@@ -56,7 +56,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs-top button,.tabbar button{border:0;background:none;cursor:pointer}
 .tabs-top button{color:var(--night-ink);opacity:.7;padding:6px 14px;border-radius:8px;font-weight:700}
 .tabs-top button[aria-selected="true"]{opacity:1;background:rgba(243,240,230,.12);box-shadow:inset 0 -2px 0 var(--lamp)}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tabbar button{padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);font-weight:700}
 .tabbar button svg{width:22px;height:22px}
 .tabbar button[aria-selected="true"]{color:var(--ink)}
@@ -334,6 +334,51 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
 .ocrset .seg{max-width:420px}
 ol.steps{margin:8px 0 0;padding-left:1.4em;line-height:1.8}
 ol.steps li+li{margin-top:2px}
+/* v6: WIN5（JRAの指定5レースの1着を全部当てる） */
+.w5banner{display:flex;flex-direction:column;gap:8px;border:1px solid var(--lamp);background:var(--warn-bg);border-radius:var(--r);padding:12px 14px;margin-bottom:var(--gap)}
+.w5banner b{font-size:15px}
+.w5banner .sub{display:block;font-size:12.5px;color:var(--muted)}
+.w5slots{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.w5sbtn{min-width:2.5em;height:2.3em;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;color:var(--ink)}
+.w5sbtn.has{border-color:var(--primary);box-shadow:inset 0 -3px 0 var(--primary)}
+.w5sbtn[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.w5push{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.w5push .lab{font-size:12.5px;color:var(--muted);font-weight:700}
+.w5top .fields{margin-top:12px}
+.w5sum{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--night);color:var(--night-ink);display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+.w5sum .big{font-family:var(--font-mono);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.w5sum .eq{font-family:var(--font-mono);font-size:13px;opacity:.8;flex:1 1 100%}
+.w5sum .lite{font-size:12.5px;opacity:.8}
+.w5sum.bad{background:var(--bad-bg);color:var(--ink)}
+.w5races{display:flex;flex-direction:column;gap:var(--gap);margin-top:var(--gap)}
+.w5h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.w5no{font-family:var(--font-display);font-size:22px;line-height:1;color:var(--primary);min-width:1.2em}
+.w5ttl{font-weight:700;font-size:16px}
+.w5meta{font-size:12.5px;color:var(--muted);flex:1 1 100%}
+.w5lab{font-size:12px;font-weight:700;color:var(--muted);margin-top:12px}
+.w5zones{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.w5zones button{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:7px 9px;cursor:pointer;font-weight:700;display:inline-flex;align-items:baseline;gap:5px;color:var(--ink)}
+.w5zones button small{font-size:10.5px;font-weight:700;color:var(--lamp)}
+.w5zones button[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.w5zones button[aria-pressed="true"] small{color:inherit;opacity:.85}
+.w5zones button:disabled{opacity:.4;cursor:default}
+.w5picks{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px}
+.w5picks .num.off{opacity:.3}
+.w5picks .cnt{font-family:var(--font-mono);font-weight:600;margin-left:4px}
+.w5empty{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.w5res{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:6px}
+.w5res .f input{text-align:center;font-family:var(--font-mono)}
+.w5res .f>label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w5mk{font-weight:700;font-size:15px;text-align:center;min-height:1.4em}
+.w5mk.o{color:var(--ok)}.w5mk.x{color:var(--bad)}
+.w5recs{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.w5rec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}
+.w5rec.cur{border-color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.w5rec .r1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700}
+.w5rec .r2{font-size:12.5px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.w5act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.w5act .btn{padding:7px 12px}
+@media (max-width:420px){.w5res{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.w5res .f input{padding:8px 4px}}
 </style>
 
 <header class="top">
@@ -341,6 +386,7 @@ ol.steps li+li{margin-top:2px}
     <div class="brand"><h1>テンゲル<em>Ⅲ</em></h1><span class="ver">大井 第13改訂版</span></div>
     <nav class="tabs-top" role="tablist" aria-label="画面">
       <button role="tab" data-tab="judge" aria-selected="true">判定</button>
+      <button role="tab" data-tab="win5" aria-selected="false">WIN5</button>
       <button role="tab" data-tab="rec" aria-selected="false">記録</button>
       <button role="tab" data-tab="stats" aria-selected="false">実測・回収</button>
       <button role="tab" data-tab="set" aria-selected="false">設定</button>
@@ -352,6 +398,7 @@ ol.steps li+li{margin-top:2px}
 <main>
 <!-- ===== 判定 ===== -->
 <section class="view" id="v-judge">
+  <div id="w5Banner" hidden></div>
   <div class="judge-grid">
     <div class="input-col">
       <div class="card">
@@ -413,6 +460,11 @@ ol.steps li+li{margin-top:2px}
 </section>
 
 <!-- ===== 記録（買ったレース） ===== -->
+<!-- ===== WIN5 ===== -->
+<section class="view" id="v-win5" hidden>
+  <div id="w5Body"></div>
+</section>
+
 <section class="view" id="v-rec" hidden>
   <div class="card">
     <div class="ym" id="ymRec"></div>
@@ -460,6 +512,7 @@ ol.steps li+li{margin-top:2px}
 
 <nav class="tabbar" role="tablist" aria-label="画面">
   <button role="tab" data-tab="judge" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9l8-5 8 5v10"/><path d="M9 19v-6h6v6"/></svg>判定</button>
+  <button role="tab" data-tab="win5" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></svg>WIN5</button>
   <button role="tab" data-tab="rec" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h11l3 3v15H6z"/><path d="M9 9h8M9 13h8M9 17h5"/></svg>記録</button>
   <button role="tab" data-tab="stats" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>実測・回収</button>
   <button role="tab" data-tab="set" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
@@ -501,9 +554,350 @@ const st = {
   tab: 'judge', recs: new Map(), derived: [], bets: new Map(), db: null, canWrite: true, sample: null, sampleImgs: null, downloads: null,
   dbState: 'connecting', betState: 'connecting', form: Object.assign(blankForm(), storeGet('tengel.form') || exampleForm()),
   ym: nowYM(), rf: 'all', open: null, per: '全期間', pairK: 'all', confirmDel: null, draft: null,
-  zk: 'A', zdraft: null
+  zk: 'A', zdraft: null, win5: new Map()
 };
 if (!Array.isArray(st.form.rows)) st.form.rows = [];
+
+// ===== WIN5（JRAが指定する5レースの1着を全部当てる馬券。1組100円・点数＝各レースで選んだ頭数のかけ算） =====
+// 5レースそれぞれをテンゲルで判定して、馬単ゾーンの「1着側」をWIN5の1着ゾーンにする（A層→人気、B層→中穴・人気 など）
+// 予算の中に収まるように、選んだゾーンの馬を「ゾーンの順→単勝オッズの低い順」に、当たる見込みが一番上がるレースから1頭ずつ足して決める
+// 作業中の5レース・予算・買い方はこの端末（tengel.win5）に、保存した記録は bets に kind:'win5' で入れる（ふつうの記録・収支には混ぜない）
+const W5N = 5, W5MARK = '①②③④⑤';
+const w5Race0 = () => ({ form: null, sel: null, win: '', picks: null });
+const w5Blank = keep => ({ id: null, fixed: false, date: todayJST(), budget: keep?.budget ?? '3000', mode: keep?.mode ?? 'pick', randAll: !!keep?.randAll,
+  races: Array.from({ length: W5N }, w5Race0), stake: '', payout: '', other: '', note: '' });
+function w5Norm(w) {
+  const o = Object.assign(w5Blank(), w && typeof w === 'object' ? w : {});
+  o.races = Array.from({ length: W5N }, (_, i) => Object.assign(w5Race0(), (w && Array.isArray(w.races) && w.races[i]) || {}));
+  return o;
+}
+const clone = o => o == null ? o : JSON.parse(JSON.stringify(o));
+st.w5 = w5Norm(storeGet('tengel.win5'));
+(() => { const e = storeGet('tengel.w5edit'); st.w5edit = e && e.n >= 1 && e.n <= W5N ? e.n : 0; st.w5back = e ? e.back || null : null; })();
+const w5Save = () => storeSet('tengel.win5', st.w5);
+const w5EditSave = () => storeSet('tengel.w5edit', st.w5edit ? { n: st.w5edit, back: st.w5back } : null);
+const w5CleanForm = f => { const c = clone(f) || {}; delete c.example; delete c.extra; delete c.id; return c; };
+const w5Unfix = () => { st.w5.fixed = false; st.w5.races.forEach(R => { R.picks = null; }); };
+const w5Label = f => f ? `${(f.venue || '').trim() || '開催場?'}${f.r ? f.r + 'R' : ''}` : '';
+const mdj = d => d ? `${+d.slice(5, 7)}/${+d.slice(8, 10)}` : '';
+
+// 1レース分：判定・1着ゾーン（推奨）・選んだゾーンの馬（ゾーンの順→単勝オッズの低い順）
+function w5Cands(J) { const out = []; J.set.forEach(z => { if (!out.includes(z.a)) out.push(z.a); }); return out; }
+function w5Race(i) {
+  const R = st.w5.races[i];
+  if (!R.form) return { i, R, empty: true };
+  const J = judgeOf(R.form);
+  if (!(R.form.venue || '').trim()) return { i, R, J, bad: '開催場を入れてね（WIN5はJRAのレースだよ）' };
+  if (!J.ok) return { i, R, J, bad: '足りない項目：' + J.missing.join('・') };
+  if (!J.horses.length) return { i, R, J, bad: 'WIN5は馬番が必要だから、単勝オッズの一覧を入れてね' };
+  const cands = w5Cands(J);
+  const has = z => J.horses.some(h => h.zone === z);
+  let sel = (Array.isArray(R.sel) && R.sel.length ? R.sel : cands).filter(z => T.ZN.includes(z) && has(z));
+  if (!sel.length) sel = cands.filter(has).slice(0, 1);
+  const qsum = J.horses.reduce((a, h) => a + 1 / h.tan, 0), pOf = h => (1 / h.tan) / qsum;
+  const order = [...cands.filter(z => sel.includes(z)), ...T.ZN.filter(z => sel.includes(z) && !cands.includes(z))];
+  const list = [];
+  for (const z of order) J.horses.filter(h => h.zone === z).forEach(h => list.push({ no: h.no, tan: h.tan, zone: z, p: pOf(h) }));
+  return { i, R, J, cands, sel, order, list, has, pOf };
+}
+// 予算の中で各レースの頭数を決める：全レース1頭から始めて、「当たる見込みの増え方÷点数の増え方」が一番大きいレースに1頭ずつ足す
+function w5Alloc(lists, maxPts) {
+  const k = lists.map(() => 1), S = (i, n) => lists[i].slice(0, n).reduce((a, h) => a + h.p, 0);
+  let P = 1;
+  for (;;) {
+    let best = -1, bs = -Infinity;
+    for (let i = 0; i < lists.length; i++) {
+      if (k[i] >= lists[i].length) continue;
+      const nP = P / k[i] * (k[i] + 1); if (nP > maxPts) continue;
+      const sc = (Math.log(S(i, k[i] + 1)) - Math.log(S(i, k[i]))) / (Math.log(k[i] + 1) - Math.log(k[i]));
+      if (sc > bs + 1e-12) { bs = sc; best = i; }
+    }
+    if (best < 0) break;
+    P = P / k[best] * (k[best] + 1); k[best]++;
+  }
+  return k;
+}
+// 区分ごとの「1着ゾーン」の割合（いま使っているマザーデータの実測）
+function w5Rates(kubun) {
+  const rs = st.derived.filter(r => r.inStats && r.kubun === kubun), c = {};
+  for (const z of T.ZN) c[z] = rs.filter(r => r.z1 === z).length;
+  return { n: rs.length, c };
+}
+function w5Plan() {
+  if (st.w5.mode === 'rand') st.w5.races.forEach((R, i) => { if (R.form && R.sel == null) { const r = w5Race(i); if (r.list) { const pool = st.w5.randAll ? T.ZN.filter(z => r.has(z)) : r.cands.filter(z => r.has(z)); if (pool.length) { R.sel = [pool[Math.floor(Math.random() * pool.length)]]; w5Save(); } } } });
+  const races = Array.from({ length: W5N }, (_, i) => w5Race(i));
+  const budget = toNum(st.w5.budget), maxPts = budget ? Math.floor(budget / 100) : 0;
+  const ready = races.filter(r => r.list && r.list.length);
+  const plan = { races, budget, maxPts, ready: ready.length, all: ready.length === W5N };
+  if (st.w5.fixed && races.every(r => !r.list || Array.isArray(r.R.picks))) {
+    races.forEach(r => { if (r.list) r.picks = r.R.picks.slice(); });
+    plan.fixed = true;
+  } else if (plan.all && maxPts >= 1) {
+    const k = w5Alloc(ready.map(r => r.list), maxPts);
+    ready.forEach((r, j) => { r.picks = r.list.slice(0, k[j]).map(h => h.no); });
+  } else ready.forEach(r => { r.picks = r.list.map(h => h.no); });
+  // 当たる目安：選んだゾーンの「1着の割合（実測）」×ゾーンの中で買った馬の単勝オッズの割合
+  let all = 1;
+  ready.forEach(r => {
+    const M = w5Rates(r.J.c.kubun), pick = new Set(r.picks), zp = z => r.J.horses.filter(h => h.zone === z).reduce((a, h) => a + r.pOf(h), 0);
+    const zpk = z => r.J.horses.filter(h => h.zone === z && pick.has(h.no)).reduce((a, h) => a + r.pOf(h), 0);
+    r.M = M;
+    r.cover = M.n >= 5 ? T.ZN.reduce((a, z) => a + (zp(z) > 0 ? (M.c[z] / M.n) * (zpk(z) / zp(z)) : 0), 0) : r.J.horses.filter(h => pick.has(h.no)).reduce((a, h) => a + r.pOf(h), 0);
+    r.coverBy = M.n >= 5 ? 'jissoku' : 'odds';
+    all *= r.cover;
+  });
+  plan.points = ready.length ? ready.reduce((a, r) => a * r.picks.length, 1) : 0;
+  plan.cost = plan.points * 100;
+  plan.hitAll = plan.all ? all : null;
+  plan.over = plan.all && maxPts >= 1 && plan.points > maxPts;
+  return plan;
+}
+// 当たり外れ：1着の馬番が買った馬に入っているか。1つでも外れたら不的中、5つ全部入ったら的中
+function w5StatusOf(races, other) {
+  const marks = (races || []).map(r => { const w = toNum(r.win); if (w == null) return '—'; return (r.picks || []).includes(w) ? '○' : '×'; });
+  if (other === '未購入') return { s: '未購入', cls: 'skip', marks };
+  if (other === '払い戻し') return { s: '払い戻し', cls: 'skip', marks };
+  if (marks.includes('×')) return { s: '不的中', cls: 'miss', marks };
+  if (marks.length === W5N && marks.every(m => m === '○')) return { s: '的中', cls: 'hit', marks };
+  return { s: '結果待ち', cls: 'wait', marks };
+}
+const w5PctTxt = v => v == null ? '—' : v >= 0.1 ? (v * 100).toFixed(1) + '%' : v >= 0.001 ? (v * 100).toFixed(2) + '%' : (v * 100).toFixed(3) + '%';
+
+// ---- 画面 ----
+function renderWin5() {
+  const body = $('#w5Body'); if (!body) return;
+  const w = st.w5;
+  body.innerHTML = `<div class="card w5top">
+    <h2>WIN5</h2>
+    <p class="small" style="margin:0">JRAが指定する<b>5レースの1着を全部当てる</b>馬券だよ（1組100円・点数＝各レースで選んだ頭数のかけ算）。5レースをテンゲルで判定して、馬単ゾーンの<b>1着側</b>を「1着ゾーン」にして、予算の中で買う馬を出すよ。</p>
+    <details class="full"><summary>使い方</summary><ol class="steps">
+      <li>下の①〜⑤の「判定画面で入れる」を押す → 判定画面でそのレースを入れる（オッズ画像の読み取りもOK）。入れた内容はそのままWIN5に入るよ。判定画面の「WIN5に入れる ①〜⑤」からも入れられるよ</li>
+      <li>予算（円）を入れる → 5レースの点数が予算に収まるように、各レースで買う馬が出るよ</li>
+      <li>ゾーンは「自分で選ぶ」（ゾーンを押して選ぶ）か「ランダム」（推奨の1着ゾーンから1つずつ選ぶ）</li>
+      <li>レースが終わったら、いちばん下の「結果・記録」に各レースの1着の馬番と払戻を入れて保存</li>
+    </ol>
+    <p class="small muted" style="margin:6px 0 0">1着ゾーン：人気＝1〜3番人気・中穴＝4〜6・大穴＝7〜9・超大穴＝10〜12。<b>推奨</b>はテンゲルの馬単ゾーンの1着側（A層→人気、B層→中穴・人気、C層・第1／第2段階→人気・中穴・大穴）。JRAのレースは【参考判定】（${esc(motherName())}のデータでの目安）だよ。</p></details>
+    ${w.id ? `<div class="banner info">保存した記録（${esc(mdj(w.date))}）を開いているよ。「WIN5の記録を保存」で上書きするよ。</div>` : ''}
+    <div class="fields">
+      <div class="f s2"><label for="w5Date">日付</label><input type="date" id="w5Date" value="${esc(w.date)}"></div>
+      <div class="f s2"><label for="w5Budget">予算（円）</label><input type="number" id="w5Budget" inputmode="numeric" step="100" min="100" placeholder="例 3000" value="${esc(w.budget)}"></div>
+      <div class="f s2"><span class="lab">ゾーンの選び方</span><div class="seg" id="w5Mode"><button type="button" data-v="pick" aria-pressed="${w.mode !== 'rand'}">自分で選ぶ</button><button type="button" data-v="rand" aria-pressed="${w.mode === 'rand'}">ランダム</button></div></div>
+    </div>
+    <div class="row" id="w5RandRow" style="margin-top:10px"${w.mode === 'rand' ? '' : ' hidden'}><button class="btn primary" type="button" data-w5act="roll">ランダムでもう一回</button>
+      <label class="small" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="w5RandAll"${w.randAll ? ' checked' : ''}>推奨以外のゾーンもまぜる</label></div>
+    <div id="w5Sum"></div>
+  </div>
+  <div class="w5races" id="w5Races"></div>
+  <div class="card" id="w5ResCard" style="margin-top:var(--gap)"></div>
+  <div class="card" id="w5ListCard" style="margin-top:var(--gap)"></div>`;
+  w5Paint();
+  w5PaintRes(true);
+  w5PaintList();
+}
+function w5Paint() {
+  const plan = w5Plan(), w = st.w5;
+  // 合計
+  const sum = $('#w5Sum');
+  if (sum) {
+    let t;
+    if (!plan.ready) t = `<div class="w5sum"><span>5レースを入れると、ここに点数と金額が出るよ。</span></div>`;
+    else if (!plan.all) t = `<div class="w5sum"><span>あと${W5N - plan.ready}レース入れてね</span><span class="eq">いまの${plan.ready}レース：${plan.races.filter(r => r.picks).map(r => r.picks.length).join('×')}（選んだゾーンを全部買うときの頭数）</span></div>`;
+    else if (!plan.maxPts) t = `<div class="w5sum bad"><span>予算を100円以上で入れてね</span></div>`;
+    else {
+      const left = plan.budget - plan.cost;
+      t = `<div class="w5sum${plan.over ? ' bad' : ''}"><span class="big">${plan.points}点</span><span>${yen(plan.cost)}円</span><span class="lite">予算 ${yen(plan.budget)}円${plan.over ? '（オーバー）' : `・残り ${yen(left)}円`}</span>
+        <span class="eq">${plan.races.map(r => r.picks ? r.picks.length : '?').join(' × ')} ＝ ${plan.points}点${plan.fixed ? '　（保存した買い目）' : ''}</span>
+        <span class="lite">5レース全部当たる目安：${w5PctTxt(plan.hitAll)}（${esc(motherName())}の1着ゾーンの実測と単勝オッズから。目安だよ）</span></div>`;
+    }
+    sum.innerHTML = t;
+  }
+  // 各レース
+  const box = $('#w5Races'); if (!box) return plan;
+  box.innerHTML = plan.races.map(r => {
+    const mk = W5MARK[r.i], edit = `<button class="btn" type="button" data-w5act="edit" data-i="${r.i}">${r.R.form ? '判定画面で直す' : '判定画面で入れる'}</button>`;
+    if (r.empty) return `<div class="card w5race"><div class="w5empty"><span class="w5no">${mk}</span><span class="muted">まだ入っていないよ</span><span style="margin-left:auto">${edit}</span></div></div>`;
+    const f = r.R.form, J = r.J, clear = `<button class="btn ghost" type="button" data-w5act="clear" data-i="${r.i}">外す</button>`;
+    if (r.bad) return `<div class="card w5race"><div class="w5h"><span class="w5no">${mk}</span><span class="w5ttl">${esc(w5Label(f))}</span></div><div class="banner warn">${esc(r.bad)}</div><div class="row" style="margin-top:10px">${edit}${clear}</div></div>`;
+    const c = J.c, x = J.x, pick = new Set(r.picks || []);
+    const chips = T.ZN.map(z => `<button type="button" data-w5z="${z}" data-i="${r.i}" aria-pressed="${r.sel.includes(z)}"${r.has(z) ? '' : ' disabled'}>${z}${r.cands.includes(z) ? '<small>推奨</small>' : ''}</button>`).join('');
+    const nums = r.list.map(h => `<span class="num ${wakuCls(h.no, J.maxNo)}${pick.has(h.no) ? '' : ' off'}" title="${h.zone}・単勝${fmt(h.tan)}">${h.no}</span>`).join('');
+    const dropped = r.list.filter(h => !pick.has(h.no)).map(h => h.no);
+    const M = r.M, rateTxt = M && M.n >= 5 ? `${esc(motherName())}の実測（${T.KUBUN_LABEL[c.kubun].replace('（固定）', '')}・n=${M.n}）：1着が ${T.ZN.map(z => `${z} ${pct(M.c[z], M.n)}`).join('・')}` : `${esc(motherName())}の実測が少ないので（n=${M ? M.n : 0}）、単勝オッズだけの目安だよ`;
+    return `<div class="card w5race" data-i="${r.i}">
+      <div class="w5h"><span class="w5no">${mk}</span><span class="w5ttl">${esc(J.venue)} ${x.r}R</span><span class="lb L${c.L}">${c.L}</span><span class="small"><b>${T.KUBUN_LABEL[c.kubun]}</b>・比${c.hi.toFixed(1)}</span>${J.isOi ? '' : '<span class="chip ref">参考判定</span>'}
+        <span class="w5meta">${x.dist}m ${esc(J.surface)}・${esc(x.baba)}・${x.n}頭　推奨の1着ゾーン：${r.cands.join('・')}（${J.set.map(z => z.label).join('／')}の1着側）</span></div>
+      <div class="w5lab">1着ゾーン（${w.mode === 'rand' ? 'ランダムで選んだよ。押すと自分で選ぶに切り替わるよ' : '押して選んでね'}）</div>
+      <div class="w5zones">${chips}</div>
+      <div class="w5lab">買う馬（${(r.picks || []).length}頭）${dropped.length ? `<span class="muted" style="font-weight:400">　うすい番号は予算に合わせて外した馬</span>` : ''}</div>
+      <div class="w5picks">${nums}</div>
+      <div class="zref">この買い方で1着が入る目安 <b>${w5PctTxt(r.cover)}</b>　${rateTxt}</div>
+      <div class="row" style="margin-top:10px">${edit}${clear}</div>
+    </div>`;
+  }).join('');
+  return plan;
+}
+// 結果・記録（1着の馬番・購入額・払戻）
+function w5PaintRes(full) {
+  const card = $('#w5ResCard'); if (!card) return;
+  const plan = w5Plan(), w = st.w5, stake = toNum(w.stake) ?? (plan.all ? plan.cost : null);
+  const sts = w5StatusOf(plan.races.map(r => ({ picks: r.picks || [], win: r.R.win })), w.other);
+  if (full) {
+    card.innerHTML = `<h2>結果・記録</h2>
+      <div class="w5lab" style="margin-top:0">各レースの1着の馬番</div>
+      <div class="w5res">${plan.races.map(r => `<div class="f"><label for="w5Win${r.i}">${W5MARK[r.i]} ${esc(w5Label(r.R.form))}</label><input id="w5Win${r.i}" data-w5win="${r.i}" inputmode="numeric" autocomplete="off" value="${esc(r.R.win || '')}" placeholder="馬番"><span class="w5mk" data-w5mk="${r.i}"></span></div>`).join('')}</div>
+      <div class="recstatus" id="w5Status" style="margin-top:12px"></div>
+      <div class="fields" style="margin-top:12px">
+        <div class="f s2"><label for="w5Stake">購入額（円）</label><input type="number" id="w5Stake" inputmode="numeric" value="${esc(w.stake)}" placeholder="${plan.all ? yen(plan.cost) : '自動'}"></div>
+        <div class="f s2"><label for="w5Pay">払戻（円）</label><input type="number" id="w5Pay" inputmode="numeric" value="${esc(w.payout)}" placeholder="外れは0"></div>
+        <div class="f s2"><span class="lab">その他</span><div class="seg" id="w5Other"><button type="button" data-v="" aria-pressed="${!w.other}">自動判定</button><button type="button" data-v="未購入" aria-pressed="${w.other === '未購入'}">未購入</button></div></div>
+        <div class="f s6"><label for="w5Note">メモ</label><input id="w5Note" value="${esc(w.note)}" placeholder="買い方のメモなど"></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" type="button" data-w5act="save">WIN5の記録を保存</button><button class="btn ghost" type="button" data-w5act="new">新しいWIN5にする</button></div>
+      <p class="small muted" style="margin:8px 0 0">WIN5の記録は、ふつうの記録・収支（テンゲルの回収率）には混ぜないで、下の「WIN5の記録」にまとめるよ。購入額が空なら点数×100円で記録するよ。</p>`;
+  }
+  plan.races.forEach(r => { const el = $(`[data-w5mk="${r.i}"]`, card); if (el) { const m = sts.marks[r.i]; el.textContent = m === '—' ? '' : m; el.className = 'w5mk' + (m === '○' ? ' o' : m === '×' ? ' x' : ''); } });
+  const pay = w.other === '未購入' ? 0 : (toNum(w.payout) || 0), bal = pay - (w.other === '未購入' ? 0 : (stake || 0));
+  const detail = sts.s === '的中' ? '5レース全部当たり！払戻を入れてね💰' : sts.s === '不的中' ? `外れたレース：${sts.marks.map((m, i) => m === '×' ? W5MARK[i] : '').join('') || '—'}` : sts.s === '未購入' ? '収支には入れないよ' : '1着の馬番を入れると、レースごとに○×が出るよ';
+  const stEl = $('#w5Status', card);
+  if (stEl) stEl.innerHTML = `<span class="stc ${sts.cls}" style="font-size:14px">${sts.s}</span><span class="sub">${esc(detail)}</span>${stake != null && sts.s !== '未購入' ? `<span class="balance ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}" style="margin-left:auto">${yen(stake)}→${yen(pay)}（${signYen(bal)}円）</span>` : ''}`;
+}
+// 保存したWIN5の記録
+function w5PaintList() {
+  const card = $('#w5ListCard'); if (!card) return;
+  const list = [...st.win5.values()].sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
+  if (!list.length) { card.innerHTML = `<h2>WIN5の記録</h2><p class="small muted" style="margin:0">${st.betState === 'on' ? 'まだ記録はないよ。「WIN5の記録を保存」で、ここに並ぶよ。' : st.betState === 'connecting' ? '記録を読み込み中…' : '記録に接続できないよ（判定はできるよ）。'}</p>`; return; }
+  const A = { n: 0, hit: 0, stake: 0, pay: 0, wait: 0 };
+  for (const b of list) { const s = w5StatusOf(b.races, b.other); if (s.s === '未購入') continue; A.n++; if (s.s === '的中') A.hit++; if (s.s === '結果待ち') A.wait++; A.stake += toNum(b.stake) || 0; A.pay += toNum(b.payout) || 0; }
+  const bal = A.pay - A.stake;
+  card.innerHTML = `<h2>WIN5の記録</h2>
+    <div class="money-tiles" style="margin-top:0">
+      <div class="tile"><div class="l">買ったWIN5</div><div class="v">${A.n}<span class="small muted">回</span></div><div class="d">的中${A.hit}${A.wait ? '・結果待ち' + A.wait : ''}</div></div>
+      <div class="tile"><div class="l">回収率</div><div class="v ${A.stake && A.pay >= A.stake ? 'plus' : ''}">${pct(A.pay, A.stake)}</div><div class="d">払戻 ${yen(A.pay)}円 ÷ 購入 ${yen(A.stake)}円</div></div>
+      <div class="tile"><div class="l">収支</div><div class="v ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}">${signYen(bal)}<span class="small muted">円</span></div><div class="d">全期間</div></div></div>
+    <div class="w5recs">${list.map(b => {
+      const s = w5StatusOf(b.races, b.other), conf = st.w5del === b.id;
+      const names = (b.races || []).map((r, i) => `${W5MARK[i]}${esc(r.label || '')}${s.marks[i] && s.marks[i] !== '—' ? ' ' + s.marks[i] : ''}`).join('　');
+      return `<div class="w5rec${st.w5.id === b.id ? ' cur' : ''}" data-id="${esc(b.id)}"><div><div class="r1">${esc(dlabel(b.date))}<span class="stc ${s.cls}">${s.s}</span><span class="lmoney">${b.points ?? '?'}点・${yen(toNum(b.stake))}円 → ${yen(toNum(b.payout) || 0)}円</span></div><div class="r2">${names}${b.note ? '　' + esc(b.note) : ''}</div></div>
+        <div class="w5act">${conf ? `<span class="confirm">消す？<button class="btn danger" type="button" data-w5act="del2">消す</button><button class="btn ghost" type="button" data-w5act="del0">やめる</button></span>` : `<button class="btn" type="button" data-w5act="open">開く</button><button class="btn ghost" type="button" data-w5act="del1">消す</button>`}</div></div>`;
+    }).join('')}</div>`;
+}
+
+// ---- 操作 ----
+function w5Changed(full) { w5Save(); if (st.tab !== 'win5') return; if (full) renderWin5(); else { w5Paint(); w5PaintRes(false); } }
+function w5Roll() {
+  st.w5.races.forEach((R, i) => {
+    const r = w5Race(i); if (!r.list) return;
+    const pool = st.w5.randAll ? T.ZN.filter(z => r.has(z)) : r.cands.filter(z => r.has(z));
+    if (pool.length) R.sel = [pool[Math.floor(Math.random() * pool.length)]];
+  });
+  st.w5.mode = 'rand'; w5Unfix();
+}
+function w5Toggle(i, z) {
+  const r = w5Race(i); if (!r.list) return;
+  const cur = r.sel.slice(), k = cur.indexOf(z);
+  if (k >= 0) { if (cur.length === 1) { toast('ゾーンは1つ以上選んでね'); return; } cur.splice(k, 1); } else cur.push(z);
+  st.w5.races[i].sel = cur; st.w5.mode = 'pick'; w5Unfix(); w5Changed(true);
+}
+// 判定画面で、WIN5の n レース目を入力する（入れた内容はそのまま WIN5 に入る）
+function w5StartEdit(n) {
+  if (!st.w5edit) st.w5back = clone(st.form);
+  const R = st.w5.races[n - 1], near = st.w5.races.map(x => x.form).find(Boolean);
+  st.form = Object.assign(blankForm(), R.form ? clone(R.form) : { venue: near ? near.venue : '', date: st.w5.date || (near ? near.date : todayJST()), surface: near ? near.surface : 'ダ' });
+  st.form.example = false; st.w5edit = n; w5EditSave(); storeSet('tengel.form', st.form);
+  st.draft = null; formToUI(); $('#ocrMsg').innerHTML = ''; w5Banner(); setTab('judge'); renderResult();
+}
+function w5EndEdit(go) {
+  const back = st.w5back; st.w5edit = 0; st.w5back = null; w5EditSave();
+  st.form = Object.assign(blankForm(), back || {}); if (!Array.isArray(st.form.rows)) st.form.rows = [];
+  storeSet('tengel.form', st.form); st.draft = null; formToUI(); $('#ocrMsg').innerHTML = ''; w5Banner(); renderResult();
+  if (go) setTab('win5');
+}
+function w5Sync() {
+  const R = st.w5.races[st.w5edit - 1]; if (!R) return;
+  R.form = w5CleanForm(st.form); if (R.form.date && !st.w5.id) st.w5.date = R.form.date;
+  w5Unfix(); w5Save(); document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'w5RandAll') { st.w5.randAll = t.checked; w5Save(); } });
+w5Banner();
+}
+function w5Banner() {
+  const el = $('#w5Banner'); if (!el) return;
+  if (!st.w5edit) { el.hidden = true; el.innerHTML = ''; return; }
+  const n = st.w5edit, f = st.w5.races[n - 1].form;
+  el.hidden = false;
+  el.innerHTML = `<div class="w5banner"><div><b>WIN5の${W5MARK[n - 1]}レース目を入力中${f && f.r ? `（${esc(w5Label(f))}）` : ''}</b><span class="sub">ここで入れた内容は、そのままWIN5の${W5MARK[n - 1]}に入るよ。オッズ画像の読み取りもそのまま使えるよ。</span></div>
+    <div class="w5slots"><span class="small muted">ほかのレース：</span>${st.w5.races.map((R, i) => `<button type="button" class="w5sbtn${R.form ? ' has' : ''}" data-w5go="${i + 1}" aria-pressed="${i + 1 === n}" aria-label="WIN5の${i + 1}レース目を入力">${W5MARK[i]}</button>`).join('')}<button class="btn primary" type="button" data-w5back="1" style="margin-left:auto">WIN5に戻る</button></div></div>`;
+}
+// 判定画面のいまのレースを、WIN5の n レース目に入れる
+function w5Push(n, btn) {
+  if (st.form.example) { toast('入力例（架空のレース）はWIN5に入れられないよ'); return; }
+  const R = st.w5.races[n - 1], f = st.form;
+  const same = R.form && R.form.date === f.date && (R.form.venue || '') === (f.venue || '') && String(R.form.r) === String(f.r);
+  if (R.form && !same && !btn.dataset.ok) { btn.dataset.ok = '1'; toast(`${W5MARK[n - 1]}には${w5Label(R.form)}が入っているよ。もう一度押すと入れ替えるよ`, 3600); return; }
+  R.form = w5CleanForm(f); R.sel = null; R.win = ''; if (f.date && !st.w5.id) st.w5.date = f.date;
+  w5Unfix(); w5Save(); renderResult(); toast(`WIN5の${W5MARK[n - 1]}に${w5Label(f)}を入れたよ。WIN5タブで買い目を出すよ`, 3200);
+}
+async function w5SaveRecord(btn) {
+  if (!st.db) { toast('記録に接続できていないよ'); return; }
+  const plan = w5Plan(), w = st.w5;
+  if (!plan.all) { toast('5レース全部入れてから保存してね', 3200); return; }
+  if (!plan.maxPts) { toast('予算を100円以上で入れてね'); return; }
+  if (!w.date) { toast('日付を入れてね'); return; }
+  const id = w.id || (() => { const base = w.date.replace(/-/g, '') + '-win5'; if (!st.win5.has(base) && !st.bets.has(base)) return base; for (let k = 2; ; k++) if (!st.win5.has(base + '-' + k) && !st.bets.has(base + '-' + k)) return base + '-' + k; })();
+  const now = new Date().toISOString(), stake = toNum(w.stake) ?? plan.cost;
+  const doc = { kind: 'win5', date: w.date, budget: toNum(w.budget), mode: w.mode, points: plan.points, stake, payout: toNum(w.payout), other: w.other || '', note: w.note || '', updatedAt: now,
+    races: plan.races.map(r => ({ form: w5CleanForm(r.R.form), sel: r.sel, picks: r.picks || [], win: toNum(r.R.win), label: w5Label(r.R.form), L: r.J.c.L, kubun: r.J.c.kubun })) };
+  const isNew = !st.win5.has(id);
+  btn.disabled = true;
+  try {
+    await writeBet(id, isNew ? { ...doc, createdAt: now } : doc, isNew);
+    w.id = id; w.fixed = true; w.races.forEach((R, i) => { R.picks = doc.races[i].picks; }); w5Save();
+    const s = w5StatusOf(doc.races, doc.other);
+    toast(`✅ WIN5の記録を保存したよ（${s.s}）`, 3000);
+    if (!inputBusy('#w5Body')) renderWin5(); else w5PaintList();
+  } catch (e) { writeErr(e); }
+  finally { btn.disabled = false; }
+}
+function w5Open(id) {
+  const b = st.win5.get(id); if (!b) return;
+  if (st.w5edit) w5EndEdit(false);
+  st.w5 = w5Norm({ id, fixed: true, date: b.date, budget: b.budget == null ? '' : String(b.budget), mode: b.mode || 'pick', randAll: st.w5.randAll,
+    races: (b.races || []).map(r => ({ form: r.form || null, sel: r.sel || null, win: r.win == null ? '' : String(r.win), picks: Array.isArray(r.picks) ? r.picks : null })),
+    stake: b.stake == null ? '' : String(b.stake), payout: b.payout == null ? '' : String(b.payout), other: b.other || '', note: b.note || '' });
+  w5Save(); renderWin5(); window.scrollTo(0, 0); toast(`${dlabel(b.date)}のWIN5を開いたよ`);
+}
+// WIN5タブの操作（押す・入れる）
+document.addEventListener('click', e => {
+  const t = e.target;
+  const push = t.closest('[data-w5push]'); if (push) { w5Push(+push.dataset.w5push, push); return; }
+  const go = t.closest('[data-w5go]'); if (go) { const n = +go.dataset.w5go; if (n !== st.w5edit) w5StartEdit(n); return; }
+  if (t.closest('[data-w5back]')) { w5EndEdit(true); return; }
+  if (!t.closest('#w5Body')) return;
+  const zb = t.closest('[data-w5z]'); if (zb && !zb.disabled) { w5Toggle(+zb.dataset.i, zb.dataset.w5z); return; }
+  const mb = t.closest('#w5Mode button'); if (mb) { const v = mb.dataset.v; if (v === st.w5.mode) return; if (v === 'rand') w5Roll(); else st.w5.mode = 'pick'; w5Changed(true); return; }
+  const ob = t.closest('#w5Other button'); if (ob) { st.w5.other = ob.dataset.v; $$('#w5Other button').forEach(x => x.setAttribute('aria-pressed', String(x === ob))); w5Save(); w5PaintRes(false); return; }
+  const a = t.closest('[data-w5act]'); if (!a) return;
+  const act = a.dataset.w5act, row = a.closest('.w5rec');
+  if (act === 'edit') w5StartEdit(+a.dataset.i + 1);
+  else if (act === 'clear') { const R = st.w5.races[+a.dataset.i]; if (!a.dataset.ok) { a.dataset.ok = '1'; a.textContent = 'ほんとに外す？'; return; } Object.assign(R, w5Race0()); w5Unfix(); w5Changed(true); }
+  else if (act === 'roll') { w5Roll(); w5Changed(true); }
+  else if (act === 'save') w5SaveRecord(a);
+  else if (act === 'new') { if (!a.dataset.ok) { a.dataset.ok = '1'; a.textContent = 'ほんとに新しくする？（入れた5レースは消えるよ）'; return; } if (st.w5edit) w5EndEdit(false); st.w5 = w5Blank(st.w5); w5Changed(true); toast('新しいWIN5にしたよ'); }
+  else if (act === 'open' && row) w5Open(row.dataset.id);
+  else if (act === 'del1' && row) { st.w5del = row.dataset.id; w5PaintList(); }
+  else if (act === 'del0') { st.w5del = null; w5PaintList(); }
+  else if (act === 'del2' && row) { const id = row.dataset.id; st.w5del = null; st.db.collection('bets').doc(id).delete().then(() => { if (st.w5.id === id) { st.w5.id = null; st.w5.fixed = false; w5Save(); } toast('WIN5の記録を消したよ'); }).catch(writeErr); }
+});
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.closest || !t.closest('#w5Body')) return;
+  if (t.id === 'w5Budget') { st.w5.budget = t.value.trim(); w5Unfix(); w5Save(); w5Paint(); w5PaintRes(false); }
+  else if (t.id === 'w5Date') { st.w5.date = t.value; w5Save(); }
+  else if (t.id === 'w5Stake') { st.w5.stake = t.value.trim(); w5Save(); w5PaintRes(false); }
+  else if (t.id === 'w5Pay') { st.w5.payout = t.value.trim(); w5Save(); w5PaintRes(false); }
+  else if (t.id === 'w5Note') { st.w5.note = t.value; w5Save(); }
+  else if (t.dataset.w5win != null) { st.w5.races[+t.dataset.w5win].win = z2h(t.value).replace(/[^\d]/g, ''); w5Save(); w5PaintRes(false); }
+});
+document.addEventListener('change', e => { const t = e.target; if (t && t.id === 'w5RandAll') { st.w5.randAll = t.checked; w5Save(); } });
+w5Banner();
+
 
 // ===== 買い目（まさちゃんのカスタム）の保存先：iPhoneアプリ版はiPhoneの中、それ以外はこのブラウザ =====
 const ZoneStore = {
@@ -563,11 +957,11 @@ document.addEventListener('click', e => { const b = e.target.closest('.slotchip,
 
 // ===== tabs =====
 function setTab(t) {
-  if (!['judge', 'rec', 'stats', 'set'].includes(t)) t = 'judge';
+  if (!['judge', 'win5', 'rec', 'stats', 'set'].includes(t)) t = 'judge';
   st.tab = t;
   $$('[role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
-  $('#v-judge').hidden = t !== 'judge'; $('#v-rec').hidden = t !== 'rec'; $('#v-stats').hidden = t !== 'stats'; $('#v-set').hidden = t !== 'set';
-  if (t === 'rec') renderRec(); if (t === 'stats') renderStats(); if (t === 'set') renderSet();
+  $('#v-judge').hidden = t !== 'judge'; $('#v-win5').hidden = t !== 'win5'; $('#v-rec').hidden = t !== 'rec'; $('#v-stats').hidden = t !== 'stats'; $('#v-set').hidden = t !== 'set';
+  if (t === 'rec') renderRec(); if (t === 'stats') renderStats(); if (t === 'set') renderSet(); if (t === 'win5') renderWin5();
   document.dispatchEvent(new CustomEvent('tengel:tab', { detail: t }));
   storeSet('tengel.tab', t); window.scrollTo(0, 0);
   if (typeof updateMini === 'function') updateMini();
@@ -618,15 +1012,15 @@ $('#oddsGrid').addEventListener('input', e => {
 });
 $('#addRow').addEventListener('click', () => { st.form.extra = rowCount() + 1; buildGrid(); });
 $('#clearBtn').addEventListener('click', () => { const keep = { venue: st.form.venue, date: st.form.date, baba: st.form.baba, surface: st.form.surface }; st.form = Object.assign(blankForm(), keep); formToUI(); changed(); $('#ocrMsg').innerHTML = ''; });
-$('#sampleBtn').addEventListener('click', () => { st.form = exampleForm(); formToUI(); changed(true); toast('入力例（架空のレース）を入れたよ'); });
-let chT; function changed(keepExample) { if (!keepExample) st.form.example = false; clearTimeout(chT); chT = setTimeout(() => { storeSet('tengel.form', st.form); renderResult(); }, 120); }
+$('#sampleBtn').addEventListener('click', () => { if (st.w5edit) { toast('WIN5のレースを入力中は、入力例は使えないよ'); return; } st.form = exampleForm(); formToUI(); changed(true); toast('入力例（架空のレース）を入れたよ'); });
+let chT; function changed(keepExample) { if (!keepExample) st.form.example = false; clearTimeout(chT); chT = setTimeout(() => { storeSet('tengel.form', st.form); if (st.w5edit) w5Sync(); renderResult(); }, 120); }
 
 // ===== waku =====
 function wakuOf(no, m) { if (!m || m <= 8) return Math.min(no, 8); const base = Math.floor(m / 8), rem = m % 8; let k = 0; for (let f = 1; f <= 8; f++) { k += f > 8 - rem ? base + 1 : base; if (no <= k) return f; } return 8; }
 function wakuCls(no, m) { return 'w' + wakuOf(no, m); }
 // ===== judge render =====
-function currentJudge() {
-  const f = st.form;
+function currentJudge() { return judgeOf(st.form); }
+function judgeOf(f) {
   const inp = { venue: f.venue, date: f.date, r: f.r, dist: f.dist, surface: f.surface, baba: f.baba, n: f.n, horses: f.rows.map(r => ({ no: r.no, tan: parseFloat(z2h(r.tan)), fuku: r.fuku })), tan1: f.tan1, s1: f.s1, s5: f.s5, s10: f.s10, s1combo: f.s1combo, s5combo: f.s5combo, s10combo: f.s10combo };
   const venue = (f.venue || '大井').trim() || '大井';
   const id = f.date && f.r ? idFor(f.date, venue, f.r) : null;
@@ -764,13 +1158,14 @@ function renderResult() {
   if (c.L === 'C' && c.c20 === '比20以上' && (k === 'C1' || k === 'C2')) h += `<div class="small">観測メモ：1着超大穴を観測中（${S.c20['比20以上'].sup1}/${S.c20['比20以上'].n}）※判定・ゾーンには使わない</div>`;
   h += `<div class="oldline">旧本線（記録用・買い目ではない）${esc(oldLineText(J))}</div>`;
   if (J.excluded) h += `<div class="small muted">基盤データにあるこのレース自身は外して参考値を計算しているよ（自己参照の除外）。</div>`;
+  if (!st.w5edit && !st.form.example) h += `<div class="w5push"><span class="lab">WIN5に入れる</span>${st.w5.races.map((R, i) => `<button type="button" class="w5sbtn${R.form ? ' has' : ''}" data-w5push="${i + 1}" aria-label="WIN5の${i + 1}レース目に入れる">${W5MARK[i]}</button>`).join('')}<span class="small muted">（JRAのWIN5対象レースのとき）</span></div>`;
   h += `<div class="row" style="margin-top:4px"><button class="btn primary" type="button" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>全文コピー</button>
-    <button class="btn primary" type="button" id="saveJudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>${st.bets.has(J.id) ? '判定と結果を上書き保存' : '判定と結果を保存'}</button></div>
-    ${st.form.example ? '<p class="small muted" style="margin:0">入力例は保存できないよ。本番のレースを入れてね。</p>' : '<p class="small muted" style="margin:0">' + (st.bets.has(J.id) ? '記録タブに保存済み。' : '') + '下の「結果・収支の記録」に入れた着順・購入額・回収額も一緒に保存するよ。結果がまだなら空のままでOK（結果待ちで保存）。</p>'}<div data-k="savemsg" data-id="${esc(J.id || '')}" hidden></div></div>
+    ${st.w5edit ? '' : `<button class="btn primary" type="button" id="saveJudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>${st.bets.has(J.id) ? '判定と結果を上書き保存' : '判定と結果を保存'}</button>`}</div>
+    ${st.w5edit ? `<p class="small muted" style="margin:0">WIN5のレースは、ここでは保存しないよ。WIN5タブで5レースまとめて記録してね。</p>` : st.form.example ? '<p class="small muted" style="margin:0">入力例は保存できないよ。本番のレースを入れてね。</p>' : '<p class="small muted" style="margin:0">' + (st.bets.has(J.id) ? '記録タブに保存済み。' : '') + '下の「結果・収支の記録」に入れた着順・購入額・回収額も一緒に保存するよ。結果がまだなら空のままでOK（結果待ちで保存）。</p>'}<div data-k="savemsg" data-id="${esc(J.id || '')}" hidden></div></div>
     <details class="full"><summary>全STEPを表示（STEP0〜T3）</summary><pre class="out" id="outText">${esc(buildText(J))}</pre></details>`;
   box.innerHTML = h;
   $('#copyAll').addEventListener('click', ev => copyText(buildText(J), ev.currentTarget, $('#outText')));
-  $('#saveJudge').addEventListener('click', () => { const box = $('#recCard .recf'); if (box) saveRecf(box, $('#saveJudge')); else toast('先に判定に必要な項目を入れてね'); });
+  const sj = $('#saveJudge'); if (sj) sj.addEventListener('click', () => { const box = $('#recCard .recf'); if (box) saveRecf(box, sj); else toast('先に判定に必要な項目を入れてね'); });
   for (const el of $$('[data-k=savemsg]', box)) paintSaveMsg(el);
 }
 
@@ -1229,6 +1624,7 @@ async function deleteBet(id) {
 // ---- 判定画面の「結果・収支の記録」カード ----
 function renderRecCard(J, force) {
   const card = $('#recCard');
+  card.hidden = !!st.w5edit; if (st.w5edit) { card.dataset.sig = ''; return; }
   if (!J.ok) { card.dataset.id = ''; card.dataset.sig = ''; card.innerHTML = `<h2>結果・収支の記録</h2><p class="small muted" style="margin:0">判定が出たら、ここで買ったレースの結果・購入額・回収額を記録できるよ。</p>`; return; }
   const id = J.id, b = st.bets.get(id) || null, canNo = J.horses.length > 0;
   const focused = card.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
@@ -1621,6 +2017,7 @@ let rT; function recompute() {
     if (st.tab === 'rec' && !inputBusy('#recList')) renderRec();
     if (st.tab === 'stats') renderStats();
     if (st.tab === 'set') renderSet();
+    if (st.tab === 'win5' && !inputBusy('#w5Body')) renderWin5();
   }, 60);
 }
 let bT; function recomputeBets() {
@@ -1628,6 +2025,7 @@ let bT; function recomputeBets() {
     setPill(); renderResult();
     if (st.tab === 'rec' && !inputBusy('#recList')) renderRec();
     if (st.tab === 'stats') renderMoney();
+    if (st.tab === 'win5') { if (inputBusy('#w5Body')) w5PaintList(); else renderWin5(); }
   }, 60);
 }
 // 1つの購読は最大1000件なので、四半期ごとに分けて購読する（2026年7月〜来四半期）
@@ -1665,7 +2063,8 @@ async function setupDB() {
   // テンゲル基盤データ（読むだけ）
   subscribeAll(db, 'races', st.recs, recompute, () => { st.dbState = 'on'; }, () => { st.dbState = 'off'; setPill(); });
   // 買ったレースの記録
-  subscribeAll(db, 'bets', st.bets, recomputeBets, () => { st.betState = 'on'; }, () => { st.betState = 'off'; setPill(); });
+  const betRouter = { set(id, v) { if (v && v.kind === 'win5') { st.win5.set(id, v); st.bets.delete(id); } else { st.bets.set(id, v); st.win5.delete(id); } }, delete(id) { st.bets.delete(id); st.win5.delete(id); } };
+  subscribeAll(db, 'bets', betRouter, recomputeBets, () => { st.betState = 'on'; }, () => { st.betState = 'off'; setPill(); });
 }
 async function setupDownloads() { st.downloads = await window.claude?.use?.('downloads').catch?.(() => null) ?? null; }
 
