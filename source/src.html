@@ -392,11 +392,11 @@ ol.steps li+li{margin-top:2px}
         <h2>3連単（人気順）</h2>
         <div class="fields">
           <div class="f s3"><label for="fS1">1位オッズ</label><input type="number" id="fS1" inputmode="decimal" step="0.1" placeholder="28.6"></div>
-          <div class="f s3"><label for="fS1c">1位の組番（任意）</label><input id="fS1c" inputmode="numeric" placeholder="3-1-5"></div>
+          <div class="f s3"><label for="fS1c">1位の組番（任意）</label><input id="fS1c" inputmode="decimal" data-dash autocomplete="off" placeholder="例 3.1.5"></div>
           <div class="f s3"><label for="fS5">5位オッズ（記録用）</label><input type="number" id="fS5" inputmode="decimal" step="0.1"></div>
-          <div class="f s3"><label for="fS5c">5位の組番</label><input id="fS5c" inputmode="numeric"></div>
+          <div class="f s3"><label for="fS5c">5位の組番</label><input id="fS5c" inputmode="decimal" data-dash autocomplete="off" placeholder="例 3.1.5"></div>
           <div class="f s3"><label for="fS10">10位オッズ（記録用）</label><input type="number" id="fS10" inputmode="decimal" step="0.1"></div>
-          <div class="f s3"><label for="fS10c">10位の組番</label><input id="fS10c" inputmode="numeric"></div>
+          <div class="f s3"><label for="fS10c">10位の組番</label><input id="fS10c" inputmode="decimal" data-dash autocomplete="off" placeholder="例 3.1.5"></div>
         </div>
         <div class="row end" style="margin-top:14px">
           <button class="btn ghost" type="button" id="clearBtn">入力をクリア</button>
@@ -1006,9 +1006,37 @@ const betsInYM = () => betList().filter(b => inYM(b, st.ym.y, st.ym.m));
 
 // 着順の文字列 → 人気・馬番
 function rankOrder(horses) { return (horses || []).filter(h => +h.tan > 0).slice().sort((a, b) => a.tan - b.tan || a.no - b.no).map(h => +h.no); }
+// iPhoneの数字キーボードには「-」がないので、「.」や空白などの区切りは打ったそばから「-」にする（data-dash の欄）
+const SEP_RE = /[\s.．,，、。\/／\-‐－―ー−~〜・]+/g;
+const dashLive = v => z2h(v).replace(SEP_RE, '-').replace(/^-+/, '');
+// 番号の上限＝頭数（馬番なら一番大きい馬番）。わからないときは18
+function resMax(horses) { const hs = (horses || []).filter(h => h && +h.no > 0); return hs.length ? Math.max(hs.length, ...hs.map(h => +h.no)) : 18; }
+// 区切りなしの数字（例 6211）を番号に分ける。3つ→2つの順に試して、読み方が1つだけならそれを使う（2つ以上なら 'amb'）
+function splitDigits(d, max) {
+  for (const k of [3, 2]) {
+    const found = [];
+    const walk = (i, acc) => {
+      if (acc.length === k) { if (i === d.length) found.push(acc.slice()); return; }
+      for (const w of [1, 2]) {
+        const t = d.slice(i, i + w); if (t.length !== w || t[0] === '0') continue;
+        const x = +t; if (x < 1 || x > max || acc.includes(x)) continue;
+        acc.push(x); walk(i + w, acc); acc.pop();
+      }
+    };
+    walk(0, []);
+    if (found.length === 1) return found[0];
+    if (found.length > 1) return 'amb';
+  }
+  return null;
+}
 function parseResStr(s, mode, horses) {
-  const parts = z2h(s).trim().split(/[^0-9]+/).filter(Boolean).map(Number);
+  let parts = z2h(s).trim().split(/[^0-9]+/).filter(Boolean).map(Number), split = false;
   if (!parts.length) return { ranks: null, nos: null };
+  if (parts.length === 1 && /^\d{2,}$/.test(z2h(s).trim())) {   // 区切りなしで打ったとき（6211 など）
+    const sp = splitDigits(z2h(s).replace(/[^0-9]/g, ''), resMax(horses));
+    if (sp === 'amb') return { err: '区切りがないと読み方がいくつかあるよ。「.」で区切ってね（例 1.12.3）' };
+    if (sp) { parts = sp; split = true; }
+  }
   if (parts.length < 2) return { err: '1着と2着は必ず入れてね（例 6-2-11）' };
   const xs = parts.slice(0, 3);
   if (new Set(xs).size !== xs.length) return { err: '同じ番号が重なっているよ。着順を確認してね' };
@@ -1016,10 +1044,26 @@ function parseResStr(s, mode, horses) {
     const ord = rankOrder(horses);
     const ranks = xs.map(no => { const i = ord.indexOf(no); return i < 0 ? null : i + 1; });
     if (ranks.some(x => x == null)) return { err: 'オッズ一覧にない馬番があるよ' };
-    return { ranks, nos: xs };
+    return { ranks, nos: xs, split };
   }
-  return { ranks: xs, nos: null };
+  return { ranks: xs, nos: null, split };
 }
+// 打ったそばから区切りを「-」に。欄を離れたら、区切りなしの数字（6211）は「6-2-11」に直して見せる
+document.addEventListener('input', e => {
+  const t = e.target; if (!t || !t.matches || !t.matches('input[data-dash]')) return;
+  const v = t.value, nv = dashLive(v);
+  if (nv !== v) { t.value = nv; try { t.setSelectionRange(nv.length, nv.length); } catch {} }
+}, true);
+document.addEventListener('change', e => {
+  const t = e.target; if (!t || !t.matches || !t.matches('input[data-dash]')) return;
+  const d = z2h(t.value).trim(); let nv = d.replace(/-+$/, '');
+  if (/^\d{3,}$/.test(d)) {
+    const box = t.closest('.recf'), ctx = box ? recCtx(box) : null;
+    const sp = splitDigits(d, ctx ? resMax(ctx.horses) : (+st.form.n || 18));
+    if (Array.isArray(sp)) nv = sp.join('-');
+  }
+  if (nv !== t.value) { t.value = nv; t.dispatchEvent(new Event('input', { bubbles: true })); }
+}, true);
 function resStrOf(b, mode) {
   if (!b || b.p1 == null || b.p2 == null) return '';
   if (mode === 'no' && b.n1 != null && b.n2 != null) return [b.n1, b.n2, b.n3].filter(v => v != null).join('-');
@@ -1039,7 +1083,7 @@ function recFormHTML(v, ctx) {
       <div class="f s3"><span class="lab">買った券種</span><div class="toggles" data-k="types"><button type="button" data-v="馬単" aria-pressed="${v.types.includes('馬単')}">馬単</button><button type="button" data-v="3連単" aria-pressed="${v.types.includes('3連単')}">3連単</button></div></div>
       <div class="f s3"><label for="stake-${sfx}">購入額（円）</label><input type="number" id="stake-${sfx}" data-k="stake" inputmode="numeric" placeholder="例 1200" value="${esc(v.stake)}"></div>
       <div class="f s3"><span class="lab">着順の入れ方</span><div class="seg" data-k="mode"><button type="button" data-v="no" aria-pressed="${v.mode === 'no'}"${ctx.canNo ? '' : ' disabled'}>馬番</button><button type="button" data-v="nin" aria-pressed="${v.mode === 'nin'}">人気</button></div></div>
-      <div class="f s3"><label for="res-${sfx}" data-k="reslab">レース結果 1着-2着-3着（${v.mode === 'no' ? '馬番' : '人気'}）</label><input id="res-${sfx}" data-k="res" inputmode="numeric" placeholder="${v.mode === 'no' ? '例 6-2-11' : '例 1-4-2'}" value="${esc(v.res)}"></div>
+      <div class="f s3"><label for="res-${sfx}" data-k="reslab">レース結果 1着-2着-3着（${v.mode === 'no' ? '馬番' : '人気'}）</label><input id="res-${sfx}" data-k="res" inputmode="decimal" data-dash autocomplete="off" placeholder="${v.mode === 'no' ? '例 6.2.11' : '例 1.4.2'}" value="${esc(v.res)}"></div>
       <div class="f s6"><span class="lab">結果（的中・不的中は着順から自動）／その他</span><div class="seg" data-k="other"><button type="button" data-v="" aria-pressed="${!v.other}">自動判定</button><button type="button" data-v="未購入" aria-pressed="${v.other === '未購入'}">未購入</button><button type="button" data-v="払い戻し" aria-pressed="${v.other === '払い戻し'}">払い戻し</button></div></div>
       <div class="f s3"><label for="pay-${sfx}">回収額（円）</label><input type="number" id="pay-${sfx}" data-k="payout" inputmode="numeric" placeholder="${v.other === '払い戻し' ? '購入額と同じ' : '外れは0'}" value="${esc(v.payout)}"></div>
       <div class="f s3"><label for="note-${sfx}">メモ</label><input id="note-${sfx}" data-k="note" value="${esc(v.note)}" placeholder="買い目など"></div>
@@ -1076,7 +1120,8 @@ function updateRecPreview(box) {
   const bal = pay - stake;
   $('[data-k=status]', box).innerHTML = `<span class="stc ${s.cls}" style="font-size:14px">${s.s}</span><span class="sub">${esc(detail)}</span>${s.s !== '未購入' && (stake || pay) ? `<span class="balance ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}" style="margin-left:auto">${yen(stake)}→${yen(pay)}（${signYen(bal)}円）</span>` : ''}`;
   const hint = $('[data-k=hint]', box);
-  hint.textContent = p.err ? p.err : (p.ranks && v.mode === 'no' ? '→ ' + p.ranks.map((x, j) => `${j + 1}着 ${x}番人気`).join('・') : '');
+  const read = p.split ? `「${(p.nos || p.ranks).join('-')}」と読んだよ。` : '';
+  hint.textContent = p.err ? p.err : !v.res ? '着順は「.」で区切ってね（6.2.11 → 6-2-11）' : read + (p.ranks && v.mode === 'no' ? '→ ' + p.ranks.map((x, j) => `${j + 1}着 ${x}番人気`).join('・') : '');
   if (s.s === '的中' && !toNum(v.payout)) hint.textContent += (hint.textContent ? '　' : '') + '的中だよ！回収額を入れてね💰';
   if (s.s === '不的中' && toNum(v.payout) > 0) hint.textContent += (hint.textContent ? '　' : '') + '※推奨ゾーン外だけど回収額が入っているよ（ゾーン外の買い目で当たったならそのままでOK）';
 }
@@ -1095,7 +1140,7 @@ function wireRecf(container) {
       const ri = $('[data-k=res]', box);
       if (p.ranks) { ri.value = b.dataset.v === 'nin' ? p.ranks.join('-') : p.ranks.map(rk => rankOrder(ctx.horses)[rk - 1]).join('-'); }
       $('[data-k=reslab]', box).textContent = `レース結果 1着-2着-3着（${b.dataset.v === 'no' ? '馬番' : '人気'}）`;
-      ri.placeholder = b.dataset.v === 'no' ? '例 6-2-11' : '例 1-4-2';
+      ri.placeholder = b.dataset.v === 'no' ? '例 6.2.11' : '例 1.4.2';
     } else return;
     if (box.dataset.scope === 'judge') { st.draft = { ...readRecf(box), id: st.draft?.id, dirty: true }; }
     updateRecPreview(box);
