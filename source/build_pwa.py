@@ -6,13 +6,13 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.11')
+APP_VER = os.environ.get('APP_VER', '2026.10.11-2')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-07')
 # 文言をiPhoneアプリ版に
 rep = [
- ("`まさちゃんのExcel（検証データ）から入れた大井のデータ：", "`このiPhoneに入っている大井のデータ："),
- ("Excelを更新したら姫に送ってね、入れ直すよ。`", "Excelを更新したら「設定」タブの「基盤データ」から入れ替えてね（姫に送ってくれてもOK）。`"),
+ ("`まさちゃんのExcel（検証データ）から入れた${motherName()}のデータ：", "`このiPhoneに入っている${motherName()}のデータ："),
+ ("Excelを更新したら姫に送ってね、入れ直すよ。`", "Excelを更新したら「設定」タブの「マザーデータ」から入れ替えてね（姫に送ってくれてもOK）。`"),
  ("Claudeの画面でこのアプリを開くと、買ったレースの記録が使えるよ。", "アプリを開き直してね。"),
  ("この画面ではデータに接続できないよ。claude.aiでアプリを開いてね", "データが読み込めなかったよ。アプリを開き直してね"),
 ]

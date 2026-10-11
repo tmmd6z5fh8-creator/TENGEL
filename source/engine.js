@@ -173,7 +173,8 @@ const T = (() => {
       anaHit12: hit12 ? anaZone(oset[hit12 - 1]) : false,
       sup1: z1 === '超大穴',
       per: period(rec.date), isOi,
-      inStats: isOi && Number(rec.cnt ?? 1) === 1 && has12,
+      // 集計に使うのは「集計対象＝1」で1・2着がわかるレース（どのマザーデータでも同じ。大井以外のレースは集計対象0で入れる）
+      inStats: Number(rec.cnt ?? 1) === 1 && has12,
       pay, inv13, inv12,
       ret13: pay != null && hit ? pay : 0,
       ret12: pay != null && hit12 ? pay : 0

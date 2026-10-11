@@ -300,9 +300,32 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
 .updbar{flex:1 1 100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--lamp);border-radius:10px;padding:8px 10px;font-size:13.5px;background:rgba(226,162,59,.12)}
 .updbar b{color:var(--lamp)}
 .updbar .btn{margin-left:auto;background:var(--lamp);color:#1C1300;border-color:var(--lamp);padding:7px 14px}
-#smRevert{white-space:normal;text-align:left}
+#smRevert,#seRevert,#seClear{white-space:normal;text-align:left}
 .kvs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px;margin:8px 0}
 .kvs dt{color:var(--muted)}.kvs dd{margin:0;min-width:0}
+
+/* v4: マザーデータ（3つ） */
+.slotbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.slotbar .sl-lab{font-size:12px;font-weight:700;color:var(--muted);margin-right:2px}
+.slotchip{display:inline-flex;align-items:baseline;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px;max-width:100%}
+.slotchip b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.slotchip span{font-size:11.5px;color:var(--muted);font-family:var(--font-mono)}
+.slotchip.on{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.slotchip.on span{color:inherit;opacity:.8}
+.slotchip.empty{border-style:dashed;opacity:.75}
+#slotStats .slotbar{margin:2px 0 8px}
+.slotlist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.slotrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}
+.slotrow.on{border-color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.slotrow.edit{outline:2px dashed var(--lamp);outline-offset:2px}
+.sr-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15.5px}
+.sr-no{font-family:var(--font-display);color:var(--muted);font-size:14px}
+.sr-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.sr-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.sr-act .btn{padding:7px 12px}
+.slotedit{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--lamp);background:var(--surface)}
+.slotedit h3{font-size:15px;margin:0 0 8px}
+.slotedit .namerow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 </style>
 
 <header class="top">
@@ -325,6 +348,7 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
     <div class="input-col">
       <div class="card">
         <h2>レース情報</h2>
+        <div data-slotbar id="slotJudge"></div>
         <div class="row" id="ocrRow" hidden>
           <button class="btn primary" id="ocrBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>オッズ画像から読み取る</button>
           <input type="file" id="ocrFile" accept="image/*" multiple hidden>
@@ -408,7 +432,8 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
     <p class="hint">ここは<b>買ったレースの記録だけ</b>で計算しているよ。下のテンゲル基盤データ（①〜⑦）には入らないよ。</p>
   </div>
   <div id="moneyBody"></div>
-  <div class="sep"><h2>テンゲル基盤データ</h2></div>
+  <div class="sep"><h2 id="motherTitle">テンゲル基盤データ</h2></div>
+  <div data-slotbar id="slotStats"></div>
   <p class="mother-note" id="motherNote"></p>
   <div class="perchips" id="perChips">
     <button class="fchip" data-v="全期間" aria-pressed="true">全期間</button><button class="fchip" data-v="前半" aria-pressed="false">前半</button><button class="fchip" data-v="後半" aria-pressed="false">後半</button><button class="fchip" data-v="新規" aria-pressed="false">新規</button><button class="fchip" data-v="第13新規" aria-pressed="false">第13新規</button>
@@ -491,7 +516,42 @@ document.addEventListener('tengel:zones', e => {
 });
 // 起動直後はこのブラウザに覚えた買い目ですぐ判定し、iPhoneの保存領域を読んだら合わせる
 (() => { const z0 = storeGet('tengel.zones'); if (z0) { try { T.setZones(z0); } catch {} } })();
-function paintVer() { const v = $('.brand .ver'); if (v) v.textContent = '大井 第13改訂版' + (T.isCustom() ? '・カスタム' : ''); }
+function paintVer() { const v = $('.brand .ver'); if (v) v.textContent = (typeof Slots !== 'undefined' && Slots.on && Slots.active !== 1 ? '' : '大井 ') + '第13改訂版' + (T.isCustom() ? '・カスタム' : ''); }
+
+// ===== マザーデータ（3つ）：iPhoneアプリ版だけ。どれを使うかで、参考的中率と実測（①〜⑦）が変わる =====
+const Slots = { on: false, active: 1, list: [] };
+const JRA_VENUES = ['札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉'];
+const slotObj = n => Slots.list.find(s => s.n === n) || null;
+function motherName() { const s = Slots.on ? slotObj(Slots.active) : null; return s ? s.name : '大井'; }
+// そのマザーデータの「地元」の開催場か（違えば【参考判定】）。1つ目＝大井、2・3つ目は名前で決める（JRA・中央＝JRAの10場）
+function slotHome(s, venue) {
+  if (!venue) return false;
+  if (!s) return venue === '大井';
+  if (s.n === 1 && venue === '大井') return true;
+  const nm = s.name || '';
+  return nm.includes(venue) || (/JRA|中央/i.test(nm) && JRA_VENUES.includes(venue));
+}
+const motherHome = venue => Slots.on ? slotHome(slotObj(Slots.active), venue) : venue === '大井';
+const otherHome = venue => Slots.on ? Slots.list.find(s => !s.active && s.usable && slotHome(s, venue)) || null : null;
+function slotChipsHTML() {
+  if (!Slots.on) return '';
+  return `<div class="slotbar" role="group" aria-label="マザーデータ"><span class="sl-lab">マザーデータ</span>${Slots.list.map(s => `<button type="button" class="slotchip${s.active ? ' on' : ''}${s.count ? '' : ' empty'}" data-slot="${s.n}" aria-pressed="${s.active}"><b>${esc(s.name)}</b><span>${s.count ? s.usable + '走' : '空'}</span></button>`).join('')}</div>`;
+}
+function paintSlotBars() { for (const el of $$('[data-slotbar]')) el.innerHTML = slotChipsHTML(); }
+function refreshSlots() {
+  const L = window.TengelLocal && window.TengelLocal.slots; if (!L) return;
+  Slots.on = true; Slots.list = L.info(); Slots.active = (Slots.list.find(s => s.active) || { n: 1 }).n;
+  paintSlotBars(); setPill(); paintVer();
+  if (st.tab === 'stats') motherNote();
+}
+async function switchSlot(n) {
+  const s = slotObj(n); if (!s || s.active) return;
+  if (!s.count) { toast(`「${s.name}」はまだ空だよ。設定タブの「マザーデータ」から入れてね`, 3600); return; }
+  try { await window.TengelLocal.slots.setActive(n); toast(`マザーデータを「${s.name}」にしたよ`); }
+  catch (err) { toast('切り替えられなかったよ：' + (err && err.message || err), 3600); }
+}
+document.addEventListener('tengel:slots', refreshSlots);
+document.addEventListener('click', e => { const b = e.target.closest('.slotchip, .slotchip-go'); if (b && b.dataset.slot) switchSlot(+b.dataset.slot); });
 
 // ===== tabs =====
 function setTab(t) {
@@ -560,10 +620,15 @@ function wakuCls(no, m) { return 'w' + wakuOf(no, m); }
 function currentJudge() {
   const f = st.form;
   const inp = { venue: f.venue, date: f.date, r: f.r, dist: f.dist, surface: f.surface, baba: f.baba, n: f.n, horses: f.rows.map(r => ({ no: r.no, tan: parseFloat(z2h(r.tan)), fuku: r.fuku })), tan1: f.tan1, s1: f.s1, s5: f.s5, s10: f.s10, s1combo: f.s1combo, s5combo: f.s5combo, s10combo: f.s10combo };
-  const id = f.date && f.r ? idFor(f.date, (f.venue || '大井').trim(), f.r) : null;
-  const excluded = id && st.recs.has(id) ? id : null;
+  const venue = (f.venue || '大井').trim() || '大井';
+  const id = f.date && f.r ? idFor(f.date, venue, f.r) : null;
+  const home = motherHome(venue);
+  let excluded = id && st.recs.has(id) ? id : null;
+  // マザーデータ2・3（開催場の列がない）：同じ日付・Rのレースが1つだけなら、それをこのレース自身とみなして外す
+  if (!excluded && home && Slots.on && Slots.active !== 1 && f.date && f.r) { const c = [...st.recs.values()].filter(r => r.date === f.date && +r.r === +f.r); if (c.length === 1) excluded = c[0].id; }
   const S = T.stats(st.derived, excluded);
   const J = T.judge(inp, S);
+  J.isOi = home; J.mother = motherName(); J.motherN = Slots.on ? Slots.active : 1;
   J.id = id; J.excluded = !!excluded; J.maxNo = Math.max(+f.n || 0, ...f.rows.map(r => r.no));
   return J;
 }
@@ -605,18 +670,18 @@ function zoneNumsHTML(J, zones) {
   return parts.join('<span class="arr">／</span>');
 }
 function refZone(J, i) {
-  const S = J.S, k = J.c.kubun, K = S.k[k], z = J.set[i];
-  if (k === 'A' || k === 'B') return `${pct(K.hit[i], K.n)}（${k}層での実測／n=${K.n}）`;
+  const S = J.S, k = J.c.kubun, K = S.k[k], z = J.set[i], mp = J.motherN !== 1 ? J.mother + '・' : '';
+  if (k === 'A' || k === 'B') return `${pct(K.hit[i], K.n)}（${mp}${k}層での実測／n=${K.n}）`;
   if (k === 'C0') {
     const A = S.k.A, E = S.early;
-    const main = K.n >= 5 ? `${pct(K.hit[i], K.n)}（C層・非該当での実測／n=${K.n}）` : `データ不足（n=${K.n}・A層を準用：${pct(T.zoneCount(A.pairs, z), A.n)}）`;
+    const main = K.n >= 5 ? `${pct(K.hit[i], K.n)}（${mp}C層・非該当での実測／n=${K.n}）` : `データ不足（n=${K.n}・${mp}A層を準用：${pct(T.zoneCount(A.pairs, z), A.n)}）`;
     return `${main}　序盤R該当分のみ（全層）：${J.set.map(s => s.label + pct(T.zoneCount(E.pairs, s), E.n)).join('／')}（n=${E.n}）`;
   }
   const band = k === 'C1' ? '第1段階' : '第2段階', B = S.band12[band];
   const subK = z.b.length > 1 ? '：' + z.b.map(b => b + (K.sub[i][b] || 0)).join('＋') : '';
   const subB = z.b.length > 1 ? '：' + z.b.map(b => b + (B.pairs[z.a + '|' + b] || 0)).join('＋') : '';
   const bc = T.zoneCount(B.pairs, z);
-  return `C層だけ：${pct(K.hit[i], K.n)}（${K.hit[i]}${subK}／n=${K.n}）　帯全体（参考・第12の帯＝全層）：${pct(bc, B.n)}（${bc}${subB}／n=${B.n}）`;
+  return `${mp}C層だけ：${pct(K.hit[i], K.n)}（${K.hit[i]}${subK}／n=${K.n}）　帯全体（参考・第12の帯＝全層）：${pct(bc, B.n)}（${bc}${subB}／n=${B.n}）`;
 }
 function ref3(J, i) {
   const k = J.c.kubun, K = J.S.k[k], tz = (J.third && J.third[i]) || [];
@@ -652,15 +717,16 @@ function renderResult() {
   }
   const c = J.c, x = J.x, S = J.S, k = c.kubun, K = S.k[k];
   const ht = T.hantei(K);
-  const refBadge = !J.isOi ? `<span class="chip ref">【参考判定】${esc(J.venue)}</span>` : '';
-  const shiba = J.surface === '芝' ? '<span class="chip">芝レース（大井はダートのみ）</span>' : '';
+  const refBadge = (!J.isOi ? `<span class="chip ref">【参考判定】${esc(J.venue)}</span>` : '') + (Slots.on ? `<span class="chip">マザー：${esc(J.mother)}</span>` : '');
+  const shiba = J.surface === '芝' && J.motherN === 1 ? '<span class="chip">芝レース（大井はダートのみ）</span>' : '';
   let h = `<div class="vhead"><div class="lbadge L${c.L}"><span class="ll">${c.L}</span><span class="ln">${({ A: '堅', B: '警戒', C: '穴' })[c.L]}</span></div>
     <div class="vmeta"><div class="vkubun">${esc(J.venue)} ${x.r}R　${T.KUBUN_LABEL[k]}</div>
     <div class="vratio">比 <b>${c.hi.toFixed(1)}</b>（3連単1位 ${fmt(x.s1)} ÷ 単勝1位 ${fmt(x.tan1)}）・${x.n}頭・${x.dist}m ${esc(J.surface)}・${esc(x.baba)}</div>
     <div class="chips">${refBadge}${T.isCustom(k) ? '<span class="chip cus">カスタム買い目</span>' : ''}<span class="chip ${ht.cls}">${ht.mark}</span>${J.chuui === '該当' ? '<span class="chip warn">超大穴帯注意</span>' : ''}${c.L === 'C' ? `<span class="chip">${c.c20}（記録用）</span>` : ''}${c.early ? `<span class="chip">序盤R：本来の帯 ${c.honrai}</span>` : ''}${shiba}</div></div></div>`;
   if (st.form.example) h += `<div class="banner info"><b>これは入力例（架空のレース）</b>だよ。「入力をクリア」してから本番のレースを入れるか、オッズ画像を読み取ってね。</div>`;
   if (J.warnN) h += `<div class="banner warn">${esc(J.warnN)}。判定は出走頭数で行っているよ。番号を確認してね。</div>`;
-  if (!S.n) h += `<div class="banner warn">基盤データに接続できていないため、参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>`;
+  if (!S.n) h += Slots.on ? `<div class="banner warn">マザーデータ「${esc(J.mother)}」に、集計できるレースがまだないよ。参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>` : `<div class="banner warn">基盤データに接続できていないため、参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>`;
+  if (!J.isOi) { const alt = otherHome(J.venue); if (alt) h += `<div class="banner info">開催場が${esc(J.venue)}だよ。マザーデータを「${esc(alt.name)}」（${alt.usable}走）に切り替える？<div class="row" style="margin-top:8px"><button class="btn primary slotchip-go" type="button" data-slot="${alt.n}">「${esc(alt.name)}」に切り替える</button></div></div>`; }
   h += '<ol class="zones">';
   J.set.forEach((z, i) => {
     const prov = z.prov ? '<span class="prov">暫定・同一ゾーン例外</span>' : '';
@@ -704,14 +770,15 @@ function renderResult() {
 function buildText(J) {
   const S = J.S, c = J.c, x = J.x, k = c.kubun, K = S.k[k], sep = '━━━━━━━━━━━━', o = [];
   const n3All = Object.values(S.k).reduce((s, q) => s + q.n3, 0);
-  const refL = J.isOi ? null : `【参考判定】${J.venue}${x.r}R／参考値はすべて大井${S.n}走（3着${n3All}走）の実測`;
+  const refL = J.isOi ? null : `【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${S.n}走（3着${n3All}走）の実測`;
   const arrow = s => String(s || '').replace(/[-－ー‐ｰ\s]+/g, '→');
   const so = (v, cb) => v == null ? '読取不可' : (cb ? arrow(cb) + ' / ' : '') + fmt(v) + '倍';
   // STEP0
   o.push(sep); if (refL) o.push(refL);
+  if (J.motherN !== 1) o.push(`マザーデータ：${J.mother}（集計対象${S.n}走）`);
   o.push(`開催場：${J.venue}`);
   o.push(`レース：${x.r}R　／　出走頭数：${x.n}頭　／　距離：${x.dist}m（${J.surface}）　／　馬場状態：${x.baba}`);
-  if (J.surface === '芝') o.push('※芝レース（大井はダートのみ）');
+  if (J.surface === '芝' && J.motherN === 1) o.push('※芝レース（大井はダートのみ）');
   if (J.horses.length) { o.push('|人気|番号|記号|単勝|'); J.horses.forEach(hh => o.push(`|${hh.rank}|${hh.no}|${hh.sym}|${fmt(hh.tan)}|`)); }
   else o.push(`単勝1位：${fmt(x.tan1)}倍（全頭のオッズ一覧なし）`);
   o.push(`3連単1位：${J.s1combo ? arrow(J.s1combo) + ' / ' : ''}${fmt(x.s1)}倍`);
@@ -741,7 +808,7 @@ function buildText(J) {
   o.push(sep, '');
   // STEP4
   o.push(sep, '■STEP4　テンゲルⅢ　馬単 最終判定');
-  if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて大井${S.n}走の実測`);
+  if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${S.n}走の実測`);
   o.push(`レース：${x.r}R（距離${x.dist}m／馬場${x.baba}／${x.n}頭）`);
   o.push(`超大穴帯注意：【${J.chuui}】　旧見送り条件（記録用）：【${J.oldSkip}】`);
   o.push(`層：${c.L}層（比${c.hi.toFixed(1)}）` + (c.L === 'C' ? `　比区分：${c.c20}　※記録用` : ''));
@@ -767,7 +834,7 @@ function buildText(J) {
   } else {
     const cus = T.isCustom(k);
     o.push(sep, '■STEP T3　テンゲルⅢ　3連単3着 最終判定');
-    if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて大井${n3All}走の実測`);
+    if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${n3All}走の実測`);
     o.push(`レース：${x.r}R（距離${x.dist}m／馬場${x.baba}／${x.n}頭）`, `区分：【${({ A: 'A層', B: 'B層', C0: 'C層・非該当', C1: 'C層・第1段階', C2: 'C層・第2段階' })[k]}】（比${c.hi.toFixed(1)}／${x.n}頭）`, '', '①3着ゾーンの番号');
     const tl = { 人気: '人気(A.B.C)', 中穴: '中穴(D.E.F)', 大穴: '大穴(G.H.I)', 超大穴: '超大穴(J.K.L)' };
     t3show(k).forEach(z => { const ns = J.horses.length ? (J.nums[z].join('・') || '該当なし') : '（オッズ一覧なし）'; o.push(`　${tl[z]}＝${ns}${z === '人気' ? '　※1・2着に使った人気馬は除いて読む' : ''}${(z === '大穴' || z === '超大穴') && J.horses.length ? (J.fukuUsed(z) ? '　※複勝オッズ昇順' : '　※単勝オッズ昇順') : ''}`); });
@@ -878,7 +945,7 @@ const toNum = v => { if (v === '' || v == null) return null; const n = Number(z2
 const pad2 = n => String(n).padStart(2, '0');
 const splitZ = s => String(s || '').split('／').filter(Boolean);
 function snapOf(J) {
-  return { ver: T.VERSION, custom: T.isCustom(J.c.kubun), L: J.c.L, kubun: J.c.kubun, hi: J.c.hi, band12: J.c.band12, c20: J.c.c20, isOi: J.isOi,
+  return { ver: T.VERSION, custom: T.isCustom(J.c.kubun), mother: J.mother || '', L: J.c.L, kubun: J.c.kubun, hi: J.c.hi, band12: J.c.band12, c20: J.c.c20, isOi: J.isOi,
     zones: J.set.map(z => ({ a: z.a, b: z.b.join('／'), label: z.label })), third: J.third ? J.third.map(t => t.join('・')) : null };
 }
 function zoneHitOf(b) {
@@ -1235,8 +1302,9 @@ function renderMoney() {
 $('#perChips').addEventListener('click', e => { const b = e.target.closest('.fchip'); if (!b) return; st.per = b.dataset.v; $$('#perChips .fchip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderMother(); });
 function renderMother() {
   const body = $('#statsBody');
-  if (st.dbState !== 'on') { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">${st.dbState === 'connecting' ? '基盤データを読み込み中…' : '基盤データに接続できません'}</div><p>①〜⑦は、テンゲル基盤データ（大井）から計算するよ。</p></div>`; $('#motherNote').textContent = ''; return; }
+  if (st.dbState !== 'on') { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">${st.dbState === 'connecting' ? '基盤データを読み込み中…' : '基盤データに接続できません'}</div><p>①〜⑦は、テンゲル基盤データ（${esc(motherName())}）から計算するよ。</p></div>`; $('#motherNote').textContent = ''; return; }
   motherNote();
+  if (!st.derived.some(r => r.inStats)) { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">「${esc(motherName())}」はまだ空だよ</div><p>設定タブの「マザーデータ」から、Excelファイルを選んで入れてね。</p></div>`; return; }
   const all = st.derived.filter(r => r.inStats);
   const rs = st.per === '全期間' ? all : all.filter(r => r.per === st.per);
   const S = T.stats(rs);
@@ -1322,7 +1390,7 @@ function reviewCard(all) {
   const C1 = since.filter(r => r.kubun === 'C1'), Cg = since.filter(r => r.kubun === 'C1' || r.kubun === 'C2');
   const C20 = d13.filter(r => r.c20 === '比20以上' && (r.kubun === 'C1' || r.kubun === 'C2'));
   const Cearly = all.filter(r => r.L === 'C' && r.r <= 3);
-  const others = {}; st.derived.filter(r => !r.isOi && r.has12).forEach(r => { others[r.venue] = (others[r.venue] || 0) + 1; });
+  const others = {}; (Slots.on && Slots.active !== 1 ? [] : st.derived).filter(r => !r.isOi && r.has12).forEach(r => { others[r.venue] = (others[r.venue] || 0) + 1; });
   const item = (lab, v, goal, desc) => `<div class="pi"><div class="pl"><span>${lab}</span><b>${v}/${goal}</b></div><div class="bar"><i style="width:${Math.min(100, v / goal * 100)}%"></i></div>${desc ? `<div class="pd">${desc}</div>` : ''}</div>`;
   let h = `<div class="card" style="margin-top:var(--gap)"><h2>見直し基準の進み具合</h2><div class="prog">`;
   h += item('【最優先①】第13新規のB層（馬単払戻あり）', B13.filter(r => r.pay != null).length, 30, `B層 ${B13.length}走中。そろったら本線と旧本線の回収率を⑦で比べる`);
@@ -1339,8 +1407,10 @@ function reviewCard(all) {
 function motherNote() {
   const all = st.derived, n = all.filter(r => r.inStats).length;
   const ds = all.map(r => r.date).filter(Boolean).sort();
-  const md = d => d ? `${+d.slice(5, 7)}/${+d.slice(8, 10)}` : '—';
-  $('#motherNote').textContent = `まさちゃんのExcel（検証データ）から入れた大井のデータ：${md(ds[0])}〜${md(ds[ds.length - 1])}・${all.length}走（集計対象${n}走）。買ったレースの記録は入らないよ。Excelを更新したら姫に送ってね、入れ直すよ。`;
+  const yr = ds.length && ds[0].slice(0, 4) !== ds[ds.length - 1].slice(0, 4);
+  const md = d => d ? `${yr ? d.slice(0, 4) + '/' : ''}${+d.slice(5, 7)}/${+d.slice(8, 10)}` : '—';
+  const t = $('#motherTitle'); if (t) t.textContent = Slots.on ? `テンゲル基盤データ（${motherName()}）` : 'テンゲル基盤データ';
+  $('#motherNote').textContent = `まさちゃんのExcel（検証データ）から入れた${motherName()}のデータ：${md(ds[0])}〜${md(ds[ds.length - 1])}・${all.length}走（集計対象${n}走）。買ったレースの記録は入らないよ。Excelを更新したら姫に送ってね、入れ直すよ。`;
 }
 
 
@@ -1451,7 +1521,7 @@ $('#zoneCard').addEventListener('click', e => {
 function setPill() {
   const p = $('#dbpill');
   const mN = st.derived.filter(r => r.inStats).length;
-  if (st.dbState === 'on') { p.textContent = `基盤 ${mN}走・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}`; p.classList.add('on'); }
+  if (st.dbState === 'on') { p.textContent = `${Slots.on ? motherName() : '基盤'} ${mN}走・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}`; p.classList.add('on'); }
   else if (st.dbState === 'off') { p.textContent = 'データなし（判定のみ）'; p.classList.remove('on'); }
   else { p.textContent = 'データに接続中…'; p.classList.remove('on'); }
 }
@@ -1513,6 +1583,7 @@ async function setupDownloads() { st.downloads = await window.claude?.use?.('dow
 
 // ===== boot =====
 paintVer(); formToUI(); renderResult(); setPill();
+if (window.TengelLocal && window.TengelLocal.ready) window.TengelLocal.ready.then(refreshSlots).catch(() => {});
 ZoneStore.load().then(z => {
   const before = JSON.stringify(T.getZones());
   T.setZones(z); storeSet('tengel.zones', z == null ? null : z); paintVer();

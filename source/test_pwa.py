@@ -67,7 +67,7 @@ try:
         print('[4 preview excel_like]', pg.locator('#smPreview').inner_text().replace('\n', ' | ')[:260])
         pg.locator('#setMother').screenshot(path=os.path.join(OUT, 'mother_preview.png'))
         pg.click('#smApply'); pg.wait_for_timeout(1000)
-        print('[4 applied]', pg.locator('#smMeta').inner_text().replace('\n', ' '), '| pill:', pg.locator('#dbpill').inner_text())
+        print('[4 applied]', pg.locator('#seMeta').inner_text().replace('\n', ' '), '| pill:', pg.locator('#dbpill').inner_text())
         chk = ev(pg, """() => { const r = TengelLocal.mem.races; const a = r.get('20261008-oi-01'), c = r.get('20261008-oi-03'), s = r.get('20260720-oi-01'), f = r.get('20260720-oi-12'); return { a, c3: c && c.p3, sBaba: s && s.baba, fBaba: f && f.baba, bad: [...r.values()].filter(x => !['良','稍重','重','不良'].includes(x.baba)).length, n0: [...r.values()].filter(x => x.cnt === 0).length } }""")
         print('    check rows:', chk)
         # 貼り付けでも読める
