@@ -120,8 +120,13 @@ us.column_dimensions['B'].width = 12   # 下の「いまのデータ」の日付
 ms = wb.create_sheet('突合メモ')
 days = sorted(set(r['date'] for r in rows))
 notes = [r for r in rows if r.get('note')]
+import os
+_lp = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'mother_log.json')
+log = json.load(open(_lp, encoding='utf8')) if os.path.exists(_lp) else []
+_ymd = lambda s: '%s/%d/%d' % (s[:4], int(s[5:7]), int(s[8:10]))
+_md = lambda s: '%d/%d' % (int(s[5:7]), int(s[8:10]))
 memo = [
-    ('このファイルの作り方（姫が作成・2026/10/11）', title_font),
+    (f'このファイルの作り方（姫が作成・{_ymd(datetime.date.today().isoformat())}）', title_font),
     ('', None),
     ('■ 元データ', bold),
     ('大井競馬分析シート.xlsx：日付・R・馬場・距離・出馬数・結果（着順の人気）', font),
@@ -129,12 +134,16 @@ memo = [
     ('この2つを「日付＋R」で突き合わせて、1行1レースにまとめた（姫フィルター第13改訂版の検証データA〜P列と同じ中身）', font),
     ('', None),
     ('■ 収録', bold),
-    (f'{len(rows)}走（{days[0][5:].replace("-", "/")}〜{days[-1][5:].replace("-", "/")}・{len(days)}日）。集計対象 {sum(1 for r in rows if r.get("cnt", 1) == 1)}走', font),
+    (f'{len(rows)}走（{_md(days[0])}〜{_md(days[-1])}・{len(days)}日）。集計対象 {sum(1 for r in rows if r.get("cnt", 1) == 1)}走', font),
     ('', None),
     ('■ 入れていないレース', bold),
     ('7/1〜7/3の36走：分析シートにはあるが、分析表に単勝1位・3連単1位がないため（判定に使えない）', font),
     ('7/24 5R・6R：どちらのファイルにも距離・結果・オッズが入っていないため', font),
     ('', None),
+]
+if log:
+    memo += [('■ 更新の記録', bold)] + [(f'{_ymd(x["date"])}　{x["text"]}', font) for x in log] + [('', None)]
+memo += [
     ('■ 集計から外したレース・食い違い（検証データの備考にも書いてあるよ）', bold),
 ]
 for i, (t, f) in enumerate(memo, 1):

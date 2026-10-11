@@ -1,7 +1,7 @@
 import json, datetime, openpyxl, zipfile, shutil, re, os, sys
 from openpyxl.styles import PatternFill
 os.makedirs('xt', exist_ok=True)
-hist = json.load(open('hist.json', encoding='utf8'))
+hist = json.load(open('hist_280.json', encoding='utf8'))   # テストの土台（10/7までの280走で固定）
 def mk(path, extra, text_dates=False):
     wb = openpyxl.Workbook()
     ws0 = wb.active; ws0.title = '使い方'; ws0['A1'] = 'テンゲルⅢ　大井姫フィルター【第13改訂版】'

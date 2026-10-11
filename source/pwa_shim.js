@@ -162,11 +162,17 @@ window.TENGEL_STANDALONE = 'pwa';
     }
     if (!embVer || meta.embedded === embVer) return;
     var source = meta.source || (String(meta.ver || '').indexOf('paste') === 0 ? 'paste' : 'app');
-    if (source === 'app') return replaceRaces(emb, { source: 'app', keepPrev: false });
+    var nl = lastDate(emb), md = function (d) { return d ? (+d.slice(5, 7)) + '/' + (+d.slice(8, 10)) : ''; };
+    var newer = '「' + slotsMeta.names[1] + '」のデータが新しくなったよ（' + emb.length + '走・' + md(nl) + 'まで）';
+    if (source === 'app') {
+      // 中身が変わったとき（レースが増えた・直した）だけお知らせする
+      var same = rows.length === emb.length && lastDate(rows) === nl;
+      return replaceRaces(emb, { source: 'app', keepPrev: false }).then(function () { if (!same) notices.push('アプリの更新で、' + newer); });
+    }
     // まさちゃんがExcelや貼り付けで入れた大井データのほうが新しければ、そのまま残す
-    var cur = { last: meta.lastDate || lastDate(rows), n: rows.length }, nl = lastDate(emb);
+    var cur = { last: meta.lastDate || lastDate(rows), n: rows.length };
     if (nl > cur.last || (nl === cur.last && emb.length > cur.n)) {
-      return replaceRaces(emb, { source: 'app' }).then(function () { notices.push('アプリの更新で、「' + slotsMeta.names[1] + '」のデータも新しい版（' + emb.length + '走）になったよ'); });
+      return replaceRaces(emb, { source: 'app' }).then(function () { notices.push('アプリの更新で、' + newer + '。前に入れたデータは「ひとつ前のデータに戻す」で戻せるよ'); });
     }
     meta.embedded = embVer; mother1 = meta; return putMeta(meta);
   }

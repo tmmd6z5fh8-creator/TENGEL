@@ -416,7 +416,8 @@
       bar = document.createElement('div'); bar.id = 'updBar'; bar.className = 'updbar';
       $('header.top .top-in').appendChild(bar);
     }
-    bar.innerHTML = `<span>✨ 新しい版（<b>${esc(v.app)}</b>）があるよ。記録はそのまま残るよ</span><button class="btn" type="button" id="updGo">更新する</button>`;
+    const data = v.mother && window.__MOTHER_VER && v.mother !== window.__MOTHER_VER;   // アプリに入っている大井データも新しくなる版
+    bar.innerHTML = `<span>✨ 新しい版（<b>${esc(v.app)}</b>）があるよ。${data ? '大井のデータも新しくなるよ。' : ''}記録はそのまま残るよ</span><button class="btn" type="button" id="updGo">更新する</button>`;
     bar.hidden = false; $('#updGo').onclick = applyUpdate;
     const ap = $('#suApply'); if (ap) ap.hidden = false;
   }
@@ -428,7 +429,7 @@
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(v => {
         const c = $('#suChecked'); if (c) c.textContent = when(new Date().toISOString());
-        if (v && v.app && v.app > APP_VER) { newer = v; showBar(v); setSuMsg(`新しい版（${v.app}）があるよ。「新しい版にする」を押してね`); }
+        if (v && v.app && v.app > APP_VER) { newer = v; showBar(v); setSuMsg(`新しい版（${v.app}）があるよ。${v.mother && window.__MOTHER_VER && v.mother !== window.__MOTHER_VER ? '大井のデータも新しくなるよ。' : ''}「新しい版にする」を押してね`); }
         else { newer = null; const bar = $('#updBar'); if (bar) bar.hidden = true; if (manual) setSuMsg('いまの版が最新だよ✨'); }
       })
       .catch(() => { if (manual) setSuMsg('確認できなかったよ。電波がいいところでもう一度押してね'); });

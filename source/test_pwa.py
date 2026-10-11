@@ -5,7 +5,7 @@ SRV = os.path.join(W, 'srv'); APPDIR = os.path.join(SRV, 'TENGEL'); OUT = os.pat
 URL = 'http://localhost:8765/TENGEL/'
 def deploy_dir(src):
     shutil.rmtree(APPDIR, ignore_errors=True); shutil.copytree(src, APPDIR, ignore=shutil.ignore_patterns('.git', 'README.md', 'source'))
-def build(app_ver, mother_ver='2026-10-07', hist='hist.json', out='pwa_t'):
+def build(app_ver, mother_ver='2026-10-07', hist='hist_280.json', out='pwa_t'):
     env = dict(os.environ, APP_VER=app_ver, MOTHER_VER=mother_ver, HIST=hist)
     subprocess.run(['python3', 'build_pwa.py', out], check=True, env=env, stdout=subprocess.DEVNULL)
     return out
@@ -95,7 +95,7 @@ try:
         s6 = state(pg); print('[6 older embedded]', s6['app'], s6['races'], s6['src'], s6['emb'])
         assert s6['races'] == 284 and s6['src'] == 'excel'
         # 7) アプリの中の基盤データのほうが新しい（10/9まで290走）→ 入れ替わってお知らせ
-        h = json.load(open('hist.json', encoding='utf8'))
+        h = json.load(open('hist_280.json', encoding='utf8'))
         add = [dict(id='20261008-oi-%02d' % r, date='2026-10-08', venue='大井', r=r, baba='良', dist=1200, surface='ダ', n=12, tan1=2.0, s1=20.0, p1=1, p2=2, p3=3, cnt=1, note='') for r in range(1, 5)]
         add += [dict(id='20261009-oi-%02d' % r, date='2026-10-09', venue='大井', r=r, baba='良', dist=1200, surface='ダ', n=12, tan1=2.0, s1=20.0, p1=1, p2=2, p3=3, cnt=1, note='') for r in range(1, 7)]
         json.dump(h + add, open(os.path.join(W, 'hist_test.json'), 'w', encoding='utf8'), ensure_ascii=False)

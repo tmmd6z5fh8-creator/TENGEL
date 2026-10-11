@@ -1,6 +1,6 @@
 # まさちゃんの元データと同じ形のテスト用Excel：分析シート（1行1レース）・分析表（1行1日・Rごとに4列）・馬場フィルター（元データ_距離馬場）
 import json, openpyxl
-hist = json.load(open('hist.json', encoding='utf8'))
+hist = json.load(open('hist_280.json', encoding='utf8'))   # テストの土台（10/7までの280走で固定）
 def serial(d):
     import datetime
     return (datetime.date.fromisoformat(d) - datetime.date(1899, 12, 30)).days
