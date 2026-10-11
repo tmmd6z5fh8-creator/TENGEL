@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const $ = (s, el) => (el || document).querySelector(s);
+  const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const z2h = s => String(s == null ? '' : s).replace(/[０-９．／－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
   const pad = n => ('0' + n).slice(-2);
@@ -57,7 +58,7 @@
     recs.forEach(r => { if (seen[r.id]) { seen[r.id]++; r.id = r.id + '-' + seen[r.id]; } else seen[r.id] = 1; });
     return { recs, bad };
   }
-  const parsePaste = (text, tag) => toRecs(text.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t').map(x => x.trim())), false, tag);
+  const parsePaste = (text, tag) => { const rows = text.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t').map(x => x.trim())); return Object.assign({ shape: shapeOf(rows) }, toRecs(rows, false, tag)); };
 
   // ---------- Excelファイル（.xlsx）をiPhoneの中で読む（どこにも送らない） ----------
   async function unzip(file) {
@@ -122,15 +123,47 @@
       });
     }
     const first = sheets.filter(s => /検証データ/.test(s.name)), rest = sheets.filter(s => !/検証データ/.test(s.name));
-    let best = null;
+    let best = null, shape = '';
     for (const sh of first.concat(rest)) {
-      const res = toRecs(await sheetRows(sh.path), d1904, tag);
-      if (res.recs.length && (!best || res.recs.length > best.recs.length)) best = Object.assign({ sheet: sh.name }, res);
+      const rows = await sheetRows(sh.path), res = toRecs(rows, d1904, tag), sp = shapeOf(rows);
+      if (!shape && sp && sp !== 'kensho') shape = sp;
+      if (res.recs.length && (!best || res.recs.length > best.recs.length)) best = Object.assign({ sheet: sh.name, shape: sp }, res);
       if (best && first.indexOf(sh) >= 0) break; // 検証データのシートで読めたら、それを使う
     }
-    if (!best) throw new Error('レースの行が見つからなかったよ。検証データと同じA〜P列（日付・R・馬場…）が入ったファイルを選んでね');
+    if (!best) { const e = new Error(shapeMsg(shape) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
     return best;
   }
+  // ---------- 形のちがうファイル（分析シート・分析表・フィルターの元データ）を見分ける ----------
+  // 返り値：'sheet'＝分析シート／'hyo'＝分析表／'filter'＝距離・馬場フィルターの元データ／'kensho'＝検証データ／''＝わからない
+  function shapeOf(rows) {
+    for (const c of rows.slice(0, 15)) {
+      if (!c) continue;
+      const L = i => String(c[i] == null ? '' : c[i]).replace(/\s/g, '');
+      if (!/^日付?$/.test(L(0))) continue;
+      if (/^1R$/i.test(L(1))) return 'hyo';
+      if (/結果/.test(L(5))) return 'sheet';
+      if (/着人気/.test(L(5))) return 'filter';
+      if (/単勝/.test(L(5)) && /3連単/.test(L(6))) return 'kensho';
+    }
+    for (const c of rows.slice(0, 15)) if (c && /単勝/.test(String(c[1] || '')) && /3連単/.test(String(c[2] || ''))) return 'hyo';
+    return '';
+  }
+  const SHAPE_NAME = { sheet: '「分析シート」の形（日付・R・馬場・距離・出馬数・結果）', hyo: '「分析表」の形（1日1行で、Rごとに単勝1位・3連単1位・結果）', filter: '距離・馬場フィルターの元データの形（日付・R・馬場・距離・頭数・1〜3着人気）' };
+  const SHAPE_MISS = { sheet: '単勝1位・3連単1位が入っていない', hyo: '馬場・距離・頭数が入っていない', filter: '単勝1位・3連単1位が入っていない' };
+  function shapeMsg(shape, what) {
+    what = what || 'このファイル';
+    const head = SHAPE_NAME[shape] ? `${what}は${SHAPE_NAME[shape]}だよ。${SHAPE_MISS[shape]}から、このままマザーデータには入れられないの。` : `${what}には、単勝1位（F列）・3連単1位（G列）・1着人気（H列）・2着人気（I列）がちゃんと入っていないみたい。`;
+    return esc(head) + '<br>マザーデータに入れられるのは、<b>姫フィルターのExcel（検証データのシートがあるもの）</b>だよ。分析シートと分析表に打ち込んだ新しいレースは、姫に送ってね（日付とRで合わせて入れるよ）。';
+  }
+  // 読み取った中身が「判定に使える形」か調べる。だめなら理由（HTML）を返す
+  function badShape(res, what) {
+    const recs = res.recs, n = recs.length;
+    const odds = recs.filter(r => r.tan1 > 0 && r.s1 > 0).length, got = recs.filter(r => r.p1 > 0 && r.p2 > 0).length;
+    const sane = recs.filter(r => r.tan1 >= 1 && r.tan1 < 1000 && r.s1 >= r.tan1).length;
+    if (n && odds >= n / 2 && got >= n / 2 && sane >= n / 2) return '';
+    return shapeMsg(res.shape, what);
+  }
+  const KEEP = '<br><b>いまのデータはそのまま</b>だよ（なにも変えていないよ）。';
 
   // ---------- 入れる先のマザーデータと比べる ----------
   const CMP = ['date', 'r', 'baba', 'dist', 'n', 'tan1', 's1', 'p1', 'p2', 'p3', 's5', 's10', 'umatanPay', 'sanrenPay', 'note', 'cnt'];
@@ -155,6 +188,25 @@
   <div class="slotlist" id="slotList"></div>
   <div class="slotedit" id="slotEdit"></div>
 </div>
+<div class="card setsec ocrset" id="setOcr">
+  <h2>画像の読み取り（オッズのスクショ）</h2>
+  <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。読み取りはClaude（Anthropic）にしてもらうから、<b>AnthropicのAPIキー</b>を1回だけ入れてね。</p>
+  <dl class="kvs"><dt>APIキー</dt><dd id="soState">まだ入っていないよ</dd><dt>料金のめやす</dt><dd>標準：1回 約1〜4円／節約：1回 1円未満<br><span class="small muted">Anthropicへの支払い。スクショの枚数で変わるよ</span></dd></dl>
+  <label for="soKey" class="small muted" style="font-weight:700">APIキー（sk-ant- ではじまる文字）</label>
+  <div class="namerow" style="margin-top:4px"><input id="soKey" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-ant-…"><button class="btn primary" type="button" id="soSave">保存して試す</button></div>
+  <div style="margin-top:10px"><span class="small muted" style="font-weight:700">読み取りのモデル</span><div class="seg" id="soModel" style="margin-top:4px"><button type="button" data-v="std" aria-pressed="true">標準（正確）</button><button type="button" data-v="eco" aria-pressed="false">節約（安い）</button></div></div>
+  <div class="row" style="margin-top:10px"><button class="btn" type="button" id="soTest" hidden>いまのキーで試す</button><button class="btn danger" type="button" id="soDel" hidden>キーを消す</button></div>
+  <p class="small" id="soMsg" style="margin:8px 0 0"></p>
+  <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:700">APIキーの作り方（5分くらい）</summary>
+    <ol class="small steps">
+      <li>Safariで <b>platform.claude.com</b> を開いてログイン（はじめてならアカウントを作る）</li>
+      <li>Settings の <b>Billing</b> で、クレジットカードを登録してクレジット（残高）を入れる。5ドルあれば、標準でも200回以上読めるよ</li>
+      <li>Settings の <b>API keys</b> →「Create key」でキーを作って、出てきた <b>sk-ant-…</b> をコピー（1回しか表示されないよ）</li>
+      <li>この上の欄に貼り付けて「保存して試す」</li>
+    </ol>
+  </details>
+  <p class="hint">キーは<b>このiPhoneの中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
+</div>
 <div class="card setsec" id="setUpdate">
   <h2>アプリの更新</h2>
   <dl class="kvs"><dt>いまの版</dt><dd>${esc(APP_VER || '—')}（第13改訂版）</dd><dt>最後に確認</dt><dd id="suChecked">まだ</dd></dl>
@@ -170,8 +222,59 @@
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
   <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
 </div>`;
-    wireSlots(); wireUpdate(); wireBackup();
+    wireSlots(); wireOcr(); wireUpdate(); wireBackup();
   }
+
+  // ---- 画像の読み取り（APIキー） ----
+  function wireOcr() {
+    const O = TengelLocal.ocr; let model = 'std';
+    const mask = k => k ? k.slice(0, 10) + '…' + k.slice(-4) : '';
+    function paint() {
+      const s = O.get(); if (s) model = s.model;
+      $('#soState').innerHTML = s ? `入っているよ（<span class="mono">${esc(mask(s.key))}</span>）` : 'まだ入っていないよ';
+      $('#soTest').hidden = !s; const d = $('#soDel'); d.hidden = !s; delete d.dataset.ok; d.textContent = 'キーを消す';
+      $$('#soModel button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === model)));
+    }
+    const MSG = { bad_key: 'このキーは使えないみたい。コピーし直して、もう一度貼ってね', no_credit: 'クレジット（残高）が足りないみたい。platform.claude.com の Billing で入れてね', network: '通信できなかったよ。電波がいいところでもう一度試してね', busy: 'Anthropicが混み合ってるみたい。少し待ってから試してね', rate_limited: '少し混み合ってるみたい。時間をおいてから試してね', bad_model: 'モデルが見つからなかったよ。「標準」にして試してね' };
+    const msgOf = e => MSG[e && e.code] || ('うまくいかなかったよ：' + (e && (e.message || e.code) || e));
+    async function tryKey(key, m, saveIt) {
+      const msg = $('#soMsg'); msg.innerHTML = '<span class="spin"></span> 試しているよ…（数秒）';
+      $('#soSave').disabled = true;
+      try {
+        await O.test(key, m);
+        if (saveIt) await O.save(key, m);
+        msg.textContent = saveIt ? '✅ 保存したよ。判定タブの「オッズ画像から読み取る」が使えるよ✨' : '✅ このキーで読み取れるよ✨';
+        if (saveIt) $('#soKey').value = '';
+      } catch (e) {
+        // キーは正しそう（残高・電波・混雑）なら、保存だけはしておく
+        if (saveIt && e && /^(no_credit|network|busy|rate_limited)$/.test(e.code)) { await O.save(key, m).catch(() => {}); $('#soKey').value = ''; msg.textContent = '⚠️ キーは保存したよ。でも ' + msgOf(e); }
+        else msg.textContent = '❌ ' + msgOf(e);
+      } finally { $('#soSave').disabled = false; paint(); }
+    }
+    $('#soSave').onclick = () => {
+      const k = $('#soKey').value.replace(/\s/g, '');
+      if (!/^sk-ant-/.test(k)) { $('#soMsg').textContent = '「sk-ant-」ではじまるキーを貼ってね'; return; }
+      tryKey(k, model, true);
+    };
+    $('#soTest').onclick = () => { const s = O.get(); if (s) tryKey(s.key, s.model, false); };
+    $('#soModel').onclick = e => {
+      const b = e.target.closest('button'); if (!b) return; model = b.dataset.v;
+      $$('#soModel button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      const s = O.get(); if (s) O.save(s.key, model).then(() => toast(model === 'eco' ? '節約モデルで読み取るよ' : '標準モデルで読み取るよ')).catch(err => toast('保存できなかったよ：' + (err && err.message || err), 3600));
+    };
+    $('#soDel').onclick = ev => {
+      const b = ev.currentTarget; if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'ほんとに消す？（もう一度押してね）'; return; }
+      O.clear().then(() => { $('#soMsg').textContent = 'キーを消したよ'; paint(); }).catch(err => toast('消せなかったよ：' + (err && err.message || err), 3600));
+    };
+    TengelLocal.ready.then(paint).catch(() => {});
+  }
+  // 判定タブなどから設定タブの各カードへ飛ぶ
+  function goSettings(sec) {
+    const tb = document.querySelector('.tabbar [data-tab=set]');
+    if (tb && getComputedStyle(tb.parentNode).display !== 'none') tb.click(); else { const t2 = document.querySelector('.tabs-top [data-tab=set]'); if (t2) t2.click(); }
+    setTimeout(() => { const s = document.getElementById({ ocr: 'setOcr', backup: 'setBackup', mother: 'setMother' }[sec] || 'setMother'); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-goset]'); if (b) { e.preventDefault(); goSettings(b.dataset.goset); } });
 
   // ---- マザーデータ（3つ） ----
   let pending = null, editN = null;
@@ -179,7 +282,7 @@
   const curEdit = () => editN || L().active();
   const srcText = s => s.n === 1 && s.source === 'app' ? 'アプリに入っていた大井データ' : s.source === 'excel' ? `Excel${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'paste' ? `貼り付けで（${when(s.at)}）` : '';
   function slotRowHTML(s, en) {
-    const how = s.count ? `${s.count}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走` : 'まだ空だよ';
+    const how = s.count ? `${s.count}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ</span>'}` : 'まだ空だよ';
     const src = s.count ? srcText(s) : '';
     return `<div class="slotrow${s.active ? ' on' : ''}${en === s.n ? ' edit' : ''}" data-n="${s.n}">
       <div><div class="sr-name"><span class="sr-no">${s.n}</span><b>${esc(s.name)}</b>${s.active ? '<span class="chip cus">使用中</span>' : ''}</div>
@@ -199,7 +302,9 @@
   function paintEditMeta(n) {
     const s = L().info().find(x => x.n === n); if (!s) return;
     const h = $('#seTitle'); if (h) h.textContent = `${n}つ目「${s.name}」の編集`;
-    const m = $('#seMeta'); if (m) m.innerHTML = s.count ? `<dt>いまのデータ</dt><dd><b>${s.count}走</b>（${span2(s.first, s.last)}）・集計対象 ${s.usable}走</dd><dt>入れ方</dt><dd>${srcText(s) || '—'}</dd>` : '<dt>いまのデータ</dt><dd>まだ空だよ</dd>';
+    const m = $('#seMeta'); if (m) m.innerHTML = s.count ? `<dt>いまのデータ</dt><dd><b>${s.count}走</b>（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ（単勝・3連単・着順が入っていない）</span>'}</dd><dt>入れ方</dt><dd>${srcText(s) || '—'}</dd>` : '<dt>いまのデータ</dt><dd>まだ空だよ</dd>';
+    const ud = $('#seUndo'), pv = L().prev(n);
+    if (ud) { ud.hidden = !pv; if (pv) ud.textContent = `ひとつ前のデータに戻す（${pv.n}走・${span2(pv.first, pv.last)}）`; delete ud.dataset.ok; }
     const emb = window.__MOTHER || [], rv = $('#seRevert'), cl = $('#seClear');
     if (rv) { rv.hidden = !(n === 1 && s.source !== 'app' && emb.length); rv.textContent = `アプリに入っている大井データ（${emb.length}走）に戻す`; delete rv.dataset.ok; }
     if (cl) { cl.hidden = !(n !== 1 && s.count); cl.textContent = 'このマザーデータを空にする'; delete cl.dataset.ok; }
@@ -219,7 +324,7 @@
         <textarea id="smText" rows="4" placeholder="2026/10/08	1	良	1200	12	2.1	18.5	1	3	2	…"></textarea>
         <div class="row" style="margin-top:8px"><button class="btn" type="button" id="smParse">読み取る</button></div>
       </details>
-      <div class="row" style="margin-top:12px"><button class="btn ghost" type="button" id="seRevert" hidden></button><button class="btn danger" type="button" id="seClear" hidden></button></div>`;
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="seUndo" hidden></button><button class="btn ghost" type="button" id="seRevert" hidden></button><button class="btn danger" type="button" id="seClear" hidden></button></div>`;
     paintEditMeta(n);
     const saveName = () => {
       const v = $('#seName').value;
@@ -231,13 +336,23 @@
     $('#smFile').onchange = e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
       const box = $('#smPreview'); box.innerHTML = '<p class="small" style="margin:8px 0 0"><span class="spin"></span> 「' + esc(f.name) + '」を読んでいるよ…</p>';
-      readXlsx(f, tagOf(n)).then(res => showPreview(n, res, `「${f.name}」の${res.sheet}シート`, { source: 'excel', file: f.name }))
-        .catch(err => { box.innerHTML = `<div class="banner bad">❌ 読めなかったよ：${esc(err && err.message || err)}</div>`; });
+      readXlsx(f, tagOf(n)).then(res => {
+        const why = badShape(res);
+        if (why) { pending = null; box.innerHTML = `<div class="banner bad">❌ 「${esc(f.name)}」は入れられないよ。<br>${why}${KEEP}</div>`; return; }
+        showPreview(n, res, `「${f.name}」の${res.sheet}シート`, { source: 'excel', file: f.name });
+      }).catch(err => { pending = null; box.innerHTML = `<div class="banner bad">❌ 読めなかったよ：${err && err.html ? err.message : esc(err && err.message || err)}${KEEP}</div>`; });
     };
     $('#smParse').onclick = () => {
-      const res = parsePaste($('#smText').value, tagOf(n));
-      if (!res.recs.length) { $('#smPreview').innerHTML = '<div class="banner bad">読み取れる行がなかったよ。A〜P列をそのまま貼ってね</div>'; return; }
+      const res = parsePaste($('#smText').value, tagOf(n)), box = $('#smPreview');
+      if (!res.recs.length) { pending = null; box.innerHTML = `<div class="banner bad">読み取れる行がなかったよ。A〜P列をそのまま貼ってね${res.shape ? '<br>' + shapeMsg(res.shape, '貼り付けた内容') : ''}</div>`; return; }
+      const why = badShape(res, '貼り付けた内容');
+      if (why) { pending = null; box.innerHTML = `<div class="banner bad">❌ 貼り付けた内容は入れられないよ。<br>${why}${KEEP}</div>`; return; }
       showPreview(n, res, '貼り付けた内容', { source: 'paste' });
+    };
+    $('#seUndo').onclick = ev => {
+      const b = ev.currentTarget, pv = L().prev(n); if (!pv) return;
+      if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'ほんとに戻す？（もう一度押してね）'; return; }
+      L().undo(n).then(() => { toast(`ひとつ前のデータ（${pv.n}走）に戻したよ`); $('#smPreview').innerHTML = ''; }).catch(e => toast('戻せなかったよ：' + (e && e.message || e), 3600));
     };
     $('#seRevert').onclick = ev => {
       const b = ev.currentTarget, emb = window.__MOTHER || [];
@@ -251,18 +366,21 @@
     };
   }
   function showPreview(n, res, label, info) {
-    const d = diff(res.recs, n), box = $('#smPreview'), nm = L().info().find(x => x.n === n).name, empty = !L().rows(n).length;
+    const d = diff(res.recs, n), box = $('#smPreview'), nm = L().info().find(x => x.n === n).name, empty = !L().rows(n).length, noUse = !usable(res.recs);
     pending = { n, recs: res.recs, info };
     const same = !d.add && !d.chg && !d.del;
     box.innerHTML = `<div class="banner info">${esc(label)}から <b>${res.recs.length}走</b>（${span(res.recs)}）を読み取ったよ。集計対象 ${usable(res.recs)}走。<br>${empty ? `「${esc(nm)}」は空だから、このデータがそのまま入るよ。` : `いまの「${esc(nm)}」と比べて：新しいレース <b>${d.add}</b>走・中身が変わったレース <b>${d.chg}</b>走・なくなるレース <b>${d.del}</b>走${same ? '<br>（いまと同じ内容だよ）' : ''}`}</div>
       ${d.del && !empty ? `<div class="banner warn">いまの「${esc(nm)}」にあって、このファイルにないレースが${d.del}走あるよ。入れ替えると、そのレースは消えるよ（買ったレースの記録は消えないよ）。</div>` : ''}
       ${res.bad ? `<p class="small muted" style="margin:6px 0 0">日付はあるのにRや馬場が読めなかった行が${res.bad}行あったよ（飛ばしたよ）。</p>` : ''}
-      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smApply">「${esc(nm)}」に入れる</button><button class="btn ghost" type="button" id="smCancel">やめる</button></div>`;
+      ${noUse ? `<div class="banner warn">集計対象（P列）が全部0だから、このままだと判定の参考値や実測（①〜⑦）には使われないよ。</div>` : ''}
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smApply">「${esc(nm)}」に入れる</button><button class="btn ghost" type="button" id="smCancel">やめる</button></div>
+      ${L().rows(n).length ? '<p class="small muted" style="margin:6px 0 0">入れたあとでも「ひとつ前のデータに戻す」で、いまのデータに戻せるよ。</p>' : ''}`;
     $('#smCancel').onclick = () => { pending = null; box.innerHTML = ''; };
     $('#smApply').onclick = ev => {
       if (!pending) return;
       const b = ev.currentTarget, p = pending;
       if (p.n === 1 && p.recs.length < 50 && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = `ほんとに入れ替える（${p.recs.length}走だけになるよ）`; return; }
+      if (noUse && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'それでも入れる（もう一度押してね）'; return; }
       b.disabled = true; b.textContent = '入れているよ…';
       L().replace(p.n, p.recs, p.info).then(() => {
         const act = L().active() === p.n;
@@ -401,8 +519,7 @@
     const rec = $('#v-rec'), list = $('#recList');
     if (rec && list) {
       const row = document.createElement('div'); row.className = 'row'; row.style.marginTop = 'var(--gap)';
-      row.innerHTML = '<button class="btn ghost" type="button">💾 記録のバックアップ（設定タブ）</button>';
-      row.querySelector('button').onclick = () => { const b = document.querySelector('.tabbar [data-tab=set]'); if (b && getComputedStyle(b.parentNode).display !== 'none') b.click(); else document.querySelector('.tabs-top [data-tab=set]').click(); setTimeout(() => { const s = $('#setBackup'); if (s) s.scrollIntoView({ block: 'start' }); }, 50); };
+      row.innerHTML = '<button class="btn ghost" type="button" data-goset="backup">💾 記録のバックアップ（設定タブ）</button>';
       rec.insertBefore(row, list);
     }
     document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); }).catch(() => {}); } });

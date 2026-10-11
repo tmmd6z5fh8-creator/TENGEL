@@ -78,7 +78,7 @@ main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:16px 96px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
 .f>label,.f>.lab{font-size:12px;color:var(--muted);font-weight:700}
 .f.s2{grid-column:span 2}.f.s3{grid-column:span 3}.f.s4{grid-column:span 4}.f.s6{grid-column:span 6}
-input[type=text],input[type=number],input[type=date],input:not([type]),select,textarea{width:100%;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:16px}
+input[type=text],input[type=number],input[type=date],input[type=password],input:not([type]),select,textarea{width:100%;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:16px}
 input[type=number]{appearance:textfield;-moz-appearance:textfield}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 textarea{font-size:14px;resize:vertical}
@@ -326,6 +326,14 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
 .slotedit{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--lamp);background:var(--surface)}
 .slotedit h3{font-size:15px;margin:0 0 8px}
 .slotedit .namerow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+/* v5: ひとつ前に戻す・形のちがうファイルの注意・画像の読み取りの設定 */
+.setsec{scroll-margin-top:84px}
+.warnline{color:var(--warn);font-weight:700}
+#seUndo{white-space:normal;text-align:left}
+.ocrset .namerow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.ocrset .seg{max-width:420px}
+ol.steps{margin:8px 0 0;padding-left:1.4em;line-height:1.8}
+ol.steps li+li{margin-top:2px}
 </style>
 
 <header class="top">
@@ -893,7 +901,19 @@ async function setupOCR() {
   $('#ocrFile').accept = lim.images.mediaTypes.join(',');
   $('#ocrRow').hidden = false;
 }
-$('#ocrBtn').addEventListener('click', () => $('#ocrFile').click());
+// iPhoneアプリ版：APIキーがまだ無いときは、写真を選ぶ前に案内する
+$('#ocrBtn').addEventListener('click', () => {
+  if (st.sample && typeof st.sample.hasKey === 'function' && !st.sample.hasKey()) { ocrFail({ code: 'need_key' }); return; }
+  $('#ocrFile').click();
+});
+const OCR_ERR = { not_granted: 'Claudeの利用が許可されていないので読み取れなかったよ。', images_unavailable: 'この画面では画像を送れないみたい。手入力でお願い！', image_rejected: '画像の形式か大きさが合わなかったよ。別のスクショで試してね。', rate_limited: '少し混み合ってるみたい。時間をおいてもう一度試してね。', invalid_json: 'うまく読み取れなかったよ。画面を大きめに撮ってもう一度試してね。', refused: '読み取りを断られちゃった。手入力でお願い！',
+  need_key: '画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。「設定」タブの「画像の読み取り」で入れてね（1回 約1〜4円）。', bad_key: 'APIキーが使えないみたい。「設定」タブの「画像の読み取り」でキーを確かめてね。', no_credit: 'Anthropicのクレジット（残高）が足りないみたい。platform.claude.com の Billing で入れてね。', bad_model: '読み取りのモデルが見つからなかったよ。「設定」タブで「標準」を選んでね。', network: '通信できなかったよ。電波がいいところでもう一度試してね。', busy: 'Claudeが混み合ってるみたい。少し待ってもう一度試してね。' };
+function ocrFail(err) {
+  const m = OCR_ERR[err?.code] || '読み取りに失敗したよ。もう一度試すか、手入力でお願い！';
+  const go = ['need_key', 'bad_key', 'no_credit', 'bad_model'].includes(err?.code) ? '<div class="row" style="margin-top:8px"><button class="btn" type="button" data-goset="ocr">「画像の読み取り」の設定を開く</button></div>' : '';
+  $('#ocrMsg').innerHTML = `<div class="banner ${err?.code === 'need_key' ? 'info' : 'bad'}">${esc(m)}${go}</div>`;
+  if (err?.code === 'not_granted' || err?.code === 'images_unavailable') $('#ocrRow').hidden = true;
+}
 $('#ocrFile').addEventListener('change', async e => {
   const files = [...e.target.files].slice(0, st.sampleImgs?.maxCount || 3); e.target.value = '';
   if (!files.length || !st.sample) return;
@@ -912,9 +932,7 @@ $('#ocrFile').addEventListener('change', async e => {
     const d = await st.sample.json(prompt, { images: files });
     applyOCR(d || {});
   } catch (err) {
-    const m = { not_granted: 'Claudeの利用が許可されていないので読み取れなかったよ。', images_unavailable: 'この画面では画像を送れないみたい。手入力でお願い！', image_rejected: '画像の形式か大きさが合わなかったよ。別のスクショで試してね。', rate_limited: '少し混み合ってるみたい。時間をおいてもう一度試してね。', invalid_json: 'うまく読み取れなかったよ。画面を大きめに撮ってもう一度試してね。', refused: '読み取りを断られちゃった。手入力でお願い！' }[err?.code] || '読み取りに失敗したよ。もう一度試すか、手入力でお願い！';
-    msg.innerHTML = `<div class="banner bad">${esc(m)}</div>`;
-    if (err?.code === 'not_granted' || err?.code === 'images_unavailable') $('#ocrRow').hidden = true;
+    ocrFail(err);
   } finally { btn.disabled = false; }
 });
 function applyOCR(d) {
