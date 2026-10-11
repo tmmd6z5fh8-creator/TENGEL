@@ -6,7 +6,7 @@ URL = 'http://localhost:8765/TENGEL/'
 def deploy_dir(src):
     shutil.rmtree(APPDIR, ignore_errors=True); shutil.copytree(src, APPDIR, ignore=shutil.ignore_patterns('.git', 'README.md', 'source'))
 def build(app_ver, mother_ver='2026-10-07', hist='hist_280.json', out='pwa_t'):
-    env = dict(os.environ, APP_VER=app_ver, MOTHER_VER=mother_ver, HIST=hist)
+    env = dict(os.environ, APP_VER=app_ver, MOTHER_VER=mother_ver, HIST=hist, DROP='')   # テストの土台（280走）の9/2はそのまま
     subprocess.run(['python3', 'build_pwa.py', out], check=True, env=env, stdout=subprocess.DEVNULL)
     return out
 # 1) いま公開中の版（GitHubのgh-pages）を、localhostでもService Workerが動くようにして置く

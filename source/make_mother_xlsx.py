@@ -123,6 +123,8 @@ notes = [r for r in rows if r.get('note')]
 import os
 _lp = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'mother_log.json')
 log = json.load(open(_lp, encoding='utf8')) if os.path.exists(_lp) else []
+_dp = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'dropped.json')   # 重複転記などで消したレース
+dropped = json.load(open(_dp, encoding='utf8')) if os.path.exists(_dp) else []
 _ymd = lambda s: '%s/%d/%d' % (s[:4], int(s[5:7]), int(s[8:10]))
 _md = lambda s: '%d/%d' % (int(s[5:7]), int(s[8:10]))
 memo = [
@@ -139,12 +141,15 @@ memo = [
     ('■ 入れていないレース', bold),
     ('7/1〜7/3の36走：分析シートにはあるが、分析表に単勝1位・3連単1位がないため（判定に使えない）', font),
     ('7/24 5R・6R：どちらのファイルにも距離・結果・オッズが入っていないため', font),
-    ('', None),
 ]
+for g in dropped:
+    rs = sorted(g['rs']); rtxt = f'{rs[0]}〜{rs[-1]}R' if rs == list(range(rs[0], rs[-1] + 1)) and len(rs) > 1 else '・'.join(f'{x}R' for x in rs)
+    memo.append((f'{_md(g["date"])}の{len(rs)}走（{rtxt}）：{g["why"]}。重複なので消した（{_ymd(g.get("at", g["date"]))}）', font))
+memo.append(('', None))
 if log:
     memo += [('■ 更新の記録', bold)] + [(f'{_ymd(x["date"])}　{x["text"]}', font) for x in log] + [('', None)]
 memo += [
-    ('■ 集計から外したレース・食い違い（検証データの備考にも書いてあるよ）', bold),
+    ('■ 食い違い・記載ミス・集計から外したレース（検証データの備考にも書いてあるよ）', bold),
 ]
 for i, (t, f) in enumerate(memo, 1):
     c = ms.cell(i, 1, t)

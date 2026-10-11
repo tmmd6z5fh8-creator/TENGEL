@@ -3,10 +3,13 @@
 #  - もとの280走（姫フィルターの検証データ）は書き換えない。食い違いがあれば報告だけする
 #  - 新しいレース＝両方のファイルにそろっていて、もとのデータにない「日付＋R」
 #  - 分析表とシートで着順がちがう → 分析表（オッズ側）を採用して備考に両方の値／同じ人気の重複 → 3着人気を空欄＋備考
+#  - 重複で消したレース（dropped.json：9/2など）は入れない。分析シートがほかの日の写しになっている日（同じRの距離・頭数・結果が3R分以上同じ）と、
+#    同じ中身（距離・頭数・単勝1位・3連単1位・着順）のレースがもうあるものも入れずに報告する
 import datetime, json, re, sys
 import openpyxl
 
 Z2H = str.maketrans('０１２３４５６７８９．', '0123456789.')
+md = lambda d: '%d/%d' % (int(d[5:7]), int(d[8:10]))   # 2026-10-07 → 10/7
 BABA = ('良', '稍重', '重', '不良')
 
 def to_date(v):
@@ -67,11 +70,37 @@ def read_table(path):
                 out[(d, R)] = {'tan1': t1, 's1': s1, 'res': res, 'rk': ranks(res)}
     return out
 
+def load_dropped(base_path):
+    """重複転記などで消したレース（dropped.json）→ {(日付, R): 理由}"""
+    import os
+    p = os.path.join(os.path.dirname(os.path.abspath(base_path)), 'dropped.json')
+    if not os.path.exists(p): return {}
+    return {(g['date'], r): g['why'] for g in json.load(open(p, encoding='utf8')) for r in g['rs']}
+
+def copied_days(S, new_dates, min_same=3):
+    """分析シートで、同じRの距離・頭数・結果がほかの日とまるごと同じ日（写し＝重複転記の疑い）→ {日付: (似ている日, 同じだったR数)}"""
+    out = {}
+    days = sorted(set(d for d, R in S))
+    for d in new_dates:
+        best = None
+        for e in days:
+            if e == d: continue
+            k = sum(1 for R in range(1, 17) if (d, R) in S and (e, R) in S and S[(d, R)]['dist'] and
+                    (S[(d, R)]['dist'], S[(d, R)]['n'], S[(d, R)]['rk']) == (S[(e, R)]['dist'], S[(e, R)]['n'], S[(e, R)]['rk']))
+            if k >= min_same and (not best or k > best[1]): best = (e, k)
+        if best: out[d] = best
+    return out
+
 def main(sheet_path, table_path, base_path='hist.json', out_path=None):
     base = json.load(open(base_path, encoding='utf8'))
     have = {(r['date'], r['r']): r for r in base}
+    dropped = load_dropped(base_path)
     S, T = read_sheet(sheet_path), read_table(table_path)
     rep = {'sheet': len(S), 'table': len(T)}
+    # 新しい日のうち、分析シートがほかの日の写しになっている日（その日はまるごと入れない）
+    cand_dates = sorted(set(d for (d, R) in set(S) | set(T) if (d, R) not in have and (d, R) not in dropped))
+    copies = copied_days(S, cand_dates)
+    sigs = {(r['dist'], r['n'], r['tan1'], r['s1'], r['p1'], r['p2'], r['p3']): r for r in base}
     # もとのデータとのちがい（書き換えない・報告だけ）
     diffs = []
     for k, b in have.items():
@@ -90,11 +119,18 @@ def main(sheet_path, table_path, base_path='hist.json', out_path=None):
         if k in have: continue
         s, t = S.get(k), T.get(k)
         d, R = k
+        if k in dropped:
+            skipped.append((k, '重複で消したレース')); continue
+        if d in copies:
+            skipped.append((k, '重複転記の疑い（分析シートが%sと%dR分同じ）' % (md(copies[d][0]), copies[d][1]))); continue
         if not s or not t:
             skipped.append((k, '分析シートだけ' if s else '分析表だけ')); continue
         if s['baba'] not in BABA or not s['dist'] or not s['n'] or not t['tan1'] or not t['s1'] or not (t['rk'] or s['rk']):
             skipped.append((k, '項目が足りない')); continue
         notes, rk = [], t['rk'] or s['rk']
+        same = sigs.get((s['dist'], s['n'], t['tan1'], t['s1']) + tuple((rk + [None] * 3)[:3]))
+        if same:
+            skipped.append((k, '同じ中身のレースがもうある（%s %dR）' % (md(same['date']), same['r']))); continue
         if t['rk'] and s['rk'] and t['rk'] != s['rk']:
             for j, nm in enumerate(['1着', '2着', '3着']):
                 a = t['rk'][j] if j < len(t['rk']) else None; b2 = s['rk'][j] if j < len(s['rk']) else None
@@ -136,7 +172,7 @@ def summarize(new):
         rs = sorted(rs); md = '%d/%d' % (int(d[5:7]), int(d[8:10]))
         if rs == list(range(rs[0], rs[-1] + 1)) and len(rs) > 1: parts.append(f'{md}（{rs[0]}〜{rs[-1]}R）')
         else: parts.append(f'{md}（{"・".join(str(x) for x in rs)}R）')
-    return '・'.join(parts) + f'の{len(new)}走'
+    return ('・'.join(parts) + f'の{len(new)}走') if new else '新しいレースなし'
 
 if __name__ == '__main__':
     a = sys.argv[1:]
@@ -144,7 +180,9 @@ if __name__ == '__main__':
     print('分析シート', rep['sheet'], '走／分析表', rep['table'], '走／新しいレース', rep['new'], '走', '→ 合計', rep.get('total', '-'), '|', rep['summary'])
     print('もとのデータとのちがい:', len(rep['diffs']))
     for d in rep['diffs'][:30]: print('   ', d)
-    print('入れなかったレース（新しい日付のみ）:', [x for x in rep['skipped'] if x[0][0] > '2026-10-07'])
-    print('入れなかったレース（〜10/7）:', len([x for x in rep['skipped'] if x[0][0] <= '2026-10-07']), '走', sorted(set(x[0][0] for x in rep['skipped'] if x[0][0] <= '2026-10-07')))
+    import collections
+    why = collections.Counter((x[0][0], x[1]) for x in rep['skipped'])
+    print('入れなかったレース:', len(rep['skipped']), '走')
+    for (d, w), n in sorted(why.items()): print('   ', d, w, n, '走')
     for r in new:
         print('  +', r['date'], '%2dR' % r['r'], r['baba'], r['dist'], '%2d頭' % r['n'], '単勝', r['tan1'], '3連単', r['s1'], '着順', r['p1'], r['p2'], r['p3'], r['note'], ('⚠️' + ','.join(r['_warn'])) if r['_warn'] else '')

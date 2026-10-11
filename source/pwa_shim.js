@@ -14,6 +14,10 @@ window.TENGEL_STANDALONE = 'pwa';
   var prevDocs = { 1: null, 2: null, 3: null };
   // 画像の読み取りの設定（meta 'set:ocr' = { key, model }）
   var ocrSet = null;
+  // 重複転記などで消したレース（アプリに入っている大井データから外したもの）。1つ目（大井）には、Excelや貼り付けで入れても入れない
+  var DROP = {}; (window.__MOTHER_DROP || []).forEach(function (id) { DROP[id] = 1; });
+  function undup(rows) { return rows.filter(function (r) { return !(r && DROP[r.id]); }); }
+  function dupCount(rows) { var k = 0; rows.forEach(function (r) { if (r && DROP[r.id]) k++; }); return k; }
   function req(r) { return new Promise(function (res, rej) { r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
   function openOnce() {
     return new Promise(function (res, rej) {
@@ -49,7 +53,7 @@ window.TENGEL_STANDALONE = 'pwa';
   // info.keepPrev = false のときは「ひとつ前」を残さない（アプリが自分で入れ直すとき）
   function replaceRaces(rows, info) {
     need();
-    info = info || {};
+    info = info || {}; rows = undup(rows);
     var src = info.source || 'app', prev = info.keepPrev === false ? null : prevOf(1);
     var t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races');
     s.clear(); rows.forEach(function (r) { s.put(r); });
@@ -86,6 +90,7 @@ window.TENGEL_STANDALONE = 'pwa';
     need();
     var cur = prevOf(n), rows = p.rows;
     if (n === 1) {
+      rows = undup(rows);
       var meta = Object.assign({ source: 'excel' }, p.meta || {}, { id: 'mother', embedded: window.__MOTHER_VER || '', n: rows.length, lastDate: lastDate(rows) });
       var t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races'), ms = t.objectStore('meta');
       s.clear(); rows.forEach(function (r) { s.put(r); }); ms.put(meta); if (cur) ms.put(cur); else ms.delete('prev:1');
@@ -139,8 +144,9 @@ window.TENGEL_STANDALONE = 'pwa';
   }
   function prevInfo(n) {
     var p = prevDocs[+n]; if (!p || !p.rows || !p.rows.length) return null;
-    var ds = p.rows.map(function (r) { return r.date; }).filter(Boolean).sort(), m = p.meta || {};
-    return { n: p.rows.length, first: ds[0] || '', last: ds[ds.length - 1] || '', at: p.at || '', source: m.source || '', file: m.file || '' };
+    var rows = +n === 1 ? undup(p.rows) : p.rows;   // 戻すときに重複は入らないので、その数で見せる
+    var ds = rows.map(function (r) { return r.date; }).filter(Boolean).sort(), m = p.meta || {};
+    return { n: rows.length, first: ds[0] || '', last: ds[ds.length - 1] || '', at: p.at || '', source: m.source || '', file: m.file || '' };
   }
   function boot(a) {
     a[1].forEach(function (b) { mem.bets.set(b.id, b); });
@@ -166,8 +172,8 @@ window.TENGEL_STANDALONE = 'pwa';
     var newer = '「' + slotsMeta.names[1] + '」のデータが新しくなったよ（' + emb.length + '走・' + md(nl) + 'まで）';
     if (source === 'app') {
       // 中身が変わったとき（レースが増えた・直した）だけお知らせする
-      var same = rows.length === emb.length && lastDate(rows) === nl;
-      return replaceRaces(emb, { source: 'app', keepPrev: false }).then(function () { if (!same) notices.push('アプリの更新で、' + newer); });
+      var same = rows.length === emb.length && lastDate(rows) === nl, k = dupCount(rows);
+      return replaceRaces(emb, { source: 'app', keepPrev: false }).then(function () { if (!same) notices.push('アプリの更新で、' + newer + (k ? '。重複していたレース（' + k + '走）は消したよ' : '')); });
     }
     // まさちゃんがExcelや貼り付けで入れた大井データのほうが新しければ、そのまま残す
     var cur = { last: meta.lastDate || lastDate(rows), n: rows.length };
@@ -176,12 +182,27 @@ window.TENGEL_STANDALONE = 'pwa';
     }
     meta.embedded = embVer; mother1 = meta; return putMeta(meta);
   }
+  // 前の版で入った重複レース（9/2など）が1つ目に残っていたら消す（Excelや貼り付けで入れたデータでも。入れた日時やファイル名はそのまま）
+  function dropDups() {
+    var all = Array.from(slot1.values()), k = dupCount(all);
+    if (!k || !idb) return;
+    var rest = undup(all), t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races');
+    all.forEach(function (r) { if (DROP[r.id]) s.delete(r.id); });
+    var meta = Object.assign({ id: 'mother', source: 'app' }, mother1 || {}, { n: rest.length, lastDate: lastDate(rest) });
+    t.objectStore('meta').put(meta);
+    return done(t).then(function () {
+      slot1 = new Map(rest.map(function (r) { return [r.id, r]; })); mother1 = meta;
+      if (slotsMeta.active === 1) { mem.races = slot1; notify('races'); }
+      notices.push('「' + slotsMeta.names[1] + '」から、重複していたレース（' + k + '走）を消したよ（' + rest.length + '走に）');
+    });
+  }
   // 保存場所が開けないときも、アプリに入っている大井データで判定はできるようにする（記録の保存はできない）
   function memoryMode(e) {
     try { if (idb) idb.close(); } catch (x) {}
     idb = null; memOnly = String(e && e.message || e || '');
     var emb = window.__MOTHER || [];
     if (!wellFormed(Array.from(slot1.values()))) { slot1 = new Map(emb.map(function (r) { return [r.id, r]; })); mother1 = null; }
+    else slot1 = new Map(undup(Array.from(slot1.values())).map(function (r) { return [r.id, r]; }));
     if (!mother1) mother1 = { id: 'mother', source: 'app', n: slot1.size };
     slotsMeta.active = 1; mem.races = slot1;
     var el = document.createElement('div'); el.id = 'memOnlyBar';
@@ -196,7 +217,7 @@ window.TENGEL_STANDALONE = 'pwa';
     idb.onversionchange = function () { try { idb.close(); } catch (e) {} };
     var g = function (id) { return req(store('meta', 'readonly').get(id)); };
     return Promise.all([req(store('races', 'readonly').getAll()), req(store('bets', 'readonly').getAll()), g('mother'), g('slots'), g('slot:2'), g('slot:3'), g('prev:1'), g('prev:2'), g('prev:3'), g('set:ocr')]);
-  }).then(boot).catch(memoryMode).then(function () { emitSlots(); });
+  }).then(function (a) { return Promise.resolve(boot(a)).then(function () { return Promise.resolve().then(dropDups).catch(function () {}); }); }).catch(memoryMode).then(function () { emitSlots(); });
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   function match(d, f) { var k = f[0], op = f[1], v = f[2]; return op === '>=' ? d[k] >= v : op === '<' ? d[k] < v : op === '==' ? d[k] === v : true; }

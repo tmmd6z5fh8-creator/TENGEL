@@ -365,11 +365,22 @@
       L().clear(n).then(() => { toast(`「${nm}」を空にしたよ`); $('#smPreview').innerHTML = ''; }).catch(e => toast('空にできなかったよ：' + (e && e.message || e), 3600));
     };
   }
+  // 1つ目（大井）：重複転記で消したレース（9/2など）は入れない
+  const DROP = new Set(window.__MOTHER_DROP || []);
   function showPreview(n, res, label, info) {
+    let dupNote = '';
+    if (+n === 1 && DROP.size) {
+      const gone = res.recs.filter(r => DROP.has(r.id));
+      if (gone.length) {
+        const ds = [...new Set(gone.map(r => r.date))].sort().map(x => (+x.slice(5, 7)) + '/' + (+x.slice(8, 10))).join('・');
+        res = Object.assign({}, res, { recs: res.recs.filter(r => !DROP.has(r.id)) });
+        dupNote = `<br>重複していた${ds}の${gone.length}走は入れないよ。`;
+      }
+    }
     const d = diff(res.recs, n), box = $('#smPreview'), nm = L().info().find(x => x.n === n).name, empty = !L().rows(n).length, noUse = !usable(res.recs);
     pending = { n, recs: res.recs, info };
     const same = !d.add && !d.chg && !d.del;
-    box.innerHTML = `<div class="banner info">${esc(label)}から <b>${res.recs.length}走</b>（${span(res.recs)}）を読み取ったよ。集計対象 ${usable(res.recs)}走。<br>${empty ? `「${esc(nm)}」は空だから、このデータがそのまま入るよ。` : `いまの「${esc(nm)}」と比べて：新しいレース <b>${d.add}</b>走・中身が変わったレース <b>${d.chg}</b>走・なくなるレース <b>${d.del}</b>走${same ? '<br>（いまと同じ内容だよ）' : ''}`}</div>
+    box.innerHTML = `<div class="banner info">${esc(label)}から <b>${res.recs.length}走</b>（${span(res.recs)}）を読み取ったよ。集計対象 ${usable(res.recs)}走。${dupNote}<br>${empty ? `「${esc(nm)}」は空だから、このデータがそのまま入るよ。` : `いまの「${esc(nm)}」と比べて：新しいレース <b>${d.add}</b>走・中身が変わったレース <b>${d.chg}</b>走・なくなるレース <b>${d.del}</b>走${same ? '<br>（いまと同じ内容だよ）' : ''}`}</div>
       ${d.del && !empty ? `<div class="banner warn">いまの「${esc(nm)}」にあって、このファイルにないレースが${d.del}走あるよ。入れ替えると、そのレースは消えるよ（買ったレースの記録は消えないよ）。</div>` : ''}
       ${res.bad ? `<p class="small muted" style="margin:6px 0 0">日付はあるのにRや馬場が読めなかった行が${res.bad}行あったよ（飛ばしたよ）。</p>` : ''}
       ${noUse ? `<div class="banner warn">集計対象（P列）が全部0だから、このままだと判定の参考値や実測（①〜⑦）には使われないよ。</div>` : ''}

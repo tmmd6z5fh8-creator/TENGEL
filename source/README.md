@@ -32,11 +32,12 @@
 | build.js → build_pwa.py | アプリを組み立てる（`deploy.sh` がまとめてやる） |
 | hist.json | アプリに入れておく基盤データ（大井）。まさちゃんのデータが届くたびに増える |
 | mother_log.json | 基盤データの更新の記録（Excelの「突合メモ」に出る） |
-| merge_raw.py | 分析シート × 分析表（まさちゃんが打ち込む元データ）を日付＋Rで突き合わせて、hist.json に新しいレースを足す（もとのレースは書き換えない・食い違いは報告だけ） |
+| dropped.json | 重複転記などで消したレース（2026/10/11：9/2の12走＝分析シートの9/2が9/1・9/3の写し）。merge_raw は入れない・アプリはiPhoneの中の大井データに残っていたら消す・Excelや貼り付けで入れても入れない（build_pwa.py が `window.__MOTHER_DROP` に入れる。`DROP=` で無し） |
+| merge_raw.py | 分析シート × 分析表（まさちゃんが打ち込む元データ）を日付＋Rで突き合わせて、hist.json に新しいレースを足す（もとのレースは書き換えない・食い違いは報告だけ）。dropped.json のレース・分析シートがほかの日の写しになっている日（同じRの距離・頭数・結果が3R分以上同じ）・同じ中身のレースがもうあるものは入れずに報告 |
 | make_mother_xlsx.py | hist.json → アプリで読めるマザーデータのExcel（大井競馬_マザーデータ_アプリ用.xlsx：検証データA〜P列・使い方・突合メモ） |
 | excel_to_hist.py | Excel（姫フィルター・マザーデータ）の検証データ → hist.json |
 | hist_280.json | テストの土台（10/7までの280走で固定）。テストは hist.json ではなくこれを使う（数字が変わらないように） |
-| test_engine.js / test_kubun.py / test_set.py / test_pwa.py / test_slots.py / test_fix.py / test_input.py / test_update.py | テスト（データを足した版への更新（test_update）・エンジンの数字・区分ごとの判定・買い目編集・アプリ更新でデータが消えないこと・マザーデータ3つ・壊れた大井の修復／形のちがうファイル／ひとつ前に戻す／画像の読み取り（APIは偽物に差し替え）／保存場所が開けないとき） |
+| test_engine.js / test_kubun.py / test_set.py / test_pwa.py / test_slots.py / test_fix.py / test_input.py / test_update.py / test_merge.py | テスト（突合（test_merge）・データを足した版への更新（test_update）・エンジンの数字・区分ごとの判定・買い目編集・アプリ更新でデータが消えないこと・マザーデータ3つ・壊れた大井の修復／形のちがうファイル／ひとつ前に戻す／画像の読み取り（APIは偽物に差し替え）／保存場所が開けないとき） |
 | mkxlsx.py / mkxlsx2.py / mkslotdata.py / mkrawfiles.py | テスト用のExcel・貼り付けデータを作る（mkrawfiles＝分析シート・分析表・馬場フィルターと同じ形） |
 
 ## アプリを直して公開する
@@ -46,11 +47,11 @@
 4. gh-pagesにコミットしてpush
 
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）
-1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）
+1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）。「重複転記の疑い」「同じ中身のレース」が出たら、まさちゃんに確かめる（重複なら dropped.json に足す）
 2. 良ければ足す：`python3 -I merge_raw.py <分析シート> <分析表> hist.json hist.json`（hist.json と mother_log.json が更新される）
 3. Excelを作る：`python3 make_mother_xlsx.py hist.json 大井競馬_マザーデータ_アプリ用.xlsx` → xlsxスキルの recalc.py で確かめて、まさちゃんに送る
 4. `APP_VER=… MOTHER_VER=<最後のレースの日付> sh deploy.sh`
-5. `OLD_APP=<今の公開版> XL_OLD=<前のマザーデータExcel> XL_NEW=<新しいExcel> NEW_VER=… python3 test_update.py`（ほかのテストも）→ push
+5. `OLD_APP=<今の公開版> XL_OLD=<前のマザーデータExcel> XL_NEW=<新しいExcel> [XL_DUP=<重複入りのExcel>] NEW_VER=… python3 test_update.py`（ほかのテストも）→ push
 6. iPhoneでは「更新する」を押すだけ。アプリの版の大井データを使っている人も、前のマザーデータExcelを入れていた人も、新しいデータに入れ替わって「データが新しくなったよ（○走・○/○まで）」と出る（Excelを入れていた人は「ひとつ前に戻す」で戻せる）
 
 ## 基盤データ（大井）をアプリに入れ直す（姫フィルターのExcelが届いたとき）

@@ -6,9 +6,12 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.11-5')
+APP_VER = os.environ.get('APP_VER', '2026.10.11-6')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
-MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09')
+MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
+# 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）
+_dp = os.environ.get('DROP', 'dropped.json')
+DROP_IDS = [g['date'].replace('-', '') + '-oi-%02d' % r for g in json.load(open(_dp, encoding='utf8')) for r in g['rs']] if _dp else []
 # 文言をiPhoneアプリ版に
 rep = [
  ("`まさちゃんのExcel（検証データ）から入れた${motherName()}のデータ：", "`このiPhoneに入っている${motherName()}のデータ："),
@@ -28,7 +31,7 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>

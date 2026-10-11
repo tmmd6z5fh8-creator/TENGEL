@@ -13,7 +13,7 @@ NEW = os.environ.get('NEW_VER', '2026.10.11-3')
 def deploy_dir(src):
     shutil.rmtree(APPDIR, ignore_errors=True); shutil.copytree(src, APPDIR, ignore=shutil.ignore_patterns('.git', 'README.md', 'source'))
 def build(app_ver, out='pwa_t'):
-    subprocess.run(['python3', 'build_pwa.py', out], check=True, env=dict(os.environ, APP_VER=app_ver, HIST='hist_280.json', MOTHER_VER='2026-10-07'), stdout=subprocess.DEVNULL)
+    subprocess.run(['python3', 'build_pwa.py', out], check=True, env=dict(os.environ, APP_VER=app_ver, HIST='hist_280.json', MOTHER_VER='2026-10-07', DROP=''), stdout=subprocess.DEVNULL)
     return out
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 deploy_dir(os.environ.get('OLD_APP', os.path.dirname(W)))   # 今の公開版
