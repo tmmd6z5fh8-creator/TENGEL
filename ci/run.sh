@@ -103,19 +103,20 @@ phase() {
   local U="$1" DEV="$2" PH="$3" W="$4"; shift 4
   local D; D=$(xcrun simctl get_app_container "$U" "$BID" data 2> /dev/null)
   [ -z "$D" ] && { say "   $DEV $PH: app container not found (not installed?)"; return 0; }
-  mkdir -p "$D/Documents"; rm -f "$D/Documents"/mark-* "$D/Documents"/report-*
+  mkdir -p "$D/Documents"; rm -f "$D/Documents"/mark-* "$D/Documents"/report-* "$D/Documents"/ack-*
   { echo "window.__ST_PHASE = $PH; window.__ST_DEVICE = '$DEV';"; cat "$ROOT/ci/selftest.js"; } > "$D/Documents/selftest.js"
   xcrun simctl launch "$U" "$BID" -tengelSelfTest >> "$OUT/$DEV-launch.txt" 2>&1
   for m in "$@"; do
     case "$m" in
       report-*)
-        if waitfile "$D/Documents/$m.json" 120; then cp "$D/Documents/$m.json" "$OUT/$DEV-$m.json"; say "   $DEV $PH: $m"
-        else say "   $DEV $PH: $m TIMEOUT"; shot "$U" "$DEV-$PH-timeout-$m" "$W"; fi ;;
+        if waitfile "$D/Documents/$m.json" 90; then cp "$D/Documents/$m.json" "$OUT/$DEV-$m.json"; say "   $DEV $PH: $m"
+        else say "   $DEV $PH: $m TIMEOUT"; shot "$U" "$DEV-$PH-timeout-$m" "$W"; break; fi ;;
       *)
-        if waitfile "$D/Documents/mark-$m.txt" 120; then sleep 0.6; shot "$U" "$DEV-$PH-$m" "$W"
-        else say "   $DEV $PH: mark $m TIMEOUT"; shot "$U" "$DEV-$PH-timeout-$m" "$W"; fi ;;
+        if waitfile "$D/Documents/mark-$m.txt" 90; then sleep 0.8; shot "$U" "$DEV-$PH-$m" "$W"; echo ok > "$D/Documents/ack-$m.txt"
+        else say "   $DEV $PH: mark $m TIMEOUT"; shot "$U" "$DEV-$PH-timeout-$m" "$W"; break; fi ;;
     esac
   done
+  for f in "$D/Documents"/report-*.json; do [ -f "$f" ] && [ ! -f "$OUT/$DEV-$(basename "$f")" ] && cp "$f" "$OUT/$DEV-$(basename "$f")"; done
   for f in "$D/Documents"/report-crash-*.json; do [ -f "$f" ] && cp "$f" "$OUT/$DEV-$(basename "$f")" && say "   $DEV $PH: CRASH $(basename "$f")"; done
   cp "$D/Library/Application Support/tengel-autobackup.json" "$OUT/$DEV-$PH-autobackup.json" 2> /dev/null
   xcrun simctl terminate "$U" "$BID" > /dev/null 2>&1; sleep 1.5
@@ -130,7 +131,8 @@ if [ -n "$IPHONE" ]; then
   xcrun simctl install "$IPHONE" "$APP" > "$OUT/iphone-install.txt" 2>&1 && say "== iPhone: installed"
   phase "$IPHONE" iphone 1 700 $P1
   phase "$IPHONE" iphone 2 700 report-2
-  phase "$IPHONE" iphone 3 700 offer restored report-3
+  phase "$IPHONE" iphone 3 700 offer restored report-3 report-link
+  sleep 3; shot "$IPHONE" "iphone-3-link-safari" 700
   # ダークモードで1枚
   xcrun simctl ui "$IPHONE" appearance dark > /dev/null 2>&1
   xcrun simctl launch "$IPHONE" "$BID" > /dev/null 2>&1; sleep 8; shot "$IPHONE" "iphone-dark" 700

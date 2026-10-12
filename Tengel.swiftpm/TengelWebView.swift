@@ -73,22 +73,19 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
 
     // MARK: - ページの移動
 
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
         guard let url = navigationAction.request.url, let scheme = url.scheme?.lowercased() else {
-            decisionHandler(.cancel)
-            return
+            return .cancel
         }
         if scheme == AppSchemeHandler.scheme || scheme == "about" || scheme == "blob" || scheme == "data" {
-            decisionHandler(.allow)
-            return
+            return .allow
         }
         // テンゲルの外のページ（http・https・メールなど）は、Safariなどアプリの外で開く
         if navigationAction.targetFrame?.isMainFrame != false {
             UIApplication.shared.open(url)
-            decisionHandler(.cancel)
-            return
+            return .cancel
         }
-        decisionHandler(.allow)
+        return .allow
     }
 
     /// Web画面の中身が落ちたら、開き直す（記録は保存場所に残っている）

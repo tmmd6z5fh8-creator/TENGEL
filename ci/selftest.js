@@ -17,7 +17,15 @@
   function post(file, text) { try { window.webkit.messageHandlers.tengel.postMessage({ id: 0, name: 'selftest', payload: { file: file, text: text } }); } catch (e) { /* アプリとつながっていない */ } }
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   async function waitFor(fn, ms) { var t0 = Date.now(); while (Date.now() - t0 < (ms || 15000)) { try { var v = fn(); if (v) return v; } catch (e) { /* まだ */ } await sleep(150); } return null; }
-  async function mark(name) { post('mark-' + name + '.txt', String(Date.now())); await sleep(2600); }
+  // スクショの合図 → CIが撮り終わって ack-<名前>.txt を置くまで待つ（アプリが __selftest/ で読ませる。最長60秒）
+  async function mark(name) {
+    post('mark-' + name + '.txt', String(Date.now()));
+    var t0 = Date.now();
+    while (Date.now() - t0 < 60000) {
+      try { var r = await fetch('__selftest/ack-' + name + '.txt', { cache: 'no-store' }); if (r.ok) return; } catch (e) { /* まだ */ }
+      await sleep(300);
+    }
+  }
   function report(name, R) { R.errors = errs.slice(); R.at = new Date().toISOString(); post('report-' + name + '.json', JSON.stringify(R, null, 1)); }
   async function step(R, key, fn) { try { R[key] = await fn(); } catch (e) { R[key] = { exception: String(e && (e.message || e)) }; } }
   function tab(name) {
@@ -178,6 +186,12 @@
     await sleep(1500);
     await step(R, 'autobackup', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, at: s.at } : null; });
     report('3', R);
+    // 外のページへのリンク → アプリの中では開かず、Safariで開く（アプリは裏に回る。CIがスクショで確かめる）
+    await sleep(500);
+    var before = location.href, a = document.createElement('a');
+    a.href = 'https://example.com/'; a.textContent = 'example'; document.body.appendChild(a); a.click();
+    await sleep(700);
+    report('link', { phase: 3, device: DEV, before: before, after: location.href });
   }
   var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : phase1;
   run().catch(function (e) { report('crash-' + (isManual ? 'manual' : PH), { phase: PH, device: DEV, exception: String(e && (e.stack || e.message || e)) }); });

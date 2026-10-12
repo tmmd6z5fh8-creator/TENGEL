@@ -16,13 +16,15 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
         if path.isEmpty || path == "/" {
             path = "/index.html"
         }
-        let name: String
-        let body: Data?
+        let name = (path as NSString).lastPathComponent
+        var body: Data?
         if path == "/__native/autobackup.json" {
-            name = "autobackup.json"
             body = AppFiles.readBackup()
+        } else if path.hasPrefix("/__selftest/") {
+            #if DEBUG
+            body = SelfTest.file(named: name)
+            #endif
         } else {
-            name = (path as NSString).lastPathComponent
             body = AppFiles.webFile(named: name).flatMap { try? Data(contentsOf: $0) }
         }
         if let body {
@@ -52,12 +54,16 @@ enum AppFiles {
 
     /// 画面のファイルがある場所（アプリの中、またはアプリの中の .bundle）
     static let webRoots: [URL] = {
-        let main = Bundle.main.bundleURL
-        var roots = [main, main.appendingPathComponent("Resources", isDirectory: true)]
-        if let items = try? FileManager.default.contentsOfDirectory(at: main, includingPropertiesForKeys: nil) {
-            for item in items where item.pathExtension == "bundle" {
-                roots.append(item)
-                roots.append(item.appendingPathComponent("Resources", isDirectory: true))
+        var roots: [URL] = []
+        // ふつうはアプリ（Bundle.main）。Swift Playgrounds で動かすときのために、このコードが入っている場所も見る
+        for base in [Bundle.main.bundleURL, Bundle(for: AppSchemeHandler.self).bundleURL] where !roots.contains(base) {
+            roots.append(base)
+            roots.append(base.appendingPathComponent("Resources", isDirectory: true))
+            if let items = try? FileManager.default.contentsOfDirectory(at: base, includingPropertiesForKeys: nil) {
+                for item in items where item.pathExtension == "bundle" {
+                    roots.append(item)
+                    roots.append(item.appendingPathComponent("Resources", isDirectory: true))
+                }
             }
         }
         return roots
@@ -156,6 +162,12 @@ enum SelfTest {
         guard enabled,
               let js = try? String(contentsOf: documents.appendingPathComponent("selftest.js"), encoding: .utf8) else { return }
         config.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+    }
+
+    /// テストの合図（CIがスクショを撮り終わったら置く ack-*.txt）を画面から読めるようにする
+    static func file(named name: String) -> Data? {
+        guard enabled, !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") else { return nil }
+        return try? Data(contentsOf: documents.appendingPathComponent(name))
     }
 
     static func save(_ payload: Any?) {
