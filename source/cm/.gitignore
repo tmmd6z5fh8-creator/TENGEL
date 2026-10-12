@@ -1,0 +1,9 @@
+shots/
+srv/
+frames/
+chk/
+*.mp4
+*.wav
+*.xlsx
+p2log*
+concat.txt

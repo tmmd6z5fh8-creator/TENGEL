@@ -1,4 +1,4 @@
-import importlib.util, json, os, shutil, sys
+import hashlib, importlib.util, json, os, shutil, sys
 out = sys.argv[1] if len(sys.argv) > 1 else 'pwa'
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
 if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ（一時フォルダに作ってからコピーしてね）')
@@ -6,7 +6,7 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.12-4')
+APP_VER = os.environ.get('APP_VER', '2026.10.12-5')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
 # 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）
@@ -24,6 +24,12 @@ for a, b in rep:
 page = page.replace('claude.aiのアプリ画面で開いてね', 'アプリを開き直してね')
 mother = [{k: v for k, v in r.items()} for r in hist]
 ICONS = ('icon3-180.png', 'icon3-192.png', 'icon3-512.png', 'icon3-maskable-512.png')
+# CM（紹介動画）：設定タブから見る。cm_media/ にある動画と表紙を cm/ に置く。中身が変わったら ?v= が変わるので古いのは使われない
+CM_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cm_media')
+CM = None
+if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
+    _h = lambda f: hashlib.md5(open(os.path.join(CM_SRC, f), 'rb').read()).hexdigest()[:8]
+    CM = {'src': 'cm/tengel3_cm.mp4?v=' + _h('tengel3_cm.mp4'), 'poster': 'cm/poster.jpg?v=' + _h('poster.jpg'), 'dur': '0:45'}
 head = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -31,7 +37,7 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>
@@ -45,6 +51,10 @@ json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_ur
 _spec = importlib.util.spec_from_file_location('build_manual', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manual', 'build_manual.py'))
 _bm = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_bm)
 MAN_IMGS, MAN_VER = _bm.build('pwa', out, APP_VER)
+if CM:
+    os.makedirs(f'{out}/cm')
+    for f in ('tengel3_cm.mp4', 'poster.jpg'):
+        shutil.copy(os.path.join(CM_SRC, f), f'{out}/cm/{f}')
 # 新しい版があるかの確認用（アプリはこのファイルだけを毎回ネットから読む）
 json.dump({"app": APP_VER, "mother": MOTHER_VER}, open(f'{out}/version.json', 'w', encoding='utf8'))
 open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
@@ -52,7 +62,7 @@ open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波�
 const CACHE = 'tengel3-''' + APP_VER + '-' + MOTHER_VER + '''';
 // 説明書の写真は別のしまい場所（写真が変わったときだけ入れ直す。アプリの更新のたびには読まない）
 const MCACHE = 'tengel3-manual-''' + MAN_VER + '''';
-const SHELL = ['./', './index.html', './manual.html', './manifest.webmanifest', ''' + ', '.join("'./%s'" % f for f in ICONS) + '''];
+const SHELL = ['./', './index.html', './manual.html', './manifest.webmanifest', ''' + ', '.join("'./%s'" % f for f in ICONS) + (", './" + CM['poster'] + "'" if CM else '') + '''];
 const MANUAL = [''' + ', '.join("'./manual/%s'" % f for f in MAN_IMGS) + '''];
 self.addEventListener('install', e => {
   const shell = caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting());
@@ -72,6 +82,8 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(key).then(h => h || caches.match('./index.html')).then(h => h || caches.match('./'))));
     return;
   }
+  // CMの動画は大きいのでしまわない（iPhoneが少しずつ読む＝Rangeのまま、ブラウザにまかせる）
+  if (u.origin === location.origin && /\\/cm\\/[^/]+\\.mp4$/.test(u.pathname)) return;
   if (u.origin === location.origin && /\\/manual\\/[^/]+$/.test(u.pathname)) {
     e.respondWith(caches.open(MCACHE).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; }))));
     return;
@@ -84,4 +96,4 @@ self.addEventListener('fetch', e => {
 # アイコン：まさちゃんのエンブレム＋金の「TENGER」（icons/ に作ってある）
 for f in ICONS:
     shutil.copy(f'icons/{f}', f'{out}/{f}')
-print('built', out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER, 'MANUAL', MAN_VER, len(MAN_IMGS))
+print('built', out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER, 'MANUAL', MAN_VER, len(MAN_IMGS), 'CM', CM)

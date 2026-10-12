@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>テンゲル 前置き</title>
+<style>
+/* 前置き（15秒）：映画の予告編のような静かで重い入り。540×960をDPR2で1080×1920に */
+*{margin:0;padding:0}
+html,body{width:540px;height:960px;overflow:hidden;background:#000}
+canvas{position:absolute;left:0;top:0;width:540px;height:960px}
+</style></head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<img id="emb" src="assets/emblem.png" alt="" style="display:none">
+<img id="word" src="assets/tenger_word.png" alt="" style="display:none">
+<script>
+const W = 540, H = 960, TAU = Math.PI * 2;
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const lerp = (a, b, x) => a + (b - a) * x;
+const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+const cv = $('c'), g = cv.getContext('2d');
+const L = document.createElement('canvas'); L.width = 1080; L.height = 1920; const Lg = L.getContext('2d');
+const FONT = '"Noto Sans CJK JP"';
+
+// ===================== 文字の場面 =====================
+const BLOCKS = [
+  { a: .7, b: 3.0, out: [2.55, 3.0], items: [
+    { s: '新しい競馬が、', y: 420, size: 34, w: 300, sp: .24, fill: 'white', t0: .75, st: .08, dur: .6 },
+    { s: 'やってくる。', y: 504, size: 74, w: 900, sp: .05, fill: 'gold', t0: 1.4, st: .05, dur: .45, shine: [1.75, 2.5] }] },
+  { a: 3.0, b: 5.4, out: [4.9, 5.4], line: { y: 548, t0: 3.75, t1: 4.35 }, items: [
+    { s: 'まったく新しい、', y: 412, size: 32, w: 300, sp: .24, fill: 'white', t0: 3.05, st: .06, dur: .55 },
+    { s: '競馬判定アプリ', y: 492, size: 64, w: 900, sp: .08, fill: 'gold', t0: 3.6, st: .045, dur: .4, shine: [3.95, 4.7] }] },
+  { a: 8.4, b: 12.0, out: [11.55, 12.0], items: [
+    { s: '競馬初心者から、', y: 372, size: 40, w: 500, sp: .12, fill: 'white', t0: 8.5, st: .045, dur: .42, dx: -46 },
+    { s: '熟練者まで。', y: 442, size: 40, w: 500, sp: .12, fill: 'white', t0: 9.2, st: .05, dur: .42, dx: 46 },
+    { s: 'それぞれの、', y: 552, size: 32, w: 300, sp: .24, fill: 'white', t0: 10.0, st: .06, dur: .5 },
+    { s: '新しい競馬。', y: 632, size: 76, w: 900, sp: .05, fill: 'gold', t0: 10.4, st: .05, dur: .42, shine: [10.75, 11.45] }] },
+  { a: 12.0, b: 15.1, out: null, items: [
+    { s: '新しい時代の、', y: 396, size: 36, w: 300, sp: .24, fill: 'white', t0: 12.3, st: .07, dur: .6 },
+    { s: '幕開け。', y: 500, size: 108, w: 900, sp: .03, fill: 'gold', t0: 12.9, st: .08, dur: .5, shine: [13.3, 14.0] }] },
+];
+const GOLD = [[0, '#fff7dc'], [.32, '#ffd877'], [.52, '#c98d26'], [.62, '#ffe7a3'], [.82, '#b47a1e'], [1, '#ffe3a0']];
+function drawItem(it, t) {
+  const font = `${it.w} ${it.size}px ${FONT}`;
+  Lg.setTransform(2, 0, 0, 2, 0, 0); Lg.clearRect(0, 0, W, H);
+  Lg.font = font; Lg.textBaseline = 'middle'; Lg.textAlign = 'left';
+  const chars = [...it.s], ws = chars.map(c => Lg.measureText(c).width), gap = it.sp * it.size;
+  let total = ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1);
+  if ('、。'.includes(chars[chars.length - 1])) total -= it.size * .45;   // 句読点の空きを詰めて真ん中に
+  let x = W / 2 - total / 2, any = false;
+  let fillStyle;
+  if (it.fill === 'gold') { const gr = Lg.createLinearGradient(0, it.y - it.size * .55, 0, it.y + it.size * .5); GOLD.forEach(([p, c]) => gr.addColorStop(p, c)); fillStyle = gr; }
+  else fillStyle = '#f4f7ff';
+  chars.forEach((ch, i) => {
+    const p = P(t, it.t0 + i * it.st, it.t0 + i * it.st + it.dur), e = eo(p);
+    if (p > 0) {
+      any = true;
+      const bl = (1 - e) * 12, dy = (1 - e) * 10, dx = (it.dx || 0) * (1 - e);
+      Lg.save(); Lg.globalAlpha = e; Lg.filter = bl > .3 ? `blur(${bl.toFixed(2)}px)` : 'none';
+      Lg.shadowColor = it.fill === 'gold' ? 'rgba(255,180,70,.6)' : 'rgba(150,190,255,.5)'; Lg.shadowBlur = it.fill === 'gold' ? 22 : 14;
+      Lg.fillStyle = fillStyle; Lg.fillText(ch, x + dx, it.y + dy); Lg.restore();
+    }
+    x += ws[i] + gap;
+  });
+  if (!any) return false;
+  if (it.shine) {
+    const u = P(t, it.shine[0], it.shine[1]);
+    if (u > 0 && u < 1) {
+      Lg.save(); Lg.globalCompositeOperation = 'source-atop';
+      const bx = lerp(W / 2 - total / 2 - 120, W / 2 + total / 2 + 120, eio(u));
+      const lg = Lg.createLinearGradient(bx - 70, it.y - it.size, bx + 70, it.y + it.size);
+      lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.95)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+      Lg.fillStyle = lg; Lg.fillRect(0, it.y - it.size, W, it.size * 2); Lg.restore();
+    }
+  }
+  return true;
+}
+function drawBlocks(t) {
+  for (const B of BLOCKS) {
+    if (t < B.a || t >= B.b) continue;
+    const q = B.out ? P(t, B.out[0], B.out[1]) : 0;
+    const sc = (1 + .022 * (t - B.a)) * (1 + .22 * eo(q)), al = 1 - eo(q), bl = 9 * q;
+    for (const it of B.items) {
+      if (!drawItem(it, t)) continue;
+      g.save(); g.globalAlpha = al; g.filter = bl > .3 ? `blur(${bl.toFixed(2)}px)` : 'none';
+      g.translate(W / 2, 480); g.scale(sc, sc); g.translate(-W / 2, -480);
+      g.drawImage(L, 0, 0, W, H); g.restore();
+    }
+    if (B.line) {   // 金の細い線（真ん中から左右へ）
+      const u = eo(P(t, B.line.t0, B.line.t1)); if (u > 0) {
+        g.save(); g.globalAlpha = al; g.translate(W / 2, 480); g.scale(sc, sc); g.translate(-W / 2, -480);
+        const hw = 170 * u, lg = g.createLinearGradient(W / 2 - hw, 0, W / 2 + hw, 0);
+        lg.addColorStop(0, 'rgba(255,210,120,0)'); lg.addColorStop(.5, 'rgba(255,225,150,.95)'); lg.addColorStop(1, 'rgba(255,210,120,0)');
+        g.fillStyle = lg; g.fillRect(W / 2 - hw, B.line.y, hw * 2, 1.6); g.restore();
+      }
+    }
+  }
+}
+
+// ===================== 背景 =====================
+const GRAIN = [];
+function mkGrain() {
+  for (let k = 0; k < 4; k++) {
+    const c = document.createElement('canvas'); c.width = 270; c.height = 480; const x = c.getContext('2d'), id = x.createImageData(270, 480);
+    for (let i = 0; i < id.data.length; i += 4) { const v = Math.floor(rnd(i * .37 + k * 13.1, k + 3) * 255); id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+    x.putImageData(id, 0, 0); GRAIN.push(c);
+  }
+}
+function dawnK(t) { return eio(P(t, 12.0, 14.6)); }
+function drawBG(t) {
+  const dk = dawnK(t);
+  const gr = g.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, `rgb(${Math.round(lerp(3, 18, dk))},${Math.round(lerp(5, 14, dk))},${Math.round(lerp(14, 34, dk))})`);
+  gr.addColorStop(.55, `rgb(${Math.round(lerp(7, 70, dk))},${Math.round(lerp(12, 34, dk))},${Math.round(lerp(30, 40, dk))})`);
+  gr.addColorStop(1, `rgb(${Math.round(lerp(2, 120, dk))},${Math.round(lerp(3, 60, dk))},${Math.round(lerp(10, 30, dk))})`);
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  // 中央のほのかな明かり
+  const rg = g.createRadialGradient(270, 470, 10, 270, 470, 420);
+  rg.addColorStop(0, 'rgba(40,70,140,.28)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  // 上からの光の筋（ゆっくり動く）
+  const on = P(t, .5, 1.6) * (1 - .7 * dk);
+  if (on > 0) {
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)';
+    [[-60, .1, 1], [600, -.13, 2], [250, .03, 3]].forEach(([x0, sk, i]) => {
+      const sway = Math.sin(t * .35 + i) * 40, x = x0 + sway, wtop = 26, wbot = 200;
+      const lg = g.createLinearGradient(0, -40, 0, 900); lg.addColorStop(0, `rgba(150,185,255,${(.11 * on).toFixed(3)})`); lg.addColorStop(1, 'rgba(150,185,255,0)');
+      g.fillStyle = lg; g.beginPath(); g.moveTo(x - wtop, -40); g.lineTo(x + wtop, -40); g.lineTo(x + wtop + sk * 1000 + wbot, 900); g.lineTo(x - wtop + sk * 1000 - wbot, 900); g.closePath(); g.fill();
+    });
+    g.restore();
+  }
+  // 競馬場のコースのような線（場面2：手前へ流れる）
+  const tr = Math.min(P(t, 3.0, 3.5), 1 - P(t, 4.9, 5.4));
+  if (tr > 0) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const vx = 270, vy = 300;
+    for (let i = -5; i <= 5; i++) {
+      const xb = 270 + i * 150, lg = g.createLinearGradient(vx, vy, xb, H);
+      lg.addColorStop(0, 'rgba(255,200,110,0)'); lg.addColorStop(1, `rgba(255,200,110,${(.22 * tr).toFixed(3)})`);
+      g.strokeStyle = lg; g.lineWidth = i === 0 ? 0 : 1.1; if (i === 0) continue; g.beginPath(); g.moveTo(vx, vy); g.lineTo(xb, H); g.stroke();
+    }
+    for (let k = 0; k < 9; k++) {
+      const f = ((k / 9) + (t - 3.0) * .55) % 1, y = vy + (H - vy) * f * f, a = .18 * tr * f;
+      g.strokeStyle = `rgba(255,210,130,${a.toFixed(3)})`; g.lineWidth = .6 + 1.4 * f; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke();
+    }
+    g.restore();
+  }
+  // 夜明け（場面4）：地平の光と昇る太陽
+  if (dk > 0) {
+    const sy = lerp(980, 720, dk), sr = lerp(380, 640, dk);
+    const sg = g.createRadialGradient(270, sy, 0, 270, sy, sr);
+    sg.addColorStop(0, `rgba(255,246,214,${(.95 * dk).toFixed(3)})`); sg.addColorStop(.2, `rgba(255,198,110,${(.7 * dk).toFixed(3)})`); sg.addColorStop(.55, `rgba(255,120,50,${(.32 * dk).toFixed(3)})`); sg.addColorStop(1, 'rgba(120,40,40,0)');
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = sg; g.fillRect(0, 0, W, H);
+    // 太陽からの光線
+    g.translate(270, sy); g.rotate(t * .06);
+    for (let i = 0; i < 22; i++) {
+      const a0 = i / 22 * TAU, a1 = a0 + .055, len = 1100;
+      const lg = g.createRadialGradient(0, 0, 40, 0, 0, len); lg.addColorStop(0, `rgba(255,220,150,${(.16 * dk).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,200,120,0)');
+      g.fillStyle = lg; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * len, Math.sin(a0) * len); g.lineTo(Math.cos(a1) * len, Math.sin(a1) * len); g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+}
+function drawDust(t, front) {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  const dk = dawnK(t), n = front ? 16 : 70;
+  for (let i = 0; i < n; i++) {
+    const k = i + (front ? 500 : 0), depth = front ? 1 : .25 + .75 * rnd(k, 1);
+    const x = (rnd(k, 2) * (W + 80) - 40 + t * (6 + 14 * depth) * (rnd(k, 3) - .5) * 2 + W * 3) % (W + 80) - 40;
+    const y = (rnd(k, 4) * (H + 80) - t * (5 + 12 * depth) + H * 3) % (H + 80) - 40;
+    const tw = .5 + .5 * Math.sin(t * (1 + rnd(k, 5) * 2) + k);
+    const r = front ? 5 + rnd(k, 6) * 9 : .5 + depth * 1.6, a = (front ? .05 : .2 + .45 * tw) * P(t, .45, 1.2);
+    const col = dk > .2 ? [255, 210 - 40 * dk, 150 - 60 * dk] : [190, 215, 255];
+    if (front) { const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, `rgba(${col.join(',')},${a.toFixed(3)})`); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    else { g.fillStyle = `rgba(${col.join(',')},${a.toFixed(3)})`; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
+  }
+  g.restore();
+}
+// 横に伸びる光（アナモルフィックフレア）
+function flare(x, y, len, a, hue = 210) {
+  if (a <= .01) return;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const [h, al] of [[26, .18], [8, .45], [2.2, 1]]) {
+    const lg = g.createLinearGradient(x - len, 0, x + len, 0);
+    lg.addColorStop(0, `hsla(${hue},100%,70%,0)`); lg.addColorStop(.5, `hsla(${hue},100%,${h < 3 ? 97 : 72}%,${(a * al).toFixed(3)})`); lg.addColorStop(1, `hsla(${hue},100%,70%,0)`);
+    g.fillStyle = lg; g.fillRect(x - len, y - h / 2, len * 2, h);
+  }
+  const cg = g.createRadialGradient(x, y, 0, x, y, 60); cg.addColorStop(0, `rgba(255,255,255,${(.8 * a).toFixed(3)})`); cg.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = cg; g.fillRect(x - 60, y - 60, 120, 120);
+  g.restore();
+}
+const FLARES = [[.5, 480, 1.3, 1, 210], [1.4, 504, 1.0, .5, 40], [3.6, 492, 1.0, .5, 40], [6.2, 610, 1.6, 1, 45], [10.4, 632, 1.0, .5, 40], [12.9, 500, 1.6, .9, 40]];
+function drawFlares(t) {
+  FLARES.forEach(([t0, y, d, a, hue]) => { if (t < t0 || t > t0 + d) return; const u = P(t, t0, t0 + d); flare(270, y, lerp(40, 420, eo(P(t, t0, t0 + .35))), a * (1 - u) * Math.min(1, P(t, t0, t0 + .05)), hue); });
+}
+
+// ===================== ロゴ（TENGER） =====================
+const emb = $('emb'), word = $('word');
+function drawLogo(t) {
+  if (t < 5.4 || t >= 8.4) return;
+  const out = P(t, 8.05, 8.4), push = 1 + .03 * P(t, 6.2, 8.4);
+  g.save(); g.globalAlpha = 1 - eo(out); g.filter = out > .02 ? `blur(${(8 * out).toFixed(2)}px)` : 'none';
+  g.translate(270, 480); g.scale(push * (1 + .2 * eo(out)), push * (1 + .2 * eo(out))); g.translate(-270, -480);
+  // 集まってくる光
+  if (t < 6.25) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 80; i++) {
+      const ang = rnd(i, 21) * TAU, r0 = 260 + rnd(i, 22) * 300, k = Math.pow(P(t, 5.4 + rnd(i, 23) * .3, 6.2), 2.2), k2 = Math.pow(P(t - .04, 5.4 + rnd(i, 23) * .3, 6.2), 2.2);
+      const r = r0 * (1 - k), r2 = r0 * (1 - k2);
+      g.strokeStyle = `rgba(200,225,255,${(.15 + .7 * k).toFixed(3)})`; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(270 + Math.cos(ang) * r2, 400 + Math.sin(ang) * r2); g.lineTo(270 + Math.cos(ang) * r, 400 + Math.sin(ang) * r); g.stroke();
+    }
+    g.restore();
+  }
+  // うしろの光線
+  const lit = eo(P(t, 6.2, 6.7));
+  if (t >= 6.2) {
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(5px)'; g.translate(270, 400); g.rotate(t * .12);
+    for (let i = 0; i < 18; i++) {
+      const a0 = i / 18 * TAU, a1 = a0 + .07, len = 640;
+      const lg = g.createRadialGradient(0, 0, 60, 0, 0, len); lg.addColorStop(0, `rgba(255,214,140,${(.15 * lit).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,200,120,0)');
+      g.fillStyle = lg; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * len, Math.sin(a0) * len); g.lineTo(Math.cos(a1) * len, Math.sin(a1) * len); g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+  // うしろから照らす光（シルエットのふち）
+  const rim = Math.max(eo(P(t, 5.5, 6.2)) * .9, lit * .6);
+  const sz = 300 * lerp(1.06, 1, eo(P(t, 6.2, 6.9)));
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = rim; g.filter = 'blur(16px) brightness(1.8)';
+  g.drawImage(emb, 270 - sz / 2, 400 - sz / 2, sz, sz); g.restore();
+  // エンブレム本体（暗いシルエット → 光が当たる）
+  g.save(); g.globalAlpha = Math.min(1, P(t, 5.45, 5.9)); g.filter = `brightness(${lerp(.1, 1, lit).toFixed(3)})`;
+  g.drawImage(emb, 270 - sz / 2, 400 - sz / 2, sz, sz); g.restore();
+  // TENGER の文字：左から現れて、光が走る
+  if (t >= 6.35) {
+    const ww = 440, wh = ww * word.height / word.width, wx = 270 - ww / 2, wy = 612 - wh / 2, rv = eo(P(t, 6.35, 6.95));
+    g.save(); g.beginPath(); g.rect(wx - 10, wy - 20, (ww + 20) * rv, wh + 40); g.clip();
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .55; g.filter = 'blur(10px)'; g.drawImage(word, wx, wy, ww, wh); g.restore();
+    g.drawImage(word, wx, wy, ww, wh);
+    const u = P(t, 7.0, 7.7);
+    if (u > 0 && u < 1) {
+      Lg.setTransform(2, 0, 0, 2, 0, 0); Lg.clearRect(0, 0, W, H); Lg.drawImage(word, wx, wy, ww, wh);
+      Lg.globalCompositeOperation = 'source-atop'; const bx = lerp(wx - 100, wx + ww + 100, eio(u));
+      const lg = Lg.createLinearGradient(bx - 60, wy, bx + 60, wy + wh); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.9)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+      Lg.fillStyle = lg; Lg.fillRect(wx - 10, wy - 10, ww + 20, wh + 20); Lg.globalCompositeOperation = 'source-over';
+      g.drawImage(L, 0, 0, W, H);
+    }
+    // 走る光のすじ（文字の前を横切る）
+    const sx = lerp(wx - 40, wx + ww + 40, rv);
+    if (rv < 1) { g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createLinearGradient(sx - 6, 0, sx + 6, 0); lg.addColorStop(0, 'rgba(255,240,200,0)'); lg.addColorStop(.5, 'rgba(255,250,230,.95)'); lg.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = lg; g.fillRect(sx - 6, wy - 16, 12, wh + 32); g.restore(); }
+    g.restore();
+    // 小さく「テンゲル」
+    drawItem({ s: 'テンゲル', y: 690, size: 22, w: 300, sp: .6, fill: 'white', t0: 6.95, st: .07, dur: .5 }, t) && g.drawImage(L, 0, 0, W, H);
+  }
+  g.restore();
+}
+
+// ===================== 仕上げ =====================
+function vignette() {
+  const vg = g.createRadialGradient(270, 480, 250, 270, 480, 640);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.72)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+}
+function grain(t) {
+  g.save(); g.globalAlpha = .07; g.globalCompositeOperation = 'overlay';
+  g.drawImage(GRAIN[Math.floor(t * 30) % GRAIN.length], 0, 0, W, H); g.restore();
+}
+function flashes(t) {
+  let a = 0;
+  [[.5, .35, .25], [6.2, .75, .35], [12.9, .45, .3]].forEach(([t0, k, d]) => { if (t >= t0 && t < t0 + d) a = Math.max(a, k * (1 - P(t, t0, t0 + d))); });
+  if (a > 0) { g.fillStyle = `rgba(255,250,240,${a.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  // 最後：光に飲みこまれて本編へ
+  const wo = eio(P(t, 14.3, 14.97));
+  if (wo > 0) { g.fillStyle = `rgba(255,248,232,${wo.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  // 最初：黒から
+  const fi = 1 - P(t, 0, .35);
+  if (fi > 0) { g.fillStyle = `rgba(0,0,0,${fi.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+}
+function render(t) {
+  g.setTransform(2, 0, 0, 2, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.filter = 'none';
+  drawBG(t);
+  drawDust(t, false);
+  drawLogo(t);
+  drawBlocks(t);
+  drawFlares(t);
+  drawDust(t, true);
+  vignette();
+  grain(t);
+  flashes(t);
+}
+window.render = render;
+window.__ready = Promise.all([...document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })))
+  .then(() => Promise.all(['300', '500', '900'].map(w => document.fonts.load(`${w} 40px "Noto Sans CJK JP"`))))
+  .then(() => { mkGrain(); render(0); return true; });
+</script>
+</body></html>

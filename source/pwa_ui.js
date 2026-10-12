@@ -551,9 +551,63 @@
     }
   }
 
+  // ---- CM（紹介動画）：設定タブの説明書の下から見る。動画は大きいので、見るときにネットから読む（iPhoneにはしまわない） ----
+  function cmEntry() {
+    const CM = window.__CM; if (!CM) return;
+    if (!document.getElementById('cmCss')) {
+      const st = document.createElement('style'); st.id = 'cmCss';
+      st.textContent = '#setCM{margin-bottom:var(--gap)}.cmrow{display:flex;gap:14px;align-items:center}.cmtext{flex:1 1 auto;min-width:0}'
+        + '.cmthumb{position:relative;flex:0 0 auto;width:92px;height:164px;padding:0;border:0;border-radius:12px;overflow:hidden;background:#0b1020;cursor:pointer;box-shadow:0 0 0 1px rgba(226,162,59,.65),0 6px 16px rgba(0,0,0,.22)}'
+        + '.cmthumb img{width:100%;height:100%;object-fit:cover;display:block}'
+        + '.cmthumb .cmplay{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.5);box-shadow:0 0 0 2px rgba(255,255,255,.9)}'
+        + '.cmthumb .cmplay::after{content:"";position:absolute;left:15px;top:12px;border-style:solid;border-width:8px 0 8px 13px;border-color:transparent transparent transparent #fff}'
+        + '.cmthumb .cmdur{position:absolute;right:6px;bottom:6px;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:700}'
+        + '.cmthumb:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
+        + '#cmModal{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 58px) 10px calc(env(safe-area-inset-bottom,0px) + 14px)}'
+        + '#cmModal video{width:100%;height:100%;max-width:min(100%,calc((100vh - 96px) * 9 / 16));object-fit:contain;background:#000;border-radius:10px}'
+        + '#cmModal .cmclose{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);color:#fff;font-size:24px;line-height:1;cursor:pointer}'
+        + '#cmModal .cmerr{position:absolute;left:16px;right:66px;top:calc(env(safe-area-inset-top,0px) + 12px);margin:0;padding:8px 12px;border-radius:10px;background:rgba(170,30,30,.85);color:#fff;font-size:13px;line-height:1.55}';
+      document.head.appendChild(st);
+    }
+    const set = $('#v-set');
+    if (set && !$('#setCM')) {
+      const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setCM';
+      c.innerHTML = '<h2>テンゲルのCM</h2><div class="cmrow">'
+        + '<button class="cmthumb" type="button" data-cm="play" aria-label="CMを再生する"><img src="' + CM.poster + '" alt="" decoding="async" onerror="this.style.visibility=\'hidden\'"><span class="cmplay"></span><span class="cmdur">' + CM.dur + '</span></button>'
+        + '<div class="cmtext"><p class="hint" style="margin:0 0 10px">テンゲルの紹介動画だよ（' + CM.dur + '・音が出るよ）。動画はネットから読むので、見るときは電波が必要だよ。</p>'
+        + '<div class="row"><button class="btn primary" type="button" data-cm="play">▶ CMを見る</button></div></div></div>';
+      const man = $('#setManual');
+      set.insertBefore(c, man ? man.nextSibling : set.firstChild);
+      c.addEventListener('click', e => { if (e.target.closest('[data-cm=play]')) openCM(); });
+    }
+  }
+  function openCM() {
+    const CM = window.__CM; if (!CM || $('#cmModal')) return;
+    if (navigator.onLine === false) { toast('CMは電波があるときに見られるよ', 3200); return; }
+    const back = document.activeElement, html = document.documentElement, ov = html.style.overflow;
+    const m = document.createElement('div'); m.id = 'cmModal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'テンゲルのCM');
+    m.innerHTML = '<video src="' + CM.src + '" poster="' + CM.poster + '" controls playsinline preload="auto"></video><button class="cmclose" type="button" aria-label="閉じる">×</button>';
+    document.body.appendChild(m); html.style.overflow = 'hidden';
+    const v = m.querySelector('video');
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    function close() {
+      try { v.pause(); } catch (_) { /* もう止まっている */ }
+      v.removeAttribute('src'); try { v.load(); } catch (_) { /* 読みこみを止めるだけ */ }
+      m.remove(); html.style.overflow = ov; document.removeEventListener('keydown', onKey);
+      if (back && back.focus) back.focus({ preventScroll: true });
+    }
+    m.querySelector('.cmclose').addEventListener('click', close);
+    m.addEventListener('click', e => { if (e.target === m) close(); });
+    document.addEventListener('keydown', onKey);
+    v.addEventListener('error', () => { if (!m.querySelector('.cmerr')) m.insertAdjacentHTML('beforeend', '<p class="cmerr">動画を読めなかったよ。電波を確かめて、もう一度「CMを見る」を押してね。</p>'); });
+    const p = v.play(); if (p && p.catch) p.catch(() => { /* 自動で始まらないときは、動画の▶を押せば見られる */ });
+    m.querySelector('.cmclose').focus({ preventScroll: true });
+  }
+
   function boot() {
     build();
     manualEntry();
+    cmEntry();
     // 記録タブには、バックアップの場所だけ案内する
     const rec = $('#v-rec'), list = $('#recList');
     if (rec && list) {
