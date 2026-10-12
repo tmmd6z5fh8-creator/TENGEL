@@ -108,6 +108,17 @@ SHOTS = {
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">')
+# App Store版：Google に通信しないで、アプリに入れたフォントを使う（ios/fonts。ファイルはそのまま）
+APP_FONT_FILES = ['BIZUDPGothic-Regular.ttf', 'BIZUDPGothic-Bold.ttf', 'DelaGothicOne-Regular.ttf', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf']
+APP_FONTS = ('<style>'
+             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap}"
+             '</style>')
+# App Store版で出さない項目（ホーム画面に追加・チャットでデータを送る流れはWeb版だけ）
+APP_SKIP = ('install', 'dataupdate')
 SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}'
             '\n.shot.has-mk .shot-in{padding-left:30px}\n.shot.has-mk .mk{left:2px;margin-left:0}'
             '\n.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}\n')
@@ -115,7 +126,9 @@ SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-rad
 
 def build(mode, out, app_ver='2026.10.12-4'):
     """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)"""
-    assert mode in ('artifact', 'pwa'), mode
+    assert mode in ('artifact', 'pwa', 'app'), mode
+    app = mode == 'app'
+    items = [it for it in ITEMS if not (app and it['id'] in APP_SKIP)]
     meta = json.load(open(D + '/meta.json', encoding='utf-8'))
     dims = json.load(open(D + '/dims.json', encoding='utf-8'))
     imgdir = 'img' if mode == 'artifact' else 'manual'
@@ -156,10 +169,18 @@ def build(mode, out, app_ver='2026.10.12-4'):
     parts = re.split(r'<!--@([a-z0-9]+)-->', content)
     sec = {parts[i]: parts[i + 1].strip() for i in range(1, len(parts), 2)}
     assert set(sec) == {it['id'] for it in ITEMS}, set(sec) ^ {it['id'] for it in ITEMS}
+    if app:   # App Store版：content_app.html の項目で入れ替える・端末の言い方
+        ap = re.split(r'<!--@([a-z0-9]+)-->', open(D + '/content_app.html', encoding='utf-8').read())
+        over = {ap[i]: ap[i + 1].strip() for i in range(1, len(ap), 2)}
+        assert set(over) <= set(sec), set(over) - set(sec)
+        sec.update(over)
+        for a, b in [('iPhoneの数字キーでは', '数字のキーボードでは')]:
+            k = [x for x in sec if a in sec[x]]; assert k, a
+            for x in k: sec[x] = sec[x].replace(a, b)
     gname = dict(GROUPS)
     sections = []
-    for k, it in enumerate(ITEMS):
-        prev = ITEMS[k - 1] if k else None; nxt = ITEMS[k + 1] if k + 1 < len(ITEMS) else None
+    for k, it in enumerate(items):
+        prev = items[k - 1] if k else None; nxt = items[k + 1] if k + 1 < len(items) else None
         pg = '<nav class="pager" aria-label="前後の項目">'
         pg += f'<a class="prev" href="#{prev["id"]}"><small>‹ 前の項目</small><b>{prev["t"]}</b></a>' if prev else '<span class="none"></span>'
         pg += f'<a class="next" href="#{nxt["id"]}"><small>次の項目 ›</small><b>{nxt["t"]}</b></a>' if nxt else '<span class="none"></span>'
@@ -167,17 +188,25 @@ def build(mode, out, app_ver='2026.10.12-4'):
         sections.append(f'<section class="item" id="s-{it["id"]}" data-id="{it["id"]}" hidden aria-labelledby="h-{it["id"]}">'
                         f'<p class="eyebrow">{gname[it["g"]]}</p><h2 id="h-{it["id"]}">{it["t"]}</h2>{fill(sec[it["id"]])}{pg}</section>')
     unused = set(SHOTS) - used
-    assert not unused, unused
+    assert app or not unused, unused   # App Store版は「iPhoneに入れる」などを出さないので、使わない写真がある
     menu = []
     for g, gl in GROUPS:
         rows = ''.join(f'<a class="mrow" id="m-{it["id"]}" href="#{it["id"]}"><span class="ic">{icon(it["ic"])}</span><span><b>{it["t"]}</b><small>{it["d"]}</small></span>{icon("chev", "chev")}</a>'
-                       for it in ITEMS if it['g'] == g)
+                       for it in items if it['g'] == g)
         menu.append(f'<section class="group" aria-label="{gl}"><h2 class="sec">{gl}</h2><div class="rows">{rows}</div></section>')
 
     css = open(D + '/manual.css', encoding='utf-8').read() + SHOT_CSS
     js = open(D + '/manual.js', encoding='utf-8').read()
-    items_js = json.dumps([{k: it[k] for k in ('id', 't', 'd', 'kw')} for it in ITEMS], ensure_ascii=False)
-    in_app = mode == 'pwa'
+    items_js = json.dumps([{k: it[k] for k in ('id', 't', 'd', 'kw')} for it in items], ensure_ascii=False)
+    in_app = mode in ('pwa', 'app')
+    start = ('<li><a href="#input"><span class="n">1</span><b>レースを判定する</b><small>オッズを入れるだけ</small></a></li>\n'
+             '<li><a href="#record"><span class="n">2</span><b>結果を記録する</b><small>当たり外れと収支</small></a></li>\n'
+             '<li><a href="#backup"><span class="n">3</span><b>記録を守る</b><small>自動バックアップとファイル保存</small></a></li>') if app else (
+             '<li><a href="#install"><span class="n">1</span><b>iPhoneに入れる</b><small>ホーム画面に追加</small></a></li>\n'
+             '<li><a href="#input"><span class="n">2</span><b>レースを判定する</b><small>オッズを入れるだけ</small></a></li>\n'
+             '<li><a href="#record"><span class="n">3</span><b>結果を記録する</b><small>当たり外れと収支</small></a></li>')
+    foot = ('<span>わからないことは、設定 →「このアプリについて」のお問い合わせ先へ。参考的中率は過去の実測で、的中を約束するものではないよ。</span>' if app else
+            '<span>わからないことは、画面のスクショを姫に送ってね。</span>')
     body = f'''<div class="topbar" id="topbar" hidden><div class="wrap">
 <button class="back" id="back" type="button" hidden>{icon('left')}もくじ</button>
 {f'<a class="back" id="toApp" href="./">{icon("left")}アプリに戻る</a>' if in_app else ''}
@@ -203,9 +232,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
 <section id="start" aria-labelledby="st-h">
 <h2 class="sec" id="st-h">はじめての人は、この順番で</h2>
 <ol class="start-steps">
-<li><a href="#install"><span class="n">1</span><b>iPhoneに入れる</b><small>ホーム画面に追加</small></a></li>
-<li><a href="#input"><span class="n">2</span><b>レースを判定する</b><small>オッズを入れるだけ</small></a></li>
-<li><a href="#record"><span class="n">3</span><b>結果を記録する</b><small>当たり外れと収支</small></a></li>
+{start}
 </ol>
 </section>
 
@@ -214,7 +241,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
 </nav>
 
 <footer class="foot">
-<span>わからないことは、画面のスクショを姫に送ってね。</span>
+{foot}
 <span>画面の写真は、架空のレースで撮ったアプリの画面だよ。写真の数字は例だよ。</span>
 </footer>
 </main>
@@ -234,6 +261,18 @@ def build(mode, out, app_ver='2026.10.12-4'):
     if mode == 'artifact':
         page = f'<title>テンゲルⅢ 説明書</title>\n{FONTS}\n<style>\n{css}\n</style>\n{body}'
         path = os.path.join(out, 'tengel-manual.html')
+    elif app:
+        page = f'''<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>テンゲル 説明書</title>
+{APP_FONTS}
+<style>:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0}}[hidden]{{display:none!important}}
+{css}
+</style></head><body>
+{body}</body></html>
+'''
+        path = os.path.join(out, 'manual.html')
     else:
         page = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">

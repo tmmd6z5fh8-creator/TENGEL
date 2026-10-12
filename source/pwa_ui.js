@@ -83,7 +83,7 @@
       const data = buf.subarray(start, start + e.csize);
       if (e.method === 0) return td.decode(data);
       if (e.method !== 8) throw new Error('読めない圧縮形式だよ');
-      if (typeof DecompressionStream === 'undefined') throw new Error('このiPhoneではExcelファイルを直接読めないよ（iOSを新しくするか、下の「貼り付け」で入れてね）');
+      if (typeof DecompressionStream === 'undefined') throw new Error(NATIVE ? 'この端末ではExcelファイルを直接読めないよ（iOS・iPadOSを新しくするか、下の「貼り付け」で入れてね）' : 'このiPhoneではExcelファイルを直接読めないよ（iOSを新しくするか、下の「貼り付け」で入れてね）');
       const out = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
       return td.decode(out);
     }
@@ -155,6 +155,7 @@
   function shapeMsg(shape, what) {
     what = what || 'このファイル';
     const head = SHAPE_NAME[shape] ? `${what}は${SHAPE_NAME[shape]}だよ。${SHAPE_MISS[shape]}から、このままマザーデータには入れられないの。` : `${what}には、単勝1位（F列）・3連単1位（G列）・1着人気（H列）・2着人気（I列）がちゃんと入っていないみたい。`;
+    if (NATIVE) return esc(head) + '<br>マザーデータに入れられるのは、<b>検証データの形（A〜P列：日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気…）のExcel</b>だよ。';
     return esc(head) + '<br>マザーデータに入れられるのは、<b>姫フィルターのExcel（検証データのシートがあるもの）</b>だよ。分析シートと分析表に打ち込んだ新しいレースは、姫に送ってね（日付とRで合わせて入れるよ）。';
   }
   // 読み取った中身が「判定に使える形」か調べる。だめなら理由（HTML）を返す
@@ -207,7 +208,7 @@
       <li>この上の欄に貼り付けて「保存して試す」</li>
     </ol>
   </details>
-  <p class="hint">キーは<b>このiPhoneの中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
+  <p class="hint">キーは<b>${NATIVE ? 'この端末' : 'このiPhone'}の中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
 </div>
 ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <h2>アプリの更新</h2>
@@ -219,7 +220,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
 </div>`}
 <div class="card setsec" id="setBackup">
   <h2>バックアップ（記録を守る）</h2>
-  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやLINEのKeepなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
+  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
     : '<p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'}
   <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd>${NATIVE ? '<dt>自動バックアップ</dt><dd id="sbAuto">—</dd>' : ''}</dl>
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
@@ -319,7 +320,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       <label for="seName" class="small muted" style="font-weight:700">名前（16文字まで）</label>
       <div class="namerow" style="margin-top:4px"><input id="seName" maxlength="16" autocomplete="off" value="${esc(s.name)}"><button class="btn" type="button" id="seNameSave">名前を保存</button></div>
       <dl class="kvs" id="seMeta"></dl>
-      <p class="hint">${n === 1 ? '大井の姫フィルター（Excel）を更新したら、ファイルを選ぶだけで入れ替えられるよ。<b>検証データ</b>シートのA〜P列（日付〜集計対象）を読むよ。' : 'このマザーデータに入れるデータを選んでね。大井の<b>検証データと同じA〜P列</b>（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）の形なら入るよ。入れ直すと、まるごと新しいデータに替わるよ。'}ファイルはこのiPhoneの中で読むだけで、どこにも送らないよ。</p>
+      <p class="hint">${n === 1 ? (NATIVE ? '大井のデータ（Excel）を新しくしたら、ファイルを選ぶだけで入れ替えられるよ。' : '大井の姫フィルター（Excel）を更新したら、ファイルを選ぶだけで入れ替えられるよ。') + '<b>検証データ</b>シートのA〜P列（日付〜集計対象）を読むよ。' : 'このマザーデータに入れるデータを選んでね。大井の<b>検証データと同じA〜P列</b>（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）の形なら入るよ。入れ直すと、まるごと新しいデータに替わるよ。'}ファイルは${NATIVE ? 'この端末' : 'このiPhone'}の中で読むだけで、どこにも送らないよ。</p>
       <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smPick">Excelファイルを選ぶ</button><input type="file" id="smFile" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div>
       <div id="smPreview"></div>
       <details style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:700">ファイルが選べないとき：コピーして貼り付け</summary>
@@ -676,7 +677,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   function openCM() {
     const CM = window.__CM; if (!CM || $('#cmModal')) return;
     if (navigator.onLine === false) { toast('CMは電波があるときに見られるよ', 3200); return; }
-    const src = NATIVE ? new URL(CM.src, CM_WEB).href : CM.src;
+    const src = NATIVE ? new URL(CM.srcApp || CM.src, CM_WEB).href : CM.src;   // アプリはアプリ用の版（最後の案内がアプリの言い方）
     const back = document.activeElement, html = document.documentElement, ov = html.style.overflow;
     const m = document.createElement('div'); m.id = 'cmModal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'テンゲルのCM');
     m.innerHTML = '<video src="' + esc(src) + '" poster="' + CM.poster + '" controls playsinline preload="auto"></video><button class="cmclose" type="button" aria-label="閉じる">×</button>';
@@ -697,10 +698,44 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     m.querySelector('.cmclose').focus({ preventScroll: true });
   }
 
+  // ---- このアプリについて：ご利用にあたって（免責・20歳・相談先）・非公式と商標・プライバシーポリシー・特定商取引法に基づく表記・フォントのライセンス ----
+  // 中身は legal/build_legal.py（build_pwa.py が window.__ABOUT に入れる）。App Store版とWeb版で少しちがう
+  function aboutEntry() {
+    const A = window.__ABOUT; if (!A || $('#setAbout')) return;
+    if (!document.getElementById('aboutCss')) {
+      const st = document.createElement('style'); st.id = 'aboutCss';
+      st.textContent = '#setAbout .aboutimp{margin:10px 0 12px;padding:10px 12px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:13.5px;line-height:1.7}'
+        + '#setAbout .aboutimp ul,#setAbout details ul{margin:6px 0 8px;padding-left:1.2em}#setAbout .aboutimp li,#setAbout details li{margin:3px 0}'
+        + '#setAbout details{border-top:1px solid var(--line);padding:2px 0}#setAbout details:last-of-type{border-bottom:1px solid var(--line)}'
+        + '#setAbout summary{cursor:pointer;font-weight:700;padding:10px 2px;list-style-position:inside}#setAbout details>div{font-size:13px;line-height:1.75;padding:0 2px 10px}'
+        + '#setAbout details h3{font-size:13.5px;margin:12px 0 4px}#setAbout details p{margin:0 0 8px}#setAbout a{color:var(--A)}'
+        + '#setAbout table.tk{width:100%;border-collapse:collapse;font-size:12.5px}#setAbout table.tk th,#setAbout table.tk td{border-top:1px solid var(--line);padding:7px 4px;text-align:left;vertical-align:top}#setAbout table.tk th{width:34%;font-weight:700}'
+        + '@media (max-width:560px){#setAbout table.tk th,#setAbout table.tk td{display:block;width:auto}#setAbout table.tk th{padding-bottom:0}#setAbout table.tk td{border-top:0;padding-top:2px}}'
+        + '#setAbout pre.ofl{white-space:pre-wrap;word-break:break-word;font-size:10.5px;line-height:1.5;max-height:320px;overflow:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px}'
+        + '#setAbout .ablink{display:inline-block;margin-top:2px}';
+      document.head.appendChild(st);
+    }
+    const ni = NATIVE ? (window.TengelNative.info || {}) : {};
+    const ver = NATIVE ? `${esc(ni.version || '—')}${ni.build ? `（${esc(ni.build)}）` : ''}` : esc(APP_VER || '—');
+    const lk = (u, t) => u ? `<p><a class="ablink" href="${esc(u)}" target="_blank" rel="noopener">${t}</a></p>` : '';
+    const L = A.links || {};
+    const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setAbout';
+    c.innerHTML = `<h2>このアプリについて</h2>
+  <dl class="kvs"><dt>アプリ</dt><dd>${esc(A.appName || 'テンゲル')} ${ver}</dd></dl>
+  <div class="aboutimp"><b>ご利用にあたって</b>${A.disclaimer || ''}</div>
+  <details id="abNotice"><summary>非公式のアプリです・商標について</summary><div>${A.notices || ''}</div></details>
+  <details id="abPrivacy"><summary>プライバシーポリシー</summary><div>${A.privacy || ''}${lk(L.privacy, 'Webで見る')}</div></details>
+  ${A.tokushoho ? `<details id="abTokusho"><summary>特定商取引法に基づく表記</summary><div>${A.tokushoho}</div></details>` : ''}
+  ${A.fonts ? `<details id="abFonts"><summary>フォントのライセンス</summary><div>${A.fonts}</div></details>` : ''}
+  ${A.email ? `<p class="small" style="margin:10px 0 0">お問い合わせ：<a href="mailto:${esc(A.email)}">${esc(A.email)}</a>${L.support ? `・<a href="${esc(L.support)}" target="_blank" rel="noopener">サポートのページ</a>` : ''}</p>` : ''}`;
+    const box = $('#setExtra') || $('#v-set'); if (box) box.appendChild(c);
+  }
+
   function boot() {
     build();
     manualEntry();
     cmEntry();
+    aboutEntry();
     // 記録タブには、バックアップの場所だけ案内する
     const rec = $('#v-rec'), list = $('#recList');
     if (rec && list) {

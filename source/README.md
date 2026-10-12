@@ -56,11 +56,14 @@
 | ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・外のリンクはSafari）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
 | ios/ci/ | GitHubのMacでの確認（run.sh・selftest.js・ios.yml）。`ios` ブランチ（Tengel.swiftpm＋ci/＋.github/workflows/ios.yml）にpushすると、Swift 5・Swift 6・Release（実機）で作って、iPhone・iPadのシミュレーターで記録の保存・開き直し・自動バックアップから戻す・画面のスクショを確かめる。結果は `ios-ci-macos-15`・`ios-ci-macos-26` ブランチ（summary.txt・report-*.json・shots/） |
 | test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
+| legal/ | 「このアプリについて」（設定タブのいちばん下：ご利用にあたって＝参考情報・20歳・相談先／非公式のアプリ・商標の表記／プライバシーポリシー／特定商取引法に基づく表記／フォントのライセンス）と、公開するページ（legal/privacy.html・tokushoho.html・support.html）。中身は build_legal.py、販売する人の欄は legal.json（seller・email・address・phone）。**欄が空のページは公開しない**（deploy.sh が「まだなし」と出す）。確認用は `python3 legal/build_legal.py preview <フォルダ>`（空の欄を【要記入】にして全部作る） |
+| ios/fonts/ | App Store版に入れるフォント（BIZ UDPGothic・Dela Gothic One・IBM Plex Mono。SIL OFL 1.1・ファイルはそのまま。入手元とライセンスは ios/fonts/README.md）。App Store版は Google Fonts に通信しない |
+| manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「大井のデータを新しくする」は出さない（build_manual.py の mode='app'） |
 | mkxlsx.py / mkxlsx2.py / mkslotdata.py / mkrawfiles.py | テスト用のExcel・貼り付けデータを作る（mkrawfiles＝分析シート・分析表・馬場フィルターと同じ形） |
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.12-6 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.12-7 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 
@@ -73,6 +76,9 @@
 - 作る：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm.zip をiPadの「ファイル」に保存 → 開いて（解凍して）Swift Playgrounds で開く → ▶︎
 - 確かめる：`python3 test_native.py`（画面）・`ios` ブランチにpush（GitHubのMacで作ってシミュレーターで動かす。ios/ci/）
 - アプリの版を上げるときは ios/Tengel.swiftpm/Package.swift の displayVersion（1.0 → 1.1）と bundleVersion（1 → 2）
+- 中身は `TARGET=app python3 build_pwa.py <出力>`（build_ios.py が呼ぶ）：フォントはアプリの中（ios/fonts）・説明書はApp Store版・「姫に送って」「まさちゃんの」はお客さん向けの言い方・「このアプリについて」はApp Store版（プライバシーにCM・自動バックアップ、フォントのライセンスつき）
+- CMはアプリ用の版（cm_media/tengel3_cm_app.mp4。最後が「iPhone・iPadで、いつでも判定」）を公開中のWeb版から読む。Web版・アプリ用とも、最後に非公式・JRA/WIN5の商標・iPhoneの商標（アイホン）の注意書き
+- 商標・特商法まわり（2026/10/13）：アプリ名・キーワードに「JRA」「WIN5」「大井」などほかの団体の名前を入れない（App Store審査 2.3.7・5.2.1）。有料で売るときは legal.json を埋めて deploy → App Store Connect のプライバシーポリシーURL・サポートURLに legal/privacy.html・support.html
 
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）
 1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）。「重複転記の疑い」「同じ中身のレース」が出たら、まさちゃんに確かめる（重複なら dropped.json に足す）

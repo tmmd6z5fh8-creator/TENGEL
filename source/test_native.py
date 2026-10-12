@@ -5,6 +5,8 @@
 #  ・保存場所が消えた（記録0件）のに自動バックアップに記録がある → 「戻す？」→ 戻す／戻さない
 #  ・CMの動画は公開中のWeb版から読む
 #  ・Web版（ブラウザ）は今までどおり（アプリの印は出ない）
+#  ・App Store版の中身（TARGET=app）：Google に通信しない（フォントはアプリの中）・「このアプリについて」（免責・20歳・相談先・非公式と商標・プライバシー・フォントのライセンス）
+#    ・お客さん向けの言い方（まさちゃん・姫に送って・iPhone を出さない）・説明書はApp Store版（「iPhoneに入れる」なし）
 import json, os, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -12,10 +14,15 @@ SRV = os.path.join(W, 'srv'); PORT = 8791; BASE = f'http://localhost:{PORT}/TENG
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'TENGEL')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP=''))
-idx = os.path.join(SRV, 'TENGEL', 'index.html'); html = open(idx, encoding='utf8').read()
-assert "window.__NATIVE = location.protocol === 'tengel:';" in html
-# アプリの中（tengel://）のかわりに、別の名前のページをアプリ版として開く
-open(os.path.join(SRV, 'TENGEL', 'app.html'), 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+# App Store版の中身（TARGET=app）。アプリの中（tengel://）のかわりに、localhost でアプリ版として開く
+subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
+for f in ('index.html', 'manual.html'):
+    pth = os.path.join(SRV, 'APP', f); html = open(pth, encoding='utf8').read()
+    if f == 'index.html':
+        assert "window.__NATIVE = location.protocol === 'tengel:';" in html
+        html = html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;')
+    open(pth, 'w', encoding='utf8').write(html)
+APPURL = f'http://localhost:{PORT}/APP/'
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
 
@@ -52,10 +59,15 @@ try:
         ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=200, content_type='application/json', body=store['backup']) if store['backup'] else route.fulfill(status=404, body='not found'))
         ctx.add_init_script(FAKE)
         ctx.add_init_script("if (!sessionStorage.getItem('seeded')) { localStorage.setItem('tengel.form', %s); sessionStorage.setItem('seeded', '1'); }" % json.dumps(json.dumps(form, ensure_ascii=False)))
+        outside = []   # アプリから外への通信（Google のフォントなど）
+        ctx.on('request', lambda r: outside.append(r.url) if not r.url.startswith('http://localhost') and not r.url.startswith('data:') and not r.url.startswith('blob:') else None)
         pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
-        pg.goto(BASE + 'app.html'); pg.wait_for_timeout(1500); pg.reload(); pg.wait_for_timeout(1500)
+        pg.goto(APPURL); pg.wait_for_timeout(1500); pg.reload(); pg.wait_for_timeout(1500)
         st = pg.evaluate("({ native: window.__NATIVE, bridge: !!window.TengelNative, sw: !!(navigator.serviceWorker && navigator.serviceWorker.controller), info: window.TengelNative && window.TengelNative.info })")
         check(st['native'] and st['bridge'] and st['info']['version'] == '1.0', f'アプリ版として動く（{st}）')
+        pg.evaluate('document.fonts.ready'); pg.wait_for_timeout(300)
+        fam = pg.evaluate("[...new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/[\"']/g, '')))]")
+        check({'BIZ UDPGothic', 'Dela Gothic One'} <= set(fam) and not [u for u in outside if 'fonts.g' in u], f'フォントはアプリの中のもの（{fam}）・Google に通信しない（{[u for u in outside if "fonts.g" in u][:2]}）')
         # ---- 設定タブ ----
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(500)
         up = pg.locator('#setUpdate')
@@ -64,6 +76,25 @@ try:
         check(pg.locator('#sbAuto').count() == 1 and '自動でバックアップ' in pg.locator('#setBackup').inner_text(), 'バックアップに「自動バックアップ」の欄')
         pg.wait_for_timeout(1200)
         check(store['writes'] >= 1, f'開いたら自動バックアップを書く（{store["writes"]}回）')
+        # ---- このアプリについて ----
+        ab = pg.locator('#setAbout')
+        last = pg.evaluate("[...document.querySelectorAll('#setExtra > .card')].pop().id")
+        check(ab.count() == 1 and last == 'setAbout', f'設定タブのいちばん下に「このアプリについて」（{last}）')
+        at = ab.inner_text()
+        check('テンゲル 1.0（7）' in at and 'ご利用にあたって' in at and '約束するものではありません' in at and '馬券は20歳になってから' in at and '0120-683-705' in at, '版・ご利用にあたって（参考情報・20歳・相談先）')
+        check(pg.locator('#setAbout a[href^="https://www.cas.go.jp"]').count() == 1 and pg.locator('#setAbout a[href="tel:0120683705"]').count() == 1, '相談窓口のリンクと電話')
+        pg.locator('#abNotice summary').click(); pg.wait_for_timeout(100)
+        nt = pg.locator('#abNotice').inner_text()
+        check('非公式' in nt and '日本中央競馬会の商標または登録商標' in nt and 'アイホン株式会社のライセンス' in nt and 'Anthropic, PBC' in nt, '非公式のアプリ・商標の表記（JRA・WIN5・iPhone・Excel・Claude）')
+        pg.locator('#abPrivacy summary').click(); pg.wait_for_timeout(100)
+        pv = pg.locator('#abPrivacy').inner_text()
+        check('開発者が集めることも、受け取ることもありません' in pv and 'GitHub Pages' in pv and 'Google' not in pv and '自動バックアップ' in pv, 'プライバシーポリシー（App Store版：Googleなし・自動バックアップ・CM）')
+        pg.locator('#abFonts summary').click(); pg.wait_for_timeout(100)
+        fo = pg.locator('#abFonts').inner_text()
+        check('BIZ UDPGothic' in fo and 'Dela Gothic One' in fo and 'IBM Plex Mono' in fo and 'SIL OPEN FONT LICENSE' in fo and 'Reserved Font Name "Plex"' in fo, 'フォントのライセンス（3つ・OFLの全文）')
+        check(pg.locator('#abTokusho').count() == 0 and 'お問い合わせ' not in at, '販売する人の欄が空のうちは、特商法の表記・お問い合わせは出さない')
+        seturl = pg.evaluate("[...document.querySelectorAll('#v-set .card')].filter(c => c.id !== 'setAbout').map(c => c.innerText).join('\\n')")
+        check(not [w for w in ('まさちゃん', '姫に送', 'iPhone', 'LINE') if w in seturl], f'設定タブにお客さん向けでない言い方がない（{[w for w in ("まさちゃん", "姫に送", "iPhone", "LINE") if w in seturl]}）')
         bk0 = json.loads(store['backup'] or '{}')
         check(bk0.get('auto') is True and bk0.get('bets') == [], '最初の自動バックアップは記録0件')
         pg.screenshot(path=os.path.join(W, 't4', 'native_set.png'), full_page=False)
@@ -111,7 +142,9 @@ try:
         pg.route('https://tmmd6z5fh8-creator.github.io/**', lambda route: route.fulfill(status=404, body=''))
         pg.locator('#setCM button.btn.primary').click(); pg.wait_for_timeout(300)
         src = pg.locator('#cmModal video').get_attribute('src')
-        check(src.startswith('https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v='), f'CMの動画は公開中のWeb版から（{src[:60]}…）')
+        cmd = pg.evaluate('window.__CM')
+        want = 'https://tmmd6z5fh8-creator.github.io/TENGEL/' + (cmd.get('srcApp') or cmd['src'])
+        check(src == want and (not cmd.get('srcApp') or 'tengel3_cm_app.mp4?v=' in src), f'CMの動画は公開中のWeb版から・アプリ用の版（{src[44:90]}…）')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # ---- 保存場所が消えた → 「戻す？」 → 戻す ----
         before = store['backup']
@@ -143,6 +176,18 @@ try:
         check(w['native'] is False and w['bridge'] is None and p2.locator('#suCheck').count() == 1 and p2.locator('#sbAuto').count() == 0 and p2.locator('#setUpdate h2').inner_text() == 'アプリの更新', 'Web版：アプリの印は出ない（更新の確認・バックアップは今までどおり）')
         p2.click('.tabbar button[data-tab=rec]'); p2.wait_for_timeout(300); p2.click('#recExportBtn'); p2.wait_for_timeout(300)
         check(not p2.locator('#recSave').is_visible(), 'Web版：「CSVで保存」は出ない（今までどおり）')
+        p2.click('.tabbar button[data-tab=set]'); p2.wait_for_timeout(300)
+        p2.locator('#abPrivacy summary').click(); p2.wait_for_timeout(100)
+        wv = p2.locator('#setAbout').inner_text()
+        check('ご利用にあたって' in wv and 'Google Fonts' in wv and p2.locator('#abFonts').count() == 0, 'Web版の「このアプリについて」（Google Fonts の説明・フォントのライセンスはなし）')
+        # ---- App Store版の説明書 ----
+        p3 = ctx.new_page(); p3.on('pageerror', lambda e: errs.append('MANUAL ' + str(e)))
+        p3.goto(APPURL + 'manual.html'); p3.wait_for_timeout(1200)
+        mt = p3.locator('#home').inner_text()
+        check('iPhoneに入れる' not in mt and '大井のデータを新しくする' not in mt and '記録を守る' in mt and '姫に送' not in p3.content(), '説明書（App Store版）：「iPhoneに入れる」「大井のデータを新しくする」なし・姫に送るなし')
+        p3.goto(APPURL + 'manual.html#backup'); p3.wait_for_timeout(600)
+        check('自動バックアップ' in p3.locator('#s-backup').inner_text() and 'LINE' not in p3.locator('#s-backup').inner_text(), '説明書：バックアップの項目はアプリ版（自動バックアップ・LINEなし）')
+        check(not [u for u in outside if 'fonts.g' in u], '説明書もGoogleに通信しない')
         b.close()
 finally:
     srv.terminate()

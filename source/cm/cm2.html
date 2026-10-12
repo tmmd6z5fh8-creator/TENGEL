@@ -50,7 +50,7 @@ canvas{position:absolute;left:0;top:0;width:540px;height:960px}
   font-weight:900;font-size:21px;letter-spacing:.04em;box-shadow:0 0 0 2px #fff6cf,0 0 24px rgba(255,190,60,.8),0 10px 26px rgba(0,0,0,.5)}
 #cta svg{width:24px;height:24px}
 #ectaSub{font-size:13.5px;letter-spacing:.04em;color:rgba(240,240,240,.9);text-shadow:0 1px 2px #000}
-#disc{font-size:11px;line-height:1.75;color:rgba(225,225,225,.82);text-shadow:0 1px 2px #000}
+#disc{width:500px;font-size:10.5px;line-height:1.7;color:rgba(225,225,225,.82);text-shadow:0 1px 2px #000}
 </style></head>
 <body>
 <div id="world">
@@ -92,6 +92,15 @@ canvas{position:absolute;left:0;top:0;width:540px;height:960px}
 const META = window.__META;
 const W = 540, H = 960;
 const $ = id => document.getElementById(id);
+// 版：?v=app＝App Store版のアプリの中で見せる版（「ホーム画面に追加」ではなく、アプリの言い方）。どちらの版にも商標の注意書きを入れる
+const APPV = /[?&]v=app\b/.test(location.search);
+(function () {
+  $('disc').innerHTML += '<br>※本アプリは、競馬の主催者とは関係のない非公式のアプリです。<br>※「JRA」「WIN5」は日本中央競馬会の商標または登録商標です。<br>※iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。';
+  if (APPV) {
+    $('cta').lastChild.textContent = 'iPhone・iPadで、いつでも判定';
+    $('ectaSub').textContent = '電波がなくても動く・記録は自動でバックアップ';
+  }
+})();
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const P = (t, a, b) => clamp((t - a) / (b - a));
 const eo = x => 1 - Math.pow(1 - x, 3);
@@ -678,7 +687,7 @@ function render(t) {
   place($('cfoot'), 270, 936, env(t, 3.9, 6.05, .3, .15));
   place($('ectaw'), 270, 612 + 14 * (1 - eo(P(t, 27.0, 27.4))), eo(P(t, 27.0, 27.35)), (.9 + .1 * back(P(t, 27.0, 27.4))) * (1 + .02 * Math.sin(t * 6) * P(t, 27.4, 27.8)));
   place($('ectaSub'), 270, 658, eo(P(t, 27.25, 27.6)));
-  place($('disc'), 270, 722, eo(P(t, 27.45, 27.85)));
+  place($('disc'), 270, 748, eo(P(t, 27.45, 27.85)));
   // 前面
   F.setTransform(2, 0, 0, 2, 0, 0); F.clearRect(0, 0, W, H);
   let sl = 0; SPEED.forEach(([t0, a]) => { if (t >= t0 && t < t0 + .35) sl = Math.max(sl, a * (1 - P(t, t0, t0 + .35))); });
@@ -701,7 +710,7 @@ window.render = render;
 function build() {
   mkText('title', 'テンゲルⅢ', { size: 88, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
   mkRibbon('rib1', '競馬 判定アプリ', { w: 360, h: 58, size: 30 });
-  mkRibbon('rib2', 'あなたのiPhoneで稼働中!!', { w: 470, h: 62, size: 30 });
+  mkRibbon('rib2', APPV ? 'あなたのiPhone・iPadで稼働中!!' : 'あなたのiPhoneで稼働中!!', { w: APPV ? 500 : 470, h: 62, size: APPV ? 26 : 30 });
   mkBadge('new', '新登場', 62);
   mkText('c1a', 'スクショを選ぶだけで', { size: 34, fill: 'white', s2: '#ffd45c', depth: 2 });
   mkText('c1b', '即判定!!', { size: 78, fill: 'fire', glow: 'rgba(255,80,0,.9)' });

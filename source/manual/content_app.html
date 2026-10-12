@@ -1,0 +1,141 @@
+<!-- App Store版の説明書だけで使う中身（content.html の同じ項目と入れ替える）。「iPhoneに入れる」「大井のデータを新しくする」はApp Store版では出さない -->
+<!--@about-->
+<div class="gist"><span>ひとことで</span><p>オッズを入れるだけで、テンゲルⅢ（第13改訂版）の判定が全部出るアプリだよ。買った馬券の結果と収支も残せるよ。</p></div>
+
+<h3>画面の5つのタブ</h3>
+{{shot:tabbar}}
+<div class="tbl fit"><table>
+<thead><tr><th>タブ</th><th>できること</th></tr></thead>
+<tbody>
+<tr><td>判定</td><td>レースのオッズを入れて判定する。買った結果もここで記録する</td></tr>
+<tr><td>WIN5</td><td>5レースの1着ゾーンと買う馬を、予算の中で出す</td></tr>
+<tr><td>記録</td><td>保存したレースの一覧。直す・開く・書き出す</td></tr>
+<tr><td>実測・回収</td><td>自分の収支と、マザーデータの実測①〜⑦</td></tr>
+<tr><td>設定</td><td>説明書・CM・買い目編集・マザーデータ・画像の読み取り・アプリの版・バックアップ・このアプリについて</td></tr>
+</tbody></table></div>
+<p class="small">タブは画面の下にあるよ。iPadを横にしたときなど、画面が広いときは上に出るよ。</p>
+
+<h3>おぼえておいてほしいこと</h3>
+<ul class="dots">
+<li><b>判定はルールどおり機械的に出る</b>よ。組番（○-○）と点数は出さない。WIN5だけは予算に合わせるので点数が出るよ。</li>
+<li><b>参考的中率は過去の実測</b>だよ。これからの的中や利益を約束するものではないから、馬券を買うかどうかは自分で決めてね。<b>馬券は20歳になってから。</b></li>
+<li><b>記録はこの端末の中だけ</b>に保存されるよ。外に送るのは、画像の読み取りでスクショをAnthropicに送るときだけ（CMを見るときは動画を読み込むよ）。</li>
+<li><b>アプリを削除すると、記録も消える</b>よ。アプリの中にも自動でバックアップしているけど、ときどき「バックアップを保存」でファイルにも残してね。</li>
+</ul>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>大井のデータで見るとき、大井以外のレース（JRAやほかの地方競馬）は【参考判定】として出るよ。仕組みは同じで、参考値は大井の実測だよ。</div>
+<div class="tip"><span class="lab">{{i:book}}説明書</span>この説明書は、アプリの画面の上にある<span class="ui alt">説明書</span>か、設定タブの<span class="ui">説明書を開く</span>で、いつでも見られるよ。電波がなくても読めるよ。</div>
+<div class="tip"><span class="lab">{{i:shield}}大切なこと</span>免責・相談先・プライバシーポリシー・商標などは、設定タブのいちばん下の<span class="ui alt">このアプリについて</span>にまとめてあるよ。</div>
+
+<!--@mother-->
+<div class="gist"><span>ひとことで</span><p>参考的中率と実測①〜⑦を計算する「もと」のデータ。3つまで持てて、切り替えられるよ。</p></div>
+
+<div class="withlegend">
+{{shot:set_mother}}
+<ol class="legend">
+<li><div><b>1つ目：大井</b><span>アプリに入っている290走（10/9まで）。「使用中」が、いま使っているデータ</span></div></li>
+<li><div><b>2つ目・3つ目</b><span>自分で入れるデータ。はじめは空（名前はJRA・船橋競馬）</span></div></li>
+<li><div><b>編集</b><span>名前・Excelファイル・元に戻すボタン</span></div></li>
+</ol>
+</div>
+
+<h3>切り替える</h3>
+<ul class="dots">
+<li>判定タブと実測タブの上の「マザーデータ」でも切り替えられるよ</li>
+<li>名前は16文字まで。名前に開催場の名前（JRAなら「JRA」か「中央」）を入れると、その開催場のレースはそのデータでふつうに判定されて、【参考判定】にならないよ</li>
+<li>記録と買い目の設定は、3つで共通だよ</li>
+</ul>
+
+<h3>Excelから入れる</h3>
+<ol class="steps">
+<li><span class="ui alt">編集</span>を押して<span class="ui">Excelファイルを選ぶ</span></li>
+<li>入れる前に走数と期間が出るので、確かめる</li>
+<li>「「○○」に入れる」を押す</li>
+</ol>
+<ul class="dots">
+<li>入れられるのは<b>検証データの形（A〜P列）</b>だけ（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）</li>
+<li>形のちがうExcel（判定に使う列が入っていないものなど）は、理由を出して断るよ。いまのデータはそのまま</li>
+<li>ファイルが選べないときは、A〜P列をコピーして貼り付けて「読み取る」</li>
+</ul>
+
+<h3>元に戻す</h3>
+<ul class="dots">
+<li>「ひとつ前のデータに戻す」：入れ替える前に戻せる</li>
+<li>「このマザーデータを空にする」：2つ目・3つ目だけ</li>
+<li>「アプリに入っている大井データに戻す」：1つ目だけ</li>
+</ul>
+
+<!--@apikey-->
+<div class="gist"><span>ひとことで</span><p>画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。5分くらいで作れるよ。</p></div>
+
+<h3>キーの作り方</h3>
+<ol class="steps">
+<li>Safariで <b>platform.claude.com</b> を開いてログイン（はじめてならアカウントを作る）</li>
+<li>Settings の <b>Billing</b> で、クレジットカードを登録してクレジット（残高）を入れる。5ドルあれば、標準でも200回以上読めるよ</li>
+<li>Settings の <b>API keys</b> →「Create key」→ 出てきた <code>sk-ant-…</code> をコピー（1回しか表示されないよ）</li>
+<li>テンゲルの<b>設定 → 画像の読み取り</b>の欄に貼って<span class="ui">保存して試す</span></li>
+</ol>
+
+<div class="withlegend">
+{{shot:set_ocr}}
+<ol class="legend">
+<li><div><b>APIキーの欄・保存して試す</b><span>sk-ant- ではじまる文字を貼って、「保存して試す」で使えるか確かめる</span></div></li>
+<li><div><b>モデル</b><span>標準（正確・1回 約1〜4円）／節約（安い・1回 1円未満）</span></div></li>
+</ol>
+</div>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>キーはこの端末の中だけに保存されるよ（バックアップにも入らない）。人には見せないでね。いらなくなったら<span class="ui danger">キーを消す</span>。APIの料金は、Anthropicに直接払うよ（このアプリの代金とは別）。</div>
+
+<!--@backup-->
+<div class="gist"><span>ひとことで</span><p>記録はアプリの中にも自動でバックアップされるよ。機種変更やアプリを消すときのために、ときどき「バックアップを保存」でファイルにも残してね。</p></div>
+
+<div class="withlegend">
+{{shot:set_backup}}
+<ol class="legend">
+<li><div><b>バックアップを保存</b><span>記録（WIN5も）・買い目の設定・マザーデータの名前・Excelで入れたマザーデータを1つのファイルに。出てきた画面で「"ファイル"に保存」などを選んでね</span></div></li>
+<li><div><b>バックアップから戻す</b><span>保存したファイルを選ぶ</span></div></li>
+</ol>
+</div>
+<ul class="dots">
+<li>戻すと、記録が足されるよ。同じレースは新しいほうが残って、いまある記録は消えないよ</li>
+<li>APIキーは入らないので、戻したあとに入れ直してね</li>
+</ul>
+
+<h3>自動バックアップ</h3>
+<ul class="dots">
+<li>記録や設定を保存するたびに、アプリの中のファイルにも自動で保存しているよ（設定タブの「自動バックアップ」に日時が出るよ）</li>
+<li>もしアプリの中の記録が消えてしまっても、開いたときに「前の記録が見つかったよ。戻す？」と出るので、<span class="ui">記録を戻す</span>を押してね</li>
+<li>アプリを削除すると、自動バックアップも消えるよ。削除する前は、必ず「バックアップを保存」でファイルに残してね</li>
+</ul>
+
+<h3>機種変更のとき</h3>
+<ol class="steps">
+<li>前の端末で「バックアップを保存」→「"ファイル"に保存」（iCloud Driveなど）</li>
+<li>新しい端末にテンゲルを入れる</li>
+<li>「バックアップから戻す」で、保存したファイルを選ぶ</li>
+<li>APIキーを入れ直す</li>
+</ol>
+
+<h3>アプリの版</h3>
+<p>設定タブの「アプリの版」に、いまの版が出るよ。新しい版は、アプリのアップデートで届くよ。アップデートしても、記録・買い目の設定・マザーデータは消えないよ。</p>
+
+<!--@trouble-->
+<div class="gist"><span>ひとことで</span><p>たいていは、画面に出たメッセージのとおりにすれば直るよ。押すと直し方が出るよ。</p></div>
+
+<div class="faq">
+<details><summary>「判定不可（データ不足）」と出る</summary><div class="a">足りない項目が出るので、そこを入れてね（R・距離・馬場・頭数・単勝オッズ・3連単1位）。</div></details>
+<details><summary>「オッズ入力○頭／出走頭数○頭」と出る</summary><div class="a">取消・除外の馬や入れ忘れがないか確かめてね。判定は出走頭数で行うよ。</div></details>
+<details><summary>画像の読み取りで「APIキーが…」と出る</summary><div class="a">設定 → 画像の読み取りで、キーを入れるか確かめてね。</div></details>
+<details><summary>「クレジット（残高）が足りない」と出る</summary><div class="a">platform.claude.com の Billing でクレジットを入れてね。</div></details>
+<details><summary>「混み合ってる」「通信できなかった」と出る</summary><div class="a">少し待つか、電波がいいところでもう一度試してね。</div></details>
+<details><summary>読めなかった項目がある</summary><div class="a">その項目は前の値が残っているので、手で入れ直してね。画面を大きめに撮ると読みやすいよ。</div></details>
+<details><summary>Excelを入れようとしたら断られた</summary><div class="a">入るのは検証データの形（A〜P列）だけだよ。「マザーデータ」の項目を見てね。</div></details>
+<details><summary>「この端末ではExcelファイルを直接読めない」と出る</summary><div class="a">iOS・iPadOSを新しくするか、A〜P列をコピーして貼り付けてね。</div></details>
+<details><summary>参考的中率が出ない</summary><div class="a">使っているマザーデータに、集計できるレースがないよ。判定画面の上で「大井競馬」に切り替えてね。</div></details>
+<details><summary>着順で「読み方がいくつかある」と出る</summary><div class="a">「.」で区切って入れてね（例 1.12.3）。</div></details>
+<details><summary>「結果待ち」のまま</summary><div class="a">着順（3連単なら3着まで）を入れて、馬単・3連単は買ったゾーンを選んでね。ほかの券種は回収額（外れは0）を入れてね。</div></details>
+<details><summary>記録に「購入額未入力」と出る</summary><div class="a">記録タブでそのレースを開いて、購入額を入れてね。</div></details>
+<details><summary>判定画面で保存できない</summary><div class="a">入力例は保存できないよ。上に「WIN5の○レース目を入力中」と出ているときは、WIN5タブでまとめて記録してね。</div></details>
+<details><summary>新しい版にしたい</summary><div class="a">App Storeの「アップデート」から更新してね。記録は消えないよ。</div></details>
+<details><summary>記録が消えた</summary><div class="a">アプリの中の自動バックアップに記録があれば、開いたときに「前の記録が見つかったよ。戻す？」と出るよ。出ないときは、設定 →「バックアップから戻す」で、保存したファイルを選んでね。</div></details>
+<details><summary>大井のデータがおかしい</summary><div class="a">設定 → マザーデータの1つ目 →「アプリに入っている大井データに戻す」。判定に使えない形になっていたら、アプリを開いたときに自動で戻るよ。</div></details>
+</div>
+<p>それでも直らないときは、設定 →「このアプリについて」のお問い合わせ先に、画面のスクショを添えて連絡してね。</p>

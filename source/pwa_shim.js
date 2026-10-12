@@ -35,7 +35,7 @@ if (window.__NATIVE) (function () {
 (function () {
   var DBNAME = 'tengel3', mem = { races: new Map(), bets: new Map() }, lis = { races: [], bets: [] }, idb = null, ready = null;
   var notices = [], memOnly = '';
-  var NOSAVE = 'いまはiPhoneに保存できない状態だよ。アプリを上にスワイプして閉じてから、開き直してね';
+  var NOSAVE = window.__NATIVE ? 'いまはこの端末に保存できない状態だよ。アプリを閉じてから、開き直してね' : 'いまはiPhoneに保存できない状態だよ。アプリを上にスワイプして閉じてから、開き直してね';
   // マザーデータは3つ。1つ目＝大井（races ストア）、2・3つ目＝meta の 'slot:2' 'slot:3'
   var DEFAULT_NAMES = { 1: '大井競馬', 2: 'JRA', 3: '船橋競馬' };
   var slotsMeta = { id: 'slots', active: 1, names: { 1: DEFAULT_NAMES[1], 2: DEFAULT_NAMES[2], 3: DEFAULT_NAMES[3] } };
@@ -239,7 +239,8 @@ if (window.__NATIVE) (function () {
     slotsMeta.active = 1; mem.races = slot1;
     var el = document.createElement('div'); el.id = 'memOnlyBar';
     el.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:99;background:#A8231B;color:#fff;padding:10px 14px;border-radius:10px;font:14px/1.5 sans-serif';
-    el.textContent = 'iPhoneの保存場所が開けなかったよ（' + memOnly + '）。判定はできるけど、記録の保存はできないの。アプリを上にスワイプして閉じてから、もう一度開いてね（プライベートブラウズのときは切ってね）';
+    el.textContent = window.__NATIVE ? 'アプリの保存場所が開けなかったよ（' + memOnly + '）。判定はできるけど、記録の保存はできないの。アプリを閉じてから、もう一度開いてね'
+      : 'iPhoneの保存場所が開けなかったよ（' + memOnly + '）。判定はできるけど、記録の保存はできないの。アプリを上にスワイプして閉じてから、もう一度開いてね（プライベートブラウズのときは切ってね）';
     el.onclick = function () { el.remove(); };
     var show = function () { document.body.appendChild(el); };
     if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);

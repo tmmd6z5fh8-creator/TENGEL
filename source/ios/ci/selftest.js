@@ -114,6 +114,12 @@
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
     R.settings.backup = bk ? bk.innerText : null;
     await mark('backup');
+    // このアプリについて（ご利用にあたって・非公式と商標を開く）
+    var ab = document.querySelector('#setAbout');
+    if (ab) { var sm = ab.querySelector('#abNotice summary'); if (sm) sm.click(); ab.scrollIntoView({ block: 'start' }); }
+    await sleep(600);
+    R.about = ab ? { text: ab.innerText.slice(0, 1500), fonts: !!ab.querySelector('#abFonts'), tokusho: !!ab.querySelector('#abTokusho') } : null;
+    await mark('about');
     // CM（全画面で再生）
     var cmb = document.querySelector('#setCM [data-cm=play]'); if (cmb) cmb.scrollIntoView({ block: 'center' }); await sleep(300);
     if (cmb) cmb.click();
@@ -121,13 +127,15 @@
       var v = await waitFor(function () { return document.querySelector('#cmModal video'); }, 3000);
       if (!v) return { modal: false };
       await waitFor(function () { return v.readyState >= 2 && v.currentTime > 0.3; }, 12000);
-      return { modal: true, rs: v.readyState, t: v.currentTime, paused: v.paused, err: v.error && v.error.code };
+      return { modal: true, rs: v.readyState, t: v.currentTime, paused: v.paused, err: v.error && v.error.code, src: v.currentSrc };
     });
     await mark('cm');
     var cl = document.querySelector('#cmModal .cmclose'); if (cl) cl.click(); await sleep(400);
     // 記録タブ
     tab('rec'); await sleep(900); window.scrollTo(0, 0); await sleep(300);
     await mark('rec');
+    // 外への通信（Google のフォントなどがないか）
+    R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);
     await sleep(500);
     sessionStorage.setItem('st1', 'done');

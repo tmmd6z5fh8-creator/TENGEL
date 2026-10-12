@@ -1,12 +1,24 @@
 import hashlib, importlib.util, json, os, shutil, sys
 out = sys.argv[1] if len(sys.argv) > 1 else 'pwa'
+HERE = os.path.dirname(os.path.abspath(__file__))
+# 作る形：web＝Web版（ホーム画面のアプリ・GitHub Pages）／app＝App Store版のアプリの中身（build_ios.py が使う）
+TARGET = os.environ.get('TARGET', 'web')
+assert TARGET in ('web', 'app'), TARGET
+
+
+def _load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+
+
+_bm = _load('build_manual', os.path.join(HERE, 'manual', 'build_manual.py'))   # 説明書
+_bl = _load('build_legal', os.path.join(HERE, 'legal', 'build_legal.py'))      # このアプリについて・公開するページ
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
 if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ（一時フォルダに作ってからコピーしてね）')
 shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.12-6')
+APP_VER = os.environ.get('APP_VER', '2026.10.12-7')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
 # 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）
@@ -22,14 +34,24 @@ rep = [
 for a, b in rep:
     assert a in page, a; page = page.replace(a, b)
 page = page.replace('claude.aiのアプリ画面で開いてね', 'アプリを開き直してね')
+if TARGET == 'app':
+    # App Store版：フォントはアプリの中のものを使う（Google に通信しない）・「姫に送って」「まさちゃんの」はお客さん向けの言い方に
+    for a, b in [(_bm.FONTS, _bm.APP_FONTS),
+                 ('（姫に送ってくれてもOK）', ''),
+                 ('<p class="hint">Excel（検証データ）を更新したら姫に送ってね。アプリの中の基盤データを入れ直すよ。</p>', '<p class="hint">マザーデータは「設定」タブの「マザーデータ」で入れ替えられるよ。</p>'),
+                 ('※まさちゃんのカスタム買い目（設定タブで変更）', '※カスタム買い目（設定タブで変更）')]:
+        assert a in page, a[:40]; page = page.replace(a, b)
 mother = [{k: v for k, v in r.items()} for r in hist]
 ICONS = ('icon3-180.png', 'icon3-192.png', 'icon3-512.png', 'icon3-maskable-512.png')
 # CM（紹介動画）：設定タブから見る。cm_media/ にある動画と表紙を cm/ に置く。中身が変わったら ?v= が変わるので古いのは使われない
-CM_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cm_media')
+CM_SRC = os.path.join(HERE, 'cm_media')
 CM = None
 if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
     _h = lambda f: hashlib.md5(open(os.path.join(CM_SRC, f), 'rb').read()).hexdigest()[:8]
     CM = {'src': 'cm/tengel3_cm.mp4?v=' + _h('tengel3_cm.mp4'), 'poster': 'cm/poster.jpg?v=' + _h('poster.jpg'), 'dur': '0:45'}
+    # App Store版のアプリの中で見せる版（最後の案内がアプリの言い方）。アプリはこれを公開中のWeb版から読む
+    if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm_app.mp4')):
+        CM['srcApp'] = 'cm/tengel3_cm_app.mp4?v=' + _h('tengel3_cm_app.mp4')
 head = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -37,7 +59,7 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>
@@ -48,12 +70,16 @@ json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_ur
   "icons": [{"src": "icon3-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon3-512.png", "sizes": "512x512", "type": "image/png"}, {"src": "icon3-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
   open(f'{out}/manifest.webmanifest', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
 # 説明書（manual.html・写真は manual/）。アプリの上の「説明書」と設定タブから開く
-_spec = importlib.util.spec_from_file_location('build_manual', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manual', 'build_manual.py'))
-_bm = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_bm)
-MAN_IMGS, MAN_VER = _bm.build('pwa', out, APP_VER)
+MAN_IMGS, MAN_VER = _bm.build('app' if TARGET == 'app' else 'pwa', out, APP_VER)
+if TARGET == 'app':
+    os.makedirs(f'{out}/fonts')
+    for f in _bm.APP_FONT_FILES:
+        shutil.copy(os.path.join(HERE, 'ios', 'fonts', f), f'{out}/fonts/{f}')
+# 公開するページ（プライバシーポリシー・特定商取引法に基づく表記・サポート）：販売する人の欄（legal/legal.json）が入っているものだけ
+LEGAL = _bl.pages(out) if TARGET == 'web' else []
 if CM:
     os.makedirs(f'{out}/cm')
-    for f in ('tengel3_cm.mp4', 'poster.jpg'):
+    for f in ('tengel3_cm.mp4', 'poster.jpg') + (('tengel3_cm_app.mp4',) if 'srcApp' in CM else ()):
         shutil.copy(os.path.join(CM_SRC, f), f'{out}/cm/{f}')
 # 新しい版があるかの確認用（アプリはこのファイルだけを毎回ネットから読む）
 json.dump({"app": APP_VER, "mother": MOTHER_VER}, open(f'{out}/version.json', 'w', encoding='utf8'))
@@ -96,4 +122,4 @@ self.addEventListener('fetch', e => {
 # アイコン：まさちゃんのエンブレム＋金の「TENGER」（icons/ に作ってある）
 for f in ICONS:
     shutil.copy(f'icons/{f}', f'{out}/{f}')
-print('built', out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER, 'MANUAL', MAN_VER, len(MAN_IMGS), 'CM', CM)
+print('built', TARGET, out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER, 'MANUAL', MAN_VER, len(MAN_IMGS), 'CM', CM, 'LEGAL', LEGAL)
