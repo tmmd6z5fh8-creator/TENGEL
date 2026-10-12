@@ -82,7 +82,7 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         }
         // テンゲルの外のページ（http・https・メールなど）は、Safariなどアプリの外で開く
         if navigationAction.targetFrame?.isMainFrame != false {
-            UIApplication.shared.open(url)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
             return .cancel
         }
         return .allow
