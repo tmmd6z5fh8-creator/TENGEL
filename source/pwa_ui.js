@@ -10,6 +10,8 @@
   // 年をまたぐデータ（JRAなど）は年も出す
   const span2 = (a, b) => { const y = !!(a && b && a.slice(0, 4) !== b.slice(0, 4)); return md(a, y) + '〜' + md(b, y); };
   const APP_VER = window.__APP_VER || '';
+  // アプリ版（iPhone・iPadのアプリの中）。Web版では false
+  const NATIVE = !!(window.__NATIVE && window.TengelNative);
   function toast(m, ms) { const t = $('#toast'); if (!t) return; t.textContent = m; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms || 3000); }
   function when(iso) {
     if (!iso) return '';
@@ -207,18 +209,19 @@
   </details>
   <p class="hint">キーは<b>このiPhoneの中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
 </div>
-<div class="card setsec" id="setUpdate">
+${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <h2>アプリの更新</h2>
   <dl class="kvs"><dt>いまの版</dt><dd>${esc(APP_VER || '—')}（第13改訂版）</dd><dt>最後に確認</dt><dd id="suChecked">まだ</dd></dl>
   <div class="row"><button class="btn" type="button" id="suCheck">新しい版があるか確認</button><button class="btn primary" type="button" id="suApply" hidden>新しい版にする</button></div>
   <p class="small" id="suMsg" style="margin:8px 0 0"></p>
   <p class="hint">更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>（このiPhoneの中にそのまま残るよ）。新しい版があるときは、アプリを開いたときに上にお知らせが出るよ。</p>
   <div class="banner warn">⚠️ ホーム画面のアイコンは消さないでね。アイコンを消すと、中の記録も一緒に消えちゃうの。</div>
-</div>
+</div>`}
 <div class="card setsec" id="setBackup">
   <h2>バックアップ（記録を守る）</h2>
-  <p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>
-  <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd></dl>
+  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやLINEのKeepなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
+    : '<p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'}
+  <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd>${NATIVE ? '<dt>自動バックアップ</dt><dd id="sbAuto">—</dd>' : ''}</dl>
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
   <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
 </div>`;
@@ -433,6 +436,7 @@
     const ap = $('#suApply'); if (ap) ap.hidden = false;
   }
   function checkUpdate(manual) {
+    if (NATIVE) return Promise.resolve();   // アプリ版は、新しい版がアプリの更新で届く
     if (!manual && (Date.now() - lastCheck < 10 * 60e3 || navigator.onLine === false)) return Promise.resolve();
     lastCheck = Date.now();
     if (manual) setSuMsg('確認しているよ…');
@@ -457,30 +461,82 @@
     }).catch(go);
   }
   function wireUpdate() {
+    if (NATIVE) return;
     $('#suCheck').onclick = () => checkUpdate(true);
     $('#suApply').onclick = applyUpdate;
     if (newer) showBar(newer);
+  }
+  // アプリ版の「アプリの版」カード（更新の確認はしない。新しい版はアプリの更新で届く）
+  function nativeUpdateCard() {
+    const ni = window.TengelNative.info || {};
+    return `<div class="card setsec" id="setUpdate">
+  <h2>アプリの版</h2>
+  <dl class="kvs"><dt>いまの版</dt><dd>${esc(ni.version || '—')}${ni.build ? `（${esc(ni.build)}）` : ''}<br><span class="small muted">中身 ${esc(APP_VER || '—')}（第13改訂版）</span></dd></dl>
+  <p class="hint">新しい版は、アプリの更新で届くよ。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>。</p>
+  <div class="banner warn">⚠️ アプリを削除すると、中の記録も一緒に消えちゃうの。削除する前に、下の「バックアップを保存」でファイルに保存してね。</div>
+</div>`;
   }
 
   // ---- バックアップ ----
   function paintBackup() {
     const n = TengelLocal.mem.bets.size, c = $('#sbCount'); if (c) c.textContent = n + '件';
     TengelLocal.getMeta('backup').then(b => { const l = $('#sbLast'); if (l) l.textContent = b && b.at ? when(b.at) + '（' + b.n + '件）' : 'まだしてないよ'; }).catch(() => {});
+    if (NATIVE) paintAuto();
+  }
+  // バックアップの中身（記録・買い目の設定・マザーデータの名前と使う番号・2・3つ目・Excelで入れた大井データ）。APIキーは入れない
+  async function makeBackup() {
+    const bets = Array.from(TengelLocal.mem.bets.values());
+    const zones = await TengelLocal.getSetting('zones').catch(() => undefined);
+    const meta = await TengelLocal.motherMeta().catch(() => null);
+    const data = { app: 'tengel3', appVer: APP_VER, at: new Date().toISOString(), bets, settings: { zones: zones === undefined ? null : zones } };
+    if (meta && meta.source !== 'app') data.mother = { meta, rows: L().rows(1) };
+    data.slots = { names: L().names(), active: L().active(), data: {} };
+    [2, 3].forEach(n => { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; });
+    return { data, zones, nSlots: Object.keys(data.slots.data).length };
+  }
+  // バックアップから戻す（同じレースの記録は新しい方を残す・マザーデータは新しいときだけ）。返り値＝お知らせの文
+  async function restoreFromData(d) {
+    const list = Array.isArray(d) ? d : d && d.bets;
+    if (!Array.isArray(list)) throw new Error('テンゲルのバックアップじゃないみたい');
+    const cur = TengelLocal.mem.bets;
+    const add = list.filter(b => { if (!b || !b.id) return false; const o = cur.get(b.id); return !o || String(b.updatedAt || '') >= String(o.updatedAt || ''); });
+    await TengelLocal.putBets(add);
+    const msg = [`記録${add.length}件を戻したよ（同じレースは新しい方を残したよ）`];
+    if (d.settings && Object.prototype.hasOwnProperty.call(d.settings, 'zones')) {
+      document.dispatchEvent(new CustomEvent('tengel:zones', { detail: d.settings.zones }));
+      msg.push(d.settings.zones ? '買い目の設定も戻したよ' : '買い目は初期の設定にしたよ');
+    }
+    const last = rs => rs.reduce((m, r) => r.date > m ? r.date : m, '');
+    if (d.slots) {
+      for (const n of [1, 2, 3]) if (d.slots.names && d.slots.names[n]) await L().rename(n, d.slots.names[n]);
+      for (const n of [2, 3]) {
+        const doc = d.slots.data && d.slots.data[n]; if (!doc || !Array.isArray(doc.rows) || !doc.rows.length) continue;
+        const cur = L().rows(n), bl = last(doc.rows), cl = last(cur);
+        if (!cur.length || bl > cl || (bl === cl && doc.rows.length > cur.length)) { await L().replace(n, doc.rows, { source: doc.source || 'excel', file: doc.file || '' }); msg.push(`「${L().names()[n]}」のデータ${doc.rows.length}走も戻したよ`); }
+      }
+    }
+    if (d.mother && Array.isArray(d.mother.rows) && d.mother.rows.length) {
+      const curRows = L().rows(1);
+      const bl = last(d.mother.rows), cl = last(curRows);
+      if (bl > cl || (bl === cl && d.mother.rows.length > curRows.length)) {
+        await TengelLocal.replaceRaces(d.mother.rows, { source: (d.mother.meta && d.mother.meta.source) || 'excel', file: (d.mother.meta && d.mother.meta.file) || '' });
+        msg.push(`大井データも${d.mother.rows.length}走に戻したよ`);
+      }
+    }
+    return msg;
   }
   function wireBackup() {
     paintBackup();
     $('#pwaBackup').onclick = async () => {
-      const bets = Array.from(TengelLocal.mem.bets.values());
-      const zones = await TengelLocal.getSetting('zones').catch(() => undefined);
-      const meta = await TengelLocal.motherMeta().catch(() => null);
-      const data = { app: 'tengel3', appVer: APP_VER, at: new Date().toISOString(), bets, settings: { zones: zones === undefined ? null : zones } };
-      if (meta && meta.source !== 'app') data.mother = { meta, rows: L().rows(1) };
-      data.slots = { names: L().names(), active: L().active(), data: {} };
-      [2, 3].forEach(n => { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; });
-      const name = 'テンゲル記録_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.json';
-      const file = new File([JSON.stringify(data)], name, { type: 'application/json' });
-      const nSlots = Object.keys(data.slots.data).length;
+      const { data, zones, nSlots } = await makeBackup();
+      const bets = data.bets, name = 'テンゲル記録_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.json', text = JSON.stringify(data);
       const doneMsg = how => { $('#pwaBkInfo').textContent = `記録${bets.length}件${zones ? '・買い目の設定' : ''}・マザーデータの名前${data.mother ? '・大井データ' : ''}${nSlots ? `・マザーデータ${nSlots}つ分` : ''}を${how}よ`; TengelLocal.putMeta({ id: 'backup', at: data.at, n: bets.length }).then(paintBackup); };
+      if (NATIVE) {
+        // アプリ版：共有シート（「ファイル」に保存・AirDrop・LINEなど）
+        window.TengelNative.share(name, text, 'application/json').then(ok => { if (ok) doneMsg('保存した'); }).catch(err => { $('#pwaBkInfo').textContent = '保存できなかったよ：' + (err && err.message || err); });
+        return;
+      }
+      const file = new File([text], name, { type: 'application/json' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({ files: [file], title: name }).then(() => doneMsg('保存した')).catch(() => {});
       } else {
@@ -491,38 +547,72 @@
     $('#pwaRestore').onclick = () => $('#pwaRestoreFile').click();
     $('#pwaRestoreFile').onchange = e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-      f.text().then(async t => {
-        const d = JSON.parse(t), list = Array.isArray(d) ? d : d.bets;
-        if (!Array.isArray(list)) throw new Error('テンゲルのバックアップじゃないみたい');
-        const cur = TengelLocal.mem.bets;
-        const add = list.filter(b => { if (!b || !b.id) return false; const o = cur.get(b.id); return !o || String(b.updatedAt || '') >= String(o.updatedAt || ''); });
-        await TengelLocal.putBets(add);
-        const msg = [`記録${add.length}件を戻したよ（同じレースは新しい方を残したよ）`];
-        if (d.settings && Object.prototype.hasOwnProperty.call(d.settings, 'zones')) {
-          document.dispatchEvent(new CustomEvent('tengel:zones', { detail: d.settings.zones }));
-          msg.push(d.settings.zones ? '買い目の設定も戻したよ' : '買い目は初期の設定にしたよ');
-        }
-        const last = rs => rs.reduce((m, r) => r.date > m ? r.date : m, '');
-        if (d.slots) {
-          for (const n of [1, 2, 3]) if (d.slots.names && d.slots.names[n]) await L().rename(n, d.slots.names[n]);
-          for (const n of [2, 3]) {
-            const doc = d.slots.data && d.slots.data[n]; if (!doc || !Array.isArray(doc.rows) || !doc.rows.length) continue;
-            const cur = L().rows(n), bl = last(doc.rows), cl = last(cur);
-            if (!cur.length || bl > cl || (bl === cl && doc.rows.length > cur.length)) { await L().replace(n, doc.rows, { source: doc.source || 'excel', file: doc.file || '' }); msg.push(`「${L().names()[n]}」のデータ${doc.rows.length}走も戻したよ`); }
-          }
-        }
-        if (d.mother && Array.isArray(d.mother.rows) && d.mother.rows.length) {
-          const curRows = L().rows(1);
-          const bl = last(d.mother.rows), cl = last(curRows);
-          if (bl > cl || (bl === cl && d.mother.rows.length > curRows.length)) {
-            await TengelLocal.replaceRaces(d.mother.rows, { source: (d.mother.meta && d.mother.meta.source) || 'excel', file: (d.mother.meta && d.mother.meta.file) || '' });
-            msg.push(`大井データも${d.mother.rows.length}走に戻したよ`);
-          }
-        }
+      f.text().then(t => restoreFromData(JSON.parse(t))).then(msg => {
         $('#pwaBkInfo').textContent = msg.join('。');
         paintBackup();
       }).catch(err => { $('#pwaBkInfo').textContent = '戻せなかったよ：' + (err && err.message || err); });
     };
+  }
+
+  // ---- アプリ版：アプリの中の自動バックアップ ----
+  // 記録や設定を保存するたびに（少し待ってから）、アプリの中のファイルにも書いておく（iPhoneの中の保存場所が消えても戻せるように）
+  // 開いたときに記録が0件なのに自動バックアップに記録があったら、「戻す？」と聞く（聞いている間は自動バックアップを書かない）
+  let autoT = null, autoHold = true, autoChain = Promise.resolve(), lastAuto = null;
+  function paintAuto() { const a = $('#sbAuto'); if (a) a.textContent = lastAuto && lastAuto.at ? `${when(lastAuto.at)}（記録${lastAuto.n}件）` : 'まだだよ'; }
+  function scheduleAuto(ms) { if (!NATIVE) return; clearTimeout(autoT); autoT = setTimeout(runAuto, ms == null ? 1500 : ms); }
+  function runAuto() {
+    autoT = null;
+    autoChain = autoChain.then(async () => {
+      if (autoHold || TengelLocal.memOnly()) return;
+      const { data } = await makeBackup(); data.auto = true;
+      await window.TengelNative.saveBackup(JSON.stringify(data));
+      lastAuto = { at: data.at, n: data.bets.length }; paintAuto();
+    }).catch(() => { /* 次に保存したときに、また書く */ });
+    return autoChain;
+  }
+  function offerRestore(saved) {
+    if ($('#nativeRestore')) return;
+    if (!document.getElementById('nrCss')) {
+      const st = document.createElement('style'); st.id = 'nrCss';
+      st.textContent = '#nativeRestore{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:rgba(8,12,26,.5)}'
+        + '#nativeRestore .nrbox{width:100%;max-width:520px;background:var(--surface);color:var(--ink);border:2px solid var(--lamp);border-radius:16px;padding:18px 18px 16px;box-shadow:0 14px 40px rgba(0,0,0,.35)}'
+        + '#nativeRestore h3{margin:0 0 8px;font-size:17px}#nativeRestore p{margin:0 0 14px;font-size:14.5px;line-height:1.65}';
+      document.head.appendChild(st);
+    }
+    const n = saved.bets.length, box = document.createElement('div');
+    box.id = 'nativeRestore'; box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'nrTitle');
+    box.innerHTML = `<div class="nrbox"><h3 id="nrTitle">前の記録が見つかったよ</h3><p>このアプリの中の自動バックアップに、買ったレースの記録が<b>${n}件</b>あるよ（${esc(when(saved.at) || '日時不明')}）。いまのアプリには記録が入っていないの。戻す？</p>`
+      + '<div class="row"><button class="btn primary" type="button" data-nr="yes">記録を戻す</button><button class="btn ghost" type="button" data-nr="no">戻さない</button></div></div>';
+    document.body.appendChild(box);
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-nr]'); if (!b) return;
+      if (b.dataset.nr === 'no') { box.remove(); autoHold = false; scheduleAuto(); return; }
+      $$('#nativeRestore button').forEach(x => { x.disabled = true; }); b.textContent = '戻しているよ…';
+      restoreFromData(saved).then(msg => {
+        box.remove(); toast(msg.join('。'), 5200); paintBackup();
+        autoHold = false; scheduleAuto(300);
+      }).catch(err => {
+        $$('#nativeRestore button').forEach(x => { x.disabled = false; }); b.textContent = '記録を戻す';
+        toast('戻せなかったよ：' + (err && err.message || err), 4200);
+      });
+    });
+    const y = box.querySelector('[data-nr=yes]'); if (y) y.focus({ preventScroll: true });
+  }
+  function nativeBoot() {
+    if (!NATIVE) return;
+    window.__tengelWrote = () => scheduleAuto();
+    // アプリを閉じる（裏に回る）ときは、待たずにすぐ書く
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && autoT) { clearTimeout(autoT); runAuto(); } });
+    TengelLocal.ready.then(() => {
+      if (TengelLocal.memOnly()) return;
+      return window.TengelNative.loadBackup().then(saved => {
+        const n = saved && Array.isArray(saved.bets) ? saved.bets.length : 0;
+        if (saved && saved.at) lastAuto = { at: saved.at, n };
+        paintAuto();
+        if (!TengelLocal.mem.bets.size && n) { offerRestore(saved); return; }
+        autoHold = false; scheduleAuto(800);
+      });
+    }).catch(() => {});
   }
 
   // ---- 説明書（manual.html）への入口：上のバーと設定タブ ----
@@ -581,12 +671,15 @@
       c.addEventListener('click', e => { if (e.target.closest('[data-cm=play]')) openCM(); });
     }
   }
+  // アプリ版は動画をアプリに入れていないので、公開中のWeb版から読む
+  const CM_WEB = 'https://tmmd6z5fh8-creator.github.io/TENGEL/';
   function openCM() {
     const CM = window.__CM; if (!CM || $('#cmModal')) return;
     if (navigator.onLine === false) { toast('CMは電波があるときに見られるよ', 3200); return; }
+    const src = NATIVE ? new URL(CM.src, CM_WEB).href : CM.src;
     const back = document.activeElement, html = document.documentElement, ov = html.style.overflow;
     const m = document.createElement('div'); m.id = 'cmModal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'テンゲルのCM');
-    m.innerHTML = '<video src="' + CM.src + '" poster="' + CM.poster + '" controls playsinline preload="auto"></video><button class="cmclose" type="button" aria-label="閉じる">×</button>';
+    m.innerHTML = '<video src="' + esc(src) + '" poster="' + CM.poster + '" controls playsinline preload="auto"></video><button class="cmclose" type="button" aria-label="閉じる">×</button>';
     document.body.appendChild(m); html.style.overflow = 'hidden';
     const v = m.querySelector('video');
     const onKey = e => { if (e.key === 'Escape') close(); };
@@ -618,6 +711,7 @@
     document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); }).catch(() => {}); } });
     document.addEventListener('tengel:slots', () => { if ($('#slotList')) TengelLocal.ready.then(() => paintSlots(false)).catch(() => {}); });
     TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); (TengelLocal.notices || []).forEach(n => toast(n, 4200)); }).catch(() => {});
+    nativeBoot();
     setTimeout(() => checkUpdate(false), 2500);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(false); });
   }

@@ -2,6 +2,36 @@
 // races = マザーデータ1つ目（大井）／bets = 買ったレースの記録／meta = マザーデータ2・3つ目、マザーデータの名前と使う番号、ひとつ前のデータ、設定（買い目・画像の読み取りなど）
 // アプリを更新しても、この3つは消さない（データベースの作りを変えるときも、足すだけにする）
 window.TENGEL_STANDALONE = 'pwa';
+// ===== アプリ版（iPhone・iPadのアプリ。画面は tengel://localhost/ で開く）=====
+// 共有シート（ファイルに保存）・コピー・アプリの中の自動バックアップは、アプリ（Swift）にお願いする
+// ブラウザ（ホーム画面のWeb版）では window.__NATIVE = false で、ここは何もしない
+window.__NATIVE = location.protocol === 'tengel:';
+window.TengelNative = null;
+if (window.__NATIVE) (function () {
+  var seq = 0, pend = {};
+  // アプリからの返事（アプリが window.__nativeReply(番号, 成功, 値) を呼ぶ）
+  window.__nativeReply = function (id, ok, val) { var p = pend[id]; if (!p) return; delete pend[id]; if (ok) p.res(val); else p.rej(new Error(val || 'アプリでうまくいかなかったよ')); };
+  function call(name, payload) {
+    return new Promise(function (res, rej) {
+      var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tengel;
+      if (!h) { rej(new Error('アプリとつながっていないよ。アプリを開き直してね')); return; }
+      var id = ++seq; pend[id] = { res: res, rej: rej };
+      try { h.postMessage({ id: id, name: name, payload: payload }); } catch (e) { delete pend[id]; rej(e); }
+    });
+  }
+  window.TengelNative = {
+    call: call,
+    info: window.__NATIVE_INFO || {},   // アプリの版（アプリが最初に入れる）
+    // ファイルを共有シートで渡す（「ファイル」に保存・AirDrop・LINEなど）。渡したら true、閉じただけなら false
+    share: function (name, text, mime) { return call('share', { name: name, text: String(text), mime: mime || 'application/octet-stream' }); },
+    copy: function (text) { return call('copy', String(text)); },
+    // アプリの中の自動バックアップ（記録・買い目・マザーデータ。APIキーは入れない）
+    saveBackup: function (text) { return call('backup', { text: String(text) }); },
+    loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+  };
+  // コピーは、アプリがiPhoneのクリップボードに直接入れる
+  try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: function (t) { return call('copy', String(t)); } } }); } catch (e) {}
+})();
 (function () {
   var DBNAME = 'tengel3', mem = { races: new Map(), bets: new Map() }, lis = { races: [], bets: [] }, idb = null, ready = null;
   var notices = [], memOnly = '';
@@ -31,7 +61,9 @@ window.TENGEL_STANDALONE = 'pwa';
   function openDB() { return openOnce().catch(function () { return new Promise(function (r) { setTimeout(r, 700); }).then(openOnce); }); }
   function need() { if (!idb) throw new Error(NOSAVE); }
   function store(name, mode) { need(); return idb.transaction(name, mode).objectStore(name); }
-  function done(t) { return new Promise(function (res, rej) { t.oncomplete = res; t.onerror = function () { rej(t.error); }; t.onabort = function () { rej(t.error); }; }); }
+  function done(t) { return new Promise(function (res, rej) { t.oncomplete = function () { res(); wrote(t); }; t.onerror = function () { rej(t.error); }; t.onabort = function () { rej(t.error); }; }); }
+  // 保存したら知らせる（アプリ版の自動バックアップが使う。Web版では何もしない）
+  function wrote(t) { try { if (t.mode === 'readwrite' && typeof window.__tengelWrote === 'function') window.__tengelWrote(); } catch (e) {} }
   function lastDate(rows) { var m = ''; rows.forEach(function (r) { if (r && r.date > m) m = r.date; }); return m; }
   // 判定に使える形のレース（単勝1位・3連単1位・1着人気・2着人気が入っている）
   function wellFormed(rows) { var k = 0; rows.forEach(function (r) { if (r && r.tan1 > 0 && r.s1 > 0 && r.p1 > 0 && r.p2 > 0) k++; }); return k; }
@@ -320,7 +352,9 @@ window.TENGEL_STANDALONE = 'pwa';
       }).then(pickJSON);
     }
   };
-  window.claude = { use: function (n) { return Promise.resolve(n === 'db' ? db : n === 'user' ? { canEdit: function () { return Promise.resolve(true); } } : n === 'sample' ? sample : null); } };
+  // ファイルの保存（記録タブの「CSVで保存」）：アプリ版だけ。共有シートで渡す（閉じたら declined）
+  var downloads = window.__NATIVE ? { save: function (o) { return window.TengelNative.share(o.filename, o.data, /\.csv$/i.test(o.filename || '') ? 'text/csv' : 'application/octet-stream').then(function (ok) { if (!ok) throw { code: 'declined' }; }); } } : null;
+  window.claude = { use: function (n) { return Promise.resolve(n === 'db' ? db : n === 'user' ? { canEdit: function () { return Promise.resolve(true); } } : n === 'sample' ? sample : n === 'downloads' ? downloads : null); } };
 
   // アプリ版だけの機能（マザーデータ・設定・バックアップ・更新・画像の読み取り）から使う
   window.TengelLocal = {
@@ -365,7 +399,8 @@ window.TENGEL_STANDALONE = 'pwa';
     getMeta: function (id) { return ready.then(function () { return idb ? req(store('meta', 'readonly').get(id)) : undefined; }); },
     putMeta: function (obj) { return ready.then(function () { return putMeta(obj); }); }
   };
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  // アプリ版は画面がアプリの中にあるので、サービスワーカーは使わない
+  if (!window.__NATIVE && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 })();

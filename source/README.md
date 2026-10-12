@@ -52,13 +52,27 @@
 | cm_media/ | CM（紹介動画・2026.10.12-5〜）。tengel3_cm.mp4（前置き15秒＋スロット新台CM風30秒＝45秒・1080×1920・30MB以下）と poster.jpg（表紙）。build_pwa.py が cm/ に置いて、設定タブの「テンゲルのCM」から全画面で見られる。動画は大きいのでサービスワーカーでしまわない（表紙だけしまう）。入れ替えたら ?v= が自動で変わる |
 | cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（cm2_shots.py の SCRUB_JS） |
 | test_cm.py | CMのテスト（設定タブの説明書の下・押すと全画面・×／外側／Escで閉じる・動画はしまわない・表紙はしまう・電波がないときのお知らせ） |
+| build_ios.py | iPhone・iPadアプリ（App Store用・Swift Playgrounds の App）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
+| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・外のリンクはSafari）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
+| ios/ci/ | GitHubのMacでの確認（run.sh・selftest.js・ios.yml）。`ios` ブランチ（Tengel.swiftpm＋ci/＋.github/workflows/ios.yml）にpushすると、Swift 5・Swift 6・Release（実機）で作って、iPhone・iPadのシミュレーターで記録の保存・開き直し・自動バックアップから戻す・画面のスクショを確かめる。結果は `ios-ci-macos-15`・`ios-ci-macos-26` ブランチ（summary.txt・report-*.json・shots/） |
+| test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
 | mkxlsx.py / mkxlsx2.py / mkslotdata.py / mkrawfiles.py | テスト用のExcel・貼り付けデータを作る（mkrawfiles＝分析シート・分析表・馬場フィルターと同じ形） |
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.12-5 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.12-6 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
+
+## iPhone・iPadアプリ（App Store用。2026.10.12〜お試し版）
+- 画面はWeb版と同じ。アプリの中では `tengel://localhost/index.html` で開くので、`window.__NATIVE`（pwa_shim.js）が true になって、アプリ版として動く：
+  - 設定タブ：「アプリの更新」のかわりに「アプリの版」（新しい版はアプリの更新で届く）・バックアップは共有シートで渡す・「自動バックアップ」の欄
+  - 記録や設定を保存するたび（1.5秒まとめて）、アプリの中のファイル（Application Support/tengel-autobackup.json・アプリを開いて最初に書くときに前のを -prev に残す）にもバックアップ。APIキーは入れない
+  - 開いたときに記録が0件なのに自動バックアップに記録がある（保存場所が消えた）→「前の記録が見つかったよ。戻す？」（聞いている間は自動バックアップを書かない）
+  - 記録タブの書き出しに「CSVで保存」（共有シート）・コピーはアプリが直接クリップボードへ・サービスワーカーは使わない・CMの動画は公開中のWeb版から読む
+- 作る：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm.zip をiPadの「ファイル」に保存 → 開いて（解凍して）Swift Playgrounds で開く → ▶︎
+- 確かめる：`python3 test_native.py`（画面）・`ios` ブランチにpush（GitHubのMacで作ってシミュレーターで動かす。ios/ci/）
+- アプリの版を上げるときは ios/Tengel.swiftpm/Package.swift の displayVersion（1.0 → 1.1）と bundleVersion（1 → 2）
 
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）
 1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）。「重複転記の疑い」「同じ中身のレース」が出たら、まさちゃんに確かめる（重複なら dropped.json に足す）

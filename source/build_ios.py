@@ -1,0 +1,52 @@
+# テンゲル iPhone・iPadアプリ（Swift Playgrounds の App）を組み立てる
+#   python3 build_ios.py <出力フォルダ>
+#   → <出力フォルダ>/Tengel.swiftpm（Swift Playgrounds・Xcodeで開ける）と Tengel.swiftpm.zip（iPadに送る用）
+# 画面はWeb版と同じもの（build_pwa.py で作る index.html・説明書・CMの表紙）を Resources/ に入れる。
+# アプリの中では tengel://localhost/ で開くので、pwa_shim.js がアプリ版（window.__NATIVE）として動く。
+# Swiftの枠は ios/Tengel.swiftpm（Package.swift・TengelApp.swift・TengelWebView.swift・AppFiles.swift・Assets.xcassets）。
+# アプリの版（App Storeの版）は ios/Tengel.swiftpm/Package.swift の displayVersion・bundleVersion。
+import os, shutil, subprocess, sys, tempfile, zipfile
+from PIL import Image
+W = os.path.dirname(os.path.abspath(__file__))
+out = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(W, 'ios_out'))
+if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ')
+os.makedirs(out, exist_ok=True)
+tmp = tempfile.mkdtemp()
+web = os.path.join(tmp, 'web')
+subprocess.run(['node', 'build.js'], cwd=W, check=True, stdout=subprocess.DEVNULL)
+subprocess.run(['python3', 'build_pwa.py', web], cwd=W, check=True, stdout=subprocess.DEVNULL)
+
+pkg = os.path.join(out, 'Tengel.swiftpm')
+shutil.rmtree(pkg, ignore_errors=True)
+shutil.copytree(os.path.join(W, 'ios', 'Tengel.swiftpm'), pkg, ignore=shutil.ignore_patterns('.DS_Store', 'Resources', 'AppIcon.png', '.build', '.swiftpm'))
+
+# 画面のファイル：Resources/ に名前だけで並べる（Swift Playgrounds は Resources の中のフォルダを平らにするので、名前がかぶらないようにする）
+files = {'index.html': 'index.html', 'manual.html': 'manual.html'}
+for f in sorted(os.listdir(os.path.join(web, 'manual'))):
+    files[f] = 'manual/' + f
+if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
+    files['poster.jpg'] = 'cm/poster.jpg'   # CMの表紙（動画は大きいので入れない。見るときに公開中のWeb版から読む）
+names = [n.lower() for n in files]
+assert len(names) == len(set(names)), '同じ名前のファイルがあるよ'
+assert not any(n.endswith('.png') for n in names), 'PNGは入れない（Xcodeが変換してしまうことがある）'
+res = os.path.join(pkg, 'Resources'); os.makedirs(res)
+for name, src in files.items():
+    shutil.copy(os.path.join(web, src), os.path.join(res, name))
+
+# アイコン（1024×1024・透明なし）
+icon = Image.open(os.path.join(W, 'icons', 'icon_master_en.png'))
+assert icon.size == (1024, 1024), icon.size
+icon.convert('RGB').save(os.path.join(pkg, 'Assets.xcassets', 'AppIcon.appiconset', 'AppIcon.png'), optimize=True)
+
+# iPadに送る用のzip（フォルダごと。Macの「._」ファイルなどは入れない）
+zpath = os.path.join(out, 'Tengel.swiftpm.zip')
+if os.path.exists(zpath): os.remove(zpath)
+with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
+    for root, dirs, fs in os.walk(pkg):
+        dirs.sort()
+        for f in sorted(fs):
+            p = os.path.join(root, f)
+            z.write(p, os.path.relpath(p, out))
+shutil.rmtree(tmp, ignore_errors=True)
+size = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(pkg) for f in fs)
+print('built', pkg, f'{size / 1e6:.1f}MB', 'files', len(files), 'zip', f'{os.path.getsize(zpath) / 1e6:.1f}MB')
