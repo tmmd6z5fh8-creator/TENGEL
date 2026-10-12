@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
+<meta name="theme-color" content="#0a1b22"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
+<title>テンゲルⅢ 説明書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+/* Layout: 出馬表（レースプログラム）風 — 濃い青緑の台紙に金の罫。もくじ＝グループごとの一覧、項目＝1ページずつ（前へ・次へ） */
+:root{
+  --bg:#0a1b22; --bg-2:#0d242d; --panel:#10303a; --panel-2:#153b47; --rule:rgba(217,180,90,.20); --rule-2:rgba(217,180,90,.42);
+  --gold:#d9b45a; --gold-hi:#f4dc96; --gold-lo:#a47a2c; --ink:#e8f0f1; --muted:#a6bec3; --faint:#7c99a0;
+  --teal:#5ccad6; --warn:#f3a95f; --warn-bg:rgba(243,169,95,.09); --tip-bg:rgba(217,180,90,.08);
+  --ok:#7fd8aa; --bad:#f39486;
+  /* アプリの色（ボタン・層のバッジ） */
+  --app-navy:#1B2A55; --app-paper:#FFFFFF; --app-ink:#141A2E; --app-line:#D7DBE4; --app-red:#A8231B;
+  --A:#2C67A8; --A-bg:#E3EDF8; --B:#A86F00; --B-bg:#FBF0D6; --C:#B8264F; --C-bg:#FBE3EA;
+  --font-display:'Dela Gothic One','Hiragino Sans','Yu Gothic',sans-serif;
+  --font-body:'BIZ UDPGothic','Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic UI','Meiryo',sans-serif;
+  --font-num:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --r:16px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.75;letter-spacing:.01em}
+a{color:var(--gold-hi)}
+button,input{font:inherit;color:inherit}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.wrap{max-width:760px;margin-inline:auto;padding-inline:16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- もくじ（ホーム） ---------- */
+.hero{position:relative;padding-block:18px 6px;isolation:isolate}
+.hero::before{content:"";position:absolute;inset:-30px -16px auto;height:560px;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 55% at 50% 30%,rgba(92,202,214,.13),transparent 70%),
+             repeating-linear-gradient(90deg,rgba(217,180,90,.045) 0 1px,transparent 1px 36px);
+  -webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+.banner{display:block;width:100%;height:auto;border-radius:18px;border:1px solid var(--rule-2);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.hero-text{margin-top:18px;display:grid;gap:8px}
+.eyebrow{margin:0;font-size:12.5px;letter-spacing:.16em;color:var(--gold);font-weight:700}
+.hero h1{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(30px,8.6vw,42px);line-height:1.2;letter-spacing:.02em;text-wrap:balance}
+.gold{background:linear-gradient(180deg,#fbe9b0 0%,#e2bf66 46%,#a47a2c 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{margin:0;color:var(--muted);font-size:15.5px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0;padding:0;list-style:none}
+.meta li{font-size:12.5px;color:var(--gold-hi);border:1px solid var(--rule-2);border-radius:999px;padding:2px 10px;line-height:1.6;font-variant-numeric:tabular-nums}
+
+.search{position:relative;margin-top:20px}
+.search svg{position:absolute;left:14px;top:50%;width:20px;height:20px;transform:translateY(-50%);color:var(--gold);pointer-events:none}
+.search input{width:100%;height:50px;border-radius:14px;border:1px solid var(--rule-2);background:var(--bg-2);padding:0 44px 0 44px;font-size:16px;color:var(--ink);-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:var(--faint)}
+.search input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,180,90,.18)}
+.search input::-webkit-search-cancel-button{display:none}
+.qx{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:0;background:rgba(217,180,90,.14);color:var(--gold-hi);font-size:18px;line-height:1;cursor:pointer}
+.qinfo{margin:10px 2px 0;color:var(--muted);font-size:14px}
+
+.sec{margin:28px 0 10px;font-size:13px;letter-spacing:.14em;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--rule)}
+.start-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:540px){
+  .start-steps{grid-template-columns:minmax(0,1fr)}
+  .start-steps a{grid-template-columns:26px minmax(0,1fr) auto;align-items:center;column-gap:12px;padding:11px 14px}
+  .start-steps .n{margin:0;grid-row:1/3}
+  .start-steps b{grid-column:2}
+  .start-steps small{grid-column:2}
+}
+.start-steps a{display:grid;gap:2px;height:100%;padding:12px 10px 12px;border-radius:14px;border:1px solid var(--rule-2);background:linear-gradient(160deg,var(--panel-2),var(--panel));text-decoration:none;color:var(--ink)}
+.start-steps .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--bg);font-weight:700;font-size:14px;line-height:1;margin-bottom:4px}
+.start-steps b{font-size:14.5px;line-height:1.4}
+.start-steps small{color:var(--muted);font-size:12px;line-height:1.45}
+.start-steps a:hover{border-color:var(--gold)}
+
+.group{margin-top:4px}
+.rows{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.mrow{display:grid;grid-template-columns:44px minmax(0,1fr) 14px;gap:12px;align-items:center;padding:12px 14px;text-decoration:none;color:var(--ink);border-top:1px solid rgba(217,180,90,.11)}
+.mrow:first-child{border-top:0}
+.mrow:hover{background:rgba(217,180,90,.06)}
+.mrow:focus-visible{outline-offset:-3px}
+.ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#17414d,#0e2932);border:1px solid var(--rule-2);color:var(--gold-hi)}
+.ic svg{width:22px;height:22px}
+.mrow b{display:block;font-size:16px;line-height:1.45}
+.mrow small{display:block;color:var(--muted);font-size:13px;line-height:1.5;margin-top:1px}
+.chev{width:14px;height:14px;color:var(--gold)}
+.foot{margin:30px 0 40px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px;display:grid;gap:4px}
+
+/* ---------- 項目のページ ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(10,27,34,.9);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
+.topbar .wrap{display:flex;align-items:center;gap:10px;min-height:56px}
+.back{display:inline-flex;align-items:center;gap:4px;flex:none;border:1px solid var(--rule-2);background:rgba(217,180,90,.08);color:var(--gold-hi);border-radius:999px;padding:6px 14px 6px 10px;font-weight:700;font-size:14px;cursor:pointer}
+.back svg{width:16px;height:16px}
+.tb-title{flex:1;min-width:0;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-emblem{flex:none;width:38px;height:38px}
+a.back{text-decoration:none}
+.tb-close{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--rule-2);background:rgba(217,180,90,.08);color:var(--gold-hi)}
+.tb-close svg{width:18px;height:18px}
+
+.item{padding-block:20px 8px}
+.item>.eyebrow{margin-bottom:6px}
+.item h2{margin:0 0 14px;font-family:var(--font-display);font-weight:400;font-size:clamp(23px,6.4vw,30px);line-height:1.3;letter-spacing:.02em;text-wrap:balance}
+.gist{border:1px solid var(--rule-2);background:linear-gradient(160deg,rgba(217,180,90,.10),rgba(217,180,90,.03));border-radius:14px;padding:12px 15px 13px}
+.gist>span{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--bg);background:var(--gold);border-radius:999px;padding:1px 10px}
+.gist p{margin:7px 0 0;font-size:16.5px;font-weight:700;line-height:1.7}
+.item h3{display:flex;align-items:center;gap:10px;margin:30px 0 10px;font-size:18px;line-height:1.5}
+.item h3::before{content:"";flex:none;width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
+.item p{margin:10px 0}
+.small{font-size:14px;color:var(--muted)}
+.cap{margin:6px 2px 0;font-size:13px;color:var(--muted)}
+b,strong{font-weight:700;color:#fff}
+
+/* 手順（順番がある） */
+.steps{list-style:none;counter-reset:st;margin:12px 0;padding:0;display:grid;gap:10px}
+.steps>li{counter-increment:st;position:relative;padding-left:40px;min-height:30px}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:1px;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold-hi);display:grid;place-items:center;font-weight:700;font-size:14px;line-height:1}
+/* 並び（順番なし） */
+.dots{margin:10px 0;padding:0;list-style:none;display:grid;gap:8px}
+.dots>li{position:relative;padding-left:18px}
+.dots>li::before{content:"";position:absolute;left:3px;top:.72em;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+
+/* ポイント・注意 */
+.tip,.warn{margin:14px 0;border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.7}
+.tip{background:var(--tip-bg);border:1px solid rgba(217,180,90,.30)}
+.warn{background:var(--warn-bg);border:1px solid rgba(243,169,95,.40)}
+.tip>.lab,.warn>.lab{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:13px;letter-spacing:.06em;margin-right:6px}
+.tip>.lab{color:var(--gold-hi)}
+.warn>.lab{color:var(--warn)}
+.tip>.lab svg,.warn>.lab svg{width:15px;height:15px}
+
+/* アプリのボタンと同じ見た目 */
+.ui{display:inline-block;padding:0 8px;margin:0 2px;border-radius:7px;background:var(--app-navy);color:#fff;font-weight:700;font-size:.88em;line-height:1.75;white-space:nowrap;border:1px solid rgba(255,255,255,.18)}
+.ui.alt{background:var(--app-paper);color:var(--app-ink);border-color:var(--app-line)}
+.ui.danger{background:var(--app-red);color:#fff}
+code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background:rgba(217,180,90,.10);border-radius:6px;padding:1px 6px;word-break:break-all}
+.lb{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 6px;border-radius:7px;font-weight:700;font-size:14px;line-height:1}
+.lb.A{color:var(--A);background:var(--A-bg)}.lb.B{color:var(--B);background:var(--B-bg)}.lb.C{color:var(--C);background:var(--C-bg)}
+
+/* 画面の写真＋番号 */
+.shot{margin:14px 0 8px;max-width:430px}
+.shot-in{position:relative}
+.shot img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--rule-2);background:#eceef3;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.mk{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--gold);color:#0a1b22;font:700 12.5px/22px var(--font-body);text-align:center;box-shadow:0 0 0 2px #0a1b22,0 3px 8px rgba(0,0,0,.5);font-variant-numeric:tabular-nums;pointer-events:none}
+.shot figcaption{margin:7px 2px 0;font-size:13px;color:var(--muted)}
+.legend{list-style:none;margin:10px 0 6px;padding:0;display:grid;gap:9px;counter-reset:lg}
+.legend>li{counter-increment:lg;display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;font-size:15px;line-height:1.65}
+.legend>li::before{content:counter(lg);width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0a1b22;font-weight:700;font-size:12.5px;line-height:22px;text-align:center;margin-top:2px}
+.legend b{display:inline;margin-right:6px}
+.legend span{color:var(--muted)}
+.withlegend{display:grid;gap:4px}
+@media (min-width:760px){
+  .withlegend{grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:22px;align-items:start}
+  .withlegend .legend{position:sticky;top:76px;margin-top:14px}
+}
+.pair{display:grid;gap:4px}
+@media (min-width:640px){.pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
+
+/* 表 */
+.tbl{overflow-x:auto;margin:12px 0;border:1px solid var(--rule);border-radius:12px;-webkit-overflow-scrolling:touch}
+.tbl table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px;line-height:1.6}
+.tbl.fit table{min-width:0}
+.tbl.fit td:first-child{white-space:normal;min-width:6.5em;max-width:9em}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:9px 12px;border-top:1px solid rgba(217,180,90,.12)}
+.tbl thead th{border-top:0;color:var(--gold-hi);font-size:13px;letter-spacing:.06em;background:rgba(217,180,90,.07);white-space:nowrap}
+.tbl td:first-child{font-weight:700;white-space:nowrap}
+.tbl .prov{color:var(--warn);font-size:12px;font-weight:700;white-space:nowrap}
+
+/* 例のカード */
+.ex{margin:14px 0;border:1px solid var(--rule);border-radius:14px;padding:12px 14px 14px;background:var(--bg-2)}
+.ex h4{margin:0 0 4px;font-size:15px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ex .tag{font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;line-height:1.7}
+.tag.hit{background:rgba(127,216,170,.16);color:var(--ok)}
+.tag.miss{background:rgba(243,148,134,.14);color:var(--bad)}
+.tag.wait{background:rgba(243,169,95,.15);color:var(--warn)}
+.ex .shot{margin:10px 0 6px;max-width:360px}
+.ex p{margin:6px 0 0;font-size:15px}
+
+/* 図：WIN5の点数 */
+.calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0;font-variant-numeric:tabular-nums}
+.calc .r{display:grid;justify-items:center;gap:0;min-width:48px;padding:6px 6px 7px;border:1px solid var(--rule-2);border-radius:12px;background:var(--panel)}
+.calc .r small{font-size:12px;color:var(--muted);line-height:1.4}
+.calc .r b{font-family:var(--font-num);font-size:20px;line-height:1.2}
+.calc .op{color:var(--gold);font-weight:700}
+.calc .sum{padding:6px 12px;border-radius:12px;background:var(--gold);color:var(--bg);font-weight:700;display:grid;justify-items:center;line-height:1.3}
+.calc .sum b{color:var(--bg);font-family:var(--font-num);font-size:20px}
+.calc .sum small{font-size:12px}
+
+/* 図：流れ（データの更新） */
+.flow{list-style:none;margin:14px 0;padding:0;display:grid;gap:10px;counter-reset:fl}
+.flow>li{counter-increment:fl;position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--rule-2);border-radius:14px;background:linear-gradient(160deg,var(--panel-2),var(--panel))}
+.flow>li .ic{width:44px;height:44px}
+.flow>li b{display:block}
+.flow>li small{display:block;color:var(--muted);font-size:13.5px;line-height:1.55}
+.flow>li .who{font-size:11.5px;letter-spacing:.1em;color:var(--gold);font-weight:700}
+.flow>li+li::before{content:"";position:absolute;left:35px;top:-11px;width:2px;height:10px;background:var(--gold)}
+
+/* 図：ゾーンのものさし */
+.ladder{display:grid;grid-template-columns:repeat(12,minmax(0,1fr)) minmax(0,1.7fr);gap:3px;margin:12px 0 4px;font-variant-numeric:tabular-nums}
+.ladder .zl{grid-row:1;text-align:center;font-size:12.5px;font-weight:700;padding:3px 0;border-radius:8px 8px 0 0;line-height:1.4}
+.ladder .cell{grid-row:2;text-align:center;font-family:var(--font-num);font-size:13px;font-weight:600;padding:6px 0;border-radius:6px;line-height:1.2}
+.z1{background:rgba(217,180,90,.85);color:#1b1405}.z2{background:rgba(217,180,90,.42);color:#fff}.z3{background:rgba(92,202,214,.40);color:#fff}.z4{background:rgba(92,202,214,.18);color:#dff}.z5{background:transparent;color:var(--faint);border:1px dashed var(--faint)}
+.ladder .zl.z1,.ladder .zl.z2,.ladder .zl.z3,.ladder .zl.z4{background:none}
+.ladder .zl.z1{color:var(--gold-hi)}.ladder .zl.z2{color:var(--gold)}.ladder .zl.z3{color:var(--teal)}.ladder .zl.z4{color:#9fdde4}.ladder .zl.z5{border:0;color:var(--faint)}
+
+/* 図：層の決まり方 */
+.decide{list-style:none;margin:12px 0;padding:0;display:grid;gap:8px;counter-reset:dc}
+.decide>li{counter-increment:dc;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--panel)}
+.decide .q{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:start;font-size:15px;line-height:1.55}
+.decide .q::before{content:counter(dc);width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold-hi);display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;margin-top:1px}
+.decide .to{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+
+/* よくある困りごと */
+.faq{display:grid;gap:8px;margin:12px 0}
+.faq details{border:1px solid var(--rule);border-radius:14px;background:var(--panel);overflow:hidden}
+.faq summary{list-style:none;cursor:pointer;padding:13px 44px 13px 14px;position:relative;font-weight:700;line-height:1.55}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";position:absolute;right:18px;top:50%;width:9px;height:9px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.faq details[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.faq details[open] summary{border-bottom:1px solid rgba(217,180,90,.14)}
+.faq .a{padding:10px 14px 13px;color:var(--ink);font-size:15px}
+
+/* 用語集 */
+.gsearch{position:relative;margin:12px 0}
+.gsearch input{width:100%;height:44px;border-radius:12px;border:1px solid var(--rule-2);background:var(--bg-2);padding:0 14px;font-size:16px}
+.terms{margin:8px 0;display:grid;gap:0;border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--panel)}
+.term{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:11px 14px;border-top:1px solid rgba(217,180,90,.11)}
+.term:first-child{border-top:0}
+.term dt{font-weight:700;color:var(--gold-hi)}
+.term dd{margin:0;font-size:15px;line-height:1.65}
+@media (min-width:640px){.term{grid-template-columns:150px minmax(0,1fr);gap:14px}}
+
+/* 前へ・次へ */
+.pager{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:34px 0 10px}
+.pager a{display:grid;gap:2px;padding:11px 13px;border:1px solid var(--rule-2);border-radius:14px;background:var(--panel);text-decoration:none;color:var(--ink);min-height:64px}
+.pager a small{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.06em}
+.pager a b{font-size:14.5px;line-height:1.45}
+.pager .next{text-align:right}
+.pager .none{visibility:hidden}
+.tomenu{display:flex;justify-content:center;margin:6px 0 44px}
+.tomenu a{display:inline-flex;align-items:center;gap:6px;color:var(--gold-hi);text-decoration:none;font-weight:700;padding:8px 18px;border-radius:999px;border:1px solid var(--rule-2)}
+
+.url{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.copy{border:1px solid var(--rule-2);background:rgba(217,180,90,.10);color:var(--gold-hi);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;cursor:pointer}
+.sheet{max-width:300px;margin:12px 0;border-radius:16px;background:#f2f2f6;color:#111;padding:8px;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.sheet div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;font-size:15px;background:#fff;margin-top:2px}
+.sheet div:first-child{margin-top:0}
+.sheet div svg{width:20px;height:20px;color:#333}
+.sheet .hl{outline:2.5px solid var(--gold);outline-offset:-2px;font-weight:700}
+
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){
+  .item:not([hidden]){animation:in .22s ease-out}
+  @keyframes in{from{opacity:.25;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+
+.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}
+.shot.has-mk .shot-in{padding-left:30px}
+.shot.has-mk .mk{left:2px;margin-left:0}
+.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}
+
+</style></head><body>
+<div class="topbar" id="topbar" hidden><div class="wrap">
+<button class="back" id="back" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>もくじ</button>
+<a class="back" id="toApp" href="./"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>アプリに戻る</a>
+<span class="tb-title" id="tbTitle"></span>
+<a class="tb-close" id="closeApp" href="./" aria-label="アプリに戻る" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>
+<img class="tb-emblem" src="manual/emblem-160.webp" width="38" height="38" alt="">
+</div></div>
+
+<main id="home" class="wrap">
+<header class="hero">
+<img class="banner" src="manual/banner.webp" width="1200" height="655" alt="TENGER テンゲル　独自の統計・オッズ分析による馬券検討支援システム">
+<div class="hero-text">
+<p class="eyebrow">アプリの使い方</p>
+<h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
+<p class="lead">知りたい項目を押すと、その説明が出るよ。画面の写真に番号をつけて、順番に読めるようにしてあるよ。</p>
+<ul class="meta"><li>アプリ 2026.10.12-5</li><li>第13改訂版</li><li>大井 290走（10/9まで）</li></ul>
+</div>
+</header>
+
+<div class="search" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="さがす（例：WIN5、APIキー、的中）" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
+<p class="qinfo" id="qinfo" hidden></p>
+
+<section id="start" aria-labelledby="st-h">
+<h2 class="sec" id="st-h">はじめての人は、この順番で</h2>
+<ol class="start-steps">
+<li><a href="#install"><span class="n">1</span><b>iPhoneに入れる</b><small>ホーム画面に追加</small></a></li>
+<li><a href="#input"><span class="n">2</span><b>レースを判定する</b><small>オッズを入れるだけ</small></a></li>
+<li><a href="#record"><span class="n">3</span><b>結果を記録する</b><small>当たり外れと収支</small></a></li>
+</ol>
+</section>
+
+<nav id="menu" aria-label="もくじ">
+<section class="group" aria-label="はじめに"><h2 class="sec">はじめに</h2><div class="rows"><a class="mrow" id="m-about" href="#about"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg></span><span><b>このアプリでできること</b><small>5つのタブと、おぼえておいてほしいこと</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-install" href="#install"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/></svg></span><span><b>iPhoneに入れる・更新する</b><small>ホーム画面に追加／新しい版にする</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="判定する（判定タブ）"><h2 class="sec">判定する（判定タブ）</h2><div class="rows"><a class="mrow" id="m-input" href="#input"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></span><span><b>レースとオッズを入れる</b><small>必ず入れるもの・入れ方のコツ</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-ocr" href="#ocr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg></span><span><b>オッズ画像から読み取る</b><small>スクショ1〜3枚で入力欄が埋まる</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-result" href="#result"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></span><span><b>判定結果の見方</b><small>層・推奨ゾーン・3着・参考的中率</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-pick" href="#pick"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="7" height="10" rx="2"/><rect x="14" y="7" width="7" height="10" rx="2" stroke-dasharray="2.4 2.2"/><path d="m5 12 1.5 1.5L8.5 11"/></svg></span><span><b>買う馬を選ぶ</b><small>番号を押して「買う／買わない」を切り替え</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="記録する"><h2 class="sec">記録する</h2><div class="rows"><a class="mrow" id="m-record" href="#record"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 6.5 3.5 5 3.5-5M12 11.5V18M9 12.5h6M9 15.5h6"/></svg></span><span><b>結果と収支を記録する</b><small>券種・金額・買ったゾーン・着順</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-hit" href="#hit"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.2 2.8 2.8L16 9.5"/></svg></span><span><b>当たり外れの決まり方</b><small>例で見る「的中」と「不的中」</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-records" href="#records"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg></span><span><b>記録タブ</b><small>一覧・直す・判定画面で開く・書き出し</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="WIN5"><h2 class="sec">WIN5</h2><div class="rows"><a class="mrow" id="m-win5" href="#win5"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></svg></span><span><b>WIN5の組み立て方</b><small>5レース・予算・1着ゾーン・買う馬</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-win5rec" href="#win5rec"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M16 5h3v2a3 3 0 0 1-3 3M8 5H5v2a3 3 0 0 0 3 3"/><path d="M12 13v4M8 20h8M9.5 17h5"/></svg></span><span><b>WIN5の結果と記録</b><small>1着の馬番で○×・払戻を保存</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="数字とデータ"><h2 class="sec">数字とデータ</h2><div class="rows"><a class="mrow" id="m-stats" href="#stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span><b>実測・回収タブ</b><small>自分の収支と、実測①〜⑦</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-mother" href="#mother"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span><span><b>マザーデータ</b><small>参考的中率のもとになるデータ（3つ）</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-dataupdate" href="#dataupdate"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg></span><span><b>大井のデータを新しくする</b><small>分析シートと分析表を姫に送るだけ</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="設定"><h2 class="sec">設定</h2><div class="rows"><a class="mrow" id="m-zones" href="#zones"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span><b>買い目編集</b><small>区分ごとの馬単と3着を変える</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-apikey" href="#apikey"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M16 7l3 3M14 9l2 2"/></svg></span><span><b>画像の読み取り（APIキー）</b><small>キーの作り方と料金</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-backup" href="#backup"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></span><span><b>アプリの更新とバックアップ</b><small>記録を守る・機種変更</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section><section class="group" aria-label="困ったとき・ことば"><h2 class="sec">困ったとき・ことば</h2><div class="rows"><a class="mrow" id="m-trouble" href="#trouble"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg></span><span><b>困ったとき</b><small>よくあるメッセージと直し方</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a><a class="mrow" id="m-glossary" href="#glossary"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20"/><path d="M8.5 8h7M8.5 12h5"/></svg></span><span><b>用語集</b><small>層・比・ゾーン・旧本線…</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="chev"><path d="m9 5 7 7-7 7"/></svg></a></div></section>
+</nav>
+
+<footer class="foot">
+<span>わからないことは、画面のスクショを姫に送ってね。</span>
+<span>画面の写真は、架空のレースで撮ったアプリの画面だよ。写真の数字は例だよ。</span>
+</footer>
+</main>
+
+<main id="page" class="wrap" hidden>
+<section class="item" id="s-about" data-id="about" hidden aria-labelledby="h-about"><p class="eyebrow">はじめに</p><h2 id="h-about">このアプリでできること</h2><div class="gist"><span>ひとことで</span><p>オッズを入れるだけで、テンゲルⅢ（第13改訂版）の判定が全部出るアプリだよ。買った馬券の結果と収支も残せるよ。</p></div>
+
+<h3>画面の下の5つのタブ</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_tabbar.webp" width="390" height="62" alt="画面の下の5つのタブ（判定・WIN5・記録・実測・回収・設定）" loading="lazy" decoding="async"></div></figure>
+<div class="tbl fit"><table>
+<thead><tr><th>タブ</th><th>できること</th></tr></thead>
+<tbody>
+<tr><td>判定</td><td>レースのオッズを入れて判定する。買った結果もここで記録する</td></tr>
+<tr><td>WIN5</td><td>5レースの1着ゾーンと買う馬を、予算の中で出す</td></tr>
+<tr><td>記録</td><td>保存したレースの一覧。直す・開く・書き出す</td></tr>
+<tr><td>実測・回収</td><td>自分の収支と、マザーデータの実測①〜⑦</td></tr>
+<tr><td>設定</td><td>説明書・CM・買い目編集・マザーデータ・画像の読み取り・更新・バックアップ</td></tr>
+</tbody></table></div>
+
+<h3>おぼえておいてほしいこと</h3>
+<ul class="dots">
+<li><b>判定はルールどおり機械的に出る</b>よ。組番（○-○）と点数は出さない。WIN5だけは予算に合わせるので点数が出るよ。</li>
+<li><b>記録はこのiPhoneの中だけ</b>に保存されるよ。外に送るのは、画像の読み取りでスクショをAnthropicに送るときだけ。</li>
+<li><b>ホーム画面のアイコンを消すと、記録も消える</b>よ。ときどき「バックアップを保存」してね。</li>
+</ul>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>大井のデータで見るとき、大井以外のレース（JRAやほかの地方競馬）は【参考判定】として出るよ。仕組みは同じで、参考値は大井の実測だよ。</div>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20"/><path d="M8.5 8h7M8.5 12h5"/></svg>説明書</span>この説明書は、アプリの画面の上にある<span class="ui alt">説明書</span>か、設定タブの<span class="ui">説明書を開く</span>で、いつでも見られるよ。電波がなくても読めるよ。</div><nav class="pager" aria-label="前後の項目"><span class="none"></span><a class="next" href="#install"><small>次の項目 ›</small><b>iPhoneに入れる・更新する</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-install" data-id="install" hidden aria-labelledby="h-install"><p class="eyebrow">はじめに</p><h2 id="h-install">iPhoneに入れる・更新する</h2><div class="gist"><span>ひとことで</span><p>Safariで開いて「ホーム画面に追加」するだけ。新しい版は、上に出るお知らせの「更新する」を押せばOK。</p></div>
+
+<h3>iPhoneに入れる</h3>
+<ol class="steps">
+<li><div>Safariでこのアドレスを開く<div class="url"><code id="appUrl">https://tmmd6z5fh8-creator.github.io/TENGEL/</code><button class="copy" type="button" data-copy="appUrl">コピー</button></div></div></li>
+<li>画面の下の<b>共有ボタン</b>（四角に上向きの矢印）を押す</li>
+<li><b>「ホーム画面に追加」</b>を押して、右上の<b>「追加」</b>を押す</li>
+<li>これからは、ホーム画面の<b>テンゲルⅢのアイコン</b>から開く</li>
+</ol>
+<div class="sheet" aria-hidden="true">
+<div>コピー<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg></div>
+<div>ブックマークを追加<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20"/><path d="M8.5 8h7M8.5 12h5"/></svg></div>
+<div class="hl">ホーム画面に追加<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div>
+</div>
+<p class="cap">Safariの共有メニュー（イメージ）。下のほうにあるときは、上にスクロールして探してね。</p>
+<p class="small">一度開けば、電波がないところでも開いて判定できるよ。画像の読み取りと、新しい版の確認だけはネットが必要。</p>
+
+<h3>新しい版にする</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_update_bar.webp" width="390" height="217" alt="新しい版のお知らせと「更新する」ボタン" loading="lazy" decoding="async"></div><figcaption>新しい版があるときのお知らせ（画面は例）</figcaption></figure>
+<ol class="steps">
+<li>新しい版があると、画面の上にお知らせが出るよ。<span class="ui">更新する</span>を押せば終わり</li>
+<li>自分で確かめるときは、<b>設定 → アプリの更新</b>の<span class="ui alt">新しい版があるか確認</span>→ あれば<span class="ui">新しい版にする</span></li>
+</ol>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>更新しても、記録・買い目の設定・マザーデータは消えないよ。「大井のデータも新しくなるよ」と出たら、大井の実測も新しくなる版だよ。</div>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span><b>ホーム画面のアイコンを消すと、中の記録も一緒に消えちゃう</b>よ。入れ直す前や機種変更の前は、必ず<b>設定 → バックアップを保存</b>をしてね。</div>
+<p class="small">リンクを人に送っても大丈夫。記録・設定・APIキーは、それぞれのiPhoneの中だけにあるよ。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#about"><small>‹ 前の項目</small><b>このアプリでできること</b></a><a class="next" href="#input"><small>次の項目 ›</small><b>レースとオッズを入れる</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-input" data-id="input" hidden aria-labelledby="h-input"><p class="eyebrow">判定する（判定タブ）</p><h2 id="h-input">レースとオッズを入れる</h2><div class="gist"><span>ひとことで</span><p>R・距離・馬場・頭数・単勝オッズ・3連単1位の6つを入れると、その場で判定が出るよ。</p></div>
+
+<h3>レース情報</h3>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_judge_info.webp" width="358" height="530" alt="判定タブのレース情報の欄" loading="lazy" decoding="async"><i class="mk" style="top:16.34%">1</i><i class="mk" style="top:29.53%">2</i><i class="mk" style="top:49.63%">3</i><i class="mk" style="top:63.61%">4</i><i class="mk" style="top:78.74%">5</i><i class="mk" style="top:92.96%">6</i></div><figcaption>判定タブ「レース情報」（画面は例・架空のレース）</figcaption></figure>
+<ol class="legend">
+<li><div><b>マザーデータ</b><span>参考的中率に使うデータ。ふだんは「大井競馬」のままでOK</span></div></li>
+<li><div><b>オッズ画像から読み取る</b><span>スクショから全部入れてくれるよ（次の項目）</span></div></li>
+<li><div><b>開催場・日付</b><span>開催場は「大井」のように入れる</span></div></li>
+<li><div><b>レース・距離</b><span>レース番号はリストから選ぶ。距離はm</span></div></li>
+<li><div><b>出走頭数・コース</b><span>コースはダ（ダート）か芝</span></div></li>
+<li><div><b>馬場状態</b><span>良・稍重・重・不良。<b>「重」だとA層</b>になるよ</span></div></li>
+</ol>
+</div>
+
+<h3>単勝・複勝オッズ</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_judge_odds.webp" width="358" height="360" alt="単勝・複勝オッズの欄" loading="lazy" decoding="async"></div><figcaption>馬番ごとに単勝と複勝を入れる（途中は省略）</figcaption></figure>
+<ul class="dots">
+<li>馬番の横に<b>単勝</b>と<b>複勝</b>を入れる。複勝はなくても判定できるよ（大穴・超大穴の番号を並べる順番に使う）</li>
+<li>複勝が幅（1.2-1.5 など）のときは、<b>下の数字（1.2）だけ</b>でOK（iPhoneの数字キーでは「-」が打てないからね）</li>
+<li>取消・除外の馬は、単勝を<b>空欄</b>のまま。馬番が足りないときは<span class="ui alt">＋馬番を1つ増やす</span></li>
+<li>単勝の一覧がないときは、「単勝1位オッズ」だけでも判定できるよ（そのときは馬番が出ない）</li>
+</ul>
+
+<h3>3連単（人気順）</h3>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_judge_tri.webp" width="358" height="344" alt="3連単の人気順の欄" loading="lazy" decoding="async"><i class="mk" style="top:27.60%">1</i><i class="mk" style="top:49.96%">2</i><i class="mk" style="top:88.88%">3</i></div></figure>
+<ol class="legend">
+<li><div><b>1位オッズ・組番</b><span>1位オッズは必ず入れる（層を決める「比」に使う）。組番はなくてもOKで、「.」で区切れる（3.1.5 → 3-1-5）</span></div></li>
+<li><div><b>5位・10位オッズ</b><span>記録用。なくても判定できるよ</span></div></li>
+<li><div><b>入力をクリア／入力例を入れる</b><span>クリアはR・距離・頭数・オッズを消す。入力例は架空のレースで動きを試せる（保存はできない）</span></div></li>
+</ol>
+</div>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>「入力をクリア」しても、<b>開催場・日付・コース・馬場は残る</b>よ。前のレースで「重」にしていたら、次のレースで押し直してね（重だとA層になるから）。</div>
+
+<h3>入力中は、下に判定が出る</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_bottom_bars.webp" width="390" height="150" alt="入力中に下に出る判定のバー" loading="lazy" decoding="async"></div><figcaption>「判定へ↓」を押すと判定結果まで移動するよ</figcaption></figure>
+<p>入力欄を見ている間は、下にこのバーが出るよ。押すと判定結果まで移動するよ。</p>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>足りない項目があると「判定不可（データ不足）」と出て、足りない項目を教えてくれるよ。</div>
+<p class="small">使っているマザーデータと開催場が違うと【参考判定】になるよ（大井のデータなら、大井以外のレース）。開催場に合うマザーデータがあれば、切り替えるボタンが出るよ。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#install"><small>‹ 前の項目</small><b>iPhoneに入れる・更新する</b></a><a class="next" href="#ocr"><small>次の項目 ›</small><b>オッズ画像から読み取る</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-ocr" data-id="ocr" hidden aria-labelledby="h-ocr"><p class="eyebrow">判定する（判定タブ）</p><h2 id="h-ocr">オッズ画像から読み取る</h2><div class="gist"><span>ひとことで</span><p>スクショを1〜3枚選ぶだけで、入力欄が埋まるよ。使うにはAPIキーが1回だけ必要。</p></div>
+
+<h3>使い方</h3>
+<ol class="steps">
+<li><span class="ui">オッズ画像から読み取る</span>を押す</li>
+<li>単勝・複勝の画面と、3連単の人気順の画面のスクショを<b>1〜3枚</b>選ぶ</li>
+<li><b>20〜60秒</b>待つと、入力欄に入って「読み取った：…」と出る</li>
+<li>「読めなかった：…」と出た項目は、<b>前の値が残っている</b>ので必ず手で入れ直す</li>
+<li>オッズと頭数だけは、もとの画面と見比べて確かめてね</li>
+</ol>
+
+<h3>はじめて押したとき</h3>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_ocr_need.webp" width="358" height="360" alt="オッズ画像から読み取るボタンと、キーがないときの案内" loading="lazy" decoding="async"><i class="mk" style="top:43.81%">1</i><i class="mk" style="top:70.79%">2</i></div></figure>
+<ol class="legend">
+<li><div><b>読み取りのボタン</b><span>押すと写真を選ぶ画面になる</span></div></li>
+<li><div><b>キーがまだないとき</b><span>この案内が出るよ。「「画像の読み取り」の設定を開く」からキーを入れてね</span></div></li>
+</ol>
+</div>
+
+<h3>読み取るもの</h3>
+<p>開催場・日付・R・距離・コース・馬場・出走頭数・単勝・複勝・3連単の1位／5位／10位（組番も）</p>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>料金は1回 約1〜4円（節約モードなら1円未満）。画面を大きめに撮ると読みやすいよ。</div>
+<p class="small">スクショは読み取りのためにAnthropicへ直接送られるよ。記録やほかのデータは送らないよ。キーの作り方は「画像の読み取り（APIキー）」を見てね。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#input"><small>‹ 前の項目</small><b>レースとオッズを入れる</b></a><a class="next" href="#result"><small>次の項目 ›</small><b>判定結果の見方</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-result" data-id="result" hidden aria-labelledby="h-result"><p class="eyebrow">判定する（判定タブ）</p><h2 id="h-result">判定結果の見方</h2><div class="gist"><span>ひとことで</span><p>まず一番上の「層」と、第1・第2…の「推奨ゾーン」を見ればOK。下にいくほど細かい情報だよ。</p></div>
+
+<h3>画面の見方</h3>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_result_a1.webp" width="358" height="552" alt="判定結果の画面の上半分（A層の例）" loading="lazy" decoding="async"><i class="mk" style="top:5.32%">1</i><i class="mk" style="top:12.29%">2</i><i class="mk" style="top:20.91%">3</i><i class="mk" style="top:47.43%">4</i><i class="mk" style="top:53.47%">5</i><i class="mk" style="top:58.71%">6</i><i class="mk" style="top:76.03%">7</i></div><figcaption>A層の例・上半分（画面は例・架空のレース）</figcaption></figure>
+<ol class="legend">
+<li><div><b>層と区分</b><span>左のバッジが層（A＝堅・B＝警戒・C＝穴）。右が区分（「A層（固定）」「C層・第2段階」など）</span></div></li>
+<li><div><b>比・頭数・距離・馬場</b><span>比＝3連単1位 ÷ 単勝1位</span></div></li>
+<li><div><b>チップ</b><span>レース判定（⚠️【薄】・【並】・◎【厚】）や超大穴帯注意など。表示だけで、ゾーンは変わらないよ</span></div></li>
+<li><div><b>推奨ゾーン（馬単）</b><span>第1・第2…の順。矢印は1着→2着</span></div></li>
+<li><div><b>そのゾーンの馬番</b><span>押すと買う馬を選べる（「買う馬を選ぶ」）</span></div></li>
+<li><div><b>参考的中率と理由</b><span>その区分で、そのゾーンが実際に出た割合（マザーデータの実測）</span></div></li>
+<li><div><b>3着（2本）</b><span>3連単の3着に入れるゾーンと馬番。1・2着に使った人気馬は除いて読む</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_result_a2.webp" width="358" height="853" alt="判定結果の画面の下半分" loading="lazy" decoding="async"><i class="mk" style="top:38.97%">8</i><i class="mk" style="top:53.66%">9</i><i class="mk" style="top:67.77%">10</i><i class="mk" style="top:74.60%">11</i><i class="mk" style="top:82.04%">12</i><i class="mk" style="top:95.86%">13</i></div><figcaption>下半分（第2のゾーンと、その下）</figcaption></figure>
+<ol class="legend" style="counter-reset:lg 7">
+<li><div><b>番号の一覧</b><span>人気・中穴・大穴・超大穴の馬番。13番人気より下は対象外</span></div></li>
+<li><div><b>レース判定</b><span>その区分の人気→人気率・穴絡み率と、3連単の参考値</span></div></li>
+<li><div><b>旧本線</b><span>第12改訂版のゾーン。比べるための記録用で、買い目じゃないよ</span></div></li>
+<li><div><b>WIN5に入れる</b><span>JRAのWIN5対象レースのとき、①〜⑤に入れる</span></div></li>
+<li><div><b>全文コピー・保存</b><span>判定の全文をコピー／判定と結果を保存</span></div></li>
+<li><div><b>全STEPを表示</b><span>STEP0〜T3の全文</span></div></li>
+</ol>
+</div>
+
+<h3>区分ごとの推奨ゾーン</h3>
+<p class="small">第13改訂版のはじめの設定だよ。設定の「買い目編集」で変えると、判定に「カスタム買い目」と出て、この表と変わるよ。</p>
+<div class="tbl fit"><table>
+<thead><tr><th>区分</th><th>馬単（1着→2着）</th><th>3着</th></tr></thead>
+<tbody>
+<tr><td><span class="lb A">A</span> A層（固定）</td><td>① 人気→人気<br>② 人気→中穴</td><td>人気・中穴</td></tr>
+<tr><td><span class="lb B">B</span> B層（固定）</td><td>① 中穴→人気<br>② 人気→大穴</td><td>人気・大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・第1段階</td><td>① 人気→大穴<br>② 中穴→中穴 <span class="prov">暫定</span><br>③ 大穴→人気</td><td>①③ 人気・中穴<br>② 人気・大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・第2段階</td><td>① 人気→大穴／超大穴<br>② 中穴→大穴／超大穴<br>③ 大穴→人気</td><td>①③ 人気・中穴<br>② 人気・超大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・非該当</td><td>① 人気→人気<br>② 人気→中穴</td><td>見送り</td></tr>
+</tbody></table></div>
+
+<h3>C層だとこうなる</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_result_c.webp" width="358" height="665" alt="判定結果の画面（C層・第2段階の例）" loading="lazy" decoding="async"></div><figcaption>C層・第2段階の例。推奨ゾーンが3本になって、大穴・超大穴の番号も出るよ（画面は例）</figcaption></figure>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>「人気→大穴」と「大穴→人気」は別の馬券だよ。矢印の向き（1着→2着）を見てね。層の決まり方は「用語集」にあるよ。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#ocr"><small>‹ 前の項目</small><b>オッズ画像から読み取る</b></a><a class="next" href="#pick"><small>次の項目 ›</small><b>買う馬を選ぶ</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-pick" data-id="pick" hidden aria-labelledby="h-pick"><p class="eyebrow">判定する（判定タブ）</p><h2 id="h-pick">買う馬を選ぶ</h2><div class="gist"><span>ひとことで</span><p>ゾーンの番号を押すと、その馬を「買う／買わない」に切り替えられるよ。当たり外れは選んだ馬で決まるよ。</p></div>
+
+<div class="pair">
+<figure class="shot"><div class="shot-in"><img src="manual/s_pick_before.webp" width="324" height="299" alt="ゾーンの番号（押す前）" loading="lazy" decoding="async"></div><figcaption>押す前：はじめは全部選んだ状態</figcaption></figure>
+<figure class="shot"><div class="shot-in"><img src="manual/s_pick_after.webp" width="324" height="299" alt="ゾーンの番号（4番を外したあと）" loading="lazy" decoding="async"><i class="ring" style="left:75.15%;top:14.69%;width:10.46%;height:11.37%"></i></div><figcaption>2着の4番を押すと、うすくなる＝買わない馬</figcaption></figure>
+</div>
+
+<h3>選び方</h3>
+<ol class="steps">
+<li>推奨ゾーンの<b>番号（1着・2着・3着）</b>を押す。うすくなった番号は「買わない馬」</li>
+<li>もう一度押すと、元に戻る</li>
+<li>それぞれの欄で<b>1頭は残す</b>（全部は外せないよ）</li>
+</ol>
+<ul class="dots">
+<li>はじめは全部選んだ状態だよ</li>
+<li>馬単・3連単の当たり外れは、<b>買ったゾーンの「選んだ馬」</b>で決まるよ（「当たり外れの決まり方」）</li>
+<li>選んだ馬は記録に残って、記録タブに「買った：人気→中穴（2着 7・1）」のように出るよ</li>
+<li>記録タブの「判定画面で開く」で、選んだ馬も戻るよ</li>
+<li>日付・開催場・レースを変えると、選び直しになるよ</li>
+</ul><nav class="pager" aria-label="前後の項目"><a class="prev" href="#result"><small>‹ 前の項目</small><b>判定結果の見方</b></a><a class="next" href="#record"><small>次の項目 ›</small><b>結果と収支を記録する</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-record" data-id="record" hidden aria-labelledby="h-record"><p class="eyebrow">記録する</p><h2 id="h-record">結果と収支を記録する</h2><div class="gist"><span>ひとことで</span><p>買った券種・金額・着順を入れて「判定と結果を保存」。当たり外れと収支は自動で出るよ。</p></div>
+
+<h3>画面の見方</h3>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_record_1.webp" width="358" height="526" alt="結果・収支の記録の欄（上）" loading="lazy" decoding="async"><i class="mk" style="top:24.39%">1</i><i class="mk" style="top:62.43%">2</i><i class="mk" style="top:85.78%">3</i></div><figcaption>馬単と3連単を買って的中した例（画面は例）</figcaption></figure>
+<ol class="legend">
+<li><div><b>結果</b><span>的中・不的中・結果待ちと、購入→回収（収支）。自動で出るよ</span></div></li>
+<li><div><b>買った券種</b><span>いくつでも選べる。はじめは馬単だけ選ばれているよ</span></div></li>
+<li><div><b>券種ごとの金額</b><span>購入額→回収額（円）。外れは0。券種ごとの当たり外れも出る</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_record_2.webp" width="358" height="438" alt="結果・収支の記録の欄（下）" loading="lazy" decoding="async"><i class="mk" style="top:10.73%">4</i><i class="mk" style="top:32.31%">5</i><i class="mk" style="top:58.61%">6</i><i class="mk" style="top:91.05%">7</i></div><figcaption>つづき</figcaption></figure>
+<ol class="legend" style="counter-reset:lg 3">
+<li><div><b>買ったゾーン</b><span>本当に買ったゾーンを押す（馬単・3連単を選んだときだけ出る）</span></div></li>
+<li><div><b>着順</b><span>左で馬番か人気を選んで（馬番は単勝の一覧を入れたときだけ）、右に1着.2着.3着を「.」で区切って入れる（2.5.1 → 2-5-1）</span></div></li>
+<li><div><b>その他</b><span>ふつうは「自動判定」。買わなかったら「未購入」、取消・中止は「払い戻し」</span></div></li>
+<li><div><b>判定と結果を保存</b><span>判定と、この記録を一緒に保存</span></div></li>
+</ol>
+</div>
+
+<h3>入れる順番</h3>
+<ol class="steps">
+<li>買った券種を押す（買っていない券種は押して外す）</li>
+<li>券種ごとに購入額→回収額を入れる（外れは0）</li>
+<li>買ったゾーンを押す</li>
+<li>着順を入れる</li>
+<li><span class="ui">判定と結果を保存</span>を押す</li>
+</ol>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>レース前でも保存できるよ。着順や回収額が空なら「結果待ち」で保存して、あとで足せばOK。</div>
+<ul class="dots">
+<li>同じ日・同じ開催場・同じRの記録は1つだけ。もう一度保存すると「上書き保存」になるよ</li>
+<li>「未購入」は収支に入らない。「払い戻し」は、回収額が空なら購入額と同じで計算するよ</li>
+<li>メモには買い目などを自由に書けるよ</li>
+<li>消すときは<span class="ui alt">記録を削除</span>→ もう一度<span class="ui danger">消す</span></li>
+</ul>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>この記録は自分の収支のためだけ。テンゲルの基盤データ（マザーデータ）には入らないよ。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#pick"><small>‹ 前の項目</small><b>買う馬を選ぶ</b></a><a class="next" href="#hit"><small>次の項目 ›</small><b>当たり外れの決まり方</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-hit" data-id="hit" hidden aria-labelledby="h-hit"><p class="eyebrow">記録する</p><h2 id="h-hit">当たり外れの決まり方</h2><div class="gist"><span>ひとことで</span><p>馬単・3連単は「買ったゾーン」と「選んだ馬」で、ほかの券種は回収額で決まるよ。どれか1つでも当たれば、そのレースは的中。</p></div>
+
+<div class="tbl fit"><table>
+<thead><tr><th>券種</th><th>的中になるとき</th></tr></thead>
+<tbody>
+<tr><td>馬単</td><td>1着・2着が、買ったゾーンの選んだ馬</td></tr>
+<tr><td>3連単</td><td>馬単が的中して、3着もそのゾーンの3着（選んだ馬）</td></tr>
+<tr><td>単勝・複勝・馬連・ワイド・3連複</td><td>回収額が入っている（0なら不的中、空なら結果待ち）</td></tr>
+<tr><td>レース全体</td><td>どれか1つでも的中なら的中</td></tr>
+</tbody></table></div>
+
+<h3>例で見てみよう</h3>
+<p>A層のレースで、<b>第2「人気→中穴」だけ</b>を馬単と3連単で買った。2着の6番人気（4番）は外した、とするよ。</p>
+
+<div class="ex"><h4>結果 2番人気 → 5番人気 → 1番人気<span class="tag hit">的中</span></h4>
+<figure class="shot"><div class="shot-in"><img src="manual/s_st_hit.webp" width="324" height="154" alt="的中の表示" loading="lazy" decoding="async"></div></figure>
+<p>人気→中穴なので、買ったゾーン第2に入って的中。3着の1番人気も3着「人気・中穴」に入るから、3連単も的中だよ。</p></div>
+
+<div class="ex"><h4>結果 1番人気 → 3番人気 → 2番人気<span class="tag miss">不的中</span></h4>
+<figure class="shot"><div class="shot-in"><img src="manual/s_st_notbought.webp" width="324" height="154" alt="買っていないゾーンで不的中の表示" loading="lazy" decoding="async"></div></figure>
+<p>人気→人気なので第1には入ったけど、第1は買っていないゾーンだから不的中。</p></div>
+
+<div class="ex"><h4>結果 2番人気 → 6番人気 → 1番人気<span class="tag miss">不的中</span></h4>
+<figure class="shot"><div class="shot-in"><img src="manual/s_st_notpicked.webp" width="324" height="154" alt="選んでいない馬で不的中の表示" loading="lazy" decoding="async"></div></figure>
+<p>ゾーンは第2で合っているけど、2着の6番人気は外した馬だから不的中。</p></div>
+
+<div class="ex"><h4>B層・結果 1番人気 → 2番人気 → 3番人気<span class="tag miss">不的中</span></h4>
+<figure class="shot"><div class="shot-in"><img src="manual/s_st_outside.webp" width="324" height="84" alt="推奨ゾーンの外で不的中の表示" loading="lazy" decoding="async"></div></figure>
+<p>人気→人気はB層の推奨ゾーン（中穴→人気・人気→大穴）にないので「推奨ゾーンの外」。</p></div>
+
+<div class="ex"><h4>着順をまだ入れていない<span class="tag wait">結果待ち</span></h4>
+<figure class="shot"><div class="shot-in"><img src="manual/s_st_wait.webp" width="324" height="114" alt="結果待ちの表示" loading="lazy" decoding="async"></div></figure>
+<p>着順を入れると、自動で判定するよ。</p></div>
+
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>馬単・3連単が的中して回収額が空だと、「回収額を入れてね💰」と教えてくれるよ。</div>
+<p class="small">前の記録（買ったゾーンを選ぶ機能ができる前のもの）は、推奨ゾーン全部で判定するよ。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#record"><small>‹ 前の項目</small><b>結果と収支を記録する</b></a><a class="next" href="#records"><small>次の項目 ›</small><b>記録タブ</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-records" data-id="records" hidden aria-labelledby="h-records"><p class="eyebrow">記録する</p><h2 id="h-records">記録タブ</h2><div class="gist"><span>ひとことで</span><p>保存したレースが日付ごとに並ぶよ。押すと開いて、直したり判定画面に戻したりできるよ。</p></div>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_records.webp" width="358" height="661" alt="記録タブの一覧" loading="lazy" decoding="async"><i class="mk" style="top:12.30%">1</i><i class="mk" style="top:28.66%">2</i><i class="mk" style="top:39.24%">3</i><i class="mk" style="top:47.92%">4</i><i class="mk" style="top:59.14%">5</i><i class="mk" style="top:66.38%">6</i><i class="mk" style="top:74.47%">7</i></div><figcaption>記録タブ（画面は例）</figcaption></figure>
+<ol class="legend">
+<li><div><b>年と月</b><span>年を選んで、月か「年間」を押す。点がついている月は記録がある月</span></div></li>
+<li><div><b>絞り込み</b><span>すべて／結果待ち／的中／不的中／未購入・払い戻し</span></div></li>
+<li><div><b>その月のまとめ</b><span>購入走数・的中・購入→回収</span></div></li>
+<li><div><b>この期間を書き出す</b><span>「コピー」でExcelに貼り付けられる</span></div></li>
+<li><div><b>記録のバックアップ</b><span>設定タブのバックアップへ移動</span></div></li>
+<li><div><b>日付ごとのまとめ</b><span>その日の購入走数・的中・収支</span></div></li>
+<li><div><b>1レースの行</b><span>R・層・区分・券種、着順、買ったゾーン、結果、購入→回収。押すと開く</span></div></li>
+</ol>
+</div>
+
+<h3>開いたときのボタン</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_record_open.webp" width="356" height="172" alt="開いた記録のボタン" loading="lazy" decoding="async"></div><figcaption>行を押して開いたときの下のボタン</figcaption></figure>
+<ul class="dots">
+<li><span class="ui">記録を更新</span>着順・金額・買ったゾーンを直したら押す</li>
+<li><span class="ui alt">判定画面で開く</span>そのレースのオッズと選んだ馬を、判定画面に戻す。馬を選び直すときに使ってね</li>
+<li><span class="ui alt">削除</span>もう一度「消す」を押すと消える</li>
+<li>「保存した判定（STEP0〜T3）」で、保存したときの判定の全文が見られるよ</li>
+</ul>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>判定画面で開いて保存し直すと、保存した判定は<b>いまの買い目・マザーデータ</b>で上書きされるよ。</div>
+<p class="small">「購入額未入力」の印が出た行は、開いて購入額を入れてね。WIN5の記録はWIN5タブにあるよ。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#hit"><small>‹ 前の項目</small><b>当たり外れの決まり方</b></a><a class="next" href="#win5"><small>次の項目 ›</small><b>WIN5の組み立て方</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-win5" data-id="win5" hidden aria-labelledby="h-win5"><p class="eyebrow">WIN5</p><h2 id="h-win5">WIN5の組み立て方</h2><div class="gist"><span>ひとことで</span><p>5レースを判定画面で入れて、予算を入れるだけ。点数が予算に収まるように、買う馬を出してくれるよ。</p></div>
+
+<h3>点数のしくみ</h3>
+<p>WIN5は、JRAが指定する5レースの1着を全部当てる馬券。1点100円で、点数は5レースで選んだ頭数のかけ算だよ。</p>
+<div class="calc" aria-label="1頭×6頭×2頭×2頭×1頭＝24点、2,400円">
+<div class="r"><small>①</small><b>1</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>②</small><b>6</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>③</small><b>2</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>④</small><b>2</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>⑤</small><b>1</b><small>頭</small></div><span class="op">＝</span>
+<div class="sum"><b>24点</b><small>2,400円</small></div>
+</div>
+
+<h3>使い方</h3>
+<ol class="steps">
+<li>①〜⑤の<span class="ui alt">判定画面で入れる</span>を押して、判定画面でそのレースを入れる（オッズ画像の読み取りもOK）。上に「WIN5の①レース目を入力中」と出ている間は、入れた内容がそのままWIN5に入るよ。終わったら<span class="ui">WIN5に戻る</span></li>
+<li>日付と予算（円）を入れる</li>
+<li>ゾーンの選び方を選ぶ：「自分で選ぶ」（1着ゾーンを押す）か「ランダム」</li>
+<li>レースごとの買う馬を確かめる（うすい番号＝予算に合わせて外した馬）</li>
+<li>一番上の合計で、点数・金額・「5レース全部当たる目安」を見る</li>
+</ol>
+<p class="small">判定画面の下の「WIN5に入れる ①〜⑤」からも入れられるよ。</p>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_w5_top.webp" width="358" height="492" alt="WIN5タブの上の部分" loading="lazy" decoding="async"><i class="mk" style="top:32.34%">1</i><i class="mk" style="top:47.42%">2</i><i class="mk" style="top:62.80%">3</i><i class="mk" style="top:75.14%">4</i></div><figcaption>WIN5タブ（画面は例）</figcaption></figure>
+<ol class="legend">
+<li><div><b>使い方</b><span>アプリの中の短い説明</span></div></li>
+<li><div><b>日付・予算（円）</b><span>予算の中に収まるように買う馬を出す</span></div></li>
+<li><div><b>ゾーンの選び方</b><span>自分で選ぶ／ランダム</span></div></li>
+<li><div><b>合計</b><span>点数・金額・残り・かけ算・当たる目安</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_w5_race.webp" width="358" height="387" alt="WIN5の1レース分" loading="lazy" decoding="async"><i class="mk" style="top:9.16%">1</i><i class="mk" style="top:38.25%">2</i><i class="mk" style="top:61.37%">3</i><i class="mk" style="top:70.99%">4</i><i class="mk" style="top:90.11%">5</i></div><figcaption>1レース分のカード</figcaption></figure>
+<ol class="legend">
+<li><div><b>レース</b><span>層・区分・比。JRAのレースは【参考判定】</span></div></li>
+<li><div><b>1着ゾーン</b><span>「推奨」がついたゾーンがテンゲルのおすすめ</span></div></li>
+<li><div><b>買う馬</b><span>うすい番号は外した馬。押すと自分で選べる</span></div></li>
+<li><div><b>1着が入る目安</b><span>この買い方で1着が入る見込み</span></div></li>
+<li><div><b>判定画面で直す・外す</b><span>オッズなどを直す／このレースを空にする</span></div></li>
+</ol>
+</div>
+
+<h3>買う馬を自分で選ぶ</h3>
+<ul class="dots">
+<li>番号を押すと、そのレースは自分で選んだ馬で固定。ほかのレースは、残りの予算で自動で出るよ</li>
+<li><span class="ui alt">おまかせに戻す</span>で、そのレースを自動に戻せる</li>
+<li>自分で選んだ馬だけで予算をこえると、赤で「馬を外すか予算を上げてね」と出るよ</li>
+</ul>
+
+<h3>推奨と、自動の選び方</h3>
+<ul class="dots">
+<li>推奨は、テンゲルの馬単ゾーンの<b>1着側</b>：A層→人気、B層→中穴・人気、C層・第1／第2段階→人気・中穴・大穴</li>
+<li>自動では、推奨ゾーンの順（B層なら中穴→人気）に、ゾーンの中は単勝オッズの低い順に並べて、当たる見込みが一番上がるレースから1頭ずつ足していくよ。予算が少ないと、後ろの順の馬（B層なら人気馬）がうすくなる</li>
+<li>ランダムは、推奨から1つずつ選ぶよ。<span class="ui">ランダムでもう一回</span>と「推奨以外のゾーンもまぜる」もあるよ</li>
+<li>当たる目安は、マザーデータの区分ごとの1着ゾーンの実測と単勝オッズから出す<b>目安</b>だよ</li>
+</ul><nav class="pager" aria-label="前後の項目"><a class="prev" href="#records"><small>‹ 前の項目</small><b>記録タブ</b></a><a class="next" href="#win5rec"><small>次の項目 ›</small><b>WIN5の結果と記録</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-win5rec" data-id="win5rec" hidden aria-labelledby="h-win5rec"><p class="eyebrow">WIN5</p><h2 id="h-win5rec">WIN5の結果と記録</h2><div class="gist"><span>ひとことで</span><p>レースが終わったら、各レースの1着の馬番を入れるだけ。○×と的中・不的中が出るよ。</p></div>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_w5_res.webp" width="358" height="633" alt="WIN5の結果・記録" loading="lazy" decoding="async"><i class="mk" style="top:20.09%">1</i><i class="mk" style="top:35.25%">2</i><i class="mk" style="top:50.75%">3</i><i class="mk" style="top:62.64%">4</i><i class="mk" style="top:83.21%">5</i></div><figcaption>③が外れて不的中の例</figcaption></figure>
+<ol class="legend">
+<li><div><b>各レースの1着の馬番</b><span>入れると○×が出る</span></div></li>
+<li><div><b>結果</b><span>的中・不的中と外れたレース、収支</span></div></li>
+<li><div><b>購入額・払戻（円）</b><span>購入額が空なら点数×100円で記録。払戻は外れなら0</span></div></li>
+<li><div><b>その他</b><span>買わなかったら「未購入」</span></div></li>
+<li><div><b>WIN5の記録を保存</b><span>下の「WIN5の記録」に並ぶ</span></div></li>
+</ol>
+</div>
+<ul class="dots">
+<li>保存すると、下の「WIN5の記録」に並んで、回数・回収率・収支も出るよ</li>
+<li>記録は<span class="ui alt">開く</span>で直して上書き、<span class="ui alt">消す</span>で消せるよ</li>
+<li>次のWIN5は<span class="ui alt">新しいWIN5にする</span></li>
+</ul>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>WIN5の記録は、ふつうの記録・収支（テンゲルの回収率）には混ぜないよ。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#win5"><small>‹ 前の項目</small><b>WIN5の組み立て方</b></a><a class="next" href="#stats"><small>次の項目 ›</small><b>実測・回収タブ</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-stats" data-id="stats" hidden aria-labelledby="h-stats"><p class="eyebrow">数字とデータ</p><h2 id="h-stats">実測・回収タブ</h2><div class="gist"><span>ひとことで</span><p>上半分は自分の収支、下半分はマザーデータの実測①〜⑦だよ。2つは別のデータ。</p></div>
+
+<h3>買ったレースの収支</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_stats_money.webp" width="358" height="319" alt="買ったレースの収支" loading="lazy" decoding="async"></div><figcaption>上の数字（例）</figcaption></figure>
+<ul class="dots">
+<li>年・月（または年間）を選ぶと、その期間の収支が出るよ（記録タブと同じ選び方）</li>
+<li>購入レース・的中率（結果が出たレース）・購入額・回収額（払い戻しを含む）・回収率・収支</li>
+<li>その下に「層別の収支」「券種別の収支」（7つの券種）「月別収支」の表が出るよ</li>
+</ul>
+<figure class="shot"><div class="shot-in"><img src="manual/s_stats_type.webp" width="358" height="280" alt="券種別の収支の表" loading="lazy" decoding="async"></div><figcaption>券種別の収支（例）</figcaption></figure>
+
+<h3>テンゲル基盤データ ①〜⑦</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_stats_period.webp" width="358" height="32" alt="期間のボタン" loading="lazy" decoding="async"></div><figcaption>期間のボタン</figcaption></figure>
+<p>マザーデータと期間を選ぶと、そのデータで計算した表が出るよ。期間は 全期間・前半（7/20〜8/17）・後半（8/31〜10/3）・新規（10/4〜10/7）・第13新規（10/8〜）。</p>
+<div class="tbl fit"><table>
+<thead><tr><th>表</th><th>中身</th></tr></thead>
+<tbody>
+<tr><td>① 層別実測</td><td>層ごとの走数・構成比・穴決着率・人気→人気率・本線の的中</td></tr>
+<tr><td>② C層の比区分</td><td>C層の比20以上／未満と1着超大穴（記録用）</td></tr>
+<tr><td>③ 推奨ゾーンの的中</td><td>区分×ゾーンごとの馬単・3着の的中。参考的中率のもと</td></tr>
+<tr><td>④ 区分ごとのレース判定</td><td>人気→人気率・穴絡み率と【薄】【並】【厚】</td></tr>
+<tr><td>⑤ 方向ペア分布</td><td>1着ゾーン→2着ゾーンの出た数（全体・層ごと）</td></tr>
+<tr><td>⑥ 1・2着の人気頭数と3着</td><td>3着の決め方の根拠</td></tr>
+<tr><td>⑦ 本線と旧本線</td><td>第13（本線）と第12（旧本線）の的中・回収率と、見直しの進み具合</td></tr>
+</tbody></table></div>
+<figure class="shot"><div class="shot-in"><img src="manual/s_stats_t1.webp" width="358" height="302" alt="① 層別実測の表" loading="lazy" decoding="async"></div><figcaption>① 層別実測（例）</figcaption></figure>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>⑦の回収率は<b>検証用の数字</b>だよ。推奨ゾーンの全通りを100円ずつ買ったとして、マザーデータの馬単払戻から計算するので、自分の収支じゃないよ。払戻が入っているレースだけが対象で、期間のボタンに関係なく⑦の中で期ごとに出るよ。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#win5rec"><small>‹ 前の項目</small><b>WIN5の結果と記録</b></a><a class="next" href="#mother"><small>次の項目 ›</small><b>マザーデータ</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-mother" data-id="mother" hidden aria-labelledby="h-mother"><p class="eyebrow">数字とデータ</p><h2 id="h-mother">マザーデータ</h2><div class="gist"><span>ひとことで</span><p>参考的中率と実測①〜⑦を計算する「もと」のデータ。3つまで持てて、切り替えられるよ。</p></div>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_set_mother.webp" width="358" height="750" alt="マザーデータ（3つ）" loading="lazy" decoding="async"><i class="mk" style="top:24.14%">1</i><i class="mk" style="top:36.45%">2</i><i class="mk" style="top:56.70%">3</i></div><figcaption>設定 → マザーデータ</figcaption></figure>
+<ol class="legend">
+<li><div><b>1つ目：大井</b><span>アプリに入っている290走（10/9まで）。「使用中」が、いま使っているデータ</span></div></li>
+<li><div><b>2つ目・3つ目</b><span>自分で入れるデータ。はじめは空（名前はJRA・船橋競馬）</span></div></li>
+<li><div><b>編集</b><span>名前・Excelファイル・元に戻すボタン</span></div></li>
+</ol>
+</div>
+
+<h3>切り替える</h3>
+<ul class="dots">
+<li>判定タブと実測タブの上の「マザーデータ」でも切り替えられるよ</li>
+<li>名前は16文字まで。名前に開催場の名前（JRAなら「JRA」か「中央」）を入れると、その開催場のレースはそのデータでふつうに判定されて、【参考判定】にならないよ</li>
+<li>記録と買い目の設定は、3つで共通だよ</li>
+</ul>
+
+<h3>Excelから入れる</h3>
+<ol class="steps">
+<li><span class="ui alt">編集</span>を押して<span class="ui">Excelファイルを選ぶ</span></li>
+<li>入れる前に走数と期間が出るので、確かめる</li>
+<li>「「○○」に入れる」を押す</li>
+</ol>
+<ul class="dots">
+<li>入れられるのは<b>検証データと同じA〜P列</b>の形だけ（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）</li>
+<li>「大井競馬_マザーデータ_アプリ用.xlsx」は入るよ。分析シート・分析表・距離／馬場フィルターは、理由を出して断るよ</li>
+<li>ファイルが選べないときは、A〜P列をコピーして貼り付けて「読み取る」</li>
+</ul>
+
+<h3>元に戻す</h3>
+<ul class="dots">
+<li>「ひとつ前のデータに戻す」：入れ替える前に戻せる</li>
+<li>「このマザーデータを空にする」：2つ目・3つ目だけ</li>
+<li>「アプリに入っている大井データに戻す」：1つ目だけ</li>
+</ul><nav class="pager" aria-label="前後の項目"><a class="prev" href="#stats"><small>‹ 前の項目</small><b>実測・回収タブ</b></a><a class="next" href="#dataupdate"><small>次の項目 ›</small><b>大井のデータを新しくする</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-dataupdate" data-id="dataupdate" hidden aria-labelledby="h-dataupdate"><p class="eyebrow">数字とデータ</p><h2 id="h-dataupdate">大井のデータを新しくする</h2><div class="gist"><span>ひとことで</span><p>新しいレースは、分析シートと分析表を姫に送るだけ。姫がアプリを新しくして、「更新する」で入るよ。</p></div>
+
+<ol class="flow">
+<li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></span><div><span class="who">まさちゃん</span><b>新しいレースを打ち込む</b><small>大井競馬分析シートと大井競馬分析表（またはマザーデータ_アプリ用.xlsxに行を足す）</small></div></li>
+<li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7 2.5 2.5 7z"/><path d="m10 13 5-5"/></svg></span><div><span class="who">まさちゃん</span><b>チャットで姫に送る</b><small>2つのファイルをそのまま送ればOK</small></div></li>
+<li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg></span><div><span class="who">姫</span><b>突き合わせて、新しいレースを足す</b><small>重複や食い違いは報告して確かめるよ。アプリの新しい版を出して、Excelも返すよ</small></div></li>
+<li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/></svg></span><div><span class="who">まさちゃん</span><b>アプリで「更新する」を押す</b><small>「大井のデータも新しくなるよ」と出たらOK</small></div></li>
+</ol>
+<p>いまのアプリの大井データは <b>290走（7/20〜10/9）</b>。</p>
+
+<h3>姫がやる突き合わせ</h3>
+<ul class="dots">
+<li>2つのファイルを<b>日付＋R</b>で突き合わせて、新しいレースだけ足す</li>
+<li>着順の人気が分析表と分析シートで違う → 分析表を使って、備考に両方を残す</li>
+<li>着順に同じ人気が重なっている → 3着人気を空欄にする（3着の集計から外れる）</li>
+<li>オッズのない日は入れない</li>
+<li>重複は入れない：消したレース（9/2の12走）、ほかの日の写しになっている日、同じ中身のレース</li>
+</ul>
+<div class="tip"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7z"/></svg>ポイント</span>更新しても、自分の記録と買い目の設定は消えないよ。前にExcelで大井データを入れていた場合は、アプリのデータのほうが新しいときだけ入れ替わるよ（入れ替わっても「ひとつ前のデータに戻す」で戻せる）。</div>
+<p class="small">姫のチャットがアプリのGitHubにつながっていないときは、Excel（大井競馬_マザーデータ_アプリ用.xlsx）だけ返すよ。設定 → マザーデータ →「編集」→「Excelファイルを選ぶ」で入れてね。更新の記録は、Excelの「突合メモ」シートにあるよ。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#mother"><small>‹ 前の項目</small><b>マザーデータ</b></a><a class="next" href="#zones"><small>次の項目 ›</small><b>買い目編集</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-zones" data-id="zones" hidden aria-labelledby="h-zones"><p class="eyebrow">設定</p><h2 id="h-zones">買い目編集</h2><div class="gist"><span>ひとことで</span><p>区分ごとに、馬単の1着→2着と3連単の3着を変えられるよ。はじめは第13改訂版のまま。</p></div>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_set_zone.webp" width="358" height="640" alt="買い目編集" loading="lazy" decoding="async"><i class="mk" style="top:25.11%">1</i><i class="mk" style="top:42.03%">2</i><i class="mk" style="top:55.04%">3</i><i class="mk" style="top:63.72%">4</i><i class="mk" style="top:85.52%">5</i></div><figcaption>設定 → 買い目編集（A層）</figcaption></figure>
+<ol class="legend">
+<li><div><b>区分</b><span>A層／B層／C層・序盤R／大穴フィルター第1段階／第2段階</span></div></li>
+<li><div><b>いまの区分</b><span>「第13改訂版の初期」か「カスタム」か</span></div></li>
+<li><div><b>買い目の1本</b><span>↑↓で順番を変える、×で消す</span></div></li>
+<li><div><b>1着・2着・3着</b><span>ゾーンを押して選ぶ</span></div></li>
+<li><div><b>的中数</b><span>基盤データ（大井）で、この買い目が当たった数</span></div></li>
+</ol>
+</div>
+<figure class="shot"><div class="shot-in"><img src="manual/s_set_zone_save.webp" width="324" height="94" alt="保存するボタン" loading="lazy" decoding="async"></div><figcaption>変えたら「保存する」</figcaption></figure>
+<ul class="dots">
+<li>1つの区分に6本まで。<span class="ui alt">＋買い目を足す</span>、<span class="ui alt">この区分を初期に戻す</span></li>
+<li><span class="ui">保存する</span>と、判定と実測①〜⑦がこの買い目で計算されて、判定に「カスタム買い目」と出るよ</li>
+<li>保存済みの購入記録は、保存したときの買い目のまま</li>
+<li>「全部の区分を第13改訂版の初期に戻す」で、いつでも元に戻せるよ</li>
+</ul>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>的中数だけで決めないでね。人気寄りの買い目ほど当たりは増えて、配当は下がりやすいよ。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#dataupdate"><small>‹ 前の項目</small><b>大井のデータを新しくする</b></a><a class="next" href="#apikey"><small>次の項目 ›</small><b>画像の読み取り（APIキー）</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-apikey" data-id="apikey" hidden aria-labelledby="h-apikey"><p class="eyebrow">設定</p><h2 id="h-apikey">画像の読み取り（APIキー）</h2><div class="gist"><span>ひとことで</span><p>画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。5分くらいで作れるよ。</p></div>
+
+<h3>キーの作り方</h3>
+<ol class="steps">
+<li>Safariで <b>platform.claude.com</b> を開いてログイン（はじめてならアカウントを作る）</li>
+<li>Settings の <b>Billing</b> で、クレジットカードを登録してクレジット（残高）を入れる。5ドルあれば、標準でも200回以上読めるよ</li>
+<li>Settings の <b>API keys</b> →「Create key」→ 出てきた <code>sk-ant-…</code> をコピー（1回しか表示されないよ）</li>
+<li>テンゲルの<b>設定 → 画像の読み取り</b>の欄に貼って<span class="ui">保存して試す</span></li>
+</ol>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_set_ocr.webp" width="358" height="567" alt="画像の読み取りの設定" loading="lazy" decoding="async"><i class="mk" style="top:57.09%">1</i><i class="mk" style="top:71.21%">2</i></div><figcaption>設定 → 画像の読み取り</figcaption></figure>
+<ol class="legend">
+<li><div><b>APIキーの欄・保存して試す</b><span>sk-ant- ではじまる文字を貼って、「保存して試す」で使えるか確かめる</span></div></li>
+<li><div><b>モデル</b><span>標準（正確・1回 約1〜4円）／節約（安い・1回 1円未満）</span></div></li>
+</ol>
+</div>
+<div class="warn"><span class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>注意</span>キーはこのiPhoneの中だけに保存されるよ（バックアップにも入らない）。人には見せないでね。いらなくなったら<span class="ui danger">キーを消す</span>。</div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#zones"><small>‹ 前の項目</small><b>買い目編集</b></a><a class="next" href="#backup"><small>次の項目 ›</small><b>アプリの更新とバックアップ</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-backup" data-id="backup" hidden aria-labelledby="h-backup"><p class="eyebrow">設定</p><h2 id="h-backup">アプリの更新とバックアップ</h2><div class="gist"><span>ひとことで</span><p>ときどき「バックアップを保存」しておけば、アイコンを消しても、機種変更しても戻せるよ。</p></div>
+
+<div class="withlegend">
+<figure class="shot has-mk"><div class="shot-in"><img src="manual/s_set_backup.webp" width="358" height="330" alt="バックアップ" loading="lazy" decoding="async"><i class="mk" style="top:70.66%">1</i><i class="mk" style="top:85.97%">2</i></div><figcaption>設定 → バックアップ</figcaption></figure>
+<ol class="legend">
+<li><div><b>バックアップを保存</b><span>記録（WIN5も）・買い目の設定・マザーデータの名前・Excelで入れたマザーデータを1つのファイルに。ファイルアプリやLINEのKeepに保存してね</span></div></li>
+<li><div><b>バックアップから戻す</b><span>保存したファイルを選ぶ</span></div></li>
+</ol>
+</div>
+<ul class="dots">
+<li>戻すと、記録が足されるよ。同じレースは新しいほうが残って、いまある記録は消えないよ</li>
+<li>APIキーは入らないので、戻したあとに入れ直してね</li>
+</ul>
+
+<h3>機種変更のとき</h3>
+<ol class="steps">
+<li>古いiPhoneで「バックアップを保存」</li>
+<li>新しいiPhoneにアプリを入れる（「iPhoneに入れる・更新する」）</li>
+<li>「バックアップから戻す」で、保存したファイルを選ぶ</li>
+<li>APIキーを入れ直す</li>
+</ol>
+
+<h3>アプリの更新</h3>
+<figure class="shot"><div class="shot-in"><img src="manual/s_set_update.webp" width="358" height="347" alt="アプリの更新" loading="lazy" decoding="async"></div><figcaption>設定 → アプリの更新</figcaption></figure>
+<p>いまの版と、最後に確認した日時が出るよ。<span class="ui alt">新しい版があるか確認</span>→ あれば<span class="ui">新しい版にする</span>。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#apikey"><small>‹ 前の項目</small><b>画像の読み取り（APIキー）</b></a><a class="next" href="#trouble"><small>次の項目 ›</small><b>困ったとき</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-trouble" data-id="trouble" hidden aria-labelledby="h-trouble"><p class="eyebrow">困ったとき・ことば</p><h2 id="h-trouble">困ったとき</h2><div class="gist"><span>ひとことで</span><p>たいていは、画面に出たメッセージのとおりにすれば直るよ。押すと直し方が出るよ。</p></div>
+
+<div class="faq">
+<details><summary>「判定不可（データ不足）」と出る</summary><div class="a">足りない項目が出るので、そこを入れてね（R・距離・馬場・頭数・単勝オッズ・3連単1位）。</div></details>
+<details><summary>「オッズ入力○頭／出走頭数○頭」と出る</summary><div class="a">取消・除外の馬や入れ忘れがないか確かめてね。判定は出走頭数で行うよ。</div></details>
+<details><summary>画像の読み取りで「APIキーが…」と出る</summary><div class="a">設定 → 画像の読み取りで、キーを入れるか確かめてね。</div></details>
+<details><summary>「クレジット（残高）が足りない」と出る</summary><div class="a">platform.claude.com の Billing でクレジットを入れてね。</div></details>
+<details><summary>「混み合ってる」「通信できなかった」と出る</summary><div class="a">少し待つか、電波がいいところでもう一度試してね。</div></details>
+<details><summary>読めなかった項目がある</summary><div class="a">その項目は前の値が残っているので、手で入れ直してね。画面を大きめに撮ると読みやすいよ。</div></details>
+<details><summary>Excelを入れようとしたら断られた</summary><div class="a">入るのは検証データのA〜P列の形だけ。分析シート・分析表は姫に送ってね（「大井のデータを新しくする」）。</div></details>
+<details><summary>「このiPhoneではExcelファイルを直接読めない」と出る</summary><div class="a">iOSを新しくするか、A〜P列をコピーして貼り付けてね。</div></details>
+<details><summary>参考的中率が出ない</summary><div class="a">使っているマザーデータに、集計できるレースがないよ。判定画面の上で「大井競馬」に切り替えてね。</div></details>
+<details><summary>着順で「読み方がいくつかある」と出る</summary><div class="a">「.」で区切って入れてね（例 1.12.3）。</div></details>
+<details><summary>「結果待ち」のまま</summary><div class="a">着順（3連単なら3着まで）を入れて、馬単・3連単は買ったゾーンを選んでね。ほかの券種は回収額（外れは0）を入れてね。</div></details>
+<details><summary>記録に「購入額未入力」と出る</summary><div class="a">記録タブでそのレースを開いて、購入額を入れてね。</div></details>
+<details><summary>判定画面で保存できない</summary><div class="a">入力例は保存できないよ。上に「WIN5の○レース目を入力中」と出ているときは、WIN5タブでまとめて記録してね。</div></details>
+<details><summary>新しい版が来ない</summary><div class="a">設定 →「新しい版があるか確認」を、電波がいいところで押してね。</div></details>
+<details><summary>記録が消えた</summary><div class="a">アイコンを消すと記録も消えるよ。設定 →「バックアップから戻す」で、保存したファイルを選んでね。</div></details>
+<details><summary>大井のデータがおかしい</summary><div class="a">設定 → マザーデータの1つ目 →「アプリに入っている大井データに戻す」。判定に使えない形になっていたら、アプリを開いたときに自動で戻るよ。</div></details>
+</div>
+<p>それでも直らないときは、画面のスクショを姫に送ってね。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#backup"><small>‹ 前の項目</small><b>アプリの更新とバックアップ</b></a><a class="next" href="#glossary"><small>次の項目 ›</small><b>用語集</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section><section class="item" id="s-glossary" data-id="glossary" hidden aria-labelledby="h-glossary"><p class="eyebrow">困ったとき・ことば</p><h2 id="h-glossary">用語集</h2><div class="gist"><span>ひとことで</span><p>アプリに出てくる言葉の意味だよ。ルールは「テンゲルシステムⅢ 第13改訂版」のとおり。</p></div>
+
+<h3>ゾーン（単勝の人気順）</h3>
+<div class="ladder" role="img" aria-label="人気は1〜3番人気、中穴は4〜6、大穴は7〜9、超大穴は10〜12、13番人気より下は対象外">
+<span class="zl z1" style="grid-column:1/4">人気</span><span class="zl z2" style="grid-column:4/7">中穴</span><span class="zl z3" style="grid-column:7/10">大穴</span><span class="zl z4" style="grid-column:10/13">超大穴</span><span class="zl z5" style="grid-column:13/14;font-size:11px">対象外</span>
+<span class="cell z1">1</span><span class="cell z1">2</span><span class="cell z1">3</span><span class="cell z2">4</span><span class="cell z2">5</span><span class="cell z2">6</span><span class="cell z3">7</span><span class="cell z3">8</span><span class="cell z3">9</span><span class="cell z4">10</span><span class="cell z4">11</span><span class="cell z4">12</span><span class="cell z5">13〜</span>
+</div>
+<p class="small">数字は単勝の人気順（オッズの低い順）。13番人気より下は対象外で、判定にも番号にも出ないよ。</p>
+
+<h3>層の決まり方</h3>
+<p class="small">上から順に見て、最初に当てはまった層になるよ。比＝3連単1位オッズ ÷ 単勝1位オッズ（小数第2位を四捨五入）。</p>
+<ol class="decide">
+<li><span class="q">馬場が「重」</span><span class="to">→ <span class="lb A">A</span></span></li>
+<li><span class="q">3連単1位が62.4倍以上</span><span class="to">→ <span class="lb C">C</span></span></li>
+<li><span class="q">単勝1位が2.5倍以上で、比が16以上</span><span class="to">→ <span class="lb C">C</span></span></li>
+<li><span class="q">比が12以上</span><span class="to">→ <span class="lb B">B</span></span></li>
+<li><span class="q">どれでもない</span><span class="to">→ <span class="lb A">A</span></span></li>
+</ol>
+
+<h3>C層の帯</h3>
+<ol class="decide">
+<li><span class="q">1〜3R</span><span class="to">→ 非該当（序盤R）</span></li>
+<li><span class="q">比10以上で、14頭以上</span><span class="to">→ 第2段階</span></li>
+<li><span class="q">比10以上で、9頭以上</span><span class="to">→ 第1段階</span></li>
+<li><span class="q">どれでもない</span><span class="to">→ 非該当</span></li>
+</ol>
+<p class="small">A層とB層は、R番号・頭数に関係なく固定のゾーンだよ。</p>
+
+<h3>ことば</h3>
+<div class="gsearch"><label class="sr" for="gq">用語集をさがす</label><input id="gq" type="search" placeholder="ことばをさがす（例：旧本線）" autocomplete="off"></div>
+<dl class="terms" id="terms">
+<div class="term"><dt>比</dt><dd>3連単1位オッズ ÷ 単勝1位オッズ。小数第2位を四捨五入して、小数第1位まで</dd></div>
+<div class="term"><dt>層（姫ゲート層）</dt><dd>レースの荒れやすさの分け方。A（堅）・B（警戒）・C（穴）。決まり方は上の図</dd></div>
+<div class="term"><dt>区分</dt><dd>層と帯を合わせたもの：A層（固定）／B層（固定）／C層・非該当／C層・第1段階／C層・第2段階</dd></div>
+<div class="term"><dt>序盤R</dt><dd>C層の1〜3R。人気→人気・人気→中穴にして、3着は見送り</dd></div>
+<div class="term"><dt>大穴フィルター</dt><dd>C層の4R以降で使う2段階のゲート。第1段階＝比10以上で9頭以上、第2段階＝比10以上で14頭以上</dd></div>
+<div class="term"><dt>ゾーン</dt><dd>単勝の人気順のまとまり。人気（1〜3）・中穴（4〜6）・大穴（7〜9）・超大穴（10〜12）</dd></div>
+<div class="term"><dt>記号A〜L</dt><dd>単勝オッズの低い順（同じなら番号の若い順）に、A＝1位からL＝12位まで</dd></div>
+<div class="term"><dt>推奨ゾーン</dt><dd>区分ごとに決まった馬単のゾーン（第1〜第3）。矢印は1着→2着で、人気→大穴と大穴→人気は別の馬券</dd></div>
+<div class="term"><dt>3着（2本）</dt><dd>3連単の3着に入れるゾーン2つ。1・2着に使った人気馬は除いて読む</dd></div>
+<div class="term"><dt>暫定</dt><dd>まだデータが少なくて、あとで見直す予定のゾーン</dd></div>
+<div class="term"><dt>参考的中率</dt><dd>その区分で、そのゾーンが実際に出た割合（マザーデータの実測）。かけ算ではない</dd></div>
+<div class="term"><dt>穴絡み</dt><dd>1着か2着に、大穴か超大穴が入ったレース</dd></div>
+<div class="term"><dt>レース判定</dt><dd>その区分の人気→人気率で、【薄】55%以上・【並】30〜55%・【厚】30%未満。表示だけで、ゾーンは変えない</dd></div>
+<div class="term"><dt>超大穴帯注意</dt><dd>超大穴（10〜12番人気）がいて、3連単5位が40倍以上のとき。表示だけ</dd></div>
+<div class="term"><dt>比区分</dt><dd>C層の比20以上／比20未満。記録用で、判定には使わない</dd></div>
+<div class="term"><dt>旧本線</dt><dd>第12改訂版のゾーン。本線（第13）と比べるための記録用で、買い目じゃない</dd></div>
+<div class="term"><dt>参考判定</dt><dd>使っているマザーデータと開催場が違うレース。同じ仕組みで判定して、参考値はそのマザーデータの実測</dd></div>
+<div class="term"><dt>マザーデータ</dt><dd>参考的中率と実測①〜⑦を計算する、もとのデータ（3つまで）。基盤データともいう</dd></div>
+<div class="term"><dt>集計対象</dt><dd>マザーデータの行を集計に入れるか（1＝入れる・0＝入れない）</dd></div>
+<div class="term"><dt>自己参照の除外</dt><dd>マザーデータに入っているレースを判定するときは、そのレース自身を外して参考値を計算すること</dd></div>
+<div class="term"><dt>期間</dt><dd>前半（7/20〜8/17）・後半（8/31〜10/3）・新規（10/4〜10/7）・第13新規（10/8〜）</dd></div>
+<div class="term"><dt>カスタム買い目</dt><dd>設定の「買い目編集」で、第13改訂版の初期から変えた買い目</dd></div>
+</dl>
+<p class="small" id="gnone" hidden>見つからなかったよ。ほかの言葉でさがしてね。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#trouble"><small>‹ 前の項目</small><b>困ったとき</b></a><span class="none"></span></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>もくじに戻る</a></div></section>
+</main>
+<script>window.__ITEMS = [{"id": "about", "t": "このアプリでできること", "d": "5つのタブと、おぼえておいてほしいこと", "kw": "タブ 使い方 できること"}, {"id": "install", "t": "iPhoneに入れる・更新する", "d": "ホーム画面に追加／新しい版にする", "kw": "インストール ホーム画面 Safari 更新 アップデート"}, {"id": "input", "t": "レースとオッズを入れる", "d": "必ず入れるもの・入れ方のコツ", "kw": "入力 単勝 複勝 3連単 馬場 頭数 距離 クリア 入力例"}, {"id": "ocr", "t": "オッズ画像から読み取る", "d": "スクショ1〜3枚で入力欄が埋まる", "kw": "画像 スクショ 写真 読み取り OCR"}, {"id": "result", "t": "判定結果の見方", "d": "層・推奨ゾーン・3着・参考的中率", "kw": "判定 層 ゾーン 推奨 3着 参考的中率 旧本線 A層 B層 C層"}, {"id": "pick", "t": "買う馬を選ぶ", "d": "番号を押して「買う／買わない」を切り替え", "kw": "馬番 選ぶ うすい 買う馬"}, {"id": "record", "t": "結果と収支を記録する", "d": "券種・金額・買ったゾーン・着順", "kw": "記録 保存 券種 購入額 回収額 着順 未購入 払い戻し"}, {"id": "hit", "t": "当たり外れの決まり方", "d": "例で見る「的中」と「不的中」", "kw": "的中 不的中 結果待ち 当たり 外れ"}, {"id": "records", "t": "記録タブ", "d": "一覧・直す・判定画面で開く・書き出し", "kw": "一覧 書き出し コピー Excel 削除"}, {"id": "win5", "t": "WIN5の組み立て方", "d": "5レース・予算・1着ゾーン・買う馬", "kw": "WIN5 予算 点数 ランダム 推奨"}, {"id": "win5rec", "t": "WIN5の結果と記録", "d": "1着の馬番で○×・払戻を保存", "kw": "WIN5 結果 払戻 記録"}, {"id": "stats", "t": "実測・回収タブ", "d": "自分の収支と、実測①〜⑦", "kw": "収支 回収率 実測 期間 本線"}, {"id": "mother", "t": "マザーデータ", "d": "参考的中率のもとになるデータ（3つ）", "kw": "マザーデータ 基盤データ Excel JRA 船橋"}, {"id": "dataupdate", "t": "大井のデータを新しくする", "d": "分析シートと分析表を姫に送るだけ", "kw": "更新 分析シート 分析表 姫 突き合わせ"}, {"id": "zones", "t": "買い目編集", "d": "区分ごとの馬単と3着を変える", "kw": "カスタム 買い目 編集 初期"}, {"id": "apikey", "t": "画像の読み取り（APIキー）", "d": "キーの作り方と料金", "kw": "APIキー Anthropic 料金 モデル"}, {"id": "backup", "t": "アプリの更新とバックアップ", "d": "記録を守る・機種変更", "kw": "バックアップ 機種変更 戻す 更新"}, {"id": "trouble", "t": "困ったとき", "d": "よくあるメッセージと直し方", "kw": "エラー 困った 直し方 できない"}, {"id": "glossary", "t": "用語集", "d": "層・比・ゾーン・旧本線…", "kw": "用語 ことば 意味"}]; window.__IN_APP = true;</script>
+<script>
+(() => {
+  document.documentElement.lang = 'ja';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const ITEMS = window.__ITEMS, IN_APP = !!window.__IN_APP;
+  const home = $('#home'), page = $('#page'), topbar = $('#topbar');
+  const backBtn = $('#back'), toApp = $('#toApp'), closeApp = $('#closeApp'), emblem = $('.tb-emblem');
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 保存できなくても動く */ } }
+  };
+  let cur = null, homeY = 0;
+
+  function show(id) {
+    const it = ITEMS.find(x => x.id === id);
+    if (!it) {
+      const wasItem = cur !== null;
+      cur = null;
+      page.hidden = true; home.hidden = false;
+      topbar.hidden = !IN_APP; backBtn.hidden = true;
+      if (toApp) toApp.hidden = !IN_APP;
+      if (closeApp) closeApp.hidden = true;
+      if (emblem) emblem.hidden = false;
+      $('#tbTitle').textContent = IN_APP ? 'テンゲルⅢ 説明書' : '';
+      document.title = 'テンゲルⅢ 説明書';
+      if (wasItem) requestAnimationFrame(() => window.scrollTo(0, homeY));
+      return;
+    }
+    if (cur === null) homeY = window.scrollY;
+    home.hidden = true; topbar.hidden = false; page.hidden = false; backBtn.hidden = false;
+    if (toApp) toApp.hidden = true;
+    if (closeApp) closeApp.hidden = !IN_APP;
+    if (emblem) emblem.hidden = IN_APP;
+    for (const s of $$('section.item', page)) s.hidden = s.dataset.id !== id;
+    $('#tbTitle').textContent = it.t;
+    document.title = it.t + '｜テンゲルⅢ 説明書';
+    cur = id;
+    window.scrollTo(0, 0);
+    store.set('tengel.manual.last', id);
+  }
+  // 説明書の中の移動は履歴を増やさない（「アプリに戻る」1回でアプリに戻れるように）
+  function go(id) {
+    const h = '#' + id;
+    try { history.replaceState(null, '', h); } catch (e) { location.replace(h); return; }
+    show(id);
+  }
+  function route() { show(decodeURIComponent(location.hash.replace(/^#/, ''))); }
+  window.addEventListener('hashchange', route);
+  backBtn.addEventListener('click', () => go('menu'));
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]'); if (!a) return;
+    e.preventDefault(); go(a.getAttribute('href').slice(1));
+  });
+
+  // ---- アプリに戻る（iPhoneアプリの中だけ） ----
+  const backToApp = e => {
+    e.preventDefault();
+    let fromApp = false;
+    try { fromApp = !!document.referrer && new URL(document.referrer).origin === location.origin && !/manual\.html/.test(document.referrer); } catch (err) { fromApp = false; }
+    if (fromApp && history.length > 1) history.back(); else location.href = './';
+  };
+  if (toApp) toApp.addEventListener('click', backToApp);
+  if (closeApp) closeApp.addEventListener('click', backToApp);
+
+  // ---- さがす ----
+  const norm = s => String(s || '').normalize('NFKC').toLowerCase()
+    .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\s+/g, ' ');
+  const bodyText = id => { const s = $('#s-' + id); if (!s) return ''; const c = s.cloneNode(true); for (const n of $$('.pager, .tomenu', c)) n.remove(); return c.textContent; };
+  const index = ITEMS.map(it => ({ it, text: norm([it.t, it.d, it.kw, bodyText(it.id)].join(' ')) }));
+  const q = $('#q'), qx = $('#qx'), qinfo = $('#qinfo'), start = $('#start');
+  function search() {
+    const words = norm(q.value).trim().split(' ').filter(Boolean);
+    qx.hidden = !words.length;
+    let n = 0;
+    for (const { it, text } of index) {
+      const ok = words.every(w => text.includes(w));
+      const row = $('#m-' + it.id); if (row) row.hidden = !ok;
+      if (ok) n++;
+    }
+    for (const g of $$('.group')) g.hidden = !$$('.mrow', g).some(r => !r.hidden);
+    start.hidden = words.length > 0;
+    qinfo.hidden = !words.length;
+    qinfo.textContent = n ? `${n}件みつかったよ` : 'みつからなかったよ。ほかの言葉でさがしてね（例：WIN5、APIキー、的中）';
+  }
+  q.addEventListener('input', search);
+  qx.addEventListener('click', () => { q.value = ''; search(); q.focus(); });
+
+  // ---- 用語集をさがす ----
+  const gq = $('#gq');
+  if (gq) gq.addEventListener('input', () => {
+    const w = norm(gq.value).trim();
+    let n = 0;
+    for (const t of $$('#terms .term')) { const ok = !w || norm(t.textContent).includes(w); t.hidden = !ok; if (ok) n++; }
+    $('#gnone').hidden = n > 0;
+  });
+
+  // ---- コピー ----
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    const el = document.getElementById(b.dataset.copy); if (!el) return;
+    const txt = el.textContent.trim();
+    const done = t => { const o = b.dataset.label || b.textContent; b.dataset.label = o; b.textContent = t; setTimeout(() => { b.textContent = o; }, 1600); };
+    const pick = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done('長押しでコピーしてね'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => done('コピーしたよ'), pick);
+    else pick();
+  });
+
+  route();
+})();
+
+</script>
+</body></html>

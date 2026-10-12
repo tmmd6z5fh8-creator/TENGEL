@@ -1,0 +1,40 @@
+# テンゲル iOSアプリの確認：ios ブランチに push すると、GitHubのMacでアプリを作ってシミュレーターで動かす
+# 結果（ログ・スクショ・report）は ios-ci-<ランナー> ブランチに置く（毎回上書き）
+name: iOS app check
+on:
+  push:
+    branches: [ios]
+permissions:
+  contents: write
+concurrency:
+  group: ios-check
+  cancel-in-progress: true
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run in Simulator
+        env:
+          RUNNER_LABEL: ${{ matrix.os }}
+        run: bash ci/run.sh
+      - name: Push results
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ matrix.os }}
+        run: |
+          mkdir -p results && cd results
+          echo "run ${GITHUB_RUN_NUMBER} attempt ${GITHUB_RUN_ATTEMPT} sha ${GITHUB_SHA} ${LABEL}" > RUN.txt
+          git init -q
+          git config user.name "tengel-ci"
+          git config user.email "tengel-ci@users.noreply.github.com"
+          git checkout -q -b "ios-ci-${LABEL}"
+          git add -A
+          git commit -q -m "iOS check run ${GITHUB_RUN_NUMBER} on ${LABEL}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "ios-ci-${LABEL}"
