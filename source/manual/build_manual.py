@@ -124,14 +124,30 @@ SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-rad
             '\n.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}\n')
 
 
-def build(mode, out, app_ver='2026.10.12-4'):
-    """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)"""
+def _app_target():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('app_target', os.path.join(os.path.dirname(D), 'app_target.py'))
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+
+
+def build(mode, out, app_ver='2026.10.12-4', mother=None):
+    """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)
+    mother：アプリに入れるマザーデータ（App Store版の「はじめのデータ ○走」に使う）"""
     assert mode in ('artifact', 'pwa', 'app'), mode
     app = mode == 'app'
-    items = [it for it in ITEMS if not (app and it['id'] in APP_SKIP)]
-    meta = json.load(open(D + '/meta.json', encoding='utf-8'))
-    dims = json.load(open(D + '/dims.json', encoding='utf-8'))
+    items = [dict(it) for it in ITEMS if not (app and it['id'] in APP_SKIP)]
+    # App Store版：画面の写真はApp Store版の画面で撮ったもの（img_app/・名前の出ない画面）
+    IMG = 'img_app' if app else 'img'
+    if app and os.environ.get('MANUAL_SHOTS_BOOTSTRAP') == '1':   # 写真を撮るためにだけ作るとき（tools/shots.py）：Web版の写真を仮に使う
+        IMG = 'img'
+    sfx = '_app' if IMG == 'img_app' else ''
+    meta = json.load(open(D + f'/meta{sfx}.json', encoding='utf-8'))
+    dims = json.load(open(D + f'/dims{sfx}.json', encoding='utf-8'))
     imgdir = 'img' if mode == 'artifact' else 'manual'
+    if app:
+        AT = _app_target()
+        for it in items:
+            it['kw'] = it['kw'].replace(' JRA 船橋', ' 開催場')
     used, imgs = set(), set(['banner.webp', 'emblem-160.webp'])
 
     def shot_html(name):
@@ -169,14 +185,22 @@ def build(mode, out, app_ver='2026.10.12-4'):
     parts = re.split(r'<!--@([a-z0-9]+)-->', content)
     sec = {parts[i]: parts[i + 1].strip() for i in range(1, len(parts), 2)}
     assert set(sec) == {it['id'] for it in ITEMS}, set(sec) ^ {it['id'] for it in ITEMS}
-    if app:   # App Store版：content_app.html の項目で入れ替える・端末の言い方
+    if app:   # App Store版：content_app.html の項目で入れ替える・端末の言い方・競馬場や版の名前を出さない
         ap = re.split(r'<!--@([a-z0-9]+)-->', open(D + '/content_app.html', encoding='utf-8').read())
         over = {ap[i]: ap[i + 1].strip() for i in range(1, len(ap), 2)}
         assert set(over) <= set(sec), set(over) - set(sec)
         sec.update(over)
+        for x in APP_SKIP:
+            sec.pop(x)
         for a, b in [('iPhoneの数字キーでは', '数字のキーボードでは')]:
             k = [x for x in sec if a in sec[x]]; assert k, a
             for x in k: sec[x] = sec[x].replace(a, b)
+        sec = AT.app_manual_sections(sec)
+        rows = mother or []
+        last = max((r['date'] for r in rows), default='')
+        minfo = f'{len(rows)}走' + (f'（{int(last[5:7])}/{int(last[8:10])}まで）' if last else '')
+        for x in sec:
+            sec[x] = sec[x].replace('{{mother}}', minfo)
     gname = dict(GROUPS)
     sections = []
     for k, it in enumerate(items):
@@ -222,7 +246,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
 <p class="eyebrow">アプリの使い方</p>
 <h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
 <p class="lead">知りたい項目を押すと、その説明が出るよ。画面の写真に番号をつけて、順番に読めるようにしてあるよ。</p>
-<ul class="meta"><li>アプリ {html.escape(app_ver)}</li><li>第13改訂版</li><li>大井 290走（10/9まで）</li></ul>
+<ul class="meta"><li>アプリ {html.escape(app_ver)}</li>{f'<li>はじめのデータ {minfo}</li>' if app else '<li>第13改訂版</li><li>大井 290走（10/9まで）</li>'}</ul>
 </div>
 </header>
 
@@ -257,7 +281,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
     os.makedirs(out, exist_ok=True)
     os.makedirs(os.path.join(out, imgdir), exist_ok=True)
     for f in sorted(imgs):
-        shutil.copy(os.path.join(D, 'img', f), os.path.join(out, imgdir, f))
+        shutil.copy(os.path.join(D, IMG if f.startswith('s_') else 'img', f), os.path.join(out, imgdir, f))
     if mode == 'artifact':
         page = f'<title>テンゲルⅢ 説明書</title>\n{FONTS}\n<style>\n{css}\n</style>\n{body}'
         path = os.path.join(out, 'tengel-manual.html')
@@ -273,6 +297,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
 {body}</body></html>
 '''
         path = os.path.join(out, 'manual.html')
+        page = AT.app_manual_page(page)   # コメントを消す・WIN5→5重勝・出さない言葉が残っていたら止める
     else:
         page = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
@@ -291,7 +316,7 @@ def build(mode, out, app_ver='2026.10.12-4'):
     open(path, 'w', encoding='utf-8').write(page)
     h = hashlib.md5()
     for f in sorted(imgs):
-        h.update(f.encode()); h.update(open(os.path.join(D, 'img', f), 'rb').read())
+        h.update(f.encode()); h.update(open(os.path.join(D, IMG if f.startswith('s_') else 'img', f), 'rb').read())
     return sorted(imgs), h.hexdigest()[:8]
 
 

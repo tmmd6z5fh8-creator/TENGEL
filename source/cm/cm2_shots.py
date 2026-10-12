@@ -1,13 +1,26 @@
 # CM第2弾用：アプリの画面を撮る（架空のレース・架空のJRAデータ。このテスト用ブラウザの中だけ）
 #  追加：買い目編集（タップ前後）・カスタム買い目の判定・マザーデータ（JRAに入れる流れ）・JRAデータでの判定・収支
+#   python3 cm2_shots.py              … Web版の画面 → shots/
+#   TARGET=app python3 cm2_shots.py   … App Store版の画面（アプリの中として開く・競馬場や団体・版の名前が出ない）→ shots_app/
 import json, os, random, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 SRC = '/home/claude/tengel/source'
-CM = os.path.dirname(os.path.abspath(__file__)); OUT = CM + '/shots'; os.makedirs(OUT, exist_ok=True)
+APP = os.environ.get('TARGET') == 'app'
+CM = os.path.dirname(os.path.abspath(__file__)); OUT = CM + ('/shots_app' if APP else '/shots'); os.makedirs(OUT, exist_ok=True)
 SRV = CM + '/srv'; PORT = 8799; URL = f'http://localhost:{PORT}/TENGEL/'
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
-subprocess.run(['python3', 'build_pwa.py', SRV + '/TENGEL'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
+subprocess.run(['python3', 'build_pwa.py', SRV + '/TENGEL'], cwd=SRC, check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, TARGET='app') if APP else None)
+if APP:   # アプリの中（tengel://）のかわりに、localhost でアプリ版として開く
+    pth = SRV + '/TENGEL/index.html'; h = open(pth, encoding='utf8').read()
+    assert "window.__NATIVE = location.protocol === 'tengel:';" in h
+    open(pth, 'w', encoding='utf8').write(h.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+FAKE = """
+window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };
+window.webkit = { messageHandlers: { tengel: { postMessage: function (m) { setTimeout(function () { window.__nativeReply(m.id, true, true); }, 30); } } } };
+"""
+# App Store版：開催場は空（空なら、使っているマザーデータの開催場として判定）・5重勝は架空の開催場
+V0 = '' if APP else '大井'
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--bind', '127.0.0.1', '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.8)
 
@@ -17,7 +30,7 @@ def rows(nos, odds, fuku=None):
     return [{"no": n, "tan": str(t), "fuku": (str(f) if f else "")} for n, t, f in zip(nos, odds, fuku)]
 
 
-def form(r, dist, n, baba, nos, odds, fuku, s1, s1c, s5, s10, venue='大井', date='2026-10-14', surface='ダ'):
+def form(r, dist, n, baba, nos, odds, fuku, s1, s1c, s5, s10, venue=V0, date='2026-10-14', surface='ダ'):
     return {"id": None, "venue": venue, "date": date, "r": str(r), "dist": str(dist), "surface": surface, "baba": baba, "n": str(n), "tan1": "",
             "s1": str(s1), "s1combo": s1c, "s5": str(s5), "s5combo": "", "s10": str(s10), "s10combo": "", "rows": rows(nos, odds, fuku)}
 
@@ -29,8 +42,8 @@ F11 = form(11, 1800, 14, '稍重', [5, 12, 3, 9, 1, 14, 7, 10, 2, 13, 6, 11, 4, 
 # 架空のJRAのレース（東京11R・芝1600・16頭・A層）
 FJ = form(11, 1600, 16, '良', [7, 3, 12, 1, 9, 15, 5, 10, 2, 14, 6, 11, 4, 16, 8, 13],
           [2.3, 4.1, 5.6, 7.9, 9.8, 12.5, 15.1, 19.7, 24.3, 31.2, 38.5, 47.0, 58.2, 72.4, 95.1, 130.6],
-          [1.2, 1.5, 1.8, 2.3, 2.7, 3.2, 3.9, 4.6, 5.5, 6.8, 8.1, 9.9, 12.2, 14.8, 18.5, 24.0], 19.6, '7-3-12', 48.2, 96.5, venue='東京', date='2026-10-17', surface='芝')
-BLANK = {"id": None, "venue": "大井", "date": "2026-10-14", "r": "", "dist": "", "surface": "ダ", "baba": "", "n": "", "tan1": "", "s1": "", "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": "", "rows": []}
+          [1.2, 1.5, 1.8, 2.3, 2.7, 3.2, 3.9, 4.6, 5.5, 6.8, 8.1, 9.9, 12.2, 14.8, 18.5, 24.0], 19.6, '7-3-12', 48.2, 96.5, venue='' if APP else '東京', date='2026-10-17', surface='芝')
+BLANK = {"id": None, "venue": V0, "date": "2026-10-14", "r": "", "dist": "", "surface": "ダ", "baba": "", "n": "", "tan1": "", "s1": "", "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": "", "rows": []}
 
 
 def w5odds(n, tan1):
@@ -38,7 +51,8 @@ def w5odds(n, tan1):
     return [{"no": (i * 5) % n + 1, "tan": str(x), "fuku": ""} for i, x in enumerate(xs)]
 
 
-RACES = [('東京', 9, 1600, 12, '良', 1.8, 12.0), ('京都', 10, 1800, 14, '良', 2.0, 30.0), ('東京', 10, 1400, 12, '稍重', 3.0, 70.0), ('京都', 11, 2000, 16, '良', 3.2, 80.0), ('東京', 11, 1600, 12, '良', 1.5, 9.0)]
+V1, V2 = ('ひがし', 'にし') if APP else ('東京', '京都')
+RACES = [(V1, 9, 1600, 12, '良', 1.8, 12.0), (V2, 10, 1800, 14, '良', 2.0, 30.0), (V1, 10, 1400, 12, '稍重', 3.0, 70.0), (V2, 11, 2000, 16, '良', 3.2, 80.0), (V1, 11, 1600, 12, '良', 1.5, 9.0)]
 W5 = {"id": None, "fixed": False, "date": "2026-10-18", "budget": "3000", "mode": "pick", "randAll": False, "stake": "", "payout": "", "other": "", "note": "",
       "races": [{"form": {"venue": v, "date": "2026-10-18", "r": str(r), "dist": str(d), "surface": "芝", "baba": b, "n": str(n), "rows": w5odds(n, t1), "tan1": "", "s1": str(s1), "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": ""},
                  "sel": None, "win": "", "picks": None, "man": None} for v, r, d, n, b, t1, s1 in RACES]}
@@ -163,7 +177,7 @@ MSEL = ['#setMother', '#slotList', '#slotList .slotrow[data-n="1"]', S2, '#slotL
 
 # 架空のJRAデータをExcel（検証データシート・A〜P列）にする
 import openpyxl
-XLSX = CM + '/JRA_マザーデータ.xlsx'
+XLSX = CM + ('/マイデータ.xlsx' if APP else '/JRA_マザーデータ.xlsx')
 wb = openpyxl.Workbook(); ws = wb.active; ws.title = '検証データ'
 ws.append(['日付', 'R', '馬場', '距離', '頭数', '単勝1位', '3連単1位', '1着人気', '2着人気', '3着人気', '3連単5位', '3連単10位', '馬単払戻', '3連単払戻', '備考', '集計対象'])
 for line in jra_tsv().split('\n'):
@@ -176,6 +190,9 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
+        if APP:
+            ctx.add_init_script(FAKE)
+            ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
         pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.add_init_script("if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', '1'); localStorage.setItem('tengel.form', %s); localStorage.setItem('tengel.win5', %s); }"
                            % (json.dumps(json.dumps(BLANK, ensure_ascii=False)), json.dumps(json.dumps(W5, ensure_ascii=False))))
@@ -192,6 +209,9 @@ try:
         bar_shot(pg, 'header.top', 'header_oi0'); bar_shot(pg, '.tabbar', 'tabbar_judge')
         # ---- 買う馬（大きく） ----
         ctx3 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
+        if APP:
+            ctx3.add_init_script(FAKE)
+            ctx3.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
         p3 = ctx3.new_page()
         p3.add_init_script("localStorage.setItem('tengel.form', %s);" % json.dumps(json.dumps(F9, ensure_ascii=False)))
         p3.goto(URL); p3.wait_for_timeout(2600)

@@ -85,7 +85,8 @@ try:
         check(pg.locator('#setAbout a[href^="https://www.cas.go.jp"]').count() == 1 and pg.locator('#setAbout a[href="tel:0120683705"]').count() == 1, '相談窓口のリンクと電話')
         pg.locator('#abNotice summary').click(); pg.wait_for_timeout(100)
         nt = pg.locator('#abNotice').inner_text()
-        check('非公式' in nt and '日本中央競馬会の商標または登録商標' in nt and 'アイホン株式会社のライセンス' in nt and 'Anthropic, PBC' in nt, '非公式のアプリ・商標の表記（JRA・WIN5・iPhone・Excel・Claude）')
+        check('非公式' in nt and '競馬の主催者・団体とは関係ありません' in nt and 'アイホン株式会社のライセンス' in nt and 'Anthropic, PBC' in nt and 'JRA' not in nt and 'WIN5' not in nt,
+              '非公式のアプリ・商標の表記（iPhone・Excel・Claude。App Store版は競馬の団体・商標の名前を出さない）')
         pg.locator('#abPrivacy summary').click(); pg.wait_for_timeout(100)
         pv = pg.locator('#abPrivacy').inner_text()
         check('開発者が集めることも、受け取ることもありません' in pv and 'GitHub Pages' in pv and 'Google' not in pv and '自動バックアップ' in pv, 'プライバシーポリシー（App Store版：Googleなし・自動バックアップ・CM）')

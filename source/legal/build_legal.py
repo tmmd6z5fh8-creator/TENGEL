@@ -43,6 +43,20 @@ NOTICES = '''<p>テンゲルは個人が開発した非公式のアプリです�
 </ul>'''
 
 
+# App Store版（アプリの中・公開するページ）：競馬場・団体・商標（JRA・WIN5 など）の名前は出さない（アプリの中でも使っていない）
+NOTICES_APP = '''<p>テンゲルは個人が開発した非公式のアプリです。競馬の主催者・団体とは関係ありません。</p>
+<ul>
+<li>iPhone、iPad、Safariは、米国およびその他の国で登録されたApple Inc.の商標です。iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。</li>
+<li>Excelは、米国Microsoft Corporationの米国およびその他の国における登録商標または商標です。</li>
+<li>Claude、Anthropicは、Anthropic, PBCの商標です。</li>
+<li>そのほか、記載されている会社名・団体名・商品名・サービス名は、各社・各団体の商標または登録商標です。</li>
+</ul>'''
+
+
+def notices(target):
+    return NOTICES_APP if target == 'app' else NOTICES
+
+
 def privacy(c, target, mark=False):
     blank = '【要記入】' if mark else ''
     who = esc(c.get('seller')) or blank
@@ -53,7 +67,7 @@ def privacy(c, target, mark=False):
 <h3>2. 端末の中に保存する情報</h3>
 <p>次の情報は、利用者の端末の中（本アプリの保存領域）にだけ保存します。開発者には送りません。</p>
 <ul>
-<li>買ったレースの記録・メモ、WIN5の記録</li>
+<li>買ったレースの記録・メモ、''' + ('5重勝の記録' if app else 'WIN5の記録') + '''</li>
 <li>買い目の設定、マザーデータ（利用者が取り込んだExcelのデータを含む）</li>
 <li>画像の読み取りに使うAPIキー（利用者が入れた場合）</li>
 </ul>
@@ -122,7 +136,7 @@ def about(target):
     links = {k: (base + k + '.html' if app and base and ready(c, k) else None) for k in ('privacy', 'tokushoho', 'support')}
     return {
         'target': target, 'appName': c.get('app_name') or 'テンゲル',
-        'disclaimer': DISCLAIMER, 'notices': NOTICES, 'privacy': privacy(c, target),
+        'disclaimer': DISCLAIMER, 'notices': notices(target), 'privacy': privacy(c, target),
         'tokushoho': tokushoho(c) if app and ready(c, 'tokushoho') else None,
         'fonts': fonts_html() if app else None,
         'email': c.get('email') or None, 'links': links,
@@ -167,7 +181,7 @@ def pages(out, mark=False):
         mail = esc(c.get('email')) or ('【要記入】' if mark else '')
         body = (f'<section><h2>テンゲルについて</h2><p>テンゲルは、競馬のオッズから「荒れやすさ」を判定して、買い目のゾーンを提案し、結果と収支を記録できるアプリです。記録はすべて端末の中に保存されます。</p></section>'
                 f'<section><h2>お問い合わせ</h2><p>ご質問・不具合のご連絡は、メールでお願いします。<br>メール：{mail}</p><p class="small">返信まで数日いただくことがあります。不具合のときは、アプリの版（設定 → このアプリについて）と、画面のスクリーンショットを添えていただけると助かります。</p></section>'
-                f'<section><h2>ご利用にあたって</h2>{DISCLAIMER}</section><section><h2>非公式のアプリです・商標について</h2>{NOTICES}</section>')
+                f'<section><h2>ご利用にあたって</h2>{DISCLAIMER}</section><section><h2>非公式のアプリです・商標について</h2>{NOTICES_APP}</section>')
         open(os.path.join(d, 'support.html'), 'w', encoding='utf-8').write(page('サポート', body, c)); made.append('support.html')
     if not made:
         os.rmdir(d)

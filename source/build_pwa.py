@@ -12,13 +12,14 @@ def _load(name, path):
 
 _bm = _load('build_manual', os.path.join(HERE, 'manual', 'build_manual.py'))   # 説明書
 _bl = _load('build_legal', os.path.join(HERE, 'legal', 'build_legal.py'))      # このアプリについて・公開するページ
+_at = _load('app_target', os.path.join(HERE, 'app_target.py'))                 # App Store版：競馬場・団体・版の名前を出さない
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
 if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ（一時フォルダに作ってからコピーしてね）')
 shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.12-7')
+APP_VER = os.environ.get('APP_VER', '2026.10.12-8')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
 # 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）
@@ -42,6 +43,11 @@ if TARGET == 'app':
                  ('※まさちゃんのカスタム買い目（設定タブで変更）', '※カスタム買い目（設定タブで変更）')]:
         assert a in page, a[:40]; page = page.replace(a, b)
 mother = [{k: v for k, v in r.items()} for r in hist]
+MOTHER_HOME = None
+if TARGET == 'app':
+    # App Store版：アプリに入れるデータは開催場の名前を消して「しるし」だけ残す・消したレースの印（DROP）は使わない（入れるデータが別の開催場でも消さないように）
+    mother, MOTHER_HOME = _at.mother(mother)
+    DROP_IDS = []
 ICONS = ('icon3-180.png', 'icon3-192.png', 'icon3-512.png', 'icon3-maskable-512.png')
 # CM（紹介動画）：設定タブから見る。cm_media/ にある動画と表紙を cm/ に置く。中身が変わったら ?v= が変わるので古いのは使われない
 CM_SRC = os.path.join(HERE, 'cm_media')
@@ -59,18 +65,20 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>
 '''
 html = head + page + '\n<script>\n' + open('pwa_ui.js', encoding='utf8').read() + '\n</script>\n</body></html>\n'
+if TARGET == 'app':
+    html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
 open(f'{out}/index.html', 'w', encoding='utf8').write(html)
 json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#16203D", "theme_color": "#16203D", "lang": "ja",
   "icons": [{"src": "icon3-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon3-512.png", "sizes": "512x512", "type": "image/png"}, {"src": "icon3-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
   open(f'{out}/manifest.webmanifest', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
 # 説明書（manual.html・写真は manual/）。アプリの上の「説明書」と設定タブから開く
-MAN_IMGS, MAN_VER = _bm.build('app' if TARGET == 'app' else 'pwa', out, APP_VER)
+MAN_IMGS, MAN_VER = _bm.build('app' if TARGET == 'app' else 'pwa', out, APP_VER, mother=mother)
 if TARGET == 'app':
     os.makedirs(f'{out}/fonts')
     for f in _bm.APP_FONT_FILES:

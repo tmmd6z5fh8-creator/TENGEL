@@ -1,14 +1,29 @@
 # 説明書用：アプリ（iPhone版）の画面を撮る。架空のレースで、記録はこのテスト用ブラウザの中だけ
+#   python3 shots.py <作業フォルダ>              … Web版（ホーム画面のアプリ）の画面 → <作業フォルダ>/man/raw
+#   TARGET=app python3 shots.py <作業フォルダ>   … App Store版の画面（アプリの中として開く・競馬場や版の名前が出ない）→ <作業フォルダ>/man_app/raw
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
 SRC = '/home/claude/tengel/source'
 SP = sys.argv[1]
+APP = os.environ.get('TARGET') == 'app'
 SRV = SP + '/mansrv'; PORT = 8791; URL = f'http://localhost:{PORT}/TENGEL/'
-RAW = SP + '/man/raw'; os.makedirs(RAW, exist_ok=True)
+RAW = SP + ('/man_app/raw' if APP else '/man/raw'); os.makedirs(RAW, exist_ok=True)
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
-subprocess.run(['python3', 'build_pwa.py', SRV + '/TENGEL'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
+# App Store版：説明書の写真がまだなくても作れるように（MANUAL_SHOTS_BOOTSTRAP）。アプリの中（tengel://）のかわりに、localhost でアプリ版として開く
+subprocess.run(['python3', 'build_pwa.py', SRV + '/TENGEL'], cwd=SRC, check=True, stdout=subprocess.DEVNULL,
+               env=dict(os.environ, TARGET='app', MANUAL_SHOTS_BOOTSTRAP='1') if APP else None)
+if APP:
+    pth = SRV + '/TENGEL/index.html'; h = open(pth, encoding='utf8').read()
+    assert "window.__NATIVE = location.protocol === 'tengel:';" in h
+    open(pth, 'w', encoding='utf8').write(h.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+# にせもののアプリ（共有・コピー・バックアップに、すぐ「できた」と返事をする）
+FAKE = """
+window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };
+window.webkit = { messageHandlers: { tengel: { postMessage: function (m) { setTimeout(function () { window.__nativeReply(m.id, true, true); }, 30); } } } };
+"""
+VENUE = '' if APP else '大井'
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.8)
 
@@ -19,7 +34,7 @@ def rows(nos, odds, fuku=None):
 
 
 def form(r, dist, n, baba, nos, odds, fuku, s1, s1c, s5, s10):
-    return {"id": None, "venue": "大井", "date": "2026-10-14", "r": str(r), "dist": str(dist), "surface": "ダ", "baba": baba, "n": str(n), "tan1": "",
+    return {"id": None, "venue": VENUE, "date": "2026-10-14", "r": str(r), "dist": str(dist), "surface": "ダ", "baba": baba, "n": str(n), "tan1": "",
             "s1": str(s1), "s1combo": s1c, "s5": str(s5), "s5combo": "", "s10": str(s10), "s10combo": "", "rows": rows(nos, odds, fuku)}
 
 
@@ -40,8 +55,10 @@ def w5odds(n, tan1):
     return [{"no": (i * 5) % n + 1, "tan": str(x), "fuku": ""} for i, x in enumerate(xs)]
 
 
-RACES = [('東京', 9, 1600, 12, '良', 1.8, 12.0), ('京都', 10, 1800, 14, '良', 2.0, 30.0), ('東京', 10, 1400, 12, '稍重', 3.0, 70.0),
-         ('京都', 11, 2000, 16, '良', 3.2, 80.0), ('東京', 11, 1600, 12, '良', 1.5, 9.0)]
+# 5重勝（WIN5）の5レース。App Store版は架空の開催場の名前（ひがし・にし）
+V1, V2 = ('ひがし', 'にし') if APP else ('東京', '京都')
+RACES = [(V1, 9, 1600, 12, '良', 1.8, 12.0), (V2, 10, 1800, 14, '良', 2.0, 30.0), (V1, 10, 1400, 12, '稍重', 3.0, 70.0),
+         (V2, 11, 2000, 16, '良', 3.2, 80.0), (V1, 11, 1600, 12, '良', 1.5, 9.0)]
 W5 = {"id": None, "fixed": False, "date": "2026-10-18", "budget": "3000", "mode": "pick", "randAll": False, "stake": "", "payout": "", "other": "", "note": "",
       "races": [{"form": {"venue": v, "date": "2026-10-18", "r": str(r), "dist": str(d), "surface": "芝", "baba": b, "n": str(n), "rows": w5odds(n, t1), "tan1": "",
                           "s1": str(s1), "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": ""}, "sel": None, "win": "", "picks": None, "man": None}
@@ -92,6 +109,9 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
+        if APP:
+            ctx.add_init_script(FAKE)
+            ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
         pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.add_init_script("if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', '1'); localStorage.setItem('tengel.form', %s); localStorage.setItem('tengel.win5', %s); }"
@@ -197,17 +217,19 @@ try:
         shot(pg, 'set_zone_save', '#zoneCard .zsave')
         shot(pg, 'set_mother', '#setMother', ['#slotList', '#slotEdit'])
         shot(pg, 'set_ocr', '#setOcr', ['#soKey', '#soSave', '#soModel'])
-        shot(pg, 'set_update', '#setUpdate')
+        if not APP:   # App Store版は「アプリの更新」も「新しい版のお知らせ」もない（アプリのアップデートで届く）
+            shot(pg, 'set_update', '#setUpdate')
         shot(pg, 'set_backup', '#setBackup', ['#pwaBackup', '#pwaRestore'])
 
-        # ---- 新しい版のお知らせ ----
-        vj = SRV + '/TENGEL/version.json'; old = open(vj, encoding='utf-8').read()
-        v = json.loads(old); v['app'] = '2026.10.20'; v['mother'] = '2026-10-18'
-        open(vj, 'w', encoding='utf-8').write(json.dumps(v))
-        pg.reload(); pg.wait_for_timeout(2600); hide(pg, True)
-        pg.evaluate("scrollTo(0, 0)")
-        shot(pg, 'update_bar', 'header.top')
-        open(vj, 'w', encoding='utf-8').write(old)
+        # ---- 新しい版のお知らせ（Web版だけ） ----
+        if not APP:
+            vj = SRV + '/TENGEL/version.json'; old = open(vj, encoding='utf-8').read()
+            v = json.loads(old); v['app'] = '2026.10.20'; v['mother'] = '2026-10-18'
+            open(vj, 'w', encoding='utf-8').write(json.dumps(v))
+            pg.reload(); pg.wait_for_timeout(2600); hide(pg, True)
+            pg.evaluate("scrollTo(0, 0)")
+            shot(pg, 'update_bar', 'header.top')
+            open(vj, 'w', encoding='utf-8').write(old)
         b.close()
 finally:
     srv.terminate()

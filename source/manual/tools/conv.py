@@ -1,8 +1,11 @@
 # 撮った画面を説明書用のWebPにする（切り出し・つなぎ合わせ）。座標は2倍のピクセル
+#   python3 conv.py <作業フォルダ>       … Web版の写真（man/raw → man/img・man/dims.json・man/raw/meta2.json）
+#   python3 conv.py <作業フォルダ> app   … App Store版の写真（man_app/…）。manual/img_app・dims_app.json・meta_app.json にコピーして使う
 import json, os, sys
 from PIL import Image, ImageDraw
 SP = sys.argv[1]
-RAW = SP + '/man/raw'; IMG = SP + '/man/img'
+D = '/man_app' if len(sys.argv) > 2 and sys.argv[2] == 'app' else '/man'
+RAW = SP + D + '/raw'; IMG = SP + D + '/img'; os.makedirs(IMG, exist_ok=True)
 meta = json.load(open(RAW + '/meta.json', encoding='utf-8'))
 CROP = {  # name: (top, bottom) in raw px
     'result_c': (0, 1330), 'record_open': (1712, None), 'set_mother': (0, 1500), 'ocr_need': (0, 720),

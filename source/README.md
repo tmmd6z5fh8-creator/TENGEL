@@ -50,7 +50,7 @@
 | manual/ | 説明書（2026.10.12-3〜）。content.html（項目ごとの中身。`<!--@id-->` で区切る）・manual.css・manual.js・build_manual.py（`build('pwa', 出力先, 版)` で manual.html と写真の manual/ を作る。build_pwa.py が呼ぶ／`artifact` でclaude.ai用）・img/（画面の写真・バナー）・meta.json/dims.json（写真の番号の位置）・tools/（写真の撮り直し：`python3 manual/tools/shots.py <作業フォルダ>` → `python3 manual/tools/conv.py <作業フォルダ>` → できた s_*.webp・meta2.json（→meta.json）・dims.json を manual/ に入れる） |
 | test_manual.py | 説明書のテスト（上と設定タブの入口・もくじ→項目・アプリに戻るとタブがそのまま・電波がなくても説明書と写真が開く・アプリのページが説明書で上書きされない） |
 | cm_media/ | CM（紹介動画・2026.10.12-5〜）。tengel3_cm.mp4（前置き15秒＋スロット新台CM風30秒＝45秒・1080×1920・30MB以下）と poster.jpg（表紙）。build_pwa.py が cm/ に置いて、設定タブの「テンゲルのCM」から全画面で見られる。動画は大きいのでサービスワーカーでしまわない（表紙だけしまう）。入れ替えたら ?v= が自動で変わる |
-| cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（cm2_shots.py の SCRUB_JS） |
+| cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（Web版の画面は cm2_shots.py の SCRUB_JS で消す・App Store版は `TARGET=app` でApp Store版の画面を撮る → shots_app/・`SHOTS=shots_app` で使う） |
 | test_cm.py | CMのテスト（設定タブの説明書の下・押すと全画面・×／外側／Escで閉じる・動画はしまわない・表紙はしまう・電波がないときのお知らせ） |
 | build_ios.py | iPhone・iPadアプリ（App Store用・Swift Playgrounds の App）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
 | ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・外のリンクはSafari）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
@@ -58,12 +58,15 @@
 | test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
 | legal/ | 「このアプリについて」（設定タブのいちばん下：ご利用にあたって＝参考情報・20歳・相談先／非公式のアプリ・商標の表記／プライバシーポリシー／特定商取引法に基づく表記／フォントのライセンス）と、公開するページ（legal/privacy.html・tokushoho.html・support.html）。中身は build_legal.py、販売する人の欄は legal.json（seller・email・address・phone）。**欄が空のページは公開しない**（deploy.sh が「まだなし」と出す）。確認用は `python3 legal/build_legal.py preview <フォルダ>`（空の欄を【要記入】にして全部作る） |
 | ios/fonts/ | App Store版に入れるフォント（BIZ UDPGothic・Dela Gothic One・IBM Plex Mono。SIL OFL 1.1・ファイルはそのまま。入手元とライセンスは ios/fonts/README.md）。App Store版は Google Fonts に通信しない |
-| manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「大井のデータを新しくする」は出さない（build_manual.py の mode='app'） |
+| manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「データを新しくする（Web版）」は出さない（build_manual.py の mode='app'）。`{{mother}}` はアプリに入れるデータの走数に置きかわる |
+| manual/img_app/・meta_app.json・dims_app.json | App Store版の説明書の写真（App Store版の画面で撮ったもの＝競馬場・団体・版の名前が出ない）。撮り直し：`TARGET=app python3 manual/tools/shots.py <作業フォルダ>` → `python3 manual/tools/conv.py <作業フォルダ> app` → man_app/img の s_*.webp を img_app/ に、man_app/dims.json を dims_app.json に、man_app/raw/meta2.json を meta_app.json に |
+| app_target.py | **App Store版に、特定の競馬場・団体・商標・版の名前（大井・JRA・WIN5・第13改訂版 など。`FORBIDDEN`）を1つも入れない**ための変換（2026/10/13）。build_pwa.py（TARGET=app）・build_manual.py（app）が使う。① プログラムのコメントを消す ② `INDEX`・`MANUAL_SEC` の表で置きかえる（置きかえる文字の数が合わなければ止まる＝元を直したら表も直す。`APP_TARGET_REPORT=1` で全部の食い違いを出す） ③ 出さない言葉が残っていたら作らない。アプリに入れるデータは開催場の名前を消して「しるし」（`fnv()`＝FNV-1a・JSの `T.vhash()` と同じ）だけ `window.__MOTHER_HOME` に入れる（id は 日付-m1-R）。Web版・claude.ai版はこの変換をしない |
+| test_appname.py | App Store版のテスト：作ったファイルと画面（全タブ・判定の全文・説明書の全項目）に出さない言葉がない・開催場ははじめ空（空ならふつうの判定）・アプリに入っているデータの開催場はしるしで比べる（「大井」「大井競馬場」と入れてもふつうの判定、ちがう開催場は【参考判定】）・自分で入れたデータは名前で比べる・日付とRで自己参照の除外・期間「最新」・5重勝・記録の（参考）とCSV・Web版は今までどおり |
 | mkxlsx.py / mkxlsx2.py / mkslotdata.py / mkrawfiles.py | テスト用のExcel・貼り付けデータを作る（mkrawfiles＝分析シート・分析表・馬場フィルターと同じ形） |
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.12-7 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.12-8 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 
@@ -77,7 +80,8 @@
 - 確かめる：`python3 test_native.py`（画面）・`ios` ブランチにpush（GitHubのMacで作ってシミュレーターで動かす。ios/ci/）
 - アプリの版を上げるときは ios/Tengel.swiftpm/Package.swift の displayVersion（1.0 → 1.1）と bundleVersion（1 → 2）
 - 中身は `TARGET=app python3 build_pwa.py <出力>`（build_ios.py が呼ぶ）：フォントはアプリの中（ios/fonts）・説明書はApp Store版・「姫に送って」「まさちゃんの」はお客さん向けの言い方・「このアプリについて」はApp Store版（プライバシーにCM・自動バックアップ、フォントのライセンスつき）
-- CMはアプリ用の版（cm_media/tengel3_cm_app.mp4。最後が「iPhone・iPadで、いつでも判定」）を公開中のWeb版から読む。Web版・アプリ用とも、最後に非公式・JRA/WIN5の商標・iPhoneの商標（アイホン）の注意書き
+- CMはアプリ用の版（cm_media/tengel3_cm_app.mp4。最後が「iPhone・iPadで、いつでも判定」）を公開中のWeb版から読む。アプリ用は画面もApp Store版で撮る（cm/shots_app・5重勝・マザーデータ2）。最後に非公式・iPhoneの商標（Apple・アイホン）の注意書き（Web版はJRA/WIN5の商標も）
+- **App Store版には、特定の競馬場・団体・商標・版の名前を入れない**（2026/10/13・まさちゃんの指定）：開催場は使う人が入れたもの・画像から読んだものだけ（はじめは空＝使っているマザーデータの開催場として判定）・マザーデータの名前ははじめ「マザーデータ1〜3」（自由に変えられる）・WIN5→「5重勝」・版の表示（第13改訂版）なし・第13新規→「最新」・第12の帯→「旧本線の帯」。アプリに入れるデータの開催場は「しるし」（ハッシュ）で比べる。全部 app_target.py（作るたびに確かめる）・test_appname.py
 - 商標・特商法まわり（2026/10/13）：アプリ名・キーワードに「JRA」「WIN5」「大井」などほかの団体の名前を入れない（App Store審査 2.3.7・5.2.1）。有料で売るときは legal.json を埋めて deploy → App Store Connect のプライバシーポリシーURL・サポートURLに legal/privacy.html・support.html
 
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）

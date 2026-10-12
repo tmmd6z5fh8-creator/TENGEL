@@ -1,14 +1,14 @@
 # CMの映像を作る：cm.html の render(t) を1コマずつ撮って ffmpeg に渡す（1080×1920・30fps・30秒）
 #   python3 render.py test 1.5 5 7 …   → frames/f_<t>.png（確認用）
 #   python3 render.py full              → video.mp4（音なし）
-#   CMQ='?v=app' OUTV=video_app.mp4 python3 render.py full  → App Store版のアプリの中で見せる版（cm2.html の APPV）
+#   CMQ='?v=app' SHOTS=shots_app OUTV=video_app.mp4 python3 render.py full  → App Store版のアプリの中で見せる版（cm2.html の APPV・画面はApp Store版で撮ったもの）
 import base64, json, os, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 CM = os.path.dirname(os.path.abspath(__file__))
 PORT = 8802; FPS = 30; DUR = 30.0
-CMQ = os.environ.get('CMQ', ''); OUTV = os.environ.get('OUTV', 'video.mp4')
+CMQ = os.environ.get('CMQ', ''); OUTV = os.environ.get('OUTV', 'video.mp4'); SHOTS = os.environ.get('SHOTS', 'shots')
 mode = sys.argv[1] if len(sys.argv) > 1 else 'test'
-meta = json.load(open(CM + '/shots/meta.json', encoding='utf-8'))
+meta = json.load(open(CM + '/' + SHOTS + '/meta.json', encoding='utf-8'))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--bind', '127.0.0.1', '--directory', CM], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.8)
 try:
@@ -18,7 +18,7 @@ try:
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
-        pg.add_init_script('window.__META = ' + json.dumps(meta) + ';')
+        pg.add_init_script('window.__META = ' + json.dumps(meta) + '; window.__SHOTS = ' + json.dumps(SHOTS) + ';')
         pg.goto(f'http://127.0.0.1:{PORT}/cm2.html{CMQ}')
         pg.evaluate('window.__ready')
         pg.wait_for_timeout(300)
