@@ -53,7 +53,7 @@
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.12-3 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.12-4 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 

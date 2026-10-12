@@ -113,7 +113,7 @@ SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-rad
             '\n.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}\n')
 
 
-def build(mode, out, app_ver='2026.10.12-3'):
+def build(mode, out, app_ver='2026.10.12-4'):
     """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)"""
     assert mode in ('artifact', 'pwa'), mode
     meta = json.load(open(D + '/meta.json', encoding='utf-8'))
@@ -215,7 +215,7 @@ def build(mode, out, app_ver='2026.10.12-3'):
 
 <footer class="foot">
 <span>わからないことは、画面のスクショを姫に送ってね。</span>
-<span>画面の写真は、アプリ 2026.10.12-2（第13改訂版）で撮ったものだよ。写真のレースと数字は例（架空のレース）だよ。</span>
+<span>画面の写真は、架空のレースで撮ったアプリの画面だよ。写真の数字は例だよ。</span>
 </footer>
 </main>
 
@@ -258,6 +258,6 @@ def build(mode, out, app_ver='2026.10.12-3'):
 
 if __name__ == '__main__':
     mode, out = sys.argv[1], sys.argv[2]
-    ver = sys.argv[3] if len(sys.argv) > 3 else '2026.10.12-3'
+    ver = sys.argv[3] if len(sys.argv) > 3 else '2026.10.12-4'
     imgs, mv = build(mode, out, ver)
     print('説明書', mode, out, '画像', len(imgs), '版', mv)
