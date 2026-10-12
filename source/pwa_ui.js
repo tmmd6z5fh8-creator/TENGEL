@@ -525,8 +525,35 @@
     };
   }
 
+  // ---- 説明書（manual.html）への入口：上のバーと設定タブ ----
+  const BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>';
+  function manualEntry() {
+    if (!document.getElementById('manCss')) {
+      const st = document.createElement('style'); st.id = 'manCss';
+      st.textContent = '.manbtn{display:inline-flex;align-items:center;gap:5px;margin-left:auto;padding:4px 12px 4px 9px;border-radius:999px;border:1px solid rgba(226,162,59,.65);background:rgba(226,162,59,.14);color:var(--night-ink);text-decoration:none;font-size:12.5px;font-weight:700;line-height:1.5;white-space:nowrap}'
+        + '.manbtn svg{width:15px;height:15px;color:var(--lamp)}.manbtn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
+        + '@media (min-width:900px){.manbtn{order:9;margin-left:0}}'
+        + '#setManual{margin-bottom:var(--gap)}#setManual .btn{text-decoration:none;color:var(--primary-ink);background:var(--primary);border-color:var(--primary)}#setManual .btn svg{width:17px;height:17px}';
+      document.head.appendChild(st);
+    }
+    const top = $('header.top .top-in'), pill = $('#dbpill');
+    if (top && !$('#manBtn')) {
+      const a = document.createElement('a'); a.id = 'manBtn'; a.className = 'manbtn'; a.href = 'manual.html'; a.setAttribute('aria-label', '説明書を開く');
+      a.innerHTML = BOOK + '説明書';
+      top.insertBefore(a, pill && pill.parentNode === top ? pill : null);
+    }
+    const set = $('#v-set');
+    if (set && !$('#setManual')) {
+      const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setManual';
+      c.innerHTML = '<h2>説明書</h2><p class="hint" style="margin:0 0 10px">アプリの使い方を、項目ごとに画面の写真つきで見られるよ。知りたい項目を押すと説明が出るよ。電波がなくても読めるよ。</p>'
+        + '<div class="row"><a class="btn primary" href="manual.html">' + BOOK + '説明書を開く</a></div>';
+      set.insertBefore(c, set.firstChild);
+    }
+  }
+
   function boot() {
     build();
+    manualEntry();
     // 記録タブには、バックアップの場所だけ案内する
     const rec = $('#v-rec'), list = $('#recList');
     if (rec && list) {

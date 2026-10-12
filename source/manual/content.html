@@ -1,0 +1,606 @@
+<!--@about-->
+<div class="gist"><span>ひとことで</span><p>オッズを入れるだけで、テンゲルⅢ（第13改訂版）の判定が全部出るアプリだよ。買った馬券の結果と収支も残せるよ。</p></div>
+
+<h3>画面の下の5つのタブ</h3>
+{{shot:tabbar}}
+<div class="tbl fit"><table>
+<thead><tr><th>タブ</th><th>できること</th></tr></thead>
+<tbody>
+<tr><td>判定</td><td>レースのオッズを入れて判定する。買った結果もここで記録する</td></tr>
+<tr><td>WIN5</td><td>5レースの1着ゾーンと買う馬を、予算の中で出す</td></tr>
+<tr><td>記録</td><td>保存したレースの一覧。直す・開く・書き出す</td></tr>
+<tr><td>実測・回収</td><td>自分の収支と、マザーデータの実測①〜⑦</td></tr>
+<tr><td>設定</td><td>買い目編集・マザーデータ・画像の読み取り・更新・バックアップ</td></tr>
+</tbody></table></div>
+
+<h3>おぼえておいてほしいこと</h3>
+<ul class="dots">
+<li><b>判定はルールどおり機械的に出る</b>よ。組番（○-○）と点数は出さない。WIN5だけは予算に合わせるので点数が出るよ。</li>
+<li><b>記録はこのiPhoneの中だけ</b>に保存されるよ。外に送るのは、画像の読み取りでスクショをAnthropicに送るときだけ。</li>
+<li><b>ホーム画面のアイコンを消すと、記録も消える</b>よ。ときどき「バックアップを保存」してね。</li>
+</ul>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>大井のデータで見るとき、大井以外のレース（JRAやほかの地方競馬）は【参考判定】として出るよ。仕組みは同じで、参考値は大井の実測だよ。</div>
+<div class="tip"><span class="lab">{{i:book}}説明書</span>この説明書は、アプリの画面の上にある<span class="ui alt">説明書</span>か、設定タブの<span class="ui">説明書を開く</span>で、いつでも見られるよ。電波がなくても読めるよ。</div>
+
+<!--@install-->
+<div class="gist"><span>ひとことで</span><p>Safariで開いて「ホーム画面に追加」するだけ。新しい版は、上に出るお知らせの「更新する」を押せばOK。</p></div>
+
+<h3>iPhoneに入れる</h3>
+<ol class="steps">
+<li><div>Safariでこのアドレスを開く<div class="url"><code id="appUrl">https://tmmd6z5fh8-creator.github.io/TENGEL/</code><button class="copy" type="button" data-copy="appUrl">コピー</button></div></div></li>
+<li>画面の下の<b>共有ボタン</b>（四角に上向きの矢印）を押す</li>
+<li><b>「ホーム画面に追加」</b>を押して、右上の<b>「追加」</b>を押す</li>
+<li>これからは、ホーム画面の<b>テンゲルⅢのアイコン</b>から開く</li>
+</ol>
+<div class="sheet" aria-hidden="true">
+<div>コピー{{i:copy}}</div>
+<div>ブックマークを追加{{i:book}}</div>
+<div class="hl">ホーム画面に追加{{i:plusbox}}</div>
+</div>
+<p class="cap">Safariの共有メニュー（イメージ）。下のほうにあるときは、上にスクロールして探してね。</p>
+<p class="small">一度開けば、電波がないところでも開いて判定できるよ。画像の読み取りと、新しい版の確認だけはネットが必要。</p>
+
+<h3>新しい版にする</h3>
+{{shot:update_bar}}
+<ol class="steps">
+<li>新しい版があると、画面の上にお知らせが出るよ。<span class="ui">更新する</span>を押せば終わり</li>
+<li>自分で確かめるときは、<b>設定 → アプリの更新</b>の<span class="ui alt">新しい版があるか確認</span>→ あれば<span class="ui">新しい版にする</span></li>
+</ol>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>更新しても、記録・買い目の設定・マザーデータは消えないよ。「大井のデータも新しくなるよ」と出たら、大井の実測も新しくなる版だよ。</div>
+<div class="warn"><span class="lab">{{i:alert}}注意</span><b>ホーム画面のアイコンを消すと、中の記録も一緒に消えちゃう</b>よ。入れ直す前や機種変更の前は、必ず<b>設定 → バックアップを保存</b>をしてね。</div>
+<p class="small">リンクを人に送っても大丈夫。記録・設定・APIキーは、それぞれのiPhoneの中だけにあるよ。</p>
+
+<!--@input-->
+<div class="gist"><span>ひとことで</span><p>R・距離・馬場・頭数・単勝オッズ・3連単1位の6つを入れると、その場で判定が出るよ。</p></div>
+
+<h3>レース情報</h3>
+<div class="withlegend">
+{{shot:judge_info}}
+<ol class="legend">
+<li><div><b>マザーデータ</b><span>参考的中率に使うデータ。ふだんは「大井競馬」のままでOK</span></div></li>
+<li><div><b>オッズ画像から読み取る</b><span>スクショから全部入れてくれるよ（次の項目）</span></div></li>
+<li><div><b>開催場・日付</b><span>開催場は「大井」のように入れる</span></div></li>
+<li><div><b>レース・距離</b><span>レース番号はリストから選ぶ。距離はm</span></div></li>
+<li><div><b>出走頭数・コース</b><span>コースはダ（ダート）か芝</span></div></li>
+<li><div><b>馬場状態</b><span>良・稍重・重・不良。<b>「重」だとA層</b>になるよ</span></div></li>
+</ol>
+</div>
+
+<h3>単勝・複勝オッズ</h3>
+{{shot:judge_odds}}
+<ul class="dots">
+<li>馬番の横に<b>単勝</b>と<b>複勝</b>を入れる。複勝はなくても判定できるよ（大穴・超大穴の番号を並べる順番に使う）</li>
+<li>複勝が幅（1.2-1.5 など）のときは、<b>下の数字（1.2）だけ</b>でOK。見出しには「幅は 1.2-1.5」とあるけど、iPhoneの数字キーでは「-」が打てないからね</li>
+<li>取消・除外の馬は、単勝を<b>空欄</b>のまま。馬番が足りないときは<span class="ui alt">＋馬番を1つ増やす</span></li>
+<li>単勝の一覧がないときは、「単勝1位オッズ」だけでも判定できるよ（そのときは馬番が出ない）</li>
+</ul>
+
+<h3>3連単（人気順）</h3>
+<div class="withlegend">
+{{shot:judge_tri}}
+<ol class="legend">
+<li><div><b>1位オッズ・組番</b><span>1位オッズは必ず入れる（層を決める「比」に使う）。組番はなくてもOKで、「.」で区切れる（3.1.5 → 3-1-5）</span></div></li>
+<li><div><b>5位・10位オッズ</b><span>記録用。なくても判定できるよ</span></div></li>
+<li><div><b>入力をクリア／入力例を入れる</b><span>クリアはR・距離・頭数・オッズを消す。入力例は架空のレースで動きを試せる（保存はできない）</span></div></li>
+</ol>
+</div>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>「入力をクリア」しても、<b>開催場・日付・コース・馬場は残る</b>よ。前のレースで「重」にしていたら、次のレースで押し直してね（重だとA層になるから）。</div>
+
+<h3>入力中は、下に判定が出る</h3>
+{{shot:bottom_bars}}
+<p>入力欄を見ている間は、下にこのバーが出るよ。押すと判定結果まで移動するよ。</p>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>足りない項目があると「判定不可（データ不足）」と出て、足りない項目を教えてくれるよ。</div>
+<p class="small">使っているマザーデータと開催場が違うと【参考判定】になるよ（大井のデータなら、大井以外のレース）。開催場に合うマザーデータがあれば、切り替えるボタンが出るよ。</p>
+
+<!--@ocr-->
+<div class="gist"><span>ひとことで</span><p>スクショを1〜3枚選ぶだけで、入力欄が埋まるよ。使うにはAPIキーが1回だけ必要。</p></div>
+
+<h3>使い方</h3>
+<ol class="steps">
+<li><span class="ui">オッズ画像から読み取る</span>を押す</li>
+<li>単勝・複勝の画面と、3連単の人気順の画面のスクショを<b>1〜3枚</b>選ぶ</li>
+<li><b>20〜60秒</b>待つと、入力欄に入って「読み取った：…」と出る</li>
+<li>「読めなかった：…」と出た項目は、<b>前の値が残っている</b>ので必ず手で入れ直す</li>
+<li>オッズと頭数だけは、もとの画面と見比べて確かめてね</li>
+</ol>
+
+<h3>はじめて押したとき</h3>
+<div class="withlegend">
+{{shot:ocr_need}}
+<ol class="legend">
+<li><div><b>読み取りのボタン</b><span>押すと写真を選ぶ画面になる</span></div></li>
+<li><div><b>キーがまだないとき</b><span>この案内が出るよ。「「画像の読み取り」の設定を開く」からキーを入れてね</span></div></li>
+</ol>
+</div>
+
+<h3>読み取るもの</h3>
+<p>開催場・日付・R・距離・コース・馬場・出走頭数・単勝・複勝・3連単の1位／5位／10位（組番も）</p>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>料金は1回 約1〜4円（節約モードなら1円未満）。画面を大きめに撮ると読みやすいよ。</div>
+<p class="small">スクショは読み取りのためにAnthropicへ直接送られるよ。記録やほかのデータは送らないよ。キーの作り方は「画像の読み取り（APIキー）」を見てね。</p>
+
+<!--@result-->
+<div class="gist"><span>ひとことで</span><p>まず一番上の「層」と、第1・第2…の「推奨ゾーン」を見ればOK。下にいくほど細かい情報だよ。</p></div>
+
+<h3>画面の見方</h3>
+<div class="withlegend">
+{{shot:result_a1}}
+<ol class="legend">
+<li><div><b>層と区分</b><span>左のバッジが層（A＝堅・B＝警戒・C＝穴）。右が区分（「A層（固定）」「C層・第2段階」など）</span></div></li>
+<li><div><b>比・頭数・距離・馬場</b><span>比＝3連単1位 ÷ 単勝1位</span></div></li>
+<li><div><b>チップ</b><span>レース判定（⚠️【薄】・【並】・◎【厚】）や超大穴帯注意など。表示だけで、ゾーンは変わらないよ</span></div></li>
+<li><div><b>推奨ゾーン（馬単）</b><span>第1・第2…の順。矢印は1着→2着</span></div></li>
+<li><div><b>そのゾーンの馬番</b><span>押すと買う馬を選べる（「買う馬を選ぶ」）</span></div></li>
+<li><div><b>参考的中率と理由</b><span>その区分で、そのゾーンが実際に出た割合（マザーデータの実測）</span></div></li>
+<li><div><b>3着（2本）</b><span>3連単の3着に入れるゾーンと馬番。1・2着に使った人気馬は除いて読む</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+{{shot:result_a2}}
+<ol class="legend" style="counter-reset:lg 7">
+<li><div><b>番号の一覧</b><span>人気・中穴・大穴・超大穴の馬番。13番人気より下は対象外</span></div></li>
+<li><div><b>レース判定</b><span>その区分の人気→人気率・穴絡み率と、3連単の参考値</span></div></li>
+<li><div><b>旧本線</b><span>第12改訂版のゾーン。比べるための記録用で、買い目じゃないよ</span></div></li>
+<li><div><b>WIN5に入れる</b><span>JRAのWIN5対象レースのとき、①〜⑤に入れる</span></div></li>
+<li><div><b>全文コピー・保存</b><span>判定の全文をコピー／判定と結果を保存</span></div></li>
+<li><div><b>全STEPを表示</b><span>STEP0〜T3の全文</span></div></li>
+</ol>
+</div>
+
+<h3>区分ごとの推奨ゾーン</h3>
+<p class="small">第13改訂版のはじめの設定だよ。設定の「買い目編集」で変えると、判定に「カスタム買い目」と出て、この表と変わるよ。</p>
+<div class="tbl fit"><table>
+<thead><tr><th>区分</th><th>馬単（1着→2着）</th><th>3着</th></tr></thead>
+<tbody>
+<tr><td><span class="lb A">A</span> A層（固定）</td><td>① 人気→人気<br>② 人気→中穴</td><td>人気・中穴</td></tr>
+<tr><td><span class="lb B">B</span> B層（固定）</td><td>① 中穴→人気<br>② 人気→大穴</td><td>人気・大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・第1段階</td><td>① 人気→大穴<br>② 中穴→中穴 <span class="prov">暫定</span><br>③ 大穴→人気</td><td>①③ 人気・中穴<br>② 人気・大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・第2段階</td><td>① 人気→大穴／超大穴<br>② 中穴→大穴／超大穴<br>③ 大穴→人気</td><td>①③ 人気・中穴<br>② 人気・超大穴 <span class="prov">暫定</span></td></tr>
+<tr><td><span class="lb C">C</span> C層・非該当</td><td>① 人気→人気<br>② 人気→中穴</td><td>見送り</td></tr>
+</tbody></table></div>
+
+<h3>C層だとこうなる</h3>
+{{shot:result_c}}
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>「人気→大穴」と「大穴→人気」は別の馬券だよ。矢印の向き（1着→2着）を見てね。層の決まり方は「用語集」にあるよ。</div>
+
+<!--@pick-->
+<div class="gist"><span>ひとことで</span><p>ゾーンの番号を押すと、その馬を「買う／買わない」に切り替えられるよ。当たり外れは選んだ馬で決まるよ。</p></div>
+
+<div class="pair">
+{{shot:pick_before}}
+{{shot:pick_after}}
+</div>
+
+<h3>選び方</h3>
+<ol class="steps">
+<li>推奨ゾーンの<b>番号（1着・2着・3着）</b>を押す。うすくなった番号は「買わない馬」</li>
+<li>もう一度押すと、元に戻る</li>
+<li>それぞれの欄で<b>1頭は残す</b>（全部は外せないよ）</li>
+</ol>
+<ul class="dots">
+<li>はじめは全部選んだ状態だよ</li>
+<li>馬単・3連単の当たり外れは、<b>買ったゾーンの「選んだ馬」</b>で決まるよ（「当たり外れの決まり方」）</li>
+<li>選んだ馬は記録に残って、記録タブに「買った：人気→中穴（2着 7・1）」のように出るよ</li>
+<li>記録タブの「判定画面で開く」で、選んだ馬も戻るよ</li>
+<li>日付・開催場・レースを変えると、選び直しになるよ</li>
+</ul>
+
+<!--@record-->
+<div class="gist"><span>ひとことで</span><p>買った券種・金額・着順を入れて「判定と結果を保存」。当たり外れと収支は自動で出るよ。</p></div>
+
+<h3>画面の見方</h3>
+<div class="withlegend">
+{{shot:record_1}}
+<ol class="legend">
+<li><div><b>結果</b><span>的中・不的中・結果待ちと、購入→回収（収支）。自動で出るよ</span></div></li>
+<li><div><b>買った券種</b><span>いくつでも選べる。はじめは馬単だけ選ばれているよ</span></div></li>
+<li><div><b>券種ごとの金額</b><span>購入額→回収額（円）。外れは0。券種ごとの当たり外れも出る</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+{{shot:record_2}}
+<ol class="legend" style="counter-reset:lg 3">
+<li><div><b>買ったゾーン</b><span>本当に買ったゾーンを押す（馬単・3連単を選んだときだけ出る）</span></div></li>
+<li><div><b>着順</b><span>左で馬番か人気を選んで（馬番は単勝の一覧を入れたときだけ）、右に1着.2着.3着を「.」で区切って入れる（2.5.1 → 2-5-1）</span></div></li>
+<li><div><b>その他</b><span>ふつうは「自動判定」。買わなかったら「未購入」、取消・中止は「払い戻し」</span></div></li>
+<li><div><b>判定と結果を保存</b><span>判定と、この記録を一緒に保存</span></div></li>
+</ol>
+</div>
+
+<h3>入れる順番</h3>
+<ol class="steps">
+<li>買った券種を押す（買っていない券種は押して外す）</li>
+<li>券種ごとに購入額→回収額を入れる（外れは0）</li>
+<li>買ったゾーンを押す</li>
+<li>着順を入れる</li>
+<li><span class="ui">判定と結果を保存</span>を押す</li>
+</ol>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>レース前でも保存できるよ。着順や回収額が空なら「結果待ち」で保存して、あとで足せばOK。</div>
+<ul class="dots">
+<li>同じ日・同じ開催場・同じRの記録は1つだけ。もう一度保存すると「上書き保存」になるよ</li>
+<li>「未購入」は収支に入らない。「払い戻し」は、回収額が空なら購入額と同じで計算するよ</li>
+<li>メモには買い目などを自由に書けるよ</li>
+<li>消すときは<span class="ui alt">記録を削除</span>→ もう一度<span class="ui danger">消す</span></li>
+</ul>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>この記録は自分の収支のためだけ。テンゲルの基盤データ（マザーデータ）には入らないよ。</div>
+
+<!--@hit-->
+<div class="gist"><span>ひとことで</span><p>馬単・3連単は「買ったゾーン」と「選んだ馬」で、ほかの券種は回収額で決まるよ。どれか1つでも当たれば、そのレースは的中。</p></div>
+
+<div class="tbl fit"><table>
+<thead><tr><th>券種</th><th>的中になるとき</th></tr></thead>
+<tbody>
+<tr><td>馬単</td><td>1着・2着が、買ったゾーンの選んだ馬</td></tr>
+<tr><td>3連単</td><td>馬単が的中して、3着もそのゾーンの3着（選んだ馬）</td></tr>
+<tr><td>単勝・複勝・馬連・ワイド・3連複</td><td>回収額が入っている（0なら不的中、空なら結果待ち）</td></tr>
+<tr><td>レース全体</td><td>どれか1つでも的中なら的中</td></tr>
+</tbody></table></div>
+
+<h3>例で見てみよう</h3>
+<p>A層のレースで、<b>第2「人気→中穴」だけ</b>を馬単と3連単で買った。2着の6番人気（4番）は外した、とするよ。</p>
+
+<div class="ex"><h4>結果 2番人気 → 5番人気 → 1番人気<span class="tag hit">的中</span></h4>
+{{shot:st_hit}}
+<p>人気→中穴なので、買ったゾーン第2に入って的中。3着の1番人気も3着「人気・中穴」に入るから、3連単も的中だよ。</p></div>
+
+<div class="ex"><h4>結果 1番人気 → 3番人気 → 2番人気<span class="tag miss">不的中</span></h4>
+{{shot:st_notbought}}
+<p>人気→人気なので第1には入ったけど、第1は買っていないゾーンだから不的中。</p></div>
+
+<div class="ex"><h4>結果 2番人気 → 6番人気 → 1番人気<span class="tag miss">不的中</span></h4>
+{{shot:st_notpicked}}
+<p>ゾーンは第2で合っているけど、2着の6番人気は外した馬だから不的中。</p></div>
+
+<div class="ex"><h4>B層・結果 1番人気 → 2番人気 → 3番人気<span class="tag miss">不的中</span></h4>
+{{shot:st_outside}}
+<p>人気→人気はB層の推奨ゾーン（中穴→人気・人気→大穴）にないので「推奨ゾーンの外」。</p></div>
+
+<div class="ex"><h4>着順をまだ入れていない<span class="tag wait">結果待ち</span></h4>
+{{shot:st_wait}}
+<p>着順を入れると、自動で判定するよ。</p></div>
+
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>馬単・3連単が的中して回収額が空だと、「回収額を入れてね💰」と教えてくれるよ。</div>
+<p class="small">前の記録（買ったゾーンを選ぶ機能ができる前のもの）は、推奨ゾーン全部で判定するよ。</p>
+
+<!--@records-->
+<div class="gist"><span>ひとことで</span><p>保存したレースが日付ごとに並ぶよ。押すと開いて、直したり判定画面に戻したりできるよ。</p></div>
+
+<div class="withlegend">
+{{shot:records}}
+<ol class="legend">
+<li><div><b>年と月</b><span>年を選んで、月か「年間」を押す。点がついている月は記録がある月</span></div></li>
+<li><div><b>絞り込み</b><span>すべて／結果待ち／的中／不的中／未購入・払い戻し</span></div></li>
+<li><div><b>その月のまとめ</b><span>購入走数・的中・購入→回収</span></div></li>
+<li><div><b>この期間を書き出す</b><span>「コピー」でExcelに貼り付けられる</span></div></li>
+<li><div><b>記録のバックアップ</b><span>設定タブのバックアップへ移動</span></div></li>
+<li><div><b>日付ごとのまとめ</b><span>その日の購入走数・的中・収支</span></div></li>
+<li><div><b>1レースの行</b><span>R・層・区分・券種、着順、買ったゾーン、結果、購入→回収。押すと開く</span></div></li>
+</ol>
+</div>
+
+<h3>開いたときのボタン</h3>
+{{shot:record_open}}
+<ul class="dots">
+<li><span class="ui">記録を更新</span>着順・金額・買ったゾーンを直したら押す</li>
+<li><span class="ui alt">判定画面で開く</span>そのレースのオッズと選んだ馬を、判定画面に戻す。馬を選び直すときに使ってね</li>
+<li><span class="ui alt">削除</span>もう一度「消す」を押すと消える</li>
+<li>「保存した判定（STEP0〜T3）」で、保存したときの判定の全文が見られるよ</li>
+</ul>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>判定画面で開いて保存し直すと、保存した判定は<b>いまの買い目・マザーデータ</b>で上書きされるよ。</div>
+<p class="small">「購入額未入力」の印が出た行は、開いて購入額を入れてね。WIN5の記録はWIN5タブにあるよ。</p>
+
+<!--@win5-->
+<div class="gist"><span>ひとことで</span><p>5レースを判定画面で入れて、予算を入れるだけ。点数が予算に収まるように、買う馬を出してくれるよ。</p></div>
+
+<h3>点数のしくみ</h3>
+<p>WIN5は、JRAが指定する5レースの1着を全部当てる馬券。1点100円で、点数は5レースで選んだ頭数のかけ算だよ。</p>
+<div class="calc" aria-label="1頭×6頭×2頭×2頭×1頭＝24点、2,400円">
+<div class="r"><small>①</small><b>1</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>②</small><b>6</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>③</small><b>2</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>④</small><b>2</b><small>頭</small></div><span class="op">×</span>
+<div class="r"><small>⑤</small><b>1</b><small>頭</small></div><span class="op">＝</span>
+<div class="sum"><b>24点</b><small>2,400円</small></div>
+</div>
+
+<h3>使い方</h3>
+<ol class="steps">
+<li>①〜⑤の<span class="ui alt">判定画面で入れる</span>を押して、判定画面でそのレースを入れる（オッズ画像の読み取りもOK）。上に「WIN5の①レース目を入力中」と出ている間は、入れた内容がそのままWIN5に入るよ。終わったら<span class="ui">WIN5に戻る</span></li>
+<li>日付と予算（円）を入れる</li>
+<li>ゾーンの選び方を選ぶ：「自分で選ぶ」（1着ゾーンを押す）か「ランダム」</li>
+<li>レースごとの買う馬を確かめる（うすい番号＝予算に合わせて外した馬）</li>
+<li>一番上の合計で、点数・金額・「5レース全部当たる目安」を見る</li>
+</ol>
+<p class="small">判定画面の下の「WIN5に入れる ①〜⑤」からも入れられるよ。</p>
+
+<div class="withlegend">
+{{shot:w5_top}}
+<ol class="legend">
+<li><div><b>使い方</b><span>アプリの中の短い説明</span></div></li>
+<li><div><b>日付・予算（円）</b><span>予算の中に収まるように買う馬を出す</span></div></li>
+<li><div><b>ゾーンの選び方</b><span>自分で選ぶ／ランダム</span></div></li>
+<li><div><b>合計</b><span>点数・金額・残り・かけ算・当たる目安</span></div></li>
+</ol>
+</div>
+<div class="withlegend">
+{{shot:w5_race}}
+<ol class="legend">
+<li><div><b>レース</b><span>層・区分・比。JRAのレースは【参考判定】</span></div></li>
+<li><div><b>1着ゾーン</b><span>「推奨」がついたゾーンがテンゲルのおすすめ</span></div></li>
+<li><div><b>買う馬</b><span>うすい番号は外した馬。押すと自分で選べる</span></div></li>
+<li><div><b>1着が入る目安</b><span>この買い方で1着が入る見込み</span></div></li>
+<li><div><b>判定画面で直す・外す</b><span>オッズなどを直す／このレースを空にする</span></div></li>
+</ol>
+</div>
+
+<h3>買う馬を自分で選ぶ</h3>
+<ul class="dots">
+<li>番号を押すと、そのレースは自分で選んだ馬で固定。ほかのレースは、残りの予算で自動で出るよ</li>
+<li><span class="ui alt">おまかせに戻す</span>で、そのレースを自動に戻せる</li>
+<li>自分で選んだ馬だけで予算をこえると、赤で「馬を外すか予算を上げてね」と出るよ</li>
+</ul>
+
+<h3>推奨と、自動の選び方</h3>
+<ul class="dots">
+<li>推奨は、テンゲルの馬単ゾーンの<b>1着側</b>：A層→人気、B層→中穴・人気、C層・第1／第2段階→人気・中穴・大穴</li>
+<li>自動では、推奨ゾーンの順（B層なら中穴→人気）に、ゾーンの中は単勝オッズの低い順に並べて、当たる見込みが一番上がるレースから1頭ずつ足していくよ。予算が少ないと、後ろの順の馬（B層なら人気馬）がうすくなる</li>
+<li>ランダムは、推奨から1つずつ選ぶよ。<span class="ui">ランダムでもう一回</span>と「推奨以外のゾーンもまぜる」もあるよ</li>
+<li>当たる目安は、マザーデータの区分ごとの1着ゾーンの実測と単勝オッズから出す<b>目安</b>だよ</li>
+</ul>
+
+<!--@win5rec-->
+<div class="gist"><span>ひとことで</span><p>レースが終わったら、各レースの1着の馬番を入れるだけ。○×と的中・不的中が出るよ。</p></div>
+
+<div class="withlegend">
+{{shot:w5_res}}
+<ol class="legend">
+<li><div><b>各レースの1着の馬番</b><span>入れると○×が出る</span></div></li>
+<li><div><b>結果</b><span>的中・不的中と外れたレース、収支</span></div></li>
+<li><div><b>購入額・払戻（円）</b><span>購入額が空なら点数×100円で記録。払戻は外れなら0</span></div></li>
+<li><div><b>その他</b><span>買わなかったら「未購入」</span></div></li>
+<li><div><b>WIN5の記録を保存</b><span>下の「WIN5の記録」に並ぶ</span></div></li>
+</ol>
+</div>
+<ul class="dots">
+<li>保存すると、下の「WIN5の記録」に並んで、回数・回収率・収支も出るよ</li>
+<li>記録は<span class="ui alt">開く</span>で直して上書き、<span class="ui alt">消す</span>で消せるよ</li>
+<li>次のWIN5は<span class="ui alt">新しいWIN5にする</span></li>
+</ul>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>WIN5の記録は、ふつうの記録・収支（テンゲルの回収率）には混ぜないよ。</div>
+
+<!--@stats-->
+<div class="gist"><span>ひとことで</span><p>上半分は自分の収支、下半分はマザーデータの実測①〜⑦だよ。2つは別のデータ。</p></div>
+
+<h3>買ったレースの収支</h3>
+{{shot:stats_money}}
+<ul class="dots">
+<li>年・月（または年間）を選ぶと、その期間の収支が出るよ（記録タブと同じ選び方）</li>
+<li>購入レース・的中率（結果が出たレース）・購入額・回収額（払い戻しを含む）・回収率・収支</li>
+<li>その下に「層別の収支」「券種別の収支」（7つの券種）「月別収支」の表が出るよ</li>
+</ul>
+{{shot:stats_type}}
+
+<h3>テンゲル基盤データ ①〜⑦</h3>
+{{shot:stats_period}}
+<p>マザーデータと期間を選ぶと、そのデータで計算した表が出るよ。期間は 全期間・前半（7/20〜8/17）・後半（8/31〜10/3）・新規（10/4〜10/7）・第13新規（10/8〜）。</p>
+<div class="tbl fit"><table>
+<thead><tr><th>表</th><th>中身</th></tr></thead>
+<tbody>
+<tr><td>① 層別実測</td><td>層ごとの走数・構成比・穴決着率・人気→人気率・本線の的中</td></tr>
+<tr><td>② C層の比区分</td><td>C層の比20以上／未満と1着超大穴（記録用）</td></tr>
+<tr><td>③ 推奨ゾーンの的中</td><td>区分×ゾーンごとの馬単・3着の的中。参考的中率のもと</td></tr>
+<tr><td>④ 区分ごとのレース判定</td><td>人気→人気率・穴絡み率と【薄】【並】【厚】</td></tr>
+<tr><td>⑤ 方向ペア分布</td><td>1着ゾーン→2着ゾーンの出た数（全体・層ごと）</td></tr>
+<tr><td>⑥ 1・2着の人気頭数と3着</td><td>3着の決め方の根拠</td></tr>
+<tr><td>⑦ 本線と旧本線</td><td>第13（本線）と第12（旧本線）の的中・回収率と、見直しの進み具合</td></tr>
+</tbody></table></div>
+{{shot:stats_t1}}
+<div class="warn"><span class="lab">{{i:alert}}注意</span>⑦の回収率は<b>検証用の数字</b>だよ。推奨ゾーンの全通りを100円ずつ買ったとして、マザーデータの馬単払戻から計算するので、自分の収支じゃないよ。払戻が入っているレースだけが対象で、期間のボタンに関係なく⑦の中で期ごとに出るよ。</div>
+
+<!--@mother-->
+<div class="gist"><span>ひとことで</span><p>参考的中率と実測①〜⑦を計算する「もと」のデータ。3つまで持てて、切り替えられるよ。</p></div>
+
+<div class="withlegend">
+{{shot:set_mother}}
+<ol class="legend">
+<li><div><b>1つ目：大井</b><span>アプリに入っている290走（10/9まで）。「使用中」が、いま使っているデータ</span></div></li>
+<li><div><b>2つ目・3つ目</b><span>自分で入れるデータ。はじめは空（名前はJRA・船橋競馬）</span></div></li>
+<li><div><b>編集</b><span>名前・Excelファイル・元に戻すボタン</span></div></li>
+</ol>
+</div>
+
+<h3>切り替える</h3>
+<ul class="dots">
+<li>判定タブと実測タブの上の「マザーデータ」でも切り替えられるよ</li>
+<li>名前は16文字まで。名前に開催場の名前（JRAなら「JRA」か「中央」）を入れると、その開催場のレースはそのデータでふつうに判定されて、【参考判定】にならないよ</li>
+<li>記録と買い目の設定は、3つで共通だよ</li>
+</ul>
+
+<h3>Excelから入れる</h3>
+<ol class="steps">
+<li><span class="ui alt">編集</span>を押して<span class="ui">Excelファイルを選ぶ</span></li>
+<li>入れる前に走数と期間が出るので、確かめる</li>
+<li>「「○○」に入れる」を押す</li>
+</ol>
+<ul class="dots">
+<li>入れられるのは<b>検証データと同じA〜P列</b>の形だけ（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）</li>
+<li>「大井競馬_マザーデータ_アプリ用.xlsx」は入るよ。分析シート・分析表・距離／馬場フィルターは、理由を出して断るよ</li>
+<li>ファイルが選べないときは、A〜P列をコピーして貼り付けて「読み取る」</li>
+</ul>
+
+<h3>元に戻す</h3>
+<ul class="dots">
+<li>「ひとつ前のデータに戻す」：入れ替える前に戻せる</li>
+<li>「このマザーデータを空にする」：2つ目・3つ目だけ</li>
+<li>「アプリに入っている大井データに戻す」：1つ目だけ</li>
+</ul>
+
+<!--@dataupdate-->
+<div class="gist"><span>ひとことで</span><p>新しいレースは、分析シートと分析表を姫に送るだけ。姫がアプリを新しくして、「更新する」で入るよ。</p></div>
+
+<ol class="flow">
+<li>{{i:edit|ic}}<div><span class="who">まさちゃん</span><b>新しいレースを打ち込む</b><small>大井競馬分析シートと大井競馬分析表（またはマザーデータ_アプリ用.xlsxに行を足す）</small></div></li>
+<li>{{i:send|ic}}<div><span class="who">まさちゃん</span><b>チャットで姫に送る</b><small>2つのファイルをそのまま送ればOK</small></div></li>
+<li>{{i:sync|ic}}<div><span class="who">姫</span><b>突き合わせて、新しいレースを足す</b><small>重複や食い違いは報告して確かめるよ。アプリの新しい版を出して、Excelも返すよ</small></div></li>
+<li>{{i:phone|ic}}<div><span class="who">まさちゃん</span><b>アプリで「更新する」を押す</b><small>「大井のデータも新しくなるよ」と出たらOK</small></div></li>
+</ol>
+<p>いまのアプリの大井データは <b>290走（7/20〜10/9）</b>。</p>
+
+<h3>姫がやる突き合わせ</h3>
+<ul class="dots">
+<li>2つのファイルを<b>日付＋R</b>で突き合わせて、新しいレースだけ足す</li>
+<li>着順の人気が分析表と分析シートで違う → 分析表を使って、備考に両方を残す</li>
+<li>着順に同じ人気が重なっている → 3着人気を空欄にする（3着の集計から外れる）</li>
+<li>オッズのない日は入れない</li>
+<li>重複は入れない：消したレース（9/2の12走）、ほかの日の写しになっている日、同じ中身のレース</li>
+</ul>
+<div class="tip"><span class="lab">{{i:spark}}ポイント</span>更新しても、自分の記録と買い目の設定は消えないよ。前にExcelで大井データを入れていた場合は、アプリのデータのほうが新しいときだけ入れ替わるよ（入れ替わっても「ひとつ前のデータに戻す」で戻せる）。</div>
+<p class="small">姫のチャットがアプリのGitHubにつながっていないときは、Excel（大井競馬_マザーデータ_アプリ用.xlsx）だけ返すよ。設定 → マザーデータ →「編集」→「Excelファイルを選ぶ」で入れてね。更新の記録は、Excelの「突合メモ」シートにあるよ。</p>
+
+<!--@zones-->
+<div class="gist"><span>ひとことで</span><p>区分ごとに、馬単の1着→2着と3連単の3着を変えられるよ。はじめは第13改訂版のまま。</p></div>
+
+<div class="withlegend">
+{{shot:set_zone}}
+<ol class="legend">
+<li><div><b>区分</b><span>A層／B層／C層・序盤R／大穴フィルター第1段階／第2段階</span></div></li>
+<li><div><b>いまの区分</b><span>「第13改訂版の初期」か「カスタム」か</span></div></li>
+<li><div><b>買い目の1本</b><span>↑↓で順番を変える、×で消す</span></div></li>
+<li><div><b>1着・2着・3着</b><span>ゾーンを押して選ぶ</span></div></li>
+<li><div><b>的中数</b><span>基盤データ（大井）で、この買い目が当たった数</span></div></li>
+</ol>
+</div>
+{{shot:set_zone_save}}
+<ul class="dots">
+<li>1つの区分に6本まで。<span class="ui alt">＋買い目を足す</span>、<span class="ui alt">この区分を初期に戻す</span></li>
+<li><span class="ui">保存する</span>と、判定と実測①〜⑦がこの買い目で計算されて、判定に「カスタム買い目」と出るよ</li>
+<li>保存済みの購入記録は、保存したときの買い目のまま</li>
+<li>「全部の区分を第13改訂版の初期に戻す」で、いつでも元に戻せるよ</li>
+</ul>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>的中数だけで決めないでね。人気寄りの買い目ほど当たりは増えて、配当は下がりやすいよ。</div>
+
+<!--@apikey-->
+<div class="gist"><span>ひとことで</span><p>画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。5分くらいで作れるよ。</p></div>
+
+<h3>キーの作り方</h3>
+<ol class="steps">
+<li>Safariで <b>platform.claude.com</b> を開いてログイン（はじめてならアカウントを作る）</li>
+<li>Settings の <b>Billing</b> で、クレジットカードを登録してクレジット（残高）を入れる。5ドルあれば、標準でも200回以上読めるよ</li>
+<li>Settings の <b>API keys</b> →「Create key」→ 出てきた <code>sk-ant-…</code> をコピー（1回しか表示されないよ）</li>
+<li>テンゲルの<b>設定 → 画像の読み取り</b>の欄に貼って<span class="ui">保存して試す</span></li>
+</ol>
+
+<div class="withlegend">
+{{shot:set_ocr}}
+<ol class="legend">
+<li><div><b>APIキーの欄・保存して試す</b><span>sk-ant- ではじまる文字を貼って、「保存して試す」で使えるか確かめる</span></div></li>
+<li><div><b>モデル</b><span>標準（正確・1回 約1〜4円）／節約（安い・1回 1円未満）</span></div></li>
+</ol>
+</div>
+<div class="warn"><span class="lab">{{i:alert}}注意</span>キーはこのiPhoneの中だけに保存されるよ（バックアップにも入らない）。人には見せないでね。いらなくなったら<span class="ui danger">キーを消す</span>。</div>
+
+<!--@backup-->
+<div class="gist"><span>ひとことで</span><p>ときどき「バックアップを保存」しておけば、アイコンを消しても、機種変更しても戻せるよ。</p></div>
+
+<div class="withlegend">
+{{shot:set_backup}}
+<ol class="legend">
+<li><div><b>バックアップを保存</b><span>記録（WIN5も）・買い目の設定・マザーデータの名前・Excelで入れたマザーデータを1つのファイルに。ファイルアプリやLINEのKeepに保存してね</span></div></li>
+<li><div><b>バックアップから戻す</b><span>保存したファイルを選ぶ</span></div></li>
+</ol>
+</div>
+<ul class="dots">
+<li>戻すと、記録が足されるよ。同じレースは新しいほうが残って、いまある記録は消えないよ</li>
+<li>APIキーは入らないので、戻したあとに入れ直してね</li>
+</ul>
+
+<h3>機種変更のとき</h3>
+<ol class="steps">
+<li>古いiPhoneで「バックアップを保存」</li>
+<li>新しいiPhoneにアプリを入れる（「iPhoneに入れる・更新する」）</li>
+<li>「バックアップから戻す」で、保存したファイルを選ぶ</li>
+<li>APIキーを入れ直す</li>
+</ol>
+
+<h3>アプリの更新</h3>
+{{shot:set_update}}
+<p>いまの版と、最後に確認した日時が出るよ。<span class="ui alt">新しい版があるか確認</span>→ あれば<span class="ui">新しい版にする</span>。</p>
+
+<!--@trouble-->
+<div class="gist"><span>ひとことで</span><p>たいていは、画面に出たメッセージのとおりにすれば直るよ。押すと直し方が出るよ。</p></div>
+
+<div class="faq">
+<details><summary>「判定不可（データ不足）」と出る</summary><div class="a">足りない項目が出るので、そこを入れてね（R・距離・馬場・頭数・単勝オッズ・3連単1位）。</div></details>
+<details><summary>「オッズ入力○頭／出走頭数○頭」と出る</summary><div class="a">取消・除外の馬や入れ忘れがないか確かめてね。判定は出走頭数で行うよ。</div></details>
+<details><summary>画像の読み取りで「APIキーが…」と出る</summary><div class="a">設定 → 画像の読み取りで、キーを入れるか確かめてね。</div></details>
+<details><summary>「クレジット（残高）が足りない」と出る</summary><div class="a">platform.claude.com の Billing でクレジットを入れてね。</div></details>
+<details><summary>「混み合ってる」「通信できなかった」と出る</summary><div class="a">少し待つか、電波がいいところでもう一度試してね。</div></details>
+<details><summary>読めなかった項目がある</summary><div class="a">その項目は前の値が残っているので、手で入れ直してね。画面を大きめに撮ると読みやすいよ。</div></details>
+<details><summary>Excelを入れようとしたら断られた</summary><div class="a">入るのは検証データのA〜P列の形だけ。分析シート・分析表は姫に送ってね（「大井のデータを新しくする」）。</div></details>
+<details><summary>「このiPhoneではExcelファイルを直接読めない」と出る</summary><div class="a">iOSを新しくするか、A〜P列をコピーして貼り付けてね。</div></details>
+<details><summary>参考的中率が出ない</summary><div class="a">使っているマザーデータに、集計できるレースがないよ。判定画面の上で「大井競馬」に切り替えてね。</div></details>
+<details><summary>着順で「読み方がいくつかある」と出る</summary><div class="a">「.」で区切って入れてね（例 1.12.3）。</div></details>
+<details><summary>「結果待ち」のまま</summary><div class="a">着順（3連単なら3着まで）を入れて、馬単・3連単は買ったゾーンを選んでね。ほかの券種は回収額（外れは0）を入れてね。</div></details>
+<details><summary>記録に「購入額未入力」と出る</summary><div class="a">記録タブでそのレースを開いて、購入額を入れてね。</div></details>
+<details><summary>判定画面で保存できない</summary><div class="a">入力例は保存できないよ。上に「WIN5の○レース目を入力中」と出ているときは、WIN5タブでまとめて記録してね。</div></details>
+<details><summary>新しい版が来ない</summary><div class="a">設定 →「新しい版があるか確認」を、電波がいいところで押してね。</div></details>
+<details><summary>記録が消えた</summary><div class="a">アイコンを消すと記録も消えるよ。設定 →「バックアップから戻す」で、保存したファイルを選んでね。</div></details>
+<details><summary>大井のデータがおかしい</summary><div class="a">設定 → マザーデータの1つ目 →「アプリに入っている大井データに戻す」。判定に使えない形になっていたら、アプリを開いたときに自動で戻るよ。</div></details>
+</div>
+<p>それでも直らないときは、画面のスクショを姫に送ってね。</p>
+
+<!--@glossary-->
+<div class="gist"><span>ひとことで</span><p>アプリに出てくる言葉の意味だよ。ルールは「テンゲルシステムⅢ 第13改訂版」のとおり。</p></div>
+
+<h3>ゾーン（単勝の人気順）</h3>
+<div class="ladder" role="img" aria-label="人気は1〜3番人気、中穴は4〜6、大穴は7〜9、超大穴は10〜12、13番人気より下は対象外">
+<span class="zl z1" style="grid-column:1/4">人気</span><span class="zl z2" style="grid-column:4/7">中穴</span><span class="zl z3" style="grid-column:7/10">大穴</span><span class="zl z4" style="grid-column:10/13">超大穴</span><span class="zl z5" style="grid-column:13/14;font-size:11px">対象外</span>
+<span class="cell z1">1</span><span class="cell z1">2</span><span class="cell z1">3</span><span class="cell z2">4</span><span class="cell z2">5</span><span class="cell z2">6</span><span class="cell z3">7</span><span class="cell z3">8</span><span class="cell z3">9</span><span class="cell z4">10</span><span class="cell z4">11</span><span class="cell z4">12</span><span class="cell z5">13〜</span>
+</div>
+<p class="small">数字は単勝の人気順（オッズの低い順）。13番人気より下は対象外で、判定にも番号にも出ないよ。</p>
+
+<h3>層の決まり方</h3>
+<p class="small">上から順に見て、最初に当てはまった層になるよ。比＝3連単1位オッズ ÷ 単勝1位オッズ（小数第2位を四捨五入）。</p>
+<ol class="decide">
+<li><span class="q">馬場が「重」</span><span class="to">→ <span class="lb A">A</span></span></li>
+<li><span class="q">3連単1位が62.4倍以上</span><span class="to">→ <span class="lb C">C</span></span></li>
+<li><span class="q">単勝1位が2.5倍以上で、比が16以上</span><span class="to">→ <span class="lb C">C</span></span></li>
+<li><span class="q">比が12以上</span><span class="to">→ <span class="lb B">B</span></span></li>
+<li><span class="q">どれでもない</span><span class="to">→ <span class="lb A">A</span></span></li>
+</ol>
+
+<h3>C層の帯</h3>
+<ol class="decide">
+<li><span class="q">1〜3R</span><span class="to">→ 非該当（序盤R）</span></li>
+<li><span class="q">比10以上で、14頭以上</span><span class="to">→ 第2段階</span></li>
+<li><span class="q">比10以上で、9頭以上</span><span class="to">→ 第1段階</span></li>
+<li><span class="q">どれでもない</span><span class="to">→ 非該当</span></li>
+</ol>
+<p class="small">A層とB層は、R番号・頭数に関係なく固定のゾーンだよ。</p>
+
+<h3>ことば</h3>
+<div class="gsearch"><label class="sr" for="gq">用語集をさがす</label><input id="gq" type="search" placeholder="ことばをさがす（例：旧本線）" autocomplete="off"></div>
+<dl class="terms" id="terms">
+<div class="term"><dt>比</dt><dd>3連単1位オッズ ÷ 単勝1位オッズ。小数第2位を四捨五入して、小数第1位まで</dd></div>
+<div class="term"><dt>層（姫ゲート層）</dt><dd>レースの荒れやすさの分け方。A（堅）・B（警戒）・C（穴）。決まり方は上の図</dd></div>
+<div class="term"><dt>区分</dt><dd>層と帯を合わせたもの：A層（固定）／B層（固定）／C層・非該当／C層・第1段階／C層・第2段階</dd></div>
+<div class="term"><dt>序盤R</dt><dd>C層の1〜3R。人気→人気・人気→中穴にして、3着は見送り</dd></div>
+<div class="term"><dt>大穴フィルター</dt><dd>C層の4R以降で使う2段階のゲート。第1段階＝比10以上で9頭以上、第2段階＝比10以上で14頭以上</dd></div>
+<div class="term"><dt>ゾーン</dt><dd>単勝の人気順のまとまり。人気（1〜3）・中穴（4〜6）・大穴（7〜9）・超大穴（10〜12）</dd></div>
+<div class="term"><dt>記号A〜L</dt><dd>単勝オッズの低い順（同じなら番号の若い順）に、A＝1位からL＝12位まで</dd></div>
+<div class="term"><dt>推奨ゾーン</dt><dd>区分ごとに決まった馬単のゾーン（第1〜第3）。矢印は1着→2着で、人気→大穴と大穴→人気は別の馬券</dd></div>
+<div class="term"><dt>3着（2本）</dt><dd>3連単の3着に入れるゾーン2つ。1・2着に使った人気馬は除いて読む</dd></div>
+<div class="term"><dt>暫定</dt><dd>まだデータが少なくて、あとで見直す予定のゾーン</dd></div>
+<div class="term"><dt>参考的中率</dt><dd>その区分で、そのゾーンが実際に出た割合（マザーデータの実測）。かけ算ではない</dd></div>
+<div class="term"><dt>穴絡み</dt><dd>1着か2着に、大穴か超大穴が入ったレース</dd></div>
+<div class="term"><dt>レース判定</dt><dd>その区分の人気→人気率で、【薄】55%以上・【並】30〜55%・【厚】30%未満。表示だけで、ゾーンは変えない</dd></div>
+<div class="term"><dt>超大穴帯注意</dt><dd>超大穴（10〜12番人気）がいて、3連単5位が40倍以上のとき。表示だけ</dd></div>
+<div class="term"><dt>比区分</dt><dd>C層の比20以上／比20未満。記録用で、判定には使わない</dd></div>
+<div class="term"><dt>旧本線</dt><dd>第12改訂版のゾーン。本線（第13）と比べるための記録用で、買い目じゃない</dd></div>
+<div class="term"><dt>参考判定</dt><dd>使っているマザーデータと開催場が違うレース。同じ仕組みで判定して、参考値はそのマザーデータの実測</dd></div>
+<div class="term"><dt>マザーデータ</dt><dd>参考的中率と実測①〜⑦を計算する、もとのデータ（3つまで）。基盤データともいう</dd></div>
+<div class="term"><dt>集計対象</dt><dd>マザーデータの行を集計に入れるか（1＝入れる・0＝入れない）</dd></div>
+<div class="term"><dt>自己参照の除外</dt><dd>マザーデータに入っているレースを判定するときは、そのレース自身を外して参考値を計算すること</dd></div>
+<div class="term"><dt>期間</dt><dd>前半（7/20〜8/17）・後半（8/31〜10/3）・新規（10/4〜10/7）・第13新規（10/8〜）</dd></div>
+<div class="term"><dt>カスタム買い目</dt><dd>設定の「買い目編集」で、第13改訂版の初期から変えた買い目</dd></div>
+</dl>
+<p class="small" id="gnone" hidden>見つからなかったよ。ほかの言葉でさがしてね。</p>

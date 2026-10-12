@@ -1,4 +1,4 @@
-import json, os, shutil, sys
+import importlib.util, json, os, shutil, sys
 out = sys.argv[1] if len(sys.argv) > 1 else 'pwa'
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
 if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ（一時フォルダに作ってからコピーしてね）')
@@ -6,7 +6,7 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.12-2')
+APP_VER = os.environ.get('APP_VER', '2026.10.12-3')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
 # 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）
@@ -41,21 +41,39 @@ open(f'{out}/index.html', 'w', encoding='utf8').write(html)
 json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#16203D", "theme_color": "#16203D", "lang": "ja",
   "icons": [{"src": "icon3-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon3-512.png", "sizes": "512x512", "type": "image/png"}, {"src": "icon3-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
   open(f'{out}/manifest.webmanifest', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
+# 説明書（manual.html・写真は manual/）。アプリの上の「説明書」と設定タブから開く
+_spec = importlib.util.spec_from_file_location('build_manual', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manual', 'build_manual.py'))
+_bm = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_bm)
+MAN_IMGS, MAN_VER = _bm.build('pwa', out, APP_VER)
 # 新しい版があるかの確認用（アプリはこのファイルだけを毎回ネットから読む）
 json.dump({"app": APP_VER, "mother": MOTHER_VER}, open(f'{out}/version.json', 'w', encoding='utf8'))
 open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
 // （記録・買い目・基盤データはiPhoneの中のデータベースにあって、ここでは触らない）
 const CACHE = 'tengel3-''' + APP_VER + '-' + MOTHER_VER + '''';
-const SHELL = ['./', './index.html', './manifest.webmanifest', ''' + ', '.join("'./%s'" % f for f in ICONS) + '''];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+// 説明書の写真は別のしまい場所（写真が変わったときだけ入れ直す。アプリの更新のたびには読まない）
+const MCACHE = 'tengel3-manual-''' + MAN_VER + '''';
+const SHELL = ['./', './index.html', './manual.html', './manifest.webmanifest', ''' + ', '.join("'./%s'" % f for f in ICONS) + '''];
+const MANUAL = [''' + ', '.join("'./manual/%s'" % f for f in MAN_IMGS) + '''];
+self.addEventListener('install', e => {
+  const shell = caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting());
+  // 説明書の写真：まだないものだけ読む。読めなくてもアプリの更新は止めない
+  const man = caches.open(MCACHE).then(c => Promise.all(MANUAL.map(u => c.match(u).then(h => h || c.add(u)).catch(() => null)))).catch(() => null);
+  e.waitUntil(Promise.all([shell, man]));
+});
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== MCACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const u = new URL(e.request.url);
   if (u.origin === location.origin && u.pathname.endsWith('/version.json')) return; // 更新の確認は毎回ネットへ
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(u.href, { cache: 'no-cache', credentials: 'same-origin' }).then(r => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then(x => x.put('./index.html', c)); } return r; })
-      .catch(() => caches.match('./index.html').then(h => h || caches.match('./'))));
+    // ページごとにしまう（説明書を開いても、アプリのページは上書きしない）
+    const key = /\\/manual\\.html$/.test(u.pathname) ? './manual.html' : './index.html';
+    e.respondWith(fetch(u.href, { cache: 'no-cache', credentials: 'same-origin' }).then(r => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then(x => x.put(key, c)); } return r; })
+      .catch(() => caches.match(key).then(h => h || caches.match('./index.html')).then(h => h || caches.match('./'))));
+    return;
+  }
+  if (u.origin === location.origin && /\\/manual\\/[^/]+$/.test(u.pathname)) {
+    e.respondWith(caches.open(MCACHE).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; }))));
     return;
   }
   if (u.origin === location.origin || /fonts\\.(googleapis|gstatic)\\.com$/.test(u.hostname)) {
@@ -66,4 +84,4 @@ self.addEventListener('fetch', e => {
 # アイコン：まさちゃんのエンブレム＋金の「TENGER」（icons/ に作ってある）
 for f in ICONS:
     shutil.copy(f'icons/{f}', f'{out}/{f}')
-print('built', out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER)
+print('built', out, sorted(os.listdir(out)), len(html), 'APP_VER', APP_VER, 'MOTHER_VER', MOTHER_VER, 'MANUAL', MAN_VER, len(MAN_IMGS))
