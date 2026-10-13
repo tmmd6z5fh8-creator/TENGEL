@@ -15,10 +15,13 @@ TARGET=app CM_PREV=1 CM_IPAD=1 CM_VW=1032 CM_VH=1376 CM_DPR=1.1627907 CM_OUT=sho
 # 2) プレビュー動画（音なし）→ 音を付けてAppleの形に
 HTML=preview.html SHOTS=shots_prev VW=443 VH=960 DPR=2 DUR=29.5 OUTV=prev_iphone_noaudio.mp4 python3 render.py full
 IPAD=1 HTML=preview.html SHOTS=shots_prev_ipad VW=1032 VH=1376 DPR=1.1627907 DUR=29.5 OUTV=prev_ipad_noaudio.mp4 python3 render.py full
+# 7Mbps（2パス）：チャットで送れる大きさ（30MiB未満）。App Store Connect はこのまま受けつける
 for V in "iphone:886x1920" "ipad:1200x1600"; do
   D=${V%%:*}; S=${V#*:}
+  ffmpeg -y -loglevel error -i prev_${D}_noaudio.mp4 -c:v libx264 -profile:v high -level:v 4.0 -pix_fmt yuv420p -r 30 -b:v 7M -maxrate 9M -bufsize 14M -preset slow \
+    -pass 1 -passlogfile prevlog -an -t 29.5 -f mp4 /dev/null
   ffmpeg -y -loglevel error -i prev_${D}_noaudio.mp4 -i bgm2.wav -filter_complex "[1:a]atrim=0:29.5,afade=t=out:st=28.2:d=1.3,asetpts=PTS-STARTPTS[a]" \
-    -map 0:v:0 -map "[a]" -c:v libx264 -profile:v high -level:v 4.0 -pix_fmt yuv420p -r 30 -b:v 10M -maxrate 12M -bufsize 20M -preset slow \
+    -map 0:v:0 -map "[a]" -c:v libx264 -profile:v high -level:v 4.0 -pix_fmt yuv420p -r 30 -b:v 7M -maxrate 9M -bufsize 14M -preset slow -pass 2 -passlogfile prevlog \
     -c:a aac -b:a 256k -ar 48000 -ac 2 -movflags +faststart -t 29.5 "$OUT/tengel_preview_${D}_${S}.mp4"
 done
 # 3) スクリーンショット
