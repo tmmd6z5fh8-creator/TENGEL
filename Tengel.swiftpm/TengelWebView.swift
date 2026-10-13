@@ -15,7 +15,7 @@ struct TengelWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {}
 }
 
-/// Webの画面とアプリをつなぐ：共有シート（ファイルに保存）・コピー・自動バックアップ・外のリンク
+/// Webの画面とアプリをつなぐ：共有シート（ファイルに保存）・コピー・自動バックアップ・App Storeの版・外のリンク
 @MainActor
 final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     private weak var webView: WKWebView?
@@ -117,6 +117,12 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 reply(id, ok: true, value: true)
             } catch {
                 reply(id, ok: false, value: "アプリの中に保存できなかったよ（\(error.localizedDescription)）")
+            }
+        case "store":
+            // App Storeに出ている版を調べる（更新そのものは App Store がする）
+            Task { [weak self] in
+                let info = await StoreCheck.lookup()
+                self?.reply(id, ok: true, value: info.dictionary)
             }
         #if DEBUG
         case "selftest":
