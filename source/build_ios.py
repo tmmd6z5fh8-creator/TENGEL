@@ -6,10 +6,16 @@
 # アプリの中では tengel://localhost/ で開くので、pwa_shim.js がアプリ版（window.__NATIVE）として動く。
 # Swiftの枠は ios/Tengel.swiftpm（Package.swift・TengelApp.swift・TengelWebView.swift・AppFiles.swift・Assets.xcassets）。
 # アプリの版（App Storeの版）は ios/Tengel.swiftpm/Package.swift の displayVersion・bundleVersion。
-import os, shutil, subprocess, sys, tempfile, zipfile
+# 新しい版をApp Storeに出すとき（アップデート）は、版の番号を上げて作る：
+#   IOS_VERSION=1.1 IOS_BUILD=2 python3 build_ios.py <出力フォルダ>
+#   （IOS_VERSION＝お客さんに見える版「1.1」・IOS_BUILD＝出すたびに1ずつ上げる番号。どちらも前より大きく）
+import os, re, shutil, subprocess, sys, tempfile, zipfile
 from PIL import Image
 W = os.path.dirname(os.path.abspath(__file__))
 out = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(W, 'ios_out'))
+IOS_VERSION, IOS_BUILD = os.environ.get('IOS_VERSION', ''), os.environ.get('IOS_BUILD', '')
+if IOS_VERSION and not re.fullmatch(r'\d+(\.\d+){0,2}', IOS_VERSION): sys.exit('IOS_VERSION は 1.1 のような数字だよ')
+if IOS_BUILD and not re.fullmatch(r'\d+', IOS_BUILD): sys.exit('IOS_BUILD は 2 のような数字だよ')
 if os.path.exists(os.path.join(out, '.git')): sys.exit('出力先にgitの作業フォルダは指定できないよ')
 os.makedirs(out, exist_ok=True)
 tmp = tempfile.mkdtemp()
@@ -20,6 +26,15 @@ subprocess.run(['python3', 'build_pwa.py', web], cwd=W, check=True, stdout=subpr
 pkg = os.path.join(out, 'Tengel.swiftpm')
 shutil.rmtree(pkg, ignore_errors=True)
 shutil.copytree(os.path.join(W, 'ios', 'Tengel.swiftpm'), pkg, ignore=shutil.ignore_patterns('.DS_Store', 'Resources', 'AppIcon.png', '.build', '.swiftpm'))
+# 版の番号（アップデートのとき）
+pk = os.path.join(pkg, 'Package.swift'); ps = open(pk, encoding='utf8').read()
+cur_v = re.search(r'displayVersion: "([^"]+)"', ps).group(1); cur_b = re.search(r'bundleVersion: "([^"]+)"', ps).group(1)
+if IOS_VERSION:
+    ps = ps.replace(f'displayVersion: "{cur_v}"', f'displayVersion: "{IOS_VERSION}"')
+if IOS_BUILD:
+    ps = ps.replace(f'bundleVersion: "{cur_b}"', f'bundleVersion: "{IOS_BUILD}"')
+open(pk, 'w', encoding='utf8').write(ps)
+VER = (IOS_VERSION or cur_v, IOS_BUILD or cur_b)
 
 # 画面のファイル：Resources/ に名前だけで並べる（Swift Playgrounds は Resources の中のフォルダを平らにするので、名前がかぶらないようにする）
 files = {'index.html': 'index.html', 'manual.html': 'manual.html'}
@@ -52,4 +67,4 @@ with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
             z.write(p, os.path.relpath(p, out))
 shutil.rmtree(tmp, ignore_errors=True)
 size = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(pkg) for f in fs)
-print('built', pkg, f'{size / 1e6:.1f}MB', 'files', len(files), 'zip', f'{os.path.getsize(zpath) / 1e6:.1f}MB')
+print('built', pkg, f'{size / 1e6:.1f}MB', 'files', len(files), 'zip', f'{os.path.getsize(zpath) / 1e6:.1f}MB', 'version', VER[0], 'build', VER[1])

@@ -61,6 +61,32 @@
     return { recs, bad };
   }
   const parsePaste = (text, tag) => { const rows = text.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t').map(x => x.trim())); return Object.assign({ shape: shapeOf(rows) }, toRecs(rows, false, tag)); };
+  // ---------- CSVファイル（このアプリの「書き出す」で作ったもの・ExcelでCSVに保存したもの。A〜P列） ----------
+  const isCsv = f => /\.(csv|txt)$/i.test(f.name || '') || /csv|text\/plain/i.test(f.type || '');
+  function parseCSV(text) {
+    const rows = []; let row = [], cell = '', q = false;
+    const s = String(text || '').replace(/^\uFEFF/, '');
+    const sep = s.split(/\r?\n/, 1)[0].indexOf('\t') >= 0 && s.split(/\r?\n/, 1)[0].indexOf(',') < 0 ? '\t' : ',';
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (q) { if (c === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
+      if (c === '"' && cell === '') q = true;
+      else if (c === sep) { row.push(cell.trim()); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell.trim()); rows.push(row); }
+    return rows.filter(r => r.some(x => x !== ''));
+  }
+  async function readCsv(file, tag) {
+    const buf = await file.arrayBuffer();
+    let text = new TextDecoder('utf-8').decode(buf);
+    // ExcelのCSV（Shift_JIS）のとき
+    if (text.indexOf('\uFFFD') >= 0) { try { text = new TextDecoder('shift_jis').decode(buf); } catch (_) { /* そのまま */ } }
+    const rows = parseCSV(text), res = toRecs(rows, false, tag), sp = shapeOf(rows);
+    if (!res.recs.length) { const e = new Error(shapeMsg(sp) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
+    return Object.assign({ sheet: '', shape: sp }, res);
+  }
 
   // ---------- Excelファイル（.xlsx）をiPhoneの中で読む（どこにも送らない） ----------
   async function unzip(file) {
@@ -226,7 +252,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
   <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
 </div>`;
-    wireSlots(); wireOcr(); wireUpdate(); wireBackup();
+    wireSlots(); wireOcr(); wireUpdate(); wireNativeUpdate(); wireBackup();
   }
 
   // ---- 画像の読み取り（APIキー） ----
@@ -276,7 +302,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   function goSettings(sec) {
     const tb = document.querySelector('.tabbar [data-tab=set]');
     if (tb && getComputedStyle(tb.parentNode).display !== 'none') tb.click(); else { const t2 = document.querySelector('.tabs-top [data-tab=set]'); if (t2) t2.click(); }
-    setTimeout(() => { const s = document.getElementById({ ocr: 'setOcr', backup: 'setBackup', mother: 'setMother' }[sec] || 'setMother'); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
+    setTimeout(() => { const s = document.getElementById({ ocr: 'setOcr', backup: 'setBackup', mother: 'setMother', data: 'setData', update: 'setUpdate' }[sec] || 'setMother'); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
   }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-goset]'); if (b) { e.preventDefault(); goSettings(b.dataset.goset); } });
 
@@ -284,7 +310,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   let pending = null, editN = null;
   const L = () => TengelLocal.slots;
   const curEdit = () => editN || L().active();
-  const srcText = s => s.n === 1 && s.source === 'app' ? 'アプリに入っていた大井データ' : s.source === 'excel' ? `Excel${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'paste' ? `貼り付けで（${when(s.at)}）` : '';
+  const srcText = s => (s.n === 1 && s.source === 'app' ? 'アプリに入っていた大井データ' : s.source === 'excel' ? `Excel${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'csv' ? `CSV${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'paste' ? `貼り付けで（${when(s.at)}）` : s.source === 'input' ? 'アプリで入力' : '')
+    + (s.inputN && s.source !== 'input' ? `・自分で足したレース ${s.inputN}走` : '');
   function slotRowHTML(s, en) {
     const how = s.count ? `${s.count}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ</span>'}` : 'まだ空だよ';
     const src = s.count ? srcText(s) : '';
@@ -320,8 +347,14 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       <label for="seName" class="small muted" style="font-weight:700">名前（16文字まで）</label>
       <div class="namerow" style="margin-top:4px"><input id="seName" maxlength="16" autocomplete="off" value="${esc(s.name)}"><button class="btn" type="button" id="seNameSave">名前を保存</button></div>
       <dl class="kvs" id="seMeta"></dl>
+      <div class="mdtools">
+        <div class="mdt-h">レースのデータ（1レースずつ）</div>
+        <div class="row"><button class="btn primary" type="button" id="mdOpenBtn">レースを見る・直す</button><button class="btn" type="button" id="mdAddBtn">＋レースを1つ入れる</button><button class="btn ghost" type="button" id="mdExpBtn">書き出す（CSV）</button></div>
+        <p class="hint">判定したレースは、判定画面の「結果・収支の記録」で着順を入れて保存すると、ここに入るよ（「マザーデータにも入れる」）。判定していないレースは「＋レースを1つ入れる」から入れてね。</p>
+        <div id="mdExport" hidden></div>
+      </div>
       <p class="hint">${n === 1 ? (NATIVE ? '大井のデータ（Excel）を新しくしたら、ファイルを選ぶだけで入れ替えられるよ。' : '大井の姫フィルター（Excel）を更新したら、ファイルを選ぶだけで入れ替えられるよ。') + '<b>検証データ</b>シートのA〜P列（日付〜集計対象）を読むよ。' : 'このマザーデータに入れるデータを選んでね。大井の<b>検証データと同じA〜P列</b>（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）の形なら入るよ。入れ直すと、まるごと新しいデータに替わるよ。'}ファイルは${NATIVE ? 'この端末' : 'このiPhone'}の中で読むだけで、どこにも送らないよ。</p>
-      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smPick">Excelファイルを選ぶ</button><input type="file" id="smFile" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smPick">Excel・CSVファイルを選ぶ</button><input type="file" id="smFile" accept=".xlsx,.xlsm,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden></div>
       <div id="smPreview"></div>
       <details style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:700">ファイルが選べないとき：コピーして貼り付け</summary>
         <p class="hint">Excelの<b>A〜P列</b>を全部コピーして貼り付けてね。</p>
@@ -336,14 +369,17 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     };
     $('#seNameSave').onclick = saveName;
     $('#seName').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); e.target.blur(); } };
+    $('#mdOpenBtn').onclick = () => mdOpen(n);
+    $('#mdAddBtn').onclick = () => mdOpen(n, { add: true });
+    $('#mdExpBtn').onclick = () => { const p = $('#mdExport'); p.hidden = !p.hidden; if (!p.hidden) mdExportPanel(n, p); };
     $('#smPick').onclick = () => $('#smFile').click();
     $('#smFile').onchange = e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
       const box = $('#smPreview'); box.innerHTML = '<p class="small" style="margin:8px 0 0"><span class="spin"></span> 「' + esc(f.name) + '」を読んでいるよ…</p>';
-      readXlsx(f, tagOf(n)).then(res => {
+      (isCsv(f) ? readCsv(f, tagOf(n)) : readXlsx(f, tagOf(n))).then(res => {
         const why = badShape(res);
         if (why) { pending = null; box.innerHTML = `<div class="banner bad">❌ 「${esc(f.name)}」は入れられないよ。<br>${why}${KEEP}</div>`; return; }
-        showPreview(n, res, `「${f.name}」の${res.sheet}シート`, { source: 'excel', file: f.name });
+        showPreview(n, res, res.sheet ? `「${f.name}」の${res.sheet}シート` : `「${f.name}」`, { source: isCsv(f) ? 'csv' : 'excel', file: f.name });
       }).catch(err => { pending = null; box.innerHTML = `<div class="banner bad">❌ 読めなかったよ：${err && err.html ? err.message : esc(err && err.message || err)}${KEEP}</div>`; });
     };
     $('#smParse').onclick = () => {
@@ -361,7 +397,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#seRevert').onclick = ev => {
       const b = ev.currentTarget, emb = window.__MOTHER || [];
       if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'ほんとに戻す？（もう一度押してね）'; return; }
-      TengelLocal.replaceRaces(emb, { source: 'app' }).then(() => { toast(`アプリに入っている大井データ（${emb.length}走）に戻したよ`); $('#smPreview').innerHTML = ''; });
+      const mine = L().rows(1).filter(r => r && r.src).length;
+      TengelLocal.replaceRaces(emb, { source: 'app', keepUser: true }).then(() => { toast(`アプリに入っている大井データ（${emb.length}走）に戻したよ${mine ? `。自分で入れたレース（${mine}走）はそのままだよ` : ''}`, 3600); $('#smPreview').innerHTML = ''; });
     };
     $('#seClear').onclick = ev => {
       const b = ev.currentTarget, nm = L().info().find(x => x.n === n).name;
@@ -388,9 +425,21 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       ${d.del && !empty ? `<div class="banner warn">いまの「${esc(nm)}」にあって、このファイルにないレースが${d.del}走あるよ。入れ替えると、そのレースは消えるよ（買ったレースの記録は消えないよ）。</div>` : ''}
       ${res.bad ? `<p class="small muted" style="margin:6px 0 0">日付はあるのにRや馬場が読めなかった行が${res.bad}行あったよ（飛ばしたよ）。</p>` : ''}
       ${noUse ? `<div class="banner warn">集計対象（P列）が全部0だから、このままだと判定の参考値や実測（①〜⑦）には使われないよ。</div>` : ''}
-      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smApply">「${esc(nm)}」に入れる</button><button class="btn ghost" type="button" id="smCancel">やめる</button></div>
-      ${L().rows(n).length ? '<p class="small muted" style="margin:6px 0 0">入れたあとでも「ひとつ前のデータに戻す」で、いまのデータに戻せるよ。</p>' : ''}`;
+      <div class="row" style="margin-top:10px">${!empty && (d.add || d.chg) ? `<button class="btn primary" type="button" id="smMerge">足す（いまのレースは残す・新しい${d.add}走${d.chg ? `・変わる${d.chg}走` : ''}）</button>` : ''}<button class="btn ${!empty && (d.add || d.chg) ? '' : 'primary'}" type="button" id="smApply">${empty ? `「${esc(nm)}」に入れる` : '入れ替える（ファイルのとおりにする）'}</button><button class="btn ghost" type="button" id="smCancel">やめる</button></div>
+      ${L().rows(n).length ? '<p class="small muted" style="margin:6px 0 0">「足す」は、いまのレースを残したまま、ファイルの新しいレース・変わったレースだけ入れるよ。「入れ替える」は、ファイルの中身だけにするよ（入れたあとでも「ひとつ前のデータに戻す」で、いまのデータに戻せるよ）。</p>' : ''}`;
     $('#smCancel').onclick = () => { pending = null; box.innerHTML = ''; };
+    const mg = $('#smMerge');
+    if (mg) mg.onclick = ev => {
+      if (!pending) return;
+      const b = ev.currentTarget, p = pending, cur = new Map(L().rows(p.n).map(r => [r.id, r]));
+      const add = p.recs.filter(r => { const o = cur.get(r.id); return !o || CMP.some(k => norm(o[k]) !== norm(r[k])); }).map(r => Object.assign({}, r, { src: 'file', at: new Date().toISOString() }));
+      b.disabled = true; b.textContent = '足しているよ…';
+      L().upsert(p.n, add).then(() => {
+        toast(`「${nm}」に${add.length}走を足したよ`, 3600);
+        box.innerHTML = `<div class="banner info">✅ 「${esc(nm)}」に${add.length}走を足したよ（いまのレースはそのまま）。全部で${L().rows(p.n).length}走になったよ。</div>`;
+        pending = null;
+      }).catch(e => { b.disabled = false; b.textContent = '足す（いまのレースは残す）'; box.insertAdjacentHTML('beforeend', `<div class="banner bad">❌ 足せなかったよ：${esc(e && e.message || e)}</div>`); });
+    };
     $('#smApply').onclick = ev => {
       if (!pending) return;
       const b = ev.currentTarget, p = pending;
@@ -403,7 +452,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         box.innerHTML = `<div class="banner info">✅ 「${esc(nm)}」に${p.recs.length}走を入れたよ（${when(new Date().toISOString())}）。${act ? '判定と実測（①〜⑦）は、このデータで計算しているよ。' : `<div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="smUse">「${esc(nm)}」を使う</button></div>`}</div>`;
         const u = $('#smUse'); if (u) u.onclick = () => L().setActive(p.n).then(() => { toast(`マザーデータを「${nm}」にしたよ`); u.closest('.row').remove(); });
         pending = null;
-      }).catch(e => { b.disabled = false; b.textContent = `「${nm}」に入れる`; box.insertAdjacentHTML('beforeend', `<div class="banner bad">❌ 入れられなかったよ：${esc(e && e.message || e)}</div>`); });
+      }).catch(e => { b.disabled = false; b.textContent = empty ? `「${nm}」に入れる` : '入れ替える（ファイルのとおりにする）'; box.insertAdjacentHTML('beforeend', `<div class="banner bad">❌ 入れられなかったよ：${esc(e && e.message || e)}</div>`); });
     };
   }
   function wireSlots() {
@@ -420,6 +469,285 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     };
     TengelLocal.ready.then(() => paintSlots(true)).catch(() => {});
   }
+
+  // ---- マザーデータの中身：レースの一覧・直す・消す・1つずつ入れる・書き出す ----
+  // 中身は Excel の検証データと同じ A〜P列（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）
+  const AP_HEAD = ['日付', 'R', '馬場', '距離', '頭数', '単勝1位', '3連単1位', '1着人気', '2着人気', '3着人気', '3連単5位', '3連単10位', '馬単払戻', '3連単払戻', '備考', '集計対象'];
+  const apRow = r => [String(r.date || '').replace(/-/g, '/'), r.r, r.baba, r.dist, r.n, r.tan1, r.s1, r.p1, r.p2, r.p3, r.s5, r.s10, r.umatanPay, r.sanrenPay, r.note || '', r.cnt == null ? 1 : r.cnt].map(v => v == null ? '' : String(v));
+  const sortRows = rows => rows.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.r - b.r || String(a.id).localeCompare(String(b.id)));
+  const idOf = (n, date, r) => String(date).replace(/-/g, '') + '-' + tagOf(n).key + '-' + pad(+r);
+  const fmtO = v => v == null || v === '' ? '—' : String(v);
+  const fmtY = v => v == null || v === '' ? '—' : (+v).toLocaleString('ja-JP') + '円';
+  const resOf = r => r.p1 != null && r.p2 != null ? [r.p1, r.p2, r.p3].filter(v => v != null).join('-') + '人気' : '着順まだ';
+  const dlab = d => { const t = new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)); return `${+d.slice(5, 7)}/${+d.slice(8, 10)}（${'日月火水木金土'[t.getDay()]}）`; };
+  const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const safeName = s => String(s || 'マザーデータ').replace(/[\\/:*?"<>|\s]+/g, '_');
+  const derive = r => { try { return T.derive(Object.assign({ id: 'x', venue: '' }, r)); } catch (_) { return null; } };
+  // 区切りなしの着順（142 など）を分ける（読み方が1つだけのとき）
+  function splitRes(d, max) {
+    for (const k of [3, 2]) {
+      const found = [];
+      const walk = (i, acc) => {
+        if (acc.length === k) { if (i === d.length) found.push(acc.slice()); return; }
+        for (const w of [1, 2]) { const t = d.slice(i, i + w); if (t.length !== w || t[0] === '0') continue; const x = +t; if (x < 1 || x > max || acc.includes(x)) continue; acc.push(x); walk(i + w, acc); acc.pop(); }
+      };
+      walk(0, []);
+      if (found.length === 1) return found[0];
+      if (found.length > 1) return null;
+    }
+    return null;
+  }
+  let mdS = null;   // 開いているマザーデータの一覧 { n, ym, open, add }
+  function mdCss() {
+    if (document.getElementById('mdCss')) return;
+    const st = document.createElement('style'); st.id = 'mdCss';
+    st.textContent = '#mdSheet{position:fixed;inset:0;z-index:45;background:rgba(8,12,26,.5);display:flex;justify-content:center;align-items:stretch;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}'
+      + '#mdSheet .mdbox{width:100%;max-width:780px;background:var(--bg);border-radius:16px 16px 0 0;display:flex;flex-direction:column;min-height:0;box-shadow:0 -8px 30px rgba(0,0,0,.3)}'
+      + '#mdSheet .mdhead{display:flex;align-items:center;gap:10px;padding:12px 14px 10px 16px;border-bottom:1px solid var(--line);background:var(--surface);border-radius:16px 16px 0 0}'
+      + '#mdSheet .mdhead h3{margin:0;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '#mdSheet .mdx{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);font-size:22px;line-height:1;cursor:pointer;color:var(--ink)}'
+      + '#mdSheet .mdbody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 28px)}'
+      + '#mdSheet .mdbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}#mdSheet .mdbar select{width:auto;min-width:10em;font-weight:700}'
+      + '#mdSheet .mdnew{margin-top:12px;border:2px solid var(--lamp);border-radius:var(--r);background:var(--surface);padding:12px}'
+      + '#mdSheet .mdnew h4{margin:0 0 10px;font-size:14.5px}'
+      + '.mdrow+.mdrow{border-top:1px solid var(--line)}.mdrow.flash{animation:mdfl 1.6s ease-out}@keyframes mdfl{from{background:rgba(226,162,59,.35)}to{background:transparent}}'
+      + '.mdmain{width:100%;display:grid;grid-template-columns:2.6em 1.9em minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:0;background:none;cursor:pointer;text-align:left;color:var(--ink)}'
+      + '.mdmain:hover{background:var(--surface-2)}.mdf{padding:10px 12px 14px;background:var(--surface-2);border-top:1px dashed var(--line)}'
+      + '.mdform .fields{margin-bottom:8px}.mdpv{margin:4px 0 10px;min-height:1.4em}.chip.mdsrc{background:var(--A-bg);color:var(--A);border-color:transparent}'
+      + '.mdtools{margin:10px 0 4px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);background:var(--surface-2)}.mdt-h{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}'
+      + '.mdo{display:block;font-size:12px;color:var(--muted);line-height:1.45}.mdtsv{font-family:var(--font-mono);font-size:12px;white-space:pre;overflow-x:auto}'
+      + '.updbar .nbx{border:0;background:none;color:inherit;font-size:20px;line-height:1;padding:0 2px 0 4px;cursor:pointer;opacity:.75}.updbar a.btn{text-decoration:none}'
+      + '@media (prefers-reduced-motion: reduce){.mdrow.flash{animation:none}}';
+    document.head.appendChild(st);
+  }
+  function mdOpen(n, opt) {
+    opt = opt || {}; mdCss();
+    let sh = $('#mdSheet');
+    if (!sh) {
+      sh = document.createElement('div'); sh.id = 'mdSheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-labelledby', 'mdTitle');
+      sh.innerHTML = '<div class="mdbox"><div class="mdhead"><h3 id="mdTitle"></h3><button class="mdx" type="button" aria-label="閉じる">×</button></div>'
+        + '<div class="mdbody"><div class="mdbar"><select id="mdYM" aria-label="月"></select><button class="btn primary" type="button" id="mdNew">＋レースを入れる</button></div>'
+        + '<p class="small muted" id="mdSum" style="margin:8px 0 0"></p><div id="mdNewBox"></div><div id="mdList"></div></div></div>';
+      document.body.appendChild(sh);
+      mdS = { back: document.activeElement, ov: document.documentElement.style.overflow };
+      document.documentElement.style.overflow = 'hidden';
+      sh.addEventListener('click', mdClick);
+      sh.addEventListener('input', e => { const fm = e.target.closest('.mdform'); if (fm) mdPreview(fm); });
+      sh.addEventListener('change', e => {
+        if (e.target.id === 'mdYM') { mdS.ym = e.target.value; mdS.open = null; mdRender(); return; }
+        const fm = e.target.closest('.mdform'); if (fm) mdPreview(fm);
+      });
+      document.addEventListener('keydown', mdKey);
+    }
+    const rows = L().rows(n), r0 = opt.id ? rows.find(r => r.id === opt.id) : null;
+    Object.assign(mdS, { n, open: r0 ? r0.id : null, add: !!opt.add, ym: r0 ? String(r0.date).slice(0, 7) : (mdS.n === n ? mdS.ym : ''), flash: r0 ? r0.id : null });
+    mdRender();
+    const x = sh.querySelector('.mdx'); if (x && !opt.add && !r0) x.focus({ preventScroll: true });
+    if (opt.add) { const d = $('#mdNewBox input[data-k=date]'); if (d) d.focus({ preventScroll: true }); }
+    if (r0) setTimeout(() => { const el = sh.querySelector(`.mdrow[data-id="${CSS.escape(r0.id)}"]`); if (el) el.scrollIntoView({ block: 'start' }); }, 30);
+  }
+  function mdKey(e) { if (e.key === 'Escape' && $('#mdSheet')) mdClose(); }
+  function mdClose() {
+    const sh = $('#mdSheet'); if (!sh) return;
+    sh.remove(); document.removeEventListener('keydown', mdKey);
+    if (mdS) { document.documentElement.style.overflow = mdS.ov || ''; if (mdS.back && mdS.back.focus) mdS.back.focus({ preventScroll: true }); }
+    mdS = null;
+  }
+  // データが変わったら（ほかの画面で保存したときなど）一覧を出し直す。入力中は出し直さない
+  function mdRefresh() {
+    const sh = $('#mdSheet'); if (!sh || !mdS) return;
+    const a = document.activeElement;
+    if (a && sh.contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.id !== 'mdYM') return;
+    mdRender();
+  }
+  function mdRender() {
+    const sh = $('#mdSheet'); if (!sh || !mdS) return;
+    const n = mdS.n, s = L().info().find(x => x.n === n); if (!s) return;
+    $('#mdTitle').textContent = `「${s.name}」のレース`;
+    const rows = L().rows(n);
+    const yms = [...new Set(rows.map(r => String(r.date).slice(0, 7)))].sort().reverse();
+    if (!mdS.ym || (mdS.ym !== 'all' && !yms.includes(mdS.ym))) mdS.ym = yms[0] || 'all';
+    $('#mdYM').innerHTML = yms.map(ym => `<option value="${ym}"${ym === mdS.ym ? ' selected' : ''}>${ym.slice(0, 4)}年${+ym.slice(5, 7)}月（${rows.filter(r => String(r.date).startsWith(ym)).length}走）</option>`).join('')
+      + `<option value="all"${mdS.ym === 'all' ? ' selected' : ''}>すべて（${rows.length}走）</option>`;
+    $('#mdSum').textContent = rows.length ? `${rows.length}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.inputN ? `・うち自分で入れた ${s.inputN}走` : ''}。レースを押すと、直したり消したりできるよ` : 'まだレースが入っていないよ。「＋レースを入れる」から入れてね';
+    // 新しいレースを入れる欄
+    const nb = $('#mdNewBox');
+    if (mdS.add) {
+      if (!nb.querySelector('.mdform')) {
+        const t = today(), same = rows.filter(r => r.date === t), lastR = same.reduce((m, r) => Math.max(m, +r.r || 0), 0);
+        const base = { date: t, r: Math.min(16, lastR + 1 || 1), baba: same.length ? same[same.length - 1].baba : '', cnt: 1 };
+        nb.innerHTML = `<div class="mdnew"><h4>レースを1つ入れる</h4>${mdFormHTML(base, true)}</div>`;
+        mdPreview(nb.querySelector('.mdform'));
+      }
+    } else nb.innerHTML = '';
+    // 一覧（日付ごと・新しい日が上）
+    const list = sortRows(rows.filter(r => mdS.ym === 'all' || String(r.date).startsWith(mdS.ym))).reverse();
+    const groups = new Map(); list.forEach(r => { if (!groups.has(r.date)) groups.set(r.date, []); groups.get(r.date).push(r); });
+    let h = '';
+    groups.forEach((rs, d) => { h += `<div class="dgroup"><h3>${dlab(d)}<span class="muted">${rs.length}レース</span></h3><div class="lrows">${rs.slice().sort((a, b) => a.r - b.r).map(mdRowHTML).join('')}</div></div>`; });
+    $('#mdList').innerHTML = h || '';
+    $$('#mdList .mdform').forEach(mdPreview);
+    if (mdS.flash) { const el = $(`#mdList .mdrow[data-id="${CSS.escape(mdS.flash)}"]`); if (el) el.classList.add('flash'); mdS.flash = null; }
+  }
+  function mdRowHTML(r) {
+    const open = mdS.open === r.id, dv = derive(r), Ly = dv ? dv.L : '?';
+    const hit = dv && dv.has12 ? (dv.hit ? `第${dv.hit}的中` : '外れ') : '';
+    return `<div class="mdrow" data-id="${esc(r.id)}"><button class="mdmain" type="button" aria-expanded="${open}"><span class="lr-r">${esc(r.r)}R</span><span class="lb L${Ly}">${Ly}</span>
+      <span class="lmid"><span class="k">${esc(r.baba || '—')}・${r.dist ? esc(r.dist) + 'm' : '—'}・${r.n ? esc(r.n) + '頭' : '—'}</span>
+      <span class="mdo">単勝1位 ${esc(fmtO(r.tan1))}・3連単1位 ${esc(fmtO(r.s1))}</span>
+      <span class="mdo">${esc(resOf(r))}${dv && dv.has12 ? '（' + esc(dv.pair) + '）' : ''}${r.umatanPay != null || r.sanrenPay != null ? `<br>払戻 馬単 ${esc(fmtY(r.umatanPay))}・3連単 ${esc(fmtY(r.sanrenPay))}` : ''}</span></span>
+      <span class="lend">${hit ? `<span class="stc ${dv.hit ? 'hit' : 'miss'}">${hit}</span>` : ''}${r.src ? '<span class="chip mdsrc">自分で入力</span>' : ''}${Number(r.cnt == null ? 1 : r.cnt) !== 1 ? '<span class="chip">集計外</span>' : ''}</span></button>
+      ${open ? `<div class="mdf">${mdFormHTML(r, false)}</div>` : ''}</div>`;
+  }
+  function mdFormHTML(r, isNew) {
+    const v = k => r[k] == null ? '' : String(r[k]);
+    const cnt = Number(r.cnt == null ? 1 : r.cnt) === 1;
+    const res = r.p1 != null ? [r.p1, r.p2, r.p3].filter(x => x != null).join('-') : '';
+    const f = (s, lab, k, im, ph, extra) => `<div class="f ${s}"><label>${lab}</label><input type="number" inputmode="${im}" data-k="${k}" value="${esc(v(k))}"${ph ? ` placeholder="${ph}"` : ''}${extra || ''}></div>`;
+    return `<div class="mdform" data-id="${esc(isNew ? '' : r.id)}">
+      <div class="fields">
+        <div class="f s3"><label>日付</label><input type="date" data-k="date" value="${esc(v('date'))}"></div>
+        <div class="f s3"><label>レース</label><select data-k="r">${Array.from({ length: 16 }, (_, i) => `<option value="${i + 1}"${+r.r === i + 1 ? ' selected' : ''}>${i + 1}R</option>`).join('')}</select></div>
+        <div class="f s6"><span class="lab">馬場状態</span><div class="seg" data-k="baba">${BABA.map(b => `<button type="button" data-v="${b}" aria-pressed="${r.baba === b}">${b}</button>`).join('')}</div></div>
+        ${f('s3', '距離(m)', 'dist', 'numeric', '1200')}${f('s3', '出走頭数', 'n', 'numeric', '12')}
+        ${f('s3', '単勝1位オッズ', 'tan1', 'decimal', '2.1', ' step="0.1"')}${f('s3', '3連単1位オッズ', 's1', 'decimal', '28.6', ' step="0.1"')}
+        <div class="f s6"><label>着順（人気）1着-2着-3着</label><input data-k="res" inputmode="decimal" data-dash autocomplete="off" value="${esc(res)}" placeholder="例 1.4.2（「.」で区切る・3着はなくてもOK）"></div>
+        ${f('s3', '馬単の払戻（100円）', 'umatanPay', 'numeric', 'あれば')}${f('s3', '3連単の払戻（100円）', 'sanrenPay', 'numeric', 'あれば')}
+        ${f('s3', '3連単5位オッズ（記録用）', 's5', 'decimal', '', ' step="0.1"')}${f('s3', '3連単10位オッズ（記録用）', 's10', 'decimal', '', ' step="0.1"')}
+        <div class="f s6"><label>備考</label><input data-k="note" maxlength="200" value="${esc(v('note'))}"></div>
+        <div class="f s6"><span class="lab">集計（参考的中率・実測）</span><div class="seg" data-k="cnt"><button type="button" data-v="1" aria-pressed="${cnt}">集計に入れる</button><button type="button" data-v="0" aria-pressed="${!cnt}">入れない</button></div></div>
+      </div>
+      <p class="small mdpv" data-k="pv"></p>
+      <div class="row"><button class="btn primary" type="button" data-md="save">${isNew ? 'このレースを入れる' : '保存'}</button><button class="btn ghost" type="button" data-md="cancel">やめる</button>${isNew ? '' : '<button class="btn danger" type="button" data-md="del">このレースを消す</button>'}</div>
+    </div>`;
+  }
+  // フォームを読む（足りない・おかしいところは errs、注意は warns）
+  function mdRead(fm) {
+    const g = k => { const el = fm.querySelector(`[data-k="${k}"]`); return el ? String(el.value).trim() : ''; };
+    const seg = k => { const b = fm.querySelector(`[data-k="${k}"] button[aria-pressed="true"]`); return b ? b.dataset.v : ''; };
+    const errs = [], warns = [];
+    const date = g('date'), r = +g('r'), baba = seg('baba'), n = num(g('n')), dist = num(g('dist')), tan1 = num(g('tan1')), s1 = num(g('s1'));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errs.push('日付');
+    if (!(r >= 1 && r <= 16)) errs.push('レース');
+    if (BABA.indexOf(baba) < 0) errs.push('馬場状態');
+    if (!(dist > 0)) errs.push('距離');
+    if (!(n >= 2 && n <= 18 && n % 1 === 0)) errs.push('出走頭数（2〜18）');
+    if (!(tan1 >= 1)) errs.push('単勝1位オッズ');
+    if (!(s1 >= 1)) errs.push('3連単1位オッズ');
+    else if (tan1 >= 1 && s1 < tan1) errs.push('3連単1位オッズ（単勝1位より小さいよ）');
+    let p = [null, null, null];
+    const raw = z2h(g('res')).trim();
+    let rs = raw.split(/[^0-9]+/).filter(Boolean).map(Number);
+    if (rs.length === 1 && /^\d{2,}$/.test(raw)) { const sp = splitRes(raw, n || 18); if (sp) rs = sp; }
+    if (rs.length) {
+      const xs = rs.slice(0, 3);
+      if (xs.length < 2) errs.push('着順（1着と2着は入れてね）');
+      else if (new Set(xs).size !== xs.length) errs.push('着順（同じ人気が重なっているよ）');
+      else if (xs.some(x => x < 1 || (n && x > n))) errs.push('着順（頭数より大きい人気があるよ）');
+      else p = [xs[0], xs[1], xs[2] == null ? null : xs[2]];
+    }
+    const cnt = seg('cnt') === '0' ? 0 : 1;
+    if (cnt === 1 && p[0] == null && !errs.length) warns.push('着順がないと、集計（参考的中率・実測）には入らないよ');
+    const pay = k => { const x = num(g(k)); if (x != null && x < 0) errs.push('払戻'); return x; };
+    const row = { date, r, baba, dist, n, tan1, s1, p1: p[0], p2: p[1], p3: p[2], s5: num(g('s5')), s10: num(g('s10')), umatanPay: pay('umatanPay'), sanrenPay: pay('sanrenPay'), note: g('note'), cnt };
+    return { row, errs, warns };
+  }
+  // 入れる前に、そのレースの判定と結果を見せる（入れ間違いに気づけるように）
+  function mdPreview(fm) {
+    const el = fm.querySelector('[data-k=pv]'); if (!el) return;
+    const { row, errs, warns } = mdRead(fm);
+    if (errs.length) { el.innerHTML = `<span class="warnline">入れてね：${esc(errs.join('・'))}</span>`; return; }
+    const dv = derive(row); if (!dv) { el.textContent = ''; return; }
+    const parts = [`${T.KUBUN_LABEL[dv.kubun] || ''}（比 ${dv.hi != null ? dv.hi.toFixed(1) : '—'}）`];
+    if (dv.has12) parts.push(`着順 ${dv.pair}${dv.z3 ? '→' + dv.z3 : ''}：${dv.hit ? `第${dv.hit}ゾーン的中${dv.tri ? '・3連単ゾーンも的中' : ''}` : '推奨ゾーンの外'}`);
+    el.innerHTML = '→ ' + esc(parts.join('　')) + (warns.length ? `<br><span class="warnline">${esc(warns.join('・'))}</span>` : '');
+  }
+  async function mdClick(e) {
+    if (e.target.closest('.mdx') || e.target.id === 'mdSheet') { mdClose(); return; }
+    if (e.target.closest('#mdNew')) { mdS.add = true; mdS.open = null; mdRender(); const d = $('#mdNewBox input[data-k=date]'); if (d) { d.focus({ preventScroll: true }); $('#mdNewBox').scrollIntoView({ block: 'nearest' }); } return; }
+    const sb = e.target.closest('.mdform .seg button');
+    if (sb) { $$('button', sb.parentElement).forEach(x => x.setAttribute('aria-pressed', String(x === sb))); mdPreview(sb.closest('.mdform')); return; }
+    const main = e.target.closest('.mdmain');
+    if (main) { const id = main.closest('.mdrow').dataset.id; mdS.open = mdS.open === id ? null : id; mdS.add = false; mdRender(); return; }
+    const b = e.target.closest('[data-md]'); if (!b) return;
+    const fm = b.closest('.mdform'), n = mdS.n, oldId = fm.dataset.id || '';
+    if (b.dataset.md === 'cancel') { if (oldId) mdS.open = null; else mdS.add = false; mdRender(); return; }
+    if (b.dataset.md === 'del') {
+      if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'ほんとに消す？（もう一度押してね）'; return; }
+      b.disabled = true;
+      try { const r = L().rows(n).find(x => x.id === oldId); await L().remove(n, [oldId]); mdS.open = null; mdRender(); toast(`${r ? dlab(r.date) + ' ' + r.r + 'R' : 'レース'}を消したよ`); }
+      catch (err) { b.disabled = false; toast('消せなかったよ：' + (err && err.message || err), 4200); }
+      return;
+    }
+    // 保存
+    const { row, errs } = mdRead(fm);
+    if (errs.length) { mdPreview(fm); toast('入れてね：' + errs.join('・'), 3600); return; }
+    const t = tagOf(n), id = idOf(n, row.date, row.r), rows = L().rows(n);
+    const exist = rows.find(x => x.id === id), old = oldId ? rows.find(x => x.id === oldId) : null;
+    if (exist && id !== oldId && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = `${dlab(row.date)} ${row.r}R はもう入っているよ。上書きする？（もう一度押してね）`; return; }
+    const rec = Object.assign({}, old || exist || {}, row, { id, venue: t.venue, surface: (old && old.surface) || 'ダ', src: 'input', at: new Date().toISOString() });
+    b.disabled = true;
+    try {
+      await L().upsert(n, [rec]);
+      if (oldId && oldId !== id) await L().remove(n, [oldId]);
+      toast(`${dlab(row.date)} ${row.r}R を${old ? '直した' : '入れた'}よ`);
+      Object.assign(mdS, { open: null, add: false, ym: row.date.slice(0, 7), flash: id });
+      mdRender();
+    } catch (err) { b.disabled = false; toast('保存できなかったよ：' + (err && err.message || err), 4200); }
+  }
+  // 書き出す（A〜P列。CSV＝Excel・Numbersで開ける／コピー＝Excelに貼り付け）
+  function saveFile(name, text, mime) {
+    if (NATIVE) return window.TengelNative.share(name, text, mime);
+    const file = new File([text], name, { type: mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) return navigator.share({ files: [file], title: name }).then(() => true).catch(() => false);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    return Promise.resolve(true);
+  }
+  function mdExportPanel(n, box) {
+    const s = L().info().find(x => x.n === n), rows = sortRows(L().rows(n));
+    if (!rows.length) { box.innerHTML = '<p class="small muted" style="margin:8px 0 0">まだレースが入っていないよ。</p>'; return; }
+    const tsv = [AP_HEAD].concat(rows.map(apRow)).map(r => r.join('\t')).join('\n');
+    box.innerHTML = `<p class="small" style="margin:8px 0 6px">「${esc(s.name)}」の${rows.length}走を、Excelと同じA〜P列（日付〜集計対象）で書き出すよ。CSVはExcel・Numbersで開けて、上の「Excel・CSVファイルを選ぶ」からまた入れられるよ。</p>
+      <div class="row"><button class="btn primary" type="button" data-mx="csv">CSVで保存</button><button class="btn" type="button" data-mx="copy">コピー（Excelに貼り付け）</button></div>
+      <textarea class="mdtsv" rows="4" wrap="off" readonly style="margin-top:8px" aria-label="書き出す内容">${esc(tsv)}</textarea>`;
+    box.onclick = async e => {
+      const b = e.target.closest('[data-mx]'); if (!b) return;
+      if (b.dataset.mx === 'copy') {
+        try { await navigator.clipboard.writeText(tsv); toast('コピーしたよ。Excelに貼り付けてね'); }
+        catch (_) { const a = box.querySelector('textarea'); a.focus(); a.select(); toast('選択したよ。コピーしてね', 3000); }
+        return;
+      }
+      const q = v => /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      const csv = '\uFEFF' + [AP_HEAD].concat(rows.map(apRow)).map(r => r.map(q).join(',')).join('\r\n');
+      saveFile(`${safeName(s.name)}_${today().replace(/-/g, '')}.csv`, csv, 'text/csv').then(ok => { if (ok) toast('保存したよ'); }).catch(err => toast('保存できなかったよ：' + (err && err.message || err), 3600));
+    };
+  }
+  // 判定画面・記録タブから使う：判定したレース＋着順を、マザーデータに1行入れる
+  window.TengelMother = {
+    on: () => !!(window.TengelLocal && TengelLocal.slots && !TengelLocal.memOnly()),
+    tag: n => tagOf(n),
+    idOf: (n, date, r) => idOf(n, date, r),
+    find: (n, date, r) => (L().rows(n) || []).find(x => x.id === idOf(n, date, r)) || null,
+    has: (n, id) => !!(n && id && (L().rows(n) || []).some(x => x.id === id)),
+    // race：{date, r, baba, dist, surface, n, tan1, s1, s5, s10, p1, p2, p3, umatanPay, sanrenPay}／prev：前に入れた先 {n, id}（入れ先を変えたとき、前のを消す）
+    async put(n, race, prev) {
+      n = +n; const t = tagOf(n), id = idOf(n, race.date, race.r), old = L().rows(n).find(x => x.id === id) || null;
+      const keep = (v, k) => v == null || v === '' ? (old && old[k] != null ? old[k] : null) : num(v);
+      const row = Object.assign({}, old || {}, {
+        id, date: race.date, venue: t.venue, r: +race.r, baba: race.baba, dist: num(race.dist), surface: race.surface === '芝' ? '芝' : 'ダ', n: num(race.n),
+        tan1: num(race.tan1), s1: num(race.s1), s5: keep(race.s5, 's5'), s10: keep(race.s10, 's10'),
+        p1: race.p1 == null ? null : +race.p1, p2: race.p2 == null ? null : +race.p2, p3: race.p3 == null ? null : +race.p3,
+        umatanPay: keep(race.umatanPay, 'umatanPay'), sanrenPay: keep(race.sanrenPay, 'sanrenPay'),
+        note: old ? (old.note || '') : '', cnt: old && old.cnt != null ? old.cnt : 1, src: 'input', at: new Date().toISOString() });
+      if (prev && prev.n && (+prev.n !== n || prev.id !== id)) {
+        const o = (L().rows(prev.n) || []).find(x => x.id === prev.id);
+        if (o && o.src === 'input') await L().remove(prev.n, [prev.id]);
+      }
+      await L().upsert(n, [row]);
+      return { id, n, count: L().rows(n).length, updated: !!old };
+    },
+    open: (n, id) => mdOpen(+n, id ? { id } : {})
+  };
 
   // ---- アプリの更新 ----
   let lastCheck = 0, newer = null;
@@ -467,15 +795,130 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#suApply').onclick = applyUpdate;
     if (newer) showBar(newer);
   }
-  // アプリ版の「アプリの版」カード（更新の確認はしない。新しい版はアプリの更新で届く）
+  // アプリ版の「アプリの更新」カード：App Storeに新しい版が出ているか確かめる（更新そのものはApp Storeがする）
+  // と「データの更新」カード：1つ目のマザーデータ（アプリに入っているデータ）の新しい版を、アプリの更新なしで入れる
   function nativeUpdateCard() {
     const ni = window.TengelNative.info || {};
     return `<div class="card setsec" id="setUpdate">
-  <h2>アプリの版</h2>
-  <dl class="kvs"><dt>いまの版</dt><dd>${esc(ni.version || '—')}${ni.build ? `（${esc(ni.build)}）` : ''}<br><span class="small muted">中身 ${esc(APP_VER || '—')}（第13改訂版）</span></dd></dl>
-  <p class="hint">新しい版は、アプリの更新で届くよ。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>。</p>
+  <h2>アプリの更新</h2>
+  <dl class="kvs"><dt>いまの版</dt><dd>${esc(ni.version || '—')}${ni.build ? `（${esc(ni.build)}）` : ''}<br><span class="small muted">中身 ${esc(APP_VER || '—')}（第13改訂版）</span></dd><dt>App Store</dt><dd id="nuStore">まだ確かめていないよ</dd></dl>
+  <div class="row"><button class="btn" type="button" id="nuCheck">新しい版があるか確認</button><a class="btn primary" id="nuOpen" hidden target="_blank" rel="noopener" href="#">App Storeで更新する</a></div>
+  <p class="small" id="nuMsg" style="margin:8px 0 0"></p>
+  <p class="hint">アプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>。</p>
   <div class="banner warn">⚠️ アプリを削除すると、中の記録も一緒に消えちゃうの。削除する前に、下の「バックアップを保存」でファイルに保存してね。</div>
+</div>
+<div class="card setsec" id="setData">
+  <h2>データの更新</h2>
+  <dl class="kvs"><dt>いまのデータ</dt><dd id="sdCur">—</dd><dt>最後に確認</dt><dd id="sdChecked">まだ</dd></dl>
+  <div class="row"><button class="btn" type="button" id="sdCheck">新しいデータがあるか確認</button><button class="btn primary" type="button" id="sdApply" hidden>新しいデータを入れる</button></div>
+  <p class="small" id="sdMsg" style="margin:8px 0 0"></p>
+  <p class="hint">1つ目のマザーデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しいレースが入った版にできるよ。読むのはレースのデータだけ。入れても、<b>自分で入れたレース・買ったレースの記録・買い目の設定はそのまま</b>。前のデータは「ひとつ前のデータに戻す」で戻せるよ。</p>
 </div>`;
+  }
+  // 版の番号をくらべる（1.10 ＞ 1.9）
+  const verCmp = (a, b) => {
+    const x = String(a || '0').split('.').map(Number), y = String(b || '0').split('.').map(Number);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0 ? 1 : -1; }
+    return 0;
+  };
+  let storeNew = null, dataNew = null;
+  const NCHK = 'tengel.nchk';
+  // App Storeの版を確かめる（アプリにお願いする）
+  async function checkStore(manual) {
+    const msg = $('#nuMsg'); if (manual && msg) msg.innerHTML = '<span class="spin"></span> 確かめているよ…';
+    try {
+      const s = await window.TengelNative.storeInfo();
+      const cur = (window.TengelNative.info || {}).version || '';
+      const st = $('#nuStore');
+      if (!s || !s.found) {
+        storeNew = null;
+        if (st) st.textContent = s && s.error ? '確かめられなかったよ' : 'まだApp Storeに出ていないよ';
+        if (manual && msg) msg.textContent = s && s.error ? '確かめられなかったよ。電波がいいところでもう一度押してね' : 'App Storeでは、まだ見つからなかったよ（公開されると、ここで確かめられるよ）';
+      } else if (verCmp(s.version, cur) > 0) {
+        storeNew = s;
+        if (st) st.innerHTML = `<b>新しい版 ${esc(s.version)}</b> があるよ`;
+        if (manual && msg) msg.textContent = `App Storeに新しい版（${s.version}）があるよ。「App Storeで更新する」を押してね`;
+      } else {
+        storeNew = null;
+        if (st) st.textContent = `${s.version}（いまの版が最新だよ）`;
+        if (manual && msg) msg.textContent = 'いまの版が最新だよ✨';
+      }
+      paintStoreBtn();
+      return storeNew;
+    } catch (e) {
+      if (manual && msg) msg.textContent = '確かめられなかったよ：' + (e && e.message || e);
+      return null;
+    }
+  }
+  function paintStoreBtn() {
+    const a = $('#nuOpen'); if (!a) return;
+    a.hidden = !(storeNew && storeNew.url); if (storeNew && storeNew.url) a.href = storeNew.url;
+  }
+  // データの更新：いまのデータの表示
+  function paintDataCard() {
+    const c = $('#sdCur'); if (!c || !TengelLocal.data) return;
+    const s = L().info().find(x => x.n === 1); if (!s) return;
+    const own = s.source !== 'app';
+    c.innerHTML = `${s.count}走（${span2(s.first, s.last)}）${s.inputN ? `・うち自分で入れた ${s.inputN}走` : ''}${own ? '<br><span class="small muted">自分で入れたファイルのデータが入っているよ</span>' : `<br><span class="small muted">データの版 ${esc(TengelLocal.data.ver() || '—')}</span>`}`;
+    const ap = $('#sdApply'); if (ap) { ap.hidden = !dataNew; delete ap.dataset.ok; ap.textContent = dataNew && dataNew.own ? '新しいデータに入れ替える' : '新しいデータを入れる'; }
+  }
+  async function checkData(manual) {
+    if (!TengelLocal.data || !TengelLocal.data.url()) return null;
+    const msg = $('#sdMsg'); if (manual && msg) msg.innerHTML = '<span class="spin"></span> 確かめているよ…';
+    try {
+      const r = await TengelLocal.data.check();
+      const ck = $('#sdChecked'); if (ck) ck.textContent = when(new Date().toISOString());
+      dataNew = r.newer ? r : null;
+      if (manual && msg) msg.textContent = r.newer ? `新しいデータ（${r.n}走・${md(r.last)}まで）があるよ。${r.own ? 'いまは自分で入れたデータが入っているから、入れると入れ替わるよ（ひとつ前に戻せるよ）' : '「新しいデータを入れる」を押してね'}` : 'いまのデータが最新だよ✨';
+      paintDataCard();
+      return dataNew;
+    } catch (e) {
+      if (manual && msg) msg.textContent = (e && e.message) || '確かめられなかったよ';
+      return null;
+    }
+  }
+  async function applyData(btn) {
+    if (!dataNew) return;
+    if (dataNew.own && btn && !btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'ほんとに入れ替える？（もう一度押してね）'; return; }
+    if (btn) btn.disabled = true;
+    const msg = $('#sdMsg'); if (msg) msg.innerHTML = '<span class="spin"></span> 入れているよ…';
+    try {
+      const r = await TengelLocal.data.apply(dataNew.doc);
+      dataNew = null;
+      const t = `新しいデータ（${r.n}走・${md(r.last)}まで）を入れたよ${r.kept ? `。自分で入れたレース（${r.kept}走）はそのままだよ` : ''}`;
+      if (msg) msg.textContent = '✅ ' + t + '。前のデータは「ひとつ前のデータに戻す」で戻せるよ';
+      toast(t, 4200); hideNBar('data');
+    } catch (e) {
+      if (msg) msg.textContent = '❌ 入れられなかったよ：' + (e && e.message || e);
+    } finally { if (btn) btn.disabled = false; paintDataCard(); }
+  }
+  // 上のお知らせ（アプリ版）：App Storeの新しい版・新しいデータ。go＝押したときにすること（文字列ならそのページをアプリの外で開く）
+  function showNBar(kind, html, btnText, go) {
+    let bar = $('#nBar_' + kind);
+    if (!bar) { const top = $('header.top .top-in'); if (!top) return; bar = document.createElement('div'); bar.id = 'nBar_' + kind; bar.className = 'updbar nbar'; top.appendChild(bar); }
+    const btn = typeof go === 'string' ? `<a class="btn" href="${esc(go)}" target="_blank" rel="noopener">${esc(btnText)}</a>` : `<button class="btn" type="button">${esc(btnText)}</button>`;
+    bar.innerHTML = `<span>${html}</span>${btn}<button class="nbx" type="button" aria-label="閉じる">×</button>`;
+    bar.hidden = false;
+    if (typeof go === 'function') bar.querySelector('button.btn').onclick = go;
+    bar.querySelector('.nbx').onclick = () => { bar.hidden = true; };
+  }
+  function hideNBar(kind) { const b = $('#nBar_' + kind); if (b) b.hidden = true; }
+  async function nativeChecks(force) {
+    if (!NATIVE || navigator.onLine === false) return;
+    let last = 0; try { last = +localStorage.getItem(NCHK) || 0; } catch (_) { /* 使えなければ毎回 */ }
+    if (!force && Date.now() - last < 12 * 3600e3) return;
+    try { localStorage.setItem(NCHK, String(Date.now())); } catch (_) { /* 覚えられなくてもOK */ }
+    const s = await checkStore(false);
+    if (s && s.url) showNBar('app', `✨ App Storeに新しい版（<b>${esc(s.version)}</b>）があるよ。記録はそのまま残るよ`, 'App Storeで更新', s.url);
+    const d = await TengelLocal.ready.then(() => checkData(false)).catch(() => null);
+    if (d) showNBar('data', `✨ 新しいデータがあるよ（<b>${d.n}走・${md(d.last)}まで</b>）`, d.own ? '見る' : '入れる', () => { if (d.own) goSettings('data'); else applyData(null); });
+  }
+  function wireNativeUpdate() {
+    if (!NATIVE) return;
+    $('#nuCheck').onclick = () => checkStore(true);
+    $('#sdCheck').onclick = () => checkData(true);
+    $('#sdApply').onclick = ev => applyData(ev.currentTarget);
+    paintStoreBtn(); TengelLocal.ready.then(paintDataCard).catch(() => {});
   }
 
   // ---- バックアップ ----
@@ -491,6 +934,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const meta = await TengelLocal.motherMeta().catch(() => null);
     const data = { app: 'tengel3', appVer: APP_VER, at: new Date().toISOString(), bets, settings: { zones: zones === undefined ? null : zones } };
     if (meta && meta.source !== 'app') data.mother = { meta, rows: L().rows(1) };
+    else { const add = L().rows(1).filter(r => r && r.src); if (add.length) data.motherAdd = add; }   // アプリに入っているデータに、自分で足したレース
     data.slots = { names: L().names(), active: L().active(), data: {} };
     [2, 3].forEach(n => { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; });
     return { data, zones, nSlots: Object.keys(data.slots.data).length };
@@ -516,6 +960,11 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         if (!cur.length || bl > cl || (bl === cl && doc.rows.length > cur.length)) { await L().replace(n, doc.rows, { source: doc.source || 'excel', file: doc.file || '' }); msg.push(`「${L().names()[n]}」のデータ${doc.rows.length}走も戻したよ`); }
       }
     }
+    if (Array.isArray(d.motherAdd) && d.motherAdd.length) {
+      const have = new Set(L().rows(1).map(r => r.id));
+      const add = d.motherAdd.filter(r => r && r.id && r.date && r.r && !have.has(r.id));
+      if (add.length) { await L().upsert(1, add); msg.push(`「${L().names()[1]}」に、自分で入れたレース${add.length}走も戻したよ`); }
+    }
     if (d.mother && Array.isArray(d.mother.rows) && d.mother.rows.length) {
       const curRows = L().rows(1);
       const bl = last(d.mother.rows), cl = last(curRows);
@@ -531,7 +980,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#pwaBackup').onclick = async () => {
       const { data, zones, nSlots } = await makeBackup();
       const bets = data.bets, name = 'テンゲル記録_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.json', text = JSON.stringify(data);
-      const doneMsg = how => { $('#pwaBkInfo').textContent = `記録${bets.length}件${zones ? '・買い目の設定' : ''}・マザーデータの名前${data.mother ? '・大井データ' : ''}${nSlots ? `・マザーデータ${nSlots}つ分` : ''}を${how}よ`; TengelLocal.putMeta({ id: 'backup', at: data.at, n: bets.length }).then(paintBackup); };
+      const doneMsg = how => { $('#pwaBkInfo').textContent = `記録${bets.length}件${zones ? '・買い目の設定' : ''}・マザーデータの名前${data.mother ? '・大井データ' : ''}${data.motherAdd ? `・自分で入れたレース${data.motherAdd.length}走` : ''}${nSlots ? `・マザーデータ${nSlots}つ分` : ''}を${how}よ`; TengelLocal.putMeta({ id: 'backup', at: data.at, n: bets.length }).then(paintBackup); };
       if (NATIVE) {
         // アプリ版：共有シート（「ファイル」に保存・AirDrop・LINEなど）
         window.TengelNative.share(name, text, 'application/json').then(ok => { if (ok) doneMsg('保存した'); }).catch(err => { $('#pwaBkInfo').textContent = '保存できなかったよ：' + (err && err.message || err); });
@@ -732,6 +1181,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   }
 
   function boot() {
+    mdCss();
     build();
     manualEntry();
     cmEntry();
@@ -743,12 +1193,13 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       row.innerHTML = '<button class="btn ghost" type="button" data-goset="backup">💾 記録のバックアップ（設定タブ）</button>';
       rec.insertBefore(row, list);
     }
-    document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); }).catch(() => {}); } });
-    document.addEventListener('tengel:slots', () => { if ($('#slotList')) TengelLocal.ready.then(() => paintSlots(false)).catch(() => {}); });
+    document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); paintDataCard(); }).catch(() => {}); } });
+    document.addEventListener('tengel:slots', () => { if ($('#slotList')) TengelLocal.ready.then(() => { paintSlots(false); paintDataCard(); mdRefresh(); }).catch(() => {}); });
     TengelLocal.ready.then(() => { paintSlots(false); paintBackup(); (TengelLocal.notices || []).forEach(n => toast(n, 4200)); }).catch(() => {});
     nativeBoot();
     setTimeout(() => checkUpdate(false), 2500);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(false); });
+    if (NATIVE) setTimeout(() => nativeChecks(false), 3000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkUpdate(false); if (NATIVE) nativeChecks(false); } });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

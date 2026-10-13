@@ -40,7 +40,7 @@ mom = json.loads(re.search(r'window\.__MOTHER=(\[.*?\]);window\.__MOTHER_DROP', 
 check(home and json.loads(home.group(1)) == [AT.fnv('大井')] and all(r['venue'] == '' and '-m1-' in r['id'] for r in mom) and len(mom) == 290,
       f'アプリに入れるデータ：開催場の名前なし・しるしだけ（{home.group(1) if home else None}・{len(mom)}走）')
 web_html = open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read()
-check('大井 第13改訂版' in web_html and '>WIN5<' in web_html and 'window.__MOTHER_HOME' not in web_html, 'Web版は今までどおり（大井 第13改訂版・WIN5）')
+check('大井 第13改訂版' in web_html and '>WIN5<' in web_html and 'window.__MOTHER_HOME=[' not in web_html and 'window.__DATA_URL=' not in web_html, 'Web版は今までどおり（大井 第13改訂版・WIN5・開催場のしるしやデータの更新先は入れない）')
 for f in ('index.html', 'manual.html'):
     pth = os.path.join(SRV, 'APP', f); h = open(pth, encoding='utf8').read()
     if f == 'index.html':

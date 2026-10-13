@@ -27,6 +27,8 @@ if (window.__NATIVE) (function () {
     copy: function (text) { return call('copy', String(text)); },
     // アプリの中の自動バックアップ（記録・買い目・マザーデータ。APIキーは入れない）
     saveBackup: function (text) { return call('backup', { text: String(text) }); },
+    // App Storeに出ている版（アプリがAppleに聞く）：{ found, version, url, notes, date }
+    storeInfo: function () { return call('store', {}); },
     loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
   };
   // コピーは、アプリがiPhoneのクリップボードに直接入れる
@@ -48,6 +50,17 @@ if (window.__NATIVE) (function () {
   var DROP = {}; (window.__MOTHER_DROP || []).forEach(function (id) { DROP[id] = 1; });
   function undup(rows) { return rows.filter(function (r) { return !(r && DROP[r.id]); }); }
   function dupCount(rows) { var k = 0; rows.forEach(function (r) { if (r && DROP[r.id]) k++; }); return k; }
+  // 自分で入れたレース（アプリで入力＝src 'input'・ファイルから足した＝src 'file'）。アプリに入っているデータが新しくなっても消さない
+  function rowKey(r) { return String(r.date) + '#' + (+r.r); }
+  function userRows(rows) { return rows.filter(function (r) { return r && r.src; }); }
+  // 新しいデータ＋自分で入れたレース（同じ日付・Rのレースが新しいデータにあれば、新しいデータのほうを使う）
+  function keepUser(rows, cur) {
+    var keys = {}, ids = {};
+    rows.forEach(function (r) { keys[rowKey(r)] = 1; ids[r.id] = 1; });
+    return rows.concat(userRows(cur).filter(function (r) { return !keys[rowKey(r)] && !ids[r.id]; }));
+  }
+  // 「データの更新」で入れた最後のデータの版（meta 'data'）
+  var dataRec = null;
   function req(r) { return new Promise(function (res, rej) { r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
   function openOnce() {
     return new Promise(function (res, rej) {
@@ -81,16 +94,21 @@ if (window.__NATIVE) (function () {
     var rows = slotRows(n); if (!rows.length || !wellFormed(rows)) return null;
     return { id: 'prev:' + n, rows: rows, meta: withoutRows(n === 1 ? mother1 : slotDocs[n]), at: new Date().toISOString(), n: rows.length, lastDate: lastDate(rows) };
   }
-  // 1つ目（大井）をまるごと入れ替える。info.source = 'app'（アプリに入っている版）／'excel'（Excelファイル）／'paste'（貼り付け）
+  // 1つ目（大井）をまるごと入れ替える。info.source = 'app'（アプリに入っている版・データの更新）／'excel'（Excelファイル）／'paste'（貼り付け）
   // info.keepPrev = false のときは「ひとつ前」を残さない（アプリが自分で入れ直すとき）
+  // info.keepUser = true のときは、自分で入れたレース（アプリで入力・ファイルから足した）を残す
+  // info.dataVer＝入れるデータの版（「データの更新」で入れたとき。ふだんはアプリに入っている版）・info.home＝そのデータの開催場のしるし
   function replaceRaces(rows, info) {
     need();
     info = info || {}; rows = undup(rows);
     var src = info.source || 'app', prev = info.keepPrev === false ? null : prevOf(1);
+    if (info.keepUser) rows = keepUser(rows, Array.from(slot1.values()));
     var t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races');
     s.clear(); rows.forEach(function (r) { s.put(r); });
-    var meta = { id: 'mother', source: src, file: info.file || '', ver: src + ':' + (src === 'app' ? (window.__MOTHER_VER || '') : new Date().toISOString()),
-      embedded: window.__MOTHER_VER || '', at: new Date().toISOString(), n: rows.length, lastDate: lastDate(rows) };
+    var dv = src === 'app' ? (info.dataVer || window.__MOTHER_VER || '') : '';
+    var meta = { id: 'mother', source: src, file: info.file || '', ver: src + ':' + (src === 'app' ? dv : new Date().toISOString()),
+      embedded: window.__MOTHER_VER || '', dataVer: dv, at: new Date().toISOString(), n: rows.length, lastDate: lastDate(rows) };
+    if (src === 'app' && Array.isArray(info.home) && info.home.length) meta.home = info.home.slice(0, 8);
     t.objectStore('meta').put(meta);
     if (prev) t.objectStore('meta').put(prev);
     return done(t).then(function () {
@@ -163,6 +181,66 @@ if (window.__NATIVE) (function () {
     slotsMeta.names[n] = name;
     return putMeta(slotsMeta).then(function () { emitSlots(); return name; });
   }
+  // レースを1つずつ足す・直す（同じ id は上書き）。アプリで入力したレースなど。「ひとつ前」は残さない（まるごと入れ替えたときだけ残す）
+  function upsertRows(n, rows) {
+    n = +n; if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    need();
+    rows = (rows || []).filter(function (r) { return r && r.id && r.date && r.r; });
+    if (n === 1) rows = undup(rows);
+    if (!rows.length) return Promise.resolve(null);
+    var now = new Date().toISOString();
+    if (n === 1) {
+      var all = new Map(slot1); rows.forEach(function (r) { all.set(r.id, r); });
+      var list = Array.from(all.values());
+      var meta = Object.assign({ id: 'mother', source: 'app', embedded: window.__MOTHER_VER || '', dataVer: window.__MOTHER_VER || '' }, mother1 || {}, { n: list.length, lastDate: lastDate(list), edited: now });
+      var t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races');
+      rows.forEach(function (r) { s.put(r); }); t.objectStore('meta').put(meta);
+      return done(t).then(function () {
+        slot1 = all; mother1 = meta;
+        if (slotsMeta.active === 1) { mem.races = slot1; notify('races'); }
+        emitSlots(); return meta;
+      });
+    }
+    var cur = slotDocs[n], map = new Map(((cur && cur.rows) || []).map(function (r) { return [r.id, r]; }));
+    rows.forEach(function (r) { map.set(r.id, r); });
+    var list2 = Array.from(map.values());
+    var doc = Object.assign({ source: 'input', file: '', at: now }, withoutRows(cur) || {}, { id: 'slot:' + n, rows: list2, n: list2.length, lastDate: lastDate(list2), edited: now });
+    return putMeta(doc).then(function () {
+      slotDocs[n] = doc; slotMaps[n] = null;
+      if (slotsMeta.active === n) { mem.races = slotMap(n); notify('races'); }
+      emitSlots(); return doc;
+    });
+  }
+  // レースを消す（id で）
+  function removeRows(n, ids) {
+    n = +n; if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    need();
+    var gone = {}; (ids || []).forEach(function (id) { gone[id] = 1; });
+    var now = new Date().toISOString();
+    if (n === 1) {
+      var keep = Array.from(slot1.values()).filter(function (r) { return !gone[r.id]; });
+      if (keep.length === slot1.size) return Promise.resolve(null);
+      if (!keep.length) return Promise.reject(new Error('1つ目は空にできないよ'));
+      var meta = Object.assign({ id: 'mother', source: 'app' }, mother1 || {}, { n: keep.length, lastDate: lastDate(keep), edited: now });
+      var t = idb.transaction(['races', 'meta'], 'readwrite'), s = t.objectStore('races');
+      Object.keys(gone).forEach(function (id) { s.delete(id); }); t.objectStore('meta').put(meta);
+      return done(t).then(function () {
+        slot1 = new Map(keep.map(function (r) { return [r.id, r]; })); mother1 = meta;
+        if (slotsMeta.active === 1) { mem.races = slot1; notify('races'); }
+        emitSlots(); return meta;
+      });
+    }
+    var cur = slotDocs[n]; if (!cur || !cur.rows) return Promise.resolve(null);
+    var rest = cur.rows.filter(function (r) { return !gone[r.id]; });
+    if (rest.length === cur.rows.length) return Promise.resolve(null);
+    if (!rest.length) return clearSlot(n);
+    var doc = Object.assign({}, withoutRows(cur), { id: 'slot:' + n, rows: rest, n: rest.length, lastDate: lastDate(rest), edited: now });
+    return putMeta(doc).then(function () {
+      slotDocs[n] = doc; slotMaps[n] = null;
+      if (slotsMeta.active === n) { mem.races = slotMap(n); notify('races'); }
+      emitSlots(); return doc;
+    });
+  }
   function slotRows(n) { return Array.from(slotMap(+n).values()); }
   function slotInfo() {
     return [1, 2, 3].map(function (n) {
@@ -171,7 +249,8 @@ if (window.__NATIVE) (function () {
       var m = n === 1 ? mother1 : slotDocs[n];
       var src = n === 1 ? (m ? (m.source || (String(m.ver || '').indexOf('paste') === 0 ? 'paste' : 'app')) : 'app') : (m ? m.source : '');
       return { n: n, name: slotsMeta.names[n] || DEFAULT_NAMES[n], count: rows.length, usable: usable, formed: wellFormed(rows), first: ds[0] || '', last: ds[ds.length - 1] || '',
-        source: src, file: m ? (m.file || '') : '', at: m ? (m.at || '') : '', active: slotsMeta.active === n };
+        source: src, file: m ? (m.file || '') : '', at: m ? (m.at || '') : '', active: slotsMeta.active === n,
+        inputN: rows.filter(function (r) { return r && r.src; }).length, edited: m ? (m.edited || '') : '' };
     });
   }
   function prevInfo(n) {
@@ -186,15 +265,18 @@ if (window.__NATIVE) (function () {
     slotDocs[2] = a[4] || null; slotDocs[3] = a[5] || null;
     prevDocs[1] = a[6] || null; prevDocs[2] = a[7] || null; prevDocs[3] = a[8] || null;
     ocrSet = a[9] && a[9].value && a[9].value.key ? a[9].value : null;
+    dataRec = a[10] || null;
     var rows = a[0], meta = a[2], emb = window.__MOTHER || [], embVer = window.__MOTHER_VER || '';
     rows.forEach(function (r) { slot1.set(r.id, r); }); mother1 = meta || null;
+    // 「データの更新」で入れたデータの開催場のしるし（アプリに入っているデータと別の開催場になったとき）
+    if (meta && meta.source === 'app' && Array.isArray(meta.home) && meta.home.length && Array.isArray(window.__MOTHER_HOME)) window.__MOTHER_HOME = meta.home;
     if (slotsMeta.active !== 1 && !hasRows(slotsMeta.active)) slotsMeta.active = 1;
     mem.races = slotMap(slotsMeta.active);
     // 1つ目（大井）：初めて開いたとき・アプリに入っている大井データが新しくなったとき
     if (!rows.length || !meta) return replaceRaces(emb, { source: 'app', keepPrev: false });
     // 単勝・3連単・着順が1走も入っていない（形のちがうファイルを入れてしまった）ときは、アプリに入っている大井データに戻す
     if (!wellFormed(rows) && wellFormed(emb)) {
-      return replaceRaces(emb, { source: 'app', keepPrev: false }).then(function () {
+      return replaceRaces(emb, { source: 'app', keepPrev: false, keepUser: true }).then(function () {
         notices.push('「' + slotsMeta.names[1] + '」のデータが判定に使えない形（単勝・3連単・着順が入っていない）になっていたから、アプリに入っている大井データ（' + emb.length + '走）に戻したよ');
       });
     }
@@ -202,15 +284,21 @@ if (window.__NATIVE) (function () {
     var source = meta.source || (String(meta.ver || '').indexOf('paste') === 0 ? 'paste' : 'app');
     var nl = lastDate(emb), md = function (d) { return d ? (+d.slice(5, 7)) + '/' + (+d.slice(8, 10)) : ''; };
     var newer = '「' + slotsMeta.names[1] + '」のデータが新しくなったよ（' + emb.length + '走・' + md(nl) + 'まで）';
+    // 自分で入れたレース（アプリで入力など）は残す
+    var mine = userRows(rows).filter(function (r) { var k = rowKey(r); return !emb.some(function (e) { return rowKey(e) === k; }); }).length;
+    var mineNote = mine ? '。自分で入れたレース（' + mine + '走）はそのまま残したよ' : '';
     if (source === 'app') {
+      // 「データの更新」で入れたデータのほうが新しい（同じ）ときは、そのまま（アプリの更新で古いデータに戻さない）
+      if (meta.dataVer && meta.dataVer >= embVer) { meta.embedded = embVer; mother1 = meta; return putMeta(meta); }
       // 中身が変わったとき（レースが増えた・直した）だけお知らせする
-      var same = rows.length === emb.length && lastDate(rows) === nl, k = dupCount(rows);
-      return replaceRaces(emb, { source: 'app', keepPrev: false }).then(function () { if (!same) notices.push('アプリの更新で、' + newer + (k ? '。重複していたレース（' + k + '走）は消したよ' : '')); });
+      var off = rows.filter(function (r) { return !r.src; });
+      var same = off.length === emb.length && lastDate(off) === nl, k = dupCount(rows);
+      return replaceRaces(emb, { source: 'app', keepPrev: false, keepUser: true }).then(function () { if (!same) notices.push('アプリの更新で、' + newer + (k ? '。重複していたレース（' + k + '走）は消したよ' : '') + mineNote); });
     }
     // まさちゃんがExcelや貼り付けで入れた大井データのほうが新しければ、そのまま残す
     var cur = { last: meta.lastDate || lastDate(rows), n: rows.length };
     if (nl > cur.last || (nl === cur.last && emb.length > cur.n)) {
-      return replaceRaces(emb, { source: 'app' }).then(function () { notices.push('アプリの更新で、' + newer + '。前に入れたデータは「ひとつ前のデータに戻す」で戻せるよ'); });
+      return replaceRaces(emb, { source: 'app', keepUser: true }).then(function () { notices.push('アプリの更新で、' + newer + mineNote + '。前に入れたデータは「ひとつ前のデータに戻す」で戻せるよ'); });
     }
     meta.embedded = embVer; mother1 = meta; return putMeta(meta);
   }
@@ -249,7 +337,7 @@ if (window.__NATIVE) (function () {
     idb = d;
     idb.onversionchange = function () { try { idb.close(); } catch (e) {} };
     var g = function (id) { return req(store('meta', 'readonly').get(id)); };
-    return Promise.all([req(store('races', 'readonly').getAll()), req(store('bets', 'readonly').getAll()), g('mother'), g('slots'), g('slot:2'), g('slot:3'), g('prev:1'), g('prev:2'), g('prev:3'), g('set:ocr')]);
+    return Promise.all([req(store('races', 'readonly').getAll()), req(store('bets', 'readonly').getAll()), g('mother'), g('slots'), g('slot:2'), g('slot:3'), g('prev:1'), g('prev:2'), g('prev:3'), g('set:ocr'), g('data')]);
   }).then(function (a) { return Promise.resolve(boot(a)).then(function () { return Promise.resolve().then(dropDups).catch(function () {}); }); }).catch(memoryMode).then(function () { emitSlots(); });
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
@@ -277,6 +365,63 @@ if (window.__NATIVE) (function () {
       doc: function (id) { return docRef(name, id); } };
   }
   var db = { collection: function (n) { return query(n, []); }, doc: function (p) { var a = p.split('/'); return docRef(a[0], a[1]); } };
+
+  // ===== データの更新：1つ目のマザーデータ（アプリに入っているデータ）の新しい版を、ネットから読んで入れる =====
+  // 読むのはデータ（レースの表）だけ。プログラムは読まない。入れても、自分で入れたレース・記録・設定はそのまま（前のデータは「ひとつ前」に残す）
+  var ROW_NUM = ['r', 'dist', 'n', 'tan1', 's1', 'p1', 'p2', 'p3', 's5', 's10', 'umatanPay', 'sanrenPay', 'cnt'];
+  function cleanRow(r) {
+    var o = { id: String(r.id), date: String(r.date), venue: String(r.venue || ''), baba: String(r.baba || ''), surface: r.surface === '芝' ? '芝' : 'ダ', note: r.note == null ? '' : String(r.note).slice(0, 200) };
+    ROW_NUM.forEach(function (k) { var v = r[k]; o[k] = v === null || v === undefined || v === '' || !isFinite(+v) ? null : +v; });
+    if (o.cnt == null) o.cnt = 1;
+    return o;
+  }
+  function remoteBad(doc) {
+    if (!doc || doc.app !== 'tengel' || doc.kind !== 'mother' || typeof doc.ver !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(doc.ver)) return 'データの形がちがうよ';
+    if (doc.minApp && String(window.__APP_VER || '') < String(doc.minApp)) return 'このデータは新しい版のアプリ用だよ。先にアプリを更新してね';
+    var rows = doc.rows;
+    if (!Array.isArray(rows) || rows.length < 20) return 'データのレースが少なすぎるよ';
+    var ok = rows.filter(function (r) { return r && typeof r.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(String(r.date)) && +r.r >= 1 && +r.r <= 16; }).length;
+    if (ok !== rows.length) return 'データの中に読めないレースがあるよ';
+    if (wellFormed(rows) < rows.length / 2) return 'データが判定に使えない形だよ';
+    return '';
+  }
+  // いま入っている、アプリのデータの版（アプリに入っている版か、データの更新で入れた版の新しいほう）
+  function curDataVer() {
+    var m = mother1 || {}, v = window.__MOTHER_VER || '';
+    if ((m.source || 'app') === 'app' && m.dataVer && m.dataVer > v) v = m.dataVer;
+    if (dataRec && dataRec.ver && dataRec.ver > v) v = dataRec.ver;
+    return v;
+  }
+  function checkRemote() {
+    var url = window.__DATA_URL || '';
+    if (!url) return Promise.reject(new Error('この版では、データの更新は使えないよ'));
+    return fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' })
+      .catch(function () { throw new Error('通信できなかったよ。電波がいいところでもう一度試してね'); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('新しいデータが見つからなかったよ（' + r.status + '）');
+        return r.json().catch(function () { throw new Error('データの形がちがうよ'); });
+      })
+      .then(function (doc) {
+        var bad = remoteBad(doc); if (bad) throw new Error(bad);
+        var ds = doc.rows.map(function (r) { return r.date; }).sort(), cur = curDataVer();
+        var m = mother1 || {};
+        return { ver: doc.ver, n: doc.rows.length, first: ds[0], last: ds[ds.length - 1], cur: cur, newer: doc.ver > cur,
+          own: (m.source || 'app') !== 'app', mine: userRows(Array.from(slot1.values())).length, doc: doc };
+      });
+  }
+  function applyRemote(doc) {
+    var bad = remoteBad(doc); if (bad) return Promise.reject(new Error(bad));
+    var rows = doc.rows.map(cleanRow), home = Array.isArray(doc.home) ? doc.home.map(String) : null;
+    var before = userRows(Array.from(slot1.values())).length;
+    return replaceRaces(rows, { source: 'app', keepUser: true, dataVer: doc.ver, home: home }).then(function (meta) {
+      if (meta.home && Array.isArray(window.__MOTHER_HOME)) window.__MOTHER_HOME = meta.home;
+      dataRec = { id: 'data', ver: doc.ver, at: new Date().toISOString(), n: rows.length };
+      return putMeta(dataRec).catch(function () {}).then(function () {
+        var kept = userRows(Array.from(slot1.values())).length;
+        return { n: rows.length, kept: kept, dropped: Math.max(0, before - kept), last: lastDate(rows), ver: doc.ver };
+      });
+    });
+  }
 
   // ===== 画像の読み取り：オッズのスクショを Claude（Anthropic の API）で読む =====
   // APIキーはまさちゃんのもの。このiPhoneの中（meta 'set:ocr'）にだけ保存して、ほかには送らない（Anthropic に直接送るだけ）
@@ -378,7 +523,18 @@ if (window.__NATIVE) (function () {
       prev: prevInfo,
       undo: function (n) { return ready.then(function () { return undoSlot(n); }); },
       formed: wellFormed,
-      doc: function (n) { return n === 1 ? mother1 : slotDocs[n]; }
+      doc: function (n) { return n === 1 ? mother1 : slotDocs[n]; },
+      // レースを1つずつ足す・直す・消す（アプリで入力したレースなど）
+      upsert: function (n, rows) { return ready.then(function () { return upsertRows(n, rows); }); },
+      remove: function (n, ids) { return ready.then(function () { return removeRows(n, ids); }); },
+      key: rowKey
+    },
+    // データの更新（1つ目のマザーデータの新しい版をネットから読む。データだけ）
+    data: {
+      url: function () { return window.__DATA_URL || ''; },
+      ver: curDataVer,
+      check: function () { return ready.then(checkRemote); },
+      apply: function (doc) { return ready.then(function () { return applyRemote(doc); }); }
     },
     // 画像の読み取り（APIキーはこのiPhoneの中だけ。バックアップにも入れない）
     ocr: {

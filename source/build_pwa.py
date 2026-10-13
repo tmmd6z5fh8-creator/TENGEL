@@ -44,6 +44,8 @@ if TARGET == 'app':
         assert a in page, a[:40]; page = page.replace(a, b)
 mother = [{k: v for k, v in r.items()} for r in hist]
 MOTHER_HOME = None
+# データの更新（App Store版がアプリの更新なしで新しいデータを読む）：公開するデータの場所。Web版が data/mother_app.json に置く
+DATA_URL = os.environ.get('DATA_URL', 'https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json')
 if TARGET == 'app':
     # App Store版：アプリに入れるデータは開催場の名前を消して「しるし」だけ残す・消したレースの印（DROP）は使わない（入れるデータが別の開催場でも消さないように）
     mother, MOTHER_HOME = _at.mother(mother)
@@ -65,7 +67,7 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';' if MOTHER_HOME is not None else ''}</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>
@@ -91,6 +93,16 @@ if CM:
         shutil.copy(os.path.join(CM_SRC, f), f'{out}/cm/{f}')
 # 新しい版があるかの確認用（アプリはこのファイルだけを毎回ネットから読む）
 json.dump({"app": APP_VER, "mother": MOTHER_VER}, open(f'{out}/version.json', 'w', encoding='utf8'))
+# App Store版の「データの更新」で読むデータ（1つ目のマザーデータ）：開催場の名前は消して「しるし」だけ（App Store版に入れるのと同じ形）
+if TARGET == 'web':
+    _drop = set(DROP_IDS)
+    _rows, _home = _at.mother([dict(r) for r in hist if r.get('id') not in _drop])
+    _ds = sorted(r['date'] for r in _rows)
+    _doc = {'app': 'tengel', 'kind': 'mother', 'ver': MOTHER_VER, 'n': len(_rows), 'first': _ds[0], 'last': _ds[-1], 'home': _home, 'rows': _rows}
+    _txt = json.dumps(_doc, ensure_ascii=False, separators=(',', ':'))
+    _at.check_clean(_txt, 'データの更新のファイル')
+    os.makedirs(f'{out}/data')
+    open(f'{out}/data/mother_app.json', 'w', encoding='utf8').write(_txt)
 open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
 // （記録・買い目・基盤データはiPhoneの中のデータベースにあって、ここでは触らない）
 const CACHE = 'tengel3-''' + APP_VER + '-' + MOTHER_VER + '''';

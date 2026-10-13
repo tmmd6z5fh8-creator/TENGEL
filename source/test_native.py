@@ -1,5 +1,5 @@
 # アプリ版（iPhone・iPadのアプリの中の画面）のテスト。アプリ（Swift）のかわりに、にせもののアプリをつなぐ
-#  ・設定タブ：「アプリの版」（更新の確認はしない）・自動バックアップの欄
+#  ・設定タブ：「アプリの更新」（App Storeの版を確かめる・Web版の更新の確認はしない）・「データの更新」・自動バックアップの欄
 #  ・記録を保存すると、アプリの中に自動バックアップ（APIキーは入れない）
 #  ・バックアップを保存／CSVで保存 → 共有シート（アプリ）に渡す・コピーはアプリへ
 #  ・保存場所が消えた（記録0件）のに自動バックアップに記録がある → 「戻す？」→ 戻す／戻さない
@@ -71,7 +71,8 @@ try:
         # ---- 設定タブ ----
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(500)
         up = pg.locator('#setUpdate')
-        check(up.locator('h2').inner_text() == 'アプリの版' and '1.0（7）' in up.inner_text() and pg.locator('#suCheck').count() == 0, '「アプリの版」：版が出て、更新の確認ボタンはない')
+        check(up.locator('h2').inner_text() == 'アプリの更新' and '1.0（7）' in up.inner_text() and pg.locator('#suCheck').count() == 0 and pg.locator('#nuCheck').count() == 1, '「アプリの更新」：版が出て、Web版の更新ボタン（version.json）はない・App Storeの版を確かめるボタンがある')
+        check(pg.locator('#setData h2').inner_text() == 'データの更新', '「データの更新」のカードがある')
         check('アプリを削除すると' in up.inner_text() and 'ホーム画面のアイコン' not in up.inner_text(), 'アプリを削除すると記録が消える注意')
         check(pg.locator('#sbAuto').count() == 1 and '自動でバックアップ' in pg.locator('#setBackup').inner_text(), 'バックアップに「自動バックアップ」の欄')
         pg.wait_for_timeout(1200)

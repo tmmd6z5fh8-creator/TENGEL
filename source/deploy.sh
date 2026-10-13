@@ -11,6 +11,8 @@ cp "$OUT"/index.html "$OUT"/manifest.webmanifest "$OUT"/sw.js "$OUT"/version.jso
 # 説明書（manual.html と写真の manual/）
 cp "$OUT"/manual.html ..
 rm -rf ../manual && cp -r "$OUT"/manual ..
+# App Store版の「データの更新」で読むデータ（data/mother_app.json：開催場の名前なし）
+rm -rf ../data && cp -r "$OUT"/data ..
 # CM（紹介動画と表紙。cm_media/ から）
 rm -rf ../cm && if [ -d "$OUT"/cm ]; then cp -r "$OUT"/cm ..; fi
 # 公開するページ（プライバシーポリシー・特定商取引法に基づく表記・サポート）：legal/legal.json の販売する人の欄が入っているものだけできる

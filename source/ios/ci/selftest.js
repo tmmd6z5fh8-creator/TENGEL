@@ -4,7 +4,7 @@
 // 結果は window.webkit.messageHandlers.tengel に { name:'selftest', payload:{ file, text } } で渡す → アプリが Documents/ に書く。
 //   mark-<名前>.txt … CIがスクショを撮る合図（出したあと2.5秒そのままにする）
 //   report-<名前>.json … 結果
-// 1回目：記録を1件保存 → 自動バックアップ・CORS（Anthropic）・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
+// 1回目：記録を1件保存（マザーデータにも入る）→ 自動バックアップ・CORS（Anthropic）・App Storeの版・データの更新（GitHub Pages）・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
 (function () {
@@ -91,6 +91,13 @@
         body: JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 1, messages: [{ role: 'user', content: 'x' }] }) });
       return { status: r.status, body: (await r.text()).slice(0, 160) };
     });
+    // App Storeの版（アプリがAppleに聞く）・データの更新（GitHub Pages を tengel:// から読めるか＝CORS）・マザーデータに入ったか
+    await step(R, 'store', async function () { return await TengelNative.storeInfo(); });
+    await step(R, 'data', async function () {
+      try { var d = await TengelLocal.data.check(); return { ok: true, ver: d.ver, n: d.n, newer: d.newer, cur: d.cur }; }
+      catch (e) { return { ok: false, msg: String(e && e.message || e), url: TengelLocal.data.url() }; }
+    });
+    await step(R, 'mother', function () { var r = TengelLocal.slots.rows(1).filter(function (x) { return x.src; }); return { n: TengelLocal.slots.rows(1).length, input: r.map(function (x) { return x.id + ' ' + x.p1 + '-' + x.p2 + '-' + x.p3; }) }; });
     await step(R, 'fonts', async function () {
       await Promise.race([document.fonts.ready, sleep(8000)]);
       var fams = {}; document.fonts.forEach(function (f) { if (f.status === 'loaded') fams[f.family] = 1; });
@@ -109,7 +116,10 @@
     // 設定タブ
     tab('set'); await sleep(900);
     var up = document.querySelector('#setUpdate'); if (up) up.scrollIntoView({ block: 'start' }); await sleep(600);
-    R.settings = { update: up ? up.innerText : null, cmPoster: (function () { var i = document.querySelector('#setCM img'); return i ? i.naturalWidth : -1; })() };
+    var nc = document.querySelector('#nuCheck'); if (nc) nc.click();
+    var sc = document.querySelector('#sdCheck'); if (sc) sc.click();
+    await sleep(4000);
+    R.settings = { update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null, cmPoster: (function () { var i = document.querySelector('#setCM img'); return i ? i.naturalWidth : -1; })() };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
     R.settings.backup = bk ? bk.innerText : null;
