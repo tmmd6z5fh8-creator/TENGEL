@@ -398,10 +398,12 @@ if (window.__NATIVE) (function () {
     return fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' })
       .catch(function () { throw new Error('通信できなかったよ。電波がいいところでもう一度試してね'); })
       .then(function (r) {
-        if (!r.ok) throw new Error('新しいデータが見つからなかったよ（' + r.status + '）');
+        if (r.status === 404) return null;   // 公開しているデータがない＝新しいデータはない
+        if (!r.ok) throw new Error('確かめられなかったよ（' + r.status + '）。時間をおいてもう一度試してね');
         return r.json().catch(function () { throw new Error('データの形がちがうよ'); });
       })
       .then(function (doc) {
+        if (doc === null) return { none: true, newer: false, cur: curDataVer() };
         var bad = remoteBad(doc); if (bad) throw new Error(bad);
         var ds = doc.rows.map(function (r) { return r.date; }).sort(), cur = curDataVer();
         var m = mother1 || {};

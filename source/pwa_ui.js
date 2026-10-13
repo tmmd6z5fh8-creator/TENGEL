@@ -869,7 +869,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       const r = await TengelLocal.data.check();
       const ck = $('#sdChecked'); if (ck) ck.textContent = when(new Date().toISOString());
       dataNew = r.newer ? r : null;
-      if (manual && msg) msg.textContent = r.newer ? `新しいデータ（${r.n}走・${md(r.last)}まで）があるよ。${r.own ? 'いまは自分で入れたデータが入っているから、入れると入れ替わるよ（ひとつ前に戻せるよ）' : '「新しいデータを入れる」を押してね'}` : 'いまのデータが最新だよ✨';
+      if (manual && msg) msg.textContent = r.none ? 'いまは新しいデータはないよ✨' : r.newer ? `新しいデータ（${r.n}走・${md(r.last)}まで）があるよ。${r.own ? 'いまは自分で入れたデータが入っているから、入れると入れ替わるよ（ひとつ前に戻せるよ）' : '「新しいデータを入れる」を押してね'}` : 'いまのデータが最新だよ✨';
       paintDataCard();
       return dataNew;
     } catch (e) {

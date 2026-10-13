@@ -254,6 +254,11 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('形がちがう' in pg.locator('#sdMsg').inner_text(), f'形のちがうデータは入れない（{pg.locator("#sdMsg").inner_text()}）')
         ctx.unroute(RM)
+        RN = re.compile(r'/remote/mother_app\.json')
+        ctx.route(RN, lambda route: route.fulfill(status=404, body='not found'))
+        pg.click('#sdCheck'); pg.wait_for_timeout(600)
+        check('新しいデータはないよ' in pg.locator('#sdMsg').inner_text() and not pg.locator('#sdApply').is_visible(), f'公開しているデータがない（404）ときは「新しいデータはないよ」（{pg.locator("#sdMsg").inner_text()}）')
+        ctx.unroute(RN)
         # 一覧に出さない言葉がない
         pg.locator('#slotList .slotrow[data-n="1"] [data-sact=edit]').click(); pg.wait_for_timeout(300)
         pg.locator('#mdOpenBtn').click(); pg.wait_for_timeout(400)
