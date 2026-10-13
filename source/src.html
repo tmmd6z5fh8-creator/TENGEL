@@ -1836,7 +1836,8 @@ async function saveRecf(box, extBtn) {
     }
     const s = betStatus({ ...(base || st.bets.get(id)), ...fields });
     const msg = `保存できたよ（${s.s}）。記録タブの${+id.slice(4, 6)}月に入っているよ${s.needZone ? '。買ったゾーンを選んでね' : ''}${noStake ? '。購入額はあとで入れてね' : ''}${mmsg}`;
-    setSaveMsg(id, true, msg); toast('✅ ' + (mmsg ? `保存できたよ（${s.s}）${mmsg}` : msg), mmsg ? 4200 : 3000);
+    // マザーデータにも入れたときは短く（買ったゾーンを選ぶ案内は残す）
+    setSaveMsg(id, true, msg); toast('✅ ' + (mmsg ? `保存できたよ（${s.s}）${s.needZone ? '。買ったゾーンを選んでね' : ''}${mmsg}` : msg), mmsg ? 4200 : 3000);
   } catch (e) { setSaveMsg(id, false, errText(e)); writeErr(e); }
   finally { btns.forEach(x => x.disabled = false); }
 }
