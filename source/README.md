@@ -8,10 +8,12 @@
 |---|---|
 | races | マザーデータ1つ目（大井）。アプリに入っている版（hist.json）か、設定タブでExcelから入れ替えた版 |
 | bets | 買ったレースの記録（実測・回収の月ごとの収支だけに使う。マザーデータ3つで共通）。`buyZ`＝買ったゾーンの名前（例 ["人気→中穴"]）。`types`＝買った券種（単勝・複勝・馬連・馬単・ワイド・3連複・3連単）、`amt`＝券種ごとの金額 {券種:{stake,payout}}（`stake`/`payout` はその合計。`amt` がない前の記録は合計だけ）。`hp`＝選んだ馬 {ゾーン名:{a:[1着の馬番],b:[2着],t:[3着]}}（全部選んでいる側は持たない）。WIN5の記録も `kind:'win5'`（id＝日付-win5）でここに入れる（画面ではふつうの記録・収支と分けて、WIN5タブにだけ出す） |
-| meta | 1つ目の情報（mother）・マザーデータ2・3つ目（slot:2・slot:3＝{rows,…}）・名前と使う番号（slots）・ひとつ前のデータ（prev:1〜3）・買い目の設定（set:zones）・画像の読み取りのAPIキー（set:ocr）・最後のバックアップ（backup） |
+| meta | 1つ目の情報（mother。`dataVer`＝入っているデータの版・`home`＝開催場のしるし）・マザーデータ2・3つ目（slot:2・slot:3＝{rows,…}）・名前と使う番号（slots）・ひとつ前のデータ（prev:1〜3）・買い目の設定（set:zones）・画像の読み取りのAPIキー（set:ocr）・最後のバックアップ（backup）・App Store版の「データの更新」で最後に入れた版（data） |
 
 - マザーデータは3つ（初期の名前：大井競馬・JRA・船橋競馬。名前は変えられる）。使う1つを選ぶと、参考的中率と実測（①〜⑦）がそのデータで計算される。
 - 2・3つ目は大井の検証データと同じA〜P列の形で入れる（開催場の列はないので venue は空、id は 日付-m2-R など）。アプリの更新では触らない。
+- **アプリの中でレースのデータを入れる**（2026.10.13-1〜）：① 判定画面の「結果・収支の記録」で着順を入れて保存すると、「マザーデータにも入れる」で選んだマザーデータにそのレースも入る（開催場が合うマザーデータがはじめから選ばれている。馬番で入れた着順はオッズの順で人気に直す。払戻も入れられる）② 設定 → マザーデータ → 編集 →「レースを見る・直す」（月ごとの一覧・直す・消す）・「＋レースを1つ入れる」（手で入れる。入れる前に層・帯・的中を表示）③「書き出す（CSV）」（A〜P列・Excelに貼り付け）④ Excel・CSVを選ぶと「足す」（いまのレースは残す）か「入れ替える」。自分で入れた行は `src`（'input'＝アプリの中で入れた・'file'＝ファイルから足した）と `at` を持つ。id は 日付-oi-R（Web版の1つ目）／日付-m1〜m3-R（App Store版・2・3つ目）
+- アプリに入っているデータが新しくなったとき（アプリの更新・App Store版の「データの更新」）は、日付＋Rが同じレースは新しいデータのほうを使い、**自分で入れたほかのレースは残す**（pwa_shim.js の keepUser）。前より古いデータには戻さない（`dataVer`）
 - 入れる前に形を確かめる：単勝1位・3連単1位・1着人気・2着人気が半分以上の行に入っていないファイル（分析シート・分析表・距離／馬場フィルターなど）は入れない（理由を表示して、いまのデータはそのまま）。
 - 入れ替える・空にする・アプリの版に戻すときは、前の中身を「ひとつ前」（prev:N）に残す →「ひとつ前のデータに戻す」で戻せる（もう一度押すと入れたデータに戻る）。
 - 1つ目（大井）が判定に使えない形（単勝・3連単・着順が1走もない）になっていたら、アプリを開いたときにアプリに入っている大井データへ自動で戻してお知らせする。
@@ -37,7 +39,7 @@
 | engine.js | 判定エンジン（第13改訂版）。`T.setZones()` で買い目編集を反映 |
 | src.html | 画面（判定・記録・実測・回収・設定） |
 | pwa_shim.js | iPhoneアプリ版の保存（IndexedDB）。アプリ更新時に基盤データをどう扱うか・壊れた大井の自動修復・画像の読み取り（Anthropic API）もここ |
-| pwa_ui.js | 設定タブのiPhone版だけの機能：マザーデータ（入れ替え・形の確認・ひとつ前に戻す）・画像の読み取り（APIキー）・アプリの更新・バックアップ |
+| pwa_ui.js | 設定タブのiPhone版だけの機能：マザーデータ（入れ替え・足す・形の確認・ひとつ前に戻す・レースの一覧と1つ入れる・CSVの読み書き）・画像の読み取り（APIキー）・アプリの更新（App Store版：App Storeの版の確認・データの更新・開いたときのお知らせ）・バックアップ（自分で入れたレースも入る） |
 | build.js → build_pwa.py | アプリを組み立てる（`deploy.sh` がまとめてやる） |
 | hist.json | アプリに入れておく基盤データ（大井）。まさちゃんのデータが届くたびに増える |
 | mother_log.json | 基盤データの更新の記録（Excelの「突合メモ」に出る） |
@@ -48,17 +50,18 @@
 | hist_280.json | テストの土台（10/7までの280走で固定）。テストは hist.json ではなくこれを使う（数字が変わらないように） |
 | test_engine.js / test_kubun.py / test_set.py / test_pwa.py / test_slots.py / test_fix.py / test_input.py / test_update.py / test_merge.py / test_buyzone.py / test_win5.py / test_types.py / test_hpick.py | テスト（買う馬の選択（test_hpick）・買った券種（test_types）・WIN5（test_win5）・買ったゾーンの判定（test_buyzone）・突合（test_merge）・データを足した版への更新（test_update）・エンジンの数字・区分ごとの判定・買い目編集・アプリ更新でデータが消えないこと・マザーデータ3つ・壊れた大井の修復／形のちがうファイル／ひとつ前に戻す／画像の読み取り（APIは偽物に差し替え）／保存場所が開けないとき） |
 | manual/ | 説明書（2026.10.12-3〜）。content.html（項目ごとの中身。`<!--@id-->` で区切る）・manual.css・manual.js・build_manual.py（`build('pwa', 出力先, 版)` で manual.html と写真の manual/ を作る。build_pwa.py が呼ぶ／`artifact` でclaude.ai用）・img/（画面の写真・バナー）・meta.json/dims.json（写真の番号の位置）・tools/（写真の撮り直し：`python3 manual/tools/shots.py <作業フォルダ>` → `python3 manual/tools/conv.py <作業フォルダ>` → できた s_*.webp・meta2.json（→meta.json）・dims.json を manual/ に入れる） |
+| test_dataentry.py | アプリの中でのデータ入力のテスト：記録の保存でマザーデータにも入る（馬番→人気・払戻・入れない選択）・レースの一覧／直す／消す／1つ入れる・書き出し（CSV）・CSVを「足す」・バックアップと戻す・アプリの更新で自分で入れたレースが残る・App Store版（にせもののアプリ）：App Storeの版のお知らせ・データの更新（新しい版／壊れたデータ／まだ公開していない（404））・前より古いデータに戻さない・名前の出ない画面 |
 | test_manual.py | 説明書のテスト（上と設定タブの入口・もくじ→項目・アプリに戻るとタブがそのまま・電波がなくても説明書と写真が開く・アプリのページが説明書で上書きされない） |
 | cm_media/ | CM（紹介動画・2026.10.12-5〜）。tengel3_cm.mp4（前置き15秒＋スロット新台CM風30秒＝45秒・1080×1920・30MB以下）と poster.jpg（表紙）。build_pwa.py が cm/ に置いて、設定タブの「テンゲルのCM」から全画面で見られる。動画は大きいのでサービスワーカーでしまわない（表紙だけしまう）。入れ替えたら ?v= が自動で変わる |
 | cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（Web版の画面は cm2_shots.py の SCRUB_JS で消す・App Store版は `TARGET=app` でApp Store版の画面を撮る → shots_app/・`SHOTS=shots_app` で使う） |
 | test_cm.py | CMのテスト（設定タブの説明書の下・押すと全画面・×／外側／Escで閉じる・動画はしまわない・表紙はしまう・電波がないときのお知らせ） |
 | build_ios.py | iPhone・iPadアプリ（App Store用・Swift Playgrounds の App）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
-| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・外のリンクはSafari）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
+| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・App Storeの版・外のリンクはSafari）・StoreCheck.swift（App Storeに出ている版を Apple の lookup で調べる。送るのはアプリのIDと国だけ）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
 | ios/ci/ | GitHubのMacでの確認（run.sh・selftest.js・ios.yml）。`ios` ブランチ（Tengel.swiftpm＋ci/＋.github/workflows/ios.yml）にpushすると、Swift 5・Swift 6・Release（実機）で作って、iPhone・iPadのシミュレーターで記録の保存・開き直し・自動バックアップから戻す・画面のスクショを確かめる。結果は `ios-ci-macos-15`・`ios-ci-macos-26` ブランチ（summary.txt・report-*.json・shots/） |
 | test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
 | legal/ | 「このアプリについて」（設定タブのいちばん下：ご利用にあたって＝参考情報・20歳・相談先／非公式のアプリ・商標の表記／プライバシーポリシー／特定商取引法に基づく表記／フォントのライセンス）と、公開するページ（legal/privacy.html・tokushoho.html・support.html）。中身は build_legal.py、販売する人の欄は legal.json（seller・email・address・phone）。**欄が空のページは公開しない**（deploy.sh が「まだなし」と出す）。確認用は `python3 legal/build_legal.py preview <フォルダ>`（空の欄を【要記入】にして全部作る） |
 | ios/fonts/ | App Store版に入れるフォント（BIZ UDPGothic・Dela Gothic One・IBM Plex Mono。SIL OFL 1.1・ファイルはそのまま。入手元とライセンスは ios/fonts/README.md）。App Store版は Google Fonts に通信しない |
-| manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「データを新しくする（Web版）」は出さない（build_manual.py の mode='app'）。`{{mother}}` はアプリに入れるデータの走数に置きかわる |
+| manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「データを新しくする（Web版）」は出さない（build_manual.py の mode='app'）。「アップデート」はApp Store版だけ（`WEB_SKIP`・写真 upd_* は `TARGET=app` の shots.py が、前の版のデータを入れたアプリとにせもののApp Store（1.1）で撮る）。`{{mother}}` はアプリに入れるデータの走数に置きかわる |
 | manual/img_app/・meta_app.json・dims_app.json | App Store版の説明書の写真（App Store版の画面で撮ったもの＝競馬場・団体・版の名前が出ない）。撮り直し：`TARGET=app python3 manual/tools/shots.py <作業フォルダ>` → `python3 manual/tools/conv.py <作業フォルダ> app` → man_app/img の s_*.webp を img_app/ に、man_app/dims.json を dims_app.json に、man_app/raw/meta2.json を meta_app.json に |
 | app_target.py | **App Store版に、特定の競馬場・団体・商標・版の名前（大井・JRA・WIN5・第13改訂版 など。`FORBIDDEN`）を1つも入れない**ための変換（2026/10/13）。build_pwa.py（TARGET=app）・build_manual.py（app）が使う。① プログラムのコメントを消す ② `INDEX`・`MANUAL_SEC` の表で置きかえる（置きかえる文字の数が合わなければ止まる＝元を直したら表も直す。`APP_TARGET_REPORT=1` で全部の食い違いを出す） ③ 出さない言葉が残っていたら作らない。アプリに入れるデータは開催場の名前を消して「しるし」（`fnv()`＝FNV-1a・JSの `T.vhash()` と同じ）だけ `window.__MOTHER_HOME` に入れる（id は 日付-m1-R）。Web版・claude.ai版はこの変換をしない |
 | test_appname.py | App Store版のテスト：作ったファイルと画面（全タブ・判定の全文・説明書の全項目）に出さない言葉がない・開催場ははじめ空（空ならふつうの判定）・アプリに入っているデータの開催場はしるしで比べる（「大井」「大井競馬場」と入れてもふつうの判定、ちがう開催場は【参考判定】）・自分で入れたデータは名前で比べる・日付とRで自己参照の除外・期間「最新」・5重勝・記録の（参考）とCSV・Web版は今までどおり |
@@ -66,19 +69,21 @@
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.12-8 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.13-1 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 
 ## iPhone・iPadアプリ（App Store用。2026.10.12〜お試し版）
 - 画面はWeb版と同じ。アプリの中では `tengel://localhost/index.html` で開くので、`window.__NATIVE`（pwa_shim.js）が true になって、アプリ版として動く：
-  - 設定タブ：「アプリの更新」のかわりに「アプリの版」（新しい版はアプリの更新で届く）・バックアップは共有シートで渡す・「自動バックアップ」の欄
+  - 設定タブ：「アプリの更新」（いまの版・App Storeに新しい版があれば「App Storeで更新する」。更新そのものは App Store）・「データの更新」（公開している data/mother_app.json を読んで、1つ目のマザーデータを新しくする。自分で入れたレース・記録はそのまま）・バックアップは共有シートで渡す・「自動バックアップ」の欄
+  - 開いたとき（12時間に1回まで）にApp Storeの版と公開データを確かめて、新しければ上にお知らせ（「App Storeで更新」「入れる」・×で閉じる）
+  - データの更新（2026.10.13-1〜）：deploy.sh が data/mother_app.json（開催場の名前なし・しるしだけ・`{app,kind,ver,n,first,last,home,rows}`）を公開する。アプリは `window.__DATA_URL` から読んで、`ver` が入っている版（MOTHER_VER）より新しければ入れる（文字の大小で比べる。**MOTHER_VER は必ず前より大きく**）。読むのはデータだけ（審査ガイドライン 2.5.2）。まだ公開していない（404）ときは「新しいデータはないよ」
   - 記録や設定を保存するたび（1.5秒まとめて）、アプリの中のファイル（Application Support/tengel-autobackup.json・アプリを開いて最初に書くときに前のを -prev に残す）にもバックアップ。APIキーは入れない
   - 開いたときに記録が0件なのに自動バックアップに記録がある（保存場所が消えた）→「前の記録が見つかったよ。戻す？」（聞いている間は自動バックアップを書かない）
   - 記録タブの書き出しに「CSVで保存」（共有シート）・コピーはアプリが直接クリップボードへ・サービスワーカーは使わない・CMの動画は公開中のWeb版から読む
 - 作る：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm.zip をiPadの「ファイル」に保存 → 開いて（解凍して）Swift Playgrounds で開く → ▶︎
 - 確かめる：`python3 test_native.py`（画面）・`ios` ブランチにpush（GitHubのMacで作ってシミュレーターで動かす。ios/ci/）
-- アプリの版を上げるときは ios/Tengel.swiftpm/Package.swift の displayVersion（1.0 → 1.1）と bundleVersion（1 → 2）
+- アプリの版を上げるときは `IOS_VERSION=1.1 IOS_BUILD=2 python3 build_ios.py <出力>`（Package.swift の displayVersion・bundleVersion を書きかえて作る。App Storeに出すたびに IOS_BUILD は前より大きく）
 - 中身は `TARGET=app python3 build_pwa.py <出力>`（build_ios.py が呼ぶ）：フォントはアプリの中（ios/fonts）・説明書はApp Store版・「姫に送って」「まさちゃんの」はお客さん向けの言い方・「このアプリについて」はApp Store版（プライバシーにCM・自動バックアップ、フォントのライセンスつき）
 - CMはアプリ用の版（cm_media/tengel3_cm_app.mp4。最後が「iPhone・iPadで、いつでも判定」）を公開中のWeb版から読む。アプリ用は画面もApp Store版で撮る（cm/shots_app・5重勝・マザーデータ2）。最後に非公式・iPhoneの商標（Apple・アイホン）の注意書き（Web版はJRA/WIN5の商標も）
 - **App Store版には、特定の競馬場・団体・商標・版の名前を入れない**（2026/10/13・まさちゃんの指定）：開催場は使う人が入れたもの・画像から読んだものだけ（はじめは空＝使っているマザーデータの開催場として判定）・マザーデータの名前ははじめ「マザーデータ1〜3」（自由に変えられる）・WIN5→「5重勝」・版の表示（第13改訂版）なし・第13新規→「最新」・第12の帯→「旧本線の帯」。アプリに入れるデータの開催場は「しるし」（ハッシュ）で比べる。全部 app_target.py（作るたびに確かめる）・test_appname.py
@@ -98,7 +103,8 @@
 3. Excelを作る：`python3 make_mother_xlsx.py hist.json 大井競馬_マザーデータ_アプリ用.xlsx` → xlsxスキルの recalc.py で確かめて、まさちゃんに送る
 4. `APP_VER=… MOTHER_VER=<最後のレースの日付> sh deploy.sh`
 5. `OLD_APP=<今の公開版> XL_OLD=<前のマザーデータExcel> XL_NEW=<新しいExcel> [XL_DUP=<重複入りのExcel>] NEW_VER=… python3 test_update.py`（ほかのテストも）→ push
-6. iPhoneでは「更新する」を押すだけ。アプリの版の大井データを使っている人も、前のマザーデータExcelを入れていた人も、新しいデータに入れ替わって「データが新しくなったよ（○走・○/○まで）」と出る（Excelを入れていた人は「ひとつ前に戻す」で戻せる）
+6. iPhoneでは「更新する」を押すだけ。アプリの版の大井データを使っている人も、前のマザーデータExcelを入れていた人も、新しいデータに入れ替わって「データが新しくなったよ（○走・○/○まで）」と出る（Excelを入れていた人は「ひとつ前に戻す」で戻せる。アプリの中で自分で入れたレースは残る）
+7. App Store版は、deploy.sh が置いた data/mother_app.json を「データの更新」で読む（アプリの更新はいらない。開いたときに「新しいデータがあるよ」と出る）
 
 ## 基盤データ（大井）をアプリに入れ直す（姫フィルターのExcelが届いたとき）
 1. `python3 excel_to_hist.py 大井競馬_姫フィルター_第13改訂版.xlsx`（hist.json を作り直す）

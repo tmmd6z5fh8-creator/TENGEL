@@ -707,7 +707,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const s = L().info().find(x => x.n === n), rows = sortRows(L().rows(n));
     if (!rows.length) { box.innerHTML = '<p class="small muted" style="margin:8px 0 0">まだレースが入っていないよ。</p>'; return; }
     const tsv = [AP_HEAD].concat(rows.map(apRow)).map(r => r.join('\t')).join('\n');
-    box.innerHTML = `<p class="small" style="margin:8px 0 6px">「${esc(s.name)}」の${rows.length}走を、Excelと同じA〜P列（日付〜集計対象）で書き出すよ。CSVはExcel・Numbersで開けて、上の「Excel・CSVファイルを選ぶ」からまた入れられるよ。</p>
+    box.innerHTML = `<p class="small" style="margin:8px 0 6px">「${esc(s.name)}」の${rows.length}走を、Excelと同じA〜P列（日付〜集計対象）で書き出すよ。CSVはExcel・Numbersで開けて、下の「Excel・CSVファイルを選ぶ」からまた入れられるよ。</p>
       <div class="row"><button class="btn primary" type="button" data-mx="csv">CSVで保存</button><button class="btn" type="button" data-mx="copy">コピー（Excelに貼り付け）</button></div>
       <textarea class="mdtsv" rows="4" wrap="off" readonly style="margin-top:8px" aria-label="書き出す内容">${esc(tsv)}</textarea>`;
     box.onclick = async e => {

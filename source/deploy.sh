@@ -1,6 +1,6 @@
 #!/bin/sh
 # テンゲルⅢ iPhoneアプリ：source/ からアプリを作って、リポジトリの一番上（公開されるファイル）に置く
-# 使い方：  cd source && APP_VER=2026.10.12-8 sh deploy.sh
+# 使い方：  cd source && APP_VER=2026.10.13-1 sh deploy.sh
 #   基盤データ（hist.json）を入れ直したときは MOTHER_VER も前と違う値にする（例：最後のレースの日付）
 set -e
 cd "$(dirname "$0")"

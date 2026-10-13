@@ -19,7 +19,7 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 page = open('tengel3.html', encoding='utf8').read()
 hist = json.load(open(os.environ.get('HIST', 'hist.json'), encoding='utf8'))
 # アプリの版：アプリを直したら上げる（iPhoneの「新しい版があるよ」のお知らせに使う）
-APP_VER = os.environ.get('APP_VER', '2026.10.12-8')
+APP_VER = os.environ.get('APP_VER', '2026.10.13-1')
 # アプリに入れておく基盤データの版：Excelから入れ直したら上げる
 MOTHER_VER = os.environ.get('MOTHER_VER', '2026-10-09b')
 # 重複転記などで消したレース（dropped.json）。iPhoneの中の大井データに残っていたら消す・Excelで入れても入れない（DROP= で無し）

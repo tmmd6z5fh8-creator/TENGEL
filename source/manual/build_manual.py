@@ -61,10 +61,12 @@ ITEMS = [
     dict(id='win5rec', g='win5', t='WIN5の結果と記録', d='1着の馬番で○×・払戻を保存', ic='trophy', kw='WIN5 結果 払戻 記録'),
     dict(id='stats', g='data', t='実測・回収タブ', d='自分の収支と、実測①〜⑦', ic='chart', kw='収支 回収率 実測 期間 本線'),
     dict(id='mother', g='data', t='マザーデータ', d='参考的中率のもとになるデータ（3つ）', ic='db', kw='マザーデータ 基盤データ Excel JRA 船橋'),
+    dict(id='racedata', g='data', t='レースのデータを入れる', d='判定＋着順でマザーデータに1行・一覧で直す', ic='plusbox', kw='マザーデータ 入れる 着順 払戻 一覧 直す 消す 手で入れる CSV 書き出す 足す 入れ替える'),
     dict(id='dataupdate', g='data', t='大井のデータを新しくする', d='分析シートと分析表を姫に送るだけ', ic='sync', kw='更新 分析シート 分析表 姫 突き合わせ'),
     dict(id='zones', g='set', t='買い目編集', d='区分ごとの馬単と3着を変える', ic='sliders', kw='カスタム 買い目 編集 初期'),
     dict(id='apikey', g='set', t='画像の読み取り（APIキー）', d='キーの作り方と料金', ic='key', kw='APIキー Anthropic 料金 モデル'),
     dict(id='backup', g='set', t='アプリの更新とバックアップ', d='記録を守る・機種変更', ic='shield', kw='バックアップ 機種変更 戻す 更新'),
+    dict(id='update', g='set', t='アップデート（新しい版・データ）', d='App Storeの新しい版と、データの更新', ic='sync', kw='アップデート 更新 新しい版 App Store データの更新 お知らせ'),
     dict(id='trouble', g='help', t='困ったとき', d='よくあるメッセージと直し方', ic='buoy', kw='エラー 困った 直し方 できない'),
     dict(id='glossary', g='help', t='用語集', d='層・比・ゾーン・旧本線…', ic='book', kw='用語 ことば 意味'),
 ]
@@ -86,7 +88,7 @@ SHOTS = {
     'pick_before': ('ゾーンの番号（押す前）', '押す前：はじめは全部選んだ状態', []),
     'pick_after': ('ゾーンの番号（4番を外したあと）', '2着の4番を押すと、うすくなる＝買わない馬', [], 1, ['button.hp.off']),
     'record_1': ('結果・収支の記録の欄（上）', '馬単と3連単を買って的中した例（画面は例）', [('[data-k=status]', .2), ('[data-k=types]',), ('[data-k=amts]',)]),
-    'record_2': ('結果・収支の記録の欄（下）', 'つづき', [('[data-k=buyzf]',), ('[data-k=mode]',), ('[data-k=other]',), ('[data-act=save]',)], 4),
+    'record_2': ('結果・収支の記録の欄（下）', 'つづき', [('[data-k=buyzf]',), ('[data-k=mode]',), ('[data-k=mfld]',), ('[data-k=other]',), ('[data-act=save]',)], 4),
     'st_hit': ('的中の表示', None, []), 'st_notbought': ('買っていないゾーンで不的中の表示', None, []), 'st_notpicked': ('選んでいない馬で不的中の表示', None, []),
     'st_outside': ('推奨ゾーンの外で不的中の表示', None, []), 'st_wait': ('結果待ちの表示', None, []),
     'records': ('記録タブの一覧', '記録タブ（画面は例）', [('#ymRec',), ('#rFilters',), ('#recSummary',), ('#recExportBtn',), ('@', 390), ('#recList .dgroup h3',), ('#recList .lrow:nth-child(1)',)]),
@@ -104,7 +106,20 @@ SHOTS = {
     'set_ocr': ('画像の読み取りの設定', '設定 → 画像の読み取り', [('#soKey',), ('#soModel',)]),
     'set_backup': ('バックアップ', '設定 → バックアップ', [('#pwaBackup',), ('#pwaRestore',)]),
     'set_update': ('アプリの更新', '設定 → アプリの更新', []),
+    # アプリの中でレースのデータを入れる（2026.10.13-1〜）
+    'md_record': ('結果の記録の「マザーデータにも入れる」の欄', '「マザーデータにも入れる」（画面は例・架空のレース）', []),
+    'md_tools': ('マザーデータの編集の中の、レースのデータのボタン', '設定 → マザーデータ → 編集', [('#mdOpenBtn',), ('#mdAddBtn',), ('#mdExpBtn',)]),
+    'md_list': ('マザーデータのレースの一覧', 'レースの一覧（画面は例）', [('#mdYM',), ('.mdrow', .3)]),
+    'md_form': ('レースを1つ入れる欄', '手で1つ入れる（画面は例・架空のレース）', [('[data-k=date]',), ('[data-k=dist]',), ('[data-k=res]',), ('[data-k=umatanPay]',), ('[data-k=cnt]',), ('[data-k=pv]',)]),
+    'md_export': ('書き出す欄', '書き出す（CSV・コピー）', []),
+    'md_merge': ('ファイルを読んだあとの「足す」と「入れ替える」', 'Excel・CSVを選んだところ（画面は例）', []),
+    # App Store版だけ：アップデート（2026.10.13-1〜）
+    'upd_bars': ('App Storeの新しい版と新しいデータのお知らせ', '開いたときのお知らせ（画面は例）', []),
+    'upd_app': ('設定のアプリの更新', '設定 → アプリの更新（画面は例）', [('dl.kvs dd',), ('#nuStore',), ('#nuCheck',)]),
+    'upd_data': ('設定のデータの更新', '設定 → データの更新（画面は例）', [('#sdCur',), ('#sdCheck',), ('#sdApply',)]),
 }
+# App Store版だけの写真（Web版では使わない）
+APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data'}
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">')
@@ -119,6 +134,10 @@ APP_FONTS = ('<style>'
              '</style>')
 # App Store版で出さない項目（ホーム画面に追加・チャットでデータを送る流れはWeb版だけ）
 APP_SKIP = ('install', 'dataupdate')
+# Web版で出さない項目（App Storeのアップデート・データの更新はApp Store版だけ）
+WEB_SKIP = ('update',)
+# App Store版だけ名前を変える項目（アプリの更新は「アップデート」の項目にあるので）
+APP_ITEM = {'backup': {'t': 'バックアップ', 'd': '記録を守る・機種変更・自動バックアップ'}}
 SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}'
             '\n.shot.has-mk .shot-in{padding-left:30px}\n.shot.has-mk .mk{left:2px;margin-left:0}'
             '\n.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}\n')
@@ -135,10 +154,11 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
     mother：アプリに入れるマザーデータ（App Store版の「はじめのデータ ○走」に使う）"""
     assert mode in ('artifact', 'pwa', 'app'), mode
     app = mode == 'app'
-    items = [dict(it) for it in ITEMS if not (app and it['id'] in APP_SKIP)]
+    items = [dict(it) for it in ITEMS if not (app and it['id'] in APP_SKIP) and not (not app and it['id'] in WEB_SKIP)]
     # App Store版：画面の写真はApp Store版の画面で撮ったもの（img_app/・名前の出ない画面）
     IMG = 'img_app' if app else 'img'
-    if app and os.environ.get('MANUAL_SHOTS_BOOTSTRAP') == '1':   # 写真を撮るためにだけ作るとき（tools/shots.py）：Web版の写真を仮に使う
+    boot = os.environ.get('MANUAL_SHOTS_BOOTSTRAP') == '1'   # 写真を撮るためにだけ作るとき（tools/shots.py）
+    if app and boot:   # App Store版の写真がまだなくても作れるように、Web版の写真を仮に使う
         IMG = 'img'
     sfx = '_app' if IMG == 'img_app' else ''
     meta = json.load(open(D + f'/meta{sfx}.json', encoding='utf-8'))
@@ -148,9 +168,12 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
         AT = _app_target()
         for it in items:
             it['kw'] = it['kw'].replace(' JRA 船橋', ' 開催場')
+            it.update(APP_ITEM.get(it['id'], {}))
     used, imgs = set(), set(['banner.webp', 'emblem-160.webp'])
 
     def shot_html(name):
+        if boot and name not in dims:   # 写真を撮るためにだけ作るとき：まだ撮っていない写真は入れない
+            return ''
         spec = SHOTS[name]; alt, cap, marks = spec[:3]; start = spec[3] if len(spec) > 3 else 1; rings = spec[4] if len(spec) > 4 else []
         d = dims[name]; m = meta.get(name, {}); H = m.get('H', d['h']); top = m.get('cropTop', 0)
         mk = []
@@ -158,8 +181,13 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
             if sp[0] == '@':
                 y = sp[1]
             else:
-                b = m['b'][sp[0]]; assert b, (name, sp)
+                b = m['b'].get(sp[0])
+                if boot and not b:   # 写真を撮るためにだけ作るとき：前の写真にない場所の番号は出さない
+                    continue
+                assert b, (name, sp)
                 y = b['y'] + b['h'] * (sp[1] if len(sp) > 1 else .5) - top
+            if boot and not 0 <= y <= H:
+                continue
             assert 0 <= y <= H, (name, sp, y, H)
             mk.append(f'<i class="mk" style="top:{y / H * 100:.2f}%">{i}</i>')
         for sel in rings:
@@ -192,6 +220,10 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
         sec.update(over)
         for x in APP_SKIP:
             sec.pop(x)
+    else:   # Web版：App Store版だけの項目（アップデート）は出さない
+        for x in WEB_SKIP:
+            sec.pop(x)
+    if app:
         for a, b in [('iPhoneの数字キーでは', '数字のキーボードでは')]:
             k = [x for x in sec if a in sec[x]]; assert k, a
             for x in k: sec[x] = sec[x].replace(a, b)
@@ -212,7 +244,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
         sections.append(f'<section class="item" id="s-{it["id"]}" data-id="{it["id"]}" hidden aria-labelledby="h-{it["id"]}">'
                         f'<p class="eyebrow">{gname[it["g"]]}</p><h2 id="h-{it["id"]}">{it["t"]}</h2>{fill(sec[it["id"]])}{pg}</section>')
     unused = set(SHOTS) - used
-    assert app or not unused, unused   # App Store版は「iPhoneに入れる」などを出さないので、使わない写真がある
+    assert app or not (unused - APP_ONLY_SHOTS), unused   # App Store版は「iPhoneに入れる」などを出さないので、使わない写真がある
     menu = []
     for g, gl in GROUPS:
         rows = ''.join(f'<a class="mrow" id="m-{it["id"]}" href="#{it["id"]}"><span class="ic">{icon(it["ic"])}</span><span><b>{it["t"]}</b><small>{it["d"]}</small></span>{icon("chev", "chev")}</a>'

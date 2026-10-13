@@ -22,7 +22,8 @@ DESCRIPTION = '''オッズのスクショを選ぶだけで、レースの「荒
 ・参考的中率：アプリに入っている過去の290走や、自分で入れたデータで、そのゾーンが実際に出た割合
 ・買う馬を選ぶ：番号を押して、買う馬・買わない馬を切り替え
 ・買い目編集：区分ごとに、馬単の1着→2着と3着を自由に変更。変えると、その場で過去のデータでの的中数を計算
-・マザーデータ：参考値のもとになるデータを3つまで。決まった形のExcelから入れられて、名前も自由に付けられます
+・マザーデータ：参考値のもとになるデータを3つまで。結果を記録したレースがそのまま入るほか、1レースずつ手で入れたり、決まった形のExcel・CSVから入れたりもできます。名前も自由に付けられます
+・データの更新：アプリに入っている過去のデータは、アプリの更新を待たずに新しいレースが入った版にできます（記録や自分で入れたレースはそのまま）
 ・5重勝：5レースの1着ゾーンと買う馬を、予算の中で組み立て
 ・収支の記録：券種（単勝・複勝・馬連・馬単・ワイド・3連複・3連単）ごとの購入額・回収額と、月ごと・年ごとの回収率
 ・電波がなくても動く：判定と記録は端末の中だけで動きます。記録はアプリの中にも自動でバックアップ、ファイルにも保存できます
@@ -37,7 +38,7 @@ DESCRIPTION = '''オッズのスクショを選ぶだけで、レースの「荒
 画像の読み取りには、Anthropic（Claude）のAPIキーが必要です（有料・利用者ご自身で用意）。選んだスクショは、利用者のAPIキーでAnthropicのAPIに直接送られ、開発者には届きません。料金の目安は1回 約1〜4円（標準）・1円未満（節約）で、Anthropicに直接お支払いいただきます。APIキーがなくても、手で入力すれば読み取り以外の機能はすべて使えます。
 
 ■ プライバシー
-記録・設定・マザーデータは、すべて端末の中に保存します。開発者が利用者の情報を受け取ることはありません。広告・アクセス解析はありません。
+記録・設定・マザーデータは、すべて端末の中に保存します。開発者が利用者の情報を受け取ることはありません（データの更新は、公開しているデータを読み込むだけです）。広告・アクセス解析はありません。
 
 ■ ご利用にあたって
 ・本アプリは、過去のデータから傾向を分析して表示する道具です。参考的中率などは過去の実測で、これからの的中や利益を約束するものではありません。
@@ -58,6 +59,7 @@ How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears below the form.
 2. Optional feature: 「オッズ画像から読み取る」 (Read odds from images) sends the screenshots the user selects to the Anthropic API with the user's own API key (Settings > 画像の読み取り). All other features work without a key.
 3. Records and settings are stored on the device and the app works offline. Backup and CSV export use the iOS share sheet.
+4. Race data: users can add past races by hand or from a CSV/Excel file (Settings > マザーデータ > 編集), and saving a race result can also add that race. Settings > データの更新 downloads an updated past-race data file (JSON data only, no executable code) from our GitHub Pages site. Settings > アプリの更新 checks the App Store for a newer version (iTunes Search API, app ID only). No user data is sent.
 
 The promotional video in Settings (テンゲルのCM) is streamed from our GitHub Pages site.
 The app is intended for adults (18+). Betting on horse races is legal only for people aged 20 or older in Japan, and the app shows this notice.'''
@@ -143,7 +145,9 @@ ANSWERS = {
 REVIEW_NOTES_JA = ('（日本語の意味）オッズを入れて（または自分のスクショから読み取って）、端末の中の過去のデータをもとに、馬単・3連単の買い目のゾーンを表示するアプリです。'
                    '実際のお金の賭けはできません（馬券の購入・賭け・賭けのサービスへのリンクはなし）。利用者は自分の結果と収支を記録するだけです。'
                    '確かめ方：判定タブの「入力例を入れる」で架空のレースの判定が出ます（アカウント不要）。画像の読み取りだけは利用者自身のAnthropicのAPIキーが必要で、ほかは全部キーなしで動きます。'
-                   '記録は端末の中・電波がなくても動く・バックアップとCSVは共有シート。設定のCMはGitHub Pagesから再生。18歳以上向け（日本では馬券は20歳から・アプリにも表示）。')
+                   '記録は端末の中・電波がなくても動く・バックアップとCSVは共有シート。'
+                   'レースのデータは手で入れたり、CSV・Excelから入れたりできる（結果を保存したレースも入れられる）。設定の「データの更新」はGitHub Pagesで公開しているデータ（JSONのデータだけで、プログラムではない）を読み込む。「アプリの更新」はApp Storeの新しい版を確かめる（送るのはアプリのIDだけ）。利用者の情報は送らない。'
+                   '設定のCMはGitHub Pagesから再生。18歳以上向け（日本では馬券は20歳から・アプリにも表示）。')
 
 MEDIA = {
     'preview_iphone': {'file': 'tengel_preview_iphone_886x1920.mp4', 'size': '886×1920', 'where': 'iPhone 6.9インチ ディスプレイの「Appプレビュー」（いちばん左＝最初に出る）', 'poster': '6.8秒（「即判定!!」のところ）'},

@@ -7,11 +7,24 @@ SP = sys.argv[1]
 D = '/man_app' if len(sys.argv) > 2 and sys.argv[2] == 'app' else '/man'
 RAW = SP + D + '/raw'; IMG = SP + D + '/img'; os.makedirs(IMG, exist_ok=True)
 meta = json.load(open(RAW + '/meta.json', encoding='utf-8'))
-CROP = {  # name: (top, bottom) in raw px
-    'result_c': (0, 1330), 'record_open': (1712, None), 'set_mother': (0, 1500), 'ocr_need': (0, 720),
+
+
+def top(name, sel, pad):   # 要素の上のふちから pad 上（raw px）
+    return round((meta[name]['b'][sel]['y'] - pad) * 2)
+
+
+def gap(name, a, b):   # 要素 a の下と要素 b の上のまん中（raw px）
+    m = meta[name]['b']; return round(m[a]['y'] + m[a]['h'] + m[b]['y'])
+
+
+CROP = {  # name: (top, bottom) in raw px。画面が変わっても切る場所がずれないように、要素の位置から決めるものもある
+    'result_c': (0, 1330), 'ocr_need': (0, 720),
+    'record_open': (top('record_open', '[data-act=save]', 21), None),           # 開いた記録の下のボタンから
+    'set_mother': (0, top('set_mother', '#slotEdit .mdtools', 12)),             # レースのデータのボタンの前まで（ボタンは md_tools の写真）
 }
 out = {}
-PARTS = {'result_a1': ('result_a', 0, 1104), 'result_a2': ('result_a', 1104, None), 'record_1': ('record', 0, 1052), 'record_2': ('record', 1052, None)}
+_rec = gap('record', '[data-k=amtsum]', '[data-k=buyzf]')   # 記録の欄は「合計」と「買ったゾーン」のあいだで分ける
+PARTS = {'result_a1': ('result_a', 0, 1104), 'result_a2': ('result_a', 1104, None), 'record_1': ('record', 0, _rec), 'record_2': ('record', _rec, None)}
 
 
 def save(name, im):
