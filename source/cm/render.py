@@ -5,8 +5,10 @@
 import base64, json, os, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 CM = os.path.dirname(os.path.abspath(__file__))
-PORT = 8802; FPS = 30; DUR = 30.0
+PORT = 8802; FPS = 30; DUR = float(os.environ.get('DUR', '30'))
 CMQ = os.environ.get('CMQ', ''); OUTV = os.environ.get('OUTV', 'video.mp4'); SHOTS = os.environ.get('SHOTS', 'shots')
+# 別のページ（App Storeのプレビュー動画 preview.html など）：HTML・大きさ（VW×VH を DPR 倍）
+HTML = os.environ.get('HTML', 'cm2.html'); VW, VH, DPR = int(os.environ.get('VW', '540')), int(os.environ.get('VH', '960')), float(os.environ.get('DPR', '2'))
 mode = sys.argv[1] if len(sys.argv) > 1 else 'test'
 meta = json.load(open(CM + '/' + SHOTS + '/meta.json', encoding='utf-8'))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--bind', '127.0.0.1', '--directory', CM], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -14,12 +16,12 @@ time.sleep(0.8)
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
-        pg = b.new_page(viewport={'width': 540, 'height': 960}, device_scale_factor=2)
+        pg = b.new_page(viewport={'width': VW, 'height': VH}, device_scale_factor=DPR)
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
-        pg.add_init_script('window.__META = ' + json.dumps(meta) + '; window.__SHOTS = ' + json.dumps(SHOTS) + ';')
-        pg.goto(f'http://127.0.0.1:{PORT}/cm2.html{CMQ}')
+        pg.add_init_script('window.__META = ' + json.dumps(meta) + '; window.__SHOTS = ' + json.dumps(SHOTS) + ';' + (' window.__IPAD = true;' if os.environ.get('IPAD') == '1' else ''))
+        pg.goto(f'http://127.0.0.1:{PORT}/{HTML}{CMQ}')
         pg.evaluate('window.__ready')
         pg.wait_for_timeout(300)
         if errs:
@@ -28,14 +30,14 @@ try:
 
         def shot():   # 速い撮り方（PNGのまま・1080×1920）。古いコマが返らないことは確認ずみ
             d = cdp.send('Page.captureScreenshot', {'format': 'png', 'optimizeForSpeed': True,
-                                                     'clip': {'x': 0, 'y': 0, 'width': 540, 'height': 960, 'scale': 2}})
+                                                     'clip': {'x': 0, 'y': 0, 'width': VW, 'height': VH, 'scale': DPR}})
             return base64.b64decode(d['data'])
         if mode == 'test':
             os.makedirs(CM + '/frames', exist_ok=True)
             for a in sys.argv[2:]:
                 t = float(a)
                 pg.evaluate(f'render({t})')
-                open(f'{CM}/frames/f{"_app" if CMQ else ""}_{a}.png', 'wb').write(shot())
+                open(f'{CM}/frames/f{"_" + HTML.split(".")[0] if HTML != "cm2.html" else ""}{"_ipad" if os.environ.get("IPAD") == "1" else ""}{"_app" if CMQ else ""}_{a}.png', 'wb').write(shot())
             print('frames ok')
         else:
             ff = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', str(FPS), '-c:v', 'png', '-i', '-',

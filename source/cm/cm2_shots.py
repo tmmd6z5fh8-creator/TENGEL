@@ -2,11 +2,17 @@
 #  追加：買い目編集（タップ前後）・カスタム買い目の判定・マザーデータ（JRAに入れる流れ）・JRAデータでの判定・収支
 #   python3 cm2_shots.py              … Web版の画面 → shots/
 #   TARGET=app python3 cm2_shots.py   … App Store版の画面（アプリの中として開く・競馬場や団体・版の名前が出ない）→ shots_app/
+#   TARGET=app CM_PREV=1 CM_VW=443 CM_VH=960 CM_DPR=2 CM_OUT=shots_prev python3 cm2_shots.py
+#        … App Storeのプレビュー動画用（画面いっぱいに使うので、6.9インチのiPhoneと同じ幅443・886×1920にそのまま合う大きさ。買う馬を選ぶ前後の画面も撮る）
 import json, os, random, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 SRC = '/home/claude/tengel/source'
 APP = os.environ.get('TARGET') == 'app'
-CM = os.path.dirname(os.path.abspath(__file__)); OUT = CM + ('/shots_app' if APP else '/shots'); os.makedirs(OUT, exist_ok=True)
+PREV = os.environ.get('CM_PREV') == '1'
+# iPad（13インチ・幅1032）：タブは上（下のタブバーはない）。上の帯（タブつき）を場面ごとに撮る
+IPAD = os.environ.get('CM_IPAD') == '1'
+VW, VH, DPR = int(os.environ.get('CM_VW', '390')), int(os.environ.get('CM_VH', '844')), float(os.environ.get('CM_DPR', '2'))
+CM = os.path.dirname(os.path.abspath(__file__)); OUT = CM + '/' + os.environ.get('CM_OUT', 'shots_app' if APP else 'shots'); os.makedirs(OUT, exist_ok=True)
 SRV = CM + '/srv'; PORT = 8799; URL = f'http://localhost:{PORT}/TENGEL/'
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
@@ -138,6 +144,8 @@ def content(pg, name, sels=()):
 
 
 def bar_shot(pg, sel, name):
+    if IPAD and sel == '.tabbar':
+        return
     hide(pg, False); pg.evaluate("scrollTo(0,0)"); pg.wait_for_timeout(250)
     scrub(pg); pg.wait_for_timeout(100)
     pg.locator(sel).screenshot(path=f'{OUT}/{name}.png', animations='disabled')
@@ -146,7 +154,7 @@ def bar_shot(pg, sel, name):
 
 
 def tab(pg, name):
-    hide(pg, False); pg.click(f'.tabbar button[data-tab={name}]'); pg.wait_for_timeout(900)
+    hide(pg, False); pg.click(f'{".tabs-top" if IPAD else ".tabbar"} button[data-tab={name}]'); pg.wait_for_timeout(900)
 
 
 def load_form(pg, f):
@@ -189,7 +197,7 @@ errs = []
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
+        ctx = b.new_context(viewport={'width': VW, 'height': VH}, device_scale_factor=DPR, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
         if APP:
             ctx.add_init_script(FAKE)
             ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
@@ -207,6 +215,12 @@ try:
         pg.wait_for_timeout(300)
         content(pg, 'judge_filled', ['#ocrMsg', '.input-col > .card:nth-child(1) .fields'] + RSEL)
         bar_shot(pg, 'header.top', 'header_oi0'); bar_shot(pg, '.tabbar', 'tabbar_judge')
+        if PREV:   # プレビュー動画用：買う馬を選ぶ前と、2つ目のゾーンの2着の4番を押したあと（画面全体）
+            PSEL = ['#result ol.zones > li:nth-child(2)', '#result ol.zones > li:nth-child(2) .znums', '#result ol.zones > li:nth-child(2) button.hp[data-hs="b"][data-no="4"]']
+            content(pg, 'judge_pick0', PSEL)
+            pg.locator('#result button.hp[data-hz="人気→中穴"][data-hs="b"][data-no="4"]').click(); pg.wait_for_timeout(400)
+            content(pg, 'judge_pick1', PSEL)
+            load_form(pg, F9)
         # ---- 買う馬（大きく） ----
         ctx3 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, color_scheme='light', locale='ja-JP', timezone_id='Asia/Tokyo')
         if APP:
@@ -227,19 +241,24 @@ try:
         record(pg, 1, '2.5.1', '600', '1860')
         load_form(pg, F10); record(pg, 0, '1.2.3', '400', '0')
         load_form(pg, F11); record(pg, 0, '2.4.1', '600', '0')
+        if PREV:   # App Storeのスクショ用：C層・第2段階の判定（推奨ゾーン3本・大穴と超大穴の番号）
+            content(pg, 'judge_c', RSEL + ['#result ol.zones > li:nth-child(3)'])
         # ---- WIN5・記録・収支 ----
         tab(pg, 'win5')
         content(pg, 'win5', ['.w5top', '#w5Sum', '#w5Races .w5race[data-i="0"]', '#w5Races .w5race[data-i="0"] .w5zones', '#w5Races .w5race[data-i="0"] .w5picks'])
         bar_shot(pg, '.tabbar', 'tabbar_win5')
+        if IPAD: bar_shot(pg, 'header.top', 'header_w5')
         tab(pg, 'rec')
         content(pg, 'records', ['#ymRec', '#rFilters', '#recSummary', '#recList .dgroup', '#recList .lrow:nth-child(1)', '#recList .lrow:nth-child(1) .stc'])
         bar_shot(pg, '.tabbar', 'tabbar_rec'); bar_shot(pg, 'header.top', 'header_oi3')
         tab(pg, 'stats')
         content(pg, 'stats', ['#moneyBody', '#moneyBody .money-tiles', '#statsBody'])
         bar_shot(pg, '.tabbar', 'tabbar_stats')
+        if IPAD: bar_shot(pg, 'header.top', 'header_st')
         # ---- 買い目編集：A層の第1に「2着 大穴」「3着 大穴」を足す ----
         tab(pg, 'set')
         bar_shot(pg, '.tabbar', 'tabbar_set')
+        if IPAD: bar_shot(pg, 'header.top', 'header_set0')
         content(pg, 'set_z0', ZSEL + MSEL)
         pg.locator(Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]').click(); pg.wait_for_timeout(400)
         content(pg, 'set_z1', ZSEL)
@@ -252,6 +271,7 @@ try:
         load_form(pg, F9)
         tab(pg, 'judge')
         content(pg, 'judge_custom', RSEL)
+        if IPAD: bar_shot(pg, 'header.top', 'header_jc')
         # ---- マザーデータ：2つ目「JRA」に架空のデータを入れて使う ----
         tab(pg, 'set')
         content(pg, 'set_m0', MSEL)
@@ -267,6 +287,7 @@ try:
         load_form(pg, FJ)
         tab(pg, 'judge')
         content(pg, 'judge_jra', RSEL)
+        if IPAD: bar_shot(pg, 'header.top', 'header_jj')
         b.close()
 finally:
     srv.terminate(); srv.wait()

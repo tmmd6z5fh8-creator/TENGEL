@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>テンゲルⅢ App Storeスクショ</title>
+<style>
+/* App Storeのスクリーンショット（1枚ずつ）。上に見出し（CMと同じ文字）、下にアプリの画面（App Store版の画面・架空のレース）
+   window.__SHOT = { dev: 'phone' | 'pad', n: 1〜6 }、window.__META（画面の写真の位置）、window.__SHOTS（写真のフォルダ） */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#0b1226}
+body{font-family:'Noto Sans CJK JP','Hiragino Sans',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
+#bg{position:absolute;inset:0;background:
+  radial-gradient(ellipse 70% 38% at 50% 19%,rgba(255,190,70,.34),rgba(255,140,0,.1) 45%,rgba(255,140,0,0) 72%),
+  repeating-conic-gradient(from 3deg at 50% 19%,rgba(255,214,130,.075) 0deg 5deg,rgba(255,214,130,0) 5deg 14deg),
+  linear-gradient(180deg,#1b2b60 0%,#0e1838 42%,#070b1c 100%)}
+#bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
+canvas{position:absolute;left:0;top:0;width:100vw;height:100vh}
+.pill{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:900;letter-spacing:.04em;text-shadow:0 2px 0 #000;
+  border:2px solid #ffd45c;background:linear-gradient(180deg,#6a000c,#1c0003);box-shadow:0 0 16px rgba(255,150,0,.6),inset 0 0 10px rgba(255,80,0,.35)}
+.pill.blue{border-color:#8fe6ff;background:linear-gradient(180deg,#0b3478,#020a22);box-shadow:0 0 16px rgba(80,200,255,.6),inset 0 0 10px rgba(80,200,255,.3)}
+.foot{position:absolute;left:0;width:100%;text-align:center;color:rgba(232,232,240,.86);letter-spacing:.02em;text-shadow:0 1px 2px #000}
+/* 端末のわく（CMのスマホと同じ金のふち） */
+#dev{position:absolute;background:linear-gradient(150deg,#3a3f48,#0c0e11 40%,#1b1f25);
+  box-shadow:0 0 0 2px rgba(255,214,102,.9),0 0 36px rgba(255,150,0,.5),0 30px 70px rgba(0,0,0,.7)}
+#screen{position:absolute;overflow:hidden;background:#eceef3}
+#app{position:absolute;left:0;top:0;transform-origin:0 0;background:#eceef3;overflow:hidden}
+#status{position:absolute;left:0;top:0;width:100%;background:#eceef3;color:#111;z-index:3}
+#status .tm{position:absolute;font-weight:700}
+#status .dt{position:absolute;font-weight:600}
+#status .isl{position:absolute;background:#000;border-radius:18px}
+#status .ic{position:absolute;display:flex;gap:6px;align-items:flex-end}
+#status .bars i{display:inline-block;width:3.5px;background:#111;border-radius:1px;margin-left:1.5px}
+#status .bat{width:26px;height:12.5px;border:1.5px solid rgba(17,17,17,.85);border-radius:4px;position:relative}
+#status .bat::after{content:"";position:absolute;left:1.8px;top:1.8px;width:17px;height:6px;background:#111;border-radius:1.5px}
+.hdr{position:absolute;left:0;width:100%;z-index:2}
+#vp{position:absolute;left:0;width:100%;overflow:hidden;background:#eceef3}
+#vp img{position:absolute;left:0;top:0;width:100%}
+.tab{position:absolute;left:0;width:100%;z-index:2}
+#home{position:absolute;left:0;bottom:0;width:100%;z-index:2}
+#home::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border-radius:3px;background:#111}
+.ring{position:absolute;border:3px solid #ffcf3a;border-radius:10px;box-shadow:0 0 0 2px rgba(80,0,0,.4),0 0 18px rgba(255,190,40,.95),inset 0 0 10px rgba(255,190,40,.4);z-index:4}
+</style></head>
+<body>
+<div id="bg"></div>
+<canvas id="fx"></canvas>
+<div id="dev"><div id="screen"><div id="app">
+  <div id="status"><span class="tm">9:41</span><span class="dt">10月14日(水)</span><span class="isl"></span>
+    <span class="ic"><span class="bars"><i style="height:5px"></i><i style="height:7.5px"></i><i style="height:10px"></i><i style="height:12.5px"></i></span><span class="bat"></span></span></div>
+  <img class="hdr" id="hdr" alt="">
+  <div id="vp"><img id="cont" alt=""></div>
+  <img class="tab" id="tab" alt="">
+  <div id="home"></div>
+</div></div></div>
+<div class="pill" id="pill"></div>
+<div class="foot" id="foot"></div>
+<script>
+const META = window.__META, SHOT = window.__SHOT || { dev: 'phone', n: 1 }, SHOTS = window.__SHOTS || 'shots_prev';
+const PAD = SHOT.dev === 'pad';
+const VW = innerWidth, VH = innerHeight;
+const $ = id => document.getElementById(id);
+const B = (k, sel) => META[k].b[sel];
+const ZN = n => `#result ol.zones > li:nth-child(${n})`, Z1 = '#zoneCard ol.zedit > li:nth-child(1)', S2 = '#slotList .slotrow[data-n="2"]';
+// アプリの画面（論理の大きさ）：iPhone 443×960（6.9インチと同じ幅）／iPad 1032×1376（13インチ）
+const AW = PAD ? 1032 : 443, AH = PAD ? 1376 : 960, STATUS = PAD ? 24 : 58, HOME = PAD ? 20 : 34;
+const HDR = META.header.H, TABH = PAD ? 0 : META.tabbar.H, VTOP = STATUS + HDR;
+// 1〜6枚目：見出し・帯・注意書き・アプリの画面（どの写真・どこまでスクロール・強調する所）
+const topOf = (k, sel, pad) => Math.max(0, B(k, sel).y - pad);
+const LIST = {
+  1: { l1: ['スクショを選ぶだけで', 'white'], l2: ['即判定!!', 'fire'], pill: 'オッズを読み取って、3つの層に判定', foot: '※画像の読み取りには、AnthropicのAPIキー（有料）が必要です',
+       k: 'judge_filled', hdr: 'header_oi0', tab: 'tabbar_judge', y: PAD ? 0 : topOf('judge_filled', '#result', 12), rings: PAD ? ['#result .lbadge'] : ['#result .lbadge'] },
+  2: { l1: ['1着・2着・3着の', 'white'], l2: ['ゾーンまで一発!!', 'rainbow'], pill: '推奨ゾーン・馬番・参考的中率まで', foot: '※参考的中率は過去の実測です。的中を約束するものではありません',
+       k: 'judge_c', hdr: 'header_oi0', tab: 'tabbar_judge', y: PAD ? 0 : topOf('judge_c', '#result', 12), rings: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] },
+  3: { l1: ['買い目編集で', 'white'], l2: ['カスタム自在!!', 'gold'], pill: '1着・2着・3着を押して変えるだけ', foot: '',
+       k: 'set_z2', hdr: PAD ? 'header_set0' : 'header_oi3', tab: 'tabbar_set', y: topOf('set_z2', '#zoneCard', PAD ? 20 : 12), rings: [Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]', Z1 + ' .zpick[data-f="t"] button[data-z="大穴"]'] },
+  4: { l1: ['自分で集めたデータで', 'white', 1], l2: ['テンゲルが育つ!!', 'blue'], pill: 'Excelのデータでマザーデータを3つまで', blue: 1, foot: '',
+       k: 'set_m3', hdr: 'header_jra', tab: 'tabbar_set', y: topOf('set_m3', '#setMother', PAD ? 20 : 12), rings: [S2] },
+  5: { l1: ['5重勝も', 'white'], l2: ['予算の中で組める!!', 'gold'], pill: '5レースの1着ゾーンと買う馬を自動で', foot: '',
+       k: 'win5', hdr: PAD ? 'header_w5' : 'header_oi3', tab: 'tabbar_win5', y: PAD ? 0 : topOf('win5', '#w5Sum', 150), rings: ['#w5Sum'] },
+  6: { l1: ['収支も', 'white'], l2: ['自動で記録!!', 'fire'], pill: '券種ごとの購入額・回収額・回収率', foot: '※画面は架空のレースの例です',
+       k: 'stats', hdr: PAD ? 'header_st' : 'header_oi3', tab: 'tabbar_stats', y: 0, rings: [] },
+};
+const S = LIST[SHOT.n];
+
+// ---- 見出しの文字（CMと同じ作り方） ----
+const FILL = {
+  gold: [[0, '#fffbe6'], [.28, '#ffe27a'], [.49, '#ffb300'], [.52, '#fff1b8'], [.78, '#e07b00'], [1, '#ffe08a']],
+  fire: [[0, '#fffde0'], [.3, '#ffe14d'], [.62, '#ff8400'], [1, '#d81b00']],
+  white: [[0, '#ffffff'], [.6, '#f4f4f4'], [1, '#c9d2e6']],
+  blue: [[0, '#f2fbff'], [.4, '#9fe3ff'], [.5, '#ffffff'], [.75, '#38a8ff'], [1, '#a9e8ff']],
+  rainbow: [[0, '#ff3b3b'], [.18, '#ff9d00'], [.36, '#ffe600'], [.54, '#3ee05a'], [.72, '#2fa8ff'], [.9, '#b04dff'], [1, '#ff4fd8']],
+};
+function drawText(g, text, x, y, o) {
+  const size = o.size, font = `900 ${size}px "Noto Sans CJK JP"`;
+  g.save(); g.font = font; g.textBaseline = 'middle'; g.textAlign = 'center'; g.lineJoin = 'round'; g.miterLimit = 2;
+  const tw = g.measureText(text).width;
+  g.translate(x, y); g.transform(1, 0, -.12, 1, 0, 0);
+  const s1 = o.s1 ?? '#2a0000', s2 = o.s2 ?? '#fff4c8', ext = o.ext ?? '#4a0000';
+  if (o.glow) { g.save(); g.shadowColor = o.glow; g.shadowBlur = size * .45; g.strokeStyle = o.glow; g.lineWidth = size * .24; g.strokeText(text, 0, 0); g.restore(); }
+  const depth = o.depth ?? Math.max(2, Math.round(size * .08));
+  g.strokeStyle = ext; g.fillStyle = ext; g.lineWidth = size * .22;
+  for (let i = depth; i >= 1; i--) { g.strokeText(text, i * .3, i); g.fillText(text, i * .3, i); }
+  g.strokeStyle = s1; g.lineWidth = size * .22; g.strokeText(text, 0, 0);
+  g.strokeStyle = s2; g.lineWidth = size * .09; g.strokeText(text, 0, 0);
+  const gr = o.dir === 'h' ? g.createLinearGradient(-tw / 2, 0, tw / 2, 0) : g.createLinearGradient(0, -size * .55, 0, size * .55);
+  FILL[o.fill].forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; g.fillText(text, 0, 0);
+  // きらっと（左上から斜めの光）
+  g.globalCompositeOperation = 'source-atop';
+  g.restore();
+  return tw;
+}
+function fitSize(g, text, size, maxW) {
+  g.font = `900 ${size}px "Noto Sans CJK JP"`; const w = g.measureText(text).width * 1.06 + size * .4;
+  return w > maxW ? Math.floor(size * maxW / w) : size;
+}
+
+function layout() {
+  // デザインの単位：iPhoneは幅440を基準、iPadは幅1032を基準
+  const U = PAD ? VW / 1032 : VW / 440;
+  const c = $('fx'); c.width = VW * 2; c.height = VH * 2; const g = c.getContext('2d'); g.scale(2, 2);
+  const yL1 = (PAD ? 150 : 104) * U, yL2 = (PAD ? 262 : 182) * U, yPill = (PAD ? 372 : 256) * U, yFoot = (PAD ? 426 : 291) * U;
+  const s1 = fitSize(g, S.l1[0], (PAD ? 52 : 31) * U, VW * .92), s2 = fitSize(g, S.l2[0], (PAD ? 108 : 66) * U, VW * .94);
+  const st = c => c === 'blue' ? { s1: '#001233', s2: '#ffffff', ext: '#00205a', glow: 'rgba(60,180,255,.9)' } : c === 'white' ? { s2: S.l1[2] ? '#8fe6ff' : '#ffd45c', s1: S.l1[2] ? '#001233' : '#2a0000', ext: S.l1[2] ? '#001a4a' : '#4a0000', depth: 2 } : { glow: c === 'fire' ? 'rgba(255,80,0,.9)' : c === 'gold' ? 'rgba(255,140,0,.9)' : 'rgba(255,255,255,.75)' };
+  drawText(g, S.l1[0], VW / 2, yL1, Object.assign({ size: s1, fill: S.l1[1] }, st(S.l1[1])));
+  drawText(g, S.l2[0], VW / 2, yL2, Object.assign({ size: s2, fill: S.l2[1], dir: S.l2[1] === 'rainbow' ? 'h' : undefined }, st(S.l2[1])));
+  const pill = $('pill'); pill.textContent = S.pill; if (S.blue) pill.classList.add('blue');
+  Object.assign(pill.style, { fontSize: (PAD ? 27 : 16.5) * U + 'px', padding: `${(PAD ? 10 : 6) * U}px ${(PAD ? 26 : 15) * U}px ${(PAD ? 11 : 7) * U}px`, borderRadius: (PAD ? 13 : 9) * U + 'px', top: yPill - (PAD ? 26 : 16) * U + 'px' });
+  const foot = $('foot'); foot.textContent = S.foot; Object.assign(foot.style, { fontSize: (PAD ? 16 : 10) * U + 'px', top: yFoot - (PAD ? 10 : 6) * U + 'px' });
+  // 端末
+  const FW = (PAD ? 690 : 300) * U, BZ = (PAD ? 16 : 9) * U, R = (PAD ? 40 : 44) * U, RI = (PAD ? 26 : 36) * U;
+  const sc = (FW - BZ * 2) / AW, FH = AH * sc + BZ * 2, FX = (VW - FW) / 2, FY = (PAD ? 448 : 316) * U;
+  Object.assign($('dev').style, { left: FX + 'px', top: FY + 'px', width: FW + 'px', height: FH + 'px', borderRadius: R + 'px' });
+  Object.assign($('screen').style, { left: BZ + 'px', top: BZ + 'px', width: (FW - BZ * 2) + 'px', height: (AH * sc) + 'px', borderRadius: RI + 'px' });
+  Object.assign($('app').style, { width: AW + 'px', height: AH + 'px', transform: `scale(${sc})` });
+  // アプリの画面の中
+  const st2 = $('status').style; st2.height = STATUS + 'px';
+  const tm = $('status').querySelector('.tm'), dt = $('status').querySelector('.dt'), isl = $('status').querySelector('.isl'), ic = $('status').querySelector('.ic');
+  if (PAD) { Object.assign(tm.style, { left: '22px', top: '5px', fontSize: '13px' }); Object.assign(dt.style, { left: '62px', top: '5px', fontSize: '13px' }); isl.remove(); Object.assign(ic.style, { right: '20px', top: '7px' }); }
+  else { Object.assign(tm.style, { left: '44px', top: '19px', fontSize: '16.5px' }); dt.remove(); Object.assign(isl.style, { left: '162px', top: '11px', width: '119px', height: '35px' }); Object.assign(ic.style, { right: '30px', top: '22px' }); }
+  $('hdr').src = `${SHOTS}/${S.hdr}.png`; $('hdr').style.top = STATUS + 'px';
+  const vp = $('vp'); vp.style.top = VTOP + 'px'; vp.style.height = (AH - VTOP - TABH - HOME) + 'px';
+  $('cont').src = `${SHOTS}/${S.k}.png`; $('cont').style.transform = `translateY(${-S.y}px)`;
+  if (PAD) $('tab').remove(); else { $('tab').src = `${SHOTS}/${S.tab}.png`; $('tab').style.top = (AH - HOME - TABH) + 'px'; }
+  const home = $('home'); home.style.height = HOME + 'px'; home.style.background = PAD ? '#eceef3' : '#fff';
+  const hs = document.createElement('style'); hs.textContent = `#home::after{top:${PAD ? 11 : 20}px;width:${PAD ? 320 : 143}px;height:5px}`; document.head.appendChild(hs);
+  // 強調の枠
+  for (const sel of S.rings) {
+    const b = B(S.k, sel); if (!b) continue;
+    const r = document.createElement('div'); r.className = 'ring'; const p = 4;
+    Object.assign(r.style, { left: (b.x - p) + 'px', top: (b.y - p - S.y) + 'px', width: (b.w + p * 2) + 'px', height: (b.h + p * 2) + 'px' });
+    vp.appendChild(r);
+  }
+}
+window.__ready = document.fonts.load('900 40px "Noto Sans CJK JP"').then(() => document.fonts.ready).then(() => { layout(); return Promise.all([...document.images].map(im => im.complete && im.naturalWidth ? 1 : new Promise(r => { im.onload = im.onerror = r; }))); }).then(() => true);
+</script>
+</body></html>

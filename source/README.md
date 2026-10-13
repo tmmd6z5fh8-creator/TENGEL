@@ -84,6 +84,14 @@
 - **App Store版には、特定の競馬場・団体・商標・版の名前を入れない**（2026/10/13・まさちゃんの指定）：開催場は使う人が入れたもの・画像から読んだものだけ（はじめは空＝使っているマザーデータの開催場として判定）・マザーデータの名前ははじめ「マザーデータ1〜3」（自由に変えられる）・WIN5→「5重勝」・版の表示（第13改訂版）なし・第13新規→「最新」・第12の帯→「旧本線の帯」。アプリに入れるデータの開催場は「しるし」（ハッシュ）で比べる。全部 app_target.py（作るたびに確かめる）・test_appname.py
 - 商標・特商法まわり（2026/10/13）：アプリ名・キーワードに「JRA」「WIN5」「大井」などほかの団体の名前を入れない（App Store審査 2.3.7・5.2.1）。有料で売るときは legal.json を埋めて deploy → App Store Connect のプライバシーポリシーURL・サポートURLに legal/privacy.html・support.html
 
+## App Storeに出す素材（2026/10/13〜）
+- `sh store/make.sh <出力フォルダ>` で全部作る：プレビュー動画（iPhone 886×1920・iPad 1200×1600・29.5秒）・スクショ（iPhone 6.9インチ 1320×2868／6.3インチ 1206×2622／iPad 13インチ 2064×2752 を各6枚・透明なしPNG）・掲載の文（掲載テキスト.txt・listing.json）・掲載キットのページ（kit.html＋media/。claude.aiのアーティファクトで公開：https://claude.ai/artifact/T81oGy9zxkB2ZTUdwzAua9）
+- プレビュー動画は **アプリの画面だけ** で作る（審査ガイドライン 2.3.4：プレビューはアプリそのものの画面の録画だけ。文字を重ねるのはOK）。cm/preview.html：CM（cm2.html）と同じテロップ・音楽（bgm2.wav）・タイミングで、画面いっぱいにApp Store版の画面。CMの前置き・エンブレム・スロットのリール・紙吹雪は使わない。iPadはテロップを下に出す（`window.__IPAD`）
+- 画面の写真：cm/cm2_shots.py を `TARGET=app CM_PREV=1`（＋ iPhone `CM_VW=443 CM_VH=960 CM_DPR=2 CM_OUT=shots_prev`／iPad `CM_IPAD=1 CM_VW=1032 CM_VH=1376 CM_DPR=1.1627907 CM_OUT=shots_prev_ipad`）。5重勝の開催場は架空（ひがし・にし）
+- スクショ：cm/store_shots.html（見出しはCMと同じ文字・金のふちの端末の中にApp Store版の画面）を cm/store_shots.py が撮る
+- 掲載の文：store/listing.py（名前・サブタイトル・プロモーション用テキスト・概要・キーワード・URL・著作権・審査へのメモ・質問への答え）。作るたびに Appleの上限（キーワードは100バイト＝日本語は1文字3バイト・3文字以上）・出さない言葉（app_target.FORBIDDEN）・ほかの会社の名前を確かめる
+- 素材の動画・写真はリポジトリには入れない（大きいので。make.sh でいつでも作り直せる）
+
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）
 1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）。「重複転記の疑い」「同じ中身のレース」が出たら、まさちゃんに確かめる（重複なら dropped.json に足す）
 2. 良ければ足す：`python3 -I merge_raw.py <分析シート> <分析表> hist.json hist.json`（hist.json と mother_log.json が更新される）
