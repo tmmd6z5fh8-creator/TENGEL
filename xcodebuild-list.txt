@@ -1,0 +1,14 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild -list
+
+Resolve Package Graph
+2026-10-14 03:58:51.116 xcodebuild[2616:17150] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+
+
+Resolved source packages:
+  テンゲル: /Users/runner/work/TENGEL/TENGEL/Tengel.swiftpm
+
+Information about workspace "Tengel":
+    Schemes:
+        テンゲル
+

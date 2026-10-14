@@ -1,0 +1,27 @@
+== runner: macOS 26.6.2 arm64 (macos-26)
+== xcode: Xcode 26.6 Build version 17F113 
+== iPhone: 88931AEA-62E6-447F-8697-DCE00A671384|iPhone 17|iOS 26.5
+== iPad: 468B2CC0-4D14-42A4-A7FB-B750EF6E38D1|iPad Pro 11-inch (M5)|iOS 26.5
+== scheme: テンゲル
+== build Swift5 Debug simulator: exit 0 (22s)
+   errors: 0  warnings: 2
+== build Swift6 Debug simulator: exit 0
+   errors: 0  warnings: 2
+== build Swift5 Release device: exit 0
+   errors: 0  warnings: 2
+   release app:  17M  selftest in release: 0
+== app: テンゲル.app
+   bundle id: jp.tengel.app  version: 1.0 (1)
+   web files: 45  index.html at: ./index.html 
+== iPhone: installed
+   iphone 1: report-1
+   iphone 1: report-manual
+   iphone 1: report-back
+   iphone 2: report-2
+   iphone 3: report-3
+   iphone 3: report-link
+== iPad: installed
+   ipad 1: report-1
+   ipad 1: report-manual
+   ipad 1: report-back
+== done
