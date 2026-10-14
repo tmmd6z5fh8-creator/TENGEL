@@ -1,0 +1,613 @@
+Command line invocation:
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -scheme テンゲル -destination "generic/platform=iOS Simulator" -derivedDataPath /Users/runner/work/TENGEL/TENGEL/dd6 -configuration Debug CODE_SIGNING_ALLOWED=NO build
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  テンゲル: /tmp/p6/Tengel.swiftpm
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'テンゲル' in project 'テンゲル' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets /tmp/p6/Tengel.swiftpm/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: fbe4620fd8816ee940ca42cbb5287b19
+Build description path: /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/XCBuildData/fbe4620fd8816ee940ca42cbb5287b19.xcbuilddata
+ClangStatCache /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -o /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache
+
+CreateBuildDirectory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products
+
+CreateBuildDirectory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/PackageFrameworks
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/PackageFrameworks
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyStaticMetadataFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyMetadataFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-x86_64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-arm64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-x86_64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-arm64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/empty-テンゲル.plist (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/empty-テンゲル.plist
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_const_extract_protocols.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftConstValuesFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.LinkFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル-OutputFileMap.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_const_extract_protocols.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftConstValuesFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.LinkFileList (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル-OutputFileMap.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    write-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift
+
+MkDir /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /bin/mkdir -p /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+GenerateAppPlaygroundAssetCatalog /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/appleProductTypesTool -appIconAssetName AppIcon -generateAccentColorAsset -accentColorPresetName orange -accentColorAssetName __PresetAccentColor -assetCatalogResourcePaths /tmp/p6/Tengel.swiftpm/Assets.xcassets -output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/__preview.dylib normal x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -install_name @rpath/テンゲル.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_dependency_info.dat -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/__preview.dylib
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/__preview.dylib normal arm64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -install_name @rpath/テンゲル.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_dependency_info.dat -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/__preview.dylib
+
+MkDir /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/unthinned (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /bin/mkdir -p /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /bin/mkdir -p /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /tmp/p6/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool /tmp/p6/Tengel.swiftpm/Assets.xcassets --compile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color __PresetAccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --platform iphonesimulator --bundle-identifier jp.tengel.app --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CreateUniversalBinary /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/__preview.dylib normal arm64\ x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/__preview.dylib /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/__preview.dylib -output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/__preview.dylib
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_w5_top.webp /tmp/p6/Tengel.swiftpm/Resources/s_w5_top.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_w5_top.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_w5_res.webp /tmp/p6/Tengel.swiftpm/Resources/s_w5_res.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_w5_res.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_w5_race.webp /tmp/p6/Tengel.swiftpm/Resources/s_w5_race.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_w5_race.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_upd_data.webp /tmp/p6/Tengel.swiftpm/Resources/s_upd_data.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_upd_data.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_upd_bars.webp /tmp/p6/Tengel.swiftpm/Resources/s_upd_bars.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_upd_bars.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_upd_app.webp /tmp/p6/Tengel.swiftpm/Resources/s_upd_app.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_upd_app.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_tabbar.webp /tmp/p6/Tengel.swiftpm/Resources/s_tabbar.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_tabbar.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_stats_type.webp /tmp/p6/Tengel.swiftpm/Resources/s_stats_type.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_stats_type.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_stats_t1.webp /tmp/p6/Tengel.swiftpm/Resources/s_stats_t1.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_stats_t1.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_stats_period.webp /tmp/p6/Tengel.swiftpm/Resources/s_stats_period.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_stats_period.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_stats_money.webp /tmp/p6/Tengel.swiftpm/Resources/s_stats_money.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_stats_money.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_st_wait.webp /tmp/p6/Tengel.swiftpm/Resources/s_st_wait.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_st_wait.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_st_outside.webp /tmp/p6/Tengel.swiftpm/Resources/s_st_outside.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_st_outside.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_st_notpicked.webp /tmp/p6/Tengel.swiftpm/Resources/s_st_notpicked.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_st_notpicked.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_st_notbought.webp /tmp/p6/Tengel.swiftpm/Resources/s_st_notbought.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_st_notbought.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_st_hit.webp /tmp/p6/Tengel.swiftpm/Resources/s_st_hit.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_st_hit.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_set_zone_save.webp /tmp/p6/Tengel.swiftpm/Resources/s_set_zone_save.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_set_zone_save.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_set_zone.webp /tmp/p6/Tengel.swiftpm/Resources/s_set_zone.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_set_zone.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_set_mother.webp /tmp/p6/Tengel.swiftpm/Resources/s_set_mother.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_set_mother.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_set_backup.webp /tmp/p6/Tengel.swiftpm/Resources/s_set_backup.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_set_backup.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_result_c.webp /tmp/p6/Tengel.swiftpm/Resources/s_result_c.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_result_c.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_result_a2.webp /tmp/p6/Tengel.swiftpm/Resources/s_result_a2.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_result_a2.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_result_a1.webp /tmp/p6/Tengel.swiftpm/Resources/s_result_a1.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_result_a1.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_records.webp /tmp/p6/Tengel.swiftpm/Resources/s_records.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_records.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_record_open.webp /tmp/p6/Tengel.swiftpm/Resources/s_record_open.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_record_open.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_record_2.webp /tmp/p6/Tengel.swiftpm/Resources/s_record_2.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_record_2.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_record_1.webp /tmp/p6/Tengel.swiftpm/Resources/s_record_1.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_record_1.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_pick_before.webp /tmp/p6/Tengel.swiftpm/Resources/s_pick_before.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_pick_before.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_pick_after.webp /tmp/p6/Tengel.swiftpm/Resources/s_pick_after.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_pick_after.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_ocr_done.webp /tmp/p6/Tengel.swiftpm/Resources/s_ocr_done.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_ocr_done.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_tools.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_tools.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_tools.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_record.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_record.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_record.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_merge.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_merge.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_merge.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_list.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_list.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_list.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_form.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_form.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_form.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_md_export.webp /tmp/p6/Tengel.swiftpm/Resources/s_md_export.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_md_export.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_judge_tri.webp /tmp/p6/Tengel.swiftpm/Resources/s_judge_tri.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_judge_tri.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_judge_odds.webp /tmp/p6/Tengel.swiftpm/Resources/s_judge_odds.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_judge_odds.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_judge_info.webp /tmp/p6/Tengel.swiftpm/Resources/s_judge_info.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_judge_info.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/s_bottom_bars.webp /tmp/p6/Tengel.swiftpm/Resources/s_bottom_bars.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/s_bottom_bars.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/poster.jpg /tmp/p6/Tengel.swiftpm/Resources/poster.jpg (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/poster.jpg /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/manual.html /tmp/p6/Tengel.swiftpm/Resources/manual.html (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/manual.html /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/index.html /tmp/p6/Tengel.swiftpm/Resources/index.html (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/index.html /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/emblem-160.webp /tmp/p6/Tengel.swiftpm/Resources/emblem-160.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/emblem-160.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/banner.webp /tmp/p6/Tengel.swiftpm/Resources/banner.webp (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/banner.webp /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/IBMPlexMono-SemiBold.ttf /tmp/p6/Tengel.swiftpm/Resources/IBMPlexMono-SemiBold.ttf (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/IBMPlexMono-SemiBold.ttf /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/IBMPlexMono-Medium.ttf /tmp/p6/Tengel.swiftpm/Resources/IBMPlexMono-Medium.ttf (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/IBMPlexMono-Medium.ttf /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/DelaGothicOne-Regular.ttf /tmp/p6/Tengel.swiftpm/Resources/DelaGothicOne-Regular.ttf (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/DelaGothicOne-Regular.ttf /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/BIZUDPGothic-Regular.ttf /tmp/p6/Tengel.swiftpm/Resources/BIZUDPGothic-Regular.ttf (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/BIZUDPGothic-Regular.ttf /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CpResource /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/BIZUDPGothic-Bold.ttf /tmp/p6/Tengel.swiftpm/Resources/BIZUDPGothic-Bold.ttf (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /tmp/p6/Tengel.swiftpm/Resources/BIZUDPGothic-Bold.ttf /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+CompileAssetCatalogVariant thinned /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets /tmp/p6/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets /tmp/p6/Tengel.swiftpm/Assets.xcassets --compile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color __PresetAccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 16.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned/Assets.car
+
+
+LinkAssetCatalog /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets /tmp/p6/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-linkAssetCatalog --thinned /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app --plist-output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Assets.car (in target 'テンゲル' from project 'テンゲル')
+note: Emplaced /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/AppIcon60x60@2x.png (in target 'テンゲル' from project 'テンゲル')
+note: Emplaced /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/AppIcon76x76@2x~ipad.png (in target 'テンゲル' from project 'テンゲル')
+
+ProcessInfoPlistFile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Info.plist /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/empty-テンゲル.plist (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-infoPlistUtility /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/empty-テンゲル.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/assetcatalog_generated_info.plist -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Info.plist
+
+SwiftDriver テンゲル normal arm64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-SwiftDriver -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver テンゲル normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-SwiftDriver -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target x86_64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ テンゲル (in target 'テンゲル' from project 'テンゲル')
+
+EmitSwiftModule normal x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ テンゲル (in target 'テンゲル' from project 'テンゲル')
+
+EmitSwiftModule normal arm64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 Compiling\ TextReader.swift,\ GeneratedAssetSymbols.swift /tmp/p6/Tengel.swiftpm/TextReader.swift /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+SwiftCompile normal x86_64 /tmp/p6/Tengel.swiftpm/TextReader.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 Compiling\ TengelApp.swift,\ TengelWebView.swift /tmp/p6/Tengel.swiftpm/TengelApp.swift /tmp/p6/Tengel.swiftpm/TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftCompile normal x86_64 /tmp/p6/Tengel.swiftpm/TengelApp.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /tmp/p6/Tengel.swiftpm/TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for テンゲル (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriver\ Compilation\ Requirements テンゲル normal arm64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for テンゲル (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriver\ Compilation\ Requirements テンゲル normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target x86_64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ TengelApp.swift,\ TengelWebView.swift /tmp/p6/Tengel.swiftpm/TengelApp.swift /tmp/p6/Tengel.swiftpm/TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+SwiftCompile normal arm64 /tmp/p6/Tengel.swiftpm/TengelApp.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /tmp/p6/Tengel.swiftpm/TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling TengelApp.swift, TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftdoc (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftdoc /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.abi.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.abi.json /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftdoc (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftdoc /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.abi.json (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.abi.json /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftsourceinfo (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftsourceinfo /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+Copy /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftsourceinfo (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftsourceinfo /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal x86_64 Compiling\ resource_bundle_accessor.swift,\ AppFiles.swift,\ StoreCheck.swift /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift /tmp/p6/Tengel.swiftpm/AppFiles.swift /tmp/p6/Tengel.swiftpm/StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+SwiftCompile normal x86_64 /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /tmp/p6/Tengel.swiftpm/AppFiles.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /tmp/p6/Tengel.swiftpm/StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 Compiling\ TextReader.swift,\ GeneratedAssetSymbols.swift /tmp/p6/Tengel.swiftpm/TextReader.swift /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+SwiftCompile normal arm64 /tmp/p6/Tengel.swiftpm/TextReader.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling TextReader.swift, GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftCompile normal arm64 Compiling\ resource_bundle_accessor.swift,\ AppFiles.swift,\ StoreCheck.swift /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift /tmp/p6/Tengel.swiftpm/AppFiles.swift /tmp/p6/Tengel.swiftpm/StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftCompile normal arm64 /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/resource_bundle_accessor.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /tmp/p6/Tengel.swiftpm/AppFiles.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /tmp/p6/Tengel.swiftpm/StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling TengelApp.swift, TengelWebView.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling resource_bundle_accessor.swift, AppFiles.swift, StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriver\ Compilation テンゲル normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target x86_64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル.debug.dylib normal x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.LinkFileList -install_name @rpath/テンゲル.debug.dylib -Xlinker -rpath -Xlinker @executable_path/../lib -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-x86_64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    construct-stub-executor-link-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル.debug.dylib /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-x86_64.txt
+note: Using stub executor library with Swift entry point. (in target 'テンゲル' from project 'テンゲル')
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル normal x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios16.0-simulator -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../lib -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-x86_64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-x86_64.txt -Xlinker -filelist -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-x86_64.txt /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル.debug.dylib -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル
+
+SwiftDriverJobDiscovery normal arm64 Compiling resource_bundle_accessor.swift, AppFiles.swift, StoreCheck.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriverJobDiscovery normal arm64 Compiling TextReader.swift, GeneratedAssetSymbols.swift (in target 'テンゲル' from project 'テンゲル')
+
+SwiftDriver\ Compilation テンゲル normal arm64 com.apple.xcode.tools.swift.compiler (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name テンゲル -Onone -enforce-exclusivity\=checked @/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/TENGEL/TENGEL/dd6/Index.noindex/DataStore -swift-version 6 -I /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -I /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/TENGEL/TENGEL/dd6/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TENGEL/TENGEL/dd6/ModuleCache.noindex/Session.modulevalidation -package-name tengel_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_const_extract_protocols.json -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /tmp/p6/Tengel.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル.debug.dylib normal arm64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.LinkFileList -install_name @rpath/テンゲル.debug.dylib -Xlinker -rpath -Xlinker @executable_path/../lib -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル.debug.dylib
+
+CreateUniversalBinary /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル.debug.dylib normal arm64\ x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル.debug.dylib /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル.debug.dylib -output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-arm64.txt (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    construct-stub-executor-link-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル.debug.dylib /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'テンゲル' from project 'テンゲル')
+
+Ld /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル normal arm64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/Developer/Library/Frameworks -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../lib -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル.debug.dylib -o /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル
+
+CreateUniversalBinary /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル normal arm64\ x86_64 (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/Binary/テンゲル /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/Binary/テンゲル -output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル
+
+ExtractAppIntentsMetadata (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name テンゲル --sdk-root /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 16.0 --bundle-identifier jp.tengel.app --output /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app --target-triple arm64-apple-ios16.0-simulator --target-triple x86_64-apple-ios16.0-simulator --binary-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル --dependency-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル_dependency_info.dat --dependency-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル_dependency_info.dat --stringsdata-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --stringsdata-file /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftFileList --source-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftFileList --metadata-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/arm64/テンゲル.SwiftConstValuesFileList --swift-const-vals-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/Objects-normal/x86_64/テンゲル.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-14 04:00:00.313 appintentsmetadataprocessor[5881:21638] Starting appintentsmetadataprocessor export
+2026-10-14 04:00:00.317 appintentsmetadataprocessor[5881:21638] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/テンゲル.debug.dylib --scan-folder /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Frameworks --scan-folder /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/PlugIns --scan-folder /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/SystemExtensions --scan-folder /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Info.plist --temp-dir-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/ssu --bundle-id jp.tengel.app --product-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app --extracted-metadata-path /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app/Metadata.appintents --metadata-file-list /Users/runner/work/TENGEL/TENGEL/dd6/Build/Intermediates.noindex/テンゲル.build/Debug-iphonesimulator/テンゲル.build/テンゲル.DependencyMetadataFileList --archive-ssu-assets
+2026-10-14 04:00:00.339 appintentsnltrainingprocessor[5882:21644] Parsing options for appintentsnltrainingprocessor
+2026-10-14 04:00:00.340 appintentsnltrainingprocessor[5882:21644] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-RegisterExecutionPolicyException /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+Validate /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    builtin-validationUtility /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app (in target 'テンゲル' from project 'テンゲル')
+    cd /tmp/p6/Tengel.swiftpm
+    /usr/bin/touch -c /Users/runner/work/TENGEL/TENGEL/dd6/Build/Products/Debug-iphonesimulator/テンゲル.app
+
+note: Disabling hardened runtime with ad-hoc codesigning. (in target 'テンゲル' from project 'テンゲル')
+warning: Skipping duplicate build file in Compile Sources build phase: /tmp/p6/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')
+warning: Skipping duplicate build file in Compile Sources build phase: /tmp/p6/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')
+** BUILD SUCCEEDED **
+

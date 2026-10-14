@@ -1,0 +1,400 @@
+2026-10-14 04:06:15.792 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x10130dc50] invalidated after the last release of the connection object
+2026-10-14 04:06:15.792 A  テンゲル[15295:d260] (TCC) TCCAccessRequest() IPC
+2026-10-14 04:06:15.792 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101508910] activating connection: mach=true listener=false peer=false name=com.apple.tccd
+2026-10-14 04:06:15.793 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101508910] invalidated after the last release of the connection object
+2026-10-14 04:06:15.806 Df テンゲル[15295:d260] (WebKit) 0x10f06c0e0 - [PID=0] WebProcessCache::updateCapacity: Cache is disabled because process swap on navigation is disabled
+2026-10-14 04:06:15.817 Df テンゲル[15295:d260] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-14 04:06:15.837 Df テンゲル[15295:d27f] [com.apple.xpc:connection] [0x10150de10] activating connection: mach=true listener=false peer=false name=com.apple.webprivacyd
+2026-10-14 04:06:15.849 Df テンゲル[15295:d260] [com.apple.WebKit:Storage] 0x101312208 - WebsiteDataStore::WebsiteDataStore sessionID=1 identifier=null
+2026-10-14 04:06:15.854 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10150ec18 - PageConfiguration::delaysWebProcessLaunchUntilFirstLoad() -> false because of associated processPool value
+2026-10-14 04:06:15.854 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10181ea08 - WebProcessPool::createWebPage: Not delaying WebProcess launch
+2026-10-14 04:06:15.854 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0c00c0 - [PID=0] WebProcessProxy::constructor:
+2026-10-14 04:06:15.860 A  テンゲル[15295:d27f] (libsystem_containermanager.dylib) container_system_group_path_for_identifier
+2026-10-14 04:06:15.861 Df テンゲル[15295:d27f] [com.apple.containermanager:xpc] Requesting container lookup; class = 13, identifier = (null), group_identifier = systemgroup.com.apple.configurationprofiles, create = 1, temp = 0, euid = 501, uid = 501
+2026-10-14 04:06:15.861 A  テンゲル[15295:d27f] (libsystem_containermanager.dylib) container_query_t
+2026-10-14 04:06:15.861 Df テンゲル[15295:d27f] [com.apple.containermanager:xpc] Query; euid = 501, uid = 501, class = 13, identifier = [(null)](0), flags = 900000003
+2026-10-14 04:06:15.862 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Bundle/Application/E68DF7CF-2A40-4AC7-98E6-CB9AAF7F7B42/テンゲル.app'
+2026-10-14 04:06:15.869 Df テンゲル[15295:d282] [com.apple.extensionkit:launch] Launching process with config: bundleID: com.apple.WebKit.WebContent instance ID: Optional([_EXExtensionInstanceIdentifier: 94EFD327-21B2-46C8-A881-39DF0813F60F])
+2026-10-14 04:06:15.892 Df テンゲル[15295:d27f] [com.apple.containermanager:unspecified] _container_query_get_result_at_index: success
+2026-10-14 04:06:15.892 A  テンゲル[15295:d27f] (libsystem_containermanager.dylib) container_copy_object
+2026-10-14 04:06:15.892 Df テンゲル[15295:d27f] [com.apple.containermanager:unspecified] container_system_group_path_for_identifier: success
+2026-10-14 04:06:15.892 Df テンゲル[15295:d27f] [com.apple.ManagedConfiguration:MC] Got system group container path from MCM for systemgroup.com.apple.configurationprofiles: /Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles
+2026-10-14 04:06:15.896 Df テンゲル[15295:d260] [com.apple.avkit:AVKit] +[AVPictureInPicturePlatformAdapter isPictureInPictureSupported]_block_invoke isPictureInPictureSupported NO
+2026-10-14 04:06:15.907 Df テンゲル[15295:d260] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-14 04:06:15.909 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101510300] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-14 04:06:15.910 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/MediaKeys/v1'
+2026-10-14 04:06:15.910 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=0, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'Process initialization'
+2026-10-14 04:06:15.913 Df テンゲル[15295:d27d] [com.apple.xpc:connection] [0x10160d330] activating connection: mach=true listener=false peer=false name=com.apple.accessibility.mediaaccessibilityd
+2026-10-14 04:06:15.923 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::constructor, site isolation enabled 0
+2026-10-14 04:06:15.924 Df テンゲル[15295:d260] [com.apple.WebKit:Media] PlaybackSessionManagerProxy::PlaybackSessionManagerProxy(2486452780)
+2026-10-14 04:06:15.925 Df テンゲル[15295:d260] [com.apple.WebKit:Fullscreen] PlaybackSessionManagerProxy::VideoPresentationManagerProxy(2486452780)
+2026-10-14 04:06:15.929 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0c00c0 - [PID=0] WebProcessProxy::addExistingWebPage: webPage=0x10181fe18, pageProxyID=8, webPageID=9
+2026-10-14 04:06:15.932 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSwapping] 0x10f06c0e0 - [PID=0] WebProcessCache::updateCapacity: Cache is disabled by client
+2026-10-14 04:06:15.932 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/com.apple.WebKit.GPU'
+2026-10-14 04:06:15.933 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/tmp/com.apple.WebKit.GPU'
+2026-10-14 04:06:15.933 Df テンゲル[15295:d260] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-14 04:06:15.933 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4120 - [PID=0, throttler=0x10f10c270] ProcessThrottler::Activity::Activity: Starting foreground activity / 'Process initialization'
+2026-10-14 04:06:15.937 Df テンゲル[15295:d260] [com.apple.WebKit:TextInteraction] Conforming to BrowserEngineKit text input protocol
+2026-10-14 04:06:15.940 Df テンゲル[15295:d27d] [com.apple.extensionkit:launch] Launching process with config: bundleID: com.apple.WebKit.GPU instance ID: Optional([_EXExtensionInstanceIdentifier: 7EE48E31-9FC2-4EC3-8C80-40C0C3144ACE])
+2026-10-14 04:06:15.969 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::loadRequest:
+2026-10-14 04:06:15.970 Df テンゲル[15295:d260] [com.apple.runningboard:connection] Creating side-channel connection to com.apple.runningboard
+2026-10-14 04:06:15.971 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101317320] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-14 04:06:15.972 Df テンゲル[15295:d260] [com.apple.runningboard:process] Hit the server for a process handle 177616c000003bbf that resolved to: [app<jp.tengel.app((null))>:15295]
+2026-10-14 04:06:15.972 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::WebPageProxy::shouldForceForegroundPriorityForClientNavigation() returns 1 based on PageClient::canTakeForegroundAssertions()
+2026-10-14 04:06:15.972 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d41b0 - [PID=0, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'Client navigation'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::loadRequestWithNavigationShared:
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::NetworkProcessProxy
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/ResourceLoadStatistics'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/jp.tengel.app/WebKit/NetworkCache'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/jp.tengel.app/WebKit/HSTS'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/ResourceMonitorThrottler'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/LocalStorage'
+2026-10-14 04:06:15.973 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/IndexedDB'
+2026-10-14 04:06:15.974 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/Default'
+2026-10-14 04:06:15.974 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/jp.tengel.app/WebKit/CacheStorage'
+2026-10-14 04:06:15.974 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/jp.tengel.app/WebKit/ServiceWorkers'
+2026-10-14 04:06:15.974 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/jp.tengel.app/WebKit/AlternativeServices'
+2026-10-14 04:06:15.975 Df テンゲル[15295:d260] [com.apple.CFNetwork:Default] Initializing CFHTTPCookieStorage singleton
+2026-10-14 04:06:15.975 Df テンゲル[15295:d260] [com.apple.CFNetwork:Default] Creating default cookie storage with process/bundle identifier
+2026-10-14 04:06:15.975 Df テンゲル[15295:d27e] [com.apple.extensionkit:launch] Launching process with config: bundleID: com.apple.WebKit.Networking instance ID: Optional([_EXExtensionInstanceIdentifier: 73E87B37-673B-4DDF-A216-0D096B26A7EB])
+2026-10-14 04:06:15.975 E  テンゲル[15295:d27e] [com.apple.extensionkit:default] Failed to resolve host network app id to config: bundleID: com.apple.WebKit.Networking instance ID: Optional([_EXExtensionInstanceIdentifier: 73E87B37-673B-4DDF-A216-0D096B26A7EB])
+2026-10-14 04:06:15.976 Df テンゲル[15295:d260] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2026-10-14 04:06:15.976 Df テンゲル[15295:d260] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2026-10-14 04:06:15.976 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Cookies'
+2026-10-14 04:06:15.977 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/Caches/com.apple.WebKit.Networking'
+2026-10-14 04:06:15.977 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Bundle/Application/E68DF7CF-2A40-4AC7-98E6-CB9AAF7F7B42/テンゲル.app'
+2026-10-14 04:06:15.978 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d41e0 - [PID=0, throttler=0x10f0dae90] ProcessThrottler::Activity::Activity: Starting foreground activity / 'Process initialization'
+2026-10-14 04:06:15.979 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f128100 - NavigationState is taking a process network assertion because a page load started
+2026-10-14 04:06:15.979 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4240 - [PID=0, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting background activity / 'Page Load'
+2026-10-14 04:06:16.010 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10f0a8100 - ApplicationStateTracker::setIsInBackground: 0
+2026-10-14 04:06:16.010 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10f0a8100 - ApplicationStateTracker: add observers for scene
+2026-10-14 04:06:16.010 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10183fa00 - WKApplicationStateTrackingView: View with page [0x10181fe18, pageProxyID=8] was added to a window, _lastObservedStateWasBackground=0, isNowBackground=0
+2026-10-14 04:06:16.083 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::updateActivityState: view visibility state changed 0 -> 1
+2026-10-14 04:06:16.086 Df テンゲル[15295:d282] [com.apple.runningboard:process] Starting death monitoring for handle [xpcservice<com.apple.WebKit.WebContent([app<jp.tengel.app((null))>:15295])>{vt hash: 71395982}[uuid:94EFD327-21B2-46C8-A881-39DF0813F60F]{definition:com.apple.WebKit.WebContent[extension][client]}:17268]
+2026-10-14 04:06:16.094 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] Activating connection to server: (null)
+2026-10-14 04:06:16.095 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] server remote target <BSXPCServiceConnectionProxy<BKSKeyboardServiceClientToServerIPC>: 0x60000291b3a0>
+2026-10-14 04:06:16.095 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: YES
+2026-10-14 04:06:16.097 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] connected: (
+    "<BKSHIDKeyboardDevice: 0x600000249e00> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.097 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: NO
+2026-10-14 04:06:16.097 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] disconnected: (
+    "<BKSHIDKeyboardDevice: 0x600000249e00> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.097 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: YES
+2026-10-14 04:06:16.098 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] connected: (
+    "<BKSHIDKeyboardDevice: 0x600000265b40> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.098 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: NO
+2026-10-14 04:06:16.098 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] disconnected: (
+    "<BKSHIDKeyboardDevice: 0x600000265b40> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.101 Df テンゲル[15295:d260] [com.apple.UIKit:HardwareKeyboard] -[UIApplication GSKeyboardForHWLayout:senderID:forceRebuild:createIfNeeded:], New hardware layout is created with US layout and 0 standardType.
+2026-10-14 04:06:16.102 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: YES
+2026-10-14 04:06:16.103 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] connected: (
+    "<BKSHIDKeyboardDevice: 0x600000249ee0> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.103 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] currently observing: NO
+2026-10-14 04:06:16.103 Df テンゲル[15295:d260] [com.apple.BackBoard:Keyboard] disconnected: (
+    "<BKSHIDKeyboardDevice: 0x600000249ee0> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-10-14 04:06:16.104 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::viewIsBecomingVisible:
+2026-10-14 04:06:16.161 Df テンゲル[15295:d260] [com.apple.WebKit:ScreenTime] Screen Time has updated to use the system shield for any blocked URL.
+2026-10-14 04:06:16.161 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=0] WebPageProxy::updateThrottleState: UIProcess is taking a foreground assertion because the view is visible
+2026-10-14 04:06:16.161 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d42a0 - [PID=0, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'View is visible'
+2026-10-14 04:06:16.162 Df テンゲル[15295:d260] [com.apple.WebKit:RemoteLayerTree] RemoteLayerTreeDrawingAreaProxy(11)::hideContentUntilAnyUpdate
+2026-10-14 04:06:16.163 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10202b600 (pageProxyID=8) -[WKWebView _endLiveResize]
+2026-10-14 04:06:16.163 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d42d0 - [PID=0, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:16.188 Df テンゲル[15295:d260] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [2E9A6507-0546-4417-A4DA-3E01217D659B] (reporting strategy default)>
+2026-10-14 04:06:16.188 Df テンゲル[15295:d260] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [17805706-AB61-4E5F-B69C-07EE14EB65CA] (reporting strategy default)>
+2026-10-14 04:06:16.188 Df テンゲル[15295:d260] [com.apple.network:activity] Set activity <nw_activity 50:1 [2E9A6507-0546-4417-A4DA-3E01217D659B] (reporting strategy default)> as the global parent
+2026-10-14 04:06:16.189 Df テンゲル[15295:d260] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-14 04:06:16.189 Df テンゲル[15295:d260] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x60000170a680>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 724 (elapsed = 1), _expireHandler: (null)
+2026-10-14 04:06:16.189 Df テンゲル[15295:d260] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x600002102300> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x60000170a680>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 724 (elapsed = 1))
+2026-10-14 04:06:16.189 Df テンゲル[15295:d260] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x600002102300> for task identifier: 1
+2026-10-14 04:06:16.189 Df テンゲル[15295:d260] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-14 04:06:16.190 Df テンゲル[15295:d260] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:jp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3  persistentID: 503E9578-18B8-4D4D-BCC5-CAF62B08E8C3
+2026-10-14 04:06:16.191 Df テンゲル[15295:d260] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 2, <UIWindowScene: 0x10150bf10> (503E9578-18B8-4D4D-BCC5-CAF62B08E8C3)
+2026-10-14 04:06:16.200 Df テンゲル[15295:d260] [com.apple.WebKit:ResourceLoadStatistics] StorageAccessPromptQuirkController::didUpdateCachedListData: Loaded 1 storage access prompt(s) quirks from WebPrivacy.
+2026-10-14 04:06:16.204 Df テンゲル[15295:d260] [com.apple.gamecontroller:Session] Creating the shared game controller session...
+2026-10-14 04:06:16.210 Df テンゲル[15295:d260] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x6000026003c0; process scope; status: none> was:none
+2026-10-14 04:06:16.210 A  テンゲル[15295:d260] (GameController) [GCDeviceSession] Activate
+2026-10-14 04:06:16.212 Df テンゲル[15295:d260] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-14 04:06:16.214 Df テンゲル[15295:d260] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 2, <UIWindowScene: 0x10150bf10> (503E9578-18B8-4D4D-BCC5-CAF62B08E8C3)
+2026-10-14 04:06:16.214 Df テンゲル[15295:d260] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:jp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3  persistentID: 503E9578-18B8-4D4D-BCC5-CAF62B08E8C3
+2026-10-14 04:06:16.214 Df テンゲル[15295:d260] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-14 04:06:16.215 Df テンゲル[15295:d260] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-14 04:06:16.215 Df テンゲル[15295:d260] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-14 04:06:16.216 Df テンゲル[15295:d260] [com.apple.WebKit:Fullscreen] PlaybackSessionManagerProxy::applicationDidBecomeActive(2486452780)
+2026-10-14 04:06:16.216 A  テンゲル[15295:d260] (GameController) Notify ApplicationDidBecomeActive
+2026-10-14 04:06:16.280 Df テンゲル[15295:d260] [com.apple.gamecontroller:Session] Connected devices changed (2 added, 0 removed) -> [2] {(
+    <GCKeyboard 0x6000002330e0 'Generic Keyboard'>,
+    <GCController 0x600003d29d10 'MFi'/'Gamepad'>
+)}
+2026-10-14 04:06:16.281 Df テンゲル[15295:d260] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-14 04:06:16.282 Df テンゲル[15295:d260] [com.apple.gamecontroller:Session] Connected devices changed (0 added, 0 removed) -> [2] {(
+    <GCKeyboard 0x6000002330e0 'Generic Keyboard'>,
+    <GCController 0x600003d29d10 'MFi'/'Gamepad'>
+)}
+2026-10-14 04:06:16.282 Df テンゲル[15295:d260] [com.apple.gamecontroller:Session] Connected devices changed (0 added, 0 removed) -> [2] {(
+    <GCKeyboard 0x6000002330e0 'Generic Keyboard'>,
+    <GCController 0x600003d29d10 'MFi'/'Gamepad'>
+)}
+2026-10-14 04:06:16.283 A  テンゲル[15295:d260] (GameControllerFoundation) [HID Event System Client] Activate
+2026-10-14 04:06:16.286 Df テンゲル[15295:d260] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-14 04:06:16.289 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101314010] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-14 04:06:16.307 Df テンゲル[15295:d260] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-14 04:06:16.330 Df テンゲル[15295:d260] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-14 04:06:16.335 Df テンゲル[15295:d260] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:jp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3  persistentID: 503E9578-18B8-4D4D-BCC5-CAF62B08E8C3
+2026-10-14 04:06:16.337 Df テンゲル[15295:d282] [com.apple.extensionkit:launch] Created new process ExtensionProcess: bundleID: com.apple.WebKit.WebContent instance ID: Optional([_EXExtensionInstanceIdentifier: 94EFD327-21B2-46C8-A881-39DF0813F60F]) pid: 17268.
+2026-10-14 04:06:16.375 Df テンゲル[15295:d260] [com.apple.network:activity] <nw_activity 50:1 [2E9A6507-0546-4417-A4DA-3E01217D659B] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 25917ms
+2026-10-14 04:06:16.375 Df テンゲル[15295:d260] [com.apple.network:activity] <nw_activity 50:2 [17805706-AB61-4E5F-B69C-07EE14EB65CA] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 25917ms
+2026-10-14 04:06:16.375 Df テンゲル[15295:d260] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [2E9A6507-0546-4417-A4DA-3E01217D659B] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-14 04:06:16.375 Df テンゲル[15295:d260] [com.apple.network:activity] Unset the global parent activity
+2026-10-14 04:06:16.376 Df テンゲル[15295:d282] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:16.445 Df テンゲル[15295:d2a3] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x6000026003c0; environment: keyboardFocus; status: target> was:none
+2026-10-14 04:06:16.446 Df テンゲル[15295:d2a3] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x60000260e160; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Ajp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3; status: ancestor> was:none
+2026-10-14 04:06:16.446 Df テンゲル[15295:d260] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x10150bf10; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Ajp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3
+2026-10-14 04:06:16.446 Df テンゲル[15295:d260] [com.apple.UIKit:EventDeferring] [0x60000290e370] Scene target of event deferring environments did update: scene: 0x10150bf10; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-14 04:06:16.446 Df テンゲル[15295:d260] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10150bf10; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Ajp.tengel.app-503E9578-18B8-4D4D-BCC5-CAF62B08E8C3
+2026-10-14 04:06:16.446 Df テンゲル[15295:d260] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x600000c03000: Migrate scenes from LastOneWins -> SystemShellManaged
+2026-10-14 04:06:16.446 Df テンゲル[15295:d260] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPhone to SystemShellManaged
+2026-10-14 04:06:16.450 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x10130f920] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-14 04:06:16.471 Df テンゲル[15295:d260] (WebKit) WebContent[17268] Installed launch log hook
+2026-10-14 04:06:16.471 Df テンゲル[15295:d282] [com.apple.xpc:connection] [0x1013119d0] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-14 04:06:16.477 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0c00c0 - [PID=17268] WebProcessProxy::didFinishLaunching:
+2026-10-14 04:06:16.478 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0c0150 - [PID=17268] ProcessThrottler::didConnectToProcess
+2026-10-14 04:06:16.478 E  テンゲル[15295:d282] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-10-14 04:06:16.478 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0c0150 - [PID=17268] ProcessThrottler::setThrottleState: Updating process assertion type to 3 (foregroundActivities=4, backgroundActivities=6)
+2026-10-14 04:06:16.478 Df テンゲル[15295:d260] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:16.481 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x600001733340 - WKProcessAssertionBackgroundTaskManager: beginBackgroundTaskWithName
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] WKProcessAssertionBackgroundTaskManager: Took a FinishTaskInterruptable assertion for own process
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0c00c0 - [PID=17268] WebProcessProxy::didChangeThrottleState: type=2
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0c00c0 - [PID=17268] WebProcessProxy::didChangeThrottleState(Foreground) Taking foreground assertion for network process
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4360 - [PID=0, throttler=0x10f0dae90] ProcessThrottler::Activity::Activity: Starting foreground activity / 'Networking for foreground view(s)'
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4390 - [PID=0, throttler=0x10f10c270] ProcessThrottler::Activity::Activity: Starting foreground activity / 'GPU for foreground view(s)'
+2026-10-14 04:06:16.482 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::sendXPCEndpointToProcess(0x10f0c00c0) state = 1 has connection = 1 XPC endpoint message = 0x0
+2026-10-14 04:06:16.484 Df テンゲル[15295:d27d] [com.apple.runningboard:process] Starting death monitoring for handle [xpcservice<com.apple.WebKit.GPU([app<jp.tengel.app((null))>:15295])>{vt hash: 223737757}[uuid:7EE48E31-9FC2-4EC3-8C80-40C0C3144ACE]{definition:com.apple.WebKit.GPU[extension][client]}:17269]
+2026-10-14 04:06:16.495 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.498 Df テンゲル[15295:d27f] [com.apple.WebKit:ProcessSuspension] 0x10f1580c0 - ProcessAssertion::acquireSync Trying to take RBS assertion 'WebProcess Foreground Assertion' for process with PID=17268
+2026-10-14 04:06:16.505 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.505 A  テンゲル[15295:d2a3] (RunningBoardServices) didChangeInheritances
+2026-10-14 04:06:16.520 E  テンゲル[15295:d2b9] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+2026-10-14 04:06:16.555 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.570 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.605 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.626 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Process initialization'
+2026-10-14 04:06:16.627 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0dae00 - NetworkProcessProxy::getNetworkProcessConnection: Taking a background assertion because web process pid 17268 (core identifier 2) is requesting a connection
+2026-10-14 04:06:16.632 Df テンゲル[15295:d260] [com.apple.WebKit:Process] WebContent[17268] getNetworkProcessConnection: Request connection for core identifier 2
+2026-10-14 04:06:16.666 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.686 A  テンゲル[15295:d2a3] (RunningBoardServices) didChangeInheritances
+2026-10-14 04:06:16.687 Df テンゲル[15295:d27f] [com.apple.WebKit:ProcessSuspension] 0x10f1580c0 - ProcessAssertion() Successfully granted capability
+2026-10-14 04:06:16.691 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.693 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.694 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.696 A  テンゲル[15295:d282] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-14 04:06:16.698 Df テンゲル[15295:d27d] [com.apple.extensionkit:launch] Created new process ExtensionProcess: bundleID: com.apple.WebKit.GPU instance ID: Optional([_EXExtensionInstanceIdentifier: 7EE48E31-9FC2-4EC3-8C80-40C0C3144ACE]) pid: 17269.
+2026-10-14 04:06:16.698 Df テンゲル[15295:d27d] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:16.701 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101613420] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-14 04:06:16.704 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f10c1e0 - GPUProcessProxy::didFinishLaunching:
+2026-10-14 04:06:16.704 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f10c1e0 - GPUProcessProxy::connectionWillOpen:
+2026-10-14 04:06:16.704 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f10c270 - [PID=17269] ProcessThrottler::didConnectToProcess
+2026-10-14 04:06:16.705 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f10c270 - [PID=17269] ProcessThrottler::setThrottleState: Updating process assertion type to 3 (foregroundActivities=2, backgroundActivities=1)
+2026-10-14 04:06:16.705 Df テンゲル[15295:d260] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:16.705 Df テンゲル[15295:d27d] [com.apple.WebKit:ProcessSuspension] 0x10f158180 - ProcessAssertion::acquireSync Trying to take RBS assertion 'GPUProcess Foreground Assertion' for process with PID=17269
+2026-10-14 04:06:16.705 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::sendXPCEndpointToProcess(0x10f10c1e0) state = 1 has connection = 1 XPC endpoint message = 0x0
+2026-10-14 04:06:16.705 A  テンゲル[15295:d282] (CoreServicesInternal) CFURLCreateBookmarkData
+2026-10-14 04:06:16.706 Df テンゲル[15295:d27d] [com.apple.WebKit:ProcessSuspension] 0x10f158180 - ProcessAssertion() Successfully granted capability
+2026-10-14 04:06:16.759 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4120 - [PID=17269, throttler=0x10f10c270] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Process initialization'
+2026-10-14 04:06:16.942 Df テンゲル[15295:d27e] [com.apple.runningboard:process] Starting death monitoring for handle [xpcservice<com.apple.WebKit.Networking([app<jp.tengel.app((null))>:15295])>{vt hash: 114736818}[uuid:73E87B37-673B-4DDF-A216-0D096B26A7EB]{definition:com.apple.WebKit.Networking[extension][client]}:17271]
+2026-10-14 04:06:16.950 Df テンゲル[15295:d27e] [com.apple.extensionkit:launch] Created new process ExtensionProcess: bundleID: com.apple.WebKit.Networking instance ID: Optional([_EXExtensionInstanceIdentifier: 73E87B37-673B-4DDF-A216-0D096B26A7EB]) pid: 17271.
+2026-10-14 04:06:16.950 Df テンゲル[15295:d27e] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:16.952 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x1015061b0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-14 04:06:17.142 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::didFinishLaunching
+2026-10-14 04:06:17.142 F  テンゲル[15295:d260] [com.apple.WebKit:Process] Networking process (0x10f0dae00) took 1.168423 seconds to launch
+2026-10-14 04:06:17.142 A  テンゲル[15295:d260] (libsystem_trace.dylib) Activity for state dumps
+2026-10-14 04:06:17.142 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0dae90 - [PID=17271] ProcessThrottler::didConnectToProcess
+2026-10-14 04:06:17.142 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0dae90 - [PID=17271] ProcessThrottler::setThrottleState: Updating process assertion type to 3 (foregroundActivities=2, backgroundActivities=2)
+2026-10-14 04:06:17.142 Df テンゲル[15295:d260] [com.apple.WebKit:Process] AssertionCapability::AssertionCapability: taking assertion Foreground
+2026-10-14 04:06:17.142 Df テンゲル[15295:d282] [com.apple.WebKit:ProcessSuspension] 0x10f158240 - ProcessAssertion::acquireSync Trying to take RBS assertion 'NetworkProcess Foreground Assertion' for process with PID=17271
+2026-10-14 04:06:17.142 Sd テンゲル[15295:0] (71A4AB2B-6C63-3811-A45D-80D677A41A21) UAUserActivity
+UAUserActivityManager supportsActivityContinuation=YES isEnabled=YES serverPid=0 PROJECT:UserActivity-551
+2026-10-14 04:06:17.142 Sd テンゲル[15295:0] (71A4AB2B-6C63-3811-A45D-80D677A41A21) UAUserActivity
+[4C14344C-0B09-4E5B-8A37-133317AD81CD userInfo.count=1 dirty 
+2026-10-14 04:06:17.146 Df テンゲル[15295:d282] [com.apple.WebKit:ProcessSuspension] 0x10f158240 - ProcessAssertion() Successfully granted capability
+2026-10-14 04:06:17.150 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::sendXPCEndpointToProcess(0x10f0c00c0) state = 1 has connection = 1 XPC endpoint message = 0x600003e0b300
+2026-10-14 04:06:17.150 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0dae00 - NetworkProcessProxy::sendXPCEndpointToProcess(0x10f10c1e0) state = 1 has connection = 1 XPC endpoint message = 0x600003e0b300
+2026-10-14 04:06:17.150 Df テンゲル[15295:d260] [com.apple.xpc:connection] WebContent[17268] [0x101906600] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-14 04:06:17.185 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] WebContent[17268] Received Launch Services database
+2026-10-14 04:06:17.189 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d41e0 - [PID=17271, throttler=0x10f0dae90] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Process initialization'
+2026-10-14 04:06:17.193 Df テンゲル[15295:d260] [com.apple.WebKit:Process] WebContent[17268] 0x10c060150 - [sessionID=1] WebProcess::initializeLogForwarding: Debug logging enabled: 0
+2026-10-14 04:06:17.193 Df テンゲル[15295:d260] [com.apple.WebKit:Process] WebContent[17268] WebProcess::platformInitializeWebProcess
+2026-10-14 04:06:17.197 Df テンゲル[15295:d260] [com.apple.xpc:connection] WebContent[17268] [0x101807090] activating connection: mach=false listener=true peer=false name=(anonymous)
+2026-10-14 04:06:17.197 Df テンゲル[15295:d260] [com.apple.xpc:connection] WebContent[17268] [0x101807090] Connection returned listener port: 0x3903
+2026-10-14 04:06:17.197 Df テンゲル[15295:d260] [com.apple.xpc:connection] WebContent[17268] [0x1018071d0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-14 04:06:17.197 Df テンゲル[15295:d260] [com.apple.xpc:connection] WebContent[17268] [0x101807310] activating connection: mach=false listener=false peer=true name=com.apple.xpc.anonymous.0x101807090.peer[17268].0x101807310
+2026-10-14 04:06:17.242 Df テンゲル[15295:d260] [com.apple.Accessibility:AXSupportCommon] WebContent[17268] Application accessibility enabled: 0, (
+	0   libAccessibility.dylib              0x000000019215585c _AXSApplicationAccessibilitySetEnabled + 76
+	1   WebKit                              0x000000018e01aa24 _ZN6WebKit10WebProcess28platformInitializeWebProcessERNS_28WebProcessCreationParametersE + 2096
+	2   WebKit                              0x000000018e1fcc94 _ZN6WebKit10WebProcess20initializeWebProcessEONS_28WebProcessCreationParametersEON3WTF17CompletionHandlerIFvN7WebCore15ProcessIdentityEEEE + 188
+	3   WebKit                              0x000000018db9b684 _ZN3IPC18handleMessageAsyncIN8Messages10WebProcess20InitializeWebProcessENS_10ConnectionEN6WebKit10WebProcessES6_FvONS5_28WebProcessCreationParametersEON3WTF17CompletionHandlerIFvN7WebCore15ProcessIdentityEEEEEEEvRT0_RNS_7DecoderEPT1_MT2_T3_ + 224
+	4   WebKit                              0x000000018e5c03cc _ZN3IPC10Connection15dispatchMessageEN3WTF9UniqueRefINS_7DecoderEEE + 556
+	5   WebKit                              0x000000018e5db49c _Z<…>
+2026-10-14 04:06:17.242 Df テンゲル[15295:d260] [com.apple.Accessibility:AXSupportCommon] WebContent[17268] Stored App AX setting: 0
+2026-10-14 04:06:17.244 Df テンゲル[15295:d260] [com.apple.Accessibility:AXSupportCommon] WebContent[17268] AXS AccessibilityEnabled: (app ax: 0), ax settings: 0, cached: 0
+2026-10-14 04:06:17.247 Df テンゲル[15295:d27e] [com.apple.xpc:connection] [0x10130f920] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+2026-10-14 04:06:17.406 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::decidePolicyForNavigationAction: frameID=4294967297, isMainFrame=1, navigationID=14
+2026-10-14 04:06:17.410 A  テンゲル[15295:d27e] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-14 04:06:17.411 Df テンゲル[15295:d27e] [com.apple.xpc:connection] [0x101510410] activating connection: mach=true listener=false peer=false name=com.apple.Safari.SafeBrowsing.Service
+2026-10-14 04:06:17.420 A  テンゲル[15295:d260] (libsystem_containermanager.dylib) container_system_group_path_for_identifier
+2026-10-14 04:06:17.420 Df テンゲル[15295:d260] [com.apple.containermanager:xpc] Requesting container lookup; class = 13, identifier = com.apple.nsurlsessiond, group_identifier = systemgroup.com.apple.nsurlstoragedresources, create = 1, temp = 0, euid = 501, uid = 501
+2026-10-14 04:06:17.420 A  テンゲル[15295:d260] (libsystem_containermanager.dylib) container_query_t
+2026-10-14 04:06:17.420 Df テンゲル[15295:d260] [com.apple.containermanager:xpc] Query; euid = 501, uid = 501, class = 13, identifier = [com.apple.nsurlsessiond](1), flags = 900000003
+2026-10-14 04:06:17.422 Df テンゲル[15295:d260] [com.apple.containermanager:unspecified] _container_query_get_result_at_index: success
+2026-10-14 04:06:17.422 A  テンゲル[15295:d260] (libsystem_containermanager.dylib) container_copy_object
+2026-10-14 04:06:17.422 Df テンゲル[15295:d260] [com.apple.containermanager:unspecified] container_system_group_path_for_identifier: success
+2026-10-14 04:06:17.442 Df テンゲル[15295:d2da] [com.apple.WebKit:RemoteLayerBuffers] WebContent[17268]: [renderingBackend=11] Created rendering backend for pageProxyID=8, webPageID=9
+2026-10-14 04:06:17.442 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] GPUProcessConnection::create - 0x10c0e4460
+2026-10-14 04:06:17.443 Df テンゲル[15295:d260] [com.apple.WebKit:AppSSO] 0x10f0b40c0 - SOAuthorizationCoordinator::tryAuthorize
+2026-10-14 04:06:17.455 A  テンゲル[15295:d260] (AppSSO) canPerformAuthorizationWithURL
+2026-10-14 04:06:17.456 A  テンゲル[15295:d260] (AppSSOCore) canPerformAuthorizationWithURL
+2026-10-14 04:06:17.458 Df テンゲル[15295:d260] [com.apple.authkit:nto] Fetching native takeover URLs
+2026-10-14 04:06:17.462 Df テンゲル[15295:d260] [com.apple.xpc:connection] [0x101316e80] activating connection: mach=true listener=false peer=false name=com.apple.ak.authorizationservices.xpc
+2026-10-14 04:06:17.463 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d42d0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:17.464 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/tmp/jp.tengel.app/WebKit/MediaCache'
+2026-10-14 04:06:17.464 Df テンゲル[15295:d260] [com.apple.WebKit:Sandbox] Successfully created a sandbox extension for '/Users/runner/Library/Developer/CoreSimulator/Devices/22970779-4A47-463E-8B6D-CC012359B320/data/Containers/Data/Application/5FC817E6-C24C-44C7-93E3-DB960F14F857/Library/WebKit/jp.tengel.app/WebsiteData/MediaKeys/v1'
+2026-10-14 04:06:17.464 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f10c1e0 - GPUProcessProxy is taking a background assertion because a web process is requesting a connection
+2026-10-14 04:06:17.473 Df テンゲル[15295:d27d] [com.apple.authkit:nto] URL shouldn't be processed
+2026-10-14 04:06:17.474 Df テンゲル[15295:d27d] [com.apple.AppSSO:SOConfigurationClient] -[SOConfigurationClient init]  on <SOConfigurationClient: 0x60000026bfa0>
+2026-10-14 04:06:17.478 Df テンゲル[15295:d27d] [com.apple.xpc:connection] [0x10160f1b0] activating connection: mach=true listener=false peer=false name=com.apple.AppSSO.service-xpc
+2026-10-14 04:06:17.479 Df テンゲル[15295:d27d] [com.apple.AppSSO:SOServiceConnection] <SOServiceConnection: 0x600000263fe0>: new XPC connection
+2026-10-14 04:06:17.481 Df テンゲル[15295:d260] [com.apple.WebKit:AppSSO] SOAuthorizationCoordinator::tryAuthorize: The requested URL is not registered for AppSSO handling. No further action needed.
+2026-10-14 04:06:17.481 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::decidePolicyForNavigationAction: listener called: frameID=4294967297, isMainFrame=1, navigationID=14, policyAction=Use, isAppBoundDomain=0, wasNavigationIntercepted=0
+2026-10-14 04:06:17.482 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::receivedNavigationActionPolicyDecision: frameID=4294967297, isMainFrame=1, navigationID=14, policyAction=Use
+2026-10-14 04:06:17.498 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSwapping] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::decidePolicyForNavigationAction: keep using process 17268 for navigation, reason=Process has not yet committed any provisional loads
+2026-10-14 04:06:17.498 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f0c00c0 - [PID=17268] WebProcessProxy::canTerminateAuxiliaryProcess: returns false (pageCount=1, provisionalPageCount=0, suspendedPageCount=0, m_isInProcessCache=0, m_shutdownPreventingScopeCounter=0)
+2026-10-14 04:06:17.589 Df テンゲル[15295:d260] [com.apple.WebKit:Process] 0x10f10c1e0 - GPUProcessProxy::didCreateContextForVisibilityPropagation: webPageProxyID: 8, pagePID: 9, contextID: 3
+2026-10-14 04:06:17.590 Df テンゲル[15295:d260] [com.apple.WebKit:Process] Created visibility propagation interaction <_UIVisibilityPropagationInteraction: 0x60000260a220> for process with PID=17269
+2026-10-14 04:06:17.598 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebFrameLoaderClient::dispatchDecidePolicyForNavigationAction: Got policyAction Use from async IPC
+2026-10-14 04:06:17.598 Df テンゲル[15295:d2da] [com.apple.WebKit:Loading] WebContent[17268] 0x10c0787e0 - [pageID=9, frameID=4294967297] PolicyChecker::checkNavigationPolicy: continuing because this policyAction from dispatchDecidePolicyForNavigationAction is Use
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::stopAllLoaders: m_provisionalDocumentLoader=0, m_documentLoader=4513894400
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, isMainFrame=1] DocumentLoader::stopLoading
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::setProvisionalDocumentLoader: Setting provisional document loader to 4513898496 (was 0)
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::continueLoadAfterNavigationPolicy: Setting provisional document loader (m_provisionalDocumentLoader=4513898496)
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ProcessSuspension] WebContent[17268]: [webPageID=9] WebPage::freezeLayerTree: Adding a reason to freeze layer tree (reason=1, new=1, old=0)
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::setPolicyDocumentLoader: Setting policy document loader to 0 (was 4513898496)
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::prepareForLoadStart: Starting frame load
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: ProgressTracker::progressStarted: frameID 4294967297, value 0.100000, tracked frames 1, originating frameID 4294967297, isMainLoad 1
+2026-10-14 04:06:17.599 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, isMainFrame=1] DocumentLoader::startLoadingMainResource: Starting load
+2026-10-14 04:06:17.600 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=18] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:17.600 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=18 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:17.600 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d000800, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:17.601 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=18] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:17.601 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] 0x10c0e4460 - GPUProcessConnection::didInitialize
+2026-10-14 04:06:17.603 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::didStartProvisionalLoadForFrame: frameID=4294967297, isMainFrame=1
+2026-10-14 04:06:17.603 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10f0c00c0 - [PID=17268] WebProcessProxy::didStartProvisionalLoadForMainFrame:
+2026-10-14 04:06:17.617 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=18] WebURLSchemeTaskProxy::didReceiveData: Received data during response processing, queuing it.
+2026-10-14 04:06:17.617 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=18] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:17.622 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::setDocumentLoader: Setting document loader to 4513898496 (was 4513894400)
+2026-10-14 04:06:17.622 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, isMainFrame=1] DocumentLoader::detachFromFrame
+2026-10-14 04:06:17.622 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, isMainFrame=1] DocumentLoader::stopLoading
+2026-10-14 04:06:17.622 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::transitionToCommitted: Clearing provisional document loader (m_provisionalDocumentLoader=4513898496)
+2026-10-14 04:06:17.622 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::setProvisionalDocumentLoader: Setting provisional document loader to 0 (was 4513898496)
+2026-10-14 04:06:17.622 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::didNavigateWithNavigationDataShared:
+2026-10-14 04:06:17.623 E  テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoadStatistics] WebContent[17268] Unable to hide query parameters from script (missing data)
+2026-10-14 04:06:17.623 Df テンゲル[15295:d2da] [com.apple.WebKit:ProcessSuspension] WebContent[17268]: [webPageID=9] WebPage::unfreezeLayerTree: Removing a reason to freeze layer tree (reason=128, new=1, old=1)
+2026-10-14 04:06:17.624 Df テンゲル[15295:d2da] [com.apple.WebKit:ProcessSuspension] WebContent[17268]: [webPageID=9] WebPage::unfreezeLayerTree: Removing a reason to freeze layer tree (reason=128, new=1, old=1)
+2026-10-14 04:06:17.625 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::didCommitLoadForFrame: frameID=4294967297, isMainFrame=1
+2026-10-14 04:06:17.625 Df テンゲル[15295:d2da] [com.apple.WebKit:ProcessSuspension] WebContent[17268]: [webPageID=9] WebPage::unfreezeLayerTree: Removing a reason to freeze layer tree (reason=32, new=1, old=1)
+2026-10-14 04:06:17.634 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=23] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:17.634 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=23 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:17.634 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d004800, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:17.634 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=23] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:17.699 Df テンゲル[15295:d260] [com.apple.WebKit:RemoteLayerTree] RemoteLayerTreeDrawingAreaProxy(11) Unhiding layer tree
+2026-10-14 04:06:17.705 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10202b600 (pageProxyID=8) -[WKWebView _updateVisibleContentRects:] - scroll view state is non-stable, bailing (shouldDeferGeometryUpdates 0, dynamicViewportUpdateMode 0, resetViewStateAfterTransactionID 2, sizeChangedSinceLastVisibleContentRectUpdate 0, [_scrollView isZoomBouncing] 0, currentlyAdjustingScrollViewInsetsForKeyboard 0)
+2026-10-14 04:06:17.712 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=18] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:17.712 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=18 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:17.722 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=23 SubResourceLoader::willCancel: (type=3, code=-999)
+2026-10-14 04:06:17.722 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=23] WebURLSchemeTaskProxy::stopLoading
+2026-10-14 04:06:17.809 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=25] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:17.809 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=25 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d012800, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=25] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=26] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=26 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d013000, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:17.810 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=26] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:17.835 Df テンゲル[15295:d2da] [com.apple.WebKit:ProcessSuspension] WebContent[17268]: [webPageID=9] WebPage::unfreezeLayerTree: Removing a reason to freeze layer tree (reason=1, new=0, old=1)
+2026-10-14 04:06:17.835 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [pageID=9, frameID=4294967297, isMainFrame=1] LocalFrameView::fireLayoutRelatedMilestonesIfNeeded: Firing first visually non-empty layout milestone on the main frame
+2026-10-14 04:06:17.836 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::dispatchDidReachLayoutMilestone: dispatching DidReachLayoutMilestone (milestones=DidFirstVisuallyNonEmptyLayout)
+2026-10-14 04:06:17.836 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::dispatchDidReachLayoutMilestone: dispatching DidFirstVisuallyNonEmptyLayoutForFrame
+2026-10-14 04:06:17.836 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::completePageTransitionIfNeeded: dispatching didCompletePageTransition
+2026-10-14 04:06:17.838 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=25] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:17.838 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=25 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:17.842 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=26] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:17.842 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=26 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:17.850 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=29] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:17.850 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=29 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:17.850 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d018000, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:17.850 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=29] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:17.912 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::dispatchDidReachLayoutMilestone: dispatching DidFirstLayoutForFrame
+2026-10-14 04:06:17.913 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::dispatchDidReachLayoutMilestone: dispatching DidReachLayoutMilestone (milestones=DidFirstLayout)
+2026-10-14 04:06:17.935 Df テンゲル[15295:d2da] [com.apple.WebKit:Layout] WebContent[17268]: [webFrameID=4294967297, webPageID=9] WebLocalFrameLoaderClient::dispatchDidReachLayoutMilestone: dispatching DidReachLayoutMilestone (milestones=DidFirstMeaningfulPaint)
+2026-10-14 04:06:17.942 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=29] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:17.942 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=29 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:17.943 Df テンゲル[15295:d2da] [com.apple.Accessibility:AXCommon] WebContent[17268] Read Per-App on Init: Smart invert = (null)
+2026-10-14 04:06:18.028 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10202b600 (pageProxyID=8) -[WKWebView _didCommitLayerTree:] - received a commit (2) while deferring visible content rect updates (dynamicViewportUpdateMode 0, resetViewStateAfterTransactionID 2, sizeChangedSinceLastVisibleContentRectUpdate 0, [_scrollView isZoomBouncing] 0, currentlyAdjustingScrollViewInsetsForKeyboard 0)
+2026-10-14 04:06:18.029 Df テンゲル[15295:d260] [com.apple.WebKit:ViewState] 0x10202b600 (pageProxyID=8) -[WKWebView _updateVisibleContentRects:] - performing first visible content rect update after deferring updates
+2026-10-14 04:06:18.040 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=132] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:18.040 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=132 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:18.040 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d000000, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:18.040 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=132] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=136] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=136 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d00f000, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=136] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=137] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=137 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d00f800, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:18.053 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=137] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:18.057 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::didFinishDocumentLoadForFrame: frameID=4294967297, isMainFrame=1
+2026-10-14 04:06:18.062 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=132] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:18.063 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=132 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:18.063 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=136] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:18.063 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=136 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:18.063 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=137] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:18.063 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=137 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::setState: main frame load completed
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]: Memory usage info dump at MainFrameLoadCompleted:
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   page_count: 1
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   backforward_cache_page_count: 0
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   document_count: 2
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   javascript_gc_heap_capacity_mb: 2
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   javascript_gc_heap_extra_memory_size_mb: 0
+2026-10-14 04:06:18.125 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   internal_mb: 41
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   compressed_mb: 6
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   phys_footprint_mb: 50
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   resident_size_mb: 185
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:PerformanceLogging] WebContent[17268]:   virtual_size_mb: 419356
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: ProgressTracker::progressCompleted: frameID 4294967297, value 0.899970, tracked frames 1, originating frameID 4294967297, isMainLoad 1
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: ProgressTracker::finalProgressComplete: value 0.899970, tracked frames 0, originating frameID 4294967297, isMainLoad 1, isMainLoadProgressing 0
+2026-10-14 04:06:18.126 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9 frameID=4294967297 isMainFrame=1] FrameLoader::checkLoadCompleteForThisFrame: Finished frame load
+2026-10-14 04:06:18.135 Df テンゲル[15295:d260] [com.apple.WebKit:Loading] 0x10181fe18 - [pageProxyID=8, webPageID=9, PID=17268] WebPageProxy::didFinishLoadForFrame: frameID=4294967297, isMainFrame=1
+2026-10-14 04:06:18.135 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f128100 - NavigationState will release its process network assertion soon because the page load completed
+2026-10-14 04:06:18.136 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:18.137 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d41b0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Client navigation'
+2026-10-14 04:06:18.145 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] 0x10280d608 - [webPageID=9] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-10-14 04:06:18.145 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] 0x10280d608 - [webPageID=9] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-10-14 04:06:18.145 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:18.163 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=221] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-10-14 04:06:18.163 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=221 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-10-14 04:06:18.163 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] 0x10c0680e0 - [resourceLoader=0x10d016000, frameLoader=0x10c1d0100, frame=0x10c0935a0, webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-10-14 04:06:18.163 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=221] WebURLSchemeTaskProxy::startLoading
+2026-10-14 04:06:18.204 Df テンゲル[15295:d2da] [com.apple.WebKit:Network] WebContent[17268] [schemeHandler=1, webPageID=9, frameID=4294967297, taskID=221] WebURLSchemeTaskProxy::didComplete
+2026-10-14 04:06:18.204 Df テンゲル[15295:d2da] [com.apple.WebKit:ResourceLoading] WebContent[17268]: [pageID=9, frameID=4294967297, resourceID=221 SubResourceLoader::didFinishLoading
+2026-10-14 04:06:19.047 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:19.048 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] 0x10280d608 - [webPageID=9] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-10-14 04:06:19.049 Df テンゲル[15295:d2da] [com.apple.WebKit:Process] WebContent[17268] 0x10280d608 - [webPageID=9] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-10-14 04:06:19.055 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d40c0 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-10-14 04:06:21.138 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f128100 NavigationState is releasing background process assertion because a page load completed
+2026-10-14 04:06:21.138 Df テンゲル[15295:d260] [com.apple.WebKit:ProcessSuspension] 0x10f0d4240 - [PID=17268, throttler=0x10f0c0150] ProcessThrottler::Activity::invalidate: Ending background activity / 'Page Load'

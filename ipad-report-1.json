@@ -1,0 +1,200 @@
+{
+ "phase": 1,
+ "device": "ipad",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "version": "1.0",
+   "build": "1",
+   "device": "pad"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 0,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+  "w": 834,
+  "h": 1178,
+  "dpr": 2,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "25px"
+ },
+ "save": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "toast": "✅ 保存できたよ（結果待ち）。買ったゾーンを選んでね。マザーデータ「マザーデータ1」にも入れたよ（291走）"
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-10-14T04:10:09.393Z",
+  "auto": true,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "keys": [
+   "app",
+   "appVer",
+   "at",
+   "bets",
+   "settings",
+   "motherAdd",
+   "slots",
+   "auto"
+  ],
+  "hasKey": false
+ },
+ "copy": true,
+ "downloads": true,
+ "ocr": {
+  "local": true,
+  "ms": 8679,
+  "raw": {
+   "ok": true,
+   "n": 68,
+   "ms": 3971,
+   "sample": [
+    "大井競馬第9競走",
+    "ダ1400m",
+    "12頭 馬場：良発走 18:0510月14日（水）",
+    "枠",
+    "馬番",
+    "1"
+   ]
+  },
+  "venue": "大井",
+  "date": "2026-10-14",
+  "r": 9,
+  "dist": 1400,
+  "surface": "ダ",
+  "baba": "良",
+  "n": 12,
+  "horses": 12,
+  "h6": {
+   "no": 6,
+   "tan": 2.4,
+   "fuku": "1.1-1.3"
+  },
+  "h12": {
+   "no": 12,
+   "tan": 88.6,
+   "fuku": "13.2-21.1"
+  },
+  "s1": {
+   "combo": "6-2-10",
+   "odds": 18.5
+  },
+  "s5": {
+   "combo": "2-10-6",
+   "odds": 41.3
+  },
+  "s10": {
+   "combo": "6-10-7",
+   "odds": 84
+  },
+  "docs": [
+   {
+    "lines": 69,
+    "horses": 12,
+    "tri": 0
+   },
+   {
+    "lines": 45,
+    "horses": 0,
+    "tri": 15
+   }
+  ],
+  "lines": [
+   69,
+   45
+  ]
+ },
+ "layout": {
+  "safeTop": 32,
+  "y": 32,
+  "safeBottom": 25,
+  "height": 1178,
+  "top": 0,
+  "statusBar": 32,
+  "windowHeight": 1210,
+  "bottom": 25,
+  "cssTop": "0px",
+  "cssBottom": "25px",
+  "padTop": "0px",
+  "padBottom": "25px"
+ },
+ "store": {
+  "error": "",
+  "date": "",
+  "version": "",
+  "found": false,
+  "url": "",
+  "notes": ""
+ },
+ "data": {
+  "ok": true,
+  "ver": "2026-10-09b",
+  "n": 290,
+  "newer": false,
+  "cur": "2026-10-09b"
+ },
+ "mother": {
+  "n": 291,
+  "input": [
+   "20261010-m1-08 4-1-2"
+  ]
+ },
+ "fonts": {
+  "status": "loaded",
+  "loaded": [
+   "BIZ UDPGothic",
+   "Dela Gothic One",
+   "IBM Plex Mono"
+  ]
+ },
+ "video": {
+  "ok": true,
+  "dur": 45,
+  "w": 1080,
+  "h": 1920
+ },
+ "settings": {
+  "update": "アプリの更新\n\nいまの版\n1.0（1）\n中身 2026.10.14-2\nApp Store\nまだApp Storeに出ていないよ\n新しい版があるか確認\nApp Storeでは、まだ見つからなかったよ（公開されると、ここで確かめられるよ）\nアプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ。\n⚠️ アプリを削除すると、中の記録も一緒に消えちゃうの。削除する前に、下の「バックアップを保存」でファイルに保存してね。\n",
+  "data": "データの更新\n\nいまのデータ\n291走（7/20〜10/10）・うち自分で入れた 1走\nデータの版 2026-10-09b\n最後に確認\n今日 04:10\n新しいデータがあるか確認\nいまのデータが最新だよ✨\n1つ目のマザーデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しいレースが入った版にできるよ。読むのはレースのデータだけ。入れても、自分で入れたレース・買ったレースの記録・買い目の設定はそのまま。前のデータは「ひとつ前のデータに戻す」で戻せるよ。\n",
+  "cmPoster": 540,
+  "backup": "バックアップ（記録を守る）\n\n記録はこのアプリの中に入っているよ。アプリの中にも自動でバックアップしているけど、機種変更やアプリを消しちゃったときのために、ときどきファイルに保存してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。\n記録\n1件\n最後のバックアップ\nまだしてないよ\n自動バックアップ\n今日 04:10（記録1件）\nバックアップを保存\nバックアップから戻す\n"
+ },
+ "about": {
+  "text": "このアプリについて\n\nアプリ\nテンゲル 1.0（1）\nご利用にあたって\nテンゲルは、過去のレースのデータから傾向を分析して表示する道具です。参考的中率などは過去の実測で、これからの的中や利益を約束するものではありません。\n馬券を買うかどうか、何を買うかは、ご自身の判断でお決めください。\n馬券は20歳になってから。20歳未満の方は、法律により馬券を購入できません。\n競馬は無理のない範囲で楽しみましょう。のめり込みが心配なときは、ひとりで悩まずに相談してください。\nギャンブル依存症予防回復支援センター「サポートコール」0120-683-705（年中無休・24時間・通話料無料）\n相談窓口の案内（内閣官房 ギャンブル等依存症対策推進本部）\n非公式のアプリです・商標について\nテンゲルは個人が開発した非公式のアプリです。競馬の主催者・団体とは関係ありません。\n\niPhone、iPad、Safariは、米国およびその他の国で登録されたApple Inc.の商標です。iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。\nExcelは、米国Microsoft Corporationの米国およびその他の国における登録商標または商標です。\nそのほか、記載されている会社名・団体名・商品名・サービス名は、各社・各団体の商標または登録商標です。\nプライバシーポリシー\nフォントのライセンス\n",
+  "fonts": true,
+  "tokusho": false
+ },
+ "cm": {
+  "modal": true,
+  "rs": 4,
+  "t": 0.3825090416666951,
+  "paused": false,
+  "err": null,
+  "src": "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0"
+ },
+ "outside": [
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1791951000098",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1791951019667",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1791951022130",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0"
+ ],
+ "errors": [],
+ "at": "2026-10-14T04:11:09.812Z"
+}
