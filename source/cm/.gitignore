@@ -9,5 +9,6 @@ chk/
 *.wav
 *.xlsx
 p2log*
+p3log*
 concat.txt
 prevlog*
