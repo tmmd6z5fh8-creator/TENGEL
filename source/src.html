@@ -1389,7 +1389,7 @@ $('#ocrFile').addEventListener('change', async e => {
   const files = [...e.target.files].slice(0, st.sampleImgs?.maxCount || 3); e.target.value = '';
   if (!files.length || !st.sample) return;
   const btn = $('#ocrBtn'), msg = $('#ocrMsg'); btn.disabled = true;
-  msg.innerHTML = `<div class="banner info"><span class="spin" aria-hidden="true"></span> ${files.length}枚の画像を読み取り中…${st.sample.local ? '（この中で読むよ・数秒）' : '（20〜60秒くらい）'}</div>`;
+  msg.innerHTML = `<div class="banner info"><span class="spin" aria-hidden="true"></span> ${files.length}枚の画像を読み取り中…${st.sample.local ? '（この中で読むよ・10秒くらい）' : '（20〜60秒くらい）'}</div>`;
   const prompt = `添付画像は日本の競馬（地方競馬・JRA）の、同じ1レースのオッズ画面のスクリーンショットです（1〜3枚）。画面に書かれている値だけを読み取り、次の形のJSONを1つだけ返してください。説明文は不要です。
 {"venue":"開催場名（例 大井）","date":"YYYY-MM-DD","r":レース番号,"dist":距離m,"surface":"ダ"または"芝","baba":"良"|"稍重"|"重"|"不良","n":出走頭数,
  "horses":[{"no":馬番,"tan":単勝オッズ,"fuku":"複勝オッズ（幅表示は 1.2-1.5 の形の文字列）"}],
