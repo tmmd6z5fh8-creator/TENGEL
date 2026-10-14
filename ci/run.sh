@@ -105,6 +105,7 @@ phase() {
   [ -z "$D" ] && { say "   $DEV $PH: app container not found (not installed?)"; return 0; }
   mkdir -p "$D/Documents"; rm -f "$D/Documents"/mark-* "$D/Documents"/report-* "$D/Documents"/ack-*
   { echo "window.__ST_PHASE = $PH; window.__ST_DEVICE = '$DEV';"; cat "$ROOT/ci/selftest.js"; } > "$D/Documents/selftest.js"
+  cp "$ROOT"/ci/ocr/*.jpg "$D/Documents/" 2> /dev/null   # 画像の読み取りの見本（架空のオッズ画面）
   xcrun simctl launch "$U" "$BID" -tengelSelfTest >> "$OUT/$DEV-launch.txt" 2>&1
   for m in "$@"; do
     case "$m" in

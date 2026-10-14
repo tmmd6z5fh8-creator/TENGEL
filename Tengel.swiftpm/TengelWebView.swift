@@ -8,14 +8,81 @@ struct TengelWebView: UIViewRepresentable {
         WebBridge()
     }
 
-    func makeUIView(context: Context) -> WKWebView {
-        context.coordinator.makeWebView()
+    func makeUIView(context: Context) -> WebHostView {
+        WebHostView(webView: context.coordinator.makeWebView())
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ view: WebHostView, context: Context) {}
 }
 
-/// Webの画面とアプリをつなぐ：共有シート（ファイルに保存）・コピー・自動バックアップ・App Storeの版・外のリンク
+/// Web画面の入れ物。時計・電波（ステータスバー）やホームバーに重なる分を測って、Webの画面に --top-inset／--bottom-inset（px）として渡す。
+/// ふつうは画面の上は安全な範囲の中に置かれるので 0。Swift Playgrounds のプレビューなど、安全な範囲が正しく伝わらないところでも
+/// 上の帯やボタンが時計・電波の下に重ならないようにするためのもの（Webの画面は max(env(safe-area-inset-*), var(--*-inset)) で使う）。
+final class WebHostView: UIView {
+    let webView: WKWebView
+    private var sent: (top: Int, bottom: Int) = (-1, -1)
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+        backgroundColor = .tengelPage
+        addSubview(webView)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { nil }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        webView.frame = bounds
+        pushInsets()
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        pushInsets()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        pushInsets()
+    }
+
+    /// 上と下の、重なる分（pt）。上＝時計・電波の帯のうち、この画面にかかっている高さ。下＝ホームバーのうち、この画面にかかっている高さ
+    var insets: (top: Int, bottom: Int) {
+        guard let window, bounds.height > 0, bounds.width > 0 else { return (0, 0) }
+        let me = convert(bounds, to: window)
+        var top = window.safeAreaInsets.top - me.minY
+        if let bar = window.windowScene?.statusBarManager, !bar.isStatusBarHidden, window.frame.origin == .zero {
+            let frame = bar.statusBarFrame
+            if frame.height > 0, frame.height < 120 {
+                top = max(top, frame.maxY - me.minY)
+            }
+        }
+        let bottom = window.safeAreaInsets.bottom - (window.bounds.maxY - me.maxY)
+        return (Int(max(0, top).rounded()), Int(max(0, bottom).rounded()))
+    }
+
+    /// Webの画面に重なる分を渡す（変わったときだけ。force はページを開き直したとき）
+    func pushInsets(force: Bool = false) {
+        let v = insets
+        if !force, v == sent { return }
+        sent = v
+        let js = "(function(){var s=document.documentElement&&document.documentElement.style;if(!s)return;s.setProperty('--top-inset','\(v.top)px');s.setProperty('--bottom-inset','\(v.bottom)px');})()"
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    /// テスト用：測った値（CIで確かめる）
+    var layoutInfo: [String: Any] {
+        let v = insets
+        let w = window
+        return ["top": v.top, "bottom": v.bottom, "safeTop": w?.safeAreaInsets.top ?? -1, "safeBottom": w?.safeAreaInsets.bottom ?? -1,
+                "statusBar": w?.windowScene?.statusBarManager?.statusBarFrame.height ?? -1, "y": w.map { convert(bounds, to: $0).minY } ?? -1,
+                "height": bounds.height, "windowHeight": w?.bounds.height ?? -1]
+    }
+}
+
+/// Webの画面とアプリをつなぐ：共有シート（ファイルに保存）・コピー・自動バックアップ・App Storeの版・画像の文字の読み取り・外のリンク
 @MainActor
 final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     private weak var webView: WKWebView?
@@ -93,6 +160,11 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         webView.reload()
     }
 
+    /// ページを開き終わったら（説明書に行き来したときも）、時計・電波に重なる分をもう一度渡す
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        (webView.superview as? WebHostView)?.pushInsets(force: true)
+    }
+
     // MARK: - Webの画面からのお願い（window.webkit.messageHandlers.tengel）
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -124,6 +196,19 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 let info = await StoreCheck.lookup()
                 self?.reply(id, ok: true, value: info.dictionary)
             }
+        case "ocr":
+            // オッズ画面のスクショの文字を、この端末の中で読む（どこにも送らない）
+            guard let image = (payload as? [String: Any])?["data"] as? String, !image.isEmpty else {
+                reply(id, ok: true, value: ["ok": false, "error": "image_rejected"])
+                return
+            }
+            Task { [weak self] in
+                let result = await TextReader.read(base64: image)
+                self?.reply(id, ok: true, value: result.dictionary)
+            }
+        case "layout":
+            // テスト用：時計・電波・ホームバーに重なる分の測り方
+            reply(id, ok: true, value: (webView?.superview as? WebHostView)?.layoutInfo ?? [:])
         #if DEBUG
         case "selftest":
             SelfTest.save(payload)
