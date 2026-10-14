@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+<style>:root{--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}body{margin:0}[hidden]{display:none!important}
 /* Layout: 出馬表（レースプログラム）風 — 濃い青緑の台紙に金の罫。もくじ＝グループごとの一覧、項目＝1ページずつ（前へ・次へ） */
 :root{
   --bg:#0a1b22; --bg-2:#0d242d; --panel:#10303a; --panel-2:#153b47; --rule:rgba(217,180,90,.20); --rule-2:rgba(217,180,90,.42);
@@ -88,7 +88,7 @@ img{max-width:100%}
 .foot{margin:30px 0 40px;padding-top:16px;border-top:1px solid var(--rule);color:var(--faint);font-size:13px;display:grid;gap:4px}
 
 /* ---------- 項目のページ ---------- */
-.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(10,27,34,.9);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
+.topbar{position:sticky;top:var(--sat,0px);z-index:20;background:rgba(10,27,34,.9);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
 .topbar .wrap{display:flex;align-items:center;gap:10px;min-height:56px}
 .back{display:inline-flex;align-items:center;gap:4px;flex:none;border:1px solid var(--rule-2);background:rgba(217,180,90,.08);color:var(--gold-hi);border-radius:999px;padding:6px 14px 6px 10px;font-weight:700;font-size:14px;cursor:pointer}
 .back svg{width:16px;height:16px}
@@ -275,11 +275,11 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 <p class="eyebrow">アプリの使い方</p>
 <h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
 <p class="lead">知りたい項目を押すと、その説明が出るよ。画面の写真に番号をつけて、順番に読めるようにしてあるよ。</p>
-<ul class="meta"><li>アプリ 2026.10.13-1</li><li>第13改訂版</li><li>大井 290走（10/9まで）</li></ul>
+<ul class="meta"><li>アプリ 2026.10.14-1</li><li>第13改訂版</li><li>大井 290走（10/9まで）</li></ul>
 </div>
 </header>
 
-<div class="search" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="さがす（例：WIN5、APIキー、的中）" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
+<div class="search" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="さがす（例：WIN5、APIキー、的中率）" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
 <p class="qinfo" id="qinfo" hidden></p>
 
 <section id="start" aria-labelledby="st-h">
