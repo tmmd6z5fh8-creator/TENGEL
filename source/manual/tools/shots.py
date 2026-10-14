@@ -32,8 +32,14 @@ if APP:
 # にせもののアプリ（共有・コピー・バックアップに、すぐ「できた」と返事をする）
 FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };
-window.webkit = { messageHandlers: { tengel: { postMessage: function (m) { setTimeout(function () { window.__nativeReply(m.id, true, true); }, 30); } } } };
+window.__ocrLines = [];   // 画像の文字の読み取り（端末の中の文字認識）のかわり：順に返す「読めた文字と位置」
+window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
+  var val = true;
+  if (m.name === 'ocr') { var L = window.__ocrLines.shift(); val = L ? { ok: true, lines: L, w: 1170, h: 2532, ms: 900 } : { ok: false, error: 'image_rejected' }; }
+  setTimeout(function () { window.__nativeReply(m.id, true, val); }, 30);
+} } } };
 """
+OCR_DIR = os.path.join(SRC, 'testdata', 'ocr')
 # App Storeに新しい版（1.1）が出ている、にせもののアプリ（アップデートの写真用）
 FAKE_STORE = """
 window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };
@@ -217,10 +223,17 @@ try:
         shot(pg, 'st_wait', '#recCard [data-k=status]')
         card.locator('[data-act=save]').click(); pg.wait_for_timeout(1200)
 
-        # ---- オッズ画像（キーがないとき） ----
+        # ---- オッズ画像：Web版はキーがないときの案内、App Store版は読み取ったあと（端末の中の文字認識のかわりに、架空のオッズ画面の文字を返す） ----
         pg.evaluate("scrollTo(0, 0)")
-        pg.locator('#ocrBtn').click(); pg.wait_for_timeout(500)
-        shot(pg, 'ocr_need', '.input-col > .card:nth-child(1)', ['#ocrRow', '#ocrMsg'])
+        if APP:
+            pg.evaluate("window.__ocrLines = %s" % json.dumps([json.load(open(os.path.join(OCR_DIR, k + '.json'), encoding='utf-8'))['lines'] for k in ('a_tanfuku_waku', 'c_sanrentan')], ensure_ascii=False))
+            pg.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg'), os.path.join(OCR_DIR, 'c_sanrentan.jpg')]); pg.wait_for_timeout(2500)
+            pg.evaluate("scrollTo(0, 0)"); pg.wait_for_timeout(200)
+            shot(pg, 'ocr_done', '.input-col > .card:nth-child(1)', ['#ocrRow', '#ocrMsg'])
+            load_form(pg, F11)   # 読み取ったレースを消して、11R に戻す
+        else:
+            pg.locator('#ocrBtn').click(); pg.wait_for_timeout(500)
+            shot(pg, 'ocr_need', '.input-col > .card:nth-child(1)', ['#ocrRow', '#ocrMsg'])
 
         # ---- 記録タブ ----
         tab(pg, 'rec')
@@ -252,7 +265,8 @@ try:
         shot_top(pg, 'set_zone', '#zoneCard', 640, ['.zk-tabs', '.zk-head', 'ol.zedit > li:nth-child(1)', '.zr-line', '.zr-stat'])
         shot(pg, 'set_zone_save', '#zoneCard .zsave')
         shot(pg, 'set_mother', '#setMother', ['#slotList', '#slotEdit', '#slotEdit .mdtools'])
-        shot(pg, 'set_ocr', '#setOcr', ['#soKey', '#soSave', '#soModel'])
+        if not APP:   # App Store版の「画像の読み取り」はAPIキーの欄がない（説明書にも出さない）
+            shot(pg, 'set_ocr', '#setOcr', ['#soKey', '#soSave', '#soModel'])
         if not APP:   # App Store版の「アプリの更新」（App Storeの版）は、下のアップデートの写真で撮る
             shot(pg, 'set_update', '#setUpdate')
         shot(pg, 'set_backup', '#setBackup', ['#pwaBackup', '#pwaRestore'])

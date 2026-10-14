@@ -80,6 +80,7 @@ SHOTS = {
     'judge_tri': ('3連単の人気順の欄', None, [('#fS1',), ('#fS5',), ('#clearBtn',)]),
     'bottom_bars': ('入力中に下に出る判定のバー', '「判定へ↓」を押すと判定結果まで移動するよ', []),
     'ocr_need': ('オッズ画像から読み取るボタンと、キーがないときの案内', None, [('#ocrRow', .3), ('#ocrMsg', .28)]),
+    'ocr_done': ('オッズ画像から読み取るボタンと、読み取ったあとの案内', '読み取ったあと（画面は例・架空のレース）', [('#ocrRow', .3), ('#ocrMsg', .3)]),
     'result_a1': ('判定結果の画面の上半分（A層の例）', 'A層の例・上半分（画面は例・架空のレース）', [
         ('.vhead .vkubun',), ('.vhead .vratio', .45), ('.vhead .chips', .3), ('ol.zones > li:nth-child(1) .zflow',), ('ol.zones > li:nth-child(1) .znums',),
         ('ol.zones > li:nth-child(1) .zref', .25), ('ol.zones > li:nth-child(1) .zthird', .09)]),
@@ -119,7 +120,7 @@ SHOTS = {
     'upd_data': ('設定のデータの更新', '設定 → データの更新（画面は例）', [('#sdCur',), ('#sdCheck',), ('#sdApply',)]),
 }
 # App Store版だけの写真（Web版では使わない）
-APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data'}
+APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data', 'ocr_done'}
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">')
@@ -133,7 +134,7 @@ APP_FONTS = ('<style>'
              "@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap}"
              '</style>')
 # App Store版で出さない項目（ホーム画面に追加・チャットでデータを送る流れはWeb版だけ）
-APP_SKIP = ('install', 'dataupdate')
+APP_SKIP = ('install', 'dataupdate', 'apikey')   # App Store版は画像の読み取りにAPIキーを使わない（端末の中で読む）
 # Web版で出さない項目（App Storeのアップデート・データの更新はApp Store版だけ）
 WEB_SKIP = ('update',)
 # App Store版だけ名前を変える項目（アプリの更新は「アップデート」の項目にあるので）
@@ -282,7 +283,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 </div>
 </header>
 
-<div class="search" role="search">{icon('search')}<label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="さがす（例：WIN5、APIキー、的中）" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
+<div class="search" role="search">{icon('search')}<label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="{'さがす（例：5重勝、読み取り、的中率）' if app else 'さがす（例：WIN5、APIキー、的中率）'}" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
 <p class="qinfo" id="qinfo" hidden></p>
 
 <section id="start" aria-labelledby="st-h">
@@ -323,7 +324,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>テンゲル 説明書</title>
 {APP_FONTS}
-<style>:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0}}[hidden]{{display:none!important}}
+<style>:root{{--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0}}[hidden]{{display:none!important}}
 {css}
 </style></head><body>
 {body}</body></html>
@@ -339,7 +340,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 <meta name="theme-color" content="#0a1b22"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <title>テンゲルⅢ 説明書</title>
 {FONTS}
-<style>:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0}}[hidden]{{display:none!important}}
+<style>:root{{--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0}}[hidden]{{display:none!important}}
 {css}
 </style></head><body>
 {body}</body></html>

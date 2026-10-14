@@ -4,7 +4,8 @@
 // 結果は window.webkit.messageHandlers.tengel に { name:'selftest', payload:{ file, text } } で渡す → アプリが Documents/ に書く。
 //   mark-<名前>.txt … CIがスクショを撮る合図（出したあと2.5秒そのままにする）
 //   report-<名前>.json … 結果
-// 1回目：記録を1件保存（マザーデータにも入る）→ 自動バックアップ・CORS（Anthropic）・App Storeの版・データの更新（GitHub Pages）・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
+// 1回目：記録を1件保存（マザーデータにも入る）→ 自動バックアップ・App Storeの版・データの更新（GitHub Pages）・画像の読み取り（端末の中の文字認識：ci/ocr/ の架空のオッズ画面）・
+//        時計・電波に重なる分の測り方・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
 (function () {
@@ -86,11 +87,25 @@
     });
     await step(R, 'copy', function () { return TengelNative.copy('テンゲルのテスト'); });
     await step(R, 'downloads', async function () { return !!(await window.claude.use('downloads')); });
-    await step(R, 'cors', async function () {
-      var r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': 'sk-ant-selftest-invalid', 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 1, messages: [{ role: 'user', content: 'x' }] }) });
-      return { status: r.status, body: (await r.text()).slice(0, 160) };
+    // 画像の読み取り：端末の中の文字認識（Vision）で、架空のオッズ画面（単勝・複勝＋3連単の人気順）を読んで入力欄の形にする。外には何も送らない
+    await step(R, 'ocr', async function () {
+      var files = [];
+      for (var i = 0; i < 2; i++) {
+        var nm = ['a_tanfuku_waku.jpg', 'c_sanrentan.jpg'][i];
+        var res = await fetch('__selftest/' + nm, { cache: 'no-store' });
+        if (!res.ok) return { skipped: 'no sample ' + nm + ' (' + res.status + ')' };
+        files.push(new File([await res.blob()], nm, { type: 'image/jpeg' }));
+      }
+      var sample = await window.claude.use('sample');
+      var t0 = Date.now();
+      var raw = await TengelNative.readText(await new Promise(function (ok, ng) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ng; fr.readAsDataURL(files[0]); }));
+      var d = await sample.json('', { images: files });
+      var hs = d.horses || [];
+      return { local: !!sample.local, ms: Date.now() - t0, raw: { ok: raw && raw.ok, n: raw && raw.lines ? raw.lines.length : -1, ms: raw && raw.ms, sample: (raw && raw.lines || []).slice(0, 6).map(function (l) { return l.text; }) },
+        venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
+        s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines };
     });
+    await step(R, 'layout', async function () { var L = await TengelNative.layout(); L.cssTop = getComputedStyle(document.documentElement).getPropertyValue('--top-inset'); L.cssBottom = getComputedStyle(document.documentElement).getPropertyValue('--bottom-inset'); L.padTop = getComputedStyle(document.documentElement).paddingTop; L.padBottom = getComputedStyle(document.documentElement).paddingBottom; return L; });
     // App Storeの版（アプリがAppleに聞く）・データの更新（GitHub Pages を tengel:// から読めるか＝CORS）・マザーデータに入ったか
     await step(R, 'store', async function () { return await TengelNative.storeInfo(); });
     await step(R, 'data', async function () {

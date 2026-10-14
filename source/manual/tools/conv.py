@@ -9,19 +9,28 @@ RAW = SP + D + '/raw'; IMG = SP + D + '/img'; os.makedirs(IMG, exist_ok=True)
 meta = json.load(open(RAW + '/meta.json', encoding='utf-8'))
 
 
-def top(name, sel, pad):   # 要素の上のふちから pad 上（raw px）
-    return round((meta[name]['b'][sel]['y'] - pad) * 2)
+def top(name, sel, pad):   # 要素の上のふちから pad 上（raw px）。その写真がないときは 0
+    m = meta.get(name); b = m and m['b'].get(sel)
+    return round((b['y'] - pad) * 2) if b else 0
 
 
 def gap(name, a, b):   # 要素 a の下と要素 b の上のまん中（raw px）
-    m = meta[name]['b']; return round(m[a]['y'] + m[a]['h'] + m[b]['y'])
+    m = meta.get(name, {}).get('b', {})
+    return round(m[a]['y'] + m[a]['h'] + m[b]['y']) if m.get(a) and m.get(b) else 0
+
+
+def bottom(name, sel, pad):   # 要素の下のふちから pad 下（raw px）。その写真がないときは None
+    m = meta.get(name); b = m and m['b'].get(sel)
+    return round((b['y'] + b['h'] + pad) * 2) if b else None
 
 
 CROP = {  # name: (top, bottom) in raw px。画面が変わっても切る場所がずれないように、要素の位置から決めるものもある
     'result_c': (0, 1330), 'ocr_need': (0, 720),
+    'ocr_done': (0, bottom('ocr_done', '#ocrMsg', 14)),                          # App Store版：読み取ったあとの案内まで
     'record_open': (top('record_open', '[data-act=save]', 21), None),           # 開いた記録の下のボタンから
     'set_mother': (0, top('set_mother', '#slotEdit .mdtools', 12)),             # レースのデータのボタンの前まで（ボタンは md_tools の写真）
 }
+CROP = {k: v for k, v in CROP.items() if k in meta}
 out = {}
 _rec = gap('record', '[data-k=amtsum]', '[data-k=buyzf]')   # 記録の欄は「合計」と「買ったゾーン」のあいだで分ける
 PARTS = {'result_a1': ('result_a', 0, 1104), 'result_a2': ('result_a', 1104, None), 'record_1': ('record', 0, _rec), 'record_2': ('record', _rec, None)}

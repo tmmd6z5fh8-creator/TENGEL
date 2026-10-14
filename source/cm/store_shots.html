@@ -64,7 +64,7 @@ const HDR = META.header.H, TABH = PAD ? 0 : META.tabbar.H, VTOP = STATUS + HDR;
 // 1〜6枚目：見出し・帯・注意書き・アプリの画面（どの写真・どこまでスクロール・強調する所）
 const topOf = (k, sel, pad) => Math.max(0, B(k, sel).y - pad);
 const LIST = {
-  1: { l1: ['スクショを選ぶだけで', 'white'], l2: ['即判定!!', 'fire'], pill: 'オッズを読み取って、3つの層に判定', foot: '※画像の読み取りには、AnthropicのAPIキー（有料）が必要です',
+  1: { l1: ['スクショを選ぶだけで', 'white'], l2: ['即判定!!', 'fire'], pill: 'オッズを読み取って、3つの層に判定', foot: '※画像の読み取りは、この端末の中で行います（通信も追加の料金もありません）',
        k: 'judge_filled', hdr: 'header_oi0', tab: 'tabbar_judge', y: PAD ? 0 : topOf('judge_filled', '#result', 12), rings: PAD ? ['#result .lbadge'] : ['#result .lbadge'] },
   2: { l1: ['1着・2着・3着の', 'white'], l2: ['ゾーンまで一発!!', 'rainbow'], pill: '推奨ゾーン・馬番・参考的中率まで', foot: '※参考的中率は過去の実測です。的中を約束するものではありません',
        k: 'judge_c', hdr: 'header_oi0', tab: 'tabbar_judge', y: PAD ? 0 : topOf('judge_c', '#result', 12), rings: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] },

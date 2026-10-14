@@ -105,6 +105,9 @@ const SHOTS = window.__SHOTS || 'shots';
   if (APPV) {
     $('cta').lastChild.textContent = 'iPhone・iPadで、いつでも判定';
     $('ectaSub').textContent = '電波がなくても動く・記録は自動でバックアップ';
+    // App Store版の画像の読み取りは端末の中（APIキーも料金もいらない）
+    $('cfoot').textContent = '※画像の読み取りは、この端末の中で行います（通信も追加の料金もありません）';
+    $('disc').innerHTML = $('disc').innerHTML.replace('※画像の読み取りには、AnthropicのAPIキー（有料）が必要です。', '※画像の読み取りは、端末の中で行います（通信も追加の料金もありません）。');
   }
 })();
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));

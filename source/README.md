@@ -28,7 +28,8 @@
   - 買う馬は番号を押して自分で選べる（`man`。そのレースは固定・ほかのレースは残りの予算で自動・「おまかせに戻す」・ランダムにすると全部おまかせに戻る・自分で選んだ馬だけで予算をこえたら赤で案内）
   - 結果：各レースの1着の馬番 → ○×。1つでも外れたら不的中、5つとも入ったら的中。購入額が空なら点数×100円。作業中の5レース・予算などは localStorage の `tengel.win5`（入力中のレースは `tengel.w5edit`）
 - 着順・3連単の組番の欄：iPhoneの数字キーボードに「-」がないので、「.」が打てるキーボード（inputmode=decimal）にして、「.」や空白は打ったそばから「-」にする。区切りなし（6211）は頭数から読み（読み方が2つ以上なら区切ってと案内）、欄を離れると 6-2-11 の形に直す。
-- 画像の読み取り：判定タブの「オッズ画像から読み取る」→ スクショを長い辺2000pxのJPEGにして Anthropic の API（標準 claude-sonnet-5-5／節約 claude-haiku-5-5）へ直接送る。APIキーは設定タブで入れて set:ocr にだけ保存（バックアップには入れない）。キーがないときは写真を選ぶ前に案内する。
+- 画像の読み取り（Web版）：判定タブの「オッズ画像から読み取る」→ スクショを長い辺2000pxのJPEGにして Anthropic の API（標準 claude-sonnet-5-5／節約 claude-haiku-5-5）へ直接送る。APIキーは設定タブで入れて set:ocr にだけ保存（バックアップには入れない）。キーがないときは写真を選ぶ前に案内する。
+- **画像の読み取り（App Store版・2026.10.14-1〜）：APIキーなし・追加料金なし・端末の中で完結**（まさちゃんの指定）。スクショを長い辺2600pxのJPEGにしてアプリ（Swift の `TextReader`＝Apple の Vision の文字認識・ja/en）に渡し、読めた文字と位置（`lines`）を `ocr_local.js` がオッズ画面の表（単勝・複勝の行＝[人気][枠]馬番 馬名 単勝 複勝、3連単の人気順＝順位 組番 オッズ、レース情報＝R・距離・ダ芝・馬場・頭数・開催場・日付）に組み立てて、Web版と同じ形の JSON にする。画像も文字も外に送らない。設定タブの「画像の読み取り」はキーの欄なし（説明だけ）。説明書の「画像の読み取り（APIキー）」の項目は App Store版には出さない
 
 - アプリを更新しても、この3つは消えない。データベースの作りを変えるときは、**足すだけ**にする（消したり作り直したりしない）。
 - ホーム画面のアイコンを消すと、iPhoneがこのデータも消す。アイコンを変えたいときは、先にバックアップ → 入れ直し → 戻す。
@@ -39,7 +40,8 @@
 | engine.js | 判定エンジン（第13改訂版）。`T.setZones()` で買い目編集を反映 |
 | src.html | 画面（判定・記録・実測・回収・設定） |
 | pwa_shim.js | iPhoneアプリ版の保存（IndexedDB）。アプリ更新時に基盤データをどう扱うか・壊れた大井の自動修復・画像の読み取り（Anthropic API）もここ |
-| pwa_ui.js | 設定タブのiPhone版だけの機能：マザーデータ（入れ替え・足す・形の確認・ひとつ前に戻す・レースの一覧と1つ入れる・CSVの読み書き）・画像の読み取り（APIキー）・アプリの更新（App Store版：App Storeの版の確認・データの更新・開いたときのお知らせ）・バックアップ（自分で入れたレースも入る） |
+| ocr_local.js | App Store版の画像の読み取り：端末の中で読んだ文字と位置から、オッズ画面の表を組み立てる（`TengelOCR.parse([lines…])`）。開催場の名前の一覧は持たない（画面に書いてあるものだけ）。テストは test_ocr_local.js（testdata/ocr/ の架空のオッズ画面＝make_mock.py で作る）と、GitHubのMacの本物の Vision（ios/ci/selftest.js の ocr） |
+| pwa_ui.js | 設定タブのiPhone版だけの機能：マザーデータ（入れ替え・足す・形の確認・ひとつ前に戻す・レースの一覧と1つ入れる・CSVの読み書き）・画像の読み取り（Web版はAPIキー・App Store版は説明だけ）・アプリの更新（App Store版：App Storeの版の確認・データの更新・開いたときのお知らせ）・バックアップ（自分で入れたレースも入る） |
 | build.js → build_pwa.py | アプリを組み立てる（`deploy.sh` がまとめてやる） |
 | hist.json | アプリに入れておく基盤データ（大井）。まさちゃんのデータが届くたびに増える |
 | mother_log.json | 基盤データの更新の記録（Excelの「突合メモ」に出る） |
@@ -56,9 +58,9 @@
 | cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（Web版の画面は cm2_shots.py の SCRUB_JS で消す・App Store版は `TARGET=app` でApp Store版の画面を撮る → shots_app/・`SHOTS=shots_app` で使う） |
 | test_cm.py | CMのテスト（設定タブの説明書の下・押すと全画面・×／外側／Escで閉じる・動画はしまわない・表紙はしまう・電波がないときのお知らせ） |
 | build_ios.py | iPhone・iPadアプリ（App Store用・Swift Playgrounds の App）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
-| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・App Storeの版・外のリンクはSafari）・StoreCheck.swift（App Storeに出ている版を Apple の lookup で調べる。送るのはアプリのIDと国だけ）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
+| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・App Storeの版・画像の文字の読み取り・外のリンクはSafari。`WebHostView`＝Web画面の入れ物：時計・電波（ステータスバー）やホームバーに重なる分を測って `--top-inset`／`--bottom-inset` として渡す）・StoreCheck.swift（App Storeに出ている版を Apple の lookup で調べる。送るのはアプリのIDと国だけ）・TextReader.swift（画像の文字を端末の中で読む：Vision の VNRecognizeTextRequest・ja/en・位置つき）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
 | ios/ci/ | GitHubのMacでの確認（run.sh・selftest.js・ios.yml）。`ios` ブランチ（Tengel.swiftpm＋ci/＋.github/workflows/ios.yml）にpushすると、Swift 5・Swift 6・Release（実機）で作って、iPhone・iPadのシミュレーターで記録の保存・開き直し・自動バックアップから戻す・画面のスクショを確かめる。結果は `ios-ci-macos-15`・`ios-ci-macos-26` ブランチ（summary.txt・report-*.json・shots/） |
-| test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
+| test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：画像の読み取り（端末の中の文字認識のかわりに架空のオッズ画面の文字を返す → 入力欄に入る・外に通信しない・APIキーの欄がない）・「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
 | legal/ | 「このアプリについて」（設定タブのいちばん下：ご利用にあたって＝参考情報・20歳・相談先／非公式のアプリ・商標の表記／プライバシーポリシー／特定商取引法に基づく表記／フォントのライセンス）と、公開するページ（legal/privacy.html・tokushoho.html・support.html）。中身は build_legal.py、販売する人の欄は legal.json（seller・email・address・phone）。**欄が空のページは公開しない**（deploy.sh が「まだなし」と出す）。確認用は `python3 legal/build_legal.py preview <フォルダ>`（空の欄を【要記入】にして全部作る） |
 | ios/fonts/ | App Store版に入れるフォント（BIZ UDPGothic・Dela Gothic One・IBM Plex Mono。SIL OFL 1.1・ファイルはそのまま。入手元とライセンスは ios/fonts/README.md）。App Store版は Google Fonts に通信しない |
 | manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「データを新しくする（Web版）」は出さない（build_manual.py の mode='app'）。「アップデート」はApp Store版だけ（`WEB_SKIP`・写真 upd_* は `TARGET=app` の shots.py が、前の版のデータを入れたアプリとにせもののApp Store（1.1）で撮る）。`{{mother}}` はアプリに入れるデータの走数に置きかわる |
@@ -74,6 +76,7 @@
 4. gh-pagesにコミットしてpush
 
 ## iPhone・iPadアプリ（App Store用。2026.10.12〜お試し版）
+- 上の帯・説明書の上のバー・下のタブは、時計・電波（ステータスバー）・ホームバーに重ならないようにしてある：CSS は `--sat`／`--sab`（`max(env(safe-area-inset-*), var(--top-inset／--bottom-inset))`）を使う。`--top-inset` などはアプリ（WebHostView）が実際の重なりを測って入れる（Swift Playgrounds のプレビューなど、安全な範囲が正しく伝わらない場所の保険。ふつうの端末では 0 で、env() のとおり）
 - 画面はWeb版と同じ。アプリの中では `tengel://localhost/index.html` で開くので、`window.__NATIVE`（pwa_shim.js）が true になって、アプリ版として動く：
   - 設定タブ：「アプリの更新」（いまの版・App Storeに新しい版があれば「App Storeで更新する」。更新そのものは App Store）・「データの更新」（公開している data/mother_app.json を読んで、1つ目のマザーデータを新しくする。自分で入れたレース・記録はそのまま）・バックアップは共有シートで渡す・「自動バックアップ」の欄
   - 開いたとき（12時間に1回まで）にApp Storeの版と公開データを確かめて、新しければ上にお知らせ（「App Storeで更新」「入れる」・×で閉じる）

@@ -217,7 +217,18 @@
   <div class="slotlist" id="slotList"></div>
   <div class="slotedit" id="slotEdit"></div>
 </div>
-<div class="card setsec ocrset" id="setOcr">
+${NATIVE ? `<div class="card setsec" id="setOcr">
+  <h2>画像の読み取り（オッズのスクショ）</h2>
+  <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。文字は<b>この端末の中</b>で読むよ（Appleの文字認識）。<b>どこにも送らないし、料金もかからないよ</b>。</p>
+  <dl class="kvs" style="margin-top:10px"><dt>読み取り</dt><dd>この端末の中（ネット不要・無料）</dd><dt>送るもの</dt><dd>なし（画像も読んだ文字も、外に出ないよ）</dd></dl>
+  <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:700">うまく読み取るコツ</summary>
+    <ul class="small" style="margin:6px 0 0;padding-left:18px">
+      <li><b>単勝・複勝の表</b>（馬番・単勝・複勝のオッズが並んだ画面）と、<b>3連単の人気順</b>（1位から順に組番とオッズが並んだ画面）を、それぞれ大きく写す</li>
+      <li>画面を拡大して、1枚に表がおさまるように。文字が小さいときは2枚に分けてもOK（最大3枚）</li>
+      <li>読み取ったあとは、オッズと頭数だけ画面と見比べてね。ちがっていたら、その欄だけ手で直せるよ</li>
+    </ul>
+  </details>
+</div>` : `<div class="card setsec ocrset" id="setOcr">
   <h2>画像の読み取り（オッズのスクショ）</h2>
   <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。読み取りはClaude（Anthropic）にしてもらうから、<b>AnthropicのAPIキー</b>を1回だけ入れてね。</p>
   <dl class="kvs"><dt>APIキー</dt><dd id="soState">まだ入っていないよ</dd><dt>料金のめやす</dt><dd>標準：1回 約1〜4円／節約：1回 1円未満<br><span class="small muted">Anthropicへの支払い。スクショの枚数で変わるよ</span></dd></dl>
@@ -235,7 +246,7 @@
     </ol>
   </details>
   <p class="hint">キーは<b>${NATIVE ? 'この端末' : 'このiPhone'}の中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
-</div>
+</div>`}
 ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <h2>アプリの更新</h2>
   <dl class="kvs"><dt>いまの版</dt><dd>${esc(APP_VER || '—')}（第13改訂版）</dd><dt>最後に確認</dt><dd id="suChecked">まだ</dd></dl>
@@ -252,7 +263,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
   <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
 </div>`;
-    wireSlots(); wireOcr(); wireUpdate(); wireNativeUpdate(); wireBackup();
+    wireSlots(); if (!NATIVE) wireOcr(); wireUpdate(); wireNativeUpdate(); wireBackup();
   }
 
   // ---- 画像の読み取り（APIキー） ----

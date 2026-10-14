@@ -29,6 +29,10 @@ if (window.__NATIVE) (function () {
     saveBackup: function (text) { return call('backup', { text: String(text) }); },
     // App Storeに出ている版（アプリがAppleに聞く）：{ found, version, url, notes, date }
     storeInfo: function () { return call('store', {}); },
+    // 画像の文字を、この端末の中で読む（AppleのVision）。{ ok, lines:[{text,x,y,w,h,conf}], w, h, ms }。画像はどこにも送らない
+    readText: function (b64) { return call('ocr', { data: b64 }); },
+    // テスト用：時計・電波・ホームバーに重なる分の測り方
+    layout: function () { return call('layout', {}); },
     loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
   };
   // コピーは、アプリがiPhoneのクリップボードに直接入れる
@@ -437,15 +441,15 @@ if (window.__NATIVE) (function () {
       im.src = u;
     });
   }
-  // 長い辺を2000pxまでに縮めてJPEGにする（文字は読めるまま、送る量と料金をおさえる）
-  function toJpeg(file) {
+  // 長い辺を max px（ふつう2000）までに縮めてJPEGにする（文字は読めるまま、送る量と料金をおさえる）
+  function toJpeg(file, max, q) {
     return loadImage(file).then(function (im) {
       var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
       if (!w || !h) throw { code: 'image_rejected' };
-      var k = Math.min(1, 2000 / Math.max(w, h)), c = document.createElement('canvas');
+      var k = Math.min(1, (max || 2000) / Math.max(w, h)), c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
       var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+      return c.toDataURL('image/jpeg', q || 0.9).split(',')[1];
     });
   }
   function apiCall(set, body, model) {
@@ -485,14 +489,36 @@ if (window.__NATIVE) (function () {
     if (a < 0 || b <= a) throw { code: 'invalid_json' };
     try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { throw { code: 'invalid_json' }; }
   }
-  var sample = {
+  // アプリ版：画像の文字はこの端末の中で読む（AppleのVision。APIキーも料金もいらない・どこにも送らない）。表の組み立ては ocr_local.js
+  var sample = window.__NATIVE ? {
+    local: true,
+    limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
+    json: function (prompt, opt) {
+      var files = ((opt && opt.images) || []).slice(0, 3);
+      if (!window.TengelOCR) return Promise.reject({ code: 'ocr_failed', message: 'no parser' });
+      return Promise.all(files.map(function (f) { return toJpeg(f, 2600, 0.92); })).then(function (imgs) {
+        var one = function (i) {
+          if (i >= imgs.length) return Promise.resolve([]);
+          return window.TengelNative.readText(imgs[i]).then(function (r) {
+            if (!r || !r.ok) throw { code: r && r.error === 'image_rejected' ? 'image_rejected' : 'ocr_failed', message: r && r.error };
+            return one(i + 1).then(function (rest) { return [r.lines || []].concat(rest); });
+          });
+        };
+        return one(0);
+      }).then(function (all) {
+        var d = window.TengelOCR.parse(all);
+        d._lines = all.map(function (l) { return l.length; });
+        return d;
+      });
+    }
+  } : {
     hasKey: function () { return !!(ocrSet && ocrSet.key); },
     limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
     json: function (prompt, opt) {
       var files = ((opt && opt.images) || []).slice(0, 3);
       return ready.then(function () {
         if (!ocrSet || !ocrSet.key) throw { code: 'need_key' };
-        return Promise.all(files.map(toJpeg));
+        return Promise.all(files.map(function (f) { return toJpeg(f); }));
       }).then(function (imgs) {
         var content = imgs.map(function (b64) { return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }; });
         content.push({ type: 'text', text: prompt });

@@ -44,7 +44,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .small{font-size:12.5px}
 
 /* header */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--night);color:var(--night-ink);border-bottom:3px solid var(--lamp)}
+.top{position:sticky;top:var(--sat,0px);z-index:20;background:var(--night);color:var(--night-ink);border-bottom:3px solid var(--lamp)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
 .brand h1{font-family:var(--font-display);font-weight:400;font-size:22px;margin:0;letter-spacing:.04em;line-height:1.2}
@@ -56,7 +56,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs-top button,.tabbar button{border:0;background:none;cursor:pointer}
 .tabs-top button{color:var(--night-ink);opacity:.7;padding:6px 14px;border-radius:8px;font-weight:700}
 .tabs-top button[aria-selected="true"]{opacity:1;background:rgba(243,240,230,.12);box-shadow:inset 0 -2px 0 var(--lamp)}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:var(--sab,0px)}
 .tabbar button{padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);font-weight:700}
 .tabbar button svg{width:22px;height:22px}
 .tabbar button[aria-selected="true"]{color:var(--ink)}
@@ -209,7 +209,7 @@ table.t .g{color:var(--ok);font-weight:700}
 .stat-grid .card+.card{margin-top:0}
 .stat-grid>*,.judge-grid>*{min-width:0}
 .ledit .fields{max-width:760px}
-.minibar{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom,0px));z-index:25;padding-inline:12px;display:flex;justify-content:center;pointer-events:none}
+.minibar{position:fixed;left:0;right:0;bottom:calc(58px + var(--sab,0px));z-index:25;padding-inline:12px;display:flex;justify-content:center;pointer-events:none}
 .minibar button{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:100%;border:0;cursor:pointer;background:var(--night);color:var(--night-ink);border-radius:999px;padding:7px 8px 7px 7px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-size:13px;text-align:left}
 .minibar .lb{flex:none}
 .minibar .mz{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -224,7 +224,7 @@ table.t .g{color:var(--ok);font-weight:700}
 .bar i{display:block;height:100%;background:var(--primary)}
 .pi .pd{font-size:12px;color:var(--muted);margin-top:3px}
 
-.toast{position:fixed;left:50%;bottom:calc(118px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--night);color:var(--night-ink);padding:9px 16px;border-radius:18px;font-size:13.5px;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(118px + var(--sab,0px));transform:translateX(-50%);background:var(--night);color:var(--night-ink);padding:9px 16px;border-radius:18px;font-size:13.5px;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
 @media (min-width:900px){.toast{bottom:28px}}
 .spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp .8s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -296,7 +296,7 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
 .zsum{margin-top:12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
 .zsum b{font-family:var(--font-mono)}
 .zsave{margin-top:14px;padding:10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.zsave.sticky{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.14);border-color:var(--lamp)}
+.zsave.sticky{position:sticky;bottom:calc(64px + var(--sab,0px));z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.14);border-color:var(--lamp)}
 @media (min-width:900px){.zsave.sticky{bottom:12px}}
 .zsave .msg{font-size:12.5px;color:var(--muted);flex:1 1 12em}
 .setsec+.setsec{margin-top:var(--gap)}
@@ -1377,6 +1377,7 @@ $('#ocrBtn').addEventListener('click', () => {
   $('#ocrFile').click();
 });
 const OCR_ERR = { not_granted: 'Claudeの利用が許可されていないので読み取れなかったよ。', images_unavailable: 'この画面では画像を送れないみたい。手入力でお願い！', image_rejected: '画像の形式か大きさが合わなかったよ。別のスクショで試してね。', rate_limited: '少し混み合ってるみたい。時間をおいてもう一度試してね。', invalid_json: 'うまく読み取れなかったよ。画面を大きめに撮ってもう一度試してね。', refused: '読み取りを断られちゃった。手入力でお願い！',
+  ocr_failed: '画像の文字が読み取れなかったよ。オッズの表が大きく写るように撮り直して、もう一度試してね。',
   need_key: '画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。「設定」タブの「画像の読み取り」で入れてね（1回 約1〜4円）。', bad_key: 'APIキーが使えないみたい。「設定」タブの「画像の読み取り」でキーを確かめてね。', no_credit: 'Anthropicのクレジット（残高）が足りないみたい。platform.claude.com の Billing で入れてね。', bad_model: '読み取りのモデルが見つからなかったよ。「設定」タブで「標準」を選んでね。', network: '通信できなかったよ。電波がいいところでもう一度試してね。', busy: 'Claudeが混み合ってるみたい。少し待ってもう一度試してね。' };
 function ocrFail(err) {
   const m = OCR_ERR[err?.code] || '読み取りに失敗したよ。もう一度試すか、手入力でお願い！';
@@ -1388,7 +1389,7 @@ $('#ocrFile').addEventListener('change', async e => {
   const files = [...e.target.files].slice(0, st.sampleImgs?.maxCount || 3); e.target.value = '';
   if (!files.length || !st.sample) return;
   const btn = $('#ocrBtn'), msg = $('#ocrMsg'); btn.disabled = true;
-  msg.innerHTML = `<div class="banner info"><span class="spin" aria-hidden="true"></span> ${files.length}枚の画像を読み取り中…（20〜60秒くらい）</div>`;
+  msg.innerHTML = `<div class="banner info"><span class="spin" aria-hidden="true"></span> ${files.length}枚の画像を読み取り中…${st.sample.local ? '（この中で読むよ・数秒）' : '（20〜60秒くらい）'}</div>`;
   const prompt = `添付画像は日本の競馬（地方競馬・JRA）の、同じ1レースのオッズ画面のスクリーンショットです（1〜3枚）。画面に書かれている値だけを読み取り、次の形のJSONを1つだけ返してください。説明文は不要です。
 {"venue":"開催場名（例 大井）","date":"YYYY-MM-DD","r":レース番号,"dist":距離m,"surface":"ダ"または"芝","baba":"良"|"稍重"|"重"|"不良","n":出走頭数,
  "horses":[{"no":馬番,"tan":単勝オッズ,"fuku":"複勝オッズ（幅表示は 1.2-1.5 の形の文字列）"}],
@@ -1406,7 +1407,8 @@ $('#ocrFile').addEventListener('change', async e => {
   } finally { btn.disabled = false; }
 });
 function applyOCR(d) {
-  const f = st.form, got = [], miss = [];
+  // いったん別の入れ物に読み取って、1つでも読めたときだけ入力欄に入れる（何も読めなかったら、いまの入力はそのまま）
+  const f = Object.assign({}, st.form), got = [], miss = [];
   const N = v => { const n = parseFloat(z2h(v)); return isFinite(n) ? n : null; };
   const put = (k, v, lab) => { if (v != null && v !== '') { f[k] = String(v); got.push(lab); } else miss.push(lab); };
   if (d.venue) { f.venue = String(d.venue).replace(/競馬場?$/, ''); got.push('開催場'); }
@@ -1421,9 +1423,11 @@ function applyOCR(d) {
     const o = d[k]; const v = o && N(o.odds);
     if (v) { f[k] = String(v); f[k + 'combo'] = o.combo ? String(o.combo) : ''; got.push(lab); } else miss.push(lab);
   }
+  if (!got.length) { $('#ocrMsg').innerHTML = '<div class="banner warn">オッズの表が見つからなかったよ。<b>単勝・複勝の表</b>（馬番と単勝・複勝のオッズ）と<b>3連単の人気順</b>が、大きくはっきり写るように撮り直してみてね。手で入れてもOKだよ。</div>'; return; }
   f.id = null; f.extra = 0; f.hp = null;
+  st.form = f;
   formToUI(); changed();
-  $('#ocrMsg').innerHTML = `<div class="banner ${miss.length ? 'warn' : 'info'}">読み取った：${esc(got.join('・') || 'なし')}${miss.length ? `<br>読めなかった：<b>${esc(miss.join('・'))}</b>　→ 手で入れてね` : ''}<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>`;
+  $('#ocrMsg').innerHTML = `<div class="banner ${miss.length ? 'warn' : 'info'}">読み取った：${esc(got.join('・'))}${miss.length ? `<br>読めなかった：<b>${esc(miss.join('・'))}</b>　→ 手で入れてね` : ''}<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>`;
 }
 
 

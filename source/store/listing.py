@@ -16,7 +16,7 @@ DESCRIPTION = '''オッズのスクショを選ぶだけで、レースの「荒
 推奨の買い目ゾーン（1着→2着と3着）と馬番、過去のデータでの参考的中率まで、一画面で見られる競馬の判定アプリです。
 
 ■ できること
-・オッズ画像の読み取り：単勝・複勝・3連単の人気順のスクショを1〜3枚選ぶと、開催場・レース番号・距離・頭数・馬場・オッズが入力欄に入ります（APIキーが必要。下の「画像の読み取りについて」）
+・オッズ画像の読み取り：単勝・複勝・3連単の人気順のスクショを1〜3枚選ぶと、開催場・レース番号・距離・頭数・馬場・オッズが入力欄に入ります。読み取りは端末の中で行い、通信も追加の料金もありません
 ・3つの層に判定：A層（堅）・B層（警戒）・C層（穴）。3連単1位と単勝1位のオッズの比や馬場などから、決まったルールで判定します
 ・推奨ゾーンと馬番：馬単の1着→2着のゾーン（人気・中穴・大穴・超大穴）と3連単の3着、あてはまる馬番を表示
 ・参考的中率：アプリに入っている過去の290走や、自分で入れたデータで、そのゾーンが実際に出た割合
@@ -34,11 +34,8 @@ DESCRIPTION = '''オッズのスクショを選ぶだけで、レースの「荒
 2. 層・推奨ゾーン・馬番・参考的中率を見る
 3. 買ったら「結果・収支の記録」に入れて保存
 
-■ 画像の読み取りについて
-画像の読み取りには、Anthropic（Claude）のAPIキーが必要です（有料・利用者ご自身で用意）。選んだスクショは、利用者のAPIキーでAnthropicのAPIに直接送られ、開発者には届きません。料金の目安は1回 約1〜4円（標準）・1円未満（節約）で、Anthropicに直接お支払いいただきます。APIキーがなくても、手で入力すれば読み取り以外の機能はすべて使えます。
-
 ■ プライバシー
-記録・設定・マザーデータは、すべて端末の中に保存します。開発者が利用者の情報を受け取ることはありません（データの更新は、公開しているデータを読み込むだけです）。広告・アクセス解析はありません。
+記録・設定・マザーデータは、すべて端末の中に保存します。オッズ画像の読み取りも端末の中で行い、画像はどこにも送りません。開発者が利用者の情報を受け取ることはありません（データの更新は、公開しているデータを読み込むだけです）。広告・アクセス解析・アプリ内課金はありません。
 
 ■ ご利用にあたって
 ・本アプリは、過去のデータから傾向を分析して表示する道具です。参考的中率などは過去の実測で、これからの的中や利益を約束するものではありません。
@@ -57,7 +54,7 @@ The app does NOT offer real-money gambling: there is no betting, no purchase of 
 
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears below the form.
-2. Optional feature: 「オッズ画像から読み取る」 (Read odds from images) sends the screenshots the user selects to the Anthropic API with the user's own API key (Settings > 画像の読み取り). All other features work without a key.
+2. 「オッズ画像から読み取る」 (Read odds from images) recognizes text in the screenshots the user selects entirely on the device, using the system's Vision text recognition. No image or text leaves the device, and no account, API key or payment is involved.
 3. Records and settings are stored on the device and the app works offline. Backup and CSV export use the iOS share sheet.
 4. Race data: users can add past races by hand or from a CSV/Excel file (Settings > マザーデータ > 編集), and saving a race result can also add that race. Settings > データの更新 downloads an updated past-race data file (JSON data only, no executable code) from our GitHub Pages site. Settings > アプリの更新 checks the App Store for a newer version (iTunes Search API, app ID only). No user data is sent.
 
@@ -119,10 +116,9 @@ ANSWERS = {
         '年齢カテゴリと上書き：「より高い年齢区分に上書き」→ 18+（日本では馬券は20歳から）',
     ],
     'Appのプライバシー': [
-        'データを収集していますか？：「はい」',
-        'データの種類：ユーザコンテンツ › 写真またはビデオ（画像の読み取りで選んだスクショがAnthropicのAPIに送られて、Anthropicで一定期間保存されるため）',
-        '使用目的：Appの機能／ユーザに関連付け：はい（利用者のAPIキー＝利用者のAnthropicのアカウントで送るため）／トラッキング：いいえ',
-        'ほかのデータの種類：すべて「収集しない」（記録・設定は端末の中だけ。開発者には届かない）',
+        'データを収集していますか？：「いいえ、このAppからデータを収集していません」',
+        '理由：記録・設定は端末の中だけ。画像の読み取りも端末の中（Vision）で、画像はどこにも送らない。アプリの更新の確認（Apple）・データの更新・CM（GitHub Pages）は、公開データを読むだけで利用者の情報を送らない',
+        'もし審査で「写真」について聞かれたら：選んだスクショは端末の中で読み取るだけで、送信も保存もしない、と答える',
     ],
     '輸出コンプライアンス（暗号化）': [
         'ビルドを出すときに聞かれる「アプリで使用している暗号化アルゴリズムの種類」：「上記のアルゴリズムのいずれでもない」（None of the algorithms mentioned above）',
@@ -144,7 +140,7 @@ ANSWERS = {
 }
 REVIEW_NOTES_JA = ('（日本語の意味）オッズを入れて（または自分のスクショから読み取って）、端末の中の過去のデータをもとに、馬単・3連単の買い目のゾーンを表示するアプリです。'
                    '実際のお金の賭けはできません（馬券の購入・賭け・賭けのサービスへのリンクはなし）。利用者は自分の結果と収支を記録するだけです。'
-                   '確かめ方：判定タブの「入力例を入れる」で架空のレースの判定が出ます（アカウント不要）。画像の読み取りだけは利用者自身のAnthropicのAPIキーが必要で、ほかは全部キーなしで動きます。'
+                   '確かめ方：判定タブの「入力例を入れる」で架空のレースの判定が出ます（アカウント不要）。画像の読み取りは、選んだスクショの文字を端末の中（iOSの文字認識）で読むだけで、画像も文字も外に送らず、アカウントもAPIキーも支払いもいりません。'
                    '記録は端末の中・電波がなくても動く・バックアップとCSVは共有シート。'
                    'レースのデータは手で入れたり、CSV・Excelから入れたりできる（結果を保存したレースも入れられる）。設定の「データの更新」はGitHub Pagesで公開しているデータ（JSONのデータだけで、プログラムではない）を読み込む。「アプリの更新」はApp Storeの新しい版を確かめる（送るのはアプリのIDだけ）。利用者の情報は送らない。'
                    '設定のCMはGitHub Pagesから再生。18歳以上向け（日本では馬券は20歳から・アプリにも表示）。')
