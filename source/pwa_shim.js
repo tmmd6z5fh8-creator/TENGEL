@@ -429,10 +429,6 @@ if (window.__NATIVE) (function () {
     });
   }
 
-  // ===== 画像の読み取り：オッズのスクショを Claude（Anthropic の API）で読む =====
-  // APIキーはまさちゃんのもの。このiPhoneの中（meta 'set:ocr'）にだけ保存して、ほかには送らない（Anthropic に直接送るだけ）
-  var OCR_MODELS = { std: 'claude-sonnet-5-5', eco: 'claude-haiku-5-5' };
-  var OCR_SYSTEM = 'あなたは日本の競馬のオッズ画面のスクリーンショットを、正確に書き写す係です。画面に書かれている数字と文字だけを読み取り、指示された形のJSONだけを返します。説明文やコードブロックの印は付けません。';
   function loadImage(file) {
     return new Promise(function (res, rej) {
       var u = URL.createObjectURL(file), im = new Image();
@@ -452,6 +448,11 @@ if (window.__NATIVE) (function () {
       return c.toDataURL('image/jpeg', q || 0.9).split(',')[1];
     });
   }
+  /*@web-only*/
+  // ===== 画像の読み取り：オッズのスクショを Claude（Anthropic の API）で読む =====
+  // APIキーはまさちゃんのもの。このiPhoneの中（meta 'set:ocr'）にだけ保存して、ほかには送らない（Anthropic に直接送るだけ）
+  var OCR_MODELS = { std: 'claude-sonnet-5-5', eco: 'claude-haiku-5-5' };
+  var OCR_SYSTEM = 'あなたは日本の競馬のオッズ画面のスクリーンショットを、正確に書き写す係です。画面に書かれている数字と文字だけを読み取り、指示された形のJSONだけを返します。説明文やコードブロックの印は付けません。';
   function apiCall(set, body, model) {
     body.model = model || OCR_MODELS[set.model] || OCR_MODELS.std;
     var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 120000) : null;
@@ -489,6 +490,27 @@ if (window.__NATIVE) (function () {
     if (a < 0 || b <= a) throw { code: 'invalid_json' };
     try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { throw { code: 'invalid_json' }; }
   }
+  var sampleWeb = {
+    hasKey: function () { return !!(ocrSet && ocrSet.key); },
+    limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
+    json: function (prompt, opt) {
+      var files = ((opt && opt.images) || []).slice(0, 3);
+      return ready.then(function () {
+        if (!ocrSet || !ocrSet.key) throw { code: 'need_key' };
+        return Promise.all(files.map(function (f) { return toJpeg(f); }));
+      }).then(function (imgs) {
+        var content = imgs.map(function (b64) { return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }; });
+        content.push({ type: 'text', text: prompt });
+        return apiCallWithFallback(ocrSet, { max_tokens: 3000, system: OCR_SYSTEM, messages: [{ role: 'user', content: content }] });
+      }).then(pickJSON);
+    }
+  };
+  // 設定タブ「保存して試す」用：このキーで読めるか
+  function ocrTest(key, model) {
+    var set = { key: String(key || '').trim(), model: model === 'eco' ? 'eco' : 'std' };
+    return apiCallWithFallback(set, { max_tokens: 16, messages: [{ role: 'user', content: '「OK」とだけ返してください。' }] });
+  }
+  /*@/web-only*/
   // アプリ版：画像の文字はこの端末の中で読む（AppleのVision。APIキーも料金もいらない・どこにも送らない）。表の組み立ては ocr_local.js
   var sample = window.__NATIVE ? {
     local: true,
@@ -511,21 +533,7 @@ if (window.__NATIVE) (function () {
         return d;
       });
     }
-  } : {
-    hasKey: function () { return !!(ocrSet && ocrSet.key); },
-    limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
-    json: function (prompt, opt) {
-      var files = ((opt && opt.images) || []).slice(0, 3);
-      return ready.then(function () {
-        if (!ocrSet || !ocrSet.key) throw { code: 'need_key' };
-        return Promise.all(files.map(function (f) { return toJpeg(f); }));
-      }).then(function (imgs) {
-        var content = imgs.map(function (b64) { return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }; });
-        content.push({ type: 'text', text: prompt });
-        return apiCallWithFallback(ocrSet, { max_tokens: 3000, system: OCR_SYSTEM, messages: [{ role: 'user', content: content }] });
-      }).then(pickJSON);
-    }
-  };
+  } : (typeof sampleWeb !== 'undefined' ? sampleWeb : null);
   // ファイルの保存（記録タブの「CSVで保存」）：アプリ版だけ。共有シートで渡す（閉じたら declined）
   var downloads = window.__NATIVE ? { save: function (o) { return window.TengelNative.share(o.filename, o.data, /\.csv$/i.test(o.filename || '') ? 'text/csv' : 'application/octet-stream').then(function (ok) { if (!ok) throw { code: 'declined' }; }); } } : null;
   window.claude = { use: function (n) { return Promise.resolve(n === 'db' ? db : n === 'user' ? { canEdit: function () { return Promise.resolve(true); } } : n === 'sample' ? sample : n === 'downloads' ? downloads : null); } };
@@ -566,17 +574,14 @@ if (window.__NATIVE) (function () {
     },
     // 画像の読み取り（APIキーはこのiPhoneの中だけ。バックアップにも入れない）
     ocr: {
-      MODELS: OCR_MODELS,
+      MODELS: typeof OCR_MODELS !== 'undefined' ? OCR_MODELS : {},
       get: function () { return ocrSet ? { key: ocrSet.key, model: ocrSet.model || 'std' } : null; },
       save: function (key, model) {
         var v = { key: String(key || '').trim(), model: model === 'eco' ? 'eco' : 'std' };
         return ready.then(function () { return putMeta({ id: 'set:ocr', value: v, at: new Date().toISOString() }); }).then(function () { ocrSet = v; return v; });
       },
       clear: function () { return ready.then(function () { need(); var t = idb.transaction('meta', 'readwrite'); t.objectStore('meta').delete('set:ocr'); return done(t); }).then(function () { ocrSet = null; }); },
-      test: function (key, model) {
-        var set = { key: String(key || '').trim(), model: model === 'eco' ? 'eco' : 'std' };
-        return apiCallWithFallback(set, { max_tokens: 16, messages: [{ role: 'user', content: '「OK」とだけ返してください。' }] });
-      }
+      test: function (key, model) { return typeof ocrTest === 'function' ? ocrTest(key, model) : Promise.reject({ code: 'unsupported' }); }
     },
     // 設定（買い目など）。まだ無いときは undefined、初期に戻したときは null
     getSetting: function (key) { return ready.then(function () { return idb ? req(store('meta', 'readonly').get('set:' + key)) : undefined; }).then(function (o) { return o ? o.value : undefined; }); },

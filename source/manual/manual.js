@@ -80,7 +80,7 @@
     for (const g of $$('.group')) g.hidden = !$$('.mrow', g).some(r => !r.hidden);
     start.hidden = words.length > 0;
     qinfo.hidden = !words.length;
-    qinfo.textContent = n ? `${n}件みつかったよ` : 'みつからなかったよ。ほかの言葉でさがしてね（例：WIN5、APIキー、的中）';
+    qinfo.textContent = n ? `${n}件みつかったよ` : 'みつからなかったよ。ほかの言葉でさがしてね（例：' + (document.documentElement.dataset.hint || '的中') + '）';
   }
   q.addEventListener('input', search);
   qx.addEventListener('click', () => { q.value = ''; search(); q.focus(); });

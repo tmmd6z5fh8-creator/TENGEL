@@ -1376,9 +1376,12 @@ $('#ocrBtn').addEventListener('click', () => {
   if (st.sample && typeof st.sample.hasKey === 'function' && !st.sample.hasKey()) { ocrFail({ code: 'need_key' }); return; }
   $('#ocrFile').click();
 });
-const OCR_ERR = { not_granted: 'Claudeの利用が許可されていないので読み取れなかったよ。', images_unavailable: 'この画面では画像を送れないみたい。手入力でお願い！', image_rejected: '画像の形式か大きさが合わなかったよ。別のスクショで試してね。', rate_limited: '少し混み合ってるみたい。時間をおいてもう一度試してね。', invalid_json: 'うまく読み取れなかったよ。画面を大きめに撮ってもう一度試してね。', refused: '読み取りを断られちゃった。手入力でお願い！',
-  ocr_failed: '画像の文字が読み取れなかったよ。オッズの表が大きく写るように撮り直して、もう一度試してね。',
-  need_key: '画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。「設定」タブの「画像の読み取り」で入れてね（1回 約1〜4円）。', bad_key: 'APIキーが使えないみたい。「設定」タブの「画像の読み取り」でキーを確かめてね。', no_credit: 'Anthropicのクレジット（残高）が足りないみたい。platform.claude.com の Billing で入れてね。', bad_model: '読み取りのモデルが見つからなかったよ。「設定」タブで「標準」を選んでね。', network: '通信できなかったよ。電波がいいところでもう一度試してね。', busy: 'Claudeが混み合ってるみたい。少し待ってもう一度試してね。' };
+const OCR_ERR = { images_unavailable: 'この画面では画像を送れないみたい。手入力でお願い！', image_rejected: '画像の形式か大きさが合わなかったよ。別のスクショで試してね。', rate_limited: '少し混み合ってるみたい。時間をおいてもう一度試してね。', invalid_json: 'うまく読み取れなかったよ。画面を大きめに撮ってもう一度試してね。', refused: '読み取りを断られちゃった。手入力でお願い！',
+  ocr_failed: '画像の文字が読み取れなかったよ。オッズの表が大きく写るように撮り直して、もう一度試してね。', network: '通信できなかったよ。電波がいいところでもう一度試してね。' };
+/*@web-only*/
+// Web版・claude.ai版（Claude が読む）だけのメッセージ。App Store版は端末の中で読むので入れない
+Object.assign(OCR_ERR, { not_granted: 'Claudeの利用が許可されていないので読み取れなかったよ。', need_key: '画像の読み取りには、AnthropicのAPIキーが1回だけ必要だよ。「設定」タブの「画像の読み取り」で入れてね（1回 約1〜4円）。', bad_key: 'APIキーが使えないみたい。「設定」タブの「画像の読み取り」でキーを確かめてね。', no_credit: 'Anthropicのクレジット（残高）が足りないみたい。platform.claude.com の Billing で入れてね。', bad_model: '読み取りのモデルが見つからなかったよ。「設定」タブで「標準」を選んでね。', busy: 'Claudeが混み合ってるみたい。少し待ってもう一度試してね。' });
+/*@/web-only*/
 function ocrFail(err) {
   const m = OCR_ERR[err?.code] || '読み取りに失敗したよ。もう一度試すか、手入力でお願い！';
   const go = ['need_key', 'bad_key', 'no_credit', 'bad_model'].includes(err?.code) ? '<div class="row" style="margin-top:8px"><button class="btn" type="button" data-goset="ocr">「画像の読み取り」の設定を開く</button></div>' : '';
@@ -1390,6 +1393,8 @@ $('#ocrFile').addEventListener('change', async e => {
   if (!files.length || !st.sample) return;
   const btn = $('#ocrBtn'), msg = $('#ocrMsg'); btn.disabled = true;
   msg.innerHTML = `<div class="banner info"><span class="spin" aria-hidden="true"></span> ${files.length}枚の画像を読み取り中…${st.sample.local ? '（この中で読むよ・10秒くらい）' : '（20〜60秒くらい）'}</div>`;
+  /*@web-only*/
+  // Claude への指示（Web版・claude.ai版）。App Store版は端末の中で読むので使わない
   const prompt = `添付画像は日本の競馬（地方競馬・JRA）の、同じ1レースのオッズ画面のスクリーンショットです（1〜3枚）。画面に書かれている値だけを読み取り、次の形のJSONを1つだけ返してください。説明文は不要です。
 {"venue":"開催場名（例 大井）","date":"YYYY-MM-DD","r":レース番号,"dist":距離m,"surface":"ダ"または"芝","baba":"良"|"稍重"|"重"|"不良","n":出走頭数,
  "horses":[{"no":馬番,"tan":単勝オッズ,"fuku":"複勝オッズ（幅表示は 1.2-1.5 の形の文字列）"}],
@@ -1399,8 +1404,9 @@ $('#ocrFile').addEventListener('change', async e => {
 - 取消・除外・競走除外の馬は horses に入れない。出走頭数は取消を除いた頭数。
 - s1/s5/s10 は3連単を人気順（オッズの低い順）に並べたときの1位・5位・10位。人気順の一覧が画面に無ければ null。
 - 数値は数値で（"2.4"ではなく2.4）。`;
+  /*@/web-only*/
   try {
-    const d = await st.sample.json(prompt, { images: files });
+    const d = await st.sample.json(typeof prompt === 'string' ? prompt : '', { images: files });
     applyOCR(d || {});
   } catch (err) {
     ocrFail(err);

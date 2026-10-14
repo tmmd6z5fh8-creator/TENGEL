@@ -29,7 +29,7 @@
   - 結果：各レースの1着の馬番 → ○×。1つでも外れたら不的中、5つとも入ったら的中。購入額が空なら点数×100円。作業中の5レース・予算などは localStorage の `tengel.win5`（入力中のレースは `tengel.w5edit`）
 - 着順・3連単の組番の欄：iPhoneの数字キーボードに「-」がないので、「.」が打てるキーボード（inputmode=decimal）にして、「.」や空白は打ったそばから「-」にする。区切りなし（6211）は頭数から読み（読み方が2つ以上なら区切ってと案内）、欄を離れると 6-2-11 の形に直す。
 - 画像の読み取り（Web版）：判定タブの「オッズ画像から読み取る」→ スクショを長い辺2000pxのJPEGにして Anthropic の API（標準 claude-sonnet-5-5／節約 claude-haiku-5-5）へ直接送る。APIキーは設定タブで入れて set:ocr にだけ保存（バックアップには入れない）。キーがないときは写真を選ぶ前に案内する。
-- **画像の読み取り（App Store版・2026.10.14-1〜）：APIキーなし・追加料金なし・端末の中で完結**（まさちゃんの指定）。スクショを長い辺2600pxのJPEGにしてアプリ（Swift の `TextReader`＝Apple の Vision の文字認識・ja/en）に渡し、読めた文字と位置（`lines`）を `ocr_local.js` がオッズ画面の表（単勝・複勝の行＝[人気][枠]馬番 馬名 単勝 複勝、3連単の人気順＝順位 組番 オッズ、レース情報＝R・距離・ダ芝・馬場・頭数・開催場・日付）に組み立てて、Web版と同じ形の JSON にする。画像も文字も外に送らない。設定タブの「画像の読み取り」はキーの欄なし（説明だけ）。説明書の「画像の読み取り（APIキー）」の項目は App Store版には出さない
+- **画像の読み取り（App Store版・2026.10.14-1〜）：APIキーなし・追加料金なし・端末の中で完結**（まさちゃんの指定）。スクショを長い辺2600pxのJPEGにしてアプリ（Swift の `TextReader`＝Apple の Vision の文字認識・ja/en）に渡し、読めた文字と位置（`lines`）を `ocr_local.js` がオッズ画面の表（単勝・複勝の行＝[人気][枠]馬番 馬名 単勝 複勝、3連単の人気順＝順位 組番 オッズ、レース情報＝R・距離・ダ芝・馬場・頭数・開催場・日付）に組み立てて、Web版と同じ形の JSON にする。画像も文字も外に送らない。設定タブの「画像の読み取り」はキーの欄なし（説明だけ）。説明書の「画像の読み取り（APIキー）」の項目は App Store版には出さない。**Web版だけの部分（Claude に読ませる仕組み・APIキーのカード・Claude への指示）は `/*@web-only*/ 〜 /*@/web-only*/` で囲んであり、app_target.py が App Store版からまるごと消す**（出さない言葉に Anthropic・Claude・sk-ant・APIキー も入れて、残っていたら作らない）
 
 - アプリを更新しても、この3つは消えない。データベースの作りを変えるときは、**足すだけ**にする（消したり作り直したりしない）。
 - ホーム画面のアイコンを消すと、iPhoneがこのデータも消す。アイコンを変えたいときは、先にバックアップ → 入れ直し → 戻す。
@@ -71,7 +71,7 @@
 
 ## アプリを直して公開する
 1. source/ のファイルを直す
-2. `cd source && APP_VER=2026.10.14-1 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
+2. `cd source && APP_VER=2026.10.14-2 sh deploy.sh`（APP_VER は必ず前より大きく。iPhoneの「新しい版があるよ」に使う。説明書の manual.html と manual/、CMの cm/ もいっしょに置く）
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 

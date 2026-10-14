@@ -12,7 +12,9 @@ import os, re, unicodedata
 FORBIDDEN = ['大井', '船橋', '川崎', '浦和', '門別', '盛岡', '水沢', '金沢', '笠松', '名古屋', '園田', '姫路', '高知', '佐賀', '帯広',
              '札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉', 'ばんえい',
              'JRA', 'NAR', 'TCK', 'WIN5', 'Win5', '中央競馬', '地方競馬', '南関', 'UMACA', 'ウインズ',
-             '改訂', '第13', '第12', '第11', 'まさちゃん', '姫に送', '姫フィルター']
+             '改訂', '第13', '第12', '第11', 'まさちゃん', '姫に送', '姫フィルター',
+             # App Store版は画像の読み取りを端末の中でするので、外のAIサービス・APIキーの名前も入れない
+             'Anthropic', 'anthropic', 'Claude', 'sk-ant', 'APIキー', 'platform.claude']
 
 
 def norm_venue(s):
@@ -124,6 +126,19 @@ def _scan(src, i, in_expr):
     return out, i
 
 
+def strip_web_only(text):
+    """Web版だけの部分（/*@web-only*/ 〜 /*@/web-only*/：APIキーで Claude に読ませる画像の読み取りなど）を、App Store版からまるごと消す"""
+    out, n = re.subn(r'/\*@web-only\*/[\s\S]*?/\*@/web-only\*/', '', text)
+    if n != WEB_ONLY_BLOCKS:
+        raise SystemExit(f'App Store版：Web版だけの部分（@web-only）の数がちがうよ（{WEB_ONLY_BLOCKS}のはずが{n}）')
+    if '@web-only' in out:
+        raise SystemExit('App Store版：@web-only の印が閉じていないよ')
+    return out
+
+
+WEB_ONLY_BLOCKS = 4   # pwa_shim.js（Claude での読み取り）・pwa_ui.js（APIキーのカード）・src.html（Claude への指示・メッセージ）
+
+
 def strip_page_comments(html):
     """ページの <script> と <style> と HTML のコメントを消す（script・style の中の文字はHTMLのコメントとして扱わない）"""
     parts, pos = [], 0
@@ -210,9 +225,6 @@ INDEX = [
     ("if (J.surface === '芝' && J.motherN === 1) o.push('※芝レース（大井はダートのみ）');",
      "if (J.surface === '芝' && J.builtin) o.push('※芝レース（アプリに入っているデータはダートのレースだけ）');", 1),
     ('o.push(`開催場：${J.venue}`);', "o.push(`開催場：${J.venue || '—'}`);", 1),
-    # 画像の読み取り（Claudeへの指示）
-    ('添付画像は日本の競馬（地方競馬・JRA）の、', '添付画像は日本の競馬の、', 1),
-    ('"venue":"開催場名（例 大井）"', '"venue":"開催場名（「○○競馬場」なら「○○」だけ）"', 1),
     # 5重勝（WIN5）の説明
     ("'開催場を入れてね（WIN5はJRAのレースだよ）'", "'開催場を入れてね'", 1),
     ('JRAが指定する<b>5レースの1着を全部当てる</b>馬券だよ（', '主催者が指定する<b>5レースの1着を全部当てる</b>馬券（5重勝）だよ（', 1),
@@ -262,6 +274,7 @@ INDEX = [
 
 def app_index(html):
     """App Store版の index.html：コメントを消して、名前を置きかえて、残っていないか確かめる"""
+    html = strip_web_only(html)
     html = strip_page_comments(html)
     html = apply(html, INDEX, 'index.html')
     check_clean(html, 'index.html')

@@ -207,28 +207,9 @@
   const span = recs => { const ds = recs.map(r => r.date).sort(); return span2(ds[0], ds[ds.length - 1]); };
   const usable = recs => recs.filter(r => Number(r.cnt) === 1 && r.p1 && r.p2).length;
 
-  // ---------- 設定タブの中身 ----------
-  function build() {
-    const box = $('#setExtra'); if (!box) return;
-    box.innerHTML = `
-<div class="card setsec" id="setMother" style="margin-top:var(--gap)">
-  <h2>マザーデータ（3つ）</h2>
-  <p class="hint" style="margin:0">「使う」を押したマザーデータで、判定の参考的中率と実測（①〜⑦）を計算するよ。判定タブと実測タブの上でも切り替えられるよ。買ったレースの記録と買い目の設定は、3つとも共通だよ。</p>
-  <div class="slotlist" id="slotList"></div>
-  <div class="slotedit" id="slotEdit"></div>
-</div>
-${NATIVE ? `<div class="card setsec" id="setOcr">
-  <h2>画像の読み取り（オッズのスクショ）</h2>
-  <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。文字は<b>この端末の中</b>で読むよ（Appleの文字認識）。<b>どこにも送らないし、料金もかからないよ</b>。</p>
-  <dl class="kvs" style="margin-top:10px"><dt>読み取り</dt><dd>この端末の中（ネット不要・無料）</dd><dt>送るもの</dt><dd>なし（画像も読んだ文字も、外に出ないよ）</dd></dl>
-  <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:700">うまく読み取るコツ</summary>
-    <ul class="small" style="margin:6px 0 0;padding-left:18px">
-      <li><b>単勝・複勝の表</b>（馬番・単勝・複勝のオッズが並んだ画面）と、<b>3連単の人気順</b>（1位から順に組番とオッズが並んだ画面）を、それぞれ大きく写す</li>
-      <li>画面を拡大して、1枚に表がおさまるように。文字が小さいときは2枚に分けてもOK（最大3枚）</li>
-      <li>読み取ったあとは、オッズと頭数だけ画面と見比べてね。ちがっていたら、その欄だけ手で直せるよ</li>
-    </ul>
-  </details>
-</div>` : `<div class="card setsec ocrset" id="setOcr">
+  /*@web-only*/
+  // ---- 画像の読み取り（Web版：まさちゃんのAPIキーで Claude が読む）。App Store版にはこの部分は入れない（端末の中で読む） ----
+  var WEB_OCR_CARD = `<div class="card setsec ocrset" id="setOcr">
   <h2>画像の読み取り（オッズのスクショ）</h2>
   <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。読み取りはClaude（Anthropic）にしてもらうから、<b>AnthropicのAPIキー</b>を1回だけ入れてね。</p>
   <dl class="kvs"><dt>APIキー</dt><dd id="soState">まだ入っていないよ</dd><dt>料金のめやす</dt><dd>標準：1回 約1〜4円／節約：1回 1円未満<br><span class="small muted">Anthropicへの支払い。スクショの枚数で変わるよ</span></dd></dl>
@@ -246,26 +227,7 @@ ${NATIVE ? `<div class="card setsec" id="setOcr">
     </ol>
   </details>
   <p class="hint">キーは<b>${NATIVE ? 'この端末' : 'このiPhone'}の中だけ</b>に保存するよ（バックアップのファイルにも入れないよ）。スクショは読み取りのためにAnthropicへ直接送るだけだよ。キーは人に見せないでね。</p>
-</div>`}
-${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
-  <h2>アプリの更新</h2>
-  <dl class="kvs"><dt>いまの版</dt><dd>${esc(APP_VER || '—')}（第13改訂版）</dd><dt>最後に確認</dt><dd id="suChecked">まだ</dd></dl>
-  <div class="row"><button class="btn" type="button" id="suCheck">新しい版があるか確認</button><button class="btn primary" type="button" id="suApply" hidden>新しい版にする</button></div>
-  <p class="small" id="suMsg" style="margin:8px 0 0"></p>
-  <p class="hint">更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>（このiPhoneの中にそのまま残るよ）。新しい版があるときは、アプリを開いたときに上にお知らせが出るよ。</p>
-  <div class="banner warn">⚠️ ホーム画面のアイコンは消さないでね。アイコンを消すと、中の記録も一緒に消えちゃうの。</div>
-</div>`}
-<div class="card setsec" id="setBackup">
-  <h2>バックアップ（記録を守る）</h2>
-  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
-    : '<p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'}
-  <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd>${NATIVE ? '<dt>自動バックアップ</dt><dd id="sbAuto">—</dd>' : ''}</dl>
-  <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
-  <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
 </div>`;
-    wireSlots(); if (!NATIVE) wireOcr(); wireUpdate(); wireNativeUpdate(); wireBackup();
-  }
-
   // ---- 画像の読み取り（APIキー） ----
   function wireOcr() {
     const O = TengelLocal.ocr; let model = 'std';
@@ -309,6 +271,49 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     };
     TengelLocal.ready.then(paint).catch(() => {});
   }
+  /*@/web-only*/
+
+  // ---------- 設定タブの中身 ----------
+  function build() {
+    const box = $('#setExtra'); if (!box) return;
+    box.innerHTML = `
+<div class="card setsec" id="setMother" style="margin-top:var(--gap)">
+  <h2>マザーデータ（3つ）</h2>
+  <p class="hint" style="margin:0">「使う」を押したマザーデータで、判定の参考的中率と実測（①〜⑦）を計算するよ。判定タブと実測タブの上でも切り替えられるよ。買ったレースの記録と買い目の設定は、3つとも共通だよ。</p>
+  <div class="slotlist" id="slotList"></div>
+  <div class="slotedit" id="slotEdit"></div>
+</div>
+${NATIVE ? `<div class="card setsec" id="setOcr">
+  <h2>画像の読み取り（オッズのスクショ）</h2>
+  <p class="hint" style="margin:0">判定タブの<b>「オッズ画像から読み取る」</b>で、スクショ（1〜3枚）から開催場・R・距離・馬場・頭数・単勝・複勝・3連単の人気順を読み取って、入力欄に入れるよ。文字は<b>この端末の中</b>で読むよ（Appleの文字認識）。<b>どこにも送らないし、料金もかからないよ</b>。</p>
+  <dl class="kvs" style="margin-top:10px"><dt>読み取り</dt><dd>この端末の中（ネット不要・無料）</dd><dt>送るもの</dt><dd>なし（画像も読んだ文字も、外に出ないよ）</dd></dl>
+  <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:700">うまく読み取るコツ</summary>
+    <ul class="small" style="margin:6px 0 0;padding-left:18px">
+      <li><b>単勝・複勝の表</b>（馬番・単勝・複勝のオッズが並んだ画面）と、<b>3連単の人気順</b>（1位から順に組番とオッズが並んだ画面）を、それぞれ大きく写す</li>
+      <li>画面を拡大して、1枚に表がおさまるように。文字が小さいときは2枚に分けてもOK（最大3枚）</li>
+      <li>読み取ったあとは、オッズと頭数だけ画面と見比べてね。ちがっていたら、その欄だけ手で直せるよ</li>
+    </ul>
+  </details>
+</div>` : (typeof WEB_OCR_CARD === 'string' ? WEB_OCR_CARD : '')}
+${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
+  <h2>アプリの更新</h2>
+  <dl class="kvs"><dt>いまの版</dt><dd>${esc(APP_VER || '—')}（第13改訂版）</dd><dt>最後に確認</dt><dd id="suChecked">まだ</dd></dl>
+  <div class="row"><button class="btn" type="button" id="suCheck">新しい版があるか確認</button><button class="btn primary" type="button" id="suApply" hidden>新しい版にする</button></div>
+  <p class="small" id="suMsg" style="margin:8px 0 0"></p>
+  <p class="hint">更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>（このiPhoneの中にそのまま残るよ）。新しい版があるときは、アプリを開いたときに上にお知らせが出るよ。</p>
+  <div class="banner warn">⚠️ ホーム画面のアイコンは消さないでね。アイコンを消すと、中の記録も一緒に消えちゃうの。</div>
+</div>`}
+<div class="card setsec" id="setBackup">
+  <h2>バックアップ（記録を守る）</h2>
+  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
+    : '<p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'}
+  <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd>${NATIVE ? '<dt>自動バックアップ</dt><dd id="sbAuto">—</dd>' : ''}</dl>
+  <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
+  <p class="small" id="pwaBkInfo" style="margin:8px 0 0"></p>
+</div>`;
+    wireSlots(); if (!NATIVE && typeof wireOcr === 'function') wireOcr(); wireUpdate(); wireNativeUpdate(); wireBackup();
+  }
+
   // 判定タブなどから設定タブの各カードへ飛ぶ
   function goSettings(sec) {
     const tb = document.querySelector('.tabbar [data-tab=set]');
