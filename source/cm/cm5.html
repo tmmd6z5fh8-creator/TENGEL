@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>テンゲルⅢ CM 第5弾（前置き3秒・ゆっくり・言葉を見直し）</title>
+<style>
+/* 第5弾（まさちゃんの指定 2026/10/15）：はじめの約3秒は派手な前置き「オッズを入れるだけの 全く新しい 競馬アプリ!!」→ 題名 → 本編
+   本編は1つ1つの場面と文字をゆっくり（第4弾の約1.4倍）・周りのランプなし・入力の説明は「単勝オッズ・3連単オッズ・レース情報を入れるだけ」
+   「誰でも簡単に! 1発でゾーンまで判定!!」。言葉はお客さん向けで、的中や利益を約束する言葉は使わない（的中数は「過去の」）
+   縦9:16（540×960をDPR2で1080×1920に）。150BPM（1拍0.4秒）。0〜50.4秒は本編、50.4〜60.4秒は注意書き。cm4.html をもとにしている */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:540px;height:960px;overflow:hidden;background:#000}
+body{font-family:'Noto Sans CJK JP','Hiragino Sans',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
+#world{position:absolute;left:0;top:0;width:540px;height:960px;overflow:hidden;transform-origin:50% 50%}
+canvas{position:absolute;left:0;top:0;width:540px;height:960px}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity}
+.center{width:540px;text-align:center}
+
+/* スマホ */
+#phone{transform-origin:0 0;width:290px;height:604.3px;border-radius:47px;background:linear-gradient(150deg,#3a3f48,#0c0e11 40%,#1b1f25);
+  box-shadow:0 0 0 1.8px rgba(255,214,102,.9),0 0 34px rgba(255,150,0,.55),0 34px 70px rgba(0,0,0,.75)}
+#screen{position:absolute;left:10px;top:10px;width:270px;height:584.3px;border-radius:37px;overflow:hidden;background:#eceef3}
+#status{position:absolute;left:0;top:0;width:270px;height:26px;background:#16203D;color:#fff;z-index:3}
+#status .tm{position:absolute;left:25px;top:6px;font-weight:700;font-size:11.5px}
+#status .isl{position:absolute;left:97px;top:5px;width:76px;height:19px;border-radius:12px;background:#000}
+#status .ic{position:absolute;right:20px;top:8px;display:flex;gap:4px;align-items:flex-end}
+#status .bars i{display:inline-block;width:3px;background:#fff;border-radius:1px;margin-left:1px}
+#status .bat{width:20px;height:10px;border:1.3px solid rgba(255,255,255,.9);border-radius:3px;position:relative}
+#status .bat::after{content:"";position:absolute;left:1.5px;top:1.5px;width:12px;height:4.5px;background:#fff;border-radius:1px}
+.hdr{position:absolute;left:0;top:26px;width:270px;z-index:2}
+#vp{position:absolute;left:0;width:270px;overflow:hidden;background:#eceef3}
+.cimg{position:absolute;left:0;top:0;width:270px}
+.tab{position:absolute;left:0;width:270px;z-index:2}
+#home{position:absolute;left:0;bottom:0;width:270px;height:14px;background:#fff;z-index:2}
+#home::after{content:"";position:absolute;left:90px;top:5px;width:90px;height:4px;border-radius:2px;background:#111}
+.ring{position:absolute;border:3px solid #ffcf3a;border-radius:10px;box-shadow:0 0 0 2px rgba(80,0,0,.45),0 0 20px rgba(255,190,40,.95),inset 0 0 12px rgba(255,190,40,.45)}
+.rip{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.95);box-shadow:0 0 16px rgba(255,220,120,.9)}
+.dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 14px rgba(255,200,80,.9)}
+
+/* カード（買う馬・WIN5・記録） */
+.card{transform-origin:50% 50%;border-radius:18px;overflow:hidden;background:#fff;
+  box-shadow:0 0 0 2.5px #ffd45c,0 0 30px rgba(255,150,0,.6),0 26px 50px rgba(0,0,0,.65)}
+.card img{position:absolute;left:0;top:0}
+
+/* テロップの小さい帯 */
+.sub{display:inline-block;padding:7px 18px 8px;border-radius:10px;border:2px solid #ffd45c;background:linear-gradient(180deg,#6a000c,#1c0003);
+  box-shadow:0 0 16px rgba(255,150,0,.6),inset 0 0 10px rgba(255,80,0,.35);font-weight:900;font-size:21px;letter-spacing:.04em;white-space:nowrap;text-shadow:0 2px 0 #000}
+.sub.blue{border-color:#8fe6ff;background:linear-gradient(180deg,#0b3478,#020a22);box-shadow:0 0 16px rgba(80,200,255,.6),inset 0 0 10px rgba(80,200,255,.3)}
+.foot{font-size:12.5px;color:rgba(230,230,230,.8);letter-spacing:.02em;text-shadow:0 1px 2px #000}
+
+/* エンディング */
+#banner{transform-origin:50% 50%;width:480px;height:261.8px;border-radius:16px;overflow:hidden;box-shadow:0 0 0 2px #ffd45c,0 0 40px rgba(255,170,0,.6),0 30px 70px rgba(0,0,0,.7)}
+#banner img{width:480px;height:261.8px;display:block}
+#cta{display:inline-flex;align-items:center;gap:10px;padding:11px 24px 12px;border-radius:999px;background:linear-gradient(180deg,#fff0a8,#f2c14e 45%,#c88a1e);color:#2a1300;
+  font-weight:900;font-size:21px;letter-spacing:.04em;box-shadow:0 0 0 2px #fff6cf,0 0 24px rgba(255,190,60,.8),0 10px 26px rgba(0,0,0,.5)}
+#cta svg{width:24px;height:24px}
+#eSum span{display:inline-block;padding:7px 16px 8px;border-radius:999px;border:1.5px solid rgba(255,212,92,.85);background:rgba(10,14,34,.8);font-weight:800;font-size:16.5px;letter-spacing:.05em;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap;box-shadow:0 0 14px rgba(255,180,60,.35)}
+#disc{width:500px;font-size:10.5px;line-height:1.7;color:rgba(225,225,225,.82);text-shadow:0 1px 2px #000}
+</style></head>
+<body>
+<div id="world">
+<canvas id="bg" width="1080" height="1920"></canvas>
+
+<div class="abs" id="phone">
+  <div id="screen">
+    <div id="status"><span class="tm">9:41</span><span class="isl"></span>
+      <span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+    <div id="hdrs"></div>
+    <div id="vp"><div id="cimgs"></div>
+      <div class="ring" id="ring" style="display:none"></div>
+      <div class="rip" id="prip" style="display:none"></div>
+      <div class="dot" id="pdot" style="display:none"></div>
+    </div>
+    <div id="tabs"></div>
+    <div id="home"></div>
+  </div>
+</div>
+
+
+<div class="abs" id="banner"><img src="assets/banner.jpg" alt=""></div>
+
+<div class="abs center" id="csub"><span class="sub"></span></div>
+<div class="abs center foot" id="cfoot">※画像の読み取りには、AnthropicのAPIキー（有料）が必要です</div>
+<div class="abs center" id="ectaw"><span id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/></svg>ホーム画面に追加して使える</span></div>
+<div class="abs center" id="eSum"><span>判定・買い目編集・収支の記録まで、これひとつ</span></div>
+
+<canvas id="fx" width="1080" height="1920"></canvas>
+</div>
+<img id="emb" src="assets/emblem.png" alt="" style="display:none">
+
+<script>
+const META = window.__META;
+const W = 540, H = 960;
+const $ = id => document.getElementById(id);
+// 版：?v=app＝App Store版のアプリの中で見せる版（「ホーム画面に追加」ではなく、アプリの言い方）。どちらの版にも商標の注意書きを入れる
+const APPV = /[?&]v=app\b/.test(location.search);
+// 画面の写真のフォルダ（App Store版は shots_app：アプリの中の画面・競馬場や団体・版の名前が出ない）
+const SHOTS = window.__SHOTS || 'shots';
+(function () {
+  if (APPV) {
+    $('cta').lastChild.textContent = 'iPhone・iPadで、いつでも判定';
+    // App Store版の画像の読み取りは端末の中（APIキーも料金もいらない）
+    $('cfoot').textContent = '※画像の読み取りは、この端末の中で行います（通信も追加の料金もありません）';
+  }
+})();
+// 注意書き（50.4秒から。大きな文字で1つずつ出して、最後まで残す）。App Store版は「JRA」「WIN5」を使わないので商標の行がちがう
+const DISC = APPV ? [
+  ['画面は架空のレースの例です'],
+  ['過去のデータの傾向を表示する道具です。', '的中や利益を約束するものではありません'],
+  ['馬券は20歳になってから。', '無理のない範囲で楽しみましょう'],
+  ['画像の読み取りは端末の中で行います', '（通信も追加の料金もありません）'],
+  ['競馬の主催者・団体とは関係のない、', '非公式のアプリです'],
+] : [
+  ['画面は架空のレースの例です'],
+  ['過去のデータの傾向を表示する道具です。', '的中や利益を約束するものではありません'],
+  ['馬券は20歳になってから。', '無理のない範囲で楽しみましょう'],
+  ['画像の読み取りには、AnthropicのAPIキー', '（有料）が必要です'],
+  ['競馬の主催者とは関係のない、非公式のアプリです。', '「JRA」「WIN5」は日本中央競馬会の', '商標または登録商標です'],
+];
+const DISC_SMALL = APPV ? ['iPhone・iPadは、米国その他の国で登録されたApple Inc.の商標です。', 'iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。']
+  : ['iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。'];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x, s = 1.70158) => { const c3 = s + 1; return 1 + c3 * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const env = (t, a, b, fi = .2, fo = .15) => (t < a || t > b) ? 0 : Math.min(eo(P(t, a, a + fi)), 1 - P(t, b - fo, b));
+const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+const TAU = Math.PI * 2;
+
+// ===================== 合図（BGMと同じ時刻） =====================
+// 場面：前置き 0〜3.2・題名 3.2〜6.4・入力 6.4〜14.4・判定 14.4〜20.8・買い目編集 20.8〜27.2・自分のデータ 27.2〜33.6
+//       自分だけのテンゲル 33.6〜38.4・買う馬／5重勝／収支 38.4〜45.6・おわり 45.6〜50.4・注意書き 50.4〜60.4
+const HITS = [[0.0, 14], [1.2, 9], [1.6, 15], [3.2, 10], [3.6, 6], [6.4, 4], [8.0, 4], [14.4, 3], [15.2, 5], [20.8, 3], [27.2, 3], [33.6, 6], [34.0, 3], [34.4, 4],
+              [38.4, 4], [40.8, 3], [43.2, 3], [45.6, 9], [46.4, 5], [50.4, 6]];
+const FLASH = [[0.0, 1.0, .35], [1.2, .7, .22], [1.6, .95, .3], [3.2, .75, .3], [6.4, .5, .2], [8.0, .3, .16], [14.4, .4, .18], [15.2, .35, .16], [20.8, .45, .2], [27.2, .45, .2],
+               [33.6, .4, .18], [38.4, .3, .14], [40.8, .25, .12], [43.2, .25, .12], [45.6, .7, .28], [50.4, .5, .3]];
+const SHOCK = [];
+const RAINBOW = [[1.6, .5, .5], [15.2, .35, .4], [33.6, .45, .5]];
+const SPEED = [[0.0, .8], [1.2, .6], [1.6, .85], [3.2, .4], [6.4, .3], [8.0, .22], [14.4, .25], [15.2, .3], [20.8, .25], [27.2, .3], [33.6, .4], [38.4, .25], [40.8, .2], [43.2, .2], [45.6, .4]];
+const BURSTS = [
+  { t: 0.0, x: 270, y: 300, n: 120, sp: 540, hue: 45 }, { t: 1.2, x: 270, y: 438, n: 80, sp: 460, hue: 30 }, { t: 1.6, x: 270, y: 580, n: 150, sp: 620, hue: -1 },
+  { t: 3.2, x: 270, y: 330, n: 90, sp: 480, hue: 45 }, { t: 3.6, x: 270, y: 520, n: 50, sp: 380, hue: 40 },
+  { t: 8.0, x: 270, y: 182, n: 40, sp: 340, hue: 25 }, { t: 15.2, x: 270, y: 174, n: 60, sp: 400, hue: -1 },
+  { t: 21.0, x: 270, y: 174, n: 36, sp: 320, hue: 45 }, { t: 27.6, x: 270, y: 174, n: 36, sp: 320, hue: 195 },
+  { t: 34.4, x: 270, y: 208, n: 70, sp: 440, hue: -1 },
+  { t: 38.4, x: 270, y: 174, n: 30, sp: 320, hue: 40 }, { t: 40.8, x: 270, y: 174, n: 30, sp: 320, hue: 40 }, { t: 43.2, x: 270, y: 174, n: 30, sp: 320, hue: 40 },
+  { t: 45.6, x: 270, y: 232, n: 100, sp: 520, hue: 45 }, { t: 46.4, x: 270, y: 516, n: 40, sp: 380, hue: 0 },
+];
+
+// ===================== 文字の絵（あらかじめ描いておく） =====================
+const FILL = {
+  gold: [[0, '#fffbe6'], [.28, '#ffe27a'], [.49, '#ffb300'], [.52, '#fff1b8'], [.78, '#e07b00'], [1, '#ffe08a']],
+  fire: [[0, '#fffde0'], [.3, '#ffe14d'], [.62, '#ff8400'], [1, '#d81b00']],
+  white: [[0, '#ffffff'], [.6, '#f4f4f4'], [1, '#c9d2e6']],
+  blue: [[0, '#f2fbff'], [.4, '#9fe3ff'], [.5, '#ffffff'], [.75, '#38a8ff'], [1, '#a9e8ff']],
+  rainbow: [[0, '#ff3b3b'], [.18, '#ff9d00'], [.36, '#ffe600'], [.54, '#3ee05a'], [.72, '#2fa8ff'], [.9, '#b04dff'], [1, '#ff4fd8']],
+};
+const SPR = {};
+function mkText(key, text, o) {
+  const size = o.size, pad = Math.ceil(size * .5), font = `900 ${size}px "Noto Sans CJK JP"`;
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  g.font = font;
+  const tw = g.measureText(text).width, w = Math.ceil(tw + pad * 2 + size * .3), h = Math.ceil(size * 1.3 + pad * 2);
+  c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  g.font = font; g.textBaseline = 'middle'; g.textAlign = 'center'; g.lineJoin = 'round'; g.miterLimit = 2;
+  g.translate(w / 2, h / 2); g.transform(1, 0, -(o.skew ?? .12), 1, 0, 0);
+  const s1 = o.s1 ?? '#2a0000', s2 = o.s2 ?? '#fff4c8', ext = o.ext ?? '#4a0000';
+  if (o.glow) { g.save(); g.shadowColor = o.glow; g.shadowBlur = size * .45; g.strokeStyle = o.glow; g.lineWidth = size * .24; g.strokeText(text, 0, 0); g.restore(); }
+  const depth = o.depth ?? Math.max(2, Math.round(size * .08));
+  g.strokeStyle = ext; g.fillStyle = ext; g.lineWidth = size * .22;
+  for (let i = depth; i >= 1; i--) { g.strokeText(text, i * .3, i); g.fillText(text, i * .3, i); }
+  g.strokeStyle = s1; g.lineWidth = size * .22; g.strokeText(text, 0, 0);
+  g.strokeStyle = s2; g.lineWidth = size * .09; g.strokeText(text, 0, 0);
+  const gr = o.dir === 'h' ? g.createLinearGradient(-tw / 2, 0, tw / 2, 0) : g.createLinearGradient(0, -size * .55, 0, size * .55);
+  FILL[o.fill].forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; g.fillText(text, 0, 0);
+  SPR[key] = { c, w, h };
+}
+function mkRibbon(key, text, o) {
+  const w = o.w, h = o.h, size = o.size;
+  const c = document.createElement('canvas'), g = c.getContext('2d'); c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  const sk = h * .35;
+  const path = () => { g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath(); };
+  path(); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, o.c1 || '#d4001a'); gr.addColorStop(.55, o.c2 || '#8a000d'); gr.addColorStop(1, o.c3 || '#4a0006');
+  g.fillStyle = gr; g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#ffd45c'; path(); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.moveTo(sk + 4, 4); g.lineTo(w - 6, 4); g.stroke();
+  g.font = `900 ${size}px "Noto Sans CJK JP"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.save(); g.translate(w / 2, h / 2 + 1); g.transform(1, 0, -.1, 1, 0, 0);
+  g.lineWidth = size * .22; g.strokeStyle = '#2a0000'; g.strokeText(text, 0, 0);
+  const tg = g.createLinearGradient(0, -size / 2, 0, size / 2); FILL.gold.forEach(([p, col]) => tg.addColorStop(p, col));
+  g.fillStyle = o.white ? '#fff' : tg; g.fillText(text, 0, 0); g.restore();
+  SPR[key] = { c, w, h };
+}
+function mkBadge(key, text, size) {
+  const R = size, c = document.createElement('canvas'), g = c.getContext('2d'), w = R * 2 + 20; c.width = c.height = w * 2; g.scale(2, 2);
+  g.translate(w / 2, w / 2);
+  g.beginPath(); for (let i = 0; i < 32; i++) { const r = i % 2 ? R * .78 : R, a = i / 32 * TAU; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath();
+  const gr = g.createRadialGradient(0, -R * .3, R * .1, 0, 0, R); gr.addColorStop(0, '#fff36b'); gr.addColorStop(.55, '#ff7a00'); gr.addColorStop(1, '#d10014');
+  g.fillStyle = gr; g.fill(); g.lineWidth = 4; g.strokeStyle = '#fff'; g.stroke(); g.lineWidth = 2; g.strokeStyle = '#7a0000'; g.stroke();
+  g.font = `900 ${R * .5}px "Noto Sans CJK JP"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.rotate(-.12); g.lineWidth = R * .16; g.strokeStyle = '#6a0000'; g.strokeText(text, 0, 2); g.fillStyle = '#fff'; g.fillText(text, 0, 2);
+  SPR[key] = { c, w, h: w };
+}
+let tmpC, tmpG;
+function drawSpr(g, key, x, y, sc = 1, a = 1, rot = 0, opt = {}) {
+  const s = SPR[key]; if (!s || a <= .001 || sc <= .001) return;
+  g.save(); g.globalAlpha = g.globalAlpha * clamp(a); g.translate(x, y); if (rot) g.rotate(rot); g.scale(sc, sc);
+  if (opt.hue != null) g.filter = `hue-rotate(${opt.hue}deg) saturate(1.25)`;
+  if (opt.shine != null && opt.shine > -0.2 && opt.shine < 1.2) {
+    if (!tmpC) { tmpC = document.createElement('canvas'); tmpG = tmpC.getContext('2d'); }
+    if (tmpC.width < s.c.width || tmpC.height < s.c.height) { tmpC.width = Math.max(tmpC.width, s.c.width); tmpC.height = Math.max(tmpC.height, s.c.height); }
+    tmpG.globalCompositeOperation = 'source-over'; tmpG.clearRect(0, 0, tmpC.width, tmpC.height);
+    tmpG.drawImage(s.c, 0, 0);
+    tmpG.globalCompositeOperation = 'source-atop';
+    const bx = lerp(-.3, 1.3, opt.shine) * s.c.width, bw = s.c.width * .18;
+    const lg = tmpG.createLinearGradient(bx - bw, 0, bx + bw, s.c.height * .3);
+    lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.85)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    tmpG.fillStyle = lg; tmpG.fillRect(0, 0, s.c.width, s.c.height);
+    g.drawImage(tmpC, 0, 0, s.c.width, s.c.height, -s.w / 2, -s.h / 2, s.w, s.h);
+  } else g.drawImage(s.c, -s.w / 2, -s.h / 2, s.w, s.h);
+  g.restore();
+}
+// たたきつける動き（t0で出て、t1で消える）
+function slamK(t, t0, t1, s0 = 2.4) {
+  if (t < t0 || t > t1) return null;
+  const u = P(t, t0, t0 + .17), out = P(t, t1 - .14, t1);
+  return { a: Math.min(1, P(t, t0, t0 + .05)) * (1 - out), sc: lerp(s0, 1, back(u, 2.2)) * (1 + .1 * out) * (1 + .012 * Math.sin((t - t0) * 9)) };
+}
+
+// ===================== スマホ =====================
+const SW = 270, S = SW / 390, STATUS = 26, HDR = META.header.H * S, TABH = META.tabbar.H * S, HOME = 14, SH = 844 * S, BEZ = 10;
+const VTOP = STATUS + HDR, VH = SH - STATUS - HDR - TABH - HOME;
+$('vp').style.top = VTOP + 'px'; $('vp').style.height = VH + 'px';
+const Z1 = '#zoneCard ol.zedit > li:nth-child(1)', S2 = '#slotList .slotrow[data-n="2"]', ZN = n => `#result ol.zones > li:nth-child(${n})`;
+// スクロールの位置は、撮った画面の中の要素の位置から決める（文字を変えて高さがずれても合うように）
+const Y = (k, sel) => META[k].b[sel].y;
+const yF = Y('judge_filled', '#result') - 15, yZ = Y('set_z0', '#zoneCard .zk-head') - 25.4, yC = Y('judge_custom', '#result') - 13.6;
+const yM0 = Y('set_m0', '#slotList') - 29.1, yM1 = Y('set_m1', '#smPreview') - 63.7, yM3 = Y('set_m3', '#slotList') - 21, yJ = Y('judge_jra', '#result') - 14.6;
+// 第4弾（プレビュー動画と同じ説明）：ゾーンの1本目・2本目、自分のデータでの判定、買う馬・5重勝・収支
+const yZ1 = Y('judge_filled', ZN(1)) - 10, yZ2 = Y('judge_filled', ZN(2)) - 10, yJZ = Y('judge_jra', ZN(1)) - 10;
+const yP = Y('judge_pick0', ZN(2)) - 10, yW = Y('win5', '#w5Sum') - 140, yR = Y('records', '#recList .dgroup') - 120;
+const ZP = 1.62, YP = 286;   // スマホの大きさと位置（画面を大きく見せる）
+// 第5弾：入れる3つ（レース情報・単勝オッズ・3連単オッズ）とスクショの読み取り
+const C2 = META.judge_filled.b['.input-col > .card:nth-child(2)'];
+const yIn1 = Y('judge_filled', '.input-col > .card:nth-child(1) .fields') - 24, yIn2 = C2.y - 10, yIn3 = Y('judge_filled', '.input-col > .card:nth-child(3)') - 10, yOcr = Y('judge_filled', '#ocrMsg') - 40;
+const ODDS_BOX = { x: C2.x, y: C2.y, w: C2.w, h: 430 };   // 単勝オッズの欄（上から8頭ぶんくらい）
+const SCENES = [
+  // 単勝オッズ・3連単オッズ・レース情報を入れるだけ!!（空の画面 → 入れたところ → ①レース情報 ②単勝 ③3連単 → スクショの読み取り）
+  { a: 6.4, b: 14.4, hdr: [['header_oi0', 6.4]], tab: [['tabbar_judge', 6.4]],
+    views: [{ k: 'judge_empty', a: 6.4 }, { k: 'judge_filled', a: 7.4, fade: .3 }],
+    scroll: { judge_empty: () => 0, judge_filled: t => t < 9.5 ? lerp(0, yIn1, eio(P(t, 7.5, 7.95))) : t < 11.2 ? lerp(yIn1, yIn2, eio(P(t, 9.5, 9.85)))
+                                                      : t < 12.8 ? lerp(yIn2, yIn3, eio(P(t, 11.2, 11.55))) : lerp(yIn3, yOcr, eio(P(t, 12.8, 13.25))) },
+    cam: t => { const e = eo(P(t, 6.4, 6.82)), zi = eio(P(t, 7.5, 7.95)); return { Z: lerp(lerp(.8, 1, e), ZP, zi), Y: lerp(lerp(1010, 298, e), YP, zi), rot: lerp(10, 0, e) }; },
+    rings: [{ a: 8.2, b: 9.45, k: 'judge_filled', sel: ['.input-col > .card:nth-child(1) .fields'] }, { a: 9.9, b: 11.15, k: 'judge_filled', box: ODDS_BOX },
+            { a: 11.6, b: 12.75, k: 'judge_filled', sel: ['.input-col > .card:nth-child(3)'] }, { a: 13.3, b: 14.35, k: 'judge_filled', sel: ['#ocrMsg'] }],
+    taps: [] },
+  // 誰でも簡単に! 1発でゾーンまで判定!!（層 → 1着→2着と馬番 → 3着 → 参考的中率）
+  { a: 14.4, b: 20.8, hdr: [['header_oi0', 14.4]], tab: [['tabbar_judge', 14.4]], views: [{ k: 'judge_filled', a: 14.4 }],
+    scroll: { judge_filled: t => t < 16.4 ? lerp(yOcr, yF, eio(P(t, 14.4, 14.85))) : lerp(yF, yZ1, eio(P(t, 16.4, 16.75))) },
+    cam: () => ({ Z: ZP, Y: YP, rot: 0 }),
+    rings: [{ a: 15.0, b: 16.3, k: 'judge_filled', sel: ['#result .vhead'] }, { a: 16.8, b: 18.0, k: 'judge_filled', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] },
+            { a: 18.05, b: 19.2, k: 'judge_filled', sel: [ZN(1) + ' .zthird'] }, { a: 19.3, b: 20.7, k: 'judge_filled', sel: [ZN(1) + ' .zref'] }], taps: [] },
+  // 買い目編集でカスタム自在!!
+  { a: 20.8, b: 27.2, hdr: [['header_oi3', 20.8], ['header_oi3c', 25.7, .25]], tab: [['tabbar_set', 20.8], ['tabbar_judge', 25.7]],
+    views: [{ k: 'set_z0', a: 20.8 }, { k: 'set_z1', a: 22.05, fade: .08 }, { k: 'set_z2', a: 23.35, fade: .08 }, { k: 'judge_custom', a: 25.7, slide: .32 }],
+    scroll: { set_z0: () => yZ, set_z1: () => yZ, set_z2: t => lerp(yZ, yZ + 12, eio(P(t, 24.4, 24.9))), judge_custom: t => lerp(yC, yC + 25, eio(P(t, 26.0, 27.1))) },
+    cam: t => { const e = eo(P(t, 20.8, 21.1)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 22.1, b: 23.2, k: 'set_z1', sel: [Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]'] }, { a: 23.4, b: 24.5, k: 'set_z2', sel: [Z1 + ' .zpick[data-f="t"] button[data-z="大穴"]'] },
+            { a: 24.6, b: 25.6, k: 'set_z2', sel: [Z1 + ' .zr-stat'] },
+            { a: 26.0, b: 26.6, k: 'judge_custom', sel: ['#result .vhead .chip.cus'] }, { a: 26.65, b: 27.15, k: 'judge_custom', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] }],
+    taps: [{ t: 22.0, k: 'set_z0', sel: Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]', fx: .5 }, { t: 23.3, k: 'set_z1', sel: Z1 + ' .zpick[data-f="t"] button[data-z="大穴"]', fx: .5 }] },
+  // 自分で集めたデータでテンゲルが育つ!!
+  { a: 27.2, b: 33.6, hdr: [['header_oi3c', 27.2], ['header_jra', 31.5, .2]], tab: [['tabbar_set', 27.2], ['tabbar_judge', 32.0]],
+    views: [{ k: 'set_m0', a: 27.2 }, { k: 'set_m1', a: 28.7, fade: .14 }, { k: 'set_m3', a: 31.5, fade: .16 }, { k: 'judge_jra', a: 32.0, slide: .32 }],
+    scroll: { set_m0: () => yM0, set_m1: t => lerp(yM0, yM1, eio(P(t, 28.9, 29.35))), set_m3: () => yM3, judge_jra: t => lerp(yJ, yJ + 23, eio(P(t, 32.4, 33.4))) },
+    cam: t => { const e = eo(P(t, 27.2, 27.5)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 27.7, b: 28.6, k: 'set_m0', sel: [S2] }, { a: 29.4, b: 30.0, k: 'set_m1', sel: ['#smPreview'] }, { a: 31.55, b: 31.95, k: 'set_m3', sel: [S2] },
+            { a: 32.4, b: 33.5, k: 'judge_jra', sel: ['#result .vhead .chips'] }],
+    taps: [{ t: 28.6, k: 'set_m0', sel: S2 + ' [data-sact=edit]', fx: .5 }, { t: 30.0, k: 'set_m1', sel: '#smApply', fx: .5 }] },
+  // 自分だけのテンゲルが作れる!!（自分のデータで判定したゾーン）
+  { a: 33.6, b: 38.4, hdr: [['header_jra', 33.6]], tab: [['tabbar_judge', 33.6]], views: [{ k: 'judge_jra', a: 33.6 }],
+    scroll: { judge_jra: t => lerp(yJ + 23, yJZ, eio(P(t, 34.2, 34.8))) + 40 * eio(P(t, 36.4, 37.2)) },
+    cam: t => ({ Z: ZP, Y: YP + 34 * eo(P(t, 33.6, 33.9)), rot: 0 }),
+    rings: [{ a: 34.9, b: 36.4, k: 'judge_jra', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] }, { a: 36.5, b: 38.3, k: 'judge_jra', sel: [ZN(1) + ' .zthird'] }], taps: [] },
+  // 買う馬も選べる!! → 5重勝も組める!! → 収支も自動で記録!!（1つ2.4秒）
+  { a: 38.4, b: 45.6, hdr: [['header_oi0', 38.4], ['header_oi3', 40.8, .12]], tab: [['tabbar_judge', 38.4], ['tabbar_win5', 40.8], ['tabbar_rec', 43.2]],
+    views: [{ k: 'judge_pick0', a: 38.4 }, { k: 'judge_pick1', a: 39.55, fade: .06 }, { k: 'win5', a: 40.8, slide: .25 }, { k: 'records', a: 43.2, slide: .25 }],
+    scroll: { judge_pick0: () => yP, judge_pick1: () => yP, win5: t => lerp(yW, yW + 30, P(t, 40.8, 43.2)), records: () => yR },
+    cam: t => { const e = eo(P(t, 38.4, 38.65)); return { Z: lerp(1.75, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 38.75, b: 39.45, k: 'judge_pick0', sel: [ZN(2) + ' .znums'] }, { a: 39.8, b: 40.7, k: 'judge_pick1', sel: [ZN(2) + ' .znums'] },
+            { a: 41.15, b: 43.1, k: 'win5', sel: ['#w5Sum'] }, { a: 43.55, b: 45.5, k: 'records', sel: ['#recList .dgroup'] }],
+    taps: [{ t: 39.55, k: 'judge_pick0', sel: ZN(2) + ' button.hp[data-hs="b"][data-no="4"]', fx: .5 }] },
+];
+// 画像を並べる（あとに出る画面ほど上）
+const CKEYS = [], HKEYS = [], TKEYS = [];
+SCENES.forEach(sc => { sc.views.forEach(v => CKEYS.includes(v.k) || CKEYS.push(v.k)); sc.hdr.forEach(([k]) => HKEYS.includes(k) || HKEYS.push(k)); sc.tab.forEach(([k]) => TKEYS.includes(k) || TKEYS.push(k)); });
+const EL = {};
+CKEYS.forEach(k => { const im = new Image(); im.className = 'cimg'; im.src = `${SHOTS}/${k}.png`; $('cimgs').appendChild(im); EL[k] = im; });
+HKEYS.forEach(k => { const im = new Image(); im.className = 'hdr'; im.src = `${SHOTS}/${k}.png`; $('hdrs').appendChild(im); EL[k] = im; });
+TKEYS.forEach(k => { const im = new Image(); im.className = 'tab'; im.src = `${SHOTS}/${k}.png`; im.style.top = (SH - HOME - TABH) + 'px'; $('tabs').appendChild(im); EL[k] = im; });
+function setVis(el, op) { el.style.opacity = op.toFixed(3); el.style.visibility = op > .001 ? 'visible' : 'hidden'; }
+function boxOf(k, sels) {
+  const bs = sels.map(s => META[k].b[s]).filter(Boolean); if (!bs.length) return null;
+  const x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y)), x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function layered(list, t) {   // [[key, a, fade]] → {key: op}
+  const out = {}; let cur = -1;
+  list.forEach(([k, a], i) => { if (t >= a) cur = i; });
+  if (cur < 0) cur = 0;
+  const [k, a, f] = list[cur]; const m = f ? P(t, a, a + f) : 1;
+  out[k] = m; if (m < 1 && cur > 0) out[list[cur - 1][0]] = 1;
+  return out;
+}
+let lastPhone = null;
+function renderPhone(t) {
+  const ph = $('phone'), sc = SCENES.find(s => t >= s.a && t < s.b);
+  if (!sc) { setVis(ph, 0); return null; }
+  const c = sc.cam(t), op = c.op ?? 1, Z = c.Z, X = 270 - 145 * Z, Y = c.Y;
+  setVis(ph, op);
+  ph.style.transform = `translate(${(X + 145 * Z).toFixed(2)}px,${(Y + 302.15 * Z).toFixed(2)}px) rotate(${(c.rot || 0).toFixed(3)}deg) scale(${Z.toFixed(4)}) translate(-145px,-302.15px)`;
+  // 中身（切り替え：重ねる or 横にスライド）
+  let ci = 0; sc.views.forEach((v, i) => { if (t >= v.a) ci = i; });
+  const cur = sc.views[ci], prev = ci > 0 ? sc.views[ci - 1] : null;
+  const dur = cur.slide || cur.fade || 0, mix = dur ? P(t, cur.a, cur.a + dur) : 1;
+  const sy = k => (sc.scroll[k] ? sc.scroll[k](t) : 0);
+  CKEYS.forEach(k => {
+    const el = EL[k]; let o = 0, tx = 0;
+    if (k === cur.k) { o = cur.slide ? 1 : (prev ? mix : 1); if (cur.slide && mix < 1) tx = SW * (1 - eio(mix)); }
+    else if (prev && k === prev.k && mix < 1) { o = 1; if (cur.slide) tx = -SW * eio(mix); }
+    setVis(el, o); if (o > 0) el.style.transform = `translate(${tx.toFixed(2)}px,${(-sy(k) * S).toFixed(2)}px)`;
+  });
+  const hs = layered(sc.hdr, t); HKEYS.forEach(k => setVis(EL[k], hs[k] || 0));
+  let tk = sc.tab[0][0]; sc.tab.forEach(([k, a]) => { if (t >= a) tk = k; }); TKEYS.forEach(k => setVis(EL[k], k === tk ? 1 : 0));
+  // 強調の枠
+  const ring = $('ring'), r = sc.rings.find(x => t >= x.a && t <= x.b);
+  if (r) {
+    const b = r.box || boxOf(r.k, r.sel), pad = 4, k = env(t, r.a, r.b, .1, .1), pu = 1 + .09 * (1 - eo(P(t, r.a, r.a + .25))), yy = sy(r.k);
+    ring.style.display = 'block'; ring.style.left = ((b.x - pad) * S) + 'px'; ring.style.top = ((b.y - pad - yy) * S) + 'px';
+    ring.style.width = ((b.w + pad * 2) * S) + 'px'; ring.style.height = ((b.h + pad * 2) * S) + 'px'; ring.style.opacity = k.toFixed(3); ring.style.transform = `scale(${pu.toFixed(4)})`;
+  } else ring.style.display = 'none';
+  // タップ
+  const tp = sc.taps.find(x => t >= x.t - .22 && t <= x.t + .45), rip = $('prip'), dot = $('pdot');
+  if (tp) {
+    const b = META[tp.k].b[tp.sel], yy = sy(tp.k), cx = (b.x + b.w * tp.fx) * S, cy = (b.y + b.h / 2 - yy) * S;
+    const q = P(t, tp.t, tp.t + .4), rr = 5 + 26 * eo(q);
+    rip.style.display = t >= tp.t ? 'block' : 'none'; rip.style.left = (cx - rr) + 'px'; rip.style.top = (cy - rr) + 'px'; rip.style.width = rip.style.height = (rr * 2) + 'px'; rip.style.opacity = (1 - q).toFixed(3);
+    dot.style.display = 'block'; dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+    dot.style.opacity = (eo(P(t, tp.t - .22, tp.t)) * (1 - P(t, tp.t + .2, tp.t + .45))).toFixed(3); dot.style.transform = `scale(${t < tp.t ? 1 : .8})`;
+  } else { rip.style.display = 'none'; dot.style.display = 'none'; }
+  // スマホの画面上の点 → 舞台の座標（タップの火花用）
+  return { X, Y, Z };
+}
+
+// ===================== カード（買う馬・WIN5・記録） =====================
+function place(el, cx, cy, op, sc = 1, rot = 0) {
+  setVis(el, op); if (op <= .001) return;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.transform = `translate(${(cx - w / 2).toFixed(2)}px,${(cy - h / 2).toFixed(2)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+}
+// ===================== 背景 =====================
+const bg = $('bg'), G = bg.getContext('2d'), fx = $('fx'), F = fx.getContext('2d');
+const THEMES = { red: ['#6a0a16', '#1c0207', '#000'], gold: ['#6a3a06', '#1a0b00', '#000'], blue: ['#0f2f78', '#050b28', '#000'], purple: ['#3d0a5c', '#12021f', '#000'], navy: ['#122656', '#070d22', '#000'] };
+function themeAt(t) {
+  if (t < 3.2) return [['red', 1]];
+  if (t < 6.4) return [['red', 1]];
+  if (t < 14.4) return [['red', 1]];
+  if (t < 20.8) return [['gold', 1]];
+  if (t < 27.2) return [['red', 1]];
+  if (t < 33.6) return [['blue', 1]];
+  if (t < 38.4) return [['purple', 1]];
+  if (t < 45.6) return [['red', 1]];
+  if (t < 50.4) return [['gold', 1]];
+  return [['navy', 1]];
+}
+function rays(g, cx, cy, n, rot, colA, colB, alpha, rIn = 0, len = 900) {
+  g.save(); g.globalAlpha = alpha; g.translate(cx, cy); g.rotate(rot);
+  for (let i = 0; i < n; i++) {
+    const a0 = i / n * TAU, a1 = (i + .5) / n * TAU;
+    g.beginPath(); g.moveTo(Math.cos(a0) * rIn, Math.sin(a0) * rIn); g.lineTo(Math.cos(a0) * len, Math.sin(a0) * len); g.lineTo(Math.cos(a1) * len, Math.sin(a1) * len); g.lineTo(Math.cos(a1) * rIn, Math.sin(a1) * rIn); g.closePath();
+    g.fillStyle = typeof colA === 'function' ? colA(i) : (i % 2 ? colB : colA); g.fill();
+  }
+  g.restore();
+}
+function rayLevel(t) {
+  // [強さ, 回る速さ, 中心y, 色]
+  if (t < 3.2) return [t < 1.6 ? .6 : .75, t < 1.6 ? .7 : 1.2, 440, 'gold'];   // 前置き：派手に
+  if (t < 6.4) return [.55, .5, 330, 'gold'];
+  if (t < 14.4) return [.13, .25, 480, 'red'];
+  if (t < 20.8) return [.2, .4, 300, 'gold'];
+  if (t < 27.2) return [.12, .25, 480, 'red'];
+  if (t < 33.6) return [.09, .2, 480, 'blue'];
+  if (t < 38.4) return [.42, .7, 200, 'rainbow'];
+  if (t < 45.6) return [.18, .5, 300, 'red'];
+  if (t < 50.4) return [.45, .5, 250, 'gold'];
+  return [.16 * (1 - .5 * P(t, 50.4, 51.4)), .12, 120, 'gold'];
+}
+function drawBG(t) {
+  G.setTransform(2, 0, 0, 2, 0, 0);
+  const [[th]] = themeAt(t), cs = THEMES[th];
+  const gr = G.createRadialGradient(270, 440, 20, 270, 480, 760);
+  gr.addColorStop(0, cs[0]); gr.addColorStop(.5, cs[1]); gr.addColorStop(1, cs[2]);
+  G.fillStyle = gr; G.fillRect(0, 0, W, H);
+  // 放射の光
+  const [lv, sp, cy, col] = rayLevel(t);
+  if (lv > 0) {
+    const rot = t * sp;
+    if (col === 'rainbow') rays(G, 270, cy, 24, rot, i => `hsla(${(i * 15 + t * 80) % 360},90%,58%,1)`, null, lv, 0);
+    else {
+      const c = { gold: ['rgba(255,200,60,1)', 'rgba(120,40,0,0)'], red: ['rgba(255,60,40,1)', 'rgba(60,0,0,0)'], blue: ['rgba(80,190,255,1)', 'rgba(0,20,60,0)'] }[col];
+      rays(G, 270, cy, 20, rot, c[0], c[1], lv, 0);
+    }
+    const vg = G.createRadialGradient(270, cy, 40, 270, cy, 560);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.85)'); G.fillStyle = vg; G.fillRect(0, 0, W, H);
+  }
+  // データの場面：数字の雨
+  const dr = env(t, 27.2, 33.6, .3, .3);
+  if (dr > 0) {
+    G.font = '700 13px "Noto Sans Mono CJK JP", monospace'; G.textAlign = 'center';
+    for (let c = 0; c < 26; c++) {
+      const x = 10 + c * 20.5, spd = 90 + rnd(c, 1) * 140, off = rnd(c, 2) * 960;
+      for (let j = 0; j < 14; j++) {
+        const y = ((off + t * spd + j * 17) % 1100) - 70, a = (j / 14) * .35 * dr;
+        G.fillStyle = j === 13 ? `rgba(220,250,255,${(.75 * dr).toFixed(3)})` : `rgba(80,200,255,${a.toFixed(3)})`;
+        G.fillText(String(Math.floor(rnd(c * 31 + j, Math.floor(t * 8)) * 10)), x, y);
+      }
+    }
+  }
+  // ただよう火の粉
+  for (let i = 0; i < 60; i++) {
+    const x = rnd(i, 3) * W + Math.sin(t * .8 + i) * 10, sp2 = 20 + rnd(i, 4) * 50, y = H - ((rnd(i, 5) * H + t * sp2) % (H + 40));
+    const a = (.25 + .45 * (.5 + .5 * Math.sin(t * (2 + rnd(i, 6) * 3) + i))) * (t < 1.2 ? .4 : 1);
+    G.fillStyle = th === 'blue' ? `rgba(140,220,255,${a.toFixed(3)})` : `rgba(255,${180 + Math.floor(rnd(i, 7) * 60)},80,${a.toFixed(3)})`;
+    G.beginPath(); G.arc(x, y, .7 + rnd(i, 8) * 1.8, 0, TAU); G.fill();
+  }
+}
+
+// ===================== 効果（前面のキャンバス） =====================
+function speedLines(g, a, seed) {
+  if (a <= .01) return;
+  g.save(); g.globalAlpha = a; g.fillStyle = '#fff'; g.translate(270, 480);
+  for (let i = 0; i < 110; i++) {
+    const ang = rnd(i, seed) * TAU, r0 = 170 + rnd(i, seed + 1) * 170, r1 = 760, wd = .006 + rnd(i, seed + 2) * .012;
+    g.beginPath(); g.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0); g.lineTo(Math.cos(ang - wd) * r1, Math.sin(ang - wd) * r1); g.lineTo(Math.cos(ang + wd) * r1, Math.sin(ang + wd) * r1); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+function bolt(g, x0, y0, x1, y1, seed, a) {
+  let pts = [[x0, y0], [x1, y1]];
+  for (let lv = 0; lv < 6; lv++) {
+    const np = [pts[0]];
+    for (let i = 1; i < pts.length; i++) { const [ax, ay] = pts[i - 1], [bx, by] = pts[i], d = Math.hypot(bx - ax, by - ay);
+      np.push([(ax + bx) / 2 + (rnd(seed * 7 + lv * 31 + i, 3) - .5) * d * .45, (ay + by) / 2 + (rnd(seed * 5 + lv * 17 + i, 4) - .5) * d * .12]); np.push(pts[i]); }
+    pts = np;
+  }
+  g.save(); g.globalAlpha = a; g.lineJoin = 'round'; g.globalCompositeOperation = 'lighter';
+  for (const [lw, col, blur] of [[9, 'rgba(120,170,255,.55)', 30], [4, 'rgba(200,230,255,.9)', 12], [1.6, '#fff', 0]]) {
+    g.shadowColor = 'rgba(150,200,255,1)'; g.shadowBlur = blur; g.lineWidth = lw; g.strokeStyle = col;
+    g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+  }
+  g.restore();
+}
+function bursts(g, t) {
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  BURSTS.forEach((b, bi) => {
+    const age = t - b.t; if (age < 0 || age > 1.4) return;
+    for (let i = 0; i < b.n; i++) {
+      const life = .55 + rnd(bi * 97 + i, 1) * .75; if (age > life) continue;
+      const ang = rnd(bi * 97 + i, 2) * TAU, sp = b.sp * (.25 + .75 * rnd(bi * 97 + i, 3)), k = 3.2;
+      const pos = tau => { const d = (1 - Math.exp(-k * tau)) / k; return [b.x + Math.cos(ang) * sp * d, b.y + Math.sin(ang) * sp * d + 260 * tau * tau]; };
+      const [x1, y1] = pos(age), [x0, y0] = pos(Math.max(0, age - .035)), fade = 1 - age / life;
+      const hue = b.hue < 0 ? (i * 37 + t * 200) % 360 : b.hue + rnd(i, 9) * 20;
+      g.strokeStyle = `hsla(${hue},100%,${62 + 25 * fade}%,${fade.toFixed(3)})`; g.lineWidth = 1.2 + 2.2 * fade * rnd(i, 5);
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    }
+  });
+  g.restore();
+}
+function confetti(g, t, T0 = 20.0, T1 = 23.2) {
+  const a = env(t, T0, T1, .1, .3); if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  for (let i = 0; i < 60; i++) {
+    const t0 = T0 + rnd(i, 1) * .5, age = t - t0; if (age < 0) continue;
+    const x = rnd(i, 2) * W + Math.sin(age * (2 + rnd(i, 3) * 2) + i) * 26, y = -20 + age * (150 + rnd(i, 4) * 170);
+    if (y > H + 20) continue;
+    g.save(); g.translate(x, y); g.rotate(age * (3 + rnd(i, 5) * 4) + i); g.scale(1, Math.cos(age * (5 + rnd(i, 6) * 5) + i));
+    g.fillStyle = `hsl(${(i * 47) % 360},95%,62%)`; g.fillRect(-5, -3, 10, 6); g.restore();
+  }
+  g.restore();
+}
+function flashes(g, t) {
+  let wa = 0; FLASH.forEach(([t0, a, d]) => { if (t >= t0 && t < t0 + d) wa = Math.max(wa, a * (1 - P(t, t0, t0 + d))); });
+  if (wa > 0) { g.fillStyle = `rgba(255,255,245,${wa.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  RAINBOW.forEach(([t0, a, d]) => {
+    if (t < t0 || t >= t0 + d) return; const k = a * (1 - P(t, t0, t0 + d));
+    const lg = g.createLinearGradient(0, 0, W, H); for (let i = 0; i <= 6; i++) lg.addColorStop(i / 6, `hsla(${(i * 60 + t * 400) % 360},100%,62%,${k.toFixed(3)})`);
+    g.save(); g.globalCompositeOperation = 'screen'; g.fillStyle = lg; g.fillRect(0, 0, W, H); g.restore();
+  });
+}
+
+// ---- データ上乗せのカウンター ----
+const ADD = [[30.2, 30], [30.5, 45], [30.8, 60], [31.1, 45]], CT0 = 30.0, CT1 = 31.6;
+function drawCounter(g, t) {
+  if (t < CT0 || t >= CT1) return;
+  const e = eo(P(t, CT0, CT0 + .18)), out = P(t, CT1 - .15, CT1), a = e * (1 - out), sc = lerp(.6, 1, back(P(t, CT0, CT0 + .2), 2)) * (1 + .1 * out);
+  let n = 0; ADD.forEach(([t0, v]) => { n += v * eo(P(t, t0, t0 + .16)); });
+  g.save(); g.globalAlpha = a; g.translate(270, 610); g.scale(sc, sc);
+  g.save(); g.shadowColor = 'rgba(80,200,255,.9)'; g.shadowBlur = 28;
+  g.beginPath(); g.roundRect(-195, -120, 390, 240, 22); const pg = g.createLinearGradient(0, -120, 0, 120); pg.addColorStop(0, 'rgba(10,40,100,.96)'); pg.addColorStop(1, 'rgba(2,8,30,.96)'); g.fillStyle = pg; g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#8fe6ff'; g.stroke(); g.restore();
+  drawSpr(g, 'cnt_t', 0, -78, 1, 1, 0, { shine: P(t, CT0 + .3, CT1 - .3) });
+  g.font = '900 22px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#bfefff'; g.fillText(APPV ? 'マザーデータ2' : 'マザーデータ「JRA」', 0, -26);
+  const num = String(Math.round(n));
+  g.font = '900 92px "Noto Sans CJK JP"'; g.lineJoin = 'round'; g.lineWidth = 14; g.strokeStyle = '#04122e'; g.strokeText(num, -22, 42);
+  const ng = g.createLinearGradient(0, 0, 0, 84); FILL.gold.forEach(([p, c]) => ng.addColorStop(p, c)); g.fillStyle = ng; g.fillText(num, -22, 42);
+  g.font = '900 38px "Noto Sans CJK JP"'; g.lineWidth = 8; g.strokeText('走', 92, 54); g.fillStyle = '#fff'; g.fillText('走', 92, 54);
+  g.restore();
+  ADD.forEach(([t0, v], i) => {
+    const age = t - t0; if (age < 0 || age > .55) return;
+    drawSpr(g, 'plus' + i, 270 + (i % 2 ? 128 : -128), 478 - 60 * eo(age / .55), lerp(1.5, 1, eo(P(age, 0, .12))), 1 - P(age, .38, .55));
+  });
+}
+
+// ===================== テロップ =====================
+const CAPS = [
+  { a: 6.5, b: 14.3, l0: 'c1z', l1: 'c1a', l2: 'c1b', l2a: 8.0, y0: 56, y1: 108, y2: 182 },
+  { a: 14.5, b: 20.7, l1: 'c2a', l2: 'c2b', l2a: 15.2 },
+  { a: 20.85, b: 27.1, l1: 'c3a', l2: 'c3b', l2a: 21.0, re: 25.7 },
+  { a: 27.25, b: 33.5, l1: 'c4a', l2: 'c4b', l2a: 27.6 },
+  { a: 38.4, b: 40.75, l1: 'm1a', l2: 'm1b', l2a: 38.4 },
+  { a: 40.8, b: 43.15, l1: 'm2a', l2: 'm2b', l2a: 40.8 },
+  { a: 43.2, b: 45.55, l1: 'm3a', l2: 'm3b', l2a: 43.2 },
+];
+// 小さい帯：1つ1秒以上（読める長さ）。的中や利益を約束する言葉は使わない
+const SUBS = [
+  { a: 8.2, b: 9.45, s: '① レース情報（距離・頭数・馬場など）' }, { a: 9.6, b: 11.15, s: '② 単勝オッズ' }, { a: 11.3, b: 12.75, s: '③ 3連単オッズ（1番人気など）' },
+  { a: 12.9, b: 14.3, s: 'スクショからの読み取りもOK' },
+  { a: 14.9, b: 16.3, s: '荒れやすさをA・B・Cで判定' }, { a: 16.6, b: 18.0, s: '1着→2着のゾーンと馬番' }, { a: 18.05, b: 19.2, s: '3着のゾーンまで' }, { a: 19.3, b: 20.7, s: '過去のデータでの参考的中率つき' },
+  { a: 22.0, b: 23.2, s: '2着に「大穴」を追加' }, { a: 23.3, b: 24.5, s: '3着にも「大穴」を追加' }, { a: 24.6, b: 25.6, s: '過去の的中数もその場で計算' }, { a: 25.7, b: 27.15, s: '判定にすぐ反映' },
+  { a: 27.75, b: 28.6, s: 'マザーデータは3つまで', blue: 1 }, { a: 28.7, b: 30.0, s: 'Excel・CSVを入れるだけ', blue: 1 }, { a: 32.0, b: 33.5, s: 'あなたのデータ × あなたの買い目', blue: 1 },
+  { a: 38.6, b: 40.75, s: '番号を押すだけ' }, { a: 41.0, b: 43.15, s: '予算に合わせて自動で組み立て' }, { a: 43.4, b: 45.55, s: '月ごと・券種ごとに集計' },
+];
+function drawCaps(g, t) {
+  const c = CAPS.find(x => t >= x.a && t <= x.b); if (!c) return;
+  const o1 = env(t, c.a, c.b, .12, .12), d1 = 18 * (1 - eo(P(t, c.a, c.a + .2)));
+  if (c.l0) drawSpr(g, c.l0, 270, (c.y0 ?? 56) + d1, 1, o1);
+  drawSpr(g, c.l1, 270, (c.y1 ?? 106) + d1, 1, o1);
+  const k = slamK(t, c.l2a, c.b, 2.2);
+  if (k) {
+    let sc = k.sc; if (c.re && t >= c.re) sc *= 1 + .16 * (1 - eo(P(t, c.re, c.re + .2)));
+    drawSpr(g, c.l2, 270, c.y2 ?? 174, sc, k.a, 0, { shine: ((t - c.l2a) % 1.6) / .7 - .1, hue: c.l2 === 'c2b' ? (t * 60) % 360 : null });
+  }
+}
+
+// ===================== 場面ごとの大きな文字 =====================
+const emb = $('emb');
+function drawEmblem(g, x, y, size, a, glow, hue) {
+  if (a <= .001) return;
+  g.save(); g.globalAlpha = g.globalAlpha * a;
+  if (glow > 0) {
+    const rg = g.createRadialGradient(x, y, size * .2, x, y, size * .95);
+    if (hue == null) { rg.addColorStop(0, `rgba(255,210,90,${(.75 * glow).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,120,0,0)'); }
+    else { rg.addColorStop(0, `hsla(${hue},100%,65%,${(.85 * glow).toFixed(3)})`); rg.addColorStop(1, `hsla(${(hue + 120) % 360},100%,55%,0)`); }
+    g.fillStyle = rg; g.fillRect(x - size, y - size, size * 2, size * 2);
+  }
+  g.drawImage(emb, x - size / 2, y - size / 2, size, size); g.restore();
+}
+// 前置き（0〜3.2）：オッズを入れるだけの → 全く新しい → 競馬アプリ!!（派手に）
+function drawPrelude(g, t) {
+  if (t >= 3.3) return;
+  const outK = P(t, 3.0, 3.2), zoom = 1 + .6 * eo(outK), a0 = 1 - outK;
+  // 「競馬アプリ!!」のうしろの光
+  if (t >= 1.6) {
+    const pu = .55 + .2 * Math.sin(t * 9), rg = g.createRadialGradient(270, 580, 20, 270, 580, 320);
+    rg.addColorStop(0, `rgba(255,210,90,${(pu * a0).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,90,0,0)');
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.fillRect(0, 200, W, 760); g.restore();
+  }
+  g.save(); g.translate(270, 450); g.scale(zoom, zoom); g.translate(-270, -450); g.globalAlpha = a0;
+  const k1 = slamK(t, 0.06, 3.3, 2.8); if (k1) drawSpr(g, 'p1', 270, 300, k1.sc, k1.a, 0, { shine: (t - .3) / .7 });
+  const k2 = slamK(t, 1.2, 3.3, 2.6); if (k2) drawSpr(g, 'p2', 270, 438, k2.sc, k2.a, 0, { shine: ((t - 1.4) % 1.4) / .7 });
+  const k3 = slamK(t, 1.6, 3.3, 3.0); if (k3) drawSpr(g, 'p3', 270, 580, k3.sc * (1 + .02 * Math.sin(t * 12)), k3.a, 0, { shine: ((t - 1.8) % 1.2) / .6 });
+  g.restore();
+}
+// 題名（3.2〜6.4）：エンブレム → テンゲルⅢ → 競馬 判定アプリ → 新登場
+function drawOpen(g, t) {
+  if (t < 3.2 || t >= 6.5) return;
+  const outK = P(t, 6.2, 6.4), zoom = 1 + .5 * eo(outK), a0 = 1 - outK;
+  g.save(); g.translate(270, 480); g.scale(zoom, zoom); g.translate(-270, -480); g.globalAlpha = a0;
+  { const u = P(t, 3.2, 3.42); drawEmblem(g, 270, 300, 250 * lerp(2.3, 1, back(u, 2)), Math.min(1, P(t, 3.2, 3.25)), .8 + .2 * Math.sin(t * 6)); }
+  const k1 = slamK(t, 3.6, 6.5, 2.6); if (k1) drawSpr(g, 'title', 270, 500, k1.sc, k1.a, 0, { shine: ((t - 3.8) % 1.6) / .8 });
+  if (t >= 4.4) { const u = eo(P(t, 4.4, 4.62)); drawSpr(g, 'rib1', lerp(-300, 270, u), 592, 1, 1); }
+  if (t >= 4.8) { const u = P(t, 4.8, 4.98); drawSpr(g, 'new', 432, 196, lerp(2.2, 1, back(u, 2.5)) * (1 + .05 * Math.sin(t * 14)), Math.min(1, P(t, 4.8, 4.85)), -.2 + .05 * Math.sin(t * 5)); }
+  g.restore();
+}
+function drawBolts(g, t) {
+  [[0.0, 0, 110, 260], [0.03, 1, 430, 300], [1.58, 4, 80, 520], [1.6, 5, 460, 520], [3.12, 6, 110, 240], [3.16, 7, 430, 300], [45.56, 2, 90, 250], [45.6, 3, 450, 250]].forEach(([t0, s, x0, y1]) => {
+    if (t >= t0 && t < t0 + .24) bolt(g, x0, -10, 270 + (x0 < 270 ? -40 : 40), y1, s * 13 + Math.floor((t - t0) * 30), (1 - P(t, t0, t0 + .24)) * (Math.floor(t * 60) % 2 ? 1 : .6));
+  });
+}
+function drawClimax(g, t) {
+  if (t < 33.6 || t >= 38.4) return;
+  const a = 1 - P(t, 38.25, 38.4);
+  g.save(); g.globalAlpha = a;
+  const k1 = slamK(t, 33.6, 38.4, 2.2), k2 = slamK(t, 34.0, 38.4, 2.2), k3 = slamK(t, 34.4, 38.4, 2.3);
+  if (k1) drawSpr(g, 'x1', 270, 62, k1.sc, k1.a, 0, { shine: ((t - 33.8) % 1.2) / .6 });
+  if (k2) drawSpr(g, 'x2', 270, 128, k2.sc, k2.a, 0, { hue: (t * 60) % 360 });
+  if (k3) drawSpr(g, 'x3', 270, 208, k3.sc * (1 + .015 * Math.sin(t * 10)), k3.a, 0, { hue: (t * 60 + 40) % 360 });
+  g.restore();
+}
+function drawEnding(g, t) {
+  if (t < 45.6) return;
+  const mv = eio(P(t, 50.4, 50.8));   // 50.4秒：題名は上に小さく、ほかは消える
+  const k1 = slamK(t, 46.0, 99, 2.4);
+  if (k1) drawSpr(g, 'title', 270, lerp(432, 96, mv), k1.sc * lerp(.9, .5, mv), k1.a, 0, { shine: ((t - 46.3) % 1.6) / .8 });
+  const fo = 1 - P(t, 50.25, 50.4);
+  if (t >= 46.4 && fo > 0) { const u = P(t, 46.4, 46.6); drawSpr(g, 'rib1', 270, 516, lerp(1.8, 1, back(u, 2)), Math.min(1, P(t, 46.4, 46.46)) * fo); }
+  if (t >= 46.8 && fo > 0) { const u = P(t, 46.8, 46.98); drawSpr(g, 'new', 452, 130, lerp(2.2, .85, back(u, 2.5)) * (1 + .05 * Math.sin(t * 14)), Math.min(1, P(t, 46.8, 46.85)) * fo, -.2 + .05 * Math.sin(t * 5)); }
+}
+// 注意書き（50.4〜）：大きな枠に、1つずつ出して最後まで残す
+const DISC_T0 = 50.8, DISC_GAP = .5, DISC_FONT = '700 20px "Noto Sans CJK JP"', DISC_LH = 30, DISC_GAPY = 22;
+function wrapLines(g, lines, maxW) {   // 幅をこえる行は文字で折り返す
+  const out = [];
+  lines.forEach(line => {
+    let cur = '';
+    for (const ch of line) { if (g.measureText(cur + ch).width > maxW && cur && !'。、）」!?！？'.includes(ch)) { out.push(cur); cur = ch; } else cur += ch; }   // 句読点は行の頭に来ない（ぶら下げ）
+    if (cur) out.push(cur);
+  });
+  return out;
+}
+function drawDisclaimer(g, t) {
+  if (t < 50.4) return;
+  const u = P(t, 50.4, 50.62), a = Math.min(1, P(t, 50.4, 50.46)), sc = lerp(1.25, 1, back(u, 1.6));
+  const px = 24, pw = 492, py = 176, ph = 740;
+  g.save(); g.globalAlpha = a; g.translate(270, py + ph / 2); g.scale(sc, sc); g.translate(-270, -(py + ph / 2));
+  g.save(); g.shadowColor = 'rgba(255,190,60,.55)'; g.shadowBlur = 26;
+  g.beginPath(); g.roundRect(px, py, pw, ph, 22); const pg = g.createLinearGradient(0, py, 0, py + ph); pg.addColorStop(0, 'rgba(14,28,66,.97)'); pg.addColorStop(1, 'rgba(4,8,24,.97)'); g.fillStyle = pg; g.fill(); g.restore();
+  g.lineWidth = 3.5; g.strokeStyle = '#ffd45c'; g.beginPath(); g.roundRect(px, py, pw, ph, 22); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,230,160,.45)'; g.beginPath(); g.roundRect(px + 7, py + 7, pw - 14, ph - 14, 16); g.stroke();
+  drawSpr(g, 'rib3', 270, py, 1, 1);
+  // 本文：1つずつ左から入る（全体を、見出しと小さい字のあいだのまん中に）
+  const maxW = pw - 96, lh = DISC_LH;
+  g.textBaseline = 'top'; g.textAlign = 'left'; g.lineJoin = 'round'; g.font = DISC_FONT;
+  const items = DISC.map(item => wrapLines(g, item, maxW));
+  const total = items.reduce((n, ls) => n + ls.length * lh + DISC_GAPY, -DISC_GAPY);
+  let y = py + 70 + Math.max(0, ((py + ph - 64) - (py + 70) - total) / 2);
+  items.forEach((ls, i) => {
+    const ta = DISC_T0 + i * DISC_GAP, k = eo(P(t, ta, ta + .28)), bh = ls.length * lh;
+    if (k > 0) {
+      g.save(); g.globalAlpha = a * k; g.translate(-34 * (1 - k), 0);
+      // 番号の丸
+      g.beginPath(); g.arc(px + 38, y + 16, 15, 0, TAU); const bg2 = g.createLinearGradient(0, y, 0, y + 30); bg2.addColorStop(0, '#fff0a8'); bg2.addColorStop(1, '#d99a1e'); g.fillStyle = bg2; g.fill();
+      g.font = '900 17px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.fillStyle = '#2a1300'; g.fillText(String(i + 1), px + 38, y + 5); g.textAlign = 'left';
+      g.font = DISC_FONT;
+      ls.forEach((ln, j) => { g.lineWidth = 5; g.strokeStyle = 'rgba(0,0,0,.65)'; g.strokeText(ln, px + 64, y + j * lh); g.fillStyle = '#fff'; g.fillText(ln, px + 64, y + j * lh); });
+      g.restore();
+    }
+    y += bh + DISC_GAPY;
+  });
+  // 小さい字（商標）
+  const ts = DISC_T0 + DISC.length * DISC_GAP, ks = eo(P(t, ts, ts + .3));
+  if (ks > 0) {
+    g.save(); g.globalAlpha = a * ks; g.font = '500 12px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.fillStyle = 'rgba(225,230,245,.9)';
+    const sl = wrapLines(g, DISC_SMALL, pw - 50);
+    sl.forEach((ln, j) => g.fillText(ln, 270, py + ph - 18 - (sl.length - j) * 19));
+    g.restore();
+  }
+  g.restore();
+}
+
+// ===================== パチンコの枠のランプ・金貨・星・衝撃の輪 =====================
+const LAMPS = (() => {
+  const pts = [], ins = 11, st = 22;
+  for (let x = ins; x <= W - ins; x += st) pts.push([x, ins]);
+  for (let y = ins + st; y <= H - ins; y += st) pts.push([W - ins, y]);
+  for (let x = W - ins - st; x >= ins; x -= st) pts.push([x, H - ins]);
+  for (let y = H - ins - st; y > ins; y -= st) pts.push([ins, y]);
+  return pts;
+})();
+function lampMode(t) {
+  // [点き方, 速さ(コマ/秒), 色] 点き方：off / boot / chase / rainbow / breathe（第4弾は控えめ：点滅なし・ゆっくり）
+  if (t < 0.3) return ['off', 0, 'gold'];
+  if (t < 1.2) return ['boot', 0, 'gold'];
+  if (t >= 20.0 && t < 23.2) return ['rainbow', 0, 'rainbow'];
+  if (t >= 30.0) return ['breathe', 0, 'gold'];
+  return ['chase', 7, t >= 15.2 && t < 20.0 ? 'blue' : 'gold'];
+}
+function drawFrame(g, t) {
+  // 金の枠（機械のふち）
+  const a = Math.min(1, P(t, .3, 1.0)); if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  const fg = g.createLinearGradient(0, 0, 0, H); fg.addColorStop(0, '#f6d77a'); fg.addColorStop(.3, '#b8841c'); fg.addColorStop(.5, '#fff1bf'); fg.addColorStop(.75, '#a9741a'); fg.addColorStop(1, '#e8c15a');
+  g.lineWidth = 4; g.strokeStyle = fg; g.strokeRect(2, 2, W - 4, H - 4);
+  g.lineWidth = 1; g.strokeStyle = 'rgba(80,40,0,.8)'; g.strokeRect(5.5, 5.5, W - 11, H - 11); g.strokeRect(17.5, 17.5, W - 35, H - 35);
+  g.restore();
+}
+function drawLamps(g, t) {
+  const [mode, sp, col] = lampMode(t); if (mode === 'off') return;
+  const n = LAMPS.length, step = Math.floor(t * sp);
+  g.save();
+  LAMPS.forEach(([x, y], i) => {
+    let on = 0, color = col === 'blue' ? '#9fe3ff' : '#fff0b8';
+    if (mode === 'boot') on = i <= n * P(t, .3, 1.2) ? .85 : 0;
+    else if (mode === 'chase') on = (i + step) % 3 === 0 ? .85 : .14;
+    else if (mode === 'rainbow') { on = .8; color = `hsl(${(i * 6 + t * 90) % 360},90%,66%)`; }
+    else if (mode === 'breathe') on = .25 + .18 * (.5 + .5 * Math.sin(t * 2.2 + i * .25));
+    g.beginPath(); g.arc(x, y, 4.4, 0, TAU); g.fillStyle = '#3e2a07'; g.fill();
+    if (on > .05) {
+      g.save(); g.globalAlpha = on; g.shadowColor = color; g.shadowBlur = on > .5 ? 7 : 2; g.fillStyle = color;
+      g.beginPath(); g.arc(x, y, 3.4, 0, TAU); g.fill(); g.restore();
+    }
+  });
+  g.restore();
+}
+function coins(g, t, T0, T1, seed, n = 44) {
+  const a = env(t, T0, T1, .1, .35); if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  for (let i = 0; i < n; i++) {
+    const t0 = T0 + rnd(i, seed) * 1.2, age = t - t0; if (age < 0) continue;
+    const x = rnd(i, seed + 1) * W + Math.sin(age * 1.5 + i) * 14, y = -30 + age * (300 + rnd(i, seed + 2) * 260);
+    if (y > H + 30) continue;
+    const ph = age * (5 + rnd(i, seed + 3) * 5) + i, sx = Math.cos(ph), r = 9 + rnd(i, seed + 4) * 6;
+    g.save(); g.translate(x, y); g.rotate(rnd(i, seed + 5) * 1.2 - .6); g.scale(Math.max(.12, Math.abs(sx)), 1);
+    const cg = g.createRadialGradient(-r * .3, -r * .3, r * .1, 0, 0, r); cg.addColorStop(0, '#fff6c0'); cg.addColorStop(.5, '#f2c14e'); cg.addColorStop(1, '#a86d10');
+    g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.lineWidth = 1.5; g.strokeStyle = '#6a4200'; g.stroke();
+    g.beginPath(); g.arc(0, 0, r * .62, 0, TAU); g.strokeStyle = 'rgba(120,80,0,.6)'; g.stroke();
+    if (sx > .3) { g.fillStyle = 'rgba(255,255,255,.75)'; g.beginPath(); g.ellipse(-r * .25, -r * .3, r * .22, r * .12, -.6, 0, TAU); g.fill(); }
+    g.restore();
+  }
+  g.restore();
+}
+function sparkles(g, t, T0, T1, n = 26) {
+  const a = env(t, T0, T1, .2, .3); if (a <= 0) return;
+  g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = '#fff';
+  for (let i = 0; i < n; i++) {
+    const x = 30 + rnd(i, 21) * (W - 60), y = 60 + rnd(i, 22) * (H - 120), ph = (t * (1.2 + rnd(i, 23)) + rnd(i, 24) * 7) % 1.4;
+    if (ph > .7) continue;
+    const s = Math.sin(ph / .7 * Math.PI) * (8 + rnd(i, 25) * 10);
+    g.save(); g.translate(x, y); g.rotate(rnd(i, 26) * .8);
+    g.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? s * .22 : s, an = k / 8 * TAU; g.lineTo(Math.cos(an) * r, Math.sin(an) * r); } g.closePath();
+    g.shadowColor = '#fff2b0'; g.shadowBlur = 10; g.fill(); g.restore();
+  }
+  g.restore();
+}
+function shocks(g, t) {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  SHOCK.forEach(t0 => {
+    const age = t - t0; if (age < 0 || age > .38) return;
+    const u = age / .38, r = 50 + 540 * eo(u);
+    g.globalAlpha = (1 - u) * .9; g.lineWidth = 16 * (1 - u) + 2; g.strokeStyle = 'rgba(255,240,200,1)';
+    g.beginPath(); g.arc(270, 420, r, 0, TAU); g.stroke();
+  });
+  g.restore();
+}
+function drawBolts3(g, t) {
+  [[6.38, 4, 80, 300], [6.4, 5, 460, 300], [9.58, 6, 70, 420], [9.6, 7, 470, 420], [14.38, 8, 90, 260], [20.0, 9, 60, 350], [20.02, 10, 480, 350], [29.98, 11, 100, 200], [30.0, 12, 440, 200]].forEach(([t0, s, x0, y1]) => {
+    if (t >= t0 && t < t0 + .22) bolt(g, x0, -10, 270 + (x0 < 270 ? -60 : 60), y1, s * 13 + Math.floor((t - t0) * 30), (1 - P(t, t0, t0 + .22)) * (Math.floor(t * 60) % 2 ? 1 : .6));
+  });
+}
+
+// ===================== 1コマを描く =====================
+function punchAt(t) {   // カメラの押し込み（ヒットで一瞬大きく）
+  let k = 0; HITS.forEach(([t0, amp]) => { if (t >= t0 && t < t0 + .3) k = Math.max(k, amp / 14 * Math.pow(1 - P(t, t0, t0 + .3), 2)); });
+  return 1 + .055 * k;
+}
+function shakeAt(t) {
+  let dx = 0, dy = 0;
+  HITS.forEach(([t0, amp], i) => { if (t >= t0 && t < t0 + .3) { const k = amp * Math.pow(1 - P(t, t0, t0 + .3), 2); dx += (rnd(i, Math.floor(t * 60)) - .5) * 2 * k; dy += (rnd(i + 50, Math.floor(t * 60)) - .5) * 2 * k; } });
+  return [dx, dy];
+}
+function render(t) {
+  const [dx, dy] = shakeAt(t); $('world').style.transform = `translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px)`;
+  drawBG(t);
+  renderPhone(t);
+  // エンディングのバナー
+  const bu = P(t, 45.6, 45.8), fo = 1 - P(t, 50.25, 50.4); place($('banner'), 270, 250, t >= 45.6 ? Math.min(1, P(t, 45.6, 45.65)) * fo : 0, lerp(1.9, 1, back(bu, 2)) * (1 + .01 * Math.sin(t * 3)));
+  // DOMの小さい文字
+  const sub = SUBS.find(s => t >= s.a && t <= s.b), cs = $('csub');
+  if (sub) { cs.firstChild.textContent = sub.s; cs.firstChild.className = 'sub' + (sub.blue ? ' blue' : ''); place(cs, 270, 254 + 8 * (1 - eo(P(t, sub.a, sub.a + .15))), env(t, sub.a, sub.b, .12, .1), lerp(1.25, 1, eo(P(t, sub.a, sub.a + .15)))); }
+  else setVis(cs, 0);
+  place($('cfoot'), 270, 936, env(t, 12.9, 14.4, .3, .15));
+  place($('eSum'), 270, 586, eo(P(t, 46.9, 47.25)) * fo, lerp(1.15, 1, eo(P(t, 46.9, 47.2))));
+  place($('ectaw'), 270, 650 + 14 * (1 - eo(P(t, 47.3, 47.7))), eo(P(t, 47.3, 47.65)) * fo, (.9 + .1 * back(P(t, 47.3, 47.7))) * (1 + .02 * Math.sin(t * 6) * P(t, 47.7, 48.1)));
+  // 前面
+  F.setTransform(2, 0, 0, 2, 0, 0); F.clearRect(0, 0, W, H);
+  let sl = 0; SPEED.forEach(([t0, a]) => { if (t >= t0 && t < t0 + .35) sl = Math.max(sl, a * (1 - P(t, t0, t0 + .35))); });
+  if (t >= 33.6 && t < 38.4) sl = Math.max(sl, .05);
+  speedLines(F, sl, Math.floor(t * 30) * 3);
+  drawPrelude(F, t);
+  drawOpen(F, t);
+  drawBolts(F, t);
+  drawCounter(F, t);
+  drawCaps(F, t);
+  drawClimax(F, t);
+  drawEnding(F, t);
+  drawDisclaimer(F, t);
+  coins(F, t, 45.6, 48.2, 50, 22);
+  confetti(F, t, 1.6, 3.2); confetti(F, t, 33.6, 38.4);
+  sparkles(F, t, 1.6, 3.2, 16); sparkles(F, t, 3.2, 6.4, 10); sparkles(F, t, 33.6, 38.4, 10); sparkles(F, t, 45.6, 50.4, 12);
+  bursts(F, t);
+  flashes(F, t);   // 第5弾：周りのランプはなし
+}
+window.render = render;
+
+// 文字の絵を作ってから始める
+function build() {
+  // 前置き
+  mkText('p1', 'オッズを入れるだけの', { size: 46, fill: 'white', s2: '#ffd45c', glow: 'rgba(255,170,40,.7)', depth: 3 });
+  mkText('p2', '全く新しい', { size: 72, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('p3', '競馬アプリ!!', { size: 80, fill: 'fire', glow: 'rgba(255,80,0,.95)' });
+  mkText('title', 'テンゲルⅢ', { size: 88, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkRibbon('rib1', '競馬 判定アプリ', { w: 360, h: 58, size: 30 });
+  mkRibbon('rib2', APPV ? 'あなたのiPhone・iPadで稼働中!!' : 'あなたのiPhoneで稼働中!!', { w: APPV ? 500 : 470, h: 62, size: APPV ? 26 : 30 });
+  mkBadge('new', '新登場', 62);
+  mkRibbon('rib3', 'ご利用にあたって', { w: 330, h: 54, size: 26, c1: '#1c3f8a', c2: '#0b1f4d', c3: '#050b22' });
+  mkText('c1z', '単勝オッズ・3連単オッズ', { size: 32, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c1a', 'レース情報を', { size: 32, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c1b', '入れるだけ!!', { size: 78, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  mkText('c2a', '誰でも簡単に! 1発で', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c2b', 'ゾーンまで判定!!', { size: 58, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.7)' });
+  mkText('c3a', '買い目編集で', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c3b', 'カスタム自在!!', { size: 62, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('c4a', '自分で集めたデータで', { size: 32, fill: 'white', s1: '#001233', s2: '#8fe6ff', ext: '#001a4a', depth: 2 });
+  mkText('c4b', 'テンゲルが育つ!!', { size: 54, fill: 'blue', s1: '#001233', s2: '#ffffff', ext: '#00205a', glow: 'rgba(60,180,255,.9)' });
+  mkText('x1', '自分だけの', { size: 44, fill: 'gold', glow: 'rgba(255,255,255,.7)' });
+  mkText('x2', 'テンゲルが', { size: 58, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.7)' });
+  mkText('x3', '作れる!!', { size: 72, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.8)' });
+  mkText('m1a', '買う馬も', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m1b', '選べる!!', { size: 74, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  mkText('m2a', APPV ? '5重勝も' : 'WIN5も', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m2b', '組める!!', { size: 74, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('m3a', '収支も', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m3b', '自動で記録!!', { size: 66, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  mkText('cnt_t', 'データ上乗せ!!', { size: 40, fill: 'fire', glow: 'rgba(255,80,0,.8)' });
+  ADD.forEach(([, v], i) => mkText('plus' + i, `+${v}走`, { size: 36, fill: 'gold', glow: 'rgba(255,200,0,.9)', depth: 2 }));
+}
+window.__ready = Promise.all([...document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })))
+  .then(() => document.fonts.load('900 40px "Noto Sans CJK JP"')).then(() => document.fonts.ready)
+  .then(() => { build(); render(0); return true; });
+</script>
+</body></html>
