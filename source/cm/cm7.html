@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>テンゲルⅢ CM 第7弾（ポイント・単勝5連予想）</title>
+<style>
+/* 第7弾（まさちゃんの指定 2026/10/15）：アプリはポイント制に（このCMはその新しい仕組みを見せる。アプリのソースはまだ変えていない＝ポイントの画面はイメージ）
+   前置き → 題名 → 初回ダウンロードのみ1500Pプレゼント → 例の画面3枚（①距離・馬場・出走頭数 ②単勝オッズ ③3連単オッズ）→ ポイントで読み取り（1レース200P）→ 自動で入る
+   → 1発でゾーンまで判定 → 買い目編集 → Pカスタム（券種を1つ500Pで解放）→ 自分だけのマザーデータ（15,000Pで解放）→ 買う馬 → 単勝5連予想（5レース読み取り・自分で選ぶ／ランダム）
+   → 収支 → サブスクでお得にポイント（通常購入・サブスク・30日繰り越し）→ おわり（紹介特典）→ 注意書き
+   スマホの電波とバッテリーの位置をそろえる・「テンゲルⅢ」のⅢはアプリと同じ字（Dela Gothic One）
+   縦9:16（540×960をDPR2で1080×1920に）。150BPM（1拍0.4秒）。0〜77.6秒は本編、77.6〜89.6秒は注意書き。cm6.html をもとにしている */
+@font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.ttf')}
+@font-face{font-family:'BIZ UDPGothic';font-weight:700;src:url('fonts/BIZUDPGothic-Bold.ttf')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url('fonts/IBMPlexMono-SemiBold.ttf')}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:540px;height:960px;overflow:hidden;background:#000}
+body{font-family:'Noto Sans CJK JP','Hiragino Sans',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
+#world{position:absolute;left:0;top:0;width:540px;height:960px;overflow:hidden;transform-origin:50% 50%}
+canvas{position:absolute;left:0;top:0;width:540px;height:960px}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity}
+.center{width:540px;text-align:center}
+
+/* スマホ */
+#phone{transform-origin:0 0;width:290px;height:604.3px;border-radius:47px;background:linear-gradient(150deg,#3a3f48,#0c0e11 40%,#1b1f25);
+  box-shadow:0 0 0 1.8px rgba(255,214,102,.9),0 0 34px rgba(255,150,0,.55),0 34px 70px rgba(0,0,0,.75)}
+#screen{position:absolute;left:10px;top:10px;width:270px;height:584.3px;border-radius:37px;overflow:hidden;background:#eceef3}
+#status{position:absolute;left:0;top:0;width:270px;height:26px;background:#16203D;color:#fff;z-index:3}
+#status .tm{position:absolute;left:25px;top:6px;font-weight:700;font-size:11.5px}
+#status .isl{position:absolute;left:97px;top:5px;width:76px;height:19px;border-radius:12px;background:#000}
+/* 第7弾：電波（4本）とバッテリーのまん中の高さをそろえる（電波の下と電池の下も同じ高さ） */
+#status .ic{position:absolute;right:20px;top:8px;height:10px;display:flex;gap:5px;align-items:center}
+#status .bars{display:flex;align-items:flex-end;gap:1px;height:10px}
+#status .bars i{display:block;width:3px;background:#fff;border-radius:1px}
+#status .bat{width:20px;height:10px;border:1.3px solid rgba(255,255,255,.9);border-radius:3px;position:relative}
+#status .bat::after{content:"";position:absolute;left:1.5px;top:1.5px;width:12px;height:4.5px;background:#fff;border-radius:1px}
+.hdr{position:absolute;left:0;top:26px;width:270px;z-index:2}
+#vp{position:absolute;left:0;width:270px;overflow:hidden;background:#eceef3}
+.cimg{position:absolute;left:0;top:0;width:270px}
+.tab{position:absolute;left:0;width:270px;z-index:2}
+#home{position:absolute;left:0;bottom:0;width:270px;height:14px;background:#fff;z-index:2}
+#home::after{content:"";position:absolute;left:90px;top:5px;width:90px;height:4px;border-radius:2px;background:#111}
+.ring{position:absolute;border:3px solid #ffcf3a;border-radius:10px;box-shadow:0 0 0 2px rgba(80,0,0,.45),0 0 20px rgba(255,190,40,.95),inset 0 0 12px rgba(255,190,40,.45)}
+.rip{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.95);box-shadow:0 0 16px rgba(255,220,120,.9);z-index:6}
+.dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 14px rgba(255,200,80,.9);z-index:6}
+/* 第7弾：ヘッダーの保有ポイント（イメージ・アプリの帯と同じ見た目。アプリの大きさ390で作って縮める） */
+#pwrap{position:absolute;left:0;top:26px;width:390px;height:93px;transform:scale(.692308);transform-origin:0 0;z-index:3;pointer-events:none}
+#ppill{position:absolute;left:16px;top:53px;height:27px;padding:0 12px 0 4px;border-radius:999px;border:1px solid rgba(243,240,230,.35);display:flex;align-items:center;gap:6px;
+  color:#F3F0E6;font-family:'BIZ UDPGothic',sans-serif;font-weight:700;font-size:13px;background:rgba(255,255,255,.05)}
+#ppill .pc{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#f0b54e 55%,#b7791f);
+  color:#5a3500;font-style:normal;font-family:'Dela Gothic One';font-size:11px;line-height:1}
+#ppill b{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;letter-spacing:.01em}
+/* 第7弾：解放のたしかめ（イメージ・アプリのダイアログと同じ色） */
+#pdlg{position:absolute;left:0;top:0;width:270px;height:100%;z-index:4;visibility:hidden}
+#pdlg .bd{position:absolute;inset:0;background:rgba(10,14,30,.45)}
+#pdlg .dlg{position:absolute;left:24px;top:116px;width:222px;background:#fff;border-radius:12px;padding:12px 12px 11px;box-shadow:0 10px 30px rgba(0,0,0,.35);
+  font-family:'BIZ UDPGothic',sans-serif;font-weight:700;color:#141A2E;transform-origin:50% 50%}
+#pdlg .ttl{font-size:11.5px}
+#pdlg .txt{font-size:9px;color:#5A6175;margin-top:4px}
+#pdlg .btns{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+#pdlg .btns span{border:1px solid #D7DBE4;border-radius:6px;padding:5px 10px;font-size:9.5px}
+#pdlg .btns .b1{background:#1B2A55;color:#fff;border-color:#1B2A55}
+
+/* 例の画面（架空）：390×844 を縮めて見せる。左上に「例」 */
+.exw{width:390px;height:844px;transform-origin:50% 50%}
+.exc{position:absolute;left:0;top:0;width:390px;height:844px;border-radius:34px;overflow:hidden;background:#fff;
+  box-shadow:0 0 0 6px #fff,0 0 0 11px #ffd45c,0 0 60px rgba(255,170,40,.75),0 40px 80px rgba(0,0,0,.7)}
+.exc img{width:390px;height:844px;display:block}
+.exring{position:absolute;border:5px solid #ffcf3a;border-radius:14px;opacity:0;transform-origin:50% 50%;
+  box-shadow:0 0 0 3px rgba(80,0,0,.45),0 0 26px rgba(255,190,40,.95),inset 0 0 14px rgba(255,190,40,.45)}
+.extag{position:absolute;left:-30px;top:-34px;padding:12px 30px 16px;border-radius:20px;background:linear-gradient(180deg,#ff4040,#b0000f);color:#fff;
+  font-weight:900;font-size:64px;line-height:1;border:6px solid #fff;box-shadow:0 8px 20px rgba(0,0,0,.55);transform:rotate(-8deg);letter-spacing:.04em}
+
+/* テロップの小さい帯 */
+.sub{display:inline-block;padding:7px 18px 8px;border-radius:10px;border:2px solid #ffd45c;background:linear-gradient(180deg,#6a000c,#1c0003);
+  box-shadow:0 0 16px rgba(255,150,0,.6),inset 0 0 10px rgba(255,80,0,.35);font-weight:900;font-size:21px;letter-spacing:.04em;white-space:nowrap;text-shadow:0 2px 0 #000}
+.sub.blue{border-color:#8fe6ff;background:linear-gradient(180deg,#0b3478,#020a22);box-shadow:0 0 16px rgba(80,200,255,.6),inset 0 0 10px rgba(80,200,255,.3)}
+.foot{font-size:12.5px;color:rgba(230,230,230,.8);letter-spacing:.02em;text-shadow:0 1px 2px #000}
+#cfoot{background:rgba(0,0,0,.74);padding:7px 8px 8px;color:rgba(242,242,242,.95)}
+
+/* エンディング */
+#banner{transform-origin:50% 50%;width:480px;height:261.8px;border-radius:16px;overflow:hidden;box-shadow:0 0 0 2px #ffd45c,0 0 40px rgba(255,170,0,.6),0 30px 70px rgba(0,0,0,.7)}
+#banner img{width:480px;height:261.8px;display:block}
+#cta{display:inline-flex;align-items:center;gap:10px;padding:11px 24px 12px;border-radius:999px;background:linear-gradient(180deg,#fff0a8,#f2c14e 45%,#c88a1e);color:#2a1300;
+  font-weight:900;font-size:21px;letter-spacing:.04em;box-shadow:0 0 0 2px #fff6cf,0 0 24px rgba(255,190,60,.8),0 10px 26px rgba(0,0,0,.5)}
+#cta svg{width:24px;height:24px}
+#eSum span{display:inline-block;padding:7px 16px 8px;border-radius:999px;border:1.5px solid rgba(255,212,92,.85);background:rgba(10,14,34,.8);font-weight:800;font-size:16.5px;letter-spacing:.05em;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap;box-shadow:0 0 14px rgba(255,180,60,.35)}
+/* 第7弾：紹介特典（おわりの下） */
+#refbox{width:540px;display:flex;justify-content:center}
+#refbox .rb{position:relative;width:476px;padding:30px 18px 14px;border-radius:18px;border:2.5px solid #ffd45c;background:linear-gradient(180deg,rgba(90,8,20,.96),rgba(30,2,8,.96));
+  box-shadow:0 0 26px rgba(255,170,40,.6),inset 0 0 16px rgba(255,120,0,.3)}
+#refbox .rbh{position:absolute;left:50%;top:-19px;transform:translateX(-50%);padding:6px 26px 7px;border-radius:999px;background:linear-gradient(180deg,#fff0a8,#f2c14e 50%,#c88a1e);
+  color:#2a1300;font-weight:900;font-size:19px;letter-spacing:.08em;white-space:nowrap;box-shadow:0 0 0 2px #fff6cf,0 6px 14px rgba(0,0,0,.45)}
+#refbox .rbl{display:flex;align-items:baseline;justify-content:center;gap:8px;font-weight:900;font-size:19px;letter-spacing:.03em;white-space:nowrap;text-shadow:0 2px 0 #000}
+#refbox .rbl + .rbl{margin-top:6px}
+#refbox .rbl b{font-size:36px;color:#ffd84a;letter-spacing:.01em;text-shadow:0 0 12px rgba(255,180,40,.8),0 3px 0 #5a1a00}
+#refbox .rbl .sm{font-size:16px;color:#ffe9b0}
+</style></head>
+<body>
+<div id="world">
+<canvas id="bg" width="1080" height="1920"></canvas>
+
+<div class="abs" id="phone">
+  <div id="screen">
+    <div id="status"><span class="tm">9:41</span><span class="isl"></span>
+      <span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+    <div id="hdrs"></div>
+    <div id="pwrap"><div id="ppill"><i class="pc">P</i><b id="pnum">1,500</b><span>P</span></div></div>
+    <div id="vp"><div id="cimgs"></div>
+      <div id="pdlg"><div class="bd"></div><div class="dlg" id="pdlgc"><div class="ttl" id="pdt">「複勝」を解放する？</div><div class="txt">記録できる券種がふえるよ</div>
+        <div class="btns"><span class="b0">やめる</span><span class="b1" id="pdb">500Pで解放</span></div></div></div>
+      <div class="ring" id="ring" style="display:none"></div>
+      <div class="ring" id="ring2" style="display:none"></div>
+      <div class="ring" id="ring3" style="display:none"></div>
+      <div class="rip" id="prip" style="display:none"></div>
+      <div class="dot" id="pdot" style="display:none"></div>
+    </div>
+    <div id="tabs"></div>
+    <div id="home"></div>
+  </div>
+</div>
+
+
+<div class="abs exw" id="ex0"><div class="exc"><img src="assets/ex_odds0.png" alt=""></div><div class="exring"></div><div class="exring"></div><div class="exring"></div><span class="extag">例</span></div>
+<div class="abs exw" id="ex1"><div class="exc"><img src="assets/ex_odds1.png" alt=""></div><span class="extag">例</span></div>
+<div class="abs exw" id="ex2"><div class="exc"><img src="assets/ex_odds2.png" alt=""></div><span class="extag">例</span></div>
+
+<div class="abs" id="banner"><img src="assets/banner.jpg" alt=""></div>
+
+<div class="abs center" id="csub"><span class="sub"></span></div>
+<div class="abs center foot" id="cfoot">※画像の読み取りには、AnthropicのAPIキー（有料）が必要です</div>
+<div class="abs center" id="ectaw"><span id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/></svg>ホーム画面に追加して使える</span></div>
+<div class="abs center" id="eSum"><span>判定・買い目編集・収支の記録まで、これひとつ</span></div>
+<div class="abs" id="refbox"><div class="rb"><div class="rbh">ユーザー紹介特典</div>
+  <div class="rbl"><span>サブスク入会＆紹介で</span><b>1,600P</b><span class="sm">プレゼント</span></div>
+  <div class="rbl"><span>紹介で入会すると</span><b>1,000P</b><span class="sm">プレゼント</span></div></div></div>
+
+<canvas id="fx" width="1080" height="1920"></canvas>
+</div>
+<img id="emb" src="assets/emblem.png" alt="" style="display:none">
+
+<script>
+const META = window.__META;
+const W = 540, H = 960;
+const $ = id => document.getElementById(id);
+// 版：?v=app＝App Store版のアプリの中で見せる版（「ホーム画面に追加」ではなく、アプリの言い方）。どちらの版にも商標の注意書きを入れる
+const APPV = /[?&]v=app\b/.test(location.search);
+// 画面の写真のフォルダ（第7弾は shots_cm7_app：App Store版の画面＋ポイントのイメージ）
+const SHOTS = window.__SHOTS || 'shots';
+(function () {
+  if (APPV) {
+    $('cta').lastChild.textContent = 'iPhone・iPadで、いつでも判定';
+    // App Store版の画像の読み取りは端末の中。第7弾：1レース200P
+    $('cfoot').textContent = '※画像の読み取りは、この端末の中で行います（1レース200P）';
+  }
+})();
+// 注意書き（77.6秒から。大きな文字で1つずつ出して、最後まで残す）。App Store版は「JRA」「WIN5」を使わないので商標の行がちがう
+// 第7弾：ポイントの画面はイメージ（アプリはこれから変える）なので「画面はイメージです」。ポイント・料金・特典は変わることがある
+const DISC = APPV ? [
+  ['画面はイメージです。', 'レース・オッズ・馬名は架空の例です'],
+  ['過去のデータの傾向を表示する道具です。', '的中や利益を約束するものではありません'],
+  ['馬券は20歳になってから。', '無理のない範囲で楽しみましょう'],
+  ['画像の読み取りは端末の中で行います', '（1レース200P）'],
+  ['ポイント・料金・特典の内容は', '変わることがあります'],
+  ['競馬の主催者・団体とは関係のない、', '独自開発のアプリです'],
+] : [
+  ['画面はイメージです。', 'レース・オッズ・馬名は架空の例です'],
+  ['過去のデータの傾向を表示する道具です。', '的中や利益を約束するものではありません'],
+  ['馬券は20歳になってから。', '無理のない範囲で楽しみましょう'],
+  ['画像の読み取りには、AnthropicのAPIキー', '（有料）が必要です'],
+  ['ポイント・料金・特典の内容は', '変わることがあります'],
+  ['競馬の主催者とは関係のない、独自開発のアプリです。', '「JRA」「WIN5」は日本中央競馬会の', '商標または登録商標です'],
+];
+const DISC_SMALL = APPV ? ['iPhone・iPadは、米国その他の国で登録されたApple Inc.の商標です。', 'iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。']
+  : ['iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。'];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x, s = 1.70158) => { const c3 = s + 1; return 1 + c3 * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const env = (t, a, b, fi = .2, fo = .15) => (t < a || t > b) ? 0 : Math.min(eo(P(t, a, a + fi)), 1 - P(t, b - fo, b));
+const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+const TAU = Math.PI * 2;
+
+// ===================== 合図（BGMと同じ時刻） =====================
+// 場面：前置き 0〜3.2・題名 3.2〜6.4・1500Pプレゼント 6.4〜9.6・例の画面 9.6〜15.2・ポイントで読み取り 15.2〜23.2・判定 23.2〜29.6・買い目編集 29.6〜36.0
+//       Pカスタム 36.0〜42.4・マザーデータ 42.4〜50.4・買う馬 50.4〜52.8・単勝5連予想 52.8〜60.8・収支 60.8〜63.2・サブスク 63.2〜71.2・おわり 71.2〜77.6・注意書き 77.6〜89.6
+const T_END = 71.2, T_DISC = 77.6;
+const HITS = [[0.0, 14], [1.2, 9], [1.6, 15], [3.2, 10], [3.6, 6], [6.4, 6], [7.2, 9], [7.6, 5], [9.6, 4], [10.0, 4], [15.2, 3], [16.5, 3], [17.9, 2], [23.2, 3], [24.0, 5],
+              [29.6, 3], [36.0, 4], [36.4, 7], [38.4, 3], [39.6, 3], [42.4, 3], [42.8, 4], [44.0, 6], [46.0, 3], [50.4, 4], [52.8, 3], [55.15, 2], [60.8, 3], [63.2, 3], [63.6, 4],
+              [71.2, 9], [72.0, 5], [77.6, 6]];
+const FLASH = [[0.0, 1.0, .35], [1.2, .7, .22], [1.6, .95, .3], [3.2, .75, .3], [6.4, .55, .22], [7.2, .6, .26], [9.6, .4, .18], [10.0, .3, .16], [15.2, .25, .14], [16.5, .25, .14], [17.9, .2, .12],
+               [23.2, .35, .16], [24.0, .35, .16], [29.6, .4, .18], [36.0, .4, .18], [36.4, .45, .2], [42.4, .4, .18], [44.0, .45, .2], [50.4, .3, .14], [52.8, .25, .12], [60.8, .25, .12],
+               [63.2, .35, .16], [71.2, .7, .28], [77.6, .5, .3]];
+const SHOCK = [];
+const RAINBOW = [[1.6, .5, .5], [24.0, .35, .4], [36.4, .5, .5]];
+const SPEED = [[0.0, .8], [1.2, .6], [1.6, .85], [3.2, .4], [6.4, .5], [7.2, .45], [9.6, .3], [10.0, .22], [15.2, .2], [23.2, .25], [24.0, .3], [29.6, .25], [36.0, .35], [36.4, .3],
+               [42.4, .3], [44.0, .25], [50.4, .25], [52.8, .2], [60.8, .2], [63.2, .25], [71.2, .4]];
+const BURSTS = [
+  { t: 0.0, x: 270, y: 300, n: 120, sp: 540, hue: 45 }, { t: 1.2, x: 270, y: 438, n: 80, sp: 460, hue: 30 }, { t: 1.6, x: 270, y: 580, n: 150, sp: 620, hue: -1 },
+  { t: 3.2, x: 270, y: 330, n: 90, sp: 480, hue: 45 }, { t: 3.6, x: 270, y: 520, n: 50, sp: 380, hue: 40 },
+  { t: 6.55, x: 270, y: 430, n: 90, sp: 480, hue: 45 }, { t: 7.2, x: 270, y: 650, n: 130, sp: 560, hue: 45 }, { t: 7.6, x: 270, y: 785, n: 60, sp: 420, hue: 30 },
+  { t: 10.0, x: 270, y: 172, n: 40, sp: 340, hue: 25 }, { t: 24.0, x: 270, y: 174, n: 60, sp: 400, hue: -1 },
+  { t: 29.8, x: 270, y: 174, n: 36, sp: 320, hue: 45 }, { t: 36.4, x: 270, y: 180, n: 90, sp: 480, hue: -1 },
+  { t: 42.8, x: 270, y: 174, n: 36, sp: 320, hue: 195 },
+  { t: 50.4, x: 270, y: 174, n: 30, sp: 320, hue: 40 }, { t: 52.8, x: 270, y: 174, n: 30, sp: 320, hue: 40 }, { t: 60.8, x: 270, y: 174, n: 30, sp: 320, hue: 40 },
+  { t: 63.6, x: 270, y: 174, n: 50, sp: 380, hue: 45 },
+  { t: 71.2, x: 270, y: 232, n: 100, sp: 520, hue: 45 }, { t: 72.0, x: 270, y: 516, n: 40, sp: 380, hue: 0 },
+];
+
+// ===================== 文字の絵（あらかじめ描いておく） =====================
+const FILL = {
+  gold: [[0, '#fffbe6'], [.28, '#ffe27a'], [.49, '#ffb300'], [.52, '#fff1b8'], [.78, '#e07b00'], [1, '#ffe08a']],
+  fire: [[0, '#fffde0'], [.3, '#ffe14d'], [.62, '#ff8400'], [1, '#d81b00']],
+  white: [[0, '#ffffff'], [.6, '#f4f4f4'], [1, '#c9d2e6']],
+  blue: [[0, '#f2fbff'], [.4, '#9fe3ff'], [.5, '#ffffff'], [.75, '#38a8ff'], [1, '#a9e8ff']],
+  rainbow: [[0, '#ff3b3b'], [.18, '#ff9d00'], [.36, '#ffe600'], [.54, '#3ee05a'], [.72, '#2fa8ff'], [.9, '#b04dff'], [1, '#ff4fd8']],
+  red: [[0, '#ffe2e2'], [.35, '#ff6b6b'], [.7, '#e01b1b'], [1, '#ff9a9a']],
+};
+const SPR = {};
+// 文字の絵。o.parts＝[[文字, フォント]]で字ごとにフォントを変えられる（第7弾：「テンゲルⅢ」のⅢはアプリと同じ Dela Gothic One）
+function mkText(key, text, o) {
+  const size = o.size, pad = Math.ceil(size * .5), base = `900 ${size}px "Noto Sans CJK JP"`;
+  const parts = o.parts || [[text, null]];
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  const fonts = parts.map(([, f]) => f ? f.replace('{s}', size) : base);
+  const ws = parts.map(([s], i) => { g.font = fonts[i]; return g.measureText(s).width; }), gap = o.gap || 0;
+  const tw = ws.reduce((a, b) => a + b, 0) + gap * (parts.length - 1), w = Math.ceil(tw + pad * 2 + size * .3), h = Math.ceil(size * 1.3 + pad * 2);
+  c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  g.textBaseline = 'middle'; g.textAlign = 'left'; g.lineJoin = 'round'; g.miterLimit = 2;
+  g.translate(w / 2, h / 2); g.transform(1, 0, -(o.skew ?? .12), 1, 0, 0);
+  const xs = []; let x0 = -tw / 2; ws.forEach(wi => { xs.push(x0); x0 += wi + gap; });
+  const dy = parts.map(([, f]) => f && o.dy ? o.dy : 0);
+  const each = fn => parts.forEach(([s], i) => { g.font = fonts[i]; fn(s, xs[i], dy[i]); });
+  const s1 = o.s1 ?? '#2a0000', s2 = o.s2 ?? '#fff4c8', ext = o.ext ?? '#4a0000';
+  if (o.glow) { g.save(); g.shadowColor = o.glow; g.shadowBlur = size * .45; g.strokeStyle = o.glow; g.lineWidth = size * .24; each((s, x, y) => g.strokeText(s, x, y)); g.restore(); }
+  const depth = o.depth ?? Math.max(2, Math.round(size * .08));
+  g.strokeStyle = ext; g.fillStyle = ext; g.lineWidth = size * .22;
+  for (let i = depth; i >= 1; i--) each((s, x, y) => { g.strokeText(s, x + i * .3, y + i); g.fillText(s, x + i * .3, y + i); });
+  g.strokeStyle = s1; g.lineWidth = size * .22; each((s, x, y) => g.strokeText(s, x, y));
+  g.strokeStyle = s2; g.lineWidth = size * .09; each((s, x, y) => g.strokeText(s, x, y));
+  const gr = o.dir === 'h' ? g.createLinearGradient(-tw / 2, 0, tw / 2, 0) : g.createLinearGradient(0, -size * .55, 0, size * .55);
+  FILL[o.fill].forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; each((s, x, y) => g.fillText(s, x, y));
+  SPR[key] = { c, w, h };
+}
+function mkRibbon(key, text, o) {
+  const w = o.w, h = o.h, size = o.size;
+  const c = document.createElement('canvas'), g = c.getContext('2d'); c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  const sk = h * .35;
+  const path = () => { g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath(); };
+  path(); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, o.c1 || '#d4001a'); gr.addColorStop(.55, o.c2 || '#8a000d'); gr.addColorStop(1, o.c3 || '#4a0006');
+  g.fillStyle = gr; g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#ffd45c'; path(); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.moveTo(sk + 4, 4); g.lineTo(w - 6, 4); g.stroke();
+  g.font = `900 ${size}px "Noto Sans CJK JP"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.save(); g.translate(w / 2, h / 2 + 1); g.transform(1, 0, -.1, 1, 0, 0);
+  g.lineWidth = size * .22; g.strokeStyle = '#2a0000'; g.strokeText(text, 0, 0);
+  const tg = g.createLinearGradient(0, -size / 2, 0, size / 2); FILL.gold.forEach(([p, col]) => tg.addColorStop(p, col));
+  g.fillStyle = o.white ? '#fff' : tg; g.fillText(text, 0, 0); g.restore();
+  SPR[key] = { c, w, h };
+}
+function mkBadge(key, text, size) {
+  const R = size, c = document.createElement('canvas'), g = c.getContext('2d'), w = R * 2 + 20; c.width = c.height = w * 2; g.scale(2, 2);
+  g.translate(w / 2, w / 2);
+  g.beginPath(); for (let i = 0; i < 32; i++) { const r = i % 2 ? R * .78 : R, a = i / 32 * TAU; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath();
+  const gr = g.createRadialGradient(0, -R * .3, R * .1, 0, 0, R); gr.addColorStop(0, '#fff36b'); gr.addColorStop(.55, '#ff7a00'); gr.addColorStop(1, '#d10014');
+  g.fillStyle = gr; g.fill(); g.lineWidth = 4; g.strokeStyle = '#fff'; g.stroke(); g.lineWidth = 2; g.strokeStyle = '#7a0000'; g.stroke();
+  g.font = `900 ${R * .5}px "Noto Sans CJK JP"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.rotate(-.12); g.lineWidth = R * .16; g.strokeStyle = '#6a0000'; g.strokeText(text, 0, 2); g.fillStyle = '#fff'; g.fillText(text, 0, 2);
+  SPR[key] = { c, w, h: w };
+}
+let tmpC, tmpG;
+function drawSpr(g, key, x, y, sc = 1, a = 1, rot = 0, opt = {}) {
+  const s = SPR[key]; if (!s || a <= .001 || sc <= .001) return;
+  g.save(); g.globalAlpha = g.globalAlpha * clamp(a); g.translate(x, y); if (rot) g.rotate(rot); g.scale(sc, sc);
+  if (opt.hue != null) g.filter = `hue-rotate(${opt.hue}deg) saturate(1.25)`;
+  if (opt.shine != null && opt.shine > -0.2 && opt.shine < 1.2) {
+    if (!tmpC) { tmpC = document.createElement('canvas'); tmpG = tmpC.getContext('2d'); }
+    if (tmpC.width < s.c.width || tmpC.height < s.c.height) { tmpC.width = Math.max(tmpC.width, s.c.width); tmpC.height = Math.max(tmpC.height, s.c.height); }
+    tmpG.globalCompositeOperation = 'source-over'; tmpG.clearRect(0, 0, tmpC.width, tmpC.height);
+    tmpG.drawImage(s.c, 0, 0);
+    tmpG.globalCompositeOperation = 'source-atop';
+    const bx = lerp(-.3, 1.3, opt.shine) * s.c.width, bw = s.c.width * .18;
+    const lg = tmpG.createLinearGradient(bx - bw, 0, bx + bw, s.c.height * .3);
+    lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.85)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    tmpG.fillStyle = lg; tmpG.fillRect(0, 0, s.c.width, s.c.height);
+    g.drawImage(tmpC, 0, 0, s.c.width, s.c.height, -s.w / 2, -s.h / 2, s.w, s.h);
+  } else g.drawImage(s.c, -s.w / 2, -s.h / 2, s.w, s.h);
+  g.restore();
+}
+// たたきつける動き（t0で出て、t1で消える）
+function slamK(t, t0, t1, s0 = 2.4) {
+  if (t < t0 || t > t1) return null;
+  const u = P(t, t0, t0 + .17), out = P(t, t1 - .14, t1);
+  return { a: Math.min(1, P(t, t0, t0 + .05)) * (1 - out), sc: lerp(s0, 1, back(u, 2.2)) * (1 + .1 * out) * (1 + .012 * Math.sin((t - t0) * 9)) };
+}
+
+// ===================== スマホ =====================
+const SW = 270, S = SW / 390, STATUS = 26, HDR = META.header.H * S, TABH = META.tabbar.H * S, HOME = 14, SH = 844 * S, BEZ = 10;
+const VTOP = STATUS + HDR, VH = SH - STATUS - HDR - TABH - HOME;
+$('vp').style.top = VTOP + 'px'; $('vp').style.height = VH + 'px';
+const Z1 = '#zoneCard ol.zedit > li:nth-child(1)', S2 = '#slotList .slotrow[data-n="2"]', ZN = n => `#result ol.zones > li:nth-child(${n})`;
+const BT = t => `#recCard [data-k=types] button[data-v="${t}"]`;
+// スクロールの位置は、撮った画面の中の要素の位置から決める（文字を変えて高さがずれても合うように）
+const Y = (k, sel) => META[k].b[sel].y;
+const yF = Y('judge_filled', '#result') - 15, yZ = Y('set_z0', '#zoneCard .zk-head') - 25.4, yC = Y('judge_custom', '#result') - 13.6;
+const yM0 = Y('set_m0', '#slotList') - 29.1, yM1 = Y('set_m1', '#smPreview') - 63.7, yM3 = Y('set_m3', '#slotList') - 21, yJ = Y('judge_jra', '#result') - 14.6;
+const yZ1 = Y('judge_filled', ZN(1)) - 10, yJZ = Y('judge_jra', ZN(1)) - 10;
+const yP = Y('judge_pick0', ZN(2)) - 10, yR = Y('records', '#recList .dgroup') - 120;
+const ZP = 1.62, YP = 286;   // スマホの大きさと位置（画面を大きく見せる）
+// 入れる3つ（レース情報・単勝オッズ・3連単オッズ）
+const C2 = META.judge_filled.b['.input-col > .card:nth-child(2)'];
+const yIn1 = Y('judge_filled', '.input-col > .card:nth-child(1) .fields') - 24, yIn2 = C2.y - 10, yIn3 = Y('judge_filled', '.input-col > .card:nth-child(3)') - 10;
+const ODDS_BOX = { x: C2.x, y: C2.y, w: C2.w, h: 430 };   // 単勝オッズの欄（上から8頭ぶんくらい）
+// 第7弾：記録できる券種（イメージ）・単勝5連予想・ポイント購入（イメージ）
+const yRT = Y('rec_lk0', '#recCard [data-k=types]') - 170;
+const yW5 = Y('w5_5', '#w5Mode') - 40, yW5z = Y('w5_rand', '#w5Races .w5race[data-i="0"] .w5zones') - 170;
+const yPt0 = Y('set_points', '#cmPts') - 8, yPt1 = Y('set_points', '#cmPts .cmp-sub') - 52;
+const SCENES = [
+  // ポイントで画像を読み取り レースを判定しよう!!（15.2 スマホ → 16.0「オッズ画像から読み取る」→ 3枚が吸い込まれる → 16.5 −200P → 読み取り中 → 17.9 自動で入る：距離・頭数・馬場 → 単勝 → 3連単）
+  { a: 15.2, b: 23.2, pp: 1, hdr: [['header_oi0', 15.2]], tab: [['tabbar_judge', 15.2]],
+    views: [{ k: 'judge_empty', a: 15.2 }, { k: 'judge_reading', a: 16.55, fade: .12 }, { k: 'judge_filled', a: 17.9, fade: .2 }],
+    scroll: { judge_empty: () => 0, judge_reading: () => 0,
+              judge_filled: t => t < 19.6 ? lerp(0, yIn1, eio(P(t, 17.95, 18.4))) : t < 21.4 ? lerp(yIn1, yIn2, eio(P(t, 19.6, 19.95))) : lerp(yIn2, yIn3, eio(P(t, 21.4, 21.75))) },
+    cam: t => { const e = eo(P(t, 15.2, 15.65)), zi = eio(P(t, 17.95, 18.4)); return { Z: lerp(lerp(.8, 1, e), ZP, zi), Y: lerp(lerp(1010, 298, e), YP, zi), rot: lerp(8, 0, e) }; },
+    rings: [{ a: 15.65, b: 16.05, k: 'judge_empty', sel: ['#ocrBtn'] }, { a: 16.7, b: 17.8, k: 'judge_reading', sel: ['#ocrMsg'] },
+            { a: 18.45, b: 19.55, k: 'judge_filled', each: ['.f:has(> #fDist)', '.f:has(> #fN)', '.f:has(> #fBaba)'] }, { a: 20.0, b: 21.35, k: 'judge_filled', box: ODDS_BOX },
+            { a: 21.8, b: 23.1, k: 'judge_filled', sel: ['.input-col > .card:nth-child(3)'] }],
+    taps: [{ t: 16.0, k: 'judge_empty', sel: '#ocrBtn', fx: .5 }] },
+  // 誰でも簡単に! 1発でゾーンまで判定!!（層 → 1着→2着と馬番 → 3着 → 参考的中率）
+  { a: 23.2, b: 29.6, pp: 1, hdr: [['header_oi0', 23.2]], tab: [['tabbar_judge', 23.2]], views: [{ k: 'judge_filled', a: 23.2 }],
+    scroll: { judge_filled: t => t < 25.2 ? lerp(yIn3, yF, eio(P(t, 23.2, 23.65))) : lerp(yF, yZ1, eio(P(t, 25.2, 25.55))) },
+    cam: () => ({ Z: ZP, Y: YP, rot: 0 }),
+    rings: [{ a: 23.8, b: 25.1, k: 'judge_filled', sel: ['#result .vhead'] }, { a: 25.6, b: 26.8, k: 'judge_filled', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] },
+            { a: 26.85, b: 28.0, k: 'judge_filled', sel: [ZN(1) + ' .zthird'] }, { a: 28.1, b: 29.5, k: 'judge_filled', sel: [ZN(1) + ' .zref'] }], taps: [] },
+  // 買い目編集でカスタム自在!!
+  { a: 29.6, b: 36.0, pp: 1, hdr: [['header_oi3', 29.6], ['header_oi3c', 34.5, .25]], tab: [['tabbar_set', 29.6], ['tabbar_judge', 34.5]],
+    views: [{ k: 'set_z0', a: 29.6 }, { k: 'set_z1', a: 30.85, fade: .08 }, { k: 'set_z2', a: 32.15, fade: .08 }, { k: 'judge_custom', a: 34.5, slide: .32 }],
+    scroll: { set_z0: () => yZ, set_z1: () => yZ, set_z2: t => lerp(yZ, yZ + 12, eio(P(t, 33.2, 33.7))), judge_custom: t => lerp(yC, yC + 25, eio(P(t, 34.8, 35.9))) },
+    cam: t => { const e = eo(P(t, 29.6, 29.9)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 30.9, b: 32.0, k: 'set_z1', sel: [Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]'] }, { a: 32.2, b: 33.3, k: 'set_z2', sel: [Z1 + ' .zpick[data-f="t"] button[data-z="大穴"]'] },
+            { a: 33.4, b: 34.4, k: 'set_z2', sel: [Z1 + ' .zr-stat'] },
+            { a: 34.8, b: 35.4, k: 'judge_custom', sel: ['#result .vhead .chip.cus'] }, { a: 35.45, b: 35.95, k: 'judge_custom', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] }],
+    taps: [{ t: 30.8, k: 'set_z0', sel: Z1 + ' .zpick[data-f="b"] button[data-z="大穴"]', fx: .5 }, { t: 32.1, k: 'set_z1', sel: Z1 + ' .zpick[data-f="t"] button[data-z="大穴"]', fx: .5 }] },
+  // Pカスタムで 自分だけのテンゲルを 育てよう!!（記録できる券種：はじめは単勝・馬単・3連単 → 複勝・馬連を500Pずつで解放）
+  { a: 36.0, b: 42.4, pp: 1, hdr: [['header_oi0', 36.0]], tab: [['tabbar_judge', 36.0]],
+    views: [{ k: 'rec_lk0', a: 36.0 }, { k: 'rec_lk1', a: 38.45, fade: .15 }, { k: 'rec_lk2', a: 39.65, fade: .15 }],
+    scroll: { rec_lk0: () => yRT, rec_lk1: () => yRT, rec_lk2: () => yRT },
+    cam: t => { const e = eo(P(t, 36.0, 36.3)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 36.6, b: 37.6, k: 'rec_lk0', each: [BT('単勝'), BT('馬単'), BT('3連単')] }, { a: 40.6, b: 42.3, k: 'rec_lk2', sel: ['#recCard [data-k=types]'] }],
+    dlgs: [{ a: 37.85, b: 38.45, name: '複勝' }, { a: 39.15, b: 39.65, name: '馬連' }],
+    taps: [{ t: 37.7, k: 'rec_lk0', sel: BT('複勝'), fx: .5 }, { t: 38.3, dlg: 1 }, { t: 39.05, k: 'rec_lk1', sel: BT('馬連'), fx: .5 }, { t: 39.5, dlg: 1 }] },
+  // 自分だけのマザーデータを 作成しよう!!（2つめは15,000Pで解放 → Excelを入れる → データ上乗せ → 自分のデータで判定）
+  { a: 42.4, b: 50.4, hdr: [['header_oi3c', 42.4], ['header_jra', 47.5, .2]], tab: [['tabbar_set', 42.4], ['tabbar_judge', 48.0]],
+    views: [{ k: 'set_m0_lk23', a: 42.4 }, { k: 'set_m0_lk3', a: 44.05, fade: .25 }, { k: 'set_m1', a: 44.6, fade: .14 }, { k: 'set_m3', a: 47.5, fade: .16 }, { k: 'judge_jra', a: 48.0, slide: .32 }],
+    scroll: { set_m0_lk23: () => yM0, set_m0_lk3: () => yM0, set_m1: t => lerp(yM0, yM1, eio(P(t, 44.8, 45.25))), set_m3: () => yM3, judge_jra: t => lerp(yJ, yJ + 23, eio(P(t, 48.4, 49.4))) },
+    cam: t => { const e = eo(P(t, 42.4, 42.7)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 42.9, b: 43.75, k: 'set_m0_lk23', sel: [S2] }, { a: 44.15, b: 44.45, k: 'set_m0_lk3', sel: [S2] }, { a: 45.3, b: 45.95, k: 'set_m1', sel: ['#smPreview'] },
+            { a: 47.55, b: 47.95, k: 'set_m3', sel: [S2] }, { a: 48.4, b: 50.3, k: 'judge_jra', sel: ['#result .vhead .chips'] }],
+    taps: [{ t: 43.8, k: 'set_m0_lk23', sel: S2, fx: .5 }, { t: 44.45, k: 'set_m0_lk3', sel: S2 + ' [data-sact=edit]', fx: .5 }, { t: 46.0, k: 'set_m1', sel: '#smApply', fx: .5 }] },
+  // 買う馬も選べる!!
+  { a: 50.4, b: 52.8, hdr: [['header_oi0', 50.4]], tab: [['tabbar_judge', 50.4]],
+    views: [{ k: 'judge_pick0', a: 50.4 }, { k: 'judge_pick1', a: 51.55, fade: .06 }],
+    scroll: { judge_pick0: () => yP, judge_pick1: () => yP },
+    cam: t => { const e = eo(P(t, 50.4, 50.65)); return { Z: lerp(1.75, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 50.75, b: 51.45, k: 'judge_pick0', sel: [ZN(2) + ' .znums'] }, { a: 51.8, b: 52.7, k: 'judge_pick1', sel: [ZN(2) + ' .znums'] }],
+    taps: [{ t: 51.55, k: 'judge_pick0', sel: ZN(2) + ' button.hp[data-hs="b"][data-no="4"]', fx: .5 }] },
+  // 単勝5連予想も組める!!（5レースを1つずつ読み取る → 予算に合わせて組み立て → 自分で選ぶ／ランダム）
+  { a: 52.8, b: 60.8, hdr: [['header_oi3', 52.8]], tab: [['tabbar_win5', 52.8]],
+    views: [{ k: 'w5_0', a: 52.8 }, { k: 'w5_1', a: 53.55, fade: .12 }, { k: 'w5_2', a: 53.95, fade: .12 }, { k: 'w5_3', a: 54.35, fade: .12 }, { k: 'w5_4', a: 54.75, fade: .12 },
+            { k: 'w5_5', a: 55.15, fade: .12 }, { k: 'w5_rand', a: 57.7, fade: .15 }],
+    scroll: { w5_0: () => yW5, w5_1: () => yW5, w5_2: () => yW5, w5_3: () => yW5, w5_4: () => yW5, w5_5: () => yW5, w5_rand: t => lerp(yW5, yW5z, eio(P(t, 58.4, 58.85))) },
+    cam: t => { const e = eo(P(t, 52.8, 53.05)); return { Z: lerp(1.75, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 55.4, b: 56.8, k: 'w5_5', sel: ['#w5Sum'] }, { a: 56.9, b: 57.6, k: 'w5_5', sel: ['#w5Mode'] }, { a: 57.75, b: 58.35, k: 'w5_rand', sel: ['#w5Mode', '#w5RandRow'] },
+            { a: 58.9, b: 60.7, k: 'w5_rand', sel: ['#w5Races .w5race[data-i="0"] .w5zones'] }],
+    taps: [{ t: 57.6, k: 'w5_5', sel: '#w5Mode button[data-v="rand"]', fx: .5 }] },
+  // 収支も自動で記録!!
+  { a: 60.8, b: 63.2, hdr: [['header_oi3', 60.8]], tab: [['tabbar_rec', 60.8]], views: [{ k: 'records', a: 60.8 }],
+    scroll: { records: () => yR },
+    cam: t => { const e = eo(P(t, 60.8, 61.05)); return { Z: lerp(1.75, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 61.15, b: 63.1, k: 'records', sel: ['#recList .dgroup'] }], taps: [] },
+  // サブスクでお得に ポイントを集めよう!!（通常購入 → サブスク → 30日繰り越し）
+  { a: 63.2, b: 71.2, hdr: [['header_oi3', 63.2]], tab: [['tabbar_set', 63.2]], views: [{ k: 'set_points', a: 63.2 }],
+    scroll: { set_points: t => lerp(yPt0, yPt1, eio(P(t, 65.3, 65.65))) },
+    cam: t => { const e = eo(P(t, 63.2, 63.5)); return { Z: lerp(1.85, ZP, e), Y: YP, rot: 0, op: e }; },
+    rings: [{ a: 63.8, b: 65.25, k: 'set_points', sel: ['#cmPts .cmp-buy'] }, { a: 65.7, b: 67.6, k: 'set_points', sel: ['#cmPts .cmp-sub'] },
+            { a: 67.7, b: 69.4, k: 'set_points', sel: ['#cmPts .cmp-note'] }, { a: 69.5, b: 71.1, k: 'set_points', sel: ['#cmPts .cmp-sub'] }],
+    taps: [] },
+];
+// 画像を並べる（あとに出る画面ほど上）
+const CKEYS = [], HKEYS = [], TKEYS = [];
+SCENES.forEach(sc => { sc.views.forEach(v => CKEYS.includes(v.k) || CKEYS.push(v.k)); sc.hdr.forEach(([k]) => HKEYS.includes(k) || HKEYS.push(k)); sc.tab.forEach(([k]) => TKEYS.includes(k) || TKEYS.push(k)); });
+const EL = {};
+CKEYS.forEach(k => { const im = new Image(); im.className = 'cimg'; im.src = `${SHOTS}/${k}.png`; $('cimgs').appendChild(im); EL[k] = im; });
+HKEYS.forEach(k => { const im = new Image(); im.className = 'hdr'; im.src = `${SHOTS}/${k}.png`; $('hdrs').appendChild(im); EL[k] = im; });
+TKEYS.forEach(k => { const im = new Image(); im.className = 'tab'; im.src = `${SHOTS}/${k}.png`; im.style.top = (SH - HOME - TABH) + 'px'; $('tabs').appendChild(im); EL[k] = im; });
+function setVis(el, op) { el.style.opacity = op.toFixed(3); el.style.visibility = op > .001 ? 'visible' : 'hidden'; }
+function boxOf(k, sels) {
+  const bs = sels.map(s => META[k].b[s]).filter(Boolean); if (!bs.length) return null;
+  const x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y)), x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function layered(list, t) {   // [[key, a, fade]] → {key: op}
+  const out = {}; let cur = -1;
+  list.forEach(([k, a], i) => { if (t >= a) cur = i; });
+  if (cur < 0) cur = 0;
+  const [k, a, f] = list[cur]; const m = f ? P(t, a, a + f) : 1;
+  out[k] = m; if (m < 1 && cur > 0) out[list[cur - 1][0]] = 1;
+  return out;
+}
+// ---- 保有ポイント（イメージ）：1,500 → 読み取りで −200 → 解放で −500 ×2 ----
+const PSTEP = [[16.5, 1500, 1300], [38.4, 1300, 800], [39.6, 800, 300]];
+function pVal(t) {
+  let v = 1500; PSTEP.forEach(([t0, a, b]) => { if (t >= t0) v = Math.round(lerp(a, b, eo(P(t, t0, t0 + .45)))); });
+  return v;
+}
+// ---- 解放のたしかめ（イメージ）：ボタンの中心（#vp の中の座標） ----
+let DLG = null;   // フォントを読んだあとに1回だけはかる
+const dlgPt = () => DLG || (DLG = (() => { const d = $('pdlgc'), b = $('pdb'); return { cx: d.offsetLeft + b.offsetLeft + b.offsetWidth / 2, cy: d.offsetTop + b.offsetTop + b.offsetHeight / 2 }; })());
+function renderPhone(t) {
+  const ph = $('phone'), sc = SCENES.find(s => t >= s.a && t < s.b);
+  if (!sc) { setVis(ph, 0); return null; }
+  const c = sc.cam(t), op = c.op ?? 1, Z = c.Z, X = 270 - 145 * Z, Y = c.Y;
+  setVis(ph, op);
+  ph.style.transform = `translate(${(X + 145 * Z).toFixed(2)}px,${(Y + 302.15 * Z).toFixed(2)}px) rotate(${(c.rot || 0).toFixed(3)}deg) scale(${Z.toFixed(4)}) translate(-145px,-302.15px)`;
+  // 中身（切り替え：重ねる or 横にスライド）
+  let ci = 0; sc.views.forEach((v, i) => { if (t >= v.a) ci = i; });
+  const cur = sc.views[ci], prev = ci > 0 ? sc.views[ci - 1] : null;
+  const dur = cur.slide || cur.fade || 0, mix = dur ? P(t, cur.a, cur.a + dur) : 1;
+  const sy = k => (sc.scroll[k] ? sc.scroll[k](t) : 0);
+  CKEYS.forEach(k => {
+    const el = EL[k]; let o = 0, tx = 0;
+    if (k === cur.k) { o = cur.slide ? 1 : (prev ? mix : 1); if (cur.slide && mix < 1) tx = SW * (1 - eio(mix)); }
+    else if (prev && k === prev.k && mix < 1) { o = 1; if (cur.slide) tx = -SW * eio(mix); }
+    setVis(el, o); if (o > 0) el.style.transform = `translate(${tx.toFixed(2)}px,${(-sy(k) * S).toFixed(2)}px)`;
+  });
+  const hs = layered(sc.hdr, t); HKEYS.forEach(k => setVis(EL[k], hs[k] || 0));
+  let tk = sc.tab[0][0]; sc.tab.forEach(([k, a]) => { if (t >= a) tk = k; }); TKEYS.forEach(k => setVis(EL[k], k === tk ? 1 : 0));
+  // 保有ポイント（ヘッダーの左下）
+  setVis($('pwrap'), sc.pp ? 1 : 0);
+  if (sc.pp) $('pnum').textContent = pVal(t).toLocaleString('ja-JP');
+  // 強調の枠（each：いくつかの場所に同時に）
+  const r = sc.rings.find(x => t >= x.a && t <= x.b);
+  const boxes = r ? (r.each ? r.each.map(q => boxOf(r.k, [q])) : [r.box || boxOf(r.k, r.sel)]) : [];
+  [$('ring'), $('ring2'), $('ring3')].forEach((ring, i) => {
+    const b = boxes[i]; if (!b) { ring.style.display = 'none'; return; }
+    const pad = 4, k = env(t, r.a, r.b, .1, .1), pu = 1 + .09 * (1 - eo(P(t, r.a, r.a + .25))), yy = sy(r.k);
+    ring.style.display = 'block'; ring.style.left = ((b.x - pad) * S) + 'px'; ring.style.top = ((b.y - pad - yy) * S) + 'px';
+    ring.style.width = ((b.w + pad * 2) * S) + 'px'; ring.style.height = ((b.h + pad * 2) * S) + 'px'; ring.style.opacity = k.toFixed(3); ring.style.transform = `scale(${pu.toFixed(4)})`;
+  });
+  // 解放のたしかめ（イメージ）
+  const dg = (sc.dlgs || []).find(x => t >= x.a && t <= x.b), pd = $('pdlg');
+  if (dg) { $('pdt').textContent = `「${dg.name}」を解放する？`; setVis(pd, env(t, dg.a, dg.b, .1, .08)); $('pdlgc').style.transform = `scale(${lerp(.88, 1, eo(P(t, dg.a, dg.a + .15))).toFixed(4)})`; }
+  else setVis(pd, 0);
+  // タップ
+  const tp = sc.taps.find(x => t >= x.t - .22 && t <= x.t + .45), rip = $('prip'), dot = $('pdot');
+  if (tp) {
+    let cx, cy;
+    if (tp.dlg) { const q = dlgPt(); cx = q.cx; cy = q.cy; }
+    else { const b = META[tp.k].b[tp.sel], yy = sy(tp.k); cx = (b.x + b.w * tp.fx) * S; cy = (b.y + b.h / 2 - yy) * S; }
+    const q = P(t, tp.t, tp.t + .4), rr = 5 + 26 * eo(q);
+    rip.style.display = t >= tp.t ? 'block' : 'none'; rip.style.left = (cx - rr) + 'px'; rip.style.top = (cy - rr) + 'px'; rip.style.width = rip.style.height = (rr * 2) + 'px'; rip.style.opacity = (1 - q).toFixed(3);
+    dot.style.display = 'block'; dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+    dot.style.opacity = (eo(P(t, tp.t - .22, tp.t)) * (1 - P(t, tp.t + .2, tp.t + .45))).toFixed(3); dot.style.transform = `scale(${t < tp.t ? 1 : .8})`;
+  } else { rip.style.display = 'none'; dot.style.display = 'none'; }
+  return { X, Y, Z };
+}
+
+// ===================== 置き場所 =====================
+function place(el, cx, cy, op, sc = 1, rot = 0) {
+  setVis(el, op); if (op <= .001) return;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.transform = `translate(${(cx - w / 2).toFixed(2)}px,${(cy - h / 2).toFixed(2)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+}
+// スマホの画面の中の要素 → 舞台の座標（傾きなしのとき）
+function phonePt(t, k, sel, fx = .5, fy = .5) {
+  const sc = SCENES.find(x => t >= x.a && t < x.b); if (!sc) return null;
+  const c = sc.cam(t), Z = c.Z, X = 270 - 145 * Z, b = META[k].b[sel], yy = sc.scroll[k] ? sc.scroll[k](t) : 0;
+  return { x: X + (BEZ + (b.x + b.w * fx) * S) * Z, y: c.Y + (BEZ + VTOP + (b.y + b.h * fy - yy) * S) * Z };
+}
+// 保有ポイントの帯（ヘッダーの左下） → 舞台の座標
+function pillPt(t) {
+  const sc = SCENES.find(x => t >= x.a && t < x.b); if (!sc) return { x: 120, y: 420 };
+  const c = sc.cam(t), Z = c.Z, X = 270 - 145 * Z;
+  return { x: X + (BEZ + 56 * S) * Z, y: c.Y + (BEZ + STATUS + 66.5 * S) * Z };
+}
+
+// ===================== 例の画面（架空・3枚）→ アプリへ =====================
+// 9.6 3枚が入る → 10.4 ①（距離・馬場・出走頭数）→ 12.0 ②（単勝）→ 13.6 ③（3連単）→ 15.2 スマホの横に小さく → 16.0 ボタンを押す → 16.1〜16.5 吸い込まれる
+const EX = [$('ex0'), $('ex1'), $('ex2')];
+const EXF = [10.4, 12.0, 13.6];   // それぞれを大きくする時刻
+const EXP = {
+  side: [{ x: 98, y: 600, s: .40, r: -3, d: 1 }, { x: 270, y: 590, s: .40, r: 0, d: 1 }, { x: 442, y: 600, s: .40, r: 3, d: 1 }],
+  focus: { x: 270, y: 628, s: .74, r: 0, d: 1 },
+  left: [{ x: 96, y: 650, s: .46, r: -5, d: .4 }, { x: 70, y: 690, s: .42, r: -8, d: .32 }],
+  right: [{ x: 444, y: 650, s: .46, r: 5, d: .4 }, { x: 470, y: 690, s: .42, r: 8, d: .32 }],
+  thumb: [{ x: 70, y: 455, s: .25, r: -6, d: 1 }, { x: 70, y: 650, s: .25, r: -4, d: 1 }, { x: 470, y: 550, s: .25, r: 6, d: 1 }],
+};
+// 例の画面①（出馬表）の「距離」「馬場」「出走頭数」の場所（example_odds.py が出す EXBOX）。①を大きくしたときに金の枠
+const EXBOX = [{ x: 24, y: 190, w: 150.5, h: 70 }, { x: 182.5, y: 190, w: 87.7, h: 70 }, { x: 278.3, y: 190, w: 87.7, h: 70 }];
+const EXR = [...$('ex0').querySelectorAll('.exring')];
+EXR.forEach((el, i) => { const b = EXBOX[i], p = 4; el.style.left = (b.x - p) + 'px'; el.style.top = (b.y - p) + 'px'; el.style.width = (b.w + p * 2) + 'px'; el.style.height = (b.h + p * 2) + 'px'; });
+const mixP = (p, q, u) => ({ x: lerp(p.x, q.x, u), y: lerp(p.y, q.y, u), s: lerp(p.s, q.s, u), r: lerp(p.r, q.r, u), d: lerp(p.d, q.d, u) });
+function poseAt(i, f) {   // f＝大きくしている画面（-1＝並べる）
+  if (f < 0) return EXP.side[i];
+  if (i === f) return EXP.focus;
+  if (i < f) return EXP.left[f - 1 - i];
+  return EXP.right[i - f - 1];
+}
+function exPose(i, t) {
+  let p, o = 1;
+  if (t < EXF[0]) { const t0 = 9.6 + .1 * i, u = P(t, t0, t0 + .5), A = EXP.side[i]; p = mixP({ x: A.x, y: 1420, s: A.s, r: A.r * 7 + (i - 1) * 8, d: 1 }, A, back(u, 1.3)); o = P(t, t0, t0 + .06); }
+  else if (t < 15.2) {
+    let f = 0; EXF.forEach((tf, j) => { if (t >= tf) f = j; });
+    const u = eio(P(t, EXF[f], EXF[f] + .32));
+    p = mixP(poseAt(i, f - 1), poseAt(i, f), u);   // f＝0 のときは並べた位置（-1）から
+  }
+  else if (t < 16.1) p = mixP(poseAt(i, 2), EXP.thumb[i], eio(P(t, 15.2, 15.65)));
+  else {   // 「オッズ画像から読み取る」に吸い込まれる
+    const bt = phonePt(Math.min(t, 16.54), 'judge_empty', '#ocrBtn'), u = eio(P(t, 16.1 + .07 * i, 16.42 + .04 * i));
+    p = mixP(EXP.thumb[i], { x: bt.x, y: bt.y, s: .03, r: 0, d: 1 }, u); o = 1 - P(u, .75, 1);
+  }
+  const still = t < 16.1 ? 1 : 0;   // 止まっているあいだは少しゆれる
+  p.y += still * 3 * Math.sin(t * 2.2 + i * 1.7); p.r += still * .6 * Math.sin(t * 1.7 + i);
+  p.o = o; return p;
+}
+function drawExamples(t) {
+  // 重なりの順番：大きくしている画面をいちばん前、そのとなりを次に
+  let f = -1; EXF.forEach((tf, j) => { if (t >= tf) f = j; }); if (t >= 15.2) f = -1;
+  const order = f < 0 ? [0, 1, 2] : [0, 1, 2].sort((a, b) => (Math.abs(b - f) - Math.abs(a - f)));
+  order.forEach((i, n) => { const el = EX[i]; if (n > 0 && el.previousElementSibling !== EX[order[n - 1]]) EX[order[n - 1]].after(el); });
+  EX.forEach((el, i) => {
+    if (t < 9.6 || t >= 16.6) { setVis(el, 0); return; }
+    const p = exPose(i, t);
+    el.firstElementChild.style.filter = p.d < .995 ? `brightness(${p.d.toFixed(3)})` : 'none';
+    place(el, p.x, p.y, p.o, p.s, p.r);
+  });
+  // ①を大きくしたら「距離」「馬場」「出走頭数」に金の枠（1つずつ）
+  EXR.forEach((el, i) => { const a = EXF[0] + .4 + .15 * i; el.style.opacity = env(t, a, EXF[1] - .05, .12, .12).toFixed(3); el.style.transform = `scale(${(1 + .14 * (1 - eo(P(t, a, a + .25)))).toFixed(4)})`; });
+}
+
+// ===================== 背景 =====================
+const bg = $('bg'), G = bg.getContext('2d'), fx = $('fx'), F = fx.getContext('2d');
+const THEMES = { red: ['#6a0a16', '#1c0207', '#000'], gold: ['#6a3a06', '#1a0b00', '#000'], blue: ['#0f2f78', '#050b28', '#000'], purple: ['#3d0a5c', '#12021f', '#000'], navy: ['#122656', '#070d22', '#000'] };
+function themeAt(t) {
+  if (t < 6.4) return [['red', 1]];
+  if (t < 9.6) return [['gold', 1]];
+  if (t < 23.2) return [['red', 1]];
+  if (t < 29.6) return [['gold', 1]];
+  if (t < 36.0) return [['red', 1]];
+  if (t < 42.4) return [['purple', 1]];
+  if (t < 50.4) return [['blue', 1]];
+  if (t < 63.2) return [['red', 1]];
+  if (t < T_DISC) return [['gold', 1]];
+  return [['navy', 1]];
+}
+function rays(g, cx, cy, n, rot, colA, colB, alpha, rIn = 0, len = 900) {
+  g.save(); g.globalAlpha = alpha; g.translate(cx, cy); g.rotate(rot);
+  for (let i = 0; i < n; i++) {
+    const a0 = i / n * TAU, a1 = (i + .5) / n * TAU;
+    g.beginPath(); g.moveTo(Math.cos(a0) * rIn, Math.sin(a0) * rIn); g.lineTo(Math.cos(a0) * len, Math.sin(a0) * len); g.lineTo(Math.cos(a1) * len, Math.sin(a1) * len); g.lineTo(Math.cos(a1) * rIn, Math.sin(a1) * rIn); g.closePath();
+    g.fillStyle = typeof colA === 'function' ? colA(i) : (i % 2 ? colB : colA); g.fill();
+  }
+  g.restore();
+}
+function rayLevel(t) {
+  // [強さ, 回る速さ, 中心y, 色]
+  if (t < 3.2) return [t < 1.6 ? .6 : .75, t < 1.6 ? .7 : 1.2, 440, 'gold'];   // 前置き：派手に
+  if (t < 6.4) return [.55, .5, 330, 'gold'];
+  if (t < 9.6) return [.62, .9, 430, 'gold'];   // 1500Pプレゼント
+  if (t < 23.2) return [.13, .25, 480, 'red'];
+  if (t < 29.6) return [.2, .4, 300, 'gold'];
+  if (t < 36.0) return [.12, .25, 480, 'red'];
+  if (t < 42.4) return [.42, .7, 200, 'rainbow'];   // Pカスタム
+  if (t < 50.4) return [.09, .2, 480, 'blue'];
+  if (t < 63.2) return [.18, .5, 300, 'red'];
+  if (t < T_END) return [.3, .45, 300, 'gold'];   // サブスク
+  if (t < T_DISC) return [.45, .5, 250, 'gold'];
+  return [.16 * (1 - .5 * P(t, T_DISC, T_DISC + 1)), .12, 120, 'gold'];
+}
+function drawBG(t) {
+  G.setTransform(2, 0, 0, 2, 0, 0);
+  const [[th]] = themeAt(t), cs = THEMES[th];
+  const gr = G.createRadialGradient(270, 440, 20, 270, 480, 760);
+  gr.addColorStop(0, cs[0]); gr.addColorStop(.5, cs[1]); gr.addColorStop(1, cs[2]);
+  G.fillStyle = gr; G.fillRect(0, 0, W, H);
+  // 放射の光
+  const [lv, sp, cy, col] = rayLevel(t);
+  if (lv > 0) {
+    const rot = t * sp;
+    if (col === 'rainbow') rays(G, 270, cy, 24, rot, i => `hsla(${(i * 15 + t * 80) % 360},90%,58%,1)`, null, lv, 0);
+    else {
+      const c = { gold: ['rgba(255,200,60,1)', 'rgba(120,40,0,0)'], red: ['rgba(255,60,40,1)', 'rgba(60,0,0,0)'], blue: ['rgba(80,190,255,1)', 'rgba(0,20,60,0)'] }[col];
+      rays(G, 270, cy, 20, rot, c[0], c[1], lv, 0);
+    }
+    const vg = G.createRadialGradient(270, cy, 40, 270, cy, 560);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.85)'); G.fillStyle = vg; G.fillRect(0, 0, W, H);
+  }
+  // データの場面：数字の雨
+  const dr = env(t, 42.4, 50.4, .3, .3);
+  if (dr > 0) {
+    G.font = '700 13px "Noto Sans Mono CJK JP", monospace'; G.textAlign = 'center';
+    for (let c = 0; c < 26; c++) {
+      const x = 10 + c * 20.5, spd = 90 + rnd(c, 1) * 140, off = rnd(c, 2) * 960;
+      for (let j = 0; j < 14; j++) {
+        const y = ((off + t * spd + j * 17) % 1100) - 70, a = (j / 14) * .35 * dr;
+        G.fillStyle = j === 13 ? `rgba(220,250,255,${(.75 * dr).toFixed(3)})` : `rgba(80,200,255,${a.toFixed(3)})`;
+        G.fillText(String(Math.floor(rnd(c * 31 + j, Math.floor(t * 8)) * 10)), x, y);
+      }
+    }
+  }
+  // ただよう火の粉
+  for (let i = 0; i < 60; i++) {
+    const x = rnd(i, 3) * W + Math.sin(t * .8 + i) * 10, sp2 = 20 + rnd(i, 4) * 50, y = H - ((rnd(i, 5) * H + t * sp2) % (H + 40));
+    const a = (.25 + .45 * (.5 + .5 * Math.sin(t * (2 + rnd(i, 6) * 3) + i))) * (t < 1.2 ? .4 : 1);
+    G.fillStyle = th === 'blue' ? `rgba(140,220,255,${a.toFixed(3)})` : `rgba(255,${180 + Math.floor(rnd(i, 7) * 60)},80,${a.toFixed(3)})`;
+    G.beginPath(); G.arc(x, y, .7 + rnd(i, 8) * 1.8, 0, TAU); G.fill();
+  }
+}
+
+// ===================== 効果（前面のキャンバス） =====================
+function speedLines(g, a, seed) {
+  if (a <= .01) return;
+  g.save(); g.globalAlpha = a; g.fillStyle = '#fff'; g.translate(270, 480);
+  for (let i = 0; i < 110; i++) {
+    const ang = rnd(i, seed) * TAU, r0 = 170 + rnd(i, seed + 1) * 170, r1 = 760, wd = .006 + rnd(i, seed + 2) * .012;
+    g.beginPath(); g.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0); g.lineTo(Math.cos(ang - wd) * r1, Math.sin(ang - wd) * r1); g.lineTo(Math.cos(ang + wd) * r1, Math.sin(ang + wd) * r1); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+function bolt(g, x0, y0, x1, y1, seed, a) {
+  let pts = [[x0, y0], [x1, y1]];
+  for (let lv = 0; lv < 6; lv++) {
+    const np = [pts[0]];
+    for (let i = 1; i < pts.length; i++) { const [ax, ay] = pts[i - 1], [bx, by] = pts[i], d = Math.hypot(bx - ax, by - ay);
+      np.push([(ax + bx) / 2 + (rnd(seed * 7 + lv * 31 + i, 3) - .5) * d * .45, (ay + by) / 2 + (rnd(seed * 5 + lv * 17 + i, 4) - .5) * d * .12]); np.push(pts[i]); }
+    pts = np;
+  }
+  g.save(); g.globalAlpha = a; g.lineJoin = 'round'; g.globalCompositeOperation = 'lighter';
+  for (const [lw, col, blur] of [[9, 'rgba(120,170,255,.55)', 30], [4, 'rgba(200,230,255,.9)', 12], [1.6, '#fff', 0]]) {
+    g.shadowColor = 'rgba(150,200,255,1)'; g.shadowBlur = blur; g.lineWidth = lw; g.strokeStyle = col;
+    g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+  }
+  g.restore();
+}
+function bursts(g, t) {
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  BURSTS.forEach((b, bi) => {
+    const age = t - b.t; if (age < 0 || age > 1.4) return;
+    for (let i = 0; i < b.n; i++) {
+      const life = .55 + rnd(bi * 97 + i, 1) * .75; if (age > life) continue;
+      const ang = rnd(bi * 97 + i, 2) * TAU, sp = b.sp * (.25 + .75 * rnd(bi * 97 + i, 3)), k = 3.2;
+      const pos = tau => { const d = (1 - Math.exp(-k * tau)) / k; return [b.x + Math.cos(ang) * sp * d, b.y + Math.sin(ang) * sp * d + 260 * tau * tau]; };
+      const [x1, y1] = pos(age), [x0, y0] = pos(Math.max(0, age - .035)), fade = 1 - age / life;
+      const hue = b.hue < 0 ? (i * 37 + t * 200) % 360 : b.hue + rnd(i, 9) * 20;
+      g.strokeStyle = `hsla(${hue},100%,${62 + 25 * fade}%,${fade.toFixed(3)})`; g.lineWidth = 1.2 + 2.2 * fade * rnd(i, 5);
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    }
+  });
+  g.restore();
+}
+function confetti(g, t, T0, T1) {
+  const a = env(t, T0, T1, .1, .3); if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  for (let i = 0; i < 60; i++) {
+    const t0 = T0 + rnd(i, 1) * .5, age = t - t0; if (age < 0) continue;
+    const x = rnd(i, 2) * W + Math.sin(age * (2 + rnd(i, 3) * 2) + i) * 26, y = -20 + age * (150 + rnd(i, 4) * 170);
+    if (y > H + 20) continue;
+    g.save(); g.translate(x, y); g.rotate(age * (3 + rnd(i, 5) * 4) + i); g.scale(1, Math.cos(age * (5 + rnd(i, 6) * 5) + i));
+    g.fillStyle = `hsl(${(i * 47) % 360},95%,62%)`; g.fillRect(-5, -3, 10, 6); g.restore();
+  }
+  g.restore();
+}
+function flashes(g, t) {
+  let wa = 0; FLASH.forEach(([t0, a, d]) => { if (t >= t0 && t < t0 + d) wa = Math.max(wa, a * (1 - P(t, t0, t0 + d))); });
+  if (wa > 0) { g.fillStyle = `rgba(255,255,245,${wa.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  RAINBOW.forEach(([t0, a, d]) => {
+    if (t < t0 || t >= t0 + d) return; const k = a * (1 - P(t, t0, t0 + d));
+    const lg = g.createLinearGradient(0, 0, W, H); for (let i = 0; i <= 6; i++) lg.addColorStop(i / 6, `hsla(${(i * 60 + t * 400) % 360},100%,62%,${k.toFixed(3)})`);
+    g.save(); g.globalCompositeOperation = 'screen'; g.fillStyle = lg; g.fillRect(0, 0, W, H); g.restore();
+  });
+}
+
+// ---- データ上乗せのカウンター ----
+const ADD = [[46.2, 30], [46.5, 45], [46.8, 60], [47.1, 45]], CT0 = 46.0, CT1 = 47.6;
+function drawCounter(g, t) {
+  if (t < CT0 || t >= CT1) return;
+  const e = eo(P(t, CT0, CT0 + .18)), out = P(t, CT1 - .15, CT1), a = e * (1 - out), sc = lerp(.6, 1, back(P(t, CT0, CT0 + .2), 2)) * (1 + .1 * out);
+  let n = 0; ADD.forEach(([t0, v]) => { n += v * eo(P(t, t0, t0 + .16)); });
+  g.save(); g.globalAlpha = a; g.translate(270, 610); g.scale(sc, sc);
+  g.save(); g.shadowColor = 'rgba(80,200,255,.9)'; g.shadowBlur = 28;
+  g.beginPath(); g.roundRect(-195, -120, 390, 240, 22); const pg = g.createLinearGradient(0, -120, 0, 120); pg.addColorStop(0, 'rgba(10,40,100,.96)'); pg.addColorStop(1, 'rgba(2,8,30,.96)'); g.fillStyle = pg; g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#8fe6ff'; g.stroke(); g.restore();
+  drawSpr(g, 'cnt_t', 0, -78, 1, 1, 0, { shine: P(t, CT0 + .3, CT1 - .3) });
+  g.font = '900 22px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#bfefff'; g.fillText(APPV ? 'マザーデータ2' : 'マザーデータ「JRA」', 0, -26);
+  const num = String(Math.round(n));
+  g.font = '900 92px "Noto Sans CJK JP"'; g.lineJoin = 'round'; g.lineWidth = 14; g.strokeStyle = '#04122e'; g.strokeText(num, -22, 42);
+  const ng = g.createLinearGradient(0, 0, 0, 84); FILL.gold.forEach(([p, c]) => ng.addColorStop(p, c)); g.fillStyle = ng; g.fillText(num, -22, 42);
+  g.font = '900 38px "Noto Sans CJK JP"'; g.lineWidth = 8; g.strokeText('走', 92, 54); g.fillStyle = '#fff'; g.fillText('走', 92, 54);
+  g.restore();
+  ADD.forEach(([t0, v], i) => {
+    const age = t - t0; if (age < 0 || age > .55) return;
+    drawSpr(g, 'plus' + i, 270 + (i % 2 ? 128 : -128), 478 - 60 * eo(age / .55), lerp(1.5, 1, eo(P(age, 0, .12))), 1 - P(age, .38, .55));
+  });
+}
+
+// ---- ポイントが減る（−200P・−500P・−15,000P）と「解放!!」 ----
+const POPS = [
+  { t: 16.5, key: 'm200', at: t => pillPt(t), dx: 92, dy0: 34 }, { t: 38.4, key: 'm500', at: t => pillPt(t), dx: 92, dy0: 34 }, { t: 39.6, key: 'm500', at: t => pillPt(t), dx: 92, dy0: 34 },
+  { t: 38.45, key: 'open', at: t => phonePt(t, 'rec_lk1', BT('複勝')), dy0: -34, sc: .62 }, { t: 39.65, key: 'open', at: t => phonePt(t, 'rec_lk2', BT('馬連')), dy0: -34, sc: .62 },
+  { t: 44.0, key: 'm15k', at: t => phonePt(t, 'set_m0_lk3', S2), dy0: -18 }, { t: 44.1, key: 'open', at: t => phonePt(t, 'set_m0_lk3', S2), dy0: 50, sc: .9 },
+];
+function drawPops(g, t) {
+  POPS.forEach(p => {
+    const age = t - p.t; if (age < 0 || age > 1.1) return;
+    const q = p.at(Math.min(t, p.t + .05)); if (!q) return;
+    const u = eo(P(age, 0, .2)), a = Math.min(1, P(age, 0, .06)) * (1 - P(age, .8, 1.1));
+    drawSpr(g, p.key, q.x + (p.dx || 0), q.y + (p.dy0 || 0) - 40 * eo(P(age, 0, 1.1)), (p.sc || 1) * lerp(1.7, 1, back(u, 2)), a);
+  });
+  // ポイントのコインが帯から飛び出す（−200P・−500P のとき）
+  [16.5, 38.4, 39.6].forEach((t0, j) => {
+    const age = t - t0; if (age < 0 || age > .7) return;
+    const q = pillPt(t0);
+    for (let i = 0; i < 6; i++) {
+      const ang = -Math.PI / 2 + (rnd(i + j * 7, 3) - .5) * 1.8, sp = 120 + rnd(i + j * 7, 4) * 120, x = q.x + Math.cos(ang) * sp * age, y = q.y + Math.sin(ang) * sp * age + 300 * age * age;
+      drawCoin(g, x, y, 7, t * 9 + i, 1 - P(age, .45, .7), true);
+    }
+  });
+}
+// 金色のコイン（P）
+function drawCoin(g, x, y, r, spin, a = 1, small = false) {
+  if (a <= .001) return;
+  const sx = Math.cos(spin), fw = Math.max(.12, Math.abs(sx));
+  g.save(); g.globalAlpha *= a; g.translate(x, y); g.scale(fw, 1);
+  if (!small) { const rg = g.createRadialGradient(0, 0, r * .4, 0, 0, r * 1.8); rg.addColorStop(0, 'rgba(255,220,120,.55)'); rg.addColorStop(1, 'rgba(255,140,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(0, 0, r * 1.8, 0, TAU); g.fill(); }
+  const cg = g.createRadialGradient(-r * .3, -r * .35, r * .1, 0, 0, r); cg.addColorStop(0, '#fff6c0'); cg.addColorStop(.45, '#f6c94e'); cg.addColorStop(1, '#a86d10');
+  g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+  g.lineWidth = Math.max(1.5, r * .07); g.strokeStyle = '#6a4200'; g.stroke();
+  g.beginPath(); g.arc(0, 0, r * .8, 0, TAU); g.lineWidth = Math.max(1, r * .04); g.strokeStyle = 'rgba(120,80,0,.65)'; g.stroke();
+  if (!small) { g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(-r * .52, -r * .6, r * .2, r * .08, -.75, 0, TAU); g.fill(); }
+  if (sx > 0 && !small) {
+    g.font = `${Math.round(r * 1.05)}px "Dela Gothic One"`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#7a4a00'; g.fillText('P', r * .03, r * .1); g.fillStyle = '#fff0b0'; g.fillText('P', -r * .02, r * .04);
+  }
+  g.restore();
+}
+
+// ===================== テロップ =====================
+const CAPS = [
+  { a: 9.7, b: 15.1, l1: 'c1a', l2: 'c1b', l2a: 10.0, y1: 96, y2: 172 },
+  { a: 15.3, b: 23.1, l1: 'c5a', l2: 'c5b', l2a: 15.6, y1: 96, y2: 172 },
+  { a: 23.3, b: 29.5, l1: 'c2a', l2: 'c2b', l2a: 24.0, rb: 1 },
+  { a: 29.65, b: 35.9, l1: 'c3a', l2: 'c3b', l2a: 29.8, re: 34.5 },
+  { a: 36.1, b: 42.3, l0: 'c6z', l1: 'c6a', l2: 'c6b', l2a: 36.4, y0: 48, y1: 100, y2: 182, rb: 1 },
+  { a: 42.45, b: 50.3, l1: 'c7a', l2: 'c7b', l2a: 42.8 },
+  { a: 50.4, b: 52.75, l1: 'm1a', l2: 'm1b', l2a: 50.4 },
+  { a: 52.8, b: 60.75, l1: 'm2a', l2: 'm2b', l2a: 52.8 },
+  { a: 60.8, b: 63.15, l1: 'm3a', l2: 'm3b', l2a: 60.8 },
+  { a: 63.3, b: 71.1, l1: 'c8a', l2: 'c8b', l2a: 63.6 },
+];
+// 小さい帯：1つ1秒以上（読める長さ）。的中や利益を約束する言葉は使わない
+const SUBS = [
+  { a: 10.45, b: 11.95, s: '① 距離・馬場・出走頭数が分かる画面' }, { a: 12.05, b: 13.55, s: '② 単勝オッズの画面' }, { a: 13.65, b: 15.1, s: '③ 3連単オッズ（人気順）の画面' },
+  { a: 15.3, b: 16.35, s: 'アプリでスクショを選ぶだけ' }, { a: 16.45, b: 17.85, s: '1レース200P（読み取りから記録まで）' },
+  { a: 18.45, b: 19.55, s: '距離・馬場・頭数が自動で入る' }, { a: 20.0, b: 21.35, s: '単勝オッズも自動で入る' }, { a: 21.8, b: 23.1, s: '3連単オッズも自動で入る' },
+  { a: 23.7, b: 25.1, s: '荒れやすさをA・B・Cで判定' }, { a: 25.4, b: 26.8, s: '1着→2着のゾーンと馬番' }, { a: 26.85, b: 28.0, s: '3着のゾーンまで' }, { a: 28.1, b: 29.5, s: '過去のデータでの参考的中率つき' },
+  { a: 30.8, b: 32.0, s: '2着に「大穴」を追加' }, { a: 32.1, b: 33.3, s: '3着にも「大穴」を追加' }, { a: 33.4, b: 34.4, s: '過去の的中数もその場で計算' }, { a: 34.5, b: 35.95, s: '判定にすぐ反映' },
+  { a: 36.6, b: 37.6, s: '最初は 単勝・馬単・3連単' }, { a: 37.7, b: 39.0, s: '1つ500Pで解放' }, { a: 39.1, b: 40.5, s: '複勝・枠複・枠単・馬連・ワイド・3連複' }, { a: 40.6, b: 42.3, s: '記録できる券種がふえる' },
+  { a: 42.9, b: 44.35, s: '新しいマザーデータは15,000Pで解放', blue: 1 }, { a: 44.5, b: 45.95, s: 'Excel・CSVを入れるだけ', blue: 1 }, { a: 48.0, b: 50.3, s: 'あなたのデータ × あなたの買い目', blue: 1 },
+  { a: 50.6, b: 52.75, s: '番号を押すだけ' },
+  { a: 53.0, b: 55.3, s: '5つのレースを読み取るだけ' }, { a: 55.4, b: 56.8, s: '予算に合わせて自動で組み立て' }, { a: 56.9, b: 58.3, s: 'ゾーンは「自分で選ぶ」か「ランダム」' },
+  { a: 58.4, b: 60.75, s: 'ランダムなら1着ゾーンをおまかせ' },
+  { a: 61.0, b: 63.15, s: '月ごと・券種ごとに集計' },
+  { a: 63.8, b: 65.25, s: '通常購入：500P 160円から' }, { a: 65.7, b: 67.6, s: 'サブスクはボーナスつきでおトク' }, { a: 67.7, b: 69.4, s: 'サブスクなら30日間 繰り越しOK' },
+  { a: 69.5, b: 71.1, s: '毎月ポイントが届く' },
+];
+function drawCaps(g, t) {
+  const c = CAPS.find(x => t >= x.a && t <= x.b); if (!c) return;
+  const o1 = env(t, c.a, c.b, .12, .12), d1 = 18 * (1 - eo(P(t, c.a, c.a + .2)));
+  if (c.l0) drawSpr(g, c.l0, 270, (c.y0 ?? 56) + d1, 1, o1);
+  drawSpr(g, c.l1, 270, (c.y1 ?? 106) + d1, 1, o1);
+  const k = slamK(t, c.l2a, c.b, 2.2);
+  if (k) {
+    let sc = k.sc; if (c.re && t >= c.re) sc *= 1 + .16 * (1 - eo(P(t, c.re, c.re + .2)));
+    drawSpr(g, c.l2, 270, c.y2 ?? 174, sc, k.a, 0, { shine: ((t - c.l2a) % 1.6) / .7 - .1, hue: c.rb ? (t * 60) % 360 : null });
+  }
+}
+
+// ===================== 場面ごとの大きな文字 =====================
+const emb = $('emb');
+function drawEmblem(g, x, y, size, a, glow, hue) {
+  if (a <= .001) return;
+  g.save(); g.globalAlpha = g.globalAlpha * a;
+  if (glow > 0) {
+    const rg = g.createRadialGradient(x, y, size * .2, x, y, size * .95);
+    if (hue == null) { rg.addColorStop(0, `rgba(255,210,90,${(.75 * glow).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,120,0,0)'); }
+    else { rg.addColorStop(0, `hsla(${hue},100%,65%,${(.85 * glow).toFixed(3)})`); rg.addColorStop(1, `hsla(${(hue + 120) % 360},100%,55%,0)`); }
+    g.fillStyle = rg; g.fillRect(x - size, y - size, size * 2, size * 2);
+  }
+  g.drawImage(emb, x - size / 2, y - size / 2, size, size); g.restore();
+}
+// 前置き（0〜3.2）：オッズを入れるだけの → 全く新しい → 競馬アプリ!!（派手に）
+function drawPrelude(g, t) {
+  if (t >= 3.3) return;
+  const outK = P(t, 3.0, 3.2), zoom = 1 + .6 * eo(outK), a0 = 1 - outK;
+  if (t >= 1.6) {
+    const pu = .55 + .2 * Math.sin(t * 9), rg = g.createRadialGradient(270, 580, 20, 270, 580, 320);
+    rg.addColorStop(0, `rgba(255,210,90,${(pu * a0).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,90,0,0)');
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.fillRect(0, 200, W, 760); g.restore();
+  }
+  g.save(); g.translate(270, 450); g.scale(zoom, zoom); g.translate(-270, -450); g.globalAlpha = a0;
+  const k1 = slamK(t, 0.06, 3.3, 2.8); if (k1) drawSpr(g, 'p1', 270, 300, k1.sc, k1.a, 0, { shine: (t - .3) / .7 });
+  const k2 = slamK(t, 1.2, 3.3, 2.6); if (k2) drawSpr(g, 'p2', 270, 438, k2.sc, k2.a, 0, { shine: ((t - 1.4) % 1.4) / .7 });
+  const k3 = slamK(t, 1.6, 3.3, 3.0); if (k3) drawSpr(g, 'p3', 270, 580, k3.sc * (1 + .02 * Math.sin(t * 12)), k3.a, 0, { shine: ((t - 1.8) % 1.2) / .6 });
+  g.restore();
+}
+// 題名（3.2〜6.4）：エンブレム → テンゲルⅢ → 競馬 判定アプリ → 新登場
+function drawOpen(g, t) {
+  if (t < 3.2 || t >= 6.5) return;
+  const outK = P(t, 6.2, 6.4), zoom = 1 + .5 * eo(outK), a0 = 1 - outK;
+  g.save(); g.translate(270, 480); g.scale(zoom, zoom); g.translate(-270, -480); g.globalAlpha = a0;
+  { const u = P(t, 3.2, 3.42); drawEmblem(g, 270, 300, 250 * lerp(2.3, 1, back(u, 2)), Math.min(1, P(t, 3.2, 3.25)), .8 + .2 * Math.sin(t * 6)); }
+  const k1 = slamK(t, 3.6, 6.5, 2.6); if (k1) drawSpr(g, 'title', 270, 500, k1.sc, k1.a, 0, { shine: ((t - 3.8) % 1.6) / .8 });
+  if (t >= 4.4) { const u = eo(P(t, 4.4, 4.62)); drawSpr(g, 'rib1', lerp(-300, 270, u), 592, 1, 1); }
+  if (t >= 4.8) { const u = P(t, 4.8, 4.98); drawSpr(g, 'new', 432, 196, lerp(2.2, 1, back(u, 2.5)) * (1 + .05 * Math.sin(t * 14)), Math.min(1, P(t, 4.8, 4.85)), -.2 + .05 * Math.sin(t * 5)); }
+  g.restore();
+}
+// 初回ダウンロードのみ 1500P プレゼント!!（6.4〜9.6）
+function drawGift(g, t) {
+  if (t < 6.4 || t >= 9.65) return;
+  const outK = P(t, 9.4, 9.6), zoom = 1 + .5 * eo(outK), a0 = 1 - outK;
+  g.save(); g.translate(270, 480); g.scale(zoom, zoom); g.translate(-270, -480); g.globalAlpha = a0;
+  const k0 = slamK(t, 6.45, 9.7, 1.9); if (k0) drawSpr(g, 'g1', 270, 196, k0.sc, k0.a, 0, { shine: ((t - 6.7) % 1.6) / .8 });
+  if (t >= 6.5) {   // 大きなPコイン：回りながら出て、少しゆれる
+    const u = P(t, 6.5, 7.0), spin = lerp(4 * Math.PI, 0, eo(P(t, 6.5, 7.15))) + .12 * Math.sin(t * 2.4);
+    drawCoin(g, 270, 425, 118 * lerp(.25, 1, back(u, 1.8)), spin, Math.min(1, P(t, 6.5, 6.6)));
+  }
+  const k1 = slamK(t, 7.2, 9.7, 2.6); if (k1) drawSpr(g, 'g2', 270, 640, k1.sc * (1 + .02 * Math.sin(t * 10)), k1.a, 0, { shine: ((t - 7.4) % 1.2) / .6 });
+  const k2 = slamK(t, 7.6, 9.7, 2.4); if (k2) drawSpr(g, 'g3', 270, 782, k2.sc, k2.a, 0, { shine: ((t - 7.8) % 1.2) / .6 });
+  g.restore();
+}
+function drawBolts(g, t) {
+  [[0.0, 0, 110, 260], [0.03, 1, 430, 300], [1.58, 4, 80, 520], [1.6, 5, 460, 520], [3.12, 6, 110, 240], [3.16, 7, 430, 300], [7.18, 8, 90, 560], [7.2, 9, 450, 560],
+   [T_END - .04, 2, 90, 250], [T_END, 3, 450, 250]].forEach(([t0, s, x0, y1]) => {
+    if (t >= t0 && t < t0 + .24) bolt(g, x0, -10, 270 + (x0 < 270 ? -40 : 40), y1, s * 13 + Math.floor((t - t0) * 30), (1 - P(t, t0, t0 + .24)) * (Math.floor(t * 60) % 2 ? 1 : .6));
+  });
+}
+// 単勝5連予想：5つの例の画面が1つずつスマホに入る（53.15〜54.75。入るたびに画面のレースがふえる）
+const W5IN = [53.15, 53.55, 53.95, 54.35, 54.75];
+function drawW5In(g, t) {
+  if (t < 52.85 || t > 55.0) return;
+  const img = $('ex1').querySelector('img'), sc0 = .15, w = 390 * sc0, h = 844 * sc0;
+  W5IN.forEach((t1, i) => {
+    const t0 = t1 - .32, show = 52.85 + .08 * i; if (t < show || t > t1 + .05) return;
+    const st = { x: 78 + 96 * i, y: 872 }, en = phonePt(t1, 'w5_0', '#w5Sum');
+    const u = eio(P(t, t0, t1)), x = lerp(st.x, en.x, u), y = lerp(st.y, en.y, u), s = lerp(1, .3, u) * lerp(.4, 1, back(P(t, show, show + .25), 1.6));
+    const a = Math.min(1, P(t, show, show + .08)) * (1 - P(u, .8, 1));
+    g.save(); g.globalAlpha = a; g.translate(x, y); g.rotate((i - 2) * .06 * (1 - u)); g.scale(s, s);
+    g.save(); g.shadowColor = 'rgba(255,170,40,.8)'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.beginPath(); g.roundRect(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 8); g.fill(); g.restore();
+    g.save(); g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 6); g.clip(); g.drawImage(img, -w / 2, -h / 2, w, h); g.restore();
+    g.lineWidth = 2.5; g.strokeStyle = '#ffd45c'; g.beginPath(); g.roundRect(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 8); g.stroke();
+    g.beginPath(); g.arc(-w / 2 + 4, -h / 2 + 4, 15, 0, TAU); const bgc = g.createLinearGradient(0, -h / 2 - 11, 0, -h / 2 + 19); bgc.addColorStop(0, '#ff5a5a'); bgc.addColorStop(1, '#b0000f'); g.fillStyle = bgc; g.fill();
+    g.lineWidth = 2.5; g.strokeStyle = '#fff'; g.stroke();
+    g.font = '900 17px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(String(i + 1), -w / 2 + 4, -h / 2 + 5);
+    g.restore();
+  });
+}
+function drawEnding(g, t) {
+  if (t < T_END) return;
+  const mv = eio(P(t, T_DISC, T_DISC + .4));   // 注意書き：題名は上に小さく、ほかは消える
+  const k1 = slamK(t, T_END + .4, 999, 2.4);
+  if (k1) drawSpr(g, 'title', 270, lerp(432, 96, mv), k1.sc * lerp(.9, .5, mv), k1.a, 0, { shine: ((t - T_END - .7) % 1.6) / .8 });
+  const fo = 1 - P(t, T_DISC - .15, T_DISC);
+  if (t >= T_END + .8 && fo > 0) { const u = P(t, T_END + .8, T_END + 1.0); drawSpr(g, 'rib1', 270, 516, lerp(1.8, 1, back(u, 2)), Math.min(1, P(t, T_END + .8, T_END + .86)) * fo); }
+  if (t >= T_END + 1.2 && fo > 0) { const u = P(t, T_END + 1.2, T_END + 1.38); drawSpr(g, 'new', 452, 130, lerp(2.2, .85, back(u, 2.5)) * (1 + .05 * Math.sin(t * 14)), Math.min(1, P(t, T_END + 1.2, T_END + 1.25)) * fo, -.2 + .05 * Math.sin(t * 5)); }
+}
+// 注意書き（77.6〜）：大きな枠に、1つずつ出して最後まで残す
+const DISC_T0 = T_DISC + .4, DISC_GAP = .5, DISC_FONT = '700 20px "Noto Sans CJK JP"', DISC_LH = 30, DISC_GAPY = 20;
+function wrapLines(g, lines, maxW) {   // 幅をこえる行は文字で折り返す
+  const out = [];
+  lines.forEach(line => {
+    let cur = '';
+    for (const ch of line) { if (g.measureText(cur + ch).width > maxW && cur && !'。、）」!?！？'.includes(ch)) { out.push(cur); cur = ch; } else cur += ch; }   // 句読点は行の頭に来ない（ぶら下げ）
+    if (cur) out.push(cur);
+  });
+  return out;
+}
+function drawDisclaimer(g, t) {
+  if (t < T_DISC) return;
+  const u = P(t, T_DISC, T_DISC + .22), a = Math.min(1, P(t, T_DISC, T_DISC + .06)), sc = lerp(1.25, 1, back(u, 1.6));
+  const px = 24, pw = 492, py = 170, ph = 760;
+  g.save(); g.globalAlpha = a; g.translate(270, py + ph / 2); g.scale(sc, sc); g.translate(-270, -(py + ph / 2));
+  g.save(); g.shadowColor = 'rgba(255,190,60,.55)'; g.shadowBlur = 26;
+  g.beginPath(); g.roundRect(px, py, pw, ph, 22); const pg = g.createLinearGradient(0, py, 0, py + ph); pg.addColorStop(0, 'rgba(14,28,66,.97)'); pg.addColorStop(1, 'rgba(4,8,24,.97)'); g.fillStyle = pg; g.fill(); g.restore();
+  g.lineWidth = 3.5; g.strokeStyle = '#ffd45c'; g.beginPath(); g.roundRect(px, py, pw, ph, 22); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,230,160,.45)'; g.beginPath(); g.roundRect(px + 7, py + 7, pw - 14, ph - 14, 16); g.stroke();
+  drawSpr(g, 'rib3', 270, py, 1, 1);
+  const maxW = pw - 96, lh = DISC_LH;
+  g.textBaseline = 'top'; g.textAlign = 'left'; g.lineJoin = 'round'; g.font = DISC_FONT;
+  const items = DISC.map(item => wrapLines(g, item, maxW));
+  const total = items.reduce((n, ls) => n + ls.length * lh + DISC_GAPY, -DISC_GAPY);
+  let y = py + 64 + Math.max(0, ((py + ph - 70) - (py + 64) - total) / 2);
+  items.forEach((ls, i) => {
+    const ta = DISC_T0 + i * DISC_GAP, k = eo(P(t, ta, ta + .28)), bh = ls.length * lh;
+    if (k > 0) {
+      g.save(); g.globalAlpha = a * k; g.translate(-34 * (1 - k), 0);
+      g.beginPath(); g.arc(px + 38, y + 16, 15, 0, TAU); const bg2 = g.createLinearGradient(0, y, 0, y + 30); bg2.addColorStop(0, '#fff0a8'); bg2.addColorStop(1, '#d99a1e'); g.fillStyle = bg2; g.fill();
+      g.font = '900 17px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.fillStyle = '#2a1300'; g.fillText(String(i + 1), px + 38, y + 5); g.textAlign = 'left';
+      g.font = DISC_FONT;
+      ls.forEach((ln, j) => { g.lineWidth = 5; g.strokeStyle = 'rgba(0,0,0,.65)'; g.strokeText(ln, px + 64, y + j * lh); g.fillStyle = '#fff'; g.fillText(ln, px + 64, y + j * lh); });
+      g.restore();
+    }
+    y += bh + DISC_GAPY;
+  });
+  const ts = DISC_T0 + DISC.length * DISC_GAP, ks = eo(P(t, ts, ts + .3));
+  if (ks > 0) {
+    g.save(); g.globalAlpha = a * ks; g.font = '500 12px "Noto Sans CJK JP"'; g.textAlign = 'center'; g.fillStyle = 'rgba(225,230,245,.9)';
+    const sl = wrapLines(g, DISC_SMALL, pw - 50);
+    sl.forEach((ln, j) => g.fillText(ln, 270, py + ph - 18 - (sl.length - j) * 19));
+    g.restore();
+  }
+  g.restore();
+}
+
+// ===================== 金貨・星 =====================
+function coins(g, t, T0, T1, seed, n = 44) {
+  const a = env(t, T0, T1, .1, .35); if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  for (let i = 0; i < n; i++) {
+    const t0 = T0 + rnd(i, seed) * 1.2, age = t - t0; if (age < 0) continue;
+    const x = rnd(i, seed + 1) * W + Math.sin(age * 1.5 + i) * 14, y = -30 + age * (300 + rnd(i, seed + 2) * 260);
+    if (y > H + 30) continue;
+    const ph = age * (5 + rnd(i, seed + 3) * 5) + i, sx = Math.cos(ph), r = 9 + rnd(i, seed + 4) * 6;
+    g.save(); g.translate(x, y); g.rotate(rnd(i, seed + 5) * 1.2 - .6); g.scale(Math.max(.12, Math.abs(sx)), 1);
+    const cg = g.createRadialGradient(-r * .3, -r * .3, r * .1, 0, 0, r); cg.addColorStop(0, '#fff6c0'); cg.addColorStop(.5, '#f2c14e'); cg.addColorStop(1, '#a86d10');
+    g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.lineWidth = 1.5; g.strokeStyle = '#6a4200'; g.stroke();
+    g.beginPath(); g.arc(0, 0, r * .62, 0, TAU); g.strokeStyle = 'rgba(120,80,0,.6)'; g.stroke();
+    if (sx > .3) { g.fillStyle = 'rgba(255,255,255,.75)'; g.beginPath(); g.ellipse(-r * .25, -r * .3, r * .22, r * .12, -.6, 0, TAU); g.fill(); }
+    g.restore();
+  }
+  g.restore();
+}
+function sparkles(g, t, T0, T1, n = 26) {
+  const a = env(t, T0, T1, .2, .3); if (a <= 0) return;
+  g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = '#fff';
+  for (let i = 0; i < n; i++) {
+    const x = 30 + rnd(i, 21) * (W - 60), y = 60 + rnd(i, 22) * (H - 120), ph = (t * (1.2 + rnd(i, 23)) + rnd(i, 24) * 7) % 1.4;
+    if (ph > .7) continue;
+    const s = Math.sin(ph / .7 * Math.PI) * (8 + rnd(i, 25) * 10);
+    g.save(); g.translate(x, y); g.rotate(rnd(i, 26) * .8);
+    g.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? s * .22 : s, an = k / 8 * TAU; g.lineTo(Math.cos(an) * r, Math.sin(an) * r); } g.closePath();
+    g.shadowColor = '#fff2b0'; g.shadowBlur = 10; g.fill(); g.restore();
+  }
+  g.restore();
+}
+
+// ===================== 1コマを描く =====================
+function shakeAt(t) {
+  let dx = 0, dy = 0;
+  HITS.forEach(([t0, amp], i) => { if (t >= t0 && t < t0 + .3) { const k = amp * Math.pow(1 - P(t, t0, t0 + .3), 2); dx += (rnd(i, Math.floor(t * 60)) - .5) * 2 * k; dy += (rnd(i + 50, Math.floor(t * 60)) - .5) * 2 * k; } });
+  return [dx, dy];
+}
+function render(t) {
+  const [dx, dy] = shakeAt(t); $('world').style.transform = `translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px)`;
+  drawBG(t);
+  renderPhone(t);
+  drawExamples(t);
+  // エンディングのバナー・まとめ・ボタン・紹介特典
+  const bu = P(t, T_END, T_END + .2), fo = 1 - P(t, T_DISC - .15, T_DISC);
+  place($('banner'), 270, 250, t >= T_END ? Math.min(1, P(t, T_END, T_END + .05)) * fo : 0, lerp(1.9, 1, back(bu, 2)) * (1 + .01 * Math.sin(t * 3)));
+  // DOMの小さい文字
+  const sub = SUBS.find(s => t >= s.a && t <= s.b), cs = $('csub');
+  if (sub) { cs.firstChild.textContent = sub.s; cs.firstChild.className = 'sub' + (sub.blue ? ' blue' : ''); place(cs, 270, 254 + 8 * (1 - eo(P(t, sub.a, sub.a + .15))), env(t, sub.a, sub.b, .12, .1), lerp(1.25, 1, eo(P(t, sub.a, sub.a + .15)))); }
+  else setVis(cs, 0);
+  place($('cfoot'), 270, 936, env(t, 16.5, 23.1, .3, .15));
+  place($('eSum'), 270, 586, eo(P(t, T_END + 1.3, T_END + 1.65)) * fo, lerp(1.15, 1, eo(P(t, T_END + 1.3, T_END + 1.6))));
+  place($('ectaw'), 270, 650 + 14 * (1 - eo(P(t, T_END + 1.7, T_END + 2.1))), eo(P(t, T_END + 1.7, T_END + 2.05)) * fo, (.9 + .1 * back(P(t, T_END + 1.7, T_END + 2.1))) * (1 + .02 * Math.sin(t * 6) * P(t, T_END + 2.1, T_END + 2.5)));
+  { const r0 = T_END + 2.4; place($('refbox'), 270, 812 + 30 * (1 - eo(P(t, r0, r0 + .35))), eo(P(t, r0, r0 + .3)) * fo, lerp(1.12, 1, eo(P(t, r0, r0 + .35))) * (1 + .012 * Math.sin(t * 5) * P(t, r0 + .4, r0 + .8))); }
+  // 前面
+  F.setTransform(2, 0, 0, 2, 0, 0); F.clearRect(0, 0, W, H);
+  let sl = 0; SPEED.forEach(([t0, a]) => { if (t >= t0 && t < t0 + .35) sl = Math.max(sl, a * (1 - P(t, t0, t0 + .35))); });
+  speedLines(F, sl, Math.floor(t * 30) * 3);
+  drawPrelude(F, t);
+  drawOpen(F, t);
+  drawGift(F, t);
+  drawBolts(F, t);
+  drawCounter(F, t);
+  drawW5In(F, t);
+  drawPops(F, t);
+  drawCaps(F, t);
+  drawEnding(F, t);
+  drawDisclaimer(F, t);
+  coins(F, t, 6.4, 9.4, 70, 40); coins(F, t, T_END, T_END + 2.6, 50, 22); coins(F, t, 63.2, 64.8, 90, 18);
+  confetti(F, t, 1.6, 3.2); confetti(F, t, 36.4, 38.0);
+  sparkles(F, t, 1.6, 3.2, 16); sparkles(F, t, 3.2, 6.4, 10); sparkles(F, t, 6.4, 9.6, 18); sparkles(F, t, 36.0, 42.4, 10); sparkles(F, t, T_END, T_DISC, 12);
+  bursts(F, t);
+  flashes(F, t);
+}
+window.render = render;
+// 吸い込まれたところ・解放したところで小さな火花
+{ const bt = phonePt(16.3, 'judge_empty', '#ocrBtn'); BURSTS.push({ t: 16.48, x: bt.x, y: bt.y, n: 34, sp: 240, hue: 45 }); }
+{ const q = phonePt(38.45, 'rec_lk1', BT('複勝')); BURSTS.push({ t: 38.45, x: q.x, y: q.y, n: 30, sp: 220, hue: 45 }); }
+{ const q = phonePt(39.65, 'rec_lk2', BT('馬連')); BURSTS.push({ t: 39.65, x: q.x, y: q.y, n: 30, sp: 220, hue: 45 }); }
+{ const q = phonePt(44.05, 'set_m0_lk3', S2); BURSTS.push({ t: 44.05, x: q.x, y: q.y, n: 70, sp: 380, hue: 195 }); }
+{ W5IN.forEach(t1 => { const q = phonePt(t1, 'w5_0', '#w5Sum'); BURSTS.push({ t: t1, x: q.x, y: q.y, n: 18, sp: 200, hue: 45 }); }); }
+
+// 文字の絵を作ってから始める
+function build() {
+  const DELA = '400 {s}px "Dela Gothic One"';
+  // 前置き
+  mkText('p1', 'オッズを入れるだけの', { size: 46, fill: 'white', s2: '#ffd45c', glow: 'rgba(255,170,40,.7)', depth: 3 });
+  mkText('p2', '全く新しい', { size: 72, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('p3', '競馬アプリ!!', { size: 80, fill: 'fire', glow: 'rgba(255,80,0,.95)' });
+  // 第7弾：「テンゲルⅢ」のⅢはアプリと同じ字（Dela Gothic One）
+  mkText('title', 'テンゲルⅢ', { size: 88, fill: 'gold', glow: 'rgba(255,140,0,.9)', parts: [['テンゲル', null], ['Ⅲ', DELA]], gap: 6 });
+  mkRibbon('rib1', '競馬 判定アプリ', { w: 360, h: 58, size: 30 });
+  mkBadge('new', '新登場', 62);
+  mkRibbon('rib3', 'ご利用にあたって', { w: 330, h: 54, size: 26, c1: '#1c3f8a', c2: '#0b1f4d', c3: '#050b22' });
+  // 1500Pプレゼント
+  mkText('g1', '初回ダウンロードのみ', { size: 42, fill: 'white', s2: '#ffd45c', glow: 'rgba(255,170,40,.7)', depth: 3 });
+  mkText('g2', '1500P', { size: 132, fill: 'gold', glow: 'rgba(255,140,0,.95)' });
+  mkText('g3', 'プレゼント!!', { size: 80, fill: 'fire', glow: 'rgba(255,80,0,.95)' });
+  // 入れる・読み取る
+  mkText('c1a', 'オッズ・距離・馬場のスクショを', { size: 32, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c1b', '入れるだけ!!', { size: 78, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  mkText('c5a', 'ポイントで画像を読み取り', { size: 34, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c5b', 'レースを判定しよう!!', { size: 54, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('c2a', '誰でも簡単に! 1発で', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c2b', 'ゾーンまで判定!!', { size: 58, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.7)' });
+  mkText('c3a', '買い目編集で', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c3b', 'カスタム自在!!', { size: 62, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  // Pカスタム
+  mkText('c6z', 'Pカスタムで', { size: 40, fill: 'gold', glow: 'rgba(255,255,255,.6)', depth: 2 });
+  mkText('c6a', '自分だけのテンゲルを', { size: 40, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c6b', '育てよう!!', { size: 80, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.8)' });
+  // マザーデータ
+  mkText('c7a', '自分だけのマザーデータを', { size: 34, fill: 'white', s1: '#001233', s2: '#8fe6ff', ext: '#001a4a', depth: 2 });
+  mkText('c7b', '作成しよう!!', { size: 70, fill: 'blue', s1: '#001233', s2: '#ffffff', ext: '#00205a', glow: 'rgba(60,180,255,.9)' });
+  // 買う馬・単勝5連予想・収支
+  mkText('m1a', '買う馬も', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m1b', '選べる!!', { size: 74, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  mkText('m2a', '単勝5連予想も', { size: 40, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m2b', '組める!!', { size: 74, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('m3a', '収支も', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m3b', '自動で記録!!', { size: 66, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
+  // サブスク
+  mkText('c8a', 'サブスクでお得に', { size: 38, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c8b', 'ポイントを集めよう!!', { size: 52, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  // データ上乗せ
+  mkText('cnt_t', 'データ上乗せ!!', { size: 40, fill: 'fire', glow: 'rgba(255,80,0,.8)' });
+  ADD.forEach(([, v], i) => mkText('plus' + i, `+${v}走`, { size: 36, fill: 'gold', glow: 'rgba(255,200,0,.9)', depth: 2 }));
+  // ポイントが減る・解放
+  mkText('m200', '−200P', { size: 40, fill: 'red', s1: '#3a0000', s2: '#ffffff', glow: 'rgba(255,60,60,.8)', depth: 2 });
+  mkText('m500', '−500P', { size: 40, fill: 'red', s1: '#3a0000', s2: '#ffffff', glow: 'rgba(255,60,60,.8)', depth: 2 });
+  mkText('m15k', '−15,000P', { size: 52, fill: 'red', s1: '#3a0000', s2: '#ffffff', glow: 'rgba(255,60,60,.8)', depth: 2 });
+  mkText('open', '解放!!', { size: 46, fill: 'gold', glow: 'rgba(255,200,0,.9)', depth: 2 });
+}
+window.__ready = Promise.all([...document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })))
+  .then(() => Promise.all([document.fonts.load('900 40px "Noto Sans CJK JP"'), document.fonts.load('400 88px "Dela Gothic One"', 'Ⅲ P'),
+    document.fonts.load('700 13px "BIZ UDPGothic"', '保有ポイント解放する？やめる「」複勝馬連記録できる券種がふえるよ500Pで'), document.fonts.load('600 14px "IBM Plex Mono"', '0123456789,')]))
+  .then(() => document.fonts.ready)
+  .then(() => { build(); render(0); return true; });
+</script>
+</body></html>

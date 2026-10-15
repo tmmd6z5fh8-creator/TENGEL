@@ -1,7 +1,8 @@
-# CM用の例：架空のオッズ画面（example_odds.html）を撮る → assets/ex_odds1.png（レース情報と単勝・複勝オッズ）・assets/ex_odds2.png（3連単オッズ）
+# CM用の例：架空の画面（example_odds.html）を撮る
+#   assets/ex_odds0.png（出馬表：距離・馬場・出走頭数）・ex_odds1.png（単勝・複勝オッズ）・ex_odds2.png（3連単オッズ）
 #   python3 example_odds.py
 # どこかの会社のアプリの画面のまねではない、独自のデザイン。レース名・馬名は架空
-# 撮ったあと、この2枚の文字と位置（DOMから。Visionの代わり）をアプリの読み取り（ocr_local.js）に通して、
+# 撮ったあと、3枚の文字と位置（DOMから。Visionの代わり）をアプリの読み取り（ocr_local.js）に通して、
 # CMのアプリの画面（cm2_shots.py の F9）と同じ数字が入るか確かめる（ちがったら止まる）
 import json, os, subprocess, tempfile
 from playwright.sync_api import sync_playwright
@@ -17,30 +18,33 @@ const O = require(process.argv[2]); const L = JSON.parse(require('fs').readFileS
 const merged = ls => O.rows(ls).map(r => ({ text: r.items.map(i => i.text).join(' '), x: r.items[0].x, y: r.items[0].y, w: r.items[r.items.length - 1].x + r.items[r.items.length - 1].w - r.items[0].x, h: r.h }));
 const NOS = [6, 2, 10, 7, 1, 4, 11, 5, 9, 3, 8, 12], TAN = [2.1, 3.4, 5.2, 7.8, 9.5, 12.4, 16.8, 22.5, 31.0, 45.6, 58.3, 82.1], FL = [1.1, 1.3, 1.6, 2.0, 2.4, 2.9, 3.6, 4.5, 5.8, 7.9, 9.8, 13.5];
 let bad = 0;
+const ok = (c, label, x) => { console.log((c ? '  ✅ ' : '  ❌ ') + label, x ? JSON.stringify(x) : ''); if (!c) bad++; };
 for (const [nm, imgs] of [['セルごと', L], ['行ごと', L.map(merged)]]) {
   const r = O.parse(imgs), hs = r.horses || [];
   const okH = hs.length === 12 && NOS.every((no, i) => { const h = hs.find(x => x.no === no); return h && h.tan === TAN[i] && parseFloat(h.fuku) === FL[i]; });
-  const ok = r.r === 9 && r.dist === 1400 && r.surface === 'ダ' && r.baba === '良' && r.n === 12 && r.date === '2026-10-14' && r.venue === null
-    && r.s1 && r.s1.combo === '6-2-10' && r.s1.odds === 18.5 && r.s5 && r.s5.odds === 42.6 && r.s10 && r.s10.odds === 78.9 && okH;
-  console.log((ok ? '  ✅ ' : '  ❌ ') + '読み取り（' + nm + '）', JSON.stringify({ r: r.r, dist: r.dist, baba: r.baba, n: r.n, s1: r.s1, s5: r.s5, s10: r.s10, h0: hs[0] }));
-  if (!ok) bad++;
+  ok(r.r === 9 && r.dist === 1400 && r.surface === 'ダ' && r.baba === '良' && r.n === 12 && r.date === '2026-10-14' && r.venue === null
+    && r.s1 && r.s1.combo === '6-2-10' && r.s1.odds === 18.5 && r.s5 && r.s5.odds === 42.6 && r.s10 && r.s10.odds === 78.9 && okH,
+    '3枚まとめて読む（' + nm + '）', { r: r.r, dist: r.dist, baba: r.baba, n: r.n, s1: r.s1, s5: r.s5, s10: r.s10, h0: hs[0] });
+  const r0 = O.parse([imgs[0]]);
+  ok(r0.r === 9 && r0.dist === 1400 && r0.surface === 'ダ' && r0.baba === '良' && r0.n === 12 && r0.horses === null && r0.s1 === null,
+    '出馬表だけ：距離・馬場・頭数が入って、オッズは入らない（' + nm + '）', { r: r0.r, dist: r0.dist, baba: r0.baba, n: r0.n, horses: r0.horses && r0.horses.length });
 }
 process.exit(bad ? 1 : 0);
 '''
-pages = []
+pages, boxes = [], {}
 with sync_playwright() as p:
     b = p.chromium.launch()
     pg = b.new_page(viewport={'width': 390, 'height': 844}, device_scale_factor=2.5)
-    for n in ('1', '2'):
+    for n in ('0', '1', '2'):
         pg.goto('file://' + CM + '/example_odds.html?p=' + n)
         pg.evaluate('document.fonts.ready'); pg.wait_for_timeout(300)
         pg.screenshot(path=f'{CM}/assets/ex_odds{n}.png', animations='disabled')
         pages.append(pg.evaluate(LEAF_JS))
-        print('ok', f'assets/ex_odds{n}.png')
-        if n == '1':   # CMで金の枠をつける場所（cm6.html の EXBOX に入れる）
-            print('   EXBOX', pg.evaluate("Object.fromEntries(['exDB', 'exDist', 'exBaba'].map(id => { const b = document.getElementById(id).getBoundingClientRect(); return [id, { x: +b.left.toFixed(1), y: +b.top.toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) }]; }))"))
-            print('   名前がはみ出さない', pg.evaluate("[...document.querySelectorAll('td.name')].every(td => td.scrollWidth <= td.clientWidth + 1)"),
-                  '表が画面に収まる', pg.evaluate("document.querySelector('table').getBoundingClientRect().bottom <= 844"))
+        fit = pg.evaluate("[...document.querySelectorAll('td.name')].every(td => td.scrollWidth <= td.clientWidth + 1) && document.querySelector('table').getBoundingClientRect().bottom <= 844")
+        print('ok', f'assets/ex_odds{n}.png', '名前がはみ出さない・表が画面に収まる' if fit else '⚠️ はみ出し')
+        if n == '0':   # CMで金の枠をつける場所（cm7.html の EXBOX に入れる）
+            boxes = pg.evaluate("Object.fromEntries(['exDist', 'exBaba', 'exN'].map(id => { const b = document.getElementById(id).getBoundingClientRect(); return [id, { x: +b.left.toFixed(1), y: +b.top.toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) }]; }))")
+            print('   EXBOX', json.dumps(boxes, ensure_ascii=False))
     b.close()
 with tempfile.TemporaryDirectory() as d:
     open(d + '/lines.json', 'w', encoding='utf8').write(json.dumps(pages, ensure_ascii=False))

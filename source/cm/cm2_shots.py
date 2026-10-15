@@ -9,6 +9,9 @@ from playwright.sync_api import sync_playwright
 SRC = '/home/claude/tengel/source'
 APP = os.environ.get('TARGET') == 'app'
 PREV = os.environ.get('CM_PREV') == '1'
+# CM第7弾（CM7=1）：3枚の読み取り・券種とマザーデータのロック（ポイントで解放するイメージ）・単勝5連予想（0〜5レース・ランダム）・ポイント購入（イメージ）
+#   ロックや購入の画面は、このテスト用ブラウザの中で画面に足して撮るだけ（アプリのソースは変えない）。「5重勝」は CM の画面だけ「単勝5連予想」に置きかえる
+CM7 = os.environ.get('CM7') == '1'
 # iPad（13インチ・幅1032）：タブは上（下のタブバーはない）。上の帯（タブつき）を場面ごとに撮る
 IPAD = os.environ.get('CM_IPAD') == '1'
 VW, VH, DPR = int(os.environ.get('CM_VW', '390')), int(os.environ.get('CM_VH', '844')), float(os.environ.get('CM_DPR', '2'))
@@ -99,6 +102,90 @@ def jra_tsv(nrace=180, seed=7):
     return '\n'.join(out)
 
 
+# ---- CM第7弾：ポイントのイメージ（このブラウザの中で画面に足すだけ・アプリのソースは変えない） ----
+BETS7 = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単']
+LOCK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'
+LOCK_CSS = """.cmlk{color:#8d94a6!important;background:#eceef3!important;border:1px dashed #b8bfcc!important;display:inline-flex!important;align-items:center;gap:4px}
+.cmlk .cmp{font-size:11.5px;font-weight:800;color:#b7791f;letter-spacing:.02em;margin-left:1px}"""
+REC_LOCK_JS = """([svg, css, open]) => {
+  let s = document.getElementById('cmlkcss'); if (!s) { s = document.createElement('style'); s.id = 'cmlkcss'; s.textContent = css; document.head.appendChild(s); }
+  const box = document.querySelector('#recCard [data-k=types]'); if (!box) return 'no types';
+  if (!box.querySelector('[data-v="枠複"]')) { const f = box.querySelector('[data-v="複勝"]'); for (const t of ['枠単', '枠複']) { const b = document.createElement('button'); b.type = 'button'; b.dataset.v = t; b.textContent = t; f.after(b); } }
+  const LOCKABLE = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
+  for (const b of box.querySelectorAll('button')) {
+    const t = b.dataset.v; b.setAttribute('aria-pressed', 'false');
+    if (LOCKABLE.includes(t) && !open.includes(t)) { b.classList.add('cmlk'); b.innerHTML = svg + t + '<span class="cmp">500P</span>'; }
+    else { b.classList.remove('cmlk'); b.textContent = t; }
+  }
+  return [...box.querySelectorAll('button')].map(b => b.dataset.v + (b.classList.contains('cmlk') ? '🔒' : '')).join(' ');
+}"""
+SLOT_CSS = """#slotList .slotrow.cmlks{position:relative;overflow:hidden}
+.cmlkc{position:absolute;inset:0;background:rgba(236,238,243,.96);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;color:#5a6175;font-size:14px;border-radius:10px;border:1.5px dashed #b8bfcc}
+.cmlkc b{color:#b7791f;font-size:15px}"""
+SLOT_JS = """([svg, css, ns]) => {
+  let s = document.getElementById('cmlkcss2'); if (!s) { s = document.createElement('style'); s.id = 'cmlkcss2'; s.textContent = css; document.head.appendChild(s); }
+  for (const r of document.querySelectorAll('#slotList .slotrow')) {
+    const c = r.querySelector('.cmlkc'); if (c) c.remove(); r.classList.remove('cmlks');
+    if (ns.includes(+r.dataset.n)) { r.classList.add('cmlks'); const d = document.createElement('div'); d.className = 'cmlkc'; d.innerHTML = svg + '<span>新しいマザーデータ　<b>15,000P</b>で作れる</span>'; r.appendChild(d); }
+  }
+  return document.querySelectorAll('#slotList .cmlkc').length;
+}"""
+
+
+def slot_lock(pg, ns):
+    if not CM7:
+        return 0
+    return pg.evaluate(SLOT_JS, [LOCK_SVG.replace('width="13" height="13"', 'width="17" height="17"'), SLOT_CSS, ns])
+
+
+def w5state(pg, k, mode):   # 単勝5連予想：k レースだけ入れた状態（のこりは空）
+    w = json.loads(json.dumps(W5)); w['mode'] = mode
+    for i in range(k, 5):
+        w['races'][i] = {"form": None, "sel": None, "win": "", "picks": None, "man": None}
+    pg.evaluate("(w) => localStorage.setItem('tengel.win5', w)", json.dumps(w, ensure_ascii=False))
+    pg.reload(); pg.wait_for_timeout(2400)
+    hide(pg, False); pg.click('.tabbar button[data-tab=win5]'); pg.wait_for_timeout(900)
+
+
+# ポイントのカード（イメージ）：保有ポイント・ポイントを買う（通常）・サブスク・繰り越し（まさちゃんの指定の金額）
+PTS_CSS = """#cmPts{margin-bottom:var(--gap,14px)}
+#cmPts .cmp-bal{display:flex;align-items:center;justify-content:space-between;background:var(--night,#16203D);color:#F3F0E6;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+#cmPts .cmp-bal span{font-size:13px;font-weight:700;letter-spacing:.06em;opacity:.85}
+#cmPts .cmp-bal b{font-family:var(--font-display);font-weight:400;font-size:26px;color:var(--lamp,#E2A23B);letter-spacing:.02em}
+#cmPts .cmp-bal b small{font-size:15px;margin-left:3px}
+#cmPts .cmp-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14.5px;margin:4px 0 8px}
+#cmPts .cmp-h .tag{font-size:11.5px;font-weight:800;color:#fff;background:#d6261d;border-radius:999px;padding:2px 9px}
+#cmPts .cmp-list{display:grid;gap:8px;margin-bottom:14px}
+#cmPts .cmp-row{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 10px 9px 12px;background:var(--surface-2)}
+#cmPts .cmp-row .pt{font-family:var(--font-mono);font-weight:600;font-size:17px}
+#cmPts .cmp-row .bn{font-size:12.5px;font-weight:800;color:#b7791f;background:#fff4dc;border:1px solid #f1d39a;border-radius:999px;padding:1px 8px}
+#cmPts .cmp-row .btn{margin-left:auto;min-width:96px;padding:7px 12px}
+#cmPts .cmp-sub .cmp-row{background:#fffaf0;border-color:#f1d39a}
+#cmPts .cmp-note{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}"""
+PTS_HTML = """<div class="card" id="cmPts"><h2>ポイント</h2>
+  <div class="cmp-bal"><span>保有ポイント</span><b>300<small>P</small></b></div>
+  <div class="cmp-h">ポイントを買う</div>
+  <div class="cmp-list cmp-buy">
+    <div class="cmp-row"><span class="pt">500P</span><button class="btn" type="button">160円</button></div>
+    <div class="cmp-row"><span class="pt">1,000P</span><button class="btn" type="button">320円</button></div>
+    <div class="cmp-row"><span class="pt">2,000P</span><button class="btn" type="button">640円</button></div>
+    <div class="cmp-row"><span class="pt">4,000P</span><button class="btn" type="button">1,280円</button></div>
+  </div>
+  <div class="cmp-h">サブスク（月額）<span class="tag">おトク</span></div>
+  <div class="cmp-list cmp-sub">
+    <div class="cmp-row"><span class="pt">2,000P</span><button class="btn primary" type="button">580円/月</button></div>
+    <div class="cmp-row"><span class="pt">4,400P</span><span class="bn">＋400P</span><button class="btn primary" type="button">1,160円/月</button></div>
+    <div class="cmp-row"><span class="pt">9,200P</span><span class="bn">＋1,000P</span><button class="btn primary" type="button">1,740円/月</button></div>
+  </div>
+  <p class="cmp-note">サブスクに入ると、ポイントを<b>購入日から30日間</b>繰り越せるよ。</p>
+</div>"""
+PTS_JS = """([html, css]) => {
+  let s = document.getElementById('cmptscss'); if (!s) { s = document.createElement('style'); s.id = 'cmptscss'; s.textContent = css; document.head.appendChild(s); }
+  const v = document.getElementById('v-set'); const old = document.getElementById('cmPts'); if (old) old.remove();
+  v.insertAdjacentHTML('afterbegin', html); return document.getElementById('cmPts').getBoundingClientRect().height;
+}"""
+
+
 HIDE = ".tabbar,.minibar,#toast{display:none!important}.top{display:none!important}main{padding-bottom:0!important}.zsave.sticky{position:static!important;box-shadow:none!important}"
 META = {}
 BOX_JS = """([root, sels]) => { const re = document.querySelector(root); const R = re.getBoundingClientRect(); const out = {};
@@ -125,7 +212,13 @@ SCRUB_JS = r"""() => {
 }"""
 
 
+RENAME_JS = r"""() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n = 0;
+  while (w.nextNode()) { const t = w.currentNode; if (/5重勝/.test(t.nodeValue)) { t.nodeValue = t.nodeValue.replace(/5重勝/g, '単勝5連予想'); n++; } } return n; }"""
+
+
 def scrub(pg):
+    if CM7:
+        pg.evaluate(RENAME_JS)
     left = pg.evaluate(SCRUB_JS)
     if left:
         print('  ⚠️ まだ残っている文字', left)
@@ -211,7 +304,7 @@ try:
         content(pg, 'judge_empty', ['#ocrBtn', '#ocrRow', '.input-col > .card:nth-child(1)', '#result'])
         # 読み取り中・読み取ったあとの文は、アプリと同じ（src.html の ocrFile・applyOCR）。App Store版は端末の中で読む（10秒くらい）
         # 例のオッズ画面には開催場が無いので「開催場」は読み取った物に入らない（複勝は入る）
-        pg.evaluate("""(t) => { document.getElementById('ocrMsg').innerHTML = '<div class="banner info"><span class="spin" aria-hidden="true"></span> 2枚の画像を読み取り中…' + t + '</div>'; }""", '（この中で読むよ・10秒くらい）' if APP else '（20〜60秒くらい）')
+        pg.evaluate("""([n, t]) => { document.getElementById('ocrMsg').innerHTML = '<div class="banner info"><span class="spin" aria-hidden="true"></span> ' + n + '枚の画像を読み取り中…' + t + '</div>'; }""", [3 if CM7 else 2, '（この中で読むよ・10秒くらい）' if APP else '（20〜60秒くらい）'])   # 第7弾は3枚（出馬表・単勝・3連単）
         pg.wait_for_timeout(300)
         content(pg, 'judge_reading', ['#ocrMsg', '#ocrBtn'])
         load_form(pg, F9)
@@ -219,8 +312,13 @@ try:
         pg.wait_for_timeout(300)
         content(pg, 'judge_filled', ['#ocrMsg', '.input-col > .card:nth-child(1) .fields'] + RSEL
                 + ['.input-col > .card:nth-child(1)', '.input-col > .card:nth-child(2)', '.input-col > .card:nth-child(3)', '.input-col > .card:nth-child(2) .oheads', '#oddsGrid', '#fS1', '#fS5', '#fS10',
-                   '.f:has(> #fDist)', '.f:has(> #fBaba)'])   # CM第5弾：入れる3つ（レース情報・単勝・3連単）。第6弾：距離と馬場の欄も
+                   '.f:has(> #fDist)', '.f:has(> #fBaba)', '.f:has(> #fN)'])   # CM第5弾：入れる3つ（レース情報・単勝・3連単）。第6弾：距離と馬場の欄も。第7弾：頭数も
         bar_shot(pg, 'header.top', 'header_oi0'); bar_shot(pg, '.tabbar', 'tabbar_judge')
+        if CM7:   # 記録できる券種：はじめは単勝・馬単・3連単。ほかは500Pで解放（イメージ）
+            for k, opened in (('rec_lk0', []), ('rec_lk1', ['複勝']), ('rec_lk2', ['複勝', '馬連'])):
+                print('   券種のロック', pg.evaluate(REC_LOCK_JS, [LOCK_SVG, LOCK_CSS, opened]))
+                content(pg, k, ['#recCard', '#recCard [data-k=types]'] + [f'#recCard [data-k=types] button[data-v="{t}"]' for t in BETS7])
+            load_form(pg, F9)
         if PREV:   # プレビュー動画用：買う馬を選ぶ前と、2つ目のゾーンの2着の4番を押したあと（画面全体）
             PSEL = ['#result ol.zones > li:nth-child(2)', '#result ol.zones > li:nth-child(2) .znums', '#result ol.zones > li:nth-child(2) button.hp[data-hs="b"][data-no="4"]']
             content(pg, 'judge_pick0', PSEL)
@@ -281,19 +379,36 @@ try:
         # ---- マザーデータ：2つ目「JRA」に架空のデータを入れて使う ----
         tab(pg, 'set')
         content(pg, 'set_m0', MSEL)
+        if CM7:   # 新しいマザーデータは15,000Pで解放（イメージ）：2と3にロック → 2を解放
+            print('   マザーデータのロック', slot_lock(pg, [2, 3])); content(pg, 'set_m0_lk23', MSEL)
+            print('   マザーデータのロック', slot_lock(pg, [3])); content(pg, 'set_m0_lk3', MSEL)
         pg.locator(S2 + ' [data-sact=edit]').click(); pg.wait_for_timeout(500)
         pg.locator('#smFile').set_input_files(XLSX); pg.wait_for_timeout(1500)
-        content(pg, 'set_m1', MSEL)
+        slot_lock(pg, [3]); content(pg, 'set_m1', MSEL)
         pg.locator('#smApply').click(); pg.wait_for_timeout(1500)
-        content(pg, 'set_m2', MSEL)
+        slot_lock(pg, [3]); content(pg, 'set_m2', MSEL)
         pg.locator('#smUse').click(); pg.wait_for_timeout(1200)
-        content(pg, 'set_m3', MSEL)
+        slot_lock(pg, [3]); content(pg, 'set_m3', MSEL)
         bar_shot(pg, 'header.top', 'header_jra')
         # ---- JRAのデータで判定（東京11R） ----
         load_form(pg, FJ)
         tab(pg, 'judge')
         content(pg, 'judge_jra', RSEL)
         if IPAD: bar_shot(pg, 'header.top', 'header_jj')
+        if CM7:
+            # ---- 単勝5連予想：5レースを1つずつ入れる（0〜5）→ 自分で選ぶ／ランダム ----
+            W5SEL = ['.w5top', '#w5Mode', '#w5Mode button[data-v="pick"]', '#w5Mode button[data-v="rand"]', '#w5Sum', '#w5RandRow', '#w5Races'] + \
+                    [f'#w5Races > .card:nth-child({i})' for i in range(1, 6)] + ['#w5Races .w5race[data-i="0"] .w5zones', '#w5Races .w5race[data-i="0"] .w5picks', '#w5Date', '#w5Budget']
+            for k in range(6):
+                w5state(pg, k, 'pick'); content(pg, f'w5_{k}', W5SEL)
+            w5state(pg, 5, 'rand'); content(pg, 'w5_rand', W5SEL)
+            bar_shot(pg, '.tabbar', 'tabbar_win5')
+            # ---- ポイント（イメージ）：設定タブのいちばん上に「ポイント」のカード ----
+            tab(pg, 'set')
+            print('   ポイントのカード', pg.evaluate(PTS_JS, [PTS_HTML, PTS_CSS]))
+            content(pg, 'set_points', ['#cmPts', '#cmPts .cmp-bal', '#cmPts .cmp-buy', '#cmPts .cmp-sub', '#cmPts .cmp-note'] +
+                    [f'#cmPts .cmp-buy .cmp-row:nth-child({i})' for i in range(1, 5)] + [f'#cmPts .cmp-sub .cmp-row:nth-child({i})' for i in range(1, 4)])
+            bar_shot(pg, '.tabbar', 'tabbar_set')
         b.close()
 finally:
     srv.terminate(); srv.wait()
