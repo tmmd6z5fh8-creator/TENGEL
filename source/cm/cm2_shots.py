@@ -219,9 +219,14 @@ RENAME_JS = r"""() => { const w = document.createTreeWalker(document.body, NodeF
   while (w.nextNode()) { const t = w.currentNode; if (/5重勝/.test(t.nodeValue)) { t.nodeValue = t.nodeValue.replace(/5重勝/g, '単勝5連予想'); n++; } } return n; }"""
 
 
+# 第7弾：上の「テンゲルⅢ」のⅢを、CMの題名と同じ3本の棒の字に（Noto Sans CJK JP Black・まさちゃんの指定 2026/10/16。画面に足して撮るだけ・アプリは変えない）
+III_JS = r"""() => { if (document.getElementById('cmiii')) return; const s = document.createElement('style'); s.id = 'cmiii';
+  s.textContent = '.brand h1 em{font-family:"Noto Sans CJK JP",sans-serif!important;font-weight:900!important}'; document.head.appendChild(s); }"""
+
+
 def scrub(pg):
     if CM7:
-        pg.evaluate(RENAME_JS)
+        pg.evaluate(RENAME_JS); pg.evaluate(III_JS)
     left = pg.evaluate(SCRUB_JS)
     if left:
         print('  ⚠️ まだ残っている文字', left)

@@ -6,7 +6,8 @@
    前置き → 題名 → 初回ダウンロードのみ1500Pプレゼント → 例の画面3枚（①距離・馬場・出走頭数 ②単勝オッズ ③3連単オッズ）→ ポイントで読み取り（1レース200P）→ 自動で入る
    → 1発でゾーンまで判定 → 買い目編集 → Pカスタム（券種を1つ500Pで解放）→ 自分だけのマザーデータ（15,000Pで解放）→ 買う馬 → 単勝5連予想（5レース読み取り・自分で選ぶ／ランダム）
    → 収支 → サブスクでお得にポイント（通常購入・サブスク・30日繰り越し）→ おわり（紹介特典）→ 注意書き
-   スマホの電波とバッテリーの位置をそろえる・「テンゲルⅢ」のⅢはアプリと同じ字（Dela Gothic One）
+   スマホの電波とバッテリーの位置をそろえる・「テンゲルⅢ」のⅢは3本の棒の字（Noto Sans CJK JP Black・第6弾までと同じ。まさちゃんの指定 2026/10/16）
+   スマホの画面の上の「テンゲルⅢ」のⅢも、CMの画面だけ同じ3本の棒の字にそろえる（cm2_shots.py。アプリのソースは変えていない）
    縦9:16（540×960をDPR2で1080×1920に）。150BPM（1拍0.4秒）。0〜77.6秒は本編、77.6〜89.6秒は注意書き。cm6.html をもとにしている */
 @font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.ttf')}
 @font-face{font-family:'BIZ UDPGothic';font-weight:700;src:url('fonts/BIZUDPGothic-Bold.ttf')}
@@ -217,7 +218,7 @@ const FILL = {
   red: [[0, '#ffe2e2'], [.35, '#ff6b6b'], [.7, '#e01b1b'], [1, '#ff9a9a']],
 };
 const SPR = {};
-// 文字の絵。o.parts＝[[文字, フォント]]で字ごとにフォントを変えられる（第7弾：「テンゲルⅢ」のⅢはアプリと同じ Dela Gothic One）
+// 文字の絵。o.parts＝[[文字, フォント]]で字ごとにフォントを変えられる（いまは使っていない）
 function mkText(key, text, o) {
   const size = o.size, pad = Math.ceil(size * .5), base = `900 ${size}px "Noto Sans CJK JP"`;
   const parts = o.parts || [[text, null]];
@@ -1008,13 +1009,12 @@ window.render = render;
 
 // 文字の絵を作ってから始める
 function build() {
-  const DELA = '400 {s}px "Dela Gothic One"';
   // 前置き
   mkText('p1', 'オッズを入れるだけの', { size: 46, fill: 'white', s2: '#ffd45c', glow: 'rgba(255,170,40,.7)', depth: 3 });
   mkText('p2', '全く新しい', { size: 72, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
   mkText('p3', '競馬アプリ!!', { size: 80, fill: 'fire', glow: 'rgba(255,80,0,.95)' });
-  // 第7弾：「テンゲルⅢ」のⅢはアプリと同じ字（Dela Gothic One）
-  mkText('title', 'テンゲルⅢ', { size: 88, fill: 'gold', glow: 'rgba(255,140,0,.9)', parts: [['テンゲル', null], ['Ⅲ', DELA]], gap: 6 });
+  // 「テンゲルⅢ」のⅢは3本の棒の字（テンゲルと同じ Noto Sans CJK JP Black・第6弾までと同じ。まさちゃんの指定 2026/10/16）
+  mkText('title', 'テンゲルⅢ', { size: 88, fill: 'gold', glow: 'rgba(255,140,0,.9)' });
   mkRibbon('rib1', '競馬 判定アプリ', { w: 360, h: 58, size: 30 });
   mkBadge('new', '新登場', 62);
   mkRibbon('rib3', 'ご利用にあたって', { w: 330, h: 54, size: 26, c1: '#1c3f8a', c2: '#0b1f4d', c3: '#050b22' });
