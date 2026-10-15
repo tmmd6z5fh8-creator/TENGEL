@@ -20,8 +20,10 @@ html,body{width:390px;height:844px;overflow:hidden;background:#f2f3f6;font-famil
 .rno{flex:none;width:58px;height:58px;border-radius:10px;background:#f08c00;color:#fff;font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center}
 .rinfo .d{font-size:13px;color:#5b6475}
 .rinfo .n{font-size:19px;font-weight:900;margin:1px 0 2px}
-.rinfo .m{font-size:14.5px;font-weight:700}
-.rinfo .m2{font-size:13.5px;color:#5b6475;font-weight:600;margin-top:1px}
+.rinfo .m{font-size:17.5px;font-weight:900;letter-spacing:.01em;margin:7px 0 6px}
+.rinfo .m #exBaba{margin-left:14px}
+.rinfo .m2{font-size:15px;font-weight:700;color:#3b4252;margin-top:1px}
+.rinfo .m2 .sm{margin-left:12px;font-size:14px;color:#5b6475;font-weight:600}
 .sect{margin:12px 10px 6px;display:flex;align-items:center;gap:8px;font-weight:900;font-size:18px}
 .sect::before{content:"";width:6px;height:20px;border-radius:3px;background:#f08c00}
 .sect small{margin-left:auto;font-size:12.5px;color:#5b6475;font-weight:600}
@@ -44,16 +46,17 @@ td.odds.hot{color:#d6261d}
 <body>
 <div class="status"><b>9:41</b><span class="ic"><span class="bars"><i style="height:5px"></i><i style="height:7.5px"></i><i style="height:10px"></i><i style="height:12.5px"></i></span><span class="bat"></span></span></div>
 <div class="appbar">オッズ</div>
-<div class="race"><div class="rno">9R</div><div class="rinfo"><div class="d">2026年10月14日(水)　発走 18:05</div><div class="n">テンゲル賞</div><div class="m">ダート1400m　12頭</div><div class="m2">天候：晴　馬場：良</div></div></div>
+<div class="race"><div class="rno">9R</div><div class="rinfo"><div class="d">2026年10月14日(水)　発走 18:05</div><div class="n">テンゲル賞</div><div class="m"><span id="exDB"><span id="exDist">ダート1400m</span><span id="exBaba">馬場：良</span></span></div><div class="m2">12頭<span class="sm">天候：晴</span></div></div></div>
 <div id="body"></div>
 <script>
 // 馬番 → 枠（12頭：1〜4は1頭ずつ、5〜8枠は2頭ずつ）
 const WAKU = n => n <= 4 ? n : Math.ceil((n - 4) / 2) + 4;
 const NO = n => `<span class="no w${WAKU(n)}">${n}</span>`;
 // 単勝・複勝（人気順）：馬番・馬名（架空）・単勝・複勝
-const TAN = [[6, 'テンゲルスター', '2.1', '1.1-1.3'], [2, 'ミライゲート', '3.4', '1.3-1.8'], [10, 'ゴールドリール', '5.2', '1.6-2.3'], [7, 'アオゾラシグナル', '7.8', '2.0-2.9'],
-             [1, 'ハヤテノオッズ', '9.5', '2.4-3.6'], [4, 'ナナイロクラウン', '12.4', '2.9-4.4'], [11, 'サンレンブラスト', '16.8', '3.6-5.5'], [5, 'ユメミルゾーン', '22.5', '4.5-6.9'],
-             [9, 'スカイパドック', '31.0', '5.8-8.9'], [3, 'ルビーノキラメキ', '45.6', '7.9-12.1'], [8, 'ムーンステップ', '58.3', '9.8-15.0'], [12, 'シルバーホープ', '82.1', '13.5-20.6']];
+// 馬名はまさちゃんが決めた架空の名前（netkeiba の競走馬検索で「テンゲル」は0頭＝実在しない・2026/10/15）。表の上から（人気順）1〜12
+const TAN = [[6, 'テンゲルスター', '2.1', '1.1-1.3'], [2, 'テンゲルゴールド', '3.4', '1.3-1.8'], [10, 'テンゲルマリモット', '5.2', '1.6-2.3'], [7, 'テンゲルインパクト', '7.8', '2.0-2.9'],
+             [1, 'テンゲルアルカイ', '9.5', '2.4-3.6'], [4, 'テンゲルテナァニ', '12.4', '2.9-4.4'], [11, 'テンゲルシップ', '16.8', '3.6-5.5'], [5, 'テンゲルグリア', '22.5', '4.5-6.9'],
+             [9, 'テンゲルノオウマ', '31.0', '5.8-8.9'], [3, 'テンゲルテテテ', '45.6', '7.9-12.1'], [8, 'テンゲルステップ', '58.3', '9.8-15.0'], [12, 'テンゲルリール', '82.1', '13.5-20.6']];
 // 3連単（人気順）：1位・5位・10位はアプリの画面と同じ
 const TRI = [[[6, 2, 10], '18.5'], [[6, 10, 2], '21.3'], [[6, 2, 7], '27.4'], [[2, 6, 10], '31.6'], [[6, 7, 2], '42.6'],
              [[6, 2, 1], '45.2'], [[6, 10, 7], '51.8'], [[2, 10, 6], '58.4'], [[6, 1, 2], '66.0'], [[10, 6, 2], '78.9']];

@@ -5,6 +5,7 @@
 /* 第6弾（まさちゃんの指定 2026/10/15）：「オッズを入れるだけ」が分かるように、入力の場面で「例のオッズ画面」（架空・独自のデザイン：example_odds.html）を2枚見せる
    ①レース情報と単勝オッズの画面 ②3連単オッズ（人気順）の画面 → アプリの「オッズ画像から読み取る」→ 読み取り中 → レース情報・単勝・3連単が自動で入る（6.4〜17.6）
    注意書きの「非公式」は「独自開発」に（販売するアプリなので、主催者とは関係のない独自のアプリだと分かる言い方に）
+   入れるのは「オッズ・距離・馬場のスクショ」（オッズのほかに距離と馬場も要る：例の画面①の距離・馬場に金の枠・入ったところも距離と馬場の欄に金の枠）。馬名はまさちゃんが決めた架空の名前
    ほかは第5弾と同じ（前置き3秒・ゆっくり・周りのランプなし・約束しない言葉）。縦9:16（540×960をDPR2で1080×1920に）。150BPM（1拍0.4秒）
    0〜53.6秒は本編、53.6〜63.6秒は注意書き。cm5.html をもとにしている（入力の場面のあとは +3.2秒） */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -46,6 +47,8 @@ canvas{position:absolute;left:0;top:0;width:540px;height:960px}
 .exc{position:absolute;left:0;top:0;width:390px;height:844px;border-radius:34px;overflow:hidden;background:#fff;
   box-shadow:0 0 0 6px #fff,0 0 0 11px #ffd45c,0 0 60px rgba(255,170,40,.75),0 40px 80px rgba(0,0,0,.7)}
 .exc img{width:390px;height:844px;display:block}
+.exring{position:absolute;border:6px solid #ffcf3a;border-radius:14px;opacity:0;transform-origin:50% 50%;
+  box-shadow:0 0 0 3px rgba(80,0,0,.45),0 0 26px rgba(255,190,40,.95),inset 0 0 14px rgba(255,190,40,.45)}
 .extag{position:absolute;left:-30px;top:-34px;padding:12px 30px 16px;border-radius:20px;background:linear-gradient(180deg,#ff4040,#b0000f);color:#fff;
   font-weight:900;font-size:64px;line-height:1;border:6px solid #fff;box-shadow:0 8px 20px rgba(0,0,0,.55);transform:rotate(-8deg);letter-spacing:.04em}
 
@@ -76,6 +79,7 @@ canvas{position:absolute;left:0;top:0;width:540px;height:960px}
     <div id="hdrs"></div>
     <div id="vp"><div id="cimgs"></div>
       <div class="ring" id="ring" style="display:none"></div>
+      <div class="ring" id="ring2" style="display:none"></div>
       <div class="rip" id="prip" style="display:none"></div>
       <div class="dot" id="pdot" style="display:none"></div>
     </div>
@@ -85,7 +89,7 @@ canvas{position:absolute;left:0;top:0;width:540px;height:960px}
 </div>
 
 
-<div class="abs exw" id="ex1"><div class="exc"><img src="assets/ex_odds1.png" alt=""></div><span class="extag">例</span></div>
+<div class="abs exw" id="ex1"><div class="exc"><img src="assets/ex_odds1.png" alt=""></div><div class="exring" id="exr"></div><span class="extag">例</span></div>
 <div class="abs exw" id="ex2"><div class="exc"><img src="assets/ex_odds2.png" alt=""></div><span class="extag">例</span></div>
 
 <div class="abs" id="banner"><img src="assets/banner.jpg" alt=""></div>
@@ -269,7 +273,7 @@ const SCENES = [
               judge_filled: t => t < 14.4 ? lerp(0, yIn1, eio(P(t, 12.85, 13.3))) : t < 16.0 ? lerp(yIn1, yIn2, eio(P(t, 14.4, 14.75))) : lerp(yIn2, yIn3, eio(P(t, 16.0, 16.35))) },
     cam: t => { const e = eo(P(t, 10.4, 10.85)), zi = eio(P(t, 12.85, 13.3)); return { Z: lerp(lerp(.8, 1, e), ZP, zi), Y: lerp(lerp(1010, 298, e), YP, zi), rot: lerp(8, 0, e) }; },
     rings: [{ a: 10.85, b: 11.25, k: 'judge_empty', sel: ['#ocrBtn'] }, { a: 11.78, b: 12.7, k: 'judge_reading', sel: ['#ocrMsg'] },
-            { a: 13.3, b: 14.35, k: 'judge_filled', sel: ['.input-col > .card:nth-child(1) .fields'] }, { a: 14.8, b: 15.95, k: 'judge_filled', box: ODDS_BOX },
+            { a: 13.3, b: 14.35, k: 'judge_filled', each: ['.f:has(> #fDist)', '.f:has(> #fBaba)'] }, { a: 14.8, b: 15.95, k: 'judge_filled', box: ODDS_BOX },
             { a: 16.4, b: 17.5, k: 'judge_filled', sel: ['.input-col > .card:nth-child(3)'] }],
     taps: [{ t: 11.2, k: 'judge_empty', sel: '#ocrBtn', fx: .5 }] },
   // 誰でも簡単に! 1発でゾーンまで判定!!（層 → 1着→2着と馬番 → 3着 → 参考的中率）
@@ -351,13 +355,15 @@ function renderPhone(t) {
   });
   const hs = layered(sc.hdr, t); HKEYS.forEach(k => setVis(EL[k], hs[k] || 0));
   let tk = sc.tab[0][0]; sc.tab.forEach(([k, a]) => { if (t >= a) tk = k; }); TKEYS.forEach(k => setVis(EL[k], k === tk ? 1 : 0));
-  // 強調の枠
-  const ring = $('ring'), r = sc.rings.find(x => t >= x.a && t <= x.b);
-  if (r) {
-    const b = r.box || boxOf(r.k, r.sel), pad = 4, k = env(t, r.a, r.b, .1, .1), pu = 1 + .09 * (1 - eo(P(t, r.a, r.a + .25))), yy = sy(r.k);
+  // 強調の枠（each：いくつかの場所に同時に。第6弾：距離と馬場）
+  const r = sc.rings.find(x => t >= x.a && t <= x.b);
+  const boxes = r ? (r.each ? r.each.map(q => boxOf(r.k, [q])) : [r.box || boxOf(r.k, r.sel)]) : [];
+  [$('ring'), $('ring2')].forEach((ring, i) => {
+    const b = boxes[i]; if (!b) { ring.style.display = 'none'; return; }
+    const pad = 4, k = env(t, r.a, r.b, .1, .1), pu = 1 + .09 * (1 - eo(P(t, r.a, r.a + .25))), yy = sy(r.k);
     ring.style.display = 'block'; ring.style.left = ((b.x - pad) * S) + 'px'; ring.style.top = ((b.y - pad - yy) * S) + 'px';
     ring.style.width = ((b.w + pad * 2) * S) + 'px'; ring.style.height = ((b.h + pad * 2) * S) + 'px'; ring.style.opacity = k.toFixed(3); ring.style.transform = `scale(${pu.toFixed(4)})`;
-  } else ring.style.display = 'none';
+  });
   // タップ
   const tp = sc.taps.find(x => t >= x.t - .22 && t <= x.t + .45), rip = $('prip'), dot = $('pdot');
   if (tp) {
@@ -386,6 +392,9 @@ const EXP = {
   back: [{ x: 104, y: 652, s: .5, r: -5, d: .4 }, { x: 436, y: 652, s: .5, r: 5, d: .4 }],
   thumb: [{ x: 76, y: 520, s: .27, r: -6, d: 1 }, { x: 464, y: 520, s: .27, r: 6, d: 1 }],
 };
+// 例の画面①の「ダート1400m　馬場：良」（example_odds.py が出す EXBOX の exDB）。①を大きくしたときに金の枠
+const EXRING = (() => { const b = { x: 94, y: 174, w: 198.5, h: 25 }, px = 11, py = 7;
+  const el = $('exr'); el.style.left = (b.x - px) + 'px'; el.style.top = (b.y - py) + 'px'; el.style.width = (b.w + px * 2) + 'px'; el.style.height = (b.h + py * 2) + 'px'; return el; })();
 const mixP = (p, q, u) => ({ x: lerp(p.x, q.x, u), y: lerp(p.y, q.y, u), s: lerp(p.s, q.s, u), r: lerp(p.r, q.r, u), d: lerp(p.d, q.d, u) });
 // スマホの画面の中の要素 → 舞台の座標（傾きなしのとき）
 function phonePt(t, k, sel, fx = .5, fy = .5) {
@@ -419,6 +428,8 @@ function drawExamples(t) {
     el.firstElementChild.style.filter = p.d < .995 ? `brightness(${p.d.toFixed(3)})` : 'none';
     place(el, p.x, p.y, p.o, p.s, p.r);
   });
+  // ①を大きくしたら「距離」「馬場」に金の枠
+  EXRING.style.opacity = env(t, 7.95, 8.95, .12, .12).toFixed(3); EXRING.style.transform = `scale(${(1 + .14 * (1 - eo(P(t, 7.95, 8.2)))).toFixed(4)})`;
 }
 
 // ===================== 背景 =====================
@@ -596,9 +607,9 @@ const CAPS = [
 ];
 // 小さい帯：1つ1秒以上（読める長さ）。的中や利益を約束する言葉は使わない
 const SUBS = [
-  { a: 7.65, b: 8.95, s: '① レース情報と単勝オッズの画面' }, { a: 9.05, b: 10.35, s: '② 3連単オッズ（人気順）の画面' },
+  { a: 7.65, b: 8.95, s: '① 距離・馬場と単勝オッズの画面' }, { a: 9.05, b: 10.35, s: '② 3連単オッズ（人気順）の画面' },
   { a: 10.45, b: 11.6, s: 'アプリでスクショを選ぶだけ' }, { a: 11.75, b: 12.75, s: 'スクショから自動で読み取り' },
-  { a: 13.3, b: 14.35, s: 'レース情報が自動で入る' }, { a: 14.8, b: 15.95, s: '単勝オッズも自動で入る' }, { a: 16.4, b: 17.5, s: '3連単オッズも自動で入る' },
+  { a: 13.3, b: 14.35, s: '距離・馬場が自動で入る' }, { a: 14.8, b: 15.95, s: '単勝オッズも自動で入る' }, { a: 16.4, b: 17.5, s: '3連単オッズも自動で入る' },
   { a: 18.1, b: 19.5, s: '荒れやすさをA・B・Cで判定' }, { a: 19.8, b: 21.2, s: '1着→2着のゾーンと馬番' }, { a: 21.25, b: 22.4, s: '3着のゾーンまで' }, { a: 22.5, b: 23.9, s: '過去のデータでの参考的中率つき' },
   { a: 25.2, b: 26.4, s: '2着に「大穴」を追加' }, { a: 26.5, b: 27.7, s: '3着にも「大穴」を追加' }, { a: 27.8, b: 28.8, s: '過去の的中数もその場で計算' }, { a: 28.9, b: 30.35, s: '判定にすぐ反映' },
   { a: 30.95, b: 31.8, s: 'マザーデータは3つまで', blue: 1 }, { a: 31.9, b: 33.2, s: 'Excel・CSVを入れるだけ', blue: 1 }, { a: 35.2, b: 36.7, s: 'あなたのデータ × あなたの買い目', blue: 1 },
@@ -878,7 +889,7 @@ function build() {
   mkRibbon('rib2', APPV ? 'あなたのiPhone・iPadで稼働中!!' : 'あなたのiPhoneで稼働中!!', { w: APPV ? 500 : 470, h: 62, size: APPV ? 26 : 30 });
   mkBadge('new', '新登場', 62);
   mkRibbon('rib3', 'ご利用にあたって', { w: 330, h: 54, size: 26, c1: '#1c3f8a', c2: '#0b1f4d', c3: '#050b22' });
-  mkText('c1a', 'オッズ画面のスクショを', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c1a', 'オッズ・距離・馬場のスクショを', { size: 32, fill: 'white', s2: '#ffd45c', depth: 2 });   // 第6弾：オッズのほかに距離と馬場も（まさちゃんの指定）
   mkText('c1b', '入れるだけ!!', { size: 78, fill: 'fire', glow: 'rgba(255,80,0,.9)' });
   mkText('c2a', '誰でも簡単に! 1発で', { size: 36, fill: 'white', s2: '#ffd45c', depth: 2 });
   mkText('c2b', 'ゾーンまで判定!!', { size: 58, fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.7)' });

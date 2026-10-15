@@ -37,6 +37,10 @@ with sync_playwright() as p:
         pg.screenshot(path=f'{CM}/assets/ex_odds{n}.png', animations='disabled')
         pages.append(pg.evaluate(LEAF_JS))
         print('ok', f'assets/ex_odds{n}.png')
+        if n == '1':   # CMで金の枠をつける場所（cm6.html の EXBOX に入れる）
+            print('   EXBOX', pg.evaluate("Object.fromEntries(['exDB', 'exDist', 'exBaba'].map(id => { const b = document.getElementById(id).getBoundingClientRect(); return [id, { x: +b.left.toFixed(1), y: +b.top.toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) }]; }))"))
+            print('   名前がはみ出さない', pg.evaluate("[...document.querySelectorAll('td.name')].every(td => td.scrollWidth <= td.clientWidth + 1)"),
+                  '表が画面に収まる', pg.evaluate("document.querySelector('table').getBoundingClientRect().bottom <= 844"))
     b.close()
 with tempfile.TemporaryDirectory() as d:
     open(d + '/lines.json', 'w', encoding='utf8').write(json.dumps(pages, ensure_ascii=False))

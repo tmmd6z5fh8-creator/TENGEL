@@ -218,7 +218,8 @@ try:
         pg.evaluate("""document.getElementById('ocrMsg').innerHTML = '<div class="banner info">読み取った：R・距離・頭数・馬場・単勝12頭・3連単1位・3連単5位・3連単10位<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>'""")
         pg.wait_for_timeout(300)
         content(pg, 'judge_filled', ['#ocrMsg', '.input-col > .card:nth-child(1) .fields'] + RSEL
-                + ['.input-col > .card:nth-child(1)', '.input-col > .card:nth-child(2)', '.input-col > .card:nth-child(3)', '.input-col > .card:nth-child(2) .oheads', '#oddsGrid', '#fS1', '#fS5', '#fS10'])   # CM第5弾：入れる3つ（レース情報・単勝・3連単）
+                + ['.input-col > .card:nth-child(1)', '.input-col > .card:nth-child(2)', '.input-col > .card:nth-child(3)', '.input-col > .card:nth-child(2) .oheads', '#oddsGrid', '#fS1', '#fS5', '#fS10',
+                   '.f:has(> #fDist)', '.f:has(> #fBaba)'])   # CM第5弾：入れる3つ（レース情報・単勝・3連単）。第6弾：距離と馬場の欄も
         bar_shot(pg, 'header.top', 'header_oi0'); bar_shot(pg, '.tabbar', 'tabbar_judge')
         if PREV:   # プレビュー動画用：買う馬を選ぶ前と、2つ目のゾーンの2着の4番を押したあと（画面全体）
             PSEL = ['#result ol.zones > li:nth-child(2)', '#result ol.zones > li:nth-child(2) .znums', '#result ol.zones > li:nth-child(2) button.hp[data-hs="b"][data-no="4"]']
