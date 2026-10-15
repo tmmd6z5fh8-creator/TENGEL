@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>CM用の例：オッズ画面（架空）</title>
+<meta name="viewport" content="width=390">
+<style>
+/* CMで「この画面のスクショを入れるだけ」を見せるための、架空のオッズ画面（どこかの会社の画面のまねではない・独自のデザイン）
+   ?p=1 … レース情報と単勝オッズ（人気順）／ ?p=2 … 3連単オッズ（人気順）
+   数字はCMのアプリの画面（cm2_shots.py の F9：9R・ダ1400m・12頭・良・単勝・複勝・3連単1位／5位／10位）と同じ。
+   アプリの読み取り（ocr_local.js）でこの2枚を読むと、F9 と同じ数字が入る（example_odds.py で確かめる） */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:390px;height:844px;overflow:hidden;background:#f2f3f6;font-family:'Noto Sans CJK JP','Hiragino Sans',sans-serif;color:#1d2330;-webkit-font-smoothing:antialiased}
+.status{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;background:#232a35;color:#fff}
+.status b{font-size:16px;letter-spacing:.02em}
+.status .ic{display:flex;gap:6px;align-items:center}
+.bars{display:flex;gap:2px;align-items:flex-end}.bars i{display:block;width:3.5px;background:#fff;border-radius:1px}
+.bat{width:25px;height:12px;border:1.5px solid rgba(255,255,255,.9);border-radius:4px;position:relative}.bat::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:5px;background:#fff;border-radius:1px}
+.appbar{height:52px;background:#232a35;color:#fff;display:flex;align-items:center;justify-content:center;position:relative;font-weight:800;font-size:18px;letter-spacing:.08em;border-bottom:3px solid #f08c00}
+.appbar::before{content:"";position:absolute;left:20px;top:18px;width:12px;height:12px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(45deg)}
+.race{background:#fff;margin:10px 10px 0;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.rno{flex:none;width:58px;height:58px;border-radius:10px;background:#f08c00;color:#fff;font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center}
+.rinfo .d{font-size:13px;color:#5b6475}
+.rinfo .n{font-size:19px;font-weight:900;margin:1px 0 2px}
+.rinfo .m{font-size:14.5px;font-weight:700}
+.rinfo .m2{font-size:13.5px;color:#5b6475;font-weight:600;margin-top:1px}
+.sect{margin:12px 10px 6px;display:flex;align-items:center;gap:8px;font-weight:900;font-size:18px}
+.sect::before{content:"";width:6px;height:20px;border-radius:3px;background:#f08c00}
+.sect small{margin-left:auto;font-size:12.5px;color:#5b6475;font-weight:600}
+table{width:calc(100% - 20px);margin:0 10px;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+th{background:#e6e9ef;color:#3b4252;font-size:13px;font-weight:800;padding:7px 4px}
+td{border-top:1px solid #e3e6ec;font-size:17px;padding:0 6px;height:43px;text-align:center}
+td.name{text-align:left;font-weight:800;color:#1c3d72;font-size:15px;white-space:nowrap;padding-left:4px}
+td.odds{text-align:right;padding-right:10px;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+td.fuku{text-align:right;padding-right:10px;font-weight:700;font-size:15px;color:#3b4252;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.odds.hot{color:#d6261d}
+.no{display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border-radius:5px;font-weight:800;font-size:17px}
+.tri td{height:52px}
+.combo{display:inline-flex;align-items:center;gap:7px}
+.combo .no{width:36px;height:32px}
+.combo i{font-style:normal;color:#8a93a5;font-size:14px}
+/* 枠の色（1白・2黒・3赤・4青・5黄・6緑・7橙・8桃） */
+.w1{background:#fff;color:#111;box-shadow:inset 0 0 0 1.5px #b8bfcc}.w2{background:#1d1d1d;color:#fff}.w3{background:#e03131;color:#fff}.w4{background:#2f6fde;color:#fff}
+.w5{background:#f5d90a;color:#111}.w6{background:#2f9e44;color:#fff}.w7{background:#f08c00;color:#fff}.w8{background:#f06595;color:#fff}
+</style></head>
+<body>
+<div class="status"><b>9:41</b><span class="ic"><span class="bars"><i style="height:5px"></i><i style="height:7.5px"></i><i style="height:10px"></i><i style="height:12.5px"></i></span><span class="bat"></span></span></div>
+<div class="appbar">オッズ</div>
+<div class="race"><div class="rno">9R</div><div class="rinfo"><div class="d">2026年10月14日(水)　発走 18:05</div><div class="n">テンゲル賞</div><div class="m">ダート1400m　12頭</div><div class="m2">天候：晴　馬場：良</div></div></div>
+<div id="body"></div>
+<script>
+// 馬番 → 枠（12頭：1〜4は1頭ずつ、5〜8枠は2頭ずつ）
+const WAKU = n => n <= 4 ? n : Math.ceil((n - 4) / 2) + 4;
+const NO = n => `<span class="no w${WAKU(n)}">${n}</span>`;
+// 単勝・複勝（人気順）：馬番・馬名（架空）・単勝・複勝
+const TAN = [[6, 'テンゲルスター', '2.1', '1.1-1.3'], [2, 'ミライゲート', '3.4', '1.3-1.8'], [10, 'ゴールドリール', '5.2', '1.6-2.3'], [7, 'アオゾラシグナル', '7.8', '2.0-2.9'],
+             [1, 'ハヤテノオッズ', '9.5', '2.4-3.6'], [4, 'ナナイロクラウン', '12.4', '2.9-4.4'], [11, 'サンレンブラスト', '16.8', '3.6-5.5'], [5, 'ユメミルゾーン', '22.5', '4.5-6.9'],
+             [9, 'スカイパドック', '31.0', '5.8-8.9'], [3, 'ルビーノキラメキ', '45.6', '7.9-12.1'], [8, 'ムーンステップ', '58.3', '9.8-15.0'], [12, 'シルバーホープ', '82.1', '13.5-20.6']];
+// 3連単（人気順）：1位・5位・10位はアプリの画面と同じ
+const TRI = [[[6, 2, 10], '18.5'], [[6, 10, 2], '21.3'], [[6, 2, 7], '27.4'], [[2, 6, 10], '31.6'], [[6, 7, 2], '42.6'],
+             [[6, 2, 1], '45.2'], [[6, 10, 7], '51.8'], [[2, 10, 6], '58.4'], [[6, 1, 2], '66.0'], [[10, 6, 2], '78.9']];
+const p = new URLSearchParams(location.search).get('p') || '1';
+const body = document.getElementById('body');
+if (p === '1') {
+  body.innerHTML = `<div class="sect">単勝・複勝オッズ<small>人気順</small></div><table><thead><tr><th style="width:40px">人気</th><th style="width:46px">馬番</th><th>馬名</th><th style="width:58px">単勝</th><th style="width:86px">複勝</th></tr></thead><tbody>`
+    + TAN.map(([n, name, o, f], i) => `<tr><td>${i + 1}</td><td>${NO(n)}</td><td class="name">${name}</td><td class="odds${i < 3 ? ' hot' : ''}">${o}</td><td class="fuku">${f}</td></tr>`).join('') + '</tbody></table>';
+} else {
+  body.innerHTML = `<div class="sect">3連単オッズ<small>人気順</small></div><table class="tri"><thead><tr><th style="width:52px">人気</th><th>組み合わせ</th><th style="width:96px">オッズ</th></tr></thead><tbody>`
+    + TRI.map(([c, o], i) => `<tr><td>${i + 1}</td><td><span class="combo">${NO(c[0])}<i>→</i>${NO(c[1])}<i>→</i>${NO(c[2])}</span></td><td class="odds">${o}</td></tr>`).join('') + '</tbody></table>';
+}
+</script>
+</body></html>

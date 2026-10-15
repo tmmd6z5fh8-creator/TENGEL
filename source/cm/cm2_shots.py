@@ -41,8 +41,10 @@ def form(r, dist, n, baba, nos, odds, fuku, s1, s1c, s5, s10, venue=V0, date='20
             "s1": str(s1), "s1combo": s1c, "s5": str(s5), "s5combo": "", "s10": str(s10), "s10combo": "", "rows": rows(nos, odds, fuku)}
 
 
+# F9 は CM の「例のオッズ画面」（example_odds.html：架空）と同じ数字。複勝は画面と同じ幅表示（下の数字は前と同じなので、大穴・超大穴の並びは変わらない）
 F9 = form(9, 1400, 12, '良', [6, 2, 10, 7, 1, 4, 11, 5, 9, 3, 8, 12], [2.1, 3.4, 5.2, 7.8, 9.5, 12.4, 16.8, 22.5, 31.0, 45.6, 58.3, 82.1],
-          [1.1, 1.3, 1.6, 2.0, 2.4, 2.9, 3.6, 4.5, 5.8, 7.9, 9.8, 13.5], 18.5, '6-2-10', 42.6, 78.9)
+          ['1.1-1.3', '1.3-1.8', '1.6-2.3', '2.0-2.9', '2.4-3.6', '2.9-4.4', '3.6-5.5', '4.5-6.9', '5.8-8.9', '7.9-12.1', '9.8-15.0', '13.5-20.6'], 18.5, '6-2-10', 42.6, 78.9)
+F9.update(s5combo='6-7-2', s10combo='10-6-2')   # 例の画面の3連単5位・10位の組番（読み取りで入る）
 F10 = form(10, 1600, 12, '良', [3, 8, 1, 11, 5, 2, 12, 7, 4, 9, 6, 10], [2.8, 3.6, 4.9, 6.7, 8.8, 11.5, 15.2, 19.8, 26.4, 38.0, 52.5, 70.3], None, 39.0, '', 88.0, 140.5)
 F11 = form(11, 1800, 14, '稍重', [5, 12, 3, 9, 1, 14, 7, 10, 2, 13, 6, 11, 4, 8], [3.6, 4.4, 5.9, 7.2, 9.0, 11.8, 14.6, 18.9, 24.1, 30.5, 41.2, 55.0, 73.8, 99.9], None, 95.2, '', 210.4, 355.0)
 # 架空のJRAのレース（東京11R・芝1600・16頭・A層）
@@ -207,11 +209,13 @@ try:
         pg.goto(URL); pg.wait_for_timeout(2600)
         # ---- 判定：空 → 読み取り中 → 読み取ったあと ----
         content(pg, 'judge_empty', ['#ocrBtn', '#ocrRow', '.input-col > .card:nth-child(1)', '#result'])
-        pg.evaluate("""document.getElementById('ocrMsg').innerHTML = '<div class="banner info"><span class="spin" aria-hidden="true"></span> 2枚の画像を読み取り中…（20〜60秒くらい）</div>'""")
+        # 読み取り中・読み取ったあとの文は、アプリと同じ（src.html の ocrFile・applyOCR）。App Store版は端末の中で読む（10秒くらい）
+        # 例のオッズ画面には開催場が無いので「開催場」は読み取った物に入らない（複勝は入る）
+        pg.evaluate("""(t) => { document.getElementById('ocrMsg').innerHTML = '<div class="banner info"><span class="spin" aria-hidden="true"></span> 2枚の画像を読み取り中…' + t + '</div>'; }""", '（この中で読むよ・10秒くらい）' if APP else '（20〜60秒くらい）')
         pg.wait_for_timeout(300)
         content(pg, 'judge_reading', ['#ocrMsg', '#ocrBtn'])
         load_form(pg, F9)
-        pg.evaluate("""document.getElementById('ocrMsg').innerHTML = '<div class="banner info">読み取った：開催場・R・距離・頭数・馬場・単勝12頭・3連単1位・3連単5位・3連単10位<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>'""")
+        pg.evaluate("""document.getElementById('ocrMsg').innerHTML = '<div class="banner info">読み取った：R・距離・頭数・馬場・単勝12頭・3連単1位・3連単5位・3連単10位<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>'""")
         pg.wait_for_timeout(300)
         content(pg, 'judge_filled', ['#ocrMsg', '.input-col > .card:nth-child(1) .fields'] + RSEL
                 + ['.input-col > .card:nth-child(1)', '.input-col > .card:nth-child(2)', '.input-col > .card:nth-child(3)', '.input-col > .card:nth-child(2) .oheads', '#oddsGrid', '#fS1', '#fS5', '#fS10'])   # CM第5弾：入れる3つ（レース情報・単勝・3連単）
