@@ -158,26 +158,29 @@ PTS_CSS = """#cmPts{margin-bottom:var(--gap,14px)}
 #cmPts .cmp-list{display:grid;gap:8px;margin-bottom:14px}
 #cmPts .cmp-row{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 10px 9px 12px;background:var(--surface-2)}
 #cmPts .cmp-row .pt{font-family:var(--font-mono);font-weight:600;font-size:17px}
-#cmPts .cmp-row .bn{font-size:12.5px;font-weight:800;color:#b7791f;background:#fff4dc;border:1px solid #f1d39a;border-radius:999px;padding:1px 8px}
-#cmPts .cmp-row .btn{margin-left:auto;min-width:96px;padding:7px 12px}
+#cmPts .cmp-row .pv{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+#cmPts .cmp-row .bn{font-size:11.5px;font-weight:800;color:#b7791f;background:#fff4dc;border:1px solid #f1d39a;border-radius:999px;padding:1px 8px;white-space:nowrap}
+#cmPts .cmp-row .btn.yen{margin-left:auto;min-width:112px;padding:5px 10px;flex-direction:column;gap:0;line-height:1.25}
+#cmPts .cmp-row .btn.yen b{font-size:14.5px}
+#cmPts .cmp-row .btn.yen small{font-size:10.5px;font-weight:700;opacity:.8}
 #cmPts .cmp-sub .cmp-row{background:#fffaf0;border-color:#f1d39a}
 #cmPts .cmp-note{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}"""
 PTS_HTML = """<div class="card" id="cmPts"><h2>ポイント</h2>
-  <div class="cmp-bal"><span>保有ポイント</span><b>300<small>P</small></b></div>
+  <div class="cmp-bal"><span>保有ポイント</span><b>100<small>P</small></b></div>
   <div class="cmp-h">ポイントを買う</div>
   <div class="cmp-list cmp-buy">
-    <div class="cmp-row"><span class="pt">500P</span><button class="btn" type="button">160円</button></div>
-    <div class="cmp-row"><span class="pt">1,000P</span><button class="btn" type="button">320円</button></div>
-    <div class="cmp-row"><span class="pt">2,000P</span><button class="btn" type="button">640円</button></div>
-    <div class="cmp-row"><span class="pt">4,000P</span><button class="btn" type="button">1,280円</button></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">500P</span></span><span class="btn yen"><b>176円</b><small>税抜160円</small></span></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">1,000P</span></span><span class="btn yen"><b>352円</b><small>税抜320円</small></span></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">2,000P</span></span><span class="btn yen"><b>704円</b><small>税抜640円</small></span></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">4,000P</span></span><span class="btn yen"><b>1,408円</b><small>税抜1,280円</small></span></div>
   </div>
   <div class="cmp-h">サブスク（月額）<span class="tag">おトク</span></div>
   <div class="cmp-list cmp-sub">
-    <div class="cmp-row"><span class="pt">2,000P</span><button class="btn primary" type="button">580円/月</button></div>
-    <div class="cmp-row"><span class="pt">4,400P</span><span class="bn">＋400P</span><button class="btn primary" type="button">1,160円/月</button></div>
-    <div class="cmp-row"><span class="pt">9,200P</span><span class="bn">＋1,000P</span><button class="btn primary" type="button">1,740円/月</button></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">2,000P</span></span><span class="btn primary yen"><b>638円/月</b><small>税抜580円</small></span></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">4,400P</span><span class="bn">うちボーナス400P</span></span><span class="btn primary yen"><b>1,276円/月</b><small>税抜1,160円</small></span></div>
+    <div class="cmp-row"><span class="pv"><span class="pt">9,200P</span><span class="bn">うちボーナス1,000P</span></span><span class="btn primary yen"><b>1,914円/月</b><small>税抜1,740円</small></span></div>
   </div>
-  <p class="cmp-note">サブスクに入ると、ポイントを<b>購入日から30日間</b>繰り越せるよ。</p>
+  <p class="cmp-note">サブスクなら、ポイントを<b>購入日から30日間</b>繰り越せる。<br>価格は税込（下の小さい数字は税抜）。</p>
 </div>"""
 PTS_JS = """([html, css]) => {
   let s = document.getElementById('cmptscss'); if (!s) { s = document.createElement('style'); s.id = 'cmptscss'; s.textContent = css; document.head.appendChild(s); }
