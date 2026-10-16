@@ -30,6 +30,14 @@ body{margin:0}
 .bnr{flex:none;display:block;width:390px;height:160px;object-fit:cover}
 .ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
 .card{position:relative;flex:none;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS);padding:14px 15px}
+.ch{margin:0 0 9px;font-size:13px;font-weight:700;color:var(--sub)}
+.mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;align-items:center;gap:4px;height:31px;padding:0 12px;border-radius:999px;border:1.5px dashed var(--tagLine);color:var(--sub);font-size:12.5px;font-weight:700;background:var(--tagBg)}
+.seg.on{background:var(--btn);color:var(--btnInk);border:1.5px solid transparent}
+.seg small{font-size:10.5px;font-weight:400;opacity:.85}
+.ocr{display:inline-flex;align-items:center;gap:8px;height:42px;margin-top:11px;padding:0 16px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14.5px;cursor:pointer}
+.ocr svg{width:19px;height:19px}
+.hint{margin:7px 0 0;font-size:12px;color:var(--sub)}
 .felt{position:absolute;top:-12px;right:14px;width:40px;height:40px}
 .vh{display:flex;gap:12px;align-items:flex-start}
 .lb{flex:none;width:66px;height:80px;border-radius:var(--rs);background:var(--badge);color:var(--badgeInk);border:var(--badgeB);display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -88,6 +96,12 @@ body{margin:0}
   </header>
   <img class="bnr" src="/_blob/e945e568f65a819f860a9a16e13beefa" alt="毛糸の編み目の背景に、ぬいぐるみの馬と手をふるロボット、毛糸玉のイラスト">
   <main class="ct">
+    <section class="card">
+      <h2 class="ch">レース情報</h2>
+      <div class="mrow"><span class="seg on">マザーデータ1 <small>290走</small></span><span class="seg">マザーデータ2 <small>空</small></span></div>
+      <button class="ocr" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>オッズ画像から読み取る</button>
+      <p class="hint">単勝・複勝と3連単人気順のスクショを1〜3枚</p>
+    </section>
     <section class="card">
       <svg class="felt" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 L24.8 14 L36.6 14.6 L27.4 22 L30.6 33.6 L20 27 L9.4 33.6 L12.6 22 L3.4 14.6 L15.2 14 Z" fill="#FFD966" stroke="#8A5A35" stroke-width="1.8" stroke-linejoin="round"></path><path d="M20 8.5 L23.4 16.2 L31.6 16.7 L25.2 21.8 L27.4 29.8 L20 25.2 L12.6 29.8 L14.8 21.8 L8.4 16.7 L16.6 16.2 Z" fill="none" stroke="#8A5A35" stroke-width="1.2" stroke-dasharray="2.4 2" stroke-linejoin="round"></path></svg>
       <div class="vh">

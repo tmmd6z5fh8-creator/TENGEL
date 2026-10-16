@@ -31,6 +31,14 @@ body{margin:0}
 .bnr{flex:none;display:block;width:390px;height:160px;object-fit:cover}
 .ct{flex:1;min-height:0;overflow:hidden;padding:16px 16px 0;display:flex;flex-direction:column;gap:12px}
 .card{position:relative;flex:none;background:var(--card);border:var(--cardB);outline:var(--cardO);border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 9px;font-size:13px;font-weight:700;color:var(--sub)}
+.mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;align-items:center;gap:4px;height:31px;padding:0 12px;border-radius:999px;border:1.5px dashed var(--tagLine);color:var(--sub);font-size:12.5px;font-weight:700;background:var(--tagBg)}
+.seg.on{background:var(--gold);color:var(--btnInk);border:1.5px solid transparent}
+.seg small{font-size:10.5px;font-weight:400;opacity:.85}
+.ocr{display:inline-flex;align-items:center;gap:8px;height:42px;margin-top:11px;padding:0 16px;border-radius:var(--btnR);border:var(--btnB);background:var(--gold);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14.5px;cursor:pointer}
+.ocr svg{width:19px;height:19px}
+.hint{margin:7px 0 0;font-size:12px;color:var(--sub)}
 .card::before,.card::after{content:"";position:absolute;top:-7px;width:10px;height:10px;transform:rotate(45deg);background:linear-gradient(135deg,#FFF1B8,#C9952B);border:1px solid #5A400A}
 .card::before{left:-7px}
 .card::after{right:-7px}
@@ -90,6 +98,12 @@ body{margin:0}
   </header>
   <img class="bnr" src="/_blob/8e04356200a9e3273978a17be39d6b66" alt="黒地に光の筋と月桂樹、金ピカに輝きながら走る馬のイラスト">
   <main class="ct">
+    <section class="card">
+      <h2 class="ch">レース情報</h2>
+      <div class="mrow"><span class="seg on">マザーデータ1 <small>290走</small></span><span class="seg">マザーデータ2 <small>空</small></span></div>
+      <button class="ocr" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>オッズ画像から読み取る</button>
+      <p class="hint">単勝・複勝と3連単人気順のスクショを1〜3枚</p>
+    </section>
     <section class="card">
       <div class="vh">
         <div class="lb"><b class="gt">A</b><small>堅</small></div>
