@@ -8,10 +8,10 @@
     "Judge_Default.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "いつもの（紺×金）"},
     "Judge_Ranch.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "牧場（黄緑）"},
     "Judge_Cute.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "かわいい（ピンク）"},
-    "Judge_Elegant.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "綺麗（ヴィラン・レッド×ブラック）"},
+    "Judge_Elegant.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "綺麗（ヴィラン・赤い月の黒馬）"},
     "Judge_Kids.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "子供向け（薄い黄色×パウダーホワイト）"},
     "Judge_Gold.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "カッコいい（金色）"},
-    "Judge_GoldFire.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "黄金の炎（3枚目の写真のイメージ）"},
+    "Judge_GoldFire.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "黄金の炎（炎と宝石の黄金の馬）"},
     "Main.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "設定 › 着せ替え（タップで着せ替わる）", "is_interactive": true},
     "Guide.dc.html": {"x": 470, "y": 1264, "w": 1640, "h": 900, "title": "テーマの色・文字・絵（メモ）"}
   },
