@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>テンゲルⅢ App Storeプレビュー（ポイント版）</title>
+<style>
+/* App Storeのプレビュー動画（App Preview）・ポイント版：アプリの画面だけで作る（審査ガイドライン 2.3.4：プレビューはアプリそのものの画面の録画だけ。文字を重ねるのはOK）
+   画面いっぱいにアプリ（iPhone 443×960 → 886×1920／iPad 1032×1376 → 1200×1600）。29.5秒。
+   中身はCM第7弾の4つの場面をそのままつないだもの（時間はCMの時刻で書いて、CMT() でプレビューの時刻に直す）。音もCMの同じところ（bgm7.wav）をつなぐ（make_preview7.sh）
+     0〜14.0 ＝ CM 15.6〜29.6（ポイントで読み取り・自動で入る → 1発でゾーンまで判定）
+     14.0〜20.4 ＝ CM 36.0〜42.4（Pカスタム：券種を500Pで解放）
+     20.4〜28.4 ＝ CM 52.8〜60.8（単勝5連予想：5レースまとめて200P・自分で選ぶ／ランダム）
+     28.4〜29.5 ＝ CM 71.2〜72.3（おわり：テンゲルⅢ）
+   CMの例の画面（3枚の画像）・エンブレム・コイン・紙吹雪などアプリにないものは使わない。ポイントの帯・ロック・解放の確かめ・購入はイメージ（アプリができたら撮り直す） */
+@font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.ttf')}
+@font-face{font-family:'BIZ UDPGothic';font-weight:700;src:url('fonts/BIZUDPGothic-Bold.ttf')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url('fonts/IBMPlexMono-SemiBold.ttf')}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:#eceef3}
+body{font-family:'Noto Sans CJK JP','Hiragino Sans',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
+#scr{position:absolute;left:0;top:0;width:var(--W);height:var(--H);overflow:hidden;background:#eceef3}
+#status{position:absolute;left:0;top:0;width:var(--W);height:58px;background:#eceef3;color:#111;z-index:3}
+.ipad #status{height:24px}.ipad #status .tm{left:22px;top:5px;font-size:13px}.ipad #status .dt{position:absolute;left:62px;top:5px;font-size:13px;font-weight:600}
+.ipad #status .isl{display:none}.ipad #status .ic{right:20px;top:6px}
+#status .tm{position:absolute;left:44px;top:19px;font-weight:700;font-size:16.5px;letter-spacing:.01em}
+#status .isl{position:absolute;left:162px;top:11px;width:119px;height:35px;border-radius:18px;background:#000}
+#status .ic{position:absolute;right:30px;top:22px;display:flex;gap:6px;align-items:center;height:12.5px}
+#status .bars{display:flex;align-items:flex-end;gap:1.5px;height:12.5px}
+#status .bars i{display:block;width:3.5px;background:#111;border-radius:1px}
+#status .bat{width:26px;height:12.5px;border:1.5px solid rgba(17,17,17,.85);border-radius:4px;position:relative}
+#status .bat::after{content:"";position:absolute;left:1.8px;top:1.8px;width:17px;height:6px;background:#111;border-radius:1.5px}
+.hdr{position:absolute;left:0;top:58px;width:var(--W);z-index:2}
+.ipad .hdr{top:24px}
+#vp{position:absolute;left:0;width:var(--W);overflow:hidden;background:#eceef3}
+.cimg{position:absolute;left:0;top:0;width:var(--W)}
+.tab{position:absolute;left:0;width:var(--W);z-index:2}
+#home{position:absolute;left:0;bottom:0;width:var(--W);height:34px;background:#fff;z-index:2}
+#home::after{content:"";position:absolute;left:calc(50% - 72px);top:20px;width:143px;height:5px;border-radius:3px;background:#111}
+.ipad #home{height:20px;background:#eceef3}.ipad #home::after{left:calc(50% - 160px);top:11px;width:320px}
+.ring{position:absolute;border:3px solid #ffcf3a;border-radius:10px;box-shadow:0 0 0 2px rgba(80,0,0,.4),0 0 18px rgba(255,190,40,.95),inset 0 0 10px rgba(255,190,40,.4);z-index:4;display:none}
+.rip{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.95);box-shadow:0 0 14px rgba(255,200,90,.95),inset 0 0 6px rgba(255,200,90,.6);z-index:6}
+.dot{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(40,40,60,.32);box-shadow:0 0 0 2.5px rgba(255,255,255,.95),0 0 14px rgba(255,190,70,.9);z-index:6}
+/* 保有ポイント（ヘッダー・イメージ） */
+#ppill{position:absolute;z-index:3;height:27px;padding:0 12px 0 4px;border-radius:999px;border:1px solid rgba(243,240,230,.35);display:flex;align-items:center;gap:6px;
+  color:#F3F0E6;font-family:'BIZ UDPGothic',sans-serif;font-weight:700;font-size:13px;background:#16203D}
+#ppill .pc{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#f0b54e 55%,#b7791f);
+  color:#5a3500;font-style:normal;font-family:'Dela Gothic One';font-size:11px;line-height:1}
+#ppill b{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;letter-spacing:.01em}
+/* 解放のたしかめ（イメージ・アプリのダイアログと同じ色） */
+#pdlg{position:absolute;left:0;top:0;width:var(--W);height:var(--H);z-index:5;visibility:hidden}
+#pdlg .bd{position:absolute;inset:0;background:rgba(10,14,30,.45)}
+#pdlg .dlg{position:absolute;width:360px;background:#fff;border-radius:16px;padding:18px 18px 16px;box-shadow:0 14px 40px rgba(0,0,0,.35);
+  font-family:'BIZ UDPGothic',sans-serif;font-weight:700;color:#141A2E;transform-origin:50% 50%}
+#pdlg .ttl{font-size:18px}
+#pdlg .txt{font-size:14px;color:#5A6175;margin-top:6px}
+#pdlg .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+#pdlg .btns span{border:1px solid #D7DBE4;border-radius:9px;padding:8px 16px;font-size:15px}
+#pdlg .btns .b1{background:#1B2A55;color:#fff;border-color:#1B2A55}
+#scrim{position:absolute;left:0;top:auto;bottom:0;width:var(--W);height:380px;z-index:7;pointer-events:none;
+  background:linear-gradient(0deg,rgba(8,11,28,.95) 0%,rgba(8,11,28,.9) 55%,rgba(8,11,28,.55) 78%,rgba(8,11,28,0) 100%)}
+#dim{position:absolute;left:0;top:0;width:var(--W);height:var(--H);z-index:7;background:rgba(6,9,24,1);opacity:0}
+canvas{position:absolute;left:0;top:0;width:var(--W);height:var(--H);z-index:8}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity;z-index:9}
+.center{width:var(--W);text-align:center}
+.sub{display:inline-block;padding:6px 15px 7px;border-radius:9px;border:2px solid #ffd45c;background:linear-gradient(180deg,#6a000c,#1c0003);
+  box-shadow:0 0 14px rgba(255,150,0,.6),inset 0 0 9px rgba(255,80,0,.35);font-weight:900;font-size:17px;letter-spacing:.04em;white-space:nowrap;text-shadow:0 2px 0 #000}
+.sub.blue{border-color:#8fe6ff;background:linear-gradient(180deg,#0b3478,#020a22);box-shadow:0 0 14px rgba(80,200,255,.6),inset 0 0 9px rgba(80,200,255,.3)}
+.ipad .sub{font-size:27px;padding:9px 24px 10px;border-radius:12px}
+.foot{font-size:11px;color:rgba(235,235,235,.88);letter-spacing:.02em;text-shadow:0 1px 2px #000}
+.ipad .foot{font-size:16px}
+#cfoot{background:rgba(0,0,0,.6);padding:5px 8px 6px}
+#disc{width:420px;font-size:12px;line-height:1.75;color:rgba(240,240,240,.95);text-shadow:0 1px 2px #000}
+.ipad #disc{width:900px;font-size:16px}
+</style></head>
+<body>
+<div id="scr">
+  <div id="status"><span class="tm">9:41</span><span class="dt">10月14日(水)</span><span class="isl"></span>
+    <span class="ic"><span class="bars"><i style="height:5px"></i><i style="height:7.5px"></i><i style="height:10px"></i><i style="height:12.5px"></i></span><span class="bat"></span></span></div>
+  <div id="hdrs"></div>
+  <div id="ppill"><i class="pc">P</i><b id="pnum">1,500</b><span>P</span></div>
+  <div id="vp"><div id="cimgs"></div>
+    <div class="ring" id="ring"></div><div class="ring" id="ring2"></div><div class="ring" id="ring3"></div>
+  </div>
+  <div id="tabs"></div>
+  <div id="home"></div>
+  <div id="pdlg"><div class="bd"></div><div class="dlg" id="pdlgc"><div class="ttl" id="pdt">「複勝」を解放する？</div><div class="txt">記録できる券種がふえるよ</div>
+    <div class="btns"><span class="b0">やめる</span><span class="b1" id="pdb">500Pで解放</span></div></div></div>
+  <div class="rip" id="rip" style="display:none"></div>
+  <div class="dot" id="dot" style="display:none"></div>
+  <div id="scrim"></div>
+  <div id="dim"></div>
+</div>
+<canvas id="fx"></canvas>
+<div class="abs center" id="csub"><span class="sub"></span></div>
+<div class="abs center foot" id="cfoot"><span>※画像の読み取りは、この端末の中で行います（1レース200P）</span></div>
+<div class="abs center" id="disc">※画面はイメージです。レース・オッズ・馬名は架空の例です。<br>過去のデータの傾向を表示する道具で、的中や利益を約束するものではありません。馬券は20歳になってから。</div>
+
+<script>
+const META = window.__META, SHOTS = window.__SHOTS || 'shots_prev7';
+const IPAD = !!window.__IPAD;
+const W = IPAD ? 1032 : 443, H = IPAD ? 1376 : 960, DUR = 29.5;
+const $ = id => document.getElementById(id);
+document.documentElement.style.setProperty('--W', W + 'px'); document.documentElement.style.setProperty('--H', H + 'px');
+if (IPAD) document.documentElement.classList.add('ipad');
+$('fx').width = W * 2; $('fx').height = H * 2;
+if (!IPAD) $('status').querySelector('.dt').remove();
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x, s = 1.70158) => { const c3 = s + 1; return 1 + c3 * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const env = (t, a, b, fi = .2, fo = .15) => (t < a || t > b) ? 0 : Math.min(eo(P(t, a, a + fi)), 1 - P(t, b - fo, b));
+
+// ===================== プレビューの時刻 → CMの時刻（4つの場面をつなぐ） =====================
+const SEG = [[0, 15.6], [14.0, 36.0], [20.4, 52.8], [28.4, 71.2]];
+function CMT(p) { let s = SEG[0]; for (const x of SEG) if (p >= x[0]) s = x; return s[1] + (p - s[0]); }
+
+// ===================== 文字の絵（CMと同じ作り方） =====================
+const FILL = {
+  gold: [[0, '#fffbe6'], [.28, '#ffe27a'], [.49, '#ffb300'], [.52, '#fff1b8'], [.78, '#e07b00'], [1, '#ffe08a']],
+  fire: [[0, '#fffde0'], [.3, '#ffe14d'], [.62, '#ff8400'], [1, '#d81b00']],
+  white: [[0, '#ffffff'], [.6, '#f4f4f4'], [1, '#c9d2e6']],
+  blue: [[0, '#f2fbff'], [.4, '#9fe3ff'], [.5, '#ffffff'], [.75, '#38a8ff'], [1, '#a9e8ff']],
+  rainbow: [[0, '#ff3b3b'], [.18, '#ff9d00'], [.36, '#ffe600'], [.54, '#3ee05a'], [.72, '#2fa8ff'], [.9, '#b04dff'], [1, '#ff4fd8']],
+  red: [[0, '#ffe2e2'], [.35, '#ff6b6b'], [.7, '#e01b1b'], [1, '#ff9a9a']],
+};
+const SPR = {};
+function mkText(key, text, o) {
+  const size = o.size, pad = Math.ceil(size * .5), font = `900 ${size}px "Noto Sans CJK JP"`;
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  g.font = font;
+  const tw = g.measureText(text).width, w = Math.ceil(tw + pad * 2 + size * .3), h = Math.ceil(size * 1.3 + pad * 2);
+  c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  g.font = font; g.textBaseline = 'middle'; g.textAlign = 'center'; g.lineJoin = 'round'; g.miterLimit = 2;
+  g.translate(w / 2, h / 2); g.transform(1, 0, -(o.skew ?? .12), 1, 0, 0);
+  const s1 = o.s1 ?? '#2a0000', s2 = o.s2 ?? '#fff4c8', ext = o.ext ?? '#4a0000';
+  if (o.glow) { g.save(); g.shadowColor = o.glow; g.shadowBlur = size * .45; g.strokeStyle = o.glow; g.lineWidth = size * .24; g.strokeText(text, 0, 0); g.restore(); }
+  const depth = o.depth ?? Math.max(2, Math.round(size * .08));
+  g.strokeStyle = ext; g.fillStyle = ext; g.lineWidth = size * .22;
+  for (let i = depth; i >= 1; i--) { g.strokeText(text, i * .3, i); g.fillText(text, i * .3, i); }
+  g.strokeStyle = s1; g.lineWidth = size * .22; g.strokeText(text, 0, 0);
+  g.strokeStyle = s2; g.lineWidth = size * .09; g.strokeText(text, 0, 0);
+  const gr = o.dir === 'h' ? g.createLinearGradient(-tw / 2, 0, tw / 2, 0) : g.createLinearGradient(0, -size * .55, 0, size * .55);
+  FILL[o.fill].forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; g.fillText(text, 0, 0);
+  SPR[key] = { c, w, h, tw: tw + size * .4 };
+}
+function mkRibbon(key, text, o) {
+  const w = o.w, h = o.h, size = o.size;
+  const c = document.createElement('canvas'), g = c.getContext('2d'); c.width = w * 2; c.height = h * 2; g.scale(2, 2);
+  const sk = h * .35;
+  const path = () => { g.beginPath(); g.moveTo(sk, 0); g.lineTo(w, 0); g.lineTo(w - sk, h); g.lineTo(0, h); g.closePath(); };
+  path(); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#d4001a'); gr.addColorStop(.55, '#8a000d'); gr.addColorStop(1, '#4a0006');
+  g.fillStyle = gr; g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#ffd45c'; path(); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.moveTo(sk + 4, 4); g.lineTo(w - 6, 4); g.stroke();
+  g.font = `900 ${size}px "Noto Sans CJK JP"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.save(); g.translate(w / 2, h / 2 + 1); g.transform(1, 0, -.1, 1, 0, 0);
+  g.lineWidth = size * .22; g.strokeStyle = '#2a0000'; g.strokeText(text, 0, 0);
+  const tg = g.createLinearGradient(0, -size / 2, 0, size / 2); FILL.gold.forEach(([p, col]) => tg.addColorStop(p, col));
+  g.fillStyle = tg; g.fillText(text, 0, 0); g.restore();
+  SPR[key] = { c, w, h };
+}
+let tmpC, tmpG;
+function drawSpr(g, key, x, y, sc = 1, a = 1, rot = 0, opt = {}) {
+  const s = SPR[key]; if (!s || a <= .001 || sc <= .001) return;
+  g.save(); g.globalAlpha = g.globalAlpha * clamp(a); g.translate(x, y); if (rot) g.rotate(rot); g.scale(sc, sc);
+  if (opt.hue != null) g.filter = `hue-rotate(${opt.hue}deg) saturate(1.25)`;
+  if (opt.shine != null && opt.shine > -0.2 && opt.shine < 1.2) {
+    if (!tmpC) { tmpC = document.createElement('canvas'); tmpG = tmpC.getContext('2d'); }
+    if (tmpC.width < s.c.width || tmpC.height < s.c.height) { tmpC.width = Math.max(tmpC.width, s.c.width); tmpC.height = Math.max(tmpC.height, s.c.height); }
+    tmpG.globalCompositeOperation = 'source-over'; tmpG.clearRect(0, 0, tmpC.width, tmpC.height);
+    tmpG.drawImage(s.c, 0, 0);
+    tmpG.globalCompositeOperation = 'source-atop';
+    const bx = lerp(-.3, 1.3, opt.shine) * s.c.width, bw = s.c.width * .18;
+    const lg = tmpG.createLinearGradient(bx - bw, 0, bx + bw, s.c.height * .3);
+    lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.85)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    tmpG.fillStyle = lg; tmpG.fillRect(0, 0, s.c.width, s.c.height);
+    g.drawImage(tmpC, 0, 0, s.c.width, s.c.height, -s.w / 2, -s.h / 2, s.w, s.h);
+  } else g.drawImage(s.c, -s.w / 2, -s.h / 2, s.w, s.h);
+  g.restore();
+}
+function slamK(t, t0, t1, s0 = 2.4) {
+  if (t < t0 || t > t1) return null;
+  const u = P(t, t0, t0 + .17), out = P(t, t1 - .14, t1);
+  return { a: Math.min(1, P(t, t0, t0 + .05)) * (1 - out), sc: lerp(s0, 1, back(u, 2.2)) * (1 + .1 * out) * (1 + .012 * Math.sin((t - t0) * 9)) };
+}
+
+// ===================== アプリの画面（画面いっぱい） =====================
+const STATUS = IPAD ? 24 : 58, HDR = META.header.H, TABH = IPAD ? 0 : META.tabbar.H, HOME = IPAD ? 20 : 34;
+const VTOP = STATUS + HDR, VH = H - VTOP - TABH - HOME;
+$('vp').style.top = VTOP + 'px'; $('vp').style.height = VH + 'px';
+const ZN = n => `#result ol.zones > li:nth-child(${n})`, BT = t => `#recCard [data-k=types] button[data-v="${t}"]`;
+const B = (k, sel) => META[k].b[sel];
+// その要素の上が、画面の y（上から）にくるスクロール量（下に余りが出ないように）
+const at = (k, sel, y) => Math.max(0, Math.min(META[k].H - VH, B(k, sel).y - (y - VTOP)));
+const FY = IPAD ? 120 : 180;   // 見せたいところを置く高さ（テロップは下なので、上のほう）
+const yIn1 = IPAD ? 0 : at('judge_filled', '.input-col > .card:nth-child(1) .fields', FY), yIn2 = at('judge_filled', '.input-col > .card:nth-child(2)', FY - 10), yIn3 = at('judge_filled', '.input-col > .card:nth-child(3)', FY - 10);
+const yF = at('judge_filled', '#result', FY - 10), yZ1 = at('judge_filled', ZN(1), FY - 10);
+const yRT = at('rec_lk0', '#recCard [data-k=types]', IPAD ? 640 : 420);
+const yW5 = IPAD ? 0 : at('w5_5', '#w5Mode', FY + 10), yW5z = at('w5_rand', '#w5Races .w5race[data-i="0"] .w5zones', IPAD ? 260 : FY + 60);
+const C2 = B('judge_filled', '.input-col > .card:nth-child(2)');
+const ODDS_BOX = { x: C2.x, y: C2.y, w: C2.w, h: Math.min(C2.h, IPAD ? 640 : 430) };
+const HD = IPAD ? { judge: 'header_oi0', w5: 'header_w5' } : { judge: 'header_oi0', w5: 'header_oi3' };
+const TB = list => IPAD ? [] : list;
+const SCENES = [   // 時刻はCMの時刻
+  // ポイントで画像を読み取り レースを判定しよう!!（読み取り −200P → 距離・頭数・馬場 → 単勝 → 3連単）
+  { a: 15.2, b: 23.2, hdr: [[HD.judge, 15.2]], tab: TB([['tabbar_judge', 15.2]]),
+    views: [{ k: 'judge_empty', a: 15.2 }, { k: 'judge_reading', a: 16.55, fade: .12 }, { k: 'judge_filled', a: 17.9, fade: .2 }],
+    scroll: { judge_empty: () => 0, judge_reading: () => 0,
+              judge_filled: t => t < 19.6 ? lerp(0, yIn1, eio(P(t, 17.95, 18.4))) : t < 21.4 ? lerp(yIn1, yIn2, eio(P(t, 19.6, 19.95))) : lerp(yIn2, yIn3, eio(P(t, 21.4, 21.75))) },
+    rings: [{ a: 15.65, b: 16.05, k: 'judge_empty', sel: ['#ocrBtn'] }, { a: 16.7, b: 17.8, k: 'judge_reading', sel: ['#ocrMsg'] },
+            { a: 18.45, b: 19.55, k: 'judge_filled', each: ['.f:has(> #fDist)', '.f:has(> #fN)', '.f:has(> #fBaba)'] }, { a: 20.0, b: 21.35, k: 'judge_filled', box: ODDS_BOX },
+            { a: 21.8, b: 23.1, k: 'judge_filled', sel: ['.input-col > .card:nth-child(3)'] }],
+    taps: [{ t: 16.0, k: 'judge_empty', sel: '#ocrBtn', fx: .5 }] },
+  // 誰でも簡単に! 1発でゾーンまで判定!!
+  { a: 23.2, b: 29.6, hdr: [[HD.judge, 23.2]], tab: TB([['tabbar_judge', 23.2]]), views: [{ k: 'judge_filled', a: 23.2 }],
+    scroll: { judge_filled: t => t < 25.2 ? lerp(yIn3, yF, eio(P(t, 23.2, 23.65))) : lerp(yF, yZ1, eio(P(t, 25.2, 25.55))) },
+    rings: [{ a: 23.8, b: 25.1, k: 'judge_filled', sel: ['#result .vhead'] }, { a: 25.6, b: 26.8, k: 'judge_filled', sel: [ZN(1) + ' .zflow', ZN(1) + ' .znums'] },
+            { a: 26.85, b: 28.0, k: 'judge_filled', sel: [ZN(1) + ' .zthird'] }, { a: 28.1, b: 29.5, k: 'judge_filled', sel: [ZN(1) + ' .zref'] }], taps: [] },
+  // Pカスタムで 自分だけのテンゲルを 育てよう!!（券種：はじめは単勝・馬単・3連単 → 複勝・馬連を500Pずつで解放）
+  { a: 36.0, b: 42.4, hdr: [[HD.judge, 36.0]], tab: TB([['tabbar_judge', 36.0]]),
+    views: [{ k: 'rec_lk0', a: 36.0 }, { k: 'rec_lk1', a: 38.45, fade: .15 }, { k: 'rec_lk2', a: 39.65, fade: .15 }],
+    scroll: { rec_lk0: () => yRT, rec_lk1: () => yRT, rec_lk2: () => yRT },
+    rings: [{ a: 36.6, b: 37.6, k: 'rec_lk0', each: [BT('単勝'), BT('馬単'), BT('3連単')] }, { a: 40.6, b: 42.3, k: 'rec_lk2', sel: ['#recCard [data-k=types]'] }],
+    dlgs: [{ a: 37.85, b: 38.45, name: '複勝' }, { a: 39.15, b: 39.65, name: '馬連' }],
+    taps: [{ t: 37.7, k: 'rec_lk0', sel: BT('複勝'), fx: .5 }, { t: 38.3, dlg: 1 }, { t: 39.05, k: 'rec_lk1', sel: BT('馬連'), fx: .5 }, { t: 39.5, dlg: 1 }] },
+  // 単勝5連予想も組める!!（5レースを1つずつ → 5レースまとめて −200P → 予算に合わせて組み立て → 自分で選ぶ／ランダム）
+  { a: 52.8, b: 60.8, hdr: [[HD.w5, 52.8]], tab: TB([['tabbar_win5', 52.8]]),
+    views: [{ k: 'w5_0', a: 52.8 }, { k: 'w5_1', a: 53.55, fade: .12 }, { k: 'w5_2', a: 53.95, fade: .12 }, { k: 'w5_3', a: 54.35, fade: .12 }, { k: 'w5_4', a: 54.75, fade: .12 },
+            { k: 'w5_5', a: 55.15, fade: .12 }, { k: 'w5_rand', a: 58.4, fade: .15 }],
+    scroll: { w5_0: () => yW5, w5_1: () => yW5, w5_2: () => yW5, w5_3: () => yW5, w5_4: () => yW5, w5_5: () => yW5, w5_rand: t => lerp(yW5, yW5z, eio(P(t, 59.0, 59.45))) },
+    rings: [{ a: 53.15, b: 55.1, k: 'w5_0', sel: ['#w5Races'] }, { a: 56.6, b: 57.55, k: 'w5_5', sel: ['#w5Sum'] }, { a: 57.7, b: 58.25, k: 'w5_5', sel: ['#w5Mode'] }, { a: 58.45, b: 58.95, k: 'w5_rand', sel: ['#w5Mode', '#w5RandRow'] },
+            { a: 59.5, b: 60.7, k: 'w5_rand', sel: ['#w5Races .w5race[data-i="0"] .w5zones'] }],
+    taps: [{ t: 58.3, k: 'w5_5', sel: '#w5Mode button[data-v="rand"]', fx: .5 }] },
+  // おわり：テンゲルⅢ（判定の画面を暗くして）
+  { a: 71.2, b: 99, hdr: [[HD.judge, 71.2]], tab: TB([['tabbar_judge', 71.2]]), views: [{ k: 'judge_filled', a: 71.2 }],
+    scroll: { judge_filled: () => yZ1 }, rings: [], taps: [] },
+];
+const CKEYS = [], HKEYS = [], TKEYS = [];
+SCENES.forEach(sc => { sc.views.forEach(v => CKEYS.includes(v.k) || CKEYS.push(v.k)); sc.hdr.forEach(([k]) => HKEYS.includes(k) || HKEYS.push(k)); sc.tab.forEach(([k]) => TKEYS.includes(k) || TKEYS.push(k)); });
+const EL = {};
+CKEYS.forEach(k => { const im = new Image(); im.className = 'cimg'; im.src = `${SHOTS}/${k}.png`; $('cimgs').appendChild(im); EL[k] = im; });
+HKEYS.forEach(k => { const im = new Image(); im.className = 'hdr'; im.src = `${SHOTS}/${k}.png`; $('hdrs').appendChild(im); EL[k] = im; });
+TKEYS.forEach(k => { const im = new Image(); im.className = 'tab'; im.src = `${SHOTS}/${k}.png`; im.style.top = (H - HOME - TABH) + 'px'; $('tabs').appendChild(im); EL[k] = im; });
+function setVis(el, op) { el.style.opacity = op.toFixed(3); el.style.visibility = op > .001 ? 'visible' : 'hidden'; }
+function boxOf(k, sels) {
+  const bs = sels.map(s => META[k].b[s]).filter(Boolean); if (!bs.length) return null;
+  const x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y)), x1 = Math.max(...bs.map(b => b.x + b.w)), y1 = Math.max(...bs.map(b => b.y + b.h));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function layered(list, t) {
+  const out = {}; let cur = -1;
+  list.forEach(([k, a], i) => { if (t >= a) cur = i; });
+  if (cur < 0) cur = 0;
+  const [k, a, f] = list[cur]; const m = f ? P(t, a, a + f) : 1;
+  out[k] = m; if (m < 1 && cur > 0) out[list[cur - 1][0]] = 1;
+  return out;
+}
+// 保有ポイント（イメージ）：1,500 → 読み取りで −200 → 解放で −500 ×2 → 単勝5連予想（5レースまとめて）で −200
+const PSTEP = [[16.5, 1500, 1300], [38.4, 1300, 800], [39.6, 800, 300], [55.5, 300, 100]];
+function pVal(t) { let v = 1500; PSTEP.forEach(([t0, a, b]) => { if (t >= t0) v = Math.round(lerp(a, b, eo(P(t, t0, t0 + .45)))); }); return v; }
+const PP = IPAD ? { right: 332, top: STATUS + 16 } : { left: 16, top: STATUS + 53 };
+Object.assign($('ppill').style, IPAD ? { right: PP.right + 'px', top: PP.top + 'px' } : { left: PP.left + 'px', top: PP.top + 'px' });
+const pillPt = () => { const b = $('ppill'); return { x: b.offsetLeft + b.offsetWidth / 2, y: b.offsetTop + b.offsetHeight / 2 }; };
+// 解放のたしかめ：いちばん上の真ん中あたり
+const DW = 360, DX = (W - DW) / 2, DY = IPAD ? 300 : 196;
+Object.assign($('pdlgc').style, { left: DX + 'px', top: DY + 'px' });
+const dlgPt = () => { const d = $('pdlgc'), b = $('pdb'); return { cx: d.offsetLeft + b.offsetLeft + b.offsetWidth / 2, cy: d.offsetTop + b.offsetTop + b.offsetHeight / 2 }; };
+// 画面の中の要素 → 画面の座標
+function scrPt(t, k, sel) { const sc = SCENES.find(x => t >= x.a && t < x.b); const b = B(k, sel), yy = sc && sc.scroll[k] ? sc.scroll[k](t) : 0; return { x: b.x + b.w / 2, y: VTOP + b.y + b.h / 2 - yy }; }
+
+function renderApp(t) {
+  const sc = SCENES.find(s => t >= s.a && t < s.b) || SCENES[SCENES.length - 1];
+  let ci = 0; sc.views.forEach((v, i) => { if (t >= v.a) ci = i; });
+  const cur = sc.views[ci], prev = ci > 0 ? sc.views[ci - 1] : null;
+  const dur = cur.slide || cur.fade || 0, mix = dur ? P(t, cur.a, cur.a + dur) : 1;
+  const sy = k => (sc.scroll[k] ? sc.scroll[k](t) : 0);
+  CKEYS.forEach(k => {
+    const el = EL[k]; let o = 0, tx = 0;
+    if (k === cur.k) { o = cur.slide ? 1 : (prev ? mix : 1); if (cur.slide && mix < 1) tx = W * (1 - eio(mix)); }
+    else if (prev && k === prev.k && mix < 1) { o = 1; if (cur.slide) tx = -W * eio(mix); }
+    setVis(el, o); if (o > 0) el.style.transform = `translate(${tx.toFixed(2)}px,${(-sy(k)).toFixed(2)}px)`;
+  });
+  const hs = layered(sc.hdr, t); HKEYS.forEach(k => setVis(EL[k], hs[k] || 0));
+  let tk = sc.tab.length ? sc.tab[0][0] : null; sc.tab.forEach(([k, a]) => { if (t >= a) tk = k; }); TKEYS.forEach(k => setVis(EL[k], k === tk ? 1 : 0));
+  $('pnum').textContent = pVal(t).toLocaleString('ja-JP');
+  // 強調の枠（each：いくつかの場所に同時に）
+  const r = sc.rings.find(x => t >= x.a && t <= x.b);
+  const boxes = r ? (r.each ? r.each.map(q => boxOf(r.k, [q])) : [r.box || boxOf(r.k, r.sel)]) : [];
+  [$('ring'), $('ring2'), $('ring3')].forEach((ring, i) => {
+    const b = boxes[i]; if (!b) { ring.style.display = 'none'; return; }
+    const pad = 4, k = env(t, r.a, r.b, .1, .1), pu = 1 + .06 * (1 - eo(P(t, r.a, r.a + .25))), yy = sy(r.k);
+    ring.style.display = 'block'; ring.style.left = (b.x - pad) + 'px'; ring.style.top = (b.y - pad - yy) + 'px';
+    ring.style.width = (b.w + pad * 2) + 'px'; ring.style.height = (b.h + pad * 2) + 'px'; ring.style.opacity = k.toFixed(3); ring.style.transform = `scale(${pu.toFixed(4)})`;
+  });
+  // 解放のたしかめ（イメージ）
+  const dg = (sc.dlgs || []).find(x => t >= x.a && t <= x.b), pd = $('pdlg');
+  if (dg) { $('pdt').textContent = `「${dg.name}」を解放する？`; setVis(pd, env(t, dg.a, dg.b, .1, .08)); $('pdlgc').style.transform = `scale(${lerp(.88, 1, eo(P(t, dg.a, dg.a + .15))).toFixed(4)})`; }
+  else setVis(pd, 0);
+  // タップの印
+  const tp = sc.taps.find(x => t >= x.t - .22 && t <= x.t + .45), rip = $('rip'), dot = $('dot');
+  if (tp) {
+    let cx, cy;
+    if (tp.dlg) { const q = dlgPt(); cx = q.cx; cy = q.cy; }
+    else { const b = B(tp.k, tp.sel), yy = sy(tp.k); cx = b.x + b.w * tp.fx; cy = VTOP + b.y + b.h / 2 - yy; }
+    const q = P(t, tp.t, tp.t + .4), rr = 6 + 30 * eo(q);
+    rip.style.display = t >= tp.t ? 'block' : 'none'; rip.style.left = (cx - rr) + 'px'; rip.style.top = (cy - rr) + 'px'; rip.style.width = rip.style.height = (rr * 2) + 'px'; rip.style.opacity = (1 - q).toFixed(3);
+    dot.style.display = 'block'; dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+    dot.style.opacity = (eo(P(t, tp.t - .22, tp.t)) * (1 - P(t, tp.t + .2, tp.t + .45))).toFixed(3); dot.style.transform = `scale(${t < tp.t ? 1 : .82})`;
+  } else { rip.style.display = 'none'; dot.style.display = 'none'; }
+}
+
+// ===================== テロップ（CMと同じ言葉・同じタイミング） =====================
+const L0 = IPAD ? H - 400 : H - 332, L1 = IPAD ? H - 322 : H - 278, L2 = IPAD ? H - 226 : H - 202, SUBY = IPAD ? H - 120 : H - 124;
+const CAPS = [
+  { a: 15.3, b: 23.1, l1: 'c5a', l2: 'c5b', l2a: 15.6 },
+  { a: 23.3, b: 29.5, l1: 'c2a', l2: 'c2b', l2a: 24.0, rb: 1 },
+  { a: 36.1, b: 42.3, l0: 'c6z', l1: 'c6a', l2: 'c6b', l2a: 36.4, rb: 1 },
+  { a: 52.8, b: 60.75, l1: 'm2a', l2: 'm2b', l2a: 52.8 },
+];
+const SUBS = [
+  { a: 15.3, b: 16.35, s: 'アプリでスクショを選ぶだけ' }, { a: 16.45, b: 17.85, s: '1レース200P（読み取りから記録まで）' },
+  { a: 18.45, b: 19.55, s: '距離・馬場・頭数が自動で入る' }, { a: 20.0, b: 21.35, s: '単勝オッズも自動で入る' }, { a: 21.8, b: 23.1, s: '3連単オッズも自動で入る' },
+  { a: 23.7, b: 25.1, s: '荒れやすさをA・B・Cで判定' }, { a: 25.4, b: 26.8, s: '1着→2着のゾーンと馬番' }, { a: 26.85, b: 28.0, s: '3着のゾーンまで' }, { a: 28.1, b: 29.5, s: '過去のデータでの参考的中率つき' },
+  { a: 36.6, b: 37.6, s: '最初は 単勝・馬単・3連単' }, { a: 37.7, b: 39.0, s: '1つ500Pで解放' }, { a: 39.1, b: 40.5, s: '複勝・枠複・枠単・馬連・ワイド・3連複' }, { a: 40.6, b: 42.3, s: '記録できる券種がふえる' },
+  { a: 53.0, b: 55.2, s: '5つのレースを読み取るだけ' }, { a: 55.3, b: 56.5, s: '5レースまとめて200P' }, { a: 56.6, b: 57.6, s: '予算に合わせて自動で組み立て' },
+  { a: 57.7, b: 58.95, s: 'ゾーンは「自分で選ぶ」か「ランダム」' }, { a: 59.05, b: 60.75, s: 'ランダムなら1着ゾーンをおまかせ' },
+];
+function drawCaps(g, t) {
+  const c = CAPS.find(x => t >= x.a && t <= x.b); if (!c) return;
+  const o1 = env(t, c.a, c.b, .12, .12), d1 = 14 * (1 - eo(P(t, c.a, c.a + .2)));
+  const l3 = !!c.l0, y1 = l3 ? (IPAD ? L1 - 20 : L1 - 6) : L1 + (IPAD ? 0 : 14);
+  const fit = key => Math.min(1, W * .94 / SPR[key].tw);   // 画面の幅に入るように
+  if (c.l0) drawSpr(g, c.l0, W / 2, L0 + d1, fit(c.l0), o1);
+  drawSpr(g, c.l1, W / 2, y1 + d1, fit(c.l1), o1);
+  const k = slamK(t, c.l2a, c.b, 2.2);
+  if (k) drawSpr(g, c.l2, W / 2, L2 + (l3 ? (IPAD ? 6 : 8) : 0), k.sc * fit(c.l2), k.a, 0, { shine: ((t - c.l2a) % 1.6) / .7 - .1, hue: c.rb ? (t * 60) % 360 : null });
+}
+// ポイントが減る（−200P・−500P）と「解放!!」
+const POPS = [
+  { t: 16.5, key: 'm200', pill: 1 }, { t: 38.4, key: 'm500', pill: 1 }, { t: 39.6, key: 'm500', pill: 1 }, { t: 55.5, key: 'm200', pill: 1 },
+  { t: 38.45, key: 'open', k: 'rec_lk1', sel: BT('複勝') }, { t: 39.65, key: 'open', k: 'rec_lk2', sel: BT('馬連') },
+];
+function drawPops(g, t) {
+  POPS.forEach(p => {
+    const age = t - p.t; if (age < 0 || age > 1.1) return;
+    let q;
+    if (p.pill) { const c = pillPt(); q = { x: c.x + (IPAD ? 0 : 92), y: c.y + (IPAD ? 44 : 34) }; }
+    else q = scrPt(Math.min(t, p.t + .05), p.k, p.sel), q.y -= 34;
+    const u = eo(P(age, 0, .2)), a = Math.min(1, P(age, 0, .06)) * (1 - P(age, .8, 1.1));
+    drawSpr(g, p.key, q.x, q.y - 40 * eo(P(age, 0, 1.1)), (p.pill ? 1 : .8) * lerp(1.7, 1, back(u, 2)), a);
+  });
+}
+// おわり：テンゲルⅢ・競馬 判定アプリ（CMの 71.2〜72.3）
+function drawEnd(g, t) {
+  if (t < 71.2) return;
+  const [yT, yR] = IPAD ? [H / 2 - 150, H / 2 - 30] : [380, 460];
+  const k1 = slamK(t, 71.3, 99, 2.4); if (k1) drawSpr(g, 'title', W / 2, yT, k1.sc, k1.a, 0, { shine: ((t - 71.5) % 1.6) / .8 });
+  if (t >= 71.6) { const u = P(t, 71.6, 71.8); drawSpr(g, 'rib1', W / 2, yR, lerp(1.8, 1, back(u, 2)), Math.min(1, P(t, 71.6, 71.66))); }
+}
+// 場面のつなぎ目で、ほんの少し光る（プレビューの時刻）
+const CUTS = [14.0, 20.4, 28.4];
+function flashes(g, p) {
+  let wa = 0; CUTS.forEach(t0 => { if (p >= t0 && p < t0 + .16) wa = Math.max(wa, .32 * (1 - P(p, t0, t0 + .16))); });
+  if (wa > 0) { g.fillStyle = `rgba(255,255,245,${wa.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+}
+
+const F = $('fx').getContext('2d');
+function place(el, cx, cy, op, sc = 1) {
+  setVis(el, op); if (op <= .001) return;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.transform = `translate(${(cx - w / 2).toFixed(2)}px,${(cy - h / 2).toFixed(2)}px) scale(${sc.toFixed(4)})`;
+}
+function render(p) {
+  const t = CMT(p);
+  renderApp(t);
+  const c3 = (t >= 36.1 && t < 42.4);   // 3行のテロップ
+  $('scrim').style.height = (IPAD ? (c3 ? 520 : 460) : (c3 ? 400 : 370)) + 'px';
+  setVis($('scrim'), t >= 71.2 ? 0 : 1);
+  $('dim').style.opacity = (t >= 71.2 ? .66 * eo(P(t, 71.2, 71.5)) : 0).toFixed(3);
+  const sub = SUBS.find(s => t >= s.a && t <= s.b), cs = $('csub');
+  if (sub) { cs.firstChild.textContent = sub.s; cs.firstChild.className = 'sub' + (sub.blue ? ' blue' : ''); place(cs, W / 2, SUBY + 6 * (1 - eo(P(t, sub.a, sub.a + .15))), env(t, sub.a, sub.b, .12, .1), lerp(1.2, 1, eo(P(t, sub.a, sub.a + .15)))); }
+  else setVis(cs, 0);
+  place($('cfoot'), W / 2, IPAD ? H - 38 : H - 62, t >= 16.5 && t < 23.2 ? env(t, 16.5, 23.15, .3, .15) : 0);
+  place($('disc'), W / 2, IPAD ? H - 230 : 560, t >= 71.2 ? eo(P(t, 71.5, 71.85)) : 0);
+  F.setTransform(2, 0, 0, 2, 0, 0); F.clearRect(0, 0, W, H);
+  drawCaps(F, t);
+  drawPops(F, t);
+  drawEnd(F, t);
+  flashes(F, p);
+}
+window.render = render;
+
+function build() {
+  const K = .82 * (IPAD ? 1.6 : 1), KI = IPAD ? 1.6 : 1;   // CM（幅540）→ プレビュー（幅443）。iPadは1.6倍
+  mkText('title', 'テンゲルⅢ', { size: Math.round(72 * KI), fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkRibbon('rib1', '競馬 判定アプリ', { w: Math.round(300 * KI), h: Math.round(48 * KI), size: Math.round(25 * KI) });
+  mkText('c5a', 'ポイントで画像を読み取り', { size: Math.round(34 * K), fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c5b', 'レースを判定しよう!!', { size: Math.round(54 * K), fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('c2a', '誰でも簡単に! 1発で', { size: Math.round(36 * K), fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c2b', 'ゾーンまで判定!!', { size: Math.round(58 * K), fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.7)' });
+  mkText('c6z', 'Pカスタムで', { size: Math.round(36 * K), fill: 'gold', glow: 'rgba(255,255,255,.6)', depth: 2 });
+  mkText('c6a', '自分だけのテンゲルを', { size: Math.round(38 * K), fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('c6b', '育てよう!!', { size: Math.round(76 * K), fill: 'rainbow', dir: 'h', glow: 'rgba(255,255,255,.8)' });
+  mkText('m2a', '単勝5連予想も', { size: Math.round(40 * K), fill: 'white', s2: '#ffd45c', depth: 2 });
+  mkText('m2b', '組める!!', { size: Math.round(74 * K), fill: 'gold', glow: 'rgba(255,140,0,.9)' });
+  mkText('m200', '−200P', { size: Math.round(32 * KI), fill: 'red', s1: '#3a0000', s2: '#ffffff', glow: 'rgba(255,60,60,.8)', depth: 2 });
+  mkText('m500', '−500P', { size: Math.round(32 * KI), fill: 'red', s1: '#3a0000', s2: '#ffffff', glow: 'rgba(255,60,60,.8)', depth: 2 });
+  mkText('open', '解放!!', { size: Math.round(40 * KI), fill: 'gold', glow: 'rgba(255,200,0,.9)', depth: 2 });
+}
+window.__ready = Promise.all([...document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })))
+  .then(() => document.fonts.load('900 40px "Noto Sans CJK JP"'))
+  .then(() => Promise.all([document.fonts.load('400 20px "Dela Gothic One"', 'P'), document.fonts.load('700 13px "BIZ UDPGothic"'), document.fonts.load('600 14px "IBM Plex Mono"')]))
+  .then(() => document.fonts.ready)
+  .then(() => { build(); render(0); return true; });
+</script>
+</body></html>

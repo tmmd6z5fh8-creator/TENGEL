@@ -144,7 +144,7 @@ def w5state(pg, k, mode):   # 単勝5連予想：k レースだけ入れた状�
         w['races'][i] = {"form": None, "sel": None, "win": "", "picks": None, "man": None}
     pg.evaluate("(w) => localStorage.setItem('tengel.win5', w)", json.dumps(w, ensure_ascii=False))
     pg.reload(); pg.wait_for_timeout(2400)
-    hide(pg, False); pg.click('.tabbar button[data-tab=win5]'); pg.wait_for_timeout(900)
+    hide(pg, False); pg.click(f'{".tabs-top" if IPAD else ".tabbar"} button[data-tab=win5]'); pg.wait_for_timeout(900)   # iPadはタブが上
 
 
 # ポイントのカード（イメージ）：保有ポイント・ポイントを買う（通常）・サブスク・繰り越し（まさちゃんの指定の金額）
@@ -166,7 +166,7 @@ PTS_CSS = """#cmPts{margin-bottom:var(--gap,14px)}
 #cmPts .cmp-sub .cmp-row{background:#fffaf0;border-color:#f1d39a}
 #cmPts .cmp-note{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}"""
 PTS_HTML = """<div class="card" id="cmPts"><h2>ポイント</h2>
-  <div class="cmp-bal"><span>保有ポイント</span><b>100<small>P</small></b></div>
+  <div class="cmp-bal"><span>保有ポイント</span><b>{BAL}<small>P</small></b></div>
   <div class="cmp-h">ポイントを買う</div>
   <div class="cmp-list cmp-buy">
     <div class="cmp-row"><span class="pv"><span class="pt">500P</span></span><span class="btn yen"><b>176円</b><small>税抜160円</small></span></div>
@@ -182,6 +182,7 @@ PTS_HTML = """<div class="card" id="cmPts"><h2>ポイント</h2>
   </div>
   <p class="cmp-note">サブスクなら、ポイントを<b>購入日から30日間</b>繰り越せる。<br>価格は税込（下の小さい数字は税抜）。</p>
 </div>"""
+PTS_HTML = PTS_HTML.replace('{BAL}', os.environ.get('CM_PTS_BAL', '100'))   # 保有ポイント（CMは100P）
 PTS_JS = """([html, css]) => {
   let s = document.getElementById('cmptscss'); if (!s) { s = document.createElement('style'); s.id = 'cmptscss'; s.textContent = css; document.head.appendChild(s); }
   const v = document.getElementById('v-set'); const old = document.getElementById('cmPts'); if (old) old.remove();
