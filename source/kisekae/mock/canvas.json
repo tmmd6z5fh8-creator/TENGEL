@@ -8,17 +8,15 @@
     "Judge_Default.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "いつもの（紺×金）"},
     "Judge_Ranch.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "牧場（黄緑）"},
     "Judge_Cute.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "かわいい（ピンク）"},
-    "Judge_Elegant.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "綺麗（ヴィラン・赤い月の黒馬）"},
-    "Judge_Kids.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "子供向け（薄い黄色×パウダーホワイト）"},
-    "Judge_Gold.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "カッコいい（金色）"},
-    "Judge_GoldFire.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "黄金の炎（炎と宝石の黄金の馬）"},
+    "Judge_Kids.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "子供向け（薄い黄色×パウダーホワイト）"},
+    "Judge_Gold.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "カッコいい（金色）"},
     "Main.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "設定 › 着せ替え（タップで着せ替わる）", "is_interactive": true},
-    "Guide.dc.html": {"x": 470, "y": 1264, "w": 1640, "h": 900, "title": "テーマの色・文字・絵（メモ）"}
+    "Guide.dc.html": {"x": 470, "y": 1264, "w": 1320, "h": 900, "title": "テーマの色・文字・絵（メモ）"}
   },
-  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Elegant.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Judge_GoldFire.dc.html", "Main.dc.html", "Guide.dc.html"],
+  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Main.dc.html", "Guide.dc.html"],
   "notes": {
-    "row1": {"x": 0, "y": -300, "text": "判定画面：いつもの＋6つの着せ替え（仮）", "kind": "title1", "maxW": 3210},
-    "row2": {"x": 0, "y": 1004, "text": "着せ替えを選ぶ画面と、テーマのメモ", "kind": "title1", "maxW": 2110}
+    "row1": {"x": 0, "y": -300, "text": "判定画面：いつもの＋4つの着せ替え（仮）", "kind": "title1", "maxW": 2270},
+    "row2": {"x": 0, "y": 1004, "text": "着せ替えを選ぶ画面と、テーマのメモ", "kind": "title1", "maxW": 1790}
   },
   "designSystems": []
 }
