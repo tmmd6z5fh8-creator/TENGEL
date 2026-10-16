@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>判定画面・綺麗</title>
+<title>判定画面・綺麗（ヴィラン）</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -12,69 +12,72 @@
 <style>
 body{margin:0}
 *{box-sizing:border-box}
-.ph{--bg:#100B0C;--ink:#F2E6E2;--sub:#C4A3A6;--card:#1A1214;--cardB:1px solid #4A1A20;--cardO:0 solid transparent;--cardS:inset 0 0 0 3px #1A1214,inset 0 0 0 4px #2E1418;--radius:4px;--rs:2px;--font:"Zen Kaku Gothic New";--dfont:"Shippori Mincho B1";--dw:800;--logo:#F4ECE8;--logoS:none;--iii:#E0303F;--iiiB:0 solid transparent;--iiiR:0;--hd:#0B0708;--hdInk:#F4ECE8;--mBg:transparent;--mLine:#C1121F;--mInk:#F4ECE8;--pill:rgba(193,18,31,.12);--pillLine:#7A1A24;--pillInk:#F2D6D6;--coin:#C1121F;--coinInk:#FFFFFF;--badge:#240A0F;--badgeInk:#FF5A67;--badgeB:1px solid #7A1A24;--tagBg:transparent;--tagInk:#E9CFCF;--tagLine:#5C1A20;--warnBg:#3A0E14;--warnInk:#FF9A9A;--znBg:transparent;--znInk:#FF6B77;--znB:1px solid #7A1A24;--znR:2px;--acc:#FF6B77;--nR:3px;--w2B:1.5px solid #9A8A8C;--sep:1px solid #3A1A20;--btn:#C1121F;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:2px;--btnS:none;--btn2:transparent;--btn2Ink:#F4ECE8;--btn2B:1px solid #C1121F;--tab:#0B0708;--tabB:1px solid #3A1A20;--tabInk:#9C8286;--tabOn:transparent;--tabOnInk:#FF6B77;--tabR:0}
-.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(ellipse at 50% 30%,#2A0A10,rgba(16,11,12,0) 65%);color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background:#060203;color:#F3E7E5;font-family:"Zen Kaku Gothic New",sans-serif;-webkit-font-smoothing:antialiased}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:1px solid #C1121F;box-shadow:0 3px 0 -1px #0B0708,0 4px 0 -1px #7A1A24}
+.wall{position:absolute;left:0;top:0;width:390px;height:844px;object-fit:cover;z-index:0}
+.shade{position:absolute;left:0;top:0;width:390px;height:844px;z-index:0;background:linear-gradient(180deg,rgba(5,1,2,.6) 0,rgba(5,1,2,0) 17%,rgba(5,1,2,0) 36%,rgba(5,1,2,.38) 46%,rgba(5,1,2,.72) 100%)}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:rgba(6,2,3,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(224,48,63,.85);box-shadow:0 1px 14px rgba(224,48,63,.35)}
 .hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
-.logo{display:flex;align-items:center;font-family:var(--dfont),serif;font-weight:var(--dw);font-size:26px;line-height:1;letter-spacing:.08em;color:var(--logo);text-shadow:var(--logoS)}
+.logo{display:flex;align-items:center;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:26px;line-height:1;letter-spacing:.08em;color:#F4ECE8;text-shadow:0 0 12px rgba(0,0,0,.6)}
 .iii{display:inline-flex;gap:3px;margin-left:4px}
-.iii i{display:block;width:4.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
-.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--dfont),serif;font-weight:600;font-size:14px;cursor:pointer}
+.iii i{display:block;width:4.5px;height:21px;background:#E0303F;box-shadow:0 0 8px rgba(255,40,50,.7)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1px solid #C1121F;background:rgba(10,3,4,.4);color:#F4ECE8;font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:14px;cursor:pointer}
 .mbtn svg{width:18px;height:18px}
 .hd-r2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
-.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--pill);border:1px solid var(--pillLine);color:var(--pillInk);font-weight:500;font-size:12.5px;white-space:nowrap}
-.coin{width:17px;height:17px;border-radius:50%;background:var(--coin);color:var(--coinInk);display:inline-flex;align-items:center;justify-content:center;font:900 10px/1 "BIZ UDPGothic",sans-serif}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:rgba(20,6,8,.62);border:1px solid rgba(224,48,63,.55);color:#F2D6D6;font-weight:500;font-size:12.5px;white-space:nowrap}
+.coin{width:17px;height:17px;border-radius:50%;background:#C1121F;color:#FFFFFF;display:inline-flex;align-items:center;justify-content:center;font:900 10px/1 "BIZ UDPGothic",sans-serif;box-shadow:0 0 6px rgba(255,40,50,.6)}
 .gdot{width:8px;height:8px;border-radius:50%;background:#3CCB84;flex:none}
-.bnr{flex:none;display:block;width:390px;height:160px;object-fit:cover;margin-top:4px}
-.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
-.card{position:relative;flex:none;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS);padding:16px}
-.rose{position:absolute;top:10px;right:12px;width:30px;height:30px}
+.hero{position:relative;z-index:1;flex:none;height:236px}
+.ct{position:relative;z-index:1;flex:1;min-height:0;overflow:hidden;padding:12px 14px 0}
+.card{position:relative;background:rgba(12,5,7,.8);-webkit-backdrop-filter:blur(12px) saturate(1.1);backdrop-filter:blur(12px) saturate(1.1);border:1px solid rgba(193,18,31,.8);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 24px rgba(193,18,31,.3);padding:15px}
 .vh{display:flex;gap:12px;align-items:flex-start}
-.lb{flex:none;width:66px;height:80px;border-radius:var(--rs);background:var(--badge);color:var(--badgeInk);border:var(--badgeB);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.lb b{font-family:var(--dfont),serif;font-weight:var(--dw);font-size:42px;line-height:1}
-.lb small{font-family:var(--dfont),serif;font-size:12px;font-weight:600;margin-top:4px;color:#E9CFCF}
-.vi{min-width:0;flex:1;padding-right:26px}
-.vt{font-family:var(--dfont),serif;font-weight:var(--dw);font-size:20px;line-height:1.25;letter-spacing:.04em;margin:0;color:var(--ink)}
-.vs{font-size:12px;line-height:1.6;color:var(--sub);margin:5px 0 8px}
-.vs b{color:var(--ink);font-size:13.5px}
+.lb{flex:none;width:66px;height:80px;border-radius:2px;background:rgba(36,8,12,.85);border:1px solid #7A1A24;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lb b{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:42px;line-height:1;color:#FF4A55;text-shadow:0 0 12px rgba(255,40,50,.6)}
+.lb small{font-family:"Shippori Mincho B1",serif;font-size:12px;font-weight:600;margin-top:4px;color:#E9CFCF}
+.vi{min-width:0;flex:1}
+.vt{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:20px;line-height:1.25;letter-spacing:.04em;margin:0;color:#F4ECE8}
+.vs{font-size:12px;line-height:1.6;color:#C9A9AC;margin:5px 0 8px}
+.vs b{color:#F4ECE8;font-size:13.5px}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
-.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:2px;font-size:11.5px;font-weight:500;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine)}
-.tag.warn{background:var(--warnBg);color:var(--warnInk);border-color:transparent}
-.zs{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-.z{border-top:1px solid #3A1A20;padding:12px 2px 4px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:2px;font-size:11.5px;font-weight:500;background:rgba(10,3,4,.5);color:#E9CFCF;border:1px solid #5C1A20}
+.tag.warn{background:rgba(120,10,20,.5);color:#FFA3A3;border-color:transparent}
+.zs{list-style:none;margin:13px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.z{border-top:1px solid rgba(122,26,36,.85);padding:11px 2px 4px}
 .zh{display:flex;align-items:center;gap:10px}
-.zn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:var(--znR);background:var(--znBg);color:var(--znInk);border:var(--znB);font-family:var(--dfont),serif;font-size:12px;font-weight:800;letter-spacing:.06em}
-.zf{font-family:var(--dfont),serif;font-weight:var(--dw);font-size:19px;line-height:1.2;letter-spacing:.06em;color:var(--ink)}
-.zf em{font-style:normal;color:var(--acc);padding:0 4px}
+.zn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:2px;color:#FF6B77;border:1px solid #7A1A24;font-family:"Shippori Mincho B1",serif;font-size:12px;font-weight:800;letter-spacing:.06em}
+.zf{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:19px;line-height:1.2;letter-spacing:.06em;color:#F4ECE8}
+.zf em{font-style:normal;color:#FF4A55;padding:0 4px;text-shadow:0 0 8px rgba(255,40,50,.6)}
 .nums{display:flex;align-items:center;gap:5px;margin-top:9px}
-.ar{color:var(--acc);font-weight:700;padding:0 3px}
-.zr{font-size:12px;line-height:1.5;color:var(--sub);margin-top:8px}
-.zr b{color:var(--ink);font-size:13px}
-.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.ar{color:#FF4A55;font-weight:700;padding:0 3px}
+.zr{font-size:12px;line-height:1.5;color:#C9A9AC;margin-top:8px}
+.zr b{color:#F4ECE8;font-size:13px}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:3px;font:700 15px/1 "BIZ UDPGothic",sans-serif}
 .w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
-.w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.w2{background:#222222;color:#FFFFFF;border:1.5px solid #9A8A8C}
 .w4{background:#1F5FC9;color:#FFFFFF}
 .w5{background:#F3C316;color:#1F1F1F}
 .w6{background:#1E8E3E;color:#FFFFFF}
 .w7{background:#F08A1C;color:#1F1F1F}
-.third{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:12px;border-top:var(--sep)}
-.tl{font-family:var(--dfont),serif;font-size:13.5px;font-weight:800;color:var(--ink)}
-.tl small{display:block;font-family:var(--font),sans-serif;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px}
+.third{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:11px;border-top:1px solid rgba(122,26,36,.85)}
+.tl{font-family:"Shippori Mincho B1",serif;font-size:13.5px;font-weight:800;color:#F4ECE8}
+.tl small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:11px;font-weight:400;color:#C9A9AC;margin-top:2px}
 .third .nums{margin-top:0;gap:4px}
 .third .n{min-width:26px;height:26px;font-size:13px}
-.sl{color:var(--sub);font-weight:700;padding:0 2px}
-.acts{display:flex;gap:8px;margin-top:16px}
-.btn{flex:1;height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--dfont),serif;font-weight:800;font-size:14px;letter-spacing:.06em;cursor:pointer}
-.btn.sub{background:var(--btn2);color:var(--btn2Ink);border:var(--btn2B);box-shadow:none}
+.sl{color:#C9A9AC;font-weight:700;padding:0 2px}
+.acts{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:2px;border:0;background:linear-gradient(180deg,#D8182A,#8E0B16);color:#FFFFFF;box-shadow:0 0 16px rgba(224,24,42,.4);font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:14px;letter-spacing:.06em;cursor:pointer}
+.btn.sub{background:rgba(10,3,4,.5);color:#F4ECE8;border:1px solid #C1121F;box-shadow:none}
 .btn svg{width:17px;height:17px}
-.tb{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 6px 22px;background:var(--tab);border-top:var(--tabB)}
-.tb button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;margin:0;border:0;background:transparent;color:var(--tabInk);font-family:var(--font),sans-serif;font-size:10.5px;font-weight:500;border-radius:var(--tabR);cursor:pointer;white-space:nowrap}
-.tb button.on{background:var(--tabOn);color:var(--tabOnInk);box-shadow:inset 0 -2px 0 #E0303F;font-weight:700}
+.tb{position:absolute;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 6px 22px;background:rgba(6,2,3,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid rgba(224,48,63,.6)}
+.tb button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;margin:0;border:0;background:transparent;color:#A68A8E;font-family:"Zen Kaku Gothic New",sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.tb button.on{color:#FF5A66;font-weight:700;box-shadow:inset 0 -2px 0 #E0303F}
 .tb svg{width:23px;height:23px}
+.tb button.on svg{filter:drop-shadow(0 0 5px rgba(255,40,50,.7))}
 </style>
 </helmet>
 <div class="ph">
+  <img class="wall" src="/_blob/19e7155657a4f8cbcb2baeaae6f32697" alt="赤い空の下、山の岩場で前足を高く上げる黒い馬。目が赤く光り、火の粉が舞う">
+  <div class="shade" aria-hidden="true"></div>
   <header class="hd">
     <div class="hd-r1">
       <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
@@ -85,10 +88,9 @@ body{margin:0}
       <span class="pill"><span class="gdot"></span>マザーデータ1 290走・記録 0件</span>
     </div>
   </header>
-  <img class="bnr" src="/_blob/20c16516fcd1d0212c47790600a063dc" alt="黒と赤の背景に、赤い月の前でたてがみがなびく馬、眼鏡をかけた大人の女性、赤い薔薇のイラスト">
+  <div class="hero" aria-hidden="true"></div>
   <main class="ct">
     <section class="card">
-      <svg class="rose" viewBox="0 0 30 30" aria-hidden="true"><path d="M8 26 C10 22 12 20 15 19" fill="none" stroke="#2F4A2C" stroke-width="1.6" stroke-linecap="round"></path><path d="M9 24 C5 24 3 21 4 19 C7 19 9 21 9 24 Z" fill="#2F4A2C"></path><circle cx="17" cy="12" r="8.5" fill="#A30F1A"></circle><path d="M12 13 A5 5 0 1 1 20 16" fill="none" stroke="#5E0710" stroke-width="1.5" stroke-linecap="round"></path><path d="M15 12 A2.6 2.6 0 1 1 19 13.5" fill="none" stroke="#5E0710" stroke-width="1.4" stroke-linecap="round"></path><path d="M11 8 A7 7 0 0 1 22 6.5" fill="none" stroke="#E0303F" stroke-width="1.1" stroke-linecap="round"></path></svg>
       <div class="vh">
         <div class="lb"><b>A</b><small>堅</small></div>
         <div class="vi">

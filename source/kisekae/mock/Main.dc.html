@@ -29,16 +29,16 @@ body{margin:0}
 .h1{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:24px;line-height:1.2;color:var(--h1);margin:0}
 .lead{font-size:12.5px;line-height:1.6;color:var(--sub);margin:5px 0 0}
 .lead b{color:var(--acc)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 14px 0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 14px 0}
 .opt{position:relative;display:flex;flex-direction:column;text-align:left;padding:0;margin:0;border:2px solid rgba(128,128,128,.28);border-radius:var(--radius);background:var(--card);overflow:hidden;cursor:pointer;font-family:var(--font),sans-serif;color:var(--ink)}
 .opt.on{border-color:var(--sel);box-shadow:0 0 0 2px var(--sel)}
-.thumb{display:block;width:100%;height:76px;object-fit:cover}
-.thumb-d{display:flex;align-items:center;justify-content:center;width:100%;height:76px;background:#161F3D;border-bottom:3px solid #E2A23B}
-.thumb-d img{width:54px;height:54px}
-.ob{display:block;padding:8px 10px 10px}
-.oname{display:block;font-weight:800;font-size:15px;line-height:1.3}
-.odesc{display:block;font-size:11px;line-height:1.4;color:var(--sub);margin-top:2px}
-.badge{position:absolute;top:6px;right:6px;height:22px;padding:0 9px;border-radius:999px;background:var(--sel);color:var(--selInk);font-size:11px;font-weight:800;display:inline-flex;align-items:center}
+.thumb{display:block;width:100%;height:58px;object-fit:cover}
+.thumb-d{display:flex;align-items:center;justify-content:center;width:100%;height:58px;background:#161F3D;border-bottom:3px solid #E2A23B}
+.thumb-d img{width:44px;height:44px}
+.ob{display:block;padding:6px 8px 8px}
+.oname{display:block;font-weight:800;font-size:13.5px;line-height:1.3}
+.odesc{display:block;font-size:10px;line-height:1.35;color:var(--sub);margin-top:2px}
+.badge{position:absolute;top:4px;right:4px;height:19px;padding:0 7px;border-radius:999px;background:var(--sel);color:var(--selInk);font-size:10px;font-weight:800;display:inline-flex;align-items:center}
 .note{margin:12px 14px 0;padding:12px 14px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
 .note p{margin:0 0 8px;font-size:12.5px;font-weight:700;line-height:1.5;color:var(--ink)}
 .nums{display:flex;align-items:center;gap:6px}
@@ -68,11 +68,18 @@ body{margin:0}
 .t-cute.ph{background-image:radial-gradient(#FFFFFF 2.4px,transparent 2.8px),radial-gradient(#FFFFFF 2.4px,transparent 2.8px);background-size:22px 22px;background-position:0 0,11px 11px}
 .t-cute .hd::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;background:radial-gradient(circle at 7px 0,#FF7DB4 7px,transparent 7.5px) 0 0/14px 10px repeat-x}
 
-.t-elegant{--bg:#100B0C;--ink:#F2E6E2;--sub:#C4A3A6;--card:#1A1214;--cardB:1px solid #4A1A20;--cardO:0 solid transparent;--cardS:inset 0 0 0 3px #1A1214,inset 0 0 0 4px #2E1418;--radius:4px;--font:"Zen Kaku Gothic New";--dfont:"Shippori Mincho B1";--dw:800;--logo:#F4ECE8;--logoS:none;--iii:#E0303F;--iiiB:0 solid transparent;--iiiR:0;--hd:#0B0708;--hdInk:#F4ECE8;--mBg:transparent;--mLine:#C1121F;--mInk:#F4ECE8;--pill:rgba(193,18,31,.12);--pillLine:#7A1A24;--pillInk:#F2D6D6;--coin:#C1121F;--coinInk:#FFFFFF;--acc:#FF6B77;--nR:3px;--w2B:1.5px solid #9A8A8C;--tab:#0B0708;--tabB:1px solid #3A1A20;--tabInk:#9C8286;--tabOn:transparent;--tabOnInk:#FF6B77;--tabR:0;--sel:#E0303F;--selInk:#FFFFFF;--h1:#F4ECE8}
-.t-elegant .hd{border-bottom:1px solid #C1121F;box-shadow:0 3px 0 -1px #0B0708,0 4px 0 -1px #7A1A24}
-.t-elegant.ph{background-image:radial-gradient(ellipse at 50% 0%,#2A0A10,rgba(16,11,12,0) 60%)}
+.t-elegant{--bg:#060203;--ink:#F3E7E5;--sub:#C9A9AC;--card:rgba(12,5,7,.82);--cardB:1px solid rgba(193,18,31,.8);--cardO:0 solid transparent;--cardS:0 0 18px rgba(193,18,31,.28);--radius:4px;--font:"Zen Kaku Gothic New";--dfont:"Shippori Mincho B1";--dw:800;--logo:#F4ECE8;--logoS:none;--iii:#E0303F;--iiiB:0 solid transparent;--iiiR:0;--hd:rgba(6,2,3,.78);--hdInk:#F4ECE8;--mBg:rgba(10,3,4,.4);--mLine:#C1121F;--mInk:#F4ECE8;--pill:rgba(20,6,8,.62);--pillLine:rgba(224,48,63,.55);--pillInk:#F2D6D6;--coin:#C1121F;--coinInk:#FFFFFF;--acc:#FF6B77;--nR:3px;--w2B:1.5px solid #9A8A8C;--tab:rgba(6,2,3,.88);--tabB:1px solid rgba(224,48,63,.6);--tabInk:#A68A8E;--tabOn:transparent;--tabOnInk:#FF5A66;--tabR:0;--sel:#E0303F;--selInk:#FFFFFF;--h1:#F4ECE8}
+.t-elegant .hd{border-bottom:1px solid rgba(224,48,63,.85);box-shadow:0 1px 14px rgba(224,48,63,.35)}
+.t-elegant.ph{background-image:linear-gradient(rgba(6,2,3,.7),rgba(6,2,3,.86)),url(/_blob/19e7155657a4f8cbcb2baeaae6f32697);background-size:auto,390px 844px;background-position:0 0,center top;background-repeat:no-repeat}
 .t-elegant .logo{letter-spacing:.08em}
+.t-elegant .iii i{box-shadow:0 0 8px rgba(255,40,50,.7)}
 .t-elegant .tb button.on{box-shadow:inset 0 -2px 0 #E0303F}
+
+.t-goldfire{--bg:#140802;--ink:#FFF3DC;--sub:#E3CDA4;--card:rgba(24,10,3,.82);--cardB:1px solid rgba(255,196,96,.8);--cardO:0 solid transparent;--cardS:0 0 22px rgba(255,140,40,.25);--radius:12px;--font:"Zen Kaku Gothic New";--dfont:"Shippori Mincho B1";--dw:800;--logo:#FFD35A;--logoS:none;--iii:linear-gradient(180deg,#FFF8D2,#FFD35A 45%,#E8901A 60%,#FFE9A0);--iiiB:0 solid transparent;--iiiR:0;--hd:rgba(18,7,2,.74);--hdInk:#FFE6AE;--mBg:rgba(30,12,3,.45);--mLine:rgba(255,196,96,.85);--mInk:#FFE6AE;--pill:rgba(30,12,3,.62);--pillLine:rgba(255,196,96,.6);--pillInk:#FFE6AE;--coin:linear-gradient(135deg,#FFF4C2,#E8901A);--coinInk:#2A1203;--acc:#FFD35A;--nR:6px;--w2B:1.5px solid #8C7A55;--tab:rgba(18,7,2,.88);--tabB:1px solid rgba(255,196,96,.65);--tabInk:#BBA176;--tabOn:rgba(255,170,60,.12);--tabOnInk:#FFD35A;--tabR:10px;--sel:#FFC24A;--selInk:#2A1203;--h1:#FFD35A}
+.t-goldfire .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,#7A4A0A,#FFD35A,#FFF4C2,#E8901A,#7A4A0A)}
+.t-goldfire.ph{background-image:linear-gradient(rgba(14,5,1,.68),rgba(14,5,1,.86)),url(/_blob/dc7d7972cb0bc78899a554c5037b485d);background-size:auto,390px 844px;background-position:0 0,center top;background-repeat:no-repeat}
+.t-goldfire .logo,.t-goldfire .h1{background:linear-gradient(180deg,#FFF8D2 0%,#FFD35A 42%,#E8901A 62%,#FFE9A0 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.t-goldfire .logo{letter-spacing:.06em}
 
 .t-kids{--bg:#FBFAF6;--ink:#4E3520;--sub:#7E6248;--card:#FFFDF8;--cardB:2px solid #E8D9B5;--cardO:2px dashed #C9A27A;--cardS:0 3px 0 #EFE4CB;--radius:20px;--font:"Zen Maru Gothic";--dfont:"Mochiy Pop One";--dw:400;--logo:#5B3A1E;--logoS:0 2px 0 #FFFFFF,2px 0 0 #FFFFFF,-2px 0 0 #FFFFFF,0 -2px 0 #FFFFFF,1.5px 1.5px 0 #FFFFFF,-1.5px 1.5px 0 #FFFFFF,1.5px -1.5px 0 #FFFFFF,-1.5px -1.5px 0 #FFFFFF;--iii:#F7A8C0;--iiiB:1.5px solid #8A5A35;--iiiR:3px;--hd:#FFF3B8 url(/_blob/6656b0f19559a587df356e2178631b83) 0 0/12px 10px repeat;--hdInk:#5B3A1E;--mBg:#FFFFFF;--mLine:#B88A5A;--mInk:#5B3A1E;--pill:#FFFFFF;--pillLine:#D9B98A;--pillInk:#6B4A2B;--coin:#FFD966;--coinInk:#5B3A1E;--acc:#7A4A22;--nR:9px;--w2B:0 solid transparent;--tab:#FBFAF6;--tabB:2px dashed #D9B98A;--tabInk:#8E7458;--tabOn:#FFF1A8;--tabOnInk:#5B3A1E;--tabR:14px;--sel:#8A5A35;--selInk:#FFFFFF;--h1:#5B3A1E}
 .t-kids .hd{border-bottom:3px solid #E8D9B5}
@@ -104,7 +111,7 @@ body{margin:0}
     <p class="lead">いまのテーマ：<b>{{curName}}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>
   </section>
   <div class="grid">
-    <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+    <sc-for list="{{themes}}" as="t" hint-placeholder-count="7">
       <button type="button" class="{{t.cls}}" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" aria-label="{{t.label}}">
         <sc-if value="{{t.hasImg}}" hint-placeholder-val="{{true}}"><img class="thumb" src="{{t.img}}" alt=""></sc-if>
         <sc-if value="{{t.noImg}}" hint-placeholder-val="{{false}}"><span class="thumb-d"><img src="/_blob/c1fccd55173e28903228b7256479cc32" alt=""></span></sc-if>
@@ -127,7 +134,7 @@ body{margin:0}
   </nav>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"startTheme":{"editor":"enum","options":["default","ranch","cute","elegant","kids","gold"],"default":"ranch"},"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"startTheme":{"editor":"enum","options":["default","ranch","cute","elegant","kids","gold","goldfire"],"default":"ranch"},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   renderVals() {
     var st = this.state || {};
@@ -137,9 +144,10 @@ class Component extends DCLogic {
       { id: 'default', name: 'いつもの', desc: '紺×金（いまの見た目）', img: '' },
       { id: 'ranch', name: '牧場', desc: '黄緑・芝と馬', img: '/_blob/4d32303d3e8ea65630ceca0f8b0b72e6' },
       { id: 'cute', name: 'かわいい', desc: 'ピンク・ハートとリボン', img: '/_blob/465d11c7ef7de2047fdb27179b0d752b' },
-      { id: 'elegant', name: '綺麗', desc: 'レッド×ブラック・薔薇', img: '/_blob/20c16516fcd1d0212c47790600a063dc' },
+      { id: 'elegant', name: '綺麗', desc: 'レッド×ブラック・ヴィランの黒馬', img: '/_blob/f3ba086a900ec68d569a1f6a48ea9c46' },
       { id: 'kids', name: '子供向け', desc: '薄い黄色・ぬいぐるみ', img: '/_blob/e945e568f65a819f860a9a16e13beefa' },
-      { id: 'gold', name: 'カッコいい', desc: '金ピカ・ゴージャス', img: '/_blob/8e04356200a9e3273978a17be39d6b66' }
+      { id: 'gold', name: 'カッコいい', desc: '金ピカ・ゴージャス', img: '/_blob/8e04356200a9e3273978a17be39d6b66' },
+      { id: 'goldfire', name: '黄金の炎', desc: '炎と宝石の黄金の馬', img: '/_blob/d587e70d9c3901bee6a63d788beb4760' }
     ];
     var cur = list.filter(function (t) { return t.id === theme; })[0] || list[1];
     return {
