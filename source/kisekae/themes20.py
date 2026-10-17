@@ -495,6 +495,33 @@ def orn_marble():
     return b
 
 
+def tile_scales():
+    """龍馬：うすい金の線の うろこ（六角の うろこを 互いちがいに）"""
+    body = ''
+    arc = 'M-10 0 A10 10 0 0 0 10 0'
+    for (x, y) in [(10, 8), (30, 8), (0, 18), (20, 18), (40, 18), (10, 28), (30, 28), (0, 38), (20, 38), (40, 38)]:
+        body += f"<path d='{arc}' fill='none' stroke='#C9952B' stroke-width='.7' opacity='.16' transform='translate({x} {y}) scale(1 -1)'/>"
+    return uri(svg(40, 40, body))
+
+
+def orn_ryuma():
+    """瑞雲（金の線のうず）と、赤い玉"""
+    out = ("<defs><linearGradient id='rg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#F6DC8C'/><stop offset='.6' stop-color='#C9952B'/>"
+           "<stop offset='1' stop-color='#E9C46A'/></linearGradient></defs>")
+    for (cx, cy, r0, flip) in ((17, 24, 11, 1), (31, 29, 7, -1), (29, 15, 6, -1)):
+        pts = []
+        for k in range(61):
+            u = k / 60
+            a = u * 1.3 * 2 * math.pi * flip + (math.pi if flip < 0 else 0)
+            r = r0 * (1 - 0.84 * u)
+            pts.append((cx + math.cos(a) * r, cy + math.sin(a) * r * 0.85))
+        out += f"<path d='{P(pts, close=False)}' fill='none' stroke='url(#rg)' stroke-width='1.5' stroke-linecap='round'/>"
+    out += "<path d='M5 20 C9 10 17 7 26 9' fill='none' stroke='#C9952B' stroke-width='1.1' stroke-linecap='round' opacity='.8'/>"
+    out += "<path d='M8 32 C12 38 22 40 34 37' fill='none' stroke='#C9952B' stroke-width='1.1' stroke-linecap='round' opacity='.8'/>"
+    out += "<circle cx='36' cy='8' r='3.2' fill='#E0362C'/><circle cx='35' cy='7' r='1' fill='#FFB4A0'/>"
+    return out
+
+
 # ---------------------------------------------------------------- テーマ
 SEG_SQ = '.mbtn,.pill,.seg,.tag,.coin,.ocr{border-radius:0}'
 
@@ -768,6 +795,32 @@ THEMES = [
       guide=dict(colors=[('#F7F5F2', '大理石'), ('#B8935A', '金'), ('#2B2620', '黒（ボタン）'), ('#F0DDB0', '薄い金'), ('#6E665A', '小さい文字')],
                  fonts='見出し：Shippori Mincho B1 ExtraBold<br>本文：しっぽり明朝', shape='角丸2px・細い二重の枠・金の細い線・大理石のすじの背景・黒いボタンに金の字・すみに月桂樹',
                  pic='大理石の像（後ろ足で立ち上がる馬・波打つたてがみ・ねじれながら台までとどくしっぽ・岩の台座）・金の帯の台・金の月桂樹')),
+
+ dict(id='ryuma', cat=4, name='龍馬', desc='墨黒と金・炎', title='龍馬（墨黒×金）', banner='ryuma',
+      alt='雷雲の夜空を、金の炎をまとって天へかける黒いうろこの龍馬（金の角とひげ・金のひづめ・ひたいの赤い玉）と、うしろの日輪・金の線の瑞雲のイラスト',
+      fonts=['Shippori+Antique+B1', 'Zen+Kaku+Gothic+New:wght@500;700'],
+      v=dict(bg='#0B0D14', ink='#F3E9D2', sub='#B9AD92', card='#141827', cardB='1px solid #8A6A2A', cardO='1px solid rgba(201,149,43,.28)', cardS='0 10px 30px rgba(0,0,0,.45)',
+             radius='6px', rs='4px', font='"Zen Kaku Gothic New"', dfont='"Shippori Antique B1"', dw='400', logo='#F2C94F', logoS='0 0 12px rgba(242,201,79,.45)',
+             iii='#F2C94F', iiiB='0 solid transparent', iiiR='1px', hd='linear-gradient(180deg,#0E1120,#151B2F)', hdInk='#F3E9D2', hdB='2px solid #C9952B',
+             mBg='rgba(242,201,79,.08)', mLine='#C9952B', mInk='#F2C94F', pill='rgba(255,255,255,.05)', pillLine='rgba(201,149,43,.5)', pillInk='#F3E9D2', coin='#F2C94F',
+             coinInk='#1A1408', badge='#1B2033', badgeInk='#F2C94F', badgeB='1.5px solid #C9952B', tagBg='rgba(201,149,43,.10)', tagInk='#F0DDA8', tagLine='#6E5428',
+             warnBg='rgba(214,60,40,.22)', warnInk='#FFB4A0', zBg='rgba(255,255,255,.03)', zB='1px solid #3A3350', znBg='#C9952B', znInk='#1A1408',
+             znB='0 solid transparent', znR='2px', znS='none', acc='#F2C94F', nR='4px', w2B='1.5px solid #8C8C9A', sep='1px solid #3A3350', btn='#C9952B',
+             btnInk='#1A1408', btnB='0 solid transparent', btnR='4px', btnS='0 0 14px rgba(201,149,43,.35)', btn2='transparent', btn2Ink='#F2C94F',
+             btn2B='1px solid #C9952B', tab='#0B0D14', tabB='1px solid #2A2A3A', tabInk='#A39A86', tabOn='rgba(242,201,79,.14)', tabOnInk='#F2C94F', tabR='4px',
+             sel='#C9952B', selInk='#1A1408', h1='#F2C94F', pageInk='#F3E9D2', pageSub='#B9AD92', pageAcc='#F2C94F'),
+      chk=dict(hd=['#0E1120', '#151B2F']),
+      css=[('', 'background-image:' + tile_scales() + ',radial-gradient(ellipse at 50% 18%,rgba(201,149,43,.16),transparent 60%);background-size:40px 40px,100% 100%'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-6px;height:1px;background:rgba(201,149,43,.5)'),
+           ('.logo', 'letter-spacing:.06em;font-size:27px'),
+           ('.lb', 'box-shadow:inset 0 0 0 3px #141827,inset 0 0 0 4px rgba(201,149,43,.6)'),
+           ('.lb b', 'text-shadow:0 0 10px rgba(242,201,79,.5)'),
+           ('.zf', 'text-shadow:0 0 8px rgba(242,201,79,.35)'),
+           ('.mbtn,.pill,.seg,.tag', 'border-radius:3px')],
+      orn=orn_ryuma(),
+      guide=dict(colors=[('#0B0D14', '墨黒'), ('#C9952B', '金'), ('#F2C94F', '明るい金'), ('#141827', 'カード'), ('#E0362C', '赤い玉')],
+                 fonts='見出し：Shippori Antique B1<br>本文：Zen角ゴシック New', shape='角丸6px・金の細い枠（二重）・帯の下に金の線・金の「第1」と金のボタン・うろこの背景・すみに瑞雲と赤い玉',
+                 pic='雷雲の夜空・日輪・金の炎をまとって天へかける黒いうろこの龍馬（金の角とひげ・金のひづめ・赤い玉）・雷・金の線の瑞雲・雷文の縁')),
 
  dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],

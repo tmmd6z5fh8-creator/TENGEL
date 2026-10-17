@@ -8,7 +8,7 @@ K = os.path.dirname(os.path.abspath(__file__))
 OUT = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'
 BOARD = {'sakura': 'Sakura', 'sea': 'Sea', 'sunset': 'Sunset', 'autumn': 'Autumn', 'snow': 'Snow', 'newyear': 'NewYear', 'fireworks': 'Fireworks',
          'night': 'Night', 'news': 'News', 'silks': 'Silks', 'lucky': 'Lucky', 'shogi': 'Shogi', 'ink': 'Ink', 'marble': 'Marble', 'chess': 'Chess',
-         'neon': 'Neon', 'pixel': 'Pixel', 'chalk': 'Chalk', 'carousel': 'Carousel', 'stars': 'Stars'}
+         'ryuma': 'Ryuma', 'neon': 'Neon', 'pixel': 'Pixel', 'chalk': 'Chalk', 'carousel': 'Carousel', 'stars': 'Stars'}
 
 ORDER = ['bg', 'ink', 'sub', 'card', 'cardB', 'cardO', 'cardS', 'radius', 'rs', 'font', 'dfont', 'dw', 'logo', 'logoS', 'iii', 'iiiB', 'iiiR', 'hd', 'hdInk', 'hdB',
          'mBg', 'mLine', 'mInk', 'pill', 'pillLine', 'pillInk', 'coin', 'coinInk', 'badge', 'badgeInk', 'badgeB', 'tagBg', 'tagInk', 'tagLine', 'warnBg', 'warnInk',
