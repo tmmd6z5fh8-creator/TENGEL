@@ -33,7 +33,7 @@
     "Judge_Stars.dc.html": {"x": 1880, "y": 3792, "w": 390, "h": 844, "title": "星座・ペガサス（紺紫×金）"},
     "Main.dc.html": {"x": 0, "y": 5056, "w": 390, "h": 1843, "title": "設定 › 着せ替え（23テーマ・タップで着せ替わる／縦に長いのはスクロールした全体）", "is_interactive": true},
     "Guide.dc.html": {"x": 470, "y": 5056, "w": 1320, "h": 900, "title": "テーマのメモ（定番の5つ）"},
-    "Guide20.dc.html": {"x": 1870, "y": 5056, "w": 1320, "h": 2460, "title": "テーマのメモ（新しい18個）"}
+    "Guide20.dc.html": {"x": 1870, "y": 5056, "w": 1320, "h": 2676, "title": "テーマのメモ（新しい18個）"}
   },
   "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Memo.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
   "notes": {

@@ -499,7 +499,7 @@ def orn_marble():
 SEG_SQ = '.mbtn,.pill,.seg,.tag,.coin,.ocr{border-radius:0}'
 
 THEMES = [
- dict(id='sakura', cat=2, name='桜', desc='ピンク・春の桜', title='桜（ピンク×若草）', banner='sakura', alt='満開の桜の下に立つ白い馬のイラスト',
+ dict(id='sakura', cat=2, name='桜', desc='ピンク・春の桜', title='桜（ピンク×若草）', banner='sakura', alt='満開の桜の下に立つ白い競走馬（桜色のたてがみ・耳もとの桜の花かざり・桜色のゼッケン1）のかわいいイラスト',
       fonts=['Kaisei+Decol:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FFF6F8', ink='#4A2A35', sub='#87596A', card='#FFFFFF', cardB='1.5px solid #F4C6D4', cardO='0 solid transparent', cardS='0 4px 12px rgba(214,110,150,.12)',
              radius='18px', rs='14px', font='"Zen Kaku Gothic New"', dfont='"Kaisei Decol"', dw='700', logo='#8A2D52', logoS='0 2px 0 rgba(255,255,255,.75)',
@@ -515,9 +515,9 @@ THEMES = [
       orn=orn_sakura(),
       guide=dict(colors=[('#F8C4D4', '桜色'), ('#C2416E', 'ボタン'), ('#A3355C', '濃い桜'), ('#FFF6F8', '背景'), ('#4A2A35', '文字')],
                  fonts='見出し：Kaisei Decol<br>本文：Zen角ゴシック New', shape='角丸18px・やわらかい影・花びらの散る背景・丸い「第1」・すみに桜の花',
-                 pic='満開の桜・白い馬・若草の丘・舞う花びら')),
+                 pic='満開の桜・桜の花かざりの白い競走馬（ぺたっとした色のかわいい絵）・若草の丘・舞う花びら')),
 
- dict(id='sea', cat=2, name='海', desc='青・夏の海', title='海（紺×水色×白）', banner='sea', alt='波打ちぎわを走る鹿毛の馬と、青い海と空のイラスト',
+ dict(id='sea', cat=2, name='海', desc='青・夏の海', title='海（紺×水色×白）', banner='sea', alt='波打ちぎわを走る鹿毛の競走馬（紺に白いしまのゼッケン1）と、青い海と空のかわいいイラスト',
       fonts=['Murecho:wght@500;700;800'],
       v=dict(bg='#EEF7FB', ink='#10324F', sub='#4A6A82', card='#FFFFFF', cardB='1.5px solid #CFE5F2', cardO='0 solid transparent', cardS='0 3px 0 #D3E8F4',
              radius='16px', rs='12px', font='"Murecho"', dfont='"Murecho"', dw='800', logo='#FFFFFF', logoS='0 2px 0 #0A2A4A',
@@ -534,7 +534,7 @@ THEMES = [
       orn=orn_sea(),
       guide=dict(colors=[('#0E3A66', '紺'), ('#0B76B8', 'ボタン'), ('#39C5DD', '水色'), ('#EEF7FB', '背景'), ('#10324F', '文字')],
                  fonts='見出し：Murecho ExtraBold<br>本文：Murecho', shape='角丸16px・丸いボタン・上の帯のふちが波・うすい波の背景・すみに浮き輪',
-                 pic='青空と入道雲・水色の海・砂浜・波打ちぎわを走る鹿毛の馬・しぶき')),
+                 pic='青空と入道雲・水色の海・砂浜・波打ちぎわを走る鹿毛の競走馬（ぺたっとした色のかわいい絵）・しぶき')),
 
  dict(id='sunset', cat=2, name='夕焼け', desc='紫とオレンジ', title='夕焼け（紫×オレンジ）', banner='sunset', alt='夕日を背に丘をかける馬のシルエット（風になびく細い毛のたてがみとしっぽ・夕日がわのふちの光）と、紫からオレンジの空のイラスト',
       fonts=['Kaisei+Opti:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -558,7 +558,7 @@ THEMES = [
                  fonts='見出し：Kaisei Opti（夕日色の文字）<br>本文：Zen角ゴシック New', shape='角丸18px・枠なしの浮いたカード・カードの上に夕焼けの線・上下の帯は濃い紫',
                  pic='紫からオレンジの空・沈む太陽・丘をかける馬のシルエット（細い毛のたてがみとしっぽ・夕日がわのふちの光）・鳥')),
 
- dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の木の下に立つ栗毛の馬のイラスト',
+ dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の林を歩く栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・赤いゼッケン1）のかわいいイラスト',
       fonts=['Zen+Old+Mincho:wght@900', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FBF3E6', ink='#3E2A1E', sub='#7A5E48', card='#FFFDF8', cardB='1.5px solid #EED8B8', cardO='0 solid transparent', cardS='0 3px 0 #EAD3B0',
              radius='12px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Zen Old Mincho"', dw='900', logo='#FFF1DE', logoS='0 2px 0 #6E2410',
@@ -574,9 +574,9 @@ THEMES = [
       orn=orn_autumn(),
       guide=dict(colors=[('#B3401E', '紅葉'), ('#E8A13A', '山吹'), ('#A33A16', 'ボタン'), ('#FBF3E6', '背景'), ('#3E2A1E', '文字')],
                  fonts='見出し：Zen Old Mincho Black<br>本文：Zen角ゴシック New', shape='角丸12px・生成りのカード・山吹の線・もみじの散る背景・すみにもみじ',
-                 pic='もみじの木・栗毛の馬（亜麻色のたてがみ）・秋の丘')),
+                 pic='もみじの木・前足を上げて歩く栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・ぺたっとした色のかわいい絵）・秋の丘')),
 
- dict(id='snow', cat=2, name='雪', desc='紺と白・冬', title='雪（冬の紺×雪の白）', banner='snow', alt='雪の中に立つ芦毛の馬と、雪をかぶった木のイラスト',
+ dict(id='snow', cat=2, name='雪', desc='紺と白・冬', title='雪（冬の紺×雪の白）', banner='snow', alt='雪の中で白い息をはいて立つ芦毛の競走馬（水色のマフラー・紺のゼッケン1）と、雪をかぶった木のかわいいイラスト',
       fonts=['Kiwi+Maru:wght@500', 'Zen+Maru+Gothic:wght@500;700'],
       v=dict(bg='#F2F7FB', ink='#1E3346', sub='#557089', card='#FFFFFF', cardB='1.5px solid #D6E5F2', cardO='0 solid transparent', cardS='0 3px 0 #DCE8F3',
              radius='16px', rs='12px', font='"Zen Maru Gothic"', dfont='"Kiwi Maru"', dw='500', logo='#FFFFFF', logoS='0 0 10px rgba(255,255,255,.35)',
@@ -594,9 +594,9 @@ THEMES = [
       orn=orn_snow(),
       guide=dict(colors=[('#24496E', '冬の紺'), ('#2F6E9E', 'ボタン'), ('#BFE3FF', '氷'), ('#F2F7FB', '背景'), ('#1E3346', '文字')],
                  fonts='見出し：Kiwi Maru<br>本文：Zen Maru Gothic', shape='角丸16px・カードの上に積もった雪・雪の水玉の背景・帯に舞う雪・すみに雪の結晶',
-                 pic='雪の原っぱ・雪をかぶった木・芦毛の馬・白い息・降る雪')),
+                 pic='雪の原っぱ・雪をかぶった木・水色のマフラーの芦毛の競走馬（ぺたっとした色のかわいい絵）・白い息・降る雪')),
 
- dict(id='newyear', cat=2, name='午年', desc='赤と金・お正月', title='午年・お正月（赤×金）', banner='newyear', alt='赤い青海波の背景に富士山と初日の出、紅白の綱をつけた白い馬のイラスト',
+ dict(id='newyear', cat=2, name='午年', desc='赤と金・お正月', title='午年・お正月（赤×金）', banner='newyear', alt='赤い青海波の背景に富士山と初日の出、前足を上げる白い競走馬（金のたてがみ・赤い頭のベルト・首に紅白の綱と金の鈴・ゼッケン1）のかわいいイラスト',
       fonts=['Yuji+Syuku', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FBF4E8', ink='#3A1A12', sub='#7A4E3A', card='#FFFDF8', cardB='1.5px solid #E2BE6A', cardO='1px solid #F1DFB2', cardS='0 3px 0 #EBD7A8',
              radius='10px', rs='8px', font='"Zen Kaku Gothic New"', dfont='"Yuji Syuku"', dw='400', logo='#F5D27A', logoS='0 2px 0 #7A0A0E',
@@ -612,7 +612,7 @@ THEMES = [
       orn=orn_newyear(),
       guide=dict(colors=[('#C8161D', '朱赤'), ('#E8B33A', '金'), ('#FFE6A3', '薄い金'), ('#FBF4E8', '背景'), ('#3A1A12', '文字')],
                  fonts='見出し：Yuji Syuku（筆の字）<br>本文：Zen角ゴシック New', shape='角丸10px・金の二重枠・帯に青海波・赤い札・すみに梅の花',
-                 pic='赤い青海波・初日の出と富士山・金の雲・紅白の綱の白い馬・「午」の印')),
+                 pic='赤い青海波・初日の出と富士山・金の雲・紅白の綱と金の鈴の白い競走馬（ぺたっとした色のかわいい絵）・「午」の印')),
 
  dict(id='fireworks', cat=2, name='花火', desc='夜空・夏祭り', title='花火（夜空×ピンク・黄）', banner='fireworks', alt='夜空に上がる花火と、金とピンクの光の線でえがいた、かける馬（しっぽはしだれ柳の花火）、ちょうちんのイラスト',
       fonts=['Potta+One', 'M+PLUS+1p:wght@500;700'],
