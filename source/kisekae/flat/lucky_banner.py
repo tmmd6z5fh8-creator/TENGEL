@@ -1,5 +1,5 @@
 """開運の絵（780×320）：緑の地・四つ葉・金の蹄鉄（3D）・金貨・きらめきは前の lucky.py のまま、
-   蹄鉄の中の馬だけ描き直す → 金運の馬のキャラクター（flat/lucky_pony.py：金色の子馬が前足をあげて福を招き、小判をだく）
+   蹄鉄の中の馬だけ描き直す → 金運の馬のキャラクター（flat/lucky_pony.py：クリーム色の子馬が右前足をあげて福を招き、小判をだく）
    python3 flat/lucky_banner.py <出力.webp>"""
 import sys, os, math
 import numpy as np
@@ -13,7 +13,7 @@ sys.path.insert(0, HERE)
 from style2d import *
 from h3d import Scene, nrm, basis
 from fire2d import aces, to_srgb
-from lucky_pony import pony_svg
+from lucky_pony import pony_svg, VB_W, VB_H
 from flat_horse import to_png
 
 W, Hh = 780, 320
@@ -79,19 +79,19 @@ img = over(img, layer, la)
 # ---------- 蹄鉄の中に、金運の馬のキャラクター ----------
 halo = np.exp(-(((xx - 390) / 74) ** 2 + ((yy - 150) / 74) ** 2))          # うしろの光
 img = img + halo[..., None] * hexc('#FFF2B8') * 0.42
-PH = 174                                                                       # キャラクターの高さ（画素）
-pw = int(round(PH * 200 / 210))
+PH = 180                                                                       # キャラクターの高さ（画素）
+pw = int(round(PH * VB_W / VB_H))
 tmp = os.path.join(TMP, 'lucky_pony.png')
-to_png(pony_svg(200, 210), 200, 210, tmp, scale=6)
+to_png(pony_svg(VB_W, VB_H), VB_W, VB_H, tmp, scale=6)
 pim = cv2.imread(tmp, cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
 pa = pim[..., 3]
 prem = pim[..., :3][..., ::-1] * pa[..., None]
 prem = cv2.resize(prem, (pw, PH), interpolation=cv2.INTER_AREA)
 pa = cv2.resize(pa, (pw, PH), interpolation=cv2.INTER_AREA)
 prgb = prem / np.maximum(pa[..., None], 1e-4)
-px0, py0 = 390 - pw // 2, 58
+px0, py0 = 390 - pw // 2 + 9, 52                                               # 体のまん中を蹄鉄のまん中に
 sh = np.zeros((Hh, W), np.float32)                                             # 足もとのうすい影
-cv2.ellipse(sh, (390 * 16, int((py0 + PH * 0.975) * 16)), (int(pw * 0.40 * 16), int(5 * 16)), 0, 0, 360, 1.0, -1, cv2.LINE_AA, shift=4)
+cv2.ellipse(sh, (386 * 16, int((py0 + PH * 0.972) * 16)), (int(pw * 0.40 * 16), int(5 * 16)), 0, 0, 360, 1.0, -1, cv2.LINE_AA, shift=4)
 img = img * (1 - blur(sh, 2.5)[..., None] * 0.30)
 img[py0:py0 + PH, px0:px0 + pw] = over(img[py0:py0 + PH, px0:px0 + pw], prgb, pa)
 

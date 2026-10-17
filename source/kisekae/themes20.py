@@ -691,7 +691,7 @@ THEMES = [
                  fonts='見出し：M PLUS 1 Black<br>本文：M PLUS 1', shape='角丸14px・青い太枠に黄・赤のずらした影・帯の下に勝負服のしま・ななめの「第1」・すみに勝負服',
                  pic='勝負服のしまと市松・ひし形の勝負服の騎手・ゼッケン1の馬')),
 
- dict(id='lucky', cat=3, name='開運', desc='緑と金・蹄鉄', title='開運・蹄鉄（緑×金）', banner='lucky', alt='金の蹄鉄の中で、前足をあげて千両の小判をだいた金色の馬のキャラクターと、四つ葉のクローバー、金貨のイラスト',
+ dict(id='lucky', cat=3, name='開運', desc='緑と金・蹄鉄', title='開運・蹄鉄（緑×金）', banner='lucky', alt='金の蹄鉄の中で、右の前足をあげて福を招き、千両の小判をだいたクリーム色の子馬のキャラクターと、四つ葉のクローバー、金貨のイラスト',
       fonts=['Zen+Antique+Soft', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#F3F8F1', ink='#1C2E22', sub='#4E6455', card='#FFFFFF', cardB='1.5px solid #D8C08A', cardO='0 solid transparent', cardS='0 3px 0 #E6D7B0',
              radius='14px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Zen Antique Soft"', dw='400', logo='#F3D27A', logoS='none',
@@ -711,7 +711,7 @@ THEMES = [
       orn=orn_lucky(),
       guide=dict(colors=[('#1F6B3A', '緑'), ('#D4A63A', '金'), ('#FFE7A6', '薄い金'), ('#F3F8F1', '背景'), ('#1C2E22', '文字')],
                  fonts='見出し：Zen Antique Soft（金の文字）<br>本文：Zen角ゴシック New', shape='角丸14px・金の枠・金のボタン・クローバーの背景・上下の帯は緑・すみに小判',
-                 pic='金の蹄鉄・中に金運の馬のキャラクター（福を招く前足・千両の小判・鈴）・四つ葉のクローバー・金貨・キラキラ')),
+                 pic='金の蹄鉄・中に金運の子馬のキャラクター（クリーム色・福を招く右前足・千両の小判・鈴）・四つ葉のクローバー・金貨・キラキラ')),
 
  dict(id='shogi', cat=4, name='将棋', desc='木目・桂馬', title='将棋・桂馬（木目）', banner='shogi', alt='将棋盤の上の桂馬と歩兵の駒のイラスト',
       fonts=['Zen+Antique', 'Zen+Kaku+Gothic+New:wght@500;700'],

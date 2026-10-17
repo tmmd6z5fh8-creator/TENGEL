@@ -1,11 +1,21 @@
-"""開運の馬のキャラクター（SVG・200×210）：金色の子馬が前を向いておすわりし、
-   片方の前足をあげて「おいで」と福を招き、もう片方の前足で小判（千両）をだいている。
-   緑の首輪に金の鈴・キラキラの目・ほっぺ・にっこり口。色は壁紙の緑と金に合わせる。形はすべて一から作ったオリジナル
+"""開運の馬のキャラクター（SVG・214×212）：右を向いておすわりした子馬。顔はななめ向きで、まるい大きな鼻先。
+   近いほうの前足（右前足）を顔の横にあげて福を招き（右の前足は金運）、遠いほうの前足で「千両」の小判をだく。緑の首輪に金の鈴。
+   クリーム色の体・茶色のたてがみと前髪・太いこげ茶の線・ベタぬり・小さな目・にっこり口・ほっぺ。
+   参考にした子馬のイラストはふんいき（色・線・ゆるい顔）だけ。形・ポーズ・向きはすべて一から作ったオリジナル
    python3 flat/lucky_pony.py <出力.svg>（確かめ用）"""
 import sys, math
 
-OUT = '#6B4510'          # 線（こげ茶の金）
-LW = 3.0
+VB_W, VB_H = 214, 212
+OUT = '#5E3F1E'          # 線
+LW = 4.2
+BODY = '#F5D485'         # 体（金色がかったクリーム）
+MUZ = '#FCE9BE'          # 鼻先
+SHADE = '#E9C26F'        # 首の下のかげ
+HAIR = '#9C6A3A'         # たてがみ・しっぽ・ひづめ
+HAIR_HI = '#B98654'
+EYE = '#4A3017'
+CHEEK = '#F3A387'
+EAR_IN = '#F2C08E'
 
 
 def star4(cx, cy, r, fill, rot=0.0, k=0.28):
@@ -17,101 +27,102 @@ def star4(cx, cy, r, fill, rot=0.0, k=0.28):
     return f"<polygon points='{' '.join(pts)}' fill='{fill}'/>"
 
 
-def pony_svg(w=200, h=210):
-    defs = (
-        "<defs>"
-        "<radialGradient id='gHead' cx='0.42' cy='0.32' r='0.75'><stop offset='0' stop-color='#FFF1B8'/><stop offset='0.55' stop-color='#F8D25E'/>"
-        "<stop offset='1' stop-color='#E8AE3E'/></radialGradient>"
-        "<radialGradient id='gBody' cx='0.40' cy='0.28' r='0.85'><stop offset='0' stop-color='#FFEBA6'/><stop offset='0.6' stop-color='#F6CB52'/>"
-        "<stop offset='1' stop-color='#E3A63A'/></radialGradient>"
-        "<linearGradient id='gMane' x1='0' y1='0' x2='0.3' y2='1'><stop offset='0' stop-color='#F7AA44'/><stop offset='1' stop-color='#D8701C'/></linearGradient>"
-        "<linearGradient id='gKoban' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#FFF7CF'/><stop offset='0.45' stop-color='#F4CF58'/>"
-        "<stop offset='1' stop-color='#C38E26'/></linearGradient>"
-        "<linearGradient id='gBell' x1='0' y1='0' x2='0.6' y2='1'><stop offset='0' stop-color='#FFF4C2'/><stop offset='0.5' stop-color='#F0C24C'/>"
-        "<stop offset='1' stop-color='#B9861F'/></linearGradient>"
-        "<linearGradient id='gCollar' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#37A05A'/><stop offset='1' stop-color='#1A5E33'/></linearGradient>"
-        "</defs>")
+def P(d, fill, extra=''):
+    return f"<path d='{d}' fill='{fill}' stroke='{OUT}' stroke-width='{LW}' stroke-linejoin='round' stroke-linecap='round' {extra}/>"
+
+
+HEAD = ('M98 22 C122 22 140 32 148 48 C151 55 153 60 157 64 C170 69 179 82 179 98 '
+        'C179 117 163 129 141 130 C126 131 112 131 98 130 C82 128 70 120 62 110 C55 100 50 86 50 70 C50 42 72 22 98 22 Z')
+TORSO = 'M60 150 C66 136 86 130 104 130 C124 130 142 136 148 150 C154 166 154 188 148 202 C140 208 74 208 64 202 C56 188 54 164 60 150 Z'
+KX, KY = 124, 174
+FORELOCK = ('M80 38 C78 26 88 16 101 16 C113 16 121 24 120 33 C119 40 113 44 107 42 C110 38 109 33 105 32 '
+            'C101 31 98 34 98 38 C95 36 91 36 88 39 C85 42 81 42 80 38 Z')
+ARM = 'M88 142 C80 144 70 144 64 141 C60 132 60 122 62 112 L42 110 C38 124 38 142 44 154 C50 162 72 163 88 160 Z'
+ARM_LN = 'M88 160 C72 163 50 162 44 154 C38 142 38 124 42 110 M62 112 C60 122 60 132 64 141 C70 144 80 144 88 142'
+HOOF_UP = 'M37 110 C35 99 43 91 52 91 C61 91 68 98 66 107 C65 114 58 118 49 117 C43 116 38 114 37 110 Z'
+HAUNCH = 'M34 178 C34 158 48 146 66 146 C84 146 98 160 98 178 C98 196 86 206 66 206 C46 206 34 196 34 178 Z'
+
+
+def pony_svg(w=VB_W, h=VB_H):
     s = []
-    st = f"stroke='{OUT}' stroke-width='{LW}' stroke-linejoin='round' stroke-linecap='round'"
-    # しっぽ（体のうしろ・右下でくるん）
-    s.append(f"<path d='M138 172 C154 160 172 160 184 170 C178 170 174 174 176 180 C182 178 188 182 190 190 C182 186 176 188 174 196 "
-             f"C168 190 160 190 154 196 C152 188 146 184 138 186 Z' fill='url(#gMane)' {st}/>")
-    s.append("<path d='M150 172 C160 168 170 168 178 172' fill='none' stroke='#FFD089' stroke-width='2.2' stroke-linecap='round' opacity='0.85'/>")
-    # たてがみ（頭のうしろ・両がわ）
-    s.append(f"<path d='M128 34 C150 34 168 52 166 74 C174 84 172 100 162 108 C164 98 158 92 150 92 C154 84 150 74 142 70 Z' fill='url(#gMane)' {st}/>")
-    s.append(f"<path d='M72 34 C52 36 36 52 38 72 C32 82 34 96 42 102 C42 92 48 86 54 84 C50 76 54 66 60 62 Z' fill='url(#gMane)' {st}/>")
-    # 耳
-    for sx in (1, -1):
-        X = lambda x: 100 + (x - 100) * sx
-        s.append(f"<path d='M{X(64)} 50 C{X(52)} 34 {X(46)} 16 {X(51)} 4 C{X(63)} 12 {X(77)} 26 {X(83)} 40 Z' fill='url(#gHead)' {st}/>")
-        s.append(f"<path d='M{X(63)} 40 C{X(58)} 30 {X(55)} 20 {X(56)} 13 C{X(63)} 19 {X(70)} 27 {X(74)} 36 Z' fill='#F1A65E' opacity='0.85'/>")
-    # 体（おすわり）・うしろ足のもも
-    body = 'M64 124 C54 146 50 170 54 192 C58 202 142 202 146 192 C150 170 146 146 136 124 C122 116 78 116 64 124 Z'
-    thighL = 'M46 186 C44 170 58 160 74 164 C86 168 88 186 80 196 C70 204 50 202 46 186 Z'
-    thighR = 'M154 186 C156 170 142 160 126 164 C114 168 112 186 120 196 C130 204 150 202 154 186 Z'
-    s.append(f"<g fill='{OUT}' stroke='{OUT}' stroke-width='{LW * 2}' stroke-linejoin='round'><path d='{body}'/><path d='{thighL}'/><path d='{thighR}'/></g>")
-    s.append(f"<g fill='url(#gBody)'><path d='{body}'/><path d='{thighL}'/><path d='{thighR}'/></g>")
-    s.append(f"<path d='M74 168 C80 176 82 188 78 196' fill='none' stroke='{OUT}' stroke-width='2.2' stroke-linecap='round' opacity='0.55'/>")
-    s.append(f"<path d='M126 168 C120 176 118 188 122 196' fill='none' stroke='{OUT}' stroke-width='2.2' stroke-linecap='round' opacity='0.55'/>")
-    s.append("<ellipse cx='100' cy='166' rx='25' ry='25' fill='#FFF2CC' opacity='0.95'/>")             # おなか
-    # うしろ足のひづめ（前に出ている）
-    for x in (58, 142):
-        s.append(f"<path d='M{x - 13} 192 C{x - 13} 186 {x + 13} 186 {x + 13} 192 L{x + 12} 201 C{x + 6} 205 {x - 6} 205 {x - 12} 201 Z' fill='#C9862E' {st}/>")
-        s.append(f"<path d='M{x - 8} 191 C{x - 3} 189 {x + 3} 189 {x + 8} 191' fill='none' stroke='#F2C27A' stroke-width='1.6' stroke-linecap='round'/>")
+    s.append("<defs>"
+             f"<clipPath id='hc'><path d='{HEAD}'/></clipPath>"
+             "<linearGradient id='kbG' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#FFF7CF'/><stop offset='0.45' stop-color='#F4CF58'/>"
+             "<stop offset='1' stop-color='#C38E26'/></linearGradient>"
+             "<linearGradient id='blG' x1='0' y1='0' x2='0.6' y2='1'><stop offset='0' stop-color='#FFF4C2'/><stop offset='0.5' stop-color='#F0C24C'/>"
+             "<stop offset='1' stop-color='#B9861F'/></linearGradient>"
+             "</defs>")
+    # しっぽ（左うしろで上にくるん）
+    s.append(P('M40 184 C24 182 12 170 12 154 C12 142 18 132 26 128 C24 138 28 146 34 146 C30 136 36 126 44 124 '
+               'C42 134 46 142 52 146 L52 176 Z', HAIR))
+    # たてがみ（頭のうしろ＝左がわ、首から肩へ）
+    s.append(P('M66 40 C48 44 38 60 42 78 C32 88 32 104 42 112 C34 122 38 136 50 142 C54 134 62 130 72 130 L72 50 Z', HAIR))
+    # 体（胴＋うしろ足のもも）：線を先にぬって、上から色
+    s.append(f"<g fill='{OUT}' stroke='{OUT}' stroke-width='{LW * 2}' stroke-linejoin='round'><path d='{TORSO}'/><path d='{HAUNCH}'/></g>")
+    s.append(f"<g fill='{BODY}'><path d='{TORSO}'/><path d='{HAUNCH}'/></g>")
+    s.append(f"<path d='M92 166 C100 176 100 189 94 199' fill='none' stroke='{OUT}' stroke-width='{LW * 0.8}' stroke-linecap='round'/>")
+    # 首の下のかげ
+    s.append(f"<path d='M74 132 C90 146 124 148 144 140 C138 134 122 130 104 130 C92 130 82 130 74 132 Z' fill='{SHADE}'/>")
+    # うしろ足のひづめ（ももの前）
+    s.append(P('M78 197 C78 189 102 188 104 196 C104 204 80 206 78 197 Z', HAIR))
+    s.append(f"<path d='M84 194 C88 191.5 96 191.5 100 193.5' fill='none' stroke='{HAIR_HI}' stroke-width='2' stroke-linecap='round'/>")
+    # 遠いほうの前足（左前足）：小判のうしろから下へ
+    s.append(P('M126 138 C138 136 150 142 150 156 C151 170 150 184 146 194 L128 194 C128 176 128 156 126 138 Z', BODY))
     # 小判（おなかの前）
-    s.append(f"<ellipse cx='105' cy='167' rx='19.5' ry='27' fill='url(#gKoban)' {st}/>")
-    s.append("<ellipse cx='105' cy='167' rx='14.5' ry='21.5' fill='none' stroke='#C38E26' stroke-width='1.3'/>")
-    for k in range(-6, 7):
-        y = 167 + k * 3.4
-        hw = 14.0 * math.sqrt(max(0.0, 1 - ((y - 167) / 22.0) ** 2))
-        if hw > 3:
-            s.append(f"<line x1='{105 - hw:.1f}' y1='{y:.1f}' x2='{105 + hw:.1f}' y2='{y:.1f}' stroke='#D9A63A' stroke-width='0.9' opacity='0.8'/>")
-    s.append("<rect x='98.5' y='152' width='13' height='29' rx='1.8' fill='#FFF3C4' stroke='#B07A1C' stroke-width='1'/>")
-    s.append("<text x='105' y='165' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='12' fill='#6E4508' text-anchor='middle'>千</text>")
-    s.append("<text x='105' y='178.5' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='12' fill='#6E4508' text-anchor='middle'>両</text>")
-    s.append("<path d='M94 154 C96 149 100 146 104 145' fill='none' stroke='#FFFFFF' stroke-width='2' stroke-linecap='round' opacity='0.85'/>")
-    # 小判をだく前足（右がわ）
-    armR = 'M137 130 C148 144 148 164 138 174 C132 180 124 180 122 174 C120 166 128 160 130 150 Z'
-    s.append(f"<path d='{armR}' fill='url(#gBody)' {st}/>")
-    s.append(f"<path d='M132 174 C132 167 126 163 120 165 C114 168 114 177 119 181 C124 185 132 181 132 174 Z' fill='#C9862E' {st}/>")
+    kx, ky = KX, KY
+    s.append(f"<g transform='rotate(-9 {kx} {ky})'>")
+    s.append(P(f'M{kx} {ky - 22} C{kx + 11} {ky - 22} {kx + 16} {ky - 12} {kx + 16} {ky} C{kx + 16} {ky + 12} {kx + 11} {ky + 22} {kx} {ky + 22} '
+               f'C{kx - 11} {ky + 22} {kx - 16} {ky + 12} {kx - 16} {ky} C{kx - 16} {ky - 12} {kx - 11} {ky - 22} {kx} {ky - 22} Z', 'url(#kbG)'))
+    s.append(f"<ellipse cx='{kx}' cy='{ky}' rx='11.6' ry='17.4' fill='none' stroke='#C38E26' stroke-width='1.2'/>")
+    for k in range(-5, 6):
+        y = ky + k * 3.2
+        hw = 11.0 * math.sqrt(max(0.0, 1 - ((y - ky) / 17.4) ** 2))
+        if hw > 3 and abs(k) > 2:
+            s.append(f"<line x1='{kx - hw:.1f}' y1='{y:.1f}' x2='{kx + hw:.1f}' y2='{y:.1f}' stroke='#D9A63A' stroke-width='0.9'/>")
+    s.append(f"<rect x='{kx - 6}' y='{ky - 12.5}' width='12' height='25' rx='1.6' fill='#FFF3C4' stroke='#B07A1C' stroke-width='1'/>")
+    s.append(f"<text x='{kx}' y='{ky - 1.2}' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='10.5' fill='#6E4508' text-anchor='middle'>千</text>")
+    s.append(f"<text x='{kx}' y='{ky + 10.4}' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='10.5' fill='#6E4508' text-anchor='middle'>両</text>")
+    s.append(f"<path d='M{kx - 10} {ky - 12} C{kx - 8} {ky - 17} {kx - 4} {ky - 20} {kx + 1} {ky - 20}' fill='none' stroke='#FFFFFF' stroke-width='2' stroke-linecap='round' opacity='0.85'/>")
+    s.append("</g>")
+    # 遠いほうの前足のひづめ：小判の右下をささえる
+    s.append(P('M128 196 C126 188 132 182 140 182 C148 182 154 188 152 196 C150 203 132 204 128 196 Z', HAIR))
+    s.append(f"<path d='M133 189 C136 185.5 142 185 146 187' fill='none' stroke='{HAIR_HI}' stroke-width='2' stroke-linecap='round'/>")
     # 首輪と鈴
-    s.append(f"<path d='M62 124 C80 136 120 136 138 124 L139 132 C120 145 80 145 61 132 Z' fill='url(#gCollar)' stroke='#123F22' stroke-width='2' stroke-linejoin='round'/>")
-    # 頭（大きい丸＋鼻先）
-    head = 'M100 26 C134 26 154 48 153 76 C152 92 144 102 138 108 C140 124 124 136 100 136 C76 136 60 124 62 108 C56 102 48 92 47 76 C46 48 66 26 100 26 Z'
-    s.append(f"<path d='{head}' fill='url(#gHead)' {st}/>")
-    s.append("<path d='M100 86 C124 86 138 98 137 112 C136 126 120 134 100 134 C80 134 64 126 63 112 C62 98 76 86 100 86 Z' fill='#FFF0C6'/>")   # 鼻先（明るい）
-    s.append("<ellipse cx='84' cy='46' rx='15' ry='8' fill='#FFFFFF' opacity='0.35' transform='rotate(-18 84 46)'/>")                       # 頭のつや
-    # 前髪（くるんと立つ）
-    s.append(f"<path d='M86 40 C80 26 88 12 102 12 C116 12 124 24 118 34 C114 28 108 26 104 30 C110 32 112 40 106 44 C100 48 92 46 86 40 Z' fill='url(#gMane)' {st}/>")
-    s.append("<path d='M94 24 C98 18 106 17 111 21' fill='none' stroke='#FFD089' stroke-width='2' stroke-linecap='round' opacity='0.85'/>")
-    # 目（キラキラ）
-    for cx in (80, 120):
-        s.append(f"<ellipse cx='{cx}' cy='74' rx='8' ry='10' fill='#3A2410'/>")
-        s.append(f"<ellipse cx='{cx}' cy='79' rx='5.5' ry='4' fill='#7A4A1C' opacity='0.9'/>")
-        s.append(f"<circle cx='{cx - 3}' cy='70' r='3.2' fill='#FFFFFF'/>")
-        s.append(star4(cx + 3.2, 78.5, 2.6, '#FFF3B0', rot=0.0, k=0.3))
+    s.append(f"<path d='M62 118 C80 136 128 140 150 126 L152 134 C130 150 78 146 60 126 Z' fill='#2F8F4E' stroke='#163F25' stroke-width='2.2' stroke-linejoin='round'/>")
+    s.append(f"<circle cx='118' cy='141' r='7' fill='url(#blG)' stroke='{OUT}' stroke-width='2.2'/>")
+    s.append(f"<path d='M112.4 141 L123.6 141' stroke='{OUT}' stroke-width='1.5' stroke-linecap='round'/>")
+    s.append(f"<circle cx='118' cy='144.4' r='1.5' fill='{OUT}'/>")
+    s.append("<circle cx='115.6' cy='138.2' r='1.7' fill='#FFFFFF' opacity='0.9'/>")
+    # 耳（頭のうしろ）
+    s.append(P('M70 38 C63 27 62 14 66 6 C68 2 72 2 76 4 C86 10 94 19 98 30 Z', BODY))
+    s.append(f"<path d='M74 32 C70 24 70 16 73 10 C81 15 88 22 91 29 Z' fill='{EAR_IN}'/>")
+    s.append(P('M110 28 C113 18 122 9 133 5 C137 3 140 5 140 9 C141 19 139 29 132 38 Z', BODY))
+    s.append(f"<path d='M116 27 C119 19 126 13 134 10 C136 18 134 26 129 32 Z' fill='{EAR_IN}'/>")
+    # 頭
+    s.append(P(HEAD, BODY))
+    s.append(f"<g clip-path='url(#hc)'><ellipse cx='141' cy='105' rx='42' ry='27.5' fill='{MUZ}' transform='rotate(6 141 105)'/></g>")
+    s.append(f"<path d='{HEAD}' fill='none' stroke='{OUT}' stroke-width='{LW}' stroke-linejoin='round'/>")
+    # 前髪（右へくるん）
+    s.append(P(FORELOCK, HAIR))
+    s.append(f"<path d='M88 26 C92 21.5 99 20 105 21' fill='none' stroke='{HAIR_HI}' stroke-width='2.2' stroke-linecap='round'/>")
+    # 目
+    for (cx, cy, rx, ry) in ((94, 74, 6.6, 8.8), (140, 70, 5.0, 7.6)):
+        s.append(f"<ellipse cx='{cx}' cy='{cy}' rx='{rx}' ry='{ry}' fill='{EYE}'/>")
+        s.append(f"<circle cx='{cx + rx * 0.3:.1f}' cy='{cy - ry * 0.38:.1f}' r='{rx * 0.32:.1f}' fill='#FFFFFF'/>")
     # ほっぺ・鼻の穴・口
-    s.append("<ellipse cx='63' cy='96' rx='9' ry='6' fill='#FF9A86' opacity='0.55'/>")
-    s.append("<ellipse cx='137' cy='96' rx='9' ry='6' fill='#FF9A86' opacity='0.55'/>")
-    s.append("<ellipse cx='90' cy='104' rx='3.8' ry='2.6' fill='#9A6422' transform='rotate(25 90 104)'/>")
-    s.append("<ellipse cx='110' cy='104' rx='3.8' ry='2.6' fill='#9A6422' transform='rotate(-25 110 104)'/>")
-    s.append(f"<path d='M88 115 C93 125 107 125 112 115 C106 118 94 118 88 115 Z' fill='#E4736A' stroke='{OUT}' stroke-width='2.4' stroke-linejoin='round'/>")
-    s.append("<path d='M95 121 C98 124 102 124 105 121' fill='none' stroke='#FF9F8F' stroke-width='1.6' stroke-linecap='round'/>")
-    # 鈴（鼻先の下）
-    s.append(f"<circle cx='100' cy='142' r='8.5' fill='url(#gBell)' stroke='{OUT}' stroke-width='2.2'/>")
-    s.append(f"<path d='M93.5 142 L106.5 142' stroke='{OUT}' stroke-width='1.6' stroke-linecap='round'/>")
-    s.append(f"<circle cx='100' cy='146' r='1.8' fill='{OUT}'/>")
-    s.append(f"<path d='M100 146 L100 149.5' stroke='{OUT}' stroke-width='1.5' stroke-linecap='round'/>")
-    s.append("<circle cx='97' cy='138.5' r='2' fill='#FFFFFF' opacity='0.9'/>")
-    # あげた前足（左がわ：福を招く）
-    armL = 'M66 132 C54 132 44 124 40 112 C36 102 38 92 44 88 C52 84 58 90 58 98 C58 106 62 114 70 118 Z'
-    s.append(f"<path d='{armL}' fill='url(#gBody)' {st}/>")
-    s.append(f"<path d='M37 92 C36 82 44 76 52 78 C58 80 60 88 56 94 C52 99 41 100 37 92 Z' fill='#C9862E' {st}/>")
-    s.append("<path d='M42 84 C45 80 50 79 53 81' fill='none' stroke='#F2C27A' stroke-width='1.6' stroke-linecap='round'/>")
-    # キラキラ（まわり）
-    for (x, y, r, rot) in ((26, 66, 6.5, 0.0), (174, 120, 5.5, 0.4), (34, 140, 4.2, 0.2), (166, 44, 4.8, 0.0), (130, 186, 3.6, 0.3)):
+    s.append(f"<ellipse cx='86' cy='98' rx='11' ry='7' fill='{CHEEK}' opacity='0.85'/>")
+    s.append(f"<ellipse cx='146' cy='104' rx='3' ry='3.6' fill='{EYE}'/>")
+    s.append(f"<ellipse cx='162' cy='100' rx='2.5' ry='3.1' fill='{EYE}'/>")
+    s.append(f"<path d='M130 114 C138 122 152 122 160 114' fill='none' stroke='{OUT}' stroke-width='3.4' stroke-linecap='round'/>")
+    # 近いほうの前足（右前足）：顔の横にあげて福を招く（いちばん手前）
+    s.append(f"<path d='{ARM}' fill='{BODY}'/>")
+    s.append(f"<path d='{ARM_LN}' fill='none' stroke='{OUT}' stroke-width='{LW}' stroke-linejoin='round' stroke-linecap='round'/>")
+    s.append(P(HOOF_UP, HAIR))
+    s.append(f"<path d='M43 101 C45 96.5 50 94.5 55 95.5' fill='none' stroke='{HAIR_HI}' stroke-width='2' stroke-linecap='round'/>")
+    # キラキラ
+    for (x, y, r, rot) in ((190, 50, 6.0, 0.0), (22, 98, 4.6, 0.3), (196, 150, 4.2, 0.2), (176, 24, 3.8, 0.0)):
         s.append(star4(x, y, r, '#FFF6C8', rot=rot, k=0.25))
-    return f"<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 200 210'>{defs}{''.join(s)}</svg>"
+    return (f"<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {VB_W} {VB_H}'>" + ''.join(s) + "</svg>")
 
 
 if __name__ == '__main__':
