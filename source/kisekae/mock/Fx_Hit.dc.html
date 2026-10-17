@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>的中ボタン（ベース）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#F3F8E6;--ink:#2B3A18;--sub:#5A6A42;--card:#FFFFFF;--cardB:2px solid #CFE6A8;--cardO:0 solid transparent;--cardS:0 3px 0 #DCEBC0;--radius:18px;--rs:14px;--font:"Zen Maru Gothic";--dfont:"Zen Maru Gothic";--dw:900;--logo:#24470C;--logoS:0 2px 0 rgba(255,255,255,.55);--iii:#8A5A2B;--iiiB:0 solid transparent;--iiiR:2px;--hd:linear-gradient(180deg,#A9DA5E,#86C23C);--hdInk:#24470C;--mBg:#FFF9E6;--mLine:#A8743F;--mInk:#5A3A1A;--pill:#FFF9E6;--pillLine:#E4D3A8;--pillInk:#5A3A1A;--coin:#FFD84A;--coinInk:#5A3A1A;--badge:#E5F4CC;--badgeInk:#3D7A16;--badgeB:2px solid #CFE6A8;--tagBg:#F7FBEF;--tagInk:#3D5A1E;--tagLine:#CFE6A8;--warnBg:#FFE9D6;--warnInk:#A0461A;--zBg:#F7FBEF;--zB:1.5px solid #DDEDC0;--znBg:#A8743F;--znInk:#FFF8E8;--znB:0 solid transparent;--znR:4px;--acc:#2F6A12;--nR:8px;--w2B:0 solid transparent;--sep:2px dotted #CFE6A8;--btn:#3E7B1E;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:14px;--btnS:0 3px 0 #2A5A10;--btn2:#FFFFFF;--btn2Ink:#3E7B1E;--btn2B:2px solid #A9D46A;--tab:#FFFBEA;--tabB:4px solid #A8743F;--tabInk:#7A6A4F;--tabOn:#DDF0BC;--tabOnInk:#2F6A12;--tabR:14px}
+.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55)}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px;color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:4px solid #A8743F}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.bnr{flex:none;display:block;width:390px;height:120px;object-fit:cover;object-position:50% 70%}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0}
+.card{position:relative;background:var(--card);border:var(--cardB);border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--sub)}
+.rh{display:flex;align-items:baseline;gap:10px}
+.rk{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:22px;color:var(--ink)}
+.rs{font-size:12px;color:var(--sub)}
+.lab{margin:12px 0 6px;font-size:12px;font-weight:700;color:var(--sub)}
+.fin{display:flex;align-items:center;gap:8px}
+.fin span.k{font-size:12px;font-weight:700;color:var(--sub)}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.ar{color:var(--sub);font-weight:700;padding:0 2px}
+.bets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bets li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:var(--zBg);border:var(--zB)}
+.bt{flex:none;min-width:46px;height:24px;padding:0 8px;border-radius:999px;background:var(--znBg);color:var(--znInk);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.bc{display:flex;align-items:center;gap:3px;flex:1}
+.bc .n{min-width:26px;height:26px;font-size:13px}
+.by{font-size:12.5px;font-weight:700;color:var(--ink)}
+.pay{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:10px 12px;border-radius:var(--rs);border:1.5px dashed var(--tagLine);font-size:13px;font-weight:700;color:var(--ink)}
+.pay b{font-size:17px}
+.rec{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:14px;border:0;border-radius:var(--btnR);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:800;font-size:17px;cursor:pointer}
+.rec svg{width:20px;height:20px}
+.note{margin:10px 2px 0;font-size:11.5px;line-height:1.5;color:var(--sub)}
+/* ---------- 重ねる画面 ---------- */
+.ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* PUSHボタン */
+.pbox{position:relative;display:flex;flex-direction:column;align-items:center}
+.push{position:relative;z-index:2;width:150px;height:150px;border-radius:50%;border:0;padding:0;cursor:pointer;
+  background:radial-gradient(circle at 34% 28%,#FFFFFF 0 5%,var(--pushC) 13%,var(--pushA) 44%,var(--pushB) 82%,#5E0A05 100%);
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
+  animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push span{position:relative;font:400 38px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push::after{content:"";position:absolute;inset:-18px;border-radius:50%;border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
+.pshadow{width:150px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
+.tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes shad{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.72);opacity:.3}}
+@keyframes ring{0%{transform:scale(.88);opacity:.95}100%{transform:scale(1.4);opacity:0}}
+@keyframes popIn{from{scale:.2}to{scale:1}}
+@keyframes blink{0%{opacity:1}100%{opacity:.35}}
+/* 押したあと */
+.pressed{position:absolute;z-index:3;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,#FFFFFF 0 5%,var(--pushC) 13%,var(--pushA) 44%,var(--pushB) 82%,#5E0A05 100%);
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+@keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
+/* ボードを持つ馬 */
+.hb{position:absolute;z-index:6;left:50%;top:150px;width:360px;height:450px;margin-left:-180px}
+.hb img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.board{position:absolute;left:12px;top:133.5px;width:336px;height:220px;border-radius:16px;border:8px solid var(--bFrame);background:var(--bFace);
+  box-shadow:0 10px 22px rgba(0,0,0,.28),inset 0 0 0 2px rgba(0,0,0,.05);padding:30px 16px 12px;display:flex;flex-direction:column;align-items:stretch;gap:7px;color:var(--bInk)}
+.bh{text-align:center;font:400 34px/1 "Dela Gothic One",sans-serif;color:var(--hitRed);text-shadow:0 2px 0 #FFFFFF,0 4px 0 rgba(0,0,0,.12)}
+.bsub{text-align:center;font-size:12.5px;font-weight:700;color:#7A5A3A;margin-top:-2px}
+.brows{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.brows li{display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:10px;background:rgba(138,90,43,.08);white-space:nowrap}
+.brows .bt{min-width:44px;height:22px;font-size:11.5px}
+.brows .bc .n{min-width:24px;height:24px;font-size:12.5px}
+.brows .by{font-size:11px;color:#7A5A3A}
+.brows .bp{margin-left:auto;font-size:14.5px;font-weight:800;color:var(--hitRed)}
+.brows .bc{flex:none;gap:2px}
+.brows .ar{padding:0 1px}
+.btot{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-top:auto;font-size:12.5px;font-weight:700;color:#5A3A1A}
+.btot b{font:400 22px/1 "Dela Gothic One",sans-serif;color:var(--bInk)}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+/* 紙ふぶき */
+.conf{position:absolute;inset:0;z-index:7;pointer-events:none}
+.conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.tap,.conf i,.rays,.rbow,.ring,.spk b{animation:none!important}.conf{display:none}}
+
+/* ---------- 的中：あたたかい光 → 馬が下から出る ---------- */
+.rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
+  background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
+  animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
+@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
+@keyframes spin{to{rotate:360deg}}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+@keyframes riseUp{from{transform:translateY(560px)}to{transform:translateY(0)}}
+.hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.hit .brows li{animation:rowIn .35s ease-out both}
+.hit .brows li:nth-child(1){animation-delay:1.15s}
+.hit .brows li:nth-child(2){animation-delay:1.3s}
+.hit .brows li:nth-child(3){animation-delay:1.45s}
+.hit .btot{animation:rowIn .35s ease-out 1.6s both}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+.hit .close{animation-delay:1.8s}
+
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+  </header>
+  <img class="bnr" src="/_blob/4d32303d3e8ea65630ceca0f8b0b72e6" alt="青空と芝生、木の柵、草原に立つ栗毛の馬のイラスト">
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レースの結果を記録</h2>
+      <div class="rh"><span class="rk">9R</span><span class="rs">1400m ダ・良・12頭・予約したレース</span></div>
+      <p class="lab">着順（馬番）</p>
+      <div class="fin"><span class="k">1着</span><span class="n w5">6</span><span class="k">2着</span><span class="n w2">2</span><span class="k">3着</span><span class="n w7">10</span></div>
+      <p class="lab">予約した買い目</p>
+      <ul class="bets"><li><span class="bt">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li><li><span class="bt">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span></li><li><span class="bt">3連単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w7">10</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li></ul>
+      <div class="pay"><span>払戻（回収額）</span><b>2,530円</b></div>
+      <button class="rec" type="button" onClick="{{toPush}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>記録する</button>
+      <p class="note">3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）</p>
+    </section>
+  </main>
+  <sc-if value="{{isPush}}" hint-placeholder-val="{{false}}">
+  <div class="ov">
+    <div class="dim"></div>
+    
+    <div class="pbox">
+      <button class="push" type="button" onClick="{{toReveal}}" aria-label="的中ボタン"><span>PUSH</span></button>
+      <div class="pshadow"></div>
+      <p class="tap">タップ！</p>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{isReveal}}" hint-placeholder-val="{{false}}">
+  <div class="ov hit">
+    <div class="dim"></div>
+    <div class="rays"></div>
+    <div class="pressed"></div>
+    <div class="hb">
+      <img src="/_blob/1ed688b24401fad37e1c64fc4605a902" alt="ボードを持つ馬">
+      <div class="board"><div class="bh">的中！</div><div class="bsub">9R の当たった買い目</div><ul class="brows"><li><span class="bt">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span><span class="bp">1,840円</span></li><li><span class="bt">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span><span class="bp">690円</span></li></ul><div class="btot">払戻 合計<b>2,530円</b></div></div>
+      <img src="/_blob/d37c9bc6b09f26adad5aa8af4a31425c" alt="">
+    </div>
+    <div class="conf"><i style="--x:93.8%;--d:2.09s;--t:2.50s;--w:6px;--h:15px;--r:496deg;--c:#F3C316"></i><i style="--x:60.3%;--d:1.28s;--t:2.69s;--w:8px;--h:12px;--r:654deg;--c:#1F5FC9"></i><i style="--x:50.2%;--d:1.98s;--t:3.97s;--w:7px;--h:16px;--r:589deg;--c:#F27BB0"></i><i style="--x:17.8%;--d:0.39s;--t:2.82s;--w:7px;--h:11px;--r:899deg;--c:#FFFFFF"></i><i style="--x:55.7%;--d:2.19s;--t:3.20s;--w:8px;--h:13px;--r:786deg;--c:#3E7B1E"></i><i style="--x:36.7%;--d:1.89s;--t:3.20s;--w:10px;--h:12px;--r:714deg;--c:#F3C316"></i><i style="--x:49.0%;--d:2.03s;--t:3.30s;--w:9px;--h:12px;--r:846deg;--c:#1F5FC9"></i><i style="--x:35.7%;--d:1.60s;--t:3.40s;--w:8px;--h:14px;--r:800deg;--c:#F08A1C"></i><i style="--x:17.9%;--d:2.00s;--t:2.88s;--w:10px;--h:12px;--r:528deg;--c:#F3C316"></i><i style="--x:48.9%;--d:0.81s;--t:3.63s;--w:10px;--h:15px;--r:752deg;--c:#F08A1C"></i><i style="--x:20.4%;--d:1.64s;--t:2.51s;--w:9px;--h:12px;--r:-729deg;--c:#E8382F"></i><i style="--x:74.4%;--d:0.30s;--t:2.88s;--w:9px;--h:16px;--r:-588deg;--c:#FFFFFF"></i><i style="--x:74.9%;--d:0.12s;--t:3.05s;--w:7px;--h:10px;--r:-875deg;--c:#E8382F"></i><i style="--x:5.9%;--d:2.02s;--t:3.07s;--w:7px;--h:16px;--r:-642deg;--c:#E8382F"></i><i style="--x:39.0%;--d:0.09s;--t:4.18s;--w:7px;--h:10px;--r:867deg;--c:#FFFFFF"></i><i style="--x:73.3%;--d:0.25s;--t:3.01s;--w:6px;--h:13px;--r:-847deg;--c:#F08A1C"></i><i style="--x:40.6%;--d:1.37s;--t:2.68s;--w:10px;--h:11px;--r:813deg;--c:#E8382F"></i><i style="--x:45.0%;--d:1.92s;--t:2.63s;--w:8px;--h:12px;--r:438deg;--c:#3E7B1E"></i><i style="--x:26.9%;--d:1.33s;--t:3.16s;--w:6px;--h:13px;--r:-722deg;--c:#3E7B1E"></i><i style="--x:5.2%;--d:0.35s;--t:2.57s;--w:9px;--h:13px;--r:-897deg;--c:#F3C316"></i><i style="--x:70.5%;--d:0.16s;--t:2.54s;--w:7px;--h:15px;--r:499deg;--c:#1F5FC9"></i><i style="--x:28.8%;--d:1.65s;--t:2.67s;--w:8px;--h:11px;--r:-490deg;--c:#E8382F"></i><i style="--x:3.9%;--d:1.65s;--t:2.59s;--w:6px;--h:14px;--r:527deg;--c:#FFFFFF"></i><i style="--x:38.5%;--d:1.51s;--t:3.77s;--w:7px;--h:15px;--r:636deg;--c:#F27BB0"></i><i style="--x:58.8%;--d:1.94s;--t:4.07s;--w:8px;--h:16px;--r:558deg;--c:#F27BB0"></i><i style="--x:94.2%;--d:0.26s;--t:3.06s;--w:9px;--h:16px;--r:370deg;--c:#FFFFFF"></i><i style="--x:41.6%;--d:0.23s;--t:2.76s;--w:9px;--h:15px;--r:392deg;--c:#FFFFFF"></i><i style="--x:48.6%;--d:0.46s;--t:3.46s;--w:6px;--h:12px;--r:525deg;--c:#FFFFFF"></i></div>
+    
+    <button class="close" type="button" onClick="{{toForm}}">とじる</button>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["form","push","reveal"],"default":"form"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var st = this.state || {};
+    var ph = st.ph || this.props.start || 'form';
+    var self = this;
+    return {
+      isPush: ph === 'push',
+      isReveal: ph === 'reveal',
+      toPush: function () { self.setState({ ph: 'push' }); },
+      toReveal: function () { self.setState({ ph: 'reveal' }); },
+      toForm: function () { self.setState({ ph: 'form' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

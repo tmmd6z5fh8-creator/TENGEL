@@ -132,6 +132,13 @@
   - 見本を作る：`python3 kisekae/gen_screens.py kisekae/blobs20.json`（Judge_*.dc.html ×20。文字と背景のコントラストも調べて、4.5未満は LOW と出る）→ `python3 kisekae/gen_main.py kisekae/blobs20.json 1960 2460`（Main.dc.html＝25テーマを5つの組に分けた選ぶ画面・Guide20.dc.html＝新しい20個のメモ）。元の5テーマのCSSは mock/base/main_v17.dc.html から取る。blobs20.json はキャンバスに上げた絵のid
   - 選ぶ画面の動きの確認：`node kisekae/vals_from_js.js kisekae/mock/Main.dc.html <テーマid> <出力>.json`（Main の renderVals をそのまま動かした値）
   - フォントはすべて Google Fonts の無料のもの（OFL）。アプリに入れるときはアプリの中へ。暗いテーマ（花火・ナイター・ネオン・黒板・星座）は黒の枠に細いふち
+- 2026/10/17 まさちゃん「記録時に的中した場合に表示される的中ボタン、デカ的中ボタンのベースを作成して！」→ **的中ボタン・デカ的中ボタン（ベース）**。アプリはまだ変えていない（Fableで入れる）
+  - 的中（3連単以外が当たり）：記録する → PUSH（上下に動く）→ タップ → 壁紙の馬がボードを持って下から出てくる（ボードに当たった買い目と払戻の合計）
+  - デカ的中（3連単が当たり。ほかの券種もいっしょに当たっていてもデカ）：大きいPUSH（虹の輪）→ タップ → 白く光る → 虹の光に包まれる → 光の中から馬がボードを持って出てくる（3連単の行は虹色の枠）
+  - 見本：kisekae/mock/Fx_Hit.dc.html・Fx_Big.dc.html（タップで動く）・Fx_Memo.dc.html（出るとき・流れと時間・重ねる順・ボードに書くもの・テーマごとに変えるところ・容量）。動きは全部CSS（動画なし）。iPhoneの「視差効果を減らす」がオンなら、上下の動き・回転・紙ふぶきを止める
+  - ボードを持つ馬：`cd kisekae/r3d && python3 fx/board_horse.py <出力> hb_ranch` → hb_ranch_back.png（馬ぜんぶ）・hb_ranch_front.png（ボードにかぶさる前足の先だけ）・hb_ranch.json（ボードの四角とひづめの位置）。アプリでは「うしろの馬 → ボード（HTMLの文字）→ 前足の先」の順に重ねるので、ひづめがボードのふちにかかって見える。前足を外へ開く形は horse3d.py の fore_spread（1.0なら前と同じ形）。ポーズを並べて選ぶ：fx/hold_test.py
+  - 見本を作る：`python3 kisekae/gen_fx.py kisekae/fx_blobs.json <hb_ranch.json>`（牧場の色と上の絵は mock/Judge_Ranch.dc.html から取る。fx_blobs.json はキャンバスに上げた絵のid）
+  - できた絵はリポジトリに入れない（キャンバスの中だけ）。いまの馬は見本（牧場の栗毛）。壁紙の絵を描き直したら、テーマごとに作り直す（色はCSS変数 --pushA〜--rimD・--bFrame・--bFace・--bInk・--ray）
 
 ## まさちゃんから分析シート・分析表が届いたとき（いつものデータ更新）
 1. 届いたファイルを空のフォルダにコピーして、まず確かめる：`python3 -I merge_raw.py <分析シート> <分析表> hist.json`（新しいレース・もとのデータとの食い違い・入れなかったレースが出る）。「重複転記の疑い」「同じ中身のレース」が出たら、まさちゃんに確かめる（重複なら dropped.json に足す）

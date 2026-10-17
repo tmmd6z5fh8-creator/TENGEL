@@ -127,6 +127,7 @@ def build(sc, pose, mats=None, detail=1.0, parts='all'):
     _neck_head(sc, pose, S, M)
 
     # ---------- 前足 ----------
+    spread = pose.get('fore_spread', 1.0)          # 1より大きいと、ひざから下を外へ広げる（ボードを持つ形など）
     for side in ('R', 'L'):
         F = S['F' + side]
         z = F['z']
@@ -146,8 +147,10 @@ def build(sc, pose, mats=None, detail=1.0, parts='all'):
         tc = ps * 0.42 + el * 0.58 + perp * 0.07
         sc.ell(v3(tc, zl * 0.92), (0.16, 0.10, 0.085), basis(v3(el - ps), (0, 0, 1)), k=0.10, mat=B)
         # 前腕
+        zk = zl * 0.93 * (1 + (spread - 1) * 0.55)
+        zf = zl * 0.9 * (1 + (spread - 1) * 0.9)
         dfk = nrm(kn - el)
-        sc.rcone(v3(el, zl), v3(kn, zl * 0.93), 0.085, 0.048, k=0.05, mat=B)
+        sc.rcone(v3(el, zl), v3(kn, zk), 0.085, 0.048, k=0.05, mat=B)
         fwd = np.array([-dfk[1], dfk[0]]) if True else None
         # 前腕の前の筋肉
         fm = el + (kn - el) * 0.32
@@ -155,18 +158,18 @@ def build(sc, pose, mats=None, detail=1.0, parts='all'):
         if np.dot(side_f, adir(F['ang'][1] + 90)) < 0: side_f = -side_f
         sc.ell(v3(fm + adir(F['ang'][1] + 90) * 0.018, zl), (0.16, 0.07, 0.068), basis(v3(kn - el), (0, 0, 1)), k=0.05, mat=B)
         # ひざ
-        sc.ell(v3(kn, zl * 0.93), (0.062, 0.058, 0.052), basis(v3(ft - kn), (0, 0, 1)), k=0.04, mat=B)
+        sc.ell(v3(kn, zk), (0.062, 0.058, 0.052), basis(v3(ft - kn), (0, 0, 1)), k=0.04, mat=B)
         # 管＋けん
         dkf = nrm(ft - kn)
         bk = adir(F['ang'][2] - 90)
-        sc.rcone(v3(kn, zl * 0.93), v3(ft, zl * 0.9), 0.044, 0.04, k=0.03, mat=B)
-        sc.rcone(v3(kn + bk * 0.026 + dkf * 0.05, zl * 0.93), v3(ft + bk * 0.022 - dkf * 0.03, zl * 0.9), 0.028, 0.026, k=0.02, mat=B)
+        sc.rcone(v3(kn, zk), v3(ft, zf), 0.044, 0.04, k=0.03, mat=B)
+        sc.rcone(v3(kn + bk * 0.026 + dkf * 0.05, zk), v3(ft + bk * 0.022 - dkf * 0.03, zf), 0.028, 0.026, k=0.02, mat=B)
         # 球節
-        sc.ell(v3(ft + bk * 0.008, zl * 0.9), (0.06, 0.062, 0.054), basis(v3(dkf), (0, 0, 1)), k=0.03, mat=B)
+        sc.ell(v3(ft + bk * 0.008, zf), (0.06, 0.062, 0.054), basis(v3(dkf), (0, 0, 1)), k=0.03, mat=B)
         # つなぎ
-        sc.rcone(v3(ft, zl * 0.9), v3(co, zl * 0.9), 0.045, 0.05, k=0.03, mat=B)
+        sc.rcone(v3(ft, zf), v3(co, zf), 0.045, 0.05, k=0.03, mat=B)
         # ひづめ
-        sc.ccone(v3(co, zl * 0.9), v3(hf, zl * 0.9), 0.056, 0.074, rnd=0.008, side=v3(adir(F['ang'][3] - 30 + 90)), k=0.012, mat=HO)
+        sc.ccone(v3(co, zf), v3(hf, zf), 0.056, 0.074, rnd=0.008, side=v3(adir(F['ang'][3] - 30 + 90)), k=0.012, mat=HO)
 
     # ---------- 後ろ足 ----------
     for side in ('R', 'L'):
