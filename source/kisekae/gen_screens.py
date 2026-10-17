@@ -6,7 +6,7 @@ from themes20 import THEMES
 K = os.path.dirname(os.path.abspath(__file__))
 # 置き場所：作業フォルダでは canvas/project、リポジトリでは mock/
 OUT = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'
-BOARD = {'sakura': 'Sakura', 'sea': 'Sea', 'sunset': 'Sunset', 'autumn': 'Autumn', 'snow': 'Snow', 'newyear': 'NewYear', 'fireworks': 'Fireworks',
+BOARD = {'tengel': 'Tengel', 'sakura': 'Sakura', 'sea': 'Sea', 'sunset': 'Sunset', 'autumn': 'Autumn', 'snow': 'Snow', 'newyear': 'NewYear', 'fireworks': 'Fireworks',
          'night': 'Night', 'news': 'News', 'silks': 'Silks', 'lucky': 'Lucky', 'shogi': 'Shogi', 'ink': 'Ink', 'marble': 'Marble', 'chess': 'Chess',
          'ryuma': 'Ryuma', 'silver': 'Silver', 'golden': 'Golden', 'neon': 'Neon', 'pixel': 'Pixel', 'chalk': 'Chalk', 'carousel': 'Carousel', 'stars': 'Stars'}
 

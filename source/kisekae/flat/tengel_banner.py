@@ -1,0 +1,41 @@
+"""テンゲル（780×320）：アプリの説明書の上の絵（manual/banner.webp：テンゲルの絵）を、着せ替えの壁紙の大きさにする
+   - 絵そのものは変えない（金と紺の盾のエンブレム・騎手を乗せて走る馬・TENGER の金の文字・「テンゲル」の金の札）
+   - 下の小さな「バージョン …」の行だけ消す（まわりの紺でぬりつぶす：App Store 版に決まった版の名前を出さないため）
+   - 内側のパネルの中から、横長（780×320）に切り出す（パネルのふちの線は入れない）
+   python3 flat/tengel_banner.py <出力.webp> [元の絵]（元の絵は、なければリポジトリの manual/banner.webp）"""
+import sys, os
+import numpy as np
+import cv2
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
+from style2d import save_webp
+
+W, Hh = 780, 320
+SRC = os.path.join(HERE, '..', '..', '..', 'manual', 'banner.webp')
+CROP = (82, 124, 1118, 549)          # 元の絵（1200×655）から切り出す所：パネル（x 66〜1134・y 〜581）の中で、絵の中身がまん中に来る（下のすみの丸みは入れない）
+VER = (600, 436, 990, 470)           # 「バージョン …」の行のある所
+
+
+def make(src=SRC):
+    im = cv2.imread(src, cv2.IMREAD_COLOR)
+    assert im is not None and im.shape[:2] == (655, 1200), (src, None if im is None else im.shape)
+    g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    x0, y0, x1, y1 = VER
+    sub = g[y0:y1, x0:x1]
+    base = cv2.morphologyEx(sub, cv2.MORPH_OPEN, np.ones((9, 9), np.uint8))       # 細い明るい文字をとった地の明るさ
+    m = ((sub.astype(np.int16) - base.astype(np.int16)) > 14).astype(np.uint8)
+    m = cv2.dilate(m, np.ones((5, 5), np.uint8))
+    mask = np.zeros(g.shape, np.uint8)
+    mask[y0:y1, x0:x1] = m * 255
+    clean = cv2.inpaint(im, mask, 6, cv2.INPAINT_TELEA)
+    cx0, cy0, cx1, cy1 = CROP
+    crop = clean[cy0:cy1, cx0:cx1]
+    out = cv2.resize(crop, (W, Hh), interpolation=cv2.INTER_AREA)
+    return out[..., ::-1].astype(np.float32) / 255.0, mask
+
+
+if __name__ == '__main__':
+    out = sys.argv[1]
+    src = sys.argv[2] if len(sys.argv) > 2 else SRC
+    img, _ = make(src)
+    save_webp(np.clip(img, 0, 1), out)

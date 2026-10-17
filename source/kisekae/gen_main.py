@@ -153,10 +153,10 @@ gstyle += ('\n.cat{display:inline-flex;align-items:center;height:20px;padding:0 
 
 
 NNEW = len(THEMES)
-NCATS = '／'.join(f"{CATS[c]}{sum(1 for t in THEMES if t['cat'] == c)}" for c in (2, 3, 4, 5))
+NCATS = '／'.join(f"{CATS[c]}{sum(1 for t in THEMES if t['cat'] == c)}" for c in (1, 2, 3, 4, 5) if any(t['cat'] == c for t in THEMES))
 
 
-GCOL = dict(sakura='#A3355C', sea='#0B5E96', sunset='#6A2E8E', autumn='#A33A16', snow='#23608F', newyear='#B0141B', fireworks='#D63A6E',
+GCOL = dict(tengel='#1F2A5A', sakura='#A3355C', sea='#0B5E96', sunset='#6A2E8E', autumn='#A33A16', snow='#23608F', newyear='#B0141B', fireworks='#D63A6E',
             night='#9A6200', news='#141414', silks='#1A3FB8', lucky='#B71C1C', shogi='#6B4423', ink='#1A1A1A', marble='#8A6A38', ryuma='#A87C22', silver='#3A424B', golden='#8A6514', chess='#111111',
             neon='#C81FB0', pixel='#1D2B53', chalk='#24423A', carousel='#B83A74', stars='#4A3F8F')
 
@@ -203,7 +203,7 @@ guide = f'''<!doctype html>
   <div class="top">
     <div>
       <h1 class="t1">新しい{NNEW}個のテーマのメモ（仮）</h1>
-      <p class="t2">{NCATS}。絵はぜんぶ一から描いたオリジナル。色・文字・形は判定画面の見本と同じ。</p>
+      <p class="t2">{NCATS}。絵はぜんぶ一から描いたオリジナル（テンゲルだけはアプリの説明書の絵）。色・文字・形は判定画面の見本と同じ。</p>
     </div>
     <div class="chg">
       <div class="box"><h3>どのテーマも同じところ</h3><p>判定の中身・画面の並び（上の帯 → 絵 → レース情報 → 判定の結果）・馬番の枠の色・タブの並び</p></div>
