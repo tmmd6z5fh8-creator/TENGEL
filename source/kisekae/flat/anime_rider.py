@@ -421,14 +421,22 @@ def paint_anime(R, look, debug=None):
     troot = np.array([xs_[sel][k_], ys_[sel][k_]], float) + np.array([tin, -2.0]) * u1     # 体の中から（ふちのうしろから出る）
     R['tail_root'] = troot
     tl = []
+    t_ang = look.get('tail_ang')                  # 画面の上での向き（度・0＝右・90＝下）を決めるとき（まさちゃんの赤線など）
     for k in range(7):
         root = troot + np.array([rng.normal(0, 0.5), (k - 3) * 0.9]) * u1
-        ang0 = tdir + (k - 3) * 0.07 + 0.10 + rng.uniform(-0.05, 0.05)
+        if t_ang is None:
+            ang0 = tdir + (k - 3) * 0.07 + 0.10 + rng.uniform(-0.05, 0.05)
+            wind_t, wang_t, curl_t = 0.08, math.pi + 0.10, 0.006 * (1 if k % 2 else -1)
+        else:
+            ang0 = math.radians(t_ang) + (k - 3) * look.get('tail_spread', 0.07) + rng.uniform(-0.05, 0.05)
+            wind_t, wang_t, curl_t = 0.0, math.pi, look.get('tail_curl', 0.0)
         L = (58 + rng.uniform(-6, 10) - abs(k - 3) * 3) * u1 * look.get('tail', 1.0)
-        pts = flow(root, ang0, L, 20, wind=0.08, wind_ang=math.pi + 0.10, curl=0.006 * (1 if k % 2 else -1), rng=rng,
-                   wave=1.8, phase=k * 0.9)
+        if t_ang is not None:                     # 下へ流れる房ほど長く、上の房は短く（扇のように広がる）
+            L = L / (58 + 2 - abs(k - 3) * 3) * 60 * look.get('tail_prof', (1.0, 1.0, 0.98, 0.95, 0.88, 0.80, 0.72))[k]
+        pts = flow(root, ang0, L, 20, wind=wind_t, wind_ang=wang_t, curl=curl_t, rng=rng, wave=look.get('tail_wave', 1.8), phase=k * 0.9)
         tl.append((pts, (look.get('tail_w', 15.0) - abs(k - 3) * 1.2) * u1))
     tl.sort(key=lambda x: -x[0][-1][1])                                    # 下の房から
+    R['tail_ends'] = [pts[-1] / s for pts, _ in tl]
     for pts, w0 in tl:                                                    # しっぽは体のうしろ（お尻のふちの線が前に来る）
         if look.get('tail_over'):
             hcol, ha = draw_lock(hcol, ha, pts, w0, hpal, hlw, tip=0.8, hi=(0.10, 0.50), leaf=True)
