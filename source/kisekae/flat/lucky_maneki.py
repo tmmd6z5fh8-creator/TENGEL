@@ -1,6 +1,6 @@
 """開運の「招き馬」のキャラクター（SVG・240×256・アニメの塗り）
    招き猫のような白い馬：白い体に黒い太い線、赤い耳の中と目の上の赤いかざり、金のたてがみ・前髪・しっぽ・ひづめ。
-   顔は正面向き（上が広く、下の鼻先がまるい馬の顔・正面の鼻の穴・うすく笑う口）。目は切れ長でつり上がり、金色に横長のひとみ（少し不気味）。
+   顔は正面向き（上が広く、下の鼻先がまるい馬の顔・正面の鼻の穴・うすく笑う口）。目はつり目で少し丸く、金色に横長のひとみ（少し不気味）。
    右前足は体の横から出して、あごの横の高さにあげて招く（首輪にかからない・ひづめの裏はうすい桃色）。左前足で「千両」の小判をだく。
    赤い首輪に金の鈴。影は青みの灰色1段（くっきり）。形はすべて一から作ったオリジナル
    python3 flat/lucky_maneki.py <出力.svg>（確かめ用）"""
@@ -49,8 +49,10 @@ ARM_UP = 'M82 188 C68 194 50 194 41 186 C33 178 29 162 30 146 L55 143 C55 154 58
 ARM_UP_LN = 'M82 188 C68 194 50 194 41 186 C33 178 29 162 30 146 M55 143 C55 154 58 162 64 168 C70 173 76 175 82 175'
 ARM_KB = 'M150 162 C164 162 178 170 178 188 C178 206 174 220 166 228 L150 222 C154 210 156 198 154 184 C153 176 152 168 150 162 Z'
 ARM_KB_LN = 'M150 162 C164 162 178 170 178 188 C178 206 174 220 166 228 M150 222 C154 210 156 198 154 184 C153 176 152 168 150 162'
-EYE_L = 'M107 93 C100 81 86 76 75 79 C81 89 95 96 107 93 Z'          # 切れ長・外がつり上がる
-EYE_R = 'M133 93 C140 81 154 76 165 79 C159 89 145 96 133 93 Z'
+EYE_L = 'M106 94 C101 79 86 73 76 82 C79 94 95 101 106 94 Z'          # つり目で少し丸い（外がつり上がる）
+EYE_R = 'M134 94 C139 79 154 73 164 82 C161 94 145 101 134 94 Z'
+LID_L = 'M106 94 C101 79 86 73 76 82'
+LID_R = 'M134 94 C139 79 154 73 164 82'
 
 
 def maneki_svg(w=VB_W, h=VB_H):
@@ -142,19 +144,19 @@ def maneki_svg(w=VB_W, h=VB_H):
                'C122 35 118 38 119 43 C113 40 106 42 103 46 C101 47 100 45 100 42 Z', GOLD, LW2 + 0.8))
     s.append(f"<path d='M108 28 C113 23 121 22 127 23' fill='none' stroke='{GOLD_HI}' stroke-width='2.6' stroke-linecap='round'/>")
     # 目の上の赤いかざり（内がわが下がる・鋭く）
-    s.append("<path d='M106 74 C98 66 86 62 74 64 C84 60 98 60 108 70 Z' fill='#E23B2A'/>")
-    s.append("<path d='M134 74 C142 66 154 62 166 64 C156 60 142 60 132 70 Z' fill='#E23B2A'/>")
+    s.append("<path d='M106 69 C98 61 86 57 74 59 C84 55 98 55 108 65 Z' fill='#E23B2A'/>")
+    s.append("<path d='M134 69 C142 61 154 57 166 59 C156 55 142 55 132 65 Z' fill='#E23B2A'/>")
     # 目：切れ長の金色・横長のひとみ・上まぶたの太い線・外がわの赤いはね
-    for (E, cid, cx, cy, ang, wing) in ((EYE_L, 'mk_eyeL', 91, 86.5, 23.6, 'M77 80 L66 73 L74 82 Z'),
-                                         (EYE_R, 'mk_eyeR', 149, 86.5, -23.6, 'M163 80 L174 73 L166 82 Z')):
+    for (E, cid, cx, cy, ang, wing) in ((EYE_L, 'mk_eyeL', 91, 88.0, 19.5, 'M78 82 L67 76 L75 86 Z'),
+                                         (EYE_R, 'mk_eyeR', 149, 88.0, -19.5, 'M162 82 L173 76 L165 86 Z')):
         s.append(f"<path d='{E}' fill='url(#mk_eye)'/>")
-        s.append(f"<g clip-path='url(#{cid})'><rect x='{cx - 8}' y='{cy - 2.6}' width='16' height='5.2' rx='2.6' fill='{OUT}' transform='rotate({ang} {cx} {cy})'/>"
+        s.append(f"<g clip-path='url(#{cid})'><rect x='{cx - 7.5}' y='{cy - 3.1}' width='15' height='6.2' rx='3.1' fill='{OUT}' transform='rotate({ang} {cx} {cy})'/>"
                  f"<path d='{E}' fill='none' stroke='#B8601A' stroke-width='3' opacity='0.55'/></g>")
         s.append(f"<path d='{E}' fill='none' stroke='{OUT}' stroke-width='2.4' stroke-linejoin='round'/>")
         s.append(f"<path d='{wing}' fill='#E23B2A' stroke='{OUT}' stroke-width='1.2' stroke-linejoin='round'/>")
-        s.append(f"<circle cx='{cx - 4 if cx < 120 else cx + 4}' cy='{cy - 4}' r='1.5' fill='#FFFFFF'/>")
-    s.append(L('M107 93 C100 81 86 76 75 79', 4.2))
-    s.append(L('M133 93 C140 81 154 76 165 79', 4.2))
+        s.append(f"<circle cx='{cx - 4 if cx < 120 else cx + 4}' cy='{cy - 5}' r='1.7' fill='#FFFFFF'/>")
+    s.append(L(LID_L, 4.2))
+    s.append(L(LID_R, 4.2))
     # 鼻の穴（正面）・口（うすく笑う）
     s.append("<path d='M102 146 C98 150 98 158 103 160 C106 161 108 158 107 154 C106 151 104 149 102 146 Z' fill='#4A2E36'/>")
     s.append("<path d='M138 146 C142 150 142 158 137 160 C134 161 132 158 133 154 C134 151 136 149 138 146 Z' fill='#4A2E36'/>")
