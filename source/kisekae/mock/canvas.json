@@ -26,25 +26,24 @@
     "Judge_Lucky.dc.html": {"x": 1410, "y": 2528, "w": 390, "h": 844, "title": "開運・招き馬（白×赤×金）"},
     "Judge_Ink.dc.html": {"x": 2060, "y": 2528, "w": 390, "h": 844, "title": "水墨画（和紙×墨・朱）"},
     "Judge_Marble.dc.html": {"x": 2530, "y": 2528, "w": 390, "h": 844, "title": "大理石（白×金）"},
-    "Judge_Ryuma.dc.html": {"x": 3000, "y": 2528, "w": 390, "h": 844, "title": "龍馬（墨黒×金）"},
     "Judge_Neon.dc.html": {"x": 0, "y": 3792, "w": 390, "h": 844, "title": "ネオン（黒×ピンク・水色）"},
     "Judge_Pixel.dc.html": {"x": 470, "y": 3792, "w": 390, "h": 844, "title": "ドット絵（レトロゲーム）"},
     "Judge_Chalk.dc.html": {"x": 940, "y": 3792, "w": 390, "h": 844, "title": "黒板（緑×チョーク）"},
     "Judge_Carousel.dc.html": {"x": 1410, "y": 3792, "w": 390, "h": 844, "title": "メリーゴーランド（パステル×金）"},
     "Judge_Stars.dc.html": {"x": 1880, "y": 3792, "w": 390, "h": 844, "title": "星座・ペガサス（紺紫×金）"},
-    "Main.dc.html": {"x": 0, "y": 5056, "w": 390, "h": 1843, "title": "設定 › 着せ替え（24テーマ・タップで着せ替わる／縦に長いのはスクロールした全体）", "is_interactive": true},
+    "Main.dc.html": {"x": 0, "y": 5056, "w": 390, "h": 1843, "title": "設定 › 着せ替え（23テーマ・タップで着せ替わる／縦に長いのはスクロールした全体）", "is_interactive": true},
     "Guide.dc.html": {"x": 470, "y": 5056, "w": 1320, "h": 900, "title": "テーマのメモ（定番の5つ）"},
-    "Guide20.dc.html": {"x": 1870, "y": 5056, "w": 1320, "h": 2676, "title": "テーマのメモ（新しい19個）"}
+    "Guide20.dc.html": {"x": 1870, "y": 5056, "w": 1320, "h": 2676, "title": "テーマのメモ（新しい18個）"}
   },
-  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Memo.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Ryuma.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
+  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Memo.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
   "notes": {
     "row1": {"x": 0, "y": -300, "text": "判定画面：定番の5つ（いつもの＋4つの着せ替え）", "kind": "title1", "maxW": 2270},
     "rowfx": {"x": 2700, "y": -300, "text": "的中ボタン・デカ的中ボタン（ベース）：記録する → PUSH → タップ", "kind": "title1", "maxW": 2260},
     "row2": {"x": 0, "y": 964, "text": "季節・行事（7）", "kind": "title1", "maxW": 3210},
     "row3": {"x": 0, "y": 2228, "text": "競馬（4）", "kind": "title1", "maxW": 1800},
-    "row3b": {"x": 2060, "y": 2228, "text": "和・アート（3）", "kind": "title1", "maxW": 1330},
+    "row3b": {"x": 2060, "y": 2228, "text": "和・アート（2）", "kind": "title1", "maxW": 860},
     "row4": {"x": 0, "y": 3492, "text": "レトロ・ポップ（5）", "kind": "title1", "maxW": 2270},
-    "row5": {"x": 0, "y": 4756, "text": "着せ替えを選ぶ画面（24テーマ）と、テーマのメモ", "kind": "title1", "maxW": 3190}
+    "row5": {"x": 0, "y": 4756, "text": "着せ替えを選ぶ画面（23テーマ）と、テーマのメモ", "kind": "title1", "maxW": 3190}
   },
   "designSystems": []
 }
