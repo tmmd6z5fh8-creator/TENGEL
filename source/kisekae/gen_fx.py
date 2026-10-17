@@ -63,7 +63,8 @@ def sparkles(n, seed):
 COMMON_CSS = r'''body{margin:0}
 *{box-sizing:border-box}
 .ph{RANCH}
-.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55)}
+.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55);
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#5E0A05 100%)}
 .ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px;color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:4px solid #A8743F}
@@ -106,14 +107,13 @@ COMMON_CSS = r'''body{margin:0}
 .ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-/* PUSHボタン */
+/* PUSHボタン（角の丸い四角） */
 .pbox{position:relative;display:flex;flex-direction:column;align-items:center}
-.push{position:relative;z-index:2;width:150px;height:150px;border-radius:50%;border:0;padding:0;cursor:pointer;
-  background:radial-gradient(circle at 34% 28%,#FFFFFF 0 5%,var(--pushC) 13%,var(--pushA) 44%,var(--pushB) 82%,#5E0A05 100%);
-  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
+.push{--pr:34px;position:relative;z-index:2;width:150px;height:150px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
+  box-shadow:inset 0 -9px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.55),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
   animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
-.push span{position:relative;font:400 38px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
-.push::after{content:"";position:absolute;inset:-18px;border-radius:50%;border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
+.push span{position:relative;font:400 34px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push::after{content:"";position:absolute;inset:-18px;border-radius:calc(var(--pr) + 18px);border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
 .pshadow{width:150px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
 .tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
@@ -121,15 +121,22 @@ COMMON_CSS = r'''body{margin:0}
 @keyframes ring{0%{transform:scale(.88);opacity:.95}100%{transform:scale(1.4);opacity:0}}
 @keyframes popIn{from{scale:.2}to{scale:1}}
 @keyframes blink{0%{opacity:1}100%{opacity:.35}}
-/* 押したあと */
-.pressed{position:absolute;z-index:3;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;
-  background:radial-gradient(circle at 34% 28%,#FFFFFF 0 5%,var(--pushC) 13%,var(--pushA) 44%,var(--pushB) 82%,#5E0A05 100%);
+@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
+@keyframes spin{to{rotate:360deg}}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+/* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
+.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+.ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
+/* 押したあと（PUSHがあった所から光ってはじける） */
+.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:34px;background:var(--pushFace);
   box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* ボードを持つ馬 */
 .hb{position:absolute;z-index:6;left:50%;top:150px;width:HBWpx;height:HBHpx;margin-left:-HBW2px}
 .hb img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-.board{position:absolute;left:BDXpx;top:BDYpx;width:BDWpx;height:BDHpx;border-radius:16px;border:8px solid var(--bFrame);background:var(--bFace);
+.board{position:absolute;left:BDXpx;top:BDYpx;width:BDWpx;min-height:BDHpx;border-radius:16px;border:8px solid var(--bFrame);background:var(--bFace);
   box-shadow:0 10px 22px rgba(0,0,0,.28),inset 0 0 0 2px rgba(0,0,0,.05);padding:30px 16px 12px;display:flex;flex-direction:column;align-items:stretch;gap:7px;color:var(--bInk)}
 .bh{text-align:center;font:400 34px/1 "Dela Gothic One",sans-serif;color:var(--hitRed);text-shadow:0 2px 0 #FFFFFF,0 4px 0 rgba(0,0,0,.12)}
 .bsub{text-align:center;font-size:12.5px;font-weight:700;color:#7A5A3A;margin-top:-2px}
@@ -149,7 +156,8 @@ COMMON_CSS = r'''body{margin:0}
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
 .conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
 @keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
-@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.tap,.conf i,.rays,.rbow,.ring,.spk b{animation:none!important}.conf{display:none}}
+/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、馬とボードはふわっと出す */
+@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
 '''
 
 HIT_CSS = r'''
@@ -158,31 +166,24 @@ HIT_CSS = r'''
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
   -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
   animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
-@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
-@keyframes spin{to{rotate:360deg}}
 .hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
-@keyframes riseUp{from{transform:translateY(560px)}to{transform:translateY(0)}}
+@keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
 .hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
-@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
-.hit .brows li{animation:rowIn .35s ease-out both}
-.hit .brows li:nth-child(1){animation-delay:1.15s}
-.hit .brows li:nth-child(2){animation-delay:1.3s}
-.hit .brows li:nth-child(3){animation-delay:1.45s}
-.hit .btot{animation:rowIn .35s ease-out 1.6s both}
-@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
-.hit .close{animation-delay:1.8s}
+.hit{--t0:1.15s;--tc:.2s}
 '''
 
 BIG_CSS = r'''
 /* ---------- デカ的中：大きいPUSH・虹色に光る ---------- */
 .ov.big .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
-.push.big{width:210px;height:210px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
-.push.big span{font-size:56px}
-.push.big::before{content:"";position:absolute;inset:-26px;border-radius:50%;z-index:-1;
-  background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
-  -webkit-mask-image:radial-gradient(circle,transparent 0 62%,#000 63% 100%);mask-image:radial-gradient(circle,transparent 0 62%,#000 63% 100%);
-  animation:spin 1.4s linear infinite;filter:drop-shadow(0 0 10px rgba(255,255,255,.8))}
-.push.big::after{inset:-40px;border:4px solid transparent;background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B) border-box;
+.push.big{--pr:46px;width:210px;height:210px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
+.push.big span{font-size:50px}
+/* 虹の輪：形は角の丸い四角のまま、色だけがぐるぐる回る */
+.halo{position:absolute;inset:-34px;z-index:-1;border-radius:calc(var(--pr) + 34px);filter:drop-shadow(0 0 8px rgba(255,255,255,.85));pointer-events:none}
+.halo i{position:absolute;inset:0;border-radius:inherit;padding:10px;overflow:hidden;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.halo b{position:absolute;left:50%;top:50%;width:440px;height:440px;margin:-220px 0 0 -220px;
+  background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);animation:spin 1.4s linear infinite}
+.push.big::after{inset:-48px;border-radius:calc(var(--pr) + 48px);border:4px solid transparent;background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B) border-box;
   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ring 1s ease-out infinite}
 .pshadow.big{width:210px;margin-top:30px;animation:shadBig .8s ease-in-out infinite}
 .tap.big{font-size:26px;background:linear-gradient(90deg,#FF5A5A,#FFD93B,#5BE38A,#4FD3FF,#B07CFF,#FF5A5A);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rbowText 1.6s linear infinite}
@@ -193,7 +194,7 @@ BIG_CSS = r'''
 .spk b{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);background:var(--c);
   clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 1.6s ease-in-out var(--d) infinite;opacity:0}
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
-.pressed.big{width:210px;height:210px;margin:-105px 0 0 -105px}
+.pressed.big{top:calc(50% - 47px);width:210px;height:210px;margin:-105px 0 0 -105px;border-radius:46px}
 /* 押したあと：白く光る → 虹の光の筋と輪 → 光の中から馬 */
 .flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .9s ease-out .18s both}
 @keyframes flash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
@@ -210,7 +211,7 @@ BIG_CSS = r'''
 .ring{position:absolute;z-index:5;left:50%;top:44%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B);
   -webkit-mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);
-  opacity:0;animation:shock 1s ease-out both}
+  opacity:0;animation:shock 1s ease-out forwards}
 .ring.r1{animation-delay:.28s}.ring.r2{animation-delay:.55s}.ring.r3{animation-delay:.85s}
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
 .big .hb{animation:emerge 1s ease-out .85s both}
@@ -219,13 +220,9 @@ BIG_CSS = r'''
 .big .bh{font-size:31px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.18));
   animation:pop .55s cubic-bezier(.2,1.8,.4,1) 1.5s both,rbowText 2s linear 1.5s infinite}
-.big .brows li{animation:rowIn .35s ease-out both}
-.big .brows li:nth-child(1){animation-delay:1.75s}
-.big .brows li:nth-child(2){animation-delay:1.9s}
-.big .brows li:nth-child(3){animation-delay:2.05s}
+.ov.big{--t0:1.75s;--tc:.3s}
 .big .brows li.top{background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF) border-box;border:2px solid transparent}
-.big .btot{animation:rowIn .35s ease-out 2.2s both}
-.big .close{animation-delay:2.5s}
+
 '''
 
 HEADER = f'''  <header class="hd">
@@ -256,11 +253,13 @@ def form(bets, pay_total, note):
 
 def board(title, bets, total, top_first=False):
     rows = ''
+    k = 0
     for t, c, s, y, p, hit in bets:
         if not hit:
             continue
         cls = ' class="top"' if (top_first and t == '3連単') else ''
-        rows += f'<li{cls}><span class="bt">{t}</span><span class="bc">{combo(c, s)}</span><span class="by">{y}</span><span class="bp">{p}</span></li>'
+        k += 1
+        rows += f'<li{cls} style="--i:{k - 1}"><span class="bt">{t}</span><span class="bc">{combo(c, s)}</span><span class="by">{y}</span><span class="bp">{p}</span></li>'
     return f'''<div class="board"><div class="bh">{title}</div><div class="bsub">9R の当たった買い目</div><ul class="brows">{rows}</ul><div class="btot">払戻 合計<b>{total}</b></div></div>'''
 
 
@@ -278,7 +277,7 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}"><span>PUSH</span></button>
+      <button class="push{pb}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}<span>PUSH</span></button>
       <div class="pshadow{pb}"></div>
       <p class="tap{pb}">タップ！</p>
     </div>
@@ -296,7 +295,7 @@ def page(kind):
         conf = confetti(28, 2)
         flash = ''
     reveal = f'''  <sc-if value="{{{{isReveal}}}}" hint-placeholder-val="{{{{false}}}}">
-  <div class="ov{pb} {'big' if big else 'hit'}">
+  <div class="ov{pb} {'big' if big else 'hit'}" style="--n:{sum(1 for b in bets if b[5])}">
     <div class="dim"></div>
     {layers}
     <div class="pressed{pb}"></div>
@@ -408,11 +407,11 @@ body{{margin:0}}
   </div>
   <div class="boxes">
     <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・外れ・中止では出ない）</li><li>3連単が当たっていれば、ほかの券種もいっしょに当たっていても<b>デカ的中</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
-    <div class="box"><h3>流れと時間</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>：押す → 0.2秒 白く光る → 0.25秒 虹の光の筋と輪 → 0.85秒 光の中から馬 → 1.5秒「デカ的中!!」→ 1.75秒〜 買い目 → 2.5秒 とじる</li><li>PUSHは上下に0.9秒（デカは0.8秒・大きく）でくり返す</li></ul></div>
-    <div class="box"><h3>重ねる順（下から）</h3><ul><li>暗い幕 → 光（的中＝光の筋／デカ＝虹の筋・光・輪）</li><li><b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>：ひづめがボードのふちにかかって見える</li><li>紙ふぶき → （デカ）白い光 → とじる</li></ul></div>
+    <div class="box"><h3>流れと時間</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>：押す → 0.2秒 白く光る → 0.25秒 虹の光の筋と輪 → 0.85秒 光の中から馬 → 1.5秒「デカ的中!!」→ 1.75秒〜 買い目 → 2.5秒 とじる</li><li><b>PUSHは角の丸い四角</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
+    <div class="box"><h3>重ねる順（下から）</h3><ul><li>暗い幕 → 光（的中＝光の筋／デカ＝虹の筋・光・輪）</li><li><b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>：ひづめがボードのふちにかかって見える</li><li>紙ふぶき → とじる → （デカ）白い光（いちばん上・すぐ消える）</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計</li><li>3連単の行は虹色の枠</li><li>ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠と面（--bFrame・--bFace・--bInk）・光の色（--ray）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>容量と見やすさ</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）</li><li>iPhoneの「視差効果を減らす」がオンなら、上下の動き・回転・紙ふぶきを止める</li><li>いまの馬は見本（牧場の栗毛）。壁紙を描き直したら、テーマごとに作る</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>容量と見やすさ</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）</li><li>iPhoneの「視差効果を減らす」がオンなら、上下の動き・回転・広がる光・紙ふぶきを止めて、馬とボードはふわっと出す</li><li>いまの馬は見本（牧場の栗毛）。壁紙を描き直したら、テーマごとに作る</li></ul></div>
   </div>
 </div>
 </x-dc>
