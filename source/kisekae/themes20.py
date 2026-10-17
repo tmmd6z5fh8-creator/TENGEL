@@ -747,7 +747,7 @@ THEMES = [
                  fonts='見出し：Yuji Mai（筆の字）<br>本文：Zen Old Mincho', shape='角丸3px・細い墨の線・帯の下に筆の線・朱色の「第1」・Aは円相・すみに円相と落款',
                  pic='和紙・墨の線とぼかしでえがいた、騎手を乗せて競り合う2頭（手前は濃い墨・奥はうすい墨）・かすれ・朱色の「馬」の落款')),
 
- dict(id='marble', cat=4, name='大理石', desc='白と金・彫刻', title='大理石（白×金）', banner='marble', alt='金の帯の台に立つ、後ろ足で立ち上がる白い大理石の馬の像と月桂樹のイラスト',
+ dict(id='marble', cat=4, name='大理石', desc='白と金・彫刻', title='大理石（白×金）', banner='marble', alt='金の帯の台の上の岩で、後ろ足で立ち上がる白い大理石の馬の像（波打つたてがみ・台までとどくしっぽ）と月桂樹のイラスト',
       fonts=['Shippori+Mincho+B1:wght@800', 'Shippori+Mincho:wght@500;700'],
       v=dict(bg='#F7F5F2', ink='#2B2620', sub='#6E665A', card='#FFFFFF', cardB='1px solid #D9D2C5', cardO='1px solid #EEE8DC', cardS='0 10px 30px rgba(80,60,30,.08)',
              radius='2px', rs='2px', font='"Shippori Mincho"', dfont='"Shippori Mincho B1"', dw='800', logo='#3A332A', logoS='none',
@@ -767,7 +767,7 @@ THEMES = [
       orn=orn_marble(),
       guide=dict(colors=[('#F7F5F2', '大理石'), ('#B8935A', '金'), ('#2B2620', '黒（ボタン）'), ('#F0DDB0', '薄い金'), ('#6E665A', '小さい文字')],
                  fonts='見出し：Shippori Mincho B1 ExtraBold<br>本文：しっぽり明朝', shape='角丸2px・細い二重の枠・金の細い線・大理石のすじの背景・黒いボタンに金の字・すみに月桂樹',
-                 pic='大理石の像（後ろ足で立つ馬）・金の帯の台・金の月桂樹')),
+                 pic='大理石の像（後ろ足で立ち上がる馬・波打つたてがみ・ねじれながら台までとどくしっぽ・岩の台座）・金の帯の台・金の月桂樹')),
 
  dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
