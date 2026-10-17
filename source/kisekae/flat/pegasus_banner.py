@@ -108,12 +108,16 @@ wing_pts, wing_sharp, wing_tips, wing_ctr = wing_outline(wr, WS)
 wing_poly = smooth_poly(wing_pts, set(wing_sharp), 12)
 wing_a = poly_aa((Hh, W), [wing_poly])
 
-# たてがみ（首の上）：上のふちは まさちゃんの赤い線（羽のふち → 少し下がって → ほぼまっすぐ → 耳の方へ上がる）
-MANE_TOP = [(437, 101), (450, 125), (468, 127), (486, 126), (505, 121), (518, 111)]
-MANE_IN = [(524, 124), (500, 146), (470, 162), (440, 158)]          # 下のふちは首と羽の中（外の線には出ない）
-mane_poly = smooth_poly(np.array(MANE_TOP + MANE_IN, float), {0, len(MANE_TOP) - 1, len(MANE_TOP)}, 12)
-mane_a = poly_aa((Hh, W), [mane_poly])
-mask = np.clip(np.maximum.reduce([body_a, hair_a, wing_a, mane_a]), 0, 1)
+# 首の上のふち：まさちゃんの赤い線（2回目「赤線のところまで絞って！」）
+#   羽の前のふち → 首のつけねまで下がる（丸い谷）→ 首の上をまっすぐ耳の方へ上がる。線より上は形から けずる
+MANE_TOP = [(438, 108), (445, 112.5), (451, 125), (455, 138), (459.5, 148), (465, 150), (472, 146), (480, 141), (490, 133),
+            (500, 125.3), (510, 118.3), (518, 113.5)]
+MANE_IN = [(524, 124), (500, 146), (470, 162), (436, 158)]          # 下のふちは首と羽の中（外の線には出ない）
+top = smooth_poly(np.array(MANE_TOP, float), {0, len(MANE_TOP) - 1}, 10)[:-10]
+mane_a = poly_aa((Hh, W), [np.vstack([top, np.array(MANE_IN, float)])])
+k0 = int(np.argmax(top[:, 0] >= 445.0))
+cut_a = poly_aa((Hh, W), [np.vstack([[top[k0][0], -5.0], top[k0:], [top[-1][0], -5.0]])])
+mask = np.clip(np.maximum.reduce([body_a, hair_a, wing_a, mane_a]), 0, 1) * (1 - cut_a)
 # 形の中の小さいすき間（羽のつけねなど）はうめる
 _bin = (mask > 0.5).astype(np.uint8)
 _n, _lab, _st, _ = cv2.connectedComponentsWithStats(1 - _bin, connectivity=4)
@@ -165,10 +169,12 @@ for i in range(len(cov) - 1):                               # 小さい羽の列
     mid = (a + b) / 2 + (wctr - (a + b) / 2) * 0.10 + np.array([-3.0, 4.0]) * WS
     arc = np.array([(1 - u) ** 2 * a + 2 * (1 - u) * u * mid + u ** 2 * b for u in np.linspace(0, 1, 10)])
     cv2.polylines(det, [(arc * SS * 16).astype(np.int32)], False, 1.0, 2, cv2.LINE_AA, shift=4)
-top = smooth_poly(np.array(MANE_TOP, float), {0, len(MANE_TOP) - 1}, 10)[:-10]
-for off, t0, t1 in ((7, 0.12, 0.92), (14, 0.22, 0.80)):                 # たてがみの毛の流れ（うすい線）
-    seg = top[int(len(top) * t0):int(len(top) * t1)] + np.array([0.0, off])
-    seg[:, 1] += np.sin(np.linspace(0, 3 * math.pi, len(seg))) * 1.6
+crest_ln = top[int(np.argmax(top[:, 1])):]                             # 首の上の線（谷 → 耳）
+cd = crest_ln[-1] - crest_ln[0]; cd = cd / np.linalg.norm(cd)
+cn = np.array([-cd[1], cd[0]]) if -cd[1] > 0 else np.array([cd[1], -cd[0]])     # 首の中へ向かう向き
+for off, t0, t1 in ((6, 0.14, 0.90), (12, 0.24, 0.78)):                 # たてがみの毛の流れ（うすい線）
+    seg = crest_ln[int(len(crest_ln) * t0):int(len(crest_ln) * t1)] + cn * off
+    seg = seg + cn * (np.sin(np.linspace(0, 3 * math.pi, len(seg))) * 1.4)[:, None]
     cv2.polylines(det, [(seg * SS * 16).astype(np.int32)], False, 1.0, 2, cv2.LINE_AA, shift=4)
 det = cv2.resize(det, (W, Hh), interpolation=cv2.INTER_AREA)
 
