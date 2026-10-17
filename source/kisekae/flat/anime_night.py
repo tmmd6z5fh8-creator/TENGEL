@@ -229,7 +229,7 @@ HORSES = [
          roll=True,
          pose=dict(theta=1.0, neck_rot=-32.0, head_ang=-34.0, fore=dict(L=[-96, -48, -44, -28], R=[-128, -36, -140, -165]),
                    hind=dict(L=[-118, -150, -128, -150], R=[-70, -112, -84, -62]), tail=[-166, -154]), haze=0.10),
-    dict(box=(256, 104, 556, 300), num=7, seed=7, tail=0.47, mane=0.72, coat='bay', legs='black', silk='red', sleeve='white', helmet='red', lw=1.0,
+    dict(box=(256, 104, 556, 300), num=7, seed=7, tail=0.52, mane=0.72, coat='bay', legs='black', silk='red', sleeve='white', helmet='red', lw=1.0,
          pose=dict(theta=0.0, neck_rot=-36.0, head_ang=-32.0, fore=dict(L=[-100, -40, -30, -18], R=[-132, -28, -150, -170]),
                    hind=dict(L=[-112, -152, -136, -156], R=[-56, -106, -76, -56]), tail=[-170, -158]), haze=0.0),
 ]

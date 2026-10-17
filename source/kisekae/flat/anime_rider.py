@@ -98,7 +98,17 @@ def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scal
     sc.light(Lk, (1.0, 1.0, 1.0), 18, 1)
     for mid in HORSE + JOCKEY:
         sc.mat(mid, 1, (1.0, 1.0, 1.0), 1.0, 0.0, 0.0, 0.0)
+    # しっぽの根元の3Dの出っぱり（背中の上）は作らない：しっぽはお尻のいちばんうしろから2Dの房で出す
+    S0 = Hm.skeleton(pose)
+    ta0 = Hm.v3(S0['tailhead']); t10 = Hm.v3(S0['tailhead'] + Hm.adir(pose['tail'][0]) * 0.20)
+    rcone0 = sc.rcone
+    def rcone_no_dock(a, b, *args, **kw):
+        if np.allclose(np.asarray(a, float), ta0) or np.allclose(np.asarray(a, float), t10):
+            return
+        return rcone0(a, b, *args, **kw)
+    sc.rcone = rcone_no_dock
     S = Hm.build(sc, pose, mats=dict(body=M_COAT, neck=M_COAT, hoof=M_HOOF, eye=M_EYE, head=M_COAT))
+    sc.rcone = rcone0
     J = jockey_a(sc, S, js)
     R = sc.render(os.path.join(TMP, name))
     ts = np.linspace(0, 1, 40)
@@ -268,9 +278,6 @@ def paint_anime(R, look, debug=None):
     part[saddle] = 7                                                     # 鞍
     girth = np.isin(part, (0, 5)) & (Pn[..., 0] > w[0] - 0.21) & (Pn[..., 0] < w[0] - 0.15) & (Pn[..., 1] < w[1] - 0.20) & (Pn[..., 1] > w[1] - 0.80)
     part[girth] = 6                                                      # 腹帯
-    ta, t1, t2 = (Hm.v3(p_) for p_ in S['tail_pts'])
-    dock = np.minimum(segd(ta, t1)[0], segd(t1, t2)[0]) < 0.085
-    part[dock & (part == 0) & (Pn[..., 0] < np.asarray(S['tailhead'])[0] + 0.03)] = 8     # しっぽの根元（毛でおおわれる）
     hc = J['head']
     q = Pn - hc
     front = (part == 12) & (q[..., 0] > -0.01 * js) & (q[..., 1] < -0.042 * js)
@@ -402,22 +409,43 @@ def paint_anime(R, look, debug=None):
     hcol = np.zeros((H3, W3, 3), np.float32); ha = np.zeros((H3, W3), np.float32)
     for pts, w0 in front:
         hcol, ha = draw_lock(hcol, ha, pts, w0, hpal, hlw, leaf=True)
-    # しっぽ：根元にそって房を出し、うしろへ長くなびかせる
+    # しっぽ：お尻のいちばんうしろ（上がわ・背中の線が下がりきって、うしろのふちが立ち上がる所）から出して、うしろへなびかせる
     tp = np.asarray(R['tail'], float)
-    tdir = math.atan2(*(tp[-1] - tp[0])[::-1])
+    tdir = math.atan2(*(tp[-1] - tp[0])[::-1])                           # 3Dのしっぽの向き（ポーズの角度）
+    Pj = lambda p3: R['scene'].project(np.asarray([p3], float))[0][0][:2]
+    cr2, bt2 = Pj(Hm.v3(S['croup'])), Pj(Hm.v3(S['buttock']))
+    ys_, xs_ = np.nonzero(np.isin(part, (0, 3, 4, 5, 6, 7)))
+    sel = (ys_ > cr2[1] - 10 * u1) & (ys_ < bt2[1] + 10 * u1) & (xs_ < cr2[0])
+    k_ = np.argmin(xs_[sel] * 0.9 + ys_[sel] * 0.44)
+    tin = look.get('tail_in', 3.0)
+    troot = np.array([xs_[sel][k_], ys_[sel][k_]], float) + np.array([tin, -2.0]) * u1     # 体の中から（ふちのうしろから出る）
+    R['tail_root'] = troot
     tl = []
     for k in range(7):
-        f = 0.15 + 0.85 * k / 6
-        root = tp[0] + (tp[-1] - tp[0]) * f + rng.normal(0, 0.6, 2) * u1
+        root = troot + np.array([rng.normal(0, 0.5), (k - 3) * 0.9]) * u1
         ang0 = tdir + (k - 3) * 0.07 + 0.10 + rng.uniform(-0.05, 0.05)
         L = (58 + rng.uniform(-6, 10) - abs(k - 3) * 3) * u1 * look.get('tail', 1.0)
         pts = flow(root, ang0, L, 20, wind=0.08, wind_ang=math.pi + 0.10, curl=0.006 * (1 if k % 2 else -1), rng=rng,
                    wave=1.8, phase=k * 0.9)
-        tl.append((pts, (13.0 - abs(k - 3) * 1.1) * u1))
+        tl.append((pts, (look.get('tail_w', 15.0) - abs(k - 3) * 1.2) * u1))
     tl.sort(key=lambda x: -x[0][-1][1])                                    # 下の房から
-    for pts, w0 in tl:
-        hcol, ha = draw_lock(hcol, ha, pts, w0, hpal, hlw, tip=0.8, hi=(0.10, 0.50))
-    # 重ね：うしろの列は体のうしろ、手前の列としっぽは体の前（騎手の前には出さない）
+    for pts, w0 in tl:                                                    # しっぽは体のうしろ（お尻のふちの線が前に来る）
+        if look.get('tail_over'):
+            hcol, ha = draw_lock(hcol, ha, pts, w0, hpal, hlw, tip=0.8, hi=(0.10, 0.50), leaf=True)
+        else:
+            bcol, ba = draw_lock(bcol, ba, pts, w0, hpal, hlw, tip=0.8, hi=(0.10, 0.50))
+    # 毛のふちの光（うしろ上からの光）：暗い空の前でも、たてがみ・しっぽの形が見えるように
+    def hair_rim(c_, al_, k=0.5):
+        U = (al_ > 0.5).astype(np.float32)
+        d_ = np.array([-0.67, -0.74])
+        def sh(dist):
+            M_ = np.float32([[1, 0, -d_[0] * dist], [0, 1, -d_[1] * dist]])
+            return cv2.warpAffine(U, M_, (U.shape[1], U.shape[0]), flags=cv2.INTER_LINEAR, borderValue=0)
+        rb = U * ss_(0.4, 0.6, sh(0.9 * hlw + 0.5)) * (1 - ss_(0.4, 0.6, sh(0.9 * hlw + 0.5 + 1.3 * u1)))
+        return c_ * (1 - rb[..., None] * k) + RIM * rb[..., None] * k
+    hcol = hair_rim(hcol, ha)
+    bcol = hair_rim(bcol, ba)
+    # 重ね：うしろの列としっぽは体のうしろ、手前の列は体の前（騎手の前には出さない）
     jm = np.clip(np.maximum(jock.astype(np.float32), _dist_line(jock.astype(np.float32), 0, 2.2 * lw)) * 1.5, 0, 1)
     ha = ha * (1 - jm)
     col = col * (1 - ha[..., None]) + hcol * ha[..., None]
