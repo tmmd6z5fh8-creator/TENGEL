@@ -543,6 +543,18 @@ def orn_silver():
     return out
 
 
+
+def orn_golden():
+    """金のきらめき（4本の光の星・大小2つ）：シルバーのきらめきを金に"""
+    out = ("<defs><linearGradient id='gg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FFF6D6'/><stop offset='.5' stop-color='#E2B64C'/>"
+           "<stop offset='1' stop-color='#9A6E1C'/></linearGradient></defs>")
+    for (cx, cy, r, w) in ((24, 22, 15, 3.2), (37, 9, 6, 1.6)):
+        d = (f"M{cx} {cy - r} C{cx + w * 0.4} {cy - w} {cx + w} {cy - w * 0.4} {cx + r} {cy} C{cx + w} {cy + w * 0.4} {cx + w * 0.4} {cy + w} {cx} {cy + r} "
+             f"C{cx - w * 0.4} {cy + w} {cx - w} {cy + w * 0.4} {cx - r} {cy} C{cx - w} {cy - w * 0.4} {cx - w * 0.4} {cy - w} {cx} {cy - r} Z")
+        out += f"<path d='{d}' fill='url(#gg)' stroke='#6E4E12' stroke-width='.6'/>"
+    out += "<circle cx='24' cy='22' r='2.2' fill='#FFFDF2'/><circle cx='37' cy='9' r='1' fill='#FFFDF2'/>"
+    return out
+
 # ---------------------------------------------------------------- テーマ
 SEG_SQ = '.mbtn,.pill,.seg,.tag,.coin,.ocr{border-radius:0}'
 
@@ -840,6 +852,30 @@ THEMES = [
       guide=dict(colors=[('#D6DAE0', '銀'), ('#2A3038', '黒（帯・ボタン）'), ('#F2F4F6', '白（カード）'), ('#8A939D', '灰（線）'), ('#1E2329', '文字')],
                  fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='角丸10px・ヘアラインの銀の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに白い字・銀の「第1」・すみにきらめき',
                  pic='全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの銀の地・像のうしろの光の輪・走る勢いの銀のすじ・みがいた床にうつる像・きらめき')),
+
+ dict(id='golden', cat=4, name='ゴールド', desc='金・光る像', title='ゴールド（金×黒）', banner='golden',
+      alt='金の地（ヘアライン）と光の輪の前を、全力で駆ける金の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト',
+      fonts=['Dela+Gothic+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
+      v=dict(bg='#E3CC8F', ink='#2A1F0C', sub='#5C4A22', card='#FBF5E4', cardB='1px solid #C9A85A', cardO='1px solid #FFFDF4', cardS='0 8px 24px rgba(60,40,10,.18)',
+             radius='10px', rs='8px', font='"Zen Kaku Gothic New"', dfont='"Dela Gothic One"', dw='400', logo='#F6DE95', logoS='0 1px 0 rgba(0,0,0,.5),0 0 10px rgba(255,214,120,.35)',
+             iii='#E2B64C', iiiB='0 solid transparent', iiiR='2px', hd='#2A1F0C', hdInk='#FBF1D6', hdB='1px solid #A9853A',
+             mBg='#FBF5E4', mLine='#A9853A', mInk='#3A2B10', pill='#FBF5E4', pillLine='#C9A85A', pillInk='#3A2B10', coin='linear-gradient(135deg,#FFF6D6,#C9952B)',
+             coinInk='#2A1F0C', badge='linear-gradient(180deg,#FFF8E2,#E2C27A)', badgeInk='#3A2B10', badgeB='1px solid #A9853A', tagBg='#F3E6C2', tagInk='#3A2B10', tagLine='#D6BD82',
+             warnBg='#F6E0D6', warnInk='#8A2A1A', zBg='#FFFBF0', zB='1px solid #EADBB0', znBg='linear-gradient(180deg,#FFF8E2,#DDB866)', znInk='#2A1F0C', znB='1px solid #A9853A',
+             znR='6px', znS='0 1px 2px rgba(60,40,10,.22)', acc='#5A3F0E', nR='6px', w2B='0 solid transparent', sep='1px solid #EADBB0', btn='#2A1F0C', btnInk='#F6DE95',
+             btnB='1px solid #A9853A', btnR='8px', btnS='0 2px 6px rgba(40,25,5,.28),inset 0 1px 0 rgba(255,230,160,.2)', btn2='#FBF5E4', btn2Ink='#3A2B10', btn2B='1px solid #A9853A',
+             tab='#F3E6C2', tabB='1px solid #C9A85A', tabInk='#5C4A22', tabOn='#2A1F0C', tabOnInk='#F6DE95', tabR='8px', sel='#2A1F0C', selInk='#F6DE95', h1='#2A1F0C'),
+      chk=dict(hd=['#2A1F0C'], zn=['#FFFBF0']),
+      css=[('', 'background-image:' + tile_hairline() + ',linear-gradient(180deg,#F6E9C4,#E0C27E 45%,#C49E4E);background-size:48px 24px,100% 100%'),
+           ('.hd', 'background-image:linear-gradient(180deg,#3E2E12,#1F1608)'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:linear-gradient(90deg,#A9853A,#FFF3C8 50%,#A9853A)'),
+           ('.logo', 'letter-spacing:.06em;font-size:24px'),
+           ('.bnr', 'box-shadow:inset 0 0 0 1px rgba(255,240,200,.5)'),
+           ('.lb', 'box-shadow:inset 0 1px 0 #FFFDF4,0 2px 4px rgba(60,40,10,.18)')],
+      orn=orn_golden(),
+      guide=dict(colors=[('#E3CC8F', '金'), ('#2A1F0C', '黒（帯・ボタン）'), ('#FBF5E4', 'アイボリー（カード）'), ('#A9853A', '濃い金（線）'), ('#F6DE95', '明るい金（ボタンの字）')],
+                 fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='シルバーと同じ形を金に：角丸10px・ヘアラインの金の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに金の字・金の「第1」・すみにきらめき',
+                 pic='全力で駆ける金の馬の像（シルバーと同じ像を金に。うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの金の地・像のうしろの光の輪・走る勢いの金のすじ・みがいた床にうつる像・きらめき')),
 
  dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
