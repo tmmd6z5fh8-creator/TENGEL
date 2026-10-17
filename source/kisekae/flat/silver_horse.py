@@ -2,7 +2,7 @@
    体・首・頭・足は3Dの馬（r3d/horse3d.py）。たてがみとしっぽは、うしろへ流れてうねる丸い筒の房（彫刻のうねり）。
    写真の形はなぞっていない（ポーズ・たてがみ・しっぽは一から。騎手・ゼッケン・名前は出さない）。
    build_statue(sc, pose, mats) → 骨組み S（目印）"""
-import os, sys, math
+import os, sys, math, contextlib
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
 import horse3d as Hm
 from h3d import nrm, basis
 from marble_horse import tube, frames, bez3, neck_hw, forelock, NEAR
+from throat_fix import slim_throat
 
 # 伸びきった駆け足（写真と同じ瞬間）：手前の前足を前へ伸ばして地面に・むこうの前足はたたむ・後ろ足は2本ともうしろへ伸ばす
 # 左向きで描く（カメラは -z）ので、手前の足は R
@@ -85,11 +86,62 @@ def tail_stream(S, length=1.05, seed=23):
     return locks
 
 
-def build_statue(sc, pose=POSE, mats=None, tail_len=1.05):
+# 首を細く（まさちゃんが引いた黄色の線に合わせる）：のどの線を たてがみの方へ・たてがみの線を少しのどの方へ寄せる
+# 割合は骨組みの4つの点ごと（胸がわ → うなじがわ）
+THROAT_IN = (0.05, 0.46, 0.46, 0.24)
+CREST_IN = (0.0, 0.06, 0.08, 0.04)
+
+
+@contextlib.contextmanager
+def slim_neck(throat_in=THROAT_IN, crest_in=CREST_IN):
+    orig = Hm.skeleton
+
+    def skel(p):
+        S = orig(p)
+        C, T = np.asarray(S['crest'], float).copy(), np.asarray(S['throat'], float).copy()
+        S['crest'] = np.array([C[i] + (T[i] - C[i]) * crest_in[i] for i in range(4)])
+        S['throat'] = np.array([T[i] + (C[i] - T[i]) * throat_in[i] for i in range(4)])
+        return S
+    Hm.skeleton = skel
+    try:
+        yield skel
+    finally:
+        Hm.skeleton = orig
+
+
+@contextlib.contextmanager
+def slim_muscle(sc, S, f=0.38, t_top=0.88, r=(0.026, 0.040)):
+    """首の横の筋（あご → 肩）：細くした首の中へ（のどの線とたてがみの線のあいだ f の所）"""
+    rc0 = sc.rcone
+
+    def rc(a_, b_, ra, rb, *args, **kw):
+        a_ = np.asarray(a_, float)
+        if abs(ra - 0.04) < 1e-9 and abs(rb - 0.06) < 1e-9 and abs(abs(a_[2]) - 0.075) < 1e-9:
+            z = np.sign(a_[2])
+            th, cr = Hm.bez(S['throat'], t_top), Hm.bez(S['crest'], t_top)
+            q = th + (cr - th) * f
+            th2, cr2 = Hm.bez(S['throat'], 0.12), Hm.bez(S['crest'], 0.12)
+            q2 = th2 + (cr2 - th2) * f
+            return rc0(np.array([q[0], q[1], 0.055 * z]), np.array([q2[0], q2[1], 0.10 * z]), r[0], r[1], *args, **kw)
+        return rc0(a_, b_, ra, rb, *args, **kw)
+    sc.rcone = rc
+    try:
+        yield
+    finally:
+        sc.rcone = rc0
+
+
+def build_statue(sc, pose=POSE, mats=None, tail_len=1.05, slim=True):
     M = dict(body=1, neck=1, hoof=1, eye=1, head=1)
     if mats:
         M.update(mats)
-    S = Hm.build(sc, pose, mats=M)
+    if slim:
+        with slim_neck() as skel:
+            S1 = skel(pose)
+            with slim_muscle(sc, S1), slim_throat(sc, pose, neck_k=0.04, neck_k_from=0.3):
+                S = Hm.build(sc, pose, mats=M)
+    else:
+        S = Hm.build(sc, pose, mats=M)
     B = M['body']
     for pts, rad, gr in mane_stream(S):
         tube(sc, pts, rad, gr, mat=B, kg=0.012)
