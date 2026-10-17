@@ -433,7 +433,25 @@ def orn_stars():
 
 
 def orn_lucky():
-    return clover_body(22, 20, 1.0, '#3FA45B', '#1F6B3A', '#2E8A48', sw=1.1)
+    """小判（金の楕円・ござ目・まん中の刻印・上下の丸い印・つや）＋キラッ"""
+    b = ("<defs><linearGradient id='kb1' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#FFF6CC'/><stop offset='.45' stop-color='#F2C94F'/>"
+         "<stop offset='1' stop-color='#B9861F'/></linearGradient></defs>")
+    g = "<g transform='rotate(-14 22 23)'>"
+    g += "<ellipse cx='22' cy='23' rx='12.5' ry='17.5' fill='url(#kb1)' stroke='#7A560E' stroke-width='1.5'/>"
+    g += "<ellipse cx='22' cy='23' rx='9.3' ry='14.2' fill='none' stroke='#C9952B' stroke-width='.9'/>"
+    for k in range(-5, 6):
+        y = 23 + k * 2.4
+        hw = 8.6 * math.sqrt(max(0.0, 1 - ((y - 23) / 14.4) ** 2))
+        if hw > 2.2 and abs(k) > 2:
+            g += f"<line x1='{22 - hw:.2f}' y1='{y:.2f}' x2='{22 + hw:.2f}' y2='{y:.2f}' stroke='#D9A63A' stroke-width='.8'/>"
+    g += "<rect x='18.4' y='16.6' width='7.2' height='12.8' rx='1' fill='#FFF1BC' stroke='#9A6A12' stroke-width='.8'/>"
+    g += "<path d='M20 20h4M20 23h4M20.6 26h2.8M22 19v8' stroke='#8A5A0E' stroke-width='.9' stroke-linecap='round'/>"
+    g += "<circle cx='22' cy='10.6' r='1.7' fill='#E9B840' stroke='#9A6A12' stroke-width='.6'/>"
+    g += "<circle cx='22' cy='35.4' r='1.7' fill='#E9B840' stroke='#9A6A12' stroke-width='.6'/>"
+    g += "<path d='M13.6 15.5 C14.6 11.2 17.4 8.4 21 7.4' stroke='#FFFFFF' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='.85'/>"
+    g += "</g>"
+    st = "<path d='M37 3.5 L38.2 7.3 L42 8.5 L38.2 9.7 L37 13.5 L35.8 9.7 L32 8.5 L35.8 7.3 Z' fill='#FFE7A6' stroke='#C9952B' stroke-width='.5'/>"
+    return b + g + st
 
 
 def orn_marble():
@@ -673,7 +691,7 @@ THEMES = [
                  fonts='見出し：M PLUS 1 Black<br>本文：M PLUS 1', shape='角丸14px・青い太枠に黄・赤のずらした影・帯の下に勝負服のしま・ななめの「第1」・すみに勝負服',
                  pic='勝負服のしまと市松・ひし形の勝負服の騎手・ゼッケン1の馬')),
 
- dict(id='lucky', cat=3, name='開運', desc='緑と金・蹄鉄', title='開運・蹄鉄（緑×金）', banner='lucky', alt='金の蹄鉄の中を走る金の馬と、四つ葉のクローバー、金貨のイラスト',
+ dict(id='lucky', cat=3, name='開運', desc='緑と金・蹄鉄', title='開運・蹄鉄（緑×金）', banner='lucky', alt='金の蹄鉄の中で、前足をあげて千両の小判をだいた金色の馬のキャラクターと、四つ葉のクローバー、金貨のイラスト',
       fonts=['Zen+Antique+Soft', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#F3F8F1', ink='#1C2E22', sub='#4E6455', card='#FFFFFF', cardB='1.5px solid #D8C08A', cardO='0 solid transparent', cardS='0 3px 0 #E6D7B0',
              radius='14px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Zen Antique Soft"', dw='400', logo='#F3D27A', logoS='none',
@@ -692,8 +710,8 @@ THEMES = [
            ('.tb', 'box-shadow:inset 0 2px 0 #D4A63A')],
       orn=orn_lucky(),
       guide=dict(colors=[('#1F6B3A', '緑'), ('#D4A63A', '金'), ('#FFE7A6', '薄い金'), ('#F3F8F1', '背景'), ('#1C2E22', '文字')],
-                 fonts='見出し：Zen Antique Soft（金の文字）<br>本文：Zen角ゴシック New', shape='角丸14px・金の枠・金のボタン・クローバーの背景・上下の帯は緑・すみに四つ葉',
-                 pic='金の蹄鉄・中を走る金の馬・四つ葉のクローバー・金貨・キラキラ')),
+                 fonts='見出し：Zen Antique Soft（金の文字）<br>本文：Zen角ゴシック New', shape='角丸14px・金の枠・金のボタン・クローバーの背景・上下の帯は緑・すみに小判',
+                 pic='金の蹄鉄・中に金運の馬のキャラクター（福を招く前足・千両の小判・鈴）・四つ葉のクローバー・金貨・キラキラ')),
 
  dict(id='shogi', cat=4, name='将棋', desc='木目・桂馬', title='将棋・桂馬（木目）', banner='shogi', alt='将棋盤の上の桂馬と歩兵の駒のイラスト',
       fonts=['Zen+Antique', 'Zen+Kaku+Gothic+New:wght@500;700'],
