@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>判定画面・テンゲル</title>
+<title>判定画面・マスター帯</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -14,7 +14,7 @@
 <style>
 body{margin:0}
 *{box-sizing:border-box}
-.ph{--bg:#EEF1F6;--ink:#1B2238;--sub:#5B647A;--card:#FFFFFF;--cardB:1px solid #DCE2EC;--cardO:0 solid transparent;--cardS:0 1px 2px rgba(20,30,60,.06);--radius:14px;--rs:10px;--font:"BIZ UDPGothic";--dfont:"Dela Gothic One";--dw:400;--logo:#F3F0E6;--logoS:none;--iii:#E2A23B;--iiiB:0 solid transparent;--iiiR:0;--hd:#161F3D;--hdInk:#F3F0E6;--hdB:3px solid #E2A23B;--mBg:rgba(255,255,255,.06);--mLine:#B98A3A;--mInk:#F3E3BF;--pill:rgba(255,255,255,.06);--pillLine:rgba(255,255,255,.3);--pillInk:#E9ECF5;--coin:#E2A23B;--coinInk:#161F3D;--badge:#E1E8F6;--badgeInk:#1F2A5A;--badgeB:0 solid transparent;--tagBg:#FFFFFF;--tagInk:#2A3352;--tagLine:#C9D1E0;--warnBg:#FDE2E0;--warnInk:#B3261E;--zBg:#F6F8FB;--zB:1px solid #E3E8F0;--znBg:#E6EBF5;--znInk:#1F2A5A;--znB:0 solid transparent;--znR:6px;--znS:none;--acc:#1F2A5A;--nR:7px;--w2B:0 solid transparent;--sep:1px dashed #D5DCE8;--btn:#1F2A5A;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:10px;--btnS:none;--btn2:#FFFFFF;--btn2Ink:#1F2A5A;--btn2B:1.5px solid #C9D1E0;--tab:#FFFFFF;--tabB:1px solid #DCE2EC;--tabInk:#6B7488;--tabOn:#E6EBF5;--tabOnInk:#1F2A5A;--tabR:12px}
+.ph{--bg:#0A1B22;--ink:#E8F0F1;--sub:#A6BEC3;--card:linear-gradient(160deg,#153B47,#10303A);--cardB:1px solid rgba(217,180,90,.42);--cardO:1px solid rgba(217,180,90,.14);--cardS:0 18px 40px rgba(0,0,0,.38);--radius:16px;--rs:12px;--font:"BIZ UDPGothic";--dfont:"Dela Gothic One";--dw:400;--logo:#E9C873;--logoS:none;--iii:#D9B45A;--iiiB:0 solid transparent;--iiiR:1px;--hd:#0A1B22;--hdInk:#E8F0F1;--hdB:1px solid rgba(217,180,90,.20);--mBg:rgba(217,180,90,.08);--mLine:rgba(217,180,90,.42);--mInk:#F4DC96;--pill:rgba(217,180,90,.08);--pillLine:rgba(217,180,90,.42);--pillInk:#F4DC96;--coin:linear-gradient(180deg,#FBE9B0,#D9B45A);--coinInk:#0A1B22;--badge:linear-gradient(145deg,#17414D,#0E2932);--badgeInk:#F4DC96;--badgeB:1px solid rgba(217,180,90,.42);--tagBg:rgba(217,180,90,.08);--tagInk:#F4DC96;--tagLine:rgba(217,180,90,.42);--warnBg:rgba(243,169,95,.14);--warnInk:#F3A95F;--zBg:#0D242D;--zB:1px solid rgba(217,180,90,.20);--znBg:linear-gradient(180deg,#FBE9B0,#D9B45A);--znInk:#0A1B22;--znB:0 solid transparent;--znR:6px;--znS:none;--acc:#F4DC96;--nR:7px;--w2B:1.5px solid #6F8C93;--sep:1px solid rgba(217,180,90,.20);--btn:linear-gradient(180deg,#FBE9B0,#D9B45A);--btnInk:#0A1B22;--btnB:0 solid transparent;--btnR:12px;--btnS:0 6px 16px rgba(0,0,0,.35);--btn2:rgba(217,180,90,.08);--btn2Ink:#F4DC96;--btn2B:1px solid rgba(217,180,90,.42);--tab:#0A1B22;--tabB:1px solid rgba(217,180,90,.20);--tabInk:#A6BEC3;--tabOn:rgba(217,180,90,.14);--tabOnInk:#F4DC96;--tabR:12px}
 .ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB)}
@@ -81,12 +81,12 @@ body{margin:0}
 .tb button.on{background:var(--tabOn);color:var(--tabOnInk)}
 .tb svg{width:23px;height:23px}
 .orn{position:absolute;top:-15px;right:14px;width:44px;height:44px;pointer-events:none;overflow:visible}
-.ch{margin:0 0 10px}
-.seg{height:32px;font-size:13px;color:#7A8296;background:#F6F8FB}
-.seg.on{border:1.5px solid #1F2A5A}
-.ocr{margin-top:12px}
-.tl small{font-weight:400}
-.acts{margin-top:12px}
+.ph{background-image:radial-gradient(70% 28% at 50% 12%,rgba(92,202,214,.13),transparent 70%),repeating-linear-gradient(90deg,rgba(217,180,90,.045) 0 1px,transparent 1px 36px)}
+.logo{background:linear-gradient(180deg,#FBE9B0 0%,#E2BF66 46%,#A47A2C 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bnr{border-bottom:1px solid rgba(217,180,90,.42)}
+.ch{color:#D9B45A;letter-spacing:.14em}
+.lb{box-shadow:inset 0 1px 0 rgba(244,220,150,.22)}
+.seg{color:#A6BEC3}
 </style>
 </helmet>
 <div class="ph">
@@ -109,7 +109,7 @@ body{margin:0}
       <p class="hint">単勝・複勝と3連単人気順のスクショを1〜3枚</p>
     </section>
     <section class="card">
-      <svg class="orn" viewBox="0 0 44 44" aria-hidden="true"></svg>
+      <svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><defs><radialGradient id='mg' cx='.4' cy='.35' r='.7'><stop offset='0' stop-color='#FBE9B0'/><stop offset='.6' stop-color='#D9B45A'/><stop offset='1' stop-color='#A47A2C'/></radialGradient></defs><line x1='6' y1='30' x2='15' y2='13' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='15' y1='13' x2='27' y2='22' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='27' y1='22' x2='38' y2='7' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='27' y1='22' x2='30' y2='31' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='30' y1='31' x2='37' y2='35' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='30' y1='31' x2='21' y2='39' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='6' y1='30' x2='21' y2='39' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='15' y1='13' x2='38' y2='7' stroke='#D9B45A' stroke-width='1' opacity='.85'/><line x1='21' y1='39' x2='37' y2='35' stroke='#D9B45A' stroke-width='1' opacity='.85'/><circle cx='6' cy='30' r='2.4' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='15' cy='13' r='2.4' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='27' cy='22' r='3.2' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='38' cy='7' r='2.4' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='37' cy='35' r='2.4' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='21' cy='39' r='2.4' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/><circle cx='30' cy='31' r='3.2' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/></svg>
       <div class="vh">
         <div class="lb"><b>A</b><small>堅</small></div>
         <div class="vi">

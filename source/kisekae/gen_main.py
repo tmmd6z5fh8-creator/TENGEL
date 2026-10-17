@@ -66,8 +66,10 @@ def card_btn():
 
 
 groups = ''
-for c in range(1, 6):
+for c in sorted(CATS):
     n = sum(1 for t in ALL if t['cat'] == c)
+    if n == 0:
+        continue
     groups += (f'  <h2 class="gh">{CATS[c]}<small>{n}</small></h2>\n  <div class="grid">\n'
                f'    <sc-for list="{{{{g{c}}}}}" as="t" hint-placeholder-count="{n}">\n' + card_btn() + '\n    </sc-for>\n  </div>\n')
 
@@ -134,13 +136,14 @@ class Component extends DCLogic {{
       }};
     }});
     function grp(n) {{ return items.filter(function (t) {{ return t.g === n; }}); }}
-    return {{ rootCls: 'ph t-' + cur.id, curName: cur.name, g1: grp(1), g2: grp(2), g3: grp(3), g4: grp(4), g5: grp(5) }};
+    return {{ rootCls: 'ph t-' + cur.id, curName: cur.name, GROUPS }};
   }}
 }}
 </script>
 </body>
 </html>
 '''
+main = main.replace('GROUPS', ', '.join(f'g{c}: grp({c})' for c in sorted(CATS) if any(t['cat'] == c for t in ALL)))
 main = main.replace('HEIGHT', f'{MAIN_H}px' if MAIN_H else 'auto;min-height:844px')
 open(f'{P}/Main.dc.html', 'w', encoding='utf-8').write(main)
 
@@ -153,10 +156,10 @@ gstyle += ('\n.cat{display:inline-flex;align-items:center;height:20px;padding:0 
 
 
 NNEW = len(THEMES)
-NCATS = '／'.join(f"{CATS[c]}{sum(1 for t in THEMES if t['cat'] == c)}" for c in (1, 2, 3, 4, 5) if any(t['cat'] == c for t in THEMES))
+NCATS = '／'.join(f"{CATS[c]}{sum(1 for t in THEMES if t['cat'] == c)}" for c in sorted(CATS) if any(t['cat'] == c for t in THEMES))
 
 
-GCOL = dict(tengel='#1F2A5A', sakura='#A3355C', sea='#0B5E96', sunset='#6A2E8E', autumn='#A33A16', snow='#23608F', newyear='#B0141B', fireworks='#D63A6E',
+GCOL = dict(tengel='#13505E', sakura='#A3355C', sea='#0B5E96', sunset='#6A2E8E', autumn='#A33A16', snow='#23608F', newyear='#B0141B', fireworks='#D63A6E',
             night='#9A6200', news='#141414', silks='#1A3FB8', lucky='#B71C1C', shogi='#6B4423', ink='#1A1A1A', marble='#8A6A38', ryuma='#A87C22', silver='#3A424B', golden='#8A6514', chess='#111111',
             neon='#C81FB0', pixel='#1D2B53', chalk='#24423A', carousel='#B83A74', stars='#4A3F8F')
 

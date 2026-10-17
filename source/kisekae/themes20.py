@@ -555,34 +555,25 @@ def orn_golden():
     out += "<circle cx='24' cy='22' r='2.2' fill='#FFFDF2'/><circle cx='37' cy='9' r='1' fill='#FFFDF2'/>"
     return out
 
+
+def orn_master():
+    """マスター帯：テンゲルの絵のネットワーク（金の点を細い線でつなぐ）"""
+    pts = [(6, 30), (15, 13), (27, 22), (38, 7), (37, 35), (21, 39), (30, 31)]
+    edges = [(0, 1), (1, 2), (2, 3), (2, 6), (6, 4), (6, 5), (0, 5), (1, 3), (5, 4)]
+    out = ("<defs><radialGradient id='mg' cx='.4' cy='.35' r='.7'><stop offset='0' stop-color='#FBE9B0'/><stop offset='.6' stop-color='#D9B45A'/>"
+           "<stop offset='1' stop-color='#A47A2C'/></radialGradient></defs>")
+    for i, j in edges:
+        (x1, y1), (x2, y2) = pts[i], pts[j]
+        out += f"<line x1='{x1}' y1='{y1}' x2='{x2}' y2='{y2}' stroke='#D9B45A' stroke-width='1' opacity='.85'/>"
+    for k, (x, y) in enumerate(pts):
+        r = 3.2 if k in (2, 6) else 2.4
+        out += f"<circle cx='{x}' cy='{y}' r='{r}' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/>"
+    return out
+
 # ---------------------------------------------------------------- テーマ
 SEG_SQ = '.mbtn,.pill,.seg,.tag,.coin,.ocr{border-radius:0}'
 
 THEMES = [
- dict(id='tengel', cat=1, name='テンゲル', desc='紺と金・テンゲルの絵', title='テンゲル（いつもの＋テンゲルの絵）', banner='tengel',
-      alt='テンゲルの絵（金と紺の盾のエンブレムに、騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線、TENGER の金の文字・「独自の統計・オッズ分析による馬券検討支援システム」・「テンゲル」の金の札）',
-      fonts=['Dela+Gothic+One', 'BIZ+UDPGothic:wght@400;700'],
-      v=dict(bg='#EEF1F6', ink='#1B2238', sub='#5B647A', card='#FFFFFF', cardB='1px solid #DCE2EC', cardO='0 solid transparent', cardS='0 1px 2px rgba(20,30,60,.06)',
-             radius='14px', rs='10px', font='"BIZ UDPGothic"', dfont='"Dela Gothic One"', dw='400', logo='#F3F0E6', logoS='none',
-             iii='#E2A23B', iiiB='0 solid transparent', iiiR='0', hd='#161F3D', hdInk='#F3F0E6', hdB='3px solid #E2A23B',
-             mBg='rgba(255,255,255,.06)', mLine='#B98A3A', mInk='#F3E3BF', pill='rgba(255,255,255,.06)', pillLine='rgba(255,255,255,.3)', pillInk='#E9ECF5',
-             coin='#E2A23B', coinInk='#161F3D', badge='#E1E8F6', badgeInk='#1F2A5A', badgeB='0 solid transparent', tagBg='#FFFFFF', tagInk='#2A3352', tagLine='#C9D1E0',
-             warnBg='#FDE2E0', warnInk='#B3261E', zBg='#F6F8FB', zB='1px solid #E3E8F0', znBg='#E6EBF5', znInk='#1F2A5A', znB='0 solid transparent', znR='6px', znS='none',
-             acc='#1F2A5A', nR='7px', w2B='0 solid transparent', sep='1px dashed #D5DCE8', btn='#1F2A5A', btnInk='#FFFFFF', btnB='0 solid transparent', btnR='10px',
-             btnS='none', btn2='#FFFFFF', btn2Ink='#1F2A5A', btn2B='1.5px solid #C9D1E0', tab='#FFFFFF', tabB='1px solid #DCE2EC', tabInk='#6B7488', tabOn='#E6EBF5',
-             tabOnInk='#1F2A5A', tabR='12px', sel='#1F2A5A', selInk='#FFFFFF', h1='#1B2238'),
-      chk=dict(hd=['#161F3D']),
-      css=[('.ch', 'margin:0 0 10px'),
-           ('.seg', 'height:32px;font-size:13px;color:#7A8296;background:#F6F8FB'),
-           ('.seg.on', 'border:1.5px solid #1F2A5A'),
-           ('.ocr', 'margin-top:12px'),
-           ('.tl small', 'font-weight:400'),
-           ('.acts', 'margin-top:12px')],
-      orn='',
-      guide=dict(colors=[('#161F3D', '紺（帯）'), ('#E2A23B', '金（帯の下の線）'), ('#EEF1F6', '背景'), ('#1F2A5A', 'ボタン'), ('#1B2238', '文字')],
-                 fonts='見出し：Dela Gothic One<br>本文：BIZ UDPゴシック', shape='いつもの（紺と金）と同じ：角丸14px・白いカード・紺の帯の下に金の線・紺のボタン。ちがうのは帯の下にテンゲルの絵が入ること',
-                 pic='テンゲルの絵（説明書の上の絵と同じ）：金と紺の盾のエンブレム（騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線）・TENGER の金の文字・「テンゲル」の金の札。下の小さな版の行は消した')),
-
  dict(id='sakura', cat=2, name='桜', desc='ピンク・春の桜', title='桜（ピンク×若草）', banner='sakura', alt='満開の桜の下に立つ白い競走馬（すらりとした足・桜色のたてがみ・耳もとの桜の花かざり・桜色のゼッケン1）のイラスト',
       fonts=['Kaisei+Decol:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FFF6F8', ink='#4A2A35', sub='#87596A', card='#FFFFFF', cardB='1.5px solid #F4C6D4', cardO='0 solid transparent', cardS='0 4px 12px rgba(214,110,150,.12)',
@@ -853,7 +844,7 @@ THEMES = [
                  fonts='見出し：Shippori Mincho B1 ExtraBold<br>本文：しっぽり明朝', shape='角丸2px・細い二重の枠・金の細い線・大理石のすじの背景・黒いボタンに金の字・すみに月桂樹',
                  pic='大理石の像（後ろ足で立ち上がる馬・波打つたてがみ・ねじれながら台までとどくしっぽ・岩の台座）・金の帯の台・金の月桂樹')),
 
- dict(id='silver', cat=4, name='シルバー', desc='銀・光る像', title='シルバー（銀×白）', banner='silver',
+ dict(id='silver', cat=6, name='シルバー帯', desc='銀・光る像', title='シルバー帯（銀×白）', banner='silver',
       alt='銀の地（ヘアライン）と光の輪の前を、全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト',
       fonts=['Dela+Gothic+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#D6DAE0', ink='#1E2329', sub='#555C64', card='#F2F4F6', cardB='1px solid #AEB5BD', cardO='1px solid #FFFFFF', cardS='0 8px 24px rgba(30,40,50,.14)',
@@ -877,7 +868,7 @@ THEMES = [
                  fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='角丸10px・ヘアラインの銀の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに白い字・銀の「第1」・すみにきらめき',
                  pic='全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの銀の地・像のうしろの光の輪・走る勢いの銀のすじ・みがいた床にうつる像・きらめき')),
 
- dict(id='golden', cat=4, name='ゴールド', desc='金・光る像', title='ゴールド（金×黒）', banner='golden',
+ dict(id='golden', cat=6, name='ゴールド帯', desc='金・光る像', title='ゴールド帯（金×黒）', banner='golden',
       alt='金の地（ヘアライン）と光の輪の前を、全力で駆ける金の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト',
       fonts=['Dela+Gothic+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#E3CC8F', ink='#2A1F0C', sub='#5C4A22', card='#FBF5E4', cardB='1px solid #C9A85A', cardO='1px solid #FFFDF4', cardS='0 8px 24px rgba(60,40,10,.18)',
@@ -900,6 +891,33 @@ THEMES = [
       guide=dict(colors=[('#E3CC8F', '金'), ('#2A1F0C', '黒（帯・ボタン）'), ('#FBF5E4', 'アイボリー（カード）'), ('#A9853A', '濃い金（線）'), ('#F6DE95', '明るい金（ボタンの字）')],
                  fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='シルバーと同じ形を金に：角丸10px・ヘアラインの金の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに金の字・金の「第1」・すみにきらめき',
                  pic='全力で駆ける金の馬の像（シルバーと同じ像を金に。うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの金の地・像のうしろの光の輪・走る勢いの金のすじ・みがいた床にうつる像・きらめき')),
+
+ dict(id='tengel', cat=6, name='マスター帯', desc='テンゲルの絵', title='マスター帯（テンゲルの紺緑×金）', banner='tengel',
+      alt='テンゲルの絵（金と紺の盾のエンブレムに、騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線、TENGER の金の文字・「独自の統計・オッズ分析による馬券検討支援システム」・「テンゲル」の金の札）',
+      fonts=['Dela+Gothic+One', 'BIZ+UDPGothic:wght@400;700'],
+      v=dict(bg='#0A1B22', ink='#E8F0F1', sub='#A6BEC3', card='linear-gradient(160deg,#153B47,#10303A)', cardB='1px solid rgba(217,180,90,.42)',
+             cardO='1px solid rgba(217,180,90,.14)', cardS='0 18px 40px rgba(0,0,0,.38)',
+             radius='16px', rs='12px', font='"BIZ UDPGothic"', dfont='"Dela Gothic One"', dw='400', logo='#E9C873', logoS='none',
+             iii='#D9B45A', iiiB='0 solid transparent', iiiR='1px', hd='#0A1B22', hdInk='#E8F0F1', hdB='1px solid rgba(217,180,90,.20)',
+             mBg='rgba(217,180,90,.08)', mLine='rgba(217,180,90,.42)', mInk='#F4DC96', pill='rgba(217,180,90,.08)', pillLine='rgba(217,180,90,.42)', pillInk='#F4DC96',
+             coin='linear-gradient(180deg,#FBE9B0,#D9B45A)', coinInk='#0A1B22', badge='linear-gradient(145deg,#17414D,#0E2932)', badgeInk='#F4DC96', badgeB='1px solid rgba(217,180,90,.42)',
+             tagBg='rgba(217,180,90,.08)', tagInk='#F4DC96', tagLine='rgba(217,180,90,.42)', warnBg='rgba(243,169,95,.14)', warnInk='#F3A95F',
+             zBg='#0D242D', zB='1px solid rgba(217,180,90,.20)', znBg='linear-gradient(180deg,#FBE9B0,#D9B45A)', znInk='#0A1B22', znB='0 solid transparent', znR='6px', znS='none',
+             acc='#F4DC96', nR='7px', w2B='1.5px solid #6F8C93', sep='1px solid rgba(217,180,90,.20)', btn='linear-gradient(180deg,#FBE9B0,#D9B45A)', btnInk='#0A1B22', btnB='0 solid transparent', btnR='12px',
+             btnS='0 6px 16px rgba(0,0,0,.35)', btn2='rgba(217,180,90,.08)', btn2Ink='#F4DC96', btn2B='1px solid rgba(217,180,90,.42)', tab='#0A1B22', tabB='1px solid rgba(217,180,90,.20)',
+             tabInk='#A6BEC3', tabOn='rgba(217,180,90,.14)', tabOnInk='#F4DC96', tabR='12px', sel='#D9B45A', selInk='#0A1B22', h1='#F4DC96',
+             pageInk='#E8F0F1', pageSub='#A6BEC3', pageAcc='#F4DC96'),
+      chk=dict(card=['#153B47', '#10303A'], hd=['#0A1B22']),
+      css=[('', 'background-image:radial-gradient(70% 28% at 50% 12%,rgba(92,202,214,.13),transparent 70%),repeating-linear-gradient(90deg,rgba(217,180,90,.045) 0 1px,transparent 1px 36px)'),
+           ('.logo', 'background:linear-gradient(180deg,#FBE9B0 0%,#E2BF66 46%,#A47A2C 100%);-webkit-background-clip:text;background-clip:text;color:transparent'),
+           ('.bnr', 'border-bottom:1px solid rgba(217,180,90,.42)'),
+           ('.ch', 'color:#D9B45A;letter-spacing:.14em'),
+           ('.lb', 'box-shadow:inset 0 1px 0 rgba(244,220,150,.22)'),
+           ('.seg', 'color:#A6BEC3')],
+      orn=orn_master(),
+      guide=dict(colors=[('#0A1B22', '紺緑（背景・帯）'), ('#10303A', 'パネル'), ('#D9B45A', '金'), ('#F4DC96', '明るい金（字）'), ('#E8F0F1', '文字')],
+                 fonts='見出し：Dela Gothic One<br>本文：BIZ UDPゴシック', shape='説明書と同じ形と色：角丸16px・紺緑のカードに金の細いふち（内がわにもう1本）・金の縦の細いすじ（36pxおき）と上の青緑の光の背景・金のボタンに紺の字・金の「第1」・すみに金のネットワーク',
+                 pic='テンゲルの絵（説明書の上の絵と同じ）：金と紺の盾のエンブレム（騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線）・TENGER の金の文字・「テンゲル」の金の札。下の小さな版の行は消した')),
 
  dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -1052,5 +1070,5 @@ RETIRED = [
                  pic='金の双龍の額縁（アニメ調：向かい合う龍の頭・うろこの体・爪が横木をつかむ・上下に赤い玉の飾り）・まん中は雷雲の夜空と金の日輪・雷・金の線の瑞雲')),
 ]
 
-CATS = {1: '定番', 2: '季節・行事', 3: '競馬', 4: '和・アート', 5: 'レトロ・ポップ'}
+CATS = {1: '定番', 2: '季節・行事', 3: '競馬', 4: '和・アート', 5: 'レトロ・ポップ', 6: '帯（ミッション）'}
 ORN = {t['id']: t['orn'] for t in THEMES}
