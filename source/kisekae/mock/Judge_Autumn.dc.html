@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>判定画面・紅葉</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#FBF3E6;--ink:#3E2A1E;--sub:#7A5E48;--card:#FFFDF8;--cardB:1.5px solid #EED8B8;--cardO:0 solid transparent;--cardS:0 3px 0 #EAD3B0;--radius:12px;--rs:10px;--font:"Zen Kaku Gothic New";--dfont:"Zen Old Mincho";--dw:900;--logo:#FFF1DE;--logoS:0 2px 0 #6E2410;--iii:#F2B33D;--iiiB:0 solid transparent;--iiiR:1px;--hd:linear-gradient(180deg,#B3401E,#8E2E14);--hdInk:#FFF1DE;--hdB:3px solid #E8A13A;--mBg:rgba(0,0,0,.12);--mLine:rgba(255,230,200,.6);--mInk:#FFF1DE;--pill:rgba(0,0,0,.14);--pillLine:rgba(255,230,200,.35);--pillInk:#FFF1DE;--coin:#F2B33D;--coinInk:#6E2410;--badge:#FBE6D0;--badgeInk:#A33A16;--badgeB:1.5px solid #EBC59E;--tagBg:#FBF0DF;--tagInk:#7A3A1A;--tagLine:#EED8B8;--warnBg:#FFE2D2;--warnInk:#9E2A10;--zBg:#FDF7EE;--zB:1.5px solid #F3E3CA;--znBg:#8E2E14;--znInk:#FFF1DE;--znB:0 solid transparent;--znR:3px;--znS:0 2px 0 #5E1E0C;--acc:#A33A16;--nR:7px;--w2B:0 solid transparent;--sep:1.5px dashed #EED8B8;--btn:#A33A16;--btnInk:#FFF8EE;--btnB:0 solid transparent;--btnR:10px;--btnS:0 3px 0 #74270C;--btn2:#FFFDF8;--btn2Ink:#A33A16;--btn2B:1.5px solid #E2BE96;--tab:#FFF8EC;--tabB:2px solid #EED8B8;--tabInk:#7A5E48;--tabOn:#FBE3CC;--tabOnInk:#A33A16;--tabR:10px}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB)}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.hd-r2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--pill);border:1px solid var(--pillLine);color:var(--pillInk);font-weight:700;font-size:12.5px;white-space:nowrap}
+.coin{width:17px;height:17px;border-radius:50%;background:var(--coin);color:var(--coinInk);display:inline-flex;align-items:center;justify-content:center;font:900 10px/1 "BIZ UDPGothic",sans-serif}
+.gdot{width:8px;height:8px;border-radius:50%;background:#3CCB84;flex:none}
+.bnr{flex:none;display:block;width:390px;height:160px;object-fit:cover}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
+.card{position:relative;flex:none;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 9px;font-size:13px;font-weight:700;color:var(--sub)}
+.mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;align-items:center;gap:4px;height:31px;padding:0 12px;border-radius:999px;border:1.5px dashed var(--tagLine);color:var(--sub);font-size:12.5px;font-weight:700;background:var(--tagBg)}
+.seg.on{background:var(--btn);color:var(--btnInk);border:1.5px solid transparent}
+.seg small{font-size:10.5px;font-weight:400;opacity:.85}
+.ocr{display:inline-flex;align-items:center;gap:8px;height:42px;margin-top:11px;padding:0 16px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14.5px;cursor:pointer}
+.ocr svg{width:19px;height:19px}
+.hint{margin:7px 0 0;font-size:12px;color:var(--sub)}
+.vh{display:flex;gap:12px;align-items:flex-start}
+.lb{flex:none;width:66px;height:80px;border-radius:var(--rs);background:var(--badge);color:var(--badgeInk);border:var(--badgeB);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lb b{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:40px;line-height:1}
+.lb small{font-size:12px;font-weight:700;margin-top:4px}
+.vi{min-width:0;flex:1}
+.vt{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:20px;line-height:1.25;margin:0;color:var(--ink)}
+.vs{font-size:12px;line-height:1.55;color:var(--sub);margin:4px 0 7px}
+.vs b{color:var(--ink);font-size:13.5px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine)}
+.tag.warn{background:var(--warnBg);color:var(--warnInk);border-color:transparent}
+.zs{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.z{background:var(--zBg);border:var(--zB);border-radius:var(--rs);padding:10px 12px}
+.zh{display:flex;align-items:center;gap:10px}
+.zn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:var(--znR);background:var(--znBg);color:var(--znInk);border:var(--znB);font-size:12px;font-weight:800;box-shadow:var(--znS)}
+.zf{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:18px;line-height:1.2;color:var(--acc)}
+.nums{display:flex;align-items:center;gap:5px;margin-top:8px}
+.ar{color:var(--sub);font-weight:700;padding:0 3px}
+.zr{font-size:12px;line-height:1.5;color:var(--sub);margin-top:7px}
+.zr b{color:var(--ink);font-size:13px}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.third{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;padding-top:11px;border-top:var(--sep)}
+.tl{font-size:13px;font-weight:800;color:var(--ink)}
+.tl small{display:block;font-size:11px;font-weight:500;color:var(--sub);margin-top:2px}
+.third .nums{margin-top:0;gap:4px}
+.third .n{min-width:26px;height:26px;font-size:13px}
+.sl{color:var(--sub);font-weight:700;padding:0 2px}
+.acts{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.btn.sub{background:var(--btn2);color:var(--btn2Ink);border:var(--btn2B);box-shadow:none}
+.btn svg{width:17px;height:17px}
+.tb{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 6px 22px;background:var(--tab);border-top:var(--tabB)}
+.tb button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;margin:0;border:0;background:transparent;color:var(--tabInk);font-family:var(--font),sans-serif;font-size:10.5px;font-weight:700;border-radius:var(--tabR);cursor:pointer;white-space:nowrap}
+.tb button.on{background:var(--tabOn);color:var(--tabOnInk)}
+.tb svg{width:23px;height:23px}
+.orn{position:absolute;top:-15px;right:14px;width:44px;height:44px;pointer-events:none;overflow:visible}
+.ph{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cpath d='M28.73 19.80 L28.77 21.48 L28.89 22.47 L28.57 24.23 L28.45 25.19 L28.18 26.23 L27.83 27.18 L27.54 27.88 L27.45 28.20 L27.55 28.28 L27.97 28.03 L28.56 27.69 L29.48 27.18 L30.38 26.82 L31.27 26.58 L32.86 26.04 L33.73 26.06 L34.52 26.20 L33.66 27.06 L32.27 27.96 L31.73 28.46 L30.57 29.03 L29.72 29.41 L28.99 29.69 L28.41 29.87 L28.31 30.00 L28.31 30.12 L28.51 30.26 L29.01 30.48 L29.56 30.76 L30.29 31.15 L31.12 31.67 L31.52 32.12 L32.68 32.98 L33.15 33.64 L32.02 33.48 L31.35 33.47 L30.12 33.00 L29.50 32.83 L28.77 32.49 L28.15 32.15 L27.69 31.88 L27.45 31.80 L27.36 31.87 L27.26 31.94 L27.16 32.00 L27.05 32.06 L26.94 32.11 L26.83 32.16 L26.71 32.20 L26.60 32.23 L26.48 32.26 L26.36 32.28 L26.24 32.30 L26.12 32.31 L26.00 32.31 L25.88 32.31 L25.76 32.30 L25.64 32.28 L25.52 32.26 L25.40 32.23 L25.29 32.20 L25.17 32.16 L25.06 32.11 L24.95 32.06 L24.84 32.00 L24.74 31.94 L24.64 31.87 L24.55 31.80 L24.45 31.72 L24.37 31.63 L24.28 31.55 L24.20 31.45 L24.13 31.36 L24.06 31.26 L24.00 31.16 L23.94 31.05 L23.89 30.94 L23.84 30.83 L23.60 30.78 L23.06 30.79 L22.41 30.76 L21.66 30.69 L20.60 30.57 L20.09 30.31 L18.77 30.00 L17.87 29.57 L19.17 29.28 L19.69 29.00 L20.97 28.93 L21.71 28.85 L22.43 28.84 L23.16 28.91 L23.69 28.97 L23.94 28.95 L24.00 28.84 L23.97 28.68 L23.56 28.23 L23.02 27.58 L22.46 26.81 L22.07 26.07 L21.23 24.70 L21.04 23.87 L20.55 22.50 L21.05 22.38 L22.32 23.62 L22.97 24.05 L23.81 25.09 L24.45 25.96 L24.89 26.58 L25.28 27.31 L25.52 27.74 L25.64 27.72 L25.73 27.40 L25.82 26.64 L26.00 25.77 L26.28 24.69 L26.70 23.29 L27.18 22.57 L27.94 20.88 Z' fill='%23E4572E' opacity='0.16'/%3E%3Cpath d='M95.68 16.52 L96.67 17.47 L97.31 17.97 L98.15 19.17 L98.64 19.80 L99.08 20.56 L99.43 21.31 L99.67 21.89 L99.80 22.12 L99.90 22.11 L100.00 21.72 L100.15 21.18 L100.38 20.36 L100.69 19.62 L101.07 18.97 L101.68 17.74 L102.19 17.25 L102.74 16.87 L102.73 17.86 L102.45 19.20 L102.43 19.80 L102.08 20.79 L101.81 21.51 L101.55 22.09 L101.32 22.53 L101.34 22.66 L101.40 22.74 L101.60 22.70 L102.02 22.54 L102.50 22.38 L103.15 22.18 L103.93 22.00 L104.42 22.03 L105.59 21.86 L106.25 21.97 L105.50 22.53 L105.10 22.92 L104.12 23.35 L103.66 23.62 L103.04 23.84 L102.49 24.00 L102.06 24.11 L101.88 24.20 L101.87 24.30 L101.85 24.39 L101.83 24.49 L101.80 24.58 L101.76 24.68 L101.73 24.77 L101.68 24.86 L101.64 24.95 L101.59 25.03 L101.53 25.11 L101.47 25.19 L101.40 25.26 L101.34 25.34 L101.26 25.40 L101.19 25.47 L101.11 25.53 L101.03 25.59 L100.95 25.64 L100.86 25.68 L100.77 25.73 L100.68 25.76 L100.58 25.80 L100.49 25.83 L100.39 25.85 L100.30 25.87 L100.20 25.88 L100.10 25.89 L100.00 25.89 L99.90 25.89 L99.80 25.88 L99.70 25.87 L99.61 25.85 L99.51 25.83 L99.42 25.80 L99.32 25.76 L99.23 25.73 L99.06 25.84 L98.75 26.16 L98.36 26.52 L97.89 26.91 L97.20 27.45 L96.76 27.60 L95.82 28.18 L95.05 28.46 L95.63 27.54 L95.77 27.07 L96.47 26.29 L96.85 25.82 L97.26 25.40 L97.72 25.01 L98.07 24.74 L98.20 24.58 L98.17 24.49 L98.07 24.41 L97.57 24.39 L96.88 24.33 L96.10 24.20 L95.45 24.00 L94.18 23.69 L93.58 23.33 L92.51 22.81 L92.73 22.46 L94.18 22.44 L94.81 22.31 L95.89 22.42 L96.77 22.56 L97.38 22.66 L98.03 22.86 L98.41 22.97 L98.47 22.89 L98.34 22.65 L97.96 22.16 L97.55 21.55 L97.09 20.77 L96.53 19.71 L96.38 19.02 L95.84 17.60 Z' fill='%23F2A13A' opacity='0.2'/%3E%3Cpath d='M74.31 81.20 L73.26 82.30 L72.70 83.02 L71.36 83.94 L70.67 84.48 L69.82 84.98 L68.99 85.36 L68.35 85.63 L68.09 85.78 L68.10 85.89 L68.53 86.00 L69.13 86.16 L70.05 86.43 L70.86 86.77 L71.59 87.19 L72.95 87.86 L73.50 88.44 L73.92 89.04 L72.82 89.04 L71.34 88.72 L70.67 88.70 L69.56 88.31 L68.77 88.01 L68.13 87.72 L67.63 87.47 L67.48 87.48 L67.41 87.56 L67.44 87.78 L67.63 88.24 L67.80 88.78 L68.02 89.50 L68.22 90.36 L68.19 90.91 L68.38 92.21 L68.26 92.94 L67.64 92.11 L67.21 91.67 L66.72 90.58 L66.43 90.07 L66.18 89.38 L66.00 88.77 L65.88 88.29 L65.78 88.09 L65.67 88.07 L65.56 88.05 L65.46 88.03 L65.35 88.00 L65.25 87.96 L65.15 87.92 L65.05 87.87 L64.95 87.82 L64.86 87.76 L64.77 87.70 L64.68 87.63 L64.59 87.56 L64.52 87.48 L64.44 87.41 L64.37 87.32 L64.30 87.23 L64.24 87.14 L64.18 87.05 L64.13 86.95 L64.08 86.85 L64.04 86.75 L64.00 86.65 L63.97 86.54 L63.95 86.44 L63.93 86.33 L63.91 86.22 L63.90 86.11 L63.90 86.00 L63.90 85.89 L63.91 85.78 L63.93 85.67 L63.95 85.56 L63.97 85.46 L64.00 85.35 L64.04 85.25 L64.08 85.15 L63.96 84.96 L63.60 84.62 L63.20 84.18 L62.77 83.65 L62.16 82.89 L62.00 82.40 L61.35 81.35 L61.05 80.50 L62.07 81.15 L62.59 81.30 L63.45 82.08 L63.98 82.50 L64.45 82.96 L64.87 83.47 L65.18 83.86 L65.35 84.00 L65.46 83.97 L65.54 83.85 L65.57 83.30 L65.64 82.53 L65.77 81.67 L66.00 80.94 L66.34 79.53 L66.75 78.87 L67.32 77.67 L67.72 77.92 L67.73 79.53 L67.87 80.23 L67.75 81.44 L67.60 82.41 L67.48 83.09 L67.27 83.81 L67.14 84.24 L67.23 84.30 L67.50 84.15 L68.04 83.73 L68.72 83.28 L69.59 82.76 L70.76 82.14 L71.53 81.98 L73.11 81.38 Z' fill='%23C9431C' opacity='0.14'/%3E%3Cpath d='M124.67 104.44 L125.21 105.53 L125.59 106.15 L125.92 107.41 L126.14 108.08 L126.28 108.84 L126.34 109.58 L126.36 110.13 L126.41 110.37 L126.49 110.39 L126.69 110.10 L126.98 109.69 L127.43 109.07 L127.91 108.56 L128.42 108.12 L129.30 107.28 L129.88 107.03 L130.45 106.88 L130.15 107.71 L129.51 108.73 L129.31 109.23 L128.72 109.95 L128.27 110.47 L127.88 110.87 L127.55 111.17 L127.52 111.29 L127.56 111.37 L127.74 111.40 L128.13 111.39 L128.58 111.40 L129.18 111.44 L129.89 111.52 L130.29 111.70 L131.32 111.91 L131.83 112.20 L131.04 112.44 L130.59 112.65 L129.64 112.71 L129.17 112.79 L128.59 112.79 L128.08 112.76 L127.69 112.72 L127.51 112.74 L127.47 112.81 L127.42 112.89 L127.38 112.96 L127.32 113.03 L127.27 113.10 L127.21 113.17 L127.15 113.23 L127.08 113.29 L127.01 113.34 L126.94 113.39 L126.87 113.44 L126.79 113.48 L126.71 113.52 L126.63 113.56 L126.55 113.59 L126.46 113.61 L126.38 113.64 L126.29 113.65 L126.20 113.67 L126.12 113.68 L126.03 113.68 L125.94 113.68 L125.85 113.67 L125.77 113.66 L125.68 113.65 L125.59 113.63 L125.51 113.61 L125.43 113.58 L125.34 113.55 L125.26 113.51 L125.19 113.47 L125.11 113.42 L125.04 113.38 L124.97 113.32 L124.90 113.27 L124.83 113.21 L124.66 113.25 L124.30 113.42 L123.87 113.61 L123.35 113.79 L122.61 114.04 L122.20 114.02 L121.23 114.22 L120.51 114.22 L121.28 113.63 L121.53 113.28 L122.36 112.84 L122.82 112.56 L123.29 112.33 L123.79 112.15 L124.16 112.03 L124.32 111.94 L124.33 111.85 L124.26 111.76 L123.85 111.58 L123.29 111.32 L122.68 110.99 L122.20 110.62 L121.23 109.97 L120.85 109.49 L120.10 108.73 L120.40 108.50 L121.61 108.93 L122.18 109.01 L123.05 109.44 L123.74 109.81 L124.22 110.09 L124.70 110.45 L124.99 110.66 L125.06 110.61 L125.02 110.37 L124.85 109.84 L124.70 109.21 L124.55 108.41 L124.40 107.36 L124.49 106.74 L124.47 105.39 Z' fill='%23E4572E' opacity='0.16'/%3E%3Cpath d='M25.18 113.82 L24.67 115.00 L24.43 115.72 L23.64 116.84 L23.25 117.46 L22.72 118.09 L22.18 118.64 L21.75 119.03 L21.59 119.23 L21.62 119.31 L22.00 119.27 L22.52 119.23 L23.32 119.17 L24.06 119.21 L24.75 119.33 L26.02 119.47 L26.62 119.77 L27.12 120.12 L26.25 120.44 L24.99 120.61 L24.46 120.79 L23.48 120.80 L22.76 120.79 L22.17 120.75 L21.71 120.69 L21.60 120.75 L21.56 120.83 L21.65 120.99 L21.93 121.30 L22.22 121.67 L22.60 122.18 L23.01 122.81 L23.14 123.25 L23.66 124.22 L23.77 124.83 L23.05 124.35 L22.58 124.13 L21.89 123.40 L21.51 123.09 L21.11 122.62 L20.80 122.19 L20.56 121.84 L20.43 121.71 L20.34 121.73 L20.25 121.75 L20.15 121.76 L20.06 121.76 L19.97 121.76 L19.88 121.76 L19.79 121.75 L19.69 121.74 L19.60 121.72 L19.51 121.70 L19.43 121.67 L19.34 121.64 L19.25 121.60 L19.17 121.56 L19.09 121.51 L19.01 121.46 L18.94 121.41 L18.87 121.35 L18.80 121.29 L18.73 121.23 L18.67 121.16 L18.61 121.09 L18.56 121.01 L18.50 120.93 L18.46 120.86 L18.41 120.77 L18.38 120.69 L18.34 120.60 L18.31 120.52 L18.29 120.43 L18.27 120.34 L18.25 120.25 L18.24 120.15 L18.24 120.06 L18.24 119.97 L18.24 119.88 L18.09 119.77 L17.71 119.60 L17.27 119.37 L16.78 119.08 L16.08 118.65 L15.81 118.31 L15.00 117.67 L14.51 117.08 L15.50 117.30 L15.96 117.27 L16.86 117.64 L17.40 117.82 L17.90 118.04 L18.38 118.33 L18.74 118.55 L18.91 118.61 L18.99 118.56 L19.02 118.43 L18.89 117.99 L18.72 117.37 L18.58 116.65 L18.55 116.01 L18.41 114.79 L18.54 114.16 L18.65 113.05 L19.03 113.13 L19.51 114.39 L19.82 114.91 L20.07 115.90 L20.23 116.71 L20.33 117.28 L20.37 117.91 L20.40 118.28 L20.49 118.30 L20.65 118.11 L20.96 117.62 L21.37 117.07 L21.91 116.41 L22.65 115.59 L23.21 115.24 L24.29 114.31 Z' fill='%23F2A13A' opacity='0.18'/%3E%3C/svg%3E");background-size:150px 150px}
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+    <div class="hd-r2">
+      <span class="pill"><span class="coin">P</span>1,100 P</span>
+      <span class="pill"><span class="gdot"></span>マザーデータ1 290走・記録 0件</span>
+    </div>
+  </header>
+  <img class="bnr" src="/_blob/3a5732294ccc7458570c52fe32689101" alt="紅葉の木の下に立つ栗毛の馬のイラスト">
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レース情報</h2>
+      <div class="mrow"><span class="seg on">マザーデータ1 <small>290走</small></span><span class="seg">マザーデータ2 <small>空</small></span></div>
+      <button class="ocr" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>オッズ画像から読み取る</button>
+      <p class="hint">単勝・複勝と3連単人気順のスクショを1〜3枚</p>
+    </section>
+    <section class="card">
+      <svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><path d='M22 25 Q24 33 21 41' stroke='#8E2E14' stroke-width='1.8' fill='none' stroke-linecap='round'/><path d='M17.81 1.28 L18.68 3.26 L19.29 4.31 L19.73 4.53 L20.18 4.92 L20.69 6.31 L21.19 8.37 L21.55 9.92 L21.83 10.47 L22.08 10.76 L22.30 11.55 L22.46 12.83 L22.56 14.04 L22.67 14.62 L22.73 15.34 L22.78 15.97 L22.81 16.48 L22.88 16.68 L22.99 16.70 L23.09 16.73 L23.23 16.63 L23.46 16.26 L23.74 15.77 L24.09 15.22 L24.38 14.88 L24.86 14.14 L25.53 13.08 L26.20 12.15 L26.65 11.78 L26.97 11.72 L27.54 11.22 L28.65 9.89 L29.95 8.43 L30.83 7.75 L31.26 7.81 L31.77 7.78 L32.90 6.97 L33.28 7.18 L33.32 7.80 L32.65 9.17 L31.52 10.93 L30.68 12.25 L30.57 12.77 L30.69 13.05 L30.29 13.77 L29.38 14.88 L28.46 15.90 L27.94 16.54 L27.69 16.94 L27.21 17.47 L26.75 17.95 L26.33 18.36 L26.00 18.69 L25.87 18.89 L25.92 18.98 L25.97 19.08 L26.01 19.17 L26.06 19.27 L26.31 19.29 L26.71 19.26 L27.18 19.22 L27.71 19.19 L28.34 19.16 L28.69 19.24 L29.26 19.27 L30.30 19.24 L31.51 19.22 L32.28 19.33 L32.45 19.56 L32.64 19.80 L33.65 19.96 L35.44 20.13 L36.90 20.40 L37.32 20.75 L36.62 21.12 L35.31 21.43 L35.06 21.74 L35.16 22.06 L34.46 22.31 L32.96 22.42 L31.53 22.47 L30.80 22.58 L30.56 22.75 L30.19 22.88 L29.39 22.89 L28.44 22.81 L27.90 22.81 L27.35 22.79 L26.86 22.75 L26.43 22.72 L26.11 22.71 L26.03 22.79 L25.98 22.89 L25.94 22.99 L25.89 23.08 L25.84 23.17 L25.78 23.27 L25.73 23.36 L25.67 23.45 L25.61 23.53 L25.55 23.62 L25.48 23.71 L25.42 23.79 L25.35 23.87 L25.28 23.95 L25.21 24.03 L25.13 24.11 L25.05 24.18 L24.98 24.25 L24.90 24.32 L24.82 24.39 L24.73 24.46 L24.65 24.53 L24.56 24.59 L24.48 24.65 L24.39 24.71 L24.30 24.76 L24.20 24.82 L24.11 24.87 L24.02 24.92 L23.92 24.97 L23.83 25.01 L23.73 25.06 L23.63 25.10 L23.53 25.14 L23.43 25.17 L23.33 25.21 L23.23 25.24 L23.12 25.26 L23.02 25.29 L22.92 25.31 L22.81 25.33 L22.71 25.35 L22.60 25.37 L22.50 25.38 L22.39 25.39 L22.28 25.40 L22.18 25.41 L22.07 25.41 L21.96 25.41 L21.86 25.41 L21.75 25.40 L21.65 25.40 L21.54 25.39 L21.43 25.37 L21.33 25.36 L21.22 25.34 L21.12 25.32 L21.01 25.30 L20.91 25.27 L20.81 25.25 L20.70 25.22 L20.60 25.18 L20.50 25.15 L20.40 25.11 L20.30 25.07 L20.21 25.03 L20.11 24.98 L20.01 24.94 L19.92 24.89 L19.83 24.84 L19.73 24.78 L19.64 24.73 L19.55 24.67 L19.47 24.61 L19.38 24.55 L19.29 24.48 L19.21 24.42 L19.13 24.35 L19.05 24.28 L18.94 24.24 L18.65 24.38 L18.28 24.58 L17.84 24.81 L17.34 25.06 L16.75 25.35 L16.41 25.41 L15.88 25.60 L14.93 26.05 L13.79 26.57 L12.99 26.80 L12.75 26.65 L12.51 26.48 L11.54 26.71 L9.81 27.27 L8.32 27.62 L7.75 27.48 L8.79 26.63 L9.90 25.81 L10.03 25.43 L9.83 25.17 L10.33 24.69 L11.60 24.01 L12.88 23.40 L13.53 23.02 L13.70 22.76 L13.99 22.50 L14.69 22.19 L15.55 21.89 L16.05 21.67 L16.54 21.48 L16.99 21.32 L17.36 21.19 L17.59 21.07 L17.59 20.96 L17.59 20.86 L17.60 20.75 L17.60 20.65 L17.41 20.52 L16.97 20.35 L16.42 20.14 L15.81 19.89 L15.12 19.60 L14.09 19.18 L13.33 18.79 L13.03 18.48 L12.73 18.15 L11.75 17.58 L10.12 16.71 L8.76 15.85 L8.40 15.33 L8.47 14.98 L7.98 14.35 L6.55 13.21 L5.12 11.96 L6.16 12.03 L8.02 12.62 L9.90 13.35 L10.96 13.64 L11.26 13.45 L11.67 13.37 L12.82 13.87 L14.28 14.70 L15.38 15.32 L15.95 15.55 L16.36 15.67 L16.95 15.99 L17.75 16.57 L18.28 16.94 L18.74 17.26 L19.10 17.51 L19.27 17.54 L19.35 17.47 L19.44 17.41 L19.42 17.20 L19.25 16.72 L19.03 16.13 L18.79 15.44 L18.45 14.49 L18.38 13.96 L18.32 13.40 L18.04 12.30 L17.58 10.63 L17.28 9.13 L17.36 8.46 L17.62 8.23 L17.67 7.31 L17.47 5.38 L17.31 3.20 L17.43 1.80 Z' fill='#E4572E' stroke='#A33A16' stroke-width='1.1' stroke-linejoin='round'/><line x1='22' y1='21' x2='19.3' y2='8.3' stroke='#B8401A' stroke-width='.9'/><line x1='22' y1='21' x2='11.8' y2='15.6' stroke='#B8401A' stroke-width='.9'/><line x1='22' y1='21' x2='29.1' y2='11.9' stroke='#B8401A' stroke-width='.9'/><line x1='22' y1='21' x2='14.2' y2='24.5' stroke='#B8401A' stroke-width='.9'/><line x1='22' y1='21' x2='30.5' y2='21.0' stroke='#B8401A' stroke-width='.9'/></svg>
+      <div class="vh">
+        <div class="lb"><b>A</b><small>堅</small></div>
+        <div class="vi">
+          <h2 class="vt">9R　A層（固定）</h2>
+          <p class="vs">比 <b>8.8</b>（3連単1位 18.5 ÷ 単勝1位 2.1）・12頭・1400m ダ・良</p>
+          <div class="tags"><span class="tag">マザー：マザーデータ1</span><span class="tag warn">【薄】</span></div>
+        </div>
+      </div>
+      <ol class="zs">
+        <li class="z">
+          <div class="zh"><span class="zn">第1</span><span class="zf">人気 → 人気</span></div>
+          <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="ar">→</span><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span></div>
+          <div class="zr">参考的中率 <b>56.1%</b>（A層での実測／n=164）</div>
+        </li>
+        <li class="z">
+          <div class="zh"><span class="zn">第2</span><span class="zf">人気 → 中穴</span></div>
+          <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="ar">→</span><span class="n w6">7</span><span class="n w1">1</span><span class="n w4">4</span></div>
+          <div class="zr">参考的中率 <b>20.7%</b>（A層での実測／n=164）</div>
+        </li>
+      </ol>
+      <div class="third">
+        <div class="tl">3着：人気・中穴<small>2本で84.1%</small></div>
+        <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="sl">／</span><span class="n w6">7</span><span class="n w1">1</span><span class="n w4">4</span></div>
+      </div>
+      <div class="acts">
+        <button class="btn sub" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"></rect><path d="M5 15.5V5.5a1.5 1.5 0 0 1 1.5-1.5H15"></path></svg>全文コピー</button>
+        <button class="btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>判定と結果を保存</button>
+      </div>
+    </section>
+  </main>
+  <nav class="tb" aria-label="タブ">
+    <button type="button" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"></path></svg>判定</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"></path><path d="M14.5 7.5v9" stroke-dasharray="1.6 2"></path></svg>単勝5連予想</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h8l4 4v13h-12z"></path><path d="M14.5 3.5v4h4M9.5 12h6M9.5 16h6"></path></svg>記録</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7.5 16.5v-4M12 16.5V7.5M16.5 16.5v-6.5"></path></svg>実測・回収</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.5v2.6M12 17.9v2.6M3.5 12h2.6M17.9 12h2.6M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"></path></svg>設定</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

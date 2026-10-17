@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>判定画面・大理石</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#F7F5F2;--ink:#2B2620;--sub:#6E665A;--card:#FFFFFF;--cardB:1px solid #D9D2C5;--cardO:1px solid #EEE8DC;--cardS:0 10px 30px rgba(80,60,30,.08);--radius:2px;--rs:2px;--font:"Shippori Mincho";--dfont:"Shippori Mincho B1";--dw:800;--logo:#3A332A;--logoS:none;--iii:#B8935A;--iiiB:0 solid transparent;--iiiR:0;--hd:#FBFAF7;--hdInk:#2B2620;--hdB:1px solid #B8935A;--mBg:#FFFFFF;--mLine:#B8935A;--mInk:#4A4236;--pill:#FFFFFF;--pillLine:#D9D2C5;--pillInk:#4A4236;--coin:linear-gradient(135deg,#F3E2B8,#B8935A);--coinInk:#2B2620;--badge:#FBF9F5;--badgeInk:#6E5428;--badgeB:1px solid #B8935A;--tagBg:#FBF9F5;--tagInk:#4A4236;--tagLine:#E2DACB;--warnBg:#F6E9E2;--warnInk:#8A3A22;--zBg:#FCFBF8;--zB:1px solid #EEE8DC;--znBg:transparent;--znInk:#8A6A38;--znB:1px solid #B8935A;--znR:0;--znS:none;--acc:#6E5428;--nR:3px;--w2B:0 solid transparent;--sep:1px solid #EEE8DC;--btn:#2B2620;--btnInk:#F0DDB0;--btnB:0 solid transparent;--btnR:2px;--btnS:none;--btn2:#FFFFFF;--btn2Ink:#2B2620;--btn2B:1px solid #B8935A;--tab:#FBFAF7;--tabB:1px solid #D9D2C5;--tabInk:#6E665A;--tabOn:#F1EBDF;--tabOnInk:#2B2620;--tabR:2px}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB)}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.hd-r2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--pill);border:1px solid var(--pillLine);color:var(--pillInk);font-weight:700;font-size:12.5px;white-space:nowrap}
+.coin{width:17px;height:17px;border-radius:50%;background:var(--coin);color:var(--coinInk);display:inline-flex;align-items:center;justify-content:center;font:900 10px/1 "BIZ UDPGothic",sans-serif}
+.gdot{width:8px;height:8px;border-radius:50%;background:#3CCB84;flex:none}
+.bnr{flex:none;display:block;width:390px;height:160px;object-fit:cover}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
+.card{position:relative;flex:none;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 9px;font-size:13px;font-weight:700;color:var(--sub)}
+.mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;align-items:center;gap:4px;height:31px;padding:0 12px;border-radius:999px;border:1.5px dashed var(--tagLine);color:var(--sub);font-size:12.5px;font-weight:700;background:var(--tagBg)}
+.seg.on{background:var(--btn);color:var(--btnInk);border:1.5px solid transparent}
+.seg small{font-size:10.5px;font-weight:400;opacity:.85}
+.ocr{display:inline-flex;align-items:center;gap:8px;height:42px;margin-top:11px;padding:0 16px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14.5px;cursor:pointer}
+.ocr svg{width:19px;height:19px}
+.hint{margin:7px 0 0;font-size:12px;color:var(--sub)}
+.vh{display:flex;gap:12px;align-items:flex-start}
+.lb{flex:none;width:66px;height:80px;border-radius:var(--rs);background:var(--badge);color:var(--badgeInk);border:var(--badgeB);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lb b{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:40px;line-height:1}
+.lb small{font-size:12px;font-weight:700;margin-top:4px}
+.vi{min-width:0;flex:1}
+.vt{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:20px;line-height:1.25;margin:0;color:var(--ink)}
+.vs{font-size:12px;line-height:1.55;color:var(--sub);margin:4px 0 7px}
+.vs b{color:var(--ink);font-size:13.5px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine)}
+.tag.warn{background:var(--warnBg);color:var(--warnInk);border-color:transparent}
+.zs{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.z{background:var(--zBg);border:var(--zB);border-radius:var(--rs);padding:10px 12px}
+.zh{display:flex;align-items:center;gap:10px}
+.zn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:var(--znR);background:var(--znBg);color:var(--znInk);border:var(--znB);font-size:12px;font-weight:800;box-shadow:var(--znS)}
+.zf{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:18px;line-height:1.2;color:var(--acc)}
+.nums{display:flex;align-items:center;gap:5px;margin-top:8px}
+.ar{color:var(--sub);font-weight:700;padding:0 3px}
+.zr{font-size:12px;line-height:1.5;color:var(--sub);margin-top:7px}
+.zr b{color:var(--ink);font-size:13px}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.third{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;padding-top:11px;border-top:var(--sep)}
+.tl{font-size:13px;font-weight:800;color:var(--ink)}
+.tl small{display:block;font-size:11px;font-weight:500;color:var(--sub);margin-top:2px}
+.third .nums{margin-top:0;gap:4px}
+.third .n{min-width:26px;height:26px;font-size:13px}
+.sl{color:var(--sub);font-weight:700;padding:0 2px}
+.acts{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--btnR);border:var(--btnB);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.btn.sub{background:var(--btn2);color:var(--btn2Ink);border:var(--btn2B);box-shadow:none}
+.btn svg{width:17px;height:17px}
+.tb{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 6px 22px;background:var(--tab);border-top:var(--tabB)}
+.tb button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;margin:0;border:0;background:transparent;color:var(--tabInk);font-family:var(--font),sans-serif;font-size:10.5px;font-weight:700;border-radius:var(--tabR);cursor:pointer;white-space:nowrap}
+.tb button.on{background:var(--tabOn);color:var(--tabOnInk)}
+.tb svg{width:23px;height:23px}
+.orn{position:absolute;top:-15px;right:14px;width:44px;height:44px;pointer-events:none;overflow:visible}
+.ph{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='390' height='900' viewBox='0 0 390 900'%3E%3Cpath d='M-10.00 352.38 L4.00 357.74 L18.00 362.83 L32.00 367.99 L46.00 373.85 L60.00 377.25 L74.00 380.75 L88.00 385.22 L102.00 392.09 L116.00 395.71 L130.00 397.90 L144.00 397.20 L158.00 398.67 L172.00 401.54 L186.00 401.15 L200.00 404.19 L214.00 410.89 L228.00 418.96 L242.00 428.15 L256.00 434.23 L270.00 436.59 L284.00 439.16 L298.00 438.61 L312.00 435.86 L326.00 431.18 L340.00 422.44 L354.00 413.35 L368.00 403.66 L382.00 397.17 L396.00 390.83' fill='none' stroke='%238C7E6A' stroke-opacity='0.08' stroke-width='1.06'/%3E%3Cpath d='M214.00 410.89 L224.00 414.49 L234.00 417.46 L244.00 420.78 L254.00 427.32 L264.00 430.73 L274.00 432.57' fill='none' stroke='%238C7E6A' stroke-opacity='0.06' stroke-width='.5'/%3E%3Cpath d='M-10.00 412.88 L4.00 408.68 L18.00 401.26 L32.00 389.85 L46.00 375.76 L60.00 361.35 L74.00 346.93 L88.00 334.96 L102.00 320.55 L116.00 311.24 L130.00 296.83 L144.00 282.41 L158.00 270.73 L172.00 258.05 L186.00 246.20 L200.00 231.79 L214.00 219.69 L228.00 205.45 L242.00 191.03 L256.00 176.62 L270.00 162.20 L284.00 152.86 L298.00 139.25 L312.00 128.21 L326.00 113.79 L340.00 99.38 L354.00 84.96 L368.00 72.95 L382.00 58.54 L396.00 44.25' fill='none' stroke='%238C7E6A' stroke-opacity='0.10' stroke-width='0.89'/%3E%3Cpath d='M186.00 246.20 L196.00 215.81 L206.00 177.41 L216.00 161.06 L226.00 121.75 L236.00 101.95 L246.00 91.27' fill='none' stroke='%238C7E6A' stroke-opacity='0.07' stroke-width='.5'/%3E%3Cpath d='M-10.00 897.90 L4.00 890.46 L18.00 887.02 L32.00 884.33 L46.00 882.20 L60.00 876.60 L74.00 867.88 L88.00 858.59 L102.00 844.17 L116.00 831.26 L130.00 822.10 L144.00 811.75 L158.00 797.33 L172.00 782.92 L186.00 770.35 L200.00 755.93 L214.00 741.52 L228.00 728.76 L242.00 714.35 L256.00 701.14 L270.00 691.76 L284.00 678.12 L298.00 663.70 L312.00 651.01 L326.00 636.60 L340.00 622.18 L354.00 609.28 L368.00 599.03 L382.00 584.61 L396.00 571.94' fill='none' stroke='%238C7E6A' stroke-opacity='0.09' stroke-width='0.87'/%3E%3Cpath d='M228.00 728.76 L238.00 667.67 L248.00 581.19 L258.00 662.37 L268.00 686.06 L278.00 767.80 L288.00 802.74' fill='none' stroke='%238C7E6A' stroke-opacity='0.06' stroke-width='.5'/%3E%3Cpath d='M-10.00 156.98 L4.00 163.57 L18.00 168.46 L32.00 170.92 L46.00 175.01 L60.00 175.97 L74.00 175.03 L88.00 174.50 L102.00 176.46 L116.00 179.23 L130.00 180.44 L144.00 184.69 L158.00 186.75 L172.00 185.42 L186.00 182.43 L200.00 179.04 L214.00 172.14 L228.00 162.16 L242.00 150.73 L256.00 140.11 L270.00 125.70 L284.00 111.28 L298.00 101.61 L312.00 96.27 L326.00 92.16 L340.00 89.46 L354.00 87.37 L368.00 82.61 L382.00 73.83 L396.00 59.42' fill='none' stroke='%238C7E6A' stroke-opacity='0.09' stroke-width='1.27'/%3E%3Cpath d='M18.00 168.46 L28.00 133.14 L38.00 96.33 L48.00 72.91 L58.00 39.98 L68.00 25.19 L78.00 -3.11' fill='none' stroke='%238C7E6A' stroke-opacity='0.06' stroke-width='.5'/%3E%3Cpath d='M-10.00 637.01 L4.00 646.15 L18.00 657.49 L32.00 672.71 L46.00 690.35 L60.00 705.53 L74.00 723.18 L88.00 740.82 L102.00 758.46 L116.00 774.68 L130.00 792.32 L144.00 809.96 L158.00 827.60 L172.00 845.24 L186.00 860.90 L200.00 877.92 L214.00 895.56 L228.00 907.12 L242.00 920.42 L256.00 938.06 L270.00 955.71 L284.00 973.35 L298.00 989.10 L312.00 1006.74 L326.00 1024.39 L340.00 1040.99 L354.00 1058.63 L368.00 1070.23 L382.00 1085.14 L396.00 1094.35' fill='none' stroke='%238C7E6A' stroke-opacity='0.08' stroke-width='0.76'/%3E%3Cpath d='M326.00 1024.39 L336.00 1023.71 L346.00 1023.02 L356.00 1023.01 L366.00 1025.59 L376.00 1026.64 L386.00 1024.74' fill='none' stroke='%238C7E6A' stroke-opacity='0.06' stroke-width='.5'/%3E%3Cpath d='M-10.00 578.14 L4.00 573.30 L18.00 571.47 L32.00 570.77 L46.00 569.66 L60.00 571.30 L74.00 571.72 L88.00 573.31 L102.00 572.79 L116.00 571.78 L130.00 572.91 L144.00 577.06 L158.00 584.32 L172.00 590.58 L186.00 597.55 L200.00 602.98 L214.00 605.65 L228.00 608.29 L242.00 613.48 L256.00 621.67 L270.00 631.99 L284.00 648.25 L298.00 661.25 L312.00 670.48 L326.00 679.23 L340.00 685.92 L354.00 690.29 L368.00 694.02 L382.00 698.70 L396.00 703.34' fill='none' stroke='%238C7E6A' stroke-opacity='0.10' stroke-width='1.29'/%3E%3Cpath d='M214.00 605.65 L224.00 618.98 L234.00 626.94 L244.00 631.07 L254.00 638.13 L264.00 641.66 L274.00 646.68' fill='none' stroke='%238C7E6A' stroke-opacity='0.07' stroke-width='.5'/%3E%3Cpath d='M-10.00 209.03 L4.00 210.75 L18.00 209.90 L32.00 208.74 L46.00 204.10 L60.00 201.90 L74.00 197.77 L88.00 190.72 L102.00 179.10 L116.00 168.93 L130.00 158.17 L144.00 148.80 L158.00 140.92 L172.00 135.67 L186.00 133.84 L200.00 133.32 L214.00 130.66 L228.00 127.82 L242.00 122.54 L256.00 112.85 L270.00 102.86 L284.00 94.99 L298.00 83.84 L312.00 69.81 L326.00 55.39 L340.00 43.57 L354.00 31.99 L368.00 21.69 L382.00 13.94 L396.00 5.18' fill='none' stroke='%238C7E6A' stroke-opacity='0.10' stroke-width='0.66'/%3E%3Cpath d='M340.00 43.57 L350.00 46.52 L360.00 47.17 L370.00 47.54 L380.00 48.67 L390.00 52.41 L400.00 55.33' fill='none' stroke='%238C7E6A' stroke-opacity='0.07' stroke-width='.5'/%3E%3Cpath d='M-10.00 779.32 L4.00 788.68 L18.00 797.67 L32.00 808.24 L46.00 815.88 L60.00 825.67 L74.00 839.22 L88.00 854.85 L102.00 872.49 L116.00 885.71 L130.00 903.35 L144.00 920.99 L158.00 938.63 L172.00 956.27 L186.00 973.92 L200.00 988.63 L214.00 1006.27 L228.00 1023.91 L242.00 1039.05 L256.00 1048.95 L270.00 1058.24 L284.00 1068.05 L298.00 1080.98 L312.00 1093.73 L326.00 1101.44 L340.00 1112.26 L354.00 1118.85 L368.00 1128.22 L382.00 1134.58 L396.00 1139.59' fill='none' stroke='%238C7E6A' stroke-opacity='0.06' stroke-width='0.70'/%3E%3Cpath d='M242.00 1039.05 L252.00 1063.86 L262.00 1149.96 L272.00 1232.83 L282.00 1166.40 L292.00 1267.11 L302.00 1303.80' fill='none' stroke='%238C7E6A' stroke-opacity='0.04' stroke-width='.5'/%3E%3Cpath d='M-10.00 190.17 L4.00 195.69 L18.00 201.39 L32.00 210.14 L46.00 219.48 L60.00 227.03 L74.00 233.54 L88.00 243.27 L102.00 257.92 L116.00 268.83 L130.00 284.37 L144.00 302.01 L158.00 319.65 L172.00 337.30 L186.00 350.35 L200.00 363.88 L214.00 377.46 L228.00 392.54 L242.00 401.85 L256.00 416.89 L270.00 432.17 L284.00 446.01 L298.00 463.65 L312.00 481.29 L326.00 498.77 L340.00 516.42 L354.00 527.81 L368.00 539.65 L382.00 550.50 L396.00 567.70' fill='none' stroke='%238C7E6A' stroke-opacity='0.07' stroke-width='0.93'/%3E%3Cpath d='M74.00 233.54 L84.00 -108.79 L94.00 835.48 L104.00 780.17 L114.00 757.72 L124.00 734.40 L134.00 701.54' fill='none' stroke='%238C7E6A' stroke-opacity='0.05' stroke-width='.5'/%3E%3C/svg%3E");background-size:390px 900px;background-repeat:no-repeat}
+.hd::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:1px;background:#D9C39A}
+.logo{letter-spacing:.08em;font-size:25px}
+.mbtn,.pill,.seg,.tag{border-radius:2px}
+.vt,.zf{letter-spacing:.03em}
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+    <div class="hd-r2">
+      <span class="pill"><span class="coin">P</span>1,100 P</span>
+      <span class="pill"><span class="gdot"></span>マザーデータ1 290走・記録 0件</span>
+    </div>
+  </header>
+  <img class="bnr" src="/_blob/2c575c27734450c37767255ec9f582bc" alt="金の帯の台に立つ、後ろ足で立ち上がる白い大理石の馬の像と月桂樹のイラスト">
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レース情報</h2>
+      <div class="mrow"><span class="seg on">マザーデータ1 <small>290走</small></span><span class="seg">マザーデータ2 <small>空</small></span></div>
+      <button class="ocr" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>オッズ画像から読み取る</button>
+      <p class="hint">単勝・複勝と3連単人気順のスクショを1〜3枚</p>
+    </section>
+    <section class="card">
+      <svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><defs><linearGradient id='lg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#F6DC8C'/><stop offset='.55' stop-color='#C9952B'/><stop offset='1' stop-color='#E9C46A'/></linearGradient></defs><path d='M19.5 40.5 Q3 33 9 6' fill='none' stroke='#A87C22' stroke-width='1.3' stroke-linecap='round'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(14.8 37.6) rotate(-179) scale(0.95)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(14.8 37.6) rotate(-103) scale(0.95)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(10.9 33.1) rotate(-160) scale(0.90)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(10.9 33.1) rotate(-84) scale(0.90)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(8.4 27.4) rotate(-143) scale(0.84)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(8.4 27.4) rotate(-67) scale(0.84)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(7.4 20.4) rotate(-130) scale(0.79)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(7.4 20.4) rotate(-54) scale(0.79)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(7.8 13.2) rotate(-121) scale(0.74)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(7.8 13.2) rotate(-45) scale(0.74)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(9.0 6.0) rotate(-77) scale(.75)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M24.5 40.5 Q41 33 35 6' fill='none' stroke='#A87C22' stroke-width='1.3' stroke-linecap='round'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(29.2 37.6) rotate(-77) scale(0.95)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(29.2 37.6) rotate(-1) scale(0.95)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(33.1 33.1) rotate(-96) scale(0.90)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(33.1 33.1) rotate(-20) scale(0.90)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(35.6 27.4) rotate(-113) scale(0.84)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(35.6 27.4) rotate(-37) scale(0.84)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(36.6 20.4) rotate(-126) scale(0.79)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(36.6 20.4) rotate(-50) scale(0.79)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(36.2 13.2) rotate(-135) scale(0.74)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(36.2 13.2) rotate(-59) scale(0.74)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M0 0 C2.6 -2.4 7.4 -2.5 10 0 C7.4 2.5 2.6 2.4 0 0 Z' transform='translate(35.0 6.0) rotate(-103) scale(.75)' fill='url(#lg)' stroke='#9A7420' stroke-width='.6'/><path d='M22 40 L17.5 44 M22 40 L26.5 44' stroke='#C9952B' stroke-width='1.6' stroke-linecap='round'/><circle cx='22' cy='40' r='2' fill='#E9C46A' stroke='#9A7420' stroke-width='.6'/></svg>
+      <div class="vh">
+        <div class="lb"><b>A</b><small>堅</small></div>
+        <div class="vi">
+          <h2 class="vt">9R　A層（固定）</h2>
+          <p class="vs">比 <b>8.8</b>（3連単1位 18.5 ÷ 単勝1位 2.1）・12頭・1400m ダ・良</p>
+          <div class="tags"><span class="tag">マザー：マザーデータ1</span><span class="tag warn">【薄】</span></div>
+        </div>
+      </div>
+      <ol class="zs">
+        <li class="z">
+          <div class="zh"><span class="zn">第1</span><span class="zf">人気 → 人気</span></div>
+          <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="ar">→</span><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span></div>
+          <div class="zr">参考的中率 <b>56.1%</b>（A層での実測／n=164）</div>
+        </li>
+        <li class="z">
+          <div class="zh"><span class="zn">第2</span><span class="zf">人気 → 中穴</span></div>
+          <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="ar">→</span><span class="n w6">7</span><span class="n w1">1</span><span class="n w4">4</span></div>
+          <div class="zr">参考的中率 <b>20.7%</b>（A層での実測／n=164）</div>
+        </li>
+      </ol>
+      <div class="third">
+        <div class="tl">3着：人気・中穴<small>2本で84.1%</small></div>
+        <div class="nums"><span class="n w5">6</span><span class="n w2">2</span><span class="n w7">10</span><span class="sl">／</span><span class="n w6">7</span><span class="n w1">1</span><span class="n w4">4</span></div>
+      </div>
+      <div class="acts">
+        <button class="btn sub" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"></rect><path d="M5 15.5V5.5a1.5 1.5 0 0 1 1.5-1.5H15"></path></svg>全文コピー</button>
+        <button class="btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>判定と結果を保存</button>
+      </div>
+    </section>
+  </main>
+  <nav class="tb" aria-label="タブ">
+    <button type="button" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"></path></svg>判定</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"></path><path d="M14.5 7.5v9" stroke-dasharray="1.6 2"></path></svg>単勝5連予想</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h8l4 4v13h-12z"></path><path d="M14.5 3.5v4h4M9.5 12h6M9.5 16h6"></path></svg>記録</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7.5 16.5v-4M12 16.5V7.5M16.5 16.5v-6.5"></path></svg>実測・回収</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.5v2.6M12 17.9v2.6M3.5 12h2.6M17.9 12h2.6M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"></path></svg>設定</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -89,7 +89,7 @@ def head_pt(S, s, w, z=0.0):
     return np.array([p[0], p[1], z * HEAD_SCALE])
 
 
-def build(sc, pose, mats=None, detail=1.0):
+def build(sc, pose, mats=None, detail=1.0, parts='all'):
     """形を sc に出す。mats: body / neck / hoof / eye"""
     M = dict(body=1, neck=1, hoof=1, eye=5, head=1)
     if mats: M.update(mats)
@@ -103,6 +103,8 @@ def build(sc, pose, mats=None, detail=1.0):
     def ellT(c, r, k=0.12, mat=B, tilt=0.0, z=0.0):
         sc.ell(v3(T(c), z), r, basis(v3(adir(th + tilt)), (0, 1, 0)), k=k, mat=mat)
 
+    if parts != 'all':
+        return _bust(sc, pose, S, M, T, th)
     # ---------- 胴 ----------
     ellT((0.05, 1.22), (0.56, 0.36, 0.30), k=0.0)            # あばら
     ellT((0.40, 1.16), (0.30, 0.32, 0.27), k=0.14)           # 胸
@@ -122,87 +124,7 @@ def build(sc, pose, mats=None, detail=1.0):
     sc.rcone(v3(t1), v3(t2), 0.055, 0.04, k=0.03, mat=B)
     S['tail_pts'] = [ta, t1, t2]
 
-    # ---------- 首 ----------
-    n = 30
-    ts = np.linspace(0, 1, n)
-    top = bez(S['crest'], ts)
-    bot = bez(S['throat'], ts)
-    hw = np.interp(ts, [0, .35, .8, 1], [0.19, 0.14, 0.095, 0.075])
-    for i in range(n):
-        c2 = (top[i] + bot[i]) / 2
-        upv = top[i] - bot[i]
-        hh = np.linalg.norm(upv) / 2
-        tang = np.array([upv[1], -upv[0]])
-        tang = tang / np.linalg.norm(tang)
-        L = 0.07 if i < n - 1 else 0.06
-        sc.ell(v3(c2), (L, hh, hw[i]), basis(v3(tang), v3(upv)), k=0.12 if i else 0.16, mat=N)
-    # たてがみの下の盛り上がり（クレスト）
-    for tt in (0.35, 0.6):
-        p = bez(S['crest'], tt)
-        q = bez(S['throat'], tt)
-        d = nrm(bez(S['crest'], tt + 0.05) - bez(S['crest'], tt - 0.05))
-        c2 = p + (q - p) * 0.2
-        sc.ell(v3(c2), (0.16, 0.07, 0.085 if tt < .5 else 0.07), basis(v3(d), v3(p - q)), k=0.06, mat=N)
-    # 首の横の筋（あごから肩へ）
-    for z in (1, -1):
-        a = head_pt(S, 0.26, -0.12)[:2]
-        b = S['FL']['ps'] + np.array([0.0, 0.06])
-        sc.rcone(np.array([a[0], a[1], 0.075 * z]), np.array([b[0], b[1], 0.11 * z]), 0.04, 0.06, k=0.09, mat=N)
-
-    # ---------- 頭 ----------
-    u = adir(S['head_ang'])
-    U3 = v3(u)
-    V3 = v3(np.array([-u[1], u[0]]))
-    HR = basis(U3, V3)
-    hp = lambda s, w, z=0.0: head_pt(S, s, w, z)
-    HS = HEAD_SCALE
-    def hdir(rot):
-        a = math.radians(rot)
-        return U3 * math.cos(a) + V3 * math.sin(a), -U3 * math.sin(a) + V3 * math.cos(a)
-
-    def E(s_, w, z, r, k, op='U', rot=0.0, mat=HD):
-        dx, dy = hdir(rot)
-        sc.ell(hp(s_, w, z), tuple(x * HS for x in r), basis(dx, dy), op=op, k=k, mat=mat)
-
-    def RB(s_, w, z, half, rnd, k, rot=0.0, op='U', mat=HD):
-        dx, dy = hdir(rot)
-        sc.rbox(hp(s_, w, z), tuple(x * HS for x in half), rnd * HS, basis(dx, dy), op=op, k=k, mat=mat)
-
-    def RC(a, b, ra, rb, k, mat=HD):
-        sc.rcone(hp(*a), hp(*b), ra * HS, rb * HS, k=k, mat=mat)
-
-    E(0.07, -0.005, 0, (0.10, 0.085, 0.092), k=0.07)                       # 頭蓋
-    RB(0.17, 0.03, 0, (0.10, 0.032, 0.088), 0.03, k=0.05)                  # ひたい（平ら）
-    RB(0.36, 0.02, 0, (0.13, 0.03, 0.062), 0.028, k=0.05, rot=-3)          # 鼻すじ
-    E(0.33, -0.045, 0, (0.16, 0.065, 0.078), k=0.05)                       # 顔の横
-    for z in (1, -1):
-        E(0.215, -0.115, 0.058 * z, (0.125, 0.115, 0.05), k=0.05)          # ほお（丸い板）
-        E(0.255, -0.02, 0.083 * z, (0.075, 0.013, 0.016), k=0.02, rot=-14)  # 顔のすじ
-        E(0.132, 0.062, 0.080 * z, (0.046, 0.017, 0.026), k=0.022, rot=8)   # まゆ
-        E(0.170, 0.010, 0.086 * z, (0.034, 0.010, 0.018), k=0.016, rot=-10)  # 下まぶた
-        RC((0.25, -0.20, 0.045 * z), (0.49, -0.10, 0.03 * z), 0.035, 0.026, k=0.04)  # 下あごの骨
-    E(0.525, -0.02, 0, (0.075, 0.072, 0.064), k=0.05)                      # 鼻先
-    E(0.575, -0.042, 0, (0.042, 0.04, 0.052), k=0.03)                      # 上くちびる
-    E(0.555, -0.088, 0, (0.045, 0.028, 0.044), k=0.02)                     # 下くちびる
-    E(0.505, -0.105, 0, (0.045, 0.03, 0.04), k=0.03)                       # あご先
-    for z in (1, -1):
-        E(0.53, 0.042, 0.043 * z, (0.035, 0.014, 0.02), k=0.015, rot=-20)  # 鼻の穴のふち
-        # 耳（平たい形＋内側のくぼみ）
-        d = nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, 0.30 * z]))
-        o = nrm(V3 * 0.7 + np.array([0, 0, 0.7 * z]))
-        o = nrm(o - d * np.dot(o, d))
-        b0 = hp(0.0, 0.02, 0.058 * z)
-        sc.ell(b0 + d * 0.07 * HS, (0.08 * HS, 0.022 * HS, 0.034 * HS), basis(d, o), k=0.025, mat=HD)
-        sc.rcone(b0 + d * 0.10 * HS, b0 + d * 0.175 * HS, 0.022 * HS, 0.004 * HS, k=0.02, mat=HD)
-        sc.ell(b0 + d * 0.08 * HS + o * 0.03 * HS, (0.06 * HS, 0.014 * HS, 0.02 * HS), basis(d, o), op='S', k=0.008, mat=HD)
-    for z in (1, -1):
-        E(0.535, 0.022, 0.05 * z, (0.03, 0.011, 0.02), k=0.01, op='S', rot=-25)   # 鼻の穴
-    E(0.565, -0.064, 0, (0.065, 0.005, 0.07), k=0.004, op='S')                    # 口
-    for z in (1, -1):
-        sc.ell(hp(0.152, 0.036, 0.091 * z), (0.030 * HS, 0.022 * HS, 0.024 * HS), basis(*hdir(-12)), k=0.003, mat=EY)  # 目（アーモンド形）
-    S['eye'] = hp(0.152, 0.036, 0.091 + 0.02)
-    S['eyes'] = [hp(0.152, 0.036, 0.091), hp(0.152, 0.036, -0.091)]
-    S['head_u'] = U3; S['head_v'] = V3
+    _neck_head(sc, pose, S, M)
 
     # ---------- 前足 ----------
     for side in ('R', 'L'):
@@ -298,3 +220,99 @@ PRANCE = dict(
     hind=dict(L=[-55, -112, -88, -60], R=[-66, -122, -95, -64]),
     tail=[-150, -110],
 )
+
+GALLOP = dict(
+    theta=-2.0, neck_rot=-30.0, head_ang=-40.0,
+    fore=dict(L=[-98, -38, -30, -18], R=[-128, -18, -142, -165]),
+    hind=dict(L=[-108, -150, -128, -150], R=[-52, -102, -72, -50]),
+    tail=[-168, -150],
+)
+
+def _neck_head(sc, pose, S, M):
+    B, N, HO, EY, HD = M['body'], M['neck'], M['hoof'], M['eye'], M['head']
+    # ---------- 首 ----------
+    n = 30
+    ts = np.linspace(0, 1, n)
+    top = bez(S['crest'], ts)
+    bot = bez(S['throat'], ts)
+    hw = np.interp(ts, [0, .35, .8, 1], [0.19, 0.14, 0.095, 0.075])
+    for i in range(n):
+        c2 = (top[i] + bot[i]) / 2
+        upv = top[i] - bot[i]
+        hh = np.linalg.norm(upv) / 2
+        tang = np.array([upv[1], -upv[0]])
+        tang = tang / np.linalg.norm(tang)
+        L = 0.07 if i < n - 1 else 0.06
+        sc.ell(v3(c2), (L, hh, hw[i]), basis(v3(tang), v3(upv)), k=0.12 if i else 0.16, mat=N)
+    # たてがみの下の盛り上がり（クレスト）
+    for tt in (0.35, 0.6):
+        p = bez(S['crest'], tt)
+        q = bez(S['throat'], tt)
+        d = nrm(bez(S['crest'], tt + 0.05) - bez(S['crest'], tt - 0.05))
+        c2 = p + (q - p) * 0.2
+        sc.ell(v3(c2), (0.16, 0.07, 0.085 if tt < .5 else 0.07), basis(v3(d), v3(p - q)), k=0.06, mat=N)
+    # 首の横の筋（あごから肩へ）
+    for z in (1, -1):
+        a = head_pt(S, 0.26, -0.12)[:2]
+        b = S['FL']['ps'] + np.array([0.0, 0.06])
+        sc.rcone(np.array([a[0], a[1], 0.075 * z]), np.array([b[0], b[1], 0.11 * z]), 0.04, 0.06, k=0.09, mat=N)
+
+    # ---------- 頭 ----------
+    u = adir(S['head_ang'])
+    U3 = v3(u)
+    V3 = v3(np.array([-u[1], u[0]]))
+    HR = basis(U3, V3)
+    hp = lambda s, w, z=0.0: head_pt(S, s, w, z)
+    HS = HEAD_SCALE
+    def hdir(rot):
+        a = math.radians(rot)
+        return U3 * math.cos(a) + V3 * math.sin(a), -U3 * math.sin(a) + V3 * math.cos(a)
+
+    def E(s_, w, z, r, k, op='U', rot=0.0, mat=HD):
+        dx, dy = hdir(rot)
+        sc.ell(hp(s_, w, z), tuple(x * HS for x in r), basis(dx, dy), op=op, k=k, mat=mat)
+
+    def RB(s_, w, z, half, rnd, k, rot=0.0, op='U', mat=HD):
+        dx, dy = hdir(rot)
+        sc.rbox(hp(s_, w, z), tuple(x * HS for x in half), rnd * HS, basis(dx, dy), op=op, k=k, mat=mat)
+
+    def RC(a, b, ra, rb, k, mat=HD):
+        sc.rcone(hp(*a), hp(*b), ra * HS, rb * HS, k=k, mat=mat)
+
+    E(0.07, -0.005, 0, (0.10, 0.085, 0.092), k=0.07)                       # 頭蓋
+    RB(0.17, 0.03, 0, (0.10, 0.032, 0.088), 0.03, k=0.05)                  # ひたい（平ら）
+    RB(0.36, 0.02, 0, (0.13, 0.03, 0.062), 0.028, k=0.05, rot=-3)          # 鼻すじ
+    E(0.33, -0.045, 0, (0.16, 0.065, 0.078), k=0.05)                       # 顔の横
+    for z in (1, -1):
+        E(0.215, -0.115, 0.058 * z, (0.125, 0.115, 0.05), k=0.05)          # ほお（丸い板）
+        E(0.255, -0.02, 0.083 * z, (0.075, 0.013, 0.016), k=0.02, rot=-14)  # 顔のすじ
+        E(0.132, 0.062, 0.080 * z, (0.046, 0.017, 0.026), k=0.022, rot=8)   # まゆ
+        E(0.170, 0.010, 0.086 * z, (0.034, 0.010, 0.018), k=0.016, rot=-10)  # 下まぶた
+        RC((0.25, -0.20, 0.045 * z), (0.49, -0.10, 0.03 * z), 0.035, 0.026, k=0.04)  # 下あごの骨
+    E(0.525, -0.02, 0, (0.075, 0.072, 0.064), k=0.05)                      # 鼻先
+    E(0.575, -0.042, 0, (0.042, 0.04, 0.052), k=0.03)                      # 上くちびる
+    E(0.555, -0.088, 0, (0.045, 0.028, 0.044), k=0.02)                     # 下くちびる
+    E(0.505, -0.105, 0, (0.045, 0.03, 0.04), k=0.03)                       # あご先
+    for z in (1, -1):
+        E(0.53, 0.042, 0.043 * z, (0.035, 0.014, 0.02), k=0.015, rot=-20)  # 鼻の穴のふち
+        # 耳（平たい形＋内側のくぼみ）
+        d = nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, 0.30 * z]))
+        o = nrm(V3 * 0.7 + np.array([0, 0, 0.7 * z]))
+        o = nrm(o - d * np.dot(o, d))
+        b0 = hp(0.0, 0.02, 0.058 * z)
+        sc.ell(b0 + d * 0.07 * HS, (0.08 * HS, 0.022 * HS, 0.034 * HS), basis(d, o), k=0.025, mat=HD)
+        sc.rcone(b0 + d * 0.10 * HS, b0 + d * 0.175 * HS, 0.022 * HS, 0.004 * HS, k=0.02, mat=HD)
+        sc.ell(b0 + d * 0.08 * HS + o * 0.03 * HS, (0.06 * HS, 0.014 * HS, 0.02 * HS), basis(d, o), op='S', k=0.008, mat=HD)
+    for z in (1, -1):
+        E(0.535, 0.022, 0.05 * z, (0.03, 0.011, 0.02), k=0.01, op='S', rot=-25)   # 鼻の穴
+    E(0.565, -0.064, 0, (0.065, 0.005, 0.07), k=0.004, op='S')                    # 口
+    for z in (1, -1):
+        sc.ell(hp(0.152, 0.036, 0.091 * z), (0.030 * HS, 0.022 * HS, 0.024 * HS), basis(*hdir(-12)), k=0.003, mat=EY)  # 目（アーモンド形）
+    S['eye'] = hp(0.152, 0.036, 0.091 + 0.02)
+    S['eyes'] = [hp(0.152, 0.036, 0.091), hp(0.152, 0.036, -0.091)]
+    S['head_u'] = U3; S['head_v'] = V3
+
+
+def _bust(sc, pose, S, M, T, th):
+    _neck_head(sc, pose, S, M)
+    return S

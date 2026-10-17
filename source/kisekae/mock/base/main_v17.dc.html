@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>設定 › 着せ替え</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;family=Dela+Gothic+One&amp;family=Zen+Maru+Gothic:wght@500;700;900&amp;family=Hachi+Maru+Pop&amp;family=M+PLUS+Rounded+1c:wght@500;700;800&amp;family=Shippori+Mincho+B1:wght@600;800&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;family=Mochiy+Pop+One&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased;transition:background-color .25s}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk)}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.hd-r2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--pill);border:1px solid var(--pillLine);color:var(--pillInk);font-weight:700;font-size:12.5px;white-space:nowrap}
+.coin{width:17px;height:17px;border-radius:50%;background:var(--coin);color:var(--coinInk);display:inline-flex;align-items:center;justify-content:center;font:900 10px/1 "BIZ UDPGothic",sans-serif}
+.gdot{width:8px;height:8px;border-radius:50%;background:#3CCB84;flex:none}
+.sec{padding:16px 16px 0}
+.h1{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:24px;line-height:1.2;color:var(--h1);margin:0}
+.lead{font-size:12.5px;line-height:1.6;color:var(--sub);margin:5px 0 0}
+.lead b{color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 14px 0}
+.opt{position:relative;display:flex;flex-direction:column;text-align:left;padding:0;margin:0;border:2px solid rgba(128,128,128,.28);border-radius:var(--radius);background:var(--card);overflow:hidden;cursor:pointer;font-family:var(--font),sans-serif;color:var(--ink)}
+.opt.on{border-color:var(--sel);box-shadow:0 0 0 2px var(--sel)}
+.thumb{display:block;width:100%;height:58px;object-fit:cover}
+.thumb-d{display:flex;align-items:center;justify-content:center;width:100%;height:58px;background:#161F3D;border-bottom:3px solid #E2A23B}
+.thumb-d img{width:44px;height:44px}
+.ob{display:block;padding:6px 8px 8px}
+.oname{display:block;font-weight:800;font-size:13.5px;line-height:1.3}
+.odesc{display:block;font-size:10px;line-height:1.35;color:var(--sub);margin-top:2px}
+.badge{position:absolute;top:4px;right:4px;height:19px;padding:0 7px;border-radius:999px;background:var(--sel);color:var(--selInk);font-size:10px;font-weight:800;display:inline-flex;align-items:center}
+.note{margin:12px 14px 0;padding:12px 14px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
+.note p{margin:0 0 8px;font-size:12.5px;font-weight:700;line-height:1.5;color:var(--ink)}
+.nums{display:flex;align-items:center;gap:6px}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.w3{background:#E0322B;color:#FFFFFF}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.w8{background:#F27BB0;color:#1F1F1F}
+.sp{flex:1}
+.tb{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 6px 22px;background:var(--tab);border-top:var(--tabB)}
+.tb button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;margin:0;border:0;background:transparent;color:var(--tabInk);font-family:var(--font),sans-serif;font-size:10.5px;font-weight:700;border-radius:var(--tabR);cursor:pointer;white-space:nowrap}
+.tb button.on{background:var(--tabOn);color:var(--tabOnInk)}
+.tb svg{width:23px;height:23px}
+
+.t-default{--bg:#EEF1F6;--ink:#1B2238;--sub:#5B647A;--card:#FFFFFF;--cardB:1px solid #DCE2EC;--cardO:0 solid transparent;--cardS:0 1px 2px rgba(20,30,60,.06);--radius:14px;--font:"BIZ UDPGothic";--dfont:"Dela Gothic One";--dw:400;--logo:#F3F0E6;--logoS:none;--iii:#E2A23B;--iiiB:0 solid transparent;--iiiR:0;--hd:#161F3D;--hdInk:#F3F0E6;--mBg:rgba(255,255,255,.06);--mLine:#B98A3A;--mInk:#F3E3BF;--pill:rgba(255,255,255,.06);--pillLine:rgba(255,255,255,.3);--pillInk:#E9ECF5;--coin:#E2A23B;--coinInk:#161F3D;--acc:#1F2A5A;--nR:7px;--w2B:0 solid transparent;--tab:#FFFFFF;--tabB:1px solid #DCE2EC;--tabInk:#6B7488;--tabOn:#E6EBF5;--tabOnInk:#1F2A5A;--tabR:12px;--sel:#1F2A5A;--selInk:#FFFFFF;--h1:#1B2238}
+.t-default .hd{border-bottom:3px solid #E2A23B}
+
+.t-ranch{--bg:#F3F8E6;--ink:#2B3A18;--sub:#5A6A42;--card:#FFFFFF;--cardB:2px solid #CFE6A8;--cardO:0 solid transparent;--cardS:0 3px 0 #DCEBC0;--radius:18px;--font:"Zen Maru Gothic";--dfont:"Zen Maru Gothic";--dw:900;--logo:#24470C;--logoS:0 2px 0 rgba(255,255,255,.55);--iii:#8A5A2B;--iiiB:0 solid transparent;--iiiR:2px;--hd:linear-gradient(180deg,#A9DA5E,#86C23C);--hdInk:#24470C;--mBg:#FFF9E6;--mLine:#A8743F;--mInk:#5A3A1A;--pill:#FFF9E6;--pillLine:#E4D3A8;--pillInk:#5A3A1A;--coin:#FFD84A;--coinInk:#5A3A1A;--acc:#2F6A12;--nR:8px;--w2B:0 solid transparent;--tab:#FFFBEA;--tabB:4px solid #A8743F;--tabInk:#7A6A4F;--tabOn:#DDF0BC;--tabOnInk:#2F6A12;--tabR:14px;--sel:#3E7B1E;--selInk:#FFFFFF;--h1:#2B3A18}
+.t-ranch .hd{border-bottom:4px solid #A8743F}
+.t-ranch.ph{background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px}
+
+.t-cute{--bg:#FFF3F8;--ink:#4A2236;--sub:#8A5A72;--card:#FFFFFF;--cardB:2px solid #FFC2DA;--cardO:0 solid transparent;--cardS:0 4px 0 #FFD6E7;--radius:22px;--font:"M PLUS Rounded 1c";--dfont:"Hachi Maru Pop";--dw:400;--logo:#FFFFFF;--logoS:0 2px 0 #B02A6E,2px 0 0 #B02A6E,-2px 0 0 #B02A6E,0 -2px 0 #B02A6E,1.5px 1.5px 0 #B02A6E,-1.5px 1.5px 0 #B02A6E,1.5px -1.5px 0 #B02A6E,-1.5px -1.5px 0 #B02A6E;--iii:#FFF1A8;--iiiB:1.5px solid #B02A6E;--iiiR:3px;--hd:linear-gradient(180deg,#FFA3CE,#FF7DB4);--hdInk:#FFFFFF;--mBg:#FFFFFF;--mLine:#FFFFFF;--mInk:#C2307A;--pill:#FFFFFF;--pillLine:#FFD1E4;--pillInk:#B02A6E;--coin:#FF5FA2;--coinInk:#FFFFFF;--acc:#C2307A;--nR:10px;--w2B:0 solid transparent;--tab:#FFFFFF;--tabB:2px solid #FFC2DA;--tabInk:#A86A88;--tabOn:#FFE0EE;--tabOnInk:#C2307A;--tabR:999px;--sel:#D63A84;--selInk:#FFFFFF;--h1:#A3275F}
+.t-cute.ph{background-image:radial-gradient(#FFFFFF 2.4px,transparent 2.8px),radial-gradient(#FFFFFF 2.4px,transparent 2.8px);background-size:22px 22px;background-position:0 0,11px 11px}
+.t-cute .hd::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;background:radial-gradient(circle at 7px 0,#FF7DB4 7px,transparent 7.5px) 0 0/14px 10px repeat-x}
+
+.t-kids{--bg:#FBFAF6;--ink:#4E3520;--sub:#7E6248;--card:#FFFDF8;--cardB:2px solid #E8D9B5;--cardO:2px dashed #C9A27A;--cardS:0 3px 0 #EFE4CB;--radius:20px;--font:"Zen Maru Gothic";--dfont:"Mochiy Pop One";--dw:400;--logo:#5B3A1E;--logoS:0 2px 0 #FFFFFF,2px 0 0 #FFFFFF,-2px 0 0 #FFFFFF,0 -2px 0 #FFFFFF,1.5px 1.5px 0 #FFFFFF,-1.5px 1.5px 0 #FFFFFF,1.5px -1.5px 0 #FFFFFF,-1.5px -1.5px 0 #FFFFFF;--iii:#F7A8C0;--iiiB:1.5px solid #8A5A35;--iiiR:3px;--hd:#FFF3B8 url(/_blob/6656b0f19559a587df356e2178631b83) 0 0/12px 10px repeat;--hdInk:#5B3A1E;--mBg:#FFFFFF;--mLine:#B88A5A;--mInk:#5B3A1E;--pill:#FFFFFF;--pillLine:#D9B98A;--pillInk:#6B4A2B;--coin:#FFD966;--coinInk:#5B3A1E;--acc:#7A4A22;--nR:9px;--w2B:0 solid transparent;--tab:#FBFAF6;--tabB:2px dashed #D9B98A;--tabInk:#8E7458;--tabOn:#FFF1A8;--tabOnInk:#5B3A1E;--tabR:14px;--sel:#8A5A35;--selInk:#FFFFFF;--h1:#5B3A1E}
+.t-kids .hd{border-bottom:3px solid #E8D9B5}
+.t-kids .hd::after{content:"";position:absolute;left:10px;right:10px;bottom:5px;border-top:2px dashed #B88A5A}
+.t-kids .mbtn{border-style:dashed}
+.t-kids.ph{background-image:radial-gradient(rgba(201,162,122,.16) 1px,transparent 1.4px);background-size:7px 7px}
+.t-kids .tb button.on{outline:1.5px dashed #B88A5A;outline-offset:-3px}
+
+.t-gold{--bg:#0D0A05;--ink:#F6EBD0;--sub:#CDBB8C;--card:#15100A;--cardB:1px solid #C9972B;--cardO:0 solid transparent;--cardS:0 0 0 3px #0D0A05,0 0 0 4px #6B5014;--radius:10px;--font:"Zen Kaku Gothic New";--dfont:"Dela Gothic One";--dw:400;--logo:#F3D47A;--logoS:none;--iii:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);--iiiB:0 solid transparent;--iiiR:0;--hd:linear-gradient(180deg,#17110A,#070503);--hdInk:#F3D47A;--mBg:transparent;--mLine:#C9972B;--mInk:#F3D47A;--pill:rgba(243,212,122,.07);--pillLine:#8C6A22;--pillInk:#F3D47A;--coin:linear-gradient(135deg,#FFF1B8,#C9952B);--coinInk:#1A1205;--acc:#F3D47A;--nR:6px;--w2B:1.5px solid #8C7A55;--tab:#070503;--tabB:0 solid transparent;--tabInk:#9A875A;--tabOn:rgba(243,212,122,.1);--tabOnInk:#F3D47A;--tabR:10px;--sel:#E9C25A;--selInk:#1A1205;--h1:#F3D47A}
+.t-gold .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#8A6514,#F7E08A,#C9952B,#FFF1B8,#8A6514)}
+.t-gold.ph{background-image:repeating-linear-gradient(45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),radial-gradient(ellipse at 50% 0%,#3A2A08,rgba(13,10,5,0) 65%)}
+.t-gold .logo,.t-gold .h1{background:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.t-gold .tb{box-shadow:inset 0 2px 0 #8C6A22}
+</style>
+</helmet>
+<div class="{{rootCls}}">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+    <div class="hd-r2">
+      <span class="pill"><span class="coin">P</span>1,100 P</span>
+      <span class="pill"><span class="gdot"></span>マザーデータ1 290走・記録 0件</span>
+    </div>
+  </header>
+  <section class="sec">
+    <h1 class="h1">着せ替え</h1>
+    <p class="lead">いまのテーマ：<b>{{curName}}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>
+  </section>
+  <div class="grid">
+    <sc-for list="{{themes}}" as="t" hint-placeholder-count="5">
+      <button type="button" class="{{t.cls}}" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" aria-label="{{t.label}}">
+        <sc-if value="{{t.hasImg}}" hint-placeholder-val="{{true}}"><img class="thumb" src="{{t.img}}" alt=""></sc-if>
+        <sc-if value="{{t.noImg}}" hint-placeholder-val="{{false}}"><span class="thumb-d"><img src="/_blob/c1fccd55173e28903228b7256479cc32" alt=""></span></sc-if>
+        <span class="ob"><span class="oname">{{t.name}}</span><span class="odesc">{{t.desc}}</span></span>
+        <sc-if value="{{t.sel}}" hint-placeholder-val="{{false}}"><span class="badge">使用中</span></sc-if>
+      </button>
+    </sc-for>
+  </div>
+  <div class="note">
+    <p>馬番の枠の色は、どのテーマでも同じだよ（読み間違えないように）</p>
+    <div class="nums"><span class="n w1">1</span><span class="n w2">2</span><span class="n w3">3</span><span class="n w4">4</span><span class="n w5">5</span><span class="n w6">6</span><span class="n w7">7</span><span class="n w8">8</span></div>
+  </div>
+  <div class="sp"></div>
+  <nav class="tb" aria-label="タブ">
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"></path></svg>判定</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"></path><path d="M14.5 7.5v9" stroke-dasharray="1.6 2"></path></svg>単勝5連予想</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h8l4 4v13h-12z"></path><path d="M14.5 3.5v4h4M9.5 12h6M9.5 16h6"></path></svg>記録</button>
+    <button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7.5 16.5v-4M12 16.5V7.5M16.5 16.5v-6.5"></path></svg>実測・回収</button>
+    <button type="button" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.5v2.6M12 17.9v2.6M3.5 12h2.6M17.9 12h2.6M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"></path></svg>設定</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startTheme":{"editor":"enum","options":["default","ranch","cute","kids","gold"],"default":"ranch"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var st = this.state || {};
+    var theme = st.theme || this.props.startTheme || 'ranch';
+    var self = this;
+    var list = [
+      { id: 'default', name: 'いつもの', desc: '紺×金（いまの見た目）', img: '' },
+      { id: 'ranch', name: '牧場', desc: '黄緑・芝と馬', img: '/_blob/4d32303d3e8ea65630ceca0f8b0b72e6' },
+      { id: 'cute', name: 'かわいい', desc: 'ピンク・ハートとリボン', img: '/_blob/465d11c7ef7de2047fdb27179b0d752b' },
+      { id: 'kids', name: '子供向け', desc: '薄い黄色・ぬいぐるみ', img: '/_blob/e945e568f65a819f860a9a16e13beefa' },
+      { id: 'gold', name: 'カッコいい', desc: '金ピカ・ゴージャス', img: '/_blob/8e04356200a9e3273978a17be39d6b66' }
+    ];
+    var cur = list.filter(function (t) { return t.id === theme; })[0] || list[1];
+    return {
+      rootCls: 'ph t-' + cur.id,
+      curName: cur.name,
+      themes: list.map(function (t) {
+        var on = t.id === cur.id;
+        return {
+          id: t.id, name: t.name, desc: t.desc, img: t.img,
+          hasImg: !!t.img, noImg: !t.img, sel: on,
+          cls: on ? 'opt on' : 'opt',
+          pressed: on ? 'true' : 'false',
+          label: t.name + '（' + t.desc + '）に着せ替える',
+          pick: function () { self.setState({ theme: t.id }); }
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

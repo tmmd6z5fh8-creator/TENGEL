@@ -444,6 +444,30 @@ static v3 shade(v3 p, v3 rd, v3 n0, int mid, int depth, unsigned *seed, float *a
             v3 back = env(norm(vadd(rd, vmul(n, -0.35f))));
             col = vadd(col, vmul(back, powf(1.f - NdotV, M->a3 > 0.f ? M->a3 + 1.f : 4.f) * M->a2 * ao));
         }
+    } else if (M->type == 3) {
+        /* 大理石：白い地に灰色のすじ（a1=すじの細かさ a2=うねり） */
+        v3 q = vmul(p, M->a1 > 0 ? M->a1 : 3.0f);
+        float w = sinf(q.x * 1.3f + q.y * 0.7f + q.z * 0.9f + fbm3(vmul(q, 0.9f), 5) * (M->a2 > 0 ? M->a2 : 9.0f));
+        float vein = powf(1.f - fabsf(w), 7.0f) * 0.75f + powf(1.f - fabsf(w), 40.0f) * 0.25f;
+        float mott = fbm3(vmul(q, 2.5f), 3);
+        v3 alb = vmul(M->col, 0.92f + 0.10f * mott);
+        alb = vmix(alb, vmul(M->col, 0.62f), clampf(vein, 0.f, 1.f));
+        v3 F = schlick(v(0.04f, 0.04f, 0.04f), NdotV);
+        v3 rc = (depth == 0) ? trace_refl(p, n0, R, M->rough, depth, seed) : env_rough(R, fmaxf(M->rough, 0.1f), seed);
+        col = vadd(col, vmul(vmulv(F, rc), ao));
+        v3 irr = vmul(vadd(vadd(env(n), env(norm(vadd(n, v(0, 0.6f, 0))))), env(norm(vadd(n, v(0, -0.6f, 0))))), 1.f / 3.f);
+        col = vadd(col, vmul(vmulv(alb, irr), ao));
+        for (int i = 0; i < nlights; i++) {
+            Light *L = &lights[i];
+            v3 Ld = L->point ? norm(vsub(L->d, p)) : L->d;
+            float nl = fmaxf(dot(n, Ld), 0.f);
+            if (nl <= 0.f) continue;
+            float sh = 1.f;
+            if (L->shadow && depth == 0) sh = softshadow(vadd(p, vmul(n0, 0.002f)), Ld, 0.004f, 6.f, L->k);
+            /* うすい光のにじみ（大理石の中を通る光） */
+            float wrap = clampf((dot(n, Ld) + 0.35f) / 1.35f, 0.f, 1.f);
+            col = vadd(col, vmul(vmulv(alb, L->col), (nl * 0.85f + wrap * 0.15f) * sh * 0.318f));
+        }
     } else if (M->type == 2) {
         /* カットした宝石：法線を面ごとにそろえる */
         v3 nq = norm(v(floorf(n.x * 2.2f + 0.5f), floorf(n.y * 2.2f + 0.5f), floorf(n.z * 2.2f + 0.5f)));
