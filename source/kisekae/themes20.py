@@ -627,7 +627,7 @@ THEMES = [
                  fonts='見出し：RocknRoll One<br>本文：M PLUS 1p', shape='角丸12px・暗いカード・カードの左にアンバーの線・照明の光の背景・すみに照明',
                  pic='夜のコース・照明・走る3頭の馬と騎手・白いラチ')),
 
- dict(id='news', cat=3, name='競馬新聞', desc='新聞紙・黒と赤', title='競馬新聞（新聞紙×黒・赤）', banner='newspaper', alt='競馬新聞の紙面のような、題字と馬柱、線でえがいた馬のイラスト',
+ dict(id='news', cat=3, name='競馬新聞', desc='新聞紙・黒と赤', title='競馬新聞（新聞紙×黒・赤）', banner='newspaper', alt='競馬新聞の紙面のような、題字と馬柱、墨の筆でえがいた馬のイラスト',
       fonts=['Kaisei+Tokumin:wght@800', 'BIZ+UDPMincho:wght@400;700'],
       v=dict(bg='#F2EEE3', ink='#141414', sub='#4E4A40', card='#FBF9F3', cardB='1.5px solid #141414', cardO='0 solid transparent', cardS='none',
              radius='0', rs='0', font='"BIZ UDPMincho"', dfont='"Kaisei Tokumin"', dw='800', logo='#F2EEE3', logoS='none',
@@ -649,7 +649,7 @@ THEMES = [
       orn=orn_news(),
       guide=dict(colors=[('#F2EEE3', '新聞紙'), ('#141414', '黒'), ('#C81E1E', '赤'), ('#FBF9F3', 'カード'), ('#4E4A40', '小さい文字')],
                  fonts='見出し：Kaisei Tokumin（太い明朝）<br>本文：BIZ UDP明朝', shape='角なし（四角）・黒い罫線・二重線の帯・黒地の題字・Aは二重丸・すみに赤い◎',
-                 pic='新聞の題字「テンゲル競馬」・馬柱・網かけの馬')),
+                 pic='新聞の題字「テンゲル競馬」・馬柱・墨の筆でえがいた馬')),
 
  dict(id='silks', cat=3, name='勝負服', desc='青・赤・黄・緑', title='勝負服（青・赤・黄・緑）', banner='silks', alt='勝負服のしま模様を背に走る、ひし形の勝負服の騎手と馬のイラスト',
       fonts=['M+PLUS+1:wght@500;700;900'],
