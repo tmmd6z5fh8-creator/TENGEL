@@ -781,7 +781,7 @@ THEMES = [
                  fonts='見出し：Shippori Antique B1<br>本文：Zen角ゴシック New', shape='角丸4px・黒い背景に白いカード・帯の下に市松・四角い「第1」・すみにナイトの駒',
                  pic='市松の盤・白（大理石）と黒（つや）のナイトの駒')),
 
- dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を走る、光る線の馬のイラスト',
+ dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#0A0718', ink='#F4F0FF', sub='#B9AEDD', card='#120C2A', cardB='1.5px solid #00F0FF', cardO='0 solid transparent',
              cardS='0 0 0 1px rgba(0,240,255,.2),0 0 18px rgba(0,240,255,.35)', radius='14px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Rampart One"', dw='400',
