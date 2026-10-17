@@ -1,11 +1,13 @@
-"""開運の「招き馬」のキャラクター（SVG・240×250・アニメの塗り）
-   招き猫のような白い馬：白い体に黒い太い線、赤い耳の中と目の上の赤いかざり、金色の目、金のたてがみ・前髪・しっぽ・ひづめ。
-   右前足（近いほう）を顔の横にあげて福を招き（ひづめの裏はうすい桃色）、左前足で「千両」の小判をだく。赤い首輪に金の鈴。
-   顔は少し右を向き、まるい鼻先・桃色の鼻の穴・にっこり口。影は青みの灰色1段（くっきり）。形はすべて一から作ったオリジナル
+"""開運の「招き馬」のキャラクター（SVG・240×256・アニメの塗り）
+   招き猫のような白い馬：白い体に黒い太い線、赤い耳の中と目の上の赤いかざり、金のたてがみ・前髪・しっぽ・ひづめ。
+   顔は正面向き（上が広く、下の鼻先がまるい馬の顔・正面の鼻の穴・うすく笑う口）。目は切れ長でつり上がり、金色に横長のひとみ（少し不気味）。
+   右前足は体の横から出して、あごの横の高さにあげて招く（首輪にかからない・ひづめの裏はうすい桃色）。左前足で「千両」の小判をだく。
+   赤い首輪に金の鈴。影は青みの灰色1段（くっきり）。形はすべて一から作ったオリジナル
    python3 flat/lucky_maneki.py <出力.svg>（確かめ用）"""
 import sys, math
 
-VB_W, VB_H = 240, 252
+VB_W, VB_H = 240, 270
+BY = 14                            # 体のずらし（頭が長くなったぶん下へ）
 OUT = '#23202A'          # 線
 LW = 4.6
 LW2 = 3.0
@@ -38,16 +40,17 @@ def L(d, w=LW2, col=OUT, extra=''):
     return f"<path d='{d}' fill='none' stroke='{col}' stroke-width='{w}' stroke-linejoin='round' stroke-linecap='round' {extra}/>"
 
 
-HG = (12, 2)                       # 頭のずらし（頭の形は lucky_pony と同じなかま：右を向いた丸い鼻先）
-HEAD = ('M98 22 C122 22 140 32 148 48 C151 55 153 60 157 64 C170 69 179 82 179 98 '
-        'C179 117 163 129 141 130 C126 131 112 131 98 130 C82 128 70 120 62 110 C55 100 50 86 50 70 C50 42 72 22 98 22 Z')
-TORSO = 'M86 138 C72 158 64 188 66 220 C68 238 84 245 130 245 C176 245 192 238 194 220 C197 188 190 158 176 138 Z'
-HAUNCH_L = 'M44 222 C44 204 56 194 72 194 C88 194 98 206 98 222 C98 238 86 246 70 246 C54 246 44 238 44 222 Z'
-HAUNCH_R = 'M158 222 C158 206 168 194 184 194 C200 194 212 204 212 222 C212 238 202 246 186 246 C170 246 158 238 158 222 Z'
-ARM_UP = 'M104 152 C88 159 68 161 57 151 C48 143 43 128 43 111 L69 108 C70 121 74 129 82 133 C89 137 97 138 104 138 Z'
-ARM_UP_LN = 'M104 152 C88 159 68 161 57 151 C48 143 43 128 43 111 M69 108 C70 121 74 129 82 133 C89 137 97 138 104 138'
-ARM_KB = 'M156 146 C170 146 184 154 184 172 C184 190 180 204 172 212 L156 206 C160 194 162 182 160 168 C159 160 158 152 156 146 Z'
-ARM_KB_LN = 'M156 146 C170 146 184 154 184 172 C184 190 180 204 172 212 M156 206 C160 194 162 182 160 168 C159 160 158 152 156 146'
+HEAD = ('M120 28 C150 28 172 44 178 68 C182 82 182 96 176 108 C171 118 166 126 164 136 C162 146 166 154 162 160 '
+        'C156 168 140 170 120 170 C100 170 84 168 78 160 C74 154 78 146 76 136 C74 126 69 118 64 108 C58 96 58 82 62 68 C68 44 90 28 120 28 Z')
+TORSO = 'M78 146 C64 166 56 196 58 226 C60 242 76 249 120 249 C164 249 180 242 182 226 C184 196 176 166 162 146 Z'
+HAUNCH_L = 'M38 228 C38 210 50 200 66 200 C82 200 92 212 92 228 C92 244 80 252 64 252 C48 252 38 244 38 228 Z'
+HAUNCH_R = 'M148 228 C148 212 158 200 174 200 C190 200 202 210 202 228 C202 244 192 252 176 252 C160 252 148 244 148 228 Z'
+ARM_UP = 'M82 188 C68 194 50 194 41 186 C33 178 29 162 30 146 L55 143 C55 154 58 162 64 168 C70 173 76 175 82 175 Z'
+ARM_UP_LN = 'M82 188 C68 194 50 194 41 186 C33 178 29 162 30 146 M55 143 C55 154 58 162 64 168 C70 173 76 175 82 175'
+ARM_KB = 'M150 162 C164 162 178 170 178 188 C178 206 174 220 166 228 L150 222 C154 210 156 198 154 184 C153 176 152 168 150 162 Z'
+ARM_KB_LN = 'M150 162 C164 162 178 170 178 188 C178 206 174 220 166 228 M150 222 C154 210 156 198 154 184 C153 176 152 168 150 162'
+EYE_L = 'M107 93 C100 81 86 76 75 79 C81 89 95 96 107 93 Z'          # 切れ長・外がつり上がる
+EYE_R = 'M133 93 C140 81 154 76 165 79 C159 89 145 96 133 93 Z'
 
 
 def maneki_svg(w=VB_W, h=VB_H):
@@ -60,111 +63,117 @@ def maneki_svg(w=VB_W, h=VB_H):
              "<stop offset='1' stop-color='#D18A22'/></linearGradient>"
              "<linearGradient id='mk_bell' x1='0' y1='0' x2='0.6' y2='1'><stop offset='0' stop-color='#FFF4B8'/><stop offset='0.5' stop-color='#F5C542'/>"
              "<stop offset='1' stop-color='#C98420'/></linearGradient>"
-             "<radialGradient id='mk_eye' cx='0.5' cy='0.62' r='0.62'><stop offset='0' stop-color='#FFD65A'/><stop offset='0.7' stop-color='#F2A12C'/>"
-             "<stop offset='1' stop-color='#C8641C'/></radialGradient>"
+             "<radialGradient id='mk_eye' cx='0.5' cy='0.55' r='0.6'><stop offset='0' stop-color='#FFF07A'/><stop offset='0.6' stop-color='#F6C437'/>"
+             "<stop offset='1' stop-color='#D9861E'/></radialGradient>"
+             f"<clipPath id='mk_eyeL'><path d='{EYE_L}'/></clipPath><clipPath id='mk_eyeR'><path d='{EYE_R}'/></clipPath>"
              "</defs>")
+    G0 = f"<g transform='translate(0 {BY})'>"
     # ---------- しっぽ（右うしろ・金） ----------
-    s.append(P('M192 204 C212 200 226 186 228 168 C222 174 216 176 211 174 C220 163 219 148 210 141 C210 153 206 163 198 167 L 194 200 Z', GOLD))
-    s.append(f"<path d='M210 150 C214 158 213 166 206 172' fill='none' stroke='{GOLD_SH}' stroke-width='3' stroke-linecap='round'/>")
-    # ---------- たてがみ（頭のうしろ・左） ----------
-    s.append(f"<g transform='translate({HG[0]} {HG[1]})'>")
-    s.append(P('M66 40 C48 44 38 60 42 78 C32 88 32 104 42 112 C34 122 38 136 50 142 C54 134 62 130 72 130 L72 50 Z', GOLD))
-    s.append(f"<path d='M47 66 C42 76 42 86 46 94 M44 108 C40 116 42 126 48 134' fill='none' stroke='{GOLD_SH}' stroke-width='3' stroke-linecap='round'/>")
+    s.append(G0)
+    s.append(P('M184 212 C204 208 218 194 220 176 C214 182 208 184 203 182 C212 171 211 156 202 149 C202 161 198 171 190 175 L 186 208 Z', GOLD))
+    s.append(f"<path d='M202 158 C206 166 205 174 198 180' fill='none' stroke='{GOLD_SH}' stroke-width='3' stroke-linecap='round'/>")
     s.append('</g>')
+    # ---------- たてがみ（頭のうしろ・左に流れる） ----------
+    s.append(P('M70 58 C52 62 42 78 46 96 C38 106 39 122 50 130 C46 142 52 156 66 162 L80 150 L74 64 Z', GOLD))
+    s.append(f"<path d='M52 84 C48 94 48 104 52 112 M50 128 C48 136 52 144 58 148' fill='none' stroke='{GOLD_SH}' stroke-width='3' stroke-linecap='round'/>")
     # ---------- 体：線を先にぬって、上から白 ----------
+    s.append(G0)
     s.append(f"<g fill='{OUT}' stroke='{OUT}' stroke-width='{LW * 2}' stroke-linejoin='round'><path d='{TORSO}'/><path d='{HAUNCH_L}'/><path d='{HAUNCH_R}'/></g>")
     s.append(f"<g fill='{WHITE}'><path d='{TORSO}'/><path d='{HAUNCH_L}'/><path d='{HAUNCH_R}'/></g>")
-    # 影（右がわ・首の下・もものした）
-    s.append(f"<g clip-path='url(#mk_torso)'><path d='M174 140 C188 162 194 196 190 240 L210 240 L210 130 Z' fill='{SHADE}'/>"
-             f"<path d='M80 140 C100 160 160 162 182 140 L182 160 C160 176 102 176 80 158 Z' fill='{SHADE}'/></g>")
-    s.append(f"<path d='M162 232 C172 240 198 240 208 228 C206 240 196 246 186 246 C174 246 164 240 162 232 Z' fill='{SHADE}'/>")
-    s.append(f"<path d='M48 232 C58 240 84 240 94 230 C92 240 84 246 70 246 C58 246 50 240 48 232 Z' fill='{SHADE}'/>")
-    # ももの前のふちの線
-    s.append(L('M94 206 C100 216 100 230 94 240'))
-    s.append(L('M162 206 C156 216 156 230 162 240'))
-    # かざりの丸（招き猫ふう：金の丸に赤いふち）
-    s.append(f"<circle cx='66' cy='215' r='8.5' fill='{RED}' stroke='{OUT}' stroke-width='2.2'/>")
-    s.append(f"<circle cx='66' cy='215' r='4.8' fill='{GOLD}'/>")
-    # うしろ足のひづめ（金）
-    for cx in (84, 172):
-        s.append(f"<ellipse cx='{cx}' cy='240' rx='16' ry='8.5' fill='{GOLD}' stroke='{OUT}' stroke-width='{LW2 + 0.6}'/>")
-        s.append(f"<path d='M{cx - 9} 237 C{cx - 4} 234 {cx + 4} 234 {cx + 9} 237' fill='none' stroke='{GOLD_HI}' stroke-width='2.4' stroke-linecap='round'/>")
+    s.append(f"<g clip-path='url(#mk_torso)'><path d='M160 148 C174 170 180 204 176 248 L200 248 L200 138 Z' fill='{SHADE}'/>"
+             f"<path d='M74 150 C92 170 148 172 166 150 L166 172 C148 188 92 188 74 170 Z' fill='{SHADE}'/></g>")
+    s.append(f"<path d='M152 238 C162 246 188 246 198 234 C196 246 186 252 176 252 C164 252 154 246 152 238 Z' fill='{SHADE}'/>")
+    s.append(f"<path d='M42 238 C52 246 78 246 88 236 C86 246 78 252 64 252 C52 252 44 246 42 238 Z' fill='{SHADE}'/>")
+    s.append(L('M88 212 C94 222 94 236 88 246'))
+    s.append(L('M152 212 C146 222 146 236 152 246'))
+    s.append(f"<circle cx='62' cy='222' r='8.5' fill='{RED}' stroke='{OUT}' stroke-width='2.2'/>")
+    s.append(f"<circle cx='62' cy='222' r='4.8' fill='{GOLD}'/>")
+    for cx in (78, 162):
+        s.append(f"<ellipse cx='{cx}' cy='246' rx='16' ry='8.5' fill='{GOLD}' stroke='{OUT}' stroke-width='{LW2 + 0.6}'/>")
+        s.append(f"<path d='M{cx - 9} 243 C{cx - 4} 240 {cx + 4} 240 {cx + 9} 243' fill='none' stroke='{GOLD_HI}' stroke-width='2.4' stroke-linecap='round'/>")
     # ---------- 小判（おなかの前） ----------
-    kx, ky = 128, 195
-    s.append(f"<g transform='rotate(-6 {kx} {ky})'>")
-    s.append(P(f'M{kx} {ky - 37} C{kx + 18} {ky - 37} {kx + 27} {ky - 20} {kx + 27} {ky} C{kx + 27} {ky + 20} {kx + 18} {ky + 37} {kx} {ky + 37} '
-               f'C{kx - 18} {ky + 37} {kx - 27} {ky + 20} {kx - 27} {ky} C{kx - 27} {ky - 20} {kx - 18} {ky - 37} {kx} {ky - 37} Z', 'url(#mk_kb)'))
-    s.append(f"<ellipse cx='{kx}' cy='{ky}' rx='20' ry='29' fill='none' stroke='{GOLD_SH}' stroke-width='1.6'/>")
+    kx, ky = 122, 214
+    s.append(f"<g transform='rotate(-5 {kx} {ky})'>")
+    s.append(P(f'M{kx} {ky - 35} C{kx + 17} {ky - 35} {kx + 26} {ky - 19} {kx + 26} {ky} C{kx + 26} {ky + 19} {kx + 17} {ky + 35} {kx} {ky + 35} '
+               f'C{kx - 17} {ky + 35} {kx - 26} {ky + 19} {kx - 26} {ky} C{kx - 26} {ky - 19} {kx - 17} {ky - 35} {kx} {ky - 35} Z', 'url(#mk_kb)'))
+    s.append(f"<ellipse cx='{kx}' cy='{ky}' rx='19.5' ry='27.5' fill='none' stroke='{GOLD_SH}' stroke-width='1.6'/>")
     for k in range(-8, 9):
-        y = ky + k * 3.3
-        hw = 19.0 * math.sqrt(max(0.0, 1 - ((y - ky) / 28.5) ** 2))
+        y = ky + k * 3.2
+        hw = 18.5 * math.sqrt(max(0.0, 1 - ((y - ky) / 27.0) ** 2))
         if hw > 3 and abs(k) > 4:
             s.append(f"<line x1='{kx - hw:.1f}' y1='{y:.1f}' x2='{kx + hw:.1f}' y2='{y:.1f}' stroke='{GOLD_SH}' stroke-width='1.1' opacity='0.8'/>")
     s.append(f"<rect x='{kx - 9}' y='{ky - 17}' width='18' height='34' rx='2' fill='#FFF6D0' stroke='{GOLD_SH}' stroke-width='1.4'/>")
     s.append(f"<text x='{kx}' y='{ky - 2}' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='14' fill='{RED}' text-anchor='middle'>千</text>")
     s.append(f"<text x='{kx}' y='{ky + 13.5}' font-family='Noto Serif CJK JP, serif' font-weight='900' font-size='14' fill='{RED}' text-anchor='middle'>両</text>")
-    s.append(f"<path d='M{kx - 18} {ky - 18} C{kx - 15} {ky - 27} {kx - 8} {ky - 32} {kx} {ky - 33}' fill='none' stroke='#FFFFFF' stroke-width='3' stroke-linecap='round' opacity='0.9'/>")
+    s.append(f"<path d='M{kx - 17} {ky - 17} C{kx - 14} {ky - 26} {kx - 8} {ky - 31} {kx} {ky - 32}' fill='none' stroke='#FFFFFF' stroke-width='3' stroke-linecap='round' opacity='0.9'/>")
     s.append("</g>")
     # ---------- 小判をだく左前足 ----------
     s.append(f"<path d='{ARM_KB}' fill='{WHITE}'/>")
-    s.append(f"<path d='M174 156 C182 168 182 190 176 204 L168 208 C174 192 174 172 168 160 Z' fill='{SHADE}'/>")
+    s.append(f"<path d='M168 172 C176 184 176 206 170 220 L162 224 C168 208 168 188 162 176 Z' fill='{SHADE}'/>")
     s.append(L(ARM_KB_LN, LW))
-    s.append(P('M150 212 C148 202 156 196 166 197 C176 198 182 206 178 214 C175 220 162 222 156 219 C152 217 151 215 150 212 Z', GOLD, LW2 + 0.6))
-    s.append(f"<path d='M157 204 C161 200 168 200 172 203' fill='none' stroke='{GOLD_HI}' stroke-width='2.4' stroke-linecap='round'/>")
+    s.append(P('M144 228 C142 218 150 212 160 213 C170 214 176 222 172 230 C169 236 156 238 150 235 C146 233 145 231 144 228 Z', GOLD, LW2 + 0.6))
+    s.append(f"<path d='M151 220 C155 216 162 216 166 219' fill='none' stroke='{GOLD_HI}' stroke-width='2.4' stroke-linecap='round'/>")
     # ---------- 首輪と鈴 ----------
-    s.append(P('M80 130 C100 146 156 148 178 132 L180 144 C156 162 100 160 78 144 Z', RED, LW2 + 0.4))
-    s.append(L('M81 135 C102 150 154 152 178 137', 1.8, GOLD))
-    s.append(L('M79 141 C100 156 156 158 179 142', 1.8, GOLD))
-    s.append(f"<circle cx='130' cy='158' r='12' fill='url(#mk_bell)' stroke='{OUT}' stroke-width='{LW2}'/>")
-    s.append(L('M119 156 L141 156', 2.2))
-    s.append(f"<circle cx='130' cy='162.5' r='2.4' fill='{OUT}'/>")
-    s.append(L('M130 163 L130 168.5', 2.2))
-    s.append("<circle cx='125.5' cy='152.5' r='2.6' fill='#FFFFFF'/>")
-    # ---------- 耳・頭・顔（頭のずらし HG） ----------
-    s.append(f"<g transform='translate({HG[0]} {HG[1]})'>")
-    s.append(P('M70 38 C63 27 62 14 66 6 C68 2 72 2 76 4 C86 10 94 19 98 30 Z', WHITE))
-    s.append("<path d='M74 32 C70 24 70 16 73 10 C81 15 88 22 91 29 Z' fill='url(#mk_ear)'/>")
-    s.append(P('M110 28 C113 18 122 9 133 5 C137 3 140 5 140 9 C141 19 139 29 132 38 Z', WHITE))
-    s.append("<path d='M116 27 C119 19 126 13 134 10 C136 18 134 26 129 32 Z' fill='url(#mk_ear)'/>")
+    s.append(P('M80 150 C96 166 144 166 160 150 L162 162 C144 180 96 180 78 162 Z', RED, LW2 + 0.4))
+    s.append(L('M81 155 C98 170 142 170 160 155', 1.8, GOLD))
+    s.append(L('M79 160 C96 176 144 176 161 160', 1.8, GOLD))
+    s.append(f"<circle cx='120' cy='180' r='12' fill='url(#mk_bell)' stroke='{OUT}' stroke-width='{LW2}'/>")
+    s.append(L('M109 178 L131 178', 2.2))
+    s.append(f"<circle cx='120' cy='184.5' r='2.4' fill='{OUT}'/>")
+    s.append(L('M120 185 L120 190.5', 2.2))
+    s.append("<circle cx='115.5' cy='174.5' r='2.6' fill='#FFFFFF'/>")
+    s.append('</g>')
+    # ---------- 耳・頭・顔（正面） ----------
+    s.append(P('M70 52 C63 36 62 16 68 4 C82 12 96 26 101 40 Z', WHITE))
+    s.append("<path d='M74 44 C69 32 69 20 72 12 C82 19 91 29 95 38 Z' fill='url(#mk_ear)'/>")
+    s.append(P('M170 52 C177 36 178 16 172 4 C158 12 144 26 139 40 Z', WHITE))
+    s.append("<path d='M166 44 C171 32 171 20 168 12 C158 19 149 29 145 38 Z' fill='url(#mk_ear)'/>")
     s.append(P(HEAD, WHITE))
     s.append(f"<g clip-path='url(#mk_head)'>"
-             f"<path d='M150 46 C166 60 176 80 178 100 C178 118 166 128 150 132 L200 140 L200 30 Z' fill='{SHADE}'/>"
-             f"<ellipse cx='141' cy='105' rx='42' ry='27.5' fill='{MUZ}' transform='rotate(6 141 105)'/>"
-             f"<path d='M100 124 C120 134 152 132 176 116 L182 140 L96 140 Z' fill='{MUZ_SH}'/>"
+             f"<path d='M164 44 C178 62 184 88 178 112 C170 128 166 150 152 168 L200 176 L200 30 Z' fill='{SHADE}'/>"
+             f"<ellipse cx='120' cy='149' rx='41' ry='22' fill='{MUZ}'/>"
+             f"<path d='M78 160 C98 172 142 172 162 160 L166 176 L74 176 Z' fill='{MUZ_SH}'/>"
              "</g>")
     s.append(f"<path d='{HEAD}' fill='none' stroke='{OUT}' stroke-width='{LW}' stroke-linejoin='round'/>")
-    s.append(P('M80 38 C78 26 88 16 101 16 C113 16 121 24 120 33 C119 40 113 44 107 42 C110 38 109 33 105 32 '
-               'C101 31 98 34 98 38 C95 36 91 36 88 39 C85 42 81 42 80 38 Z', GOLD, LW2 + 0.8))
-    s.append(f"<path d='M88 26 C92 21.5 99 20 105 21' fill='none' stroke='{GOLD_HI}' stroke-width='2.6' stroke-linecap='round'/>")
-    # 目の上の赤いかざり（招き猫ふう）
-    s.append("<path d='M80 58 C85 51 95 48 105 51 C97 52 90 55 85 61 Z' fill='#E8452C'/>")
-    s.append("<path d='M128 52 C135 47 145 48 151 54 C145 52 138 52 131 55 Z' fill='#E8452C'/>")
-    # 目（金色のひとみ・黒いひとみ孔・白い光）
-    for (cx, cy, rx, ry) in ((95, 76, 10.5, 12.5), (139, 72, 8.0, 11.0)):
-        s.append(f"<ellipse cx='{cx}' cy='{cy}' rx='{rx}' ry='{ry}' fill='{OUT}'/>")
-        s.append(f"<ellipse cx='{cx}' cy='{cy + ry * 0.12:.1f}' rx='{rx * 0.78:.1f}' ry='{ry * 0.80:.1f}' fill='url(#mk_eye)'/>")
-        s.append(f"<ellipse cx='{cx}' cy='{cy + ry * 0.05:.1f}' rx='{rx * 0.42:.1f}' ry='{ry * 0.62:.1f}' fill='{OUT}'/>")
-        s.append(f"<circle cx='{cx - rx * 0.28:.1f}' cy='{cy - ry * 0.40:.1f}' r='{rx * 0.30:.1f}' fill='#FFFFFF'/>")
-        s.append(f"<circle cx='{cx + rx * 0.30:.1f}' cy='{cy + ry * 0.30:.1f}' r='{rx * 0.14:.1f}' fill='#FFFFFF'/>")
-    # ほっぺ・鼻の穴・口
-    s.append(f"<ellipse cx='80' cy='100' rx='10' ry='6' fill='{PINK}' opacity='0.9'/>")
-    s.append(f"<ellipse cx='146' cy='104' rx='3.4' ry='4.2' fill='{OUT}' transform='rotate(-10 146 104)'/>")
-    s.append(f"<ellipse cx='162.5' cy='100' rx='2.8' ry='3.6' fill='{OUT}' transform='rotate(12 162.5 100)'/>")
-    s.append(f"<path d='M128 115 C134 125 152 126 160 114 C152 118 136 118 128 115 Z' fill='#C9343B' stroke='{OUT}' stroke-width='2.4' stroke-linejoin='round'/>")
-    s.append(f"<path d='M136 119 C140 123 148 123 152 119' fill='none' stroke='#F49AA0' stroke-width='3' stroke-linecap='round'/>")
-    s.append('</g>')
-    # ---------- あげた右前足（招く・いちばん手前） ----------
+    s.append(L('M71 106 C79 114 83 124 81 134', 2.4))
+    s.append(L('M169 106 C161 114 157 124 159 134', 2.4))
+    # 前髪（金・まん中から右へくるん）
+    s.append(P('M100 42 C98 28 108 18 122 18 C136 18 146 28 143 40 C141 48 133 51 127 48 C131 44 131 38 126 36 '
+               'C122 35 118 38 119 43 C113 40 106 42 103 46 C101 47 100 45 100 42 Z', GOLD, LW2 + 0.8))
+    s.append(f"<path d='M108 28 C113 23 121 22 127 23' fill='none' stroke='{GOLD_HI}' stroke-width='2.6' stroke-linecap='round'/>")
+    # 目の上の赤いかざり（内がわが下がる・鋭く）
+    s.append("<path d='M106 74 C98 66 86 62 74 64 C84 60 98 60 108 70 Z' fill='#E23B2A'/>")
+    s.append("<path d='M134 74 C142 66 154 62 166 64 C156 60 142 60 132 70 Z' fill='#E23B2A'/>")
+    # 目：切れ長の金色・横長のひとみ・上まぶたの太い線・外がわの赤いはね
+    for (E, cid, cx, cy, ang, wing) in ((EYE_L, 'mk_eyeL', 91, 86.5, 23.6, 'M77 80 L66 73 L74 82 Z'),
+                                         (EYE_R, 'mk_eyeR', 149, 86.5, -23.6, 'M163 80 L174 73 L166 82 Z')):
+        s.append(f"<path d='{E}' fill='url(#mk_eye)'/>")
+        s.append(f"<g clip-path='url(#{cid})'><rect x='{cx - 8}' y='{cy - 2.6}' width='16' height='5.2' rx='2.6' fill='{OUT}' transform='rotate({ang} {cx} {cy})'/>"
+                 f"<path d='{E}' fill='none' stroke='#B8601A' stroke-width='3' opacity='0.55'/></g>")
+        s.append(f"<path d='{E}' fill='none' stroke='{OUT}' stroke-width='2.4' stroke-linejoin='round'/>")
+        s.append(f"<path d='{wing}' fill='#E23B2A' stroke='{OUT}' stroke-width='1.2' stroke-linejoin='round'/>")
+        s.append(f"<circle cx='{cx - 4 if cx < 120 else cx + 4}' cy='{cy - 4}' r='1.5' fill='#FFFFFF'/>")
+    s.append(L('M107 93 C100 81 86 76 75 79', 4.2))
+    s.append(L('M133 93 C140 81 154 76 165 79', 4.2))
+    # 鼻の穴（正面）・口（うすく笑う）
+    s.append("<path d='M102 146 C98 150 98 158 103 160 C106 161 108 158 107 154 C106 151 104 149 102 146 Z' fill='#4A2E36'/>")
+    s.append("<path d='M138 146 C142 150 142 158 137 160 C134 161 132 158 133 154 C134 151 136 149 138 146 Z' fill='#4A2E36'/>")
+    s.append(L('M104 165 C112 169.5 128 169.5 136 165', 2.5))
+    s.append(L('M102.5 162.5 L104.8 165.4', 2.0))
+    s.append(L('M137.5 162.5 L135.2 165.4', 2.0))
+    # ---------- あげた右前足（体の横から・あごの横の高さ） ----------
+    s.append(G0)
     s.append(f"<path d='{ARM_UP}' fill='{WHITE}'/>")
-    s.append(f"<path d='M47 118 C47 132 51 144 60 150 C72 156 90 154 102 150 L102 146 C88 150 72 150 64 144 C57 138 54 128 53 118 Z' fill='{SHADE}'/>")
+    s.append(f"<path d='M34 152 C34 166 38 178 46 184 C56 190 70 190 80 186 L80 182 C70 186 58 186 50 180 C43 174 40 164 40 152 Z' fill='{SHADE}'/>")
     s.append(L(ARM_UP_LN, LW))
-    s.append(f"<circle cx='58' cy='134' r='6' fill='{RED}' stroke='{OUT}' stroke-width='1.8'/>")
-    s.append(f"<circle cx='58' cy='134' r='3.2' fill='{GOLD}'/>")
-    # ひづめ（ふちは金・裏はうすい桃色）
-    s.append(P('M36 108 C32 94 41 83 55 83 C69 83 78 93 75 106 C73 115 63 120 52 119 C44 118 38 114 36 108 Z', GOLD, LW2 + 0.6))
-    s.append("<path d='M42 104 C40 95 46 89 55 89 C64 89 70 95 68 103 C66 110 59 113 52 112 C47 111 43 108 42 104 Z' fill='#F9C6C4'/>")
-    s.append(f"<path d='M45 91 C49 87 57 86 62 88' fill='none' stroke='{GOLD_HI}' stroke-width='2.2' stroke-linecap='round'/>")
+    s.append(f"<circle cx='44' cy='174' r='6' fill='{RED}' stroke='{OUT}' stroke-width='1.8'/>")
+    s.append(f"<circle cx='44' cy='174' r='3.2' fill='{GOLD}'/>")
+    s.append(P('M24 140 C20 126 29 115 43 115 C57 115 66 125 63 138 C61 147 51 152 40 151 C32 150 26 146 24 140 Z', GOLD, LW2 + 0.6))
+    s.append("<path d='M30 136 C28 127 34 121 43 121 C52 121 58 127 56 135 C54 142 47 145 40 144 C35 143 31 140 30 136 Z' fill='#F9C6C4'/>")
+    s.append(f"<path d='M33 123 C37 119 45 118 50 120' fill='none' stroke='{GOLD_HI}' stroke-width='2.2' stroke-linecap='round'/>")
+    s.append('</g>')
     # ---------- キラキラ ----------
-    for (x, y, r, rot) in ((24, 70, 7.5, 0.0), (214, 112, 6.0, 0.3), (28, 160, 4.6, 0.2), (204, 28, 5.2, 0.0)):
+    for (x, y, r, rot) in ((26, 76, 7.5, 0.0), (214, 118, 6.0, 0.3), (18, 200, 4.6, 0.2), (204, 30, 5.2, 0.0)):
         s.append(star4(x, y, r, '#FFD45A', rot=rot, k=0.25))
     return (f"<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {VB_W} {VB_H}'>" + ''.join(s) + "</svg>")
 

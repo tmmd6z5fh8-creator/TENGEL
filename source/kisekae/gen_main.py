@@ -1,4 +1,4 @@
-"""着せ替えを選ぶ画面（Main.dc.html：25テーマ）と、新しい20個のメモ（Guide20.dc.html）を作る
+"""着せ替えを選ぶ画面（Main.dc.html：23テーマ）と、新しい18個のメモ（Guide20.dc.html）を作る
    python3 gen_main.py blobs.json [Mainの高さ] [Guide20の高さ]"""
 import os, re, sys, json
 from themes20 import THEMES, CATS
@@ -144,7 +144,7 @@ class Component extends DCLogic {{
 main = main.replace('HEIGHT', f'{MAIN_H}px' if MAIN_H else 'auto;min-height:844px')
 open(f'{P}/Main.dc.html', 'w', encoding='utf-8').write(main)
 
-# ---------------------------------------------------------------- Guide20（新しい20個のメモ）
+# ---------------------------------------------------------------- Guide20（新しい18個のメモ）
 gsrc = open(f'{BASE}/guide_v17.dc.html', encoding='utf-8').read()
 gstyle = re.search(r'<style>\n(.*?)\n</style>', gsrc, re.S).group(1)
 gstyle = gstyle.replace('.gd{width:1320px;height:900px;', '.gd{width:1320px;height:GH;')
@@ -184,7 +184,7 @@ guide = f'''<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>新しい20個のテーマのメモ</title>
+<title>新しい18個のテーマのメモ</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -198,8 +198,8 @@ guide = f'''<!doctype html>
 <div class="gd">
   <div class="top">
     <div>
-      <h1 class="t1">新しい20個のテーマのメモ（仮）</h1>
-      <p class="t2">季節・行事7／競馬4／和・アート4／レトロ・ポップ5。絵はぜんぶ一から描いたオリジナル。色・文字・形は判定画面の見本と同じ。</p>
+      <h1 class="t1">新しい18個のテーマのメモ（仮）</h1>
+      <p class="t2">季節・行事7／競馬4／和・アート2／レトロ・ポップ5。絵はぜんぶ一から描いたオリジナル。色・文字・形は判定画面の見本と同じ。</p>
     </div>
     <div class="chg">
       <div class="box"><h3>どのテーマも同じところ</h3><p>判定の中身・画面の並び（上の帯 → 絵 → レース情報 → 判定の結果）・馬番の枠の色・タブの並び</p></div>

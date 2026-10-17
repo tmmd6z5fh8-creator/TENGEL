@@ -175,25 +175,25 @@ def banner_svg():
     S.append(f"<g mask='url(#rm)'><path d='{' '.join(rays)}' fill='#FFF0CC' opacity='0.85'/></g>")
     S.append("<ellipse cx='390' cy='160' rx='250' ry='200' fill='url(#glow)'/>")
     # 金貨・桜・四つ葉（うしろ）
-    for (x, y, r, rot) in ((96, 62, 15, 10), (668, 52, 13, -14), (712, 168, 11, 20), (30, 150, 10, 0)):
+    for (x, y, r, rot) in ((92, 58, 15, 10), (676, 50, 13, -14), (722, 160, 11, 20), (34, 148, 10, 0)):
         S.append(sakura_svg(x, y, r, rot))
-    for (x, y, r, rot) in ((232, 52, 13, 15), (560, 66, 12, -20), (200, 262, 12, 40)):
+    for (x, y, r, rot) in ((178, 40, 13, 15), (610, 34, 12, -20), (170, 168, 11, 40)):
         S.append(clover_svg(x, y, r, rot))
     # 蹄鉄
-    S.append(shoe_svg(390, 150, 126, 118, web=(48, 42, 36), th0=146))
+    S.append(shoe_svg(390, 164, 170, 128, web=(54, 48, 42), th0=146))
     # 招き馬
-    ch = 236
+    ch = 302
     cw = ch * MW / MH
-    S.append(f"<svg x='{f2(392 - cw / 2)}' y='{f2(314 - ch)}' width='{f2(cw)}' height='{f2(ch)}' viewBox='0 0 {MW} {MH}'>"
+    S.append(f"<svg x='{f2(392 - cw / 2)}' y='{f2(319 - ch)}' width='{f2(cw)}' height='{f2(ch)}' viewBox='0 0 {MW} {MH}'>"
              + maneki_svg(MW, MH).split('>', 1)[1].rsplit('</svg>', 1)[0] + "</svg>")
     # 手前の金貨・桜
-    for (x, y, r, rot) in ((112, 250, 25, 0), (160, 284, 20, 15), (640, 262, 27, -10), (694, 226, 18, 8)):
+    for (x, y, r, rot) in ((96, 252, 25, 0), (146, 288, 20, 15), (654, 262, 27, -10), (706, 224, 18, 8)):
         S.append(coin_svg(x, y, r, rot))
     for (x, y, r, rot) in ((52, 262, 14, 30), (742, 290, 15, -12), (588, 296, 10, 4)):
         S.append(sakura_svg(x, y, r, rot))
     # キラキラ（金・赤）
-    for (x, y, r, c) in ((150, 120, 9, '#FFD45A'), (618, 132, 10, '#FFD45A'), (276, 26, 7, '#FFD45A'), (520, 22, 6, '#FF8A80'),
-                         (60, 110, 6, '#FF8A80'), (735, 100, 8, '#FFD45A'), (300, 300, 5, '#FFD45A'), (470, 300, 6, '#FF8A80')):
+    for (x, y, r, c) in ((136, 118, 9, '#FFD45A'), (628, 128, 10, '#FFD45A'), (250, 24, 7, '#FFD45A'), (536, 20, 6, '#FF8A80'),
+                         (60, 108, 6, '#FF8A80'), (742, 98, 8, '#FFD45A'), (226, 300, 5, '#FFD45A'), (572, 302, 6, '#FF8A80')):
         S.append(sparkle(x, y, r, c))
     return f"<svg xmlns='http://www.w3.org/2000/svg' width='780' height='320' viewBox='0 0 780 320'>" + ''.join(S) + "</svg>"
 
