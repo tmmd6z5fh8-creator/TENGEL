@@ -59,14 +59,14 @@ body{margin:0}
 .ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-/* PUSHボタン（角の丸い四角） */
+/* PUSHボタン（横長の長方形・角は丸い） */
 .pbox{position:relative;display:flex;flex-direction:column;align-items:center}
-.push{--pr:34px;position:relative;z-index:2;width:150px;height:150px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
+.push{--pr:26px;position:relative;z-index:2;width:200px;height:100px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
   box-shadow:inset 0 -9px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.55),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
   animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
-.push span{position:relative;font:400 34px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push span{position:relative;font:400 40px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
 .push::after{content:"";position:absolute;inset:-18px;border-radius:calc(var(--pr) + 18px);border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
-.pshadow{width:150px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
+.pshadow{width:200px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
 .tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
 @keyframes shad{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.72);opacity:.3}}
@@ -82,7 +82,7 @@ body{margin:0}
 .ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
 .ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
 /* 押したあと（PUSHがあった所から光ってはじける） */
-.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:34px;background:var(--pushFace);
+.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
   box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* ボードを持つ馬 */
@@ -113,17 +113,17 @@ body{margin:0}
 
 /* ---------- デカ的中：大きいPUSH・虹色に光る ---------- */
 .ov.big .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
-.push.big{--pr:46px;width:210px;height:210px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
-.push.big span{font-size:50px}
-/* 虹の輪：形は角の丸い四角のまま、色だけがぐるぐる回る */
-.halo{position:absolute;inset:-34px;z-index:-1;border-radius:calc(var(--pr) + 34px);filter:drop-shadow(0 0 8px rgba(255,255,255,.85));pointer-events:none}
+.push.big{--pr:36px;width:280px;height:140px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
+.push.big span{font-size:56px}
+/* 虹の輪：形はボタンと同じ横長のまま、色だけがぐるぐる回る */
+.halo{position:absolute;inset:-30px;z-index:-1;border-radius:calc(var(--pr) + 30px);filter:drop-shadow(0 0 8px rgba(255,255,255,.85));pointer-events:none}
 .halo i{position:absolute;inset:0;border-radius:inherit;padding:10px;overflow:hidden;
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 .halo b{position:absolute;left:50%;top:50%;width:440px;height:440px;margin:-220px 0 0 -220px;
   background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);animation:spin 1.4s linear infinite}
-.push.big::after{inset:-48px;border-radius:calc(var(--pr) + 48px);border:4px solid transparent;background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B) border-box;
+.push.big::after{inset:-44px;border-radius:calc(var(--pr) + 44px);border:4px solid transparent;background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B) border-box;
   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ring 1s ease-out infinite}
-.pshadow.big{width:210px;margin-top:30px;animation:shadBig .8s ease-in-out infinite}
+.pshadow.big{width:280px;margin-top:30px;animation:shadBig .8s ease-in-out infinite}
 .tap.big{font-size:26px;background:linear-gradient(90deg,#FF5A5A,#FFD93B,#5BE38A,#4FD3FF,#B07CFF,#FF5A5A);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rbowText 1.6s linear infinite}
 @keyframes bobBig{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-26px) scale(1.04)}}
 @keyframes shadBig{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(.68);opacity:.28}}
@@ -132,7 +132,7 @@ body{margin:0}
 .spk b{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);background:var(--c);
   clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 1.6s ease-in-out var(--d) infinite;opacity:0}
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
-.pressed.big{top:calc(50% - 47px);width:210px;height:210px;margin:-105px 0 0 -105px;border-radius:46px}
+.pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
 /* 押したあと：白く光る → 虹の光の筋と輪 → 光の中から馬 */
 .flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .9s ease-out .18s both}
 @keyframes flash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
