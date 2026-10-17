@@ -606,7 +606,7 @@ THEMES = [
                  fonts='見出し：Potta One（ピンク→黄の文字）<br>本文：M PLUS 1p', shape='角丸18px・暗いカード・光るボタン・帯の下にちょうちん・すみに花火',
                  pic='夜空の花火・花火の点でえがいた馬・ちょうちんの列')),
 
- dict(id='night', cat=3, name='ナイター', desc='夜のレース場', title='ナイター（夜×照明のアンバー）', banner='nightrace', alt='照明に照らされた夜のコースを走る3頭の馬と騎手のイラスト',
+ dict(id='night', cat=3, name='ナイター', desc='夜のレース場', title='ナイター（夜×照明のアンバー）', banner='nightrace', alt='照明に照らされた夜のコースを走る3頭の馬と騎手のアニメ風イラスト',
       fonts=['RocknRoll+One', 'M+PLUS+1p:wght@500;700'],
       v=dict(bg='#0E1324', ink='#F1F3F9', sub='#A3ACC6', card='#161C33', cardB='1px solid #2A3352', cardO='0 solid transparent', cardS='0 8px 24px rgba(0,0,0,.4)',
              radius='12px', rs='8px', font='"M PLUS 1p"', dfont='"RocknRoll One"', dw='400', logo='#FFFFFF', logoS='0 0 12px rgba(255,255,255,.45)',
