@@ -735,7 +735,7 @@ THEMES = [
                  fonts='見出し：Zen Antique<br>本文：Zen角ゴシック New', shape='角丸6px・盤のマス目の背景・駒の形の「第1」とAの札・上下の帯は濃い木目・すみに桂の駒',
                  pic='将棋盤・桂馬と歩兵の駒・木目')),
 
- dict(id='ink', cat=4, name='水墨画', desc='和紙と墨', title='水墨画（和紙×墨・朱）', banner='ink', alt='和紙に墨でえがいた走る馬と、朱色の落款のイラスト',
+ dict(id='ink', cat=4, name='水墨画', desc='和紙と墨', title='水墨画（和紙×墨・朱）', banner='ink', alt='和紙に墨の線と灰色のぼかしでえがいた、騎手を乗せて競り合う2頭の競走馬と、朱色の落款のイラスト',
       fonts=['Yuji+Mai', 'Zen+Old+Mincho:wght@600;700'],
       v=dict(bg='#F6F3EC', ink='#1A1A1A', sub='#5E5A52', card='#FBFAF6', cardB='1px solid rgba(26,26,26,.2)', cardO='0 solid transparent', cardS='none',
              radius='3px', rs='2px', font='"Zen Old Mincho"', dfont='"Yuji Mai"', dw='400', logo='#1A1A1A', logoS='none',
@@ -754,7 +754,7 @@ THEMES = [
       orn=orn_ink(),
       guide=dict(colors=[('#F6F3EC', '和紙'), ('#1A1A1A', '墨'), ('#B7282E', '朱（落款）'), ('#5E5A52', '薄墨'), ('#FBFAF6', 'カード')],
                  fonts='見出し：Yuji Mai（筆の字）<br>本文：Zen Old Mincho', shape='角丸3px・細い墨の線・帯の下に筆の線・朱色の「第1」・Aは円相・すみに円相と落款',
-                 pic='和紙・墨でえがいた走る馬・かすれ・朱色の「馬」の落款')),
+                 pic='和紙・墨の線とぼかしでえがいた、騎手を乗せて競り合う2頭（手前は濃い墨・奥はうすい墨）・かすれ・朱色の「馬」の落款')),
 
  dict(id='marble', cat=4, name='大理石', desc='白と金・彫刻', title='大理石（白×金）', banner='marble', alt='金の帯の台に立つ、後ろ足で立ち上がる白い大理石の馬の像と月桂樹のイラスト',
       fonts=['Shippori+Mincho+B1:wght@800', 'Shippori+Mincho:wght@500;700'],
