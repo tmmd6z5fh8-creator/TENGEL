@@ -614,7 +614,7 @@ THEMES = [
                  fonts='見出し：Yuji Syuku（筆の字）<br>本文：Zen角ゴシック New', shape='角丸10px・金の二重枠・帯に青海波・赤い札・すみに梅の花',
                  pic='赤い青海波・初日の出と富士山・金の雲・紅白の綱の白い馬・「午」の印')),
 
- dict(id='fireworks', cat=2, name='花火', desc='夜空・夏祭り', title='花火（夜空×ピンク・黄）', banner='fireworks', alt='夜空に上がる花火と、花火でえがいた馬、ちょうちんのイラスト',
+ dict(id='fireworks', cat=2, name='花火', desc='夜空・夏祭り', title='花火（夜空×ピンク・黄）', banner='fireworks', alt='夜空に上がる花火と、金とピンクの光の線でえがいた、かける馬（しっぽはしだれ柳の花火）、ちょうちんのイラスト',
       fonts=['Potta+One', 'M+PLUS+1p:wght@500;700'],
       v=dict(bg='#11183A', ink='#F2F4FF', sub='#AEB6D9', card='#18214A', cardB='1px solid #2E3A72', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.35)',
              radius='18px', rs='12px', font='"M PLUS 1p"', dfont='"Potta One"', dw='400', logo='#FFD45E', logoS='none',
@@ -634,7 +634,7 @@ THEMES = [
       orn=orn_fireworks(),
       guide=dict(colors=[('#0B1029', '夜空'), ('#FF5C8A', '花火ピンク'), ('#FFD45E', '花火の黄'), ('#18214A', 'カード'), ('#F2F4FF', '文字')],
                  fonts='見出し：Potta One（ピンク→黄の文字）<br>本文：M PLUS 1p', shape='角丸18px・暗いカード・光るボタン・帯の下にちょうちん・すみに花火',
-                 pic='夜空の花火・花火の点でえがいた馬・ちょうちんの列')),
+                 pic='夜空の花火・金とピンクの光の線でえがいた、かける馬（たてがみとしっぽは しだれ柳の花火）・ちょうちんの列')),
 
  dict(id='night', cat=3, name='ナイター', desc='夜のレース場', title='ナイター（夜×照明のアンバー）', banner='nightrace', alt='照明に照らされた夜のコースを走る3頭の馬と騎手のアニメ風イラスト',
       fonts=['RocknRoll+One', 'M+PLUS+1p:wght@500;700'],
