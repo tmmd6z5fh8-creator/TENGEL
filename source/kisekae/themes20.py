@@ -536,7 +536,7 @@ THEMES = [
                  fonts='見出し：Murecho ExtraBold<br>本文：Murecho', shape='角丸16px・丸いボタン・上の帯のふちが波・うすい波の背景・すみに浮き輪',
                  pic='青空と入道雲・水色の海・砂浜・波打ちぎわを走る鹿毛の馬・しぶき')),
 
- dict(id='sunset', cat=2, name='夕焼け', desc='紫とオレンジ', title='夕焼け（紫×オレンジ）', banner='sunset', alt='夕焼けの丘を走る馬のシルエットと沈む太陽のイラスト',
+ dict(id='sunset', cat=2, name='夕焼け', desc='紫とオレンジ', title='夕焼け（紫×オレンジ）', banner='sunset', alt='夕日を背に丘をかける馬のシルエット（風になびく細い毛のたてがみとしっぽ・夕日がわのふちの光）と、紫からオレンジの空のイラスト',
       fonts=['Kaisei+Opti:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FFF3EA', ink='#3A2340', sub='#7A5A6E', card='#FFFFFF', cardB='0 solid transparent', cardO='0 solid transparent', cardS='0 6px 18px rgba(120,50,90,.13)',
              radius='18px', rs='14px', font='"Zen Kaku Gothic New"', dfont='"Kaisei Opti"', dw='700', logo='#FFD9A8', logoS='none',
@@ -556,7 +556,7 @@ THEMES = [
       orn=orn_sunset(),
       guide=dict(colors=[('#47226A', '夕方の紫'), ('#C8461F', '夕日'), ('#FF9A5C', 'オレンジ'), ('#FFF3EA', '背景'), ('#3A2340', '文字')],
                  fonts='見出し：Kaisei Opti（夕日色の文字）<br>本文：Zen角ゴシック New', shape='角丸18px・枠なしの浮いたカード・カードの上に夕焼けの線・上下の帯は濃い紫',
-                 pic='紫からオレンジの空・沈む太陽・丘を走る馬のシルエット・鳥')),
+                 pic='紫からオレンジの空・沈む太陽・丘をかける馬のシルエット（細い毛のたてがみとしっぽ・夕日がわのふちの光）・鳥')),
 
  dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の木の下に立つ栗毛の馬のイラスト',
       fonts=['Zen+Old+Mincho:wght@900', 'Zen+Kaku+Gothic+New:wght@500;700'],
