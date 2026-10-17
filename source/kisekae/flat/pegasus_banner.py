@@ -46,21 +46,11 @@ S, scn = R['S'], R['scene']
 P2 = lambda p, z=0.0: scn.project(np.array([[p[0], p[1], z]]))[0][0][:2]
 body_a = np.clip(R['a'], 0, 1)
 
-# ---------- たてがみとしっぽ（風で後ろへ大きくなびく。一から作った房） ----------
+# ---------- 前髪としっぽ（風で後ろへ大きくなびく。一から作った房）。たてがみは下の MANE_TOP ----------
 hr = np.random.default_rng(12)
 crest = np.asarray(R['crest'], float)
 locks = []
 nC = len(crest)
-for i in range(2, nC - 5, 2):                              # たてがみ：首すじから上うしろへ
-    p = crest[i]
-    tg = crest[min(i + 1, nC - 1)] - crest[i - 1]
-    up = math.atan2(tg[1], tg[0]) - math.pi / 2
-    if math.cos(up) > 0.3:
-        up += math.pi
-    tt = i / nC
-    L = (44 + 34 * math.sin(tt * math.pi * 0.9)) * 1.15
-    pts = flow(p, up - 0.5, L, 12, wind=0.30, wind_ang=math.pi + 0.28, rng=hr, wave=1.4, phase=i * 0.7)
-    locks.append(lock_poly(pts, 15, 0.8))
 pp, mz = np.asarray(R['poll'], float), np.asarray(R['muzzle'], float)
 fd = (mz - pp) / np.linalg.norm(mz - pp)
 for k in range(2):                                          # 前髪
@@ -118,7 +108,19 @@ wing_pts, wing_sharp, wing_tips, wing_ctr = wing_outline(wr, WS)
 wing_poly = smooth_poly(wing_pts, set(wing_sharp), 12)
 wing_a = poly_aa((Hh, W), [wing_poly])
 
-mask = np.clip(np.maximum.reduce([body_a, hair_a, wing_a]), 0, 1)
+# たてがみ（首の上）：上のふちは まさちゃんの赤い線（羽のふち → 少し下がって → ほぼまっすぐ → 耳の方へ上がる）
+MANE_TOP = [(437, 101), (450, 125), (468, 127), (486, 126), (505, 121), (518, 111)]
+MANE_IN = [(524, 124), (500, 146), (470, 162), (440, 158)]          # 下のふちは首と羽の中（外の線には出ない）
+mane_poly = smooth_poly(np.array(MANE_TOP + MANE_IN, float), {0, len(MANE_TOP) - 1, len(MANE_TOP)}, 12)
+mane_a = poly_aa((Hh, W), [mane_poly])
+mask = np.clip(np.maximum.reduce([body_a, hair_a, wing_a, mane_a]), 0, 1)
+# 形の中の小さいすき間（羽のつけねなど）はうめる
+_bin = (mask > 0.5).astype(np.uint8)
+_n, _lab, _st, _ = cv2.connectedComponentsWithStats(1 - _bin, connectivity=4)
+for _i in range(1, _n):
+    x0, y0, w0, h0, area = _st[_i]
+    if area < 150 and x0 > 0 and y0 > 0 and x0 + w0 < W and y0 + h0 < Hh:
+        mask[_lab == _i] = 1.0
 
 # ---------- うすく光る形 ----------
 lav = hexc('#8E8CFF')
@@ -163,6 +165,11 @@ for i in range(len(cov) - 1):                               # 小さい羽の列
     mid = (a + b) / 2 + (wctr - (a + b) / 2) * 0.10 + np.array([-3.0, 4.0]) * WS
     arc = np.array([(1 - u) ** 2 * a + 2 * (1 - u) * u * mid + u ** 2 * b for u in np.linspace(0, 1, 10)])
     cv2.polylines(det, [(arc * SS * 16).astype(np.int32)], False, 1.0, 2, cv2.LINE_AA, shift=4)
+top = smooth_poly(np.array(MANE_TOP, float), {0, len(MANE_TOP) - 1}, 10)[:-10]
+for off, t0, t1 in ((7, 0.12, 0.92), (14, 0.22, 0.80)):                 # たてがみの毛の流れ（うすい線）
+    seg = top[int(len(top) * t0):int(len(top) * t1)] + np.array([0.0, off])
+    seg[:, 1] += np.sin(np.linspace(0, 3 * math.pi, len(seg))) * 1.6
+    cv2.polylines(det, [(seg * SS * 16).astype(np.int32)], False, 1.0, 2, cv2.LINE_AA, shift=4)
 det = cv2.resize(det, (W, Hh), interpolation=cv2.INTER_AREA)
 
 line_col = hexc('#CFD6FF')
