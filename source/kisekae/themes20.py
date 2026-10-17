@@ -85,6 +85,18 @@ def tile_clovers():
     return uri(svg(130, 130, body))
 
 
+def tile_lucky():
+    """白い地にうすく：小さな桜（桃色）と小判の線（金）"""
+    body = ''
+    for (x, y, r, o) in [(26, 30, 7, .55), (88, 86, 6, .5)]:
+        pet = ''.join(f"<ellipse cx='{x}' cy='{y - r * .58:.2f}' rx='{r * .42:.2f}' ry='{r * .58:.2f}' transform='rotate({k * 72} {x} {y})' fill='#F7C6D2'/>"
+                      for k in range(5))
+        body += f"<g opacity='{o}'>{pet}<circle cx='{x}' cy='{y}' r='{r * .22:.2f}' fill='#EDBF55'/></g>"
+    body += ("<g opacity='.5' fill='none' stroke='#E2C27C' stroke-width='1.4'><ellipse cx='86' cy='28' rx='6' ry='8.5'/>"
+             "<ellipse cx='30' cy='94' rx='5' ry='7'/></g>")
+    return uri(svg(120, 120, body))
+
+
 def tile_seigaiha(bg, line, w=40):
     h = w // 2
     body = ''
@@ -691,27 +703,28 @@ THEMES = [
                  fonts='見出し：M PLUS 1 Black<br>本文：M PLUS 1', shape='角丸14px・青い太枠に黄・赤のずらした影・帯の下に勝負服のしま・ななめの「第1」・すみに勝負服',
                  pic='勝負服のしまと市松・ひし形の勝負服の騎手・ゼッケン1の馬')),
 
- dict(id='lucky', cat=3, name='開運', desc='緑と金・蹄鉄', title='開運・蹄鉄（緑×金）', banner='lucky', alt='金の蹄鉄の中で、右の前足をあげて福を招き、千両の小判をだいたクリーム色の子馬のキャラクターと、四つ葉のクローバー、金貨のイラスト',
+ dict(id='lucky', cat=3, name='開運', desc='白と赤・招き馬', title='開運・招き馬（白×赤×金）', banner='lucky',
+      alt='銀の蹄鉄の中で、右の前足をあげて福を招き、千両の小判をだいた白い招き馬（赤い首輪・金の鈴）と、金貨・桜・四つ葉のアニメ風イラスト',
       fonts=['Zen+Antique+Soft', 'Zen+Kaku+Gothic+New:wght@500;700'],
-      v=dict(bg='#F3F8F1', ink='#1C2E22', sub='#4E6455', card='#FFFFFF', cardB='1.5px solid #D8C08A', cardO='0 solid transparent', cardS='0 3px 0 #E6D7B0',
-             radius='14px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Zen Antique Soft"', dw='400', logo='#F3D27A', logoS='none',
-             iii='linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A)', iiiB='0 solid transparent', iiiR='1px',
-             hd='linear-gradient(180deg,#1F6B3A,#17552E)', hdInk='#FFF6DD', hdB='0 solid transparent', mBg='rgba(255,255,255,.08)', mLine='#F3D27A', mInk='#FFF6DD',
-             pill='rgba(0,0,0,.15)', pillLine='rgba(243,210,122,.5)', pillInk='#FFF6DD', coin='linear-gradient(135deg,#FFF1B8,#C9952B)', coinInk='#2A1E05',
-             badge='#1F6B3A', badgeInk='#FFE7A6', badgeB='0 solid transparent', tagBg='#EEF6EF', tagInk='#1F5A33', tagLine='#C9E2CF', warnBg='#FFF1D0', warnInk='#8A5A00',
-             zBg='#F7FBF6', zB='1.5px solid #DCEDE0', znBg='#1F6B3A', znInk='#FFF6DD', znB='0 solid transparent', znR='999px', znS='none', acc='#1A5E33', nR='8px',
-             w2B='0 solid transparent', sep='1.5px dashed #C9E2CF', btn='linear-gradient(180deg,#F6DA8A,#D4A63A)', btnInk='#2A1E05', btnB='0 solid transparent',
-             btnR='12px', btnS='0 3px 0 #9A7420', btn2='#FFFFFF', btn2Ink='#1F6B3A', btn2B='1.5px solid #9CC9A8', tab='linear-gradient(180deg,#1F6B3A,#17552E)',
-             tabB='0 solid transparent', tabInk='#CFE6D5', tabOn='rgba(0,0,0,.24)', tabOnInk='#F3D27A', tabR='12px', sel='#1F6B3A', selInk='#FFF6DD', h1='#1A5E33'),
-      chk=dict(hd=['#1F6B3A', '#17552E'], btn=['#F6DA8A', '#D4A63A'], tab=['#1F6B3A', '#17552E'], logo=['#FFF6CF', '#E0B04A']),
-      css=[('', 'background-image:' + tile_clovers() + ';background-size:130px 130px'),
-           ('.logo', 'background:linear-gradient(180deg,#FFF6CF,#F3D27A 50%,#E0B04A 60%,#FFF1B8);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))'),
-           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#8A6514,#F7E08A,#C9952B,#FFF1B8,#8A6514)'),
-           ('.tb', 'box-shadow:inset 0 2px 0 #D4A63A')],
+      v=dict(bg='#FFFCF6', ink='#2A1A16', sub='#6B4E44', card='#FFFFFF', cardB='1.5px solid #E6C66F', cardO='0 solid transparent', cardS='0 3px 0 #F2E2BE',
+             radius='16px', rs='12px', font='"Zen Kaku Gothic New"', dfont='"Zen Antique Soft"', dw='400', logo='#C62828', logoS='none',
+             iii='linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A)', iiiB='1px solid #8A6514', iiiR='1.5px',
+             hd='linear-gradient(180deg,#FFFFFF,#FFF7EA)', hdInk='#2A1A16', hdB='0 solid transparent', mBg='#FFFFFF', mLine='#D9302C', mInk='#B71C1C',
+             pill='#FFF6E8', pillLine='#E6C66F', pillInk='#5A3A10', coin='linear-gradient(135deg,#FFF1B8,#C9952B)', coinInk='#2A1E05',
+             badge='#D32F2F', badgeInk='#FFFFFF', badgeB='0 solid transparent', tagBg='#FFF1EF', tagInk='#A51D22', tagLine='#F2C2BC', warnBg='#FFF1D0', warnInk='#8A5A00',
+             zBg='#FFFDF9', zB='1.5px solid #F1DFBC', znBg='#D32F2F', znInk='#FFFFFF', znB='0 solid transparent', znR='999px', znS='none', acc='#B71C1C', nR='8px',
+             w2B='0 solid transparent', sep='1.5px dashed #EDD6B0', btn='linear-gradient(180deg,#D63A33,#BE2525)', btnInk='#FFFFFF', btnB='0 solid transparent',
+             btnR='12px', btnS='0 3px 0 #8E1B1B', btn2='#FFFFFF', btn2Ink='#B71C1C', btn2B='1.5px solid #EBA9A3', tab='linear-gradient(180deg,#FFFFFF,#FFF7EA)',
+             tabB='0 solid transparent', tabInk='#765549', tabOn='#FDE6E3', tabOnInk='#B71C1C', tabR='12px', sel='#C62828', selInk='#FFFFFF', h1='#B71C1C'),
+      chk=dict(hd=['#FFFFFF', '#FFF7EA'], btn=['#D63A33', '#BE2525'], tab=['#FFFFFF', '#FFF7EA'], logo=['#C62828', '#C62828']),
+      css=[('', 'background-image:' + tile_lucky() + ';background-size:120px 120px'),
+           ('.logo', 'color:#C62828;filter:drop-shadow(0 1.5px 0 #F3D27A)'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(180deg,#E6C66F 0 2px,#D32F2F 2px 5px)'),
+           ('.tb', 'box-shadow:inset 0 3px 0 #D32F2F,inset 0 5px 0 #E6C66F')],
       orn=orn_lucky(),
-      guide=dict(colors=[('#1F6B3A', '緑'), ('#D4A63A', '金'), ('#FFE7A6', '薄い金'), ('#F3F8F1', '背景'), ('#1C2E22', '文字')],
-                 fonts='見出し：Zen Antique Soft（金の文字）<br>本文：Zen角ゴシック New', shape='角丸14px・金の枠・金のボタン・クローバーの背景・上下の帯は緑・すみに小判',
-                 pic='金の蹄鉄・中に金運の子馬のキャラクター（クリーム色・福を招く右前足・千両の小判・鈴）・四つ葉のクローバー・金貨・キラキラ')),
+      guide=dict(colors=[('#FFFFFF', '白'), ('#D32F2F', '赤'), ('#D4A63A', '金'), ('#B9C4D1', '銀'), ('#FFFCF6', '背景'), ('#2A1A16', '文字')],
+                 fonts='見出し：Zen Antique Soft（赤い文字）<br>本文：Zen角ゴシック New', shape='角丸16px・金の枠・赤いボタン・白地に小さな桜と小判・上下の帯は白に赤と金の線・すみに小判',
+                 pic='銀の蹄鉄（つま先のでっぱり・溝・くぎ穴・くぎ）・中に白い招き馬（招き猫ふう：赤い耳・目の上の赤いかざり・金の目・赤い首輪に金の鈴・千両の小判・招く右前足）・金貨・桜・四つ葉・キラキラ（アニメ風）')),
 
  dict(id='shogi', cat=4, name='将棋', desc='木目・桂馬', title='将棋・桂馬（木目）', banner='shogi', alt='将棋盤の上の桂馬と歩兵の駒のイラスト',
       fonts=['Zen+Antique', 'Zen+Kaku+Gothic+New:wght@500;700'],

@@ -23,7 +23,7 @@
     "Judge_Night.dc.html": {"x": 0, "y": 2528, "w": 390, "h": 844, "title": "ナイター（夜×照明のアンバー）"},
     "Judge_News.dc.html": {"x": 470, "y": 2528, "w": 390, "h": 844, "title": "競馬新聞（新聞紙×黒・赤）"},
     "Judge_Silks.dc.html": {"x": 940, "y": 2528, "w": 390, "h": 844, "title": "勝負服（青・赤・黄・緑）"},
-    "Judge_Lucky.dc.html": {"x": 1410, "y": 2528, "w": 390, "h": 844, "title": "開運・蹄鉄（緑×金）"},
+    "Judge_Lucky.dc.html": {"x": 1410, "y": 2528, "w": 390, "h": 844, "title": "開運・招き馬（白×赤×金）"},
     "Judge_Shogi.dc.html": {"x": 2060, "y": 2528, "w": 390, "h": 844, "title": "将棋・桂馬（木目）"},
     "Judge_Ink.dc.html": {"x": 2530, "y": 2528, "w": 390, "h": 844, "title": "水墨画（和紙×墨・朱）"},
     "Judge_Marble.dc.html": {"x": 3000, "y": 2528, "w": 390, "h": 844, "title": "大理石（白×金）"},
