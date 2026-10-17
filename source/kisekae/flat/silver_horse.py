@@ -86,27 +86,56 @@ def tail_stream(S, length=1.05, seed=23):
     return locks
 
 
-# 首を細く（まさちゃんが引いた黄色の線に合わせる）：のどの線を たてがみの方へ・たてがみの線を少しのどの方へ寄せる
-# 割合は骨組みの4つの点ごと（胸がわ → うなじがわ）
-THROAT_IN = (0.05, 0.46, 0.46, 0.24)
+# 首の形（まさちゃんが引いた線に合わせる）
+# 1回目（黄色の線）：首を細く → 2回目（赤線）：首の下のふちを広げて、あごのうしろの下（ほおの丸い板の下のはし）から胸までを1本の線に
+# のどの線：胸がわの3つの点は（もとの のどの点 → たてがみの点）の割合、頭がわの端は頭の座標（s, w）
+#   頭がわの端＝赤線の角（あごのうしろの下）を、体のまん中の面へもどした点。
+#   3つの割合は、絵の首の下のふちが赤線にそうように（ずれ −1.4〜+2.7 画素）何回か描いて決めた
+THROAT_IN = (0.10, 0.55, -0.04)
+THROAT_END = (0.1463, -0.2146)
 CREST_IN = (0.0, 0.06, 0.08, 0.04)
 
 
 @contextlib.contextmanager
-def slim_neck(throat_in=THROAT_IN, crest_in=CREST_IN):
+def slim_neck(throat_in=THROAT_IN, throat_end=THROAT_END, crest_in=CREST_IN):
     orig = Hm.skeleton
 
     def skel(p):
         S = orig(p)
         C, T = np.asarray(S['crest'], float).copy(), np.asarray(S['throat'], float).copy()
         S['crest'] = np.array([C[i] + (T[i] - C[i]) * crest_in[i] for i in range(4)])
-        S['throat'] = np.array([T[i] + (C[i] - T[i]) * throat_in[i] for i in range(4)])
+        th = [T[i] + (C[i] - T[i]) * throat_in[i] for i in range(3)]
+        th.append(Hm.head_pt(S, throat_end[0], throat_end[1])[:2])
+        S['throat'] = np.array(th)
         return S
     Hm.skeleton = skel
     try:
         yield skel
     finally:
         Hm.skeleton = orig
+
+
+@contextlib.contextmanager
+def flat_eye(sc, eye_mat):
+    """目のところを平らに（まさちゃん「目が二つになってるから赤バツのところはフラットにして！」）：
+       目（ふくらんだアーモンド）・まゆ・下まぶたを作らない。ひたいの前のかどの丸み（光る玉に見える所）が目に見える"""
+    HS = Hm.HEAD_SCALE
+    ell0 = sc.ell
+    skip = [(np.array([0.046, 0.017, 0.026]) * HS, 0.022), (np.array([0.034, 0.010, 0.018]) * HS, 0.016)]
+
+    def ell(c, radii, R=None, *args, **kw):
+        if kw.get('mat') == eye_mat:
+            return
+        r = np.asarray(radii, float)
+        for rr, k in skip:
+            if np.allclose(r, rr) and abs(kw.get('k', 0.0) - k) < 1e-9:
+                return
+        return ell0(c, radii, R, *args, **kw)
+    sc.ell = ell
+    try:
+        yield
+    finally:
+        sc.ell = ell0
 
 
 @contextlib.contextmanager
@@ -135,13 +164,16 @@ def build_statue(sc, pose=POSE, mats=None, tail_len=1.05, slim=True):
     M = dict(body=1, neck=1, hoof=1, eye=1, head=1)
     if mats:
         M.update(mats)
+    EYE_SKIP = 97
+    M_build = dict(M, eye=EYE_SKIP)
     if slim:
         with slim_neck() as skel:
             S1 = skel(pose)
-            with slim_muscle(sc, S1), slim_throat(sc, pose, neck_k=0.04, neck_k_from=0.3):
-                S = Hm.build(sc, pose, mats=M)
+            with slim_muscle(sc, S1), slim_throat(sc, pose, neck_k=0.04, neck_k_from=0.3), flat_eye(sc, EYE_SKIP):
+                S = Hm.build(sc, pose, mats=M_build)
     else:
-        S = Hm.build(sc, pose, mats=M)
+        with flat_eye(sc, EYE_SKIP):
+            S = Hm.build(sc, pose, mats=M_build)
     B = M['body']
     for pts, rad, gr in mane_stream(S):
         tube(sc, pts, rad, gr, mat=B, kg=0.012)
