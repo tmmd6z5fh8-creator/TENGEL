@@ -1,9 +1,10 @@
 """的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）の見本の画面：Fx_Hit.dc.html・Fx_Big.dc.html・Fx_Freeze.dc.html
    python3 gen_fx.py fx_blobs.json
-   fx_blobs.json：{"back": "<id>", "front": "<id>"}（ボードを持つ馬の2枚）＋メモの静止画（s_…。そろっていればメモ Fx_Memo.dc.html も作る）
+   fx_blobs.json：{"back": "<id>", "front": "<id>"}（ボードを持つ馬の2枚）＋フリーズの絵（fz_warp・fz_icon・fz_ncore・fz_nglow）
+   ＋メモの静止画（s_…。そろっていればメモ Fx_Memo.dc.html も作る）
    流れ：記録する → PUSHボタン（上下に動く）→ タップ → 馬がボードを持って出てくる（ボードに当たった買い目）
-   フリーズ（3連単の当たりに超大穴＝10〜12番人気の馬）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップで「プチュン」
-   （テレビを消したように 横の線 → 点 → 真っ暗）→ 一瞬止まる → 雷と虹の大当たり →「超大穴!!」→ 雷の中から馬がボード"""
+   フリーズ（3連単の当たりに超大穴＝10〜12番人気の馬）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップでパチスロのフリーズのように
+   画面がバグる → 青白い横一本線にプチュン → 真っ暗（2秒）→ 虹色ネオンの超高速カット →「ど的中」が炎と光の中からドーン → 炎の中から馬がボード"""
 import os, re, sys, json, random, math
 from urllib.parse import quote
 from gen_screens import SVG_A
@@ -73,27 +74,6 @@ def coins(n, seed, d0=0.0):
         x = rnd.uniform(3, 97); d = d0 + rnd.uniform(0, 2.0); t = rnd.uniform(2.2, 3.6); w = rnd.uniform(12, 19)
         out.append(f'<i class="cn" style="--x:{x:.1f}%;--d:{d:.2f}s;--t:{t:.2f}s;--w:{w:.0f}px"></i>')
     return ''.join(out)
-
-
-def bolt(seed, x0, y0, x1, y1, d, n=10, amp=24, branches=3):
-    """雷（ジグザグの線＋枝）：390×844の画面の上の座標。d＝落ちる時刻（秒）"""
-    rnd = random.Random(seed)
-    pts = [(x0, y0)]
-    for i in range(1, n):
-        t = i / n
-        pts.append((x0 + (x1 - x0) * t + rnd.uniform(-amp, amp), y0 + (y1 - y0) * t + rnd.uniform(-amp * .3, amp * .3)))
-    pts.append((x1, y1))
-    path = lambda q: 'M' + ' L'.join(f'{x:.0f} {y:.0f}' for x, y in q)
-    out = [f'<path class="gl" pathLength="1" d="{path(pts)}"></path><path class="co" pathLength="1" d="{path(pts)}"></path>']
-    for k in range(branches):
-        i = rnd.randint(2, n - 3)
-        bx, by = pts[i]
-        side = rnd.choice([-1, 1])
-        q = [(bx, by)]
-        for j in range(1, 4):
-            q.append((q[-1][0] + side * rnd.uniform(12, 24), q[-1][1] + rnd.uniform(16, 28)))
-        out.append(f'<path class="gl s" pathLength="1" d="{path(q)}"></path><path class="co s" pathLength="1" d="{path(q)}"></path>')
-    return f'<svg class="bolt" style="--d:{d}s" viewBox="0 0 390 844" aria-hidden="true">{"".join(out)}</svg>'
 
 
 COMMON_CSS = r'''body{margin:0}
@@ -262,11 +242,11 @@ BIG_CSS = r'''
 '''
 
 FREEZE_CSS = r'''
-/* ---------- フリーズ的中：虹色にギラギラ光る めちゃくちゃデカいPUSH → プチュン（真っ暗）→ 雷と虹の大当たり ----------
-   秒は押してから。<W>＝歪みが終わってプチュン・<B>＝真っ暗のあと「ドーン」（プチュン専用の2秒の演出）・<S>＝雷が落ちて馬が出る */
+/* ---------- フリーズ的中：虹色にギラギラ光る めちゃくちゃデカいPUSH → タップでパチスロのフリーズのように ----------
+   （押したあとの秒は下の「押したあと」に書いてある） */
 .w3{background:#E0322B;color:#FFFFFF}
 .w8{background:#F27BB0;color:#1F1F1F}
-.ov.fz{--rb:#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B;--ink2:#2A1259;--t0:<S+.85>;--tc:.35s}
+.ov.fz{--rb:#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B;--ink2:#2A1259;--t0:<R+.85>;--tc:.35s}
 .ov.fz .dim{background:radial-gradient(circle at 50% 44%,rgba(84,26,136,.55),rgba(5,2,14,.94) 66%)}
 /* PUSHのうしろ：ぼかした虹（回る）と白い光の筋 */
 .aura{position:absolute;left:50%;top:44%;width:600px;height:600px;margin:-300px 0 0 -300px;border-radius:50%;background:conic-gradient(var(--rb));filter:blur(40px);opacity:.6;animation:spin 3.2s linear infinite}
@@ -309,181 +289,251 @@ FREEZE_CSS = r'''
 @keyframes shadFz{0%,100%{transform:scale(1);opacity:.62}50%{transform:scale(.7);opacity:.3}}
 .tap.fz{margin-top:20px;font-size:32px;background:linear-gradient(90deg,#FF6A6A,#FFE04D,#6BEB98,#5FDBFF,#C08CFF,#FF6A6A);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 var(--ink2)) drop-shadow(0 0 7px rgba(255,255,255,.7));animation:rbowText 1.1s linear infinite}
-/* ---------- 押したあと ---------- */
+/* ---------- 押したあと（パチスロのフリーズのように） ----------
+   秒は押してから。<C>＝アイコンのドアップ・<H>＝横に流れる光・<E>＝画面が青く光る・<W>＝プチュン（青白い横一本線）・<Z>＝線が点に縮んで消える
+   ・（真っ暗）・<M>＝虹色ネオンの超高速カット・<F>＝白い爆発 →「ど的中」・<R>＝馬がボード */
 .ov.fz .blk{position:absolute;inset:0;background:#000000}
-/* 歪み（0〜<W>）：押した瞬間の画面を細い帯に切って、波のように左右にずらす（だんだん強く）。ときどき帯がちぎれる・色がずれる・走査線・縦にガクッ。
-   テレビの砂嵐（ザザーッ）が4回強く混ざって、最後は画面ぜんぶが砂嵐になる */
-.wrp{position:absolute;inset:0;z-index:15;overflow:hidden;background:#000000;
-  animation:wwob <W> linear both,wcol <W> steps(1) both,crtOff .08s cubic-bezier(.6,0,1,.6) <W> forwards}
-.wrp i{position:absolute;left:-60px;width:510px;background:url(/_blob/WARPID) 60px 0/390px 844px repeat-x;animation:wk0 <W> linear both}
-.wrp .scl,.wrp .nz,.wrp .gb,.wrp .snw,.wrp .snb{position:absolute;inset:0;pointer-events:none}
-.wrp .scl{background:repeating-linear-gradient(180deg,rgba(0,0,0,.34) 0 1px,rgba(0,0,0,0) 1px 3px);opacity:0;animation:wramp <W> ease-in both}
-.wrp .nz{background:NOISE 0 0/180px 180px;opacity:0;animation:wnz <W> ease-in both,nzj .3s steps(1) infinite}
-.wrp .gb b{position:absolute;left:0;right:0;top:var(--y);height:var(--h);background:var(--c);opacity:0;animation:gbar var(--t) linear var(--d)}
-/* 砂嵐：白黒の細かい粒（1粒 約1px）が1コマごとに入れかわる。強くなる所（ザザッ）が4回と、上から下へ流れる砂嵐の帯 */
-.wrp .snw{background:SNOW 0 0/200px 200px;opacity:0;animation:snw <W> linear both,snj .05s steps(1) infinite}
-.wrp .snb b{position:absolute;left:0;right:0;top:calc(var(--h) * -1);height:var(--h);background:SNOW 0 0/200px 200px;visibility:hidden;
-  -webkit-mask-image:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent);
-  animation:snb var(--t) linear var(--d),snj .05s steps(1) infinite}
-.wrp::after{content:"";position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:crtW .08s linear <W> forwards}
-@keyframes wramp{0%{opacity:0}100%{opacity:1}}
-@keyframes wnz{0%{opacity:0}55%{opacity:.12}100%{opacity:.42}}
-@keyframes nzj{0%{background-position:0 0}20%{background-position:-61px 37px}40%{background-position:47px -83px}60%{background-position:-19px -29px}80%{background-position:88px 54px}}
-@keyframes gbar{from,to{opacity:.9}}
-@keyframes snw{0%,14%{opacity:0}16%{opacity:.62}21%{opacity:.08}36%{opacity:.06}39%{opacity:.76}45%{opacity:.12}58%{opacity:.18}61%{opacity:.86}67%{opacity:.26}77%{opacity:.42}80%{opacity:.92}86%{opacity:.55}92%{opacity:.85}100%{opacity:1}}
-@keyframes snj{0%{background-position:0 0}25%{background-position:-73px 41px}50%{background-position:59px -97px}75%{background-position:-31px -53px}}
-@keyframes snb{from{visibility:visible;translate:0 0}to{visibility:visible;translate:0 1000px}}
-@keyframes wwob{0%{transform:none}25%{transform:scale(1.01,.99)}50%{transform:scale(.985,1.02) skewX(-.8deg)}61%{transform:scale(1.02,.985) skewX(.6deg)}62%{transform:translateY(-14px) scale(1.02,.985)}65%{transform:translateY(9px) scale(1.02,.985)}67%{transform:scale(1.02,.98) skewX(1deg)}80%{transform:scale(1.04,.96) skewX(1.6deg)}90%{transform:scale(.97,1.04) skewX(-2.2deg)}100%{transform:scale(1.05,.95) skewX(2.6deg)}}
-@keyframes wcol{0%{filter:none}18%{filter:hue-rotate(25deg) saturate(1.3)}24%{filter:none}41%{filter:hue-rotate(-40deg) saturate(1.6)}46%{filter:none}63%{filter:hue-rotate(70deg) saturate(1.8) contrast(1.1)}68%{filter:saturate(1.4)}79%{filter:hue-rotate(-90deg) saturate(2)}86%{filter:hue-rotate(140deg) saturate(2.2) contrast(1.15)}93%{filter:hue-rotate(-160deg) saturate(2.4) contrast(1.2)}100%{filter:none}}
-/* プチュン（<W>）：砂嵐の画面が縦につぶれて、いちばん細い白い線（1ピクセル＝画面の点1つぶん）に（〜<W+.08>）
-   → ジリジリ静電気（<W+.06>〜<W+.5>：線がチラチラ・細かい火花がはじける・線のまわりに1ピクセルの細かい砂嵐）
-   → 光が線の上を左から右へ走って、通ったところから線が消える（<W+.5>〜<W+.72>）→ 真っ暗 */
-@keyframes crtOff{0%{transform:scale(1.05,.95) skewX(2.6deg);filter:brightness(1)}99%{transform:scale(1.05,.0004) skewX(0deg);filter:brightness(2.6);opacity:1}100%{transform:scale(1.05,.0004);opacity:0}}
-@keyframes crtW{0%{opacity:0}60%{opacity:.4}100%{opacity:1}}
-.tvw{position:absolute;inset:0;z-index:16;pointer-events:none}
-.tvl{position:absolute;left:0;right:0;top:50%;height:1px;margin-top:-.5px;background:#FFFFFF;transform:scaleY(.34);
-  box-shadow:0 0 1px #FFFFFF,0 0 3px rgba(190,225,255,.9),0 0 9px rgba(120,170,255,.55);opacity:0;
-  animation:tvOn .01s linear <W+.06> forwards,tvFl .05s steps(1) <W+.06> 9,tvJit .04s steps(1) <W+.06> 11,tvErase .22s cubic-bezier(.5,0,.85,.5) <W+.5> forwards}
-.tvs{position:absolute;left:0;right:0;top:50%;height:16px;margin-top:-8px;background:NOISEF 0 0/120px 120px;mix-blend-mode:screen;
-  -webkit-mask-image:linear-gradient(180deg,transparent,#000 40%,#000 60%,transparent);mask-image:linear-gradient(180deg,transparent,#000 40%,#000 60%,transparent);
-  opacity:0;animation:tvsOn .44s linear <W+.06> forwards,snj .05s steps(1) infinite,tvErase .22s cubic-bezier(.5,0,.85,.5) <W+.5> forwards}
-@keyframes tvOn{from,to{opacity:1}}
-@keyframes tvFl{0%{opacity:1}35%{opacity:.45}55%{opacity:1}80%{opacity:.7}}
-@keyframes tvJit{0%{translate:0 0}50%{translate:0 .6px}}
-@keyframes tvErase{from{clip-path:inset(0 0 0 0)}to{clip-path:inset(0 0 0 100%)}}
-@keyframes tvsOn{0%{opacity:.95}100%{opacity:.55}}
-/* ジリジリの火花：細い線（0.6px）のギザギザが一瞬（0.045秒）ずつ、あちこちで光る */
-.tva{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible;filter:drop-shadow(0 0 1.5px #CFF0FF) drop-shadow(0 0 4px #6FA8FF)}
-.tva path{fill:none;stroke:#FFFFFF;stroke-width:.6;stroke-linecap:round;stroke-linejoin:round;visibility:hidden;animation:arc .045s steps(1) var(--d)}
-.tva circle{fill:#FFFFFF;visibility:hidden;animation:arc .045s steps(1) var(--d)}
-@keyframes arc{from,to{visibility:visible}}
-/* 消える：光（左から右へ走る）と、通ったあとに飛ぶ小さな火花 */
-.tvh{position:absolute;left:-45px;top:50%;width:60px;height:10px;margin-top:-5px;
-  background:radial-gradient(50% 50% at 75% 50%,#FFFFFF 0 16%,rgba(205,232,255,.95) 26%,rgba(120,175,255,.4) 52%,rgba(120,175,255,0) 74%);
-  opacity:0;animation:tvh .22s cubic-bezier(.5,0,.85,.5) <W+.5> forwards}
-@keyframes tvh{0%{opacity:1;translate:0 0}94%{opacity:1}100%{opacity:0;translate:390px 0}}
-.tvp i{position:absolute;left:var(--x);top:50%;width:2px;height:2px;margin:-1px 0 0 -1px;border-radius:50%;background:#FFFFFF;box-shadow:0 0 3px #BFE6FF;
-  opacity:0;animation:tvp .18s ease-out var(--d) forwards}
-@keyframes tvp{0%{opacity:1;translate:0 0}100%{opacity:0;translate:var(--dx) var(--dy)}}
-/* 真っ暗のあと、まん中に光の星（<B-.28>）→ <B> ドーン */
-.ign,.igg{position:absolute;z-index:16;left:50%;top:44%;opacity:0;animation:ign .28s ease-in <B-.28> forwards}
-.ign{width:44px;height:44px;margin:-22px 0 0 -22px;background:#FFFFFF;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%)}
-.igg{width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(200,170,255,.5) 40%,rgba(255,255,255,0) 70%)}
-@keyframes ign{0%{opacity:1;transform:scale(.1) rotate(0)}92%{opacity:1;transform:scale(3.2) rotate(80deg)}100%{opacity:0;transform:scale(3.4) rotate(90deg)}}
-.flash.fz{z-index:17;opacity:0;animation:fzFlash .4s ease-out <B> forwards}
-@keyframes fzFlash{0%{opacity:1}100%{opacity:0}}
-/* ゆれる層（<B>から見える）。<B>にドーン・アイコンが上と下に当たるたびに小さく・1文字ずつ小さく・<T+.6>の雷・<S>の雷でゆれる */
-.shk{position:absolute;inset:0;z-index:1;opacity:0;
-  animation:fzOn .01s linear <B> forwards,shake .5s linear <B>,
-    shakeS .16s linear <B+.66>,shakeS .16s linear <B+1.08>,shakeS .16s linear <B+1.5>,shakeS .16s linear <B+1.92>,shakeS .16s linear <B+2.34>,shakeS .16s linear <B+2.73>,
-    shakeS .2s linear <T+.08>,shakeS .2s linear <T+.22>,shakeS .2s linear <T+.36>,shakeS .22s linear <T+.5>,shake .35s linear <T+.6>,shake .45s linear <S>}
-.rvw{position:absolute;inset:0;z-index:13;pointer-events:none;opacity:0;animation:fzOn .01s linear <B> forwards}
-.rvw .frame b{animation:none}
+@keyframes vis{from,to{visibility:visible}}
+@keyframes on1{from,to{opacity:1}}
 @keyframes fzOn{from,to{opacity:1}}
+.ov.fz .gl,.ov.fz .pc,.ov.fz .mt,.ov.fz .fin,.ov.fz .xf{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+/* ===== 1) グリッチ（0〜<E>）：押した瞬間の画面がバグる（横ズレ・色ずれ・色の反転・ブロックのノイズ・走査線・縦の線・砂嵐）
+   → <N>〜 一瞬もとに戻る → <C>〜 テンゲルのアイコンのドアップ（バグりながら少しずつ引く）→ <H>〜 横に流れる光の筋 ===== */
+.gl{z-index:40;background:#000000;visibility:hidden;animation:vis <E> steps(1)}
+.gl .sn,.gl .ic,.gl .sm,.gl .gS,.gl .gS i,.gl .gw,.gl .gsc,.gl .gvl,.gl .gsw,.gl .ib{position:absolute;inset:0}
+.gl .sn,.gl .sn .sl{background:url(/_blob/WARPID) 0 0/390px 844px}
+.gl .ib,.gl .ic .sl{background:url(/_blob/ICONID) -795px -148px/1500px 1500px}
+.gl .sn .gS{--im:url(/_blob/WARPID) 0 0/390px 844px}
+.gl .ic .gS{--im:url(/_blob/ICONID) -795px -148px/1500px 1500px}
+/* 色ずれ：赤だけの絵と水色だけの絵を左右にずらして重ねる（重なると元の色） */
+.gl .gS{isolation:isolate;background:#000000;opacity:0}
+.gl .gS i{background:var(--im),#FF0000;background-blend-mode:multiply}
+.gl .gS i + i{background:var(--im),#00FFFF;background-blend-mode:multiply;mix-blend-mode:screen}
+.gl .sl{position:absolute;left:0;width:390px;opacity:0}
+.gl .ic{visibility:hidden;transform-origin:50% 45%;animation:vis <H-C> steps(1) <C>,icz <H-C> cubic-bezier(.2,.6,.4,1) <C> both}
+@keyframes icz{from{scale:1.22}to{scale:1}}
+/* 横に流れる光の筋（<H>〜<E>）：アイコンを横に引きのばした絵＋光の筋 */
+.gl .sm{visibility:hidden;animation:vis <E-H> steps(1) <H>;background:linear-gradient(180deg,#020A3A 0%,#0A2FB0 30%,#1E78FF 47%,#8FE6FF 51%,#1E78FF 55%,#0A2FB0 72%,#020A3A 100%)}
+.gl .sm .st{position:absolute;inset:0;background:url(/_blob/ICONID) -795px -148px/1500px 1500px;transform:scaleX(9);opacity:.6;mix-blend-mode:screen;filter:saturate(1.8) hue-rotate(150deg)}
+.gl .sm b{position:absolute;left:0;top:var(--y);width:390px;height:var(--h);background:linear-gradient(90deg,rgba(255,255,255,0),var(--c) 28%,#FFFFFF 50%,var(--c) 72%,rgba(255,255,255,0));animation:smb var(--t) linear var(--d) both}
+@keyframes smb{from{translate:-430px 0}to{translate:430px 0}}
+/* 上にかぶせるもの：暗く・水色に白く・緑で色を反転・紫・走査線・縦の線・砂嵐・ブロック・横の線 */
+.gl .gw{opacity:0}
+.gl .gw.w1{background:rgba(0,2,16,.45)}
+.gl .gw.w2{background:rgba(165,238,255,.88);mix-blend-mode:screen}
+.gl .gw.w3{inset:auto 0;top:300px;height:170px;background:linear-gradient(180deg,#3CFF6E,#E8FF3A 55%,#3CFFC8);mix-blend-mode:difference}
+.gl .gw.w4{background:#FF2BD6;mix-blend-mode:multiply}
+.gl .gsc{background:repeating-linear-gradient(180deg,rgba(0,0,0,.42) 0 1px,rgba(0,0,0,0) 1px 3px)}
+.gl .gvl{background:repeating-linear-gradient(90deg,rgba(255,255,255,.45) 0 1px,rgba(255,255,255,0) 1px 8px);opacity:0}
+.gl .gsw{background:SNOW 0 0/200px 200px;mix-blend-mode:screen;opacity:0}
+.gl .gbk i,.gl .gtr i{position:absolute;opacity:0;animation:on1 var(--t) steps(1) var(--d)}
+.gl .gbk i{left:var(--x);top:var(--y);width:var(--w);height:var(--h);background:var(--c)}
+.gl .gtr i{left:0;right:0;top:var(--y);height:var(--h);background:var(--c);box-shadow:0 0 6px var(--c)}
+@keyframes snj{0%{background-position:0 0}25%{background-position:-73px 41px}50%{background-position:59px -97px}75%{background-position:-31px -53px}}
+/* ===== 2) プチュン（<E>〜）：画面が青く光って、まん中の白い光が2回ふくらむ・稲妻がジリジリ
+   → <W> 画面が縦につぶれて青白い横一本線（まん中に光のフレア）→ 線のまわりで静電気がジリジリ
+   → <Z> 線が両はしから点に縮んで消える（光の粒が散る）→ 真っ暗 ===== */
+.pc{z-index:39;visibility:hidden;animation:vis <Z+.8-E> steps(1) <E>}
+.pcb{position:absolute;inset:0;background:radial-gradient(ellipse 85% 60% at 50% 50%,#9AD6FF 0%,#3A7EFF 26%,#0E33C2 56%,#030C4A 100%);opacity:0;
+  animation:pcbOn <W-E> linear <E> both,pcbOff .08s cubic-bezier(.6,0,1,.6) <W> forwards}
+.pcb::after{content:"";position:absolute;inset:0;background:NOISEF 0 0/120px 120px;mix-blend-mode:screen;opacity:.4;animation:snj .05s steps(1) infinite}
+@keyframes pcbOn{0%{opacity:1}40%{opacity:.86}64%{opacity:1}100%{opacity:1}}
+@keyframes pcbOff{0%{transform:scaleY(1);filter:brightness(1);opacity:1}99%{transform:scaleY(.004);filter:brightness(2.4);opacity:1}100%{transform:scaleY(.004);opacity:0}}
+.pcg{position:absolute;left:50%;top:422px;width:640px;height:300px;margin:-150px 0 0 -320px;border-radius:50%;opacity:0;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,#FFFFFF 0 14%,rgba(205,236,255,.95) 26%,rgba(110,175,255,.55) 48%,rgba(50,110,255,0) 72%);
+  animation:pcgOn <W-E> ease-in-out <E> both,pcgSq .09s cubic-bezier(.6,0,1,.6) <W> forwards,pcgX .18s cubic-bezier(.55,0,.9,.45) <Z> forwards}
+@keyframes pcgOn{0%{opacity:0;transform:scale(.6,.4)}15%{opacity:1;transform:scale(1,.85)}42%{opacity:1;transform:scale(1.18,.68)}66%{opacity:1;transform:scale(.96,.95)}100%{opacity:1;transform:scale(1.12,.74)}}
+@keyframes pcgSq{from{opacity:1;transform:scale(1.12,.74)}to{opacity:1;transform:scale(1.15,.05)}}
+@keyframes pcgX{from{opacity:1;transform:scale(1.15,.05)}to{opacity:1;transform:scale(0,.05)}}
+.pcl{position:absolute;left:0;right:0;top:421px;height:2px;opacity:0;
+  background:linear-gradient(90deg,rgba(150,200,255,.25),#D8EEFF 6%,#FFFFFF 50%,#D8EEFF 94%,rgba(150,200,255,.25));
+  box-shadow:0 0 2px #FFFFFF,0 0 6px #BFE3FF,0 0 14px #4F96FF,0 0 30px #2A5CFF;
+  animation:on1 <Z+.18-W-.05> steps(1) <W+.05>,pclFl .05s steps(1) <W+.05> 5,pclX .18s cubic-bezier(.55,0,.9,.45) <Z> forwards}
+@keyframes pclFl{0%{opacity:1}50%{opacity:.6}}
+@keyframes pclX{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.pcf{position:absolute;left:50%;top:422px;width:0;height:0;opacity:0;animation:on1 <Z+.42-W> steps(1) <W>,pcfS .26s ease-in <Z+.14> forwards}
+.pcf i{position:absolute;border-radius:50%}
+.pcf .f1{left:-210px;top:-10px;width:420px;height:20px;background:radial-gradient(ellipse 50% 50% at 50% 50%,#FFFFFF 0 6%,rgba(190,225,255,.9) 14%,rgba(70,130,255,.45) 38%,rgba(40,90,255,0) 70%);animation:pcfP .07s steps(1) <W> 4}
+.pcf .f2{left:-36px;top:-36px;width:72px;height:72px;background:radial-gradient(circle,#FFFFFF 0 12%,rgba(170,215,255,.85) 26%,rgba(60,120,255,.3) 52%,rgba(40,90,255,0) 72%)}
+.pcf .f3{left:-1.5px;top:-34px;width:3px;height:68px;border-radius:2px;background:linear-gradient(180deg,rgba(255,255,255,0),#FFFFFF 50%,rgba(255,255,255,0))}
+@keyframes pcfP{0%{opacity:1}50%{opacity:.7}}
+@keyframes pcfS{0%{transform:scale(1)}55%{transform:scale(.4)}100%{transform:scale(0);opacity:0}}
+/* ジリジリの稲妻：白い細い線のギザギザが一瞬ずつ（0.03〜0.07秒）あちこちで光る */
+.pca{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible;filter:drop-shadow(0 0 2px #CFF0FF) drop-shadow(0 0 6px #4F8BFF)}
+.pca path{fill:none;stroke:#FFFFFF;stroke-linecap:round;stroke-linejoin:round;visibility:hidden;animation:vis var(--t) steps(1) var(--d)}
+.pca circle{fill:#FFFFFF;visibility:hidden;animation:vis var(--t) steps(1) var(--d)}
+.pcd i{position:absolute;left:var(--x);top:var(--y);width:2px;height:2px;margin:-1px 0 0 -1px;border-radius:50%;background:#E4F3FF;box-shadow:0 0 4px #7FB6FF;
+  opacity:0;animation:pcd var(--t) ease-out var(--d) forwards}
+@keyframes pcd{0%{opacity:1;translate:0 0}100%{opacity:0;translate:var(--dx) var(--dy)}}
+/* ===== 3) 真っ暗（<Z+.4>〜<M>）→ 4) 虹色ネオンの超高速カット（<M>〜<F>）=====
+   S1 テンゲルのアイコン（ネオンの線画・画面よりデカい）が虹色に光りながら左右にブルブル・上下に動く／矢印の帯
+   → S2 ネオンのギザギザがトンネルのように迫る → S3 一瞬真っ暗 → 星空に散らばった T・E・N・G・E・R が集まる
+   → S4 白く光る → 星空・集中線・光の玉に「超」「大」「穴」「!!」がドン・ドン・ドン → S5 赤い画面に「超大穴」の文字の壁（バグる）
+   → S6 虹のトンネル → 虹の光がはじける → S7 アイコンのドアップ（ネオン）に「FREEZE」 */
+.mt{z-index:30}
+.sc{position:absolute;inset:0;overflow:hidden;visibility:hidden}
+.mfl{position:absolute;inset:0;z-index:5;background:#FFFFFF;opacity:0}
+.mfl.a{animation:mfl .34s ease-out <M> forwards}
+.mfl.b{animation:mfl .3s ease-out <M+2.2> forwards}
+@keyframes mfl{0%{opacity:.92}100%{opacity:0}}
+@keyframes vib{0%,100%{translate:-1.5px 0}50%{translate:1.5px 0}}
+/* ネオンの線画：芯（白っぽい虹）と光（こい虹）を、テンゲルのアイコンからひろった線の形でくりぬく。虹色は流れる（回らない） */
+.nic{position:absolute;left:50%;top:0}
+.nic .nv{position:absolute;inset:0;animation:vib .12s linear infinite}
+.nic .ng{opacity:.85}
+.nic .ng,.nic .nc{position:absolute;inset:0;background:repeating-linear-gradient(135deg,#FF2BD6 0,#FF9F1A 86px,#FFE53B 172px,#3CFF6A 258px,#2FD6FF 344px,#6A5BFF 430px,#FF2BD6 516px) 0 -400px/2600px 2600px no-repeat;
+  -webkit-mask:url(/_blob/NGLOW) 0 0/100% 100%;mask:url(/_blob/NGLOW) 0 0/100% 100%;animation:nflow .55s linear infinite}
+.nic .nc{background-image:repeating-linear-gradient(135deg,#FF8AE6 0,#FFC77A 86px,#FFF08A 172px,#9CFFB4 258px,#8CEBFF 344px,#ABA2FF 430px,#FF8AE6 516px);-webkit-mask-image:url(/_blob/NCORE);mask-image:url(/_blob/NCORE)}
+.nic.alt .ng{background-image:repeating-linear-gradient(135deg,#FF6A00 0,#FFE53B 104px,#FF2BD6 208px,#2FD6FF 312px,#3CFF6A 416px,#FF6A00 520px)}
+.nic.alt .nc{background-image:repeating-linear-gradient(135deg,#FFB27A 0,#FFF08A 104px,#FF8AE6 208px,#8CEBFF 312px,#9CFFB4 416px,#FFB27A 520px)}
+.nic.alt .ng,.nic.alt .nc{animation-name:nflow2}
+@keyframes nflow{to{background-position:-729.7px -400px}}
+@keyframes nflow2{to{background-position:-735.4px -400px}}
+/* S1（<M>〜） */
+.s1{animation:vis .85s steps(1) <M>}
+.s1 .bg{position:absolute;inset:-60px;background:radial-gradient(circle at 16% 20%,#FF2BD6 0,rgba(255,43,214,0) 40%),radial-gradient(circle at 86% 16%,#2FD6FF 0,rgba(47,214,255,0) 38%),
+  radial-gradient(circle at 80% 80%,#FFE53B 0,rgba(255,229,59,0) 42%),radial-gradient(circle at 18% 84%,#3CFF6A 0,rgba(60,255,106,0) 42%),radial-gradient(circle at 50% 48%,#7A3BFF 0,rgba(122,59,255,0) 58%),#14062E;
+  animation:s1bg .85s ease-in-out <M> both}
+@keyframes s1bg{from{transform:scale(1.25) translate(10px,30px)}to{transform:scale(1) translate(-10px,-20px)}}
+.s1 .dk{position:absolute;inset:0;background:rgba(8,2,26,.45)}
+.chv{position:absolute;opacity:.92}
+.chv.v{left:135px;top:-60px;width:120px;height:964px;background:CHVD 0 0/120px 56px repeat-y;animation:chvY .3s linear infinite}
+.chv.h{left:-40px;top:560px;width:470px;height:110px;background:CHVR 0 0/56px 110px repeat-x;animation:chvX .3s linear infinite}
+@keyframes chvY{to{background-position:0 56px}}
+@keyframes chvX{to{background-position:56px 0}}
+.s1 .nic{width:1100px;height:1100px;margin-left:-550px;animation:nicY .85s cubic-bezier(.45,0,.55,1) <M> both}
+@keyframes nicY{0%{translate:0 60px}55%{translate:0 -160px}100%{translate:0 -90px}}
+/* S2（<M+.85>〜） */
+.s2{background:#06021A;animation:vis .7s steps(1) <M+.85>}
+.s2 .zz{position:absolute;left:50%;top:50%;width:2800px;height:2800px;margin:-1400px 0 0 -1400px;animation:zz .7s cubic-bezier(.5,0,.9,.6) <M+.85> both}
+.s2 .zz svg,.xpl svg{display:block;width:100%;height:100%}
+@keyframes zz{from{transform:scale(.45) rotate(-4deg)}to{transform:scale(.8) rotate(4deg)}}
+/* S3（<M+1.6>〜。0.05秒 真っ暗） */
+.s3{animation:vis .6s steps(1) <M+1.6>}
+.stf{position:absolute;inset:0;background:radial-gradient(1.2px 1.2px at 20px 30px,#FFFFFF 50%,rgba(255,255,255,0) 51%) 0 0/71px 67px,radial-gradient(1px 1px at 50px 10px,#BFD8FF 50%,rgba(191,216,255,0) 51%) 0 0/53px 89px,
+  radial-gradient(1.6px 1.6px at 30px 60px,#FFFFFF 50%,rgba(255,255,255,0) 51%) 0 0/113px 97px,radial-gradient(circle at 30% 30%,rgba(122,59,255,.5),rgba(122,59,255,0) 50%),
+  radial-gradient(circle at 75% 70%,rgba(47,140,255,.45),rgba(47,140,255,0) 50%),#05020F}
+.s3 .stf,.s3 .spd{opacity:0;animation:on1 .55s steps(1) <M+1.65> forwards}
+.s3 .spd{animation:on1 .55s steps(1) <M+1.65> forwards,spd .24s linear infinite;-webkit-mask-image:radial-gradient(circle at 50% 50%,transparent 0 24%,rgba(0,0,0,.45) 50%);mask-image:radial-gradient(circle at 50% 50%,transparent 0 24%,rgba(0,0,0,.45) 50%)}
+.s3 .lgl{position:absolute;left:50%;top:422px;width:520px;height:260px;margin:-130px 0 0 -260px;border-radius:50%;opacity:0;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,255,255,.95) 0,rgba(255,120,230,.6) 30%,rgba(120,80,255,.25) 55%,rgba(120,80,255,0) 72%);animation:lgl .45s ease-out <M+2.0> forwards}
+@keyframes lgl{0%{opacity:0;transform:scale(.4)}25%{opacity:1}100%{opacity:.55;transform:scale(1.15)}}
+.lt{position:absolute;left:0;top:372px;width:390px;height:100px;animation:ltP .3s ease-out <M+2.0> both}
+.lt b{position:absolute;left:var(--x);top:0;font:400 64px/100px "Dela Gothic One",sans-serif;color:var(--c);-webkit-text-stroke:2px #FFFFFF;
+  text-shadow:0 0 10px var(--c),0 0 24px var(--c);opacity:0;animation:ltIn .34s cubic-bezier(.2,.9,.3,1.15) var(--d) forwards}
+@keyframes ltIn{0%{opacity:0;transform:translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(var(--ss))}25%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes ltP{0%{transform:scale(1);filter:brightness(1)}40%{transform:scale(1.1);filter:brightness(1.6)}100%{transform:scale(1.04);filter:brightness(1)}}
+/* S4（<M+2.2>〜） */
+.s4{animation:vis 1.2s steps(1) <M+2.2>}
+.spd{position:absolute;inset:-100px;background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,0) 0 3deg,rgba(255,255,255,.7) 3deg 3.35deg,rgba(255,255,255,0) 3.35deg 7.3deg),
+  repeating-conic-gradient(from 1.7deg at 50% 50%,rgba(80,220,255,0) 0 5deg,rgba(80,220,255,.55) 5deg 5.5deg,rgba(80,220,255,0) 5.5deg 11deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,transparent 0 16%,#000 42%);mask-image:radial-gradient(circle at 50% 50%,transparent 0 16%,#000 42%);animation:spd .24s linear infinite}
+@keyframes spd{from{transform:scale(1)}to{transform:scale(1.25)}}
+.s4 .orb{position:absolute;left:50%;top:46%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
+  background:radial-gradient(circle,#FFFFFF 0 9%,#C8FFE0 18%,#3CFF9A 34%,rgba(60,255,154,.35) 52%,rgba(60,255,154,0) 70%);animation:orb .3s ease-in-out infinite alternate}
+@keyframes orb{from{transform:scale(.85);filter:hue-rotate(0deg)}to{transform:scale(1.12);filter:hue-rotate(80deg)}}
+.chl{position:absolute;left:-40px;top:700px;width:470px;height:60px;background:CHVL 0 0/44px 60px repeat-x;animation:chvL .1s linear infinite}
+@keyframes chvL{to{background-position:-44px 0}}
+.kj{position:absolute;inset:0;animation:kjZ .2s ease-in <M+3.2> forwards}
+.kj b{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);opacity:0;animation:kjIn .22s cubic-bezier(.2,.9,.3,1.25) var(--d) forwards}
+.kj span{position:absolute;left:-30px;right:-30px;top:0;text-align:center;white-space:nowrap;font:400 var(--fs)/var(--h) "Dela Gothic One",sans-serif}
+.kj .o{color:#FFFFFF;-webkit-text-stroke:16px #FFFFFF;filter:drop-shadow(0 0 10px var(--g)) drop-shadow(0 0 22px var(--g))}
+.kj .f{background:linear-gradient(160deg,var(--c1),var(--c2) 52%,var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px #1A0838}
+@keyframes kjIn{0%{opacity:0;transform:scale(2.6) rotate(-10deg)}55%{opacity:1;transform:scale(.92) rotate(0deg)}100%{opacity:1;transform:scale(1)}}
+@keyframes kjZ{to{transform:scale(1.3);opacity:0}}
+/* S5（<M+3.4>〜） */
+.s5{background:#D6001C;animation:vis .4s steps(1) <M+3.4>}
+.s5 p{position:absolute;left:-60px;margin:0;top:var(--y);white-space:nowrap;font:400 30px/40px "Dela Gothic One",sans-serif;color:var(--c);letter-spacing:.02em;
+  text-shadow:-2px 0 rgba(0,255,255,.75),2px 0 rgba(255,0,170,.75)}
+.s5 i{position:absolute;left:0;right:0;top:var(--y);height:var(--h);background:#000000;opacity:0;animation:on1 var(--t) steps(1) var(--d)}
+/* S6（<M+3.8>〜） */
+.s6{background:#000000;animation:vis .75s steps(1) <M+3.8>}
+.s6 .tn{position:absolute;left:50%;top:50%;width:1300px;height:1300px;margin:-650px 0 0 -650px;border-radius:50%;
+  background:radial-gradient(circle,#000000 0 60px,rgba(0,0,0,0) 61px),repeating-radial-gradient(circle,#FF2B4A 0 26px,#FF9F1A 26px 52px,#FFE53B 52px 78px,#3CFF6A 78px 104px,#2FD6FF 104px 130px,#4C6BFF 130px 156px,#B34CFF 156px 182px);
+  -webkit-mask-image:conic-gradient(#000 0 38deg,transparent 38deg 52deg,#000 52deg 128deg,transparent 128deg 142deg,#000 142deg 218deg,transparent 218deg 232deg,#000 232deg 308deg,transparent 308deg 322deg,#000 322deg);
+  mask-image:conic-gradient(#000 0 38deg,transparent 38deg 52deg,#000 52deg 128deg,transparent 128deg 142deg,#000 142deg 218deg,transparent 218deg 232deg,#000 232deg 308deg,transparent 308deg 322deg,#000 322deg);
+  animation:tn .4s cubic-bezier(.5,0,.9,.5) <M+3.8> both}
+@keyframes tn{from{transform:scale(.9)}to{transform:scale(1.2)}}
+.s6 .bu{position:absolute;left:50%;top:50%;width:1200px;height:1200px;margin:-600px 0 0 -600px;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,#FFFFFF 0 6%,rgba(255,255,255,.85) 10%,rgba(255,255,255,0) 30%),repeating-conic-gradient(#FF2B4A 0 5deg,#FFE53B 5deg 10deg,#3CFF6A 10deg 15deg,#2FD6FF 15deg 20deg,#B34CFF 20deg 25deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 30%,rgba(0,0,0,.6) 50%,transparent 70%);mask-image:radial-gradient(circle,#000 0 30%,rgba(0,0,0,.6) 50%,transparent 70%);
+  animation:bu .4s cubic-bezier(.15,.8,.3,1) <M+4.15> forwards}
+@keyframes bu{0%{opacity:1;transform:scale(.25)}100%{opacity:1;transform:scale(1.25)}}
+.s6 .bs{position:absolute;left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;background:#FF1E3C;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);
+  opacity:0;animation:bs .4s ease-out <M+4.15> forwards}
+@keyframes bs{0%{opacity:1;transform:scale(.2) rotate(0deg)}100%{opacity:1;transform:scale(1.7) rotate(45deg)}}
+/* S7（<M+4.55>〜<F>） */
+.s7{animation:vis <F-M-4.55> steps(1) <M+4.55>}
+.s7 .spd{opacity:.55;animation-duration:.4s}
+.s7 .nic{width:1700px;height:1700px;margin-left:-1122px;top:-266px;transform-origin:66% 38%;animation:nic2 <F-M-4.55> linear <M+4.55> both}
+@keyframes nic2{from{transform:scale(1) rotate(-3deg)}to{transform:scale(1.14) rotate(2deg)}}
+.s7 .fr{position:absolute;left:0;right:0;top:620px;text-align:center;font:400 64px/1 "Dela Gothic One",sans-serif;color:rgba(255,255,255,.12);-webkit-text-stroke:2.5px #FFFFFF;letter-spacing:.02em;
+  text-shadow:0 0 6px #FF2BD6,0 0 16px #FF2BD6,0 0 34px #7A3BFF;clip-path:inset(0 100% 0 0);animation:frIn .22s ease-out <M+4.72> forwards,frF .08s steps(1) <M+5.0> 4}
+@keyframes frIn{to{clip-path:inset(0 0 0 0)}}
+@keyframes frF{0%{opacity:1}50%{opacity:.7}}
+/* ===== 5) 白い爆発（<F>）→「ど的中」が炎と光の中からドーン → <R-.35> 上へ → <R> 雷…ではなく炎の中から馬がボード ===== */
+.xf{z-index:45}
+.xpl{position:absolute;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;opacity:0;animation:xpl .6s cubic-bezier(.12,.75,.3,1) <F> forwards}
+@keyframes xpl{0%{opacity:1;transform:scale(.12) rotate(0deg)}45%{opacity:1}100%{opacity:0;transform:scale(1.9) rotate(8deg)}}
+.xf2{position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.95),rgba(255,214,120,.7) 28%,rgba(255,120,0,0) 62%);opacity:0;animation:mfl .32s ease-out <R-.45> forwards}
+.fin{z-index:20;opacity:0;animation:fzOn .01s linear <F> forwards}
+.fsk{position:absolute;inset:0;animation:shake .45s linear <F+.24>,shakeS .2s linear <R-.45>,shake .4s linear <R>}
 @keyframes shake{0%,100%{translate:0 0}10%{translate:-10px 6px}20%{translate:9px -8px}30%{translate:-8px -5px}40%{translate:7px 7px}50%{translate:-6px 4px}60%{translate:5px -4px}70%{translate:-3px 3px}80%{translate:2px -2px}90%{translate:-1px 1px}}
 @keyframes shakeS{0%,100%{translate:0 0}20%{translate:-5px 4px}40%{translate:5px -4px}60%{translate:-4px -3px}80%{translate:3px 3px}}
-/* 背景：回らない（虹のぐるぐるはやめた）。夜空のような深い紫・白い光の筋（回らずに明るさだけゆっくり変わる）・サーチライト */
-.fzbg{position:absolute;z-index:1;inset:-40px;background:radial-gradient(circle at 50% 44%,#6A33A6 0%,#341266 30%,#160838 60%,#05020D 100%)}
-.vig{position:absolute;z-index:2;inset:-40px;background:radial-gradient(circle at 50% 44%,rgba(255,255,255,.3) 0,rgba(255,255,255,0) 22%,rgba(10,3,24,0) 55%,rgba(5,2,13,.55) 90%)}
-.beams{position:absolute;z-index:3;inset:0;pointer-events:none}
-.beams i{position:absolute;bottom:-30px;width:190px;height:980px;transform-origin:50% 100%;rotate:var(--a0);
-  background:linear-gradient(0deg,rgba(255,255,255,.6),rgba(255,255,255,.16) 55%,rgba(255,255,255,0));
-  clip-path:polygon(44% 100%,56% 100%,100% 0,0 0);mix-blend-mode:screen;animation:sweep 1.9s ease-in-out <B> infinite alternate}
-.beams i:nth-child(1){left:-60px;--a0:-34deg;--a1:22deg}
-.beams i:nth-child(2){right:-60px;--a0:34deg;--a1:-22deg;animation-direction:alternate-reverse}
-@keyframes sweep{from{rotate:var(--a0)}to{rotate:var(--a1)}}
-.ov.fz .rbow{z-index:4;background:repeating-conic-gradient(rgba(255,240,200,.5) 0 4deg,transparent 4deg 11deg);opacity:1;
-  -webkit-mask-image:radial-gradient(circle,#000 0 8%,transparent 56%);mask-image:radial-gradient(circle,#000 0 8%,transparent 56%);
-  animation:raysIn .5s ease-out <B> both,rayP 1.1s ease-in-out <B+.5> infinite alternate}
-@keyframes rayP{from{opacity:1}to{opacity:.55}}
-.ov.fz .glow{z-index:5;width:440px;height:440px;margin:-220px 0 0 -220px;animation:fzWrap 1s ease-out <B> both,breathe 1.8s ease-in-out <B+1> infinite}
-@keyframes fzWrap{0%{scale:.1;opacity:0}40%{scale:1.6;opacity:.95}100%{scale:1.15;opacity:.85}}
-.ov.fz .ring{z-index:6}
-.ov.fz .ring.r1{animation-delay:<B>}.ov.fz .ring.r4{animation-delay:<S>}
-/* 雷（強く光るのは<W>・<B>・<T+.6>・<S>：1秒に3回までにする） */
-.bolt{position:absolute;z-index:7;left:0;top:0;width:390px;height:844px;pointer-events:none;overflow:visible;opacity:0;
-  filter:drop-shadow(0 0 5px #A8ECFF) drop-shadow(0 0 14px #8A6BFF);animation:bolt .55s ease-out var(--d) forwards}
-.bolt path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:1;animation:boltDraw .08s linear var(--d) forwards}
-.bolt .gl{stroke:rgba(180,235,255,.9);stroke-width:8}
-.bolt .co{stroke:#FFFFFF;stroke-width:3}
-.bolt .gl.s{stroke-width:5}
-.bolt .co.s{stroke-width:1.8}
-@keyframes bolt{0%{opacity:1}50%{opacity:.9}100%{opacity:0}}
-@keyframes boltDraw{to{stroke-dashoffset:0}}
-/* ---------- プチュン専用のド派手演出（<B>〜<S>） ----------
-   <B>〜<T>（3秒）：テンゲルのアイコンが虹色に光りながら左右にブルブル振動して、画面いっぱいに上下にビュンビュン動く（虹色の残像3つ。
-   上と下に当たるたびに白い輪と小さなゆれ）・集中線・金のコインがはじける・花火 → 上で止まる
-   → <T+.08>〜「超」「大」「穴」「!!」が1文字ずつドン（文字ごとに色の輪）→ <T+.6> 雷が落ちる → アイコンと文字が手前へ飛んで消える → <S> 雷の中から馬 */
-.sp{position:absolute;inset:0;z-index:8;pointer-events:none;animation:spOut .3s ease-in <S> forwards}
-@keyframes spOut{to{opacity:0}}
-.spl{position:absolute;inset:-80px;transform-origin:50% 44.5%;
-  background:repeating-conic-gradient(from 0deg at 50% 44.5%,rgba(255,255,255,0) 0 2.3deg,rgba(255,255,255,.85) 2.3deg 2.7deg,rgba(255,255,255,0) 2.7deg 5.2deg),
-    repeating-conic-gradient(from 1.9deg at 50% 44.5%,rgba(255,255,255,0) 0 3.2deg,rgba(255,255,255,.6) 3.2deg 3.45deg,rgba(255,255,255,0) 3.45deg 7.7deg);
-  -webkit-mask-image:radial-gradient(circle at 50% 44.5%,transparent 0 26%,#000 46%);mask-image:radial-gradient(circle at 50% 44.5%,transparent 0 26%,#000 46%);
-  animation:spl .3s steps(1) infinite}
-@keyframes spl{0%{rotate:0deg}33%{rotate:1.6deg}66%{rotate:-1.1deg}}
-.tic{position:absolute;left:50%;top:0;width:250px;height:250px;margin-left:-125px;opacity:0;
-  animation:fzOn .01s linear <B> forwards,ticY 3s ease-in-out <B> forwards,ticOut .3s ease-in <T+.62> forwards}
-.tic.g1{animation-delay:<B+.04>,<B+.04>,<T+.62>}
-.tic.g2{animation-delay:<B+.08>,<B+.08>,<T+.62>}
-.tic.g3{animation-delay:<B+.12>,<B+.12>,<T+.62>}
-.tiv{position:absolute;inset:0;animation:vib .07s linear infinite}
-.tis{position:absolute;inset:0;animation:ticPop .35s cubic-bezier(.2,1.6,.4,1) <B> both}
-.tic.g1 .tis{animation-delay:<B+.04>}.tic.g2 .tis{animation-delay:<B+.08>}.tic.g3 .tis{animation-delay:<B+.12>}
-.tib{position:absolute;inset:-9px;border-radius:27%;background:linear-gradient(135deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8);animation:tglow .9s linear infinite}
-.tii{position:absolute;inset:0;border-radius:22%;background:url(/_blob/ICONID) center/cover;box-shadow:0 0 0 3px #FFFFFF;overflow:hidden}
-.tii::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 65%) -150% 0/60% 100% no-repeat;animation:glint .8s ease-in-out infinite}
-.gh{position:absolute;inset:-6px;border-radius:26%;filter:blur(7px)}
-.g1 .gh{background:#2FD6FF;opacity:.6}
-.g2 .gh{background:#FF3BB8;opacity:.45}
-.g3 .gh{background:#FFE53B;opacity:.32}
-@keyframes ticY{0%,8%{translate:0 246px}22%{translate:0 34px}36%{translate:0 560px}50%{translate:0 34px}64%{translate:0 560px}78%{translate:0 34px}91%{translate:0 560px}100%{translate:0 64px}}
-@keyframes ticPop{from{scale:.15}to{scale:1}}
-@keyframes ticOut{to{opacity:0;scale:1.6;filter:brightness(2) blur(3px)}}
-@keyframes vib{0%,100%{translate:-6px 0}50%{translate:6px 0}}
-@keyframes tglow{0%,100%{box-shadow:0 0 22px 8px rgba(255,59,59,.85),0 0 60px 20px rgba(255,59,59,.45)}17%{box-shadow:0 0 22px 8px rgba(255,159,26,.85),0 0 60px 20px rgba(255,159,26,.45)}33%{box-shadow:0 0 22px 8px rgba(255,229,59,.85),0 0 60px 20px rgba(255,229,59,.45)}50%{box-shadow:0 0 22px 8px rgba(59,226,106,.85),0 0 60px 20px rgba(59,226,106,.45)}67%{box-shadow:0 0 22px 8px rgba(47,214,255,.85),0 0 60px 20px rgba(47,214,255,.45)}83%{box-shadow:0 0 22px 8px rgba(179,76,255,.85),0 0 60px 20px rgba(179,76,255,.45)}}
-.tir{position:absolute;left:50%;top:var(--y);width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:4px solid #FFFFFF;
-  box-shadow:0 0 16px #FFFFFF,inset 0 0 12px rgba(255,255,255,.8);opacity:0;animation:tir .4s ease-out var(--d) forwards}
-@keyframes tir{0%{opacity:.95;scale:.4}100%{opacity:0;scale:1.9}}
-.sl2{position:absolute;left:0;top:352px;width:390px;height:96px;animation:sl2p .4s ease-out <T+.6> both,sl2z .35s ease-in <T+.8> forwards}
-.sl2 b{position:absolute;top:0;left:var(--x);width:var(--w);height:96px;opacity:0;animation:chr .42s cubic-bezier(.2,.9,.3,1.25) var(--d) forwards}
-.sl2 span{position:absolute;left:-20px;right:-20px;top:0;text-align:center;white-space:nowrap;font:400 80px/1 "Dela Gothic One",sans-serif}
-.sl2 .o{color:var(--ink2);-webkit-text-stroke:14px var(--ink2);filter:drop-shadow(0 0 12px rgba(255,255,255,.9)) drop-shadow(0 0 22px var(--g))}
-.sl2 .f{background:linear-gradient(180deg,#FFFFFF 0%,#FFF6B0 38%,#FFC83A 58%,#FF8A1A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px #FFFFFF}
-.sl2 u{position:absolute;left:var(--x);top:48px;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:6px solid var(--g);box-shadow:0 0 14px var(--g),inset 0 0 10px var(--g);opacity:0;animation:cring .5s ease-out var(--d) forwards}
-@keyframes chr{0%{opacity:0;scale:4;rotate:-14deg}50%{opacity:1;scale:.86;rotate:0deg}72%{scale:1.1}100%{opacity:1;scale:1}}
-@keyframes cring{0%{opacity:1;scale:.3}100%{opacity:0;scale:2.3}}
-@keyframes sl2p{0%{scale:1;filter:none}35%{scale:1.08;filter:brightness(1.7)}100%{scale:1;filter:none}}
-@keyframes sl2z{to{scale:2.6;opacity:0;filter:blur(4px)}}
-.bst{position:absolute;left:50%;top:44%;width:0;height:0}
-.bst i{position:absolute;left:calc(var(--w) / -2);top:calc(var(--w) / -2);width:var(--w);height:var(--w);border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#FFFBE0 0 16%,#FFD54A 32%,#E0A100 70%,#9A6A00 100%);box-shadow:0 0 8px rgba(255,220,120,.95);
-  opacity:0;animation:bst .9s cubic-bezier(.12,.75,.3,1) var(--d) forwards}
-@keyframes bst{0%{opacity:1;transform:translate(0,0) scale(.3) rotateY(0deg)}75%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.15) rotateY(900deg)}}
-.fw{position:absolute;left:var(--x);top:var(--y);width:0;height:0}
-.fw i{position:absolute;left:-3.5px;top:-3.5px;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 7px 2px var(--c);
-  opacity:0;animation:fw .7s cubic-bezier(.15,.8,.35,1) var(--d) forwards}
-@keyframes fw{0%{opacity:1;transform:translate(0,0) scale(1.4)}70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.4)}}
-.ov.fz .spk{z-index:9}
-.ov.fz .spk.top{z-index:12}
-/* 雷の光の中から馬がボードを持って出る（<S>）。コインは馬のうしろ・紙ふぶきは前 */
-.ov.fz .conf.cb{z-index:9}
-.ov.fz .hb{z-index:10;animation:strike .8s ease-out <S> both}
+.fin .fb{position:absolute;inset:-40px;background:radial-gradient(circle at 50% 38%,#FFF6C8 0,#FFC21A 9%,#FF6A00 24%,#D61A00 44%,#6A0000 72%,#1A0000 100%)}
+.fin .frr{position:absolute;left:50%;top:38%;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:50%;
+  background:repeating-conic-gradient(rgba(255,244,200,.62) 0 3deg,rgba(255,244,200,0) 3deg 8.5deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 6%,transparent 55%);mask-image:radial-gradient(circle,#000 0 6%,transparent 55%);animation:frP 1.1s ease-in-out <F> infinite alternate}
+@keyframes frP{from{opacity:.6;transform:scale(1)}to{opacity:1;transform:scale(1.08)}}
+.fin .emb i{position:absolute;left:var(--x);bottom:-20px;width:var(--s);height:var(--s);border-radius:50%;background:#FFE7A0;box-shadow:0 0 6px 2px #FF8A00;opacity:0;animation:emb var(--t) linear var(--d) infinite}
+@keyframes emb{0%{opacity:0;translate:0 0}10%{opacity:1}80%{opacity:.9}100%{opacity:0;translate:var(--dx) -900px}}
+/* 「ど的中」：外側の黒い太いふち・金のふち・内側の細いふち・炎の色（上は白っぽい金 → 橙 → 赤）・光がサッと走る。少し右に傾ける */
+.dlg{position:absolute;left:0;right:0;top:282px;height:200px;animation:dIn .34s cubic-bezier(.2,.9,.3,1.2) <F+.22> both,dUp .38s cubic-bezier(.5,0,.3,1) <R-.35> forwards}
+@keyframes dIn{0%{opacity:0;transform:scale(2.8)}60%{opacity:1;transform:scale(.94)}100%{opacity:1;transform:scale(1)}}
+@keyframes dUp{from{transform:scale(1)}to{transform:translateY(-302px) scale(.62)}}
+.dlg .dfl{position:absolute;left:-20px;right:-20px;top:-40px;bottom:-30px;border-radius:50%;
+  background:radial-gradient(ellipse 50% 50% at 50% 58%,rgba(255,236,150,.95) 0,rgba(255,140,0,.75) 36%,rgba(255,50,0,.35) 58%,rgba(255,40,0,0) 74%);animation:dfl .16s ease-in-out <F+.2> infinite alternate}
+@keyframes dfl{from{transform:scale(1,1)}to{transform:scale(1.04,1.1)}}
+/* 文字のうしろで燃える炎（ゆらゆら・ちらちら） */
+.dlg .ffl{position:absolute;left:0;top:0;width:390px;height:200px;overflow:visible;filter:drop-shadow(0 0 6px rgba(255,110,0,.9))}
+.dlg .ffl path{transform-box:fill-box;transform-origin:50% 100%;animation:flk var(--t) ease-in-out var(--d) infinite alternate}
+@keyframes flk{0%{transform:scale(1,.82) skewX(-4deg)}50%{transform:scale(.92,1.08) skewX(3deg)}100%{transform:scale(1.04,1.16) skewX(-2deg)}}
+/* 着地したときの光の輪 */
+.dlg .dr{position:absolute;left:50%;top:104px;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;border:7px solid #FFF3B0;
+  box-shadow:0 0 22px 4px #FFB000,inset 0 0 22px 4px #FFB000;opacity:0;animation:dr .55s ease-out <F+.5> forwards}
+@keyframes dr{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(2.6)}}
+.dlg .dsb{position:absolute;left:0;right:0;top:-6px;text-align:center;font:700 15px/1 "BIZ UDPGothic",sans-serif;letter-spacing:.42em;padding-left:.42em;color:#FFFFFF;text-shadow:0 0 6px #FF3B00,0 0 14px #FF3B00,0 2px 0 #5A0000}
+.dlg .dw{position:absolute;left:0;right:0;top:22px;height:160px;transform:skewX(-9deg)}
+.dlg .dw span{position:absolute;left:-10px;right:-10px;top:0;text-align:center;white-space:nowrap;font:400 130px/160px "Dela Gothic One",sans-serif;letter-spacing:-.02em}
+.dlg .dw small{font-size:90px;letter-spacing:.02em}
+.dlg .o1{color:#2A0000;-webkit-text-stroke:24px #2A0000;filter:drop-shadow(2px 3px 0 #7A0A00) drop-shadow(2px 3px 0 #5A0000) drop-shadow(2px 3px 0 #3A0000) drop-shadow(0 0 22px rgba(255,110,0,.95))}
+.dlg .o2{color:#FFC83A;-webkit-text-stroke:11px #FFC83A}
+.dlg .o3{color:#5A0A00;-webkit-text-stroke:4px #5A0A00}
+.dlg .f{background:linear-gradient(180deg,#FFFFFF 0%,#FFF6C0 15%,#FFD84A 33%,#FFFFFF 38%,#FFE58A 40%,#FFA200 53%,#FF5A00 67%,#D81000 83%,#7A0000 100%) 0 30px/100% 112px no-repeat;-webkit-background-clip:text;background-clip:text;color:transparent}
+.dlg .h{background:linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.95) 50%,rgba(255,255,255,0) 62%) -150% 0/60% 100% no-repeat;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:dsh 1.1s ease-in-out <F+.5> infinite}
+@keyframes dsh{0%{background-position:-150% 0}60%,100%{background-position:250% 0}}
+.dlg .dsp b{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);background:#FFFFFF;
+  clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 4px #FFE08A);opacity:0;animation:twinkle .9s ease-in-out var(--d) infinite}
+/* 炎の中から馬がボードを持って出る（<R>）。コインは馬のうしろ・紙ふぶきは前 */
+.fin .hb{z-index:6;animation:strike .8s ease-out <R> both}
 @keyframes strike{0%{opacity:0;transform:translateY(-36px) scale(.7);filter:brightness(4) blur(2px)}30%{opacity:1;transform:translateY(8px) scale(1.06);filter:brightness(2.2) blur(0)}55%{transform:translateY(-4px) scale(.99);filter:brightness(1.3)}100%{transform:none;filter:none}}
-.ov.fz .conf{z-index:11}
+.fin .conf.cb{z-index:5}
+.fin .conf{z-index:7}
+.fin .dlg{z-index:8}
 .conf i.cn{height:var(--w);border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFFBE0 0 16%,#FFD54A 32%,#E0A100 70%,#9A6A00 100%);box-shadow:0 0 6px rgba(255,220,120,.9);animation:coin var(--t) linear var(--d) infinite}
 @keyframes coin{0%{opacity:1;transform:translateY(0) rotateY(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotateY(1080deg)}}
-.ov.fz .close{z-index:18}
+.ov.fz .close{z-index:60}
 /* ボード：枠は虹色（回さない） */
-.fz .board{border-color:transparent;background-clip:padding-box;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,255,255,.9),0 0 64px 18px rgba(255,110,230,.55),0 12px 24px rgba(0,0,0,.35)}
+.fz .board{border-color:transparent;background-clip:padding-box;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,236,170,.9),0 0 64px 18px rgba(255,120,0,.6),0 12px 24px rgba(0,0,0,.35)}
 .fz .board > .halo{inset:-8px;z-index:auto;border-radius:16px;filter:none}
 .fz .board > .halo i{padding:8px}
 .fz .board > .halo b{width:700px;height:700px;margin:-350px 0 0 -350px;animation:none}
 .fz .bh{font-size:30px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.2));
-  animation:pop .55s cubic-bezier(.2,1.8,.4,1) <S+.6> both,rbowText 1.2s linear <S+.6> infinite}
+  animation:pop .55s cubic-bezier(.2,1.8,.4,1) <R+.6> both,rbowText 1.2s linear <R+.6> infinite}
 .zrib{display:flex;align-items:center;justify-content:center;gap:6px;align-self:center;margin-top:1px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--ink2);color:#FFFFFF;font-size:12px;font-weight:700;white-space:nowrap;
-  box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7);animation:rowIn .35s ease-out <S+.7> both}
+  box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7);animation:rowIn .35s ease-out <R+.7> both}
 .zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:var(--ink2);font-weight:800;font-size:11.5px}
 .zrib .n{min-width:22px;height:22px;font-size:12px}
 .n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6);animation:zx 1.2s linear infinite}
@@ -491,16 +541,17 @@ FREEZE_CSS = r'''
 .fz .brows li.top{position:relative;background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;padding:4px 6px}
 .fz .brows li{flex-wrap:wrap}
 .fz .brows li.top{gap:3px;padding:4px 5px}
-.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat;animation:glint 1.8s ease-in-out <S+1.05> infinite}
+.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat;animation:glint 1.8s ease-in-out <R+1.05> infinite}
 .fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
-/* 視差効果を減らす：ふるえ・回転・広がる光・歪み・砂嵐・プチュン・ゆれ・雷・白い光・アイコンの演出を止める。1秒真っ暗 → 夜空の画面と馬・ボードをふわっと出す */
+/* 視差効果を減らす：グリッチ・プチュン・ネオンのカット・爆発・ゆれ・炎の粒・紙ふぶきを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す */
 @media (prefers-reduced-motion:reduce){
-  .push.fz,.push.fz::before,.push.fz .face,.push.fz .glit b,.pshadow.fz,.tap.fz,.aura,.prays,.edge,.frame b,.beams i,.n.zx,.fz .brows li.top::after,.fz .board > .halo b{animation:none!important}
-  .push.fz::after,.ov.fz .wrp,.ov.fz .tvw,.ov.fz .ign,.ov.fz .igg,.ov.fz .flash,.ov.fz .bolt,.ov.fz .sp,.ov.fz .ring,.ov.fz .beams,.ov.fz .conf{display:none}
+  .push.fz,.push.fz::before,.push.fz .face,.push.fz .glit b,.pshadow.fz,.tap.fz,.aura,.prays,.edge,.frame b,.n.zx,.fz .brows li.top::after,.fz .board > .halo b{animation:none!important}
+  .push.fz::after,.ov.fz .gl,.ov.fz .pc,.ov.fz .mt,.ov.fz .xf,.ov.fz .emb,.ov.fz .conf,.ov.fz .dsp,.ov.fz .dr{display:none}
   .push.fz .glit b{opacity:.6}
   .ov.fz{--t0:1.9s}
-  .ov.fz .shk,.ov.fz .rvw{animation:fadeIn .6s ease-out 1s both!important}
-  .ov.fz .rbow{animation:none!important}
+  .ov.fz .fin{animation:fadeIn .6s ease-out 1s both!important}
+  .ov.fz .fsk,.ov.fz .frr,.ov.fz .dfl,.ov.fz .dlg .h,.ov.fz .ffl path{animation:none!important}
+  .ov.fz .dlg{animation:none!important;transform:translateY(-302px) scale(.62)}
   .ov.fz .hb{animation:fadeIn .5s ease-out 1.3s both!important}
   .fz .bh{animation:fadeIn .4s ease-out 1.6s both!important}
   .zrib{animation:fadeIn .4s ease-out 1.7s both!important}
@@ -547,15 +598,10 @@ def board(title, bets, total, top_first=False, rib='', mark=(), ring=''):
 
 
 FZ_X = 11    # 見本の超大穴の馬（11番・11番人気）
-# フリーズの時刻（押してから）：W＝歪みが終わってプチュン・B＝真っ暗のあと「ドーン」（テンゲルのアイコンが3秒）・T＝アイコンが止まって「超大穴!!」・S＝雷が落ちて馬が出る
-FZ_T = dict(W=1.0, B=2.4, T=5.4, S=6.6)
-WARP_N = 44        # 歪みの帯の数（1本 約19px）
-NOISE = 'url("data:image/svg+xml,' + quote(
-    "<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'>"
-    "<feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7' stitchTiles='stitch'/>"
-    "<feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.5 0 0 0 -.45'/></filter>"
-    "<rect width='180' height='180' filter='url(#n)'/></svg>", safe="/:=' .,-") + '")'
-# 砂嵐：白黒の粒（1粒 約1px・不透明）。プチュンの線のまわり：もっと細かい白い粒（1粒 約1/3px＝画面の点1つぶん）
+# フリーズの時刻（押してから）：N＝グリッチが一瞬おさまる・C＝アイコンのドアップ・H＝横に流れる光・E＝画面が青く光る・W＝プチュン（青白い横一本線）
+# ・Z＝線が点に縮んで消える（このあと真っ暗）・M＝虹色ネオンの超高速カット・F＝白い爆発 →「ど的中」・R＝馬がボード
+FZ_T = dict(N=.5, C=.86, H=1.2, E=1.4, W=1.64, Z=1.98, M=4.4, F=9.9, R=11.9)
+# 砂嵐：白黒の粒（1粒 約1px・不透明）。プチュンの青い画面：もっと細かい白い粒（1粒 約1/3px＝画面の点1つぶん）
 SNOW = 'url("data:image/svg+xml,' + quote(
     "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='s'>"
     "<feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='1' seed='3' stitchTiles='stitch'/>"
@@ -568,41 +614,34 @@ NOISEF = 'url("data:image/svg+xml,' + quote(
     "<rect width='360' height='360' filter='url(#f)'/></svg>", safe="/:=' .,-") + '")'
 
 
+def svg_url(svg):
+    return 'url("data:image/svg+xml,' + quote(svg, safe="/:=' .,-") + '")'
 
-def warp_keyframes(n=WARP_N, seed=51):
-    """歪みの帯ごとの動き：だんだん強くなる波（ゆっくりの大きい波＋速い小さい波）＋ときどき帯がちぎれる"""
-    rnd = random.Random(seed)
-    W = FZ_T['W']
-    tears = []
-    for _ in range(14):
-        t = rnd.uniform(.12, .97)
-        k0 = rnd.randrange(n)
-        tears.append((t, k0, min(n, k0 + rnd.randint(1, 4)), rnd.choice([-1, 1]) * rnd.uniform(14, 46) * (.4 + t)))
-    m = 32
-    out = []
-    for k in range(n):
-        y = (k + .5) / n
-        parts = []
-        for i in range(m + 1):
-            u = i / m
-            t = u * W
-            x = (3 + 40 * u ** 1.5) * math.sin(2 * math.pi * (2.2 * t + 2.6 * y)) + 10 * u ** 2 * math.sin(2 * math.pi * (5.0 * t + 7.0 * y + .3))
-            for te, k0, k1, dx in tears:
-                if k0 <= k < k1 and abs(t - te) < .5 * W / m:
-                    x += dx
-            parts.append(f'{u * 100:g}%{{translate:{x:.1f}px 0}}')
-        out.append(f'@keyframes wk{k}{{{"".join(parts)}}}')
-    return '\n'.join(out)
+
+def chev(w, h, pts, cols):
+    """矢印の帯の1コマ（ネオンの「く」の字：太い色・細い色・白い芯）"""
+    lines = ''.join(f"<polyline points='{p}' fill='none' stroke='{c}' stroke-width='{sw}' stroke-linejoin='miter' stroke-linecap='square'/>"
+                    for p, cs in zip(pts, cols) for c, sw in zip(cs, (16, 9, 3)))
+    return svg_url(f"<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {w} {h}'>{lines}</svg>")
+
+
+CHVD = chev(120, 56, ['10,6 60,40 110,6'], [('#1E4BFF', '#2FD6FF', '#FFFFFF')])           # 下向き（青）
+CHVR = chev(56, 110, ['8,10 42,55 8,100'], [('#C8004A', '#FF2BD6', '#FFFFFF')])           # 右向き（赤むらさき）
+CHVL = chev(264, 60, [f'{34 + 44 * i},8 {10 + 44 * i},30 {34 + 44 * i},52' for i in range(6)],  # 左向き（虹色が6つ）
+            [(f'hsl({h},100%,40%)', f'hsl({h},100%,60%)', '#FFFFFF') for h in (0, 45, 120, 190, 230, 290)])
+
+
+def fz_sec(v):
+    return f'{v:.3f}'.rstrip('0').rstrip('.') + 's'
 
 
 def fz_css():
-    """FREEZE_CSS の <B+.02> などを秒に直す・歪みの絵とノイズを入れる・帯ごとの動きを足す"""
-    def rep(m):
-        v = FZ_T[m.group(1)] + float(m.group(2) or 0)
-        return f'{v:.2f}'.rstrip('0').rstrip('.') + 's'
-    css = re.sub(r'<([WBTS])([+-][0-9.]+)?>', rep, FREEZE_CSS)
-    css = css.replace('NOISEF', NOISEF).replace('SNOW', SNOW).replace('ICONID', blobs['fz_icon'])
-    return css.replace('WARPID', blobs['fz_warp']).replace('NOISE', NOISE) + '/* 歪みの帯ごとの動き（gen_fx.py の warp_keyframes で作る） */\n' + warp_keyframes() + '\n'
+    """FREEZE_CSS の <M+.85>・<H-C> などを秒に直す・絵とノイズを入れる・グリッチの1コマごとの動きを足す"""
+    css = re.sub(r'<([A-Z][A-Z0-9.+\-]*)>', lambda m: fz_sec(eval(m.group(1), {}, dict(FZ_T))), FREEZE_CSS)
+    for k, v in (('NOISEF', NOISEF), ('SNOW', SNOW), ('ICONID', blobs['fz_icon']), ('WARPID', blobs['fz_warp']), ('NGLOW', blobs['fz_nglow']),
+                 ('NCORE', blobs['fz_ncore']), ('CHVD', CHVD), ('CHVR', CHVR), ('CHVL', CHVL)):
+        css = css.replace(k, v)
+    return css + '/* グリッチ・文字の壁の1コマごとの動き（gen_fx.py の glitch・mt_layers で作る） */\n' + GL['css'] + MT['css'] + '\n'
 
 
 def glitter(n, seed):
@@ -624,61 +663,126 @@ def fz_push():
     <div class="edge"></div><div class="frame"><b></b></div>'''
 
 
-def warp_layers(seed=53):
-    """歪み：押した瞬間の画面（fz_warp の絵）を WARP_N 本の帯に切る＋走査線・ノイズ・ちぎれる光の線"""
-    h = 844 / WARP_N
-    strips = ''.join(f'<i style="top:{k * h:.2f}px;height:{h + 1.5:.2f}px;background-position:60px {-k * h:.2f}px;animation-name:wk{k}"></i>' for k in range(WARP_N))
+def kf_steps(name, total, segs, base, fmt):
+    """1コマずつ切りかわる動き（animation-timing-function: steps(1) で使う）。segs＝[(始まり, 終わり, 値)]・base＝それ以外の値"""
+    pts = sorted({0.0, *[t for s in segs for t in s[:2] if t < total]})
+
+    def at(t):
+        for t0, t1, v in segs:
+            if t0 <= t < t1:
+                return v
+        return base
+    stops = ''.join(f'{t / total * 100:.3f}%{{{fmt(at(t))}}}' for t in pts)
+    return f'@keyframes {name}{{{stops}100%{{{fmt(base)}}}}}'
+
+
+# グリッチの台本（1コマ＝1/30秒）。S＝色ずれ(px)・L＝横ズレの強さ(px)・w1 暗く・w2 水色に白く・w3 緑で色を反転・w4 紫・V＝縦の線・N＝砂嵐の濃さ・B＝ブロック・T＝横の線
+GL_SCRIPT = [
+    # 押した瞬間の画面（0〜N）
+    (0.000, 'L20 S6'), (0.033, 'S10 B'), (0.067, 'L30 T'), (0.100, 'w2'), (0.133, 'S14 B'), (0.167, 'L24 N.15'), (0.200, 'S8 T N.15'),
+    (0.233, 'L36 B N.15'), (0.267, 'S12 N.15'), (0.300, 'L20 T N.15'), (0.333, 'S16 B N.15'), (0.367, 'V S8'), (0.400, 'w3 L20'), (0.433, 'S10 L20'), (0.467, 'S6 T'),
+    # 一瞬もとに戻る（N〜C）の途中で1回だけピクッ
+    (0.700, 'L12'), (0.733, 'S4'),
+    # テンゲルのアイコンのドアップ（C〜H）
+    (0.860, 'S14'), (0.893, 'T S6'), (0.927, 'L30'), (0.960, 'S10'), (0.993, 'w2'), (1.027, 'S10 B'), (1.060, 'L30 T'), (1.093, 'S18'),
+    (1.127, 'L20'), (1.160, 'S8 T'),
+]
+GL_COLS = ['#FF2BD6', '#2FD6FF', '#3CFF6A', '#FFE53B', '#FFFFFF', '#000000', '#6A2BFF', '#FF3B3B']
+
+
+def glitch(seed=61):
+    """グリッチの部品（HTML）と1コマごとの動き（CSS）"""
     rnd = random.Random(seed)
-    W = FZ_T['W']
-    bars = ''.join(f'<b style="--y:{rnd.uniform(40, 800):.0f}px;--h:{rnd.choice([1, 2, 2, 3, 5])}px;--d:{rnd.uniform(.25, .97) * W:.2f}s;--t:{rnd.uniform(.04, .09):.2f}s;--c:{rnd.choice(["#FFFFFF", "#FF3BB8", "#2FD6FF", "#FFE53B"])}"></b>' for _ in range(12))
-    snow = ''.join(f'<b style="--h:{h}px;--t:{t:.2f}s;--d:{d * W:.2f}s"></b>' for h, t, d in ((90, .24, .17), (130, .28, .4), (70, .2, .62), (150, .3, .78)))
-    return (f'<div class="wrp" aria-hidden="true">{strips}<div class="scl"></div><div class="nz"></div>'
-            f'<div class="snw"></div><div class="snb">{snow}</div><div class="gb">{bars}</div></div>')
+    E, N, C, H = FZ_T['E'], FZ_T['N'], FZ_T['C'], FZ_T['H']
+    frames = []
+    for i, (t0, fx) in enumerate(GL_SCRIPT):
+        nxt = GL_SCRIPT[i + 1][0] if i + 1 < len(GL_SCRIPT) else H
+        t1 = min(nxt, t0 + 1 / 30 + .001)
+        if t0 < N <= t1 or t0 < C <= t1:
+            t1 = min(t1, N if t0 < N else C)
+        frames.append((t0, t1, fx.split(), 'ic' if t0 >= C else 'sn'))
+    css, html = [], {}
+    # 色ずれ・横ズレ（押した瞬間の画面とアイコンでべつべつ）
+    slices = {'sn': [], 'ic': []}
+    for g, n in (('sn', 12), ('ic', 8)):
+        for k in range(n):
+            y = rnd.uniform(0, 800); h = rnd.uniform(14, 60)
+            slices[g].append((y, h))
+    for g in ('sn', 'ic'):
+        segs_o, segs_r, segs_c = [], [], []
+        sl_segs = [[] for _ in slices[g]]
+        for t0, t1, fx, gg in frames:
+            if gg != g:
+                continue
+            for f in fx:
+                if f[0] == 'S':
+                    d = float(f[1:])
+                    segs_o.append((t0, t1, 1)); segs_r.append((t0, t1, (-d, 0))); segs_c.append((t0, t1, (d, rnd.choice([-1, 1]))))
+                if f[0] == 'L':
+                    a = float(f[1:])
+                    for k in rnd.sample(range(len(slices[g])), 4):      # 1コマでずれる帯は4本まで（画面の明るさが大きく変わらないように）
+                        sl_segs[k].append((t0, t1, (rnd.choice([-1, 1]) * rnd.uniform(.25, 1) * a, rnd.random() < .25)))
+        css.append(kf_steps(f'gS{g}', E, segs_o, 0, lambda v: f'opacity:{v}'))
+        css.append(kf_steps(f'gR{g}', E, segs_r, (0, 0), lambda v: f'translate:{v[0]:g}px {v[1]:g}px'))
+        css.append(kf_steps(f'gC{g}', E, segs_c, (0, 0), lambda v: f'translate:{v[0]:g}px {v[1]:g}px'))
+        css.append(f'.gl .{g} .gS{{animation:gS{g} {fz_sec(E)} steps(1) both}}.gl .{g} .gS i{{animation:gR{g} {fz_sec(E)} steps(1) both}}.gl .{g} .gS i + i{{animation:gC{g} {fz_sec(E)} steps(1) both}}')
+        els = []
+        for k, ((y, h), segs) in enumerate(zip(slices[g], sl_segs)):
+            name = f'sl{g}{k}'
+            css.append(kf_steps(name, E, [(a, b, v) for a, b, v in segs], None,
+                                lambda v: 'opacity:0;translate:0 0;filter:none' if v is None else f'opacity:1;translate:{v[0]:.0f}px 0;filter:{"invert(1) hue-rotate(90deg)" if v[1] else "none"}'))
+            pos = f'0 {-y:.0f}px' if g == 'sn' else f'-795px {-148 - y:.0f}px'
+            els.append(f'<i class="sl" style="top:{y:.0f}px;height:{h:.0f}px;background-position:{pos};animation:{name} {fz_sec(E)} steps(1) both"></i>')
+        html[g] = ''.join(els)
+    # かぶせる色・縦の線・砂嵐
+    for name, key in (('gw1', 'w1'), ('gw2', 'w2'), ('gw3', 'w3'), ('gw4', 'w4'), ('gvl', 'V')):
+        segs = [(t0, t1, 1) for t0, t1, fx, _ in frames if key in fx]
+        css.append(kf_steps(name, E, segs, 0, lambda v: f'opacity:{v}'))
+    segs = [(t0, t1, float(f[1:])) for t0, t1, fx, _ in frames for f in fx if f[0] == 'N']
+    css.append(kf_steps('gsw', E, segs, 0, lambda v: f'opacity:{v:g}'))
+    css.append(f'.gl .gw.w1{{animation:gw1 {fz_sec(E)} steps(1) both}}.gl .gw.w2{{animation:gw2 {fz_sec(E)} steps(1) both}}'
+               f'.gl .gw.w3{{animation:gw3 {fz_sec(E)} steps(1) both}}.gl .gw.w4{{animation:gw4 {fz_sec(E)} steps(1) both}}'
+               f'.gl .gvl{{animation:gvl {fz_sec(E)} steps(1) both}}.gl .gsw{{animation:gsw {fz_sec(E)} steps(1) both,snj .05s steps(1) infinite}}')
+    # ブロック（色の四角・ずれた画面のかけら）と横の線
+    blocks, tears = [], []
+    for t0, t1, fx, g in frames:
+        if 'B' in fx:
+            for _ in range(5):
+                x, y, w, h = rnd.uniform(-20, 340), rnd.uniform(20, 800), rnd.uniform(30, 220), rnd.uniform(6, 60)
+                if rnd.random() < .45 and g == 'sn':
+                    c = f'url(/_blob/{blobs["fz_warp"]}) {-x + rnd.uniform(-60, 60):.0f}px {-y:.0f}px/390px 844px'
+                else:
+                    c = rnd.choice(GL_COLS)
+                blocks.append(f'<i style="--x:{x:.0f}px;--y:{y:.0f}px;--w:{w:.0f}px;--h:{h:.0f}px;--c:{c};--d:{fz_sec(t0)};--t:{fz_sec(t1 - t0)}"></i>')
+        if 'T' in fx:
+            for _ in range(3):
+                tears.append(f'<i style="--y:{rnd.uniform(30, 820):.0f}px;--h:{rnd.choice([1, 1, 2, 3, 5])}px;--c:{rnd.choice(["#FFFFFF", "#FF2BD6", "#2FD6FF", "#E8FF3A", "#FF3B3B"])};--d:{fz_sec(t0)};--t:{fz_sec(t1 - t0)}"></i>')
+    # 横に流れる光の筋（H〜E）
+    bars = ''.join(f'<b style="--y:{rnd.gauss(422, 150):.0f}px;--h:{rnd.choice([1, 2, 2, 3, 4, 6, 9])}px;--c:{rnd.choice(["#7FE0FF", "#3CFF6A", "#E8FF3A", "#FFFFFF", "#2F8BFF"])};'
+                   f'--d:{fz_sec(H + rnd.uniform(0, .14))};--t:{fz_sec(rnd.uniform(.1, .2))}"></b>' for _ in range(22))
+    html['all'] = (f'<div class="gl" aria-hidden="true">'
+                   f'<div class="sn"><div class="gS"><i></i><i></i></div>{html["sn"]}</div>'
+                   f'<div class="ic"><div class="ib"></div><div class="gS"><i></i><i></i></div>{html["ic"]}</div>'
+                   f'<div class="sm"><div class="st"></div>{bars}</div>'
+                   f'<div class="gw w1"></div><div class="gw w2"></div><div class="gw w3"></div><div class="gw w4"></div>'
+                   f'<div class="gsc"></div><div class="gvl"></div><div class="gsw"></div>'
+                   f'<div class="gbk">{"".join(blocks)}</div><div class="gtr">{"".join(tears)}</div></div>')
+    return dict(css='\n'.join(css) + '\n', html=html['all'])
 
 
-def burst(n, seed, d, dist=(230, 420), size=(12, 20), fall=90):
-    """金のコインがまん中からはじける"""
-    rnd = random.Random(seed)
-    out = []
-    for i in range(n):
-        a = 2 * math.pi * (i + rnd.uniform(-.3, .3)) / n
-        r = rnd.uniform(*dist)
-        out.append(f'<i style="--dx:{math.cos(a) * r:.0f}px;--dy:{math.sin(a) * r + fall:.0f}px;--w:{rnd.uniform(*size):.0f}px;--d:{d + rnd.uniform(0, .08):.2f}s"></i>')
-    return f'<div class="bst">{"".join(out)}</div>'
-
-
-def firework(x, y, d, seed, n=18):
-    """花火（虹色の光の粒が丸く広がる）"""
-    rnd = random.Random(seed)
-    dots = ''.join(f'<i style="--dx:{math.cos(2 * math.pi * i / n) * r:.0f}px;--dy:{math.sin(2 * math.pi * i / n) * r + 14:.0f}px;--c:hsl({int(i * 360 / n)},100%,68%)"></i>'
-                   for i, r in ((i, rnd.uniform(80, 136)) for i in range(n)))
-    return f'<div class="fw" style="--x:{x}px;--y:{y}px;--d:{d:.2f}s">{dots}</div>'
-
-
-def slam_chars(T):
-    """「超」「大」「穴」「!!」が1文字ずつドン（文字ごとに色の輪）"""
-    chars = [('超', 43, 80, T + .08, '#FF3BB8'), ('大', 123, 80, T + .22, '#2FD6FF'), ('穴', 203, 80, T + .36, '#FFE53B'), ('!!', 283, 64, T + .5, '#3BE26A')]
-    out = ''
-    for c, x, w, d, g in chars:
-        out += f'<b style="--x:{x}px;--w:{w}px;--d:{d:.2f}s;--g:{g}"><span class="o">{c}</span><span class="f">{c}</span></b>'
-        out += f'<u style="--x:{x + w / 2:g}px;--d:{d:.2f}s;--g:{g}"></u>'
-    return f'<div class="sl2" aria-hidden="true">{out}</div>'
-
-
-
-def bez_time(u, x1=.5, y1=0, x2=.85, y2=.5):
-    """cubic-bezier の進み u（0〜1）になる時刻（0〜1）"""
-    bx = lambda t: 3 * (1 - t) ** 2 * t * x1 + 3 * (1 - t) * t * t * x2 + t ** 3
-    by = lambda t: 3 * (1 - t) ** 2 * t * y1 + 3 * (1 - t) * t * t * y2 + t ** 3
+def bez_prog(t, x1, y1, x2, y2):
+    """cubic-bezier の時刻 t（0〜1）のときの進み（0〜1）"""
+    bx = lambda s: 3 * (1 - s) ** 2 * s * x1 + 3 * (1 - s) * s * s * x2 + s ** 3
+    by = lambda s: 3 * (1 - s) ** 2 * s * y1 + 3 * (1 - s) * s * s * y2 + s ** 3
     lo, hi = 0.0, 1.0
     for _ in range(40):
         m = (lo + hi) / 2
-        lo, hi = (m, hi) if by(m) < u else (lo, m)
-    return bx((lo + hi) / 2)
+        lo, hi = (m, hi) if bx(m) < t else (lo, m)
+    return by((lo + hi) / 2)
 
 
 def jag(rnd, x0, y0, x1, y1, n, amp):
-    """ギザギザの線（火花）"""
+    """ギザギザの線（稲妻）"""
     pts = []
     for j in range(n + 1):
         u = j / n
@@ -689,79 +793,176 @@ def jag(rnd, x0, y0, x1, y1, n, amp):
     return 'M' + ' L'.join(f'{a:.1f} {b:.1f}' for a, b in pts), pts[-1]
 
 
-def tv_layers(seed=91):
-    """プチュン：1ピクセルの線・線のまわりの細かい砂嵐・ジリジリの火花・左から右へ走る光と、通ったあとの火花"""
+def pc_layers(seed=93):
+    """プチュン：青い画面・白い光・横一本線・まん中のフレア・ジリジリの稲妻・散る光の粒"""
     rnd = random.Random(seed)
-    W = FZ_T['W']
+    E, W, Z = FZ_T['E'], FZ_T['W'], FZ_T['Z']
     y0 = 422
     arcs = []
-    for _ in range(36):            # 線の上のジリジリ（W+.06〜W+.5）
-        d = W + rnd.uniform(.06, .47)
-        x = rnd.uniform(4, 386)
-        L = rnd.uniform(10, 46)
-        side = rnd.choice([-1, 1])
-        path, end = jag(rnd, x - L / 2, y0 + rnd.uniform(-1, 1), x + L / 2, y0 + side * rnd.uniform(1, 8), rnd.randint(3, 6), rnd.uniform(2, 6))
-        arcs.append(f'<path style="--d:{d:.3f}s" d="{path}"></path>')
-        if rnd.random() < .5:
-            arcs.append(f'<circle style="--d:{d:.3f}s" cx="{end[0]:.1f}" cy="{end[1]:.1f}" r=".9"></circle>')
-    for _ in range(14):            # プチュンの直前（W-.18〜W）：画面のあちこちでジリッ
-        d = W - rnd.uniform(.02, .18)
-        x, y = rnd.uniform(20, 370), rnd.uniform(60, 790)
-        a = rnd.uniform(0, 2 * math.pi)
-        L = rnd.uniform(18, 60)
-        path, _ = jag(rnd, x, y, x + math.cos(a) * L, y + math.sin(a) * L, rnd.randint(4, 7), rnd.uniform(3, 8))
-        arcs.append(f'<path style="--d:{d:.3f}s" d="{path}"></path>')
-    sparks = ''
-    for i in range(16):            # 走る光が通ったところから飛ぶ火花
-        u = (i + .5) / 16
-        d = W + .5 + .22 * bez_time(u)
-        sparks += f'<i style="--x:{390 * u:.1f}px;--d:{d:.3f}s;--dx:{rnd.uniform(-3, 10):.0f}px;--dy:{rnd.choice([-1, 1]) * rnd.uniform(5, 16):.0f}px"></i>'
-    return (f'<div class="tvw" aria-hidden="true"><div class="tvs"></div><div class="tvl"></div>'
-            f'<svg class="tva" viewBox="0 0 390 844">{"".join(arcs)}</svg><div class="tvh"></div><div class="tvp">{sparks}</div></div>')
+
+    def add(path, d, t, sw):
+        arcs.append(f'<path style="--d:{fz_sec(d)};--t:{fz_sec(t)};stroke-width:{sw}" d="{path}"></path>')
+    for _ in range(20):            # 青い画面のジリジリ（E〜W）：まん中の横の帯のあたりに大きめの稲妻
+        d, t = rnd.uniform(E + .02, W - .02), rnd.uniform(.035, .07)
+        x, y = rnd.uniform(10, 380), y0 + rnd.gauss(0, 55)
+        L, a = rnd.uniform(40, 150), math.radians(rnd.uniform(-25, 25)) + rnd.choice([0, math.pi])
+        add(jag(rnd, x, y, x + math.cos(a) * L, y + math.sin(a) * L, rnd.randint(5, 9), rnd.uniform(8, 22))[0], d, t, 1.4)
+    for _ in range(40):            # 横一本線のまわり（W〜Z）：線にまとわりつく細かい稲妻
+        d, t = rnd.uniform(W + .05, Z - .01), rnd.uniform(.03, .06)
+        x, L, side = rnd.uniform(0, 390), rnd.uniform(14, 60), rnd.choice([-1, 1])
+        path, end = jag(rnd, x - L / 2, y0 + rnd.uniform(-1, 1), x + L / 2, y0 + side * rnd.uniform(2, 14), rnd.randint(3, 6), rnd.uniform(2, 7))
+        add(path, d, t, .9)
+        if rnd.random() < .45:
+            arcs.append(f'<circle style="--d:{fz_sec(d)};--t:{fz_sec(t)}" cx="{end[0]:.1f}" cy="{end[1]:.1f}" r="1"></circle>')
+    for _ in range(12):            # 線が縮むとき（Z〜）：残っている線の上だけ
+        d, t = rnd.uniform(Z, Z + .15), rnd.uniform(.03, .05)
+        hw = 195 * (1 - bez_prog((d - Z) / .18, .55, 0, .9, .45))
+        x, L, side = rnd.uniform(195 - hw, 195 + hw), rnd.uniform(10, 36), rnd.choice([-1, 1])
+        add(jag(rnd, x - L / 2, y0, x + L / 2, y0 + side * rnd.uniform(2, 10), rnd.randint(3, 5), rnd.uniform(2, 5))[0], d, t, .9)
+    dust = ''
+    for _ in range(28):            # 点になったところから散る光の粒
+        x = 195 + rnd.uniform(-36, 36)
+        dust += (f'<i style="--x:{x:.1f}px;--y:{y0 + rnd.uniform(-3, 3):.1f}px;--d:{fz_sec(Z + rnd.uniform(.1, .22))};--t:{fz_sec(rnd.uniform(.3, .55))};'
+                 f'--dx:{(x - 195) * rnd.uniform(.5, 1.6) + rnd.uniform(-20, 20):.0f}px;--dy:{rnd.uniform(-26, 26):.0f}px"></i>')
+    return (f'<div class="pc" aria-hidden="true"><div class="pcb"></div><div class="pcg"></div><div class="pcl"></div>'
+            f'<div class="pcf"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div>'
+            f'<svg class="pca" viewBox="0 0 390 844">{"".join(arcs)}</svg><div class="pcd">{dust}</div></div>')
 
 
-def icon_show():
-    """テンゲルのアイコン（3秒）：虹色の残像3つ（うしろ）＋アイコン＋上と下に当たったときの白い輪"""
-    B = FZ_T['B']
-    ghosts = ''.join(f'<div class="tic {g}"><div class="tiv"><div class="tis"><i class="gh"></i></div></div></div>' for g in ('g3', 'g2', 'g1'))
-    main = '<div class="tic"><div class="tiv"><div class="tis"><i class="tib"></i><i class="tii"></i></div></div></div>'
-    hits = ((.22, 159), (.36, 685), (.50, 159), (.64, 685), (.78, 159), (.91, 685))      # ticY の 上（34px）・下（560px）
-    rings = ''.join(f'<i class="tir" style="--y:{y}px;--d:{B + 3 * p:.2f}s"></i>' for p, y in hits)
-    return rings + ghosts + main
+def zigzag():
+    """S2：ネオンのギザギザ（12の角の星）が16重。外ほど太い"""
+    out = []
+    for k in range(16):
+        R = 80 * 1.3 ** k
+        pts = ' '.join(f'{(R if i % 2 == 0 else R * .6) * math.cos(math.pi * i / 12 + (k % 2) * math.pi / 12):.0f},'
+                       f'{(R if i % 2 == 0 else R * .6) * math.sin(math.pi * i / 12 + (k % 2) * math.pi / 12):.0f}' for i in range(24))
+        h, sw = (k * 53 + 300) % 360, 5 + k * 2.6
+        out.append(f'<polygon points="{pts}" stroke="hsl({h},100%,58%)" stroke-width="{sw * 2.4:.1f}" stroke-opacity=".32"></polygon>'
+                   f'<polygon points="{pts}" stroke="hsl({h},100%,60%)" stroke-width="{sw:.1f}"></polygon>'
+                   f'<polygon points="{pts}" stroke="#FFFFFF" stroke-width="{sw * .3:.1f}"></polygon>')
+    return f'<svg viewBox="-1400 -1400 2800 2800" fill="none" stroke-linejoin="miter" aria-hidden="true">{"".join(out)}</svg>'
+
+
+def neon_icon(alt=False):
+    return f'<div class="nic{" alt" if alt else ""}"><div class="nv"><i class="ng"></i><i class="nc"></i></div></div>'
+
+
+def mt_layers(seed=71):
+    """虹色ネオンの超高速カット（S1〜S7）と、文字の壁の1コマごとの動き（CSS）"""
+    rnd = random.Random(seed)
+    M = FZ_T['M']
+    css = []
+    # S3：T・E・N・G・E・R（Dela Gothic One 64px の字の幅）
+    adv = [60.1, 55.5, 58.8, 58.8, 55.5, 56.5]
+    x = (390 - sum(adv)) / 2
+    letters = ''
+    for i, (ch, a, c) in enumerate(zip('TENGER', adv, ['#FF2BD6', '#FFE53B', '#3CFF6A', '#2FD6FF', '#FF9F1A', '#B34CFF'])):
+        letters += (f'<b style="--x:{x:.1f}px;--c:{c};--d:{fz_sec(M + 1.66 + i * .035)};--sx:{rnd.choice([-1, 1]) * rnd.uniform(90, 200):.0f}px;'
+                    f'--sy:{rnd.choice([-1, 1]) * rnd.uniform(120, 300):.0f}px;--sr:{rnd.choice([-1, 1]) * rnd.uniform(30, 80):.0f}deg;--ss:{rnd.uniform(1.8, 2.8):.2f}">{ch}</b>')
+        x += a
+    # S4：超・大・穴・!!
+    kj = ''
+    for ch, x, y, w, fs, d, c1, c2, c3, g in (('超', 14, 150, 190, 190, 2.32, '#FFF26B', '#FF5AD2', '#8A2BFF', '#FF2BD6'),
+                                               ('大', 186, 300, 190, 190, 2.62, '#B8FFF6', '#2FD6FF', '#3C5BFF', '#2FD6FF'),
+                                               ('穴', 30, 455, 190, 190, 2.92, '#FFF6B0', '#FFB21A', '#FF3B3B', '#FFB21A'),
+                                               ('!!', 236, 470, 120, 150, 3.08, '#E8FFB0', '#3CFF6A', '#0FA850', '#3CFF6A')):
+        kj += (f'<b style="--x:{x}px;--y:{y}px;--w:{w}px;--h:{int(fs * 1.16)}px;--fs:{fs}px;--d:{fz_sec(M + d)};--c1:{c1};--c2:{c2};--c3:{c3};--g:{g}">'
+               f'<span class="o">{ch}</span><span class="f">{ch}</span></b>')
+    # S5：赤い画面に「超大穴」の文字の壁（行ごとに横にガクッとずれる）
+    rows = ''
+    for k in range(22):
+        name = f'rw{k}'
+        segs = []
+        for _ in range(3):
+            t0 = rnd.uniform(0, .36)
+            segs.append((t0, t0 + rnd.uniform(.03, .07), rnd.uniform(-70, 40)))
+        segs.sort()
+        clean = []
+        for s in segs:
+            if not clean or s[0] >= clean[-1][1]:
+                clean.append(s)
+        css.append(kf_steps(name, .4, clean, 0, lambda v: f'translate:{v:.0f}px 0'))
+        col = ['#FFE600', '#FFFFFF', '#2A0006', '#FF9AB0'][k % 4]
+        rows += f'<p style="--y:{-10 + 40 * k}px;--c:{col};animation:{name} .4s steps(1) {fz_sec(M + 3.4)} both">{"超大穴" * 14}</p>'
+    bars = ''.join(f'<i style="--y:{rnd.uniform(0, 820):.0f}px;--h:{rnd.uniform(6, 40):.0f}px;--d:{fz_sec(M + 3.4 + rnd.uniform(0, .36))};--t:{fz_sec(rnd.uniform(.04, .08))}"></i>' for _ in range(6))
+    html = f'''<div class="mt" aria-hidden="true">
+      <div class="sc s1"><div class="bg"></div><div class="dk"></div><i class="chv v"></i><i class="chv h"></i>{neon_icon()}</div>
+      <div class="sc s2"><div class="zz">{zigzag()}</div></div>
+      <div class="sc s3"><div class="stf"></div><div class="spd"></div><div class="lgl"></div><div class="spk">{sparkles(18, 43, white=True)}</div><div class="lt">{letters}</div></div>
+      <div class="sc s4"><div class="stf"></div><div class="spd"></div><div class="orb"></div><div class="spk">{sparkles(26, 47)}</div><i class="chl"></i><div class="kj">{kj}</div></div>
+      <div class="sc s5">{rows}{bars}</div>
+      <div class="sc s6"><div class="tn"></div><div class="bu"></div><div class="bs"></div></div>
+      <div class="sc s7"><div class="stf"></div><div class="spd"></div>{neon_icon(alt=True)}<div class="spk">{sparkles(16, 53)}</div><div class="fr">FREEZE</div></div>
+      <div class="mfl a"></div><div class="mfl b"></div>
+    </div>'''
+    return dict(css='\n'.join(css) + '\n', html=html)
+
+
+def explosion(seed=97):
+    """白い爆発（ギザギザのふちが桃・黄・水色）"""
+    rnd = random.Random(seed)
+    n = 64
+    rs = [rnd.uniform(.55, 1.0) if i % 2 == 0 else rnd.uniform(.28, .5) for i in range(n)]
+    poly = lambda sc: ' '.join(f'{450 + 440 * sc * r * math.cos(2 * math.pi * i / n):.0f},{450 + 440 * sc * r * math.sin(2 * math.pi * i / n):.0f}' for i, r in enumerate(rs))
+    return ('<svg viewBox="0 0 900 900" aria-hidden="true">'
+            + ''.join(f'<polygon points="{poly(sc)}" fill="{c}"></polygon>' for c, sc in (('#FF2BD6', 1.12), ('#FFE53B', 1.07), ('#2FD6FF', 1.03), ('#FFFFFF', 1.0))) + '</svg>')
+
+
+def embers(n, seed):
+    """炎の粒（下から上へ）"""
+    rnd = random.Random(seed)
+    F = FZ_T['F']
+    return ''.join(f'<i style="--x:{rnd.uniform(0, 390):.0f}px;--s:{rnd.uniform(3, 6):.1f}px;--t:{rnd.uniform(1.6, 3.2):.2f}s;--d:{F + rnd.uniform(0, 2):.2f}s;--dx:{rnd.uniform(-60, 60):.0f}px"></i>' for _ in range(n))
+
+
+def dlogo():
+    """「ど的中」（外側の黒いふち・金のふち・内側のふち・炎の色・光が走る）＋上の小さい英語＋きらめき"""
+    F = FZ_T['F']
+    word = '<small>ど</small>的中'
+    layers = ''.join(f'<span class="{c}">{word}</span>' for c in ('o1', 'o2', 'o3', 'f', 'h'))
+    glints = ''.join(f'<b style="--x:{x}px;--y:{y}px;--s:{s}px;--d:{F + .5 + i * .15:.2f}s"></b>'
+                     for i, (x, y, s) in enumerate(((52, 70, 22), (150, 44, 28), (262, 40, 24), (352, 92, 30), (300, 178, 20), (86, 176, 24))))
+    rnd = random.Random(23)
+    flames = ''
+    for i in range(15):
+        cx = 12 + i * 26.3 + rnd.uniform(-7, 7)
+        w, h, base = rnd.uniform(46, 78), rnd.uniform(120, 200) * (1.15 if 4 <= i <= 10 else .85), 168 + rnd.uniform(-6, 6)
+        d = (f'M{cx - w / 2:.0f} {base:.0f} C{cx - w / 2:.0f} {base - h * .45:.0f} {cx - w * .12:.0f} {base - h * .55:.0f} {cx + rnd.uniform(-6, 6):.0f} {base - h:.0f} '
+             f'C{cx + w * .12:.0f} {base - h * .55:.0f} {cx + w / 2:.0f} {base - h * .45:.0f} {cx + w / 2:.0f} {base:.0f} Z')
+        flames += f'<path d="{d}" fill="url(#dflg)" style="--t:{rnd.uniform(.14, .26):.2f}s;--d:{-rnd.uniform(0, .3):.2f}s"></path>'
+    grad = ('<defs><linearGradient id="dflg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFE680" stop-opacity="0"></stop><stop offset=".1" stop-color="#FFFFFF"></stop><stop offset=".26" stop-color="#FFE680"></stop>'
+            '<stop offset=".5" stop-color="#FF9A00" stop-opacity=".95"></stop><stop offset=".8" stop-color="#FF3A00" stop-opacity=".6"></stop>'
+            '<stop offset="1" stop-color="#B00000" stop-opacity="0"></stop></linearGradient></defs>')
+    return (f'<div class="dlg" role="img" aria-label="ど的中"><div class="dfl"></div><svg class="ffl" viewBox="0 0 390 200" aria-hidden="true">{grad}{flames}</svg>'
+            f'<div class="dr"></div><div class="dsb">SUPER LONGSHOT</div><div class="dw">{layers}</div><div class="dsp">{glints}</div></div>')
+
 
 def fz_layers(bets, total):
-    """フリーズの押したあと（下から）：黒 → ゆれる層（虹の画面・2秒の演出・馬とボード）→ 画面のふちの虹 → 歪み（→ プチュン）→ 線・点・星 → 白い光"""
+    """フリーズの押したあと（下から）：黒 → 炎の画面（「ど的中」・馬とボード）→ ネオンのカット → プチュン → グリッチ → 爆発"""
     rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
     ring = '<i class="halo" aria-hidden="true"><i><b></b></i></i>'
-    B, T, S = FZ_T['B'], FZ_T['T'], FZ_T['S']
-    bolts = bolt(41, 34, -12, 150, 430, B) + bolt(43, 362, -12, 248, 470, B) + bolt(47, 210, -12, 196, 300, S, n=9, amp=20)
-    show = ('<div class="sp" aria-hidden="true"><div class="spl"></div>'
-            + burst(36, 71, B + 1.1) + burst(28, 73, B + 2.0, dist=(160, 330), size=(10, 16))
-            + firework(84, 196, B + 1.3, 81) + firework(304, 236, B + 1.75, 83) + firework(196, 640, B + 2.2, 85) + firework(96, 560, B + 2.6, 87)
-            + icon_show() + bolt(61, 120, -12, 170, 362, T + .6, n=9, amp=18) + slam_chars(T) + '</div>')
+    R = FZ_T['R']
     return f'''<div class="blk"></div>
-    <div class="shk">
-      <div class="fzbg"></div><div class="vig"></div>
-      <div class="beams"><i></i><i></i></div>
-      <div class="rbow"></div><div class="glow"></div>
-      <div class="ring r1"></div><div class="ring r4"></div>
-      {bolts}
-      {show}
-      <div class="spk">{sparkles(34, 13)}</div>
-      <div class="conf cb">{coins(22, 8, B + .1)}</div>
+    <div class="fin"><div class="fsk">
+      <div class="fb"></div><div class="frr"></div>
+      <div class="emb">{embers(36, 11)}</div>
+      <div class="conf cb">{coins(22, 8, R)}</div>
       <div class="hb">
         <img src="/_blob/{blobs['back']}" alt="ボードを持つ馬">
         {board('フリーズ的中!!!', bets, total, top_first=True, rib=rib, mark=(FZ_X,), ring=ring)}
         <img src="/_blob/{blobs['front']}" alt="">
       </div>
-      <div class="conf">{confetti(40, 7, rainbow=True, d0=B + .05)}</div>
-      <div class="spk top">{sparkles(12, 17)}</div>
-    </div>
-    <div class="rvw"><div class="edge"></div><div class="frame"><b></b></div></div>
-    {warp_layers()}
-    {tv_layers()}
-    <div class="igg"></div><div class="ign"></div>
-    <div class="flash fz"></div>'''
+      {dlogo()}
+      <div class="conf">{confetti(40, 7, rainbow=True, d0=R)}</div>
+    </div></div>
+    {MT['html']}
+    {pc_layers()}
+    {GL['html']}
+    <div class="xf" aria-hidden="true"><div class="xpl">{explosion()}</div><div class="xf2"></div></div>'''
+
+
+GL = glitch()
+MT = mt_layers()
 
 
 def page(kind):
@@ -878,18 +1079,18 @@ class Component extends DCLogic {{
 '''
 
 
-MEMO_W, MEMO_H = 2200, 1300
+MEMO_W, MEMO_H = 2200, 1360
 
 
 def memo_page():
-    """メモのボード（静止画11枚＋Fableに渡す決まり）"""
+    """メモのボード（静止画13枚＋Fableに渡す決まり）"""
     def still(key, cap):
         return f'<figure class="st"><img src="/_blob/{blobs[key]}" alt="{cap}"><figcaption>{cap}</figcaption></figure>'
     hit = still('s_hit_form', '① 記録する') + still('s_hit_push', '② PUSHが上下に動く') + still('s_hit_board', '③ タップ → 馬がボード')
     big = still('s_big_push', '① 大きいPUSH（虹の輪）') + still('s_big_light', '② 虹色の光に包まれる') + still('s_big_board', '③ 光の中から馬がボード')
-    fz = (still('s_fz_push', '① 虹色の超デカPUSH') + still('s_fz_warp', '② 歪み＋砂嵐（1秒）') + still('s_fz_off', '③ プチュン（ジリジリ）')
-          + still('s_fz_show', '④ テンゲルのアイコン（3秒）') + still('s_fz_board', '⑤ 雷の中から馬がボード'))
-    Wt, B, T, S = FZ_T['W'], FZ_T['B'], FZ_T['T'], FZ_T['S']
+    fz = (still('s_fz_push', '① 虹色の超デカPUSH') + still('s_fz_glitch', '② 画面がバグる') + still('s_fz_line', '③ プチュン（横一本線）')
+          + still('s_fz_neon', '④ ネオンの超高速カット') + still('s_fz_kanji', '⑤「超」「大」「穴」') + still('s_fz_logo', '⑥ ど的中') + still('s_fz_result', '⑦ 炎の中から馬がボード'))
+    N, C, H, E, W, Z, M, F, R = (FZ_T[k] for k in 'NCHEWZMFR')
     sec = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.')
     return f'''<!doctype html>
 <html lang="ja">
@@ -909,7 +1110,7 @@ body{{margin:0}}
 .gd{{width:{MEMO_W}px;height:{MEMO_H}px;overflow:hidden;background:#F4F2EC;color:#22252E;font-family:"BIZ UDPGothic",sans-serif;padding:34px 40px 0}}
 .t1{{margin:0;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-height:1.2;color:#161F3D}}
 .t2{{margin:8px 0 0;max-width:1560px;font-size:14.5px;line-height:1.7;color:#4E5466}}
-.rows{{display:grid;grid-template-columns:3fr 3fr 5fr;gap:20px;margin-top:20px}}
+.rows{{display:grid;grid-template-columns:3fr 3fr 7fr;gap:20px;margin-top:20px}}
 .grp{{background:#FFFFFF;border:1px solid #DDD8CC;border-radius:14px;padding:14px 16px}}
 .grp.fzg{{border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8) border-box}}
 .grp h2{{margin:0 0 10px;font-size:17px;color:#161F3D}}
@@ -928,7 +1129,7 @@ body{{margin:0}}
 </helmet>
 <div class="gd">
   <h1 class="t1">的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）</h1>
-  <p class="t2">まさちゃんの指定：記録して <b>当たり → 的中ボタン</b>、<b>3連単が当たり → デカ的中ボタン</b>、<b>3連単の当たりに超大穴（10〜12番人気）の馬 → フリーズ的中ボタン</b>。タップすると、壁紙の馬がボードを持って出てきて、当たった買い目を報告する。フリーズは、虹色にギラギラ光るめちゃくちゃデカいPUSH → タップで画面が止まって1秒グニャッと歪む（テレビの砂嵐が混ざる）→「プチュン」（1ピクセルの線がジリジリ → 光が横に走って消える）→ テンゲルのアイコンが虹色に光りながら画面いっぱいに上下に3秒 →「超大穴!!」→ 雷の中から馬がボード。となりの3つの画面は、タップで動く見本（どれもデフォルト＝全テーマ共通の動き）。</p>
+  <p class="t2">まさちゃんの指定：記録して <b>当たり → 的中ボタン</b>、<b>3連単が当たり → デカ的中ボタン</b>、<b>3連単の当たりに超大穴（10〜12番人気）の馬 → フリーズ的中ボタン</b>。タップすると、壁紙の馬がボードを持って出てきて、当たった買い目を報告する。フリーズは、まさちゃんの送ってくれたパチスロのフリーズの動画のように（台の絵や文字は使わない）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップで画面がバグる → テンゲルのアイコンのドアップ → 画面が青く光って青白い横一本線に「プチュン」（静電気がジリジリ → 点に縮んで消える）→ 真っ暗のまま2秒 → 虹色ネオンの超高速カット → 白い爆発 →「ど的中」が炎と光の中からドーン → 炎の中から馬がボード。となりの3つの画面は、タップで動く見本（どれもデフォルト＝全テーマ共通の動き）。</p>
   <div class="rows">
     <section class="grp"><h2>的中ボタン<small>当たったとき</small></h2><div class="sts">{hit}</div></section>
     <section class="grp"><h2>デカ的中ボタン<small>3連単が当たったとき</small></h2><div class="sts">{big}</div></section>
@@ -937,12 +1138,12 @@ body{{margin:0}}
   <div class="boxes">
     <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・外れ・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり）＞ <b>的中</b>（それ以外の当たり）</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
     <div class="box"><h3>流れと時間（的中・デカ）</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>：押す → 0.2秒 白く光る → 0.25秒 虹の光の筋と輪 → 0.85秒 光の中から馬 → 1.5秒「デカ的中!!」→ 1.75秒〜 買い目 → 2.5秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
-    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>歪み（0〜{sec(Wt)}秒）</b>：押した瞬間の画面が止まって、細い帯（44本）に切れて波のように左右にずれる（だんだん強く・ちぎれる・色ずれ・走査線・縦にガクッ）。テレビの砂嵐が4回ザザッと強くなり、帯になって上から下へ流れ、最後は画面ぜんぶ砂嵐</li><li><b>プチュン（{sec(Wt)}秒）</b>：砂嵐の画面が縦につぶれて、いちばん細い白い線（画面の点1つぶん）→ ジリジリ静電気（{sec(Wt + .06)}〜{sec(Wt + .5)}秒：線がチラチラ・細い火花・線のまわりに細かい砂嵐）→ 光が線の上を左から右へ走って、通ったところから消える（〜{sec(Wt + .72)}秒）→ 真っ暗 → {sec(B - .28)}秒 まん中に光の星</li><li><b>{sec(B)}〜{sec(T)}秒 テンゲルのアイコン（3秒）</b>：ドーン（白い光・雷2本・ゆれ）→ アイコン（250px・角の丸い四角）が虹色に光りながら左右にブルブル、画面いっぱいに上下に3往復（虹色の残像3つ・上と下に当たるたびに白い輪とゆれ）・集中線・金のコイン・花火 → 上で止まる</li><li><b>{sec(T)}秒</b>〜「超」「大」「穴」「!!」が1文字ずつドン → {sec(T + .6)}秒 雷 → アイコンと文字が手前へ飛んで消える → <b>{sec(S)}秒</b> 雷の中から馬がボード → {sec(S + .6)}秒「フリーズ的中!!!」→ {sec(S + .85)}秒〜 買い目 → {sec(S + .85 + .45 + .35)}秒 とじる</li></ul></div>
-    <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → ゆれる層（夜空・光の筋・サーチライト・光・輪・雷・演出（集中線・コイン・花火・白い輪・アイコンの残像・アイコン・「超大穴!!」）・きらめき・コイン・馬とボード・紙ふぶき）→ 画面のふちの虹 → 歪み（押した瞬間の画面の絵を帯に切ったもの・走査線・ノイズ・砂嵐）→ プチュン（細かい砂嵐・線・火花・走る光）→ 星 → 白い光 → とじる</li></ul></div>
-    <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。押したあとに回る虹（虹のぐるぐる）は使わない</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>光と見やすさ</h3><ul><li>強く光るのは<b>1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため）：{sec(Wt)}秒（プチュン）・{sec(B)}秒（ドーン）・{sec(T + .6)}秒（雷）・{sec(S)}秒（雷と馬）。いちばん近いところでも1秒に2回。砂嵐は明るさがほぼ一定（灰色）</li><li>iPhoneの「視差効果を減らす」がオンなら：上下・ふるえ・回転・広がる光・紙ふぶき・きらめき・歪み・砂嵐・プチュン・アイコンの演出・ゆれ・雷・白い光を止める。フリーズは押すと1秒真っ暗 → 夜空の画面と馬・ボードをふわっと出す</li><li>音は見本に入れていない</li></ul></div>
-    <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>だけ（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）。虹・雷・コイン・星・花火・文字・砂嵐はCSSとSVG</li><li>歪みに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
+    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面が1コマ（1/30秒）ずつバグる：横にズレる・赤と水色に色ずれ・緑で色が反転・暗く・水色に白く・紫・ブロック・横の線・縦の線・走査線・砂嵐 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光が2回ふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま約2秒</b>（フリーズの間）</li><li><b>虹色ネオンの超高速カット（{sec(M)}〜{sec(F)}秒）</b>：白く光る → テンゲルのアイコン（ネオンの線画・画面よりデカい）が虹色に光りながら左右にブルブル・上下に動く（矢印の帯）→ ネオンのギザギザのトンネル → 一瞬真っ暗 → T・E・N・G・E・R が集まる → 白く光る →「超」「大」「穴」「!!」がドン（星空・集中線・光の玉）→ 赤い画面に「超大穴」の文字の壁（バグる）→ 虹のトンネル → 虹の光がはじける → アイコンのドアップ（ネオン）に「FREEZE」</li><li><b>{sec(F)}秒 白い爆発 →「ど的中」</b>が炎と光の中からドーン（光の輪・ゆれ・炎がゆらゆら・光がサッと走る・きらめき。上に小さく SUPER LONGSHOT）→ {sec(R - .35)}秒 上へ → <b>{sec(R)}秒</b> 炎の中から馬がボード → {sec(R + .6)}秒「フリーズ的中!!!」→ {sec(R + .85)}秒〜 買い目 → {sec(R + .85 + .45 + .35)}秒 とじる</li></ul></div>
+    <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → 炎の画面（ゆれる：炎の色・光の筋・炎の粒・コイン・馬とボード・「ど的中」・紙ふぶき）→ ネオンのカット（7つ・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・アイコンのドアップ・横に流れる光・かぶせる色・走査線・縦の線・砂嵐・ブロック・横の線）→ 白い爆発・光 → とじる</li></ul></div>
+    <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>光と見やすさ</h3><ul><li>強く光るのは<b>1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため）。パチスロのように1コマごとに白と黒をチカチカさせない（ネオンは色が流れる・形が動く）。白く光るのは {sec(M)}秒・{sec(M + 2.2)}秒・{sec(F)}秒（爆発）・{sec(R - .45)}秒の4回、バグるところの水色は0.1秒と1秒の2回だけ。動画の明るさを1コマずつ測って確かめた</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・爆発・ゆれ・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す</li><li>音は見本に入れていない</li></ul></div>
+    <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・矢印・爆発・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
   </div>
 </div>
 </x-dc>
@@ -958,7 +1159,8 @@ class Component extends DCLogic {{
 '''
 
 
-STILLS = ('s_hit_form', 's_hit_push', 's_hit_board', 's_big_push', 's_big_light', 's_big_board', 's_fz_push', 's_fz_warp', 's_fz_off', 's_fz_show', 's_fz_board')
+STILLS = ('s_hit_form', 's_hit_push', 's_hit_board', 's_big_push', 's_big_light', 's_big_board',
+          's_fz_push', 's_fz_glitch', 's_fz_line', 's_fz_neon', 's_fz_kanji', 's_fz_logo', 's_fz_result')
 
 if __name__ == '__main__':
     out = os.environ.get('FX_OUT', P)
