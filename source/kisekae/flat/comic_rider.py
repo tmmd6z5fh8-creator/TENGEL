@@ -92,10 +92,33 @@ def comic_lock(col, alpha, pts, w0, base, lw, rng, tip=0.9, leaf=True, strands=2
     return col, np.maximum(alpha, np.maximum(m, ol))
 
 
+def fill_holes(R, max_area=900):
+    """形の中の小さな穴（光線がすきまをぬけた所）を、となりの画素の値でうめる"""
+    from scipy import ndimage
+    inside = R['a'] > 0.5
+    n_, lab_, st_, _ = cv2.connectedComponentsWithStats((~inside).astype(np.uint8), connectivity=4)
+    H3, W3 = inside.shape
+    hole = np.zeros_like(inside)
+    for i in range(1, n_):
+        x, y, w_, h_, ar = st_[i]
+        if ar <= max_area and x > 0 and y > 0 and x + w_ < W3 and y + h_ < H3:
+            hole |= lab_ == i
+    if not hole.any():
+        return 0
+    _, (iy, ix) = ndimage.distance_transform_edt(~inside, return_indices=True)
+    for k in ('a', 'd', 'n', 'm', 'rgb', 'ao'):
+        if k in R:
+            R[k] = R[k].copy()
+            R[k][hole] = R[k][iy[hole], ix[hole]]
+    return int(hole.sum())
+
+
 def paint_comic(R, look, debug=None):
     """look: lw（線の太さの倍率）・num・seed・tail・mane・socks（白い靴下の足）・blaze（流星）
        戻り値：1倍の (rgb, alpha)。R に hooves1（1倍のひづめ）・tail_ends を入れる"""
     s = R['s']
+    if look.get('fill_holes', True):
+        fill_holes(R)
     a = np.clip(R['a'], 0, 1)
     inside = a > 0.5
     H3, W3 = a.shape
@@ -167,9 +190,15 @@ def paint_comic(R, look, debug=None):
     part[girth] = 6
     hc = J['head']
     q = Pn - hc
-    front = (part == 12) & (q[..., 0] > 0.005 * js) & (q[..., 1] < -0.036 * js)
-    part[front & (q[..., 1] > -0.066 * js)] = 16                       # ゴーグル（ひさしのすぐ下）
-    part[front & (q[..., 1] <= -0.066 * js)] = 15                      # 顔
+    if 'head_r' in J:                                                  # 大きめの頭（toon_rider）：顔を広く
+        hr = J['head_r']
+        front = (part == 12) & (q[..., 0] > 0.02 * hr) & (q[..., 1] < -0.22 * hr)
+        part[front & (q[..., 1] > -0.52 * hr)] = 16
+        part[front & (q[..., 1] <= -0.52 * hr)] = 15
+    else:
+        front = (part == 12) & (q[..., 0] > 0.005 * js) & (q[..., 1] < -0.036 * js)
+        part[front & (q[..., 1] > -0.066 * js)] = 16                   # ゴーグル（ひさしのすぐ下）
+        part[front & (q[..., 1] <= -0.066 * js)] = 15                  # 顔
     for z in (1, -1):
         kn = J[f'knee{z}']
         part[(part == 14) & (np.linalg.norm(Pn - kn, axis=-1) < 0.075 * js)] = 17
@@ -208,9 +237,12 @@ def paint_comic(R, look, debug=None):
         tbest = np.full(m.shape, -1.0, np.float32)
         dbest = np.full(m.shape, 9.0, np.float32)
         for z in (1, -1):
-            sh = np.array([w[0] + 0.06 * js, w[1] + 0.34 * js, 0.13 * z * js])
-            el = np.array([w[0] + 0.10 * js, w[1] + 0.18 * js, 0.21 * z * js])
-            hd = np.array([w[0] + 0.36 * js, w[1] + 0.06 * js, 0.10 * z * js])
+            if f'arm{z}' in J:
+                sh, el, hd = (np.asarray(v, float) for v in J[f'arm{z}'])
+            else:
+                sh = np.array([w[0] + 0.06 * js, w[1] + 0.34 * js, 0.13 * z * js])
+                el = np.array([w[0] + 0.10 * js, w[1] + 0.18 * js, 0.21 * z * js])
+                hd = np.array([w[0] + 0.36 * js, w[1] + 0.06 * js, 0.10 * z * js])
             d1, t1 = segd(sh, el)
             d2, t2 = segd(el, hd)
             l1, l2 = np.linalg.norm(el - sh), np.linalg.norm(hd - el)
@@ -256,6 +288,12 @@ def paint_comic(R, look, debug=None):
         if key in R:
             pm = R[key].astype(np.uint8)
             patb |= (cv2.morphologyEx(pm, cv2.MORPH_GRADIENT, np.ones((3, 3), np.uint8)) > 0) & np.isin(part, (10, 11))
+    def drop_small(mk, lim):                                           # 小さな島の線（3Dの形のつなぎ目のこぶ）は描かない
+        n_, lab_, st_, _ = cv2.connectedComponentsWithStats(mk.astype(np.uint8), connectivity=8)
+        keep = np.zeros(n_, bool)
+        keep[1:] = np.maximum(st_[1:, 2], st_[1:, 3]) >= lim
+        return keep[lab_]
+    near = drop_small(near, 14 * s)
     inner = np.maximum(_thick(near.astype(np.float32), 2.2 * lw), _thick(bound.astype(np.float32), 1.5 * lw))
     inner = np.maximum(inner, _thick(patb.astype(np.float32), 0.9 * lw) * 0.9)
     # 筋肉の線：光の当たり方の段（ふくらみ）のさかい目を、ところどころ入りと抜きのある細い線で
@@ -269,6 +307,9 @@ def paint_comic(R, look, debug=None):
         for c in cs:
             Pc = c[:, 0, :].astype(float)
             if len(Pc) < 30 * s:
+                continue
+            ext = Pc.max(0) - Pc.min(0)
+            if ext.max() < 16 * s:                                     # 小さな輪（目のように見える）は描かない
                 continue
             ok = coat[Pc[:, 1].astype(int), Pc[:, 0].astype(int)] & (dsil[Pc[:, 1].astype(int), Pc[:, 0].astype(int)] > 4.5 * s)
             i = 0
@@ -284,6 +325,8 @@ def paint_comic(R, look, debug=None):
                     tapered(ml, Q, 1.25 * s * lw * k_)
                 i += L + int(rng.uniform(4, 14) * s)
     line = np.clip(np.maximum(np.maximum(sil, inner * inside), ml.astype(np.float32) / 255 * inside), 0, 1)
+    if debug is not None:
+        debug['L_sil'] = sil; debug['L_inner'] = inner; debug['L_ml'] = ml.astype(np.float32) / 255; debug['inside'] = inside
     col = col * (1 - line[..., None]) + INK * line[..., None]
     A = np.clip(np.maximum(a, line), 0, 1)
 
@@ -300,20 +343,21 @@ def paint_comic(R, look, debug=None):
         cv2.ellipse(mm, (int(cx * 16), int(cy * 16)), (int(ax * 16), int(ay * 16)), rot, a0, a1, 255, th, cv2.LINE_AA, shift=4)
         return mm.astype(np.float32) / 255
     E = np.array([ex, ey])
-    alm = fill_poly((H3, W3), [np.array([E - fd * r * 1.05 + pv * r * 0.10, E - fd * r * 0.4 + pv * r * 0.62, E + fd * r * 0.55 + pv * r * 0.55,
-                                         E + fd * r * 1.10 + pv * r * 0.05, E + fd * r * 0.40 - pv * r * 0.48, E - fd * r * 0.45 - pv * r * 0.40])])
-    col = over(col, hexc('#FFFDF6'), alm)                               # 白目
-    ir = E + fd * r * 0.30 + pv * r * 0.04
-    iris = soft_circle(H3, W3, ir[0], ir[1], r * 0.45, 1.0) * alm
-    col = over(col, hexc('#2A1A12'), iris)
-    col = over(col, hexc('#FFFFFF'), soft_circle(H3, W3, ir[0] - r * 0.12, ir[1] - r * 0.16, r * 0.14, 1.0) * alm)
-    lid = np.zeros((H3, W3), np.uint8)
-    tapered(lid, [E - fd * r * 1.30 + pv * r * 0.05, E - fd * r * 0.4 + pv * r * 0.66, E + fd * r * 0.55 + pv * r * 0.58, E + fd * r * 1.15 + pv * r * 0.05],
-            2.4 * s * lw, prof=(0.2, 0.15))                               # 太い上まぶた
-    tapered(lid, [E + fd * r * 1.10 + pv * r * 0.05, E + fd * r * 0.40 - pv * r * 0.50, E - fd * r * 0.45 - pv * r * 0.42], 1.2 * s * lw, prof=(0.2, 0.3))
-    tapered(lid, [E - fd * r * 1.15 + pv * r * 1.35, E - fd * r * 0.1 + pv * r * 1.10, E + fd * r * 0.95 + pv * r * 0.78], 1.6 * s * lw, prof=(0.3, 0.2))   # けわしい眉の線
-    col = over(col, INK, lid.astype(np.float32) / 255)
-    A = np.maximum(A, lid.astype(np.float32) / 255 * horse)
+    if look.get('eye', True):                                            # toon_rider は目を上に描くので、なしにできる
+        alm = fill_poly((H3, W3), [np.array([E - fd * r * 1.05 + pv * r * 0.10, E - fd * r * 0.4 + pv * r * 0.62, E + fd * r * 0.55 + pv * r * 0.55,
+                                             E + fd * r * 1.10 + pv * r * 0.05, E + fd * r * 0.40 - pv * r * 0.48, E - fd * r * 0.45 - pv * r * 0.40])])
+        col = over(col, hexc('#FFFDF6'), alm)                               # 白目
+        ir = E + fd * r * 0.30 + pv * r * 0.04
+        iris = soft_circle(H3, W3, ir[0], ir[1], r * 0.45, 1.0) * alm
+        col = over(col, hexc('#2A1A12'), iris)
+        col = over(col, hexc('#FFFFFF'), soft_circle(H3, W3, ir[0] - r * 0.12, ir[1] - r * 0.16, r * 0.14, 1.0) * alm)
+        lid = np.zeros((H3, W3), np.uint8)
+        tapered(lid, [E - fd * r * 1.30 + pv * r * 0.05, E - fd * r * 0.4 + pv * r * 0.66, E + fd * r * 0.55 + pv * r * 0.58, E + fd * r * 1.15 + pv * r * 0.05],
+                2.4 * s * lw, prof=(0.2, 0.15))                               # 太い上まぶた
+        tapered(lid, [E + fd * r * 1.10 + pv * r * 0.05, E + fd * r * 0.40 - pv * r * 0.50, E - fd * r * 0.45 - pv * r * 0.42], 1.2 * s * lw, prof=(0.2, 0.3))
+        tapered(lid, [E - fd * r * 1.15 + pv * r * 1.35, E - fd * r * 0.1 + pv * r * 1.10, E + fd * r * 0.95 + pv * r * 0.78], 1.6 * s * lw, prof=(0.3, 0.2))   # けわしい眉の線
+        col = over(col, INK, lid.astype(np.float32) / 255)
+        A = np.maximum(A, lid.astype(np.float32) / 255 * horse)
     nx_, ny_ = R['nostril']
     nos = np.zeros((H3, W3), np.uint8)
     tapered(nos, [np.array([nx_, ny_]) - fd * r * 0.55 + pv * r * 0.35, np.array([nx_, ny_]) + fd * r * 0.25 + pv * r * 0.30,
@@ -423,9 +467,10 @@ def paint_comic(R, look, debug=None):
     cheek_pts = [(1 - v_) ** 3 * top + 3 * (1 - v_) ** 2 * v_ * (top + (c1_ - top) * 1.25) + 3 * (1 - v_) * v_ ** 2 * c2_ + v_ ** 3 * mo
                  for v_ in np.linspace(0, 1, 30)]
     strap(cheek_pts, 2.2 * u1, RED[0])                                                           # ほおのベルト（なめらかに）
-    mouthl = np.zeros((H3, W3), np.uint8)                                # 口の線（はみから鼻先の下へ）
-    tapered(mouthl, [mo + fd * 0.5 * u1, mo + fd * 4.0 * u1 + perp * 0.6 * u1, mo + fd * 7.5 * u1 - perp * 0.3 * u1], 1.6 * s * lw, prof=(0.15, 0.35))
-    col = over(col, INK, mouthl.astype(np.float32) / 255 * horse)
+    if look.get('mouth', True):
+        mouthl = np.zeros((H3, W3), np.uint8)                            # 口の線（はみから鼻先の下へ）
+        tapered(mouthl, [mo + fd * 0.5 * u1, mo + fd * 4.0 * u1 + perp * 0.6 * u1, mo + fd * 7.5 * u1 - perp * 0.3 * u1], 1.6 * s * lw, prof=(0.15, 0.35))
+        col = over(col, INK, mouthl.astype(np.float32) / 255 * horse)
     strap([pp + fd * 3.4 * u1 + perp * 0.5 * u1, pp + fd * 4.8 * u1 - perp * 4.6 * u1], 2.2 * u1, RED[0])   # ひたいのベルト
     # シャドーロール（白いふわふわの鼻革）
     roll = np.zeros((H3, W3), np.uint8)

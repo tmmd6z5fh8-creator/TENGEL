@@ -8,7 +8,7 @@ W, Hh = 780, 320
 K_ = 0.45                                   # コマのふちのかたむき（x = u - K_*y）
 NAVY = '#121A33'
 BLUE, RED, YEL, GRN = '#1A3FB8', '#E02424', '#FFC400', '#0F9D58'
-PANELS = [(-260, 98, 'check'), (106, 246, 'stripe'), (254, 724, 'center'), (732, 836, 'star'), (844, 1200, 'hoop')]
+PANELS = [(-260, 86, 'check'), (94, 222, 'stripe'), (230, 768, 'center'), (776, 880, 'star'), (888, 1200, 'hoop')]
 GAP = 3.6
 
 
