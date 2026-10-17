@@ -31,7 +31,8 @@ SPOTS = {
     'snow': dict(pose='stand', facing='left', box=(394, 54, 627, 294), azim=-6, shadow=('#6E86A6', 0.30)),
     'autumn': dict(pose='walk', facing='right', box=(290, 59, 523, 294), azim=6, shadow=('#7A3A16', 0.30)),
     'sea': dict(pose='gallop', facing='right', box=(280, 64, 572, 266), azim=6, shadow=('#8A6A3A', 0.22)),
-    'sakura': dict(pose='stand', facing='left', box=(421, 52, 649, 296), azim=-6, shadow=('#6A8A5A', 0.24)),
+    'sakura': dict(pose='stand', facing='left', box=(421, 52, 649, 296), azim=-6, shadow=('#6A8A5A', 0.24),
+                   throat=dict(neck_k=0.03, amount=0.5, jowl=1.0, chest=1.0)),          # のど元すっきり（まさちゃんのオレンジの線）
 }
 
 

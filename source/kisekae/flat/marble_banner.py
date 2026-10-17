@@ -55,7 +55,10 @@ sc.bump(2, 1, 5.0, 0.12)
 ROCK = 0.10
 foot = np.array([PX + 0.30, gy + ROCK, 0.0])
 if os.environ.get('MARBLE_NO_HORSE') != '1':
-    S = MH.build_statue(sc, foot, yaw=16.0, g=0.98, mats=dict(body=3, neck=3, hoof=3, eye=3, head=3))
+    # のど元（まさちゃんが引いた黄色の線に合わせる）：あごの下のふくらみをとって、のどの線は首の骨組みにそわせ、
+    # 首の根元の太さは残す。ほおの下のふくらみも小さく。首の横に、のど元から肩へ向かう すじを彫る
+    S = MH.build_statue(sc, foot, yaw=16.0, g=0.98, mats=dict(body=3, neck=3, hoof=3, eye=3, head=3),
+                        throat=dict(neck_k=0.03, neck_k_from=0.3, amount=0.9, jowl=1.0), groove=True)
     MH.rock(sc, foot, S['tail_end_world'], gy + ROCK)
 sc.rbox(np.array([PX, gy - 0.30, 0.0]), (0.62, 0.30, 0.42), 0.03, k=0.0, mat=1)
 sc.rbox(np.array([PX, gy - 0.05, 0.0]), (0.645, 0.028, 0.445), 0.01, k=0.0, mat=7)

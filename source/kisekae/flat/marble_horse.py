@@ -10,6 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
 import horse3d as Hm
 from h3d import nrm, basis
+from throat_fix import slim_throat
 
 POSE = dict(theta=44.0, neck_rot=-26.0, head_ang=-50.0,
             fore=dict(R=[-62, 10, -98, -130], L=[-48, 38, -62, -100]),
@@ -151,9 +152,9 @@ def mane(S, n=16, seed=11):
         for j in range(m + 1):
             u = j / m
             q2 = c + d1 * L * u + np.array([-d1[1], d1[0]]) * 0.022 * math.sin(2 * math.pi * 0.8 * u + ph)
-            z = NEAR * (0.02 + neck_hw(t) * 0.92 * math.sin(min(1.0, u * 1.6) * math.pi / 2))
+            z = NEAR * (0.01 + neck_hw(t) * 0.80 * math.sin(min(1.0, u * 1.6) * math.pi / 2))     # 首の面に そわせる（出っぱりすぎない）
             pts.append(np.array([q2[0], q2[1], z]))
-            rad.append(max(0.008, 0.042 * (1 - 0.85 * u ** 1.3)))
+            rad.append(max(0.008, 0.036 * (1 - 0.85 * u ** 1.3)))
         locks.append((pts, rad, ()))
     return locks
 
@@ -168,6 +169,23 @@ def forelock(S):
         rad = [0.035 * (1 - 0.75 * s) for s in np.linspace(0, 1, 9)]
         out.append((pts, rad, ()))
     return out
+
+
+def jugular(S, t0=0.86, f0=0.10, t1=0.38, f1=0.42, n=13):
+    """首のこちらがわの すじ（のど元から、首の横をななめに肩の方へ）：彫る道と太さ。
+       首の上の点＝のどの線と たてがみの線のあいだの割合 f、首の面（だ円）の上の z"""
+    pts, rad = [], []
+    for j in range(n):
+        u = j / (n - 1)
+        t = t0 + (t1 - t0) * u
+        f = f0 + (f1 - f0) * u
+        th, cr = Hm.bez(S['throat'], t), Hm.bez(S['crest'], t)
+        q2 = th + (cr - th) * f
+        v = 2 * f - 1
+        z = NEAR * neck_hw(t) * math.sqrt(max(0.0, 1 - v * v)) * 0.97
+        pts.append(np.array([q2[0], q2[1], z]))
+        rad.append(0.012 + 0.007 * math.sin(math.pi * u))
+    return pts, rad
 
 
 def tail(S, end):
@@ -205,7 +223,7 @@ def tail(S, end):
     return locks
 
 
-def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58):
+def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58, throat=None, groove=False):
     """foot＝後ろ足のひづめ（2つのまん中・下のふち）を置く世界の点。g＝大きさ。tail_back＝しっぽの先をひづめからどれだけうしろへ（m）"""
     M = dict(body=1, neck=1, hoof=6, eye=5, head=1)
     if mats:
@@ -215,8 +233,13 @@ def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58)
     Rw = roty(yaw)
     o = np.asarray(foot, float) - hm
     X = Xf(sc, Rw, o, hm, g)
-    S = Hm.build(X, pose, mats=M)
+    with slim_throat(X, pose, **(throat or {})):                 # のど元をすっきり（throat があるときだけ：throat_fix.py）
+        S = Hm.build(X, pose, mats=M)
     B = M['body']
+    if groove:                                                       # 首の横の すじ（彫る）
+        gp, gr = jugular(S)
+        for i in range(len(gp) - 1):
+            X.rcone(gp[i], gp[i + 1], gr[i], gr[i + 1], op='S', k=0.02, mat=B)
     for pts, rad, gr in mane(S):
         tube(X, pts, rad, gr, mat=B, kg=0.012)
     for pts, rad, gr in forelock(S):

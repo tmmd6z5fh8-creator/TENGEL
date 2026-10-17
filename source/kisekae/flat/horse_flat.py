@@ -19,6 +19,7 @@ from style2d import frame_horse, world_pos, hexc, blur
 from h3d import Scene
 import horse3d as Hm
 from cute_horse import svg_rgba, smooth, f2, path, stroke, circ, ell, unit, V, lock_d, tuft, mix
+from throat_fix import slim_throat
 
 S3 = 3
 HEAD_SC = 1.14
@@ -63,7 +64,7 @@ def proc_tmp():
     return d
 
 
-def render_body(pose, eye, tgt, fov, W, Hh, name, tmp):
+def render_body(pose, eye, tgt, fov, W, Hh, name, tmp, throat=None):
     """style2d.render_horse と同じ形（しっぽの根元の3Dの出っぱりだけ作らない：しっぽは房で描く）"""
     sc = Scene()
     sc.image(W, Hh, 1)
@@ -85,7 +86,8 @@ def render_body(pose, eye, tgt, fov, W, Hh, name, tmp):
         return rc0(a_, b_, *args, **kw)
 
     sc.rcone = rc
-    S = Hm.build(sc, pose, mats=dict(body=1, neck=1, hoof=6, eye=5, head=1))
+    with slim_throat(sc, pose, **(throat or {})):                  # のど元をすっきり（spec の throat があるときだけ：throat_fix.py）
+        S = Hm.build(sc, pose, mats=dict(body=1, neck=1, hoof=6, eye=5, head=1))
     sc.rcone = rc0
     R = sc.render(os.path.join(tmp, name))
     R['S'], R['scene'] = S, sc
@@ -131,7 +133,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     S2.TMP = tmp                                                         # frame_horse の一時ファイルも このフォルダへ
     try:
         e, t = frame_horse(pose, tuple(v * s for v in spec['box']), W3, H3, facing=facing, azim=spec.get('azim', 0.0), elev=spec.get('elev', 3.0))
-        R = render_body(pose, e, t, 26, W3, H3, name, tmp)
+        R = render_body(pose, e, t, 26, W3, H3, name, tmp, throat=spec.get('throat'))
     finally:
         S2.TMP = tmp0
         shutil.rmtree(tmp, ignore_errors=True)
