@@ -1,8 +1,8 @@
-"""龍馬（780×320）：雷雲の夜空を、金の炎をまとって天へかける黒い龍馬（一から作ったオリジナルの絵）
-   - 体は3D（flat/ryuma_horse.py：黒い鉄のようなうろこの体・金の角とひげ・金のひづめ・ひたいの玉・首の金の輪）。
-     左向きで跳び、顔を少しこちらへ向ける。目は金に光る
-   - たてがみ・しっぽ・背すじ・足もと・前髪の炎は2D（r3d/fire2d.py の Heat：金の炎）。うしろの炎は体にかくれる
-   - 背景：墨色から紺へ、金の光・雲（下は雲の海）・雷（2本）・うしろへ流れる金の気流・火の粉・金の縁の線
+"""龍馬（780×320）第2版：雷雲の夜空と日輪の前で、前足を上げて立つ 銀のうろこの龍馬（一から作ったオリジナルの絵）
+   - 体は3D（flat/ryuma_horse.py：青みがかった銀の金属に細かいうろこ・龍の頭（開いた口と牙・金の角・金に光る目）・
+     のどと胸の象牙色の板・肩と腰の金の飾り板と赤い玉・金のひづめ）。左向きに立ち、顔を少しこちらへ向ける
+   - たてがみ・ほおの毛・あごひげ・しっぽ・足もとの毛は2Dの銀白の毛（やわらかい房＋細いすじ）。うしろの毛は体にかくれる
+   - 背景：墨色から紺へ、金の光・日輪・雲（下は雲の海）・雷（2本）・うしろへ流れる金の気流・火の粉・瑞雲・金の縁の線（第1版のまま）
    python3 flat/ryuma_banner.py <出力.webp>（sdfr がいる）"""
 import sys, os, math, shutil
 import numpy as np
@@ -17,15 +17,18 @@ from h3d import Scene, nrm
 import horse3d as Hm
 from paint import fbm, warp, blur, smoothstep
 from fire2d import Heat, flow_path, fire_color, aces, to_srgb, dust, sparks, GOLD_STOPS
+
+# 銀白の毛の色（線形・明るいほど白く）
+SILVER_STOPS = [(0.0, (0, 0, 0)), (0.22, (0.06, 0.07, 0.09)), (0.45, (0.30, 0.34, 0.40)), (0.7, (0.85, 0.92, 1.05)), (0.88, (1.7, 1.78, 1.9)), (1.0, (2.6, 2.65, 2.7))]
 import ryuma_horse as RH
 
 W, Hh = 780, 320
-BOX = (150, 58, 540, 300)          # 体（角・ひげをのぞく）がちょうど入る箱
-YAW = 22.0                         # 頭と首を こちらへ
+BOX = (150, 62, 540, 304)          # 体（角・ひげをのぞく）がちょうど入る箱
+YAW = 26.0                         # 頭と首を こちらへ
 AZIM, ELEV = 4.0, 2.0
 
 GOLD = (1.0, 0.72, 0.30)
-BODY = (0.022, 0.040, 0.038)       # 黒い鉄に、わずかな翠（金属：まわりの光をうすく映す）
+SCALE = (0.42, 0.50, 0.56)         # 青みがかった銀（つや消しの金属）
 
 
 def render3d(tmp):
@@ -36,46 +39,56 @@ def render3d(tmp):
     sc.image(W, Hh, 2)
     sc.camera(e, t, 26)
     sc.bounce(1)
-    # 環境：暗い夜。うしろ上から金の光（ふちの光）・上から少し青緑・下から炎の照り返し
-    sc.env((0.012, 0.020, 0.028), (0.008, 0.009, 0.009), (0.006, 0.004, 0.002), (0.001, 0.001, 0.001))
-    sc.lobe((0.35, 0.45, 0.82), (1.5, 0.95, 0.32), 5.0)            # うしろの金（うろこの縁に映る）
-    sc.lobe((-0.2, 0.9, -0.35), (0.28, 0.62, 0.70), 6.0)           # 上の青緑
+    # 環境：暗い夜。うしろ上から金の光（ふちの光）・上から青緑・下から炎の照り返し・カメラがわのやわらかい明かり
+    sc.env((0.07, 0.11, 0.16), (0.045, 0.047, 0.050), (0.025, 0.017, 0.010), (0.002, 0.002, 0.002))
+    sc.lobe((0.35, 0.45, 0.82), (1.3, 0.80, 0.26), 5.0)            # うしろの金（うろこの縁に映る）
+    sc.lobe((-0.2, 0.9, -0.35), (0.55, 0.85, 1.05), 3.0)           # 上の青（うろこの面に映る）
     sc.lobe((0.0, -1.0, 0.0), (0.6, 0.30, 0.08), 3.0)              # 下の炎の照り返し
-    sc.lobe((-0.9, 0.2, -0.3), (0.7, 0.42, 0.16), 10.0)            # 前（顔の方）の金
-    sc.lobe((-0.1, 0.35, -0.93), (1.3, 1.0, 0.6), 4.0)             # カメラがわの明かり（金に映る）
-    sc.light((0.42, 0.66, -0.62), (1.5, 1.4, 1.3), 12, 1)          # 主光（手前の上から）
+    sc.lobe((-0.9, 0.2, -0.3), (0.6, 0.40, 0.18), 10.0)            # 前（顔の方）の金
+    sc.lobe((-0.1, 0.35, -0.93), (1.1, 1.1, 1.1), 4.0)             # カメラがわの明かり（銀に映る）
+    sc.light((0.42, 0.66, -0.62), (2.0, 1.95, 1.9), 12, 1)         # 主光（手前の上から）
     sc.light((-0.55, 0.45, 0.70), (5.0, 3.0, 1.0), 10, 0)          # ふちの光（うしろの金）
     sc.light((0.15, -0.85, -0.5), (0.5, 0.28, 0.10), 8, 0)         # 下からの炎の照り返し
-    # 素材（体：黒い鉄のようなうろこ。金の光を映して、うろこの縁が光る）
-    sc.mat(1, 0, BODY, 0.42, 0, 0, 0.0)                            # 体：うろこ
     S0 = Hm.skeleton(pose)
     th = pose['theta']
     piv2 = np.array([-0.60, 1.25])
     T = lambda p: Hm.rot2(p, piv2, th)
-    ch, bu = T((0.66, 1.10)), T((-0.93, 1.30))
-    sc.bump(1, 2, 0.060, 0.085, Hm.v3(ch), Hm.v3(bu - ch), (0, 0, 1), 0.28)
-    sc.mat(2, 0, BODY, 0.42, 0, 0, 0.0)                            # 首：うろこ（首にそって）
     Rw = RH.roty(YAW)
     nb = Hm.v3(T((0.52, 1.40)))
+    # 素材：体は青みがかった銀の金属に うろこ（参考の像の色あい）。まわりの金と青緑の光を映す
+    sc.mat(1, 0, SCALE, 0.50, 0, 0, 0.0)                           # 体：うろこ（つや消しの銀：まわりの光をやわらかく映す）
+    ch, bu = T((0.66, 1.10)), T((-0.93, 1.30))
+    sc.bump(1, 2, 0.038, 0.004, Hm.v3(ch), Hm.v3(bu - ch), (0, 0, 1), 0.28)
+    sc.mat(2, 0, SCALE, 0.50, 0, 0, 0.0)                           # 首：うろこ（首にそって）
     a = Rw @ (Hm.v3(Hm.bez(S0['crest'], 0.1)) - nb) + nb
     b = Rw @ (Hm.v3(Hm.bez(S0['crest'], 0.95)) - nb) + nb
-    sc.bump(2, 2, 0.050, 0.050, a, b - a, Rw @ np.array([0, 0, 1.0]), 0.16)
-    sc.mat(8, 0, BODY, 0.40, 0, 0, 0.0)                            # 頭：細かいうろこ（頭にそって）
+    sc.bump(2, 2, 0.032, 0.006, a, b - a, Rw @ np.array([0, 0, 1.0]), 0.16)
+    sc.mat(8, 0, SCALE, 0.46, 0, 0, 0.0)                           # 頭：細かいうろこ（頭にそって）
     pl = Rw @ (Hm.v3(S0['poll']) - nb) + nb
     hd = Rw @ Hm.v3(Hm.adir(S0['head_ang']))
-    sc.bump(8, 2, 0.024, 0.06, pl, hd, Rw @ np.array([0, 0, 1.0]), 0.09)
-    sc.mat(7, 0, GOLD, 0.18, 0, 0, 0.0)                            # 金
-    sc.mat(6, 0, (0.85, 0.56, 0.22), 0.30, 0, 0, 6.0)              # ひづめ：濃い金
+    sc.bump(8, 2, 0.018, 0.0035, pl, hd, Rw @ np.array([0, 0, 1.0]), 0.09)
+    sc.mat(7, 0, (0.78, 0.62, 0.36), 0.32, 0, 0, 4.0)              # 角：古い金（少しくすんだ）
+    sc.mat(3, 0, GOLD, 0.22, 0, 0, 0.0)                            # 飾り板：金（彫り模様）
+    sc.bump(3, 3, 9.0, 0.022)
+    sc.mat(6, 0, (0.80, 0.56, 0.24), 0.30, 0, 0, 6.0)              # ひづめ：濃い金
     sc.mat(5, 2, (1.0, 0.62, 0.16), 0.03, 2.2, 0.4)                # 目：中から金に光る
-    sc.mat(4, 2, (0.95, 0.14, 0.10), 0.03, 0.9, 1.0)               # ひたいの玉：赤
-    M = RH.build(sc, pose, yaw=YAW, mats=dict(body=1, neck=2, head=8, hoof=6, eye=5, gold=7, gem=4))
+    sc.mat(4, 2, (0.95, 0.14, 0.10), 0.03, 0.9, 1.0)               # 飾り板の玉：赤
+    sc.mat(9, 1, (0.86, 0.80, 0.66), 0.45, 0.0, 0.5, 3.0)          # 歯・のどの板：象牙
+    sc.mat(10, 1, (0.22, 0.03, 0.03), 0.5, 0.0, 0.0, 0.0)          # 口の中：暗い赤
+    sc.mat(11, 0, (0.62, 0.68, 0.72), 0.40, 0, 0, 0.0)             # ひれ・ひげ：明るい銀
+    hs0 = Hm.HEAD_SCALE
+    Hm.HEAD_SCALE = 1.30                                            # 頭は大きく（龍の頭）
+    try:
+        M = RH.build(sc, pose, yaw=YAW, mats=dict(body=1, neck=2, head=8, horn=7, hoof=6, eye=5, teeth=9, mouth=10, fin=11, plate=9, gold=3, gem=4))
+    finally:
+        Hm.HEAD_SCALE = hs0
     R = sc.render(os.path.join(tmp, 'ryuma'))
     P = lambda pts: sc.project(np.asarray(pts, float))[0][:, :2]
     marks = dict(
         crest=P(M['crest']), crest_near=P(M['crest_near']), crest_far=P(M['crest_far']), throat=P(M['throat']),
-        poll=P([M['poll']])[0], eye=P([M['eye']])[0], eye_far=P([M['eye_far']])[0], muzzle=P([M['muzzle']])[0], gem=P([M['gem']])[0],
+        poll=P([M['poll']])[0], eye=P([M['eye']])[0], eye_far=P([M['eye_far']])[0], muzzle=P([M['muzzle']])[0], jaw=P([M['jaw']])[0],
         tailhead=P([M['tailhead']])[0], croup=P([M['croup']])[0], withers=P([M['withers']])[0], back=P([M['back']])[0], loin=P([M['loin']])[0],
-        hooves=P(M['hooves']), fetlocks=P(M['fetlocks']), antler_tips=P(M['antler_tips']), chest=P([M['chest']])[0],
+        hooves=P(M['hooves']), fetlocks=P(M['fetlocks']), horn_tips=P(M['horn_tips']), chest=P([M['chest']])[0],
         whisk_near=P(M['whiskers'][-1]), whisk_far=P(M['whiskers'][1]),
     )
     return R, marks
@@ -180,83 +193,113 @@ def compose(R, M, rng_seed=7):
     swirl = fire_color(np.clip(swh * .8, 0, 1), GOLD_STOPS) * 0.14
     bg += swirl + blur(swirl, 8) * 0.6 + blur(swirl, 30) * 0.3
 
-    # ---------- 炎（たてがみ・しっぽ・背すじ・足もと） ----------
-    def mane(heat, pts, n, peak_rng, side_off, ang_rng=(-84, -46), L_rng=(90, 210), w_rng=(6, 13), strands=3, up=0.3):
-        pts = pts[:int(len(pts) * 0.8)]                                  # うなじの先（角のまわり）には出さない
-        L_all = len(pts)
-        for i in range(n):
-            t = (i + rng.random()) / n
-            j = t * (L_all - 1); j0 = int(j); j1 = min(j0 + 1, L_all - 1)
-            p = pts[j0] + (pts[j1] - pts[j0]) * (j - j0)
-            p = p + np.array([rng.normal(0, 3), side_off * rng.uniform(.3, 1.0)])
-            base_ang = math.radians(rng.uniform(*ang_rng) + 16 * (1 - t))
-            L = rng.uniform(*L_rng) * (1.05 - 0.4 * t)
-            c = flow_path(p, base_ang, L, 30, rng, wave=1.2, phase=rng.uniform(0, 6), turn=rng.uniform(-0.004, 0.012), curl=0.03, rise=up)
-            w0 = rng.uniform(*w_rng) * (1.05 - 0.35 * t)
-            heat.lock(c, w0, rng.uniform(*peak_rng))
+    # ---------- 毛（たてがみ・ほおの毛・あごひげ・しっぽ・足もとの毛）：銀白の房 ----------
+    # やわらかい房（Heat：量感）と、細いすじ（Hair.buf：毛の線）を別に作って重ねる → 煙ではなく「毛」に見せる
+    class Hair:
+        def __init__(self, ss=3):
+            self.soft = Heat(Hh, W, ss=2)
+            self.ss = ss
+            self.buf = np.zeros((Hh * ss, W * ss), np.float32)
+
+        def line(self, c, v, power):
+            s_ = self.ss
+            q = np.round(np.asarray(c, float) * s_ * 16).astype(np.int32)
+            n = len(c)
+            for k in range(n - 1):
+                t = k / (n - 1)
+                val = v * (1 - t) ** power * (0.45 + 0.55 * smoothstep(0.0, 0.12, t))
+                cv2.line(self.buf, tuple(q[k]), tuple(q[k + 1]), float(val), 1, cv2.LINE_AA, shift=4)
+
+        def lock(self, c, w0, peak, ns=8, spread=1.6, root_taper=0.08, power=1.0, soft=0.8):
+            c = np.asarray(c, float)
+            if soft > 0:
+                self.soft.lock(c, w0, peak * soft, root_taper=root_taper, power=power)
             tang = np.gradient(c, axis=0)
             nn = np.stack([-tang[:, 1], tang[:, 0]], 1)
             nn /= np.linalg.norm(nn, axis=1, keepdims=True) + 1e-9
-            for k in range(strands):
+            L_ = len(c)
+            for k in range(ns):
                 off = rng.uniform(-1, 1) * w0 * 0.7
-                spread = np.linspace(0, 1, len(c)) ** 1.3 * rng.uniform(-1, 1) * w0 * 1.6
-                wob = np.sin(np.linspace(0, rng.uniform(4, 9), len(c)) + rng.uniform(0, 6))[:, None] * w0 * 0.25
-                c2 = c + nn * (off + spread)[:, None] + nn * wob
-                cut = int(len(c2) * rng.uniform(.75, 1.0))
-                heat.lock(c2[:cut], rng.uniform(1.6, 4.0), rng.uniform(.55, .95) * peak_rng[1], root_taper=.05, power=0.9)
-            for k in range(2):
-                j2 = int(len(c) * rng.uniform(.35, .6))
-                c3 = flow_path(c[j2], math.atan2(*(c[j2] - c[j2 - 1])[::-1]) + rng.normal(0, .5), L * rng.uniform(.3, .55), 14, rng, wave=1.4,
-                               phase=rng.uniform(0, 6), rise=.3)
-                heat.lock(c3, w0 * rng.uniform(.2, .4), rng.uniform(.45, .75) * (1 - j2 / len(c)))
+                sp = np.linspace(0, 1, L_) ** 1.3 * rng.uniform(-1, 1) * w0 * spread
+                wob = np.sin(np.linspace(0, rng.uniform(3, 8), L_) + rng.uniform(0, 6)) * w0 * 0.25
+                c2 = c + nn * (off + sp + wob)[:, None]
+                cut = int(L_ * rng.uniform(.6, 1.0))
+                self.line(c2[:cut], peak * rng.uniform(.5, 1.0), power)
 
-    back = Heat(Hh, W)
-    mane(back, M['crest_far'], 14, (.68, 1.0), -8)
-    # 背すじの小さな炎（き甲 → 腰：うしろ）
-    spine = np.array([M['withers'], M['back'], M['loin'], M['croup']])
-    for i in range(10):
-        u = (i + rng.random()) / 10
-        k = u * 3; k0 = int(k); p = spine[k0] + (spine[min(k0 + 1, 3)] - spine[k0]) * (k - k0)
-        c = flow_path(p + np.array([0, -4]), math.radians(rng.uniform(-80, -40)), rng.uniform(40, 95), 14, rng, wave=1.2, phase=rng.uniform(0, 6), rise=.3)
-        back.lock(c, rng.uniform(6, 11), rng.uniform(.5, .8))
-    backh = back.result(turb=26, fine=9, seed=10, breakup=.6)
-    fire_back = fire_color(np.clip(backh * 0.9, 0, 1), GOLD_STOPS) * 0.62
+        def result(self, turb, fine, seed, breakup):
+            soft = self.soft.result(turb=turb, fine=fine, seed=seed, breakup=breakup, up=0)
+            strands = cv2.resize(self.buf, (W, Hh), interpolation=cv2.INTER_AREA)
+            return np.clip(soft, 0, 1.2), np.clip(strands, 0, 2.0)
 
-    front = Heat(Hh, W)
-    mane(front, M['crest_near'], 10, (.62, .98), 8)
-    for i in range(7):                                                  # 前髪（角のあいだから前上へ）
-        p = poll + rng.normal(0, 4, 2)
-        c = flow_path(p, math.radians(rng.uniform(-125, -80)), rng.uniform(36, 80), 16, rng, wave=1.1, phase=rng.uniform(0, 6), curl=0.03, rise=0.3)
-        front.lock(c, rng.uniform(4, 8), rng.uniform(.5, .82))
-    tdir = np.array([1.0, -0.25])
-    for i in range(24):                                                 # しっぽ：うしろ上へ流れて、先は上へ巻く
-        p = tail + rng.normal(0, 5, 2) + np.array([rng.uniform(0, 30), rng.uniform(-6, 10)])
-        a = math.atan2(tdir[1], tdir[0]) + rng.normal(0, .3)
-        c = flow_path(p, a, rng.uniform(150, 300), 30, rng, wave=1.4, phase=rng.uniform(0, 6), turn=rng.uniform(-0.03, -0.005), curl=-0.02, rise=0.35)
-        front.lock(c, rng.uniform(6, 14), rng.uniform(.45, .78))
-    for fx, fy in M['fetlocks']:                                        # 足もと（球節のまわり）
+    def hair(hr, pts, n, peak_rng, side_off, ang_rng, L_rng, w_rng, turn=(-0.004, 0.012), curl=0.02, t_rng=(0.0, 1.0), up=0.1, ns=8):
+        L_all = len(pts)
+        for i in range(n):
+            t = t_rng[0] + (t_rng[1] - t_rng[0]) * (i + rng.random()) / n
+            j = t * (L_all - 1); j0 = int(j); j1 = min(j0 + 1, L_all - 1)
+            p = pts[j0] + (pts[j1] - pts[j0]) * (j - j0)
+            p = p + np.array([rng.normal(0, 3), side_off * rng.uniform(.3, 1.0)])
+            base_ang = math.radians(rng.uniform(*ang_rng))
+            L = rng.uniform(*L_rng)
+            c = flow_path(p, base_ang, L, 30, rng, wave=1.1, phase=rng.uniform(0, 6), turn=rng.uniform(*turn), curl=curl, rise=up)
+            hr.lock(c, rng.uniform(*w_rng), rng.uniform(*peak_rng), ns=ns)
+
+    SILVER = np.array([0.88, 0.94, 1.05])
+
+    def colorize(soft, strands, gain=1.0):
+        return fire_color(np.clip(soft * 0.9, 0, 1), SILVER_STOPS) * 0.40 * gain + strands[..., None] * SILVER * 1.9 * gain
+
+    # うしろ（体にかくれる）：むこうがわのたてがみ・うなじの毛・しっぽの根元
+    back = Hair()
+    hair(back, M['crest_far'], 16, (.55, .9), -8, (-58, -18), (70, 150), (4, 8), t_rng=(0.0, 0.92))
+    for i in range(9):                                                  # うなじ（角のうしろ）から うしろ上へ（頭のうしろ）
+        p = M['poll'] + np.array([rng.uniform(-4, 12), rng.uniform(-4, 10)])
+        c = flow_path(p, math.radians(rng.uniform(-70, -20)), rng.uniform(45, 95), 18, rng, wave=1.1, phase=rng.uniform(0, 6), curl=0.02, rise=0.1)
+        back.lock(c, rng.uniform(3, 6), rng.uniform(.5, .85), ns=6)
+    backh, backs = back.result(turb=8, fine=3, seed=10, breakup=.35)
+    hair_back = colorize(backh, backs, 0.75)
+
+    front = Hair()
+    hair(front, M['crest_near'], 16, (.6, .95), 8, (-56, -14), (70, 150), (4, 8), t_rng=(0.0, 0.92))
+    # 頭のまわりの毛（ほお・あごの下から うしろへ流れる：参考の像のように、頭を毛でかこむ）
+    poll = M['poll']; eye = M['eye']; jaw = M['jaw']
+    cheek = eye + (poll - eye) * 0.3 + np.array([14, 16])
+    for i in range(14):                                                 # ほお（目のうしろ）から うしろ・下へ
+        p = cheek + np.array([rng.uniform(-6, 12), rng.uniform(-12, 16)])
+        c = flow_path(p, math.radians(rng.uniform(-25, 35)), rng.uniform(30, 75), 16, rng, wave=1.2, phase=rng.uniform(0, 6), curl=0.03, rise=0.05)
+        front.lock(c, rng.uniform(2.5, 5), rng.uniform(.5, .85), ns=6)
+    for i in range(6):                                                  # あごひげ（あご先から 下・うしろへ）
+        p = jaw + np.array([rng.uniform(-4, 6), rng.uniform(-3, 4)])
+        c = flow_path(p, math.radians(rng.uniform(40, 95)), rng.uniform(26, 55), 12, rng, wave=1.2, phase=rng.uniform(0, 6), curl=0.04)
+        front.lock(c, rng.uniform(2, 4), rng.uniform(.5, .85), ns=5)
+    tail = M['tailhead']
+    for i in range(18):                                                 # しっぽ：根元から うしろ上へ、ゆれて下へ
+        p = tail + rng.normal(0, 4, 2) + np.array([rng.uniform(0, 12), rng.uniform(-6, 6)])
+        a = math.radians(rng.uniform(-62, -28))
+        c = flow_path(p, a, rng.uniform(110, 200), 30, rng, wave=1.3, phase=rng.uniform(0, 6), turn=rng.uniform(0.018, 0.04), curl=0.01, rise=-0.1)
+        front.lock(c, rng.uniform(4, 9), rng.uniform(.5, .9), ns=9, spread=2.0, root_taper=0.15, power=0.85)
+    for (fx, fy) in M['fetlocks']:                                      # 足もとの毛（球節から うしろ下へ）
         for i in range(5):
-            p = np.array([fx, fy]) + rng.normal(0, 4, 2)
-            c = flow_path(p, math.radians(rng.uniform(-40, 30)), rng.uniform(26, 60), 10, rng, wave=1.0, phase=rng.uniform(0, 6), rise=.2)
-            front.lock(c, rng.uniform(5, 9), rng.uniform(.4, .7))
-    fronth = front.result(turb=26, fine=9, seed=20, breakup=.6)
-    fire_front = fire_color(np.clip(fronth * 0.9, 0, 1), GOLD_STOPS) * 0.62
+            p = np.array([fx, fy]) + rng.normal(0, 3, 2)
+            c = flow_path(p, math.radians(rng.uniform(15, 75)), rng.uniform(18, 40), 10, rng, wave=1.0, phase=rng.uniform(0, 6))
+            front.lock(c, rng.uniform(3, 6), rng.uniform(.45, .8), ns=5)
+    fronth, fronts = front.result(turb=8, fine=3, seed=20, breakup=.35)
+    hair_front = colorize(fronth, fronts, 1.0)
+    # 根元の金のにじみ（毛の根元が少し金に）
+    root_glow = blur(fire_color(np.clip(fronth * 0.9, 0, 1), GOLD_STOPS) * 0.25, 6) + blur(fire_color(np.clip(backh * 0.9, 0, 1), GOLD_STOPS) * 0.2, 6)
 
     # ---------- 合成 ----------
-    img = bg + fire_back + blur(fire_back, 16) * 0.35
-    fire_all = fire_back + fire_front + swirl * 0.5
-    fl = blur(fire_all, 24) * 0.55 + blur(fire_all, 60) * 0.35
+    img = bg + hair_back + blur(hair_back, 10) * 0.18
+    fl = blur(hair_front + hair_back, 24) * 0.35 + blur(swirl, 60) * 0.5
     # 体のふちの金の光（うしろ上からの光：法線がカメラに対して寝ている所）
     n = R['n']
     nv = np.clip(1 - np.abs(n[..., 2]), 0, 1) ** 2.6
     lr = np.clip(n[..., 0] * 0.45 + n[..., 1] * 0.62 + n[..., 2] * 0.64, 0, 1)
     rim = (nv * (0.35 + 0.65 * lr) * A).astype(np.float32)
     rim = blur(rim, 0.8)
-    horse = rgb + fl * np.array([1.0, 0.72, 0.32]) * A[..., None] * 0.16 + rim[..., None] * np.array([1.0, 0.70, 0.28]) * 0.9
-    horse += (A * (1 - rim))[..., None] * np.array([0.004, 0.009, 0.010])                       # 影の中にうすい青緑
+    horse = rgb + fl * np.array([1.0, 0.8, 0.5]) * A[..., None] * 0.12 + rim[..., None] * np.array([1.0, 0.72, 0.30]) * 0.7
     img = img * (1 - A[..., None]) + horse
-    img += fire_front + blur(fire_front, 14) * 0.3 + blur(fire_front, 44) * 0.15 + blur(fire_back, 44) * 0.12
-    # ひげ（金の細いすじ：手前は体の上・むこうは体のうしろ）
+    img += hair_front + blur(hair_front, 6) * 0.15 + root_glow * 0.5
+    # ひげ（銀の細いすじ：手前は体の上・むこうは体のうしろ）
     def strand(acc, pts, w0, w1, val):
         pts = np.asarray(pts, float)
         for k in range(len(pts) - 1):
@@ -265,18 +308,17 @@ def compose(R, M, rng_seed=7):
             q = np.round(pts[k:k + 2] * 16).astype(np.int32)
             cv2.line(acc, tuple(q[0]), tuple(q[1]), float(val * (1 - 0.5 * u)), max(1, int(round(w))), cv2.LINE_AA, shift=4)
     wn, wf = np.zeros((Hh, W), np.float32), np.zeros((Hh, W), np.float32)
-    strand(wn, M['whisk_near'], 4.4, 1.2, 1.0)
-    strand(wf, M['whisk_far'], 3.4, 1.0, 0.8)
-    wcol = np.array([1.0, 0.74, 0.30])
-    img += (wf * (1 - A))[..., None] * wcol * 1.6 + blur(wf * (1 - A), 3)[..., None] * wcol * 0.6
-    img += wn[..., None] * wcol * 2.2 + blur(wn, 3)[..., None] * wcol * 0.9 + blur(wn, 10)[..., None] * wcol * 0.3
+    strand(wn, M['whisk_near'], 1.4, 0.6, 0.45)
+    strand(wf, M['whisk_far'], 1.6, 0.8, 0.6)
+    wcol = np.array([0.95, 0.97, 1.0])
+    img += (wf * (1 - A))[..., None] * wcol * 1.0 + blur(wf * (1 - A), 3)[..., None] * wcol * 0.4
+    img += wn[..., None] * wcol * 1.1 + blur(wn, 3)[..., None] * wcol * 0.35 + blur(wn, 10)[..., None] * np.array([1.0, 0.8, 0.5]) * 0.15
     # 角の先の光
-    for (ax, ay) in M['antler_tips']:
+    for (ax, ay) in M['horn_tips']:
         g = np.exp(-((xx - ax) ** 2 + (yy - ay) ** 2) / (2 * 2.2 ** 2))
         img += g[..., None] * np.array([1.0, 0.78, 0.36]) * 0.9 + blur(g, 5)[..., None] * np.array([1.0, 0.7, 0.3]) * 0.5
-    # 目と玉の光
-    for (ex, ey), r, col, k in ((M['eye'], 3.6, (1.0, 0.62, 0.16), 3.2), (M['gem'], 2.8, (1.0, 0.18, 0.08), 2.4),
-                                (M['eye_far'], 2.4, (1.0, 0.62, 0.16), 1.2)):
+    # 目の光
+    for (ex, ey), r, col, k in ((M['eye'], 3.4, (1.0, 0.62, 0.16), 3.2), (M['eye_far'], 2.2, (1.0, 0.62, 0.16), 1.2)):
         g = np.exp(-((xx - ex) ** 2 + (yy - ey) ** 2) / (2 * r * r))
         img += g[..., None] * np.array(col) * k + blur(g, 7)[..., None] * np.array(col) * k * 0.6
     # 火の粉
