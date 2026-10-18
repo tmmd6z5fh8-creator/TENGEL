@@ -298,13 +298,11 @@ FREEZE_CSS = r'''
 @keyframes fzOn{from,to{opacity:1}}
 .ov.fz .gl,.ov.fz .pc,.ov.fz .mt,.ov.fz .fin,.ov.fz .xf{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 /* ===== 1) グリッチ（0〜<E>）：押した瞬間の画面がバグる（色ずれ・横ズレ・ブロック・横の線・走査線）
-   → <N>〜 一瞬もとに戻る → <C>〜 テンゲルのアイコンのドアップ（バグりながら少しずつ引く）→ <H>〜 横に流れる光の筋 ===== */
+   → <N>〜 一瞬もとに戻る → <C>〜 テンゲルのアイコンのドアップ（虹色のネオンの線画・ギザギザ。バグりながら少しずつ引く）→ <H>〜 横に流れる光の筋 ===== */
 .gl{z-index:40;background:#000000;visibility:hidden;animation:vis <E> steps(1)}
-.gl .sn,.gl .ic,.gl .sm,.gl .gS,.gl .gS i,.gl .gsc,.gl .ib{position:absolute;inset:0}
+.gl .sn,.gl .ic,.gl .sm,.gl .gS,.gl .gS i,.gl .gsc{position:absolute;inset:0}
 .gl .sn,.gl .sn .sl{background:url(/_blob/WARPID) 0 0/390px 844px}
-.gl .ib,.gl .ic .sl{background:url(/_blob/ICONID) -795px -148px/1500px 1500px}
 .gl .sn .gS{--im:url(/_blob/WARPID) 0 0/390px 844px}
-.gl .ic .gS{--im:url(/_blob/ICONID) -795px -148px/1500px 1500px}
 /* 色ずれ：赤だけの絵と水色だけの絵を左右にずらして重ねる（重なると元の色） */
 .gl .gS{isolation:isolate;background:#000000;opacity:0}
 .gl .gS i{background:var(--im),#FF0000;background-blend-mode:multiply}
@@ -312,6 +310,18 @@ FREEZE_CSS = r'''
 .gl .sl{position:absolute;left:0;width:390px;opacity:0}
 .gl .ic{visibility:hidden;transform-origin:50% 45%;animation:vis <H-C> steps(1) <C>,icz <H-C> cubic-bezier(.2,.6,.4,1) <C> both}
 @keyframes icz{from{scale:1.22}to{scale:1}}
+/* アイコンのドアップは虹色のネオンの線画（まさちゃんの指定「もっとネオンでギザギザに虹色に」）：アイコンからひろった線（NCORE・NGLOW）に虹色をつけて、
+   SVG のノイズ（#fzj）で線をギザギザにゆがめる。赤と水色のずれ・横にずれる帯もネオンの線で */
+.gl .ic .nbk{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,#1C0A3E 0,#0A0420 45%,#04010C 100%)}
+.gl .ic .jz{position:absolute;inset:0;overflow:hidden;filter:url(#fzj)}
+.gl .ic .jz .nl{position:absolute;inset:0}
+.gl .ic .jz .nl,.gl .ic .jz .sl{-webkit-mask:url(/_blob/NCORE) -795px -148px/1500px 1500px no-repeat;mask:url(/_blob/NCORE) -795px -148px/1500px 1500px no-repeat}
+.gl .ic .jz .ng{background:repeating-linear-gradient(135deg,#FF2BD6 0,#FF9F1A 86px,#FFE53B 172px,#3CFF6A 258px,#2FD6FF 344px,#6A5BFF 430px,#FF2BD6 516px);-webkit-mask-image:url(/_blob/NGLOW);mask-image:url(/_blob/NGLOW)}
+.gl .ic .jz .nc,.gl .ic .jz .sl{background:repeating-linear-gradient(135deg,#FF8AE6 0,#FFC77A 86px,#FFF08A 172px,#9CFFB4 258px,#8CEBFF 344px,#ABA2FF 430px,#FF8AE6 516px)}
+.gl .ic .jz .xr,.gl .ic .jz .xc{mix-blend-mode:screen;opacity:0}
+.gl .ic .jz .xr{background:#FF1E5A;animation:gSic <E> steps(1) both,gRic <E> steps(1) both}
+.gl .ic .jz .xc{background:#00E6FF;animation:gSic <E> steps(1) both,gCic <E> steps(1) both}
+.fzd{position:absolute;width:0;height:0;overflow:hidden}
 /* 横に流れる光の筋（<H>〜<E>）：アイコンを横に引きのばした絵＋光の筋 */
 .gl .sm{visibility:hidden;animation:vis <E-H> steps(1) <H>;background:linear-gradient(180deg,#020A3A 0%,#0A2FB0 30%,#1E78FF 47%,#8FE6FF 51%,#1E78FF 55%,#0A2FB0 72%,#020A3A 100%)}
 .gl .sm .st{position:absolute;inset:0;background:url(/_blob/ICONID) -795px -148px/1500px 1500px;transform:scaleX(9);opacity:.6;mix-blend-mode:screen;filter:saturate(1.8) hue-rotate(150deg)}
@@ -407,15 +417,15 @@ FREEZE_CSS = r'''
 .gq .f{background:repeating-linear-gradient(180deg,rgba(255,255,255,.18) 0 1px,rgba(255,255,255,0) 1px 4px),linear-gradient(175deg,var(--c1) 8%,var(--c2) 48%,var(--c3) 92%);
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .gq .w{color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.85)}
-.gq .s{position:absolute;inset:0;visibility:hidden}
+.gq .s{position:absolute;inset:0;opacity:0}
 .gq .s .o{filter:none}
 .gq .s1{clip-path:inset(18% -40% 60% -40%);animation:gqS1 .9s steps(1) var(--d) both}
 .gq .s2{clip-path:inset(56% -40% 22% -40%);animation:gqS2 .9s steps(1) var(--d) both}
 @keyframes gqR{0%{translate:-10px 1px}30%{translate:-16px -1px}62%{translate:-7px 1px}}
 @keyframes gqC{0%{translate:10px -1px}30%{translate:15px 1px}62%{translate:7px -1px}}
 @keyframes gqV{0%{translate:0 0;rotate:0deg}25%{translate:var(--va) calc(var(--va) * -.55);rotate:var(--vr)}50%{translate:calc(var(--va) * -.85) calc(var(--va) * .45);rotate:calc(var(--vr) * -1)}75%{translate:calc(var(--va) * .4) calc(var(--va) * .8);rotate:calc(var(--vr) * .5)}}
-@keyframes gqS1{0%{visibility:hidden;translate:0 0}8%{visibility:visible;translate:var(--a1) 0}12%{visibility:hidden;translate:0 0}46%{visibility:visible;translate:calc(var(--a1) * -.7) 0}50%{visibility:hidden;translate:0 0}}
-@keyframes gqS2{0%{visibility:hidden;translate:0 0}30%{visibility:visible;translate:var(--a2) 0}34%{visibility:hidden;translate:0 0}74%{visibility:visible;translate:calc(var(--a2) * -.6) 0}78%{visibility:hidden;translate:0 0}}
+@keyframes gqS1{0%{opacity:0;translate:0 0}8%{opacity:1;translate:var(--a1) 0}12%{opacity:0;translate:0 0}46%{opacity:1;translate:calc(var(--a1) * -.7) 0}50%{opacity:0;translate:0 0}}
+@keyframes gqS2{0%{opacity:0;translate:0 0}30%{opacity:1;translate:var(--a2) 0}34%{opacity:0;translate:0 0}74%{opacity:1;translate:calc(var(--a2) * -.6) 0}78%{opacity:0;translate:0 0}}
 /* まわりの小さなブロック（1コマずつ） */
 .bk i{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);background:var(--c);opacity:0;animation:on1 var(--t) steps(1) var(--d)}
 /* 文字が出たときの光の輪（小さく1回） */
@@ -437,7 +447,7 @@ FREEZE_CSS = r'''
 /* T4（<M+2.2>〜）：白く光る → 星空に「ど！」×4 */
 .t4{animation:vis 1.2s steps(1) <M+2.2>}
 .t4 .glw{position:absolute;inset:0;background:radial-gradient(circle at 50% 44%,rgba(255,60,200,.45),rgba(122,59,255,.2) 40%,rgba(5,2,15,0) 70%)}
-/* T5（<M+3.4>〜<R>）：ネオンのパチンコの当たりのような虹色（黒に光る虹の光線・虹の輪・白く光るまん中・ネオンの星・きらめき。動かない）に「ど的中」「！！！！」。そろってから1.5秒 */
+/* T5（<M+3.4>〜<R>）：ネオンのパチンコの当たりのような虹色（黒に光る虹の光線・虹の輪・白く光るまん中・ネオンの星・きらめき）に「ど的中」「！！！！」。そろってから1.5秒 */
 .t5{background:#06010F;animation:vis <R-M-3.4> steps(1) <M+3.4>}
 .t5 .nr{position:absolute;left:50%;top:44%;width:1600px;height:1600px;margin:-800px 0 0 -800px;border-radius:50%;
   background:repeating-conic-gradient(from -1.2deg,#FF0844 0 2.4deg,rgba(0,0,0,0) 2.4deg 6deg,#FF9500 6deg 8.4deg,rgba(0,0,0,0) 8.4deg 12deg,#FFE600 12deg 14.4deg,rgba(0,0,0,0) 14.4deg 18deg,
@@ -457,6 +467,17 @@ FREEZE_CSS = r'''
   clip-path:polygon(50% 0,59% 41%,100% 50%,59% 59%,50% 100%,41% 59%,0 50%,41% 41%)}
 .t5 .bsg{position:absolute;inset:0;filter:drop-shadow(0 0 10px #FF3BD2) drop-shadow(0 0 20px #2FF3FF)}
 .t5 .spk b{filter:drop-shadow(0 0 4px var(--c))}
+/* この背景だけ動く（まさちゃんの指定）：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中の光と星がふくらむ。回らない */
+.t5 .rw{position:absolute;inset:0;
+  -webkit-mask-image:repeating-conic-gradient(from -1.2deg at 50% 44%,#000 0 2.4deg,rgba(0,0,0,0) 2.4deg 6deg);mask-image:repeating-conic-gradient(from -1.2deg at 50% 44%,#000 0 2.4deg,rgba(0,0,0,0) 2.4deg 6deg)}
+.t5 .rw i{position:absolute;left:50%;top:44%;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,0) 0 50%,rgba(255,250,225,.75) 63%,rgba(255,255,255,0) 77%);opacity:0;animation:rwv 1.35s cubic-bezier(.25,.1,.6,1) var(--d) infinite}
+@keyframes rwv{0%{opacity:1;transform:scale(.3)}80%{opacity:.85}100%{opacity:0;transform:scale(4.6)}}
+.t5 .rg{animation:rgo 1.6s ease-out var(--d) infinite}
+@keyframes rgo{0%{opacity:0;transform:scale(.7)}18%{opacity:1}100%{opacity:0;transform:scale(1.45)}}
+.t5 .core{animation:cbr .9s ease-in-out <M+3.4> infinite alternate}
+@keyframes cbr{from{scale:.9}to{scale:1.12}}
+.t5 .bs{animation:cbr .9s ease-in-out <M+3.4> infinite alternate}
 /* ===== 5) 結果（<R>）：白く光る → 炎の画面に、上に小さく「ど的中」・炎の中から馬がボード（画面はゆらさない） ===== */
 .xf{z-index:45}
 .rfl{position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:mfl .4s ease-out <R> forwards}
@@ -689,8 +710,11 @@ def glitch(seed=61):
             name = f'sl{g}{k}'
             css.append(kf_steps(name, E, segs, None,
                                 lambda v: 'opacity:0;translate:0 0;filter:none' if v is None else f'opacity:1;translate:{v[0]:.0f}px 0;filter:{"invert(1) hue-rotate(90deg)" if v[1] else "none"}'))
-            pos = f'0 {-y:.0f}px' if g == 'sn' else f'-795px {-148 - y:.0f}px'
-            els.append(f'<i class="sl" style="top:{y:.0f}px;height:{h:.0f}px;background-position:{pos};animation:{name} {fz_sec(E)} steps(1) both"></i>')
+            if g == 'sn':
+                pos = f'background-position:0 {-y:.0f}px'
+            else:                  # ドアップのネオンの線は mask の位置で切る
+                pos = f'-webkit-mask-position:-795px {-148 - y:.0f}px;mask-position:-795px {-148 - y:.0f}px'
+            els.append(f'<i class="sl" style="top:{y:.0f}px;height:{h:.0f}px;{pos};animation:{name} {fz_sec(E)} steps(1) both"></i>')
         html[g] = ''.join(els)
     # ブロック（色の四角・ずれた画面のかけら）と横の線：毎回ちがう場所に1コマだけ
     blocks, tears = [], []
@@ -711,7 +735,7 @@ def glitch(seed=61):
                    f'--d:{fz_sec(H + rnd.uniform(0, .1))};--t:{fz_sec(rnd.uniform(.12, .2))}"></b>' for _ in range(14))
     html['all'] = (f'<div class="gl" aria-hidden="true">'
                    f'<div class="sn"><div class="gS"><i></i><i></i></div>{html["sn"]}</div>'
-                   f'<div class="ic"><div class="ib"></div><div class="gS"><i></i><i></i></div>{html["ic"]}</div>'
+                   f'<div class="ic"><div class="nbk"></div><div class="jz"><i class="nl ng"></i><i class="nl nc"></i><i class="nl xr"></i><i class="nl xc"></i>{html["ic"]}</div></div>'
                    f'<div class="sm"><div class="st"></div>{bars}</div>'
                    f'<div class="gsc"></div><div class="gbk">{"".join(blocks)}</div><div class="gtr">{"".join(tears)}</div></div>')
     return dict(css='\n'.join(css) + '\n', html=html['all'])
@@ -876,13 +900,14 @@ def mt_layers(seed=71):
     t5 = tx('ど的中', 290, 150, 112, M + 3.42, TX_FIRE, r=-6, dark=True, sw=18) + ring(195, 365, M + 3.42, '#FFFFFF')
     for i, ((x, y, fs, r), cols) in enumerate(zip(((18, 470, 84, -14), (104, 500, 96, 8), (200, 460, 80, -6), (282, 505, 92, 12)), (TX_PINK, TX_GOLD, TX_LIME, TX_CYAN))):
         t5 += tx('！', y, round(fs * 1.3), fs, M + 3.48 + i * .06, cols, r=r, x=x, w=fs, dark=True, sw=16)
-    t5_rings = ''.join(f'<i class="rg" style="--s:{s}px"></i>' for s in (250, 410, 600, 830))
+    t5_rings = ''.join(f'<i class="rg" style="--s:{sz}px;--d:{fz_sec(M + 3.4 - k * .4)}"></i>' for k, sz in enumerate((250, 410, 600, 830)))
+    t5_waves = '<div class="rw">' + ''.join(f'<i style="--d:{fz_sec(M + 3.4 + k * .45)}"></i>' for k in range(3)) + '</div>'
     html = f'''<div class="mt" aria-hidden="true">
       <div class="sc t1"><div class="bg"></div><div class="dk"></div>{neon_icon()}<div class="dk2"></div>{t1}</div>
       <div class="sc t2"><div class="stf"></div><div class="spd"></div><div class="orb"></div><div class="spk">{sparkles(26, 47)}</div>{t2}</div>
       <div class="sc t3"><div class="zz">{zigzag()}</div>{t3}</div>
       <div class="sc t4"><div class="stf"></div><div class="glw"></div><div class="spk">{sparkles(22, 43, white=True)}</div>{t4}</div>
-      <div class="sc t5"><div class="nr g"></div><div class="nr"></div><div class="nw"></div>{t5_rings}<div class="core"></div><div class="bsg"><div class="bs"></div></div>
+      <div class="sc t5"><div class="nr g"></div><div class="nr"></div><div class="nw"></div>{t5_waves}{t5_rings}<div class="core"></div><div class="bsg"><div class="bs"></div></div>
         <div class="spk">{sparkles(34, 59)}</div>{t5}</div>
       <div class="mfl b"></div>
     </div>'''
@@ -923,7 +948,10 @@ def fz_layers(bets, total):
     rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
     ring = '<i class="halo" aria-hidden="true"><i><b></b></i></i>'
     R = FZ_T['R']
-    return f'''<div class="blk"></div>
+    jag = ('<svg class="fzd" width="0" height="0" aria-hidden="true"><filter id="fzj" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">'
+           '<feTurbulence type="turbulence" baseFrequency=".09 .16" numOctaves="2" seed="8" result="t"></feTurbulence>'
+           '<feDisplacementMap in="SourceGraphic" in2="t" scale="13" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap></filter></svg>')
+    return f'''{jag}<div class="blk"></div>
     <div class="fin"><div class="fsk">
       <div class="fb"></div><div class="frr"></div>
       <div class="emb">{embers(36, 11)}</div>
@@ -1060,7 +1088,7 @@ class Component extends DCLogic {{
 '''
 
 
-MEMO_W, MEMO_H = 2200, 1460
+MEMO_W, MEMO_H = 2200, 1500
 
 
 def memo_page():
@@ -1119,11 +1147,11 @@ body{{margin:0}}
   <div class="boxes">
     <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・外れ・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり）＞ <b>的中</b>（それ以外の当たり）</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
     <div class="box"><h3>流れと時間（的中・デカ）</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>：押す → 0.2秒 白く光る → 0.25秒 虹の光の筋と輪 → 0.85秒 光の中から馬 → 1.5秒「デカ的中!!」→ 1.75秒〜 買い目 → 2.5秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
-    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。場所・大きさ・向きはバラバラ：真っ暗から → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」→ 星空に「とんでも！」（左上から右下へ階段）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る）→ 白く光る → 星空に大きな「ど！」×4 → <b>ネオンのパチンコの当たりのような虹色</b>（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。背景は止まったまま（回る・迫る・流れる・ゆれるはなし）</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面に、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中から馬がボード → {sec(R + .6)}秒「フリーズ的中!!!」→ {sec(R + .85)}秒〜 買い目 → {sec(R + .85 + .45 + .35)}秒 とじる</li></ul></div>
+    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（<b>虹色のネオンの線画・線はギザギザ</b>。バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。場所・大きさ・向きはバラバラ：真っ暗から → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」→ 星空に「とんでも！」（左上から右下へ階段）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る）→ 白く光る → 星空に大きな「ど！」×4 → <b>ネオンのパチンコの当たりのような虹色</b>（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面に、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中から馬がボード → {sec(R + .6)}秒「フリーズ的中!!!」→ {sec(R + .85)}秒〜 買い目 → {sec(R + .85 + .45 + .35)}秒 とじる</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → 炎の画面（炎の色・光の筋・炎の粒・コイン・馬とボード・「ど的中」・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・色ずれ・横ズレの帯・アイコンのドアップ・横に流れる光・走査線・ブロック・横の線）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
     <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒だけ。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。白く光るのは {sec(M + 2.2)}秒・{sec(R)}秒（どちらも弱め）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。音は見本に入れていない</li></ul></div>
+    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。白く光るのは {sec(M + 2.2)}秒・{sec(R)}秒（どちらも弱め）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。音は見本に入れていない</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
   </div>
 </div>
