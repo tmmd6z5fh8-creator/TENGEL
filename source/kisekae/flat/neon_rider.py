@@ -61,17 +61,23 @@ def jockey(sc, S, side_z=0.30):
     return J
 
 
-def render_rider(box, W, Hh, azim=40, elev=6, ss=2, name='neonrider', head_scale=1.1, js=1.0):
+def render_rider(box, W, Hh, azim=40, elev=6, ss=2, name='neonrider', head_scale=1.1, js=1.0, pose=None, cam=None):
+    """pose：馬の形（なければ POSE）。cam：決めたカメラ (eye, tgt)（走るコマで いまの絵と同じカメラを使う）。R['cam'] に入れる"""
     global JS
     JS = js
     Hm.HEAD_SCALE = head_scale
     holder = {}
+    pose = POSE if pose is None else pose
 
     def extra(sc, S):
         holder['J'] = jockey(sc, S)
-    e, t = frame_horse(POSE, box, W, Hh, facing='right', azim=azim, elev=elev)
-    R = render_horse(POSE, e, t, 26, W, Hh, ss=ss, name=name, extra=extra, mats=MATS)
+    if cam is None:
+        e, t = frame_horse(pose, box, W, Hh, facing='right', azim=azim, elev=elev)
+    else:
+        e, t = (np.asarray(v, float) for v in cam)
+    R = render_horse(pose, e, t, 26, W, Hh, ss=ss, name=name, extra=extra, mats=MATS)
     R['J'] = holder['J']
+    R['cam'] = (e, t)
     return R
 
 
