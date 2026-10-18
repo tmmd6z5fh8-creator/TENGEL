@@ -34,6 +34,7 @@ THEMED = dict(
     hit_gold=dict(base='hit', tid='gold', banner='gold', push='gp', fonts=['Zen+Kaku+Gothic+New:wght@400;500;700']),   # カッコいい：黒と金の ぷるんぷるんPUSH・壁紙のおしりが ぷるん
     hit_ranch=dict(base='hit', tid='ranch', banner='ranch', push='gr'),   # 牧場：芝生でできたPUSH・壁紙の馬が右へ左へ（1〜8秒・ときどき立ち止まって芝を食べる／こっちを見る）
     hit_sakura=dict(base='hit', tid='sakura', banner='sakura', push='sk', fonts=BY_ID['sakura']['fonts']),   # 桜：桜がついたPUSH・壁紙にいつも桜が降る
+    hit_sea=dict(base='hit', tid='sea', banner='sea', push='se', fonts=BY_ID['sea']['fonts']),   # 海：海の模様のPUSH・壁紙で馬がいつも走って景色が流れる
 )
 SAKURA_BLOB = '/_blob/3b3f002de6b9b1c35fec1c32400e1494'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
 
@@ -49,6 +50,9 @@ def theme_banner(name):
     if name == 'sakura':
         import sakura
         return sakura.inline(SAKURA_BLOB)
+    if name == 'sea':                     # 海：絵は flat/sea_run.py の4まい（キャンバスの id は sea_blobs.json・大きさは sea_run.json）
+        import sea_wall
+        return sea_wall.inline(json.load(open(f'{K}/sea_blobs.json')), json.load(open(f'{K}/sea_run.json')))
     raise KeyError(name)
 
 # 馬番の枠の色（12頭のレース）
@@ -633,6 +637,8 @@ def theme_form_css(tid):
         out.append('.ph .bnr{height:160px}')
     if tid == 'sakura':  # 桜：上の絵は160pxぜんぶ（花びらが上から下まで降る）・上の帯の下の線は判定画面と同じ
         out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
+    if tid == 'sea':     # 海：上の絵は160pxぜんぶ（走る馬と流れる景色）・上の帯の下のふちは判定画面と同じ
+        out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
     return '\n'.join(out) + '\n'
 
 
@@ -891,6 +897,94 @@ SK_CSS = r'''
   70%{opacity:1;transform:translate(calc(var(--x) * 1.08),calc(var(--y) + 30px)) rotate(calc(var(--r) * 1.3)) scale(.35,1)}100%{opacity:0;transform:translate(calc(var(--x) * 1.12),calc(var(--y) + 64px)) rotate(calc(var(--r) * 1.6)) scale(1,1)}}
 @media (prefers-reduced-motion:reduce){.sk .skb1,.sk .skb2{animation:none}.sk .skd,.clips.sk{display:none}}
 '''.replace('PETAL_A', SK_PETAL_URI.replace('COLOR', 'FBD3E0')).replace('PETAL_B', SK_PETAL_URI.replace('COLOR', 'F7A8C4')).replace('PETAL_C', SK_PETAL_URI.replace('COLOR', 'FFF0F5'))
+
+
+# ---------- 海の的中ボタン：海の模様のPUSH（まさちゃんの指定） ----------
+def se_star(cx, cy, R, rot):
+    """ひとで（5本の腕・先は丸く）"""
+    pts = []
+    for k in range(10):
+        a = math.radians(rot + k * 36 - 90)
+        r = R if k % 2 == 0 else R * .48
+        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    d = 'M' + ' '.join(f'{x:.1f} {y:.1f}' for x, y in pts) + ' Z'
+    dots = ''.join(f'<circle cx="{cx + R * .55 * math.cos(math.radians(rot + k * 72 - 90)):.1f}" cy="{cy + R * .55 * math.sin(math.radians(rot + k * 72 - 90)):.1f}" r="{R * .09:.1f}" fill="#FFE2B8"/>'
+                   for k in range(5))
+    return (f'<path d="{d}" fill="#FFA24C" stroke="#E2711D" stroke-width="1.6" stroke-linejoin="round"/>'
+            f'<circle cx="{cx}" cy="{cy}" r="{R * .16:.1f}" fill="#FFC27D"/>{dots}')
+
+
+def sea_push_svg():
+    """海の模様のPUSH（ボタン 200×100 の上に重ねる。まわりに出るので -24〜224 × -30〜130）：
+       面＝海のグラデーションに青海波（白いうすい弧・下の段が上の段を隠す）・上に光・下に白い波（横に流れる .sewv）・泡が上る（.sebb）
+       右上に浮き輪（判定画面のすみの浮き輪と同じ形・ゆれる .sebu）・左下に ひとで"""
+    from themes20 import orn_sea
+    W_, H_, RAD, R = 200, 100, 26, 14
+    defs = ('<defs><linearGradient id="seF" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100"><stop offset="0" stop-color="#8FDDF7"/>'
+            '<stop offset=".38" stop-color="#36A6DE"/><stop offset=".78" stop-color="#1A72B8"/><stop offset="1" stop-color="#0E4C8A"/></linearGradient>'
+            '<radialGradient id="seGl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".62"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'
+            f'<clipPath id="seC"><rect width="{W_}" height="{H_}" rx="{RAD}"/></clipPath></defs>')
+    face = f'<rect width="{W_}" height="{H_}" fill="url(#seF)"/>'
+    for j in range(-1, 17):                                   # 青海波：上の段から（下の段が上の段の下半分を隠す）
+        y = j * R / 2
+        for i in range(-1, 9):
+            cx = i * 2 * R + (R if j % 2 else 0)
+            face += f'<path d="M{cx - R} {y} A{R} {R} 0 0 1 {cx + R} {y}Z" fill="url(#seF)"/>'
+            face += ''.join(f'<path d="M{cx - r} {y} A{r} {r} 0 0 1 {cx + r} {y}" fill="none" stroke="#FFFFFF" stroke-opacity=".34" stroke-width="1.1"/>' for r in (R - 1.2, R - 5, R - 8.8))
+    face += f'<ellipse cx="{W_ / 2}" cy="13" rx="88" ry="18" fill="url(#seGl)"/>'
+    wv = ''.join(f'<path d="M{x} 86 q10 -9 20 0 q10 9 20 0" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-opacity=".9"/>' for x in range(-40, 241, 40))
+    wv += f'<path d="M-40 92 {" ".join("q10 -7 20 0 q10 7 20 0" for _ in range(8))} V110 H-40Z" fill="#FFFFFF" fill-opacity=".35"/>'
+    face += f'<g class="sewv">{wv}</g>'
+    face += ''.join(f'<circle class="sebb" style="animation-delay:{-d:.1f}s" cx="{x}" cy="{y}" r="{r}" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-opacity=".9"/>'
+                    for x, y, r, d in ((30, 96, 2.6, 0), (58, 100, 1.8, 1.1), (150, 98, 2.2, .5), (176, 100, 1.6, 2.0), (112, 100, 1.4, 1.6)))
+    out = f'<g clip-path="url(#seC)">{face}</g>'
+    out += f'<rect x="1.5" y="1.5" width="{W_ - 3}" height="{H_ - 3}" rx="{RAD - 1.5}" fill="none" stroke="#0E3A66" stroke-opacity=".28" stroke-width="3"/>'
+    out += f'<g class="sebu"><g transform="translate(176 -16) rotate(8 22 23) scale(.95)">{orn_sea()}</g></g>'
+    out += se_star(4, 96, 17, 12)
+    return ('<i class="seab" aria-hidden="true"><svg viewBox="-24 -30 248 160" width="248" height="160">'
+            f'{defs}{out}</svg></i>')
+
+
+def water_burst(n=22, seed=9):
+    """押した瞬間に、水しぶきがパッと飛ぶ（ボタンのまん中から外へ → 落ちて消える）"""
+    rnd = random.Random(seed)
+    out = ''
+    for i in range(n):
+        a = math.radians(-90 + (i / n - .5) * 320 + rnd.uniform(-8, 8))
+        dist = rnd.uniform(90, 170)
+        x, y = math.cos(a) * dist * 1.2, math.sin(a) * dist * .85 - 26
+        s = rnd.uniform(.6, 1.3)
+        out += f'<i style="--x:{x:.0f}px;--y:{y:.0f}px;--s:{s:.2f};--d:{rnd.uniform(0, .08):.2f}s"></i>'
+    return f'<div class="clips se" aria-hidden="true">{out}</div>'
+
+
+SE_CSS = r'''
+/* ---------- 海の的中ボタン：海の模様のPUSH（まさちゃんの指定） ----------
+   面＝海のグラデーション（明るい水色 → 深い青）に青海波（白いうすい弧）・上に光・下に白い波（横に流れる）・泡が上る。
+   白い泡のふち・紺のふち・紺の厚み。白い「PUSH」に紺の影。右上に浮き輪（ゆれる）・左下に ひとで。
+   上下の動きは的中と同じ。押すと同じボタンがはじけて、水しぶきが飛ぶ */
+.se{--pushA:#2EA0DC;--pushB:#0E5A9C;--pushC:#8FDDF7;--rim:#EAF8FF;--rimD:#0E3A66;
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#0A3766 100%)}
+.push.se{box-shadow:inset 0 -9px 0 rgba(0,20,60,.18),inset 0 2px 0 rgba(255,255,255,.6),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #0B2D52,0 22px 34px rgba(0,20,50,.5)}
+.push.se span{text-shadow:0 3px 0 #0B3A6B,0 0 14px rgba(255,255,255,.55)}
+.push.se::after{border-color:rgba(150,230,255,.95)}
+.se .seab{position:absolute;left:-24px;top:-30px;width:248px;height:160px;pointer-events:none}
+.se .seab svg{display:block;width:248px;height:160px;overflow:visible}
+.se .sewv{animation:seWave 2.6s linear infinite}
+@keyframes seWave{from{transform:translateX(0)}to{transform:translateX(-40px)}}
+.se .sebb{opacity:0;animation:seBub 3s ease-in infinite}
+@keyframes seBub{0%{opacity:0;transform:translateY(0)}15%{opacity:.95}100%{opacity:0;transform:translateY(-74px)}}
+.se .sebu{transform-box:view-box;transform-origin:0 0;animation:seBuoy 2.6s ease-in-out infinite}
+@keyframes seBuoy{0%,100%{transform:translate(197px,-14px) rotate(-6deg) translate(-197px,14px)}50%{transform:translate(197px,-14px) rotate(6deg) translate(-197px,14px)}}
+.tap.se{color:#DFF6FF}
+.pressed.se{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #0B2D52}
+.clips.se{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips.se i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50% 50% 50% 0;opacity:0;
+  background:radial-gradient(circle at 38% 38%,#FFFFFF 0 22%,#B9EEFF 40%,#4FC3F7 100%);animation:seFly 1.05s cubic-bezier(.15,.7,.3,1) var(--d) both}
+@keyframes seFly{0%{opacity:0;transform:translate(0,0) rotate(-45deg) scale(.4)}10%{opacity:1}55%{opacity:1;transform:translate(var(--x),var(--y)) rotate(-45deg) scale(var(--s))}
+  100%{opacity:0;transform:translate(calc(var(--x) * 1.1),calc(var(--y) + 90px)) rotate(-45deg) scale(var(--s))}}
+@media (prefers-reduced-motion:reduce){.se .sewv,.se .sebu{animation:none}.se .sebb,.clips.se{display:none}}
+'''
 
 
 def form(bets, pay_total, note, fin=(6, 2, 10)):
@@ -1385,7 +1479,8 @@ PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイ
     miss=('Fx_Miss.dc.html', 'ハズレ（ボードだけ）'),
     hit_gold=('Fx_HitGold.dc.html', '的中ボタン（カッコいい：黒と金のぷるんPUSH）'),
     hit_ranch=('Fx_HitRanch.dc.html', '的中ボタン（牧場：芝生のPUSH）'),
-    hit_sakura=('Fx_HitSakura.dc.html', '的中ボタン（桜：桜がついたPUSH）'))
+    hit_sakura=('Fx_HitSakura.dc.html', '的中ボタン（桜：桜がついたPUSH）'),
+    hit_sea=('Fx_HitSea.dc.html', '的中ボタン（海：海の模様のPUSH）'))
 BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
 BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
 BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
@@ -1419,7 +1514,7 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}<span>PUSH</span></button>
+      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}{sea_push_svg() if th.get('push') == 'se' else ''}<span>PUSH</span></button>
       <div class="pshadow{pb}{pc}"></div>
       <p class="tap{pb}{pc}">タップ！</p>
     </div>
@@ -1441,7 +1536,7 @@ def page(kind):
   <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}
+    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}{sea_push_svg() if th.get("push") == "se" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}{water_burst() if th.get('push') == 'se' else ''}
     <div class="hb">{board(kind, bets, total, tid=tid)}</div>
     {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
@@ -1473,7 +1568,7 @@ def page(kind):
     else:
         css += HIT_CSS
     if th:
-        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS).get(th.get('push'), '')
+        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS, se=SE_CSS).get(th.get('push'), '')
     css += board_css([tid])
     fn, name = PAGES[page_kind]
     fonts = ''.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">\n' for f in th.get('fonts', ()))
@@ -1612,7 +1707,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜の的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海の的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -1995,7 +2090,7 @@ body{{margin:0}}
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>

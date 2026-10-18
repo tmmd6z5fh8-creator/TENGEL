@@ -51,7 +51,7 @@ TAILS = {
 
 
 def make_pose(name, facing):
-    P = POSES[name]
+    P = POSES[name] if isinstance(name, str) else name          # 名前（POSES）か、同じ形の dict（走るコマなど）
     near, far = ('L', 'R') if facing == 'right' else ('R', 'L')
     return dict(theta=P['theta'], neck_rot=P['neck_rot'], head_ang=P['head_ang'], tail=P['tail'],
                 fore={near: P['fore_near'], far: P['fore_far']}, hind={near: P['hind_near'], far: P['hind_far']})
@@ -132,7 +132,12 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     tmp, tmp0 = proc_tmp(), S2.TMP
     S2.TMP = tmp                                                         # frame_horse の一時ファイルも このフォルダへ
     try:
-        e, t = frame_horse(pose, tuple(v * s for v in spec['box']), W3, H3, facing=facing, azim=spec.get('azim', 0.0), elev=spec.get('elev', 3.0))
+        if spec.get('cam'):                                              # カメラを決めて描く（走るコマ：どのコマも同じカメラ）
+            e, t = spec['cam']
+        else:
+            e, t = frame_horse(pose, tuple(v * s for v in spec['box']), W3, H3, facing=facing, azim=spec.get('azim', 0.0), elev=spec.get('elev', 3.0))
+        if spec.get('cam_out') is not None:                              # 決めたカメラを返す（ほかのコマで使う）
+            spec['cam_out'][:] = [e, t]
         R = render_body(pose, e, t, 26, W3, H3, name, tmp, throat=spec.get('throat'))
     finally:
         S2.TMP = tmp0
@@ -404,10 +409,11 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     # しっぽ（体のうしろ）：いちばん下にしく
     th = P3(Hm.v3(S['tailhead']))
     root = first_out(inside, th, th - P3(Hm.v3(S['withers']))) / s - back_dir * 0.035 * p1u
-    kind = POSES[spec['pose']]['tail_kind']
+    P_ = POSES[spec['pose']] if isinstance(spec['pose'], str) else spec['pose']
+    kind = P_['tail_kind']
     dn = V(0, 1.0)
     tparts = []
-    TL = TAILS[kind]
+    TL = P_.get('tail_tufts') or TAILS[kind]                             # 走るコマは、コマごとにしっぽの房をなびかせる
     for k, (p1_, p2_, p3_, wm) in enumerate(TL):
         cvt = lambda q: root + back_dir * q[0] * p1u + dn * q[1] * p1u
         d_, C_ = lock_d(root, cvt(p1_), cvt(p2_), cvt(p3_), wm * p1u, w0=0.11 * p1u)
