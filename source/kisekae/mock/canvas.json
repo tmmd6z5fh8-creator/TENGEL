@@ -13,8 +13,8 @@
     "Fx_Hit.dc.html": {"x": 2700, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
     "Fx_Big.dc.html": {"x": 3170, "y": 0, "w": 390, "h": 844, "title": "デカ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
     "Fx_Freeze.dc.html": {"x": 3640, "y": 0, "w": 390, "h": 844, "title": "フリーズ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
-    "Fx_Memo.dc.html": {"x": 5050, "y": 0, "w": 2200, "h": 2170, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレのメモ"},
-    "Fx_Sound.dc.html": {"x": 7330, "y": 0, "w": 2200, "h": 1440, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true},
+    "Fx_Memo.dc.html": {"x": 5050, "y": 0, "w": 2200, "h": 2340, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレのメモ"},
+    "Fx_Sound.dc.html": {"x": 7330, "y": 0, "w": 2200, "h": 1470, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true},
     "Judge_Sakura.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "桜（ピンク×若草）"},
     "Judge_Sea.dc.html": {"x": 470, "y": 1264, "w": 390, "h": 844, "title": "海（紺×水色×白）"},
     "Judge_Sunset.dc.html": {"x": 940, "y": 1264, "w": 390, "h": 844, "title": "夕焼け（紫×オレンジ）"},
@@ -41,7 +41,7 @@
     "Guide20.dc.html": {"x": 1870, "y": 5056, "w": 1320, "h": 3390, "title": "テーマのメモ（新しい21個）"},
     "Fx_Hidden.dc.html": {"x": 4110, "y": 0, "w": 390, "h": 844, "title": "隠れど的中（デカ的中ボタン → タップでど的中・音が出る）", "is_interactive": true},
     "Fx_Miss.dc.html": {"x": 4580, "y": 0, "w": 390, "h": 844, "title": "ハズレ（ボタンなし・ボードだけ）", "is_interactive": true},
-    "Fx_Boards.dc.html": {"x": 5050, "y": 2560, "w": 3952, "h": 3860, "title": "結果のボード（26テーマ・的中とハズレ）"}
+    "Fx_Boards.dc.html": {"x": 5050, "y": 2740, "w": 3952, "h": 3860, "title": "結果のボード（26テーマ・的中とハズレ）"}
   },
   "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Freeze.dc.html", "Fx_Hidden.dc.html", "Fx_Miss.dc.html", "Fx_Memo.dc.html", "Fx_Sound.dc.html", "Fx_Boards.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Silver.dc.html", "Judge_Golden.dc.html", "Judge_Tengel.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
   "notes": {
@@ -53,7 +53,7 @@
     "row3c": {"x": 3000, "y": 2228, "text": "帯（ミッションで手に入る3枚）", "kind": "title1", "maxW": 1330},
     "row4": {"x": 0, "y": 3492, "text": "レトロ・ポップ（5）", "kind": "title1", "maxW": 2270},
     "row5": {"x": 0, "y": 4756, "text": "着せ替えを選ぶ画面（26テーマ）と、テーマのメモ", "kind": "title1", "maxW": 3190},
-    "rowboards": {"x": 5050, "y": 2300, "text": "結果のボード：壁紙のテーマに沿ったボード（26テーマ × 的中・ハズレ）", "kind": "title1", "maxW": 3952}
+    "rowboards": {"x": 5050, "y": 2480, "text": "結果のボード：壁紙のテーマに沿ったボード（26テーマ × 的中・ハズレ）", "kind": "title1", "maxW": 3952}
   },
   "designSystems": []
 }

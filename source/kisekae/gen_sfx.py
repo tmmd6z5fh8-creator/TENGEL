@@ -3,7 +3,7 @@
    → sfx_hit_push.wav・sfx_hit.wav（的中）／sfx_big_push.wav・sfx_big.wav（デカ）／sfx_fz_push.wav・sfx_fz.wav（ど的中＝フリーズ）
      *_push＝PUSHが出たとき（当たりのお知らせ）。それ以外＝PUSHを押してから（0秒＝押した瞬間）。44.1kHz・16bit・ステレオ
      ＋ sfx_wave.json（音の大きさの形・1/50秒ごと。効果音のメモ Fx_Sound.dc.html の波形に使う。gen_fx.py と同じフォルダに置く）
-   秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（時刻）と GL_SCRIPT（バグるコマ）をそのまま読む
+   秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む
    乱数の種が決まっているので、何回作っても同じ音になる
    アプリ・見本に入れるとき（AAC 160kbps）：ffmpeg -i sfx_hit.wav -c:a aac -b:a 160k -movflags +faststart sfx_hit.m4a
    （見本のキャンバスは .m4a を受け付けないので、中身は同じで名前だけ .mp4 にして入れている）"""
@@ -16,18 +16,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def read_fx_times():
-    """gen_fx.py から FZ_T・MT_T（ネオンのカットの時刻）と GL_SCRIPT を読む（見本の動きと音の時刻をそろえるため）"""
+    """gen_fx.py から FZ_T（フリーズの時刻）・MT_T（ネオンのカットの時刻）を読む（見本の動きと音の時刻をそろえるため）"""
     tree = ast.parse(open(f'{HERE}/gen_fx.py', encoding='utf-8').read())
-    fz = gl = mt = None
+    fz = mt = None
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
             if node.targets[0].id == 'FZ_T':
                 fz = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
             elif node.targets[0].id == 'MT_T':
                 mt = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
-            elif node.targets[0].id == 'GL_SCRIPT':
-                gl = ast.literal_eval(node.value)
-    return fz, gl, mt
+    return fz, mt
 
 
 # ---------- 部品 ----------
@@ -390,48 +388,6 @@ def rumble(d, rng, fc=160, am=14):
     return fade(x / 2, .05, .1)
 
 
-def lglitch(kind, d, rng):
-    """低いバグる音：zap＝ヴッ（音程がいっきに下がる）・buzz＝ブブブ（低いデジタルのうなり）・thud＝ドッ・tick＝コッ"""
-    n = n_(d)
-    t = tl(n)
-    if kind == 'zap':
-        f = 60 + rng.uniform(300, 700) * np.exp(-t / .012)
-        x = lp(np.sign(np.sin(phase(f, n))) * np.exp(-t / .04), 3000)
-    elif kind == 'buzz':
-        f = rng.uniform(40, 110)
-        x = lp(np.round((.6 * np.sign(np.sin(phase(f, n))) + .4 * np.sign(np.sin(phase(f * 1.5, n)))) * 4) / 4, 1600)
-    elif kind == 'thud':
-        x = np.tanh(2 * np.sin(phase(rng.uniform(42, 60), n)) * np.exp(-t / .04))
-    else:
-        x = 3 * lp(rng.standard_normal(n), 1200) * np.exp(-t / .006)
-    return fade(x, .001, .004)
-
-
-def lcrackle(d, rate, rng):
-    """低いジジジ（こもった静電気）"""
-    n = n_(d)
-    x = np.zeros(n)
-    for _ in range(int(rng.poisson(rate * d))):
-        i = int(rng.integers(0, max(1, n - 400)))
-        k = int(rng.integers(60, 400))
-        seg = rng.standard_normal(k) * np.exp(-np.arange(k) / (k / 4)) * rng.uniform(.3, 1)
-        x[i:i + k] += seg[:len(x[i:i + k])]
-    return bp(x, 150, 1800)
-
-
-def crt_low(rng):
-    """ブツン（低いプチュン）：重低音がドスンと落ちる「ブ」＋音程がいっきに下がる「ツ」＋短いうなり「ン」"""
-    d = .6
-    n = n_(d)
-    t = tl(n)
-    pu = np.tanh(2.2 * np.sin(phase(26 + 130 * np.exp(-t / .03), n)) * np.exp(-t / .16)) / np.tanh(2.2)
-    zip_ = np.tanh(3 * np.sin(phase(55 + 1500 * np.exp(-t / .028), n))) * np.exp(-t / .07)
-    chu = bp(rng.standard_normal(n), 400, 3000) * np.exp(-np.maximum(t - .005, 0) / .015) * np.minimum(t / .005, 1)
-    hum = (np.sin(phase(55, n)) + .5 * np.sin(phase(110, n))) * np.exp(-np.maximum(t - .03, 0) / .12) * np.minimum(t / .03, 1)
-    click = lp(rng.standard_normal(n), 3000) * np.exp(-t / .002)
-    return fade(.9 * pu + .6 * zip_ + .5 * chu + .3 * hum + .4 * click, .0005, .06)
-
-
 def glitch(kind, d, rng):
     """バグる音：zip＝ジッ（荒いデジタルの粒）・buzz＝ブーッ（デジタルのうなり）・thud＝ブッ・tick＝チッ"""
     n = n_(d)
@@ -458,19 +414,6 @@ def crackle(d, rate, rng):
         k = int(rng.integers(20, 160))
         x[i:i + k] += rng.standard_normal(k)[:len(x[i:i + k])] * np.exp(-np.arange(k) / (k / 4))[:len(x[i:i + k])] * rng.uniform(.3, 1)
     return hp(x, 2500)
-
-
-def crt_off(rng):
-    """プチュン：「プ」（低いポン）＋「チュ」（高いノイズ）＋音程がいっきに下がる高い音（画面がつぶれる）＋「ン」（短いうなり）"""
-    d = .45
-    n = n_(d)
-    t = tl(n)
-    zip_ = np.sin(phase(380 + 6200 * np.exp(-t / .022), n)) * np.exp(-t / .06)
-    chu = bp(rng.standard_normal(n), 2500, 9000) * np.exp(-np.maximum(t - .006, 0) / .018) * np.minimum(t / .006, 1)
-    pu = np.sin(phase(70 + 160 * np.exp(-t / .02), n)) * np.exp(-t / .07)
-    hum = (np.sin(phase(240, n)) + .4 * np.sin(phase(480, n))) * np.exp(-np.maximum(t - .03, 0) / .09) * np.minimum(t / .03, 1)
-    click = hp(rng.standard_normal(n), 2000) * np.exp(-t / .0015)
-    return fade(.5 * zip_ + .45 * chu + .7 * pu + .22 * hum + .45 * click, .0005, .05)
 
 
 # ---------- まぜる ----------
@@ -726,55 +669,79 @@ def medals(mx, t0, dur, count, g, rng, curve=1.8):
         mx.add(coin(rng.uniform(1000, 1900), rng, rng.uniform(.25, .45)), t0 + dur * rng.uniform(0, 1) ** curve, g * rng.uniform(.5, 1), rng.uniform(-.8, .8), rv=.25)
 
 
+def arc_zap(d, rng, rate=260):
+    """バチバチッ・ジジッ：細い電気（放電）の音。はじける粒（とても短い・高い音が多い）がかたまって鳴る＋シャーという細いノイズ"""
+    n = n_(d)
+    x = np.zeros(n)
+    for _ in range(int(rng.poisson(rate * d))):
+        i = int(rng.integers(0, max(1, n - 120)))
+        k = int(rng.integers(8, 90))
+        x[i:i + k] += (rng.standard_normal(k) * np.exp(-np.arange(k) / (k / 5)))[:len(x[i:i + k])] * rng.uniform(.4, 1)
+    hiss = bp(rng.standard_normal(n), 3500, 11000) * .25
+    return fade(hp(x, 1800) + hiss, .001, .006)
+
+
 def sfx_fz():
-    """押してから（秒は gen_fx.py の FZ_T・MT_T）。全体を低音・重低音で、どてき！！からは爆発のようにずっしり重く：
-       0〜E バグる音（ドッ＋GL_SCRIPT のコマごとに低いブブッ・ヴッ・ドッ・コッ）→ C アイコンのドアップでヴォォン＋ギュゥン↓
-       → H 光の筋でゴォッ → E 青い画面でゴゴゴ（地ひびき）と低いうなりが上がる → W ブツン（低いプチュン）→ Z ズゥン↓ → 真っ暗（無音）
+    """押してから（秒は gen_fx.py の FZ_T・MT_T）。押した瞬間にフリーズ（まさちゃんの送ってくれたパチスロのフリーズの動画のような音。動画の音は使わず、ここで作る）：
+       0 ドンッ（重低音）＋ギュッ↓（低い音がいっきに下がる）＋ビーーッ（角ばった電子音 460Hz。画面のコマに合わせて揺れて、ときどき途切れる・ザザッ・チリチリ）
+       → B・B＋.11 白い光がふくらむたびに低いヴォン → W ブツッ（電子音がいきなり消える）→ 線にまとわりつく細い電気でバチバチッ・ジジッ
+       → Z ヒュゥン↓（線が縮む）→ プツッ → 真っ暗（無音）
        → M ドガーン!!（大爆発）→「どてき！！」ど・て・き は1文字ずつ小さな爆発でドドド＋1つ目の「！」でドガッ・2つ目の「！」で爆発と低いジャン（E → F# → G# → A）・低いベースが刻む
        → M＋T4 白い光でゴォーン →「ど！」×4（爆発がだんだん高く・低いジャン）→ 低いタムの連打
        → M＋T5「ど的中！！！！」で大爆発＋低い金管の和音＋「！」×4で小さな爆発 → 光の波に合わせて .45秒ごとに重いドン（爆発）
        → R 結果：大爆発＋低いパッパッパーン → R＋.3 着地のズドン・「ど的中！！！」ジャーン → 買い目 R＋.45〜（.08秒おき）→ 合計 R＋.69（メダル）"""
-    fz, gl, mt = read_fx_times()
-    C, H, E, W, Z, M, R = (fz[k] for k in 'CHEWZMR')
+    fz, mt = read_fx_times()
+    B, W, Z, M, R = (fz[k] for k in 'BWZMR')
     mx = Mix(R + 3.4, 32)
     r = mx.rng
-    # --- バグる（0〜E） ---
-    mx.add(boom(120, 32, .9, .3, .03, 2.8, r), 0, .9 * FZ_LOW, rv=.08)
-    mx.add(lglitch('zap', .08, r), 0, .45, rv=.08)
-    for t0, t1, fx in gl:
-        d = max(.02, t1 - t0)
-        for f in fx.split():
-            v = float(f[1:]) if len(f) > 1 else 0
-            if f[0] == 'S':
-                rb = np.random.default_rng(int(v * 7 + 3))
-                mx.add(lglitch('buzz', d, rb), t0, .2 + .012 * v, rv=.05)
-            elif f[0] == 'L':
-                mx.add(lglitch('zap', min(d, .06), r), t0, .55 + v / 80, r.uniform(-.5, .5), rv=.08)
-            elif f[0] == 'B':
-                mx.add(lglitch('thud', min(d, .06), r), t0, .7, rv=.05)
-            elif f[0] == 'T':
-                mx.add(lglitch('tick', .03, r), t0, .6, r.uniform(-.4, .4), rv=.05)
-    # アイコンのドアップ（C〜E）：ヴォォン（低い電気のうなり）＋ギュゥン↓
-    n = n_(E - C)
-    hum = lp(saw(41.2, n, .1) + .6 * saw(55.0 * 1.003, n, .15), 700) * np.minimum(tl(n) / .03, 1) * np.clip((E - C - tl(n)) / .05, 0, 1)
-    mx.add(fade(hum), C, .32, rv=.1)
-    gd = .25
-    mx.add(fade(np.sin(phase(np.geomspace(420, 42, n_(gd)), n_(gd))) * np.exp(-tl(n_(gd)) / .1)), C, .45, rv=.15)
-    mx.add(boom(80, 30, .6, .25, .04, 2.0, r), C, .5 * FZ_LOW, rv=.1)
-    # 光の筋（H〜E）：ゴォッ（低いノイズが左から右へ）
-    wd = E - H + .05
-    mx.add(nsweep(wd, 70, 600, .45, r) * np.sin(np.linspace(0, np.pi, n_(wd))), H, .3, np.linspace(-.7, .7, 8), rv=.2)
-    # 青い画面（E〜W）：ゴゴゴ＋低いうなりが上がる＋低いジジジ
-    d = W - E
-    mx.add(rumble(d, r, 180, 16) * np.linspace(.3, 1, n_(d)), E, .45, rv=.1)
-    mx.add(fade(np.tanh(1.5 * np.sin(phase(np.geomspace(32, 80, n_(d)), n_(d)))) * np.linspace(.3, 1, n_(d))), E, .35, rv=.1)
-    mx.add(lcrackle(d, 90, r), E, .3, rv=.15)
-    # ブツン（W）→ 線の低いジジ → ズゥン↓（Z）
-    mx.add(crt_low(r), W, 1.8, rv=.25)
-    mx.add(lcrackle(Z - W - .04, 45, r), W + .04, .18, rv=.2)
-    sd = .35
-    mx.add(fade(np.tanh(1.8 * np.sin(phase(np.geomspace(300, 34, n_(sd)), n_(sd)))) * np.exp(-tl(n_(sd)) / .12)), Z, .5, rv=.25)
-    # --- 真っ暗（Z＋.3〜M）は無音 ---
+    FR = 1 / 30
+    # --- 押した瞬間：ドンッ（重低音）＋ギュッ↓＋カチッ ---
+    mx.add(boom(110, 30, .55, .18, .03, 2.8, r), 0, 1.0 * FZ_LOW, rv=.03)       # すぐ消える（W からは無音に近く）
+    n = n_(.18)
+    t = tl(n)
+    mx.add(fade(np.tanh(2.2 * np.sin(phase(70 + 190 * np.exp(-t / .045), n))) * np.exp(-t / .08)), 0, .6, rv=.06)
+    mx.add(glitch('tick', .03, r), 0, .5, rv=.04)
+    # --- ビーーッ（0〜W）：角ばった電子音（460Hz と1オクターブ下）。1コマごとに音程が少しずれて、ときどき小さくなる（途切れる）→ W でいきなり消える ---
+    n = n_(W)
+    t = tl(n)
+    fi = np.minimum((t / FR).astype(int), int(W / FR))
+    rr = np.random.default_rng(461)
+    det = 1 + rr.uniform(-.025, .025, fi.max() + 1)[fi]
+    gate = np.where(rr.random(fi.max() + 1) < .25, .3, 1.0)[fi]
+    f = 460 * det
+    sq = np.tanh(6 * np.sin(phase(f, n))) / np.tanh(6)
+    sub = np.tanh(4 * np.sin(phase(f / 2 * 1.003, n))) / np.tanh(4)
+    bz = lp(.7 * sq + .5 * sub, 7000) * lp(gate, 250, 1) * np.minimum(t / .004, 1)
+    bz[-n_(.003):] *= np.linspace(1, 0, n_(.003))
+    mx.add(bz, 0, .78, rv=0)                                                     # 残響なし（W でいきなり消える）
+    # ザザッ（横に流れる帯 .067〜.2）・チリチリ（赤い粒 .2〜.267）・点々（B＋1コマ）
+    for k in range(4):
+        mx.add(glitch('zip', FR * .9, r), .067 + k * FR, .32, r.uniform(-.4, .4), rv=.05)
+    mx.add(crackle(.067, 900, r), .2, .45, rv=.05)
+    mx.add(glitch('zip', FR * .9, r), B + FR, .3, rv=.05)
+    # 白い光がふくらむ（B・B＋.11）：低いヴォン
+    for tt in (B, B + .11):
+        n = n_(.12)
+        t = tl(n)
+        mx.add(fade(np.tanh(1.8 * np.sin(phase(62 + 30 * np.exp(-t / .03), n))) * np.exp(-t / .06)), tt, .45, rv=.08)
+    # --- ブツッ（W）：電子音が消える瞬間の短いポップ ---
+    n = n_(.08)
+    t = tl(n)
+    mx.add(fade(.8 * np.sin(phase(50 + 90 * np.exp(-t / .01), n)) * np.exp(-t / .025) + .5 * lp(r.standard_normal(n), 2500) * np.exp(-t / .003)), W, .7, rv=.05)
+    # --- 細い電気（W〜Z＋.15）：バチバチッ・ジジッ（電気の形が変わるコマごとに、はじける粒がかたまる）---
+    k = 0
+    while W + k * FR < Z + .15:
+        tt = W + k * FR
+        sz = 1.0 if tt < Z else max(.3, 1 - (tt - Z) / .18)
+        mx.add(arc_zap(FR * 1.2, r, rate=420 * sz), tt, 1.25 * sz, r.uniform(-.5, .5), rv=.04)
+        k += 1
+    # --- ヒュゥン↓（Z〜）：線が縮む・高い音がいっきに下がる → プツッ ---
+    n = n_(.2)
+    t = tl(n)
+    wh = np.sin(phase(2600 * np.exp(-t / .06) + 180, n)) * np.minimum(t / .01, 1) * np.clip((.2 - t) / .03, 0, 1)
+    mx.add(fade(wh), Z, .16, rv=.05)
+    mx.add(glitch('tick', .02, r), Z + .19, .35, rv=.04)
+    # --- 真っ暗（Z＋.2〜M）は無音 ---
     # --- ネオンのカット（M〜R）：爆発のような重低音 ---
     T2, T3, T4, T5 = (M + mt[k] for k in ('T2', 'T3', 'T4', 'T5'))
     mx.add(explosion(r, 1.4), M, 1.0, rv=.15)                                      # ドガーン!!（大爆発）
