@@ -21,11 +21,12 @@ def ss_(e0, e1, x):
     return t * t * (3 - 2 * t)
 
 
-def render_sil(pose, box, W, Hh, s=3, azim=4, elev=3, fov=26, head_scale=1.15, name='ink'):
-    """3倍の大きさで馬の形を描く（しっぽの根元の3Dの出っぱりは作らない）"""
+def render_sil(pose, box, W, Hh, s=3, azim=4, elev=3, fov=26, head_scale=1.15, name='ink', cam=None):
+    """3倍の大きさで馬の形を描く（しっぽの根元の3Dの出っぱりは作らない）。
+       cam：決めたカメラ (目, 見る所)（走るコマで、どのコマも同じカメラにするとき）。なければ box に入るように決める（R['cam'] に入れて返す）"""
     Hm.HEAD_SCALE = head_scale
     W3, H3 = W * s, Hh * s
-    e, t = frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
+    e, t = cam if cam is not None else frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
     sc = Scene()
     sc.image(W3, H3, 1)
     sc.camera(e, t, fov)
@@ -55,6 +56,7 @@ def render_sil(pose, box, W, Hh, s=3, azim=4, elev=3, fov=26, head_scale=1.15, n
     R['eye'] = P([e0 if np.dot(e0 - t, np.asarray(e, float) - t) > np.dot(e1 - t, np.asarray(e, float) - t) else e1])[0]
     R['S'], R['scene'], R['s'] = S, sc, s
     R['P'] = P
+    R['cam'] = (e, t)
     return R
 
 

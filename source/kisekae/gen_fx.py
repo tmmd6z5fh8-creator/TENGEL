@@ -38,6 +38,7 @@ THEMED = dict(
     hit_autumn=dict(base='hit', tid='autumn', banner='autumn', push='mo', fonts=BY_ID['autumn']['fonts']),   # 紅葉：紅葉がついたPUSH・壁紙にいつも紅葉が降る
     hit_snow=dict(base='hit', tid='snow', banner='snow', push='yk', fonts=BY_ID['snow']['fonts']),   # 雪：雪が積もったPUSH・壁紙にいつも雪が降る
     hit_newyear=dict(base='hit', tid='newyear', banner='newyear', push='ny', fonts=BY_ID['newyear']['fonts']),   # お正月：初日の出が映ったPUSH・壁紙の初日の出の光が右回り
+    hit_news=dict(base='hit', tid='news', banner='news', push='np', fonts=BY_ID['news']['fonts']),   # 競馬新聞：新聞でできたPUSH・壁紙の墨の馬がいつも走る
 )
 AUTUMN_BLOB = '/_blob/18ba135d88acec43b93ec30218b90a09'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
 SNOW_BLOB = '/_blob/6683d421d2b9e7e0503e7173da2288ba'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
@@ -61,6 +62,9 @@ def theme_banner(name):
     if name == 'snow':
         import yuki
         return yuki.inline(SNOW_BLOB)
+    if name == 'news':                    # 競馬新聞：走るコマは flat/news_run.py（キャンバスの id は news_blobs.json・切りぬく場所は news_run.json）
+        import news_wall
+        return news_wall.inline(news_wall.load_blobs(f'{K}/news_blobs.json'), json.load(open(f'{K}/news_run.json')))
     if name == 'newyear':                 # お正月：絵は flat/newyear_banner.py --layers の2まい（キャンバスの id は newyear_blobs.json・光の決まりは newyear_sun.json）
         import newyear_wall
         return newyear_wall.inline(newyear_wall.load_blobs(f'{K}/newyear_blobs.json'), json.load(open(f'{K}/newyear_sun.json')))
@@ -650,6 +654,8 @@ def theme_form_css(tid):
     if tid == 'ranch':  # 牧場：上の絵は160pxぜんぶ（判定画面と同じ・馬が右はしから左はしまで行ったり来たり）
         out.append('.ph .bnr{height:160px}')
     if tid == 'sakura':  # 桜：上の絵は160pxぜんぶ（花びらが上から下まで降る）・上の帯の下の線は判定画面と同じ
+        out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
+    if tid == 'news':     # 競馬新聞：上の絵は160pxぜんぶ（墨の馬が走る）・上の帯の下の二重線は判定画面と同じ
         out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
     if tid == 'newyear':  # お正月：上の絵は160pxぜんぶ（初日の出の光が回る）・上の帯の下の金の線は判定画面と同じ
         out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
@@ -1415,6 +1421,117 @@ NY_CSS = r'''
 '''.replace('STAR', NY_STAR_URI)
 
 
+# ---------- 競馬新聞の的中ボタン：新聞でできたPUSH（まさちゃんの指定） ----------
+NP_INK, NP_RED, NP_GREY, NP_PAPER = '#141414', '#C81E1E', '#8C877D', '#F2EEE3'
+
+
+def np_bars(x0, x1, ys, seed, h=2.2):
+    """記事の行（灰色の棒）：x0〜x1 の はばで、行ごとに少し長さを変える。さいごの行は短い"""
+    rnd = random.Random(seed)
+    out = ''
+    for i, y in enumerate(ys):
+        w = (x1 - x0) * (rnd.uniform(.55, .75) if i == len(ys) - 1 else rnd.uniform(.88, 1))
+        out += f'<rect x="{x0}" y="{y}" width="{w:.1f}" height="{h}" fill="{NP_GREY}"/>'
+    return out
+
+
+def news_face_svg(sfx=''):
+    """PUSHの面＝新聞の紙面（面 200×100・角の丸み6で切りぬく。文字の下）：
+       新聞紙の色（上は明るく下は少し黄ばむ）に網点・まん中に たたんだ折り目。
+       上に題字「テンゲル競馬」（黒い帯に紙の色の字）・赤い◎（本命）と記事の行・右上に赤い「号外」（どきどき大きくなる .npg）・太い線。
+       下に二重線と3段の記事の行（段のあいだに細い線）。まん中の見出しが「PUSH」（黒い字に赤いずれの影・CSS）。sfx：id のうしろにつける字"""
+    K_, S_, D_ = (f'np{c}{sfx}' for c in 'KSD')
+    font = "font-family=\"'Kaisei Tokumin',serif\" font-weight=\"800\" font-style=\"normal\""      # <i> の中なので、ななめにならないように
+    defs = (f'<defs><clipPath id="{K_}"><rect width="200" height="100" rx="6"/></clipPath>'
+            f'<linearGradient id="{S_}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8F5EC"/><stop offset="1" stop-color="#E8E0CE"/></linearGradient>'
+            f'<pattern id="{D_}" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".6" fill="{NP_INK}" opacity=".07"/></pattern></defs>')
+    body = (f'<rect width="200" height="100" fill="url(#{S_})"/><rect width="200" height="100" fill="url(#{D_})"/>'
+            f'<rect x="8" y="6" width="70" height="15" fill="{NP_INK}"/>'
+            f'<text x="43" y="16.9" font-size="9.6" fill="{NP_PAPER}" text-anchor="middle" letter-spacing=".5" {font}>テンゲル競馬</text>'
+            f'<circle cx="88.5" cy="13.5" r="5.8" fill="none" stroke="{NP_RED}" stroke-width="1.8"/><circle cx="88.5" cy="13.5" r="2.4" fill="none" stroke="{NP_RED}" stroke-width="1.5"/>'
+            + np_bars(98, 150, (8.5, 12.6, 16.7), 3, 2.1)
+            + f'<g transform="translate(175 13.5)"><g class="npg"><rect x="-17" y="-8.5" width="34" height="17" fill="{NP_RED}"/>'
+            f'<text y="4.4" font-size="12" fill="#FFFFFF" text-anchor="middle" {font}>号外</text></g></g>'
+            f'<rect x="8" y="24.5" width="184" height="1.8" fill="{NP_INK}"/>'
+            f'<rect x="8" y="73.2" width="184" height="1.3" fill="{NP_INK}"/><rect x="8" y="75.8" width="184" height=".6" fill="{NP_INK}"/>'
+            + np_bars(8, 62, (80, 84.4, 88.8, 93.2), 5) + np_bars(70, 128, (80, 84.4, 88.8, 93.2), 6) + np_bars(136, 192, (80, 84.4, 88.8, 93.2), 7)
+            + f'<rect x="65.6" y="79" width=".7" height="17" fill="{NP_INK}" opacity=".6"/><rect x="131.6" y="79" width=".7" height="17" fill="{NP_INK}" opacity=".6"/>'
+            '<rect x="99" width="2" height="100" fill="#000000" opacity=".07"/><rect x="101" width=".9" height="100" fill="#FFFFFF" opacity=".55"/>'
+            '<rect width="200" height="100" fill="none" stroke="#000000" stroke-opacity=".06" stroke-width="3"/>')
+    return (f'<i class="npf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100">{defs}'
+            f'<g clip-path="url(#{K_})">{body}</g></svg></i>')
+
+
+def news_stack_svg(sfx=''):
+    """PUSHの厚み＝かさねた新聞の束（紙のふちの線。厚みの見える所だけ）"""
+    C_ = f'npC{sfx}'
+    lines = ''.join(f'<rect x="-14" y="{y}" width="228" height=".9" fill="{c}"/>'
+                    for y, c in ((114.2, '#F7F3EA'), (115.6, '#A39A86'), (117.2, '#F7F3EA'), (118.6, '#A39A86'), (120.2, '#F7F3EA'), (121.6, '#A39A86')))
+    return ('<i class="npt" aria-hidden="true"><svg viewBox="-20 -20 240 150" width="240" height="150">'
+            f'<defs><clipPath id="{C_}"><rect x="-13" y="-3" width="226" height="126" rx="19"/></clipPath></defs>'     # 厚みの形（ふちの下に見える所だけに線がある）
+            f'<g clip-path="url(#{C_})">{lines}</g></svg></i>')
+
+
+def news_push_svg(sfx=''):
+    return news_face_svg(sfx) + news_stack_svg(sfx)
+
+
+def paper_burst(n=18, seed=19):
+    """押した瞬間に、新聞の切れはしがパッと舞う（ボタンのまん中から外へ → くるくる裏返りながら落ちて消える）"""
+    rnd = random.Random(seed)
+    out = ''
+    for i in range(n):
+        a = math.radians(-90 + (i / n - .5) * 340 + rnd.uniform(-8, 8))
+        dist = rnd.uniform(90, 170)
+        x, y = math.cos(a) * dist * 1.2, math.sin(a) * dist * .85 - 24
+        out += (f'<i class="q{i % 3}" style="--x:{x:.0f}px;--y:{y:.0f}px;--r:{rnd.choice((-1, 1)) * rnd.uniform(120, 300):.0f}deg;'
+                f'--d:{rnd.uniform(0, .1):.2f}s"></i>')
+    return f'<div class="clips np" aria-hidden="true">{out}</div>'
+
+
+def np_scrap_uri(k):
+    """新聞の切れはし（押したときに舞う）：0＝記事の行・1＝赤い◎・2＝黒い見出しの帯"""
+    inner = {0: "<rect x='3' y='4' width='18' height='1.6' fill='%238C877D'/><rect x='3' y='7.5' width='16' height='1.6' fill='%238C877D'/><rect x='3' y='11' width='17' height='1.6' fill='%238C877D'/>",
+             1: "<circle cx='9' cy='9' r='5' fill='none' stroke='%23C81E1E' stroke-width='1.6'/><circle cx='9' cy='9' r='2' fill='none' stroke='%23C81E1E' stroke-width='1.3'/>",
+             2: "<rect x='3' y='3' width='18' height='4.5' fill='%23141414'/><rect x='3' y='9.5' width='15' height='1.4' fill='%238C877D'/>"}[k]
+    w, h = (24, 15) if k != 1 else (18, 18)
+    return (f"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}'%3E%3Crect width='{w}' height='{h}' fill='%23F4F0E6' stroke='%23B5AC98' stroke-width='.6'/%3E"
+            + inner.replace('<', '%3C').replace('>', '%3E') + "%3C/svg%3E")
+
+
+NP_CSS = r'''
+/* ---------- 競馬新聞の的中ボタン：新聞でできたPUSH（まさちゃんの指定） ----------
+   面＝新聞の紙面（新聞紙の色に網点・たたんだ折り目・上に題字「テンゲル競馬」と赤い◎と記事・右上に赤い「号外」・下に3段の記事）。
+   見出しの「PUSH」は黒い字に赤いずれの影。角は少しだけ丸い（新聞の四角）。紙の白いふち・黒い太いふち・厚みは かさねた新聞の束（紙のふちの線）。
+   「号外」が どきどき大きくなる。上下の動きは的中と同じ。押すと同じボタンがはじけて（紙なので白く光らせない）、新聞の切れはしがパッと舞う */
+.np{--pr:6px;--pushA:#F2EEE3;--pushB:#141414;--pushC:#F8F5EC;--rim:#FBF9F3;--rimD:#141414;
+  --pushFace:linear-gradient(180deg,#F8F5EC,#E8E0CE)}
+.push.np{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #CFC6B3,0 22px 34px rgba(0,0,0,.45)}
+.push.np span{color:#141414;text-shadow:3px 3px 0 #C81E1E}
+.push.np::after{border-color:rgba(200,30,30,.9)}
+.np .npf{position:absolute;left:0;top:0;width:200px;height:100px;border-radius:6px;overflow:hidden;pointer-events:none;font-style:normal}
+.np .npf svg{display:block;width:200px;height:100px}
+.np .npt{position:absolute;left:-20px;top:-20px;width:240px;height:150px;pointer-events:none;z-index:3}
+.np .npt svg{display:block;width:240px;height:150px;overflow:visible}
+.np .npg{transform-box:view-box;transform-origin:0 0;animation:npPulse 1.6s ease-in-out infinite}
+@keyframes npPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.tap.np{color:#F2EEE3}
+.pressed.np{border-radius:6px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #CFC6B3;animation-name:npPress}
+@keyframes npPress{0%{transform:scale(1)}35%{transform:scale(.84)}100%{transform:scale(1.7);opacity:0}}   /* 紙の白は光らせない（ボードが出るところと重なって、ちかちかしないように） */
+.clips.np{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips.np i{position:absolute;opacity:0;left:-12px;top:-8px;width:24px;height:15px;background:center/contain no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.25);
+  animation:npFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both}
+.clips.np .q0{background-image:url("SCRAP_0")}
+.clips.np .q1{width:18px;height:18px;left:-9px;top:-9px;background-image:url("SCRAP_1")}
+.clips.np .q2{background-image:url("SCRAP_2")}
+@keyframes npFly{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.4,.4)}10%{opacity:1}45%{transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1,1)}
+  70%{opacity:1;transform:translate(calc(var(--x) * 1.08),calc(var(--y) + 34px)) rotate(calc(var(--r) * 1.3)) scale(-.6,1)}100%{opacity:0;transform:translate(calc(var(--x) * 1.12),calc(var(--y) + 70px)) rotate(calc(var(--r) * 1.6)) scale(1,1)}}
+@media (prefers-reduced-motion:reduce){.np .npg{animation:none}.clips.np{display:none}}
+'''
+for _k in range(3):
+    NP_CSS = NP_CSS.replace(f'SCRAP_{_k}', np_scrap_uri(_k))
+
+
 def form(bets, pay_total, note, fin=(6, 2, 10)):
     rows = ''.join(f'<li><span class="bt">{t}</span><span class="bc">{combo(c, s)}</span><span class="by">{y}</span></li>' for t, c, s, y, _, _ in bets)
     return f'''  <main class="ct">
@@ -1911,7 +2028,8 @@ PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイ
     hit_sea=('Fx_HitSea.dc.html', '的中ボタン（海：海の模様のPUSH）'),
     hit_autumn=('Fx_HitAutumn.dc.html', '的中ボタン（紅葉：紅葉がついたPUSH）'),
     hit_snow=('Fx_HitSnow.dc.html', '的中ボタン（雪：雪が積もったPUSH）'),
-    hit_newyear=('Fx_HitNewYear.dc.html', '的中ボタン（お正月：初日の出が映ったPUSH）'))
+    hit_newyear=('Fx_HitNewYear.dc.html', '的中ボタン（お正月：初日の出が映ったPUSH）'),
+    hit_news=('Fx_HitNews.dc.html', '的中ボタン（競馬新聞：新聞でできたPUSH）'))
 BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
 BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
 BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
@@ -1945,7 +2063,7 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}{sea_push_svg() if th.get('push') == 'se' else ''}{momiji_push_svg() if th.get('push') == 'mo' else ''}{snow_push_svg() if th.get('push') == 'yk' else ''}{newyear_push_svg() if th.get('push') == 'ny' else ''}<span>PUSH</span></button>
+      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}{sea_push_svg() if th.get('push') == 'se' else ''}{momiji_push_svg() if th.get('push') == 'mo' else ''}{snow_push_svg() if th.get('push') == 'yk' else ''}{newyear_push_svg() if th.get('push') == 'ny' else ''}{news_push_svg() if th.get('push') == 'np' else ''}<span>PUSH</span></button>
       <div class="pshadow{pb}{pc}"></div>
       <p class="tap{pb}{pc}">タップ！</p>
     </div>
@@ -1967,7 +2085,7 @@ def page(kind):
   <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}{sea_push_svg() if th.get("push") == "se" else ""}{momiji_push_svg("moP") if th.get("push") == "mo" else ""}{snow_push_svg("2") if th.get("push") == "yk" else ""}{newyear_push_svg("2") if th.get("push") == "ny" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}{water_burst() if th.get('push') == 'se' else ''}{leaf_burst() if th.get('push') == 'mo' else ''}{snow_burst() if th.get('push') == 'yk' else ''}{gold_burst() if th.get('push') == 'ny' else ''}
+    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}{sea_push_svg() if th.get("push") == "se" else ""}{momiji_push_svg("moP") if th.get("push") == "mo" else ""}{snow_push_svg("2") if th.get("push") == "yk" else ""}{newyear_push_svg("2") if th.get("push") == "ny" else ""}{news_push_svg("2") if th.get("push") == "np" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}{water_burst() if th.get('push') == 'se' else ''}{leaf_burst() if th.get('push') == 'mo' else ''}{snow_burst() if th.get('push') == 'yk' else ''}{gold_burst() if th.get('push') == 'ny' else ''}{paper_burst() if th.get('push') == 'np' else ''}
     <div class="hb">{board(kind, bets, total, tid=tid)}</div>
     {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
@@ -1999,7 +2117,7 @@ def page(kind):
     else:
         css += HIT_CSS
     if th:
-        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS, se=SE_CSS, mo=MO_CSS, yk=YK_CSS, ny=NY_CSS).get(th.get('push'), '')
+        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS, se=SE_CSS, mo=MO_CSS, yk=YK_CSS, ny=NY_CSS, np=NP_CSS).get(th.get('push'), '')
     css += board_css([tid])
     fn, name = PAGES[page_kind]
     fonts = ''.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">\n' for f in th.get('fonts', ()))
@@ -2138,7 +2256,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月の的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'], hit_news=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月・競馬新聞の的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -2521,7 +2639,7 @@ body{{margin:0}}
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li><b>紅葉</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>紅葉がついたPUSH</b>（朱色の面・左上と右下に枝ともみじ（赤・朱・橙・山吹）・面にもみじ。枝がゆれて もみじがひらひら落ちる・押すと もみじが舞う。見本「的中ボタン（紅葉）」）・壁紙に<b>いつも紅葉が降っている</b>（もみじ18枚・ゆらゆら／くるくる回って裏返る・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・momiji.py。視差効果を減らすなら消える）</li><li><b>雪</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>雪が積もったPUSH</b>（氷の色の面・上に雪がこんもり（前に3か所たれる）・下につらら・面に雪の結晶。雪の上がきらっ・ときどき雪のかたまりがポロッ・前を雪がふわふわ降る・押すと雪けむりがボフッ。見本「的中ボタン（雪）」）・壁紙に<b>いつも雪が降っている</b>（雪つぶ40こ＋結晶6こ・ふわふわゆれる・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・yuki.py。視差効果を減らすなら消える）</li><li><b>お正月</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>初日の出が映ったPUSH</b>（面に夜明けの空・右回りに回る金の光・初日の出・小さな富士山・金の雲・きらっと光る星・ななめに通る光。左下と右上に金の雲・押すと金の星と金の粉が広がる。見本「的中ボタン（お正月）」）・壁紙は<b>初日の出の光が右回りでいつも回る</b>（絵を「光より うしろ」と「光より前」の2まいに分けて、あいだの光12本を太陽のまん中で36秒に1回り。flat/newyear_banner.py --layers・newyear_wall.py。視差効果を減らすなら回らない）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li><b>紅葉</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>紅葉がついたPUSH</b>（朱色の面・左上と右下に枝ともみじ（赤・朱・橙・山吹）・面にもみじ。枝がゆれて もみじがひらひら落ちる・押すと もみじが舞う。見本「的中ボタン（紅葉）」）・壁紙に<b>いつも紅葉が降っている</b>（もみじ18枚・ゆらゆら／くるくる回って裏返る・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・momiji.py。視差効果を減らすなら消える）</li><li><b>雪</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>雪が積もったPUSH</b>（氷の色の面・上に雪がこんもり（前に3か所たれる）・下につらら・面に雪の結晶。雪の上がきらっ・ときどき雪のかたまりがポロッ・前を雪がふわふわ降る・押すと雪けむりがボフッ。見本「的中ボタン（雪）」）・壁紙に<b>いつも雪が降っている</b>（雪つぶ40こ＋結晶6こ・ふわふわゆれる・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・yuki.py。視差効果を減らすなら消える）</li><li><b>お正月</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>初日の出が映ったPUSH</b>（面に夜明けの空・右回りに回る金の光・初日の出・小さな富士山・金の雲・きらっと光る星・ななめに通る光。左下と右上に金の雲・押すと金の星と金の粉が広がる。見本「的中ボタン（お正月）」）・壁紙は<b>初日の出の光が右回りでいつも回る</b>（絵を「光より うしろ」と「光より前」の2まいに分けて、あいだの光12本を太陽のまん中で36秒に1回り。flat/newyear_banner.py --layers・newyear_wall.py。視差効果を減らすなら回らない）</li><li><b>競馬新聞</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>新聞でできたPUSH</b>（面が新聞の紙面：題字・赤い◎・記事の行・折り目・どきどきする赤い「号外」。見出しの「PUSH」は黒に赤いずれの影・厚みは かさねた新聞の束・押すと新聞の切れはしが舞う。見本「的中ボタン（競馬新聞）」）・壁紙は<b>墨の馬がいつも走っている</b>（いまの絵と同じ墨の馬・同じカメラで、ギャロップ1回10コマ・0.5秒。紙と字ごと馬の所だけ切りぬいて重ねる。flat/news_run.py・news_wall.py。視差効果を減らすなら止まった絵）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>
