@@ -2,9 +2,11 @@
    python3 gen_fx.py fx_blobs.json
    fx_blobs.json：{"back": "<id>", "front": "<id>"}（ボードを持つ馬の2枚）＋フリーズの絵（fz_warp・fz_icon・fz_ncore・fz_nglow）
    ＋メモの静止画（s_…。そろっていればメモ Fx_Memo.dc.html も作る）
+   ＋効果音（snd_hit_push・snd_hit・snd_big_push・snd_big・snd_fz_push・snd_fz。gen_sfx.py の音。あれば見本の画面で鳴らして、
+     同じフォルダの sfx_wave.json と合わせて効果音のメモ Fx_Sound.dc.html も作る）
    流れ：記録する → PUSHボタン（上下に動く）→ タップ → 馬がボードを持って出てくる（ボードに当たった買い目）
    フリーズ（3連単の当たりに超大穴＝10〜12番人気の馬）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップでパチスロのフリーズのように
-   画面がバグる → 青白い横一本線にプチュン → 真っ暗（2秒）→ 虹色ネオンの超高速カット →「ど的中」が炎と光の中からドーン → 炎の中から馬がボード"""
+   画面がバグる → 青白い横一本線にプチュン → 真っ暗（1.5秒）→ 虹色ネオンのカット（とんでも！・ど！・ど的中！！！！）→ 炎の画面に「ど的中」と馬がボード"""
 import os, re, sys, json, random, math
 from urllib.parse import quote
 from gen_screens import SVG_A
@@ -1068,17 +1070,302 @@ def page(kind):
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{{"start":{{"editor":"enum","options":["form","push","reveal"],"default":"form"}},"$preview":{{"width":390,"height":844}}}}'>
+{page_js(kind)}</script>
+</body>
+</html>
+'''
+
+
+# ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
+SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz')}
+WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
+
+# 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
+SFX_JS = '''  sfxDecode(c, b) {
+    return new Promise(function (ok) {
+      try { var q = c.decodeAudioData(b, ok, function () { ok(null); }); if (q && q.catch) q.catch(function () { ok(null); }); } catch (e) { ok(null); }
+    });
+  }
+  sfxInit() {
+    // 音は先に読んで、音のデータにしておく（鳴らすのは押したときだけ）
+    if (this._sx) return this._sx;
+    var self = this, sx = this._sx = { raw: {}, buf: {}, ctx: null, src: null, el: null, id: 0, ok: 0 };
+    var urls = this.sfxUrls(), dec = null;
+    var OC = typeof window === 'undefined' ? null : (window.OfflineAudioContext || window.webkitOfflineAudioContext);
+    if (OC) { try { dec = new OC(2, 44100, 44100); } catch (e) { dec = null; } }
+    if (typeof fetch === 'function') {
+      Object.keys(urls).forEach(function (k) {
+        sx.raw[k] = fetch(urls[k]).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).catch(function () { return null; });
+        if (dec) sx.buf[k] = sx.raw[k].then(function (b) { return b ? self.sfxDecode(dec, b.slice(0)) : null; });
+      });
+    }
+    return sx;
+  }
+  sfx(k, from, wait, done) {
+    // 押した瞬間を0秒として、音の from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）
+    var self = this, sx = this.sfxInit();
+    this.hush();
+    var id = sx.id, t0 = Date.now(), url = this.sfxUrls()[k];
+    var end = function () { if (done && id === sx.id) done(); };
+    from = from || 0;
+    wait = wait || 0;
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    var ctx = sx.ctx;
+    if (!ctx || !sx.raw[k]) {
+      if (from || wait || typeof Audio === 'undefined') { end(); return; }
+      try { var a = new Audio(url); a.onended = end; sx.el = a; var p = a.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
+      return;
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    if (!sx.ok) {
+      sx.ok = 1;
+      try { var s0 = ctx.createBufferSource(); s0.buffer = ctx.createBuffer(1, 1, 22050); s0.connect(ctx.destination); s0.start(0); } catch (e) {}
+    }
+    (sx.buf[k] || Promise.resolve(null)).then(function (buf) {
+      // 先に読めなかったときは、鳴らす方で読みなおす
+      return buf || sx.raw[k].then(function (b) { return b ? self.sfxDecode(ctx, b.slice(0)) : null; });
+    }).then(function (buf) {
+      if (id !== sx.id) return;
+      var el = (Date.now() - t0) / 1000, late = Math.max(0, el - wait), off = from + (late > .1 ? late : 0);
+      if (!buf || off >= buf.duration) { end(); return; }
+      var s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(ctx.destination);
+      s.onended = end;
+      s.start(ctx.currentTime + Math.max(0, wait - el), off);
+      sx.src = s;
+    });
+  }
+  hush() {
+    var sx = this._sx;
+    if (!sx) return;
+    sx.id++;
+    if (sx.src) { try { sx.src.stop(); } catch (e) {} sx.src = null; }
+    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }
+  }
+  slow() {
+    // iPhoneの「視差効果を減らす」
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+'''
+
+
+def page_js(kind):
+    """見本の画面のスクリプト。音があれば：記録する → PUSHの音／PUSHをタップ → タップの音（フリーズは視差効果を減らすなら1秒後に結果の所から）／とじる → 止める"""
+    ids = [blobs.get(k) for k in SND[kind]]
+    on, head, init = dict(push='', tap='', form=''), '', ''
+    if all(ids):
+        tap = "self.sfx('tap'); "
+        if kind == 'fz':
+            tap = f"if (self.slow()) self.sfx('tap', {FZ_T['R']:g}, 1); else self.sfx('tap'); "
+        on = dict(push="self.sfx('push'); ", tap=tap, form='self.hush(); ')
+        head = f"  sfxUrls() {{\n    return {{ push: '/_blob/{ids[0]}', tap: '/_blob/{ids[1]}' }};\n  }}\n" + SFX_JS
+        init = '    this.sfxInit();\n'
+    return ('class Component extends DCLogic {\n' + head
+            + '  renderVals() {\n' + init
+            + "    var st = this.state || {};\n"
+            + "    var ph = st.ph || this.props.start || 'form';\n"
+            + "    var self = this;\n"
+            + "    return {\n"
+            + "      isPush: ph === 'push',\n"
+            + "      isReveal: ph === 'reveal',\n"
+            + f"      toPush: function () {{ {on['push']}self.setState({{ ph: 'push' }}); }},\n"
+            + f"      toReveal: function () {{ {on['tap']}self.setState({{ ph: 'reveal' }}); }},\n"
+            + f"      toForm: function () {{ {on['form']}self.setState({{ ph: 'form' }}); }}\n"
+            + "    };\n"
+            + "  }\n"
+            + "}\n")
+
+
+SOUND_W, SOUND_H = 2200, 1300
+SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目もり（秒）
+    ('hit', '的中ボタン', '当たったとき・ハ長調（明るく軽く）', 'ピロリン↑（鐘が3つ上がる）＋キラキラ', ('#C8281F', '#FF9A3C'), .5),
+    ('big', 'デカ的中ボタン', '3連単が当たったとき・ニ長調（大きく）', 'キュイーン↑（上がる音を重ねて）＋キラキラ', ('#7B4CFF', '#FF3BB8'), .5),
+    ('fz', 'ど的中ボタン（フリーズ的中ボタン）', '3連単の当たりに超大穴（10〜12番人気）<br>ホ長調（いちばん派手）', 'ドゥン＋重いギュイイイン↑＋キラキラ',
+     ('#FF3B3B', '#FF9F1A', '#FFE53B', '#3BE26A', '#2FD6FF', '#4C6BFF', '#B34CFF', '#FF3BB8'), 1.0),
+)
+
+
+def snd_events():
+    """タップの音の中身（秒・終わり・音・画面）。フリーズは FZ_T の時刻"""
+    C, H, E, W, Z, M, R = (FZ_T[k] for k in 'CHEWZMR')
+    return {
+        'hit': [(0, None, 'ポン', '押した'), (.22, .97, 'ヒュイーン↑', '馬がボードを持って下から'), (.95, None, 'キラーン', '「的中！」'),
+                (1.15, 1.3, 'ピン・ポン', '買い目が1行ずつ'), (1.6, None, 'チャリーン', '払戻の合計（コイン）')],
+        'big': [(0, None, 'ポン', '押した'), (.18, None, 'ドーン', '白く光る'), (.25, .7, 'シャララララ↑', '虹の光の筋と輪'),
+                (.85, None, 'ヒュッ↓', '光の中から馬'), (1.29, 1.43, 'タ・タ・タ', 'ためて'), (1.5, None, 'パーン！', '「デカ的中!!」'),
+                (1.75, 1.9, 'ピン・ピン', '買い目'), (1.85, 2.0, 'パッ・パッ', 'ファンファーレ'), (2.2, None, 'パーーン＋ジャラジャラ', '払戻の合計（コイン）')],
+        'fz': [(0, E, 'ガチッ → ジジッ・ブツッ', '画面がバグる（コマに合わせて）'), (C, None, 'ヴォン＋ギュン↓', 'アイコンのドアップ'),
+               (H, None, 'シュイーン', '横に流れる光'), (E, W, 'ジジジ＋キーン↑', '青く光る・稲妻'), (W, None, 'プチュン', '青白い横一本線'),
+               (Z, None, 'シュン↓', '点に縮んで消える'), (Z + .3, M, '無音', '真っ暗（フリーズの間）'),
+               (M, M + 2.2, 'ドン！→ ダダダダ・ジャン×4', '「とんでも！」（1文字ずつ・ベースが刻む）'),
+               (M + 2.2, M + 3.0, 'シャーン↑ → ド！ド！ド！ド！', '白く光る → 大きな「ど！」×4'),
+               (M + 3.0, M + 3.4, 'ダララララ', 'スネアの連打'), (M + 3.4, None, 'ジャーン!!', '「ど的中！！！！」'),
+               (M + 3.85, R, 'ドン・ドン（0.45秒ごと）', '光の波と輪に合わせて'), (R, None, 'パッパッパーン＋ジャラジャラ', '結果（炎の画面・コイン）'),
+               (R + .6, None, 'キラーン', '「フリーズ的中!!!」'), (R + .85, R + 1.15, 'ピン・ポン・パン', '買い目'),
+               (R + 1.3, None, 'チャリーン', '払戻の合計')],
+    }
+
+
+def ssec(v):
+    return f'{v:.2f}'.rstrip('0').rstrip('.')
+
+
+def wave_svg(key, name, wv, evs, cols, step):
+    """タップの音の波形（音の大きさ・dB）と、番号つきの印・秒の目もり"""
+    PX, WW, MT, WH = 14, 1664, 30, 92
+    TW, TH = PX * 2 + WW, MT + WH + 26
+    d, h = wv['d'], wv['h']
+    X = lambda t: PX + t / d * WW
+    mid, amp, n = MT + WH / 2, WH / 2 - 2, len(h)
+    pts = [(X(0), 0)] + [(X((i + .5) * d / n), max(v, .015) * amp) for i, v in enumerate(h)] + [(X(d), 0)]
+    poly = ' '.join(f'{x:.0f},{mid - a:.0f}' for x, a in pts) + ' ' + ' '.join(f'{x:.0f},{mid + a:.0f}' for x, a in reversed(pts))
+    stops = ''.join(f'<stop offset="{i / max(1, len(cols) - 1):.3f}" stop-color="{c}"></stop>' for i, c in enumerate(cols))
+    band = ''.join(f'<rect x="{X(t0):.1f}" y="{MT}" width="{X(t1) - X(t0):.1f}" height="{WH}" rx="4" fill="#161F3D" fill-opacity=".07"></rect>'
+                   for t0, t1, *_ in evs if t1)
+    marks = ''
+    for i, (t0, *_) in enumerate(evs, 1):
+        x = X(t0)
+        marks += (f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{MT - 4}" y2="{MT + WH}" stroke="#22252E" stroke-opacity=".35" stroke-dasharray="3 3"></line>'
+                  f'<circle cx="{x:.1f}" cy="13" r="11" class="mk"></circle>'
+                  f'<text x="{x:.1f}" y="17.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">{i}</text>')
+    ticks, t = '', 0.0
+    while t <= d + 1e-6:
+        x = X(t)
+        ticks += (f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{MT + WH}" y2="{MT + WH + 5}" stroke="#6A7080"></line>'
+                  f'<text x="{x:.1f}" y="{MT + WH + 19}" text-anchor="middle" font-size="12" fill="#6A7080">{ssec(t)}{"秒" if t == 0 else ""}</text>')
+        t = round(t + step, 6)
+    return (f'<svg class="wv" width="{TW}" height="{TH}" viewBox="0 0 {TW} {TH}" role="img" aria-label="{name}のタップの音の大きさ（{ssec(d)}秒）" font-family="BIZ UDPGothic, sans-serif">'
+            f'<defs><linearGradient id="wg{key}" x1="0" x2="1" y1="0" y2="0">{stops}</linearGradient></defs>{band}'
+            f'<line x1="{PX}" x2="{PX + WW}" y1="{mid:.0f}" y2="{mid:.0f}" stroke="#22252E" stroke-opacity=".15"></line>'
+            f'<polygon points="{poly}" fill="url(#wg{key})"></polygon>{marks}{ticks}</svg>')
+
+
+PLAY_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"></path></svg>'
+STOP_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>'
+
+
+def sound_page():
+    """効果音のメモ：▶で聞ける・タップの音の波形と中身・アプリで鳴らすときの決まり"""
+    evs_all = snd_events()
+    R = FZ_T['R']
+    secs = ''
+    for key, name, sub, pdesc, cols, step in SND_INFO:
+        wp, wt = WAVES[f'sfx_{key}_push'], WAVES[f'sfx_{key}']
+        evs = evs_all[key]
+        items = ''.join(f'<li><span class="no">{i}</span><span class="tx"><span class="tm">{ssec(t0)}{"〜" + ssec(t1) if t1 else ""}秒</span> <b>{snd}</b> <span class="wh">{what}</span></span></li>'
+                        for i, (t0, t1, snd, what) in enumerate(evs, 1))
+        secs += f'''
+  <section class="sn {key}">
+    <div class="sl">
+      <h2>{name}<small>{sub}</small></h2>
+      <button class="pl" type="button" onClick="{{{{p_{key}_push}}}}" aria-pressed="{{{{a_{key}_push}}}}">{PLAY_SVG}PUSHが出たとき<small>{ssec(wp['d'])}秒</small></button>
+      <p class="pd">{pdesc}</p>
+      <button class="pl" type="button" onClick="{{{{p_{key}}}}}" aria-pressed="{{{{a_{key}}}}}">{PLAY_SVG}PUSHをタップしたとき<small>{ssec(wt['d'])}秒</small></button>
+      <p class="pd">右の波形（0秒＝押した瞬間。見本の画面の動きと同じ時刻）</p>
+      <p class="lv">大きさ：PUSH {wp['lufs']:g}・タップ {wt['lufs']:g} LUFS</p>
+    </div>
+    <div class="sr">{wave_svg(key, name, wt, evs, cols, step)}<ol class="ev">{items}</ol></div>
+  </section>'''
+    keys = [k for k, *_ in SND_INFO]
+    urls = ',\n      '.join(f"{k}_push: '/_blob/{blobs[f'snd_{k}_push']}', {k}: '/_blob/{blobs[f'snd_{k}']}'" for k in keys)
+    vals = ',\n      '.join(f"p_{k}: play('{k}'), a_{k}: on === '{k}' ? 'true' : 'false'" for k in [x for k in keys for x in (f'{k}_push', k)])
+    box = '<div class="box"><h3>{}</h3><ul>{}</ul></div>'.format
+    boxes = (box('鳴らすとき', '<li><b>PUSHの音</b>：PUSHが出た瞬間（結果を記録して当たりのとき。3つのボタンのうち出た1つの音だけ）</li>'
+                 '<li><b>タップの音</b>：PUSHを押した瞬間が0秒。画面の動きと同じ時刻で、見本の画面（となりの3つ）でも同じに鳴る</li>'
+                 '<li>「とじる」・ほかの画面へ移る・アプリを閉じる → すぐ止める。鳴っている途中で次の音が鳴るときは、前の音を止めてから</li>')
+             + box('iPhoneでの鳴らし方（アプリ）', '<li><b>消音スイッチ（マナーモード）なら鳴らさない</b>・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）。音量はiPhoneの音量のまま</li>'
+                   '<li>設定に「効果音」オン／オフ（最初はオン）<b>※仮</b></li>'
+                   f'<li>「視差効果を減らす」がオン：的中・デカは同じ音。ど的中は動きが短い（1秒真っ暗 → 結果）ので、押して1秒後に、ど的中の音の{ssec(R)}秒（結果のパッパッパーン）から鳴らす <b>※仮</b>（見本の画面も同じ）</li>')
+             + box('大きさとファイル', '<li>6つ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz（AAC 160kbps・m4a・ぜんぶで約520KB）</li>'
+                   '<li>大きさはそろえて、強いボタンほど少し大きく（的中 −16〜−17・デカ −15〜−16・ど的中 −14〜−15 LUFS）。いちばん大きい所も −1dB 以下（音割れしない）</li>'
+                   '<li>買い目の音は見本の行の数（的中・デカ2行・ど的中3行）。4行以上だと合計が出る前に「チャリーン」が鳴るので、アプリでは行と合計の音を分けて、出るたびに鳴らす（あとで作る）<b>※仮</b></li>')
+             + box('作り方', '<li>音は全部プログラムで作った（gen_sfx.py・numpy と scipy）。<b>録音や、ほかの音のデータ（サンプル）は使っていない</b></li>'
+                   '<li>鐘（FM）・金管（ノコギリ波を重ねる）・ドラム・コイン・「シュッ」（ノイズ）を組み合わせて、残響・イコライザー・圧縮で仕上げ</li>'
+                   '<li>ど的中は gen_fx.py の時刻（FZ_T）とバグるコマ（GL_SCRIPT）を読むので、動きを変えたら作り直すだけで音もそろう：python3 gen_sfx.py &lt;フォルダ&gt; → ffmpeg で m4a に</li>'))
+    return f'''<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>効果音のメモ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
+<style>
+body{{margin:0}}
+*{{box-sizing:border-box}}
+.gd{{width:{SOUND_W}px;height:{SOUND_H}px;overflow:hidden;background:#F4F2EC;color:#22252E;font-family:"BIZ UDPGothic",sans-serif;padding:34px 40px 0}}
+.hdr{{display:flex;align-items:flex-start;justify-content:space-between;gap:40px}}
+.t1{{margin:0;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-height:1.2;color:#161F3D}}
+.t2{{margin:8px 0 0;max-width:1560px;font-size:14.5px;line-height:1.7;color:#4E5466}}
+.stop{{flex:none;display:inline-flex;align-items:center;gap:8px;height:48px;margin-top:4px;padding:0 24px;border-radius:999px;border:2px solid #161F3D;background:#FFFFFF;color:#161F3D;font-family:"BIZ UDPGothic",sans-serif;font-weight:700;font-size:15px;cursor:pointer}}
+.stop svg{{width:16px;height:16px}}
+.sn{{--c:#161F3D;display:grid;grid-template-columns:360px minmax(0,1fr);gap:28px;margin-top:16px;background:#FFFFFF;border:1px solid #DDD8CC;border-radius:14px;padding:16px 20px}}
+.sn.hit{{--c:#C8281F}}
+.sn.big{{--c:#7B4CFF}}
+.sn.fz{{border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8) border-box}}
+.sn h2{{margin:0;font-size:19px;line-height:1.3;color:#161F3D}}
+.sn h2 small{{display:block;margin-top:4px;font-size:12.5px;font-weight:700;color:#8A6A38}}
+.pl{{display:flex;align-items:center;gap:10px;width:100%;height:48px;margin-top:12px;padding:0 16px;border-radius:12px;border:2px solid var(--c);background:#FFFFFF;color:#161F3D;font-family:"BIZ UDPGothic",sans-serif;font-weight:700;font-size:15px;text-align:left;cursor:pointer}}
+.pl svg{{flex:none;width:18px;height:18px;color:var(--c)}}
+.pl small{{margin-left:auto;font-size:12.5px;color:#5A6070}}
+.pl[aria-pressed="true"]{{background:var(--c);color:#FFFFFF}}
+.pl[aria-pressed="true"] svg,.pl[aria-pressed="true"] small{{color:#FFFFFF}}
+.pd{{margin:6px 2px 0;font-size:12.5px;line-height:1.55;color:#4E5466}}
+.lv{{margin:10px 2px 0;font-size:12px;color:#5A6070}}
+.wv{{display:block}}
+.wv .mk{{fill:var(--c)}}
+.ev{{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 18px}}
+.ev li{{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:7px;align-items:start;font-size:13px;line-height:20px;color:#22252E}}
+.no{{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#FFFFFF;font-size:11.5px;font-weight:700;line-height:1}}
+.tm{{font-size:12.5px;font-weight:700;color:#5A6070}}
+.wh{{font-size:12.5px;color:#4E5466}}
+.boxes{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}}
+.box{{background:#FFFFFF;border:1px solid #DDD8CC;border-radius:12px;padding:12px 14px}}
+.box h3{{margin:0 0 6px;font-size:14px;color:#161F3D}}
+.box li{{margin:0;font-size:12.5px;line-height:1.65;color:#4E5466}}
+.box ul{{margin:0;padding-left:1.1em}}
+.box b{{color:#22252E}}
+</style>
+</helmet>
+<div class="gd">
+  <div class="hdr">
+    <div>
+      <h1 class="t1">効果音（的中ボタン・デカ的中ボタン・ど的中ボタン）</h1>
+      <p class="t2">まさちゃんの指定：3つのボタンに効果音。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
+    </div>
+    <button class="stop" type="button" onClick="{{{{stop}}}}">{STOP_SVG}とめる</button>
+  </div>{secs}
+  <div class="boxes">{boxes}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":{SOUND_W},"height":{SOUND_H}}}}}'>
 class Component extends DCLogic {{
-  renderVals() {{
-    var st = this.state || {{}};
-    var ph = st.ph || this.props.start || 'form';
-    var self = this;
+  sfxUrls() {{
     return {{
-      isPush: ph === 'push',
-      isReveal: ph === 'reveal',
-      toPush: function () {{ self.setState({{ ph: 'push' }}); }},
-      toReveal: function () {{ self.setState({{ ph: 'reveal' }}); }},
-      toForm: function () {{ self.setState({{ ph: 'form' }}); }}
+      {urls}
+    }};
+  }}
+{SFX_JS}  renderVals() {{
+    this.sfxInit();
+    var st = this.state || {{}};
+    var on = st.on || '';
+    var self = this;
+    var play = function (k) {{
+      return function () {{
+        if (on === k) {{ self.hush(); self.setState({{ on: '' }}); return; }}
+        self.sfx(k, 0, 0, function () {{ self.setState({{ on: '' }}); }});
+        self.setState({{ on: k }});
+      }};
+    }};
+    return {{
+      {vals},
+      stop: function () {{ self.hush(); self.setState({{ on: '' }}); }}
     }};
   }}
 }}
@@ -1151,7 +1438,7 @@ body{{margin:0}}
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → 炎の画面（炎の色・光の筋・炎の粒・コイン・馬とボード・「ど的中」・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・色ずれ・横ズレの帯・アイコンのドアップ・横に流れる光・走査線・ブロック・横の線）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
     <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。白く光るのは {sec(M + 2.2)}秒・{sec(R)}秒（どちらも弱め）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。音は見本に入れていない</li></ul></div>
+    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。白く光るのは {sec(M + 2.2)}秒・{sec(R)}秒（どちらも弱め）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
   </div>
 </div>
@@ -1179,3 +1466,6 @@ if __name__ == '__main__':
     if all(k in blobs for k in STILLS):
         open(f'{out}/Fx_Memo.dc.html', 'w', encoding='utf-8').write(memo_page())
         print('Fx_Memo.dc.html')
+    if WAVES and all(k in blobs for v in SND.values() for k in v):
+        open(f'{out}/Fx_Sound.dc.html', 'w', encoding='utf-8').write(sound_page())
+        print('Fx_Sound.dc.html')
