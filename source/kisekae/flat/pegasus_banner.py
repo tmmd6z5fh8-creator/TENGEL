@@ -1,8 +1,11 @@
 """星座・ペガサスの絵（780×320）：夜空・天の川・星・三日月は前の constellation.py のまま、ペガサスだけ描き直す
    走る馬（3Dの馬の形）＋風になびくたてがみとしっぽ＋羽（一から作った形）を、
    うすく光る形・なめらかな外の線・線の上の小さい星・星座の線と明るい星で描く
-   python3 flat/pegasus_banner.py <出力.webp> [見本のPNG]"""
-import sys, os, math
+   python3 flat/pegasus_banner.py <出力.webp> [見本のPNG]
+   python3 flat/pegasus_banner.py --base <出力.webp> <位置.json>   → 壁紙の動き（まさちゃん「背景の星が動く・ペガサスがキラキラ」）のための下の絵：
+     うしろの小さい星700こだけを描かない（夜空・天の川・三日月・ペガサスはそのまま）。位置.json に 星（x, y, 明るさ）・三日月の円・
+     星座の明るい星と線・外の線の上の小さい星 を書く（stars_wall.py が ページの SVG で星を流し、ペガサスをキラキラさせる）"""
+import sys, os, math, json
 import numpy as np
 import cv2
 
@@ -15,7 +18,8 @@ import horse3d as Hm
 from paint import fbm, warp
 
 W, Hh = 780, 320
-out = sys.argv[1]
+BASE = sys.argv[1] == '--base'
+out = sys.argv[2] if BASE else sys.argv[1]
 rng = np.random.default_rng(201)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
 
@@ -24,12 +28,16 @@ img = grad_v(Hh, W, [(0, '#070A24'), (0.6, '#1B1546'), (1, '#2D1B5A')])
 band = np.exp(-(((yy - (220 - xx * 0.28)) / 60) ** 2))
 neb = warp(fbm(Hh, W, 70, 5, seed=3), (fbm(Hh, W, 120, 3, seed=4) - .5) * 60, (fbm(Hh, W, 120, 3, seed=5) - .5) * 30)
 img = img + (band * neb ** 2)[..., None] * hexc('#9C7BFF') * 0.45 + (band * neb ** 4)[..., None] * hexc('#FFD6F2') * 0.35
+BG = []                                     # うしろの小さい星（x, y, 明るさ）。--base のときは描かない
 for i in range(700):
     x, y = rng.uniform(0, W), rng.uniform(0, Hh)
     b = rng.random() ** 3
     xi, yi = int(x), int(y)
-    img[yi, xi] = np.minimum(1, img[yi, xi] + 0.35 + b * 0.65)
-moon = soft_circle(Hh, W, 700, 58, 30, 1.0) - soft_circle(Hh, W, 712, 50, 27, 1.0)
+    BG.append((xi, yi, 0.35 + b * 0.65))
+    if not BASE:
+        img[yi, xi] = np.minimum(1, img[yi, xi] + 0.35 + b * 0.65)
+MOON = ((700, 58, 30), (712, 50, 27))       # 三日月＝大きい円から小さい円をぬいた形
+moon = soft_circle(Hh, W, *MOON[0], 1.0) - soft_circle(Hh, W, *MOON[1], 1.0)
 img = img + blur(np.clip(moon, 0, 1), 10)[..., None] * hexc('#FFE9A8') * 0.4
 img = over(img, hexc('#FFF2C4'), np.clip(moon, 0, 1))
 
@@ -225,7 +233,14 @@ img = img + blur(stl, 3.0)[..., None] * hexc('#FFD27A') * 0.9
 img = np.maximum(img, stl[..., None] * hexc('#FFFBEA'))
 
 save_webp(np.clip(img, 0, 1), out)
-if len(sys.argv) > 2:      # 確かめ用：形だけ
+if BASE:                   # 動きの位置（stars_wall.py が使う）
+    names = list(STARS)
+    json.dump(dict(size=[W, Hh], bg=[[x, y, round(v, 4)] for x, y, v in BG], moon=[list(m) for m in MOON],
+                   con=[[round(float(STARS[k][0]), 2), round(float(STARS[k][1]), 2), int(k in BIG)] for k in names],
+                   links=[[names.index(a), names.index(b)] for a, b in LINKS],
+                   dots=[[round(float(x), 2), round(float(y), 2), int(i % 3 == 0)] for i, (x, y) in enumerate(dots)]),
+              open(sys.argv[3], 'w'), separators=(',', ':'))
+elif len(sys.argv) > 2:    # 確かめ用：形だけ
     dbg = (np.dstack([mask] * 3) * 150).astype(np.uint8)
     for k, p in STARS.items():
         cv2.circle(dbg, (int(p[0]), int(p[1])), 3, (255, 255, 0), -1)
