@@ -78,6 +78,42 @@ def coins(n, seed, d0=0.0):
     return ''.join(out)
 
 
+def burst(x, y, d, s, c1, c2, seed, n=12, ring=True, star=True, z=None, dist=(.55, 1.0)):
+    """爆発の光：ギザギザの星形の光（.bs1）・衝撃の輪（.bw）・飛び散る光の破片 n こ。(x, y)＝まん中・d＝秒・s＝大きさ・c1/c2＝光の色"""
+    rnd = random.Random(seed)
+    pts = []
+    for i in range(32):
+        a = math.pi * 2 * i / 32 + rnd.uniform(-.05, .05)
+        r = rnd.uniform(40, 50) if i % 2 == 0 else rnd.uniform(14, 22)
+        pts.append(f'{50 + r * math.sin(a):.1f}% {50 - r * math.cos(a):.1f}%')
+    deb = ''
+    for i in range(n):
+        a = 2 * math.pi * (i + rnd.uniform(-.3, .3)) / n
+        dd = s * rnd.uniform(*dist)
+        deb += (f'<i style="--dx:{math.cos(a) * dd:.0f}px;--dy:{math.sin(a) * dd:.0f}px;--r:{math.degrees(a):.0f}deg;'
+                f'--t:{rnd.uniform(.38, .6):.2f}s;--c:hsl({rnd.randint(0, 359)},100%,{rnd.randint(60, 75)}%)"></i>')
+    zs = f'z-index:{z};' if z is not None else ''
+    st = f'<b class="bs1" style="clip-path:polygon({",".join(pts)})"></b>' if star else ''
+    rg = '<b class="bw"></b>' if ring else ''
+    return f'<i class="bx" style="{zs}--x:{x:g}px;--y:{y:g}px;--d:{fz_sec(d)};--s:{s:g}px;--c1:{c1};--c2:{c2}" aria-hidden="true">{st}{rg}{deb}</i>'
+
+
+BURST_CSS = r'''
+/* 爆発の光（文字やボードが出るとき）：ギザギザの星形の光がはじけて消える・衝撃の輪・飛び散る光の破片。小さな範囲で1回だけ光る（画面全体は光らせない） */
+.bx{position:absolute;left:var(--x);top:var(--y);width:0;height:0;pointer-events:none}
+.bx .bs1{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);
+  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards}
+@keyframes bxS{0%{opacity:1;transform:scale(.12)}45%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+.bx .bw{position:absolute;left:calc(var(--s) * -.35);top:calc(var(--s) * -.35);width:calc(var(--s) * .7);height:calc(var(--s) * .7);border-radius:50%;
+  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards}
+@keyframes bxW{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(2)}}
+.bx > i{position:absolute;left:-7px;top:-2px;width:14px;height:4px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);
+  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards}
+@keyframes bxD{0%{opacity:1;transform:translate(0,0) rotate(var(--r)) scaleX(2.2)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scaleX(.5)}}
+@media (prefers-reduced-motion:reduce){.bx{display:none}}
+'''
+
+
 COMMON_CSS = r'''body{margin:0}
 *{box-sizing:border-box}
 .ph{RANCH}
@@ -193,6 +229,8 @@ HIT_CSS = r'''
 BIG_CSS = r'''
 /* ---------- デカ的中：大きいPUSH・虹色に光る ---------- */
 .ov.big .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
+/* 押したあとの画面（.rv）は、PUSHの画面と同じ暗さのまま始める（暗さがいったん消えてまた暗くなると、白い光の前にもう1回光ってしまう） */
+.ov.rv .dim{animation:none}
 .push.big{--pr:36px;width:280px;height:140px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
 .push.big span{font-size:56px}
 /* 虹の輪：形はボタンと同じ横長のまま、色だけがぐるぐる回る */
@@ -213,32 +251,40 @@ BIG_CSS = r'''
   clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 1.6s ease-in-out var(--d) infinite;opacity:0}
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
 .pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
-/* 押したあと：白く光る → 虹の光の筋と輪 → 光の中から馬 */
-.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .9s ease-out .18s both}
-@keyframes flash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+/* 押したあと（パチンコの当たりのように速く・勢いよく）：はじける → 0.04秒 白く光る・爆発・虹の光の筋 → 虹の輪3つ（0.1・0.25・0.4秒）
+   → 0.38秒 馬とボードがドンと出る（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
+.pressed.big{animation:press .28s ease-in both}
+.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both}
+@keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 .rbow{position:absolute;z-index:3;left:50%;top:44%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
   -webkit-mask-image:repeating-conic-gradient(#000 0 6deg,transparent 6deg 15deg),radial-gradient(circle,#000 0 10%,transparent 60%);
   -webkit-mask-composite:source-in;mask-image:repeating-conic-gradient(#000 0 6deg,transparent 6deg 15deg),radial-gradient(circle,#000 0 10%,transparent 60%);mask-composite:intersect;
-  opacity:.85;animation:raysIn .7s ease-out .25s both,spin 7s linear infinite}
+  opacity:.85;animation:raysIn .25s cubic-bezier(.2,.9,.3,1) .04s both,spin 30s linear infinite}
 .glow{position:absolute;z-index:4;left:50%;top:44%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;
   background:radial-gradient(circle,#FFFFFF 0 22%,rgba(255,248,214,.9) 34%,rgba(255,230,160,.45) 52%,transparent 70%);
-  animation:wrap 1.3s ease-out .2s both,breathe 2.4s ease-in-out 1.5s infinite}
-@keyframes wrap{0%{scale:.1;opacity:0}45%{scale:2.6;opacity:1}100%{scale:1.15;opacity:.95}}
+  animation:wrap .55s ease-out .04s both,breathe 2.4s ease-in-out .6s infinite}
+@keyframes wrap{0%{scale:.1;opacity:0}60%{scale:1.3;opacity:1}100%{scale:1.15;opacity:.95}}
 @keyframes breathe{0%,100%{scale:1.15}50%{scale:1.25}}
 .ring{position:absolute;z-index:5;left:50%;top:44%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B);
   -webkit-mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);
-  opacity:0;animation:shock 1s ease-out forwards}
-.ring.r1{animation-delay:.28s}.ring.r2{animation-delay:.55s}.ring.r3{animation-delay:.85s}
+  opacity:0;animation:shock2 .42s ease-out forwards}
+/* 虹の輪3つ（キュウィン×3）：だんだん大きい輪がポンと出て消える（同じ所が何回も光らないように、輪の大きさを変える） */
+.ring.r1{--rs:.9;animation-delay:.1s}.ring.r2{--rs:1.5;animation-delay:.25s}.ring.r3{--rs:2.2;animation-delay:.4s}
+@keyframes shock2{0%{opacity:.7;scale:calc(var(--rs) * .6)}100%{opacity:0;scale:calc(var(--rs) * 1.25)}}
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
-.big .hb{animation:emerge 1s ease-out .85s both}
-@keyframes emerge{0%{opacity:0;transform:scale(.6);filter:brightness(3.2) blur(3px)}60%{opacity:1;transform:scale(1.06);filter:brightness(1.6) blur(0)}100%{transform:scale(1);filter:none}}
+.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both}
+@keyframes bslam{0%{opacity:0;transform:translateY(-70px) scale(1.45);filter:brightness(3) blur(3px)}55%{opacity:1;transform:translateY(8px) scale(.96);filter:brightness(1.7) blur(0)}78%{transform:translateY(-3px) scale(1.02);filter:brightness(1.15)}100%{transform:none;filter:none}}
 .big .board{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 26px 6px rgba(255,236,160,.85),0 10px 22px rgba(0,0,0,.3)}
 .big .bh{font-size:31px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.18));
-  animation:pop .55s cubic-bezier(.2,1.8,.4,1) 1.5s both,rbowText 2s linear 1.5s infinite}
-.ov.big{--t0:1.75s;--tc:.3s}
+  animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
+@keyframes bhSlam{0%{opacity:0;transform:scale(2.6)}60%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
+.ov.big{--t0:.9s;--tc:.25s}
+.ov.big .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.big .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.big .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 .big .brows li.top{background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF) border-box;border:2px solid transparent}
 
 '''
@@ -248,7 +294,11 @@ FREEZE_CSS = r'''
    （押したあとの秒は下の「押したあと」に書いてある） */
 .w3{background:#E0322B;color:#FFFFFF}
 .w8{background:#F27BB0;color:#1F1F1F}
-.ov.fz{--rb:#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B;--ink2:#2A1259;--t0:<R+.85>;--tc:.35s}
+.ov.fz{--rb:#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B;--ink2:#2A1259;--t0:<R+.45>;--tc:.25s}
+/* 結果の買い目は0.08秒おき（パチンコの当たりのように速く） */
+.ov.fz .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.fz .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.fz .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 .ov.fz .dim{background:radial-gradient(circle at 50% 44%,rgba(84,26,136,.55),rgba(5,2,14,.94) 66%)}
 /* PUSHのうしろ：ぼかした虹（回る）と白い光の筋 */
 .aura{position:absolute;left:50%;top:44%;width:600px;height:600px;margin:-300px 0 0 -300px;border-radius:50%;background:conic-gradient(var(--rb));filter:blur(40px);opacity:.6;animation:spin 3.2s linear infinite}
@@ -376,7 +426,6 @@ FREEZE_CSS = r'''
 .mt{z-index:30}
 .sc{position:absolute;inset:0;overflow:hidden;visibility:hidden}
 .mfl{position:absolute;inset:0;z-index:5;background:#FFFFFF;opacity:0}
-.mfl.b{animation:mfl .4s ease-out <M+2.2> forwards}
 @keyframes mfl{0%{opacity:.7}100%{opacity:0}}
 /* ネオンの線画：芯（白っぽい虹）と光（こい虹）を、テンゲルのアイコンからひろった線の形でくりぬく。虹色はゆっくり流れる（回らない） */
 .nic{position:absolute;left:50%;top:0}
@@ -400,7 +449,7 @@ FREEZE_CSS = r'''
   background:radial-gradient(circle,#FFFFFF 0 9%,#C8FFE0 18%,#3CFF9A 34%,rgba(60,255,154,.35) 52%,rgba(60,255,154,0) 70%);animation:orb 1.2s ease-in-out infinite alternate}
 @keyframes orb{from{transform:scale(.94)}to{transform:scale(1.04)}}
 /* 文字（T5）：黒い太いふち＋白い光（.o）と、色（.f）。ポンと出て少し傾いたまま止まる */
-.tx{position:absolute;left:var(--x,0px);width:var(--w,390px);top:var(--y);height:var(--h);opacity:0;transform:rotate(var(--r));animation:txIn .22s cubic-bezier(.2,.9,.3,1.2) var(--d) forwards}
+.tx{position:absolute;left:var(--x,0px);width:var(--w,390px);top:var(--y);height:var(--h);opacity:0;transform:rotate(var(--r));animation:gqIn .18s cubic-bezier(.3,.7,.3,1) var(--d) forwards}
 .tx span{position:absolute;left:-40px;right:-40px;top:0;text-align:center;white-space:nowrap;font:400 var(--fs)/var(--h) "Dela Gothic One",sans-serif;letter-spacing:-.02em}
 .tx .o{color:#FFFFFF;-webkit-text-stroke:var(--sw,14px) #FFFFFF;filter:drop-shadow(0 0 8px var(--g)) drop-shadow(0 0 18px var(--g))}
 .tx .f{background:linear-gradient(160deg,var(--c1),var(--c2) 52%,var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px #1A0838}
@@ -410,7 +459,9 @@ FREEZE_CSS = r'''
    色のこい塗り（上が白っぽい）＋ちがう色のネオンのふち（光る）＋白い細い芯＋走査線。押した直後のPUSHのように乱れる：
    赤と水色のずれ（ずれ方が3回変わる）・横にずれる帯2本（それぞれ2回・1コマずつ）・まわりに小さなブロック。文字はずっと激しくブルブル（左右上下と傾き） */
 .gq{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--w) / -2);opacity:0;transform:rotate(var(--r));
-  animation:txIn .2s cubic-bezier(.2,.9,.3,1.2) var(--d) forwards}
+  animation:gqIn .16s cubic-bezier(.3,.7,.3,1) var(--d) forwards}
+/* たたきつけるように出る：大きく → 少し小さく → ちょうど（0.16秒） */
+@keyframes gqIn{0%{opacity:0;transform:rotate(var(--r)) scale(1.5)}55%{opacity:1;transform:rotate(var(--r)) scale(.88)}80%{opacity:1;transform:rotate(var(--r)) scale(1.06)}100%{opacity:1;transform:rotate(var(--r)) scale(1)}}
 .gq .gj{position:absolute;inset:0;animation:gqV var(--vt) steps(1) var(--vd) infinite}
 .gq span{position:absolute;left:-60px;right:-60px;top:0;text-align:center;white-space:nowrap;font:400 var(--fs)/var(--h) "Dela Gothic One",sans-serif;letter-spacing:-.04em}
 .gq .gr,.gq .gc{color:#FF1E5A;-webkit-text-stroke:var(--ow) #FF1E5A;mix-blend-mode:screen;opacity:.8;animation:gqR .9s steps(1) var(--d) both}
@@ -433,24 +484,24 @@ FREEZE_CSS = r'''
 /* 文字が出たときの光の輪（小さく1回） */
 .tr{position:absolute;left:var(--x);top:var(--y);width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:5px solid var(--g);box-shadow:0 0 12px var(--g);opacity:0;animation:cring .45s ease-out var(--d) forwards}
 @keyframes cring{0%{opacity:1;scale:.3}100%{opacity:0;scale:2}}
-/* T1（<M>〜）：テンゲルのアイコンのネオン（画面よりデカい・止まっている） */
-.t1{animation:vis .75s steps(1) <M>}
+/* T1（<M>〜）：テンゲルのアイコンのネオン（画面よりデカい・止まっている）。まん中で大爆発 */
+.t1{animation:vis <T2> steps(1) <M>}
 .t1 .bg{position:absolute;inset:0;background:radial-gradient(circle at 16% 20%,#FF2BD6 0,rgba(255,43,214,0) 40%),radial-gradient(circle at 86% 16%,#2FD6FF 0,rgba(47,214,255,0) 38%),
   radial-gradient(circle at 80% 80%,#FFE53B 0,rgba(255,229,59,0) 42%),radial-gradient(circle at 18% 84%,#3CFF6A 0,rgba(60,255,106,0) 42%),radial-gradient(circle at 50% 48%,#7A3BFF 0,rgba(122,59,255,0) 58%),#14062E}
 .t1 .dk{position:absolute;inset:0;background:rgba(8,2,26,.55)}
 .t1 .nic{width:1100px;height:1100px;margin-left:-550px;top:-150px}
 .t1 .dk2{position:absolute;inset:0;background:rgba(8,2,26,.35)}
-/* T2（<M+.75>〜）：星空・光の玉 */
-.t2{animation:vis .7s steps(1) <M+.75>}
-/* T3（<M+1.45>〜）：ネオンのギザギザ（止まっている） */
-.t3{background:#06021A;animation:vis .75s steps(1) <M+1.45>}
+/* T2（<M+T2>〜）：星空・光の玉 */
+.t2{animation:vis <T3-T2> steps(1) <M+T2>}
+/* T3（<M+T3>〜）：ネオンのギザギザ（止まっている） */
+.t3{background:#06021A;animation:vis <T4-T3> steps(1) <M+T3>}
 .t3 .zz{position:absolute;left:50%;top:50%;width:2800px;height:2800px;margin:-1400px 0 0 -1400px;transform:scale(.6);opacity:.5}
 .t3 .zz svg{display:block;width:100%;height:100%}
-/* T4（<M+2.2>〜）：白く光る → 星空に「ど！」×4 */
-.t4{animation:vis 1.2s steps(1) <M+2.2>}
+/* T4（<M+T4>〜）：星空に「ど！」×4（1つずつ光の破片が飛び散る） */
+.t4{animation:vis <T5-T4> steps(1) <M+T4>}
 .t4 .glw{position:absolute;inset:0;background:radial-gradient(circle at 50% 44%,rgba(255,60,200,.45),rgba(122,59,255,.2) 40%,rgba(5,2,15,0) 70%)}
-/* T5（<M+3.4>〜<R>）：ネオンのパチンコの当たりのような虹色（黒に光る虹の光線・虹の輪・白く光るまん中・ネオンの星・きらめき）に「ど的中」「！！！！」。そろってから1.5秒 */
-.t5{background:#06010F;animation:vis <R-M-3.4> steps(1) <M+3.4>}
+/* T5（<M+T5>〜<R>）：ネオンのパチンコの当たりのような虹色（黒に光る虹の光線・虹の輪・白く光るまん中・ネオンの星・きらめき）に「ど的中」「！！！！」。そろってから1.5秒 */
+.t5{background:#06010F;animation:vis <R-M-T5> steps(1) <M+T5>}
 .t5 .nr{position:absolute;left:50%;top:44%;width:1600px;height:1600px;margin:-800px 0 0 -800px;border-radius:50%;
   background:repeating-conic-gradient(from -1.2deg,#FF0844 0 2.4deg,rgba(0,0,0,0) 2.4deg 6deg,#FF9500 6deg 8.4deg,rgba(0,0,0,0) 8.4deg 12deg,#FFE600 12deg 14.4deg,rgba(0,0,0,0) 14.4deg 18deg,
     #19FF6E 18deg 20.4deg,rgba(0,0,0,0) 20.4deg 24deg,#00E5FF 24deg 26.4deg,rgba(0,0,0,0) 26.4deg 30deg,#C23CFF 30deg 32.4deg,rgba(0,0,0,0) 32.4deg 36deg);
@@ -477,9 +528,9 @@ FREEZE_CSS = r'''
 @keyframes rwv{0%{opacity:1;transform:scale(.3)}80%{opacity:.85}100%{opacity:0;transform:scale(4.6)}}
 .t5 .rg{animation:rgo 1.6s ease-out var(--d) infinite}
 @keyframes rgo{0%{opacity:0;transform:scale(.7)}18%{opacity:1}100%{opacity:0;transform:scale(1.45)}}
-.t5 .core{animation:cbr .9s ease-in-out <M+3.4> infinite alternate}
+.t5 .core{animation:cbr .9s ease-in-out <M+T5> infinite alternate}
 @keyframes cbr{from{scale:.9}to{scale:1.12}}
-.t5 .bs{animation:cbr .9s ease-in-out <M+3.4> infinite alternate}
+.t5 .bs{animation:cbr .9s ease-in-out <M+T5> infinite alternate}
 /* ===== 5) 結果（<R>）：白く光る → 炎の画面に、上に小さく「ど的中」・炎の中から馬がボード（画面はゆらさない） ===== */
 .xf{z-index:45}
 .rfl{position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:mfl .4s ease-out <R> forwards}
@@ -493,7 +544,7 @@ FREEZE_CSS = r'''
 .fin .emb i{position:absolute;left:var(--x);bottom:-20px;width:var(--s);height:var(--s);border-radius:50%;background:#FFE7A0;box-shadow:0 0 6px 2px #FF8A00;opacity:0;animation:emb var(--t) linear var(--d) infinite}
 @keyframes emb{0%{opacity:0;translate:0 0}10%{opacity:1}80%{opacity:.9}100%{opacity:0;translate:var(--dx) -900px}}
 /* 上の小さい「ど的中」：外側の黒い太いふち・金のふち・内側の細いふち・炎の色（上は白っぽい金 → 橙 → 赤）・光がサッと走る。少し右に傾ける */
-.dlg{position:absolute;left:0;right:0;top:282px;height:200px;opacity:0;transform:translateY(-302px) scale(.62);animation:dPop .4s cubic-bezier(.2,.9,.3,1.2) <R+.1> forwards}
+.dlg{position:absolute;left:0;right:0;top:282px;height:200px;opacity:0;transform:translateY(-302px) scale(.62);animation:dPop .3s cubic-bezier(.2,.9,.3,1.2) <R+.03> forwards}
 @keyframes dPop{from{opacity:0;transform:translateY(-302px) scale(.85)}to{opacity:1;transform:translateY(-302px) scale(.62)}}
 .dlg .dfl{position:absolute;left:-20px;right:-20px;top:-40px;bottom:-30px;border-radius:50%;
   background:radial-gradient(ellipse 50% 50% at 50% 58%,rgba(255,236,150,.95) 0,rgba(255,140,0,.75) 36%,rgba(255,50,0,.35) 58%,rgba(255,40,0,0) 74%);animation:dfl .5s ease-in-out <R> infinite alternate}
@@ -504,7 +555,7 @@ FREEZE_CSS = r'''
 @keyframes flk{0%{transform:scale(1,.82) skewX(-4deg)}50%{transform:scale(.92,1.08) skewX(3deg)}100%{transform:scale(1.04,1.16) skewX(-2deg)}}
 /* 出たときの光の輪 */
 .dlg .dr{position:absolute;left:50%;top:104px;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;border:7px solid #FFF3B0;
-  box-shadow:0 0 22px 4px #FFB000,inset 0 0 22px 4px #FFB000;opacity:0;animation:dr .55s ease-out <R+.3> forwards}
+  box-shadow:0 0 22px 4px #FFB000,inset 0 0 22px 4px #FFB000;opacity:0;animation:dr .5s ease-out <R+.12> forwards}
 @keyframes dr{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(2.6)}}
 .dlg .dsb{position:absolute;left:0;right:0;top:-6px;text-align:center;font:700 15px/1 "BIZ UDPGothic",sans-serif;letter-spacing:.42em;padding-left:.42em;color:#FFFFFF;text-shadow:0 0 6px #FF3B00,0 0 14px #FF3B00,0 2px 0 #5A0000}
 .dlg .dw{position:absolute;left:0;right:0;top:22px;height:160px;transform:skewX(-9deg)}
@@ -515,12 +566,12 @@ FREEZE_CSS = r'''
 .dlg .o3{color:#5A0A00;-webkit-text-stroke:4px #5A0A00}
 .dlg .f{background:linear-gradient(180deg,#FFFFFF 0%,#FFF6C0 15%,#FFD84A 33%,#FFFFFF 38%,#FFE58A 40%,#FFA200 53%,#FF5A00 67%,#D81000 83%,#7A0000 100%) 0 30px/100% 112px no-repeat;-webkit-background-clip:text;background-clip:text;color:transparent}
 .dlg .h{background:linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.95) 50%,rgba(255,255,255,0) 62%) -150% 0/60% 100% no-repeat;-webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:dsh 1.1s ease-in-out <R+.5> infinite}
+  animation:dsh 1.1s ease-in-out <R+.3> infinite}
 @keyframes dsh{0%{background-position:-150% 0}60%,100%{background-position:250% 0}}
 .dlg .dsp b{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);background:#FFFFFF;
   clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 4px #FFE08A);opacity:0;animation:twinkle .9s ease-in-out var(--d) infinite}
-/* 炎の中から馬がボードを持って出る（<R>）。コインは馬のうしろ・紙ふぶきは前 */
-.fin .hb{z-index:6;animation:strike .8s ease-out <R+.15> both}
+/* 炎の中から馬がボードを持ってドンと出る（<R>・爆発）。コインは馬のうしろ・紙ふぶきは前 */
+.fin .hb{z-index:6;animation:strike .45s cubic-bezier(.2,.9,.3,1.1) <R+.06> both}
 @keyframes strike{0%{opacity:0;transform:translateY(-36px) scale(.7);filter:brightness(4) blur(2px)}30%{opacity:1;transform:translateY(8px) scale(1.06);filter:brightness(2.2) blur(0)}55%{transform:translateY(-4px) scale(.99);filter:brightness(1.3)}100%{transform:none;filter:none}}
 .fin .conf.cb{z-index:5}
 .fin .conf{z-index:7}
@@ -535,9 +586,9 @@ FREEZE_CSS = r'''
 .fz .board > .halo b{width:700px;height:700px;margin:-350px 0 0 -350px;animation:none}
 .fz .bh{font-size:30px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.2));
-  animation:pop .55s cubic-bezier(.2,1.8,.4,1) <R+.6> both,rbowText 1.2s linear <R+.6> infinite}
+  animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) <R+.3> both,rbowText 1.2s linear <R+.3> infinite}
 .zrib{display:flex;align-items:center;justify-content:center;gap:6px;align-self:center;margin-top:1px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--ink2);color:#FFFFFF;font-size:12px;font-weight:700;white-space:nowrap;
-  box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7);animation:rowIn .35s ease-out <R+.7> both}
+  box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7);animation:rowIn .22s ease-out <R+.36> both}
 .zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:var(--ink2);font-weight:800;font-size:11.5px}
 .zrib .n{min-width:22px;height:22px;font-size:12px}
 .n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6);animation:zx 1.2s linear infinite}
@@ -545,7 +596,7 @@ FREEZE_CSS = r'''
 .fz .brows li.top{position:relative;background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;padding:4px 6px}
 .fz .brows li{flex-wrap:wrap}
 .fz .brows li.top{gap:3px;padding:4px 5px}
-.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat;animation:glint 1.8s ease-in-out <R+1.05> infinite}
+.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat;animation:glint 1.8s ease-in-out <R+.6> infinite}
 .fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
 /* 視差効果を減らす：グリッチ・プチュン・ネオンのカット・炎の粒・紙ふぶきを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す */
 @media (prefers-reduced-motion:reduce){
@@ -604,7 +655,11 @@ def board(title, bets, total, top_first=False, rib='', mark=(), ring=''):
 FZ_X = 11    # 見本の超大穴の馬（11番・11番人気）
 # フリーズの時刻（押してから）：N＝グリッチが一瞬おさまる・C＝アイコンのドアップ・H＝横に流れる光・E＝画面が青く光る・W＝プチュン（青白い横一本線）
 # ・Z＝線が点に縮んで消える（このあと真っ暗1.5秒）・M＝虹色ネオンのカット・R＝結果（炎の画面・上に小さく「ど的中」・馬がボード）
-FZ_T = dict(N=.5, C=.86, H=1.2, E=1.4, W=1.64, Z=1.98, M=3.9, R=9.2)
+FZ_T = dict(N=.5, C=.86, H=1.2, E=1.4, W=1.64, Z=1.98, M=3.9, R=8.28)
+# 虹色ネオンのカットの始まり（<M> からの秒）。パチンコの当たりのように速く・激しく：T1「とんでも！」→ T2 → T3（×2）→ T4「ど！」×4 → T5「ど的中！！！！」
+# T5 の「！」がそろうのは <M+T5+.23>、そこから HOLD 秒で結果（R ＝ M＋T5＋.23＋HOLD）
+MT_T = dict(T2=.6, T3=1.15, T4=1.75, T5=2.65, HOLD=1.5)
+assert abs(FZ_T['R'] - (FZ_T['M'] + MT_T['T5'] + .23 + MT_T['HOLD'])) < 1e-9
 # プチュンの青い画面の細かい白い粒（1粒 約1/3px＝画面の点1つぶん。動かさない）
 NOISEF = 'url("data:image/svg+xml,' + quote(
     "<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360'><filter id='f'>"
@@ -623,7 +678,7 @@ def fz_sec(v):
 
 def fz_css():
     """FREEZE_CSS の <M+.85>・<H-C> などを秒に直す・絵とノイズを入れる・グリッチの1コマごとの動きを足す"""
-    css = re.sub(r'<([A-Z][A-Z0-9.+\-]*)>', lambda m: fz_sec(eval(m.group(1), {}, dict(FZ_T))), FREEZE_CSS)
+    css = re.sub(r'<([A-Z][A-Z0-9.+\-]*)>', lambda m: fz_sec(eval(m.group(1), {}, dict(FZ_T, **MT_T))), FREEZE_CSS)
     for k, v in (('NOISEF', NOISEF), ('ICONID', blobs['fz_icon']), ('WARPID', blobs['fz_warp']), ('NGLOW', blobs['fz_nglow']),
                  ('NCORE', blobs['fz_ncore'])):
         css = css.replace(k, v)
@@ -874,36 +929,44 @@ def blocks(n, d0, d1, seed):
 
 def mt_layers(seed=71):
     """虹色ネオンのカット（T1〜T5）：まさちゃんの指定の文字「とんでも！」「とんでも！」「とんでも！とんでも！」「ど！ど！ど！ど！」「ど的中！！！！」
-       とんでも・ど！は1文字ずつ大きなバグるネオン（場所・大きさ・向きはバラバラ）、ど的中は黒いふち"""
+       とんでも・ど！は1文字ずつ大きなバグるネオン（場所・大きさ・向きはバラバラ）、ど的中は黒いふち。
+       パチンコの当たりのように速く・激しく：文字はたたきつけるように出て、「！」「ど！」「ど的中」が出るたびに爆発（星形の光・衝撃の輪・光の破片）"""
     M = FZ_T['M']
+    T2, T3, T4, T5 = (M + MT_T[k] for k in ('T2', 'T3', 'T4', 'T5'))
     rnd = random.Random(seed)
-    # T1：2×2に「と」「ん」「で」「も」・右に大きな「！」
-    t1 = ''.join(gq(c, x, y, fs, M + .08 + i * .06, 'pink', r, seed=10 + i) for i, (c, x, y, fs, r) in enumerate(
-        (('と', 102, 245, 190, -14), ('ん', 276, 322, 166, 9), ('で', 112, 548, 186, 7), ('も', 282, 628, 162, -11), ('！', 352, 458, 214, 16))))
-    t1 += ring(190, 420, M + .08, '#3FF4FF') + blocks(8, M + .1, M + .7, 21)
-    # T2：左上から右下へ階段のように
-    t2 = ''.join(gq(c, x, y, fs, M + .8 + i * .06, 'blue', r, seed=20 + i, z=9 - i) for i, (c, x, y, fs, r) in enumerate(
+    # T1：まん中で大爆発 → 2×2に「と」「ん」「で」「も」・右に大きな「！」（爆発）
+    t1 = burst(190, 420, M + .02, 340, '#FFF0FA', '#FF2BD6', 61, n=20, z=0)
+    t1 += ''.join(gq(c, x, y, fs, M + .05 + i * .05, 'pink', r, seed=10 + i) for i, (c, x, y, fs, r) in enumerate(
+        (('と', 102, 245, 190, -14), ('ん', 276, 322, 166, 9), ('で', 112, 548, 186, 7), ('も', 282, 628, 162, -11))))
+    t1 += burst(352, 458, M + .27, 260, '#E8FFFF', '#3FF4FF', 62, n=12, z=0) + gq('！', 352, 458, 214, M + .27, 'pink', 16, seed=14)
+    t1 += blocks(8, M + .06, M + .5, 21)
+    # T2：左上から右下へ階段のように（「！」で爆発）
+    t2 = ''.join(gq(c, x, y, fs, T2 + .03 + i * .045, 'blue', r, seed=20 + i, z=9 - i) for i, (c, x, y, fs, r) in enumerate(
         (('と', 78, 168, 168, -10), ('ん', 160, 322, 152, 8), ('で', 238, 480, 172, -6), ('も', 300, 636, 150, 12), ('！', 345, 772, 150, 18))))
-    t2 += ring(200, 420, M + .8, '#FF4FD8') + blocks(8, M + .82, M + 1.4, 22)
-    # T3：「とんでも！」を2つ（大きく・画面からはみ出てもいい。上は右上がり・下は右下がり。1文字ずつ上下にずらす）
+    t2 += burst(345, 772, T2 + .21, 250, '#FFE8FA', '#FF4FD8', 63, n=12, z=0) + blocks(8, T2 + .04, T2 + .48, 22)
+    # T3：「とんでも！」を2つ（大きく・画面からはみ出てもいい。上は右上がり・下は右下がり。1文字ずつ上下にずらす。「！」で爆発）
     t3 = ''
-    for k, (x0, y0, x1, y1, fs, d0, pal) in enumerate(((36, 404, 362, 86, 134, M + 1.5, 'gold'), (36, 548, 362, 796, 132, M + 1.72, 'green'))):
+    for k, (x0, y0, x1, y1, fs, d0, pal, c1, c2) in enumerate(((36, 404, 362, 86, 134, T3 + .03, 'gold', '#FFF8C0', '#FFB300'),
+                                                               (36, 548, 362, 796, 132, T3 + .22, 'green', '#F0FFC8', '#3CFF6A'))):
         for i, c in enumerate('とんでも！'):
             u = i / 4
-            t3 += gq(c, round(x0 + (x1 - x0) * u), round(y0 + (y1 - y0) * u + rnd.uniform(-12, 12)), fs + rnd.randint(-6, 12), d0 + i * .045, pal,
-                     round(rnd.uniform(-12, 12)), seed=30 + k * 10 + i, z=19 - k * 10 - i)
-    t3 += blocks(8, M + 1.5, M + 2.15, 23)
-    # T4：「ど！」×4（大きく・はみ出てもいい・バラバラ）
+            x, y = round(x0 + (x1 - x0) * u), round(y0 + (y1 - y0) * u + rnd.uniform(-12, 12))
+            t3 += gq(c, x, y, fs + rnd.randint(-6, 12), d0 + i * .04, pal, round(rnd.uniform(-12, 12)), seed=30 + k * 10 + i, z=19 - k * 10 - i)
+            if c == '！':
+                t3 += burst(x, y, d0 + i * .04, 240, c1, c2, 64 + k, n=12, z=0)
+    t3 += blocks(8, T3 + .03, T3 + .52, 23)
+    # T4：「ど！」×4（大きく・はみ出てもいい・バラバラ・1つずつ光の破片が飛び散る）
     t4 = ''
     for i, (x, y, fs, r, pal) in enumerate(((158, 172, 196, -12, 'pink'), (238, 370, 182, 10, 'blue'), (148, 566, 204, 7, 'gold'), (240, 752, 190, -9, 'green'))):
-        t4 += gq('ど！', x, y, fs, M + 2.34 + i * .22, pal, r, seed=40 + i) + ring(x, y, M + 2.34 + i * .22, GQ_PAL[pal][3])
-    t4 += blocks(10, M + 2.34, M + 3.35, 24)
-    # T5：「ど的中」「！！！！」（そろってから1.5秒）
-    t5 = tx('ど的中', 290, 150, 112, M + 3.42, TX_FIRE, r=-6, dark=True, sw=18) + ring(195, 365, M + 3.42, '#FFFFFF')
+        d = T4 + .12 + i * .17
+        t4 += burst(x, y, d, 420, GQ_PAL[pal][0], GQ_PAL[pal][1], 70 + i, n=18, star=False, ring=False, z=0) + gq('ど！', x, y, fs, d, pal, r, seed=40 + i)
+    t4 += blocks(10, T4 + .12, T4 + .85, 24)
+    # T5：「ど的中」（大爆発）「！！！！」（そろってから HOLD 秒）
+    t5 = burst(195, 365, T5 + .02, 320, '#FFFBE0', '#FF5A00', 80, n=22, ring=False, z=0) + tx('ど的中', 290, 150, 112, T5 + .02, TX_FIRE, r=-6, dark=True, sw=18)
     for i, ((x, y, fs, r), cols) in enumerate(zip(((18, 470, 84, -14), (104, 500, 96, 8), (200, 460, 80, -6), (282, 505, 92, 12)), (TX_PINK, TX_GOLD, TX_LIME, TX_CYAN))):
-        t5 += tx('！', y, round(fs * 1.3), fs, M + 3.48 + i * .06, cols, r=r, x=x, w=fs, dark=True, sw=16)
-    t5_rings = ''.join(f'<i class="rg" style="--s:{sz}px;--d:{fz_sec(M + 3.4 - k * .4)}"></i>' for k, sz in enumerate((250, 410, 600, 830)))
-    t5_waves = '<div class="rw">' + ''.join(f'<i style="--d:{fz_sec(M + 3.4 + k * .45)}"></i>' for k in range(3)) + '</div>'
+        t5 += tx('！', y, round(fs * 1.3), fs, T5 + .08 + i * .05, cols, r=r, x=x, w=fs, dark=True, sw=16)
+    t5_rings = ''.join(f'<i class="rg" style="--s:{sz}px;--d:{fz_sec(T5 - k * .4)}"></i>' for k, sz in enumerate((250, 410, 600, 830)))
+    t5_waves = '<div class="rw">' + ''.join(f'<i style="--d:{fz_sec(T5 + k * .45)}"></i>' for k in range(3)) + '</div>'
     html = f'''<div class="mt" aria-hidden="true">
       <div class="sc t1"><div class="bg"></div><div class="dk"></div>{neon_icon()}<div class="dk2"></div>{t1}</div>
       <div class="sc t2"><div class="stf"></div><div class="spd"></div><div class="orb"></div><div class="spk">{sparkles(26, 47)}</div>{t2}</div>
@@ -911,7 +974,6 @@ def mt_layers(seed=71):
       <div class="sc t4"><div class="stf"></div><div class="glw"></div><div class="spk">{sparkles(22, 43, white=True)}</div>{t4}</div>
       <div class="sc t5"><div class="nr g"></div><div class="nr"></div><div class="nw"></div>{t5_waves}{t5_rings}<div class="core"></div><div class="bsg"><div class="bs"></div></div>
         <div class="spk">{sparkles(34, 59)}</div>{t5}</div>
-      <div class="mfl b"></div>
     </div>'''
     return dict(css='', html=html)
 
@@ -928,7 +990,7 @@ def dlogo():
     R = FZ_T['R']
     word = '<small>ど</small>的中'
     layers = ''.join(f'<span class="{c}">{word}</span>' for c in ('o1', 'o2', 'o3', 'f', 'h'))
-    glints = ''.join(f'<b style="--x:{x}px;--y:{y}px;--s:{s}px;--d:{R + .5 + i * .15:.2f}s"></b>'
+    glints = ''.join(f'<b style="--x:{x}px;--y:{y}px;--s:{s}px;--d:{R + .3 + i * .12:.2f}s"></b>'
                      for i, (x, y, s) in enumerate(((52, 70, 22), (150, 44, 28), (262, 40, 24), (352, 92, 30), (300, 178, 20), (86, 176, 24))))
     rnd = random.Random(23)
     flames = ''
@@ -956,6 +1018,7 @@ def fz_layers(bets, total):
     return f'''{jag}<div class="blk"></div>
     <div class="fin"><div class="fsk">
       <div class="fb"></div><div class="frr"></div>
+      {burst(195, 330, R + .02, 520, '#FFF6C8', '#FF6A00', 90, n=22)}
       <div class="emb">{embers(36, 11)}</div>
       <div class="conf cb">{coins(22, 8, R)}</div>
       <div class="hb">
@@ -1004,7 +1067,10 @@ def page(kind):
   </sc-if>'''
     if big:
         layers = ('<div class="rbow"></div><div class="glow"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>'
-                  '<div class="spk">' + sparkles(26, 9) + '</div>')
+                  '<div class="spk">' + sparkles(26, 9) + '</div>'
+                  + burst(195, 371, .04, 600, '#FFF6C8', '#FFB21A', 5, n=18, z=5)          # 押した瞬間の爆発
+                  + burst(195, 420, .55, 660, '#FFFFFF', '#FF3BB8', 6, n=14, star=False, z=5)   # 馬とボードの着地（ボードのうしろ・輪と光の破片だけ）
+                  + burst(195, 316, .7, 300, '#FFFFFF', '#FFE53B', 7, n=0, star=False, z=7))   # 「デカ的中!!」の輪
         title = 'デカ的中!!'
         conf = confetti(34, 3, rainbow=True)
         flash = '<div class="flash"></div>'
@@ -1015,7 +1081,7 @@ def page(kind):
         flash = ''
     nhit = sum(1 for b in bets if b[5])
     reveal = f'''  <sc-if value="{{{{isReveal}}}}" hint-placeholder-val="{{{{false}}}}">
-  <div class="ov{pb} {'big' if big else 'hit'}" style="--n:{nhit}">
+  <div class="ov{pb} {'big rv' if big else 'hit'}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
     <div class="pressed{pb}"></div>
@@ -1041,7 +1107,7 @@ def page(kind):
     <button class="close" type="button" onClick="{{{{toForm}}}}">とじる</button>
   </div>
   </sc-if>'''
-    css = (COMMON_CSS.replace('RANCH', RANCH_VARS) + (BIG_CSS + fz_css() if fz else BIG_CSS if big else HIT_CSS))
+    css = (COMMON_CSS.replace('RANCH', RANCH_VARS) + (BIG_CSS + BURST_CSS + fz_css() if fz else BIG_CSS + BURST_CSS if big else HIT_CSS))
     css = (css.replace('HBW2', f'{HB_W / 2:g}').replace('HBW', f'{HB_W:g}').replace('HBH', f'{HB_H:g}')
               .replace('BDX', f'{BD["x"]:g}').replace('BDY', f'{BD["y"]:g}').replace('BDW', f'{BD["w"]:g}').replace('BDH', f'{BD["h"]:g}'))
     name = 'フリーズ的中ボタン' if fz else 'デカ的中ボタン' if big else '的中ボタン'
@@ -1178,10 +1244,10 @@ def page_js(kind):
             + "}\n")
 
 
-SOUND_W, SOUND_H = 2200, 1400
+SOUND_W, SOUND_H = 2200, 1440
 SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目もり（秒）
     ('hit', '的中ボタン', '当たったとき・ハ長調（明るく軽く）', 'ピロリン↑（鐘が3つ上がる）＋キラキラ', ('#C8281F', '#FF9A3C'), .5),
-    ('big', 'デカ的中ボタン', '3連単が当たったとき・ニ長調（大きく）', 'キュイーン↑（上がる音を重ねて）＋キラキラ', ('#7B4CFF', '#FF3BB8'), .5),
+    ('big', 'デカ的中ボタン', '3連単が当たったとき・ニ長調・重く重低音で（速く勢いよく）', 'ドゥン（重低音）＋キュイーン↑（低めから）＋低いうなり', ('#7B4CFF', '#FF3BB8'), .5),
     ('fz', 'ど的中ボタン（フリーズ的中ボタン）', '3連単の当たりに超大穴（10〜12番人気）<br>ホ長調・低音と重低音（いちばん派手）', 'ドォォン（重低音）＋グォォォン↑（低いうなりが1オクターブ上がる）＋低いどら',
      ('#FF3B3B', '#FF9F1A', '#FFE53B', '#3BE26A', '#2FD6FF', '#4C6BFF', '#B34CFF', '#FF3BB8'), 1.0),
 )
@@ -1190,22 +1256,22 @@ SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目も�
 def snd_events():
     """タップの音の中身（秒・終わり・音・画面）。フリーズは FZ_T の時刻"""
     C, H, E, W, Z, M, R = (FZ_T[k] for k in 'CHEWZMR')
+    T4, T5 = M + MT_T['T4'], M + MT_T['T5']
     return {
         'hit': [(0, None, 'ポン', '押した'), (.22, .97, 'ヒュイーン↑', '馬がボードを持って下から'), (.95, None, 'キラーン', '「的中！」'),
                 (1.15, 1.3, 'ピン・ポン', '買い目が1行ずつ'), (1.6, None, 'チャリーン', '払戻の合計（コイン）')],
-        'big': [(0, None, 'ポン', '押した'), (.18, None, 'ドーン', '白く光る'), (.28, None, 'キュウィン', '虹の輪①（うしろで小さくシャララ）'),
-                (.55, None, 'キュウィン', '虹の輪②（少し高く）'), (.85, None, 'キュウィン', '虹の輪③（もっと高く）・光の中から馬'),
-                (1.29, 1.43, 'タ・タ・タ', 'ためて'), (1.5, None, 'パーン！', '「デカ的中!!」'),
-                (1.75, 1.9, 'ピン・ピン', '買い目'), (1.85, 2.0, 'パッ・パッ', 'ファンファーレ'), (2.2, None, 'パーーン＋ジャラジャラ', '払戻の合計（コイン）')],
+        'big': [(0, None, 'ガツッ', '押した'), (.04, None, 'ドォォン!!', '白く光る・爆発・虹の光の筋'), (.1, None, 'キュウィン', '虹の輪①（下にドン）'),
+                (.25, None, 'キュウィン', '虹の輪②（少し高く）'), (.4, None, 'キュウィン', '虹の輪③（もっと高く）'),
+                (.55, None, 'ズドン', '馬とボードが落ちてきて着地（0.38秒〜）'), (.7, None, 'ジャーン!!', '「デカ的中!!」（低い金管）'),
+                (.9, .98, 'ピン・ピン', '買い目（0.08秒おき）'), (1.14, None, 'パッパッ＋ジャラジャラ', '払戻の合計（メダル）'), (1.4, None, 'パーン', 'ファンファーレ')],
         'fz': [(0, E, 'ドッ → ブブッ・ヴッ（低い）', '画面がバグる（コマに合わせて）'), (C, None, 'ヴォォン＋ギュゥン↓', 'アイコンのドアップ'),
                (H, None, 'ゴォッ', '横に流れる光'), (E, W, 'ゴゴゴ＋低いうなり↑', '青く光る・稲妻'), (W, None, 'ブツン（低いプチュン）', '青白い横一本線'),
                (Z, None, 'ズゥン↓', '点に縮んで消える'), (Z + .3, M, '無音', '真っ暗（フリーズの間）'),
-               (M, M + 2.2, 'ドォォン！→ ドドドド・ジャン×4', '「とんでも！」（1文字ずつ低いタム・低いベースが刻む）'),
-               (M + 2.2, M + 3.0, 'ゴォーン → ドッ！×4', '白く光る → 大きな「ど！」×4（重低音）'),
-               (M + 3.0, M + 3.4, 'ドドドドド', '低いタムの連打'), (M + 3.4, None, 'ドォォォン!!＋低い金管', '「ど的中！！！！」'),
-               (M + 3.85, R, 'ドン・ドン（0.45秒ごと）', '光の波と輪に合わせて'), (R, None, 'ドォン＋低いパッパッパーン＋ジャラジャラ', '結果（炎の画面・メダル）'),
-               (R + .6, None, 'ゴォーン', '「フリーズ的中!!!」'), (R + .85, R + 1.15, 'ボン・ボン・ボン', '買い目（低い鐘）'),
-               (R + 1.3, None, 'ゴーン＋チャリン', '払戻の合計')],
+               (M, T4, 'ドガーン!! → ドドドド・ドガン×4', '大爆発 →「とんでも！」1文字ずつ小さな爆発・「！」で爆発（低いベースが刻む）'),
+               (T4 + .12, T4 + .63, 'ドガン×4（だんだん高く）', '「ど！」×4（重低音の爆発）'), (T4 + .71, T5, 'ドドドドッ', '低いタムの連打'),
+               (T5, None, 'ドガーン!!＋低い金管', '「ど的中！！！！」大爆発'), (T5 + .45, R, 'ドン・ドン（0.45秒ごと）', '光の波と輪に合わせて（小さな爆発）'),
+               (R, R + .3, '大爆発 → ズドン＋ジャーン', '結果（炎の画面）→ 馬とボードの着地・「フリーズ的中!!!」'),
+               (R + .45, R + .69, 'ボン・ボン・ボン → ゴーン＋ジャラジャラ', '買い目（0.08秒おき）→ 払戻の合計（メダル）')],
     }
 
 
@@ -1279,12 +1345,12 @@ def sound_page():
              + box('iPhoneでの鳴らし方（アプリ）', '<li><b>消音スイッチ（マナーモード）なら鳴らさない</b>・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）。音量はiPhoneの音量のまま</li>'
                    '<li>設定に「効果音」オン／オフ（最初はオン）<b>※仮</b></li>'
                    f'<li>「視差効果を減らす」がオン：的中・デカは同じ音。ど的中は動きが短い（1秒真っ暗 → 結果）ので、押して1秒後に、ど的中の音の{ssec(R)}秒（結果のドォン・パッパッパーン）から鳴らす <b>※仮</b>（見本の画面も同じ）</li>')
-             + box('大きさとファイル', '<li>6つ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz（AAC 160kbps・m4a・ぜんぶで約520KB）</li>'
-                   '<li>大きさはそろえて、強いボタンほど少し大きく（的中 −16〜−17・デカ −15〜−16・ど的中 −13 LUFS）。いちばん大きい所も −1dB 以下（音割れしない）</li>'
-                   '<li><b>ど的中は低音と重低音</b>：重低音はスマホのスピーカーからはほとんど出ないので、ひずませて作った倍音で低音を感じるようにした。イヤホン・ヘッドホンだと重低音まで聞こえる。スマホのスピーカーでは前の音より少し小さめに聞こえる</li>'
+             + box('大きさとファイル', '<li>6つ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz（AAC 160kbps・m4a・ぜんぶで約490KB）</li>'
+                   '<li>大きさはそろえて、強いボタンほど少し大きく（的中 −16〜−17・デカ −13〜−14・ど的中 −13 LUFS）。いちばん大きい所も −1dB 以下（音割れしない）</li>'
+                   '<li><b>デカとど的中は低音と重低音</b>：重低音はスマホのスピーカーからはほとんど出ないので、ひずませて作った倍音で低音を感じるようにして、ジャーンやファンファーレには高めの音も小さく重ねた。イヤホン・ヘッドホンだと重低音まで聞こえる。スマホのスピーカーでは的中より少し小さめに聞こえることがある</li>'
                    '<li>買い目の音は見本の行の数（的中・デカ2行・ど的中3行）。4行以上だと合計が出る前に「チャリーン」が鳴るので、アプリでは行と合計の音を分けて、出るたびに鳴らす（あとで作る）<b>※仮</b></li>')
              + box('作り方', '<li>音は全部プログラムで作った（gen_sfx.py・numpy と scipy）。<b>録音や、ほかの音のデータ（サンプル）は使っていない</b></li>'
-                   '<li>鐘（FM）・金管（ノコギリ波を重ねる）・ドラム・コイン・「シュッ」（ノイズ）・キュウィン（すばやく上がるシンセ）を組み合わせて、残響・イコライザー・圧縮で仕上げ。ど的中は重低音のドォォン・低いうなり・低いどら・低い金管で、仕上げも低音用（FZ_LOW・FZ_MID で重低音と低音の楽器の大きさを変えられる）</li>'
+                   '<li>鐘（FM）・金管（ノコギリ波を重ねる）・ドラム・コイン・「シュッ」（ノイズ）・キュウィン（すばやく上がるシンセ）・爆発（はじける音・爆風・重低音・地ひびき・かけら）を組み合わせて、残響・イコライザー・圧縮で仕上げ。デカとど的中は重低音のドォォン・爆発・低いうなり・低いどら・低い金管で、仕上げも低音用（ど的中は FZ_LOW・FZ_MID で重低音と低音の楽器の大きさを変えられる）</li>'
                    '<li>ど的中は gen_fx.py の時刻（FZ_T）とバグるコマ（GL_SCRIPT）を読むので、動きを変えたら作り直すだけで音もそろう：python3 gen_sfx.py &lt;フォルダ&gt; → ffmpeg で m4a に</li>'))
     return f'''<!doctype html>
 <html lang="ja">
@@ -1339,7 +1405,7 @@ body{{margin:0}}
   <div class="hdr">
     <div>
       <h1 class="t1">効果音（的中ボタン・デカ的中ボタン・ど的中ボタン）</h1>
-      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回・ど的中は全体を低音と重低音で）。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
+      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回、全体を重く重低音に・ど的中は全体を低音と重低音で、「とんでも！」からは爆発のようにずっしり重く）。動きもパチンコの当たりのように速く・勢いよくした。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
     </div>
     <button class="stop" type="button" onClick="{{{{stop}}}}">{STOP_SVG}とめる</button>
   </div>{secs}
@@ -1377,7 +1443,7 @@ class Component extends DCLogic {{
 '''
 
 
-MEMO_W, MEMO_H = 2200, 1500
+MEMO_W, MEMO_H = 2200, 1660
 
 
 def memo_page():
@@ -1385,10 +1451,11 @@ def memo_page():
     def still(key, cap):
         return f'<figure class="st"><img src="/_blob/{blobs[key]}" alt="{cap}"><figcaption>{cap}</figcaption></figure>'
     hit = still('s_hit_form', '① 記録する') + still('s_hit_push', '② PUSHが上下に動く') + still('s_hit_board', '③ タップ → 馬がボード')
-    big = still('s_big_push', '① 大きいPUSH（虹の輪）') + still('s_big_light', '② 虹色の光に包まれる') + still('s_big_board', '③ 光の中から馬がボード')
+    big = still('s_big_push', '① 大きいPUSH（虹の輪）') + still('s_big_light', '② 爆発・虹の輪（キュウィン）') + still('s_big_board', '③ 馬とボードがドン！')
     fz = (still('s_fz_push', '① 虹色の超デカPUSH') + still('s_fz_glitch', '② 画面がバグる') + still('s_fz_line', '③ プチュン（横一本線）')
           + still('s_fz_tonde', '④「とんでも！」') + still('s_fz_dodo', '⑤「ど！ど！ど！ど！」') + still('s_fz_logo', '⑥「ど的中！！！！」') + still('s_fz_result', '⑦ 結果（上に ど的中）'))
     N, C, H, E, W, Z, M, R = (FZ_T[k] for k in 'NCHEWZMR')
+    T5 = M + MT_T['T5']
     sec = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.')
     return f'''<!doctype html>
 <html lang="ja">
@@ -1435,12 +1502,12 @@ body{{margin:0}}
   </div>
   <div class="boxes">
     <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・外れ・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり）＞ <b>的中</b>（それ以外の当たり）</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
-    <div class="box"><h3>流れと時間（的中・デカ）</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>：押す → 0.2秒 白く光る → 0.25秒 虹の光の筋と輪 → 0.85秒 光の中から馬 → 1.5秒「デカ的中!!」→ 1.75秒〜 買い目 → 2.5秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
-    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（<b>虹色のネオンの線画・線はギザギザ</b>。バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。場所・大きさ・向きはバラバラ：真っ暗から → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」→ 星空に「とんでも！」（左上から右下へ階段）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る）→ 白く光る → 星空に大きな「ど！」×4 → <b>ネオンのパチンコの当たりのような虹色</b>（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面に、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中から馬がボード → {sec(R + .6)}秒「フリーズ的中!!!」→ {sec(R + .85)}秒〜 買い目 → {sec(R + .85 + .45 + .35)}秒 とじる</li></ul></div>
+    <div class="box"><h3>流れと時間（的中・デカ）</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>（パチンコの当たりのように速く・勢いよく）：押す → 0.04秒 白く光る・爆発・虹の光の筋 → 0.1・0.25・0.4秒 虹の輪（キュウィン×3・だんだん大きく）→ 0.38秒 馬とボードがドンと落ちてくる（0.55秒 着地・光の破片）→ 0.7秒「デカ的中!!」がたたきつけるように → 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
+    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（<b>虹色のネオンの線画・線はギザギザ</b>。バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」（{sec(M)}秒〜）→ 星空に「とんでも！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面で爆発、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中から馬とボードがドンと出る → {sec(R + .3)}秒「フリーズ的中!!!」→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → 炎の画面（炎の色・光の筋・炎の粒・コイン・馬とボード・「ど的中」・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・色ずれ・横ズレの帯・アイコンのドアップ・横に流れる光・走査線・ブロック・横の線）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
     <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。白く光るのは {sec(M + 2.2)}秒・{sec(R)}秒（どちらも弱め）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
+    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの {sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
   </div>
 </div>

@@ -16,16 +16,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def read_fx_times():
-    """gen_fx.py から FZ_T と GL_SCRIPT を読む（見本の動きと音の時刻をそろえるため）"""
+    """gen_fx.py から FZ_T・MT_T（ネオンのカットの時刻）と GL_SCRIPT を読む（見本の動きと音の時刻をそろえるため）"""
     tree = ast.parse(open(f'{HERE}/gen_fx.py', encoding='utf-8').read())
-    fz = gl = None
+    fz = gl = mt = None
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
             if node.targets[0].id == 'FZ_T':
                 fz = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
+            elif node.targets[0].id == 'MT_T':
+                mt = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
             elif node.targets[0].id == 'GL_SCRIPT':
                 gl = ast.literal_eval(node.value)
-    return fz, gl
+    return fz, gl, mt
 
 
 # ---------- 部品 ----------
@@ -286,6 +288,43 @@ def boom(f0=95, f1=30, d=1.6, tau=.55, drop=.06, drive=2.2, rng=None, grit=.25, 
         x = x + grit * bp(rng.standard_normal(n), 150, 1500) * np.exp(-t / .05) * 4
         x = x + click * bp(rng.standard_normal(n), 1200, 5000) * np.exp(-t / .004) * 3
     return fade(x, .001, .08)
+
+
+def nlow(d, fc0, fc1, tau, rng):
+    """ザーッという音（ノイズ）の、こもり具合を時間で変える：ローパスの境目が fc0 → fc1 へ（tau 秒で 1/e）"""
+    n = n_(d)
+    x = rng.standard_normal(n + 4096)
+    f, tt, z = signal.stft(x, fs=SR, nperseg=1024, noverlap=768)
+    fc = fc1 + (fc0 - fc1) * np.exp(-tt / tau)
+    m = 1 / (1 + (np.maximum(f, 1)[:, None] / fc[None, :]) ** 4)
+    _, y = signal.istft(z * m, fs=SR, nperseg=1024, noverlap=768)
+    y = y[:n]
+    return y / (np.std(y[:max(1, n_(.05))]) + 1e-9)
+
+
+EX_MIX = (.6, .9, .6, .25, .35)    # 爆発の中身の大きさ：はじける音・爆風・重低音・地ひびき・かけら
+
+
+def explosion(rng, size=1.0, pitch=1.0):
+    """ドガーン：爆発。はじける音＋だんだんこもる爆風＋重低音のドスン＋長い地ひびき＋飛び散るかけら（size で大きさ・長さ。pitch で高さ）"""
+    d = .6 + 1.4 * size
+    n = n_(d)
+    t = tl(n)
+    crack = bp(rng.standard_normal(n), 300, 7000) * np.exp(-t / .012)
+    blast = nlow(d, 4000, 250, .18 * size + .05, rng) * np.minimum(t / .003, 1) * np.exp(-t / (.35 * size + .08))
+    f = (24 + 66 * np.exp(-t / .06)) * pitch
+    sub = np.tanh(2.0 * np.sin(phase(f, n)) * np.exp(-t / (.22 * size + .06))) / np.tanh(2.0)
+    rum = lp(rng.standard_normal(n), 140, 4)
+    rum = rum / (np.std(rum) + 1e-9) * (.7 + .3 * np.sin(2 * np.pi * 9 * t)) * np.minimum(t / .06, 1) * np.exp(-t / (.7 * size + .1))
+    deb = np.zeros(n)
+    for _ in range(int(6 * size) + 2):
+        i = int(rng.uniform(.04, .5 * size + .1) * SR)
+        k = int(rng.integers(80, 400))
+        if i + k < n:
+            deb[i:i + k] += rng.standard_normal(k) * np.exp(-np.arange(k) / (k / 5)) * rng.uniform(.3, 1)
+    deb = bp(deb, 200, 2500)
+    x = EX_MIX[0] * crack + EX_MIX[1] * blast + EX_MIX[2] * sub + EX_MIX[3] * rum + EX_MIX[4] * deb
+    return fade(np.tanh(1.5 * x) / np.tanh(1.5), .0005, .1)
 
 
 def growl(f0, f1, d, rise, drive=2.6):
@@ -606,52 +645,61 @@ def sfx_hit():
 
 # ---------- デカ的中ボタン（ニ長調・大きく） ----------
 def sfx_big_push():
-    """PUSHが出たとき：キュイーン！"""
+    """PUSHが出たとき：ドゥン（重低音）＋キュイーン↑（低めから上がる）＋低いうなり（D2 → D3）＋低めのキラキラ"""
     mx = Mix(1.9, 21)
-    mx.add(cuin(740, 2350, 1.3, .26, mx.rng), 0, .55, rv=.35)
-    sparkle(mx, .22, .7, 8, (86, 90, 93, 98, 102), .07, mx.rng)
-    return mx.render(1.5, target=-16)
+    r = mx.rng
+    mx.add(boom(95, 30, 1.5, .45, .06, 2.4, r), 0, .55, rv=.1)
+    mx.add(cuin(440, 1400, 1.3, .24, r), .02, .5, rv=.3)
+    mx.add(growl(mtof(38), mtof(50), 1.6, .8), .02, .4, rv=.2)
+    mx.add(lcrash(r, 1.4, .45), .02, .1, rv=.3)
+    sparkle(mx, .25, .6, 5, (74, 78, 81, 86), .05, r)
+    return mx.render(1.5, target=-14, bass=True)
 
 
 def sfx_big():
-    """押してから：0 ポン → .18 ドーン（白く光る）→ .28・.55・.85 キュウィン×3（虹の輪が3つ広がるのに合わせて・だんだん高く。うしろで小さくシャララ）
-       → .85 光の中から馬 → 1.5「デカ的中!!」パーン → 1.85 パ（IV）→ 2.0 パ（V）→ 2.2 パーーン（I）＋合計でコイン（買い目 1.75・1.9）"""
-    mx = Mix(3.8, 22)
+    """押してから（パチンコの当たりのように速く・重く。gen_fx.py の BIG_CSS の秒）：0 ガツッ → .04 ドォォン!!（白く光る・爆発）
+       → .1・.25・.4 キュウィン×3（虹の輪・下にドン。D6 → F#6 → A6）→ .38〜.55 馬が落ちてきてズドン（着地・爆発）
+       → .7「デカ的中!!」ジャーン!!（低い金管・D）→ .9・.98 買い目 → 1.14 合計（メダルがジャラジャラ・パッパッ）→ 1.4 パーン（D）
+       （ジャーンとパーンは低い金管が中心。上に高めの金管を小さく重ねて、スマホのスピーカーでも聞こえるようにする）"""
+    mx = Mix(3.0, 22)
     r = mx.rng
-    mx.add(pop(440, 200, .16, r, .35), 0, .8, rv=.1)
-    mx.add(kick(130, 42, .7, 2.5, .33, .3, r), .18, .9, rv=.12)
-    mx.add(crash(r, 2.0, .6), .18, .2, -.5, rv=.2)
-    mx.add(crash(r, 2.0, .6), .18, .2, .5, rv=.2)
-    scale = (74, 76, 78, 79, 81, 83, 85, 86, 88, 90, 91, 93, 95, 97, 98)       # D5〜D7（ニ長調）
-    for i, m in enumerate(scale):
-        mx.add(bell(mtof(m), .7, idx=1.8, tau=.28, glock=.2), .25 + .45 * i / len(scale), .05, -.7 + 1.4 * i / len(scale), rv=.4)
-    sw = pad((62, 66, 69, 74), .62, .5, .25)
-    mx.add(sw, .25, .5, rv=.3)
-    mx.add(nsweep(.62, 600, 5200, .35, r) * np.linspace(0, 1, n_(.62)) ** 2, .25, .1, rv=.3)
-    mx.add(nsweep(.5, 3200, 700, .4, r) * np.exp(-tl(n_(.5)) / .15), .85, .06, rv=.3)
-    # キュウィン×3（虹の輪 r1・r2・r3 と同じ時刻。D6 → F#6 → A6 と上がる）
-    for t, m, g, p in ((.28, 86, .42, -.3), (.55, 90, .45, .3), (.85, 93, .5, 0)):
+    mx.add(pop(300, 110, .12, r, .3), 0, .7, rv=.1)
+    mx.add(explosion(r, .9), .04, 1.0, rv=.15)
+    mx.add(boom(100, 28, 1.4, .45, .06, 2.6, r), .04, .9, rv=.1)
+    mx.add(lcrash(r, 1.6, .5), .04, .2, -.5, rv=.25)
+    mx.add(lcrash(r, 1.6, .5), .04, .2, .5, rv=.25)
+    for t, m, g, p in ((.1, 86, .42, -.3), (.25, 90, .45, .3), (.4, 93, .5, 0)):
         mx.add(kyuin(mtof(m) / 2.3, mtof(m)), t, g, p, rv=.3)
-    # ファンファーレ
-    for t, m in ((1.29, 69), (1.36, 71), (1.43, 73)):                            # A4 B4 C#5（ためて）
-        mx.add(brass(m, .055, r, False), t, .3, rv=.2)
-    for t, ch, d, g in ((1.5, (62, 69, 74, 78, 81), .3, .34), (1.85, (67, 71, 74, 79), .11, .3), (2.0, (69, 73, 76, 81), .11, .3),
-                        (2.2, (62, 69, 74, 78, 81, 86), .85, .32)):
-        for i, m in enumerate(ch):
-            mx.add(brass(m, d, r), t, g, (i / max(1, len(ch) - 1) - .5) * .7, rv=.25)
-    for t in (1.5, 2.2):
-        mx.add(kick(120, 45, .5, 2.0, .2, .2, r), t, .6, rv=.08)
-        mx.add(crash(r, 1.8, .55), t, .2, -.4, rv=.25)
-        mx.add(crash(r, 1.8, .55), t, .2, .4, rv=.25)
-    for i, m in enumerate((86, 90, 93)):
-        mx.add(bell(mtof(m), 1.0, idx=2.0, tau=.45), 1.5 + .02 * i, .17, (-.3, 0, .3)[i], rv=.35)
-    for t, m in ((1.75, 90), (1.9, 93)):                                      # 買い目
-        mx.add(bell(mtof(m), .6, idx=1.5, tau=.28), t, .18, rv=.3)
-        mx.add(coin(3500, r, .3, False), t, .1, rv=.2)
-    mx.add(bell(mtof(98), 1.3, idx=1.3, tau=.6), 2.2, .24, rv=.45)               # 合計
-    coins(mx, 2.2, .9, 14, .2, r)
-    mx.add(pad((62, 66, 69, 74), 1.1, .3, .6), 2.2, .3, rv=.3)
-    return mx.render(1.5, target=-15)
+        mx.add(boom(120, 40, .35, .14, .03, 2.4, r), t, .45, rv=.05)
+    mx.add(nsweep(.18, 2400, 300, .4, r) * np.linspace(0, 1, n_(.18)) ** 2, .38, .2, rv=.2)
+    mx.add(boom(110, 30, 1.0, .35, .04, 2.8, r), .55, .9, rv=.1)
+    mx.add(explosion(r, .5), .55, .5, rv=.15)
+    for i, m in enumerate((38, 45, 50, 54, 57, 62)):                               # D2 A2 D3 F#3 A3 D4
+        mx.add(brass(m, .9, r), .7, .42, (i / 5 - .5) * .8, rv=.25)
+    mx.add(boom(90, 28, 1.2, .4, .05, 2.6, r), .7, .8, rv=.1)
+    mx.add(lcrash(r, 1.8, .6), .7, .2, -.4, rv=.3)
+    mx.add(lcrash(r, 1.8, .6), .7, .2, .4, rv=.3)
+    mx.add(gong(mtof(50), 1.8, .7, r), .7, .3, rv=.35)
+    for t, m in ((.9, 62), (.98, 66)):                                               # 買い目（D4・F#4）
+        mx.add(bell(mtof(m), .6, idx=1.4, tau=.3), t, .25, rv=.3)
+        mx.add(coin(1600, r, .3, False), t, .12, rv=.2)
+    medals(mx, 1.14, 1.2, 18, .28, r)                                                # 合計
+    mx.add(bell(mtof(69), 1.2, idx=1.3, tau=.6), 1.14, .25, rv=.4)
+    for t, m in ((1.14, 50), (1.22, 54), (1.3, 57)):
+        mx.add(brass(m, .07, r, False), t, .38, rv=.2)
+    for i, m in enumerate((38, 45, 50, 54, 57, 62)):
+        mx.add(brass(m, .9, r), 1.4, .36, (i / 5 - .5) * .8, rv=.3)
+    mx.add(boom(90, 28, 1.1, .35, .05, 2.4, r), 1.4, .7, rv=.1)
+    mx.add(lcrash(r, 1.6, .55), 1.4, .15, -.4, rv=.3)
+    mx.add(lcrash(r, 1.6, .55), 1.4, .15, .4, rv=.3)
+    mx.add(pad((38, 45, 50, 54), 1.0, .2, .6, .45), 1.4, .25, rv=.35)
+    # 上の金管（F#4・A4・D5）を小さく重ねる：重低音はスマホのスピーカーから出ないので、ジャーンとファンファーレがスマホでも聞こえるように
+    for t, g in ((.7, .16), (1.4, .16 * .9)):
+        for i, m in enumerate((66, 69, 74)):
+            mx.add(brass(m, .9, r), t, g, (i - 1) * .5, rv=.3)
+    for t, m in ((1.14, 62), (1.22, 66), (1.3, 69)):
+        mx.add(brass(m, .07, r, False), t, .16 * 1.2, rv=.2)
+    return mx.render(1.5, target=-13, bass=True)
 
 
 # ---------- ど的中ボタン（フリーズ・ホ長調・低音と重低音で、いちばん派手） ----------
@@ -679,14 +727,14 @@ def medals(mx, t0, dur, count, g, rng, curve=1.8):
 
 
 def sfx_fz():
-    """押してから（秒は gen_fx.py の FZ_T）。全体を低音・重低音で：
+    """押してから（秒は gen_fx.py の FZ_T・MT_T）。全体を低音・重低音で、とんでも！からは爆発のようにずっしり重く：
        0〜E バグる音（ドッ＋GL_SCRIPT のコマごとに低いブブッ・ヴッ・ドッ・コッ）→ C アイコンのドアップでヴォォン＋ギュゥン↓
        → H 光の筋でゴォッ → E 青い画面でゴゴゴ（地ひびき）と低いうなりが上がる → W ブツン（低いプチュン）→ Z ズゥン↓ → 真っ暗（無音）
-       → M ドォォン！→「とんでも！」1文字ずつ低いタムでドドドド＋「！」で低いジャン（E → F# → G# → A）・低いベースが刻む
-       → M＋2.2 白い光でゴォーン（低いどら）→「ど！」×4（重低音のドッ！と低いジャン）→ 低いタムの連打
-       → M＋3.4「ど的中！！！！」でドォォォン!!＋低い金管の和音 → 光の波に合わせて .45秒ごとに重いドン
-       → R 結果：ドォン＋低いパッパッパーン＋メダルのジャラジャラ → R＋.6「フリーズ的中!!!」ゴォーン → 買い目 R＋.85〜 → 合計 R＋1.3"""
-    fz, gl = read_fx_times()
+       → M ドガーン!!（大爆発）→「とんでも！」1文字ずつ小さな爆発でドドドド＋「！」で爆発と低いジャン（E → F# → G# → A）・低いベースが刻む
+       → M＋T4 白い光でゴォーン →「ど！」×4（爆発がだんだん高く・低いジャン）→ 低いタムの連打
+       → M＋T5「ど的中！！！！」で大爆発＋低い金管の和音＋「！」×4で小さな爆発 → 光の波に合わせて .45秒ごとに重いドン（爆発）
+       → R 結果：大爆発＋低いパッパッパーン → R＋.3 着地のズドン・「フリーズ的中!!!」ジャーン → 買い目 R＋.45〜（.08秒おき）→ 合計 R＋.69（メダル）"""
+    fz, gl, mt = read_fx_times()
     C, H, E, W, Z, M, R = (fz[k] for k in 'CHEWZMR')
     mx = Mix(R + 3.4, 32)
     r = mx.rng
@@ -727,50 +775,56 @@ def sfx_fz():
     sd = .35
     mx.add(fade(np.tanh(1.8 * np.sin(phase(np.geomspace(300, 34, n_(sd)), n_(sd)))) * np.exp(-tl(n_(sd)) / .12)), Z, .5, rv=.25)
     # --- 真っ暗（Z＋.3〜M）は無音 ---
-    # --- ネオンのカット（M〜R） ---
-    mx.add(boom(90, 27, 1.6, .45, .08, 2.6, r), M, 1.0 * FZ_LOW, rv=.15)
-    mx.add(lcrash(r, 1.8, .55), M, .14 * FZ_MID, -.5, rv=.25)
-    mx.add(lcrash(r, 1.8, .55), M, .14 * FZ_MID, .5, rv=.25)
-    mx.add(stab((40, 47, 52), .55, r, 3.0, .5), M, .55 * FZ_MID, rv=.25)                # E2・B2・E3（下に E1）
-    cuts = (((M + .08 + .06 * i for i in range(5)), 52), ((M + .8 + .06 * i for i in range(5)), 54),
-            ((M + 1.5 + .045 * i for i in range(5)), 56), ((M + 1.72 + .045 * i for i in range(5)), 57))
-    for k, (times, root) in enumerate(cuts):
-        times = list(times)
-        for i, t in enumerate(times[:4]):                                          # と・ん・で・も：低いタム
-            mx.add(tom(mtof(root - 17 + 2 * i), r, .4), t, .5, (-.4, -.15, .15, .4)[i], rv=.12)
-            mx.add(lglitch('zap', .04, r), t, .12, r.uniform(-.5, .5), rv=.05)
-        tx = times[4]                                                               # ！：低いジャン
+    # --- ネオンのカット（M〜R）：爆発のような重低音 ---
+    T2, T3, T4, T5 = (M + mt[k] for k in ('T2', 'T3', 'T4', 'T5'))
+    mx.add(explosion(r, 1.4), M, 1.0, rv=.15)                                      # ドガーン!!（大爆発）
+    mx.add(boom(90, 26, 1.6, .45, .08, 2.8, r), M, 1.0 * FZ_LOW, rv=.15)
+    mx.add(lcrash(r, 1.8, .55), M, .16 * FZ_MID, -.5, rv=.25)
+    mx.add(lcrash(r, 1.8, .55), M, .16 * FZ_MID, .5, rv=.25)
+    mx.add(stab((40, 47, 52), .55, r, 3.0, .5), M, .55 * FZ_MID, rv=.25)           # E2・B2・E3（下に E1）
+    # 「とんでも！」×4（T1・T2・T3の2つ）：と・ん・で・も は小さな爆発でドドドド、「！」で爆発＋低いジャン（E → F# → G# → A）
+    cuts = ((M + .05, .05, M + .27, 52), (T2 + .03, .045, T2 + .21, 54), (T3 + .03, .04, T3 + .19, 56), (T3 + .22, .04, T3 + .38, 57))
+    for k, (d0, step, tx, root) in enumerate(cuts):
+        for i in range(4):
+            t = d0 + step * i
+            mx.add(explosion(r, .3, 1 + .08 * i), t, .5, (-.4, -.15, .15, .4)[i], rv=.1)
+            mx.add(tom(mtof(root - 17 + 2 * i), r, .4), t, .35 * FZ_MID, (-.4, -.15, .15, .4)[i], rv=.12)
+        mx.add(explosion(r, .8), tx, .85, (-.2, .2, -.1, .1)[k], rv=.15)
         mx.add(stab((root - 12, root - 5, root), .42, r, 3.0, .45), tx, .55 * FZ_MID, (-.2, .2, -.1, .1)[k], rv=.22)
-        mx.add(boom(110, 34, .5, .2, .03, 2.4, r), tx, .75 * FZ_LOW, rv=.08)
-        mx.add(lcrash(r, .7, .25), tx, .07 * FZ_MID, (-.4, .4, -.3, .3)[k], rv=.2)
-    # 下で刻む低いベース（E1 → F#1 → G#1 → A1 → B1）・8分
-    roots = ((M, 28), (M + .8, 30), (M + 1.5, 32), (M + 1.72, 33), (M + 2.2, 35))
-    g0 = M + 2.34 - 10 * .22
-    for k in range(15):
-        t = g0 + .22 * k
-        if t >= M + 3.4 - .05:
-            break
-        rt = [m for s, m in roots if s <= t + 1e-6][-1]
-        mx.add(stab((rt + 12, rt + 24), .2, r, 2.6, .5), t, (.16 + .01 * k) * FZ_MID, rv=.08)
-    # 白い光（M＋2.2）：ゴォーン（低いどら）＋暗いシャーン →「ど！」×4（重低音のドッ！＋低いジャン）
-    mx.add(gong(mtof(47), 1.8, .7, r), M + 2.2, .4 * FZ_MID, rv=.35)                  # B2
-    mx.add(lcrash(r, 1.4, .45), M + 2.2, .12 * FZ_MID, -.4, rv=.3)
-    mx.add(lcrash(r, 1.4, .45), M + 2.2, .12 * FZ_MID, .4, rv=.3)
+        mx.add(boom(110, 32, .6, .22, .03, 2.6, r), tx, .75 * FZ_LOW, rv=.08)
+        mx.add(lcrash(r, .8, .3), tx, .1 * FZ_MID, (-.4, .4, -.3, .3)[k], rv=.2)
+    # 下で刻む低いベース（E → F# → G# → A → B）：「ど！」と同じ .17秒の刻み
+    roots = ((M, 28), (T2, 30), (T3, 32), (T3 + .22, 33), (T4, 35))
+    dd = T4 + .12
+    k = 0
+    while dd - .17 * (k + 1) >= M + .05:
+        k += 1
+    t = dd - .17 * k
+    j = 0
+    while t < T5 - .05:
+        rt = [m for s0, m in roots if s0 <= t + 1e-6][-1]
+        mx.add(stab((rt + 12, rt + 24), .16, r, 2.6, .5), t, (.14 + .006 * j) * FZ_MID, rv=.08)
+        t += .17
+        j += 1
+    # 白い光（M＋T4）：ゴォーン＋暗いシャーン →「ど！」×4（爆発がだんだん高く・低いジャン）
+    mx.add(gong(mtof(47), 1.6, .6, r), T4, .35 * FZ_MID, rv=.35)                  # B2
+    mx.add(lcrash(r, 1.2, .4), T4, .12 * FZ_MID, -.4, rv=.3)
+    mx.add(lcrash(r, 1.2, .4), T4, .12 * FZ_MID, .4, rv=.3)
     for i, ch in enumerate(((47, 54, 59), (51, 54, 59, 63), (54, 59, 63, 66), (59, 63, 66, 71))):
-        t = M + 2.34 + .22 * i
-        mx.add(stab(ch, .22, r, 3.0, .5), t, (.5 + .05 * i) * FZ_MID, rv=.2)
-        mx.add(boom(130, 33, .45, .18, .025, 2.6, r), t, .9 * FZ_LOW, rv=.06)
-        mx.add(lsnare(r, .25), t, .3, rv=.12)
-    t = M + 3.0
-    while t < M + 3.38:                                                             # 低いタムの連打（だんだん速く・高く・大きく）
-        u = (t - M - 3.0) / .4
-        mx.add(tom(70 + 70 * u, r, .18), t, .25 + .35 * u, r.uniform(-.3, .3), rv=.12)
-        t += .055 - .03 * u
-    rd = 1.2
-    mx.add(nsweep(rd, 60, 900, .4, r) * np.linspace(0, 1, n_(rd)) ** 2, M + 2.2, .3, rv=.25)
-    mx.add(fade(np.tanh(1.4 * np.sin(phase(np.geomspace(30, 62, n_(rd)), n_(rd)))) * np.linspace(0, 1, n_(rd)) ** 1.5), M + 2.2, .3, rv=.1)
-    # 「ど的中！！！！」（M＋3.4）：ドォォォン!!＋低い金管の和音（E）
-    T5 = M + 3.4
+        t = T4 + .12 + .17 * i
+        mx.add(explosion(r, .9, 1 + .12 * i), t, .9 + .04 * i, (-.25, .25, -.15, .15)[i], rv=.12)
+        mx.add(stab(ch, .2, r, 3.0, .5), t, (.45 + .05 * i) * FZ_MID, rv=.2)
+        mx.add(lsnare(r, .22), t, .3, rv=.12)
+    t = T4 + .12 + .17 * 3 + .08
+    while t < T5 - .02:                                                             # 低いタムの連打（だんだん速く・高く）
+        u = (t - (T4 + .71)) / max(.01, T5 - T4 - .71)
+        mx.add(tom(70 + 80 * u, r, .16), t, (.3 + .3 * u) * FZ_MID, r.uniform(-.3, .3), rv=.12)
+        t += .045 - .015 * u
+    rd = T5 - T4
+    mx.add(nsweep(rd, 60, 1200, .4, r) * np.linspace(0, 1, n_(rd)) ** 2, T4, .3, rv=.25)
+    mx.add(fade(np.tanh(1.4 * np.sin(phase(np.geomspace(30, 66, n_(rd)), n_(rd)))) * np.linspace(0, 1, n_(rd)) ** 1.5), T4, .3, rv=.1)
+    # 「ど的中！！！！」（M＋T5）：大爆発＋ドォォォン＋低い金管の和音（E）＋「！」×4で小さな爆発
+    mx.add(explosion(r, 1.8), T5, 1.0, rv=.2)
     mx.add(boom(80, 25, 2.0, .55, .1, 2.6, r), T5, 1.0 * FZ_LOW, rv=.2)
     mx.add(lcrash(r, 2.4, .8), T5, .22 * FZ_MID, -.5, rv=.35)
     mx.add(lcrash(r, 2.4, .8), T5, .22 * FZ_MID, .5, rv=.35)
@@ -778,15 +832,16 @@ def sfx_fz():
         mx.add(brass(m, 1.5, r), T5, .34 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
     for i, m in enumerate((68, 71)):                                               # 上に G#4・B4 を少し（輪郭）
         mx.add(brass(m, 1.5, r), T5, .2 * FZ_MID, (-.3, .3)[i], rv=.3)
-    mx.add(pad((40, 47, 52), 1.6, .15, .5, .5), T5, .25, rv=.3)
+    mx.add(pad((40, 47, 52), 1.4, .15, .5, .5), T5, .25, rv=.3)
     mx.add(gong(mtof(52), 2.0, .75, r), T5 + .02, .35 * FZ_MID, rv=.4)
-    for i, m in enumerate((56, 59, 64, 68)):                                       # ！×4：低い鐘
-        mx.add(bell(mtof(m), 1.0, idx=1.4, tau=.5), T5 + .08 + .06 * i, .22 * FZ_MID, (-.45, -.15, .15, .45)[i], rv=.4)
-    # 光の波（.45秒ごと）に合わせた重いドンと、低いピロピロ（16分）
+    for i in range(4):                                                              # ！×4
+        mx.add(explosion(r, .35, 1.1 + .1 * i), T5 + .08 + .05 * i, .5, (-.45, -.15, .15, .45)[i], rv=.12)
+    # 光の波（.45秒ごと）に合わせて重いドン（小さな爆発）と、低いピロピロ（16分）
     k = 1
     while T5 + .45 * k < R - .1:
         tb = T5 + .45 * k
-        mx.add(boom(110, 32, .55, .22, .03, 2.6, r), tb, .55 * FZ_LOW, rv=.06)
+        mx.add(explosion(r, .45), tb, .55, rv=.08)
+        mx.add(boom(110, 32, .55, .22, .03, 2.6, r), tb, .5 * FZ_LOW, rv=.06)
         mx.add(stab((40, 52), .3, r, 2.2, .5), tb, .2 * FZ_MID, rv=.15)
         k += 1
     arp = (52, 56, 59, 64, 59, 56)
@@ -795,27 +850,27 @@ def sfx_fz():
         tj = T5 + .2 + .1125 * j
         mx.add(pluck(arp[j % len(arp)] + 12 * (j // 12 % 2), .25, .1), tj, .12, (-.3, .3)[j % 2], rv=.25)
         j += 1
-    # --- 結果（R）：ドォン＋低いパッパッパーン＋メダル → 「フリーズ的中!!!」ゴォーン → 買い目 → 合計 ---
+    # --- 結果（R）：大爆発＋低いパッパッパーン → R＋.3 着地のズドン・「フリーズ的中!!!」ジャーン → 買い目（.08秒おき）→ 合計 ---
+    mx.add(explosion(r, 1.6), R, 1.0, rv=.15)
     mx.add(boom(100, 30, 1.3, .4, .05, 2.4, r), R, .95 * FZ_LOW, rv=.15)
-    mx.add(gong(mtof(52), 1.8, .7, r), R, .3 * FZ_MID, rv=.4)
-    for t, m in ((R, 52), (R + .09, 56), (R + .18, 59)):                          # E3 G#3 B3
-        mx.add(brass(m, .07, r, False), t, .38 * FZ_MID, rv=.2)
-    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
-        mx.add(brass(m, 1.4, r), R + .27, .32 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
+    for t, m in ((R, 52), (R + .08, 56), (R + .16, 59)):                          # E3 G#3 B3
+        mx.add(brass(m, .06, r, False), t, .38 * FZ_MID, rv=.2)
+    mx.add(boom(110, 30, 1.0, .35, .04, 2.8, r), R + .3, .9 * FZ_LOW, rv=.1)       # 着地（ズドン）
+    mx.add(explosion(r, .6), R + .3, .6, rv=.12)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):                               # 「フリーズ的中!!!」
+        mx.add(brass(m, 1.3, r), R + .3, .32 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
     for i, m in enumerate((68, 71)):
-        mx.add(brass(m, 1.4, r), R + .27, .2 * FZ_MID, (-.3, .3)[i], rv=.3)
-    mx.add(lcrash(r, 2.0, .6), R + .27, .16 * FZ_MID, -.4, rv=.35)
-    mx.add(lcrash(r, 2.0, .6), R + .27, .16 * FZ_MID, .4, rv=.35)
-    mx.add(boom(90, 28, 1.1, .35, .05, 2.4, r), R + .27, .85 * FZ_LOW, rv=.1)
-    medals(mx, R + .1, 2.0, 26, .22 * FZ_MID, r)
-    mx.add(gong(mtof(47), 1.8, .7, r), R + .6, .3 * FZ_MID, -.2, rv=.4)                   # 「フリーズ的中!!!」
-    mx.add(bell(mtof(59), 1.4, idx=1.4, tau=.6), R + .62, .2 * FZ_MID, .2, rv=.4)
-    for t, m in ((R + .85, 56), (R + 1.0, 59), (R + 1.15, 64)):                   # 買い目
-        mx.add(bell(mtof(m), .8, idx=1.4, tau=.35), t, .22 * FZ_MID, rv=.3)
-    mx.add(bell(mtof(64), 1.6, idx=1.3, tau=.7), R + 1.3, .28 * FZ_MID, rv=.45)            # 合計
-    mx.add(coin(1500, r, .5), R + 1.3, .2, -.2, rv=.25)
-    mx.add(coin(1900, r, .45), R + 1.36, .15, .25, rv=.25)
-    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), R + 1.3, .22, rv=.35)
+        mx.add(brass(m, 1.3, r), R + .3, .2 * FZ_MID, (-.3, .3)[i], rv=.3)
+    mx.add(lcrash(r, 2.0, .6), R + .3, .16 * FZ_MID, -.4, rv=.35)
+    mx.add(lcrash(r, 2.0, .6), R + .3, .16 * FZ_MID, .4, rv=.35)
+    mx.add(gong(mtof(47), 1.8, .7, r), R + .3, .3 * FZ_MID, -.2, rv=.4)
+    medals(mx, R + .1, 1.8, 26, .22 * FZ_MID, r)
+    for t, m in ((R + .45, 56), (R + .53, 59), (R + .61, 64)):                    # 買い目
+        mx.add(bell(mtof(m), .7, idx=1.4, tau=.3), t, .22 * FZ_MID, rv=.3)
+    mx.add(bell(mtof(64), 1.4, idx=1.3, tau=.6), R + .69, .28 * FZ_MID, rv=.45)  # 合計
+    mx.add(coin(1500, r, .5), R + .69, .2, -.2, rv=.25)
+    mx.add(coin(1900, r, .45), R + .75, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), R + .69, .22, rv=.35)
     return mx.render(1.8, target=-13, bass=True)
 
 

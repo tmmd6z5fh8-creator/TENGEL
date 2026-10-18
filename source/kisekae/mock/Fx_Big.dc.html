@@ -113,6 +113,8 @@ body{margin:0}
 
 /* ---------- デカ的中：大きいPUSH・虹色に光る ---------- */
 .ov.big .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
+/* 押したあとの画面（.rv）は、PUSHの画面と同じ暗さのまま始める（暗さがいったん消えてまた暗くなると、白い光の前にもう1回光ってしまう） */
+.ov.rv .dim{animation:none}
 .push.big{--pr:36px;width:280px;height:140px;animation:bobBig .8s ease-in-out infinite,popIn .4s cubic-bezier(.2,1.6,.4,1) both}
 .push.big span{font-size:56px}
 /* 虹の輪：形はボタンと同じ横長のまま、色だけがぐるぐる回る */
@@ -133,34 +135,55 @@ body{margin:0}
   clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 1.6s ease-in-out var(--d) infinite;opacity:0}
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
 .pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
-/* 押したあと：白く光る → 虹の光の筋と輪 → 光の中から馬 */
-.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .9s ease-out .18s both}
-@keyframes flash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+/* 押したあと（パチンコの当たりのように速く・勢いよく）：はじける → 0.04秒 白く光る・爆発・虹の光の筋 → 虹の輪3つ（0.1・0.25・0.4秒）
+   → 0.38秒 馬とボードがドンと出る（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
+.pressed.big{animation:press .28s ease-in both}
+.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both}
+@keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 .rbow{position:absolute;z-index:3;left:50%;top:44%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
   -webkit-mask-image:repeating-conic-gradient(#000 0 6deg,transparent 6deg 15deg),radial-gradient(circle,#000 0 10%,transparent 60%);
   -webkit-mask-composite:source-in;mask-image:repeating-conic-gradient(#000 0 6deg,transparent 6deg 15deg),radial-gradient(circle,#000 0 10%,transparent 60%);mask-composite:intersect;
-  opacity:.85;animation:raysIn .7s ease-out .25s both,spin 7s linear infinite}
+  opacity:.85;animation:raysIn .25s cubic-bezier(.2,.9,.3,1) .04s both,spin 30s linear infinite}
 .glow{position:absolute;z-index:4;left:50%;top:44%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;
   background:radial-gradient(circle,#FFFFFF 0 22%,rgba(255,248,214,.9) 34%,rgba(255,230,160,.45) 52%,transparent 70%);
-  animation:wrap 1.3s ease-out .2s both,breathe 2.4s ease-in-out 1.5s infinite}
-@keyframes wrap{0%{scale:.1;opacity:0}45%{scale:2.6;opacity:1}100%{scale:1.15;opacity:.95}}
+  animation:wrap .55s ease-out .04s both,breathe 2.4s ease-in-out .6s infinite}
+@keyframes wrap{0%{scale:.1;opacity:0}60%{scale:1.3;opacity:1}100%{scale:1.15;opacity:.95}}
 @keyframes breathe{0%,100%{scale:1.15}50%{scale:1.25}}
 .ring{position:absolute;z-index:5;left:50%;top:44%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3B3B);
   -webkit-mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);
-  opacity:0;animation:shock 1s ease-out forwards}
-.ring.r1{animation-delay:.28s}.ring.r2{animation-delay:.55s}.ring.r3{animation-delay:.85s}
+  opacity:0;animation:shock2 .42s ease-out forwards}
+/* 虹の輪3つ（キュウィン×3）：だんだん大きい輪がポンと出て消える（同じ所が何回も光らないように、輪の大きさを変える） */
+.ring.r1{--rs:.9;animation-delay:.1s}.ring.r2{--rs:1.5;animation-delay:.25s}.ring.r3{--rs:2.2;animation-delay:.4s}
+@keyframes shock2{0%{opacity:.7;scale:calc(var(--rs) * .6)}100%{opacity:0;scale:calc(var(--rs) * 1.25)}}
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
-.big .hb{animation:emerge 1s ease-out .85s both}
-@keyframes emerge{0%{opacity:0;transform:scale(.6);filter:brightness(3.2) blur(3px)}60%{opacity:1;transform:scale(1.06);filter:brightness(1.6) blur(0)}100%{transform:scale(1);filter:none}}
+.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both}
+@keyframes bslam{0%{opacity:0;transform:translateY(-70px) scale(1.45);filter:brightness(3) blur(3px)}55%{opacity:1;transform:translateY(8px) scale(.96);filter:brightness(1.7) blur(0)}78%{transform:translateY(-3px) scale(1.02);filter:brightness(1.15)}100%{transform:none;filter:none}}
 .big .board{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 26px 6px rgba(255,236,160,.85),0 10px 22px rgba(0,0,0,.3)}
 .big .bh{font-size:31px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.18));
-  animation:pop .55s cubic-bezier(.2,1.8,.4,1) 1.5s both,rbowText 2s linear 1.5s infinite}
-.ov.big{--t0:1.75s;--tc:.3s}
+  animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
+@keyframes bhSlam{0%{opacity:0;transform:scale(2.6)}60%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
+.ov.big{--t0:.9s;--tc:.25s}
+.ov.big .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.big .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.big .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 .big .brows li.top{background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF) border-box;border:2px solid transparent}
 
+
+/* 爆発の光（文字やボードが出るとき）：ギザギザの星形の光がはじけて消える・衝撃の輪・飛び散る光の破片。小さな範囲で1回だけ光る（画面全体は光らせない） */
+.bx{position:absolute;left:var(--x);top:var(--y);width:0;height:0;pointer-events:none}
+.bx .bs1{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);
+  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards}
+@keyframes bxS{0%{opacity:1;transform:scale(.12)}45%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+.bx .bw{position:absolute;left:calc(var(--s) * -.35);top:calc(var(--s) * -.35);width:calc(var(--s) * .7);height:calc(var(--s) * .7);border-radius:50%;
+  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards}
+@keyframes bxW{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(2)}}
+.bx > i{position:absolute;left:-7px;top:-2px;width:14px;height:4px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);
+  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards}
+@keyframes bxD{0%{opacity:1;transform:translate(0,0) rotate(var(--r)) scaleX(2.2)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scaleX(.5)}}
+@media (prefers-reduced-motion:reduce){.bx{display:none}}
 
 </style>
 </helmet>
@@ -197,9 +220,9 @@ body{margin:0}
   </div>
   </sc-if>
   <sc-if value="{{isReveal}}" hint-placeholder-val="{{false}}">
-  <div class="ov big big" style="--n:2">
+  <div class="ov big big rv" style="--n:2">
     <div class="dim"></div>
-    <div class="rbow"></div><div class="glow"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="spk"><b style="--x:46.6%;--y:38.1%;--s:12px;--d:1.39s;--c:hsl(3,100%,75%)"></b><b style="--x:35.1%;--y:45.9%;--s:20px;--d:0.53s;--c:hsl(315,100%,75%)"></b><b style="--x:68.4%;--y:68.6%;--s:13px;--d:1.51s;--c:hsl(216,100%,75%)"></b><b style="--x:18.5%;--y:26.5%;--s:12px;--d:0.81s;--c:hsl(302,100%,75%)"></b><b style="--x:9.8%;--y:65.2%;--s:23px;--d:1.42s;--c:hsl(149,100%,75%)"></b><b style="--x:22.9%;--y:25.3%;--s:23px;--d:1.42s;--c:hsl(136,100%,75%)"></b><b style="--x:87.8%;--y:40.1%;--s:15px;--d:0.07s;--c:hsl(2,100%,75%)"></b><b style="--x:84.9%;--y:10.7%;--s:16px;--d:0.79s;--c:hsl(12,100%,75%)"></b><b style="--x:25.8%;--y:69.3%;--s:24px;--d:1.54s;--c:hsl(1,100%,75%)"></b><b style="--x:15.2%;--y:55.8%;--s:24px;--d:0.32s;--c:hsl(4,100%,75%)"></b><b style="--x:86.1%;--y:17.5%;--s:25px;--d:0.80s;--c:hsl(293,100%,75%)"></b><b style="--x:49.7%;--y:85.2%;--s:17px;--d:0.64s;--c:hsl(327,100%,75%)"></b><b style="--x:74.4%;--y:66.3%;--s:12px;--d:1.50s;--c:hsl(21,100%,75%)"></b><b style="--x:9.0%;--y:53.7%;--s:20px;--d:0.24s;--c:hsl(137,100%,75%)"></b><b style="--x:71.8%;--y:55.5%;--s:11px;--d:1.39s;--c:hsl(206,100%,75%)"></b><b style="--x:91.5%;--y:26.4%;--s:20px;--d:0.07s;--c:hsl(187,100%,75%)"></b><b style="--x:81.8%;--y:50.9%;--s:19px;--d:1.10s;--c:hsl(177,100%,75%)"></b><b style="--x:14.1%;--y:81.8%;--s:16px;--d:0.34s;--c:hsl(101,100%,75%)"></b><b style="--x:94.7%;--y:55.4%;--s:10px;--d:1.28s;--c:hsl(168,100%,75%)"></b><b style="--x:4.1%;--y:15.6%;--s:14px;--d:0.43s;--c:hsl(45,100%,75%)"></b><b style="--x:32.3%;--y:30.5%;--s:18px;--d:0.09s;--c:hsl(195,100%,75%)"></b><b style="--x:75.8%;--y:75.4%;--s:18px;--d:1.14s;--c:hsl(127,100%,75%)"></b><b style="--x:56.1%;--y:11.7%;--s:20px;--d:0.15s;--c:hsl(205,100%,75%)"></b><b style="--x:50.9%;--y:88.2%;--s:19px;--d:0.22s;--c:hsl(148,100%,75%)"></b><b style="--x:19.7%;--y:78.5%;--s:14px;--d:0.08s;--c:hsl(88,100%,75%)"></b><b style="--x:28.2%;--y:20.1%;--s:12px;--d:0.24s;--c:hsl(24,100%,75%)"></b></div>
+    <div class="rbow"></div><div class="glow"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="spk"><b style="--x:46.6%;--y:38.1%;--s:12px;--d:1.39s;--c:hsl(3,100%,75%)"></b><b style="--x:35.1%;--y:45.9%;--s:20px;--d:0.53s;--c:hsl(315,100%,75%)"></b><b style="--x:68.4%;--y:68.6%;--s:13px;--d:1.51s;--c:hsl(216,100%,75%)"></b><b style="--x:18.5%;--y:26.5%;--s:12px;--d:0.81s;--c:hsl(302,100%,75%)"></b><b style="--x:9.8%;--y:65.2%;--s:23px;--d:1.42s;--c:hsl(149,100%,75%)"></b><b style="--x:22.9%;--y:25.3%;--s:23px;--d:1.42s;--c:hsl(136,100%,75%)"></b><b style="--x:87.8%;--y:40.1%;--s:15px;--d:0.07s;--c:hsl(2,100%,75%)"></b><b style="--x:84.9%;--y:10.7%;--s:16px;--d:0.79s;--c:hsl(12,100%,75%)"></b><b style="--x:25.8%;--y:69.3%;--s:24px;--d:1.54s;--c:hsl(1,100%,75%)"></b><b style="--x:15.2%;--y:55.8%;--s:24px;--d:0.32s;--c:hsl(4,100%,75%)"></b><b style="--x:86.1%;--y:17.5%;--s:25px;--d:0.80s;--c:hsl(293,100%,75%)"></b><b style="--x:49.7%;--y:85.2%;--s:17px;--d:0.64s;--c:hsl(327,100%,75%)"></b><b style="--x:74.4%;--y:66.3%;--s:12px;--d:1.50s;--c:hsl(21,100%,75%)"></b><b style="--x:9.0%;--y:53.7%;--s:20px;--d:0.24s;--c:hsl(137,100%,75%)"></b><b style="--x:71.8%;--y:55.5%;--s:11px;--d:1.39s;--c:hsl(206,100%,75%)"></b><b style="--x:91.5%;--y:26.4%;--s:20px;--d:0.07s;--c:hsl(187,100%,75%)"></b><b style="--x:81.8%;--y:50.9%;--s:19px;--d:1.10s;--c:hsl(177,100%,75%)"></b><b style="--x:14.1%;--y:81.8%;--s:16px;--d:0.34s;--c:hsl(101,100%,75%)"></b><b style="--x:94.7%;--y:55.4%;--s:10px;--d:1.28s;--c:hsl(168,100%,75%)"></b><b style="--x:4.1%;--y:15.6%;--s:14px;--d:0.43s;--c:hsl(45,100%,75%)"></b><b style="--x:32.3%;--y:30.5%;--s:18px;--d:0.09s;--c:hsl(195,100%,75%)"></b><b style="--x:75.8%;--y:75.4%;--s:18px;--d:1.14s;--c:hsl(127,100%,75%)"></b><b style="--x:56.1%;--y:11.7%;--s:20px;--d:0.15s;--c:hsl(205,100%,75%)"></b><b style="--x:50.9%;--y:88.2%;--s:19px;--d:0.22s;--c:hsl(148,100%,75%)"></b><b style="--x:19.7%;--y:78.5%;--s:14px;--d:0.08s;--c:hsl(88,100%,75%)"></b><b style="--x:28.2%;--y:20.1%;--s:12px;--d:0.24s;--c:hsl(24,100%,75%)"></b></div><i class="bx" style="z-index:5;--x:195px;--y:371px;--d:0.04s;--s:600px;--c1:#FFF6C8;--c2:#FFB21A" aria-hidden="true"><b class="bs1" style="clip-path:polygon(50.6% 2.6%,54.8% 29.0%,69.9% 5.0%,59.1% 34.8%,84.3% 18.6%,62.7% 42.2%,89.2% 33.6%,68.2% 46.5%,92.1% 47.9%,71.0% 53.7%,88.0% 66.9%,62.3% 58.8%,78.8% 79.5%,62.5% 66.8%,67.3% 88.5%,53.1% 70.7%,51.0% 99.6%,46.1% 69.0%,32.4% 96.2%,37.6% 67.8%,18.4% 79.2%,37.4% 58.7%,13.0% 66.9%,31.6% 54.0%,3.3% 52.3%,33.8% 47.0%,9.2% 31.5%,35.0% 40.4%,21.9% 20.7%,42.7% 37.8%,32.6% 4.8%,45.1% 30.3%)"></b><b class="bw"></b><i style="--dx:486px;--dy:-14px;--r:-2deg;--t:0.38s;--c:hsl(23,100%,65%)"></i><i style="--dx:547px;--dy:215px;--r:21deg;--t:0.41s;--c:hsl(125,100%,74%)"></i><i style="--dx:335px;--dy:263px;--r:38deg;--t:0.50s;--c:hsl(236,100%,63%)"></i><i style="--dx:262px;--dy:473px;--r:61deg;--t:0.46s;--c:hsl(151,100%,61%)"></i><i style="--dx:111px;--dy:584px;--r:79deg;--t:0.43s;--c:hsl(262,100%,71%)"></i><i style="--dx:-109px;--dy:407px;--r:105deg;--t:0.58s;--c:hsl(279,100%,62%)"></i><i style="--dx:-193px;--dy:368px;--r:118deg;--t:0.42s;--c:hsl(40,100%,64%)"></i><i style="--dx:-329px;--dy:251px;--r:143deg;--t:0.49s;--c:hsl(24,100%,62%)"></i><i style="--dx:-460px;--dy:116px;--r:166deg;--t:0.47s;--c:hsl(121,100%,71%)"></i><i style="--dx:-452px;--dy:-31px;--r:184deg;--t:0.47s;--c:hsl(28,100%,61%)"></i><i style="--dx:-385px;--dy:-168px;--r:204deg;--t:0.43s;--c:hsl(288,100%,64%)"></i><i style="--dx:-406px;--dy:-360px;--r:222deg;--t:0.40s;--c:hsl(222,100%,71%)"></i><i style="--dx:-314px;--dy:-462px;--r:236deg;--t:0.44s;--c:hsl(232,100%,65%)"></i><i style="--dx:-34px;--dy:-451px;--r:266deg;--t:0.49s;--c:hsl(162,100%,75%)"></i><i style="--dx:58px;--dy:-453px;--r:277deg;--t:0.58s;--c:hsl(57,100%,72%)"></i><i style="--dx:264px;--dy:-393px;--r:304deg;--t:0.42s;--c:hsl(255,100%,70%)"></i><i style="--dx:334px;--dy:-321px;--r:316deg;--t:0.49s;--c:hsl(280,100%,71%)"></i><i style="--dx:493px;--dy:-232px;--r:335deg;--t:0.46s;--c:hsl(300,100%,61%)"></i></i><i class="bx" style="z-index:5;--x:195px;--y:420px;--d:0.55s;--s:660px;--c1:#FFFFFF;--c2:#FF3BB8" aria-hidden="true"><b class="bw"></b><i style="--dx:631px;--dy:-28px;--r:-3deg;--t:0.52s;--c:hsl(156,100%,71%)"></i><i style="--dx:438px;--dy:193px;--r:24deg;--t:0.41s;--c:hsl(250,100%,61%)"></i><i style="--dx:371px;--dy:392px;--r:47deg;--t:0.60s;--c:hsl(49,100%,74%)"></i><i style="--dx:189px;--dy:626px;--r:73deg;--t:0.58s;--c:hsl(343,100%,74%)"></i><i style="--dx:-127px;--dy:596px;--r:102deg;--t:0.56s;--c:hsl(264,100%,73%)"></i><i style="--dx:-353px;--dy:450px;--r:128deg;--t:0.47s;--c:hsl(43,100%,66%)"></i><i style="--dx:-410px;--dy:165px;--r:158deg;--t:0.49s;--c:hsl(88,100%,60%)"></i><i style="--dx:-396px;--dy:51px;--r:173deg;--t:0.51s;--c:hsl(184,100%,66%)"></i><i style="--dx:-461px;--dy:-186px;--r:202deg;--t:0.58s;--c:hsl(130,100%,73%)"></i><i style="--dx:-259px;--dy:-414px;--r:238deg;--t:0.49s;--c:hsl(308,100%,75%)"></i><i style="--dx:-92px;--dy:-501px;--r:260deg;--t:0.54s;--c:hsl(254,100%,69%)"></i><i style="--dx:129px;--dy:-485px;--r:285deg;--t:0.46s;--c:hsl(83,100%,72%)"></i><i style="--dx:293px;--dy:-331px;--r:312deg;--t:0.52s;--c:hsl(249,100%,65%)"></i><i style="--dx:425px;--dy:-146px;--r:341deg;--t:0.38s;--c:hsl(230,100%,61%)"></i></i><i class="bx" style="z-index:7;--x:195px;--y:316px;--d:0.7s;--s:300px;--c1:#FFFFFF;--c2:#FFE53B" aria-hidden="true"><b class="bw"></b></i>
     <div class="pressed big"></div>
     <div class="hb">
       <img src="/_blob/1ed688b24401fad37e1c64fc4605a902" alt="ボードを持つ馬">
@@ -216,7 +239,7 @@ body{margin:0}
 <script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["form","push","reveal"],"default":"form"},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   sfxUrls() {
-    return { push: '/_blob/b5557f2f9cf4bd294391348079207019', tap: '/_blob/ab8e4b31cd65a17aa9af5c0cbd7d1d94' };
+    return { push: '/_blob/b54e122d36201a3037259bd9d2bdeb7d', tap: '/_blob/81744081a579a59154beea2a3bdd2546' };
   }
   sfxDecode(c, b) {
     return new Promise(function (ok) {
