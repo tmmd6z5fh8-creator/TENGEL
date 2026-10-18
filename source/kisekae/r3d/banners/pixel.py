@@ -49,15 +49,16 @@ def camera(pose=None):
     return frame_horse(pose, BOX, W, Hh, facing='right', azim=4, elev=4, fov=26)
 
 
-def horse(img, pose=None, cam=None, name='pix', hair=None):
-    """馬（低い解像度で描いて、4色にへらす）を img に描く（その場で書きかえる）。hair：たてがみとしっぽの描き方（HAIR を上書き）"""
+def horse(img, pose=None, cam=None, name='pix', hair=None, light=(0.3, 0.8, 0.5), eyes='near'):
+    """馬（低い解像度で描いて、4色にへらす）を img に描く（その場で書きかえる）。hair：たてがみとしっぽの描き方（HAIR を上書き）
+       light：明るい側の向き（カメラを馬のまわりに回すときは、光も同じだけ回す）・eyes：目の光（'near'＝手前の目・'both'＝両目（正面）・'none'＝つむる）"""
     pose = dict(Hm.GALLOP) if pose is None else pose
     e, t = camera(pose) if cam is None else cam
     R = render_horse(pose, e, t, 26, W, Hh, ss=3, name=name)
     hair_, ha = mane_tail(R, (Hh, W), '#000000', '#000000', **dict(HAIR, **(hair or {})))
     A = R['a']
     n = R['n']
-    l = np.sum(n * nrm((0.3, 0.8, 0.5)), -1)
+    l = np.sum(n * nrm(light), -1)
     body = (A > 0.45)
     img[body & (l > 0.2)] = PAL['horse']
     img[body & (l <= 0.2)] = PAL['horse2']
@@ -70,7 +71,11 @@ def horse(img, pose=None, cam=None, name='pix', hair=None):
     edge = (cv2.dilate(m, np.ones((3, 3), np.uint8)) - m).astype(bool)
     img[edge & (np.arange(Hh)[:, None] < 60)] = PAL['black']
     # 目
-    ex, ey = R['eye']; img[int(round(ey)), int(round(ex))] = PAL['white']
+    if eyes == 'near':
+        ex, ey = R['eye']; img[int(round(ey)), int(round(ex))] = PAL['white']
+    elif eyes == 'both':
+        for q in R['scene'].project(np.array(R['S']['eyes']))[0]:
+            img[int(round(q[1])), int(round(q[0]))] = PAL['white']
     R['cam'] = (e, t)
     return img, R
 
