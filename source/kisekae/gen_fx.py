@@ -1,28 +1,30 @@
-"""的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）の見本の画面：Fx_Hit.dc.html・Fx_Big.dc.html・Fx_Freeze.dc.html
+"""的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）・隠れど的中・ハズレの見本の画面：
+   Fx_Hit.dc.html・Fx_Big.dc.html・Fx_Freeze.dc.html・Fx_Hidden.dc.html・Fx_Miss.dc.html ＋ 結果のボード26テーマの一覧 Fx_Boards.dc.html
    python3 gen_fx.py fx_blobs.json
-   fx_blobs.json：{"back": "<id>", "front": "<id>"}（ボードを持つ馬の2枚）＋フリーズの絵（fz_warp・fz_icon・fz_ncore・fz_nglow）
+   fx_blobs.json：フリーズの絵（fz_warp・fz_icon・fz_ncore・fz_nglow）・隠れど的中の「押した瞬間の画面」（big_warp＝デカのPUSHの画面）
    ＋メモの静止画（s_…。そろっていればメモ Fx_Memo.dc.html も作る）
    ＋効果音（snd_hit_push・snd_hit・snd_big_push・snd_big・snd_fz_push・snd_fz。gen_sfx.py の音。あれば見本の画面で鳴らして、
      同じフォルダの sfx_wave.json と合わせて効果音のメモ Fx_Sound.dc.html も作る）
-   流れ：記録する → PUSHボタン（上下に動く）→ タップ → 馬がボードを持って出てくる（ボードに当たった買い目）
+   流れ：記録する → PUSHボタン（上下に動く）→ タップ → 壁紙のテーマのボードが出る（当たった買い目。ボードは boards.py・馬は出さない）
    フリーズ（3連単の当たりに超大穴＝10〜12番人気の馬）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップでパチスロのフリーズのように
-   画面がバグる → 青白い横一本線にプチュン → 真っ暗（1.5秒）→ 虹色ネオンのカット（とんでも！・ど！・ど的中！！！！）→ 炎の画面に「ど的中」と馬がボード"""
+   画面がバグる → 青白い横一本線にプチュン → 真っ暗（1.5秒）→ 虹色ネオンのカット（とんでも！・ど！・ど的中！！！！）→ 炎の画面に「ど的中」とボード
+   隠れど的中（デカ的中の2〜7回に1回・ランダム）：デカ的中のPUSH → タップでそのまま、ど的中の演出 → 見出し「隠れど的中!!!」のボード
+   ハズレ：記録する → ボタンなしでボードだけ（静かに出る・音なし）"""
 import os, re, sys, json, random, math
 from urllib.parse import quote
 from gen_screens import SVG_A
+from boards import board_css, board_html, font_links as theme_fonts, ORDERED, BY_ID, CAT_ORDER
+from themes20 import CATS
 
 K = os.path.dirname(os.path.abspath(__file__))
 P = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'
 blobs = json.load(open(sys.argv[1]))
-rect = json.load(open(sys.argv[2])) if len(sys.argv) > 2 else dict(x=24, y=267, w=672, h=440, W=720, H=900)
 RANCH = open(f'{P}/Judge_Ranch.dc.html', encoding='utf-8').read()
 RANCH_VARS = re.search(r'^\.ph\{(--bg:[^}]*)\}', RANCH, re.M).group(1)
 BANNER = re.search(r'<img class="bnr" src="(/_blob/[0-9a-f]{32})"', RANCH).group(1)
 
-# ボードを持つ馬：画像 720×900 → 画面では 360×450
-SC = 0.5
-HB_W, HB_H = rect['W'] * SC, rect['H'] * SC
-BD = dict(x=rect['x'] * SC, y=rect['y'] * SC, w=rect['w'] * SC, h=rect['h'] * SC)
+# 見本の画面のテーマ（牧場）。結果のボードは壁紙のテーマごと（boards.py。26テーマの一覧は Fx_Boards）
+THEME = 'ranch'
 
 # 馬番の枠の色（12頭のレース）
 WAKU = {1: 'w1', 2: 'w2', 3: 'w3', 4: 'w3', 5: 'w4', 6: 'w4', 7: 'w5', 8: 'w5', 9: 'w6', 10: 'w6', 11: 'w7', 12: 'w8'}
@@ -187,35 +189,20 @@ COMMON_CSS = r'''body{margin:0}
 .pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
   box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
-/* ボードを持つ馬 */
-.hb{position:absolute;z-index:6;left:50%;top:150px;width:HBWpx;height:HBHpx;margin-left:-HBW2px}
-.hb img{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-.board{position:absolute;left:BDXpx;top:BDYpx;width:BDWpx;min-height:BDHpx;border-radius:16px;border:8px solid var(--bFrame);background:var(--bFace);
-  box-shadow:0 10px 22px rgba(0,0,0,.28),inset 0 0 0 2px rgba(0,0,0,.05);padding:30px 16px 12px;display:flex;flex-direction:column;align-items:stretch;gap:7px;color:var(--bInk)}
-.bh{text-align:center;font:400 34px/1 "Dela Gothic One",sans-serif;color:var(--hitRed);text-shadow:0 2px 0 #FFFFFF,0 4px 0 rgba(0,0,0,.12)}
-.bsub{text-align:center;font-size:12.5px;font-weight:700;color:#7A5A3A;margin-top:-2px}
-.brows{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-.brows li{display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:10px;background:rgba(138,90,43,.08);white-space:nowrap}
-.brows .bt{min-width:44px;height:22px;font-size:11.5px}
-.brows .bc .n{min-width:24px;height:24px;font-size:12.5px}
-.brows .by{font-size:11px;color:#7A5A3A}
-.brows .bp{margin-left:auto;font-size:14.5px;font-weight:800;color:var(--hitRed)}
-.brows .bc{flex:none;gap:2px}
-.brows .ar{padding:0 1px}
-.btot{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-top:auto;font-size:12.5px;font-weight:700;color:#5A3A1A}
-.btot b{font:400 22px/1 "Dela Gothic One",sans-serif;color:var(--bInk)}
+/* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
+.hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
 .close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 /* 紙ふぶき */
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
 .conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
 @keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
-/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、馬とボードはふわっと出す */
+/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、ボードはふわっと出す */
 @media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
 '''
 
 HIT_CSS = r'''
-/* ---------- 的中：あたたかい光 → 馬が下から出る ---------- */
+/* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
 .rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
   -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
@@ -224,6 +211,16 @@ HIT_CSS = r'''
 @keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
 .hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
 .hit{--t0:1.15s;--tc:.2s}
+'''
+
+MISS_CSS = r'''
+/* ---------- ハズレ：ボタンなし。記録したら、暗い幕とテーマのボードが静かに出る（光・紙ふぶき・音なし） ---------- */
+.miss .hb{animation:missIn .4s cubic-bezier(.2,.8,.3,1) .1s both}
+@keyframes missIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.ov.miss{--t0:.45s;--tc:.15s}
+.ov.miss .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.miss .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.miss .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 '''
 
 BIG_CSS = r'''
@@ -252,7 +249,7 @@ BIG_CSS = r'''
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
 .pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
 /* 押したあと（パチンコの当たりのように速く・勢いよく）：はじける → 0.04秒 白く光る・爆発・虹の光の筋 → 虹の輪3つ（0.1・0.25・0.4秒）
-   → 0.38秒 馬とボードがドンと出る（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
+   → 0.38秒 ボードがドンと落ちてくる（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
 .pressed.big{animation:press .28s ease-in both}
 .flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both}
 @keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
@@ -276,16 +273,13 @@ BIG_CSS = r'''
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
 .big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both}
 @keyframes bslam{0%{opacity:0;transform:translateY(-70px) scale(1.45);filter:brightness(3) blur(3px)}55%{opacity:1;transform:translateY(8px) scale(.96);filter:brightness(1.7) blur(0)}78%{transform:translateY(-3px) scale(1.02);filter:brightness(1.15)}100%{transform:none;filter:none}}
-.big .board{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 26px 6px rgba(255,236,160,.85),0 10px 22px rgba(0,0,0,.3)}
-.big .bh{font-size:31px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3B3B);background-size:200% 100%;
-  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.18));
-  animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
+/* 見出し「デカ的中!!」：虹色の文字（boards.py）がたたきつけるように出て、色が流れる */
+.big .bh{animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
 @keyframes bhSlam{0%{opacity:0;transform:scale(2.6)}60%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
 .ov.big{--t0:.9s;--tc:.25s}
 .ov.big .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
 .ov.big .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.big .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
-.big .brows li.top{background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF) border-box;border:2px solid transparent}
 
 '''
 
@@ -343,7 +337,7 @@ FREEZE_CSS = r'''
   -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 var(--ink2)) drop-shadow(0 0 7px rgba(255,255,255,.7));animation:rbowText 1.1s linear infinite}
 /* ---------- 押したあと（パチスロのフリーズのように） ----------
    秒は押してから。<C>＝アイコンのドアップ・<H>＝横に流れる光・<E>＝画面が青く光る・<W>＝プチュン（青白い横一本線）・<Z>＝線が点に縮んで消える
-   ・（真っ暗1.5秒）・<M>＝虹色ネオンのカット・<R>＝結果（炎の画面・上に小さく「ど的中」・馬がボード） */
+   ・（真っ暗1.5秒）・<M>＝虹色ネオンのカット・<R>＝結果（炎の画面・上に小さく「ど的中」・テーマのボード） */
 .ov.fz .blk{position:absolute;inset:0;background:#000000}
 @keyframes vis{from,to{visibility:visible}}
 @keyframes on1{from,to{opacity:1}}
@@ -531,7 +525,7 @@ FREEZE_CSS = r'''
 .t5 .core{animation:cbr .9s ease-in-out <M+T5> infinite alternate}
 @keyframes cbr{from{scale:.9}to{scale:1.12}}
 .t5 .bs{animation:cbr .9s ease-in-out <M+T5> infinite alternate}
-/* ===== 5) 結果（<R>）：白く光る → 炎の画面に、上に小さく「ど的中」・炎の中から馬がボード（画面はゆらさない） ===== */
+/* ===== 5) 結果（<R>）：白く光る → 炎の画面に、上に小さく「ど的中」・炎の中からテーマのボード（画面はゆらさない） ===== */
 .xf{z-index:45}
 .rfl{position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:mfl .4s ease-out <R> forwards}
 .fin{z-index:20;opacity:0;animation:fzOn .01s linear <R> forwards}
@@ -570,7 +564,7 @@ FREEZE_CSS = r'''
 @keyframes dsh{0%{background-position:-150% 0}60%,100%{background-position:250% 0}}
 .dlg .dsp b{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);background:#FFFFFF;
   clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 4px #FFE08A);opacity:0;animation:twinkle .9s ease-in-out var(--d) infinite}
-/* 炎の中から馬がボードを持ってドンと出る（<R>・爆発）。コインは馬のうしろ・紙ふぶきは前 */
+/* 炎の中からボードがドンと出る（<R>・爆発）。コインはボードのうしろ・紙ふぶきは前 */
 .fin .hb{z-index:6;animation:strike .45s cubic-bezier(.2,.9,.3,1.1) <R+.06> both}
 @keyframes strike{0%{opacity:0;transform:translateY(-36px) scale(.7);filter:brightness(4) blur(2px)}30%{opacity:1;transform:translateY(8px) scale(1.06);filter:brightness(2.2) blur(0)}55%{transform:translateY(-4px) scale(.99);filter:brightness(1.3)}100%{transform:none;filter:none}}
 .fin .conf.cb{z-index:5}
@@ -579,28 +573,15 @@ FREEZE_CSS = r'''
 .conf i.cn{height:var(--w);border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFFBE0 0 16%,#FFD54A 32%,#E0A100 70%,#9A6A00 100%);box-shadow:0 0 6px rgba(255,220,120,.9);animation:coin var(--t) linear var(--d) infinite}
 @keyframes coin{0%{opacity:1;transform:translateY(0) rotateY(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotateY(1080deg)}}
 .ov.fz .close{z-index:60}
-/* ボード：枠は虹色（回さない） */
-.fz .board{border-color:transparent;background-clip:padding-box;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,236,170,.9),0 0 64px 18px rgba(255,120,0,.6),0 12px 24px rgba(0,0,0,.35)}
-.fz .board > .halo{inset:-8px;z-index:auto;border-radius:16px;filter:none}
-.fz .board > .halo i{padding:8px}
-.fz .board > .halo b{width:700px;height:700px;margin:-350px 0 0 -350px;animation:none}
-.fz .bh{font-size:30px;background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#E8C200,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
-  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #FFFFFF) drop-shadow(0 3px 0 rgba(0,0,0,.2));
-  animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) <R+.3> both,rbowText 1.2s linear <R+.3> infinite}
-.zrib{display:flex;align-items:center;justify-content:center;gap:6px;align-self:center;margin-top:1px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--ink2);color:#FFFFFF;font-size:12px;font-weight:700;white-space:nowrap;
-  box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7);animation:rowIn .22s ease-out <R+.36> both}
-.zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:var(--ink2);font-weight:800;font-size:11.5px}
-.zrib .n{min-width:22px;height:22px;font-size:12px}
-.n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6);animation:zx 1.2s linear infinite}
+/* ボード（boards.py の .rb.fz：枠は虹色・回さない）の動き：見出しがたたきつけるように出て虹色が流れる・帯・超大穴の馬番の輪の色が回る・3連単の行に光が走る */
+.fz .bh{animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) <R+.3> both,rbowText 1.2s linear <R+.3> infinite}
+.zrib{animation:rowIn .22s ease-out <R+.36> both}
+.n.zx{animation:zx 1.2s linear infinite}
 @keyframes zx{0%,100%{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3B3B,0 0 10px 4px rgba(255,59,59,.65)}20%{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FFC21A,0 0 10px 4px rgba(255,194,26,.65)}40%{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #2DBB55,0 0 10px 4px rgba(45,187,85,.65)}60%{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #1FA8E0,0 0 10px 4px rgba(31,168,224,.65)}80%{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #B34CFF,0 0 10px 4px rgba(179,76,255,.65)}}
-.fz .brows li.top{position:relative;background:linear-gradient(#FFFDF5,#FFFDF5) padding-box,linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;padding:4px 6px}
-.fz .brows li{flex-wrap:wrap}
-.fz .brows li.top{gap:3px;padding:4px 5px}
-.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat;animation:glint 1.8s ease-in-out <R+.6> infinite}
-.fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
-/* 視差効果を減らす：グリッチ・プチュン・ネオンのカット・炎の粒・紙ふぶきを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す */
+.fz .brows li.top::after{animation:glint 1.8s ease-in-out <R+.6> infinite}
+/* 視差効果を減らす：グリッチ・プチュン・ネオンのカット・炎の粒・紙ふぶきを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・ボードをふわっと出す */
 @media (prefers-reduced-motion:reduce){
-  .push.fz,.push.fz::before,.push.fz .face,.push.fz .glit b,.pshadow.fz,.tap.fz,.aura,.prays,.edge,.frame b,.n.zx,.fz .brows li.top::after,.fz .board > .halo b{animation:none!important}
+  .push.fz,.push.fz::before,.push.fz .face,.push.fz .glit b,.pshadow.fz,.tap.fz,.aura,.prays,.edge,.frame b,.n.zx,.fz .brows li.top::after{animation:none!important}
   .push.fz::after,.ov.fz .gl,.ov.fz .pc,.ov.fz .mt,.ov.fz .xf,.ov.fz .emb,.ov.fz .conf,.ov.fz .dsp,.ov.fz .dr{display:none}
   .push.fz .glit b{opacity:.6}
   .ov.fz{--t0:1.9s}
@@ -639,22 +620,29 @@ def form(bets, pay_total, note, fin=(6, 2, 10)):
   </main>'''
 
 
-def board(title, bets, total, top_first=False, rib='', mark=(), ring=''):
-    """rib：見出しの下の帯（フリーズ：超大穴の馬）／mark：虹色の輪をつける馬番（3連単の行だけ）／ring：枠の虹（フリーズ）"""
-    rows = ''
-    k = 0
+def bet_rows(bets, kind, mark=()):
+    """ボードの行：当たった買い目だけ（ハズレは全部・払戻0円）。デカ・ど的中・隠れど的中は3連単の行に虹色のふち（.top）"""
+    rows, k = '', 0
     for t, c, s, y, p, hit in bets:
-        if not hit:
+        if kind != 'miss' and not hit:
             continue
-        cls = ' class="top"' if (top_first and t == '3連単') else ''
+        cls = ' class="top"' if (kind in ('big', 'fz', 'hidden') and t == '3連単') else ''
+        pay = '0円' if kind == 'miss' else p
+        rows += (f'<li{cls} style="--i:{k}"><span class="bt tag">{t}</span><span class="bc">{combo(c, s, mark if t == "3連単" else ())}</span>'
+                 f'<span class="by">{y}</span><span class="bp">{pay}</span></li>')
         k += 1
-        rows += f'<li{cls} style="--i:{k - 1}"><span class="bt">{t}</span><span class="bc">{combo(c, s, mark if t == "3連単" else ())}</span><span class="by">{y}</span><span class="bp">{p}</span></li>'
-    return f'''<div class="board">{ring}<div class="bh">{title}</div><div class="bsub">9R の当たった買い目</div>{rib}<ul class="brows">{rows}</ul><div class="btot">払戻 合計<b>{total}</b></div></div>'''
+    return rows, k
+
+
+def board(kind, bets, total, rib='', mark=(), tid=THEME, race='9R'):
+    """結果のボード（壁紙のテーマ tid のボード・boards.py）。kind：hit・big・fz・hidden・miss ／ rib：見出しの下の帯 ／ mark：虹色の輪をつける馬番"""
+    rows, _ = bet_rows(bets, kind, mark)
+    return board_html(tid, kind, rows, total, race=race, rib=rib)
 
 
 FZ_X = 11    # 見本の超大穴の馬（11番・11番人気）
 # フリーズの時刻（押してから）：N＝グリッチが一瞬おさまる・C＝アイコンのドアップ・H＝横に流れる光・E＝画面が青く光る・W＝プチュン（青白い横一本線）
-# ・Z＝線が点に縮んで消える（このあと真っ暗1.5秒）・M＝虹色ネオンのカット・R＝結果（炎の画面・上に小さく「ど的中」・馬がボード）
+# ・Z＝線が点に縮んで消える（このあと真っ暗1.5秒）・M＝虹色ネオンのカット・R＝結果（炎の画面・上に小さく「ど的中」・テーマのボード）
 FZ_T = dict(N=.5, C=.86, H=1.2, E=1.4, W=1.64, Z=1.98, M=3.9, R=8.28)
 # 虹色ネオンのカットの始まり（<M> からの秒）。パチンコの当たりのように速く・激しく：T1「とんでも！」→ T2 → T3（×2）→ T4「ど！」×4 → T5「ど的中！！！！」
 # T5 の「！」がそろうのは <M+T5+.23>、そこから HOLD 秒で結果（R ＝ M＋T5＋.23＋HOLD）
@@ -676,10 +664,11 @@ def fz_sec(v):
     return f'{v:.3f}'.rstrip('0').rstrip('.') + 's'
 
 
-def fz_css():
-    """FREEZE_CSS の <M+.85>・<H-C> などを秒に直す・絵とノイズを入れる・グリッチの1コマごとの動きを足す"""
+def fz_css(warp='fz_warp'):
+    """FREEZE_CSS の <M+.85>・<H-C> などを秒に直す・絵とノイズを入れる・グリッチの1コマごとの動きを足す。
+       warp＝バグる「押した瞬間の画面」の絵（ど的中＝フリーズのPUSHの画面・隠れど的中＝デカのPUSHの画面）"""
     css = re.sub(r'<([A-Z][A-Z0-9.+\-]*)>', lambda m: fz_sec(eval(m.group(1), {}, dict(FZ_T, **MT_T))), FREEZE_CSS)
-    for k, v in (('NOISEF', NOISEF), ('ICONID', blobs['fz_icon']), ('WARPID', blobs['fz_warp']), ('NGLOW', blobs['fz_nglow']),
+    for k, v in (('NOISEF', NOISEF), ('ICONID', blobs['fz_icon']), ('WARPID', blobs[warp]), ('NGLOW', blobs['fz_nglow']),
                  ('NCORE', blobs['fz_ncore'])):
         css = css.replace(k, v)
     return css + '/* グリッチ・文字の壁の1コマごとの動き（gen_fx.py の glitch・mt_layers で作る） */\n' + GL['css'] + MT['css'] + '\n'
@@ -731,8 +720,8 @@ GL_SCRIPT = [
 GL_COLS = ['#FF2BD6', '#2FD6FF', '#3CFF6A', '#FFE53B', '#FFFFFF', '#000000', '#6A2BFF', '#FF3B3B']
 
 
-def glitch(seed=61):
-    """グリッチの部品（HTML）と1コマごとの動き（CSS）"""
+def glitch(seed=61, warp='fz_warp'):
+    """グリッチの部品（HTML）と1コマごとの動き（CSS）。warp＝押した瞬間の画面の絵（ずれた画面のかけらに使う）"""
     rnd = random.Random(seed)
     E, C, H = FZ_T['E'], FZ_T['C'], FZ_T['H']
     frames = [(t0, t1, fx.split(), 'ic' if t0 >= C else 'sn') for t0, t1, fx in GL_SCRIPT]
@@ -780,7 +769,7 @@ def glitch(seed=61):
             for _ in range(3):
                 x, y, w, h = rnd.uniform(-20, 330), rnd.uniform(20, 800), rnd.uniform(30, 120), rnd.uniform(6, 30)
                 if rnd.random() < .5 and g == 'sn':
-                    c = f'url(/_blob/{blobs["fz_warp"]}) {-x + rnd.uniform(-60, 60):.0f}px {-y:.0f}px/390px 844px'
+                    c = f'url(/_blob/{blobs[warp]}) {-x + rnd.uniform(-60, 60):.0f}px {-y:.0f}px/390px 844px'
                 else:
                     c = rnd.choice(GL_COLS)
                 blocks.append(f'<i style="--x:{x:.0f}px;--y:{y:.0f}px;--w:{w:.0f}px;--h:{h:.0f}px;--c:{c};--d:{fz_sec(t0)};--t:{fz_sec(t1 - t0)}"></i>')
@@ -1007,10 +996,15 @@ def dlogo():
             f'<div class="dr"></div><div class="dsb">SUPER LONGSHOT</div><div class="dw">{layers}</div><div class="dsp">{glints}</div></div>')
 
 
-def fz_layers(bets, total):
-    """フリーズの押したあと（下から）：黒 → 結果（炎の画面・上に小さく「ど的中」・馬とボード）→ ネオンのカット → プチュン → グリッチ → 白い光"""
-    rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
-    ring = '<i class="halo" aria-hidden="true"><i><b></b></i></i>'
+def fz_layers(bets, total, kind='fz'):
+    """フリーズの押したあと（下から）：黒 → 結果（炎の画面・上に小さく「ど的中」・テーマのボード）→ ネオンのカット → プチュン → グリッチ → 白い光
+       kind：fz（超大穴の馬の帯）／hidden（隠れど的中：デカ的中が化けた帯・押した瞬間の画面はデカのPUSHの画面）"""
+    if kind == 'hidden':
+        rib = '<div class="zrib"><b class="zt">隠れ</b><span>デカ的中が ど的中に化けた！</span></div>'
+        bd, gl = board('hidden', bets, total, rib=rib), GL_HIDDEN
+    else:
+        rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
+        bd, gl = board('fz', bets, total, rib=rib, mark=(FZ_X,)), GL
     R = FZ_T['R']
     jag = ('<svg class="fzd" width="0" height="0" aria-hidden="true"><filter id="fzj" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">'
            '<feTurbulence type="turbulence" baseFrequency=".09 .16" numOctaves="2" seed="8" result="t"></feTurbulence>'
@@ -1021,38 +1015,49 @@ def fz_layers(bets, total):
       {burst(195, 330, R + .02, 520, '#FFF6C8', '#FF6A00', 90, n=22)}
       <div class="emb">{embers(36, 11)}</div>
       <div class="conf cb">{coins(22, 8, R)}</div>
-      <div class="hb">
-        <img src="/_blob/{blobs['back']}" alt="ボードを持つ馬">
-        {board('フリーズ的中!!!', bets, total, top_first=True, rib=rib, mark=(FZ_X,), ring=ring)}
-        <img src="/_blob/{blobs['front']}" alt="">
-      </div>
+      <div class="hb">{bd}</div>
       {dlogo()}
       <div class="conf">{confetti(40, 7, rainbow=True, d0=R)}</div>
     </div></div>
     {MT['html']}
     {pc_layers()}
-    {GL['html']}
+    {gl['html']}
     <div class="xf" aria-hidden="true"><div class="rfl"></div></div>'''
 
 
 GL = glitch()
+GL_HIDDEN = glitch(warp='big_warp') if 'big_warp' in blobs else GL     # 隠れど的中：同じバグり方で、絵だけデカのPUSHの画面
 MT = mt_layers()
 
 
+PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイトル）
+    hit=('Fx_Hit.dc.html', '的中ボタン（デフォルト）'), big=('Fx_Big.dc.html', 'デカ的中ボタン（デフォルト）'),
+    fz=('Fx_Freeze.dc.html', 'フリーズ的中ボタン（デフォルト）'), hidden=('Fx_Hidden.dc.html', '隠れど的中（デカ的中ボタン → ど的中）'),
+    miss=('Fx_Miss.dc.html', 'ハズレ（ボードだけ）'))
+BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
+BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
+BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
+BETS_MISS = [('3連単', [6, 2, 10], '→', '100円', '0円', False), ('馬単', [6, 2], '→', '100円', '0円', False), ('ワイド', [2, 10], '-', '100円', '0円', False)]
+
+
 def page(kind):
-    big = kind == 'big'
-    fz = kind == 'fz'
+    """見本の画面（記録する → PUSH → タップ → 結果のボード）。kind：hit・big・fz・hidden（デカのPUSH → ど的中）・miss（PUSHなし）"""
+    big = kind in ('big', 'hidden')          # PUSHはデカ（隠れど的中もデカのPUSH）
+    fz = kind in ('fz', 'hidden')            # 押したあとは、ど的中
     fin = (6, 2, 10)
-    if fz:
-        bets = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
-        total, fin = '315,500円', (FZ_X, 6, 2)
+    if kind == 'fz':
+        bets, total, fin = BETS_FZ, '315,500円', (FZ_X, 6, 2)
         note = f'3連単が当たって、3頭の中に超大穴（10〜12番人気）がいるので、記録するとフリーズ的中ボタンが出るよ（見本・架空のレース。{FZ_X}番が{FZ_X}番人気）'
-    elif big:
-        bets = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
-        total, note = '50,760円', '3連単が当たったので、記録するとデカ的中ボタンが出るよ（見本・架空のレース）'
+    elif kind == 'hidden':
+        bets, total = BETS_BIG, '50,760円'
+        note = '3連単が当たったのでデカ的中ボタン。デカ的中の2〜7回に1回（ランダム）は隠れど的中で、押すとど的中になるよ（見本・架空のレース）'
+    elif kind == 'big':
+        bets, total, note = BETS_BIG, '50,760円', '3連単が当たったので、記録するとデカ的中ボタンが出るよ（見本・架空のレース）'
+    elif kind == 'miss':
+        bets, total, fin = BETS_MISS, '0円', (7, 1, 4)
+        note = '外れたので、記録するとハズレのボードだけが出るよ（ボタンなし・見本・架空のレース）'
     else:
-        bets = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
-        total, note = '2,530円', '3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）'
+        bets, total, note = BETS_HIT, '2,530円', '3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）'
     pb = ' big' if big else ''
     push = f'''  <sc-if value="{{{{isPush}}}}" hint-placeholder-val="{{{{false}}}}">
   <div class="ov{pb}">
@@ -1065,57 +1070,61 @@ def page(kind):
     </div>
   </div>
   </sc-if>'''
-    if big:
+    nhit = len(bets) if kind == 'miss' else sum(1 for b in bets if b[5])
+    if kind == 'big':
         layers = ('<div class="rbow"></div><div class="glow"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>'
                   '<div class="spk">' + sparkles(26, 9) + '</div>'
                   + burst(195, 371, .04, 600, '#FFF6C8', '#FFB21A', 5, n=18, z=5)          # 押した瞬間の爆発
-                  + burst(195, 420, .55, 660, '#FFFFFF', '#FF3BB8', 6, n=14, star=False, z=5)   # 馬とボードの着地（ボードのうしろ・輪と光の破片だけ）
+                  + burst(195, 420, .55, 660, '#FFFFFF', '#FF3BB8', 6, n=14, star=False, z=5)   # ボードの着地（ボードのうしろ・輪と光の破片だけ）
                   + burst(195, 316, .7, 300, '#FFFFFF', '#FFE53B', 7, n=0, star=False, z=7))   # 「デカ的中!!」の輪
-        title = 'デカ的中!!'
-        conf = confetti(34, 3, rainbow=True)
-        flash = '<div class="flash"></div>'
+        conf, flash, cls = confetti(34, 3, rainbow=True), '<div class="flash"></div>', ' big big rv'
+    elif kind == 'miss':
+        layers, conf, flash, cls = '', '', '', ' miss'
     else:
-        layers = '<div class="rays"></div>'
-        title = '的中！'
-        conf = confetti(28, 2)
-        flash = ''
-    nhit = sum(1 for b in bets if b[5])
+        layers, conf, flash, cls = '<div class="rays"></div>', confetti(28, 2), '', ' hit'
     reveal = f'''  <sc-if value="{{{{isReveal}}}}" hint-placeholder-val="{{{{false}}}}">
-  <div class="ov{pb} {'big rv' if big else 'hit'}" style="--n:{nhit}">
+  <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    <div class="pressed{pb}"></div>
-    <div class="hb">
-      <img src="/_blob/{blobs['back']}" alt="ボードを持つ馬">
-      {board(title, bets, total, top_first=big)}
-      <img src="/_blob/{blobs['front']}" alt="">
-    </div>
-    <div class="conf">{conf}</div>
+    {'' if kind == 'miss' else f'<div class="pressed{pb}"></div>'}
+    <div class="hb">{board(kind, bets, total)}</div>
+    {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
     <button class="close" type="button" onClick="{{{{toForm}}}}">とじる</button>
   </div>
   </sc-if>'''
-    if fz:
+    if kind == 'fz':
         push = f'''  <sc-if value="{{{{isPush}}}}" hint-placeholder-val="{{{{false}}}}">
   <div class="ov fz">
     {fz_push()}
   </div>
   </sc-if>'''
+    if fz:
         reveal = f'''  <sc-if value="{{{{isReveal}}}}" hint-placeholder-val="{{{{false}}}}">
   <div class="ov fz" style="--n:{nhit}">
-    {fz_layers(bets, total)}
+    {fz_layers(bets, total, kind)}
     <button class="close" type="button" onClick="{{{{toForm}}}}">とじる</button>
   </div>
   </sc-if>'''
-    css = (COMMON_CSS.replace('RANCH', RANCH_VARS) + (BIG_CSS + BURST_CSS + fz_css() if fz else BIG_CSS + BURST_CSS if big else HIT_CSS))
-    css = (css.replace('HBW2', f'{HB_W / 2:g}').replace('HBW', f'{HB_W:g}').replace('HBH', f'{HB_H:g}')
-              .replace('BDX', f'{BD["x"]:g}').replace('BDY', f'{BD["y"]:g}').replace('BDW', f'{BD["w"]:g}').replace('BDH', f'{BD["h"]:g}'))
-    name = 'フリーズ的中ボタン' if fz else 'デカ的中ボタン' if big else '的中ボタン'
+    if kind == 'miss':
+        push = ''
+    css = COMMON_CSS.replace('RANCH', RANCH_VARS)
+    if fz:
+        css += BIG_CSS + BURST_CSS + fz_css('big_warp' if kind == 'hidden' else 'fz_warp')
+    elif kind == 'big':
+        css += BIG_CSS + BURST_CSS
+    elif kind == 'miss':
+        css += MISS_CSS
+    else:
+        css += HIT_CSS
+    css += board_css([THEME])
+    fn, name = PAGES[kind]
+    starts = '["form","reveal"]' if kind == 'miss' else '["form","push","reveal"]'
     return f'''<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>{name}（デフォルト）</title>
+<title>{name}</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -1135,15 +1144,112 @@ def page(kind):
 {reveal}
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{{"start":{{"editor":"enum","options":["form","push","reveal"],"default":"form"}},"$preview":{{"width":390,"height":844}}}}'>
+<script type="text/x-dc" data-dc-script data-props='{{"start":{{"editor":"enum","options":{starts},"default":"form"}},"$preview":{{"width":390,"height":844}}}}'>
 {page_js(kind)}</script>
 </body>
 </html>
 '''
 
 
+# ---------- 結果のボードの一覧（26テーマ × 的中・ハズレ ＋ ボードの種類） ----------
+CELL_W, COLS, GGAP, GPAD = 752, 5, 28, 40
+BOARDS_W, BOARDS_H = 2 * GPAD + COLS * CELL_W + (COLS - 1) * GGAP, 3860
+OLD_DESC = dict(default='紺×金', ranch='黄緑', cute='ピンク', kids='薄い黄色×パウダーホワイト', gold='金色')
+
+
+def theme_label(t):
+    from themes20 import THEMES as T20
+    for x in T20:
+        if x['id'] == t['id']:
+            return x['title']
+    return f"{t['name']}（{OLD_DESC.get(t['id'], '')}）"
+
+
+def boards_page():
+    """26テーマの結果のボード（的中・ハズレ）と、ボードの種類（見本：いつもの）。動きなし・テーマの字はGoogle Fonts"""
+    ids = [t['id'] for t in ORDERED]
+    rib_fz = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
+    rib_hd = '<div class="zrib"><b class="zt">隠れ</b><span>デカ的中が ど的中に化けた！</span></div>'
+    kinds = [('hit', BETS_HIT, '2,530円', '', (), '的中（当たり）'), ('big', BETS_BIG, '50,760円', '', (), 'デカ的中（3連単が当たり）'),
+             ('fz', BETS_FZ, '315,500円', rib_fz, (FZ_X,), 'ど的中（3連単に超大穴）'),
+             ('hidden', BETS_BIG, '50,760円', rib_hd, (), '隠れど的中（デカ的中の2〜7回に1回）'), ('miss', BETS_MISS, '0円', '', (), 'ハズレ（ボタンなし）')]
+    var = ''.join(f'<figure>{board(k, b, tot, rib=rb, mark=mk, tid="default")}<figcaption>{cap}</figcaption></figure>' for k, b, tot, rb, mk, cap in kinds)
+    var += ('<div class="vnote"><h3>ボードの決まり</h3><ul>'
+            '<li>どのテーマも同じ形：<b>ふち</b>（背景のもよう）→ <b>上の帯</b>（見出し）→ <b>カード</b>（買い目）・すみに<b>飾り</b>。色・字・もよう・飾りは、そのテーマの判定画面と同じ</li>'
+            '<li><b>的中</b>：見出しはテーマのロゴの字と色 ／ <b>デカ的中</b>：虹色の見出しと光るふち・3連単の行に虹色のふち ／ <b>ど的中・隠れど的中</b>：虹色の枠と炎の光・見出しの下に帯 ／ <b>ハズレ</b>：静かな見出し・入れた買い目を全部・払戻0円</li>'
+            '<li><b>隠れど的中</b>：デカ的中の2〜7回に1回（ランダム）。デカのPUSHを押すと、そのまま、ど的中の演出 →「隠れど的中!!!」</li>'
+            '<li>払戻が長いと、その行の払戻だけ次の行へ。<b>馬番の枠の色は全テーマ同じ</b></li></ul></div>')
+    groups = ''
+    for c in CAT_ORDER:
+        ts = [t for t in ORDERED if t['cat'] == c]
+        cells = ''
+        for t in ts:
+            cells += (f'<section class="cell"><h3>{theme_label(t)}</h3><div class="pair">'
+                      f'<figure><span class="lb">的中</span>{board("hit", BETS_HIT, "2,530円", tid=t["id"])}</figure>'
+                      f'<figure><span class="lb">ハズレ</span>{board("miss", BETS_MISS, "0円", tid=t["id"])}</figure></div></section>')
+        groups += f'<h2 class="gh">{CATS[c]}<small>{len(ts)}テーマ</small></h2><div class="grid">{cells}</div>'
+    return f'''<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>結果のボード（26テーマ）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+{theme_fonts(ids, extra=['BIZ+UDPGothic:wght@400;700', 'Dela+Gothic+One'])}
+<style>
+body{{margin:0}}
+*{{box-sizing:border-box}}
+.gd{{width:{BOARDS_W}px;height:{BOARDS_H}px;overflow:hidden;background:#F4F2EC;color:#22252E;font-family:"BIZ UDPGothic",sans-serif;padding:34px {GPAD}px 0}}
+.t1{{margin:0;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:34px;line-height:1.2;color:#161F3D}}
+.t2{{margin:10px 0 0;max-width:2400px;font-size:15px;line-height:1.75;color:#4E5466}}
+.t2 b{{color:#22252E}}
+.vr{{margin-top:22px;padding:18px 24px 22px;border-radius:18px;background:#1E1A2C}}
+.vr h2{{margin:0 0 16px;font-size:19px;color:#FFFFFF}}
+.vr h2 small{{margin-left:10px;font-size:13px;font-weight:700;color:#CFC8E8}}
+.vrow{{display:flex;gap:26px;align-items:flex-start}}
+.vrow figure{{margin:0;display:flex;flex-direction:column;align-items:center;gap:12px}}
+.vrow figcaption{{font-size:14px;font-weight:700;color:#ECE8F8}}
+.vnote{{flex:1;min-width:0;margin-left:14px;padding:16px 22px 14px;border-radius:14px;background:rgba(255,255,255,.07);color:#E6E2F4}}
+.vnote h3{{margin:0 0 8px;font-size:16px;color:#FFFFFF}}
+.vnote ul{{margin:0;padding-left:1.2em}}
+.vnote li{{margin:0 0 7px;font-size:14px;line-height:1.75}}
+.vnote b{{color:#FFFFFF}}
+.gh{{display:flex;align-items:baseline;gap:10px;margin:30px 0 14px;font-size:21px;color:#161F3D}}
+.gh small{{font-size:13px;font-weight:700;color:#8A6A38}}
+.grid{{display:grid;grid-template-columns:repeat({COLS},{CELL_W}px);gap:{GGAP}px}}
+.cell{{border-radius:16px;background:#2A231D;padding:12px 16px 18px}}
+.cell h3{{margin:0 0 12px;font-size:16px;line-height:1.3;color:#FFFFFF}}
+.pair{{display:flex;gap:20px;align-items:flex-start}}
+.pair figure{{margin:0;display:flex;flex-direction:column;gap:7px}}
+.pair .lb{{font-size:12px;font-weight:700;color:#D6CBB8}}
+{board_css(ids)}
+</style>
+</helmet>
+<div class="gd">
+  <h1 class="t1">結果のボード（壁紙のテーマごと・26テーマ）</h1>
+  <p class="t2">まさちゃんの指定：結果は<b>馬がボードを持つのをやめて、壁紙のテーマに沿ったボード</b>に（的中もハズレも）。ボードは、そのテーマの判定画面をぎゅっと小さくした形：<b>ふち＝背景のもよう・見出し＝上の帯（ロゴと同じ字と色）・買い目＝カード・すみの飾り</b>。色は判定画面と同じ（文字と背景のコントラストは確かめずみの値）。デカ的中は虹色の見出しと光るふち、ど的中・隠れど的中は虹色の枠と炎の光、ハズレは静かな見出しで払戻0円。<b>馬番の枠の色はどのテーマも同じ</b>。見本の画面（となりの5つ）は牧場のボード。</p>
+  <section class="vr"><h2>ボードの種類<small>見本：いつもの（紺×金）</small></h2><div class="vrow">{var}</div></section>
+  {groups}
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":{BOARDS_W},"height":{BOARDS_H}}}}}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    return {{}};
+  }}
+}}
+</script>
+</body>
+</html>
+'''
+
+
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
-SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz')}
+SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
+       'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -1218,12 +1324,13 @@ SFX_JS = '''  sfxDecode(c, b) {
 
 
 def page_js(kind):
-    """見本の画面のスクリプト。音があれば：記録する → PUSHの音／PUSHをタップ → タップの音（フリーズは視差効果を減らすなら1秒後に結果の所から）／とじる → 止める"""
-    ids = [blobs.get(k) for k in SND[kind]]
+    """見本の画面のスクリプト。音があれば：記録する → PUSHの音／PUSHをタップ → タップの音（フリーズは視差効果を減らすなら1秒後に結果の所から）／とじる → 止める
+       ハズレ：記録する → すぐボード（PUSHなし・音なし）"""
+    ids = [blobs.get(k) for k in SND.get(kind, ())]
     on, head, init = dict(push='', tap='', form=''), '', ''
-    if all(ids):
+    if ids and all(ids):
         tap = "self.sfx('tap'); "
-        if kind == 'fz':
+        if kind in ('fz', 'hidden'):
             tap = f"if (self.slow()) self.sfx('tap', {FZ_T['R']:g}, 1); else self.sfx('tap'); "
         on = dict(push="self.sfx('push'); ", tap=tap, form='self.hush(); ')
         head = f"  sfxUrls() {{\n    return {{ push: '/_blob/{ids[0]}', tap: '/_blob/{ids[1]}' }};\n  }}\n" + SFX_JS
@@ -1236,7 +1343,7 @@ def page_js(kind):
             + "    return {\n"
             + "      isPush: ph === 'push',\n"
             + "      isReveal: ph === 'reveal',\n"
-            + f"      toPush: function () {{ {on['push']}self.setState({{ ph: 'push' }}); }},\n"
+            + f"      toPush: function () {{ {on['push']}self.setState({{ ph: '{'reveal' if kind == 'miss' else 'push'}' }}); }},\n"
             + f"      toReveal: function () {{ {on['tap']}self.setState({{ ph: 'reveal' }}); }},\n"
             + f"      toForm: function () {{ {on['form']}self.setState({{ ph: 'form' }}); }}\n"
             + "    };\n"
@@ -1258,11 +1365,11 @@ def snd_events():
     C, H, E, W, Z, M, R = (FZ_T[k] for k in 'CHEWZMR')
     T4, T5 = M + MT_T['T4'], M + MT_T['T5']
     return {
-        'hit': [(0, None, 'ポン', '押した'), (.22, .97, 'ヒュイーン↑', '馬がボードを持って下から'), (.95, None, 'キラーン', '「的中！」'),
+        'hit': [(0, None, 'ポン', '押した'), (.22, .97, 'ヒュイーン↑', 'ボードが下から'), (.95, None, 'キラーン', '「的中！」'),
                 (1.15, 1.3, 'ピン・ポン', '買い目が1行ずつ'), (1.6, None, 'チャリーン', '払戻の合計（コイン）')],
         'big': [(0, None, 'ガツッ', '押した'), (.04, None, 'ドォォン!!', '白く光る・爆発・虹の光の筋'), (.1, None, 'キュウィン', '虹の輪①（下にドン）'),
                 (.25, None, 'キュウィン', '虹の輪②（少し高く）'), (.4, None, 'キュウィン', '虹の輪③（もっと高く）'),
-                (.55, None, 'ズドン', '馬とボードが落ちてきて着地（0.38秒〜）'), (.7, None, 'ジャーン!!', '「デカ的中!!」（低い金管）'),
+                (.55, None, 'ズドン', 'ボードが落ちてきて着地（0.38秒〜）'), (.7, None, 'ジャーン!!', '「デカ的中!!」（低い金管）'),
                 (.9, .98, 'ピン・ピン', '買い目（0.08秒おき）'), (1.14, None, 'パッパッ＋ジャラジャラ', '払戻の合計（メダル）'), (1.4, None, 'パーン', 'ファンファーレ')],
         'fz': [(0, E, 'ドッ → ブブッ・ヴッ（低い）', '画面がバグる（コマに合わせて）'), (C, None, 'ヴォォン＋ギュゥン↓', 'アイコンのドアップ'),
                (H, None, 'ゴォッ', '横に流れる光'), (E, W, 'ゴゴゴ＋低いうなり↑', '青く光る・稲妻'), (W, None, 'ブツン（低いプチュン）', '青白い横一本線'),
@@ -1270,7 +1377,7 @@ def snd_events():
                (M, T4, 'ドガーン!! → ドドドド・ドガン×4', '大爆発 →「とんでも！」1文字ずつ小さな爆発・「！」で爆発（低いベースが刻む）'),
                (T4 + .12, T4 + .63, 'ドガン×4（だんだん高く）', '「ど！」×4（重低音の爆発）'), (T4 + .71, T5, 'ドドドドッ', '低いタムの連打'),
                (T5, None, 'ドガーン!!＋低い金管', '「ど的中！！！！」大爆発'), (T5 + .45, R, 'ドン・ドン（0.45秒ごと）', '光の波と輪に合わせて（小さな爆発）'),
-               (R, R + .3, '大爆発 → ズドン＋ジャーン', '結果（炎の画面）→ 馬とボードの着地・「フリーズ的中!!!」'),
+               (R, R + .3, '大爆発 → ズドン＋ジャーン', '結果（炎の画面）→ ボードの着地・「フリーズ的中!!!」'),
                (R + .45, R + .69, 'ボン・ボン・ボン → ゴーン＋ジャラジャラ', '買い目（0.08秒おき）→ 払戻の合計（メダル）')],
     }
 
@@ -1340,6 +1447,7 @@ def sound_page():
     vals = ',\n      '.join(f"p_{k}: play('{k}'), a_{k}: on === '{k}' ? 'true' : 'false'" for k in [x for k in keys for x in (f'{k}_push', k)])
     box = '<div class="box"><h3>{}</h3><ul>{}</ul></div>'.format
     boxes = (box('鳴らすとき', '<li><b>PUSHの音</b>：PUSHが出た瞬間（結果を記録して当たりのとき。3つのボタンのうち出た1つの音だけ）</li>'
+                 '<li><b>隠れど的中</b>：PUSHが出たときはデカの音・タップでど的中の音（見た目もデカ → ど的中）。<b>ハズレは音なし</b></li>'
                  '<li><b>タップの音</b>：PUSHを押した瞬間が0秒。画面の動きと同じ時刻で、見本の画面（となりの3つ）でも同じに鳴る</li>'
                  '<li>「とじる」・ほかの画面へ移る・アプリを閉じる → すぐ止める。鳴っている途中で次の音が鳴るときは、前の音を止めてから</li>')
              + box('iPhoneでの鳴らし方（アプリ）', '<li><b>消音スイッチ（マナーモード）なら鳴らさない</b>・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）。音量はiPhoneの音量のまま</li>'
@@ -1443,17 +1551,19 @@ class Component extends DCLogic {{
 '''
 
 
-MEMO_W, MEMO_H = 2200, 1660
+MEMO_W, MEMO_H = 2200, 2125
 
 
 def memo_page():
-    """メモのボード（静止画13枚＋Fableに渡す決まり）"""
+    """メモのボード（静止画18枚＋Fableに渡す決まり）"""
     def still(key, cap):
         return f'<figure class="st"><img src="/_blob/{blobs[key]}" alt="{cap}"><figcaption>{cap}</figcaption></figure>'
-    hit = still('s_hit_form', '① 記録する') + still('s_hit_push', '② PUSHが上下に動く') + still('s_hit_board', '③ タップ → 馬がボード')
-    big = still('s_big_push', '① 大きいPUSH（虹の輪）') + still('s_big_light', '② 爆発・虹の輪（キュウィン）') + still('s_big_board', '③ 馬とボードがドン！')
+    hit = still('s_hit_form', '① 記録する') + still('s_hit_push', '② PUSHが上下に動く') + still('s_hit_board', '③ タップ → ボード')
+    big = still('s_big_push', '① 大きいPUSH（虹の輪）') + still('s_big_light', '② 爆発・虹の輪（キュウィン）') + still('s_big_board', '③ ボードがドン！')
     fz = (still('s_fz_push', '① 虹色の超デカPUSH') + still('s_fz_glitch', '② 画面がバグる') + still('s_fz_line', '③ プチュン（横一本線）')
           + still('s_fz_tonde', '④「とんでも！」') + still('s_fz_dodo', '⑤「ど！ど！ど！ど！」') + still('s_fz_logo', '⑥「ど的中！！！！」') + still('s_fz_result', '⑦ 結果（上に ど的中）'))
+    hd = still('s_big_push', '① デカのPUSH') + still('s_hd_glitch', '② タップ → バグる') + still('s_hd_result', '③「隠れど的中!!!」')
+    ms = still('s_miss_form', '① 記録する') + still('s_miss_board', '② ボードだけ')
     N, C, H, E, W, Z, M, R = (FZ_T[k] for k in 'NCHEWZMR')
     T5 = M + MT_T['T5']
     sec = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.')
@@ -1476,6 +1586,7 @@ body{{margin:0}}
 .t1{{margin:0;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-height:1.2;color:#161F3D}}
 .t2{{margin:8px 0 0;max-width:1560px;font-size:14.5px;line-height:1.7;color:#4E5466}}
 .rows{{display:grid;grid-template-columns:3fr 3fr 7fr;gap:20px;margin-top:20px}}
+.rows.r2{{grid-template-columns:3fr 2fr 8fr;margin-top:16px}}
 .grp{{background:#FFFFFF;border:1px solid #DDD8CC;border-radius:14px;padding:14px 16px}}
 .grp.fzg{{border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8) border-box}}
 .grp h2{{margin:0 0 10px;font-size:17px;color:#161F3D}}
@@ -1490,25 +1601,39 @@ body{{margin:0}}
 .box p,.box li{{margin:0;font-size:12.5px;line-height:1.65;color:#4E5466}}
 .box ul{{margin:0;padding-left:1.1em}}
 .box b{{color:#22252E}}
+.grp.bx ul{{margin:0;padding-left:1.1em}}
+.grp.bx li{{margin:0 0 4px;font-size:13px;line-height:1.7;color:#4E5466}}
+.grp.bx b{{color:#22252E}}
 </style>
 </helmet>
 <div class="gd">
-  <h1 class="t1">的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）</h1>
-  <p class="t2">まさちゃんの指定：記録して <b>当たり → 的中ボタン</b>、<b>3連単が当たり → デカ的中ボタン</b>、<b>3連単の当たりに超大穴（10〜12番人気）の馬 → フリーズ的中ボタン</b>。タップすると、壁紙の馬がボードを持って出てきて、当たった買い目を報告する。フリーズは、まさちゃんの送ってくれたパチスロのフリーズの動画のように（台の絵や文字は使わない）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップで画面がバグる → テンゲルのアイコンのドアップ → 画面が青く光って青白い横一本線に「プチュン」（静電気がジリジリ → 点に縮んで消える）→ 真っ暗のまま1.5秒 → 虹色ネオンのカットに、押した直後のPUSHのように乱れて激しくふるえる大きなネオンの文字で「とんでも！」「とんでも！」「とんでも！とんでも！」「ど！ど！ど！ど！」（1文字ずつ・場所と向きはバラバラ・はみ出てもいい）→ ネオンのパチンコの当たりのような虹色に「ど的中！！！！」（そろってから1.5秒）→ 炎の画面に、上に小さく「ど的中」・炎の中から馬がボード。視覚酔いしないように、画面全体が回る・迫る・ゆれる動きはしない。となりの3つの画面は、タップで動く見本（どれもデフォルト＝全テーマ共通の動き）。</p>
+  <h1 class="t1">的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）・隠れど的中・ハズレ</h1>
+  <p class="t2">まさちゃんの指定：記録して <b>当たり → 的中ボタン</b>、<b>3連単が当たり → デカ的中ボタン</b>、<b>3連単の当たりに超大穴（10〜12番人気）の馬 → フリーズ的中ボタン</b>、<b>デカ的中の2〜7回に1回（ランダム）→ 隠れど的中</b>（デカのPUSHを押すと、そのまま、ど的中）、<b>ハズレ → ボタンなしでボードだけ</b>。タップすると<b>壁紙のテーマのボード</b>が出て、当たった買い目を報告する（<b>馬がボードを持つのはやめた</b>。的中もハズレも、ボードはテーマに沿った形）。フリーズは、まさちゃんの送ってくれたパチスロのフリーズの動画のように（台の絵や文字は使わない）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップで画面がバグる → テンゲルのアイコンのドアップ → 青白い横一本線に「プチュン」→ 真っ暗のまま1.5秒 → 虹色ネオンのカット（「とんでも！」「ど！ど！ど！ど！」）→「ど的中！！！！」（そろってから1.5秒）→ 炎の画面に、上に小さく「ど的中」・炎の中からボード。視覚酔いしないように、画面全体が回る・迫る・ゆれる動きはしない。となりの5つの画面は、タップで動く見本（どれもデフォルト＝全テーマ共通の動き・ボードは牧場）。</p>
   <div class="rows">
     <section class="grp"><h2>的中ボタン<small>当たったとき</small></h2><div class="sts">{hit}</div></section>
     <section class="grp"><h2>デカ的中ボタン<small>3連単が当たったとき</small></h2><div class="sts">{big}</div></section>
     <section class="grp fzg"><h2>フリーズ的中ボタン<small>3連単の当たりに超大穴（10〜12番人気）</small></h2><div class="sts">{fz}</div></section>
   </div>
+  <div class="rows r2">
+    <section class="grp fzg"><h2>隠れど的中<small>デカ的中の2〜7回に1回</small></h2><div class="sts">{hd}</div></section>
+    <section class="grp"><h2>ハズレ<small>ボタンなし</small></h2><div class="sts">{ms}</div></section>
+    <section class="grp bx"><h2>結果のボード（壁紙のテーマごと）と、隠れど的中の決まり</h2><ul>
+      <li><b>馬は出さない</b>（まさちゃんの指定）。的中・デカ的中・ど的中・隠れど的中・ハズレ、どれも<b>壁紙のテーマのボード</b>。26テーマの見本は「結果のボード（26テーマ）」、作り方は boards.py</li>
+      <li>ボード＝<b>そのテーマの判定画面をぎゅっと小さくした形</b>：ふち＝背景のもよう（--bg と背景のルール）・見出し＝上の帯（--hd・--hdInk・--hdB・帯の飾り）・見出しの字＝ロゴと同じ（--dfont・--logo・--logoS）・買い目＝カード（--card・--cardB・--cardS）と行（--zBg・--zB）・券種＝タグ（--tagBg・--tagInk・--tagLine）・払戻＝--acc・合計＝--ink・すみの飾り（判定画面のカードと同じ所）。色は判定画面と同じ（コントラストを確かめた値）。馬番の枠の色は全テーマ同じ</li>
+      <li><b>デカ</b>：まわりが光る・見出しは虹色（黒いふち）・3連単の行に虹色のふち。<b>ど的中・隠れど的中</b>：枠は虹色（回さない）・炎の光。<b>ハズレ</b>：見出しは上の帯の文字の色で静かに・払戻0円・光も紙ふぶきも音もなし</li>
+      <li><b>隠れど的中</b>：デカ的中が出るたびに数えて、<b>2〜7回目（ランダム）の1回</b>。出たら、次の回数をまた2〜7からランダムに決める。数は端末に保存（アプリを閉じても続く・記録やバックアップとは別）。本物のど的中（超大穴）は数えない <b>※仮</b></li>
+      <li>見た目は<b>デカ的中のPUSH</b>（PUSHが出たときの音もデカ）→ タップで<b>そのまま、ど的中の演出</b>（押した瞬間の画面＝デカのPUSHの画面がバグる・音はど的中）→ 結果の見出し「<b>隠れど的中!!!</b>」・帯「隠れ　デカ的中が ど的中に化けた！」（超大穴の帯のかわり）</li>
+    </ul></section>
+  </div>
   <div class="boxes">
-    <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・外れ・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり）＞ <b>的中</b>（それ以外の当たり）</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
-    <div class="box"><h3>流れと時間（的中・デカ）</h3><ul><li><b>的中</b>：押す → 0.3秒 馬が下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>（パチンコの当たりのように速く・勢いよく）：押す → 0.04秒 白く光る・爆発・虹の光の筋 → 0.1・0.25・0.4秒 虹の輪（キュウィン×3・だんだん大きく）→ 0.38秒 馬とボードがドンと落ちてくる（0.55秒 着地・光の破片）→ 0.7秒「デカ的中!!」がたたきつけるように → 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
-    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（<b>虹色のネオンの線画・線はギザギザ</b>。バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」（{sec(M)}秒〜）→ 星空に「とんでも！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面で爆発、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中から馬とボードがドンと出る → {sec(R + .3)}秒「フリーズ的中!!!」→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li></ul></div>
-    <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ</b>：暗い幕 → 光 → <b>馬（うしろの絵）→ ボード（文字はHTML）→ 前足の先（前の絵）</b>（ひづめがボードのふちにかかる）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ</b>：黒 → 炎の画面（炎の色・光の筋・炎の粒・コイン・馬とボード・「ど的中」・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・色ずれ・横ズレの帯・アイコンのドアップ・横に流れる光・走査線・ブロック・横の線）→ 白い光 → とじる</li></ul></div>
-    <div class="box"><h3>ボードに書くもの</h3><ul><li>R・当たった買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>デカ・フリーズは3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出し「フリーズ的中!!!」・その下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪・ボードの枠は虹色（回さない）</li><li>払戻が長いと次の行へ。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>馬の絵2枚</b>（うしろ・前足の先）と、ボードの四角の位置</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・ボードの枠・面・文字（--bFrame・--bFace・--bInk・--hitRed）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのは馬の絵とボードの面・文字だけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
-    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの {sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・馬とボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
-    <div class="box"><h3>容量</h3><ul><li>馬の絵は1テーマ約27KB（WebP 2枚）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（WebP 約60KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（Dela Gothic One・BIZ UDPゴシック）。いまの馬は見本（牧場の栗毛）</li></ul></div>
+    <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり。2〜7回に1回は<b>隠れど的中</b>）＞ <b>的中</b>（それ以外の当たり）</li><li><b>ハズレ</b>（当たりが1つもない）：PUSHは出さずに、ハズレのボードだけ</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
+    <div class="box"><h3>流れと時間（的中・デカ・ハズレ）</h3><ul><li><b>的中</b>：押す → 0.3秒 ボードが下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>（パチンコの当たりのように速く・勢いよく）：押す → 0.04秒 白く光る・爆発・虹の光の筋 → 0.1・0.25・0.4秒 虹の輪（キュウィン×3・だんだん大きく）→ 0.38秒 ボードがドンと落ちてくる（0.55秒 着地・光の破片）→ 0.7秒「デカ的中!!」がたたきつけるように → 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる</li><li><b>ハズレ</b>：記録する → 暗い幕 → 0.1秒 ボードが静かに出る（0.4秒）→ 0.45秒〜 買い目（0.08秒おき）→ 0.85秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
+    <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>バグる（0〜{sec(E)}秒）</b>：押した瞬間の画面に赤と水色の色ずれ（ずれ方が2回変わる）・1コマ（1/30秒）だけ横にズレる帯・ブロック・横の線（毎回ちがう場所）・走査線 → {sec(N)}秒 一瞬もとに戻る → {sec(C)}秒 テンゲルのアイコンのドアップ（<b>虹色のネオンの線画・線はギザギザ</b>。バグりながら少し引く）→ {sec(H)}秒 横に流れる光の筋</li><li><b>プチュン（{sec(E)}秒〜）</b>：画面が青く光って、まん中の白い光がふくらむ・稲妻がジリジリ → {sec(W)}秒 画面が縦につぶれて<b>青白い横一本線</b>（まん中に光のフレア・線にまとわりつく静電気）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。「とんでも」「ど！」は<b>1文字ずつ大きなネオン</b>（色のこい塗り＋ちがう色のネオンのふち＋白い芯＋走査線）で、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっと激しくガクガクふるえる</b>（左右上下と傾き・1秒に約7回）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「と」「ん」「で」「も」と大きな「！」（{sec(M)}秒〜）→ 星空に「とんでも！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「とんでも！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → 炎の画面で爆発、上に小さく「ど的中」（炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・炎の中からボードがドンと出る → {sec(R + .3)}秒「フリーズ的中!!!」（隠れど的中は「隠れど的中!!!」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（バグるのは、押した瞬間のデカのPUSHの画面）</li></ul></div>
+    <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 炎の画面（炎の色・光の筋・炎の粒・コイン・テーマのボード・「ど的中」・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ プチュン（青い画面・白い光・線・フレア・稲妻・光の粒）→ バグる（押した瞬間の画面の絵・色ずれ・横ズレの帯・アイコンのドアップ・横に流れる光・走査線・ブロック・横の線）→ 白い光 → とじる</li></ul></div>
+    <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・フリーズ的中!!!・隠れど的中!!!・ハズレ）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・炎の粒と、「ど的中！！！！」の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの {sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：バグる・プチュン・ネオンのカット・炎のゆらゆら・炎の粒・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 炎の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
+    <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は<b>テンゲルのアイコン</b>（App Storeのアイコンと同じ絵・WebP 750×750 約52KB）と、アイコンから作った<b>ネオンの線画のマスク2枚</b>（芯 1024 約59KB・光 512 約40KB。neon_icon.py）。ほかの虹・文字・炎・ギザギザ・稲妻はCSSとSVG</li><li>バグるのに使う「押した瞬間の画面の絵」は、アプリでは押した瞬間に撮る（WKWebView の takeSnapshot）。見本では見本の画面の絵（フリーズのPUSH 約60KB・デカのPUSH 約36KB）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）</li></ul></div>
   </div>
 </div>
 </x-dc>
@@ -1525,13 +1650,16 @@ class Component extends DCLogic {{
 
 
 STILLS = ('s_hit_form', 's_hit_push', 's_hit_board', 's_big_push', 's_big_light', 's_big_board',
-          's_fz_push', 's_fz_glitch', 's_fz_line', 's_fz_tonde', 's_fz_dodo', 's_fz_logo', 's_fz_result')
+          's_fz_push', 's_fz_glitch', 's_fz_line', 's_fz_tonde', 's_fz_dodo', 's_fz_logo', 's_fz_result',
+          's_hd_glitch', 's_hd_result', 's_miss_form', 's_miss_board')
 
 if __name__ == '__main__':
     out = os.environ.get('FX_OUT', P)
-    for kind, fn in (('hit', 'Fx_Hit.dc.html'), ('big', 'Fx_Big.dc.html'), ('fz', 'Fx_Freeze.dc.html')):
+    for kind, (fn, _) in PAGES.items():
         open(f'{out}/{fn}', 'w', encoding='utf-8').write(page(kind))
         print(fn)
+    open(f'{out}/Fx_Boards.dc.html', 'w', encoding='utf-8').write(boards_page())
+    print('Fx_Boards.dc.html')
     if all(k in blobs for k in STILLS):
         open(f'{out}/Fx_Memo.dc.html', 'w', encoding='utf-8').write(memo_page())
         print('Fx_Memo.dc.html')
