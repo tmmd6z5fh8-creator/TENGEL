@@ -19,7 +19,7 @@
     "Judge_Sea.dc.html": {"x": 470, "y": 1264, "w": 390, "h": 844, "title": "海（紺×水色×白・馬がいつも走って景色が流れる）"},
     "Judge_Sunset.dc.html": {"x": 940, "y": 1264, "w": 390, "h": 844, "title": "夕焼け（紫×オレンジ）"},
     "Judge_Autumn.dc.html": {"x": 1410, "y": 1264, "w": 390, "h": 844, "title": "紅葉（赤×山吹・いつも紅葉が降っている）"},
-    "Judge_Snow.dc.html": {"x": 1880, "y": 1264, "w": 390, "h": 844, "title": "雪（冬の紺×雪の白）"},
+    "Judge_Snow.dc.html": {"x": 1880, "y": 1264, "w": 390, "h": 844, "title": "雪（冬の紺×雪の白・いつも雪が降っている）"},
     "Judge_NewYear.dc.html": {"x": 2350, "y": 1264, "w": 390, "h": 844, "title": "午年・お正月（赤×金）"},
     "Judge_Fireworks.dc.html": {"x": 2820, "y": 1264, "w": 390, "h": 844, "title": "花火（夜空×ピンク・黄）"},
     "Judge_Night.dc.html": {"x": 0, "y": 2528, "w": 390, "h": 844, "title": "ナイター（夜×照明のアンバー）"},
@@ -46,9 +46,10 @@
     "Fx_HitSakura.dc.html": {"x": 940, "y": 8900, "w": 390, "h": 844, "title": "的中ボタン（桜：桜がついたPUSH・タップで動く・音が出る）", "is_interactive": true},
     "Fx_HitSea.dc.html": {"x": 1410, "y": 8900, "w": 390, "h": 844, "title": "的中ボタン（海：海の模様のPUSH・タップで動く・音が出る）", "is_interactive": true},
     "Fx_HitAutumn.dc.html": {"x": 1880, "y": 8900, "w": 390, "h": 844, "title": "的中ボタン（紅葉：紅葉がついたPUSH・タップで動く・音が出る）", "is_interactive": true},
+    "Fx_HitSnow.dc.html": {"x": 2350, "y": 8900, "w": 390, "h": 844, "title": "的中ボタン（雪：雪が積もったPUSH・タップで動く・音が出る）", "is_interactive": true},
     "Fx_Boards.dc.html": {"x": 5050, "y": 2740, "w": 3952, "h": 3860, "title": "結果のボード（26テーマ・的中とハズレ）"}
   },
-  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Freeze.dc.html", "Fx_Hidden.dc.html", "Fx_Miss.dc.html", "Fx_HitGold.dc.html", "Fx_HitRanch.dc.html", "Fx_HitSakura.dc.html", "Fx_HitSea.dc.html", "Fx_HitAutumn.dc.html", "Fx_Memo.dc.html", "Fx_Sound.dc.html", "Fx_Boards.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Silver.dc.html", "Judge_Golden.dc.html", "Judge_Tengel.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
+  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Freeze.dc.html", "Fx_Hidden.dc.html", "Fx_Miss.dc.html", "Fx_HitGold.dc.html", "Fx_HitRanch.dc.html", "Fx_HitSakura.dc.html", "Fx_HitSea.dc.html", "Fx_HitAutumn.dc.html", "Fx_HitSnow.dc.html", "Fx_Memo.dc.html", "Fx_Sound.dc.html", "Fx_Boards.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Silver.dc.html", "Judge_Golden.dc.html", "Judge_Tengel.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
   "notes": {
     "row1": {"x": 0, "y": -300, "text": "判定画面：定番の5つ（いつもの＋4つの着せ替え）", "kind": "title1", "maxW": 2270},
     "rowfx": {"x": 2700, "y": -300, "text": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ（デフォルト）：記録する → PUSH → タップ（効果音つき）→ テーマのボード", "kind": "title1", "maxW": 6830},
@@ -58,7 +59,7 @@
     "row3c": {"x": 3000, "y": 2228, "text": "帯（ミッションで手に入る3枚）", "kind": "title1", "maxW": 1330},
     "row4": {"x": 0, "y": 3492, "text": "レトロ・ポップ（5）", "kind": "title1", "maxW": 2270},
     "row5": {"x": 0, "y": 4756, "text": "着せ替えを選ぶ画面（26テーマ）と、テーマのメモ", "kind": "title1", "maxW": 3190},
-    "rowtheme": {"x": 0, "y": 8600, "text": "テーマの的中ボタン（まさちゃんの指定）：カッコいい・牧場・桜・海・紅葉　記録する → PUSH → タップ（効果音つき）→ テーマのボード", "kind": "title1", "maxW": 3200},
+    "rowtheme": {"x": 0, "y": 8600, "text": "テーマの的中ボタン（まさちゃんの指定）：カッコいい・牧場・桜・海・紅葉・雪　記録する → PUSH → タップ（効果音つき）→ テーマのボード", "kind": "title1", "maxW": 3200},
     "rowboards": {"x": 5050, "y": 2480, "text": "結果のボード：壁紙のテーマに沿ったボード（26テーマ × 的中・ハズレ）", "kind": "title1", "maxW": 3952}
   },
   "designSystems": []

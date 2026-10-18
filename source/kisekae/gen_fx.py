@@ -36,8 +36,10 @@ THEMED = dict(
     hit_sakura=dict(base='hit', tid='sakura', banner='sakura', push='sk', fonts=BY_ID['sakura']['fonts']),   # 桜：桜がついたPUSH・壁紙にいつも桜が降る
     hit_sea=dict(base='hit', tid='sea', banner='sea', push='se', fonts=BY_ID['sea']['fonts']),   # 海：海の模様のPUSH・壁紙で馬がいつも走って景色が流れる
     hit_autumn=dict(base='hit', tid='autumn', banner='autumn', push='mo', fonts=BY_ID['autumn']['fonts']),   # 紅葉：紅葉がついたPUSH・壁紙にいつも紅葉が降る
+    hit_snow=dict(base='hit', tid='snow', banner='snow', push='yk', fonts=BY_ID['snow']['fonts']),   # 雪：雪が積もったPUSH・壁紙にいつも雪が降る
 )
 AUTUMN_BLOB = '/_blob/18ba135d88acec43b93ec30218b90a09'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
+SNOW_BLOB = '/_blob/6683d421d2b9e7e0503e7173da2288ba'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
 SAKURA_BLOB = '/_blob/3b3f002de6b9b1c35fec1c32400e1494'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
 
 
@@ -55,6 +57,9 @@ def theme_banner(name):
     if name == 'autumn':
         import momiji
         return momiji.inline(AUTUMN_BLOB)
+    if name == 'snow':
+        import yuki
+        return yuki.inline(SNOW_BLOB)
     if name == 'sea':                     # 海：絵は flat/sea_run.py の4まい（キャンバスの id は sea_blobs.json・大きさは sea_run.json）
         import sea_wall
         return sea_wall.inline(json.load(open(f'{K}/sea_blobs.json')), json.load(open(f'{K}/sea_run.json')))
@@ -642,6 +647,8 @@ def theme_form_css(tid):
         out.append('.ph .bnr{height:160px}')
     if tid == 'sakura':  # 桜：上の絵は160pxぜんぶ（花びらが上から下まで降る）・上の帯の下の線は判定画面と同じ
         out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
+    if tid == 'snow':    # 雪：上の絵は160pxぜんぶ（雪が上から下まで降る）・上の帯の下は判定画面と同じ（線なし）
+        out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
     if tid == 'autumn':  # 紅葉：上の絵は160pxぜんぶ（もみじが上から下まで降る）・上の帯の下の線は判定画面と同じ
         out.append('.ph .bnr{height:160px;object-position:50% 50%}\n.ph .hd{border-bottom:var(--hdB)}')
     if tid == 'sea':     # 海：上の絵は160pxぜんぶ（走る馬と流れる景色）・上の帯の下のふちは判定画面と同じ
@@ -1093,6 +1100,189 @@ MO_CSS = r'''
 '''
 for _k in range(4):
     MO_CSS = MO_CSS.replace(f'LEAF_{_k}', mo_leaf_uri(_k))
+
+
+# ---------- 雪の的中ボタン：雪が積もったPUSH（まさちゃんの指定） ----------
+YK_EDGE = '#8FB3D6'        # 雪のふちの水色（壁紙の雪・yuki.py と同じ）
+
+
+def yk_contour(n=150):
+    """ボタンのいちばん外のふち（紺のふちの外がわ・角の丸み39）の上半分を n+1 点に：左の横（y=34）→ 左上の角 → 上 → 右上の角 → 右の横（y=34）。
+       戻り値 [(u, x, y, 外向きの nx, ny)]（u：0〜1）"""
+    segs = [8, math.pi / 2 * 39, 148, math.pi / 2 * 39, 8]
+    tot = sum(segs)
+    out = []
+    for i in range(n + 1):
+        s, u = tot * i / n, i / n
+        if s <= segs[0]:
+            out.append((u, -13, 34 - s, -1, 0))
+            continue
+        s -= segs[0]
+        if s <= segs[1]:
+            a = math.pi + s / 39
+            out.append((u, 26 + 39 * math.cos(a), 26 + 39 * math.sin(a), math.cos(a), math.sin(a)))
+            continue
+        s -= segs[1]
+        if s <= segs[2]:
+            out.append((u, 26 + s, -13, 0, -1))
+            continue
+        s -= segs[2]
+        if s <= segs[3]:
+            a = math.pi * 1.5 + s / 39
+            out.append((u, 174 + 39 * math.cos(a), 26 + 39 * math.sin(a), math.cos(a), math.sin(a)))
+            continue
+        s -= segs[3]
+        out.append((u, 213, 26 + s, 1, 0))
+    return out
+
+
+YK_DRIPS = ((.3, 9.5, .02), (.52, 7, .022), (.745, 11, .019))     # 前に たれる雪：(場所 u・長さ・はば)
+YK_MOUNDS = ((.2, 5.5, .085), (.38, 8, .1), (.6, 5, .09), (.8, 7, .095))   # 上の もり上がり：(場所 u・高さ・はば)
+
+
+def yk_cap_path():
+    """積もった雪の形：上はふわっと3〜4こ もり上がり（ふちから 11〜18px）・前は紺と白のふちをおおって面に少しかかる（たれる所が3つ）。両はしは横で細くなって終わる"""
+    sm = lambda a, b, x: (lambda t: t * t * (3 - 2 * t))(min(1, max(0, (x - a) / (b - a))))
+    top, bot = [], []
+    for u, x, y, nx, ny in yk_contour():
+        e = sm(0, .2, u) * sm(0, .2, 1 - u)
+        to = e * (9.5 + sum(h * math.exp(-((u - c) / w) ** 2) for c, h, w in YK_MOUNDS) + .7 * math.sin(2 * math.pi * 9.4 * u + .4))
+        ti = sm(0, .13, u) * sm(0, .13, 1 - u) * (8.5 + 1.4 * math.sin(2 * math.pi * 3.3 * u + 1.2))
+        ti += sum(L * math.exp(-((u - u0) / w) ** 2) for u0, L, w in YK_DRIPS)
+        top.append((x + nx * to, y + ny * to))
+        bot.append((x - nx * ti, y - ny * ti))
+    pts = top + bot[::-1]
+    return 'M' + 'L'.join(f'{x:.1f} {y:.1f}' for x, y in pts) + 'Z'
+
+
+def yk_drip_tip(k):
+    """たれる雪 k の先の場所"""
+    u0, L, _ = YK_DRIPS[k]
+    c = yk_contour()
+    i = min(range(len(c)), key=lambda j: abs(c[j][0] - u0))
+    _, x, y, nx, ny = c[i]
+    sm = lambda a, b, x: (lambda t: t * t * (3 - 2 * t))(min(1, max(0, (x - a) / (b - a))))
+    ti = sm(0, .13, u0) * sm(0, .13, 1 - u0) * (8.5 + 1.4 * math.sin(2 * math.pi * 3.3 * u0 + 1.2)) + L
+    return x - nx * ti, y - ny * ti
+
+
+def yk_crystal(arm, w1=2.2, w2=1.1):
+    """雪の結晶（判定画面のすみの結晶と同じ形）：まん中が 0,0。水色の太い線の上に白い細い線"""
+    lines = []
+    for k in range(6):
+        a = math.radians(k * 60 - 90)
+        ca, sa = math.cos(a), math.sin(a)
+        lines.append((0, 0, arm * ca, arm * sa))
+        for r, L in ((.47, .27), (.74, .22)):
+            px, py = arm * r * ca, arm * r * sa
+            for sg in (-1, 1):
+                b = a + sg * math.radians(45)
+                lines.append((px, py, px + arm * L * math.cos(b), py + arm * L * math.sin(b)))
+    d = ''.join(f'M{x1:.1f} {y1:.1f}L{x2:.1f} {y2:.1f}' for x1, y1, x2, y2 in lines)
+    return (f'<g fill="none" stroke-linecap="round"><path d="{d}" stroke="{YK_EDGE}" stroke-width="{w1}"/><path d="{d}" stroke="#FFFFFF" stroke-width="{w2}"/>'
+            f'<circle r="{arm * .16:.1f}" fill="#FFFFFF" stroke="{YK_EDGE}" stroke-width=".7"/></g>')
+
+
+def yk_icicle(x, L, w=6.4):
+    """つらら（厚みの下のふち y=123 から下へ）"""
+    y = 121.5
+    return (f'<path d="M{x - w / 2:.1f} {y}L{x + w / 2:.1f} {y}L{x + .7:.1f} {y + L - 1:.1f}Q{x:.1f} {y + L + .8:.1f} {x - .7:.1f} {y + L - 1:.1f}Z" '
+            f'fill="url(#{{G}})" stroke="#7FAAD3" stroke-width=".8" stroke-linejoin="round"/>'
+            f'<path d="M{x - w / 2 + 1.4:.1f} {y + 1.5}L{x - .5:.1f} {y + L - 3:.1f}" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".85"/>')
+
+
+def yk_star(x, y, r):
+    """きらっと光る小さな星（雪の上）"""
+    k = r * .28
+    return (f'<path d="M{x:.1f} {y - r:.1f}Q{x + k:.1f} {y - k:.1f} {x + r:.1f} {y:.1f}Q{x + k:.1f} {y + k:.1f} {x:.1f} {y + r:.1f}'
+            f'Q{x - k:.1f} {y + k:.1f} {x - r:.1f} {y:.1f}Q{x - k:.1f} {y - k:.1f} {x:.1f} {y - r:.1f}Z" fill="#FFFFFF" stroke="{YK_EDGE}" stroke-width=".6"/>')
+
+
+def snow_push_svg(sfx=''):
+    """PUSHに積もった雪（ボタン 200×100 の上に重ねる。まわりに出るので -34〜234 × -44〜142）：
+       上に雪がこんもり積もる（ふわっと もり上がり・紺と白のふちをおおって前に3か所たれる・両はしは横で細く）・下の厚みから つらら6本・面に雪の結晶2つ。
+       雪の上で小さな星がきらっ（.ykt）・たれた所から ときどき雪のかたまりが ポロッと落ちる（.ykp）・ボタンの前を雪がふわふわ降る（.ykd：雪つぶ2つ・結晶2つ）。
+       sfx：形の id のうしろにつける字（PUSHと押したあとで別の id にする）"""
+    P_, G_, I_, C_ = f'ykP{sfx}', f'ykG{sfx}', f'ykI{sfx}', f'ykC{sfx}'
+    defs = (f'<defs><path id="{P_}" d="{yk_cap_path()}"/>'
+            f'<linearGradient id="{G_}" gradientUnits="userSpaceOnUse" x1="0" y1="-30" x2="0" y2="10"><stop offset="0" stop-color="#FFFFFF"/>'
+            '<stop offset=".45" stop-color="#FFFFFF"/><stop offset=".72" stop-color="#EAF2FA"/><stop offset=".92" stop-color="#D3E3F2"/></linearGradient>'
+            f'<linearGradient id="{I_}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F6FBFF"/><stop offset=".55" stop-color="#CFE8FB"/>'
+            f'<stop offset="1" stop-color="#9CC6EA"/></linearGradient><g id="{C_}">{yk_crystal(6)}</g></defs>')
+    cap = (f'<use href="#{P_}" fill="{YK_EDGE}" stroke="{YK_EDGE}" stroke-width="2.4" stroke-linejoin="round"/>'
+           f'<use href="#{P_}" fill="url(#{G_})"/>')
+    cap += ''.join(f'<g transform="translate({x} {y})"><g class="ykt" style="animation-duration:{t}s;animation-delay:{dl}s">{yk_star(0, 0, r)}</g></g>'
+                   for x, y, r, t, dl in ((46, -26, 3.6, 2.2, -.4), (118, -27, 3, 2.6, -1.5), (171, -24, 3.3, 2.4, -2.1)))
+    ice = ''.join(yk_icicle(x, L) for x, L in ((40, 13), (51, 8), (62, 11), (138, 9), (150, 15), (162, 10))).replace('{G}', I_)
+    face = ''.join(f'<use href="#{C_}" transform="translate({x} {y}) rotate({a}) scale({s})"/>' for x, y, a, s in ((176, 74, 12, .9), (24, 76, -8, .75)))
+    clumps = ''
+    for k, (t, dl) in ((0, (5.8, -1.2)), (2, (7.4, -4.6))):
+        x, y = yk_drip_tip(k)
+        clumps += (f'<g transform="translate({x:.1f} {y:.1f})"><g class="ykp" style="animation-duration:{t}s;animation-delay:{dl}s">'
+                   f'<g fill="#FFFFFF" stroke="{YK_EDGE}" stroke-width=".8"><circle cx="-1.6" cy="3.4" r="3.2"/><circle cx="1.9" cy="3" r="2.7"/><circle cx=".2" cy="5.6" r="2.6"/></g>'
+                   '<circle cx="-.4" cy="3.6" r="2.4" fill="#FFFFFF"/></g></g>')
+    drops = ''
+    for j, (x, y, kind, t) in enumerate(((22, -30, 'd', 4.6), (84, -36, 'c', 5.4), (140, -32, 'd', 4.2), (192, -38, 'c', 5.8))):
+        body = (f'<circle r="2.8" fill="#FFFFFF" stroke="{YK_EDGE}" stroke-width=".6"/>' if kind == 'd'
+                else f'<use href="#{C_}" transform="scale(.62)"/>')
+        drops += (f'<g transform="translate({x} {y})"><g class="ykd" style="animation-duration:{t}s;animation-delay:{-t * j / 4:.2f}s">{body}</g></g>')
+    return ('<i class="ykb" aria-hidden="true"><svg viewBox="-34 -44 268 186" width="268" height="186">'
+            f'{defs}{ice}{face}{cap}{clumps}{drops}</svg></i>')
+
+
+def snow_burst(n=24, seed=14):
+    """押した瞬間に、雪けむりがボフッと広がる（ボタンのまん中から外へ → ふわっと広がって消える）。6つに1つは結晶"""
+    rnd = random.Random(seed)
+    out = ''
+    for i in range(n):
+        a = math.radians(-90 + (i / n - .5) * 340 + rnd.uniform(-8, 8))
+        dist = rnd.uniform(80, 160)
+        x, y = math.cos(a) * dist * 1.2, math.sin(a) * dist * .85 - 20
+        cls = 'c' if i % 6 == 3 else 'p'
+        z = rnd.uniform(12, 24) if cls == 'p' else 16
+        out += (f'<i class="{cls}" style="--x:{x:.0f}px;--y:{y:.0f}px;--z:{z:.0f}px;--r:{rnd.choice((-1, 1)) * rnd.uniform(120, 240):.0f}deg;'
+                f'--d:{rnd.uniform(0, .1):.2f}s"></i>')
+    return f'<div class="clips yk" aria-hidden="true">{out}</div>'
+
+
+def yk_crystal_uri():
+    """雪の結晶の絵（押したときに舞う結晶）：data URI の SVG"""
+    svg = f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='-9 -9 18 18'>{yk_crystal(7.4, 2.4, 1.2)}</svg>".replace('"', "'")
+    return 'data:image/svg+xml,' + svg.replace('#', '%23').replace('<', '%3C').replace('>', '%3E')
+
+
+YK_CSS = r'''
+/* ---------- 雪の的中ボタン：雪が積もったPUSH（まさちゃんの指定） ----------
+   氷の色の面（上は白っぽい水色 → 下は深い青）・白いふち・紺のふち・こい紺の厚み。白い「PUSH」に紺の影。
+   上に雪がこんもり積もる（ふわっと もり上がる・紺と白のふちをおおって前に3か所たれる・両はしは横で細く）・下の厚みから つらら6本・面に雪の結晶2つ（判定画面のすみの結晶と同じ形）。
+   雪の上で小さな星がきらっ・たれた所から ときどき雪のかたまりが ポロッと落ちる・ボタンの前を雪がふわふわ降る。上下の動きは的中と同じ。押すと同じボタンがはじけて、雪けむりがボフッと広がる */
+.yk{--pushA:#5E9FD6;--pushB:#2F6E9E;--pushC:#DDF0FF;--rim:#F4FAFF;--rimD:#2F6390;
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#224E78 100%)}
+.push.yk{box-shadow:inset 0 -9px 0 rgba(10,40,80,.18),inset 0 2px 0 rgba(255,255,255,.65),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #1F4468,0 22px 34px rgba(10,25,50,.5)}
+.push.yk span{text-shadow:0 3px 0 #1F4F7A,0 0 14px rgba(255,255,255,.6)}
+.push.yk::after{border-color:rgba(214,236,255,.95)}
+.yk .ykb{position:absolute;left:-34px;top:-44px;width:268px;height:186px;pointer-events:none;z-index:3}
+.yk .ykb svg{display:block;width:268px;height:186px;overflow:visible}
+.yk .ykt,.yk .ykp,.yk .ykd{transform-box:view-box;transform-origin:0 0}
+.yk .ykt{animation:ykTw 2.4s ease-in-out infinite}
+@keyframes ykTw{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1)}}
+.yk .ykp{opacity:0;animation:ykClump 6s linear infinite}
+@keyframes ykClump{0%{opacity:0;transform:translate(0,-3px) rotate(0) scale(.2)}10%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}
+  62%{opacity:1;transform:translate(0,0) rotate(0) scale(1);animation-timing-function:cubic-bezier(.5,0,.9,.6)}
+  78%{opacity:0;transform:translate(3px,84px) rotate(40deg) scale(.9)}100%{opacity:0;transform:translate(3px,84px) rotate(40deg) scale(.2)}}
+.yk .ykd{opacity:0;animation:ykDrop 5s linear infinite}
+@keyframes ykDrop{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:.95}30%{transform:translate(7px,48px) rotate(40deg)}55%{transform:translate(-5px,96px) rotate(90deg)}
+  85%{opacity:.95;transform:translate(6px,146px) rotate(150deg)}100%{opacity:0;transform:translate(0,170px) rotate(180deg)}}
+.tap.yk{color:#E3F2FF}
+.pressed.yk{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #1F4468}
+.clips.yk{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips.yk i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:ykFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both}
+.clips.yk .p{border-radius:50%;background:radial-gradient(circle,#FFFFFF 0 38%,rgba(240,247,253,.85) 58%,rgba(225,238,250,0) 72%)}
+.clips.yk .c{background:center/contain no-repeat url("CRYSTAL")}
+@keyframes ykFly{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}50%{opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}
+  100%{opacity:0;transform:translate(calc(var(--x) * 1.15),calc(var(--y) + 40px)) rotate(calc(var(--r) * 1.4)) scale(1.7)}}
+@media (prefers-reduced-motion:reduce){.yk .ykt{animation:none;opacity:.9;transform:none}.yk .ykp,.yk .ykd,.clips.yk{display:none}}
+'''.replace('CRYSTAL', yk_crystal_uri())
 
 
 def form(bets, pay_total, note, fin=(6, 2, 10)):
@@ -1589,7 +1779,8 @@ PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイ
     hit_ranch=('Fx_HitRanch.dc.html', '的中ボタン（牧場：芝生のPUSH）'),
     hit_sakura=('Fx_HitSakura.dc.html', '的中ボタン（桜：桜がついたPUSH）'),
     hit_sea=('Fx_HitSea.dc.html', '的中ボタン（海：海の模様のPUSH）'),
-    hit_autumn=('Fx_HitAutumn.dc.html', '的中ボタン（紅葉：紅葉がついたPUSH）'))
+    hit_autumn=('Fx_HitAutumn.dc.html', '的中ボタン（紅葉：紅葉がついたPUSH）'),
+    hit_snow=('Fx_HitSnow.dc.html', '的中ボタン（雪：雪が積もったPUSH）'))
 BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
 BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
 BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
@@ -1623,7 +1814,7 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}{sea_push_svg() if th.get('push') == 'se' else ''}{momiji_push_svg() if th.get('push') == 'mo' else ''}<span>PUSH</span></button>
+      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}{sakura_push_svg() if th.get('push') == 'sk' else ''}{sea_push_svg() if th.get('push') == 'se' else ''}{momiji_push_svg() if th.get('push') == 'mo' else ''}{snow_push_svg() if th.get('push') == 'yk' else ''}<span>PUSH</span></button>
       <div class="pshadow{pb}{pc}"></div>
       <p class="tap{pb}{pc}">タップ！</p>
     </div>
@@ -1645,7 +1836,7 @@ def page(kind):
   <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}{sea_push_svg() if th.get("push") == "se" else ""}{momiji_push_svg("moP") if th.get("push") == "mo" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}{water_burst() if th.get('push') == 'se' else ''}{leaf_burst() if th.get('push') == 'mo' else ''}
+    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}{sakura_push_svg() if th.get("push") == "sk" else ""}{sea_push_svg() if th.get("push") == "se" else ""}{momiji_push_svg("moP") if th.get("push") == "mo" else ""}{snow_push_svg("2") if th.get("push") == "yk" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}{petal_burst() if th.get('push') == 'sk' else ''}{water_burst() if th.get('push') == 'se' else ''}{leaf_burst() if th.get('push') == 'mo' else ''}{snow_burst() if th.get('push') == 'yk' else ''}
     <div class="hb">{board(kind, bets, total, tid=tid)}</div>
     {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
@@ -1677,7 +1868,7 @@ def page(kind):
     else:
         css += HIT_CSS
     if th:
-        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS, se=SE_CSS, mo=MO_CSS).get(th.get('push'), '')
+        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS, sk=SK_CSS, se=SE_CSS, mo=MO_CSS, yk=YK_CSS).get(th.get('push'), '')
     css += board_css([tid])
     fn, name = PAGES[page_kind]
     fonts = ''.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">\n' for f in th.get('fonts', ()))
@@ -1816,7 +2007,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉の的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪の的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -2199,7 +2390,7 @@ body{{margin:0}}
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li><b>紅葉</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>紅葉がついたPUSH</b>（朱色の面・左上と右下に枝ともみじ（赤・朱・橙・山吹）・面にもみじ。枝がゆれて もみじがひらひら落ちる・押すと もみじが舞う。見本「的中ボタン（紅葉）」）・壁紙に<b>いつも紅葉が降っている</b>（もみじ18枚・ゆらゆら／くるくる回って裏返る・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・momiji.py。視差効果を減らすなら消える）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li><b>紅葉</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>紅葉がついたPUSH</b>（朱色の面・左上と右下に枝ともみじ（赤・朱・橙・山吹）・面にもみじ。枝がゆれて もみじがひらひら落ちる・押すと もみじが舞う。見本「的中ボタン（紅葉）」）・壁紙に<b>いつも紅葉が降っている</b>（もみじ18枚・ゆらゆら／くるくる回って裏返る・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・momiji.py。視差効果を減らすなら消える）</li><li><b>雪</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>雪が積もったPUSH</b>（氷の色の面・上に雪がこんもり（前に3か所たれる）・下につらら・面に雪の結晶。雪の上がきらっ・ときどき雪のかたまりがポロッ・前を雪がふわふわ降る・押すと雪けむりがボフッ。見本「的中ボタン（雪）」）・壁紙に<b>いつも雪が降っている</b>（雪つぶ40こ＋結晶6こ・ふわふわゆれる・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・yuki.py。視差効果を減らすなら消える）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>
