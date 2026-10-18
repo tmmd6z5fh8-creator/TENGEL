@@ -82,11 +82,12 @@ def jockey_a(sc, S, js=1.12, side_z=0.30):
 
 
 def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scale=1.06, fov=26, js=1.12,
-                 key=(0.30, 0.80, 0.55)):
-    """3倍の大きさで形を描く（光は1つ・影つき・白い素材）。rgb は「光の当たり具合（影をふくむ）」になる"""
+                 key=(0.30, 0.80, 0.55), cam=None):
+    """3倍の大きさで形を描く（光は1つ・影つき・白い素材）。rgb は「光の当たり具合（影をふくむ）」になる。
+       cam：決めたカメラ (目, 見る所)（走るコマで、どのコマも同じカメラにするとき）。なければ box に入るように決める（R['cam'] に入れて返す）"""
     Hm.HEAD_SCALE = head_scale
     W3, H3 = W * s, Hh * s
-    e, t = frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
+    e, t = cam if cam is not None else frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
     sc = Scene()
     sc.image(W3, H3, 1)
     sc.camera(e, t, fov)
@@ -124,6 +125,7 @@ def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scal
     R['hooves'] = P([Hm.v3(S[k]['hf'], 0.15 * S[k]['z']) for k in ('FL', 'FR', 'HL', 'HR')])
     R['hand_near'] = P([J['hand1'] if side > 0 else J['hand-1']])[0]
     R['S'], R['scene'], R['J'], R['side'], R['Lk'], R['s'] = S, sc, J, side, Lk, s
+    R['cam'] = (e, t)
     return R
 
 

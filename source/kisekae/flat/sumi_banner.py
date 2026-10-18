@@ -2,7 +2,8 @@
    馬だけ描き直す → 騎手を乗せて競り合う2頭（flat/sumi_rider.py：墨の線＋灰色のぼかし）。
    手前の馬は濃い墨（光の当たる所は筆のかすれで白く抜く）で先頭、奥の馬はうすい墨（遠いほどうすい）で追う。
    足もとは乾いた筆で横にはいた地面と、うしろへ流れる細い筆の線
-   python3 flat/sumi_banner.py <出力.webp>"""
+   python3 flat/sumi_banner.py <出力.webp>
+   （走るコマは flat/sumi_run.py が compose()・horse_layer() を使って描く：馬の形・カメラ・上下のずれだけ変えて、紙・山・地面・しぶき・落款は同じ）"""
 import sys, os, math
 import numpy as np
 import cv2
@@ -17,16 +18,7 @@ sys.path.insert(0, K)
 from paint import fbm
 
 W, Hh = 780, 320
-out = sys.argv[1]
-rng = np.random.default_rng(121)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
-img = np.broadcast_to(hexc('#F5F0E4'), (Hh, W, 3)).copy()
-fib = fbm(Hh, W, 30, 4, seed=3)
-img = img * (0.95 + 0.05 * fib)[..., None]
-for i in range(160):                                   # 和紙の繊維
-    x, y = rng.uniform(0, W), rng.uniform(0, Hh); a = rng.uniform(0, math.pi); L = rng.uniform(6, 22)
-    cv2.line(img, (int(x * 16), int(y * 16)), (int((x + math.cos(a) * L) * 16), int((y + math.sin(a) * L) * 16)), (0.86, 0.83, 0.76), 1, cv2.LINE_AA, shift=4)
-paper = img.copy()                                     # 馬の中に見せる紙（山のぼかしなし）
 INK = hexc('#1C1A18')
 
 
@@ -34,12 +26,24 @@ def wash(img, mask, k):
     return img * (1 - mask[..., None] * k) + INK * (mask[..., None] * k)
 
 
-# 遠くの山（にじむ墨）
-for y0, amp, k, f, sd in [(150, 50, 0.16, 140, 1), (190, 36, 0.26, 90, 2)]:
-    ridge = y0 - amp * np.abs(np.sin(xx / f + sd)) - 12 * np.sin(xx / 33 + sd)
-    m = np.clip((yy - ridge) / 3 + .5, 0, 1) * np.clip(1 - (yy - ridge) / 70, 0, 1)
-    m = blur(m, 2) * (0.75 + 0.25 * fbm(Hh, W, 40, 3, seed=sd + 5))
-    img = wash(img, m, k)
+def background():
+    """和紙（繊維）と遠くの山。戻り値 (絵, 馬の中に見せる紙, 乱数のつづき)"""
+    rng = np.random.default_rng(121)
+    img = np.broadcast_to(hexc('#F5F0E4'), (Hh, W, 3)).copy()
+    fib = fbm(Hh, W, 30, 4, seed=3)
+    img = img * (0.95 + 0.05 * fib)[..., None]
+    for i in range(160):                                   # 和紙の繊維
+        x, y = rng.uniform(0, W), rng.uniform(0, Hh); a = rng.uniform(0, math.pi); L = rng.uniform(6, 22)
+        cv2.line(img, (int(x * 16), int(y * 16)), (int((x + math.cos(a) * L) * 16), int((y + math.sin(a) * L) * 16)), (0.86, 0.83, 0.76), 1, cv2.LINE_AA, shift=4)
+    paper = img.copy()                                     # 馬の中に見せる紙（山のぼかしなし）
+    # 遠くの山（にじむ墨）
+    for y0, amp, k, f, sd in [(150, 50, 0.16, 140, 1), (190, 36, 0.26, 90, 2)]:
+        ridge = y0 - amp * np.abs(np.sin(xx / f + sd)) - 12 * np.sin(xx / 33 + sd)
+        m = np.clip((yy - ridge) / 3 + .5, 0, 1) * np.clip(1 - (yy - ridge) / 70, 0, 1)
+        m = blur(m, 2) * (0.75 + 0.25 * fbm(Hh, W, 40, 3, seed=sd + 5))
+        img = wash(img, m, k)
+    return img, paper, rng
+
 
 # ---------- 2頭（左向き：3Dは右向きで描いて、左右をかえす） ----------
 HORSES = [
@@ -52,15 +56,16 @@ HORSES = [
          pose=dict(theta=0.0, neck_rot=-36.0, head_ang=-32.0, fore=dict(L=[-100, -40, -30, -18], R=[-132, -28, -150, -170]),
                    hind=dict(L=[-112, -152, -136, -156], R=[-56, -106, -76, -56]), tail=[-170, -158])),
 ]
-grng = np.random.default_rng(131)                      # 地面の筆（背景の乱数とは別）
-layers = []
-for h in HORSES:
+
+
+def horse_layer(h, pose=None, cam=None, name=None):
+    """1頭（左向き：3Dは右向きで描いて、左右をかえす）。戻り値 (墨の濃さ k, おおう量 A, ひづめ, h, R)"""
     x0, y0, x1, y1 = h['box']
-    R = render_anime(h['pose'], (W - x1, y0, W - x0, y1), W, Hh, name='sumi_' + h['name'])
+    R = render_anime(pose or h['pose'], (W - x1, y0, W - x0, y1), W, Hh, name=name or 'sumi_' + h['name'], cam=cam)
     k, A = paint_sumi(R, h)
     hv = np.asarray(R['hooves'], float) / R['s']
     hv[:, 0] = W - hv[:, 0]
-    layers.append((k[:, ::-1], A[:, ::-1], hv, h))
+    return k[:, ::-1], A[:, ::-1], hv, h, R
 
 
 def dry_ground(img, gy, xa, xb, scl, ink, rng_):
@@ -89,28 +94,38 @@ def dry_ground(img, gy, xa, xb, scl, ink, rng_):
     return wash(img, np.clip(g, 0, 1), ink)
 
 
-for k_, A_, hv, h in layers:
-    gy = hv[:, 1].max() + 2.0
-    scl = 1.0 if h['tones'] == 'dark' else 0.8
-    img = dry_ground(img, gy, hv[:, 0].min() - 10, hv[:, 0].max() + 10, scl, 0.42 if h['tones'] == 'dark' else 0.26, grng)
-for k_, A_, hv, h in layers:                           # 奥 → 手前
-    col = paper * (1 - k_[..., None]) + INK * k_[..., None]
-    img = img * (1 - A_[..., None]) + col * A_[..., None]
+def compose(layers, ground=None):
+    """絵にまとめる。layers：[(k, A, ひづめ, h), …]（奥 → 手前）・ground：地面の筆を引く ひづめ（1頭ずつ・なければ layers のひづめ）"""
+    img, paper, rng = background()
+    grng = np.random.default_rng(131)                      # 地面の筆（背景の乱数とは別）
+    for (k_, A_, hv, h), ghv in zip(layers, ground or [l[2] for l in layers]):
+        gy = ghv[:, 1].max() + 2.0
+        scl = 1.0 if h['tones'] == 'dark' else 0.8
+        img = dry_ground(img, gy, ghv[:, 0].min() - 10, ghv[:, 0].max() + 10, scl, 0.42 if h['tones'] == 'dark' else 0.26, grng)
+    for k_, A_, hv, h in layers:                           # 奥 → 手前
+        col = paper * (1 - k_[..., None]) + INK * k_[..., None]
+        img = img * (1 - A_[..., None]) + col * A_[..., None]
 
-# 墨のしぶき
-for i in range(16):
-    x, y = rng.uniform(150, 650), rng.uniform(40, 300)
-    m = soft_circle(Hh, W, x, y, rng.uniform(0.8, 3.0), 1.0)
-    img = wash(img, m, 0.85)
-# 落款（赤い四角に白い「馬」）
-pil = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8))
-d = ImageDraw.Draw(pil)
-x0, y0, s = 660, 210, 58
-d.rectangle((x0, y0, x0 + s, y0 + s), fill=(183, 40, 46))
-d.text((x0 + s / 2, y0 + s / 2 + 2), '馬', font=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSerifCJK-Black.ttc', 44), fill=(245, 240, 228), anchor='mm')
-img = np.asarray(pil).astype(np.float32) / 255
-grain = blur(rng.random((Hh, W)).astype(np.float32), 0.8)
-seal = np.zeros((Hh, W), np.float32); seal[y0:y0 + s, x0:x0 + s] = 1
-img = img + ((grain > 0.62) * seal * 0.25)[..., None]
-save_webp(np.clip(img, 0, 1), out)
-print(out)
+    # 墨のしぶき
+    for i in range(16):
+        x, y = rng.uniform(150, 650), rng.uniform(40, 300)
+        m = soft_circle(Hh, W, x, y, rng.uniform(0.8, 3.0), 1.0)
+        img = wash(img, m, 0.85)
+    # 落款（赤い四角に白い「馬」）
+    pil = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8))
+    d = ImageDraw.Draw(pil)
+    x0, y0, s = 660, 210, 58
+    d.rectangle((x0, y0, x0 + s, y0 + s), fill=(183, 40, 46))
+    d.text((x0 + s / 2, y0 + s / 2 + 2), '馬', font=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSerifCJK-Black.ttc', 44), fill=(245, 240, 228), anchor='mm')
+    img = np.asarray(pil).astype(np.float32) / 255
+    grain = blur(rng.random((Hh, W)).astype(np.float32), 0.8)
+    seal = np.zeros((Hh, W), np.float32); seal[y0:y0 + s, x0:x0 + s] = 1
+    img = img + ((grain > 0.62) * seal * 0.25)[..., None]
+    return np.clip(img, 0, 1)
+
+
+if __name__ == '__main__':
+    out = sys.argv[1]
+    layers = [horse_layer(h)[:4] for h in HORSES]
+    save_webp(compose(layers), out)
+    print(out)
