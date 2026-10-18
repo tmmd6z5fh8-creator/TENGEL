@@ -1,4 +1,7 @@
-"""子供向け：薄い黄色×パウダーホワイト・毛糸の編み目とフェルト・ぬいぐるみの馬・ロボット"""
+"""子供向け：薄い黄色×パウダーホワイト・毛糸の編み目とフェルト・ぬいぐるみの馬・ロボット
+   python3 kids.py <出力フォルダ>   → kids.svg（いつもの絵）
+   壁紙の動き（kids_wall.py）のために、banner(parts) で 絵を部品に分けて受けとれる：下の絵・毛糸玉と糸・枠・かげ・
+   馬（目なし）・馬のボタンの目・ロボット（黒目なし）・ロボットの黒目。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
@@ -8,6 +11,11 @@ FELT = '#E9B47C'      # ぬいぐるみの馬（キャラメル）
 FELT_L = '#F8DEBB'
 YARN = '#E8843F'
 STITCH = dict(fill='none', stroke=BR, stroke_width='1.3', stroke_dasharray='3 2.4', stroke_linecap='round')
+HORSE_AT = (62, 22, .98)      # 馬を置く所（translate・scale）
+ROBOT_AT = (216, 26, .98)     # ロボットを置く所
+HORSE_EYE = (93, 44)          # 馬のボタンの目のまん中（馬の座標）
+ROBOT_EYES = (35, 57)         # ロボットの目のまん中の x（y は 39・ロボットの座標）
+YARN_BALL = (352, 128, 15)    # 毛糸玉のまん中と半径（絵の座標）
 
 
 def stitched(d, fill, lw=2.0, inset_d=None, filt=True):
@@ -17,8 +25,19 @@ def stitched(d, fill, lw=2.0, inset_d=None, filt=True):
     return out
 
 
-def plush_horse():
-    """右向きのぬいぐるみの馬（だいたい 0〜135 × 0〜128）"""
+def horse_eye():
+    """馬のボタンの目（馬の座標）"""
+    return ('<circle cx="93" cy="44" r="6.2" fill="#2B1E16"/><circle cx="91" cy="44" r="1.2" fill="#8A6A55"/><circle cx="95" cy="44" r="1.2" fill="#8A6A55"/>'
+            '<circle cx="91.2" cy="41.2" r="1.4" fill="#FFFFFF" opacity=".85"/>')
+
+
+def robot_pupil(ex):
+    """ロボットの黒目と光（ロボットの座標・ex＝目のまん中の x）"""
+    return f'<circle cx="{ex + 1}" cy="40" r="3.8" fill="#2B1E16"/><circle cx="{ex + 2.3}" cy="38.4" r="1.3" fill="#FFFFFF"/>'
+
+
+def plush_horse(eye=True):
+    """右向きのぬいぐるみの馬（だいたい 0〜135 × 0〜128）。eye=False なら ボタンの目なし（壁紙で目だけ動かす）"""
     head = smooth(ellipse_pts(84, 46, 28, 24, 14))
     snout = smooth(ellipse_pts(107, 59, 18, 14, 12, rot=10))
     body = smooth(ellipse_pts(58, 92, 33, 22, 14))
@@ -55,8 +74,8 @@ def plush_horse():
         out += f'<circle cx="{cx}" cy="{cy}" r="6.4" fill="{YARN}" stroke="#C4652A" stroke-width="1.2"/>'
         out += f'<path d="M{cx - 3.6} {cy - 1} q3.6 -4 7.2 0" fill="none" stroke="#F6B27A" stroke-width="1.3" stroke-linecap="round"/>'
     # ボタンの目
-    out += '<circle cx="93" cy="44" r="6.2" fill="#2B1E16"/><circle cx="91" cy="44" r="1.2" fill="#8A6A55"/><circle cx="95" cy="44" r="1.2" fill="#8A6A55"/>'
-    out += '<circle cx="91.2" cy="41.2" r="1.4" fill="#FFFFFF" opacity=".85"/>'
+    if eye:
+        out += horse_eye()
     # ほっぺ・鼻・口（縫い目）
     out += '<circle cx="96" cy="58" r="4.6" fill="#F7A8C0" opacity=".9"/>'
     out += path('M114 55 l3 3 M117 55 l-3 3', fill='none', stroke=BR, stroke_width='1.4', stroke_linecap='round')
@@ -64,8 +83,8 @@ def plush_horse():
     return out
 
 
-def robot():
-    """手をふるロボット（だいたい 0〜95 × 0〜122）"""
+def robot(pupils=True):
+    """手をふるロボット（だいたい 0〜95 × 0〜122）。pupils=False なら 黒目なし（壁紙で黒目だけ動かす）"""
     out = ''
     out += f'<path d="M46 9 L46 21" stroke="{BR}" stroke-width="2.4" stroke-linecap="round"/>'
     out += stitched(smooth(ellipse_pts(46, 8, 5.5, 5.5, 10)), '#FF9AA8', 1.6)
@@ -86,8 +105,8 @@ def robot():
     out += stitched(smooth(ellipse_pts(16, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6) + stitched(smooth(ellipse_pts(76, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6)
     out += stitched('M30 20 h32 q12 0 12 12 v18 q0 12 -12 12 h-32 q-12 0 -12 -12 v-18 q0 -12 12 -12 Z', '#A9DCF3', 2.0,
                     'M31 24.5 h30 q8.5 0 8.5 8.5 v16 q0 8.5 -8.5 8.5 h-30 q-8.5 0 -8.5 -8.5 v-16 q0 -8.5 8.5 -8.5 Z')
-    for ex in (35, 57):
-        out += f'<circle cx="{ex}" cy="39" r="7.4" fill="#FFFFFF" stroke="{BR}" stroke-width="1.5"/><circle cx="{ex + 1}" cy="40" r="3.8" fill="#2B1E16"/><circle cx="{ex + 2.3}" cy="38.4" r="1.3" fill="#FFFFFF"/>'
+    for ex in ROBOT_EYES:
+        out += f'<circle cx="{ex}" cy="39" r="7.4" fill="#FFFFFF" stroke="{BR}" stroke-width="1.5"/>' + (robot_pupil(ex) if pupils else '')
     out += '<circle cx="28" cy="50" r="3.6" fill="#F7A8C0"/><circle cx="64" cy="50" r="3.6" fill="#F7A8C0"/>'
     out += path('M40 50 q6 5 12 0', fill='none', stroke=BR, stroke_width='1.8', stroke_linecap='round')
     return out
@@ -99,7 +118,13 @@ def cloud(x, y, s):
     return stitched(d, '#FCFBF7', 1.6)
 
 
-def banner():
+def at(t):
+    x, y, s = t
+    return f'translate({f(x)} {f(y)}) scale({s:g})'.replace('scale(0.', 'scale(.')
+
+
+def banner(parts=None):
+    """いつもの絵（SVG）。parts に dict を入れると 部品を入れて返す（壁紙の動き・kids_wall.py）"""
     W, H = 390, 160
     defs = ('<pattern id="knit" width="12" height="10" patternUnits="userSpaceOnUse">'
             '<ellipse cx="3.1" cy="5" rx="2.5" ry="4.7" transform="rotate(-30 3.1 5)" fill="#F4DC82"/>'
@@ -116,18 +141,23 @@ def banner():
     b += cloud(20, 34, .9) + cloud(250, 24, .75)
     for cx, cy, r, c in [(150, 26, 9, '#FFD966'), (212, 54, 6.5, '#FFB7C5'), (366, 74, 7.5, '#FFD966'), (330, 30, 6, '#A9DCF3')]:
         b += stitched(star5(cx, cy, r), c, 1.4)
-    yx, yy = 352, 128
-    b += stitched(smooth(ellipse_pts(yx, yy, 15, 15, 12)), '#F7A8C0', 1.8)
+    yx, yy, yr = YARN_BALL
+    ball = stitched(smooth(ellipse_pts(yx, yy, yr, yr, 12)), '#F7A8C0', 1.8)
     for d in [f'M{yx - 12} {yy - 6} q12 -6 24 4', f'M{yx - 14} {yy + 2} q14 -8 27 2', f'M{yx - 10} {yy + 10} q10 -6 21 0', f'M{yx - 4} {yy - 14} q-4 14 2 28']:
-        b += path(d, fill='none', stroke='#D9799A', stroke_width='1.4', stroke_linecap='round')
-    b += path(f'M{yx - 14} {yy + 8} C {yx - 40} {yy + 22}, {yx - 70} {yy + 6}, {yx - 92} {yy + 18}', fill='none', stroke='#F7A8C0', stroke_width='2.2', stroke_linecap='round')
+        ball += path(d, fill='none', stroke='#D9799A', stroke_width='1.4', stroke_linecap='round')
+    thread = path(f'M{yx - 14} {yy + 8} C {yx - 40} {yy + 22}, {yx - 70} {yy + 6}, {yx - 92} {yy + 18}', fill='none', stroke='#F7A8C0', stroke_width='2.2', stroke_linecap='round')
     # 糸のかがりの枠
-    b += '<rect x="6" y="6" width="378" height="148" rx="12" fill="none" stroke="#B88A5A" stroke-width="1.6" stroke-dasharray="6 4" stroke-linecap="round"/>'
+    frame = '<rect x="6" y="6" width="378" height="148" rx="12" fill="none" stroke="#B88A5A" stroke-width="1.6" stroke-dasharray="6 4" stroke-linecap="round"/>'
     # ぬいぐるみの馬・ロボット
-    b += '<ellipse cx="128" cy="146" rx="48" ry="5" fill="#C9A27A" opacity=".3"/><ellipse cx="262" cy="146" rx="30" ry="4.5" fill="#C9A27A" opacity=".3"/>'
-    b += g(plush_horse(), transform='translate(62 22) scale(.98)')
-    b += g(robot(), transform='translate(216 26) scale(.98)')
-    return svg(W, H, b, defs)
+    shadow_h = '<ellipse cx="128" cy="146" rx="48" ry="5" fill="#C9A27A" opacity=".3"/>'
+    shadow_r = '<ellipse cx="262" cy="146" rx="30" ry="4.5" fill="#C9A27A" opacity=".3"/>'
+    horse = g(plush_horse(), transform=at(HORSE_AT))
+    rob = g(robot(), transform=at(ROBOT_AT))
+    if parts is not None:
+        parts.update(size=(W, H), defs=defs, bg=b, ball=ball, thread=thread, frame=frame, shadow_h=shadow_h, shadow_r=shadow_r,
+                     horse=g(plush_horse(eye=False), transform=at(HORSE_AT)), eye=g(horse_eye(), transform=at(HORSE_AT)),
+                     robot=g(robot(pupils=False), transform=at(ROBOT_AT)), pupils=[g(robot_pupil(ex), transform=at(ROBOT_AT)) for ex in ROBOT_EYES])
+    return svg(W, H, b + ball + thread + frame + shadow_h + shadow_r + horse + rob, defs)
 
 
 if __name__ == '__main__':
