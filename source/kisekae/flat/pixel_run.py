@@ -4,6 +4,8 @@
        いまの絵の形（GALLOP）を中心に少しゆれる。地面についている ひづめの高さをそろえ（カメラを上下にずらして描く）、4本とも宙のときは少し浮く
      ・止まる：前足を前へつっぱり、うしろ足を おなかの下へ入れて すべる2コマ（ブレーキ）。ひづめの うしろに ドットの土けむり（出たて → ふくらむ）
      ・立つ：止まって立っている2コマ（首と頭が少し上下・しっぽが少しゆれる。昔のゲームの「待っている」動き）
+     ・走りだす：かまえる（頭を下げて、うしろ足を おなかの下へ）→ けり出す（うしろ足で地面をけって、前が上がる・うしろに大きな土けむり）→
+       1歩め（走るコマの0に、土けむりが うしろへ流れて小さくなったのを足したコマ）。ページで 1歩め・2歩めを ゆっくり → 少し速く して全速へ
    - 空・丘・コース・ゴール板・「GO!」は いまの絵と同じ。馬が動く所だけを切りぬいて横に並べた1まい（pixel_run.webp・5倍・すき通しなし）。
      ページでは いまの絵の同じ場所に重ねる（pixel_wall.py）。下に置く いまの絵も ここで ロスなしで書き出す（pixel_static.webp：
      キャンバスの いまの絵は ロスありで、色のふちが少し にじむので、重ねた所の さかい目が見えないように 両方とも ロスなしに そろえた）
@@ -35,10 +37,19 @@ STAND = [dict(theta=0.0, neck_rot=2.0, head_ang=-58.0, tail=[-118, -100],
          dict(theta=0.0, neck_rot=5.0, head_ang=-52.0, tail=[-126, -108],
               fore=dict(L=[-125, -90, -90, -60], R=[-122, -88, -88, -58]), hind=dict(L=[-62, -118, -92, -62], R=[-66, -120, -94, -64]),
               hair=dict(wind_ang=2.1, mane_len=0.55, tail_len=0.85))]
+READY = dict(theta=2.0, neck_rot=-22.0, head_ang=-42.0, tail=[-140, -120],         # かまえる：頭を下げて前へ・うしろ足を おなかの下へ
+             fore=dict(L=[-108, -94, -98, -72], R=[-112, -96, -100, -74]), hind=dict(L=[-48, -126, -74, -46], R=[-52, -128, -76, -48]),
+             hair=dict(wind_ang=2.4, mane_len=0.7, tail_len=0.9))
+PUSH = dict(theta=10.0, neck_rot=-20.0, head_ang=-40.0, tail=[-165, -150],          # けり出す：うしろ足で地面をけって前が上がる・前足は1本たたみ1本のばす
+            fore=dict(L=[-118, -30, -140, -165], R=[-70, -30, -45, -30]), hind=dict(L=[-100, -136, -112, -124], R=[-94, -132, -108, -120]),
+            hair=dict(wind_ang=3.0, mane_len=0.9))
 DUST = '#FFF1E8', '#C2C3C7'        # 土けむりの色（白・かげの灰）
 # 土けむり（ひづめの うしろ）：ブレーキの2コマ（出たて → ふくらんで少し上へ）。(ひづめからの x, 地面からの y, 半径)
 DUST_HIND = ([(-6, -1.5, 2.2), (-10, -2.2, 1.8), (-7.5, -4.2, 1.3)], [(-7, -2.2, 2.7), (-11.5, -3.2, 2.3), (-15, -1.6, 1.6), (-8.5, -5.6, 1.9)])
 DUST_FORE = ([(-4.5, -1.2, 1.7), (-7.5, -2, 1.3)], [(-5, -1.8, 2.1), (-8.5, -2.8, 1.7), (-6, -4.6, 1.3)])
+# 走りだしの土けむり（けり出したときの うしろ足からの x）：けり出す（大きい）→ 1歩め（うしろへ流れて小さく）
+DUST_PUSH = [(-4.5, -1.8, 2.6), (-9, -3, 2.4), (-13, -1.6, 1.9), (-6.5, -5.6, 2.0), (-11, -6.4, 1.3)]
+DUST_DASH = [(-11, -2.4, 2.0), (-15.5, -3.6, 1.7), (-18.5, -1.8, 1.2), (-13, -6.4, 1.1)]
 
 
 def run_pose(g):
@@ -151,6 +162,22 @@ def run(out, sample=None):
         img, R, dy = frame(ps, cam, ground, f'pxstand{i}', hair=p['hair'])
         frames.append(PX.go_text(img))
         info.append((f'stand{i}', round(dy, 2)))
+    # 走りだす：かまえる → けり出す（土けむり）→ 1歩め（走るコマの0に、うしろへ流れた土けむり）
+    pr = {k: v for k, v in READY.items() if k != 'hair'}
+    img, R, dy = frame(pr, cam, ground, 'pxready', hair=READY['hair'])
+    frames.append(PX.go_text(img))
+    info.append(('ready', round(dy, 2)))
+    pp = {k: v for k, v in PUSH.items() if k != 'hair'}
+    img, R, dy = frame(pp, cam, ground, 'pxpush', hair=PUSH['hair'])
+    hv = hooves(pp, shifted(cam, dy))
+    hx = min(hv['HL'][0], hv['HR'][0])
+    dust(img, [(hx + x, ground + y, r) for x, y, r in DUST_PUSH])
+    frames.append(PX.go_text(img))
+    info.append(('push', round(dy, 2)))
+    img, R, dy = frame(run_pose(0), cam, ground, 'pxdash', dy=dys[0])
+    dust(img, [(hx + x, ground + y, r) for x, y, r in DUST_DASH])
+    frames.append(PX.go_text(img))
+    info.append(('dash', round(dy, 2)))
     # 切りぬく所：いまの絵と ちがう所がぜんぶ入る四角（ドットを偶数にそろえる＝ページの画素が整数になる）
     diff = np.maximum.reduce([np.abs(fr - orig).max(-1) for fr in frames])
     ys, xs = np.nonzero(diff > 1e-6)
