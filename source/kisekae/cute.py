@@ -1,4 +1,7 @@
-"""かわいい：ピンク・ハート・リボン・目の大きいポニー（右向き）"""
+"""かわいい：ピンク・ハート・リボン・目の大きいポニー（右向き）
+   python3 cute.py <出力フォルダ>   → cute.svg（いつもの絵）・cute_pony.svg
+   壁紙の動き（cute_wall.py）のために、banner(parts) で 絵を部品に分けて受けとれる：下の絵（水玉・レース）・ハート（1つめが大きいハート）・
+   大きいハートの光・右上のリボン・キラキラ・かげ・ポニー。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
@@ -6,6 +9,12 @@ from art import *
 LINE = '#A8416F'
 PINK = '#FF8DC0'
 DEEP = '#FF4F9A'
+# ハート：(まん中 x, y, 大きさ, 色, ふち)。1つめが 大きいハート
+HEARTS = [(316, 72, 26, '#FF6FA8', ''), (360, 112, 13, '#FFA6CB', ''), (284, 124, 9, '#FFFFFF', LINE),
+          (34, 34, 10, '#FF8DC0', ''), (168, 28, 8, '#FFB7D3', ''), (226, 112, 10, '#FF6FA8', ''),
+          (246, 40, 6, '#FFFFFF', LINE), (20, 112, 7, '#FFB7D3', '')]
+BIG_BOW = (356, 34, 1.15)     # 右上の大きいリボン（結び目と大きさ）
+PONY_AT = (66, 24)            # ポニーを置く所
 
 
 def bow(cx, cy, s, c=DEEP, line=LINE, tails=True, dots=True):
@@ -74,7 +83,14 @@ def pony():
     return out
 
 
-def banner():
+def heart_shape(cx, cy, s, c, o):
+    if o:
+        return path(heart(cx, cy, s), fill=c, stroke=o, stroke_width='1.6')
+    return path(heart(cx, cy, s), fill=c)
+
+
+def banner(parts=None):
+    """いつもの絵（SVG）。parts に dict を入れると 部品を入れて返す（壁紙の動き・cute_wall.py）"""
     W, H = 390, 160
     defs = ('<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">'
             '<circle cx="5" cy="5" r="2.6" fill="#FFFFFF" opacity=".75"/><circle cx="16" cy="16" r="2.6" fill="#FFFFFF" opacity=".75"/></pattern>'
@@ -91,24 +107,21 @@ def banner():
     b += lace + '<rect x="0" y="152" width="390" height="8" fill="#FFFFFF"/>'
     b += ''.join(f'<circle cx="{i * 17 + 12.5}" cy="156" r="1.6" fill="#FFC2DA"/>' for i in range(23))
     # ハート
-    for cx, cy, s, c, o in [(316, 72, 26, '#FF6FA8', ''), (360, 112, 13, '#FFA6CB', ''), (284, 124, 9, '#FFFFFF', LINE),
-                            (34, 34, 10, '#FF8DC0', ''), (168, 28, 8, '#FFB7D3', ''), (226, 112, 10, '#FF6FA8', ''),
-                            (246, 40, 6, '#FFFFFF', LINE), (20, 112, 7, '#FFB7D3', '')]:
-        if o:
-            b += path(heart(cx, cy, s), fill=c, stroke=o, stroke_width='1.6')
-        else:
-            b += path(heart(cx, cy, s), fill=c)
-    b += path(heart(316, 72, 26), fill='none', stroke='#FFFFFF', stroke_width='2', opacity='.0')
-    b += path('M300 58 q4 -6 10 -4', fill='none', stroke='#FFFFFF', stroke_width='3', stroke_linecap='round', opacity='.8')
+    hearts = [heart_shape(*h) for h in HEARTS]
+    shine = path(heart(316, 72, 26), fill='none', stroke='#FFFFFF', stroke_width='2', opacity='.0')
+    shine += path('M300 58 q4 -6 10 -4', fill='none', stroke='#FFFFFF', stroke_width='3', stroke_linecap='round', opacity='.8')
     # 大きいリボン（右上）
-    b += bow(356, 34, 1.15)
+    big_bow = bow(*BIG_BOW)
     # キラキラ
+    spark = ''
     for cx, cy, r, c in [(268, 30, 8, '#FFFFFF'), (196, 66, 5, '#FFF3A6'), (126, 26, 6, '#FFFFFF'), (346, 140, 6, '#FFFFFF'), (210, 140, 4.5, '#FFF3A6'), (14, 70, 5, '#FFFFFF')]:
-        b += path(sparkle(cx, cy, r), fill=c)
+        spark += path(sparkle(cx, cy, r), fill=c)
     # ポニー
-    b += '<ellipse cx="128" cy="146" rx="46" ry="5" fill="#E77BAA" opacity=".25"/>'
-    b += g(pony(), transform='translate(66 24) scale(1.0)')
-    return svg(W, H, b, defs)
+    shadow = '<ellipse cx="128" cy="146" rx="46" ry="5" fill="#E77BAA" opacity=".25"/>'
+    pony_g = g(pony(), transform=f'translate({PONY_AT[0]} {PONY_AT[1]}) scale(1.0)')
+    if parts is not None:
+        parts.update(size=(W, H), defs=defs, bg=b, hearts=hearts, shine=shine, bow=big_bow, sparkles=spark, shadow=shadow, pony=pony_g)
+    return svg(W, H, b + ''.join(hearts) + shine + big_bow + spark + shadow + pony_g, defs)
 
 
 if __name__ == '__main__':
