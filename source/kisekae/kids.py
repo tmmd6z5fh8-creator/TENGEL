@@ -1,7 +1,8 @@
 """子供向け：薄い黄色×パウダーホワイト・毛糸の編み目とフェルト・ぬいぐるみの馬・ロボット
    python3 kids.py <出力フォルダ>   → kids.svg（いつもの絵）
    壁紙の動き（kids_wall.py）のために、banner(parts) で 絵を部品に分けて受けとれる：下の絵・毛糸玉と糸・枠・かげ・
-   馬（目なし）・馬のボタンの目・ロボット（黒目なし）・ロボットの黒目。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
+   馬（目なし）・馬のボタンの目・ロボット（黒目なし）・ロボットの黒目・ロボットの部品（アンテナ・腕2本・足2つ・体・頭）・
+   ロボットが持つ時の 毛糸玉の 短い糸。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
@@ -83,26 +84,37 @@ def plush_horse(eye=True):
     return out
 
 
-def robot(pupils=True):
-    """手をふるロボット（だいたい 0〜95 × 0〜122）。pupils=False なら 黒目なし（壁紙で黒目だけ動かす）"""
-    out = ''
-    out += f'<path d="M46 9 L46 21" stroke="{BR}" stroke-width="2.4" stroke-linecap="round"/>'
-    out += stitched(smooth(ellipse_pts(46, 8, 5.5, 5.5, 10)), '#FF9AA8', 1.6)
-    # 腕（うしろ）
-    out += stitched(limb([(24, 72), (14, 86), (12, 98)], [10, 9, 9]), '#9FD5C0', 1.8)
-    out += stitched(smooth(ellipse_pts(12, 100, 6.5, 6.5, 10)), '#D9D9D9', 1.6)
-    out += stitched(limb([(68, 70), (80, 58), (86, 46)], [10, 9, 9]), '#9FD5C0', 1.8)
-    out += stitched(smooth(ellipse_pts(87, 42, 6.5, 6.5, 10)), '#D9D9D9', 1.6)
-    # 足
-    for x in (32, 50):
-        out += stitched(f'M{x} 98 h12 v14 h-12 Z', '#9CCFEA', 1.6)
-        out += stitched(smooth(ellipse_pts(x + 6, 114, 9, 4.6, 10)), '#7FB8D8', 1.6)
-    # 体
-    out += stitched('M30 62 h32 q10 0 10 10 v20 q0 10 -10 10 h-32 q-10 0 -10 -10 v-20 q0 -10 10 -10 Z', '#B6E8D1', 2.0,
-                    'M31.5 66 h29 q7 0 7 7 v18 q0 7 -7 7 h-29 q-7 0 -7 -7 v-18 q0 -7 7 -7 Z')
-    out += stitched(star5(46, 82, 9), '#FFD966', 1.5)
-    # 頭
-    out += stitched(smooth(ellipse_pts(16, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6) + stitched(smooth(ellipse_pts(76, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6)
+def robot_antenna():
+    """ロボットのアンテナ（ロボットの座標）"""
+    return (f'<path d="M46 9 L46 21" stroke="{BR}" stroke-width="2.4" stroke-linecap="round"/>'
+            + stitched(smooth(ellipse_pts(46, 8, 5.5, 5.5, 10)), '#FF9AA8', 1.6))
+
+
+def robot_arm(side):
+    """ロボットの腕と手（side 0＝左の下げた腕・1＝右の手をふる腕。体のうしろ）"""
+    if side == 0:
+        return (stitched(limb([(24, 72), (14, 86), (12, 98)], [10, 9, 9]), '#9FD5C0', 1.8)
+                + stitched(smooth(ellipse_pts(12, 100, 6.5, 6.5, 10)), '#D9D9D9', 1.6))
+    return (stitched(limb([(68, 70), (80, 58), (86, 46)], [10, 9, 9]), '#9FD5C0', 1.8)
+            + stitched(smooth(ellipse_pts(87, 42, 6.5, 6.5, 10)), '#D9D9D9', 1.6))
+
+
+def robot_foot(x):
+    """ロボットの足（x＝32 が左・50 が右）"""
+    return (stitched(f'M{x} 98 h12 v14 h-12 Z', '#9CCFEA', 1.6)
+            + stitched(smooth(ellipse_pts(x + 6, 114, 9, 4.6, 10)), '#7FB8D8', 1.6))
+
+
+def robot_body():
+    """ロボットの体と星"""
+    return (stitched('M30 62 h32 q10 0 10 10 v20 q0 10 -10 10 h-32 q-10 0 -10 -10 v-20 q0 -10 10 -10 Z', '#B6E8D1', 2.0,
+                     'M31.5 66 h29 q7 0 7 7 v18 q0 7 -7 7 h-29 q-7 0 -7 -7 v-18 q0 -7 7 -7 Z')
+            + stitched(star5(46, 82, 9), '#FFD966', 1.5))
+
+
+def robot_head(pupils=True):
+    """ロボットの頭（耳・白目・ほっぺ・口。pupils=False なら 黒目なし）"""
+    out = stitched(smooth(ellipse_pts(16, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6) + stitched(smooth(ellipse_pts(76, 40, 5.2, 5.2, 10)), '#D9D9D9', 1.6)
     out += stitched('M30 20 h32 q12 0 12 12 v18 q0 12 -12 12 h-32 q-12 0 -12 -12 v-18 q0 -12 12 -12 Z', '#A9DCF3', 2.0,
                     'M31 24.5 h30 q8.5 0 8.5 8.5 v16 q0 8.5 -8.5 8.5 h-30 q-8.5 0 -8.5 -8.5 v-16 q0 -8.5 8.5 -8.5 Z')
     for ex in ROBOT_EYES:
@@ -110,6 +122,19 @@ def robot(pupils=True):
     out += '<circle cx="28" cy="50" r="3.6" fill="#F7A8C0"/><circle cx="64" cy="50" r="3.6" fill="#F7A8C0"/>'
     out += path('M40 50 q6 5 12 0', fill='none', stroke=BR, stroke_width='1.8', stroke_linecap='round')
     return out
+
+
+def robot(pupils=True):
+    """手をふるロボット（だいたい 0〜95 × 0〜122）。pupils=False なら 黒目なし（壁紙で黒目だけ動かす）。
+       下から アンテナ → 腕（左・右）→ 足（左・右）→ 体 → 頭（壁紙では 部品ごとに動かす）"""
+    return robot_antenna() + robot_arm(0) + robot_arm(1) + robot_foot(32) + robot_foot(50) + robot_body() + robot_head(pupils)
+
+
+def yarn_tail():
+    """ロボットが毛糸玉を持つ時の 短い糸（毛糸玉の右下から たれる・絵の座標。長い糸は 地面の毛糸玉だけ）"""
+    yx, yy, yr = YARN_BALL
+    return path(f'M{yx + 9} {yy + 12} C {yx + 15} {yy + 17}, {yx + 8} {yy + 21}, {yx + 13} {yy + 27}', fill='none', stroke='#F7A8C0',
+                stroke_width='2.2', stroke_linecap='round')
 
 
 def cloud(x, y, s):
@@ -156,7 +181,10 @@ def banner(parts=None):
     if parts is not None:
         parts.update(size=(W, H), defs=defs, bg=b, ball=ball, thread=thread, frame=frame, shadow_h=shadow_h, shadow_r=shadow_r,
                      horse=g(plush_horse(eye=False), transform=at(HORSE_AT)), eye=g(horse_eye(), transform=at(HORSE_AT)),
-                     robot=g(robot(pupils=False), transform=at(ROBOT_AT)), pupils=[g(robot_pupil(ex), transform=at(ROBOT_AT)) for ex in ROBOT_EYES])
+                     robot=g(robot(pupils=False), transform=at(ROBOT_AT)), pupils=[g(robot_pupil(ex), transform=at(ROBOT_AT)) for ex in ROBOT_EYES],
+                     rob_antenna=g(robot_antenna(), transform=at(ROBOT_AT)), rob_arm=[g(robot_arm(k), transform=at(ROBOT_AT)) for k in (0, 1)],
+                     rob_foot=[g(robot_foot(x), transform=at(ROBOT_AT)) for x in (32, 50)], rob_body=g(robot_body(), transform=at(ROBOT_AT)),
+                     rob_head=g(robot_head(pupils=False), transform=at(ROBOT_AT)), tail=yarn_tail())
     return svg(W, H, b + ball + thread + frame + shadow_h + shadow_r + horse + rob, defs)
 
 
