@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>的中ボタン（ドット絵：ドットでできたPUSH）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#F3F8E6;--ink:#2B3A18;--sub:#5A6A42;--card:#FFFFFF;--cardB:2px solid #CFE6A8;--cardO:0 solid transparent;--cardS:0 3px 0 #DCEBC0;--radius:18px;--rs:14px;--font:"Zen Maru Gothic";--dfont:"Zen Maru Gothic";--dw:900;--logo:#24470C;--logoS:0 2px 0 rgba(255,255,255,.55);--iii:#8A5A2B;--iiiB:0 solid transparent;--iiiR:2px;--hd:linear-gradient(180deg,#A9DA5E,#86C23C);--hdInk:#24470C;--mBg:#FFF9E6;--mLine:#A8743F;--mInk:#5A3A1A;--pill:#FFF9E6;--pillLine:#E4D3A8;--pillInk:#5A3A1A;--coin:#FFD84A;--coinInk:#5A3A1A;--badge:#E5F4CC;--badgeInk:#3D7A16;--badgeB:2px solid #CFE6A8;--tagBg:#F7FBEF;--tagInk:#3D5A1E;--tagLine:#CFE6A8;--warnBg:#FFE9D6;--warnInk:#A0461A;--zBg:#F7FBEF;--zB:1.5px solid #DDEDC0;--znBg:#A8743F;--znInk:#FFF8E8;--znB:0 solid transparent;--znR:4px;--acc:#2F6A12;--nR:8px;--w2B:0 solid transparent;--sep:2px dotted #CFE6A8;--btn:#3E7B1E;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:14px;--btnS:0 3px 0 #2A5A10;--btn2:#FFFFFF;--btn2Ink:#3E7B1E;--btn2B:2px solid #A9D46A;--tab:#FFFBEA;--tabB:4px solid #A8743F;--tabInk:#7A6A4F;--tabOn:#DDF0BC;--tabOnInk:#2F6A12;--tabR:14px}
+.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55);
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#5E0A05 100%)}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px;color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:4px solid #A8743F}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.bnr{flex:none;display:block;width:390px;height:120px;object-fit:cover;object-position:50% 70%}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0}
+.card{position:relative;background:var(--card);border:var(--cardB);border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--sub)}
+.rh{display:flex;align-items:baseline;gap:10px}
+.rk{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:22px;color:var(--ink)}
+.rs{font-size:12px;color:var(--sub)}
+.lab{margin:12px 0 6px;font-size:12px;font-weight:700;color:var(--sub)}
+.fin{display:flex;align-items:center;gap:8px}
+.fin span.k{font-size:12px;font-weight:700;color:var(--sub)}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.ar{color:var(--sub);font-weight:700;padding:0 2px}
+.bets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bets li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:var(--zBg);border:var(--zB)}
+.bt{flex:none;min-width:46px;height:24px;padding:0 8px;border-radius:999px;background:var(--znBg);color:var(--znInk);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.bc{display:flex;align-items:center;gap:3px;flex:1}
+.bc .n{min-width:26px;height:26px;font-size:13px}
+.by{font-size:12.5px;font-weight:700;color:var(--ink)}
+.pay{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:10px 12px;border-radius:var(--rs);border:1.5px dashed var(--tagLine);font-size:13px;font-weight:700;color:var(--ink)}
+.pay b{font-size:17px}
+.rec{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:14px;border:0;border-radius:var(--btnR);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:800;font-size:17px;cursor:pointer}
+.rec svg{width:20px;height:20px}
+.note{margin:10px 2px 0;font-size:11.5px;line-height:1.5;color:var(--sub)}
+/* ---------- 重ねる画面 ---------- */
+.ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* PUSHボタン（横長の長方形・角は丸い） */
+.pbox{position:relative;display:flex;flex-direction:column;align-items:center}
+.push{--pr:26px;position:relative;z-index:2;width:200px;height:100px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
+  box-shadow:inset 0 -9px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.55),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
+  animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push span{position:relative;font:400 40px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push::after{content:"";position:absolute;inset:-18px;border-radius:calc(var(--pr) + 18px);border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
+.pshadow{width:200px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
+.tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes shad{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.72);opacity:.3}}
+@keyframes ring{0%{transform:scale(.88);opacity:.95}100%{transform:scale(1.4);opacity:0}}
+@keyframes popIn{from{scale:.2}to{scale:1}}
+@keyframes blink{0%{opacity:1}100%{opacity:.35}}
+@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
+@keyframes spin{to{rotate:360deg}}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+/* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
+.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+.ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
+/* 押したあと（PUSHがあった所から光ってはじける） */
+.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+@keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
+/* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
+.hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+/* 紙ふぶき */
+.conf{position:absolute;inset:0;z-index:7;pointer-events:none}
+.conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
+/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、ボードはふわっと出す */
+@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
+
+/* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
+.rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
+  background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
+  animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+@keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
+.hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
+.hit{--t0:1.15s;--tc:.2s}
+.ph{--bg:#1D2B53;--ink:#1D2B53;--sub:#4A433C;--card:#FFF1E8;--cardB:0 solid transparent;--cardO:0 solid transparent;--cardS:0 -4px 0 0 #000,0 4px 0 0 #000,-4px 0 0 0 #000,4px 0 0 0 #000,6px 10px 0 0 rgba(0,0,0,.35);--radius:0;--rs:0;--font:"DotGothic16";--dfont:"DotGothic16";--dw:400;--logo:#FFEC27;--logoS:3px 3px 0 #FF004D;--iii:#00E436;--iiiB:0 solid transparent;--iiiR:0;--hd:#000000;--hdInk:#FFF1E8;--hdB:4px solid #29ADFF;--mBg:transparent;--mLine:#FFF1E8;--mInk:#FFF1E8;--pill:#1D2B53;--pillLine:#29ADFF;--pillInk:#FFF1E8;--coin:#FFEC27;--coinInk:#000000;--badge:#FFEC27;--badgeInk:#000000;--badgeB:0 solid transparent;--tagBg:#C2C3C7;--tagInk:#000000;--tagLine:#000000;--warnBg:#FFA300;--warnInk:#000000;--zBg:#FFFFFF;--zB:2px solid #1D2B53;--znBg:#1D2B53;--znInk:#FFEC27;--znB:0 solid transparent;--znR:0;--znS:none;--acc:#7E2553;--nR:0;--w2B:0 solid transparent;--sep:2px dashed #83769C;--btn:#00E436;--btnInk:#000000;--btnB:0 solid transparent;--btnR:0;--btnS:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000,inset -3px -3px 0 0 #008751;--btn2:#FFF1E8;--btn2Ink:#1D2B53;--btn2B:0 solid transparent;--tab:#000000;--tabB:4px solid #29ADFF;--tabInk:#C2C3C7;--tabOn:#29ADFF;--tabOnInk:#000000;--tabR:0;--sel:#FFEC27;--selInk:#000000;--h1:#FFEC27;--pageInk:#FFF1E8;--pageSub:#C2C3C7;--pageAcc:#FFEC27}
+.ph{background-image:linear-gradient(rgba(255,255,255,.045) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.045) 2px,transparent 2px);background-size:16px 16px}
+.ph .mbtn,.ph .pill,.ph .seg,.ph .tag,.ph .coin,.ph .ocr{border-radius:0}
+.ph .ct{padding:18px 18px 0;gap:18px}
+.ph .seg{border:2px solid #1D2B53}
+.ph .seg.on{background:#29ADFF;color:#000000;border-color:#000000}
+.ph .btn.sub{box-shadow:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000,inset -3px -3px 0 0 #C2C3C7}
+.ph .acts{gap:14px;margin-top:16px}
+.ph .lb{box-shadow:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000}
+.ph .n{border-radius:0}
+.ph .bnr{height:160px;object-position:50% 50%}
+.ph .hd{border-bottom:var(--hdB)}
+
+/* ---------- ドット絵の的中ボタン：ドットでできたPUSH（まさちゃんの指定） ----------
+   ぜんぶ 5px の四角いドット（テーマと同じ16色）で描いた昔のゲームのボタン：灰色の台（白い上と左・むらさきの下と右・黒いふち）に、
+   赤いボタン（上と左はピンク・下と右は市松のちらし・厚み・黒いふち・左上に白い光）。「PUSH」は太いドットの字（上は白・下は黄色・こい影）。
+   面の上を ななめの光が ドットずつ通る（2.6秒に1回）。左に ▶ のカーソル（右へ ちょんちょん）・左上に回る金貨・右上と右下に きらっ。
+   上下の動きも ドットずつ（6コマ）。わくの光の輪も 四角でカクカク広がる。押すと ボタンが へこんで（カチッ）、カクカク大きくなって消え（強く光らせない）、
+   金貨・ハート・きらっ・ブロックが はじけて飛んで、さいごは ちかちか点めつして消える */
+.dp{--pr:0px;--pushA:#FF004D;--pushB:#7E2553;--pushC:#FF77A8;--rim:#C2C3C7;--rimD:#000000;--pushFace:#FF004D}
+.push.dp{background:none;box-shadow:none;border-radius:0;animation:dpBob .9s step-end infinite,dpPop .36s step-end both}
+.push.dp span{color:transparent;text-shadow:none}
+.push.dp::after{inset:-34px -34px -44px;border:0;border-radius:0;
+  background:linear-gradient(#FFEC27,#FFEC27) 5px 0/calc(100% - 10px) 5px no-repeat,linear-gradient(#FFEC27,#FFEC27) 5px 100%/calc(100% - 10px) 5px no-repeat,
+    linear-gradient(#FFEC27,#FFEC27) 0 5px/5px calc(100% - 10px) no-repeat,linear-gradient(#FFEC27,#FFEC27) 100% 5px/5px calc(100% - 10px) no-repeat;
+  animation:dpRing 1.2s steps(4) infinite}
+@keyframes dpRing{0%{transform:scale(.94);opacity:1}100%{transform:scale(1.22);opacity:0}}
+@keyframes dpBob{0%,100%{transform:translateY(0)}16.6%{transform:translateY(-5px)}33.3%{transform:translateY(-10px)}50%{transform:translateY(-15px)}
+  66.6%{transform:translateY(-10px)}83.3%{transform:translateY(-5px)}}
+@keyframes dpPop{0%{scale:.25}25%{scale:.5}50%{scale:.8}75%{scale:1.08}100%{scale:1}}
+.dp .dpf{position:absolute;left:-20px;top:-20px;width:240px;height:150px;pointer-events:none;font-style:normal}
+.dp .dpf svg,.dp .dpd svg{display:block;overflow:visible}
+.dp .dpd{position:absolute;left:-70px;top:-60px;width:340px;height:230px;pointer-events:none;z-index:3;font-style:normal}
+.dp .dps{animation:dpShine 2.6s steps(60) .4s infinite}
+@keyframes dpShine{0%{transform:translateX(0)}35%,100%{transform:translateX(300px)}}
+.dp .dpc{animation:dpCur .8s step-end infinite}
+@keyframes dpCur{0%,100%{transform:none}50%{transform:translateX(5px)}}
+.dp .dpm0,.dp .dpm1,.dp .dpm2{opacity:0}
+.dp .dpm0{opacity:1;animation:dpM0 1.8s step-end infinite}
+.dp .dpm1{animation:dpM1 1.8s step-end infinite}
+.dp .dpm2{animation:dpM2 1.8s step-end infinite}
+@keyframes dpM0{0%,100%{opacity:1}8.3%{opacity:0}33.3%{opacity:1}}
+@keyframes dpM1{0%,100%{opacity:0}8.3%{opacity:1}16.7%{opacity:0}25%{opacity:1}33.3%{opacity:0}}
+@keyframes dpM2{0%,100%{opacity:0}16.7%{opacity:1}25%{opacity:0}}
+.dp .dpk0,.dp .dpk1,.dp .dpk2{opacity:0;animation:1.6s step-end infinite;animation-delay:inherit}
+.dp .dpk0{animation-name:dpK0}
+.dp .dpk1{animation-name:dpK1}
+.dp .dpk2{animation-name:dpK2}
+@keyframes dpK0{0%,25%,100%{opacity:0}12.5%{opacity:1}62.5%{opacity:1}75%{opacity:0}}
+@keyframes dpK1{0%,100%{opacity:0}25%{opacity:1}37.5%{opacity:0}50%{opacity:1}62.5%{opacity:0}}
+@keyframes dpK2{0%,100%{opacity:0}37.5%{opacity:1}50%{opacity:0}}
+.pshadow.dp{width:220px;height:15px;margin-top:44px;border-radius:0;filter:none;background:rgba(0,0,0,.42);
+  clip-path:polygon(15px 0,calc(100% - 15px) 0,calc(100% - 15px) 5px,100% 5px,100% 10px,calc(100% - 15px) 10px,calc(100% - 15px) 15px,15px 15px,15px 10px,0 10px,0 5px,15px 5px);
+  animation:dpShad .9s step-end infinite}
+@keyframes dpShad{0%,100%{transform:scale(1)}16.6%{transform:scale(.92)}33.3%{transform:scale(.84)}50%{transform:scale(.76)}66.6%{transform:scale(.84)}83.3%{transform:scale(.92)}}
+.tap.dp{font-family:"DotGothic16",sans-serif;font-size:22px;color:#FFEC27;text-shadow:3px 3px 0 #FF004D}
+.pressed.dp{background:none;box-shadow:none;border-radius:0;animation:dpPress .5s step-end both}
+@keyframes dpPress{0%{transform:none;opacity:1}20%{transform:scale(1.08);opacity:1}40%{transform:scale(1.2);opacity:.75}60%{transform:scale(1.34);opacity:.5}
+  80%{transform:scale(1.48);opacity:.25}100%{transform:scale(1.6);opacity:0}}   /* へこむ → カクカク大きくなって消える（強く光らせない） */
+.pressed.dp .dps{display:none}
+.clips.dp{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips.dp i{position:absolute;left:0;top:0;opacity:0;animation:dpFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both,dpBlink 1.3s step-end var(--d) both}
+.clips.dp b{position:absolute;display:block;background:0 0/100% 100% no-repeat}
+.clips.dp .c b{left:-12px;top:-16px;width:24px;height:32px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M8 0h8v4h-8zM36 0h4v4h-4zM60 0h4v4h-4zM84 0h4v4h-4zM4 4h4v4h-4zM16 4h4v4h-4zM32 4h4v4h-4zM40 4h4v4h-4zM56 4h4v4h-4zM64 4h4v4h-4zM80 4h4v4h-4zM88 4h4v4h-4zM0 8h4v4h-4zM20 8h4v4h-4zM28 8h4v4h-4zM44 8h4v4h-4zM56 8h4v4h-4zM64 8h4v4h-4zM76 8h4v4h-4zM92 8h4v4h-4zM0 12h4v4h-4zM20 12h4v4h-4zM28 12h4v4h-4zM44 12h4v4h-4zM56 12h4v4h-4zM64 12h4v4h-4zM76 12h4v4h-4zM92 12h4v4h-4zM0 16h4v4h-4zM20 16h4v4h-4zM28 16h4v4h-4zM44 16h4v4h-4zM56 16h4v4h-4zM64 16h4v4h-4zM76 16h4v4h-4zM92 16h4v4h-4zM0 20h4v4h-4zM20 20h4v4h-4zM28 20h4v4h-4zM44 20h4v4h-4zM56 20h4v4h-4zM64 20h4v4h-4zM76 20h4v4h-4zM92 20h4v4h-4zM4 24h4v4h-4zM16 24h4v4h-4zM32 24h4v4h-4zM40 24h4v4h-4zM56 24h4v4h-4zM64 24h4v4h-4zM80 24h4v4h-4zM88 24h4v4h-4zM8 28h8v4h-8zM36 28h4v4h-4zM60 28h4v4h-4zM84 28h4v4h-4z'/%3E%3Cpath fill='%23FFF1E8' d='M8 4h4v4h-4zM36 4h4v4h-4zM84 4h4v4h-4zM8 8h4v4h-4zM36 8h4v4h-4zM84 8h4v4h-4zM8 12h4v4h-4zM36 12h4v4h-4zM84 12h4v4h-4zM8 16h4v4h-4zM36 16h4v4h-4zM84 16h4v4h-4zM8 20h4v4h-4zM36 20h4v4h-4zM84 20h4v4h-4zM8 24h4v4h-4zM36 24h4v4h-4zM84 24h4v4h-4z'/%3E%3Cpath fill='%23FFEC27' d='M12 4h4v4h-4zM4 8h4v4h-4zM12 8h4v4h-4zM32 8h4v4h-4zM80 8h4v4h-4zM4 12h4v4h-4zM12 12h4v4h-4zM32 12h4v4h-4zM80 12h4v4h-4zM4 16h4v4h-4zM12 16h4v4h-4zM32 16h4v4h-4zM80 16h4v4h-4zM4 20h4v4h-4zM12 20h4v4h-4zM32 20h4v4h-4zM80 20h4v4h-4zM12 24h4v4h-4z'/%3E%3Cpath fill='%23FFA300' d='M60 4h4v4h-4zM16 8h4v4h-4zM40 8h4v4h-4zM60 8h4v4h-4zM88 8h4v4h-4zM16 12h4v4h-4zM40 12h4v4h-4zM60 12h4v4h-4zM88 12h4v4h-4zM16 16h4v4h-4zM40 16h4v4h-4zM60 16h4v4h-4zM88 16h4v4h-4zM16 20h4v4h-4zM40 20h4v4h-4zM60 20h4v4h-4zM88 20h4v4h-4zM60 24h4v4h-4z'/%3E%3C/svg%3E") 0 0/96px 32px no-repeat;animation:dpSpin .48s steps(4) infinite}
+.clips.dp .h b{left:-22px;top:-20px;width:44px;height:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 40' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M8 0h8v4h-8zM28 0h8v4h-8zM4 4h4v4h-4zM16 4h4v4h-4zM24 4h4v4h-4zM36 4h4v4h-4zM0 8h4v4h-4zM20 8h4v4h-4zM40 8h4v4h-4zM0 12h4v4h-4zM40 12h4v4h-4zM0 16h4v4h-4zM40 16h4v4h-4zM4 20h4v4h-4zM36 20h4v4h-4zM8 24h4v4h-4zM32 24h4v4h-4zM12 28h4v4h-4zM28 28h4v4h-4zM16 32h4v4h-4zM24 32h4v4h-4zM20 36h4v4h-4z'/%3E%3Cpath fill='%23FF004D' d='M8 4h8v4h-8zM28 4h8v4h-8zM4 8h4v4h-4zM16 8h4v4h-4zM24 8h16v4h-16zM4 12h4v4h-4zM12 12h28v4h-28zM4 16h32v4h-32zM8 20h24v4h-24zM12 24h16v4h-16zM16 28h8v4h-8zM20 32h4v4h-4z'/%3E%3Cpath fill='%23FFF1E8' d='M8 8h8v4h-8zM8 12h4v4h-4z'/%3E%3Cpath fill='%237E2553' d='M36 16h4v4h-4zM32 20h4v4h-4zM28 24h4v4h-4zM24 28h4v4h-4z'/%3E%3C/svg%3E")}
+.clips.dp .s b{left:-14px;top:-14px;width:28px;height:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' shape-rendering='crispEdges'%3E%3Cpath fill='%23FFA300' d='M12 0h4v4h-4zM0 12h4v4h-4zM24 12h4v4h-4zM12 24h4v4h-4z'/%3E%3Cpath fill='%23FFEC27' d='M12 4h4v4h-4zM4 12h4v4h-4zM20 12h4v4h-4zM12 20h4v4h-4z'/%3E%3Cpath fill='%23FFF1E8' d='M12 8h4v4h-4zM8 12h12v4h-12zM12 16h4v4h-4z'/%3E%3C/svg%3E")}
+.clips.dp .b1 b,.clips.dp .b2 b,.clips.dp .b3 b,.clips.dp .b4 b{left:-10px;top:-10px;width:20px;height:20px}
+.clips.dp .b1 b{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h12v4h-12zM0 4h4v4h-4zM16 4h4v4h-4zM0 8h4v4h-4zM16 8h4v4h-4zM0 12h4v4h-4zM16 12h4v4h-4zM4 16h12v4h-12z'/%3E%3Cpath fill='%23FFF1E8' d='M4 4h4v4h-4z'/%3E%3Cpath fill='%2329ADFF' d='M8 4h4v4h-4zM4 8h8v4h-8z'/%3E%3Cpath fill='%231D2B53' d='M12 4h4v4h-4zM12 8h4v4h-4zM4 12h12v4h-12z'/%3E%3C/svg%3E")}
+.clips.dp .b2 b{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h12v4h-12zM0 4h4v4h-4zM16 4h4v4h-4zM0 8h4v4h-4zM16 8h4v4h-4zM0 12h4v4h-4zM16 12h4v4h-4zM4 16h12v4h-12z'/%3E%3Cpath fill='%23FFF1E8' d='M4 4h4v4h-4z'/%3E%3Cpath fill='%2300E436' d='M8 4h4v4h-4zM4 8h8v4h-8z'/%3E%3Cpath fill='%23008751' d='M12 4h4v4h-4zM12 8h4v4h-4zM4 12h12v4h-12z'/%3E%3C/svg%3E")}
+.clips.dp .b3 b{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h12v4h-12zM0 4h4v4h-4zM16 4h4v4h-4zM0 8h4v4h-4zM16 8h4v4h-4zM0 12h4v4h-4zM16 12h4v4h-4zM4 16h12v4h-12z'/%3E%3Cpath fill='%23FFF1E8' d='M4 4h4v4h-4z'/%3E%3Cpath fill='%23FFEC27' d='M8 4h4v4h-4zM4 8h8v4h-8z'/%3E%3Cpath fill='%23FFA300' d='M12 4h4v4h-4zM12 8h4v4h-4zM4 12h12v4h-12z'/%3E%3C/svg%3E")}
+.clips.dp .b4 b{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h12v4h-12zM0 4h4v4h-4zM16 4h4v4h-4zM0 8h4v4h-4zM16 8h4v4h-4zM0 12h4v4h-4zM16 12h4v4h-4zM4 16h12v4h-12z'/%3E%3Cpath fill='%23FFF1E8' d='M4 4h4v4h-4z'/%3E%3Cpath fill='%23FF77A8' d='M8 4h4v4h-4zM4 8h8v4h-8z'/%3E%3Cpath fill='%237E2553' d='M12 4h4v4h-4zM12 8h4v4h-4zM4 12h12v4h-12z'/%3E%3C/svg%3E")}
+@keyframes dpSpin{to{background-position:-96px 0}}
+@keyframes dpFly{0%{transform:translate(0,0) scale(.4)}55%{transform:translate(var(--x),var(--y)) scale(1)}100%{transform:translate(calc(var(--x) * 1.1),calc(var(--y) + 60px)) scale(1)}}
+@keyframes dpBlink{0%{opacity:0}6%{opacity:1}70%{opacity:0}76%{opacity:1}82%{opacity:0}88%{opacity:1}94%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.dp .dps,.dp .dpc,.dp .dpm0,.dp .dpm1,.dp .dpm2,.dp .dpk0,.dp .dpk1,.dp .dpk2{animation:none}.dp .dps,.dp .dpk0,.dp .dpk1,.dp .dpk2{display:none}
+  .pshadow.dp{animation:none}.clips.dp{display:none}}
+
+/* ===== 結果のボード（テーマの判定画面と同じ見た目・馬は出さない） =====
+   ふち（.rb）＝テーマの背景のもよう → 上の帯（.hd）＝見出し → カード（.card）＝買い目。すみにテーマの飾り（.orn） */
+.rb{position:relative;width:350px;padding:8px;border-radius:calc(var(--radius) + 8px);background-color:var(--bg);color:var(--ink);text-align:left;
+  font-family:var(--font),"BIZ UDPGothic",sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 0 0 1.5px rgba(255,255,255,.6),0 18px 38px rgba(0,0,0,.45)}
+.rb .hd{position:relative;z-index:1;display:block;flex:none;padding:13px 12px 14px;border-radius:var(--radius);background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB);text-align:center}
+.rb .bh{display:inline-block;max-width:100%;margin:0;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:34px;line-height:1.12;color:var(--logo);text-shadow:var(--logoS);white-space:nowrap}
+/* 見出しの大きさはそろえる（テーマのロゴの大きさの決まりより強く） */
+.rb.rb .hd .bh{font-size:34px}
+.rb.rb.miss .hd .bh,.rb.rb.fz .hd .bh{font-size:30px}
+.rb .bh .bx3{margin-left:-.18em;letter-spacing:-.42em}
+.rb .bsub{display:block;margin-top:6px;font-size:12.5px;font-weight:700;line-height:1.3;color:var(--hdInk);white-space:nowrap}
+.rb .card{position:relative;flex:none;margin-top:9px;padding:13px 11px 12px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
+.rb .orn{position:absolute;top:-15px;right:12px;width:44px;height:44px;pointer-events:none;overflow:visible;z-index:2}
+.rb .orn.o34{height:34px;top:-12px}
+.rb .orn.o40{width:40px;height:40px;top:-13px}
+.rb .brows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rb .brows li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:6px 8px;border-radius:var(--rs);background:var(--zBg);border:var(--zB);white-space:nowrap}
+/* 払戻が長くて入らないときは、払戻だけ次の行へ（右によせる） */
+.rb .bt{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:22px;padding:0 8px;border-radius:999px;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine);font-size:11.5px;font-weight:800}
+.rb .bc{display:flex;align-items:center;gap:2px;flex:none}
+.rb .n{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;border-radius:var(--nR);font:700 12.5px/1 "BIZ UDPGothic",sans-serif}
+.rb .w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.rb .w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.rb .w3{background:#E0322B;color:#FFFFFF}
+.rb .w4{background:#1F5FC9;color:#FFFFFF}
+.rb .w5{background:#F3C316;color:#1F1F1F}
+.rb .w6{background:#1E8E3E;color:#FFFFFF}
+.rb .w7{background:#F08A1C;color:#1F1F1F}
+.rb .w8{background:#F27BB0;color:#1F1F1F}
+.rb .ar{color:var(--sub);font-weight:700;padding:0 1px}
+.rb .by{font-size:11px;color:var(--sub)}
+.rb .bp{margin-left:auto;font-size:14.5px;font-weight:800;color:var(--acc)}
+.rb .btot{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-top:10px;padding-top:9px;border-top:var(--sep);font-size:12.5px;font-weight:700;color:var(--sub)}
+.rb .btot b{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:24px;line-height:1;color:var(--ink)}
+/* ハズレ：見出しは上の帯の文字の色で静かに・払戻は0円（うすく） */
+.rb.miss .bh{color:var(--hdInk);text-shadow:none}
+.rb.miss .bp,.rb.miss .btot b{color:var(--sub)}
+.rb.miss .bp{font-weight:700}
+/* デカ的中：まわりが光る・見出しは虹色（黒いふち）・3連単の行は虹色のふち */
+.rb.big{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 26px 6px rgba(255,236,160,.85),0 18px 38px rgba(0,0,0,.45)}
+.rb.big .bh,.rb.fz .bh{background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFD21A,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(1.5px 0 0 #1E1030) drop-shadow(-1.5px 0 0 #1E1030) drop-shadow(0 1.5px 0 #1E1030) drop-shadow(0 -1.5px 0 #1E1030) drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.rb.big .brows li.top,.rb.fz .brows li.top{position:relative;background:linear-gradient(var(--zBg),var(--zBg)) padding-box,linear-gradient(var(--rbFace),var(--rbFace)) padding-box,
+  linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;gap:2px 3px;padding:4px 5px}
+/* ど的中・隠れど的中：枠は虹色（回さない）・炎に光る・見出しの下に帯（超大穴の馬／デカ的中が化けた） */
+.rb.fz{padding:11px;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,236,170,.9),0 0 64px 18px rgba(255,120,0,.6),0 12px 24px rgba(0,0,0,.35)}
+.rb.fz::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:4px;pointer-events:none;
+  background:conic-gradient(from 200deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.rb.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat}
+.rb.fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
+.rb .zrib{display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:8px auto 0;padding:3px 10px 3px 4px;border-radius:999px;background:#2A1259;color:#FFFFFF;
+  font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7)}
+.rb .zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:#2A1259;font-weight:800;font-size:11.5px}
+.rb .zrib .n{min-width:22px;height:22px;font-size:12px}
+.rb .n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6)}
+
+.rb.t-pixel{--hdB:4px solid #29ADFF;--cardO:0 solid transparent;--zBg:#FFFFFF;--zB:2px solid #1D2B53;--sep:2px dashed #83769C;--rs:0;--nR:0;--w2B:0 solid transparent;--tagBg:#C2C3C7;--tagInk:#000000;--tagLine:#000000;--bg:#1D2B53;--ink:#1D2B53;--sub:#4A433C;--card:#FFF1E8;--cardB:0 solid transparent;--cardS:0 -4px 0 0 #000,0 4px 0 0 #000,-4px 0 0 0 #000,4px 0 0 0 #000,6px 10px 0 0 rgba(0,0,0,.35);--radius:0;--font:"DotGothic16";--dfont:"DotGothic16";--dw:400;--logo:#FFEC27;--logoS:3px 3px 0 #FF004D;--hd:#000000;--hdInk:#FFF1E8;--acc:#7E2553;--h1:#FFEC27;--coin:#FFEC27;--coinInk:#000000;--rbFace:#FFF1E8}
+.rb.t-pixel{background-image:linear-gradient(rgba(255,255,255,.045) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.045) 2px,transparent 2px);background-size:16px 16px}
+.rb.t-pixel .mbtn,.rb.t-pixel .pill,.rb.t-pixel .seg,.rb.t-pixel .tag,.rb.t-pixel .coin,.rb.t-pixel .ocr{border-radius:0}
+.rb.t-pixel .ct{padding:18px 18px 0;gap:18px}
+.rb.t-pixel .seg{border:2px solid #1D2B53}
+.rb.t-pixel .seg.on{background:#29ADFF;color:#000000;border-color:#000000}
+.rb.t-pixel .btn.sub{box-shadow:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000,inset -3px -3px 0 0 #C2C3C7}
+.rb.t-pixel .acts{gap:14px;margin-top:16px}
+.rb.t-pixel .lb{box-shadow:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000}
+.rb.t-pixel .n{border-radius:0}
+.pqw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}.pqw .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%;image-rendering:pixelated}.pqw .pqh{position:absolute;left:70px;top:5px;width:215px;height:140px;overflow:hidden}.pqw .pqh i{position:absolute;left:0;top:0;height:140px;background:url(/_blob/03a01f63bec34476799075e6f21d4c7a) 0 0/2580px 140px no-repeat;image-rendering:pixelated}.pqw .pqh .pqr{width:1720px;animation:pqRun 0.5s steps(8) infinite,pqA 10s step-end infinite}.pqw .pqh .pqb{width:430px;background-position:-1720px 0;opacity:0;animation:pqB 10s step-end infinite}.pqw .pqh .pqs{width:430px;background-position:-2150px 0;opacity:0;animation:pqS 10s step-end infinite}@keyframes pqRun{to{transform:translateX(-1720px)}}@keyframes pqA{0%{opacity:1}80%,100%{opacity:0}}@keyframes pqB{0%,83%,100%{opacity:0;transform:none}80%{opacity:1;transform:none}81.5%{opacity:1;transform:translateX(-215px)}}@keyframes pqS{0%{opacity:0;transform:none}83%{opacity:1;transform:none}88.5%{opacity:1;transform:translateX(-215px)}94%,100%{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.pqw .pqh{display:none}}
+
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+  </header>
+  <div class="pqw" role="img" aria-label="昔のゲームのようなドット絵で、コースを走る馬と「GO!」の文字（馬がいつも走り、10秒に1回 止まって2秒立つ）"><img class="bnr" src="/_blob/3900203f02440d60dccfb5af5441e084" alt=""><div class="pqh"><i class="pqr"></i><i class="pqb"></i><i class="pqs"></i></div></div>
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レースの結果を記録</h2>
+      <div class="rh"><span class="rk">9R</span><span class="rs">1400m ダ・良・12頭・予約したレース</span></div>
+      <p class="lab">着順（馬番）</p>
+      <div class="fin"><span class="k">1着</span><span class="n w5">6</span><span class="k">2着</span><span class="n w2">2</span><span class="k">3着</span><span class="n w7">10</span></div>
+      <p class="lab">予約した買い目</p>
+      <ul class="bets"><li><span class="bt">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li><li><span class="bt">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span></li><li><span class="bt">3連単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w7">10</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li></ul>
+      <div class="pay"><span>払戻（回収額）</span><b>2,530円</b></div>
+      <button class="rec" type="button" onClick="{{toPush}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>記録する</button>
+      <p class="note">3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）</p>
+    </section>
+  </main>
+  <sc-if value="{{isPush}}" hint-placeholder-val="{{false}}">
+  <div class="ov">
+    <div class="dim"></div>
+    
+    <div class="pbox">
+      <button class="push dp" type="button" onClick="{{toReveal}}" aria-label="的中ボタン"><i class="dpf" aria-hidden="true"><svg viewBox="-20 -20 240 150" width="240" height="150" shape-rendering="crispEdges"><path fill="#000000" d="M-5 -20h210v5h-210zM-10 -15h5v5h-5zM205 -15h5v5h-5zM-15 -10h5v5h-5zM210 -10h5v5h-5zM-20 -5h5v5h-5zM5 -5h190v5h-190zM215 -5h5v5h-5zM-20 0h5v5h-5zM0 0h5v5h-5zM195 0h5v5h-5zM215 0h5v5h-5zM-20 5h5v5h-5zM-5 5h5v5h-5zM200 5h5v5h-5zM215 5h5v5h-5zM-20 10h5v5h-5zM-5 10h5v5h-5zM200 10h5v5h-5zM215 10h5v5h-5zM-20 15h5v5h-5zM-5 15h5v5h-5zM200 15h5v5h-5zM215 15h5v5h-5zM-20 20h5v5h-5zM-5 20h5v5h-5zM200 20h5v5h-5zM215 20h5v5h-5zM-20 25h5v5h-5zM-5 25h5v5h-5zM200 25h5v5h-5zM215 25h5v5h-5zM-20 30h5v5h-5zM-5 30h5v5h-5zM200 30h5v5h-5zM215 30h5v5h-5zM-20 35h5v5h-5zM-5 35h5v5h-5zM200 35h5v5h-5zM215 35h5v5h-5zM-20 40h5v5h-5zM-5 40h5v5h-5zM200 40h5v5h-5zM215 40h5v5h-5zM-20 45h5v5h-5zM-5 45h5v5h-5zM200 45h5v5h-5zM215 45h5v5h-5zM-20 50h5v5h-5zM-5 50h5v5h-5zM200 50h5v5h-5zM215 50h5v5h-5zM-20 55h5v5h-5zM-5 55h5v5h-5zM200 55h5v5h-5zM215 55h5v5h-5zM-20 60h5v5h-5zM-5 60h5v5h-5zM200 60h5v5h-5zM215 60h5v5h-5zM-20 65h5v5h-5zM-5 65h5v5h-5zM200 65h5v5h-5zM215 65h5v5h-5zM-20 70h5v5h-5zM-5 70h5v5h-5zM200 70h5v5h-5zM215 70h5v5h-5zM-20 75h5v5h-5zM-5 75h5v5h-5zM200 75h5v5h-5zM215 75h5v5h-5zM-20 80h5v5h-5zM-5 80h5v5h-5zM200 80h5v5h-5zM215 80h5v5h-5zM-20 85h5v5h-5zM-5 85h5v5h-5zM200 85h5v5h-5zM215 85h5v5h-5zM-20 90h5v5h-5zM-5 90h5v5h-5zM200 90h5v5h-5zM215 90h5v5h-5zM-20 95h5v5h-5zM-5 95h5v5h-5zM200 95h5v5h-5zM215 95h5v5h-5zM-20 100h5v5h-5zM-5 100h5v5h-5zM200 100h5v5h-5zM215 100h5v5h-5zM-20 105h5v5h-5zM0 105h5v5h-5zM195 105h5v5h-5zM215 105h5v5h-5zM-20 110h5v5h-5zM5 110h190v5h-190zM215 110h5v5h-5zM-15 115h5v5h-5zM210 115h5v5h-5zM-10 120h5v5h-5zM205 120h5v5h-5zM-5 125h210v5h-210z"/><path fill="#FFF1E8" d="M-5 -15h210v5h-210zM-10 -10h5v5h-5zM205 -10h5v5h-5zM-15 -5h5v5h-5zM210 -5h5v5h-5zM-15 0h5v5h-5zM-15 5h5v5h-5zM-15 10h5v5h-5zM10 10h15v5h-15zM30 10h5v5h-5zM-15 15h5v5h-5zM10 15h5v5h-5zM-15 20h5v5h-5zM-15 25h5v5h-5zM-15 30h5v5h-5zM30 30h25v5h-25zM65 30h10v5h-10zM85 30h10v5h-10zM105 30h25v5h-25zM135 30h10v5h-10zM155 30h10v5h-10zM-15 35h5v5h-5zM30 35h10v5h-10zM50 35h10v5h-10zM65 35h10v5h-10zM85 35h10v5h-10zM100 35h10v5h-10zM135 35h10v5h-10zM155 35h10v5h-10zM-15 40h5v5h-5zM30 40h10v5h-10zM50 40h10v5h-10zM65 40h10v5h-10zM85 40h10v5h-10zM100 40h10v5h-10zM135 40h10v5h-10zM155 40h10v5h-10zM-15 45h5v5h-5zM30 45h25v5h-25zM65 45h10v5h-10zM85 45h10v5h-10zM105 45h20v5h-20zM135 45h30v5h-30zM-15 50h5v5h-5zM-15 55h5v5h-5zM-15 60h5v5h-5zM-15 65h5v5h-5zM-15 70h5v5h-5zM-15 75h5v5h-5zM-15 80h5v5h-5zM-15 85h5v5h-5zM-15 90h5v5h-5zM-15 95h5v5h-5zM-15 100h5v5h-5zM-15 105h5v5h-5zM-15 110h5v5h-5zM-10 115h5v5h-5zM-5 120h5v5h-5z"/><path fill="#C2C3C7" d="M-5 -10h210v5h-210zM-10 -5h15v5h-15zM195 -5h15v5h-15zM-10 0h10v5h-10zM200 0h10v5h-10zM-10 5h5v5h-5zM205 5h5v5h-5zM-10 10h5v5h-5zM205 10h5v5h-5zM-10 15h5v5h-5zM205 15h5v5h-5zM-10 20h5v5h-5zM205 20h5v5h-5zM-10 25h5v5h-5zM205 25h5v5h-5zM-10 30h5v5h-5zM205 30h5v5h-5zM-10 35h5v5h-5zM205 35h5v5h-5zM-10 40h5v5h-5zM205 40h5v5h-5zM-10 45h5v5h-5zM205 45h5v5h-5zM-10 50h5v5h-5zM205 50h5v5h-5zM-10 55h5v5h-5zM205 55h5v5h-5zM-10 60h5v5h-5zM205 60h5v5h-5zM-10 65h5v5h-5zM205 65h5v5h-5zM-10 70h5v5h-5zM205 70h5v5h-5zM-10 75h5v5h-5zM205 75h5v5h-5zM-10 80h5v5h-5zM205 80h5v5h-5zM-10 85h5v5h-5zM205 85h5v5h-5zM-10 90h5v5h-5zM205 90h5v5h-5zM-10 95h5v5h-5zM205 95h5v5h-5zM-10 100h5v5h-5zM205 100h5v5h-5zM-10 105h10v5h-10zM200 105h10v5h-10zM-10 110h15v5h-15zM195 110h15v5h-15zM-5 115h210v5h-210z"/><path fill="#FF77A8" d="M5 0h190v5h-190zM0 5h5v5h-5zM0 10h5v5h-5zM0 15h5v5h-5zM0 20h5v5h-5zM0 25h5v5h-5zM0 30h5v5h-5zM0 35h5v5h-5zM0 40h5v5h-5zM0 45h5v5h-5zM0 50h5v5h-5zM0 55h5v5h-5zM0 60h5v5h-5zM0 65h5v5h-5zM0 70h5v5h-5zM0 75h5v5h-5zM0 80h5v5h-5zM0 85h5v5h-5zM0 90h5v5h-5zM0 95h5v5h-5z"/><path fill="#83769C" d="M210 0h5v5h-5zM210 5h5v5h-5zM210 10h5v5h-5zM210 15h5v5h-5zM210 20h5v5h-5zM210 25h5v5h-5zM210 30h5v5h-5zM210 35h5v5h-5zM210 40h5v5h-5zM210 45h5v5h-5zM210 50h5v5h-5zM210 55h5v5h-5zM210 60h5v5h-5zM210 65h5v5h-5zM210 70h5v5h-5zM210 75h5v5h-5zM210 80h5v5h-5zM210 85h5v5h-5zM210 90h5v5h-5zM210 95h5v5h-5zM210 100h5v5h-5zM210 105h5v5h-5zM210 110h5v5h-5zM205 115h5v5h-5zM0 120h205v5h-205z"/><path fill="#FF004D" d="M5 5h195v5h-195zM5 10h5v5h-5zM25 10h5v5h-5zM35 10h160v5h-160zM5 15h5v5h-5zM15 15h185v5h-185zM5 20h190v5h-190zM5 25h195v5h-195zM5 30h25v5h-25zM55 30h10v5h-10zM75 30h10v5h-10zM95 30h10v5h-10zM130 30h5v5h-5zM145 30h10v5h-10zM165 30h30v5h-30zM5 35h25v5h-25zM60 35h5v5h-5zM80 35h5v5h-5zM150 35h5v5h-5zM170 35h30v5h-30zM5 40h25v5h-25zM45 40h5v5h-5zM80 40h5v5h-5zM115 40h20v5h-20zM150 40h5v5h-5zM170 40h25v5h-25zM5 45h25v5h-25zM80 45h5v5h-5zM100 45h5v5h-5zM125 45h10v5h-10zM170 45h30v5h-30zM5 50h25v5h-25zM60 50h5v5h-5zM80 50h5v5h-5zM100 50h10v5h-10zM130 50h5v5h-5zM170 50h25v5h-25zM5 55h25v5h-25zM45 55h20v5h-20zM80 55h5v5h-5zM100 55h20v5h-20zM150 55h5v5h-5zM170 55h30v5h-30zM5 60h25v5h-25zM45 60h25v5h-25zM150 60h5v5h-5zM170 60h25v5h-25zM5 65h30v5h-30zM45 65h30v5h-30zM95 65h10v5h-10zM130 65h10v5h-10zM150 65h10v5h-10zM170 65h30v5h-30zM5 70h190v5h-190zM5 75h195v5h-195zM5 80h190v5h-190zM5 85h195v5h-195zM5 90h190v5h-190zM5 95h5v5h-5zM15 95h5v5h-5zM25 95h5v5h-5zM35 95h5v5h-5zM45 95h5v5h-5zM55 95h5v5h-5zM65 95h5v5h-5zM75 95h5v5h-5zM85 95h5v5h-5zM95 95h5v5h-5zM105 95h5v5h-5zM115 95h5v5h-5zM125 95h5v5h-5zM135 95h5v5h-5zM145 95h5v5h-5zM155 95h5v5h-5zM165 95h5v5h-5zM175 95h5v5h-5zM185 95h5v5h-5zM195 95h5v5h-5z"/><path fill="#7E2553" d="M195 10h5v5h-5zM195 20h5v5h-5zM195 30h5v5h-5zM40 35h10v5h-10zM75 35h5v5h-5zM95 35h5v5h-5zM110 35h25v5h-25zM145 35h5v5h-5zM165 35h5v5h-5zM40 40h5v5h-5zM60 40h5v5h-5zM75 40h5v5h-5zM95 40h5v5h-5zM110 40h5v5h-5zM145 40h5v5h-5zM165 40h5v5h-5zM195 40h5v5h-5zM55 45h10v5h-10zM75 45h5v5h-5zM95 45h5v5h-5zM165 45h5v5h-5zM40 50h20v5h-20zM75 50h5v5h-5zM95 50h5v5h-5zM110 50h10v5h-10zM145 50h10v5h-10zM165 50h5v5h-5zM195 50h5v5h-5zM40 55h5v5h-5zM75 55h5v5h-5zM95 55h5v5h-5zM130 55h5v5h-5zM145 55h5v5h-5zM165 55h5v5h-5zM40 60h5v5h-5zM90 60h10v5h-10zM125 60h10v5h-10zM145 60h5v5h-5zM165 60h5v5h-5zM195 60h5v5h-5zM35 65h10v5h-10zM75 65h20v5h-20zM105 65h25v5h-25zM140 65h10v5h-10zM160 65h10v5h-10zM195 70h5v5h-5zM195 80h5v5h-5zM195 90h5v5h-5zM10 95h5v5h-5zM20 95h5v5h-5zM30 95h5v5h-5zM40 95h5v5h-5zM50 95h5v5h-5zM60 95h5v5h-5zM70 95h5v5h-5zM80 95h5v5h-5zM90 95h5v5h-5zM100 95h5v5h-5zM110 95h5v5h-5zM120 95h5v5h-5zM130 95h5v5h-5zM140 95h5v5h-5zM150 95h5v5h-5zM160 95h5v5h-5zM170 95h5v5h-5zM180 95h5v5h-5zM190 95h5v5h-5zM0 100h200v5h-200zM5 105h190v5h-190z"/><path fill="#FFEC27" d="M30 50h10v5h-10zM65 50h10v5h-10zM85 50h10v5h-10zM120 50h10v5h-10zM135 50h10v5h-10zM155 50h10v5h-10zM30 55h10v5h-10zM65 55h10v5h-10zM85 55h10v5h-10zM120 55h10v5h-10zM135 55h10v5h-10zM155 55h10v5h-10zM30 60h10v5h-10zM70 60h20v5h-20zM100 60h25v5h-25zM135 60h10v5h-10zM155 60h10v5h-10z"/><defs><clipPath id="dpbK"><rect x="5" y="5" width="190" height="90"/></clipPath></defs><g clip-path="url(#dpbK)"><g class="dps" fill="#FFF1E8" opacity=".4"><path d="M-20 5h10v5h-10zM-25 10h10v5h-10zM-30 15h10v5h-10zM-35 20h10v5h-10zM-40 25h10v5h-10zM-45 30h10v5h-10zM-50 35h10v5h-10zM-55 40h10v5h-10zM-60 45h10v5h-10zM-65 50h10v5h-10zM-70 55h10v5h-10zM-75 60h10v5h-10zM-80 65h10v5h-10zM-85 70h10v5h-10zM-90 75h10v5h-10zM-95 80h10v5h-10zM-100 85h10v5h-10zM-105 90h10v5h-10z"/></g></g></svg></i><i class="dpd" aria-hidden="true"><svg viewBox="-70 -60 340 230" width="340" height="230" shape-rendering="crispEdges"><g class="dpc"><path fill="#000000" d="M-50 30h5v5h-5zM-55 35h5v5h-5zM-45 35h5v5h-5zM-55 40h5v5h-5zM-40 40h5v5h-5zM-55 45h5v5h-5zM-35 45h5v5h-5zM-55 50h5v5h-5zM-30 50h5v5h-5zM-55 55h5v5h-5zM-35 55h5v5h-5zM-55 60h5v5h-5zM-40 60h5v5h-5zM-55 65h5v5h-5zM-45 65h5v5h-5zM-50 70h5v5h-5z"/><path fill="#FFF1E8" d="M-50 35h5v5h-5zM-50 40h10v5h-10zM-50 45h15v5h-15zM-50 50h15v5h-15zM-50 55h10v5h-10zM-50 60h5v5h-5z"/><path fill="#C2C3C7" d="M-35 50h5v5h-5zM-40 55h5v5h-5zM-45 60h5v5h-5zM-50 65h5v5h-5z"/></g><g class="dpm"><g class="dpm0" transform="translate(-40 -40)"><path fill="#000000" d="M-5 -20h10v5h-10zM-10 -15h5v5h-5zM5 -15h5v5h-5zM-15 -10h5v5h-5zM10 -10h5v5h-5zM-15 -5h5v5h-5zM10 -5h5v5h-5zM-15 0h5v5h-5zM10 0h5v5h-5zM-15 5h5v5h-5zM10 5h5v5h-5zM-10 10h5v5h-5zM5 10h5v5h-5zM-5 15h10v5h-10z"/><path fill="#FFF1E8" d="M-5 -15h5v5h-5zM-5 -10h5v5h-5zM-5 -5h5v5h-5zM-5 0h5v5h-5zM-5 5h5v5h-5zM-5 10h5v5h-5z"/><path fill="#FFEC27" d="M0 -15h5v5h-5zM-10 -10h5v5h-5zM0 -10h5v5h-5zM-10 -5h5v5h-5zM0 -5h5v5h-5zM-10 0h5v5h-5zM0 0h5v5h-5zM-10 5h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFA300" d="M5 -10h5v5h-5zM5 -5h5v5h-5zM5 0h5v5h-5zM5 5h5v5h-5z"/></g><g class="dpm1" transform="translate(-40 -40)"><path fill="#000000" d="M0 -20h5v5h-5zM-5 -15h5v5h-5zM5 -15h5v5h-5zM-10 -10h5v5h-5zM10 -10h5v5h-5zM-10 -5h5v5h-5zM10 -5h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM-10 5h5v5h-5zM10 5h5v5h-5zM-5 10h5v5h-5zM5 10h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFF1E8" d="M0 -15h5v5h-5zM0 -10h5v5h-5zM0 -5h5v5h-5zM0 0h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFEC27" d="M-5 -10h5v5h-5zM-5 -5h5v5h-5zM-5 0h5v5h-5zM-5 5h5v5h-5z"/><path fill="#FFA300" d="M5 -10h5v5h-5zM5 -5h5v5h-5zM5 0h5v5h-5zM5 5h5v5h-5z"/></g><g class="dpm2" transform="translate(-40 -40)"><path fill="#000000" d="M0 -20h5v5h-5zM-5 -15h5v5h-5zM5 -15h5v5h-5zM-5 -10h5v5h-5zM5 -10h5v5h-5zM-5 -5h5v5h-5zM5 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM-5 5h5v5h-5zM5 5h5v5h-5zM-5 10h5v5h-5zM5 10h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFA300" d="M0 -15h5v5h-5zM0 -10h5v5h-5zM0 -5h5v5h-5zM0 0h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/></g></g><g class="dpk" style="animation-delay:0s"><g class="dpk0" transform="translate(225 -35)"><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk1" transform="translate(225 -35)"><path fill="#FFEC27" d="M0 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM0 5h5v5h-5z"/><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk2" transform="translate(225 -35)"><path fill="#FFA300" d="M0 -15h5v5h-5zM-15 0h5v5h-5zM15 0h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFEC27" d="M0 -10h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFF1E8" d="M0 -5h5v5h-5zM-5 0h15v5h-15zM0 5h5v5h-5z"/></g></g><g class="dpk" style="animation-delay:-0.8s"><g class="dpk0" transform="translate(240 135)"><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk1" transform="translate(240 135)"><path fill="#FFEC27" d="M0 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM0 5h5v5h-5z"/><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk2" transform="translate(240 135)"><path fill="#FFA300" d="M0 -15h5v5h-5zM-15 0h5v5h-5zM15 0h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFEC27" d="M0 -10h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFF1E8" d="M0 -5h5v5h-5zM-5 0h15v5h-15zM0 5h5v5h-5z"/></g></g></svg></i><span>PUSH</span></button>
+      <div class="pshadow dp"></div>
+      <p class="tap dp">タップ！</p>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{isReveal}}" hint-placeholder-val="{{false}}">
+  <div class="ov hit" style="--n:2">
+    <div class="dim"></div>
+    <div class="rays"></div>
+    <div class="pressed dp"><i class="dpf" aria-hidden="true"><svg viewBox="-20 -20 240 150" width="240" height="150" shape-rendering="crispEdges"><path fill="#000000" d="M-5 -20h210v5h-210zM-10 -15h5v5h-5zM205 -15h5v5h-5zM-15 -10h5v5h-5zM210 -10h5v5h-5zM-20 -5h5v5h-5zM215 -5h5v5h-5zM-20 0h5v5h-5zM215 0h5v5h-5zM-20 5h5v5h-5zM5 5h190v5h-190zM215 5h5v5h-5zM-20 10h5v5h-5zM0 10h5v5h-5zM195 10h5v5h-5zM215 10h5v5h-5zM-20 15h5v5h-5zM-5 15h5v5h-5zM200 15h5v5h-5zM215 15h5v5h-5zM-20 20h5v5h-5zM-5 20h5v5h-5zM200 20h5v5h-5zM215 20h5v5h-5zM-20 25h5v5h-5zM-5 25h5v5h-5zM200 25h5v5h-5zM215 25h5v5h-5zM-20 30h5v5h-5zM-5 30h5v5h-5zM200 30h5v5h-5zM215 30h5v5h-5zM-20 35h5v5h-5zM-5 35h5v5h-5zM200 35h5v5h-5zM215 35h5v5h-5zM-20 40h5v5h-5zM-5 40h5v5h-5zM200 40h5v5h-5zM215 40h5v5h-5zM-20 45h5v5h-5zM-5 45h5v5h-5zM200 45h5v5h-5zM215 45h5v5h-5zM-20 50h5v5h-5zM-5 50h5v5h-5zM200 50h5v5h-5zM215 50h5v5h-5zM-20 55h5v5h-5zM-5 55h5v5h-5zM200 55h5v5h-5zM215 55h5v5h-5zM-20 60h5v5h-5zM-5 60h5v5h-5zM200 60h5v5h-5zM215 60h5v5h-5zM-20 65h5v5h-5zM-5 65h5v5h-5zM200 65h5v5h-5zM215 65h5v5h-5zM-20 70h5v5h-5zM-5 70h5v5h-5zM200 70h5v5h-5zM215 70h5v5h-5zM-20 75h5v5h-5zM-5 75h5v5h-5zM200 75h5v5h-5zM215 75h5v5h-5zM-20 80h5v5h-5zM-5 80h5v5h-5zM200 80h5v5h-5zM215 80h5v5h-5zM-20 85h5v5h-5zM-5 85h5v5h-5zM200 85h5v5h-5zM215 85h5v5h-5zM-20 90h5v5h-5zM-5 90h5v5h-5zM200 90h5v5h-5zM215 90h5v5h-5zM-20 95h5v5h-5zM-5 95h5v5h-5zM200 95h5v5h-5zM215 95h5v5h-5zM-20 100h5v5h-5zM-5 100h5v5h-5zM200 100h5v5h-5zM215 100h5v5h-5zM-20 105h5v5h-5zM0 105h5v5h-5zM195 105h5v5h-5zM215 105h5v5h-5zM-20 110h5v5h-5zM5 110h190v5h-190zM215 110h5v5h-5zM-15 115h5v5h-5zM210 115h5v5h-5zM-10 120h5v5h-5zM205 120h5v5h-5zM-5 125h210v5h-210z"/><path fill="#FFF1E8" d="M-5 -15h210v5h-210zM-10 -10h5v5h-5zM205 -10h5v5h-5zM-15 -5h5v5h-5zM210 -5h5v5h-5zM-15 0h5v5h-5zM-15 5h5v5h-5zM-15 10h5v5h-5zM-15 15h5v5h-5zM-15 20h5v5h-5zM10 20h15v5h-15zM30 20h5v5h-5zM-15 25h5v5h-5zM10 25h5v5h-5zM-15 30h5v5h-5zM-15 35h5v5h-5zM-15 40h5v5h-5zM30 40h25v5h-25zM65 40h10v5h-10zM85 40h10v5h-10zM105 40h25v5h-25zM135 40h10v5h-10zM155 40h10v5h-10zM-15 45h5v5h-5zM30 45h10v5h-10zM50 45h10v5h-10zM65 45h10v5h-10zM85 45h10v5h-10zM100 45h10v5h-10zM135 45h10v5h-10zM155 45h10v5h-10zM-15 50h5v5h-5zM30 50h10v5h-10zM50 50h10v5h-10zM65 50h10v5h-10zM85 50h10v5h-10zM100 50h10v5h-10zM135 50h10v5h-10zM155 50h10v5h-10zM-15 55h5v5h-5zM30 55h25v5h-25zM65 55h10v5h-10zM85 55h10v5h-10zM105 55h20v5h-20zM135 55h30v5h-30zM-15 60h5v5h-5zM-15 65h5v5h-5zM-15 70h5v5h-5zM-15 75h5v5h-5zM-15 80h5v5h-5zM-15 85h5v5h-5zM-15 90h5v5h-5zM-15 95h5v5h-5zM-15 100h5v5h-5zM-15 105h5v5h-5zM-15 110h5v5h-5zM-10 115h5v5h-5zM-5 120h5v5h-5z"/><path fill="#C2C3C7" d="M-5 -10h210v5h-210zM-10 -5h220v5h-220zM-10 0h10v5h-10zM200 0h10v5h-10zM-10 5h10v5h-10zM200 5h10v5h-10zM-10 10h10v5h-10zM200 10h10v5h-10zM-10 15h5v5h-5zM205 15h5v5h-5zM-10 20h5v5h-5zM205 20h5v5h-5zM-10 25h5v5h-5zM205 25h5v5h-5zM-10 30h5v5h-5zM205 30h5v5h-5zM-10 35h5v5h-5zM205 35h5v5h-5zM-10 40h5v5h-5zM205 40h5v5h-5zM-10 45h5v5h-5zM205 45h5v5h-5zM-10 50h5v5h-5zM205 50h5v5h-5zM-10 55h5v5h-5zM205 55h5v5h-5zM-10 60h5v5h-5zM205 60h5v5h-5zM-10 65h5v5h-5zM205 65h5v5h-5zM-10 70h5v5h-5zM205 70h5v5h-5zM-10 75h5v5h-5zM205 75h5v5h-5zM-10 80h5v5h-5zM205 80h5v5h-5zM-10 85h5v5h-5zM205 85h5v5h-5zM-10 90h5v5h-5zM205 90h5v5h-5zM-10 95h5v5h-5zM205 95h5v5h-5zM-10 100h5v5h-5zM205 100h5v5h-5zM-10 105h10v5h-10zM200 105h10v5h-10zM-10 110h15v5h-15zM195 110h15v5h-15zM-5 115h210v5h-210z"/><path fill="#5F574F" d="M0 0h200v5h-200zM0 5h5v5h-5zM195 5h5v5h-5z"/><path fill="#83769C" d="M210 0h5v5h-5zM210 5h5v5h-5zM210 10h5v5h-5zM210 15h5v5h-5zM210 20h5v5h-5zM210 25h5v5h-5zM210 30h5v5h-5zM210 35h5v5h-5zM210 40h5v5h-5zM210 45h5v5h-5zM210 50h5v5h-5zM210 55h5v5h-5zM210 60h5v5h-5zM210 65h5v5h-5zM210 70h5v5h-5zM210 75h5v5h-5zM210 80h5v5h-5zM210 85h5v5h-5zM210 90h5v5h-5zM210 95h5v5h-5zM210 100h5v5h-5zM210 105h5v5h-5zM210 110h5v5h-5zM205 115h5v5h-5zM0 120h205v5h-205z"/><path fill="#FF77A8" d="M5 10h190v5h-190zM0 15h5v5h-5zM0 20h5v5h-5zM0 25h5v5h-5zM0 30h5v5h-5zM0 35h5v5h-5zM0 40h5v5h-5zM0 45h5v5h-5zM0 50h5v5h-5zM0 55h5v5h-5zM0 60h5v5h-5zM0 65h5v5h-5zM0 70h5v5h-5zM0 75h5v5h-5zM0 80h5v5h-5zM0 85h5v5h-5zM0 90h5v5h-5zM0 95h5v5h-5zM0 100h5v5h-5z"/><path fill="#FF004D" d="M5 15h195v5h-195zM5 20h5v5h-5zM25 20h5v5h-5zM35 20h160v5h-160zM5 25h5v5h-5zM15 25h185v5h-185zM5 30h190v5h-190zM5 35h195v5h-195zM5 40h25v5h-25zM55 40h10v5h-10zM75 40h10v5h-10zM95 40h10v5h-10zM130 40h5v5h-5zM145 40h10v5h-10zM165 40h30v5h-30zM5 45h25v5h-25zM60 45h5v5h-5zM80 45h5v5h-5zM150 45h5v5h-5zM170 45h30v5h-30zM5 50h25v5h-25zM45 50h5v5h-5zM80 50h5v5h-5zM115 50h20v5h-20zM150 50h5v5h-5zM170 50h25v5h-25zM5 55h25v5h-25zM80 55h5v5h-5zM100 55h5v5h-5zM125 55h10v5h-10zM170 55h30v5h-30zM5 60h25v5h-25zM60 60h5v5h-5zM80 60h5v5h-5zM100 60h10v5h-10zM130 60h5v5h-5zM170 60h25v5h-25zM5 65h25v5h-25zM45 65h20v5h-20zM80 65h5v5h-5zM100 65h20v5h-20zM150 65h5v5h-5zM170 65h30v5h-30zM5 70h25v5h-25zM45 70h25v5h-25zM150 70h5v5h-5zM170 70h25v5h-25zM5 75h30v5h-30zM45 75h30v5h-30zM95 75h10v5h-10zM130 75h10v5h-10zM150 75h10v5h-10zM170 75h30v5h-30zM5 80h190v5h-190zM5 85h195v5h-195zM5 90h190v5h-190zM5 95h195v5h-195zM5 100h190v5h-190zM5 105h5v5h-5zM15 105h5v5h-5zM25 105h5v5h-5zM35 105h5v5h-5zM45 105h5v5h-5zM55 105h5v5h-5zM65 105h5v5h-5zM75 105h5v5h-5zM85 105h5v5h-5zM95 105h5v5h-5zM105 105h5v5h-5zM115 105h5v5h-5zM125 105h5v5h-5zM135 105h5v5h-5zM145 105h5v5h-5zM155 105h5v5h-5zM165 105h5v5h-5zM175 105h5v5h-5zM185 105h5v5h-5z"/><path fill="#7E2553" d="M195 20h5v5h-5zM195 30h5v5h-5zM195 40h5v5h-5zM40 45h10v5h-10zM75 45h5v5h-5zM95 45h5v5h-5zM110 45h25v5h-25zM145 45h5v5h-5zM165 45h5v5h-5zM40 50h5v5h-5zM60 50h5v5h-5zM75 50h5v5h-5zM95 50h5v5h-5zM110 50h5v5h-5zM145 50h5v5h-5zM165 50h5v5h-5zM195 50h5v5h-5zM55 55h10v5h-10zM75 55h5v5h-5zM95 55h5v5h-5zM165 55h5v5h-5zM40 60h20v5h-20zM75 60h5v5h-5zM95 60h5v5h-5zM110 60h10v5h-10zM145 60h10v5h-10zM165 60h5v5h-5zM195 60h5v5h-5zM40 65h5v5h-5zM75 65h5v5h-5zM95 65h5v5h-5zM130 65h5v5h-5zM145 65h5v5h-5zM165 65h5v5h-5zM40 70h5v5h-5zM90 70h10v5h-10zM125 70h10v5h-10zM145 70h5v5h-5zM165 70h5v5h-5zM195 70h5v5h-5zM35 75h10v5h-10zM75 75h20v5h-20zM105 75h25v5h-25zM140 75h10v5h-10zM160 75h10v5h-10zM195 80h5v5h-5zM195 90h5v5h-5zM195 100h5v5h-5zM10 105h5v5h-5zM20 105h5v5h-5zM30 105h5v5h-5zM40 105h5v5h-5zM50 105h5v5h-5zM60 105h5v5h-5zM70 105h5v5h-5zM80 105h5v5h-5zM90 105h5v5h-5zM100 105h5v5h-5zM110 105h5v5h-5zM120 105h5v5h-5zM130 105h5v5h-5zM140 105h5v5h-5zM150 105h5v5h-5zM160 105h5v5h-5zM170 105h5v5h-5zM180 105h5v5h-5zM190 105h5v5h-5z"/><path fill="#FFEC27" d="M30 60h10v5h-10zM65 60h10v5h-10zM85 60h10v5h-10zM120 60h10v5h-10zM135 60h10v5h-10zM155 60h10v5h-10zM30 65h10v5h-10zM65 65h10v5h-10zM85 65h10v5h-10zM120 65h10v5h-10zM135 65h10v5h-10zM155 65h10v5h-10zM30 70h10v5h-10zM70 70h20v5h-20zM100 70h25v5h-25zM135 70h10v5h-10zM155 70h10v5h-10z"/></svg></i><i class="dpd" aria-hidden="true"><svg viewBox="-70 -60 340 230" width="340" height="230" shape-rendering="crispEdges"><g class="dpc"><path fill="#000000" d="M-50 30h5v5h-5zM-55 35h5v5h-5zM-45 35h5v5h-5zM-55 40h5v5h-5zM-40 40h5v5h-5zM-55 45h5v5h-5zM-35 45h5v5h-5zM-55 50h5v5h-5zM-30 50h5v5h-5zM-55 55h5v5h-5zM-35 55h5v5h-5zM-55 60h5v5h-5zM-40 60h5v5h-5zM-55 65h5v5h-5zM-45 65h5v5h-5zM-50 70h5v5h-5z"/><path fill="#FFF1E8" d="M-50 35h5v5h-5zM-50 40h10v5h-10zM-50 45h15v5h-15zM-50 50h15v5h-15zM-50 55h10v5h-10zM-50 60h5v5h-5z"/><path fill="#C2C3C7" d="M-35 50h5v5h-5zM-40 55h5v5h-5zM-45 60h5v5h-5zM-50 65h5v5h-5z"/></g><g class="dpm"><g class="dpm0" transform="translate(-40 -40)"><path fill="#000000" d="M-5 -20h10v5h-10zM-10 -15h5v5h-5zM5 -15h5v5h-5zM-15 -10h5v5h-5zM10 -10h5v5h-5zM-15 -5h5v5h-5zM10 -5h5v5h-5zM-15 0h5v5h-5zM10 0h5v5h-5zM-15 5h5v5h-5zM10 5h5v5h-5zM-10 10h5v5h-5zM5 10h5v5h-5zM-5 15h10v5h-10z"/><path fill="#FFF1E8" d="M-5 -15h5v5h-5zM-5 -10h5v5h-5zM-5 -5h5v5h-5zM-5 0h5v5h-5zM-5 5h5v5h-5zM-5 10h5v5h-5z"/><path fill="#FFEC27" d="M0 -15h5v5h-5zM-10 -10h5v5h-5zM0 -10h5v5h-5zM-10 -5h5v5h-5zM0 -5h5v5h-5zM-10 0h5v5h-5zM0 0h5v5h-5zM-10 5h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFA300" d="M5 -10h5v5h-5zM5 -5h5v5h-5zM5 0h5v5h-5zM5 5h5v5h-5z"/></g><g class="dpm1" transform="translate(-40 -40)"><path fill="#000000" d="M0 -20h5v5h-5zM-5 -15h5v5h-5zM5 -15h5v5h-5zM-10 -10h5v5h-5zM10 -10h5v5h-5zM-10 -5h5v5h-5zM10 -5h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM-10 5h5v5h-5zM10 5h5v5h-5zM-5 10h5v5h-5zM5 10h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFF1E8" d="M0 -15h5v5h-5zM0 -10h5v5h-5zM0 -5h5v5h-5zM0 0h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFEC27" d="M-5 -10h5v5h-5zM-5 -5h5v5h-5zM-5 0h5v5h-5zM-5 5h5v5h-5z"/><path fill="#FFA300" d="M5 -10h5v5h-5zM5 -5h5v5h-5zM5 0h5v5h-5zM5 5h5v5h-5z"/></g><g class="dpm2" transform="translate(-40 -40)"><path fill="#000000" d="M0 -20h5v5h-5zM-5 -15h5v5h-5zM5 -15h5v5h-5zM-5 -10h5v5h-5zM5 -10h5v5h-5zM-5 -5h5v5h-5zM5 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM-5 5h5v5h-5zM5 5h5v5h-5zM-5 10h5v5h-5zM5 10h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFA300" d="M0 -15h5v5h-5zM0 -10h5v5h-5zM0 -5h5v5h-5zM0 0h5v5h-5zM0 5h5v5h-5zM0 10h5v5h-5z"/></g></g><g class="dpk" style="animation-delay:0s"><g class="dpk0" transform="translate(225 -35)"><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk1" transform="translate(225 -35)"><path fill="#FFEC27" d="M0 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM0 5h5v5h-5z"/><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk2" transform="translate(225 -35)"><path fill="#FFA300" d="M0 -15h5v5h-5zM-15 0h5v5h-5zM15 0h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFEC27" d="M0 -10h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFF1E8" d="M0 -5h5v5h-5zM-5 0h15v5h-15zM0 5h5v5h-5z"/></g></g><g class="dpk" style="animation-delay:-0.8s"><g class="dpk0" transform="translate(240 135)"><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk1" transform="translate(240 135)"><path fill="#FFEC27" d="M0 -5h5v5h-5zM-5 0h5v5h-5zM5 0h5v5h-5zM0 5h5v5h-5z"/><path fill="#FFF1E8" d="M0 0h5v5h-5z"/></g><g class="dpk2" transform="translate(240 135)"><path fill="#FFA300" d="M0 -15h5v5h-5zM-15 0h5v5h-5zM15 0h5v5h-5zM0 15h5v5h-5z"/><path fill="#FFEC27" d="M0 -10h5v5h-5zM-10 0h5v5h-5zM10 0h5v5h-5zM0 10h5v5h-5z"/><path fill="#FFF1E8" d="M0 -5h5v5h-5zM-5 0h15v5h-15zM0 5h5v5h-5z"/></g></g></svg></i></div><div class="clips dp" aria-hidden="true"><i class="c" style="--x:-21px;--y:89px;--d:0.05s"><b></b></i><i class="h" style="--x:-58px;--y:88px;--d:0.04s"><b></b></i><i class="s" style="--x:-76px;--y:75px;--d:0.00s"><b></b></i><i class="b1" style="--x:-96px;--y:51px;--d:0.10s"><b></b></i><i class="c" style="--x:-150px;--y:34px;--d:0.09s"><b></b></i><i class="b2" style="--x:-170px;--y:-5px;--d:0.02s"><b></b></i><i class="s" style="--x:-151px;--y:-20px;--d:0.10s"><b></b></i><i class="b3" style="--x:-152px;--y:-30px;--d:0.07s"><b></b></i><i class="c" style="--x:-153px;--y:-76px;--d:0.08s"><b></b></i><i class="h" style="--x:-167px;--y:-100px;--d:0.09s"><b></b></i><i class="b4" style="--x:-108px;--y:-94px;--d:0.04s"><b></b></i><i class="s" style="--x:-79px;--y:-128px;--d:0.03s"><b></b></i><i class="c" style="--x:-38px;--y:-164px;--d:0.09s"><b></b></i><i class="h" style="--x:13px;--y:-118px;--d:0.07s"><b></b></i><i class="s" style="--x:53px;--y:-141px;--d:0.07s"><b></b></i><i class="b1" style="--x:75px;--y:-148px;--d:0.02s"><b></b></i><i class="c" style="--x:91px;--y:-98px;--d:0.05s"><b></b></i><i class="b2" style="--x:103px;--y:-95px;--d:0.08s"><b></b></i><i class="s" style="--x:166px;--y:-86px;--d:0.08s"><b></b></i><i class="b3" style="--x:175px;--y:-44px;--d:0.02s"><b></b></i><i class="c" style="--x:212px;--y:-19px;--d:0.10s"><b></b></i><i class="h" style="--x:153px;--y:8px;--d:0.10s"><b></b></i><i class="b4" style="--x:172px;--y:44px;--d:0.01s"><b></b></i><i class="s" style="--x:157px;--y:62px;--d:0.05s"><b></b></i><i class="c" style="--x:83px;--y:74px;--d:0.09s"><b></b></i><i class="h" style="--x:72px;--y:64px;--d:0.06s"><b></b></i></div>
+    <div class="hb"><div class="rb hit t-pixel"><div class="hd"><div class="bh logo">的中！</div><div class="bsub">9R の当たった買い目</div></div><div class="card"><svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><g shape-rendering='crispEdges'><rect x='16' y='34' width='4' height='4' fill='#000000'/><rect x='40' y='14' width='4' height='4' fill='#000000'/><rect x='24' y='34' width='4' height='4' fill='#000000'/><rect x='36' y='6' width='4' height='4' fill='#000000'/><rect x='32' y='2' width='4' height='4' fill='#000000'/><rect x='0' y='10' width='4' height='4' fill='#000000'/><rect x='16' y='6' width='4' height='4' fill='#000000'/><rect x='24' y='6' width='4' height='4' fill='#000000'/><rect x='20' y='38' width='4' height='4' fill='#000000'/><rect x='40' y='10' width='4' height='4' fill='#000000'/><rect x='12' y='2' width='4' height='4' fill='#000000'/><rect x='4' y='22' width='4' height='4' fill='#000000'/><rect x='8' y='26' width='4' height='4' fill='#000000'/><rect x='28' y='2' width='4' height='4' fill='#000000'/><rect x='0' y='18' width='4' height='4' fill='#000000'/><rect x='20' y='10' width='4' height='4' fill='#000000'/><rect x='36' y='22' width='4' height='4' fill='#000000'/><rect x='40' y='18' width='4' height='4' fill='#000000'/><rect x='4' y='6' width='4' height='4' fill='#000000'/><rect x='8' y='2' width='4' height='4' fill='#000000'/><rect x='12' y='30' width='4' height='4' fill='#000000'/><rect x='28' y='30' width='4' height='4' fill='#000000'/><rect x='32' y='26' width='4' height='4' fill='#000000'/><rect x='0' y='14' width='4' height='4' fill='#000000'/><rect x='16' y='22' width='4' height='4' fill='#FF004D'/><rect x='20' y='18' width='4' height='4' fill='#FF004D'/><rect x='16' y='10' width='4' height='4' fill='#FF004D'/><rect x='24' y='22' width='4' height='4' fill='#FF004D'/><rect x='20' y='30' width='4' height='4' fill='#FF004D'/><rect x='24' y='10' width='4' height='4' fill='#FF004D'/><rect x='4' y='14' width='4' height='4' fill='#FF004D'/><rect x='36' y='18' width='4' height='4' fill='#7E2553'/><rect x='12' y='14' width='4' height='4' fill='#FF004D'/><rect x='8' y='6' width='4' height='4' fill='#FF004D'/><rect x='12' y='26' width='4' height='4' fill='#FF004D'/><rect x='8' y='18' width='4' height='4' fill='#FF004D'/><rect x='32' y='22' width='4' height='4' fill='#7E2553'/><rect x='28' y='14' width='4' height='4' fill='#FF004D'/><rect x='32' y='10' width='4' height='4' fill='#FF004D'/><rect x='28' y='26' width='4' height='4' fill='#7E2553'/><rect x='20' y='14' width='4' height='4' fill='#FF004D'/><rect x='20' y='26' width='4' height='4' fill='#FF004D'/><rect x='16' y='18' width='4' height='4' fill='#FF004D'/><rect x='24' y='30' width='4' height='4' fill='#7E2553'/><rect x='16' y='30' width='4' height='4' fill='#FF004D'/><rect x='24' y='18' width='4' height='4' fill='#FF004D'/><rect x='36' y='14' width='4' height='4' fill='#FF004D'/><rect x='4' y='10' width='4' height='4' fill='#FF004D'/><rect x='12' y='22' width='4' height='4' fill='#FF004D'/><rect x='8' y='14' width='4' height='4' fill='#FFF1E8'/><rect x='12' y='10' width='4' height='4' fill='#FFF1E8'/><rect x='28' y='10' width='4' height='4' fill='#FF004D'/><rect x='32' y='6' width='4' height='4' fill='#FF004D'/><rect x='28' y='22' width='4' height='4' fill='#FF004D'/><rect x='32' y='18' width='4' height='4' fill='#FF004D'/><rect x='16' y='14' width='4' height='4' fill='#FF004D'/><rect x='20' y='34' width='4' height='4' fill='#FF004D'/><rect x='16' y='26' width='4' height='4' fill='#FF004D'/><rect x='24' y='14' width='4' height='4' fill='#FF004D'/><rect x='20' y='22' width='4' height='4' fill='#FF004D'/><rect x='24' y='26' width='4' height='4' fill='#FF004D'/><rect x='36' y='10' width='4' height='4' fill='#FF004D'/><rect x='8' y='10' width='4' height='4' fill='#FFF1E8'/><rect x='4' y='18' width='4' height='4' fill='#FF004D'/><rect x='12' y='6' width='4' height='4' fill='#FF004D'/><rect x='8' y='22' width='4' height='4' fill='#FF004D'/><rect x='12' y='18' width='4' height='4' fill='#FF004D'/><rect x='32' y='14' width='4' height='4' fill='#FF004D'/><rect x='28' y='6' width='4' height='4' fill='#FF004D'/><rect x='28' y='18' width='4' height='4' fill='#FF004D'/></g></svg><ul class="brows"><li style="--i:0"><span class="bt tag">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span><span class="bp">1,840円</span></li><li style="--i:1"><span class="bt tag">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span><span class="bp">690円</span></li></ul><div class="btot">払戻 合計<b>2,530円</b></div></div></div></div>
+    <div class="conf"><i style="--x:93.8%;--d:2.09s;--t:2.50s;--w:6px;--h:15px;--r:496deg;--c:#F3C316"></i><i style="--x:60.3%;--d:1.28s;--t:2.69s;--w:8px;--h:12px;--r:654deg;--c:#1F5FC9"></i><i style="--x:50.2%;--d:1.98s;--t:3.97s;--w:7px;--h:16px;--r:589deg;--c:#F27BB0"></i><i style="--x:17.8%;--d:0.39s;--t:2.82s;--w:7px;--h:11px;--r:899deg;--c:#FFFFFF"></i><i style="--x:55.7%;--d:2.19s;--t:3.20s;--w:8px;--h:13px;--r:786deg;--c:#3E7B1E"></i><i style="--x:36.7%;--d:1.89s;--t:3.20s;--w:10px;--h:12px;--r:714deg;--c:#F3C316"></i><i style="--x:49.0%;--d:2.03s;--t:3.30s;--w:9px;--h:12px;--r:846deg;--c:#1F5FC9"></i><i style="--x:35.7%;--d:1.60s;--t:3.40s;--w:8px;--h:14px;--r:800deg;--c:#F08A1C"></i><i style="--x:17.9%;--d:2.00s;--t:2.88s;--w:10px;--h:12px;--r:528deg;--c:#F3C316"></i><i style="--x:48.9%;--d:0.81s;--t:3.63s;--w:10px;--h:15px;--r:752deg;--c:#F08A1C"></i><i style="--x:20.4%;--d:1.64s;--t:2.51s;--w:9px;--h:12px;--r:-729deg;--c:#E8382F"></i><i style="--x:74.4%;--d:0.30s;--t:2.88s;--w:9px;--h:16px;--r:-588deg;--c:#FFFFFF"></i><i style="--x:74.9%;--d:0.12s;--t:3.05s;--w:7px;--h:10px;--r:-875deg;--c:#E8382F"></i><i style="--x:5.9%;--d:2.02s;--t:3.07s;--w:7px;--h:16px;--r:-642deg;--c:#E8382F"></i><i style="--x:39.0%;--d:0.09s;--t:4.18s;--w:7px;--h:10px;--r:867deg;--c:#FFFFFF"></i><i style="--x:73.3%;--d:0.25s;--t:3.01s;--w:6px;--h:13px;--r:-847deg;--c:#F08A1C"></i><i style="--x:40.6%;--d:1.37s;--t:2.68s;--w:10px;--h:11px;--r:813deg;--c:#E8382F"></i><i style="--x:45.0%;--d:1.92s;--t:2.63s;--w:8px;--h:12px;--r:438deg;--c:#3E7B1E"></i><i style="--x:26.9%;--d:1.33s;--t:3.16s;--w:6px;--h:13px;--r:-722deg;--c:#3E7B1E"></i><i style="--x:5.2%;--d:0.35s;--t:2.57s;--w:9px;--h:13px;--r:-897deg;--c:#F3C316"></i><i style="--x:70.5%;--d:0.16s;--t:2.54s;--w:7px;--h:15px;--r:499deg;--c:#1F5FC9"></i><i style="--x:28.8%;--d:1.65s;--t:2.67s;--w:8px;--h:11px;--r:-490deg;--c:#E8382F"></i><i style="--x:3.9%;--d:1.65s;--t:2.59s;--w:6px;--h:14px;--r:527deg;--c:#FFFFFF"></i><i style="--x:38.5%;--d:1.51s;--t:3.77s;--w:7px;--h:15px;--r:636deg;--c:#F27BB0"></i><i style="--x:58.8%;--d:1.94s;--t:4.07s;--w:8px;--h:16px;--r:558deg;--c:#F27BB0"></i><i style="--x:94.2%;--d:0.26s;--t:3.06s;--w:9px;--h:16px;--r:370deg;--c:#FFFFFF"></i><i style="--x:41.6%;--d:0.23s;--t:2.76s;--w:9px;--h:15px;--r:392deg;--c:#FFFFFF"></i><i style="--x:48.6%;--d:0.46s;--t:3.46s;--w:6px;--h:12px;--r:525deg;--c:#FFFFFF"></i></div>
+    
+    <button class="close" type="button" onClick="{{toForm}}">とじる</button>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["form","push","reveal"],"default":"form"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  sfxUrls() {
+    return { push: '/_blob/2c19be676e8b2f4b3c27664978e77784', tap: '/_blob/6b84e59051fd187b240d447831bfccc0' };
+  }
+  sfxDecode(c, b) {
+    return new Promise(function (ok) {
+      try { var q = c.decodeAudioData(b, ok, function () { ok(null); }); if (q && q.catch) q.catch(function () { ok(null); }); } catch (e) { ok(null); }
+    });
+  }
+  sfxInit() {
+    // 音は先に読んで、音のデータにしておく（鳴らすのは押したときだけ）
+    if (this._sx) return this._sx;
+    var self = this, sx = this._sx = { raw: {}, buf: {}, ctx: null, src: null, el: null, id: 0, ok: 0 };
+    var urls = this.sfxUrls(), dec = null;
+    var OC = typeof window === 'undefined' ? null : (window.OfflineAudioContext || window.webkitOfflineAudioContext);
+    if (OC) { try { dec = new OC(2, 44100, 44100); } catch (e) { dec = null; } }
+    if (typeof fetch === 'function') {
+      Object.keys(urls).forEach(function (k) {
+        sx.raw[k] = fetch(urls[k]).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).catch(function () { return null; });
+        if (dec) sx.buf[k] = sx.raw[k].then(function (b) { return b ? self.sfxDecode(dec, b.slice(0)) : null; });
+      });
+    }
+    return sx;
+  }
+  sfx(k, from, wait, done) {
+    // 押した瞬間を0秒として、音の from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）
+    var self = this, sx = this.sfxInit();
+    this.hush();
+    var id = sx.id, t0 = Date.now(), url = this.sfxUrls()[k];
+    var end = function () { if (done && id === sx.id) done(); };
+    from = from || 0;
+    wait = wait || 0;
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    var ctx = sx.ctx;
+    if (!ctx || !sx.raw[k]) {
+      if (from || wait || typeof Audio === 'undefined') { end(); return; }
+      try { var a = new Audio(url); a.onended = end; sx.el = a; var p = a.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
+      return;
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    if (!sx.ok) {
+      sx.ok = 1;
+      try { var s0 = ctx.createBufferSource(); s0.buffer = ctx.createBuffer(1, 1, 22050); s0.connect(ctx.destination); s0.start(0); } catch (e) {}
+    }
+    (sx.buf[k] || Promise.resolve(null)).then(function (buf) {
+      // 先に読めなかったときは、鳴らす方で読みなおす
+      return buf || sx.raw[k].then(function (b) { return b ? self.sfxDecode(ctx, b.slice(0)) : null; });
+    }).then(function (buf) {
+      if (id !== sx.id) return;
+      var el = (Date.now() - t0) / 1000, late = Math.max(0, el - wait), off = from + (late > .1 ? late : 0);
+      if (!buf || off >= buf.duration) { end(); return; }
+      var s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(ctx.destination);
+      s.onended = end;
+      s.start(ctx.currentTime + Math.max(0, wait - el), off);
+      sx.src = s;
+    });
+  }
+  hush() {
+    var sx = this._sx;
+    if (!sx) return;
+    sx.id++;
+    if (sx.src) { try { sx.src.stop(); } catch (e) {} sx.src = null; }
+    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }
+  }
+  slow() {
+    // iPhoneの「視差効果を減らす」
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  renderVals() {
+    this.sfxInit();
+    var st = this.state || {};
+    var ph = st.ph || this.props.start || 'form';
+    var self = this;
+    return {
+      isPush: ph === 'push',
+      isReveal: ph === 'reveal',
+      toPush: function () { self.sfx('push'); self.setState({ ph: 'push' }); },
+      toReveal: function () { self.sfx('tap'); self.setState({ ph: 'reveal' }); },
+      toForm: function () { self.hush(); self.setState({ ph: 'form' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>
