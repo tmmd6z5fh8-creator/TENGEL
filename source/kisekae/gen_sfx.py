@@ -258,6 +258,141 @@ def cuin(f0, f1, d, rise, rng):
     return fade(x * a / 2.4, .002, .06)
 
 
+def kyuin(f0, f1, d=.42, tau=.035, per=.16):
+    """キュウィン：「キュ」とすばやく上がって少し行きすぎ、「ウィン」と鳴って消える明るいシンセ（パチスロの告知音のような）"""
+    n = n_(d)
+    t = tl(n)
+    s = 1 - np.exp(-t / tau) * np.cos(2 * np.pi * t / per)          # 少し上へ行きすぎて戻る
+    f = f0 * (f1 / f0) ** s
+    f = f * (1 + .008 * np.clip((t - .14) / .08, 0, 1) * np.sin(2 * np.pi * 8 * t))
+    dk = .12 + .45 * np.exp(-t / .03) + .25 * np.clip((t - .14) / .22, 0, 1)   # こもる → 開く（ウィ）→ 少しこもる（ン）
+    x = (.5 * saw(f, n, dk, nh=24) + .3 * saw(f * 1.004, n, dk, nh=24, odd=.5)
+         + .45 * np.sin(phase(f, n)) + .18 * np.sin(phase(f / 2, n)))
+    a = np.minimum(t / .004, 1) * np.where(t < .16, 1, np.exp(-(t - .16) / .11))
+    return fade(x * a / 1.3, .001, .04)
+
+
+# ---------- 低音・重低音（ど的中） ----------
+def boom(f0=95, f1=30, d=1.6, tau=.55, drop=.06, drive=2.2, rng=None, grit=.25, body=.7, click=.35):
+    """ドォォン：重低音（音程がゆっくり下がって長く響く）＋1オクターブ上の「ドン」と、低い「ドッ」（空気の音）。
+       ひずませて倍音を出し、スマホのスピーカー（重低音が出ない）でも低音を感じるように"""
+    n = n_(d)
+    t = tl(n)
+    f = f1 + (f0 - f1) * np.exp(-t / drop)
+    ph = phase(f, n)
+    x = np.tanh(drive * np.sin(ph) * np.exp(-t / tau)) / np.tanh(drive)
+    x = x + body * np.tanh(2.5 * np.sin(2 * ph) * np.exp(-t / (tau * .45))) / np.tanh(2.5)
+    if grit and rng is not None:
+        x = x + grit * bp(rng.standard_normal(n), 150, 1500) * np.exp(-t / .05) * 4
+        x = x + click * bp(rng.standard_normal(n), 1200, 5000) * np.exp(-t / .004) * 3
+    return fade(x, .001, .08)
+
+
+def growl(f0, f1, d, rise, drive=2.6):
+    """グォォォン↑：低いうなり（少しずらした2つののこぎり波＋1オクターブ下）が上がりながら明るくなる"""
+    n = n_(d)
+    t = tl(n)
+    s = np.clip(t / rise, 0, 1)
+    s = s * s * (3 - 2 * s)
+    f = f0 * (f1 / f0) ** s
+    dk = .3 - .22 * s
+    x = .5 * saw(f * 2 ** (-10 / 1200), n, dk, nh=60) + .5 * saw(f * 2 ** (10 / 1200), n, dk, nh=60) + .6 * np.sin(phase(f / 2, n))
+    x = x + .5 * saw(f * 2, n, dk + .05, nh=40)
+    x = np.tanh(drive * x) / np.tanh(drive)
+    a = np.minimum(t / .05, 1) * np.where(t < rise + .1, 1, np.exp(-(t - rise - .1) / .35))
+    return fade(x * a, .003, .08)
+
+
+def gong(f, d=2.5, tau=1.0, rng=None):
+    """ゴォーン：低いどら（ふぞろいな倍音が長く鳴る）"""
+    n = n_(d)
+    t = tl(n)
+    x = np.zeros(n)
+    for r, a, k in ((1, 1, 1), (1.48, .6, .8), (1.99, .5, .6), (2.57, .35, .45), (3.11, .25, .35), (3.73, .18, .25)):
+        if f * r < 12000:
+            x += a * np.sin(2 * np.pi * f * r * t + (rng.uniform(0, 6.28) if rng is not None else 0)) * np.exp(-t / (tau * k))
+    x = x * np.minimum(t / .006, 1)
+    if rng is not None:
+        x = x + .3 * lp(rng.standard_normal(n), 1200) * np.exp(-t / .03)
+    return fade(x / 2.2, .001, .1)
+
+
+def lsnare(rng, d=.28, tau=.08, tone=110):
+    """低いスネア（ドスッ）"""
+    n = n_(d)
+    t = tl(n)
+    nz = bp(rng.standard_normal(n), 250, 2600) * np.exp(-t / tau)
+    tn = (.8 * np.sin(2 * np.pi * tone * t) + .4 * np.sin(2 * np.pi * tone * 1.6 * t)) * np.exp(-t / .06)
+    return fade(.7 * nz + tn, .0005, .02)
+
+
+def lcrash(rng, d=2.0, tau=.6):
+    """暗いシャーン（低めの金属の板＋こもったノイズ）"""
+    n = n_(d)
+    t = tl(n)
+    m = np.zeros(n)
+    for f in (205.3, 304.4, 369.6, 522.7, 540.0, 800.0):
+        m += np.sign(np.sin(2 * np.pi * f * .8 * t + rng.uniform(0, 6.28)))
+    m = bp(m, 900, 5500)
+    nz = bp(rng.standard_normal(n), 600, 4500)
+    x = (.5 * m / 6 + .5 * nz) * np.exp(-t / tau) * np.minimum(t / .004, 1)
+    return fade(x, .001, .15)
+
+
+def rumble(d, rng, fc=160, am=14):
+    """ゴゴゴ：地ひびき（こもったノイズを細かくゆらす＋とても低い音）"""
+    n = n_(d)
+    t = tl(n)
+    x = lp(rng.standard_normal(n), fc, 4)
+    x = x / (np.std(x) + 1e-9) * (.65 + .35 * np.sin(2 * np.pi * am * t + rng.uniform(0, 6.28)))
+    x = x + .5 * np.sin(phase(36 + 4 * np.sin(2 * np.pi * .7 * t), n))
+    g = bp(rng.standard_normal(n), 180, 700)
+    x = x + .6 * g / (np.std(g) + 1e-9) * (.5 + .5 * np.sin(2 * np.pi * am * 1.5 * t)) ** 2
+    return fade(x / 2, .05, .1)
+
+
+def lglitch(kind, d, rng):
+    """低いバグる音：zap＝ヴッ（音程がいっきに下がる）・buzz＝ブブブ（低いデジタルのうなり）・thud＝ドッ・tick＝コッ"""
+    n = n_(d)
+    t = tl(n)
+    if kind == 'zap':
+        f = 60 + rng.uniform(300, 700) * np.exp(-t / .012)
+        x = lp(np.sign(np.sin(phase(f, n))) * np.exp(-t / .04), 3000)
+    elif kind == 'buzz':
+        f = rng.uniform(40, 110)
+        x = lp(np.round((.6 * np.sign(np.sin(phase(f, n))) + .4 * np.sign(np.sin(phase(f * 1.5, n)))) * 4) / 4, 1600)
+    elif kind == 'thud':
+        x = np.tanh(2 * np.sin(phase(rng.uniform(42, 60), n)) * np.exp(-t / .04))
+    else:
+        x = 3 * lp(rng.standard_normal(n), 1200) * np.exp(-t / .006)
+    return fade(x, .001, .004)
+
+
+def lcrackle(d, rate, rng):
+    """低いジジジ（こもった静電気）"""
+    n = n_(d)
+    x = np.zeros(n)
+    for _ in range(int(rng.poisson(rate * d))):
+        i = int(rng.integers(0, max(1, n - 400)))
+        k = int(rng.integers(60, 400))
+        seg = rng.standard_normal(k) * np.exp(-np.arange(k) / (k / 4)) * rng.uniform(.3, 1)
+        x[i:i + k] += seg[:len(x[i:i + k])]
+    return bp(x, 150, 1800)
+
+
+def crt_low(rng):
+    """ブツン（低いプチュン）：重低音がドスンと落ちる「ブ」＋音程がいっきに下がる「ツ」＋短いうなり「ン」"""
+    d = .6
+    n = n_(d)
+    t = tl(n)
+    pu = np.tanh(2.2 * np.sin(phase(26 + 130 * np.exp(-t / .03), n)) * np.exp(-t / .16)) / np.tanh(2.2)
+    zip_ = np.tanh(3 * np.sin(phase(55 + 1500 * np.exp(-t / .028), n))) * np.exp(-t / .07)
+    chu = bp(rng.standard_normal(n), 400, 3000) * np.exp(-np.maximum(t - .005, 0) / .015) * np.minimum(t / .005, 1)
+    hum = (np.sin(phase(55, n)) + .5 * np.sin(phase(110, n))) * np.exp(-np.maximum(t - .03, 0) / .12) * np.minimum(t / .03, 1)
+    click = lp(rng.standard_normal(n), 3000) * np.exp(-t / .002)
+    return fade(.9 * pu + .6 * zip_ + .5 * chu + .3 * hum + .4 * click, .0005, .06)
+
+
 def glitch(kind, d, rng):
     """バグる音：zip＝ジッ（荒いデジタルの粒）・buzz＝ブーッ（デジタルのうなり）・thud＝ブッ・tick＝チッ"""
     n = n_(d)
@@ -320,7 +455,7 @@ class Mix:
             self.b[i:j] += g * x[:j - i]
             self.r[i:j] += g * rv * x[:j - i]
 
-    def render(self, rt=1.5, damp=6500, target=-16.0, peak_db=-1.0):
+    def render(self, rt=1.5, damp=6500, target=-16.0, peak_db=-1.0, bass=False):
         rng = np.random.default_rng(7)
         n = n_(rt * 1.3)
         t = tl(n)
@@ -331,7 +466,7 @@ class Mix:
             irs.append(ir / np.sqrt((ir ** 2).sum()) * .5)
         wl = signal.fftconvolve(self.r[:, 0], irs[0])[:len(self.b)]
         wr = signal.fftconvolve(self.r[:, 1], irs[1])[:len(self.b)]
-        x = master(self.b + np.stack([wl + .25 * wr, wr + .25 * wl], 1), peak_db)
+        x = master(self.b + np.stack([wl + .25 * wr, wr + .25 * wl], 1), peak_db, bass)
         # 大きさをそろえる（LUFS）。ただし -1dB をこえるときは、こえない所まで
         g = min(10 ** ((target - lufs(x)) / 20), 10 ** (peak_db / 20) / (np.max(np.abs(x)) + 1e-12))
         return x * g
@@ -375,19 +510,37 @@ def lufs(x):
     return float(-.691 + 10 * np.log10(z.mean()))
 
 
-def master(x, peak_db=-1.0):
-    """仕上げ：低すぎる音を切る → 低音を少し下げ、こもりを少し取り、輪郭を少し出す → まとめて少し圧縮（大きいところだけ下げる）→ 少しだけ丸める → いちばん大きい所を -1dB に"""
-    x = np.stack([hp(x[:, c] - x[:, c].mean(), 30, 2) for c in range(2)], 1)
-    for kind, f0, q, g in (('shelf_lo', 150, .7071, -3.0), ('peak', 320, 1.0, -2.0), ('peak', 2600, .9, 1.5)):
+BASS_EX = 1.0    # 低音から作る倍音の量（ど的中）
+BASS_SAT = 2.5   # 低音（120Hzより下）をまるめる強さ（ど的中。重低音のピークで全体が小さくならないように）
+
+
+def master(x, peak_db=-1.0, bass=False):
+    """仕上げ：低すぎる音を切る → 低音を少し下げ、こもりを少し取り、輪郭を少し出す → まとめて少し圧縮（大きいところだけ下げる）→ 少しだけ丸める → いちばん大きい所を -1dB に
+       bass（ど的中）：低音を下げずに持ち上げ（100Hzより下 +3dB）、1.5kHz あたりを少し出して輪郭を作る。
+       120Hzより下だけ頭をまるめて（重低音のピークで全体が小さくならないように）、160Hzより下の音をひずませて 200〜1500Hz の倍音を足す
+       （スマホのスピーカーは重低音が出ないので、倍音で低音を感じるように）"""
+    x = np.stack([hp(x[:, c] - x[:, c].mean(), 25 if bass else 30, 2) for c in range(2)], 1)
+    eq = ((('shelf_lo', 100, .7071, 3.0), ('peak', 320, 1.0, -2.0), ('peak', 1500, .9, 2.5), ('shelf_hi', 7000, .7071, -1.5)) if bass
+          else (('shelf_lo', 150, .7071, -3.0), ('peak', 320, 1.0, -2.0), ('peak', 2600, .9, 1.5)))
+    for kind, f0, q, g in eq:
         b, a = biquad(kind, f0, q, g)
         x = signal.lfilter(b, a, x, axis=0)
+    if bass:
+        lo = np.stack([lp(lp(x[:, c], 120, 2), 120, 2) for c in range(2)], 1)
+        pk = np.max(np.abs(lo)) + 1e-12
+        x = x - lo + np.tanh(BASS_SAT * lo / pk) * pk / BASS_SAT
+        lo = np.stack([lp(x[:, c], 160, 4) for c in range(2)], 1)
+        pk = np.max(np.abs(lo)) + 1e-12
+        h = np.tanh(6 * lo / pk) * pk
+        x = x + BASS_EX * np.stack([bp(h[:, c], 200, 1500, 2) for c in range(2)], 1)
     x = x / (np.max(np.abs(x)) + 1e-12)
     e = np.sqrt(np.maximum(lp(np.mean(x ** 2, 1), 15, 1), 1e-10))
     g = np.minimum(1.0, (.22 / e) ** (1 - 1 / 2.5))
     g = lp(np.concatenate([np.ones(2000), g]), 6, 1)[2000:]
     x = x * g[:, None]
     x = x / (np.max(np.abs(x)) + 1e-12)
-    x = np.tanh(1.3 * x) / np.tanh(1.3)
+    k = 1.8 if bass else 1.3
+    x = np.tanh(k * x) / np.tanh(k)
     return x / (np.max(np.abs(x)) + 1e-12) * 10 ** (peak_db / 20)
 
 
@@ -461,8 +614,8 @@ def sfx_big_push():
 
 
 def sfx_big():
-    """押してから：0 ポン → .18 ドーン（白く光る）→ .25〜.75 シャララララ↑（虹の光）→ .85 光の中から馬 → 1.5「デカ的中!!」パーン
-       → 1.85 パ（IV）→ 2.0 パ（V）→ 2.2 パーーン（I）＋合計でコイン（買い目 1.75・1.9）"""
+    """押してから：0 ポン → .18 ドーン（白く光る）→ .28・.55・.85 キュウィン×3（虹の輪が3つ広がるのに合わせて・だんだん高く。うしろで小さくシャララ）
+       → .85 光の中から馬 → 1.5「デカ的中!!」パーン → 1.85 パ（IV）→ 2.0 パ（V）→ 2.2 パーーン（I）＋合計でコイン（買い目 1.75・1.9）"""
     mx = Mix(3.8, 22)
     r = mx.rng
     mx.add(pop(440, 200, .16, r, .35), 0, .8, rv=.1)
@@ -471,11 +624,14 @@ def sfx_big():
     mx.add(crash(r, 2.0, .6), .18, .2, .5, rv=.2)
     scale = (74, 76, 78, 79, 81, 83, 85, 86, 88, 90, 91, 93, 95, 97, 98)       # D5〜D7（ニ長調）
     for i, m in enumerate(scale):
-        mx.add(bell(mtof(m), .7, idx=1.8, tau=.28, glock=.2), .25 + .45 * i / len(scale), .13, -.7 + 1.4 * i / len(scale), rv=.4)
+        mx.add(bell(mtof(m), .7, idx=1.8, tau=.28, glock=.2), .25 + .45 * i / len(scale), .05, -.7 + 1.4 * i / len(scale), rv=.4)
     sw = pad((62, 66, 69, 74), .62, .5, .25)
     mx.add(sw, .25, .5, rv=.3)
     mx.add(nsweep(.62, 600, 5200, .35, r) * np.linspace(0, 1, n_(.62)) ** 2, .25, .1, rv=.3)
-    mx.add(nsweep(.5, 3200, 700, .4, r) * np.exp(-tl(n_(.5)) / .15), .85, .1, rv=.3)
+    mx.add(nsweep(.5, 3200, 700, .4, r) * np.exp(-tl(n_(.5)) / .15), .85, .06, rv=.3)
+    # キュウィン×3（虹の輪 r1・r2・r3 と同じ時刻。D6 → F#6 → A6 と上がる）
+    for t, m, g, p in ((.28, 86, .42, -.3), (.55, 90, .45, .3), (.85, 93, .5, 0)):
+        mx.add(kyuin(mtof(m) / 2.3, mtof(m)), t, g, p, rv=.3)
     # ファンファーレ
     for t, m in ((1.29, 69), (1.36, 71), (1.43, 73)):                            # A4 B4 C#5（ためて）
         mx.add(brass(m, .055, r, False), t, .3, rv=.2)
@@ -498,157 +654,169 @@ def sfx_big():
     return mx.render(1.5, target=-15)
 
 
-# ---------- ど的中ボタン（フリーズ・ホ長調・いちばん派手） ----------
+# ---------- ど的中ボタン（フリーズ・ホ長調・低音と重低音で、いちばん派手） ----------
+FZ_LOW = .5     # 重低音（ドォォン）の大きさ
+FZ_MID = 1.5    # 低音の楽器（金管・ジャン・どら・鐘・シャーン）の大きさ。スマホのスピーカーで聞こえるのはおもにこちら
+
+
 def sfx_fz_push():
-    """PUSHが出たとき：ドゥン＋重いギュイイイン！＋キラキラ"""
+    """PUSHが出たとき：ドォォン（重低音）＋グォォォン↑（低いうなりが1オクターブ上がる）＋低いどら＋うしろでゴゴゴ（地ひびき）"""
     mx = Mix(2.4, 31)
     r = mx.rng
-    mx.add(kick(90, 38, .9, 2.6, .5, .2, r), 0, .65, rv=.15)
-    mx.add(cuin(520, 2640, 1.7, .36, r), 0, .5, -.1, rv=.35)
-    mx.add(cuin(260, 1320, 1.7, .36, r), .01, .28, .1, rv=.3)
-    mx.add(crash(r, 1.8, .5), .02, .12, 0, rv=.3)
-    sparkle(mx, .3, 1.0, 12, (88, 92, 95, 100, 104, 107), .07, r)
-    return mx.render(1.6, target=-15)
+    mx.add(boom(100, 30, 1.8, .5, .07, 2.4, r), 0, 1.2 * FZ_LOW, rv=.12)
+    mx.add(growl(mtof(40), mtof(52), 1.9, 1.0), .02, .8, -.1, rv=.2)         # E2 → E3
+    mx.add(growl(mtof(47), mtof(59), 1.9, 1.0), .03, .35, .1, rv=.2)         # 5度上を重ねる（B2 → B3）
+    mx.add(rumble(1.8, r), 0, .15, rv=.1)
+    mx.add(lcrash(r, 1.6, .5), .02, .1 * FZ_MID, rv=.3)
+    mx.add(gong(mtof(52), 2.0, .8, r), .03, .25 * FZ_MID, rv=.35)                     # E3
+    return mx.render(1.6, target=-13, bass=True)
+
+
+def medals(mx, t0, dur, count, g, rng, curve=1.8):
+    """ジャラジャラ：メダル（コインより低め）がたくさん"""
+    for _ in range(count):
+        mx.add(coin(rng.uniform(1000, 1900), rng, rng.uniform(.25, .45)), t0 + dur * rng.uniform(0, 1) ** curve, g * rng.uniform(.5, 1), rng.uniform(-.8, .8), rv=.25)
 
 
 def sfx_fz():
-    """押してから（秒は gen_fx.py の FZ_T）：
-       0〜E バグる音（GL_SCRIPT のコマごとに ジッ・ブッ・チッ・色ずれのうなり）→ C アイコンのドアップでヴォン → H 光の筋がシュイーン
-       → E 青い画面でジジジ（静電気）と高い音が上がる → W プチュン → 線のジジ → Z 線が縮んでシュン → 真っ暗（無音）
-       → M ドン！→「とんでも！」1文字ずつダダダダ＋「！」でジャン（E → F# → G# → A と上がる）→ M＋2.2 白い光でシャーン
-       →「ど！」×4（B のコードで上がる・スネアの連打とせり上がる音）→ M＋3.4「ど的中！！！！」でジャーン!!（E）＋光の波に合わせて .45秒ごとのリズム
-       → R 結果：パッパッパーン＋コインがジャラジャラ → R＋.6「フリーズ的中!!!」キラーン → 買い目 R＋.85〜 → 合計 R＋1.3 チャリーン"""
+    """押してから（秒は gen_fx.py の FZ_T）。全体を低音・重低音で：
+       0〜E バグる音（ドッ＋GL_SCRIPT のコマごとに低いブブッ・ヴッ・ドッ・コッ）→ C アイコンのドアップでヴォォン＋ギュゥン↓
+       → H 光の筋でゴォッ → E 青い画面でゴゴゴ（地ひびき）と低いうなりが上がる → W ブツン（低いプチュン）→ Z ズゥン↓ → 真っ暗（無音）
+       → M ドォォン！→「とんでも！」1文字ずつ低いタムでドドドド＋「！」で低いジャン（E → F# → G# → A）・低いベースが刻む
+       → M＋2.2 白い光でゴォーン（低いどら）→「ど！」×4（重低音のドッ！と低いジャン）→ 低いタムの連打
+       → M＋3.4「ど的中！！！！」でドォォォン!!＋低い金管の和音 → 光の波に合わせて .45秒ごとに重いドン
+       → R 結果：ドォン＋低いパッパッパーン＋メダルのジャラジャラ → R＋.6「フリーズ的中!!!」ゴォーン → 買い目 R＋.85〜 → 合計 R＋1.3"""
     fz, gl = read_fx_times()
     C, H, E, W, Z, M, R = (fz[k] for k in 'CHEWZMR')
     mx = Mix(R + 3.4, 32)
     r = mx.rng
     # --- バグる（0〜E） ---
-    mx.add(kick(110, 40, .4, 3.0, .15, .4, r), 0, .7, rv=.1)
-    mx.add(glitch('zip', .08, r), 0, .5, rv=.1)
+    mx.add(boom(120, 32, .9, .3, .03, 2.8, r), 0, .9 * FZ_LOW, rv=.08)
+    mx.add(lglitch('zap', .08, r), 0, .45, rv=.08)
     for t0, t1, fx in gl:
         d = max(.02, t1 - t0)
         for f in fx.split():
             v = float(f[1:]) if len(f) > 1 else 0
             if f[0] == 'S':
                 rb = np.random.default_rng(int(v * 7 + 3))
-                mx.add(glitch('buzz', d, rb), t0, .1 + .008 * v, rv=.05)
+                mx.add(lglitch('buzz', d, rb), t0, .2 + .012 * v, rv=.05)
             elif f[0] == 'L':
-                mx.add(glitch('zip', min(d, .05), r), t0, .35 + v / 120, r.uniform(-.6, .6), rv=.08)
+                mx.add(lglitch('zap', min(d, .06), r), t0, .55 + v / 80, r.uniform(-.5, .5), rv=.08)
             elif f[0] == 'B':
-                mx.add(glitch('thud', min(d, .05), r), t0, .5, rv=.05)
+                mx.add(lglitch('thud', min(d, .06), r), t0, .7, rv=.05)
             elif f[0] == 'T':
-                mx.add(glitch('tick', .02, r), t0, .45, r.uniform(-.5, .5), rv=.05)
-    # アイコンのドアップ（C〜E）：ヴォン（電気のうなり）
+                mx.add(lglitch('tick', .03, r), t0, .6, r.uniform(-.4, .4), rv=.05)
+    # アイコンのドアップ（C〜E）：ヴォォン（低い電気のうなり）＋ギュゥン↓
     n = n_(E - C)
-    hum = bp(saw(55, n, .15) + .5 * saw(110.5, n, .2), 80, 1800) * np.minimum(tl(n) / .03, 1) * np.clip((E - C - tl(n)) / .05, 0, 1)
-    mx.add(fade(hum), C, .22, rv=.1)
-    mx.add(fade(np.sin(phase(np.geomspace(1300, 180, n_(.12)), n_(.12))) * np.exp(-tl(n_(.12)) / .05)), C, .3, rv=.15)
-    # 光の筋（H〜E）：シュイーン（左から右へ）
+    hum = lp(saw(41.2, n, .1) + .6 * saw(55.0 * 1.003, n, .15), 700) * np.minimum(tl(n) / .03, 1) * np.clip((E - C - tl(n)) / .05, 0, 1)
+    mx.add(fade(hum), C, .32, rv=.1)
+    gd = .25
+    mx.add(fade(np.sin(phase(np.geomspace(420, 42, n_(gd)), n_(gd))) * np.exp(-tl(n_(gd)) / .1)), C, .45, rv=.15)
+    mx.add(boom(80, 30, .6, .25, .04, 2.0, r), C, .5 * FZ_LOW, rv=.1)
+    # 光の筋（H〜E）：ゴォッ（低いノイズが左から右へ）
     wd = E - H + .05
-    mx.add(nsweep(wd, 1500, 6500, .3, r) * np.sin(np.linspace(0, np.pi, n_(wd))), H, .14, np.linspace(-.8, .8, 8), rv=.2)
-    mx.add(fade(np.sin(phase(np.geomspace(800, 3000, n_(wd)), n_(wd))) * np.sin(np.linspace(0, np.pi, n_(wd)))), H, .06, rv=.2)
-    # 青い画面（E〜W）：ジジジ＋上がる高い音＋白い光がふくらむ
+    mx.add(nsweep(wd, 70, 600, .45, r) * np.sin(np.linspace(0, np.pi, n_(wd))), H, .3, np.linspace(-.7, .7, 8), rv=.2)
+    # 青い画面（E〜W）：ゴゴゴ＋低いうなりが上がる＋低いジジジ
     d = W - E
-    mx.add(crackle(d, 130, r), E, .4, rv=.15)
-    wh = np.sin(phase(np.geomspace(1800, 6000, n_(d)), n_(d)) + .4 * np.sin(2 * np.pi * 37 * tl(n_(d)))) * np.linspace(.2, 1, n_(d))
-    mx.add(fade(wh), E, .1, rv=.2)
-    mx.add(lp(r.standard_normal(n_(d)), 3000) * np.linspace(0, 1, n_(d)) ** 2, E, .06, rv=.2)
-    # プチュン（W）→ 線のジジ → 縮んでシュン（Z）
-    mx.add(crt_off(r), W, 1.6, rv=.25)
-    mx.add(crackle(Z - W - .04, 55, r), W + .04, .2, rv=.2)
-    sd = .2
-    mx.add(fade(np.sin(phase(np.geomspace(2600, 500, n_(sd)), n_(sd))) * np.exp(-tl(n_(sd)) / .08)), Z, .25, rv=.25)
+    mx.add(rumble(d, r, 180, 16) * np.linspace(.3, 1, n_(d)), E, .45, rv=.1)
+    mx.add(fade(np.tanh(1.5 * np.sin(phase(np.geomspace(32, 80, n_(d)), n_(d)))) * np.linspace(.3, 1, n_(d))), E, .35, rv=.1)
+    mx.add(lcrackle(d, 90, r), E, .3, rv=.15)
+    # ブツン（W）→ 線の低いジジ → ズゥン↓（Z）
+    mx.add(crt_low(r), W, 1.8, rv=.25)
+    mx.add(lcrackle(Z - W - .04, 45, r), W + .04, .18, rv=.2)
+    sd = .35
+    mx.add(fade(np.tanh(1.8 * np.sin(phase(np.geomspace(300, 34, n_(sd)), n_(sd)))) * np.exp(-tl(n_(sd)) / .12)), Z, .5, rv=.25)
     # --- 真っ暗（Z＋.3〜M）は無音 ---
     # --- ネオンのカット（M〜R） ---
-    mx.add(kick(120, 38, .9, 3.0, .45, .3, r), M, 1.0, rv=.15)
-    mx.add(crash(r, 1.6, .5), M, .2, -.5, rv=.25)
-    mx.add(crash(r, 1.6, .5), M, .2, .5, rv=.25)
-    mx.add(stab((52, 59, 64), .45, r), M, .45, rv=.25)
+    mx.add(boom(90, 27, 1.6, .45, .08, 2.6, r), M, 1.0 * FZ_LOW, rv=.15)
+    mx.add(lcrash(r, 1.8, .55), M, .14 * FZ_MID, -.5, rv=.25)
+    mx.add(lcrash(r, 1.8, .55), M, .14 * FZ_MID, .5, rv=.25)
+    mx.add(stab((40, 47, 52), .55, r, 3.0, .5), M, .55 * FZ_MID, rv=.25)                # E2・B2・E3（下に E1）
     cuts = (((M + .08 + .06 * i for i in range(5)), 52), ((M + .8 + .06 * i for i in range(5)), 54),
             ((M + 1.5 + .045 * i for i in range(5)), 56), ((M + 1.72 + .045 * i for i in range(5)), 57))
     for k, (times, root) in enumerate(cuts):
         times = list(times)
-        for i, t in enumerate(times[:4]):                                          # と・ん・で・も
-            mx.add(tom(mtof(root - 12 + 2 * i), r), t, .38, (-.4, -.15, .15, .4)[i], rv=.12)
-            mx.add(glitch('zip', .03, r), t, .12, r.uniform(-.5, .5), rv=.05)
-        tx = times[4]                                                               # ！
-        mx.add(stab((root, root + 7, root + 12), .38, r), tx, .5, (-.2, .2, -.1, .1)[k], rv=.25)
-        mx.add(kick(130, 45, .45, 2.4, .2, .25, r), tx, .65, rv=.08)
-        mx.add(crash(r, .6, .2), tx, .08, (-.4, .4, -.3, .3)[k], rv=.2)
-    # 下で鳴る低いうなり（コードに合わせて E → F# → G# → A → B）・8分で刻む
-    roots = ((M, 40), (M + .8, 42), (M + 1.5, 44), (M + 1.72, 45), (M + 2.2, 47))
+        for i, t in enumerate(times[:4]):                                          # と・ん・で・も：低いタム
+            mx.add(tom(mtof(root - 17 + 2 * i), r, .4), t, .5, (-.4, -.15, .15, .4)[i], rv=.12)
+            mx.add(lglitch('zap', .04, r), t, .12, r.uniform(-.5, .5), rv=.05)
+        tx = times[4]                                                               # ！：低いジャン
+        mx.add(stab((root - 12, root - 5, root), .42, r, 3.0, .45), tx, .55 * FZ_MID, (-.2, .2, -.1, .1)[k], rv=.22)
+        mx.add(boom(110, 34, .5, .2, .03, 2.4, r), tx, .75 * FZ_LOW, rv=.08)
+        mx.add(lcrash(r, .7, .25), tx, .07 * FZ_MID, (-.4, .4, -.3, .3)[k], rv=.2)
+    # 下で刻む低いベース（E1 → F#1 → G#1 → A1 → B1）・8分
+    roots = ((M, 28), (M + .8, 30), (M + 1.5, 32), (M + 1.72, 33), (M + 2.2, 35))
     g0 = M + 2.34 - 10 * .22
     for k in range(15):
         t = g0 + .22 * k
         if t >= M + 3.4 - .05:
             break
         rt = [m for s, m in roots if s <= t + 1e-6][-1]
-        mx.add(stab((rt, rt + 7), .2, r, 1.2, 0), t, .1 + .008 * k, rv=.1)
-    # 白い光（M＋2.2）：シャーン＋キラキラ↑ →「ど！」×4（B）
-    mx.add(crash(r, 1.4, .45), M + 2.2, .18, -.4, rv=.3)
-    mx.add(crash(r, 1.4, .45), M + 2.2, .18, .4, rv=.3)
-    for i, m in enumerate((83, 87, 90, 95, 99, 102, 107)):
-        mx.add(bell(mtof(m), .5, idx=1.6, tau=.25, glock=.2), M + 2.2 + .025 * i, .1, -.6 + .2 * i, rv=.4)
+        mx.add(stab((rt + 12, rt + 24), .2, r, 2.6, .5), t, (.16 + .01 * k) * FZ_MID, rv=.08)
+    # 白い光（M＋2.2）：ゴォーン（低いどら）＋暗いシャーン →「ど！」×4（重低音のドッ！＋低いジャン）
+    mx.add(gong(mtof(47), 1.8, .7, r), M + 2.2, .4 * FZ_MID, rv=.35)                  # B2
+    mx.add(lcrash(r, 1.4, .45), M + 2.2, .12 * FZ_MID, -.4, rv=.3)
+    mx.add(lcrash(r, 1.4, .45), M + 2.2, .12 * FZ_MID, .4, rv=.3)
     for i, ch in enumerate(((47, 54, 59), (51, 54, 59, 63), (54, 59, 63, 66), (59, 63, 66, 71))):
         t = M + 2.34 + .22 * i
-        mx.add(stab(ch, .2, r, 2.2), t, .48 + .05 * i, rv=.2)
-        mx.add(kick(140, 48, .35, 2.6, .14, .3, r), t, .7, rv=.06)
-        mx.add(snare(r, .2, .06), t, .25, rv=.15)
+        mx.add(stab(ch, .22, r, 3.0, .5), t, (.5 + .05 * i) * FZ_MID, rv=.2)
+        mx.add(boom(130, 33, .45, .18, .025, 2.6, r), t, .9 * FZ_LOW, rv=.06)
+        mx.add(lsnare(r, .25), t, .3, rv=.12)
     t = M + 3.0
-    while t < M + 3.38:                                                             # スネアの連打（だんだん速く・大きく）
+    while t < M + 3.38:                                                             # 低いタムの連打（だんだん速く・高く・大きく）
         u = (t - M - 3.0) / .4
-        mx.add(snare(r, .12, .04), t, .12 + .25 * u, r.uniform(-.2, .2), rv=.15)
+        mx.add(tom(70 + 70 * u, r, .18), t, .25 + .35 * u, r.uniform(-.3, .3), rv=.12)
         t += .055 - .03 * u
     rd = 1.2
-    mx.add(nsweep(rd, 500, 8000, .35, r) * np.linspace(0, 1, n_(rd)) ** 2, M + 2.2, .2, rv=.3)
-    mx.add(fade(np.sin(phase(np.geomspace(mtof(59), mtof(83), n_(rd)), n_(rd))) * np.linspace(0, 1, n_(rd))), M + 2.2, .06, rv=.3)
-    # 「ど的中！！！！」（M＋3.4）：ジャーン!!（E）
+    mx.add(nsweep(rd, 60, 900, .4, r) * np.linspace(0, 1, n_(rd)) ** 2, M + 2.2, .3, rv=.25)
+    mx.add(fade(np.tanh(1.4 * np.sin(phase(np.geomspace(30, 62, n_(rd)), n_(rd)))) * np.linspace(0, 1, n_(rd)) ** 1.5), M + 2.2, .3, rv=.1)
+    # 「ど的中！！！！」（M＋3.4）：ドォォォン!!＋低い金管の和音（E）
     T5 = M + 3.4
-    mx.add(kick(110, 36, 1.0, 3.0, .5, .3, r), T5, 1.0, rv=.2)
-    mx.add(crash(r, 2.2, .8), T5, .28, -.5, rv=.35)
-    mx.add(crash(r, 2.2, .8), T5, .28, .5, rv=.35)
-    for i, m in enumerate((52, 59, 64, 68, 71, 76)):
-        mx.add(brass(m, 1.4, r), T5, .32, (i / 5 - .5) * .8, rv=.3)
-    mx.add(pad((64, 68, 71, 76), 1.7, .2, .5), T5, .3, rv=.35)
-    mx.add(bell(mtof(88), 1.2, idx=2.2, tau=.5), T5 + .02, .24, rv=.4)
-    for i, m in enumerate((92, 95, 100, 104)):                                     # ！×4
-        mx.add(bell(mtof(m), .9, idx=1.6, tau=.4), T5 + .08 + .06 * i, .2, (-.45, -.15, .15, .45)[i], rv=.4)
-    # 光の波（.45秒ごと）に合わせたリズムと、ピロピロ（16分）
+    mx.add(boom(80, 25, 2.0, .55, .1, 2.6, r), T5, 1.0 * FZ_LOW, rv=.2)
+    mx.add(lcrash(r, 2.4, .8), T5, .22 * FZ_MID, -.5, rv=.35)
+    mx.add(lcrash(r, 2.4, .8), T5, .22 * FZ_MID, .5, rv=.35)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):                               # E2・B2・E3・G#3・B3・E4
+        mx.add(brass(m, 1.5, r), T5, .34 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
+    for i, m in enumerate((68, 71)):                                               # 上に G#4・B4 を少し（輪郭）
+        mx.add(brass(m, 1.5, r), T5, .2 * FZ_MID, (-.3, .3)[i], rv=.3)
+    mx.add(pad((40, 47, 52), 1.6, .15, .5, .5), T5, .25, rv=.3)
+    mx.add(gong(mtof(52), 2.0, .75, r), T5 + .02, .35 * FZ_MID, rv=.4)
+    for i, m in enumerate((56, 59, 64, 68)):                                       # ！×4：低い鐘
+        mx.add(bell(mtof(m), 1.0, idx=1.4, tau=.5), T5 + .08 + .06 * i, .22 * FZ_MID, (-.45, -.15, .15, .45)[i], rv=.4)
+    # 光の波（.45秒ごと）に合わせた重いドンと、低いピロピロ（16分）
     k = 1
     while T5 + .45 * k < R - .1:
         tb = T5 + .45 * k
-        mx.add(kick(120, 45, .35, 2.0, .15, .2, r), tb, .35, rv=.06)
-        mx.add(pad((64, 68, 71), .3, .03, .2, .25), tb, .2, rv=.25)
+        mx.add(boom(110, 32, .55, .22, .03, 2.6, r), tb, .55 * FZ_LOW, rv=.06)
+        mx.add(stab((40, 52), .3, r, 2.2, .5), tb, .2 * FZ_MID, rv=.15)
         k += 1
-    arp = (76, 80, 83, 88, 83, 80)
+    arp = (52, 56, 59, 64, 59, 56)
     j = 0
     while T5 + .2 + .1125 * j < R - .05:
         tj = T5 + .2 + .1125 * j
-        mx.add(pluck(arp[j % len(arp)] + 12 * (j // 12 % 2), .25, .1), tj, .13, (-.3, .3)[j % 2], rv=.3)
-        if j % 2:
-            mx.add(hat(r), tj, .1, rv=.05)
+        mx.add(pluck(arp[j % len(arp)] + 12 * (j // 12 % 2), .25, .1), tj, .12, (-.3, .3)[j % 2], rv=.25)
         j += 1
-    # --- 結果（R）：パッパッパーン＋コイン → 「フリーズ的中!!!」キラーン → 買い目 → 合計 チャリーン ---
-    mx.add(kick(120, 40, .8, 2.6, .4, .3, r), R, .9, rv=.15)
-    for i, m in enumerate((88, 92, 95, 100, 104, 107)):
-        mx.add(bell(mtof(m), .6, idx=1.5, tau=.3, glock=.2), R + .02 * i, .12, -.5 + .2 * i, rv=.4)
-    for t, m in ((R, 76), (R + .09, 80), (R + .18, 83)):
-        mx.add(brass(m, .07, r, False), t, .34, rv=.2)
-    for i, m in enumerate((64, 71, 76, 80, 83, 88)):
-        mx.add(brass(m, 1.3, r), R + .27, .3, (i / 5 - .5) * .8, rv=.3)
-    mx.add(crash(r, 2.0, .6), R + .27, .2, -.4, rv=.35)
-    mx.add(crash(r, 2.0, .6), R + .27, .2, .4, rv=.35)
-    mx.add(kick(110, 40, .6, 2.4, .3, .2, r), R + .27, .8, rv=.1)
-    coins(mx, R + .1, 2.2, 40, .17, r, 1.8)
-    mx.add(bell(mtof(95), 1.2, idx=2.0, tau=.5), R + .6, .24, -.2, rv=.4)
-    mx.add(bell(mtof(100), 1.2, idx=1.6, tau=.5), R + .62, .2, .2, rv=.4)
-    for t, m in ((R + .85, 92), (R + 1.0, 95), (R + 1.15, 100)):                   # 買い目
-        mx.add(bell(mtof(m), .6, idx=1.4, tau=.28), t, .17, rv=.3)
-    mx.add(bell(mtof(100), 1.4, idx=1.3, tau=.6), R + 1.3, .26, rv=.45)            # 合計
-    mx.add(coin(3000, r, .5), R + 1.3, .3, -.2, rv=.25)
-    mx.add(coin(4100, r, .45), R + 1.36, .22, .25, rv=.25)
-    mx.add(pad((64, 68, 71, 76), 1.4, .3, .8), R + 1.3, .28, rv=.35)
-    return mx.render(1.6, target=-14)
+    # --- 結果（R）：ドォン＋低いパッパッパーン＋メダル → 「フリーズ的中!!!」ゴォーン → 買い目 → 合計 ---
+    mx.add(boom(100, 30, 1.3, .4, .05, 2.4, r), R, .95 * FZ_LOW, rv=.15)
+    mx.add(gong(mtof(52), 1.8, .7, r), R, .3 * FZ_MID, rv=.4)
+    for t, m in ((R, 52), (R + .09, 56), (R + .18, 59)):                          # E3 G#3 B3
+        mx.add(brass(m, .07, r, False), t, .38 * FZ_MID, rv=.2)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
+        mx.add(brass(m, 1.4, r), R + .27, .32 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
+    for i, m in enumerate((68, 71)):
+        mx.add(brass(m, 1.4, r), R + .27, .2 * FZ_MID, (-.3, .3)[i], rv=.3)
+    mx.add(lcrash(r, 2.0, .6), R + .27, .16 * FZ_MID, -.4, rv=.35)
+    mx.add(lcrash(r, 2.0, .6), R + .27, .16 * FZ_MID, .4, rv=.35)
+    mx.add(boom(90, 28, 1.1, .35, .05, 2.4, r), R + .27, .85 * FZ_LOW, rv=.1)
+    medals(mx, R + .1, 2.0, 26, .22 * FZ_MID, r)
+    mx.add(gong(mtof(47), 1.8, .7, r), R + .6, .3 * FZ_MID, -.2, rv=.4)                   # 「フリーズ的中!!!」
+    mx.add(bell(mtof(59), 1.4, idx=1.4, tau=.6), R + .62, .2 * FZ_MID, .2, rv=.4)
+    for t, m in ((R + .85, 56), (R + 1.0, 59), (R + 1.15, 64)):                   # 買い目
+        mx.add(bell(mtof(m), .8, idx=1.4, tau=.35), t, .22 * FZ_MID, rv=.3)
+    mx.add(bell(mtof(64), 1.6, idx=1.3, tau=.7), R + 1.3, .28 * FZ_MID, rv=.45)            # 合計
+    mx.add(coin(1500, r, .5), R + 1.3, .2, -.2, rv=.25)
+    mx.add(coin(1900, r, .45), R + 1.36, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), R + 1.3, .22, rv=.35)
+    return mx.render(1.8, target=-13, bass=True)
 
 
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
