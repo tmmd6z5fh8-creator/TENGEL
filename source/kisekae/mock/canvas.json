@@ -13,7 +13,7 @@
     "Fx_Hit.dc.html": {"x": 2700, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
     "Fx_Big.dc.html": {"x": 3170, "y": 0, "w": 390, "h": 844, "title": "デカ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
     "Fx_Freeze.dc.html": {"x": 3640, "y": 0, "w": 390, "h": 844, "title": "フリーズ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true},
-    "Fx_Memo.dc.html": {"x": 5050, "y": 0, "w": 2200, "h": 2125, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレのメモ"},
+    "Fx_Memo.dc.html": {"x": 5050, "y": 0, "w": 2200, "h": 2170, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレのメモ"},
     "Fx_Sound.dc.html": {"x": 7330, "y": 0, "w": 2200, "h": 1440, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true},
     "Judge_Sakura.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "桜（ピンク×若草）"},
     "Judge_Sea.dc.html": {"x": 470, "y": 1264, "w": 390, "h": 844, "title": "海（紺×水色×白）"},

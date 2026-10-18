@@ -165,6 +165,7 @@ BOARD_CSS = r'''
 /* 見出しの大きさはそろえる（テーマのロゴの大きさの決まりより強く） */
 .rb.rb .hd .bh{font-size:34px}
 .rb.rb.miss .hd .bh,.rb.rb.fz .hd .bh{font-size:30px}
+.rb .bh .bx3{margin-left:-.18em;letter-spacing:-.42em}
 .rb .bsub{display:block;margin-top:6px;font-size:12.5px;font-weight:700;line-height:1.3;color:var(--hdInk);white-space:nowrap}
 .rb .card{position:relative;flex:none;margin-top:9px;padding:13px 11px 12px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
 .rb .orn{position:absolute;top:-15px;right:12px;width:44px;height:44px;pointer-events:none;overflow:visible;z-index:2}
@@ -236,7 +237,7 @@ def font_links(ids, extra=()):
     return '\n'.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">' for f in fams)
 
 
-TITLES = dict(hit='的中！', big='デカ的中!!', fz='フリーズ的中!!!', hidden='隠れど的中!!!', miss='ハズレ')
+TITLES = dict(hit='的中！', big='デカ的中!!', fz='ど的中！！！', hidden='隠れど的中！！！', miss='ハズレ')   # ど的中はまさちゃんの指定（前は「フリーズ的中!!!」）
 
 
 def board_html(tid, kind, rows, total, race='9R', rib='', cls=''):
@@ -248,5 +249,6 @@ def board_html(tid, kind, rows, total, race='9R', rib='', cls=''):
     k = 'fz' if kind in ('fz', 'hidden') else kind
     logo = '' if kind == 'miss' else ' logo'
     sub = f'{race} の買い目' if kind == 'miss' else f'{race} の当たった買い目'
-    return (f'<div class="rb {k} t-{tid}{cls}"><div class="hd"><div class="bh{logo}">{TITLES[kind]}</div><div class="bsub">{sub}</div>{rib}</div>'
+    title = TITLES[kind].replace('！！！', '<span class="bx3">！！</span>！')   # 全角の「！」が3つ続くところは字の間をつめる
+    return (f'<div class="rb {k} t-{tid}{cls}"><div class="hd"><div class="bh{logo}">{title}</div><div class="bsub">{sub}</div>{rib}</div>'
             f'<div class="card">{orn}<ul class="brows">{rows}</ul><div class="btot">払戻 合計<b>{total}</b></div></div></div>')
