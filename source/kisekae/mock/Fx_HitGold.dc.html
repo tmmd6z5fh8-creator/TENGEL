@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>的中ボタン（カッコいい：黒と金のぷるんPUSH）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#F3F8E6;--ink:#2B3A18;--sub:#5A6A42;--card:#FFFFFF;--cardB:2px solid #CFE6A8;--cardO:0 solid transparent;--cardS:0 3px 0 #DCEBC0;--radius:18px;--rs:14px;--font:"Zen Maru Gothic";--dfont:"Zen Maru Gothic";--dw:900;--logo:#24470C;--logoS:0 2px 0 rgba(255,255,255,.55);--iii:#8A5A2B;--iiiB:0 solid transparent;--iiiR:2px;--hd:linear-gradient(180deg,#A9DA5E,#86C23C);--hdInk:#24470C;--mBg:#FFF9E6;--mLine:#A8743F;--mInk:#5A3A1A;--pill:#FFF9E6;--pillLine:#E4D3A8;--pillInk:#5A3A1A;--coin:#FFD84A;--coinInk:#5A3A1A;--badge:#E5F4CC;--badgeInk:#3D7A16;--badgeB:2px solid #CFE6A8;--tagBg:#F7FBEF;--tagInk:#3D5A1E;--tagLine:#CFE6A8;--warnBg:#FFE9D6;--warnInk:#A0461A;--zBg:#F7FBEF;--zB:1.5px solid #DDEDC0;--znBg:#A8743F;--znInk:#FFF8E8;--znB:0 solid transparent;--znR:4px;--acc:#2F6A12;--nR:8px;--w2B:0 solid transparent;--sep:2px dotted #CFE6A8;--btn:#3E7B1E;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:14px;--btnS:0 3px 0 #2A5A10;--btn2:#FFFFFF;--btn2Ink:#3E7B1E;--btn2B:2px solid #A9D46A;--tab:#FFFBEA;--tabB:4px solid #A8743F;--tabInk:#7A6A4F;--tabOn:#DDF0BC;--tabOnInk:#2F6A12;--tabR:14px}
+.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55);
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#5E0A05 100%)}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px;color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:4px solid #A8743F}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.bnr{flex:none;display:block;width:390px;height:120px;object-fit:cover;object-position:50% 70%}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0}
+.card{position:relative;background:var(--card);border:var(--cardB);border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--sub)}
+.rh{display:flex;align-items:baseline;gap:10px}
+.rk{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:22px;color:var(--ink)}
+.rs{font-size:12px;color:var(--sub)}
+.lab{margin:12px 0 6px;font-size:12px;font-weight:700;color:var(--sub)}
+.fin{display:flex;align-items:center;gap:8px}
+.fin span.k{font-size:12px;font-weight:700;color:var(--sub)}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.ar{color:var(--sub);font-weight:700;padding:0 2px}
+.bets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bets li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:var(--zBg);border:var(--zB)}
+.bt{flex:none;min-width:46px;height:24px;padding:0 8px;border-radius:999px;background:var(--znBg);color:var(--znInk);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.bc{display:flex;align-items:center;gap:3px;flex:1}
+.bc .n{min-width:26px;height:26px;font-size:13px}
+.by{font-size:12.5px;font-weight:700;color:var(--ink)}
+.pay{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:10px 12px;border-radius:var(--rs);border:1.5px dashed var(--tagLine);font-size:13px;font-weight:700;color:var(--ink)}
+.pay b{font-size:17px}
+.rec{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:14px;border:0;border-radius:var(--btnR);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:800;font-size:17px;cursor:pointer}
+.rec svg{width:20px;height:20px}
+.note{margin:10px 2px 0;font-size:11.5px;line-height:1.5;color:var(--sub)}
+/* ---------- 重ねる画面 ---------- */
+.ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* PUSHボタン（横長の長方形・角は丸い） */
+.pbox{position:relative;display:flex;flex-direction:column;align-items:center}
+.push{--pr:26px;position:relative;z-index:2;width:200px;height:100px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
+  box-shadow:inset 0 -9px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.55),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
+  animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push span{position:relative;font:400 40px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push::after{content:"";position:absolute;inset:-18px;border-radius:calc(var(--pr) + 18px);border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
+.pshadow{width:200px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
+.tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes shad{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.72);opacity:.3}}
+@keyframes ring{0%{transform:scale(.88);opacity:.95}100%{transform:scale(1.4);opacity:0}}
+@keyframes popIn{from{scale:.2}to{scale:1}}
+@keyframes blink{0%{opacity:1}100%{opacity:.35}}
+@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
+@keyframes spin{to{rotate:360deg}}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+/* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
+.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+.ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
+/* 押したあと（PUSHがあった所から光ってはじける） */
+.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+@keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
+/* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
+.hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+/* 紙ふぶき */
+.conf{position:absolute;inset:0;z-index:7;pointer-events:none}
+.conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
+/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、ボードはふわっと出す */
+@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
+
+/* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
+.rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
+  background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
+  animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+@keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
+.hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
+.hit{--t0:1.15s;--tc:.2s}
+.ph{--bg:#0D0A05;--ink:#F6EBD0;--sub:#CDBB8C;--card:#15100A;--cardB:1px solid #C9972B;--cardO:0 solid transparent;--cardS:0 0 0 3px #0D0A05,0 0 0 4px #6B5014,0 10px 24px rgba(0,0,0,.45);--radius:10px;--font:"Zen Kaku Gothic New";--dfont:"Dela Gothic One";--dw:400;--logo:#F3D47A;--logoS:none;--iii:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);--iiiB:0 solid transparent;--iiiR:0;--hd:linear-gradient(180deg,#17110A,#070503);--hdInk:#F3D47A;--mBg:transparent;--mLine:#C9972B;--mInk:#F3D47A;--pill:rgba(243,212,122,.07);--pillLine:#8C6A22;--pillInk:#F3D47A;--coin:linear-gradient(135deg,#FFF1B8,#C9952B);--coinInk:#1A1205;--acc:#F3D47A;--nR:6px;--w2B:1.5px solid #8C7A55;--tab:#070503;--tabB:0 solid transparent;--tabInk:#9A875A;--tabOn:rgba(243,212,122,.1);--tabOnInk:#F3D47A;--tabR:10px;--sel:#E9C25A;--selInk:#1A1205;--h1:#F3D47A;--gold:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);--rs:8px;--badge:#1E1609;--badgeB:1.5px solid #C9972B;--tagBg:transparent;--tagInk:#EBD9A6;--tagLine:#6B5014;--warnBg:#3A2A08;--warnInk:#FFC27A;--zBg:rgba(243,212,122,.04);--zB:1px solid #4A3A16;--znInk:#1A1205;--znB:0 solid transparent;--znR:4px;--sep:1px solid #4A3A16;--btnInk:#1A1205;--btnB:0 solid transparent;--btnR:8px;--btnS:0 0 14px rgba(243,212,122,.28);--btn2:transparent;--btn2Ink:#F3D47A;--btn2B:1px solid #C9972B;--btn:var(--gold);--znBg:var(--gold)}
+.ph .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#8A6514,#F7E08A,#C9952B,#FFF1B8,#8A6514)}
+.ph{background-image:repeating-linear-gradient(45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),radial-gradient(ellipse at 50% 0%,#3A2A08,rgba(13,10,5,0) 65%)}
+.ph .logo,.ph .h1{background:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ph .tb{box-shadow:inset 0 2px 0 #8C6A22}
+.ph{background-size:auto}
+.ph .hd{border-bottom:0}
+.ph .w2{border:var(--w2B)}
+.ph .bnr{height:160px;object-position:50% 50%}
+.ph .card::before,.ph .card::after{content:"";position:absolute;top:-7px;width:10px;height:10px;transform:rotate(45deg);background:linear-gradient(135deg,#FFF1B8,#C9952B);border:1px solid #5A400A}
+.ph .card::before{left:-7px}
+.ph .card::after{right:-7px}
+
+/* ---------- カッコいい（金色）の的中ボタン：黒と金の、ぷるんぷるんしたPUSH（まさちゃんの指定） ----------
+   黒いつやの面（上にうすい光）・金のふち（グラデーション）・金の「PUSH」。下を中心に、つぶれる → のびる をくり返す（ゼリーのように・1.2秒ごと） */
+.push.gp,.pressed.gp{border:6px solid transparent;
+  background:radial-gradient(70% 44% at 50% 10%,rgba(255,255,255,.5),rgba(255,255,255,.1) 58%,rgba(255,255,255,0) 100%) padding-box,
+    linear-gradient(180deg,#3D3527 0%,#17130C 40%,#050403 100%) padding-box,
+    linear-gradient(135deg,#8A6514,#F7E08A 22%,#C9952B 42%,#FFF1B8 62%,#D8A537 80%,#8A6514) border-box}
+.push.gp{box-shadow:inset 0 -8px 0 rgba(0,0,0,.6),inset 0 2px 0 rgba(255,241,184,.4),0 0 0 2px #5A400A,0 8px 0 2px #2A1E06,0 0 26px rgba(243,212,122,.45),0 22px 34px rgba(0,0,0,.6);
+  transform-origin:50% 100%;animation:gpPurun 1.2s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push.gp span{display:block;background:linear-gradient(180deg,#FFF6D0 0%,#F3D47A 42%,#C9952B 60%,#FFE9A8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 8px rgba(243,212,122,.5))}
+.push.gp::after{border-color:rgba(243,212,122,.9)}
+@keyframes gpPurun{0%,62%,100%{transform:translateY(0) scale(1,1)}8%{transform:translateY(0) scale(1.16,.82)}20%{transform:translateY(-10px) scale(.88,1.14)}32%{transform:translateY(0) scale(1.08,.93)}42%{transform:translateY(-3px) scale(.96,1.04)}52%{transform:translateY(0) scale(1.02,.98)}}
+.pshadow.gp{animation:gpShad 1.2s ease-in-out infinite}
+@keyframes gpShad{0%,62%,100%{transform:scale(1,1);opacity:.5}8%{transform:scale(1.2,1);opacity:.62}20%{transform:scale(.8,1);opacity:.32}32%{transform:scale(1.08,1);opacity:.55}42%{transform:scale(.95,1);opacity:.45}}
+.tap.gp{color:#F3D47A}
+.pressed.gp{box-shadow:0 0 0 2px #5A400A,0 0 30px rgba(243,212,122,.6)}
+
+/* ===== 結果のボード（テーマの判定画面と同じ見た目・馬は出さない） =====
+   ふち（.rb）＝テーマの背景のもよう → 上の帯（.hd）＝見出し → カード（.card）＝買い目。すみにテーマの飾り（.orn） */
+.rb{position:relative;width:350px;padding:8px;border-radius:calc(var(--radius) + 8px);background-color:var(--bg);color:var(--ink);text-align:left;
+  font-family:var(--font),"BIZ UDPGothic",sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 0 0 1.5px rgba(255,255,255,.6),0 18px 38px rgba(0,0,0,.45)}
+.rb .hd{position:relative;z-index:1;display:block;flex:none;padding:13px 12px 14px;border-radius:var(--radius);background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB);text-align:center}
+.rb .bh{display:inline-block;max-width:100%;margin:0;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:34px;line-height:1.12;color:var(--logo);text-shadow:var(--logoS);white-space:nowrap}
+/* 見出しの大きさはそろえる（テーマのロゴの大きさの決まりより強く） */
+.rb.rb .hd .bh{font-size:34px}
+.rb.rb.miss .hd .bh,.rb.rb.fz .hd .bh{font-size:30px}
+.rb .bh .bx3{margin-left:-.18em;letter-spacing:-.42em}
+.rb .bsub{display:block;margin-top:6px;font-size:12.5px;font-weight:700;line-height:1.3;color:var(--hdInk);white-space:nowrap}
+.rb .card{position:relative;flex:none;margin-top:9px;padding:13px 11px 12px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
+.rb .orn{position:absolute;top:-15px;right:12px;width:44px;height:44px;pointer-events:none;overflow:visible;z-index:2}
+.rb .orn.o34{height:34px;top:-12px}
+.rb .orn.o40{width:40px;height:40px;top:-13px}
+.rb .brows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rb .brows li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:6px 8px;border-radius:var(--rs);background:var(--zBg);border:var(--zB);white-space:nowrap}
+/* 払戻が長くて入らないときは、払戻だけ次の行へ（右によせる） */
+.rb .bt{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:22px;padding:0 8px;border-radius:999px;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine);font-size:11.5px;font-weight:800}
+.rb .bc{display:flex;align-items:center;gap:2px;flex:none}
+.rb .n{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;border-radius:var(--nR);font:700 12.5px/1 "BIZ UDPGothic",sans-serif}
+.rb .w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.rb .w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.rb .w3{background:#E0322B;color:#FFFFFF}
+.rb .w4{background:#1F5FC9;color:#FFFFFF}
+.rb .w5{background:#F3C316;color:#1F1F1F}
+.rb .w6{background:#1E8E3E;color:#FFFFFF}
+.rb .w7{background:#F08A1C;color:#1F1F1F}
+.rb .w8{background:#F27BB0;color:#1F1F1F}
+.rb .ar{color:var(--sub);font-weight:700;padding:0 1px}
+.rb .by{font-size:11px;color:var(--sub)}
+.rb .bp{margin-left:auto;font-size:14.5px;font-weight:800;color:var(--acc)}
+.rb .btot{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-top:10px;padding-top:9px;border-top:var(--sep);font-size:12.5px;font-weight:700;color:var(--sub)}
+.rb .btot b{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:24px;line-height:1;color:var(--ink)}
+/* ハズレ：見出しは上の帯の文字の色で静かに・払戻は0円（うすく） */
+.rb.miss .bh{color:var(--hdInk);text-shadow:none}
+.rb.miss .bp,.rb.miss .btot b{color:var(--sub)}
+.rb.miss .bp{font-weight:700}
+/* デカ的中：まわりが光る・見出しは虹色（黒いふち）・3連単の行は虹色のふち */
+.rb.big{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 26px 6px rgba(255,236,160,.85),0 18px 38px rgba(0,0,0,.45)}
+.rb.big .bh,.rb.fz .bh{background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFD21A,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(1.5px 0 0 #1E1030) drop-shadow(-1.5px 0 0 #1E1030) drop-shadow(0 1.5px 0 #1E1030) drop-shadow(0 -1.5px 0 #1E1030) drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.rb.big .brows li.top,.rb.fz .brows li.top{position:relative;background:linear-gradient(var(--zBg),var(--zBg)) padding-box,linear-gradient(var(--rbFace),var(--rbFace)) padding-box,
+  linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;gap:2px 3px;padding:4px 5px}
+/* ど的中・隠れど的中：枠は虹色（回さない）・炎に光る・見出しの下に帯（超大穴の馬／デカ的中が化けた） */
+.rb.fz{padding:11px;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,236,170,.9),0 0 64px 18px rgba(255,120,0,.6),0 12px 24px rgba(0,0,0,.35)}
+.rb.fz::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:4px;pointer-events:none;
+  background:conic-gradient(from 200deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.rb.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat}
+.rb.fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
+.rb .zrib{display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:8px auto 0;padding:3px 10px 3px 4px;border-radius:999px;background:#2A1259;color:#FFFFFF;
+  font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7)}
+.rb .zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:#2A1259;font-weight:800;font-size:11.5px}
+.rb .zrib .n{min-width:22px;height:22px;font-size:12px}
+.rb .n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6)}
+
+.rb.t-gold{--hdB:0 solid transparent;--cardO:0 solid transparent;--zBg:rgba(243,212,122,.04);--zB:1px solid #4A3A16;--sep:1px solid #4A3A16;--rs:8px;--nR:6px;--w2B:1.5px solid #8C7A55;--tagBg:transparent;--tagInk:#EBD9A6;--tagLine:#6B5014;--bg:#0D0A05;--ink:#F6EBD0;--sub:#CDBB8C;--card:#15100A;--cardB:1px solid #C9972B;--cardS:0 0 0 3px #0D0A05,0 0 0 4px #6B5014,0 10px 24px rgba(0,0,0,.45);--radius:10px;--font:"Zen Kaku Gothic New";--dfont:"Dela Gothic One";--dw:400;--logo:#F3D47A;--logoS:none;--hd:linear-gradient(180deg,#17110A,#070503);--hdInk:#F3D47A;--acc:#F3D47A;--h1:#F3D47A;--coin:linear-gradient(135deg,#FFF1B8,#C9952B);--coinInk:#1A1205;--rbFace:#15100A}
+.rb.t-gold .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#8A6514,#F7E08A,#C9952B,#FFF1B8,#8A6514)}
+.rb.t-gold{background-image:repeating-linear-gradient(45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(243,212,122,.04) 0 1px,transparent 1px 16px),radial-gradient(ellipse at 50% 0%,#3A2A08,rgba(13,10,5,0) 65%)}
+.rb.t-gold .logo,.rb.t-gold .h1{background:linear-gradient(180deg,#FFF1B8,#E9C25A 45%,#B8861F 55%,#F7E08A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rb.t-gold .tb{box-shadow:inset 0 2px 0 #8C6A22}
+.bnr .rp{transform-box:view-box;transform-origin:0 0;animation:gbPurun 3s ease-in-out .6s infinite}@keyframes gbPurun{0%{transform:translate(92px,84px) scale(1,1) translate(-92px,-84px)}4%{transform:translate(92px,84px) scale(1.1,0.89) translate(-92px,-84px)}10%{transform:translate(92px,84px) scale(0.93,1.1) translate(-92px,-84px)}16%{transform:translate(92px,84px) scale(1.05,0.95) translate(-92px,-84px)}22%{transform:translate(92px,84px) scale(0.98,1.03) translate(-92px,-84px)}27%{transform:translate(92px,84px) scale(1.01,0.99) translate(-92px,-84px)}31%{transform:translate(92px,84px) scale(1,1) translate(-92px,-84px)}100%{transform:translate(92px,84px) scale(1,1) translate(-92px,-84px)}}@media (prefers-reduced-motion:reduce){.bnr .rp{animation:none}}
+
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+  </header>
+  <svg class="bnr" role="img" aria-label="黒地に光の筋と月桂樹、金ピカに輝きながら走る馬のイラスト（3秒に1回おしりがぷるんと揺れる）" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 160" width="390" height="160"><defs><linearGradient id="gbgh" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="236" y2="134"><stop offset="0" stop-color="#8A6514"/><stop offset=".22" stop-color="#F7E08A"/><stop offset=".42" stop-color="#C9952B"/><stop offset=".62" stop-color="#FFF1B8"/><stop offset=".8" stop-color="#D8A537"/><stop offset="1" stop-color="#8A6514"/></linearGradient><linearGradient id="gbgl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="390" y2="160"><stop offset="0" stop-color="#8A6514"/><stop offset=".22" stop-color="#F7E08A"/><stop offset=".42" stop-color="#C9952B"/><stop offset=".62" stop-color="#FFF1B8"/><stop offset=".8" stop-color="#D8A537"/><stop offset="1" stop-color="#8A6514"/></linearGradient><radialGradient id="gbbg" cx=".5" cy=".55" r=".7"><stop offset="0" stop-color="#3A2A08"/><stop offset=".6" stop-color="#140E03"/><stop offset="1" stop-color="#050402"/></radialGradient><radialGradient id="gbhalo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE9A3" stop-opacity=".55"/><stop offset="1" stop-color="#FFE9A3" stop-opacity="0"/></radialGradient></defs><rect width="390" height="160" fill="url(#gbbg)"/><path d="M200 78 L499.3 98.9 L496.3 124.9 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L483.7 175.7 L474.1 200 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L448.7 245.8 L433.1 266.8 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L396.8 304.4 L376.3 320.7 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L331.5 347.6 L307.5 358.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L257.2 372.5 L231.4 376.4 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L179.1 377.3 L153.1 374.3 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L102.3 361.7 L78 352.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L32.2 326.7 L11.2 311.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-26.4 274.8 L-42.7 254.3 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-69.6 209.5 L-80.1 185.5 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-94.5 135.2 L-98.4 109.4 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-99.3 57.1 L-96.3 31.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-83.7 -19.7 L-74.1 -44 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L-48.7 -89.8 L-33.1 -110.8 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L3.2 -148.4 L23.7 -164.7 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L68.5 -191.6 L92.5 -202.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L142.8 -216.5 L168.6 -220.4 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L220.9 -221.3 L246.9 -218.3 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L297.7 -205.7 L322 -196.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L367.8 -170.7 L388.8 -155.1 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L426.4 -118.8 L442.7 -98.3 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L469.6 -53.5 L480.1 -29.5 Z" fill="#F6D776" opacity=".07"/><path d="M200 78 L494.5 20.8 L498.4 46.6 Z" fill="#F6D776" opacity=".07"/><ellipse cx="200" cy="78" rx="120" ry="70" fill="url(#gbhalo)"/><path d="M187.1 151.9 C187.1 151.9 171.5 151 163.8 150.1 C156.2 149.1 148.5 147.8 141.2 146.2 C133.9 144.5 126.8 142.5 120 140.2 C113.2 137.9 106.7 135.3 100.6 132.4 C94.5 129.5 88.8 126.3 83.5 122.9 C78.3 119.5 73.5 115.8 69.2 111.9 C64.9 108.1 61.1 104 58 99.8 C54.8 95.6 52.1 91.2 50.1 86.8 C48.1 82.3 46.6 77.8 45.8 73.2 C45 68.6 44.8 64 45.2 59.4 C45.6 54.8 48.3 45.7 48.3 45.7" fill="none" stroke="url(#gbgl)" stroke-width="2.2" stroke-linecap="round"/><path d="M187.1 151.9 Q178.9 153.4 174.3 160.4 Q182.5 158.9 187.1 151.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M187.1 151.9 Q183.6 144.3 175.7 141.5 Q179.3 149.1 187.1 151.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M163.8 150.1 Q155.8 150.8 150.7 157.1 Q158.7 156.3 163.8 150.1 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M163.8 150.1 Q161.1 142.5 153.8 139 Q156.5 146.7 163.8 150.1 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M141.2 146.2 Q133.5 146.1 128 151.6 Q135.8 151.7 141.2 146.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M141.2 146.2 Q139.4 138.6 132.7 134.6 Q134.6 142.2 141.2 146.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M120 140.2 Q112.6 139.3 106.7 144 Q114.2 144.9 120 140.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M120 140.2 Q119.1 132.8 113.1 128.3 Q114 135.7 120 140.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M100.6 132.4 Q93.6 130.7 87.5 134.4 Q94.5 136.2 100.6 132.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M100.6 132.4 Q100.6 125.2 95.4 120.2 Q95.5 127.4 100.6 132.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M83.5 122.9 Q77.2 120.3 70.8 123 Q77.2 125.6 83.5 122.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M83.5 122.9 Q84.5 116.1 80.3 110.6 Q79.3 117.4 83.5 122.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M69.2 111.9 Q63.6 108.4 57.2 110 Q62.8 113.5 69.2 111.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M69.2 111.9 Q71.2 105.7 68.2 99.8 Q66.2 106.1 69.2 111.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M58 99.8 Q53.4 95.4 47.1 95.7 Q51.7 100 58 99.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M58 99.8 Q61.1 94.3 59.4 88.3 Q56.2 93.7 58 99.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M50.1 86.8 Q46.9 81.7 41 80.5 Q44.2 85.6 50.1 86.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M50.1 86.8 Q54.2 82.4 54 76.4 Q49.9 80.8 50.1 86.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M45.8 73.2 Q44.1 67.8 39 65.2 Q40.7 70.6 45.8 73.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M45.8 73.2 Q50.7 70.2 51.9 64.6 Q47.1 67.6 45.8 73.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M45.2 59.4 Q45 54 40.9 50.4 Q41.2 55.8 45.2 59.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M45.2 59.4 Q50.4 57.9 52.9 53.1 Q47.7 54.6 45.2 59.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M48.3 45.7 Q52 40.4 50.9 34 Q47.2 39.3 48.3 45.7 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M202.9 151.9 C202.9 151.9 218.5 151 226.2 150.1 C233.8 149.1 241.5 147.8 248.8 146.2 C256.1 144.5 263.2 142.5 270 140.2 C276.8 137.9 283.3 135.3 289.4 132.4 C295.5 129.5 301.2 126.3 306.5 122.9 C311.7 119.5 316.5 115.8 320.8 111.9 C325.1 108.1 328.9 104 332 99.8 C335.2 95.6 337.9 91.2 339.9 86.8 C341.9 82.3 343.4 77.8 344.2 73.2 C345 68.6 345.2 64 344.8 59.4 C344.4 54.8 341.7 45.7 341.7 45.7" fill="none" stroke="url(#gbgl)" stroke-width="2.2" stroke-linecap="round"/><path d="M202.9 151.9 Q210.7 149.1 214.3 141.5 Q206.4 144.3 202.9 151.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M202.9 151.9 Q207.5 158.9 215.7 160.4 Q211.1 153.4 202.9 151.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M226.2 150.1 Q233.5 146.7 236.2 139 Q228.9 142.5 226.2 150.1 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M226.2 150.1 Q231.3 156.3 239.3 157.1 Q234.2 150.8 226.2 150.1 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M248.8 146.2 Q255.4 142.2 257.3 134.6 Q250.6 138.6 248.8 146.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M248.8 146.2 Q254.2 151.7 262 151.6 Q256.5 146.1 248.8 146.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M270 140.2 Q276 135.7 276.9 128.3 Q270.9 132.8 270 140.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M270 140.2 Q275.8 144.9 283.3 144 Q277.4 139.3 270 140.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M289.4 132.4 Q294.5 127.4 294.6 120.2 Q289.4 125.2 289.4 132.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M289.4 132.4 Q295.5 136.2 302.5 134.4 Q296.4 130.7 289.4 132.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M306.5 122.9 Q310.7 117.4 309.7 110.6 Q305.5 116.1 306.5 122.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M306.5 122.9 Q312.8 125.6 319.2 123 Q312.8 120.3 306.5 122.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M320.8 111.9 Q323.8 106.1 321.8 99.8 Q318.8 105.7 320.8 111.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M320.8 111.9 Q327.2 113.5 332.8 110 Q326.4 108.4 320.8 111.9 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M332 99.8 Q333.8 93.7 330.6 88.3 Q328.9 94.3 332 99.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M332 99.8 Q338.3 100 342.9 95.7 Q336.6 95.4 332 99.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M339.9 86.8 Q340.1 80.8 336 76.4 Q335.8 82.4 339.9 86.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M339.9 86.8 Q345.8 85.6 349 80.5 Q343.1 81.7 339.9 86.8 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M344.2 73.2 Q342.9 67.6 338.1 64.6 Q339.3 70.2 344.2 73.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M344.2 73.2 Q349.3 70.6 351 65.2 Q345.9 67.8 344.2 73.2 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M344.8 59.4 Q342.3 54.6 337.1 53.1 Q339.6 57.9 344.8 59.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M344.8 59.4 Q348.8 55.8 349.1 50.4 Q345 54 344.8 59.4 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M341.7 45.7 Q342.8 39.3 339.1 34 Q338 40.4 341.7 45.7 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><g transform="translate(84 12) scale(.98)"><path d="M64 54 C60.8 53.1 53.2 51.4 48.5 52.7 C43.7 54.1 40.2 60.7 35.5 62 C30.8 63.4 23.1 60.8 20.3 60.8 C17.5 60.7 19 61.3 18.9 61.7 C18.8 62.1 16.8 61.8 19.7 63.2 C22.6 64.6 31.2 70 36.5 70 C41.8 70 46.9 64.6 51.5 63.3 C56.1 62 61.3 62.9 64 62 C66.7 61.1 67.6 59.3 67.6 58 C67.6 56.7 67.2 54.9 64 54 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M66.5 49.7 C63.7 46.8 56.3 40.3 51.5 39.2 C46.6 38 42.8 43.1 37.3 42.7 C31.9 42.3 22.1 37.6 18.7 36.7 C15.3 35.8 17.1 36.9 16.8 37.3 C16.6 37.8 14.3 36.6 17.3 39.3 C20.2 42 29.5 51.1 34.7 53.3 C39.9 55.6 44.1 52 48.5 52.8 C53 53.7 58.3 57.8 61.5 58.3 C64.7 58.9 67.1 57.7 67.9 56.2 C68.7 54.8 69.2 52.5 66.5 49.7 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M64 54 C60.8 53.1 53.2 51.4 48.5 52.7 C43.7 54.1 40.2 60.7 35.5 62 C30.8 63.4 23.1 60.8 20.3 60.8 C17.5 60.7 19 61.3 18.9 61.7 C18.8 62.1 16.8 61.8 19.7 63.2 C22.6 64.6 31.2 70 36.5 70 C41.8 70 46.9 64.6 51.5 63.3 C56.1 62 61.3 62.9 64 62 C66.7 61.1 67.6 59.3 67.6 58 C67.6 56.7 67.2 54.9 64 54 Z" fill="url(#gbgh)"/><path d="M66.5 49.7 C63.7 46.8 56.3 40.3 51.5 39.2 C46.6 38 42.8 43.1 37.3 42.7 C31.9 42.3 22.1 37.6 18.7 36.7 C15.3 35.8 17.1 36.9 16.8 37.3 C16.6 37.8 14.3 36.6 17.3 39.3 C20.2 42 29.5 51.1 34.7 53.3 C39.9 55.6 44.1 52 48.5 52.8 C53 53.7 58.3 57.8 61.5 58.3 C64.7 58.9 67.1 57.7 67.9 56.2 C68.7 54.8 69.2 52.5 66.5 49.7 Z" fill="url(#gbgh)"/><g opacity=".82"><path d="M144.8 86.2 C145.4 90.4 153.7 98.3 153.6 103.2 C153.4 108.1 146.7 113.1 143.9 115.5 C141.1 118 138.3 116.9 136.9 118 C135.4 119 134.9 121 135.3 122 C135.6 123 137 124.3 139.1 124 C141.3 123.8 144.2 123.7 148.1 120.5 C152 117.3 160.6 111.2 162.4 104.8 C164.3 98.3 161.2 86.4 159.2 81.8 C157.1 77.3 152.5 76.8 150.1 77.5 C147.7 78.3 144.2 81.9 144.8 86.2 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M94.5 89 C96.4 93.3 107.1 98.2 109.1 103.1 C111.2 108.1 105.7 114 106.8 118.5 C107.8 123 113.3 128.1 115.5 130 C117.6 132 119 131 119.8 130.3 C120.7 129.6 121.6 128.1 120.5 126 C119.4 123.8 113.5 121.7 113.2 117.5 C112.9 113.3 119.5 107.3 118.9 100.9 C118.2 94.4 113 82.9 109.5 79 C105.9 75.1 100 75.6 97.5 77.3 C95 78.9 92.6 84.7 94.5 89 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M144.8 86.2 C145.4 90.4 153.7 98.3 153.6 103.2 C153.4 108.1 146.7 113.1 143.9 115.5 C141.1 118 138.3 116.9 136.9 118 C135.4 119 134.9 121 135.3 122 C135.6 123 137 124.3 139.1 124 C141.3 123.8 144.2 123.7 148.1 120.5 C152 117.3 160.6 111.2 162.4 104.8 C164.3 98.3 161.2 86.4 159.2 81.8 C157.1 77.3 152.5 76.8 150.1 77.5 C147.7 78.3 144.2 81.9 144.8 86.2 Z" fill="url(#gbgh)"/><path d="M94.5 89 C96.4 93.3 107.1 98.2 109.1 103.1 C111.2 108.1 105.7 114 106.8 118.5 C107.8 123 113.3 128.1 115.5 130 C117.6 132 119 131 119.8 130.3 C120.7 129.6 121.6 128.1 120.5 126 C119.4 123.8 113.5 121.7 113.2 117.5 C112.9 113.3 119.5 107.3 118.9 100.9 C118.2 94.4 113 82.9 109.5 79 C105.9 75.1 100 75.6 97.5 77.3 C95 78.9 92.6 84.7 94.5 89 Z" fill="url(#gbgh)"/></g><g class="rp"><path d="M117.6 58.1 C118.3 62.4 117.8 67.5 116.1 71.6 C114.5 75.7 111.3 79.9 107.7 82.7 C104.1 85.6 99.1 87.8 94.5 88.6 C89.9 89.4 84.5 89 80.1 87.6 C75.8 86.2 71.3 83.3 68.4 80 C65.4 76.7 63.2 72.1 62.4 67.9 C61.7 63.6 62.2 58.5 63.9 54.4 C65.5 50.3 68.7 46.1 72.3 43.3 C75.9 40.4 80.9 38.2 85.5 37.4 C90.1 36.6 95.5 37 99.9 38.4 C104.2 39.8 108.7 42.7 111.6 46 C114.6 49.3 116.8 53.9 117.6 58.1 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/></g><path d="M167.9 62.9 C168.1 66.2 166.8 70 164.2 73.2 C161.7 76.4 157.4 79.6 152.6 82 C147.8 84.4 141.5 86.5 135.3 87.7 C129.2 88.9 122 89.4 115.8 89.1 C109.6 88.7 103 87.6 97.9 85.9 C92.8 84.1 88.1 81.5 85.2 78.7 C82.2 75.9 80.3 72.4 80.1 69.1 C79.9 65.8 81.2 62 83.8 58.8 C86.3 55.6 90.6 52.4 95.4 50 C100.2 47.6 106.5 45.5 112.7 44.3 C118.8 43.1 126 42.6 132.2 42.9 C138.4 43.3 145 44.4 150.1 46.1 C155.2 47.9 159.9 50.5 162.8 53.3 C165.8 56.1 167.7 59.6 167.9 62.9 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M182 70 C182 73.5 180.9 77.5 179.1 80.5 C177.2 83.5 174.2 86.4 171 88.2 C167.8 89.9 163.7 91 160 91 C156.3 91 152.2 89.9 149 88.2 C145.8 86.4 142.8 83.5 140.9 80.5 C139.1 77.5 138 73.5 138 70 C138 66.5 139.1 62.5 140.9 59.5 C142.8 56.5 145.8 53.6 149 51.8 C152.2 50.1 156.3 49 160 49 C163.7 49 167.8 50.1 171 51.8 C174.2 53.6 177.2 56.5 179.1 59.5 C180.9 62.5 182 66.5 182 70 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M136 52 C133.7 43.3 143.3 38 148 32 C152.7 26 158 20.2 164 16 C170 11.8 178 7 184 7 C190 7 197.3 11.5 200 16 C202.7 20.5 201.7 27.7 200 34 C198.3 40.3 193.3 47.7 190 54 C186.7 60.3 184.7 67 180 72 C175.3 77 169.3 87.3 162 84 C154.7 80.7 138.3 60.7 136 52 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M184 8 C186 5.7 192.7 5 197 6 C201.3 7 205.8 10.7 210 14 C214.2 17.3 218.3 22 222 26 C225.7 30 230.5 34.5 232 38 C233.5 41.5 232.7 45 231 47 C229.3 49 225.3 50.2 222 50 C218.7 49.8 214.7 47.7 211 46 C207.3 44.3 203.3 42.3 200 40 C196.7 37.7 193.5 35.3 191 32 C188.5 28.7 186.2 24 185 20 C183.8 16 182 10.3 184 8 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M186 12 C184.2 10.3 181.7 -1.3 183 -2 C184.3 -2.7 193.5 5.7 194 8 C194.5 10.3 187.8 13.7 186 12 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M163.1 86.3 C166.6 90.1 176.6 95.6 183.7 98.4 C190.8 101.2 199.6 103.1 205.8 103.2 C212 103.4 218.1 100.5 220.9 99.1 C223.7 97.8 223.1 96.2 222.8 95.2 C222.5 94.2 221.9 92.6 219.1 92.9 C216.3 93.1 211.3 97.3 206.2 96.8 C201.1 96.2 193.9 93.4 188.3 89.6 C182.8 85.7 177.2 76 172.9 73.7 C168.6 71.4 164 73.5 162.3 75.6 C160.7 77.7 159.5 82.5 163.1 86.3 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><path d="M78.2 73 C73.9 76.5 71 88.5 66.5 93.8 C62 99.1 55.9 103.3 51.2 104.8 C46.5 106.4 41.1 102.7 38.5 102.8 C35.8 102.9 35.3 104.5 35.1 105.6 C35 106.7 34.6 108.3 37.5 109.2 C40.5 110.1 46.8 112.3 52.8 111.2 C58.8 110 66.7 106.3 73.5 102.2 C80.3 98.2 90.7 91.9 93.8 87 C97 82.1 94.9 75.3 92.3 72.9 C89.7 70.6 82.4 69.6 78.2 73 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.8" stroke-linejoin="round"/><g class="rp"><path d="M117.6 58.1 C118.3 62.4 117.8 67.5 116.1 71.6 C114.5 75.7 111.3 79.9 107.7 82.7 C104.1 85.6 99.1 87.8 94.5 88.6 C89.9 89.4 84.5 89 80.1 87.6 C75.8 86.2 71.3 83.3 68.4 80 C65.4 76.7 63.2 72.1 62.4 67.9 C61.7 63.6 62.2 58.5 63.9 54.4 C65.5 50.3 68.7 46.1 72.3 43.3 C75.9 40.4 80.9 38.2 85.5 37.4 C90.1 36.6 95.5 37 99.9 38.4 C104.2 39.8 108.7 42.7 111.6 46 C114.6 49.3 116.8 53.9 117.6 58.1 Z" fill="url(#gbgh)"/><path d="M70.8 50.6 C 76.6 43.9, 85.3 38.2, 94.8 40.8" fill="none" stroke="#FFF8D6" stroke-width="2" stroke-linecap="round" opacity=".85"/></g><path d="M167.9 62.9 C168.1 66.2 166.8 70 164.2 73.2 C161.7 76.4 157.4 79.6 152.6 82 C147.8 84.4 141.5 86.5 135.3 87.7 C129.2 88.9 122 89.4 115.8 89.1 C109.6 88.7 103 87.6 97.9 85.9 C92.8 84.1 88.1 81.5 85.2 78.7 C82.2 75.9 80.3 72.4 80.1 69.1 C79.9 65.8 81.2 62 83.8 58.8 C86.3 55.6 90.6 52.4 95.4 50 C100.2 47.6 106.5 45.5 112.7 44.3 C118.8 43.1 126 42.6 132.2 42.9 C138.4 43.3 145 44.4 150.1 46.1 C155.2 47.9 159.9 50.5 162.8 53.3 C165.8 56.1 167.7 59.6 167.9 62.9 Z" fill="url(#gbgh)"/><path d="M182 70 C182 73.5 180.9 77.5 179.1 80.5 C177.2 83.5 174.2 86.4 171 88.2 C167.8 89.9 163.7 91 160 91 C156.3 91 152.2 89.9 149 88.2 C145.8 86.4 142.8 83.5 140.9 80.5 C139.1 77.5 138 73.5 138 70 C138 66.5 139.1 62.5 140.9 59.5 C142.8 56.5 145.8 53.6 149 51.8 C152.2 50.1 156.3 49 160 49 C163.7 49 167.8 50.1 171 51.8 C174.2 53.6 177.2 56.5 179.1 59.5 C180.9 62.5 182 66.5 182 70 Z" fill="url(#gbgh)"/><path d="M136 52 C133.7 43.3 143.3 38 148 32 C152.7 26 158 20.2 164 16 C170 11.8 178 7 184 7 C190 7 197.3 11.5 200 16 C202.7 20.5 201.7 27.7 200 34 C198.3 40.3 193.3 47.7 190 54 C186.7 60.3 184.7 67 180 72 C175.3 77 169.3 87.3 162 84 C154.7 80.7 138.3 60.7 136 52 Z" fill="url(#gbgh)"/><path d="M184 8 C186 5.7 192.7 5 197 6 C201.3 7 205.8 10.7 210 14 C214.2 17.3 218.3 22 222 26 C225.7 30 230.5 34.5 232 38 C233.5 41.5 232.7 45 231 47 C229.3 49 225.3 50.2 222 50 C218.7 49.8 214.7 47.7 211 46 C207.3 44.3 203.3 42.3 200 40 C196.7 37.7 193.5 35.3 191 32 C188.5 28.7 186.2 24 185 20 C183.8 16 182 10.3 184 8 Z" fill="url(#gbgh)"/><path d="M186 12 C184.2 10.3 181.7 -1.3 183 -2 C184.3 -2.7 193.5 5.7 194 8 C194.5 10.3 187.8 13.7 186 12 Z" fill="url(#gbgh)"/><path d="M163.1 86.3 C166.6 90.1 176.6 95.6 183.7 98.4 C190.8 101.2 199.6 103.1 205.8 103.2 C212 103.4 218.1 100.5 220.9 99.1 C223.7 97.8 223.1 96.2 222.8 95.2 C222.5 94.2 221.9 92.6 219.1 92.9 C216.3 93.1 211.3 97.3 206.2 96.8 C201.1 96.2 193.9 93.4 188.3 89.6 C182.8 85.7 177.2 76 172.9 73.7 C168.6 71.4 164 73.5 162.3 75.6 C160.7 77.7 159.5 82.5 163.1 86.3 Z" fill="url(#gbgh)"/><path d="M78.2 73 C73.9 76.5 71 88.5 66.5 93.8 C62 99.1 55.9 103.3 51.2 104.8 C46.5 106.4 41.1 102.7 38.5 102.8 C35.8 102.9 35.3 104.5 35.1 105.6 C35 106.7 34.6 108.3 37.5 109.2 C40.5 110.1 46.8 112.3 52.8 111.2 C58.8 110 66.7 106.3 73.5 102.2 C80.3 98.2 90.7 91.9 93.8 87 C97 82.1 94.9 75.3 92.3 72.9 C89.7 70.6 82.4 69.6 78.2 73 Z" fill="url(#gbgh)"/><ellipse cx="222" cy="96" rx="4.6" ry="3.4" fill="#5A400A"/><ellipse cx="40" cy="106" rx="4.6" ry="3.4" fill="#5A400A"/><ellipse cx="138" cy="121" rx="4.6" ry="3.4" fill="#5A400A"/><ellipse cx="119" cy="128" rx="4.6" ry="3.4" fill="#5A400A"/><path d="M189.3 9.3 C187 7.7 180.9 4 176.4 3.5 C171.9 3 167 6.5 162.3 6.2 C157.6 5.9 150.6 2.3 148.2 1.5 C145.8 0.8 147.7 1.7 147.6 1.8 C147.5 2 145.4 1.1 147.8 2.5 C150.2 3.8 157.1 8.8 161.7 9.8 C166.4 10.8 171.5 7.7 175.6 8.5 C179.8 9.3 184.2 13.9 186.7 14.7 C189.1 15.5 190 14.1 190.4 13.2 C190.9 12.3 191.7 10.9 189.3 9.3 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.4" stroke-linejoin="round"/><path d="M189.3 9.3 C187 7.7 180.9 4 176.4 3.5 C171.9 3 167 6.5 162.3 6.2 C157.6 5.9 150.6 2.3 148.2 1.5 C145.8 0.8 147.7 1.7 147.6 1.8 C147.5 2 145.4 1.1 147.8 2.5 C150.2 3.8 157.1 8.8 161.7 9.8 C166.4 10.8 171.5 7.7 175.6 8.5 C179.8 9.3 184.2 13.9 186.7 14.7 C189.1 15.5 190 14.1 190.4 13.2 C190.9 12.3 191.7 10.9 189.3 9.3 Z" fill="url(#gbgh)"/><path d="M180.9 14.9 C178.1 13.6 170.8 11.1 166 11.2 C161.2 11.4 156.8 16 152.1 16 C147.5 16.1 140.6 12.2 138.2 11.5 C135.8 10.8 137.7 11.7 137.6 11.8 C137.5 12 135.4 11.1 137.8 12.5 C140.2 13.8 147.2 19.3 151.9 20 C156.6 20.7 161.5 16.6 166 16.8 C170.5 16.9 176.3 20.8 179.1 21.1 C181.9 21.5 182.5 19.8 182.8 18.8 C183.1 17.8 183.7 16.1 180.9 14.9 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.4" stroke-linejoin="round"/><path d="M180.9 14.9 C178.1 13.6 170.8 11.1 166 11.2 C161.2 11.4 156.8 16 152.1 16 C147.5 16.1 140.6 12.2 138.2 11.5 C135.8 10.8 137.7 11.7 137.6 11.8 C137.5 12 135.4 11.1 137.8 12.5 C140.2 13.8 147.2 19.3 151.9 20 C156.6 20.7 161.5 16.6 166 16.8 C170.5 16.9 176.3 20.8 179.1 21.1 C181.9 21.5 182.5 19.8 182.8 18.8 C183.1 17.8 183.7 16.1 180.9 14.9 Z" fill="url(#gbgh)"/><path d="M170.4 23 C167.6 22.2 160 20.7 155.6 21.5 C151.2 22.4 148.1 27.5 143.9 28.2 C139.6 28.9 132.5 25.9 130.1 25.5 C127.8 25.1 129.6 25.7 129.6 25.9 C129.5 26 127.4 25.5 129.9 26.5 C132.3 27.5 139.7 31.8 144.1 31.8 C148.6 31.8 152.1 26.9 156.4 26.5 C160.6 26 166.9 29 169.6 29 C172.3 29 172.5 27.4 172.7 26.4 C172.8 25.4 173.3 23.8 170.4 23 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.4" stroke-linejoin="round"/><path d="M170.4 23 C167.6 22.2 160 20.7 155.6 21.5 C151.2 22.4 148.1 27.5 143.9 28.2 C139.6 28.9 132.5 25.9 130.1 25.5 C127.8 25.1 129.6 25.7 129.6 25.9 C129.5 26 127.4 25.5 129.9 26.5 C132.3 27.5 139.7 31.8 144.1 31.8 C148.6 31.8 152.1 26.9 156.4 26.5 C160.6 26 166.9 29 169.6 29 C172.3 29 172.5 27.4 172.7 26.4 C172.8 25.4 173.3 23.8 170.4 23 Z" fill="url(#gbgh)"/><path d="M160 33.2 C157.5 32.9 151.5 32.6 147.4 33.8 C143.4 35 139.6 39.5 135.7 40.4 C131.8 41.4 126.1 39.6 124.1 39.5 C122.1 39.4 123.6 39.8 123.6 39.9 C123.5 40.1 121.8 39.9 123.9 40.5 C126 41.1 132.2 44 136.3 43.6 C140.4 43.2 144.6 39 148.6 38.2 C152.5 37.4 157.7 39.1 160 38.8 C162.3 38.4 162.5 36.9 162.5 36 C162.5 35.1 162.5 33.6 160 33.2 Z" fill="#5A400A" stroke="#5A400A" stroke-width="1.4" stroke-linejoin="round"/><path d="M160 33.2 C157.5 32.9 151.5 32.6 147.4 33.8 C143.4 35 139.6 39.5 135.7 40.4 C131.8 41.4 126.1 39.6 124.1 39.5 C122.1 39.4 123.6 39.8 123.6 39.9 C123.5 40.1 121.8 39.9 123.9 40.5 C126 41.1 132.2 44 136.3 43.6 C140.4 43.2 144.6 39 148.6 38.2 C152.5 37.4 157.7 39.1 160 38.8 C162.3 38.4 162.5 36.9 162.5 36 C162.5 35.1 162.5 33.6 160 33.2 Z" fill="url(#gbgh)"/><path d="M108.5 48 C 123.1 47.3, 140.2 43.9, 153.9 49.8" fill="none" stroke="#FFF8D6" stroke-width="2" stroke-linecap="round" opacity=".85"/><path d="M204 16 C 214 22, 222 30, 228 38" fill="none" stroke="#FFF8D6" stroke-width="2" stroke-linecap="round" opacity=".85"/><path d="M201 21 Q205 18.5 209 21.5 Q205 23.5 201 21 Z" fill="#3A2806"/><path d="M225 38 q3 -1 4 2" fill="none" stroke="#3A2806" stroke-width="1.3" stroke-linecap="round"/></g><path d="M52 25 Q53.4 32.6 61 34 Q53.4 35.4 52 43 Q50.6 35.4 43 34 Q50.6 32.6 52 25 Z" fill="#FFF6CF"/><path d="M330 19 Q331.8 28.2 341 30 Q331.8 31.8 330 41 Q328.2 31.8 319 30 Q328.2 28.2 330 19 Z" fill="#FFF6CF"/><path d="M300 114 Q301 119 306 120 Q301 121 300 126 Q299 121 294 120 Q299 119 300 114 Z" fill="#FFF6CF"/><path d="M96 111 Q96.8 115.2 101 116 Q96.8 116.8 96 121 Q95.2 116.8 91 116 Q95.2 115.2 96 111 Z" fill="#FFF6CF"/><path d="M360 78 Q361 83 366 84 Q361 85 360 90 Q359 85 354 84 Q359 83 360 78 Z" fill="#FFF6CF"/><path d="M28 87 Q28.8 91.2 33 92 Q28.8 92.8 28 97 Q27.2 92.8 23 92 Q27.2 91.2 28 87 Z" fill="#FFF6CF"/><path d="M250 17 Q250.8 21.2 255 22 Q250.8 22.8 250 27 Q249.2 22.8 245 22 Q249.2 21.2 250 17 Z" fill="#FFF6CF"/><path d="M150 16 Q150.6 19.4 154 20 Q150.6 20.6 150 24 Q149.4 20.6 146 20 Q149.4 19.4 150 16 Z" fill="#FFF6CF"/><circle cx="70" cy="60" r="1.4" fill="#FFE9A3"/><circle cx="120" cy="30" r="1.4" fill="#FFE9A3"/><circle cx="280" cy="60" r="1.4" fill="#FFE9A3"/><circle cx="342" cy="132" r="1.4" fill="#FFE9A3"/><circle cx="20" cy="140" r="1.4" fill="#FFE9A3"/><circle cx="230" cy="132" r="1.4" fill="#FFE9A3"/><circle cx="180" cy="40" r="1.4" fill="#FFE9A3"/><circle cx="318" cy="100" r="1.4" fill="#FFE9A3"/><rect x="5" y="5" width="380" height="150" fill="none" stroke="url(#gbgl)" stroke-width="2.2"/><rect x="10" y="10" width="370" height="140" fill="none" stroke="url(#gbgl)" stroke-width=".8" opacity=".8"/><path d="M5 -1 L11 5 L5 11 L-1 5 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M385 -1 L391 5 L385 11 L379 5 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M5 149 L11 155 L5 161 L-1 155 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/><path d="M385 149 L391 155 L385 161 L379 155 Z" fill="url(#gbgl)" stroke="#5A400A" stroke-width=".6"/></svg>
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レースの結果を記録</h2>
+      <div class="rh"><span class="rk">9R</span><span class="rs">1400m ダ・良・12頭・予約したレース</span></div>
+      <p class="lab">着順（馬番）</p>
+      <div class="fin"><span class="k">1着</span><span class="n w5">6</span><span class="k">2着</span><span class="n w2">2</span><span class="k">3着</span><span class="n w7">10</span></div>
+      <p class="lab">予約した買い目</p>
+      <ul class="bets"><li><span class="bt">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li><li><span class="bt">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span></li><li><span class="bt">3連単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w7">10</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li></ul>
+      <div class="pay"><span>払戻（回収額）</span><b>2,530円</b></div>
+      <button class="rec" type="button" onClick="{{toPush}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>記録する</button>
+      <p class="note">3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）</p>
+    </section>
+  </main>
+  <sc-if value="{{isPush}}" hint-placeholder-val="{{false}}">
+  <div class="ov">
+    <div class="dim"></div>
+    
+    <div class="pbox">
+      <button class="push gp" type="button" onClick="{{toReveal}}" aria-label="的中ボタン"><span>PUSH</span></button>
+      <div class="pshadow gp"></div>
+      <p class="tap gp">タップ！</p>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{isReveal}}" hint-placeholder-val="{{false}}">
+  <div class="ov hit" style="--n:2">
+    <div class="dim"></div>
+    <div class="rays"></div>
+    <div class="pressed gp"></div>
+    <div class="hb"><div class="rb hit t-gold"><div class="hd"><div class="bh logo">的中！</div><div class="bsub">9R の当たった買い目</div></div><div class="card"><svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><path d="M6 32 L8.4 13 L16 22 L22 8 L28 22 L35.6 13 L38 32 Z" fill="#E9C25A" stroke="#6B5014" stroke-width="2" stroke-linejoin="round"></path><path d="M6.6 35 H37.4" stroke="#C9972B" stroke-width="4" stroke-linecap="round"></path><circle cx="22" cy="8" r="2.6" fill="#FFF1B8" stroke="#6B5014" stroke-width="1.4"></circle><circle cx="8.4" cy="13" r="2.2" fill="#FFF1B8" stroke="#6B5014" stroke-width="1.4"></circle><circle cx="35.6" cy="13" r="2.2" fill="#FFF1B8" stroke="#6B5014" stroke-width="1.4"></circle><path d="M14 28 H30" stroke="#FFF1B8" stroke-width="1.6" stroke-linecap="round" opacity=".8"></path></svg><ul class="brows"><li style="--i:0"><span class="bt tag">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span><span class="bp">1,840円</span></li><li style="--i:1"><span class="bt tag">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span><span class="bp">690円</span></li></ul><div class="btot">払戻 合計<b>2,530円</b></div></div></div></div>
+    <div class="conf"><i style="--x:93.8%;--d:2.09s;--t:2.50s;--w:6px;--h:15px;--r:496deg;--c:#F3C316"></i><i style="--x:60.3%;--d:1.28s;--t:2.69s;--w:8px;--h:12px;--r:654deg;--c:#1F5FC9"></i><i style="--x:50.2%;--d:1.98s;--t:3.97s;--w:7px;--h:16px;--r:589deg;--c:#F27BB0"></i><i style="--x:17.8%;--d:0.39s;--t:2.82s;--w:7px;--h:11px;--r:899deg;--c:#FFFFFF"></i><i style="--x:55.7%;--d:2.19s;--t:3.20s;--w:8px;--h:13px;--r:786deg;--c:#3E7B1E"></i><i style="--x:36.7%;--d:1.89s;--t:3.20s;--w:10px;--h:12px;--r:714deg;--c:#F3C316"></i><i style="--x:49.0%;--d:2.03s;--t:3.30s;--w:9px;--h:12px;--r:846deg;--c:#1F5FC9"></i><i style="--x:35.7%;--d:1.60s;--t:3.40s;--w:8px;--h:14px;--r:800deg;--c:#F08A1C"></i><i style="--x:17.9%;--d:2.00s;--t:2.88s;--w:10px;--h:12px;--r:528deg;--c:#F3C316"></i><i style="--x:48.9%;--d:0.81s;--t:3.63s;--w:10px;--h:15px;--r:752deg;--c:#F08A1C"></i><i style="--x:20.4%;--d:1.64s;--t:2.51s;--w:9px;--h:12px;--r:-729deg;--c:#E8382F"></i><i style="--x:74.4%;--d:0.30s;--t:2.88s;--w:9px;--h:16px;--r:-588deg;--c:#FFFFFF"></i><i style="--x:74.9%;--d:0.12s;--t:3.05s;--w:7px;--h:10px;--r:-875deg;--c:#E8382F"></i><i style="--x:5.9%;--d:2.02s;--t:3.07s;--w:7px;--h:16px;--r:-642deg;--c:#E8382F"></i><i style="--x:39.0%;--d:0.09s;--t:4.18s;--w:7px;--h:10px;--r:867deg;--c:#FFFFFF"></i><i style="--x:73.3%;--d:0.25s;--t:3.01s;--w:6px;--h:13px;--r:-847deg;--c:#F08A1C"></i><i style="--x:40.6%;--d:1.37s;--t:2.68s;--w:10px;--h:11px;--r:813deg;--c:#E8382F"></i><i style="--x:45.0%;--d:1.92s;--t:2.63s;--w:8px;--h:12px;--r:438deg;--c:#3E7B1E"></i><i style="--x:26.9%;--d:1.33s;--t:3.16s;--w:6px;--h:13px;--r:-722deg;--c:#3E7B1E"></i><i style="--x:5.2%;--d:0.35s;--t:2.57s;--w:9px;--h:13px;--r:-897deg;--c:#F3C316"></i><i style="--x:70.5%;--d:0.16s;--t:2.54s;--w:7px;--h:15px;--r:499deg;--c:#1F5FC9"></i><i style="--x:28.8%;--d:1.65s;--t:2.67s;--w:8px;--h:11px;--r:-490deg;--c:#E8382F"></i><i style="--x:3.9%;--d:1.65s;--t:2.59s;--w:6px;--h:14px;--r:527deg;--c:#FFFFFF"></i><i style="--x:38.5%;--d:1.51s;--t:3.77s;--w:7px;--h:15px;--r:636deg;--c:#F27BB0"></i><i style="--x:58.8%;--d:1.94s;--t:4.07s;--w:8px;--h:16px;--r:558deg;--c:#F27BB0"></i><i style="--x:94.2%;--d:0.26s;--t:3.06s;--w:9px;--h:16px;--r:370deg;--c:#FFFFFF"></i><i style="--x:41.6%;--d:0.23s;--t:2.76s;--w:9px;--h:15px;--r:392deg;--c:#FFFFFF"></i><i style="--x:48.6%;--d:0.46s;--t:3.46s;--w:6px;--h:12px;--r:525deg;--c:#FFFFFF"></i></div>
+    
+    <button class="close" type="button" onClick="{{toForm}}">とじる</button>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["form","push","reveal"],"default":"form"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  sfxUrls() {
+    return { push: '/_blob/2c19be676e8b2f4b3c27664978e77784', tap: '/_blob/6b84e59051fd187b240d447831bfccc0' };
+  }
+  sfxDecode(c, b) {
+    return new Promise(function (ok) {
+      try { var q = c.decodeAudioData(b, ok, function () { ok(null); }); if (q && q.catch) q.catch(function () { ok(null); }); } catch (e) { ok(null); }
+    });
+  }
+  sfxInit() {
+    // 音は先に読んで、音のデータにしておく（鳴らすのは押したときだけ）
+    if (this._sx) return this._sx;
+    var self = this, sx = this._sx = { raw: {}, buf: {}, ctx: null, src: null, el: null, id: 0, ok: 0 };
+    var urls = this.sfxUrls(), dec = null;
+    var OC = typeof window === 'undefined' ? null : (window.OfflineAudioContext || window.webkitOfflineAudioContext);
+    if (OC) { try { dec = new OC(2, 44100, 44100); } catch (e) { dec = null; } }
+    if (typeof fetch === 'function') {
+      Object.keys(urls).forEach(function (k) {
+        sx.raw[k] = fetch(urls[k]).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).catch(function () { return null; });
+        if (dec) sx.buf[k] = sx.raw[k].then(function (b) { return b ? self.sfxDecode(dec, b.slice(0)) : null; });
+      });
+    }
+    return sx;
+  }
+  sfx(k, from, wait, done) {
+    // 押した瞬間を0秒として、音の from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）
+    var self = this, sx = this.sfxInit();
+    this.hush();
+    var id = sx.id, t0 = Date.now(), url = this.sfxUrls()[k];
+    var end = function () { if (done && id === sx.id) done(); };
+    from = from || 0;
+    wait = wait || 0;
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    var ctx = sx.ctx;
+    if (!ctx || !sx.raw[k]) {
+      if (from || wait || typeof Audio === 'undefined') { end(); return; }
+      try { var a = new Audio(url); a.onended = end; sx.el = a; var p = a.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
+      return;
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    if (!sx.ok) {
+      sx.ok = 1;
+      try { var s0 = ctx.createBufferSource(); s0.buffer = ctx.createBuffer(1, 1, 22050); s0.connect(ctx.destination); s0.start(0); } catch (e) {}
+    }
+    (sx.buf[k] || Promise.resolve(null)).then(function (buf) {
+      // 先に読めなかったときは、鳴らす方で読みなおす
+      return buf || sx.raw[k].then(function (b) { return b ? self.sfxDecode(ctx, b.slice(0)) : null; });
+    }).then(function (buf) {
+      if (id !== sx.id) return;
+      var el = (Date.now() - t0) / 1000, late = Math.max(0, el - wait), off = from + (late > .1 ? late : 0);
+      if (!buf || off >= buf.duration) { end(); return; }
+      var s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(ctx.destination);
+      s.onended = end;
+      s.start(ctx.currentTime + Math.max(0, wait - el), off);
+      sx.src = s;
+    });
+  }
+  hush() {
+    var sx = this._sx;
+    if (!sx) return;
+    sx.id++;
+    if (sx.src) { try { sx.src.stop(); } catch (e) {} sx.src = null; }
+    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }
+  }
+  slow() {
+    // iPhoneの「視差効果を減らす」
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  renderVals() {
+    this.sfxInit();
+    var st = this.state || {};
+    var ph = st.ph || this.props.start || 'form';
+    var self = this;
+    return {
+      isPush: ph === 'push',
+      isReveal: ph === 'reveal',
+      toPush: function () { self.sfx('push'); self.setState({ ph: 'push' }); },
+      toReveal: function () { self.sfx('tap'); self.setState({ ph: 'reveal' }); },
+      toForm: function () { self.hush(); self.setState({ ph: 'form' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

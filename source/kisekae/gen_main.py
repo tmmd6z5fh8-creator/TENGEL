@@ -15,7 +15,7 @@ OLD = [dict(id='default', cat=1, name='いつもの', desc='紺と金（いま�
        dict(id='ranch', cat=1, name='牧場', desc='黄緑・芝と馬', img='/_blob/4d32303d3e8ea65630ceca0f8b0b72e6'),
        dict(id='cute', cat=1, name='かわいい', desc='ピンク・リボン', img='/_blob/465d11c7ef7de2047fdb27179b0d752b'),
        dict(id='kids', cat=1, name='子供向け', desc='ぬいぐるみ', img='/_blob/e945e568f65a819f860a9a16e13beefa'),
-       dict(id='gold', cat=1, name='カッコいい', desc='金ピカ・ゴージャス', img='/_blob/d01a899bc1e22b0f16fdd5db8e9e66bb')]
+       dict(id='gold', cat=1, name='カッコいい', desc='金ピカ・ゴージャス', img='/_blob/4055cb4c8c928f84b366d05700100ca1')]
 ALL = OLD + [dict(id=t['id'], cat=t['cat'], name=t['name'], desc=t['desc'], img='/_blob/' + blobs[t['id']]) for t in THEMES]
 
 # ---------------------------------------------------------------- 今の Main から、元の5テーマの CSS とフォントを取り出す

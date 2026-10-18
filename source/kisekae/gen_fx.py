@@ -15,7 +15,7 @@
 import os, re, sys, json, random, math
 from urllib.parse import quote
 from gen_screens import SVG_A
-from boards import board_css, board_html, font_links as theme_fonts, ORDERED, BY_ID, CAT_ORDER
+from boards import board_css, board_html, font_links as theme_fonts, ORDERED, BY_ID, CAT_ORDER, scoped
 from themes20 import CATS
 
 K = os.path.dirname(os.path.abspath(__file__))
@@ -27,6 +27,20 @@ BANNER = re.search(r'<img class="bnr" src="(/_blob/[0-9a-f]{32})"', RANCH).group
 
 # 見本の画面のテーマ（牧場）。結果のボードは壁紙のテーマごと（boards.py。26テーマの一覧は Fx_Boards）
 THEME = 'ranch'
+RANCH_ALT = '青空と芝生、木の柵、草原に立つ栗毛の馬のイラスト'
+
+# テーマごとの見本（まさちゃんの指定があったテーマだけ）：見本の画面の種類 → 元の種類・テーマ・判定画面・PUSHの形・字
+THEMED = dict(
+    hit_gold=dict(base='hit', tid='gold', banner='gold', push='gp', fonts=['Zen+Kaku+Gothic+New:wght@400;500;700']),   # カッコいい：黒と金の ぷるんぷるんPUSH・壁紙のおしりが ぷるん
+)
+
+
+def theme_banner(name):
+    """テーマの上の絵をページにじかに入れる形（<svg class="bnr">）と動きの CSS（カッコいい＝gold.py の inline）"""
+    if name == 'gold':
+        import gold
+        return gold.inline()
+    raise KeyError(name)
 
 # 馬番の枠の色（12頭のレース）
 WAKU = {1: 'w1', 2: 'w2', 3: 'w3', 4: 'w3', 5: 'w4', 6: 'w4', 7: 'w5', 8: 'w5', 9: 'w6', 10: 'w6', 11: 'w7', 12: 'w8'}
@@ -581,13 +595,52 @@ FREEZE_CSS = r'''
 }
 '''
 
-HEADER = f'''  <header class="hd">
+def header(banner=BANNER, alt=RANCH_ALT, svg=None):
+    img = svg or f'<img class="bnr" src="{banner}" alt="{alt}">'
+    return f'''  <header class="hd">
     <div class="hd-r1">
       <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
       <button class="mbtn" type="button"><svg {SVG_A}><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
     </div>
   </header>
-  <img class="bnr" src="{BANNER}" alt="青空と芝生、木の柵、草原に立つ栗毛の馬のイラスト">'''
+  {img}'''
+
+
+HEADER = header()
+
+
+# ---------- テーマの見本：記録する画面をそのテーマの色と形に（変数とルールは boards.py の BY_ID ＝ 判定画面と同じ値） ----------
+def theme_form_css(tid):
+    t = BY_ID[tid]
+    v = dict(t['v'])
+    v.setdefault('btn', 'var(--gold)')
+    v.setdefault('znBg', 'var(--gold)')
+    out = ['.ph{' + ';'.join(f'--{k}:{x}' for k, x in v.items()) + '}', scoped(t['rules'], '.ph')]
+    if tid == 'gold':   # カッコいい：判定画面（Judge_Gold）と同じ　ななめの格子の背景・金の線の帯・金の字・カードの角のひし形。上の絵は160pxぜんぶ（おしりの ぷるん が見えるように）
+        out.append('.ph{background-size:auto}\n.ph .hd{border-bottom:0}\n.ph .w2{border:var(--w2B)}\n.ph .bnr{height:160px;object-position:50% 50%}\n'
+                   '.ph .card::before,.ph .card::after{content:"";position:absolute;top:-7px;width:10px;height:10px;transform:rotate(45deg);background:linear-gradient(135deg,#FFF1B8,#C9952B);border:1px solid #5A400A}\n'
+                   '.ph .card::before{left:-7px}\n.ph .card::after{right:-7px}')
+    return '\n'.join(out) + '\n'
+
+
+GP_CSS = r'''
+/* ---------- カッコいい（金色）の的中ボタン：黒と金の、ぷるんぷるんしたPUSH（まさちゃんの指定） ----------
+   黒いつやの面（上にうすい光）・金のふち（グラデーション）・金の「PUSH」。下を中心に、つぶれる → のびる をくり返す（ゼリーのように・1.2秒ごと） */
+.push.gp,.pressed.gp{border:6px solid transparent;
+  background:radial-gradient(70% 44% at 50% 10%,rgba(255,255,255,.5),rgba(255,255,255,.1) 58%,rgba(255,255,255,0) 100%) padding-box,
+    linear-gradient(180deg,#3D3527 0%,#17130C 40%,#050403 100%) padding-box,
+    linear-gradient(135deg,#8A6514,#F7E08A 22%,#C9952B 42%,#FFF1B8 62%,#D8A537 80%,#8A6514) border-box}
+.push.gp{box-shadow:inset 0 -8px 0 rgba(0,0,0,.6),inset 0 2px 0 rgba(255,241,184,.4),0 0 0 2px #5A400A,0 8px 0 2px #2A1E06,0 0 26px rgba(243,212,122,.45),0 22px 34px rgba(0,0,0,.6);
+  transform-origin:50% 100%;animation:gpPurun 1.2s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push.gp span{display:block;background:linear-gradient(180deg,#FFF6D0 0%,#F3D47A 42%,#C9952B 60%,#FFE9A8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 8px rgba(243,212,122,.5))}
+.push.gp::after{border-color:rgba(243,212,122,.9)}
+@keyframes gpPurun{0%,62%,100%{transform:translateY(0) scale(1,1)}8%{transform:translateY(0) scale(1.16,.82)}20%{transform:translateY(-10px) scale(.88,1.14)}32%{transform:translateY(0) scale(1.08,.93)}42%{transform:translateY(-3px) scale(.96,1.04)}52%{transform:translateY(0) scale(1.02,.98)}}
+.pshadow.gp{animation:gpShad 1.2s ease-in-out infinite}
+@keyframes gpShad{0%,62%,100%{transform:scale(1,1);opacity:.5}8%{transform:scale(1.2,1);opacity:.62}20%{transform:scale(.8,1);opacity:.32}32%{transform:scale(1.08,1);opacity:.55}42%{transform:scale(.95,1);opacity:.45}}
+.tap.gp{color:#F3D47A}
+.pressed.gp{box-shadow:0 0 0 2px #5A400A,0 0 30px rgba(243,212,122,.6)}
+'''
 
 
 def form(bets, pay_total, note, fin=(6, 2, 10)):
@@ -1079,7 +1132,8 @@ MT = mt_layers()
 PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイトル）
     hit=('Fx_Hit.dc.html', '的中ボタン（デフォルト）'), big=('Fx_Big.dc.html', 'デカ的中ボタン（デフォルト）'),
     fz=('Fx_Freeze.dc.html', 'フリーズ的中ボタン（デフォルト）'), hidden=('Fx_Hidden.dc.html', '隠れど的中（デカ的中ボタン → ど的中）'),
-    miss=('Fx_Miss.dc.html', 'ハズレ（ボードだけ）'))
+    miss=('Fx_Miss.dc.html', 'ハズレ（ボードだけ）'),
+    hit_gold=('Fx_HitGold.dc.html', '的中ボタン（カッコいい：黒と金のぷるんPUSH）'))
 BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
 BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
 BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
@@ -1087,7 +1141,10 @@ BETS_MISS = [('3連単', [6, 2, 10], '→', '100円', '0円', False), ('馬単',
 
 
 def page(kind):
-    """見本の画面（記録する → PUSH → タップ → 結果のボード）。kind：hit・big・fz・hidden（デカのPUSH → ど的中）・miss（PUSHなし）"""
+    """見本の画面（記録する → PUSH → タップ → 結果のボード）。kind：hit・big・fz・hidden（デカのPUSH → ど的中）・miss（PUSHなし）
+       ・THEMED の種類（hit_gold など）＝そのテーマの見本（記録する画面とボードがそのテーマ・PUSHもそのテーマの形）"""
+    th, page_kind = THEMED.get(kind, {}), kind
+    kind, tid, pc = th.get('base', kind), th.get('tid', THEME), (' ' + th['push'] if th.get('push') else '')
     big = kind in ('big', 'hidden')          # PUSHはデカ（隠れど的中もデカのPUSH）
     fz = kind in ('fz', 'hidden')            # 押したあとは、ど的中
     fin = (6, 2, 10)
@@ -1110,9 +1167,9 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}<span>PUSH</span></button>
-      <div class="pshadow{pb}"></div>
-      <p class="tap{pb}">タップ！</p>
+      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}<span>PUSH</span></button>
+      <div class="pshadow{pb}{pc}"></div>
+      <p class="tap{pb}{pc}">タップ！</p>
     </div>
   </div>
   </sc-if>'''
@@ -1132,8 +1189,8 @@ def page(kind):
   <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    {'' if kind == 'miss' else f'<div class="pressed{pb}"></div>'}
-    <div class="hb">{board(kind, bets, total)}</div>
+    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}"></div>'}
+    <div class="hb">{board(kind, bets, total, tid=tid)}</div>
     {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
     <button class="close" type="button" onClick="{{{{toForm}}}}">とじる</button>
@@ -1163,8 +1220,15 @@ def page(kind):
         css += MISS_CSS
     else:
         css += HIT_CSS
-    css += board_css([THEME])
-    fn, name = PAGES[kind]
+    if th:
+        css += theme_form_css(tid) + (GP_CSS if th.get('push') == 'gp' else '')
+    css += board_css([tid])
+    fn, name = PAGES[page_kind]
+    fonts = ''.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">\n' for f in th.get('fonts', ()))
+    hdr = HEADER
+    if th.get('banner'):
+        bsvg, bcss = theme_banner(th['banner'])
+        hdr, css = header(svg=bsvg), css + bcss + '\n'
     starts = '["form","reveal"]' if kind == 'miss' else '["form","push","reveal"]'
     return f'''<!doctype html>
 <html lang="ja">
@@ -1179,19 +1243,19 @@ def page(kind):
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&amp;display=swap">
-<style>
+{fonts}<style>
 {css}
 </style>
 </helmet>
 <div class="ph">
-{HEADER}
+{hdr}
 {form(bets, total, note, fin)}
 {push}
 {reveal}
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{{"start":{{"editor":"enum","options":{starts},"default":"form"}},"$preview":{{"width":390,"height":844}}}}'>
-{page_js(kind)}</script>
+{page_js(page_kind)}</script>
 </body>
 </html>
 '''
@@ -1296,6 +1360,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
+PAGE_SND = dict(SND, hit_gold=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいいの的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -1372,7 +1437,7 @@ SFX_JS = '''  sfxDecode(c, b) {
 def page_js(kind):
     """見本の画面のスクリプト。音があれば：記録する → PUSHの音／PUSHをタップ → タップの音（フリーズは視差効果を減らすなら1秒後に結果の所から）／とじる → 止める
        ハズレ：記録する → すぐボード（PUSHなし・音なし）"""
-    ids = [blobs.get(k) for k in SND.get(kind, ())]
+    ids = [blobs.get(k) for k in PAGE_SND.get(kind, ())]
     on, head, init = dict(push='', tap='', form=''), '', ''
     if ids and all(ids):
         tap = "self.sfx('tap'); "
@@ -1678,7 +1743,7 @@ body{{margin:0}}
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>

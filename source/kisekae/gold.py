@@ -1,9 +1,57 @@
-"""カッコいい：金ピカ・ゴージャス・走る金の馬（右向き）・月桂樹・光の筋・キラキラ"""
-import sys, os, math
+"""カッコいい：金ピカ・ゴージャス・走る金の馬（右向き）・月桂樹・光の筋・キラキラ
+   壁紙の動き（まさちゃんの指定「ぷりけつのお馬」）：3秒に1回、馬のおしりが ぷるんっ と揺れる（くり返す）。
+   SVG の中の CSS アニメーション（<style>）なので、アプリの中のファイルなら <img> で出しても動く。視差効果を減らす（prefers-reduced-motion）なら止まる。
+   claude.ai のキャンバスは、アップロードした SVG の <style> を消してしまうので、キャンバスの判定画面には絵をじかに入れる（inline・動きの CSS はページの <style>）：
+     python3 gold.py <出力フォルダ>                                  → gold.svg（ファイルの形・<style>つき）・gold_horse.svg
+     python3 gold.py <出力フォルダ> --judge <Judge_Gold.dc.html>      → ＋判定画面の上の絵を inline の形に書きかえる"""
+import sys, os, math, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
 
 EDGE = '#5A400A'
+
+# おしりの ぷるん：おしり（hind）の線と塗りと、おしりの白いつやを .rp に入れて、おしりの下（馬の座標 RP_O）を中心に
+# 縦横に のびちぢみ（ぷ → るん → だんだん小さく）。3秒で1回（はじめの約0.9秒だけ動いて、あとは止まる）
+RP_O = (92, 84)
+RP_KEYS = [(0, 1, 1), (4, 1.10, .89), (10, .93, 1.10), (16, 1.05, .95), (22, .98, 1.03), (27, 1.01, .99), (31, 1, 1), (100, 1, 1)]
+RUMP_GLOSS = 'M70.8 50.6 C 76.6 43.9, 85.3 38.2, 94.8 40.8'
+
+
+def purun_css(sel='.rp', name='purun', tag=True):
+    ox, oy = RP_O
+    kf = ''.join(f'{p}%{{transform:translate({ox}px,{oy}px) scale({sx:g},{sy:g}) translate(-{ox}px,-{oy}px)}}' for p, sx, sy in RP_KEYS)
+    css = (f'{sel}{{transform-box:view-box;transform-origin:0 0;animation:{name} 3s ease-in-out .6s infinite}}'
+           f'@keyframes {name}{{{kf}}}'
+           f'@media (prefers-reduced-motion:reduce){{{sel}{{animation:none}}}}')
+    return f'<style>{css}</style>' if tag else css
+
+
+ALT = '黒地に光の筋と月桂樹、金ピカに輝きながら走る馬のイラスト（3秒に1回おしりがぷるんと揺れる）'
+INLINE_IDS = ('gh', 'gl', 'bg', 'halo')
+
+
+def inline(alt=ALT, p='gb'):
+    """ページの中にじかに入れる形（<svg class="bnr">）と、そのページの <style> に入れる動きの CSS。
+       id に p をつけて、ページのほかの SVG とぶつからないようにする。戻り値 (svg, css)"""
+    s = re.sub(r'<style>.*?</style>', '', banner(), flags=re.S)
+    for i in INLINE_IDS:
+        s = s.replace(f'id="{i}"', f'id="{p}{i}"').replace(f'url(#{i})', f'url(#{p}{i})')
+    s = s.replace(' xmlns:xlink="http://www.w3.org/1999/xlink"', '').replace('<svg ', f'<svg class="bnr" role="img" aria-label="{alt}" ', 1)
+    return s, purun_css('.bnr .rp', f'{p}Purun', tag=False)
+
+
+def judge_inline(fn):
+    """判定画面（Judge_Gold.dc.html）の上の絵を inline の形に書きかえる（<img class="bnr"> か、前に入れた <svg class="bnr">）。動きの CSS は <style> の最後（印のあいだ）"""
+    page = open(fn, encoding='utf-8').read()
+    svg_html, css = inline()
+    page, n = re.subn(r'<img class="bnr" [^>]*>|<svg class="bnr" .*?</svg>', lambda m: svg_html, page, count=1, flags=re.S)
+    assert n == 1, 'banner not found'
+    block = f'/* カッコいいの壁紙：おしりの ぷるん（gold.py） */\n{css}\n/* /カッコいいの壁紙 */\n'
+    if '/* カッコいいの壁紙：' in page:
+        page = re.sub(r'/\* カッコいいの壁紙：.*?/\* /カッコいいの壁紙 \*/\n', lambda m: block, page, flags=re.S)
+    else:
+        page = page.replace('</style>', block + '</style>', 1)
+    open(fn, 'w', encoding='utf-8').write(page)
 
 
 def gold_defs(idp='g', x2=240, y2=150):
@@ -30,8 +78,13 @@ def gold_horse(fill='url(#gh)'):
     # しっぽ・向こうの脚（少し暗く）
     out += outlined([tail2, tail], fill, EDGE, .9)
     out += g(outlined(far, fill, EDGE, .9), opacity='.82')
-    # 体
-    out += outlined([hind, body, chest, neck, head, ear] + near, fill, EDGE, .9)
+    # 体（おしり＝hind だけ .rp に入れて、ぷるんと揺らす。重なりの順は outlined と同じ：線を全部 → 塗りを全部）
+    parts = [hind, body, chest, neck, head, ear] + near
+    under = [path(d, fill=EDGE, stroke=EDGE, stroke_width=1.8, stroke_linejoin='round') for d in parts]
+    over = [path(d, fill=fill) for d in parts]
+    rump_gloss = path(RUMP_GLOSS, fill='none', stroke='#FFF8D6', stroke_width='2', stroke_linecap='round', opacity='.85')
+    out += f'<g class="rp">{under[0]}</g>' + ''.join(under[1:])
+    out += f'<g class="rp">{over[0]}{rump_gloss}</g>' + ''.join(over[1:])
     # ひづめ
     for x, y, a in [(222, 96, 0), (40, 106, 0), (138, 121, 0), (119, 128, 0)]:
         out += f'<ellipse cx="{x}" cy="{y}" rx="4.6" ry="3.4" fill="#5A400A"/>'
@@ -41,9 +94,9 @@ def gold_horse(fill='url(#gh)'):
                     ([(170, 26), (156, 24), (144, 30), (130, 26)], [6, 5, 3.6, 1]),
                     ([(160, 36), (148, 36), (136, 42), (124, 40)], [5.5, 4.6, 3.2, 1])]:
         out += outlined([limb(pts, ws)], fill, EDGE, .7)
-    # 光のすじ（体のつや）：背中・おしり・顔。背中とおしりの2本は、まさちゃんが赤線で引いた位置（2026/10/18。スクショの赤線をひろって曲線に直した）。
+    # 光のすじ（体のつや）：背中・顔（おしりの1本は上の .rp の中）。背中とおしりの2本は、まさちゃんが赤線で引いた位置（2026/10/18。スクショの赤線をひろって曲線に直した）。
     # 首の上の1本（たてがみに重なっていた所）は、まさちゃんの指定でやめた
-    for d in ['M108.5 48 C 123.1 47.3, 140.2 43.9, 153.9 49.8', 'M70.8 50.6 C 76.6 43.9, 85.3 38.2, 94.8 40.8', 'M204 16 C 214 22, 222 30, 228 38']:
+    for d in ['M108.5 48 C 123.1 47.3, 140.2 43.9, 153.9 49.8', 'M204 16 C 214 22, 222 30, 228 38']:
         out += path(d, fill='none', stroke='#FFF8D6', stroke_width='2', stroke_linecap='round', opacity='.85')
     # 目・鼻
     out += path('M201 21 Q205 18.5 209 21.5 Q205 23.5 201 21 Z', fill='#3A2806')
@@ -73,7 +126,7 @@ def laurel(cx, cy, rx, ry, a0, a1, n=11):
 
 def banner():
     W, H = 390, 160
-    defs = gold_defs('gh', 236, 134) + gold_defs('gl', 390, 160)
+    defs = purun_css() + gold_defs('gh', 236, 134) + gold_defs('gl', 390, 160)
     defs += ('<radialGradient id="bg" cx=".5" cy=".55" r=".7"><stop offset="0" stop-color="#3A2A08"/><stop offset=".6" stop-color="#140E03"/><stop offset="1" stop-color="#050402"/></radialGradient>'
              '<radialGradient id="halo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE9A3" stop-opacity=".55"/><stop offset="1" stop-color="#FFE9A3" stop-opacity="0"/></radialGradient>')
     b = f'<rect width="{W}" height="{H}" fill="url(#bg)"/>'
@@ -104,4 +157,6 @@ def banner():
 if __name__ == '__main__':
     out = sys.argv[1]
     open(f'{out}/gold.svg', 'w').write(banner())
-    open(f'{out}/gold_horse.svg', 'w').write(svg(250, 150, f'<rect width="250" height="150" fill="#140E03"/>' + g(gold_horse(), transform='translate(6 8)'), gold_defs('gh', 236, 134)))
+    open(f'{out}/gold_horse.svg', 'w').write(svg(250, 150, f'<rect width="250" height="150" fill="#140E03"/>' + g(gold_horse(), transform='translate(6 8)'), purun_css() + gold_defs('gh', 236, 134)))
+    if '--judge' in sys.argv:
+        judge_inline(sys.argv[sys.argv.index('--judge') + 1])
