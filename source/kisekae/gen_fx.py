@@ -23,7 +23,7 @@ P = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/moc
 blobs = json.load(open(sys.argv[1]))
 RANCH = open(f'{P}/Judge_Ranch.dc.html', encoding='utf-8').read()
 RANCH_VARS = re.search(r'^\.ph\{(--bg:[^}]*)\}', RANCH, re.M).group(1)
-BANNER = re.search(r'<img class="bnr" src="(/_blob/[0-9a-f]{32})"', RANCH).group(1)
+BANNER = '/_blob/4d32303d3e8ea65630ceca0f8b0b72e6'    # 牧場の上の絵（動かない絵・キャンバスの絵）。判定画面 Judge_Ranch は ranch.py の inline（馬が右へ左へ）
 
 # 見本の画面のテーマ（牧場）。結果のボードは壁紙のテーマごと（boards.py。26テーマの一覧は Fx_Boards）
 THEME = 'ranch'
@@ -32,14 +32,18 @@ RANCH_ALT = '青空と芝生、木の柵、草原に立つ栗毛の馬のイラ�
 # テーマごとの見本（まさちゃんの指定があったテーマだけ）：見本の画面の種類 → 元の種類・テーマ・判定画面・PUSHの形・字
 THEMED = dict(
     hit_gold=dict(base='hit', tid='gold', banner='gold', push='gp', fonts=['Zen+Kaku+Gothic+New:wght@400;500;700']),   # カッコいい：黒と金の ぷるんぷるんPUSH・壁紙のおしりが ぷるん
+    hit_ranch=dict(base='hit', tid='ranch', banner='ranch', push='gr'),   # 牧場：芝生でできたPUSH・壁紙の馬が右へ左へ（1〜8秒）
 )
 
 
 def theme_banner(name):
-    """テーマの上の絵をページにじかに入れる形（<svg class="bnr">）と動きの CSS（カッコいい＝gold.py の inline）"""
+    """テーマの上の絵をページにじかに入れる形（<svg class="bnr">）と動きの CSS（カッコいい＝gold.py・牧場＝ranch.py の inline）"""
     if name == 'gold':
         import gold
         return gold.inline()
+    if name == 'ranch':
+        import ranch
+        return ranch.inline()
     raise KeyError(name)
 
 # 馬番の枠の色（12頭のレース）
@@ -620,6 +624,8 @@ def theme_form_css(tid):
         out.append('.ph{background-size:auto}\n.ph .hd{border-bottom:0}\n.ph .w2{border:var(--w2B)}\n.ph .bnr{height:160px;object-position:50% 50%}\n'
                    '.ph .card::before,.ph .card::after{content:"";position:absolute;top:-7px;width:10px;height:10px;transform:rotate(45deg);background:linear-gradient(135deg,#FFF1B8,#C9952B);border:1px solid #5A400A}\n'
                    '.ph .card::before{left:-7px}\n.ph .card::after{right:-7px}')
+    if tid == 'ranch':  # 牧場：上の絵は160pxぜんぶ（判定画面と同じ・馬が右はしから左はしまで行ったり来たり）
+        out.append('.ph .bnr{height:160px}')
     return '\n'.join(out) + '\n'
 
 
@@ -640,6 +646,149 @@ GP_CSS = r'''
 @keyframes gpShad{0%,62%,100%{transform:scale(1,1);opacity:.5}8%{transform:scale(1.2,1);opacity:.62}20%{transform:scale(.8,1);opacity:.32}32%{transform:scale(1.08,1);opacity:.55}42%{transform:scale(.95,1);opacity:.45}}
 .tap.gp{color:#F3D47A}
 .pressed.gp{box-shadow:0 0 0 2px #5A400A,0 0 30px rgba(243,212,122,.6)}
+'''
+
+
+# ---------- 牧場の的中ボタン：芝生でできたPUSH（まさちゃんの指定） ----------
+TURF_C = ('#8ED24C', '#6DBE34', '#A9E26A', '#5AAE2B', '#7CC93E')       # 草の葉の色
+
+
+def turf_blade(x, y, ang, h, w, c):
+    """草の葉1枚：根もと (x, y)・向き ang（度。-90＝上）・長さ h・根もとの幅 w"""
+    a = math.radians(ang)
+    ux, uy = math.cos(a), math.sin(a)          # 葉の向き
+    nx, ny = -uy, ux                           # 横
+    tip = (x + ux * h, y + uy * h)
+    bend = .18 * h                             # 先が少し曲がる
+    l, r = (x - nx * w / 2, y - ny * w / 2), (x + nx * w / 2, y + ny * w / 2)
+    q1 = (x + ux * h * .55 - nx * (w * .25 - bend * .3), y + uy * h * .55 - ny * (w * .25 - bend * .3))
+    q2 = (x + ux * h * .5 + nx * (w * .3 + bend * .3), y + uy * h * .5 + ny * (w * .3 + bend * .3))
+    p = lambda v: f'{v[0]:.1f} {v[1]:.1f}'
+    return f'<path d="M{p(l)} Q{p(q1)} {p(tip)} Q{p(q2)} {p(r)} Z" fill="{c}"/>'
+
+
+def rr_points(w, h, rad, step):
+    """角丸の四角のふち：(x, y, 外向きの角度) を step ごとに（上 → 右 → 下 → 左）"""
+    pts, L = [], []
+    segs = [((rad, 0), (w - rad, 0), -90), ('arc', (w - rad, rad), -90, 0), ((w, rad), (w, h - rad), 0), ('arc', (w - rad, h - rad), 0, 90),
+            ((w - rad, h), (rad, h), 90), ('arc', (rad, h - rad), 90, 180), ((0, h - rad), (0, rad), 180), ('arc', (rad, rad), 180, 270)]
+    for sg in segs:
+        if sg[0] == 'arc':
+            (cx, cy), a0, a1 = sg[1], sg[2], sg[3]
+            n = max(1, round(math.radians(a1 - a0) * rad / step))
+            for i in range(n):
+                a = a0 + (a1 - a0) * (i + .5) / n
+                pts.append((cx + rad * math.cos(math.radians(a)), cy + rad * math.sin(math.radians(a)), a, 'c'))
+        else:
+            (x0, y0), (x1, y1), a = sg
+            n = max(1, round(math.hypot(x1 - x0, y1 - y0) / step))
+            for i in range(n):
+                t = (i + .5) / n
+                pts.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, a, 's'))
+    return pts
+
+
+def daisy(cx, cy, r, petal='#FFFFFF', mid='#F7C531', n=7):
+    out = ''.join(f'<ellipse cx="{cx + r * .62 * math.cos(2 * math.pi * i / n):.1f}" cy="{cy + r * .62 * math.sin(2 * math.pi * i / n):.1f}" rx="{r * .42:.1f}" ry="{r * .27:.1f}" '
+                  f'transform="rotate({360 * i / n:.0f} {cx + r * .62 * math.cos(2 * math.pi * i / n):.1f} {cy + r * .62 * math.sin(2 * math.pi * i / n):.1f})" fill="{petal}"/>' for i in range(n))
+    return out + f'<circle cx="{cx}" cy="{cy}" r="{r * .36:.1f}" fill="{mid}"/>'
+
+
+def turf_svg(seed=8):
+    """芝生のPUSHの絵（ボタンの 200×100 の上に重ねる。まわりに葉が出るので -16〜216 × -22〜128）：
+       下に土の側面（小石）→ 芝の面（グラデーション・刈ったあとの縞・葉の模様・上の光）→ ふちの葉（上の葉は風でそよぐ .gs1・.gs2）→ 花"""
+    rnd = random.Random(seed)
+    W_, H_, RAD = 200, 100, 26
+    defs = ('<defs><linearGradient id="grF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A6E463"/><stop offset=".32" stop-color="#74C83A"/>'
+            '<stop offset=".72" stop-color="#52A82A"/><stop offset="1" stop-color="#3B8A1E"/></linearGradient>'
+            '<linearGradient id="grS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5A2E"/><stop offset="1" stop-color="#4E2F14"/></linearGradient>'
+            '<radialGradient id="grH" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'
+            f'<clipPath id="grC"><rect width="{W_}" height="{H_}" rx="{RAD}"/></clipPath></defs>')
+    # 土の側面（ボタンの厚み）と小石
+    out = f'<rect x="-1" y="10" width="{W_ + 2}" height="{H_}" rx="{RAD + 1}" fill="url(#grS)"/>'
+    for i in range(11):
+        x = 16 + i * 16.8 + rnd.uniform(-4, 4)
+        out += f'<ellipse cx="{x:.1f}" cy="{H_ + rnd.uniform(3, 7):.1f}" rx="{rnd.uniform(1.4, 2.6):.1f}" ry="{rnd.uniform(1, 1.6):.1f}" fill="{rnd.choice(("#A87A4A", "#B98C5A", "#3E2410"))}"/>'
+    # ふちの葉（下と横・動かない）：芝の面のうしろ
+    back = ''
+    for x, y, a, kind in rr_points(W_, H_, RAD, 5.2):
+        if -90 < a < 270 and not (a == -90):
+            if a == 90 and rnd.random() < .45:
+                continue
+            h = rnd.uniform(4, 7) if a in (0, 180) or kind == 'c' else rnd.uniform(3, 5.5)
+            if a == 90:
+                h = rnd.uniform(3.5, 6)
+            back += turf_blade(x - math.cos(math.radians(a)) * 2, y - math.sin(math.radians(a)) * 2, a + rnd.uniform(-22, 22), h, rnd.uniform(3.4, 5), rnd.choice(TURF_C))
+    out += back
+    # 芝の面
+    out += f'<rect width="{W_}" height="{H_}" rx="{RAD}" fill="url(#grF)"/>'
+    face = ''
+    # 刈ったあとの縞（競馬場の芝のように・うすく）
+    for i in range(-2, 8):
+        x = i * 34
+        face += f'<path d="M{x} -2 L{x + 17} -2 L{x - 9} 104 L{x - 26} 104 Z" fill="#FFFFFF" opacity=".09"/>'
+    # 葉の模様
+    for i in range(150):
+        x, y = rnd.uniform(2, W_ - 2), rnd.uniform(4, H_ - 2)
+        if 30 < x < 170 and 24 < y < 76 and rnd.random() < .55:
+            continue
+        hh = rnd.uniform(3, 6.5)
+        c = rnd.choice(('#C6F288', '#B3EA74', '#3F8F1F', '#4A9A25', '#9DDC5C'))
+        face += f'<path d="M{x:.1f} {y:.1f} q{rnd.uniform(-1.2, 1.2):.1f} {-hh / 2:.1f} {rnd.uniform(-1.8, 1.8):.1f} {-hh:.1f}" stroke="{c}" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".6"/>'
+    face += f'<ellipse cx="{W_ / 2}" cy="12" rx="86" ry="17" fill="url(#grH)"/>'
+    out += f'<g clip-path="url(#grC)">{face}</g>'
+    out += f'<rect x="1.5" y="1.5" width="{W_ - 3}" height="{H_ - 3}" rx="{RAD - 1.5}" fill="none" stroke="#2F7A14" stroke-opacity=".35" stroke-width="3"/>'
+    # 上のふちの葉（風でそよぐ・2つの組が交互に）
+    sway = ['', '']
+    for x, y, a, kind in rr_points(W_, H_, RAD, 4.2):
+        if a == -90:
+            i = int(x / 4.2) % 2
+            sway[i] += turf_blade(x + rnd.uniform(-1, 1), y + 2.5, -90 + rnd.uniform(-16, 16), rnd.uniform(8, 15), rnd.uniform(3.6, 5.4), rnd.choice(TURF_C))
+        elif kind == 'c' and (a < 0 or a > 180):     # 上の角：少し短く
+            out += turf_blade(x - math.cos(math.radians(a)) * 2.5, y - math.sin(math.radians(a)) * 2.5, a + rnd.uniform(-14, 14), rnd.uniform(6, 10), rnd.uniform(3.4, 5), rnd.choice(TURF_C))
+    # 花：上のふちに背の高いデイジー（そよぐ）・面の左下に白・右上に黄色
+    sway[0] += '<path d="M150 3 Q151 -6 153.5 -13" stroke="#4E9E27" stroke-width="2" fill="none" stroke-linecap="round"/>' + daisy(153.5, -15, 6.4)
+    out += f'<g class="gs1">{sway[0]}</g><g class="gs2">{sway[1]}</g>'
+    out += daisy(21, 78, 6.2) + daisy(181, 24, 5.6, petal='#FFE14D', mid='#F2A33A', n=6) + daisy(34, 88, 4, n=6)
+    return (f'<i class="turf" aria-hidden="true"><svg viewBox="-16 -22 232 150" width="232" height="150">{defs}{out}</svg></i>')
+
+
+def clippings(n=18, seed=4):
+    """押した瞬間に、芝の葉と花びらがパッと舞う（ボタンのまん中から外へ → 少し落ちて消える）"""
+    rnd = random.Random(seed)
+    out = ''
+    for i in range(n):
+        a = math.radians(-90 + (i / n - .5) * 300 + rnd.uniform(-8, 8))
+        dist = rnd.uniform(95, 165)
+        x, y = math.cos(a) * dist * 1.25, math.sin(a) * dist * .85 - 20
+        petal = i % 6 == 5
+        c = '#FFFFFF' if petal and i % 12 == 5 else ('#FFE14D' if petal else rnd.choice(TURF_C))
+        out += (f'<i class="{"pt" if petal else "bl"}" style="--x:{x:.0f}px;--y:{y:.0f}px;--r:{rnd.choice((-1, 1)) * rnd.uniform(140, 320):.0f}deg;'
+                f'--d:{rnd.uniform(0, .08):.2f}s;--c:{c}"></i>')
+    return f'<div class="clips" aria-hidden="true">{out}</div>'
+
+
+GR_CSS = r'''
+/* ---------- 牧場の的中ボタン：芝生でできたPUSH（まさちゃんの指定） ----------
+   芝の面（上は明るい黄緑 → 下は濃い緑・刈ったあとのうすい縞・葉の模様）・まわりに葉・下に土の側面（ボタンの厚み）・小さな花。
+   白い「PUSH」に濃い緑のふち。上下の動きは的中と同じ。上のふちの葉と背の高い花が風でそよぐ（2.4秒）。押すと同じ芝のボタンがはじけて、芝の葉と花びらがパッと舞う */
+.push.gr{background:none;box-shadow:0 26px 30px rgba(0,0,0,.42)}
+.gr .turf{position:absolute;left:-16px;top:-22px;width:232px;height:150px;pointer-events:none}
+.gr .turf svg{display:block;width:232px;height:150px;overflow:visible}
+.push.gr span{color:#FFFFF4;text-shadow:0 3px 0 #2A6410,1.5px 0 0 #2A6410,-1.5px 0 0 #2A6410,0 -1.5px 0 #2A6410,0 0 14px rgba(255,255,230,.55)}
+.push.gr::after{border-color:rgba(205,245,150,.95)}
+.gr .gs1,.gr .gs2{transform-box:view-box;transform-origin:0 0;animation:grSway 2.4s ease-in-out infinite}
+.gr .gs2{animation-delay:-1.2s}
+@keyframes grSway{0%,100%{transform:skewX(-10deg)}50%{transform:skewX(10deg)}}
+.tap.gr{color:#E6FFC2}
+.pressed.gr{background:none;box-shadow:none}
+.clips{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips i{position:absolute;opacity:0;animation:grFly .95s cubic-bezier(.15,.7,.3,1) var(--d) both}
+.clips .bl{left:-2px;top:-7px;width:4px;height:14px;border-radius:50% 50% 30% 30%/90% 90% 10% 10%;background:var(--c)}
+.clips .pt{left:-4px;top:-4px;width:8px;height:8px;border-radius:50% 50% 50% 0;background:var(--c)}
+@keyframes grFly{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.5)}10%{opacity:1}62%{opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}
+  100%{opacity:0;transform:translate(var(--x),calc(var(--y) + 50px)) rotate(calc(var(--r) * 1.5)) scale(.9)}}
+@media (prefers-reduced-motion:reduce){.gr .gs1,.gr .gs2{animation:none}.clips{display:none}}
 '''
 
 
@@ -1133,7 +1282,8 @@ PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイ
     hit=('Fx_Hit.dc.html', '的中ボタン（デフォルト）'), big=('Fx_Big.dc.html', 'デカ的中ボタン（デフォルト）'),
     fz=('Fx_Freeze.dc.html', 'フリーズ的中ボタン（デフォルト）'), hidden=('Fx_Hidden.dc.html', '隠れど的中（デカ的中ボタン → ど的中）'),
     miss=('Fx_Miss.dc.html', 'ハズレ（ボードだけ）'),
-    hit_gold=('Fx_HitGold.dc.html', '的中ボタン（カッコいい：黒と金のぷるんPUSH）'))
+    hit_gold=('Fx_HitGold.dc.html', '的中ボタン（カッコいい：黒と金のぷるんPUSH）'),
+    hit_ranch=('Fx_HitRanch.dc.html', '的中ボタン（牧場：芝生のPUSH）'))
 BETS_HIT = [('馬単', [6, 2], '→', '100円', '1,840円', True), ('馬連', [2, 6], '-', '100円', '690円', True), ('3連単', [6, 10, 2], '→', '100円', '0円', False)]
 BETS_BIG = [('3連単', [6, 2, 10], '→', '100円', '48,920円', True), ('馬単', [6, 2], '→', '100円', '1,840円', True), ('ワイド', [2, 10], '-', '100円', '0円', False)]
 BETS_FZ = [('3連単', [FZ_X, 6, 2], '→', '100円', '286,370円', True), ('馬単', [FZ_X, 6], '→', '100円', '24,180円', True), ('ワイド', [2, FZ_X], '-', '100円', '4,950円', True)]
@@ -1167,7 +1317,7 @@ def page(kind):
     <div class="dim"></div>
     {'<div class="spk">' + sparkles(22, 5) + '</div>' if big else ''}
     <div class="pbox">
-      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}<span>PUSH</span></button>
+      <button class="push{pb}{pc}" type="button" onClick="{{{{toReveal}}}}" aria-label="{'デカ的中ボタン' if big else '的中ボタン'}">{'<i class="halo" aria-hidden="true"><i><b></b></i></i>' if big else ''}{turf_svg() if th.get('push') == 'gr' else ''}<span>PUSH</span></button>
       <div class="pshadow{pb}{pc}"></div>
       <p class="tap{pb}{pc}">タップ！</p>
     </div>
@@ -1189,7 +1339,7 @@ def page(kind):
   <div class="ov{cls}" style="--n:{nhit}">
     <div class="dim"></div>
     {layers}
-    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}"></div>'}
+    {'' if kind == 'miss' else f'<div class="pressed{pb}{pc}">{turf_svg() if th.get("push") == "gr" else ""}</div>'}{clippings() if th.get('push') == 'gr' else ''}
     <div class="hb">{board(kind, bets, total, tid=tid)}</div>
     {f'<div class="conf">{conf}</div>' if conf else ''}
     {flash}
@@ -1221,7 +1371,7 @@ def page(kind):
     else:
         css += HIT_CSS
     if th:
-        css += theme_form_css(tid) + (GP_CSS if th.get('push') == 'gp' else '')
+        css += theme_form_css(tid) + dict(gp=GP_CSS, gr=GR_CSS).get(th.get('push'), '')
     css += board_css([tid])
     fn, name = PAGES[page_kind]
     fonts = ''.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">\n' for f in th.get('fonts', ()))
@@ -1360,7 +1510,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいいの的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'])       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場の的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -1743,7 +1893,7 @@ body{{margin:0}}
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
-    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
+    <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く。ranch.py。視差効果を減らすなら止まる）</li><li>シルバー帯・ゴールド帯・マスター帯は指示書9.1の指定どおり（あとで作る）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
     <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>
