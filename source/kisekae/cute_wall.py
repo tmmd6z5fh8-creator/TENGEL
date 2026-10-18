@@ -8,10 +8,16 @@
    - 8秒で1回り（CYCLE）：0〜1秒 いつもの場所 → 1〜5秒 ポニーは ぴょこぴょこ はねながら右へ（MEET の pony）、大きいハートは ふわっと左へ（MEET の heart）→
      5秒 ポニーの鼻と ハートが ちょうど当たる（ハートは むにゅっと へこんで ぽよんと ふくらむ）→ その場所で ポニーが ぴょーん・ぴょんと飛び跳ねて喜ぶ
      （ちぢんで ふみこむ → 跳ぶ（頭が上がる）→ おりて ちぢむ・かげは上がると小さく うすく・ハートが3つ ふわっと出る）→
-     6.4〜7.9秒 ポニーは ぴょこぴょこ もとの場所へ、ハートも ふわっと もどる → くり返す
+     6.4〜7.9秒 ポニーも ハートも すーっと なめらかに もとの場所へ（まさちゃん「戻る時がカクカクしてるからスムーズに戻って！」）→ くり返す
+   - こっちを見る（まさちゃん「3秒〜9秒の中で、ユーザーの方を1回みて、3秒たったらゆっくり1回ユーザーの方を見て、1秒後に２度見して！」→ 3〜9秒ごとランダム）：
+     前の回が終わってから 3〜9秒（毎回ちがう・LOOK_GAPS）たったら こっちを1回見る（くるっと正面の顔に → 1秒見て まばたき → もどる）→
+     その3秒後に ゆっくり こっちを見て → ちらっと よそを見て → 1秒後に 2度見（さっと正面に・目が まんまる・ぴょんと はねて「！」）→ もどる。
+     頭だけを回す：横向きの頭が 頭のまん中で細くなって、正面の顔が 細い所から広がる（体は そのまま）。8回ぶんを 96秒で1回り（LOOK_CYCLE・8秒の12回ぶん）で、
+     ハートと当たる時（5秒）には 前を向いている・2度見は 飛び跳ねて喜ぶ所と かさならないように ならべた（plan() で確かめる・--plan で一覧）
    - 視差効果を減らす（prefers-reduced-motion）なら動かさない（部品が いつもの場所にあるので、いつもの絵と同じ）
    クラスの名前は cw…
-   python3 cute_wall.py --judge <Judge_Cute.dc.html>   → 判定画面の上の絵を書きかえる（何回やっても同じ）"""
+   python3 cute_wall.py --judge <Judge_Cute.dc.html>   → 判定画面の上の絵を書きかえる（何回やっても同じ）
+   python3 cute_wall.py --plan                          → こっちを見る時の一覧"""
 import sys, os, re, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cute
@@ -22,7 +28,7 @@ GO, MEET, BACK, HOME = 1.0, 5.0, 6.4, 7.9      # 近づきはじめ・当たる�
 # 当たる所：いつもの絵で ポニーの鼻と大きいハートは よこに106px はなれている（いちばん近い高さ）。ポニーが48・ハートが60 近づいて ちょうど当たる
 MOVE = dict(pony=48, heart=60)
 HOP_O = (124, 141)            # ポニーが はねる時の中心（足もと）
-STEP = (.4, 3.5, -2)          # ぴょこぴょこ：1回の秒・高さ・かたむき（近づく時は 10回、もどる時は 4回）
+STEP = (.4, 3.5, -2)          # ぴょこぴょこ：1回の秒・高さ・かたむき（近づく時に 10回。もどる時は はねずに すーっと）
 # 飛び跳ねて喜ぶ：(秒, 上へ, よこ・たての のび, かたむき, 次までの動き)
 JOY = [(5.00, 0, 1, 1, 0, 'quad-out'), (5.10, 0, 1.07, .9, 0, 'quad-out'), (5.40, 20, .98, 1.02, -6, 'quad-in'),
        (5.66, 0, .98, 1.03, 2, 'quad-out'), (5.74, 0, 1.07, .9, 0, 'quad-out'), (5.98, 11, .99, 1.01, -4, 'quad-in'),
@@ -34,13 +40,24 @@ BOING = [(5.00, 1, 1, 'quad-out'), (5.08, .9, 1.07, 'ease-out'), (5.22, 1.14, 1.
 FLOAT = [(2.0, 4, 8, 0), (2.6667, 3, 10, -1.1), (4.0, 3.5, 7, -2.3), (1.6, 3, 9, -.5), (2.0, 3.5, 8, -1.3), (2.6667, 3, 12, -.4), (4.0, 3, 9, -3.1)]
 # よろこびのハート：(出る秒, まん中, 大きさ)
 JOY_HEARTS = [(5.30, (236, 32), 7.4), (5.42, (257, 22), 6.2), (5.92, (215, 20), 6.6)]
+# こっちを見る：1回りの秒・前の回から次の回までの秒（3〜9秒・毎回ちがう）・頭を回す中心（絵の座標）
+LOOK_CYCLE = 96.0
+LOOK_GAPS = [3.1, 5.7, 7.4, 6.6, 8.9, 8.3, 6.1, 6.7]
+LOOK_O = (146, 72)
+# 1回ぶん（はじまりからの秒）：横 → 正面（くるっ）・正面 → 横（もどる）。(はじまり, おわり, 速さ)。とちゅうで 細い所（.15）で 入れかわる
+TURNS = [('front', 0.00, 0.32), ('side', 1.25, 1.53),          # こっちを1回見る（1秒）
+         ('front', 3.00, 3.70), ('side', 3.80, 3.94),          # 3秒後に ゆっくり見る → ちらっと よそを見る
+         ('front', 4.00, 4.10), ('side', 5.10, 5.38)]          # 1秒後に 2度見（さっと）→ もどる
+LOOK_LEN = 5.4
+BLINK = 0.70                  # 1回目に見ている間の まばたき
+SNAP = 4.04                   # 2度見で 正面になる時（目が まんまる・ぴょん・「！」）
 EASE = {'linear': 'linear', 'quad-out': 'cubic-bezier(.3333,.6667,.6667,1)', 'quad-in': 'cubic-bezier(.3333,0,.6667,.3333)',
         'ease-in-out': 'ease-in-out', 'ease-in': 'ease-in', 'ease-out': 'ease-out'}
 IDS = (('dots', 'cwDots'), ('pk', 'cwPk'))
 
 
-def pct(t):
-    s = f'{t / CYCLE * 100:.4f}'.rstrip('0').rstrip('.')
+def pct(t, cyc=CYCLE):
+    s = f'{t / cyc * 100:.4f}'.rstrip('0').rstrip('.')
     return s + '%'
 
 
@@ -74,11 +91,11 @@ def steps(t0, t1, n, h, rot):
 def pony_css():
     """ポニーの 左右（.cwx）・はねる（.cwj）・かげ（.cws）"""
     dp = MOVE['pony']
-    mv = [(0, 0, 'linear'), (GO, 0, 'linear'), (MEET, dp, 'linear'), (BACK, dp, 'linear'), (HOME, 0, 'linear'), (CYCLE, 0, 'linear')]
+    mv = [(0, 0, 'linear'), (GO, 0, 'linear'), (MEET, dp, 'linear'), (BACK, dp, 'ease-in-out'), (HOME, 0, 'linear'), (CYCLE, 0, 'linear')]
     x = '@keyframes cwPx{' + ''.join(f'{pct(t)}{{transform:translateX({num(v)}px);animation-timing-function:{EASE[e]}}}' for t, v, e in mv) + '}'
     per, h, rot = STEP
     ks = ([(0, 0, 1, 1, 0, 'linear')] + steps(GO, MEET, round((MEET - GO) / per), h, rot) + JOY
-          + steps(BACK, HOME, 4, h * .85, rot) + [(HOME, 0, 1, 1, 0, 'linear'), (CYCLE, 0, 1, 1, 0, 'linear')])
+          + [(CYCLE, 0, 1, 1, 0, 'linear')])
     hmax = max(k[1] for k in ks)
     jump = ''.join(f'{pct(t)}{{transform:translateY({num(-hh)}px) rotate({num(r)}deg) scale({num(sx, 3)},{num(sy, 3)});animation-timing-function:{EASE[e]}}}'
                    for t, hh, sx, sy, r, e in ks)
@@ -116,6 +133,94 @@ def heart_box(cx, cy, s, pad=1.6):
     return ibox(cx - s * 1.1 - pad, cy - s * 1.1 - pad, cx + s * 1.1 + pad, cy + s * 1.05 + pad)
 
 
+# ---------- こっちを見る（頭だけ回す・96秒で1回り） ----------
+EX_AT = (178, 32)             # 2度見の「！」（絵の座標・ポニーが いつもの場所の時）
+EXCLAIM = (f'<g transform="translate({EX_AT[0]} {EX_AT[1]})" stroke-linecap="round">'
+           '<path d="M-9.5 -9 l-4 -3 M-10.5 -3 l-5 0 M9.5 -9 l4 -3 M10.5 -3 l5 0" stroke="#FF4F9A" stroke-width="2"/>'
+           '<path d="M0 -12.5 L0 0" stroke="#FFFFFF" stroke-width="8.6"/><circle cy="7" r="4.2" fill="#FFFFFF"/>'
+           '<path d="M0 -12.5 L0 0" stroke="#FF4F9A" stroke-width="5"/><circle cy="7" r="2.6" fill="#FF4F9A"/></g>')
+EX_B = ibox(EX_AT[0] - 17, EX_AT[1] - 18, EX_AT[0] + 17, EX_AT[1] + 12)
+
+
+def look_starts():
+    """こっちを見る回の はじまりの秒（前の回が終わってから LOOK_GAPS）"""
+    out, t = [], 0.0
+    for g in LOOK_GAPS:
+        t += g
+        out.append(round(t, 3))
+        t += LOOK_LEN
+    assert abs(t - LOOK_CYCLE) < 1e-6, t
+    return out
+
+
+def front_spans(s):
+    """正面の顔が見えている間（s：回の はじまり）"""
+    out, a = [], None
+    for to, t0, t1 in TURNS:
+        mid = (t0 + t1) / 2
+        if to == 'front':
+            a = s + mid
+        else:
+            out.append((a, s + mid))
+    return out
+
+
+def plan(show=True):
+    """こっちを見る時の一覧。ハートと当たる時（8秒ごとの 4.6〜5.4秒）は 前を向いている・2度見は 飛び跳ねて喜ぶ所（4.6〜6.6秒）と かさならない"""
+    starts = look_starts()
+    for k, s in enumerate(starts):
+        for a, b in front_spans(s):
+            for n in range(-1, int(LOOK_CYCLE / CYCLE) + 2):
+                assert not (a < MEET + .4 + n * CYCLE and b > MEET - .4 + n * CYCLE), (k, s, a, b)
+        snap = s + SNAP
+        assert not any(MEET - .4 + n * CYCLE <= snap <= MEET + 1.6 + n * CYCLE for n in range(-1, int(LOOK_CYCLE / CYCLE) + 2)), (k, s)
+        if show:
+            gap = LOOK_GAPS[k]
+            print(f'{k + 1}回目：{s:6.2f}秒（前の回から {gap}秒・8秒の中では {s % CYCLE:4.2f}秒）こっちを見る → {s + 3:6.2f}秒 ゆっくり見る → {s + 4:6.2f}秒 2度見')
+    return starts
+
+
+def turn_keys(target, starts):
+    """横の頭（target='side'）か 正面の頭（'front'）の よこの のび（scaleX）の keyframes：(秒, のび, 次までの動き)"""
+    ks = [(0, 1 if target == 'side' else 0, 'linear')]
+    eps = .001
+    for s in starts:
+        for to, t0, t1 in TURNS:
+            mid = (t0 + t1) / 2
+            if to == 'front':            # 横が細くなって消え → 正面が細い所から広がる
+                ks += ([(s + t0, 1, 'ease-in'), (s + mid, .15, 'linear'), (s + mid + eps, 0, 'linear')] if target == 'side'
+                       else [(s + mid - eps, 0, 'linear'), (s + mid, .15, 'ease-out'), (s + t1, 1, 'linear')])
+            else:                        # 正面が細くなって消え → 横が細い所から広がる
+                ks += ([(s + t0, 1, 'ease-in'), (s + mid, .15, 'linear'), (s + mid + eps, 0, 'linear')] if target == 'front'
+                       else [(s + mid - eps, 0, 'linear'), (s + mid, .15, 'ease-out'), (s + t1, 1, 'linear')])
+    ks.append((LOOK_CYCLE, ks[0][1], 'linear'))
+    return ks
+
+
+def look_css():
+    """頭を回す（.cwsh・.cwfh）・正面の目（.cwe：まばたき・まんまる）・2度見の ぴょん（.cwq）と「！」（.cwex）"""
+    starts = plan(show=False)
+    L = LOOK_CYCLE
+    kf = lambda name, ks, fmt: f'@keyframes {name}{{' + ''.join(f'{pct(t, L)}{{{fmt(v)};animation-timing-function:{EASE[e]}}}' for t, v, e in ks) + '}'
+    side = kf('cwSide', turn_keys('side', starts), lambda v: f'transform:scaleX({num(v, 3)})')
+    front = kf('cwFront', turn_keys('front', starts), lambda v: f'transform:scaleX({num(v, 3)})')
+    eye, hop, ex = [(0, (1, 1), 'linear')], [(0, 0, 'linear')], [(0, (0, .3, 0), 'linear')]
+    for s in starts:
+        b = s + BLINK
+        eye += [(b, (1, 1), 'ease-in'), (b + .06, (1, .12), 'ease-out'), (b + .12, (1, 1), 'linear'),
+                (s + SNAP, (1, 1), 'quad-out'), (s + SNAP + .1, (1.22, 1.22), 'ease-in-out'), (s + SNAP + .26, (1.1, 1.1), 'linear'),
+                (s + 5.06, (1.1, 1.1), 'ease-in-out'), (s + 5.2, (1, 1), 'linear')]
+        hop += [(s + SNAP, 0, 'quad-out'), (s + SNAP + .09, 7, 'quad-in'), (s + SNAP + .22, 0, 'linear')]
+        ex += [(s + SNAP + .01, (0, .3, 0), 'quad-out'), (s + SNAP + .11, (1, 1.25, 0), 'ease-in-out'), (s + SNAP + .23, (1, 1, 0), 'linear'),
+               (s + 4.85, (1, 1, 0), 'ease-in'), (s + 5.05, (0, 1, -5), 'linear')]
+    eye.append((L, (1, 1), 'linear'))
+    hop.append((L, 0, 'linear'))
+    ex.append((L, (0, .3, 0), 'linear'))
+    return (side + front + kf('cwEye', eye, lambda v: f'transform:scale({num(v[0], 3)},{num(v[1], 3)})')
+            + kf('cwQ', hop, lambda v: f'transform:translateY({num(-v)}px)')
+            + kf('cwEx', ex, lambda v: f'opacity:{num(v[0])};transform:translateY({num(v[2])}px) scale({num(v[1], 3)})'))
+
+
 def inline(alt=ALT):
     """(html, css)。html は <div class="bnr cww">（判定画面の <img class="bnr"> と入れかえる）"""
     p = {}
@@ -136,7 +241,9 @@ def inline(alt=ALT):
             + '<i class="cwh"><i class="cwk"><i class="cwf"><i class="cwd">' + box_svg(p['hearts'][0] + p['shine'], BIG_B) + '</i></i></i></i>'
             + ''.join(f'<i class="cwz cwz{k + 1}">' + box_svg(p['hearts'][k + 1], SB[k]) + '</i>' for k in range(len(small)))
             + '<i class="cwr">' + box_svg(p['bow'], BOW_B) + '</i>'
-            + '<i class="cwx"><i class="cws">' + box_svg(p['shadow'], SHADOW_B) + '</i><i class="cwj">' + box_svg(p['pony'], full) + '</i></i>'
+            + '<i class="cwx"><i class="cws">' + box_svg(p['shadow'], SHADOW_B) + '</i><i class="cwj"><i class="cwq">' + box_svg(p['pony_body'], full)
+            + '<i class="cwsh">' + box_svg(p['pony_head'], full) + '</i><i class="cwfh">' + box_svg(p['pony_front'], full) + '</i>'
+            + '<i class="cwex">' + box_svg(EXCLAIM, EX_B) + '</i></i></i></i>'
             + ''.join(f'<i class="cwy cwy{k + 1}">' + box_svg(cute.path(cute.heart(0, 0, s), fill='#FF6FA8', stroke='#FFFFFF', stroke_width='1.4'), heart_box(0, 0, s)) + '</i>'
                       for k, (t0, (cx, cy), s) in enumerate(JOY_HEARTS))
             + '</div>')
@@ -158,9 +265,16 @@ def inline(alt=ALT):
            f'.cww .cwx{{left:0;top:0;width:{W}px;height:{H}px;animation:cwPx {CYCLE:g}s linear infinite}}'
            f'.cww .cws{{{pos(SHADOW_B)};transform-origin:48px 7px;animation:cwPs {CYCLE:g}s linear infinite}}'
            f'.cww .cwj{{left:0;top:0;width:{W}px;height:{H}px;transform-origin:{num(HOP_O[0])}px {num(HOP_O[1])}px;animation:cwPj {CYCLE:g}s linear infinite}}'
+           f'.cww .cwq,.cww .cwsh,.cww .cwfh{{left:0;top:0;width:{W}px;height:{H}px}}'
+           f'.cww .cwq{{animation:cwQ {LOOK_CYCLE:g}s linear infinite}}'
+           f'.cww .cwsh,.cww .cwfh{{transform-origin:{num(LOOK_O[0])}px {num(LOOK_O[1])}px}}'
+           f'.cww .cwsh{{animation:cwSide {LOOK_CYCLE:g}s linear infinite}}'
+           f'.cww .cwfh{{transform:scaleX(0);animation:cwFront {LOOK_CYCLE:g}s linear infinite}}'
+           f'.cww .cwe{{transform-box:fill-box;transform-origin:50% 50%;animation:cwEye {LOOK_CYCLE:g}s linear infinite}}'
+           f'.cww .cwex{{{pos(EX_B)};opacity:0;transform-origin:50% 70%;animation:cwEx {LOOK_CYCLE:g}s linear infinite}}'
            + ''.join(f'.cww .cwy{k + 1}{{{pos((cx + b[0], cy + b[1], b[2], b[3]))};opacity:0;animation:cwJoy{k + 1} {CYCLE:g}s linear infinite}}'
                      for k, (t0, (cx, cy), s) in enumerate(JOY_HEARTS) for b in [heart_box(0, 0, s)])
-           + pony_css() + heart_css() + ''.join(joy_css(k + 1, t0) for k, (t0, *_r) in enumerate(JOY_HEARTS))
+           + pony_css() + heart_css() + look_css() + ''.join(joy_css(k + 1, t0) for k, (t0, *_r) in enumerate(JOY_HEARTS))
            + '@media (prefers-reduced-motion:reduce){.cww *{animation:none!important}}')
     return html, css
 
@@ -180,4 +294,7 @@ def judge_inline(fn, alt=ALT):
 
 
 if __name__ == '__main__':
-    judge_inline(sys.argv[sys.argv.index('--judge') + 1])
+    if '--plan' in sys.argv:
+        plan()
+    else:
+        judge_inline(sys.argv[sys.argv.index('--judge') + 1])
