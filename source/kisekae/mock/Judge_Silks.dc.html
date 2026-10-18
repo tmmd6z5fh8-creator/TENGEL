@@ -85,6 +85,9 @@ body{margin:0}
 .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;background:repeating-linear-gradient(-55deg,#E02424 0 10px,#FFFFFF 10px 14px,#FFC400 14px 24px,#FFFFFF 24px 28px,#0F9D58 28px 38px,#FFFFFF 38px 42px)}
 .zn{transform:skewX(-12deg)}
 .card + .card{box-shadow:4px 4px 0 #E02424}
+/* 勝負服の壁紙：馬がいつも走り、柄が右から左へ流れる（silks_wall.py） */
+.sbw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}.sbw .sbb{position:absolute;left:0;top:0;width:1212px;height:160px;background:url(/_blob/e1ea98564155829b5e910ae11670c931) 0 0/606px 160px repeat-x;animation:sbFlow 14s linear infinite}@keyframes sbFlow{to{transform:translateX(-606px)}}.sbw .sbh{position:absolute;left:35px;top:12px;width:306px;height:146px;overflow:hidden}.sbw .sbr{width:3060px;height:146px;background:url(/_blob/a6f4674ee0a8a396c3f9df8527b92f77) 0 0/3060px 146px no-repeat;animation:sbRun 0.5s steps(10) infinite}@keyframes sbRun{to{transform:translateX(-3060px)}}@media (prefers-reduced-motion:reduce){.sbw .sbb,.sbw .sbr{animation:none}}
+/* /勝負服の壁紙 */
 </style>
 </helmet>
 <div class="ph">
@@ -98,7 +101,7 @@ body{margin:0}
       <span class="pill"><span class="gdot"></span>マザーデータ1 290走・記録 0件</span>
     </div>
   </header>
-  <img class="bnr" src="/_blob/731b1b4b7aa9f476f8fcc8b7bef66d68" alt="勝負服の柄（市松・縦じま・星・輪）のコマ割りを背に、首と足をいっぱいにのばして走る栗毛の馬（にらむ目・歯をくいしばった口・鼻息）と、ひし形の勝負服の騎手（ゴーグル・とぶ汗）の漫画風イラスト">
+  <div class="sbw" role="img" aria-label="勝負服の柄（市松・縦じま・星・輪）のコマ割りを背に、首と足をいっぱいにのばして走る栗毛の馬と、ひし形の勝負服の騎手の漫画風イラスト（馬がいつも走り、うしろの柄が右から左へ流れる）"><div class="sbb"></div><div class="sbh"><div class="sbr"></div></div></div>
   <main class="ct">
     <section class="card">
       <h2 class="ch">レース情報</h2>

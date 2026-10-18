@@ -50,9 +50,7 @@ def halftone(u0, u1, y0, rmax, rng, col=NAVY, op=0.30, step=7.0):
     return f"<g fill='{col}' opacity='{op}'>" + ''.join(out) + "</g>"
 
 
-def bg_svg(seed=5):
-    rng = np.random.default_rng(seed)
-    S = [f"<rect width='{W}' height='{Hh}' fill='#FFFFFF'/>"]
+def _defs(panels):
     defs = [f"<pattern id='chk' width='28' height='28' patternUnits='userSpaceOnUse' patternTransform='translate(6 4)'>"
             f"<rect width='28' height='28' fill='{YEL}'/><rect width='14' height='14' fill='{RED}'/><rect x='14' y='14' width='14' height='14' fill='{RED}'/></pattern>",
             f"<pattern id='stp' width='20' height='40' patternUnits='userSpaceOnUse' patternTransform='rotate({f2(math.degrees(math.atan(K_)))})'>"
@@ -63,27 +61,33 @@ def bg_svg(seed=5):
             "<stop offset='0' stop-color='#5D86FF'/><stop offset='0.45' stop-color='#2F5BE6'/><stop offset='1' stop-color='#173AAE'/></radialGradient>",
             "<linearGradient id='shine' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FFFFFF' stop-opacity='.22'/>"
             "<stop offset='.35' stop-color='#FFFFFF' stop-opacity='0'/></linearGradient>"]
-    for i, (u0, u1, kind) in enumerate(PANELS):
+    for i, (u0, u1, kind) in enumerate(panels):
         defs.append(f"<clipPath id='cp{i}'><polygon points='{pts(panel_poly(u0, u1))}'/></clipPath>")
-    S.insert(0, '<defs>' + ''.join(defs) + '</defs>')
-    for i, (u0, u1, kind) in enumerate(PANELS):
+    return '<defs>' + ''.join(defs) + '</defs>'
+
+
+def _panels(panels, rng, rect=None):
+    """コマの中身とふちの SVG の部品。rect(u0, u1)：コマの中をぬる四角の属性（なければ絵のはばいっぱい）"""
+    S = []
+    for i, (u0, u1, kind) in enumerate(panels):
         poly = pts(panel_poly(u0, u1))
+        R_ = rect(u0, u1) if rect else f"width='{W}' height='{Hh}'"
         g = [f"<g clip-path='url(#cp{i})'>"]
         if kind == 'check':
-            g.append(f"<rect width='{W}' height='{Hh}' fill='url(#chk)'/>")
+            g.append(f"<rect {R_} fill='url(#chk)'/>")
         elif kind == 'stripe':
-            g.append(f"<rect width='{W}' height='{Hh}' fill='url(#stp)'/>")
+            g.append(f"<rect {R_} fill='url(#stp)'/>")
         elif kind == 'hoop':
-            g.append(f"<rect width='{W}' height='{Hh}' fill='url(#hoop)'/>")
+            g.append(f"<rect {R_} fill='url(#hoop)'/>")
         elif kind == 'star':
-            g.append(f"<rect width='{W}' height='{Hh}' fill='{RED}'/>")
+            g.append(f"<rect {R_} fill='{RED}'/>")
             for row in range(9):
                 y = 18 + row * 38
                 for col in range(-1, 4):
                     x = u0 - K_ * y + 22 + col * 40 + (20 if row % 2 else 0)
                     g.append(f"<path d='{star_path(x, y, 10.5, rot=8)}' fill='#FFFFFF'/>")
         elif kind == 'center':
-            g.append(f"<rect width='{W}' height='{Hh}' fill='url(#glow)'/>")
+            g.append(f"<rect {R_} fill='url(#glow)'/>")
             # 流線（うしろへ流れる白いスピード線）：馬のうしろに多く、まんなかの高さに集める
             ys_ = np.sort(rng.uniform(10, 310, 38))
             for y in ys_:
@@ -105,13 +109,37 @@ def bg_svg(seed=5):
                 g.append(f"<polygon points='{pts(panel_poly(ua, ub, 0))}' fill='#FFFFFF' opacity='{op}'/>")
         if kind != 'center':
             g.append(halftone(u0, u1, 196, 2.9, rng))
-            g.append(f"<rect width='{W}' height='{Hh}' fill='url(#shine)'/>")
+            g.append(f"<rect {R_} fill='url(#shine)'/>")
         else:
             g.append(halftone(u0, u1, 236, 2.2, rng, col='#0B1D63', op=0.45))
         g.append('</g>')
         S.append(''.join(g))
         S.append(f"<polygon points='{poly}' fill='none' stroke='{NAVY}' stroke-width='3' stroke-linejoin='round'/>")
+    return S
+
+
+def bg_svg(seed=5):
+    rng = np.random.default_rng(seed)
+    S = [f"<rect width='{W}' height='{Hh}' fill='#FFFFFF'/>"]
+    S.insert(0, _defs(PANELS))
+    S += _panels(PANELS, rng)
     return f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{Hh}' viewBox='0 0 {W} {Hh}'>" + ''.join(S) + "</svg>"
+
+
+# 壁紙の動き（まさちゃん「背景が常に右から左に模様が動く同じ模様をリピートする」）：くり返しの1まい（はば PERIOD）。
+# コマの並びは いまの絵と同じ（市松・縦じま・青・星・輪）で、市松と輪のはばだけ ちぢめて、輪のあとに また市松が来るようにした。
+# いまの絵の 0〜780 の所は いまの絵と同じ（見えない所だけ ちがう）
+STRIP = [(-114, 86, 'check'), (94, 222, 'stripe'), (230, 768, 'center'), (776, 880, 'star'), (888, 1090, 'hoop')]
+PERIOD = 1090 + 8 + 114                      # 輪のおわり → 次の市松のはじめ（すき間 8）
+
+
+def strip_svg(seed=5):
+    """くり返しの1まい（PERIOD × 320）：1回分のコマを、まえ・いま・つぎ の3か所に同じ形で置く（柄も一緒にずれるので、つぎ目がない）"""
+    S = [_defs(STRIP), f"<rect width='{PERIOD}' height='{Hh}' fill='#FFFFFF'/>"]
+    rect = lambda u0, u1: f"x='{f2(u0 - K_ * Hh - 12)}' width='{f2(u1 - u0 + K_ * Hh + 24)}' height='{Hh}'"
+    for k in (-1, 0, 1):
+        S.append(f"<g transform='translate({k * PERIOD} 0)'>" + ''.join(_panels(STRIP, np.random.default_rng(seed), rect)) + '</g>')
+    return f"<svg xmlns='http://www.w3.org/2000/svg' width='{PERIOD}' height='{Hh}' viewBox='0 0 {PERIOD} {Hh}'>" + ''.join(S) + "</svg>"
 
 
 if __name__ == '__main__':

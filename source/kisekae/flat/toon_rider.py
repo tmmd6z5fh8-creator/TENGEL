@@ -45,11 +45,15 @@ def jockey_t(sc, S, js=1.25, side_z=0.30, head_r=0.13):
 
 
 def render_toon(pose, box, W, Hh, s=3, azim=18, elev=5, name='toon', head_scale=1.32, fov=26, js=1.25, head_r=0.13,
-                key=(0.30, 0.80, 0.55)):
-    """anime_rider.render_anime と同じ描き方で、騎手だけ jockey_t（大きめの頭・前へつき出す手）"""
+                key=(0.30, 0.80, 0.55), cam=None):
+    """anime_rider.render_anime と同じ描き方で、騎手だけ jockey_t（大きめの頭・前へつき出す手）。
+       cam：決めたカメラ (eye, tgt)（走るコマで いまの絵と同じカメラを使う）。なければ box に入るように決める。R['cam'] に入れる"""
     Hm.HEAD_SCALE = head_scale
     W3, H3 = W * s, Hh * s
-    e, t = frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
+    if cam is None:
+        e, t = frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
+    else:
+        e, t = (np.asarray(v, float) for v in cam)
     sc = Scene()
     sc.image(W3, H3, 1)
     sc.camera(e, t, fov)
@@ -93,6 +97,7 @@ def render_toon(pose, box, W, Hh, s=3, azim=18, elev=5, name='toon', head_scale=
     fwd2 = P([J['head'] + np.array([J['head_r'], 0, 0])])[0] - hcen
     R['jfwd'] = fwd2 / (np.linalg.norm(fwd2) + 1e-9)
     R['S'], R['scene'], R['J'], R['side'], R['Lk'], R['s'] = S, sc, J, side, Lk, s
+    R['cam'] = (e, t)
     return R
 
 
