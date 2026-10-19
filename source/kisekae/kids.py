@@ -2,7 +2,7 @@
    python3 kids.py <出力フォルダ>   → kids.svg（いつもの絵）
    壁紙の動き（kids_wall.py）のために、banner(parts) で 絵を部品に分けて受けとれる：下の絵・毛糸玉と糸・枠・かげ・
    馬（目なし）・馬のボタンの目・ロボット（黒目なし）・ロボットの黒目・ロボットの部品（アンテナ・腕2本・足2つ・体・頭）・
-   ロボットが持つ時の 毛糸玉の 短い糸。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
+   ロボットが持つ時の 毛糸玉の 短い糸・くわえた毛糸玉の前に重ねる 鼻先の下半分。部品を同じ順に重ねると いつもの絵"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
@@ -61,7 +61,7 @@ def plush_horse(eye=True):
     # 鼻先（別の布）
     out += stitched(snout, FELT_L, 2.0, smooth(ellipse_pts(107, 59, 14.5, 10.8, 12, rot=10)))
     # 縫い目
-    out += path('M60 72 C 62 84, 60 100, 56 112', **STITCH)
+    out += path('M60 72 C 61.32 79.92, 60.9 89.53, 59.31 98.67', **STITCH)      # 首の つけ根から 胸へ（前足の上で おわる：まさちゃん「縫い目不自然だから消して」）
     out += path('M70 64 C 76 70, 84 72, 92 70', **STITCH)
     # ハートのつぎあて
     out += stitched(heart(46, 92, 9), '#F7A8C0', 1.6, heart(46, 92, 6.6))
@@ -83,6 +83,16 @@ def plush_horse(eye=True):
     out += path('M104 67 q5 4 10 0', **STITCH)
     return out
 
+
+def horse_snout_front():
+    """くわえた毛糸玉の 前に重ねる 鼻先の下半分（馬の座標・y≧58 だけ）：毛糸玉が 鼻先の下に 入って、口で くわえて見える。
+       いつもの絵の 鼻先・ほっぺ・鼻・口と 同じ形（重ねても 見た目は かわらない）"""
+    snout = smooth(ellipse_pts(107, 59, 18, 14, 12, rot=10))
+    out = stitched(snout, FELT_L, 2.0, smooth(ellipse_pts(107, 59, 14.5, 10.8, 12, rot=10)))
+    out += '<circle cx="96" cy="58" r="4.6" fill="#F7A8C0" opacity=".9"/>'
+    out += path('M114 55 l3 3 M117 55 l-3 3', fill='none', stroke=BR, stroke_width='1.4', stroke_linecap='round')
+    out += path('M104 67 q5 4 10 0', **STITCH)
+    return '<clipPath id="snoutcut"><rect x="70" y="58" width="72" height="34"/></clipPath>' + g(out, clip_path='url(#snoutcut)')
 
 def robot_antenna():
     """ロボットのアンテナ（ロボットの座標）"""
@@ -184,7 +194,8 @@ def banner(parts=None):
                      robot=g(robot(pupils=False), transform=at(ROBOT_AT)), pupils=[g(robot_pupil(ex), transform=at(ROBOT_AT)) for ex in ROBOT_EYES],
                      rob_antenna=g(robot_antenna(), transform=at(ROBOT_AT)), rob_arm=[g(robot_arm(k), transform=at(ROBOT_AT)) for k in (0, 1)],
                      rob_foot=[g(robot_foot(x), transform=at(ROBOT_AT)) for x in (32, 50)], rob_body=g(robot_body(), transform=at(ROBOT_AT)),
-                     rob_head=g(robot_head(pupils=False), transform=at(ROBOT_AT)), tail=yarn_tail())
+                     rob_head=g(robot_head(pupils=False), transform=at(ROBOT_AT)), tail=yarn_tail(),
+                     snout=g(horse_snout_front(), transform=at(HORSE_AT)))
     return svg(W, H, b + ball + thread + frame + shadow_h + shadow_r + horse + rob, defs)
 
 

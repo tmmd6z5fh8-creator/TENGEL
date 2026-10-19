@@ -7,7 +7,7 @@
     同じ3回〜8回のうちランダムで入れて！」
    - 絵は kids.py の部品（いつもの絵と同じ形・同じ場所）を べつべつの <svg> にして重ね、動く所だけを CSS で動かす。下から：
      下の絵（毛糸の編み目・布・雲・星）→ 毛糸玉と糸・投げた毛糸玉（枠の内がわだけ見える）→
-     馬（枠の内がわだけ：かげ → 向き → はねる → のぞきこむ → 立ち上がる → 馬（目なし）・ボタンの目・くわえた毛糸玉）→
+     馬（枠の内がわだけ：かげ → 向き → はねる → のぞきこむ → 立ち上がる → 馬（目なし）・ボタンの目・くわえた毛糸玉・その前の 鼻先の下半分）→
      ロボット（枠の内がわだけ：かげ → けむり・ピコーン → アンテナ → 左の腕 → 右の腕（手に持った毛糸玉）→ 足 → 体と頭 → 黒目・ぐるぐる目 → あせ・火花）→
      ハート → 「ヒヒーン！」→ 枠（毛糸玉は 馬とロボットの うしろ、馬は ロボットの うしろを通る＝いつもの絵と同じ重なり）
    - 1回（回のはじめ＝前の回で 毛糸玉を はなした時）：投げた毛糸玉が 左の外へ（FLY 秒）→ GAP（1.7秒）あけて 左から ころころ転がってくる
@@ -92,12 +92,12 @@ OFF_H = 1.0                              # 見えない間（1秒後に戻る）
 BACK_H = 1.4                             # 戻る秒（6回）
 TOSS_A = -20.0                           # 首を ふり上げて投げる（左向き）
 FLIP_O = (130, 145)                      # 向きを変える時の まん中
-HORSE_HELD = (176, 82)                   # くわえた毛糸玉のまん中（右向きで いつもの場所の時・絵の座標）
+HORSE_HELD = (180, 98)                   # くわえた毛糸玉のまん中（右向きで いつもの場所の時・絵の座標）：鼻先の下に 上の3分の1が入る（まさちゃん「もっとくちばしで毛糸持ってるように」）
 H_THROW = ((40, 16), -24.0)              # 馬が投げた毛糸玉：いちばん高い所・出た所の x（FLY 秒）
 EASE = {'linear': 'linear', 'quad-out': 'cubic-bezier(.33,.67,.67,1)', 'quad-in': 'cubic-bezier(.33,0,.67,.33)', 'ease-in-out': 'ease-in-out',
         'ease-in': 'ease-in', 'ease-out': 'ease-out'}
 BEZ = {'quad-out': (1 / 3, 2 / 3, 2 / 3, 1), 'quad-in': (1 / 3, 0, 2 / 3, 1 / 3), 'ease-in-out': (.42, 0, .58, 1), 'ease-in': (.42, 0, 1, 1), 'ease-out': (0, 0, .58, 1)}
-IDS = (('knit', 'kdKnit'), ('felt', 'kdFelt'))
+IDS = (('knit', 'kdKnit'), ('felt', 'kdFelt'), ('snoutcut', 'kdSnoutCut'))
 SWEAT = ('<path d="M227 44.6 C 228.3 47.4, 230.8 49.8, 230.8 52.2 A 3.8 3.8 0 0 1 223.2 52.2 C 223.2 49.8, 225.7 47.4, 227 44.6 Z" '
          f'fill="#BFE8FB" stroke="{kids.BR}" stroke-width="1.1" stroke-linejoin="round"/><ellipse cx="225.6" cy="52" rx=".9" ry="1.4" fill="#FFFFFF"/>')
 SWEAT_B = (221, 43, 12, 15)
@@ -849,7 +849,7 @@ def inline(alt=ALT):
             + '<i class="kdz"><i class="kdHw">' + box_svg(p['shadow_h'], SHADOW_B, 'kdhs')
             + '<i class="kdHf"><i class="kdh"><i class="kdl"><i class="kdHr">' + box_svg(p['horse'], full)
             + '<i class="kde">' + box_svg(p['eye'], EYE_B) + '</i>'
-            + '<i class="kdHh">' + box_svg(held_ball, HB) + '</i></i></i></i></i></i></i>'
+            + '<i class="kdHh">' + box_svg(held_ball, HB) + '</i><i class="kdHn">' + box_svg(p['snout'], full) + '</i></i></i></i></i></i></i>'
             + '<i class="kdq"><i class="kdR">' + box_svg(p['shadow_r'], RSHADOW_B, 'kdRs')
             + ''.join(f'<i class="kdRm kdRm{k + 1}">' + box_svg(smoke_svg(), SM_B) + '</i>' for k in range(2))
             + '<i class="kdRp">' + box_svg(sparkle_svg(), SP_B) + '</i>'
@@ -898,6 +898,7 @@ def inline(alt=ALT):
            f'.kdw .kdHr{{{FULL};{org(REAR_O)};{an("kdHr")}}}'
            f'.kdw .kde{{{pos(EYE_B)};{an("kdEye")}}}'
            f'.kdw .kdHh{{{pos((*HH_AT, 44, 54))};opacity:0;{an("kdHh")}}}'
+           f'.kdw .kdHn{{{FULL};opacity:0;{an("kdHh")}}}'                 # 鼻先の下半分（くわえた毛糸玉の前・毛糸玉と同じ時に見える）
            # ロボット
            f'.kdw .kdR{{{FULL};{an("kdRx", "kdRo")}}}'
            f'.kdw .kdRs{{{pos(RSHADOW_B)}}}'
