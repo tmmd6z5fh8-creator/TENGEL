@@ -16,7 +16,9 @@ CROP = (82, 124, 1118, 549)          # 元の絵（1200×655）から切り出�
 VER = (600, 436, 990, 470)           # 「バージョン …」の行のある所
 
 
-def make(src=SRC):
+def clean_crop(src=SRC):
+    """「バージョン …」の行を消して 切り出した絵（元の大きさ 1036×425・BGR）と 消した所のマスク（元の絵の大きさ）。
+       壁紙の動き（flat/tengel_run.py）も この絵から作る"""
     im = cv2.imread(src, cv2.IMREAD_COLOR)
     assert im is not None and im.shape[:2] == (655, 1200), (src, None if im is None else im.shape)
     g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -29,7 +31,11 @@ def make(src=SRC):
     mask[y0:y1, x0:x1] = m * 255
     clean = cv2.inpaint(im, mask, 6, cv2.INPAINT_TELEA)
     cx0, cy0, cx1, cy1 = CROP
-    crop = clean[cy0:cy1, cx0:cx1]
+    return clean[cy0:cy1, cx0:cx1], mask
+
+
+def make(src=SRC):
+    crop, mask = clean_crop(src)
     out = cv2.resize(crop, (W, Hh), interpolation=cv2.INTER_AREA)
     return out[..., ::-1].astype(np.float32) / 255.0, mask
 
