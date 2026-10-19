@@ -4,17 +4,18 @@
    - 絵は flat/lucky_banner.py の部品（parts：いつもの絵と同じ形・同じ場所）を べつべつの <svg> にして重ね、動く所だけを CSS で動かす。下から：
      地（光・青海波・うしろの桜と四つ葉）→ うしろの小判（降る・蹄鉄と招き馬の うしろを通る）→ 蹄鉄と招き馬 → 手前の金貨・桜・キラキラ → 手前の小判（降る・左右だけ）
    - 招き馬の 動かす部品（flat/lucky_maneki.py の rig で包む。動く中心は <g transform> で はさむ）：
-     右前足（ひじを中心に 少し かたむく・前へ たおれて 少し短く見える）・ひづめ（手首を中心に 前へ おれる＝たての のびが cos θ。
-     θ が 90度を こえると 裏＝金の ひづめの かべ・白い毛のふち に入れかわる）・頭（首を中心に 上がって 少し かたむく）・
-     顔（目と かざりは 上へ ちぢむ・鼻先は 上へ 大きく＝上を向く・鼻先の下がわが 見える）・ひとみ（上を見る）・口（開ける・ふるえる）・
-     耳（うしろへ たおれる）・たてがみ・しっぽ・体（少し のびる）
+     頭（首を中心に 上がって 少し かたむく）・顔（目と かざりは 上へ ちぢむ・鼻先は 上へ 大きく＝上を向く・鼻先の下がわが 見える）・
+     ひとみ（上を見る）・口（開ける・ふるえる）・耳（うしろへ たおれる）・前髪・たてがみ・しっぽ・体（少し のびる）
+   - あげた右前足は 立体（まさちゃん「招くときはもっと腕動かして」「招く腕は立体にみてるようにして」）：flat/lucky_arm.py で
+     太さの変わる管の前足と 厚みのある ひづめを 3D で動かして描いた コマ（θ＝ひづめ全体の おれ・lucky_arm.THETAS）を よこに ならべた帯にして、
+     窓（clip）の中で 帯を ずらして コマを めくる（step-end）。前足は ひじから 前へ たおれて（近づくと 大きく）、ひづめは 手首で さらに おれる
+     （ふち＝厚みが見えて、90度を こえると 裏＝金の かべと 白い毛のふち）。帯は 2重の <g>（8秒の1回り .lwSA・ヒヒィーンの1回り .lwSB）で
+     ずらす：どちらかは いつも 0（動く時が かさならない）なので、足したずれが そのコマ
    - 8秒で1回り（CYCLE・R_KEYS）：0〜1秒 そのまま → 1〜2秒 ひづめが 前へ・うしろへ がたがた（前へ おれかけて 引っかかり、うしろへ もどる）
-     → 2.25〜2.95秒 少しうしろへ ためる（ぷるぷる）→ 3秒 一気に 前へ おれて 振り下ろす（0.2秒・少し はねかえる）→ 3.55〜4.05秒 もどる → 8秒まで そのまま
+     → 2.25〜2.95秒 少しうしろへ ためる（ぷるぷる）→ 3秒 一気に 前へ たおれて 振り下ろす（0.2秒・少し はねかえる）→ 3.55〜4.05秒 もどる → 8秒まで そのまま
    - ヒヒィーン（neigh_tracks）：首を上げて 上を向き（目も上を見る）・口を開けて 鳴く（頭と口が ふるえる・耳が たおれる・しっぽを ふる）・
-     そのあいだに 招く（BECKON_S 秒に1回 ひづめを おって もどす）→ もどる。前のヒヒィーンから 11〜19秒（ばらばら・はじめ → はじめ）。
+     そのあいだに 招く（BECKON_S 秒に1回 前足を 前へ たおして もどす）→ もどる。前のヒヒィーンから 11〜19秒（ばらばら・はじめ → はじめ）。
      招く所は がたがた・振り下ろしと かさならない（8秒の中の FREE。3秒の 振り下ろしの前に 首が上がった時は、振り下ろしも 招く1回）。
-     招く右前足は もう1本（.lwAB：BECKON_S 秒で くり返す 動き）を 招く間だけ 出して、いつもの右前足（.lwAA）と 入れかえる
-     （どちらも 止まっている時に 入れかえるので 見えない。だから ヒヒィーンの はじめは BECKON_S 秒の ます目の上）。
      EV_CYCLES 回ぶん（EV_LOOP 秒）で1回り。ページを開いてから 1回目は 11〜19秒
    - 小判（KOBAN）：うしろ8まい・手前8まい。上から下へ（うしろは 小さく ゆっくり）・左右に ゆれて かたむく・くるっと うらがえる（よこに 細くなる）
    - ページを開くと 0秒（いつもの絵と同じ招き馬）から。視差効果を減らす（prefers-reduced-motion）なら 動かさず、小判も出さない（いつもの絵と同じ）
@@ -27,6 +28,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, 'flat'))
 import lucky_banner as LB
 import lucky_maneki as LM
+import lucky_arm as LA
 
 ALT = ('銀の蹄鉄の中で、右の前足をあげて福を招き、千両の小判をだいた白い招き馬（正面の顔・つり目の金色の目・赤い首輪と金の鈴）と、金貨・桜・四つ葉のアニメ風イラスト'
        '（まわりに いつも小判が降っている。8秒ごとに 右の前足が 引っかかったように がたがたして、一気に 振り下ろす。ときどき 上を向いて 招きながら いななく）')
@@ -34,14 +36,13 @@ CYCLE = 8.0                      # 振り下ろしの1回り
 EV_CYCLES = 12                   # ヒヒィーンの1回りの 8秒の数（EV_LOOP＝96秒）
 EV_LOOP = EV_CYCLES * CYCLE
 EV_GAP = (11.0, 19.0)            # ヒヒィーンと つぎのヒヒィーンの間（はじめ → はじめ）
-BECKON_S = 0.6                   # 招く1回の秒（ヒヒィーンの はじめも この ます目の上）
+BECKON_S = 0.6                   # 招く1回の秒
+FPS = 60                         # 前足の コマを えらぶ きざみ（1秒に）
 FREE = (4.25, 9.0)               # 招いてよい所・首が上がっていてよい おわり（8秒の中：振り下ろしが もどってから、つぎの がたがたまで）
 NEIGH_FROM = 2.4                 # ヒヒィーンを はじめてよい所（8秒の中・がたがたの あと）
 SEED = 0
 
 # 動かす中心（招き馬の座標・viewBox 0 0 240 270）
-P_EL = (44.0, 196.0)             # ひじ（右前足が かたむく）
-P_WR = (42.5, 161.0)             # 手首（ひづめが おれる）
 P_NK = (120.0, 170.0)            # 首（頭が上がる）
 P_FE = (120.0, 58.0)             # 目と かざりが ちぢむ中心
 P_FL = (120.0, 40.0)             # 前髪
@@ -67,9 +68,10 @@ R_KEYS = [(0.00, 0, 'linear'), (1.00, 0, 'ease-out'),
           # 一気に 振り下ろす（90度で 裏に入れかわる）→ はねかえる → もどる
           (3.00, -24, 'ease-in'), (3.12, 90, 'ease-out'), (3.20, 162, 'ease-in-out'), (3.28, 143, 'ease-in-out'), (3.35, 150, 'linear'),
           (3.55, 150, 'ease-in'), (3.74, 90, 'ease-out'), (4.05, -8, 'ease-in-out'), (4.20, 0, 'linear'), (CYCLE, 0, 'linear')]
-# 招く1回（BECKON_S 秒でくり返す・ヒヒィーンの時だけ出す右前足）
-BECKON = [(0.00, 0, 'ease-in'), (0.09, 90, 'ease-out'), (0.15, 140, 'ease-in-out'), (0.21, 134, 'ease-in'), (0.30, 90, 'ease-out'),
-          (0.42, -6, 'ease-in-out'), (0.50, 0, 'linear'), (BECKON_S, 0, 'linear')]
+# 招く1回（ヒヒィーンの時：BECKON_S 秒ずつ つづけて）
+BECKON = [(0.00, 0, 'ease-in'), (0.10, 90, 'ease-out'), (0.17, 150, 'ease-in-out'), (0.24, 142, 'ease-in'), (0.33, 90, 'ease-out'),
+          (0.45, -6, 'ease-in-out'), (0.52, 0, 'linear'), (BECKON_S, 0, 'linear')]
+NEIGH_B = 0.6                    # 首を上げてから 招きはじめるまで
 NEIGH_UP = 0.32                  # 首を上げる秒
 NEIGH_DOWN = 0.45                # 首を もどす秒
 NEIGH_HOLD = 1.95                # 首を上げている（はじめから。招くのが のびたら のばす）
@@ -108,31 +110,6 @@ def pv(cls, p, inner):
             f"<g transform='translate({num(-p[0])} {num(-p[1])})'>{inner}</g></g></g>")
 
 
-def fold(th):
-    """ひづめの おれ θ → (よこ, たて) の のび。前へ おれると 近づくので 少し大きく、うしろへは 少し小さく"""
-    s = math.sin(math.radians(th))
-    return (1 + 0.07 * s if th >= 0 else 1 + 0.04 * s), math.cos(math.radians(th))
-
-
-def arm_of(th):
-    """ひづめの おれ θ → 右前足（ひじが中心）の (かたむき, たての のび)。がたがたの時は 前へ おれると 内がわへ・うしろへ もどると 外がわへ ゆれ、
-       振り下ろすと 内がわへ 5度・前へ たおれて 0.93"""
-    if th <= 40:
-        return 0.1 * th, 1.0
-    u = min(1.0, (th - 40) / 110)
-    return 4.0 + 1.0 * u, 1 - 0.07 * u
-
-
-def crossings(keys):
-    """θ が 90度を こえる 秒（キーに 90 を入れてあるので、その秒）→ [(秒, 裏か)]"""
-    out = []
-    for (t0, a, _), (t1, b, _) in zip(keys, keys[1:]):
-        if (a < 90 <= b) or (a >= 90 > b):
-            assert b == 90 or a == 90, (t0, a, t1, b)
-            out.append((t1 if b == 90 else t0, b > 90 or (b == 90 and a < 90)))
-    return out
-
-
 def kf(name, keys, period, fmt, nd=3, dflt='linear'):
     """[(秒, 値, 次までの動き)] → @keyframes（dflt＝アニメーションの動き と同じものは 書かない）"""
     body = ''.join(f'{pct(t, period, nd)}{{{fmt(v)}' + (f';animation-timing-function:{e}' if e != dflt else '') + '}'
@@ -148,35 +125,29 @@ def kf_step(name, keys, period, prop='opacity', nd=3):
 
 
 # ---------- ヒヒィーンの予定 ----------
-def grid(t):
-    return round(t / BECKON_S) * BECKON_S
-
-
 def neigh_plan(s):
-    """s 秒（BECKON_S の ます目の上）に はじめた ヒヒィーン → dict(招く はじめ・回数（ページの秒）, 首を もどしはじめる秒, おわり, 振り下ろしも招くか)"""
-    c0 = math.floor(s / CYCLE) * CYCLE
+    """s 秒に はじめた ヒヒィーン → dict(招く はじめ（ページの秒）・回数, 首を もどしはじめる秒, おわり, 振り下ろしも招くか)"""
+    c0 = math.floor(s / CYCLE + 1e-9) * CYCLE
     o = s - c0
     swing = o < 2.95                                   # 3秒の 振り下ろしの前に 首が上がる → 振り下ろしも 招く1回
-    first = s + BECKON_S
-    while first < c0 + FREE[0] - 1e-9:
-        first += BECKON_S
+    first = max(s + NEIGH_B, c0 + FREE[0])
     n = 2 if swing else 3
     down = max(s + NEIGH_HOLD, first + n * BECKON_S - 0.05)
-    return dict(b0=round(first, 3), n=n, down=round(down, 3), end=round(down + NEIGH_DOWN, 3), swing=swing, o=o, c0=c0)
+    return dict(b0=round(first, 3), n=n, down=round(down, 3), end=round(down + NEIGH_DOWN, 3), swing=swing, o=round(o, 3), c0=c0)
 
 
 def neigh_ok(s):
     pl = neigh_plan(s)
-    if not NEIGH_FROM - 1e-9 <= pl['o'] <= FREE[1]:
+    if pl['o'] < NEIGH_FROM - 1e-9:
         return False
     return pl['b0'] >= pl['c0'] + FREE[0] - 1e-9 and pl['end'] <= pl['c0'] + FREE[1] + 1e-9
 
 
 def schedule():
-    """ヒヒィーンの はじめの秒の列（EV_LOOP の中・BECKON_S の ます目の上）。いつも同じ予定（SEED から しらべて、決まりに合う さいしょの予定）。
+    """ヒヒィーンの はじめの秒の列（EV_LOOP の中・0.1秒きざみ）。いつも同じ予定（SEED から しらべて、決まりに合う さいしょの予定）。
        決まり：はじめ → つぎのはじめ が EV_GAP（つなぎ目も）・招く所と 首が上がっている所は FREE の中・ページを開いてから 1回目は EV_GAP の中・
        11〜19秒が かたよらない（短い 11〜13・長い 17〜19 を どちらも ふくむ）"""
-    gaps_all = [round(BECKON_S * k, 3) for k in range(int(math.ceil(EV_GAP[0] / BECKON_S)), int(EV_GAP[1] / BECKON_S) + 1)]
+    gaps_all = [round(EV_GAP[0] + 0.1 * k, 1) for k in range(int(round((EV_GAP[1] - EV_GAP[0]) / 0.1)) + 1)]
     for seed in range(SEED, SEED + 50000):
         rnd = random.Random(seed)
         firsts = [g for g in gaps_all if neigh_ok(g)]
@@ -196,7 +167,7 @@ def schedule():
         if not EV_GAP[0] <= wrap <= EV_GAP[1] or neigh_plan(starts[-1])['end'] > EV_LOOP:
             continue
         gaps = [round(b - a, 3) for a, b in zip(starts, starts[1:])] + [wrap]
-        if min(gaps) > 12.6 or max(gaps) < 17.4 or len(set(gaps)) < len(gaps) - 1:
+        if min(gaps) > 13.0 or max(gaps) < 17.0 or len(set(gaps)) < len(gaps):
             continue
         return starts
     raise RuntimeError('no schedule')
@@ -236,8 +207,6 @@ def neigh_tracks(starts):
         K[k] = [(0.0, 0, 'linear')] + [(round(t, 3), v, e) for t, v, e in K[k]] + [(EV_LOOP, 0, 'linear')]
         ts = [t for t, _, _ in K[k]]
         assert all(a <= b + 1e-9 for a, b in zip(ts, ts[1:])), (k, ts)
-    for a, b in beck:
-        assert abs(a / BECKON_S - round(a / BECKON_S)) < 1e-6 and abs(b / BECKON_S - round(b / BECKON_S)) < 1e-6, (a, b)
     return K, beck
 
 
@@ -347,18 +316,6 @@ def koban_layer(which, n):
 
 
 # ---------- 招き馬（rig） ----------
-def back_hoof():
-    """ひづめの裏（前へ おれて 下に たれた時に見える がわ）：表と同じ形・金の かべ・白い毛のふち（手首がわ）・つや。
-       たての のびが − で 上下が 入れかわるので、ここでは 上下を ひっくり返して描く（下が 手首）"""
-    P, L = LM.P, LM.L
-    return (P('M24 140 C20 126 29 115 43 115 C57 115 66 125 63 138 C61 147 51 152 40 151 C32 150 26 146 24 140 Z', GOLD, LM.LW2 + 0.6)
-            + f"<path d='M26.5 131 C27 121 34 117 43 117 C53 117 60 121 61 131 C56 125 50 123 43 123 C36 123 30 125 26.5 131 Z' fill='{GOLD_SH}' opacity='.75'/>"
-            + L('M28.5 133 C35 128 52 128 59 133', 2.0, GOLD_SH)
-            + "<path d='M26.5 142 C33 147.5 51 148.5 60.5 141 C58 148 51 152 40 151 C32 150 27.5 146.5 26.5 142 Z' fill='#FFFFFF'/>"
-            + L('M26.5 142 C33 147.5 51 148.5 60.5 141', 2.2)
-            + f"<path d='M31 137.5 C34 140.5 38 141.5 44 141' fill='none' stroke='{GOLD_HI}' stroke-width='2.2' stroke-linecap='round'/>")
-
-
 def open_mouth():
     """開けた口（鳴く）：こい茶の口・上の歯・桃色の舌"""
     return (f"<path d='M103 162.5 C109 160 131 160 137 162.5 C139 170 131 178.5 120 178.5 C109 178.5 101 170 103 162.5 Z' fill='#4A2E36' stroke='{OUT}' stroke-width='2.4' stroke-linejoin='round'/>"
@@ -369,25 +326,37 @@ def open_mouth():
 def rig():
     """lucky_maneki.maneki_svg の rig：動かす部品を <g class=…> で包む・足す"""
     G = lambda cls: (lambda x: f"<g class='{cls}'>{x}</g>")
-    BY = LM.BY
 
-    def arm(arm_svg, hoof_svg):
-        back = f"<g transform='translate(0 {BY})'>{back_hoof()}</g>"
-        a = pv('lwA1', P_EL, arm_svg + pv('lwW1', P_WR, f"<g class='lwV1a'>{hoof_svg}</g><g class='lwV1b'>{back}</g>"))
-        b = pv('lwA0', P_EL, arm_svg + pv('lwW2', P_WR, f"<g class='lwHf'>{hoof_svg}</g><g class='lwHb'>{back}</g>"))
-        return f"<g class='lwAA'>{a}</g><g class='lwAB'>{b}</g>"
+    strip, thetas, win, slot = arm_strip()
+
+    def arm(arm_svg, hoof_svg):                       # いまの絵の 右前足の かわりに 立体の コマの帯（窓の中だけ見える）
+        return f"<g clip-path='url(#mkAW)'><g class='lwSA'><g class='lwSB'>{strip}</g></g></g>"
+    x0, y0, x1, y1 = win
+    clips = (f"<clipPath id='mkAW'><rect x='{x0}' y='{y0}' width='{x1 - x0}' height='{y1 - y0}'/></clipPath>"
+             f"<clipPath id='mkAj'><rect x='-60' y='0' width='{LA.JUNC_X + 60:g}' height='300'/></clipPath>")
     mouth_o = pv('lwMo', P_MO, pv('lwMq', P_MO, open_mouth()))
     return dict(tail=lambda x: pv('lwTl', P_TL, x), body=lambda x: pv('lwBd', P_BD, x), mane=lambda x: pv('lwMn', P_MN, pv('lwMf', P_MN, x)),
                 head=lambda x: pv('lwHd', P_NK, pv('lwHv', P_NK, x)), ear_l=lambda x: pv('lwEL', P_EAR[0], x), ear_r=lambda x: pv('lwER', P_EAR[1], x),
                 muzzle=lambda x: pv('lwMz', P_MZ, x), feat=lambda x: pv('lwFe', P_FE, x), pupil=G('lwPu'), forelock=lambda x: pv('lwFl', P_FL, x),
                 nose=lambda x: pv('lwNs', P_MZ, x), mouth=G('lwMc'),
                 under=lambda _: f"<g class='lwUn'><ellipse cx='120' cy='149' rx='41' ry='22' fill='{LM.MUZ_SH}'/></g>",
-                mouth_open=lambda _: f"<g class='lwMv'>{mouth_o}</g>", arm=arm)
+                mouth_open=lambda _: f"<g class='lwMv'>{mouth_o}</g>", arm=arm, defs=lambda: clips)
+
+
+_STRIP = None
+
+
+def arm_strip():
+    """立体の右前足の コマの帯（flat/lucky_arm.py・作るのに 数秒かかるので 1回だけ）"""
+    global _STRIP
+    if _STRIP is None:
+        _STRIP = LA.strip()
+    return _STRIP
 
 
 def prefix_ids(s, pre='lw'):
     for i in sorted(set(re.findall(r"id='([^']+)'", s)), key=len, reverse=True):
-        s = s.replace(f"id='{i}'", f"id='{pre}{i}'").replace(f'url(#{i})', f'url(#{pre}{i})')
+        s = s.replace(f"id='{i}'", f"id='{pre}{i}'").replace(f'url(#{i})', f'url(#{pre}{i})').replace(f"href='#{i}'", f"href='#{pre}{i}'")
     return s
 
 
@@ -395,27 +364,48 @@ def svg_layer(inner, cls='lwL'):
     return f'<svg class="{cls}" viewBox="0 0 780 320" width="390" height="160" aria-hidden="true">{inner}</svg>'
 
 
-def tracks():
-    """CSS のキーフレーム（8秒の1回り・招く1回・ヒヒィーンの1回り）と、ヒヒィーンの予定"""
-    css = ''
-    # 8秒の1回り：ひづめ（.lwW1）・右前足（.lwA1）・表と裏（.lwV1a・.lwV1b）
-    css += kf('lwW1K', R_KEYS, CYCLE, lambda th: T(s=fold(th)), 2)
-    css += kf('lwA1K', R_KEYS, CYCLE, lambda th: T(r=arm_of(th)[0], s=(1, arm_of(th)[1])), 2)
-    cr = crossings(R_KEYS)
-    css += kf_step('lwV1aK', [(0, 1)] + [(t, 0 if bk else 1) for t, bk in cr], CYCLE, nd=2)
-    css += kf_step('lwV1bK', [(0, 0)] + [(t, 1 if bk else 0) for t, bk in cr], CYCLE, nd=2)
-    # 招く1回（BECKON_S 秒で くり返す）
-    css += kf('lwW2K', BECKON, BECKON_S, lambda th: T(s=fold(th)), 2)
-    css += kf('lwA0K', BECKON, BECKON_S, lambda th: T(r=arm_of(th)[0], s=(1, arm_of(th)[1])), 2)
-    cb = crossings(BECKON)
-    css += kf_step('lwHfK', [(0, 1)] + [(t, 0 if bk else 1) for t, bk in cb], BECKON_S, nd=2)
-    css += kf_step('lwHbK', [(0, 0)] + [(t, 1 if bk else 0) for t, bk in cb], BECKON_S, nd=2)
-    # ヒヒィーン（EV_LOOP 秒）
+def theta_at(keys, t):
+    """[(秒, θ, 次までの動き)] の t 秒の θ"""
+    for (t0, v0, e), (t1, v1, _) in zip(keys, keys[1:]):
+        if t0 <= t < t1:
+            return v0 + (v1 - v0) * ease_val(e, (t - t0) / (t1 - t0))
+    return keys[-1][1]
+
+
+def frame_keys(samples):
+    """[(秒, コマ)] → コマが かわる所だけ"""
+    out = []
+    for t, k in samples:
+        if not out or out[-1][1] != k:
+            out.append((t, k))
+    return out
+
+
+def arm_keys():
+    """前足の コマ：8秒の1回り [(秒, コマ)]・ヒヒィーンの1回り [(秒, コマ)]・ヒヒィーンの予定・招く間"""
+    a = frame_keys([(round(i / FPS, 4), LA.nearest(theta_at(R_KEYS, i / FPS))) for i in range(int(CYCLE * FPS))])
     starts = schedule()
     K, beck = neigh_tracks(starts)
+    b = [(0.0, 0)]
+    for s0, s1 in beck:
+        n = int(round((s1 - s0) / BECKON_S))
+        for k in range(n):
+            t0 = s0 + k * BECKON_S
+            for i in range(int(round(BECKON_S * FPS))):
+                b.append((round(t0 + i / FPS, 4), LA.nearest(theta_at(BECKON, i / FPS))))
+        b.append((round(s1, 4), 0))
+    return a, frame_keys(b), starts, K, beck
+
+
+def tracks():
+    """CSS のキーフレーム（8秒の1回り・ヒヒィーンの1回り）と、ヒヒィーンの予定"""
+    css = ''
+    strip, thetas, win, slot = arm_strip()
+    a, b, starts, K, beck = arm_keys()
+    sx = lambda k: f'transform:translate({-k * slot}px,0)' if k else 'transform:translate(0,0)'
+    css += '@keyframes lwSAK{' + ''.join(f'{pct(t, CYCLE)}{{{sx(k)}}}' for t, k in a) + f'100%{{{sx(a[-1][1])}}}}}'
+    css += '@keyframes lwSBK{' + ''.join(f'{pct(t, EV_LOOP)}{{{sx(k)}}}' for t, k in b) + f'100%{{{sx(b[-1][1])}}}}}'
     L = EV_LOOP
-    css += kf_step('lwAAK', [(0, 1)] + [x for a, b in beck for x in ((a, 0), (b, 1))], L)
-    css += kf_step('lwABK', [(0, 0)] + [x for a, b in beck for x in ((a, 1), (b, 0))], L)
     css += kf('lwHdK', K['u'], L, lambda u: T(t=(0, -8 * u), r=-5 * u, s=(1, 1 - 0.03 * u)))
     css += kf('lwFlK', K['u'], L, lambda u: T(t=(0, -3 * u), s=(1, 1 - 0.15 * u)))
     css += kf('lwHvK', K['vib'], L, lambda r: T(r=r), dflt='ease-in-out')
@@ -447,18 +437,13 @@ def inline(alt=ALT):
             + svg_layer(koban_layer('front', 2), 'lwL lwK')
             + '</div>')
     mv = ('lwTl', 'lwBd', 'lwMn', 'lwMf', 'lwHd', 'lwHv', 'lwFl', 'lwEL', 'lwER', 'lwMz', 'lwNs', 'lwFe', 'lwPu', 'lwMo', 'lwMq',
-          'lwA0', 'lwA1', 'lwW1', 'lwW2', 'lwKy', 'lwKx', 'lwKf', 'lwKp', 'lwKs')
+          'lwSA', 'lwSB', 'lwKy', 'lwKx', 'lwKf', 'lwKp', 'lwKs')
     loop = lambda c, k=None: f'.lw .{c}{{animation:{k or c + "K"} {EV_LOOP:g}s linear infinite}}'
     css = ('.lw{position:relative;overflow:hidden;isolation:isolate}'
            '.lw .lwL{position:absolute;left:0;top:0;display:block;overflow:hidden}'
            + ','.join(f'.lw .{c}' for c in mv) + '{transform-box:view-box;transform-origin:0 0}'
-           # 8秒の1回り（がたがた → 振り下ろす）
-           + f'.lw .lwW1{{animation:lwW1K {CYCLE:g}s linear infinite}}.lw .lwA1{{animation:lwA1K {CYCLE:g}s linear infinite}}'
-           + f'.lw .lwV1a{{animation:lwV1aK {CYCLE:g}s step-end infinite}}.lw .lwV1b{{opacity:0;animation:lwV1bK {CYCLE:g}s step-end infinite}}'
-           # 招く右前足（ヒヒィーンの間だけ出す・BECKON_S 秒で くり返す）
-           + f'.lw .lwAA{{animation:lwAAK {EV_LOOP:g}s step-end infinite}}.lw .lwAB{{opacity:0;animation:lwABK {EV_LOOP:g}s step-end infinite}}'
-           + f'.lw .lwW2{{animation:lwW2K {BECKON_S:g}s linear infinite}}.lw .lwA0{{animation:lwA0K {BECKON_S:g}s linear infinite}}'
-           + f'.lw .lwHf{{animation:lwHfK {BECKON_S:g}s step-end infinite}}.lw .lwHb{{opacity:0;animation:lwHbK {BECKON_S:g}s step-end infinite}}'
+           # 右前足の コマ（8秒の1回り：がたがた → 振り下ろす／ヒヒィーンの1回り：招く）
+           + f'.lw .lwSA{{animation:lwSAK {CYCLE:g}s step-end infinite}}.lw .lwSB{{animation:lwSBK {EV_LOOP:g}s step-end infinite}}'
            # ヒヒィーン（EV_LOOP 秒）
            + ''.join(loop(c) for c in ('lwHd', 'lwFl', 'lwFe', 'lwPu', 'lwMz', 'lwBd', 'lwEL', 'lwER', 'lwMn', 'lwTl', 'lwMo'))
            + loop('lwNs', 'lwMzK')
