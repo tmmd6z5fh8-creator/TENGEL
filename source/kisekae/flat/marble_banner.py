@@ -46,8 +46,8 @@ def camera():
     return e, t, hx - 0.05, gy                              # 台のまん中（x）
 
 
-def scene(cam, ss=2, rect=None, psi=0.0, look=0.0, spin_c=None, horse=True, look_kw=None):
-    """場面：像（psi＝台の上で まわす角度・look＝首と頭を うしろへ ふり向ける角度：flat/marble_run.py）と台"""
+def scene(cam, ss=2, rect=None, psi=0.0, look=0.0, spin_c=None, horse=True, look_kw=None, pose=None):
+    """場面：像（psi＝台の上で まわす角度・look＝首と頭を うしろへ ふり向ける角度・pose＝骨組み（ヒヒィーン）：flat/marble_run.py）と台"""
     e, t, PX, gy = cam
     sc = Scene()
     sc.image(W, Hh, ss, rect)
@@ -68,7 +68,7 @@ def scene(cam, ss=2, rect=None, psi=0.0, look=0.0, spin_c=None, horse=True, look
     if horse:
         # のど元（まさちゃんが引いた黄色の線に合わせる）：あごの下のふくらみをとって、のどの線は首の骨組みにそわせ、
         # 首の根元の太さは残す。ほおの下のふくらみも小さく。首の横に、のど元から肩へ向かう すじを彫る
-        S = MH.build_statue(st, foot, yaw=YAW, g=G, mats=dict(body=3, neck=3, hoof=3, eye=3, head=3),
+        S = MH.build_statue(st, foot, yaw=YAW, g=G, pose=pose or MH.POSE, mats=dict(body=3, neck=3, hoof=3, eye=3, head=3),
                             throat=dict(neck_k=0.03, neck_k_from=0.3, amount=0.9, jowl=1.0), groove=True, look=look, **(look_kw or {}))
         MH.rock(st, foot, S['tail_end_world'], gy + ROCK)
     sc.rbox(np.array([PX, gy - 0.30, 0.0]), (0.62, 0.30, 0.42), 0.03, k=0.0, mat=1)
