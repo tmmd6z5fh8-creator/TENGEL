@@ -4,7 +4,8 @@
      まわりの光（上は白・地平は灰・下は暗い）が体に映る。手前の前足のひづめが床につく
    - 背景：明るい銀の地（ヘアライン＝横の細いすじ）・像のうしろのやわらかい光・みがいた床（像がうつる）・床の影・
      ふちの暗がり・像のいちばん明るい所に小さなきらめき
-   python3 flat/silver_banner.py <出力.webp>（sdfr がいる）"""
+   python3 flat/silver_banner.py <出力.webp>（sdfr がいる）
+   壁紙の動く きらめき（metal_wall.py）の絵と形は flat/metal_run.py"""
 import sys, os, math, shutil
 import numpy as np
 import cv2
@@ -56,7 +57,8 @@ def render3d(tmp, pal=SILVER):
     return R, S
 
 
-def compose(R, rng_seed=5, pal=SILVER):
+def compose(R, rng_seed=5, pal=SILVER, sparkle=True, info=None):
+    """絵にする。sparkle=False なら きらめきを描かない（壁紙の動く きらめきの下の絵）。info に dict を渡すと きらめきの場所と長さ・床の線を入れる"""
     rng = np.random.default_rng(rng_seed)
     yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
     A = np.clip(R['a'], 0, 1)
@@ -121,8 +123,15 @@ def compose(R, rng_seed=5, pal=SILVER):
             taken.append((x, y))
         if len(taken) >= 4:
             break
+    if info is not None:
+        info['gy'] = gy
+        info['spark'] = []
     for (x, y) in taken:
         L = rng.uniform(12, 20)
+        if info is not None:
+            info['spark'].append((int(x), int(y), float(L)))
+        if not sparkle:
+            continue
         for (dx, dy, l) in ((1, 0, L), (0, 1, L * 0.75), (0.7, 0.7, L * 0.35), (0.7, -0.7, L * 0.35)):
             for s in (1, -1):
                 cv2.line(spark, (int(x * 16), int(y * 16)), (int((x + dx * l * s) * 16), int((y + dy * l * s) * 16)), 1.0, 1, cv2.LINE_AA, shift=4)

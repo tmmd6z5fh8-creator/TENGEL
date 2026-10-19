@@ -139,6 +139,29 @@ def flat_eye(sc, eye_mat):
 
 
 @contextlib.contextmanager
+def flat_face(sc, z_in=0.074, scale=(1.05, 1.1, 0.45), k=0.04):
+    """顔のすじを平らに（まさちゃん「赤丸の中の赤い線のところもう少しフラット目にして！」：目の前から ほおへ ななめに 出ていた すじ）：
+       顔のすじ（horse3d の E(0.255, -0.02, ±0.083, (0.075, 0.013, 0.016), k=0.02, rot=-14)）を 顔の中へ よせて（z 0.083 → z_in）、
+       出っぱり（3つめの半径）を scale で うすく・まわりと なめらかに つなぐ（k）"""
+    HS = Hm.HEAD_SCALE
+    ell0 = sc.ell
+    target = np.array([0.075, 0.013, 0.016]) * HS
+
+    def ell(c, radii, R=None, *args, **kw):
+        r = np.asarray(radii, float)
+        if np.allclose(r, target) and abs(kw.get('k', 0.0) - 0.02) < 1e-9:
+            c = np.asarray(c, float).copy()
+            c[2] *= z_in / 0.083
+            return ell0(c, tuple(r * np.asarray(scale)), R, *args, **dict(kw, k=k))
+        return ell0(c, radii, R, *args, **kw)
+    sc.ell = ell
+    try:
+        yield
+    finally:
+        sc.ell = ell0
+
+
+@contextlib.contextmanager
 def slim_muscle(sc, S, f=0.38, t_top=0.88, r=(0.026, 0.040)):
     """首の横の筋（あご → 肩）：細くした首の中へ（のどの線とたてがみの線のあいだ f の所）"""
     rc0 = sc.rcone
@@ -169,10 +192,10 @@ def build_statue(sc, pose=POSE, mats=None, tail_len=1.05, slim=True):
     if slim:
         with slim_neck() as skel:
             S1 = skel(pose)
-            with slim_muscle(sc, S1), slim_throat(sc, pose, neck_k=0.04, neck_k_from=0.3), flat_eye(sc, EYE_SKIP):
+            with slim_muscle(sc, S1), slim_throat(sc, pose, neck_k=0.04, neck_k_from=0.3), flat_eye(sc, EYE_SKIP), flat_face(sc):
                 S = Hm.build(sc, pose, mats=M_build)
     else:
-        with flat_eye(sc, EYE_SKIP):
+        with flat_eye(sc, EYE_SKIP), flat_face(sc):
             S = Hm.build(sc, pose, mats=M_build)
     B = M['body']
     for pts, rad, gr in mane_stream(S):
