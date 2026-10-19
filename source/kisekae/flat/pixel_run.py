@@ -14,11 +14,18 @@
        正面では両目・うしろ向きでは目を描かない。おりたら 足もとに土けむり（sland）
      ・こっちを見る：正面を向いて立つ（look）・まばたき（blink）・ななめ（turn：正面 ↔ 横の あいだ）
      ・走りだす：かまえる（ready）→ けり出す（push・土けむり）→ 1歩め（dash＝走るコマの0に うしろへ流れた土けむり）
-   - 空・丘・コース・ゴール板・「GO!」は いまの絵と同じ。馬が動く所だけを切りぬいて横に並べた1まい（pixel_run.webp・ドットのまま＝1倍・
-     すき通しなし・ロスなし）。ページでは いまの絵の同じ場所に重ねて、ドットは ぼかさずに大きくする（pixel_wall.py・image-rendering:pixelated）。
-     下に置く いまの絵も ここで ロスなしで書き出す（pixel_static.webp・5倍：キャンバスの いまの絵は ロスありで 色のふちが少し にじむので、
+   - コマは 馬だけ（土けむり・宙の かげ も）：いまの絵の 馬が動く所を切りぬいて横に並べた1まい（pixel_run.webp・ドットのまま＝1倍・
+     馬の所だけ すき通さない・ロスなし）。ページでは いまの絵の同じ場所に重ねて、ドットは ぼかさずに大きくする（pixel_wall.py・image-rendering:pixelated）。
+   - まさちゃん「背景を右から左に動かしてリピートして！背景は遠いからゆっくりめで！」→ うしろの景色を 3まいに分ける（どれも ドットのまま・ロスなし）：
+     ・空：上の帯と 下の帯の2色だけ（ページの CSS でぬる）
+     ・遠くの景色（pixel_far.webp）：雲の帯と 丘の帯（すき通し）。はば FAR_P ドットで くり返す。はじめの156ドットは いまの絵と同じで、
+       その先は 雲を1つ足し、丘の上のふちは いまの式から FAR_P で はじめに戻る式へ なめらかに うつる（丘のしまも FAR_P でつながる）
+     ・前の景色（pixel_near.webp）：コース・さく・ゴール板・「GO!」（動かない・すき通し）
+     空 → 雲 → 丘 → 前の景色 → 馬 と重ねて、ずれていない時は いまの絵と1ドットもちがわない（run() で確かめる）
+   - 下に置く いまの絵も ここで ロスなしで書き出す（pixel_static.webp・5倍：キャンバスの いまの絵は ロスありで 色のふちが少し にじむので、
      重ねた所の さかい目が見えないように そろえた）
-   python3 flat/pixel_run.py <出力フォルダ> [見本PNG]  → pixel_run.webp・pixel_static.webp・pixel_run.json（切りぬく場所・コマの並び）（sdfr がいる。1分ほど）"""
+   python3 flat/pixel_run.py <出力フォルダ> [見本PNG]  → pixel_run.webp・pixel_far.webp・pixel_near.webp・pixel_static.webp・pixel_run.json
+     （切りぬく場所・コマの並び・景色の帯）（sdfr がいる。1分ほど）"""
 import sys, os, math, json
 import numpy as np
 import cv2
@@ -77,6 +84,9 @@ DUST_FORE = ([(-4.5, -1.2, 1.7), (-7.5, -2, 1.3)], [(-5, -1.8, 2.1), (-8.5, -2.8
 DUST_PUSH = [(-4.5, -1.8, 2.6), (-9, -3, 2.4), (-13, -1.6, 1.9), (-6.5, -5.6, 2.0), (-11, -6.4, 1.3)]   # けり出す（大きい）
 DUST_DASH = [(-11, -2.4, 2.0), (-15.5, -3.6, 1.7), (-18.5, -1.8, 1.2), (-13, -6.4, 1.1)]               # 1歩め（うしろへ流れて小さく）
 DUST_SPIN = [(-5.5, -1.6, 2.3), (-9, -2.8, 1.7), (-6.5, -4.4, 1.3), (5.5, -1.6, 2.3), (9, -2.8, 1.7), (6.5, -4.4, 1.3)]   # 一回転から おりる（足もとの左右・まん中からの x）
+FAR_P = 200                        # 遠くの景色（雲・丘）を くり返す はば（ドット）。はじめの156は いまの絵と同じ（200 の半分が5の倍数＝丘のしまも つながる）
+MORE_CLOUDS = [(172, 8)]           # 157〜200 に足す雲（いまの雲と同じ形）
+CLOUD_ROWS, HILL_ROWS = (0, 16), (28, 40)   # 雲の帯・丘の帯（行）
 
 
 def run_pose(g):
@@ -213,6 +223,69 @@ def spin_eyes(yaw):
     return 'both' if a == 90 else 'none' if 180 < a < 360 else 'near'
 
 
+def hill_top(x):
+    """丘の上のふち（いまの絵と同じ式。156 より先は、FAR_P で はじめに戻る式へ なめらかに うつる）"""
+    f = lambda u: 34 + 3 * math.sin(u / 9) + 2 * math.sin(u / 4.3)
+    if x < PX.W:
+        return int(f(x))
+    w = (x - PX.W) / (FAR_P - PX.W)
+    w = w * w * (3 - 2 * w)
+    return int((1 - w) * f(x) + w * f(x - FAR_P))
+
+
+def far_sheet():
+    """遠くの景色（すき通し・はば FAR_P でくり返す）：上に雲の帯（CLOUD_ROWS）・下に丘の帯（HILL_ROWS）"""
+    c0, c1 = CLOUD_ROWS
+    h0, h1 = HILL_ROWS
+    sh = np.zeros((c1 - c0 + h1 - h0, FAR_P, 4), np.float32)
+    for cx, cy in [(20, 9), (70, 6), (128, 11)] + MORE_CLOUDS:              # 雲（いまの絵と同じ形）
+        for dx, dy, w in [(0, 0, 14), (3, -2, 8), (-2, 1, 4)]:
+            for x in range(cx + dx, cx + dx + w):
+                sh[cy + dy - c0:cy + dy + 3 - c0, x % FAR_P] = (*PX.PAL['cloud'], 1)
+    for x in range(FAR_P):                                                  # 丘（たての しまは いまの絵と同じ きまり）
+        h = hill_top(x)
+        sh[c1 - c0 + h - h0:c1 - c0 + h1 - h0, x] = (*(PX.PAL['hill2'] if (x // 2 + h) % 5 == 0 else PX.PAL['hill']), 1)
+    return sh
+
+
+def near_layer():
+    """前の景色（動かない・すき通し）：コース・さく（下の線と 丘の前の くい）・ゴール板・「GO!」"""
+    img = PX.go_text(PX.background())
+    a = np.zeros((PX.Hh, PX.W), np.float32)
+    a[40:] = 1
+    a[39, ::4] = 1
+    a[22:40, 140] = 1
+    a[22:28, 136:145] = 1
+    return np.dstack([img, a])
+
+
+def sky_rows():
+    """空の2色（[(色, ここまでの行)]）"""
+    return [(PX.PAL['sky1'], 18), (PX.PAL['sky2'], 40)]
+
+
+def layered(off_c=0, off_h=0):
+    """空 → 雲 → 丘 → 前の景色 を重ねた絵（off：左へ ずらすドット）"""
+    img = np.zeros((PX.Hh, PX.W, 3), np.float32)
+    y = 0
+    for col, y1 in sky_rows():
+        img[y:y1] = col
+        y = y1
+    far = far_sheet()
+    for (r0, r1), sy, off in ((CLOUD_ROWS, 0, off_c), (HILL_ROWS, CLOUD_ROWS[1] - CLOUD_ROWS[0], off_h)):
+        band = far[sy:sy + r1 - r0, (np.arange(PX.W) + off) % FAR_P]
+        a = band[..., 3:] > 0
+        img[r0:r1] = np.where(a, band[..., :3], img[r0:r1])
+    near = near_layer()
+    return np.where(near[..., 3:] > 0, near[..., :3], img)
+
+
+def save_lossless_rgba(img, path):
+    """すき通しつきの WebP（ロスなし）"""
+    u8 = (np.clip(img, 0, 1) * 255 + .5).astype(np.uint8)
+    cv2.imwrite(path, cv2.cvtColor(u8, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 101])
+
+
 def run(out, sample=None):
     os.makedirs(out, exist_ok=True)
     cam = PX.camera()
@@ -281,12 +354,19 @@ def run(out, sample=None):
     while y0 > 0 and not np.array_equal(orig[y0 - 1, x0:x1], orig[y0, x0:x1]):
         y0 -= 2
     cw, ch = x1 - x0, y1 - y0
-    sheet = np.concatenate([fr[y0:y1, x0:x1] for fr in frames], 1)
-    save_lossless(sheet, f'{out}/pixel_run.webp')                          # ドットのまま（1倍）
+    ref = PX.go_text(PX.background())                                       # 馬のいない絵
+    assert np.array_equal(layered(), ref), '重ねた景色が いまの絵とちがう'
+    rgba = [np.dstack([fr, np.any(np.abs(fr - ref) > 1e-6, -1).astype(np.float32)]) for fr in frames]   # 馬（土けむり・かげ）だけ
+    sheet = np.concatenate([fr[y0:y1, x0:x1] for fr in rgba], 1)
+    save_lossless_rgba(sheet, f'{out}/pixel_run.webp')                      # ドットのまま（1倍）
+    save_lossless_rgba(far_sheet(), f'{out}/pixel_far.webp')
+    save_lossless_rgba(near_layer(), f'{out}/pixel_near.webp')
     save_lossless(PX.upscale(orig), f'{out}/pixel_static.webp')            # 下に置く いまの絵（同じ絵・5倍・ロスなし）
     S_ = PX.SCALE
     js = dict(size=[PX.W * S_, PX.Hh * S_], cell=[int(x0 * S_), int(y0 * S_), int(cw * S_), int(ch * S_)], sheet_scale=1,
-              order=[k for k, _ in info], run=N_RUN, dy=[d for _, d in info])
+              order=[k for k, _ in info], run=N_RUN, dy=[d for _, d in info],
+              sky=[['#%02X%02X%02X' % tuple(int(round(v * 255)) for v in col), y1] for col, y1 in sky_rows()],
+              far=dict(period=FAR_P, clouds=list(CLOUD_ROWS), hills=list(HILL_ROWS)))
     json.dump(js, open(f'{out}/pixel_run.json', 'w'), ensure_ascii=False)
     print(json.dumps(js, ensure_ascii=False))
     if sample:                                           # 見本：いまの絵とコマ（3倍）
