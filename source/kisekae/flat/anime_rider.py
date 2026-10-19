@@ -199,7 +199,7 @@ def draw_lock(col, alpha, pts, w0, pal, lw, tip=0.9, hi=(0.14, 0.55), leaf=False
 
 
 def paint_anime(R, look, debug=None):
-    """look: coat・legs（'black'／'socks'）・silk・sleeve・helmet・num・seed・tail・mane・lw（線の太さの倍率）・roll（白い鼻革）
+    """look: coat・legs（'black'／'socks'）・silk・sleeve・helmet・num・seed・tail・mane・lw（線の太さの倍率）・roll（白い鼻革）・hair_phase（たてがみ・しっぽの波の位相）
        戻り値：1倍の (rgb, alpha)"""
     s = R['s']
     a = np.clip(R['a'], 0, 1)
@@ -368,6 +368,7 @@ def paint_anime(R, look, debug=None):
 
     # ---------- たてがみ・前髪・しっぽ（房） ----------
     rng = np.random.default_rng(look.get('seed', 1))
+    hph = look.get('hair_phase', 0.0)                                   # たてがみ・しっぽの波の位相（走るコマで なびかせる）
     hlw = max(1.0, s * lw)
     crest = np.asarray(R['crest'], float)
     nC = len(crest)
@@ -389,7 +390,7 @@ def paint_anime(R, look, debug=None):
         upa = crest_dir(i)
         L = (32 + 12 * math.sin(i / nC * math.pi) + rng.uniform(-4, 5)) * u1 * mane_k
         pts = flow(crest[i] + np.array([0.0, 2.0 * u1]), upa - 0.30 + rng.uniform(-0.12, 0.12), L, 16, wind=0.20,
-                   wind_ang=math.pi + 0.40, curl=0.025, rng=rng, wave=1.2, phase=i * 0.5)
+                   wind_ang=math.pi + 0.40, curl=0.025, rng=rng, wave=1.2, phase=i * 0.5 + hph)
         back.append((pts, (12.0 + rng.uniform(-1, 1.5)) * u1))
     bcol = np.zeros((H3, W3, 3), np.float32); ba = np.zeros((H3, W3), np.float32)
     for pts, w0 in back:
@@ -401,12 +402,12 @@ def paint_anime(R, look, debug=None):
         root = crest[i] - np.array([math.cos(upa), math.sin(upa)]) * 2.0 * u1        # 首の中から
         L = (28 + 14 * math.sin(i / nC * math.pi) + rng.uniform(-4, 4)) * u1 * mane_k
         pts = flow(root, upa - 0.62 + rng.uniform(-0.12, 0.12), L, 16, wind=0.22, wind_ang=math.pi + 0.30, curl=0.03,
-                   rng=rng, wave=1.3, phase=i * 0.7)
+                   rng=rng, wave=1.3, phase=i * 0.7 + hph)
         front.append((pts, (12.0 + rng.uniform(-1, 1.5)) * u1))
     for k in range(2):
         a0 = math.atan2(-fd[1], -fd[0]) - 0.55 - 0.25 * k
         pts = flow(pp + fd * (3.0 + 2.5 * k) * u1, a0, (15 - 3 * k) * u1 * mane_k, 10, wind=0.18, wind_ang=math.pi + 0.35,
-                   curl=0.03, rng=rng, wave=0.6, phase=k)
+                   curl=0.03, rng=rng, wave=0.6, phase=k + hph)
         front.append((pts, (6.5 - k) * u1))
     hcol = np.zeros((H3, W3, 3), np.float32); ha = np.zeros((H3, W3), np.float32)
     for pts, w0 in front:
@@ -435,7 +436,7 @@ def paint_anime(R, look, debug=None):
         L = (58 + rng.uniform(-6, 10) - abs(k - 3) * 3) * u1 * look.get('tail', 1.0)
         if t_ang is not None:                     # 下へ流れる房ほど長く、上の房は短く（扇のように広がる）
             L = L / (58 + 2 - abs(k - 3) * 3) * 60 * look.get('tail_prof', (1.0, 1.0, 0.98, 0.95, 0.88, 0.80, 0.72))[k]
-        pts = flow(root, ang0, L, 20, wind=wind_t, wind_ang=wang_t, curl=curl_t, rng=rng, wave=look.get('tail_wave', 1.8), phase=k * 0.9)
+        pts = flow(root, ang0, L, 20, wind=wind_t, wind_ang=wang_t, curl=curl_t, rng=rng, wave=look.get('tail_wave', 1.8), phase=k * 0.9 + hph)
         tl.append((pts, (look.get('tail_w', 15.0) - abs(k - 3) * 1.2) * u1))
     tl.sort(key=lambda x: -x[0][-1][1])                                    # 下の房から
     R['tail_ends'] = [pts[-1] / s for pts, _ in tl]
