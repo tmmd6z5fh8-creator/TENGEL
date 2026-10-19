@@ -2,7 +2,8 @@
    体・首・頭・足は3Dの馬（r3d/horse3d.py）。たてがみとしっぽは、太さの変わる丸い筒をつないだ房（彫刻のうねり）。
    像ぜんたいを、上から見て yaw 度まわして（顔を少しこちらへ）、後ろ足のひづめを岩の上へ置く。
    形はすべて一から作ったオリジナル（参考の写真の形はなぞっていない）。
-   build_statue(sc, foot, yaw, mats) → 目印"""
+   build_statue(sc, foot, yaw, mats) → 目印
+   動き（flat/marble_run.py）：look＝首と頭を うしろへ ふり向ける角度（Look）・Spin＝像（馬と岩）を 台の上で たての軸のまわりに まわす"""
 import os, sys, math
 import numpy as np
 
@@ -50,6 +51,142 @@ class Xf:
         self.sc.ccone(self.p(a), self.p(b), ra * self.g, rb * self.g, rnd=rnd * self.g, side=self.Rw @ np.asarray(side, float), **self.kw(kw))
     def begin(self, op='U', k=0.0, mat=0): self.sc.begin(op, k * self.g, mat)
     def end(self): self.sc.end()
+
+
+def rot_axis(axis, deg):
+    """軸 axis のまわりに deg 度まわす行列"""
+    a = nrm(axis)
+    t = math.radians(deg)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) + math.sin(t) * K + (1 - math.cos(t)) * (K @ K)
+
+
+class Spin:
+    """sc に出す形を ぜんぶ、点 c を通る たての軸のまわりに psi 度まわす（像＝馬と岩を 台の上で まわす。上から見て roty と同じ向き）"""
+    def __init__(self, sc, psi, c):
+        self.sc, self.Q, self.c = sc, roty(psi), np.asarray(c, float)
+
+    def p(self, q):
+        return self.Q @ (np.asarray(q, float) - self.c) + self.c
+
+    def R(self, R):
+        return (np.eye(3) if R is None else np.asarray(R, float)) @ self.Q.T
+
+    def ell(self, c, radii, R=None, **kw): self.sc.ell(self.p(c), radii, self.R(R), **kw)
+    def rcone(self, a, b, ra, rb, **kw): self.sc.rcone(self.p(a), self.p(b), ra, rb, **kw)
+    def sph(self, c, r, **kw): self.sc.sph(self.p(c), r, **kw)
+    def rbox(self, c, half, rnd, R=None, **kw): self.sc.rbox(self.p(c), half, rnd, self.R(R), **kw)
+    def ccone(self, a, b, ra, rb, rnd=0.0, side=(1, 0, 0), **kw):
+        self.sc.ccone(self.p(a), self.p(b), ra, rb, rnd=rnd, side=self.Q @ np.asarray(side, float), **kw)
+    def begin(self, *a, **kw): self.sc.begin(*a, **kw)
+    def end(self): self.sc.end()
+
+
+TAG = dict(neck=101, head=102, eye=103, mane=104)       # ふり向く時だけ使う 素材の印（首・頭・目・たてがみ）→ Look が もとの素材にもどす
+
+
+class Look:
+    """首と頭を、点 pivot を通る軸 axis のまわりに phi 度まわして X に出す（馬の形の座標のまま）。
+       頭（と目・前髪）は phi ぜんぶ、首と たてがみは 首の根元 0 → うなじ 1 の場所 t で だんだん（w(t)＝なめらかに 0 → 1）。
+       長い筋（あご → 肩）は 細かく切って、首といっしょに曲げる。素材の印（TAG）を もとの素材（real）にもどす"""
+    def __init__(self, X, S, phi, pivot, axis=(0, 1, 0), real=None, wr=(0.0, 1.0)):
+        self.X, self.phi, self.pivot, self.axis, self.wr = X, float(phi), np.asarray(pivot, float), np.asarray(axis, float), wr
+        self.real = real or {}
+        ts = np.linspace(0, 1, 30)
+        self.mid = (Hm.bez(S['crest'], ts) + Hm.bez(S['throat'], ts)) / 2   # 首のまん中の線（根元 → うなじ）
+        self.cum = np.r_[0, np.cumsum(np.linalg.norm(np.diff(self.mid, axis=0), axis=1))]
+        self.depth = 0
+
+    def t(self, q):
+        q = np.asarray(q, float)[:2]
+        best, tb = 1e9, 0.0
+        for i in range(len(self.mid) - 1):
+            a, b = self.mid[i], self.mid[i + 1]
+            d = b - a
+            u = max(0.0, min(1.0, float(np.dot(q - a, d) / np.dot(d, d))))
+            e = float(np.linalg.norm(q - (a + d * u)))
+            if e < best:
+                best, tb = e, (self.cum[i] + u * (self.cum[i + 1] - self.cum[i])) / self.cum[-1]
+        return tb
+
+    def w(self, q, mat):
+        if mat in (TAG['head'], TAG['eye']):
+            return 1.0
+        x = (self.t(q) - self.wr[0]) / (self.wr[1] - self.wr[0])
+        x = min(1.0, max(0.0, x))
+        return x * x * (3 - 2 * x)
+
+    def Q(self, w):
+        return rot_axis(self.axis, self.phi * w)
+
+    def p(self, q, w):
+        return self.pivot + self.Q(w) @ (np.asarray(q, float) - self.pivot)
+
+    def _mat(self, kw):
+        m = kw.get('mat', 0)
+        if m in self.real:
+            kw = dict(kw)
+            kw['mat'] = self.real[m]
+            return m, kw
+        return None, kw
+
+    def ell(self, c, radii, R=None, **kw):
+        tag, kw = self._mat(kw)
+        if tag is None:
+            return self.X.ell(c, radii, R, **kw)
+        w = self.w(c, tag)
+        R = np.eye(3) if R is None else np.asarray(R, float)
+        self.X.ell(self.p(c, w), radii, R @ self.Q(w).T, **kw)
+
+    def rcone(self, a, b, ra, rb, **kw):
+        tag, kw = self._mat(kw)
+        if tag is None:
+            return self.X.rcone(a, b, ra, rb, **kw)
+        a, b = np.asarray(a, float), np.asarray(b, float)
+        wa, wb = self.w(a, tag), self.w(b, tag)
+        n = max(1, int(math.ceil(abs(wa - wb) / 0.04)))
+        if n == 1:
+            return self.X.rcone(self.p(a, wa), self.p(b, wb), ra, rb, **kw)
+        op, k = kw.get('op', 'U'), kw.get('k', 0.0)
+        group = self.depth == 0 and op == 'U' and k > 0
+        if group:
+            self.X.begin('U', k, kw['mat'])
+            kw = dict(kw, k=0.0)
+        for j in range(n):
+            u0, u1 = j / n, (j + 1) / n
+            q0, q1 = a + (b - a) * u0, a + (b - a) * u1
+            self.X.rcone(self.p(q0, self.w(q0, tag)), self.p(q1, self.w(q1, tag)), ra + (rb - ra) * u0, ra + (rb - ra) * u1, **kw)
+        if group:
+            self.X.end()
+
+    def sph(self, c, r, **kw):
+        tag, kw = self._mat(kw)
+        if tag is None:
+            return self.X.sph(c, r, **kw)
+        self.X.sph(self.p(c, self.w(c, tag)), r, **kw)
+
+    def rbox(self, c, half, rnd, R=None, **kw):
+        tag, kw = self._mat(kw)
+        if tag is None:
+            return self.X.rbox(c, half, rnd, R, **kw)
+        w = self.w(c, tag)
+        R = np.eye(3) if R is None else np.asarray(R, float)
+        self.X.rbox(self.p(c, w), half, rnd, R @ self.Q(w).T, **kw)
+
+    def ccone(self, a, b, ra, rb, rnd=0.0, side=(1, 0, 0), **kw):
+        tag, kw = self._mat(kw)
+        if tag is None:
+            return self.X.ccone(a, b, ra, rb, rnd=rnd, side=side, **kw)
+        wa, wb = self.w(a, tag), self.w(b, tag)
+        self.X.ccone(self.p(a, wa), self.p(b, wb), ra, rb, rnd=rnd, side=self.Q((wa + wb) / 2) @ np.asarray(side, float), **kw)
+
+    def begin(self, op='U', k=0.0, mat=0):
+        self.depth += 1
+        self.X.begin(op, k, self.real.get(mat, mat))
+
+    def end(self):
+        self.depth -= 1
+        self.X.end()
 
 
 def chain(sc, pts, rad, k=0.0, kg=0.02, mat=1):
@@ -223,8 +360,12 @@ def tail(S, end):
     return locks
 
 
-def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58, throat=None, groove=False):
-    """foot＝後ろ足のひづめ（2つのまん中・下のふち）を置く世界の点。g＝大きさ。tail_back＝しっぽの先をひづめからどれだけうしろへ（m）"""
+LOOK_AXIS = (0.0, 1.0, 0.0)      # ふり向く軸（馬の形の座標・たて）
+
+
+def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58, throat=None, groove=False, look=0.0, look_axis=LOOK_AXIS, look_wr=(0.0, 1.0), look_pivot=None):
+    """foot＝後ろ足のひづめ（2つのまん中・下のふち）を置く世界の点。g＝大きさ。tail_back＝しっぽの先をひづめからどれだけうしろへ（m）。
+       look＝首と頭を うしろへ ふり向ける角度（度・上から見て roty と同じ向き：＋で こちら（カメラ）がわを通って うしろへ）。0 なら いままでと同じ"""
     M = dict(body=1, neck=1, hoof=6, eye=5, head=1)
     if mats:
         M.update(mats)
@@ -233,17 +374,25 @@ def build_statue(sc, foot, yaw=0.0, g=1.0, pose=POSE, mats=None, tail_back=0.58,
     Rw = roty(yaw)
     o = np.asarray(foot, float) - hm
     X = Xf(sc, Rw, o, hm, g)
-    with slim_throat(X, pose, **(throat or {})):                 # のど元をすっきり（throat があるときだけ：throat_fix.py）
-        S = Hm.build(X, pose, mats=M)
+    Y, Mb, tg = X, M, dict(neck=M['body'], mane=M['body'], head=M['body'])
+    if look:                                                         # ふり向く：首と頭に印をつけて Look で まわす（ふり向きの軸は 首の根元）
+        th = pose['theta']
+        nb = Hm.rot2((0.52, 1.40), np.array([-0.60, 1.25]), th) if look_pivot is None else np.asarray(look_pivot, float)
+        Y = Look(X, S0, look, (nb[0], nb[1], 0.0), look_axis,
+                 real={TAG['neck']: M['neck'], TAG['head']: M['head'], TAG['eye']: M['eye'], TAG['mane']: M['body']}, wr=look_wr)
+        Mb = dict(M, neck=TAG['neck'], head=TAG['head'], eye=TAG['eye'])
+        tg = dict(neck=TAG['neck'], mane=TAG['mane'], head=TAG['head'])
+    with slim_throat(Y, pose, **(throat or {})):                 # のど元をすっきり（throat があるときだけ：throat_fix.py）
+        S = Hm.build(Y, pose, mats=Mb)
     B = M['body']
     if groove:                                                       # 首の横の すじ（彫る）
         gp, gr = jugular(S)
         for i in range(len(gp) - 1):
-            X.rcone(gp[i], gp[i + 1], gr[i], gr[i + 1], op='S', k=0.02, mat=B)
+            Y.rcone(gp[i], gp[i + 1], gr[i], gr[i + 1], op='S', k=0.02, mat=tg['neck'])
     for pts, rad, gr in mane(S):
-        tube(X, pts, rad, gr, mat=B, kg=0.012)
+        tube(Y, pts, rad, gr, mat=tg['mane'], kg=0.012)
     for pts, rad, gr in forelock(S):
-        tube(X, pts, rad, gr, mat=B, kg=0.02)
+        tube(Y, pts, rad, gr, mat=tg['head'], kg=0.02)
     end = np.array([hm[0] - tail_back, hm[1]])
     for pts, rad, gr in tail(S, end):
         tube(X, pts, rad, gr, mat=B, kg=0.012)
