@@ -394,27 +394,53 @@ def orn_pixel():
     return b + '</g>'
 
 
+def hanamaru_d(cx, cy, size, n=9, turns=2.5, h=1.6, end=0.0, r0=0.05, N=120, nd=2):
+    """花丸（1本の線・いちばん外の半径 size）：まん中から 時計回りの うずまき → いちばん外（花びらの つけ根の 円）で
+       花びらの わくへ つながり、時計回りに ぐるっと1周して もどる。花びらは 丸い ふくらみで、さかいめは 内がわへ とがる（線は 外へ はみ出さない）"""
+    a_end = math.radians(end)
+    T = 2 * math.pi * turns
+
+    def shape(rb):
+        pts = []
+        for i in range(N + 1):
+            u = i / N
+            th = a_end - T * (1 - u)
+            r = rb * (r0 + (1 - r0) * u)
+            pts.append((cx + r * math.cos(th), cy + r * math.sin(th)))
+        pets = []
+        chord = 2 * rb * math.sin(math.pi / n)
+        for k in range(n):
+            a0, a1 = a_end + 2 * math.pi * k / n, a_end + 2 * math.pi * (k + 1) / n
+            am = (a0 + a1) / 2
+            L = chord / 2 * h
+            A = (cx + rb * math.cos(a0), cy + rb * math.sin(a0))
+            B = (cx + rb * math.cos(a1), cy + rb * math.sin(a1))
+            pets.append(((A[0] + math.cos(am) * L, A[1] + math.sin(am) * L), (B[0] + math.cos(am) * L, B[1] + math.sin(am) * L), B))
+        return pts, pets
+
+    def reach(rb):                                           # いちばん外（花びらの先）
+        pts, pets = shape(rb)
+        m, prev = 0.0, pts[-1]
+        for c1, c2, B in pets:
+            for i in range(1, 21):
+                t = i / 20
+                x = (1 - t) ** 3 * prev[0] + 3 * (1 - t) ** 2 * t * c1[0] + 3 * (1 - t) * t * t * c2[0] + t ** 3 * B[0]
+                y = (1 - t) ** 3 * prev[1] + 3 * (1 - t) ** 2 * t * c1[1] + 3 * (1 - t) * t * t * c2[1] + t ** 3 * B[1]
+                m = max(m, math.hypot(x - cx, y - cy))
+            prev = B
+        return m
+    pts, pets = shape(size / (reach(1.0) or 1))
+    f = lambda v: (f'{v:.{nd}f}'.rstrip('0').rstrip('.') or '0')
+    return ('M' + ' L'.join(f'{f(x)} {f(y)}' for x, y in pts)
+            + ''.join(f' C{f(c1[0])} {f(c1[1])} {f(c2[0])} {f(c2[1])} {f(B[0])} {f(B[1])}' for c1, c2, B in pets))
+
+
 def orn_chalk():
-    pts = []
-    for i in range(80):
-        t = i / 79 * 3.4 * math.pi
-        r = .8 + 1.55 * t
-        pts.append((22 + r * math.cos(t), 22 + r * math.sin(t)))
-    d = P(pts, False)
-    pet = ''
-    n = 9
-    for k in range(n):
-        a0 = 2 * math.pi * k / n
-        a1 = 2 * math.pi * (k + 1) / n
-        am = (a0 + a1) / 2
-        x0, y0 = 22 + 12 * math.cos(a0), 22 + 12 * math.sin(a0)
-        x1, y1 = 22 + 12 * math.cos(a1), 22 + 12 * math.sin(a1)
-        cx, cy = 22 + 22 * math.cos(am), 22 + 22 * math.sin(am)
-        pet += (f'M{x0:.1f} {y0:.1f} ' if k == 0 else '') + f'Q{cx:.1f} {cy:.1f} {x1:.1f} {y1:.1f} '
+    """すみの 花丸（ピンクのチョーク）：1本の線の うずまきと 花びら（まさちゃん「ちゃんと綺麗な花丸にして」）"""
     return ("<defs><filter id='ck' x='-10%' y='-10%' width='120%' height='120%'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' seed='9' result='n'/>"
             "<feDisplacementMap in='SourceGraphic' in2='n' scale='1.3' result='d'/><feComposite in='d' in2='n' operator='arithmetic' k1='0' k2='1' k3='-.35' k4='.1'/></filter></defs>"
             f"<g filter='url(#ck)' fill='none' stroke='#F4A6C0' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'>"
-            f"<path d='{d}'/><path d='{pet}Z'/></g>")
+            f"<path d='{hanamaru_d(22, 22, 19.6)}'/></g>")
 
 
 def orn_carousel():
