@@ -461,6 +461,300 @@ def horse_sheet(h, out_dir):
     return dict(frames=n, cell=[cw, ch], at=[x0 - px, y0], phase=PHASE[h['num']], **marks)
 
 
+# ---------------- 止まる・立つ・走りだす（ゴールのあとと 表彰のあと：まさちゃんの指定「ゴールしたら一回皆んなゆっくりとまって」「2秒からまたレーススタート」） ----------------
+STAND = dict(theta=0.0, neck_rot=-12.0, head_ang=-50.0, tail=[-128, -110],              # 止まって立つ形（首を少し起こす・足は4本とも下）
+             fore=dict(L=[-125, -90, -90, -60], R=[-122, -92, -90, -60]),
+             hind=dict(L=[-60, -118, -92, -62], R=[-64, -116, -92, -62]))
+STAND_TAIL = 112.0                   # 止まった馬の しっぽの向き（画面の上・度：下へ たれる）
+F0 = 2.0                             # ギャロップの 足の運び（回/秒）＝ページの ギャロップ 0.5秒
+DEC_T, DEC_P = 3.0, 1.0              # 止まる：足の運びの速さ f = F0·(1 - t/DEC_T)^DEC_P（ゴールから）
+DEC_PHI = (1.10, 1.20, 1.30, 1.41, 1.52, 1.64, 1.77, 1.91, 2.08, 2.29, 2.55)   # 止まる コマ（ゴールからの 足の運びの回数。1回目は いまのコマ）
+DEC_END = 3.0                        # 足の大きさが 0 になる所（DEC_STAND で 立つ形に かえる）
+DEC_STAND = 2.80
+ACC_T, ACC_Q = 0.9, 0.5              # 走りだす：f = F0·(t/ACC_T)^ACC_Q（ACC_T 秒で ギャロップの速さ）
+ACC_PHI = (0.12, 0.25, 0.40, 0.55, 0.70, 0.85)   # 走りだす コマ（1回目の とちゅうまで。そのあとは いまのコマ）
+ACC_G0 = round(F0 * ACC_T * ACC_Q / (1 + ACC_Q), 6) % 1.0     # 走りだしの位相のずれ（0.6：ACC_T のあと ページの ギャロップと コマが そろう）
+TRANS_COLS = 6
+
+
+def dec_phi(t):
+    """ゴールから t 秒の 足の運びの回数"""
+    t = min(max(t, 0.0), DEC_T)
+    return F0 * DEC_T / (DEC_P + 1) * (1 - (1 - t / DEC_T) ** (DEC_P + 1))
+
+
+def dec_amp(phi):
+    """止まる時の 足の大きさ（ギャロップ＝1 → 立つ＝0）：1回目（phi＜1）は ギャロップのまま"""
+    u = min(max((phi - 1.0) / (DEC_END - 1.0), 0.0), 1.0)
+    return 0.5 * (1 + math.cos(math.pi * u))
+
+
+def acc_phi(t):
+    """走りだしてから t 秒の 足の運びの回数"""
+    if t <= 0:
+        return 0.0
+    if t <= ACC_T:
+        return F0 * ACC_T / (ACC_Q + 1) * (t / ACC_T) ** (ACC_Q + 1)
+    return F0 * ACC_T / (ACC_Q + 1) + F0 * (t - ACC_T)
+
+
+def acc_amp(phi):
+    """走りだす時の 足の大きさ（立つ＝0 → ギャロップ＝1：1回目の終わりで 1）"""
+    return math.sin(math.pi / 2 * min(max(phi, 0.0), 1.0))
+
+
+def blend_pose(g, a, P0):
+    """立つ形（STAND）と ギャロップの位相 g の形の あいだ（a＝足の大きさ：1でギャロップ・0で立つ）"""
+    G = horse_pose(g, P0)
+    mix_ = lambda s_, g_: round(s_ + (g_ - s_) * a, 2)
+    return dict(theta=mix_(STAND['theta'], G['theta']), neck_rot=mix_(STAND['neck_rot'], G['neck_rot']), head_ang=mix_(STAND['head_ang'], G['head_ang']),
+                tail=[mix_(s_, g_) for s_, g_ in zip(STAND['tail'], G['tail'])],
+                fore={k: [mix_(s_, g_) for s_, g_ in zip(STAND['fore'][k], G['fore'][k])] for k in 'LR'},
+                hind={k: [mix_(s_, g_) for s_, g_ in zip(STAND['hind'][k], G['hind'][k])] for k in 'LR'})
+
+
+def trans_list(num):
+    """止まる・立つ・走りだす コマ：(種類, 足の運びの回数, 位相 g, 足の大きさ a)"""
+    ph = PHASE[num]
+    L = [('dec', phi, ph + phi, dec_amp(phi)) for phi in DEC_PHI]
+    L.append(('stand', DEC_STAND, ph + DEC_STAND, 0.0))
+    L += [('acc', phi, ph + ACC_G0 + phi, acc_amp(phi)) for phi in ACC_PHI]
+    return L
+
+
+def drop_tmp(name):
+    """3Dの描画の 一時ファイル（1まい 約90MB）を消す"""
+    for suf in ('rgb', 'a', 'd', 'n', 'm', 'ao'):
+        try:
+            os.remove(os.path.join(TMP, f'{name}_{suf}.f32'))
+        except OSError:
+            pass
+
+
+def trans_frames(h, cache, dyg):
+    """1頭の 止まる・立つ・走りだす コマ（1倍の絵ぜんたいの premultiplied RGBA）。ギャロップと同じカメラ・影・砂けむり（足の大きさで うすく）。
+       dyg：ギャロップの コマの 上下のずれ（night_run.json の dy）"""
+    num = h['num']
+    px = h.get('padx', 0)
+    wc = W + 2 * px
+    R0 = render_anime(h['pose'], h['box'], W, Hh, name=f'nrun{num}')
+    drop_tmp(f'nrun{num}')
+    cam, s = R0['cam'], R0['s']
+    hv0 = np.asarray(R0['hooves'], float) / s + np.array([px, 0.0])
+    gy = hv0[:, 1].max() + 1.5
+    scl = (gy - Y0) / (Hh - Y0)
+    sh = shadow_mask(hv0, gy, scl, wc)
+    hx_d = hv0[2:, 0].min()
+    g0 = hv0[:, 1].max()
+    ph = PHASE[num]
+    out, meta = [], []
+    for i, (kind, phi, g, a) in enumerate(trans_list(num)):
+        cf = os.path.join(cache, f'h{num}_t{i:02d}.npz')
+        if os.path.exists(cf):
+            z = np.load(cf)
+            rgb, al, hv = z['rgb'], z['a'], z['hv']
+        else:
+            look = dict(h, hair_phase=2 * math.pi * (g - ph), hair_wind=0.4 + 0.6 * a, hair_drop=0.85 * (1 - a))
+            if 'tail_ang' in h:
+                look['tail_ang'] = STAND_TAIL + (h['tail_ang'] - STAND_TAIL) * a
+            R = render_anime(blend_pose(g, a, h['pose']), h['box'], wc, Hh, name=f'ntr{num}_{i}', cam=cam)
+            rgb, al = paint_anime(R, look)
+            hv = np.asarray(R['hooves'], float) / s
+            drop_tmp(f'ntr{num}_{i}')
+            np.savez_compressed(cf, rgb=rgb.astype(np.float32), a=al.astype(np.float32), hv=hv)
+        # 上下：いちばん低い ひづめを 地面に（宙の位相は 足の大きさだけ 山なり）。ギャロップに近いほど ギャロップの コマの ずれに寄せる
+        raw = g0 - hv[:, 1].max()
+        if not stance_legs(g % 1.0):
+            u = ((g % 1.0) - 0.67) / 0.33
+            raw -= LIFT * a * 4 * u * (1 - u)
+        x = ((g - ph) % 1.0) * len(dyg)
+        i0 = int(math.floor(x)) % len(dyg)
+        dg = dyg[i0] * (1 - (x - math.floor(x))) + dyg[(i0 + 1) % len(dyg)] * (x - math.floor(x))
+        dy = a * a * dg + (1 - a * a) * raw
+        M = np.float32([[1, 0, 0], [0, 1, float(dy)]])
+        aw = cv2.warpAffine(al, M, (wc, Hh), flags=cv2.INTER_LINEAR)
+        rp = cv2.warpAffine(rgb * al[..., None], M, (wc, Hh), flags=cv2.INTER_LINEAR)
+        rgbw = np.where(aw[..., None] > 1e-4, rp / np.maximum(aw, 1e-4)[..., None], 0)
+        rgbw = rgbw * (1 - h['haze']) + HAZE * h['haze']
+        pre = np.zeros((Hh, wc, 3), np.float32); A = np.zeros((Hh, wc), np.float32)
+        sa = sh * 0.38
+        pre, A = pre * (1 - sa[..., None]), A + sa * (1 - A)
+        if a > 0.02:
+            dr, da = dust_flow(hx_d, gy, scl, 1.0 - h['haze'] * 0.8, 200 + HORSES.index(h), (g - ph) % 1.0, wc)
+            da = da * a * a
+            pre, A = pre * (1 - da[..., None]) + dr * da[..., None], A + da * (1 - A)
+        pre, A = pre * (1 - aw[..., None]) + rgbw * aw[..., None], A + aw * (1 - A)
+        out.append((pre, A))
+        meta.append(dict(kind=kind, phi=round(phi, 4), amp=round(a, 4), dy=round(float(dy), 2)))
+        print('horse', num, 'trans', i, kind, round(phi, 2), round(a, 3), flush=True)
+    return out, meta
+
+
+def trans_sheet(h, out_dir, dyg):
+    """止まる・立つ・走りだす コマ → 切りぬいて よこ TRANS_COLS こずつ並べた1まい（すき通しつき・ロスなし）"""
+    cache = os.path.join(out_dir, 'cache')
+    os.makedirs(cache, exist_ok=True)
+    frames, meta = trans_frames(h, cache, dyg)
+    A_all = np.max(np.stack([A for _, A in frames]), 0)
+    wc = A_all.shape[1]
+    ys, xs = np.nonzero(A_all > 0.002)
+    x0, y0 = max(0, int(xs.min()) - 4), max(0, int(ys.min()) - 4)
+    x1, y1 = min(wc, int(xs.max()) + 5), min(Hh, int(ys.max()) + 5)
+    x0, y0 = x0 - x0 % 2, y0 - y0 % 2
+    x1, y1 = x1 + (x1 - x0) % 2, y1 + (y1 - y0) % 2
+    cw, ch = x1 - x0, y1 - y0
+    n = len(frames)
+    cols = TRANS_COLS
+    rows = -(-n // cols)
+    sheet = np.zeros((ch * rows, cw * cols, 4), np.float32)
+    for i, (pre, A) in enumerate(frames):
+        r, c = divmod(i, cols)
+        rgb = np.where(A[..., None] > 1e-4, pre / np.maximum(A, 1e-4)[..., None], 0)
+        sheet[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, :3] = rgb[y0:y1, x0:x1]
+        sheet[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, 3] = A[y0:y1, x0:x1]
+    save_rgba(f'{out_dir}/night_t{h["num"]}.webp', sheet[..., :3], sheet[..., 3])
+    return dict(cell=[cw, ch], at=[x0 - h.get('padx', 0), y0], cols=cols, rows=rows, frames=meta)
+
+
+# ---------------- 表彰（まさちゃんの指定「6秒から7秒で勝った馬表彰して」）：スポットライトの中に 勝った馬（大きく）・騎手のガッツポーズ・優勝のレイ ----------------
+AWARD_POSE = dict(theta=0.0, neck_rot=-6.0, head_ang=-50.0, tail=[-128, -110],              # 胸をはって立つ（手前の前足を少し前へ）
+                  fore=dict(L=[-118, -86, -88, -58], R=[-128, -92, -90, -60]),
+                  hind=dict(L=[-60, -118, -92, -62], R=[-66, -114, -92, -62]))
+AWARD_BOX = (226, 66, 512, 292)      # 馬が入る四角（絵の画素）：上に 騎手の上げた手が入るように
+SPOT_X = 352                         # スポットライトの まん中（絵の画素）
+GROUND_Y = 288                       # 光だまりの まん中の高さ
+LEI = ('#E8264A', '#FFF2F4', '#FFC93C', '#E8264A', '#FFF2F4', '#FF8FB0')   # 優勝のレイの花の色（くり返し）
+
+
+def award_back():
+    """表彰のうしろ：いまのコースを暗くした所に、上からのスポットライトと 地面の光だまり"""
+    img = np.zeros((Hh, W, 3), np.float32)
+    img[:FAR_H] = far_band()
+    for rgb_, a_, y0 in (track_band() + (TRACK_Y,), rail_band() + (RAIL_Y,)):
+        a3 = a_[..., None]
+        img[y0:] = img[y0:] * (1 - a3) + rgb_ * a3
+    img = 0.26 * img + 0.30 * img ** 2.4                                  # 暗く（明るい所は少し のこす）
+    img = img * 0.80 + H('#070A22') * 0.20 * (1 - img)
+    yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
+    ax_, ay_ = SPOT_X, -70.0                                              # スポットライト（上の外から）
+    hw = 212.0 * (yy - ay_) / (GROUND_Y - ay_)
+    edge = ss_(-22, 22, hw - np.abs(xx - ax_)) * (yy < GROUND_Y + 6)
+    ang = np.arctan2(xx - ax_, yy - ay_)
+    rays = 0.82 + 0.18 * np.sin(ang * 46.0) * np.sin(ang * 17.0 + 1.3)
+    beam = edge * rays * (0.45 + 0.55 * np.clip(1 - yy / 330.0, 0, 1))
+    img = img + blur(beam, 2.5)[..., None] * H('#FFE6BE') * 0.24
+    pool = np.exp(-(((xx - SPOT_X) / 220.0) ** 2 + ((yy - GROUND_Y) / 30.0) ** 2) * 1.6)
+    core = np.exp(-(((xx - SPOT_X) / 150.0) ** 2 + ((yy - GROUND_Y) / 18.0) ** 2) * 1.6)
+    img = img + (pool * 0.42 + core * 0.30)[..., None] * H('#FFDCA8') * (yy > 200)[..., None]
+    sp = np.random.default_rng(31)
+    for i in range(46):                                                   # 光の中の ちり
+        y = sp.uniform(10, GROUND_Y - 30)
+        x = ax_ + sp.uniform(-1, 1) * 212.0 * (y - ay_) / (GROUND_Y - ay_) * 0.9
+        soft_dot(img, x, y, sp.uniform(0.5, 1.3), 0.9, H('#FFF4DC') * sp.uniform(0.25, 0.7))
+    r2 = ((xx - W / 2) / (W * 0.62)) ** 2 + ((yy - Hh * 0.55) / (Hh * 0.95)) ** 2
+    img = img * (1 - 0.42 * np.clip(r2, 0, 1))[..., None]                 # まわりを暗く
+    return np.clip(img, 0, 1)
+
+
+def lei_layer(R, s, shape):
+    """優勝のレイ（首の つけ根から 胸の前へ たれる 花の輪の 手前がわ）：1倍の (rgb, alpha)"""
+    S, sc = R['S'], R['scene']
+    side = R['side']
+    zc = 0.17 * side
+    P = lambda p2, z=zc: sc.project(np.asarray([[p2[0], p2[1], z]], float))[0][0][:2] / s
+    a0 = Hm.bez(S['crest'], np.array([0.30]))[0] + np.array([0.0, -0.08])  # 首の上（たてがみの少し下）
+    c2 = np.asarray(S['chest'], float) + np.array([0.08, -0.10])          # 胸の前の下
+    mid = (a0 + c2) / 2 + np.array([-0.07, -0.03])                         # うしろへ少し たわむ
+    ts = np.linspace(0, 1, 60)
+    pts = np.array([P((1 - t) ** 2 * a0 + 2 * (1 - t) * t * mid + t ** 2 * c2, zc * (1.0 - 0.25 * t)) for t in ts])
+    L = np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1))
+    hl = np.linalg.norm(np.asarray(R['muzzle']) - np.asarray(R['poll'])) / s
+    r = max(3.2, hl * 0.15)                                                # 花の半分の大きさ（頭の長さに合わせる）
+    Hs, Ws = shape
+    S4 = 4
+    col = np.zeros((Hs * S4, Ws * S4, 3), np.float32); al = np.zeros((Hs * S4, Ws * S4), np.float32)
+    cum = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))])
+    n = int(L / (r * 1.35)) + 1
+    lines = np.zeros((Hs * S4, Ws * S4), np.uint8)
+    for k in range(n):
+        d = min(L, k * r * 1.35)
+        i = min(len(pts) - 2, int(np.searchsorted(cum, d)))
+        p = pts[i]
+        tg = pts[i + 1] - pts[i]; tg = tg / (np.linalg.norm(tg) + 1e-9); nr = np.array([-tg[1], tg[0]])
+        for sgn in (1, -1):                                                # 葉
+            q = p + nr * sgn * r * 0.95
+            m = np.zeros_like(lines)
+            cv2.ellipse(m, (int(q[0] * S4 * 16), int(q[1] * S4 * 16)), (int(r * 0.75 * S4 * 16), int(r * 0.38 * S4 * 16)),
+                        math.degrees(math.atan2(nr[1], nr[0])), 0, 360, 255, -1, cv2.LINE_AA, shift=4)
+            mf = m.astype(np.float32) / 255
+            col = over(col, H('#2E9A52'), mf); al = np.maximum(al, mf)
+            cv2.ellipse(lines, (int(q[0] * S4 * 16), int(q[1] * S4 * 16)), (int(r * 0.75 * S4 * 16), int(r * 0.38 * S4 * 16)),
+                        math.degrees(math.atan2(nr[1], nr[0])), 0, 360, 255, max(1, int(S4 * 0.7)), cv2.LINE_AA, shift=4)
+    for k in range(n):                                                     # 花（ばら）
+        d = min(L, k * r * 1.35)
+        i = min(len(pts) - 1, int(np.searchsorted(cum, d)))
+        p = pts[i]
+        c = H(LEI[k % len(LEI)])
+        m = np.zeros_like(lines)
+        cv2.circle(m, (int(p[0] * S4 * 16), int(p[1] * S4 * 16)), int(r * S4 * 16), 255, -1, cv2.LINE_AA, shift=4)
+        mf = m.astype(np.float32) / 255
+        col = over(col, c, mf); al = np.maximum(al, mf)
+        sh_ = np.zeros_like(lines)                                         # 下がわの影・まん中の うず
+        cv2.circle(sh_, (int((p[0] + r * 0.25) * S4 * 16), int((p[1] + r * 0.30) * S4 * 16)), int(r * 0.85 * S4 * 16), 255, -1, cv2.LINE_AA, shift=4)
+        col = over(col, c * 0.62, (sh_.astype(np.float32) / 255) * mf * 0.55)
+        cv2.ellipse(lines, (int(p[0] * S4 * 16), int(p[1] * S4 * 16)), (int(r * 0.45 * S4 * 16), int(r * 0.35 * S4 * 16)), 20, 30, 300, 255,
+                    max(1, int(S4 * 0.6)), cv2.LINE_AA, shift=4)
+        cv2.circle(lines, (int(p[0] * S4 * 16), int(p[1] * S4 * 16)), int(r * S4 * 16), 255, max(1, int(S4 * 0.8)), cv2.LINE_AA, shift=4)
+        hl_ = np.zeros_like(lines)
+        cv2.circle(hl_, (int((p[0] - r * 0.35) * S4 * 16), int((p[1] - r * 0.40) * S4 * 16)), int(r * 0.28 * S4 * 16), 255, -1, cv2.LINE_AA, shift=4)
+        col = over(col, np.minimum(c * 1.25 + 0.15, 1.0), (hl_.astype(np.float32) / 255) * mf * 0.8)
+    lf = lines.astype(np.float32) / 255
+    col = over(col, LINE * 0.7, lf * 0.85)
+    al = np.maximum(al, lf * 0.85)
+    tip = pts[-1]                                                          # 下の 金の房
+    m = np.zeros_like(lines)
+    cv2.ellipse(m, (int(tip[0] * S4 * 16), int((tip[1] + r * 1.6) * S4 * 16)), (int(r * 0.45 * S4 * 16), int(r * 1.1 * S4 * 16)), 0, 0, 360, 255, -1, cv2.LINE_AA, shift=4)
+    mf = m.astype(np.float32) / 255 * (1 - al)
+    col = over(col, H('#F2B632'), mf); al = np.maximum(al, mf)
+    pre = cv2.resize(col * al[..., None], (Ws, Hs), interpolation=cv2.INTER_AREA)
+    A = cv2.resize(al, (Ws, Hs), interpolation=cv2.INTER_AREA)
+    return np.where(A[..., None] > 1e-4, pre / np.maximum(A, 1e-4)[..., None], 0), A
+
+
+def award_picture(h, out_dir):
+    """1頭の 表彰の絵（スポットライト・大きく立つ馬・ガッツポーズの騎手・優勝のレイ）→ night_award<番号>.webp"""
+    num = h['num']
+    back = award_back()
+    look = dict(h, hair_wind=0.4, hair_drop=0.85, hair_phase=0.6)
+    if 'tail_ang' in h:
+        look['tail_ang'] = STAND_TAIL
+    R = render_anime(AWARD_POSE, AWARD_BOX, W, Hh, name=f'naw{num}', jockey='win')
+    dbg = {}
+    rgb, a = paint_anime(R, look, debug=dbg)
+    drop_tmp(f'naw{num}')
+    s = R['s']
+    jm = cv2.resize(((dbg['part'] >= 10) & (dbg['part'] <= 17)).astype(np.float32), (W, Hh), interpolation=cv2.INTER_AREA)
+    hv = np.asarray(R['hooves'], float) / s
+    gy = hv[:, 1].max() + 1.0
+    yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
+    x0, x1 = hv[:, 0].min() - 26, hv[:, 0].max() + 30
+    shd = np.exp(-((xx - (x0 + x1) / 2) / ((x1 - x0) / 2)) ** 4 - ((yy - gy) / 7.0) ** 2)
+    img = back * (1 - 0.62 * shd)[..., None]                                # 足もとの影
+    glow = np.clip(blur(a, 7) - a, 0, 1) * ss_(0.0, 1.0, (GROUND_Y - yy) / 120.0)
+    img = img + glow[..., None] * H('#FFD9A0') * 0.40                       # 馬のまわりの光
+    img = img * (1 - a[..., None]) + rgb * a[..., None]
+    lr, la = lei_layer(R, s, (Hh, W))
+    la = la * (1 - np.clip(jm * 1.4, 0, 1))                                  # 騎手の足の うしろ
+    img = img * (1 - la[..., None]) + lr * la[..., None]
+    rim = np.clip(a - cv2.warpAffine(a, np.float32([[1, 0, 0], [0, 1, 2.2]]), (W, Hh)), 0, 1)
+    img = img + rim[..., None] * H('#FFE8C0') * 0.35                          # 上からの光の ふち
+    img = np.clip(img, 0, 1)
+    save_rgb(f'{out_dir}/night_award{num}.webp', img, q=92)
+    fist = np.asarray(R.get('fist', R['hand_near']), float) / s
+    return dict(fist=[round(float(fist[0]), 1), round(float(fist[1]), 1)], ground=round(float(gy), 1),
+                nose=round(float(np.asarray(R['muzzle'], float)[0] / s), 1))
+
+
 def save_rgba(path, rgb, a):
     u8 = (np.dstack([np.clip(rgb, 0, 1), np.clip(a, 0, 1)]) * 255 + .5).astype(np.uint8)
     Image.fromarray(u8, 'RGBA').save(path, 'WEBP', lossless=True, quality=100, method=6)
@@ -493,5 +787,14 @@ if __name__ == '__main__':
     for h in HORSES:
         if 'horses' in what or f'h{h["num"]}' in what:
             info.setdefault('horses', {})[str(h['num'])] = horse_sheet(h, out)
+            json.dump(info, open(jf, 'w'), ensure_ascii=False, indent=1)
+    for h in HORSES:
+        if 'trans' in what or f't{h["num"]}' in what:
+            info.setdefault('trans', {})[str(h['num'])] = trans_sheet(h, out, info['horses'][str(h['num'])]['dy'])
+            info['timing'] = dict(f0=F0, dec_t=DEC_T, dec_p=DEC_P, dec_end=DEC_END, dec_stand=DEC_STAND, acc_t=ACC_T, acc_q=ACC_Q, acc_g0=ACC_G0)
+            json.dump(info, open(jf, 'w'), ensure_ascii=False, indent=1)
+    for h in HORSES:
+        if 'award' in what or f'a{h["num"]}' in what:
+            info.setdefault('award', {})[str(h['num'])] = award_picture(h, out)
             json.dump(info, open(jf, 'w'), ensure_ascii=False, indent=1)
     json.dump(info, open(jf, 'w'), ensure_ascii=False, indent=1)

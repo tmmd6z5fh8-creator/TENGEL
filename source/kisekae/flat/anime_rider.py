@@ -81,10 +81,43 @@ def jockey_a(sc, S, js=1.12, side_z=0.30):
     return J
 
 
+def jockey_win(sc, S, js=1.12, side_z=0.30, side=1.0):
+    """表彰の騎手：体を起こして、手前の手を高く上げる（ガッツポーズ）。手綱は奥の手。ゼッケンは体に貼る"""
+    w = np.asarray(S['withers'], float)
+    P3 = lambda y=0.0, x=0.0, z=0.0: np.array([w[0] + x * js, w[1] + y * js, z * js], float)
+    J = {}
+    J['pelvis'] = P3(0.24, -0.32); J['chest'] = P3(0.56, -0.22); J['neck'] = P3(0.64, -0.19); J['head'] = P3(0.74, -0.15)
+    a, b = J['pelvis'], J['chest']
+    sc.ell_ax((a + b) / 2, b - a, (np.linalg.norm(b - a) / 2 + 0.07 * js, 0.12 * js, 0.15 * js), up=(1, 0, 0), k=0.04, mat=M_SILK)
+    sc.ell(a + np.array([0.0, -0.02, 0]) * js, (0.13 * js, 0.10 * js, 0.15 * js), k=0.05, mat=M_PANTS)
+    sc.rcone(J['chest'], J['neck'], 0.07 * js, 0.05 * js, k=0.03, mat=M_SILK)
+    sc.sph(J['head'], 0.095 * js, k=0.02, mat=M_HELMET)
+    sc.ell(J['head'] + np.array([0.085, -0.03, 0]) * js, (0.05 * js, 0.012 * js, 0.07 * js), k=0.01, mat=M_HELMET)
+    for z in (1, -1):
+        up = z == side                                                   # 手前の手を上げる
+        sh = P3(0.53, -0.20, 0.13 * z)
+        el, hd = (P3(0.70, -0.06, 0.22 * z), P3(0.93, -0.02, 0.17 * z)) if up else (P3(0.38, -0.10, 0.21 * z), P3(0.30, 0.18, 0.12 * z))
+        sc.rcone(sh, el, 0.05 * js, 0.042 * js, k=0.02, mat=M_SLEEVE)
+        sc.rcone(el, hd, 0.04 * js, 0.032 * js, k=0.02, mat=M_SLEEVE)
+        sc.sph(hd, (0.045 if up else 0.035) * js, k=0.01, mat=M_PANTS)
+        hip = P3(0.22, -0.26, 0.12 * z); kn = P3(0.14, 0.02, side_z * z)
+        an = P3(-0.18, -0.18, (side_z + 0.06) * z); toe = P3(-0.22, -0.06, (side_z + 0.07) * z)
+        sc.rcone(hip, kn, 0.075 * js, 0.055 * js, k=0.03, mat=M_PANTS)
+        sc.rcone(kn, an, 0.052 * js, 0.04 * js, k=0.02, mat=M_BOOT)
+        sc.rcone(an, toe, 0.04 * js, 0.03 * js, k=0.01, mat=M_BOOT)
+        J[f'hand{z}'] = hd; J[f'knee{z}'] = kn; J[f'ankle{z}'] = an
+        if not up:
+            J['rein'] = hd
+        else:
+            J['fist'] = hd
+    J['js'] = js
+    return J
+
 def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scale=1.06, fov=26, js=1.12,
-                 key=(0.30, 0.80, 0.55), cam=None):
+                 key=(0.30, 0.80, 0.55), cam=None, jockey=None):
     """3倍の大きさで形を描く（光は1つ・影つき・白い素材）。rgb は「光の当たり具合（影をふくむ）」になる。
-       cam：決めたカメラ (目, 見る所)（走るコマで、どのコマも同じカメラにするとき）。なければ box に入るように決める（R['cam'] に入れて返す）"""
+       cam：決めたカメラ (目, 見る所)（走るコマで、どのコマも同じカメラにするとき）。なければ box に入るように決める（R['cam'] に入れて返す）
+       jockey：'win' なら 表彰の騎手（体を起こして 手前の手を上げる・jockey_win）"""
     Hm.HEAD_SCALE = head_scale
     W3, H3 = W * s, Hh * s
     e, t = cam if cam is not None else frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
@@ -110,7 +143,7 @@ def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scal
     sc.rcone = rcone_no_dock
     S = Hm.build(sc, pose, mats=dict(body=M_COAT, neck=M_COAT, hoof=M_HOOF, eye=M_EYE, head=M_COAT))
     sc.rcone = rcone0
-    J = jockey_a(sc, S, js)
+    J = jockey_win(sc, S, js, side=side) if jockey == 'win' else jockey_a(sc, S, js)
     R = sc.render(os.path.join(TMP, name))
     ts = np.linspace(0, 1, 40)
     P = lambda pts: sc.project(np.asarray(pts, float))[0]
@@ -123,7 +156,9 @@ def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scal
     e0, e1 = S['eyes']
     R['eye'] = P([e0 if np.dot(e0 - t, np.asarray(e, float) - t) > np.dot(e1 - t, np.asarray(e, float) - t) else e1])[0]
     R['hooves'] = P([Hm.v3(S[k]['hf'], 0.15 * S[k]['z']) for k in ('FL', 'FR', 'HL', 'HR')])
-    R['hand_near'] = P([J['hand1'] if side > 0 else J['hand-1']])[0]
+    R['hand_near'] = P([J['rein'] if 'rein' in J else (J['hand1'] if side > 0 else J['hand-1'])])[0]
+    if 'fist' in J:
+        R['fist'] = P([J['fist']])[0]
     R['S'], R['scene'], R['J'], R['side'], R['Lk'], R['s'] = S, sc, J, side, Lk, s
     R['cam'] = (e, t)
     return R
@@ -199,7 +234,7 @@ def draw_lock(col, alpha, pts, w0, pal, lw, tip=0.9, hi=(0.14, 0.55), leaf=False
 
 
 def paint_anime(R, look, debug=None):
-    """look: coat・legs（'black'／'socks'）・silk・sleeve・helmet・num・seed・tail・mane・lw（線の太さの倍率）・roll（白い鼻革）・hair_phase（たてがみ・しっぽの波の位相）
+    """look: coat・legs（'black'／'socks'）・silk・sleeve・helmet・num・seed・tail・mane・lw（線の太さの倍率）・roll（白い鼻革）・hair_phase（たてがみ・しっぽの波の位相）・hair_wind（なびく強さの倍率）・hair_drop（0：うしろへ なびく 〜 1：下へ たれる）
        戻り値：1倍の (rgb, alpha)"""
     s = R['s']
     a = np.clip(R['a'], 0, 1)
@@ -369,6 +404,9 @@ def paint_anime(R, look, debug=None):
     # ---------- たてがみ・前髪・しっぽ（房） ----------
     rng = np.random.default_rng(look.get('seed', 1))
     hph = look.get('hair_phase', 0.0)                                   # たてがみ・しっぽの波の位相（走るコマで なびかせる）
+    hwk = look.get('hair_wind', 1.0)                                    # なびく強さ（止まる馬は弱く）
+    hdrop = look.get('hair_drop', 0.0)                                  # 0：うしろへ なびく 〜 1：下へ たれる（止まった馬）
+    wang = lambda a_: (1 - hdrop) * a_ + hdrop * (math.pi / 2 + 0.45)
     hlw = max(1.0, s * lw)
     crest = np.asarray(R['crest'], float)
     nC = len(crest)
@@ -389,8 +427,8 @@ def paint_anime(R, look, debug=None):
     for i in range(10, nC - 3, 5):
         upa = crest_dir(i)
         L = (32 + 12 * math.sin(i / nC * math.pi) + rng.uniform(-4, 5)) * u1 * mane_k
-        pts = flow(crest[i] + np.array([0.0, 2.0 * u1]), upa - 0.30 + rng.uniform(-0.12, 0.12), L, 16, wind=0.20,
-                   wind_ang=math.pi + 0.40, curl=0.025, rng=rng, wave=1.2, phase=i * 0.5 + hph)
+        pts = flow(crest[i] + np.array([0.0, 2.0 * u1]), upa - 0.30 + rng.uniform(-0.12, 0.12), L, 16, wind=0.20 * hwk,
+                   wind_ang=wang(math.pi + 0.40), curl=0.025, rng=rng, wave=1.2, phase=i * 0.5 + hph)
         back.append((pts, (12.0 + rng.uniform(-1, 1.5)) * u1))
     bcol = np.zeros((H3, W3, 3), np.float32); ba = np.zeros((H3, W3), np.float32)
     for pts, w0 in back:
@@ -401,12 +439,12 @@ def paint_anime(R, look, debug=None):
         upa = crest_dir(i)
         root = crest[i] - np.array([math.cos(upa), math.sin(upa)]) * 2.0 * u1        # 首の中から
         L = (28 + 14 * math.sin(i / nC * math.pi) + rng.uniform(-4, 4)) * u1 * mane_k
-        pts = flow(root, upa - 0.62 + rng.uniform(-0.12, 0.12), L, 16, wind=0.22, wind_ang=math.pi + 0.30, curl=0.03,
+        pts = flow(root, upa - 0.62 + rng.uniform(-0.12, 0.12), L, 16, wind=0.22 * hwk, wind_ang=wang(math.pi + 0.30), curl=0.03,
                    rng=rng, wave=1.3, phase=i * 0.7 + hph)
         front.append((pts, (12.0 + rng.uniform(-1, 1.5)) * u1))
     for k in range(2):
         a0 = math.atan2(-fd[1], -fd[0]) - 0.55 - 0.25 * k
-        pts = flow(pp + fd * (3.0 + 2.5 * k) * u1, a0, (15 - 3 * k) * u1 * mane_k, 10, wind=0.18, wind_ang=math.pi + 0.35,
+        pts = flow(pp + fd * (3.0 + 2.5 * k) * u1, a0, (15 - 3 * k) * u1 * mane_k, 10, wind=0.18 * hwk, wind_ang=wang(math.pi + 0.35),
                    curl=0.03, rng=rng, wave=0.6, phase=k + hph)
         front.append((pts, (6.5 - k) * u1))
     hcol = np.zeros((H3, W3, 3), np.float32); ha = np.zeros((H3, W3), np.float32)
@@ -429,7 +467,7 @@ def paint_anime(R, look, debug=None):
         root = troot + np.array([rng.normal(0, 0.5), (k - 3) * 0.9]) * u1
         if t_ang is None:
             ang0 = tdir + (k - 3) * 0.07 + 0.10 + rng.uniform(-0.05, 0.05)
-            wind_t, wang_t, curl_t = 0.08, math.pi + 0.10, 0.006 * (1 if k % 2 else -1)
+            wind_t, wang_t, curl_t = 0.08 * hwk, wang(math.pi + 0.10), 0.006 * (1 if k % 2 else -1)
         else:
             ang0 = math.radians(t_ang) + (k - 3) * look.get('tail_spread', 0.07) + rng.uniform(-0.05, 0.05)
             wind_t, wang_t, curl_t = 0.0, math.pi, look.get('tail_curl', 0.0)
