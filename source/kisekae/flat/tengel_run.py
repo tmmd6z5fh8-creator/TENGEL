@@ -2,7 +2,8 @@
    エンブレムの 馬は 動かさない（まさちゃんの指定「やっぱりテンゲルのアイコンは動かさなくていいや・アイコン、元のように戻して」）。
    上の絵は いまの絵（flat/tengel_banner.py：説明書の上の絵 manual/banner.webp から 版の行を消して 切り出した絵）の まま
    - tengel_run.json：数字（0と1）の 場所・大きさ・0か1か・色（数字の色と うしろの色）。元の大きさの 切り出し（clean_crop）から さがす
-   - tengel_icon.webp（312×312）：的中ボタン（gen_fx.py の tg_face_svg）に使う テンゲルのアイコン（アプリのアイコン icons/icon3-512.png を 小さくしただけ）
+   - tengel_push.webp（900×491）：的中ボタン（gen_fx.py の tg_face_svg：説明書の上の絵と 同じ 長方形の PUSH）の 面。
+     説明書の上の絵（manual/banner.webp・外の すじの わくも ふくむ）から 版の行を 消した絵（clean_full）を 小さくしただけ（ボタン 300px の 3倍）
    python3 flat/tengel_run.py <出力フォルダ> [元の絵]"""
 import sys, os, json
 import numpy as np
@@ -13,8 +14,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
 import tengel_banner as TB
 
 W, Hh = TB.W, TB.Hh
-ICON = os.path.join(HERE, '..', '..', 'icons', 'icon3-512.png')
-ICON_PX = 312                       # 的中ボタン（156px）の 2倍
+PUSH_PX = (900, 491)                # 的中ボタン（300×164）の 3倍（元の絵 1200×655 と 同じ 横長）
 
 # 数字（0と1）：ある所（ドームの中・左の行・後ろ足の下の行：780×320 の 座標）と 字の間の目安
 DIGIT_REG = dict(D=[(110, 118), (119, 114), (151, 114), (155, 116), (155, 150), (149, 159), (124, 167), (110, 167)],
@@ -103,9 +103,8 @@ def build(outdir, src=TB.SRC):
     os.makedirs(outdir, exist_ok=True)
     S = Src(src)
     run = dict(size=[W, Hh], digits=digits(S))
-    ic = cv2.imread(ICON, cv2.IMREAD_COLOR)
-    assert ic is not None and ic.shape[:2] == (512, 512), ICON
-    cv2.imwrite(os.path.join(outdir, 'tengel_icon.webp'), cv2.resize(ic, (ICON_PX, ICON_PX), interpolation=cv2.INTER_AREA), [cv2.IMWRITE_WEBP_QUALITY, 90])
+    full, _ = TB.clean_full(src)
+    cv2.imwrite(os.path.join(outdir, 'tengel_push.webp'), cv2.resize(full, PUSH_PX, interpolation=cv2.INTER_AREA), [cv2.IMWRITE_WEBP_QUALITY, 90])
     json.dump(run, open(os.path.join(outdir, 'tengel_run.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     print('数字', len(run['digits']), {r: sum(d['r'] == r for d in run['digits']) for r in DIGIT_REG})
     return run

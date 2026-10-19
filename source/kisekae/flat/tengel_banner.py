@@ -16,9 +16,9 @@ CROP = (82, 124, 1118, 549)          # 元の絵（1200×655）から切り出�
 VER = (600, 436, 990, 470)           # 「バージョン …」の行のある所
 
 
-def clean_crop(src=SRC):
-    """「バージョン …」の行を消して 切り出した絵（元の大きさ 1036×425・BGR）と 消した所のマスク（元の絵の大きさ）。
-       壁紙の動き（flat/tengel_run.py）も この絵から作る"""
+def clean_full(src=SRC):
+    """「バージョン …」の行を消した 元の絵（1200×655・BGR：外の すじの わくも ふくむ）と 消した所のマスク。
+       的中ボタン（マスター帯の 長方形の PUSH：flat/tengel_run.py）は この絵を そのまま 使う"""
     im = cv2.imread(src, cv2.IMREAD_COLOR)
     assert im is not None and im.shape[:2] == (655, 1200), (src, None if im is None else im.shape)
     g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -29,7 +29,13 @@ def clean_crop(src=SRC):
     m = cv2.dilate(m, np.ones((5, 5), np.uint8))
     mask = np.zeros(g.shape, np.uint8)
     mask[y0:y1, x0:x1] = m * 255
-    clean = cv2.inpaint(im, mask, 6, cv2.INPAINT_TELEA)
+    return cv2.inpaint(im, mask, 6, cv2.INPAINT_TELEA), mask
+
+
+def clean_crop(src=SRC):
+    """「バージョン …」の行を消して 切り出した絵（元の大きさ 1036×425・BGR）と 消した所のマスク（元の絵の大きさ）。
+       壁紙の 数字（flat/tengel_run.py）も この絵から さがす"""
+    clean, mask = clean_full(src)
     cx0, cy0, cx1, cy1 = CROP
     return clean[cy0:cy1, cx0:cx1], mask
 
