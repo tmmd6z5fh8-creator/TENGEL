@@ -1,12 +1,9 @@
-"""マスター帯の壁紙の動き（まさちゃんの指定「常にテンゲルのアイコンの馬がアイコン上で走ってる、お尻から後ろ脚の当たりにある数字も常に動いている、
-   全体的に緑の雷が枠全体にビリビリと輝いている」・2回目「濃い緑のビリビリも混ぜて、それぞれ消えたりついたり・ピクセル1番細い線に」・
-   3回目「脚の切れ目が見えないように一体型の脚に・体もジョッキーも動画の馬と騎手のように・もう少しゆっくり」）：ページに入れる HTML と CSS
-   - 絵は flat/tengel_run.py の 馬を ぬいた絵（plate）と、走る馬の コマを よこ1列に 並べた シート（horse：flat/tengel_gallop.py で 描く）。
-     キャンバスでは /_blob/<id>（tengel_blobs.json）・コマの 大きさと 置く場所・数字の場所は tengel_run.json。1つの <svg>（780×320 を 390×160 に）に重ねる
-   - 馬が走る：シートを steps で めくる（1歩 0.75秒・18コマ）。体が 上下に ゆれて 前後に かたむき、頭が うなずき、騎手は 体を 低く たもつ。
-     足は 金の 板で 描きなおした 一体の 足（ひざ・飛節で とがって つながる）で、4本が 順に 地面について 宙に浮く
+"""マスター帯の壁紙の動き（まさちゃんの指定「お尻から後ろ脚の当たりにある数字も常に動いている、全体的に緑の雷が枠全体にビリビリと輝いている」・
+   2回目「濃い緑のビリビリも混ぜて、それぞれ消えたりついたり・ピクセル1番細い線に」）：ページに入れる HTML と CSS
+   エンブレムの 馬は 動かさない（まさちゃんの指定「やっぱりテンゲルのアイコンは動かさなくていいや・アイコン、元のように戻して」）。
+   上の絵は いまの絵（tengel_blobs.json の banner）の まま、その上に 数字と 雷を 重ねる（1つの <svg>：780×320 を 390×160 に）
    - 数字：おしり（ドーム）・その左の行・後ろ足の下の行の 0と1 が、かわるがわる 反対の数字に（字のうしろの色で 前の字を かくして 書く）。
-     かわる時は 右（馬）から 左へ 波のように 流れる（DIGIT_V）。数字は 馬の 下（足が 数字の上を 通る）
+     かわる時は 右（馬）から 左へ 波のように 流れる（DIGIT_V）。場所と 色は tengel_run.json（flat/tengel_run.py）
    - 緑の雷：明るい緑と 濃い緑の いなずまが 枠に そって いくつも（EDGE_N 本）。1本ずつ べつべつに ついたり 消えたり
      （1回に 2〜7回 ちらちら光って、そのたび 形が かわる・つく間かくも 1本ずつ ちがう）。線は いちばん細く（芯は 0.7＝画面の 約1画素）・
      まわりに うすい光。内がわへ 小さく 枝わかれ。ときどき 枠から 中へ 大きな いなずま（同じ道を 3回 光る・枝わかれ：BOLTS）。
@@ -14,11 +11,11 @@
    - 視差効果を減らす（prefers-reduced-motion）なら 動かさない（いまの絵：雷も なし）
    クラスの名前は tq…（的中ボタンの .tg とは別）。いなずまの 形の作り方（frac・bolt_use）は 的中ボタン（gen_fx.py）も使う
    python3 tengel_wall.py --judge <Judge_Tengel.dc.html> <tengel_blobs.json> <tengel_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
-   python3 tengel_wall.py --plan  → 雷の ついている 本数（走り方の 予定は python3 flat/tengel_gallop.py --plan）"""
+   python3 tengel_wall.py --plan  → 雷の ついている 本数"""
 import sys, re, json, math, random
 
 ALT = ('テンゲルの絵（金と紺の盾のエンブレムに、騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線、TENGER の金の文字・「独自の統計・オッズ分析による馬券検討支援システム」・「テンゲル」の金の札）'
-       '（いつも エンブレムの馬が 本物の馬のように 体を ゆらして 走り、騎手も いっしょに 動き、おしりから 後ろ足の まわりの 数字が 動いて、枠じゅうに 明るい緑と 濃い緑の 雷が ビリビリ 光る）')
+       '（おしりから 後ろ足の まわりの 数字が いつも 動いて、枠じゅうに 明るい緑と 濃い緑の 雷が ビリビリ 光る）')
 
 # ---------- 数字 ----------
 DIGIT_P = (0.9, 1.3, 1.7, 2.1, 2.6)   # 数字が かわる 間（秒）
@@ -76,18 +73,6 @@ def vis_kf(name, ranges, period):
             last = v
     out.append(f'100%{{visibility:{"visible" if last else "hidden"}}}')
     return f'@keyframes {name}{{' + ''.join(out) + '}'
-
-
-# ---------- 馬 ----------
-def horse(blobs, run):
-    """(svg, css)：走る馬の シート（よこ1列）を コマの 四角の 中で steps で めくる（ミリ秒の 整数で ずれない）"""
-    sh = run['sheet']
-    n, (cw, ch), (ax, ay) = sh['frames'], sh['cell'], sh['at']
-    ms = int(round(sh['period'] * 1000))
-    svg = (f'<svg x="{ax}" y="{ay}" width="{cw}" height="{ch}" viewBox="0 0 {cw} {ch}" overflow="hidden">'
-           f'<image class="tqH" href="{blobs["horse"]}" width="{n * cw}" height="{ch}" preserveAspectRatio="none"/></svg>')
-    css = f'.tqw .tqH{{animation:tqH {ms}ms steps({n}) infinite}}@keyframes tqH{{to{{transform:translateX(-{n * cw}px)}}}}'
-    return svg, css
 
 
 # ---------- 数字 ----------
@@ -292,18 +277,17 @@ def defs():
 
 
 def inline(blobs, run, alt=ALT):
-    """(html, css)。blobs：banner・plate・部品（小文字）→ /_blob/<id>。html は <div class="bnr tqw">（判定画面の <img class="bnr"> と入れかえる）"""
-    hs, hc = horse(blobs, run)
+    """(html, css)。blobs：banner → /_blob/<id>。html は <div class="bnr tqw">（判定画面の <img class="bnr"> と入れかえる）"""
     ds, dc = digits(run)
     ls, lc, ld, _ = lightning()
     im = lambda h: f'<image href="{h}" width="780" height="320" preserveAspectRatio="none"/>'
     # 帯の下に 1px の金の線（.bnr の border-bottom）があるので、上の絵は 上に そろえる（<img> の object-fit:cover と 同じ所に）
-    # 重ねる順：足と頭を ぬいた絵 → 数字（足の下）→ 馬 → 雷。いなずまの線は 色の線を 重ねるので fill なし・角は まるく
+    # 重ねる順：いまの絵 → 数字 → 雷。いなずまの線は 色の線を 重ねるので fill なし・角は まるく
     html = (f'<div class="bnr tqw" role="img" aria-label="{alt}"><svg viewBox="0 0 780 320" width="390" height="160" preserveAspectRatio="xMidYMin slice" aria-hidden="true">'
             f'<defs>{defs()}<g fill="none" stroke-linecap="round" stroke-linejoin="round">{ld}</g></defs>{im(blobs["banner"])}'
-            f'<g class="tqA">{im(blobs["plate"])}{ds}{hs}<g fill="none" stroke-linecap="round" stroke-linejoin="round">{ls}</g></g></svg></div>')
+            f'<g class="tqA">{ds}<g fill="none" stroke-linecap="round" stroke-linejoin="round">{ls}</g></g></svg></div>')
     css = ('.tqw{position:relative;overflow:hidden}.tqw>svg{display:block;width:100%;height:100%}'
-           + hc + dc + lc
+           + dc + lc
            + '@media (prefers-reduced-motion:reduce){.tqw *{animation:none!important}.tqw .tqA{visibility:hidden}}')
     return html, css
 
