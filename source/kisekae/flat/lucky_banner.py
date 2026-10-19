@@ -3,6 +3,7 @@
    - 蹄鉄：銀（本物の蹄鉄の形：つま先のでっぱり・溝・くぎ穴・四角い頭のくぎ・丸いかかと）。くっきりした影と白いつや・太い線
    - まわり：金貨・桜・四つ葉・金と赤のキラキラ（どれも太い線とくっきりした影）
    ぜんぶSVGで描いて Chromium で2倍に描き、縮める。形はすべて一から作ったオリジナル
+   parts()：重なりの順に分けた部品（地・蹄鉄・招き馬・手前）。開運の壁紙（lucky_wall.py）は これを べつべつの <svg> にして重ね、招き馬を動かす
    python3 flat/lucky_banner.py <出力.webp>"""
 import sys, os, math
 import numpy as np
@@ -146,19 +147,30 @@ def sparkle(x, y, r, fill='#FFD45A', rot=0):
     return f"<polygon points='{' '.join(pts)}' fill='{fill}' stroke='{OUT}' stroke-width='1.6' stroke-linejoin='round'/>"
 
 
-def banner_svg():
+def maneki_box():
+    """招き馬を置く所（絵の座標）：(左, 上, はば, 高さ)。viewBox は 0 0 MW MH（同じ倍率で たて・よこ）"""
+    ch = 302
+    cw = ch * MW / MH
+    return 392 - cw / 2, 319 - ch, cw, ch
+
+
+def parts(rig=None):
+    """絵を 重なりの順に分けた部品（lucky_wall.py の壁紙で べつべつに重ねる）：
+       defs・bg（地・青海波・放射の光・光の輪・うしろの桜と四つ葉）・shoe（蹄鉄）・maneki（招き馬の <svg>）・fg（手前の金貨・桜・キラキラ）。
+       rig：招き馬の 動かす部品を包む（lucky_maneki.maneki_svg）。なしなら いつもの絵と同じ"""
+    P = {}
+    P['defs'] = ("<defs>"
+                 "<radialGradient id='glow' cx='0.5' cy='0.5' r='0.5'><stop offset='0' stop-color='#FFF2C4' stop-opacity='1'/>"
+                 "<stop offset='0.55' stop-color='#FFF6DC' stop-opacity='0.75'/><stop offset='1' stop-color='#FFFDF8' stop-opacity='0'/></radialGradient>"
+                 "<radialGradient id='raysfade' cx='0.5' cy='0.5' r='0.5'><stop offset='0' stop-color='#fff' stop-opacity='1'/>"
+                 "<stop offset='0.7' stop-color='#fff' stop-opacity='0.5'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>"
+                 "<mask id='rm'><rect x='0' y='0' width='780' height='320' fill='url(#raysfade)'/></mask>"
+                 "<pattern id='sgh' width='36' height='18' patternUnits='userSpaceOnUse'>"
+                 + ''.join(f"<circle cx='{cx}' cy='{cy}' r='{r}' fill='none' stroke='#F1E4C6' stroke-width='1.1'/>"
+                           for cx, cy in ((0, 18), (36, 18), (18, 9), (0, 0), (36, 0)) for r in (17, 12.5, 8, 3.5))
+                 + "</pattern>"
+                 "</defs>")
     S = []
-    S.append("<defs>"
-             "<radialGradient id='glow' cx='0.5' cy='0.5' r='0.5'><stop offset='0' stop-color='#FFF2C4' stop-opacity='1'/>"
-             "<stop offset='0.55' stop-color='#FFF6DC' stop-opacity='0.75'/><stop offset='1' stop-color='#FFFDF8' stop-opacity='0'/></radialGradient>"
-             "<radialGradient id='raysfade' cx='0.5' cy='0.5' r='0.5'><stop offset='0' stop-color='#fff' stop-opacity='1'/>"
-             "<stop offset='0.7' stop-color='#fff' stop-opacity='0.5'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>"
-             "<mask id='rm'><rect x='0' y='0' width='780' height='320' fill='url(#raysfade)'/></mask>"
-             "<pattern id='sgh' width='36' height='18' patternUnits='userSpaceOnUse'>"
-             + ''.join(f"<circle cx='{cx}' cy='{cy}' r='{r}' fill='none' stroke='#F1E4C6' stroke-width='1.1'/>"
-                       for cx, cy in ((0, 18), (36, 18), (18, 9), (0, 0), (36, 0)) for r in (17, 12.5, 8, 3.5))
-             + "</pattern>"
-             "</defs>")
     S.append("<rect width='780' height='320' fill='#FFFDF8'/>")
     # すみの青海波（うすく）
     S.append("<g opacity='0.75'><path d='M0 0 H190 C150 40 110 60 0 70 Z' fill='url(#sgh)'/>"
@@ -179,14 +191,15 @@ def banner_svg():
         S.append(sakura_svg(x, y, r, rot))
     for (x, y, r, rot) in ((178, 40, 13, 15), (610, 34, 12, -20), (170, 168, 11, 40)):
         S.append(clover_svg(x, y, r, rot))
+    P['bg'] = ''.join(S)
     # 蹄鉄
-    S.append(shoe_svg(390, 164, 170, 128, web=(54, 48, 42), th0=146))
+    P['shoe'] = shoe_svg(390, 164, 170, 128, web=(54, 48, 42), th0=146)
     # 招き馬
-    ch = 302
-    cw = ch * MW / MH
-    S.append(f"<svg x='{f2(392 - cw / 2)}' y='{f2(319 - ch)}' width='{f2(cw)}' height='{f2(ch)}' viewBox='0 0 {MW} {MH}'>"
-             + maneki_svg(MW, MH).split('>', 1)[1].rsplit('</svg>', 1)[0] + "</svg>")
+    x0, y0, cw, ch = maneki_box()
+    P['maneki'] = (f"<svg x='{f2(x0)}' y='{f2(y0)}' width='{f2(cw)}' height='{f2(ch)}' viewBox='0 0 {MW} {MH}'>"
+                   + maneki_svg(MW, MH, rig).split('>', 1)[1].rsplit('</svg>', 1)[0] + "</svg>")
     # 手前の金貨・桜
+    S = []
     for (x, y, r, rot) in ((96, 252, 25, 0), (146, 288, 20, 15), (654, 262, 27, -10), (706, 224, 18, 8)):
         S.append(coin_svg(x, y, r, rot))
     for (x, y, r, rot) in ((52, 262, 14, 30), (742, 290, 15, -12), (588, 296, 10, 4)):
@@ -195,7 +208,14 @@ def banner_svg():
     for (x, y, r, c) in ((136, 118, 9, '#FFD45A'), (628, 128, 10, '#FFD45A'), (250, 24, 7, '#FFD45A'), (536, 20, 6, '#FF8A80'),
                          (60, 108, 6, '#FF8A80'), (742, 98, 8, '#FFD45A'), (226, 300, 5, '#FFD45A'), (572, 302, 6, '#FF8A80')):
         S.append(sparkle(x, y, r, c))
-    return f"<svg xmlns='http://www.w3.org/2000/svg' width='780' height='320' viewBox='0 0 780 320'>" + ''.join(S) + "</svg>"
+    P['fg'] = ''.join(S)
+    return P
+
+
+def banner_svg():
+    P = parts()
+    return (f"<svg xmlns='http://www.w3.org/2000/svg' width='780' height='320' viewBox='0 0 780 320'>"
+            + P['defs'] + P['bg'] + P['shoe'] + P['maneki'] + P['fg'] + "</svg>")
 
 
 if __name__ == '__main__':
