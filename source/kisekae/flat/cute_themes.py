@@ -202,13 +202,15 @@ def acc_sea_all(m):
 ACC = dict(newyear=acc_newyear, snow=acc_snow, autumn=acc_autumn, sea=acc_sea_all, sakura=acc_sakura)
 
 
-def draw_cute(img, theme, W, Hh):
-    sp = SPOTS[theme]
+def draw_cute(img, theme, W, Hh, spec=None, shadow_marks=None):
+    """spec：ポーズやカメラを かえた spec（足ぶみのコマ：step_run.py）。shadow_marks：影の大きさを この目印（ひづめ・いちばん下）で決める（コマで影が動かないように）"""
+    sp = spec or SPOTS[theme]
     rgb, a, m = draw_horse(sp, PALS[theme], W, Hh, acc=ACC[theme], number='1', name='flat_' + theme)
     # 影（地面）：ぼかしは numpy で（いつも同じ絵になるように）
     col, k = sp['shadow']
-    xs = [h[0] for h in m['hooves']]
-    gy = m['bottom']
+    ms = shadow_marks or m
+    xs = [h[0] for h in ms['hooves']]
+    gy = ms['bottom']
     if theme == 'sea':
         shadow = ((min(xs) + max(xs)) / 2, gy + 3, (max(xs) - min(xs)) / 2 + 20, 6.0)
     else:

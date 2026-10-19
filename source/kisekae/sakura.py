@@ -5,7 +5,8 @@
    視差効果を減らす（prefers-reduced-motion）なら消える（壁紙の絵にも舞う花びらが描いてある）。
    claude.ai のキャンバスは、アップロードした SVG の <style> を消してしまうので、キャンバスの判定画面には じかに入れる（inline・動きの CSS はページの <style>）：
      python3 sakura.py <出力フォルダ>                                → sakura_fall.svg（ファイルの形・<style>つき・390×160・背景なし）
-     python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html>  → ＋判定画面の上の絵を「絵＋花びら」の形に書きかえる"""
+     python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html>  → ＋判定画面の上の絵を「絵＋花びら」の形に書きかえる
+     python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が いつも ゆっくり足ぶみして 首を動かす（step_wall.py）"""
 import sys, os, math, re, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -71,23 +72,28 @@ def fall_svg(kn='sk', css=True, cls=''):
             f'<defs>{st}{defs}</defs><g class="skf">{body}</g></svg>')
 
 
-def inline(blob, alt=ALT, p='sb'):
+def inline(blob, alt=ALT, p='sb', step=None):
     """ページにじかに入れる形：<div class="bnrw">（壁紙の絵の <img class="bnr"> ＋ 花びらの <svg class="skfall">）と、ページの <style> に入れる CSS。戻り値 (html, css)"""
     s = fall_svg(kn=f'{p}k', css=False, cls='skfall')
     for i in INLINE_IDS:
         s = s.replace(f'id="{i}"', f'id="{p}{i}"').replace(f'url(#{i})', f'url(#{p}{i})')
     s = s.replace(' xmlns="http://www.w3.org/2000/svg"', '')
-    html = f'<div class="bnrw"><img class="bnr" src="{blob}" alt="{alt}">{s}</div>'
-    css = ('.bnrw{position:relative;flex:none;overflow:hidden}.bnrw .skfall{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
+    hh, hc = '', ''
+    if step is not None:                             # 馬が いつも ゆっくり足ぶみして 首を動かす（step_wall.py・コマは flat/step_run.py）
+        import step_wall
+        hh, hc = step_wall.sprite('sakura', *step)
+        alt = step_wall.alt_with(alt)
+    html = f'<div class="bnrw"><img class="bnr" src="{blob}" alt="{alt}">{hh}{s}</div>'
+    css = (hc + '.bnrw{position:relative;flex:none;overflow:hidden}.bnrw .skfall{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
            + fall_css('.bnrw', f'{p}k', tag=False))
     return html, css
 
 
-def judge_inline(fn):
+def judge_inline(fn, step=None):
     """判定画面（Judge_Sakura.dc.html）の上の絵を「絵＋花びら」の形に書きかえる（<img class="bnr"> か、前に入れた <div class="bnrw">）。CSS は <style> の最後（印のあいだ）"""
     page = open(fn, encoding='utf-8').read()
     m = re.search(r'<img class="bnr" src="(/_blob/[0-9a-f]{32})"', page)
-    html, css = inline(m.group(1))
+    html, css = inline(m.group(1), step=step)
     page, n = re.subn(r'<div class="bnrw">.*?</svg></div>|<img class="bnr" [^>]*>', lambda _: html, page, count=1, flags=re.S)
     assert n == 1, 'banner not found'
     block = f'/* 桜の壁紙：花びらが降る（sakura.py） */\n{css}\n/* /桜の壁紙 */\n'
@@ -101,5 +107,10 @@ def judge_inline(fn):
 if __name__ == '__main__':
     out = sys.argv[1]
     open(f'{out}/sakura_fall.svg', 'w').write(fall_svg())
+    step = None
+    if '--step' in sys.argv:                         # 馬の足ぶみ（step_blobs.json・step_run.json）
+        import step_wall
+        i = sys.argv.index('--step')
+        step = step_wall.load(sys.argv[i + 1], sys.argv[i + 2])
     if '--judge' in sys.argv:
-        judge_inline(sys.argv[sys.argv.index('--judge') + 1])
+        judge_inline(sys.argv[sys.argv.index('--judge') + 1], step=step)

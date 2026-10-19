@@ -7,7 +7,8 @@
    視差効果を減らす（prefers-reduced-motion）なら消える（壁紙の絵にも降る雪が描いてある）。
    claude.ai のキャンバスは、アップロードした SVG の <style> を消してしまうので、キャンバスの判定画面には じかに入れる（inline・動きの CSS はページの <style>）：
      python3 yuki.py <出力フォルダ>                               → yuki_fall.svg（ファイルの形・<style>つき・390×160・背景なし）
-     python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html>  → ＋判定画面の上の絵を「絵＋降る雪」の形に書きかえる"""
+     python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html>  → ＋判定画面の上の絵を「絵＋降る雪」の形に書きかえる
+     python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が いつも ゆっくり足ぶみして 首を動かす（step_wall.py）"""
 import sys, os, math, re, random
 
 W, H = 390, 160
@@ -106,23 +107,28 @@ def fall_svg(kn='yk', css=True, cls=''):
             f'<defs>{st}{defs}</defs><g class="ykf">{body}</g></svg>')
 
 
-def inline(blob, alt=ALT, p='sn'):
+def inline(blob, alt=ALT, p='sn', step=None):
     """ページにじかに入れる形：<div class="bnrw">（壁紙の絵の <img class="bnr"> ＋ 雪の <svg class="ykfall">）と、ページの <style> に入れる CSS。戻り値 (html, css)"""
     s = fall_svg(kn=f'{p}k', css=False, cls='ykfall')
     for i in INLINE_IDS:
         s = s.replace(f'id="{i}"', f'id="{p}{i}"').replace(f'href="#{i}"', f'href="#{p}{i}"')
     s = s.replace(' xmlns="http://www.w3.org/2000/svg"', '')
-    html = f'<div class="bnrw"><img class="bnr" src="{blob}" alt="{alt}">{s}</div>'
-    css = ('.bnrw{position:relative;flex:none;overflow:hidden}.bnrw .ykfall{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
+    hh, hc = '', ''
+    if step is not None:                             # 馬が いつも ゆっくり足ぶみして 首を動かす（step_wall.py・コマは flat/step_run.py）
+        import step_wall
+        hh, hc = step_wall.sprite('snow', *step)
+        alt = step_wall.alt_with(alt)
+    html = f'<div class="bnrw"><img class="bnr" src="{blob}" alt="{alt}">{hh}{s}</div>'
+    css = (hc + '.bnrw{position:relative;flex:none;overflow:hidden}.bnrw .ykfall{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
            + fall_css('.bnrw', f'{p}k', tag=False))
     return html, css
 
 
-def judge_inline(fn):
+def judge_inline(fn, step=None):
     """判定画面（Judge_Snow.dc.html）の上の絵を「絵＋降る雪」の形に書きかえる（<img class="bnr"> か、前に入れた <div class="bnrw">）。CSS は <style> の最後（印のあいだ）"""
     page = open(fn, encoding='utf-8').read()
     m = re.search(r'<img class="bnr" src="(/_blob/[0-9a-f]{32})"', page)
-    html, css = inline(m.group(1))
+    html, css = inline(m.group(1), step=step)
     page, n = re.subn(r'<div class="bnrw">.*?</svg></div>|<img class="bnr" [^>]*>', lambda _: html, page, count=1, flags=re.S)
     assert n == 1, 'banner not found'
     block = f'/* 雪の壁紙：雪が降る（yuki.py） */\n{css}\n/* /雪の壁紙 */\n'
@@ -136,5 +142,10 @@ def judge_inline(fn):
 if __name__ == '__main__':
     out = sys.argv[1]
     open(f'{out}/yuki_fall.svg', 'w').write(fall_svg())
+    step = None
+    if '--step' in sys.argv:                         # 馬の足ぶみ（step_blobs.json・step_run.json）
+        import step_wall
+        i = sys.argv.index('--step')
+        step = step_wall.load(sys.argv[i + 1], sys.argv[i + 2])
     if '--judge' in sys.argv:
-        judge_inline(sys.argv[sys.argv.index('--judge') + 1])
+        judge_inline(sys.argv[sys.argv.index('--judge') + 1], step=step)
