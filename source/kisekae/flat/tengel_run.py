@@ -5,7 +5,8 @@
      （まわりの 暗い紺だけから ぼかして ひろげる）。頭のうしろの 盾の金のふち（たての線）は 下の所を 写して つなぐ
    - tengel_<部品>.webp（すき通し）：足は 上と下の2つ（ひじ・ひざ／ももと すね）・頭・体と騎手（足が 体のうしろを 通るように 足の上に重ねる）
      どれも 元の絵の画素のまま（まわりの こい線ごと 少し大きめに 切りぬく）。止まった形で重ねると いまの絵と同じ
-   - tengel_run.json：部品ごとの 置く場所（780×320）・回る中心、数字（0と1）の 場所・大きさ・色（数字の色と うしろの色）
+     （足は いちばん大きな ひとかたまりだけ：はなれた 小さな かけらは 絵から ぬくだけ。奥の前足は 少し暗く：FAR_DIM）
+   - tengel_run.json：部品ごとの 置く場所（780×320）・回る中心・足の さき（tip）、数字（0と1）の 場所・大きさ・色（数字の色と うしろの色）
    - tengel_icon.webp（312×312）：的中ボタン（gen_fx.py の tg_face_svg）に使う テンゲルのアイコン（アプリのアイコン icons/icon3-512.png を 小さくしただけ）
    python3 flat/tengel_run.py <出力フォルダ> [元の絵] [--check]（--check：止まった形で重ねて いまの絵と くらべる）"""
 import sys, os, json
@@ -38,6 +39,9 @@ BODY = [(150, 150), (160, 110), (176, 95), (205, 90), (232, 104), (262, 112), (2
 PIVOT = dict(FL1u=(221, 177), FL1l=(253.5, 199), FL2u=(250, 180), FL2l=(279.5, 181.5), HL1u=(151, 171), HL1l=(141, 191), HL2=(164, 172), HEAD=(262, 111))
 BAR = dict(x=(283, 292.5), gap=(72, 118.5), src=(121, 135))                             # 頭のうしろの 盾の金のふち
 PARTS = ('HL2', 'FL2l', 'FL2u', 'HL1l', 'HL1u', 'FL1l', 'FL1u', 'BODY', 'HEAD')          # 重ねる順（下から）
+LEG_PARTS = ('FL1u', 'FL1l', 'FL2u', 'FL2l', 'HL1u', 'HL1l', 'HL2')
+CHILD = dict(FL1u='FL1l', FL2u='FL2l', HL1u='HL1l')                                     # 上の部品 → 下の部品（ひざ・飛節）
+FAR_DIM = dict(FL2u=0.8, FL2l=0.8)       # 奥の前足は 少し暗く（走ると 手前の前足と 交差するので、奥だと わかるように）
 
 # 数字（0と1）：ある所（ドームの中・左の行・下の行）と 字の間の目安
 DIGIT_REG = dict(D=[(110, 118), (119, 114), (151, 114), (155, 116), (155, 150), (149, 159), (124, 167), (110, 167)],
@@ -106,9 +110,17 @@ def part_masks(S):
     ell = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     M = {k: ((cv2.dilate(m, ell) & (1 - other)) | m) for k, m in raw.items()}
     legs = np.zeros((S.Hs, S.Ws), np.uint8)
-    for k in ('FL1u', 'FL1l', 'FL2u', 'FL2l', 'HL1u', 'HL1l', 'HL2'):
+    for k in LEG_PARTS:
         legs |= M[k]
     M['BODY'] = (S.poly(BODY) & (S.V > 60).astype(np.uint8) & (1 - legs)).astype(np.uint8)
+    # 足は いちばん大きな ひとかたまりだけ 動かす（はなれた 小さな かけらは 走ると 飛びちって見えるので、絵から ぬくだけ：DROP）
+    M['DROP'] = np.zeros((S.Hs, S.Ws), np.uint8)
+    for k in LEG_PARTS:
+        n, lab, st, _ = cv2.connectedComponentsWithStats(M[k], connectivity=8)
+        if n > 2:
+            big = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+            M['DROP'] |= (M[k] & (lab != big)).astype(np.uint8)
+            M[k] = (lab == big).astype(np.uint8)
     return M
 
 
@@ -220,9 +232,25 @@ def build(outdir, src=TB.SRC, check=False):
     layers = {}
     for k in PARTS:
         im, (x, y, w, h) = rgba_part(S, M[k])
+        layers[k] = (im.copy(), x, y)
+        if k in FAR_DIM:
+            im[..., :3] = np.clip(im[..., :3].astype(np.float32) * FAR_DIM[k] + .5, 0, 255).astype(np.uint8)
         cv2.imwrite(os.path.join(outdir, f'tengel_{k.lower()}.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 92])
         run['parts'][k] = dict(box=[x, y, w, h], pivot=list(PIVOT.get(k, (0, 0))))
-        layers[k] = (im, x, y)
+    # 足の さき（ひざ・飛節は 下の部品の 回る中心・ひづめは つけねから 遠い所（いちばん遠い所の 85% より先）の まん中）：
+    # 走る形の 計算に使う（tengel_wall.py）
+    for k in LEG_PARTS:
+        if k in CHILD:
+            tip = PIVOT[CHILD[k]]
+        else:
+            im, x, y = layers[k]
+            ys, xs = np.nonzero(im[..., 3] > 128)
+            px, py = PIVOT[k]
+            gx, gy = xs + x + .5, ys + y + .5
+            d = np.hypot(gx - px, gy - py)
+            far = d >= d.max() * .85
+            tip = (round(float(gx[far].mean()), 1), round(float(gy[far].mean()), 1))
+        run['parts'][k]['tip'] = list(tip)
     run['digits'] = digits(S)
     ic = cv2.imread(ICON, cv2.IMREAD_COLOR)
     assert ic is not None and ic.shape[:2] == (512, 512), ICON
@@ -234,13 +262,17 @@ def build(outdir, src=TB.SRC, check=False):
         comp = cv2.imread(os.path.join(outdir, 'tengel_plate.webp')).astype(np.float32)
         for k in PARTS:
             im = cv2.imread(os.path.join(outdir, f'tengel_{k.lower()}.webp'), cv2.IMREAD_UNCHANGED).astype(np.float32)
+            if k in FAR_DIM:
+                im[..., :3] /= FAR_DIM[k]                     # 暗くした分を もどして くらべる
             x, y = layers[k][1], layers[k][2]
             h, w = im.shape[:2]
             a = im[..., 3:] / 255
             comp[y:y + h, x:x + w] = comp[y:y + h, x:x + w] * (1 - a) + im[..., :3] * a
         d = np.abs(comp - ref).max(2)
-        print('止まった形と いまの絵（切り出し・webp まえ）：ちがい 平均', round(float(d.mean()), 2), '最大', int(d.max()),
-              ' 8段より大きい画素', int((d > 8).sum()))
+        drop = to_banner(M['DROP'].astype(np.float32)) > 0.02
+        keep = ~cv2.dilate(drop.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        print('止まった形と いまの絵（切り出し・webp まえ・ぬいた かけらの所は のぞく）：ちがい 平均', round(float(d[keep].mean()), 2),
+              '最大', int(d[keep].max()), ' 8段より大きい画素', int((d[keep] > 8).sum()), ' ぬいた かけら', int(drop.sum()), '画素')
         cv2.imwrite(os.path.join(outdir, 'check_rest.png'), np.clip(comp, 0, 255).astype(np.uint8))
     return run
 
