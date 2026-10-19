@@ -11,7 +11,10 @@
        ヒヒィーン … 体を起こして 首を上げ 頭をふり上げ、前足を 交互に 前へ 打ち出して 頭を少しふる（NEIGH_S 秒・字はなし）
        ずっ！ずっ！ … 右を向いている時だけ。台ごと（台の影も）ずっ！と5回 右へすべって 画面の外へ（あとの2回で うすくなって消える・
                       すべるたびに 台の下に 粉が ふわっ）→ しばらく 何もない → 左を向いて 画面の右から ずっ！と5回 もとの場所へ もどる（24秒）。
-                      動いているあいだは 像も台も影もない 背景だけの絵（plate）を いまの絵の上に重ねる
+                      動いているあいだは 像も台も影もない 背景だけの絵（plate）を いまの絵の上に重ねる。
+                      はじめと おわりの つなぎ目（まさちゃんの指定「中央についてからリセットされるとき、馬の切り替わりが映ってるから繋ぎが分からないように」）：
+                      すべる絵と 背景だけの絵を ひとまとめ（.mwG）にして、止まっている時に いまの絵と ふわっと 入れかえる
+                      （はじめ FADE_IN 秒・おわり FADE_OUT 秒。どちらも 同じ形の 同じ絵どうしなので、入れかわりが 見えない）
      ずっ！ずっ！の あいだも ふり向きの1回りは 見えない所で すすむ（もどった時に ちょうど左向きの 休み）
    - ページを開くと 0秒（いまの絵と同じ）から。視差効果を減らす（prefers-reduced-motion）なら 重ねる絵を出さない（いまの絵だけ）
    - キャンバスでは /_blob/<id>（marble_blobs.json の base・look・turnB・turnD・neighL・neighR・spR・spL・plate）・切りぬく場所と コマのならびは marble_run.json
@@ -43,6 +46,7 @@ OUT_OP = (1, 1, 1, 1, .55, 0)                              # 出ていく：う�
 BACK_X = (250, 180, 122, 74, 34, 0)                        # もどる：右から 左へ（だんだん小さく）
 BACK_OP = (0, .45, 1, 1, 1, 1)
 LIFT, TILT = 1.5, 1.4            # ずっ！の時に 少し うき上がる（画素）・すべる向きへ かたむく（度）
+FADE_IN, FADE_OUT = 0.3, 0.6     # ずっ！ずっ！の はじめ・おわりに いまの絵と ふわっと 入れかえる 秒（止まっている時）
 DT = 0.005                       # 予定を しらべる きざみ（秒）
 SEED = 0                         # 出来事の順番を決める 乱数の はじめ（いつも同じ予定になるように：schedule が しらべて決める）
 
@@ -222,20 +226,20 @@ def tracks(run):
                         v = pos[f'N{side}{k:02d}'] + ';opacity:1'
             pts.append((round(t, 3), v))
         F[key] = (EV_LOOP, pts)
-    plate = [(0.0, 'opacity:0')]
+    group = [(0.0, 'opacity:0')]                                       # すべる絵と 背景だけの絵の ひとまとめ（ふわっと 入れかえる）
     S = {'spR': [(0.0, 'opacity:0;transform:none')], 'spL': [(0.0, 'opacity:0;transform:none')], 'dust': [(0.0, 'opacity:0;transform:none')]}
     for t0, kind, side in sorted(ev):
         if kind != 'slide':
             continue
         moves, dust, (a, b) = slide_parts(t0)
         assert b <= EV_LOOP, 'slide across the loop end'
-        plate += [(a, 'opacity:1'), (b, 'opacity:0')]
+        group += [(a, 'opacity:0'), (a + FADE_IN, 'opacity:1'), (b, 'opacity:1'), (b + FADE_OUT, 'opacity:0')]
         for who in ('spR', 'spL'):
             mv = [m for m in moves if m[0] == who]
             S[who].append((mv[0][1] - 0.002, 'opacity:0;transform:none'))
             for _, t, x, y, r, op in mv:
                 S[who].append((t, f'opacity:{op:.2f};transform:translate({x:.1f}px,{y:.2f}px) rotate({r:.2f}deg)'))
-            end = b + 0.002 if who == 'spL' else mv[-1][1] + 0.01        # もどった絵は 台を消すのより 少しあとまで（いまの絵と重なって 同じ絵）
+            end = b + FADE_OUT + 0.002 if who == 'spL' else mv[-1][1] + 0.01   # もどった絵は ふわっと 入れかわり おわるまで
             S[who].append((end - 0.002, S[who][-1][1]))
             S[who].append((end, 'opacity:0;transform:none'))
         for t, x, sgn, op in dust:
@@ -245,14 +249,14 @@ def tracks(run):
                 S['dust'].append((t + 0.55 * u, f'opacity:{0.8 * op * (1 - u) ** 1.4 if j else 0:.2f};'
                                   f'transform:translate({x - sgn * 5 * u:.1f}px,0) scale({0.5 + 0.8 * ease_out(u):.2f},{0.6 + 0.5 * ease_out(u):.2f})'))
             S['dust'].append((t + 0.55 + 0.002, 'opacity:0;transform:none'))
-    return F, plate, S, ev
+    return F, group, S, ev
 
 
 def inline(blobs, run, alt=ALT):
     """(html, css)。blobs：base（いまの止まった絵）・シート（look・turnB・turnD・neighL・neighR）・spR・spL・plate → '/_blob/<id>'。run：marble_run.json"""
     x0, y0, x1, y1 = (v // 2 for v in run['crop'])
     fw, fh = (v // 2 for v in run['frame'])
-    F, plate, S, ev = tracks(run)
+    F, group, S, ev = tracks(run)
     css = ('.mww{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
            '.mww .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
            '.mww i{position:absolute;display:block;font-style:normal;pointer-events:none}'
@@ -264,18 +268,20 @@ def inline(blobs, run, alt=ALT):
         css += (f'.mww .{cls}{{background-image:url({blobs[key]});background-size:{sh["cols"] * fw}px {sh["rows"] * fh}px;'
                 + ('' if key == 'look' else 'opacity:0;') + f'animation-name:{cls}K;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period))
         html += f'<i class="mwF {cls}" aria-hidden="true"></i>'
+    css += (f'.mww .mwG{{left:0;top:0;width:390px;height:160px;opacity:0;animation:mwGK {EV_LOOP:g}s linear infinite}}'   # ひとまとめ：ふわっと 入れかえる
+            + _kf('mwGK', group, EV_LOOP, True))
+    html += '<i class="mwG" aria-hidden="true">'
     px0, py0, px1, py1 = (v / 2 for v in run['plate'])              # 背景だけの絵：像と台と影の所だけ（ほかは すき通し）
-    css += (f'.mww .mwP{{left:{px0:g}px;top:{py0:g}px;width:{px1 - px0:g}px;height:{py1 - py0:g}px;opacity:0;'
-            f'background:url({blobs["plate"]}) 0 0/{px1 - px0:g}px {py1 - py0:g}px no-repeat;'
-            f'animation:mwPK {EV_LOOP:g}s step-end infinite}}' + _kf('mwPK', plate, EV_LOOP))
-    html += '<i class="mwP" aria-hidden="true"></i>'
+    css += (f'.mww .mwP{{left:{px0:g}px;top:{py0:g}px;width:{px1 - px0:g}px;height:{py1 - py0:g}px;'
+            f'background:url({blobs["plate"]}) 0 0/{px1 - px0:g}px {py1 - py0:g}px no-repeat}}')
+    html += '<i class="mwP"></i>'
     b = run['sprites']['spR']
     fxc, fyb = b['foot'][0] / 2, b['foot'][1] / 2
     bw = (b['base'][1] - b['base'][0]) / 2
     dw = bw + 36
     css += (f'.mww .mwU{{left:{fxc - dw / 2:g}px;top:{fyb - 13:g}px;width:{dw:g}px;height:16px;opacity:0;transform-origin:50% 100%;'
             f'animation:mwUK {EV_LOOP:g}s linear infinite}}.mww .mwU svg{{display:block;width:100%;height:100%}}' + _kf('mwUK', S['dust'], EV_LOOP, True))
-    html += ('<i class="mwU" aria-hidden="true">'
+    html += ('<i class="mwU">'
              f'<svg viewBox="0 0 {dw:g} 16" preserveAspectRatio="none"><defs><radialGradient id="mwDu"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/>'
              '<stop offset=".6" stop-color="#EDE6DA" stop-opacity=".55"/><stop offset="1" stop-color="#E2D9CA" stop-opacity="0"/></radialGradient></defs>'
              + ''.join(f'<ellipse cx="{cx:g}" cy="{cy:g}" rx="{rx:g}" ry="{ry:g}" fill="url(#mwDu)"/>'
@@ -289,8 +295,8 @@ def inline(blobs, run, alt=ALT):
         css += (f'.mww .{cls}{{left:{sx0:g}px;top:{sy0:g}px;width:{sx1 - sx0:g}px;height:{sy1 - sy0:g}px;opacity:0;'
                 f'background:url({blobs[key]}) 0 0/{sx1 - sx0:g}px {sy1 - sy0:g}px no-repeat;transform-origin:{fx:g}px {fy:g}px;'
                 f'animation:{cls}K {EV_LOOP:g}s linear infinite}}' + _kf(f'{cls}K', S[key], EV_LOOP, True))
-        html += f'<i class="{cls}" aria-hidden="true"></i>'
-    html += '</div>'
+        html += f'<i class="{cls}"></i>'
+    html += '</i></div>'
     css += '@media (prefers-reduced-motion:reduce){.mww i{display:none}}'
     return html, css
 
@@ -299,7 +305,8 @@ def judge_inline(fn, blobs, run):
     """判定画面（Judge_Marble.dc.html）の上の絵を書きかえる（<img class="bnr"> か、前に入れた <div class="mww">）。CSS は <style> の最後（印のあいだ）"""
     page = open(fn, encoding='utf-8').read()
     html, css = inline(blobs, run)
-    page, n = re.subn(r'<div class="mww" .*?<i class="mwL" aria-hidden="true"></i></div>|<div class="mww" .*?<i class="mwS" aria-hidden="true"></i></div>|<img class="bnr" [^>]*>',
+    page, n = re.subn(r'<div class="mww" .*?<i class="mwL"></i></i></div>|<div class="mww" .*?<i class="mwL" aria-hidden="true"></i></div>|'
+                      r'<div class="mww" .*?<i class="mwS" aria-hidden="true"></i></div>|<img class="bnr" [^>]*>',
                       lambda _: html, page, count=1, flags=re.S)
     assert n == 1, 'banner not found'
     block = f'/* 大理石の壁紙：8秒ごとに 像の馬が うしろを2度見して、くるっと 反対を向く・ときどき いななく／ずっずっと 外へ出て もどる（marble_wall.py） */\n{css}\n/* /大理石の壁紙 */\n'
