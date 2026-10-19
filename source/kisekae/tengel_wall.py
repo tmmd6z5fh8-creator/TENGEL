@@ -1,16 +1,12 @@
 """マスター帯の壁紙の動き（まさちゃんの指定「常にテンゲルのアイコンの馬がアイコン上で走ってる、お尻から後ろ脚の当たりにある数字も常に動いている、
-   全体的に緑の雷が枠全体にビリビリと輝いている」・2回目「濃い緑のビリビリも混ぜて、それぞれ消えたりついたり・ピクセル1番細い線に」
-   「馬の走り方を 現実の馬の走り方に（動画を見本に）」）：ページに入れる HTML と CSS
-   - 絵は flat/tengel_run.py の 足と頭を ぬいた絵（plate）と、足（前足2本・後ろ足2本：それぞれ 上と下）・頭・体と騎手の 切りぬき。
-     キャンバスでは /_blob/<id>（tengel_blobs.json）・置く場所と 回る中心・足の さき・数字の場所は tengel_run.json。1つの <svg>（780×320 を 390×160 に）に重ねる
-   - 馬が走る（GALLOP 秒で 1歩）：本物の馬の ギャロップ（まさちゃんの 動画を 見本に）。4本の足が 順に 地面につく
-     （奥の後ろ → 手前の後ろ → 奥の前 → 手前の前：FOOTFALL）→ 4本とも 宙に浮く。
-     ひづめの 通り道（PATH）を 決めて、2本の骨の 向きを 計算する（IK：前足の ひざは 前へ・後ろ足の 飛節は うしろへ まがる）。
-     地面に ついている間は ひづめが まっすぐ うしろへ 同じ速さで（地面を けっている）、はなれると うしろで はね上がって たたみ
-     （前足は ひづめを ひじの下へ・後ろ足は うしろへ けり上げて 飛節を まげる）、前へ ふり出して のばし、前で 地面につく。
-     体は エンブレムの 形のまま 動かさない。頭は 足に合わせて うなずく（前足が つく時に 下がる）。足は 体のうしろを 通る
+   全体的に緑の雷が枠全体にビリビリと輝いている」・2回目「濃い緑のビリビリも混ぜて、それぞれ消えたりついたり・ピクセル1番細い線に」・
+   3回目「脚の切れ目が見えないように一体型の脚に・体もジョッキーも動画の馬と騎手のように・もう少しゆっくり」）：ページに入れる HTML と CSS
+   - 絵は flat/tengel_run.py の 馬を ぬいた絵（plate）と、走る馬の コマを よこ1列に 並べた シート（horse：flat/tengel_gallop.py で 描く）。
+     キャンバスでは /_blob/<id>（tengel_blobs.json）・コマの 大きさと 置く場所・数字の場所は tengel_run.json。1つの <svg>（780×320 を 390×160 に）に重ねる
+   - 馬が走る：シートを steps で めくる（1歩 0.75秒・18コマ）。体が 上下に ゆれて 前後に かたむき、頭が うなずき、騎手は 体を 低く たもつ。
+     足は 金の 板で 描きなおした 一体の 足（ひざ・飛節で とがって つながる）で、4本が 順に 地面について 宙に浮く
    - 数字：おしり（ドーム）・その左の行・後ろ足の下の行の 0と1 が、かわるがわる 反対の数字に（字のうしろの色で 前の字を かくして 書く）。
-     かわる時は 右（馬）から 左へ 波のように 流れる（DIGIT_V）。数字は 足の下（足が 数字の上を 通る）
+     かわる時は 右（馬）から 左へ 波のように 流れる（DIGIT_V）。数字は 馬の 下（足が 数字の上を 通る）
    - 緑の雷：明るい緑と 濃い緑の いなずまが 枠に そって いくつも（EDGE_N 本）。1本ずつ べつべつに ついたり 消えたり
      （1回に 2〜7回 ちらちら光って、そのたび 形が かわる・つく間かくも 1本ずつ ちがう）。線は いちばん細く（芯は 0.7＝画面の 約1画素）・
      まわりに うすい光。内がわへ 小さく 枝わかれ。ときどき 枠から 中へ 大きな いなずま（同じ道を 3回 光る・枝わかれ：BOLTS）。
@@ -18,29 +14,11 @@
    - 視差効果を減らす（prefers-reduced-motion）なら 動かさない（いまの絵：雷も なし）
    クラスの名前は tq…（的中ボタンの .tg とは別）。いなずまの 形の作り方（frac・bolt_use）は 的中ボタン（gen_fx.py）も使う
    python3 tengel_wall.py --judge <Judge_Tengel.dc.html> <tengel_blobs.json> <tengel_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
-   python3 tengel_wall.py --plan <tengel_run.json>  → 1歩の 足の向きと ひづめの 位置・雷の ついている 本数"""
+   python3 tengel_wall.py --plan  → 雷の ついている 本数（走り方の 予定は python3 flat/tengel_gallop.py --plan）"""
 import sys, re, json, math, random
 
 ALT = ('テンゲルの絵（金と紺の盾のエンブレムに、騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線、TENGER の金の文字・「独自の統計・オッズ分析による馬券検討支援システム」・「テンゲル」の金の札）'
-       '（いつも エンブレムの馬が 本物の馬のように 走り、おしりから 後ろ足の まわりの 数字が 動いて、枠じゅうに 明るい緑と 濃い緑の 雷が ビリビリ 光る）')
-
-# ---------- 走り方 ----------
-GALLOP = 0.50                   # 1歩（秒）
-STEPS = 48                      # 1歩の キーフレーム
-FOOTFALL = dict(HL2=0.00, HL1=0.045, FL2=0.38, FL1=0.60)   # ひづめが つく 位相：奥の後ろ → 手前の後ろ → 奥の前 → 手前の前（動画では 前足2本の あいだが ひらく）
-LEGS = dict(FL1=('F', 'FL1u', 'FL1l'), FL2=('F', 'FL2u', 'FL2l'), HL1=('H', 'HL1u', 'HL1l'), HL2=('H', 'HL2', None))
-CHAIN = dict(FL1l='FL1u', FL2l='FL2u', HL1l='HL1u')       # 下の部品 → 上の部品（ひざ・飛節から下は 上に ついていく）
-# ひづめの 通り道：つけね（ひじ・もも）からの 位置を 足の長さで わった値（x 前＋・y 下＋）。その足が つく時＝0。
-# 地面（ground）に ついている間（〜stance）は x0 → x1 へ まっすぐ・同じ速さ。宙は swing の点を なめらかに つなぐ（地面の 速さに つながる）
-PATH = dict(
-    F=dict(stance=0.30, ground=0.87, x0=0.48, x1=-0.46,
-           swing=[(0.36, -0.52, 0.70), (0.44, -0.30, 0.42), (0.52, 0.00, 0.36), (0.60, 0.30, 0.48), (0.68, 0.55, 0.62),
-                  (0.76, 0.68, 0.70), (0.86, 0.62, 0.78), (0.94, 0.53, 0.84)]),
-    H=dict(stance=0.27, ground=0.90, x0=0.18, x1=-0.48,
-           swing=[(0.35, -0.58, 0.64), (0.45, -0.50, 0.48), (0.56, -0.24, 0.44), (0.68, 0.10, 0.56), (0.80, 0.28, 0.72),
-                  (0.90, 0.23, 0.85)]))
-HIND_UP = (-70.0, -8.0)         # 後ろ足の 上の部品（飛節の上）の 向きの はば（短いので、ここで おさえて 下の部品を ひづめへ 向ける）
-HEAD_NOD = (4.5, 0.45)          # 頭の うなずき（ふれはば°, いちばん下がる 位相）
+       '（いつも エンブレムの馬が 本物の馬のように 体を ゆらして 走り、騎手も いっしょに 動き、おしりから 後ろ足の まわりの 数字が 動いて、枠じゅうに 明るい緑と 濃い緑の 雷が ビリビリ 光る）')
 
 # ---------- 数字 ----------
 DIGIT_P = (0.9, 1.3, 1.7, 2.1, 2.6)   # 数字が かわる 間（秒）
@@ -101,108 +79,15 @@ def vis_kf(name, ranges, period):
 
 
 # ---------- 馬 ----------
-def _cr(ext, p):
-    """(位相, x, y) の 列を Catmull-Rom で（間かくが ふぞろいでも）"""
-    i = max(j for j in range(1, len(ext) - 2) if ext[j][0] <= p)
-    out = []
-    for col in (1, 2):
-        p0, p1, p2, p3 = (ext[i + d][col] for d in (-1, 0, 1, 2))
-        t0, t1, t2, t3 = (ext[i + d][0] for d in (-1, 0, 1, 2))
-        m1 = (p2 - p0) / (t2 - t0)
-        m2 = (p3 - p1) / (t3 - t1)
-        h = t2 - t1
-        s = (p - t1) / h
-        out.append((2 * s**3 - 3 * s**2 + 1) * p1 + (s**3 - 2 * s**2 + s) * h * m1
-                   + (-2 * s**3 + 3 * s**2) * p2 + (s**3 - s**2) * h * m2)
-    return tuple(out)
-
-
-def hoof(kind, psi):
-    """足の位相 psi の ひづめの位置（つけねからの x・y を 足の長さで わった値）"""
-    spec = PATH[kind]
-    psi %= 1.0
-    st, gy, x0, x1 = spec['stance'], spec['ground'], spec['x0'], spec['x1']
-    if psi <= st:
-        return x0 + (x1 - x0) * psi / st, gy
-    v = (x1 - x0) / st
-    ext = [(st - .06, x1 - v * .06, gy), (st, x1, gy)] + list(spec['swing']) + [(1.0, x0, gy), (1.06, x0 + v * .06, gy)]
-    return _cr(ext, psi)
-
-
-def ik(a, b, tx, ty, knee_front, lim=None):
-    """つけね(0,0) → ひづめ (tx, ty)。上の骨 a・下の骨 b。戻り値：上と下の 向き（下＝0°・前＝＋）。
-       knee_front：ひざが 前（前足）・うしろ（後ろ足）。lim＝上の骨の 向きの はば（はみ出たら おさえて、下の骨は ひづめへ 向ける）"""
-    d = math.hypot(tx, ty)
-    d = min(max(d, abs(a - b) + 1e-3), a + b - 1e-3)
-    A = math.degrees(math.acos(max(-1.0, min(1.0, (a * a + d * d - b * b) / (2 * a * d)))))
-    ph = math.degrees(math.atan2(tx, ty))
-    au = ph + A if knee_front else ph - A
-    if lim:
-        au = min(max(au, lim[0]), lim[1])
-    kx, ky = a * math.sin(math.radians(au)), a * math.cos(math.radians(au))
-    return au, math.degrees(math.atan2(tx - kx, ty - ky))
-
-
-def _ang(p, q):
-    return math.degrees(math.atan2(q[0] - p[0], q[1] - p[1]))
-
-
-def pose(run, g):
-    """1歩の位相 g（0〜1）：部品ごとの 回転（CSS の rotate：＋＝時計回り）と ひづめの 位置（780×320）"""
-    P = run['parts']
-    rot, hooves = {}, {}
-    for L, (kind, up, lo) in LEGS.items():
-        hx, hy = hoof(kind, g - FOOTFALL[L])
-        rx, ry = P[up]['pivot']
-        rest_u = _ang(P[up]['pivot'], P[up]['tip'])
-        a = math.dist(P[up]['pivot'], P[up]['tip'])
-        if lo is None:                                      # 1まいの 足：ひづめの 向きへ
-            au = math.degrees(math.atan2(hx, hy))
-            rot[up] = -(au - rest_u)
-            hooves[L] = (rx + a * math.sin(math.radians(au)), ry + a * math.cos(math.radians(au)))
-            continue
-        b = math.dist(P[lo]['pivot'], P[lo]['tip'])
-        Lt = a + b
-        au, al = ik(a, b, hx * Lt, hy * Lt, knee_front=(kind == 'F'), lim=None if kind == 'F' else HIND_UP)
-        ru, rl = au - rest_u, al - _ang(P[lo]['pivot'], P[lo]['tip'])
-        rot[up] = -ru
-        rot[lo] = -(rl - ru)                                # 下は 上の中に 入っているので、上の 回転を 引く
-        kx, ky = rx + a * math.sin(math.radians(au)), ry + a * math.cos(math.radians(au))
-        hooves[L] = (kx + b * math.sin(math.radians(al)), ky + b * math.cos(math.radians(al)))
-    A, low = HEAD_NOD
-    rot['HEAD'] = A * math.cos(2 * math.pi * (g - low))     # ＋＝鼻先が 下がる
-    return rot, hooves
-
-
 def horse(blobs, run):
-    """(svg, css)：足・体・頭"""
-    P = run['parts']
-
-    def img(k):
-        x, y, w, h = P[k]['box']
-        return f'<image href="{blobs[k.lower()]}" x="{x}" y="{y}" width="{w}" height="{h}" preserveAspectRatio="none"/>'
-    seqs = {}
-    for i in range(STEPS + 1):
-        r, _ = pose(run, i / STEPS)
-        for k, v in r.items():
-            seqs.setdefault(k, []).append(v)
-    css = []
-    for k, seq in seqs.items():
-        px, py = P[k]['pivot']
-        keys = ''.join(f'{pct(i * GALLOP / STEPS, GALLOP)}{{transform:rotate({num(v, 1)}deg)}}' for i, v in enumerate(seq))
-        css.append(f'.tqw .tq{k}{{transform-box:view-box;transform-origin:{num(px)}px {num(py)}px;animation:tq{k} {GALLOP:g}s linear infinite}}'
-                   f'@keyframes tq{k}{{{keys}}}')
-    svg = ''
-    for k in run['order']:
-        if k in CHAIN:
-            continue                                   # 上の部品の中に入れる
-        if k == 'BODY':
-            svg += img(k)
-            continue
-        low = [c for c, up in CHAIN.items() if up == k]
-        inner = ''.join(f'<g class="tq{c}">{img(c)}</g>' for c in low)
-        svg += f'<g class="tq{k}">{inner}{img(k)}</g>'
-    return svg, ''.join(css)
+    """(svg, css)：走る馬の シート（よこ1列）を コマの 四角の 中で steps で めくる（ミリ秒の 整数で ずれない）"""
+    sh = run['sheet']
+    n, (cw, ch), (ax, ay) = sh['frames'], sh['cell'], sh['at']
+    ms = int(round(sh['period'] * 1000))
+    svg = (f'<svg x="{ax}" y="{ay}" width="{cw}" height="{ch}" viewBox="0 0 {cw} {ch}" overflow="hidden">'
+           f'<image class="tqH" href="{blobs["horse"]}" width="{n * cw}" height="{ch}" preserveAspectRatio="none"/></svg>')
+    css = f'.tqw .tqH{{animation:tqH {ms}ms steps({n}) infinite}}@keyframes tqH{{to{{transform:translateX(-{n * cw}px)}}}}'
+    return svg, css
 
 
 # ---------- 数字 ----------
@@ -417,7 +302,7 @@ def inline(blobs, run, alt=ALT):
     html = (f'<div class="bnr tqw" role="img" aria-label="{alt}"><svg viewBox="0 0 780 320" width="390" height="160" preserveAspectRatio="xMidYMin slice" aria-hidden="true">'
             f'<defs>{defs()}<g fill="none" stroke-linecap="round" stroke-linejoin="round">{ld}</g></defs>{im(blobs["banner"])}'
             f'<g class="tqA">{im(blobs["plate"])}{ds}{hs}<g fill="none" stroke-linecap="round" stroke-linejoin="round">{ls}</g></g></svg></div>')
-    css = ('.tqw{position:relative;overflow:hidden}.tqw svg{display:block;width:100%;height:100%}'
+    css = ('.tqw{position:relative;overflow:hidden}.tqw>svg{display:block;width:100%;height:100%}'
            + hc + dc + lc
            + '@media (prefers-reduced-motion:reduce){.tqw *{animation:none!important}.tqw .tqA{visibility:hidden}}')
     return html, css
@@ -441,16 +326,9 @@ def load_blobs(fn):
     return {k: (v if v.startswith('/_blob/') else f'/_blob/{v}') for k, v in json.load(open(fn)).items()}
 
 
-def plan(run):
-    """1歩の 足の向き・ひづめの 位置（12に わけて）と、枠の いなずまが ついている 本数"""
-    for i in range(12):
-        g = i / 12
-        rot, hv = pose(run, g)
-        on = [L for L in FOOTFALL if ((g - FOOTFALL[L]) % 1.0) < PATH[LEGS[L][0]]['stance']]
-        print(f'{g:.3f}', '地面:', ','.join(on) or '（宙）', ' ', ' '.join(f'{k}:{v:+.0f}' for k, v in rot.items()),
-              ' ひづめ', ' '.join(f'{L}({x:.0f},{y:.0f})' for L, (x, y) in hv.items()))
+def plan():
+    """枠の いなずまが ついている 本数（30秒ぶん・0.01秒ごと）"""
     _, _, _, plans = lightning()
-    # 0.01秒ごとに 何本 ついているか（いちばん長い 1回りの 公倍数は 長いので 30秒ぶん）
     cnt = []
     for i in range(3000):
         t = i * .01
@@ -466,7 +344,7 @@ def plan(run):
 
 if __name__ == '__main__':
     if '--plan' in sys.argv:
-        plan(json.load(open(sys.argv[sys.argv.index('--plan') + 1])))
+        plan()
     else:
         i = sys.argv.index('--judge')
         judge_inline(sys.argv[i + 1], load_blobs(sys.argv[i + 2]), json.load(open(sys.argv[i + 3])))

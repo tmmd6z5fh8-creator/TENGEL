@@ -1,14 +1,12 @@
-"""マスター帯の壁紙（tengel_wall.py：テンゲルのアイコンの馬が いつも走る・数字が いつも動く・緑の雷が 枠じゅう ビリビリ）の絵と形
+"""マスター帯の壁紙（tengel_wall.py：テンゲルのアイコンの馬が いつも 本物の馬のように 走る・数字が いつも動く・緑の雷が 枠じゅう ビリビリ）の絵と形
    元は flat/tengel_banner.py と同じ（説明書の上の絵 manual/banner.webp から 版の行を消して 切り出した絵 1036×425：clean_crop）。
-   絵そのものは描きなおさない（アイコンの馬の 足と頭を 切りぬいて 動かす）
-   - tengel_plate.webp（780×320）：馬の足（前足2本・後ろ足2本）と 頭を ぬいた絵。ぬいた所は まわりの紺で なめらかに うめる
-     （まわりの 暗い紺だけから ぼかして ひろげる）。頭のうしろの 盾の金のふち（たての線）は 下の所を 写して つなぐ
-   - tengel_<部品>.webp（すき通し）：足は 上と下の2つ（ひじ・ひざ／ももと すね）・頭・体と騎手（足が 体のうしろを 通るように 足の上に重ねる）
-     どれも 元の絵の画素のまま（まわりの こい線ごと 少し大きめに 切りぬく）。止まった形で重ねると いまの絵と同じ
-     （足は いちばん大きな ひとかたまりだけ：はなれた 小さな かけらは 絵から ぬくだけ。奥の前足は 少し暗く：FAR_DIM）
-   - tengel_run.json：部品ごとの 置く場所（780×320）・回る中心・足の さき（tip）、数字（0と1）の 場所・大きさ・色（数字の色と うしろの色）
+   - tengel_plate.webp（780×320）：馬（体・頭・騎手・たてがみ・足）を ぬいた絵。ぬいた所は まわりの 地の紺で なめらかに うめる
+     （まわりの 紺だけから ぼかして ひろげる）。頭のうしろの 盾の金のふち（たての線）は 下の所を 写して つなぐ。上がる グラフの 矢は のこす
+   - tengel_horse.webp：走る馬の コマ（flat/tengel_gallop.py：1歩 18コマ・すき通し）を よこ 1列に 並べた シート。
+     コマは みな 同じ 四角（すべての コマの 馬が 入る 大きさ）で、置く場所は tengel_run.json の sheet
+   - tengel_run.json：sheet（コマ数・1歩の 秒・コマの 大きさ・置く場所）・数字（0と1）の 場所・大きさ・色（数字の色と うしろの色）
    - tengel_icon.webp（312×312）：的中ボタン（gen_fx.py の tg_face_svg）に使う テンゲルのアイコン（アプリのアイコン icons/icon3-512.png を 小さくしただけ）
-   python3 flat/tengel_run.py <出力フォルダ> [元の絵] [--check]（--check：止まった形で重ねて いまの絵と くらべる）"""
+   python3 flat/tengel_run.py <出力フォルダ> [元の絵] [--check]（--check：ぬいた所の 外が いまの絵と 同じか・コマが 四角に 入るか）"""
 import sys, os, json
 import numpy as np
 import cv2
@@ -16,12 +14,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
 import tengel_banner as TB
+import tengel_gallop as TG
 
 W, Hh = TB.W, TB.Hh
 ICON = os.path.join(HERE, '..', '..', 'icons', 'icon3-512.png')
 ICON_PX = 312                       # 的中ボタン（156px）の 2倍
 
-# 動かす部品（780×320 の座標）。足は 金の かたまり（その点を ふくむ）から 明るい所を ひろげて、まわりの こい線ごと 切りぬく
+# もとの 足（ぬく所・780×320 の座標）：金の かたまり（その点を ふくむ）から 明るい所を ひろげて、まわりの こい線ごと
 SEEDS = dict(FL1=[(240, 190), (225, 207)],                      # 手前の前足（「く」の字に たたんだ足）
              FL2=[(279, 195), (264, 193), (262, 176)],          # 向こうの前足（「7」の字）
              HL1=[(145, 200), (175, 228)],                      # 手前の後ろ足（「<」の字）
@@ -35,13 +34,9 @@ BOXES = dict(
 HL2 = [(156, 170), (173, 174), (171, 181), (167, 206), (162, 207), (157, 190)]            # 向こうの後ろ足（紺の細い足）
 SPLIT = dict(FL1=((226, 198), (262, 201)), FL2=((268, 186), (285, 176)))                  # 上と下に分ける線（この線より上が 上の部品）
 HL1_SPLIT_Y = 192
-BODY = [(150, 150), (160, 110), (176, 95), (205, 90), (232, 104), (262, 112), (282, 118), (280, 170), (258, 172), (240, 175), (212, 182), (195, 182), (158, 178)]
-PIVOT = dict(FL1u=(221, 177), FL1l=(253.5, 199), FL2u=(250, 180), FL2l=(279.5, 181.5), HL1u=(151, 171), HL1l=(141, 191), HL2=(164, 172), HEAD=(262, 111))
+BODY = [(150, 150), (160, 110), (176, 95), (205, 90), (232, 104), (262, 112), (282, 118), (280, 170), (258, 172), (240, 175), (212, 182), (195, 182), (158, 178)]   # 足の まわりを ひろげすぎない 目安
 BAR = dict(x=(283, 292.5), gap=(72, 118.5), src=(121, 135))                             # 頭のうしろの 盾の金のふち
-PARTS = ('HL2', 'FL2l', 'FL2u', 'HL1l', 'HL1u', 'FL1l', 'FL1u', 'BODY', 'HEAD')          # 重ねる順（下から）
 LEG_PARTS = ('FL1u', 'FL1l', 'FL2u', 'FL2l', 'HL1u', 'HL1l', 'HL2')
-CHILD = dict(FL1u='FL1l', FL2u='FL2l', HL1u='HL1l')                                     # 上の部品 → 下の部品（ひざ・飛節）
-FAR_DIM = dict(FL2u=0.8, FL2l=0.8)       # 奥の前足は 少し暗く（走ると 手前の前足と 交差するので、奥だと わかるように）
 
 # 数字（0と1）：ある所（ドームの中・左の行・下の行）と 字の間の目安
 DIGIT_REG = dict(D=[(110, 118), (119, 114), (151, 114), (155, 116), (155, 150), (149, 159), (124, 167), (110, 167)],
@@ -124,51 +119,8 @@ def part_masks(S):
     return M
 
 
-def make_plate(S, M):
-    """足と頭を ぬいた絵（元の大きさ・BGR）"""
-    union = np.zeros((S.Hs, S.Ws), np.uint8)
-    for k, m in M.items():
-        if k != 'BODY':
-            union |= m
-    near = cv2.dilate(union, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
-    cf = S.crop.astype(np.float32)
-    valid = ((S.V >= 38) & (S.V <= 85) & (near == 0)).astype(np.float32)         # まわりの 暗い紺だけ（部品の ふちの こい線は つかわない）
-    fill = None
-    for sig in (7, 18):
-        num = cv2.GaussianBlur(cf * valid[..., None], (0, 0), sig)
-        den = cv2.GaussianBlur(valid, (0, 0), sig)[..., None]
-        f = num / np.maximum(den, 1e-4)
-        if fill is None:
-            fill, wgt = f, np.clip(den / 0.25, 0, 1)
-        else:
-            fill = fill * wgt + f * (1 - wgt)
-    soft = union[..., None].astype(np.float32)                                    # うめるのは 部品の中だけ（外は いまの絵のまま）
-    plate = np.clip(cf * (1 - soft) + fill * soft, 0, 255).astype(np.uint8)
-    s = S.s
-    x0, x1 = int(BAR['x'][0] * s), int(BAR['x'][1] * s) + 1
-    ya, yb = int(BAR['gap'][0] * s), int(BAR['gap'][1] * s)
-    src = S.crop[int(BAR['src'][0] * s):int(BAR['src'][1] * s), x0:x1]
-    for y in range(ya, yb):
-        row = src[(y - ya) % src.shape[0]]
-        plate[y, x0:x1] = np.where(M['HEAD'][y, x0:x1, None] > 0, row, plate[y, x0:x1])
-    return plate
-
-
 def to_banner(img):
     return cv2.resize(img, (W, Hh), interpolation=cv2.INTER_AREA)
-
-
-def rgba_part(S, m):
-    """部品の 切りぬき（780×320 の大きさで・すき通し・色は 元の画素）：(BGRA, (x0, y0, w, h))"""
-    a = cv2.GaussianBlur(m.astype(np.float32), (0, 0), 0.6)
-    a = np.clip(a * 1.25, 0, 1) * (cv2.dilate(m, np.ones((3, 3), np.uint8)) > 0)
-    pa = to_banner(S.crop.astype(np.float32) * a[..., None])
-    ab = to_banner(a)
-    col = pa / np.maximum(ab, 1e-4)[..., None]
-    ys, xs = np.nonzero(ab > 1 / 255)
-    x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-    out = np.dstack([np.clip(col, 0, 255), np.clip(ab * 255, 0, 255)])[y0:y1, x0:x1]
-    return (out + .5).astype(np.uint8), (int(x0), int(y0), int(x1 - x0), int(y1 - y0))
 
 
 def digits(S):
@@ -225,55 +177,40 @@ def build(outdir, src=TB.SRC, check=False):
     os.makedirs(outdir, exist_ok=True)
     S = Src(src)
     M = part_masks(S)
-    plate = make_plate(S, M)
-    pb = to_banner(plate)
-    cv2.imwrite(os.path.join(outdir, 'tengel_plate.webp'), pb, [cv2.IMWRITE_WEBP_QUALITY, 88])
-    run = dict(size=[W, Hh], parts={}, order=list(PARTS))
-    layers = {}
-    for k in PARTS:
-        im, (x, y, w, h) = rgba_part(S, M[k])
-        layers[k] = (im.copy(), x, y)
-        if k in FAR_DIM:
-            im[..., :3] = np.clip(im[..., :3].astype(np.float32) * FAR_DIM[k] + .5, 0, 255).astype(np.uint8)
-        cv2.imwrite(os.path.join(outdir, f'tengel_{k.lower()}.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 92])
-        run['parts'][k] = dict(box=[x, y, w, h], pivot=list(PIVOT.get(k, (0, 0))))
-    # 足の さき（ひざ・飛節は 下の部品の 回る中心・ひづめは つけねから 遠い所（いちばん遠い所の 85% より先）の まん中）：
-    # 走る形の 計算に使う（tengel_wall.py）
+    legs = M['DROP'].copy()
+    gold = np.zeros_like(legs)
     for k in LEG_PARTS:
-        if k in CHILD:
-            tip = PIVOT[CHILD[k]]
-        else:
-            im, x, y = layers[k]
-            ys, xs = np.nonzero(im[..., 3] > 128)
-            px, py = PIVOT[k]
-            gx, gy = xs + x + .5, ys + y + .5
-            d = np.hypot(gx - px, gy - py)
-            far = d >= d.max() * .85
-            tip = (round(float(gx[far].mean()), 1), round(float(gy[far].mean()), 1))
-        run['parts'][k]['tip'] = list(tip)
-    run['digits'] = digits(S)
+        legs |= M[k]
+        if k != 'HL2':                                   # 奥の 後ろ足は 紺（体の 中に のこっても 目立たない）
+            gold |= M[k]
+    rig = TG.Rig(S, legs, gold, BAR)
+    plate = to_banner(rig.plate)
+    cv2.imwrite(os.path.join(outdir, 'tengel_plate.webp'), np.clip(plate + .5, 0, 255).astype(np.uint8), [cv2.IMWRITE_WEBP_QUALITY, 88])
+    # コマ：すべての コマの 馬が 入る 四角（2px の すき間・偶数に そろえる＝3倍の 画面で 画素に のる）
+    frames = [TG.render(rig, i / TG.FRAMES) for i in range(TG.FRAMES)]
+    al = np.max([f[..., 3] for f in frames], 0)
+    ys, xs = np.nonzero(al > 0.5)
+    x0, y0 = (int(xs.min()) - 2) // 2 * 2, (int(ys.min()) - 2) // 2 * 2
+    x1, y1 = -(-(int(xs.max()) + 3) // 2) * 2, -(-(int(ys.max()) + 3) // 2) * 2
+    x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(Hh, y1)
+    cw, ch = x1 - x0, y1 - y0
+    sheet = np.concatenate([np.clip(f[y0:y1, x0:x1] + .5, 0, 255).astype(np.uint8) for f in frames], 1)
+    sheet[sheet[..., 3] == 0] = 0
+    cv2.imwrite(os.path.join(outdir, 'tengel_horse.webp'), sheet, [cv2.IMWRITE_WEBP_QUALITY, 90])
+    run = dict(size=[W, Hh], sheet=dict(frames=TG.FRAMES, period=TG.PERIOD, cell=[cw, ch], at=[x0, y0]), digits=digits(S))
     ic = cv2.imread(ICON, cv2.IMREAD_COLOR)
     assert ic is not None and ic.shape[:2] == (512, 512), ICON
     cv2.imwrite(os.path.join(outdir, 'tengel_icon.webp'), cv2.resize(ic, (ICON_PX, ICON_PX), interpolation=cv2.INTER_AREA), [cv2.IMWRITE_WEBP_QUALITY, 90])
     json.dump(run, open(os.path.join(outdir, 'tengel_run.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
-    print('部品', {k: v['box'] for k, v in run['parts'].items()}, '数字', len(run['digits']))
+    print('コマ', TG.FRAMES, '四角', (cw, ch), '場所', (x0, y0), 'シート', sheet.shape[1::-1],
+          os.path.getsize(os.path.join(outdir, 'tengel_horse.webp')), 'バイト  数字', len(run['digits']))
     if check:
         ref = to_banner(S.crop).astype(np.float32)
-        comp = cv2.imread(os.path.join(outdir, 'tengel_plate.webp')).astype(np.float32)
-        for k in PARTS:
-            im = cv2.imread(os.path.join(outdir, f'tengel_{k.lower()}.webp'), cv2.IMREAD_UNCHANGED).astype(np.float32)
-            if k in FAR_DIM:
-                im[..., :3] /= FAR_DIM[k]                     # 暗くした分を もどして くらべる
-            x, y = layers[k][1], layers[k][2]
-            h, w = im.shape[:2]
-            a = im[..., 3:] / 255
-            comp[y:y + h, x:x + w] = comp[y:y + h, x:x + w] * (1 - a) + im[..., :3] * a
-        d = np.abs(comp - ref).max(2)
-        drop = to_banner(M['DROP'].astype(np.float32)) > 0.02
-        keep = ~cv2.dilate(drop.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
-        print('止まった形と いまの絵（切り出し・webp まえ・ぬいた かけらの所は のぞく）：ちがい 平均', round(float(d[keep].mean()), 2),
-              '最大', int(d[keep].max()), ' 8段より大きい画素', int((d[keep] > 8).sum()), ' ぬいた かけら', int(drop.sum()), '画素')
-        cv2.imwrite(os.path.join(outdir, 'check_rest.png'), np.clip(comp, 0, 255).astype(np.uint8))
+        out = to_banner(rig.removed.astype(np.float32)) > 0
+        d = np.abs(plate - ref).max(2)
+        print('ぬいた所の 外：いまの絵との ちがい 最大', int(d[~cv2.dilate(out.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)].max()))
+        inside = al[y0:y1, x0:x1].sum() / max(al.sum(), 1)
+        print('コマの 四角に 入る 割合', round(float(inside), 6))
     return run
 
 
