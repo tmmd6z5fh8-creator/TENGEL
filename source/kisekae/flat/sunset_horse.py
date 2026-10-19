@@ -5,7 +5,9 @@
    - しっぽ：お尻のうしろの太い根元（3Dの出っぱりは作らず、うしろ・少し上へ）から、38の束がうしろへ流れて、下の束ほどたれる。
      束はそろって波打ち、先はたくさんの細い毛にほどけて、くるっと曲がる
    - ふちの光：夕日に向いたふちに細いオレンジの光、上のふちにうすい桃色の光。夕日に重なる所は光が少しまわりこむ
-   形はすべて一から作ったオリジナル。silhouette(W, Hh) → (おおう量, 夕日がわのふちの光, 上のふちの光)"""
+   形はすべて一から作ったオリジナル。silhouette(W, Hh) → (おおう量, 夕日がわのふちの光, 上のふちの光)
+   壁紙の走るコマ（flat/sunset_run.py）では、cam（カメラを決めて うごかさない）・pose（ギャロップの形）・phase（たてがみとしっぽが波打つ位相）を わたす。
+   phase なしなら いつもの絵と1バイトもちがわない"""
 import sys, os, math
 import numpy as np
 import cv2
@@ -101,11 +103,17 @@ def render_nodock(pose, eye, tgt, fov, W, Hh, name='sunset_sil'):
     return R
 
 
-def silhouette(W, Hh, seed=11, pose=POSE, box=BOX):
+def camera(W, Hh, pose=POSE, box=BOX):
+    """いつもの絵のカメラ（馬が box にちょうど入る）"""
+    Hm.HEAD_SCALE = 1.0
+    return frame_horse(pose, tuple(v * S4 for v in box), W * S4, Hh * S4, facing='left', azim=0, elev=2)
+
+
+def silhouette(W, Hh, seed=11, pose=POSE, box=BOX, cam=None, phase=None, name='sunset_sil'):
     rng = np.random.default_rng(seed)
     Hm.HEAD_SCALE = 1.0
-    e, t = frame_horse(pose, tuple(v * S4 for v in box), W * S4, Hh * S4, facing='left', azim=0, elev=2)
-    R = render_nodock(pose, e, t, 26, W * S4, Hh * S4)
+    e, t = camera(W, Hh, pose, box) if cam is None else cam
+    R = render_nodock(pose, e, t, 26, W * S4, Hh * S4, name=name)
     a4 = R['a']
     hair = np.zeros(a4.shape, np.uint8)
     H3, W3 = a4.shape
@@ -141,6 +149,8 @@ def silhouette(W, Hh, seed=11, pose=POSE, box=BOX):
     top = lambda f: tp[int(np.clip(round(f * (len(tp) - 1)), 0, len(tp) - 1))]
     nor = lambda f: nn[int(np.clip(round(f * (len(nn) - 1)), 0, len(nn) - 1))]
     flow = unit([1.0, -0.32])                                           # 風：うしろ（右）へ、少し上へ
+    if phase is not None:                                               # 走るコマ：風の向きが少しゆれる
+        flow = rot(flow, 3.0 * math.sin(phase))
     # 根元のまとまり（首の上にのる、すき間のない帯）
     fs = np.linspace(0.0, 0.92, 60)
     hgt = 3.2 * np.sin(np.pi * np.clip(fs / 0.92, 0, 1)) ** 0.6
@@ -166,7 +176,10 @@ def silhouette(W, Hh, seed=11, pose=POSE, box=BOX):
         tq = np.gradient(P, axis=0)
         tq /= np.linalg.norm(tq, axis=1, keepdims=True) + 1e-9
         nq = np.stack([-tq[:, 1], tq[:, 0]], 1)
-        P = P + nq * (rng.uniform(0.6, 1.5) * np.sin(tt * math.pi * rng.uniform(1.2, 2.2) + rng.uniform(0, 6)) * tt)[:, None]
+        a_, k_, p_ = rng.uniform(0.6, 1.5), rng.uniform(1.2, 2.2), rng.uniform(0, 6)
+        if phase is not None:                                           # 走るコマ：束が波打つ（1回で1周）
+            p_ = p_ + phase
+        P = P + nq * (a_ * np.sin(tt * math.pi * k_ + p_) * tt)[:, None]
         w = rng.uniform(4.2, 6.2) * (1 - tt) ** 0.85 + 0.22
         fill(hair, taper_poly(P, w))
         locks.append((P, L))
@@ -197,7 +210,8 @@ def silhouette(W, Hh, seed=11, pose=POSE, box=BOX):
         dk_n = -dk_n
     tlocks = []
     NT = 38
-    ph0 = 0.6
+    ph0 = 0.6 if phase is None else 0.6 + phase                         # 走るコマ：しっぽが波打つ（1回で1周）
+    swing = 0.0 if phase is None else 4.0 * math.sin(phase - 1.2)      # 走るコマ：しっぽ全体が少し上下にゆれる
     for k in range(NT):
         f = (k + rng.uniform(0.1, 0.9)) / NT                            # 0：上 … 1：下
         j = int(rng.uniform(0.25, 0.98) * (len(dock) - 1))
@@ -205,6 +219,8 @@ def silhouette(W, Hh, seed=11, pose=POSE, box=BOX):
         L = 120.0 * (0.70 + 0.40 * math.sin(math.pi * f)) * rng.uniform(0.85, 1.12)
         d_in = rot(dock_dir, (f - 0.5) * 34 + rng.uniform(-4, 4))
         d_out = rot(unit([1.0, 0.14 + 0.30 * f]), rng.uniform(-5, 5))  # 下の毛ほどたれる
+        if phase is not None:
+            d_in, d_out = rot(d_in, swing * 0.6), rot(d_out, swing)
         p1 = root + d_in * L * 0.28
         p2 = p1 + d_out * L * 0.40
         p3 = p2 + rot(d_out, rng.uniform(-12, 20)) * L * 0.32
