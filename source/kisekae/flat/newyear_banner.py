@@ -17,7 +17,7 @@ from style2d import *
 from cute_themes import draw_cute
 
 W, Hh = 780, 320
-SUN = (250, 150, 78)                 # 初日の出のまん中と半径
+SUN = (240, 150, 78)                 # 初日の出のまん中と半径（まん中の x は 富士山の頂上と同じ 240：まさちゃん「太陽の位置を富士山の真ん中に合わせて！」・まえは 250）
 RAYS = dict(n=12, thr=0.4, alpha=0.22, decay=220, color='#F2C14E')   # 光：sin(角度×n) > thr の所・こさ alpha×exp(−きょり/decay)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
 

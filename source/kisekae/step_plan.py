@@ -1,6 +1,7 @@
-"""桜・紅葉・雪・お正月の壁紙の馬の 動きの時間わり。numpy なしの Python だけ（step_wall.py も flat/step_run.py も使う）
+"""桜・紅葉・雪の壁紙の馬の 動きの時間わり。numpy なしの Python だけ（step_wall.py も flat/step_run.py も使う）
    まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり
    1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」→「やっぱり4枚とも前脚も動かさなくていいよ！ あと首の動きもっとスムーズにして！」
+   （お正月は「一枚目太陽の位置を富士山の真ん中に合わせて！馬の動きは無くして！」で 馬を動かさない＝ここから外した）
    - 足は 4本とも 動かさない（いまの絵のまま）。首と頭だけ 動く
    - コマの名前（どのテーマも LOWER_N＋NOD_N＋1 コマ）：
        U0 … 首を上げた形（いまの絵＝コマ0）
@@ -16,8 +17,8 @@
 import random
 import math
 
-THEMES = ('sakura', 'autumn', 'snow', 'newyear')
-SEEDS = dict(sakura=21, autumn=22, snow=23, newyear=24)               # 時間わりの種（さがす はじまり）
+THEMES = ('sakura', 'autumn', 'snow')
+SEEDS = dict(sakura=21, autumn=22, snow=23)               # 時間わりの種（さがす はじまり）
 
 LOWER_N = 48              # 首を下げる だんかい（とちゅうの コマは LOWER_N−1）
 NOD_N = 6                 # 草を食べる 頭の動きの だんかい

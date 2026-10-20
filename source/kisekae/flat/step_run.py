@@ -1,23 +1,21 @@
-"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 首を下げて 草を食べる（足は 4本とも 動かさない）
+"""桜・紅葉・雪の壁紙の馬が、ときどき 首を下げて 草を食べる（足は 4本とも 動かさない）
    （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」
-    →「やっぱり4枚とも前脚も動かさなくていいよ！ あと首の動きもっとスムーズにして！」）
-   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体と 足と しっぽは 動かさない（紅葉・お正月は 前足を上げた いまの形のまま）
+    →「やっぱり4枚とも前脚も動かさなくていいよ！ あと首の動きもっとスムーズにして！」。お正月は「一枚目太陽の位置を富士山の真ん中に合わせて！馬の動きは無くして！」で 馬を動かさない＝ここから外した）
+   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体と 足と しっぽは 動かさない（紅葉は 前足を上げた いまの形のまま）
    - コマ（名前と順は ../step_plan.py）：首を上げた形（いまの絵）・首を下げていく とちゅう・首を下げた形・草を食べる頭の動き。
      首は 根元から まげて 少しのばす（r3d/horse3d.py の neck_bend・neck_len）。とちゅうの コマの 下げぐあいは、頭の動く道のりが 同じ はばになるように
      えらぶ（lower_levels：コマを めくる はやさが 動きの はやさに合う＝なめらか）
    - いつ どのコマを出すか（時間わり）は ../step_plan.py（きまった種の ランダム・約2分の くり返し）。ページの CSS は ../step_wall.py
    - コマ0は いまの絵と同じ（1画素もちがわない）
    - コマは いまの絵を描くのと同じ流れ（flat/<テーマ>_banner.py）で、馬のポーズだけ かえて描く（背景・手前の花びらなど・影も同じ）。
-     動く所（すべてのコマの ちがう所を まとめた四角）だけ 切りぬいて、たて・よこに並べた1まい（シート）にする：
-       桜・紅葉・雪 … すき通しなし（背景ごと）。いまの絵の上に重ねる
-       お正月 … 光より前の絵（すき通しつき）の 切りぬき。光より前の絵は その四角を すき通しにした1まい（top_hole）も作る（光が うしろで回るので）
-   python3 flat/step_run.py --cams <step_cams.json>                 → 4つの馬の いまのカメラ（3倍の絵で決める・約1分）
+     動く所（すべてのコマの ちがう所を まとめた四角）だけ 切りぬいて、たて・よこに並べた1まい（シート）にする（すき通しなし・背景ごと。いまの絵の上に重ねる）
+   python3 flat/step_run.py --cams <step_cams.json>                 → 3つの馬の いまのカメラ（3倍の絵で決める・約1分）
    python3 flat/step_run.py --check [テーマ…]                        → 足（4本の ひづめが 動かない）と 首を下げた時の 鼻先の高さ・下げぐあい（描かない）
    python3 flat/step_run.py --preview <テーマ> <out.png> <step_cams.json> [コマの名前…]  → 馬だけを 1倍で描いた一覧（形を決めるため・速い）
    python3 flat/step_run.py --frames <テーマ> <コマのフォルダ> <step_cams.json> [コマの番号…]  → コマ（PNG）を描く（コマ0を先に・sdfr がいる・1コマ 約13秒）
-   python3 flat/step_run.py --sheet <テーマ> <コマのフォルダ> <出力フォルダ> <step_run.json>  → <テーマ>_step.webp（シート）・お正月は newyear_top_hole.webp も・step_run.json に置く場所
-   （コマ0は いまの絵と同じ書き出し方で 1バイトもちがわない：桜・紅葉・雪の いまの WebP・お正月の 光より前の WebP）"""
-import sys, os, math, json, runpy, copy
+   python3 flat/step_run.py --sheet <テーマ> <コマのフォルダ> <出力フォルダ> <step_run.json>  → <テーマ>_step.webp（シート）・step_run.json に置く場所
+   （コマ0は いまの絵と同じ書き出し方で 1バイトもちがわない：桜・紅葉・雪の いまの WebP）"""
+import sys, os, math, json, copy
 import numpy as np
 import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +38,6 @@ THEMES = {
     'sakura': dict(base='stand', facing='left', down=(-98.0, 1.20, -92.0)),
     'snow': dict(base='stand', facing='left', down=(-98.0, 1.20, -92.0)),
     'autumn': dict(base='walk', facing='right', down=(-96.0, 1.20, -92.0)),
-    'newyear': dict(base='prance', facing='left', down=(-108.0, 1.30, -90.0)),
 }
 
 
@@ -147,7 +144,7 @@ def check(name):
 
 
 def ref_cams(out_json):
-    """4つの馬の いまのカメラ（いまの絵と同じ：3倍の絵で frame_horse が決める）"""
+    """3つの馬の いまのカメラ（いまの絵と同じ：3倍の絵で frame_horse が決める）"""
     import cute_themes as C
     from horse_flat import draw_horse
     cams = {}
@@ -224,8 +221,7 @@ def banner_parts(name):
 
 
 def frame_u8(name, pose, cams, ref=None):
-    """ポーズ pose の コマ：いまの絵を描く流れ（flat/<name>_banner.py）で、馬だけ かえた絵（u8）と 馬の目印。
-       桜・紅葉・雪は 絵ぜんぶ（RGB）、お正月は 光より前の絵（RGBA：黒と白の上に描いた差から すき通し＝newyear_banner.layers と同じ）。
+    """ポーズ pose の コマ：いまの絵を描く流れ（flat/<name>_banner.py）で、馬だけ かえた絵（u8・RGB の 絵ぜんぶ）と 馬の目印。
        ref：影を決める目印（コマ0の ひづめ・いちばん下）。None なら この コマの目印で（＝いまの絵と同じ）"""
     import cute_themes as C
     script = os.path.join(HERE, f'{name}_banner.py')
@@ -233,7 +229,7 @@ def frame_u8(name, pose, cams, ref=None):
     cache = {}
     real_dh, real_dc = C.draw_horse, C.draw_cute
 
-    def dh(*a, **kw):                                   # 馬は 1コマに1回だけ描く（お正月は 黒と白の上に2回 つかう）
+    def dh(*a, **kw):                                   # 馬は 1コマに1回だけ描く
         if 'r' not in cache:
             cache['r'] = real_dh(*a, **kw)
         return cache['r']
@@ -244,19 +240,12 @@ def frame_u8(name, pose, cams, ref=None):
 
     C.draw_horse, C.draw_cute = dh, dc
     try:
-        if name == 'newyear':
-            g = runpy.run_path(script, run_name='step_run')
-            k, w = g['render']('fg', (0, 0, 0)), g['render']('fg', (1, 1, 1))
-            a = np.clip(1 - (w - k).mean(axis=2), 0, 1)
-            col = np.where(a[..., None] > 1e-4, k / np.maximum(a, 1e-4)[..., None], 0)
-            u8 = (np.dstack([np.clip(col, 0, 1), a]) * 255 + .5).astype(np.uint8)
-        else:                                           # 馬より前（背景）は1回だけ描いて、馬と そのあと（手前の花びらなど）を コマごとに
-            g, tail = banner_parts(name)
-            got = {}
-            g2 = dict(g, rng=copy.deepcopy(g['rng']), save_webp=lambda img, path, q=88: got.setdefault('img', img))
-            g2['img'] = dc(g['img'].copy(), name, W, Hh)
-            exec(tail, g2)
-            u8 = (np.clip(got['img'], 0, 1) * 255 + .5).astype(np.uint8)
+        g, tail = banner_parts(name)                    # 馬より前（背景）は1回だけ描いて、馬と そのあと（手前の花びらなど）を コマごとに
+        got = {}
+        g2 = dict(g, rng=copy.deepcopy(g['rng']), save_webp=lambda img, path, q=88: got.setdefault('img', img))
+        g2['img'] = dc(g['img'].copy(), name, W, Hh)
+        exec(tail, g2)
+        u8 = (np.clip(got['img'], 0, 1) * 255 + .5).astype(np.uint8)
     finally:
         C.draw_horse, C.draw_cute = real_dh, real_dc
     return u8, cache['r'][2]
@@ -295,8 +284,6 @@ def calm_edges(f0, x0, y0, x1, y1, reach=EDGE_REACH):
     """切りぬく四角の 4つの へりを、外へ reach 画素まで ずらして、絵の こまかい所（しっぽの毛・ふち）を通らない所にする
        （へりの 内と外で ちがう書き出しの絵が となりあうので、こまかい所を通ると 細い線が見える）。へりの まわり3画素の 明るさの変わりで くらべる"""
     a = f0.astype(np.float32)
-    if a.shape[2] == 4:                                # すき通しつき：色に こさを かけて、すき通しの 変わりも入れる
-        a = np.dstack([a[..., :3] * a[..., 3:] / 255, a[..., 3:]])
     gx = np.abs(np.diff(a, axis=1)).max(2)             # よこの となりとの ちがい（x と x+1）
     gy = np.abs(np.diff(a, axis=0)).max(2)
 
@@ -318,8 +305,7 @@ def calm_edges(f0, x0, y0, x1, y1, reach=EDGE_REACH):
 def make_sheet(name, frdir, outdir, run_json):
     """コマ（<frdir>/<name>_fNN.png）→ 動く所（どれかの コマで コマ0と ちがう画素をまとめた四角）を切りぬいて、
        よこ COLS に並べた1まい（<outdir>/<name>_step.webp・ロスなし）。コマの まわりには のりしろ（PAD・絵の となりの画素）をつける
-       （3倍の画面などで 絵を大きくして見る時に、となりのコマが ふちに にじまない）。お正月は 光より前の絵の その四角を すき通しにした1まい
-       （<outdir>/newyear_top_hole.webp）も。置く場所と大きさ・時間わり（step_plan の種の番号）を run_json（テーマごと）に書く"""
+       （3倍の画面などで 絵を大きくして見る時に、となりのコマが ふちに にじまない）。置く場所と大きさ・時間わり（step_plan の種の番号）を run_json（テーマごと）に書く"""
     from PIL import Image
     fns = SP.frames(name)
     N = len(fns)
@@ -346,11 +332,7 @@ def make_sheet(name, frdir, outdir, run_json):
         sh[r * ch2:(r + 1) * ch2, c * cw2:(c + 1) * cw2] = fp[y0:y1 + 2 * P, x0:x1 + 2 * P]
     os.makedirs(outdir, exist_ok=True)
     # シートは ロスなし（ロスありだと、コマごとに 動かない所の にじみ方が ちがって、めくるたびに ちらちらする）
-    Image.fromarray(sh, 'RGBA' if sh.shape[2] == 4 else 'RGB').save(f'{outdir}/{name}_step.webp', 'WEBP', lossless=True, quality=100, method=6)
-    if sh.shape[2] == 4:                               # お正月：光より前の絵の 穴あき（光より前の絵と同じ書き出し方）
-        top = fr[0].copy()
-        top[y0 + P:y1 - P, x0 + P:x1 - P, 3] = 0       # ふちの P は のこす（3倍の画面で 穴のふちが すけない。そこは シートと同じ絵）・色も のこす
-        Image.fromarray(top, 'RGBA').save(f'{outdir}/{name}_top_hole.webp', 'WEBP', quality=90, method=6)
+    Image.fromarray(sh, 'RGB').save(f'{outdir}/{name}_step.webp', 'WEBP', lossless=True, quality=100, method=6)
     k, _ = SP.plan(name)
     loop_ms, tl = SP.timeline(name, levels(name), k=k)
     run = json.load(open(run_json)) if os.path.exists(run_json) else {}
