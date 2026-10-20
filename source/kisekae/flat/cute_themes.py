@@ -415,9 +415,14 @@ def draw_cute(img, theme, W, Hh, spec=None, shadow_marks=None):
     """spec：ポーズやカメラを かえた spec（馬が動くコマ：step_run.py）。shadow_marks：影の大きさを この目印（ひづめ・いちばん下）で決める（コマで影が動かないように）"""
     sp = spec or SPOTS[theme]
     rgb, a, m = draw_horse(sp, PALS[theme], W, Hh, acc=ACC[theme], number='1', name='flat_' + theme)
-    # 影（地面）：ぼかしは numpy で（いつも同じ絵になるように）
+    img = horse_shadow(img, theme, W, Hh, sp, shadow_marks or m)
+    return img * (1 - a[..., None]) + rgb * a[..., None]
+
+
+def horse_shadow(img, theme, W, Hh, sp, ms):
+    """馬の 影（地面）：ぼかしは numpy で（いつも同じ絵になるように）。ms：馬の目印（ひづめ・いちばん下）。
+       draw_cute と、馬を べつの絵に する 動く壁紙（flat/couple_run.py：影は 空の絵に）"""
     col, k = sp['shadow']
-    ms = shadow_marks or m
     xs = [h[0] for h in ms['hooves']]
     gy = ms['bottom']
     if theme == 'sea':
@@ -427,5 +432,4 @@ def draw_cute(img, theme, W, Hh, spec=None, shadow_marks=None):
     sm = np.zeros((Hh * 4, W * 4), np.float32)
     cv2.ellipse(sm, (int(round(shadow[0] * 4)), int(round(shadow[1] * 4))), (int(round(shadow[2] * 4)), int(round(shadow[3] * 4))), 0, 0, 360, 1.0, -1, cv2.LINE_AA)
     sm = cv2.GaussianBlur(cv2.resize(sm, (W, Hh), interpolation=cv2.INTER_AREA), (0, 0), 3.4) * k
-    img = img * (1 - sm[..., None]) + np.array([int(col[i:i + 2], 16) / 255 for i in (1, 3, 5)], np.float32) * sm[..., None]
-    return img * (1 - a[..., None]) + rgb * a[..., None]
+    return img * (1 - sm[..., None]) + np.array([int(col[i:i + 2], 16) / 255 for i in (1, 3, 5)], np.float32) * sm[..., None]

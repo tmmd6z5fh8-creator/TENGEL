@@ -92,6 +92,16 @@ def skeleton(pose):
 HEAD_SCALE = 1.1
 
 
+def ear_vec(U3, V3, z, rot=0.0):
+    """耳の 向き（U3：頭の向き・V3：ひたいの向き・z：左右 ±1）。rot：耳を 前へ 向ける 角度（度。＋＝前へ・−＝うしろへ ふせる）。
+       rot が 0 なら いままでと 1バイトも ちがわない（pose の ear_rot：バレンタイン・ホワイトデーの 動く壁紙 flat/couple_run.py）"""
+    if not rot:
+        return nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, 0.30 * z]))
+    a = math.atan2(0.25, -0.9) - math.radians(rot)
+    r = math.hypot(0.9, 0.25)
+    return nrm(U3 * (r * math.cos(a)) + V3 * (r * math.sin(a)) + np.array([0, 0, 0.30 * z]))
+
+
 def head_pt(S, s, w, z=0.0):
     u = adir(S['head_ang'])
     vv = np.array([-u[1], u[0]])
@@ -309,7 +319,7 @@ def _neck_head(sc, pose, S, M):
     for z in (1, -1):
         E(0.53, 0.042, 0.043 * z, (0.035, 0.014, 0.02), k=0.015, rot=-20)  # 鼻の穴のふち
         # 耳（平たい形＋内側のくぼみ）
-        d = nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, 0.30 * z]))
+        d = ear_vec(U3, V3, z, pose.get('ear_rot', 0.0))
         o = nrm(V3 * 0.7 + np.array([0, 0, 0.7 * z]))
         o = nrm(o - d * np.dot(o, d))
         b0 = hp(0.0, 0.02, 0.058 * z)

@@ -438,53 +438,116 @@ def bare_tree(col='#1E1230'):
 
 
 # ------------------------------------------------------------------ バレンタイン・ホワイトデー
-def girl(dress='#F58AA8', dressD='#D9668A', hair='#7A4A2E', hairD='#5A3420', ribbon='#E23B5A', hold=None, hand_out=1, skin='#FFE0CC'):
-    """女の子（前向き・長い髪・リボン）。足もと 0,0・高さ 約170。hand_out：さしだす手（1＝右・-1＝左）。hold：手に もつ物の SVG（手の所が 0,0）"""
-    o = ''
-    o += path('M-30,-138 Q-38,-100 -30,-70 L30,-70 Q38,-100 30,-138 Z', hairD)                 # うしろ髪
-    o += rect(-13, -36, 9, 26, skin, 4) + rect(4, -36, 9, 26, skin, 4)                        # 足
-    o += path('M-16,-12 L-2,-12 L-2,-2 Q-9,1 -17,-2 Z', ribbon) + path('M2,-12 L16,-12 L17,-2 Q9,1 2,-2 Z', ribbon)
-    o += path('M-20,-96 Q-12,-104 0,-104 Q12,-104 20,-96 L36,-34 Q0,-26 -36,-34 Z', dress)      # ワンピース
-    o += path('M2,-104 Q12,-104 20,-96 L36,-34 Q20,-31 4,-30 Z', dressD, 'opacity=".45"')
-    o += path('M-12,-102 Q0,-90 12,-102 Q6,-96 0,-95 Q-6,-96 -12,-102 Z', '#FFFFFF')
+GIRL_ORDER = ('hairB', 'legL', 'legR', 'shoeL', 'shoeR', 'dress', 'armD', 'armO', 'skin', 'eyes', 'cheeks', 'mouth', 'hair', 'ribbon', 'hold', 'hand')
+
+
+def girl_bits(dress='#F58AA8', dressD='#D9668A', hair='#7A4A2E', hairD='#5A3420', ribbon='#E23B5A', hold=None, hand_out=1, skin='#FFE0CC'):
+    """女の子の 部品（名前 → SVG）。girl() は GIRL_ORDER の順に つないだもの（いまの絵と1バイトも ちがわない）。
+       armD：下ろした うで（かた (−16·hand_out, −96)）・armO：さしだす うで（かた (16·hand_out, −96)。hold と hand も その先）。
+       バレンタイン・ホワイトデーの 動く壁紙（couple_wall.py）は 部品ごとに <g> で包んで 動かす"""
+    b = dict.fromkeys(GIRL_ORDER, '')
+    b['hairB'] = path('M-30,-138 Q-38,-100 -30,-70 L30,-70 Q38,-100 30,-138 Z', hairD)                 # うしろ髪
+    b['legL'], b['legR'] = rect(-13, -36, 9, 26, skin, 4), rect(4, -36, 9, 26, skin, 4)               # 足
+    b['shoeL'], b['shoeR'] = path('M-16,-12 L-2,-12 L-2,-2 Q-9,1 -17,-2 Z', ribbon), path('M2,-12 L16,-12 L17,-2 Q9,1 2,-2 Z', ribbon)
+    b['dress'] = (path('M-20,-96 Q-12,-104 0,-104 Q12,-104 20,-96 L36,-34 Q0,-26 -36,-34 Z', dress)       # ワンピース
+                  + path('M2,-104 Q12,-104 20,-96 L36,-34 Q20,-31 4,-30 Z', dressD, 'opacity=".45"')
+                  + path('M-12,-102 Q0,-90 12,-102 Q6,-96 0,-95 Q-6,-96 -12,-102 Z', '#FFFFFF'))
     # うで
     hx = 46 * hand_out
-    o += line(f'M{-16 * hand_out},-96 Q{-24 * hand_out},-76 {-22 * hand_out},-62', skin, 9)
-    o += line(f'M{16 * hand_out},-96 Q{32 * hand_out},-88 {hx},-84', skin, 9)
+    b['armD'] = line(f'M{-16 * hand_out},-96 Q{-24 * hand_out},-76 {-22 * hand_out},-62', skin, 9)
+    b['armO'] = line(f'M{16 * hand_out},-96 Q{32 * hand_out},-88 {hx},-84', skin, 9)
     # あたま・前髪・ほお・リボン
-    o += circ(0, -128, 27, skin)
-    o += face(skin, y=-126, happy=False)
-    o += path('M-28,-128 Q-30,-160 0,-160 Q30,-160 28,-128 Q20,-146 6,-142 Q4,-150 -2,-142 Q-16,-148 -28,-128 Z', hair)
-    o += path('M-28,-128 Q-34,-104 -30,-86 Q-24,-100 -22,-118 Z', hair) + path('M28,-128 Q34,-104 30,-86 Q24,-100 22,-118 Z', hair)
-    o += path('M-16,-156 Q-4,-160 8,-158', 'none', 'stroke="#9A6A48" stroke-width="2.4" stroke-linecap="round" opacity=".7"')
-    o += path('M16,-154 Q26,-166 32,-152 Q24,-150 16,-154 Z', ribbon) + path('M16,-154 Q10,-168 2,-156 Q10,-152 16,-154 Z', ribbon) + circ(16, -154, 3.2, ribbon)
+    b['skin'] = circ(0, -128, 27, skin)
+    b['eyes'], b['cheeks'], b['mouth'] = face_parts(skin, y=-126, happy=False)
+    b['hair'] = (path('M-28,-128 Q-30,-160 0,-160 Q30,-160 28,-128 Q20,-146 6,-142 Q4,-150 -2,-142 Q-16,-148 -28,-128 Z', hair)
+                 + path('M-28,-128 Q-34,-104 -30,-86 Q-24,-100 -22,-118 Z', hair) + path('M28,-128 Q34,-104 30,-86 Q24,-100 22,-118 Z', hair)
+                 + path('M-16,-156 Q-4,-160 8,-158', 'none', 'stroke="#9A6A48" stroke-width="2.4" stroke-linecap="round" opacity=".7"'))
+    b['ribbon'] = path('M16,-154 Q26,-166 32,-152 Q24,-150 16,-154 Z', ribbon) + path('M16,-154 Q10,-168 2,-156 Q10,-152 16,-154 Z', ribbon) + circ(16, -154, 3.2, ribbon)
     if hold is not None:
-        o += g(hold, hx, -84)
-    o += circ(hx, -84, 5.5, skin)
-    return o
+        b['hold'] = g(hold, hx, -84)
+    b['hand'] = circ(hx, -84, 5.5, skin)
+    return b
+
+
+def girl(dress='#F58AA8', dressD='#D9668A', hair='#7A4A2E', hairD='#5A3420', ribbon='#E23B5A', hold=None, hand_out=1, skin='#FFE0CC'):
+    """女の子（前向き・長い髪・リボン）。足もと 0,0・高さ 約170。hand_out：さしだす手（1＝右・-1＝左）。hold：手に もつ物の SVG（手の所が 0,0）"""
+    b = girl_bits(dress, dressD, hair, hairD, ribbon, hold, hand_out, skin)
+    return ''.join(b[k] for k in GIRL_ORDER)
+
+
+BOY_ORDER = ('legL', 'legR', 'shoeL', 'shoeR', 'soleL', 'soleR', 'body', 'armO', 'armS', 'skin', 'eyes', 'cheeks', 'mouth', 'hair', 'hold')
+
+
+def boy_bits(top='#5B8FD6', topD='#4473B8', pants='#3A4A6A', hair='#3A2A22', skin='#FFE0CC', hand_out=-1, shy=True, hold=None):
+    """男の子の 部品（名前 → SVG）。boy() は BOY_ORDER の順に つないだもの（いまの絵と1バイトも ちがわない）。
+       armO：さしだす うで（かた (20·hand_out, −98)。hold も その先）・armS：もう一方の うで（かた (−22·hand_out, −98)。shy なら 頭のうしろ）"""
+    b = dict.fromkeys(BOY_ORDER, '')
+    b['legL'], b['legR'] = rect(-16, -42, 14, 30, pants, 4), rect(2, -42, 14, 30, pants, 4)
+    b['shoeL'], b['shoeR'] = path('M-19,-14 L-1,-14 L-1,-2 Q-10,1 -20,-2 Z', '#FFFFFF'), path('M1,-14 L19,-14 L20,-2 Q10,1 1,-2 Z', '#FFFFFF')
+    b['soleL'], b['soleR'] = rect(-19, -5, 19, 4, '#C9D4E2', 2), rect(1, -5, 19, 4, '#C9D4E2', 2)
+    b['body'] = (path('M-24,-102 Q0,-112 24,-102 L28,-38 Q0,-32 -28,-38 Z', top)
+                 + path('M2,-108 Q14,-106 24,-102 L28,-38 Q16,-35 4,-34 Z', topD, 'opacity=".45"')
+                 + path('M-9,-106 L0,-96 L9,-106 Z', '#FFFFFF'))
+    hx = 46 * hand_out
+    b['armO'] = line(f'M{20 * hand_out},-98 Q{34 * hand_out},-90 {hx},-86', top, 11) + circ(hx, -86, 6, skin)
+    if shy:
+        b['armS'] = line(f'M{-22 * hand_out},-98 Q{-40 * hand_out},-118 {-22 * hand_out},-146', top, 11) + circ(-20 * hand_out, -148, 6, skin)
+    else:
+        b['armS'] = line(f'M{-22 * hand_out},-98 Q{-28 * hand_out},-76 {-26 * hand_out},-62', top, 11) + circ(-26 * hand_out, -60, 6, skin)
+    b['skin'] = circ(0, -134, 28, skin)
+    b['eyes'], b['cheeks'], b['mouth'] = face_parts(skin, y=-132, happy=True, blush='#F27F8A')
+    b['hair'] = path('M-29,-134 Q-32,-168 0,-168 Q32,-168 29,-134 Q24,-150 12,-152 L16,-144 Q4,-150 -6,-152 L-4,-144 Q-18,-150 -29,-134 Z', hair)
+    if hold is not None:
+        b['hold'] = g(hold, hx, -86)
+    return b
 
 
 def boy(top='#5B8FD6', topD='#4473B8', pants='#3A4A6A', hair='#3A2A22', skin='#FFE0CC', hand_out=-1, shy=True, hold=None):
     """男の子（前向き・短い髪）。足もと 0,0・高さ 約176。shy：もう一方の手を 頭のうしろへ（てれる）"""
-    o = ''
-    o += rect(-16, -42, 14, 30, pants, 4) + rect(2, -42, 14, 30, pants, 4)
-    o += path('M-19,-14 L-1,-14 L-1,-2 Q-10,1 -20,-2 Z', '#FFFFFF') + path('M1,-14 L19,-14 L20,-2 Q10,1 1,-2 Z', '#FFFFFF')
-    o += rect(-19, -5, 19, 4, '#C9D4E2', 2) + rect(1, -5, 19, 4, '#C9D4E2', 2)
-    o += path('M-24,-102 Q0,-112 24,-102 L28,-38 Q0,-32 -28,-38 Z', top)
-    o += path('M2,-108 Q14,-106 24,-102 L28,-38 Q16,-35 4,-34 Z', topD, 'opacity=".45"')
-    o += path('M-9,-106 L0,-96 L9,-106 Z', '#FFFFFF')
-    hx = 46 * hand_out
-    o += line(f'M{20 * hand_out},-98 Q{34 * hand_out},-90 {hx},-86', top, 11) + circ(hx, -86, 6, skin)
-    if shy:
-        o += line(f'M{-22 * hand_out},-98 Q{-40 * hand_out},-118 {-22 * hand_out},-146', top, 11) + circ(-20 * hand_out, -148, 6, skin)
-    else:
-        o += line(f'M{-22 * hand_out},-98 Q{-28 * hand_out},-76 {-26 * hand_out},-62', top, 11) + circ(-26 * hand_out, -60, 6, skin)
-    o += circ(0, -134, 28, skin)
-    o += face(skin, y=-132, happy=True, blush='#F27F8A')
-    o += path('M-29,-134 Q-32,-168 0,-168 Q32,-168 29,-134 Q24,-150 12,-152 L16,-144 Q4,-150 -6,-152 L-4,-144 Q-18,-150 -29,-134 Z', hair)
-    if hold is not None:
-        o += g(hold, hx, -86)
+    b = boy_bits(top, topD, pants, hair, skin, hand_out, shy, hold)
+    return ''.join(b[k] for k in BOY_ORDER)
+
+
+def kid_fx(y, eye='#3A2A22'):
+    """バレンタイン・ホワイトデーの 動く壁紙（couple_wall.py）で 子どもに たす 顔（顔の まん中が 0,y・face_parts と 同じ 座標）：
+       eyesHappy（＾＾）・eyesOpen（まるい 目）・eyesShut（ぎゅっと つぶった ＞＜）・mouthO（あけた 小さい 口）・sweat（こめかみの 汗 2つ）"""
+    o = {}
+    o['eyesHappy'] = face_parts('#FFFFFF', eye=eye, y=y, happy=True, mouth=False)[0]
+    o['eyesOpen'] = face_parts('#FFFFFF', eye=eye, y=y, happy=False, mouth=False)[0]
+    o['eyesShut'] = ''.join(line(f'M{f(sx * 13.5)},{f(y - 4)} L{f(sx * 6.5)},{f(y)} L{f(sx * 13.5)},{f(y + 4)}', eye, 2.6) for sx in (-1, 1))
+    o['mouthO'] = ell(0, y + 11, 3.4, 4, '#B24A4A') + ell(0, y + 12.4, 2, 1.6, '#E58A8A')
+    o['sweat'] = drop(24, y - 16, 0.8) + drop(-25, y - 8, 0.65)
     return o
+
+
+def sky_hearts(rng, W=780, n=16):
+    """バレンタインの 空に ふわっと光る ハート [(x, y, 大きさ, こさ)]（flat/valentine_banner.py と 動く壁紙 couple_wall.py。乱数は この順に つかう）"""
+    out = []
+    for i in range(n):
+        x, y, s = rng.uniform(0, W), rng.uniform(40, 230), rng.uniform(10, 26)
+        out.append((x, y, s, rng.uniform(.25, .5)))
+    return out
+
+
+def choco_drip(rng):
+    """バレンタインの 上から とろける チョコの 形（SVG の path。flat/valentine_banner.py と 動く壁紙 flat/couple_run.py）"""
+    drip = 'M0,0 L780,0 L780,18'
+    x = 780
+    k = 0
+    while x > 0:
+        w = rng.uniform(26, 48)
+        dl = rng.uniform(14, 42) if k % 2 == 0 else rng.uniform(4, 10)
+        xm = x - w / 2
+        drip += f' Q{x - 4:.1f},{18 + dl * 0.2:.1f} {x - w * 0.3:.1f},{18 + dl * 0.8:.1f} Q{xm:.1f},{18 + dl + 8:.1f} {x - w * 0.7:.1f},{18 + dl * 0.8:.1f} Q{x - w + 4:.1f},{18 + dl * 0.2:.1f} {x - w:.1f},18'
+        x -= w
+        k += 1
+    return drip + ' L0,0 Z'
+
+
+def choco_drip_svg(drip):
+    """とろける チョコ（形 drip）の 絵：チョコ・上の帯・光の すじ"""
+    lay = path(drip, '#5A2E1C') + rect(0, 0, 780, 10, '#6E3A24')
+    return lay + path('M0,10 L780,10', 'none', 'stroke="#8A5232" stroke-width="3" opacity=".6"')
 
 
 def heart_box(s=1.0, col='#D7264A', colD='#A81A38', rib='#F7C9D6'):

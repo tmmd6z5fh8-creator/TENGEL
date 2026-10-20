@@ -59,6 +59,10 @@ def make_pose(name, facing):
     if P.get('neck_bend'):                                         # 首を まげる・のばす（草を食べる馬：flat/step_run.py。なければ いままでと同じ）
         out['neck_bend'] = P['neck_bend']
         out['neck_len'] = P.get('neck_len', 1.0)
+    if P.get('ear_rot'):                                           # 耳を 前へ／うしろへ（バレンタイン・ホワイトデーの 動く壁紙：flat/couple_run.py。なければ いままでと同じ）
+        out['ear_rot'] = P['ear_rot']
+    if P.get('brow'):                                              # おこった まゆ（'angry'：同じ。なければ いままでと同じ）
+        out['brow'] = P['brow']
     return out
 
 
@@ -189,7 +193,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         J = S[key]
         for j in range(len(chain) - 1):
             near_far_leg |= segd2(J[chain[j]], J[chain[j + 1]]) < (0.10 if j else 0.08)
-    d_ear_f = Hm.nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, -0.30 * side]))
+    d_ear_f = Hm.ear_vec(U3, V3, -side, pose.get('ear_rot', 0.0))
     b_ear_f = hp(0.0, 0.02, -0.058 * side)
     ear_f = segd(b_ear_f, b_ear_f + d_ear_f * 0.19 * HEAD_SC)[0] < 0.05 * HEAD_SC
     far = inside & (zs < -0.045) & (near_far_leg | ear_f)
@@ -199,7 +203,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     head = inside & (segd(Hm.v3(S['poll']), hp(0.56, -0.03))[0] < 0.21 * HEAD_SC)
     muzzle = head & (hs > 0.44) & ~far
     # 耳の中（手前の耳）
-    d_ear = Hm.nrm(-U3 * 0.9 + V3 * 0.25 + np.array([0, 0, 0.30 * side]))
+    d_ear = Hm.ear_vec(U3, V3, side, pose.get('ear_rot', 0.0))
     b_ear = hp(0.0, 0.02, 0.058 * side)
     ear_in = inside & (segd(b_ear + d_ear * 0.05 * HEAD_SC, b_ear + d_ear * 0.15 * HEAD_SC)[0] < 0.013 * HEAD_SC) & (zs > 0.02)
 
@@ -410,6 +414,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     er = 0.034 * p1u
     face = [ell(eye_c, er, er * 0.74, ang - 14 * fx, pal['eye']),
             circ(eye_c + head_dir * er * 0.28 + V(0, -er * 0.30), er * 0.30, '#FFFFFF')]
+    if pose.get('brow') == 'angry':                                # おこった まゆ：目の上に 顔の前（鼻の方）へ 下がる 太い線（画面の 向きで：バレンタイン・ホワイトデーの 動く壁紙で ブチギレ）
+        face.append(stroke(smooth([eye_c + V(-1.9 * fx, -2.0) * er, eye_c + V(1.7 * fx, -0.75) * er], closed=False), pal['eye'], er * 0.9))
     nos = P1(hp(0.535, 0.024, 0.06 * side))
     face.append(ell(nos, 0.024 * p1u, 0.014 * p1u, ang - 30 * fx, pal['nostril']))
     face.append(stroke(smooth([P1(hp(0.50, -0.098, 0.06 * side)), P1(hp(0.545, -0.088, 0.06 * side)), P1(hp(0.585, -0.070, 0.05 * side))], closed=False), pal['nostril'], 0.016 * p1u))

@@ -2,7 +2,9 @@
    水色の空（マシュマロみたいな 雲・キラッ）に 上から 水色の リボン、左に マシュマロの びんを わたす 男の子と、よろこぶ 女の子のカップル、
    右に 白い競走馬（水色の たてがみ・水色の リボン・ハートの 水色のゼッケン1）、手前に 白・ピンク・水色の マシュマロと プレゼント。
    馬は horse_flat・人と物は flat/event_art.py（一から作った形）
-   python3 flat/whiteday_banner.py <出力.webp>"""
+   python3 flat/whiteday_banner.py <出力.webp>
+   EVENT_SKY=1 CUTE_NO_HORSE=1 … → 動く壁紙の 空の絵（空・雲・キラッ・床・上の リボンだけ：カップル・馬・手前の マシュマロなし。
+                                     馬の 影と 前の絵は flat/couple_run.py・動きは couple_wall.py）"""
 import sys, os, math
 import numpy as np
 import cv2
@@ -16,6 +18,7 @@ import event_art as A
 
 W, Hh = 780, 320
 out = sys.argv[1]
+SKY = os.environ.get('EVENT_SKY') == '1'           # 動く壁紙の 空の絵
 rng = np.random.default_rng(314)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
 
@@ -51,6 +54,9 @@ for i in range(1, 6):
     lay += A.path(f'M{x0},12 L{x0 - 8},34 L{x0 - 2},30 Z M{x0},12 L{x0 + 8},34 L{x0 + 2},30 Z', '#5E9FD0') + A.circ(x0, 12, 4, '#5E9FD0')
 rgb, a = svg_layer(lay, W, Hh)
 img = over(img, rgb, a)
+if SKY:                                            # 空の絵は ここまで（カップルと 手前の マシュマロは ページの SVG）
+    save_webp(img, out)
+    sys.exit(0)
 # カップル（左）：男の子が マシュマロの びんを わたす
 lay = A.shadow(170, 300, 112, 7, '#8FB4D6', .45)
 lay += A.g(A.girl(dress='#F7B6CB', dressD='#E58FAD', hair='#4A2E22', hairD='#33201A', ribbon='#6FAEDB', hand_out=1, hold=None), 122, 300, 0.95)
