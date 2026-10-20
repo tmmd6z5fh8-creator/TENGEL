@@ -246,82 +246,174 @@ def snowflake(cx, cy, r, col='#FFFFFF', op=1.0):
 
 
 # ------------------------------------------------------------------ ハロウィン
-def vampire():
-    """ドラキュラ（前向き・マントを 両手で ひろげる・きばの見える にっこり）。足もと 0,0・高さ 約190"""
-    skin, skinD, hair, cape, capeD, lining = '#F1E6F2', '#D9C6DE', '#231A2E', '#2A1E3A', '#1A1226', '#C4243A'
-    o = ''
+VAMP_ORDER = ('cape', 'lining', 'shadeL', 'shadeR', 'legL', 'legR', 'bootL', 'bootR', 'body', 'armL', 'armR', 'handL', 'handR',
+              'collar', 'ears', 'face', 'hair', 'eyeL', 'browL', 'eyeR', 'browR', 'cheeks', 'mouth')
+VAMP_COL = dict(skin='#F1E6F2', skinD='#D9C6DE', hair='#231A2E', cape='#2A1E3A', capeD='#1A1226', lining='#C4243A', mouth='#7A1A2E')
+
+
+def vampire_bits():
+    """ドラキュラの 部品（名前 → SVG）。vampire() は VAMP_ORDER の順に つないだもの（いまの絵と1バイトも ちがわない）。
+       capeL・capeR・liningL・liningR は マントの 左右の 半分（まん中で 6 ずつ かさねる：ハロウィンの 動く壁紙で 羽のように はばたかせる。halloween_wall.py）"""
+    C = VAMP_COL
+    skin, skinD, hair, cape, capeD, lining = C['skin'], C['skinD'], C['hair'], C['cape'], C['capeD'], C['lining']
+    b = {}
     # マント（うしろ・ひろげた形）：外がわ・内がわの赤
-    o += path('M-12,-150 Q-70,-140 -92,-96 Q-98,-60 -84,-18 Q-60,-30 -46,-8 Q-30,-28 -14,-6 L14,-6 Q30,-28 46,-8 Q60,-30 84,-18 Q98,-60 92,-96 Q70,-140 12,-150 Z', cape)
-    o += path('M-12,-146 Q-62,-134 -80,-96 Q-86,-62 -76,-26 Q-58,-34 -46,-16 Q-30,-34 -14,-14 L14,-14 Q30,-34 46,-16 Q58,-34 76,-26 Q86,-62 80,-96 Q62,-134 12,-146 Z', lining)
-    o += path('M-12,-146 Q-62,-134 -80,-96 Q-70,-120 -12,-128 Z', '#9E1A2E', 'opacity=".6"') + path('M12,-146 Q62,-134 80,-96 Q70,-120 12,-128 Z', '#9E1A2E', 'opacity=".6"')
+    b['cape'] = path('M-12,-150 Q-70,-140 -92,-96 Q-98,-60 -84,-18 Q-60,-30 -46,-8 Q-30,-28 -14,-6 L14,-6 Q30,-28 46,-8 Q60,-30 84,-18 Q98,-60 92,-96 Q70,-140 12,-150 Z', cape)
+    b['lining'] = path('M-12,-146 Q-62,-134 -80,-96 Q-86,-62 -76,-26 Q-58,-34 -46,-16 Q-30,-34 -14,-14 L14,-14 Q30,-34 46,-16 Q58,-34 76,-26 Q86,-62 80,-96 Q62,-134 12,-146 Z', lining)
+    b['capeL'] = path('M6,-150 L-12,-150 Q-70,-140 -92,-96 Q-98,-60 -84,-18 Q-60,-30 -46,-8 Q-30,-28 -14,-6 L6,-6 Z', cape)
+    b['capeR'] = path('M-6,-150 L12,-150 Q70,-140 92,-96 Q98,-60 84,-18 Q60,-30 46,-8 Q30,-28 14,-6 L-6,-6 Z', cape)
+    b['liningL'] = path('M6,-146 L-12,-146 Q-62,-134 -80,-96 Q-86,-62 -76,-26 Q-58,-34 -46,-16 Q-30,-34 -14,-14 L6,-14 Z', lining)
+    b['liningR'] = path('M-6,-146 L12,-146 Q62,-134 80,-96 Q86,-62 76,-26 Q58,-34 46,-16 Q30,-34 14,-14 L-6,-14 Z', lining)
+    b['shadeL'] = path('M-12,-146 Q-62,-134 -80,-96 Q-70,-120 -12,-128 Z', '#9E1A2E', 'opacity=".6"')
+    b['shadeR'] = path('M12,-146 Q62,-134 80,-96 Q70,-120 12,-128 Z', '#9E1A2E', 'opacity=".6"')
     # 足・ズボン
-    o += rect(-20, -40, 17, 30, '#2B2234', 4) + rect(3, -40, 17, 30, '#2B2234', 4)
-    o += rect(-23, -14, 22, 14, '#141018', 7) + rect(1, -14, 22, 14, '#141018', 7)
+    b['legL'], b['legR'] = rect(-20, -40, 17, 30, '#2B2234', 4), rect(3, -40, 17, 30, '#2B2234', 4)
+    b['bootL'], b['bootR'] = rect(-23, -14, 22, 14, '#141018', 7), rect(1, -14, 22, 14, '#141018', 7)
     # 体（白いシャツ・黒い上着・赤い ちょうネクタイ）
-    o += path('M-28,-40 Q-32,-84 -22,-112 L22,-112 Q32,-84 28,-40 Z', '#2E2440')
+    o = path('M-28,-40 Q-32,-84 -22,-112 L22,-112 Q32,-84 28,-40 Z', '#2E2440')
     o += path('M-12,-112 L12,-112 L8,-58 L0,-48 L-8,-58 Z', '#FFFFFF')
     o += path('M-12,-112 L-2,-92 L-10,-60 Q-22,-80 -22,-112 Z', '#3A2E52') + path('M12,-112 L2,-92 L10,-60 Q22,-80 22,-112 Z', '#3A2E52')
     o += path('M0,-104 L-11,-110 L-11,-98 Z', lining) + path('M0,-104 L11,-110 L11,-98 Z', lining) + circ(0, -104, 3.2, '#E8364E')
     o += circ(0, -74, 4.5, '#F2C14E') + circ(-1.2, -75.5, 1.4, '#FFF4C2')
+    b['body'] = o
     # うで（マントの はしを もつ）
-    o += line('M-24,-104 Q-50,-112 -74,-100', '#2E2440', 15) + line('M24,-104 Q50,-112 74,-100', '#2E2440', 15)
-    o += circ(-78, -98, 8, skin) + circ(78, -98, 8, skin)
+    b['armL'], b['armR'] = line('M-24,-104 Q-50,-112 -74,-100', '#2E2440', 15), line('M24,-104 Q50,-112 74,-100', '#2E2440', 15)
+    b['handL'], b['handR'] = circ(-78, -98, 8, skin), circ(78, -98, 8, skin)
     # えり（高く 立った マントの えり）
-    o += path('M-14,-118 Q-40,-142 -34,-170 Q-20,-150 -4,-130 Z', capeD) + path('M14,-118 Q40,-142 34,-170 Q20,-150 4,-130 Z', capeD)
-    o += path('M-12,-120 Q-34,-140 -31,-162 Q-20,-146 -5,-130 Z', lining) + path('M12,-120 Q34,-140 31,-162 Q20,-146 5,-130 Z', lining)
+    b['collar'] = (path('M-14,-118 Q-40,-142 -34,-170 Q-20,-150 -4,-130 Z', capeD) + path('M14,-118 Q40,-142 34,-170 Q20,-150 4,-130 Z', capeD)
+                   + path('M-12,-120 Q-34,-140 -31,-162 Q-20,-146 -5,-130 Z', lining) + path('M12,-120 Q34,-140 31,-162 Q20,-146 5,-130 Z', lining))
     # あたま（とがった耳・オールバックの髪・まん中が とがった 前髪）
-    o += path('M-26,-142 L-40,-160 L-25,-152 Z', skin) + path('M26,-142 L40,-160 L25,-152 Z', skin)
-    o += circ(0, -146, 27, skin) + path('M14,-166 Q30,-152 25,-130 Q19,-144 14,-166 Z', skinD, 'opacity=".55"')
-    o += path('M-28,-148 Q-30,-178 0,-180 Q30,-178 28,-148 Q22,-162 8,-164 L0,-152 L-8,-164 Q-22,-162 -28,-148 Z', hair)
-    o += path('M-18,-170 Q-4,-176 10,-172', 'none', 'stroke="#4A3A60" stroke-width="2.4" stroke-linecap="round"')
-    for sx in (-1, 1):                                                      # 目（赤い ひとみ）・まゆ
+    b['ears'] = path('M-26,-142 L-40,-160 L-25,-152 Z', skin) + path('M26,-142 L40,-160 L25,-152 Z', skin)
+    b['face'] = circ(0, -146, 27, skin) + path('M14,-166 Q30,-152 25,-130 Q19,-144 14,-166 Z', skinD, 'opacity=".55"')
+    b['hair'] = (path('M-28,-148 Q-30,-178 0,-180 Q30,-178 28,-148 Q22,-162 8,-164 L0,-152 L-8,-164 Q-22,-162 -28,-148 Z', hair)
+                 + path('M-18,-170 Q-4,-176 10,-172', 'none', 'stroke="#4A3A60" stroke-width="2.4" stroke-linecap="round"'))
+    for sx, k in ((-1, 'L'), (1, 'R')):                                    # 目（赤い ひとみ）・まゆ
         x = sx * 10
-        o += ell(x, -144, 4, 4.8, '#FFFFFF') + ell(x, -143.5, 2.8, 3.6, '#B3122E') + circ(x + 1, -145.5, 1.1, '#FFFFFF')
-        o += line(f'M{x - 5 * sx},{-153} L{x + 5 * sx},{-151}', hair, 2.4)
-    o += ell(-17, -136, 4.6, 3, '#E99AB8', extra='opacity=".7"') + ell(17, -136, 4.6, 3, '#E99AB8', extra='opacity=".7"')
-    o += path('M-8,-134 Q0,-128 8,-134 Q0,-131 -8,-134 Z', '#7A1A2E')       # にっこり＋きば
-    o += path('M-5.5,-133.4 L-4,-128.6 L-2.5,-132.9 Z', '#FFFFFF') + path('M5.5,-133.4 L4,-128.6 L2.5,-132.9 Z', '#FFFFFF')
+        b['eye' + k] = ell(x, -144, 4, 4.8, '#FFFFFF') + ell(x, -143.5, 2.8, 3.6, '#B3122E') + circ(x + 1, -145.5, 1.1, '#FFFFFF')
+        b['brow' + k] = line(f'M{x - 5 * sx},{-153} L{x + 5 * sx},{-151}', hair, 2.4)
+    b['cheeks'] = ell(-17, -136, 4.6, 3, '#E99AB8', extra='opacity=".7"') + ell(17, -136, 4.6, 3, '#E99AB8', extra='opacity=".7"')
+    b['mouth'] = (path('M-8,-134 Q0,-128 8,-134 Q0,-131 -8,-134 Z', C['mouth'])          # にっこり＋きば
+                  + path('M-5.5,-133.4 L-4,-128.6 L-2.5,-132.9 Z', '#FFFFFF') + path('M5.5,-133.4 L4,-128.6 L2.5,-132.9 Z', '#FFFFFF'))
+    return b
+
+
+def vampire():
+    """ドラキュラ（前向き・マントを 両手で ひろげる・きばの見える にっこり）。足もと 0,0・高さ 約190"""
+    b = vampire_bits()
+    return ''.join(b[k] for k in VAMP_ORDER)
+
+
+def vampire_fx():
+    """ハロウィンの 動く壁紙（halloween_wall.py）で ドラキュラに たす 顔（vampire() と同じ 足もと 0,0 の座標）：
+       ぎゅっと つぶった目（＞＜）・にこっと 細めた目（＾＾）・あけた口（きばつき）・こめかみの汗・まっかな ほお"""
+    C = VAMP_COL
+    o = {}
+    o['eyesShut'] = line('M-14.5,-148 L-6.5,-144 L-14.5,-140', C['hair'], 2.6) + line('M14.5,-148 L6.5,-144 L14.5,-140', C['hair'], 2.6)
+    o['eyesHappy'] = line('M-14.5,-142.5 Q-10,-150 -5.5,-142.5', C['hair'], 2.6) + line('M5.5,-142.5 Q10,-150 14.5,-142.5', C['hair'], 2.6)
+    o['mouthOpen'] = (path('M-6.5,-134.5 Q0,-136 6.5,-134.5 Q6,-124.5 0,-124 Q-6,-124.5 -6.5,-134.5 Z', C['mouth'])
+                      + ell(0, -126.6, 3.2, 1.7, '#E58AA0')
+                      + path('M-5,-134.6 L-3.8,-130.4 L-2.6,-134.9 Z', '#FFFFFF') + path('M5,-134.6 L3.8,-130.4 L2.6,-134.9 Z', '#FFFFFF'))
+    o['sweat'] = drop(27, -160, 0.85)
+    o['blush'] = ell(-17, -136, 5.6, 3.6, '#F07AA6', extra='opacity=".85"') + ell(17, -136, 5.6, 3.6, '#F07AA6', extra='opacity=".85"')
     return o
+
+
+SKULL_ORDER = ('bone', 'shade', 'eyes', 'shine', 'nose', 'teeth')
+SKULL_COL = dict(bone='#F3EEE2', boneD='#D8D0BE', hole='#2A1A3A')
+
+
+def skull_bits():
+    """ドクロの 部品（名前 → SVG・下の まん中が 0,0）。skull() は SKULL_ORDER の順に つないで 大きさ s に したもの（いまの絵と1バイトも ちがわない）"""
+    bone, boneD, hole = SKULL_COL['bone'], SKULL_COL['boneD'], SKULL_COL['hole']
+    b = {}
+    b['bone'] = path('M-22,-26 Q-24,-50 0,-52 Q24,-50 22,-26 Q22,-16 14,-12 L14,0 L-14,0 L-14,-12 Q-22,-16 -22,-26 Z', bone)
+    b['shade'] = path('M10,-50 Q24,-46 22,-26 Q22,-16 14,-12 L14,0 L8,0 L8,-14 Q16,-20 16,-32 Q16,-44 10,-50 Z', boneD, 'opacity=".7"')
+    b['eyes'] = ell(-9, -30, 7, 8, hole) + ell(9, -30, 7, 8, hole)
+    b['shine'] = circ(-7, -32, 2, '#FFFFFF', 'opacity=".8"') + circ(11, -32, 2, '#FFFFFF', 'opacity=".8"')
+    b['nose'] = path('M0,-22 L-3.5,-15 L3.5,-15 Z', hole)
+    b['teeth'] = ''.join(rect(x - 1.2, -10, 2.4, 7, hole, 1.2, 'opacity=".75"') for x in (-8, -3, 2, 7))
+    return b
 
 
 def skull(s=1.0):
     """かわいい ドクロ（下の まん中が 0,0・はば 約 46s）"""
-    bone, boneD, hole = '#F3EEE2', '#D8D0BE', '#2A1A3A'
-    o = path('M-22,-26 Q-24,-50 0,-52 Q24,-50 22,-26 Q22,-16 14,-12 L14,0 L-14,0 L-14,-12 Q-22,-16 -22,-26 Z', bone)
-    o += path('M10,-50 Q24,-46 22,-26 Q22,-16 14,-12 L14,0 L8,0 L8,-14 Q16,-20 16,-32 Q16,-44 10,-50 Z', boneD, 'opacity=".7"')
-    o += ell(-9, -30, 7, 8, hole) + ell(9, -30, 7, 8, hole) + circ(-7, -32, 2, '#FFFFFF', 'opacity=".8"') + circ(11, -32, 2, '#FFFFFF', 'opacity=".8"')
-    o += path('M0,-22 L-3.5,-15 L3.5,-15 Z', hole)
-    for x in (-8, -3, 2, 7):
-        o += rect(x - 1.2, -10, 2.4, 7, hole, 1.2, 'opacity=".75"')
-    return g(o, s=s)
+    b = skull_bits()
+    return g(''.join(b[k] for k in SKULL_ORDER), s=s)
 
 
-def pumpkin(w=60.0, h=46.0, face=True, glow=True, look=0.0):
-    """ジャック・オー・ランタン（下の まん中が 0,0）：オレンジの みぞ・緑のへた・光る 三角の目と ぎざぎざの口"""
+JAW_Y = -12.0                         # ドクロの あごの 上の線（これより下が あご：ハロウィンの 動く壁紙で カタカタ うごかす）
+
+
+def skull_laugh(cid):
+    """笑う ドクロ（ハロウィンの 動く壁紙：halloween_wall.py）の 部品：mouth（口の中・あごが さがると 見える）・jaw（あご＋歯）・
+       head（あたま：目は ＾＾ に 細める）。あごと あたまは いまの形を JAW_Y で 上下に 切ったもの（cid：切りぬきの id の 頭）。
+       あごは 上へ 2 のばして あたまの 下に かくす（切れ目に すきまが 見えないように）"""
+    b = skull_bits()
+    hole = SKULL_COL['hole']
+    up, dn = f'{cid}U', f'{cid}D'
+    defs = (f'<defs><clipPath id="{up}"><rect x="-30" y="-60" width="60" height="{f(60 + JAW_Y)}"/></clipPath>'
+            f'<clipPath id="{dn}"><rect x="-30" y="{f(JAW_Y - 2)}" width="60" height="{f(4 - JAW_Y)}"/></clipPath></defs>')
+    o = {}
+    o['mouth'] = defs + rect(-12.5, JAW_Y - 1, 25, 11, hole, 3) + ell(0, JAW_Y + 6.5, 6, 2.6, '#C2405E', extra='opacity=".9"')
+    o['jaw'] = f'<g clip-path="url(#{dn})">{b["bone"]}{b["shade"]}</g>{b["teeth"]}'
+    eyes = line('M-15.5,-27.5 Q-9,-38 -2.5,-27.5', hole, 4.2) + line('M2.5,-27.5 Q9,-38 15.5,-27.5', hole, 4.2)
+    o['head'] = f'<g clip-path="url(#{up})">{b["bone"]}{b["shade"]}</g>{eyes}{b["nose"]}'
+    return o
+
+
+PUMPKIN_ORDER = ('glow', 'body', 'stem', 'eyes', 'nose', 'mouth')
+PUMPKIN_FACE = '#FFE36A'
+
+
+def pumpkin_bits(w=60.0, h=46.0, face=True, glow=True, look=0.0):
+    """ジャック・オー・ランタンの 部品（名前 → SVG・下の まん中が 0,0）。pumpkin() は PUMPKIN_ORDER の順に つないだもの（いまの絵と1バイトも ちがわない）"""
     O, OD, OL = '#F28A1E', '#C9631A', '#FFB04A'
-    o = ''
+    b = dict.fromkeys(PUMPKIN_ORDER, '')
     if glow:                                                   # まわりの あたたかい光（まん中ほど こい）
         gid = f'pkg{next(_GID)}'
-        o += (f'<defs><radialGradient id="{gid}"><stop offset="0" stop-color="#FFB347" stop-opacity=".55"/><stop offset=".5" stop-color="#FF9A2E" stop-opacity=".18"/>'
-              f'<stop offset="1" stop-color="#FF9A2E" stop-opacity="0"/></radialGradient></defs>')
-        o += ell(0, -h * 0.45, w * 1.05, h * 0.95, f'url(#{gid})')
+        b['glow'] = (f'<defs><radialGradient id="{gid}"><stop offset="0" stop-color="#FFB347" stop-opacity=".55"/><stop offset=".5" stop-color="#FF9A2E" stop-opacity=".18"/>'
+                     f'<stop offset="1" stop-color="#FF9A2E" stop-opacity="0"/></radialGradient></defs>') + ell(0, -h * 0.45, w * 1.05, h * 0.95, f'url(#{gid})')
     for k, (dx, ww) in enumerate(((-w * 0.28, w * 0.36), (w * 0.28, w * 0.36), (0, w * 0.34))):
-        o += ell(dx, -h / 2, ww, h / 2, O if k < 2 else OL)
-    o += ell(-w * 0.28, -h / 2, w * 0.36, h / 2, OD, extra='opacity=".35"') + ell(w * 0.1, -h * 0.5, w * 0.16, h * 0.46, OD, extra='opacity=".22"')
-    o += path(f'M{f(-w * 0.04)},{f(-h + 2)} Q{f(-w * 0.06)},{f(-h - 10)} {f(w * 0.06)},{f(-h - 14)} L{f(w * 0.1)},{f(-h - 10)} Q{f(w * 0.04)},{f(-h - 6)} {f(w * 0.06)},{f(-h + 2)} Z', '#4E7A2A')
+        b['body'] += ell(dx, -h / 2, ww, h / 2, O if k < 2 else OL)
+    b['body'] += ell(-w * 0.28, -h / 2, w * 0.36, h / 2, OD, extra='opacity=".35"') + ell(w * 0.1, -h * 0.5, w * 0.16, h * 0.46, OD, extra='opacity=".22"')
+    b['stem'] = path(f'M{f(-w * 0.04)},{f(-h + 2)} Q{f(-w * 0.06)},{f(-h - 10)} {f(w * 0.06)},{f(-h - 14)} L{f(w * 0.1)},{f(-h - 10)} Q{f(w * 0.04)},{f(-h - 6)} {f(w * 0.06)},{f(-h + 2)} Z', '#4E7A2A')
     if face:
-        c = '#FFE36A'
+        c = PUMPKIN_FACE
         cy = -h * 0.55
-        o += path(f'M{f(look - w * 0.26)},{f(cy)} L{f(look - w * 0.16)},{f(cy - h * 0.2)} L{f(look - w * 0.06)},{f(cy)} Z', c)
-        o += path(f'M{f(look + w * 0.06)},{f(cy)} L{f(look + w * 0.16)},{f(cy - h * 0.2)} L{f(look + w * 0.26)},{f(cy)} Z', c)
-        o += path(f'M{f(look - w * 0.03)},{f(cy + h * 0.06)} L{f(look)},{f(cy + h * 0.0)} L{f(look + w * 0.03)},{f(cy + h * 0.06)} Z', c)
+        b['eyes'] = (path(f'M{f(look - w * 0.26)},{f(cy)} L{f(look - w * 0.16)},{f(cy - h * 0.2)} L{f(look - w * 0.06)},{f(cy)} Z', c)
+                     + path(f'M{f(look + w * 0.06)},{f(cy)} L{f(look + w * 0.16)},{f(cy - h * 0.2)} L{f(look + w * 0.26)},{f(cy)} Z', c))
+        b['nose'] = path(f'M{f(look - w * 0.03)},{f(cy + h * 0.06)} L{f(look)},{f(cy + h * 0.0)} L{f(look + w * 0.03)},{f(cy + h * 0.06)} Z', c)
         my = -h * 0.24
         d = f'M{f(look - w * 0.3)},{f(my - h * 0.08)}'
         for i in range(7):
             x = look - w * 0.3 + w * 0.6 * (i + 1) / 7
             d += f' L{f(x - w * 0.6 / 14)},{f(my + (h * 0.07 if i % 2 == 0 else -h * 0.02))} L{f(x)},{f(my - h * 0.08 + (0 if i % 2 else h * 0.03))}'
         d += f' Q{f(look)},{f(my + h * 0.2)} {f(look - w * 0.3)},{f(my - h * 0.08)} Z'
-        o += path(d, c)
+        b['mouth'] = path(d, c)
+    return b
+
+
+def pumpkin(w=60.0, h=46.0, face=True, glow=True, look=0.0):
+    """ジャック・オー・ランタン（下の まん中が 0,0）：オレンジの みぞ・緑のへた・光る 三角の目と ぎざぎざの口"""
+    b = pumpkin_bits(w, h, face, glow, look)
+    return ''.join(b[k] for k in PUMPKIN_ORDER)
+
+
+def pumpkin_laugh(w=60.0, h=46.0, look=0.0):
+    """笑う ジャック・オー・ランタンの 顔（ハロウィンの 動く壁紙：halloween_wall.py）：eyes（＾＾ に 細めた 光る目）・nose・
+       mouth（大きく あけた 口：上の歯 2本）。mouth_top：口の 上の線の 高さ（口を ぱくぱく させる 中心）"""
+    c, O = PUMPKIN_FACE, '#F28A1E'
+    cy = -h * 0.55
+    sw = f(max(h * 0.085, 2.2))
+    o = {}
+    o['eyes'] = ''.join(f'<path d="M{f(look + sx * w * 0.06 - w * 0.0)},{f(cy - h * 0.02)} Q{f(look + sx * w * 0.16)},{f(cy - h * 0.3)} {f(look + sx * w * 0.26)},{f(cy - h * 0.02)}" '
+                        f'fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>' for sx in (-1, 1))
+    o['nose'] = path(f'M{f(look - w * 0.03)},{f(cy + h * 0.06)} L{f(look)},{f(cy + h * 0.0)} L{f(look + w * 0.03)},{f(cy + h * 0.06)} Z', c)
+    top = -h * 0.33
+    o['mouth'] = (path(f'M{f(look - w * 0.3)},{f(top)} Q{f(look)},{f(top + h * 0.05)} {f(look + w * 0.3)},{f(top)} '
+                       f'Q{f(look + w * 0.27)},{f(top + h * 0.3)} {f(look)},{f(top + h * 0.31)} Q{f(look - w * 0.27)},{f(top + h * 0.3)} {f(look - w * 0.3)},{f(top)} Z', c)
+                  + rect(look - w * 0.14, top - 0.5, w * 0.08, h * 0.09, O, 1) + rect(look + w * 0.06, top - 0.5, w * 0.08, h * 0.09, O, 1))
+    o['mouth_top'] = top
     return o
 
 

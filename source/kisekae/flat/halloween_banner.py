@@ -2,7 +2,9 @@
    むらさきの夜（大きな満月・星・こうもり・遠くの丘の お城・はだかの木）に、左に マントを ひろげる ドラキュラ、
    まん中に 魔女の帽子を かぶった 芦毛の競走馬（むらさきに オレンジのふちの ゼッケン1・こうもり）、
    右と 手前に 光る ジャック・オー・ランタンと かわいい ドクロ。馬は horse_flat・人と物は flat/event_art.py（一から作った形）
-   python3 flat/halloween_banner.py <出力.webp>"""
+   python3 flat/halloween_banner.py <出力.webp>
+   HALLOWEEN_BASE=1 python3 flat/halloween_banner.py <出力.webp>   → 動く壁紙の 下の絵（ドラキュラと その影・顔のある かぼちゃ3つ・ドクロなし。
+                                                                    どれも ページの SVG で動かす：halloween_wall.py・flat/halloween_run.py）"""
 import sys, os, math
 import numpy as np
 import cv2
@@ -16,6 +18,7 @@ import event_art as A
 
 W, Hh = 780, 320
 out = sys.argv[1]
+BASE = os.environ.get('HALLOWEEN_BASE') == '1'      # 動く壁紙の 下の絵（ドラキュラ・顔のある かぼちゃ・ドクロは halloween_wall.py が ページの SVG で 動かす）
 rng = np.random.default_rng(31)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
 
@@ -51,15 +54,18 @@ for i in range(70):
 rgb, a = svg_layer(grass, W, Hh)
 img = over(img, rgb, a * 0.9)
 # ドラキュラ（左）
-rgb, a = svg_layer(A.shadow(108, 300, 66, 7, '#0E0818', .5) + A.g(A.vampire(), 108, 300, 0.92), W, Hh)
-img = over(img, rgb, a)
+if not BASE:
+    rgb, a = svg_layer(A.shadow(108, 300, 66, 7, '#0E0818', .5) + A.g(A.vampire(), 108, 300, 0.92), W, Hh)
+    img = over(img, rgb, a)
 # 馬（まん中・左向き＝ドラキュラの方）
 if os.environ.get('CUTE_NO_HORSE') != '1':
     img = draw_cute(img, 'halloween', W, Hh)
 # ジャック・オー・ランタンと ドクロ（右・手前）
 lay = A.shadow(600, 306, 120, 8, '#0E0818', .5)
-lay += A.g(A.pumpkin(78, 58, look=-4), 560, 306) + A.g(A.pumpkin(54, 40, look=3), 640, 310) + A.g(A.skull(1.05), 690, 308)
-lay += A.g(A.pumpkin(46, 34, look=4), 216, 312) + A.g(A.pumpkin(40, 30, face=False, glow=False), 742, 314)
+if not BASE:
+    lay += A.g(A.pumpkin(78, 58, look=-4), 560, 306) + A.g(A.pumpkin(54, 40, look=3), 640, 310) + A.g(A.skull(1.05), 690, 308)
+    lay += A.g(A.pumpkin(46, 34, look=4), 216, 312)
+lay += A.g(A.pumpkin(40, 30, face=False, glow=False), 742, 314)
 rgb, a = svg_layer(lay, W, Hh)
 img = over(img, rgb, a)
 save_webp(img, out)
