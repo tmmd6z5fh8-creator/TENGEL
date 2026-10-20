@@ -245,7 +245,7 @@ HW_CSS = r'''
 # ================================================================== チョコのPUSH（vl）
 def vl_face(sfx=''):
     """ボタン（200×100）が 板チョコ：つやの ある こげ茶・4×2の 四角の くぼみ・右はしに ピンクの 包み紙（金の ふち・白い ハート）・
-       左上から ピンクの すじ（とろっと）・ときどき つやが すっと通る（.vlsh）"""
+       ときどき つやが すっと通る（.vlsh）。左上の ピンクの すじ（波線2本）は やめた（まさちゃん「この赤線の2本の波線いらない！」）"""
     c, s, g = f'vlC{sfx}', f'vlS{sfx}', f'vlG{sfx}'
     defs = (f'<defs><clipPath id="{c}"><rect width="200" height="100" rx="12"/></clipPath>'
             f'<linearGradient id="{s}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5232"/><stop offset=".5" stop-color="#6B3A22"/><stop offset="1" stop-color="#4A2614"/></linearGradient>'
@@ -258,8 +258,6 @@ def vl_face(sfx=''):
             o += (f'<rect x="{x}" y="{y}" width="33" height="40" rx="5" fill="#5A2E1A"/>'
                   f'<rect x="{x + 2}" y="{y + 2}" width="29" height="36" rx="4" fill="#7A4430"/>'
                   f'<path d="M{x + 4} {y + 33} V{y + 6} Q{x + 4} {y + 4} {x + 6} {y + 4} H{x + 27}" fill="none" stroke="#A86E4C" stroke-width="2" stroke-linecap="round" opacity=".7"/>')
-    o += '<path d="M2 18 Q20 6 38 18 T76 18 T112 14" fill="none" stroke="#F7A8C0" stroke-width="4" stroke-linecap="round" opacity=".9"/>'
-    o += '<path d="M2 30 Q16 22 30 30 T60 28" fill="none" stroke="#F7A8C0" stroke-width="3" stroke-linecap="round" opacity=".8"/>'
     o += ('<rect x="150" y="-4" width="56" height="108" fill="#E8547C"/><rect x="146" y="-4" width="7" height="108" fill="#F2C14E"/>'
           '<rect x="153" y="-4" width="53" height="12" fill="#C7375F" opacity=".5"/>'
           f'<path d="{heart_d(178, 52, 12)}" fill="#FFFFFF"/>'
@@ -301,7 +299,7 @@ def vl_burst():
 
 VL_CSS = r'''
 /* ---------- バレンタインの的中ボタン：チョコのPUSH（まさちゃんの指定） ----------
-   ボタンが まるごと 板チョコ：つやの ある こげ茶・4×2の 四角の くぼみ・左上から ピンクの すじ・右はしに ピンクの 包み紙（金の ふち・白い ハート）。
+   ボタンが まるごと 板チョコ：つやの ある こげ茶・4×2の 四角の くぼみ・右はしに ピンクの 包み紙（金の ふち・白い ハート）。
    「PUSH」は チョコに うかした字（ミルクチョコの色・上に 光・下に かげ）。ときどき つやが すっと通る。まわりに ハートのチョコと トリュフが ふわふわ・ピンクの リボン。
    上下の動きは的中と同じ。押すと チョコが ちぢんで ふくらみ（強く光らせない）、チョコの かけら・ハート・トリュフ・ピンクの つぶが はじけて 落ち、ピンクの 光の輪が広がる */
 .vl{--pushA:#6B3A22;--pushB:#2E160C;--pushC:#8A5232;--rim:#F7A8C0;--rimD:#5A2E1C}
