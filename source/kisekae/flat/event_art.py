@@ -90,7 +90,7 @@ def face(skin, eye='#3A2A22', blush='#F59AA0', happy=True, y=0.0, mouth=True, lo
 
 
 def santa(gift=True):
-    """サンタさん（前向き・右手を ふる・左手に プレゼント）。足もと 0,0・高さ 約200"""
+    """サンタさん（前向き・右手を ふる・左手に プレゼントを のせて さしだす）。足もと 0,0・高さ 約200"""
     red, redD, fur, furD, skin, skinD = '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0', '#FFDCC4', '#F2BFA4'
     o = ''
     # 足（ブーツ）・ズボン
@@ -123,14 +123,14 @@ def santa(gift=True):
     o += path('M16,-196 Q34,-200 44,-186 L52,-190 Q42,-208 20,-210 Z', redD, 'opacity=".5"')
     o += rect(-33, -170, 66, 16, fur, 8) + rect(-33, -160, 66, 6, furD, 3, 'opacity=".6"')
     o += circ(51, -186, 10, fur) + circ(48, -189, 3.5, '#FFFFFF')
-    if gift:                                                                # プレゼント（左手で 前に さしだす）
-        o += line('M-30,-104 Q-50,-92 -58,-78', redD, 19)
-        o += circ(-60, -76, 10.5, fur)
-        gx, gy = -84, -94
+    if gift:                                                                # プレゼント（左手に のせて 前に さしだす）
+        o += line('M-30,-104 Q-50,-100 -60,-88', redD, 19)                  # そで（肩から 外へ のばす）
+        gx, gy = -82, -124                                                  # 箱（はば38・高さ32）：手の上に のせる
         o += rect(gx - 19, gy, 38, 32, '#2E8C5A', 4) + rect(gx + 4, gy, 15, 32, '#246F47', 3, 'opacity=".6"')
         o += rect(gx - 4, gy, 8, 32, '#F2C14E') + rect(gx - 21, gy - 7, 42, 11, '#3BA66C', 3) + rect(gx - 4, gy - 7, 8, 11, '#F2C14E')
         o += path(f'M{gx},{gy - 7} Q{gx - 16},{gy - 22} {gx - 14},{gy - 8} Z', '#F2C14E') + path(f'M{gx},{gy - 7} Q{gx + 16},{gy - 22} {gx + 14},{gy - 8} Z', '#F2C14E')
-        o += ell(-64, -84, 9, 8, '#FFFFFF')                                 # 手ぶくろ（箱の前）
+        o += circ(-61, -88, 10.5, fur) + circ(-61, -88, 10.5, furD, 'opacity=".25"')   # そでの 白い ふち
+        o += ell(-73, -91, 10.5, 7.5, '#FFFFFF') + ell(-73, -88.5, 9, 4, furD, extra='opacity=".5"')   # 手ぶくろ（箱の 底を 下から ささえる）
     return o
 
 

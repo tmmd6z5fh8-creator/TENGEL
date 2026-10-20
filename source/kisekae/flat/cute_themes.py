@@ -230,16 +230,27 @@ def holly(c, r, col='#2F8A55', berry='#E23B3B'):
     return out
 
 
-def hat_on_head(m, wid, hgt, col, colD, band, bandD, flop=True, brim=0.0):
-    """馬の頭の上の 帽子（サンタの帽子・魔女の帽子）：耳の前（前髪の上）に のせる。
-       wid・hgt：はば・高さ（m）。flop：先が うしろへ たれて 白い玉（サンタ）。brim：つば の はば（m・魔女の帽子）"""
+HAT_OVR = {}      # ためしに 変える時だけ（{'xmas': {'at': …}} のように テーマごと。ふだんは 空）
+
+
+def hat_on_head(m, wid, hgt, col, colD, band, bandD, flop=True, brim=0.0, at=0.7, tilt=None, hang=(0.21, 0.12), back=0.075, theme=''):
+    """馬の頭の上の 帽子（サンタの帽子・魔女の帽子）。
+       wid・hgt：はば・高さ（m）。flop：先が うしろへ たれて 白い玉（サンタ）。brim：つば の はば（m・魔女の帽子）
+       at：のせる所（耳の うしろ（poll）＝0 → 前髪（forelock）＝1。0.5 が 頭の上の まん中）
+       tilt：うしろへ かたむける 角度（度。None ＝ 頭の向きから決める＝まえの形）・hang：サンタの帽子の 先の たれかた（うしろへ・下へ。m）
+       back：サンタの帽子の うしろがわの ふくらみ（m。大きいほど 耳を つつむ）"""
+    o = HAT_OVR.get(theme, {})
+    wid, at, tilt, hang, back = o.get('wid', wid), o.get('at', at), o.get('tilt', tilt), o.get('hang', hang), o.get('back', back)
     p, fx = m['p1u'], m['fx']
     hd = unit(m['head_dir'])
-    up = unit(-hd + V(0, -0.9))
+    if tilt is None:
+        up = unit(-hd + V(0, -0.9))
+    else:
+        up = V(-math.sin(math.radians(tilt)) * fx, -math.cos(math.radians(tilt)))
     br = unit(V(-up[1], up[0]))
     if br[0] * fx < 0:
         br = -br
-    base = m['forelock'] + (m['poll'] - m['forelock']) * 0.3 + up * 0.015 * p
+    base = m['poll'] + (m['forelock'] - m['poll']) * at + up * 0.015 * p
     w = wid * p
     a_b, a_f = base - br * w * 0.5, base + br * w * 0.5
     out = []
@@ -250,13 +261,14 @@ def hat_on_head(m, wid, hgt, col, colD, band, bandD, flop=True, brim=0.0):
         out.append(f'<ellipse cx="{f2(c0[0])}" cy="{f2(c0[1])}" rx="{f2(bw * 0.5)}" ry="{f2(0.045 * p)}" fill="{colD}" transform="rotate({f2(ang)} {f2(c0[0])} {f2(c0[1])})"/>')
         k = base + up * hgt * 0.58 * p - br * 0.03 * p
         tip = k + up * hgt * 0.3 * p - br * 0.2 * p
-        out.append(path(smooth([a_b, k - br * 0.06 * p, tip, k + br * 0.07 * p, a_f], sharp=(0, 2, 4)), col))
+        bk = a_b + up * 0.17 * p                                 # うしろがわは 下を まっすぐ 立てて 耳を つつむ
+        out.append(path(smooth([a_b, bk, k - br * 0.06 * p, tip, k + br * 0.07 * p, a_f], sharp=(0, 3, 5)), col))
         out.append(path(smooth([a_b + up * 0.035 * p, a_f + up * 0.035 * p, a_f + up * 0.1 * p, a_b + up * 0.1 * p], sharp=(0, 1, 2, 3)), band))
         out.append(path(smooth([tip, k + br * 0.07 * p, a_f + up * 0.1 * p, base + up * 0.12 * p + br * 0.02 * p, k + br * 0.01 * p], sharp=(0,)), '#FFFFFF', 'fill-opacity=".08"'))
         return out
     top = base + up * hgt * p                                       # 先が うしろへ まがる 山（いちばん上が まがり目）
-    hang = top + V(-0.21 * fx * p, 0.12 * p)
-    inner = base + up * hgt * 0.6 * p - br * 0.075 * p
+    hang = top + V(-hang[0] * fx * p, hang[1] * p)
+    inner = base + up * hgt * 0.6 * p - br * back * p
     out.append(path(smooth([a_b, a_b + up * 0.14 * p, inner, hang, top + br * 0.03 * p, a_f + up * 0.2 * p, a_f], sharp=(0, 3, 6)), col))
     out.append(path(smooth([top + br * 0.03 * p, a_f + up * 0.2 * p, a_f, base + br * w * 0.12 + up * 0.1 * p, top - up * 0.07 * p + br * 0.01 * p], sharp=(2,)), colD, 'fill-opacity=".38"'))
     out.append(path(smooth([a_b - br * 0.03 * p - up * 0.03 * p, a_f + br * 0.03 * p - up * 0.03 * p, a_f + br * 0.03 * p + up * 0.055 * p,
@@ -280,8 +292,9 @@ def acc_xmas(m):
     out += [circ(bell, br, '#F2C14E'), circ(bell + V(-br * 0.3, -br * 0.3), br * 0.33, '#FFF0B8'),
             stroke(f'M{f2(bell[0] - br * 0.7)},{f2(bell[1] + br * 0.29)} H{f2(bell[0] + br * 0.7)}', '#9A6A14', 0.018 * p),
             circ(bell + V(0, br * 0.6), br * 0.17, '#7A4A10')]
-    # 帽子：耳の前（前髪の上）に のせる。上は 頭の向きの うしろ（つむじがわ）を 少し 立てた向き・先は うしろへ たれて 白い玉
-    hat = hat_on_head(m, 0.29, 0.34, '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0')
+    # 帽子：頭の上の まん中に まっすぐ のせる（まさちゃん「クリスマスの馬の帽子の位置を、しっかり頭の中心に合わせて！」。
+    #       まえは 頭の向きに あわせて うしろへ 約19度 かたむいていた）。うしろがわを ふくらませて 耳を つつむ・先は うしろへ たれて 白い玉
+    hat = hat_on_head(m, 0.29, 0.34, '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0', at=0.6, tilt=3, back=0.12, hang=(0.19, 0.12), theme='xmas')
     cloth = holly(cloth_corner(m), 0.085 * p)
     return dict(neck=out, head=hat, cloth=cloth)
 
@@ -289,7 +302,9 @@ def acc_xmas(m):
 def acc_halloween(m):
     """魔女の帽子（黒に オレンジの帯・先は うしろへ 折れる）・布のすみに 小さな こうもり"""
     p, fx = m['p1u'], m['fx']
-    hat = hat_on_head(m, 0.27, 0.62, '#2A1E38', '#140C1E', '#FF8A1F', '#C9661A', flop=False, brim=0.30)
+    # 帽子：頭の上の まん中に まっすぐ のせる（まさちゃん「ハロウィンの馬の帽子の位置を、しっかり頭の中心に合わせて！」。
+    #       まえは うしろへ 約19度 かたむいていた）。山を 少し太くして、うしろがわを まっすぐ 立てて 耳を つつむ
+    hat = hat_on_head(m, 0.31, 0.62, '#2A1E38', '#140C1E', '#FF8A1F', '#C9661A', flop=False, brim=0.30, at=0.6, tilt=4, theme='halloween')
     c = cloth_corner(m, 0.14, 0.12)
     k = 0.0042 * p
     bat = (f'<g transform="translate({f2(c[0])} {f2(c[1])}) scale({f2(k * fx)} {f2(k)})"><path d="M0,-4 Q-6,-10 -10,-6 Q-18,-16 -30,-14 Q-26,-8 -28,-2 '
