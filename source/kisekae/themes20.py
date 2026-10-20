@@ -596,6 +596,123 @@ def orn_master():
         out += f"<circle cx='{x}' cy='{y}' r='{r}' fill='url(#mg)' stroke='#7A5A1E' stroke-width='.5'/>"
     return out
 
+# ---------------------------------------------------------------- 行事の4テーマ（クリスマス・ハロウィン・バレンタイン・ホワイトデー：まさちゃんの指定）
+def heart_path(cx, cy, r):
+    return (f"M{cx:.1f} {cy + r * 0.95:.1f} C{cx - r * 0.2:.1f} {cy + r * 0.75:.1f} {cx - r * 1.05:.1f} {cy + r * 0.25:.1f} {cx - r:.1f} {cy - r * 0.25:.1f} "
+            f"C{cx - r * 0.95:.1f} {cy - r * 0.85:.1f} {cx - r * 0.2:.1f} {cy - r * 0.95:.1f} {cx:.1f} {cy - r * 0.42:.1f} "
+            f"C{cx + r * 0.2:.1f} {cy - r * 0.95:.1f} {cx + r * 0.95:.1f} {cy - r * 0.85:.1f} {cx + r:.1f} {cy - r * 0.25:.1f} "
+            f"C{cx + r * 1.05:.1f} {cy + r * 0.25:.1f} {cx + r * 0.2:.1f} {cy + r * 0.75:.1f} {cx:.1f} {cy + r * 0.95:.1f} Z")
+
+
+def star_path(cx, cy, r, r2=None, n=5):
+    r2 = r * 0.45 if r2 is None else r2
+    pts = [(cx + math.cos(math.radians(-90 + k * 180 / n)) * (r if k % 2 == 0 else r2),
+            cy + math.sin(math.radians(-90 + k * 180 / n)) * (r if k % 2 == 0 else r2)) for k in range(n * 2)]
+    return P(pts)
+
+
+def tile_xmas():
+    """雪の結晶・金の星・白い点（クリスマスの背景）"""
+    body = ''
+    for x, y, r, o in ((20, 24, 6, .5), (92, 70, 5, .42), (50, 108, 4.5, .38)):
+        for k in range(3):
+            a = math.radians(k * 60)
+            body += f"<line x1='{x - r * math.cos(a):.1f}' y1='{y - r * math.sin(a):.1f}' x2='{x + r * math.cos(a):.1f}' y2='{y + r * math.sin(a):.1f}' stroke='#9FC3D9' stroke-width='1.3' stroke-linecap='round' opacity='{o}'/>"
+    for x, y, r in ((74, 20, 5), (24, 76, 4)):
+        body += f"<path d='{star_path(x, y, r)}' fill='#E6B54A' opacity='.45'/>"
+    for x, y in ((48, 50), (108, 30), (100, 112), (8, 120), (70, 92)):
+        body += f"<circle cx='{x}' cy='{y}' r='1.6' fill='#C9D9E6' opacity='.7'/>"
+    return uri(svg(120, 130, body))
+
+
+def tile_bats():
+    """こうもり・星（ハロウィンの背景・暗い地に うすく）"""
+    bat = ('M0,-2 Q-3,-5 -5,-3 Q-9,-8 -15,-7 Q-13,-4 -14,-1 Q-11,-2 -9,1 Q-7,-1 -5,2 Q-3,0 0,3 '
+           'Q3,0 5,2 Q7,-1 9,1 Q11,-2 14,-1 Q13,-4 15,-7 Q9,-8 5,-3 Q3,-5 0,-2 Z')
+    body = ''
+    for x, y, s, o in ((30, 30, 1.0, .16), (96, 84, .8, .13), (40, 118, .7, .12)):
+        body += f"<path d='{bat}' fill='#C9B6E8' opacity='{o}' transform='translate({x} {y}) scale({s})'/>"
+    for x, y in ((80, 20), (14, 76), (110, 128), (64, 64)):
+        body += f"<circle cx='{x}' cy='{y}' r='1.3' fill='#FFD7A0' opacity='.35'/>"
+    return uri(svg(130, 140, body))
+
+
+def tile_hearts():
+    """小さな ハート（バレンタインの背景）"""
+    body = ''
+    for x, y, r, c, o in ((20, 22, 6, '#F5A6C0', .5), (82, 16, 4.5, '#E8547C', .35), (54, 66, 7, '#F7C3D3', .55), (104, 80, 5, '#F5A6C0', .45),
+                          (24, 104, 4.5, '#E8547C', .3), (84, 118, 6, '#F7C3D3', .5)):
+        body += f"<path d='{heart_path(x, y, r)}' fill='{c}' opacity='{o}'/>"
+    return uri(svg(120, 130, body))
+
+
+def tile_marsh():
+    """マシュマロ・小さな ハート・点（ホワイトデーの背景）"""
+    body = ''
+    for x, y, c, a in ((22, 26, '#FFFFFF', -12), (88, 64, '#FFE3EC', 14), (40, 104, '#E3F1FB', -6)):
+        body += (f"<g transform='translate({x} {y}) rotate({a})'><rect x='-8' y='-6' width='16' height='12' rx='5' fill='{c}' stroke='#CFE0EF' stroke-width='1'/>"
+                 f"<rect x='-8' y='-6' width='16' height='5' rx='2.5' fill='#FFFFFF' opacity='.7'/></g>")
+    for x, y, r in ((82, 18, 4), (106, 110, 3.6)):
+        body += f"<path d='{heart_path(x, y, r)}' fill='#9CCBEB' opacity='.45'/>"
+    for x, y in ((56, 52), (10, 72), (112, 34), (70, 124)):
+        body += f"<circle cx='{x}' cy='{y}' r='1.6' fill='#BFDDF2' opacity='.7'/>"
+    return uri(svg(124, 136, body))
+
+
+def pumpkins_row():
+    """上の帯の下に ならぶ 小さな かぼちゃ（ハロウィン）"""
+    def one(x):
+        return (f"<ellipse cx='{x - 3}' cy='8' rx='4.2' ry='4.6' fill='#F28A1E'/><ellipse cx='{x + 3}' cy='8' rx='4.2' ry='4.6' fill='#F28A1E'/>"
+                f"<ellipse cx='{x}' cy='8' rx='3.6' ry='4.8' fill='#FFA640'/><rect x='{x - .8}' y='1.6' width='1.6' height='2.8' rx='.6' fill='#4E7A2A'/>"
+                f"<path d='M{x - 3.4} 7 L{x - 2.2} 5.4 L{x - 1} 7 Z M{x + 1} 7 L{x + 2.2} 5.4 L{x + 3.4} 7 Z M{x - 3} 9.6 Q{x} 11.6 {x + 3} 9.6 Z' fill='#5A2A06'/>")
+    body = "<path d='M0 1.4 Q14 3.6 28 1.4 T56 1.4' fill='none' stroke='#4A3566' stroke-width='.8'/>" + one(14) + one(42)
+    return uri(svg(56, 14, body))
+
+
+def choco_drip():
+    """上の帯の下の とろける チョコ（バレンタイン）"""
+    body = ("<path d='M0 0 H64 V2 Q60 2 58 4 Q56 10 52 10 Q48 10 47 5 Q46 2 40 2 Q36 2 35 4 Q34 7 31 7 Q28 7 27 4 Q26 2 20 2 Q16 2 15 5 "
+            "Q14 11 10 11 Q6 11 5 6 Q4 2 0 2 Z' fill='#43200F'/>")
+    return uri(svg(64, 11, body))
+
+
+def orn_xmas():
+    """ひいらぎ（葉2まい・赤い実3つ）"""
+    leaf = 'M0 0 C5 -5 9 -2 11 -6 C12 -2 16 -1 18 -4 C18 1 21 3 24 3 C20 6 18 7 15 9 C12 6 9 8 6 10 C5 6 2 5 0 0 Z'
+    b = (f"<path d='{leaf}' fill='#2F8A55' stroke='#1E5E3A' stroke-width='1' stroke-linejoin='round' transform='translate(22 22) rotate(-160)'/>"
+         f"<path d='{leaf}' fill='#3CA066' stroke='#1E5E3A' stroke-width='1' stroke-linejoin='round' transform='translate(22 22) rotate(-20)'/>")
+    for x, y in ((18.6, 19.4), (25.4, 19.4), (22, 25)):
+        b += f"<circle cx='{x}' cy='{y}' r='3.6' fill='#E23B3B' stroke='#9E1F2A' stroke-width='.9'/><circle cx='{x - 1}' cy='{y - 1.1}' r='1' fill='#FFFFFF' opacity='.8'/>"
+    return b
+
+
+def orn_halloween():
+    """ジャック・オー・ランタン"""
+    b = ("<ellipse cx='15' cy='25' rx='9' ry='11' fill='#E8781A'/><ellipse cx='29' cy='25' rx='9' ry='11' fill='#E8781A'/>"
+         "<ellipse cx='22' cy='25' rx='8.5' ry='12' fill='#FF9A2E'/><path d='M20.5 13.6 Q20 8 24.5 6.4 L25.6 8 Q22.6 9.6 23.4 13.6 Z' fill='#4E7A2A'/>"
+         "<path d='M14 22 L17 17.6 L20 22 Z M24 22 L27 17.6 L30 22 Z' fill='#FFE36A'/>"
+         "<path d='M13.6 27 L16 30.6 L18.4 28 L22 31.6 L25.6 28 L28 30.6 L30.4 27 Q22 35.6 13.6 27 Z' fill='#FFE36A'/>")
+    return "<g stroke='#7A3A08' stroke-width='.6'>" + b + "</g>"
+
+
+def orn_valentine():
+    """ハートの チョコ（ピンクの すじ・リボン）"""
+    return (f"<path d='{heart_path(22, 24, 15)}' fill='#5A2E1C'/><path d='{heart_path(21, 22.6, 12.6)}' fill='#7A4430'/>"
+            "<path d='M12 21 Q16 17 20 21 T28 21 T35 19' fill='none' stroke='#F7A8C0' stroke-width='2' stroke-linecap='round'/>"
+            "<path d='M13.5 27 Q17 24 21 27 T29 27' fill='none' stroke='#F7A8C0' stroke-width='1.8' stroke-linecap='round'/>"
+            "<path d='M31 8 Q26 2 25.6 8.6 Z M31 8 Q36 2 36.4 8.6 Z' fill='#E8547C'/><circle cx='31' cy='8' r='1.8' fill='#C7375F'/>")
+
+
+def orn_whiteday():
+    """マシュマロ2つと 水色の リボン"""
+    def mm(x, y, a, c):
+        return (f"<g transform='translate({x} {y}) rotate({a})'><rect x='-9' y='-7' width='18' height='14' rx='6' fill='{c}' stroke='#9CC2E0' stroke-width='1.1'/>"
+                f"<rect x='-9' y='-7' width='18' height='6' rx='3' fill='#FFFFFF' opacity='.8'/></g>")
+    return (mm(15, 27, -14, '#FFFFFF') + mm(29, 25, 12, '#FFE3EC')
+            + "<path d='M22 13 Q14 5 13.4 14.2 Z M22 13 Q30 5 30.6 14.2 Z' fill='#8CC4EC' stroke='#5E9FD0' stroke-width='.8'/>"
+              "<path d='M22 13 L19 21 L21 20 Z M22 13 L25 21 L23 20 Z' fill='#5E9FD0'/><circle cx='22' cy='13' r='2' fill='#5E9FD0'/>")
+
+
 # ---------------------------------------------------------------- テーマ
 SEG_SQ = '.mbtn,.pill,.seg,.tag,.coin,.ocr{border-radius:0}'
 
@@ -615,8 +732,8 @@ THEMES = [
       css=[('', 'background-image:' + tile_petals() + ';background-size:120px 120px')],
       orn=orn_sakura(),
       guide=dict(colors=[('#F8C4D4', '桜色'), ('#C2416E', 'ボタン'), ('#A3355C', '濃い桜'), ('#FFF6F8', '背景'), ('#4A2A35', '文字')],
-                 fonts='見出し：Kaisei Decol<br>本文：Zen角ゴシック New', shape='角丸18px・やわらかい影・花びらの散る背景・丸い「第1」・すみに桜の花',
-                 pic='満開の桜・桜の花かざりの白い競走馬（馬らしい形の、ぺたっとした色の絵）・若草の丘・舞う花びら')),
+                 fonts='見出し：Kaisei Decol<br>本文：Zen角ゴシック New', shape='角丸18px・やわらかい影・花びらの散る背景・丸い「第1」・すみに桜の花・的中ボタンは桜がついたPUSH',
+                 pic='満開の桜・桜の花かざりの白い競走馬（馬らしい形の、ぺたっとした色の絵・首を下げて草を食べる）・若草の丘・舞う花びら（いつも降っている）')),
 
  dict(id='sea', cat=2, name='海', desc='青・夏の海', title='海（紺×水色×白）', banner='sea', alt='波打ちぎわを走る鹿毛の競走馬（紺に白いしまのゼッケン1）と、青い海と空のイラスト',
       fonts=['Murecho:wght@500;700;800'],
@@ -634,8 +751,8 @@ THEMES = [
            ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-8px;height:9px;background:' + wave_edge() + ' 0 0/28px 9px repeat-x')],
       orn=orn_sea(),
       guide=dict(colors=[('#0E3A66', '紺'), ('#0B76B8', 'ボタン'), ('#39C5DD', '水色'), ('#EEF7FB', '背景'), ('#10324F', '文字')],
-                 fonts='見出し：Murecho ExtraBold<br>本文：Murecho', shape='角丸16px・丸いボタン・上の帯のふちが波・うすい波の背景・すみに浮き輪',
-                 pic='青空と入道雲・水色の海・砂浜・波打ちぎわを走る鹿毛の競走馬（馬らしい形の、ぺたっとした色の絵）・しぶき')),
+                 fonts='見出し：Murecho ExtraBold<br>本文：Murecho', shape='角丸16px・丸いボタン・上の帯のふちが波・うすい波の背景・すみに浮き輪・的中ボタンは海の模様のPUSH',
+                 pic='青空と入道雲・水色の海・砂浜・波打ちぎわを走る鹿毛の競走馬（馬らしい形の、ぺたっとした色の絵・いつも走っていて景色が流れる）・しぶき')),
 
  dict(id='sunset', cat=2, name='夕焼け', desc='紫とオレンジ', title='夕焼け（紫×オレンジ）', banner='sunset', alt='夕日を背に丘をかける馬のシルエット（風になびく細い毛のたてがみとしっぽ・夕日がわのふちの光）と、紫からオレンジの空のイラスト',
       fonts=['Kaisei+Opti:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -656,8 +773,8 @@ THEMES = [
            ('.card::before', 'content:"";position:absolute;left:18px;right:18px;top:0;height:3px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,#FF9A5C,#C2416B,#6A2E8E)')],
       orn=orn_sunset(),
       guide=dict(colors=[('#47226A', '夕方の紫'), ('#C8461F', '夕日'), ('#FF9A5C', 'オレンジ'), ('#FFF3EA', '背景'), ('#3A2340', '文字')],
-                 fonts='見出し：Kaisei Opti（夕日色の文字）<br>本文：Zen角ゴシック New', shape='角丸18px・枠なしの浮いたカード・カードの上に夕焼けの線・上下の帯は濃い紫',
-                 pic='紫からオレンジの空・沈む太陽・丘をかける馬のシルエット（細い毛のたてがみとしっぽ・夕日がわのふちの光）・鳥')),
+                 fonts='見出し：Kaisei Opti（夕日色の文字）<br>本文：Zen角ゴシック New', shape='角丸18px・枠なしの浮いたカード・カードの上に夕焼けの線・上下の帯は濃い紫・的中ボタンは夕日の映ったPUSH',
+                 pic='紫からオレンジの空・沈む太陽（10秒ごとに 沈んで真っ暗 → 戻る）・丘をかける馬のシルエット（いつも走る）・鳥')),
 
  dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の林に立つ栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・赤いゼッケン1）のイラスト',
       fonts=['Zen+Old+Mincho:wght@900', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -674,8 +791,8 @@ THEMES = [
       css=[('', 'background-image:' + tile_leaves() + ';background-size:150px 150px')],
       orn=orn_autumn(),
       guide=dict(colors=[('#B3401E', '紅葉'), ('#E8A13A', '山吹'), ('#A33A16', 'ボタン'), ('#FBF3E6', '背景'), ('#3E2A1E', '文字')],
-                 fonts='見出し：Zen Old Mincho Black<br>本文：Zen角ゴシック New', shape='角丸12px・生成りのカード・山吹の線・もみじの散る背景・すみにもみじ',
-                 pic='もみじの木・4本の足で立つ栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・馬らしい形の、ぺたっとした色の絵）・秋の丘')),
+                 fonts='見出し：Zen Old Mincho Black<br>本文：Zen角ゴシック New', shape='角丸12px・生成りのカード・山吹の線・もみじの散る背景・すみにもみじ・的中ボタンは紅葉がついたPUSH',
+                 pic='もみじの木・栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・馬らしい形の、ぺたっとした色の絵・首を下げて草を食べる）・秋の丘・降るもみじ')),
 
  dict(id='snow', cat=2, name='雪', desc='紺と白・冬', title='雪（冬の紺×雪の白）', banner='snow', alt='雪の中で白い息をはいて立つ芦毛の競走馬（まだら模様・水色のマフラー・紺のゼッケン1）と、雪をかぶった木のイラスト',
       fonts=['Kiwi+Maru:wght@500', 'Zen+Maru+Gothic:wght@500;700'],
@@ -694,8 +811,8 @@ THEMES = [
            ('.card::before', 'content:"";position:absolute;left:12px;right:12px;top:-7px;height:12px;background:radial-gradient(circle at 8px 12px,#FFFFFF 7.6px,transparent 8.2px) 0 0/16px 12px repeat-x;filter:drop-shadow(0 -1px 0 #C9DCEC)')],
       orn=orn_snow(),
       guide=dict(colors=[('#24496E', '冬の紺'), ('#2F6E9E', 'ボタン'), ('#BFE3FF', '氷'), ('#F2F7FB', '背景'), ('#1E3346', '文字')],
-                 fonts='見出し：Kiwi Maru<br>本文：Zen Maru Gothic', shape='角丸16px・カードの上に積もった雪・雪の水玉の背景・帯に舞う雪・すみに雪の結晶',
-                 pic='雪の原っぱ・雪をかぶった木・水色のマフラーの芦毛の競走馬（馬らしい形の、ぺたっとした色の絵）・白い息・降る雪')),
+                 fonts='見出し：Kiwi Maru<br>本文：Zen Maru Gothic', shape='角丸16px・カードに積もった雪・雪の水玉の背景・帯に舞う雪・すみに雪の結晶・的中ボタンは雪が積もったPUSH',
+                 pic='雪の原っぱ・雪をかぶった木・水色のマフラーの芦毛の競走馬（馬らしい形の、ぺたっとした色の絵・首を下げて草を食べる）・白い息・降る雪')),
 
  dict(id='newyear', cat=2, name='午年', desc='赤と金・お正月', title='午年・お正月（赤×金）', banner='newyear', alt='赤い青海波の背景に富士山と初日の出、前足を上げる白い競走馬（金のたてがみ・赤い頭のベルト・首に紅白の綱と金の鈴・ゼッケン1）のイラスト',
       fonts=['Yuji+Syuku', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -712,8 +829,8 @@ THEMES = [
       css=[('.lb', 'box-shadow:inset 0 0 0 3px #C8161D,inset 0 0 0 4.5px #E8B33A')],
       orn=orn_newyear(),
       guide=dict(colors=[('#C8161D', '朱赤'), ('#E8B33A', '金'), ('#FFE6A3', '薄い金'), ('#FBF4E8', '背景'), ('#3A1A12', '文字')],
-                 fonts='見出し：Yuji Syuku（筆の字）<br>本文：Zen角ゴシック New', shape='角丸10px・金の二重枠・帯に青海波・赤い札・すみに梅の花',
-                 pic='赤い青海波・初日の出と富士山・金の雲・紅白の綱と金の鈴の白い競走馬（馬らしい形の、ぺたっとした色の絵）・「午」の印')),
+                 fonts='見出し：Yuji Syuku（筆の字）<br>本文：Zen角ゴシック New', shape='角丸10px・金の二重枠・帯に青海波・赤い札・すみに梅の花・的中ボタンは初日の出が映ったPUSH',
+                 pic='赤い青海波・初日の出（光が右回りに回る）と富士山・金の雲・紅白の綱と金の鈴の白い競走馬（馬らしい形の、ぺたっとした色の絵）・「午」の印')),
 
  dict(id='fireworks', cat=2, name='花火', desc='夜空・夏祭り', title='花火（夜空×ピンク・黄）', banner='fireworks', alt='夜空に上がる花火と、金とピンクの光の線でえがいた、かける馬（しっぽはしだれ柳の花火）、ちょうちんのイラスト',
       fonts=['Potta+One', 'M+PLUS+1p:wght@500;700'],
@@ -734,8 +851,94 @@ THEMES = [
            ('.card', 'background-image:radial-gradient(circle at 100% 0,rgba(255,107,154,.12),transparent 45%)')],
       orn=orn_fireworks(),
       guide=dict(colors=[('#0B1029', '夜空'), ('#FF5C8A', '花火ピンク'), ('#FFD45E', '花火の黄'), ('#18214A', 'カード'), ('#F2F4FF', '文字')],
-                 fonts='見出し：Potta One（ピンク→黄の文字）<br>本文：M PLUS 1p', shape='角丸18px・暗いカード・光るボタン・帯の下にちょうちん・すみに花火',
-                 pic='夜空の花火・金とピンクの光の線でえがいた、かける馬（たてがみとしっぽは しだれ柳の花火）・ちょうちんの列')),
+                 fonts='見出し：Potta One（ピンク→黄の文字）<br>本文：M PLUS 1p', shape='角丸18px・暗いカード・光るボタン・帯の下にちょうちん・すみに花火・的中ボタンは花火でできたPUSH',
+                 pic='夜空の花火（咲いて 散り散りに消える・ときどき一斉）・金とピンクの光の線の かける馬（たてがみとしっぽは しだれ柳の花火）・ちょうちんの列')),
+
+ dict(id='xmas', cat=2, name='クリスマス', desc='赤と緑・聖夜', title='クリスマス（赤×緑×金）', banner='xmas',
+      alt='雪の夜の町で、サンタの帽子をかぶった鹿毛の競走馬（赤と緑の綱に金の鈴・赤いゼッケン1）と、プレゼントをさしだすサンタさん、星と玉でかざったクリスマスツリーのイラスト',
+      fonts=['Kaisei+Tokumin:wght@800', 'Zen+Maru+Gothic:wght@500;700'],
+      v=dict(bg='#FBF6EE', ink='#2A2420', sub='#6E5F55', card='#FFFFFF', cardB='1.5px solid #E7D7C2', cardO='0 solid transparent', cardS='0 3px 0 #E9DCCB',
+             radius='14px', rs='10px', font='"Zen Maru Gothic"', dfont='"Kaisei Tokumin"', dw='800', logo='#FFF4D6', logoS='0 2px 0 #0E3A22',
+             iii='#E6B54A', iiiB='0 solid transparent', iiiR='2px',
+             hd='radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.7px) 0 0/22px 22px,radial-gradient(rgba(255,255,255,.3) 1px,transparent 1.6px) 11px 7px/22px 22px,linear-gradient(180deg,#1E6B44,#155433)',
+             hdInk='#FFF4D6', hdB='3px solid #D7323A', mBg='rgba(255,255,255,.12)', mLine='rgba(255,236,190,.65)', mInk='#FFF4D6', pill='rgba(0,0,0,.18)',
+             pillLine='rgba(255,236,190,.4)', pillInk='#FFF4D6', coin='#E6B54A', coinInk='#3A2A0A', badge='#FCE9E6', badgeInk='#A8202A', badgeB='1.5px solid #F2C3BE',
+             tagBg='#F4F9F2', tagInk='#1F5E3A', tagLine='#CFE3CF', warnBg='#FFE3E0', warnInk='#A31E28', zBg='#FFFBF5', zB='1.5px solid #F0E3D1',
+             znBg='#1E6B44', znInk='#FFFFFF', znB='0 solid transparent', znR='999px', znS='none', acc='#A8202A', nR='8px', w2B='0 solid transparent',
+             sep='1.5px dashed #E7D7C2', btn='#C8242C', btnInk='#FFFFFF', btnB='0 solid transparent', btnR='12px', btnS='0 3px 0 #8E1820',
+             btn2='#FFFFFF', btn2Ink='#1E6B44', btn2B='1.5px solid #B9D7BF', tab='#FFFFFF', tabB='1px solid #E7D7C2', tabInk='#6E5F55', tabOn='#E8F3EA',
+             tabOnInk='#1E6B44', tabR='12px', sel='#C8242C', selInk='#FFFFFF', h1='#A8202A'),
+      chk=dict(hd=['#1E6B44', '#155433']),
+      css=[('', 'background-image:' + tile_xmas() + ';background-size:120px 130px'),
+           ('.card::before', 'content:"";position:absolute;left:16px;right:16px;top:0;height:4px;border-radius:0 0 4px 4px;background:repeating-linear-gradient(135deg,#C8242C 0 6px,#FFFFFF 6px 12px)')],
+      orn=orn_xmas(),
+      guide=dict(colors=[('#1E6B44', 'もみの木'), ('#C8242C', 'ボタン'), ('#E6B54A', '金'), ('#FBF6EE', '背景'), ('#2A2420', '文字')],
+                 fonts='見出し：Kaisei Tokumin<br>本文：Zen Maru Gothic', shape='角丸14px・帯に舞う雪と赤い線・カードの上にキャンディケインのしま・雪の結晶と星の背景・すみにひいらぎ・的中ボタンはクリスマスツリーのPUSH',
+                 pic='雪の夜の町・星と玉でかざったクリスマスツリーとプレゼント・サンタの帽子をかぶった鹿毛の競走馬（馬らしい形の、ぺたっとした色の絵）・プレゼントをさしだすサンタさん')),
+
+ dict(id='halloween', cat=2, name='ハロウィン', desc='オレンジと紫', title='ハロウィン（オレンジ×紫×黒）', banner='halloween',
+      alt='むらさきの夜の満月とお城を背に、魔女の帽子をかぶった芦毛の競走馬（むらさきのゼッケン1）と、マントをひろげるドラキュラ、光るかぼちゃとドクロのイラスト',
+      fonts=['Reggae+One', 'M+PLUS+1p:wght@500;700'],
+      v=dict(bg='#1C1229', ink='#F6EEE2', sub='#C2B4D6', card='#271A38', cardB='1px solid #46305E', cardO='0 solid transparent', cardS='0 8px 20px rgba(0,0,0,.35)',
+             radius='16px', rs='12px', font='"M PLUS 1p"', dfont='"Reggae One"', dw='400', logo='#FF9A2E', logoS='0 2px 0 #3A1A0A',
+             iii='#FF9A2E', iiiB='0 solid transparent', iiiR='2px', hd='linear-gradient(180deg,#120A1E,#24143A)', hdInk='#F6EEE2', hdB='0 solid transparent',
+             mBg='rgba(255,255,255,.06)', mLine='#FF9A2E', mInk='#FFE2C2', pill='rgba(255,255,255,.06)', pillLine='rgba(255,255,255,.18)', pillInk='#EDE4F7',
+             coin='#FF9A2E', coinInk='#2A1206', badge='#3A2550', badgeInk='#FFB45E', badgeB='1.5px solid #FF9A2E', tagBg='rgba(255,255,255,.06)', tagInk='#E6DCF5',
+             tagLine='#4A3566', warnBg='rgba(255,154,46,.18)', warnInk='#FFB86B', zBg='rgba(255,255,255,.04)', zB='1px solid #46305E',
+             znBg='#FF8A1F', znInk='#24120A', znB='0 solid transparent', znR='6px', znS='none', acc='#FFB45E', nR='8px', w2B='1.5px solid #8C7AA8',
+             sep='1px dashed #4A3566', btn='#FF8A1F', btnInk='#24120A', btnB='0 solid transparent', btnR='14px', btnS='0 3px 0 #A8520E',
+             btn2='transparent', btn2Ink='#FFB45E', btn2B='1.5px solid #FF9A2E', tab='#120A1E', tabB='1px solid #2E1E44', tabInk='#A897C2',
+             tabOn='rgba(255,154,46,.14)', tabOnInk='#FFB45E', tabR='14px', sel='#FF8A1F', selInk='#24120A', h1='#FFB45E'),
+      chk=dict(hd=['#120A1E', '#24143A']),
+      css=[('', 'background-image:' + tile_bats() + ';background-size:130px 140px'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-12px;height:14px;background:' + pumpkins_row() + ' 0 0/56px 14px repeat-x'),
+           ('.card', 'background-image:radial-gradient(circle at 100% 0,rgba(255,138,31,.13),transparent 45%)')],
+      orn=orn_halloween(),
+      guide=dict(colors=[('#120A1E', '夜'), ('#FF8A1F', 'かぼちゃ'), ('#4B2A6E', 'むらさき'), ('#271A38', 'カード'), ('#F6EEE2', '文字')],
+                 fonts='見出し：Reggae One<br>本文：M PLUS 1p', shape='角丸16px・暗いカード・オレンジのボタン・帯の下にかぼちゃ・こうもりの背景・すみにジャック・オー・ランタン・的中ボタンはかぼちゃのPUSH',
+                 pic='むらさきの夜・満月とお城・こうもり・魔女の帽子をかぶった芦毛の競走馬（馬らしい形の、ぺたっとした色の絵）・マントをひろげるドラキュラ・光るかぼちゃとドクロ')),
+
+ dict(id='valentine', cat=2, name='バレンタイン', desc='チョコとピンク', title='バレンタイン（チョコ×ピンク）', banner='valentine',
+      alt='上からとろけるチョコとピンクのハートの中で、赤いリボンのチョコ色の競走馬（クリーム色のたてがみ・ピンクのゼッケン1）と、ハートのチョコをわたす女の子とてれる男の子のカップル、板チョコとトリュフのイラスト',
+      fonts=['Yusei+Magic', 'Zen+Maru+Gothic:wght@500;700'],
+      v=dict(bg='#FFF4F6', ink='#3E2420', sub='#86606A', card='#FFFFFF', cardB='1.5px solid #F5C9D5', cardO='0 solid transparent', cardS='0 4px 12px rgba(200,80,120,.12)',
+             radius='18px', rs='14px', font='"Zen Maru Gothic"', dfont='"Yusei Magic"', dw='400', logo='#FFE3EC', logoS='0 2px 0 #2A140C',
+             iii='#F28DB2', iiiB='0 solid transparent', iiiR='3px', hd='linear-gradient(180deg,#5A2E1C,#43200F)', hdInk='#FFE9EF', hdB='0 solid transparent',
+             mBg='rgba(255,255,255,.1)', mLine='rgba(255,200,215,.6)', mInk='#FFE9EF', pill='rgba(0,0,0,.18)', pillLine='rgba(255,200,215,.35)', pillInk='#FFE9EF',
+             coin='#F28DB2', coinInk='#43200F', badge='#FFE6EE', badgeInk='#B32A55', badgeB='1.5px solid #F5C9D5', tagBg='#FFF0F4', tagInk='#8E2E4E',
+             tagLine='#F5C9D5', warnBg='#FFE3E8', warnInk='#A8323E', zBg='#FFF8FA', zB='1.5px solid #FBDDE6', znBg='#6B3A22', znInk='#FFE9EF',
+             znB='0 solid transparent', znR='999px', znS='none', acc='#B32A55', nR='8px', w2B='0 solid transparent', sep='1.5px dashed #F5C9D5',
+             btn='#C7375F', btnInk='#FFFFFF', btnB='0 solid transparent', btnR='999px', btnS='0 3px 0 #8E2242', btn2='#FFFFFF', btn2Ink='#B32A55',
+             btn2B='1.5px solid #F2B5C8', tab='#FFFFFF', tabB='1px solid #F6D3DE', tabInk='#86606A', tabOn='#FCE3EB', tabOnInk='#B32A55', tabR='14px',
+             sel='#C7375F', selInk='#FFFFFF', h1='#B32A55'),
+      chk=dict(hd=['#5A2E1C', '#43200F']),
+      css=[('', 'background-image:' + tile_hearts() + ';background-size:120px 130px'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-10px;height:11px;background:' + choco_drip() + ' 0 0/64px 11px repeat-x')],
+      orn=orn_valentine(),
+      guide=dict(colors=[('#5A2E1C', 'チョコ'), ('#C7375F', 'ボタン'), ('#F28DB2', 'ピンク'), ('#FFF4F6', '背景'), ('#3E2420', '文字')],
+                 fonts='見出し：Yusei Magic<br>本文：Zen Maru Gothic', shape='角丸18px・丸いボタン・帯はチョコ色で下のふちがとろける・ハートの背景・すみにハートのチョコ・的中ボタンはチョコのPUSH',
+                 pic='上からとろけるチョコ・ピンクのハート・赤いリボンのチョコ色の競走馬（馬らしい形の、ぺたっとした色の絵）・ハートのチョコをわたす女の子とてれる男の子・板チョコとトリュフ')),
+
+ dict(id='whiteday', cat=2, name='ホワイトデー', desc='白と水色', title='ホワイトデー（白×水色）', banner='whiteday',
+      alt='水色の空とマシュマロみたいな雲の下で、マシュマロのびんをわたす男の子とよろこぶ女の子のカップルと、水色のリボンの白い競走馬（水色のゼッケン1）、白・ピンク・水色のマシュマロのイラスト',
+      fonts=['Mochiy+Pop+One', 'M+PLUS+Rounded+1c:wght@500;700;800'],
+      v=dict(bg='#F3F8FC', ink='#1E3346', sub='#557089', card='#FFFFFF', cardB='1.5px solid #D6E5F2', cardO='0 solid transparent', cardS='0 3px 0 #DCE8F3',
+             radius='20px', rs='14px', font='"M PLUS Rounded 1c"', dfont='"Mochiy Pop One"', dw='400', logo='#FFFFFF', logoS='0 2px 0 #2A5A8C',
+             iii='#FFFFFF', iiiB='0 solid transparent', iiiR='3px', hd='linear-gradient(180deg,#4A8CC8,#3A78B4)', hdInk='#FFFFFF', hdB='0 solid transparent',
+             mBg='rgba(0,0,0,.16)', mLine='rgba(255,255,255,.6)', mInk='#FFFFFF', pill='rgba(0,0,0,.16)', pillLine='rgba(255,255,255,.35)', pillInk='#FFFFFF',
+             coin='#FFFFFF', coinInk='#2F6EA8', badge='#E6F1FA', badgeInk='#23608F', badgeB='1.5px solid #C9DDF0', tagBg='#EEF5FB', tagInk='#2A5378',
+             tagLine='#CFE0EF', warnBg='#FFE9EE', warnInk='#A43A4A', zBg='#F7FAFD', zB='1.5px solid #E1ECF6', znBg='#3A78B4', znInk='#FFFFFF',
+             znB='0 solid transparent', znR='999px', znS='none', acc='#23608F', nR='10px', w2B='0 solid transparent', sep='1.5px dashed #D6E5F2',
+             btn='#3A78B4', btnInk='#FFFFFF', btnB='0 solid transparent', btnR='999px', btnS='0 3px 0 #2A5A8C', btn2='#FFFFFF', btn2Ink='#2F6EA8',
+             btn2B='1.5px solid #B9D3EA', tab='#FFFFFF', tabB='1px solid #D6E5F2', tabInk='#557089', tabOn='#E3F0FA', tabOnInk='#23608F', tabR='16px',
+             sel='#3A78B4', selInk='#FFFFFF', h1='#23608F'),
+      chk=dict(hd=['#4A8CC8', '#3A78B4']),
+      css=[('', 'background-image:' + tile_marsh() + ';background-size:124px 136px'),
+           ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-7px;height:8px;background:radial-gradient(circle at 8px 0,#3A78B4 7px,transparent 7.6px) 0 0/16px 8px repeat-x')],
+      orn=orn_whiteday(),
+      guide=dict(colors=[('#3A78B4', '水色'), ('#8CC4EC', 'リボン'), ('#FFE3EC', 'ピンク'), ('#F3F8FC', '背景'), ('#1E3346', '文字')],
+                 fonts='見出し：Mochiy Pop One<br>本文：M PLUS Rounded 1c', shape='角丸20px・丸いボタン・帯の下のふちがまるい波・マシュマロの背景・すみにマシュマロとリボン・的中ボタンはマシュマロのPUSH',
+                 pic='水色の空とマシュマロみたいな雲・上から水色のリボン・マシュマロのびんをわたす男の子とよろこぶ女の子・水色のリボンの白い競走馬（馬らしい形の、ぺたっとした色の絵）・白・ピンク・水色のマシュマロ')),
 
  dict(id='night', cat=3, name='ナイター', desc='夜のレース場', title='ナイター（夜×照明のアンバー）', banner='nightrace', alt='照明に照らされた夜のコースを走る3頭の馬と騎手のアニメ風イラスト',
       fonts=['RocknRoll+One', 'M+PLUS+1p:wght@500;700'],
@@ -755,8 +958,8 @@ THEMES = [
            ('.vt', 'letter-spacing:.02em')],
       orn=orn_night(),
       guide=dict(colors=[('#070A16', '夜'), ('#FFB020', '照明のアンバー'), ('#161C33', 'カード'), ('#8790AE', 'グレー'), ('#F1F3F9', '文字')],
-                 fonts='見出し：RocknRoll One<br>本文：M PLUS 1p', shape='角丸12px・暗いカード・カードの左にアンバーの線・照明の光の背景・すみに照明',
-                 pic='夜のコース・照明・走る3頭の馬と騎手・白いラチ')),
+                 fonts='見出し：RocknRoll One<br>本文：M PLUS 1p', shape='角丸12px・暗いカード・カードの左にアンバーの線・照明の光の背景・すみに照明・的中ボタンはナイター照明に照らされたPUSH',
+                 pic='夜のコース・照明・走る3頭の馬と騎手（いつも走って景色が流れる・順位が入れかわり、ゴール → 止まって暗く → 表彰 → また走りだす）・白いラチ')),
 
  dict(id='news', cat=3, name='競馬新聞', desc='新聞紙・黒と赤', title='競馬新聞（新聞紙×黒・赤）', banner='newspaper', alt='競馬新聞の紙面のような、題字と馬柱、墨の筆でえがいた馬のイラスト',
       fonts=['Kaisei+Tokumin:wght@800', 'BIZ+UDPMincho:wght@400;700'],
@@ -779,8 +982,8 @@ THEMES = [
            ('.tb button', 'font-weight:700')],
       orn=orn_news(),
       guide=dict(colors=[('#F2EEE3', '新聞紙'), ('#141414', '黒'), ('#C81E1E', '赤'), ('#FBF9F3', 'カード'), ('#4E4A40', '小さい文字')],
-                 fonts='見出し：Kaisei Tokumin（太い明朝）<br>本文：BIZ UDP明朝', shape='角なし（四角）・黒い罫線・二重線の帯・黒地の題字・Aは二重丸・すみに赤い◎',
-                 pic='新聞の題字「テンゲル競馬」・馬柱・墨の筆でえがいた馬')),
+                 fonts='見出し：Kaisei Tokumin（太い明朝）<br>本文：BIZ UDP明朝', shape='角なし（四角）・黒い罫線・二重線の帯・黒地の題字・Aは二重丸・すみに赤い◎・的中ボタンは新聞でできたPUSH',
+                 pic='新聞の題字「テンゲル競馬」・馬柱・墨の筆でえがいた馬（いつも走っている）')),
 
  dict(id='silks', cat=3, name='勝負服', desc='青・赤・黄・緑', title='勝負服（青・赤・黄・緑）', banner='silks', alt='勝負服の柄（市松・縦じま・星・輪）のコマ割りを背に、首と足をいっぱいにのばして走る栗毛の馬（にらむ目・歯をくいしばった口・鼻息）と、ひし形の勝負服の騎手（ゴーグル・とぶ汗）の漫画風イラスト',
       fonts=['M+PLUS+1:wght@500;700;900'],
@@ -801,8 +1004,8 @@ THEMES = [
            ('.card + .card', 'box-shadow:4px 4px 0 #E02424')],
       orn=orn_silks(),
       guide=dict(colors=[('#1A3FB8', '青'), ('#E02424', '赤'), ('#FFC400', '黄'), ('#0F9D58', '緑'), ('#121A33', '文字')],
-                 fonts='見出し：M PLUS 1 Black<br>本文：M PLUS 1', shape='角丸14px・青い太枠に黄・赤のずらした影・帯の下に勝負服のしま・ななめの「第1」・すみに勝負服',
-                 pic='勝負服の柄のコマ割り（市松・縦じま・星・輪）・青いコマに流線・遊び心のある漫画の馬（のびた走り・にらむ目・歯・鼻息）とひし形の勝負服の騎手（ゴーグル・汗・ゼッケン1）')),
+                 fonts='見出し：M PLUS 1 Black<br>本文：M PLUS 1', shape='角丸14px・青い太枠に黄・赤のずらした影・帯の下に勝負服のしま・ななめの「第1」・すみと的中ボタンに勝負服',
+                 pic='流れる勝負服の柄のコマ割り（市松・縦じま・星・輪）・青いコマに流線・いつも走る漫画の馬（のびた走り・にらむ目・歯・鼻息）とひし形の勝負服の騎手（ゴーグル・汗・ゼッケン1）')),
 
  dict(id='lucky', cat=3, name='開運', desc='白と赤・招き馬', title='開運・招き馬（白×赤×金）', banner='lucky',
       alt='銀の蹄鉄の中で、右の前足をあげて福を招き、千両の小判をだいた白い招き馬（正面の顔・つり目の金色の目・赤い首輪と金の鈴）と、金貨・桜・四つ葉のアニメ風イラスト',
@@ -824,8 +1027,8 @@ THEMES = [
            ('.tb', 'box-shadow:inset 0 3px 0 #D32F2F,inset 0 5px 0 #E6C66F')],
       orn=orn_lucky(),
       guide=dict(colors=[('#FFFFFF', '白'), ('#D32F2F', '赤'), ('#D4A63A', '金'), ('#B9C4D1', '銀'), ('#FFFCF6', '背景'), ('#2A1A16', '文字')],
-                 fonts='見出し：Zen Antique Soft（赤い文字）<br>本文：Zen角ゴシック New', shape='角丸16px・金の枠・赤いボタン・白地に小さな桜と小判・上下の帯は白に赤と金の線・すみに小判',
-                 pic='銀の蹄鉄（つま先のでっぱり・溝・くぎ穴・くぎ）・中に大きな白い招き馬（招き猫ふう：正面の顔・丸みのあるつり目の金色の目（横長のひとみ）・赤い耳・目の上の赤いかざり・赤い首輪に金の鈴・千両の小判・体の横から招く右前足）・金貨・桜・四つ葉・キラキラ（アニメ風）')),
+                 fonts='見出し：Zen Antique Soft（赤い文字）<br>本文：Zen角ゴシック New', shape='角丸16px・金の枠・赤いボタン・白地に小さな桜と小判・帯は白に赤と金の線・的中ボタンは小判でできたPUSH',
+                 pic='銀の蹄鉄（溝・くぎ穴・くぎ）・中に大きな白い招き馬（招き猫ふう：正面の顔・つり目の金色の目・赤い耳・赤い首輪に金の鈴・千両の小判・招く右前足。8秒ごとに 前足が がたがた → 一気に 振り下ろす・ときどき 上を向いて 招きながら いななく）・金貨・桜・四つ葉・降る小判（アニメ風）')),
 
  dict(id='ink', cat=4, name='水墨画', desc='和紙と墨', title='水墨画（和紙×墨・朱）', banner='ink', alt='和紙に墨の線と灰色のぼかしでえがいた、騎手を乗せて競り合う2頭の競走馬と、朱色の落款のイラスト',
       fonts=['Yuji+Mai', 'Zen+Old+Mincho:wght@600;700'],
@@ -845,8 +1048,8 @@ THEMES = [
            ('.lb', 'background:' + enso_uri() + ' 50% 46%/64px 64px no-repeat')],
       orn=orn_ink(),
       guide=dict(colors=[('#F6F3EC', '和紙'), ('#1A1A1A', '墨'), ('#B7282E', '朱（落款）'), ('#5E5A52', '薄墨'), ('#FBFAF6', 'カード')],
-                 fonts='見出し：Yuji Mai（筆の字）<br>本文：Zen Old Mincho', shape='角丸3px・細い墨の線・帯の下に筆の線・朱色の「第1」・Aは円相・すみに円相と落款',
-                 pic='和紙・墨の線とぼかしでえがいた、騎手を乗せて競り合う2頭（手前は濃い墨・奥はうすい墨）・かすれ・朱色の「馬」の落款')),
+                 fonts='見出し：Yuji Mai（筆の字）<br>本文：Zen Old Mincho', shape='角丸3px・細い墨の線・帯の下に筆の線・朱色の「第1」・Aは円相・すみに円相と落款・的中ボタンは墨画でできたPUSH',
+                 pic='和紙・墨の線とぼかしでえがいた、騎手を乗せて競り合う2頭（手前は濃い墨・奥はうすい墨・いつも走っている）・かすれ・朱色の「馬」の落款')),
 
  dict(id='marble', cat=4, name='大理石', desc='白と金・彫刻', title='大理石（白×金）', banner='marble', alt='金の帯の台の上の岩で、後ろ足で立ち上がる白い大理石の馬の像（波打つたてがみ・台までとどくしっぽ）と月桂樹のイラスト',
       fonts=['Shippori+Mincho+B1:wght@800', 'Shippori+Mincho:wght@500;700'],
@@ -867,8 +1070,8 @@ THEMES = [
            ('.vt,.zf', 'letter-spacing:.03em')],
       orn=orn_marble(),
       guide=dict(colors=[('#F7F5F2', '大理石'), ('#B8935A', '金'), ('#2B2620', '黒（ボタン）'), ('#F0DDB0', '薄い金'), ('#6E665A', '小さい文字')],
-                 fonts='見出し：Shippori Mincho B1 ExtraBold<br>本文：しっぽり明朝', shape='角丸2px・細い二重の枠・金の細い線・大理石のすじの背景・黒いボタンに金の字・すみに月桂樹',
-                 pic='大理石の像（後ろ足で立ち上がる馬・波打つたてがみ・ねじれながら台までとどくしっぽ・岩の台座）・金の帯の台・金の月桂樹')),
+                 fonts='見出し：Shippori Mincho B1 ExtraBold<br>本文：しっぽり明朝', shape='角丸2px・細い二重の枠・金の細い線・大理石のすじの背景・黒いボタンに金の字・すみに月桂樹・的中ボタンは大理石でできたPUSH',
+                 pic='大理石の像（後ろ足で立ち上がる馬・波打つたてがみ・ねじれながら台までとどくしっぽ・岩の台座。8秒ごとに うしろを2度見して、くるっと反対を向く・ときどき いななく／台ごと ずっずっと 外へ出て もどる）・金の帯の台・金の月桂樹')),
 
  dict(id='silver', cat=6, name='シルバー帯', desc='銀・光る像', title='シルバー帯（銀×白）', banner='silver',
       alt='銀の地（ヘアライン）と光の輪の前を、全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト',
@@ -891,8 +1094,8 @@ THEMES = [
            ('.lb', 'box-shadow:inset 0 1px 0 #FFFFFF,0 2px 4px rgba(0,0,0,.15)')],
       orn=orn_silver(),
       guide=dict(colors=[('#D6DAE0', '銀'), ('#2A3038', '黒（帯・ボタン）'), ('#F2F4F6', '白（カード）'), ('#8A939D', '灰（線）'), ('#1E2329', '文字')],
-                 fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='角丸10px・ヘアラインの銀の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに白い字・銀の「第1」・すみにきらめき',
-                 pic='全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの銀の地・像のうしろの光の輪・走る勢いの銀のすじ・みがいた床にうつる像・きらめき')),
+                 fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='角丸10px・ヘアラインの銀の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに白い字・銀の「第1」・すみにきらめき・的中ボタンはシルバーでできたPUSH（めちゃくちゃ輝く）',
+                 pic='全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・手前の前足が床につく。いつも キラキラ輝く：きらめきが あちこちで またたき、光の粒が うしろへ流れる）・ヘアラインの銀の地・像のうしろの光の輪（光が回る）・走る勢いの銀のすじ・みがいた床にうつる像・きらめき')),
 
  dict(id='golden', cat=6, name='ゴールド帯', desc='金・光る像', title='ゴールド帯（金×黒）', banner='golden',
       alt='金の地（ヘアライン）と光の輪の前を、全力で駆ける金の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト',
@@ -915,8 +1118,8 @@ THEMES = [
            ('.lb', 'box-shadow:inset 0 1px 0 #FFFDF4,0 2px 4px rgba(60,40,10,.18)')],
       orn=orn_golden(),
       guide=dict(colors=[('#E3CC8F', '金'), ('#2A1F0C', '黒（帯・ボタン）'), ('#FBF5E4', 'アイボリー（カード）'), ('#A9853A', '濃い金（線）'), ('#F6DE95', '明るい金（ボタンの字）')],
-                 fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='シルバーと同じ形を金に：角丸10px・ヘアラインの金の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに金の字・金の「第1」・すみにきらめき',
-                 pic='全力で駆ける金の馬の像（シルバーと同じ像を金に。うしろへ流れるたてがみとしっぽ・手前の前足が床につく）・ヘアラインの金の地・像のうしろの光の輪・走る勢いの金のすじ・みがいた床にうつる像・きらめき')),
+                 fonts='見出し：Dela Gothic One<br>本文：Zen角ゴシック New', shape='シルバーと同じ形を金に：角丸10px・ヘアラインの金の背景・白い内ふちのカード・黒い帯の下に光る線・黒いボタンに金の字・金の「第1」・すみにきらめき・的中ボタンはゴールドでできたPUSH（めちゃくちゃ輝く）',
+                 pic='全力で駆ける金の馬の像（シルバーと同じ像を金に。いつも 金に キラキラ輝く：きらめきが またたき、金の粉が流れる）・ヘアラインの金の地・光の輪（光が回る）・金のすじ・みがいた床にうつる像')),
 
  dict(id='tengel', cat=6, name='マスター帯', desc='テンゲルの絵', title='マスター帯（テンゲルの紺緑×金）', banner='tengel',
       alt='テンゲルの絵（金と紺の盾のエンブレムに、騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線、TENGER の金の文字・「独自の統計・オッズ分析による馬券検討支援システム」・「テンゲル」の金の札）',
@@ -942,8 +1145,8 @@ THEMES = [
            ('.seg', 'color:#A6BEC3')],
       orn=orn_master(),
       guide=dict(colors=[('#0A1B22', '紺緑（背景・帯）'), ('#10303A', 'パネル'), ('#D9B45A', '金'), ('#F4DC96', '明るい金（字）'), ('#E8F0F1', '文字')],
-                 fonts='見出し：Dela Gothic One<br>本文：BIZ UDPゴシック', shape='説明書と同じ形と色：角丸16px・紺緑のカードに金の細いふち（内がわにもう1本）・金の縦の細いすじ（36pxおき）と上の青緑の光の背景・金のボタンに紺の字・金の「第1」・すみに金のネットワーク',
-                 pic='テンゲルの絵（説明書の上の絵と同じ）：金と紺の盾のエンブレム（騎手を乗せて走る馬・上がるグラフ・王冠・データの数字と線）・TENGER の金の文字・「テンゲル」の金の札。下の小さな版の行は消した')),
+                 fonts='見出し：Dela Gothic One<br>本文：BIZ UDPゴシック', shape='説明書と同じ形と色：角丸16px・紺緑のカードに金の細いふち2本・金の縦のすじと青緑の光の背景・金のボタンに紺の字・金の「第1」・すみに金のネットワーク・的中ボタンは説明書の絵の長方形のPUSH（緑の雷をまとう）',
+                 pic='テンゲルの絵（説明書の上の絵と同じ・版の行なし）：金と紺の盾のエンブレム（騎手を乗せて走る馬・上がるグラフ・王冠・動く数字と線）・TENGER の金の文字・「テンゲル」の金の札・枠に2色の緑の雷')),
 
  dict(id='neon', cat=5, name='ネオン', desc='光る線・80年代', title='ネオン（黒×ピンク・水色）', banner='neon', alt='紫の夜空と光る格子、しま模様の太陽の前を、騎手を乗せて走ってくる光る線の競走馬のイラスト',
       fonts=['Rampart+One', 'Zen+Kaku+Gothic+New:wght@500;700'],
@@ -968,8 +1171,8 @@ THEMES = [
            ('.card + .card', 'border-color:#FF2BD6;box-shadow:0 0 0 1px rgba(255,43,214,.2),0 0 18px rgba(255,43,214,.35)')],
       orn=orn_neon(),
       guide=dict(colors=[('#0A0718', '黒紫'), ('#FF2BD6', 'ネオンピンク'), ('#00F0FF', 'ネオン水色'), ('#120C2A', 'カード'), ('#F4F0FF', '文字')],
-                 fonts='見出し：Rampart One（光る字）<br>本文：Zen角ゴシック New', shape='角丸14px・光る線の枠（水色とピンク）・丸い光るボタン・格子の背景・すみにしま模様の太陽',
-                 pic='紫の夜空・光る格子・しま模様の太陽・光る線でえがいた馬')),
+                 fonts='見出し：Rampart One（光る字）<br>本文：Zen角ゴシック New', shape='角丸14px・光る線の枠（水色とピンク）・丸い光るボタン・格子の背景・すみにしま模様の太陽・的中ボタンはネオンでできたPUSH',
+                 pic='紫の夜空・光る格子・しま模様の太陽・光る線でえがいた馬（いつも走っている）・10秒に1回 流れ星')),
 
  dict(id='pixel', cat=5, name='ドット絵', desc='昔のゲーム', title='ドット絵（レトロゲーム）', banner='pixel', alt='昔のゲームのようなドット絵で、コースを走る馬と「GO!」の文字',
       fonts=['DotGothic16'],
@@ -995,8 +1198,8 @@ THEMES = [
            ('.n', 'border-radius:0')],
       orn=orn_pixel(),
       guide=dict(colors=[('#1D2B53', '紺'), ('#FFEC27', '黄'), ('#00E436', '緑（ボタン）'), ('#29ADFF', '水色'), ('#FF004D', '赤')],
-                 fonts='見出し・本文：DotGothic16（ドットの字）', shape='角なし・ギザギザのドットの枠・ボタンは段のある影・枠の色は16色だけ・すみにドットのハート',
-                 pic='ドットの空と丘・コース・ゴール板・ドットの馬・「GO!」')),
+                 fonts='見出し・本文：DotGothic16（ドットの字）', shape='角なし・ギザギザのドットの枠・ボタンは段のある影・枠の色は16色だけ・すみにドットのハート・的中ボタンはドットでできたPUSH',
+                 pic='ドットの空と丘（丘と雲が ゆっくり流れる）・コース・ゴール板・ドットの馬（いつも走り、ときどきジャンプか一回転して こっちを1秒見る・20〜23秒に1回 立ち止まる）・「GO!」')),
 
  dict(id='chalk', cat=5, name='黒板', desc='チョーク・学校', title='黒板（緑×チョーク）', banner='chalk', alt='黒板にチョークでかいた走る馬と、メモや星の落書き',
       fonts=['Yomogi', 'Klee+One:wght@600'],
@@ -1020,8 +1223,8 @@ THEMES = [
            ('.tb::before', 'content:"";position:absolute;top:-10px;right:26px;width:64px;height:7px;border-radius:2px;background:linear-gradient(90deg,#F3F1E7 0 18px,transparent 18px 23px,#F6E27F 23px 41px,transparent 41px 46px,#F4A6C0 46px 64px)')],
       orn=orn_chalk(),
       guide=dict(colors=[('#24423A', '黒板'), ('#F3F1E7', 'チョーク白'), ('#F6E27F', 'チョーク黄'), ('#F4A6C0', 'チョークピンク'), ('#8A5A2B', '木の枠')],
-                 fonts='見出し：Yomogi（手書き）<br>本文：Klee One', shape='角丸8px・チョークの点線の枠・Aは丸で囲む・上下の帯は木の枠・タブの上にチョーク・すみに花丸',
-                 pic='黒板・チョークの馬・「本日の◎」のメモ・矢印と星・チョーク受け')),
+                 fonts='見出し：Yomogi（手書き）<br>本文：Klee One', shape='角丸8px・チョークの点線の枠・Aは丸で囲む・上下の帯は木の枠・タブの上にチョーク・すみに花丸・的中ボタンは黒板にチョークで書いたPUSH',
+                 pic='黒板・チョークの馬（走る馬・ゼッケンの競走馬・立っている馬の3種類。10秒ごとに 黒板消しで消して、チョークで 書きなおす）・「本日の◎」のメモ・矢印と星・チョーク受け')),
 
  dict(id='carousel', cat=5, name='メリーゴーランド', desc='パステル・遊園地', title='メリーゴーランド（パステル×金）', banner='carousel', alt='しま模様の屋根と電球の下の、金の柱の木馬のイラスト',
       fonts=['Cherry+Bomb+One', 'Zen+Maru+Gothic:wght@500;700'],
@@ -1040,8 +1243,8 @@ THEMES = [
            ('.mbtn', 'box-shadow:0 2px 0 #C9A044')],
       orn=orn_carousel(),
       guide=dict(colors=[('#F49AC1', 'ピンク'), ('#E9C46A', '金'), ('#B83A74', 'ボタン'), ('#8A3A9A', '紫'), ('#FBEFF6', '背景')],
-                 fonts='見出し：Cherry Bomb One<br>本文：Zen Maru Gothic', shape='角丸20px・金の枠・上の帯はしま模様の屋根（絵とつながる）・ロゴは看板・丸いボタン・すみにテント',
-                 pic='しま模様の屋根・電球・金の柱の木馬（ピンクとミントの鞍）・ぼけた光')),
+                 fonts='見出し：Cherry Bomb One<br>本文：Zen Maru Gothic', shape='角丸20px・金の枠・上の帯はしま模様の屋根（絵とつながる）・ロゴは看板・丸いボタン・すみにテント・的中ボタンはメリーゴーランドのPUSH',
+                 pic='しま模様の屋根・電球・金の柱の木馬（ピンクとミントの鞍・柱にそって上下に動く）・ぼけた光')),
 
  dict(id='stars', cat=5, name='星座', desc='夜空・ペガサス', title='星座・ペガサス（紺紫×金）', banner='constellation', alt='天の川の夜空に、星をむすんだ翼のある馬の星座と三日月のイラスト',
       fonts=['Tsukimi+Rounded:wght@500;700'],
@@ -1062,8 +1265,8 @@ THEMES = [
            ('.lb b', 'text-shadow:0 0 10px rgba(255,216,107,.6)')],
       orn=orn_stars(),
       guide=dict(colors=[('#0D0B2A', '夜空'), ('#FFD86B', '星の金'), ('#B9ACFF', 'ラベンダー'), ('#17143A', 'カード'), ('#F3F0FF', '文字')],
-                 fonts='見出し・本文：Tsukimi Rounded（月見）', shape='角丸16px・星の背景・帯の下に星座の線・金の「第1」・丸いボタン・すみに三日月',
-                 pic='天の川・星でむすんだ翼のある馬（ペガサス）・三日月')),
+                 fonts='見出し・本文：Tsukimi Rounded（月見）', shape='角丸16px・星の背景・帯の下に星座の線・金の「第1」・丸いボタン・すみに三日月・的中ボタンは星でできたPUSH',
+                 pic='天の川・流れる星・星でむすんだ翼のある馬（ペガサス・きらきら・8秒に1回 鼻から しっぽへ キラキラ）・三日月')),
 ]
 
 # いったん外したテーマ（2026/10/18 まさちゃん「一回、壁紙から龍馬全て消して！」）。THEMES には入れない（選ぶ画面・見本・メモに出ない）。

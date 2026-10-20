@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>的中ボタン（ホワイトデー：マシュマロのPUSH）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+.ph{--bg:#F3F8E6;--ink:#2B3A18;--sub:#5A6A42;--card:#FFFFFF;--cardB:2px solid #CFE6A8;--cardO:0 solid transparent;--cardS:0 3px 0 #DCEBC0;--radius:18px;--rs:14px;--font:"Zen Maru Gothic";--dfont:"Zen Maru Gothic";--dw:900;--logo:#24470C;--logoS:0 2px 0 rgba(255,255,255,.55);--iii:#8A5A2B;--iiiB:0 solid transparent;--iiiR:2px;--hd:linear-gradient(180deg,#A9DA5E,#86C23C);--hdInk:#24470C;--mBg:#FFF9E6;--mLine:#A8743F;--mInk:#5A3A1A;--pill:#FFF9E6;--pillLine:#E4D3A8;--pillInk:#5A3A1A;--coin:#FFD84A;--coinInk:#5A3A1A;--badge:#E5F4CC;--badgeInk:#3D7A16;--badgeB:2px solid #CFE6A8;--tagBg:#F7FBEF;--tagInk:#3D5A1E;--tagLine:#CFE6A8;--warnBg:#FFE9D6;--warnInk:#A0461A;--zBg:#F7FBEF;--zB:1.5px solid #DDEDC0;--znBg:#A8743F;--znInk:#FFF8E8;--znB:0 solid transparent;--znR:4px;--acc:#2F6A12;--nR:8px;--w2B:0 solid transparent;--sep:2px dotted #CFE6A8;--btn:#3E7B1E;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:14px;--btnS:0 3px 0 #2A5A10;--btn2:#FFFFFF;--btn2Ink:#3E7B1E;--btn2B:2px solid #A9D46A;--tab:#FFFBEA;--tabB:4px solid #A8743F;--tabInk:#7A6A4F;--tabOn:#DDF0BC;--tabOnInk:#2F6A12;--tabR:14px}
+.ph{--pushA:#E8382F;--pushB:#A51A12;--pushC:#FF9A8A;--rim:#F6E7B8;--rimD:#B98A3A;--bFrame:#8A5A2B;--bFace:#FFFDF5;--bInk:#3A2414;--hitRed:#E8382F;--ray:rgba(255,236,170,.55);
+  --pushFace:radial-gradient(72% 40% at 50% 14%,rgba(255,255,255,.9),rgba(255,255,255,.3) 58%,rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--pushC) 0%,var(--pushA) 40%,var(--pushB) 86%,#5E0A05 100%)}
+.ph{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;background-color:var(--bg);background-image:radial-gradient(#E1EFC4 1.6px,transparent 2px);background-size:18px 18px;color:var(--ink);font-family:var(--font),sans-serif;-webkit-font-smoothing:antialiased}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hd{position:relative;z-index:2;flex:none;padding:10px 16px 12px;background:var(--hd);color:var(--hdInk);border-bottom:4px solid #A8743F}
+.hd-r1{display:flex;align-items:center;justify-content:space-between;height:42px}
+.logo{display:flex;align-items:center;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:26px;line-height:1;color:var(--logo);text-shadow:var(--logoS)}
+.iii{display:inline-flex;gap:3px;margin-left:6px}
+.iii i{display:block;width:5.5px;height:21px;background:var(--iii);border:var(--iiiB);border-radius:var(--iiiR)}
+.mbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;border:1.5px solid var(--mLine);background:var(--mBg);color:var(--mInk);font-family:var(--font),sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.mbtn svg{width:18px;height:18px}
+.bnr{flex:none;display:block;width:390px;height:120px;object-fit:cover;object-position:50% 70%}
+.ct{flex:1;min-height:0;overflow:hidden;padding:14px 14px 0}
+.card{position:relative;background:var(--card);border:var(--cardB);border-radius:var(--radius);box-shadow:var(--cardS);padding:14px}
+.ch{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--sub)}
+.rh{display:flex;align-items:baseline;gap:10px}
+.rk{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:22px;color:var(--ink)}
+.rs{font-size:12px;color:var(--sub)}
+.lab{margin:12px 0 6px;font-size:12px;font-weight:700;color:var(--sub)}
+.fin{display:flex;align-items:center;gap:8px}
+.fin span.k{font-size:12px;font-weight:700;color:var(--sub)}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:var(--nR);font:700 15px/1 "BIZ UDPGothic",sans-serif}
+.w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.w2{background:#222222;color:#FFFFFF}
+.w4{background:#1F5FC9;color:#FFFFFF}
+.w5{background:#F3C316;color:#1F1F1F}
+.w6{background:#1E8E3E;color:#FFFFFF}
+.w7{background:#F08A1C;color:#1F1F1F}
+.ar{color:var(--sub);font-weight:700;padding:0 2px}
+.bets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bets li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:var(--zBg);border:var(--zB)}
+.bt{flex:none;min-width:46px;height:24px;padding:0 8px;border-radius:999px;background:var(--znBg);color:var(--znInk);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.bc{display:flex;align-items:center;gap:3px;flex:1}
+.bc .n{min-width:26px;height:26px;font-size:13px}
+.by{font-size:12.5px;font-weight:700;color:var(--ink)}
+.pay{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:10px 12px;border-radius:var(--rs);border:1.5px dashed var(--tagLine);font-size:13px;font-weight:700;color:var(--ink)}
+.pay b{font-size:17px}
+.rec{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:14px;border:0;border-radius:var(--btnR);background:var(--btn);color:var(--btnInk);box-shadow:var(--btnS);font-family:var(--font),sans-serif;font-weight:800;font-size:17px;cursor:pointer}
+.rec svg{width:20px;height:20px}
+.note{margin:10px 2px 0;font-size:11.5px;line-height:1.5;color:var(--sub)}
+/* ---------- 重ねる画面 ---------- */
+.ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dim{position:absolute;inset:0;background:rgba(24,14,4,.62);animation:fadeIn .25s ease-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* PUSHボタン（横長の長方形・角は丸い） */
+.pbox{position:relative;display:flex;flex-direction:column;align-items:center}
+.push{--pr:26px;position:relative;z-index:2;width:200px;height:100px;border-radius:var(--pr);border:0;padding:0;cursor:pointer;background:var(--pushFace);
+  box-shadow:inset 0 -9px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.55),0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #6E4E1A,0 22px 34px rgba(0,0,0,.5);
+  animation:bob .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+.push span{position:relative;font:400 40px/1 "Dela Gothic One",sans-serif;color:#FFFFFF;letter-spacing:.04em;text-shadow:0 3px 0 var(--pushB),0 0 14px rgba(255,255,255,.55)}
+.push::after{content:"";position:absolute;inset:-18px;border-radius:calc(var(--pr) + 18px);border:3px solid rgba(255,232,150,.95);animation:ring 1.2s ease-out infinite}
+.pshadow{width:200px;height:22px;margin-top:22px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(4px);animation:shad .9s ease-in-out infinite}
+.tap{margin:16px 0 0;font:400 20px/1 "Dela Gothic One",sans-serif;color:#FFF3C8;letter-spacing:.1em;animation:blink 1s steps(2) infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes shad{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.72);opacity:.3}}
+@keyframes ring{0%{transform:scale(.88);opacity:.95}100%{transform:scale(1.4);opacity:0}}
+@keyframes popIn{from{scale:.2}to{scale:1}}
+@keyframes blink{0%{opacity:1}100%{opacity:.35}}
+@keyframes raysIn{from{opacity:0;scale:.3}to{opacity:1;scale:1}}
+@keyframes spin{to{rotate:360deg}}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+/* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
+.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+.ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
+/* 押したあと（PUSHがあった所から光ってはじける） */
+.pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+@keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
+/* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
+.hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+/* 紙ふぶき */
+.conf{position:absolute;inset:0;z-index:7;pointer-events:none}
+.conf i{position:absolute;left:var(--x);top:-30px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:0;animation:fall var(--t) linear var(--d) infinite}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(var(--r))}}
+/* 視差効果を減らす：上下・回転・広がる光・紙ふぶきを止めて、ボードはふわっと出す */
+@media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
+
+/* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
+.rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
+  background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
+  animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+@keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
+.hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
+.hit{--t0:1.15s;--tc:.2s}
+.ph{--bg:#F3F8FC;--ink:#1E3346;--sub:#557089;--card:#FFFFFF;--cardB:1.5px solid #D6E5F2;--cardO:0 solid transparent;--cardS:0 3px 0 #DCE8F3;--radius:20px;--rs:14px;--font:"M PLUS Rounded 1c";--dfont:"Mochiy Pop One";--dw:400;--logo:#FFFFFF;--logoS:0 2px 0 #2A5A8C;--iii:#FFFFFF;--iiiB:0 solid transparent;--iiiR:3px;--hd:linear-gradient(180deg,#4A8CC8,#3A78B4);--hdInk:#FFFFFF;--hdB:0 solid transparent;--mBg:rgba(0,0,0,.16);--mLine:rgba(255,255,255,.6);--mInk:#FFFFFF;--pill:rgba(0,0,0,.16);--pillLine:rgba(255,255,255,.35);--pillInk:#FFFFFF;--coin:#FFFFFF;--coinInk:#2F6EA8;--badge:#E6F1FA;--badgeInk:#23608F;--badgeB:1.5px solid #C9DDF0;--tagBg:#EEF5FB;--tagInk:#2A5378;--tagLine:#CFE0EF;--warnBg:#FFE9EE;--warnInk:#A43A4A;--zBg:#F7FAFD;--zB:1.5px solid #E1ECF6;--znBg:#3A78B4;--znInk:#FFFFFF;--znB:0 solid transparent;--znR:999px;--znS:none;--acc:#23608F;--nR:10px;--w2B:0 solid transparent;--sep:1.5px dashed #D6E5F2;--btn:#3A78B4;--btnInk:#FFFFFF;--btnB:0 solid transparent;--btnR:999px;--btnS:0 3px 0 #2A5A8C;--btn2:#FFFFFF;--btn2Ink:#2F6EA8;--btn2B:1.5px solid #B9D3EA;--tab:#FFFFFF;--tabB:1px solid #D6E5F2;--tabInk:#557089;--tabOn:#E3F0FA;--tabOnInk:#23608F;--tabR:16px;--sel:#3A78B4;--selInk:#FFFFFF;--h1:#23608F}
+.ph{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='124' height='136' viewBox='0 0 124 136'%3E%3Cg transform='translate(22 26) rotate(-12)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23FFFFFF' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cg transform='translate(88 64) rotate(14)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23FFE3EC' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cg transform='translate(40 104) rotate(-6)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23E3F1FB' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cpath d='M82.0 21.8 C81.2 21.0 77.8 19.0 78.0 17.0 C78.2 14.6 81.2 14.2 82.0 16.3 C82.8 14.2 85.8 14.6 86.0 17.0 C86.2 19.0 82.8 21.0 82.0 21.8 Z' fill='%239CCBEB' opacity='.45'/%3E%3Cpath d='M106.0 113.4 C105.3 112.7 102.2 110.9 102.4 109.1 C102.6 106.9 105.3 106.6 106.0 108.5 C106.7 106.6 109.4 106.9 109.6 109.1 C109.8 110.9 106.7 112.7 106.0 113.4 Z' fill='%239CCBEB' opacity='.45'/%3E%3Ccircle cx='56' cy='52' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='10' cy='72' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='112' cy='34' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='70' cy='124' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3C/svg%3E");background-size:124px 136px}
+.ph .hd::after{content:"";position:absolute;left:0;right:0;bottom:-7px;height:8px;background:radial-gradient(circle at 8px 0,#3A78B4 7px,transparent 7.6px) 0 0/16px 8px repeat-x}
+.ph .bnr{height:160px;object-position:50% 50%}
+.ph .hd{border-bottom:var(--hdB)}
+
+/* ---------- ホワイトデーの的中ボタン：マシュマロのPUSH（まさちゃんの指定） ----------
+   ボタンが まるごと ふわふわの マシュマロ：白い 面（下は うすい水色）・上に ふんわり光・こなを ふった 点・まるい 角。
+   「PUSH」は 水色の まるい字に 白い ふち。ボタンが ぽよん ぽよんと ゆれる（上下の動きに 合わせて すこし つぶれる）。
+   まわりに ピンクと水色の 小さな マシュマロが ぽよん・左上に 水色の リボン・キラッ。
+   押すと マシュマロが ふにゃっと つぶれて ふくらみ（強く光らせない）、白・ピンク・水色の マシュマロと キラッ と ハートが はじけて 落ち、水色の 光の輪が広がる */
+.wd{--pushA:#FFFFFF;--pushB:#4F8CC4;--pushC:#FFFFFF;--rim:#D6ECFB;--rimD:#8CC4EC}
+.push.wd{--pr:42px;background:#FFFFFF;box-shadow:inset 0 -6px 10px rgba(110,160,210,.25),0 0 0 4px #D6ECFB,0 0 0 6px #8CC4EC,0 8px 0 6px #B5D6EF,0 22px 30px rgba(40,80,130,.35);
+  animation:bob .9s ease-in-out infinite,wdSq .9s ease-in-out infinite,popIn .35s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes wdSq{0%,100%{scale:1.04 .95}50%{scale:.98 1.03}}
+.push.wd span{font:400 40px/1 "Mochiy Pop One",sans-serif;letter-spacing:.04em;color:#5E9FD0;text-shadow:0 0 0 #FFFFFF,2px 2px 0 #FFFFFF,-2px 2px 0 #FFFFFF,2px -2px 0 #FFFFFF,-2px -2px 0 #FFFFFF,0 4px 0 #8CC4EC}
+.push.wd::after{border-radius:60px;border-color:rgba(140,196,236,.95)}
+.wd .wdf{position:absolute;left:0;top:0;width:200px;height:100px;border-radius:42px;overflow:hidden;pointer-events:none;font-style:normal}
+.wd .wdf svg{display:block;width:200px;height:100px}
+.wd .wdd{position:absolute;left:-40px;top:-40px;width:280px;height:180px;pointer-events:none;z-index:3;font-style:normal}
+.wd .wdd svg{display:block;width:280px;height:180px;overflow:visible}
+.wd .wdbo{transform-box:fill-box;transform-origin:50% 100%;animation:wdBo 1.8s ease-in-out infinite}
+@keyframes wdBo{0%,100%{transform:scale(1.06,.92) translateY(2px)}50%{transform:scale(.96,1.05) translateY(-3px)}}
+.wd .wdtw{transform-box:fill-box;transform-origin:50% 50%;animation:wdTw 2.4s ease-in-out infinite}
+@keyframes wdTw{0%,100%{opacity:.25;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
+.tap.wd{font-family:"Mochiy Pop One",sans-serif;font-weight:400;color:#E3F1FB;letter-spacing:.12em;text-shadow:0 2px 0 #3A78B4,0 0 10px rgba(140,196,236,.7)}
+.pressed.wd{border-radius:42px;background:#FFFFFF;box-shadow:0 0 0 4px #D6ECFB,0 0 0 6px #8CC4EC,0 8px 0 6px #B5D6EF;animation-name:wdPress}
+@keyframes wdPress{0%{transform:scale(1)}25%{transform:scale(1.12,.78)}50%{transform:scale(.94,1.1)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
+@media (prefers-reduced-motion:reduce){.push.wd{animation:none!important}.wd .wdbo,.wd .wdtw{animation:none}.clips.wd{display:none}}
+.clips.wd{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
+.clips.wd i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:wdFly 1.5s cubic-bezier(.2,.6,.4,1) calc(var(--d) + .1s) both;background:center/contain no-repeat}
+.clips.wd .m1{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-15 -13 30 26'%3E%3Crect x='-14' y='-10' width='28' height='22' rx='10' fill='%23D4E6F6'/%3E%3Crect x='-14' y='-12' width='28' height='17' rx='8.5' fill='%23FFFFFF'/%3E%3Cellipse cx='-4' cy='-7' rx='5' ry='2.4' fill='%23FFFFFF' opacity='.9'/%3E%3C/svg%3E");height:calc(var(--z) * .86)}
+.clips.wd .m2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-15 -13 30 26'%3E%3Crect x='-14' y='-10' width='28' height='22' rx='10' fill='%23F2B5C8'/%3E%3Crect x='-14' y='-12' width='28' height='17' rx='8.5' fill='%23FFD6E2'/%3E%3Cellipse cx='-4' cy='-7' rx='5' ry='2.4' fill='%23FFFFFF' opacity='.9'/%3E%3C/svg%3E");height:calc(var(--z) * .86)}
+.clips.wd .m3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-15 -13 30 26'%3E%3Crect x='-14' y='-10' width='28' height='22' rx='10' fill='%23B5D6EF'/%3E%3Crect x='-14' y='-12' width='28' height='17' rx='8.5' fill='%23D6ECFB'/%3E%3Cellipse cx='-4' cy='-7' rx='5' ry='2.4' fill='%23FFFFFF' opacity='.9'/%3E%3C/svg%3E");height:calc(var(--z) * .86)}
+.clips.wd .tw{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cpath d='M0.0 -9.5 Q2.1 -2.1 9.5 0.0 Q2.1 2.1 0.0 9.5 Q-2.1 2.1 -9.5 0.0 Q-2.1 -2.1 0.0 -9.5 Z' fill='%238CC4EC'/%3E%3C/svg%3E")}
+.clips.wd .ht{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -11 22 22'%3E%3Cpath d='M0.0 9.5 C-2.0 7.5 -10.5 2.5 -10.0 -2.5 C-9.5 -8.5 -2.0 -9.5 0.0 -4.2 C2.0 -9.5 9.5 -8.5 10.0 -2.5 C10.5 2.5 2.0 7.5 0.0 9.5 Z' fill='%238CC4EC' stroke='%234F8CC4' stroke-width='1.2'/%3E%3C/svg%3E")}
+.clips.wd .ring{left:-70px;top:-70px;width:140px;height:140px;border-radius:50%;border:5px solid rgba(140,196,236,.95);box-shadow:0 0 16px rgba(140,196,236,.95);animation:wdRing .8s ease-out .1s forwards}
+@keyframes wdFly{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.35)}8%{opacity:1}45%{opacity:1;transform:translate(calc(var(--x) * .8),var(--y)) rotate(calc(var(--r) * .45)) scale(1)}100%{opacity:0;transform:translate(var(--x),calc(var(--y) + 170px)) rotate(var(--r)) scale(.9)}}
+@keyframes wdRing{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(2.2)}}
+
+/* ===== 結果のボード（テーマの判定画面と同じ見た目・馬は出さない） =====
+   ふち（.rb）＝テーマの背景のもよう → 上の帯（.hd）＝見出し → カード（.card）＝買い目。すみにテーマの飾り（.orn） */
+.rb{position:relative;width:350px;padding:8px;border-radius:calc(var(--radius) + 8px);background-color:var(--bg);color:var(--ink);text-align:left;
+  font-family:var(--font),"BIZ UDPGothic",sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 0 0 1.5px rgba(255,255,255,.6),0 18px 38px rgba(0,0,0,.45)}
+.rb .hd{position:relative;z-index:1;display:block;flex:none;padding:13px 12px 14px;border-radius:var(--radius);background:var(--hd);color:var(--hdInk);border-bottom:var(--hdB);text-align:center}
+.rb .bh{display:inline-block;max-width:100%;margin:0;font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:34px;line-height:1.12;color:var(--logo);text-shadow:var(--logoS);white-space:nowrap}
+/* 見出しの大きさはそろえる（テーマのロゴの大きさの決まりより強く） */
+.rb.rb .hd .bh{font-size:34px}
+.rb.rb.miss .hd .bh,.rb.rb.fz .hd .bh{font-size:30px}
+.rb .bh .bx3{margin-left:-.18em;letter-spacing:-.42em}
+.rb .bsub{display:block;margin-top:6px;font-size:12.5px;font-weight:700;line-height:1.3;color:var(--hdInk);white-space:nowrap}
+.rb .card{position:relative;flex:none;margin-top:9px;padding:13px 11px 12px;background:var(--card);border:var(--cardB);outline:var(--cardO);outline-offset:-7px;border-radius:var(--radius);box-shadow:var(--cardS)}
+.rb .orn{position:absolute;top:-15px;right:12px;width:44px;height:44px;pointer-events:none;overflow:visible;z-index:2}
+.rb .orn.o34{height:34px;top:-12px}
+.rb .orn.o40{width:40px;height:40px;top:-13px}
+.rb .brows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rb .brows li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:6px 8px;border-radius:var(--rs);background:var(--zBg);border:var(--zB);white-space:nowrap}
+/* 払戻が長くて入らないときは、払戻だけ次の行へ（右によせる） */
+.rb .bt{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:22px;padding:0 8px;border-radius:999px;background:var(--tagBg);color:var(--tagInk);border:1px solid var(--tagLine);font-size:11.5px;font-weight:800}
+.rb .bc{display:flex;align-items:center;gap:2px;flex:none}
+.rb .n{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;border-radius:var(--nR);font:700 12.5px/1 "BIZ UDPGothic",sans-serif}
+.rb .w1{background:#FFFFFF;color:#1F1F1F;border:1.5px solid #9AA0A6}
+.rb .w2{background:#222222;color:#FFFFFF;border:var(--w2B)}
+.rb .w3{background:#E0322B;color:#FFFFFF}
+.rb .w4{background:#1F5FC9;color:#FFFFFF}
+.rb .w5{background:#F3C316;color:#1F1F1F}
+.rb .w6{background:#1E8E3E;color:#FFFFFF}
+.rb .w7{background:#F08A1C;color:#1F1F1F}
+.rb .w8{background:#F27BB0;color:#1F1F1F}
+.rb .ar{color:var(--sub);font-weight:700;padding:0 1px}
+.rb .by{font-size:11px;color:var(--sub)}
+.rb .bp{margin-left:auto;font-size:14.5px;font-weight:800;color:var(--acc)}
+.rb .btot{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-top:10px;padding-top:9px;border-top:var(--sep);font-size:12.5px;font-weight:700;color:var(--sub)}
+.rb .btot b{font-family:var(--dfont),sans-serif;font-weight:var(--dw);font-size:24px;line-height:1;color:var(--ink)}
+/* ハズレ：見出しは上の帯の文字の色で静かに・払戻は0円（うすく） */
+.rb.miss .bh{color:var(--hdInk);text-shadow:none}
+.rb.miss .bp,.rb.miss .btot b{color:var(--sub)}
+.rb.miss .bp{font-weight:700}
+/* デカ的中：まわりが光る・見出しは虹色（黒いふち）・3連単の行は虹色のふち */
+.rb.big{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 26px 6px rgba(255,236,160,.85),0 18px 38px rgba(0,0,0,.45)}
+.rb.big .bh,.rb.fz .bh{background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFD21A,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(1.5px 0 0 #1E1030) drop-shadow(-1.5px 0 0 #1E1030) drop-shadow(0 1.5px 0 #1E1030) drop-shadow(0 -1.5px 0 #1E1030) drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.rb.big .brows li.top,.rb.fz .brows li.top{position:relative;background:linear-gradient(var(--zBg),var(--zBg)) padding-box,linear-gradient(var(--rbFace),var(--rbFace)) padding-box,
+  linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) border-box;border:2px solid transparent;gap:2px 3px;padding:4px 5px}
+/* ど的中・隠れど的中：枠は虹色（回さない）・炎に光る・見出しの下に帯（超大穴の馬／デカ的中が化けた） */
+.rb.fz{padding:11px;box-shadow:0 0 0 3px #FFFFFF,0 0 28px 8px rgba(255,236,170,.9),0 0 64px 18px rgba(255,120,0,.6),0 12px 24px rgba(0,0,0,.35)}
+.rb.fz::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:4px;pointer-events:none;
+  background:conic-gradient(from 200deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.rb.fz .brows li.top::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 70%) -130% 0/50% 100% no-repeat}
+.rb.fz .btot b{background:linear-gradient(90deg,#FF3B3B,#FFE53B,#3BE26A,#2FD6FF,#B34CFF,#FF3BB8) 0 100%/100% 3px no-repeat;padding-bottom:4px}
+.rb .zrib{display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:8px auto 0;padding:3px 10px 3px 4px;border-radius:999px;background:#2A1259;color:#FFFFFF;
+  font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 0 0 2px #FFFFFF,0 0 12px rgba(179,76,255,.7)}
+.rb .zrib .zt{padding:3px 8px;border-radius:999px;background:linear-gradient(180deg,#FFF3B0,#FFC21A);color:#2A1259;font-weight:800;font-size:11.5px}
+.rb .zrib .n{min-width:22px;height:22px;font-size:12px}
+.rb .n.zx{box-shadow:0 0 0 2px #FFFFFF,0 0 0 4px #FF3BB8,0 0 10px 4px rgba(255,59,184,.6)}
+
+.rb.t-whiteday{--hdB:0 solid transparent;--cardO:0 solid transparent;--zBg:#F7FAFD;--zB:1.5px solid #E1ECF6;--sep:1.5px dashed #D6E5F2;--rs:14px;--nR:10px;--w2B:0 solid transparent;--tagBg:#EEF5FB;--tagInk:#2A5378;--tagLine:#CFE0EF;--bg:#F3F8FC;--ink:#1E3346;--sub:#557089;--card:#FFFFFF;--cardB:1.5px solid #D6E5F2;--cardS:0 3px 0 #DCE8F3;--radius:20px;--font:"M PLUS Rounded 1c";--dfont:"Mochiy Pop One";--dw:400;--logo:#FFFFFF;--logoS:0 2px 0 #2A5A8C;--hd:linear-gradient(180deg,#4A8CC8,#3A78B4);--hdInk:#FFFFFF;--acc:#23608F;--h1:#23608F;--coin:#FFFFFF;--coinInk:#2F6EA8;--rbFace:#FFFFFF}
+.rb.t-whiteday{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='124' height='136' viewBox='0 0 124 136'%3E%3Cg transform='translate(22 26) rotate(-12)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23FFFFFF' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cg transform='translate(88 64) rotate(14)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23FFE3EC' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cg transform='translate(40 104) rotate(-6)'%3E%3Crect x='-8' y='-6' width='16' height='12' rx='5' fill='%23E3F1FB' stroke='%23CFE0EF' stroke-width='1'/%3E%3Crect x='-8' y='-6' width='16' height='5' rx='2.5' fill='%23FFFFFF' opacity='.7'/%3E%3C/g%3E%3Cpath d='M82.0 21.8 C81.2 21.0 77.8 19.0 78.0 17.0 C78.2 14.6 81.2 14.2 82.0 16.3 C82.8 14.2 85.8 14.6 86.0 17.0 C86.2 19.0 82.8 21.0 82.0 21.8 Z' fill='%239CCBEB' opacity='.45'/%3E%3Cpath d='M106.0 113.4 C105.3 112.7 102.2 110.9 102.4 109.1 C102.6 106.9 105.3 106.6 106.0 108.5 C106.7 106.6 109.4 106.9 109.6 109.1 C109.8 110.9 106.7 112.7 106.0 113.4 Z' fill='%239CCBEB' opacity='.45'/%3E%3Ccircle cx='56' cy='52' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='10' cy='72' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='112' cy='34' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3Ccircle cx='70' cy='124' r='1.6' fill='%23BFDDF2' opacity='.7'/%3E%3C/svg%3E");background-size:124px 136px}
+.rb.t-whiteday .hd::after{content:"";position:absolute;left:0;right:0;bottom:-7px;height:8px;background:radial-gradient(circle at 8px 0,#3A78B4 7px,transparent 7.6px) 0 0/16px 8px repeat-x}
+
+
+</style>
+</helmet>
+<div class="ph">
+  <header class="hd">
+    <div class="hd-r1">
+      <div class="logo">テンゲル<span class="sr">Ⅲ</span><span class="iii" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="mbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5.5h6a2.5 2.5 0 0 1 2.5 2.5v11a2 2 0 0 0-2-2H3.5z"></path><path d="M20.5 5.5h-6A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6.5z"></path></svg>説明書</button>
+    </div>
+  </header>
+  <img class="bnr" src="/_blob/9032be0a66027dd2395fc3581ac104c8" alt="水色の空とマシュマロみたいな雲の下で、マシュマロのびんをわたす男の子とよろこぶ女の子のカップルと、水色のリボンの白い競走馬（水色のゼッケン1）、白・ピンク・水色のマシュマロのイラスト">
+  <main class="ct">
+    <section class="card">
+      <h2 class="ch">レースの結果を記録</h2>
+      <div class="rh"><span class="rk">9R</span><span class="rs">1400m ダ・良・12頭・予約したレース</span></div>
+      <p class="lab">着順（馬番）</p>
+      <div class="fin"><span class="k">1着</span><span class="n w5">6</span><span class="k">2着</span><span class="n w2">2</span><span class="k">3着</span><span class="n w7">10</span></div>
+      <p class="lab">予約した買い目</p>
+      <ul class="bets"><li><span class="bt">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li><li><span class="bt">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span></li><li><span class="bt">3連単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w7">10</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span></li></ul>
+      <div class="pay"><span>払戻（回収額）</span><b>2,530円</b></div>
+      <button class="rec" type="button" onClick="{{toPush}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11l3 3v12H5z"></path><path d="M8 4.5v5h7v-5M8 19.5v-5h8v5"></path></svg>記録する</button>
+      <p class="note">3連単は外れ・馬単と馬連が当たったので、記録すると的中ボタンが出るよ（見本・架空のレース）</p>
+    </section>
+  </main>
+  <sc-if value="{{isPush}}" hint-placeholder-val="{{false}}">
+  <div class="ov">
+    <div class="dim"></div>
+    
+    <div class="pbox">
+      <button class="push wd" type="button" onClick="{{toReveal}}" aria-label="的中ボタン"><i class="wdf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100"><defs><clipPath id="wdC"><rect width="200" height="100" rx="42"/></clipPath><linearGradient id="wdS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#F7FAFD"/><stop offset="1" stop-color="#D4E6F6"/></linearGradient></defs><g clip-path="url(#wdC)"><rect width="200" height="100" fill="url(#wdS)"/><ellipse cx="100" cy="18" rx="80" ry="16" fill="#FFFFFF"/><ellipse cx="100" cy="96" rx="92" ry="16" fill="#BFD8EE" opacity=".55"/><circle cx="71.1" cy="24.9" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="29.9" cy="52.6" r="1.1" fill="#BFD8EE" opacity=".55"/><circle cx="27.5" cy="50.5" r="0.8" fill="#BFD8EE" opacity=".55"/><circle cx="89.1" cy="19.0" r="0.9" fill="#BFD8EE" opacity=".55"/><circle cx="87.6" cy="73.5" r="0.9" fill="#BFD8EE" opacity=".55"/><circle cx="54.6" cy="59.2" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="112.6" cy="42.6" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="25.6" cy="75.8" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="41.7" cy="22.5" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="151.8" cy="27.0" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="122.8" cy="40.8" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="28.3" cy="18.3" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="129.6" cy="44.8" r="1.1" fill="#BFD8EE" opacity=".55"/><circle cx="114.0" cy="46.6" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="148.3" cy="64.3" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="112.2" cy="51.8" r="1.5" fill="#BFD8EE" opacity=".55"/><circle cx="137.6" cy="34.7" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="37.4" cy="44.1" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="42.9" cy="49.2" r="0.8" fill="#BFD8EE" opacity=".55"/><circle cx="127.6" cy="69.0" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="161.6" cy="36.6" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="115.5" cy="55.8" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="155.8" cy="82.0" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="126.9" cy="18.4" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="124.1" cy="85.5" r="1.5" fill="#BFD8EE" opacity=".55"/><circle cx="64.7" cy="41.8" r="1.3" fill="#BFD8EE" opacity=".55"/><path d="M30 28 Q40 16 58 14" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/></g></svg></i><i class="wdd" aria-hidden="true"><svg viewBox="-40 -40 280 180" width="280" height="180"><g transform="translate(-22 84) rotate(-16)"><g class="wdbo" style="animation-delay:-0.0s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#F2B5C8"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#FFD6E2"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(222 88) rotate(14)"><g class="wdbo" style="animation-delay:-0.7s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#B5D6EF"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#D6ECFB"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(226 8) rotate(10)"><g class="wdbo" style="animation-delay:-1.4s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#D4E6F6"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#FFFFFF"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(-26 20) rotate(-8)"><g class="wdbo" style="animation-delay:-2.1s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#B5D6EF"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#D6ECFB"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><path d="M24 0 Q8 -18 4 -2 Q10 6 24 0 Z M24 0 Q40 -18 44 -2 Q38 6 24 0 Z" fill="#8CC4EC" stroke="#4F8CC4" stroke-width="1.4"/><path d="M24 0 L18 18 L22 16 Z M24 0 L30 18 L26 16 Z" fill="#6FAEDB"/><circle cx="24" cy="0" r="3.6" fill="#6FAEDB"/><path class="wdtw" d="M100.0 -30.0 Q101.3 -25.3 106.0 -24.0 Q101.3 -22.7 100.0 -18.0 Q98.7 -22.7 94.0 -24.0 Q98.7 -25.3 100.0 -30.0 Z" fill="#BFE0F6" style="animation-delay:-0.0s"/><path class="wdtw" d="M186.0 -21.0 Q187.1 -17.1 191.0 -16.0 Q187.1 -14.9 186.0 -11.0 Q184.9 -14.9 181.0 -16.0 Q184.9 -17.1 186.0 -21.0 Z" fill="#BFE0F6" style="animation-delay:-0.8s"/><path class="wdtw" d="M8.0 111.5 Q9.0 115.0 12.5 116.0 Q9.0 117.0 8.0 120.5 Q7.0 117.0 3.5 116.0 Q7.0 115.0 8.0 111.5 Z" fill="#BFE0F6" style="animation-delay:-1.6s"/></svg></i><span>PUSH</span></button>
+      <div class="pshadow wd"></div>
+      <p class="tap wd">タップ！</p>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{isReveal}}" hint-placeholder-val="{{false}}">
+  <div class="ov hit" style="--n:2">
+    <div class="dim"></div>
+    <div class="rays"></div>
+    <div class="pressed wd"><i class="wdf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100"><defs><clipPath id="wdC2"><rect width="200" height="100" rx="42"/></clipPath><linearGradient id="wdS2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#F7FAFD"/><stop offset="1" stop-color="#D4E6F6"/></linearGradient></defs><g clip-path="url(#wdC2)"><rect width="200" height="100" fill="url(#wdS2)"/><ellipse cx="100" cy="18" rx="80" ry="16" fill="#FFFFFF"/><ellipse cx="100" cy="96" rx="92" ry="16" fill="#BFD8EE" opacity=".55"/><circle cx="71.1" cy="24.9" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="29.9" cy="52.6" r="1.1" fill="#BFD8EE" opacity=".55"/><circle cx="27.5" cy="50.5" r="0.8" fill="#BFD8EE" opacity=".55"/><circle cx="89.1" cy="19.0" r="0.9" fill="#BFD8EE" opacity=".55"/><circle cx="87.6" cy="73.5" r="0.9" fill="#BFD8EE" opacity=".55"/><circle cx="54.6" cy="59.2" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="112.6" cy="42.6" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="25.6" cy="75.8" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="41.7" cy="22.5" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="151.8" cy="27.0" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="122.8" cy="40.8" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="28.3" cy="18.3" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="129.6" cy="44.8" r="1.1" fill="#BFD8EE" opacity=".55"/><circle cx="114.0" cy="46.6" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="148.3" cy="64.3" r="1.0" fill="#BFD8EE" opacity=".55"/><circle cx="112.2" cy="51.8" r="1.5" fill="#BFD8EE" opacity=".55"/><circle cx="137.6" cy="34.7" r="1.6" fill="#BFD8EE" opacity=".55"/><circle cx="37.4" cy="44.1" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="42.9" cy="49.2" r="0.8" fill="#BFD8EE" opacity=".55"/><circle cx="127.6" cy="69.0" r="1.3" fill="#BFD8EE" opacity=".55"/><circle cx="161.6" cy="36.6" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="115.5" cy="55.8" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="155.8" cy="82.0" r="1.2" fill="#BFD8EE" opacity=".55"/><circle cx="126.9" cy="18.4" r="1.4" fill="#BFD8EE" opacity=".55"/><circle cx="124.1" cy="85.5" r="1.5" fill="#BFD8EE" opacity=".55"/><circle cx="64.7" cy="41.8" r="1.3" fill="#BFD8EE" opacity=".55"/><path d="M30 28 Q40 16 58 14" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/></g></svg></i><i class="wdd" aria-hidden="true"><svg viewBox="-40 -40 280 180" width="280" height="180"><g transform="translate(-22 84) rotate(-16)"><g class="wdbo" style="animation-delay:-0.0s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#F2B5C8"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#FFD6E2"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(222 88) rotate(14)"><g class="wdbo" style="animation-delay:-0.7s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#B5D6EF"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#D6ECFB"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(226 8) rotate(10)"><g class="wdbo" style="animation-delay:-1.4s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#D4E6F6"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#FFFFFF"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><g transform="translate(-26 20) rotate(-8)"><g class="wdbo" style="animation-delay:-2.1s"><rect x="-14" y="-11" width="28" height="22" rx="10" fill="#B5D6EF"/><rect x="-14" y="-12" width="28" height="17" rx="8.5" fill="#D6ECFB"/><ellipse cx="-4" cy="-7" rx="5" ry="2.4" fill="#FFFFFF" opacity=".9"/></g></g><path d="M24 0 Q8 -18 4 -2 Q10 6 24 0 Z M24 0 Q40 -18 44 -2 Q38 6 24 0 Z" fill="#8CC4EC" stroke="#4F8CC4" stroke-width="1.4"/><path d="M24 0 L18 18 L22 16 Z M24 0 L30 18 L26 16 Z" fill="#6FAEDB"/><circle cx="24" cy="0" r="3.6" fill="#6FAEDB"/><path class="wdtw" d="M100.0 -30.0 Q101.3 -25.3 106.0 -24.0 Q101.3 -22.7 100.0 -18.0 Q98.7 -22.7 94.0 -24.0 Q98.7 -25.3 100.0 -30.0 Z" fill="#BFE0F6" style="animation-delay:-0.0s"/><path class="wdtw" d="M186.0 -21.0 Q187.1 -17.1 191.0 -16.0 Q187.1 -14.9 186.0 -11.0 Q184.9 -14.9 181.0 -16.0 Q184.9 -17.1 186.0 -21.0 Z" fill="#BFE0F6" style="animation-delay:-0.8s"/><path class="wdtw" d="M8.0 111.5 Q9.0 115.0 12.5 116.0 Q9.0 117.0 8.0 120.5 Q7.0 117.0 3.5 116.0 Q7.0 115.0 8.0 111.5 Z" fill="#BFE0F6" style="animation-delay:-1.6s"/></svg></i></div><div class="clips wd" aria-hidden="true"><i class="m1" style="--x:-71px;--y:76px;--z:22px;--r:270deg;--d:0.01s"></i><i class="m2" style="--x:-106px;--y:88px;--z:22px;--r:-166deg;--d:0.09s"></i><i class="tw" style="--x:-130px;--y:43px;--z:14px;--r:-176deg;--d:0.02s"></i><i class="m3" style="--x:-138px;--y:8px;--z:20px;--r:-158deg;--d:0.11s"></i><i class="ht" style="--x:-172px;--y:26px;--z:17px;--r:233deg;--d:0.09s"></i><i class="m1" style="--x:-182px;--y:-29px;--z:26px;--r:295deg;--d:0.07s"></i><i class="m2" style="--x:-118px;--y:-48px;--z:22px;--r:-153deg;--d:0.03s"></i><i class="tw" style="--x:-141px;--y:-72px;--z:15px;--r:221deg;--d:0.10s"></i><i class="m1" style="--x:-145px;--y:-83px;--z:22px;--r:-337deg;--d:0.08s"></i><i class="m2" style="--x:-144px;--y:-127px;--z:26px;--r:-288deg;--d:0.04s"></i><i class="tw" style="--x:-112px;--y:-119px;--z:13px;--r:-272deg;--d:0.12s"></i><i class="m3" style="--x:-70px;--y:-100px;--z:23px;--r:141deg;--d:0.10s"></i><i class="ht" style="--x:-48px;--y:-111px;--z:14px;--r:329deg;--d:0.01s"></i><i class="m1" style="--x:-17px;--y:-109px;--z:24px;--r:252deg;--d:0.11s"></i><i class="m2" style="--x:-8px;--y:-124px;--z:20px;--r:-138deg;--d:0.07s"></i><i class="tw" style="--x:7px;--y:-121px;--z:14px;--r:157deg;--d:0.01s"></i><i class="m1" style="--x:64px;--y:-119px;--z:26px;--r:210deg;--d:0.10s"></i><i class="m2" style="--x:100px;--y:-153px;--z:24px;--r:-269deg;--d:0.11s"></i><i class="tw" style="--x:104px;--y:-110px;--z:16px;--r:-345deg;--d:0.05s"></i><i class="m3" style="--x:106px;--y:-94px;--z:22px;--r:357deg;--d:0.04s"></i><i class="ht" style="--x:150px;--y:-86px;--z:14px;--r:232deg;--d:0.08s"></i><i class="m1" style="--x:173px;--y:-69px;--z:24px;--r:-261deg;--d:0.11s"></i><i class="m2" style="--x:142px;--y:-52px;--z:24px;--r:262deg;--d:0.04s"></i><i class="tw" style="--x:139px;--y:-23px;--z:14px;--r:192deg;--d:0.05s"></i><i class="m1" style="--x:102px;--y:-1px;--z:23px;--r:-194deg;--d:0.03s"></i><i class="m2" style="--x:111px;--y:21px;--z:21px;--r:276deg;--d:0.01s"></i><i class="tw" style="--x:158px;--y:66px;--z:15px;--r:-225deg;--d:0.10s"></i><i class="m3" style="--x:102px;--y:41px;--z:24px;--r:185deg;--d:0.09s"></i><i class="ring"></i></div>
+    <div class="hb"><div class="rb hit t-whiteday"><div class="hd"><div class="bh logo">的中！</div><div class="bsub">9R の当たった買い目</div></div><div class="card"><svg class="orn" viewBox="0 0 44 44" aria-hidden="true"><g transform='translate(15 27) rotate(-14)'><rect x='-9' y='-7' width='18' height='14' rx='6' fill='#FFFFFF' stroke='#9CC2E0' stroke-width='1.1'/><rect x='-9' y='-7' width='18' height='6' rx='3' fill='#FFFFFF' opacity='.8'/></g><g transform='translate(29 25) rotate(12)'><rect x='-9' y='-7' width='18' height='14' rx='6' fill='#FFE3EC' stroke='#9CC2E0' stroke-width='1.1'/><rect x='-9' y='-7' width='18' height='6' rx='3' fill='#FFFFFF' opacity='.8'/></g><path d='M22 13 Q14 5 13.4 14.2 Z M22 13 Q30 5 30.6 14.2 Z' fill='#8CC4EC' stroke='#5E9FD0' stroke-width='.8'/><path d='M22 13 L19 21 L21 20 Z M22 13 L25 21 L23 20 Z' fill='#5E9FD0'/><circle cx='22' cy='13' r='2' fill='#5E9FD0'/></svg><ul class="brows"><li style="--i:0"><span class="bt tag">馬単</span><span class="bc"><span class="n w5">6</span><span class="ar">→</span><span class="n w2">2</span></span><span class="by">100円</span><span class="bp">1,840円</span></li><li style="--i:1"><span class="bt tag">馬連</span><span class="bc"><span class="n w2">2</span><span class="ar">-</span><span class="n w5">6</span></span><span class="by">100円</span><span class="bp">690円</span></li></ul><div class="btot">払戻 合計<b>2,530円</b></div></div></div></div>
+    <div class="conf"><i style="--x:93.8%;--d:2.09s;--t:2.50s;--w:6px;--h:15px;--r:496deg;--c:#F3C316"></i><i style="--x:60.3%;--d:1.28s;--t:2.69s;--w:8px;--h:12px;--r:654deg;--c:#1F5FC9"></i><i style="--x:50.2%;--d:1.98s;--t:3.97s;--w:7px;--h:16px;--r:589deg;--c:#F27BB0"></i><i style="--x:17.8%;--d:0.39s;--t:2.82s;--w:7px;--h:11px;--r:899deg;--c:#FFFFFF"></i><i style="--x:55.7%;--d:2.19s;--t:3.20s;--w:8px;--h:13px;--r:786deg;--c:#3E7B1E"></i><i style="--x:36.7%;--d:1.89s;--t:3.20s;--w:10px;--h:12px;--r:714deg;--c:#F3C316"></i><i style="--x:49.0%;--d:2.03s;--t:3.30s;--w:9px;--h:12px;--r:846deg;--c:#1F5FC9"></i><i style="--x:35.7%;--d:1.60s;--t:3.40s;--w:8px;--h:14px;--r:800deg;--c:#F08A1C"></i><i style="--x:17.9%;--d:2.00s;--t:2.88s;--w:10px;--h:12px;--r:528deg;--c:#F3C316"></i><i style="--x:48.9%;--d:0.81s;--t:3.63s;--w:10px;--h:15px;--r:752deg;--c:#F08A1C"></i><i style="--x:20.4%;--d:1.64s;--t:2.51s;--w:9px;--h:12px;--r:-729deg;--c:#E8382F"></i><i style="--x:74.4%;--d:0.30s;--t:2.88s;--w:9px;--h:16px;--r:-588deg;--c:#FFFFFF"></i><i style="--x:74.9%;--d:0.12s;--t:3.05s;--w:7px;--h:10px;--r:-875deg;--c:#E8382F"></i><i style="--x:5.9%;--d:2.02s;--t:3.07s;--w:7px;--h:16px;--r:-642deg;--c:#E8382F"></i><i style="--x:39.0%;--d:0.09s;--t:4.18s;--w:7px;--h:10px;--r:867deg;--c:#FFFFFF"></i><i style="--x:73.3%;--d:0.25s;--t:3.01s;--w:6px;--h:13px;--r:-847deg;--c:#F08A1C"></i><i style="--x:40.6%;--d:1.37s;--t:2.68s;--w:10px;--h:11px;--r:813deg;--c:#E8382F"></i><i style="--x:45.0%;--d:1.92s;--t:2.63s;--w:8px;--h:12px;--r:438deg;--c:#3E7B1E"></i><i style="--x:26.9%;--d:1.33s;--t:3.16s;--w:6px;--h:13px;--r:-722deg;--c:#3E7B1E"></i><i style="--x:5.2%;--d:0.35s;--t:2.57s;--w:9px;--h:13px;--r:-897deg;--c:#F3C316"></i><i style="--x:70.5%;--d:0.16s;--t:2.54s;--w:7px;--h:15px;--r:499deg;--c:#1F5FC9"></i><i style="--x:28.8%;--d:1.65s;--t:2.67s;--w:8px;--h:11px;--r:-490deg;--c:#E8382F"></i><i style="--x:3.9%;--d:1.65s;--t:2.59s;--w:6px;--h:14px;--r:527deg;--c:#FFFFFF"></i><i style="--x:38.5%;--d:1.51s;--t:3.77s;--w:7px;--h:15px;--r:636deg;--c:#F27BB0"></i><i style="--x:58.8%;--d:1.94s;--t:4.07s;--w:8px;--h:16px;--r:558deg;--c:#F27BB0"></i><i style="--x:94.2%;--d:0.26s;--t:3.06s;--w:9px;--h:16px;--r:370deg;--c:#FFFFFF"></i><i style="--x:41.6%;--d:0.23s;--t:2.76s;--w:9px;--h:15px;--r:392deg;--c:#FFFFFF"></i><i style="--x:48.6%;--d:0.46s;--t:3.46s;--w:6px;--h:12px;--r:525deg;--c:#FFFFFF"></i></div>
+    
+    <button class="close" type="button" onClick="{{toForm}}">とじる</button>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["form","push","reveal"],"default":"form"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  sfxUrls() {
+    return { push: '/_blob/2c19be676e8b2f4b3c27664978e77784', tap: '/_blob/6b84e59051fd187b240d447831bfccc0' };
+  }
+  sfxDecode(c, b) {
+    return new Promise(function (ok) {
+      try { var q = c.decodeAudioData(b, ok, function () { ok(null); }); if (q && q.catch) q.catch(function () { ok(null); }); } catch (e) { ok(null); }
+    });
+  }
+  sfxInit() {
+    // 音は先に読んで、音のデータにしておく（鳴らすのは押したときだけ）
+    if (this._sx) return this._sx;
+    var self = this, sx = this._sx = { raw: {}, buf: {}, ctx: null, src: null, el: null, id: 0, ok: 0 };
+    var urls = this.sfxUrls(), dec = null;
+    var OC = typeof window === 'undefined' ? null : (window.OfflineAudioContext || window.webkitOfflineAudioContext);
+    if (OC) { try { dec = new OC(2, 44100, 44100); } catch (e) { dec = null; } }
+    if (typeof fetch === 'function') {
+      Object.keys(urls).forEach(function (k) {
+        sx.raw[k] = fetch(urls[k]).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).catch(function () { return null; });
+        if (dec) sx.buf[k] = sx.raw[k].then(function (b) { return b ? self.sfxDecode(dec, b.slice(0)) : null; });
+      });
+    }
+    return sx;
+  }
+  sfx(k, from, wait, done) {
+    // 押した瞬間を0秒として、音の from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）
+    var self = this, sx = this.sfxInit();
+    this.hush();
+    var id = sx.id, t0 = Date.now(), url = this.sfxUrls()[k];
+    var end = function () { if (done && id === sx.id) done(); };
+    from = from || 0;
+    wait = wait || 0;
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    var ctx = sx.ctx;
+    if (!ctx || !sx.raw[k]) {
+      if (from || wait || typeof Audio === 'undefined') { end(); return; }
+      try { var a = new Audio(url); a.onended = end; sx.el = a; var p = a.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
+      return;
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    if (!sx.ok) {
+      sx.ok = 1;
+      try { var s0 = ctx.createBufferSource(); s0.buffer = ctx.createBuffer(1, 1, 22050); s0.connect(ctx.destination); s0.start(0); } catch (e) {}
+    }
+    (sx.buf[k] || Promise.resolve(null)).then(function (buf) {
+      // 先に読めなかったときは、鳴らす方で読みなおす
+      return buf || sx.raw[k].then(function (b) { return b ? self.sfxDecode(ctx, b.slice(0)) : null; });
+    }).then(function (buf) {
+      if (id !== sx.id) return;
+      var el = (Date.now() - t0) / 1000, late = Math.max(0, el - wait), off = from + (late > .1 ? late : 0);
+      if (!buf || off >= buf.duration) { end(); return; }
+      var s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(ctx.destination);
+      s.onended = end;
+      s.start(ctx.currentTime + Math.max(0, wait - el), off);
+      sx.src = s;
+    });
+  }
+  hush() {
+    var sx = this._sx;
+    if (!sx) return;
+    sx.id++;
+    if (sx.src) { try { sx.src.stop(); } catch (e) {} sx.src = null; }
+    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }
+  }
+  slow() {
+    // iPhoneの「視差効果を減らす」
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  renderVals() {
+    this.sfxInit();
+    var st = this.state || {};
+    var ph = st.ph || this.props.start || 'form';
+    var self = this;
+    return {
+      isPush: ph === 'push',
+      isReveal: ph === 'reveal',
+      toPush: function () { self.sfx('push'); self.setState({ ph: 'push' }); },
+      toReveal: function () { self.sfx('tap'); self.setState({ ph: 'reveal' }); },
+      toForm: function () { self.hush(); self.setState({ ph: 'form' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -24,6 +24,19 @@ PALS = {
     'sakura': dict(body='#FFFFFF', shade='#DFD3E7', muzzle='#FCE4EE', mane='#F5A6C4', maneD='#E27FA8', hoof='#8C7A86', eye='#3A2440',
                    blush='#F7A8C8', tack='#C95E8C', ring='#FFFFFF', cloth='#F28DB2', clothTrim='#FFFFFF', num='#FFFFFF', saddle='#5B3B4A',
                    bodyShade='#EFE8F3'),
+    # 行事の4テーマ（まさちゃんの指定・flat/event_art.py と flat/<テーマ>_banner.py）
+    'xmas': dict(body='#A0612F', shade='#79451F', muzzle='#CF9A72', mane='#2C1C16', maneD='#160D09', hoof='#2E2420', eye='#1A100A',
+                 blush='#EE8C72', tack='#2C1C16', ring='#F2C14E', cloth='#D7323A', clothTrim='#FFFFFF', num='#FFFFFF', saddle='#2B1A12',
+                 bodyShade='#8E5429'),
+    'halloween': dict(body='#DAD6E4', shade='#A8A1BE', muzzle='#EEEAF5', mane='#3B2A50', maneD='#22172F', hoof='#4A4058', eye='#1E1630',
+                      blush='#F0A2B6', tack='#2A1E38', ring='#FF8A1F', cloth='#4B2A6E', clothTrim='#FF8A1F', num='#FFE2B8', saddle='#1E1428',
+                      bodyShade='#C6C1D5'),
+    'valentine': dict(body='#7C4A30', shade='#5A3420', muzzle='#B37C5A', mane='#F6E6CF', maneD='#E0C6A2', hoof='#3A2418', eye='#1E1008',
+                      blush='#F08A9C', tack='#4A2A1A', ring='#F7A8C0', cloth='#E8547C', clothTrim='#FFFFFF', num='#FFFFFF', saddle='#3A2018',
+                      bodyShade='#6C3F27'),
+    'whiteday': dict(body='#FFFFFF', shade='#BFD0E2', muzzle='#F4F7FB', mane='#A9D2EE', maneD='#7FB6DE', hoof='#7A8A9C', eye='#22304A',
+                     blush='#F5B5C8', tack='#4A7DB0', ring='#FFFFFF', cloth='#79B4E0', clothTrim='#FFFFFF', num='#FFFFFF', saddle='#3B4E66',
+                     bodyShade='#E2EAF3'),
 }
 # ポーズ・置き場所（馬の絵がちょうど入る箱 x0, y0, x1, y1：下のふち＝ひづめ）・向き・影の色
 SPOTS = {
@@ -33,6 +46,10 @@ SPOTS = {
     'sea': dict(pose='gallop', facing='right', box=(280, 64, 572, 266), azim=6, shadow=('#8A6A3A', 0.22)),
     'sakura': dict(pose='stand', facing='left', box=(421, 52, 649, 296), azim=-6, shadow=('#6A8A5A', 0.24),
                    throat=dict(neck_k=0.03, amount=0.5, jowl=1.0, chest=1.0)),          # のど元すっきり（まさちゃんのオレンジの線）
+    'xmas': dict(pose='stand', facing='right', box=(300, 66, 512, 298), azim=6, shadow=('#8FA9C8', 0.30)),
+    'halloween': dict(pose='stand', facing='left', box=(262, 74, 478, 300), azim=-6, shadow=('#0E0818', 0.45)),
+    'valentine': dict(pose='stand', facing='right', box=(100, 62, 318, 298), azim=6, shadow=('#C9708E', 0.30)),
+    'whiteday': dict(pose='stand', facing='left', box=(470, 62, 688, 298), azim=-6, shadow=('#8FB4D6', 0.30)),
 }
 
 
@@ -199,7 +216,125 @@ def acc_sea_all(m):
     return d
 
 
-ACC = dict(newyear=acc_newyear, snow=acc_snow, autumn=acc_autumn, sea=acc_sea_all, sakura=acc_sakura)
+def holly(c, r, col='#2F8A55', berry='#E23B3B'):
+    """ひいらぎ（葉2まい・赤い実3つ）"""
+    c = np.asarray(c, float)
+    out = []
+    for rot in (-28, 208):
+        a = math.radians(rot)
+        d, nv = np.array([math.cos(a), math.sin(a)]), np.array([-math.sin(a), math.cos(a)])
+        P = [c, c + d * r * 0.5 + nv * r * 0.36, c + d * r * 0.8 + nv * r * 0.16, c + d * r * 1.25, c + d * r * 0.8 - nv * r * 0.16, c + d * r * 0.5 - nv * r * 0.36]
+        out.append(path(smooth(P, sharp=(0, 3)), col))
+    for dx, dy in ((-0.16, -0.12), (0.16, -0.12), (0.0, 0.14)):
+        out.append(circ(c + V(dx * r, dy * r), r * 0.22, berry))
+    return out
+
+
+def hat_on_head(m, wid, hgt, col, colD, band, bandD, flop=True, brim=0.0):
+    """馬の頭の上の 帽子（サンタの帽子・魔女の帽子）：耳の前（前髪の上）に のせる。
+       wid・hgt：はば・高さ（m）。flop：先が うしろへ たれて 白い玉（サンタ）。brim：つば の はば（m・魔女の帽子）"""
+    p, fx = m['p1u'], m['fx']
+    hd = unit(m['head_dir'])
+    up = unit(-hd + V(0, -0.9))
+    br = unit(V(-up[1], up[0]))
+    if br[0] * fx < 0:
+        br = -br
+    base = m['forelock'] + (m['poll'] - m['forelock']) * 0.3 + up * 0.015 * p
+    w = wid * p
+    a_b, a_f = base - br * w * 0.5, base + br * w * 0.5
+    out = []
+    if brim:                                                     # 魔女の帽子：つば → 先の とがった 山（先は うしろへ 折れる）
+        bw = (wid + brim) * p
+        ang = math.degrees(math.atan2(br[1], br[0]))
+        c0 = base - up * 0.005 * p
+        out.append(f'<ellipse cx="{f2(c0[0])}" cy="{f2(c0[1])}" rx="{f2(bw * 0.5)}" ry="{f2(0.045 * p)}" fill="{colD}" transform="rotate({f2(ang)} {f2(c0[0])} {f2(c0[1])})"/>')
+        k = base + up * hgt * 0.58 * p - br * 0.03 * p
+        tip = k + up * hgt * 0.3 * p - br * 0.2 * p
+        out.append(path(smooth([a_b, k - br * 0.06 * p, tip, k + br * 0.07 * p, a_f], sharp=(0, 2, 4)), col))
+        out.append(path(smooth([a_b + up * 0.035 * p, a_f + up * 0.035 * p, a_f + up * 0.1 * p, a_b + up * 0.1 * p], sharp=(0, 1, 2, 3)), band))
+        out.append(path(smooth([tip, k + br * 0.07 * p, a_f + up * 0.1 * p, base + up * 0.12 * p + br * 0.02 * p, k + br * 0.01 * p], sharp=(0,)), '#FFFFFF', 'fill-opacity=".08"'))
+        return out
+    top = base + up * hgt * p                                       # 先が うしろへ まがる 山（いちばん上が まがり目）
+    hang = top + V(-0.21 * fx * p, 0.12 * p)
+    inner = base + up * hgt * 0.6 * p - br * 0.075 * p
+    out.append(path(smooth([a_b, a_b + up * 0.14 * p, inner, hang, top + br * 0.03 * p, a_f + up * 0.2 * p, a_f], sharp=(0, 3, 6)), col))
+    out.append(path(smooth([top + br * 0.03 * p, a_f + up * 0.2 * p, a_f, base + br * w * 0.12 + up * 0.1 * p, top - up * 0.07 * p + br * 0.01 * p], sharp=(2,)), colD, 'fill-opacity=".38"'))
+    out.append(path(smooth([a_b - br * 0.03 * p - up * 0.03 * p, a_f + br * 0.03 * p - up * 0.03 * p, a_f + br * 0.03 * p + up * 0.055 * p,
+                            a_b - br * 0.03 * p + up * 0.055 * p]), band))
+    if flop:
+        out += [circ(hang, 0.07 * p, band), circ(hang + V(0.018 * p, 0.022 * p), 0.04 * p, bandD)]
+        out.append(circ(hang + V(-0.015 * p, -0.018 * p), 0.028 * p, '#FFFFFF'))
+    return out
+
+
+def acc_xmas(m):
+    """サンタの帽子（頭の上・先は うしろへ たれて 白い玉）・赤と緑の綱に 金の鈴（首）・布のすみに ひいらぎ"""
+    p, fx = m['p1u'], m['fx']
+    top, bot, ax = m['collar'](0.12)
+    dv = unit(bot - top)
+    out, P = rope(top - dv * 0.02 * p, bot + dv * 0.02 * p, -ax * 0.06 * p, 0.075 * p, '#D7323A', '#2F8A55', n=6, edge='#7A1414')
+    hang = P[len(P) // 2 + 2]
+    br = 0.085 * p
+    bell = hang + V(0, 0.12 * p)
+    out.append(stroke(smooth([hang, bell + V(0, -br * 0.7)], closed=False), '#7A1414', 0.02 * p))
+    out += [circ(bell, br, '#F2C14E'), circ(bell + V(-br * 0.3, -br * 0.3), br * 0.33, '#FFF0B8'),
+            stroke(f'M{f2(bell[0] - br * 0.7)},{f2(bell[1] + br * 0.29)} H{f2(bell[0] + br * 0.7)}', '#9A6A14', 0.018 * p),
+            circ(bell + V(0, br * 0.6), br * 0.17, '#7A4A10')]
+    # 帽子：耳の前（前髪の上）に のせる。上は 頭の向きの うしろ（つむじがわ）を 少し 立てた向き・先は うしろへ たれて 白い玉
+    hat = hat_on_head(m, 0.29, 0.34, '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0')
+    cloth = holly(cloth_corner(m), 0.085 * p)
+    return dict(neck=out, head=hat, cloth=cloth)
+
+
+def acc_halloween(m):
+    """魔女の帽子（黒に オレンジの帯・先は うしろへ 折れる）・布のすみに 小さな こうもり"""
+    p, fx = m['p1u'], m['fx']
+    hat = hat_on_head(m, 0.27, 0.62, '#2A1E38', '#140C1E', '#FF8A1F', '#C9661A', flop=False, brim=0.30)
+    c = cloth_corner(m, 0.14, 0.12)
+    k = 0.0042 * p
+    bat = (f'<g transform="translate({f2(c[0])} {f2(c[1])}) scale({f2(k * fx)} {f2(k)})"><path d="M0,-4 Q-6,-10 -10,-6 Q-18,-16 -30,-14 Q-26,-8 -28,-2 '
+           'Q-22,-4 -18,2 Q-14,-2 -10,4 Q-6,0 0,6 Q6,0 10,4 Q14,-2 18,2 Q22,-4 28,-2 Q26,-8 30,-14 Q18,-16 10,-6 Q6,-10 0,-4 Z" fill="#FF8A1F"/></g>')
+    return dict(head=hat, cloth=[bat])
+
+
+def ribbon_bow(m, col, colD, heart=None):
+    """首に まいた リボン（のどがわに ちょうむすび・2本の はし）。heart：布のすみの ハートの色"""
+    p, fx = m['p1u'], m['fx']
+    top, bot, ax = m['collar'](0.14)
+    dv = unit(bot - top)
+    a, b = top - dv * 0.02 * p, bot + dv * 0.01 * p
+    mid = (a + b) / 2 - ax * 0.03 * p
+    hh = 0.045 * p
+    band = [a + ax * hh, mid + ax * hh, b + ax * hh, b - ax * hh, mid - ax * hh, a - ax * hh]
+    neck = [path(smooth(band), col)]
+    k = b - dv * 0.03 * p
+    nv = V(-dv[1], dv[0])
+    loop = lambda sgn: path(smooth([k, k + nv * sgn * 0.17 * p - dv * 0.1 * p, k + nv * sgn * 0.21 * p + dv * 0.02 * p, k + nv * sgn * 0.05 * p + dv * 0.05 * p], sharp=(0,)), col)
+    tail = lambda sgn: path(smooth([k, k + nv * sgn * 0.06 * p + dv * 0.24 * p, k + nv * sgn * 0.13 * p + dv * 0.2 * p, k + nv * sgn * 0.03 * p + dv * 0.04 * p], sharp=(0, 1, 2)), colD)
+    neck += [tail(1), tail(-1), loop(1), loop(-1), circ(k, 0.045 * p, colD), circ(k + V(-0.012 * p, -0.012 * p), 0.016 * p, '#FFFFFF', 'fill-opacity=".6"')]
+    out = dict(neck=neck)
+    if heart:
+        c = cloth_corner(m, 0.13, 0.12)
+        r = 0.07 * p
+        out['cloth'] = [path(f'M{f2(c[0])},{f2(c[1] + r * 0.95)} C{f2(c[0] - r * 0.2)},{f2(c[1] + r * 0.75)} {f2(c[0] - r * 1.05)},{f2(c[1] + r * 0.25)} {f2(c[0] - r)},{f2(c[1] - r * 0.25)} '
+                             f'C{f2(c[0] - r * 0.95)},{f2(c[1] - r * 0.85)} {f2(c[0] - r * 0.2)},{f2(c[1] - r * 0.95)} {f2(c[0])},{f2(c[1] - r * 0.42)} '
+                             f'C{f2(c[0] + r * 0.2)},{f2(c[1] - r * 0.95)} {f2(c[0] + r * 0.95)},{f2(c[1] - r * 0.85)} {f2(c[0] + r)},{f2(c[1] - r * 0.25)} '
+                             f'C{f2(c[0] + r * 1.05)},{f2(c[1] + r * 0.25)} {f2(c[0] + r * 0.2)},{f2(c[1] + r * 0.75)} {f2(c[0])},{f2(c[1] + r * 0.95)} Z', heart)]
+    return out
+
+
+def acc_valentine(m):
+    """赤い リボン（首）・布のすみに 白い ハート"""
+    return ribbon_bow(m, '#D7264A', '#A81A38', heart='#FFFFFF')
+
+
+def acc_whiteday(m):
+    """水色の リボン（首）・布のすみに 白い ハート"""
+    return ribbon_bow(m, '#8CC4EC', '#5E9FD0', heart='#FFFFFF')
+
+
+ACC = dict(newyear=acc_newyear, snow=acc_snow, autumn=acc_autumn, sea=acc_sea_all, sakura=acc_sakura, xmas=acc_xmas, halloween=acc_halloween,
+           valentine=acc_valentine, whiteday=acc_whiteday)
 
 
 def draw_cute(img, theme, W, Hh, spec=None, shadow_marks=None):

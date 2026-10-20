@@ -1,5 +1,6 @@
-"""新しい20個の判定画面（Judge_*.dc.html）を作る ＋ 文字と背景のコントラストを調べる
-   python3 gen_screens.py blobs.json   （blobs.json：{"sakura": "<blob id>", ...}。無ければ仮のid）"""
+"""新しいテーマの判定画面（Judge_*.dc.html）を作る ＋ 文字と背景のコントラストを調べる
+   python3 gen_screens.py blobs.json [--only id,id…]   （blobs.json：{"sakura": "<blob id>", ...}。無ければ仮のid）
+   --only：そのテーマの判定画面だけ書く（ほかの判定画面は 上の絵の動きを 書きこんであるので、そのままにする。コントラストは ぜんぶ調べる）"""
 import os, re, sys, json
 from themes20 import THEMES
 
@@ -8,7 +9,8 @@ K = os.path.dirname(os.path.abspath(__file__))
 OUT = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'
 BOARD = {'tengel': 'Tengel', 'sakura': 'Sakura', 'sea': 'Sea', 'sunset': 'Sunset', 'autumn': 'Autumn', 'snow': 'Snow', 'newyear': 'NewYear', 'fireworks': 'Fireworks',
          'night': 'Night', 'news': 'News', 'silks': 'Silks', 'lucky': 'Lucky', 'shogi': 'Shogi', 'ink': 'Ink', 'marble': 'Marble', 'chess': 'Chess',
-         'ryuma': 'Ryuma', 'silver': 'Silver', 'golden': 'Golden', 'neon': 'Neon', 'pixel': 'Pixel', 'chalk': 'Chalk', 'carousel': 'Carousel', 'stars': 'Stars'}
+         'ryuma': 'Ryuma', 'silver': 'Silver', 'golden': 'Golden', 'neon': 'Neon', 'pixel': 'Pixel', 'chalk': 'Chalk', 'carousel': 'Carousel', 'stars': 'Stars',
+         'xmas': 'Xmas', 'halloween': 'Halloween', 'valentine': 'Valentine', 'whiteday': 'WhiteDay'}
 
 ORDER = ['bg', 'ink', 'sub', 'card', 'cardB', 'cardO', 'cardS', 'radius', 'rs', 'font', 'dfont', 'dw', 'logo', 'logoS', 'iii', 'iiiB', 'iiiR', 'hd', 'hdInk', 'hdB',
          'mBg', 'mLine', 'mInk', 'pill', 'pillLine', 'pillInk', 'coin', 'coinInk', 'badge', 'badgeInk', 'badgeB', 'tagBg', 'tagInk', 'tagLine', 'warnBg', 'warnInk',
@@ -289,8 +291,10 @@ def check(t):
 
 if __name__ == '__main__':
     blobs = json.load(open(sys.argv[1])) if len(sys.argv) > 1 and os.path.exists(sys.argv[1]) else {}
+    only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None
     for t in THEMES:
         name = 'Judge_' + BOARD[t['id']] + '.dc.html'
-        open(f'{OUT}/{name}', 'w', encoding='utf-8').write(judge_html(t, blobs.get(t['id'], '0' * 32)))
+        if only is None or t['id'] in only:
+            open(f'{OUT}/{name}', 'w', encoding='utf-8').write(judge_html(t, blobs.get(t['id'], '0' * 32)))
         bad = check(t)
         print(f"{t['id']:10s} {name:26s}", 'OK' if not bad else 'LOW: ' + ', '.join(bad))

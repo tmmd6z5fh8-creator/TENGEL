@@ -161,7 +161,8 @@ NCATS = '／'.join(f"{CATS[c]}{sum(1 for t in THEMES if t['cat'] == c)}" for c i
 
 GCOL = dict(tengel='#13505E', sakura='#A3355C', sea='#0B5E96', sunset='#6A2E8E', autumn='#A33A16', snow='#23608F', newyear='#B0141B', fireworks='#D63A6E',
             night='#9A6200', news='#141414', silks='#1A3FB8', lucky='#B71C1C', shogi='#6B4423', ink='#1A1A1A', marble='#8A6A38', ryuma='#A87C22', silver='#3A424B', golden='#8A6514', chess='#111111',
-            neon='#C81FB0', pixel='#1D2B53', chalk='#24423A', carousel='#B83A74', stars='#4A3F8F')
+            neon='#C81FB0', pixel='#1D2B53', chalk='#24423A', carousel='#B83A74', stars='#4A3F8F',
+            xmas='#1E6B44', halloween='#C25E10', valentine='#B32A55', whiteday='#2F6EA8')
 
 
 def guide_col(t):
