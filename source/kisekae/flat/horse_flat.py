@@ -30,8 +30,8 @@ POSES = {
     'stand': dict(theta=0.0, neck_rot=-4.0, head_ang=-56.0, tail=[-118, -100], tail_kind='hang',
                   fore_near=[-125, -90, -90, -60], fore_far=[-122, -92, -90, -60],
                   hind_near=[-60, -118, -92, -62], hind_far=[-64, -116, -92, -62]),
-    'walk': dict(theta=0.0, neck_rot=-6.0, head_ang=-54.0, tail=[-118, -100], tail_kind='sway',
-                 fore_near=[-100, -38, -112, -142], fore_far=[-126, -92, -90, -60],
+    'walk': dict(theta=0.0, neck_rot=-6.0, head_ang=-54.0, tail=[-118, -100], tail_kind='sway',   # 紅葉の馬：4本とも 地面（手前の前足は 奥の前足より 少し前に おろす）
+                 fore_near=[-118, -84, -86, -58], fore_far=[-126, -92, -90, -60],             # まさちゃん「赤丸の前脚降ろして！」（まえは 手前の前足を上げた [-100, -38, -112, -142]）
                  hind_near=[-66, -116, -92, -62], hind_far=[-56, -122, -94, -64]),
     'prance': dict(theta=8.0, neck_rot=-8.0, head_ang=-62.0, tail=[-130, -108], tail_kind='sway',
                    fore_near=[-84, -8, -98, -132], fore_far=[-120, -94, -90, -62],

@@ -659,7 +659,7 @@ THEMES = [
                  fonts='見出し：Kaisei Opti（夕日色の文字）<br>本文：Zen角ゴシック New', shape='角丸18px・枠なしの浮いたカード・カードの上に夕焼けの線・上下の帯は濃い紫',
                  pic='紫からオレンジの空・沈む太陽・丘をかける馬のシルエット（細い毛のたてがみとしっぽ・夕日がわのふちの光）・鳥')),
 
- dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の林を歩く栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・赤いゼッケン1）のイラスト',
+ dict(id='autumn', cat=2, name='紅葉', desc='赤と山吹・秋', title='紅葉（赤×山吹）', banner='autumn', alt='紅葉の林に立つ栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・赤いゼッケン1）のイラスト',
       fonts=['Zen+Old+Mincho:wght@900', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FBF3E6', ink='#3E2A1E', sub='#7A5E48', card='#FFFDF8', cardB='1.5px solid #EED8B8', cardO='0 solid transparent', cardS='0 3px 0 #EAD3B0',
              radius='12px', rs='10px', font='"Zen Kaku Gothic New"', dfont='"Zen Old Mincho"', dw='900', logo='#FFF1DE', logoS='0 2px 0 #6E2410',
@@ -675,7 +675,7 @@ THEMES = [
       orn=orn_autumn(),
       guide=dict(colors=[('#B3401E', '紅葉'), ('#E8A13A', '山吹'), ('#A33A16', 'ボタン'), ('#FBF3E6', '背景'), ('#3E2A1E', '文字')],
                  fonts='見出し：Zen Old Mincho Black<br>本文：Zen角ゴシック New', shape='角丸12px・生成りのカード・山吹の線・もみじの散る背景・すみにもみじ',
-                 pic='もみじの木・前足を上げて歩く栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・馬らしい形の、ぺたっとした色の絵）・秋の丘')),
+                 pic='もみじの木・4本の足で立つ栗毛の競走馬（亜麻色のたてがみ・もみじの髪かざり・馬らしい形の、ぺたっとした色の絵）・秋の丘')),
 
  dict(id='snow', cat=2, name='雪', desc='紺と白・冬', title='雪（冬の紺×雪の白）', banner='snow', alt='雪の中で白い息をはいて立つ芦毛の競走馬（まだら模様・水色のマフラー・紺のゼッケン1）と、雪をかぶった木のイラスト',
       fonts=['Kiwi+Maru:wght@500', 'Zen+Maru+Gothic:wght@500;700'],

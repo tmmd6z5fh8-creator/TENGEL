@@ -1,5 +1,6 @@
 """紅葉（780×320）：もみじの林・遠くの山・舞う葉は前の r3d/banners/autumn.py のまま（同じ乱数の順）、
-   馬だけ描き直す → 馬らしい形の、ぺたっとした色の競走馬（第2版・horse_flat）：前足を上げて歩く栗毛の馬（亜麻色のたてがみ・もみじの髪かざり・赤に山吹のふちの布）
+   馬だけ描き直す → 馬らしい形の、ぺたっとした色の競走馬（第2版・horse_flat）：4本の足で立つ栗毛の馬（手前の前足を 少し前に おろした 歩く形・まさちゃん「赤丸の前脚降ろして！」・
+   亜麻色のたてがみ・もみじの髪かざり・赤に山吹のふちの布）
    python3 flat/autumn_banner.py <出力.webp>"""
 import sys, os, math
 import numpy as np
@@ -54,7 +55,7 @@ for cx, cy, rr, n in [(70, 50, 110, 220), (180, 30, 70, 110), (700, 50, 110, 220
         m = poly_aa((Hh, W), [leaf_poly(x, y, rng.uniform(7, 12), rng.uniform(0, 6))])
         img = over(img, hexc(cols[rng.integers(0, len(cols))]), m)
 
-# かわいい競走馬（flat/cute_themes.py・前足を上げて歩く栗毛の馬（亜麻色のたてがみ・もみじの髪かざり・赤に山吹のふちの布））
+# かわいい競走馬（flat/cute_themes.py・4本の足で立つ栗毛の馬（亜麻色のたてがみ・もみじの髪かざり・赤に山吹のふちの布））
 if os.environ.get('CUTE_NO_HORSE') != '1':
     img = draw_cute(img, 'autumn', W, Hh)
 # 舞う葉（手前）
