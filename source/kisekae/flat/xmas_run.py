@@ -1,12 +1,12 @@
 """クリスマスの壁紙の馬が、サンタさんの プレゼントを 食べようとする コマ（まさちゃんの指定「クリスマス エフェクト:常に雪が降っている
    5秒から12秒、ランダムにサンタさんの持っているプレゼントを食べようとしてサンタさんが焦って逃げる💨右側へフェードアウト、
    様子を見ながら元の位置に戻る 15秒に1回リピート」）。いつ どのコマを出すか・サンタさん・雪は ../xmas_wall.py
-   - 馬は いまの絵と同じ馬（horse_flat・同じ色と帽子と綱・同じカメラ）。体と 足と しっぽは 動かさない（首と頭だけ）
+   - 馬は いまの絵と同じ馬（horse_flat・同じ色と トナカイの カチューシャと 綱・同じカメラ）。体と 足と しっぽは 動かさない（首と頭だけ）
    - コマ（名前と順は frames()）：U0（いまの絵）・R1〜R31（首を のばしていく とちゅう）・R32（のばしきった形：鼻先が サンタさんの
      プレゼントの リボンに とどく）・B1〜B4（ぱくっ：のばしきった形から 首を 少し前へ のばして 頭を 下へ＝箱の 角を かもうとする）。
      首は 根元から まげて のばす（r3d/horse3d.py の neck_bend・neck_len）。とちゅうの コマの のばしぐあいは、頭と首の 目印の 動く道のりが
      同じ はばに なるように えらぶ（levels：コマを めくる はやさが 動きの はやさに合う＝なめらか）
-   - 帽子は 頭と いっしょに かたむく（cute_themes.hat_on_head の tilt を、頭の角度の かわった ぶんだけ かえる：HAT_OVR）
+   - トナカイの カチューシャ（cute_themes.antler_band）は 頭の向きから 置くので、頭と いっしょに 動いて かたむく（まえの サンタの帽子は HAT_OVR で かたむけていた）
    - 背景は 動く壁紙の 下の絵（flat/xmas_banner.py を XMAS_BASE=1：サンタさんと 手前の 降る雪なし。どちらも ページの SVG で動かす）。
      コマ0は その 下の絵と 同じ（1画素も ちがわない）。コマは 下の絵を描くのと同じ流れ（flat/step_run.py の frame_u8）で、馬のポーズだけ かえて描く
    - 動く所（すべての コマの ちがう所を まとめた四角）だけ 切りぬいて、よこ8コマずつ 並べた1まい（シート・ロスなし・背景ごと）にする
@@ -33,7 +33,6 @@ REACH = (-48.0, 1.15, -44.0)                     # のばしきった形：首�
 BITE = (-5.0, 0.03, -8.0)                        # ぱくっ（いちばん先）：のばしきった形に たす（首を 少し前へ のばして 頭を 下へ）
 N_REACH = 32                                     # 首を のばす だんかい（R1〜R32。R32 が のばしきった形）
 N_BITE = 4                                       # ぱくっの だんかい（B1〜B4）
-HAT_TILT = -12.0                                 # いまの絵の 帽子の かたむき（cute_themes.acc_xmas の tilt）
 MARK_HEAD_SCALE = 1.1                            # 目印の 頭の大きさ（step_run と同じ：描く順で かわらないように）
 
 
@@ -50,11 +49,6 @@ def pose_at(p, q=0.0):
         out['neck_len'] = round(1 + (REACH[1] - 1) * p + BITE[1] * q, 5)
         out['head_ang'] = round(P['head_ang'] + (REACH[2] - P['head_ang']) * p + BITE[2] * q, 4)
     return out
-
-
-def hat_tilt(pose):
-    """帽子の かたむき：頭が 上を向いた ぶん（頭の角度が ふえた ぶん）だけ うしろへ"""
-    return round(HAT_TILT + (pose['head_ang'] - POSES[BASE]['head_ang']), 4)
 
 
 def head_marks(p):
@@ -108,7 +102,6 @@ def parse(fn):
 
 def render_frames(outdir, cams, idxs):
     """コマを描いて <outdir>/xmas_fNN.png に（NN は シートの順。コマ0を先に：影の目印を xmas_ref.json に）"""
-    import cute_themes as C
     fns = frames()
     os.makedirs(outdir, exist_ok=True)
     rf = f'{outdir}/{NAME}_ref.json'
@@ -120,13 +113,7 @@ def render_frames(outdir, cams, idxs):
             r = json.load(open(rf))
             ref = dict(hooves=[np.asarray(h, float) for h in r['hooves']], bottom=r['bottom'])
         pose = pose_at(*parse(fns[i]))
-        C.HAT_OVR.clear()
-        if i != 0:
-            C.HAT_OVR[NAME] = {'tilt': hat_tilt(pose)}
-        try:
-            u8, m = SR.frame_u8(NAME, pose, cams, ref)
-        finally:
-            C.HAT_OVR.clear()
+        u8, m = SR.frame_u8(NAME, pose, cams, ref)
         if i == 0:
             json.dump(dict(hooves=[[float(v) for v in h] for h in m['hooves']], bottom=float(m['bottom'])), open(rf, 'w'))
         SR.save_png(f'{outdir}/{NAME}_f{i:02d}.png', u8)
