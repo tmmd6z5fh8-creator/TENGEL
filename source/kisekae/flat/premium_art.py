@@ -9,15 +9,17 @@
        ポニーは 部品ごと（まさちゃん「馬もプルンプルン系で、全体的に動いて！…でも身体が歪んだりは変だから構造は身体の構造を考えて作成して！」：
          ページで 体の つくりどおりに 動かす。顔の 向き R＝右向き・T＝やや右・W＝やや右で 手前の 目を ウィンク・F＝正面。
          左向き・やや左は ページで 左右 うらがえす。箱は 画面の まん中で 左右 対称）：
-         pm_legs：うしろ足（ハートの 下から 見える 関節の ある 短い 足・動かない）／ pm_neck_…：首 ／ pm_mane_…：たてがみ（頭の うしろ）／
+         pm_neck_…：首 ／ pm_mane_…：たてがみ（頭の うしろ）／
          pm_earL_…・pm_earR_…：耳 ／ pm_face_…：頭と 顔・前髪（ウィンクの 顔は 小さな ハートも）／ pm_bow_…：リボン（左右の 耳の まん中）。
          動きの 中心（首の 上・たてがみの 上の はし・耳の つけね・リボンの むすびめ・ハートを 持つ 所）は premium_layers.json の rig。
          頭の 形は 3D の 形を 顔の 向きに 回して 描く（まさちゃん「顔もう少し細く！馬っぽく！目の位置ももっと自然にして！」：YAW・SKULL・CHEEK・SNOUT …）
          カメラ（まさちゃん「カメラだと思って、ど！は右正面からアップに、…う！は真正面からドアップに！カメラ目線で作成して！」）：
          R＝①右正面から・T／W＝③④右正面 斜め上から（PITCH：頭を 少し 上から・頭を 少し 大きく）・F＝⑤真正面 ドアップ。目は カメラ目線（GAZE）。
-         絵は 世界の 座標の 箱で、その カメラの アップの 大きさで くっきり 描く（dens）
+         絵は 世界の 座標の 箱で、その 顔を 見せる いちばん アップの 大きさで くっきり 描く（ZOOM_OF・dens）。
+         まさちゃん「ど！からもっとアップで！どんどん画面に近く感じにして！」：近い カメラほど 首を 短く して 頭を 下に（HEAD_C：T・W は 14・F は 30）。
+         うしろ足は 下に つもった ハートに うまるので 描かない
        pm_aura_…：オーラ（まさちゃん「光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！」：ポニーと、その カメラで かたむいた
-         ハート・前足（・うしろ足）の 形の まわりの つやつやの ピンクの わと 白 → ピンクの 光。ページで 外へ 広がる）
+         ハート・前足の 形の まわりの つやつやの ピンクの わと 白 → ピンクの 光。ページで 外へ 広がる）
        pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：前足（首の 横の 肩から ハートの 山の 前を おりて、
          ひづめで ハートの 左右の ふちを 上から つかむ：肩・うで・ふわふわの 毛・ひづめ・ハートに 落ちる かげ）
        pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
@@ -571,12 +573,13 @@ HEAD_K = 1.1 * WU                                 # 頭の 大きさ（まさち
 # カメラ（まさちゃん「カメラだと思って、ど！は右正面からアップに、て！は左正面からアップに、き！は右正面斜め上からアップに、
 #  ちゅ！は左正面斜め上からアップに、う！は真正面からドアップに！カメラ目線で作成して！」）：顔の 向きごとの カメラ（PC.CAMS の 番号）。
 #  R＝①右正面から（②は 左右 うらがえし）・T＝③右正面 斜め上から・W＝T で ウィンク（④は ③の カメラを 左右 うらがえし）・F＝⑤真正面 ドアップ
-CAM_OF = dict(R=0, T=2, W=2, F=4)
+CAM_OF = dict(R=0, T=2, W=2, F=4)                 # ハートの かたむき（オーラの 形）：W は ③の カメラを ④で うらがえす
+ZOOM_OF = dict(R=max(PC.CAMS[0]['z'], PC.CAMS[1]['z']), T=PC.CAMS[2]['z'], W=PC.CAMS[3]['z'], F=PC.CAMS[4]['z'])   # その 顔を 見せる いちばん アップの 倍率
 HEAD_SC = dict(R=1.0, T=1.08, W=1.08, F=1.03)     # カメラに 近い 頭は 少し 大きく（斜め上から・ドアップ）
-HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .75 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .75 * 2 * HS + 6),
-              F=(HC[0], HC[1] - .75 * 2 * HS))                  # 頭の まん中（顔の 向きごと。斜め上からは 首が 短く 見えて 少し 下）
+HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .75 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .75 * 2 * HS + 14),
+              F=(HC[0], HC[1] - .75 * 2 * HS + 30))             # 頭の まん中（顔の 向きごと。近い カメラほど 首を 短く して 頭を 下に：顔と 字が 画面に 入る）
 HEAD_C['W'] = HEAD_C['T']
-ZMAX = max(c['z'] for c in PC.CAMS)
+ZMAX = max(c['z'] for c in PC.CAMS) * PC.PUSH_IN
 
 
 def dens(z):
@@ -588,38 +591,6 @@ def head_k(v):
     return HEAD_K * HEAD_SC[v]
 HOOF_R = .072 * 2 * HS                            # ひづめの 大きさ（場所は 前足の HOOF_AT）
 HEART_KY = .94                                    # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート）
-
-
-LEG_X, LEG_Y0, LEG_KNEE, LEG_Y1 = .19 * 2 * HS, HC[1] + 70, HC[1] + 132, HC[1] + 180   # うしろ足：左右・上の はし（ハートの うしろ）・関節・ひづめの 下
-
-
-def legs(cv):
-    """うしろ足（ハートの 下から 見える 短い 足：関節（ひざ）で 少し 曲がる・白い 毛・ひづめに かぶさる ふわふわの 毛・ピンクの ひづめ）。
-       まさちゃん「後ろ脚もいいサイズ感で入れて！この感じなら短い方がいいと思う！」「脚は、せめて関節入れて！」（まさちゃんの 絵の うしろ足）"""
-    from art import limb
-    cuff = [(0, '#E7B3D2'), (.4, '#F7D9EA'), (.7, '#FFFFFF'), (1, '#FFFFFF')]
-    for sd in (-1, 1):
-        x = HC[0] + sd * LEG_X
-        top, knee, ank = (x - sd * 4, LEG_Y0), (x + sd * 10, LEG_KNEE), (x + sd * 2, LEG_Y1 - 26)
-        a = cv.mask(P(limb([top, knee], [36, 32], cap=False)) + P(limb([knee, ank], [26, 25], cap=False)) + P(oval(knee[0] + sd * 3, knee[1], 19, 17)))
-        drop(cv, grow(a, cv.px(2.4)), k=.25)
-        fur(cv, a, R=12, lw=2.4)
-        # 関節（ひざ）：ふくらみの かげ・内がわの しわ・上の 光
-        cv.tint(np.clip(soft_ell(cv, knee[0] + sd * 3, knee[1] + 8, 18, 9, 0, 1.0) - soft_ell(cv, knee[0] + sd * 3, knee[1] + 2, 16, 10, 0, 1.0), 0, 1) * a,
-                hexc('#E2B4CF'), .9)
-        cr = stroke_mask(cv, f'M{f(knee[0] - sd * 14)} {f(knee[1] - 9)} Q{f(knee[0] - sd * 5)} {f(knee[1] + 1)} {f(knee[0] - sd * 12)} {f(knee[1] + 11)}', 2.4)
-        cv.put(hexc('#B97A9F'), cr * .9)
-        cv.put(hexc('#FFFFFF'), soft_ell(cv, knee[0] + sd * 6, knee[1] - 6, 7, 4, 0, .6) * .85 * a)
-        # ひづめ（うすい ピンク・つや）→ ひづめに かぶさる ふわふわの 毛
-        y = LEG_Y1 - 30
-        hf = cv.mask(P(smooth([(x - 21, y + 12), (x + 21, y + 12), (x + 24, LEG_Y1 - 6), (x + 19, LEG_Y1), (x - 19, LEG_Y1), (x - 24, LEG_Y1 - 6)])))
-        shaded(cv, hf, cols=[(0, '#D66A9C'), (.35, '#EC98C0'), (.7, '#F8C6DD'), (1, '#FFEAF4')], R=6, lw=2.4, gloss=.6,
-               hl=[(x - 9, LEG_Y1 - 10, 6.5, 3, -8, .8)])
-        sc = [(x - 24, y + 4), (x - 18, y - 5), (x - 10, y - 1), (x - 3, y - 7), (x + 4, y - 1), (x + 12, y - 6), (x + 19, y - 1), (x + 24, y + 4),
-              (x + 25, y + 13), (x + 19, y + 19), (x + 11, y + 15), (x + 3, y + 20), (x - 4, y + 15), (x - 12, y + 20), (x - 19, y + 15), (x - 25, y + 13)]
-        m = cv.mask(P(smooth(sc)))
-        drop(cv, grow(m, cv.px(2.2)), k=.25)
-        fur(cv, m, R=8, lw=2.2, cols=cuff)
 
 
 def neck(cv, v, th, ph=0.0):
@@ -721,13 +692,6 @@ def rig(v):
     return {k: [round(x, 2), round(y, 2)] for k, (x, y) in r.items()}
 
 
-def legs_layer():
-    """うしろ足（顔の 向きに よらない・動かない：ハートの 下から 見える。見えるのは ①②の カメラだけ）"""
-    cv = Cv(HEAD_BOX, sc=dens(PC.CAMS[CAM_OF['R']]['z']))
-    legs(cv)
-    return cv
-
-
 _PARTS = {}
 
 
@@ -741,7 +705,7 @@ def pony_parts(v):
     hx, hy = HEAD_C[v]
     K = head_k(v)
     th, ph = math.radians(YAW[v]), math.radians(PITCH[v])
-    sc = dens(PC.CAMS[CAM_OF[v]]['z'])
+    sc = dens(ZOOM_OF[v])
     S = lambda p: (hx + p[0] * K, hy + p[1] * K)
     P3 = lambda p: S(pr(p, th, ph)[0])
     out = {}
@@ -953,7 +917,6 @@ def hooves():
 # 全体的に馬とハートから出るようにして！」）：ポニーと ハートの 形の まわりの つやつやの ピンクの わ（ゼリー）と、白 → ピンクの やわらかい 光。
 # ページで 着地の 時に 外へ 広がりながら 消える（pm_aura_…：顔の 向きごと。ハートは その カメラの かたむきで 入れる）
 AURA_BOX = (-80.0, -10.0, 550.0, 830.0)
-_LEGS = {}
 
 
 def tilt_pt(x, y, ry, rx, fs=1.0, P=PC.PERSP):
@@ -1003,17 +966,12 @@ def front_tilted(cv, ry, rx, fs=1.0):
 
 
 def aura_layer(v):
-    """オーラ（顔の 向き v の ポニー（とその カメラで かたむいた ハート・前足・見えれば うしろ足）の まわり）"""
+    """オーラ（顔の 向き v の ポニー（と その カメラで かたむいた ハート・前足）の まわり）"""
     cam = PC.CAMS[CAM_OF[v]]
-    cv = Cv(AURA_BOX, sc=dens(cam['z']) * .6)
+    cv = Cv(AURA_BOX, sc=dens(ZOOM_OF[v]) * .6)
     parts = pony_parts(v)
     sc_v = parts['face'].sc
     U = resample(np.maximum.reduce([parts[k].img[..., 3] for k in PART_NAMES]), HEAD_BOX, sc_v, cv)
-    if cam['legs']:
-        if 'cv' not in _LEGS:
-            _LEGS['cv'] = legs_layer()
-        lg = _LEGS['cv']
-        U = np.maximum(U, resample(lg.img[..., 3], HEAD_BOX, lg.sc, cv))
     U = np.maximum(U, front_tilted(cv, cam['ry'], cam['rx'], cam['fs']))
     # 外の ふちだけの 形（まつげ・すきまの 穴は うめる：広がる 時に 黒い すじや 中の わが 見えないように）
     m = (blur(np.clip(U, 0, 1).astype(np.float32), cv.px(1.5)) > .35).astype(np.uint8)
@@ -1097,8 +1055,8 @@ def word(cv, text, cx, cy, s, w=17.0, gap=-4, seed=3):
 
 def text_layer(i):
     text, _, _, s_txt = PC.SCREENS[i]
-    cv = Cv(HEART_BOX, sc=dens(PC.CAMS[i]['z'] * 1.05))      # その 画面の カメラで くっきり（かたむけて 手前が 少し 大きくなる 分も）
-    word(cv, text, HC[0], HC[1] - 6, s_txt * HS / 150, w=17, gap=2, seed=10 + i)
+    cv = Cv(HEART_BOX, sc=dens(PC.CAMS[i]['z'] * PC.PUSH_IN * 1.05))   # その 画面の カメラで くっきり（近づく 分と、かたむけて 手前が 大きくなる 分も）
+    word(cv, text, HC[0], HC[1] - 6, s_txt * HS / 150, w=17, gap=PC.TEXT_GAP[i], seed=10 + i)
     return cv
 
 
@@ -1234,15 +1192,9 @@ FACES = ('R', 'T', 'W', 'F')                                       # 顔の 向�
 PART_NAMES = ('neck', 'mane', 'earL', 'earR', 'face', 'bow')
 
 
-def legs_cached():
-    if 'cv' not in _LEGS:
-        _LEGS['cv'] = legs_layer()
-    return _LEGS['cv']
-
-
 def _layers():
     """書き出す 絵の 名前 → 作る 関数（顔の 向きごとに 部品 → オーラ の 順：同じ 顔の 部品を 1回で 作る）"""
-    L = dict(pm_legs=legs_cached)
+    L = {}
     for v in FACES:
         for p in PART_NAMES:
             L[f'pm_{p}_{v}'] = lambda p=p, v=v: pony_parts(v)[p]
