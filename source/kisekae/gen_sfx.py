@@ -1,9 +1,11 @@
-"""的中ボタン・デカ的中ボタン・ど的中ボタン（フリーズ的中ボタン）の効果音。音は全部ここで合成する（録音や、ほかの音のデータは使わない）
+"""的中ボタン・デカ的中ボタン・ど的中ボタン（フリーズ的中ボタン）・プレミアムど的中（かわいい）の効果音。音は全部ここで合成する（録音や、ほかの音のデータは使わない）
    python3 gen_sfx.py <出力フォルダ>
    → sfx_hit_push.wav・sfx_hit.wav（的中）／sfx_big_push.wav・sfx_big.wav（デカ）／sfx_fz_push.wav・sfx_fz.wav（ど的中＝フリーズ）
+     ／sfx_pc.wav（プレミアムど的中（かわいい）：タップの音だけ。PUSHの音は ど的中と同じ）
      *_push＝PUSHが出たとき（当たりのお知らせ）。それ以外＝PUSHを押してから（0秒＝押した瞬間）。44.1kHz・16bit・ステレオ
      ＋ sfx_wave.json（音の大きさの形・1/50秒ごと。効果音のメモ Fx_Sound.dc.html の波形に使う。gen_fx.py と同じフォルダに置く）
-   秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む
+   秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む。
+   プレミアムは premium_cute.py の PC_T と SCREENS を読む
    乱数の種が決まっているので、何回作っても同じ音になる
    アプリ・見本に入れるとき（AAC 160kbps）：ffmpeg -i sfx_hit.wav -c:a aac -b:a 160k -movflags +faststart sfx_hit.m4a
    （見本のキャンバスは .m4a を受け付けないので、中身は同じで名前だけ .mp4 にして入れている）"""
@@ -846,8 +848,164 @@ def sfx_fz():
     return mx.render(1.8, target=-13, bass=True)
 
 
+# ---------- プレミアムど的中（かわいい・ハ長調・オルゴールと鐘で かわいく。PUSHの音は ど的中と同じ） ----------
+def read_pc_times():
+    """premium_cute.py から PC_T（時刻）と SCREENS（①〜⑤：字・顔・入ってくる方）を読む（見本の動きと音の時刻をそろえるため）"""
+    tree = ast.parse(open(f'{HERE}/premium_cute.py', encoding='utf-8').read())
+    pc = sc = None
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            if node.targets[0].id == 'PC_T':
+                pc = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
+            elif node.targets[0].id == 'SCREENS':
+                sc = ast.literal_eval(node.value)
+    return pc, sc
+
+
+def tine(f, d=1.2, tau=.6):
+    """オルゴールの 音（細い 金属の 歯：はじいた 瞬間だけ 高い 倍音・すぐ すんだ 音に）"""
+    n = n_(d)
+    t = tl(n)
+    x = np.sin(2 * np.pi * f * t) + .22 * np.sin(2 * np.pi * f * 2 * t) * np.exp(-t / (tau * .4))
+    if f * 5.4 < 16000:
+        x = x + .3 * np.sin(2 * np.pi * f * 5.4 * t) * np.exp(-t / .025)
+    return fade(x * env(n, .001, tau), .001, .03)
+
+
+def kiss(rng):
+    """チュッ：くちびるの 小さな 音（とても 短い ノイズ）＋ すっと 上がる 高い 音"""
+    n = n_(.15)
+    t = tl(n)
+    f = 1150 + 1700 * (1 - np.exp(-t / .022))
+    x = np.sin(phase(f, n)) * np.minimum(t / .004, 1) * np.exp(-t / .032)
+    x = x + .45 * bp(rng.standard_normal(n), 1800, 7000) * np.exp(-t / .005)
+    return fade(x, .0005, .02)
+
+
+def clap(rng, d=.2):
+    """パン：やわらかい 手拍子（ノイズが 3回 すぐ つづく）"""
+    n = n_(d)
+    t = tl(n)
+    e = np.zeros(n)
+    for k, dt in enumerate((0, .009, .018)):
+        e += (t >= dt) * np.exp(-np.maximum(t - dt, 0) / (.006 if k < 2 else .055))
+    return fade(bp(rng.standard_normal(n), 900, 6000) * e, .0005, .02)
+
+
+PC_NOTES = (72, 74, 76, 77, 79)                                                   # ど・て・き・ちゅ・う ＝ ド・レ・ミ・ファ・ソ（C5〜G5）。最後の ど的中 ＝ 高い ド
+PC_CHORDS = ((60, 64, 67), (55, 59, 62), (57, 60, 64), (53, 57, 60), (55, 59, 62))  # ①〜⑤の 和音：C・G・Am・F・G → 最後 C
+
+
+def sfx_pc():
+    """押してから（秒は premium_cute.py の PC_T・SCREENS）：0 ポン＋キラリン → ハートが 降って つもる（オルゴールの ポロポロが だんだん 多く 高く・和音が ふくらむ）
+       → BURST パーン＋ポポポポン（まん中から じゅんに はじける）→ W キラーーン（白い 光）
+       → ①〜⑤ 入ってくる 方から シュッ → 止まった 時に ポン＋鐘（ド・レ・ミ・ファ・ソ）・④ は チュッ＋ウィンクで キラッ（下で オルゴールの 分散和音と 手拍子）
+       → FIN ふわっ → ジャーン（ど的中・高い ド）→ ドクン・ドクン（ハートの 鼓動）・シャララ↑（のぼる ハート）
+       → RES ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 ピン・ピン・ピン（0.08秒おき）→ 合計 キラリーン"""
+    T, SC = read_pc_times()
+    S, IN, FIN, RES, FILL, B = T['S'], T['IN'], T['FIN'], T['RES'], T['FILL'], T['BURST']
+    W1 = T['W'][1]
+    t0b = RES + .45                                                                # ボードの 行（gen_fx の --t0）
+    mx = Mix(t0b + 2.4, 41)
+    r = mx.rng
+    # --- 0：ポン＋キラリン ---
+    mx.add(pop(700, 380, .12, r, .2), 0, .7, rv=.15)
+    for i, m in enumerate((84, 88, 91, 96)):
+        mx.add(bell(mtof(m), 1.0, idx=1.6, tau=.35), .03 + .05 * i, .15, (-.3, -.1, .1, .3)[i], rv=.35)
+    # --- 0〜FILL：ハートが 降って つもる（オルゴールの ポロポロ：つもるほど 多く・高く）＋ 和音が ふくらむ ＋ シュワーッ ---
+    penta = (72, 74, 76, 79, 81, 84, 86, 88, 91, 93, 96, 98)
+    tt = .5
+    while tt < FILL:
+        u = (tt - .5) / (FILL - .5)
+        m = penta[min(len(penta) - 1, int(u * 7) + int(r.integers(0, 5)))]
+        mx.add(tine(mtof(m), .9, .35), tt, .09 + .06 * u, r.uniform(-.8, .8), rv=.35)
+        tt += .12 - .075 * u + r.uniform(-.015, .015)
+    mx.add(pad((60, 64, 67, 74), FILL, FILL * .9, .25, .45), .1, .2, rv=.4)
+    w = nsweep(FILL, 300, 5000, .5, r) * np.linspace(0, 1, n_(FILL)) ** 2
+    mx.add(w, .1, .05, rv=.3)
+    # --- BURST：パーン＋ポポポポン（まん中から 外へ）---
+    mx.add(pop(420, 160, .2, r, .35), B, .8, rv=.15)
+    mx.add(kick(140, 55, .4, 1.6, .12, .2, r), B, .4, rv=.05)
+    for k in range(10):
+        mx.add(pop(1500 + 120 * k, 900, .07, r, .15), B + T['CHAIN'] * k / 9 + r.uniform(0, .01), .26, r.uniform(-.8, .8), rv=.2)
+    # --- W：キラーーン（白い 光）---
+    d = W1 - B + .05
+    mx.add(nsweep(d, 2000, 9000, .4, r) * np.linspace(0, 1, n_(d)) ** 2, B, .07, rv=.3)
+    for i, m in enumerate((84, 88, 91, 96, 100)):
+        mx.add(bell(mtof(m), 2.2, idx=1.8, tau=.9), W1 + .012 * i, .18, (-.4, -.2, 0, .2, .4)[i], rv=.5)
+    sparkle(mx, W1, .6, 10, (96, 98, 100, 103, 105, 108), .06, r)
+    mx.add(pad((60, 64, 67, 72), .9, .02, .7, .3), W1, .12, rv=.5)
+    # --- ①〜⑤：シュッ（入ってくる 方から）→ ポン＋鐘（ド・レ・ミ・ファ・ソ）。下で オルゴールの 分散和音・ベース・手拍子（止まる 時が 2拍目）---
+    for i, (text, face, frm, s_txt) in enumerate(SC):
+        ti = S[i]
+        land = ti + IN * .72
+        d = land - ti + .05
+        f0, f1 = {'L': (500, 2600), 'R': (500, 2600), 'B': (300, 2800), 'T': (2800, 500), 'C': (400, 2200)}[frm]
+        wh = nsweep(d, f0, f1, .45, r) * np.sin(np.linspace(0, np.pi, n_(d))) ** 2
+        p0 = {'L': -.9, 'R': .9}.get(frm, 0.0)
+        mx.add(wh, ti, .09, np.linspace(p0, 0, 8), rv=.25)
+        m = PC_NOTES[i]
+        mx.add(pop(600, 300, .1, r, .15), land, .45, rv=.12)
+        mx.add(bell(mtof(m + 12), 1.4, idx=1.5, tau=.55), land, .28, rv=.4)
+        mx.add(tine(mtof(m), 1.4, .7), land, .28, rv=.35)
+        mx.add(tine(mtof(m + 24), .8, .3), land + .01, .09, rv=.35)
+        sparkle(mx, land, .35, 4, (96, 100, 103, 108), .045, r)
+        for k in range(4):                                                         # とびちる 小さな ハート
+            mx.add(pop(1700 + 150 * k, 1100, .06, r, .1), land + .03 + .04 * k, .1, r.uniform(-.7, .7), rv=.2)
+        if text.startswith('ちゅ'):                                                # チュッ＋ウィンクの キラッ
+            mx.add(kiss(r), land + .06, .5, .1, rv=.15)
+            mx.add(bell(mtof(103), .8, idx=1.0, tau=.25), land + .22, .11, .35, rv=.35)
+        base = land - .3
+        ch = PC_CHORDS[i]
+        arp = (ch[0] + 12, ch[2] + 12, ch[1] + 12, ch[2] + 12, ch[0] + 24, ch[2] + 12, ch[1] + 12, ch[2] + 12)
+        for k in range(8):
+            mx.add(tine(mtof(arp[k]), .5, .2), base + .15 * k, .055, (-.3, .3)[k % 2], rv=.3)
+        for k in (0, 2):
+            mx.add(pluck(ch[0] - 12, .3, .15), base + .3 * k, .1, rv=.15)
+        for k in (1, 3):
+            mx.add(clap(r), base + .3 * k, .07, rv=.2)
+    # --- FIN：ふわっ → ジャーン（ど的中・高い ド）---
+    hit = FIN + .28
+    mx.add(nsweep(.3, 400, 3000, .45, r) * np.linspace(0, 1, n_(.3)) ** 2, FIN, .1, rv=.3)
+    for i, m in enumerate((60, 64, 67, 72, 76, 79)):
+        mx.add(brass(m + 12, 1.1, r), hit, .09, (i / 5 - .5) * .8, rv=.35)
+    for i, m in enumerate((84, 88, 91, 96)):
+        mx.add(bell(mtof(m), 2.0, idx=1.6, tau=.8), hit + .01 * i, .2, (-.3, -.1, .1, .3)[i], rv=.5)
+    mx.add(tine(mtof(84), 1.6, .8), hit, .25, rv=.4)
+    mx.add(kick(150, 55, .5, 1.6, .15, .2, r), hit, .45, rv=.05)
+    mx.add(crash(r, 2.0, .7), hit, .08, rv=.4)
+    sparkle(mx, hit, .5, 8, (96, 100, 103, 108), .055, r)
+    for k in range(6):
+        mx.add(pop(1600 + 140 * k, 1000, .06, r, .1), hit + .02 + .03 * k, .1, r.uniform(-.8, .8), rv=.2)
+    mx.add(pad((48, 60, 64, 67, 72), RES - FIN + .6, .3, .6, .4), FIN, .15, rv=.45)
+    # ドクン・ドクン（ハートの 鼓動：大きくなる 2回）
+    for tb in (FIN + .5, FIN + 1.4):
+        for k, dt in enumerate((.16, .42)):
+            mx.add(kick(110, 50, .35, 1.6, .1, .05, r), tb + dt, (.5, .36)[k], rv=.08)
+    # シャララ↑（のぼる ハート）
+    for k in range(3):
+        t = FIN + .6 + .55 * k
+        for j, m in enumerate((84, 86, 88, 91, 93, 96, 98, 100)):
+            mx.add(tine(mtof(m), .6, .25), t + .045 * j, .045, r.uniform(-.6, .6), rv=.4)
+    # --- RES：ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 → 合計 ---
+    n = n_(.5)
+    t = tl(n)
+    mx.add(fade(np.sin(phase(900 * 2.2 ** np.clip(t / .4, 0, 1), n)) * np.minimum(t / .03, 1) * np.clip((.5 - t) / .12, 0, 1)), RES - .1, .1, rv=.3)
+    mx.add(pop(560, 260, .14, r, .2), RES + .12, .6, rv=.15)
+    for i, m in enumerate((96, 100, 103)):
+        mx.add(tine(mtof(m), .7, .3), t0b + .08 * i, .2, (-.2, 0, .2)[i], rv=.35)
+        mx.add(coin(3600, r, .3, False), t0b + .08 * i, .07, rv=.2)
+    tt = t0b + .08 * 3
+    for i, m in enumerate((84, 88, 91, 96)):
+        mx.add(bell(mtof(m), 1.6, idx=1.4, tau=.6), tt + .015 * i, .2, (-.3, -.1, .1, .3)[i], rv=.45)
+    mx.add(coin(3000, r, .5), tt, .2, -.2, rv=.25)
+    mx.add(coin(4200, r, .45), tt + .06, .15, .25, rv=.25)
+    mx.add(pad((60, 64, 67, 72), 1.0, .2, .8, .35), tt, .14, rv=.45)
+    return mx.render(1.6, target=-14)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
-          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz))
+          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc))
 
 def wave_env(x, per_sec=50):
     """メモの波形：1/50秒ごとのいちばん大きい所（0〜1）の平方根（小さい音も見えるように。-6dB≒0.7・-20dB≒0.3・-40dB＝0.1）"""
