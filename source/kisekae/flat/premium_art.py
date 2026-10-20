@@ -13,6 +13,11 @@
          pm_earL_…・pm_earR_…：耳 ／ pm_face_…：頭と 顔・前髪（ウィンクの 顔は 小さな ハートも）／ pm_bow_…：リボン（左右の 耳の まん中）。
          動きの 中心（首の 上・たてがみの 上の はし・耳の つけね・リボンの むすびめ・ハートを 持つ 所）は premium_layers.json の rig。
          頭の 形は 3D の 形を 顔の 向きに 回して 描く（まさちゃん「顔もう少し細く！馬っぽく！目の位置ももっと自然にして！」：YAW・SKULL・CHEEK・SNOUT …）
+         カメラ（まさちゃん「カメラだと思って、ど！は右正面からアップに、…う！は真正面からドアップに！カメラ目線で作成して！」）：
+         R＝①右正面から・T／W＝③④右正面 斜め上から（PITCH：頭を 少し 上から・頭を 少し 大きく）・F＝⑤真正面 ドアップ。目は カメラ目線（GAZE）。
+         絵は 世界の 座標の 箱で、その カメラの アップの 大きさで くっきり 描く（dens）
+       pm_aura_…：オーラ（まさちゃん「光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！」：ポニーと、その カメラで かたむいた
+         ハート・前足（・うしろ足）の 形の まわりの つやつやの ピンクの わと 白 → ピンクの 光。ページで 外へ 広がる）
        pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：前足（首の 横の 肩から ハートの 山の 前を おりて、
          ひづめで ハートの 左右の ふちを 上から つかむ：肩・うで・ふわふわの 毛・ひづめ・ハートに 落ちる かげ）
        pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
@@ -402,35 +407,39 @@ def stroke_mask(cv, d, w, cap='round'):
 EYE_D = hexc('#22041A')
 
 
-def eye(cv, ex, ey, rx, ry, side=1, rot=0.0, lashes=True, clip=None):
+def eye(cv, ex, ey, rx, ry, side=1, rot=0.0, lashes=True, clip=None, gaze=(0.0, 0.0)):
     """大きな キラキラの 目（まさちゃんの 絵の 目）：上が こい 紫 → 下が マゼンタ・まん中の ひとみ・大きな 白い 光・下の やわらかい 光・
-       上の まぶたの 線・まつげ 3本（side：まつげの 向き 1＝右・-1＝左）。clip：目を この 形（SVG）の 中だけに（ななめの 顔の 向こうの 目）"""
+       上の まぶたの 線・まつげ 3本（side：まつげの 向き 1＝右・-1＝左）。clip：目を この 形（SVG）の 中だけに（ななめの 顔の 向こうの 目）。
+       gaze：目線（ひとみと 光を 目の はば・高さの 何倍 ずらすか：カメラ目線）"""
     R = max(rx, ry) * 1.9
     cv = cv.sub(ex - R, ey - R, ex + R, ey + R)
     a = cv.mask(P(oval(ex, ey, rx, ry, rot)))
     if clip:
         a = a * cv.mask(clip)
+    gx, gy = gaze[0] * rx, gaze[1] * ry
     t = np.clip((cv.Y - (ey - ry)) / (2 * ry), 0, 1)
     col = ramp(t, [(0, '#24051A'), (.3, '#3A0A2C'), (.55, '#701A5A'), (.78, '#B8357F'), (1, '#E66AAE')])
     cv.put(col, a)
     # 下の やわらかい 光（ピンク）
-    cv.put(hexc('#F59ACB'), soft_ell(cv, ex - rx * .15 * side, ey + ry * .62, rx * .75, ry * .35, 0, 1.0) * .55 * a)
-    # ひとみ（まん中 少し 下）と その まわりの 輪
-    ir = soft_ell(cv, ex, ey + ry * .1, rx * .6, ry * .52, rot, .08)
+    cv.put(hexc('#F59ACB'), soft_ell(cv, ex - rx * .15 * side + gx * .5, ey + ry * .62 + gy * .5, rx * .75, ry * .35, 0, 1.0) * .55 * a)
+    # ひとみ（まん中 少し 下・目線の 方へ）と その まわりの 輪
+    px0, py0 = ex + gx, ey + ry * .12 + gy
+    ir = soft_ell(cv, px0, py0 - ry * .02, rx * .6, ry * .52, rot, .08)
     cv.tint(ir * a, hexc('#5A1046'), .35)
-    pu = soft_ell(cv, ex, ey + ry * .12, rx * .38, ry * .34, rot, .12)
+    pu = soft_ell(cv, px0, py0, rx * .38, ry * .34, rot, .12)
     cv.put(hexc('#2A0420'), pu * .92 * a)
-    pr = np.clip(soft_ell(cv, ex, ey + ry * .12, rx * .46, ry * .42, rot, .05) - soft_ell(cv, ex, ey + ry * .12, rx * .38, ry * .34, rot, .05), 0, 1)
+    pr = np.clip(soft_ell(cv, px0, py0, rx * .46, ry * .42, rot, .05) - soft_ell(cv, px0, py0, rx * .38, ry * .34, rot, .05), 0, 1)
     cv.put(hexc('#C0488F'), pr * .5 * a)
     # 下の ふちの 光の 玉（ボケ）
     for bx, by, br, op in ((-.42, .58, .2, .75), (-.12, .7, .14, .6), (.22, .66, .1, .45)):
-        cv.put(hexc('#FFE2F2'), soft_ell(cv, ex + rx * bx * side, ey + ry * by, rx * br, rx * br, 0, .35) * op * a)
-    # 大きな 白い 光（上・ひとみの 左）と 小さな 光
-    hl = cv.mask(P(oval(ex - rx * .18 * side, ey - ry * .42, rx * .36, ry * .28, 0)))
+        cv.put(hexc('#FFE2F2'), soft_ell(cv, ex + rx * bx * side + gx * .6, ey + ry * by + gy * .6, rx * br, rx * br, 0, .35) * op * a)
+    # 大きな 白い 光（上・ひとみの 左）と 小さな 光（ひとみと いっしょに 動く）
+    hx0, hy0 = gx, gy * .45
+    hl = cv.mask(P(oval(ex - rx * .18 * side + hx0, ey - ry * .42 + hy0, rx * .36, ry * .28, 0)))
     cv.put(hexc('#FFFFFF'), hl * a)
-    cv.put(hexc('#FFFFFF'), cv.mask(P(circ(ex + rx * .06 * side, ey + ry * .04, rx * .1))) * a)
-    cv.put(hexc('#FFFFFF'), cv.mask(P(sparkle(ex + rx * .45 * side, ey + ry * .02, rx * .16, .2))) * .95 * a)
-    cv.put(hexc('#FFFFFF'), cv.mask(P(circ(ex - rx * .02 * side, ey + ry * .34, rx * .05))) * .8 * a)
+    cv.put(hexc('#FFFFFF'), cv.mask(P(circ(ex + rx * .06 * side + gx, ey + ry * .04 + gy, rx * .1))) * a)
+    cv.put(hexc('#FFFFFF'), cv.mask(P(sparkle(ex + rx * .45 * side + gx, ey + ry * .02 + gy, rx * .16, .2))) * .95 * a)
+    cv.put(hexc('#FFFFFF'), cv.mask(P(circ(ex - rx * .02 * side + gx, ey + ry * .34 + gy, rx * .05))) * .8 * a)
     # ふち（こい むらさき・上を 太く）
     W = cv.px(rx * .1)
     ring = np.clip(grow(a, W) - a, 0, 1)
@@ -559,9 +568,24 @@ HEART_BOX = PC.HEART_BOX
 HOOF_BOX = PC.HOOF_BOX
 WU = 2 * HS / 350                                 # 頭の 部品の 数字は ハートの はば 350px の 時の 大きさ
 HEAD_K = 1.1 * WU                                 # 頭の 大きさ（まさちゃんの 絵より 1割 大きく：アップ）
-HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .75 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .75 * 2 * HS),
-              F=(HC[0], HC[1] - .75 * 2 * HS))                  # 頭の まん中（顔の 向きごと）
+# カメラ（まさちゃん「カメラだと思って、ど！は右正面からアップに、て！は左正面からアップに、き！は右正面斜め上からアップに、
+#  ちゅ！は左正面斜め上からアップに、う！は真正面からドアップに！カメラ目線で作成して！」）：顔の 向きごとの カメラ（PC.CAMS の 番号）。
+#  R＝①右正面から（②は 左右 うらがえし）・T＝③右正面 斜め上から・W＝T で ウィンク（④は ③の カメラを 左右 うらがえし）・F＝⑤真正面 ドアップ
+CAM_OF = dict(R=0, T=2, W=2, F=4)
+HEAD_SC = dict(R=1.0, T=1.08, W=1.08, F=1.03)     # カメラに 近い 頭は 少し 大きく（斜め上から・ドアップ）
+HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .75 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .75 * 2 * HS + 6),
+              F=(HC[0], HC[1] - .75 * 2 * HS))                  # 頭の まん中（顔の 向きごと。斜め上からは 首が 短く 見えて 少し 下）
 HEAD_C['W'] = HEAD_C['T']
+ZMAX = max(c['z'] for c in PC.CAMS)
+
+
+def dens(z):
+    """画面で z 倍に して 見せる 絵の 画素の こさ（iPhone の 3倍の 画面で くっきり）"""
+    return SC * z
+
+
+def head_k(v):
+    return HEAD_K * HEAD_SC[v]
 HOOF_R = .072 * 2 * HS                            # ひづめの 大きさ（場所は 前足の HOOF_AT）
 HEART_KY = .94                                    # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート）
 
@@ -598,15 +622,16 @@ def legs(cv):
         fur(cv, m, R=8, lw=2.2, cols=cuff)
 
 
-def neck(cv, v, th):
+def neck(cv, v, th, ph=0.0):
     """首（白・頭の うしろから むねへ。下ほど 太く、肩の あいだに 入る）。まさちゃん「全体的に、首がなく」「首から手の位置まで、肩を入れたり自然にして！」"""
     from art import limb
     hx, hy = HEAD_C[v]
-    (nx, ny), _ = pr((0, 40, -18), th)
-    top = (hx + nx * HEAD_K, hy + ny * HEAD_K)
+    K = head_k(v)
+    (nx, ny), _ = pr((0, 40, -18), th, ph)
+    top = (hx + nx * K, hy + ny * K)
     bot = (HC[0], HC[1] - 100)                                      # むねの まん中（ハートの うしろ）
     mid = (top[0] * .55 + bot[0] * .45, top[1] * .55 + bot[1] * .45)
-    a = cv.mask(P(limb([top, mid, bot], [92 * HEAD_K, 100 * HEAD_K, 118 * HEAD_K])))
+    a = cv.mask(P(limb([top, mid, bot], [92 * K, 100 * HEAD_K, 118 * HEAD_K])))
     fur(cv, a, R=30, lw=2.6)
 
 
@@ -634,8 +659,10 @@ def hoof_rot(sd):
 
 # ---------------------------------------------------------------- 頭（3D の 形を 顔の 向きに 回して 描く：どの 向きでも 目・耳・鼻の 場所が 自然に そろう）
 # まさちゃん「顔もう少し細く！馬っぽく！目の位置ももっと自然にして！」「ここ耳がおかしい！二枚目に合わせて！」（耳は まっすぐ 上へ のびる 長い 耳）
-# 座標：x＝右・y＝下・z＝手前（ハートの はば 350px の 時の 大きさ）。向き：右へ 回す 角度
-YAW = dict(R=35.0, T=18.0, W=18.0, F=0.0)          # R＝右向き（もう少し 正面より）・T＝やや右（W は ウィンク）・F＝正面。左向き・やや左は ページで 左右 うらがえす
+# 座標：x＝右・y＝下・z＝手前（ハートの はば 350px の 時の 大きさ）。向き：右へ 回す 角度・上から 見る 角度
+YAW = dict(R=30.0, T=16.0, W=16.0, F=0.0)          # R＝右正面から（①）・T＝右正面 斜め上から（③。W は ウィンク）・F＝真正面（⑤）。左は ページで 左右 うらがえす
+PITCH = dict(R=0.0, T=12.0, W=12.0, F=0.0)          # 斜め上から：頭を 少し 上から 見る（顔は カメラへ 上げているので 少しだけ）
+GAZE = dict(R=(-.3, 0.0), T=(-.16, -.3), W=(-.16, -.3), F=(0.0, 0.0))   # カメラ目線：ひとみを カメラの 方へ（目の はば・高さの 何倍）
 SKULL = ((0, -18, 0), (68, 66, 62))                # 頭の まるい 所（まん中・半径 x, y, z）
 CHEEK = ((0, 16, 18), (57, 48, 56))                # ほお（頭と 鼻先の あいだ）
 SNOUT = ((0, 50, 56), (40, 30, 54))                # 鼻先（前と 下へ のびる＝馬の 顔）
@@ -650,21 +677,23 @@ MANE = [((-68, -56, -24), 31, 22, -26, 1), ((-82, -16, -30), 39, 27, -14, 1), ((
         ((-78, 70, -26), 37, 24, 0, 1), ((-64, 106, -20), 34, 22, 6, 1)]                 # たてがみ（首の 左がわ だけ。正面の 顔では 頭の うしろ）
 
 
-def pr(p, th):
-    """3D の 点 → (画面の x, y)・手前への 深さ"""
+def pr(p, th, ph=0.0):
+    """3D の 点 → (画面の x, y)・手前への 深さ（th：右へ 回す・ph：上から 見る 角度）"""
     x, y, z = p
-    return (x * math.cos(th) + z * math.sin(th), y), -x * math.sin(th) + z * math.cos(th)
+    x1, z1 = x * math.cos(th) + z * math.sin(th), -x * math.sin(th) + z * math.cos(th)
+    return (x1, y * math.cos(ph) + z1 * math.sin(ph)), -y * math.sin(ph) + z1 * math.cos(ph)
 
 
-def pr_ell(c, r, th):
+def pr_ell(c, r, th, ph=0.0):
     """だ円の 玉 → 画面の だ円 (x, y, はば, 高さ)"""
-    (x, y), _ = pr(c, th)
-    return x, y, math.hypot(r[0] * math.cos(th), r[2] * math.sin(th)), r[1]
+    (x, y), _ = pr(c, th, ph)
+    rz = math.hypot(r[0] * math.sin(th), r[2] * math.cos(th))
+    return x, y, math.hypot(r[0] * math.cos(th), r[2] * math.sin(th)), math.hypot(r[1] * math.cos(ph), rz * math.sin(ph))
 
 
-def facing(n, th):
+def facing(n, th, ph=0.0):
     """向き n の 面が どれだけ こちらを 向くか（1＝まっすぐ こちら）"""
-    return -n[0] * math.sin(th) + n[2] * math.cos(th)
+    return -n[1] * math.sin(ph) + (-n[0] * math.sin(th) + n[2] * math.cos(th)) * math.cos(ph)
 
 
 def flip(p, sd):
@@ -681,20 +710,20 @@ def rig(v):
     """動きの 中心（画面の 座標・左右 うらがえす 前）：head＝首の 上（頭が かたむく）・mane＝たてがみの 上の はし・
        earL・earR＝耳の つけね・bow＝リボンの むすびめ"""
     hx, hy = HEAD_C[v]
-    K = HEAD_K
-    th = math.radians(YAW[v])
+    K = head_k(v)
+    th, ph = math.radians(YAW[v]), math.radians(PITCH[v])
     S = lambda p: (hx + p[0] * K, hy + p[1] * K)
-    P3 = lambda p: S(pr(p, th)[0])
+    P3 = lambda p: S(pr(p, th, ph)[0])
     (bx, by, bz), tip, w = EAR
-    r = dict(head=S(pr((0, 40, -18), th)[0]), mane=P3(MANE[0][0]),
+    r = dict(head=P3((0, 40, -18)), mane=P3(MANE[0][0]),
              earL=P3((-(bx + EAR_OUT[0] / 2), by + EAR_OUT[1] / 2, bz)), earR=P3((bx + EAR_OUT[0] / 2, by + EAR_OUT[1] / 2, bz)),
-             bow=P3(BOW[0]))
+             bow=P3(BOW[0]), hc=(hx, hy))
     return {k: [round(x, 2), round(y, 2)] for k, (x, y) in r.items()}
 
 
 def legs_layer():
-    """うしろ足（顔の 向きに よらない・動かない：ハートの 下から 見える）"""
-    cv = Cv(HEAD_BOX)
+    """うしろ足（顔の 向きに よらない・動かない：ハートの 下から 見える。見えるのは ①②の カメラだけ）"""
+    cv = Cv(HEAD_BOX, sc=dens(PC.CAMS[CAM_OF['R']]['z']))
     legs(cv)
     return cv
 
@@ -710,16 +739,17 @@ def pony_parts(v):
     if v in _PARTS:
         return _PARTS[v]
     hx, hy = HEAD_C[v]
-    K = HEAD_K
-    th = math.radians(YAW[v])
+    K = head_k(v)
+    th, ph = math.radians(YAW[v]), math.radians(PITCH[v])
+    sc = dens(PC.CAMS[CAM_OF[v]]['z'])
     S = lambda p: (hx + p[0] * K, hy + p[1] * K)
-    P3 = lambda p: S(pr(p, th)[0])
+    P3 = lambda p: S(pr(p, th, ph)[0])
     out = {}
-    nk = Cv(HEAD_BOX)
-    neck(nk, v, th)
+    nk = Cv(HEAD_BOX, sc=sc)
+    neck(nk, v, th, ph)
     out['neck'] = nk
     # たてがみ（首の 左がわ・頭の うしろ）
-    mn = Cv(HEAD_BOX)
+    mn = Cv(HEAD_BOX, sc=sc)
     for c, rx, ry, rot, sp in MANE:
         curl(mn, *P3(c), rx * K, ry * K, rot, sp)
     cast(mn, grow(mn.img[..., 3].copy(), mn.px(1)), nk.img[..., 3])
@@ -727,23 +757,23 @@ def pony_parts(v):
     # 耳：まっすぐ 上へ のびる 長い 耳（頭の うしろから）
     (bx, by, bz), tip, w = EAR
     for sd, name in ((-1, 'earL'), (1, 'earR')):
-        e = Cv(HEAD_BOX)
+        e = Cv(HEAD_BOX, sc=sc)
         ear(e, P3((sd * (bx - w), by, bz)), P3(flip(tip, sd)), P3((sd * (bx + w + EAR_OUT[0]), by + EAR_OUT[1], bz)))
         out[name] = e
     # 頭：まるい 頭・ほお・鼻先（馬の 長い 顔）
-    cv = Cv(HEAD_BOX)
-    sk, ch, sn = pr_ell(*SKULL, th), pr_ell(*CHEEK, th), pr_ell(*SNOUT, th)
+    cv = Cv(HEAD_BOX, sc=sc)
+    sk, ch, sn = pr_ell(*SKULL, th, ph), pr_ell(*CHEEK, th, ph), pr_ell(*SNOUT, th, ph)
     rot_sn = -14 * math.sin(th) / math.sin(math.radians(35))
     head_svg = (P(oval(*S(sk[:2]), sk[2] * K, sk[3] * K)) + P(oval(*S(ch[:2]), ch[2] * K, ch[3] * K))
                 + P(oval(*S(sn[:2]), sn[2] * K, sn[3] * K, rot_sn)))
     a = cv.mask(head_svg)
     fur(cv, a, R=30 * K, lw=2.6)
     # 鼻先の うすい ピンク
-    (nx, ny), _ = pr((0, 56, 80), th)
+    (nx, ny), _ = pr((0, 56, 80), th, ph)
     cv.tint(soft_ell(cv, *S((nx, ny)), sn[2] * .82 * K, sn[3] * .7 * K, rot_sn, 1.0) * a, hexc('#FFD3E7'), .6)
     # ほお
     for sd in (-1, 1):
-        f_ = facing(flip(BLUSH[3], sd), th)
+        f_ = facing(flip(BLUSH[3], sd), th, ph)
         if f_ < .15:
             continue
         x, y = P3(flip(BLUSH[0], sd))
@@ -752,7 +782,7 @@ def pony_parts(v):
         cv.put(hexc('#FFFFFF'), soft_ell(cv, x - rx * .35, y - ry * .2, rx * .16, rx * .16, 0, .5) * .85 * a)
     # 鼻の あな
     for sd in (-1, 1):
-        f_ = facing(flip(NOSTRIL[3], sd), th)
+        f_ = facing(flip(NOSTRIL[3], sd), th, ph)
         if f_ < .2:
             continue
         x, y = P3(flip(NOSTRIL[0], sd))
@@ -760,10 +790,10 @@ def pony_parts(v):
         ring = stroke_mask(cv, oval(x, y, rx, ry, sd * 10, n=12), 2.0)
         cv.put(hexc('#E2729F'), ring * a)
         cv.put(hexc('#F7A6C8'), cv.mask(P(oval(x, y, rx * .7, ry * .7, sd * 10))) * .6 * a)
-    # 目（向こうの 目は 細く・頭の 形の 中だけ）
+    # 目（向こうの 目は 細く・頭の 形の 中だけ）：カメラ目線（GAZE）
     eyes = []
     for sd in (-1, 1):
-        f_ = facing(flip(EYE[3], sd), th)
+        f_ = facing(flip(EYE[3], sd), th, ph)
         if f_ < .2:
             continue
         x, y = P3(flip(EYE[0], sd))
@@ -773,10 +803,10 @@ def pony_parts(v):
         if v == 'W' and (sd, x) == near[:2]:
             wink(cv, x, y, EYE[1] * K, EYE[2] * K, sd)
         else:
-            eye(cv, x, y, EYE[1] * kx * K, EYE[2] * K, sd, clip=head_svg)
+            eye(cv, x, y, EYE[1] * kx * K, EYE[2] * K, sd, clip=head_svg, gaze=GAZE[v])
     # 前髪
     for c, rx, ry, rot, sp in FORE:
-        if pr(c, th)[1] > -12:
+        if pr(c, th, ph)[1] > -12:
             curl(cv, *P3(c), rx * K, ry * K, rot, sp)
     if v == 'W':                                  # 「ちゅ！❤️」：ウィンクの 目の 外に 小さな ハート
         sd, x, y, kx = near
@@ -786,7 +816,7 @@ def pony_parts(v):
     cast(cv, grow(a, cv.px(2.4)), below)
     out['face'] = cv
     # リボン（左右の 耳の まん中）
-    bw = Cv(HEAD_BOX)
+    bw = Cv(HEAD_BOX, sc=sc)
     c, bs, br = BOW
     bow(bw, *P3(c), bs * K, br * YAW[v])
     cast(bw, grow(bw.img[..., 3].copy(), bw.px(1)), np.maximum.reduce([out[k].img[..., 3] for k in ('face', 'earL', 'earR')]))
@@ -884,7 +914,8 @@ def big_heart(cv, cx, cy, s, seed=7):
 
 
 def heart_layer():
-    cv = Cv(HEART_BOX)
+    """ハート（①〜⑤で 同じ 絵：いちばん アップの カメラで くっきり）"""
+    cv = Cv(HEART_BOX, sc=dens(ZMAX))
     big_heart(cv, HC[0], HC[1], HS)
     return cv
 
@@ -893,7 +924,7 @@ def hooves():
     """前足（ハートの 前）：首の 横の 肩から ハートの 山の 前を ななめに おりて、ひづめで ハートの 左右の ふちを 上から つかむ
        （肩・うで・手首の ふわふわの 毛・うすい ピンクの つやつやの ひづめ・ハートに 落ちる かげ）。
        まさちゃん「ハートの持ち方が手が下から入ってるから変！上から持って！首から手の位置まで、肩を入れたり自然にして！」"""
-    cv = Cv(HOOF_BOX)
+    cv = Cv(HOOF_BOX, sc=dens(ZMAX))
     cuff = [(0, '#E7B3D2'), (.4, '#F7D9EA'), (.7, '#FFFFFF'), (1, '#FFFFFF')]
     on_heart = grow(cv.mask(P(heart_d(HC[0], HC[1], HS, HEART_KY))), cv.px(4))
     for side in (-1, 1):
@@ -916,6 +947,117 @@ def hooves():
         drop(cv, grow(cm, cv.px(2.2)), k=.3)
         fur(cv, cm, R=7, lw=2.2, cols=cuff)
     return cv
+
+
+# ---------------------------------------------------------------- オーラ（まさちゃん「馬とハートが登場してプルルンと揺れる時に、光沢があるピンクと白のオーラが
+# 全体的に馬とハートから出るようにして！」）：ポニーと ハートの 形の まわりの つやつやの ピンクの わ（ゼリー）と、白 → ピンクの やわらかい 光。
+# ページで 着地の 時に 外へ 広がりながら 消える（pm_aura_…：顔の 向きごと。ハートは その カメラの かたむきで 入れる）
+AURA_BOX = (-80.0, -10.0, 550.0, 830.0)
+_LEGS = {}
+
+
+def tilt_pt(x, y, ry, rx, fs=1.0, P=PC.PERSP):
+    """ハートの 面の 点（ハートの まん中から の ずれ）→ 世界の 点。ページの transform:perspective(P) rotateX(rx) rotateY(ry) scale(fs)
+       （ハートの まん中が 中心）と 同じ"""
+    b, a = math.radians(ry), math.radians(rx)
+    x, y = x * fs, y * fs
+    x1, z1 = x * math.cos(b), -x * math.sin(b)
+    y2, z2 = y * math.cos(a) - z1 * math.sin(a), y * math.sin(a) + z1 * math.cos(a)
+    w = 1 - z2 / P
+    return HC[0] + x1 / w, HC[1] + y2 / w
+
+
+def resample(alpha, src_box, src_sc, cv):
+    """ほかの 板（src_box・src_sc）の 不透明度を この 板の 画素に"""
+    s = src_sc / cv.sc
+    tx = (cv.box[0] - src_box[0]) * src_sc + .5 * s - .5
+    ty = (cv.box[1] - src_box[1]) * src_sc + .5 * s - .5
+    M = np.float32([[s, 0, tx], [0, s, ty]])
+    return cv2.warpAffine(alpha, M, (cv.W, cv.H), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderValue=0)
+
+
+def front_mask(cv):
+    """ハートと 前足の 形（ふちまで）"""
+    a = grow(cv.mask(P(heart_d(HC[0], HC[1], HS, HEART_KY))), cv.px(3.4))
+    for side in (-1, 1):
+        x, y = HC[0] + side * HOOF_X, HOOF_Y
+        hm = cv.mask(P(oval(x, y, HOOF_R * .9, HOOF_R * 1.08, hoof_rot(side))))
+        am = cv.mask(P(arm_d(side)))
+        a = np.maximum(a, grow(np.maximum(hm, am), cv.px(2.6)))
+    return a
+
+
+def front_tilted(cv, ry, rx, fs=1.0):
+    """ハートと 前足の 形を カメラの かたむきで（この 板の 上に）"""
+    pl = Cv(HEART_BOX, sc=cv.sc)
+    m = front_mask(pl)
+    bx, by = pl.box[0], pl.box[1]
+    src, dst = [], []
+    for u, v in ((0, 0), (pl.W - 1, 0), (pl.W - 1, pl.H - 1), (0, pl.H - 1)):
+        X, Y = bx + (u + .5) / pl.sc, by + (v + .5) / pl.sc
+        x2, y2 = tilt_pt(X - HC[0], Y - HC[1], ry, rx, fs)
+        src.append((u, v))
+        dst.append(((x2 - cv.box[0]) * cv.sc - .5, (y2 - cv.box[1]) * cv.sc - .5))
+    H = cv2.getPerspectiveTransform(np.float32(src), np.float32(dst))
+    return cv2.warpPerspective(m, H, (cv.W, cv.H), flags=cv2.INTER_LINEAR, borderValue=0)
+
+
+def aura_layer(v):
+    """オーラ（顔の 向き v の ポニー（とその カメラで かたむいた ハート・前足・見えれば うしろ足）の まわり）"""
+    cam = PC.CAMS[CAM_OF[v]]
+    cv = Cv(AURA_BOX, sc=dens(cam['z']) * .6)
+    parts = pony_parts(v)
+    sc_v = parts['face'].sc
+    U = resample(np.maximum.reduce([parts[k].img[..., 3] for k in PART_NAMES]), HEAD_BOX, sc_v, cv)
+    if cam['legs']:
+        if 'cv' not in _LEGS:
+            _LEGS['cv'] = legs_layer()
+        lg = _LEGS['cv']
+        U = np.maximum(U, resample(lg.img[..., 3], HEAD_BOX, lg.sc, cv))
+    U = np.maximum(U, front_tilted(cv, cam['ry'], cam['rx'], cam['fs']))
+    # 外の ふちだけの 形（まつげ・すきまの 穴は うめる：広がる 時に 黒い すじや 中の わが 見えないように）
+    m = (blur(np.clip(U, 0, 1).astype(np.float32), cv.px(1.5)) > .35).astype(np.uint8)
+    cs, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    fill = np.zeros_like(m)
+    cv2.drawContours(fill, cs, -1, 1, -1)
+    U = blur(fill.astype(np.float32), cv.px(.6))
+    d = dist_out(U) / cv.sc                                             # 形の 外への きょり（世界の px）
+    out = np.clip(1 - U, 0, 1)
+    # つやつやの ピンクの わ（ゼリー：ふくらみ・左上の 白い つや・右下の 光）と、わの まわりの 白 → ピンクの やわらかい 光
+    # （形の すぐ まわりの 光は ページの drop-shadow：ここで 広く 光らせると、広がる 時に 点めつが ふえる）
+    d0, W = 5.0, 12.0
+    g = np.exp(-np.abs(d - (d0 + W * .5)) / 5.0) * out
+    cv.put(ramp(np.clip((d - d0) / W, 0, 1), [(0, '#FFFFFF'), (.4, '#FFD2E8'), (1, '#FF8CC6')]), g * .45)
+    u = np.clip((d - d0) / W, 0, 1).astype(np.float32)
+    band = np.clip(np.minimum(d - d0, d0 + W - d) / 1.3, 0, 1).astype(np.float32)
+    h = (np.clip(np.sin(np.pi * u), 0, 1) ** .65).astype(np.float32)
+    n = normals(blur(h, cv.px(.6)), cv.px(W) * .5)
+    dd, sp = lit(n, 26)
+    cv.put(ramp(np.clip(.1 + .95 * dd, 0, 1), [(0, '#E23A8A'), (.45, '#FF7FBF'), (.8, '#FFC6E2'), (1, '#FFF1F8')]), band * .92)
+    rimv = np.clip(n[..., 0] * .45 + n[..., 1] * .85, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
+    cv.add(hexc('#FFE3F1'), rimv * .5 * band)
+    cv.put(hexc('#FFFFFF'), np.clip(sp * 1.6, 0, 1) * .95 * band)
+    # わの まん中の 白い すじ（光沢）
+    mid = np.clip(1 - np.abs(d - (d0 + W * .38)) / 1.4, 0, 1)
+    ex, ey = edge_dir(U, cv.px(4))
+    face_l = np.clip(-(ex * LIGHT[0] + ey * LIGHT[1]) * 1.2, 0, 1)
+    cv.put(hexc('#FFFFFF'), mid * face_l * .8 * band)
+    glitter(cv, band, 70, 40 + FACES.index(v), r=(.7, 2.0), op=(.7, 1.0), star=.6)
+    glitter(cv, np.clip(g * 1.6, 0, 1) * out, 50, 50 + FACES.index(v), r=(1.2, 3.0), op=(.6, 1.0), star=1.0)
+    ys, xs = np.nonzero(U > .5)
+    _AURA_C[v] = (round(float(cv.box[0] + (xs.min() + xs.max() + 1) / 2 / cv.sc), 2),
+                  round(float(cv.box[1] + (ys.min() + ys.max() + 1) / 2 / cv.sc), 2))
+    return cv
+
+
+_AURA_C = {}
+
+
+def aura_center(v):
+    """オーラが 広がる 中心（ポニーと ハートの 形の 箱の まん中・世界の 座標）"""
+    if v not in _AURA_C:
+        aura_layer(v)
+    return list(_AURA_C[v])
 
 
 # ---------------------------------------------------------------- 字（ど！ など：PC.GLYPHS の 線を 太く・虹色・つや）
@@ -955,7 +1097,7 @@ def word(cv, text, cx, cy, s, w=17.0, gap=-4, seed=3):
 
 def text_layer(i):
     text, _, _, s_txt = PC.SCREENS[i]
-    cv = Cv(HEART_BOX)
+    cv = Cv(HEART_BOX, sc=dens(PC.CAMS[i]['z'] * 1.05))      # その 画面の カメラで くっきり（かたむけて 手前が 少し 大きくなる 分も）
     word(cv, text, HC[0], HC[1] - 6, s_txt * HS / 150, w=17, gap=2, seed=10 + i)
     return cv
 
@@ -1090,10 +1232,27 @@ def final_layer():
 # ---------------------------------------------------------------- 書き出し
 FACES = ('R', 'T', 'W', 'F')                                       # 顔の 向き（左向き・やや左は ページで 左右 うらがえす）
 PART_NAMES = ('neck', 'mane', 'earL', 'earR', 'face', 'bow')
-LAYERS = dict(pm_legs=legs_layer,
-              **{f'pm_{p}_{v}': (lambda p=p, v=v: pony_parts(v)[p]) for v in FACES for p in PART_NAMES},
-              pm_heart=heart_layer, pm_hoof=hooves, **{f'pm_t{i}': (lambda i=i: text_layer(i)) for i in range(5)},
-              pm_fin=final_layer, pm_bg=background, pm_jelly=jelly_sheet)
+
+
+def legs_cached():
+    if 'cv' not in _LEGS:
+        _LEGS['cv'] = legs_layer()
+    return _LEGS['cv']
+
+
+def _layers():
+    """書き出す 絵の 名前 → 作る 関数（顔の 向きごとに 部品 → オーラ の 順：同じ 顔の 部品を 1回で 作る）"""
+    L = dict(pm_legs=legs_cached)
+    for v in FACES:
+        for p in PART_NAMES:
+            L[f'pm_{p}_{v}'] = lambda p=p, v=v: pony_parts(v)[p]
+        L[f'pm_aura_{v}'] = lambda v=v: aura_layer(v)
+    L.update(pm_heart=heart_layer, pm_hoof=hooves, **{f'pm_t{i}': (lambda i=i: text_layer(i)) for i in range(5)},
+             pm_fin=final_layer, pm_bg=background, pm_jelly=jelly_sheet)
+    return L
+
+
+LAYERS = _layers()
 NO_CROP = ('pm_bg', 'pm_jelly')
 
 
@@ -1119,7 +1278,7 @@ def main(out, names):
         cv.save(os.path.join(out, name + '.webp'), q=90)
         boxes[name] = box
         print(name, box, os.path.getsize(os.path.join(out, name + '.webp')))
-    rigs = {v: rig(v) for v in FACES}
+    rigs = {v: dict(rig(v), aura=aura_center(v)) for v in FACES}
     rigs['heart'] = [round(HC[0], 2), round(HC[1] + HOOF_AT[1], 2)]                 # ハートが ぷるんっと する 中心（前足で 持っている 所）
     with open(fn_json, 'w', encoding='utf-8') as fh:
         fh.write('{' + ',\n '.join(f'"{k}": [{", ".join(repr(v) for v in boxes[k])}]' for k in LAYERS if k in boxes)

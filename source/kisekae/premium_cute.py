@@ -33,8 +33,15 @@
    - ポニーを 部品（うしろ足・首・たてがみ・耳 左右・顔・リボン）に 分けて、体の つくりどおりの 関節で ぷるるん（pony_tree・pony_motion）：
      うしろ足は 地面に ついたまま・体は 着地で はずむ・頭は 首の 上を 中心に・耳は つけね・たてがみは 上の はし・リボンは むすびめを 中心に ゆれる。
      白い ふちの 光は CSS の drop-shadow（動く 部品に ついていく）
+   「そしたら全体的にもっと顔とハートの文字を画面にアップにして！カメラだと思って、ど！は右正面からアップに、て！は左正面からアップに、
+    き！は右正面斜め上からアップに、ちゅ！は左正面斜め上からアップに、う！は真正面からドアップに！カメラ目線で作成して！
+    後、馬とハートが登場してプルルンと揺れる時に、光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！ハートも周りに飛ぶように！」
+   - ①〜⑤は カメラ（CAMS・camera）：世界の 座標で 作った ポニーと ハートを 1.28〜1.55倍の アップに。ハート・字・前足は カメラの 向きに かたむける
+     （CSS の perspective・rotateX・rotateY）。顔の 向き・上からの 角度・カメラ目線は flat/premium_art.py（YAW・PITCH・GAZE）
+   - 着地で ぷるるん する 間：動く 絵に ついていく 白 → ピンクの 光（.pmQ の drop-shadow：pmAu）・外へ 広がる つやつやの ピンクと 白の オーラ
+     （pm_aura_…：ripple・2回）・まわりへ とぶ つやつやの ハート（aura_hearts）
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
-     ポニーの 部品（顔の 向き 4つ：右向き・やや右・やや右で ウィンク・正面 × 首・たてがみ・耳 左右・顔・リボン。左向き・やや左は 左右 うらがえす）・
+     ポニーの 部品（顔の 向き 4つ：右正面から・右正面 斜め上から・その ウィンク・真正面 × 首・たてがみ・耳 左右・顔・リボン・オーラ。左は 左右 うらがえす）・
      うしろ足・ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
      背景（パチンコの 大当たりのような 虹色の 光線）・つやつやの ゼリーの ハート 6色（つもる・とぶ・のぼる・ふわふわ ハート）
      premium_blobs.json（名前 → キャンバスの id）・premium_layers.json（名前 → 画面の 箱：flat/premium_art.py が 書く）
@@ -158,6 +165,19 @@ PC_T = dict(FILL=2.4,                   # ハートが 画面 いっぱいに �
             RES=10.9)                   # ハートが 上へ・ボード
 # ①〜⑤：(字, 顔の 向き, 入ってくる 方, 字の 大きさ)。顔：R＝右・L＝左・r＝やや右・l＝やや左（ウィンク）・F＝正面。方：L＝左から・R＝右から・B＝下から・T＝上から・C＝まん中に 出る
 SCREENS = (('ど！', 'R', 'L', 1.32), ('て！', 'L', 'R', 1.32), ('き！', 'r', 'B', 1.32), ('ちゅ！', 'l', 'T', 1.1), ('う！', 'F', 'C', 1.32))
+# ①〜⑤の カメラ（まさちゃん「全体的にもっと顔とハートの文字を画面にアップにして！カメラだと思って、ど！は右正面からアップに、て！は左正面からアップに、
+#  き！は右正面斜め上からアップに、ちゅ！は左正面斜め上からアップに、う！は真正面からドアップに！カメラ目線で作成して！」）：
+#  ポニーと ハートは 世界の 座標（390×844 の 画面と 同じ 大きさ）で 作り、カメラで 画面へ：世界の FOCUS が 画面の at に くるように z 倍（アップ）。
+#  ハート（と 字・前足）は カメラの 向きに かたむける（ry＝左右・rx＝上下。度。PERSP＝遠近の きょり。fs：斜め上からは 頭より 遠いので 少し 小さく）。
+#  legs：うしろ足が 見える（斜め上・ドアップでは 見えない）。
+#  顔の 向き・上からの 角度・目線は flat/premium_art.py（YAW・PITCH・GAZE）
+FOCUS = (195.0, 400.0)
+CAMS = (dict(z=1.28, at=(195.0, 432.0), ry=14.0, rx=0.0, fs=1.0, legs=True),      # ①ど！：右正面から アップ
+        dict(z=1.28, at=(195.0, 432.0), ry=-14.0, rx=0.0, fs=1.0, legs=True),     # ②て！：左正面から アップ（①の 左右 うらがえし）
+        dict(z=1.3, at=(195.0, 436.0), ry=8.0, rx=-22.0, fs=.95, legs=False),     # ③き！：右正面 斜め上から アップ
+        dict(z=1.3, at=(195.0, 436.0), ry=-8.0, rx=-22.0, fs=.95, legs=False),    # ④ちゅ！：左正面 斜め上から アップ（③の 左右 うらがえし）
+        dict(z=1.55, at=(195.0, 476.0), ry=0.0, rx=0.0, fs=1.0, legs=False))      # ⑤う！：真正面から ドアップ
+PERSP = 1000.0
 FIN_C, FIN_S = (195.0, 415.0), 165.0     # 大きな ハートの まん中と 大きさ
 FIN_BOX = (0.0, 225.0, 390.0, 390.0)     # 最後の ハートの 絵の 箱（flat/premium_art.py の pm_fin）
 TITLE_Y, TITLE_K = 112.0, .48            # ボードの 上に 動いた ハートの まん中と 大きさ
@@ -336,37 +356,41 @@ def rise_lag(t, frm):
 JIG_F, JIG_TAU = 3.0, .26        # ゆれの 速さ（1秒に 3回）と 小さくなる 速さ：体から 頭・リボン・耳・たてがみへ 少しずつ おくれて つたわる（同じ 速さで ゆれる＝ばらばらに ちらつかない）
 
 
-def pony_motion(frm, mir):
-    """部品ごとの 動き（t 秒 → CSS の transform）。mir：左右 うらがえした 顔（かたむきの 向きを 画面に あわせる）"""
+def pony_motion(frm, mir, g=1.0):
+    """部品ごとの 動き（t 秒 → CSS の transform）。mir：左右 うらがえした 顔（かたむきの 向きを 画面に あわせる）。
+       g：ゆれの 大きさ（カメラの アップで 画面の 上の 動きが 大きく なりすぎないように：JIG_G）"""
     sg = -1.0 if mir else 1.0
-    amp = dict(T=17.0, C=12.0).get(frm, 14.0)                      # 着地で 体が 沈む 大きさ（上から 落ちる 時は 大きく）
+    amp = dict(T=17.0, C=12.0).get(frm, 14.0) * g                  # 着地で 体が 沈む 大きさ（上から 落ちる 時は 大きく）
     F, TAU = JIG_F, JIG_TAU
 
     def tilt(t, d=0.0, k=1.0):
-        return sg * k * entry_lag(t - d, frm)
+        return sg * k * g * entry_lag(t - d, frm)
 
     def bow(t):
-        q = osc(t, IMPACT + .04, .09, F, TAU, math.pi / 2)
-        return f'rotate({tilt(t, .02, 1.3) + osc(t, IMPACT + .04, 11.0, F, TAU):.2f}deg) scale({1 + q:.3f},{1 - q:.3f})'
+        q = osc(t, IMPACT + .04, .09 * g, F, TAU, math.pi / 2)
+        return f'rotate({tilt(t, .02, 1.3) + osc(t, IMPACT + .04, 11.0 * g, F, TAU):.2f}deg) scale({1 + q:.3f},{1 - q:.3f})'
 
     def ear(sd):
-        return lambda t: f'rotate({tilt(t, .03, 1.5) + sd * (osc(t, IMPACT + .05, 13.0, F, TAU) + 1.4 * rise_lag(t - .02, frm)):.2f}deg)'
+        return lambda t: f'rotate({tilt(t, .03, 1.5) + sd * g * (osc(t, IMPACT + .05, 13.0, F, TAU) + 1.4 * rise_lag(t - .02, frm)):.2f}deg)'
 
     return dict(
         body=lambda t: f'translateY({osc(t, IMPACT, amp, F, TAU):.2f}px)',
-        head=lambda t: (f'translateY({osc(t, IMPACT + .02, 6.0, F, TAU) + rise_lag(t, frm):.2f}px) '
-                        f'rotate({tilt(t) + osc(t, IMPACT + .03, 4.0, F, TAU):.2f}deg)'),
-        mane=lambda t: f'rotate({tilt(t, .05, 1.2) + osc(t, IMPACT + .07, 5.0, F, TAU):.2f}deg)',
+        head=lambda t: (f'translateY({g * (osc(t, IMPACT + .02, 6.0, F, TAU) + rise_lag(t, frm)):.2f}px) '
+                        f'rotate({tilt(t) + g * osc(t, IMPACT + .03, 4.0, F, TAU):.2f}deg)'),
+        mane=lambda t: f'rotate({tilt(t, .05, 1.2) + g * osc(t, IMPACT + .07, 5.0, F, TAU):.2f}deg)',
         earL=ear(-1.0), earR=ear(1.0), bow=bow,
-        heart=lambda t: f'scale({1 + osc(t, IMPACT + .01, .055, F, TAU):.3f},{1 - osc(t, IMPACT + .01, .11, F, TAU):.3f})',
+        heart=lambda t: f'scale({1 + g * osc(t, IMPACT + .01, .055, F, TAU):.3f},{1 - g * osc(t, IMPACT + .01, .11, F, TAU):.3f})',
     )
+
+
+JIG_G = 1.0          # カメラの 倍率 z の とき ゆれを z**-JIG_G 倍（1＝画面の 上の 動きは アップ 前と 同じ）
 
 
 def pony_css():
     """①〜⑤の キーフレーム（pmJ<部品><画面>）"""
     out = ''
     for i, (text, face, frm, s_txt) in enumerate(SCREENS):
-        for name, fn in pony_motion(frm, FACE[face][1]).items():
+        for name, fn in pony_motion(frm, FACE[face][1], CAMS[i]['z'] ** -JIG_G).items():
             stops = ''.join(f'{k * 100 / JIG_N:.4g}%{{transform:{fn(JIG_D * k / JIG_N)}}}' for k in range(JIG_N + 1))
             out += f'@keyframes pmJ{name}{i}{{{stops}}}\n'
     return out
@@ -384,13 +408,30 @@ def joint(at, parent, inner, anim=''):
     return f'<div class="pmJ" style="{st}{";animation:" + anim if anim else ""}">{inner}</div>'
 
 
+def camera(i, inner):
+    """カメラ：世界の 座標の 絵を ①〜⑤の 画面へ（世界の FOCUS → 画面の at・z 倍）"""
+    c = CAMS[i]
+    z = c['z']
+    tx, ty = c['at'][0] - FOCUS[0] * z, c['at'][1] - FOCUS[1] * z
+    return f'<div class="pmJ" style="left:0;top:0;transform:translate({tx:.2f}px,{ty:.2f}px) scale({z:g})">{inner}</div>'
+
+
+def cam_pt(i, p, mir=False):
+    """世界の 点 → ①〜⑤の 画面の 点（mir：左右 うらがえした ポニーの 点）"""
+    c = CAMS[i]
+    x = 390 - p[0] if mir else p[0]
+    return c['at'][0] + (x - FOCUS[0]) * c['z'], c['at'][1] + (p[1] - FOCUS[1]) * c['z']
+
+
 def pony_tree(i, face, t_in):
-    """①〜⑤の 絵：うしろ足（動かない）→ 体（首・頭（たてがみ・耳・顔・リボン））→ ハート（字）→ 前足。左右 うらがえす 顔は ポニーだけ うらがえす（字は うらがえさない）"""
+    """①〜⑤の 絵（カメラの 中）：うしろ足（動かない・見える カメラだけ）→ 体（首・頭（たてがみ・耳・顔・リボン））→
+       カメラの 向きに かたむいた ハート（字）と 前足。左右 うらがえす 顔は ポニーだけ うらがえす（字は うらがえさない）"""
     hv, mir = FACE[face]
+    c = CAMS[i]
     R = art()[1]['rig'][hv]
     hp = art()[1]['rig']['heart']
     an = lambda n: f'pmJ{n}{i} {sec(JIG_D)} linear {sec(t_in)} both'
-    O, M, B = (0.0, 0.0), (195.0, 0.0), (195.0, 400.0)            # 画面の 左上・左右 うらがえす 中心・体（上下に はずむ）
+    O, M, B = (0.0, 0.0), (195.0, 0.0), (195.0, 400.0)            # 世界の 左上・左右 うらがえす 中心・体（上下に はずむ）
     hd = R['head']
     head = (joint(R['mane'], hd, pimg(f'pm_mane_{hv}', R['mane']), an('mane'))
             + joint(R['earL'], hd, pimg(f'pm_earL_{hv}', R['earL']), an('earL'))
@@ -398,28 +439,76 @@ def pony_tree(i, face, t_in):
             + pimg(f'pm_face_{hv}', hd)
             + joint(R['bow'], hd, pimg(f'pm_bow_{hv}', R['bow']), an('bow')))
     body = pimg(f'pm_neck_{hv}', B) + joint(hd, B, head, an('head'))
-    pony = f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{pimg("pm_legs", M)}{joint(B, M, body, an("body"))}</div>'
-    front = joint(B, O, joint(hp, B, pimg('pm_heart', hp) + pimg(f'pm_t{i}', hp), an('heart')) + pimg('pm_hoof', B), an('body'))
-    return pony + front
+    legs = pimg('pm_legs', M) if c['legs'] else ''
+    pony = f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{legs}{joint(B, M, body, an("body"))}</div>'
+    tilt = (f'<div class="pmJ" style="left:{HEART_C[0] - B[0]:.2f}px;top:{HEART_C[1] - B[1]:.2f}px;'
+            f'transform:perspective({PERSP:g}px) rotateX({c["rx"]:g}deg) rotateY({c["ry"]:g}deg) scale({c["fs"]:g})">'
+            f'{joint(hp, HEART_C, pimg("pm_heart", hp) + pimg(f"pm_t{i}", hp), an("heart"))}{pimg("pm_hoof", HEART_C)}</div>')
+    front = joint(B, O, tilt, an('body'))
+    return camera(i, pony + front)
+
+
+# ---------------------------------------------------------------- オーラと とぶ ハート（まさちゃん「馬とハートが登場してプルルンと揺れる時に、
+# 光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！ハートも周りに飛ぶように！」）
+AURA_T = (IMPACT - .02, .9)              # まわりの 光（.pmQ）：着地の 少し 前から 0.9秒
+AURA_F = ('drop-shadow(0 0 2px #FFFFFF) drop-shadow(0 0 6px rgba(255,255,255,.9)) drop-shadow(0 0 0 rgba(255,95,175,0))',       # ふだん（白い ふち）
+          'drop-shadow(0 0 3px #FFFFFF) drop-shadow(0 0 11px rgba(255,255,255,.95)) drop-shadow(0 0 26px rgba(255,95,175,.95))',  # 着地（いちばん 強い）
+          'drop-shadow(0 0 3px #FFFFFF) drop-shadow(0 0 9px rgba(255,255,255,.9)) drop-shadow(0 0 22px rgba(255,95,175,.82))')   # ゆっくり もどる
+RIP_T = (IMPACT - .02,)                 # 外へ 広がる つやつやの オーラ（pm_aura_…：着地で 1回。2回に すると 点めつが ふえる）
+RIP_D = .72
+
+
+def ripple(i, face, t_in):
+    """外へ 広がる つやつやの ピンクと 白の オーラ（ポニーと かたむいた ハートの 形：pm_aura_…・ポニーと いっしょに 左右 うらがえす）"""
+    hv, mir = FACE[face]
+    ac = art()[1]['rig'][hv]['aura']
+    M = (195.0, 0.0)
+    im = pimg(f'pm_aura_{hv}', ac)
+    rr = ''.join(joint(ac, M, im, f'pmRip {sec(RIP_D)} cubic-bezier(.2,.65,.35,1) {sec(t_in + t)} both') for t in RIP_T)
+    return camera(i, f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{rr}</div>')
+
+
+def aura_hearts(i, face, t_in, seed):
+    """オーラと いっしょに まわりへ とぶ つやつやの ゼリーの ハート：頭と ハートの まわりから 外へ（2回）"""
+    hv, mir = FACE[face]
+    R = art()[1]['rig'][hv]
+    rnd = random.Random(seed)
+    hx, hy = cam_pt(i, R['hc'], mir)
+    cx, cy = cam_pt(i, HEART_C)
+    z = CAMS[i]['z']
+    o = ''
+    n = 14
+    for k in range(n):
+        if k % 2 == 0:                                       # 頭の まわり（上・左右へ）
+            a = math.radians(-170 + 160 * ((k // 2 + rnd.uniform(.1, .9)) / (n // 2)))
+            x0, y0 = hx + math.cos(a) * 100 * z, hy + math.sin(a) * 116 * z
+        else:                                                # ハートの まわり（左右・下へ）
+            a = math.radians(-30 + 240 * ((k // 2 + rnd.uniform(.1, .9)) / (n // 2)))
+            x0, y0 = cx + math.cos(a) * 172 * z, cy + math.sin(a) * 138 * z
+        r = rnd.uniform(80, 160)
+        s = rnd.uniform(28, 46)
+        d = t_in + IMPACT + (0 if k % 4 < 2 else .22) + rnd.uniform(0, .08)
+        o += (f'<i class="pm{rnd.randrange(len(PILE_COLS))}" style="left:{x0 - s / 2:.0f}px;top:{y0 - s / 2:.0f}px;width:{s:.0f}px;height:{s:.0f}px;'
+              f'--dx:{math.cos(a) * r:.0f}px;--dy:{math.sin(a) * r - 20:.0f}px;--d:{sec(d)};--r:{rnd.uniform(-70, 70):.0f}deg"></i>')
+    return o
 
 
 def pc_layers(board_html):
     """押したあと（下から）：虹色の 背景（パチンコの 大当たりのような 光線・ふわふわの ハート）→ つもる ハート → 回る 白い 光線・キラキラ →
-       ①〜⑤ の ポニーの アップ（着いた時に ハートが とぶ）→ 最後の 大きな ハート（細かい ハートが のぼる）→ ボード → 白い 光。
+       ①〜⑤ の ポニーの アップ（カメラ。着いた時に オーラが 出て ハートが とぶ）→ 最後の 大きな ハート（細かい ハートが のぼる）→ ボード → 白い 光。
        board_html：テーマの ボード（gen_fx の board）"""
     T = PC_T
     hearts, n = pile_html()
     scr = ''
     S = T['S']
-    cx, cy = HEART_C
     for i, (text, face, frm, s_txt) in enumerate(SCREENS):
         t_in = S[i]
         t_out = (S[i + 1] if i + 1 < len(S) else T['FIN']) - T['OUT']
-        land = t_in + T['IN'] * .72
         tree = pony_tree(i, face, t_in)
         scr += (f'<div class="pms" aria-hidden="true" style="animation:{enter_anim(frm)} {sec(T["IN"])} cubic-bezier(.25,.9,.35,1) {sec(t_in)} both,'
-                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards"><div class="pmQ">{tree}</div>{veil(tree, t_in, T["IN"])}</div>'
-                f'<i class="pmr" style="--d:{sec(land)}"></i><div class="pml">{pop_hearts(cx, cy - 20, land, 14, 30 + i)}</div>')
+                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards">{ripple(i, face, t_in)}'
+                f'<div class="pmQ" style="animation:pmAu {sec(AURA_T[1])} linear {sec(t_in + AURA_T[0])} both">{tree}</div>{veil(tree, t_in, T["IN"])}</div>'
+                f'<div class="pml">{aura_hearts(i, face, t_in, 30 + i)}</div>')
     fx, fy = FIN_C
     bx, by = BURST_C
     fin = img('pm_fin')
@@ -486,8 +575,8 @@ def pc_css():
 .ov.pm .pms{{position:absolute;left:0;top:0;width:390px;height:844px;z-index:5;opacity:0;pointer-events:none;transform-origin:{HEART_C[0]:.0f}px {HEART_C[1]:.0f}px}}
 @keyframes pmInL{{0%{{opacity:1;transform:translateX(-440px) rotate(-7deg)}}72%{{transform:translateX(8px) rotate(1deg)}}100%{{opacity:1;transform:none}}}}
 @keyframes pmInR{{0%{{opacity:1;transform:translateX(440px) rotate(7deg)}}72%{{transform:translateX(-8px) rotate(-1deg)}}100%{{opacity:1;transform:none}}}}
-@keyframes pmInB{{0%{{opacity:1;transform:translateY(760px)}}72%{{transform:translateY(-14px)}}100%{{opacity:1;transform:none}}}}
-@keyframes pmInT{{0%{{opacity:1;transform:translateY(-840px)}}72%{{transform:translateY(6px) scale(1.02,.98)}}100%{{opacity:1;transform:none}}}}
+@keyframes pmInB{{0%{{opacity:1;transform:translateY(900px)}}72%{{transform:translateY(-14px)}}100%{{opacity:1;transform:none}}}}
+@keyframes pmInT{{0%{{opacity:1;transform:translateY(-900px)}}72%{{transform:translateY(6px) scale(1.02,.98)}}100%{{opacity:1;transform:none}}}}
 @keyframes pmInC{{0%{{opacity:0;transform:scale(.15)}}55%{{opacity:1;transform:scale(1.13)}}78%{{transform:scale(.95)}}100%{{opacity:1;transform:none}}}}
 @keyframes pmOut{{from{{opacity:1}}to{{opacity:0}}}}
 /* 白い 光の 形：入ってくる 間は 白く つつみ（0.92）、止まる 前に 消えて 色が つく */
@@ -495,7 +584,7 @@ def pc_css():
 @keyframes pmVl{{0%,62%{{opacity:.92}}100%{{opacity:0}}}}
 /* 最後の ハートが 上へ 動く 間も 白く つつむ（{sec(T['RES'] - UP_VEIL[0])}〜） */
 @keyframes pmVu{{0%{{opacity:0}}{UP_VEIL[0] / UP_VEIL[1] * 100:.1f}%{{opacity:.92}}{(UP_VEIL[0] + .5) / UP_VEIL[1] * 100:.1f}%{{opacity:.92}}100%{{opacity:0}}}}
-/* 着いた時：白い 輪と 小さな ハートが とびちる */
+/* 最後の ハートが 着いた時：白い 輪と 小さな ハートが とびちる（①〜⑤は オーラと とぶ ハート） */
 .ov.pm .pmr{{position:absolute;z-index:4;left:{HEART_C[0] - 110:.0f}px;top:{HEART_C[1] - 130:.0f}px;width:220px;height:220px;border-radius:50%;border:8px solid #FFFFFF;
   box-shadow:0 0 16px rgba(255,120,190,.8),inset 0 0 12px rgba(255,120,190,.6);opacity:0;animation:pmRing .55s ease-out var(--d) both}}
 .ov.pm .pmrf{{top:{fy - 120:.0f}px}}
@@ -511,7 +600,10 @@ def pc_css():
    まわりの 白い 光の ふちは 動く 絵に あわせて つける（.pmQ） */
 .ov.pm .pmJ{{position:absolute;width:0;height:0;transform-origin:0 0}}
 .ov.pm .pmM{{transform:scaleX(-1)}}
-.ov.pm .pmQ{{position:absolute;left:0;top:0;width:0;height:0;filter:drop-shadow(0 0 2px #FFFFFF) drop-shadow(0 0 6px rgba(255,255,255,.9))}}
+/* オーラ（着地で ぷるるん する 間）：動く 絵に ついていく 白 → ピンクの 光（.pmQ の drop-shadow）と、外へ 広がる つやつやの オーラ（pm_aura_…・2回） */
+.ov.pm .pmQ{{position:absolute;left:0;top:0;width:0;height:0;filter:{AURA_F[0]}}}
+@keyframes pmAu{{0%,100%{{filter:{AURA_F[0]}}}12%{{filter:{AURA_F[1]}}}45%{{filter:{AURA_F[2]}}}}}
+@keyframes pmRip{{0%{{opacity:0;transform:scale(.97)}}14%{{opacity:.95}}100%{{opacity:0;transform:scale(1.2)}}}}
 {pony_css()}/* 最後：大きな ハートの ど的中（{sec(T['FIN'])}）→ {sec(T['RES'])} に 上へ 動いて ボード */
 .ov.pm .pmf{{position:absolute;left:0;top:0;width:390px;height:844px;z-index:7;opacity:0;pointer-events:none;transform-origin:{FIN_C[0]:.0f}px {fy:.0f}px;
   animation:pmInC .5s cubic-bezier(.25,.9,.35,1) {sec(T['FIN'])} both,pmBeat .9s ease-in-out {sec(T['FIN'] + .5)} 2,pmUp .5s cubic-bezier(.3,.8,.3,1) {sec(T['RES'])} forwards}}
