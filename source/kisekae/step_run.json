@@ -1,78 +1,102 @@
 {
  "sakura": {
-  "frames": 40,
+  "frames": 47,
+  "names": ["U0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "D0", "D1", "D2", "UN1", "UN2", "UN3", "UN4", "UN5", "UN6", "UN7", "UN8", "UF1", "UF2", "UF3", "UF4", "UF5", "UF6", "UF7", "UF8", "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DF1", "DF2", "DF3", "DF4", "DF5", "DF6", "DF7", "DF8"],
   "cols": 8,
-  "rows": 5,
+  "rows": 6,
   "cell": [
-   274,
-   246
+   272,
+   230
   ],
   "pad": 2,
   "at": [
-   408,
+   386,
    52
   ],
-  "cycle": 4.0,
   "size": [
    780,
    320
-  ]
+  ],
+  "plan": {
+   "seed": 11,
+   "k": 320,
+   "loop_ms": 126586,
+   "changes": 909
+  }
  },
  "autumn": {
-  "frames": 40,
+  "frames": 47,
+  "names": ["UN8", "U0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "D0", "D1", "D2", "UN1", "UN2", "UN3", "UN4", "UN5", "UN6", "UN7", "UF1", "UF2", "UF3", "UF4", "UF5", "UF6", "UF7", "UF8", "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DF1", "DF2", "DF3", "DF4", "DF5", "DF6", "DF7", "DF8"],
   "cols": 8,
-  "rows": 5,
+  "rows": 6,
   "cell": [
-   262,
+   260,
    248
   ],
   "pad": 2,
   "at": [
-   276,
-   58
+   310,
+   56
   ],
-  "cycle": 4.0,
   "size": [
    780,
    320
-  ]
+  ],
+  "plan": {
+   "seed": 12,
+   "k": 166,
+   "loop_ms": 128369,
+   "changes": 889
+  }
  },
  "snow": {
-  "frames": 40,
+  "frames": 47,
+  "names": ["U0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "D0", "D1", "D2", "UN1", "UN2", "UN3", "UN4", "UN5", "UN6", "UN7", "UN8", "UF1", "UF2", "UF3", "UF4", "UF5", "UF6", "UF7", "UF8", "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DF1", "DF2", "DF3", "DF4", "DF5", "DF6", "DF7", "DF8"],
   "cols": 8,
-  "rows": 5,
+  "rows": 6,
   "cell": [
-   316,
-   258
+   290,
+   244
   ],
   "pad": 2,
   "at": [
-   340,
-   48
+   314,
+   46
   ],
-  "cycle": 4.0,
   "size": [
    780,
    320
-  ]
+  ],
+  "plan": {
+   "seed": 13,
+   "k": 325,
+   "loop_ms": 113316,
+   "changes": 785
+  }
  },
  "newyear": {
-  "frames": 40,
+  "frames": 47,
+  "names": ["UN8", "U0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "D0", "D1", "D2", "UN1", "UN2", "UN3", "UN4", "UN5", "UN6", "UN7", "UF1", "UF2", "UF3", "UF4", "UF5", "UF6", "UF7", "UF8", "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DF1", "DF2", "DF3", "DF4", "DF5", "DF6", "DF7", "DF8"],
   "cols": 8,
-  "rows": 5,
+  "rows": 6,
   "cell": [
-   246,
-   262
+   256,
+   256
   ],
   "pad": 2,
   "at": [
-   370,
-   36
+   334,
+   42
   ],
-  "cycle": 4.0,
   "size": [
    780,
    320
-  ]
+  ],
+  "plan": {
+   "seed": 14,
+   "k": 297,
+   "loop_ms": 120960,
+   "changes": 849
+  }
  }
 }

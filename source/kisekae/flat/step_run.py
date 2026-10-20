@@ -1,17 +1,18 @@
-"""桜・紅葉・雪・お正月の壁紙の馬が、いつも ゆったり 足ぶみして 首を動かす（まさちゃんの指定「この４つの壁紙、常に足と首を動かして！ゆったりめで！」）
-   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体は動かさず、足を1本ずつ順に上げて おろす（その場で足ぶみ）。
-     地面についている足は動かさない（ひづめが すべらない）。首と頭は 足に合わせて ゆっくり上下する（1回りで2回）
-   - 足の順（左右は馬の手前・奥）：前の手前 → うしろの奥 → 前の奥 → うしろの手前（1本ずつ、すきまなく つづく）
-     お正月は 前足を高く上げる（いまの絵の ポーズ）・紅葉は 前足を上げて歩く ポーズ・桜と雪は 立っている ポーズから
-   - 1回り CYCLE 秒を N コマ（0.1秒ずつ）。コマ0は いまの絵と同じ（1画素もちがわない）
+"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 前足を動かしたり、首を下げて 草を食べたりする
+   （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」）
+   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体と うしろ足と しっぽは 動かさない
+   - コマ（47まい・名前と順は ../step_plan.py）：首を上げた形・首を下げていく とちゅう（11）・首を下げた形（草を食べる頭の動き 3）・
+     首を上げたまま／下げたまま 手前／奥の前足を上げていく形（8ずつ）。首は 根元から まげて 少しのばす（r3d/horse3d.py の neck_bend・neck_len）
+   - いつ どのコマを出すか（時間わり）は ../step_plan.py（きまった種の ランダム・約2分の くり返し）。ページの CSS は ../step_wall.py
+   - コマ0は いまの絵と同じ（1画素もちがわない）：桜・雪は 立っている形、紅葉・お正月は 手前の前足を上げた形
    - コマは いまの絵を描くのと同じ流れ（flat/<テーマ>_banner.py）で、馬のポーズだけ かえて描く（背景・手前の花びらなど・影も同じ）。
      動く所（すべてのコマの ちがう所を まとめた四角）だけ 切りぬいて、たて・よこに並べた1まい（シート）にする：
        桜・紅葉・雪 … すき通しなし（背景ごと）。いまの絵の上に重ねる
        お正月 … 光より前の絵（すき通しつき）の 切りぬき。光より前の絵は その四角を すき通しにした1まい（top_hole）も作る（光が うしろで回るので）
    python3 flat/step_run.py --cams <step_cams.json>                 → 4つの馬の いまのカメラ（3倍の絵で決める・約1分）
-   python3 flat/step_run.py --check <テーマ>                        → 足の動き（ひづめの高さ）を たしかめる（描かない）
-   python3 flat/step_run.py --preview <テーマ> <out.png> <step_cams.json> [コマ数]  → 馬だけを 1倍で描いた一覧（形を決めるため・速い）
-   python3 flat/step_run.py --frames <テーマ> <コマのフォルダ> <step_cams.json> [コマの番号…]  → コマ（PNG）を描く（コマ0を先に・sdfr がいる・1コマ 約13〜25秒）
+   python3 flat/step_run.py --check [テーマ…]                        → ひづめ（うしろ足と 地面についている前足が 動かない・上げた足が 地面より下に行かない）と 鼻先の高さ（描かない）
+   python3 flat/step_run.py --preview <テーマ> <out.png> <step_cams.json> [コマの名前…]  → 馬だけを 1倍で描いた一覧（形を決めるため・速い）
+   python3 flat/step_run.py --frames <テーマ> <コマのフォルダ> <step_cams.json> [コマの番号…]  → コマ（PNG）を描く（コマ0を先に・sdfr がいる・1コマ 約15〜30秒）
    python3 flat/step_run.py --sheet <テーマ> <コマのフォルダ> <出力フォルダ> <step_run.json>  → <テーマ>_step.webp（シート）・お正月は newyear_top_hole.webp も・step_run.json に置く場所
    （コマ0は いまの絵と同じ書き出し方で 1バイトもちがわない：桜・紅葉・雪の いまの WebP・お正月の 光より前の WebP）"""
 import sys, os, math, json, runpy, copy
@@ -19,112 +20,117 @@ import numpy as np
 import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
+sys.path.insert(0, os.path.join(HERE, '..'))
 sys.path.insert(0, HERE)
 import horse3d as Hm
 from horse_flat import POSES
+import step_plan as SP
 
 W, Hh = 780, 320
-CYCLE = 4.0                      # 1回りの秒（足4本で1回り・首は2回 上下）
-N = 40                           # 1回りの コマ数（0.1秒ずつ）
-COLS = 8                         # シートの よこの コマ数（たて N/COLS 段・1段 0.8秒）
+COLS = 8                         # シートの よこの コマ数
 PAD = 2                          # シートの コマの まわりの のりしろ（絵の画素・画面の1px）
 EDGE_REACH = 16                  # 切りぬく四角の へりを 外へ ずらして よい はば（絵の画素）
 LEGS = ('fore_near', 'fore_far', 'hind_near', 'hind_far')
 
-# 足を上げた いちばん上の形（4つの骨の向き°・horse3d の角度）
-F_WALK = POSES['walk']['fore_near']            # 前足：ひざを曲げて 前へ（紅葉の いまの絵の 上げた足）
-F_PRANCE = POSES['prance']['fore_near']        # 前足を高く（お正月の いまの絵の 上げた足）
-H_STEP = [-45, -125, -60, -95]                 # うしろ足：ひざ（飛節）を曲げて 少し前へ
-EX = dict(F=(2.0, .6, .8, 2.0), H=(1.0, 1.0, 1.0, 1.0))    # 上げぐあい s の べき（骨ごと：上 → 下）。小さいほど 先に動く（前足は ひざが先・ひづめは あとで たたむ）
+# 前足を上げた いちばん上の形（4つの骨の向き°・horse3d の角度）
+F_WALK = POSES['walk']['fore_near']            # ひざを曲げて 前へ（紅葉の いまの絵の 上げた足）
+F_PRANCE = POSES['prance']['fore_near']        # 高く（お正月の いまの絵の 上げた足）
+EX = (2.0, .6, .8, 2.0)                        # 上げぐあい s の べき（骨ごと：上 → 下）。小さいほど 先に動く（ひざが先・ひづめは あとで たたむ）
+K_DOWN = 0.65                                  # 首を下げている時は 前足を 少し低く上げる（peak までの わりあい）
+NIB = {0: (0.0, 0.0), 1: (2.0, 5.0), 2: (4.0, 8.0)}    # 草を食べる頭の動き：首のまげ（°）と 頭の角度（°）に たす
 
-# テーマごと：いまの絵のポーズ（base）・地面につく形（plant：いまの絵で上げている足だけ）・足を上げる まん中の時と はば（1回りを1）・
-#   上げた形（peak：前 F／うしろ H）と 上げる大きさ（k：1＝peak まで）・首（nod：'mid'＝いまの形を まん中に上下／'top'＝いまの形が いちばん上）
+# テーマごと：いまの絵のポーズ（base）・地面につく形（plant：いまの絵で上げている足だけ）・前足を上げた形（peak）と 上げる大きさ（k：1＝peak まで）・
+#   首を下げた形（down：首のまげ°・首ののばし・頭の角度°。鼻先が 前足の 約0.8m前の 地面の すぐ上に来る）
 THEMES = {
-    'sakura': dict(base='stand', facing='left',
-                   lift={'fore_near': (.125, .25), 'hind_far': (.375, .25), 'fore_far': (.625, .25), 'hind_near': (.875, .25)},
-                   peak=dict(F=F_WALK, H=H_STEP), k=dict(F=.8, H=.85), nod=('mid', 6.0, 4.0)),
-    'snow': dict(base='stand', facing='left',
-                 lift={'fore_near': (.125, .25), 'hind_far': (.375, .25), 'fore_far': (.625, .25), 'hind_near': (.875, .25)},
-                 peak=dict(F=F_WALK, H=H_STEP), k=dict(F=.8, H=.85), nod=('mid', 6.0, 4.0)),
-    'autumn': dict(base='walk', facing='right', plant={'fore_near': [-124, -91, -90, -60]},
-                   lift={'fore_near': (0.0, .3), 'hind_far': (.25, .25), 'fore_far': (.5, .3), 'hind_near': (.75, .25)},
-                   peak=dict(F=F_WALK, H=H_STEP), k=dict(F=1.0, H=1.0), nod=('top', 8.0, 4.0)),
-    'newyear': dict(base='prance', facing='left', plant={'fore_near': [-120, -94, -90, -62]},
-                    lift={'fore_near': (0.0, .36), 'hind_far': (.25, .2), 'fore_far': (.5, .36), 'hind_near': (.75, .2)},
-                    peak=dict(F=F_PRANCE, H=[-48, -122, -70, -98]), k=dict(F=1.0, H=1.0), nod=('top', 8.0, 4.0)),
+    'sakura': dict(base='stand', facing='left', peak=F_WALK, k=.8, down=(-98.0, 1.20, -92.0)),
+    'snow': dict(base='stand', facing='left', peak=F_WALK, k=.8, down=(-98.0, 1.20, -92.0)),
+    'autumn': dict(base='walk', facing='right', plant={'fore_near': [-124, -91, -90, -60]}, peak=F_WALK, k=1.0, down=(-96.0, 1.20, -92.0)),
+    'newyear': dict(base='prance', facing='left', plant={'fore_near': [-120, -94, -90, -62]}, peak=F_PRANCE, k=1.0, down=(-108.0, 1.30, -90.0)),
 }
 
 
-def bump(u):
-    """0 → 1 → 0（はじめと おわりは ゆっくり）"""
-    return math.sin(math.pi * u) ** 2
+def ease(u):
+    """0 → 1（はじめと おわりは ゆっくり）"""
+    return 0.5 - 0.5 * math.cos(math.pi * max(0.0, min(1.0, u)))
 
 
-def lift_amount(t, c, w):
-    """時 t（1回りを1）に、まん中 c・はば w で上げる足の 上げぐあい（0〜1）"""
-    d = ((t - c + .5) % 1.0) - .5
-    u = d / w + .5
-    return bump(u) if 0.0 < u < 1.0 else 0.0
+def parse(fn):
+    """コマの名前 → (首の下げぐあい 0〜1, 頭の動き 0〜2, 上げる前足 or None, 上げぐあい 0〜1)"""
+    if fn == 'U0':
+        return 0.0, 0, None, 0.0
+    if fn[0] == 'L':
+        return int(fn[1:]) / SP.LOWER_N, 0, None, 0.0
+    if fn in ('D0', 'D1', 'D2'):
+        return 1.0, int(fn[1]), None, 0.0
+    head = 0.0 if fn[0] == 'U' else 1.0
+    leg = 'fore_near' if fn[1] == 'N' else 'fore_far'
+    return head, 0, leg, ease(int(fn[2:]) / SP.LIFT_N)
 
 
-def pose_at(name, t):
-    """時 t（0〜1）の ポーズ（horse_flat の POSES と同じ形の dict）。t＝0 は いまの絵と同じ"""
+def pose_of(name, fn):
+    """コマの名前の ポーズ（horse_flat の POSES と同じ形の dict）"""
     th = THEMES[name]
     P = POSES[th['base']]
-    out = dict(theta=P['theta'], tail=list(P['tail']), tail_kind=P['tail_kind'])
-    kind, A, B = th['nod']
-    if kind == 'mid':                                   # いまの形を まん中に、上下（1回りで2回）
-        f = math.sin(4 * math.pi * t)
-    else:                                               # いまの形が いちばん上（足を上げた時）→ 下がって もどる
-        f = -math.sin(2 * math.pi * t) ** 2
-    out['neck_rot'] = round(P['neck_rot'] + A * f, 3)
-    out['head_ang'] = round(P['head_ang'] + B * f, 3)
-    for leg in LEGS:
-        plant = th.get('plant', {}).get(leg, P[leg])
-        c, w = th['lift'][leg]
-        s = lift_amount(t, c, w)
-        fh = 'F' if leg.startswith('fore') else 'H'
-        k = th['k'][fh]
-        peak = [p + (q - p) * k for p, q in zip(plant, th['peak'][fh])]
-        ex = EX[fh]                                     # 骨ごとの 動きはじめ（ひづめが地面に めりこまない）
-        out[leg] = [round(p + (q - p) * s ** e, 3) for p, q, e in zip(plant, peak, ex)]
+    out = {k: (list(v) if isinstance(v, list) else v) for k, v in P.items()}
+    for leg, v in th.get('plant', {}).items():
+        out[leg] = list(v)
+    head, nib, leg, s = parse(fn)
+    if head > 0:
+        Bd, Ld, Hd = th['down']
+        e, eh = ease(head), ease(head) ** 1.25            # 頭の向きは 少し おくれて 下を向く
+        db, dh = NIB[nib]
+        out['neck_bend'] = round(Bd * e + db, 3)
+        out['neck_len'] = round(1 + (Ld - 1) * e, 4)
+        out['head_ang'] = round(P['head_ang'] + (Hd - P['head_ang']) * eh + dh, 3)
+    if leg:
+        plant = out[leg]
+        k = th['k'] if head == 0 else K_DOWN
+        peak = [p + (q - p) * k for p, q in zip(plant, th['peak'])]
+        out[leg] = [round(p + (q - p) * s ** ex, 3) for p, q, ex in zip(plant, peak, EX)]
     return out
 
 
-def hooves(pose, facing):
-    """ひづめの点（horse3d の世界の座標・手前／奥の名前で）"""
+def first_pose_is_now(name):
+    """コマ0の ポーズが いまの絵の ポーズと 同じか"""
+    P = POSES[THEMES[name]['base']]
+    q = pose_of(name, SP.frames(name)[0])
+    return all(q[k] == P[k] for k in P) and set(q) == set(P)
+
+
+def skel(pose, facing):
     near, far = ('L', 'R') if facing == 'right' else ('R', 'L')
     full = dict(theta=pose['theta'], neck_rot=pose['neck_rot'], head_ang=pose['head_ang'], tail=pose['tail'],
                 fore={near: pose['fore_near'], far: pose['fore_far']}, hind={near: pose['hind_near'], far: pose['hind_far']})
-    S = Hm.skeleton(full)
-    return {'fore_near': S['F' + near]['hf'], 'fore_far': S['F' + far]['hf'], 'hind_near': S['H' + near]['hf'], 'hind_far': S['H' + far]['hf']}
+    if pose.get('neck_bend'):
+        full['neck_bend'], full['neck_len'] = pose['neck_bend'], pose['neck_len']
+    return Hm.skeleton(full), near, far
 
 
-def check(name, n=200):
-    """足の動きを たしかめる：地面についている ひづめが動かないか・上げた ひづめが地面より下に行かないか・いちばん高い所"""
+def check(name):
+    """うしろ足・地面についている前足の ひづめが 動かないか・上げた ひづめが 地面より下に行かないか・鼻先の高さ（首を下げた時）"""
     th = THEMES[name]
-    h0 = hooves(pose_at(name, 0.0), th['facing'])
-    ground = {}
-    for leg in LEGS:                                    # 地面についている時の ひづめ（上げていない時）
-        c, w = th['lift'][leg]
-        t_off = (c + .5) % 1.0
-        ground[leg] = hooves(pose_at(name, t_off), th['facing'])[leg]
-    worst = {leg: dict(lo=0.0, hi=0.0, dx=0.0) for leg in LEGS}
-    for i in range(n):
-        t = i / n
-        hv = hooves(pose_at(name, t), th['facing'])
+    fr = SP.frames(name)
+    ref, near, far = skel(pose_of(name, 'U0'), th['facing'])
+    key = {'fore_near': 'F' + near, 'fore_far': 'F' + far, 'hind_near': 'H' + near, 'hind_far': 'H' + far}
+    g0 = {leg: np.asarray(ref[key[leg]]['hf'], float) for leg in LEGS}
+    ground = min(v[1] for v in g0.values())
+    worst = dict(moved=0.0, below=0.0, hi=0.0, mz_lo=9.0, mz_hi=-9.0)
+    for fn in fr:
+        S, _, _ = skel(pose_of(name, fn), th['facing'])
+        _, _, lifted, _ = parse(fn)
         for leg in LEGS:
-            dy = hv[leg][1] - ground[leg][1]
-            dx = hv[leg][0] - ground[leg][0]
-            wv = worst[leg]
-            wv['lo'] = min(wv['lo'], dy)
-            wv['hi'] = max(wv['hi'], dy)
-            wv['dx'] = max(wv['dx'], abs(dx)) if abs(dy) < 1e-9 else wv['dx']
-    gy = {leg: round(float(ground[leg][1]), 4) for leg in LEGS}
-    print(name, 'ground y', gy)
-    for leg in LEGS:
-        wv = worst[leg]
-        print(f'  {leg:10s} 上げた高さ max {wv["hi"]:.3f} m・地面より下 {wv["lo"]:.4f} m・ついている時の よこずれ {wv["dx"]:.4f} m')
+            h = np.asarray(S[key[leg]]['hf'], float)
+            if leg == lifted:
+                worst['below'] = min(worst['below'], h[1] - g0[leg][1])
+                worst['hi'] = max(worst['hi'], h[1] - g0[leg][1])
+            else:
+                worst['moved'] = max(worst['moved'], float(np.abs(h - g0[leg]).max()))
+        if parse(fn)[0] == 1.0:
+            mz = np.asarray(Hm.head_pt(S, 0.60, -0.03), float)
+            worst['mz_lo'] = min(worst['mz_lo'], mz[1] - ground)
+            worst['mz_hi'] = max(worst['mz_hi'], mz[1] - ground)
+    print(f'{name}: コマ0＝いまの絵 {first_pose_is_now(name)}・地面の足の ずれ max {worst["moved"]:.6f} m・上げた ひづめ 高さ max {worst["hi"]:.3f} m'
+          f'（地面より下 {worst["below"]:.4f} m）・首を下げた時の 鼻先 {worst["mz_lo"]:.3f}〜{worst["mz_hi"]:.3f} m（地面から）')
 
 
 def ref_cams(out_json):
@@ -142,39 +148,42 @@ def ref_cams(out_json):
     json.dump(cams, open(out_json, 'w'), indent=1)
 
 
-def spec_at(name, t, cams):
-    """時 t の draw_horse の spec（いまの絵の spec の ポーズだけ かえて、カメラは いまの絵と同じ）"""
+def spec_of(name, pose, cams):
+    """draw_horse の spec（いまの絵の spec の ポーズだけ かえて、カメラは いまの絵と同じ）"""
     import cute_themes as C
     sp = dict(C.SPOTS[name])
-    sp['pose'] = pose_at(name, t)
+    sp['pose'] = pose
     e, tg = cams[name]
     sp['cam'] = (np.asarray(e, float), np.asarray(tg, float))
     return sp
 
 
-def preview(name, out_png, cams, n=16):
-    """馬だけを 1倍（速い）で n コマ描いて 一覧にする（地面の線・いまの ひづめの所に 印）"""
+def preview(name, out_png, cams, fns=None):
+    """馬だけを 1倍（速い）で描いて 一覧にする（地面の線つき）"""
     import cute_themes as C
     import horse_flat
     horse_flat.S3 = 1
+    fns = fns or SP.frames(name)
     x0, y0, x1, y1 = C.SPOTS[name]['box']
-    x0, y0, x1, y1 = x0 - 24, y0 - 24, x1 + 24, y1 + 10
+    x0, y0, x1, y1 = x0 - 60, y0 - 30, x1 + 60, y1 + 14
     cells = []
-    for i in range(n):
-        t = i / n
-        rgb, a, m = horse_flat.draw_horse(spec_at(name, t, cams), C.PALS[name], W, Hh, acc=C.ACC[name], number='1', name=f'step_pv{i}')
+    for i, fn in enumerate(fns):
+        rgb, a, m = horse_flat.draw_horse(spec_of(name, pose_of(name, fn), cams), C.PALS[name], W, Hh, acc=C.ACC[name], number='1', name=f'step_pv{i}')
         bg = np.ones((Hh, W, 3), np.float32) * np.array([.86, .9, .84], np.float32)
         img = bg * (1 - a[..., None]) + rgb * a[..., None]
         img = (np.clip(img, 0, 1) * 255).astype(np.uint8)
         g = int(round(m['bottom']))
         cv2.line(img, (0, g), (W, g), (90, 120, 90), 1)
         c = np.ascontiguousarray(img[y0:y1, x0:x1])
-        cv2.putText(c, f'{i} t={t:.3f}', (4, 14), cv2.FONT_HERSHEY_SIMPLEX, .42, (40, 40, 40), 1, cv2.LINE_AA)
+        cv2.putText(c, fn, (4, 14), cv2.FONT_HERSHEY_SIMPLEX, .42, (40, 40, 40), 1, cv2.LINE_AA)
         cells.append(c)
-        print('preview', i, flush=True)
-    cols = 4
-    rows = [np.hstack(cells[r * cols:(r + 1) * cols]) for r in range(math.ceil(n / cols))]
-    rows[-1] = np.hstack([rows[-1], np.full((rows[-1].shape[0], rows[0].shape[1] - rows[-1].shape[1], 3), 255, np.uint8)]) if rows[-1].shape[1] < rows[0].shape[1] else rows[-1]
+        print('preview', fn, flush=True)
+    cols = 6
+    rows = []
+    for r in range(math.ceil(len(cells) / cols)):
+        row = cells[r * cols:(r + 1) * cols]
+        row += [np.full_like(cells[0], 255)] * (cols - len(row))
+        rows.append(np.hstack(row))
     cv2.imwrite(out_png, cv2.cvtColor(np.vstack(rows), cv2.COLOR_RGB2BGR))
 
 
@@ -201,14 +210,13 @@ def banner_parts(name):
     return _PARTS[name]
 
 
-def frame_u8(name, t, cams, ref=None):
-    """時 t の コマ：いまの絵を描く流れ（flat/<name>_banner.py）で、馬だけ かえた絵（u8）と 馬の目印。
+def frame_u8(name, pose, cams, ref=None):
+    """ポーズ pose の コマ：いまの絵を描く流れ（flat/<name>_banner.py）で、馬だけ かえた絵（u8）と 馬の目印。
        桜・紅葉・雪は 絵ぜんぶ（RGB）、お正月は 光より前の絵（RGBA：黒と白の上に描いた差から すき通し＝newyear_banner.layers と同じ）。
        ref：影を決める目印（コマ0の ひづめ・いちばん下）。None なら この コマの目印で（＝いまの絵と同じ）"""
     import cute_themes as C
-    import style2d
     script = os.path.join(HERE, f'{name}_banner.py')
-    spec = spec_at(name, t, cams)
+    spec = spec_of(name, pose, cams)
     cache = {}
     real_dh, real_dc = C.draw_horse, C.draw_cute
 
@@ -251,7 +259,9 @@ def load_png(path):
 
 
 def render_frames(name, outdir, cams, idxs):
-    """コマを描いて <outdir>/<name>_fNN.png に（コマ0を先に：影の目印を <name>_ref.json に）"""
+    """コマを描いて <outdir>/<name>_fNN.png に（NN は シートの順＝step_plan.frames の番号。コマ0を先に：影の目印を <name>_ref.json に）"""
+    assert first_pose_is_now(name)
+    fns = SP.frames(name)
     os.makedirs(outdir, exist_ok=True)
     rf = f'{outdir}/{name}_ref.json'
     for i in idxs:
@@ -261,11 +271,11 @@ def render_frames(name, outdir, cams, idxs):
         if i != 0:
             r = json.load(open(rf))
             ref = dict(hooves=[np.asarray(h, float) for h in r['hooves']], bottom=r['bottom'])
-        u8, m = frame_u8(name, i / N, cams, ref)
+        u8, m = frame_u8(name, pose_of(name, fns[i]), cams, ref)
         if i == 0:
             json.dump(dict(hooves=[[float(v) for v in h] for h in m['hooves']], bottom=float(m['bottom'])), open(rf, 'w'))
         save_png(f'{outdir}/{name}_f{i:02d}.png', u8)
-        print(name, 'frame', i, flush=True)
+        print(name, 'frame', i, fns[i], flush=True)
 
 
 def calm_edges(f0, x0, y0, x1, y1, reach=EDGE_REACH):
@@ -294,10 +304,12 @@ def calm_edges(f0, x0, y0, x1, y1, reach=EDGE_REACH):
 
 def make_sheet(name, frdir, outdir, run_json):
     """コマ（<frdir>/<name>_fNN.png）→ 動く所（どれかの コマで コマ0と ちがう画素をまとめた四角）を切りぬいて、
-       よこ COLS・たて N/COLS に並べた1まい（<outdir>/<name>_step.webp・ロスなし）。コマの まわりには のりしろ（PAD・絵の となりの画素）をつける
+       よこ COLS に並べた1まい（<outdir>/<name>_step.webp・ロスなし）。コマの まわりには のりしろ（PAD・絵の となりの画素）をつける
        （3倍の画面などで 絵を大きくして見る時に、となりのコマが ふちに にじまない）。お正月は 光より前の絵の その四角を すき通しにした1まい
-       （<outdir>/newyear_top_hole.webp）も。置く場所と大きさを run_json（テーマごと）に書く"""
+       （<outdir>/newyear_top_hole.webp）も。置く場所と大きさ・時間わり（step_plan の種の番号）を run_json（テーマごと）に書く"""
     from PIL import Image
+    fns = SP.frames(name)
+    N = len(fns)
     fr = [load_png(f'{frdir}/{name}_f{i:02d}.png') for i in range(N)]
     f0 = fr[0].astype(np.int16)
     d = np.zeros(f0.shape[:2], bool)
@@ -311,7 +323,7 @@ def make_sheet(name, frdir, outdir, run_json):
     x0, y0 = x0 - x0 % 2, y0 - y0 % 2                  # 画面の画素（半分）にそろえる
     x1, y1 = x1 + (x1 - x0) % 2, y1 + (y1 - y0) % 2
     cw, ch = int(x1 - x0), int(y1 - y0)
-    rows = N // COLS
+    rows = math.ceil(N / COLS)
     P = PAD                                            # コマの まわりに 本当の となりの画素を P ずつ（大きくして見る画面で となりのコマが にじまない）
     cw2, ch2 = cw + 2 * P, ch + 2 * P
     sh = np.zeros((rows * ch2, COLS * cw2, fr[0].shape[2]), np.uint8)
@@ -326,11 +338,19 @@ def make_sheet(name, frdir, outdir, run_json):
         top = fr[0].copy()
         top[y0 + P:y1 - P, x0 + P:x1 - P, 3] = 0       # ふちの P は のこす（3倍の画面で 穴のふちが すけない。そこは シートと同じ絵）・色も のこす
         Image.fromarray(top, 'RGBA').save(f'{outdir}/{name}_top_hole.webp', 'WEBP', quality=90, method=6)
+    k, (T, _, _) = SP.plan(name)
+    loop_ms, tl = SP.timeline(name, k=k)
     run = json.load(open(run_json)) if os.path.exists(run_json) else {}
-    run[name] = dict(frames=N, cols=COLS, rows=rows, cell=[cw, ch], pad=P, at=[int(x0), int(y0)], cycle=CYCLE, size=[W, Hh])
-    json.dump(run, open(run_json, 'w'), ensure_ascii=False, indent=1)
+    run[name] = dict(frames=N, names=fns, cols=COLS, rows=rows, cell=[cw, ch], pad=P, at=[int(x0), int(y0)], size=[W, Hh],
+                     plan=dict(seed=SP.SEEDS[name], k=k, loop_ms=loop_ms, changes=len(tl)))
+    txt = json.dumps(run, ensure_ascii=False, indent=1)
+    for nm in run:                                     # コマの名前の並びは 1行に
+        if 'names' in run[nm]:
+            txt = txt.replace(json.dumps(run[nm]['names'], ensure_ascii=False, indent=1).replace('\n', '\n  '),
+                              json.dumps(run[nm]['names'], ensure_ascii=False))
+    open(run_json, 'w').write(txt)
     kb = os.path.getsize(f'{outdir}/{name}_step.webp') / 1024
-    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', run[name])
+    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', {k_: v for k_, v in run[name].items() if k_ != 'names'})
 
 
 if __name__ == '__main__':
@@ -340,10 +360,10 @@ if __name__ == '__main__':
     elif sys.argv[1] == '--cams':
         ref_cams(sys.argv[2])
     elif sys.argv[1] == '--preview':
-        preview(sys.argv[2], sys.argv[3], json.load(open(sys.argv[4])), int(sys.argv[5]) if len(sys.argv) > 5 else 16)
+        preview(sys.argv[2], sys.argv[3], json.load(open(sys.argv[4])), sys.argv[5:] or None)
     elif sys.argv[1] == '--sheet':
         make_sheet(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     elif sys.argv[1] == '--frames':
         nm, outdir, cams = sys.argv[2], sys.argv[3], json.load(open(sys.argv[4]))
-        idxs = [int(v) for v in sys.argv[5:]] or list(range(N))
+        idxs = [int(v) for v in sys.argv[5:]] or list(range(len(SP.frames(nm))))
         render_frames(nm, outdir, cams, idxs)

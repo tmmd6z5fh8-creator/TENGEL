@@ -7,7 +7,7 @@
    - アプリのファイルの形：svg/newyear_rays.svg（光だけ・中の <style> で回る・390×160・背景なし）を、2まいの絵のあいだに <img> で重ねる
    クラスの名前は ny…
    python3 newyear_wall.py <出力フォルダ> [--judge <Judge_NewYear.dc.html> <newyear_blobs.json>] [--step <step_blobs.json> <step_run.json>] <newyear_sun.json>
-     → newyear_rays.svg（＋判定画面の上の絵を「回る光」の形に書きかえる・何回やっても同じ。--step で 馬が いつも ゆっくり足ぶみして 首を動かす：step_wall.py）"""
+     → newyear_rays.svg（＋判定画面の上の絵を「回る光」の形に書きかえる・何回やっても同じ。--step で 馬が ときどき 前足を動かしたり 首を下げて 草を食べたりする：step_wall.py）"""
 import sys, os, re, json, math
 
 W, H = 390, 160
@@ -49,7 +49,7 @@ def rays_file(sun):
 
 def inline(blobs, sun, alt=ALT, p='nj', step=None):
     """(html, css)。blobs：bg・top → '/_blob/<id>'。p：id の頭（ページの中で ほかと ぶつからないように）。
-       step：(step_blobs, step_run)（step_wall.load）があれば、馬が いつも ゆっくり足ぶみして 首を動かす：光より前の絵は 馬の所を すき通しにした top に かえて、
+       step：(step_blobs, step_run)（step_wall.load）があれば、馬が ときどき 前足を動かしたり 首を下げて 草を食べたりする：光より前の絵は 馬の所を すき通しにした top に かえて、
        その四角に コマのシートを重ねる（四角の中と外で 重ならないので、前の絵との上下は どちらでもよい）"""
     defs, body = rays_svg_inner(sun, gid=f'{p}nyG')
     top, hh, hc = blobs['top'], '', ''
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     out, sun = sys.argv[1], json.load(open(sys.argv[-1]))
     open(f'{out}/newyear_rays.svg', 'w').write(rays_file(sun))
     step = None
-    if '--step' in sys.argv:                         # 馬の足ぶみ（step_blobs.json・step_run.json）
+    if '--step' in sys.argv:                         # 馬の動き（step_blobs.json・step_run.json）
         import step_wall
         i = sys.argv.index('--step')
         step = step_wall.load(sys.argv[i + 1], sys.argv[i + 2])

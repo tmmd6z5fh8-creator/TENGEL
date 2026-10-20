@@ -53,8 +53,12 @@ TAILS = {
 def make_pose(name, facing):
     P = POSES[name] if isinstance(name, str) else name          # 名前（POSES）か、同じ形の dict（走るコマなど）
     near, far = ('L', 'R') if facing == 'right' else ('R', 'L')
-    return dict(theta=P['theta'], neck_rot=P['neck_rot'], head_ang=P['head_ang'], tail=P['tail'],
-                fore={near: P['fore_near'], far: P['fore_far']}, hind={near: P['hind_near'], far: P['hind_far']})
+    out = dict(theta=P['theta'], neck_rot=P['neck_rot'], head_ang=P['head_ang'], tail=P['tail'],
+               fore={near: P['fore_near'], far: P['fore_far']}, hind={near: P['hind_near'], far: P['hind_far']})
+    if P.get('neck_bend'):                                         # 首を まげる・のばす（草を食べる馬：flat/step_run.py。なければ いままでと同じ）
+        out['neck_bend'] = P['neck_bend']
+        out['neck_len'] = P.get('neck_len', 1.0)
+    return out
 
 
 def proc_tmp():
@@ -279,13 +283,18 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     # 首（飾り用）：t は 0＝き甲 … 1＝うなじ
     crest = Hm.bez(S['crest'], np.linspace(0, 1, 41))
     throat = Hm.bez(S['throat'], np.linspace(0, 1, 41))
+    bent = bool(pose.get('neck_bend'))                                   # 首を下げている（草を食べる馬）
 
     def collar(t_):
         """首の t のところの、上のふち・下のふち（1倍）と首にそった向き（頭がわ）"""
         i = int(round(np.clip(t_, 0, 1) * 40))
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
         top = first_out(inside, (c3 + th3) / 2, c3 - th3) / s
-        bot = first_out(inside, (c3 + th3) / 2, th3 - c3) / s
+        if bent:   # 首を下げた時：のどがわへ まっすぐ進むと 下げた首の中を通って 頭まで行ってしまう → のどの線の少し先で止める
+            lim = int((np.linalg.norm(th3 - c3) / 2 + 0.03 * ppu) / 0.5)
+            bot = first_out(inside, (c3 + th3) / 2, th3 - c3, maxn=lim) / s
+        else:
+            bot = first_out(inside, (c3 + th3) / 2, th3 - c3) / s
         j = min(40, i + 2)
         k = max(0, i - 2)
         ax = unit((P1(Hm.v3(crest[j])) + P1(Hm.v3(throat[j]))) / 2 - (P1(Hm.v3(crest[k])) + P1(Hm.v3(throat[k]))) / 2)
@@ -394,6 +403,9 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     face.append(stroke(smooth([P1(hp(0.03, 0.02, zz)), P1(hp(0.06, -0.09, zz)), P1(hp(0.13, -0.17, zz * 0.9))], closed=False), pal['tack'], tw * 0.85))   # のど
     pommel = V(sx[1], stop[1] - 0.05 * p1u)
     sag = (ring + pommel) / 2 + V(0, 0.14 * p1u)
+    if bent:   # 首を下げた時：手綱は 首にそって たれる（まげが小さいうちは いままでの形へ なめらかに もどる）
+        wb = min(1.0, abs(pose['neck_bend']) / 45.0)
+        sag = sag * (1 - wb) + P1(Hm.v3(crest[18] * 0.55 + throat[18] * 0.45)) * wb
     face.append(stroke(smooth([ring, sag, pommel], closed=False), pal['tack'], 0.024 * p1u))                                                                # 手綱
     face.append(circ(ring, 0.040 * p1u, 'none', f'stroke="{pal["ring"]}" stroke-width="{f2(0.02 * p1u)}"'))
     layer(face)

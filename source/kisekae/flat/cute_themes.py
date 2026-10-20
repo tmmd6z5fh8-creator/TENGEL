@@ -203,7 +203,7 @@ ACC = dict(newyear=acc_newyear, snow=acc_snow, autumn=acc_autumn, sea=acc_sea_al
 
 
 def draw_cute(img, theme, W, Hh, spec=None, shadow_marks=None):
-    """spec：ポーズやカメラを かえた spec（足ぶみのコマ：step_run.py）。shadow_marks：影の大きさを この目印（ひづめ・いちばん下）で決める（コマで影が動かないように）"""
+    """spec：ポーズやカメラを かえた spec（馬が動くコマ：step_run.py）。shadow_marks：影の大きさを この目印（ひづめ・いちばん下）で決める（コマで影が動かないように）"""
     sp = spec or SPOTS[theme]
     rgb, a, m = draw_horse(sp, PALS[theme], W, Hh, acc=ACC[theme], number='1', name='flat_' + theme)
     # 影（地面）：ぼかしは numpy で（いつも同じ絵になるように）

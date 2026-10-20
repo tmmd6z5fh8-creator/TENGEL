@@ -33,6 +33,11 @@ STAND = dict(
 )
 
 
+# 首を まげる時（pose の neck_bend・度／neck_len・のばす倍率）の 点ごとの まわし方と のばし方（たてがみ側・のど側の 4つの点：根元 → うなじ）。
+# neck_bend が ない／0 なら いままでと 1バイトも ちがわない（草を食べる馬：flat/step_run.py）
+NECK_BEND_W = ((0.0, 0.75, 0.95, 1.0), (0.0, 0.65, 0.9, 1.0))
+
+
 def skeleton(pose):
     th = pose['theta']
     piv = np.array([-0.60, 1.25])
@@ -49,9 +54,14 @@ def skeleton(pose):
     nr = pose['neck_rot']
     crest = [rot2(T(p), nb, nr) for p in crest]
     throat = [rot2(T(p), nb, nr) for p in throat]
+    bend = pose.get('neck_bend', 0.0)
+    if bend:                                    # 首を まげる（草を食べる：き甲と 胸の根元は そのまま、先ほど 大きく まわす。NECK_BEND_W）
+        L = pose.get('neck_len', 1.0)           # 首を少し のばす（首が 短いので、のばさないと 口が 地面に とどかない）
+        crest = [nb + (rot2(p, nb, bend * w) - nb) * (1 + (L - 1) * w) for p, w in zip(crest, NECK_BEND_W[0])]
+        throat = [nb + (rot2(p, nb, bend * w) - nb) * (1 + (L - 1) * w) for p, w in zip(throat, NECK_BEND_W[1])]
     S['crest'] = np.array(crest)
     S['throat'] = np.array(throat)
-    S['poll'] = crest[3] + (adir(th + nr + 40) * 0.03)
+    S['poll'] = crest[3] + (adir(th + nr + bend + 40) * 0.03)
     S['head_ang'] = pose['head_ang']
     # 前足
     for side, z in (('L', 1), ('R', -1)):
