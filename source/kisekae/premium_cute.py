@@ -45,8 +45,10 @@
     良くなるから違和感なくせる！馬とハートが揺れる時に、下のハートも揺れて！馬とハートがカットインして、中央に入った時、近い位置にある小さな、
     馬とハートに押される感じで、前に移動して！」
    - ①〜⑤で だんだん 近く（1.40 → 1.66倍）・どの 画面も その 間に 少し 近づく（PUSH_IN）。うしろ足は 出さない（下の ハートに うまる）。
-     まわりの ハートは 着地ごとに 44こ ふえて 消えない（⑤では ポニーと ハートの ほかが ハートで いっぱい）＋ オーラの キラキラ。
+     まわりの ハートは 着地ごとに ふえて 消えない（⑤では ポニーと ハートの ほかが ハートで いっぱい）＋ オーラの キラキラ。
      下に つもった 小さな ハートは 着地ごとに ぷるん・まん中の 近くは 前へ おされて もどる
+   「下とか周りのハート小さすぎてちょっと気持ち悪い！写真赤丸のハートより少し大きめにして！」（④の ウィンクの ハート）
+   - 下と まわりの ハート・背景の ふわふわ ハートは ますの はば 58〜72px（HEART_W）。まわりの ハートは 着地ごとに 16こ
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
      ポニーの 部品（顔の 向き 4つ：右正面から・右正面 斜め上から・その ウィンク・真正面 × 首・たてがみ・耳 左右・顔・リボン・オーラ。左は 左右 うらがえす）・
      ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
@@ -216,11 +218,11 @@ def fly_uri():
 
 
 def bob_hearts():
-    """背景の 上で ふわふわ うく つやつやの ゼリーの ハート"""
+    """背景の 上で ふわふわ うく つやつやの ゼリーの ハート（はば 58〜72px の ます：④の ウィンクの ハートより 少し 大きい）"""
     rnd = random.Random(21)
     o = ''
-    for x, y, sz, rot in ((38, 214, 18, -14), (354, 206, 15, 12), (22, 648, 16, 10), (366, 654, 20, -12), (318, 296, 11, 8), (86, 112, 12, -8),
-                          (300, 790, 13, 10), (60, 470, 10, -10)):
+    for x, y, sz, rot in ((38, 214, 30, -14), (354, 206, 27, 12), (22, 648, 28, 10), (366, 654, 32, -12), (318, 296, 26, 8), (86, 112, 27, -8),
+                          (300, 790, 26, 10), (60, 470, 26, -10)):
         w = sz * 2.24
         o += (f'<i class="pmj pm{rnd.choice((0, 1, 3, 4))}" style="left:{x - w / 2:.0f}px;top:{y - w / 2:.0f}px;width:{w:.0f}px;height:{w:.0f}px;'
               f'--r:{rot}deg;animation-delay:-{rnd.uniform(0, 3):.2f}s"></i>')
@@ -497,9 +499,11 @@ def ripple(i, face, t_in):
     return camera(i, f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{rr}</div>')
 
 
-PILE_Y, PILE_RISE = 802.0, 64.0          # 下に つもった ハートの 上の はし：まん中（ハートが うまる 所）・左右の はしで 高くなる 分（字に かからない）
-PUSH_R = 165.0                           # 着地で 前へ おされる ハートの はんい（ハートの 下の まん中から）
-BLOOM_N = 44                             # 着地ごとに ふえる まわりの ハート（①〜⑤で 220：画面を うめる）
+PILE_Y, PILE_RISE = 816.0, 60.0          # 下に つもった ハートの まん中の 上の はし（ハートが うまる 所）・左右の はしで 高くなる 分（字に かからない）
+PUSH_R = 190.0                           # 着地で 前へ おされる ハートの はんい（ハートの 下の まん中から）
+HEART_W = (58.0, 72.0)                   # 下と まわりの ハートの ますの はば（ハートは ますの 9割：④の ウィンクの ハート（はば 約46px）より 少し 大きい。
+                                         #  まさちゃん「下とか周りのハート小さすぎてちょっと気持ち悪い！写真赤丸のハートより少し大きめにして！」）
+BLOOM_N = 16                             # 着地ごとに ふえる まわりの ハート（①〜⑤で 80：画面を うめる）
 SPARK_N = 16                             # 着地ごとに ふえる オーラの キラキラ
 
 
@@ -538,17 +542,17 @@ def bloom_hearts(seed=61):
     for i in range(len(SCREENS)):
         t0 = PC_T['S'][i] + IMPACT
         ox, oy = cam_pt(i, (195.0, 430.0))                          # とびだす 中心（ポニーの うしろ）
-        cand = [(x + rnd.uniform(-9, 9), y + rnd.uniform(-9, 9)) for y in range(16, 800, 28) for x in range(12, 390, 28)]
+        cand = [(x + rnd.uniform(-12, 12), y + rnd.uniform(-12, 12)) for y in range(30, 800, 44) for x in range(26, 380, 44)]
         rnd.shuffle(cand)
         n = 0
         for x, y in cand:
             if n >= BLOOM_N:
                 break
-            if y > pile_surface(x) - 20 or on_pony(i, x, y) or any((x - px) ** 2 + (y - py) ** 2 < 25 ** 2 for px, py in placed):
+            if y > pile_surface(x) - 40 or on_pony(i, x, y) or any((x - px) ** 2 + (y - py) ** 2 < 50 ** 2 for px, py in placed):
                 continue
             placed.append((x, y))
             n += 1
-            s = rnd.uniform(18, 38)
+            s = rnd.uniform(*HEART_W)
             dx, dy = x - ox, y - oy
             L = math.hypot(dx, dy) or 1
             back = min(L - 10, rnd.uniform(55, 115))                 # ポニーの 方から どれだけ とんでくるか
@@ -562,7 +566,7 @@ def bloom_hearts(seed=61):
         for x, y in cand[::-1]:
             if k >= SPARK_N:
                 break
-            if y > pile_surface(x) - 16 or on_pony(i, x, y):
+            if y > pile_surface(x) - 36 or on_pony(i, x, y):
                 continue
             k += 1
             r = rnd.uniform(7, 15)
@@ -581,15 +585,15 @@ def pile_bottom(seed=71):
        ほかの ハートも まん中から 外へ じゅんに ぷるん。上の ハートほど うしろ・おされる ハートは いちばん 前"""
     rnd = random.Random(seed)
     hs = []
-    y, row = 868.0, 0
-    while y > PILE_Y - PILE_RISE - 24:
-        x = -14.0 + (row % 2) * 12 + rnd.uniform(-4, 4)
-        while x < 404:
-            yy = y + rnd.uniform(-5, 5)
-            if yy >= pile_surface(x) - 6:
-                hs.append((x, yy, rnd.uniform(11, 17)))
-            x += rnd.uniform(21, 27)
-        y -= rnd.uniform(14, 17)
+    y, row = 884.0, 0
+    while y > PILE_Y - PILE_RISE - 40:
+        x = -20.0 + (row % 2) * 25 + rnd.uniform(-6, 6)
+        while x < 412:
+            yy = y + rnd.uniform(-6, 6)
+            if yy >= pile_surface(x) - 8:
+                hs.append((x, yy, rnd.uniform(*HEART_W) / 2.24))
+            x += rnd.uniform(46, 54)
+        y -= rnd.uniform(30, 34)
         row += 1
     cx, cy = 195.0, PILE_Y + 10                                      # ハートの 下の まん中（おす 所）
     items = []
@@ -598,7 +602,7 @@ def pile_bottom(seed=71):
         f = max(0.0, 1 - d / PUSH_R) ** 1.3
         sg = 1 if x >= cx else -1
         if f > 0:
-            px, py, g, w = sg * (12 + 30 * f) * f, (10 + 26 * f) * f, .34 * f, .1 + .05 * f
+            px, py, g, w = sg * (16 + 36 * f) * f, (12 + 30 * f) * f, .3 * f, .1 + .05 * f
         else:
             px, py, g, w = 0.0, 0.0, 0.0, .09 * max(.25, 1 - d / 430)
         lag = d / 900
