@@ -20,8 +20,10 @@
    - 頭は 3D の 形（まるい 頭・ほお・前へ のびる 鼻先＝細めの 馬の 顔）を 顔の 向きに 回して 描く：目・耳・鼻の 場所が どの 向きでも 自然に そろう。
      耳は まっすぐ 上へ のびる 長い 耳（頭の うしろから）。うしろ足は ハートの 下から 少し 見える 短い 足（まさちゃんの 絵の うしろ足）
    「全体的に、首がなく、肩が出てて変、手の奥にある身体がおかしい手は手だけでいいよ！、脚は、せめて関節入れて！」
-   - 頭を 少し 上げて 首（頭の うしろから ハートの うしろへ）を 見せる。前足は 手（ひづめと その 上の ふわふわの 毛）だけ：ハートの 外に 出る 腕・肩・むねは なくした。
-     うしろ足は 関節（ひざ）で 少し 曲がる
+   - 頭を 少し 上げて 首（頭の うしろから ハートの うしろへ）を 見せる。うしろ足は 関節（ひざ）で 少し 曲がる
+   「ハートの持ち方が手が下から入ってるから変！上から持って！首から手の位置まで、肩を入れたり自然にして！」
+   - 前足は 首の 横の 肩から ハートの 山の 前を ななめに おりて、ひづめで ハートの 左右の ふちを 上から つかむ（pm_hoof：肩・うで・ふわふわの 毛・ひづめ）。
+     前足は ハートと いっしょに ぷるんっ（持っている 所を 中心に ハートの 下が ゆれる）
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
      頭（右向き・やや右・やや右で ウィンク・正面。左向き・やや左は 左右 うらがえす）・ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
      背景（パチンコの 大当たりのような 虹色の 光線）・つやつやの ゼリーの ハート 6色（つもる・とぶ・のぼる・ふわふわ ハート）
@@ -103,9 +105,9 @@ def word_d(text, cx, cy, s, gap=-4):
 
 # ---------------------------------------------------------------- ならべ方（390×844 の 画面）と 絵（flat/premium_art.py の WebP）
 HEART_C, HEART_S = (195.0, 520.0), 170.0          # ハートの まん中と 大きさ（ハートの はば＝2×HEART_S）
-HEAD_BOX = (-30.0, 96.0, 450.0, 644.0)            # 頭の 絵を 描く 箱（pm_head_…：画面の まん中で 左右 対称。うしろ足と まわりの 白い 光は ハートの 下まで）
+HEAD_BOX = (-30.0, 80.0, 450.0, 660.0)            # 頭の 絵を 描く 箱（pm_head_…：画面の まん中で 左右 対称。うしろ足と まわりの 白い 光は ハートの 下まで）
 HEART_BOX = (0.0, 330.0, 390.0, 360.0)            # ハートと 字の 絵を 描く 箱（pm_heart・pm_t…）
-HOOF_BOX = (0.0, 450.0, 390.0, 110.0)             # ひづめの 絵を 描く 箱（pm_hoof）
+HOOF_BOX = (0.0, 330.0, 390.0, 230.0)             # 前足（肩から ひづめ）の 絵を 描く 箱（pm_hoof）
 HERE = os.path.dirname(os.path.abspath(__file__))
 FACE = dict(R=('R', False), L=('R', True), r=('T', False), l=('W', True), F=('F', False))   # 顔の 向き → (頭の 絵, 左右 うらがえす)
 _ART = {}
@@ -295,7 +297,7 @@ def pc_layers(board_html):
         land = t_in + T['IN'] * .72
         hv, mir = FACE[face]
         head = img(f'pm_head_{hv}', mir)
-        art_html = (head + f'<div class="pmhj" style="animation-delay:{t_in + T["IN"] * .9:.2f}s">{img("pm_heart")}{img(f"pm_t{i}")}</div>' + img('pm_hoof'))
+        art_html = (head + f'<div class="pmhj" style="animation-delay:{t_in + T["IN"] * .9:.2f}s">{img("pm_heart")}{img(f"pm_t{i}")}{img("pm_hoof")}</div>')
         scr += (f'<div class="pms" aria-hidden="true" style="animation:{enter_anim(frm)} {sec(T["IN"])} cubic-bezier(.25,.9,.35,1) {sec(t_in)} both,'
                 f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards">{art_html}{veil(head + img("pm_heart") + img("pm_hoof"), t_in, T["IN"])}</div>'
                 f'<i class="pmr" style="--d:{sec(land)}"></i><div class="pml">{pop_hearts(cx, cy - 20, land, 14, 30 + i)}</div>')
@@ -386,8 +388,8 @@ def pc_css():
   40%{{transform:translate(calc(var(--dx) * .7),calc(var(--dy) * .7)) scale(.9,1.1) rotate(calc(var(--r) * .55))}}
   58%{{transform:translate(calc(var(--dx) * .86),calc(var(--dy) * .86)) scale(1.06,.95) rotate(calc(var(--r) * .78))}}70%{{opacity:1}}
   100%{{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1) rotate(var(--r))}}}}
-/* ①〜⑤：止まった時に ハートと 字が ぷるんっ */
-.ov.pm .pmhj{{position:absolute;inset:0;transform-origin:{HEART_C[0]:.0f}px {HEART_C[1] + HEART_S * .8:.0f}px;animation:pmHJ .62s ease-out both}}
+/* ①〜⑤：止まった時に ハートと 字が ぷるんっ（前足で 上から 持っているので、持っている 所を 中心に 下が ぷるんっ。前足も いっしょ） */
+.ov.pm .pmhj{{position:absolute;inset:0;transform-origin:{HEART_C[0]:.0f}px {HEART_C[1] - HEART_S * .65:.0f}px;animation:pmHJ .62s ease-out both}}
 @keyframes pmHJ{{0%{{transform:none}}18%{{transform:scale(1.07,.92)}}38%{{transform:scale(.95,1.05)}}58%{{transform:scale(1.025,.98)}}78%{{transform:scale(.993,1.006)}}100%{{transform:none}}}}
 /* 最後：大きな ハートの ど的中（{sec(T['FIN'])}）→ {sec(T['RES'])} に 上へ 動いて ボード */
 .ov.pm .pmf{{position:absolute;left:0;top:0;width:390px;height:844px;z-index:7;opacity:0;pointer-events:none;transform-origin:{FIN_C[0]:.0f}px {fy:.0f}px;

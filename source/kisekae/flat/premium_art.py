@@ -9,7 +9,8 @@
        pm_head_R・pm_head_T・pm_head_W・pm_head_F：頭（右向き・やや右・やや右で 手前の 目を ウィンク・正面）と たてがみ・首・
          うしろ足（ハートの うしろ・下から 見える 関節の ある 短い 足）。左向き・やや左は ページで 左右 うらがえす（箱は 画面の まん中で 左右 対称）。
          頭は 3D の 形を 顔の 向きに 回して 描く（まさちゃん「顔もう少し細く！馬っぽく！目の位置ももっと自然にして！」：YAW・SKULL・CHEEK・SNOUT …）
-       pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：ハートの ふちを つかむ 手（ひづめと ふわふわの 毛だけ・左右）
+       pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：前足（首の 横の 肩から ハートの 山の 前を おりて、
+         ひづめで ハートの 左右の ふちを 上から つかむ：肩・うで・ふわふわの 毛・ひづめ・ハートに 落ちる かげ）
        pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
        pm_bg：パチンコの 大当たりのような 虹色の 背景 ／ pm_jelly：つやつやの ゼリーの ハート 6色（よこに ならべた 1まい）
    python3 flat/premium_art.py <出力フォルダ> [名前 …]   → <名前>.webp（名前を 書かなければ ぜんぶ）と、絵を おく 箱（画面の 座標）を
@@ -554,10 +555,10 @@ HEART_BOX = PC.HEART_BOX
 HOOF_BOX = PC.HOOF_BOX
 WU = 2 * HS / 350                                 # 頭の 部品の 数字は ハートの はば 350px の 時の 大きさ
 HEAD_K = 1.1 * WU                                 # 頭の 大きさ（まさちゃんの 絵より 1割 大きく：アップ）
-HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .69 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .69 * 2 * HS),
-              F=(HC[0], HC[1] - .69 * 2 * HS))                  # 頭の まん中（顔の 向きごと）
+HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .75 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .75 * 2 * HS),
+              F=(HC[0], HC[1] - .75 * 2 * HS))                  # 頭の まん中（顔の 向きごと）
 HEAD_C['W'] = HEAD_C['T']
-HOOF_X, HOOF_Y, HOOF_R = .43 * 2 * HS, HC[1] - .03 * 2 * HS, .072 * 2 * HS    # ひづめ（ハートの まん中から 左右へ・高さ・大きさ）
+HOOF_X, HOOF_Y, HOOF_R = .43 * 2 * HS, HC[1] - 20, .072 * 2 * HS          # ひづめ（ハートの まん中から 左右へ・高さ・大きさ）
 HEART_KY = .94                                    # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート）
 
 
@@ -594,14 +595,33 @@ def legs(cv):
 
 
 def neck(cv, v, th):
-    """首（白・頭の うしろから ハートの うしろへ。頭と ハートの あいだに 見える）。まさちゃん「全体的に、首がなく」"""
+    """首（白・頭の うしろから むねへ。下ほど 太く、肩の あいだに 入る）。まさちゃん「全体的に、首がなく」「首から手の位置まで、肩を入れたり自然にして！」"""
     from art import limb
     hx, hy = HEAD_C[v]
     (nx, ny), _ = pr((0, 40, -18), th)
     top = (hx + nx * HEAD_K, hy + ny * HEAD_K)
-    bot = (HC[0] + (top[0] - HC[0]) * .35, HC[1] - 30)
-    a = cv.mask(P(limb([top, ((top[0] + bot[0]) / 2, (top[1] + bot[1]) / 2), bot], [100 * HEAD_K, 108 * HEAD_K, 118 * HEAD_K])))
+    bot = (HC[0], HC[1] - 100)                                      # むねの まん中（ハートの うしろ）
+    mid = (top[0] * .55 + bot[0] * .45, top[1] * .55 + bot[1] * .45)
+    a = cv.mask(P(limb([top, mid, bot], [92 * HEAD_K, 100 * HEAD_K, 118 * HEAD_K])))
     fur(cv, a, R=30, lw=2.6)
+
+
+# 前足（まさちゃん「ハートの持ち方が手が下から入ってるから変！上から持って！首から手の位置まで、肩を入れたり自然にして！」）：
+# 首の 横の 肩から、ハートの 山の 前を ななめに おりて、ハートの 左右の ふちを 上から つかむ。点は (ハートの まん中から 左右へ, 上下)
+ARM = ((64, -135), (93, -119), (119, -89), (136, -53))           # 肩 → ハートの 山の 前 → 手首
+ARM_W = (44, 38, 34, 31)
+
+
+def arm_d(sd):
+    """前足（肩から 手首まで）の 形"""
+    from art import limb
+    return limb([(HC[0] + sd * dx, HC[1] + dy) for dx, dy in ARM], list(ARM_W))
+
+
+def hoof_rot(sd):
+    """ひづめの かたむき（手首から ひづめへの 向きに あわせる：上が 内がわ）"""
+    (x0, y0), (x1, y1) = ARM[-2], ARM[-1]
+    return -sd * math.degrees(math.atan2(x1 - x0, y1 - y0))
 
 
 # ---------------------------------------------------------------- 頭（3D の 形を 顔の 向きに 回して 描く：どの 向きでも 目・耳・鼻の 場所が 自然に そろう）
@@ -718,7 +738,7 @@ def head(v):
         jx, jy = x + sd * EYE[1] * K * 1.9, y + EYE[2] * K * .1
         jelly_heart(cv.sub(jx - 30, jy - 30, jx + 30, jy + 30), jx, jy, 12 * K, '#FF5FA6', '#FFC2DE', '#DD3484', rot=-16)
     # まわりの 白い 光（頭・ハート・ひづめ を あわせた 形の まわり：派手な 背景の 上でも 形が わかる）
-    hm = cv.mask(P(heart_d(HC[0], HC[1], HS, HEART_KY)) + ''.join(P(oval(HC[0] + sd * HOOF_X, HOOF_Y, HOOF_R, HOOF_R * 1.1)) for sd in (-1, 1)))
+    hm = cv.mask(P(heart_d(HC[0], HC[1], HS, HEART_KY)) + ''.join(P(oval(HC[0] + sd * HOOF_X, HOOF_Y, HOOF_R, HOOF_R * 1.1)) + P(arm_d(sd)) for sd in (-1, 1)))
     glow(cv, np.maximum(cv.img[..., 3], hm))
     return cv
 
@@ -817,21 +837,28 @@ def heart_layer():
 
 
 def hooves():
-    """ハートの 左右の ふちを つかむ 手（ひづめ）だけ：うすい ピンクの つやつやの たまご形・上に 小さな ふわふわの 毛（ハートの ふちの 中）。
-       まさちゃん「肩が出てて変、手の奥にある身体がおかしい手は手だけでいいよ！」"""
+    """前足（ハートの 前）：首の 横の 肩から ハートの 山の 前を ななめに おりて、ひづめで ハートの 左右の ふちを 上から つかむ
+       （肩・うで・手首の ふわふわの 毛・うすい ピンクの つやつやの ひづめ・ハートに 落ちる かげ）。
+       まさちゃん「ハートの持ち方が手が下から入ってるから変！上から持って！首から手の位置まで、肩を入れたり自然にして！」"""
     cv = Cv(HOOF_BOX)
     cuff = [(0, '#E7B3D2'), (.4, '#F7D9EA'), (.7, '#FFFFFF'), (1, '#FFFFFF')]
+    on_heart = grow(cv.mask(P(heart_d(HC[0], HC[1], HS, HEART_KY))), cv.px(4))
     for side in (-1, 1):
         x, y = HC[0] + side * HOOF_X, HOOF_Y
-        hm = cv.mask(P(oval(x, y, HOOF_R * .9, HOOF_R * 1.08, side * -24)))
-        # ふわふわの 毛（ひづめの すぐ 上：ひづめと 同じ 向き・下の ふちが ぎざぎざ）
+        rot = hoof_rot(side)
+        hm = cv.mask(P(oval(x, y, HOOF_R * .9, HOOF_R * 1.08, rot)))
+        am = cv.mask(P(arm_d(side)))
+        # ふわふわの 毛（ひづめの すぐ 上・うでの 向き：下の ふちが ぎざぎざ）
         R0 = HOOF_R
         pts = [(-.78, .1), (-.82, -.32), (-.5, -.62), (0, -.7), (.5, -.62), (.82, -.32), (.78, .1),
                (.6, .3), (.4, .16), (.2, .34), (0, .2), (-.2, .34), (-.4, .16), (-.6, .3)]
-        sc = tf([(px * R0, py * R0) for px, py in pts], x, y - R0 * .78, 1.0, side * -24)
-        cm = cv.mask(P(smooth(sc)))
-        cv.put(hexc('#6E1030'), blur(np.roll(np.roll(grow(np.maximum(hm, cm), cv.px(2.6)), int(cv.px(3)), 0), int(cv.px(side * 1.5)), 1), cv.px(3)) * .32)
-        gloss_ball(cv, x, y, HOOF_R * .9, HOOF_R * 1.08, side * -24, cols=[(0, '#D66A9C'), (.35, '#EC98C0'), (.7, '#F8C6DD'), (1, '#FFEAF4')],
+        cx, cy = rot_pt(x, y, 0, -R0 * .78, rot)
+        cm = cv.mask(P(smooth(tf([(px * R0, py * R0) for px, py in pts], cx, cy, 1.0, rot))))
+        # ハートに 落ちる かげ（右下へ）
+        sh = blur(np.roll(np.roll(grow(np.maximum(np.maximum(hm, cm), am), cv.px(2.6)), int(cv.px(3.5)), 0), int(cv.px(2)), 1), cv.px(3))
+        cv.put(hexc('#6E1030'), sh * on_heart * .3)
+        fur(cv, am, R=14, lw=2.4)
+        gloss_ball(cv, x, y, HOOF_R * .9, HOOF_R * 1.08, rot, cols=[(0, '#D66A9C'), (.35, '#EC98C0'), (.7, '#F8C6DD'), (1, '#FFEAF4')],
                    lw=2.6, sh=0)
         drop(cv, grow(cm, cv.px(2.2)), k=.3)
         fur(cv, cm, R=7, lw=2.2, cols=cuff)
