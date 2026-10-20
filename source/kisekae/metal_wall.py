@@ -2,34 +2,34 @@
    ページに入れる HTML と CSS（銀も金も 同じ作り・色だけ ちがう）
    - 絵は flat/metal_run.py の いまの絵（きらめきつき：silver_banner・gold_banner）と、そこから きらめき（4本の光）だけ ぬいた絵（silver_base・gold_base）。
      キャンバスでは /_blob/<id>（metal_blobs.json）・像の形（ふちの線）と きらめきの場所は metal_run.json。1つの <svg>（780×320 を 390×160 に）に重ねる
-   - いつも キラキラ（SHEEN 秒で1回り）：
-     ・光の帯が 像の上を ななめに すうっと通る（像の形で 切りぬいた帯を スクリーンで重ねる。金は 金の光）
-     ・帯が通った所の きらめき（いまの絵の4つ＋またたく所）が 帯を追いかけて つぎつぎに きらっ（いまの絵の4つは 帯のあとにも もう1回 きらっ）
+   - いつも キラキラ：
+     ・きらめき（いまの絵の4つ＋またたく所）が TWINKLE 秒に 2回ずつ、ばらばらの順で きらっ（左から右へ 順に 光らせない）
      ・像の上の こまかい光の粒が ばらばらに ちかっ
      ・光の粒（金は 金の粉）が 像の うしろがわ（しっぽ・おしり・後ろ足）から うしろへ ふわっと流れて 消える
      ・うしろの光の輪を 光が ゆっくり回る（像の うしろを通る・床の下は 通らない）
-   - 強く光らせない（光るのは 小さい所だけ・帯は SHEEN 秒に1回）。視差効果を減らす（prefers-reduced-motion）なら 動かさない（いまの絵）
+   - まえは 光の帯が 像の上を 左から右へ ななめに すうっと通って 体を 光らせていたが、まさちゃん「シルバー帯とゴールド帯の馬の銅像に
+     左から右へ光が馬の身体を光らせる演出いらない！」で やめた（帯を 追いかけて 左から右へ つぎつぎに 光っていた きらめきも ばらばらの順に）
+   - 強く光らせない（光るのは 小さい所だけ）。視差効果を減らす（prefers-reduced-motion）なら 動かさない（いまの絵）
    クラスの名前は mxs…（銀）・mxg…（金）（的中ボタンの .ag・.au とは別）
    python3 metal_wall.py --judge <Judge_Silver.dc.html> silver <metal_blobs.json> <metal_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
-   python3 metal_wall.py --judge <Judge_Golden.dc.html> gold <metal_blobs.json> <metal_run.json>"""
+   python3 metal_wall.py --judge <Judge_Golden.dc.html> gold <metal_blobs.json> <metal_run.json>
+   python3 metal_wall.py --plan <metal_run.json>  → きらめきの 予定（と 左右との 相関）"""
 import sys, re, json, math, random
 
 ALT = dict(
     silver=('銀の地（ヘアライン）と光の輪の前を、全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト'
-            '（いつも キラキラ：光の帯が 像の上を すうっと通り、あちこちが きらっと またたく・光の粒が うしろへ流れる・光の輪を 光が回る）'),
+            '（いつも キラキラ：あちこちが きらっと またたく・光の粒が うしろへ流れる・光の輪を 光が回る）'),
     gold=('金の地（ヘアライン）と光の輪の前を、全力で駆ける金の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト'
-          '（いつも 金に キラキラ：金の光の帯が 像の上を すうっと通り、あちこちが きらっと またたく・金の粉が うしろへ流れる・光の輪を 光が回る）'))
+          '（いつも 金に キラキラ：あちこちが きらっと またたく・金の粉が うしろへ流れる・光の輪を 光が回る）'))
 PRE = dict(silver='mxs', gold='mxg')
 NAME = dict(silver='シルバー帯', gold='ゴールド帯')
 
-SHEEN = 4.0                    # 光の帯の1回り（秒）
-SW = (0.35, 1.65)              # 帯が 左はしから 右はしまで 通る（1回りの中の秒）
-X0, X1 = 40.0, 880.0           # 帯のまん中（高さ0の所）の はじめと おわり（780×320）
-TILT = 0.45                    # 帯の かたむき（上へ行くほど 右へ：高さ1で 0.45）
-BAND = 150.0                   # 帯の はば
+TWINKLE = 4.0                  # きらめきの1回り（秒）：どの きらめきも この間に 2回 きらっ
+TW_T0 = .08                    # 1回りの中で いちばん はじめの きらっ（秒）
+TW_GAP = 7                     # 同じ きらめきの 2回の きらっ は 7こま（約0.8秒）以上 はなす（1回りの つなぎ目を またいでも）
 STAR_L = 16.0                  # きらめきの形の 大きさ（横の光の長さ）
-FLARE = (2.0, 1.45)            # 帯が通る時の きらっ の大きさ（いまの絵の4つ・またたく所。いまの絵の きらめきの何倍）
-TW2 = (1.85, 4.0, .82)         # 帯のあとの もう1回の きらっ（この間に ばらばらの順で・帯の時の何倍）
+FLARE = (2.0, 1.45)            # 1回目の きらっ の大きさ（いまの絵の4つ・またたく所。いまの絵の きらめきの何倍）
+TW2 = .82                      # 2回目の きらっ の大きさ（1回目の何倍）
 DOT_P = (1.9, 3.4)             # こまかい光の粒の ちかっ の間（秒）
 TRAIL = 20                     # うしろへ流れる 光の粒（ふちの 右を向いた所から 最大20・たがいに はなす。いまの像では17）
 TRAIL_X = 430.0                # 光の粒が 出る所（像の ふちの この x より右）
@@ -37,13 +37,8 @@ RING_S = 10.0                  # 光の輪の光が 1回り（秒）
 RING_ARC = 75.0                # 光の輪の光の 尾の長さ（度）
 
 COL = dict(
-    silver=dict(sheen=[(0, '#EEF3FF', 0), (.25, '#EEF3FF', .16), (.5, '#FFFFFF', .62), (.75, '#EEF3FF', .16), (1, '#EEF3FF', 0)],
-                core=[(0, '#FFFFFF', 0), (.5, '#FFFFFF', 1), (1, '#FFFFFF', 0)],
-                star='#FFFFFF', glow='#AECBFF', dust='#FFFFFF', dglow='#B7D0FF', ring='#FFFFFF'),
-    gold=dict(sheen=[(0, '#FFD45A', 0), (.25, '#FFD45A', .22), (.5, '#FFE9A0', .7), (.75, '#FFD45A', .22), (1, '#FFD45A', 0)],
-              core=[(0, '#FFF8DC', 0), (.5, '#FFFDF4', 1), (1, '#FFF8DC', 0)],
-              star='#FFFBEA', glow='#FFC83A', dust='#FFF0BA', dglow='#F5B829', ring='#FFF1C0'))
-CORE = 12.0                    # 帯のまん中の 細い光の はば
+    silver=dict(star='#FFFFFF', glow='#AECBFF', dust='#FFFFFF', dglow='#B7D0FF', ring='#FFFFFF'),
+    gold=dict(star='#FFFBEA', glow='#FFC83A', dust='#FFF0BA', dglow='#F5B829', ring='#FFF1C0'))
 
 
 def pct(t, period):
@@ -105,9 +100,25 @@ def inside(P, x, y):
     return c
 
 
-def pass_t(x, y):
-    """帯のまん中が (x, y) を通る秒（1回りの中）"""
-    return SW[0] + (x + TILT * y - X0) / (X1 - X0) * (SW[1] - SW[0])
+def corr(xs, ys):
+    mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+    sxy = sum((a - mx) * (b - my) for a, b in zip(xs, ys))
+    return sxy / math.sqrt(sum((a - mx) ** 2 for a in xs) * sum((b - my) ** 2 for b in ys))
+
+
+def tw_slots(xs, seed=5):
+    """きらめき n こ（左右の位置 xs）の きらっ 2回ずつ（2n回）を、1回りの 2n この こまに ばらばらに わける：(1回目の こま, 2回目の こま) の list。
+       1回目は 前の半分（0〜n−1）・2回目は うしろの半分（n〜2n−1）。同じ きらめきの 2回は TW_GAP こま以上 はなす（1回りの つなぎ目を またいでも）。
+       左から右（右から左）へ 順に 光って 見えないように、こまの 順と 左右の位置の 相関が ±0.1 より 小さい わけかたを えらぶ"""
+    n = len(xs)
+    rnd = random.Random(seed)
+    while True:
+        a, b = list(range(n)), list(range(n))
+        rnd.shuffle(a)
+        rnd.shuffle(b)
+        if (all(TW_GAP <= n + b[i] - a[i] <= 2 * n - TW_GAP for i in range(n))
+                and abs(corr(xs, a)) < .1 and abs(corr(xs, b)) < .1):
+            return [(a[i], n + b[i]) for i in range(n)]
 
 
 def trail_src(P, n=TRAIL, gap=13.0):
@@ -128,6 +139,14 @@ def trail_src(P, n=TRAIL, gap=13.0):
     return sorted(out, key=lambda q: (q[1], q[0]))
 
 
+def twinkles(R):
+    """きらめき（いまの絵の4つ＝main・またたく所）ごとの (x, y, 大きさ, main か, 1回目の秒, 2回目の秒)"""
+    stars = [(x, y, L, True) for x, y, L in R['spark']] + [(x, y, L, False) for x, y, L in R['glint']]
+    n = len(stars)
+    step = (TWINKLE - TW_T0 - .72) / (2 * n - 1)          # 2回目（.7秒）が 1回りの中で おわる
+    return [(x, y, L, main, TW_T0 + a * step, TW_T0 + b * step) for (x, y, L, main), (a, b) in zip(stars, tw_slots([v[0] for v in stars]))]
+
+
 def inline(name, blobs, run, alt=None):
     """(html, css)。name：'silver'・'gold'。blobs：{'banner','base'} の /_blob/<id>。html は <div class="bnr mxsw">（判定画面の <img class="bnr"> と入れかえる）"""
     p = PRE[name]
@@ -143,15 +162,10 @@ def inline(name, blobs, run, alt=None):
     def im(href):
         return f'<image href="{href}" width="780" height="320" preserveAspectRatio="none"/>'
     # ---------- defs ----------
-    stops = ''.join(f'<stop offset="{num(o)}" stop-color="{c}" stop-opacity="{num(a)}"/>' for o, c, a in C['sheen'])
-    cstops = ''.join(f'<stop offset="{num(o)}" stop-color="{c}" stop-opacity="{num(a)}"/>' for o, c, a in C['core'])
     a0 = math.radians(-RING_ARC)
     tx, ty = cx + rr * math.cos(a0), cy + rr * math.sin(a0)
     hx, hy = cx + rr, cy
-    defs = (f'<clipPath id="{p}H"><path d="{d}"/></clipPath>'
-            f'<clipPath id="{p}O"><path clip-rule="evenodd" d="M0 0H780V{floor - 1}H0Z{d}"/></clipPath>'
-            f'<linearGradient id="{p}Sg" x1="0" y1="0" x2="1" y2="0">{stops}</linearGradient>'
-            f'<linearGradient id="{p}Cg" x1="0" y1="0" x2="1" y2="0">{cstops}</linearGradient>'
+    defs = (f'<clipPath id="{p}O"><path clip-rule="evenodd" d="M0 0H780V{floor - 1}H0Z{d}"/></clipPath>'
             f'<linearGradient id="{p}Lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{C["glow"]}" stop-opacity="0"/>'
             f'<stop offset=".5" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="{C["glow"]}" stop-opacity="0"/></linearGradient>'
             f'<radialGradient id="{p}Gl"><stop offset="0" stop-color="{C["glow"]}" stop-opacity=".95"/><stop offset=".35" stop-color="{C["glow"]}" stop-opacity=".45"/>'
@@ -174,15 +188,6 @@ def inline(name, blobs, run, alt=None):
              f'<circle cx="{num(hx, 1)}" cy="{num(hy, 1)}" r="11" fill="url(#{p}Gl)"/></g></g>')
     css.append(f'.{p}w .{p}R{{transform-box:view-box;transform-origin:{num(cx, 1)}px {num(cy, 1)}px;animation:{p}R {RING_S:g}s linear infinite}}'
                f'@keyframes {p}R{{to{{transform:rotate(360deg)}}}}')
-    # ---------- 光の帯（像の形で 切りぬく・スクリーン） ----------
-    skew = -math.degrees(math.atan(TILT))
-    body += (f'<g class="{p}Sb" clip-path="url(#{p}H)"><g class="{p}S"><g transform="skewX({num(skew)})">'
-             f'<rect x="{num(-BAND / 2)}" y="-30" width="{num(BAND)}" height="380" fill="url(#{p}Sg)"/>'
-             f'<rect x="{num(-CORE / 2)}" y="-30" width="{num(CORE)}" height="380" fill="url(#{p}Cg)"/></g></g></g>')
-    css.append(f'.{p}w .{p}Sb{{mix-blend-mode:screen}}'
-               f'.{p}w .{p}S{{transform-box:view-box;transform-origin:0 0;transform:translateX({num(X0)}px);animation:{p}S {SHEEN:g}s linear infinite}}'
-               + kf(f'{p}S', [(0, X0, 'linear'), (SW[0], X0, 'linear'), (SW[1], X1, 'linear'), (SHEEN, X1, 'linear')], SHEEN,
-                    lambda v: f'transform:translateX({num(v)}px)'))
     # ---------- こまかい光の粒（像の上・ばらばらに ちかっ） ----------
     rnd = random.Random(31)
     dots = ''
@@ -210,23 +215,17 @@ def inline(name, blobs, run, alt=None):
                    f'100%{{opacity:0;transform:translate({num(dx)}px,{num(dy)}px) scale({num(s * .3)})}}}}')
     body += trail
     css.append(f'.{p}w .{p}P{{opacity:0;transform-box:view-box;transform-origin:0 0}}')
-    # ---------- きらめき（帯を追いかけて きらっ → 帯のあとに もう1回 ばらばらの順で きらっ） ----------
-    stars = [(x, y, L, True) for x, y, L in R['spark']] + [(x, y, L, False) for x, y, L in R['glint']]
-    order = list(range(len(stars)))
-    random.Random(5).shuffle(order)
-    step = (TW2[1] - TW2[0] - .7) / max(1, len(stars) - 1)
-    for i, (x, y, L, main) in enumerate(stars):
-        tp = pass_t(x, y)
+    # ---------- きらめき（TWINKLE 秒に 2回ずつ・ばらばらの順で きらっ） ----------
+    for i, (x, y, L, main, t1, t2) in enumerate(twinkles(R)):
         s = L / STAR_L * FLARE[0 if main else 1]
-        keys = [(0, (0, 0, -20), 'linear'), (tp - .06, (0, 0, -20), 'cubic-bezier(.2,.8,.4,1)'), (tp + .1, (s, 1, 0), 'ease-out'),
-                (tp + .32, (s * .55, .9, 18), 'ease-in'), (tp + .62, (0, 0, 40), 'linear')]
-        t2 = TW2[0] + order.index(i) * step
-        keys += [(t2, (0, 0, -10), 'ease-out'), (t2 + .22, (s * TW2[2], 1, 8), 'ease-in-out'), (t2 + .7, (0, 0, 30), 'linear')]
-        keys.append((SHEEN, (0, 0, 40), 'linear'))
+        keys = [(0, (0, 0, -20), 'linear'), (t1 - .06, (0, 0, -20), 'cubic-bezier(.2,.8,.4,1)'), (t1 + .1, (s, 1, 0), 'ease-out'),
+                (t1 + .32, (s * .55, .9, 18), 'ease-in'), (t1 + .62, (0, 0, 40), 'linear')]
+        keys += [(t2, (0, 0, -10), 'ease-out'), (t2 + .22, (s * TW2, 1, 8), 'ease-in-out'), (t2 + .7, (0, 0, 30), 'linear')]
+        keys.append((TWINKLE, (0, 0, 40), 'linear'))
         c = f'{p}F{i}'
         body += f'<g transform="translate({x} {y})"><g class="{p}F {c}"><use href="#{p}{"Sm" if main else "St"}"/></g></g>'
-        css.append(f'.{p}w .{c}{{animation:{c} {SHEEN:g}s linear infinite}}'
-                   + kf(c, keys, SHEEN, lambda v: f'opacity:{num(v[1])};transform:scale({num(v[0], 3)}) rotate({num(v[2], 1)}deg)'))
+        css.append(f'.{p}w .{c}{{animation:{c} {TWINKLE:g}s linear infinite}}'
+                   + kf(c, keys, TWINKLE, lambda v: f'opacity:{num(v[1])};transform:scale({num(v[0], 3)}) rotate({num(v[2], 1)}deg)'))
     css.append(f'.{p}w .{p}F{{opacity:0;transform-box:view-box;transform-origin:0 0}}')
     body += '</g>'
     html = (f'<div class="bnr {p}w" role="img" aria-label="{alt or ALT[name]}"><svg viewBox="0 0 780 320" width="390" height="160" '
@@ -245,7 +244,7 @@ def judge_inline(fn, name, blobs, run, alt=None):
     page, k = re.subn(rf'<div class="bnr {p}w" .*?</svg></div>|<img class="bnr" [^>]*>', lambda _: html, page, count=1, flags=re.S)
     assert k == 1, 'banner not found'
     nm = NAME[name]
-    block = f'/* {nm}の壁紙：いつも キラキラ（光の帯・きらめき・光の粒・光の輪。metal_wall.py） */\n{css}\n/* /{nm}の壁紙 */\n'
+    block = f'/* {nm}の壁紙：いつも キラキラ（きらめき・光の粒・光の輪。metal_wall.py） */\n{css}\n/* /{nm}の壁紙 */\n'
     if f'/* {nm}の壁紙：' in page:
         page = re.sub(rf'/\* {nm}の壁紙：.*?/\* /{nm}の壁紙 \*/\n', lambda _: block, page, flags=re.S)
     else:
@@ -260,7 +259,21 @@ def load_blobs(fn, name):
     return dict(banner=f(b[f'{name}_banner']), base=f(b[f'{name}_base']))
 
 
+def plan(run):
+    """きらめきの 予定（1回目・2回目の秒）と、x（左右）との 相関（左から右へ 順に 光っていないか）"""
+    for name in ('silver', 'gold'):
+        tw = twinkles(run[name])
+        print(NAME[name], len(tw), 'こ')
+        for x, y, L, main, t1, t2 in sorted(tw, key=lambda v: v[4]):
+            print(f'  {t1:5.2f}秒 / {t2:5.2f}秒  x={x:6.1f} y={y:6.1f}' + ('  （いまの絵の きらめき）' if main else ''))
+        for k in (4, 5):
+            print(f'  {k - 3}回目の 秒と x の 相関 {corr([v[0] for v in tw], [v[k] for v in tw]):+.2f}')
+
+
 if __name__ == '__main__':
+    if '--plan' in sys.argv:
+        plan(json.load(open(sys.argv[sys.argv.index('--plan') + 1])))
+        sys.exit()
     i = sys.argv.index('--judge')
     fn, name, bfn, rfn = sys.argv[i + 1:i + 5]
     judge_inline(fn, name, load_blobs(bfn, name), json.load(open(rfn)))
