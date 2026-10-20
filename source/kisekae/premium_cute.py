@@ -28,8 +28,14 @@
     左右の耳の中央にくるように！ あと5枚目のところ耳が散れちゃってるからリボンで隠して！」「あと赤丸の立髪は馬の顔の後ろにあるようにして！1枚目が求めている形」
    - 前足は 肩と 角度は そのまま 短く：ひづめを 手首で 少し 下へ 曲げて、ハートの 上の 方に ひっかけて 支える。リボンは 左右の 耳の まん中（少し 小さく）・
      耳の 外がわの つけねを 頭の 中へ（つけねの 線が 出て 耳が 切れて 見えていた）・たてがみは どの 顔でも 頭の うしろ
+   「ど！、て！、き！、ちゅ！、う！全部ハートと腕しか動いてないから不自然！馬もプルンプルン系で、全体的に動いて！結構プルルンて感じにして！全体的に！
+    でも身体が歪んだりは変だから構造は身体の構造を考えて作成して！」
+   - ポニーを 部品（うしろ足・首・たてがみ・耳 左右・顔・リボン）に 分けて、体の つくりどおりの 関節で ぷるるん（pony_tree・pony_motion）：
+     うしろ足は 地面に ついたまま・体は 着地で はずむ・頭は 首の 上を 中心に・耳は つけね・たてがみは 上の はし・リボンは むすびめを 中心に ゆれる。
+     白い ふちの 光は CSS の drop-shadow（動く 部品に ついていく）
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
-     頭（右向き・やや右・やや右で ウィンク・正面。左向き・やや左は 左右 うらがえす）・ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
+     ポニーの 部品（顔の 向き 4つ：右向き・やや右・やや右で ウィンク・正面 × 首・たてがみ・耳 左右・顔・リボン。左向き・やや左は 左右 うらがえす）・
+     うしろ足・ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
      背景（パチンコの 大当たりのような 虹色の 光線）・つやつやの ゼリーの ハート 6色（つもる・とぶ・のぼる・ふわふわ ハート）
      premium_blobs.json（名前 → キャンバスの id）・premium_layers.json（名前 → 画面の 箱：flat/premium_art.py が 書く）
    - 背景の 上で 白い 光線が ゆっくり 回る（1つの 所を 光線が 通るのは 1秒に 1回 くらい＝点めつ しない）
@@ -109,11 +115,11 @@ def word_d(text, cx, cy, s, gap=-4):
 
 # ---------------------------------------------------------------- ならべ方（390×844 の 画面）と 絵（flat/premium_art.py の WebP）
 HEART_C, HEART_S = (195.0, 520.0), 170.0          # ハートの まん中と 大きさ（ハートの はば＝2×HEART_S）
-HEAD_BOX = (-30.0, 80.0, 450.0, 660.0)            # 頭の 絵を 描く 箱（pm_head_…：画面の まん中で 左右 対称。うしろ足と まわりの 白い 光は ハートの 下まで）
+HEAD_BOX = (-30.0, 80.0, 450.0, 660.0)            # ポニーの 部品の 絵を 描く 箱（pm_legs・pm_neck_…・pm_mane_…・pm_ear…・pm_face_…・pm_bow_…：画面の まん中で 左右 対称）
 HEART_BOX = (0.0, 330.0, 390.0, 360.0)            # ハートと 字の 絵を 描く 箱（pm_heart・pm_t…）
 HOOF_BOX = (0.0, 330.0, 390.0, 230.0)             # 前足（肩から ひづめ）の 絵を 描く 箱（pm_hoof）
 HERE = os.path.dirname(os.path.abspath(__file__))
-FACE = dict(R=('R', False), L=('R', True), r=('T', False), l=('W', True), F=('F', False))   # 顔の 向き → (頭の 絵, 左右 うらがえす)
+FACE = dict(R=('R', False), L=('R', True), r=('T', False), l=('W', True), F=('F', False))   # 顔の 向き → (部品の 絵の 顔, 左右 うらがえす)
 _ART = {}
 
 
@@ -286,6 +292,117 @@ def veil(art_html, t, dur, more=''):
     return f'<div class="pmv" aria-hidden="true" style="animation:pmVl {sec(dur)} linear {sec(t)} both{more}">{art_html}</div>'
 
 
+# ---------------------------------------------------------------- ①〜⑤の ぷるるん（まさちゃん「ど！、て！、き！、ちゅ！、う！全部ハートと腕しか動いてないから不自然！
+# 馬もプルンプルン系で、全体的に動いて！結構プルルンて感じにして！全体的に！でも身体が歪んだりは変だから構造は身体の構造を考えて作成して！」）
+# 体の つくりどおりに：うしろ足は 地面に ついたまま・体（首・肩・前足・ハート）は 着地で 上下に はずむ・頭は 首の 上を 中心に おくれて かたむく・
+# 耳は つけねを 中心に・たてがみは 上の はしを 中心に・リボンは むすびめを 中心に ゆれる（どれも 形は ゆがめない。ゆがむのは ゼリーの ハートと リボンだけ）。
+# 入ってくる 間は 頭・耳・たてがみが 動く 向きと 反対へ おくれて、着いた時に ゆりもどす
+JIG_D, JIG_N = 1.05, 30          # 1つの 画面の 動きの 長さ（秒：入ってくる 所から 次の 画面まで）・キーフレームの 数
+IMPACT = .30                     # 着地（入ってくる 動きの 0.30秒め）
+
+
+def osc(t, t0, amp, f, tau, ph=0.0):
+    """t0 から はじまる だんだん 小さくなる ゆれ（amp・f＝1秒の 回数・tau＝小さくなる 速さ）"""
+    if t < t0:
+        return 0.0
+    u = t - t0
+    return amp * math.exp(-u / tau) * math.sin(2 * math.pi * f * u + ph)
+
+
+def entry_lag(t, frm):
+    """入ってくる 間の おくれ（画面で：右へ 動く 時は 頭が 左へ かたむく＝−。度）と、着いてから の ゆりもどし。frm：入ってくる 方"""
+    a0 = dict(L=-6.0, R=6.0).get(frm, 0.0)
+    if not a0 or t <= 0:
+        return 0.0
+    if t < IMPACT:
+        x = min(1.0, t / .12)
+        return a0 * x * x * (3 - 2 * x)
+    u = t - IMPACT
+    return a0 * math.exp(-u / .2) * math.cos(2 * math.pi * JIG_F * u)
+
+
+def rise_lag(t, frm):
+    """下から 上がる 時は 頭が 下へ おくれる（＋）・上から 落ちる 時は 上へ おくれる（−）：px。着いてから ゆりもどす"""
+    a0 = dict(B=6.0, T=-5.0).get(frm, 0.0)
+    if not a0 or t <= 0:
+        return 0.0
+    if t < IMPACT:
+        x = min(1.0, t / .12)
+        return a0 * x * x * (3 - 2 * x)
+    u = t - IMPACT
+    return a0 * math.exp(-u / .15) * math.cos(2 * math.pi * JIG_F * u)
+
+
+JIG_F, JIG_TAU = 3.0, .26        # ゆれの 速さ（1秒に 3回）と 小さくなる 速さ：体から 頭・リボン・耳・たてがみへ 少しずつ おくれて つたわる（同じ 速さで ゆれる＝ばらばらに ちらつかない）
+
+
+def pony_motion(frm, mir):
+    """部品ごとの 動き（t 秒 → CSS の transform）。mir：左右 うらがえした 顔（かたむきの 向きを 画面に あわせる）"""
+    sg = -1.0 if mir else 1.0
+    amp = dict(T=17.0, C=12.0).get(frm, 14.0)                      # 着地で 体が 沈む 大きさ（上から 落ちる 時は 大きく）
+    F, TAU = JIG_F, JIG_TAU
+
+    def tilt(t, d=0.0, k=1.0):
+        return sg * k * entry_lag(t - d, frm)
+
+    def bow(t):
+        q = osc(t, IMPACT + .04, .09, F, TAU, math.pi / 2)
+        return f'rotate({tilt(t, .02, 1.3) + osc(t, IMPACT + .04, 11.0, F, TAU):.2f}deg) scale({1 + q:.3f},{1 - q:.3f})'
+
+    def ear(sd):
+        return lambda t: f'rotate({tilt(t, .03, 1.5) + sd * (osc(t, IMPACT + .05, 13.0, F, TAU) + 1.4 * rise_lag(t - .02, frm)):.2f}deg)'
+
+    return dict(
+        body=lambda t: f'translateY({osc(t, IMPACT, amp, F, TAU):.2f}px)',
+        head=lambda t: (f'translateY({osc(t, IMPACT + .02, 6.0, F, TAU) + rise_lag(t, frm):.2f}px) '
+                        f'rotate({tilt(t) + osc(t, IMPACT + .03, 4.0, F, TAU):.2f}deg)'),
+        mane=lambda t: f'rotate({tilt(t, .05, 1.2) + osc(t, IMPACT + .07, 5.0, F, TAU):.2f}deg)',
+        earL=ear(-1.0), earR=ear(1.0), bow=bow,
+        heart=lambda t: f'scale({1 + osc(t, IMPACT + .01, .055, F, TAU):.3f},{1 - osc(t, IMPACT + .01, .11, F, TAU):.3f})',
+    )
+
+
+def pony_css():
+    """①〜⑤の キーフレーム（pmJ<部品><画面>）"""
+    out = ''
+    for i, (text, face, frm, s_txt) in enumerate(SCREENS):
+        for name, fn in pony_motion(frm, FACE[face][1]).items():
+            stops = ''.join(f'{k * 100 / JIG_N:.4g}%{{transform:{fn(JIG_D * k / JIG_N)}}}' for k in range(JIG_N + 1))
+            out += f'@keyframes pmJ{name}{i}{{{stops}}}\n'
+    return out
+
+
+def pimg(name, at):
+    """部品の 絵（at＝親の 動きの 中心から の 場所）"""
+    x, y, w, h = art()[1][name]
+    return f'<img class="pmi" src="{blob(name)}" alt="" style="left:{x - at[0]:.3f}px;top:{y - at[1]:.3f}px;width:{w:.3f}px;height:{h:.3f}px">'
+
+
+def joint(at, parent, inner, anim=''):
+    """動きの 中心（関節）：at に 置いた 大きさ 0 の 箱（transform-origin が 関節）"""
+    st = f'left:{at[0] - parent[0]:.2f}px;top:{at[1] - parent[1]:.2f}px'
+    return f'<div class="pmJ" style="{st}{";animation:" + anim if anim else ""}">{inner}</div>'
+
+
+def pony_tree(i, face, t_in):
+    """①〜⑤の 絵：うしろ足（動かない）→ 体（首・頭（たてがみ・耳・顔・リボン））→ ハート（字）→ 前足。左右 うらがえす 顔は ポニーだけ うらがえす（字は うらがえさない）"""
+    hv, mir = FACE[face]
+    R = art()[1]['rig'][hv]
+    hp = art()[1]['rig']['heart']
+    an = lambda n: f'pmJ{n}{i} {sec(JIG_D)} linear {sec(t_in)} both'
+    O, M, B = (0.0, 0.0), (195.0, 0.0), (195.0, 400.0)            # 画面の 左上・左右 うらがえす 中心・体（上下に はずむ）
+    hd = R['head']
+    head = (joint(R['mane'], hd, pimg(f'pm_mane_{hv}', R['mane']), an('mane'))
+            + joint(R['earL'], hd, pimg(f'pm_earL_{hv}', R['earL']), an('earL'))
+            + joint(R['earR'], hd, pimg(f'pm_earR_{hv}', R['earR']), an('earR'))
+            + pimg(f'pm_face_{hv}', hd)
+            + joint(R['bow'], hd, pimg(f'pm_bow_{hv}', R['bow']), an('bow')))
+    body = pimg(f'pm_neck_{hv}', B) + joint(hd, B, head, an('head'))
+    pony = f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{pimg("pm_legs", M)}{joint(B, M, body, an("body"))}</div>'
+    front = joint(B, O, joint(hp, B, pimg('pm_heart', hp) + pimg(f'pm_t{i}', hp), an('heart')) + pimg('pm_hoof', B), an('body'))
+    return pony + front
+
+
 def pc_layers(board_html):
     """押したあと（下から）：虹色の 背景（パチンコの 大当たりのような 光線・ふわふわの ハート）→ つもる ハート → 回る 白い 光線・キラキラ →
        ①〜⑤ の ポニーの アップ（着いた時に ハートが とぶ）→ 最後の 大きな ハート（細かい ハートが のぼる）→ ボード → 白い 光。
@@ -299,11 +416,9 @@ def pc_layers(board_html):
         t_in = S[i]
         t_out = (S[i + 1] if i + 1 < len(S) else T['FIN']) - T['OUT']
         land = t_in + T['IN'] * .72
-        hv, mir = FACE[face]
-        head = img(f'pm_head_{hv}', mir)
-        art_html = (head + f'<div class="pmhj" style="animation-delay:{t_in + T["IN"] * .9:.2f}s">{img("pm_heart")}{img(f"pm_t{i}")}{img("pm_hoof")}</div>')
+        tree = pony_tree(i, face, t_in)
         scr += (f'<div class="pms" aria-hidden="true" style="animation:{enter_anim(frm)} {sec(T["IN"])} cubic-bezier(.25,.9,.35,1) {sec(t_in)} both,'
-                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards">{art_html}{veil(head + img("pm_heart") + img("pm_hoof"), t_in, T["IN"])}</div>'
+                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards"><div class="pmQ">{tree}</div>{veil(tree, t_in, T["IN"])}</div>'
                 f'<i class="pmr" style="--d:{sec(land)}"></i><div class="pml">{pop_hearts(cx, cy - 20, land, 14, 30 + i)}</div>')
     fx, fy = FIN_C
     bx, by = BURST_C
@@ -392,10 +507,12 @@ def pc_css():
   40%{{transform:translate(calc(var(--dx) * .7),calc(var(--dy) * .7)) scale(.9,1.1) rotate(calc(var(--r) * .55))}}
   58%{{transform:translate(calc(var(--dx) * .86),calc(var(--dy) * .86)) scale(1.06,.95) rotate(calc(var(--r) * .78))}}70%{{opacity:1}}
   100%{{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1) rotate(var(--r))}}}}
-/* ①〜⑤：止まった時に ハートと 字が ぷるんっ（前足で 上から 持っているので、持っている 所を 中心に 下が ぷるんっ。前足も いっしょ） */
-.ov.pm .pmhj{{position:absolute;inset:0;transform-origin:{HEART_C[0]:.0f}px {HEART_C[1] - HEART_S * .65:.0f}px;animation:pmHJ .62s ease-out both}}
-@keyframes pmHJ{{0%{{transform:none}}18%{{transform:scale(1.07,.92)}}38%{{transform:scale(.95,1.05)}}58%{{transform:scale(1.025,.98)}}78%{{transform:scale(.993,1.006)}}100%{{transform:none}}}}
-/* 最後：大きな ハートの ど的中（{sec(T['FIN'])}）→ {sec(T['RES'])} に 上へ 動いて ボード */
+/* ①〜⑤：ポニーの ぷるるん（体の つくりどおり：関節＝大きさ 0 の 箱 .pmJ を 中心に 回す・上下に はずむ。うしろ足は 動かない）。
+   まわりの 白い 光の ふちは 動く 絵に あわせて つける（.pmQ） */
+.ov.pm .pmJ{{position:absolute;width:0;height:0;transform-origin:0 0}}
+.ov.pm .pmM{{transform:scaleX(-1)}}
+.ov.pm .pmQ{{position:absolute;left:0;top:0;width:0;height:0;filter:drop-shadow(0 0 2px #FFFFFF) drop-shadow(0 0 6px rgba(255,255,255,.9))}}
+{pony_css()}/* 最後：大きな ハートの ど的中（{sec(T['FIN'])}）→ {sec(T['RES'])} に 上へ 動いて ボード */
 .ov.pm .pmf{{position:absolute;left:0;top:0;width:390px;height:844px;z-index:7;opacity:0;pointer-events:none;transform-origin:{FIN_C[0]:.0f}px {fy:.0f}px;
   animation:pmInC .5s cubic-bezier(.25,.9,.35,1) {sec(T['FIN'])} both,pmBeat .9s ease-in-out {sec(T['FIN'] + .5)} 2,pmUp .5s cubic-bezier(.3,.8,.3,1) {sec(T['RES'])} forwards}}
 @keyframes pmBeat{{0%,100%{{transform:none}}14%{{transform:scale(1.08,.93)}}30%{{transform:scale(.95,1.06)}}46%{{transform:scale(1.03,.97)}}62%{{transform:scale(.99,1.01)}}}}
