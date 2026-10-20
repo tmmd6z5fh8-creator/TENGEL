@@ -6,10 +6,10 @@
    - 描き方：形は SVG（librsvg）で 3倍の 大きさに ぬって、ふくらみ（ふちからの きょり → 高さ → 光の 当たり方）・つや・ふちの 赤・まわりの かげ・
      キラキラを numpy で 重ねる（左上から 光）
    - 出す 絵（すき通しの ある WebP・画面の 座標の きまった 箱に ぴったり）：
-       pm_head_R・pm_head_T・pm_head_W・pm_head_F：頭（右向き・やや右・やや右で 手前の 目を ウィンク・正面）と たてがみ・首・前足・
-         うしろ足（ハートの うしろ・下から 少し 見える 短い 足）。左向き・やや左は ページで 左右 うらがえす（箱は 画面の まん中で 左右 対称）。
+       pm_head_R・pm_head_T・pm_head_W・pm_head_F：頭（右向き・やや右・やや右で 手前の 目を ウィンク・正面）と たてがみ・首・
+         うしろ足（ハートの うしろ・下から 見える 関節の ある 短い 足）。左向き・やや左は ページで 左右 うらがえす（箱は 画面の まん中で 左右 対称）。
          頭は 3D の 形を 顔の 向きに 回して 描く（まさちゃん「顔もう少し細く！馬っぽく！目の位置ももっと自然にして！」：YAW・SKULL・CHEEK・SNOUT …）
-       pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：ハートの ふちを つかむ ひづめ（左右）
+       pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：ハートの ふちを つかむ 手（ひづめと ふわふわの 毛だけ・左右）
        pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
        pm_bg：パチンコの 大当たりのような 虹色の 背景 ／ pm_jelly：つやつやの ゼリーの ハート 6色（よこに ならべた 1まい）
    python3 flat/premium_art.py <出力フォルダ> [名前 …]   → <名前>.webp（名前を 書かなければ ぜんぶ）と、絵を おく 箱（画面の 座標）を
@@ -554,54 +554,54 @@ HEART_BOX = PC.HEART_BOX
 HOOF_BOX = PC.HOOF_BOX
 WU = 2 * HS / 350                                 # 頭の 部品の 数字は ハートの はば 350px の 時の 大きさ
 HEAD_K = 1.1 * WU                                 # 頭の 大きさ（まさちゃんの 絵より 1割 大きく：アップ）
-HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .6 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .6 * 2 * HS),
-              F=(HC[0], HC[1] - .6 * 2 * HS))                  # 頭の まん中（顔の 向きごと）
+HEAD_C = dict(R=(HC[0] - .1 * 2 * HS, HC[1] - .69 * 2 * HS), T=(HC[0] - .06 * 2 * HS, HC[1] - .69 * 2 * HS),
+              F=(HC[0], HC[1] - .69 * 2 * HS))                  # 頭の まん中（顔の 向きごと）
 HEAD_C['W'] = HEAD_C['T']
 HOOF_X, HOOF_Y, HOOF_R = .43 * 2 * HS, HC[1] - .03 * 2 * HS, .072 * 2 * HS    # ひづめ（ハートの まん中から 左右へ・高さ・大きさ）
 HEART_KY = .94                                    # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート）
 
 
-def arms(cv):
-    """前足（ハートの うしろから 左右の ふちを まわって ひづめへ：ハートの 外に 白い 前足が 少し 見える）"""
-    from art import limb
-    for side in (-1, 1):
-        X = lambda dx: HC[0] + side * dx
-        pts = [(X(HS * .78), HOOF_Y - 96), (X(HS * 1.0), HOOF_Y - 70), (X(HS * 1.06), HOOF_Y - 32), (X(HOOF_X + 10), HOOF_Y - 4)]
-        a = cv.mask(P(limb(pts, [38, 34, 31, 28])))
-        fur(cv, a, R=14, lw=2.4)
-
-
-LEG_X, LEG_Y0, LEG_Y1 = .2 * 2 * HS, HC[1] + 66, HC[1] + 160      # うしろ足（ハートの まん中から 左右へ・上の はし（ハートの うしろ）・ひづめの 下）
+LEG_X, LEG_Y0, LEG_KNEE, LEG_Y1 = .19 * 2 * HS, HC[1] + 70, HC[1] + 132, HC[1] + 180   # うしろ足：左右・上の はし（ハートの うしろ）・関節・ひづめの 下
 
 
 def legs(cv):
-    """うしろ足（ハートの 下から 少し 見える 短い 足：白い 毛・ピンクの ひづめ・ひづめに かぶさる ふわふわの 毛）。
-       まさちゃん「後ろ脚もいいサイズ感で入れて！この感じなら短い方がいいと思う！」（まさちゃんの 絵の うしろ足）"""
+    """うしろ足（ハートの 下から 見える 短い 足：関節（ひざ）で 少し 曲がる・白い 毛・ひづめに かぶさる ふわふわの 毛・ピンクの ひづめ）。
+       まさちゃん「後ろ脚もいいサイズ感で入れて！この感じなら短い方がいいと思う！」「脚は、せめて関節入れて！」（まさちゃんの 絵の うしろ足）"""
     from art import limb
-    body = cv.mask(P(oval(HC[0], HC[1] + 30, 118, 84)))           # おなか（ハートの うしろ・足の つけね）
-    fur(cv, body, R=36, lw=2.4)
     cuff = [(0, '#E7B3D2'), (.4, '#F7D9EA'), (.7, '#FFFFFF'), (1, '#FFFFFF')]
     for sd in (-1, 1):
         x = HC[0] + sd * LEG_X
-        y = LEG_Y1 - 30                                           # ふわふわの 毛の 上
-        a = cv.mask(P(limb([(x - sd * 6, LEG_Y0), (x - sd * 2, y + 4)], [48, 46], cap=False)))
+        top, knee, ank = (x - sd * 4, LEG_Y0), (x + sd * 10, LEG_KNEE), (x + sd * 2, LEG_Y1 - 26)
+        a = cv.mask(P(limb([top, knee], [36, 32], cap=False)) + P(limb([knee, ank], [26, 25], cap=False)) + P(oval(knee[0] + sd * 3, knee[1], 19, 17)))
         drop(cv, grow(a, cv.px(2.4)), k=.25)
-        fur(cv, a, R=16, lw=2.4)
-        hf = cv.mask(P(smooth([(x - 23, y + 12), (x + 23, y + 12), (x + 26, LEG_Y1 - 6), (x + 21, LEG_Y1), (x - 21, LEG_Y1), (x - 26, LEG_Y1 - 6)])))
+        fur(cv, a, R=12, lw=2.4)
+        # 関節（ひざ）：ふくらみの かげ・内がわの しわ・上の 光
+        cv.tint(np.clip(soft_ell(cv, knee[0] + sd * 3, knee[1] + 8, 18, 9, 0, 1.0) - soft_ell(cv, knee[0] + sd * 3, knee[1] + 2, 16, 10, 0, 1.0), 0, 1) * a,
+                hexc('#E2B4CF'), .9)
+        cr = stroke_mask(cv, f'M{f(knee[0] - sd * 14)} {f(knee[1] - 9)} Q{f(knee[0] - sd * 5)} {f(knee[1] + 1)} {f(knee[0] - sd * 12)} {f(knee[1] + 11)}', 2.4)
+        cv.put(hexc('#B97A9F'), cr * .9)
+        cv.put(hexc('#FFFFFF'), soft_ell(cv, knee[0] + sd * 6, knee[1] - 6, 7, 4, 0, .6) * .85 * a)
+        # ひづめ（うすい ピンク・つや）→ ひづめに かぶさる ふわふわの 毛
+        y = LEG_Y1 - 30
+        hf = cv.mask(P(smooth([(x - 21, y + 12), (x + 21, y + 12), (x + 24, LEG_Y1 - 6), (x + 19, LEG_Y1), (x - 19, LEG_Y1), (x - 24, LEG_Y1 - 6)])))
         shaded(cv, hf, cols=[(0, '#D66A9C'), (.35, '#EC98C0'), (.7, '#F8C6DD'), (1, '#FFEAF4')], R=6, lw=2.4, gloss=.6,
-               hl=[(x - 10, LEG_Y1 - 10, 7, 3.2, -8, .8)])
-        sc = [(x - 27, y + 4), (x - 21, y - 5), (x - 12, y - 1), (x - 4, y - 7), (x + 4, y - 1), (x + 13, y - 6), (x + 21, y - 1), (x + 27, y + 4),
-              (x + 28, y + 14), (x + 21, y + 20), (x + 13, y + 16), (x + 4, y + 21), (x - 4, y + 16), (x - 13, y + 21), (x - 21, y + 16), (x - 28, y + 14)]
+               hl=[(x - 9, LEG_Y1 - 10, 6.5, 3, -8, .8)])
+        sc = [(x - 24, y + 4), (x - 18, y - 5), (x - 10, y - 1), (x - 3, y - 7), (x + 4, y - 1), (x + 12, y - 6), (x + 19, y - 1), (x + 24, y + 4),
+              (x + 25, y + 13), (x + 19, y + 19), (x + 11, y + 15), (x + 3, y + 20), (x - 4, y + 15), (x - 12, y + 20), (x - 19, y + 15), (x - 25, y + 13)]
         m = cv.mask(P(smooth(sc)))
         drop(cv, grow(m, cv.px(2.2)), k=.25)
         fur(cv, m, R=8, lw=2.2, cols=cuff)
 
 
-def neck(cv, v):
-    """首と むね（白・ハートの うしろ。ハートの くぼみと 頭の 下に 見える）"""
+def neck(cv, v, th):
+    """首（白・頭の うしろから ハートの うしろへ。頭と ハートの あいだに 見える）。まさちゃん「全体的に、首がなく」"""
+    from art import limb
     hx, hy = HEAD_C[v]
-    a = cv.mask(P(oval(HC[0], HC[1] - 74, 110, 92)) + P(oval((hx + HC[0]) / 2, hy + 80 * HEAD_K, 58 * HEAD_K, 70 * HEAD_K)))
-    fur(cv, a, R=40, lw=2.4)
+    (nx, ny), _ = pr((0, 40, -18), th)
+    top = (hx + nx * HEAD_K, hy + ny * HEAD_K)
+    bot = (HC[0] + (top[0] - HC[0]) * .35, HC[1] - 30)
+    a = cv.mask(P(limb([top, ((top[0] + bot[0]) / 2, (top[1] + bot[1]) / 2), bot], [100 * HEAD_K, 108 * HEAD_K, 118 * HEAD_K])))
+    fur(cv, a, R=30, lw=2.6)
 
 
 # ---------------------------------------------------------------- 頭（3D の 形を 顔の 向きに 回して 描く：どの 向きでも 目・耳・鼻の 場所が 自然に そろう）
@@ -650,9 +650,8 @@ def head(v):
     th = math.radians(YAW[v])
     S = lambda p: (hx + p[0] * K, hy + p[1] * K)
     P3 = lambda p: S(pr(p, th)[0])
-    arms(cv)
     legs(cv)
-    neck(cv, v)
+    neck(cv, v, th)
     mane_back = YAW[v] < 10                       # 正面の 顔：たてがみは 頭の うしろ（顔に かからない）。ななめの 顔：手前の 首の がわなので 頭の ふちの 前
     if mane_back:
         for c, rx, ry, rot, sp in MANE:
@@ -818,18 +817,24 @@ def heart_layer():
 
 
 def hooves():
-    """ハートの 左右の ふちを つかむ ひづめ（うすい ピンクの つやつやの たまご形）"""
+    """ハートの 左右の ふちを つかむ 手（ひづめ）だけ：うすい ピンクの つやつやの たまご形・上に 小さな ふわふわの 毛（ハートの ふちの 中）。
+       まさちゃん「肩が出てて変、手の奥にある身体がおかしい手は手だけでいいよ！」"""
     cv = Cv(HOOF_BOX)
-    from art import limb
+    cuff = [(0, '#E7B3D2'), (.4, '#F7D9EA'), (.7, '#FFFFFF'), (1, '#FFFFFF')]
     for side in (-1, 1):
         x, y = HC[0] + side * HOOF_X, HOOF_Y
-        # 手首（ハートの ふちの 外から ひづめへ：白い 毛）
-        w = cv.mask(P(limb([(HC[0] + side * (HS * 1.05), y - 34), (HC[0] + side * (HS * .99), y - 20), (x + side * 9, y - 9)], [28, 27, 25])))
         hm = cv.mask(P(oval(x, y, HOOF_R * .9, HOOF_R * 1.08, side * -24)))
-        cv.put(hexc('#6E1030'), blur(np.roll(np.roll(grow(np.maximum(w, hm), cv.px(2.6)), int(cv.px(3)), 0), int(cv.px(side * 1.5)), 1), cv.px(3)) * .32)
-        fur(cv, w, R=10, lw=2.4)
+        # ふわふわの 毛（ひづめの すぐ 上：ひづめと 同じ 向き・下の ふちが ぎざぎざ）
+        R0 = HOOF_R
+        pts = [(-.78, .1), (-.82, -.32), (-.5, -.62), (0, -.7), (.5, -.62), (.82, -.32), (.78, .1),
+               (.6, .3), (.4, .16), (.2, .34), (0, .2), (-.2, .34), (-.4, .16), (-.6, .3)]
+        sc = tf([(px * R0, py * R0) for px, py in pts], x, y - R0 * .78, 1.0, side * -24)
+        cm = cv.mask(P(smooth(sc)))
+        cv.put(hexc('#6E1030'), blur(np.roll(np.roll(grow(np.maximum(hm, cm), cv.px(2.6)), int(cv.px(3)), 0), int(cv.px(side * 1.5)), 1), cv.px(3)) * .32)
         gloss_ball(cv, x, y, HOOF_R * .9, HOOF_R * 1.08, side * -24, cols=[(0, '#D66A9C'), (.35, '#EC98C0'), (.7, '#F8C6DD'), (1, '#FFEAF4')],
-                   lw=2.6, sh=.45)
+                   lw=2.6, sh=0)
+        drop(cv, grow(cm, cv.px(2.2)), k=.3)
+        fur(cv, cm, R=7, lw=2.2, cols=cuff)
     return cv
 
 
