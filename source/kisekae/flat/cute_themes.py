@@ -294,52 +294,50 @@ def hat_on_head(m, wid, hgt, col, colD, band, bandD, flop=True, brim=0.0, at=0.7
     return out
 
 
-# トナカイの 角（ふわふわの 布の角）：角の 根もと 0,0 から、(上へ, 前へ) を 角の長さを 1 として。幹（まん中の 太い所）と 枝3本（前へ 2本・上の うしろへ 1本）
-ANTLER_BEAM = ((0, 0), (0.50, -0.14), (0.85, -0.10), (1.0, 0.04))
-ANTLER_TINES = (((0.30, -0.10), (0.48, 0.14)), ((0.62, -0.14), (0.82, 0.10)), ((0.86, -0.10), (0.94, -0.26)))
+# トナカイの 角（ふわふわの 布の角）：角の 根もと 0,0 から、(上へ, 前へ) を 角の長さを 1 として。
+# まさちゃんの 絵（「こうして！」）のとおり：幹は 前へ たおれて まっすぐ のび（先は 少し 前へ まがる）、枝は 2本とも 前へ よこに のびる
+ANTLER_BEAM = ((0, 0), (0.45, -0.03), (0.8, 0.0), (1.0, 0.07))
+ANTLER_TINES = (((0.30, -0.02), (0.53, 0.33)), ((0.56, -0.02), (0.74, 0.25)))
 
 
 def antler(base, up, fwd, L, w, col, hi=None):
-    """トナカイの 角 1本（線を 太く まるく つないだ形）。hi：前がわの 明るい すじ（なければ なし）"""
+    """トナカイの 角 1本（太い まるい線：幹と 枝2本）。hi：前がわの 明るい すじ（なければ なし）"""
     P = lambda a, b: base + up * a * L + fwd * b * L
     out = [stroke(smooth([P(*q) for q in ANTLER_BEAM], closed=False), col, w)]
     for a0, a1 in ANTLER_TINES:
-        out.append(stroke(smooth([P(*a0), P((a0[0] + a1[0]) / 2 + 0.02, (a0[1] + a1[1]) / 2 - 0.02), P(*a1)], closed=False), col, w * 0.82))
+        out.append(stroke(smooth([P(*a0), P(*a1)], closed=False), col, w * 0.85))
     if hi:
-        off = fwd * w * 0.22 - up * w * 0.05
-        out.append(stroke(smooth([P(*q) + off for q in ANTLER_BEAM[1:]], closed=False), hi, w * 0.3, 'opacity=".9"'))
-        for a0, a1 in ANTLER_TINES[:2]:
-            out.append(stroke(smooth([P(a0[0] + 0.06, a0[1] + 0.06) + off, P(*a1) + off * 0.6], closed=False), hi, w * 0.26, 'opacity=".9"'))
+        off = fwd * w * 0.24
+        out.append(stroke(smooth([P(*q) + off for q in ANTLER_BEAM[1:]], closed=False), hi, w * 0.28, 'opacity=".9"'))
+        for a0, a1 in ANTLER_TINES:
+            mid = ((a0[0] + a1[0]) / 2, (a0[1] + a1[1]) / 2)
+            out.append(stroke(smooth([P(*mid), P(*a1)], closed=False), hi, w * 0.24, 'opacity=".85"'))
     return out
 
 
-def antler_band(m, L=0.46, w=0.075, back=0.10, lean=8.0, col='#C99358', colD='#A06D3C', hi='#EBC089', band='#D7323A', bandD='#A9232B', bw=0.05):
-    """トナカイの カチューシャ（まさちゃん「馬やっぱり帽子じゃなくて、トナカイのカチューシャにして！」）：
-       耳の すぐ うしろ（うなじの上）に 赤い カチューシャ・その上に ふわふわの トナカイの角 2本（手前は 明るい色・奥は 少し暗い色で 手前の角の うしろ）。
-       耳は かくさない（角は 耳の うしろ）。角の向きは 頭の向きから 決める（首を のばす コマでも 頭と いっしょに かたむく）。
-       L・w：角の長さ・太さ（m）・back：角の根もとを うなじから うしろへ ずらす（m）・lean：角の かたむき（頭の うしろ向きから 前へ 何度 起こすか）。
-       もどり値 (頭の上に かく部品＝カチューシャと 手前の角, 奥の角＝たてがみの上・顔の下に かく：首を のばして 頭が 下がっても たてがみに かくれない)"""
+def antler_band(m, L=0.62, w=0.072, lean=66.0, at=(0.012, 0.057), band_pts=((0.04, -0.057), (0.072, -0.175)),
+                col='#C99358', hi='#EBC089', band='#D7323A', bandD='#A9232B', bw=0.045):
+    """トナカイの カチューシャ（まさちゃん「馬やっぱり帽子じゃなくて、トナカイのカチューシャにして！」→ 絵を そえて「こうして！」）：
+       頭の上（耳の すぐ前・前髪の 上）に ふわふわの トナカイの角を 1本、前へ たおして 立てる（枝は 2本とも 前へ）。
+       赤い カチューシャは 角の 根もとから 耳の 根もとの 前を 通って、目の うしろの 下（のど革の 上）まで。耳は かくさない（角の うしろ＝左）。
+       L・w：角の長さ・太さ（m）・lean：角の かたむき（頭の うしろ向き（鼻先 → うなじ）から 前へ 何度 たおすか）・
+       at：角の根もと（頭の目印 hp の (s, w)）・band_pts：カチューシャの 下の点（hp の (s, w)）・bw：カチューシャの はば（m）。
+       角も カチューシャも 頭の 目印から 置くので、首を のばす コマでも 頭と いっしょに 動いて かたむく。もどり値は 頭の上に かく 部品"""
     p, fx = m['p1u'], m['fx']
+    hp, P1, zz = m['hp'], m['P1'], 0.094 * m['side']
     bk = -unit(m['head_dir'])                                  # 頭の うしろ（鼻先 → うなじ）
     nm = V(-bk[1], bk[0]) * fx                                 # ひたいの 向き
     a = math.radians(lean)
     up = unit(bk * math.cos(a) + nm * math.sin(a))
     fw = V(-up[1], up[0]) * fx                                 # 角の 前（顔の 向き）
-    base = m['poll'] - fw * back * p
-    a2 = math.radians(lean - 8)                                # 奥の角：少し うしろへ・少し 小さく・少し 暗い色
-    up2 = unit(bk * math.cos(a2) + nm * math.sin(a2))
-    fw2 = V(-up2[1], up2[0]) * fx
-    base2 = base - fw * 0.07 * p - up * 0.01 * p
-    far = antler(base2, up2, fw2, L * 0.94 * p, w * p, colD)
-    hp, P1, zz = m['hp'], m['P1'], 0.094 * m['side']
-    bpts = [base + fw * 0.01 * p + up * 0.01 * p, P1(hp(0.03, -0.07, zz)), P1(hp(0.07, -0.15, zz))]   # カチューシャ：角の根もとから 頭の うしろがわを 下へ
-    head = [stroke(smooth(bpts, closed=False), bandD, bw * 1.25 * p), stroke(smooth(bpts, closed=False), band, bw * p)]
-    head += antler(base, up, fw, L * p, w * p, col, hi)
-    return head, far
+    base = np.asarray(P1(hp(at[0], at[1], zz)), float)
+    bpts = [base] + [np.asarray(P1(hp(s_, w_, zz)), float) for s_, w_ in band_pts]
+    out = [stroke(smooth(bpts, closed=False), bandD, bw * 1.25 * p), stroke(smooth(bpts, closed=False), band, bw * p)]
+    return out + antler(base, up, fw, L * p, w * p, col, hi)
 
 
 def acc_xmas(m):
-    """トナカイの カチューシャ（耳の うしろに 赤い カチューシャと ふわふわの 角 2本）・赤と緑の綱に 金の鈴（首）・布のすみに ひいらぎ"""
+    """トナカイの カチューシャ（頭の上に 前へ たおれた ふわふわの 角と、角の 根もとから 頭の 横を 下りる 赤い カチューシャ）・赤と緑の綱に 金の鈴（首）・布のすみに ひいらぎ"""
     p, fx = m['p1u'], m['fx']
     top, bot, ax = m['collar'](0.12)
     dv = unit(bot - top)
@@ -351,11 +349,11 @@ def acc_xmas(m):
     out += [circ(bell, br, '#F2C14E'), circ(bell + V(-br * 0.3, -br * 0.3), br * 0.33, '#FFF0B8'),
             stroke(f'M{f2(bell[0] - br * 0.7)},{f2(bell[1] + br * 0.29)} H{f2(bell[0] + br * 0.7)}', '#9A6A14', 0.018 * p),
             circ(bell + V(0, br * 0.6), br * 0.17, '#7A4A10')]
-    # 頭：トナカイの カチューシャ（まさちゃん「馬やっぱり帽子じゃなくて、トナカイのカチューシャにして！」）。
+    # 頭：トナカイの カチューシャ（まさちゃん「馬やっぱり帽子じゃなくて、トナカイのカチューシャにして！」→ 絵を そえて「こうして！」：
+    #     はじめは 耳の うしろに 角2本（うしろへ たおれる）だったのを、耳の 前に 1本・前へ たおして 枝も 前へ に した）。
     #     まえは サンタの帽子（hat_on_head：at 0.75・tilt −12・back 0.12・hang (0.19, 0.12)・sink 0・curve 0.018）
-    head, far = antler_band(m)
     cloth = holly(cloth_corner(m), 0.085 * p)
-    return dict(neck=out + far, head=head, cloth=cloth)
+    return dict(neck=out, head=antler_band(m), cloth=cloth)
 
 
 def acc_halloween(m):
