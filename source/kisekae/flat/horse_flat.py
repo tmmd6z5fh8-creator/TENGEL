@@ -23,6 +23,7 @@ from throat_fix import slim_throat
 
 S3 = 3
 HEAD_SC = 1.14
+NECK_STOP = 3                   # 首を下げた時の 首の かざりの 下のはし：首の まん中の線で この数（41点の）より 頭がわの所に入ったら止める（out_before_neck）
 
 # ポーズ（near＝手前の足・far＝奥の足。向きに合わせて L／R に入れかえる）
 POSES = {
@@ -284,15 +285,33 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     crest = Hm.bez(S['crest'], np.linspace(0, 1, 41))
     throat = Hm.bez(S['throat'], np.linspace(0, 1, 41))
     bent = bool(pose.get('neck_bend'))                                   # 首を下げている（草を食べる馬）
+    neck_mid = (crest + throat) / 2                                      # 首の まん中の線（世界の xy・41点）
+
+    def out_before_neck(p, d, i, step=0.5, maxn=800):
+        """first_out と同じ。ただし 首の i より 頭がわ（NECK_STOP より先）の 所に入ったら そこで止める
+           （首を下げると、のどがわへ まっすぐ進む線が 下げた首の中を通って 頭まで行ってしまうので。
+            首が その線に かからない うちは first_out と 同じ所で止まる＝首を下げはじめても かざりが とばない）"""
+        H3_, W3_ = inside.shape
+        d = unit(d)
+        q = np.asarray(p, float)
+        last = q.copy()
+        for _ in range(maxn):
+            xi, yi = int(round(q[0])), int(round(q[1]))
+            if not (0 <= xi < W3_ and 0 <= yi < H3_) or not inside[yi, xi]:
+                return last
+            if int(np.argmin(((neck_mid - Pn[yi, xi, :2]) ** 2).sum(1))) > i + NECK_STOP:
+                return last
+            last = q.copy()
+            q = q + d * step
+        return last
 
     def collar(t_):
         """首の t のところの、上のふち・下のふち（1倍）と首にそった向き（頭がわ）"""
         i = int(round(np.clip(t_, 0, 1) * 40))
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
         top = first_out(inside, (c3 + th3) / 2, c3 - th3) / s
-        if bent:   # 首を下げた時：のどがわへ まっすぐ進むと 下げた首の中を通って 頭まで行ってしまう → のどの線の少し先で止める
-            lim = int((np.linalg.norm(th3 - c3) / 2 + 0.03 * ppu) / 0.5)
-            bot = first_out(inside, (c3 + th3) / 2, th3 - c3, maxn=lim) / s
+        if bent:   # 首を下げた時：下げた首の中に入る所で止める（out_before_neck）
+            bot = out_before_neck((c3 + th3) / 2, th3 - c3, i) / s
         else:
             bot = first_out(inside, (c3 + th3) / 2, th3 - c3) / s
         j = min(40, i + 2)

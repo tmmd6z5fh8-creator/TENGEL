@@ -1,18 +1,20 @@
-"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 前足を動かしたり、首を下げて 草を食べたりする
-   （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」）
-   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体と うしろ足と しっぽは 動かさない
-   - コマ（47まい・名前と順は ../step_plan.py）：首を上げた形・首を下げていく とちゅう（11）・首を下げた形（草を食べる頭の動き 3）・
-     首を上げたまま／下げたまま 手前／奥の前足を上げていく形（8ずつ）。首は 根元から まげて 少しのばす（r3d/horse3d.py の neck_bend・neck_len）
+"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 首を下げて 草を食べる（足は 4本とも 動かさない）
+   （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」
+    →「やっぱり4枚とも前脚も動かさなくていいよ！ あと首の動きもっとスムーズにして！」）
+   - 馬は いまの絵と同じ馬（horse_flat・同じ色と飾り・同じカメラ）。体と 足と しっぽは 動かさない（紅葉・お正月は 前足を上げた いまの形のまま）
+   - コマ（名前と順は ../step_plan.py）：首を上げた形（いまの絵）・首を下げていく とちゅう・首を下げた形・草を食べる頭の動き。
+     首は 根元から まげて 少しのばす（r3d/horse3d.py の neck_bend・neck_len）。とちゅうの コマの 下げぐあいは、頭の動く道のりが 同じ はばになるように
+     えらぶ（lower_levels：コマを めくる はやさが 動きの はやさに合う＝なめらか）
    - いつ どのコマを出すか（時間わり）は ../step_plan.py（きまった種の ランダム・約2分の くり返し）。ページの CSS は ../step_wall.py
-   - コマ0は いまの絵と同じ（1画素もちがわない）：桜・雪は 立っている形、紅葉・お正月は 手前の前足を上げた形
+   - コマ0は いまの絵と同じ（1画素もちがわない）
    - コマは いまの絵を描くのと同じ流れ（flat/<テーマ>_banner.py）で、馬のポーズだけ かえて描く（背景・手前の花びらなど・影も同じ）。
      動く所（すべてのコマの ちがう所を まとめた四角）だけ 切りぬいて、たて・よこに並べた1まい（シート）にする：
        桜・紅葉・雪 … すき通しなし（背景ごと）。いまの絵の上に重ねる
        お正月 … 光より前の絵（すき通しつき）の 切りぬき。光より前の絵は その四角を すき通しにした1まい（top_hole）も作る（光が うしろで回るので）
    python3 flat/step_run.py --cams <step_cams.json>                 → 4つの馬の いまのカメラ（3倍の絵で決める・約1分）
-   python3 flat/step_run.py --check [テーマ…]                        → ひづめ（うしろ足と 地面についている前足が 動かない・上げた足が 地面より下に行かない）と 鼻先の高さ（描かない）
+   python3 flat/step_run.py --check [テーマ…]                        → 足（4本の ひづめが 動かない）と 首を下げた時の 鼻先の高さ・下げぐあい（描かない）
    python3 flat/step_run.py --preview <テーマ> <out.png> <step_cams.json> [コマの名前…]  → 馬だけを 1倍で描いた一覧（形を決めるため・速い）
-   python3 flat/step_run.py --frames <テーマ> <コマのフォルダ> <step_cams.json> [コマの番号…]  → コマ（PNG）を描く（コマ0を先に・sdfr がいる・1コマ 約15〜30秒）
+   python3 flat/step_run.py --frames <テーマ> <コマのフォルダ> <step_cams.json> [コマの番号…]  → コマ（PNG）を描く（コマ0を先に・sdfr がいる・1コマ 約13秒）
    python3 flat/step_run.py --sheet <テーマ> <コマのフォルダ> <出力フォルダ> <step_run.json>  → <テーマ>_step.webp（シート）・お正月は newyear_top_hole.webp も・step_run.json に置く場所
    （コマ0は いまの絵と同じ書き出し方で 1バイトもちがわない：桜・紅葉・雪の いまの WebP・お正月の 光より前の WebP）"""
 import sys, os, math, json, runpy, copy
@@ -31,70 +33,28 @@ COLS = 8                         # シートの よこの コマ数
 PAD = 2                          # シートの コマの まわりの のりしろ（絵の画素・画面の1px）
 EDGE_REACH = 16                  # 切りぬく四角の へりを 外へ ずらして よい はば（絵の画素）
 LEGS = ('fore_near', 'fore_far', 'hind_near', 'hind_far')
+NOD = (5.0, 10.0)                # 草を食べる頭の動き（いちばん上）：首のまげ（°）と 頭の角度（°）に たす
 
-# 前足を上げた いちばん上の形（4つの骨の向き°・horse3d の角度）
-F_WALK = POSES['walk']['fore_near']            # ひざを曲げて 前へ（紅葉の いまの絵の 上げた足）
-F_PRANCE = POSES['prance']['fore_near']        # 高く（お正月の いまの絵の 上げた足）
-EX = (2.0, .6, .8, 2.0)                        # 上げぐあい s の べき（骨ごと：上 → 下）。小さいほど 先に動く（ひざが先・ひづめは あとで たたむ）
-K_DOWN = 0.65                                  # 首を下げている時は 前足を 少し低く上げる（peak までの わりあい）
-NIB = {0: (0.0, 0.0), 1: (2.0, 5.0), 2: (4.0, 8.0)}    # 草を食べる頭の動き：首のまげ（°）と 頭の角度（°）に たす
-
-# テーマごと：いまの絵のポーズ（base）・地面につく形（plant：いまの絵で上げている足だけ）・前足を上げた形（peak）と 上げる大きさ（k：1＝peak まで）・
-#   首を下げた形（down：首のまげ°・首ののばし・頭の角度°。鼻先が 前足の 約0.8m前の 地面の すぐ上に来る）
+# テーマごと：いまの絵のポーズ（base）・首を下げた形（down：首のまげ°・首ののばし・頭の角度°。鼻先が 前足の 約0.8m前の 地面の すぐ上に来る）
 THEMES = {
-    'sakura': dict(base='stand', facing='left', peak=F_WALK, k=.8, down=(-98.0, 1.20, -92.0)),
-    'snow': dict(base='stand', facing='left', peak=F_WALK, k=.8, down=(-98.0, 1.20, -92.0)),
-    'autumn': dict(base='walk', facing='right', plant={'fore_near': [-124, -91, -90, -60]}, peak=F_WALK, k=1.0, down=(-96.0, 1.20, -92.0)),
-    'newyear': dict(base='prance', facing='left', plant={'fore_near': [-120, -94, -90, -62]}, peak=F_PRANCE, k=1.0, down=(-108.0, 1.30, -90.0)),
+    'sakura': dict(base='stand', facing='left', down=(-98.0, 1.20, -92.0)),
+    'snow': dict(base='stand', facing='left', down=(-98.0, 1.20, -92.0)),
+    'autumn': dict(base='walk', facing='right', down=(-96.0, 1.20, -92.0)),
+    'newyear': dict(base='prance', facing='left', down=(-108.0, 1.30, -90.0)),
 }
 
 
-def ease(u):
-    """0 → 1（はじめと おわりは ゆっくり）"""
-    return 0.5 - 0.5 * math.cos(math.pi * max(0.0, min(1.0, u)))
-
-
-def parse(fn):
-    """コマの名前 → (首の下げぐあい 0〜1, 頭の動き 0〜2, 上げる前足 or None, 上げぐあい 0〜1)"""
-    if fn == 'U0':
-        return 0.0, 0, None, 0.0
-    if fn[0] == 'L':
-        return int(fn[1:]) / SP.LOWER_N, 0, None, 0.0
-    if fn in ('D0', 'D1', 'D2'):
-        return 1.0, int(fn[1]), None, 0.0
-    head = 0.0 if fn[0] == 'U' else 1.0
-    leg = 'fore_near' if fn[1] == 'N' else 'fore_far'
-    return head, 0, leg, ease(int(fn[2:]) / SP.LIFT_N)
-
-
-def pose_of(name, fn):
-    """コマの名前の ポーズ（horse_flat の POSES と同じ形の dict）"""
+def pose_at(name, p, q=0.0):
+    """首の下げぐあい p（0〜1）・草を食べる頭の動き q（0〜1）の ポーズ（horse_flat の POSES と同じ形の dict）。p＝q＝0 は いまの絵"""
     th = THEMES[name]
     P = POSES[th['base']]
     out = {k: (list(v) if isinstance(v, list) else v) for k, v in P.items()}
-    for leg, v in th.get('plant', {}).items():
-        out[leg] = list(v)
-    head, nib, leg, s = parse(fn)
-    if head > 0:
+    if p > 0 or q > 0:
         Bd, Ld, Hd = th['down']
-        e, eh = ease(head), ease(head) ** 1.25            # 頭の向きは 少し おくれて 下を向く
-        db, dh = NIB[nib]
-        out['neck_bend'] = round(Bd * e + db, 3)
-        out['neck_len'] = round(1 + (Ld - 1) * e, 4)
-        out['head_ang'] = round(P['head_ang'] + (Hd - P['head_ang']) * eh + dh, 3)
-    if leg:
-        plant = out[leg]
-        k = th['k'] if head == 0 else K_DOWN
-        peak = [p + (q - p) * k for p, q in zip(plant, th['peak'])]
-        out[leg] = [round(p + (q - p) * s ** ex, 3) for p, q, ex in zip(plant, peak, EX)]
+        out['neck_bend'] = round(Bd * p + NOD[0] * q, 4)
+        out['neck_len'] = round(1 + (Ld - 1) * p, 5)
+        out['head_ang'] = round(P['head_ang'] + (Hd - P['head_ang']) * p ** 1.25 + NOD[1] * q, 4)   # 頭は 少し おくれて 下を向く
     return out
-
-
-def first_pose_is_now(name):
-    """コマ0の ポーズが いまの絵の ポーズと 同じか"""
-    P = POSES[THEMES[name]['base']]
-    q = pose_of(name, SP.frames(name)[0])
-    return all(q[k] == P[k] for k in P) and set(q) == set(P)
 
 
 def skel(pose, facing):
@@ -106,31 +66,75 @@ def skel(pose, facing):
     return Hm.skeleton(full), near, far
 
 
+def head_marks(name, p):
+    """首の下げぐあい p の時の 頭と首の 目印（世界の xy）：鼻先・うなじ・首の上と下の まん中"""
+    S, _, _ = skel(pose_at(name, p), THEMES[name]['facing'])
+    pts = [Hm.head_pt(S, 0.60, -0.03), S['poll'], Hm.bez(S['crest'], np.array([0.5]))[0], Hm.bez(S['throat'], np.array([0.5]))[0]]
+    return np.array([np.asarray(v, float)[:2] for v in pts])
+
+
+def lower_levels(name, n=SP.LOWER_N):
+    """首を下げていく とちゅうの コマ（L1〜L{n−1}）の 下げぐあい：頭と首の 目印の いちばん大きく動く所の 道のりが 同じ はばに なるように
+       （コマの あいだの 動きが どこでも 同じくらい＝なめらか）。小数5けた"""
+    ps = np.linspace(0, 1, 801)
+    m = np.array([head_marks(name, p) for p in ps])
+    step = np.linalg.norm(np.diff(m, axis=0), axis=2).max(1)
+    d = np.concatenate([[0], np.cumsum(step)])
+    lv = np.interp(np.linspace(0, d[-1], n + 1), d, ps)[1:-1]
+    return [round(float(v), 5) for v in lv]
+
+
+_LV = {}
+
+
+def levels(name):
+    if name not in _LV:
+        _LV[name] = lower_levels(name)
+    return _LV[name]
+
+
+def parse(name, fn):
+    """コマの名前 → (首の下げぐあい p, 頭の動き q)"""
+    if fn == 'U0':
+        return 0.0, 0.0
+    if fn[0] == 'L':
+        return levels(name)[int(fn[1:]) - 1], 0.0
+    if fn == 'D0':
+        return 1.0, 0.0
+    return 1.0, int(fn[1:]) / SP.NOD_N
+
+
+def pose_of(name, fn):
+    """コマの名前の ポーズ"""
+    return pose_at(name, *parse(name, fn))
+
+
+def first_pose_is_now(name):
+    """コマ0の ポーズが いまの絵の ポーズと 同じか"""
+    P = POSES[THEMES[name]['base']]
+    q = pose_of(name, SP.frames(name)[0])
+    return all(q[k] == P[k] for k in P) and set(q) == set(P)
+
+
 def check(name):
-    """うしろ足・地面についている前足の ひづめが 動かないか・上げた ひづめが 地面より下に行かないか・鼻先の高さ（首を下げた時）"""
+    """4本の ひづめが 動かないか・首を下げた時の 鼻先の高さ・下げぐあいの はば"""
     th = THEMES[name]
-    fr = SP.frames(name)
     ref, near, far = skel(pose_of(name, 'U0'), th['facing'])
     key = {'fore_near': 'F' + near, 'fore_far': 'F' + far, 'hind_near': 'H' + near, 'hind_far': 'H' + far}
     g0 = {leg: np.asarray(ref[key[leg]]['hf'], float) for leg in LEGS}
     ground = min(v[1] for v in g0.values())
-    worst = dict(moved=0.0, below=0.0, hi=0.0, mz_lo=9.0, mz_hi=-9.0)
-    for fn in fr:
+    moved, mz = 0.0, []
+    for fn in SP.frames(name):
         S, _, _ = skel(pose_of(name, fn), th['facing'])
-        _, _, lifted, _ = parse(fn)
         for leg in LEGS:
-            h = np.asarray(S[key[leg]]['hf'], float)
-            if leg == lifted:
-                worst['below'] = min(worst['below'], h[1] - g0[leg][1])
-                worst['hi'] = max(worst['hi'], h[1] - g0[leg][1])
-            else:
-                worst['moved'] = max(worst['moved'], float(np.abs(h - g0[leg]).max()))
-        if parse(fn)[0] == 1.0:
-            mz = np.asarray(Hm.head_pt(S, 0.60, -0.03), float)
-            worst['mz_lo'] = min(worst['mz_lo'], mz[1] - ground)
-            worst['mz_hi'] = max(worst['mz_hi'], mz[1] - ground)
-    print(f'{name}: コマ0＝いまの絵 {first_pose_is_now(name)}・地面の足の ずれ max {worst["moved"]:.6f} m・上げた ひづめ 高さ max {worst["hi"]:.3f} m'
-          f'（地面より下 {worst["below"]:.4f} m）・首を下げた時の 鼻先 {worst["mz_lo"]:.3f}〜{worst["mz_hi"]:.3f} m（地面から）')
+            moved = max(moved, float(np.abs(np.asarray(S[key[leg]]['hf'], float) - g0[leg]).max()))
+        if parse(name, fn)[0] == 1.0:
+            mz.append(float(np.asarray(Hm.head_pt(S, 0.60, -0.03), float)[1] - ground))
+    lv = [0.0] + levels(name) + [1.0]
+    m = np.array([head_marks(name, p) for p in lv])
+    stp = np.linalg.norm(np.diff(m, axis=0), axis=2).max(1)
+    print(f'{name}: コマ0＝いまの絵 {first_pose_is_now(name)}・ひづめの ずれ max {moved:.6f} m・首を下げた時の 鼻先 {min(mz):.3f}〜{max(mz):.3f} m（地面から）'
+          f'・コマの あいだの 動き {stp.min() * 100:.2f}〜{stp.max() * 100:.2f} cm（{len(lv) - 1} だんかい）')
 
 
 def ref_cams(out_json):
@@ -338,19 +342,20 @@ def make_sheet(name, frdir, outdir, run_json):
         top = fr[0].copy()
         top[y0 + P:y1 - P, x0 + P:x1 - P, 3] = 0       # ふちの P は のこす（3倍の画面で 穴のふちが すけない。そこは シートと同じ絵）・色も のこす
         Image.fromarray(top, 'RGBA').save(f'{outdir}/{name}_top_hole.webp', 'WEBP', quality=90, method=6)
-    k, (T, _, _) = SP.plan(name)
-    loop_ms, tl = SP.timeline(name, k=k)
+    k, _ = SP.plan(name)
+    loop_ms, tl = SP.timeline(name, levels(name), k=k)
     run = json.load(open(run_json)) if os.path.exists(run_json) else {}
-    run[name] = dict(frames=N, names=fns, cols=COLS, rows=rows, cell=[cw, ch], pad=P, at=[int(x0), int(y0)], size=[W, Hh],
+    run[name] = dict(frames=N, names=fns, lower=levels(name), cols=COLS, rows=rows, cell=[cw, ch], pad=P, at=[int(x0), int(y0)], size=[W, Hh],
                      plan=dict(seed=SP.SEEDS[name], k=k, loop_ms=loop_ms, changes=len(tl)))
     txt = json.dumps(run, ensure_ascii=False, indent=1)
-    for nm in run:                                     # コマの名前の並びは 1行に
-        if 'names' in run[nm]:
-            txt = txt.replace(json.dumps(run[nm]['names'], ensure_ascii=False, indent=1).replace('\n', '\n  '),
-                              json.dumps(run[nm]['names'], ensure_ascii=False))
+    for nm in run:                                     # コマの名前・下げぐあいの 並びは 1行に
+        for key in ('names', 'lower'):
+            if key in run[nm]:
+                txt = txt.replace(json.dumps(run[nm][key], ensure_ascii=False, indent=1).replace('\n', '\n  '),
+                                  json.dumps(run[nm][key], ensure_ascii=False))
     open(run_json, 'w').write(txt)
     kb = os.path.getsize(f'{outdir}/{name}_step.webp') / 1024
-    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', {k_: v for k_, v in run[name].items() if k_ != 'names'})
+    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', {k_: v for k_, v in run[name].items() if k_ not in ('names', 'lower')})
 
 
 if __name__ == '__main__':

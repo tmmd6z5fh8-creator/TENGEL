@@ -6,7 +6,7 @@
    claude.ai のキャンバスは、アップロードした SVG の <style> を消してしまうので、キャンバスの判定画面には じかに入れる（inline・動きの CSS はページの <style>）：
      python3 sakura.py <出力フォルダ>                                → sakura_fall.svg（ファイルの形・<style>つき・390×160・背景なし）
      python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html>  → ＋判定画面の上の絵を「絵＋花びら」の形に書きかえる
-     python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が ときどき 前足を動かしたり 首を下げて 草を食べたりする（step_wall.py）"""
+     python3 sakura.py <出力フォルダ> --judge <Judge_Sakura.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が ときどき 首を下げて 草を食べる（step_wall.py）"""
 import sys, os, math, re, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -79,7 +79,7 @@ def inline(blob, alt=ALT, p='sb', step=None):
         s = s.replace(f'id="{i}"', f'id="{p}{i}"').replace(f'url(#{i})', f'url(#{p}{i})')
     s = s.replace(' xmlns="http://www.w3.org/2000/svg"', '')
     hh, hc = '', ''
-    if step is not None:                             # 馬が ときどき 前足を動かしたり 草を食べたりする（step_wall.py・コマは flat/step_run.py・時間わりは step_plan.py）
+    if step is not None:                             # 馬が ときどき 首を下げて 草を食べる（step_wall.py・コマは flat/step_run.py・時間わりは step_plan.py）
         import step_wall
         hh, hc = step_wall.sprite('sakura', *step)
         alt = step_wall.alt_with(alt)

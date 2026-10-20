@@ -1,20 +1,22 @@
-"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 前足を動かしたり、首を下げて 草を食べたりする
-   （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」）：
+"""桜・紅葉・雪・お正月の壁紙の馬が、ときどき 首を下げて 草を食べる（足は 4本とも 動かさない）
+   （まさちゃんの指定「この4枚の壁紙後ろ脚動かさない 前足は、6秒〜9秒のランダムで2回動かす。ゆったり 1秒〜5秒のランダムで、地面の草を食べる5秒〜10秒でリピートする。」
+    →「やっぱり4枚とも前脚も動かさなくていいよ！ あと首の動きもっとスムーズにして！」）：
    ページに入れる HTML と CSS（コマの絵は flat/step_run.py・時間わりは step_plan.py）。
-   - 動く所だけ切りぬいた コマ（47コマ）を たて・よこに並べた1まい（シート）を、いまの絵の上の 同じ場所に重ねて、
+   - 動く所だけ切りぬいた コマ（55コマ）を たて・よこに並べた1まい（シート）を、いまの絵の上の 同じ場所に重ねて、
      CSS の keyframes で めくる（step-end：つぎの時まで そのコマ。同じコマの時は まとめて1つに書く）。
      時間わりは きまった種の ランダム（約2分で くり返し・つなぎめも 決まりどおり）。ページを開くと コマ0（いまの絵と同じ）から。
      シートの コマの まわりには のりしろ（pad：絵の となりの画素）があって、見えるのは まん中の四角だけ（3倍の画面で となりのコマが にじまない）
    - 桜・紅葉・雪：シートは 背景ごと（すき通しなし）。視差効果を減らす（prefers-reduced-motion）なら シートを消して いまの絵のまま
    - お正月：シートは 光より前の絵の 切りぬき（すき通しつき）で、光より前の絵は その四角を すき通しにした1まい（top）に かえる
      （光が うしろで回るので）。視差効果を減らすなら めくらない（コマ0＝いまの絵）
-   - キャンバスの id は step_blobs.json（テーマごとに sheet・お正月は top も）・置く場所と大きさ・時間わりの種は step_run.json（flat/step_run.py --sheet が書く）
+   - キャンバスの id は step_blobs.json（テーマごとに sheet・お正月は top も）・置く場所と大きさ・首の下げぐあい（lower）・時間わりの種は step_run.json
+     （flat/step_run.py --sheet が書く）
    クラスの名前は テーマごとに skh（桜）・mjh（紅葉）・ykh（雪）・nyh（お正月）"""
 import json
 import step_plan
 
 PREFIX = dict(sakura='skh', autumn='mjh', snow='ykh', newyear='nyh')
-ALT_ADD = '・馬が ときどき 前足を ゆっくり動かしたり 首を下げて 草を食べたりする'
+ALT_ADD = '・馬が ときどき 首を下げて 草を食べる'
 
 
 def alt_with(alt):
@@ -32,7 +34,7 @@ def keyframes(theme, run):
     """(くり返しの ミリ秒, keyframes の中身)：コマごとに、そのコマを出す時（%）を まとめて translate を1つ"""
     r = run[theme]
     assert r['names'] == step_plan.frames(theme), 'コマの名前が step_plan とちがう（コマを描きなおす）'
-    T_ms, tl = step_plan.timeline(theme, seed=r['plan']['seed'], k=r['plan']['k'])
+    T_ms, tl = step_plan.timeline(theme, r['lower'], seed=r['plan']['seed'], k=r['plan']['k'])
     assert T_ms == r['plan']['loop_ms'] and len(tl) == r['plan']['changes'], '時間わりが step_run.json とちがう'
     cols = r['cols']
     cw, ch = (v // 2 for v in r['cell'])
