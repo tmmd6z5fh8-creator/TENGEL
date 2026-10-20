@@ -341,24 +341,22 @@ def skull(s=1.0):
     return g(''.join(b[k] for k in SKULL_ORDER), s=s)
 
 
-JAW_Y = -12.0                         # ドクロの あごの 上の線（これより下が あご：ハロウィンの 動く壁紙で カタカタ うごかす）
+JAW_Y = -6.5                          # ドクロの 口が ひらく 線（歯の まん中：まさちゃんの スクショの 黄色い線。上の歯は あたま・下の歯は あご）
 
 
 def skull_laugh(cid):
-    """笑う ドクロ（ハロウィンの 動く壁紙：halloween_wall.py）の 部品：mouth（口の中・あごが さがると 見える）・jaw（あご＋歯）・
-       head（あたま：目は ＾＾ に 細める）。あごと あたまは いまの形を JAW_Y で 上下に 切ったもの（cid：切りぬきの id の 頭）。
-       あごは 上へ 2 のばして あたまの 下に かくす（切れ目に すきまが 見えないように）"""
+    """笑う ドクロ（ハロウィンの 動く壁紙：halloween_wall.py）の 部品：jaw（あご：下の歯と、あごが さがると 見える 口の中）・
+       head（あたま：上の歯まで。目は そのまま＝まさちゃん「笑う時目は笑わないで！」）。どちらも いまの形を JAW_Y（歯の まん中）で 上下に 切ったもの
+       （cid：切りぬきの id の 頭）。あごは 上へ 1 のばして あたまの 下に かくす（切れ目に すきまが 見えないように）。
+       口の中は あごの 上の はしの 上に つけて、あごと いっしょに 動く（とじている時は あたまに かくれる）"""
     b = skull_bits()
-    hole = SKULL_COL['hole']
+    still = ''.join(b[k] for k in SKULL_ORDER)
     up, dn = f'{cid}U', f'{cid}D'
+    top = JAW_Y - 1                                             # あごの 上の はし（あたまの 下に 1 かくれる）
     defs = (f'<defs><clipPath id="{up}"><rect x="-30" y="-60" width="60" height="{f(60 + JAW_Y)}"/></clipPath>'
-            f'<clipPath id="{dn}"><rect x="-30" y="{f(JAW_Y - 2)}" width="60" height="{f(4 - JAW_Y)}"/></clipPath></defs>')
-    o = {}
-    o['mouth'] = defs + rect(-12.5, JAW_Y - 1, 25, 11, hole, 3) + ell(0, JAW_Y + 6.5, 6, 2.6, '#C2405E', extra='opacity=".9"')
-    o['jaw'] = f'<g clip-path="url(#{dn})">{b["bone"]}{b["shade"]}</g>{b["teeth"]}'
-    eyes = line('M-15.5,-27.5 Q-9,-38 -2.5,-27.5', hole, 4.2) + line('M2.5,-27.5 Q9,-38 15.5,-27.5', hole, 4.2)
-    o['head'] = f'<g clip-path="url(#{up})">{b["bone"]}{b["shade"]}</g>{eyes}{b["nose"]}'
-    return o
+            f'<clipPath id="{dn}"><rect x="-30" y="{f(top)}" width="60" height="{f(4 - top)}"/></clipPath></defs>')
+    inside = rect(-13.5, top - 6, 27, 6.2, SKULL_COL['hole'], 1.5)  # 口の中（あごが 6 まで さがっても すきまを うめる）
+    return dict(jaw=defs + inside + f'<g clip-path="url(#{dn})">{still}</g>', head=f'<g clip-path="url(#{up})">{still}</g>')
 
 
 PUMPKIN_ORDER = ('glow', 'body', 'stem', 'eyes', 'nose', 'mouth')
@@ -400,16 +398,11 @@ def pumpkin(w=60.0, h=46.0, face=True, glow=True, look=0.0):
 
 
 def pumpkin_laugh(w=60.0, h=46.0, look=0.0):
-    """笑う ジャック・オー・ランタンの 顔（ハロウィンの 動く壁紙：halloween_wall.py）：eyes（＾＾ に 細めた 光る目）・nose・
-       mouth（大きく あけた 口：上の歯 2本）。mouth_top：口の 上の線の 高さ（口を ぱくぱく させる 中心）"""
+    """笑う ジャック・オー・ランタンの 口（ハロウィンの 動く壁紙：halloween_wall.py）：mouth（大きく あけた 口：上の歯 2本）。
+       目と 鼻は いまの まま（まさちゃん「笑う時目は笑わないで！」）。mouth_top：口の 上の線の 高さ（口を ぱくぱく させる 中心）"""
     c, O = PUMPKIN_FACE, '#F28A1E'
-    cy = -h * 0.55
-    sw = f(max(h * 0.085, 2.2))
-    o = {}
-    o['eyes'] = ''.join(f'<path d="M{f(look + sx * w * 0.06 - w * 0.0)},{f(cy - h * 0.02)} Q{f(look + sx * w * 0.16)},{f(cy - h * 0.3)} {f(look + sx * w * 0.26)},{f(cy - h * 0.02)}" '
-                        f'fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>' for sx in (-1, 1))
-    o['nose'] = path(f'M{f(look - w * 0.03)},{f(cy + h * 0.06)} L{f(look)},{f(cy + h * 0.0)} L{f(look + w * 0.03)},{f(cy + h * 0.06)} Z', c)
     top = -h * 0.33
+    o = {}
     o['mouth'] = (path(f'M{f(look - w * 0.3)},{f(top)} Q{f(look)},{f(top + h * 0.05)} {f(look + w * 0.3)},{f(top)} '
                        f'Q{f(look + w * 0.27)},{f(top + h * 0.3)} {f(look)},{f(top + h * 0.31)} Q{f(look - w * 0.27)},{f(top + h * 0.3)} {f(look - w * 0.3)},{f(top)} Z', c)
                   + rect(look - w * 0.14, top - 0.5, w * 0.08, h * 0.09, O, 1) + rect(look + w * 0.06, top - 0.5, w * 0.08, h * 0.09, O, 1))

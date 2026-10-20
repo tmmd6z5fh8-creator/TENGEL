@@ -5,7 +5,8 @@
      ドクロなし：flat/halloween_banner.py を HALLOWEEN_BASE=1）・馬の 首と頭の コマ（flat/halloween_run.py のシート・背景ごと 切りぬいた・すき通しなし）・
      ドラキュラ（flat/event_art.py の vampire_bits を 部品ごとに <g> で包んだ SVG：止まっている時は いまの絵と同じ形・同じ場所。マントは 左右の 半分を
      うでと いっしょに 肩を 中心に まわして、羽のように はばたかせる）・顔のある かぼちゃ3つと ドクロ（pumpkin_bits・skull_bits：止まっている時は
-     いまの絵と同じ。笑う時は pumpkin_laugh・skull_laugh の 顔に かえて、ぴょこぴょこ はねる・かぼちゃは 口を ぱくぱく・ドクロは あごを カタカタ）
+     いまの絵と同じ。笑う時は ぴょこぴょこ はねて、かぼちゃは 大きく あけた 口（pumpkin_laugh）を ぱくぱく・ドクロは 歯の まん中で 口を ひらいて
+     あごを カタカタ（skull_laugh）。目は どちらも そのまま＝まさちゃん「笑う時目は笑わないで！」）
    - 8〜11秒ごと（GAP・ばらばら）に 1回。10回ぶん（N_EV）で1回り（いつも同じ予定：schedule）。10回のうち 2回（N_UP：5回に1回）は うまく 飛べる回
      1回の中の 時刻（秒）：
        ふつうの回（n）：0〜0.18 しゃがんで マントを 上げる → 0.18〜 マントを 羽のように パタパタ（0.28秒に1回）・1.5秒までに 少しだけ 上へ →
@@ -45,7 +46,7 @@ PUMPKINS = ((560.0, 306.0, 78.0, 58.0, -4.0), (640.0, 310.0, 54.0, 40.0, 3.0), (
 SKULL_AT, SKULL_S = (690.0, 308.0), 1.05
 # 笑う時の はねかた：(はじまりの おくれ 秒, 1回の 秒, はねる 高さ, かたむき 度)。かぼちゃ 560・640・216・ドクロ（ドクロの あごは JAW_PER ごとに カタカタ）
 LAUGHERS = ((0.00, 0.26, 5.0, 4.0), (0.06, 0.22, 4.0, 5.0), (0.10, 0.24, 4.0, 6.0), (0.03, 0.25, 3.0, 6.0))
-JAW, JAW_PER = 4.5, 0.17                      # ドクロの あごが さがる はば・カタカタ 1回の 秒
+JAW, JAW_PER = 5.0, 0.17                      # ドクロの あごが さがる はば（口の すきまは 1 へらした 4）・カタカタ 1回の 秒
 
 # ---- 1回の中の 時刻（秒）
 T_PREP = 0.18                    # しゃがんで マントを 上げる
@@ -395,7 +396,7 @@ def jaw_keys(typ):
 
 
 def laugh_steps(typ):
-    """笑う顔に かえる（Pf＝いつもの かぼちゃの顔・Pl＝笑う顔・Ks＝いつもの ドクロ・Kl＝笑う ドクロ）"""
+    """笑う口に かえる（Pf＝いつもの かぼちゃの口・Pl＝笑う口・Ks＝いつもの ドクロ・Kl＝口を ひらく ドクロ。目は そのまま）"""
     tl = T_LAND[typ]
     t1 = tl + LAUGH + 0.1
     return dict(Pf=[(0, 1), (tl, 0), (t1, 1)], Pl=[(0, 0), (tl, 1), (t1, 0)], Ks=[(0, 1), (tl, 0), (t1, 1)], Kl=[(0, 0), (tl, 1), (t1, 0)])
@@ -528,9 +529,9 @@ def pumpkin_svg(i):
     lf = A.pumpkin_laugh(w, h, look)
     top = lf['mouth_top']
     glow = re.sub(r'pkg\d+', f'hlG{i}', b['glow'])
-    laugh = (lf['eyes'] + lf['nose'] + f'<g transform="translate(0 {num(top)})"><g class="hlPm{i}"><g transform="translate(0 {num(-top)})">{lf["mouth"]}</g></g></g>')
-    return (f'<g transform="translate({num(x)} {num(y)})"><g class="hlJ{i}">{glow}{b["body"]}{b["stem"]}'
-            f'<g class="hlPf">{b["eyes"]}{b["nose"]}{b["mouth"]}</g><g class="hlPl">{laugh}</g></g></g>')
+    laugh = f'<g transform="translate(0 {num(top)})"><g class="hlPm{i}"><g transform="translate(0 {num(-top)})">{lf["mouth"]}</g></g></g>'
+    return (f'<g transform="translate({num(x)} {num(y)})"><g class="hlJ{i}">{glow}{b["body"]}{b["stem"]}{b["eyes"]}{b["nose"]}'
+            f'<g class="hlPf">{b["mouth"]}</g><g class="hlPl">{laugh}</g></g></g>')
 
 
 def skull_svg():
@@ -538,7 +539,7 @@ def skull_svg():
     lf = A.skull_laugh('hlK')
     still = ''.join(b[k] for k in A.SKULL_ORDER)
     return (f'<g transform="translate({num(SKULL_AT[0])} {num(SKULL_AT[1])}) scale({num(SKULL_S)})"><g class="hlJ3">'
-            f'<g class="hlKs">{still}</g><g class="hlKl">{lf["mouth"]}<g class="hlKj">{lf["jaw"]}</g>{lf["head"]}</g></g></g>')
+            f'<g class="hlKs">{still}</g><g class="hlKl"><g class="hlKj">{lf["jaw"]}</g>{lf["head"]}</g></g></g>')
 
 
 def scene_svg():
