@@ -72,66 +72,112 @@ def shadow(cx, cy, rx, ry, col, op):
 
 
 # ------------------------------------------------------------------ 人（ちびキャラ：足もとが 0,0・前向き）
-def face(skin, eye='#3A2A22', blush='#F59AA0', happy=True, y=0.0, mouth=True, look=0.0):
-    """顔の中（頭のまん中が 0,y）：目・ほお・口"""
-    o = ''
+def face_parts(skin, eye='#3A2A22', blush='#F59AA0', happy=True, y=0.0, mouth=True, look=0.0):
+    """顔の中（頭のまん中が 0,y）の 部品：(目, ほお, 口)。face() は この3つを つないだもの"""
+    eyes = ''
     if happy:
         for sx in (-1, 1):
             x = sx * 9.5 + look
-            o += line(f'M{f(x - 4.6)},{f(y + 1.4)} Q{f(x)},{f(y - 4.4)} {f(x + 4.6)},{f(y + 1.4)}', eye, 2.6)
+            eyes += line(f'M{f(x - 4.6)},{f(y + 1.4)} Q{f(x)},{f(y - 4.4)} {f(x + 4.6)},{f(y + 1.4)}', eye, 2.6)
     else:
         for sx in (-1, 1):
             x = sx * 9.5 + look
-            o += ell(x, y, 3.4, 4.4, eye) + circ(x + 1.2, y - 1.6, 1.3, '#FFFFFF')
-    o += ell(-16 + look, y + 7.5, 4.8, 3.2, blush, extra='opacity=".75"') + ell(16 + look, y + 7.5, 4.8, 3.2, blush, extra='opacity=".75"')
-    if mouth:
-        o += line(f'M{f(-3.6 + look)},{f(y + 9)} Q{f(look)},{f(y + 12.6)} {f(3.6 + look)},{f(y + 9)}', '#B24A4A', 2.0)
-    return o
+            eyes += ell(x, y, 3.4, 4.4, eye) + circ(x + 1.2, y - 1.6, 1.3, '#FFFFFF')
+    cheeks = ell(-16 + look, y + 7.5, 4.8, 3.2, blush, extra='opacity=".75"') + ell(16 + look, y + 7.5, 4.8, 3.2, blush, extra='opacity=".75"')
+    m = line(f'M{f(-3.6 + look)},{f(y + 9)} Q{f(look)},{f(y + 12.6)} {f(3.6 + look)},{f(y + 9)}', '#B24A4A', 2.0) if mouth else ''
+    return eyes, cheeks, m
+
+
+def face(skin, eye='#3A2A22', blush='#F59AA0', happy=True, y=0.0, mouth=True, look=0.0):
+    """顔の中（頭のまん中が 0,y）：目・ほお・口"""
+    return ''.join(face_parts(skin, eye, blush, happy, y, mouth, look))
+
+
+SANTA_ORDER = ('pantsL', 'pantsR', 'bootL', 'bootR', 'shine', 'sleeveW', 'sleeveG', 'coat', 'handW',
+               'skin', 'eyes', 'cheeks', 'nose', 'beard', 'stache', 'mouth', 'brows', 'hat', 'gift', 'handG')
+
+
+def santa_bits(gift=True):
+    """サンタさんの 部品（名前 → SVG）。santa() は SANTA_ORDER の順に つないだもの（いまの絵と1バイトも ちがわない）。
+       クリスマスの 動く壁紙（xmas_wall.py）は 部品ごとに <g> で包んで 動かす"""
+    red, redD, fur, furD, skin, skinD = '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0', '#FFDCC4', '#F2BFA4'
+    b = dict.fromkeys(SANTA_ORDER, '')
+    # 足（ブーツ）・ズボン
+    b['pantsL'], b['pantsR'] = rect(-24, -38, 20, 26, redD, 4), rect(4, -38, 20, 26, redD, 4)
+    b['bootL'], b['bootR'] = rect(-27, -17, 25, 17, '#2A2224', 7), rect(2, -17, 25, 17, '#2A2224', 7)
+    b['shine'] = rect(-24, -15, 8, 4, '#FFFFFF', 2, 'opacity=".25"')
+    # うで（プレゼントの手は 体の前）・上着
+    b['sleeveW'] = line('M30,-104 Q48,-120 54,-146', redD, 19)               # ふる手（右）：そで
+    if gift:                                                                # プレゼントの手（左）：そでは 上着の 横（胸の高さ）から 外へ（つけねは 上着の下）
+        b['sleeveG'] = line('M-24,-96 Q-46,-97 -60,-88', redD, 19)
+    b['coat'] = (path('M-36,-34 Q-46,-78 -30,-112 Q0,-122 30,-112 Q46,-78 36,-34 Z', red)
+                 + path('M2,-118 Q30,-114 36,-34 L2,-34 Z', redD, 'opacity=".35"')
+                 + rect(-40, -44, 80, 15, fur, 7.5) + rect(-40, -36, 80, 7, furD, 3.5, 'opacity=".7"')
+                 + rect(-6, -112, 12, 72, fur, 6)
+                 + rect(-37, -74, 74, 11, '#2B2224', 3) + rect(-10, -77, 20, 17, 'none', 3, 'stroke="#F2C14E" stroke-width="3.4"'))
+    b['handW'] = (circ(56, -150, 11, fur) + circ(56, -150, 11, furD, 'opacity=".25"') + ell(57, -161, 9.5, 8, '#FFFFFF')     # そでの白・手ぶくろ
+                  + ell(63, -165, 3.5, 6, '#FFFFFF', rot=30))
+    # あたま
+    b['skin'] = circ(0, -140, 28, skin) + path('M14,-160 Q30,-148 26,-126 Q20,-140 14,-160 Z', skinD, 'opacity=".6"')
+    b['eyes'], b['cheeks'], _ = face_parts(skin, y=-147, mouth=False)
+    b['nose'] = circ(0, -138, 5.4, '#F49C88') + circ(-1.6, -140, 1.6, '#FFFFFF', 'opacity=".8"')
+    # ひげ（ふわふわ）・口ひげ・まゆ
+    beard = 'M-27,-140 Q-34,-112 -20,-100 Q-12,-88 0,-90 Q12,-88 20,-100 Q34,-112 27,-140 Q16,-126 0,-128 Q-16,-126 -27,-140 Z'
+    b['beard'] = path(beard, fur) + path('M0,-90 Q12,-88 20,-100 Q34,-112 27,-140 Q22,-118 0,-104 Z', furD, 'opacity=".6"')
+    for x, y, r in ((-24, -114, 7), (-17, -100, 7.5), (-6, -93, 7.5), (6, -93, 7.5), (17, -100, 7.5), (24, -114, 7)):
+        b['beard'] += circ(x, y, r, fur)
+    b['stache'] = ell(-8.5, -131, 10, 5.6, fur, rot=-14) + ell(8.5, -131, 10, 5.6, fur, rot=14)
+    b['mouth'] = path('M-2,-130 Q0,-126 2,-130', 'none', 'stroke="#C9D2DC" stroke-width="1.4"')
+    b['brows'] = line('M-14,-155 Q-9.5,-158.5 -5,-155', '#FFFFFF', 3.2) + line('M5,-155 Q9.5,-158.5 14,-155', '#FFFFFF', 3.2)
+    # ぼうし（先が 右へ たれる・白い玉）
+    b['hat'] = (path('M-29,-160 Q-22,-206 12,-212 Q40,-214 52,-190 L44,-186 Q34,-200 16,-196 Q20,-178 29,-160 Z', red)
+                + path('M16,-196 Q34,-200 44,-186 L52,-190 Q42,-208 20,-210 Z', redD, 'opacity=".5"')
+                + rect(-33, -170, 66, 16, fur, 8) + rect(-33, -160, 66, 6, furD, 3, 'opacity=".6"')
+                + circ(51, -186, 10, fur) + circ(48, -189, 3.5, '#FFFFFF'))
+    if gift:                                                                # プレゼント（左手に のせて 前に さしだす）
+        gx, gy = -82, -124                                                  # 箱（はば38・高さ32）：手の上に のせる
+        b['gift'] = (rect(gx - 19, gy, 38, 32, '#2E8C5A', 4) + rect(gx + 4, gy, 15, 32, '#246F47', 3, 'opacity=".6"')
+                     + rect(gx - 4, gy, 8, 32, '#F2C14E') + rect(gx - 21, gy - 7, 42, 11, '#3BA66C', 3) + rect(gx - 4, gy - 7, 8, 11, '#F2C14E')
+                     + path(f'M{gx},{gy - 7} Q{gx - 16},{gy - 22} {gx - 14},{gy - 8} Z', '#F2C14E')
+                     + path(f'M{gx},{gy - 7} Q{gx + 16},{gy - 22} {gx + 14},{gy - 8} Z', '#F2C14E'))
+        b['handG'] = (circ(-61, -88, 10.5, fur) + circ(-61, -88, 10.5, furD, 'opacity=".25"')   # そでの 白い ふち
+                      + ell(-73, -91, 10.5, 7.5, '#FFFFFF') + ell(-73, -88.5, 9, 4, furD, extra='opacity=".5"'))   # 手ぶくろ（箱の 底を 下から ささえる）
+    return b
 
 
 def santa(gift=True):
     """サンタさん（前向き・右手を ふる・左手に プレゼントを のせて さしだす）。足もと 0,0・高さ 約200"""
-    red, redD, fur, furD, skin, skinD = '#D7323A', '#A9232B', '#FFFFFF', '#E4E9F0', '#FFDCC4', '#F2BFA4'
-    o = ''
-    # 足（ブーツ）・ズボン
-    o += rect(-24, -38, 20, 26, redD, 4) + rect(4, -38, 20, 26, redD, 4)
-    o += rect(-27, -17, 25, 17, '#2A2224', 7) + rect(2, -17, 25, 17, '#2A2224', 7)
-    o += rect(-24, -15, 8, 4, '#FFFFFF', 2, 'opacity=".25"')
-    # うで（プレゼントの手は 体の前）・上着
-    o += line('M30,-104 Q48,-120 54,-146', redD, 19)                       # ふる手（右）：そで
-    if gift:                                                                # プレゼントの手（左）：そでは 上着の 横（胸の高さ）から 外へ（つけねは 上着の下）
-        o += line('M-24,-96 Q-46,-97 -60,-88', redD, 19)
-    o += path('M-36,-34 Q-46,-78 -30,-112 Q0,-122 30,-112 Q46,-78 36,-34 Z', red)
-    o += path('M2,-118 Q30,-114 36,-34 L2,-34 Z', redD, 'opacity=".35"')
-    o += rect(-40, -44, 80, 15, fur, 7.5) + rect(-40, -36, 80, 7, furD, 3.5, 'opacity=".7"')
-    o += rect(-6, -112, 12, 72, fur, 6)
-    o += rect(-37, -74, 74, 11, '#2B2224', 3) + rect(-10, -77, 20, 17, 'none', 3, 'stroke="#F2C14E" stroke-width="3.4"')
-    o += circ(56, -150, 11, fur) + circ(56, -150, 11, furD, 'opacity=".25"') + ell(57, -161, 9.5, 8, '#FFFFFF')     # そでの白・手ぶくろ
-    o += ell(63, -165, 3.5, 6, '#FFFFFF', rot=30)
-    # あたま
-    o += circ(0, -140, 28, skin) + path('M14,-160 Q30,-148 26,-126 Q20,-140 14,-160 Z', skinD, 'opacity=".6"')
-    o += face(skin, y=-147, mouth=False)
-    o += circ(0, -138, 5.4, '#F49C88') + circ(-1.6, -140, 1.6, '#FFFFFF', 'opacity=".8"')
-    # ひげ（ふわふわ）・口ひげ・まゆ
-    beard = 'M-27,-140 Q-34,-112 -20,-100 Q-12,-88 0,-90 Q12,-88 20,-100 Q34,-112 27,-140 Q16,-126 0,-128 Q-16,-126 -27,-140 Z'
-    o += path(beard, fur) + path('M0,-90 Q12,-88 20,-100 Q34,-112 27,-140 Q22,-118 0,-104 Z', furD, 'opacity=".6"')
-    for x, y, r in ((-24, -114, 7), (-17, -100, 7.5), (-6, -93, 7.5), (6, -93, 7.5), (17, -100, 7.5), (24, -114, 7)):
-        o += circ(x, y, r, fur)
-    o += ell(-8.5, -131, 10, 5.6, fur, rot=-14) + ell(8.5, -131, 10, 5.6, fur, rot=14)
-    o += path('M-2,-130 Q0,-126 2,-130', 'none', 'stroke="#C9D2DC" stroke-width="1.4"')
-    o += line('M-14,-155 Q-9.5,-158.5 -5,-155', '#FFFFFF', 3.2) + line('M5,-155 Q9.5,-158.5 14,-155', '#FFFFFF', 3.2)
-    # ぼうし（先が 右へ たれる・白い玉）
-    o += path('M-29,-160 Q-22,-206 12,-212 Q40,-214 52,-190 L44,-186 Q34,-200 16,-196 Q20,-178 29,-160 Z', red)
-    o += path('M16,-196 Q34,-200 44,-186 L52,-190 Q42,-208 20,-210 Z', redD, 'opacity=".5"')
-    o += rect(-33, -170, 66, 16, fur, 8) + rect(-33, -160, 66, 6, furD, 3, 'opacity=".6"')
-    o += circ(51, -186, 10, fur) + circ(48, -189, 3.5, '#FFFFFF')
-    if gift:                                                                # プレゼント（左手に のせて 前に さしだす）
-        gx, gy = -82, -124                                                  # 箱（はば38・高さ32）：手の上に のせる
-        o += rect(gx - 19, gy, 38, 32, '#2E8C5A', 4) + rect(gx + 4, gy, 15, 32, '#246F47', 3, 'opacity=".6"')
-        o += rect(gx - 4, gy, 8, 32, '#F2C14E') + rect(gx - 21, gy - 7, 42, 11, '#3BA66C', 3) + rect(gx - 4, gy - 7, 8, 11, '#F2C14E')
-        o += path(f'M{gx},{gy - 7} Q{gx - 16},{gy - 22} {gx - 14},{gy - 8} Z', '#F2C14E') + path(f'M{gx},{gy - 7} Q{gx + 16},{gy - 22} {gx + 14},{gy - 8} Z', '#F2C14E')
-        o += circ(-61, -88, 10.5, fur) + circ(-61, -88, 10.5, furD, 'opacity=".25"')   # そでの 白い ふち
-        o += ell(-73, -91, 10.5, 7.5, '#FFFFFF') + ell(-73, -88.5, 9, 4, furD, extra='opacity=".5"')   # 手ぶくろ（箱の 底を 下から ささえる）
+    b = santa_bits(gift)
+    return ''.join(b[k] for k in SANTA_ORDER)
+
+
+def drop_d(s=1.0):
+    """汗の しずく（先が上・まん中が 0,0・高さ 約 12s）"""
+    return (f'M0,{f(-7 * s)} C{f(2.6 * s)},{f(-3.2 * s)} {f(4.6 * s)},{f(-0.4 * s)} {f(4.6 * s)},{f(2.2 * s)} '
+            f'A{f(4.6 * s)},{f(4.6 * s)} 0 0 1 {f(-4.6 * s)},{f(2.2 * s)} C{f(-4.6 * s)},{f(-0.4 * s)} {f(-2.6 * s)},{f(-3.2 * s)} 0,{f(-7 * s)} Z')
+
+
+def drop(x, y, s=1.0):
+    return g(path(drop_d(), '#86CDF7') + ell(-1.6, 0.6, 1.3, 2.2, '#FFFFFF', rot=20, extra='opacity=".85"'), x, y, s)
+
+
+def santa_fx():
+    """クリスマスの 動く壁紙（xmas_wall.py）で サンタさんに たす 絵（santa() と同じ 足もと 0,0 の座標）：
+       あせった目（まるく あける）・あけた口・こめかみの汗・とびちる汗・びくっの線・走る線・💨 の けむり（まん中 0,0）"""
+    eye = '#3A2A22'
+    o = {}
+    o['eyesOpen'] = ''.join(ell(sx * 9.5, -147, 3.8, 5.0, eye) + circ(sx * 9.5 + 1.3, -148.9, 1.45, '#FFFFFF') for sx in (-1, 1))
+    o['mouthOpen'] = ell(0, -122.5, 4.8, 5.8, '#8A2E35') + ell(0, -119.8, 3.0, 2.4, '#E58A8A')
+    o['sweat'] = drop(30, -150, 0.9)
+    o['burst'] = ''.join(line(f'M{f(math.cos(math.radians(a)) * 50)},{f(-150 + math.sin(math.radians(a)) * 50)} '
+                              f'L{f(math.cos(math.radians(a)) * 63)},{f(-150 + math.sin(math.radians(a)) * 63)}', '#FFFFFF', 3.4)
+                         for a in (196, 214, 232))
+    o['speed'] = ''.join(line(f'M{f(x0)},{f(y)} L{f(x0 + w)},{f(y)}', '#FFFFFF', 3, 'opacity=".85"')
+                         for x0, y, w in ((-104, -146, 28), (-112, -100, 36), (-100, -54, 24)))
+    puff = [(-12, 0, 9), (0, -4.5, 11), (12, 0, 8), (2, 4, 8.5)]
+    o['puff'] = (''.join(circ(x, y, r + 1.6, '#94ABC8') for x, y, r in puff) + ''.join(circ(x, y, r, '#FFFFFF') for x, y, r in puff)
+                 + ''.join(ell(x, y + r * 0.45, r * 0.62, r * 0.3, '#E4ECF6') for x, y, r in puff)
+                 + line('M20,-6 L31,-6', '#94ABC8', 2.4) + line('M18,5 L27,5', '#94ABC8', 2.4))
     return o
 
 

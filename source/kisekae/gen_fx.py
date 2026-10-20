@@ -57,7 +57,7 @@ THEMED = dict(
     hit_silver=dict(base='hit', tid='silver', banner='silver', push='ag', fonts=BY_ID['silver']['fonts']),   # シルバー帯：シルバーでできたPUSH（めちゃくちゃ輝く）・壁紙の銀の馬の像が いつも キラキラ
     hit_golden=dict(base='hit', tid='golden', banner='golden', push='au', fonts=BY_ID['golden']['fonts']),   # ゴールド帯：ゴールドでできたPUSH（めちゃくちゃ輝く）・壁紙の金の馬の像が いつも 金に キラキラ
     hit_tengel=dict(base='hit', tid='tengel', banner='tengel', push='tg', fonts=BY_ID['tengel']['fonts']),   # マスター帯：説明書の上の絵と 同じ 長方形の テンゲルの PUSHが 緑の雷を まとう・壁紙は アイコンの馬は 動かさず（元の絵）、数字が動き、緑の雷が 枠じゅう ビリビリ
-    hit_xmas=dict(base='hit', tid='xmas', banner='xmas', push='xm', fonts=BY_ID['xmas']['fonts']),   # クリスマス：クリスマスツリーのPUSH・壁紙は 止まった絵（push_events.py）
+    hit_xmas=dict(base='hit', tid='xmas', banner='xmas', push='xm', fonts=BY_ID['xmas']['fonts']),   # クリスマス：クリスマスツリーのPUSH（push_events.py）・壁紙は いつも雪が降って、ときどき 馬が プレゼントを 食べようとして サンタさんが 逃げる（xmas_wall.py）
     hit_halloween=dict(base='hit', tid='halloween', banner='halloween', push='hw', fonts=BY_ID['halloween']['fonts']),   # ハロウィン：かぼちゃのPUSH・壁紙は 止まった絵
     hit_valentine=dict(base='hit', tid='valentine', banner='valentine', push='vl', fonts=BY_ID['valentine']['fonts']),   # バレンタイン：チョコのPUSH・壁紙は 止まった絵
     hit_whiteday=dict(base='hit', tid='whiteday', banner='whiteday', push='wd', fonts=BY_ID['whiteday']['fonts']),   # ホワイトデー：マシュマロのPUSH・壁紙は 止まった絵
@@ -148,14 +148,17 @@ def theme_banner(name):
     if name == 'sea':                     # 海：絵は flat/sea_run.py の4まい（キャンバスの id は sea_blobs.json・大きさは sea_run.json）
         import sea_wall
         return sea_wall.inline(json.load(open(f'{K}/sea_blobs.json')), json.load(open(f'{K}/sea_run.json')))
-    if name in EVENTS:                    # 行事の4テーマ（クリスマス・ハロウィン・バレンタイン・ホワイトデー）：壁紙は 止まった絵（キャンバスの id は blobs20.json・絵の説明は themes20.py の alt）
+    if name == 'xmas':                    # クリスマス：止まった絵（blobs20.json）・動く時の 下の絵と 馬の コマの シート（flat/xmas_run.py・キャンバスの id は xmas_blobs.json・置く場所は xmas_run.json）・サンタさんと 雪は ページの SVG（xmas_wall.py）
+        import xmas_wall
+        return xmas_wall.inline(xmas_wall.load_blobs(f'{K}/xmas_blobs.json'), json.load(open(f'{K}/xmas_run.json')))
+    if name in EVENTS:                    # 行事の3テーマ（ハロウィン・バレンタイン・ホワイトデー）：壁紙は 止まった絵（キャンバスの id は blobs20.json・絵の説明は themes20.py の alt）
         from themes20 import THEMES as T20
         t = next(x for x in T20 if x['id'] == name)
         return f'<img class="bnr" src="/_blob/{json.load(open(f"{K}/blobs20.json"))[name]}" alt="{t["alt"]}">', ''
     raise KeyError(name)
 
 
-EVENTS = ('xmas', 'halloween', 'valentine', 'whiteday')
+EVENTS = ('xmas', 'halloween', 'valentine', 'whiteday')   # 行事の4テーマ（クリスマスの壁紙は 動く：theme_banner の xmas）
 
 # 馬番の枠の色（12頭のレース）
 WAKU = {1: 'w1', 2: 'w2', 3: 'w3', 4: 'w3', 5: 'w4', 6: 'w4', 7: 'w5', 8: 'w5', 9: 'w6', 10: 'w6', 11: 'w7', 12: 'w8'}

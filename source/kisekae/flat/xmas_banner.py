@@ -2,7 +2,8 @@
    雪の夜（星・月・遠くの町の あかり・降る雪）に、左に クリスマスツリー（金の星・玉・あかり・プレゼント）、
    まん中に サンタの帽子をかぶった 鹿毛の競走馬（赤と緑の綱に 金の鈴・白いふちの 赤いゼッケン1・ひいらぎ）、
    右に プレゼントを さしだす サンタさん。馬は horse_flat（ぺたっとした色の絵）・人と物は flat/event_art.py（一から作った形）
-   python3 flat/xmas_banner.py <出力.webp>"""
+   python3 flat/xmas_banner.py <出力.webp>
+   XMAS_BASE=1 python3 flat/xmas_banner.py <出力.webp>   → 動く壁紙の 下の絵（サンタさんと 手前の 降る雪なし。どちらも ページの SVG で動かす：xmas_wall.py・flat/xmas_run.py）"""
 import sys, os, math
 import numpy as np
 import cv2
@@ -56,24 +57,25 @@ img = over(img, rgb, a)
 # 馬（まん中・右向き）
 if os.environ.get('CUTE_NO_HORSE') != '1':
     img = draw_cute(img, 'xmas', W, Hh)
-# サンタさん（右・プレゼントを 馬へ）
-rgb, a = svg_layer(A.shadow(640, 300, 54, 7, '#8FA9C8', .55) + A.g(A.santa(), 640, 300, 0.86), W, Hh)
-img = over(img, rgb, a)
-# 降る雪（手前）
-snow = ''
-FACES = ((596, 112, 700, 200), (430, 58, 520, 150))                    # 顔の前には 雪を 置かない（サンタさん・馬）
-free = lambda x, y: not any(x0 <= x <= x1 and y0 <= y <= y1 for x0, y0, x1, y1 in FACES)
-for i in range(90):
-    x, y = rng.uniform(0, W), rng.uniform(0, Hh)
-    r = rng.uniform(1.2, 3.0)
-    op = rng.uniform(.55, .95)
-    if free(x, y):
-        snow += A.circ(x, y, r, '#FFFFFF', f'opacity="{op:.2f}"')
-for i in range(10):
-    x, y, r = rng.uniform(0, W), rng.uniform(0, 190), rng.uniform(4, 6.5)
-    if free(x, y):
-        snow += A.snowflake(x, y, r, op=0.85)
-rgb, a = svg_layer(snow, W, Hh)
-img = over(img, rgb, a)
+if os.environ.get('XMAS_BASE') != '1':        # 動く壁紙の 下の絵は サンタさんと 降る雪なし（xmas_wall.py が ページの SVG で 動かす）
+    # サンタさん（右・プレゼントを 馬へ）
+    rgb, a = svg_layer(A.shadow(640, 300, 54, 7, '#8FA9C8', .55) + A.g(A.santa(), 640, 300, 0.86), W, Hh)
+    img = over(img, rgb, a)
+    # 降る雪（手前）
+    snow = ''
+    FACES = ((596, 112, 700, 200), (430, 58, 520, 150))                    # 顔の前には 雪を 置かない（サンタさん・馬）
+    free = lambda x, y: not any(x0 <= x <= x1 and y0 <= y <= y1 for x0, y0, x1, y1 in FACES)
+    for i in range(90):
+        x, y = rng.uniform(0, W), rng.uniform(0, Hh)
+        r = rng.uniform(1.2, 3.0)
+        op = rng.uniform(.55, .95)
+        if free(x, y):
+            snow += A.circ(x, y, r, '#FFFFFF', f'opacity="{op:.2f}"')
+    for i in range(10):
+        x, y, r = rng.uniform(0, W), rng.uniform(0, 190), rng.uniform(4, 6.5)
+        if free(x, y):
+            snow += A.snowflake(x, y, r, op=0.85)
+    rgb, a = svg_layer(snow, W, Hh)
+    img = over(img, rgb, a)
 save_webp(img, out)
 print(out)
