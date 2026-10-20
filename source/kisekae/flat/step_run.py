@@ -66,10 +66,19 @@ def skel(pose, facing):
     return Hm.skeleton(full), near, far
 
 
+MARK_HEAD_SCALE = 1.1           # 目印の 頭の大きさ（horse3d の はじめの HEAD_SCALE）。horse_flat.draw_horse は Hm.HEAD_SCALE を 1.14 に かえたままにするので、
+                                # 描いたあとでも 同じ 下げぐあいに なるように ここで決める（決めないと コマを描く順で 下げぐあいが かわる）
+
+
 def head_marks(name, p):
     """首の下げぐあい p の時の 頭と首の 目印（世界の xy）：鼻先・うなじ・首の上と下の まん中"""
     S, _, _ = skel(pose_at(name, p), THEMES[name]['facing'])
-    pts = [Hm.head_pt(S, 0.60, -0.03), S['poll'], Hm.bez(S['crest'], np.array([0.5]))[0], Hm.bez(S['throat'], np.array([0.5]))[0]]
+    hs0 = Hm.HEAD_SCALE
+    Hm.HEAD_SCALE = MARK_HEAD_SCALE
+    try:
+        pts = [Hm.head_pt(S, 0.60, -0.03), S['poll'], Hm.bez(S['crest'], np.array([0.5]))[0], Hm.bez(S['throat'], np.array([0.5]))[0]]
+    finally:
+        Hm.HEAD_SCALE = hs0
     return np.array([np.asarray(v, float)[:2] for v in pts])
 
 
