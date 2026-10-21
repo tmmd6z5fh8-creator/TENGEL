@@ -21,7 +21,7 @@
     "Fx_Big.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "デカ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true, "page": "fx"},
     "Fx_Freeze.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "フリーズ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true, "page": "fx"},
     "Fx_Memo.dc.html": {"x": 2350, "y": 0, "w": 2200, "h": 2340, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ・プレミアムど的中のメモ", "page": "fx"},
-    "Fx_Sound.dc.html": {"x": 4630, "y": 0, "w": 2200, "h": 2460, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true, "page": "fx"},
+    "Fx_Sound.dc.html": {"x": 4630, "y": 0, "w": 2200, "h": 2480, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true, "page": "fx"},
     "Judge_Sakura.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "桜（ピンク×若草・いつも桜が降っている・馬が ときどき 首を下げて草を食べる）", "page": "wall"},
     "Judge_Sea.dc.html": {"x": 470, "y": 1264, "w": 390, "h": 844, "title": "海（紺×水色×白・馬がいつも走って景色が流れる）", "page": "wall"},
     "Judge_Sunset.dc.html": {"x": 940, "y": 1264, "w": 390, "h": 844, "title": "夕焼け（紫×オレンジ・馬がいつも走って地面が流れる・10秒に1回 夕日が沈んで真っ暗 → また戻る）", "page": "wall"},

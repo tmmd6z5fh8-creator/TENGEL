@@ -1016,6 +1016,174 @@ def voice(syl, note, rng, d=None):
     return fade(out, .001, .02)
 
 
+# ---------- アニメ声（まさちゃん「プレミアムど的中ようもつくりたいから、ど！、て！、き！、ちゅ！、う！の声はもっとアニメ声で可愛く人間ぽくして！」）----------
+# 声の しくみは voice と 同じ（録音・声の データは 使わない）。もっと 人の 声に 近づける ため：
+#  ・のどの ふるえを LF モデル（人の のどの 空気の 流れの 形：Fant）に。息っぽさ Rd を 時間で かえる（出だしと おわりは 息まじり・まん中は はっきり）
+#  ・息の ノイズは のどが ひらいて いる 間だけ（脈うつ 息）・高さの ゆらぎ（ゆっくり＋細かく）・大きさの ゆらぎ・ひびきの 高さも 少し ゆれる
+#  ・アニメの 女の子の 声：口が 小さい（ひびきを 1.15倍 高く・ほほえみで F2・F3 少し 高く）・高い 声で 大きく 上がって 下がる・短く はっきり
+ANIME_VOWELS = dict(  # F1〜F8 Hz・はば Hz（大人の 女の人の 日本語の 母音 × 1.15 ＋ ほほえみ）
+    o=((600, 1060, 3200, 4500, 5500, 6600, 7800, 9200), (95, 120, 200, 280, 350, 500, 700, 900)),
+    e=((645, 2700, 3500, 4600, 5600, 6700, 7900, 9300), (95, 130, 200, 280, 350, 500, 700, 900)),
+    i=((380, 3280, 3950, 4900, 5800, 6900, 8000, 9400), (75, 160, 200, 280, 350, 500, 700, 900)),
+    u=((440, 1900, 3200, 4500, 5500, 6600, 7800, 9200), (85, 130, 200, 280, 350, 500, 700, 900)))
+# 短い 音節（ど！・て！・き！・ちゅ！・う！）：v 母音・d 長さ・von 声が 出はじめる 秒・pre だ行の 声の 前の のどの ふるえ・burst 破裂（秒・長さ・高さの 下・上・大きさ）・
+#   asp 息（はじめ・おわり・大きさ）・fric こすれる 音（はじめ・おわり・高さの 下・上・大きさ）・tr ひびきの 動き（F1〜F3 の はじめ・秒）・
+#   f0 高さの 形（声が 出てからの 秒・半音：note からの ずれ）・end おわりの 形（'stop'＝のどで きゅっと 止める・'up'＝ちょっと 上がって ふわっと）
+SYL_A = dict(
+    do=dict(v='o', d=.25, von=.025, pre=.025, burst=(.025, .003, 2500, 6500, 1.0), tr=((300, 1850, 2800), .05),
+            f0=((0, -3.0), (.06, .5), (.11, 0), (.2, -1.6), (.225, -3.2)), end='stop'),
+    te=dict(v='e', d=.25, von=.03, burst=(0, .005, 3500, 8500, 1.6), asp=(.004, .03, .3), tr=((380, 2000, 3000), .045),
+            f0=((0, -2.2), (.055, .6), (.1, 0), (.19, -1.5), (.22, -3.0)), end='stop'),
+    ki=dict(v='i', d=.25, von=.045, burst=(0, .006, 3000, 5200, 2.0), asp=(.006, .045, .25), fric=(.008, .042, 4000, 7600, .2),
+            tr=((320, 3000, 3700), .035), f0=((0, -2.0), (.05, .7), (.09, 0), (.17, -1.2), (.205, -2.8)), end='stop'),
+    chu=dict(v='u', d=.27, von=.06, burst=(0, .004, 3500, 8000, 1.2), fric=(.004, .06, 3800, 8000, .5), tr=((350, 2500, 3300), .05),
+             f0=((0, -2.0), (.06, .9), (.11, .3), (.17, .6), (.21, 1.8)), end='up'),
+    u=dict(v='u', d=.3, von=0.0, asp=(0, .025, .16), f0=((0, -2.2), (.07, .8), (.14, 0), (.24, -.8), (.29, -2.4)), end='stop'))
+LF_RD = (.6, .8, 1.0, 1.2, 1.45, 1.7, 2.0, 2.4)    # 息っぽさ（Rd）の 表：この 間を 線で つなぐ
+_LF = {}
+
+
+def lf_table(rd, n=4096):
+    """LF モデルの のどの 空気の 流れの 変化（1周期 ぶん・いちばん 低い 所が −1）と 流れ（0〜1）。Rd：息っぽさ（小さい ほど はっきり・大きい ほど 息まじり）"""
+    if rd in _LF:
+        return _LF[rd]
+    from scipy.optimize import brentq
+    ra = (-1 + 4.8 * rd) / 100
+    rk = (22.4 + 11.8 * rd) / 100
+    rg = rk / (4 * (.11 * rd / (.5 + 1.2 * rk) - ra))
+    tp = 1 / (2 * rg)
+    te = tp * (1 + rk)
+    ta = ra
+    tc = 1.0
+    eps = brentq(lambda e: e * ta - (1 - np.exp(-e * (tc - te))), 1e-6, 1e6)
+    wg = np.pi / tp
+
+    def area(al):
+        e0 = -1 / (np.exp(al * te) * np.sin(wg * te))
+        a1 = e0 * (np.exp(al * te) * (al * np.sin(wg * te) - wg * np.cos(wg * te)) + wg) / (al * al + wg * wg)
+        a2 = -(1 / (eps * ta)) * ((1 - np.exp(-eps * (tc - te))) / eps - (tc - te) * np.exp(-eps * (tc - te)))
+        return a1 + a2
+    lo, hi = -50.0, 200.0
+    al = brentq(area, lo, hi)
+    e0 = -1 / (np.exp(al * te) * np.sin(wg * te))
+    t = np.arange(n) / n
+    E = np.where(t <= te, e0 * np.exp(al * t) * np.sin(wg * t), -(1 / (eps * ta)) * (np.exp(-eps * (t - te)) - np.exp(-eps * (tc - te))))
+    U = np.cumsum(E) / n
+    U = U - U.min()
+    U = U / (U.max() + 1e-12)
+    _LF[rd] = (E, U)
+    return E, U
+
+
+def _lf_source(f0, rd, n, up=4):
+    """高さ f0（Hz）・息っぽさ rd（サンプルごと）→ のどの 音（流れの 変化）と 流れ。4倍の 細かさで 作って もどす"""
+    f0u = np.repeat(f0, up)
+    rdu = np.repeat(rd, up)
+    ph = np.cumsum(f0u / (SR * up)) % 1.0
+    tabs = [lf_table(r) for r in LF_RD]
+    N = len(tabs[0][0])
+    idx = (ph * N).astype(int) % N
+    pos = np.interp(rdu, LF_RD, np.arange(len(LF_RD)))
+    k0 = np.clip(np.floor(pos).astype(int), 0, len(LF_RD) - 2)
+    w = pos - k0
+    E = np.zeros(len(ph))
+    U = np.zeros(len(ph))
+    for k in range(len(LF_RD) - 1):
+        m = k0 == k
+        if m.any():
+            e0, u0 = tabs[k]
+            e1, u1 = tabs[k + 1]
+            E[m] = e0[idx[m]] * (1 - w[m]) + e1[idx[m]] * w[m]
+            U[m] = u0[idx[m]] * (1 - w[m]) + u1[idx[m]] * w[m]
+    E = signal.resample_poly(E, 1, up)[:n]
+    U = signal.resample_poly(U, 1, up)[:n]
+    return E, U
+
+
+def _tract_a(x, S, t, n, pert):
+    """口の ひびき（アニメ声の 母音・8つ）：子音の 形から 母音へ（tr）・ひびきの 高さが 少し ゆれる（pert）"""
+    Fv, Bv = ANIME_VOWELS[S['v']]
+    von = S['von']
+    for k in range(len(Fv)):
+        F, B = Fv[k], Bv[k]
+        if S.get('tr') and k < 3:
+            f_s, tdur = S['tr'][0][k], S['tr'][1]
+            Ft = _track([(0, f_s), (von, f_s), (von + tdur, F), (t[-1] + 1e-3, F)], n)
+        else:
+            Ft = np.full(n, float(F))
+        Ft = Ft * (1 + pert * (.6 if k < 3 else .3))
+        rlx = np.clip((t - (t[-1] - .05)) / .05, 0, 1)                              # おわりの 0.05秒：口が 少し ゆるむ（F1 は 下がり・F2 は まん中へ）
+        if k == 0:
+            Ft = Ft * (1 - .1 * rlx)
+        elif k == 1:
+            Ft = Ft + (1700 - Ft) * .12 * rlx
+        Bt = np.full(n, float(B)) + (160 * (t < von) if k == 0 else 0)
+        x = _reson(x, Ft, Bt)
+    return x
+
+
+def _norm_lp(rng, n, f):
+    y = lp(rng.standard_normal(n), f, 1)
+    return y / (np.std(y) + 1e-12)
+
+
+def anime_voice(syl, note, rng):
+    """アニメの 女の子の 声の 短い 音節（ど！・て！・き！・ちゅ！・う！）。note＝高さの まん中（MIDI）。母音の 大きさ（RMS）を 0.25 に そろえる"""
+    S = SYL_A[syl]
+    d = S['d']
+    n = n_(d)
+    t = tl(n)
+    von = S['von']
+    # 高さ：S['f0']（声が 出てからの 秒・半音）＋ ゆっくりの ゆれ（±0.25半音）＋ 細かい ゆれ（±0.08半音）
+    keys = [(0.0, S['f0'][0][1])] + [(von + a, b) for a, b in S['f0']]
+    st = note + _track(keys + [(d, S['f0'][-1][1])], n) + .25 * _norm_lp(rng, n, 5) + .08 * _norm_lp(rng, n, 70)
+    f0 = 440.0 * 2 ** ((st - 69) / 12)
+    # 息っぽさ：出だし 1.9 → はっきり 1.0 → おわり 2.0（息が ぬける）
+    rd = _track([(0, 1.9), (von, 1.9), (von + .04, 1.0), (max(von + .05, d - .07), 1.05), (d, 2.0)], n)
+    E, U = _lf_source(f0, rd, n)
+    shim = 1 + .05 * _norm_lp(rng, n, 50)
+    # 大きさ：はやく 立ち上がって 少し 下がり、おわりは のどで 止める（stop）か ふわっと（up）
+    rel = .028 if S['end'] == 'stop' else .06
+    av = _track([(0, 0), (max(0, von - 1e-4), 0), (von + .008, 1), (von + .05, .92), (d - rel, .78), (d, 0)], n)
+    if S.get('pre'):
+        pre = _track([(0, 0), (.005, .1), (S['pre'], .16), (S['pre'] + .003, 0), (d, 0)], n)
+    else:
+        pre = np.zeros(n)
+    breath = hp(rng.standard_normal(n), 500) * (.15 + .85 * U)                     # 脈うつ 息（のどが ひらいて いる 間）
+    pert = .012 * _norm_lp(rng, n, 7)
+    src = (E * av * shim + breath * .07 * av)
+    voiced = _tract_a(src, S, t, n, pert)
+    i0, i1 = n_(von + .05), n_(min(d - .03, von + .12))
+    voiced = voiced / (np.sqrt(np.mean(voiced[i0:i1] ** 2)) + 1e-12) * .25
+    out = voiced
+    if S.get('pre'):                                                              # だ行：声の 前に のどだけ ふるえる（低い ブー）
+        mur = lp(E * pre, 400, 2)
+        out = out + mur / (np.sqrt(np.mean(mur[:n_(S['pre'])] ** 2)) + 1e-12) * .25 * .12
+    air = hp(E * av * shim + breath * .07 * av, 3200, 2)
+    out = out + air / (np.sqrt(np.mean(air[i0:i1] ** 2)) + 1e-12) * .25 * .05
+    if S.get('asp'):                                                              # 息（口の ひびきを 通る ノイズ）
+        a0, a1, aa = S['asp']
+        e = _track([(0, 0), (a0, 0), (a0 + .004, 1), (a1 - .006, .8), (a1 + .01, 0), (d, 0)], n)
+        asp = _tract_a(hp(rng.standard_normal(n), 300) * e, S, t, n, pert)
+        m = e > .5
+        out = out + asp / (np.sqrt(np.mean(asp[m] ** 2)) + 1e-12) * .25 * aa
+    if S.get('burst'):                                                            # 破裂（ぱっと 出る 短い ノイズ）
+        b0, bd, lo, hi, ba = S['burst']
+        e = np.exp(-np.maximum(t - b0, 0) / max(bd / 2.5, 1e-4)) * (t >= b0) * (t < b0 + bd * 2)
+        out = out + _noise(rng, n, lo, hi) * e * .25 * ba
+    if S.get('fric'):                                                             # こすれる 音（ち・き）
+        f0_, f1_, lo, hi, fa = S['fric']
+        e = _track([(0, 0), (f0_, 0), (f0_ + .01, .55), (f1_ - .01, 1), (f1_ + .004, 0), (d, 0)], n)
+        out = out + _noise(rng, n, lo, hi) * e * .25 * fa
+    out = signal.sosfilt(signal.tf2sos(*biquad('shelf_hi', 4500, .7071, 2.0)), out)
+    out = hp(out, 120)
+    return fade(out, .001, .012 if S['end'] == 'stop' else .03)
+
+
+PC_ANIME = (('do', 69), ('te', 71), ('ki', 72), ('chu', 74), ('u', 76))   # プレミアムの ①〜⑤の アニメ声：ど！（A4）・て！（B4）・き！（C5）・ちゅ！（D5）・う！（E5）。だんだん 高く
+PC_ANIME_G = 1.1                                                                 # アニメ声の 大きさ（ミックスの 中で）
+
+
 PC_VOICE = (('do', 69), ('te', 71), ('ki', 72), ('chu', 72), ('u', 74))    # ①〜⑤の 声：どぉ！（A4）・てぇ！（B4）・きぃ！（C5）・ちゅ！（C5）・う！（D5）。だんだん 高く
 PC_AIR = .05                                                                      # 声の 高い 所の 明るさ（母音の 大きさに たいして）
 PC_VOICE_G = 1.1                                                                  # 声の 大きさ（ミックスの 中で：ほかの 音より 前に）
@@ -1026,12 +1194,15 @@ PC_NOTES = (72, 74, 76, 77, 79)                                                 
 PC_CHORDS = ((60, 64, 67), (55, 59, 62), (57, 60, 64), (53, 57, 60), (55, 59, 62))  # ①〜⑤の 和音：C・G・Am・F・G → 最後 C
 
 
-def sfx_pc(with_voice=False):
+def sfx_pc(with_voice=False, anime=True):
     """押してから（秒は premium_cute.py の PC_T・SCREENS）：0 ポン＋キラリン → ハートが 降って つもる（オルゴールの ポロポロが だんだん 多く 高く・和音が ふくらむ）
        → BURST パーン＋ポポポポン（まん中から じゅんに はじける）→ W キラーーン（白い 光）
        → ①〜⑤ 入ってくる 方から シュッ → 止まった 時に ポン＋鐘（ド・レ・ミ・ファ・ソ）・④ は チュッ＋ウィンクで キラッ（下で オルゴールの 分散和音と 手拍子）
        with_voice=True（超プレミアムど的中：sfx_zp）：止まった 時の 鐘と チュッ を 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」に（voice：だんだん 高く・その 間 まわりを 小さく）。
-         まさちゃん「プレミアムど的中、音を変えて！ … これでおとだせる？」→「これ超プレミアムど的中の音声に使用して！」（超プレミアムだけ 声・プレミアムは 前の 音）
+         まさちゃん「プレミアムど的中、音を変えて！ … これでおとだせる？」→「これ超プレミアムど的中の音声に使用して！」（超プレミアムは この 声）
+       anime=True（プレミアムど的中：sfx_pc）：止まった 時の 鐘と チュッ を アニメ声「ど！」「て！」「き！」「ちゅ！」「う！」に（anime_voice：LF モデルの のど・小さな 口）。
+         まさちゃん「プレミアムど的中ようもつくりたいから、ど！、て！、き！、ちゅ！、う！の声はもっとアニメ声で可愛く人間ぽくして！」
+       with_voice=False・anime=False：前の ポン＋鐘（ド・レ・ミ・ファ・ソ）と チュッ
        → FIN ふわっ → ジャーン（ど的中・高い ド）→ ドクン・ドクン（ハートの 鼓動）・シャララ↑（のぼる ハート）
        → RES ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 ピン・ピン・ピン（0.08秒おき）→ 合計 キラリーン"""
     T, SC = read_pc_times()
@@ -1071,6 +1242,8 @@ def sfx_pc(with_voice=False):
     #     下で オルゴールの 分散和音・ベース・手拍子（止まる 時が 2拍目）---
     vr = np.random.default_rng(77)                                                 # 声の 乱数（ほかの 音の 乱数と 分ける）
     vq = []                                                                        # 声は まわりの 音を 置いて から（その 間 まわりを 小さく して）のせる
+    aq = []                                                                        # アニメ声（プレミアム）も 同じ
+    ar = np.random.default_rng(88)                                                 # アニメ声の 乱数
     for i, (text, face, frm, s_txt) in enumerate(SC):
         ti = S[i]
         land = ti + IN * .72
@@ -1083,6 +1256,10 @@ def sfx_pc(with_voice=False):
             mx.add(pop(600, 300, .1, r, .15), land, .2, rv=.12)
             syl, note = PC_VOICE[i]
             vq.append((syl, note, land - SYL[syl]['von']))
+        elif anime:                                                                # プレミアム：アニメ声（ど！・て！・き！・ちゅ！・う！）
+            mx.add(pop(600, 300, .1, r, .15), land, .2, rv=.12)
+            syl, note = PC_ANIME[i]
+            aq.append((syl, note, land - SYL_A[syl]['von']))
         else:                                                                      # プレミアム：ポン＋鐘（ド・レ・ミ・ファ・ソ）
             m = PC_NOTES[i]
             mx.add(pop(600, 300, .1, r, .15), land, .45, rv=.12)
@@ -1092,7 +1269,7 @@ def sfx_pc(with_voice=False):
         sparkle(mx, land, .35, 4, (96, 100, 103, 108), .045, r)
         for k in range(4):                                                         # とびちる 小さな ハート
             mx.add(pop(1700 + 150 * k, 1100, .06, r, .1), land + .03 + .04 * k, .1, r.uniform(-.7, .7), rv=.2)
-        if text.startswith('ちゅ') and with_voice:                                 # ウィンクの キラッ（声「ちゅ！」の あと）
+        if text.startswith('ちゅ') and (with_voice or anime):                      # ウィンクの キラッ（声「ちゅ！」の あと）
             mx.add(bell(mtof(103), .8, idx=1.0, tau=.25), land + .3, .11, .35, rv=.35)
         elif text.startswith('ちゅ'):                                              # チュッ＋ウィンクの キラッ
             mx.add(kiss(r), land + .06, .5, .1, rv=.15)
@@ -1109,6 +1286,9 @@ def sfx_pc(with_voice=False):
     for k, (syl, note, ts) in enumerate(vq):                                        # 声：その 間 まわりの 音を 小さく（PC_DUCK dB）して のせる
         mx.duck(ts, ts + SYL[syl]['d'], PC_DUCK[k])
         mx.add(voice(syl, note, vr), ts, PC_VOICE_G, rv=.22)
+    for k, (syl, note, ts) in enumerate(aq):                                        # アニメ声：同じ ように のせる
+        mx.duck(ts, ts + SYL_A[syl]['d'], PC_DUCK[k])
+        mx.add(anime_voice(syl, note, ar), ts, PC_ANIME_G, rv=.2)
     # --- FIN：ふわっ → ジャーン（ど的中・高い ド）---
     hit = FIN + .28
     mx.add(nsweep(.3, 400, 3000, .45, r) * np.linspace(0, 1, n_(.3)) ** 2, FIN, .1, rv=.3)
@@ -1151,7 +1331,7 @@ def sfx_pc(with_voice=False):
 
 def sfx_zp():
     """超プレミアムど的中（手書き・鉛筆）の タップの 音：プレミアムの 音の ①〜⑤を 声に（PUSHの 音は ど的中と 同じ）"""
-    return sfx_pc(with_voice=True)
+    return sfx_pc(with_voice=True, anime=False)
 
 
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
