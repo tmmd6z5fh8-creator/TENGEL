@@ -60,6 +60,11 @@
    - ハートは ひと回り 大きく（HEART_W 70〜88px）・つやを ふやして（flat/premium_art.py の glossy_heart）・いつも ぷるぷる（pmJly）
    - まわりの ハートは カットインと 同時に、ポニーが 入ってくる 方から とんできて ふえる（BLOOM_T）。⑤では のこりの 場所を ぜんぶ うめる
    - 最後の「ど的中」でも まわりの ハートは 消さない。その 上に でっかい ハート（FIN_S：165 → 185）と「ど的中」
+   「プレミアムど的中ボタンだけ試すと落ちちゃう！」
+   - 重さ（iPhone で 落ちない ように）：見えない 間は 描かない（hide()・pmH：①〜⑤は その 画面の 1.2秒 だけ・白い 光の 形は 入ってくる 間・
+     広がる オーラは 広がる 間・つもる ハートの 雨は はじけるまで・まわりの ハートと キラキラは 入ってくる 時から・最後の ハートなどは 出る 時から）。
+     オーラの 光の drop-shadow は 1つの 箱に 1つ（中 .pmQi＝白い ふち・外 .pmQ＝ピンクの 光）・広がる オーラは 絵（img）を そのまま 動かす・
+     回る 光線の 箱は 1040px。はかり方は layer_mem.py（層の 画素：いちばん 多い 時 1075MB → 225MB）
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
      ポニーの 部品（顔の 向き 4つ：右正面から・右正面 斜め上から・その ウィンク・真正面 × 首・たてがみ・耳 左右・顔・リボン・オーラ。左は 左右 うらがえす）・
      ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
@@ -213,6 +218,20 @@ PILE_COLS = (('#FF5FA6', '#FFC2DE', '#DD3484'), ('#FF8CC2', '#FFDCEC', '#EE5EA0'
 
 def sec(v):
     return f'{v:.2f}'.rstrip('0').rstrip('.') + 's'
+
+
+def hide(t0=None, t1=None, gap=None):
+    """見えない 間は 描かない（まさちゃん「プレミアムど的中ボタンだけ試すと落ちちゃう！」）：
+       出る 前・消えた あとの 絵も、アニメが ついていると 画面の 外の 層（合成の 層）の 画素を 使いつづける（ぜんぶで iPhone の 3倍の 画素で 約1GB）。
+       t0 より 前・t1 より あと・gap＝(a, b) の 間は visibility:hidden（pmH）に して 描かない → animation に 足す 文（先頭に ,）"""
+    o = ''
+    if t0 is not None:
+        o += f',pmH .001s linear {sec(t0)} backwards'
+    if t1 is not None:
+        o += f',pmH .001s linear {sec(t1)} forwards'
+    if gap is not None:
+        o += f',pmH {sec(gap[1] - gap[0])} linear {sec(gap[0])}'
+    return o
 
 
 def jelly_bg(k):
@@ -492,10 +511,15 @@ def pony_tree(i, face, t_in):
 # ---------------------------------------------------------------- オーラと ハート（まさちゃん「馬とハートが登場してプルルンと揺れる時に、
 # 光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！ハートも周りに飛ぶように！」
 # 「背景のオーラとハートはもっと多くていいよ！画面馬とハート以外の画面埋まるくらい！」）
-AURA_T = (IMPACT - .02, .9)              # まわりの 光（.pmQ）：着地の 少し 前から 0.9秒
-AURA_F = ('drop-shadow(0 0 2px #FFFFFF) drop-shadow(0 0 6px rgba(255,255,255,.9)) drop-shadow(0 0 0 rgba(255,95,175,0))',       # ふだん（白い ふち）
-          'drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 14px rgba(255,255,255,.95)) drop-shadow(0 0 40px rgba(255,95,175,.95))',  # 着地（いちばん 強い）
-          'drop-shadow(0 0 3px #FFFFFF) drop-shadow(0 0 12px rgba(255,255,255,.9)) drop-shadow(0 0 32px rgba(255,95,175,.88))')   # ゆっくり もどる
+AURA_T = (IMPACT - .02, .9)              # まわりの 光（.pmQ・.pmQi）：着地の 少し 前から 0.9秒
+# 光は drop-shadow を 1つずつ：中（.pmQi）＝白い ふち・外（.pmQ）＝ピンクの 光。drop-shadow を 1つの 箱に 2つ 以上 かさねると、
+# iPhone（Safari）では 画面の 合成で 描けず、動く ポニーを 毎コマ 描きなおす（重い）ので 分けた（まさちゃん「プレミアムど的中ボタンだけ試すと落ちちゃう！」）
+AURA_W = ('drop-shadow(0 0 4px #FFFFFF)',                      # 白い ふち：ふだん
+          'drop-shadow(0 0 10px #FFFFFF)',                     # 着地（いちばん 強い）
+          'drop-shadow(0 0 8px rgba(255,255,255,.95))')        # ゆっくり もどる
+AURA_P = ('drop-shadow(0 0 0 rgba(255,95,175,0))',             # ピンクの 光：ふだん（なし）
+          'drop-shadow(0 0 36px rgba(255,95,175,.95))',        # 着地（いちばん 強い）
+          'drop-shadow(0 0 30px rgba(255,95,175,.88))')        # ゆっくり もどる
 RIP_T = (IMPACT - .02, IMPACT + .3)       # 外へ 広がる つやつやの オーラ（pm_aura_…）：着地と 0.32秒 あと
 RIP_D, RIP_S = .9, 1.55                  # 広がる 長さ（秒）・どこまで 広がるか（倍：画面の はしまで）
 
@@ -503,10 +527,16 @@ RIP_D, RIP_S = .9, 1.55                  # 広がる 長さ（秒）・どこま
 def ripple(i, face, t_in):
     """外へ 広がる つやつやの ピンクと 白の オーラ（ポニーと かたむいた ハートの 形：pm_aura_…・ポニーと いっしょに 左右 うらがえす）"""
     hv, mir = FACE[face]
+    name = f'pm_aura_{hv}'
     ac = art()[1]['rig'][hv]['aura']
+    x, y, w, h = art()[1][name]
     M = (195.0, 0.0)
-    im = pimg(f'pm_aura_{hv}', ac)
-    rr = ''.join(joint(ac, M, im, f'pmRip {sec(RIP_D)} cubic-bezier(.2,.65,.35,1) {sec(t_in + t)} both') for t in RIP_T)
+    S = PC_T['S']
+    t_end = S[i + 1] if i + 1 < len(S) else PC_T['FIN']                 # この 画面が 消える 時
+    rr = ''.join(f'<img class="pmi" src="{blob(name)}" alt="" style="left:{x - M[0]:.3f}px;top:{y - M[1]:.3f}px;width:{w:.3f}px;height:{h:.3f}px;'
+                 f'transform-origin:{ac[0] - x:.3f}px {ac[1] - y:.3f}px;opacity:0;'
+                 f'animation:pmRip {sec(RIP_D)} cubic-bezier(.2,.65,.35,1) {sec(t_in + t)} both{hide(t_in + t, min(t_in + t + RIP_D, t_end))}">'
+                 for t in RIP_T)
     return camera(i, f'<div class="pmJ{" pmM" if mir else ""}" style="left:{M[0]:.0f}px;top:0">{rr}</div>')
 
 
@@ -625,7 +655,7 @@ def bloom_hearts(seed=61):
                 fx, fy, u = -(x - cx) / L * dist * .6, -(y - cy) / L * dist * .6, min(1.0, L / 480)
             d = t_cut + .02 + BLOOM_T * u + rnd.uniform(0, .08)
             o += (f'<i style="left:{x - s / 2:.1f}px;top:{y - s / 2:.1f}px;width:{s:.1f}px;height:{s:.1f}px;'
-                  f'--fx:{fx:.0f}px;--fy:{fy:.0f}px;--r:{rnd.uniform(-30, 30):.0f}deg;animation:pmBl .5s cubic-bezier(.2,.8,.3,1) {sec(d)} both">'
+                  f'--fx:{fx:.0f}px;--fy:{fy:.0f}px;--r:{rnd.uniform(-30, 30):.0f}deg;animation:pmBl .5s cubic-bezier(.2,.8,.3,1) {sec(d)} both{hide(d)}">'
                   f'{jelly_b(rnd)}</i>')
         BLOOM_N[i] = len(pos)
         t0 = t_cut + IMPACT
@@ -639,7 +669,7 @@ def bloom_hearts(seed=61):
             r = rnd.uniform(8, 16)
             d = t0 + .05 + math.hypot(x - cx, y - cy) / 950 + rnd.uniform(0, .12)
             sp += (f'<i class="sp" style="left:{x - r:.1f}px;top:{y - r:.1f}px;width:{r * 2:.1f}px;height:{r * 2:.1f}px;--fx:0px;--fy:0px;--r:0deg;'
-                   f'animation:pmBl .5s cubic-bezier(.2,.8,.3,1) {sec(d)} both">'
+                   f'animation:pmBl .5s cubic-bezier(.2,.8,.3,1) {sec(d)} both{hide(d)}">'
                    f'<b style="animation:pmTw {rnd.uniform(1.4, 2.2):.2f}s ease-in-out -{rnd.uniform(0, 2):.2f}s infinite alternate"></b></i>')
     return o, sp
 
@@ -707,16 +737,20 @@ def pc_layers(board_html):
         t_out = (S[i + 1] if i + 1 < len(S) else T['FIN']) - T['OUT']
         tree = pony_tree(i, face, t_in)
         scr += (f'<div class="pms" aria-hidden="true" style="animation:{enter_anim(frm)} {sec(T["IN"])} cubic-bezier(.25,.9,.35,1) {sec(t_in)} both,'
-                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards">{ripple(i, face, t_in)}'
-                f'<div class="pmQ" style="animation:pmAu {sec(AURA_T[1])} linear {sec(t_in + AURA_T[0])} both">{tree}</div>{veil(tree, t_in, T["IN"])}</div>')
+                f'pmOut {sec(T["OUT"])} linear {sec(t_out)} forwards{hide(t_in, t_out + T["OUT"])}">{ripple(i, face, t_in)}'
+                f'<div class="pmQ" style="animation:pmAu {sec(AURA_T[1])} linear {sec(t_in + AURA_T[0])} both">'
+                f'<div class="pmQi" style="animation:pmAw {sec(AURA_T[1])} linear {sec(t_in + AURA_T[0])} both">{tree}</div></div>'
+                f'{veil(tree, t_in, T["IN"], hide(t1=t_in + T["IN"]))}</div>')
     back, front = pile_bottom()
     bloom, spark = bloom_hearts()
     fx, fy = FIN_C
     bx, by = BURST_C
     fin = img('pm_fin')
+    up0 = T['RES'] - UP_VEIL[0]                                       # 最後の ハートが 上へ 動く 前に 白く なりはじめる 時
+    pop_d = T['FIN'] + .28                                            # 最後の ハートの 白い 輪と とぶ ハート
     return f'''<div class="pmbg" aria-hidden="true"><img class="pmi" src="{blob('pm_bg')}" alt="" style="left:0;top:0;width:390px;height:844px">{bob_hearts()}</div>
-    <div class="pmp" aria-hidden="true">{hearts}</div>
-    <div class="pml pmlb">{pop_hearts(bx, by, T['BURST'], 20, 23, dist=(170, 300), size=(24, 40))}</div>
+    <div class="pmp" aria-hidden="true" style="animation:{hide(t1=T['W'][2])[1:]}">{hearts}</div>
+    <div class="pml pmlb" style="animation:{hide(T['BURST'], T['W'][3])[1:]}">{pop_hearts(bx, by, T['BURST'], 20, 23, dist=(170, 300), size=(24, 40))}</div>
     <div class="pmpk" aria-hidden="true"><i class="rays"></i><i class="glow"></i><svg class="spk" viewBox="0 0 390 844">{twinkles(26, 5)}</svg></div>
     <div class="pmbh" aria-hidden="true">{bloom}</div>
     <div class="pmpl pmpb" aria-hidden="true">{back}</div>
@@ -724,8 +758,9 @@ def pc_layers(board_html):
     {scr}
     <div class="pmpl" aria-hidden="true">{front}</div>
     <div class="pmu" aria-hidden="true">{rising_hearts(40, 9, T['FIN'])}</div>
-    <div class="pmf" aria-hidden="true">{fin}{veil(fin, T["FIN"], .5, f",pmVu {sec(UP_VEIL[1])} linear {sec(T['RES'] - UP_VEIL[0])} forwards")}</div>
-    <i class="pmr pmrf" style="--d:{sec(T['FIN'] + .28)}"></i><div class="pml">{pop_hearts(fx, fy - 10, T['FIN'] + .28, 18, 47, dist=(150, 230), size=(26, 42))}</div>
+    <div class="pmf" aria-hidden="true">{fin}{veil(fin, T["FIN"], .5, f",pmVu {sec(UP_VEIL[1])} linear {sec(up0)} forwards" + hide(t1=up0 + UP_VEIL[1], gap=(T['FIN'] + .5, up0)))}</div>
+    <i class="pmr pmrf" style="--d:{sec(pop_d)};animation:pmRing .55s ease-out {sec(pop_d)} both{hide(pop_d, pop_d + .55)}"></i>
+    <div class="pml" style="animation:{hide(pop_d, pop_d + .8)[1:]}">{pop_hearts(fx, fy - 10, pop_d, 18, 47, dist=(150, 230), size=(26, 42))}</div>
     <div class="hb">{board_html}</div>
     <div class="pmw" aria-hidden="true"></div>
     <p class="sr">プレミアムど的中！ハートが いっぱいに つもって はじけ、虹色の 大当たりの 光の 中に、ハートを だいた ポニーが ど・て・き・ちゅ・う と 1文字ずつ 出てきて、さいごに ハートに つつまれた ど的中</p>'''
@@ -744,12 +779,15 @@ def pc_css():
 /* ---------- プレミアムど的中（かわいいど的中）：premium_cute.py（絵は flat/premium_art.py の WebP） ---------- */
 .ov.fz.pm{{--t0:{sec(T['RES'] + .45)};--tc:.3s}}
 .ov.pm .pmi{{position:absolute;display:block;max-width:none;max-height:none;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}}
+/* 見えない 間は 描かない（hide()：出る 前・消えた あとの 絵が 層の 画素を 使わない ように。iPhone で 落ちない ため） */
+@keyframes pmH{{0%,100%{{visibility:hidden}}}}
 /* 虹色の 背景（パチンコの 大当たりのような 光線・まん中の 白い 光・虹の 輪・さくら・キラキラ：pm_bg）の 上で つやつやの ハートが ふわふわ */
 .ov.pm .pmbg{{position:absolute;inset:0;overflow:hidden;background:#FF6FC4}}
 .ov.pm .pmbg .pmj{{position:absolute;display:block;transform:rotate(var(--r));animation:pmBob 2.8s ease-in-out infinite alternate}}
 @keyframes pmBob{{to{{transform:translateY(-6px) rotate(var(--r))}}}}
 /* つもる ハート：外の i＝はじける（{sec(T['BURST'])}〜・まん中から じゅんに・ぷくっと ふくらんで）・中の b＝上から 落ちる
-   （b::before＝すき通った 光の ハート・b::after＝つもった 時に つやつやの ゼリーの ハートに なって ぷるんっ） */
+   （b::before＝すき通った 光の ハート・b::after＝つもった 時に つやつやの ゼリーの ハートに なって ぷるんっ）。
+   消えた 光の ハート・はじけた ハートは visibility:hidden（描かない：重さ対策） */
 .ov.pm .pmp{{position:absolute;inset:0;z-index:2;pointer-events:none}}
 .ov.pm .pmp i{{position:absolute;display:block;background:none!important;animation:pmB .24s linear var(--bd) forwards}}
 .ov.pm .pmp b{{position:absolute;inset:0;transform:translateY(var(--y0)) rotate(var(--r0));animation:pmF var(--t) cubic-bezier(.333,0,.667,.333) var(--d) both}}
@@ -759,18 +797,19 @@ def pc_css():
 {''.join(f'.ov.pm .pmp .pm{k} b::after{{background:{jelly_bg(k)}}}' for k in range(len(PILE_COLS)))}
 @keyframes pmF{{to{{transform:translateY(0) rotate(var(--r1))}}}}
 @keyframes pmL{{to{{opacity:1}}}}
-@keyframes pmLo{{to{{opacity:0}}}}
+@keyframes pmLo{{to{{opacity:0;visibility:hidden}}}}
 .ov.pm .pmp .pv b::before{{display:none}}
 .ov.pm .pmp .pv b::after{{opacity:1;animation:pmWob .34s ease-in-out infinite alternate,pmJ .55s ease-out var(--l) forwards}}
 @keyframes pmWob{{from{{transform:scale(1.07,.93)}}to{{transform:scale(.94,1.06)}}}}
 @keyframes pmJ{{0%{{transform:scale(1.2,.76)}}28%{{transform:scale(.9,1.12)}}52%{{transform:scale(1.06,.95)}}76%{{transform:scale(.98,1.02)}}100%{{transform:none}}}}
-@keyframes pmB{{0%{{transform:none}}35%{{transform:translate(calc(var(--bx) * .3),calc(var(--by) * .3)) scale(1.16,.9)}}100%{{transform:translate(var(--bx),var(--by)) scale(1.4) rotate(var(--br));opacity:0}}}}
+@keyframes pmB{{0%{{transform:none}}35%{{transform:translate(calc(var(--bx) * .3),calc(var(--by) * .3)) scale(1.16,.9)}}100%{{transform:translate(var(--bx),var(--by)) scale(1.4) rotate(var(--br));opacity:0;visibility:hidden}}}}
 .ov.pm .pmlb{{z-index:2}}
-/* 白い 光の 中で 出る：細い 白い 光線（ゆっくり 回る＝大当たりの 光。1つの 所を 光線が 通るのは 1秒に 1回 くらい）・まん中の 光・キラキラ */
-.ov.pm .pmpk{{position:absolute;inset:0;z-index:3;opacity:0;overflow:hidden;animation:fzOn .01s linear {sec(T['BG'])} forwards}}
-.ov.pm .pmpk .rays{{position:absolute;left:50%;top:{BG_C[1]:.0f}px;width:1500px;height:1500px;margin:-750px 0 0 -750px;border-radius:50%;opacity:.6;
+/* 白い 光の 中で 出る：細い 白い 光線（ゆっくり 回る＝大当たりの 光。1つの 所を 光線が 通るのは 1秒に 1回 くらい）・まん中の 光・キラキラ。
+   光線の 箱は 画面の いちばん 遠い すみ（まん中から 509px）が 入る 大きさ（はば 1040px）：前の 1500px と 見た目は 同じで、層の 画素が 半分 */
+.ov.pm .pmpk{{position:absolute;inset:0;z-index:3;opacity:0;overflow:hidden;animation:fzOn .01s linear {sec(T['BG'])} forwards{hide(T['BG'])}}}
+.ov.pm .pmpk .rays{{position:absolute;left:50%;top:{BG_C[1]:.0f}px;width:1040px;height:1040px;margin:-520px 0 0 -520px;border-radius:50%;opacity:.6;
   background:repeating-conic-gradient(rgba(255,255,255,.9) 0 2deg,rgba(255,255,255,0) 2deg 12deg);
-  -webkit-mask-image:radial-gradient(circle,transparent 0 9%,#000 20%,#000 40%,transparent 62%);mask-image:radial-gradient(circle,transparent 0 9%,#000 20%,#000 40%,transparent 62%);
+  -webkit-mask-image:radial-gradient(circle 1060px,transparent 0 9%,#000 20%,#000 40%,transparent 62%);mask-image:radial-gradient(circle 1060px,transparent 0 9%,#000 20%,#000 40%,transparent 62%);
   animation:spin 36s linear infinite}}
 .ov.pm .pmpk .glow{{position:absolute;left:50%;top:{BG_C[1]:.0f}px;width:440px;height:440px;margin:-220px 0 0 -220px;border-radius:50%;
   background:radial-gradient(circle,rgba(255,255,255,.6),rgba(255,255,255,.22) 40%,rgba(255,255,255,0) 70%)}}
@@ -807,8 +846,11 @@ def pc_css():
 .ov.pm .pmJ{{position:absolute;width:0;height:0;transform-origin:0 0}}
 .ov.pm .pmM{{transform:scaleX(-1)}}
 /* オーラ（着地で ぷるるん する 間）：動く 絵に ついていく 白 → ピンクの 光（.pmQ の drop-shadow）と、外へ 広がる つやつやの オーラ（pm_aura_…・2回） */
-.ov.pm .pmQ{{position:absolute;left:0;top:0;width:0;height:0;filter:{AURA_F[0]}}}
-@keyframes pmAu{{0%,100%{{filter:{AURA_F[0]}}}12%{{filter:{AURA_F[1]}}}45%{{filter:{AURA_F[2]}}}}}
+.ov.pm .pmQ,.ov.pm .pmQi{{position:absolute;left:0;top:0;width:0;height:0}}
+.ov.pm .pmQ{{filter:{AURA_P[0]}}}
+.ov.pm .pmQi{{filter:{AURA_W[0]}}}
+@keyframes pmAu{{0%,100%{{filter:{AURA_P[0]}}}12%{{filter:{AURA_P[1]}}}45%{{filter:{AURA_P[2]}}}}}
+@keyframes pmAw{{0%,100%{{filter:{AURA_W[0]}}}12%{{filter:{AURA_W[1]}}}45%{{filter:{AURA_W[2]}}}}}
 @keyframes pmRip{{0%{{opacity:0;transform:scale(.97)}}12%{{opacity:.95}}100%{{opacity:0;transform:scale({RIP_S})}}}}
 {pony_css()}{cam_css()}/* まわりを うめる ハート（ポニーの 方から 少し とんできて とまる・4こに 1こは ふわふわ・⑤で 画面ぜんぶ）・その 上の キラキラ・下に すきまなく つもった ハート（着地で ぷるん・まん中の 近くは 前へ おされる） */
 .ov.pm .pmbh{{position:absolute;inset:0;z-index:4;pointer-events:none}}
@@ -819,7 +861,7 @@ def pc_css():
   78%{{transform:scale(.94,1.06)}}100%{{opacity:1;transform:none}}}}
 @keyframes pmDis{{to{{opacity:0;transform:translateY(-34px) scale(.7)}}}}
 .ov.pm .pmbh .sp b{{background:{spark_uri()} center/contain no-repeat;transform-origin:center}}
-.ov.pm .pmpl{{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden}}
+.ov.pm .pmpl{{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;animation:{hide(T['BG'])[1:]}}}
 .ov.pm .pmpb{{z-index:4}}
 .ov.pm .pmpl i{{transform-origin:50% 75%}}
 @keyframes pmPA{{to{{opacity:1}}}}
@@ -830,17 +872,17 @@ def pc_css():
   74%{{transform:translate(calc(var(--px) * .2),calc(var(--py) * .2)) scale(calc(1 + var(--g) * .2 - var(--w) * .15),calc(1 + var(--g) * .2 + var(--w) * .15))}}
   100%{{transform:none}}}}/* 最後：大きな ハートの ど的中（{sec(T['FIN'])}）→ {sec(T['RES'])} に 上へ 動いて ボード */
 .ov.pm .pmf{{position:absolute;left:0;top:0;width:390px;height:844px;z-index:7;opacity:0;pointer-events:none;transform-origin:{FIN_C[0]:.0f}px {fy:.0f}px;
-  animation:pmInC .5s cubic-bezier(.25,.9,.35,1) {sec(T['FIN'])} both,pmBeat .9s ease-in-out {sec(T['FIN'] + .5)} 2,pmUp .5s cubic-bezier(.3,.8,.3,1) {sec(T['RES'])} forwards}}
+  animation:pmInC .5s cubic-bezier(.25,.9,.35,1) {sec(T['FIN'])} both,pmBeat .9s ease-in-out {sec(T['FIN'] + .5)} 2,pmUp .5s cubic-bezier(.3,.8,.3,1) {sec(T['RES'])} forwards{hide(T['FIN'])}}}
 @keyframes pmBeat{{0%,100%{{transform:none}}14%{{transform:scale(1.08,.93)}}30%{{transform:scale(.95,1.06)}}46%{{transform:scale(1.03,.97)}}62%{{transform:scale(.99,1.01)}}}}
 @keyframes pmUp{{from{{opacity:1;transform:none}}to{{opacity:1;transform:translateY({TITLE_Y - fy:.0f}px) scale({TITLE_K})}}}}
-.ov.pm .pmu{{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;animation:fzOn .01s linear {sec(T['FIN'])} forwards}}
+.ov.pm .pmu{{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;animation:fzOn .01s linear {sec(T['FIN'])} forwards{hide(T['FIN'])}}}
 .ov.pm .pmu i{{position:absolute;bottom:-24px;display:block;opacity:0;animation:pmRise var(--t) linear var(--d) infinite}}
 @keyframes pmRise{{0%{{opacity:0;transform:translate(0,0)}}10%{{opacity:1}}25%{{transform:translate(calc(var(--w) * .5),-220px) scale(1.12,.9)}}
   50%{{transform:translate(var(--w),-440px) scale(.92,1.08)}}75%{{transform:translate(calc(var(--w) * .5),-670px) scale(1.06,.95)}}80%{{opacity:.9}}100%{{opacity:0;transform:translate(0,-900px)}}}}
-.ov.pm .hb{{z-index:8;animation:pmBoard .5s cubic-bezier(.2,.9,.3,1.1) {sec(T['RES'] + .12)} both}}
+.ov.pm .hb{{z-index:8;animation:pmBoard .5s cubic-bezier(.2,.9,.3,1.1) {sec(T['RES'] + .12)} both{hide(T['RES'] + .12)}}}
 @keyframes pmBoard{{0%{{opacity:0;transform:translateY(40px) scale(.7)}}55%{{opacity:1;transform:translateY(-8px) scale(1.04)}}100%{{opacity:1;transform:none}}}}
 /* 白い 光（ハートが はじける時に 1回だけ） */
-.ov.pm .pmw{{position:absolute;inset:0;z-index:40;background:#FFFFFF;opacity:0;pointer-events:none;animation:pmWhite {sec(wd)} linear {sec(w0)} forwards}}
+.ov.pm .pmw{{position:absolute;inset:0;z-index:40;background:#FFFFFF;opacity:0;pointer-events:none;animation:pmWhite {sec(wd)} linear {sec(w0)} forwards{hide(w0, w3)}}}
 @keyframes pmWhite{{0%{{opacity:0}}{(w1 - w0) / wd * 100:.1f}%{{opacity:1}}{(w2 - w0) / wd * 100:.1f}%{{opacity:1}}100%{{opacity:0}}}}
 /* 視差効果を減らす：つもる ハート・白い 光・ポニー・とぶ ハート・回る 光線を 出さず、背景の 小さな ハートも 止める。虹色の 背景のまま 1秒 → まん中の 光と キラキラ・上の ハートの ど的中・ボードを ふわっと */
 @media (prefers-reduced-motion:reduce){{
