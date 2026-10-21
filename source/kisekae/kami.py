@@ -357,15 +357,18 @@ def gd_css():
 .ov.gd .gdz{{z-index:9}}
 .ov.gd .hb{{z-index:10;animation:gdBoard .5s cubic-bezier(.2,.9,.3,1.1) {sec(T['RES'] + .15)} both{hide(T['RES'] + .15)}}}
 @keyframes gdBoard{{0%{{opacity:0;transform:translateY(40px) scale(.7)}}55%{{opacity:1;transform:translateY(-8px) scale(1.04)}}100%{{opacity:1;transform:none}}}}
-/* 視差効果を減らす：雷・光・とぶ 字を 出さない。1秒 さいごの 画面と ど的中！！ → ボードを ふわっと */
+/* 視差効果を減らす：雷・光・とぶ 字を 出さない。さいごの 画面に くっきりした ど的中！！（動かさない）→ 1.15秒から 消えて ボードを ふわっと */
+@keyframes gdFade{{to{{opacity:0}}}}
 @media (prefers-reduced-motion:reduce){{
   .ov.gd .gdyb,.ov.gd .gdgb,.ov.gd .gdw,.ov.gd .gdsc,.ov.gd .gdp,.ov.gd .gdds{{display:none}}
   .ov.fz.gd{{--t0:1.9s}}
   .ov.gd .gdbg{{animation:none!important}}
   .ov.gd .gdsc2{{animation:fadeIn .6s ease-out .3s both!important}}
   .ov.gd .gdpl{{animation:none!important;opacity:1}}
-  .ov.gd .gdfn{{animation:fadeIn .6s ease-out .5s both!important}}
-  .ov.gd .gdfn2,.ov.gd .gdfa{{animation:none!important}}
+  .ov.gd .gdfn{{animation:fadeIn .5s ease-out .2s both!important}}
+  .ov.gd .gdfn2{{animation:gdFade .45s ease-in 1.15s forwards!important}}
+  .ov.gd .gdfa{{animation:none!important;opacity:1}}
+  .ov.gd .gdft{{animation:none!important;filter:none;opacity:1}}
   .ov.gd .hb{{animation:fadeIn .5s ease-out 1.3s both!important}}
 }}
 '''
