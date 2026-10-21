@@ -24,6 +24,9 @@
          ひづめで ハートの 左右の ふちを 上から つかむ：肩・うで・ふわふわの 毛・ひづめ・ハートに 落ちる かげ）
        pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
        pm_bg：パチンコの 大当たりのような 虹色の 背景 ／ pm_jelly：つやつやの ゼリーの ハート 6色（よこに ならべた 1まい）
+   - つや（まさちゃん「プレミアムど的中の馬とハートもっと光沢とプルンプルン感まして！」）：白い 毛は coat（形 ぜんたいの ふくらみの かげ・
+     くっきりした 白い つや・ふちの 白い すじ・下の ピンクの はねかえり。顔は 頭・ほお・鼻先の 玉ごとの つや：ell_union_normals）・
+     大きな ハートは わくの つやと 星空の 上の ガラスの ドーム（glass）。強さは GLOSS・COAT・HEART_GLOSS・GLASS（0 で 前と 同じ）
    python3 flat/premium_art.py <出力フォルダ> [名前 …]   → <名前>.webp（名前を 書かなければ ぜんぶ）と、絵を おく 箱（画面の 座標）を
                                                            premium_layers.json に（絵を 作りなおしたら キャンバスに 入れて、id を premium_blobs.json に）
    python3 flat/premium_art.py --boxes                   → 描く 箱"""
@@ -267,6 +270,108 @@ def soft_ell(cv, cx, cy, rx, ry, rot=0.0, feather=.5):
     return np.clip((1 - q) / max(1e-3, feather), 0, 1).astype(np.float32)
 
 
+def smoothstep(e0, e1, x):
+    t = np.clip((x - e0) / (e1 - e0), 0, 1)
+    return (t * t * (3 - 2 * t)).astype(np.float32)
+
+
+# ---------------------------------------------------------------- つやつやの 上ぬり（まさちゃん「プレミアムど的中の馬とハートもっと光沢とプルンプルン感まして！」）
+GLOSS = 1.0                                       # ポニーの 白い 毛の つやの 強さ（0 で 前と 同じ）
+CURL_GLOSS = 0.0                                  # たてがみ・前髪の くるくるの つやを 足す 強さ（0 で 前と 同じ：もとから つやつや。足すと 入ってくる 時に ちらつく）
+
+
+def dome_normals(a, k=.75):
+    """形 a の 全体が まん中まで まるく ふくらんだ 面の 向き（白い 毛の つや用：ふちだけで なく 形 ぜんたいが 丸い）"""
+    R = max(2.0, float(dist_in(a).max()))
+    return normals(height(a, R, soft=.2), R * k)
+
+
+HEAD_SMOOTH = 9.0                                 # 頭の 玉の つなぎめを なめらかに する はば（画面px）
+
+
+def ell_union_normals(cv, ells, smooth=None):
+    """だ円の 玉を かさねた 形（頭・ほお・鼻先）の 面の 向き：玉ごとの 高さ zc + rz√(1−q) の いちばん 手前。
+       つなぎめは smooth（画面px）で なめらかに。ells＝[(cx, cy, rx, ry, rot, zc, rz)]（画面の 座標・px）"""
+    smooth = HEAD_SMOOTH if smooth is None else smooth
+    H = np.full((cv.H, cv.W), -1e4, np.float32)
+    for cx, cy, rx, ry, rot, zc, rz in ells:
+        q = ell_q(cv, cx, cy, rx, ry, rot) ** 2
+        z = zc + rz * np.sqrt(np.clip(1 - q, 0, 1))
+        H = np.where(q < 1, np.maximum(H, z), H)
+    inside = H > -1e3
+    H = np.where(inside, H, H[inside].min() if inside.any() else 0).astype(np.float32)
+    H = blur(H, cv.px(smooth))
+    gx = cv2.Sobel(H, cv2.CV_32F, 1, 0, ksize=3) / 8 * cv.sc
+    gy = cv2.Sobel(H, cv2.CV_32F, 0, 1, ksize=3) / 8 * cv.sc
+    n = np.dstack([-gx, -gy, np.ones_like(H)])
+    return n / np.linalg.norm(n, axis=2, keepdims=True)
+
+
+def coat(cv, a, n=None, k=1.0, n_spec=None):
+    """白い 毛の つやつやの 上ぬり：光から 遠い 所は うすい ラベンダー ピンクの かげ（白い 上でも つやが 見える）・下の ふちに ピンクの はねかえり・
+       広い うすい つや・くっきりした 白い つや（左上）・左上の ふちの 白い すじ・キラッと 光る 点。n：面の 向き（なければ 形 ぜんたいの ふくらみ）・
+       n_spec：つやだけの 面の 向き（頭：頭・ほお・鼻先の 玉ごとに つや。かげは 頭 ぜんたいの ふくらみ）"""
+    if k <= 0:
+        return
+    C = COAT
+    if n is None:
+        n = dome_normals(a)
+    d = np.clip(n @ LIGHT, 0, 1)
+    hv = np.clip((n if n_spec is None else n_spec) @ HALF, 0, 1)
+    di = dist_in(a) / cv.sc                                                                   # ふちからの きょり（画面px）
+    if C['base']:
+        cv.tint(a, hexc(C['base_c']), C['base'] * k)                                          # ぜんたいを ほんの 少し ピンクに
+    cv.tint(np.clip((C['shade_d'] - d) / .45, 0, 1) * a, hexc(C['shade_c']), C['shade'] * k)  # 光から 遠い 所の かげ
+    cv.tint(np.clip(1 - di / C['edge_w'], 0, 1) ** 1.5 * a, hexc(C['shade_c']), C['edge'] * k)   # ふちの 内がわの うすい かげ（白い つやの すじが 見える）
+    low = np.clip(n[..., 0] * .35 + n[..., 1] * .9, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
+    cv.tint(low ** 1.2 * a, hexc('#FF9FCC'), C['pink'] * k)                                  # 下の ふちの ピンクの はねかえり
+    spot = smoothstep(C['spot_e'][0], C['spot_e'][1], hv ** C['spot_p'])
+    ring = np.clip(smoothstep(C['spot_e'][0] * .25, C['spot_e'][0], hv ** C['spot_p']) - spot, 0, 1)
+    cv.tint(ring * a, hexc(C['shade_c']), C['halo'] * k)                                      # つやの まわりを ほんの 少し こく（白い 上でも 光が うく）
+    cv.put(hexc('#FFFFFF'), hv ** C['sheen_p'] * C['sheen'] * k * a)                         # 広い うすい つや
+    cv.put(hexc('#FFFFFF'), spot * C['spot'] * k * a)                                        # くっきりした つや
+    ex, ey = edge_dir(a, cv.px(1.2))
+    face_l = np.clip(-(ex * LIGHT[0] + ey * LIGHT[1]) * 1.3 - .25, 0, 1)
+    streak = np.clip(1 - np.abs(di - C['streak_d']) / C['streak_w'], 0, 1) * face_l          # 光の 方の ふちの 白い すじ（ふちから 少し 内）
+    cv.put(hexc('#FFFFFF'), streak * C['streak'] * k * a)
+    hot = smoothstep(.95, .99, hv)                                                           # キラッと 光る 点
+    cv.put(hexc('#FFFFFF'), hot * C['hot'] * k * a)
+
+
+COAT = dict(base_c='#FFDDEE', base=0.0, shade_c='#DDADD0', shade_d=.62, shade=.4, edge_w=7.0, edge=.2, pink=.4, sheen_p=8, sheen=.3,
+            spot_p=16, spot_e=(.5, .66), spot=1.0, halo=.15, streak_d=4.0, streak_w=2.0, streak=.95, hot=1.0)
+# （ふちの 内がわの かげ edge・つやの まわりの かげ halo を こく すると、ゆれる 時に ふちの 線が 太く 見えて 点めつが ふえる ので うすめ）
+
+
+def glass(cv, a, lobes, k=1.0):
+    """ガラスの ドームの つや（大きな ハートの 星空の 上）：山ごとの くっきりした 三日月の 光（ふちに そって・はしは 細く）・
+       広い うすい 光・右下の 内がわの 明るい 三日月・光から 遠い ふちを 少し こく・キラッと 光る 点。
+       lobes＝[(山の まん中 x, y, 光の 向き（度：画面で 上が −90）, 光の はばの 半分（度）, 強さ)]"""
+    G = GLASS
+    R = max(2.0, float(dist_in(a).max()))
+    n = normals(height(a, R, soft=.2), R * .55)
+    hv = np.clip(n @ HALF, 0, 1)
+    d = np.clip(n @ LIGHT, 0, 1)
+    cv.tint(np.clip((.55 - d) / .5, 0, 1) * a, hexc('#5A0E6E'), G['shade'] * k)              # 光から 遠い ふち（右下）を 少し こく
+    cv.put(hexc('#FFFFFF'), hv ** 10 * G['sheen'] * k * a)                                   # 広い うすい 光
+    di = dist_in(a) / cv.sc
+    for lx, ly, ac, aw, st in lobes:                                                          # 山ごとの 三日月の 光
+        ang = np.degrees(np.arctan2(cv.Y - ly, cv.X - lx))
+        da = np.abs((ang - ac + 180) % 360 - 180) / aw
+        taper = np.clip(1 - da, 0, 1)
+        w0, w1 = G['cres'][0], G['cres'][1] * (.35 + .65 * taper)                            # 三日月の 内がわの はし（はしほど 細い）
+        band = smoothstep(w0, w0 + 2.5, di) * (1 - smoothstep(w1, w1 + 4.0, di))
+        cv.put(hexc('#FFFFFF'), band * np.clip(taper * 1.6, 0, 1) * st * k * a)
+    ex, ey = edge_dir(a, cv.px(2.0))
+    rb = np.clip(ex * .55 + ey * .85, 0, 1) ** 2
+    cv.put(hexc('#FFF0F8'), np.clip(1 - np.abs(di - 6.0) / 3.5, 0, 1) * rb * G['rb'] * k * a)  # 右下の 内がわの 明るい 三日月
+    cv.put(hexc('#FFFFFF'), smoothstep(G['hot_e'][0], G['hot_e'][1], hv) * G['hot'] * k * a)  # キラッと
+
+
+GLASS = dict(shade=.22, sheen=.05, cres=(4.0, 16.0), rb=.5, hot=.45, hot_e=(.975, .996))
+GLASS_LOBES = lambda ic, si, ly: [(ic[0] - .5 * si, ly, -165.0, 55.0, .95)]     # 三日月の 光：左の 山の 左がわ（上は 前足に かくれる）
+
+
 # ---------------------------------------------------------------- 部品
 def circ(cx, cy, r, n=20):
     return smooth(ellipse_pts(cx, cy, r, r, n))
@@ -354,8 +459,8 @@ def curl(cv, cx, cy, rx, ry, rot=0.0, spin=1, lw=2.6, sh=.3):
     d, s = lit(n, 26)
     cv.put(ramp(np.clip(.22 + .78 * d, 0, 1), CURL), a)
     rimv = np.clip(n[..., 0] * .5 + n[..., 1] * .85, 0, 1) ** 1.5 * np.clip(1 - n[..., 2], 0, 1)
-    cv.add(hexc('#FFD9EC'), rimv * .45 * a * (1 - ia))
-    cv.put(hexc('#FFFFFF'), np.clip(s * 1.2, 0, 1) * .4 * a * (1 - ia))
+    cv.add(hexc('#FFD9EC'), rimv * (.45 + .2 * CURL_GLOSS) * a * (1 - ia))
+    cv.put(hexc('#FFFFFF'), np.clip(s * 1.2, 0, 1) * (.4 + .25 * CURL_GLOSS) * a * (1 - ia))
     # 中の まき：まわりの みぞ（こい ピンク）→ 玉（左上は 外の まきの かげ）→ 中の うず
     crease = np.clip(grow(ia, cv.px(rx * .07 + .8)) - ia, 0, 1) * a
     cv.tint(blur(crease, cv.px(.8)), hexc('#A3205F'), .7)
@@ -374,17 +479,20 @@ def curl(cv, cx, cy, rx, ry, rot=0.0, spin=1, lw=2.6, sh=.3):
     # つや：外の まきの 左上の 三日月・中の まきの 左上・小さな 点
     hx, hy = rot_pt(cx, cy, -rx * .48, -ry * .5, rot)
     hl = soft_ell(cv, hx, hy, rx * .32, ry * .13, rot - 26, .4) * (1 - ia)
-    cv.put(hexc('#FFFFFF'), np.clip(hl * 1.5, 0, 1) * .8 * a)
+    cv.put(hexc('#FFFFFF'), np.clip(hl * (1.5 + .5 * CURL_GLOSS), 0, 1) * min(1.0, .8 + .17 * CURL_GLOSS) * a)
     hx2, hy2 = rot_pt(icx, icy, -irx * .3, -iry * .38, rot)
     hl2 = soft_ell(cv, hx2, hy2, irx * .28, iry * .14, rot - 24, .5)
-    cv.put(hexc('#FFFFFF'), np.clip(hl2 * 1.4, 0, 1) * .7 * ia)
+    cv.put(hexc('#FFFFFF'), np.clip(hl2 * (1.4 + .5 * CURL_GLOSS), 0, 1) * min(1.0, .7 + .22 * CURL_GLOSS) * ia)
     px_, py_ = rot_pt(cx, cy, rx * .02, -ry * .72, rot)
-    cv.put(hexc('#FFFFFF'), soft_ell(cv, px_, py_, rx * .05, rx * .05, 0, .6) * .85 * a)
+    cv.put(hexc('#FFFFFF'), soft_ell(cv, px_, py_, rx * .05, rx * .05, 0, .6) * min(1.0, .85 + .15 * CURL_GLOSS) * a)
+    if CURL_GLOSS:                                     # 右下の 小さな 光（つやつやの 反射）
+        qx, qy = rot_pt(cx, cy, rx * .5, ry * .52, rot)
+        cv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, qx, qy, rx * .16, ry * .07, rot + 30, .5) * 1.5, 0, 1) * .6 * CURL_GLOSS * a * (1 - ia))
     return sil
 
 
-def fur(cv, a, R=26.0, lw=2.4, cols=WHITE, rim=.0, line=True):
-    """白い 毛（頭・首・前足）：ふち・やわらかい かげ（うすい ラベンダー ピンク）"""
+def fur(cv, a, R=26.0, lw=2.4, cols=WHITE, rim=.0, line=True, ells=None, gl=None):
+    """白い 毛（頭・首・前足）：ふち・やわらかい かげ（うすい ラベンダー ピンク）＋ つやつやの 上ぬり（coat：gl＝強さ・ells＝頭の だ円の 玉）"""
     cv, a = cv.sub_mask(a, lw + 4)
     sil = None
     if line:
@@ -396,6 +504,7 @@ def fur(cv, a, R=26.0, lw=2.4, cols=WHITE, rim=.0, line=True):
     if rim:
         rimv = np.clip(n[..., 0] * .4 + n[..., 1] * .8, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
         cv.add(hexc('#FFF4FA'), rimv * rim * a)
+    coat(cv, a, None, GLOSS if gl is None else gl, n_spec=ell_union_normals(cv, ells) if ells else None)
     return sil
 
 
@@ -540,7 +649,7 @@ def bow(cv, cx, cy, s=1.0, rot=0.0, mx=1):
         d = f'M{f(q[0][0])} {f(q[0][1])} L{f(q[1][0])} {f(q[1][1])} L{f(q[2][0])} {f(q[2][1])} L{f(q[3][0])} {f(q[3][1])} L{f(q[4][0])} {f(q[4][1])} Z'
         a = cv.mask(P(d))
         cols = PINK if i % 2 else [(0, '#D9579A'), (.4, '#EC7DB5'), (.75, '#F8AED2'), (1, '#FFD9EC')]
-        shaded(cv, a, cols, R=4.5 * s, lw=1.8, gloss=.35)
+        shaded(cv, a, cols, R=4.5 * s, lw=1.8, gloss=.35 + .25 * GLOSS)
     # 左右の わ（右の わは 少し 小さい：ななめ）
     for side, k in ((-1, 1.0), (1, .9)):
         side_pts = lambda pts: [(x * k * side, y * k) for x, y in pts]        # わの 点（x が 正）→ side の がわ
@@ -548,7 +657,7 @@ def bow(cv, cx, cy, s=1.0, rot=0.0, mx=1):
         q = tf(side_pts(loop), cx, cy, s, rot, mx)
         a = cv.mask(P(smooth(q)))
         hx, hy = tf([(side * 36 * k, -18 * k)], cx, cy, s, rot, mx)[0]
-        shaded(cv, a, PINK, R=11 * s, lw=2.6, hl=[(hx, hy, 9 * s, 5 * s, rot - 20 * side * mx, .85)])
+        shaded(cv, a, PINK, R=11 * s, lw=2.6, hl=[(hx, hy, 9 * s, 5 * s, rot - 20 * side * mx, min(1.0, .85 + .15 * GLOSS))], gloss=.5 + .3 * GLOSS)
         inner = [(8, -2), (20, -15), (33, -13), (36, -1), (28, 8), (13, 6)]
         q2 = tf(side_pts(inner), cx, cy, s, rot, mx)
         ia = cv.mask(P(smooth(q2))) * a
@@ -637,6 +746,8 @@ GAZE = dict(R=(-.3, 0.0), T=(-.16, -.3), W=(-.16, -.3), F=(0.0, 0.0))   # カメ
 SKULL = ((0, -18, 0), (68, 66, 62))                # 頭の まるい 所（まん中・半径 x, y, z）
 CHEEK = ((0, 16, 18), (57, 48, 56))                # ほお（頭と 鼻先の あいだ）
 SNOUT = ((0, 50, 56), (40, 30, 54))                # 鼻先（前と 下へ のびる＝馬の 顔）
+HEAD_ZK = .12                                      # つやの 面の 向き：玉の まん中の 深さを 小さく（鼻先・ほおの つなぎめを なだらかに）
+HEAD_ELLS = True                                   # 頭の つやの 面の 向きを 玉ごとに（False：頭 ぜんたいを 1つの ふくらみに）
 EYE = ((40, -20, 50), 20, 27, (.55, 0, .83))       # 右目（左目は x を 反対）：まん中・はば・高さ・向き
 EAR = ((37, -74, -8), (44, -150, -16), 19.5)       # 右耳：つけねの まん中・先・つけねの はばの 半分（外がわの つけねは EAR_OUT まで 下げて 頭の 中に）
 EAR_OUT = (-4, 24)                                 # 外がわの つけねを 内へ・下へ（まさちゃん「耳が散れちゃってる」：つけねの 線が 頭の 外に 出ていた）
@@ -731,7 +842,11 @@ def pony_parts(v):
     head_svg = (P(oval(*S(sk[:2]), sk[2] * K, sk[3] * K)) + P(oval(*S(ch[:2]), ch[2] * K, ch[3] * K))
                 + P(oval(*S(sn[:2]), sn[2] * K, sn[3] * K, rot_sn)))
     a = cv.mask(head_svg)
-    fur(cv, a, R=30 * K, lw=2.6)
+    ells = []                                     # 頭の まるい 玉（つやの 面の 向き：頭・ほお・鼻先が それぞれ ふくらむ）
+    for (c, r), e, rr in ((SKULL, sk, 0.0), (CHEEK, ch, 0.0), (SNOUT, sn, rot_sn)):
+        rz = math.hypot(math.hypot(r[0] * math.sin(th), r[2] * math.cos(th)) * math.cos(ph), r[1] * math.sin(ph))
+        ells.append((*S(e[:2]), e[2] * K, e[3] * K, rr, pr(c, th, ph)[1] * K * HEAD_ZK, rz * K))
+    fur(cv, a, R=30 * K, lw=2.6, ells=ells if HEAD_ELLS else None)
     # 鼻先の うすい ピンク
     (nx, ny), _ = pr((0, 56, 80), th, ph)
     cv.tint(soft_ell(cv, *S((nx, ny)), sn[2] * .82 * K, sn[3] * .7 * K, rot_sn, 1.0) * a, hexc('#FFD3E7'), .6)
@@ -811,6 +926,7 @@ def heart_d(cx, cy, s, ky=1.0):
 
 
 FRAME = [(0, '#B51A63'), (.25, '#D9307F'), (.5, '#F2559F'), (.75, '#FF8DC3'), (1, '#FFD3E8')]
+HEART_GLOSS = 1.0                                 # 大きな ハートの つやの 強さ（わくの くっきりした つや・星空の 上の ガラスの ドーム。0 で 前と 同じ）
 
 
 def nebula(cv, a, seed, cx, cy, s):
@@ -853,6 +969,9 @@ def big_heart(cv, cx, cy, s, seed=7):
     rimv = np.clip(n[..., 0] * .45 + n[..., 1] * .85, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
     cv.add(hexc('#FFC2E0'), rimv * .6 * frame)
     cv.put(hexc('#FFFFFF'), np.clip(sp * 1.4, 0, 1) * .7 * frame)
+    if HEART_GLOSS:                                # わくの くっきりした つや（まさちゃん「馬とハートもっと光沢と…」）
+        cv.put(hexc('#FFFFFF'), smoothstep(.35, .6, sp) * .95 * HEART_GLOSS * frame)
+        cv.add(hexc('#FFD6EA'), rimv * .35 * HEART_GLOSS * frame)
     # 中の 星空
     nebula(cv, inner, seed, ic[0], ic[1], si)
     glitter(cv, inner, 320, seed + 1, r=(.35, 1.1), op=(.45, 1.0))
@@ -872,8 +991,12 @@ def big_heart(cv, cx, cy, s, seed=7):
     cv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, cx + s * .62, cy + s * .2, s * .22, s * .14, -48, .8) * 1.3, 0, 1) * blur(mid2, cv.px(.5)) * .5)
     for px_, py_, r_ in ((-.93, -.12, .03), (.14, -.83, .026), (-.2, .72, .02)):
         cv.put(hexc('#FFFFFF'), soft_ell(cv, cx + px_ * s, cy + py_ * s * HEART_KY, s * r_, s * r_, 0, .4) * .95)
-    # 星空の 上の うすい ガラスの 光（左上）
-    cv.put(hexc('#FFFFFF'), soft_ell(cv, cx - s * .42, cy - s * .42, s * .3, s * .12, -40, 1.0) * .35 * inner)
+    # 星空の 上の ガラスの つや（まさちゃん「馬とハートもっと光沢と…」：ガラスの ドーム。HEART_GLOSS＝0 なら 前の うすい 光）
+    if HEART_GLOSS:
+        ly = ic[1] - .45 * si * HEART_KY
+        glass(cv, inner, GLASS_LOBES(ic, si, ly), HEART_GLOSS)
+    else:
+        cv.put(hexc('#FFFFFF'), soft_ell(cv, cx - s * .42, cy - s * .42, s * .3, s * .12, -40, 1.0) * .35 * inner)
     return outer
 
 
@@ -917,6 +1040,8 @@ def hooves():
 # 全体的に馬とハートから出るようにして！」）：ポニーと ハートの 形の まわりの つやつやの ピンクの わ（ゼリー）と、白 → ピンクの やわらかい 光。
 # ページで 着地の 時に 外へ 広がりながら 消える（pm_aura_…：顔の 向きごと。ハートは その カメラの かたむきで 入れる）
 AURA_BOX = (-80.0, -10.0, 550.0, 830.0)
+AURA_RING = (5.0, 19.0, 8.5, .45)                 # わの 内の はし・はば・まわりの 光の ひろがり・こさ（まさちゃん「白とピンクのオーラはもっと幅を広く大きく演出して！」：はば 12 → 19・光 5 → 8.5。
+                                                  #  こさは 前と 同じ .45：こく すると 広がる 時に 点めつが ふえる）
 
 
 def tilt_pt(x, y, ry, rx, fs=1.0, P=PC.PERSP):
@@ -983,9 +1108,9 @@ def aura_layer(v):
     out = np.clip(1 - U, 0, 1)
     # つやつやの ピンクの わ（ゼリー：ふくらみ・左上の 白い つや・右下の 光）と、わの まわりの 白 → ピンクの やわらかい 光
     # （形の すぐ まわりの 光は ページの drop-shadow：ここで 広く 光らせると、広がる 時に 点めつが ふえる）
-    d0, W = 5.0, 12.0
-    g = np.exp(-np.abs(d - (d0 + W * .5)) / 5.0) * out
-    cv.put(ramp(np.clip((d - d0) / W, 0, 1), [(0, '#FFFFFF'), (.4, '#FFD2E8'), (1, '#FF8CC6')]), g * .45)
+    d0, W, fall, gk = AURA_RING                                         # わの 内の はし・はば・まわりの 光の ひろがり・こさ（画面px）
+    g = np.exp(-np.abs(d - (d0 + W * .5)) / fall) * out
+    cv.put(ramp(np.clip((d - d0) / W, 0, 1), [(0, '#FFFFFF'), (.4, '#FFD2E8'), (1, '#FF8CC6')]), g * gk)
     u = np.clip((d - d0) / W, 0, 1).astype(np.float32)
     band = np.clip(np.minimum(d - d0, d0 + W - d) / 1.3, 0, 1).astype(np.float32)
     h = (np.clip(np.sin(np.pi * u), 0, 1) ** .65).astype(np.float32)

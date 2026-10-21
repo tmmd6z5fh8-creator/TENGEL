@@ -65,6 +65,11 @@
      広がる オーラは 広がる 間・つもる ハートの 雨は はじけるまで・まわりの ハートと キラキラは 入ってくる 時から・最後の ハートなどは 出る 時から）。
      オーラの 光の drop-shadow は 1つの 箱に 1つ（中 .pmQi＝白い ふち・外 .pmQ＝ピンクの 光）・広がる オーラは 絵（img）を そのまま 動かす・
      回る 光線の 箱は 1040px。はかり方は layer_mem.py（層の 画素：いちばん 多い 時 1075MB → 225MB）
+   「プレミアムど的中の馬とハートもっと光沢とプルンプルン感まして！ ど！て！き！ちゅ！う！の白とピンクのオーラはもっと幅を広く大きく演出して！」
+   - つやは flat/premium_art.py（白い 毛の 上ぬり coat・ハートの ガラス glass）。ぷるるんは 1.35倍・ハートは もっと のびちぢみ ＋ 左右に ゆがむ。
+     速さは 1秒に 2.2回（大きく ゆれる ほど 点めつが ふえるので ゆっくり 大きく：JIG_F・JIG_K・HEART_JIG）。
+     オーラの 光は 着地で 白 24px・ピンク 66px に 広げて その 画面の おわりまで 広い まま（AURA_W・AURA_P）・外へ 広がる わは 太く 遠くまで（RIP_S）。
+     ⑤で 画面が ハートで うまって いる 間は 光線を 描かない（PK_GAP：いちばん 多い 時 230MB）。点めつ 8.4%
    - 絵は ぜんぶ flat/premium_art.py で 作った WebP（キャンバスの アセット・リポジトリには 入れない。まさちゃんの 絵も 入れない・なぞっていない）：
      ポニーの 部品（顔の 向き 4つ：右正面から・右正面 斜め上から・その ウィンク・真正面 × 首・たてがみ・耳 左右・顔・リボン・オーラ。左は 左右 うらがえす）・
      ハート・字（ど！ など）・ひづめ・最後の「ど的中」・
@@ -397,33 +402,44 @@ def rise_lag(t, frm):
     return a0 * math.exp(-u / .15) * math.cos(2 * math.pi * JIG_F * u)
 
 
-JIG_F, JIG_TAU = 3.0, .26        # ゆれの 速さ（1秒に 3回）と 小さくなる 速さ：体から 頭・リボン・耳・たてがみへ 少しずつ おくれて つたわる（同じ 速さで ゆれる＝ばらばらに ちらつかない）
+JIG_F, JIG_TAU = 2.2, .27        # ゆれの 速さ（1秒に 2.2回）と 小さくなる 速さ：体から 頭・リボン・耳・たてがみへ 少しずつ おくれて つたわる（同じ 速さで ゆれる＝ばらばらに ちらつかない）。
+                                 #  まさちゃん「プレミアムど的中の馬とハートもっと光沢とプルンプルン感まして！」：ゆれを 1.35倍・少し 長く（.26 → .27）。
+                                 #  速さは 3 → 2.2回：大きく ゆれる ほど ふちの 線が 同じ 所を 何回も 行き来して 点めつが ふえる（3回の まま 大きく すると 面積 13〜27%）。
+                                 #  ゆっくり 大きく ぷるーん ぷるーん と ゆれる ほうが 点めつが 少ない（60コマ／秒で しらべて 8.4%）
+JIG_K = 1.35                     # ゆれの 大きさ（前の 何倍：体・頭・耳・たてがみ・リボン）
+HEART_JIG = (.075, .14, 1.8)     # ハートの ぷるんっ（よこに のびる・たてに ちぢむ・左右に ゆがむ（skewX・度）：前は .055・.11・0）
 
 
 def pony_motion(frm, mir, g=1.0):
     """部品ごとの 動き（t 秒 → CSS の transform）。mir：左右 うらがえした 顔（かたむきの 向きを 画面に あわせる）。
        g：ゆれの 大きさ（カメラの アップで 画面の 上の 動きが 大きく なりすぎないように：JIG_G）"""
     sg = -1.0 if mir else 1.0
-    amp = dict(T=17.0, C=12.0).get(frm, 14.0) * g                  # 着地で 体が 沈む 大きさ（上から 落ちる 時は 大きく）
+    amp = dict(T=17.0, C=12.0).get(frm, 14.0) * g * JIG_K         # 着地で 体が 沈む 大きさ（上から 落ちる 時は 大きく）
     F, TAU = JIG_F, JIG_TAU
+    gk = g * JIG_K
 
     def tilt(t, d=0.0, k=1.0):
         return sg * k * g * entry_lag(t - d, frm)
 
     def bow(t):
-        q = osc(t, IMPACT + .04, .09 * g, F, TAU, math.pi / 2)
-        return f'rotate({tilt(t, .02, 1.3) + osc(t, IMPACT + .04, 11.0 * g, F, TAU):.2f}deg) scale({1 + q:.3f},{1 - q:.3f})'
+        q = osc(t, IMPACT + .04, .09 * gk, F, TAU, math.pi / 2)
+        return f'rotate({tilt(t, .02, 1.3) + osc(t, IMPACT + .04, 11.0 * gk, F, TAU):.2f}deg) scale({1 + q:.3f},{1 - q:.3f})'
 
     def ear(sd):
-        return lambda t: f'rotate({tilt(t, .03, 1.5) + sd * g * (osc(t, IMPACT + .05, 13.0, F, TAU) + 1.4 * rise_lag(t - .02, frm)):.2f}deg)'
+        return lambda t: f'rotate({tilt(t, .03, 1.5) + sd * (gk * osc(t, IMPACT + .05, 13.0, F, TAU) + g * 1.4 * rise_lag(t - .02, frm)):.2f}deg)'
+
+    hx, hy, hk = HEART_JIG
+
+    def heart(t):
+        sk = f' skewX({g * osc(t, IMPACT + .06, hk, F, TAU, math.pi / 2):.2f}deg)' if hk else ''
+        return f'scale({1 + g * osc(t, IMPACT + .01, hx, F, TAU):.3f},{1 - g * osc(t, IMPACT + .01, hy, F, TAU):.3f}){sk}'
 
     return dict(
         body=lambda t: f'translateY({osc(t, IMPACT, amp, F, TAU):.2f}px)',
-        head=lambda t: (f'translateY({g * (osc(t, IMPACT + .02, 6.0, F, TAU) + rise_lag(t, frm)):.2f}px) '
-                        f'rotate({tilt(t) + g * osc(t, IMPACT + .03, 4.0, F, TAU):.2f}deg)'),
-        mane=lambda t: f'rotate({tilt(t, .05, 1.2) + g * osc(t, IMPACT + .07, 5.0, F, TAU):.2f}deg)',
-        earL=ear(-1.0), earR=ear(1.0), bow=bow,
-        heart=lambda t: f'scale({1 + g * osc(t, IMPACT + .01, .055, F, TAU):.3f},{1 - g * osc(t, IMPACT + .01, .11, F, TAU):.3f})',
+        head=lambda t: (f'translateY({gk * osc(t, IMPACT + .02, 6.0, F, TAU) + g * rise_lag(t, frm):.2f}px) '
+                        f'rotate({tilt(t) + gk * osc(t, IMPACT + .03, 4.0, F, TAU):.2f}deg)'),
+        mane=lambda t: f'rotate({tilt(t, .05, 1.2) + gk * osc(t, IMPACT + .07, 5.0, F, TAU):.2f}deg)',
+        earL=ear(-1.0), earR=ear(1.0), bow=bow, heart=heart,
     )
 
 
@@ -511,17 +527,23 @@ def pony_tree(i, face, t_in):
 # ---------------------------------------------------------------- オーラと ハート（まさちゃん「馬とハートが登場してプルルンと揺れる時に、
 # 光沢があるピンクと白のオーラが全体的に馬とハートから出るようにして！ハートも周りに飛ぶように！」
 # 「背景のオーラとハートはもっと多くていいよ！画面馬とハート以外の画面埋まるくらい！」）
-AURA_T = (IMPACT - .02, .9)              # まわりの 光（.pmQ・.pmQi）：着地の 少し 前から 0.9秒
+AURA_T = (IMPACT - .02, .9)              # まわりの 光（.pmQ・.pmQi）：着地の 少し 前から 0.9秒（その 画面の おわりまで）
 # 光は drop-shadow を 1つずつ：中（.pmQi）＝白い ふち・外（.pmQ）＝ピンクの 光。drop-shadow を 1つの 箱に 2つ 以上 かさねると、
 # iPhone（Safari）では 画面の 合成で 描けず、動く ポニーを 毎コマ 描きなおす（重い）ので 分けた（まさちゃん「プレミアムど的中ボタンだけ試すと落ちちゃう！」）
-AURA_W = ('drop-shadow(0 0 4px #FFFFFF)',                      # 白い ふち：ふだん
-          'drop-shadow(0 0 10px #FFFFFF)',                     # 着地（いちばん 強い）
-          'drop-shadow(0 0 8px rgba(255,255,255,.95))')        # ゆっくり もどる
+# まさちゃん「ど！て！き！ちゅ！う！の白とピンクのオーラはもっと幅を広く大きく演出して！」：着地で 白 10 → 24px・ピンク 36 → 66px に 広げて、
+# もどらずに その 画面の おわりまで 広い まま（白 18px・ピンク 52px）。外へ 広がる わも 太く（pm_aura_…：はば 12 → 19）・遠くまで（1.55 → 1.8倍）・長く（0.9 → 1.05秒）
+AURA_W = ('drop-shadow(0 0 5px #FFFFFF)',                      # 白い ふち：ふだん（入ってくる 間）
+          'drop-shadow(0 0 24px #FFFFFF)',                     # 着地（いちばん 強い）
+          'drop-shadow(0 0 20px rgba(255,255,255,.97))',       # ゆっくり もどる
+          'drop-shadow(0 0 18px rgba(255,255,255,.95))')       # その 画面の おわりまで
 AURA_P = ('drop-shadow(0 0 0 rgba(255,95,175,0))',             # ピンクの 光：ふだん（なし）
-          'drop-shadow(0 0 36px rgba(255,95,175,.95))',        # 着地（いちばん 強い）
-          'drop-shadow(0 0 30px rgba(255,95,175,.88))')        # ゆっくり もどる
+          'drop-shadow(0 0 66px rgba(255,95,175,.97))',        # 着地（いちばん 強い）
+          'drop-shadow(0 0 58px rgba(255,95,175,.92))',        # ゆっくり もどる
+          'drop-shadow(0 0 52px rgba(255,95,175,.88))')        # その 画面の おわりまで
 RIP_T = (IMPACT - .02, IMPACT + .3)       # 外へ 広がる つやつやの オーラ（pm_aura_…）：着地と 0.32秒 あと
-RIP_D, RIP_S = .9, 1.55                  # 広がる 長さ（秒）・どこまで 広がるか（倍：画面の はしまで）
+RIP_D, RIP_S = 1.05, 1.8                 # 広がる 長さ（秒）・どこまで 広がるか（倍：画面の はしの 外まで）
+RIP_O = ''                       # 広がる わの こさの とちゅう（'40%{opacity:.88}…' で 大きく 広がる 間も こく できるが、点めつが ふえる ので 前と 同じ）
+PK_GAP = (PC_T['S'][4] + .6, PC_T['FIN'])  # 光線と まん中の 光（.pmpk）は ⑤で まわりが ぜんぶ ハートで うまって ポニーが まん中に いる 間は 見えないので 描かない（いちばん 重い 時：広がる わが 2つ）
 
 
 def ripple(i, face, t_in):
@@ -806,7 +828,7 @@ def pc_css():
 .ov.pm .pmlb{{z-index:2}}
 /* 白い 光の 中で 出る：細い 白い 光線（ゆっくり 回る＝大当たりの 光。1つの 所を 光線が 通るのは 1秒に 1回 くらい）・まん中の 光・キラキラ。
    光線の 箱は 画面の いちばん 遠い すみ（まん中から 509px）が 入る 大きさ（はば 1040px）：前の 1500px と 見た目は 同じで、層の 画素が 半分 */
-.ov.pm .pmpk{{position:absolute;inset:0;z-index:3;opacity:0;overflow:hidden;animation:fzOn .01s linear {sec(T['BG'])} forwards{hide(T['BG'])}}}
+.ov.pm .pmpk{{position:absolute;inset:0;z-index:3;opacity:0;overflow:hidden;animation:fzOn .01s linear {sec(T['BG'])} forwards{hide(T['BG'], gap=PK_GAP)}}}
 .ov.pm .pmpk .rays{{position:absolute;left:50%;top:{BG_C[1]:.0f}px;width:1040px;height:1040px;margin:-520px 0 0 -520px;border-radius:50%;opacity:.6;
   background:repeating-conic-gradient(rgba(255,255,255,.9) 0 2deg,rgba(255,255,255,0) 2deg 12deg);
   -webkit-mask-image:radial-gradient(circle 1060px,transparent 0 9%,#000 20%,#000 40%,transparent 62%);mask-image:radial-gradient(circle 1060px,transparent 0 9%,#000 20%,#000 40%,transparent 62%);
@@ -849,9 +871,9 @@ def pc_css():
 .ov.pm .pmQ,.ov.pm .pmQi{{position:absolute;left:0;top:0;width:0;height:0}}
 .ov.pm .pmQ{{filter:{AURA_P[0]}}}
 .ov.pm .pmQi{{filter:{AURA_W[0]}}}
-@keyframes pmAu{{0%,100%{{filter:{AURA_P[0]}}}12%{{filter:{AURA_P[1]}}}45%{{filter:{AURA_P[2]}}}}}
-@keyframes pmAw{{0%,100%{{filter:{AURA_W[0]}}}12%{{filter:{AURA_W[1]}}}45%{{filter:{AURA_W[2]}}}}}
-@keyframes pmRip{{0%{{opacity:0;transform:scale(.97)}}12%{{opacity:.95}}100%{{opacity:0;transform:scale({RIP_S})}}}}
+@keyframes pmAu{{0%{{filter:{AURA_P[0]}}}12%{{filter:{AURA_P[1]}}}45%{{filter:{AURA_P[2]}}}100%{{filter:{AURA_P[3]}}}}}
+@keyframes pmAw{{0%{{filter:{AURA_W[0]}}}12%{{filter:{AURA_W[1]}}}45%{{filter:{AURA_W[2]}}}100%{{filter:{AURA_W[3]}}}}}
+@keyframes pmRip{{0%{{opacity:0;transform:scale(.97)}}10%{{opacity:1}}{RIP_O}100%{{opacity:0;transform:scale({RIP_S})}}}}
 {pony_css()}{cam_css()}/* まわりを うめる ハート（ポニーの 方から 少し とんできて とまる・4こに 1こは ふわふわ・⑤で 画面ぜんぶ）・その 上の キラキラ・下に すきまなく つもった ハート（着地で ぷるん・まん中の 近くは 前へ おされる） */
 .ov.pm .pmbh{{position:absolute;inset:0;z-index:4;pointer-events:none}}
 .ov.pm .pmbh i,.ov.pm .pmpl i{{position:absolute;display:block;opacity:0}}
