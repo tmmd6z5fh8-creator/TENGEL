@@ -5135,7 +5135,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'], hit_news=SND['hit'], hit_ink=SND['hit'], hit_carousel=SND['hit'], hit_stars=SND['hit'], hit_silks=SND['hit'], hit_neon=SND['hit'], hit_pixel=SND['hit'], hit_fireworks=SND['hit'], hit_kids=SND['hit'], hit_cute=SND['hit'], hit_sunset=SND['hit'], hit_night=SND['hit'], hit_marble=SND['hit'], hit_lucky=SND['hit'], hit_chalk=SND['hit'], hit_silver=SND['hit'], hit_golden=SND['hit'], hit_tengel=SND['hit'], hit_xmas=SND['hit'], hit_halloween=SND['hit'], hit_valentine=SND['hit'], hit_whiteday=SND['hit'], fz_pc=('snd_fz_push', 'snd_pc'), fz_zp=('snd_fz_push', 'snd_pc'))       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月・競馬新聞・水墨画・メリーゴーランド・星座・勝負服・ネオン・ドット絵・花火・子供向け・かわいい・夕焼け・ナイター・大理石・開運・黒板・シルバー帯・ゴールド帯・マスター帯・クリスマス・ハロウィン・バレンタイン・ホワイトデーの的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'], hit_news=SND['hit'], hit_ink=SND['hit'], hit_carousel=SND['hit'], hit_stars=SND['hit'], hit_silks=SND['hit'], hit_neon=SND['hit'], hit_pixel=SND['hit'], hit_fireworks=SND['hit'], hit_kids=SND['hit'], hit_cute=SND['hit'], hit_sunset=SND['hit'], hit_night=SND['hit'], hit_marble=SND['hit'], hit_lucky=SND['hit'], hit_chalk=SND['hit'], hit_silver=SND['hit'], hit_golden=SND['hit'], hit_tengel=SND['hit'], hit_xmas=SND['hit'], hit_halloween=SND['hit'], hit_valentine=SND['hit'], hit_whiteday=SND['hit'], fz_pc=('snd_fz_push', 'snd_pc'), fz_zp=('snd_fz_push', 'snd_zp'))       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月・競馬新聞・水墨画・メリーゴーランド・星座・勝負服・ネオン・ドット絵・花火・子供向け・かわいい・夕焼け・ナイター・大理石・開運・黒板・シルバー帯・ゴールド帯・マスター帯・クリスマス・ハロウィン・バレンタイン・ホワイトデーの的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -5209,7 +5209,7 @@ SFX_JS = '''  sfxDecode(c, b) {
 '''
 
 
-TXT_SND = ('snd_pc',)     # キャンバスが 音だけの mp4 を 受け付けなくなったので、base64 の テキスト（.txt）で 入れた 音（見本の画面で もどして 鳴らす）
+TXT_SND = ('snd_pc', 'snd_zp')     # キャンバスが 音だけの mp4 を 受け付けなくなったので、base64 の テキスト（.txt）で 入れた 音（見本の画面で もどして 鳴らす）
 SFX_JS_TXT = SFX_JS.replace("return r.ok ? r.arrayBuffer() : null;", "return r.ok ? r.arrayBuffer().then(function (b) { return self.sfxBin(b); }) : null;") + '''  sfxBin(b) {
     // base64 の テキストで 入れた 音は もとの m4a に もどす（はじめから m4a・mp4 なら そのまま）
     try {
@@ -5256,16 +5256,18 @@ def page_js(kind):
             + "}\n")
 
 
-SOUND_W, SOUND_H = 2200, 1914
+SOUND_W, SOUND_H = 2200, 2460     # 超プレミアムの 段を 足して 高く（下の 4つの 箱まで ぜんぶ 入る）
 SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目もり（秒）
     ('hit', '的中ボタン', '当たったとき・ハ長調（明るく軽く）', 'ピロリン↑（鐘が3つ上がる）＋キラキラ', ('#C8281F', '#FF9A3C'), .5),
     ('big', 'デカ的中ボタン', '3連単が当たったとき・ニ長調・重く重低音で（速く勢いよく）', 'ドゥン（重低音）＋キュイーン↑（低めから）＋低いうなり', ('#7B4CFF', '#FF3BB8'), .5),
     ('fz', 'ど的中ボタン（フリーズ的中ボタン）', '3連単の当たりに超大穴（10〜12番人気）<br>ホ長調・低音と重低音（いちばん派手）', 'ドォォン（重低音）＋グォォォン↑（低いうなりが1オクターブ上がる）＋低いどら',
      ('#FF3B3B', '#FF9F1A', '#FFE53B', '#3BE26A', '#2FD6FF', '#4C6BFF', '#B34CFF', '#FF3BB8'), 1.0),
-    ('pc', 'プレミアムど的中（かわいいど的中）', 'どの着せ替えでも ど的中の 6回に1回<br>ハ長調・オルゴールと鐘＋声', 'ど的中と同じ（PUSHの音は 分けない）',
+    ('pc', 'プレミアムど的中（かわいいど的中）', 'どの着せ替えでも ど的中の 6回に1回<br>ハ長調・オルゴールと鐘（かわいく）', 'ど的中と同じ（PUSHの音は 分けない）',
      ('#FF6FA8', '#FFB3CF', '#C9A8FF', '#FF6FA8'), 1.0),
+    ('zp', '超プレミアムど的中（手書き・鉛筆）', 'プレミアムど的中の 8回に1回<br>プレミアムの音＋①〜⑤は 声', 'ど的中と同じ（PUSHの音は 分けない）',
+     ('#6E5F6B', '#FF8DC0', '#FFD3E5', '#6E5F6B'), 1.0),
 )
-PUSH_OF = dict(pc='fz')     # PUSHの音が ほかと 同じ もの（プレミアムは ど的中の PUSH の音）
+PUSH_OF = dict(pc='fz', zp='fz')     # PUSHの音が ほかと 同じ もの（プレミアム・超プレミアムは ど的中の PUSH の音）
 
 
 def snd_events():
@@ -5289,19 +5291,23 @@ def snd_events():
                (R, R + .3, '大爆発 → ズドン＋ジャーン', '結果（虹色の大当たりの画面）→ ボードの着地・「ど的中！！！」'),
                (R + .45, R + .69, 'ボン・ボン・ボン → ゴーン＋ジャラジャラ', '買い目（0.08秒おき）→ 払戻の合計（メダル）')],
         'pc': pc_events(),
+        'zp': pc_events(True),
     }
 
 
-def pc_events():
-    """プレミアムど的中（かわいいど的中）の タップの 音の 中身（秒は PC.PC_T）"""
+def pc_events(with_voice=False):
+    """プレミアムど的中（かわいいど的中）の タップの 音の 中身（秒は PC.PC_T）。with_voice：超プレミアム（①〜⑤は 声）"""
     T = PC.PC_T
     S, land = T['S'], T['IN'] * .72
     t0b = T['RES'] + .45
     ev = [(0, None, 'ポン＋キラリン', '押した'), (.5, T['FILL'], 'ポロポロ（オルゴール）', 'ハートが 降って つもる（つもるほど 多く・高く）'),
           (T['BURST'], T['BURST'] + T['CHAIN'], 'パーン＋ポポポポン', 'まん中から ハートが はじける'), (T['W'][1], None, 'キラーーン', '白い 光')]
-    names = (('「どぉ！」', '① ど！（左から）'), ('「てぇ！」', '② て！（右から）'), ('「きぃ！」', '③ き！（下から）'), ('「ちゅ！」＋キラッ', '④ ちゅ！（上から・ウィンク）'), ('「う！」', '⑤ う！（まん中に）'))
+    if with_voice:
+        names = (('声「どぉ！」', '① ど！（左から）'), ('声「てぇ！」', '② て！（右から）'), ('声「きぃ！」', '③ き！（下から）'), ('声「ちゅ！」＋キラッ', '④ ちゅ！（上から・ウィンク）'), ('声「う！」', '⑤ う！（まん中に）'))
+    else:
+        names = (('ポン＋ド', '① ど！（左から）'), ('ポン＋レ', '② て！（右から）'), ('ポン＋ミ', '③ き！（下から）'), ('ポン＋ファ＋チュッ＋キラッ', '④ ちゅ！（上から・ウィンク）'), ('ポン＋ソ', '⑤ う！（まん中に）'))
     for i, (snd, what) in enumerate(names):
-        ev.append((S[i], S[i] + land, f'シュッ → 声{snd}', what))
+        ev.append((S[i], S[i] + land, f'シュッ → {snd}', what))
     ev += [(T['FIN'] + .28, None, 'ジャーン（高い ド）', '大きな ハートの ど的中'), (T['FIN'] + .5, T['RES'], 'ドクン・ドクン＋シャララ↑', 'ハートの 鼓動・のぼる 小さな ハート'),
            (T['RES'] - .1, T['RES'] + .12, 'ヒューン↑ → ポンッ', 'ハートが 上へ・ボード'), (t0b, t0b + .24, 'ピン・ピン・ピン → キラリーン', '買い目（0.08秒おき）→ 払戻の合計')]
     return ev
@@ -5374,19 +5380,20 @@ def sound_page():
     boxes = (box('鳴らすとき', '<li><b>PUSHの音</b>：PUSHが出た瞬間（結果を記録して当たりのとき。3つのボタンのうち出た1つの音だけ）</li>'
                  '<li><b>隠れど的中</b>：PUSHが出たときはデカの音・タップでど的中の音（見た目もデカ → ど的中）。<b>ハズレは音なし</b></li>'
                  '<li><b>プレミアムど的中（かわいいど的中）</b>：どの着せ替えでも、PUSHが出たときは ど的中の音・タップで プレミアムの音（見た目も PUSH は ど的中と同じ）</li>'
-                 '<li><b>超プレミアムど的中（手書き・鉛筆）</b>：プレミアムと 同じ音（秒が 同じ：super_premium.py は premium_cute.py の PC_T を そのまま 使う）<b>※仮</b></li>'
+                 '<li><b>超プレミアムど的中（手書き・鉛筆）</b>：PUSHが出たときは ど的中の音・タップで 超プレミアムの音（プレミアムの 音の ①〜⑤を 声に した もの。秒は 同じ：super_premium.py は premium_cute.py の PC_T を そのまま 使う）</li>'
                  '<li><b>タップの音</b>：PUSHを押した瞬間が0秒。画面の動きと同じ時刻で、見本の画面（となりの3つ）でも同じに鳴る</li>'
                  '<li>「とじる」・ほかの画面へ移る・アプリを閉じる → すぐ止める。鳴っている途中で次の音が鳴るときは、前の音を止めてから</li>')
              + box('iPhoneでの鳴らし方（アプリ）', '<li><b>消音スイッチ（マナーモード）なら鳴らさない</b>・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）。音量はiPhoneの音量のまま</li>'
                    '<li>設定に「効果音」オン／オフ（最初はオン）<b>※仮</b></li>'
                    f'<li>「視差効果を減らす」がオン：的中・デカは同じ音。ど的中は動きが短い（1秒真っ暗 → 結果）ので、押して1秒後に、ど的中の音の{ssec(R)}秒（結果のドォン・パッパッパーン）から鳴らす。プレミアムも 1秒後に その音の{ssec(PC.PC_T['RES'])}秒（ハートが 上へ・ボード）から <b>※仮</b>（見本の画面も同じ）</li>')
-             + box('大きさとファイル', '<li>7つ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz・sfx_pc（プレミアムど的中（かわいいど的中）のタップの音。PUSHの音は ど的中と同じ）（AAC 160kbps・m4a・ぜんぶで約740KB）</li>'
+             + box('大きさとファイル', '<li>8つ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz・sfx_pc（プレミアムど的中（かわいいど的中）のタップの音）・sfx_zp（超プレミアムど的中のタップの音）。プレミアム・超プレミアムの PUSHの音は ど的中と同じ（AAC 160kbps・m4a・ぜんぶで約1MB）</li>'
                    '<li>大きさはそろえて、強いボタンほど少し大きく（的中 −16〜−17・デカ −13〜−14・ど的中 −13 LUFS）。いちばん大きい所も −1dB 以下（音割れしない）</li>'
                    '<li><b>デカとど的中は低音と重低音</b>：重低音はスマホのスピーカーからはほとんど出ないので、ひずませて作った倍音で低音を感じるようにして、ジャーンやファンファーレには高めの音も小さく重ねた。イヤホン・ヘッドホンだと重低音まで聞こえる。スマホのスピーカーでは的中より少し小さめに聞こえることがある</li>'
                    '<li>買い目の音は見本の行の数（的中・デカ2行・ど的中3行）。4行以上だと合計が出る前に「チャリーン」が鳴るので、アプリでは行と合計の音を分けて、出るたびに鳴らす（あとで作る）<b>※仮</b></li>')
              + box('作り方', '<li>音は全部プログラムで作った（gen_sfx.py・numpy と scipy）。<b>録音や、ほかの音のデータ（サンプル）は使っていない</b></li>'
                    '<li>鐘（FM）・金管（ノコギリ波を重ねる）・ドラム・コイン・「シュッ」（ノイズ）・キュウィン（すばやく上がるシンセ）・爆発（はじける音・爆風・重低音・地ひびき・かけら）を組み合わせて、残響・イコライザー・圧縮で仕上げ。デカとど的中は重低音のドォォン・爆発・低いうなり・低いどら・低い金管で、仕上げも低音用（ど的中は FZ_LOW・FZ_MID で重低音と低音の楽器の大きさを変えられる）</li>'
                    '<li>ど的中は gen_fx.py の時刻（FZ_T・MT_T）、プレミアムは premium_cute.py の時刻（PC_T・SCREENS）を読むので、動きを変えたら作り直すだけで音もそろう：python3 gen_sfx.py &lt;フォルダ&gt; → ffmpeg で m4a に</li>'
+                   '<li><b>超プレミアムの 声</b>（どぉ！てぇ！きぃ！ちゅ！う！）も 録音や 声の データは 使わず、人の 声の しくみ（のどの ふるえ → 口の 中の ひびき）を 計算で まねて 作った（gen_sfx.py の voice）</li>'
                    '<li>見本の キャンバスは 音だけの mp4 を 受け付けなくなったので、プレミアムの音は m4a を base64 の テキスト（.txt）にして入れ、見本の画面で もどして 鳴らす（アプリでは m4a のまま）</li>'))
     return f'''<!doctype html>
 <html lang="ja">
@@ -5414,6 +5421,7 @@ body{{margin:0}}
 .sn.big{{--c:#7B4CFF}}
 .sn.fz{{border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8) border-box}}
 .sn.pc{{--c:#E0468C;border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF6FA8,#FFB3CF,#C9A8FF,#FF6FA8) border-box}}
+.sn.zp{{--c:#6E5F6B;border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#6E5F6B,#FF8DC0,#FFD3E5,#6E5F6B) border-box}}
 .sn h2{{margin:0;font-size:19px;line-height:1.3;color:#161F3D}}
 .sn h2 small{{display:block;margin-top:4px;font-size:12.5px;font-weight:700;color:#8A6A38}}
 .pl{{display:flex;align-items:center;gap:10px;width:100%;height:48px;margin-top:12px;padding:0 16px;border-radius:12px;border:2px solid var(--c);background:#FFFFFF;color:#161F3D;font-family:"BIZ UDPGothic",sans-serif;font-weight:700;font-size:15px;text-align:left;cursor:pointer}}
@@ -5442,7 +5450,7 @@ body{{margin:0}}
   <div class="hdr">
     <div>
       <h1 class="t1">効果音（的中ボタン・デカ的中ボタン・ど的中ボタン・プレミアムど的中）</h1>
-      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回、全体を重く重低音に・ど的中は全体を低音と重低音で、「どてき！！」からは爆発のようにずっしり重く）。動きもパチンコの当たりのように速く・勢いよくした。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。<b>ど的中のフリーズは押した瞬間</b>（まさちゃんの指定。送ってくれたパチスロのフリーズの動画のように、ドンッ＋ビーーッ…ブツッ（電子音がいきなり消える）→ 細い電気のバチバチ → 無音。動画の音は使わず、似た感じに作った）。<b>プレミアムど的中（かわいいど的中）</b>は どの着せ替えでも ど的中の 6回に1回：オルゴールと鐘で かわいく、①〜⑤は <b>声「どぉ！てぇ！きぃ！ちゅ！う！」</b>（録音ではなく 計算で 作った 声）→ 最後の ど的中で 高い ド。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
+      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回、全体を重く重低音に・ど的中は全体を低音と重低音で、「どてき！！」からは爆発のようにずっしり重く）。動きもパチンコの当たりのように速く・勢いよくした。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。<b>ど的中のフリーズは押した瞬間</b>（まさちゃんの指定。送ってくれたパチスロのフリーズの動画のように、ドンッ＋ビーーッ…ブツッ（電子音がいきなり消える）→ 細い電気のバチバチ → 無音。動画の音は使わず、似た感じに作った）。<b>プレミアムど的中（かわいいど的中）</b>は どの着せ替えでも ど的中の 6回に1回：オルゴールと鐘で かわいく（ど・て・き・ちゅ・う ＝ ド・レ・ミ・ファ・ソ → 最後の ど的中で 高い ド）。<b>超プレミアムど的中</b>（プレミアムの 8回に1回）は 同じ音の ①〜⑤が <b>声「どぉ！てぇ！きぃ！ちゅ！う！」</b>（まさちゃんの指定。録音ではなく 計算で 作った 声）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
     </div>
     <button class="stop" type="button" onClick="{{{{stop}}}}">{STOP_SVG}とめる</button>
   </div>{secs}
@@ -5553,7 +5561,7 @@ body{{margin:0}}
       <li><b>隠れど的中</b>：デカ的中が出るたびに数えて、<b>2〜7回目（ランダム）の1回</b>。出たら、次の回数をまた2〜7からランダムに決める。数は端末に保存（アプリを閉じても続く・記録やバックアップとは別）。本物のど的中（超大穴）は数えない <b>※仮</b></li>
       <li>見た目は<b>デカ的中のPUSH</b>（PUSHが出たときの音もデカ）→ タップで<b>そのまま、ど的中の演出</b>（押した瞬間にフリーズ・音はど的中）→ 結果の見出し「<b>隠れど的中！！！</b>」・帯「隠れ　デカ的中が ど的中に化けた！」（超大穴の帯のかわり）</li>
       <li><b>プレミアムど的中（かわいいど的中）</b>：<b>どの着せ替えでも</b>、ど的中が出るたびに<b>6回に1回（ランダム）</b>。PUSHは ど的中と同じ → タップで ハートが 降って つもる → はじけて 白い光 → ハートを だいた ポニーが「ど！・て！・き！・ちゅ！・う！」（1文字ずつ）→ ハートに つつまれた「ど的中」→ その着せ替えの ど的中の ボード。見本は「プレミアムど的中」・作り方は premium_cute.py。隠れど的中では 出さない <b>※仮</b></li>
-      <li><b>超プレミアムど的中（手書き・鉛筆）</b>：<b>どの着せ替えでも</b>、<b>プレミアムど的中の 8回に1回（ランダム）</b>＝ど的中の 48回に1回（超プレミアムの 時は プレミアムは 出ない）。PUSHは ど的中と同じ → タップで はじめの プレミアムど的中と 同じ 流れ（ハートが 降って つもる → はじけて 白い光 → ハートを だいた ポニーが「ど！・て！・き！・ちゅ！・う！」→ ハートに つつまれた「ど的中」→ その着せ替えの ど的中の ボード）を、<b>鉛筆で 描いた 感じ</b>に（細い 鉛筆の 線を うすい 線で もう1回 なぞる・はしが 少し 行きすぎて 交わる・ぬりが 少し ずれる・紙の ざらざら）。見本は「超プレミアムど的中」・作り方は super_premium.py と rough.py。隠れど的中では 出さない <b>※仮</b></li>
+      <li><b>超プレミアムど的中（手書き・鉛筆）</b>：<b>どの着せ替えでも</b>、<b>プレミアムど的中の 8回に1回（ランダム）</b>＝ど的中の 48回に1回（超プレミアムの 時は プレミアムは 出ない）。PUSHは ど的中と同じ → タップで はじめの プレミアムど的中と 同じ 流れ（ハートが 降って つもる → はじけて 白い光 → ハートを だいた ポニーが「ど！・て！・き！・ちゅ！・う！」→ ハートに つつまれた「ど的中」→ その着せ替えの ど的中の ボード）を、<b>鉛筆で 描いた 感じ</b>に（細い 鉛筆の 線を うすい 線で もう1回 なぞる・はしが 少し 行きすぎて 交わる・ぬりが 少し ずれる・紙の ざらざら）。音は プレミアムの 音の ①〜⑤が 声「どぉ！てぇ！きぃ！ちゅ！う！」（sfx_zp・まさちゃんの指定）。見本は「超プレミアムど的中」・作り方は super_premium.py と rough.py。隠れど的中では 出さない <b>※仮</b></li>
     </ul></section>
   </div>
   <div class="boxes">

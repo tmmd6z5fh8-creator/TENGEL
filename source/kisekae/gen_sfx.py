@@ -1,8 +1,9 @@
 """的中ボタン・デカ的中ボタン・ど的中ボタン（フリーズ的中ボタン）・プレミアムど的中（かわいいど的中）の効果音。音は全部ここで合成する（録音や、ほかの音のデータは使わない）。
-   プレミアムの ①〜⑤の 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」も 人の 声の しくみを 計算で まねて 作る（voice：フォルマント合成。録音・声の データは 使わない）
+   超プレミアムの ①〜⑤の 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」も 人の 声の しくみを 計算で まねて 作る（voice：フォルマント合成。録音・声の データは 使わない）
    python3 gen_sfx.py <出力フォルダ>
    → sfx_hit_push.wav・sfx_hit.wav（的中）／sfx_big_push.wav・sfx_big.wav（デカ）／sfx_fz_push.wav・sfx_fz.wav（ど的中＝フリーズ）
      ／sfx_pc.wav（プレミアムど的中（かわいいど的中）：タップの音だけ。PUSHの音は ど的中と同じ）
+     ／sfx_zp.wav（超プレミアムど的中（手書き・鉛筆）：プレミアムの 音の ①〜⑤を 声に。PUSHの音は ど的中と同じ）
      *_push＝PUSHが出たとき（当たりのお知らせ）。それ以外＝PUSHを押してから（0秒＝押した瞬間）。44.1kHz・16bit・ステレオ
      ＋ sfx_wave.json（音の大きさの形・1/50秒ごと。効果音のメモ Fx_Sound.dc.html の波形に使う。gen_fx.py と同じフォルダに置く）
    秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む。
@@ -881,6 +882,16 @@ def tine(f, d=1.2, tau=.6):
     return fade(x * env(n, .001, tau), .001, .03)
 
 
+def kiss(rng):
+    """チュッ：くちびるの 小さな 音（とても 短い ノイズ）＋ すっと 上がる 高い 音"""
+    n = n_(.15)
+    t = tl(n)
+    f = 1150 + 1700 * (1 - np.exp(-t / .022))
+    x = np.sin(phase(f, n)) * np.minimum(t / .004, 1) * np.exp(-t / .032)
+    x = x + .45 * bp(rng.standard_normal(n), 1800, 7000) * np.exp(-t / .005)
+    return fade(x, .0005, .02)
+
+
 def clap(rng, d=.2):
     """パン：やわらかい 手拍子（ノイズが 3回 すぐ つづく）"""
     n = n_(d)
@@ -1011,14 +1022,16 @@ PC_VOICE_G = 1.1                                                                
 PC_DUCK = (-10.0, -6.0, -6.0, -6.0, -6.0)                                         # 声の 間 まわりの 音を 小さく する 量（dB。①は 白い 光の 鐘の ひびきが のこって いるので 深く）
 
 
+PC_NOTES = (72, 74, 76, 77, 79)                                                   # ど・て・き・ちゅ・う ＝ ド・レ・ミ・ファ・ソ（C5〜G5）。最後の ど的中 ＝ 高い ド（プレミアム）
 PC_CHORDS = ((60, 64, 67), (55, 59, 62), (57, 60, 64), (53, 57, 60), (55, 59, 62))  # ①〜⑤の 和音：C・G・Am・F・G → 最後 C
 
 
-def sfx_pc():
+def sfx_pc(with_voice=False):
     """押してから（秒は premium_cute.py の PC_T・SCREENS）：0 ポン＋キラリン → ハートが 降って つもる（オルゴールの ポロポロが だんだん 多く 高く・和音が ふくらむ）
        → BURST パーン＋ポポポポン（まん中から じゅんに はじける）→ W キラーーン（白い 光）
-       → ①〜⑤ 入ってくる 方から シュッ → 止まった 時に 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」（voice：だんだん 高く）・④は ウィンクで キラッ
-         （下で オルゴールの 分散和音と 手拍子。前の ポン＋鐘の ド・レ・ミ・ファ・ソ と チュッ は 声に かえた）
+       → ①〜⑤ 入ってくる 方から シュッ → 止まった 時に ポン＋鐘（ド・レ・ミ・ファ・ソ）・④ は チュッ＋ウィンクで キラッ（下で オルゴールの 分散和音と 手拍子）
+       with_voice=True（超プレミアムど的中：sfx_zp）：止まった 時の 鐘と チュッ を 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」に（voice：だんだん 高く・その 間 まわりを 小さく）。
+         まさちゃん「プレミアムど的中、音を変えて！ … これでおとだせる？」→「これ超プレミアムど的中の音声に使用して！」（超プレミアムだけ 声・プレミアムは 前の 音）
        → FIN ふわっ → ジャーン（ど的中・高い ド）→ ドクン・ドクン（ハートの 鼓動）・シャララ↑（のぼる ハート）
        → RES ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 ピン・ピン・ピン（0.08秒おき）→ 合計 キラリーン"""
     T, SC = read_pc_times()
@@ -1054,7 +1067,8 @@ def sfx_pc():
         mx.add(bell(mtof(m), 2.2, idx=1.8, tau=.9), W1 + .012 * i, .18, (-.4, -.2, 0, .2, .4)[i], rv=.5)
     sparkle(mx, W1, .6, 10, (96, 98, 100, 103, 105, 108), .06, r)
     mx.add(pad((60, 64, 67, 72), .9, .02, .7, .3), W1, .12, rv=.5)
-    # --- ①〜⑤：シュッ（入ってくる 方から）→ 声（どぉ！・てぇ！・きぃ！・ちゅ！・う！：母音が 止まる 時に 出る）。下で オルゴールの 分散和音・ベース・手拍子（止まる 時が 2拍目）---
+    # --- ①〜⑤：シュッ（入ってくる 方から）→ ポン＋鐘（ド・レ・ミ・ファ・ソ）／超プレミアムは 声（どぉ！・てぇ！・きぃ！・ちゅ！・う！：母音が 止まる 時に 出る）。
+    #     下で オルゴールの 分散和音・ベース・手拍子（止まる 時が 2拍目）---
     vr = np.random.default_rng(77)                                                 # 声の 乱数（ほかの 音の 乱数と 分ける）
     vq = []                                                                        # 声は まわりの 音を 置いて から（その 間 まわりを 小さく して）のせる
     for i, (text, face, frm, s_txt) in enumerate(SC):
@@ -1065,14 +1079,24 @@ def sfx_pc():
         wh = nsweep(d, f0, f1, .45, r) * np.sin(np.linspace(0, np.pi, n_(d))) ** 2
         p0 = {'L': -.9, 'R': .9}.get(frm, 0.0)
         mx.add(wh, ti, .09, np.linspace(p0, 0, 8), rv=.25)
-        mx.add(pop(600, 300, .1, r, .15), land, .2, rv=.12)
-        syl, note = PC_VOICE[i]
-        vq.append((syl, note, land - SYL[syl]['von']))
+        if with_voice:                                                             # 超プレミアム：声（まわりを 置いた あとで のせる）
+            mx.add(pop(600, 300, .1, r, .15), land, .2, rv=.12)
+            syl, note = PC_VOICE[i]
+            vq.append((syl, note, land - SYL[syl]['von']))
+        else:                                                                      # プレミアム：ポン＋鐘（ド・レ・ミ・ファ・ソ）
+            m = PC_NOTES[i]
+            mx.add(pop(600, 300, .1, r, .15), land, .45, rv=.12)
+            mx.add(bell(mtof(m + 12), 1.4, idx=1.5, tau=.55), land, .28, rv=.4)
+            mx.add(tine(mtof(m), 1.4, .7), land, .28, rv=.35)
+            mx.add(tine(mtof(m + 24), .8, .3), land + .01, .09, rv=.35)
         sparkle(mx, land, .35, 4, (96, 100, 103, 108), .045, r)
         for k in range(4):                                                         # とびちる 小さな ハート
             mx.add(pop(1700 + 150 * k, 1100, .06, r, .1), land + .03 + .04 * k, .1, r.uniform(-.7, .7), rv=.2)
-        if text.startswith('ちゅ'):                                                # ウィンクの キラッ（声「ちゅ！」の あと）
+        if text.startswith('ちゅ') and with_voice:                                 # ウィンクの キラッ（声「ちゅ！」の あと）
             mx.add(bell(mtof(103), .8, idx=1.0, tau=.25), land + .3, .11, .35, rv=.35)
+        elif text.startswith('ちゅ'):                                              # チュッ＋ウィンクの キラッ
+            mx.add(kiss(r), land + .06, .5, .1, rv=.15)
+            mx.add(bell(mtof(103), .8, idx=1.0, tau=.25), land + .22, .11, .35, rv=.35)
         base = land - .3
         ch = PC_CHORDS[i]
         arp = (ch[0] + 12, ch[2] + 12, ch[1] + 12, ch[2] + 12, ch[0] + 24, ch[2] + 12, ch[1] + 12, ch[2] + 12)
@@ -1125,8 +1149,13 @@ def sfx_pc():
     return mx.render(1.6, target=-14)
 
 
+def sfx_zp():
+    """超プレミアムど的中（手書き・鉛筆）の タップの 音：プレミアムの 音の ①〜⑤を 声に（PUSHの 音は ど的中と 同じ）"""
+    return sfx_pc(with_voice=True)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
-          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc))
+          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp))
 
 def wave_env(x, per_sec=50):
     """メモの波形：1/50秒ごとのいちばん大きい所（0〜1）の平方根（小さい音も見えるように。-6dB≒0.7・-20dB≒0.3・-40dB＝0.1）"""
