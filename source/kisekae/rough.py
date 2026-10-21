@@ -5,6 +5,12 @@
      はしを 少し はみ出す（とじた 形は 少し 行きすぎる）・細い 線を もう1本 少し ずらして 重ねる（下書きの 線）
    - ぬりは 線から 少し ずれる（色を ぬる 時の ずれ）・ふちも 少し ゆれる
    - 出す path は 2次の B スプライン（相対・0.1 きざみ：qspline）で 小さく（art.smooth の 3分の1 くらい）
+   鉛筆（style='pencil'：まさちゃん「線をもっと細くして！」「鉛筆で描いたかんじで！」）：
+   - ふちの 線（ink に した 色・こい 色）は 細い 鉛筆の 線（1.3px・太さが 少し かわる・はしは 細く）を ぬりの **上** に 描き、
+     もう1本 もっと 細い うすい 線で なぞる（少し ずれて 行きすぎる）。色は 鉛筆の 黒（PEN['ink']）
+   - outlined（部品を まとめた ふち）は ほかの 部品の 中に 入る 所の 線を 描かない（まとめた 形の 外がわだけ）。
+     線が とぎれる 所は 少し 行きすぎて 交わる（鉛筆の 線の 重なり）
+   - ぬりの ずれは 小さく（0.6px）。白い つや など 色の 線は そのまま（下書きの 線なし）
    使い方：with hand(scale=…, seed=…): の 中で art の path()・outlined() を 呼ぶと 手書きに なる（cute.py なども 同じ。
    scale＝その 絵が 画面で 何倍に なるか：ゆれの 大きさを 画面の px で そろえる）。ellipse・circle・rect の 文字は ellipses() で 手書きの path に。
    乱数は seed で きまる（何回 作っても 同じ）"""
@@ -245,8 +251,8 @@ def noise(rnd, wl):
                       math.sin(2 * math.pi * s / 7.3 + p3) * .6 + math.sin(2 * math.pi * s / 4.1 + p4) * .4)
 
 
-def hand_pts(pts, closed, rnd, amp, over, step, tremor=None):
-    """手書きの 線の 点：とじた 形は はじまりを ずらして 少し 行きすぎる・ひらいた 線は はしを 少し のばす。法線の 方へ ゆらす"""
+def hand_pts(pts, closed, rnd, amp, over, step, tremor=None, both=False):
+    """手書きの 線の 点：とじた 形は はじまりを ずらして 少し 行きすぎる・ひらいた 線は はしを 少し のばす（both：はじめも）。法線の 方へ ゆらす"""
     sc = _S['scale']
     stp = step / sc
     if closed:
@@ -272,6 +278,11 @@ def hand_pts(pts, closed, rnd, amp, over, step, tremor=None):
             (ax, ay), (bx, by) = pts[-2], pts[-1]
             L = math.hypot(bx - ax, by - ay) or 1
             pts = pts + [(bx + (bx - ax) / L * ov, by + (by - ay) / L * ov)]
+            if both:
+                ov = over / sc * rnd.uniform(.3, 1.0)
+                (ax, ay), (bx, by) = pts[1], pts[0]
+                L = math.hypot(bx - ax, by - ay) or 1
+                pts = [(bx + (bx - ax) / L * ov, by + (by - ay) / L * ov)] + pts
     nz = noise(rnd, P['wl'] / sc)
     nm = normals(pts)
     out, s = [], 0.0
@@ -284,7 +295,7 @@ def hand_pts(pts, closed, rnd, amp, over, step, tremor=None):
     return out
 
 
-def brush_d(pts, w, rnd):
+def brush_d(pts, w, rnd, wvar=None):
     """太さが かわる 線（筆）の 形：はじめと おわりは 少し 細く・とちゅうは ゆっくり 太く 細く"""
     if len(pts) < 2:
         x, y = pts[0]
@@ -299,7 +310,7 @@ def brush_d(pts, w, rnd):
     for i, (p, (nx, ny)) in enumerate(zip(pts, nm)):
         if i:
             s += math.dist(pts[i - 1], p)
-        k = 1 + P['wvar'] * nz(s * sc)[0]
+        k = 1 + (P['wvar'] if wvar is None else wvar) * nz(s * sc)[0]
         e = min(s, L - s)
         k *= .55 + .45 * min(1.0, e / taper) if taper else 1
         h = w * k / 2
@@ -350,6 +361,89 @@ def wobble_d(d, amp=None):
     return o.strip() or d
 
 
+# ---------------------------------------------------------------- 鉛筆の 線
+PEN = dict(w=1.3, wvar=.38, amp=1.0, over=5.0, op=.9,          # 線：はば（画面の px）・太さの かわり方・ゆれ・行きすぎ・こさ
+           re_w=.5, re_amp=1.6, re_over=9.0, re_op=.45,        # なぞる 線：はば・ゆれ・行きすぎ・こさ
+           fill_shift=.6, ink='#4D4049', dark=.25, min_run=3.0)   # ぬりの ずれ・鉛筆の 色・これより こい 色の 線は 鉛筆に・これより 短い 線は 描かない（px）
+
+
+def _lum(c):
+    """#RRGGBB の 明るさ（相対輝度）。色で ない もの（url(…)・none）は 1"""
+    m = re.fullmatch(r'#([0-9a-fA-F]{6})', str(c).strip())
+    if not m:
+        return 1.0
+    v = [int(m.group(1)[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    v = [x / 12.92 if x <= .04045 else ((x + .055) / 1.055) ** 2.4 for x in v]
+    return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]
+
+
+def pen_ink(color):
+    """鉛筆で 描く 色か（ふちの 色・こい 色）→ 鉛筆の 色。ちがえば None（白い つや などは そのまま）"""
+    if color in _S.get('inks', ()) or _lum(color) < PEN['dark']:
+        return PEN['ink']
+    return None
+
+
+def pencil_line(pts, closed, op=1.0, both=True):
+    """鉛筆の 線：細い 線（太さが 少し かわる・はしは 細く）＋ もっと 細い うすい なぞる 線（少し ずれて 行きすぎる）"""
+    rnd, sc = _S['rnd'], _S['scale']
+    hp = hand_pts(pts, closed, rnd, PEN['amp'], PEN['over'], P['step'], both=both)
+    o = f'<path d="{brush_d(hp, PEN["w"] / sc, rnd, PEN["wvar"])}" fill="{PEN["ink"]}" opacity="{PEN["op"] * op:.2f}"/>'
+    rp = hand_pts(pts, closed, rnd, PEN['re_amp'], PEN['re_over'], P['step'], both=both)
+    o += (f'<path d="{qspline(rp, closed=False)}" fill="none" stroke="{PEN["ink"]}" stroke-width="{art.f(PEN["re_w"] / sc)}" '
+          f'stroke-linecap="round" opacity="{PEN["re_op"] * op:.2f}"/>')
+    return o
+
+
+def _inside(P_, poly):
+    """点（N×2）が 形（とじた 点の 列）の 中か（偶奇の きまり）"""
+    import numpy as np
+    x, y = poly[:, 0], poly[:, 1]
+    x2, y2 = np.roll(x, -1), np.roll(y, -1)
+    px, py = P_[:, :1], P_[:, 1:]
+    cond = (y > py) != (y2 > py)
+    xi = (x2 - x) * (py - y) / np.where(y2 == y, 1e-9, y2 - y) + x
+    return ((cond & (px < xi)).sum(1) % 2) == 1
+
+
+def pencil_outline(parts):
+    """部品を まとめた 形の ふち（ほかの 部品の 中に 入る 所は 描かない）を 鉛筆の 線で"""
+    import numpy as np
+    sc = _S['scale']
+    polys = []
+    for d in parts:
+        for pts, closed in parse(d, step=1.5 / sc):
+            if len(pts) >= 3:
+                polys.append(pts)
+    arrs = [np.array(p) for p in polys]
+    out = ''
+    for i, poly in enumerate(polys):
+        ring = resample(poly + [poly[0]], P['step'] / sc)[:-1]
+        if len(ring) < 3:
+            continue
+        R_ = np.array(ring)
+        vis = np.ones(len(ring), bool)
+        for j, a in enumerate(arrs):
+            if j != i:
+                vis &= ~_inside(R_, a)
+        if vis.all():
+            out += pencil_line(ring, True)
+            continue
+        if not vis.any():
+            continue
+        k = int(np.argmin(vis))                 # 見えない 点から 回して、見える 点の ならびを 切り出す
+        order = list(range(k, len(ring))) + list(range(0, k))
+        run = []
+        for idx in order + [None]:
+            if idx is not None and vis[idx]:
+                run.append(ring[idx])
+                continue
+            if len(run) >= 2 and length(run) * sc >= PEN['min_run']:
+                out += pencil_line(run, False)
+            run = []
+    return out
+
+
 # ---------------------------------------------------------------- art の path()・outlined() を 手書きに
 _ORIG = dict(path=art.path, outlined=art.outlined)
 
@@ -372,7 +466,15 @@ def h_path(d, **a):
     if fill not in ('none',):
         out += f'<path d="{wobble_d(d)}" {_attrs(a)}/>'
     if stroke and stroke != 'none':
-        out += rough_stroke(d, sw, stroke, cap=cap, sketch=sw * _S['scale'] > 2.2)
+        if _S.get('style') == 'pencil':
+            if pen_ink(stroke):
+                for pts, closed in parse(d, step=1.5 / _S['scale']):
+                    if len(pts) >= 2:
+                        out += pencil_line(pts, closed)
+            else:
+                out += rough_stroke(d, sw, stroke, cap=cap, sketch=False)
+        else:
+            out += rough_stroke(d, sw, stroke, cap=cap, sketch=sw * _S['scale'] > 2.2)
     if wrap:
         out = f'<g {_attrs(wrap)}>{out}</g>'
     return out
@@ -384,6 +486,10 @@ def h_outlined(parts, fill, line, lw):
         return _ORIG['outlined'](parts, fill, line, lw)
     rnd = _S['rnd']
     sc = _S['scale']
+    if _S.get('style') == 'pencil':          # 鉛筆：ぬり（少し ずれる）→ まとめた 形の ふちを 細い 鉛筆の 線で 上に
+        dx, dy = (rnd.uniform(-1, 1) * PEN['fill_shift'] / sc, rnd.uniform(-1, 1) * PEN['fill_shift'] / sc)
+        over = ''.join(f'<path d="{wobble_d(d)}" fill="{fill}"/>' for d in parts)
+        return f'<g transform="translate({dx:.2f} {dy:.2f})">{over}</g>' + pencil_outline(parts)
     under = ''.join(rough_stroke(d, lw * 2, line, sketch=True) for d in parts)
     dx, dy = (rnd.uniform(-1, 1) * P['fill_shift'] / sc, rnd.uniform(-.6, 1) * P['fill_shift'] / sc)
     over = ''.join(f'<path d="{wobble_d(d)}" fill="{fill}"/>' for d in parts)
@@ -413,14 +519,15 @@ def ellipses(svg):
 
 
 class hand:
-    """with hand(scale=2.7, seed=5): の 中で art.path・art.outlined（と mods の 中の 同じ 名前）を 手書きに する"""
+    """with hand(scale=2.7, seed=5): の 中で art.path・art.outlined（と mods の 中の 同じ 名前）を 手書きに する。
+       style='pencil' で 鉛筆の 線（inks：鉛筆に する ふちの 色）"""
 
-    def __init__(self, scale=1.0, seed=1, mods=()):
-        self.scale, self.seed, self.mods = scale, seed, mods
+    def __init__(self, scale=1.0, seed=1, mods=(), style='brush', inks=()):
+        self.scale, self.seed, self.mods, self.style, self.inks = scale, seed, mods, style, tuple(inks)
 
     def __enter__(self):
         self.prev = dict(_S)
-        _S.update(scale=self.scale, rnd=random.Random(self.seed), on=True)
+        _S.update(scale=self.scale, rnd=random.Random(self.seed), on=True, style=self.style, inks=self.inks)
         self.saved = []
         for m in (art,) + tuple(self.mods):
             for name, fn in (('path', h_path), ('outlined', h_outlined)):

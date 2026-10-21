@@ -7,7 +7,11 @@
    - 線は ゆれて 太さが かわる 筆の 線・はしは 少し はみ出す・細い 下書きの 線が もう1本（rough.py）。ぬりは 線から 少し ずれる
    - 字（ど！ など）も 手書きの 線・ハート（降る・つもる・とぶ・のぼる）・キラキラ・水玉・光の 筋も 手書き
    - 秒は プレミアムど的中と 同じ（premium_cute.py の PC_T）＝効果音も 同じ（snd_pc）
-   - 出る 回数（ど的中の 何回に 1回か）は ※仮（gen_fx.py の 見本の 文・指示書 17章）
+   - 出る 回数：プレミアムど的中の 8回に1回（ランダム）＝ど的中の 48回に1回（まさちゃんの指定「超プレミアムど的中ボタンを入れる
+     プレミアムど的中演出の8回に1回ランダムで発生。」）。超プレミアムの 時は プレミアムは 出ない
+   - 鉛筆（まさちゃん「線をもっと細くして！ 脚あと少し伸ばして！ 鉛筆で描いたかんじで！」）：ふちの 線は 細い 鉛筆の 線（rough.py の pencil：
+     1.3px・太さが 少し かわる・うすい 線で もう1回 なぞる・はしが 少し 行きすぎて 交わる）を ぬりの 上に。絵 ぜんたいに 紙の ざらざら（白い こまかい 点）を
+     うすく 重ねて 鉛筆と 色鉛筆の 感じに（ボードには 重ねない）。うしろ足は 40px 長く
    - 重さ：見えない 間は 描かない（zpH：出る 前・消えた あと）・drop-shadow なし
    絵は ぜんぶ SVG（一から 作った 形・cute.py の ポニーと 同じ 形と 色）。まさちゃんの 画面録画は ふんいきの 参考だけ（なぞっていない）
    このファイルは 絵（zp_layers の HTML）と 動き（zp_css）。見本の 画面は gen_fx.py の fz_zp。CSS の 名前は zp…（ほかの 演出と かぶらない）"""
@@ -32,9 +36,12 @@ def outlined(parts, fill, line, lw):
     return art.outlined(parts, fill, line, lw)
 
 
+STYLE = 'pencil'               # 線の 描き方：鉛筆（まさちゃん「線をもっと細くして！」「鉛筆で描いたかんじで！」）。'brush' で 前の 筆の 線
+
+
 def hand(scale=1.0, seed=0):
-    """この 中で 描く 線と ぬりは 手書き（cute.py の 部品も）"""
-    return R.hand(scale=scale, seed=SEED + seed, mods=(C,))
+    """この 中で 描く 線と ぬりは 手書き（cute.py の 部品も）。ふちの 色（LINE）と こい 色の 線は 鉛筆の 線に"""
+    return R.hand(scale=scale, seed=SEED + seed, mods=(C,), style=STYLE, inks=(LINE,))
 
 
 # ---------------------------------------------------------------- 字（太い まるい 線で 書いた 字：手書きの 線）
@@ -117,11 +124,20 @@ def _word_stroke(st, rnd, W, s, gid, layers):
     pts = R.parse(smooth(st, closed=False), step=1.5)[0][0] if len(st) > 2 else st     # なめらかな 線に してから
     hp = R.hand_pts(pts, False, rnd, R.P['amp'] * .9, 2.5, R.P['step'])
     d = R.qspline(hp, closed=False)
-    layers[0] += f'<path d="{d}" fill="none" stroke="#7A1C4A" stroke-width="{f(W + 16 * s)}" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 {f(5 * s)})" opacity=".3"/>'
-    layers[1] += f'<path d="{R.brush_d(hp, W + 15 * s, rnd)}" fill="{LINE}"/>'
-    sk = R.hand_pts(pts, False, rnd, R.P['sketch_amp'] * 1.3, 4.0, R.P['step'])
-    layers[1] += (f'<path d="{R.qspline(sk, closed=False)}" fill="none" stroke="{LINE}" stroke-width="{f(2.2 * s)}" stroke-linecap="round" opacity=".6" '
-                  f'transform="translate({f(rnd.uniform(-2, 2) * s)} {f(rnd.uniform(-2, 2) * s)})"/>')
+    if STYLE == 'pencil':      # 鉛筆：白い ふちの 外に 細い 鉛筆の 線（白の 下に 描く）＋ ずれた うすい 線
+        layers[0] += f'<path d="{d}" fill="none" stroke="#7A1C4A" stroke-width="{f(W + 12 * s)}" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 {f(4 * s)})" opacity=".2"/>'
+        rim = W + 8 * s + 2 * R.PEN['w']
+        layers[1] += (f'<path d="{d}" fill="none" stroke="{R.PEN["ink"]}" stroke-width="{f(rim)}" stroke-linecap="round" stroke-linejoin="round" '
+                      f'opacity="{R.PEN["op"]}"/>')
+        rp = R.hand_pts(pts, False, rnd, R.PEN['re_amp'] * 1.4, 5.0, R.P['step'], both=True)
+        layers[1] += (f'<path d="{R.qspline(rp, closed=False)}" fill="none" stroke="{R.PEN["ink"]}" stroke-width="{f(rim + 1.6)}" stroke-linecap="round" '
+                      f'stroke-linejoin="round" opacity="{R.PEN["re_op"]}"/>')
+    else:
+        layers[0] += f'<path d="{d}" fill="none" stroke="#7A1C4A" stroke-width="{f(W + 16 * s)}" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 {f(5 * s)})" opacity=".3"/>'
+        layers[1] += f'<path d="{R.brush_d(hp, W + 15 * s, rnd)}" fill="{LINE}"/>'
+        sk = R.hand_pts(pts, False, rnd, R.P['sketch_amp'] * 1.3, 4.0, R.P['step'])
+        layers[1] += (f'<path d="{R.qspline(sk, closed=False)}" fill="none" stroke="{LINE}" stroke-width="{f(2.2 * s)}" stroke-linecap="round" opacity=".6" '
+                      f'transform="translate({f(rnd.uniform(-2, 2) * s)} {f(rnd.uniform(-2, 2) * s)})"/>')
     layers[2] += f'<path d="{d}" fill="none" stroke="#FFFFFF" stroke-width="{f(W + 8 * s)}" stroke-linecap="round" stroke-linejoin="round"/>'
     off = f'transform="translate({f(rnd.uniform(-1.2, 1.2) * s)} {f(rnd.uniform(-1.2, 1.2) * s)})"'
     layers[3] += f'<path d="{d}" fill="none" stroke="url(#{gid})" stroke-width="{f(W)}" stroke-linecap="round" stroke-linejoin="round" {off}/>'
@@ -231,15 +247,19 @@ def pony_tail():
     return out + gloss_curls(curls)
 
 
+LEG_X = 40.0                   # うしろ足を のばす 長さ（px。まさちゃん「脚あと少し伸ばして！」）
+
+
 def pony_legs():
     cx, cy = HEART_C
     out = ''
+    y = cy + LEG_X                # くつ下と くつの 高さ
     for lx, fx in ((cx - 44, cx - 50), (cx + 44, cx + 50)):
-        leg = limb([(lx, cy + 70), (fx, cy + 196)], [50, 46])
+        leg = limb([(lx, cy + 70), (fx, y + 196)], [50, 46])
         out += outlined([leg], '#FFFFFF', LINE, 2.8)
-        out += frill(fx, cy + 180, 52, 6)
-        out += outlined([smooth([(fx - 25, cy + 190), (fx + 25, cy + 190), (fx + 26, cy + 212), (fx - 26, cy + 212)])], '#FFB3CF', LINE, 2.6)
-        out += path(f'M{f(fx - 16)} {f(cy + 197)} L{f(fx + 16)} {f(cy + 197)}', fill='none', stroke='#FFFFFF', stroke_width='3', stroke_linecap='round', opacity='.7')
+        out += frill(fx, y + 180, 52, 6)
+        out += outlined([smooth([(fx - 25, y + 190), (fx + 25, y + 190), (fx + 26, y + 212), (fx - 26, y + 212)])], '#FFB3CF', LINE, 2.6)
+        out += path(f'M{f(fx - 16)} {f(y + 197)} L{f(fx + 16)} {f(y + 197)}', fill='none', stroke='#FFFFFF', stroke_width='3', stroke_linecap='round', opacity='.7')
     return out
 
 
@@ -456,6 +476,18 @@ def dots_svg():
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88">{o}</svg>'
 
 
+GRAIN = dict(tile=180, freq=.85, oct=2, seed=7, k=3.4, t=1.86, op=.55)   # 紙の ざらざら（鉛筆）：ますの 大きさ・こまかさ・かさね・種・白い 点の こさ（k×のこぎり − t）・ぜんたいの こさ
+
+
+def grain_svg():
+    """紙の ざらざら（鉛筆の 線と 色鉛筆の ぬりに 紙の 白い 点が のこる 感じ）：白い こまかい 点の ます（SVG の feTurbulence・つなぎめ なし）。
+       絵の 上に うすく 重ねる（ラスターの 絵は 使わない）"""
+    g = GRAIN
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{g["tile"]}" height="{g["tile"]}"><filter id="g" x="0" y="0" width="100%" height="100%">'
+            f'<feTurbulence type="fractalNoise" baseFrequency="{g["freq"]}" numOctaves="{g["oct"]}" seed="{g["seed"]}" stitchTiles="stitch"/>'
+            f'<feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 {g["k"]} 0 0 0 -{g["t"]}"/></filter><rect width="100%" height="100%" filter="url(#g)"/></svg>')
+
+
 def pile(seed=11, W=390, H=844):
     """つもる ハート [(x, y（まん中）, s（はばの 半分）, 色, 回る角度 …)]。下から 順に つもる。画面の いちばん ひくい 所が 上の はしを こえるまで"""
     rnd = random.Random(seed)
@@ -585,9 +617,10 @@ def zp_layers(board_html):
     <div class="zpf" aria-hidden="true"><svg viewBox="0 0 390 844"><defs>{fdefs}</defs><g id="zpFG">{fbody}</g></svg>{veil("zpFG", T["FIN"], .5, f",zpVu {sec(UP_VEIL[1])} linear {sec(up0)} forwards" + hide(t1=up0 + UP_VEIL[1], gap=(T['FIN'] + .5, up0)))}</div>
     <i class="zpr zprf" style="animation:zpRing .55s ease-out {sec(pop_d)} both{hide(pop_d, pop_d + .55)}"></i>
     <div class="zpl" aria-hidden="true" style="animation:{hide(pop_d, pop_d + .8)[1:]}">{pop_hearts(fx, fy - 10, pop_d, 18, 47, dist=(130, 210))}</div>
+    <div class="zpgr" aria-hidden="true"></div>
     <div class="hb">{board_html}</div>
     <div class="zpw" aria-hidden="true"></div>
-    <p class="sr">超プレミアムど的中！手書きの ハートが いっぱいに つもって はじけ、手書きの ハートを だいた ポニーが ど・て・き・ちゅ・う と 1文字ずつ 出てきて、さいごに 手書きの ハートに つつまれた ど的中</p>'''
+    <p class="sr">超プレミアムど的中！鉛筆で 描いた ハートが いっぱいに つもって はじけ、鉛筆で 描いた ハートを だいた ポニーが ど・て・き・ちゅ・う と 1文字ずつ 出てきて、さいごに 鉛筆で 描いた ハートに つつまれた ど的中</p>'''
 
 
 def zp_css():
@@ -597,7 +630,7 @@ def zp_css():
     fy = FIN_C[1]
     hc = ''.join(f'.ov.zp .zpc{k}{{--h:{uri(heart_svg(c, l, k))}}}' for k, (c, l) in enumerate(PILE_COLS))     # 手書きの ハートの 絵（--h：つもる・とぶ・のぼる ハートで 使う）
     return hc + f'''
-/* ---------- 超プレミアムど的中（手書き）：super_premium.py・rough.py（線は 手書き：ゆれる 筆の 線・下書きの 線・ずれた ぬり） ---------- */
+/* ---------- 超プレミアムど的中（手書き・鉛筆）：super_premium.py・rough.py（線は 細い 鉛筆の 線・なぞる 線・ずれた ぬり・紙の ざらざら） ---------- */
 .ov.fz.zp{{--t0:{sec(T['RES'] + .45)};--tc:.3s}}
 /* 見えない 間は 描かない（hide()：出る 前・消えた あとの 絵が 層の 画素を 使わない ように） */
 @keyframes zpH{{0%,100%{{visibility:hidden}}}}
@@ -659,6 +692,8 @@ def zp_css():
 @keyframes zpRise{{0%{{opacity:0;transform:translate(0,0)}}10%{{opacity:1}}50%{{transform:translate(var(--w),-440px)}}80%{{opacity:.9}}100%{{opacity:0;transform:translate(0,-900px)}}}}
 .ov.zp .hb{{z-index:8;animation:zpBoard .5s cubic-bezier(.2,.9,.3,1.1) {sec(T['RES'] + .12)} both{hide(T['RES'] + .12)}}}
 @keyframes zpBoard{{0%{{opacity:0;transform:translateY(40px) scale(.7)}}55%{{opacity:1;transform:translateY(-8px) scale(1.04)}}100%{{opacity:1;transform:none}}}}
+/* 紙の ざらざら（鉛筆と 色鉛筆の 感じ：白い こまかい 点の ます {GRAIN['tile']}px・動かない）：絵 ぜんたいの 上・ボードの 下 */
+.ov.zp .zpgr{{position:absolute;inset:0;z-index:7;pointer-events:none;background:{uri(grain_svg())} 0 0/{GRAIN['tile']}px {GRAIN['tile']}px;opacity:{GRAIN['op']}}}
 /* 白い 光（ハートが はじける時に 1回だけ） */
 .ov.zp .zpw{{position:absolute;inset:0;z-index:40;background:#FFFFFF;opacity:0;pointer-events:none;animation:zpWhite {sec(wd)} linear {sec(w0)} forwards{hide(w0, w3)}}}
 @keyframes zpWhite{{0%{{opacity:0}}{(w1 - w0) / wd * 100:.1f}%{{opacity:1}}{(w2 - w0) / wd * 100:.1f}%{{opacity:1}}100%{{opacity:0}}}}
