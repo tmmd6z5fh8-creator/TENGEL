@@ -1142,7 +1142,7 @@ def background():
 
 
 # ---------------------------------------------------------------- つやつやの ゼリーの ハート（つもる・とぶ・のぼる 小さな ハート）と 最後の「ど的中」
-JELLY_PX = 192                                    # 1つの ハートの 大きさ（画素）
+JELLY_PX = 288                                    # 1つの ハートの 大きさ（画素：はば 88px の ハートが 3倍の 画面で くっきり）
 
 
 def jelly_heart(cv, cx, cy, s, fill, light, deep, rot=0.0, lw=None):
@@ -1165,12 +1165,59 @@ def jelly_heart(cv, cx, cy, s, fill, light, deep, rot=0.0, lw=None):
     return a
 
 
+def glossy_heart(cv, cx, cy, s, fill, light, deep, rot=0.0, lw=None):
+    """もっと つやつやの ゼリーの ハート（まさちゃん「小さなハートは全体的にあと一回り大きく！もっと光沢付けて、プルンプルンにして！」）：
+       こい ピンクの 赤の ふち（つや）・ふくらみ・ふちほど こく まん中ほど 明るい（中から 光る ゼリー）・下の ふちの あつみ・右下の はねかえりの 光・
+       左上の くっきりした 三日月の つや・右の 山の 小さな つや・左の ふちの 白い すじ・右下の 内がわの 明るい 三日月・キラッと 光る 点"""
+    from art import heart as heart0
+    d = heart0(0, 0, s)
+    a = cv.mask(f'<path d="{d}" transform="translate({f(cx)} {f(cy)}) rotate({f(rot)})"/>')
+    outline(cv, a, lw or max(1.2, s * .07), col=hexc('#B21E55'), hi=hexc('#F27AA6'), gloss=.7)
+    h = height(a, cv.px(s * .75), soft=.35)
+    n = normals(h, cv.px(s * .65))
+    dd, sp = lit(n, 46)
+    di = np.clip(dist_in(a) / cv.px(s * .5), 0, 1)
+    base = ramp(np.clip(.04 + .92 * dd, 0, 1), [(0, deep), (.5, fill), (1, light)])
+    inner = ramp(di, [(0, deep), (.45, fill), (1, light)])
+    cv.put(base * .55 + inner * .45, a)
+    # 下の ふちの あつみ（こい かげ）
+    low = np.clip((cv.Y - cy) / (s * .9), 0, 1) * np.clip(1 - di * 1.6, 0, 1)
+    cv.tint(low * a, hexc(deep), .45)
+    # 右下の はねかえりの 光
+    rimv = np.clip(n[..., 0] * .45 + n[..., 1] * .85, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
+    cv.add(hexc('#FFEAF6'), rimv * .85 * a)
+    # 光の つや（白）
+    cv.put(hexc('#FFFFFF'), np.clip(sp * 1.7, 0, 1) * .9 * a)
+    # 左上の 大きな つや（くっきり 三日月）
+    hx, hy = rot_pt(cx, cy, -.5 * s, -.47 * s, rot)
+    big = soft_ell(cv, hx, hy, .31 * s, .18 * s, -40 + rot, .22)
+    hx2, hy2 = rot_pt(cx, cy, -.44 * s, -.38 * s, rot)
+    cut = soft_ell(cv, hx2, hy2, .27 * s, .13 * s, -40 + rot, .3)
+    cv.put(hexc('#FFFFFF'), np.clip((big - cut * .75) * 2.2, 0, 1) * .97 * a)
+    # 右の 山の 小さな つや
+    hx3, hy3 = rot_pt(cx, cy, .52 * s, -.6 * s, rot)
+    cv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, hx3, hy3, .13 * s, .07 * s, 32 + rot, .35) * 1.6, 0, 1) * .85 * a)
+    # 左の ふちの 白い すじ
+    ex, ey = edge_dir(a, cv.px(s * .05))
+    lft = np.clip(-(ex * .9 + ey * .1), 0, 1) ** 2 * np.clip(1 - np.abs(dist_in(a) / cv.px(s * .09) - 1.2), 0, 1)
+    band = np.clip((cy + s * .25 - cv.Y) / (s * .6), 0, 1)
+    cv.put(hexc('#FFFFFF'), lft * band * .6 * a)
+    # キラッと 光る 点
+    px_, py_ = rot_pt(cx, cy, -.22 * s, -.74 * s, rot)
+    cv.put(hexc('#FFFFFF'), soft_ell(cv, px_, py_, .055 * s, .055 * s, 0, .5) * a)
+    # 右下の ふちの 内がわの 明るい 三日月（ゼリーの 中を とおった 光）
+    ex2, ey2 = edge_dir(a, cv.px(s * .05))
+    rb = np.clip(ex2 * .55 + ey2 * .85, 0, 1) ** 2 * np.clip(1 - np.abs(dist_in(a) / cv.px(s * .1) - 1.3), 0, 1)
+    cv.put(hexc('#FFF2F8'), rb * .55 * a)
+    return a
+
+
 def jelly_sheet():
-    """6色の ゼリーの ハート（よこに ならべた 1まい：1つ JELLY_PX 画素の ます）"""
+    """6色の つやつやの ゼリーの ハート（よこに ならべた 1まい：1つ JELLY_PX 画素の ます）"""
     n = len(PC.PILE_COLS)
     cv = Cv((0, 0, n * 2.24, 2.24), sc=JELLY_PX / 2.24)
     for k, (fill, light, deep) in enumerate(PC.PILE_COLS):
-        jelly_heart(cv, k * 2.24 + 1.12, 1.16, .96, fill, light, deep, lw=.07)
+        glossy_heart(cv, k * 2.24 + 1.12, 1.16, .96, fill, light, deep, lw=.065)
     return cv
 
 
@@ -1181,7 +1228,7 @@ def final_layer():
     s = PC.FIN_S
     big_heart(cv, cx, cy, s, seed=17)
     word(cv, 'ど的中', cx - 4, cy - 6, .98 * s / 165, w=14, gap=-4, seed=19)
-    jelly_heart(cv, cx + s * .76, cy - s * .55, 23, '#FF5FA6', '#FFC2DE', '#DD3484', rot=14)
+    glossy_heart(cv, cx + s * .76, cy - s * .55, 23 * s / 165, '#FF5FA6', '#FFC2DE', '#DD3484', rot=14)
     glow(cv, np.maximum(cv.img[..., 3], cv.mask(P(heart_d(cx, cy, s, HEART_KY)))))
     return cv
 
