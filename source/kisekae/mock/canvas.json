@@ -9,7 +9,8 @@
     {"id": "theme", "name": "③ テーマの的中ボタン"},
     {"id": "boards", "name": "④ 結果のボード"},
     {"id": "premium", "name": "⑤ プレミアムど的中"},
-    {"id": "superpremium", "name": "⑥ 超プレミアムど的中"}
+    {"id": "superpremium", "name": "⑥ 超プレミアムど的中"},
+    {"id": "god", "name": "⑦ 神様的中"}
   ],
   "boards": {
     "Judge_Default.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "いつもの（紺×金）", "page": "wall"},
@@ -20,8 +21,8 @@
     "Fx_Hit.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true, "page": "fx"},
     "Fx_Big.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "デカ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true, "page": "fx"},
     "Fx_Freeze.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "フリーズ的中ボタン（デフォルト・タップで動く・音が出る）", "is_interactive": true, "page": "fx"},
-    "Fx_Memo.dc.html": {"x": 2350, "y": 0, "w": 2200, "h": 2340, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ・プレミアムど的中のメモ", "page": "fx"},
-    "Fx_Sound.dc.html": {"x": 4630, "y": 0, "w": 2200, "h": 2460, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true, "page": "fx"},
+    "Fx_Memo.dc.html": {"x": 2350, "y": 0, "w": 2200, "h": 2340, "title": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ・プレミアムど的中・神様的中のメモ", "page": "fx"},
+    "Fx_Sound.dc.html": {"x": 4630, "y": 0, "w": 2200, "h": 2890, "title": "効果音のメモ（▶で聞ける）", "is_interactive": true, "page": "fx"},
     "Judge_Sakura.dc.html": {"x": 0, "y": 1264, "w": 390, "h": 844, "title": "桜（ピンク×若草・いつも桜が降っている・馬が ときどき 首を下げて草を食べる）", "page": "wall"},
     "Judge_Sea.dc.html": {"x": 470, "y": 1264, "w": 390, "h": 844, "title": "海（紺×水色×白・馬がいつも走って景色が流れる）", "page": "wall"},
     "Judge_Sunset.dc.html": {"x": 940, "y": 1264, "w": 390, "h": 844, "title": "夕焼け（紫×オレンジ・馬がいつも走って地面が流れる・10秒に1回 夕日が沈んで真っ暗 → また戻る）", "page": "wall"},
@@ -54,6 +55,7 @@
     "Fx_Miss.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "ハズレ（ボタンなし・ボードだけ）", "is_interactive": true, "page": "fx"},
     "Fx_PremiumCute.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "プレミアムど的中（かわいいど的中：どの着せ替えでも ど的中の 6回に1回・PUSHは ど的中と同じ → 押すと パチンコの 大当たりのような 虹色の 背景に つやつやの ハートが ぷるんっと つもって はじけ、ハートを だいた ポニーの アップ（顔・前足・ハート）が ど！・て！・き！・ちゅ！・う！→ ハートに つつまれた ど的中 → その着せ替えの ど的中の ボード（見本は牧場）・タップで動く・音が出る）", "is_interactive": true, "page": "premium"},
     "Fx_SuperPremium.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "超プレミアムど的中（手書き・鉛筆：プレミアムど的中の 8回に1回（ランダム）＝ど的中の 48回に1回・PUSHは ど的中と同じ → 押すと はじめの プレミアムど的中と 同じ 流れ（ハートが 降って つもる → はじけて 白い 光 → ハートを だいた ポニーが ど！・て！・き！・ちゅ！・う！ → ハートに つつまれた ど的中）を、鉛筆で 描いた 感じに（細い 鉛筆の 線を うすい 線で もう1回 なぞる・はしが 少し 行きすぎて 交わる・ぬりが 少し ずれる・紙の ざらざら）→ その着せ替えの ど的中の ボード（見本は牧場）・タップで動く・音が出る）", "is_interactive": true, "page": "superpremium"},
+    "Fx_God.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "神様的中（3連単の 当たりに 超大穴と、ほかに 大穴以上 ※仮・PUSHは ど的中と同じ ※仮 → 押すと 黄色い ピクセルの 細い 雷が 落ちて 黄色 → 白い 光 → 金の でっかい ど！が 左から 右へ・右から 左へ 消える → 金の オーラの ど！が 奥から 10こ 爆発しながら とんできて 画面を うめる → 金 → 白い 光 → うんと 上から 金の オーラを まとった たて書きの ど的中！！が ゆっくり おりてきて、まん中で 金の 雷と 金の オーラに つつまれる → その着せ替えの ど的中の ボード（見本は牧場）・タップで動く・音が出る）", "is_interactive": true, "page": "god"},
     "Fx_HitGold.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（カッコいい：黒と金のぷるんPUSH・タップで動く・音が出る）", "is_interactive": true, "page": "theme"},
     "Fx_HitRanch.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（牧場：芝生のPUSH・タップで動く・音が出る）", "is_interactive": true, "page": "theme"},
     "Fx_HitSakura.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（桜：桜がついたPUSH・タップで動く・音が出る）", "is_interactive": true, "page": "theme"},
@@ -85,10 +87,10 @@
     "Fx_HitWhiteDay.dc.html": {"x": 13160, "y": 0, "w": 390, "h": 844, "title": "的中ボタン（ホワイトデー：マシュマロのPUSH・タップで動く・音が出る）", "is_interactive": true, "page": "theme"},
     "Fx_Boards.dc.html": {"x": 0, "y": 0, "w": 3952, "h": 4280, "title": "結果のボード（30テーマ・的中とハズレ）", "page": "boards"}
   },
-  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Freeze.dc.html", "Fx_Hidden.dc.html", "Fx_Miss.dc.html", "Fx_PremiumCute.dc.html", "Fx_SuperPremium.dc.html", "Fx_HitGold.dc.html", "Fx_HitRanch.dc.html", "Fx_HitSakura.dc.html", "Fx_HitSea.dc.html", "Fx_HitAutumn.dc.html", "Fx_HitSnow.dc.html", "Fx_HitNewYear.dc.html", "Fx_HitNews.dc.html", "Fx_HitInk.dc.html", "Fx_HitCarousel.dc.html", "Fx_HitStars.dc.html", "Fx_HitSilks.dc.html", "Fx_HitNeon.dc.html", "Fx_HitPixel.dc.html", "Fx_HitFireworks.dc.html", "Fx_HitKids.dc.html", "Fx_HitCute.dc.html", "Fx_HitSunset.dc.html", "Fx_HitNight.dc.html", "Fx_HitMarble.dc.html", "Fx_HitLucky.dc.html", "Fx_HitChalk.dc.html", "Fx_HitSilver.dc.html", "Fx_HitGolden.dc.html", "Fx_HitTengel.dc.html", "Fx_HitXmas.dc.html", "Fx_HitHalloween.dc.html", "Fx_HitValentine.dc.html", "Fx_HitWhiteDay.dc.html", "Fx_Memo.dc.html", "Fx_Sound.dc.html", "Fx_Boards.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Xmas.dc.html", "Judge_Halloween.dc.html", "Judge_Valentine.dc.html", "Judge_WhiteDay.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Silver.dc.html", "Judge_Golden.dc.html", "Judge_Tengel.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
+  "order": ["Judge_Default.dc.html", "Judge_Ranch.dc.html", "Judge_Cute.dc.html", "Judge_Kids.dc.html", "Judge_Gold.dc.html", "Fx_Hit.dc.html", "Fx_Big.dc.html", "Fx_Freeze.dc.html", "Fx_Hidden.dc.html", "Fx_Miss.dc.html", "Fx_PremiumCute.dc.html", "Fx_SuperPremium.dc.html", "Fx_God.dc.html", "Fx_HitGold.dc.html", "Fx_HitRanch.dc.html", "Fx_HitSakura.dc.html", "Fx_HitSea.dc.html", "Fx_HitAutumn.dc.html", "Fx_HitSnow.dc.html", "Fx_HitNewYear.dc.html", "Fx_HitNews.dc.html", "Fx_HitInk.dc.html", "Fx_HitCarousel.dc.html", "Fx_HitStars.dc.html", "Fx_HitSilks.dc.html", "Fx_HitNeon.dc.html", "Fx_HitPixel.dc.html", "Fx_HitFireworks.dc.html", "Fx_HitKids.dc.html", "Fx_HitCute.dc.html", "Fx_HitSunset.dc.html", "Fx_HitNight.dc.html", "Fx_HitMarble.dc.html", "Fx_HitLucky.dc.html", "Fx_HitChalk.dc.html", "Fx_HitSilver.dc.html", "Fx_HitGolden.dc.html", "Fx_HitTengel.dc.html", "Fx_HitXmas.dc.html", "Fx_HitHalloween.dc.html", "Fx_HitValentine.dc.html", "Fx_HitWhiteDay.dc.html", "Fx_Memo.dc.html", "Fx_Sound.dc.html", "Fx_Boards.dc.html", "Judge_Sakura.dc.html", "Judge_Sea.dc.html", "Judge_Sunset.dc.html", "Judge_Autumn.dc.html", "Judge_Snow.dc.html", "Judge_NewYear.dc.html", "Judge_Fireworks.dc.html", "Judge_Xmas.dc.html", "Judge_Halloween.dc.html", "Judge_Valentine.dc.html", "Judge_WhiteDay.dc.html", "Judge_Night.dc.html", "Judge_News.dc.html", "Judge_Silks.dc.html", "Judge_Lucky.dc.html", "Judge_Ink.dc.html", "Judge_Marble.dc.html", "Judge_Silver.dc.html", "Judge_Golden.dc.html", "Judge_Tengel.dc.html", "Judge_Neon.dc.html", "Judge_Pixel.dc.html", "Judge_Chalk.dc.html", "Judge_Carousel.dc.html", "Judge_Stars.dc.html", "Main.dc.html", "Guide.dc.html", "Guide20.dc.html"],
   "notes": {
     "row1": {"x": 0, "y": -300, "text": "判定画面：定番の5つ（いつもの＋4つの着せ替え）", "kind": "title1", "maxW": 2270, "page": "wall"},
-    "rowfx": {"x": 0, "y": -300, "text": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ（デフォルト）：記録する → PUSH → タップ（効果音つき）→ テーマのボード（プレミアムど的中は ⑤・超プレミアムど的中は ⑥のページ）", "kind": "title1", "maxW": 6830, "page": "fx"},
+    "rowfx": {"x": 0, "y": -300, "text": "的中ボタン・デカ的中ボタン・フリーズ的中ボタン・隠れど的中・ハズレ（デフォルト）：記録する → PUSH → タップ（効果音つき）→ テーマのボード（プレミアムど的中は ⑤・超プレミアムど的中は ⑥・神様的中は ⑦のページ）", "kind": "title1", "maxW": 6830, "page": "fx"},
     "row2": {"x": 0, "y": 964, "text": "季節・行事（11）", "kind": "title1", "maxW": 5090, "page": "wall"},
     "row3": {"x": 0, "y": 2228, "text": "競馬（4）", "kind": "title1", "maxW": 1800, "page": "wall"},
     "row3b": {"x": 2060, "y": 2228, "text": "和・アート（2）", "kind": "title1", "maxW": 860, "page": "wall"},
