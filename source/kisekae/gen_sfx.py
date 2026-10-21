@@ -1040,6 +1040,21 @@ SYL_A = dict(
     chu=dict(v='u', d=.27, von=.06, burst=(0, .004, 3500, 8000, 1.2), fric=(.004, .06, 3800, 8000, .5), tr=((350, 2500, 3300), .05),
              f0=((0, -3.0), (.06, 1.2), (.11, .4), (.17, .8), (.21, 2.4)), end='up'),
     u=dict(v='u', d=.3, von=0.0, asp=(0, .025, .16), f0=((0, -3.2), (.07, 1.2), (.14, .3), (.24, -1.2), (.29, -3.6)), end='stop'))
+# ポニーの いななき（まさちゃん「ヒヒィ！ ど！／ヒヒィ！ て！／ヒヒィん！ き！／ヒィ❤️！ ちゅ！／ヒィ！ う！ これで一回やってみて！」）：アニメ声で「ヒヒィ！」。
+#   ひ＝[ç]（口を い の 形に して 息を こする：い の 口の ひびきを 通る 息＋高い こすれる 音）＋ い。
+#   trill＝いななきの ふるえ（声が 出てからの はじめ 秒・1秒に 何回・高さの ゆれ 半音・大きさの ゆれ）・nasal＝ん（はじめ 秒・口が とじる までの 秒）・
+#   hnr＝この 音節だけの 声と 息の 差（dB）・tail＝声の あとの 息（いななきの あとは すぐ ことばなので なし）
+HI_C = dict(asp=(0, .042, .3), fric=(0, .042, 3600, 8000, .18))
+SYL_A.update(
+    hi=dict(v='i', d=.085, von=.04, **HI_C, f0=((0, .5), (.03, 2.0), (.045, 1.6)), end='stop', tail=0.0),                    # ヒ（ヒヒィ の はじめ：短く）
+    hii=dict(v='i', d=.24, von=.04, **HI_C, f0=((0, 2.0), (.04, 3.2), (.12, 1.4), (.2, -.8)), trill=(.05, 11.0, 1.1, .35),
+             end='stop', tail=0.0),                                                                                        # ヒィ！（上がって ふるえながら 下がる）
+    hiin=dict(v='i', d=.3, von=.04, **HI_C, f0=((0, 2.0), (.04, 3.2), (.12, 1.6), (.2, -.6), (.26, -2.4)), trill=(.05, 11.0, 1.1, .35),
+              nasal=(.19, .04), end='up', tail=0.0),                                                                       # ヒィん！（さいごは ん：口を とじて 鼻へ）
+    hiih=dict(v='i', d=.3, von=.04, **HI_C, f0=((0, -1.0), (.06, 2.0), (.13, 1.0), (.2, 2.4), (.26, 4.0)), trill=(.08, 6.5, .35, .1),
+              hnr=7.0, end='up', tail=0.0),                                                                                # ヒィ❤️！（あまく：息 多め・さいごは 上がって ふわっと）
+    hiis=dict(v='i', d=.24, von=.04, **HI_C, f0=((0, .5), (.035, 2.6), (.09, 1.8), (.15, -.5), (.2, -2.5)), end='stop', tail=0.0))  # ヒィ！（短く 明るく）
+ANIME_NASAL = ((380, 1650, 2750), (120, 280, 380))   # ん の 口の ひびき F1〜F3・はば（口を とじて 鼻へ：低く・はばは ひろく）
 LF_RD = (.6, .8, 1.0, 1.2, 1.45, 1.7, 2.0, 2.4)    # 息っぽさ（Rd）の 表：この 間を 線で つなぐ
 # 息まじり（まさちゃん「もっと高い声にして！ 息も混じりながら！」）：rd_on・rd_mid・rd_end＝息っぽさ Rd（出だし・まん中・おわり）・
 #   hnr＝声と 息の ノイズの 差（dB・口の ひびきを 通った あと・母音の まん中）・edge＝出だしと おわりで 息を ふやす 量・
@@ -1110,6 +1125,7 @@ def _tract_a(x, S, t, n, pert):
     """口の ひびき（アニメ声の 母音・8つ）：子音の 形から 母音へ（tr）・ひびきの 高さが 少し ゆれる（pert）"""
     Fv, Bv = ANIME_VOWELS[S['v']]
     von = S['von']
+    wn = np.clip((t - S['nasal'][0]) / S['nasal'][1], 0, 1) if S.get('nasal') else None   # ん に うつる 量（0→1）
     for k in range(len(Fv)):
         F, B = Fv[k], Bv[k]
         if S.get('tr') and k < 3:
@@ -1118,12 +1134,16 @@ def _tract_a(x, S, t, n, pert):
         else:
             Ft = np.full(n, float(F))
         Ft = Ft * (1 + pert * (.6 if k < 3 else .3))
-        rlx = np.clip((t - (t[-1] - .05)) / .05, 0, 1)                              # おわりの 0.05秒：口が 少し ゆるむ（F1 は 下がり・F2 は まん中へ）
-        if k == 0:
-            Ft = Ft * (1 - .1 * rlx)
-        elif k == 1:
-            Ft = Ft + (1700 - Ft) * .12 * rlx
+        if wn is None:
+            rlx = np.clip((t - (t[-1] - .05)) / .05, 0, 1)                          # おわりの 0.05秒：口が 少し ゆるむ（F1 は 下がり・F2 は まん中へ）
+            if k == 0:
+                Ft = Ft * (1 - .1 * rlx)
+            elif k == 1:
+                Ft = Ft + (1700 - Ft) * .12 * rlx
         Bt = np.full(n, float(B)) + (160 * (t < von) if k == 0 else 0) + (ANIME_BREATH['bw'][k] if k < 3 else 0)
+        if wn is not None and k < 3:                                                # ん：口を とじて 鼻へ
+            Ft = Ft + (ANIME_NASAL[0][k] - Ft) * wn
+            Bt = Bt + (ANIME_NASAL[1][k] - Bt) * wn
         x = _reson(x, Ft, Bt)
     return x
 
@@ -1133,8 +1153,13 @@ def _norm_lp(rng, n, f):
     return y / (np.std(y) + 1e-12)
 
 
+def _track_s(keys, n):
+    """_track と 同じ（時刻が ならんで いない 時は 先に ならべる：短い 音節で 大きさの 形の 点が 入れかわる ため）"""
+    return _track(sorted(keys, key=lambda k: k[0]), n)
+
+
 def anime_voice(syl, note, rng):
-    """アニメの 女の子の 声の 短い 音節（ど！・て！・き！・ちゅ！・う！）。note＝高さの まん中（MIDI）。母音の 大きさ（RMS）を 0.25 に そろえる"""
+    """アニメの 女の子の 声の 短い 音節（ど！・て！・き！・ちゅ！・う！・いななきの ヒ・ヒィ）。note＝高さの まん中（MIDI）。母音の 大きさ（RMS）を 0.25 に そろえる"""
     S = SYL_A[syl]
     d = S['d']
     n = n_(d)
@@ -1143,15 +1168,24 @@ def anime_voice(syl, note, rng):
     # 高さ：S['f0']（声が 出てからの 秒・半音）＋ ゆっくりの ゆれ（±0.25半音）＋ 細かい ゆれ（±0.08半音）
     keys = [(0.0, S['f0'][0][1])] + [(von + a, b) for a, b in S['f0']]
     st = note + _track(keys + [(d, S['f0'][-1][1])], n) + .25 * _norm_lp(rng, n, 5) + .08 * _norm_lp(rng, n, 70)
+    trem = None
+    if S.get('trill'):                                                            # いななきの ふるえ：高さと 大きさが いっしょに ゆれる（高い 時に 大きく）
+        tt0, rate, depth, am = S['trill']
+        ramp = np.clip((t - (von + tt0)) / .03, 0, 1)
+        ph = 2 * np.pi * rate * np.maximum(t - (von + tt0), 0)
+        st = st + depth * ramp * np.sin(ph)
+        trem = 1 - am * ramp * .5 * (1 - np.sin(ph))
     f0 = 440.0 * 2 ** ((st - 69) / 12)
     # 息っぽさ：出だし 2.3 → まん中 1.45 → おわり 2.4（息まじり・おわりは 息が ぬける）
     B = ANIME_BREATH
-    rd = _track([(0, B['rd_on']), (von, B['rd_on']), (von + .04, B['rd_mid']), (max(von + .05, d - .07), B['rd_mid'] + .05), (d, B['rd_end'])], n)
+    rd = _track_s([(0, B['rd_on']), (von, B['rd_on']), (von + .04, B['rd_mid']), (max(von + .05, d - .07), B['rd_mid'] + .05), (d, B['rd_end'])], n)
     E, U = _lf_source(f0, rd, n)
     shim = 1 + .05 * _norm_lp(rng, n, 50)
     # 大きさ：はやく 立ち上がって 少し 下がり、おわりは のどで 止める（stop）か ふわっと（up）
     rel = .028 if S['end'] == 'stop' else .06
-    av = _track([(0, 0), (max(0, von - 1e-4), 0), (von + .008, 1), (von + .05, .92), (d - rel, .78), (d, 0)], n)
+    av = _track_s([(0, 0), (max(0, von - 1e-4), 0), (von + .008, 1), (von + .05, .92), (d - rel, .78), (d, 0)], n)
+    if trem is not None:
+        av = av * trem
     if S.get('pre'):
         pre = _track([(0, 0), (.005, .1), (S['pre'], .16), (S['pre'] + .003, 0), (d, 0)], n)
     else:
@@ -1160,16 +1194,23 @@ def anime_voice(syl, note, rng):
     breath = hp(rng.standard_normal(n), 500) * (.15 + .85 * U) * edge              # 脈うつ 息（のどが ひらいて いる 間）
     pert = .012 * _norm_lp(rng, n, 7)
     i0, i1 = n_(von + .05), n_(min(d - .03, von + .12))
+    if i1 - i0 < n_(.02):                                                         # 短い 音節（ヒ）：母音の あと 7割の 所で
+        i0, i1 = n_(von + .3 * (d - von)), n_(d - .012)
+    hnr = S.get('hnr', B['hnr'])
     harm = _tract_a(E * av * shim, S, t, n, pert)                                 # 声と 息は 別に 口を 通して、通った あとで 差を そろえる
     nois = _tract_a(breath * av, S, t, n, pert)                                   # （母音と 高さで 息の 聞こえ方が かわらない ように）
-    voiced = harm + nois * (np.sqrt(np.mean(harm[i0:i1] ** 2)) / (np.sqrt(np.mean(nois[i0:i1] ** 2)) + 1e-12)) * 10 ** (-B['hnr'] / 20)
+    voiced = harm + nois * (np.sqrt(np.mean(harm[i0:i1] ** 2)) / (np.sqrt(np.mean(nois[i0:i1] ** 2)) + 1e-12)) * 10 ** (-hnr / 20)
     voiced = voiced / (np.sqrt(np.mean(voiced[i0:i1] ** 2)) + 1e-12) * .25
+    wn = np.clip((t - S['nasal'][0]) / S['nasal'][1], 0, 1) if S.get('nasal') else None
+    if wn is not None:                                                            # ん：口を とじて 鼻へ（高い 所が へって 小さく）
+        voiced = voiced * (1 - wn) + lp(voiced, 2000, 2) * wn * .85
     out = voiced
     if S.get('pre'):                                                              # だ行：声の 前に のどだけ ふるえる（低い ブー）
         mur = lp(E * pre, 400, 2)
         out = out + mur / (np.sqrt(np.mean(mur[:n_(S['pre'])] ** 2)) + 1e-12) * .25 * .12
     air = hp(E * av * shim + breath * B['air'] * av, 3200, 2)
-    out = out + air / (np.sqrt(np.mean(air[i0:i1] ** 2)) + 1e-12) * .25 * .05
+    air = air / (np.sqrt(np.mean(air[i0:i1] ** 2)) + 1e-12) * .25 * .05
+    out = out + (air if wn is None else air * (1 - wn))
     if S.get('asp'):                                                              # 息（口の ひびきを 通る ノイズ）
         a0, a1, aa = S['asp']
         e = _track([(0, 0), (a0, 0), (a0 + .004, 1), (a1 - .006, .8), (a1 + .01, 0), (d, 0)], n)
@@ -1184,11 +1225,12 @@ def anime_voice(syl, note, rng):
         f0_, f1_, lo, hi, fa = S['fric']
         e = _track([(0, 0), (f0_, 0), (f0_ + .01, .55), (f1_ - .01, 1), (f1_ + .004, 0), (d, 0)], n)
         out = out + _noise(rng, n, lo, hi) * e * .25 * fa
-    if B['tail'] > 0:                                                             # 声の あとに はく 息（ふっ）：おわりの 少し 前から
-        nt = n_(B['tail'])
+    tail_len = S.get('tail', B['tail'])
+    if tail_len > 0:                                                              # 声の あとに はく 息（ふっ）：おわりの 少し 前から
+        nt = n_(tail_len)
         tail_t = tl(nt)
         noise_t = hp(rng.standard_normal(n + nt), 600)
-        e = np.concatenate([np.zeros(n - n_(.03)), np.minimum(np.arange(n_(.03)) / n_(.03), 1), np.exp(-tail_t / (B['tail'] / 2.5))])[:n + nt]
+        e = np.concatenate([np.zeros(n - n_(.03)), np.minimum(np.arange(n_(.03)) / n_(.03), 1), np.exp(-tail_t / (tail_len / 2.5))])[:n + nt]
         S2 = dict(S, von=0.0, tr=None)
         tl2 = tl(n + nt)
         tail = _tract_a(noise_t * e, S2, tl2, n + nt, np.zeros(n + nt))
@@ -1203,6 +1245,25 @@ PC_ANIME = (('do', 76), ('te', 77), ('ki', 79), ('chu', 81), ('u', 83))   # プ�
                                                                                  # （まさちゃん「もっと声高く！」→「もっと高い声にして！」：A4〜E5 → C5〜G5 → E5〜B5。高い 所は 約720〜1080Hz。
                                                                                  #  ①〜⑤の 和音（C・G・Am・F・G）に あう 音：E は C の 3度・F は G の 7度・G は Am の 7度・A は F の 3度・B は G の 3度）
 PC_ANIME_G = 1.1                                                                 # アニメ声の 大きさ（ミックスの 中で）
+# ①〜⑤の ことばの 前の いななき（まさちゃん「ヒヒィ！ ど！／ヒヒィ！ て！／ヒヒィん！ き！／ヒィ❤️！ ちゅ！／ヒィ！ う！」）：
+#   (音節, 大きさ) の ならび。高さの まん中は その ことばと 同じ。字が 入ってくる 間に いななき → 止まった 時に ことば
+PC_WHINNY = ((('hi', .85), ('hii', 1.0)),       # ① ヒヒィ！
+             (('hi', .85), ('hii', 1.0)),       # ② ヒヒィ！
+             (('hi', .85), ('hiin', 1.0)),      # ③ ヒヒィん！
+             (('hiih', 1.0),),                  # ④ ヒィ❤️！
+             (('hiis', 1.0),))                  # ⑤ ヒィ！
+PC_WHINNY_GAP = .05                                                              # いななきと ことばの 間（秒）
+PC_WHINNY_JOIN = .012                                                            # ヒ と ヒィ を つなぐ かさなり（秒）
+
+
+def whinny_times(parts, ts):
+    """いななきの 音節を ことば（ts から）の 前に うしろから ならべる → [(音節, 置く 秒, 大きさ)]"""
+    out, t = [], ts - PC_WHINNY_GAP
+    for syl, g in reversed(parts):
+        t -= SYL_A[syl]['d']
+        out.insert(0, (syl, t, g))
+        t += PC_WHINNY_JOIN
+    return out
 
 
 PC_VOICE = (('do', 69), ('te', 71), ('ki', 72), ('chu', 72), ('u', 74))    # ①〜⑤の 声：どぉ！（A4）・てぇ！（B4）・きぃ！（C5）・ちゅ！（C5）・う！（D5）。だんだん 高く
@@ -1223,6 +1284,7 @@ def sfx_pc(with_voice=False, anime=True):
          まさちゃん「プレミアムど的中、音を変えて！ … これでおとだせる？」→「これ超プレミアムど的中の音声に使用して！」（超プレミアムは この 声）
        anime=True（プレミアムど的中：sfx_pc）：止まった 時の 鐘と チュッ を アニメ声「ど！」「て！」「き！」「ちゅ！」「う！」に（anime_voice：LF モデルの のど・小さな 口）。
          まさちゃん「プレミアムど的中ようもつくりたいから、ど！、て！、き！、ちゅ！、う！の声はもっとアニメ声で可愛く人間ぽくして！」
+         ことばの 前に いななき「ヒヒィ！」「ヒヒィ！」「ヒヒィん！」「ヒィ❤️！」「ヒィ！」（字が 入ってくる 間：PC_WHINNY。まさちゃん「ヒヒィ！ ど！ … これで一回やってみて！」）
        with_voice=False・anime=False：前の ポン＋鐘（ド・レ・ミ・ファ・ソ）と チュッ
        → FIN ふわっ → ジャーン（ど的中・高い ド）→ ドクン・ドクン（ハートの 鼓動）・シャララ↑（のぼる ハート）
        → RES ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 ピン・ピン・ピン（0.08秒おき）→ 合計 キラリーン"""
@@ -1307,8 +1369,12 @@ def sfx_pc(with_voice=False, anime=True):
     for k, (syl, note, ts) in enumerate(vq):                                        # 声：その 間 まわりの 音を 小さく（PC_DUCK dB）して のせる
         mx.duck(ts, ts + SYL[syl]['d'], PC_DUCK[k])
         mx.add(voice(syl, note, vr), ts, PC_VOICE_G, rv=.22)
-    for k, (syl, note, ts) in enumerate(aq):                                        # アニメ声：同じ ように のせる（声の あとの 息も 聞こえる ように そこまで 小さく）
-        mx.duck(ts, ts + SYL_A[syl]['d'] + ANIME_BREATH['tail'], PC_DUCK[k])
+    wr = np.random.default_rng(99)                                                 # いななきの 乱数（ことばの 声の 乱数とは 分ける：ことばの 声は 前と 同じ）
+    for k, (syl, note, ts) in enumerate(aq):                                        # アニメ声：いななき → ことば（その 間と 声の あとの 息まで まわりを 小さく）
+        wq = whinny_times(PC_WHINNY[k], ts)
+        mx.duck(wq[0][1] if wq else ts, ts + SYL_A[syl]['d'] + ANIME_BREATH['tail'], PC_DUCK[k])
+        for wsyl, tw, g in wq:
+            mx.add(anime_voice(wsyl, note, wr), tw, PC_ANIME_G * g, rv=.2)
         mx.add(anime_voice(syl, note, ar), ts, PC_ANIME_G, rv=.2)
     # --- FIN：ふわっ → ジャーン（ど的中・高い ド）---
     hit = FIN + .28
