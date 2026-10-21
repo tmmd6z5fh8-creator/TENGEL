@@ -787,22 +787,22 @@ def pc_css():
 @keyframes pmBob{{to{{transform:translateY(-6px) rotate(var(--r))}}}}
 /* つもる ハート：外の i＝はじける（{sec(T['BURST'])}〜・まん中から じゅんに・ぷくっと ふくらんで）・中の b＝上から 落ちる
    （b::before＝すき通った 光の ハート・b::after＝つもった 時に つやつやの ゼリーの ハートに なって ぷるんっ）。
-   消えた 光の ハート・はじけた ハートは visibility:hidden（描かない：重さ対策） */
+   落ちてくる 前（画面の 上の 外）・つもる 前の ゼリーの ハート・消えた 光の ハート・はじけた ハートは pmH で 描かない（重さ対策） */
 .ov.pm .pmp{{position:absolute;inset:0;z-index:2;pointer-events:none}}
-.ov.pm .pmp i{{position:absolute;display:block;background:none!important;animation:pmB .24s linear var(--bd) forwards}}
-.ov.pm .pmp b{{position:absolute;inset:0;transform:translateY(var(--y0)) rotate(var(--r0));animation:pmF var(--t) cubic-bezier(.333,0,.667,.333) var(--d) both}}
+.ov.pm .pmp i{{position:absolute;display:block;background:none!important;animation:pmB .24s linear var(--bd) forwards,pmH .001s linear calc(var(--bd) + .24s) forwards}}
+.ov.pm .pmp b{{position:absolute;inset:0;transform:translateY(var(--y0)) rotate(var(--r0));animation:pmF var(--t) cubic-bezier(.333,0,.667,.333) var(--d) both,pmH .001s linear var(--d) backwards}}
 .ov.pm .pmp b::before,.ov.pm .pmp b::after{{content:'';position:absolute;inset:0}}
-.ov.pm .pmp b::before{{background:{fly_uri()} center/contain no-repeat;animation:pmLo .08s linear var(--l) forwards}}
-.ov.pm .pmp b::after{{opacity:0;transform-origin:50% 88%;animation:pmL .1s linear var(--l) forwards,pmJ .55s ease-out var(--l) both}}
+.ov.pm .pmp b::before{{background:{fly_uri()} center/contain no-repeat;animation:pmLo .08s linear var(--l) forwards,pmH .001s linear calc(var(--l) + .08s) forwards}}
+.ov.pm .pmp b::after{{opacity:0;transform-origin:50% 88%;animation:pmL .1s linear var(--l) forwards,pmJ .55s ease-out var(--l) both,pmH .001s linear var(--l) backwards}}
 {''.join(f'.ov.pm .pmp .pm{k} b::after{{background:{jelly_bg(k)}}}' for k in range(len(PILE_COLS)))}
 @keyframes pmF{{to{{transform:translateY(0) rotate(var(--r1))}}}}
 @keyframes pmL{{to{{opacity:1}}}}
-@keyframes pmLo{{to{{opacity:0;visibility:hidden}}}}
+@keyframes pmLo{{to{{opacity:0}}}}
 .ov.pm .pmp .pv b::before{{display:none}}
 .ov.pm .pmp .pv b::after{{opacity:1;animation:pmWob .34s ease-in-out infinite alternate,pmJ .55s ease-out var(--l) forwards}}
 @keyframes pmWob{{from{{transform:scale(1.07,.93)}}to{{transform:scale(.94,1.06)}}}}
 @keyframes pmJ{{0%{{transform:scale(1.2,.76)}}28%{{transform:scale(.9,1.12)}}52%{{transform:scale(1.06,.95)}}76%{{transform:scale(.98,1.02)}}100%{{transform:none}}}}
-@keyframes pmB{{0%{{transform:none}}35%{{transform:translate(calc(var(--bx) * .3),calc(var(--by) * .3)) scale(1.16,.9)}}100%{{transform:translate(var(--bx),var(--by)) scale(1.4) rotate(var(--br));opacity:0;visibility:hidden}}}}
+@keyframes pmB{{0%{{transform:none}}35%{{transform:translate(calc(var(--bx) * .3),calc(var(--by) * .3)) scale(1.16,.9)}}100%{{transform:translate(var(--bx),var(--by)) scale(1.4) rotate(var(--br));opacity:0}}}}
 .ov.pm .pmlb{{z-index:2}}
 /* 白い 光の 中で 出る：細い 白い 光線（ゆっくり 回る＝大当たりの 光。1つの 所を 光線が 通るのは 1秒に 1回 くらい）・まん中の 光・キラキラ。
    光線の 箱は 画面の いちばん 遠い すみ（まん中から 509px）が 入る 大きさ（はば 1040px）：前の 1500px と 見た目は 同じで、層の 画素が 半分 */

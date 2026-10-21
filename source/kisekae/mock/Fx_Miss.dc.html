@@ -78,16 +78,20 @@ body{margin:0}
 @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 /* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
-.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
-.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+/* 見えない 間は 描かない（fxH：出る 前・消えた あとは visibility:hidden。アニメが ついた 見えない 絵も 合成の 層の 画素を 使うので。まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」） */
+@keyframes fxH{0%,100%{visibility:hidden}}
+.ov .brows li{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
 .ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
 /* 押したあと（PUSHがあった所から光ってはじける） */
 .pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
-  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both,fxH .001s linear .45s forwards}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
 .hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
-.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+/* 押した 時に とびちる テーマの かけら（.clips）：どの テーマも 2秒 までに 消えるので、そのあとは 描かない */
+.clips{animation:fxH .001s linear 2s forwards}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both,fxH .001s linear backwards}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 /* 紙ふぶき */
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
@@ -97,11 +101,11 @@ body{margin:0}
 @media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
 
 /* ---------- ハズレ：ボタンなし。記録したら、暗い幕とテーマのボードが静かに出る（光・紙ふぶき・音なし） ---------- */
-.miss .hb{animation:missIn .4s cubic-bezier(.2,.8,.3,1) .1s both}
+.miss .hb{animation:missIn .4s cubic-bezier(.2,.8,.3,1) .1s both,fxH .001s linear .1s backwards}
 @keyframes missIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 .ov.miss{--t0:.45s;--tc:.15s}
-.ov.miss .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
-.ov.miss .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.miss .brows li{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.miss .btot{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.miss .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 
 /* ===== 結果のボード（テーマの判定画面と同じ見た目・馬は出さない） =====

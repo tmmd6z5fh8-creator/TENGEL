@@ -202,6 +202,19 @@ def inline(blobs, lay, alt=ALT):
                 stops.append((B + dt, qi))
         kf.append(f'@keyframes hqP{k}{{0%{{{KEY[0]}}}' + ''.join(f'{t / T * 100:.3f}%{{{KEY[qi]}}}' for t, qi in stops if t > 0)
                   + f'100%{{{KEY[0]}}}}}')
+        # 見えない 間は 描かない（まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」）：
+        # 打ち上げ（Q[0]）から 消える（Q[-1]）までの 外は どの 部品も こさ 0 なので、花火 ひとつ ぶんを visibility:hidden（hqV…・step-end）
+        win = sorted((t0 + d[k] + RISE + Q[0], t0 + d[k] + RISE + Q[-1]) for t0, kind, d in rounds)
+        vk = [(0.0, any(a <= 0.0 < b for a, b in win))]
+        for a, b in win:
+            assert 0.0 <= a < b <= T, 'firework window across the loop end'
+            vk += [(a, True), (b, False)]
+        vs = ''
+        for t, on in vk:
+            if not vs or vs.rsplit('visibility:', 1)[1].startswith('visible') != on:
+                vs += f'{t / T * 100:.3f}%{{visibility:{"visible" if on else "hidden"}}}'
+        kf.append(f'@keyframes hqV{k}{{{vs}}}')
+        css_l.append(f'.hqw .hq{k}{{animation:hqV{k} {T:g}s step-end -{START:g}s infinite}}')
     defs = ('<svg class="hqd" width="0" height="0" aria-hidden="true"><defs>'
             '<linearGradient id="hqTl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="46"><stop offset="0" stop-color="#FFF1C4"/><stop offset=".45" stop-color="#FFB45A" stop-opacity=".7"/>'
             '<stop offset="1" stop-color="#FF7A3A" stop-opacity="0"/></linearGradient>'

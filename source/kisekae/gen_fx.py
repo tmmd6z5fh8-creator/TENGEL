@@ -245,13 +245,13 @@ BURST_CSS = r'''
 /* 爆発の光（文字やボードが出るとき）：ギザギザの星形の光がはじけて消える・衝撃の輪・飛び散る光の破片。小さな範囲で1回だけ光る（画面全体は光らせない） */
 .bx{position:absolute;left:var(--x);top:var(--y);width:0;height:0;pointer-events:none}
 .bx .bs1{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);
-  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards}
+  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + .36s) forwards}
 @keyframes bxS{0%{opacity:1;transform:scale(.12)}45%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
 .bx .bw{position:absolute;left:calc(var(--s) * -.35);top:calc(var(--s) * -.35);width:calc(var(--s) * .7);height:calc(var(--s) * .7);border-radius:50%;
-  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards}
+  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + .42s) forwards}
 @keyframes bxW{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(2)}}
 .bx > i{position:absolute;left:-7px;top:-2px;width:14px;height:4px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);
-  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards}
+  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + var(--t)) forwards}
 @keyframes bxD{0%{opacity:1;transform:translate(0,0) rotate(var(--r)) scaleX(2.2)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scaleX(.5)}}
 @media (prefers-reduced-motion:reduce){.bx{display:none}}
 '''
@@ -323,16 +323,20 @@ COMMON_CSS = r'''body{margin:0}
 @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 /* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
-.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
-.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+/* 見えない 間は 描かない（fxH：出る 前・消えた あとは visibility:hidden。アニメが ついた 見えない 絵も 合成の 層の 画素を 使うので。まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」） */
+@keyframes fxH{0%,100%{visibility:hidden}}
+.ov .brows li{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
 .ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
 /* 押したあと（PUSHがあった所から光ってはじける） */
 .pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
-  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both,fxH .001s linear .45s forwards}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
 .hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
-.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+/* 押した 時に とびちる テーマの かけら（.clips）：どの テーマも 2秒 までに 消えるので、そのあとは 描かない */
+.clips{animation:fxH .001s linear 2s forwards}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both,fxH .001s linear backwards}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 /* 紙ふぶき */
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
@@ -348,7 +352,7 @@ HIT_CSS = r'''
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
   -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
   animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
-.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both,fxH .001s linear .3s backwards}
 @keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
 .hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
 .hit{--t0:1.15s;--tc:.2s}
@@ -356,11 +360,11 @@ HIT_CSS = r'''
 
 MISS_CSS = r'''
 /* ---------- ハズレ：ボタンなし。記録したら、暗い幕とテーマのボードが静かに出る（光・紙ふぶき・音なし） ---------- */
-.miss .hb{animation:missIn .4s cubic-bezier(.2,.8,.3,1) .1s both}
+.miss .hb{animation:missIn .4s cubic-bezier(.2,.8,.3,1) .1s both,fxH .001s linear .1s backwards}
 @keyframes missIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 .ov.miss{--t0:.45s;--tc:.15s}
-.ov.miss .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
-.ov.miss .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.miss .brows li{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.miss .btot{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.miss .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 '''
 
@@ -391,8 +395,8 @@ BIG_CSS = r'''
 .pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
 /* 押したあと（パチンコの当たりのように速く・勢いよく）：はじける → 0.04秒 白く光る・爆発・虹の光の筋 → 虹の輪3つ（0.1・0.25・0.4秒）
    → 0.38秒 ボードがドンと落ちてくる（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
-.pressed.big{animation:press .28s ease-in both}
-.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both}
+.pressed.big{animation:press .28s ease-in both,fxH .001s linear .28s forwards}
+.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both,fxH .001s linear .04s backwards,fxH .001s linear .54s forwards}
 @keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 .rbow{position:absolute;z-index:3;left:50%;top:44%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
@@ -409,17 +413,17 @@ BIG_CSS = r'''
   -webkit-mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);
   opacity:0;animation:shock2 .42s ease-out forwards}
 /* 虹の輪3つ（キュウィン×3）：だんだん大きい輪がポンと出て消える（同じ所が何回も光らないように、輪の大きさを変える） */
-.ring.r1{--rs:.9;animation-delay:.1s}.ring.r2{--rs:1.5;animation-delay:.25s}.ring.r3{--rs:2.2;animation-delay:.4s}
+.ring.r1{--rs:.9;animation:shock2 .42s ease-out .1s forwards,fxH .001s linear .1s backwards,fxH .001s linear .52s forwards}.ring.r2{--rs:1.5;animation:shock2 .42s ease-out .25s forwards,fxH .001s linear .25s backwards,fxH .001s linear .67s forwards}.ring.r3{--rs:2.2;animation:shock2 .42s ease-out .4s forwards,fxH .001s linear .4s backwards,fxH .001s linear .82s forwards}
 @keyframes shock2{0%{opacity:.7;scale:calc(var(--rs) * .6)}100%{opacity:0;scale:calc(var(--rs) * 1.25)}}
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
-.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both}
+.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both,fxH .001s linear .38s backwards}
 @keyframes bslam{0%{opacity:0;transform:translateY(-70px) scale(1.45);filter:brightness(3) blur(3px)}55%{opacity:1;transform:translateY(8px) scale(.96);filter:brightness(1.7) blur(0)}78%{transform:translateY(-3px) scale(1.02);filter:brightness(1.15)}100%{transform:none;filter:none}}
 /* 見出し「デカ的中!!」：虹色の文字（boards.py）がたたきつけるように出て、色が流れる */
 .big .bh{animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
 @keyframes bhSlam{0%{opacity:0;transform:scale(2.6)}60%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
 .ov.big{--t0:.9s;--tc:.25s}
-.ov.big .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
-.ov.big .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.big .brows li{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.big .btot{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.big .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 
 '''
@@ -431,8 +435,8 @@ FREEZE_CSS = r'''
 .w8{background:#F27BB0;color:#1F1F1F}
 .ov.fz{--rb:#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B;--ink2:#2A1259;--t0:<R+.45>;--tc:.25s}
 /* 結果の買い目は0.08秒おき（パチンコの当たりのように速く） */
-.ov.fz .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
-.ov.fz .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.fz .brows li{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.fz .btot{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.fz .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 .ov.fz .dim{background:radial-gradient(circle at 50% 44%,rgba(84,26,136,.55),rgba(5,2,14,.94) 66%)}
 /* PUSHのうしろ：ぼかした虹（回る）と白い光の筋 */
@@ -530,7 +534,7 @@ FREEZE_CSS = r'''
 .pc .pca path{fill:none;stroke:#F3FBFF;stroke-linecap:round;stroke-linejoin:round;visibility:hidden;animation:vis var(--t) steps(1) var(--d)}
 /* 散る光の粒（下へ落ちながら消える） */
 .pc .pcd i{left:var(--x);top:var(--y);width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;background:#D8F0FF;box-shadow:0 0 3px #5EA8FF;
-  visibility:visible;opacity:0;animation:pcd var(--t) cubic-bezier(.2,.6,.4,1) var(--d) forwards}
+  visibility:visible;opacity:0;animation:pcd var(--t) cubic-bezier(.2,.6,.4,1) var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + var(--t)) forwards}
 @keyframes pcd{0%{opacity:1;translate:0 0}100%{opacity:0;translate:var(--dx) var(--dy)}}
 /* ===== 3) 真っ暗（<Z+.4>〜<M>・1.5秒）→ 4) 虹色ネオンのカット（<M>〜<R>）：まさちゃんの指定の文字が、カットごとに出る
    T1「ど」「て」「き」「！」「！」→ T2「どてき！！」（階段）→ T3「どてき！！」「どてき！！」→ T4 白く光る →「ど！」×4 → T5「ど的中」「！！！！」（そろってから1.5秒）→ 結果
@@ -651,8 +655,8 @@ FREEZE_CSS = r'''
 /* ===== 5) 結果（<R>）：白く光る → 虹色の大当たりの画面（まさちゃんの指定「虹色の大当たり感強く」）に、上に「ど的中」・まん中からテーマのボード（画面はゆらさない）
    虹色の光線（止まったまま・回さない）・「ど的中」のうしろの白い光・虹の輪が外へ広がる・虹色のきらめきが上る・コイン・紙ふぶき ===== */
 .xf{z-index:45}
-.rfl{position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:mfl .4s ease-out <R> forwards}
-.ov.fz .fin{z-index:20;opacity:0;animation:fzOn .01s linear <R> forwards}
+.rfl{position:absolute;inset:0;background:#FFFFFF;opacity:0;animation:mfl .4s ease-out <R> forwards,fxH .001s linear <R> backwards,fxH .001s linear <R+.4> forwards}
+.ov.fz .fin{z-index:20;opacity:0;animation:fzOn .01s linear <R> forwards,fxH .001s linear <R> backwards}
 .fsk{position:absolute;inset:0}
 .fin .fb{position:absolute;inset:0;background:radial-gradient(circle at 50% 94px,#FFFFFF 0,#FFF8DC 30px,rgba(255,236,170,.8) 64px,rgba(255,190,240,0) 190px),
   radial-gradient(circle at 50% 94px,rgba(26,6,52,0) 260px,rgba(26,6,52,.32) 600px,rgba(16,4,36,.6) 900px),
@@ -683,7 +687,7 @@ FREEZE_CSS = r'''
 @keyframes flk{0%{transform:scale(1,.82) skewX(-4deg)}50%{transform:scale(.92,1.08) skewX(3deg)}100%{transform:scale(1.04,1.16) skewX(-2deg)}}
 /* 出たときの光の輪 */
 .dlg .dr{position:absolute;left:50%;top:104px;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;border:7px solid #FFF3B0;
-  box-shadow:0 0 22px 4px #FFB000,inset 0 0 22px 4px #FFB000;opacity:0;animation:dr .5s ease-out <R+.12> forwards}
+  box-shadow:0 0 22px 4px #FFB000,inset 0 0 22px 4px #FFB000;opacity:0;animation:dr .5s ease-out <R+.12> forwards,fxH .001s linear <R+.62> forwards}
 @keyframes dr{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(2.6)}}
 .dlg .dsb{position:absolute;left:0;right:0;top:-6px;text-align:center;font:700 15px/1 "BIZ UDPGothic",sans-serif;letter-spacing:.42em;padding-left:.42em;color:#FFFFFF;text-shadow:0 0 6px #FF3BD2,0 0 14px #7A3BFF,0 2px 0 #2A0A48}
 .dlg .dw{position:absolute;left:50%;top:122px;width:var(--w);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--w) / -2)}
@@ -1640,7 +1644,7 @@ NP_CSS = r'''
 .np .npg{transform-box:view-box;transform-origin:0 0;animation:npPulse 1.6s ease-in-out infinite}
 @keyframes npPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 .tap.np{color:#F2EEE3}
-.pressed.np{border-radius:6px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #CFC6B3;animation-name:npPress}
+.pressed.np{border-radius:6px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #CFC6B3;animation-name:npPress,fxH}
 @keyframes npPress{0%{transform:scale(1)}35%{transform:scale(.84)}100%{transform:scale(1.7);opacity:0}}   /* 紙の白は光らせない（ボードが出るところと重なって、ちかちかしないように） */
 .clips.np{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.np i{position:absolute;opacity:0;left:-12px;top:-8px;width:24px;height:15px;background:center/contain no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.25);
@@ -1777,7 +1781,7 @@ NK_CSS = r'''
 .nk .nkm{animation:nkMist 7s linear infinite}
 @keyframes nkMist{from{transform:translateX(0)}to{transform:translateX(270px)}}
 .tap.nk{color:#F5F0E4}
-.pressed.nk{border-radius:8px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3A3530;animation-name:nkPress}
+.pressed.nk{border-radius:8px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3A3530;animation-name:nkPress,fxH}
 @keyframes nkPress{0%{transform:scale(1)}35%{transform:scale(.84)}100%{transform:scale(1.7);opacity:0}}   /* 紙の白は光らせない */
 .clips.nk{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.nk i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);border-radius:50% 50% 50% 45%;
@@ -2078,7 +2082,7 @@ SZ_CSS = r'''
 .sz .szo{animation:szRock 4s ease-in-out infinite}
 @keyframes szRock{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .tap.sz{color:#FFE7A3}
-.pressed.sz{border-radius:24px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3B2F86;animation-name:szPress}
+.pressed.sz{border-radius:24px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3B2F86;animation-name:szPress,fxH}
 @keyframes szPress{0%{transform:scale(1)}35%{transform:scale(.84);filter:brightness(1.3)}100%{transform:scale(1.75);opacity:0;filter:brightness(1.5)}}   /* 夜空は強く光らせない */
 .clips.sz{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.sz i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:szFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -2194,7 +2198,7 @@ SJ_CSS = r'''
 .sj .sjv.r{animation-delay:-.35s}
 @keyframes sjFlap{from{transform:rotate(-5deg)}to{transform:rotate(6deg)}}
 .tap.sj{color:#FFC400}
-.pressed.sj{border-radius:18px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #0F2A80;animation-name:sjPress}
+.pressed.sj{border-radius:18px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #0F2A80;animation-name:sjPress,fxH}
 @keyframes sjPress{0%{transform:scale(1)}35%{transform:scale(.84);filter:brightness(1.15)}100%{transform:scale(1.75);opacity:0;filter:brightness(1.3)}}   /* 黄色は強く光らせない */
 .clips.sj{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.sj i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:sjFly 1.25s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -2318,7 +2322,7 @@ NN_CSS = r'''
 @keyframes nnTw{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.1);opacity:1}}
 .nn .nnz{animation:nnHum 1.6s ease-in-out infinite}
 .tap.nn{color:#2EEBFF;text-shadow:0 0 6px rgba(46,235,255,.8)}
-.pressed.nn{border-radius:16px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #05030C,0 0 26px 14px rgba(46,235,255,.32);animation-name:nnPress}
+.pressed.nn{border-radius:16px;box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #05030C,0 0 26px 14px rgba(46,235,255,.32);animation-name:nnPress,fxH}
 @keyframes nnPress{0%{transform:scale(1)}35%{transform:scale(.84);filter:brightness(1.3)}100%{transform:scale(1.75);opacity:0;filter:brightness(1.5)}}   /* 強く光らせない */
 .clips.nn{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.nn i{position:absolute;opacity:0;animation:nnFly 1.25s cubic-bezier(.15,.7,.3,1) var(--d) both}
@@ -2561,7 +2565,7 @@ DP_CSS = r'''
   animation:dpShad .9s step-end infinite}
 @keyframes dpShad{0%,100%{transform:scale(1)}16.6%{transform:scale(.92)}33.3%{transform:scale(.84)}50%{transform:scale(.76)}66.6%{transform:scale(.84)}83.3%{transform:scale(.92)}}
 .tap.dp{font-family:"DotGothic16",sans-serif;font-size:22px;color:#FFEC27;text-shadow:3px 3px 0 #FF004D}
-.pressed.dp{background:none;box-shadow:none;border-radius:0;animation:dpPress .5s step-end both}
+.pressed.dp{background:none;box-shadow:none;border-radius:0;animation:dpPress .5s step-end both,fxH .001s linear .5s forwards}
 @keyframes dpPress{0%{transform:none;opacity:1}20%{transform:scale(1.08);opacity:1}40%{transform:scale(1.2);opacity:.75}60%{transform:scale(1.34);opacity:.5}
   80%{transform:scale(1.48);opacity:.25}100%{transform:scale(1.6);opacity:0}}   /* へこむ → カクカク大きくなって消える（強く光らせない） */
 .pressed.dp .dps{display:none}
@@ -2737,7 +2741,7 @@ HN_CSS = r'''
 .hn .hnp{transform-box:view-box;transform-origin:0 0;opacity:0;animation:hnPop 2.6s ease-out infinite}
 @keyframes hnPop{0%{opacity:0;transform:scale(.2)}8%{opacity:1}30%{opacity:1;transform:scale(1)}55%{opacity:0;transform:scale(1.12) translateY(3px)}100%{opacity:0;transform:scale(1.12) translateY(3px)}}
 .tap.hn{font-family:"Potta One",sans-serif;background:linear-gradient(90deg,#FF6FA8,#FFD45E);-webkit-background-clip:text;background-clip:text;color:transparent}
-.pressed.hn{border-radius:22px;box-shadow:0 0 0 7px var(--rim),0 0 0 11px var(--rimD),0 9px 0 11px #070B1E,0 0 28px 12px rgba(255,111,168,.32);animation-name:hnPress}
+.pressed.hn{border-radius:22px;box-shadow:0 0 0 7px var(--rim),0 0 0 11px var(--rimD),0 9px 0 11px #070B1E,0 0 28px 12px rgba(255,111,168,.32);animation-name:hnPress,fxH}
 @keyframes hnPress{0%{transform:scale(1)}35%{transform:scale(.86);filter:brightness(1.25)}100%{transform:scale(1.7);opacity:0;filter:brightness(1.4)}}   /* 強く光らせない */
 .clips.hn{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.hn i{position:absolute;opacity:0}
@@ -2971,7 +2975,7 @@ KE_CSS = r'''
 .ke .keu{animation:keSwing 2.6s ease-in-out infinite}
 @keyframes keSwing{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
 .tap.ke{font-family:"Mochiy Pop One",sans-serif;color:#FFE58A;text-shadow:0 2px 0 #8A5A35}
-.pressed.ke{border-radius:24px;box-shadow:0 0 0 7px var(--rim),0 0 0 10px var(--rimD),0 9px 0 10px #8A5A35;animation-name:kePress}
+.pressed.ke{border-radius:24px;box-shadow:0 0 0 7px var(--rim),0 0 0 10px var(--rimD),0 9px 0 10px #8A5A35;animation-name:kePress,fxH}
 @keyframes kePress{0%{transform:scale(1)}32%{transform:scale(1.06,.84)}100%{transform:scale(1.6);opacity:0}}   /* 強く光らせない */
 .clips.ke{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.ke i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:keFly 1.35s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -3129,7 +3133,7 @@ KW_CSS = r'''
 .kw .kwu{transform-box:fill-box;transform-origin:50% 50%;opacity:0;animation:kwUp 2.4s ease-out infinite}
 @keyframes kwUp{0%{opacity:0;transform:translateY(8px) scale(.5) rotate(-12deg)}20%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(-34px) scale(1.05) rotate(12deg)}}
 .tap.kw{font-family:"Hachi Maru Pop",sans-serif;color:#FFFFFF;text-shadow:0 2px 0 #D63A84,0 0 10px rgba(255,125,180,.8)}
-.pressed.kw{border-radius:26px;box-shadow:0 0 0 9px var(--rim),0 0 0 13px var(--rimD),0 9px 0 13px #C2307A;animation-name:kwPress}
+.pressed.kw{border-radius:26px;box-shadow:0 0 0 9px var(--rim),0 0 0 13px var(--rimD),0 9px 0 13px #C2307A;animation-name:kwPress,fxH}
 @keyframes kwPress{0%{transform:scale(1)}22%{transform:scale(1.1)}40%{transform:scale(.86)}100%{transform:scale(1.6);opacity:0}}   /* 強く光らせない */
 .clips.kw{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.kw i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:kwFly 1.35s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -3277,7 +3281,7 @@ SS_CSS = r'''
 .ss .sssh{animation:ssShine 5s ease-in-out infinite}
 @keyframes ssShine{0%,55%{transform:translateX(0)}85%,100%{transform:translateX(300px)}}
 .tap.ss{font-family:"Kaisei Opti",serif;font-weight:700;color:#FFD9A8;text-shadow:0 2px 0 #3A1D5C,0 0 10px rgba(255,150,90,.8)}
-.pressed.ss{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3A1D5C;animation-name:ssPress}
+.pressed.ss{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #3A1D5C;animation-name:ssPress,fxH}
 @keyframes ssPress{0%{transform:scale(1)}25%{transform:scale(1.08)}45%{transform:scale(.9)}100%{transform:scale(1.6);opacity:0}}   /* 強く光らせない */
 .clips.ss{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.ss i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:ssFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -3418,7 +3422,7 @@ NB_CSS = r'''
 .nb .nbbm.r{animation-delay:-1.8s}
 @keyframes nbBeam{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
 .tap.nb{font-family:"RocknRoll One",sans-serif;font-weight:400;color:#FFD27A;text-shadow:0 2px 0 #0E1324,0 0 10px rgba(255,176,32,.8)}
-.pressed.nb{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #070A16;animation-name:nbPress}
+.pressed.nb{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #070A16;animation-name:nbPress,fxH}
 @keyframes nbPress{0%{transform:scale(1)}25%{transform:scale(1.08)}45%{transform:scale(.9)}100%{transform:scale(1.6);opacity:0}}   /* 強く光らせない */
 .clips.nb{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.nb i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:nbFly 1.3s cubic-bezier(.15,.7,.3,1) var(--d) both;background:center/contain no-repeat}
@@ -3571,7 +3575,7 @@ MB_CSS = r'''
 .mb .mbck path{stroke-dasharray:1 1;stroke-dashoffset:1;animation:mbCrack .14s ease-out .03s both}
 @keyframes mbCrack{to{stroke-dashoffset:0}}
 .tap.mb{font-family:"Shippori Mincho B1",serif;font-weight:800;color:#F3E2B8;letter-spacing:.14em;text-shadow:0 2px 0 #6E5428,0 0 10px rgba(233,207,142,.7)}
-.pressed.mb{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #8E6F3A;animation-name:mbPress}
+.pressed.mb{box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD),0 10px 0 13px #8E6F3A;animation-name:mbPress,fxH}
 @keyframes mbPress{0%{transform:scale(1);opacity:1}30%{transform:scale(.96);opacity:1}50%{transform:scale(1.06);opacity:.9}100%{transform:scale(1.55);opacity:0}}   /* ひびが走るまでは 不透明のまま・強く光らせない */
 .clips.mb{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.mb i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:mbFly 1.3s cubic-bezier(.15,.7,.3,1) calc(var(--d) + .12s) both;background:center/contain no-repeat}
@@ -3709,7 +3713,7 @@ KB_CSS = r'''
 .kb .kbbo{transform-box:view-box;transform-origin:0 0;animation:kbBob 2.6s ease-in-out infinite alternate}
 @keyframes kbBob{from{transform:translate(0,-3px) rotate(-5deg)}to{transform:translate(0,3px) rotate(5deg)}}
 .tap.kb{font-family:"Zen Antique Soft",serif;font-weight:400;color:#FFE08A;letter-spacing:.12em;text-shadow:0 2px 0 #6B430A,0 0 10px rgba(255,200,80,.75)}
-.pressed.kb{border-radius:50%;box-shadow:0 0 0 4px #F7D774,0 0 0 6px #7A520C,0 6px 0 6px #DCA436,0 7.5px 0 6px #7A520C;animation-name:kbPress}
+.pressed.kb{border-radius:50%;box-shadow:0 0 0 4px #F7D774,0 0 0 6px #7A520C,0 6px 0 6px #DCA436,0 7.5px 0 6px #7A520C;animation-name:kbPress,fxH}
 @keyframes kbPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.07)}100%{transform:scale(1.5);opacity:0}}   /* 強く光らせない */
 .clips.kb{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.kb i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:kbFly 1.5s cubic-bezier(.2,.6,.4,1) calc(var(--d) + .1s) both;background:center/contain no-repeat}
@@ -3858,7 +3862,7 @@ KK_CSS = r"""
 .kk .kktw{transform-box:view-box;animation:kkTw 2.6s ease-in-out infinite}
 @keyframes kkTw{0%,100%{opacity:.35;transform:scale(.6) rotate(0deg)}50%{opacity:1;transform:scale(1.1) rotate(18deg)}}
 .tap.kk{font-family:"Yomogi",sans-serif;font-weight:400;color:#F3F1E7;letter-spacing:.14em;text-shadow:0 0 6px rgba(255,255,255,.35)}
-.pressed.kk{border-radius:10px;background:#24423A;box-shadow:0 0 0 7px #9A6834,0 0 0 9px #5E3A18,0 9px 0 9px #6E4520;animation-name:kkPress}
+.pressed.kk{border-radius:10px;background:#24423A;box-shadow:0 0 0 7px #9A6834,0 0 0 9px #5E3A18,0 9px 0 9px #6E4520;animation-name:kkPress,fxH}
 @keyframes kkPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.05)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
 .clips.kk{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.kk i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) * -.19);width:var(--z);height:calc(var(--z) * .375);animation:kkFly 1.5s cubic-bezier(.2,.6,.4,1) calc(var(--d) + .06s) both;background:center/contain no-repeat}
@@ -4074,7 +4078,7 @@ MT_CSS = r'''
 .@P .@Pfl{opacity:0;animation:@PFl 2.6s linear infinite}
 @keyframes @PFl{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}45%{opacity:.35}70%{opacity:1}100%{opacity:0;transform:translate(6px,-118px)}}
 .tap.@P{color:@TAP;text-shadow:@TAPS}
-.pressed.@P{border-radius:26px;box-shadow:0 0 0 2.5px @R1,0 0 0 5px @R2,0 0 0 8.5px @R3,0 0 0 10.5px @R4,0 8px 0 10.5px @D1,0 10px 0 10.5px @D2;animation-name:@PPress}
+.pressed.@P{border-radius:26px;box-shadow:0 0 0 2.5px @R1,0 0 0 5px @R2,0 0 0 8.5px @R3,0 0 0 10.5px @R4,0 8px 0 10.5px @D1,0 10px 0 10.5px @D2;animation-name:@PPress,fxH}
 @keyframes @PPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.07)}100%{transform:scale(1.5);opacity:0}}   /* 強く光らせない */
 .clips.@P{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.@P i{position:absolute;opacity:0;left:calc(var(--z) / -2);top:calc(var(--z) / -2);width:var(--z);height:var(--z);animation:@PFly 1.4s cubic-bezier(.15,.7,.3,1) calc(var(--d) + .1s) both;background:center/contain no-repeat}
@@ -4345,7 +4349,7 @@ TG_CSS = r'''
 .tg .tgs{opacity:0;transform-box:fill-box;transform-origin:50% 50%;animation:tgS 1.7s ease-out infinite}
 @keyframes tgS{0%{opacity:0;transform:translate(0,0) scale(1)}6%{opacity:1}40%{opacity:0;transform:translate(var(--x),var(--y)) scale(.4)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(.4)}}
 .tap.tg{color:#F4DC96;text-shadow:0 2px 0 #0A1B22,0 0 12px rgba(38,255,130,.85)}
-.pressed.tg{width:300px;height:164px;margin:-82px 0 0 -150px;border-radius:15px;background:#0A1C23;box-shadow:0 0 0 2px #E9C873,0 0 0 4.5px #0A1B22,0 0 0 6px #B48A3A,0 7px 0 6px #6E5216,0 0 18px 3px rgba(38,255,130,.2);animation-name:tgPress}
+.pressed.tg{width:300px;height:164px;margin:-82px 0 0 -150px;border-radius:15px;background:#0A1C23;box-shadow:0 0 0 2px #E9C873,0 0 0 4.5px #0A1B22,0 0 0 6px #B48A3A,0 7px 0 6px #6E5216,0 0 18px 3px rgba(38,255,130,.2);animation-name:tgPress,fxH}
 @keyframes tgPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.05)}100%{transform:scale(1.3);opacity:0}}   /* 強く光らせない */
 .clips.tg{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:0;height:0}
 .clips.tg .tgb{position:absolute;left:-300px;top:-230px;width:600px;height:460px;overflow:visible;visibility:hidden;animation:tgBolt .5s step-end .06s both}

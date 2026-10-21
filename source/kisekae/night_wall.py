@@ -199,9 +199,30 @@ def races_kfs(blocks):
     return [(k * BLOCK + u, v, tf) for k, kfs in enumerate(blocks) for u, v, tf in kfs]
 
 
-def anim(name, period=BLOCK, tf='linear'):
-    """ページを開いた時が 1回りの OPEN_U 秒（BLOCK の くり返しも 同じ ずれ：LOOP は BLOCK の倍数）"""
-    return f'animation:{name} {period:g}s {tf} -{OPEN_U:g}s infinite'
+def anim(name, period=BLOCK, tf='linear', twin=None):
+    """ページを開いた時が 1回りの OPEN_U 秒（BLOCK の くり返しも 同じ ずれ：LOOP は BLOCK の倍数）。
+       twin：見えない 間は 描かない アニメ（vis_twin の 名前・step-end で 同じ 周期）を いっしょに つける"""
+    tw = f',{twin} {period:g}s step-end -{OPEN_U:g}s infinite' if twin else ''
+    return f'animation:{name} {period:g}s {tf} -{OPEN_U:g}s infinite{tw}'
+
+
+def vis_(o):
+    """こさ 0/1 の コマ（step-end）を visibility に（見た目は 同じ・0 の 間は 描かない）"""
+    return f'visibility:{"visible" if o else "hidden"}'
+
+
+def vis_twin(name, kfs, period=BLOCK, op=lambda v: v):
+    """こさの キーフレーム kfs（[(t, 値, 次までの動き)]・op：値 → こさ）から、こさが 0 の 間だけ visibility:hidden に する
+       アニメ（step-end）を 作る（まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」：
+       見えない 間も 合成の 層の 画素を 使わない ように）。次の キーフレームまでの 間に こさが 0 より 大きい 所が あれば 見せる"""
+    out = []
+    for i, (t, v, tf) in enumerate(kfs):
+        o0 = op(v)
+        o1 = op(kfs[i + 1][1]) if i + 1 < len(kfs) else o0
+        show = o0 > 0 or (o1 > 0 and tf != 'step-end')
+        if not out or out[-1][1] != show:
+            out.append((t, show, None))
+    return keyframes(name, out, vis_, period, step=True)
 
 
 def pos_x(run, num, order):
@@ -416,10 +437,11 @@ def inline(blobs, run, alt=ALT, static=STATIC):
     # ゴール板（柱の下のはしが 奥の柵の上）：外がわは レースごとの 1着の鼻先・内がわは そこからの ずれ（どのレースも同じ）
     xg = [LAYOUT[order_at(r, T_GOAL)][r['win']] / 2 for r in races]
     css += (f'.ntg{{position:absolute;left:-14px;top:{POST_FOOT - 78}px;width:28px;height:78px;pointer-events:none;{anim("ntGo", LOOP, "step-end")}}}'
-            f'.ntgi{{width:28px;height:78px;{anim("ntGi")}}}.ntg .ntgs{{display:block;overflow:visible}}.ntgl{{opacity:0;{anim("ntGl")}}}'
+            f'.ntgi{{width:28px;height:78px;{anim("ntGi")}}}.ntg .ntgs{{display:block;overflow:visible}}.ntgl{{opacity:0;{anim("ntGl", twin="ntGlV")}}}'
             + keyframes('ntGo', races_kfs([[(0.0, x, None)] for x in xg]), lambda x: f'transform:translateX({x:g}px)', LOOP, step=True)
             + keyframes('ntGi', post_block(tm, min(xg)), lambda p: f'transform:translateX({p[0]:.1f}px);opacity:{p[1]}')
-            + keyframes('ntGl', [(0.0, 0, None), (T_GOAL - 0.15, 0, None), (T_GOAL + 0.15, 1, None), (T_GOAL + 0.75, 0, None)], op_))
+            + keyframes('ntGl', GL := [(0.0, 0, None), (T_GOAL - 0.15, 0, None), (T_GOAL + 0.15, 1, None), (T_GOAL + 0.75, 0, None)], op_)
+            + vis_twin('ntGlV', GL))
     for num in DRAW:
         r, t = hz[str(num)], tz[str(num)]
         cw, ch = r['cell'][0] / 2, r['cell'][1] / 2
@@ -444,15 +466,15 @@ def inline(blobs, run, alt=ALT, static=STATIC):
                 f'@keyframes ntS{num}{{to{{transform:translateX(-{n * cw:g}px)}}}}'
                 + keyframes(f'ntR{num}', races_kfs([horse_block(run, num, rc, nxt(k)) for k, rc in enumerate(races)]), lambda x: f'transform:translateX({x:.1f}px)', LOOP)
                 + keyframes(f'ntJ{num}', sway_block(num), lambda x: f'transform:translateX({x:g}px)')
-                + keyframes(f'ntC{num}', show_block(gal), op_, step=True)
-                + keyframes(f'ntU{num}', show_block(mid), op_, step=True)
-                + keyframes(f'ntK{num}', show_block(trn), op_, step=True)
+                + keyframes(f'ntC{num}', show_block(gal), vis_, step=True)
+                + keyframes(f'ntU{num}', show_block(mid), vis_, step=True)
+                + keyframes(f'ntK{num}', show_block(trn), vis_, step=True)
                 + keyframes(f'ntV{num}', gallop_frames_block(tm, cw), lambda x: f'transform:translateX({x:g}px)', step=True)
                 + keyframes(f'ntQ{num}', trans_frames_block(tm, t), lambda p: f'transform:translate({p[0]:g}px,{p[1]:g}px)', step=True))
     # 暗くなる幕・照明・「スタート！」
-    css += (f'.ntd{{position:absolute;inset:0;background:{DARK};pointer-events:none;{anim("ntD")}}}'
-            + keyframes('ntD', [(0.0, 1, None), (T_LIGHT + 0.3, 1, 'ease-out'), (T_LIGHT + 0.9, 0, None),
-                                (T_GOAL, 0, 'cubic-bezier(.42,0,.58,1)'), (T_GOAL + DARK_S, 1, None)], op_))
+    DK = [(0.0, 1, None), (T_LIGHT + 0.3, 1, 'ease-out'), (T_LIGHT + 0.9, 0, None), (T_GOAL, 0, 'cubic-bezier(.42,0,.58,1)'), (T_GOAL + DARK_S, 1, None)]
+    css += (f'.ntd{{position:absolute;inset:0;background:{DARK};pointer-events:none;{anim("ntD", twin="ntDV")}}}'
+            + keyframes('ntD', DK, op_) + vis_twin('ntDV', DK))
     css += ('.ntl{position:absolute;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;pointer-events:none;opacity:0;'
             'background:radial-gradient(circle,#FFFFFF 0,#F4F6FF 9%,rgba(176,196,255,.62) 24%,rgba(120,140,255,.18) 48%,rgba(120,140,255,0) 70%)}'
             '.ntl::before,.ntl::after{content:"";position:absolute;left:50%;top:50%;width:110px;height:2px;margin:-1px 0 0 -55px;'
@@ -460,26 +482,29 @@ def inline(blobs, run, alt=ALT, static=STATIC):
     sc_ = lambda p: f'opacity:{p[0]};transform:scale({p[1]})'
     for i, (lx, ly) in enumerate(LAMPS):
         t0 = T_LIGHT + 0.15 * i
-        css += (f'.ntl{i}{{left:{lx}px;top:{ly}px;{anim(f"ntL{i}")}}}'
-                + keyframes(f'ntL{i}', [(0.0, (0, .6), None), (t0, (0, .6), 'ease-out'), (t0 + 0.12, (1, 1), None), (T_LIGHT + 0.9, (1, 1), 'ease-in-out'),
-                                        (T_LIGHT + 1.8, (0, 1), 'step-end'), (T_LIGHT + 1.9, (0, .6), None)], sc_))
+        LK = [(0.0, (0, .6), None), (t0, (0, .6), 'ease-out'), (t0 + 0.12, (1, 1), None), (T_LIGHT + 0.9, (1, 1), 'ease-in-out'),
+              (T_LIGHT + 1.8, (0, 1), 'step-end'), (T_LIGHT + 1.9, (0, .6), None)]
+        css += (f'.ntl{i}{{left:{lx}px;top:{ly}px;{anim(f"ntL{i}", twin=f"ntL{i}V")}}}'
+                + keyframes(f'ntL{i}', LK, sc_) + vis_twin(f'ntL{i}V', LK, op=lambda v: v[0]))
     css += ('.ntst{position:absolute;left:0;right:0;top:33px;text-align:center;pointer-events:none;opacity:0;'
             'font:400 29px/1 "RocknRoll One",sans-serif;letter-spacing:.06em;color:#FFF6E0;'
-            f'text-shadow:0 0 6px #FFB020,0 0 16px rgba(255,176,32,.8),0 2px 0 #7A3A00;{anim("ntSt")}}}'
-            + keyframes('ntSt', [(0.0, (0, .72), None), (T_START - 0.1, (0, .72), 'cubic-bezier(.2,.8,.3,1.25)'), (T_START + 0.2, (1, 1), None),
-                                 (T_START + 0.9, (1, 1), 'ease-in'), (T_START + 1.35, (0, 1.06), 'step-end'), (T_START + 1.45, (0, .72), None)], sc_))
+            f'text-shadow:0 0 6px #FFB020,0 0 16px rgba(255,176,32,.8),0 2px 0 #7A3A00;{anim("ntSt", twin="ntStV")}}}'
+            + keyframes('ntSt', SK := [(0.0, (0, .72), None), (T_START - 0.1, (0, .72), 'cubic-bezier(.2,.8,.3,1.25)'), (T_START + 0.2, (1, 1), None),
+                                       (T_START + 0.9, (1, 1), 'ease-in'), (T_START + 1.35, (0, 1.06), 'step-end'), (T_START + 1.45, (0, .72), None)], sc_)
+            + vis_twin('ntStV', SK, op=lambda v: v[0]))
     # 表彰（勝った馬の絵・1着のバッジ・紙ふぶき・カメラの光）：どの馬の表彰かは 1回り、出方は どのレースも同じ
-    css += ('.ntaw{position:absolute;inset:0;pointer-events:none;opacity:0;' + anim('ntAw') + '}'
-            '.nta{position:absolute;inset:0;overflow:hidden;opacity:0}'
+    AW = [(0.0, 0, None), (T_AWARD, 0, 'ease-out'), (T_AWARD + 0.8, 1, None), (T_AWEND, 1, 'ease-in'), (T_BLACK, 0, None)]
+    css += ('.ntaw{position:absolute;inset:0;pointer-events:none;opacity:0;' + anim('ntAw', twin='ntAwV') + '}'
+            '.nta{position:absolute;inset:0;overflow:hidden;visibility:hidden}'
             '.ntz{position:absolute;inset:0;transform-origin:45% 75%;will-change:transform;' + anim('ntZ') + '}'
             '.ntbd{position:absolute;left:290px;top:8px;width:96px;height:126px;opacity:0;transform-origin:50% 38%;' + anim('ntBd') + '}.ntbd svg{display:block}'
-            + keyframes('ntAw', [(0.0, 0, None), (T_AWARD, 0, 'ease-out'), (T_AWARD + 0.8, 1, None), (T_AWEND, 1, 'ease-in'), (T_BLACK, 0, None)], op_)
+            + keyframes('ntAw', AW, op_) + vis_twin('ntAwV', AW)
             + keyframes('ntZ', [(0.0, 1.0, None), (T_AWARD, 1.0, 'linear'), (T_BLACK, 1.045, 'step-end'), (T_RESET, 1.0, None)], lambda s_: f'transform:scale({s_})')
             + keyframes('ntBd', [(0.0, (0, .4), None), (T_AWARD + 0.55, (0, .4), 'cubic-bezier(.3,.7,.4,1.3)'), (T_AWARD + 1.0, (1, 1), None),
                                  (T_BLACK, (1, 1), 'step-end'), (T_RESET, (0, .4), None)], sc_))
     for num in DRAW:
         css += (f'.nta{num}{{{anim(f"ntA{num}", LOOP, "step-end")}}}.ntz{num}{{background:url({blobs["a" + str(num)]}) 0 0/390px 160px no-repeat}}'
-                + keyframes(f'ntA{num}', races_kfs([[(0.0, 0, None), (T_AWARD - 0.5, int(rc['win'] == num), None)] for rc in races]), op_, LOOP, step=True))
+                + keyframes(f'ntA{num}', races_kfs([[(0.0, 0, None), (T_AWARD - 0.5, int(rc['win'] == num), None)] for rc in races]), vis_, LOOP, step=True))
     css += ('.ntfx{position:absolute;inset:0;overflow:hidden;opacity:0;' + anim('ntFx') + '}'
             '.ntfx i{position:absolute;top:-14px;border-radius:1px;animation:ntCf var(--d) linear infinite;animation-delay:var(--dl);will-change:transform}'
             '@keyframes ntCf{from{transform:translate(0,-6px) rotate(0)}to{transform:translate(var(--dx),186px) rotate(var(--r))}}'

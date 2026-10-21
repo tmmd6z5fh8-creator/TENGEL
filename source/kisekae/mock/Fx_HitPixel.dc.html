@@ -79,16 +79,20 @@ body{margin:0}
 @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 /* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
-.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
-.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+/* 見えない 間は 描かない（fxH：出る 前・消えた あとは visibility:hidden。アニメが ついた 見えない 絵も 合成の 層の 画素を 使うので。まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」） */
+@keyframes fxH{0%,100%{visibility:hidden}}
+.ov .brows li{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
 .ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
 /* 押したあと（PUSHがあった所から光ってはじける） */
 .pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
-  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both,fxH .001s linear .45s forwards}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
 .hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
-.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+/* 押した 時に とびちる テーマの かけら（.clips）：どの テーマも 2秒 までに 消えるので、そのあとは 描かない */
+.clips{animation:fxH .001s linear 2s forwards}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both,fxH .001s linear backwards}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 /* 紙ふぶき */
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
@@ -102,7 +106,7 @@ body{margin:0}
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
   -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
   animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
-.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both}
+.hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both,fxH .001s linear .3s backwards}
 @keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}
 .hit .bh{animation:pop .5s cubic-bezier(.2,1.8,.4,1) .95s both}
 .hit{--t0:1.15s;--tc:.2s}
@@ -162,7 +166,7 @@ body{margin:0}
   animation:dpShad .9s step-end infinite}
 @keyframes dpShad{0%,100%{transform:scale(1)}16.6%{transform:scale(.92)}33.3%{transform:scale(.84)}50%{transform:scale(.76)}66.6%{transform:scale(.84)}83.3%{transform:scale(.92)}}
 .tap.dp{font-family:"DotGothic16",sans-serif;font-size:22px;color:#FFEC27;text-shadow:3px 3px 0 #FF004D}
-.pressed.dp{background:none;box-shadow:none;border-radius:0;animation:dpPress .5s step-end both}
+.pressed.dp{background:none;box-shadow:none;border-radius:0;animation:dpPress .5s step-end both,fxH .001s linear .5s forwards}
 @keyframes dpPress{0%{transform:none;opacity:1}20%{transform:scale(1.08);opacity:1}40%{transform:scale(1.2);opacity:.75}60%{transform:scale(1.34);opacity:.5}
   80%{transform:scale(1.48);opacity:.25}100%{transform:scale(1.6);opacity:0}}   /* へこむ → カクカク大きくなって消える（強く光らせない） */
 .pressed.dp .dps{display:none}

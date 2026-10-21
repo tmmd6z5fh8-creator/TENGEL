@@ -151,7 +151,7 @@ XM_CSS = r'''
 @keyframes xmTw{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
 .pshadow.xm{width:230px}
 .tap.xm{font-family:"Kaisei Tokumin",serif;font-weight:800;color:#FFE9A0;letter-spacing:.12em;text-shadow:0 2px 0 #14492C,0 0 10px rgba(255,220,120,.6)}
-.pressed.xm{background:none;border-radius:0;box-shadow:none;animation-name:xmPress}
+.pressed.xm{background:none;border-radius:0;box-shadow:none;animation-name:xmPress,fxH}
 @keyframes xmPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.06)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
 @media (prefers-reduced-motion:reduce){.xm .xmlt,.xm .xmst,.xm .xmsn,.xm .xmtw{animation:none}.xm .xmsn,.clips.xm{display:none}}
 ''' + fly_css('xm', 'rgba(246,206,90,.9)', XM_PIECES)
@@ -236,7 +236,7 @@ HW_CSS = r'''
 @keyframes hwCd{from{transform:rotate(-10deg) translateY(-2px)}to{transform:rotate(10deg) translateY(3px)}}
 .pshadow.hw{width:230px}
 .tap.hw{font-family:"Reggae One",sans-serif;font-weight:400;color:#FFB65A;letter-spacing:.12em;text-shadow:0 2px 0 #3A1A0A,0 0 10px rgba(255,154,46,.6)}
-.pressed.hw{background:none;border-radius:50%;box-shadow:none;animation-name:hwPress}
+.pressed.hw{background:none;border-radius:50%;box-shadow:none;animation-name:hwPress,fxH}
 @keyframes hwPress{0%{transform:scale(1)}22%{transform:scale(.9,.94)}45%{transform:scale(1.08,1.04)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
 @media (prefers-reduced-motion:reduce){.hw .hwgl,.hw .hwbt,.hw .hwcd{animation:none}.clips.hw{display:none}}
 ''' + fly_css('hw', 'rgba(255,154,46,.9)', HW_PIECES)
@@ -315,7 +315,7 @@ VL_CSS = r'''
 .vl .vlbo{animation:vlBob 2.6s ease-in-out infinite alternate}
 @keyframes vlBob{from{transform:translate(0,-3px) rotate(-6deg)}to{transform:translate(0,3px) rotate(6deg)}}
 .tap.vl{font-family:"Yusei Magic",sans-serif;font-weight:400;color:#FFD3E1;letter-spacing:.12em;text-shadow:0 2px 0 #5A2E1C,0 0 10px rgba(247,168,192,.7)}
-.pressed.vl{border-radius:12px;background:#6B3A22;box-shadow:0 0 0 4px #F7A8C0,0 0 0 6px #5A2E1C,0 7px 0 6px #3E1F10;animation-name:vlPress}
+.pressed.vl{border-radius:12px;background:#6B3A22;box-shadow:0 0 0 4px #F7A8C0,0 0 0 6px #5A2E1C,0 7px 0 6px #3E1F10;animation-name:vlPress,fxH}
 @keyframes vlPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.06)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
 @media (prefers-reduced-motion:reduce){.vl .vlsh,.vl .vlbo{animation:none}.vl .vlsh,.clips.vl{display:none}}
 ''' + fly_css('vl', 'rgba(247,168,192,.9)', VL_PIECES)
@@ -392,7 +392,7 @@ WD_CSS = r'''
 .wd .wdtw{transform-box:fill-box;transform-origin:50% 50%;animation:wdTw 2.4s ease-in-out infinite}
 @keyframes wdTw{0%,100%{opacity:.25;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
 .tap.wd{font-family:"Mochiy Pop One",sans-serif;font-weight:400;color:#E3F1FB;letter-spacing:.12em;text-shadow:0 2px 0 #3A78B4,0 0 10px rgba(140,196,236,.7)}
-.pressed.wd{border-radius:42px;background:#FFFFFF;box-shadow:0 0 0 4px #D6ECFB,0 0 0 6px #8CC4EC,0 8px 0 6px #B5D6EF;animation-name:wdPress}
+.pressed.wd{border-radius:42px;background:#FFFFFF;box-shadow:0 0 0 4px #D6ECFB,0 0 0 6px #8CC4EC,0 8px 0 6px #B5D6EF;animation-name:wdPress,fxH}
 @keyframes wdPress{0%{transform:scale(1)}25%{transform:scale(1.12,.78)}50%{transform:scale(.94,1.1)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
 @media (prefers-reduced-motion:reduce){.push.wd{animation:none!important}.wd .wdbo,.wd .wdtw{animation:none}.clips.wd{display:none}}
 ''' + fly_css('wd', 'rgba(140,196,236,.95)', WD_PIECES)

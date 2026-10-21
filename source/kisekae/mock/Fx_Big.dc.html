@@ -78,16 +78,20 @@ body{margin:0}
 @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 /* 買い目の行は0.15秒おき（--i＝何行目か）。合計と「とじる」は最後の行のあと（--n＝行の数。3行より少なくても3行ぶん待つ） */
-.ov .brows li{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .15s)}
-.ov .btot{animation:rowIn .35s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
+/* 見えない 間は 描かない（fxH：出る 前・消えた あとは visibility:hidden。アニメが ついた 見えない 絵も 合成の 層の 画素を 使うので。まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」） */
+@keyframes fxH{0%,100%{visibility:hidden}}
+.ov .brows li{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .15s)}
+.ov .btot{animation:rowIn .35s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s)}
 .ov .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .15s + var(--tc))}
 /* 押したあと（PUSHがあった所から光ってはじける） */
 .pressed{position:absolute;z-index:3;left:50%;top:calc(50% - 40px);width:200px;height:100px;margin:-50px 0 0 -100px;border-radius:26px;background:var(--pushFace);
-  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both}
+  box-shadow:0 0 0 8px var(--rim),0 0 0 13px var(--rimD);animation:press .45s ease-in both,fxH .001s linear .45s forwards}
 @keyframes press{0%{transform:scale(1)}35%{transform:scale(.82);filter:brightness(1.4)}100%{transform:scale(1.9);opacity:0;filter:brightness(3)}}
 /* 結果のボード（壁紙のテーマのボード・boards.py）を入れる箱：この箱が動く（下から出る・落ちてくる・炎の中からドン）。馬は出さない */
 .hb{position:absolute;z-index:6;left:50%;top:196px;width:350px;margin-left:-175px}
-.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both}
+/* 押した 時に とびちる テーマの かけら（.clips）：どの テーマも 2秒 までに 消えるので、そのあとは 描かない */
+.clips{animation:fxH .001s linear 2s forwards}
+.close{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);height:46px;padding:0 34px;border-radius:999px;border:2px solid rgba(255,255,255,.85);background:rgba(0,0,0,.35);color:#FFFFFF;font-family:var(--font),sans-serif;font-weight:800;font-size:15px;cursor:pointer;animation:fadeUp .4s ease-out both,fxH .001s linear backwards}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 /* 紙ふぶき */
 .conf{position:absolute;inset:0;z-index:7;pointer-events:none}
@@ -122,8 +126,8 @@ body{margin:0}
 .pressed.big{top:calc(50% - 47px);width:280px;height:140px;margin:-70px 0 0 -140px;border-radius:36px}
 /* 押したあと（パチンコの当たりのように速く・勢いよく）：はじける → 0.04秒 白く光る・爆発・虹の光の筋 → 虹の輪3つ（0.1・0.25・0.4秒）
    → 0.38秒 ボードがドンと落ちてくる（0.55秒に着地・爆発）→ 0.7秒「デカ的中!!」→ 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる */
-.pressed.big{animation:press .28s ease-in both}
-.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both}
+.pressed.big{animation:press .28s ease-in both,fxH .001s linear .28s forwards}
+.flash{position:absolute;inset:0;z-index:9;background:#FFFFFF;pointer-events:none;animation:flash .5s ease-out .04s both,fxH .001s linear .04s backwards,fxH .001s linear .54s forwards}
 @keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 .rbow{position:absolute;z-index:3;left:50%;top:44%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;
   background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);
@@ -140,30 +144,30 @@ body{margin:0}
   -webkit-mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);mask-image:radial-gradient(circle,transparent 0 64%,#000 66% 72%,transparent 74%);
   opacity:0;animation:shock2 .42s ease-out forwards}
 /* 虹の輪3つ（キュウィン×3）：だんだん大きい輪がポンと出て消える（同じ所が何回も光らないように、輪の大きさを変える） */
-.ring.r1{--rs:.9;animation-delay:.1s}.ring.r2{--rs:1.5;animation-delay:.25s}.ring.r3{--rs:2.2;animation-delay:.4s}
+.ring.r1{--rs:.9;animation:shock2 .42s ease-out .1s forwards,fxH .001s linear .1s backwards,fxH .001s linear .52s forwards}.ring.r2{--rs:1.5;animation:shock2 .42s ease-out .25s forwards,fxH .001s linear .25s backwards,fxH .001s linear .67s forwards}.ring.r3{--rs:2.2;animation:shock2 .42s ease-out .4s forwards,fxH .001s linear .4s backwards,fxH .001s linear .82s forwards}
 @keyframes shock2{0%{opacity:.7;scale:calc(var(--rs) * .6)}100%{opacity:0;scale:calc(var(--rs) * 1.25)}}
 @keyframes shock{0%{opacity:1;scale:.2}100%{opacity:0;scale:3.2}}
-.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both}
+.big .hb{animation:bslam .42s cubic-bezier(.2,.9,.3,1.1) .38s both,fxH .001s linear .38s backwards}
 @keyframes bslam{0%{opacity:0;transform:translateY(-70px) scale(1.45);filter:brightness(3) blur(3px)}55%{opacity:1;transform:translateY(8px) scale(.96);filter:brightness(1.7) blur(0)}78%{transform:translateY(-3px) scale(1.02);filter:brightness(1.15)}100%{transform:none;filter:none}}
 /* 見出し「デカ的中!!」：虹色の文字（boards.py）がたたきつけるように出て、色が流れる */
 .big .bh{animation:bhSlam .3s cubic-bezier(.2,1.5,.4,1) .7s both,rbowText 2s linear .7s infinite}
 @keyframes bhSlam{0%{opacity:0;transform:scale(2.6)}60%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
 .ov.big{--t0:.9s;--tc:.25s}
-.ov.big .brows li{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + var(--i) * .08s)}
-.ov.big .btot{animation:rowIn .22s ease-out both;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
+.ov.big .brows li{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + var(--i) * .08s)}
+.ov.big .btot{animation:rowIn .22s ease-out both,fxH .001s linear backwards;animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s)}
 .ov.big .close{animation-delay:calc(var(--t0) + max(var(--n), 3) * .08s + var(--tc))}
 
 
 /* 爆発の光（文字やボードが出るとき）：ギザギザの星形の光がはじけて消える・衝撃の輪・飛び散る光の破片。小さな範囲で1回だけ光る（画面全体は光らせない） */
 .bx{position:absolute;left:var(--x);top:var(--y);width:0;height:0;pointer-events:none}
 .bx .bs1{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);
-  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards}
+  background:radial-gradient(circle,#FFFFFF 0 7%,var(--c1) 20%,var(--c2) 44%,rgba(0,0,0,0) 68%);opacity:0;animation:bxS .36s cubic-bezier(.1,.8,.3,1) var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + .36s) forwards}
 @keyframes bxS{0%{opacity:1;transform:scale(.12)}45%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
 .bx .bw{position:absolute;left:calc(var(--s) * -.35);top:calc(var(--s) * -.35);width:calc(var(--s) * .7);height:calc(var(--s) * .7);border-radius:50%;
-  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards}
+  border:6px solid var(--c1);box-shadow:0 0 14px var(--c1),inset 0 0 10px var(--c1);opacity:0;animation:bxW .42s ease-out var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + .42s) forwards}
 @keyframes bxW{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(2)}}
 .bx > i{position:absolute;left:-7px;top:-2px;width:14px;height:4px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);
-  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards}
+  opacity:0;animation:bxD var(--t) cubic-bezier(.12,.7,.3,1) var(--d) forwards,fxH .001s linear var(--d) backwards,fxH .001s linear calc(var(--d) + var(--t)) forwards}
 @keyframes bxD{0%{opacity:1;transform:translate(0,0) rotate(var(--r)) scaleX(2.2)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scaleX(.5)}}
 @media (prefers-reduced-motion:reduce){.bx{display:none}}
 

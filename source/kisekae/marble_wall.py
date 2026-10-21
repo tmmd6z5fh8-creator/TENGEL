@@ -192,6 +192,22 @@ def _kf(name, pts, period, smooth=False):
     return f'@keyframes {name}{{{"".join(out)}}}'
 
 
+def vis_pts(pts, smooth=False):
+    """こさの キーフレーム [(秒, 'css')] → こさ 0 の 間だけ visibility:hidden の キーフレーム（step-end で 使う）。
+       smooth：なめらかに つなぐ 動き（次の キーフレームまでに こさが 0 より 大きく なる 間も 見せる）。
+       見えない 間も 合成の 層の 画素を 使わない ように（まさちゃん「他も同じようにいらないデータ使ってるものが、もしあれは整えて！」）"""
+    def op(v):
+        m = re.search(r'opacity:([0-9.]+)', v)
+        return float(m.group(1)) if m else 1.0
+    out = []
+    for i, (t, v) in enumerate(pts):
+        o0 = op(v)
+        o1 = op(pts[i + 1][1]) if i + 1 < len(pts) else o0
+        show = o0 > 0 or (smooth and o1 > 0)
+        out.append((t, f'visibility:{"visible" if show else "hidden"}'))
+    return out
+
+
 def tracks(run):
     """要素ごとの キーフレーム：コマ（step-end）＝{要素: (周期, [(秒, 'css')])}・すべる絵と 粉（なめらか）＝{要素: [(秒, 'css')]}・出来事の予定"""
     fw, fh = (v // 2 for v in run['frame'])
@@ -266,10 +282,12 @@ def inline(blobs, run, alt=ALT):
         sh = run['sheets'][key]
         period, pts = F[key]
         css += (f'.mww .{cls}{{background-image:url({blobs[key]});background-size:{sh["cols"] * fw}px {sh["rows"] * fh}px;'
-                + ('' if key == 'look' else 'opacity:0;') + f'animation-name:{cls}K;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period))
+                + ('' if key == 'look' else 'opacity:0;')
+                + (f'animation-name:{cls}K;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period) if key == 'look' else
+                   f'animation-name:{cls}K,{cls}V;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period) + _kf(f'{cls}V', vis_pts(pts), period)))
         html += f'<i class="mwF {cls}" aria-hidden="true"></i>'
-    css += (f'.mww .mwG{{left:0;top:0;width:390px;height:160px;opacity:0;animation:mwGK {EV_LOOP:g}s linear infinite}}'   # ひとまとめ：ふわっと 入れかえる
-            + _kf('mwGK', group, EV_LOOP, True))
+    css += (f'.mww .mwG{{left:0;top:0;width:390px;height:160px;opacity:0;animation:mwGK {EV_LOOP:g}s linear infinite,mwGV {EV_LOOP:g}s step-end infinite}}'   # ひとまとめ：ふわっと 入れかえる
+            + _kf('mwGK', group, EV_LOOP, True) + _kf('mwGV', vis_pts(group, smooth=True), EV_LOOP))
     html += '<i class="mwG" aria-hidden="true">'
     px0, py0, px1, py1 = (v / 2 for v in run['plate'])              # 背景だけの絵：像と台と影の所だけ（ほかは すき通し）
     css += (f'.mww .mwP{{left:{px0:g}px;top:{py0:g}px;width:{px1 - px0:g}px;height:{py1 - py0:g}px;'
