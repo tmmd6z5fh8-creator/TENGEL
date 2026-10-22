@@ -4,11 +4,14 @@
    送ってくれた 3つの 動画と 同じ 流れで、絵と 音は 一から 作った（動画の 絵・音・字・ロゴは 使わない・なぞらない）。
    第4.45版「一枚目の青の爆破エフェクト、色の線やじりじりを球体の周りを走る電気をもっと乱雑な線にして！ 球体の周りを走る電気は、もっと球体を全体的に包むようにして！
    ビリビリ感増して！ 二枚目のブロックは一つ一つももっと立体的に金色の爆発エフェクトも混ぜ合わせてみて！」
+   第4.46版「まずは、この一枚目の演出完全させよ！ 送った二枚目の動画が求めてる映像！ この動き、広がり方、光の具合、迫力を求める！ ここは、全力で頼む」
+   → ① の 青い 嵐を 1つめの 動画の 動き・広がり方・光・迫力に 合わせて 一から 作り直した（絵は flat/kami_storm.py）
    押した あと（0秒＝押した 瞬間）：
-     ① 青い 嵐：光の 爆発 → 白 → 赤い 炎の 一瞬 → 青い 嵐（光の 柱・光の ドームを つつむ 乱雑な 電気・白い 光の 帯・とんでくる 岩・水色の 光の つぶ）→ 立体の 金の 輪と 金の 爆発・金の 粒 → 白
+     ① 青い 嵐：光の 爆発 → 白 → 赤い 炎の 一瞬 → 青い 嵐（太い 光の 滝と しぶき・ガラスの ような 光の ドームが 床から ひろがって ゆっくり 大きく・ピンクの 電気の 光・
+        画面を 横切る 大きな 雷・ドームの ふちの ジリジリと 肩の ピンクの 電気・白い 光の 帯・とんでくる 岩）→ 立体の 金の 輪と 金の 爆発・金の 粒 → 白
      ② 金の 字：金の 雲の 空に 金の 立体の 字。「万馬券（きせき）」の 寄り → 「天眼（テンゲル）」の 寄り → 白 → 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」
      ③ 神様的中：白 → 金の 粒が はじけて「神」の 寄り → 金の 粒 →「様」→ 金の 粒 →「的」→ 金の 粒 →「中」→ 金の 粒の 大爆発の 中に「神様／的中」→ ひいて 金の 鳥居 → ボード
-   絵：flat/kami_art.py（キャンバスの アセット：id は kami_blobs.json・大きさは kami_layers.json）。ほかは CSS と SVG（雷・光の 帯・岩・光の つぶ・光）
+   絵：flat/kami_art.py・flat/kami_storm.py（キャンバスの アセット：id は kami_blobs.json・大きさは kami_layers.json）。ほかは CSS と SVG（電気・雷・光の つぶ・光）
    点めつ：画面の 大きな 光は 白（押した 瞬間・①→②・②の 中・②→③）と ③の 金の 粒の 大きい 爆発（3回）だけ。どの 1秒にも 3回 以下"""
 import os, json, math, random
 
@@ -19,11 +22,13 @@ W_, H_ = 390.0, 844.0
 # ---------------------------------------------------------------- 時刻（秒・押した 瞬間が 0）
 GD_T = dict(BURST=(0.0, .24),                      # ① 光の 爆発
             WA1=(.02, .1, .16, .34),               # 白（はじまり・まっ白・まっ白の おわり・消える）
-            FIRE=(.12, .44),                       # 赤い 炎の 一瞬
+            FIRE=(.12, .4),                        # 赤い 炎の 一瞬
             STORM=(.3, 1.66),                      # 青い 嵐
-            BEAMS=(.44, .64, .86, 1.06, 1.24),     # 白い 光の 帯（上から 下へ）
-            ROCKS=(.36, .48, .6, .74, .88, 1.0, 1.12, 1.24),     # とんでくる 岩
-            ZAP=(.36, 1.4),                        # 光の ドームを はしる 電気・まわりの 雷
+            DOME=(.4, .66, 1.44),                  # 光の ドーム：ふくらみ はじめ・ふくらみ おわり（ここから ゆっくり 大きく）・おわり
+            SURGE=(.44, .47, .53, .66),            # ピンクの 電気の 光（出る・いちばん 明るい・まだ 明るい・消える）
+            CRACK=(.58, 1.42),                     # ドームの ふちの ジリジリ・肩の ピンクの 電気・ドームを はしる 電気
+            BOLTS=(.5, .62, .76, .92, 1.08, 1.2),  # 大きな 雷（BOLT_D）
+            ROCKS=(.4, .56, .72, .9, 1.08),        # とんでくる 岩
             RING=(1.24, 1.66),                     # 金の 輪（立体の かたまり）と 金の 爆発・金の 粒
             WA2=(1.44, 1.58, 1.66, 1.84),          # 白（① → ②）
             B=1.6,
@@ -76,10 +81,6 @@ def _disp(rng, a, b, depth, rough):
     return pts
 
 
-def _pd(pts):
-    return 'M' + ' '.join(f'{x:.1f} {y:.1f}' for x, y in pts)
-
-
 def _pdi(pts):
     """みじかく 書いた path（1px に まるめて・となりとの ちがいで）：たくさんの 電気でも ページが 重く ならない ように"""
     q = [(round(x), round(y)) for x, y in pts]
@@ -93,49 +94,70 @@ def _pdi(pts):
     return o + ' '.join(st) if st else ''
 
 
-def bolt(seed, a, b, branches=3, rough=.42, depth=6):
-    """細い 雷（本線＋えだ）→ path"""
-    rng = random.Random(seed)
-    main = _disp(rng, a, b, depth, rough)
-    d = _pd(main)
-    L = math.hypot(b[0] - a[0], b[1] - a[1])
-    base = math.atan2(b[1] - a[1], b[0] - a[0])
-    for _ in range(branches):
-        p = main[rng.randint(len(main) // 6, len(main) * 5 // 6)]
-        ang = base + rng.choice((-1, 1)) * rng.uniform(.4, 1.1)
-        ln = rng.uniform(.12, .3) * L
-        d += _pd(_disp(rng, p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), depth - 2, rough * 1.1))
-    return d
+DOME2 = (195.0, 716.0, 186.0, 418.0)         # 光の ドーム（ガラスの ような ドーム）：まん中の x・床の y・床での 半径・高さ（画面の px）
+DOME_P, DOME_Q = 2.3, 2.6                    # ドームの 形（下は ほぼ まっすぐ 立ち、上が まるい）
+RIBBONS = ((((104, -40), (62, 230), (160, 470), (116, 790)), .3, 1.06),        # 白い 光の 帯：(ベジェの 4点（画面の px）, 出る 秒, 消える 秒)
+           (((292, -40), (338, 250), (226, 500), (266, 790)), .36, .94),
+           (((176, -40), (132, 270), (236, 520), (184, 780)), .62, 1.4),
+           (((334, -40), (296, 270), (366, 500), (320, 770)), .96, 1.42),
+           (((44, -40), (12, 300), (112, 530), (66, 800)), 1.08, 1.42),
+           (((236, -40), (270, 240), (198, 480), (240, 760)), .74, 1.2))
+BOLT_D = (((14, 800), (382, 110), 'c'), ((40, -12), (92, 360), 'c'), ((376, 20), (360, 600), 'c'),
+          ((330, -12), (232, 320), 'p'), ((14, 40), (30, 560), 'p'), ((150, -12), (286, 330), 'p'))
+# 大きな 雷（GD_T の BOLTS の 時刻）：(はじめ, おわり, 色 c＝水色・p＝ピンク)
 
 
-DOME = (195.0, 709.0, 242.0, 338.0)          # 光の ドーム（まん中・よこ・たての 半径）：flat/kami_art.py の storm と 同じ
+def dome_r(h):
+    """床からの 高さ h（画面の px：数 か numpy の 配列）→ その 高さの ドームの 半径"""
+    RX, HD = DOME2[2], DOME2[3]
+    if hasattr(h, 'shape'):
+        import numpy as np
+        u = np.clip(h / HD, 0, 1)
+        return RX * np.clip(1 - u ** DOME_Q, 0, 1) ** (1 / DOME_P)
+    u = max(0.0, min(1.0, h / HD))
+    return RX * max(0.0, 1 - u ** DOME_Q) ** (1 / DOME_P)
 
 
-DOME_TILT = .16                              # 少し 上から 見る（よこの 輪が 弓なりに 見える）
+BOLT_ROUGH = (.16, .2, .26, .4, .52, .58, .6)      # 大きな 雷の ギザギザ（あらい 段 → 細かい 段：大きく うねらず 細かく ギザギザ）
 
 
-def sphere_xy(th, ph):
-    """光の ドーム（半分の 球）の 表面の 点 → 画面の 点（正面の 少し 上から 見る）。th：高さの 角度（0＝地面・90＝てっぺん）・ph：よこの 角度（0＝正面・±90＝はし）"""
-    return _proj(_unit(th, ph))
+def _disp_ms(rng, a, b, rough):
+    """段ごとの ギザギザ（rough：段ごとの ずれの 大きさ）"""
+    pts = [a, b]
+    for r in rough:
+        nw = [pts[0]]
+        for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+            L = math.hypot(bx - ax, by - ay) or 1.0
+            nx, ny = -(by - ay) / L, (bx - ax) / L
+            off = rng.gauss(0, r * L / 2)
+            nw += [((ax + bx) / 2 + nx * off, (ay + by) / 2 + ny * off), (bx, by)]
+        pts = nw
+    return pts
 
 
-def _unit(th, ph):
-    t, p = math.radians(th), math.radians(ph)
-    return (math.cos(t) * math.sin(p), math.sin(t), math.cos(t) * math.cos(p))
-
-
-def _slerp(a, b, u):
-    d = max(-1.0, min(1.0, sum(x * y for x, y in zip(a, b))))
-    w = math.acos(d)
-    if w < 1e-4:
-        return a
-    s0, s1 = math.sin((1 - u) * w) / math.sin(w), math.sin(u * w) / math.sin(w)
-    return tuple(s0 * x + s1 * y for x, y in zip(a, b))
-
-
-def _proj(v):
-    cx, cy, rx, ry = DOME
-    return (cx + rx * v[0], cy - ry * v[1] + DOME_TILT * ry * v[2])
+def dome_outline(n=520):
+    """ドームの ふち（左の 床 → てっぺん → 右の 床）を 長さ 等分の 点で → [(x, y, 外向きの nx, ny, 高さの 割合 u)]"""
+    cx, base, RX, HD = DOME2
+    hs = [HD * (i / 1600) ** .7 for i in range(1601)]
+    left = [(cx - dome_r(h), base - h) for h in hs]
+    pts = left + [(2 * cx - x, y) for x, y in reversed(left[:-1])]
+    acc = [0.0]
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        acc.append(acc[-1] + math.hypot(bx - ax, by - ay))
+    L = acc[-1]
+    out = []
+    j = 0
+    for i in range(n + 1):
+        s = L * i / n
+        while j < len(acc) - 2 and acc[j + 1] < s:
+            j += 1
+        f = (s - acc[j]) / max(1e-9, acc[j + 1] - acc[j])
+        x = pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f
+        y = pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f
+        tx, ty = pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]
+        tl = math.hypot(tx, ty) or 1.0
+        out.append((x, y, ty / tl, -tx / tl, (base - y) / HD))
+    return out
 
 
 def _jag(rng, pts, rough, depth=3):
@@ -146,194 +168,278 @@ def _jag(rng, pts, rough, depth=3):
     return out
 
 
-def sphere_path(rng, kind, lo=0.0, hi=1.0):
-    """ドームを つつむ 電気 1本の 道（球の 表面に そって 曲がる 線＋中くらいの ずれ）：kind＝rim（ふち）・lat（よこの 輪）・mer（たての 線）・arc（ななめに 大きく まわる）。
-       lo〜hi：よこの 場所（0＝左・1＝右）→ 点の 列（光って いる 間は 同じ 道）"""
-    def ph_in():
-        return -70 + 140 * rng.uniform(lo, hi)
-    n = 24
-    if kind == 'rim':
-        side = 90 if (lo + hi) / 2 > .5 else -90
-        t0 = rng.uniform(0, 40)
-        t1 = rng.uniform(55, 90)
-        pts = [sphere_xy(t0 + (t1 - t0) * k / n, side) for k in range(n + 1)]
-    elif kind == 'lat':
-        th = rng.uniform(8, 72)
-        p0 = ph_in()
-        p1 = max(-88.0, min(88.0, p0 + rng.choice((-1, 1)) * rng.uniform(40, 80)))
-        pts = [sphere_xy(th, p0 + (p1 - p0) * k / n) for k in range(n + 1)]
-    elif kind == 'mer':
-        ph = ph_in()
-        t0 = rng.uniform(0, 25)
-        t1 = rng.uniform(50, 90)
-        pts = [sphere_xy(t0 + (t1 - t0) * k / n, ph) for k in range(n + 1)]
-    else:
-        a = _unit(rng.uniform(5, 80), ph_in())
-        b = _unit(rng.uniform(5, 85), max(-85.0, min(85.0, ph_in() + rng.uniform(-50, 50))))
-        pts = [_proj(_slerp(a, b, k / n)) for k in range(n + 1)]
-    return _jag(rng, pts, rng.uniform(.3, .45), 2)
-
-
-def bolt_branches(rng, main):
-    """道の えだ（外へ・まわりへ 小さく ギザギザ。光って いる 間は 同じ 形）→ path"""
-    cx, cy = DOME[0], DOME[1]
-    d = ''
-    for _ in range(rng.randint(4, 7)):
-        p = main[rng.randint(len(main) // 10, len(main) * 9 // 10)]
-        out = math.atan2(p[1] - cy, p[0] - cx)
-        ang = out + rng.uniform(-1.4, 1.4)
-        ln = rng.uniform(10, 40)
-        br = _disp(rng, p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), 3, .55)
-        d += _pdi(br)
-        if rng.random() < .55:
-            q = br[len(br) // 2]
-            a2 = ang + rng.uniform(-1.0, 1.0)
-            l2 = ln * rng.uniform(.3, .6)
-            d += _pdi(_disp(rng, q, (q[0] + l2 * math.cos(a2), q[1] + l2 * math.sin(a2)), 2, .7))
-    return d
-
-
-def twitch(rng, main, n):
-    """そのコマだけ パチッと 出る とても 小さな 電気（道の 上から 6〜14px）→ path"""
-    d = ''
-    for _ in range(n):
-        p = main[rng.randrange(len(main))]
-        a = rng.uniform(0, 2 * math.pi)
-        ln = rng.uniform(6, 14)
-        d += _pdi(_disp(rng, p, (p[0] + ln * math.cos(a), p[1] + ln * math.sin(a)), 2, .9))
-    return d
-
-
-def sparks_around(rng, n):
-    """ドームの ふちの まわりで パチッと はじける 小さな 電気（ふちの 点から 外へ 短く ギザギザ）"""
-    d = ''
-    for _ in range(n):
-        th = rng.uniform(0, 180)
-        x, y = sphere_xy(th if th <= 90 else 180 - th, 90 if th <= 90 else -90)
-        ang = math.atan2(y - DOME[1], x - DOME[0]) + rng.uniform(-.8, .8)
-        ln = rng.uniform(8, 22)
-        d += _pdi(_disp(rng, (x, y), (x + ln * math.cos(ang), y + ln * math.sin(ang)), 3, .9))
-    return d
-
-
 def flick(t, dur, inner, cls='gdfk'):
     return f'<g class="{cls}" style="animation:gdFk {sec(dur)} linear {sec(t)} forwards{hide(t, t + dur)}">{inner}</g>'
 
 
-SIDE_BOLTS = ((30, 70, 420, .52), (360, 320, 380, .7), (60, 20, 520, .92), (340, 372, 470, 1.12), (20, 90, 360, 1.3))
-# まわりの 雷（左右の 上から）：(上の x・下の x・下の y・時刻)。それぞれ 0.07秒・0.14秒 あとに もう1回（形を かえて）
-ZAP_DT = .06                                    # ドームの 電気の 1コマ（ここごとに 形が ふるえて えだが かわる）
-ZAP_LIFE, ZAP_NEW = 4, 2                        # 1本の 電気が 光る コマ数（0.24秒）・コマごとに 新しく 出る 本数（いつも 約8本が ドームを つつむ）
-ZAP_KINDS = (('rim', 0, .5), ('rim', .5, 1), ('lat', 0, .5), ('lat', .5, 1), ('mer', 0, .5), ('mer', .5, 1), ('arc', 0, .5), ('arc', .5, 1))
-# 1回に 光る 電気：ドームの 左・右 それぞれに ふち・よこの 輪・たての 線・ななめ（ドームを ぜんたいに つつむ）
+# ---------------------------------------------------------------- ドームの 電気（ふちの ジリジリ・肩の ピンクの 電気・ドームを はしる 電気）
+CR_DT = .05                    # ドームの 電気の 1コマ（ここごとに ジリジリと 小さな パチッが かわる）
+CR_LIFE = 5                    # ピンクの 電気・ドームを はしる 電気が 光る コマ数（0.25秒：光って いる 間は 同じ 所で ふるえる）
+CR_SIZZLE, CR_NEW = 18, 3      # 1コマの ふちの ジリジリの 数・コマごとに 新しく 出る ピンクの 電気の かたまり（いつも 約15）
 
 
-def zap_events():
-    """光の ドームを つつむ 電気：[(時刻, 左右（-1〜1）)]（1回 ZAP_DT 秒・そのたび 形が かわる。音も この 時刻で 鳴らす：gen_sfx.py）"""
-    t0, t1 = GD_T['ZAP']
+def cr_frames():
+    """ドームの 電気の コマの 時刻 [(時刻, 左右（-1〜1）)]（音も この 時刻で 鳴らす：gen_sfx.py）"""
+    t0, t1 = GD_T['CRACK']
     rng = random.Random(5)
     ev = []
     t = t0
     while t < t1 - .01:
         ev.append((round(t, 3), round(rng.uniform(-.7, .7), 2)))
-        t += ZAP_DT
+        t += CR_DT
     return ev
 
 
-def zaps():
-    """光の ドームを つつむ 電気（白い しんと 水色・ピンク・紫の 光）：0.06秒ごとに 6本＋ふちの パチッ。1回 光る たびに 形が かわる（同じ 所が 何回も 光らない）
-       と まわりの 紫の 雷"""
-    g, defs = '', ''
+def _spread_ok(o, f):
+    """はじめの 4コマは てっぺんから 床へ ひろがる（f：はじまってからの コマ）"""
+    w = min(.5, .07 + .11 * f)
+    return abs(o - .5) <= w
+
+
+def rim_sizzle(rng, OL, n, f):
+    """ふちの ジリジリ（ふちの 上で 小さく はじける ギザギザ 4〜12px）→ path"""
+    d = ''
+    N = len(OL)
+    k = 0
+    while k < n:
+        o = rng.random()
+        if not _spread_ok(o, f):
+            continue
+        x, y, nx, ny, u = OL[int(o * (N - 1))]
+        ang = math.atan2(ny, nx) + rng.uniform(-1.2, 1.2)
+        ln = rng.uniform(4, 12)
+        p0 = (x + nx * rng.uniform(-2, 2), y + ny * rng.uniform(-2, 2))
+        d += _pdi(_disp(rng, p0, (p0[0] + ln * math.cos(ang), p0[1] + ln * math.sin(ang)), 2, .9))
+        k += 1
+    return d
+
+
+CRK_ROUGH = (.3, .5, .6)        # ピンクの 電気の ギザギザ（小さな 雷の かけら）
+
+
+def crackle(rng, OL, f):
+    """肩の ピンクの 電気の かたまり（ふちの 内がわ 5〜40px：小さな ギザギザ 3〜5本）→ (path, 中心)"""
+    N = len(OL)
+    while True:
+        o = rng.random()
+        x, y, nx, ny, u = OL[int(o * (N - 1))]
+        if u > .3 and _spread_ok(o, f):
+            break
+    dep = rng.uniform(5, 40)
+    c = (x - nx * dep, y - ny * dep)
+    d = ''
+    a0 = rng.uniform(0, 2 * math.pi)
+    for j in range(rng.randint(3, 5)):
+        a = a0 + j * 2.1 + rng.uniform(-.5, .5)
+        ln = rng.uniform(10, 30)
+        p0 = (c[0] + rng.uniform(-3, 3), c[1] + rng.uniform(-3, 3))
+        main = _disp_ms(rng, p0, (p0[0] + ln * math.cos(a), p0[1] + ln * math.sin(a)), CRK_ROUGH)
+        d += _pdi(main)
+        if rng.random() < .7:
+            q = main[rng.randint(1, len(main) - 2)]
+            a2 = a + rng.choice((-1, 1)) * rng.uniform(.5, 1.2)
+            l2 = ln * rng.uniform(.3, .55)
+            d += _pdi(_disp_ms(rng, q, (q[0] + l2 * math.cos(a2), q[1] + l2 * math.sin(a2)), CRK_ROUGH[1:]))
+    return d, c
+
+
+def surface_arc(rng, side):
+    """ドームの 表面を はしる 電気（ふちから 内へ・球に そって 曲がる ギザギザの 線）→ 点の 列"""
+    cx, base, RX, HD = DOME2
+    h0 = rng.uniform(.28, .9) * HD
+    ph0 = side * 88.0
+    ph1 = side * rng.uniform(12, 58)
+    h1 = max(14.0, min(HD * .93, h0 + rng.uniform(-.38, .22) * HD))
+    pts = []
+    for j in range(25):
+        u = j / 24
+        h = h0 + (h1 - h0) * u
+        ph = math.radians(ph0 + (ph1 - ph0) * u)
+        pts.append((cx + dome_r(h) * math.sin(ph), base - h))
+    return _jag(rng, pts, rng.uniform(.3, .45), 2)
+
+
+def arc_branches(rng, main):
+    d = ''
+    for _ in range(rng.randint(3, 6)):
+        p = main[rng.randint(len(main) // 8, len(main) * 7 // 8)]
+        a = rng.uniform(0, 2 * math.pi)
+        ln = rng.uniform(8, 30)
+        br = _disp(rng, p, (p[0] + ln * math.cos(a), p[1] + ln * math.sin(a)), 3, .6)
+        d += _pdi(br)
+    return d
+
+
+def twitch(rng, pts, n, lo=4, hi=10):
+    """そのコマだけ パチッと 出る とても 小さな 電気 → path"""
+    d = ''
+    for _ in range(n):
+        p = pts[rng.randrange(len(pts))]
+        a = rng.uniform(0, 2 * math.pi)
+        ln = rng.uniform(lo, hi)
+        d += _pdi(_disp(rng, p, (p[0] + ln * math.cos(a), p[1] + ln * math.sin(a)), 2, .9))
+    return d
+
+
+def dome_elec():
+    """ドームの 電気（ドームと いっしょに 大きく なる）：
+       ・ふちの ジリジリ（白と 水色・コマごとに かわる 小さな ギザギザ）
+       ・肩の ピンクの 電気（かたまりは 0.15秒 同じ 所で ふるえて 消える・コマごとに 4つ 出る）
+       ・ドームの 表面を はしる 電気（0.1秒ごとに 左右 かわるがわる・0.15秒）
+       はじめの 4コマで てっぺんから 床へ ひろがる"""
+    OL = dome_outline()
     rng = random.Random(77)
-    ev = zap_events()
-    bolts = []                                                  # (はじめの コマ, 道, 色)：同じ 所が 何回も 光らない ように、1本は 0.24秒 だけ 光って 消える
-    for f in range(len(ev)):
-        for b in range(ZAP_NEW):
-            kind, lo, hi = ZAP_KINDS[(f * ZAP_NEW + b) % len(ZAP_KINDS)]
-            path = sphere_path(rng, kind, lo, hi)
-            bolts.append((f, path, _pdi(path) + bolt_branches(rng, path), rng.choice('ccpv')))
-    for k, (t, pan) in enumerate(ev):
-        by = dict(c='', p='', v='')
-        for f0, path, d, tone in bolts:
-            if f0 <= k < f0 + ZAP_LIFE:
-                by[tone] += d + twitch(rng, path, 2)      # 道と えだは 同じ・小さな パチッ だけ コマごとに
-        by['c'] += sparks_around(rng, 4)
+    ev = cr_frames()
+    cl, arcs = [], []
+    g, defs = '', ''
+    for f, (t, pan) in enumerate(ev):
+        for _ in range(CR_NEW):
+            d, c = crackle(rng, OL, f)
+            cl.append((f, d, c))
+        if f % 3 == 0:
+            side = 1 if (f // 3) % 2 else -1
+            pts = surface_arc(rng, side)
+            arcs.append((f, _pdi(pts) + arc_branches(rng, pts), pts, rng.choice('cv')))
+        by = dict(c=rim_sizzle(rng, OL, CR_SIZZLE, f), p='', v='')
+        for f0, d, c in cl:
+            if f0 <= f < f0 + CR_LIFE:
+                by['p'] += d + twitch(rng, [c], 1, 3, 8)
+        for f0, d, pts, tone in arcs:
+            if f0 <= f < f0 + CR_LIFE:
+                by[tone] += d + twitch(rng, pts, 2)
         inner = ''
-        for tone, d in by.items():                                # 形は 1回だけ 書いて、光・まわり・しん の 3本で 使う
+        for tone, d in by.items():
             if d:
-                defs += f'<path id="gdz{k}{tone}" d="{d}"/>'
-                inner += ''.join(f'<use href="#gdz{k}{tone}" class="{c}"/>' for c in (f'zg{tone}', f'zh{tone}', 'zc'))
-        g += flick(t, ZAP_DT, inner)
-    for j, (x0, x1, y1, t) in enumerate(SIDE_BOLTS):
-        for q, o in enumerate((0, .07, .14)):
-            d2 = bolt(300 + j * 7 + q, (x0, -10), (x1 + q * 8, y1 - q * 14), 6, .62)
-            defs += f'<path id="gdzs{j}{q}" d="{d2}"/>'
-            g += flick(t + o, .05, ''.join(f'<use href="#gdzs{j}{q}" class="{c}"/>' for c in ('zgp', 'zhp', 'zc')))
+                defs += f'<path id="gde{f}{tone}" d="{d}"/>'
+                inner += ''.join(f'<use href="#gde{f}{tone}" class="{c}"/>' for c in (f'eg{tone}', f'eh{tone}', 'ec'))
+        g += flick(t, CR_DT, inner)
     return f'<defs>{defs}</defs>{g}'
 
 
-BEAM_D = (((120, -30), (60, 240), (190, 480), (150, 760)), ((282, -30), (350, 260), (200, 520), (246, 760)),
-          ((40, 60), (10, 300), (130, 520), (96, 780)), ((356, 40), (390, 330), (260, 560), (300, 780)), ((210, -30), (150, 250), (250, 520), (204, 760)))
+def bolt2(seed, a, b, branches=9):
+    """大きな 雷（本線は まっすぐ 走って 細かく ギザギザ・えだは 前へ ひらく・小えだ つき）→ path"""
+    rng = random.Random(seed)
+    main = _disp_ms(rng, a, b, BOLT_ROUGH)
+    d = _pdi(main)
+    L = math.hypot(b[0] - a[0], b[1] - a[1])
+    base = math.atan2(b[1] - a[1], b[0] - a[0])
+    for _ in range(branches):
+        i = rng.randint(len(main) // 8, len(main) * 7 // 8)
+        p = main[i]
+        ang = base + rng.choice((-1, 1)) * rng.uniform(.35, .9)
+        ln = rng.uniform(.1, .3) * L
+        q = (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang))
+        br = _disp_ms(rng, p, q, BOLT_ROUGH[1:])
+        d += _pdi(br)
+        if rng.random() < .6:
+            j = rng.randint(len(br) // 4, len(br) * 3 // 4)
+            p2 = br[j]
+            a2 = ang + rng.choice((-1, 1)) * rng.uniform(.3, .8)
+            l2 = ln * rng.uniform(.3, .55)
+            d += _pdi(_disp_ms(rng, p2, (p2[0] + l2 * math.cos(a2), p2[1] + l2 * math.sin(a2)), BOLT_ROUGH[3:]))
+    return d
 
 
-def beams():
-    """白い 光の 帯（上から 下へ 走って 消える）：しん 3px＋まわりの 光"""
-    g = ''
-    for k, (t, (p0, p1, p2, p3)) in enumerate(zip(GD_T['BEAMS'], BEAM_D)):
-        d = f'M{p0[0]} {p0[1]} C{p1[0]} {p1[1]} {p2[0]} {p2[1]} {p3[0]} {p3[1]}'
-        st = f'animation:gdBm .12s ease-out {sec(t)} both,gdBo .34s ease-in {sec(t + .26)} forwards{hide(t, t + .6)}'
-        g += (f'<g class="gdbm" style="{st}"><path d="{d}" pathLength="100" class="bg1"/><path d="{d}" pathLength="100" class="bg2"/>'
-              f'<path d="{d}" pathLength="100" class="bg3"/></g>')
-    return g
+def big_bolts():
+    """大きな 雷（画面を 横切る：白い しん＋水色 か ピンクの 光）：1本 0.08秒（同じ 所は 1回だけ 光る）"""
+    g, defs = '', ''
+    for k, (t, (a, b, tone)) in enumerate(zip(GD_T['BOLTS'], BOLT_D)):
+        d = bolt2(700 + k * 13, a, b)
+        defs += f'<path id="gdb{k}" d="{d}"/>'
+        g += (f'<g class="gdbt" style="animation:gdBt .09s linear {sec(t)} forwards{hide(t, t + .09)}">'
+              + ''.join(f'<use href="#gdb{k}" class="{c}"/>' for c in (f'bb{tone}', f'bm{tone}', f'bg{tone}', f'bh{tone}', 'bc')) + '</g>')
+    return f'<defs>{defs}</defs>{g}'
 
 
-def rocks():
-    """とんでくる 岩（暗い 青・ふちに 水色の 光）：まん中から 手前へ（大きく なって 画面の 外へ）"""
+def ribbons():
+    """白い 光の 帯（上から 下へ のびて 出る・ゆっくり ゆれる・消える）：絵は gd_rib（1まいに ならべた もの）"""
+    L = LAY['gd_rib']
     o = ''
-    rng = random.Random(9)
-    for k, t in enumerate(GD_T['ROCKS']):
-        n = rng.randint(7, 9)
-        pts = []
-        for i in range(n):
-            a = 2 * math.pi * i / n + rng.uniform(-.25, .25)
-            r = rng.uniform(18, 30)
-            pts.append((40 + r * math.cos(a), 40 + r * math.sin(a) * rng.uniform(.75, 1.0)))
-        d = 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in pts) + 'Z'
-        side = -1 if k % 2 == 0 else 1
-        x0, y0 = 195 + side * rng.uniform(10, 50), rng.uniform(300, 460)
-        dx, dy = side * rng.uniform(230, 320), rng.uniform(-260, 200)
-        dur = rng.uniform(.45, .6)
-        o += (f'<svg class="gdrk" viewBox="0 0 80 80" style="left:{x0 - 40:.0f}px;top:{y0 - 40:.0f}px;--dx:{dx:.0f}px;--dy:{dy:.0f}px;--r:{side * rng.uniform(60, 140):.0f}deg;--s:{rng.uniform(2.6, 4.8):.1f};'
-              f'animation:gdRk {sec(dur)} cubic-bezier(.5,0,.9,.6) {sec(t)} both{hide(t, t + dur)}">'
-              f'<path d="{d}" fill="url(#gdrkg)"/><path d="{d}" fill="none" stroke="#5FDcFF" stroke-width="1.6" stroke-opacity=".85"/></svg>')
+    for (p, t0, t1), (sx, x, y, w, h) in zip(RIBBONS, L['pos']):
+        st = (f'left:{x:.1f}px;top:{y:.1f}px;width:{w:.1f}px;height:{h:.1f}px;'
+              f'animation:gdRbIn .14s cubic-bezier(.2,.7,.4,1) {sec(t0)} both,gdRbOut .2s ease-in {sec(t1 - .2)} forwards{hide(t0, t1)}')
+        o += f'<i style="{st}"><i style="background-position:-{sx:g}px 0;animation:gdRbSw 1.3s ease-in-out {sec(t0)} infinite alternate"></i></i>'
     return o
 
 
-def motes(n, seed):
-    """水色の 光の つぶ（地面から 上へ）"""
+def splash(n, seed):
+    """光の 滝の 下の しぶき（床から 上と 左右へ とぶ 光の 粒）"""
     rng = random.Random(seed)
     o = ''
+    cx, base = DOME2[0], DOME2[1]
     for _ in range(n):
-        x = 195 + rng.gauss(0, 70)
-        y = rng.uniform(640, 820)
-        s = rng.uniform(2, 4.5)
-        o += (f'<i style="left:{x:.0f}px;top:{y:.0f}px;width:{s:.1f}px;height:{s:.1f}px;--dy:{-rng.uniform(90, 260):.0f}px;--dx:{rng.uniform(-30, 30):.0f}px;'
-              f'animation-duration:{rng.uniform(.8, 1.3):.2f}s;animation-delay:{rng.uniform(.3, 1.0):.2f}s"></i>')
+        x = cx + rng.gauss(0, 30)
+        y = base + rng.uniform(-8, 2)
+        s = rng.uniform(1.6, 3.6)
+        ang = rng.uniform(-math.pi * .94, -math.pi * .06)
+        sp = rng.uniform(40, 150)
+        o += (f'<i style="left:{x:.0f}px;top:{y:.0f}px;width:{s:.1f}px;height:{s:.1f}px;--dx:{math.cos(ang) * sp * 1.4:.0f}px;--dy:{math.sin(ang) * sp * .75:.0f}px;'
+              f'animation-duration:{rng.uniform(.45, .8):.2f}s;animation-delay:{rng.uniform(.32, 1.0):.2f}s"></i>')
+    return o
+
+
+def rim_sparks(n, seed):
+    """ドームの ふちから 外へ とぶ 小さな 光の 粒（水色 と ピンク）"""
+    OL = dome_outline(200)
+    rng = random.Random(seed)
+    c0, c1 = GD_T['CRACK']
+    o = ''
+    for _ in range(n):
+        while True:
+            x, y, nx, ny, u = OL[rng.randrange(len(OL))]
+            if u > .12:
+                break
+        ang = math.atan2(ny, nx) + rng.uniform(-.6, .6)
+        ln = rng.uniform(16, 46)
+        pk = 'p' if u > .45 and rng.random() < .4 else 'c'
+        o += (f'<i class="{pk}" style="left:{x - 1:.0f}px;top:{y - 1:.0f}px;--dx:{ln * math.cos(ang):.0f}px;--dy:{ln * math.sin(ang) + 10:.0f}px;'
+              f'animation-duration:{rng.uniform(.32, .55):.2f}s;animation-delay:{rng.uniform(c0, c0 + .55):.2f}s"></i>')
+    return o
+
+
+def rocks():
+    """とんでくる 岩（暗い 紺・うしろからの 水色の ふちの 光：gd_rock）：ドームの 前から 手前へ（大きく なって 画面の 外へ）"""
+    L = LAY['gd_rock']
+    cell = L['cell']
+    o = ''
+    rng = random.Random(9)
+    for k, t in enumerate(GD_T['ROCKS']):
+        side = -1 if k % 2 == 0 else 1
+        x0, y0 = 195 + side * rng.uniform(20, 70), rng.uniform(330, 520)
+        dx, dy = side * rng.uniform(220, 300), rng.uniform(-300, 140)
+        dur = rng.uniform(.42, .56)
+        o += (f'<i class="gdrk" style="left:{x0 - cell / 2:.0f}px;top:{y0 - cell / 2:.0f}px;background-position:-{(k % L["n"]) * cell:g}px 0;'
+              f'--dx:{dx:.0f}px;--dy:{dy:.0f}px;--r:{side * rng.uniform(70, 160):.0f}deg;--s:{rng.uniform(1.4, 2.1):.1f};'
+              f'animation:gdRk {sec(dur)} cubic-bezier(.5,0,.9,.6) {sec(t)} both{hide(t, t + dur)}"></i>')
     return o
 
 
 def scene_a():
     T = GD_T
     st0, st1 = T['STORM']
-    fa = LAY['gd_fall']
+    fa, fb = LAY['gd_fall'], LAY['gd_fmask']
     ring, bl = LAY['gd_ring'], LAY['gd_blast']
+    dm = LAY['gd_dome']
     r0, r1 = T['RING']
-    return f'''<div class="gdA" aria-hidden="true" style="animation:{hide(t1=T['WA2'][2])[1:]}">
+    d0, d1, d2 = T['DOME']
+    s0, s1, s2, s3 = T['SURGE']
+    sd = s3 - s0
+    return f'''<div class="gdA" aria-hidden="true" style="animation:{hide(t1=T['WA2'][1])[1:]}">
       {_img('gd_storm', 0, 0, W_, H_, 'gdst', f'animation:gdIn .1s linear {sec(st0)} both{hide(st0)}')}
-      <div class="gdpl" style="animation:gdIn .14s linear {sec(st0)} both{hide(st0)}"><i style="background-image:url({blob('gd_fall')});background-size:{fa['w']:g}px {fa['h']:g}px;--fh:{fa['h']:g}px"></i></div>
-      <svg class="gdzap" viewBox="0 0 390 844" aria-hidden="true"><defs><radialGradient id="gdrkg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#2A3270"/><stop offset=".6" stop-color="#0E1030"/><stop offset="1" stop-color="#05060F"/></radialGradient><linearGradient id="gdbmw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset=".22" stop-color="#FFFFFF"/><stop offset=".8" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".15"/></linearGradient><linearGradient id="gdbmc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9BE6FF" stop-opacity="0"/><stop offset=".3" stop-color="#C8F2FF"/><stop offset=".85" stop-color="#9BE6FF"/><stop offset="1" stop-color="#9BE6FF" stop-opacity=".1"/></linearGradient></defs>{zaps()}{beams()}</svg>
-      <div class="gdmo">{motes(34, 3)}</div>
-      {rocks()}
+      {_img('gd_vein1', 0, 0, W_, H_, 'gdvn', f'animation:gdVn .9s ease-in-out {sec(st0)} infinite alternate both{hide(st0)}')}
+      {_img('gd_vein2', 0, 0, W_, H_, 'gdvn', f'animation:gdVn .9s ease-in-out {sec(st0 - .9)} infinite alternate both{hide(st0)}')}
+      <div class="gdwf" style="left:{fb['x']:g}px;top:{fb['y']:g}px;width:{fb['w']:g}px;height:{fb['h']:g}px;-webkit-mask-image:url({blob('gd_fmask')});mask-image:url({blob('gd_fmask')});animation:gdIn .12s linear {sec(st0)} both{hide(st0)}"><i class="f2" style="background-image:url({blob('gd_fall')});--fh:{fa['h'] * 1.45:g}px;background-size:{fa['w'] * 1.45:g}px {fa['h'] * 1.45:g}px"></i><i class="f1" style="background-image:url({blob('gd_fall')});--fh:{fa['h']:g}px;background-size:{fa['w']:g}px {fa['h']:g}px"></i></div>
+      <div class="gdsq">{splash(46, 4)}</div>
+      <i class="gdsw" style="animation:gdSw .5s cubic-bezier(.15,.7,.3,1) {sec(d0)} both{hide(d0, d0 + .5)}"></i>
+      <div class="gddm" style="animation:gdDm {sec(d1 - d0)} cubic-bezier(.12,.8,.25,1) {sec(d0)} both{hide(d0)}"><div class="gddm2" style="animation:gdDm2 {sec(d2 - d1)} linear {sec(d1)} both">
+        {_img('gd_dome', dm['x'], dm['y'], dm['w'], dm['h'], 'gddg')}
+        <svg class="gdel" viewBox="0 0 390 844" aria-hidden="true">{dome_elec()}</svg>
+        <div class="gdrs" style="animation:{hide(T['CRACK'][0])[1:]}">{rim_sparks(40, 12)}</div>
+      </div></div>
+      <div class="gdrb" style="--rib:url({blob('gd_rib')});--rw:{LAY['gd_rib']['w']:g}px;--rh:{LAY['gd_rib']['h']:g}px">{ribbons()}</div>
+      {_img('gd_surge', 0, 0, W_, H_, 'gdsg', f'animation:gdSg {sec(sd)} linear {sec(s0)} both{hide(s0, s3)}')}
+      <svg class="gdbo" viewBox="0 0 390 844" aria-hidden="true">{big_bolts()}</svg>
+      <div class="gdrks" style="--rock:url({blob('gd_rock')});--cell:{LAY['gd_rock']['cell']:g}px;--rkw:{LAY['gd_rock']['w']:g}px;--rkh:{LAY['gd_rock']['h']:g}px">{rocks()}</div>
       {_img('gd_fire', 0, 0, W_, H_, 'gdfi', f'animation:gdFi {sec(T["FIRE"][1] - T["FIRE"][0])} linear {sec(T["FIRE"][0])} both{hide(T["FIRE"][0], T["FIRE"][1])}')}
       {_img('gd_burst', 0, 0, W_, H_, 'gdbu', f'animation:gdBu {sec(T["BURST"][1])} cubic-bezier(.2,.8,.3,1) 0s both{hide(None, T["BURST"][1])}')}
       {_img('gd_blast', FX - bl['w'] / 2, 422 - bl['h'] / 2, bl['w'], bl['h'], 'gdbl', f'animation:gdBl {sec(r1 - r0)} cubic-bezier(.2,.7,.35,1) {sec(r0)} both{hide(r0, r1)}')}
@@ -512,38 +618,60 @@ def gd_css():
 .ov.gd .gdA,.ov.gd .gdB,.ov.gd .gdC{{position:absolute;inset:0;overflow:hidden;pointer-events:none}}
 .ov.gd img{{position:absolute;display:block;max-width:none}}
 .ov.gd .gdA i,.ov.gd .gdB i,.ov.gd .gdC i{{position:absolute;display:block}}
-/* ① 青い 嵐 */
+/* ① 青い 嵐（第4.46版：ガラスの ドーム・光の 滝・白い 光の 帯・電気・大きな 雷・ピンクの 光・岩） */
 .ov.gd .gdbu{{transform-origin:50% 46%}}
 @keyframes gdBu{{0%{{opacity:0;transform:scale(.55)}}18%{{opacity:1}}100%{{opacity:1;transform:scale(1.3)}}}}
 @keyframes gdFi{{0%{{opacity:1}}{(T['STORM'][0] + .06 - fr0) / df * 100:.0f}%{{opacity:1}}100%{{opacity:0}}}}
-.ov.gd .gdpl{{position:absolute;left:105px;top:-10px;width:180px;height:740px;overflow:hidden;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(90deg,transparent,#000 28%,#000 72%,transparent)}}
-.ov.gd .gdpl i{{left:0;top:calc(-1 * var(--fh));width:100%;height:calc(100% + 2 * var(--fh));background-repeat:repeat-y;opacity:.42;animation:gdFall .9s linear infinite}}
+.ov.gd .gdvn{{opacity:0}}
+@keyframes gdVn{{from{{opacity:.3}}to{{opacity:.95}}}}
+.ov.gd .gdwf{{position:absolute;overflow:hidden;-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}}
+.ov.gd .gdwf i{{left:0;top:calc(-1 * var(--fh));width:100%;height:calc(100% + var(--fh));background-repeat:repeat-y;background-position:50% 0;animation:gdFall .5s linear infinite}}
+.ov.gd .gdwf i.f2{{opacity:.5;animation-duration:.95s}}
 @keyframes gdFall{{to{{transform:translateY(var(--fh))}}}}
-.ov.gd .gdzap{{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible}}
+.ov.gd .gdsq{{position:absolute;inset:0}}
+.ov.gd .gdsq i{{border-radius:50%;background:#E6FDFF;box-shadow:0 0 5px 1px #3FD4FF;opacity:0;animation:gdSq 1s cubic-bezier(.2,.65,.4,1) infinite}}
+@keyframes gdSq{{0%{{opacity:0;transform:none}}12%{{opacity:1}}100%{{opacity:0;transform:translate(var(--dx),var(--dy))}}}}
+.ov.gd .gdsw{{left:135px;top:702px;width:120px;height:28px;border-radius:50%;border:2px solid rgba(200,250,255,.95);box-shadow:0 0 14px 4px rgba(70,200,255,.75),inset 0 0 12px 3px rgba(70,200,255,.6);opacity:0}}
+@keyframes gdSw{{0%{{opacity:0;transform:scale(.2)}}15%{{opacity:1}}100%{{opacity:0;transform:scale(3.6)}}}}
+.ov.gd .gddm,.ov.gd .gddm2{{position:absolute;inset:0;transform-origin:{DOME2[0]:g}px {DOME2[1]:g}px}}
+@keyframes gdDm{{0%{{opacity:0;transform:scale(.06)}}14%{{opacity:1}}100%{{opacity:1;transform:none}}}}
+@keyframes gdDm2{{from{{transform:none}}to{{transform:scale(1.18)}}}}
+.ov.gd .gdel,.ov.gd .gdbo{{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible}}
 .ov.gd .gdfk{{opacity:0}}
 @keyframes gdFk{{0%,99%{{opacity:1}}100%{{opacity:0}}}}
-.ov.gd .gdzap path{{fill:none;stroke-linecap:round;stroke-linejoin:round}}
-.ov.gd .zc{{stroke:#FFFFFF;stroke-width:1.1}}
-.ov.gd .zhc{{stroke:#9BEFFF;stroke-width:3.2;stroke-opacity:.45}}
-.ov.gd .zgc{{stroke:#58C8FF;stroke-width:8;stroke-opacity:.14}}
-.ov.gd .zhp{{stroke:#FF8AE6;stroke-width:3.2;stroke-opacity:.45}}
-.ov.gd .zgp{{stroke:#E040C8;stroke-width:8;stroke-opacity:.14}}
-.ov.gd .zhv{{stroke:#B49BFF;stroke-width:3.2;stroke-opacity:.45}}
-.ov.gd .zgv{{stroke:#7A4CFF;stroke-width:8;stroke-opacity:.16}}
-.ov.gd .gdbm path{{stroke-dasharray:100 100}}
-.ov.gd .bg1{{stroke:url(#gdbmc);stroke-width:34;stroke-opacity:.16}}
-.ov.gd .bg2{{stroke:url(#gdbmc);stroke-width:14;stroke-opacity:.55}}
-.ov.gd .bg3{{stroke:url(#gdbmw);stroke-width:5}}
-@keyframes gdBm{{from{{stroke-dashoffset:100}}to{{stroke-dashoffset:0}}}}
-.ov.gd .gdbm{{animation-fill-mode:both}}
-.ov.gd .gdbm path{{animation:inherit}}
-@keyframes gdBo{{from{{opacity:1}}to{{opacity:0}}}}
-.ov.gd .gdrk{{position:absolute;width:80px;height:80px;overflow:visible}}
+.ov.gd .gdel path,.ov.gd .gdbo path{{fill:none;stroke-linecap:round;stroke-linejoin:round}}
+.ov.gd .ec{{stroke:#FFFFFF;stroke-width:1}}
+.ov.gd .ehc{{stroke:#A8F2FF;stroke-width:2.6;stroke-opacity:.42}}
+.ov.gd .egc{{stroke:#46C8FF;stroke-width:6;stroke-opacity:.1}}
+.ov.gd .ehp{{stroke:#FF6FDC;stroke-width:3;stroke-opacity:.62}}
+.ov.gd .egp{{stroke:#FF30C8;stroke-width:8;stroke-opacity:.16}}
+.ov.gd .ehv{{stroke:#C0A6FF;stroke-width:2.8;stroke-opacity:.45}}
+.ov.gd .egv{{stroke:#8A5CFF;stroke-width:6.5;stroke-opacity:.12}}
+.ov.gd .gdbt{{opacity:0}}
+@keyframes gdBt{{0%,70%{{opacity:1}}100%{{opacity:0}}}}
+.ov.gd .bc{{stroke:#FFFFFF;stroke-width:2.4}}
+.ov.gd .bhc{{stroke:#D8F8FF;stroke-width:4.6;stroke-opacity:.5}}
+.ov.gd .bgc{{stroke:#8FDCFF;stroke-width:10;stroke-opacity:.13}}
+.ov.gd .bmc{{stroke:#5FB0FF;stroke-width:20;stroke-opacity:.11}}
+.ov.gd .bbc{{stroke:#4A7CFF;stroke-width:32;stroke-opacity:.06}}
+.ov.gd .bhp{{stroke:#FFD0F4;stroke-width:4.6;stroke-opacity:.5}}
+.ov.gd .bgp{{stroke:#FF6EDA;stroke-width:10;stroke-opacity:.15}}
+.ov.gd .bmp{{stroke:#E040E0;stroke-width:20;stroke-opacity:.12}}
+.ov.gd .bbp{{stroke:#A030FF;stroke-width:32;stroke-opacity:.065}}
+.ov.gd .gdrs{{position:absolute;inset:0}}
+.ov.gd .gdrs i{{width:2.2px;height:2.2px;border-radius:50%;background:#FFFFFF;box-shadow:0 0 4px 1px #6FE0FF;opacity:0;animation:gdRs .5s ease-out infinite}}
+.ov.gd .gdrs i.p{{box-shadow:0 0 4px 1px #FF5CD6}}
+@keyframes gdRs{{0%{{opacity:1;transform:none}}100%{{opacity:0;transform:translate(var(--dx),var(--dy))}}}}
+.ov.gd .gdrb{{position:absolute;inset:0}}
+.ov.gd .gdrb i i{{inset:0;background-image:var(--rib);background-size:var(--rw) var(--rh);background-repeat:no-repeat}}
+@keyframes gdRbIn{{from{{opacity:0;transform:translateY(-170px)}}to{{opacity:1;transform:none}}}}
+@keyframes gdRbSw{{from{{transform:translateX(-3px)}}to{{transform:translateX(3px)}}}}
+@keyframes gdRbOut{{to{{opacity:0}}}}
+.ov.gd .gdsg{{opacity:0}}
+@keyframes gdSg{{0%{{opacity:0}}{(T['SURGE'][1] - T['SURGE'][0]) / (T['SURGE'][3] - T['SURGE'][0]) * 100:.0f}%{{opacity:1}}{(T['SURGE'][2] - T['SURGE'][0]) / (T['SURGE'][3] - T['SURGE'][0]) * 100:.0f}%{{opacity:.85}}100%{{opacity:0}}}}
+.ov.gd .gdrks{{position:absolute;inset:0}}
+.ov.gd .gdrk{{width:var(--cell);height:var(--cell);background-image:var(--rock);background-size:var(--rkw) var(--rkh)}}
 @keyframes gdRk{{0%{{opacity:0;transform:translate(0,0) scale(.3) rotate(0)}}12%{{opacity:1}}100%{{opacity:1;transform:translate(var(--dx),var(--dy)) scale(var(--s)) rotate(var(--r))}}}}
-.ov.gd .gdmo{{position:absolute;inset:0}}
-.ov.gd .gdmo i{{border-radius:50%;background:#BDF6FF;box-shadow:0 0 6px #3FD0FF;opacity:0;animation:gdMo 1s ease-out infinite}}
-@keyframes gdMo{{0%{{opacity:0;transform:none}}20%{{opacity:.9}}100%{{opacity:0;transform:translate(var(--dx),var(--dy))}}}}
 @keyframes gdRg{{0%{{opacity:0;transform:scale(.86)}}22%{{opacity:1}}100%{{opacity:1;transform:scale(1.14)}}}}
 @keyframes gdBl{{0%{{opacity:0;transform:scale(.6)}}18%{{opacity:1}}100%{{opacity:1;transform:scale(1.5)}}}}
 /* 白い 光 */

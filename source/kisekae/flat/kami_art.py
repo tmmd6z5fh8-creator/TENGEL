@@ -5,8 +5,9 @@
    - 金の 立体の 字：前の 面（金の ふちの 面取り＋字の 面）＋ななめ うしろへの 厚み（こい 茶色の 側面・うしろの はしに 金の 線）＋外の こい ふち。
      光（左上・手前）・金の 映りこみ（上から 下へ）・つや・キラッ を numpy で
    - 出す 絵（すき通しの ある WebP。大きさと 置き場所は kami_layers.json）：
-       ① 青い 嵐（はじまり）：gd_burst（はじめの 光の 爆発）・gd_fire（赤い 炎の 一瞬）・gd_storm（青い 嵐の 背景）・gd_fall（光の 柱の すじ）・
+       ① 青い 嵐（はじまり）：gd_burst（はじめの 光の 爆発）・gd_fire（赤い 炎の 一瞬）・
           gd_ring（立体の 金の 輪：まん中へ むかう 厚み）・gd_blast（金の 爆発）
+          青い 嵐の 絵（第4.46版で 作り直し）は flat/kami_storm.py：gd_storm・gd_vein1／gd_vein2・gd_dome・gd_fall・gd_fmask・gd_rib・gd_surge・gd_rock
        ② 金の 字：gd_sky（金の 雲の 空）・gd_cu1（万馬券（きせき）の 寄り）・gd_cu2（天眼（テンゲル）の 寄り）・gd_txt（4行の 文）
        ③ 神様的中：gd_c1〜gd_c4（神・様・的・中 の 寄り：しまの 金の 字）・gd_logo（神様／的中）・gd_frame（金の 鳥居）・gd_nug（金の 粒 8つ）
    python3 flat/kami_art.py <出力フォルダ> [名前 …]   → <名前>.webp と kami_layers.json（名前を つけた 時は その 絵の 所だけ かわる）
@@ -22,6 +23,7 @@ K = os.path.join(HERE, '..')
 sys.path.insert(0, HERE)
 sys.path.insert(0, K)
 from cute_horse import svg_rgba
+import kami_storm as KS
 
 FONT_PATH = os.path.join(K, '..', 'ios', 'fonts', 'DelaGothicOne-Regular.ttf')
 SS = 3                     # 細かく 作って もどす 倍率（ふちを なめらかに）
@@ -420,86 +422,6 @@ def lightning_lines(H, W, segs, seed, rough=.45, depth=7, branches=3):
             br = disp(p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), depth - 2, rough * 1.1)
             cv2.polylines(img, [np.int32(np.array(br) * 8)], False, lv * .7, 1, cv2.LINE_AA, shift=3)
     return img
-
-
-def storm(W, H, seed=21):
-    """青い 嵐の 背景（光の 柱・光の ドーム・地面の 光の つぶ・まわりの 紫の 光・うすい 雷）→ RGB。動く 物は ページで 重ねる"""
-    ys = (np.arange(H, dtype=np.float32)[:, None] / H) * np.ones((1, W), np.float32)
-    xs = (np.arange(W, dtype=np.float32)[None, :] / W) * np.ones((H, 1), np.float32)
-    r = np.sqrt(((xs - .5) * W / H * 1.6) ** 2 + (ys - .62) ** 2)
-    col = ramp(r * 1.5, ((0, (40, 110, 255)), (.25, (26, 54, 200)), (.5, (34, 14, 120)), (.8, (12, 4, 48)), (1.1, (3, 2, 14))))
-    fog = fbm(H, W, 6, seed, 6, .55)
-    col = col * (.7 + .6 * fog[..., None])
-    # まわりの 紫と ピンクの 光
-    for cx, cy, rr, c in ((.05, .3, .35, (190, 40, 220)), (.95, .42, .35, (220, 40, 200)), (.15, .75, .3, (60, 40, 230)), (.9, .8, .28, (80, 30, 220))):
-        g = radial(H, W, cx * W, cy * H, rr * H, 2.0) * (.5 + .5 * fbm(H, W, 10, seed + int(cx * 100), 4))
-        col = col + np.array(c, np.float32)[None, None, :] / 255 * g[..., None] * .55
-    # 光の ドーム（ふちが 明るい）
-    dx, dy, rx, ry = .5 * W, .84 * H, .62 * W, .4 * H
-    d = np.sqrt(((xs * W - dx) / rx) ** 2 + ((ys * H - dy) / ry) ** 2)
-    inside = (d < 1) & (ys * H < dy)
-    dome = np.where(inside, .06 + .7 * np.clip(d, 0, 1) ** 8, 0) * smoothstep(1.0, .97, d)
-    col = col + np.array([.25, .75, 1.0], np.float32) * dome[..., None] * .55
-    # 光の 柱（うしろの ぼんやりした 光）
-    pil = np.exp(-((xs - .5) * W / (.16 * W)) ** 2) * smoothstep(.0, .2, ys) * (.6 + .4 * ys)
-    col = col + np.array([.2, .8, 1.0], np.float32) * pil[..., None] * .7
-    core = np.exp(-((xs - .5) * W / (.05 * W)) ** 2) * smoothstep(.0, .25, ys) * (.5 + .5 * ys)      # 光の 柱の しん（白っぽい 水色）
-    col = col + np.array([.55, .95, 1.0], np.float32) * core[..., None] * .55
-    spray = np.exp(-((xs - .5) * W / (.32 * W)) ** 2) * smoothstep(.7, .86, ys) * smoothstep(.98, .86, ys)   # 下の しぶき
-    col = col + np.array([.25, .8, 1.0], np.float32) * spray[..., None] * .35
-    # 地面（暗い 青・光の つぶ・柱の 下の しぶき）
-    gnd = smoothstep(.8, .86, ys)
-    col = col * (1 - .55 * gnd[..., None])
-    rng = np.random.default_rng(seed + 5)
-    dots = np.zeros((H, W), np.float32)
-    for _ in range(int(W * H * .0035)):
-        x = rng.uniform(0, W)
-        y = rng.uniform(.8, 1.0) * H
-        near = math.exp(-((x - W / 2) / (.3 * W)) ** 2)
-        if rng.random() < .35 + .65 * near:
-            cv2.circle(dots, (int(x), int(y)), int(rng.integers(0, 2)), float(rng.uniform(.3, 1.0)), -1, cv2.LINE_AA)
-    dots = np.maximum(dots, cv2.GaussianBlur(dots, (0, 0), 2) * 1.5)
-    col = col + np.array([.4, .9, 1.0], np.float32) * dots[..., None] * .8
-    splash = radial(H, W, W * .5, H * .86, W * .45, 2.2, 1.0 / .35)
-    col = col + np.array([.3, .85, 1.0], np.float32) * splash[..., None] * .6
-    # うすい 雷（うしろ）
-    segs = []
-    for k in range(9):
-        x0 = rng.uniform(0, W)
-        segs.append(((x0, rng.uniform(0, .3) * H), (x0 + rng.uniform(-.3, .3) * W, rng.uniform(.4, .8) * H), 1, .5))
-    ln = lightning_lines(H, W, segs, seed + 9, .5, 7, 3)
-    ln = np.maximum(ln, cv2.GaussianBlur(ln, (0, 0), 2.5) * .8)
-    col = col + np.array([.5, .7, 1.0], np.float32) * ln[..., None] * .4
-    vig = 1 - .5 * smoothstep(.5, 1.0, np.sqrt(((xs - .5) * 1.4) ** 2 + ((ys - .5) * .9) ** 2) * 1.5)
-    return np.clip(col * vig[..., None], 0, 1)
-
-
-def fall_tile(W, H, seed=33):
-    """光の 柱の すじ（上から 下へ 落ちる 光：たてに つながる 絵）→ premultiplied RGBA"""
-    rng = np.random.default_rng(seed)
-    a = np.zeros((H, W), np.float32)
-    for _ in range(int(W * .9)):
-        x = np.clip(rng.normal(.5, .2), 0, 1) * W
-        L = rng.uniform(.1, .5) * H
-        y0 = rng.uniform(0, H)
-        w = rng.choice((1, 1, 2, 2, 3))
-        lv = rng.uniform(.25, 1.0)
-        for off in (-H, 0, H):
-            ys0, ys1 = int(y0 + off), int(y0 + L + off)
-            yy = np.arange(max(0, ys0), min(H, ys1))
-            if len(yy) == 0:
-                continue
-            t = (yy - ys0) / max(1, L)
-            v = lv * np.clip(t, 0, 1) ** 1.5        # 下が 明るい（落ちる 先）
-            xi = int(x)
-            for dxp in range(-w, w + 1):
-                xx = xi + dxp
-                if 0 <= xx < W:
-                    a[yy, xx] = np.maximum(a[yy, xx], v * math.exp(-(dxp / max(.6, w * .6)) ** 2))
-    a = np.maximum(a, cv2.GaussianBlur(a, (0, 0), 1.5) * .7)
-    a = np.clip(a, 0, 1)
-    col = np.stack([.55 + .45 * a, .95 + .05 * a, np.ones_like(a)], -1)
-    return np.dstack([col * a[..., None], a])
 
 
 def burst(W, H, seed=41):
@@ -940,9 +862,41 @@ def build_text(out, names, lay):
 
 
 # ---------------------------------------------------------------- まとめて 作る
-BG = dict(gd_burst=(burst, 1.0, 'rgb'), gd_fire=(fire, 1.0, 'rgb'), gd_storm=(storm, 1.5, 'rgb'), gd_sky=(sky, 1.5, 'rgb'))
+def build_storm(out, want, lay):
+    """① 青い 嵐の 絵（kami_storm.py）"""
+    if want('gd_vein1') or want('gd_vein2'):
+        for j, sd in ((1, 5), (2, 6)):
+            if want(f'gd_vein{j}'):
+                save(KS.veins(sd), os.path.join(out, f'gd_vein{j}.webp'), 82)
+    for j in (1, 2):
+        lay[f'gd_vein{j}'] = dict(w=SCR_W, h=SCR_H)
+    if want('gd_dome'):
+        save(KS.dome_glass(), os.path.join(out, 'gd_dome.webp'), 86)
+    x0, y0, bw, bh = KS.dome_box()
+    lay['gd_dome'] = dict(x=round(x0, 2), y=round(y0, 2), w=round(bw, 2), h=round(bh, 2))
+    if want('gd_fall'):
+        save(KS.fall_tile2(), os.path.join(out, 'gd_fall.webp'), 82)
+    lay['gd_fall'] = dict(w=KS.FALL2[0], h=KS.FALL2[1])
+    if want('gd_fmask'):
+        m = KS.fall_mask()
+        save(np.dstack([np.repeat(m[..., None], 3, -1), m]), os.path.join(out, 'gd_fmask.webp'), 80)
+    fx, fy, fw, fh = KS.FALL_BOX
+    lay['gd_fmask'] = dict(x=fx, y=fy, w=fw, h=fh)
+    if want('gd_rib'):
+        sheet, pos = KS.ribbon_sheet()
+        save(sheet, os.path.join(out, 'gd_rib.webp'), 84)
+        lay['gd_rib'] = dict(w=round(sheet.shape[1] / KS.RIB_DPR, 2), h=round(sheet.shape[0] / KS.RIB_DPR, 2),
+                             pos=[[sx, round(b[0], 2), round(b[1], 2), round(b[2], 2), round(b[3], 2)] for sx, b in pos])
+    if want('gd_surge'):
+        save(KS.surge(), os.path.join(out, 'gd_surge.webp'), 80)
+    lay['gd_surge'] = dict(w=SCR_W, h=SCR_H)
+    if want('gd_rock'):
+        save(KS.rock_sheet(), os.path.join(out, 'gd_rock.webp'), 86)
+    lay['gd_rock'] = dict(w=KS.ROCK_CELL * KS.ROCK_N, h=KS.ROCK_CELL, cell=KS.ROCK_CELL, n=KS.ROCK_N)
+
+
+BG = dict(gd_burst=(burst, 1.0, 'rgb'), gd_fire=(fire, 1.0, 'rgb'), gd_storm=(KS.storm_bg, 1.5, 'rgb'), gd_sky=(sky, 1.5, 'rgb'))
 SCR_W, SCR_H = 390.0, 844.0
-FALL = (180.0, 420.0, 1.0)       # 光の 柱の すじ（画面の px・倍率）
 RING = (600.0, 1.4)              # 金の 輪（立体の かたまり）
 BLAST = (600.0, 1.0)             # 金の 爆発
 
@@ -958,9 +912,7 @@ def build(out, names=None):
         if want(name):
             save_rgb(fn(int(SCR_W * dpr), int(SCR_H * dpr)), os.path.join(out, name + '.webp'), 80 if name != 'gd_fire' else 72)
         lay[name] = dict(w=SCR_W, h=SCR_H)
-    if want('gd_fall'):
-        save(fall_tile(int(FALL[0] * FALL[2]), int(FALL[1] * FALL[2])), os.path.join(out, 'gd_fall.webp'), 80)
-    lay['gd_fall'] = dict(w=FALL[0], h=FALL[1])
+    build_storm(out, want, lay)
     if want('gd_ring'):
         save(gold_ring(int(RING[0] * RING[1])), os.path.join(out, 'gd_ring.webp'), 84)
     lay['gd_ring'] = dict(w=RING[0], h=RING[0])
