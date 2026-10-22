@@ -11,7 +11,7 @@
      0.4〜0.63秒 ガラスの ドームが 床から ふくらむ（ふちが 光る）・0.43〜0.63秒 ピンクの 電気の 光
      0.6〜1.4秒 嵐の 頂点：ドームの ふちの ジリジリと 肩の 電気・とんでくる 岩・しぶき
      0.52〜0.74秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 1.08〜1.333秒 玉が まん中へ 小さく なって 金の 光に 入る
-       玉は 丸く なって から 消えるまで ずっと 大きさが ふるえる・床から はなれる 時は 下で 雷が スパークして 金の 爆発（0.52〜0.82秒）
+       ドームが 床から 上がり はじめて から 玉が 消えるまで ずっと ブルブル（左右・大きさ）・床から はなれる 時は 下で 雷が スパークして 金の 爆発（0.52〜1.06秒）
      0.24〜1.4秒 上から 下への 雷（上は 細く 下ほど 太い・だんだん 太く・上の 方は 不定期に ガクッと かわる）・0.73〜1.3秒 玉から 画面の はしへ はしる 雷（不定期）
      1.33〜1.6秒 金の 光が 集まって 金の 爆発（金の かけら・金の 粒・光の 筋）→ まっ白（② 金の 字へ）。ドームは もう ない
    光は 足し算で 重ねて、明るい 所の にじみ（ブルーム）と、白く とぶ 前に ゆるやかに 頭うち（肩の ある 曲線）
@@ -409,6 +409,8 @@ MORPH = (.52, .74)              # ドームが 床から 上がりながら 丸�
 SHRINK = (1.08, 1.333)          # 玉が 小さく なる（おわり＝金の 光の はじめ）
 ORB_VIB = (.008, .010)          # 玉の 大きさの ふるえ（半径の 割合：ふだん・小さく なる 間に 足す）
 ORB_SHAKE = (1.8, 1.0)          # 玉の 左右の ブルブル（画面の px：ふだん・小さく なる 間に 足す）
+ORB_VIB_W = .012                # はばだけの ふるえ（左右の 大きさ：ドームが 上がり はじめた 時から）
+#   まさちゃん「ドーム型から球体へ変形する下から上に上がる時もドームを左右に大きさ変えて振動させて！」→ ふるえは ドームが 床から 上がり はじめる 時から
 #   まさちゃん「球体常に、大きさが変わって振動しているようにして！」「左右にもブルブルして、振動の速度早くして違和感ないようにして！」
 #   → 丸く なって から 消えるまで ずっと ふるえる：コマごとに 大きさと 左右が 細かく かわる（ブルブル）。ふちと 電気は いっしょに ふるえ、
 #     ふちは 少し ぶれて 見える（速く ふるえる 物は ぶれて 見えるのが 自然）。中の もようは ふるえない（点めつを ふやさない）・小さめ（画面ぜんたいが 近づく ように 見えない）
@@ -436,7 +438,8 @@ def vib_seq():
             vx = (1 if k % 2 else -1) * rng.uniform(.55, 1.0)
             vs = (1 if (k + (k // 3)) % 2 else -1) * rng.uniform(.45, 1.0)
             vq = rng.uniform(-1, 1)
-            out.append((vx, vs, vq))
+            vw = (1 if (k // 2 + k) % 2 else -1) * rng.uniform(.5, 1.0)
+            out.append((vx, vs, vq, vw))
         return out
     return cache('vib', f)
 
@@ -465,13 +468,14 @@ def shape_at(t):
               q=KM.DOME_Q + (2 - KM.DOME_Q) * m, m=m, w=w, f=f, sd=sd)
     sh['base'] = sh
     # ふるえ（丸く なって くると はじまる）：ふち（形・電気）だけ ふるえる。中の もようは base（ふるえない 形）で 描く
-    on = sstep(.5, 1.0, m)
+    on = sstep(MORPH[0] - .02, MORPH[0] + .06, t)            # ドームが 床から 上がり はじめる 時から ずっと
     va = (ORB_VIB[0] + ORB_VIB[1] * w) * on
     if va > 0:
-        vx, vs, vq = vib_seq()[max(0, int(round(t * FPS)))]
+        vx, vs, vq, vw = vib_seq()[max(0, int(round(t * FPS)))]
         su, sq = 1 + va * vs, va * .4 * vq
+        sw = 1 + ORB_VIB_W * on * vw                          # 左右の 大きさ
         vb = dict(sh)
-        vb.update(cx=CX + (ORB_SHAKE[0] + ORB_SHAKE[1] * w) * on * vx, W=Wd * su * (1 + sq), Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
+        vb.update(cx=CX + (ORB_SHAKE[0] + ORB_SHAKE[1] * w) * on * vx, W=Wd * su * (1 + sq) * sw, Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
         vb.update(yt=ye - vb['Hu'], yb=ye + vb['Hl'], vib=on)
         vb['base'] = sh
         return vb
@@ -706,7 +710,7 @@ def dome(img, t):
     # ふくらむ 間は ふちが 強く 光る
     e = 1 - sstep(d1, d1 + .12, t)
     if e > 0:
-        OL = shape_outline(sh, 400)
+        OL = shape_outline(sh['base'], 400)                     # ふくらむ 間の 光は ふるえない 形で（ふちの 線だけ ふるえる）
         pts = [(x, y) for x, y, nx, ny, u, fl in OL if fl < .5]
         m = lines_mask([(pts, 1.0)], 2.2)
         glow_add(img, m, ((0, (1, 1, 1), .9 * e), (2, (.5, .9, 1.0), 1.4 * e), (8, (.3, .6, 1.0), 1.2 * e)))
@@ -891,8 +895,9 @@ def dome_elec(img, t, fi):
 # まさちゃん「ドームから球体に上がる時に、したの方は、雷がスパークして、爆発してる演出も入れて！」
 # → 玉が 床から はなれる 所で：床の まん中から 金の 爆発（ふくらむ 炎の 光・床を はしる 衝撃の 輪・とびちる 火花）と、
 #   床を はしる 雷・床と 玉の 下を つなぐ 雷・まん中から はじける 短い 雷（スパーク）
-LIFT_T = (.52, .59, .82)          # 爆発：はじまり・いちばん 強い・消える
-LIFT_FR = (16, 23)                # 下の 雷の スパークが 出る コマ
+LIFT_T = (.52, .6, .88, 1.06)    # 爆発：はじまり・いちばん 強い・消え はじめ・消える（まさちゃん「あと下のスパーク爆発の時間もう少し長くして！」）
+LIFT_FR = (16, 29)                # 下の 雷の スパークが 出る コマ（0.53〜0.97秒）
+LIFT_BURSTS = ((0.0, 110), (.15, 60), (.29, 45))   # 火花が とぶ 時（はじまりからの 秒）と 数
 LIFT_ENV = (.9, 1.0, .6)          # その 雷の コマごとの 明るさ
 
 
@@ -902,37 +907,46 @@ def lift_tex():
 
 def lift_blast(img, t):
     """床の まん中の 金の 爆発（炎の 光・衝撃の 輪・火花）"""
-    t0, tp, t1 = LIFT_T
+    t0, tp, t2, t1 = LIFT_T
     if not (t0 <= t <= t1):
         return
     u = (t - t0) / (t1 - t0)
-    e = sstep(t0, tp, t) * (1 - sstep(tp, t1, t))
+    e = sstep(t0, tp, t) * (1 - .18 * sstep(tp, tp + .1, t)) * (1 - sstep(t2, t1, t))   # ぱっと 強く → 少し おちて つづく → 消える
     y0 = max(0, int((BASE - 300) * S))
     y1 = min(H, int((BASE + 70) * S))
     X = (np.arange(W, dtype=np.float32)[None, :] / S)
     Y = (np.arange(y0, y1, dtype=np.float32)[:, None] / S)
     reg = img[y0:y1]
     # 炎の 光（床から 上へ ふくらむ：もようで ゆらぐ）
-    r = 26 + 150 * ease_out(u / .6)
+    r = 26 + 150 * ease_out((t - t0) / .26) + 14 * sstep(tp, t1, t)
     dx, dy = (X - CX) / r, (Y - BASE) / (r * .62)
     d = np.sqrt(dx * dx + dy * dy)
     tx = lift_tex()
     mx = np.broadcast_to(np.clip((dx + 1.5) / 3, 0, 1) * 511, d.shape).astype(np.float32)
-    my = np.broadcast_to(np.clip((dy + 1.5) / 3, 0, 1) * 255 + 40 * u, d.shape).astype(np.float32)
+    my = np.broadcast_to(np.clip((dy + 1.5) / 3, 0, 1) * 255 + 90 * u, d.shape).astype(np.float32)    # 炎の もようが 上へ ながれる
     nz = cv2.remap(tx, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
     fire = np.clip(1 - d / (.7 + .5 * nz), 0, 1) ** 1.4 * (Y <= BASE + 6) * e
     core = np.exp(-(d / .28) ** 2) * e
     reg += fire[..., None] * np.float32([1.0, .55, .14]) * 1.1 + (fire ** 2)[..., None] * np.float32([1.0, .85, .45]) * .9
     reg += core[..., None] * np.float32([1.0, .96, .85]) * 1.2
     # 床を はしる 衝撃の 輪
-    rr = 24 + 330 * ease_out(u / .75)
-    ring = np.exp(-((np.sqrt(((X - CX) / rr) ** 2 + ((Y - BASE - 3) / (rr * .11)) ** 2) - 1) * rr / 7) ** 2) * (1 - u) ** 1.2
-    reg += ring[..., None] * np.float32([1.0, .78, .38]) * 1.1
+    for rs0, rg in ((0.0, 1.1), (.2, .6)):                   # 2つめの 輪は 少し あとで よわく
+        uu = (t - t0 - rs0) / .34
+        if 0 <= uu <= 1:
+            rr = 24 + 330 * ease_out(uu)
+            ring = np.exp(-((np.sqrt(((X - CX) / rr) ** 2 + ((Y - BASE - 3) / (rr * .11)) ** 2) - 1) * rr / 7) ** 2) * (1 - uu) ** 1.2
+            reg += ring[..., None] * np.float32([1.0, .78, .38]) * rg
     # 火花（金の すじ：上と 左右へ とぶ・おちる）
     sp = np.zeros((H, W), np.float32)
     rng = random.Random(4400)
-    for _ in range(110):
-        b0 = t0 + rng.uniform(0, .07)
+    for k_ in range(sum(n_ for _, n_ in LIFT_BURSTS)):
+        bt = 0.0
+        acc = 0
+        for bs, n_ in LIFT_BURSTS:
+            if k_ >= acc:
+                bt = bs
+            acc += n_
+        b0 = t0 + bt + rng.uniform(0, .07)
         age = t - b0
         life = rng.uniform(.22, .4)
         a = math.radians(rng.uniform(-172, -8))
