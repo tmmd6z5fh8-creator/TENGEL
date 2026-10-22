@@ -11,6 +11,7 @@
      0.4〜0.63秒 ガラスの ドームが 床から ふくらむ（ふちが 光る）・0.43〜0.63秒 ピンクの 電気の 光
      0.6〜1.4秒 嵐の 頂点：ドームの ふちの ジリジリと 肩の 電気・とんでくる 岩・しぶき
      0.52〜0.74秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 1.08〜1.333秒 玉が まん中へ 小さく なって 金の 光に 入る
+       玉は 丸く なって から 消えるまで ずっと 大きさが ふるえる・床から はなれる 時は 下で 雷が スパークして 金の 爆発（0.52〜0.82秒）
      0.24〜1.4秒 上から 下への 雷（上は 細く 下ほど 太い・だんだん 太く・上の 方は 不定期に ガクッと かわる）・0.73〜1.3秒 玉から 画面の はしへ はしる 雷（不定期）
      1.33〜1.6秒 金の 光が 集まって 金の 爆発（金の かけら・金の 粒・光の 筋）→ まっ白（② 金の 字へ）。ドームは もう ない
    光は 足し算で 重ねて、明るい 所の にじみ（ブルーム）と、白く とぶ 前に ゆるやかに 頭うち（肩の ある 曲線）
@@ -406,6 +407,11 @@ ORB_C = (195.0, 432.0)          # 玉の まん中（金の 光も ここ）
 ORB_R = 192.0                   # 玉の 半径（上は ドームの てっぺんの あたり）
 MORPH = (.52, .74)              # ドームが 床から 上がりながら 丸く なる（まさちゃん「ドームから球体に変わる速度もっと早くてもいいかも！」）
 SHRINK = (1.08, 1.333)          # 玉が 小さく なる（おわり＝金の 光の はじめ）
+ORB_VIB = (.008, .010)          # 玉の 大きさの ふるえ（半径の 割合：ふだん・小さく なる 間に 足す）
+ORB_SHAKE = (1.8, 1.0)          # 玉の 左右の ブルブル（画面の px：ふだん・小さく なる 間に 足す）
+#   まさちゃん「球体常に、大きさが変わって振動しているようにして！」「左右にもブルブルして、振動の速度早くして違和感ないようにして！」
+#   → 丸く なって から 消えるまで ずっと ふるえる：コマごとに 大きさと 左右が 細かく かわる（ブルブル）。ふちと 電気は いっしょに ふるえ、
+#     ふちは 少し ぶれて 見える（速く ふるえる 物は ぶれて 見えるのが 自然）。中の もようは ふるえない（点めつを ふやさない）・小さめ（画面ぜんたいが 近づく ように 見えない）
 SP_ENV = (.45, .85, 1.0, .85, .6, .3)   # 玉の まわりの 雷（とげ）の コマごとの 明るさ（ゆっくり ついて 消える：点めつを ふやさない）
 WR_ENV = (.5, .9, 1.0, .7, .35)         # 玉に まきつく 雷の コマごとの 明るさ
 
@@ -419,6 +425,20 @@ def dome_scale(t):
     if t < d2:
         return 1.0 + .15 * (t - d1) / (d2 - d1)
     return 1.15 + .03 * min(1.0, (t - d2) / (d3 - d2))
+
+
+def vib_seq():
+    """コマごとの ふるえ（左右・大きさ・つぶれ）：向きが コマごとに かわる（速い ブルブル）・大きさは ばらばら"""
+    def f():
+        rng = random.Random(8800)
+        out = []
+        for k in range(N + 8):
+            vx = (1 if k % 2 else -1) * rng.uniform(.55, 1.0)
+            vs = (1 if (k + (k // 3)) % 2 else -1) * rng.uniform(.45, 1.0)
+            vq = rng.uniform(-1, 1)
+            out.append((vx, vs, vq))
+        return out
+    return cache('vib', f)
 
 
 def shape_at(t):
@@ -441,8 +461,21 @@ def shape_at(t):
     f = Wd / RX
     if w > 0:
         f = max(f, .32)
-    return dict(cx=CX, ye=ye, W=Wd, Hu=Hu, Hl=Hl, yt=ye - Hu, yb=ye + Hl, p=KM.DOME_P + (2 - KM.DOME_P) * m,
-                q=KM.DOME_Q + (2 - KM.DOME_Q) * m, m=m, w=w, f=f, sd=sd)
+    sh = dict(cx=CX, ye=ye, W=Wd, Hu=Hu, Hl=Hl, yt=ye - Hu, yb=ye + Hl, p=KM.DOME_P + (2 - KM.DOME_P) * m,
+              q=KM.DOME_Q + (2 - KM.DOME_Q) * m, m=m, w=w, f=f, sd=sd)
+    sh['base'] = sh
+    # ふるえ（丸く なって くると はじまる）：ふち（形・電気）だけ ふるえる。中の もようは base（ふるえない 形）で 描く
+    on = sstep(.5, 1.0, m)
+    va = (ORB_VIB[0] + ORB_VIB[1] * w) * on
+    if va > 0:
+        vx, vs, vq = vib_seq()[max(0, int(round(t * FPS)))]
+        su, sq = 1 + va * vs, va * .4 * vq
+        vb = dict(sh)
+        vb.update(cx=CX + (ORB_SHAKE[0] + ORB_SHAKE[1] * w) * on * vx, W=Wd * su * (1 + sq), Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
+        vb.update(yt=ye - vb['Hu'], yb=ye + vb['Hl'], vib=on)
+        vb['base'] = sh
+        return vb
+    return sh
 
 
 def shape_w(sh, y):
@@ -537,26 +570,33 @@ def glass(img, sh, t, fade=1.0):
     xs = np.arange(x0, x1, dtype=np.float64) / S
     ys = np.arange(y0, y1, dtype=np.float64) / S
     hh, ww = len(ys), len(xs)
-    wr = shape_w(sh, ys)[:, None]
-    dw = (shape_w(sh, ys + .5) - shape_w(sh, ys - .5))[:, None]
+    sb = sh['base']                                          # 中の もようは ふるえない 形で（ふちだけ ふるえる）
+    wv = shape_w(sh, ys)[:, None]
+    wr = shape_w(sb, ys)[:, None]
+    dw = (shape_w(sb, ys + .5) - shape_w(sb, ys - .5))[:, None]
     X = np.broadcast_to(xs[None, :], (hh, ww))
     Y = np.broadcast_to(ys[:, None], (hh, ww))
-    inside = ((np.abs(X - cx) < wr) & (wr > 0)).astype(np.float32)
-    sr = (X - cx) / np.maximum(wr, 1e-3)
+    inside = ((np.abs(X - sb['cx']) < wr) & (wr > 0)).astype(np.float32)          # 体（ふるえない）
+    inside_v = ((np.abs(X - cx) < wv) & (wv > 0)).astype(np.float32)               # ふち（ふるえる）
+    sr = (X - sb['cx']) / np.maximum(wr, 1e-3)
     s = np.clip(sr, -1, 1)
     c = np.sqrt(np.clip(1 - s * s, 0, 1))
     rn2 = np.sqrt(1 + dw * dw)
     fres = np.clip(1 - c / rn2, 0, 1).astype(np.float32)
     phi = np.arcsin(s)
-    u = np.clip((yb - Y) / max(yb - yt, 1e-3), 0, 1).astype(np.float32)
+    ybb, ytb = sb['yb'], sb['yt']
+    u = np.clip((ybb - Y) / max(ybb - ytb, 1e-3), 0, 1).astype(np.float32)
     hgt = (yb - Y).astype(np.float32)
     A = ((np.clip(sr, -1.4, 1.4) + 1) / 2).astype(np.float32)
-    B = ((Y - yt) / max(yb - yt, 1e-3)).astype(np.float32)
+    B = ((Y - ytb) / max(ybb - ytb, 1e-3)).astype(np.float32)
     TX = glass_tex()
     m8 = (inside > .5).astype(np.uint8)
     din = cv2.distanceTransform(m8, cv2.DIST_L2, 5) / S / max(f, 1e-3)
-    dout = cv2.distanceTransform(1 - m8, cv2.DIST_L2, 5) / S / max(f, 1e-3)
-    sdd = din - dout
+    if sb is sh:
+        sdd = din - cv2.distanceTransform(1 - m8, cv2.DIST_L2, 5) / S / max(f, 1e-3)
+    else:                                                    # ふちの 線は ふるえる 形で
+        mv = (inside_v > .5).astype(np.uint8)
+        sdd = (cv2.distanceTransform(mv, cv2.DIST_L2, 5) - cv2.distanceTransform(1 - mv, cv2.DIST_L2, 5)) / S / max(f, 1e-3)
     abs_s = np.abs(s).astype(np.float32)
     col = np.zeros((hh, ww, 3), np.float32)
     al = np.zeros((hh, ww), np.float32)
@@ -631,6 +671,8 @@ def glass(img, sh, t, fade=1.0):
                      (int(((x + ln * f * math.cos(ang)) * S - x0) * 4), int(((y + ln * f * math.sin(ang)) * S - y0) * 4)),
                      float(v2), max(1, int(f * S * .7)), cv2.LINE_AA, shift=2)
     rim = np.maximum(rim, beads)
+    if sh.get('vib', 0) > 0:                                 # 速く ふるえる 物は 少し ぶれて 見える（ふちの 白い 線を やわらかく）
+        rim = rim * (1 - .7 * sh['vib']) + fblur(rim, 2.2 * S) * 1.3 * .7 * sh['vib']
     rimg = fblur(rim, max(.5, 2.5 * S * f)) * 2.0 + fblur(rim, max(.5, 7 * S * f)) * 1.4 + fblur(rim, max(.5, 16 * S * f)) * .8
     col += KS.pc((.5, .9, 1.0)) * rimg[..., None] * .55
     col += KS.pc((1.0, 1.0, 1.0)) * rim[..., None] * .95
@@ -717,7 +759,7 @@ def elec_events():
         if k % 3 == 0:
             arcs.append((f, 1 if (k // 3) % 2 else -1, rng.uniform(.28, .9), rng.uniform(-.38, .22), rng.uniform(12, 58),
                          rng.uniform(.3, .45), rng.randrange(1 << 30), rng.choice('cv')))
-        for _ in range(3):
+        for _ in range(2):
             sp.append((f, rng.random(), rng.uniform(-1.0, 1.0), rng.uniform(18, 58), rng.choice((1, 1, 1, -1)), rng.randrange(1 << 30)))
         wr.append((f, rng.random(), rng.uniform(.04, .16) * rng.choice((-1, 1)), rng.uniform(2, 12), rng.randrange(1 << 30)))
     _EL.update(f0=f0, f1=f1, cl=cl, arcs=arcs, sp=sp, wr=wr)
@@ -763,7 +805,7 @@ def dome_elec(img, t, fi):
     rng = random.Random(900 + fi)
     sizz = []
     c = tries = 0
-    while c < 10 and tries < 500:
+    while c < 7 and tries < 500:
         tries += 1
         o = rng.random()
         if not KM._spread_ok(o, k):
@@ -797,7 +839,7 @@ def dome_elec(img, t, fi):
         u1 = max(.04, min(.93, u0 + du))
         ys_ = np.array([yb - (u0 + (u1 - u0) * j / 24) * (yb - yt) for j in range(25)])
         ws_ = shape_w(sh, ys_)
-        pts = [(CX + float(ws_[j]) * math.sin(math.radians(side * (88.0 + (ph1d - 88.0) * j / 24))), float(ys_[j])) for j in range(25)]
+        pts = [(sh['cx'] + float(ws_[j]) * math.sin(math.radians(side * (88.0 + (ph1d - 88.0) * j / 24))), float(ys_[j])) for j in range(25)]
         pts = KM._jag(rs, pts, rough, 2)
         (arcs_c if tone == 'c' else arcs_v).extend([(pts, 1.0)] + arc_br(rs, pts) + twitch_polys(rng, pts, 2))
     cor = []
@@ -843,6 +885,108 @@ def dome_elec(img, t, fi):
     if cor:
         m = lines_mask(cor, 1.25)
         glow_add(img, m, ((0, (1, 1, 1), 1.0), (1.0, (1, .85, .45), 1.3), (3.5, (1, .5, .12), .85), (10, (1, .3, .06), .35)))
+
+
+# ---------------------------------------------------------------- ドームが 床から 上がる 時の 下の 爆発と 雷の スパーク（第4.47版）
+# まさちゃん「ドームから球体に上がる時に、したの方は、雷がスパークして、爆発してる演出も入れて！」
+# → 玉が 床から はなれる 所で：床の まん中から 金の 爆発（ふくらむ 炎の 光・床を はしる 衝撃の 輪・とびちる 火花）と、
+#   床を はしる 雷・床と 玉の 下を つなぐ 雷・まん中から はじける 短い 雷（スパーク）
+LIFT_T = (.52, .59, .82)          # 爆発：はじまり・いちばん 強い・消える
+LIFT_FR = (16, 23)                # 下の 雷の スパークが 出る コマ
+LIFT_ENV = (.9, 1.0, .6)          # その 雷の コマごとの 明るさ
+
+
+def lift_tex():
+    return cache('lifttex', lambda: KS.fbm(256, 512, 9, 517, 5, .55).astype(np.float32))
+
+
+def lift_blast(img, t):
+    """床の まん中の 金の 爆発（炎の 光・衝撃の 輪・火花）"""
+    t0, tp, t1 = LIFT_T
+    if not (t0 <= t <= t1):
+        return
+    u = (t - t0) / (t1 - t0)
+    e = sstep(t0, tp, t) * (1 - sstep(tp, t1, t))
+    y0 = max(0, int((BASE - 300) * S))
+    y1 = min(H, int((BASE + 70) * S))
+    X = (np.arange(W, dtype=np.float32)[None, :] / S)
+    Y = (np.arange(y0, y1, dtype=np.float32)[:, None] / S)
+    reg = img[y0:y1]
+    # 炎の 光（床から 上へ ふくらむ：もようで ゆらぐ）
+    r = 26 + 150 * ease_out(u / .6)
+    dx, dy = (X - CX) / r, (Y - BASE) / (r * .62)
+    d = np.sqrt(dx * dx + dy * dy)
+    tx = lift_tex()
+    mx = np.broadcast_to(np.clip((dx + 1.5) / 3, 0, 1) * 511, d.shape).astype(np.float32)
+    my = np.broadcast_to(np.clip((dy + 1.5) / 3, 0, 1) * 255 + 40 * u, d.shape).astype(np.float32)
+    nz = cv2.remap(tx, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    fire = np.clip(1 - d / (.7 + .5 * nz), 0, 1) ** 1.4 * (Y <= BASE + 6) * e
+    core = np.exp(-(d / .28) ** 2) * e
+    reg += fire[..., None] * np.float32([1.0, .55, .14]) * 1.1 + (fire ** 2)[..., None] * np.float32([1.0, .85, .45]) * .9
+    reg += core[..., None] * np.float32([1.0, .96, .85]) * 1.2
+    # 床を はしる 衝撃の 輪
+    rr = 24 + 330 * ease_out(u / .75)
+    ring = np.exp(-((np.sqrt(((X - CX) / rr) ** 2 + ((Y - BASE - 3) / (rr * .11)) ** 2) - 1) * rr / 7) ** 2) * (1 - u) ** 1.2
+    reg += ring[..., None] * np.float32([1.0, .78, .38]) * 1.1
+    # 火花（金の すじ：上と 左右へ とぶ・おちる）
+    sp = np.zeros((H, W), np.float32)
+    rng = random.Random(4400)
+    for _ in range(110):
+        b0 = t0 + rng.uniform(0, .07)
+        age = t - b0
+        life = rng.uniform(.22, .4)
+        a = math.radians(rng.uniform(-172, -8))
+        v = rng.uniform(260, 820)
+        if not (0 <= age <= life):
+            continue
+        x0 = CX + rng.gauss(0, 30)
+        vx, vy = math.cos(a) * v, math.sin(a) * v
+        x, y = x0 + vx * age, BASE - 4 + vy * age + 900 * age * age
+        tx_, ty_ = x - vx * .025, y - (vy + 1800 * age) * .025
+        cv2.line(sp, (int(tx_ * S * 4), int(ty_ * S * 4)), (int(x * S * 4), int(y * S * 4)), float(1 - age / life), 2, cv2.LINE_AA, shift=2)
+    glow_add(img, sp, ((0, (1, .95, .8), 1.0), (1.5, (1, .7, .25), 1.2), (5, (1, .4, .1), .6)))
+
+
+def lift_arcs(mask, t, fi):
+    """下の 雷の スパーク：床を はしる 雷・床と 玉の 下を つなぐ 雷・まん中から はじける 短い 雷（形は 雷ごとに 決まる・細かい ギザギザだけ コマごとに）"""
+    if not (LIFT_FR[0] <= fi <= LIFT_FR[1] + len(LIFT_ENV)):
+        return
+    sh = shape_at(t)
+    rng = random.Random(4500)
+    for f in range(LIFT_FR[0], LIFT_FR[1] + 1):
+        for _ in range(2):
+            kind = rng.choice(('floor', 'floor', 'up', 'burst'))
+            side = rng.choice((-1, 1))
+            seed = rng.randrange(1 << 30)
+            p = (rng.uniform(-50, 50), rng.uniform(80, 200), rng.uniform(-70, 70), rng.uniform(-110, -35), rng.uniform(25, 60), rng.uniform(-6, 10))
+            age = fi - f
+            if not (0 <= age < len(LIFT_ENV)):
+                continue
+            g = LIFT_ENV[age]
+            rs = random.Random(seed)
+            st = (CX + p[0] * .5, BASE - 2)
+            if kind == 'floor':
+                en = (CX + side * p[1], BASE + p[5])
+                w1 = 3.5
+            elif kind == 'up':
+                if sh is None:
+                    continue
+                st = (CX + p[2], BASE - 2)
+                en = (CX + p[2] * 1.2 + rs.uniform(-30, 30), sh['yb'] - 4)
+                if en[1] > BASE - 12:
+                    continue
+                w1 = 2.5
+            else:
+                a = math.radians(p[3] if side > 0 else -180 - p[3])
+                en = (st[0] + p[4] * math.cos(a) * 1.6, st[1] + p[4] * math.sin(a) * 1.6)
+                w1 = 2.2
+            macro = macro_path(rs, st, en, rs.choice(('zig', 'zig', 'step')))
+            mid = fine_jag(random.Random(seed + 1), macro, (.16, .22))
+            rj = random.Random(seed * 5 + fi)
+            pts = [mid[0]]
+            for q0, q1 in zip(mid, mid[1:]):
+                pts += KM._disp_ms(rj, q0, q1, (.12,))[1:]
+            draw_taper(mask, pts, 1.0, w1, g, min(1.0, (age + 1) / 1.5), 1.0)
 
 
 def surge(img, t):
@@ -985,7 +1129,7 @@ def sphere_bolts(mask, t, fi):
             continue
         g = SB_ENV[min(age, len(SB_ENV) - 1)] if age < life - 2 else SB_ENV[len(SB_ENV) - (life - age)]
         rs = random.Random(seed)
-        w1 = rs.uniform(5.0, 8.0)
+        w1 = rs.uniform(3.8, 6.0)
         a_ = math.radians(ang + rs.uniform(-6, 6))
         st = (cx + (R - 3) * math.cos(a_), cy + (R - 3) * math.sin(a_))
         en = edge_point((cx, cy), ang)
@@ -1016,7 +1160,7 @@ def vbolt_changes(j, f0, f1):
     out, f = [], f0
     while f <= f1:
         out.append(f)
-        f += rng.choice((4, 5, 6, 8))
+        f += rng.choice((5, 6, 8, 10))
     return out
 
 
@@ -1040,7 +1184,7 @@ def vertical_bolts(mask, t, fi):
         for i, (x, y) in enumerate(base):
             u = i / 10
             wgt = max(0.0, 1 - u / .6)                       # 上の 6割だけ 動く
-            up = random.Random(5000 + 97 * j + 1000 * phase + i).uniform(-1, 1) * 14
+            up = random.Random(5000 + 97 * j + 1000 * phase + i).uniform(-1, 1) * 11
             low = random.Random(5000 + 97 * j + i).uniform(-1, 1) * 4
             pts.append((float(x) + up * wgt + low, float(y), float(i)))
         rp = random.Random(6000 + 97 * j + 1000 * phase)
@@ -1289,10 +1433,12 @@ def frame(fi):
         impact(img, t)
         dome(img, t)
         dome_elec(img, t, fi)
+        lift_blast(img, t)
         surge(img, t)
         bm = np.zeros((H, W), np.float32)
         vertical_bolts(bm, t, fi)
         sphere_bolts(bm, t, fi)
+        lift_arcs(bm, t, fi)
         glow_add(img, bm, BOLT_GLOW)
         floor_reflect(img, t)
         rocks(img, t)
