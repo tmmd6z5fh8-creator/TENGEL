@@ -11,7 +11,7 @@
    乱数の種が決まっているので、何回作っても同じ音になる
    アプリ・見本に入れるとき（AAC 160kbps）：ffmpeg -i sfx_hit.wav -c:a aac -b:a 160k -movflags +faststart sfx_hit.m4a
    （見本のキャンバスは .m4a を受け付けないので、中身は同じで名前だけ .mp4 にして入れている）"""
-import os, sys, ast, wave, json
+import os, sys, ast, wave, json, math
 import numpy as np
 from scipy import signal
 
@@ -1154,8 +1154,219 @@ def sfx_zp():
     return sfx_pc(with_voice=True)
 
 
+# ---------- 神様的中（ホ長調・嵐の 雷と 爆発・金管と 合唱・金の 粒。秒は kami.py の GD_T と zap_events。PUSHの 音は ど的中と 同じ） ----------
+def read_gd():
+    """kami.py の 時刻（見本の 動きと 音の 時刻を そろえる。kami.py は 軽いので そのまま 読みこむ）"""
+    sys.path.insert(0, HERE)
+    import kami
+    return kami
+
+
+CHOIR_A = ((730, 1090, 2440, 3400, 4300), (90, 110, 160, 250, 300))      # 「あ」の ひびき（大人の 声）
+CHOIR_A_HI = ((850, 1220, 2810, 3800, 4950), (100, 120, 170, 260, 320))  # 高い 声の「あ」
+
+
+def choir(ms, d, rng, att=.35, rel=.6, n_v=3, bright=1.0):
+    """ああぁぁ：合唱（声の しくみを 計算で まねる：のどの 音 → 口の ひびき「あ」。1つの 高さに 声 n_v 人・少しずつ ずらす・ビブラート・息）→ ステレオ"""
+    n = n_(d + rel)
+    t = tl(n)
+    a = np.minimum(t / att, 1) ** 1.5 * np.clip((d + rel - t) / rel, 0, 1)
+    out = np.zeros((n, 2))
+    for i, m in enumerate(ms):
+        F, B = CHOIR_A_HI if m >= 60 else CHOIR_A
+        for v in range(n_v):
+            det = rng.uniform(-14, 14)
+            vib = .18 * np.sin(2 * np.pi * rng.uniform(4.6, 5.6) * t + rng.uniform(0, 6.28)) * np.clip((t - .25) / .4, 0, 1)
+            drift = lp(rng.standard_normal(n), 3, 1)
+            drift = drift / (np.std(drift) + 1e-9) * .06
+            f0 = mtof(m + (det / 100) + vib + drift)
+            ph = np.cumsum(f0 / SR) % 1.0
+            g = (ph < .6) * (2 * (ph / .6) - 3 * (ph / .6) ** 2)                 # のどの ふるえ（ひらいて とじる）
+            g = g - np.mean(g)
+            src = lp(g, 5000, 1) + .04 * hp(rng.standard_normal(n), 500)
+            y = np.zeros(n)
+            for k, (f, b) in enumerate(zip(F, B)):
+                r = np.exp(-np.pi * b / SR)
+                bb, aa = [1 - r], [1, -2 * r * np.cos(2 * np.pi * f / SR), r * r]
+                y += signal.lfilter(bb, aa, src) * (1, .7, .45 * bright, .3 * bright, .2 * bright)[k]
+            y = y / (np.std(y) + 1e-9)
+            p = rng.uniform(-.8, .8)
+            ang = (p + 1) * np.pi / 4
+            out[:, 0] += y * a * np.cos(ang)
+            out[:, 1] += y * a * np.sin(ang)
+    return out / (len(ms) * n_v) * 1.4
+
+
+def laser(f0, f1, d, rng):
+    """ズバァン：光の 帯（高い 音が すっと 下がる＋明るい ノイズ）"""
+    n = n_(d)
+    t = tl(n)
+    f = f1 + (f0 - f1) * np.exp(-t / (d / 4))
+    x = .6 * np.sin(phase(f, n)) + .3 * np.sin(phase(f * 1.5, n)) + .5 * bp(rng.standard_normal(n), 2500, 9000)
+    return fade(x * np.exp(-t / (d / 2.5)), .001, .02)
+
+
+def whoosh(d, rng, f0=3000, f1=400):
+    """ヒュンッ：岩が そばを 通る（ノイズの 高さが 下がる・だんだん 大きく → すっと 消える）"""
+    n = n_(d)
+    t = tl(n)
+    x = nsweep(d, f0, f1, .6, rng)
+    a = np.sin(np.pi * np.clip(t / d, 0, 1)) ** 2
+    return fade(x * a, .005, .02)
+
+
+def jingle(mx, t0, dur, count, g, rng, pan=.8):
+    """ジャラジャラ：金の 粒（コインより 少し 低く 重い）"""
+    for _ in range(count):
+        mx.add(coin(rng.uniform(1800, 3600), rng, rng.uniform(.25, .5)), t0 + dur * rng.uniform(0, 1) ** 1.5, g * rng.uniform(.5, 1), rng.uniform(-pan, pan), rv=.3)
+
+
+def sfx_gd():
+    """神様的中の タップの 音（秒は kami.py の GD_T・zap_events・SIDE_BOLTS）：
+       0 ドガーン!!（光の 爆発）＋キィィン → ゴォッ（赤い 炎）→ 青い 嵐：ゴゴゴ（低い うなり）＋電気の バチバチ（ドームの 電気・まわりの 雷）＋ズバァン（光の 帯）＋ヒュンッ（岩）
+       → シュワーッ↑（金の 輪）→ パァーン（白）→ ジャーン（金管と 合唱：ミ）万馬券 → ジャーン（ラ）天眼 → シュワーッ↑ → ドーン＋どら＋ジャーン（白 → 4行の 文）＋ああぁぁ（合唱）＋キラーン（光の 帯）
+       → シュワーッ↑ → ドガーン!!＋ジャラジャラ（金の 粒）→ ドン（神）・ドン（様）・ドン（的）・ドン（中）→ ドガーン!!＋ジャーン（神様／的中）→ グォォ↑（ひく）→ パッパッパーン（ファンファーレ）
+       → シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル"""
+    G = read_gd()
+    T = G.GD_T
+    RES = T['RES']
+    t0b = RES + .45
+    mx = Mix(t0b + 2.0, 61)
+    r = mx.rng
+    E = (40, 47, 52, 56)          # ホ長調（E2・B2・E3・G#3）
+    A_ = (45, 52, 57, 61)         # ラ（A2・E3・A3・C#4）
+    # --- ① 光の 爆発（0）・白 → 赤い 炎 ---
+    mx.add(boom(110, 30, 1.4, .45, .05, 2.6, r), 0, .9 * FZ_LOW, rv=.1)
+    mx.add(explosion(r, 1.0, .9), .01, .75, rv=.3)
+    mx.add(arc_zap(.35, r, 900), 0, .45, rv=.2)
+    n = n_(1.0)
+    tt = tl(n)
+    ring = np.sin(phase(5200 - 1400 * (1 - np.exp(-tt / .3)), n)) * np.exp(-tt / .35) * .35          # キィィン
+    mx.add(ring, .02, .22, rv=.4)
+    fr0, fr1 = T['FIRE']
+    mx.add(nlow(fr1 - fr0 + .3, 2500, 300, .2, r) * np.exp(-tl(n_(fr1 - fr0 + .3)) / .25), fr0, .35, rv=.3)      # ゴォッ
+    # --- 青い 嵐 ---
+    s0, s1 = T['STORM']
+    mx.add(rumble(s1 - s0 + .2, r, 150, 9), s0, .5, rv=.3)
+    mx.add(growl(30.9, 41.2, s1 - s0, s1 - s0, 2.0), s0, .16, rv=.2)                           # 低い うなり
+    mx.add(crackle(s1 - s0, 90, r), s0, .25, rv=.25)
+    for t, a0, a1, tone in G.zap_events():
+        pan = math.cos(math.radians((a0 + a1) / 2)) * .9
+        mx.add(arc_zap(.07, r, 900), t, .3, pan, rv=.2)
+        mx.add(crackle(.12, 220, r), t, .25, pan, rv=.2)
+    for x0, x1, y1, t in G.SIDE_BOLTS:
+        pan = (x0 / 195 - 1) * .9
+        for o in (0, .07):
+            mx.add(arc_zap(.06, r, 1100), t + o, .4, pan, rv=.25)
+        mx.add(explosion(r, .25, 1.6), t + .01, .2, pan, rv=.35)                                  # バリッ（雷の はじける 音）
+    for k, t in enumerate(T['BEAMS']):
+        pan = (-.5, .5, -.8, .8, 0)[k % 5]
+        mx.add(laser(5200, 900, .45, r), t, .2, pan, rv=.35)
+        mx.add(boom(90, 36, .6, .2, .03, 2.0, r), t, .35 * FZ_LOW, rv=.1)
+    for k, t in enumerate(T['ROCKS']):
+        pan = (-.7, .7)[k % 2]
+        mx.add(whoosh(.5, r), t, .3, np.linspace(0, pan * 1.2, 12), rv=.2)
+    # --- 金の 輪 → 白（① → ②）---
+    r0 = T['RING'][0]
+    pk = T['WA2'][1]
+    d = pk - r0 + .05
+    mx.add(nsweep(d, 500, 9000, .45, r) * np.linspace(0, 1, n_(d)) ** 2, r0, .35, rv=.35)
+    for j, m in enumerate((76, 80, 83, 88, 92, 95, 100)):
+        mx.add(bell(mtof(m), .8, idx=1.4, tau=.4), r0 + j * (d - .05) / 7, .1, (j / 6 - .5) * .9, rv=.5)
+    mx.add(boom(120, 40, .8, .25, .03, 2.0, r), pk, .55 * FZ_LOW, rv=.2)
+    mx.add(crash(r, 2.2, .8), pk, .35, .3, rv=.45)
+    for i, m in enumerate((64, 68, 71, 76, 80, 83)):
+        mx.add(bell(mtof(m + 12), 2.0, idx=1.6, tau=.7), pk + .012 * i, .2, (i / 5 - .5) * .9, rv=.5)
+    # --- ② 金の 字：万馬券（ミ）・天眼（ラ）---
+    for (c0, c1), ch, pn in ((T['CU1'], E, -.3), (T['CU2'], A_, .3)):
+        mx.add(boom(85, 30, 1.0, .35, .05, 2.4, r), c0, .6 * FZ_LOW, rv=.15)
+        mx.add(gong(mtof(ch[0]), 2.0, .9, r), c0 + .02, .22 * FZ_MID, rv=.5)
+        for i, m in enumerate(ch):
+            mx.add(brass(m + 12, c1 - c0 + .15, r), c0, .24 * FZ_MID, (i / 3 - .5) * .8, rv=.4)
+        mx.add(choir((ch[1] + 12, ch[2] + 12, ch[3] + 12, ch[2] + 24), c1 - c0, r, .12, .4), c0, .55, rv=.6)
+        mx.add(lcrash(r, 1.8, .7), c0, .12 * FZ_MID, pn, rv=.45)
+        sparkle(mx, c0 + .05, c1 - c0, 8, (96, 100, 103, 108), .05, r)
+    # 白 → 4行の 文：シュワーッ↑ → ドーン＋どら＋ジャーン（ホ長調）→ ああぁぁ（合唱）＋キラキラ
+    w0, w1 = T['WB'][0], T['WB'][1]
+    d = w1 - w0 + .02
+    mx.add(nsweep(d, 400, 8000, .5, r) * np.linspace(0, 1, n_(d)) ** 2, w0, .3, rv=.35)
+    tx = T['TXT']
+    mx.add(explosion(r, .9, .8), tx, .5, rv=.3)
+    mx.add(boom(80, 26, 1.8, .55, .07, 2.6, r), tx, .9 * FZ_LOW, rv=.15)
+    mx.add(gong(mtof(40), 3.0, 1.2, r), tx + .02, .32 * FZ_MID, rv=.5)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
+        mx.add(brass(m + 12, 1.4, r), tx, .26 * FZ_MID, (i / 5 - .5) * .8, rv=.4)
+    hold = T['WC'][0] - tx
+    mx.add(choir((52, 56, 59, 64, 68, 71), hold, r, .25, .5), tx + .05, .8, rv=.7)
+    mx.add(pad((52, 59, 64, 68), hold, .6, .5, .25), tx + .1, .3, rv=.6)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 2.2, idx=1.5, tau=.8), tx + .02 + .012 * i, .18, (-.3, -.1, .1, .3)[i], rv=.5)
+    sparkle(mx, tx + .3, hold - .3, 22, (96, 98, 100, 103, 105, 108), .05, r)
+    for t in T['SHINE']:                                                                         # 光の 帯：キラーン
+        for j, m in enumerate((96, 100, 103, 108)):
+            mx.add(bell(mtof(m), .9, idx=1.2, tau=.4, glock=.2), t + .25 + .07 * j, .07, (j / 3 - .5) * 1.2, rv=.5)
+    # --- ③ 神様的中：シュワーッ↑ → 金の 粒の 爆発・神・様・的・中 ---
+    w0, w1 = T['WC'][0], T['WC'][1]
+    d = w1 - w0 + .02
+    mx.add(nsweep(d, 400, 9000, .5, r) * np.linspace(0, 1, n_(d)) ** 2, w0, .32, rv=.35)
+    for k, (t, kind) in enumerate(T['BU']):
+        big = kind > 0
+        mx.add(explosion(r, (.5, .9, 1.4)[kind], .9), t, (.35, .6, .9)[kind], rv=.3)
+        mx.add(boom(100, 30, (.6, 1.0, 1.8)[kind], .3, .05, 2.4, r), t, (.4, .7, 1.0)[kind] * FZ_LOW, rv=.15)
+        jingle(mx, t + .02, (.35, .6, 1.0)[kind], (10, 18, 30)[kind], (.1, .14, .18)[kind], r)
+        if big:
+            mx.add(crash(r, 1.8, .7), t, .25, (-.3, .3)[k % 2], rv=.45)
+    for k, (c0, c1) in enumerate(T['CH']):                                                      # ドン（神・様・的・中：だんだん 高く）
+        mx.add(tom(70 + 6 * k, r, .5), c0 + .02, .35 * FZ_MID, rv=.25)
+        mx.add(boom(75 + 8 * k, 30, .9, .3, .05, 2.4, r), c0 + .02, .7 * FZ_LOW, rv=.15)
+        ch = ((40, 47, 52, 56), (42, 49, 54, 57), (44, 51, 56, 59), (45, 52, 57, 61))[k]          # ミ → ファ# → ソ# → ラ
+        mx.add(stab(tuple(m + 12 for m in ch), .45, r, 1.8, .4), c0 + .02, .22 * FZ_MID, rv=.35)
+        mx.add(choir((ch[1] + 12, ch[2] + 12, ch[3] + 12), c1 - c0 - .05, r, .06, .2, 2), c0 + .02, .4, rv=.55)
+    # --- 神様／的中：ドガーン!!＋ジャーン（ホ長調）→ グォォ↑（ひく）→ パッパッパーン ---
+    lg = T['LOGO']
+    mx.add(gong(mtof(40), 3.0, 1.2, r), lg + .02, .35 * FZ_MID, rv=.5)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
+        mx.add(brass(m + 12, .9, r), lg, .3 * FZ_MID, (i / 5 - .5) * .8, rv=.35)
+    mx.add(lcrash(r, 2.4, .8), lg, .2 * FZ_MID, -.5, rv=.4)
+    mx.add(lcrash(r, 2.4, .8), lg, .2 * FZ_MID, .5, rv=.4)
+    p0, p1 = T['PULL']
+    mx.add(growl(41.2, 82.4, p1 - p0 + .1, p1 - p0), p0, .22, rv=.15)
+    mx.add(nsweep(p1 - p0, 300, 7000, .5, r) * np.linspace(0, 1, n_(p1 - p0)) ** 2.5, p0, .3, rv=.35)
+    tt = p0
+    while tt < p1 - .03:                                                                        # ドロロロ…（ティンパニ）
+        u = (tt - p0) / (p1 - p0)
+        mx.add(tom(62 + 8 * u, r, .3), tt, (.05 + .3 * u ** 1.5) * FZ_MID, r.uniform(-.2, .2), rv=.3)
+        tt += .05
+    fz = p1                                                                                     # パッパッパーン（ミ・ミ・シ → 高い ミ）
+    for k, (dt, dd, top) in enumerate(((0, .14, 64), (.18, .14, 64), (.36, .14, 71), (.54, .9, 76))):
+        for i, m in enumerate((top - 12, top - 5, top)):
+            mx.add(brass(m, dd, r), fz + dt, (.2 if k < 3 else .3) * FZ_MID, (i - 1) * .4, rv=.4)
+    mx.add(explosion(r, .9, .9), fz + .54, .45, rv=.3)
+    mx.add(boom(80, 25, 2.0, .6, .08, 2.6, r), fz + .54, .9 * FZ_LOW, rv=.2)
+    mx.add(gong(mtof(40), 2.6, 1.0, r), fz + .56, .3 * FZ_MID, rv=.5)
+    mx.add(choir((52, 56, 59, 64, 68, 71, 76), RES - fz + .2, r, .15, .6), fz + .54, .7, rv=.7)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 2.4, idx=1.5, tau=.9), fz + .56 + .012 * i, .2, (-.3, -.1, .1, .3)[i], rv=.5)
+    sparkle(mx, fz + .6, RES - fz - .4, 16, (96, 98, 100, 103, 105, 108), .06, r)
+    # --- RES：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル ---
+    for jj, m in enumerate((88, 90, 92, 95, 97, 100, 102, 104)):
+        mx.add(tine(mtof(m), .6, .25), RES + .03 * jj, .08, (jj % 2 * 2 - 1) * .4, rv=.4)
+    mx.add(pop(560, 260, .14, r, .2), RES + .2, .5, rv=.15)
+    for i, m in enumerate((56, 59, 64)):
+        mx.add(bell(mtof(m), .7, idx=1.4, tau=.3), t0b + .08 * i, .22 * FZ_MID, rv=.3)
+    tt = t0b + .08 * 3
+    mx.add(bell(mtof(64), 1.4, idx=1.3, tau=.6), tt, .28 * FZ_MID, rv=.45)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 1.6, idx=1.4, tau=.6), tt + .015 * i, .14, (-.3, -.1, .1, .3)[i], rv=.45)
+    mx.add(coin(1500, r, .5), tt, .2, -.2, rv=.25)
+    mx.add(coin(1900, r, .45), tt + .06, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
+    medals(mx, RES + .1, 1.8, 26, .2 * FZ_MID, r)
+    return mx.render(1.8, target=-13, bass=True)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
-          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp))
+          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd))
 
 def wave_env(x, per_sec=50):
     """メモの波形：1/50秒ごとのいちばん大きい所（0〜1）の平方根（小さい音も見えるように。-6dB≒0.7・-20dB≒0.3・-40dB＝0.1）"""
