@@ -1,4 +1,4 @@
-"""神様的中 ③ 神様的中・おめでとう御座います！（第4.48版）：1コマずつ 描く 絵。1170×2532（iPhone の 画面の 画素）・1秒 30コマ
+"""神様的中 ③ 神様的中・おめでとう御座います！（第4.49版）：1コマずつ 描く 絵。1170×2532（iPhone の 画面の 画素）・1秒 30コマ
    まさちゃん「じゃあ最後のシーンいくね！ここは、GODの文字のところを、神様的中、GAMEの文字のところを、おめでとう御座います！にして！
    ファイルは全部で78枚あるよ！」
    → 送ってくれた コマは 見るだけ（描き写さない・字・形・構図・動きの 組み立ては 姫の オリジナル）。
@@ -9,6 +9,11 @@
      白が ひく → 金の 粒が はじけて「神」の 寄り → 大きな 粒が 手前を 横切って「様」→ 金の 粒が はじけて「的」→ 大きな 粒が 横切って「中」
      → 金の 粒の 大爆発の 中に「神様／的中／おめでとう／御座います！」（ななめ）→ 正面へ 回りながら ひく（うしろに 金の 鳥居）→ 光が すべる → キラキラ
    画面 全体は 回さない・ゆらさない（動くのは 字と 金の 粒だけ・寄りは 横に ゆっくり）。点めつ：どの 1秒にも 3回 以下
+   第4.49版：まさちゃん「このシーンからの文字をもっと立体的に、雷が、不定期に文字の周りを走ってる感じにして！あと⛩️ももっとリアルに豪華な感じにして！
+     最後のシーン、神様的中、おめでとう御座います、の文字には雷がビリビリビリビリ不定期に走ってる演出にして！」
+     → 字：厚みを 約1.6倍・ふちと 側面に 左上からの 光（光る 所と かげ）・さいごは 少し ななめ 下から 見上げる 角度（側面が 見える）・字の かげが 鳥居に おちる。
+       雷：字の ふちを はしる 雷・字から 字へ とぶ 雷・ふちの 小さな ビリビリ（どれも 不定期・同じ 所には つづけて 出さない（点めつ））。
+       鳥居：kami_torii3.py（朱ぬりの 明神鳥居の 本当の 立体：黒い 漆の 笠木・金の 台輪・帯・飾り金具・金の わくの 額「天眼」）
    python3 flat/kami_film3.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -19,7 +24,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, K)
 import kami_art as KA
 import kami_film as KF
-from cute_horse import svg_rgba
+import kami_torii3 as T3
 
 S = 3.0
 W, H = KF.W, KF.H
@@ -81,9 +86,23 @@ def env_map():
     return KF.cache('env3', f)
 
 
-def env_lookup(rv, rot=0.0):
+def env_lvl(level):
+    """映りこみの 地図：0＝はっきり（金）・1＝少し ぼけ（漆の つや）・2＝大きく ぼけ（まわりの 光：面の 明るさ）"""
+    def f():
+        e = env_map()
+        sig = (0.0, 2.5, 34.0)[level]
+        if sig <= 0:
+            return e
+        p = int(sig * 3)
+        b = cv2.copyMakeBorder(e, p, p, 0, 0, cv2.BORDER_REPLICATE)
+        b = cv2.copyMakeBorder(b, 0, 0, p, p, cv2.BORDER_WRAP)
+        return cv2.GaussianBlur(b, (0, 0), sig)[p:-p, p:-p].copy()
+    return KF.cache(f'env3_{level}', f)
+
+
+def env_lookup(rv, rot=0.0, level=0):
     """映りこみの 向き rv（…×3：カメラ：x 右・y 下・z 前）→ 色"""
-    env = env_map()
+    env = env_lvl(level)
     x, y, z = rv[..., 0], rv[..., 1], rv[..., 2]
     el = np.degrees(np.arcsin(np.clip(-y, -1, 1)))
     az = np.degrees(np.arctan2(x, z)) + rot
@@ -106,6 +125,8 @@ FACE = ((0.0, (255, 232, 140)), (.08, (255, 206, 64)), (.2, (255, 170, 30)), (.3
         (.455, (212, 74, 8)), (.48, (112, 20, 3)), (.505, (200, 56, 8)), (.64, (184, 38, 6)), (.8, (214, 70, 10)), (.93, (250, 136, 34)),
         (1.0, (255, 186, 76)))
 GOLD_TINT = np.float32([1.0, .86, .55])       # ふちの 金
+KEY_T = np.array([-.45, -.78, -.45])
+KEY_T = KEY_T / np.linalg.norm(KEY_T)         # 左上 手前からの 光（字の ふちと 側面の 光る 所と かげ）
 SIDE_TINT = np.float32([1.0, .62, .26])       # 側面（こい 金 → こげ茶）
 
 
@@ -144,6 +165,35 @@ def _segments(m, dep, Wt, Ht):
     return out
 
 
+def _outlines(m, k, cx, cy, row, sp_px=10.0):
+    """形の ふちを 等間隔の 点に（雷が はしる 道）：[dict(P＝点（字の 座標）, N＝外向き, L＝ふちに そった 長さ, tot＝1周, row＝行)]"""
+    b = (m > .5).astype(np.uint8)
+    cs, _ = cv2.findContours(b, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+    Hm, Wm = b.shape
+    out = []
+    for c in cs:
+        c = c[:, 0, :].astype(np.float64)
+        if len(c) < 40:
+            continue
+        kern = np.ones(5) / 5
+        c = np.stack([np.convolve(np.r_[c[-2:, i], c[:, i], c[:2, i]], kern, 'valid') for i in (0, 1)], 1)
+        cc = np.vstack([c, c[:1]])
+        Lc = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(cc, axis=0).T))])
+        tot = Lc[-1]
+        n = max(8, int(tot / sp_px))
+        ss = np.linspace(0, tot, n, endpoint=False)
+        P = np.stack([np.interp(ss, Lc, cc[:, 0]), np.interp(ss, Lc, cc[:, 1])], 1)
+        tg = np.roll(P, -1, 0) - np.roll(P, 1, 0)
+        tg /= np.linalg.norm(tg, axis=1, keepdims=True) + 1e-9
+        nr = np.stack([tg[:, 1], -tg[:, 0]], 1)
+        tx = np.clip(np.round(P[:, 0] + nr[:, 0] * 3).astype(int), 0, Wm - 1)
+        ty = np.clip(np.round(P[:, 1] + nr[:, 1] * 3).astype(int), 0, Hm - 1)
+        if (b[ty, tx] > 0).mean() > .5:                       # 内 向きなら 返す（1周 まとめて）
+            nr = -nr
+        out.append(dict(P=(P - [cx, cy]) / k, N=nr, L=ss / k, tot=tot / k, row=row))
+    return out
+
+
 def make_obj(parts, k, cx, cy, Wt, Ht, glint_n=14, seed=1, style='stripe', extra=None):
     """parts＝[(形 0〜1, 面取りの はば（画素）, 厚み（1000 単位）, しまの 座標 0〜1 か None)]（どれも 同じ 大きさの 絵）。
        k：1 単位あたりの 画素・(cx, cy)：字の まん中（画素）。→ 立体（地図は 3段：細かい → あらい）"""
@@ -152,9 +202,11 @@ def make_obj(parts, k, cx, cy, Wt, Ht, glint_n=14, seed=1, style='stripe', extra
     rim = np.zeros((Ht, Wt), np.float32)
     sv = np.zeros((Ht, Wt), np.float32)
     segs = []
+    outl = []
     for j, (m, w, dep, svm) in enumerate(parts):
         if m.max() < .5:
             continue
+        outl += _outlines(m, k, cx, cy, j)
         d = KA.dist_in(m)
         h = w * .75 * KA.bevel(d, w)
         h -= np.exp(-((d - w * 1.2) / (w * .16)) ** 2) * w * .06          # みぞ（ふちと 面の さかい）
@@ -197,7 +249,7 @@ def make_obj(parts, k, cx, cy, Wt, Ht, glint_n=14, seed=1, style='stripe', extra
         kk *= (w_ // 2) / w_
         ccx, ccy = ccx * (w_ // 2) / w_, ccy * (h_ // 2) / h_
     gl = (np.array(pick, np.float64) - np.array([cx, cy])) / k if pick else np.zeros((0, 2))
-    return dict(lv=lv, segs=segs, glints=gl, style=style)
+    return dict(lv=lv, segs=segs, glints=gl, style=style, outl=outl)
 
 
 def text_obj(lines, k, bevel_em=.06, depth=280.0, pad_em=.14, seed=1):
@@ -253,6 +305,7 @@ def sides(obj, R, Tv, gain=1.0, env_rot=0.0):
     nl = np.stack([segs[:, 4], segs[:, 5], np.zeros(len(segs))], 1)
     dep = segs[:, 6]
     Nc = nl @ R.T
+    lf = .56 + .66 * np.clip(Nc @ KEY_T, 0, 1)            # 左上からの 光（上 向きの 側面は 明るく・下 向きは かげ）
     polys, cols, zs = [], [], []
     edges = [0.0, .015, .035, .06, .09, .125, .165, .21, .26, .32, .39, .47, .56, .66, .77, .88, 1.0]
     zero = np.zeros(len(segs))
@@ -273,7 +326,7 @@ def sides(obj, R, Tv, gain=1.0, env_rot=0.0):
         rv = V - 2 * np.einsum('ij,ij->i', V, Nc)[:, None] * Nc
         rv = rv + (cen - Tv) / ENV_R
         rv /= np.linalg.norm(rv, axis=1, keepdims=True)
-        col = env_lookup(rv, env_rot) * (.5 * gk * gain) * SIDE_TINT
+        col = env_lookup(rv, env_rot) * (.5 * gk * gain) * SIDE_TINT * lf[:, None].astype(np.float32)
         if j == len(edges) - 2:                        # うしろの はしの 金の 線
             col = col * .6 + np.float32([.5, .32, .08]) * gain
         pr = project(quad) * SSA
@@ -348,7 +401,11 @@ def face(obj, R, Tv, env_rot=0.0, gain=1.0, shine=None, tilt=0.0):
         rv = rv + (P - Tv) / ENV_R
         rv /= np.linalg.norm(rv, axis=1, keepdims=True)
         envc = env_lookup(rv, env_rot).astype(np.float32)
-        gold = envc * GOLD_TINT * 1.05
+        ndl = np.clip(n @ KEY_T, 0, 1).astype(np.float32)
+        hv = KEY_T[None, :] - V
+        hv /= np.linalg.norm(hv, axis=1, keepdims=True)
+        spec = (np.clip(np.sum(n * hv, 1), 0, 1) ** 48).astype(np.float32)
+        gold = envc * GOLD_TINT * 1.05 * (.7 + .52 * ndl)[:, None] + spec[:, None] * np.float32([1.0, .95, .82]) * 1.25
         u = (P - Tv) @ R[:, 0]                               # 字の 横の 位置（1000 単位）
         if obj['style'] == 'stripe':
             w = sv + .016 * np.sin(u / 1000 * 2 * math.pi * 2.3 + 1.1 + tilt) + .008 * np.sin(u / 1000 * 2 * math.pi * 5.9 + .4)
@@ -356,6 +413,7 @@ def face(obj, R, Tv, env_rot=0.0, gain=1.0, shine=None, tilt=0.0):
             lum = envc @ np.float32([.3, .55, .15])
             fc = fc * (.58 + .36 * np.clip(lum, 0, 1.6))[:, None]
             fc = fc + (np.clip(lum - 1.0, 0, None) * .4)[:, None] * np.float32([1.0, .9, .7])
+            fc = fc * (.9 + .22 * ndl)[:, None]
         else:                                                # 金（鳥居）：みがいた 金の 面
             fc = envc * GOLD_TINT * .82
             if ex is not None:                               # 額：こい 赤（金の 字は ふちの 金）
@@ -392,56 +450,86 @@ def draw(img, obj, R, Tv, env_rot=0.0, gain=1.0, side_gain=1.0, shine=None, tilt
 CU_CHARS = '神様的中'
 CU_K = 1.6                            # 寄りの 字の 地図の 細かさ（1 単位 あたりの 画素）
 LOGO_K = .8
-LOGO_LINES = (('神様', 1.0, 0.0, .058, 280.0), ('的中', 1.0, 860.0, .058, 280.0),
-              ('おめでとう', .36, 1272.0, .075, 170.0), ('御座います！', .36, 1620.0, .075, 170.0))
+LOGO_LINES = (('神様', 1.0, 0.0, .064, 460.0), ('的中', 1.0, 860.0, .064, 460.0),
+              ('おめでとう', .36, 1272.0, .08, 290.0), ('御座います！', .36, 1620.0, .08, 290.0))
 
 
 def cu_obj(j):
-    return KF.cache(f'cu{j}', lambda: text_obj([(CU_CHARS[j], 1.0, 0.0, .048, 300.0)], CU_K, seed=11 + j))
+    return KF.cache(f'cu{j}', lambda: text_obj([(CU_CHARS[j], 1.0, 0.0, .052, 470.0)], CU_K, seed=11 + j))
 
 
 def logo_obj():
-    return KF.cache('logo3', lambda: text_obj(list(LOGO_LINES), LOGO_K, seed=21))
+    return KF.cache('logo4', lambda: text_obj(list(LOGO_LINES), LOGO_K, seed=21))
 
 
-# ---------------------------------------------------------------- 金の 鳥居（うしろ）
-TORII_U = 6.8                          # 鳥居の 絵の 1px（画面の px）＝ 6.8 単位
-TORII_K = .45
+# ---------------------------------------------------------------- 朱ぬりの 鳥居（うしろ：kami_torii3.py）
+TORII_BACK = 540.0                     # 字の うしろ（1000 単位）
+TORII_FIT = (24.0, 1146.0, 150.0)      # さいごの 形で：笠木の 左の 端・右の 端（x）・笠木の 上（y）（画面の 画素）
+TORII_DOF = 1.1                        # 鳥居の ぼけ（字に ピント）
 
 
-def torii_obj():
+def torii_geo():
+    return KF.cache('torii4', T3.build)
+
+
+def plq_tex():
+    return KF.cache('plqtex', T3.plaque_tex)
+
+
+def torii_fit():
+    """さいごの 形（回りおわり）で 鳥居が 画面に おさまる 大きさと 場所（字の 座標で）→ (off (3,), D の 大きさ)"""
     def f():
-        d, (px0, py0, px1, py1) = KA.torii_d()
-        k = TORII_K * TORII_U                         # 鳥居の 絵の 1px あたりの 画素
-        Wt, Ht = int(KA.FRAME_W * k) + 40, int(KA.FRAME_H * k) + 40
-        s = 3
-        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{Wt * s}" height="{Ht * s}" viewBox="{-20 / k} {-20 / k} {Wt / k} {Ht / k}">'
-               f'<path d="{d}" fill="#fff"/></svg>')
-        a = cv2.resize(svg_rgba(svg, Wt * s, Ht * s)[..., 3], (Wt, Ht), interpolation=cv2.INTER_AREA)
-        pm = np.zeros((Ht, Wt), np.float32)
-        cv2.rectangle(pm, (int(px0 * k + 20), int(py0 * k + 20)), (int(px1 * k + 20), int(py1 * k + 20)), 1.0, -1)
-        pm = cv2.GaussianBlur(pm, (0, 0), .8)
-        # 額の 中の 金の「天眼」（たて）
-        its, boxes = [], []
-        for j, c in enumerate('天眼'):
-            it, bx, w = KA.run([(c, 1.0)], 0.0, 880.0 + j * 1000)
-            its += it
-            boxes.append(bx)
-        box = KA.union_box(*boxes)
-        kk = (py1 - py0 - 14) / (box[3] - box[1]) * k
-        tm = KA.mask(its, box, kk, 0)
-        th, tw = tm.shape
-        tx, ty = int(((px0 + px1) / 2) * k + 20 - tw / 2), int(((py0 + py1) / 2) * k + 20 - th / 2)
-        full = np.zeros((Ht, Wt), np.float32)
-        full[ty:ty + th, tx:tx + tw] = tm[:max(0, min(th, Ht - ty)), :max(0, min(tw, Wt - tx))]
-        panel = pm * (1 - full)
-        cx, cy = (KA.FRAME_W / 2) * k + 20, (KA.FRAME_H / 2) * k + 20
-        kk_u = k / TORII_U                             # 1 単位 あたりの 画素
-        parts = [(a, 7.0 * k, 190.0, None), (full, 2.2 * k, 30.0, None)]
-        o = make_obj(parts, kk_u, cx, cy, Wt, Ht, glint_n=8, seed=31, style='gold', extra=panel)
-        o['size'] = (KA.FRAME_W * TORII_U, KA.FRAME_H * TORII_U)
-        return o
-    return KF.cache('torii3', f)
+        from scipy.optimize import fsolve
+        yaw, pitch, roll, x, y, z = logo_pose(TT['TURN'][1])
+        R = rot(yaw, pitch, roll)
+        Tv = np.array([x, y, z])
+        ky = T3.SHI_Y0 - T3.SHI_H - T3.KAS_H / 2
+        e = .004
+        tipL = np.array([-(T3.LK + e), ky - float(T3.curve(T3.LK)), -T3.KAS_D / 2 - e])
+        tipR = tipL * np.array([-1, 1, 1])
+        topC = np.array([0.0, ky - T3.KAS_H / 2, -T3.KAS_D / 2])
+
+        def res(q):
+            ox, oy, dsc = q
+            Tt = Tv + R @ np.array([ox, oy, TORII_BACK])
+            pl, pr, pt = (project(R @ (p * dsc) + Tt) for p in (tipL, tipR, topC))
+            return [pl[0] - TORII_FIT[0], pr[0] - TORII_FIT[1], pt[1] - TORII_FIT[2]]
+        z0 = z + TORII_BACK
+        q = fsolve(res, [0.0, -(CYS - 150) * z0 / FOCAL, .5 * z0])
+        return np.array([q[0], q[1], TORII_BACK]), float(q[2])
+    return KF.cache('toriifit', f)
+
+
+def torii_place(R, Tv):
+    """鳥居（字と いっしょに 動く）→ (回転, 場所, D の 大きさ)"""
+    off, dsc = torii_fit()
+    return R, Tv + R @ off, dsc
+
+
+def text_shadow(o, R, Tv):
+    """字の かげ（鳥居に おちる：左上 手前からの 光 → 右下へ ずれて ぼける）→ 0〜1"""
+    L = o['lv'][min(len(o['lv']) - 1, pick_level(o, Tv) + 1)]
+    Hs = homography(L, R, Tv)
+    sc = .25
+    Mv = np.array([[sc, 0, 26 * sc], [0, sc, 64 * sc], [0, 0, 1]]) @ Hs
+    a = cv2.warpPerspective(L['m4'][..., 0], Mv, (int(W * sc), int(H * sc)), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    a = cv2.GaussianBlur(a, (0, 0), 16 * sc)
+    return cv2.resize(a, (W, H), interpolation=cv2.INTER_LINEAR)
+
+
+def draw_torii(img, R, Tv, t, mv, o):
+    Rt, Tt, dsc = torii_place(R, Tv)
+    rgb, a = T3.render(torii_geo(), plq_tex(), Rt, Tt, dsc, W, H, FOCAL, CXS, CYS, lambda rv, rt, lv: env_lookup(rv, rt, lv),
+                       env_rot=8 - 6 * (t - TT['LOGO']), ss=2)
+    rgb *= (1 - .58 * text_shadow(o, R, Tv))[..., None]
+    rgba = np.dstack([rgb, a]).astype(np.float32)
+    rgba = cv2.GaussianBlur(rgba, (0, 0), TORII_DOF)
+    ox = oy = 0
+    if math.hypot(*mv) > 1.5:
+        b = KF.motion_blur(rgba, mv[0], mv[1])
+        p_ = (b.shape[0] - H) // 2
+        rgba, ox, oy = b, -p_, -p_
+    KF.place(img, rgba, ox, oy)
 
 
 # ---------------------------------------------------------------- 背景（暗い 金の 部屋：動かない）
@@ -855,6 +943,301 @@ def unit_h(R, Tv):
     return Kc @ np.column_stack([R[:, 0], R[:, 1], Tv])
 
 
+# ---------------------------------------------------------------- 雷（字の まわりを はしる：不定期）
+# まさちゃん「雷が、不定期に文字の周りを走ってる感じにして！」「神様的中、おめでとう御座います、の文字には雷がビリビリビリビリ不定期に走ってる演出にして！」
+# → ふちを はしる 雷（先が ふちに そって 走る・形は 場所で 決まり、いちばん 細かい ギザギザだけ コマごとに かわる＝ビリビリ）・
+#   字から 字へ とぶ 雷（さいごの 字）・寄りの 字から 外へ はしる 雷・ふちの 小さな ビリビリ（毎コマ ちがう 所）。
+#   点めつ：明るさは 1コマで つき 2コマで 消える（ちかちか させない）・同じ 区画には 12コマ あけて 出す・太い 雷は 少しだけ
+ELEC_GLOW = ((0, (1, 1, 1), 1.5), (1.0, (1, .98, .9), 1.35), (3.0, (1, .82, .5), .8), (8.0, (1, .55, .18), .34))
+ELEC_RIM = .4                         # 雷の まわりを 少し 暗く（金の 上でも 白い 線が 見える）
+ELEC_LOGO0 = 2.42                     # さいごの 字の 雷の はじまり（大爆発が おちついて から）
+ELEC_ZOFF = -14.0                     # 雷は 字の 前の 面より 少し 手前
+
+
+def obj_key(t):
+    return 'logo' if t >= TT['LOGO'] else min(3, sum(1 for a, b in TT['CU'] if t >= b))
+
+
+def obj_of(key):
+    return logo_obj() if key == 'logo' else cu_obj(key)
+
+
+def obj_pose(key, t):
+    yaw, pitch, roll, x, y, z = logo_pose(t) if key == 'logo' else cu_pose(key, t)
+    return rot(yaw, pitch, roll), np.array([x, y, z])
+
+
+def ol_at(c, s):
+    """ふちの 長さ s（1000 単位・1周で もどる）の 所の 点と 外向き"""
+    s = np.asarray(s, np.float64) % c['tot']
+    Lp = np.r_[c['L'], c['tot']]
+    P = np.vstack([c['P'], c['P'][:1]])
+    Nn = np.vstack([c['N'], c['N'][:1]])
+    p = np.stack([np.interp(s, Lp, P[:, 0]), np.interp(s, Lp, P[:, 1])], -1)
+    n = np.stack([np.interp(s, Lp, Nn[:, 0]), np.interp(s, Lp, Nn[:, 1])], -1)
+    n /= np.linalg.norm(n, axis=-1, keepdims=True) + 1e-9
+    return p, n
+
+
+def ol_screen(p, n, R, Tv, push=10.0):
+    """字の 座標の 点と 外向き → 画面の 点と 画面での 外向き"""
+    z = np.full(p.shape[:-1] + (1,), ELEC_ZOFF)
+    a = project(np.concatenate([p, z], -1) @ R.T + Tv)
+    b = project(np.concatenate([p + n * push, z], -1) @ R.T + Tv)
+    d = b - a
+    d /= np.linalg.norm(d, axis=-1, keepdims=True) + 1e-9
+    return a, d
+
+
+def _zz(seed, k):
+    return random.Random(seed * 1000003 + int(k)).random() * 2 - 1
+
+
+def elec_events():
+    """雷の 一覧（はじめに まとめて 作る：何回 作っても 同じ）"""
+    def f():
+        rng = random.Random(4747)
+        ev, used = [], {}
+
+        def blk(p):
+            return (int(p[0] // 170), int(p[1] // 170))
+
+        def free(p, f0, gap=12):
+            return f0 - used.get(blk(p), -99) > gap
+
+        def mark(p, f0, life):
+            used[blk(p)] = max(used.get(blk(p), -99), f0 + life)
+
+        def pick(key, t, margin=40):
+            o = obj_of(key)
+            R, Tv = obj_pose(key, t)
+            f0 = int(round(t * FPS))
+            cand = []
+            for ci, c in enumerate(o['outl']):
+                sc, _ = ol_screen(c['P'], c['N'], R, Tv)
+                ok = np.flatnonzero((sc[:, 0] > margin) & (sc[:, 0] < W - margin) & (sc[:, 1] > margin) & (sc[:, 1] < H - margin))
+                cand += [(ci, int(i), sc[i]) for i in ok[::2]]
+            if not cand:
+                return None
+            for _ in range(80):
+                ci, i, p = cand[rng.randrange(len(cand))]
+                if free(p, f0):
+                    return o, R, Tv, ci, i, p
+            ci, i, p = cand[rng.randrange(len(cand))]
+            return o, R, Tv, ci, i, p
+
+        def runner(key, t):
+            r = pick(key, t)
+            if r is None:
+                return
+            o, R, Tv, ci, i, p = r
+            c = o['outl'][ci]
+            sc = FOCAL / Tv[2]                                   # 1 単位 あたりの 画面の 画素
+            wide = rng.random() < .3
+            life = rng.randint(6, 10)
+            e = dict(kind='run', key=key, f0=int(round(t * FPS)), life=life, ci=ci, s0=float(c['L'][i]), dirn=rng.choice((-1, 1)),
+                     v=rng.uniform(1100, 2200) / sc, Lseg=rng.uniform(260, 520) / sc, off=rng.uniform(16, 40) if wide else rng.uniform(0, 6),
+                     amp=rng.uniform(8, 16) if wide else rng.uniform(5, 10), step=20.0 / sc, seed=rng.randrange(1 << 30),
+                     wm=float(np.clip(sc / .55, 1.0, 1.5)))                # 寄りの 大きな 字では 雷も 太く
+            ev.append(e)
+            mark(p, e['f0'], life)
+            pe, ne = ol_at(c, e['s0'] + e['dirn'] * e['v'] * life / FPS)
+            mark(ol_screen(pe, ne, R, Tv)[0], e['f0'], life)
+
+        # 寄り（神・様・的・中）
+        for j, (t0, t1) in enumerate(TT['CU']):
+            t = t0 + (.14 if j == 0 else .07)
+            while t < t1 - .1:
+                runner(j, t)
+                if rng.random() < .3:
+                    runner(j, t + rng.choice((0.0, 1 / FPS)))
+                t += rng.choice((.04, .06, .08, .11, .15))
+            for tt in (t0 + rng.uniform(.12, .2) + (.1 if j == 0 else 0), t0 + rng.uniform(.3, .4)):   # 字から 外へ はしる 雷
+                r = pick(j, tt, 120)
+                if r is not None:
+                    o, R, Tv, ci, i, p = r
+                    ev.append(dict(kind='out', key=j, f0=int(round(tt * FPS)), life=5, ci=ci, i=i, da=rng.uniform(-.5, .5),
+                                   Lpx=rng.uniform(260, 520), style=rng.choice(('zig', 'zig', 'step')), seed=rng.randrange(1 << 30)))
+                    mark(p, int(round(tt * FPS)), 5)
+        # さいごの 字
+        t = ELEC_LOGO0
+        while t < N / FPS - .08:
+            runner('logo', t)
+            if rng.random() < .5:
+                runner('logo', t + rng.choice((0.0, 1 / FPS)))
+            t += rng.choice((.02, .03, .05, .07, .09, .12, .16))
+        t = ELEC_LOGO0 + .1
+        while t < N / FPS - .15:                                  # 字から 字へ とぶ 雷
+            r = pick('logo', t)
+            if r is not None:
+                o, R, Tv, ci, i, p = r
+                best = []
+                for cj, c in enumerate(o['outl']):
+                    if cj == ci:
+                        continue
+                    sc_, _ = ol_screen(c['P'], c['N'], R, Tv)
+                    d = np.hypot(sc_[:, 0] - p[0], sc_[:, 1] - p[1])
+                    ok = np.flatnonzero((d > 110) & (d < 360))
+                    best += [(cj, int(q)) for q in ok[::3]]
+                if best:
+                    cj, q = best[rng.randrange(len(best))]
+                    ev.append(dict(kind='jump', key='logo', f0=int(round(t * FPS)), life=4, ci=ci, i=i, cj=cj, q=q,
+                                   style=rng.choice(('zig', 'zig', 'step', 'wander')), seed=rng.randrange(1 << 30)))
+                    mark(p, int(round(t * FPS)), 4)
+            t += rng.uniform(.12, .3)
+        return ev
+    return KF.cache('elecev', f)
+
+
+def _poly(mask, pts, val, th):
+    if len(pts) < 2:
+        return
+    q = np.int32(np.round(np.array(pts, np.float64) * 8))
+    cv2.polylines(mask, [q], False, float(val), int(th), cv2.LINE_AA, shift=3)
+
+
+def _taper(mask, pts, w0, w1, val, grow=1.0):
+    """太さ w0 → w1（画素）の 線（はじめから grow の 割合まで）"""
+    acc = KF.poly_len(pts)
+    L = acc[-1] or 1.0
+    lim = L * grow
+    for i in range(len(pts) - 1):
+        if acc[i] >= lim:
+            break
+        a, b = pts[i], pts[i + 1]
+        if acc[i + 1] > lim:
+            f_ = (lim - acc[i]) / max(1e-6, acc[i + 1] - acc[i])
+            b = (a[0] + (b[0] - a[0]) * f_, a[1] + (b[1] - a[1]) * f_)
+        u = ((acc[i] + acc[i + 1]) / 2) / L
+        cv2.line(mask, (int(a[0] * 8), int(a[1] * 8)), (int(b[0] * 8), int(b[1] * 8)), float(val), max(1, int(round(w0 + (w1 - w0) * u))), cv2.LINE_AA, shift=3)
+
+
+def _fine(rng, pts, rough):
+    out = [pts[0]]
+    for a, b in zip(pts, pts[1:]):
+        out += KF.KM._disp_ms(rng, a, b, rough)[1:]
+    return out
+
+
+def _env(age, life):
+    if age == 0:
+        return .85
+    if age >= life - 1:
+        return .32
+    if age >= life - 2:
+        return .62
+    return 1.0
+
+
+def elec(img, t, fi):
+    """雷を 描く（今 写って いる 字の まわり）"""
+    if t < .12:
+        return
+    key = obj_key(t)
+    o = obj_of(key)
+    R, Tv = obj_pose(key, t)
+    mask = np.zeros((H, W), np.float32)
+    for e in elec_events():
+        if e['key'] != key:
+            continue
+        age = fi - e['f0']
+        if not (0 <= age < e['life']):
+            continue
+        val = _env(age, e['life'])
+        if e['kind'] == 'run':
+            c = o['outl'][e['ci']]
+            tau = age / FPS
+            head = e['s0'] + e['dirn'] * e['v'] * tau
+            tail = head - e['dirn'] * e['Lseg'] * min(1.0, (age + 1) / 2.5)
+            lo, hi = min(head, tail), max(head, tail)
+            ks = np.arange(math.ceil(lo / e['step']), math.floor(hi / e['step']) + 1)
+            ss = np.r_[lo, ks * e['step'], hi]
+            p, n = ol_at(c, ss)
+            sp, sn = ol_screen(p, n, R, Tv)
+            zz = np.array([0.0] + [_zz(e['seed'], k) for k in ks] + [0.0])
+            pts = sp + sn * (e['off'] + e['amp'] * zz)[:, None]
+            pts = [tuple(q) for q in pts]
+            rf = random.Random(e['seed'] * 31 + fi)
+            fine = _fine(rf, pts, (.26, .3))
+            wm = e['wm']
+            _poly(mask, fine, val, 7 * wm)
+            fine2 = _fine(random.Random(e['seed'] * 53 + fi), [(x + rf.uniform(-4, 4) * wm, y + rf.uniform(-4, 4) * wm) for x, y in pts], (.3, .34))
+            _poly(mask, fine2, val * .6, 3 * wm)                 # となりを はしる 細い 線（ビリビリ）
+            rb = random.Random(e['seed'] * 7 + fi // 2)
+            for _ in range(rb.randint(1, 3)):
+                if len(pts) < 3:
+                    break
+                j = rb.randrange(1, len(pts) - 1)
+                a0 = math.atan2(sn[j][1], sn[j][0]) + rb.choice((-1, 1)) * rb.uniform(.3, 1.1)
+                ln = rb.uniform(20, 64) * wm
+                q0 = pts[j]
+                q1 = (q0[0] + ln * math.cos(a0), q0[1] + ln * math.sin(a0))
+                br = KF.KM._disp_ms(rb, q0, q1, (.35, .4, .45))
+                _poly(mask, br, val * .85, 4 * wm)
+                if rb.random() < .4:
+                    q2 = br[len(br) // 2]
+                    a1 = a0 + rb.choice((-1, 1)) * rb.uniform(.4, .9)
+                    l2 = ln * rb.uniform(.35, .6)
+                    _poly(mask, KF.KM._disp_ms(rb, q2, (q2[0] + l2 * math.cos(a1), q2[1] + l2 * math.sin(a1)), (.35, .4)), val * .65, 2)
+        elif e['kind'] == 'jump':
+            ca, cb = o['outl'][e['ci']], o['outl'][e['cj']]
+            pa, na = ol_screen(ca['P'][e['i']], ca['N'][e['i']], R, Tv)
+            pb, nb = ol_screen(cb['P'][e['q']], cb['N'][e['q']], R, Tv)
+            rs = random.Random(e['seed'])
+            macro = KF.macro_path(rs, tuple(pa), tuple(pb), e['style'])
+            mid = _fine(random.Random(e['seed'] + 1), macro, (.14, .2))
+            pts = _fine(random.Random(e['seed'] * 7 + fi), mid, (.12,))
+            _taper(mask, pts, 5.0, 9.0, val, min(1.0, (age + 1) / 2))
+            for _ in range(rs.randint(1, 2)):
+                if len(macro) < 3:
+                    break
+                k = rs.randrange(1, len(macro) - 1)
+                q0 = macro[k]
+                a0 = math.atan2(macro[k + 1][1] - q0[1], macro[k + 1][0] - q0[0]) + rs.choice((-1, 1)) * rs.uniform(.5, 1.0)
+                ln = rs.uniform(30, 70)
+                br = _fine(random.Random(e['seed'] + 2 + k), [q0, (q0[0] + ln * math.cos(a0), q0[1] + ln * math.sin(a0))], (.25, .3, .35))
+                _taper(mask, br, 4.0, 1.5, val * .85)
+        else:                                                    # 字から 外へ
+            c = o['outl'][e['ci']]
+            pa, na = ol_screen(c['P'][e['i']], c['N'][e['i']], R, Tv)
+            a0 = math.atan2(na[1], na[0]) + e['da']
+            pb = (pa[0] + e['Lpx'] * math.cos(a0), pa[1] + e['Lpx'] * math.sin(a0))
+            rs = random.Random(e['seed'])
+            macro = KF.macro_path(rs, tuple(pa), pb, e['style'])
+            mid = _fine(random.Random(e['seed'] + 1), macro, (.14, .2))
+            pts = _fine(random.Random(e['seed'] * 7 + fi), mid, (.12,))
+            _taper(mask, pts, 9.0, 2.5, val, min(1.0, (age + 1) / 2))
+            k = rs.randrange(1, len(macro) - 1) if len(macro) > 2 else 0
+            if k:
+                q0 = macro[k]
+                a1 = a0 + rs.choice((-1, 1)) * rs.uniform(.5, .9)
+                ln = e['Lpx'] * rs.uniform(.2, .35)
+                br = _fine(random.Random(e['seed'] + 3), [q0, (q0[0] + ln * math.cos(a1), q0[1] + ln * math.sin(a1))], (.25, .3, .35))
+                _taper(mask, br, 3.2, 1.2, val * .8)
+    # ふちの 小さな ビリビリ（毎コマ ちがう 所）
+    rz = random.Random(9100 + fi)
+    dens = random.Random(9500 + fi // 3).uniform(.4, 1.0)
+    nz = int(round((18 if key == 'logo' else 9) * dens))
+    if t >= (ELEC_LOGO0 if key == 'logo' else .14):
+        lens = np.array([c['tot'] for c in o['outl']])
+        cum = np.cumsum(lens) / lens.sum()
+        for _ in range(nz):
+            ci = int(np.searchsorted(cum, rz.random()))
+            c = o['outl'][min(ci, len(o['outl']) - 1)]
+            p, n = ol_at(c, rz.uniform(0, c['tot']))
+            sp, sn = ol_screen(p, n, R, Tv)
+            if not (0 <= sp[0] < W and 0 <= sp[1] < H):
+                continue
+            a0 = math.atan2(sn[1], sn[0]) + rz.uniform(-1.3, 1.3)
+            ln = rz.uniform(10, 30)
+            q0 = (sp[0] + sn[0] * rz.uniform(0, 4), sp[1] + sn[1] * rz.uniform(0, 4))
+            _poly(mask, KF.KM._disp(rz, q0, (q0[0] + ln * math.cos(a0), q0[1] + ln * math.sin(a0)), 2, .9), rz.uniform(.6, .9), 4)
+    if mask.max() > 0:
+        rim = cv2.GaussianBlur(cv2.dilate(np.clip(mask * 2, 0, 1), np.ones((5, 5), np.uint8)), (0, 0), 3.0)
+        img *= (1 - ELEC_RIM * np.clip(rim, 0, 1))[..., None]
+        KF.glow_add(img, mask, ELEC_GLOW)
+
+
 # ---------------------------------------------------------------- 字の 動き
 # 神・様・的・中 の 寄り：(yaw はじめ, おわり, pitch, roll, x はじめ, おわり, y, z)。横に ゆっくり（しまは 横 なので たてには 動かさない）
 CU_POSE = ((-21.0, -16.0, 20.0, -3.0, -50.0, 45.0, 60.0, 960.0),
@@ -873,9 +1256,12 @@ def cu_pose(j, t):
     return (y0 + y1) / 2 + (y1 - y0) * u * CU_DRIFT, pitch, roll, (x0 + x1) / 2 + (x1 - x0) * u * CU_DRIFT, y, z
 
 
+LOGO_END = (5.0, -7.0)               # さいごの 角度（yaw・pitch：右と 下の 側面が 少し 見える）
+
+
 def logo_final():
     lo = logo_obj()
-    zf = FOCAL * lo['size'][0] / (.92 * W)
+    zf = FOCAL * lo['size'][0] / (.9 * W)
     return zf, (470 * S - CYS) * zf / FOCAL
 
 
@@ -886,21 +1272,12 @@ def logo_pose(t):
     p = min(1.0, max(0.0, (t - t0) / (t1 - t0)))
     u = 1 - (1 - p) ** 2.6
     a = (-13.0, 10.0, -2.5, 170.0, yf + 140.0, zf * .82)
-    b = (0.0, 3.0, 0.0, 0.0, yf, zf)
+    b = (LOGO_END[0], LOGO_END[1], 0.0, 0.0, yf, zf)
     pose = [x + (y - x) * u for x, y in zip(a, b)]
     s = max(0.0, t - t1)
     pose[0] += .9 * s
     pose[5] *= 1 + .012 * s
     return pose
-
-
-def torii_place(R, Tv):
-    """鳥居（字の うしろ 500）"""
-    zf, yf = logo_final()
-    zt = zf + 500.0
-    yt = (426 * S - CYS) * zt / FOCAL
-    off = np.array([0.0, yt - yf, 500.0])
-    return R, Tv + R @ off
 
 
 def white_amt(t):
@@ -924,19 +1301,19 @@ def frame(fi):
         yaw, pitch, roll, x, y, z = logo_pose(t)
         R = rot(yaw, pitch, roll)
         Tv = np.array([x, y, z])
-        Rt, Tt = torii_place(R, Tv)
         pv = logo_pose(max(TT['LOGO'], t - .5 / FPS))                # 動きの ぶれ（半コマぶん）
         c1, c0 = project(Tv), project(np.array(pv[3:]))
         mv = (float(c1[0] - c0[0]) * 1.4, float(c1[1] - c0[1]) * 1.4)
-        draw(img, torii_obj(), Rt, Tt, env_rot=8 - 6 * (t - TT['LOGO']), mv=mv)
+        o = logo_obj()
+        draw_torii(img, R, Tv, t, mv, o)
         sh = None
         s0, s1 = TT['SHINE']
         if s0 - .05 <= t <= s1 + .05:
             q = (t - s0) / (s1 - s0)
             sh = (-2.6 + 5.2 * ease_out(q), .5)
-        o = logo_obj()
         draw(img, o, R, Tv, env_rot=-14 + 10 * (t - TT['LOGO']), shine=sh, mv=mv)
         glints(img, o, unit_h(R, Tv), t, 70)
+    elec(img, t, fi)
     burst_light(img, t)
     nuggets(img, t)
     debris(img, t)
@@ -970,21 +1347,10 @@ def _test(out):
         img = KF.bloom(img)
         cv2.imwrite(os.path.join(out, f'cu{j}.png'), cv2.cvtColor((KF.tonemap(img) * 255 + .5).astype(np.uint8), cv2.COLOR_RGB2BGR))
         print('cu', j, flush=True)
-    lo = logo_obj()
-    to = torii_obj()
-    z = FOCAL * lo['size'][0] / (.92 * W)
-    img = background().copy()
-    zt = z + 500
-    Tt = np.array([0.0, (436 - 422) * S * zt / FOCAL, zt])
-    draw(img, to, rot(0, 2, 0), Tt)
-    Tl = np.array([0.0, (470 - 422) * S * z / FOCAL, z])
-    draw(img, lo, rot(0, 4, 0), Tl)
-    img = KF.bloom(img)
-    cv2.imwrite(os.path.join(out, 'logo.png'), cv2.cvtColor((KF.tonemap(img) * 255 + .5).astype(np.uint8), cv2.COLOR_RGB2BGR))
-    img = background().copy()
-    draw(img, lo, rot(-20, 14, -3), np.array([150.0, 200.0, z * .78]))
-    img = KF.bloom(img)
-    cv2.imwrite(os.path.join(out, 'logo_tilt.png'), cv2.cvtColor((KF.tonemap(img) * 255 + .5).astype(np.uint8), cv2.COLOR_RGB2BGR))
+    for nm, t in (('logo_tilt', TT['LOGO'] + .1), ('logo', N / FPS - .01)):
+        im = frame(int(round(t * FPS)))
+        cv2.imwrite(os.path.join(out, f'{nm}.png'), cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
+        print(nm, flush=True)
 
 
 if __name__ == '__main__':
