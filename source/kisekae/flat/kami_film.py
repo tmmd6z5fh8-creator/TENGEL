@@ -10,7 +10,7 @@
      0.2〜0.33秒 白が ひいて 嵐の 空・光の 滝が 上から おりて 床に 当たる（しぶき・床の 光の 輪）
      0.4〜0.63秒 ガラスの ドームが 床から ふくらむ（ふちが 光る）・0.43〜0.63秒 ピンクの 電気の 光
      0.6〜1.4秒 嵐の 頂点：ドームの ふちの ジリジリと 肩の 電気・とんでくる 岩・しぶき
-     0.52〜0.74秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 1.08〜1.333秒 玉が まん中へ 小さく なって 金の 光に 入る
+     0.52〜0.74秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 0.68〜1.333秒 止まらずに 玉が まん中へ 小さく なって 金の 光に 入る
        ドームが 床から 上がり はじめて から 玉が 消えるまで ずっと ブルブル（左右・大きさ）・床から はなれる 時は 下で 雷が スパークして 金の 爆発（0.52〜1.06秒）
      0.24〜1.4秒 上から 下への 雷（上は 細く 下ほど 太い・だんだん 太く・上の 方は 不定期に ガクッと かわる）・0.73〜1.3秒 玉から 画面の はしへ はしる 雷（不定期）
      1.33〜1.6秒 金の 光が 集まって 金の 爆発（金の かけら・金の 粒・光の 筋）→ まっ白（② 金の 字へ）。ドームは もう ない
@@ -406,10 +406,11 @@ def impact(img, t):
 ORB_C = (195.0, 432.0)          # 玉の まん中（金の 光も ここ）
 ORB_R = 192.0                   # 玉の 半径（上は ドームの てっぺんの あたり）
 MORPH = (.52, .74)              # ドームが 床から 上がりながら 丸く なる（まさちゃん「ドームから球体に変わる速度もっと早くてもいいかも！」）
-SHRINK = (1.08, 1.333)          # 玉が 小さく なる（おわり＝金の 光の はじめ）
-ORB_VIB = (.008, .010)          # 玉の 大きさの ふるえ（半径の 割合：ふだん・小さく なる 間に 足す）
-ORB_SHAKE = (1.8, 1.0)          # 玉の 左右の ブルブル（画面の px：ふだん・小さく なる 間に 足す）
-ORB_VIB_W = .012                # はばだけの ふるえ（左右の 大きさ：ドームが 上がり はじめた 時から）
+SHRINK = (.68, 1.333)           # 玉が 小さく なる（おわり＝金の 光の はじめ）：まさちゃん「ドームから球体になる時に一度、止まる演出無くて、その分球体が小さくなるのを…長くして！」
+#   → 玉に なって 止まる 間を なくし、丸く なりきる 前から ゆっくり 小さく なり はじめる（ゆっくり → だんだん 速く → まん中へ すいこまれる）
+ORB_VIB = (.008, 0.0)           # 玉の 大きさの ふるえ（半径の 割合）
+ORB_SHAKE = (1.8, 0.0)          # 玉の 左右の ブルブル（画面の px：玉が 小さく なると √ で 小さく）
+ORB_VIB_W = .008                # はばだけの ふるえ（左右の 大きさ：ドームが 上がり はじめた 時から）
 #   まさちゃん「ドーム型から球体へ変形する下から上に上がる時もドームを左右に大きさ変えて振動させて！」→ ふるえは ドームが 床から 上がり はじめる 時から
 #   まさちゃん「球体常に、大きさが変わって振動しているようにして！」「左右にもブルブルして、振動の速度早くして違和感ないようにして！」
 #   → 丸く なって から 消えるまで ずっと ふるえる：コマごとに 大きさと 左右が 細かく かわる（ブルブル）。ふちと 電気は いっしょに ふるえ、
@@ -456,7 +457,7 @@ def shape_at(t):
     R, w = ORB_R, 0.0
     if t > SHRINK[0]:
         w = (t - SHRINK[0]) / (SHRINK[1] - SHRINK[0])
-        R = ORB_R * (1 - w) ** 1.3
+        R = ORB_R * (1 - w * w)                             # ゆっくり 小さく なり はじめて だんだん 速く（まん中へ すいこまれる）
     Wd = RX * sd * (1 - m) + R * m
     ye = BASE + (ORB_C[1] - BASE) * m
     Hu = HD * sd * (1 - m) + R * m
@@ -469,13 +470,14 @@ def shape_at(t):
     sh['base'] = sh
     # ふるえ（丸く なって くると はじまる）：ふち（形・電気）だけ ふるえる。中の もようは base（ふるえない 形）で 描く
     on = sstep(MORPH[0] - .02, MORPH[0] + .06, t)            # ドームが 床から 上がり はじめる 時から ずっと
-    va = (ORB_VIB[0] + ORB_VIB[1] * w) * on
+    va = ORB_VIB[0] * on                                     # 大きさの ふるえ（半径の 割合：小さく なっても 同じ 割合）
     if va > 0:
         vx, vs, vq, vw = vib_seq()[max(0, int(round(t * FPS)))]
         su, sq = 1 + va * vs, va * .4 * vq
         sw = 1 + ORB_VIB_W * on * vw                          # 左右の 大きさ
         vb = dict(sh)
-        vb.update(cx=CX + (ORB_SHAKE[0] + ORB_SHAKE[1] * w) * on * vx, W=Wd * su * (1 + sq) * sw, Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
+        shk = ORB_SHAKE[0] * on * (R / ORB_R if m >= 1 else 1.0) ** .5   # 左右の ゆれ（小さく なると 少し 小さく）
+        vb.update(cx=CX + shk * vx, W=Wd * su * (1 + sq) * sw, Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
         vb.update(yt=ye - vb['Hu'], yb=ye + vb['Hl'], vib=on)
         vb['base'] = sh
         return vb
@@ -707,15 +709,15 @@ def dome(img, t):
         return
     d0, d1 = T['DOME'][:2]
     glass(img, sh, t, sstep(d0, d0 + .04, t))
-    # ふくらむ 間は ふちが 強く 光る
-    e = 1 - sstep(d1, d1 + .12, t)
+    # ふくらむ 間は ふちが 強く 光る（丸く なり はじめたら すぐ 消える：点めつを ふやさない）
+    e = 1 - sstep(d1 - .05, d1 + .03, t)
     if e > 0:
         OL = shape_outline(sh['base'], 400)                     # ふくらむ 間の 光は ふるえない 形で（ふちの 線だけ ふるえる）
         pts = [(x, y) for x, y, nx, ny, u, fl in OL if fl < .5]
         m = lines_mask([(pts, 1.0)], 2.2)
         glow_add(img, m, ((0, (1, 1, 1), .9 * e), (2, (.5, .9, 1.0), 1.4 * e), (8, (.3, .6, 1.0), 1.2 * e)))
     # 小さく なる 間：残像の ふち（内へ すいこまれる）
-    if sh['w'] > 0:
+    if sh['w'] > .45:                                        # 速く 小さく なる 所だけ（ゆっくりの 間は ふちが 太く 見える だけ）
         segs = []
         for k_, g_ in ((1, .45), (2, .25), (3, .12)):
             s2 = shape_at(t - k_ / 90)
@@ -826,7 +828,7 @@ def dome_elec(img, t, fi):
     for f0_, o, dep, polys in E['cl']:
         if not (f0_ <= fi < f0_ + 4):
             continue
-        if (o * 9973.0) % 1.0 < .6 * m_:          # 玉に なると 肩の 電気は 少し へらす（まわりの 雷と かさなって 点めつが ふえない ように）
+        if (o * 9973.0) % 1.0 < .8 * m_:          # 玉に なると 肩の 電気は 少し へらす（まわりの 雷と かさなって 点めつが ふえない ように）
             continue
         x, y, nx, ny, u, fl = P(o)
         if fl > .5 or u < .3 * (1 - m_):
@@ -930,7 +932,7 @@ def lift_blast(img, t):
     reg += fire[..., None] * np.float32([1.0, .55, .14]) * 1.1 + (fire ** 2)[..., None] * np.float32([1.0, .85, .45]) * .9
     reg += core[..., None] * np.float32([1.0, .96, .85]) * 1.2
     # 床を はしる 衝撃の 輪
-    for rs0, rg in ((0.0, 1.1), (.2, .6)):                   # 2つめの 輪は 少し あとで よわく
+    for rs0, rg in ((0.0, 1.1),):                            # 衝撃の 輪（1つ：点めつを ふやさない）
         uu = (t - t0 - rs0) / .34
         if 0 <= uu <= 1:
             rr = 24 + 330 * ease_out(uu)
@@ -972,7 +974,7 @@ def lift_arcs(mask, t, fi):
             kind = rng.choice(('floor', 'floor', 'up', 'burst'))
             side = rng.choice((-1, 1))
             seed = rng.randrange(1 << 30)
-            p = (rng.uniform(-50, 50), rng.uniform(80, 200), rng.uniform(-70, 70), rng.uniform(-110, -35), rng.uniform(25, 60), rng.uniform(-6, 10))
+            p = (rng.uniform(-50, 50), rng.uniform(70, 150), rng.uniform(-70, 70), rng.uniform(-110, -35), rng.uniform(25, 60), rng.uniform(-6, 10))
             age = fi - f
             if not (0 <= age < len(LIFT_ENV)):
                 continue
@@ -1120,7 +1122,8 @@ def sphere_bolt_events():
             sh = shape_at(fi / FPS)
             big = sh is not None and sh['W'] > 150             # 玉が 大きい 間は 横 向きを さける（画面の はしまで 近すぎる）
             for _ in range(rng.choice((1, 2, 2))):
-                cand = [d for d in SB_DIRS if fi - last.get(area(d), -99) > 10 and not (big and abs(math.sin(math.radians(d))) < .45)]
+                cand = [d for d in SB_DIRS if fi - last.get(area(d), -99) > 10 and not (big and abs(math.sin(math.radians(d))) < .45)
+                        and not (fi < 32 and math.sin(math.radians(d)) > .3)]     # はじめは 下の すみへ 行かない（爆発・床の 光と かさねない）
                 if not cand:
                     continue
                 d = rng.choice(cand)
