@@ -241,7 +241,8 @@ def font_links(ids, extra=()):
     return '\n'.join(f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={f}&amp;display=swap">' for f in fams)
 
 
-TITLES = dict(hit='的中！', big='デカ的中!!', fz='ど的中！！！', hidden='隠れど的中！！！', miss='ハズレ')   # ど的中はまさちゃんの指定（前は「フリーズ的中!!!」）
+TITLES = dict(hit='的中！', big='デカ的中!!', fz='ど的中！！！', hidden='隠れど的中！！！', miss='ハズレ',   # ど的中はまさちゃんの指定（前は「フリーズ的中!!!」）
+              gd='神様的中！！！', sgd='超神様的中！！！')   # 第4.51版（まさちゃんの指定）：神様的中・超神様的中の ボードの 見出し（ボードの 形は ど的中の まま）
 
 
 def title_html(kind):
@@ -253,8 +254,9 @@ def title_html(kind):
     return f'{head}<span class="bz{" bzx" if last == "！" else ""}">{last}</span>'
 
 
-def board_html(tid, kind, rows, total, race='9R', rib='', cls=''):
-    """kind：hit・big・fz・hidden・miss ／ rows：<li>…</li> を並べたもの ／ rib：見出しの下の帯（ど的中・隠れど的中）"""
+def board_html(tid, kind, rows, total, race='9R', rib='', cls='', head=None):
+    """kind：hit・big・fz・hidden・miss ／ rows：<li>…</li> を並べたもの ／ rib：見出しの下の帯（ど的中・隠れど的中）
+       head：見出しだけ ちがう 字に する 時の TITLES の キー（神様的中＝gd・超神様的中＝sgd。ボードの 形は kind の まま）"""
     t = BY_ID[tid]
     vb, body = t['orn']
     oc = ' o34' if vb.endswith('44 34') else ' o40' if vb.endswith('40 40') else ''
@@ -262,6 +264,6 @@ def board_html(tid, kind, rows, total, race='9R', rib='', cls=''):
     k = 'fz' if kind in ('fz', 'hidden') else kind
     logo = '' if kind == 'miss' else ' logo'
     sub = f'{race} の買い目' if kind == 'miss' else f'{race} の当たった買い目'
-    title = title_html(kind)
+    title = title_html(head or kind)
     return (f'<div class="rb {k} t-{tid}{cls}"><div class="hd"><div class="bh{logo}">{title}</div><div class="bsub">{sub}</div>{rib}</div>'
             f'<div class="card">{orn}<ul class="brows">{rows}</ul><div class="btot">払戻 合計<b>{total}</b></div></div></div>')

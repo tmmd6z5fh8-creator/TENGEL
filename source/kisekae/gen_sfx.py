@@ -4,6 +4,7 @@
    → sfx_hit_push.wav・sfx_hit.wav（的中）／sfx_big_push.wav・sfx_big.wav（デカ）／sfx_fz_push.wav・sfx_fz.wav（ど的中＝フリーズ）
      ／sfx_pc.wav（プレミアムど的中（かわいいど的中）：タップの音だけ。PUSHの音は ど的中と同じ）
      ／sfx_zp.wav（超プレミアムど的中（手書き・鉛筆）：プレミアムの 音の ①〜⑤を 声に。PUSHの音は ど的中と同じ）
+     ／sfx_gd.wav（神様的中：kami.py の 時刻）／sfx_sgd.wav（超神様的中（第4.51版）：1コマずつ 描いた 動画 ①②③ の 時刻＝kami_super.film_events()。PUSHの音は ど的中と同じ）
      *_push＝PUSHが出たとき（当たりのお知らせ）。それ以外＝PUSHを押してから（0秒＝押した瞬間）。44.1kHz・16bit・ステレオ
      ＋ sfx_wave.json（音の大きさの形・1/50秒ごと。効果音のメモ Fx_Sound.dc.html の波形に使う。gen_fx.py と同じフォルダに置く）
    秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む。
@@ -1393,8 +1394,271 @@ def sfx_gd():
     return mx.render(1.8, target=-13, bass=True)
 
 
+# ---------- 超神様的中（第4.51版：1コマずつ 描いた 動画 ①②③ に 合わせる。秒は kami_super.film_events()＝動画の 絵の スクリプトの 時刻。PUSHの 音は ど的中と 同じ） ----------
+def read_sgd():
+    """kami_super.py（動画の 長さ・ボードの 時刻）と、動画の 絵の スクリプト（flat/kami_film*.py）の 時刻"""
+    sys.path.insert(0, HERE)
+    import kami_super
+    return kami_super, kami_super.film_events()
+
+
+def koban(f, rng, d=.7):
+    """チャリーン：小判（大きく 平たい 金の 板 → コインより 低く、長く ひびく）＋当たる 音＋2回 はねる"""
+    n = n_(d)
+    t = tl(n)
+    x = np.zeros(n)
+    for r_, a, tau in ((1, 1, .3), (1.53, .6, .19), (2.31, .45, .12), (2.94, .3, .08), (4.1, .18, .05)):
+        fr = f * r_ * (1 + rng.uniform(-.006, .006))
+        if fr < 15000:
+            x += a * np.sin(2 * np.pi * fr * t + rng.uniform(0, 6.28)) * np.exp(-t / tau)
+    x += .4 * bp(rng.standard_normal(n), 2500, 9000) * np.exp(-t / .003)
+    for dt, g in ((rng.uniform(.04, .07), .45), (rng.uniform(.1, .14), .2)):
+        k = n_(dt)
+        x[k:] += g * x[:n - k]
+    return fade(x / 1.6, .0008, .03)
+
+
+def kjingle(mx, t0, dur, count, g, rng, pan=.85, curve=1.5, f=(1300, 2700)):
+    """ジャラジャラ：小判（はじめが 多くて、だんだん 少なく）"""
+    for _ in range(count):
+        mx.add(koban(rng.uniform(*f), rng, rng.uniform(.45, .75)), t0 + dur * rng.uniform(0, 1) ** curve, g * rng.uniform(.5, 1),
+               rng.uniform(-pan, pan), rv=.3)
+
+
+def suzu(mx, t0, g, rng, pan=0.0, shakes=1, gap=.3):
+    """シャン：神社の 鈴（小さな 鈴が たくさん いっしょに ゆれる：1回 ふる ごとに 細かい 当たりが かたまって 鳴る）"""
+    fs = rng.uniform(3000, 5600, 7)
+    for s in range(shakes):
+        ts = t0 + s * gap
+        for k in range(26):
+            f = fs[int(rng.integers(0, len(fs)))]
+            n = n_(.45)
+            t = tl(n)
+            x = (np.sin(2 * np.pi * f * t) + .5 * np.sin(2 * np.pi * f * 2.42 * t) * np.exp(-t / .05)) * np.exp(-t / rng.uniform(.08, .22))
+            x = fade(x + .3 * hp(rng.standard_normal(n), 6000) * np.exp(-t / .002), .0005, .03)
+            mx.add(x, ts + .09 * rng.uniform(0, 1) ** 1.8, g * rng.uniform(.25, 1) / 4, float(np.clip(pan + rng.uniform(-.4, .4), -1, 1)), rv=.45)
+
+
+def sfx_sgd():
+    """超神様的中の タップの 音（第4.51版）。0秒＝動画の はじめ（見本では 動画が 動きだした 時に その 時刻から 鳴らす）：
+       ① 金の 嵐（0〜1.6秒）：キュイッ↑（光の 粒）→ ドガーン!!（光の 爆発）＋パァーン（まっ白）→ ザァッ↓（光の 滝）→ ドーン（床に 当たる）＋ゴゴゴ・ゴォォォ（嵐）
+          → ブォォン↑・シュワーッ↑（ドームが 床から 上がる）＋ギュイーン（電気の 光）＋ドガーン・パチパチ（下の 火花の 爆発）
+          ＋バリバリッ・ドーン（上から 下への 雷 6本・形が かわる たびに バチッ）＋ジジジ・ビリビリ（ドームの 電気）＋バリッ（玉から 画面の はしへの 雷）＋ヒュンッ（岩）
+          ＋キュゥゥン↑（玉が 小さく なる）→ キィン（金の 光が 集まる）→ ドガーン!!＋ジャラジャラ（金の 爆発）→ シュワーッ↑ → パァーン（まっ白）
+       ② 金の 字（1.6〜6.3秒）：ゴォォッ（左から すべって くる）→ ズーン!!（万馬券：ミの ジャーン＋どら＋合唱）→ ゴォォッ（右から）→ ズーン!!（天眼：ラ）
+          → シュワーッ↑ → ドーン＋どら＋ジャーン（4行の 文：ホ長調）＋ああぁぁ（合唱）＋キラーン（光が すべる 2回）→ シュワーッ↑
+       ③ 神様的中（6.3〜12.5秒）：ドガーン＋ジャラジャラ（小判が はじける）・ドン（神）→ ヒュオッ（大きな 小判が 横切る）・ドン（様）→ ドガーン＋ジャラジャラ・ドン（的）
+          → ヒュオッ・ドン（中）（ドンは だんだん 高く）＋バチバチ（字の ふちを はしる 雷）・バリバリッ（外へ はしる 雷）
+          → ドガーン!!＋ジャラジャラジャラ（小判の 大爆発）＋ジャーン（神様的中）→ グォォ↑＋ドロロロ（ひいて 鳥居）＋シャララン（神社の 鈴）
+          → パッパッパーン（ファンファーレ）＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
+       → 白い 光：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判の ジャラジャラ"""
+    SG, ev = read_sgd()
+    o1, o2, o3 = SG.OFS
+    RES, t0b, FILM = SG.RES, SG.T0B, SG.FILM
+    mx = Mix(t0b + 2.0, 71)
+    r = mx.rng
+    E = (40, 47, 52, 56)          # ホ長調（E2・B2・E3・G#3）
+    A_ = (45, 52, 57, 61)         # ラ（A2・E3・A3・C#4）
+    T1, T2, T3 = ev['T1'], ev['T2'], ev['T3']
+    # ======== ① 金の 嵐 ========
+    ig0, igw, igf, igr, ige = (o1 + v for v in T1['IGN'])        # 点火：はじまり・白が 出はじめ・まっ白・白が ひきはじめ・白が 消える
+    mx.add(cuin(700, 3600, igw - ig0 + .06, igw - ig0, r), ig0, .14, rv=.3)          # キュイッ↑（光の 粒が ふくらむ）
+    mx.add(arc_zap(igw - ig0, r, 500), ig0, .3, rv=.2)
+    mx.add(explosion(r, 1.1, .9), igw - .01, .8, rv=.3)                              # ドガーン!!（光の 爆発）
+    mx.add(boom(110, 28, 1.6, .5, .05, 2.6, r), igw - .01, 1.0 * FZ_LOW, rv=.1)
+    mx.add(crash(r, 2.0, .7), igf, .3, -.2, rv=.45)                                 # パァーン（まっ白）
+    for i, m in enumerate((76, 83, 88, 95)):
+        mx.add(bell(mtof(m), 1.4, idx=1.3, tau=.5), igf + .01 * i, .1, (i / 3 - .5) * .8, rv=.5)
+    c0, c1 = (o1 + v for v in T1['COL'])
+    dcol = c1 - c0 + .03
+    mx.add(nsweep(dcol, 7000, 900, .6, r) * np.linspace(.3, 1, n_(dcol)), c0, .3, rv=.3)          # ザァッ↓（光の 滝が おりる）
+    im = o1 + T1['IMPACT']
+    mx.add(boom(90, 28, 1.3, .45, .05, 2.4, r), im, .85 * FZ_LOW, rv=.15)                       # ドーン（床に 当たる）
+    mx.add(explosion(r, .6, 1.1), im, .45, rv=.3)
+    gl, gx, gw, gk = (o1 + v for v in T1['GOLD'])                                 # 金：光が 集まる・爆発・白が 出はじめ・まっ白
+    dw = gw - c0
+    tw = tl(n_(dw))
+    mx.add(nlow(dw, 3400, 1900, 1.0, r) * np.minimum(tw / .1, 1) * np.clip((dw - tw) / .25, 0, 1), c0, .24, rv=.35)   # ゴォォォ（光の 滝）
+    mx.add(rumble(gw - im + .2, r, 150, 9), im, .5, rv=.3)                                      # ゴゴゴ（嵐）
+    mx.add(growl(30.9, 41.2, gw - im, gw - im, 2.0), im, .14, rv=.2)
+    d0, d1 = (o1 + v for v in T1['DOME'][:2])                                     # ドームが 床から 上がる
+    mx.add(growl(41.2, 98.0, d1 - d0 + .3, d1 - d0, 2.2), d0, .2, rv=.25)                       # ブォォン↑
+    dd = d1 - d0 + .06
+    mx.add(nsweep(dd, 300, 6500, .5, r) * np.linspace(0, 1, n_(dd)) ** 1.5, d0, .26, rv=.35)     # シュワーッ↑
+    for j, m in enumerate((76, 83, 88, 95)):                                                     # キラッ（ガラスの 玉）
+        mx.add(bell(mtof(m), .9, idx=1.2, tau=.35), d1 - .03 + .025 * j, .07, (j / 3 - .5) * .9, rv=.5)
+    g0, _, _, g3 = (o1 + v for v in T1['SURGE'])
+    mx.add(buzz(g3 - g0 + .12, r, 74), g0, .28, rv=.2)                                          # ギュイーン（電気の 光）
+    mx.add(crackle(g3 - g0, 380, r), g0, .35, -.5, rv=.25)
+    mx.add(crackle(g3 - g0, 300, r), g0, .3, .5, rv=.25)
+    l0 = o1 + ev['LIFT_T'][0]                                                                    # 下の 火花の 爆発
+    mx.add(explosion(r, .8, 1.0), l0, .5, rv=.3)
+    mx.add(boom(100, 30, 1.0, .35, .05, 2.4, r), l0 + .01, .55 * FZ_LOW, rv=.15)
+    for dt, cnt in ev['LIFT_BURSTS']:                                                            # パチパチパチ（火花が とぶ）
+        mx.add(crackle(.45, cnt * 2.2, r), l0 + dt, .3, r.uniform(-.3, .3), rv=.3)
+        mx.add(arc_zap(.1, r, 900), l0 + dt, .2, r.uniform(-.3, .3), rv=.2)
+    for t0, t1, pan, chg in ev['RIBS']:                                                          # 上から 下への 雷
+        t0, t1 = o1 + t0, o1 + t1
+        mx.add(arc_zap(.14, r, 1400), t0, .45, pan, rv=.25)                                      # バリバリッ
+        mx.add(explosion(r, .35, 1.5), t0 + .005, .3, pan, rv=.35)                               # ドーン
+        mx.add(boom(85, 30, .9, .3, .03, 2.4, r), t0 + .01, .38 * FZ_LOW, rv=.2)
+        mx.add(buzz(t1 - t0, r, 96 + 10 * pan), t0 + .03, .05, pan, rv=.15)                      # ジジジ（のこって いる 間）
+        for tc in chg:                                                                           # バチッ（形が かわる）
+            mx.add(arc_zap(.06, r, 1100), o1 + tc, .2, pan, rv=.2)
+    k0, k1 = (o1 + v for v in ev['CRACK'])                                                       # ドームの 電気
+    mx.add(buzz(k1 - k0 + .1, r), k0, .12, rv=.15)                                               # ビリビリ
+    mx.add(crackle(k1 - k0, 160, r), k0, .22, rv=.25)                                            # ジジジ
+    for t, pan in ev['ARCS']:                                                                    # バチッ（玉の 表面を はしる 電気）
+        mx.add(arc_zap(.08, r, 900), o1 + t, .2, pan, rv=.2)
+    for t, pan, life in ev['SB']:                                                                # バリッ（玉から 画面の はしへの 雷）
+        mx.add(arc_zap(life, r, 1300), o1 + t, .3, pan, rv=.25)
+        mx.add(explosion(r, .15, 1.9), o1 + t + .004, .12, pan, rv=.3)
+    for t, side, _ in ev['ROCKS']:                                                               # ヒュンッ（岩）
+        mx.add(whoosh(.5, r), o1 + t, .28, np.linspace(0, side, 12), rv=.2)
+    s0, s1 = (o1 + v for v in ev['SHRINK'])                                                      # キュゥゥン↑（玉が 小さく なる）
+    mx.add(cuin(330, 1320, s1 - s0 + .1, s1 - s0, r), s0, .07, rv=.35)
+    mx.add(growl(55.0, 110.0, s1 - s0 + .1, s1 - s0, 2.0), s0, .1, rv=.2)
+    for j, m in enumerate((88, 95, 100)):                                                        # キィン（金の 光が 集まる）
+        mx.add(bell(mtof(m), .5, idx=1.2, tau=.25), gl + .02 * j, .08, rv=.4)
+    mx.add(explosion(r, 1.0, 1.0), gx, .7, rv=.3)                                               # ドガーン!!（金の 爆発）
+    mx.add(boom(115, 32, 1.2, .4, .05, 2.5, r), gx, .85 * FZ_LOW, rv=.15)
+    jingle(mx, gx + .03, .5, 18, .15, r)                                                         # ジャラジャラ（金の かけら）
+    dsw = gk - gx + .05
+    mx.add(nsweep(dsw, 500, 9000, .45, r) * np.linspace(0, 1, n_(dsw)) ** 2, gx, .32, rv=.35)    # シュワーッ↑
+    mx.add(boom(120, 40, .8, .25, .03, 2.0, r), gk, .5 * FZ_LOW, rv=.2)                         # パァーン（まっ白：① → ②）
+    mx.add(crash(r, 2.2, .8), gk, .32, .3, rv=.45)
+    for i, m in enumerate((64, 68, 71, 76, 80, 83)):
+        mx.add(bell(mtof(m + 12), 2.0, idx=1.6, tau=.7), gk + .012 * i, .18, (i / 5 - .5) * .9, rv=.5)
+    # ======== ② 金の 字：重たい 金が ズーン（万馬券 ← 左から・天眼 ← 右から）========
+    for (ha, hl, he), ch, side in ((ev['HEAVY'][0], E, -1), (ev['HEAVY'][1], A_, 1)):
+        a, l, e = o2 + ha, o2 + hl, o2 + he
+        dsl = l - a + .06
+        u = np.linspace(.15, 1, n_(dsl)) ** 1.6
+        mx.add(nlow(dsl, 800, 2600, .35, r) * u, a, .3, np.linspace(side * .9, 0, 12), rv=.25)   # ゴォォッ（横から すべって くる）
+        mx.add(growl(36.7, 55.0, dsl, dsl, 2.4), a, .12, np.linspace(side * .6, 0, 8), rv=.2)
+        mx.add(boom(70, 24, 2.2, .7, .08, 2.8, r), l, 1.0 * FZ_LOW, rv=.15)                      # ズーン!!（着地）
+        mx.add(explosion(r, .7, .7), l, .45, rv=.3)
+        mx.add(lsnare(r, .4, .12, 90), l, .3, rv=.3)
+        mx.add(gong(mtof(ch[0]), 2.6, 1.1, r), l + .02, .3 * FZ_MID, rv=.5)
+        for i, m in enumerate(ch):
+            mx.add(brass(m + 12, e - l + .1, r), l, .24 * FZ_MID, (i / 3 - .5) * .8, rv=.4)
+        mx.add(choir((ch[1] + 12, ch[2] + 12, ch[3] + 12, ch[2] + 24), e - l, r, .12, .4), l, .55, rv=.6)
+        mx.add(lcrash(r, 1.8, .7), l, .12 * FZ_MID, side * .3, rv=.45)
+        dr_ = .5                                                                                  # シュワァン（金の 輪が ひろがる）＋キラーン
+        mx.add(nsweep(dr_, 2500, 9000, .5, r) * np.exp(-tl(n_(dr_)) / .18), l + .1, .16, rv=.4)
+        for j, m in enumerate((88, 95, 100)):
+            mx.add(bell(mtof(m), 1.2, idx=1.3, tau=.5), l + .12 + .05 * j, .09, (j - 1) * .5, rv=.5)
+        sparkle(mx, l + .15, e - l - .15, 8, (96, 100, 103, 108), .05, r)
+    w0, w1 = o2 + T2['WB'][0], o2 + T2['WB'][1]                                                  # シュワーッ↑（白）
+    dsw = w1 - w0 + .02
+    mx.add(nsweep(dsw, 400, 8000, .5, r) * np.linspace(0, 1, n_(dsw)) ** 2, w0, .3, rv=.35)
+    tx = o2 + T2['TXT']                                                                          # ドーン＋どら＋ジャーン（4行の 文）
+    mx.add(explosion(r, .9, .8), tx, .5, rv=.3)
+    mx.add(boom(80, 26, 1.8, .55, .07, 2.6, r), tx, .9 * FZ_LOW, rv=.15)
+    mx.add(gong(mtof(40), 3.0, 1.2, r), tx + .02, .32 * FZ_MID, rv=.5)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
+        mx.add(brass(m + 12, 1.4, r), tx, .26 * FZ_MID, (i / 5 - .5) * .8, rv=.4)
+    hold = o2 + T2['WC'][0] - tx
+    mx.add(choir((52, 56, 59, 64, 68, 71), hold, r, .25, .5), tx + .05, .8, rv=.7)                # ああぁぁ（合唱）
+    mx.add(pad((52, 59, 64, 68), hold, .6, .5, .25), tx + .1, .3, rv=.6)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 2.2, idx=1.5, tau=.8), tx + .02 + .012 * i, .18, (-.3, -.1, .1, .3)[i], rv=.5)
+    sparkle(mx, tx + .3, hold - .3, 22, (96, 98, 100, 103, 105, 108), .05, r)
+    for t in T2['SHINE']:                                                                        # キラーン（光が すべる）
+        for j, m in enumerate((96, 100, 103, 108)):
+            mx.add(bell(mtof(m), .9, idx=1.2, tau=.4, glock=.2), o2 + t + .25 + .07 * j, .07, (j / 3 - .5) * 1.2, rv=.5)
+    w0, w1 = o2 + T2['WC'][0], o2 + T2['WC'][1]                                                  # シュワーッ↑（白：② → ③）
+    dsw = w1 - w0 + .02
+    mx.add(nsweep(dsw, 400, 9000, .5, r) * np.linspace(0, 1, n_(dsw)) ** 2, w0, .32, rv=.35)
+    # ======== ③ 神様的中：小判と 神・様・的・中 → 鳥居の 中に 神様的中 おめでとう御座います ========
+    for k, (t, kind, _) in enumerate(T3['BU']):
+        tt = o3 + t
+        if kind == 0:                                                                            # ヒュオッ（大きな 小判が 手前を 横切る）
+            dirn = -1 if k % 4 == 1 else 1
+            for q in range(3):
+                mx.add(whoosh(.36, r, 2400, 500), tt + .05 + .04 * q - .18, .24, np.linspace(-dirn * .9, dirn * .9, 12), rv=.2)
+            mx.add(koban(900, r, 1.0), tt + .05, .12, rv=.4)
+            continue
+        big = kind == 2
+        mx.add(explosion(r, 1.4 if big else .8, .9), tt, .9 if big else .55, rv=.3)              # ドガーン（小判が はじける）
+        mx.add(boom(100, 30, 1.8 if big else 1.0, .3, .05, 2.4, r), tt, (1.0 if big else .7) * FZ_LOW, rv=.15)
+        kjingle(mx, tt + .02, 1.1 if big else .6, 42 if big else 18, .2 if big else .15, r)      # ジャラジャラ
+        if big:
+            mx.add(crash(r, 1.8, .7), tt, .25, rv=.45)
+    for k, (c0, c1) in enumerate(T3['CU']):                                                      # ドン（神・様・的・中：だんだん 高く）
+        cs, ce = o3 + c0, o3 + c1
+        mx.add(tom(70 + 6 * k, r, .5), cs + .02, .35 * FZ_MID, rv=.25)
+        mx.add(boom(75 + 8 * k, 30, .9, .3, .05, 2.4, r), cs + .02, .7 * FZ_LOW, rv=.15)
+        ch = ((40, 47, 52, 56), (42, 49, 54, 57), (44, 51, 56, 59), (45, 52, 57, 61))[k]          # ミ → ファ# → ソ# → ラ
+        mx.add(stab(tuple(m + 12 for m in ch), .45, r, 1.8, .4), cs + .02, .22 * FZ_MID, rv=.35)
+        mx.add(choir((ch[1] + 12, ch[2] + 12, ch[3] + 12), ce - cs - .05, r, .06, .2, 2), cs + .02, .4, rv=.55)
+    lg = o3 + T3['LOGO']                                                                         # ジャーン（神様的中：ホ長調）
+    mx.add(gong(mtof(40), 3.0, 1.2, r), lg + .02, .35 * FZ_MID, rv=.5)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):
+        mx.add(brass(m + 12, .9, r), lg, .3 * FZ_MID, (i / 5 - .5) * .8, rv=.35)
+    mx.add(lcrash(r, 2.4, .8), lg, .2 * FZ_MID, -.5, rv=.4)
+    mx.add(lcrash(r, 2.4, .8), lg, .2 * FZ_MID, .5, rv=.4)
+    p0, p1 = o3 + T3['TURN'][0], o3 + T3['TURN'][1]                                              # グォォ↑（ひいて 鳥居）＋ドロロロ
+    mx.add(growl(41.2, 82.4, p1 - p0 + .1, p1 - p0), p0, .22, rv=.15)
+    mx.add(nsweep(p1 - p0, 300, 7000, .5, r) * np.linspace(0, 1, n_(p1 - p0)) ** 2.5, p0, .3, rv=.35)
+    tt = p0 + .1
+    while tt < p1 - .03:
+        u = (tt - p0) / (p1 - p0)
+        mx.add(tom(62 + 8 * u, r, .3), tt, (.05 + .3 * u ** 1.5) * FZ_MID, r.uniform(-.2, .2), rv=.3)
+        tt += .05
+    suzu(mx, p0 + .15, .5, r, 0.0)                                                               # シャララン（神社の 鈴：鳥居が 見えて くる）
+    fz = p1                                                                                      # パッパッパーン（ミ・ミ・シ → 高い ミ）
+    for k, (dt, dd, top) in enumerate(((0, .14, 64), (.18, .14, 64), (.36, .14, 71), (.54, .9, 76))):
+        for i, m in enumerate((top - 12, top - 5, top)):
+            mx.add(brass(m, dd, r), fz + dt, (.2 if k < 3 else .3) * FZ_MID, (i - 1) * .4, rv=.4)
+    mx.add(explosion(r, .9, .9), fz + .54, .45, rv=.3)
+    mx.add(boom(80, 25, 2.0, .6, .08, 2.6, r), fz + .54, .9 * FZ_LOW, rv=.2)
+    mx.add(gong(mtof(40), 2.6, 1.0, r), fz + .56, .3 * FZ_MID, rv=.5)
+    bed = RES - fz - .54 + .2
+    mx.add(choir((52, 56, 59, 64, 68, 71, 76), bed, r, .15, .6), fz + .54, .7, rv=.7)             # ああぁぁ（合唱）
+    mx.add(pad((40, 52, 59, 64, 68), bed, .5, .6, .3), fz + .6, .22, rv=.6)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 2.4, idx=1.5, tau=.9), fz + .56 + .012 * i, .2, (-.3, -.1, .1, .3)[i], rv=.5)
+    sparkle(mx, fz + .6, RES - fz - .8, 22, (96, 98, 100, 103, 105, 108), .05, r)
+    for t0, _ in T3['SHINE']:                                                                    # キラーン（光が すべる）
+        for j, m in enumerate((96, 100, 103, 108)):
+            mx.add(bell(mtof(m), .9, idx=1.2, tau=.4, glock=.2), o3 + t0 + .25 + .07 * j, .08, (j / 3 - .5) * 1.2, rv=.5)
+    suzu(mx, o3 + T3['SHINE'][1][0] - .65, .32, r, -.2, 3, .3)                                   # シャン・シャン・シャン（鈴）
+    for t, kind, life, pan in ev['EL3']:                                                         # 字の 雷（不定期）
+        tt = o3 + t
+        if kind == 'run':                                                                        # バチバチ（ふちを はしる）
+            mx.add(arc_zap(max(.05, life * .7), r, 700), tt, .13 if tt < lg else .1, pan * .8, rv=.2)
+        elif kind == 'out':                                                                      # バリバリッ（外へ はしる）
+            mx.add(arc_zap(life + .05, r, 1400), tt, .3, pan, rv=.25)
+            mx.add(explosion(r, .2, 1.8), tt + .005, .14, pan, rv=.3)
+        else:                                                                                    # バチッ（字から 字へ とぶ）
+            mx.add(arc_zap(life + .03, r, 1200), tt, .2, pan * .8, rv=.25)
+    cu0 = o3 + T3['CU'][0][0] + .1                                                               # ふちの ビリビリ（毎コマ ちがう 所）
+    for pn in (-.3, .3):
+        mx.add(crackle(lg - cu0, 90, r), cu0, .12, pn, rv=.2)
+    e0 = o3 + ev['LOGO0']
+    for pn in (-.4, .4):
+        mx.add(crackle(FILM - e0, 110, r), e0, .1, pn, rv=.2)
+    mx.add(buzz(FILM - e0 + .1, r, 98), e0, .03, rv=.15)
+    # ======== RES：白い 光 シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判 ========
+    for jj, m in enumerate((88, 90, 92, 95, 97, 100, 102, 104)):
+        mx.add(tine(mtof(m), .6, .25), RES - .15 + .03 * jj, .08, (jj % 2 * 2 - 1) * .4, rv=.4)
+    mx.add(pop(560, 260, .14, r, .2), RES + .2, .5, rv=.15)
+    for i, m in enumerate((56, 59, 64)):
+        mx.add(bell(mtof(m), .7, idx=1.4, tau=.3), t0b + .08 * i, .22 * FZ_MID, rv=.3)
+    tt = t0b + .08 * 3
+    mx.add(bell(mtof(64), 1.4, idx=1.3, tau=.6), tt, .28 * FZ_MID, rv=.45)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 1.6, idx=1.4, tau=.6), tt + .015 * i, .14, (-.3, -.1, .1, .3)[i], rv=.45)
+    mx.add(koban(1500, r, .6), tt, .2, -.2, rv=.25)
+    mx.add(koban(1900, r, .55), tt + .06, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
+    kjingle(mx, RES + .1, 1.8, 28, .2 * FZ_MID, r, curve=1.8)
+    return mx.render(1.8, target=-13, bass=True)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
-          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd))
+          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd), ('sfx_sgd', sfx_sgd))
 
 def wave_env(x, per_sec=50):
     """メモの波形：1/50秒ごとのいちばん大きい所（0〜1）の平方根（小さい音も見えるように。-6dB≒0.7・-20dB≒0.3・-40dB＝0.1）"""
