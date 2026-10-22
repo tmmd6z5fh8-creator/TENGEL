@@ -1,4 +1,4 @@
-"""神様的中 ③ 神様的中・おめでとう御座います！（第4.49版）：1コマずつ 描く 絵。1170×2532（iPhone の 画面の 画素）・1秒 30コマ
+"""神様的中 ③ 神様的中・おめでとう御座います（第4.50版）：1コマずつ 描く 絵。1170×2532（iPhone の 画面の 画素）・1秒 30コマ
    まさちゃん「じゃあ最後のシーンいくね！ここは、GODの文字のところを、神様的中、GAMEの文字のところを、おめでとう御座います！にして！
    ファイルは全部で78枚あるよ！」
    → 送ってくれた コマは 見るだけ（描き写さない・字・形・構図・動きの 組み立ては 姫の オリジナル）。
@@ -14,6 +14,9 @@
      → 字：厚みを 約1.6倍・ふちと 側面に 左上からの 光（光る 所と かげ）・さいごは 少し ななめ 下から 見上げる 角度（側面が 見える）・字の かげが 鳥居に おちる。
        雷：字の ふちを はしる 雷・字から 字へ とぶ 雷・ふちの 小さな ビリビリ（どれも 不定期・同じ 所には つづけて 出さない（点めつ））。
        鳥居：kami_torii3.py（朱ぬりの 明神鳥居の 本当の 立体：黒い 漆の 笠木・金の 台輪・帯・飾り金具・金の わくの 額「天眼」）
+   第4.50版：まさちゃん「三枚目の写真の！を消して、四枚目の写真は後2秒長くして！」「小石のようなエフェクトは全てリアルな小判に変えて！」
+     → 字は「御座います」（！なし）・さいごの 字の 場面を 2秒 のばす（全体 6.2秒：光が もう 1回 すべる・雷は さいごまで）・
+       金の 粒は ぜんぶ 本物の ような 慶長小判（kami_koban.py：茣蓙目・扇の わくの 桐の 紋・壹两・光次と 花押／裏は 花押）が 回りながら とぶ
    python3 flat/kami_film3.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -25,11 +28,12 @@ sys.path.insert(0, K)
 import kami_art as KA
 import kami_film as KF
 import kami_torii3 as T3
+import kami_koban as KB
 
 S = 3.0
 W, H = KF.W, KF.H
 FPS = 30
-N = 126                               # 4.2秒
+N = 186                               # 6.2秒（第4.50版：さいごの 字の 場面を 2秒 のばした）
 SSA = 2                               # 側面は 2倍で 描いて もどす
 FOCAL = 1500.0                        # カメラ（絵の 画素）
 ENV_R = 2600.0                        # 映りこみの 空までの きょり（1000 単位）
@@ -41,7 +45,7 @@ TT = dict(WIN=(0.0, .05, .3),                                          # 白（�
           BU=((0.0, 1, .55), (.5, 0, None), (1.05, 1, 1.62), (1.57, 0, None), (2.1, 2, None)),
           # 金の 粒（時刻・強さ 0＝大きな 粒が 手前を 横切る（光らない）・1＝はじける・2＝いちばん 大きい・寄りが かわる 時に 消す 時刻）
           LOGO=2.15, TURN=(2.15, 3.0),                                 # 神様／的中／おめでとう／御座います！（ななめ → 正面へ 回りながら ひく）
-          SHINE=(3.1, 3.75))                                           # 光が すべる
+          SHINE=((3.1, 3.75), (5.15, 5.8)))                            # 光が すべる（2回）
 
 
 def smoothstep(e0, e1, x):
@@ -451,7 +455,7 @@ CU_CHARS = '神様的中'
 CU_K = 1.6                            # 寄りの 字の 地図の 細かさ（1 単位 あたりの 画素）
 LOGO_K = .8
 LOGO_LINES = (('神様', 1.0, 0.0, .064, 460.0), ('的中', 1.0, 860.0, .064, 460.0),
-              ('おめでとう', .36, 1272.0, .08, 290.0), ('御座います！', .36, 1620.0, .08, 290.0))
+              ('おめでとう', .36, 1272.0, .08, 290.0), ('御座います', .36, 1620.0, .08, 290.0))
 
 
 def cu_obj(j):
@@ -459,7 +463,7 @@ def cu_obj(j):
 
 
 def logo_obj():
-    return KF.cache('logo4', lambda: text_obj(list(LOGO_LINES), LOGO_K, seed=21))
+    return KF.cache('logo5', lambda: text_obj(list(LOGO_LINES), LOGO_K, seed=21))
 
 
 # ---------------------------------------------------------------- 朱ぬりの 鳥居（うしろ：kami_torii3.py）
@@ -558,99 +562,17 @@ def background():
     return KF.cache('bg3', f)
 
 
-# ---------------------------------------------------------------- 金の 粒（ごつごつ した 金の かたまり：本当の 立体）
-def icosphere(sub):
-    t = (1 + 5 ** .5) / 2
-    V = [np.array(v, np.float64) for v in ((-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0), (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
-                                           (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1))]
-    V = [v / np.linalg.norm(v) for v in V]
-    F = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8),
-         (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)]
-    for _ in range(sub):
-        cache = {}
-
-        def mid(a, b):
-            key = (min(a, b), max(a, b))
-            if key not in cache:
-                p = V[a] + V[b]
-                V.append(p / np.linalg.norm(p))
-                cache[key] = len(V) - 1
-            return cache[key]
-        F2 = []
-        for a, b, c in F:
-            ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
-            F2 += [(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)]
-        F = F2
-    V = np.array(V)
-    F = np.array(F, np.int32)
-    tri = V[F]
-    n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-    if np.mean(np.einsum('ij,ij->i', n, tri.mean(1))) < 0:          # 外向きに そろえる
-        F = F[:, ::-1].copy()
-    return V, F
-
-
-def nug_shape(V, seed):
-    """球を ごつごつに：大きな こぶ・くぼみ・平らな 割れ面・細かい しわ・つぶれ"""
-    rng = np.random.default_rng(seed)
-    r = np.ones(len(V))
-
-    def rdir():
-        d = rng.normal(size=3)
-        return d / np.linalg.norm(d)
-    for _ in range(int(rng.integers(4, 7))):
-        r += rng.uniform(.12, .3) * np.clip(V @ rdir(), 0, 1) ** rng.uniform(2.0, 4.5)
-    for _ in range(int(rng.integers(5, 9))):
-        r -= rng.uniform(.05, .14) * np.clip(V @ rdir(), 0, 1) ** rng.uniform(6, 14)
-    for _ in range(int(rng.integers(2, 4))):
-        d, c = rdir(), rng.uniform(.78, .95)
-        pr = V @ d
-        r = np.where(pr > .05, np.minimum(r, c / np.maximum(pr, .05)), r)
-    for _ in range(70):
-        d, s, a = rdir(), rng.uniform(.1, .28), rng.uniform(-.045, .055)
-        r += a * np.exp(-(np.arccos(np.clip(V @ d, -1, 1)) / s) ** 2)
-    for _ in range(170):                                             # 細かい しわ（くしゃっと した 金）
-        d, s, a = rdir(), rng.uniform(.045, .11), rng.uniform(-.04, .035)
-        r += a * np.exp(-(np.arccos(np.clip(V @ d, -1, 1)) / s) ** 2)
-    for _ in range(5):                                               # おれ目の すじ
-        d, fq, ph = rdir(), rng.uniform(9, 17), rng.uniform(0, 6.3)
-        r += .022 * np.abs(np.sin(V @ d * fq + ph)) - .011
-    P = V * r[:, None] * rng.uniform(.72, 1.12, 3)
-    return (P / np.abs(P).max()).astype(np.float64), r
-
-
+# ---------------------------------------------------------------- 小判（第4.50版：金の 粒の かわり。kami_koban.py）
 NUG_TYPES = 10
-NUG_N = dict(burst=22, big=56, cover=3, drift=4, linger=4)      # 粒の 数（点めつ：1つの 所を 何回も 横切らない ように 少なめ）
+NUG_N = dict(burst=22, big=56, cover=3, drift=4, linger=4)      # 小判の 数（点めつ：1つの 所を 何回も 横切らない ように 少なめ）
+KOBAN_V = 3                            # 打ちあとの ちがう 小判の しゅるい
+KOBAN_SZ = 1.15                        # 粒の 大きさ → 小判の たての 半分
+KOBAN_T = .055                         # 小判の 厚み（たての 半分に 対して）
+KOBAN_TINT = np.float32([1.0, .82, .46])
 
 
-def nug_meshes():
-    """金の 粒の 形（10しゅ・細かさ 3段）"""
-    def f():
-        out = []
-        for sub in (1, 2, 3, 4):
-            V, F = icosphere(sub)
-            # となりの 点（くぼみを 暗く する ため）
-            nb = [set() for _ in range(len(V))]
-            for a, b, c in F:
-                nb[a] |= {b, c}
-                nb[b] |= {a, c}
-                nb[c] |= {a, b}
-            lst = []
-            for j in range(NUG_TYPES):
-                P, r = nug_shape(V, 700 + j * 13)
-                rs = r.copy()
-                for _ in range(3):
-                    rs = np.array([(rs[i] + np.mean(rs[list(nb[i])])) / 2 for i in range(len(V))])
-                cav = np.clip((rs - r) / .06, 0, 1)                      # くぼみ（0〜1）
-                lst.append((P, F, cav[F].mean(1)))
-            out.append(lst)
-        return out
-    return KF.cache('nugm', f)
-
-
-NUG_L = np.array([-.42, -.7, -.58])
-NUG_L = NUG_L / np.linalg.norm(NUG_L)
-NUG_TINT = np.float32([1.0, .8, .46])
+def koban_tex(i):
+    return KF.cache(f'koban{i}', lambda: KB.koban(i))
 
 
 def axis_rot(ax, ang):
@@ -664,54 +586,99 @@ def axis_rot(ax, ang):
                      [z * x * C - y * s, z * y * C + x * s, c + z * z * C]])
 
 
-def draw_nugget(img, mesh, Rn, pos, size, boost=1.0, blur=0.0, mv=(0.0, 0.0), fade=1.0):
-    """金の 粒 1つを img に（面ごとに 映りこみ・近い ほど ぼける・速い ほど ぶれる）"""
-    P, F, cav = mesh
-    Q = P @ Rn.T * size + pos
-    if Q[:, 2].min() < 30:
+def _gold_at(n, V):
+    """金の 色（映りこみ・左上の 光）：n, V（…×3：カメラ）"""
+    vn = np.sum(V * n, -1, keepdims=True)
+    rv = V - 2 * vn * n
+    rv[..., 1] = rv[..., 1] * .55 - .2                               # 下（暗い 床）を 映しすぎない（ひっくり返る たびに 暗く ならない）
+    rv /= np.linalg.norm(rv, axis=-1, keepdims=True)
+    envc = env_lookup(rv).astype(np.float32)
+    ndl = np.clip(n @ KEY_T, 0, 1).astype(np.float32)
+    hv = KEY_T - V
+    hv /= np.linalg.norm(hv, axis=-1, keepdims=True)
+    spec = (np.clip(np.sum(n * hv, -1), 0, 1) ** 50).astype(np.float32)
+    return envc * KOBAN_TINT * (.55 + .5 * ndl)[..., None] + spec[..., None] * np.float32([1.0, .95, .8]) * 1.1 + np.float32([.08, .04, .012])
+
+
+def draw_koban(img, kb, Rn, pos, size, boost=1.0, blur=0.0, mv=(0.0, 0.0), fade=1.0):
+    """小判 1まいを img に（見える 面＋ふちの 側面・近い ほど ぼける・速い ほど ぶれる）"""
+    B = size * KOBAN_SZ
+    A = B * KB.TW / KB.TH
+    t = B * KOBAN_T
+    if pos[2] - B < 40:
         return
-    tri = Q[F]
-    n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-    n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
-    cen = tri.mean(1)
-    vis = np.einsum('ij,ij->i', n, cen) < 0
-    if not vis.any():
-        return
-    tri, n, cen, cav = tri[vis], n[vis], cen[vis], cav[vis]
-    pts = project(tri)
+    ol, on = KB.outline(48)
+    olA = ol * np.array([A * .985, B * .985])
+    Pf = np.column_stack([olA, np.full(len(olA), -t / 2)]) @ Rn.T + pos
+    Pb = np.column_stack([olA, np.full(len(olA), t / 2)]) @ Rn.T + pos
+    pf, pb = project(Pf), project(Pb)
+    allp = np.vstack([pf, pb])
     pad = blur * 2.6 + 4
-    X0, Y0 = int(math.floor(pts[..., 0].min() - pad)), int(math.floor(pts[..., 1].min() - pad))
-    X1, Y1 = int(math.ceil(pts[..., 0].max() + pad)), int(math.ceil(pts[..., 1].max() + pad))
+    X0, Y0 = int(math.floor(allp[:, 0].min() - pad)), int(math.floor(allp[:, 1].min() - pad))
+    X1, Y1 = int(math.ceil(allp[:, 0].max() + pad)), int(math.ceil(allp[:, 1].max() + pad))
     mvl = math.hypot(*mv)
     if X1 + mvl < 0 or Y1 + mvl < 0 or X0 - mvl > W or Y0 - mvl > H:
         return
     w, h = X1 - X0, Y1 - Y0
     if w * h > 9e6:
         return
-    ss = 2.0 if max(w, h) < 260 else (1.0 if blur < 5 else .5)
+    ss = 2.0 if max(w, h) < 220 else (1.0 if blur < 4 else (.5 if blur < 14 else .25))
     cw, ch = max(2, int(w * ss) + 1), max(2, int(h * ss) + 1)
     canvas = np.zeros((ch, cw, 3), np.float32)
     cov = np.zeros((ch, cw), np.float32)
-    V = cen / np.linalg.norm(cen, axis=1, keepdims=True)
-    vn = np.einsum('ij,ij->i', V, n)
-    rv = V - 2 * vn[:, None] * n
-    rv[:, 1] = rv[:, 1] * .55 - .2                                  # 下（暗い 床）を 映しすぎない
-    rv /= np.linalg.norm(rv, axis=1, keepdims=True)
-    envc = env_lookup(rv).astype(np.float32)
-    envc = np.clip(envc - .16, 0, None) * 1.3                       # 映りこみの 明暗を 強く（みがいた 金）
-    dif = np.clip(n @ NUG_L, 0, 1)
-    hv = NUG_L[None, :] - V
-    hv /= np.linalg.norm(hv, axis=1, keepdims=True)
-    spec = np.clip(np.einsum('ij,ij->i', n, hv), 0, 1) ** 44
-    col = envc * NUG_TINT * (.22 + .9 * dif)[:, None] + spec[:, None] * np.float32([1.0, .95, .8]) * 1.5
-    col += ((1 - np.abs(vn)) ** 3 * .2)[:, None] * np.float32([1.0, .72, .3])
-    col += np.float32([.1, .05, .015])                               # まわりの 金の 光（暗く なりすぎない）
-    col *= (1 - .5 * cav)[:, None] * boost
-    q = np.round((pts - np.array([X0, Y0])) * ss * 4).astype(np.int32)
-    for i in np.argsort(-cen[:, 2]):
-        cv2.fillConvexPoly(canvas, q[i], col[i].tolist(), cv2.LINE_8, shift=2)
-        cv2.fillConvexPoly(cov, q[i], 1.0, cv2.LINE_8, shift=2)
-    rgba = np.dstack([canvas, cov])
+    # ふち（側面：遠い 順）
+    nl = on / np.array([A, B])
+    nl /= np.linalg.norm(nl, axis=1, keepdims=True)
+    j1 = (np.arange(len(ol)) + 1) % len(ol)
+    nm = nl + nl[j1]
+    nm /= np.linalg.norm(nm, axis=1, keepdims=True)
+    Nc = np.column_stack([nm, np.zeros(len(nm))]) @ Rn.T
+    cen = (Pf + Pf[j1] + Pb + Pb[j1]) / 4
+    vis = np.einsum('ij,ij->i', Nc, cen) < 0
+    if vis.any():
+        V = cen / np.linalg.norm(cen, axis=1, keepdims=True)
+        col = _gold_at(Nc, V) * .78 * boost
+        for i in np.flatnonzero(vis)[np.argsort(-cen[vis, 2])]:
+            q = np.array([pf[i], pf[j1[i]], pb[j1[i]], pb[i]])
+            q = np.round((q - [X0, Y0]) * ss * 4).astype(np.int32)
+            cv2.fillConvexPoly(canvas, q, col[i].tolist(), cv2.LINE_8, shift=2)
+            cv2.fillConvexPoly(cov, q, 1.0, cv2.LINE_8, shift=2)
+    # 見える 面（表 か 裏）
+    nf = Rn @ np.array([0.0, 0.0, -1.0])
+    front = float(nf @ pos) < 0
+    sgn = 1.0 if front else -1.0
+    zf_ = -t / 2 if front else t / 2
+    hpx = 2 * B * FOCAL / pos[2] * ss
+    j = int(np.clip(math.floor(math.log2(max(1.0, KB.TH / max(hpx * 1.25, 1.0)))), 0, 4))
+    L = kb['front' if front else 'back'][j]
+    sc = KB.TH / L.shape[0]
+    c0 = Rn[:, 0] * (sgn * A / (KB.TW / 2)) * sc
+    c1 = Rn[:, 1] * (B / (KB.TH / 2)) * sc
+    c2 = pos + Rn @ np.array([0.0, 0.0, zf_]) - Rn[:, 0] * sgn * A - Rn[:, 1] * B
+    Kc = np.array([[FOCAL, 0, CXS], [0, FOCAL, CYS], [0, 0, 1]])
+    Hc = np.array([[ss, 0, -X0 * ss], [0, ss, -Y0 * ss], [0, 0, 1]]) @ Kc @ np.column_stack([c0, c1, c2])
+    m4 = cv2.warpPerspective(L, Hc, (cw, ch), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    a = m4[..., 0]
+    idx = np.flatnonzero(a > .003)
+    if len(idx):
+        al = a.ravel()[idx]
+        nx = m4[..., 1].ravel()[idx] / al
+        ny = m4[..., 2].ravel()[idx] / al
+        cv_ = np.clip(m4[..., 3].ravel()[idx] / al, 0, 1)
+        nloc = np.stack([nx, ny, -np.ones_like(nx)], 1) if front else np.stack([-nx, ny, np.ones_like(nx)], 1)
+        n = nloc @ Rn.T
+        n /= np.linalg.norm(n, axis=1, keepdims=True)
+        ys, xs = np.divmod(idx, cw)
+        V = np.stack([((xs + .5) / ss + X0 - CXS) / FOCAL, ((ys + .5) / ss + Y0 - CYS) / FOCAL, np.ones(len(idx))], 1)
+        V /= np.linalg.norm(V, axis=1, keepdims=True)
+        vn = np.sum(V * n, 1, keepdims=True)
+        n = np.where(vn > 0, n - 2 * vn * n, n)
+        col = _gold_at(n, V) * (1 - .55 * cv_)[:, None] * boost
+        fr = np.zeros((ch * cw, 3), np.float32)
+        fr[idx] = col * al[:, None]
+        canvas = fr.reshape(ch, cw, 3) + canvas * (1 - a[..., None])
+        cov = a + cov * (1 - a)
+    rgba = np.dstack([canvas, cov]).astype(np.float32)
     if ss != 1.0:
         rgba = cv2.resize(rgba, (max(1, w), max(1, h)), interpolation=cv2.INTER_AREA if ss > 1 else cv2.INTER_LINEAR)
     if ss > 1:
@@ -765,8 +732,8 @@ def nug_events():
             cz, cx, cy = (2050.0, 0.0, 380.0) if big else (960.0, 0.0, 60.0)
             for k in range(n):
                 th = rng.uniform(0, 2 * math.pi)
-                lat = rng.uniform(400, 1800) * (1.35 if big else 1.0)
-                vz = -rng.uniform(1400, 3400) * (1.25 if big else 1.0)
+                lat = rng.uniform(600, 2000) * (1.35 if big else 1.0)
+                vz = -rng.uniform(700, 2000) * (1.25 if big else 1.0)            # 小判が 見える ように カメラへ 来すぎない
                 vx, vy = lat * math.cos(th), lat * math.sin(th) * .85
                 if big:
                     vy -= rng.uniform(300, 1100)                    # 下から 上へ ぶわっと
@@ -804,8 +771,7 @@ def focus_z(t):
 
 
 def nuggets(img, t):
-    """金の 粒（遠い 順に）"""
-    meshes = nug_meshes()
+    """小判（遠い 順に）"""
     zf = focus_z(t)
     items = []
     for e in nug_events():
@@ -818,20 +784,17 @@ def nuggets(img, t):
         items.append((p[2], e, p, s))
     items.sort(key=lambda a: -a[0])
     for z, e, p, s in items:
-        pp = nug_state(e, t - .5 / FPS)
+        pp = nug_state(e, t - .33 / FPS)                                 # 動きの ぶれ（1/3 コマ：小判の すじが 見える）
         c1 = project(p)
         c0 = project(pp)
-        r_px = e['size'] * FOCAL / z
         blur = min(22.0, 3.2 * abs(zf / z - 1.0)) if z < zf else min(4.0, 3.0 * (1 - zf / z))
         if e.get('soft'):
             blur = max(blur, 30.0)                                  # 手前を 横切る 大きな 粒は 大きく ぼかす（中の 明暗で ちらつかない）
-        lvl = 0 if r_px < 14 else (1 if r_px < 40 else (2 if (r_px < 130 or blur > 5) else 3))
-        mesh = meshes[lvl][e['typ']]
         Rn = axis_rot(e['ax'], e['ph'] + e['w'] * s)
-        boost = (1.15, 1.0 + 1.6 * math.exp(-s / .1), 1.0 + 1.6 * math.exp(-s / .1), 1.0)[e['kind']]
+        boost = (1.0, 1.0 + .5 * math.exp(-s / .08), 1.0 + .5 * math.exp(-s / .08), 1.0)[e['kind']]   # はじけた 時の 光は 少しだけ（小判の 形が 見える）
         fin = e.get('fin', .03)
         fade = min(1.0, (e['life'] - s) / .2) * min(1.0, s / fin + .2)
-        draw_nugget(img, mesh, Rn, p, e['size'], boost, blur, (c1[0] - c0[0], c1[1] - c0[1]), fade)
+        draw_koban(img, koban_tex(e['typ'] % KOBAN_V), Rn, p, e['size'], boost, blur, (c1[0] - c0[0], c1[1] - c0[1]), fade)
 
 
 # ---------------------------------------------------------------- はじける 光・金の ちり・キラッ
@@ -1307,10 +1270,10 @@ def frame(fi):
         o = logo_obj()
         draw_torii(img, R, Tv, t, mv, o)
         sh = None
-        s0, s1 = TT['SHINE']
-        if s0 - .05 <= t <= s1 + .05:
-            q = (t - s0) / (s1 - s0)
-            sh = (-2.6 + 5.2 * ease_out(q), .5)
+        for s0, s1 in TT['SHINE']:
+            if s0 - .05 <= t <= s1 + .05:
+                q = (t - s0) / (s1 - s0)
+                sh = (-2.6 + 5.2 * ease_out(q), .5)
         draw(img, o, R, Tv, env_rot=-14 + 10 * (t - TT['LOGO']), shine=sh, mv=mv)
         glints(img, o, unit_h(R, Tv), t, 70)
     elec(img, t, fi)

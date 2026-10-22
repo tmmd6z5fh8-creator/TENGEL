@@ -18,13 +18,14 @@ import kami as KM                                     # DOME2・dome_r（ペー�
 W_, H_ = 390.0, 844.0
 
 # ---------------------------------------------------------------- 色の くみ（第4.47版：まさちゃん「今青色のところを赤に変えて、紫色のところを金と白に変えられる？」）
-PAL = 'blue'           # 'blue'＝はじめの 青い 嵐（前の 絵と 1バイトも かわらない）・'red'＝赤い 嵐（kami_film.py が えらぶ）
+PAL = 'blue'           # 'blue'＝はじめの 青い 嵐（前の 絵と 1バイトも かわらない）・'red'＝赤い 嵐・'gold'＝金の 嵐（kami_film.py が えらぶ）
 
 
 CLOUD_EDGE = (1.0, .13, .07)     # 'red' の 雲の はしの 色（赤い 光）
 CLOUD_GOLD = (1.0, .8, .22)      # 'red' の 雲の まん中の 色（金）
 CLOUD_K = (.33, .88, .34, .97)   # はしの 強さ・金の 強さ・金が 出はじめる こさ・いちばん 明るく なる こさ
 CLOUD_TEX = .42                  # 金の 雲の もようの 強さ
+CLOUD_EDGE_GOLD = (1.0, .42, .06)  # 'gold' の 雲の はしの 色（こい 金の 光）
 
 
 def pc(c, scale=1.0):
@@ -33,6 +34,8 @@ def pc(c, scale=1.0):
        白・黒・灰と 金・だいだいなどは そのまま"""
     if PAL == 'blue':
         return np.array(c, np.float32) if scale == 1.0 else c
+    if PAL == 'gold':
+        return _pc_gold(c, scale)
     rgb = [float(v) / scale for v in c]
     h, s, v = colorsys.rgb_to_hsv(*rgb)
     h *= 360
@@ -46,6 +49,32 @@ def pc(c, scale=1.0):
         out = colorsys.hsv_to_rgb(th / 360, s * .9, v)
     else:
         out = rgb
+    out = [x * scale for x in out]
+    return np.array(out, np.float32) if scale == 1.0 else tuple(out)
+
+
+def _pc_gold(c, scale=1.0):
+    """'gold'（第4.50版：まさちゃん「赤色のところを金色にして！」）：青・水色 → 金（こい 青は こい 金・水色は 明るい 金）／
+       紫・ピンク → 金／赤・だいだい → 金。白・黒・灰は そのまま"""
+    rgb = [float(v) / scale for v in c]
+    h, s, v = colorsys.rgb_to_hsv(*rgb)
+    h *= 360
+    if s < 1e-6:
+        out = rgb
+    elif 150 <= h <= 258:
+        th = float(np.interp(h, (150, 180, 200, 220, 240, 258), (42, 40, 38, 35, 32, 30)))
+        out = colorsys.hsv_to_rgb(th / 360, s * .95, v)
+    elif 258 < h <= 345:
+        th = float(np.interp(s, (0, .5, 1), (44, 40, 36)))
+        out = colorsys.hsv_to_rgb(th / 360, s * .92, v)
+    elif h > 345 or h < 34:
+        hh = h - 360 if h > 345 else h
+        th = 33 + max(0.0, hh) * .1
+        out = colorsys.hsv_to_rgb(th / 360, s * .95, v)
+    else:
+        out = rgb
+    if s >= 1e-6 and not (34 <= h <= 150):
+        out = [x * (1 - .28 * s) for x in out]                 # 金は 赤より ずっと 明るく 見えるので こい 色ほど 少し 暗く（深い 金・点めつも ふやさない）
     out = [x * scale for x in out]
     return np.array(out, np.float32) if scale == 1.0 else tuple(out)
 
@@ -159,7 +188,7 @@ def storm_bg(W, H, seed=21, falls=1.0):
             col = col + np.array(pc(c, 255), np.float32) / 255 * g[..., None] * .8
         else:
             # 金の 雲：うすい 所は 赤い 光（空に とける。暗い 金は 茶色に 見えるので 作らない）→ こい 所ほど 明るい 金
-            col = col + np.array(CLOUD_EDGE, np.float32) * g[..., None] * CLOUD_K[0]
+            col = col + np.array(CLOUD_EDGE_GOLD if PAL == 'gold' else CLOUD_EDGE, np.float32) * g[..., None] * CLOUD_K[0]
             gt = g * (1 - CLOUD_TEX + 2 * CLOUD_TEX * tx)                    # 雲の もよう（ぼんやりした 玉に しない）
             col = col + np.array(CLOUD_GOLD, np.float32) * (smoothstep(CLOUD_K[2], CLOUD_K[3], gt) ** 1.5)[..., None] * CLOUD_K[1]
         col = col + pc((1.0, .35, .9)) * (plasma(H, W, 11, s_ + 50, 7.0) * g)[..., None] * .35
