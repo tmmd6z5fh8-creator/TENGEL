@@ -96,7 +96,7 @@ def plasma(H, W, cells, seed, p=6.0):
     return np.clip(1 - np.abs(n) * 1.6, 0, 1) ** p
 
 
-def storm_bg(W, H, seed=21):
+def storm_bg(W, H, seed=21, falls=1.0):
     """嵐の 背景（RGB・画面いっぱい）：こい 青の 空に 水色の 電気の もや・紫と ピンクの 雲・光の 滝の 体と 床の しぶき・
        床（ぬれた 青・光の つぶ・横の 光の すじ）。ドーム・滝の すじ・電気は べつの 層"""
     k = W / W_
@@ -132,19 +132,19 @@ def storm_bg(W, H, seed=21):
     wcore = np.exp(-((xs - cx) / (half * .38)) ** 2) * (.55 + .45 * u) * smoothstep(base + 20, base - 10, ys)
     wout = np.exp(-((xs - cx) / (half * 2.2)) ** 2) * (.3 + .7 * u)
     wtex = .75 + .5 * fbm(H, W, 24, seed + 60, 4)                      # 滝の 体の もようの こさ（動かない）
-    col = col + np.array([.05, .3, 1.0], np.float32) * wout[..., None] * .35
-    col = col + np.array([.1, .78, 1.0], np.float32) * (wf * wtex)[..., None] * .75
-    col = col + np.array([.62, .97, 1.0], np.float32) * wcore[..., None] * .62
+    col = col + np.array([.05, .3, 1.0], np.float32) * wout[..., None] * .35 * falls
+    col = col + np.array([.1, .78, 1.0], np.float32) * (wf * wtex)[..., None] * .75 * falls
+    col = col + np.array([.62, .97, 1.0], np.float32) * wcore[..., None] * .62 * falls
     pool = np.exp(-(((xs - cx) / 220) ** 2 + ((ys - base) / 62) ** 2))
-    col = col + np.array([.15, .7, 1.0], np.float32) * pool[..., None] * .7
+    col = col + np.array([.15, .7, 1.0], np.float32) * pool[..., None] * .7 * falls
     # 床の しぶき（白い あわ：滝の 下で ばらばらに 光る かたまり）
     foam_n = fbm(H, W, 40, seed + 70, 4)
     fe = np.exp(-(((xs - cx) / 150) ** 2 + ((ys - base + 6) / 22) ** 2))
     foam = smoothstep(.52, .7, foam_n + fe * .25) * fe
     foam = np.maximum(foam, glow(foam, 3 * k) * 1.2)
-    col = col + np.array([.75, .98, 1.0], np.float32) * foam[..., None] * .9
+    col = col + np.array([.75, .98, 1.0], np.float32) * foam[..., None] * .9 * falls
     hot = np.exp(-(((xs - cx) / 120) ** 2 + ((ys - base + 8) / 28) ** 2))
-    col = col + np.array([.6, .97, 1.0], np.float32) * hot[..., None] * .55
+    col = col + np.array([.6, .97, 1.0], np.float32) * hot[..., None] * .55 * falls
     # 床（ぬれた 青：横の 光の すじ・光の つぶ）
     gnd = smoothstep(base - 6, base + 16, ys)
     fl = ramp((ys - base) / (H / k - base), ((0, (14, 40, 170)), (.4, (8, 20, 110)), (1, (3, 6, 40))))
@@ -169,7 +169,7 @@ def storm_bg(W, H, seed=21):
     dots = np.maximum(dots, glow(dots, 1.6 * k) * 1.6)
     fl = fl + np.array([.45, .9, 1.0], np.float32) * dots[..., None] * .75
     col = col * (1 - gnd[..., None]) + fl * gnd[..., None]
-    col = col + np.array([.2, .7, 1.0], np.float32) * (pool * gnd)[..., None] * .5
+    col = col + np.array([.2, .7, 1.0], np.float32) * (pool * gnd)[..., None] * .5 * falls
     vig = 1 - .5 * smoothstep(.55, 1.15, np.sqrt(((xs - cx) / 260) ** 2 + ((ys - 470) / 560) ** 2))
     return np.clip(col * vig[..., None], 0, 1)
 
@@ -186,12 +186,12 @@ def dome_box():
     return x0, y0, 2 * (RX + DOME_PAD[0]), HD + DOME_PAD[1] + DOME_PAD[2]
 
 
-def dome_glass(seed=31):
+def dome_glass(seed=31, k=None, gloss=False):
     """光の ドーム（前の 面）→ premultiplied RGBA（dome_box の 大きさ × DOME_DPR）。
        すき通る ガラス（まん中は うすく・はしほど 光る）・たての 光の すじ（下ほど 強い）・下の 横の 光の 帯・ふち（光の 粒が つながった 線）と 外の 光・
        ふちの 内がわの 厚み・肩の ピンクの 光"""
     cx, base, RX, HD = KM.DOME2[:4]
-    k = DOME_DPR
+    k = k or DOME_DPR
     x0, y0, bw, bh = dome_box()
     W, H = int(round(bw * k)), int(round(bh * k))
     X = (np.arange(W, dtype=np.float32)[None, :] / k + x0) * np.ones((H, 1), np.float32)
@@ -221,6 +221,30 @@ def dome_glass(seed=31):
     col += np.array([.12, .4, 1.0], np.float32) * (inside * (.08 + .12 * u))[..., None] * .4
     col += np.array([.35, .85, 1.0], np.float32) * (inside * fres ** 2.0)[..., None] * .55
     al = np.maximum(al, body)
+    if gloss:
+        # ガラスが 光を すう（おくの 光が 少し 暗く 青く：奥行き）
+        tint = inside * (.2 + .25 * fres ** 2)
+        al = np.maximum(al, tint)
+        col += np.array([.0, .02, .08], np.float32) * tint[..., None]
+        # つや：左上からの 光の 映りこみ（広い つや＋細い つや）
+        rn2 = np.sqrt(1 + rp * rp)
+        nx_, nu_, nz_ = s * c / c.clip(1e-3) / rn2, -rp / rn2, c / rn2
+        Ld = np.array([-.5, .55, .67])
+        Ld /= np.linalg.norm(Ld)
+        hv = Ld + np.array([0, 0, 1.0])
+        hv /= np.linalg.norm(hv)
+        ndh = np.clip(nx_ * hv[0] + nu_ * hv[1] + nz_ * hv[2], 0, 1) * inside
+        sp1 = ndh ** 40 * .35
+        # 細長い つや（たての 光の 映りこみ：左に 太く・右に 細く。上と 下は うすく）
+        ph_d = np.degrees(phi)
+        vert = smoothstep(.04, .2, u) * (1 - smoothstep(.6, .9, u)) * inside
+        sp1 = sp1 + (np.exp(-((ph_d + 44) / 4.5) ** 2) * .9 + np.exp(-((ph_d + 36) / 1.2) ** 2) * .8 + np.exp(-((ph_d - 57) / 2.2) ** 2) * .5) * vert
+        col += np.array([.85, .97, 1.0], np.float32) * sp1[..., None]
+        al = np.maximum(al, np.clip(sp1, 0, 1) * .8)
+        # 空の 映りこみ（上の ほうの 弓なりの 光の 帯）
+        band2 = inside * smoothstep(.45, .62, nu_) * (1 - smoothstep(.7, .86, nu_)) * (.6 + .4 * fbm(H, W, 12, seed + 12, 3))
+        col += np.array([.55, .85, 1.0], np.float32) * band2[..., None] * .3
+        al = np.maximum(al, band2 * .3)
     # たての 光の すじ（球の 表面に そって・下ほど 強い・はしほど 細かい）
     nrib = 15
     wob = (fbm(H, W, 5, seed + 11, 3) - .5) * .5                     # すじの ゆらぎ（まっすぐ すぎない）
@@ -310,10 +334,11 @@ FALL2 = (340.0, 420.0, 1.5)            # 光の 滝の すじの 絵（画面の
 FALL_BOX = (25.0, -10.0, 340.0, 744.0)  # 光の 滝の 置き場所（左・上・はば・高さ）
 
 
-def fall_tile2(seed=33):
+def fall_tile2(seed=33, k=None):
     """光の 滝の すじ（上から 下へ 落ちる 細かい 光の すじ：たてに つながる 絵）→ premultiplied RGBA。
        細い すじを たくさん（太い かたまりは 作らない：速く 動くと 点めつに なる）"""
-    Wc, Hc, k = FALL2
+    Wc, Hc, k0 = FALL2
+    k = k or k0
     W, H = int(Wc * k), int(Hc * k)
     rng = np.random.default_rng(seed)
     a = np.zeros((H, W), np.float32)
@@ -353,12 +378,12 @@ def fall_tile2(seed=33):
     return np.dstack([col * a[..., None], a])
 
 
-def fall_mask():
-    """光の 滝の 形（上は せまく 下ほど ひろい・ふちは やわらか）→ 0〜1（1倍）"""
+def fall_mask(k=1.0):
+    """光の 滝の 形（上は せまく 下ほど ひろい・ふちは やわらか）→ 0〜1（k 倍）"""
     x0, y0, w, h = FALL_BOX
-    W, H = int(w), int(h)
-    ys = (np.arange(H, dtype=np.float32)[:, None] + y0) * np.ones((1, W), np.float32)
-    xs = (np.arange(W, dtype=np.float32)[None, :] + x0) * np.ones((H, 1), np.float32)
+    W, H = int(round(w * k)), int(round(h * k))
+    ys = (np.arange(H, dtype=np.float32)[:, None] / k + y0) * np.ones((1, W), np.float32)
+    xs = (np.arange(W, dtype=np.float32)[None, :] / k + x0) * np.ones((H, 1), np.float32)
     cx, base = KM.DOME2[0], KM.DOME2[1]
     u = np.clip(ys / base, 0, 1)
     half = 50 + 92 * u ** 1.5
@@ -438,9 +463,9 @@ def ribbon_box(p):
     return float(x0), float(y0), float(x1 - x0), float(y1 - y0)
 
 
-def ribbon(p, seed, strands=3):
+def ribbon(p, seed, strands=3, k=None):
     """白い 光の 帯 1本（2〜3本の 光の 糸が ねじれながら ならぶ・まん中が 明るく 両はしは うすく）→ premultiplied RGBA（ribbon_box の 大きさ × RIB_DPR）"""
-    k = RIB_DPR
+    k = k or RIB_DPR
     x0, y0, bw, bh = ribbon_box(p)
     W, H = int(round(bw * k)), int(round(bh * k))
     rng = np.random.default_rng(seed)
