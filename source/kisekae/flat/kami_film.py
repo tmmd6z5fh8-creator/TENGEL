@@ -408,9 +408,10 @@ ORB_R = 192.0                   # 玉の 半径（上は ドームの てっぺ�
 MORPH = (.52, .74)              # ドームが 床から 上がりながら 丸く なる（まさちゃん「ドームから球体に変わる速度もっと早くてもいいかも！」）
 SHRINK = (.68, 1.333)           # 玉が 小さく なる（おわり＝金の 光の はじめ）：まさちゃん「ドームから球体になる時に一度、止まる演出無くて、その分球体が小さくなるのを…長くして！」
 #   → 玉に なって 止まる 間を なくし、丸く なりきる 前から ゆっくり 小さく なり はじめる（ゆっくり → だんだん 速く → まん中へ すいこまれる）
-ORB_VIB = (.008, 0.0)           # 玉の 大きさの ふるえ（半径の 割合）
-ORB_SHAKE = (1.8, 0.0)          # 玉の 左右の ブルブル（画面の px：玉が 小さく なると √ で 小さく）
+ORB_VIB_PX = (1.5, 3.2, 6.0)    # 大きさの ふるえ（画面の px）：ドームの 間・玉に なった 時・小さく なる おわりの 方（だんだん 大きく）
+ORB_SHAKE_PX = (1.8, 3.2, 6.0)  # 左右の ブルブル（画面の px）：同じ。小さい 玉では 半径の 11〜12% まで
 ORB_VIB_W = .008                # はばだけの ふるえ（左右の 大きさ：ドームが 上がり はじめた 時から）
+#   まさちゃん「球体になってからもっと大きく振動しながら小さくして！」→ 玉に なったら ふるえを 大きく・小さく なる ほど もっと 大きく
 #   まさちゃん「ドーム型から球体へ変形する下から上に上がる時もドームを左右に大きさ変えて振動させて！」→ ふるえは ドームが 床から 上がり はじめる 時から
 #   まさちゃん「球体常に、大きさが変わって振動しているようにして！」「左右にもブルブルして、振動の速度早くして違和感ないようにして！」
 #   → 丸く なって から 消えるまで ずっと ふるえる：コマごとに 大きさと 左右が 細かく かわる（ブルブル）。ふちと 電気は いっしょに ふるえ、
@@ -470,13 +471,19 @@ def shape_at(t):
     sh['base'] = sh
     # ふるえ（丸く なって くると はじまる）：ふち（形・電気）だけ ふるえる。中の もようは base（ふるえない 形）で 描く
     on = sstep(MORPH[0] - .02, MORPH[0] + .06, t)            # ドームが 床から 上がり はじめる 時から ずっと
-    va = ORB_VIB[0] * on                                     # 大きさの ふるえ（半径の 割合：小さく なっても 同じ 割合）
-    if va > 0:
+    if on > 0:
         vx, vs, vq, vw = vib_seq()[max(0, int(round(t * FPS)))]
-        su, sq = 1 + va * vs, va * .4 * vq
+        g1 = sstep(MORPH[1] - .06, MORPH[1] + .04, t)              # 玉に なると 大きく
+        g2 = sstep(SHRINK[0] + .1, SHRINK[1] - .1, t)              # 小さく なる ほど もっと 大きく
+
+        def amp(a):
+            return (a[0] + (a[1] - a[0]) * g1 + (a[2] - a[1]) * g2) * on
+        Rn = max(Wd, 1.0)
+        ra = min(amp(ORB_VIB_PX), .11 * Rn)                      # 大きさの ふるえ（px）
+        shk = min(amp(ORB_SHAKE_PX), .12 * Rn)                   # 左右の ゆれ（px）
+        su, sq = 1 + ra / Rn * vs, ra / Rn * .4 * vq
         sw = 1 + ORB_VIB_W * on * vw                          # 左右の 大きさ
         vb = dict(sh)
-        shk = ORB_SHAKE[0] * on * (R / ORB_R if m >= 1 else 1.0) ** .5   # 左右の ゆれ（小さく なると 少し 小さく）
         vb.update(cx=CX + shk * vx, W=Wd * su * (1 + sq) * sw, Hu=Hu * su * (1 - sq), Hl=Hl * su * (1 - sq))
         vb.update(yt=ye - vb['Hu'], yb=ye + vb['Hl'], vib=on)
         vb['base'] = sh
@@ -1121,7 +1128,7 @@ def sphere_bolt_events():
         while fi <= SB_FR[1]:
             sh = shape_at(fi / FPS)
             big = sh is not None and sh['W'] > 150             # 玉が 大きい 間は 横 向きを さける（画面の はしまで 近すぎる）
-            for _ in range(rng.choice((1, 2, 2))):
+            for _ in range(rng.choice((1, 1, 2))):
                 cand = [d for d in SB_DIRS if fi - last.get(area(d), -99) > 10 and not (big and abs(math.sin(math.radians(d))) < .45)
                         and not (fi < 32 and math.sin(math.radians(d)) > .3)]     # はじめは 下の すみへ 行かない（爆発・床の 光と かさねない）
                 if not cand:
@@ -1129,7 +1136,7 @@ def sphere_bolt_events():
                 d = rng.choice(cand)
                 last[area(d)] = fi
                 ev.append((fi, d + rng.uniform(-10, 10), rng.choice(('zig', 'zig', 'step', 'wander')), rng.randrange(1 << 30), rng.randint(4, 6)))
-            fi += rng.choice((1, 1, 2, 2))
+            fi += rng.choice((1, 2, 2, 3))
         return ev
     return cache('sbev', f)
 
@@ -1220,7 +1227,7 @@ def vertical_bolts(mask, t, fi):
             sd = 9000 + 97 * j + int(ai * 26) + (0 if lowseg else 1000 * phase)
             out += KM._disp_ms(random.Random(sd), (ax, ay), (bx, by), (.1, .16, .22))[1:]
         rsh = random.Random(7000 + 31 * j + fi)               # 上の 細い 所だけ コマごとに ふるえる
-        out = [(x + rsh.uniform(-1, 1) * 1.2 * max(0.0, 1 - (y + 40) / 500), y) for x, y in out]
+        out = [(x + rsh.uniform(-1, 1) * .6 * max(0.0, 1 - (y + 40) / 500), y) for x, y in out]
         cut = []                                              # 床で 止める（床に 当たる 所が 光る）
         for q0, q1 in zip(out, out[1:]):
             cut.append(q0)
