@@ -5,9 +5,10 @@
      字は Dela Gothic One（アプリに 入れて いる フォント）を 本当の 立体（前の 面・ふちの 面取り・うしろへの 厚い 厚み）に して、
      カメラから 見た 形（遠近）で 描く。金は まわりの 光の 映りこみ（金の 空：上は まぶしい 金・地平の こい 線・下は だいだいの 金・たての 光の 帯）
    流れ（0秒＝② の はじめ＝押して から 1.6秒）：
-     0〜0.24秒 白が ひく → 0〜0.48秒「万馬券（きせき）」ななめから 大きく（ゆっくり 回りこむ）
-     0.48〜1.22秒「天眼（テンゲル）」反対の ななめから（ゆっくり 寄る）→ 1.06〜1.52秒 白
-     1.22秒〜 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」が 手前で ふわっと おちつく → 光が 2回 すべる → 3.24〜3.44秒 白（③ へ）
+     0〜0.24秒 白が ひく → 0〜1.2秒「万馬券（きせき）」ななめ 上から 重たい 金が ズーン（0.5秒で 着地：金の 光と 衝撃の 輪・ちり）→ ほんの 少しずつ
+     1.2〜2.5秒「天眼（テンゲル）」反対の ななめ 上から ズーン（1.7秒で 着地）→ 2.32〜2.78秒 白
+     2.48秒〜 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」が 手前で ふわっと おちつく（字の うしろから 金粉が ばらばらに ぶわっと）→ 光が 2回 すべる → 4.5〜4.7秒 白（③ へ）
+     まさちゃん「この二つのシーンはもっとゆっくりで！イメージズーン！て重たい金が登場するイメージ！」
    python3 flat/kami_film2.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -22,7 +23,7 @@ import kami_film as KF
 S = 3.0
 W, H = KF.W, KF.H
 FPS = 30
-N = 104                               # 3.44秒（③ の はじめの まっ白まで）
+N = 141                               # 4.7秒（③ の はじめの まっ白まで）
 SSA = 2                               # 立体の 字は 2倍で 描いて もどす（ふちを なめらかに）
 FOCAL = 1500.0                        # カメラ（絵の 画素：広い 角度で 遠近を 強く）
 ENV_R = 2600.0                        # 映りこみの 空までの きょり（1000 単位：字の 場所で 映りこみが かわる）
@@ -31,10 +32,10 @@ CXS, CYS = W / 2, H / 2
 
 # ---------------------------------------------------------------- 時刻（② の はじめが 0）
 TT = dict(WIN=(0.0, .06, .24),                 # 白（まっ白 → 消える）
-          CU1=(0.0, .5), CU2=(.48, 1.24),
-          WB=(1.06, 1.2, 1.28, 1.52),          # 白（寄り → 4行の 文）
-          TXT=1.22, SHINE=(1.95, 2.85),        # 4行の 文・光が すべる
-          WC=(3.24, 3.38, 3.44))               # 白（③ へ）
+          CU1=(0.0, 1.2), CU2=(1.2, 2.5),      # 万馬券・天眼（まさちゃん「この二つのシーンはもっとゆっくりで！イメージズーン！て重たい金が登場するイメージ！」）
+          WB=(2.32, 2.46, 2.54, 2.78),         # 白（寄り → 4行の 文）
+          TXT=2.48, SHINE=(3.2, 4.1),          # 4行の 文・光が すべる
+          WC=(4.5, 4.64, 4.7))                 # 白（③ へ）
 
 
 def smoothstep(e0, e1, x):
@@ -281,7 +282,7 @@ def glints(img, obj, Hs, t, seed):
     rng = random.Random(seed)
     m = np.zeros((H, W), np.float32)
     for (x, y) in xy:
-        t0 = rng.uniform(-.2, 3.4)
+        t0 = rng.uniform(-.2, 4.6)
         dur = rng.uniform(.28, .45)
         if not (t0 <= t <= t0 + dur) or not (0 <= x < W and 0 <= y < H):
             continue
@@ -315,9 +316,38 @@ def objects():
     return KF.cache('objs2', f)
 
 
-# カメラ（字の 向きと 場所）：(秒, yaw, pitch, roll, x, y, z)（x, y, z は 1000 単位・z は カメラからの きょり）
-POSE1 = ((0.0, -40.0, 17.0, -13.0, 230.0, 140.0, 3350.0), (.5, -29.0, 12.0, -8.0, 90.0, 60.0, 2850.0))
-POSE2 = ((.48, 36.0, 11.0, 10.0, -200.0, 120.0, 2900.0), (1.24, 23.0, 7.0, 5.0, -70.0, 40.0, 2450.0))
+# 重たい 金が ズーン：上から どっしり おりて きて（だんだん 速く）着地 → 少し しずんで もどる → ほんの 少しずつ 動く
+# (はじめ, 着地, おわり) の 秒と、その 時の (yaw, pitch, roll, x, y, z)（x, y, z は 1000 単位・z は カメラからの きょり）
+HEAVY1 = dict(t=(0.0, .5, 1.2), a=(-44.0, 25.0, -15.0, 300.0, -1250.0, 2550.0), b=(-30.0, 13.0, -9.0, 110.0, 70.0, 2950.0),
+              c=(-26.5, 11.5, -7.5, 88.0, 58.0, 2830.0))
+HEAVY2 = dict(t=(1.2, 1.7, 2.5), a=(42.0, 24.0, 15.0, -330.0, -1200.0, 2450.0), b=(30.0, 10.0, 8.0, -140.0, 80.0, 2700.0),
+              c=(25.0, 8.0, 5.5, -95.0, 62.0, 2540.0))
+
+
+def heavy_pose(P, t):
+    """ズーン：着地まで だんだん 速く（重さで おちる）→ 着地で 止まり 少し しずむ → ゆっくり"""
+    t0, tl, t1 = P['t']
+    a, b, c = P['a'], P['b'], P['c']
+    if t < tl:
+        p = max(0.0, (t - t0) / (tl - t0))
+        u = p ** 1.6
+        return [x + (y - x) * u for x, y in zip(a, b)]
+    s = t - tl
+    v = sstep(tl, t1, t)
+    out = [x + (y - x) * v for x, y in zip(b, c)]
+    dip = math.exp(-s / .09) * math.sin(min(math.pi, math.pi * s / .16)) * 34.0        # 着地で しずむ（1000 単位）
+    out[4] += dip
+    out[1] += dip * .03
+    return out
+
+
+def land_time(t):
+    """いちばん 近い 着地からの 秒（なければ None）"""
+    for P in (HEAVY1, HEAVY2):
+        tl = P['t'][1]
+        if tl - .02 <= t <= tl + .7:
+            return t - tl, P
+    return None
 
 
 def txt_z():
@@ -338,13 +368,6 @@ def pose_txt(t):
     return yaw, pitch, 0.0, 0.0, cy, z
 
 
-def lerp_pose(P, t):
-    (t0, *a), (t1, *b) = P
-    u = min(1.0, max(0.0, (t - t0) / (t1 - t0)))
-    u = u * u * (3 - 2 * u) * .35 + u * .65              # ほぼ 一定の 速さ（はじめと おわりを 少し やわらかく）
-    return [x + (y - x) * u for x, y in zip(a, b)]
-
-
 def white_amt(t):
     w0, w1, w2 = TT['WIN']
     a = 1.0 - sstep(w1, w2, t) if t <= w2 else 0.0
@@ -355,6 +378,109 @@ def white_amt(t):
     if t >= c0:
         a = max(a, sstep(c0, c1, t))
     return a
+
+
+def land_back(img, s, cen):
+    """着地の うしろ：金の 光が ぶわっと（すぐ 消える）・金の 衝撃の 輪が 外へ"""
+    if s < 0:
+        return
+    X = (np.arange(W, dtype=np.float32)[None, :]) * np.ones((H, 1), np.float32)
+    Y = (np.arange(H, dtype=np.float32)[:, None]) * np.ones((1, W), np.float32)
+    dx, dy = X - cen[0], (Y - cen[1]) * 1.25
+    d = np.sqrt(dx * dx + dy * dy)
+    g = math.exp(-s / .16)
+    img += (np.exp(-(d / (520 + 900 * s)) ** 2) * .55 * g)[..., None] * np.float32([1.0, .8, .4])
+    r = 80 + 1500 * ease_out(s / .55)
+    th = 26 + 90 * min(1.0, s / .55)
+    ring = np.exp(-((d - r) / th) ** 2) * max(0.0, 1 - s / .55) ** 1.4
+    img += ring[..., None] * np.float32([1.0, .86, .5]) * .75
+
+
+def land_front(img, s, cen, tl):
+    """着地の 前：金の ちりが 外へ とびちる（だんだん おそく）"""
+    if s < 0:
+        return
+    m = np.zeros((H, W), np.float32)
+    rng = random.Random(int(tl * 1000))
+    for _ in range(90):
+        a = rng.uniform(0, 2 * math.pi)
+        v = rng.uniform(500, 2600)
+        life = rng.uniform(.35, .65)
+        if s > life:
+            continue
+        x0 = cen[0] + rng.gauss(0, 140)
+        y0 = cen[1] + rng.gauss(0, 70)
+        dist = v * (1 - math.exp(-s / .18)) * .18
+        x, y = x0 + dist * math.cos(a), y0 + dist * math.sin(a) * .8
+        tail = v * math.exp(-s / .18) * .03
+        e = 1 - s / life
+        cv2.line(m, (int((x - tail * math.cos(a)) * 4), int((y - tail * math.sin(a) * .8) * 4)), (int(x * 4), int(y * 4)),
+                 float(e), max(1, int(rng.uniform(1.5, 3.5))), cv2.LINE_AA, shift=2)
+    KF.glow_add(img, m, ((0, (1, .96, .82), 1.0), (1.5, (1, .78, .3), .9), (6, (1, .55, .12), .4)))
+
+
+def spray_events():
+    """4行の 文の うしろから 金粉が ぶわっと（時刻は ばらばら）：(時刻, 文の 中の 場所 x, y（-1〜1）, 種, 強さ)"""
+    def f():
+        rng = random.Random(9100)
+        ev = []
+        t = TT['TXT'] + .22
+        while t < TT['WC'][1] - .1:
+            ev.append((t, rng.uniform(-1, 1), rng.uniform(-1, 1), rng.randrange(1 << 30), rng.uniform(.7, 1.2)))
+            t += rng.choice((.16, .22, .3, .38, .5))
+        return ev
+    return KF.cache('spray', f)
+
+
+def gold_spray(img, t):
+    """金粉（4行の 文の うしろから 外へ ぶわっと → ゆっくり まって 消える：キラキラ）。まさちゃん「ここは文字の背景から金粉が不定期に飛び散る演出入れて！」
+       細かい 金粉（たくさん）＋大きめの 金の かけら（星の ように キラッ）＋出る 所の 金の もや"""
+    if t < TT['TXT']:
+        return
+    m = np.zeros((H, W), np.float32)
+    big = np.zeros((H, W), np.float32)
+    puffs = []
+    for t0, fx, fy, seed, g in spray_events():
+        s = t - t0
+        if not (0 <= s <= 1.4):
+            continue
+        rng = random.Random(seed)
+        bx, by = 195 + fx * 150, 436 + fy * 175          # 文の うしろの 場所（画面の px）
+        base = rng.uniform(0, 2 * math.pi)
+        if s < .5:
+            puffs.append((bx, by, (1 - s / .5) ** 1.5 * g, 40 + 120 * ease_out(s / .5)))
+        for k in range(int(170 * g)):
+            a = base + rng.gauss(0, 1.15)
+            v = rng.uniform(80, 430)
+            life = rng.uniform(.6, 1.35)
+            tw = rng.uniform(0, 6.3)
+            r = rng.uniform(.6, 2.0)
+            flake = k % 14 == 0
+            if s > life:
+                continue
+            tau = .3
+            dist = v * tau * (1 - math.exp(-s / tau))
+            x = bx + rng.gauss(0, 12) + dist * math.cos(a)
+            y = by + rng.gauss(0, 12) + dist * math.sin(a) + 36 * s * s
+            e = (1 - s / life) ** .6 * (.5 + .5 * math.sin(tw + 24 * s))
+            if e <= 0:
+                continue
+            if flake:                                      # 大きめの 金の かけら（星の ように キラッ）
+                X_, Y_, L = x * S, y * S, (3.5 + 3 * e) * S
+                cv2.line(big, (int((X_ - L) * 4), int(Y_ * 4)), (int((X_ + L) * 4), int(Y_ * 4)), float(e), 2, cv2.LINE_AA, shift=2)
+                cv2.line(big, (int(X_ * 4), int((Y_ - L) * 4)), (int(X_ * 4), int((Y_ + L) * 4)), float(e), 2, cv2.LINE_AA, shift=2)
+                cv2.circle(big, (int(X_ * 4), int(Y_ * 4)), int(1.6 * S * 4), float(e), -1, cv2.LINE_AA, shift=2)
+            else:
+                cv2.circle(m, (int(x * S * 4), int(y * S * 4)), max(1, int(r * S * 4)), float(e), -1, cv2.LINE_AA, shift=2)
+    if puffs:
+        X = (np.arange(W, dtype=np.float32)[None, :] / S)
+        Y = (np.arange(H, dtype=np.float32)[:, None] / S)
+        for bx, by, a, r in puffs:
+            img += (np.exp(-(((X - bx) ** 2 + (Y - by) ** 2) / (r * r))) * .35 * a)[..., None] * np.float32([1.0, .82, .4])
+    if m.max() > 0:
+        KF.glow_add(img, m, ((0, (1, .98, .88), 1.4), (1.2, (1, .84, .4), 1.0), (5, (1, .62, .16), .45)))
+    if big.max() > 0:
+        KF.glow_add(img, big, ((0, (1, 1, .95), 1.3), (2, (1, .9, .55), .9), (8, (1, .7, .25), .4)))
 
 
 def sky_bg():
@@ -382,14 +508,20 @@ def frame(fi):
     o1, o2, o3 = objects()
     img = sky_bg().copy()
     lay, gl = None, None
-    if t < TT['CU1'][1] and t < TT['CU2'][0]:
-        yaw, pitch, roll, x, y, z = lerp_pose(POSE1, t)
-        lay, Hs = draw_obj(o1, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-20 + 40 * t)
+    cen = None
+    if t < TT['CU2'][0]:
+        yaw, pitch, roll, x, y, z = heavy_pose(HEAVY1, t)
+        lay, Hs = draw_obj(o1, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-24 + 22 * t)
         gl = (o1, Hs, 11)
+        cen = project(np.array([x, y, z]))
     elif t < TT['TXT'] + .02:
-        yaw, pitch, roll, x, y, z = lerp_pose(POSE2, t)
-        lay, Hs = draw_obj(o2, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=10 - 30 * (t - TT['CU2'][0]))
+        yaw, pitch, roll, x, y, z = heavy_pose(HEAVY2, t)
+        lay, Hs = draw_obj(o2, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=12 - 18 * (t - TT['CU2'][0]))
         gl = (o2, Hs, 12)
+        cen = project(np.array([x, y, z]))
+    lt = land_time(t)
+    if lt is not None and cen is not None:
+        land_back(img, lt[0], cen)
     if t >= TT['TXT']:
         yaw, pitch, roll, x, y, z = pose_txt(t)
         sh = None
@@ -399,10 +531,13 @@ def frame(fi):
                 sh = (-3.6 + 7.2 * ease_out(q) * 1.0, .45)
         lay, Hs = draw_obj(o3, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-8 + 6 * (t - TT['TXT']), shine=sh)
         gl = (o3, Hs, 13)
+    gold_spray(img, t)                                       # 字の うしろから（字より 先に 描く）
     if lay is not None:
         lay = downsample(lay)
         img = lay[..., :3] + img * (1 - lay[..., 3:4])
         glints(img, gl[0], gl[1], t, gl[2])
+    if lt is not None and cen is not None:
+        land_front(img, lt[0], cen, lt[1]['t'][1])
     dust(img, t)
     img = KF.bloom(img)
     w = white_amt(t)
