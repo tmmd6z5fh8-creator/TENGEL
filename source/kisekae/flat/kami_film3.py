@@ -681,18 +681,18 @@ def nug_events():
                     sz = rng.uniform(70, 125)
                 ev.append(dict(t0=t0 + rng.uniform(0, .07 if big else .05), kind=kind, typ=rng.randrange(NUG_TYPES),
                                p0=np.array([cx + rng.gauss(0, 380 if big else 230), cy + rng.gauss(0, 300 if big else 190), cz - rng.uniform(0, 420)]),
-                               v0=np.array([vx, vy, vz]), tau=rng.uniform(.3, .5), g=rng.uniform(300, 700),
+                               v0=np.array([vx, vy, vz]), tau=rng.uniform(.8, 1.2) if big else rng.uniform(.7, 1.0), g=rng.uniform(200, 500),
                                ax=np.array([rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)]), w=rng.uniform(3, 9) * rng.choice((-1, 1)),
-                               ph=rng.uniform(0, 6.3), size=sz, life=rng.uniform(.55, 1.0) * (1.25 if big else 1.0), end=t_end))
+                               ph=rng.uniform(0, 6.3), size=sz, life=rng.uniform(.55, .9) if big else rng.uniform(.45, .75), end=t_end))
             if big:                                                 # ゆっくり ただよう 粒（おちつく まで 少し のこる）
-                for k in range(12):
+                for k in range(6):
                     th = rng.uniform(0, 2 * math.pi)
                     lat = rng.uniform(150, 480)
                     ev.append(dict(t0=t0 + rng.uniform(.02, .12), kind=kind, typ=rng.randrange(NUG_TYPES),
-                                   p0=np.array([rng.gauss(0, 260), 380 + rng.gauss(0, 260), rng.uniform(900, 1700)]),
+                                   p0=np.array([rng.choice((-1, 1)) * rng.uniform(320, 700), 380 + rng.gauss(0, 420), rng.uniform(1100, 1700)]),
                                    v0=np.array([lat * math.cos(th), lat * math.sin(th) - 200, -rng.uniform(150, 500)]), tau=1.2, g=rng.uniform(150, 300),
                                    ax=np.array([rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)]), w=rng.uniform(1.5, 4) * rng.choice((-1, 1)),
-                                   ph=rng.uniform(0, 6.3), size=rng.uniform(20, 60), life=rng.uniform(1.2, 1.7), end=None))
+                                   ph=rng.uniform(0, 6.3), size=rng.uniform(20, 60), life=rng.uniform(1.0, 1.4), end=None))
         return ev
     return KF.cache('nugev', f)
 
