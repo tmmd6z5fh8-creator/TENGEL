@@ -2,8 +2,10 @@
    まさちゃん（第4.44版）「スタート一個目の動画にして、次に、二個目の動画にして、文章に 万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり
    を入れて！ 三個目の動画をその後に入れて、GODの文字を、神様的中にして！ 全く同じような演出で一度作成してみて！」
    送ってくれた 3つの 動画と 同じ 流れで、絵と 音は 一から 作った（動画の 絵・音・字・ロゴは 使わない・なぞらない）。
+   第4.45版「一枚目の青の爆破エフェクト、色の線やじりじりを球体の周りを走る電気をもっと乱雑な線にして！ 球体の周りを走る電気は、もっと球体を全体的に包むようにして！
+   ビリビリ感増して！ 二枚目のブロックは一つ一つももっと立体的に金色の爆発エフェクトも混ぜ合わせてみて！」
    押した あと（0秒＝押した 瞬間）：
-     ① 青い 嵐：光の 爆発 → 白 → 赤い 炎の 一瞬 → 青い 嵐（光の 柱・光の ドームを はしる 電気・白い 光の 帯・とんでくる 岩・水色の 光の つぶ）→ 金の 輪の 光 → 白
+     ① 青い 嵐：光の 爆発 → 白 → 赤い 炎の 一瞬 → 青い 嵐（光の 柱・光の ドームを つつむ 乱雑な 電気・白い 光の 帯・とんでくる 岩・水色の 光の つぶ）→ 立体の 金の 輪と 金の 爆発・金の 粒 → 白
      ② 金の 字：金の 雲の 空に 金の 立体の 字。「万馬券（きせき）」の 寄り → 「天眼（テンゲル）」の 寄り → 白 → 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」
      ③ 神様的中：白 → 金の 粒が はじけて「神」の 寄り → 金の 粒 →「様」→ 金の 粒 →「的」→ 金の 粒 →「中」→ 金の 粒の 大爆発の 中に「神様／的中」→ ひいて 金の 鳥居 → ボード
    絵：flat/kami_art.py（キャンバスの アセット：id は kami_blobs.json・大きさは kami_layers.json）。ほかは CSS と SVG（雷・光の 帯・岩・光の つぶ・光）
@@ -22,8 +24,8 @@ GD_T = dict(BURST=(0.0, .24),                      # ① 光の 爆発
             BEAMS=(.44, .64, .86, 1.06, 1.24),     # 白い 光の 帯（上から 下へ）
             ROCKS=(.36, .48, .6, .74, .88, 1.0, 1.12, 1.24),     # とんでくる 岩
             ZAP=(.36, 1.4),                        # 光の ドームを はしる 電気・まわりの 雷
-            RING=(1.3, 1.64),                      # 金の 輪の 光
-            WA2=(1.42, 1.56, 1.66, 1.84),          # 白（① → ②）
+            RING=(1.24, 1.66),                     # 金の 輪（立体の かたまり）と 金の 爆発・金の 粒
+            WA2=(1.44, 1.58, 1.66, 1.84),          # 白（① → ②）
             B=1.6,
             CU1=(1.6, 2.08), CU2=(2.08, 2.82),     # 万馬券（きせき）・天眼（テンゲル）の 寄り
             WB=(2.66, 2.8, 2.88, 3.12),            # 白（寄り → 4行の 文）
@@ -78,6 +80,19 @@ def _pd(pts):
     return 'M' + ' '.join(f'{x:.1f} {y:.1f}' for x, y in pts)
 
 
+def _pdi(pts):
+    """みじかく 書いた path（1px に まるめて・となりとの ちがいで）：たくさんの 電気でも ページが 重く ならない ように"""
+    q = [(round(x), round(y)) for x, y in pts]
+    o = f'M{q[0][0]} {q[0][1]}l'
+    px, py = q[0]
+    st = []
+    for x, y in q[1:]:
+        if (x, y) != (px, py):
+            st.append(f'{x - px} {y - py}')
+            px, py = x, y
+    return o + ' '.join(st) if st else ''
+
+
 def bolt(seed, a, b, branches=3, rough=.42, depth=6):
     """細い 雷（本線＋えだ）→ path"""
     rng = random.Random(seed)
@@ -96,25 +111,108 @@ def bolt(seed, a, b, branches=3, rough=.42, depth=6):
 DOME = (195.0, 709.0, 242.0, 338.0)          # 光の ドーム（まん中・よこ・たての 半径）：flat/kami_art.py の storm と 同じ
 
 
-def dome_arc(seed, a0, a1):
-    """光の ドームの ふちを はしる 電気：(角度 a0 → a1 の 弧を ギザギザに）"""
-    rng = random.Random(seed)
+DOME_TILT = .16                              # 少し 上から 見る（よこの 輪が 弓なりに 見える）
+
+
+def sphere_xy(th, ph):
+    """光の ドーム（半分の 球）の 表面の 点 → 画面の 点（正面の 少し 上から 見る）。th：高さの 角度（0＝地面・90＝てっぺん）・ph：よこの 角度（0＝正面・±90＝はし）"""
+    return _proj(_unit(th, ph))
+
+
+def _unit(th, ph):
+    t, p = math.radians(th), math.radians(ph)
+    return (math.cos(t) * math.sin(p), math.sin(t), math.cos(t) * math.cos(p))
+
+
+def _slerp(a, b, u):
+    d = max(-1.0, min(1.0, sum(x * y for x, y in zip(a, b))))
+    w = math.acos(d)
+    if w < 1e-4:
+        return a
+    s0, s1 = math.sin((1 - u) * w) / math.sin(w), math.sin(u * w) / math.sin(w)
+    return tuple(s0 * x + s1 * y for x, y in zip(a, b))
+
+
+def _proj(v):
     cx, cy, rx, ry = DOME
-    n = 18
-    pts = []
-    for k in range(n + 1):
-        a = math.radians(a0 + (a1 - a0) * k / n)
-        j = rng.gauss(0, 5)
-        pts.append((cx + (rx + j) * math.cos(a), cy + (ry + j) * math.sin(a)))
+    return (cx + rx * v[0], cy - ry * v[1] + DOME_TILT * ry * v[2])
+
+
+def _jag(rng, pts, rough, depth=3):
+    """点の 列を ギザギザに（となりの 点の 間を さらに ずらす）"""
+    out = [pts[0]]
+    for a, b in zip(pts, pts[1:]):
+        out += _disp(rng, a, b, depth, rough)[1:]
+    return out
+
+
+def sphere_path(rng, kind, lo=0.0, hi=1.0):
+    """ドームを つつむ 電気 1本の 道（球の 表面に そって 曲がる 線＋中くらいの ずれ）：kind＝rim（ふち）・lat（よこの 輪）・mer（たての 線）・arc（ななめに 大きく まわる）。
+       lo〜hi：よこの 場所（0＝左・1＝右）→ 点の 列（光って いる 間は 同じ 道）"""
+    def ph_in():
+        return -70 + 140 * rng.uniform(lo, hi)
+    n = 24
+    if kind == 'rim':
+        side = 90 if (lo + hi) / 2 > .5 else -90
+        t0 = rng.uniform(0, 40)
+        t1 = rng.uniform(55, 90)
+        pts = [sphere_xy(t0 + (t1 - t0) * k / n, side) for k in range(n + 1)]
+    elif kind == 'lat':
+        th = rng.uniform(8, 72)
+        p0 = ph_in()
+        p1 = max(-88.0, min(88.0, p0 + rng.choice((-1, 1)) * rng.uniform(40, 80)))
+        pts = [sphere_xy(th, p0 + (p1 - p0) * k / n) for k in range(n + 1)]
+    elif kind == 'mer':
+        ph = ph_in()
+        t0 = rng.uniform(0, 25)
+        t1 = rng.uniform(50, 90)
+        pts = [sphere_xy(t0 + (t1 - t0) * k / n, ph) for k in range(n + 1)]
+    else:
+        a = _unit(rng.uniform(5, 80), ph_in())
+        b = _unit(rng.uniform(5, 85), max(-85.0, min(85.0, ph_in() + rng.uniform(-50, 50))))
+        pts = [_proj(_slerp(a, b, k / n)) for k in range(n + 1)]
+    return _jag(rng, pts, rng.uniform(.3, .45), 2)
+
+
+def bolt_branches(rng, main):
+    """道の えだ（外へ・まわりへ 小さく ギザギザ。光って いる 間は 同じ 形）→ path"""
+    cx, cy = DOME[0], DOME[1]
     d = ''
-    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
-        d += _pd(_disp(rng, (ax, ay), (bx, by), 3, .5))[0 if not d else 0:]
-    # 外へ 小さな えだ
-    for _ in range(3):
-        p = pts[rng.randint(2, n - 2)]
-        ang = math.atan2(p[1] - cy, p[0] - cx) + rng.uniform(-.6, .6)
-        ln = rng.uniform(14, 34)
-        d += _pd(_disp(rng, p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), 3, .5))
+    for _ in range(rng.randint(4, 7)):
+        p = main[rng.randint(len(main) // 10, len(main) * 9 // 10)]
+        out = math.atan2(p[1] - cy, p[0] - cx)
+        ang = out + rng.uniform(-1.4, 1.4)
+        ln = rng.uniform(10, 40)
+        br = _disp(rng, p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), 3, .55)
+        d += _pdi(br)
+        if rng.random() < .55:
+            q = br[len(br) // 2]
+            a2 = ang + rng.uniform(-1.0, 1.0)
+            l2 = ln * rng.uniform(.3, .6)
+            d += _pdi(_disp(rng, q, (q[0] + l2 * math.cos(a2), q[1] + l2 * math.sin(a2)), 2, .7))
+    return d
+
+
+def twitch(rng, main, n):
+    """そのコマだけ パチッと 出る とても 小さな 電気（道の 上から 6〜14px）→ path"""
+    d = ''
+    for _ in range(n):
+        p = main[rng.randrange(len(main))]
+        a = rng.uniform(0, 2 * math.pi)
+        ln = rng.uniform(6, 14)
+        d += _pdi(_disp(rng, p, (p[0] + ln * math.cos(a), p[1] + ln * math.sin(a)), 2, .9))
+    return d
+
+
+def sparks_around(rng, n):
+    """ドームの ふちの まわりで パチッと はじける 小さな 電気（ふちの 点から 外へ 短く ギザギザ）"""
+    d = ''
+    for _ in range(n):
+        th = rng.uniform(0, 180)
+        x, y = sphere_xy(th if th <= 90 else 180 - th, 90 if th <= 90 else -90)
+        ang = math.atan2(y - DOME[1], x - DOME[0]) + rng.uniform(-.8, .8)
+        ln = rng.uniform(8, 22)
+        d += _pdi(_disp(rng, (x, y), (x + ln * math.cos(ang), y + ln * math.sin(ang)), 3, .9))
     return d
 
 
@@ -123,38 +221,55 @@ def flick(t, dur, inner, cls='gdfk'):
 
 
 SIDE_BOLTS = ((30, 70, 420, .52), (360, 320, 380, .7), (60, 20, 520, .92), (340, 372, 470, 1.12), (20, 90, 360, 1.3))
-# まわりの 雷（左右の 上から）：(上の x・下の x・下の y・時刻)。それぞれ 0.07秒 あとに もう1回（形を かえて）
+# まわりの 雷（左右の 上から）：(上の x・下の x・下の y・時刻)。それぞれ 0.07秒・0.14秒 あとに もう1回（形を かえて）
+ZAP_DT = .06                                    # ドームの 電気の 1コマ（ここごとに 形が ふるえて えだが かわる）
+ZAP_LIFE, ZAP_NEW = 4, 2                        # 1本の 電気が 光る コマ数（0.24秒）・コマごとに 新しく 出る 本数（いつも 約8本が ドームを つつむ）
+ZAP_KINDS = (('rim', 0, .5), ('rim', .5, 1), ('lat', 0, .5), ('lat', .5, 1), ('mer', 0, .5), ('mer', .5, 1), ('arc', 0, .5), ('arc', .5, 1))
+# 1回に 光る 電気：ドームの 左・右 それぞれに ふち・よこの 輪・たての 線・ななめ（ドームを ぜんたいに つつむ）
 
 
 def zap_events():
-    """光の ドームの 電気：[(時刻, はじめの 角度, おわりの 角度, 色 c／p)]（音も この 時刻で 鳴らす：gen_sfx.py）"""
+    """光の ドームを つつむ 電気：[(時刻, 左右（-1〜1）)]（1回 ZAP_DT 秒・そのたび 形が かわる。音も この 時刻で 鳴らす：gen_sfx.py）"""
     t0, t1 = GD_T['ZAP']
     rng = random.Random(5)
     ev = []
     t = t0
-    k = 0
-    while t < t1:
-        a0 = rng.uniform(190, 300)
-        a1 = min(a0 + rng.uniform(30, 70), 350)
-        ev.append((round(t, 3), a0, a1, 'p' if k % 2 else 'c'))
-        b0 = (a0 + 70 + rng.uniform(0, 60)) % 160 + 190
-        ev.append((round(t + .02, 3), b0, min(b0 + rng.uniform(24, 50), 350), 'c' if k % 2 else 'p'))
-        t += rng.uniform(.07, .1)
-        k += 1
+    while t < t1 - .01:
+        ev.append((round(t, 3), round(rng.uniform(-.7, .7), 2)))
+        t += ZAP_DT
     return ev
 
 
 def zaps():
-    """光の ドームの 電気（白い しんと ピンク・水色の 光）と まわりの 紫の 雷：1回 光る たびに 形が かわる（同じ 所が 何回も 光らない）"""
-    g = ''
-    for k, (t, a0, a1, tone) in enumerate(zap_events()):
-        d = dome_arc(100 + k, a0, a1)
-        g += flick(t, .06, f'<path d="{d}" class="zg{tone}"/><path d="{d}" class="zh{tone}"/><path d="{d}" class="zc"/>')
+    """光の ドームを つつむ 電気（白い しんと 水色・ピンク・紫の 光）：0.06秒ごとに 6本＋ふちの パチッ。1回 光る たびに 形が かわる（同じ 所が 何回も 光らない）
+       と まわりの 紫の 雷"""
+    g, defs = '', ''
+    rng = random.Random(77)
+    ev = zap_events()
+    bolts = []                                                  # (はじめの コマ, 道, 色)：同じ 所が 何回も 光らない ように、1本は 0.24秒 だけ 光って 消える
+    for f in range(len(ev)):
+        for b in range(ZAP_NEW):
+            kind, lo, hi = ZAP_KINDS[(f * ZAP_NEW + b) % len(ZAP_KINDS)]
+            path = sphere_path(rng, kind, lo, hi)
+            bolts.append((f, path, _pdi(path) + bolt_branches(rng, path), rng.choice('ccpv')))
+    for k, (t, pan) in enumerate(ev):
+        by = dict(c='', p='', v='')
+        for f0, path, d, tone in bolts:
+            if f0 <= k < f0 + ZAP_LIFE:
+                by[tone] += d + twitch(rng, path, 2)      # 道と えだは 同じ・小さな パチッ だけ コマごとに
+        by['c'] += sparks_around(rng, 4)
+        inner = ''
+        for tone, d in by.items():                                # 形は 1回だけ 書いて、光・まわり・しん の 3本で 使う
+            if d:
+                defs += f'<path id="gdz{k}{tone}" d="{d}"/>'
+                inner += ''.join(f'<use href="#gdz{k}{tone}" class="{c}"/>' for c in (f'zg{tone}', f'zh{tone}', 'zc'))
+        g += flick(t, ZAP_DT, inner)
     for j, (x0, x1, y1, t) in enumerate(SIDE_BOLTS):
-        for q, o in enumerate((0, .07)):
-            d2 = bolt(300 + j, (x0, -10), (x1, y1), 3) if q == 0 else bolt(320 + j, (x0, -10), (x1 + 10, y1 - 20), 3)
-            g += flick(t + o, .05, f'<path d="{d2}" class="zgp"/><path d="{d2}" class="zhp"/><path d="{d2}" class="zc"/>')
-    return g
+        for q, o in enumerate((0, .07, .14)):
+            d2 = bolt(300 + j * 7 + q, (x0, -10), (x1 + q * 8, y1 - q * 14), 6, .62)
+            defs += f'<path id="gdzs{j}{q}" d="{d2}"/>'
+            g += flick(t + o, .05, ''.join(f'<use href="#gdzs{j}{q}" class="{c}"/>' for c in ('zgp', 'zhp', 'zc')))
+    return f'<defs>{defs}</defs>{g}'
 
 
 BEAM_D = (((120, -30), (60, 240), (190, 480), (150, 760)), ((282, -30), (350, 260), (200, 520), (246, 760)),
@@ -211,7 +326,7 @@ def scene_a():
     T = GD_T
     st0, st1 = T['STORM']
     fa = LAY['gd_fall']
-    ring = LAY['gd_ring']
+    ring, bl = LAY['gd_ring'], LAY['gd_blast']
     r0, r1 = T['RING']
     return f'''<div class="gdA" aria-hidden="true" style="animation:{hide(t1=T['WA2'][2])[1:]}">
       {_img('gd_storm', 0, 0, W_, H_, 'gdst', f'animation:gdIn .1s linear {sec(st0)} both{hide(st0)}')}
@@ -221,7 +336,9 @@ def scene_a():
       {rocks()}
       {_img('gd_fire', 0, 0, W_, H_, 'gdfi', f'animation:gdFi {sec(T["FIRE"][1] - T["FIRE"][0])} linear {sec(T["FIRE"][0])} both{hide(T["FIRE"][0], T["FIRE"][1])}')}
       {_img('gd_burst', 0, 0, W_, H_, 'gdbu', f'animation:gdBu {sec(T["BURST"][1])} cubic-bezier(.2,.8,.3,1) 0s both{hide(None, T["BURST"][1])}')}
+      {_img('gd_blast', FX - bl['w'] / 2, 422 - bl['h'] / 2, bl['w'], bl['h'], 'gdbl', f'animation:gdBl {sec(r1 - r0)} cubic-bezier(.2,.7,.35,1) {sec(r0)} both{hide(r0, r1)}')}
       {_img('gd_ring', FX - ring['w'] / 2, 422 - ring['h'] / 2, ring['w'], ring['h'], 'gdrg', f'animation:gdRg {sec(r1 - r0)} cubic-bezier(.3,.6,.4,1) {sec(r0)} both{hide(r0, r1)}')}
+      <div class="gdnu" style="--nug:url({blob('gd_nug')});--cell:{LAY['gd_nug']['cell']}px;--sw:{LAY['gd_nug']['w']:g}px;--sh:{LAY['gd_nug']['h']:g}px">{nug_burst(r0 + .04, 3, 33, FX, 422)}</div>
     </div>'''
 
 
@@ -281,11 +398,12 @@ TWINKLE_C = ((.08, .1), (.92, .08), (.45, .48), (.1, .9), (.88, .9), (.62, .2), 
 
 
 def nug_burst(t, kind, seed, cx=195.0, cy=430.0):
-    """金の 粒の 爆発：まん中から 手前へ（大きく なって 画面の 外へ）。kind 0＝大きな 粒が いくつか 手前を 横切る（字の かわり目を かくす）・1＝大・2＝いちばん 大"""
+    """金の 粒の 爆発：まん中から 手前へ（大きく なって 画面の 外へ）。kind 0＝大きな 粒が いくつか 手前を 横切る（字の かわり目を かくす）・1＝大・2＝いちばん 大・
+       3＝① の 金の 輪と いっしょの 金の 爆発（少なめ：点めつの ため）"""
     L = LAY['gd_nug']
     cell = L['cell']
     rng = random.Random(seed)
-    n = (6, 18, 28)[kind]
+    n = (6, 18, 28, 10)[kind]
     o = ''
     for k in range(n):
         a = 2 * math.pi * (k + rng.uniform(-.4, .4)) / n
@@ -406,11 +524,13 @@ def gd_css():
 .ov.gd .gdfk{{opacity:0}}
 @keyframes gdFk{{0%,99%{{opacity:1}}100%{{opacity:0}}}}
 .ov.gd .gdzap path{{fill:none;stroke-linecap:round;stroke-linejoin:round}}
-.ov.gd .zc{{stroke:#FFFFFF;stroke-width:1.2}}
+.ov.gd .zc{{stroke:#FFFFFF;stroke-width:1.1}}
 .ov.gd .zhc{{stroke:#9BEFFF;stroke-width:3.2;stroke-opacity:.45}}
 .ov.gd .zgc{{stroke:#58C8FF;stroke-width:8;stroke-opacity:.14}}
 .ov.gd .zhp{{stroke:#FF8AE6;stroke-width:3.2;stroke-opacity:.45}}
 .ov.gd .zgp{{stroke:#E040C8;stroke-width:8;stroke-opacity:.14}}
+.ov.gd .zhv{{stroke:#B49BFF;stroke-width:3.2;stroke-opacity:.45}}
+.ov.gd .zgv{{stroke:#7A4CFF;stroke-width:8;stroke-opacity:.16}}
 .ov.gd .gdbm path{{stroke-dasharray:100 100}}
 .ov.gd .bg1{{stroke:url(#gdbmc);stroke-width:34;stroke-opacity:.16}}
 .ov.gd .bg2{{stroke:url(#gdbmc);stroke-width:14;stroke-opacity:.55}}
@@ -424,7 +544,8 @@ def gd_css():
 .ov.gd .gdmo{{position:absolute;inset:0}}
 .ov.gd .gdmo i{{border-radius:50%;background:#BDF6FF;box-shadow:0 0 6px #3FD0FF;opacity:0;animation:gdMo 1s ease-out infinite}}
 @keyframes gdMo{{0%{{opacity:0;transform:none}}20%{{opacity:.9}}100%{{opacity:0;transform:translate(var(--dx),var(--dy))}}}}
-@keyframes gdRg{{0%{{opacity:0;transform:scale(.3)}}22%{{opacity:1}}100%{{opacity:1;transform:scale(1.7)}}}}
+@keyframes gdRg{{0%{{opacity:0;transform:scale(.86)}}22%{{opacity:1}}100%{{opacity:1;transform:scale(1.14)}}}}
+@keyframes gdBl{{0%{{opacity:0;transform:scale(.6)}}18%{{opacity:1}}100%{{opacity:1;transform:scale(1.5)}}}}
 /* 白い 光 */
 .ov.gd .gdw{{position:absolute;inset:0;background:#FFFFFF;opacity:0;pointer-events:none;z-index:8}}
 {wk}

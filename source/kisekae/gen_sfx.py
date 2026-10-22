@@ -1215,6 +1215,16 @@ def whoosh(d, rng, f0=3000, f1=400):
     return fade(x * a, .005, .02)
 
 
+def buzz(d, rng, f=118):
+    """ビリビリ：電気の うなり（少し ずらした 四角い 波 2つ＋こまかい ノイズ・大きさが ゆれる）"""
+    n = n_(d)
+    t = tl(n)
+    x = .5 * np.sign(np.sin(phase(f * (1 + .01 * np.sin(2 * np.pi * 7 * t)), n))) + .35 * np.sign(np.sin(phase(f * 2.01, n)))
+    x = bp(x, 300, 5000) + .5 * bp(rng.standard_normal(n), 2000, 9000)
+    am = .55 + .45 * np.sign(np.sin(2 * np.pi * 23 * t + rng.uniform(0, 6)))
+    return fade(x * lp(am, 80, 1), .01, .05)
+
+
 def jingle(mx, t0, dur, count, g, rng, pan=.8):
     """ジャラジャラ：金の 粒（コインより 少し 低く 重い）"""
     for _ in range(count):
@@ -1223,8 +1233,8 @@ def jingle(mx, t0, dur, count, g, rng, pan=.8):
 
 def sfx_gd():
     """神様的中の タップの 音（秒は kami.py の GD_T・zap_events・SIDE_BOLTS）：
-       0 ドガーン!!（光の 爆発）＋キィィン → ゴォッ（赤い 炎）→ 青い 嵐：ゴゴゴ（低い うなり）＋電気の バチバチ（ドームの 電気・まわりの 雷）＋ズバァン（光の 帯）＋ヒュンッ（岩）
-       → シュワーッ↑（金の 輪）→ パァーン（白）→ ジャーン（金管と 合唱：ミ）万馬券 → ジャーン（ラ）天眼 → シュワーッ↑ → ドーン＋どら＋ジャーン（白 → 4行の 文）＋ああぁぁ（合唱）＋キラーン（光の 帯）
+       0 ドガーン!!（光の 爆発）＋キィィン → ゴォッ（赤い 炎）→ 青い 嵐：ゴゴゴ（低い うなり）＋ビリビリ（電気の うなり）＋バチバチ（ドームを つつむ 電気・コマごと／まわりの 雷）
+       ＋ズバァン（光の 帯）＋ヒュンッ（岩）→ ドガーン＋ジャラジャラ（金の 輪と 金の 爆発）＋シュワーッ↑ → パァーン（白）→ ジャーン（金管と 合唱：ミ）万馬券 → ジャーン（ラ）天眼 → シュワーッ↑ → ドーン＋どら＋ジャーン（白 → 4行の 文）＋ああぁぁ（合唱）＋キラーン（光の 帯）
        → シュワーッ↑ → ドガーン!!＋ジャラジャラ（金の 粒）→ ドン（神）・ドン（様）・ドン（的）・ドン（中）→ ドガーン!!＋ジャーン（神様／的中）→ グォォ↑（ひく）→ パッパッパーン（ファンファーレ）
        → シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル"""
     G = read_gd()
@@ -1250,13 +1260,14 @@ def sfx_gd():
     mx.add(rumble(s1 - s0 + .2, r, 150, 9), s0, .5, rv=.3)
     mx.add(growl(30.9, 41.2, s1 - s0, s1 - s0, 2.0), s0, .16, rv=.2)                           # 低い うなり
     mx.add(crackle(s1 - s0, 90, r), s0, .25, rv=.25)
-    for t, a0, a1, tone in G.zap_events():
-        pan = math.cos(math.radians((a0 + a1) / 2)) * .9
-        mx.add(arc_zap(.07, r, 900), t, .3, pan, rv=.2)
-        mx.add(crackle(.12, 220, r), t, .25, pan, rv=.2)
+    z0, z1 = T['ZAP']
+    mx.add(buzz(z1 - z0 + .1, r), z0, .12, rv=.15)                                          # ビリビリ（ドームを つつむ 電気の うなり）
+    for t, pan in G.zap_events():                                                             # ドームの 電気：コマごとに バチバチ
+        mx.add(arc_zap(.07, r, 1000), t, .3, pan, rv=.2)
+        mx.add(crackle(.1, 260, r), t, .22, -pan, rv=.2)
     for x0, x1, y1, t in G.SIDE_BOLTS:
         pan = (x0 / 195 - 1) * .9
-        for o in (0, .07):
+        for o in (0, .07, .14):
             mx.add(arc_zap(.06, r, 1100), t + o, .4, pan, rv=.25)
         mx.add(explosion(r, .25, 1.6), t + .01, .2, pan, rv=.35)                                  # バリッ（雷の はじける 音）
     for k, t in enumerate(T['BEAMS']):
@@ -1266,9 +1277,12 @@ def sfx_gd():
     for k, t in enumerate(T['ROCKS']):
         pan = (-.7, .7)[k % 2]
         mx.add(whoosh(.5, r), t, .3, np.linspace(0, pan * 1.2, 12), rv=.2)
-    # --- 金の 輪 → 白（① → ②）---
+    # --- 金の 輪（立体の かたまり）と 金の 爆発 → 白（① → ②）---
     r0 = T['RING'][0]
     pk = T['WA2'][1]
+    mx.add(explosion(r, .9, 1.0), r0, .6, rv=.3)                                             # ドガーン（金の 爆発）
+    mx.add(boom(110, 34, 1.0, .35, .05, 2.4, r), r0, .7 * FZ_LOW, rv=.15)
+    jingle(mx, r0 + .04, .45, 16, .14, r)                                                    # ジャラジャラ（金の 粒）
     d = pk - r0 + .05
     mx.add(nsweep(d, 500, 9000, .45, r) * np.linspace(0, 1, n_(d)) ** 2, r0, .35, rv=.35)
     for j, m in enumerate((76, 80, 83, 88, 92, 95, 100)):

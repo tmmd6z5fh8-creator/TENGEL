@@ -5,7 +5,8 @@
    - 金の 立体の 字：前の 面（金の ふちの 面取り＋字の 面）＋ななめ うしろへの 厚み（こい 茶色の 側面・うしろの はしに 金の 線）＋外の こい ふち。
      光（左上・手前）・金の 映りこみ（上から 下へ）・つや・キラッ を numpy で
    - 出す 絵（すき通しの ある WebP。大きさと 置き場所は kami_layers.json）：
-       ① 青い 嵐（はじまり）：gd_burst（はじめの 光の 爆発）・gd_fire（赤い 炎の 一瞬）・gd_storm（青い 嵐の 背景）・gd_fall（光の 柱の すじ）・gd_ring（金の 輪の 光）
+       ① 青い 嵐（はじまり）：gd_burst（はじめの 光の 爆発）・gd_fire（赤い 炎の 一瞬）・gd_storm（青い 嵐の 背景）・gd_fall（光の 柱の すじ）・
+          gd_ring（立体の 金の 輪：まん中へ むかう 厚み）・gd_blast（金の 爆発）
        ② 金の 字：gd_sky（金の 雲の 空）・gd_cu1（万馬券（きせき）の 寄り）・gd_cu2（天眼（テンゲル）の 寄り）・gd_txt（4行の 文）
        ③ 神様的中：gd_c1〜gd_c4（神・様・的・中 の 寄り：しまの 金の 字）・gd_logo（神様／的中）・gd_frame（金の 鳥居）・gd_nug（金の 粒 8つ）
    python3 flat/kami_art.py <出力フォルダ> [名前 …]   → <名前>.webp と kami_layers.json（名前を つけた 時は その 絵の 所だけ かわる）
@@ -537,8 +538,39 @@ def fire(W, H, seed=51):
     return np.clip(col, 0, 1)
 
 
+def extrude_radial(body, cx, cy, depth, steps=None):
+    """まん中へ むかう 厚み（金の 輪の かたまり）：前の 面の 形を まん中へ 小さく して 重ねる（うしろ → 前）→ premultiplied RGBA。
+       側面は 左上を 向く 所が 光る（こい 金 → 黒に 近い 茶色）・うしろの はしに 金の 線"""
+    H, W = body.shape
+    n = steps or max(4, int(depth * max(H, W) / 1.2))
+    nx, ny = out_normals(body)
+    lit = np.clip(-(nx * -.6 + ny * -.8), 0, 1)                     # まん中を 向く 側面：左上の 光を うける 向き
+    lit = np.clip(-nx * .6 - ny * .8, 0, 1) * 0 + np.clip(nx * -.6 + ny * -.8, 0, 1)
+    spec = np.clip(nx * -.6 + ny * -.8, 0, 1) ** 12
+    acc = np.zeros((H, W, 4), np.float32)
+
+    def warp(img, k):
+        M = np.float32([[k, 0, cx * (1 - k)], [0, k, cy * (1 - k)]])
+        return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    e = warp(body, 1 - depth * 1.05)
+    acc[..., :3] = BACK_EDGE * e[..., None]
+    acc[..., 3] = e
+    for i in range(n, 0, -1):
+        s = i / n
+        k = 1 - depth * s
+        a_s = warp(body, k)
+        l_s = warp(lit, k)
+        p_s = warp(spec, k)
+        base = SIDE_NEAR * (1 - s) ** 1.1 + SIDE_FAR * (1 - (1 - s) ** 1.1)
+        col = base[None, None, :] + (SIDE_HI[None, None, :] - base[None, None, :]) * (l_s * (1 - .5 * s))[..., None] * .9
+        col = col + np.array([1.0, .95, .8], np.float32) * (p_s * (1 - s))[..., None] * .6
+        acc = over(acc, np.dstack([np.clip(col, 0, 1) * a_s[..., None], a_s]))
+    return acc
+
+
 def gold_ring(S_, seed=61):
-    """金の 輪の 光（青い 嵐 → 金の 字 の 間）：まん中が 白・金の 輪の 切れはし（面取り）・光の 筋 → premultiplied RGBA"""
+    """金の 輪（青い 嵐 → 金の 字 の 間）：金の 輪の 切れはしを 立体の かたまりに（前の 面の 面取り＋まん中へ むかう 厚み）＋まん中の 白い 光と 光の 筋
+       → premultiplied RGBA（金の 爆発は gold_blast で べつの 絵）"""
     H = W = S_
     cx = cy = S_ / 2
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -546,24 +578,77 @@ def gold_ring(S_, seed=61):
     ang = np.arctan2(yy - cy, xx - cx)
     rng = np.random.default_rng(seed)
     a = np.zeros((H, W), np.float32)
-    for r0, w, nseg in ((.34, .05, 7), (.5, .08, 9), (.68, .06, 12), (.86, .1, 8)):
-        ring = smoothstep(w * .5, w * .5 - .01, np.abs(rr - r0))
+    for r0, w, nseg in ((.3, .06, 6), (.47, .085, 8), (.65, .075, 11), (.85, .1, 8)):
+        ring = smoothstep(w * .5, w * .5 - .012, np.abs(rr - r0))
         segm = np.zeros_like(a)
         off = rng.uniform(0, 6.28)
         for k in range(nseg):
             a0 = off + k * 2 * np.pi / nseg
-            ln = rng.uniform(.45, .8) * 2 * np.pi / nseg
+            ln = rng.uniform(.5, .78) * 2 * np.pi / nseg
             da = np.mod(ang - a0, 2 * np.pi)
-            segm = np.maximum(segm, smoothstep(0, .02, da) * smoothstep(ln, ln - .02, da))
+            segm = np.maximum(segm, smoothstep(0, .025, da) * smoothstep(ln, ln - .025, da))
         a = np.maximum(a, ring * segm)
-    em = S_ * .1
-    fr, body = front(a, em, (.0, .25, .2), 'gold', 6)
+    em = S_ * .045
+    sd = extrude_radial(a, cx, cy, .13)
+    fr, body = front(a, em, (.0, .32, .0005), 'gold', 10)
+    allm = np.maximum(body, sd[..., 3])
+    ring_e = np.clip(grow(allm, max(1.0, .03 * em)) - allm, 0, 1)
+    blocks = np.zeros((H, W, 4), np.float32)
+    blocks[..., :3] = np.array(EDGE, np.float32) / 255 * ring_e[..., None]
+    blocks[..., 3] = ring_e
+    blocks = over(blocks, sd)
+    blocks = over(blocks, fr)
     glow = radial(H, W, cx, cy, S_ * .5, 1.6)
     ry = rays(H, W, cx, cy, 40, seed + 2, .7, 1.2) * np.clip(1 - rr, 0, 1)
     la = np.clip(glow * 1.1 + ry * .6, 0, 1)
     lc = np.stack([np.ones_like(la), .92 + 0 * la, .7 + .3 * glow], -1)
     out = np.dstack([lc * la[..., None], la])
-    return over(out, fr)
+    return over(out, blocks)
+
+
+def gold_blast(S_, seed=71):
+    """金の 爆発（金の 輪と いっしょに）：まん中が 白 → 金 → だいだいの 炎の 舌が 外へ・金の 光の 筋・火の 粉 → premultiplied RGBA"""
+    H = W = S_
+    cx = cy = S_ / 2
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    rr = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) / (S_ / 2)
+    th = (np.arctan2(yy - cy, xx - cx) + np.pi) / (2 * np.pi)
+    N = 512
+
+    def wrap_x(t):                                          # よこに つながる ノイズ（まわりを 1周 しても つなぎめ なし）
+        w = np.linspace(0, 1, N, endpoint=False, dtype=np.float32)[None, :]
+        return t[:, N:] * (1 - w) + t[:, :N] * w
+    tex = wrap_x(fbm(N, 2 * N, 6, seed, 6, .55))
+    tex2 = wrap_x(fbm(N, 2 * N, 14, seed + 5, 4, .5))
+    tex = (tex - tex.mean()) / (tex.std() + 1e-6) * .16 + .5
+    tex2 = (tex2 - tex2.mean()) / (tex2.std() + 1e-6) * .14 + .5
+    mx = (th * N * 2) % N                                   # まわりを 2回 まわる（つなぎめ なし）
+    my = np.clip(rr * N * .9, 0, N - 1)
+    n1 = cv2.remap(tex, mx.astype(np.float32), my.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
+    n2 = cv2.remap(tex2, ((th * N * 5) % N).astype(np.float32), np.clip(rr * N * 1.6, 0, N - 1).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
+    f = 1.18 - rr * 1.25 + (n1 - .5) * 1.1 + (n2 - .5) * .35
+    f = np.clip(f, 0, 1) ** 1.2
+    core = radial(H, W, cx, cy, S_ * .2, 1.4)
+    f = np.clip(f + core * .8, 0, 1)
+    col = ramp(f, ((0, (200, 90, 10)), (.25, (250, 150, 24)), (.5, (255, 196, 50)), (.72, (255, 230, 120)), (.88, (255, 248, 210)), (1, (255, 255, 255))))
+    al = smoothstep(.04, .35, f) * (.55 + .45 * smoothstep(.1, .5, f))
+    ry = rays(H, W, cx, cy, 34, seed + 2, .5, 1.4) * np.clip(1 - rr * .9, 0, 1) * smoothstep(.05, .25, rr)
+    col = np.clip(col + ry[..., None] * np.array([1.0, .85, .4], np.float32) * .7, 0, 1)
+    al = np.clip(al + ry * .55, 0, 1)
+    rng = np.random.default_rng(seed + 9)
+    sp = np.zeros((H, W), np.float32)
+    for _ in range(140):                                     # 火の 粉（外へ むかう 短い すじ）
+        a_ = rng.uniform(0, 2 * np.pi)
+        r0 = rng.uniform(.25, .95) * S_ / 2
+        ln = rng.uniform(4, 16) * S_ / 600
+        p0 = (cx + r0 * math.cos(a_), cy + r0 * math.sin(a_))
+        p1 = (cx + (r0 + ln) * math.cos(a_), cy + (r0 + ln) * math.sin(a_))
+        cv2.line(sp, (int(p0[0] * 4), int(p0[1] * 4)), (int(p1[0] * 4), int(p1[1] * 4)), float(rng.uniform(.6, 1.0)), max(1, int(S_ / 400)), cv2.LINE_AA, shift=2)
+    sp = np.maximum(sp, cv2.GaussianBlur(sp, (0, 0), 1.5) * .8)
+    col = col * (1 - sp[..., None]) + np.array([1.0, .95, .7], np.float32) * sp[..., None]
+    al = np.clip(np.maximum(al, sp), 0, 1)
+    al *= smoothstep(1.0, .8, rr)
+    return np.dstack([col * al[..., None], al])
 
 
 # ---------------------------------------------------------------- ③ 金の 粒・金の 鳥居
@@ -858,7 +943,8 @@ def build_text(out, names, lay):
 BG = dict(gd_burst=(burst, 1.0, 'rgb'), gd_fire=(fire, 1.0, 'rgb'), gd_storm=(storm, 1.5, 'rgb'), gd_sky=(sky, 1.5, 'rgb'))
 SCR_W, SCR_H = 390.0, 844.0
 FALL = (180.0, 420.0, 1.0)       # 光の 柱の すじ（画面の px・倍率）
-RING = (600.0, 1.0)              # 金の 輪の 光
+RING = (600.0, 1.4)              # 金の 輪（立体の かたまり）
+BLAST = (600.0, 1.0)             # 金の 爆発
 
 
 def build(out, names=None):
@@ -876,8 +962,11 @@ def build(out, names=None):
         save(fall_tile(int(FALL[0] * FALL[2]), int(FALL[1] * FALL[2])), os.path.join(out, 'gd_fall.webp'), 80)
     lay['gd_fall'] = dict(w=FALL[0], h=FALL[1])
     if want('gd_ring'):
-        save(gold_ring(int(RING[0] * RING[1])), os.path.join(out, 'gd_ring.webp'), 82)
+        save(gold_ring(int(RING[0] * RING[1])), os.path.join(out, 'gd_ring.webp'), 84)
     lay['gd_ring'] = dict(w=RING[0], h=RING[0])
+    if want('gd_blast'):
+        save(gold_blast(int(BLAST[0] * BLAST[1])), os.path.join(out, 'gd_blast.webp'), 80)
+    lay['gd_blast'] = dict(w=BLAST[0], h=BLAST[0])
     if want('gd_nug'):
         save(nug_sheet(), os.path.join(out, 'gd_nug.webp'), 86)
     lay['gd_nug'] = dict(w=NUG_CELL * 4, h=NUG_CELL * 2, cell=NUG_CELL, n=NUG_N)
