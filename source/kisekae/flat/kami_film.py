@@ -8,12 +8,13 @@
    流れ（0秒＝押した 瞬間）：
      0〜0.23秒 点火：光の 玉が はじけて ひろがる（光の 筋・電気・横に のびる 光・火花）→ まっ白
      0.2〜0.33秒 白が ひいて 嵐の 空・光の 滝が 上から おりて 床に 当たる（しぶき・床の 光の 輪）
-     0.4〜0.63秒 ガラスの ドームが 床から ふくらむ（ふちが 光る）・0.43〜0.63秒 ピンクの 電気の 光・大きな 雷
-     0.6〜1.4秒 嵐の 頂点：ドームの ふちの ジリジリと 肩の ピンクの 電気・大きな 雷・白い 光の 帯・とんでくる 岩・しぶき（ドームは ゆっくり 大きく）
-     0.55〜0.95秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 1.08〜1.333秒 玉が まん中へ 小さく なって 金の 光に 入る
+     0.4〜0.63秒 ガラスの ドームが 床から ふくらむ（ふちが 光る）・0.43〜0.63秒 ピンクの 電気の 光
+     0.6〜1.4秒 嵐の 頂点：ドームの ふちの ジリジリと 肩の 電気・とんでくる 岩・しぶき
+     0.52〜0.74秒 ドームが 床から 上がりながら 丸い 玉に なる（まわりに 雷を まとう：第4.47版）→ 1.08〜1.333秒 玉が まん中へ 小さく なって 金の 光に 入る
+     0.24〜1.4秒 上から 下への 雷（上は 細く 下ほど 太い・だんだん 太く・上の 方は 不定期に ガクッと かわる）・0.73〜1.3秒 玉から 画面の はしへ はしる 雷（不定期）
      1.33〜1.6秒 金の 光が 集まって 金の 爆発（金の かけら・金の 粒・光の 筋）→ まっ白（② 金の 字へ）。ドームは もう ない
    光は 足し算で 重ねて、明るい 所の にじみ（ブルーム）と、白く とぶ 前に ゆるやかに 頭うち（肩の ある 曲線）
-   点めつ：強い 光は どの 点でも 1秒に 3回まで（大きな 白は はじめの 1回と さいごの 金→白 だけ。雷は 1本 2コマ・同じ 所は 1回）。画面ぜんたいは 動かさない（動くのは 光・ドーム・帯・岩）
+   点めつ：強い 光は どの 点でも 1秒に 3回まで（大きな 白は はじめの 1回と さいごの 金→白 だけ。雷の 太い 所は 動かさず、同じ 所には つづけて 出さない）。画面ぜんたいは 動かさない（動くのは 光・ドーム・帯・岩）
    python3 flat/kami_film.py <出力フォルダ> [コマ番号（1〜48）…]  → f01.png〜f48.png（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -39,11 +40,8 @@ T = dict(IGN=(0.0, .133, .2, .233, .367),       # 点火：はじまり・白が
          SURGE=(.45, .483, .55, .65),           # ピンクの 電気の 光
          CRACK=(.6, 1.4),                       # ドームの 電気
          GOLD=(1.333, 1.4, 1.467, 1.567))       # 金：光が 集まる・爆発・白が 出はじめ・まっ白
-BOLTS = ((16, (14, 800), (382, 110), 'c'), (22, (376, 20), (356, 640), 'c'), (27, (40, -12), (100, 360), 'p'),
-         (31, (330, -12), (236, 330), 'p'), (35, (14, 60), (34, 600), 'c'), (38, (160, -12), (286, 320), 'p'))
-# 大きな 雷：(はじめの コマ（0から）, はじめ, おわり, 色)。1本 2コマ
 RIBS = ((0, .24, 1.0), (1, .3, .9), (2, .56, 1.36), (5, .72, 1.2), (3, .9, 1.4), (4, 1.04, 1.4))
-# 白い 光の 帯：(kami.py の RIBBONS の 番号, 出る 秒, 消える 秒)
+# 上から 下への 雷（前の 白い 光の 帯の 所：第4.47版）：(kami.py の RIBBONS の 番号, 出る 秒, 消える 秒)
 ROCKS = ((.45, -1, 0), (.6, 1, 1), (.78, -1, 2), (.95, 1, 3), (1.12, -1, 0))
 # 岩：(とび はじめ, 左右, 形の 番号)
 
@@ -175,30 +173,6 @@ def tonemap(img):
 
 
 # ---------------------------------------------------------------- 線の 形（雷・電気）
-def bolt_polys(seed, a, b, branches=9, rough=None):
-    """大きな 雷の 線（本線・えだ・小えだ）→ [(点の 列, 明るさ)]"""
-    rng = random.Random(seed)
-    R = rough or KM.BOLT_ROUGH
-    main = KM._disp_ms(rng, a, b, R)
-    out = [(main, 1.0)]
-    L = math.hypot(b[0] - a[0], b[1] - a[1])
-    base = math.atan2(b[1] - a[1], b[0] - a[0])
-    for _ in range(branches):
-        i = rng.randint(len(main) // 8, len(main) * 7 // 8)
-        p = main[i]
-        ang = base + rng.choice((-1, 1)) * rng.uniform(.35, .9)
-        ln = rng.uniform(.1, .3) * L
-        br = KM._disp_ms(rng, p, (p[0] + ln * math.cos(ang), p[1] + ln * math.sin(ang)), R[1:])
-        out.append((br, .75))
-        if rng.random() < .6:
-            j = rng.randint(len(br) // 4, len(br) * 3 // 4)
-            p2 = br[j]
-            a2 = ang + rng.choice((-1, 1)) * rng.uniform(.3, .8)
-            l2 = ln * rng.uniform(.3, .55)
-            out.append((KM._disp_ms(rng, p2, (p2[0] + l2 * math.cos(a2), p2[1] + l2 * math.sin(a2)), R[3:]), .55))
-    return out
-
-
 def ray_polys(rng, c, n, r0, r1, rough=.35):
     """まん中から 外へ はしる 電気（点火）"""
     out = []
@@ -250,13 +224,6 @@ def fall_mask():
 
 def surge_img():
     return cache('surge', lambda: KS.surge(k=S).astype(np.float32))
-
-
-def ribbon_img(j):
-    def f():
-        p = KM.RIBBONS[j][0]
-        return KS.ribbon(p, 500 + 7 * j, k=S).astype(np.float32)
-    return cache(f'rib{j}', f)
 
 
 def rock_img(j):
@@ -437,7 +404,7 @@ def impact(img, t):
 #   金の 光（GOLD の はじめ）に 合わせて 玉が まん中へ 小さく なって 消える（3枚目＝金の 光の 点だけ・ドームは もう ない）
 ORB_C = (195.0, 432.0)          # 玉の まん中（金の 光も ここ）
 ORB_R = 192.0                   # 玉の 半径（上は ドームの てっぺんの あたり）
-MORPH = (.55, .95)              # ドームが 床から 上がりながら 丸く なる
+MORPH = (.52, .74)              # ドームが 床から 上がりながら 丸く なる（まさちゃん「ドームから球体に変わる速度もっと早くてもいいかも！」）
 SHRINK = (1.08, 1.333)          # 玉が 小さく なる（おわり＝金の 光の はじめ）
 SP_ENV = (.45, .85, 1.0, .85, .6, .3)   # 玉の まわりの 雷（とげ）の コマごとの 明るさ（ゆっくり ついて 消える：点めつを ふやさない）
 WR_ENV = (.5, .9, 1.0, .7, .35)         # 玉に まきつく 雷の コマごとの 明るさ
@@ -750,7 +717,7 @@ def elec_events():
         if k % 3 == 0:
             arcs.append((f, 1 if (k // 3) % 2 else -1, rng.uniform(.28, .9), rng.uniform(-.38, .22), rng.uniform(12, 58),
                          rng.uniform(.3, .45), rng.randrange(1 << 30), rng.choice('cv')))
-        for _ in range(4):
+        for _ in range(3):
             sp.append((f, rng.random(), rng.uniform(-1.0, 1.0), rng.uniform(18, 58), rng.choice((1, 1, 1, -1)), rng.randrange(1 << 30)))
         wr.append((f, rng.random(), rng.uniform(.04, .16) * rng.choice((-1, 1)), rng.uniform(2, 12), rng.randrange(1 << 30)))
     _EL.update(f0=f0, f1=f1, cl=cl, arcs=arcs, sp=sp, wr=wr)
@@ -796,7 +763,7 @@ def dome_elec(img, t, fi):
     rng = random.Random(900 + fi)
     sizz = []
     c = tries = 0
-    while c < 18 and tries < 500:
+    while c < 10 and tries < 500:
         tries += 1
         o = rng.random()
         if not KM._spread_ok(o, k):
@@ -807,13 +774,13 @@ def dome_elec(img, t, fi):
         ang = math.atan2(ny, nx) + rng.uniform(-1.2, 1.2)
         ln = rng.uniform(4, 12) * fe
         p0 = (x + nx * rng.uniform(-2, 2), y + ny * rng.uniform(-2, 2))
-        sizz.append((KM._disp(rng, p0, (p0[0] + ln * math.cos(ang), p0[1] + ln * math.sin(ang)), 2, .9), 1.0))
+        sizz.append((KM._disp(rng, p0, (p0[0] + ln * math.cos(ang), p0[1] + ln * math.sin(ang)), 2, .9), .6))
         c += 1
     pink = []
     for f0_, o, dep, polys in E['cl']:
         if not (f0_ <= fi < f0_ + 4):
             continue
-        if (o * 9973.0) % 1.0 < .4 * m_:          # 玉に なると 肩の 電気は 少し へらす（まわりの 雷と かさなって 点めつが ふえない ように）
+        if (o * 9973.0) % 1.0 < .6 * m_:          # 玉に なると 肩の 電気は 少し へらす（まわりの 雷と かさなって 点めつが ふえない ように）
             continue
         x, y, nx, ny, u, fl = P(o)
         if fl > .5 or u < .3 * (1 - m_):
@@ -887,44 +854,226 @@ def surge(img, t):
     img[:] = sg[..., :3] * a + img * (1 - sg[..., 3:4] * a)
 
 
-# ---------------------------------------------------------------- 大きな 雷
-def big_bolts(img, fi):
-    for k, (f0, a, b, tone) in enumerate(BOLTS):
-        if not (f0 <= fi <= f0 + 1):
+# ---------------------------------------------------------------- 玉から 画面の はしへ はしる 雷・上から 下への 雷（第4.47版）
+# まさちゃん「一枚目の青の線(雷)みたいに不定期で球体から、画面端側までビリビリと動く演出入れて！
+#   あと、二枚目、三枚目の雷は、これももっと不定期に動いて、どんどん画面側に近づいていくにつれ雷が画面上から下にかけて太くなっていく演出入れて！
+#   四枚目以降は、二枚目、三枚目の雷の動きを横向きの場合で、ラフに描いたものだよ。そのような動きを混ぜて不定期にして！」
+#   「雷は青じゃなくて、例として青にしただけ！周りの雷の色は一緒！」
+# → 色は 玉の まわりの 雷と 同じ（白い しん・金・だいだい・赤）。形は 大きな ギザギザ（のこぎり・横に ずれる 段・うねって から のこぎり）に 細かい ギザギザ。
+#   はじめ（玉の 所・画面の 上）は 細く、先（画面の はし・下）ほど 太い（手前に 近づく）。出る 時と 形が かわる 時は 不定期
+BOLT_GLOW = ((0, (1, 1, 1), 1.0), (1.0, (1, .85, .45), 1.3), (3.5, (1, .5, .12), .85), (10, (1, .3, .06), .35))   # 玉の まわりの 雷と 同じ 色
+SB_FR = (22, 39)                         # 玉から 画面の はしへの 雷が 出る コマ（0.73〜1.3秒：玉に なって から）
+SB_ENV = (.85, 1.0, 1.0, .8, .5, .25)    # その 雷の コマごとの 明るさ（ついて すぐ のびきり、ビリビリ して 消える）
+SB_DIRS = (-140, -112, -68, -40, -8, 12, 40, 68, 112, 140, 172, 192)   # 方向（度：0＝右・90＝下）
+
+
+def poly_len(pts):
+    acc = [0.0]
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        acc.append(acc[-1] + math.hypot(bx - ax, by - ay))
+    return acc
+
+
+def macro_path(rng, a, b, style):
+    """a → b の 大きな ギザギザ：'zig'＝のこぎり（右左に 大きく）・'step'＝まっすぐ 進んで 横に 段・'wander'＝うねって から のこぎり"""
+    ax, ay = a
+    bx, by = b
+    L = math.hypot(bx - ax, by - ay) or 1.0
+    ux, uy = (bx - ax) / L, (by - ay) / L
+    px, py = -uy, ux
+    pts = [a]
+    if style == 'zig':
+        n = rng.randint(4, 7)
+        amp = L * rng.uniform(.07, .13)
+        for i in range(1, n):
+            s = (i + rng.uniform(-.3, .3)) / n
+            off = amp * (1 if i % 2 else -1) * rng.uniform(.6, 1.3)
+            pts.append((ax + ux * L * s + px * off, ay + uy * L * s + py * off))
+    elif style == 'step':
+        n = rng.randint(3, 5)
+        off = 0.0
+        for i in range(1, n + 1):
+            s = i / (n + 1)
+            pts.append((ax + ux * L * s + px * off, ay + uy * L * s + py * off))
+            off += rng.choice((-1, 1)) * L * rng.uniform(.06, .12)
+            s2 = s + rng.uniform(.01, .04)
+            pts.append((ax + ux * L * s2 + px * off, ay + uy * L * s2 + py * off))
+    else:
+        n = rng.randint(5, 8)
+        sag = L * rng.uniform(.12, .22) * rng.choice((-1, 1))
+        for i in range(1, n):
+            s = i / n
+            off = sag * math.sin(math.pi * s) + (L * .06 * (1 if i % 2 else -1) if s > .4 else 0.0)
+            pts.append((ax + ux * L * s + px * off, ay + uy * L * s + py * off))
+    pts.append(b)
+    return pts
+
+
+def fine_jag(rng, pts, rough=(.16, .22, .28)):
+    """大きな ギザギザの 間を 細かく ギザギザに（コマごとに かえると ビリビリ 動く）"""
+    out = [pts[0]]
+    for a, b in zip(pts, pts[1:]):
+        out += KM._disp_ms(rng, a, b, rough)[1:]
+    return out
+
+
+def draw_taper(mask, pts, w0, w1, val, grow=1.0, gam=1.3):
+    """太さ w0 → w1（画面の px）の 線（はじめから grow の 割合まで）"""
+    acc = poly_len(pts)
+    L = acc[-1] or 1.0
+    lim = L * grow
+    for i in range(len(pts) - 1):
+        if acc[i] >= lim:
+            break
+        a, b = pts[i], pts[i + 1]
+        if acc[i + 1] > lim:
+            f = (lim - acc[i]) / max(1e-6, acc[i + 1] - acc[i])
+            b = (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f)
+        s = ((acc[i] + acc[i + 1]) / 2) / L
+        wd = w0 + (w1 - w0) * s ** gam
+        cv2.line(mask, (int(a[0] * S * 8), int(a[1] * S * 8)), (int(b[0] * S * 8), int(b[1] * S * 8)), float(val),
+                 max(1, int(round(wd * S))), cv2.LINE_AA, shift=3)
+
+
+def edge_point(c, ang):
+    """c から ang（度）の 向きに のばして 画面の はし（少し 外）に 当たる 所（下は 床まで）"""
+    a = math.radians(ang)
+    dx, dy = math.cos(a), math.sin(a)
+    best = 1e9
+    for lim, d, o in ((-8.0, dx, c[0]), (398.0, dx, c[0]), (-8.0, dy, c[1]), (BASE + 18.0, dy, c[1])):
+        if abs(d) > 1e-6:
+            k = (lim - o) / d
+            if k > 0:
+                best = min(best, k)
+    return c[0] + dx * best, c[1] + dy * best
+
+
+def sphere_bolt_events():
+    """玉から 画面の はしへの 雷：(出る コマ, 方向（度）, 形, 種, 長さ（コマ）)。同じ 向きは つづけて 出さない（同じ 所の 点めつを ふやさない）"""
+    def f():
+        rng = random.Random(6100)
+        ev, last = [], {}
+        fi = SB_FR[0]
+
+        def area(d):                               # 先の 場所（同じ 場所には 10コマ あけて 出す）
+            e = edge_point(ORB_C, d)
+            return (int(e[0] // 130), int(e[1] // 280))
+        while fi <= SB_FR[1]:
+            sh = shape_at(fi / FPS)
+            big = sh is not None and sh['W'] > 150             # 玉が 大きい 間は 横 向きを さける（画面の はしまで 近すぎる）
+            for _ in range(rng.choice((1, 2, 2))):
+                cand = [d for d in SB_DIRS if fi - last.get(area(d), -99) > 10 and not (big and abs(math.sin(math.radians(d))) < .45)]
+                if not cand:
+                    continue
+                d = rng.choice(cand)
+                last[area(d)] = fi
+                ev.append((fi, d + rng.uniform(-10, 10), rng.choice(('zig', 'zig', 'step', 'wander')), rng.randrange(1 << 30), rng.randint(4, 6)))
+            fi += rng.choice((1, 1, 2, 2))
+        return ev
+    return cache('sbev', f)
+
+
+def sphere_bolts(mask, t, fi):
+    """玉から 画面の はしへ はしる 雷（大きな ギザギザ・先ほど 太い・ビリビリ）"""
+    sh = shape_at(t)
+    if sh is None:
+        return
+    cx, cy, R = sh['cx'], sh['ye'], sh['W']
+    for f0_, ang, style, seed, life in sphere_bolt_events():
+        age = fi - f0_
+        if not (0 <= age < life):
             continue
-        g = 1.0 if fi == f0 else .55
-        polys = bolt_polys(700 + k * 13, a, b)
-        m = lines_mask(polys, 2.2)
-        if tone == 'c':
-            lay = ((0, (1, 1, 1), 1.2 * g), (1.6, (.75, .95, 1.0), 1.2 * g), (6, (.4, .75, 1.0), 1.0 * g), (18, (.3, .5, 1.0), .7 * g))
-        else:
-            lay = ((0, (1, .95, 1), 1.2 * g), (1.6, (1.0, .6, .95), 1.2 * g), (6, (.95, .3, 1.0), 1.0 * g), (18, (.6, .2, 1.0), .7 * g))
-        glow_add(img, m, lay)
+        g = SB_ENV[min(age, len(SB_ENV) - 1)] if age < life - 2 else SB_ENV[len(SB_ENV) - (life - age)]
+        rs = random.Random(seed)
+        w1 = rs.uniform(5.0, 8.0)
+        a_ = math.radians(ang + rs.uniform(-6, 6))
+        st = (cx + (R - 3) * math.cos(a_), cy + (R - 3) * math.sin(a_))
+        en = edge_point((cx, cy), ang)
+        macro = macro_path(rs, st, en, style)
+        brs = [(rs.randint(1, len(macro) - 2), rs.uniform(-1, 1), rs.uniform(.15, .3)) for _ in range(rs.randint(1, 2))] if len(macro) > 2 else []
+        mid = fine_jag(random.Random(seed + 1), macro, (.14, .2))      # 中くらいの ギザギザ（雷ごとに 決まる）
+        rj = random.Random(seed * 7 + fi)                      # ビリビリ：いちばん 細かい ギザギザだけ コマごとに 少し かわる
+        pts = [mid[0]]
+        for q0, q1 in zip(mid, mid[1:]):
+            pts += KM._disp_ms(rj, q0, q1, (.12,))[1:]
+        grow = min(1.0, (age + 1) / 2)
+        draw_taper(mask, pts, .8, w1, g, grow)
+        Ltot = poly_len(macro)[-1]
+        for i, sgn, fr in brs:
+            if grow < (i / (len(macro) - 1)):
+                continue
+            p = macro[i]
+            q = macro[i + 1]
+            ang2 = math.atan2(q[1] - p[1], q[0] - p[0]) + sgn * .9
+            ln = Ltot * fr
+            br = fine_jag(random.Random(seed + 2 + i), [p, (p[0] + ln * math.cos(ang2), p[1] + ln * math.sin(ang2))], (.25, .3, .35))
+            draw_taper(mask, br, .7, w1 * .45, g * .8)
 
 
-# ---------------------------------------------------------------- 白い 光の 帯
-def ribbons(img, t):
+def vbolt_changes(j, f0, f1):
+    """上から 下への 雷の 上の 方の 形が かわる コマ（不定期：4〜8コマごと）"""
+    rng = random.Random(3300 + j)
+    out, f = [], f0
+    while f <= f1:
+        out.append(f)
+        f += rng.choice((4, 5, 6, 8))
+    return out
+
+
+def vertical_bolts(mask, t, fi):
+    """上から 下への 雷（前の 白い 光の 帯の 所）：上は 細く 下ほど 太い・だんだん 太く（手前に 近づく）。
+       上の 方は 不定期に ガクッと 形が かわる（横に ずれる 段）・下の 太い 所は 動かさない（点めつを ふやさない）"""
     for j, t0, t1 in RIBS:
         if not (t0 <= t <= t1):
             continue
-        rb = ribbon_img(j)
-        x0, y0, bw, bh = KS.ribbon_box(KM.RIBBONS[j][0])
-        u = (t - t0) / .13                       # 0.13秒で 上から すべりこむ
-        dy = -170 * (1 - ease_out(u)) if u < 1 else 0.0
-        sway = 3 * math.sin(2 * math.pi * (t - t0) / 1.3)
-        fade = 1 - sstep(t1 - .2, t1, t)
-        inn = sstep(0, .5, u)
-        a = fade * inn
-        if a <= 0:
+        p = KM.RIBBONS[j][0]
+        f0, f1 = int(math.ceil(t0 * FPS)), int(t1 * FPS)
+        phase = len([c for c in vbolt_changes(j, f0, f1) if c <= fi])
+        age = fi - f0
+        grow = min(1.0, (age + 1) / 2)                       # 上から 下へ 2コマで のびる
+        life = (t - t0) / max(1e-3, t1 - t0)
+        g = (1 - sstep(t1 - .2, t1, t)) * (.85 + .15 * min(1.0, age / 2))
+        if g <= 0:
             continue
-        spr = rb
-        if u < 1:
-            vy = 170 * 3 * (1 - u) ** 2 / .13 / FPS * .6        # このコマの 動き（画素）
-            spr = motion_blur(rb, 0, vy * S)
-            pad = (spr.shape[0] - rb.shape[0]) // 2
-            place(img, spr * a, (x0 + sway) * S - pad, (y0 + dy) * S - pad)
+        base = KS.bez(p, np.linspace(0, 1, 11))
+        pts = []                                             # (x, y, もとの 番号)
+        for i, (x, y) in enumerate(base):
+            u = i / 10
+            wgt = max(0.0, 1 - u / .6)                       # 上の 6割だけ 動く
+            up = random.Random(5000 + 97 * j + 1000 * phase + i).uniform(-1, 1) * 14
+            low = random.Random(5000 + 97 * j + i).uniform(-1, 1) * 4
+            pts.append((float(x) + up * wgt + low, float(y), float(i)))
+        rp = random.Random(6000 + 97 * j + 1000 * phase)
+        for _ in range(rp.randint(1, 2)):                    # 横に ずれる 段（上の 方）
+            k = rp.randint(1, 4)
+            dx = rp.choice((-1, 1)) * rp.uniform(6, 12)
+            x, y, bi = pts[k]
+            ky = y
+            pts.insert(k + 1, (x + dx, y + rp.uniform(2, 5), bi + .5))
+            for q in range(k + 2, len(pts)):
+                xq, yq, bq = pts[q]
+                pts[q] = (xq + dx * max(0.0, 1 - (yq - ky) / 260), yq, bq)
+        out = [(pts[0][0], pts[0][1])]
+        for (ax, ay, ai), (bx, by, bi) in zip(pts, pts[1:]):
+            lowseg = ai / 10 >= .6
+            sd = 9000 + 97 * j + int(ai * 26) + (0 if lowseg else 1000 * phase)
+            out += KM._disp_ms(random.Random(sd), (ax, ay), (bx, by), (.1, .16, .22))[1:]
+        rsh = random.Random(7000 + 31 * j + fi)               # 上の 細い 所だけ コマごとに ふるえる
+        out = [(x + rsh.uniform(-1, 1) * 1.2 * max(0.0, 1 - (y + 40) / 500), y) for x, y in out]
+        cut = []                                              # 床で 止める（床に 当たる 所が 光る）
+        for q0, q1 in zip(out, out[1:]):
+            cut.append(q0)
+            if q1[1] >= BASE + 2:
+                f_ = (BASE + 2 - q0[1]) / max(1e-6, q1[1] - q0[1])
+                cut.append((q0[0] + (q1[0] - q0[0]) * f_, BASE + 2.0))
+                break
         else:
-            place(img, spr * a, (x0 + sway) * S, (y0 + dy) * S)
+            cut.append(out[-1])
+        w1 = 2.5 + 5.5 * min(1.0, life * 1.3)                 # だんだん 太く（手前に 近づく）
+        draw_taper(mask, cut, .7, w1, g, grow, 1.6)
+        if grow >= 1.0 and cut[-1][1] >= BASE:
+            ex, ey = cut[-1]
+            cv2.ellipse(mask, (int(ex * S * 8), int(ey * S * 8)), (int(w1 * 2.2 * S * 8), int(w1 * .7 * S * 8)), 0, 0, 360, float(g * .8), -1, cv2.LINE_AA, shift=3)
 
 
 # ---------------------------------------------------------------- 岩
@@ -1141,8 +1290,10 @@ def frame(fi):
         dome(img, t)
         dome_elec(img, t, fi)
         surge(img, t)
-        ribbons(img, t)
-        big_bolts(img, fi)
+        bm = np.zeros((H, W), np.float32)
+        vertical_bolts(bm, t, fi)
+        sphere_bolts(bm, t, fi)
+        glow_add(img, bm, BOLT_GLOW)
         floor_reflect(img, t)
         rocks(img, t)
     else:
