@@ -372,12 +372,17 @@ def face(obj, R, Tv, env_rot=0.0, gain=1.0, shine=None, tilt=0.0):
     return rgb.reshape(H, W, 3), a, Hs
 
 
-def draw(img, obj, R, Tv, env_rot=0.0, gain=1.0, side_gain=1.0, shine=None, tilt=0.0):
-    """側面 → 前の 面 を img に 重ねる → 字 → 画面 の 行列"""
+def draw(img, obj, R, Tv, env_rot=0.0, gain=1.0, side_gain=1.0, shine=None, tilt=0.0, mv=None):
+    """側面 → 前の 面 を img に 重ねる（mv：動きの ぶれ（画面の 画素））→ 字 → 画面 の 行列"""
     sc, scov = sides(obj, R, Tv, side_gain * gain, env_rot)
     fr, fa, Hs = face(obj, R, Tv, env_rot, gain, shine, tilt)
     rgb = fr + sc * (1 - fa[..., None])
     al = np.clip(fa + scov * (1 - fa), 0, 1)
+    if mv is not None and math.hypot(*mv) > 1.5:
+        lay = KF.motion_blur(np.dstack([rgb, al]).astype(np.float32), mv[0], mv[1])
+        p_ = (lay.shape[0] - H) // 2
+        lay = lay[p_:p_ + H, p_:p_ + W]
+        rgb, al = lay[..., :3], np.clip(lay[..., 3], 0, 1)
     img *= (1 - al[..., None])
     img += rgb
     return Hs, al
@@ -527,6 +532,7 @@ def nug_shape(V, seed):
 
 
 NUG_TYPES = 10
+NUG_N = dict(burst=22, big=56, cover=3, drift=4, linger=4)      # 粒の 数（点めつ：1つの 所を 何回も 横切らない ように 少なめ）
 
 
 def nug_meshes():
@@ -642,22 +648,22 @@ def nug_events():
             rng = random.Random(500 + bi * 37)
             if kind == 0:                                           # 大きな 粒が 手前を 横切る（字の かわり目を かくす）
                 dirn = -1 if bi % 4 == 1 else 1
-                for k in range(6):
+                for k in range(NUG_N['cover']):
                     z = rng.uniform(300, 640)
                     half = (W / 2) * z / FOCAL * 1.45
                     y = rng.uniform(-.85, .85) * (H / 2) * z / FOCAL
-                    tc = t0 + .05 + k * .025 + rng.uniform(-.02, .02)
+                    tc = t0 + .05 + k * .04 + rng.uniform(-.02, .02)
                     dur = rng.uniform(.26, .36)
                     vx = 2 * half / dur * dirn
                     ev.append(dict(t0=tc - dur / 2, kind=0, typ=rng.randrange(NUG_TYPES), p0=np.array([-dirn * half, y, z]),
                                    v0=np.array([vx, rng.uniform(-150, 150), rng.uniform(-60, 60)]), tau=99.0, g=0.0,
                                    ax=np.array([rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)]), w=rng.uniform(3, 7) * rng.choice((-1, 1)),
-                                   ph=rng.uniform(0, 6.3), size=rng.uniform(85, 150), life=dur + .02, end=None))
+                                   ph=rng.uniform(0, 6.3), size=rng.uniform(120, 175), life=dur + .02, end=None, soft=True))
                 # 次の 寄りの 間：手前を ゆっくり ただよう 粒（光らない・ぼけて いる）
                 j = 1 if bi == 1 else 3
                 s0, s1 = TT['CU'][j]
                 r2 = random.Random(800 + bi)
-                for k in range(7):
+                for k in range(NUG_N['drift']):
                     z = r2.uniform(320, 850)
                     tt = s0 + r2.uniform(.04, .14)
                     ev.append(dict(t0=tt, kind=3, typ=r2.randrange(NUG_TYPES),
@@ -667,7 +673,7 @@ def nug_events():
                                    ph=r2.uniform(0, 6.3), size=r2.uniform(18, 55), life=s1 - tt + .02, end=s1, fin=.15))
                 continue
             big = kind == 2
-            n = 120 if big else 46
+            n = NUG_N['big'] if big else NUG_N['burst']
             cz, cx, cy = (2050.0, 0.0, 380.0) if big else (960.0, 0.0, 60.0)
             for k in range(n):
                 th = rng.uniform(0, 2 * math.pi)
@@ -685,7 +691,7 @@ def nug_events():
                                ax=np.array([rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)]), w=rng.uniform(3, 9) * rng.choice((-1, 1)),
                                ph=rng.uniform(0, 6.3), size=sz, life=rng.uniform(.55, .9) if big else rng.uniform(.45, .75), end=t_end))
             if big:                                                 # ゆっくり ただよう 粒（おちつく まで 少し のこる）
-                for k in range(6):
+                for k in range(NUG_N['linger']):
                     th = rng.uniform(0, 2 * math.pi)
                     lat = rng.uniform(150, 480)
                     ev.append(dict(t0=t0 + rng.uniform(.02, .12), kind=kind, typ=rng.randrange(NUG_TYPES),
@@ -729,10 +735,12 @@ def nuggets(img, t):
         c0 = project(pp)
         r_px = e['size'] * FOCAL / z
         blur = min(22.0, 3.2 * abs(zf / z - 1.0)) if z < zf else min(4.0, 3.0 * (1 - zf / z))
+        if e.get('soft'):
+            blur = max(blur, 30.0)                                  # 手前を 横切る 大きな 粒は 大きく ぼかす（中の 明暗で ちらつかない）
         lvl = 0 if r_px < 14 else (1 if r_px < 40 else (2 if (r_px < 130 or blur > 5) else 3))
         mesh = meshes[lvl][e['typ']]
         Rn = axis_rot(e['ax'], e['ph'] + e['w'] * s)
-        boost =(1.3, 1.0 + 1.6 * math.exp(-s / .1), 1.0 + 1.6 * math.exp(-s / .1), 1.0)[e['kind']]
+        boost = (1.15, 1.0 + 1.6 * math.exp(-s / .1), 1.0 + 1.6 * math.exp(-s / .1), 1.0)[e['kind']]
         fin = e.get('fin', .03)
         fade = min(1.0, (e['life'] - s) / .2) * min(1.0, s / fin + .2)
         draw_nugget(img, mesh, Rn, p, e['size'], boost, blur, (c1[0] - c0[0], c1[1] - c0[1]), fade)
@@ -767,7 +775,7 @@ def debris(img, t):
             continue
         rng = random.Random(900 + bi)
         cx, cy = CXS, CYS + (60 if kind == 1 else 300) * S * .3
-        for _ in range(220 if kind == 2 else 140):
+        for _ in range(120 if kind == 2 else 70):
             a = rng.uniform(0, 2 * math.pi)
             v = rng.uniform(300, 2200) * (1.3 if kind == 2 else 1.0)
             life = rng.uniform(.35, 1.0)
@@ -855,11 +863,14 @@ CU_POSE = ((-21.0, -16.0, 20.0, -3.0, -50.0, 45.0, 60.0, 960.0),
            (22.0, 17.0, 18.0, 3.0, 45.0, -45.0, 60.0, 980.0))
 
 
+CU_DRIFT = .35                       # 寄りの 横の 動きの 大きさ（点めつ：字の 細かい 明暗が 画素を 何度も 通らない）
+
+
 def cu_pose(j, t):
     t0, t1 = TT['CU'][j]
-    u = (t - t0) / (t1 - t0)
+    u = (t - t0) / (t1 - t0) - .5
     y0, y1, pitch, roll, x0, x1, y, z = CU_POSE[j]
-    return y0 + (y1 - y0) * u, pitch, roll, x0 + (x1 - x0) * u, y, z
+    return (y0 + y1) / 2 + (y1 - y0) * u * CU_DRIFT, pitch, roll, (x0 + x1) / 2 + (x1 - x0) * u * CU_DRIFT, y, z
 
 
 def logo_final():
@@ -874,7 +885,7 @@ def logo_pose(t):
     t0, t1 = TT['TURN']
     p = min(1.0, max(0.0, (t - t0) / (t1 - t0)))
     u = 1 - (1 - p) ** 2.6
-    a = (-22.0, 15.0, -4.0, 330.0, yf + 260.0, zf * .7)
+    a = (-13.0, 10.0, -2.5, 170.0, yf + 140.0, zf * .82)
     b = (0.0, 3.0, 0.0, 0.0, yf, zf)
     pose = [x + (y - x) * u for x, y in zip(a, b)]
     s = max(0.0, t - t1)
@@ -914,14 +925,17 @@ def frame(fi):
         R = rot(yaw, pitch, roll)
         Tv = np.array([x, y, z])
         Rt, Tt = torii_place(R, Tv)
-        draw(img, torii_obj(), Rt, Tt, env_rot=8 - 6 * (t - TT['LOGO']))
+        pv = logo_pose(max(TT['LOGO'], t - .5 / FPS))                # 動きの ぶれ（半コマぶん）
+        c1, c0 = project(Tv), project(np.array(pv[3:]))
+        mv = (float(c1[0] - c0[0]) * 1.4, float(c1[1] - c0[1]) * 1.4)
+        draw(img, torii_obj(), Rt, Tt, env_rot=8 - 6 * (t - TT['LOGO']), mv=mv)
         sh = None
         s0, s1 = TT['SHINE']
         if s0 - .05 <= t <= s1 + .05:
             q = (t - s0) / (s1 - s0)
             sh = (-2.6 + 5.2 * ease_out(q), .5)
         o = logo_obj()
-        draw(img, o, R, Tv, env_rot=-14 + 10 * (t - TT['LOGO']), shine=sh)
+        draw(img, o, R, Tv, env_rot=-14 + 10 * (t - TT['LOGO']), shine=sh, mv=mv)
         glints(img, o, unit_h(R, Tv), t, 70)
     burst_light(img, t)
     nuggets(img, t)
