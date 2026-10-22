@@ -1453,10 +1453,15 @@ def sfx_sgd():
           → パッパッパーン（ファンファーレ）＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
        → 白い 光：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判の ジャラジャラ"""
     SG, ev = read_sgd()
-    o1, o2, o3 = SG.OFS
-    RES, t0b, FILM = SG.RES, SG.T0B, SG.FILM
-    mx = Mix(t0b + 2.0, 71)
-    r = mx.rng
+    mx = Mix(SG.T0B + 2.0, 71)
+    sgd_mix(mx, mx.rng, SG, ev, 0.0)
+    return mx.render(1.8, target=-13, bass=True)
+
+
+def sgd_mix(mx, r, SG, ev, o=0.0):
+    """超神様の 音の 中身を mx に 置く（o：ずらす 秒。宇宙の カットインの あとに 鳴らす 時は カットインの 長さ）"""
+    o1, o2, o3 = (v + o for v in SG.OFS)
+    RES, t0b, FILM = SG.RES + o, SG.T0B + o, SG.FILM + o
     E = (40, 47, 52, 56)          # ホ長調（E2・B2・E3・G#3）
     A_ = (45, 52, 57, 61)         # ラ（A2・E3・A3・C#4）
     T1, T2, T3 = ev['T1'], ev['T2'], ev['T3']
@@ -1654,6 +1659,90 @@ def sfx_sgd():
     mx.add(koban(1900, r, .55), tt + .06, .15, .25, rv=.25)
     mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
     kjingle(mx, RES + .1, 1.8, 28, .2 * FZ_MID, r, curve=1.8)
+
+
+# ---------- 超神様的中の 宇宙の カットイン（超神様的中の 4回に1回 ※仮：flat/kami_cutin.py の SEQ・RIPPLE に 合わせる） ----------
+def read_cutin():
+    sys.path.insert(0, os.path.join(HERE, 'flat'))
+    import kami_cutin
+    return kami_cutin
+
+
+def whomp(d, rng, f0=140, f1=42):
+    """ワァン：衝撃波の 低い ゆれ（音程が 下がりながら ゆらゆら・こもる）"""
+    n = n_(d)
+    t = tl(n)
+    f = f1 + (f0 - f1) * np.exp(-t / (d / 3))
+    vib = 1 + .05 * np.sin(2 * np.pi * 6.5 * t)
+    x = np.sin(phase(f * vib, n)) + .45 * np.sin(phase(2 * f * vib, n)) + .25 * saw(f * 1.5, n, .4, nh=12)
+    x = np.tanh(1.8 * x) / np.tanh(1.8)
+    a = np.minimum(t / .008, 1) * np.exp(-t / (d / 2.5))
+    return fade(x * a, .002, .05)
+
+
+def glassring(f, d, rng, rate=8.0):
+    """ワンワン…：ガラスの 波紋の ひびき（高い 鐘が ゆれる）"""
+    n = n_(d)
+    t = tl(n)
+    x = bell(f, d, ratio=2.76, idx=.9, tau=d / 3, glock=.1)[:n]
+    am = .55 + .45 * np.sin(2 * np.pi * rate * t + rng.uniform(0, 6.28))
+    return fade(x * am, .002, .05)
+
+
+def cutin_mix(mx, r, CI):
+    """宇宙の カットイン（0〜1.7秒）：
+       ゴォォ（宇宙の うなり）＋キュイィン↑（太陽が ギラッと 大きく）→ バシュッ!!（色が 反転）→ チッ・チッ・チッ・チッ（色が かわる たび）
+       → ヴォン（青）→ キィン（赤・太陽が もっと 大きく）→ ドォォン!!＋ワァン・ワァン・ワァン（白い 反転の 中を 衝撃波の 波紋）＋ガラスの ひびき
+       → スッ（暗く：音が いったん ひく）→ シャーン↑（惑星が もどる）"""
+    seg = {m: (a / CI.FPS, b / CI.FPS) for a, b, m in CI.SEQ}
+    r0, r1 = seg['R']
+    dd = r1 + .1
+    mx.add(rumble(dd, r, 90, 6) * np.linspace(.3, 1, n_(dd)), 0, .32, rv=.3)
+    mx.add(cuin(500, 2600, r1 + .03, r1, r), 0, .14, rv=.3)
+    mx.add(nsweep(r1, 800, 9000, .5, r) * np.linspace(0, 1, n_(r1)) ** 2, 0, .25, rv=.35)
+    h1 = seg['Ncyan'][0]                                                                   # バシュッ!!（反転）
+    mx.add(explosion(r, .5, 1.6), h1, .5, rv=.25)
+    mx.add(boom(120, 40, .7, .25, .03, 2.4, r), h1, .7 * FZ_LOW, rv=.1)
+    mx.add(glitch('zip', .07, r), h1, .35, -.4, rv=.1)
+    mx.add(glitch('zip', .07, r), h1 + .01, .35, .4, rv=.1)
+    for k, m in enumerate(('Nviolet', 'Nyel', 'Nblue', 'Ncyan2')):                        # チッ（色が かわる たび・だんだん 高く）
+        t = seg[m][0]
+        mx.add(glitch('tick', .02, r), t, .3, (-.5, .5)[k % 2], rv=.1)
+        mx.add(bell(mtof(84 + 3 * k), .25, idx=.8, tau=.08, glock=0), t, .08, (-.3, .3)[k % 2], rv=.2)
+    tb = seg['B'][0]                                                                       # ヴォン（青）
+    mx.add(boom(70, 35, .5, .2, .03, 2.0, r, grit=.1), tb, .45 * FZ_LOW, rv=.15)
+    mx.add(glitch('thud', .08, r), tb, .25, rv=.1)
+    t2, t2e = seg['R2']                                                                    # キィン（赤）＋シュワッ↑
+    for i, m in enumerate((88, 95)):
+        mx.add(bell(mtof(m), .6, idx=1.2, tau=.25), t2 + .01 * i, .1, (i - .5) * .6, rv=.4)
+    d2 = t2e - t2 + .02
+    mx.add(nsweep(d2, 1500, 12000, .4, r) * np.linspace(0, 1, n_(d2)) ** 2, t2, .3, rv=.3)
+    ts, te = seg['Nwhite']                                                                 # ドォォン!!＋衝撃波の 波紋
+    mx.add(explosion(r, 1.3, .8), ts, .85, rv=.3)
+    mx.add(boom(85, 24, 2.0, .7, .07, 2.8, r), ts, 1.0 * FZ_LOW, rv=.15)
+    mx.add(crash(r, 2.0, .7), ts, .3, rv=.45)
+    for k, tlch in enumerate(CI.RIPPLE['launch']):
+        mx.add(whomp(.7, r, 150 - 20 * k, 42), ts + tlch, (.55, .42, .32)[k] * FZ_MID, (0, -.35, .35)[k], rv=.35)
+        mx.add(glassring(mtof((96, 93, 91)[k]), .8, r), ts + tlch + .02, (.1, .08, .06)[k], (-.5, .5, 0)[k], rv=.5)
+    mx.add(nlow(te - ts, 3000, 600, .3, r) * np.exp(-tl(n_(te - ts)) / .35), ts, .25, rv=.4)
+    td = seg['Dark'][0]                                                                    # スッ（暗く：音が いったん ひく）
+    mx.duck(td, seg['R3'][0], -14.0, ramp=.02)
+    mx.add(boom(60, 30, .8, .3, .05, 2.0, r, grit=0), td, .35 * FZ_LOW, rv=.1)
+    t3 = seg['R3'][0]                                                                      # シャーン↑（惑星が もどる）
+    mx.add(nsweep(.25, 2000, 10000, .5, r) * np.linspace(0, 1, n_(.25)) ** 1.5, t3, .2, rv=.4)
+    for i, m in enumerate((84, 88, 91, 96)):
+        mx.add(bell(mtof(m), .7, idx=1.1, tau=.3), t3 + .03 * i, .07, (i / 3 - .5) * .8, rv=.45)
+
+
+def sfx_sgd_ci():
+    """超神様的中＋宇宙の カットイン（超神様的中の 4回に1回 ※仮）：0〜1.7秒 カットイン → 1.7秒から 超神様の 音（sfx_sgd と 同じ 中身を ずらす）"""
+    CI = read_cutin()
+    ci = CI.N / CI.FPS
+    SG, ev = read_sgd()
+    mx = Mix(ci + SG.T0B + 2.0, 72)
+    r = mx.rng
+    cutin_mix(mx, r, CI)
+    sgd_mix(mx, r, SG, ev, ci)
     return mx.render(1.8, target=-13, bass=True)
 
 
