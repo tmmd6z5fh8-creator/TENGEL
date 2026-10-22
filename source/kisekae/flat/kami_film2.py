@@ -5,8 +5,8 @@
      字は Dela Gothic One（アプリに 入れて いる フォント）を 本当の 立体（前の 面・ふちの 面取り・うしろへの 厚い 厚み）に して、
      カメラから 見た 形（遠近）で 描く。金は まわりの 光の 映りこみ（金の 空：上は まぶしい 金・地平の こい 線・下は だいだいの 金・たての 光の 帯）
    流れ（0秒＝② の はじめ＝押して から 1.6秒）：
-     0〜0.24秒 白が ひく → 0〜1.2秒「万馬券（きせき）」ななめ 上から 重たい 金が ズーン（0.5秒で 着地：金の 光と 衝撃の 輪・ちり）→ ほんの 少しずつ
-     1.2〜2.5秒「天眼（テンゲル）」反対の ななめ 上から ズーン（1.7秒で 着地）→ 2.32〜2.78秒 白
+     0〜0.24秒 白が ひく → 0〜1.2秒「万馬券（きせき）」左から 右へ 重たい 金が ズーン（0.5秒で 止まる：金の 光と 衝撃の 輪・ちり）→ ほんの 少しずつ 右へ
+     1.2〜2.5秒「天眼（テンゲル）」右から 左へ ズーン（1.7秒で 止まる）→ ほんの 少しずつ 左へ → 2.32〜2.78秒 白
      2.48秒〜 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」が 手前で ふわっと おちつく（字の うしろから 金粉が ばらばらに ぶわっと）→ 光が 2回 すべる → 4.5〜4.7秒 白（③ へ）
      まさちゃん「この二つのシーンはもっとゆっくりで！イメージズーン！て重たい金が登場するイメージ！」
    python3 flat/kami_film2.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
@@ -316,28 +316,29 @@ def objects():
     return KF.cache('objs2', f)
 
 
-# 重たい 金が ズーン：上から どっしり おりて きて（だんだん 速く）着地 → 少し しずんで もどる → ほんの 少しずつ 動く
-# (はじめ, 着地, おわり) の 秒と、その 時の (yaw, pitch, roll, x, y, z)（x, y, z は 1000 単位・z は カメラからの きょり）
-HEAVY1 = dict(t=(0.0, .5, 1.2), a=(-44.0, 25.0, -15.0, 300.0, -1250.0, 2550.0), b=(-30.0, 13.0, -9.0, 110.0, 70.0, 2950.0),
-              c=(-26.5, 11.5, -7.5, 88.0, 58.0, 2830.0))
-HEAVY2 = dict(t=(1.2, 1.7, 2.5), a=(42.0, 24.0, 15.0, -330.0, -1200.0, 2450.0), b=(30.0, 10.0, 8.0, -140.0, 80.0, 2700.0),
-              c=(25.0, 8.0, 5.5, -95.0, 62.0, 2540.0))
+# 重たい 金が ズーン：まさちゃん「万馬券は左から右・天眼は右から左にして！」
+#   → 画面の 外から 横へ すべって きて（重さで ブレーキが かかる）着地（行きすぎて 少し もどる）→ 同じ 向きへ ほんの 少しずつ
+# (はじめ, 着地, おわり) の 秒と、その 時の (yaw, pitch, roll, x, y, z)（x, y, z は 1000 単位・z は カメラからの きょり）・dir：動く 向き（1＝右へ）
+HEAVY1 = dict(t=(0.0, .5, 1.2), dir=1, a=(-38.0, 14.0, -10.0, -2250.0, 70.0, 2950.0), b=(-30.0, 13.0, -9.0, 60.0, 70.0, 2950.0),
+              c=(-27.0, 11.5, -7.5, 150.0, 58.0, 2830.0))
+HEAVY2 = dict(t=(1.2, 1.7, 2.5), dir=-1, a=(38.0, 11.0, 9.0, 1950.0, 80.0, 2700.0), b=(30.0, 10.0, 8.0, -110.0, 80.0, 2700.0),
+              c=(26.0, 8.0, 5.5, -200.0, 62.0, 2540.0))
 
 
 def heavy_pose(P, t):
-    """ズーン：着地まで だんだん 速く（重さで おちる）→ 着地で 止まり 少し しずむ → ゆっくり"""
+    """ズーン：横から すべって きて ブレーキ（少し 速さを のこして 着地）→ 行きすぎて 少し もどる → ゆっくり 同じ 向きへ"""
     t0, tl, t1 = P['t']
     a, b, c = P['a'], P['b'], P['c']
     if t < tl:
         p = max(0.0, (t - t0) / (tl - t0))
-        u = p ** 1.6
+        u = 1 - (1 - p) ** 1.7
         return [x + (y - x) * u for x, y in zip(a, b)]
     s = t - tl
     v = sstep(tl, t1, t)
     out = [x + (y - x) * v for x, y in zip(b, c)]
-    dip = math.exp(-s / .09) * math.sin(min(math.pi, math.pi * s / .16)) * 34.0        # 着地で しずむ（1000 単位）
-    out[4] += dip
-    out[1] += dip * .03
+    over = math.exp(-s / .09) * math.sin(min(math.pi, math.pi * s / .16)) * 60.0        # 行きすぎて もどる（1000 単位）
+    out[3] += P['dir'] * over
+    out[0] += P['dir'] * over * .02
     return out
 
 
@@ -508,17 +509,16 @@ def frame(fi):
     o1, o2, o3 = objects()
     img = sky_bg().copy()
     lay, gl = None, None
-    cen = None
-    if t < TT['CU2'][0]:
-        yaw, pitch, roll, x, y, z = heavy_pose(HEAVY1, t)
-        lay, Hs = draw_obj(o1, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-24 + 22 * t)
-        gl = (o1, Hs, 11)
+    cen, blur = None, 0.0
+    for P, o, sd, er in ((HEAVY1, o1, 11, lambda t: -24 + 22 * t), (HEAVY2, o2, 12, lambda t: 12 - 18 * (t - TT['CU2'][0]))):
+        if not (P['t'][0] <= t < (TT['CU2'][0] if P is HEAVY1 else TT['TXT'] + .02)):
+            continue
+        yaw, pitch, roll, x, y, z = heavy_pose(P, t)
+        lay, Hs = draw_obj(o, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=er(t))
+        gl = (o, Hs, sd)
         cen = project(np.array([x, y, z]))
-    elif t < TT['TXT'] + .02:
-        yaw, pitch, roll, x, y, z = heavy_pose(HEAVY2, t)
-        lay, Hs = draw_obj(o2, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=12 - 18 * (t - TT['CU2'][0]))
-        gl = (o2, Hs, 12)
-        cen = project(np.array([x, y, z]))
+        prev = heavy_pose(P, t - .5 / FPS)                     # 動きの ぶれ（半コマぶん：速く すべる 間）
+        blur = abs(cen[0] - project(np.array(prev[3:]))[0])
     lt = land_time(t)
     if lt is not None and cen is not None:
         land_back(img, lt[0], cen)
@@ -534,6 +534,8 @@ def frame(fi):
     gold_spray(img, t)                                       # 字の うしろから（字より 先に 描く）
     if lay is not None:
         lay = downsample(lay)
+        if blur > 3:
+            lay = cv2.blur(lay, (int(blur) | 1, 1))
         img = lay[..., :3] + img * (1 - lay[..., 3:4])
         glints(img, gl[0], gl[1], t, gl[2])
     if lt is not None and cen is not None:
