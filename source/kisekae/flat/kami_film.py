@@ -1,4 +1,6 @@
-"""神様的中 ① 青い 嵐（第4.47版）：1コマずつ 描く 絵（パラパラ漫画）。1170×2532（iPhone の 画面の 画素）・1秒 30コマ・48コマ＝1.6秒
+"""神様的中 ① 赤い 嵐（第4.47版）：1コマずつ 描く 絵（パラパラ漫画）。1170×2532（iPhone の 画面の 画素）・1秒 30コマ・48コマ＝1.6秒
+   色：まさちゃん「今青色のところを赤に変えて、紫色のところを金と白に変えられる？」→ 青・水色は 赤（kami_storm.pc）・紫と ピンク（雲・肩の 電気・ピンクの 雷）は 金と 白。
+       PALETTE＝'blue' に すると はじめの 青い 嵐（下の 説明の 色は 青い 嵐の 時の 名前）
    まさちゃん「ここの手前までどうしても納得いかない。一度この一枚目の画像(画像のシーンも含み)より手前のシーンは削除して、作り直して！
    アプリで動かすのに問題がでない程度で、どれくらい細かく作れる？ … まずは48枚を一枚づつ描いて作成して！ 質感や光沢、動きなど精密に再現して！」
    → 送ってくれた 動画の コマは 描き写さない（ほかの 人の 作品の コピーに なる）。テンポと 明るさの 流れだけ 参考に して、形・構図・色は 姫の オリジナルで 1コマずつ 描く
@@ -151,7 +153,7 @@ def glow_add(dst, mask, layers):
     """mask の 光を 色ごとの ぼかしで 足す：layers＝[(ぼかし（画面の px）, 色, 強さ)]（ぼかし 0 は しん）"""
     for sig, col, g in layers:
         m = mask if sig <= 0 else fblur(mask, sig * S)
-        dst += m[..., None] * (np.asarray(col, np.float32) * g)
+        dst += m[..., None] * (KS.pc(col) * g)
 
 
 def bloom(img):
@@ -218,6 +220,7 @@ def cache(name, fn):
     return _C[name]
 
 
+PALETTE = 'red'      # 色の くみ（第4.47版：まさちゃん「今青色のところを赤に変えて、紫色のところを金と白に変えられる？」）。'blue'＝はじめの 青い 嵐
 SKY_DIM = .72        # 空の 明るさ（光の 物が 映える ように 少し 暗く）
 
 
@@ -296,8 +299,8 @@ def ignition(img, t):
     d = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
     rc = 4 + 260 * u ** 2.6
     core = np.exp(-(d / rc) ** 2) * 2.6 + np.exp(-(d / (rc * 2.4)) ** 2) * .8
-    img += core[..., None] * np.array([1.0, 1.0, 1.0], np.float32)
-    img += np.exp(-(d / (rc * 4.5 + 30)) ** 2)[..., None] * np.array([.3, .55, 1.0], np.float32) * (.5 + .6 * u)
+    img += core[..., None] * KS.pc((1.0, 1.0, 1.0))
+    img += np.exp(-(d / (rc * 4.5 + 30)) ** 2)[..., None] * KS.pc((.3, .55, 1.0)) * (.5 + .6 * u)
     # 光の 筋（まん中から 外へ のびる）
     rng = np.random.default_rng(11)
     ang = np.arctan2(Y - cy, X - cx)
@@ -308,12 +311,12 @@ def ignition(img, t):
         da = np.angle(np.exp(1j * (ang - a0)))
         ln = (20 + 950 * u ** 1.4) * rng.uniform(.4, 1.0)
         rays = np.maximum(rays, np.exp(-(da / wd) ** 2) * np.clip(1 - d / ln, 0, 1) ** 1.5 * rng.uniform(.4, 1.0))
-    img += rays[..., None] * np.array([.75, .9, 1.0], np.float32) * (.9 + 1.4 * u)
+    img += rays[..., None] * KS.pc((.75, .9, 1.0)) * (.9 + 1.4 * u)
     tint = np.exp(-((ang - 2.4) / .7) ** 2) + np.exp(-((ang + .9) / .6) ** 2)
-    img += (rays * tint)[..., None] * np.array([.7, .2, 1.0], np.float32) * 1.3
+    img += (rays * tint)[..., None] * KS.pc((.7, .2, 1.0)) * 1.3
     # 横に のびる 光（細い）
     hs = np.exp(-((Y - cy) / (1.0 + 2.5 * u)) ** 2) * np.exp(-((X - cx) / (30 + 700 * u ** 1.3)) ** 2)
-    img += hs[..., None] * np.array([.6, .95, 1.0], np.float32) * (1.2 + 2 * u)
+    img += hs[..., None] * KS.pc((.6, .95, 1.0)) * (1.2 + 2 * u)
     # まわりへ のびる 電気（先へ のびる だけ）
     polys = [(grow_poly(p, min(1.0, .15 + 1.1 * u)), v) for p, v in ign_arcs()]
     m = lines_mask(polys, 1.1)
@@ -389,7 +392,7 @@ def storm(img, t):
         X = (np.arange(W, dtype=np.float32)[None, :] / S)
         dy = (Y - hy)
         fl = np.exp(-((X - CX) / 70) ** 2) * np.exp(-(dy / 26) ** 2) * (1 - sstep(c1, c1 + .05, t))
-        img += fl[..., None] * np.array([.7, .95, 1.0], np.float32) * 1.6
+        img += fl[..., None] * KS.pc((.7, .95, 1.0)) * 1.6
 
 
 def impact(img, t):
@@ -403,11 +406,11 @@ def impact(img, t):
     if u < .2:
         g = math.exp(-u / .07)
         fl = np.exp(-(((X - CX) / (90 + 300 * u)) ** 2 + ((Y - BASE + 6) / (26 + 60 * u)) ** 2))
-        img += fl[..., None] * np.array([.75, .97, 1.0], np.float32) * 1.6 * g
+        img += fl[..., None] * KS.pc((.75, .97, 1.0)) * 1.6 * g
     if u < .5:
         r = 20 + 520 * ease_out(u / .5)
         ring = np.exp(-((np.sqrt(((X - CX) / r) ** 2 + ((Y - BASE - 2) / (r * .12)) ** 2) - 1) * r / 5) ** 2)
-        img += ring[..., None] * np.array([.5, .9, 1.0], np.float32) * .9 * (1 - u / .5)
+        img += ring[..., None] * KS.pc((.5, .9, 1.0)) * .9 * (1 - u / .5)
     # しぶき（光の 粒が 上と 左右へ とぶ・すじ）
     sp = np.zeros((H, W), np.float32)
     rng = random.Random(21)
@@ -693,7 +696,7 @@ def gold_shard(R, seed):
         cv2.line(edge, (int(apex[0] * 4), int(apex[1] * 4)), (int(p_[0] * 4), int(p_[1] * 4)), .8, max(1, int(R * .035)), cv2.LINE_AA, shift=2)
     cv2.polylines(edge, [np.int32(np.vstack([pts, pts[:1]]) * 4)], False, 1.0, max(1, int(R * .05)), cv2.LINE_AA, shift=2)
     edge = cv2.GaussianBlur(edge, (0, 0), max(.6, R * .015)) * (img[..., 3] > .05)
-    img[..., :3] += edge[..., None] * np.array([1.0, .95, .75], np.float32) * .75
+    img[..., :3] += edge[..., None] * KS.pc((1.0, .95, .75)) * .75
     outl = np.clip(KA.grow(img[..., 3], max(1.0, R * .025)) - img[..., 3], 0, 1)
     img[..., :3] = img[..., :3] * img[..., 3:4] + np.array(KA.EDGE, np.float32) / 255 * outl[..., None]
     img[..., 3] = np.clip(img[..., 3] + outl, 0, 1)
@@ -706,7 +709,7 @@ def gold_shard(R, seed):
     cv2.line(star, (int(gx * 4), int((gy - L) * 4)), (int(gx * 4), int((gy + L) * 4)), 1.0, max(1, int(R * .02)), cv2.LINE_AA, shift=2)
     star = cv2.GaussianBlur(star, (0, 0), max(.8, R * .012)) * np.exp(-(((xx - gx) ** 2 + (yy - gy) ** 2) / (2 * (R * .25) ** 2)))
     gl = np.clip(spot * 1.2 + star, 0, 1.5)
-    img[..., :3] += gl[..., None] * np.array([1.0, .98, .9], np.float32)
+    img[..., :3] += gl[..., None] * KS.pc((1.0, .98, .9))
     img[..., 3] = np.clip(np.maximum(img[..., 3], np.clip(gl, 0, 1)), 0, 1)
     return img
 
@@ -761,7 +764,7 @@ def gold(img, t):
     rc = 8 + 30 * u + 60 * sstep(0, .1, v)
     over_col(img, np.exp(-(d / (rc * 3.2)) ** 2) * (.55 + .3 * u), (1.0, .7, .2))
     over_col(img, np.exp(-(d / (rc * 1.4)) ** 2) * .9, (1.0, .86, .45))
-    img += (np.exp(-(d / (rc * .5)) ** 2) * 1.3)[..., None] * np.array([1.0, .97, .85], np.float32)
+    img += (np.exp(-(d / (rc * .5)) ** 2) * 1.3)[..., None] * KS.pc((1.0, .97, .85))
     # 金の 光の 筋（ゆっくり 回る）
     rng = np.random.default_rng(31)
     rays = np.zeros((H, W), np.float32)
@@ -829,6 +832,7 @@ def floor_reflect(img, t):
 # ---------------------------------------------------------------- 1コマ
 def frame(fi):
     """fi：0〜47 → 8bit RGB"""
+    KS.PAL = PALETTE
     t = fi / FPS
     img = np.zeros((H, W, 3), np.float32)
     if t >= T['IGN'][2] - .001:
@@ -848,7 +852,7 @@ def frame(fi):
     img = bloom(img)
     w = white_level(t)
     if w > 0:
-        img = img * (1 - w) + np.array([1.0, 1.0, 1.0], np.float32) * w * 1.2 + img * w * .2
+        img = img * (1 - w) + KS.pc((1.0, 1.0, 1.0)) * w * 1.2 + img * w * .2
     out = tonemap(img)
     return (out * 255 + .5).astype(np.uint8)
 
