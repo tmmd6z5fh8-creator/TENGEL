@@ -69,7 +69,7 @@ enum Markers {
         default:
             let r = get(key)
             if let e = r.error { return ["ok": false, "error": e] }
-            return ["ok": true, "value": r.value as Any, "has": r.value != nil]
+            return ["ok": true, "value": (r.value as Any?) ?? NSNull(), "has": r.value != nil]
         }
     }
 }
