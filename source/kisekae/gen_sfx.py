@@ -5,6 +5,7 @@
      ／sfx_pc.wav（プレミアムど的中（かわいいど的中）：タップの音だけ。PUSHの音は ど的中と同じ）
      ／sfx_zp.wav（超プレミアムど的中（手書き・鉛筆）：プレミアムの 音の ①〜⑤を 声に。PUSHの音は ど的中と同じ）
      ／sfx_gd.wav（神様的中：kami.py の 時刻）／sfx_sgd.wav（超神様的中（第4.51版）：1コマずつ 描いた 動画 ①②③ の 時刻＝kami_super.film_events()。PUSHの音は ど的中と同じ）
+     ／sfx_spg_up.wav・sfx_spg.wav（超プレミアム神様的中（第4.52版）：き！の あとの 昇格の 音・超神様の 動画の 音に 声を 足した もの。はじめの 6.0秒は sfx_zp）
      *_push＝PUSHが出たとき（当たりのお知らせ）。それ以外＝PUSHを押してから（0秒＝押した瞬間）。44.1kHz・16bit・ステレオ
      ＋ sfx_wave.json（音の大きさの形・1/50秒ごと。効果音のメモ Fx_Sound.dc.html の波形に使う。gen_fx.py と同じフォルダに置く）
    秒は見本の動き（gen_fx.py）に合わせる。フリーズは gen_fx.py の FZ_T（フリーズの時刻）と MT_T（ネオンのカットの時刻）をそのまま読む。
@@ -1646,17 +1647,29 @@ def sfx_sgd():
        ③ 神様的中（7.63〜14.23秒）：ドガーン＋ジャラジャラ（小判が はじける）・ドン（神）→ ヒュオッ（大きな 小判が 横切る）・ドン（様）→ ドガーン＋ジャラジャラ・ドン（的）
           → ヒュオッ・ドン（中）（ドンは だんだん 高く）＋バチバチ（字の ふちを はしる 雷）・バリバリッ（外へ はしる 雷）
           → ドガーン!!＋ジャラジャラジャラ（小判の 大爆発）＋ジャーン（神様的中）→ グォォ↑＋ドロロロ（ひいて 鳥居）＋シャララン（神社の 鈴）
-          → パッパッパーン（ファンファーレ）＋すぅっ・声「おめでとう御座います！」「いやーーーーん！」＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
+          → パッパッパーン（ファンファーレ）＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
        → 白い 光：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判の ジャラジャラ
-       ① と ② の 間の 白い 光（1.5秒：kami_super.NW）は ああぁぁ（合唱）＋ふわぁ＋キラキラ → シュワッ↑"""
+       ① と ② の 間の 白い 光（1.5秒：kami_super.NW）は ああぁぁ（合唱）＋ふわぁ＋キラキラ → シュワッ↑
+       超プレミアム神様的中（sfx_spg）は 同じ 動画で この 音に 声（おめでとう御座います！・いやーーーーん！）を 足した もの"""
     SG, ev = read_sgd()
     mx = Mix(SG.T0B + 2.0, 71)
     sgd_mix(mx, mx.rng, SG, ev, 0.0)
     return mx.render(1.8, target=-13, bass=True)
 
 
-def sgd_mix(mx, r, SG, ev, o=0.0):
-    """超神様の 音の 中身を mx に 置く（o：ずらす 秒。宇宙の カットインの あとに 鳴らす 時は カットインの 長さ）"""
+def sfx_spg():
+    """超プレミアム神様的中（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）の 動画の 音。0秒＝超神様の 動画の はじめ（動画は 超神様的中と 同じ）：
+       超神様的中の 音（sfx_sgd）＋鳥居の ファンファーレの あとに すぅっ・声「おめでとう御座います！」（息の まじった 声）→「いやーーーーん！」（大きな 声）。
+       声は 超プレミアムど的中の ポニーの 声（anime の 声：say）。この 前に バグ → まっ暗 → 宇宙の カットイン の 音（sfx_spg_up）"""
+    SG, ev = read_sgd()
+    mx = Mix(SG.T0B + 2.0, 71)
+    sgd_mix(mx, mx.rng, SG, ev, 0.0, voice=True)
+    return mx.render(1.8, target=-13, bass=True)
+
+
+def sgd_mix(mx, r, SG, ev, o=0.0, voice=False):
+    """超神様の 音の 中身を mx に 置く（o：ずらす 秒。宇宙の カットインの あとに 鳴らす 時は カットインの 長さ）。
+       voice：鳥居の 所で 声「おめでとう御座います！」「いやーーーーん！」（超プレミアム神様的中だけ。乱数は 別なので ほかの 音は かわらない）"""
     o1, o2, o3 = (v + o for v in SG.OFS)
     RES, t0b, FILM = SG.RES + o, SG.T0B + o, SG.FILM + o
     E = (40, 47, 52, 56)          # ホ長調（E2・B2・E3・G#3）
@@ -1862,6 +1875,8 @@ def sgd_mix(mx, r, SG, ev, o=0.0):
     mx.add(koban(1900, r, .55), tt + .06, .15, .25, rv=.25)
     mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
     kjingle(mx, RES + .1, 1.8, 28, .2 * FZ_MID, r, curve=1.8)
+    if not voice:
+        return
     vr = np.random.default_rng(79)
     v, tv, v2, t2 = omedetou_voice(fz, vr)                                                   # 声「おめでとう御座います！」（息の まじった 人の 声）＋「いやーーーーん！」（大きな 声）
     mx.duck(tv, t2 + len(v2) / SR - .05, VOICE_OMEDETOU[1], ramp=.05)
@@ -2080,10 +2095,13 @@ def rng_d(r, a, b):
 
 
 def sfx_sgd_up():
-    """超神様的中の 昇格（超神様的中の 4回に1回 ※仮）の 音：0秒＝き！で 画面が 止まる → 2秒 バグ → まっ暗 1秒（音も なし）
-       → 宇宙の カットイン（2.97〜6.57秒）。このあと 超神様の 動画と 音（sfx_sgd）が つづく。
+    """超プレミアム神様的中（第4.52版：超神様的中の 4回に1回）の 昇格の 音（sfx_spg_up）：0秒＝き！で 画面が 止まる → 2秒 バグ → まっ暗 1秒（音も なし）
+       → 宇宙の カットイン（2.97〜6.57秒）。このあと 超神様の 動画と 声つきの 音（sfx_spg）が つづく。
        超プレミアムど的中の 音（sfx_zp）は き！の 所（押してから 6秒）で 止める"""
     KG, CI = read_glitch(), read_cutin()
+    sys.path.insert(0, HERE)
+    import kami_super
+    assert KG.N + CI.N == kami_super.UP_N, (KG.N, CI.N, kami_super.UP_N)       # 見本の ページの 昇格の 動画の 長さ（kami_super.UP）と そろえる
     g = KG.N / KG.FPS
     mx = Mix(g + CI.N / CI.FPS + 1.2, 73)
     r = mx.rng
@@ -2093,7 +2111,27 @@ def sfx_sgd_up():
 
 
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
-          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd), ('sfx_sgd', sfx_sgd))
+          ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd), ('sfx_sgd', sfx_sgd),
+          ('sfx_spg_up', sfx_sgd_up), ('sfx_spg', sfx_spg))     # 第4.52版：超プレミアム神様的中（昇格の 音・動画の 音）
+
+def spg_flow(zp, up, spg):
+    """超プレミアム神様的中の 流れ（押した 瞬間が 0秒）：超プレミアム（き！の 6.0秒で ブツッ）→ 昇格（6.0秒〜）→ 超神様＋声（12.57秒〜）。
+       見本の ページと 同じ 時刻で つなげる（効果音の メモの 波形・sfx_wave.json の sfx_spg_flow。ファイルには しない）"""
+    sys.path.insert(0, HERE)
+    import kami_super as SG
+    n = int(round((SG.SPG_FILM + len(spg) / SR) * SR))
+    out = np.zeros((n, zp.shape[1]))
+    k = int(round(SG.UP_AT * SR))
+    z = zp[:k].copy()
+    fd = int(.003 * SR)
+    z[-fd:] *= np.linspace(1, 0, fd)[:, None]
+    out[:k] += z
+    for x, t in ((up, SG.UP_AT), (spg, SG.SPG_FILM)):
+        i = int(round(t * SR))
+        m = min(len(x), n - i)
+        out[i:i + m] += x[:m]
+    return out
+
 
 def wave_env(x, per_sec=50):
     """メモの波形：1/50秒ごとのいちばん大きい所（0〜1）の平方根（小さい音も見えるように。-6dB≒0.7・-20dB≒0.3・-40dB＝0.1）"""
@@ -2107,13 +2145,16 @@ def wave_env(x, per_sec=50):
 if __name__ == '__main__':
     out = sys.argv[1] if len(sys.argv) > 1 else '.'
     os.makedirs(out, exist_ok=True)
-    waves = {}
+    waves, xs = {}, {}
     for name, fn in SOUNDS:
-        x = fn()
+        x = xs[name] = fn()
         write_wav(f'{out}/{name}.wav', x)
         lu, pk = lufs(x), 20 * np.log10(np.max(np.abs(x)))
         waves[name] = dict(d=round(len(x) / SR, 2), lufs=round(lu, 1), peak=round(float(pk), 1), h=wave_env(x))
         print(f'{name}.wav  {len(x) / SR:.2f}秒  {lu:.1f} LUFS  ピーク {pk:.1f}dB')
+    x = spg_flow(xs['sfx_zp'], xs['sfx_spg_up'], xs['sfx_spg'])     # 超プレミアム神様的中の 流れ（メモの 波形だけ）
+    waves['sfx_spg_flow'] = dict(d=round(len(x) / SR, 2), lufs=round(lufs(x), 1), peak=round(float(20 * np.log10(np.max(np.abs(x)))), 1), h=wave_env(x))
+    print(f'sfx_spg_flow（波形だけ）  {len(x) / SR:.2f}秒')
     with open(f'{out}/sfx_wave.json', 'w', encoding='utf-8') as f:
         json.dump(waves, f, separators=(',', ':'))
     print('sfx_wave.json')

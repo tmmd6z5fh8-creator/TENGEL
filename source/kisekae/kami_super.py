@@ -7,7 +7,12 @@
      神・様・的・中 と 小判 → 朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います 6.2秒）＝ 12.5秒 → 超神様的中の ボード（見出し「超神様的中！！！」）
    動画だけは 1コマずつ 描いた 絵（1170×2532・30コマ/秒）なので アプリでも 動画（H.264・音なし）。音は ほかと 同じ 効果音（gen_sfx.py の sfx_sgd）
    見本の ページ：動画は 押す 前から ページに 置いて 先に 読む・押した 瞬間に 再生 → 動画が 動きだした 時に 音を その 時刻から（絵と 音が ずれない）
-     → 動画の 12.6秒に 白い 光 → ボード（ボードの 時計も 動きだした 時から）。視差効果を減らす：動画は 出さず さいごの 1まい（鳥居の 中の 神様的中）→ 1.3秒から ボード"""
+     → 動画の 12.6秒に 白い 光 → ボード（ボードの 時計も 動きだした 時から）。視差効果を減らす：動画は 出さず さいごの 1まい（鳥居の 中の 神様的中）→ 1.3秒から ボード
+   第4.52版：動画を 新しく（① の あとの 白い 光を 金粉が 舞う 1.5秒に・③ の さいごを 0.4秒 のばした：14.23秒）。超神様的中と 超プレミアム神様的中で 同じ 動画を 使う
+   超プレミアム神様的中（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）：超神様的中の 4回に1回（ランダム）。PUSHは ど的中と 同じ
+     押すと 超プレミアムど的中（super_premium.py）の ふりで はじまり → ③「き！」（押してから 6.0秒：UP_AT）で 画面が 止まって
+     昇格の 動画（バグ 2秒 → まっ暗 1秒 → 宇宙の カットイン 3.6秒＝flat/kami_glitch.py・kami_cutin.py：6.57秒・音なし）→ 超神様の 動画（声つきの 音）→ 超神様的中の ボード
+     動画は 2つ（昇格・超神様）とも 押す 前から 読んでおき、押した 瞬間（タップの 中）に 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）"""
 import os
 
 FPS = 30
@@ -35,13 +40,17 @@ def sgd_video(film_url):
             f'aria-hidden="true" ref="{{{{vref}}}}" onPlaying="{{{{onPlay}}}}"></video>')
 
 
-def sgd_layers(board_html, last_url):
+SGD_SR = ('超神様的中！金色の 嵐の 中で 光の 玉が はじけ、金粉が 舞う 白い 光の あと、金色の 立体の 字で「万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり」。'
+          '雷を まとった 神・様・的・中 と 小判が とびかい、朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います')
+
+
+def sgd_layers(board_html, last_url, sr=SGD_SR):
     """押したあと（下から）：（動画は ページの video）→ さいごの 1まい（視差効果を減らす 時）→ 白い 光 → ボードの うしろを 少し 暗く → ボード（board_html）"""
     return f'''<img class="sgs" src="{last_url}" alt="">
     <div class="sgw" aria-hidden="true"></div>
     <div class="sgk" aria-hidden="true"></div>
     <div class="hb">{board_html}</div>
-    <p class="sr">超神様的中！金色の 嵐の 中で 光の 玉が はじけ、金色の 立体の 字で「万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり」。雷を まとった 神・様・的・中 と 小判が とびかい、朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います</p>'''
+    <p class="sr">{sr}</p>'''
 
 
 def sgd_css():
@@ -181,3 +190,135 @@ def film_events():
     return dict(T1=F1.T, RIBS=ribs, ROCKS=F1.ROCKS, LIFT_T=F1.LIFT_T, LIFT_BURSTS=F1.LIFT_BURSTS, SHRINK=F1.SHRINK, SB=sb, ARCS=arcs,
                 CRACK=(el1['f0'] / FPS, el1['f1'] / FPS),
                 T2=F2.TT, HEAVY=(F2.HEAVY1['t'], F2.HEAVY2['t']), T3=F3.TT, EL3=el3, LOGO0=F3.ELEC_LOGO0)
+
+
+# ---------- 超プレミアム神様的中（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）：超神様的中の 4回に1回 ----------
+UP_AT = 6.0                  # 超プレミアムど的中の ③「き！」（押してから 6.0秒）で 画面が 止まって 昇格の 動画へ（flat/capture_page.py で 写した 6.0秒の 1まいが バグの もと）
+UP_N = 89 + 108              # 昇格の 動画の コマ数：flat/kami_glitch.py の N（バグ 59＋まっ暗 30）＋flat/kami_cutin.py の N（宇宙の カットイン 108）
+UP = UP_N / FPS              # 6.57秒（音なし。音は gen_sfx.py の sfx_spg_up）
+SPG_FILM = UP_AT + UP        # 超神様の 動画が はじまる 時（押してから 12.57秒。読みこみが 遅れたら その ぶん うしろへ）
+WAIT_MAX = 4.0               # 動画が この 秒 たっても 動かない 時は さいごの 1まい → ボード
+SPG_SR = ('超プレミアム神様的中！鉛筆で 描いた ハートが つもって はじけ、ハートを だいた ポニーが ど・て・き と 出てきた ところで 画面が 止まって バグり、'
+          'まっ暗に なって 宇宙の カットイン（隕石・大きな 爆発・惑星を はしる 雷）。そのまま 超神様的中：金色の 嵐・金粉の 白い 光・金色の 立体の 字・'
+          '雷を まとった 神・様・的・中 と 小判・朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います')
+
+
+def spg_videos(up_url, film_url):
+    """動画 2つ（押す 前から ページに 置いて 先に 読む）：昇格（バグ → まっ暗 → 宇宙の カットイン）と 超神様。音は 入れない（効果音で 鳴らす）"""
+    return (f'<video class="{{{{spuCls}}}}" src="{up_url}" muted="true" playsinline="true" webkit-playsinline="true" preload="auto" '
+            f'aria-hidden="true" ref="{{{{uref}}}}" onPlaying="{{{{onUpPlay}}}}" onEnded="{{{{onUpEnd}}}}"></video>\n  '
+            + sgd_video(film_url))
+
+
+def spg_css():
+    return f'''
+/* ---------- 超プレミアム神様的中（第4.52版）：kami_super.py（超プレミアムど的中の 0〜{sec(UP_AT)} → 昇格の 動画 {sec(UP)} → 超神様の 動画 {sec(FILM)} → ボード） ---------- */
+.ph .spu{{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:30;opacity:0;pointer-events:none}}
+.ph .spu.on{{opacity:1}}
+/* 超プレミアムの 画面（いちばん 上）：き！で 止まる（stop）→ 昇格の 動画が 動きだしたら 消す（gone） */
+.ov.fz.zp.spz{{z-index:32;pointer-events:none}}
+.ov.fz.zp.spz.stop,.ov.fz.zp.spz.stop *{{animation-play-state:paused!important}}
+.ov.fz.zp.spz.gone{{display:none}}
+/* 超神様の 幕：黒は 動画の 絵（昇格の さいごも 超神様の はじめも 黒）。さいごの 1まいの 時だけ 黒 */
+.ov.fz.sgd.spg{{background:transparent}}
+.ov.fz.sgd.spg.still{{background:#000}}
+'''
+
+
+def spg_js(snd):
+    """ページの スクリプト（Component に 足す 所）。snd：音が ある。音の キー：tap＝超プレミアム（0〜6.0秒）・up＝昇格・film＝超神様（声つき）
+       sp：0＝超プレミアム・1＝き！で 止まった（昇格の 動画を 読んで いる）・2＝昇格の 動画。go：1＝超神様の 動画・2＝さいごの 1まい"""
+    S = (lambda x: x) if snd else (lambda x: '')
+    return (S('''  sgdWake() {
+    // 押した 瞬間に 音の 準備（iPhone は タップの 中で 起こす）
+    var sx = this.sfxInit();
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    if (sx.ctx && sx.ctx.state !== 'running' && sx.ctx.resume) { try { sx.ctx.resume(); } catch (e) {} }
+    if (sx.ctx && !sx.ok) {
+      sx.ok = 1;
+      try { var s0 = sx.ctx.createBufferSource(); s0.buffer = sx.ctx.createBuffer(1, 1, 22050); s0.connect(sx.ctx.destination); s0.start(0); } catch (e) {}
+    }
+  }
+''') + '''  spgUv(el) {
+    this._su = el || null;
+  }
+  sgdVid(el) {
+    this._sv = el || null;
+  }
+  spgClear() {
+    clearTimeout(this._spT);
+    clearTimeout(this._sgT);
+  }
+  spgGo() {
+    // 押した 瞬間（タップの 中）：動画 2つを 一度 動かして 止めて おく（iPhone で あとから 再生できる）→ 超プレミアムの 音 → ''' + f'{UP_AT:g}' + '''秒で 昇格
+    var self = this, u = this._su, v = this._sv;
+    this.spgClear();
+    this._spOn = 0;
+    this._spUp = 0;
+    this._sgdOn = 0;
+''' + S("    this.sgdWake();\n    this.hush();\n") + '''    if (!u || !v || this.slow()) { this.spgStill(); return; }
+    [u, v].forEach(function (x) {
+      try { x.currentTime = 0; var p = x.play(); if (p && p.catch) p.catch(function () {}); x.pause(); } catch (e) {}
+    });
+''' + S("    this.sfx('tap');\n") + '''    this._spT = setTimeout(function () { self.spgUp(); }, ''' + f'{UP_AT * 1000:g}' + ''');
+  }
+  spgUp() {
+    // き！で 画面が 止まる（超プレミアムの 音も ブツッと 止める）→ 昇格の 動画
+    var self = this, u = this._su, st = this.state || {};
+    if (st.ph !== 'reveal' || this._spUp || this._sgdOn) return;
+    this._spUp = 1;
+''' + S("    this.hush();\n") + '''    this.setState({ sp: 1 });
+    try { u.currentTime = 0; } catch (e) {}
+    var p = null;
+    try { p = u.play(); } catch (e) { this.spgStill(); return; }
+    if (p && p.catch) p.catch(function () { self.spgStill(); });
+    clearTimeout(this._spT);
+    this._spT = setTimeout(function () { if (!self._spOn) self.spgStill(); }, ''' + f'{WAIT_MAX * 1000:g}' + ''');
+  }
+  spgUpPlaying() {
+    // 昇格の 動画が 動きだした 時：その 時刻から 昇格の 音・超プレミアムの 画面を 消す
+    var self = this, u = this._su, st = this.state || {};
+    if (this._spOn || this._sgdOn || !u || st.ph !== 'reveal' || this._spUp !== 1) return;
+    this._spOn = 1;
+''' + S("    this.sfx('up', u.currentTime || 0);\n") + '''    this.setState({ sp: 2 });
+    var rest = Math.max(0, (u.duration || ''' + f'{UP:.4f}' + ''') - (u.currentTime || 0));
+    clearTimeout(this._spT);
+    this._spT = setTimeout(function () { self.spgFilm(); }, (rest + .5) * 1000);   // おわりの 知らせが こない 時の ため
+  }
+  spgFilm() {
+    // 昇格の 動画が おわった（まっ暗）→ 超神様の 動画
+    var self = this, v = this._sv, st = this.state || {};
+    if (this._spOn !== 1 || this._sgdOn || st.ph !== 'reveal') return;
+    this._spOn = 2;
+    clearTimeout(this._spT);
+    try { v.currentTime = 0; } catch (e) {}
+    var p = null;
+    try { p = v.play(); } catch (e) { this.spgStill(); return; }
+    if (p && p.catch) p.catch(function () { self.spgStill(); });
+    clearTimeout(this._sgT);
+    this._sgT = setTimeout(function () { if (!self._sgdOn) self.spgStill(); }, ''' + f'{WAIT_MAX * 1000:g}' + ''');
+  }
+  spgFilmPlaying() {
+    // 超神様の 動画が 動きだした 時：声つきの 音を その 時刻から（昇格の 音の のこりに 重ねる）・ボードの 時計も ここから
+    var v = this._sv, st = this.state || {};
+    if (this._spOn !== 2 || this._sgdOn || !v || st.ph !== 'reveal') return;
+    this._sgdOn = 1;
+    clearTimeout(this._sgT);
+''' + S("    this.sfxAt('film', v.currentTime || 0);\n") + '''    this.setState({ go: 1 });
+  }
+  spgStill() {
+    // 視差効果を減らす・動画が 動かない 時：動画は 出さずに 超神様の さいごの 1まい → ボード
+    this.spgClear();
+    this._sgdOn = 2;
+    [this._su, this._sv].forEach(function (x) { if (x) { try { x.pause(); } catch (e) {} } });
+''' + S(f"    this.sfx('film', {STILL_FROM:g}, {STILL_WAIT:g});\n") + '''    this.setState({ go: 2 });
+  }
+  spgStop() {
+    this.spgClear();
+    this._spOn = 0;
+    this._spUp = 0;
+    this._sgdOn = 0;
+    [this._su, this._sv].forEach(function (x) { if (x) { try { x.pause(); x.currentTime = 0; } catch (e) {} } });
+  }
+''')

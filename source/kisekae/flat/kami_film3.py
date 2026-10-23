@@ -35,7 +35,7 @@ W, H = KF.W, KF.H
 FPS = 30
 N0 = 186                              # 6.2秒（第4.50版：さいごの 字の 場面を 2秒 のばした）。雷・キラッの 乱数は この 長さで 作る（前の コマは かわらない）
 XN = 12                               # さいごの 場面を さらに のばす コマ（のばした 所の 雷と キラッは べつの 乱数）：声「おめでとう御座います！いやーーーーん！」が
-                                      # ボードの 前に 言いおわる ように 0.4秒（第4.53版）
+                                      # ボードの 前に 言いおわる ように 0.4秒（第4.52版）
 N = N0 + XN                           # 6.6秒
 SSA = 2                               # 側面は 2倍で 描いて もどす
 FOCAL = 1500.0                        # カメラ（絵の 画素）
@@ -1031,7 +1031,7 @@ def elec_events():
                     ev.append(dict(kind='out', key=j, f0=int(round(tt * FPS)), life=5, ci=ci, i=i, da=rng.uniform(-.5, .5),
                                    Lpx=rng.uniform(260, 520), style=rng.choice(('zig', 'zig', 'step')), seed=rng.randrange(1 << 30)))
                     mark(p, int(round(tt * FPS)), 5)
-        # さいごの 字：N0 まで 前と 同じ 乱数（前の コマは かわらない）→ のばした 所（第4.53版）は べつの 乱数
+        # さいごの 字：N0 まで 前と 同じ 乱数（前の コマは かわらない）→ のばした 所（第4.52版）は べつの 乱数
         def logo_runs(t, t_end):
             while t < t_end:
                 runner('logo', t)

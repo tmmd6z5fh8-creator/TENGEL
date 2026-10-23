@@ -584,16 +584,18 @@ def veil(gid, t, dur, more=''):
     return f'<svg class="zpv" viewBox="0 0 390 844" aria-hidden="true" style="animation:zpVl {sec(dur)} linear {sec(t)} both{more}"><use href="#{gid}"/></svg>'
 
 
-def zp_layers(board_html):
+def zp_layers(board_html, upto=None, sr=None):
     """押したあと（下から）：ラベンダーの 空 → つもる 手書きの ハート → ピンクの 画面（手書きの 水玉・光の 筋・キラキラ）→ ①〜⑤ の 手書きの ポニー
        （着いた時に 手書きの 輪と ハートが とぶ）→ 最後の 手書きの 大きな ハート（細かい ハートが のぼる）→ ボード → 白い 光。
-       board_html：テーマの ボード（gen_fx の board）"""
+       board_html：テーマの ボード（gen_fx の board）
+       upto：①〜⑤ の うち はじめから いくつ 出すか（超プレミアム神様的中（第4.52版）は 3＝③「き！」まで。その あとの 大きな ハート・ボードは 入れない：
+       き！で 画面が 止まって 昇格の 動画に なる・kami_super.py）。sr：画面を 読み上げる 文（upto の 時）"""
     T = ZP_T
     hearts, n = pile_html()
     scr = ''
     S = T['S']
     cx, cy = HEART_C
-    for i, (text, face, frm, s_txt) in enumerate(SCREENS):
+    for i, (text, face, frm, s_txt) in enumerate(SCREENS[:upto]):
         defs, body = screen_art(i, text, face, f'zp{i}', s_txt)
         t_in = S[i]
         t_out = (S[i + 1] if i + 1 < len(S) else T['FIN']) - T['OUT']
@@ -603,9 +605,16 @@ def zp_layers(board_html):
                 f'<svg viewBox="0 0 390 844"><defs>{defs}</defs><g id="zpG{i}">{body}</g></svg>{veil(f"zpG{i}", t_in, T["IN"], hide(t1=t_in + T["IN"]))}</div>'
                 f'<i class="zpr" style="animation:zpRing .55s ease-out {sec(land)} both{hide(land, land + .55)}"></i>'
                 f'<div class="zpl" aria-hidden="true" style="animation:{hide(land, land + .8)[1:]}">{pop_hearts(cx, cy - 20, land, 14, 30 + i)}</div>')
+    bx, by = BURST_C
+    if upto is not None:
+        return f'''{shared_defs()}<div class="zpbg" aria-hidden="true"></div>
+    <div class="zpp" aria-hidden="true" style="animation:{hide(t1=T['W'][2])[1:]}">{hearts}</div>
+    <div class="zpl zplb" aria-hidden="true" style="animation:{hide(T['BURST'], T['W'][2])[1:]}">{pop_hearts(bx, by, T['BURST'], 20, 23, dist=(170, 300), size=(16, 30))}</div>
+    <div class="zppk" aria-hidden="true"><i class="rays">{rays_svg()}</i><i class="glow"></i><svg class="zpk" viewBox="0 0 390 844">{twinkles(22, 5)}</svg></div>
+    {scr}
+    <p class="sr">{sr or ''}</p>'''
     fdefs, fbody = final_art()
     fx, fy = FIN_C
-    bx, by = BURST_C
     up0 = T['RES'] - UP_VEIL[0]                                       # 最後の ハートが 上へ 動く 前に 白く なりはじめる 時
     pop_d = T['FIN'] + .28                                            # 最後の ハートの 輪と とぶ ハート
     return f'''{shared_defs()}<div class="zpbg" aria-hidden="true"></div>

@@ -16,6 +16,9 @@
    超神様的中 Fx_SuperGod.dc.html（第4.51版・まさちゃんの指定）：神様的中の 8回に1回（ランダム）※仮・PUSHは ど的中と同じ ※仮 → タップで 1コマずつ 描いた 動画
      （flat/kami_film*.py の ①②③：金の 嵐 → 金の 立体の 字 → 雷を まとった 神・様・的・中 と 小判 → 朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います）
      → 見出し「超神様的中！！！」の ボード（kami_super.py・THEMED の fz_sgd。動画は fx_blobs.json の sgd_film・さいごの 1まいは sgd_last・音は snd_sgd）
+   超プレミアム神様的中 Fx_SuperPremiumGod.dc.html（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）：超神様的中の 4回に1回（ランダム）・PUSHは ど的中と同じ
+     → タップで 超プレミアムど的中の ふり（super_premium.py の ①〜③）→ ③「き！」（6.0秒）で 画面が 止まって 昇格の 動画（バグ → まっ暗 → 宇宙の カットイン：spg_up）
+     → 超神様の 動画（sgd_film：超神様的中と 同じ）→ 見出し「超神様的中！！！」の ボード（THEMED の fz_spg。音は snd_zp → snd_spg_up → snd_spg（声つき））
    流れ：記録する → PUSHボタン（上下に動く）→ タップ → 壁紙のテーマのボードが出る（当たった買い目。ボードは boards.py・馬は出さない）
    フリーズ（3連単の当たりに超大穴＝10〜12番人気の馬）：虹色にギラギラ光るめちゃくちゃデカいPUSH → タップした瞬間にパチスロのフリーズのように
    白く光って横に流れるノイズ → 青い画面に白い光と細い電気 → 青白い横一本線に1pxの電気（プチュン）→ 点に縮んで消える → 真っ暗（1.5秒）
@@ -77,6 +80,7 @@ THEMED = dict(
     hit_valentine=dict(base='hit', tid='valentine', banner='valentine', push='vl', fonts=BY_ID['valentine']['fonts']),   # バレンタイン：チョコのPUSH・壁紙は いつも ハートが 動き、10秒ごとに カップルが 馬を なでにいく（6回に1回は 馬が ブチギレる：couple_wall.py）
     fz_pc=dict(base='fz', premium='cute'),   # プレミアムど的中（かわいいど的中）：どの着せ替えでも ど的中の 6回に1回。PUSHは ど的中と 同じ・押すと ハートが つもって はじけ、白い 光 → ハートを だいた ポニーが ど！・て！・き！・ちゅ！・う！ → ハートに つつまれた ど的中（premium_cute.py）→ その着せ替えの ど的中の ボード。tid なし＝ど的中の 見本と 同じ デフォルト
     fz_gd=dict(base='fz', premium='god'),    # 神様的中（まさちゃんの指定）：3連単の 当たりの 3頭に 超大穴（10〜12番人気）と、ほかに 大穴以上（7〜12番人気）が 1頭 以上 ※仮。PUSHは ど的中と 同じ ※仮・押すと 青い 嵐（光の 柱・電気・光の 帯・とんでくる 岩）→ 金の 雲の 空に 金の 立体の 字（万馬券（きせき）の 寄り → 天眼（テンゲル）の 寄り → 4行の 文）→ 金の 粒が はじけて 神・様・的・中 の 寄り → 金の 鳥居の 中に 神様／的中（kami.py）→ その着せ替えの ど的中の ボード
+    fz_spg=dict(base='fz', premium='superpremiumgod'),   # 超プレミアム神様的中（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）：超神様的中の 4回に1回（ランダム）。PUSHは ど的中と 同じ・押すと 超プレミアムど的中の ふり → き！で 画面が 止まって バグ → まっ暗 → 宇宙の カットイン → 超神様の 動画（声つき）→ 見出し「超神様的中！！！」の ボード（kami_super.py）
     fz_sgd=dict(base='fz', premium='supergod'),   # 超神様的中（第4.51版・まさちゃん「これを超神様的中ボタンにして！」）：神様的中の 8回に1回（ランダム）※仮。PUSHは ど的中と 同じ ※仮・押すと 1コマずつ 描いた 動画（金の 嵐 → 金の 立体の 字 → 雷を まとった 神・様・的・中 と 小判 → 朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います：kami_super.py）→ 見出し「超神様的中！！！」の ボード
     fz_zp=dict(base='fz', premium='hand'),   # 超プレミアムど的中（手書き・鉛筆）：プレミアムど的中の 8回に1回（ランダム）＝ど的中の 48回に1回（まさちゃんの指定）。PUSHは ど的中と 同じ・押すと 鉛筆で 描いた ハートが つもって はじけ、白い 光 → 鉛筆で 描いた ハートを だいた ポニーが ど！・て！・き！・ちゅ！・う！ → 鉛筆で 描いた ハートに つつまれた ど的中（super_premium.py・rough.py）→ その着せ替えの ど的中の ボード
     hit_whiteday=dict(base='hit', tid='whiteday', banner='whiteday', push='wd', fonts=BY_ID['whiteday']['fonts']),   # ホワイトデー：マシュマロのPUSH・壁紙は いつも ハートが 動き、10秒ごとに カップルが 馬を なでにいく（6回に1回は 馬が ブチギレる：couple_wall.py）
@@ -4877,6 +4881,7 @@ PAGES = dict(   # 種類 → ファイル名・名前（見本の画面のタイ
     fz_zp=('Fx_SuperPremium.dc.html', '超プレミアムど的中（手書き・鉛筆：プレミアムど的中の 8回に1回）'),
     fz_gd=('Fx_God.dc.html', '神様的中（3連単に 超大穴と 大穴以上 ※仮）'),
     fz_sgd=('Fx_SuperGod.dc.html', '超神様的中（神様的中の 8回に1回 ※仮）'),
+    fz_spg=('Fx_SuperPremiumGod.dc.html', '超プレミアム神様的中（超神様的中の 4回に1回）'),
     hit_gold=('Fx_HitGold.dc.html', '的中ボタン（カッコいい：黒と金のぷるんPUSH）'),
     hit_ranch=('Fx_HitRanch.dc.html', '的中ボタン（牧場：芝生のPUSH）'),
     hit_sakura=('Fx_HitSakura.dc.html', '的中ボタン（桜：桜がついたPUSH）'),
@@ -4934,6 +4939,11 @@ def page(kind):
             note = (f'3連単の当たりに 超大穴（{FZ_X}番が{FZ_X}番人気）と 大穴（{GD_Y}番が{GD_Y}番人気）で 神様的中。その 8回に1回（ランダム）は 超神様的中 ※仮。'
                     f'押すと 金の 嵐 → 金の 立体の 字「万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり」→ 雷を まとった 神・様・的・中 と 小判 → '
                     f'朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います が 出るよ（見本・架空のレース）')
+        elif th.get('premium') == 'superpremiumgod':
+            bets, total, fin = BETS_GD, '1,357,560円', (FZ_X, GD_Y, 2)
+            note = (f'3連単の当たりに 超大穴（{FZ_X}番が{FZ_X}番人気）と 大穴（{GD_Y}番が{GD_Y}番人気）で 神様的中。その 8回に1回は 超神様的中 ※仮、'
+                    f'さらに その 4回に1回（ランダム）は 超プレミアム神様的中。押すと 超プレミアムど的中の ふり（ハートを だいた ポニーが ど！・て！・き！）→ '
+                    f'き！で 画面が 止まって バグり まっ暗 → 宇宙の カットイン → 超神様的中の 動画（おめでとう御座います！・いやーーーーん！）が 出るよ（見本・架空のレース）')
         elif th.get('premium') == 'hand':
             note = f'3連単の当たりに超大穴（{FZ_X}番が{FZ_X}番人気）で ど的中。どの着せ替えでも プレミアムど的中の 8回に1回（ランダム）は 超プレミアムど的中で、押すと 鉛筆で 描いた ハートが つもって はじけ、鉛筆で 描いた ハートを だいた ポニーが 出てくるよ（見本・架空のレース）'
         elif th.get('premium'):
@@ -5006,6 +5016,18 @@ def page(kind):
   </div>
   </sc-if>
   {SG.sgd_video('/_blob/' + blobs['sgd_film'])}'''
+    elif fz and th.get('premium') == 'superpremiumgod':     # 超プレミアム神様的中（第4.52版）：超プレミアムど的中の ①〜③（super_premium.py）→ き！で 止まって 昇格の 動画 → 超神様の 動画 → ボード
+        rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<b class="zt">大穴</b>{num(GD_Y, " zx")}<span>が3連単に！</span></div>'
+        reveal = f'''  <sc-if value="{{{{isReveal}}}}" hint-placeholder-val="{{{{false}}}}">
+  <div class="{{{{spzCls}}}}">
+    {SP.zp_layers('', upto=3)}
+  </div>
+  <div class="{{{{sgdCls}}}}" style="--n:{nhit}">
+    {SG.sgd_layers(board('fz', bets, total, rib=rib, mark=(FZ_X, GD_Y), tid=tid, head='sgd'), '/_blob/' + blobs['sgd_last'], sr=SG.SPG_SR)}
+    <button class="close" type="button" onClick="{{{{toForm}}}}">とじる</button>
+  </div>
+  </sc-if>
+  {SG.spg_videos('/_blob/' + blobs['spg_up'], '/_blob/' + blobs['sgd_film'])}'''
     elif fz and th.get('premium'):     # プレミアムど的中：押したあとは premium_cute.py・超プレミアムど的中（手書き）は super_premium.py（ボードは そのテーマの ど的中の ボード）
         rib = f'<div class="zrib"><b class="zt">超大穴</b>{num(FZ_X, " zx")}<span>{FZ_X}番人気が3連単に！</span></div>'
         hand = th.get('premium') == 'hand'
@@ -5039,6 +5061,8 @@ def page(kind):
         css += GD.gd_css()
     elif th.get('premium') == 'supergod':
         css += SG.sgd_css()
+    elif th.get('premium') == 'superpremiumgod':
+        css += SP.zp_css() + SG.sgd_css() + SG.spg_css()
     elif th.get('premium') == 'hand':
         css += SP.zp_css()
     elif th.get('premium'):
@@ -5181,7 +5205,7 @@ class Component extends DCLogic {{
 # ---------- 効果音（gen_sfx.py で作った音。fx_blobs.json の snd_… があれば、見本の画面で鳴らす） ----------
 SND = {'hit': ('snd_hit_push', 'snd_hit'), 'big': ('snd_big_push', 'snd_big'), 'fz': ('snd_fz_push', 'snd_fz'),
        'hidden': ('snd_big_push', 'snd_fz')}     # 隠れど的中：PUSHはデカの音・タップはど的中の音（ハズレは音なし）
-PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'], hit_news=SND['hit'], hit_ink=SND['hit'], hit_carousel=SND['hit'], hit_stars=SND['hit'], hit_silks=SND['hit'], hit_neon=SND['hit'], hit_pixel=SND['hit'], hit_fireworks=SND['hit'], hit_kids=SND['hit'], hit_cute=SND['hit'], hit_sunset=SND['hit'], hit_night=SND['hit'], hit_marble=SND['hit'], hit_lucky=SND['hit'], hit_chalk=SND['hit'], hit_silver=SND['hit'], hit_golden=SND['hit'], hit_tengel=SND['hit'], hit_xmas=SND['hit'], hit_halloween=SND['hit'], hit_valentine=SND['hit'], hit_whiteday=SND['hit'], fz_pc=('snd_fz_push', 'snd_pc'), fz_zp=('snd_fz_push', 'snd_zp'), fz_gd=('snd_fz_push', 'snd_gd'), fz_sgd=('snd_fz_push', 'snd_sgd'))       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月・競馬新聞・水墨画・メリーゴーランド・星座・勝負服・ネオン・ドット絵・花火・子供向け・かわいい・夕焼け・ナイター・大理石・開運・黒板・シルバー帯・ゴールド帯・マスター帯・クリスマス・ハロウィン・バレンタイン・ホワイトデーの的中も的中の音）
+PAGE_SND = dict(SND, hit_gold=SND['hit'], hit_ranch=SND['hit'], hit_sakura=SND['hit'], hit_sea=SND['hit'], hit_autumn=SND['hit'], hit_snow=SND['hit'], hit_newyear=SND['hit'], hit_news=SND['hit'], hit_ink=SND['hit'], hit_carousel=SND['hit'], hit_stars=SND['hit'], hit_silks=SND['hit'], hit_neon=SND['hit'], hit_pixel=SND['hit'], hit_fireworks=SND['hit'], hit_kids=SND['hit'], hit_cute=SND['hit'], hit_sunset=SND['hit'], hit_night=SND['hit'], hit_marble=SND['hit'], hit_lucky=SND['hit'], hit_chalk=SND['hit'], hit_silver=SND['hit'], hit_golden=SND['hit'], hit_tengel=SND['hit'], hit_xmas=SND['hit'], hit_halloween=SND['hit'], hit_valentine=SND['hit'], hit_whiteday=SND['hit'], fz_pc=('snd_fz_push', 'snd_pc'), fz_zp=('snd_fz_push', 'snd_zp'), fz_gd=('snd_fz_push', 'snd_gd'), fz_sgd=('snd_fz_push', 'snd_sgd'), fz_spg=('snd_fz_push', 'snd_zp', 'snd_spg_up', 'snd_spg'))       # テーマの見本の音は、元の種類と同じ（カッコいい・牧場・桜・海・紅葉・雪・お正月・競馬新聞・水墨画・メリーゴーランド・星座・勝負服・ネオン・ドット絵・花火・子供向け・かわいい・夕焼け・ナイター・大理石・開運・黒板・シルバー帯・ゴールド帯・マスター帯・クリスマス・ハロウィン・バレンタイン・ホワイトデーの的中も的中の音）
 WAVES = json.load(open(f'{K}/sfx_wave.json')) if os.path.exists(f'{K}/sfx_wave.json') else None
 
 # 鳴らす部品（Web Audio。読み込みは先に・鳴らすのは押したときだけ・押した瞬間を0秒にして動きとそろえる）
@@ -5255,7 +5279,7 @@ SFX_JS = '''  sfxDecode(c, b) {
 '''
 
 
-TXT_SND = ('snd_pc', 'snd_zp', 'snd_gd', 'snd_sgd')     # キャンバスが 音だけの mp4 を 受け付けなくなったので、base64 の テキスト（.txt）で 入れた 音（見本の画面で もどして 鳴らす）
+TXT_SND = ('snd_pc', 'snd_zp', 'snd_gd', 'snd_sgd', 'snd_spg_up', 'snd_spg')     # キャンバスが 音だけの mp4 を 受け付けなくなったので、base64 の テキスト（.txt）で 入れた 音（見本の画面で もどして 鳴らす）
 SFX_JS_TXT = SFX_JS.replace("return r.ok ? r.arrayBuffer() : null;", "return r.ok ? r.arrayBuffer().then(function (b) { return self.sfxBin(b); }) : null;") + '''  sfxBin(b) {
     // base64 の テキストで 入れた 音は もとの m4a に もどす（はじめから m4a・mp4 なら そのまま）
     try {
@@ -5269,6 +5293,42 @@ SFX_JS_TXT = SFX_JS.replace("return r.ok ? r.arrayBuffer() : null;", "return r.o
   }
 '''
 assert 'self.sfxBin(b)' in SFX_JS_TXT
+# 重ねて 鳴らす（第4.52版：超プレミアム神様的中の 超神様の 音は 昇格の 音の のこりに 重ねる・効果音の メモの 超プレミアム神様的中は 3つの 音を つなげて 鳴らす）
+SFX_JS_LAYER = SFX_JS_TXT.replace(
+    "    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }\n",
+    "    if (sx.el) { try { sx.el.pause(); } catch (e) {} sx.el = null; }\n    (sx.more || []).forEach(function (q) { try { q.stop(); } catch (e) {} });\n    sx.more = [];\n") + '''  sfxAt(k, from, wait, dur, done) {
+    // 前の 音を 止めずに 重ねて 鳴らす：押した 瞬間を 0秒として 音の from 秒の 所から wait 秒後に dur 秒だけ（dur なし＝さいごまで）
+    var self = this, sx = this.sfxInit();
+    var id = sx.id, t0 = Date.now();
+    var end = function () { if (done && id === sx.id) done(); };
+    from = from || 0;
+    wait = wait || 0;
+    var AC = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+    if (!sx.ctx && AC) { try { sx.ctx = new AC(); } catch (e) { sx.ctx = null; } }
+    var ctx = sx.ctx;
+    if (!ctx || !sx.raw[k]) { end(); return; }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    if (!sx.ok) {
+      sx.ok = 1;
+      try { var s0 = ctx.createBufferSource(); s0.buffer = ctx.createBuffer(1, 1, 22050); s0.connect(ctx.destination); s0.start(0); } catch (e) {}
+    }
+    (sx.buf[k] || Promise.resolve(null)).then(function (buf) {
+      return buf || sx.raw[k].then(function (b) { return b ? self.sfxDecode(ctx, b.slice(0)) : null; });
+    }).then(function (buf) {
+      if (id !== sx.id) return;
+      var el = (Date.now() - t0) / 1000, late = Math.max(0, el - wait), off = from + (late > .1 ? late : 0);
+      var d = dur ? dur - (off - from) : 0;
+      if (!buf || off >= buf.duration || (dur && d <= 0)) { end(); return; }
+      var s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(ctx.destination);
+      s.onended = end;
+      if (d) s.start(ctx.currentTime + Math.max(0, wait - el), off, d); else s.start(ctx.currentTime + Math.max(0, wait - el), off);
+      (sx.more || (sx.more = [])).push(s);
+    });
+  }
+'''
+assert 'sx.more = [];' in SFX_JS_LAYER
 
 
 def page_js(kind):
@@ -5276,6 +5336,7 @@ def page_js(kind):
        ハズレ：記録する → すぐボード（PUSHなし・音なし）"""
     ids = [blobs.get(k) for k in PAGE_SND.get(kind, ())]
     sg = kind in THEMED and THEMED[kind].get('premium') == 'supergod'     # 超神様的中：押した 瞬間に 動画を 再生（kami_super.py の sgd_js）
+    spg = kind in THEMED and THEMED[kind].get('premium') == 'superpremiumgod'     # 超プレミアム神様的中（第4.52版）：超プレミアム → き！で 昇格の 動画 → 超神様の 動画（kami_super.py の spg_js）
     on, head, init = dict(push='', tap='', form=''), '', ''
     if ids and all(ids):
         tap = "self.sfx('tap'); "
@@ -5285,8 +5346,9 @@ def page_js(kind):
             res = GD.GD_T['RES'] if THEMED[kind]['premium'] == 'god' else PC.PC_T['RES']
             tap = f"if (self.slow()) self.sfx('tap', {res:g}, 1); else self.sfx('tap'); "
         on = dict(push="self.sfx('push'); ", tap=tap, form='self.hush(); ')
-        head = (f"  sfxUrls() {{\n    return {{ push: '/_blob/{ids[0]}', tap: '/_blob/{ids[1]}' }};\n  }}\n"
-                + (SFX_JS_TXT if any(k in TXT_SND for k in PAGE_SND[kind]) else SFX_JS))
+        urls = ', '.join(f"{k}: '/_blob/{i}'" for k, i in zip(('push', 'tap', 'up', 'film'), ids))     # 超プレミアム神様的中は up（昇格）・film（超神様・声つき）も
+        head = (f"  sfxUrls() {{\n    return {{ {urls} }};\n  }}\n"
+                + (SFX_JS_LAYER if spg else SFX_JS_TXT if any(k in TXT_SND for k in PAGE_SND[kind]) else SFX_JS))
         init = '    this.sfxInit();\n'
     go, vals, rs, fs = '', '', '', ''
     if sg:     # 押した 瞬間に 動画（音は 動画が 動きだした 時から：sgdPlaying）。go：1＝動画・2＝さいごの 1まい（視差効果を減らす・動画が 動かない・start が reveal）
@@ -5299,6 +5361,21 @@ def page_js(kind):
                 "      sgvCls: 'sgv' + (ph === 'reveal' && go === 1 ? ' on' : ''),\n"
                 "      sgdCls: 'ov fz sgd' + (go === 1 ? ' go' : go === 2 ? ' still' : ''),\n")
         rs, fs = 'go: 0, ', ', go: 0'
+    if spg:    # 押した 瞬間に 動画 2つを 起こして 超プレミアム → 6.0秒で 昇格の 動画 → 超神様の 動画。sp：1＝き！で 止まる・2＝昇格の 動画。go：1＝超神様の 動画・2＝さいごの 1まい
+        head += SG.spg_js(bool(ids and all(ids)))
+        on['tap'] = 'self.spgGo(); '
+        on['form'] = 'self.spgStop(); ' + on['form']
+        go = "    var go = st.go || (ph === 'reveal' && !st.ph ? 2 : 0), sp = st.sp || 0;\n"
+        vals = ("      uref: this._ur || (this._ur = function (el) { self.spgUv(el); }),\n"
+                "      vref: this._vr || (this._vr = function (el) { self.sgdVid(el); }),\n"
+                "      onUpPlay: function () { self.spgUpPlaying(); },\n"
+                "      onUpEnd: function () { self.spgFilm(); },\n"
+                "      onPlay: function () { self.spgFilmPlaying(); },\n"
+                "      spzCls: 'ov fz zp spz' + (sp ? ' stop' : '') + (sp === 2 || go ? ' gone' : ''),\n"
+                "      spuCls: 'spu' + (ph === 'reveal' && sp === 2 && !go ? ' on' : ''),\n"
+                "      sgvCls: 'sgv' + (ph === 'reveal' && go === 1 ? ' on' : ''),\n"
+                "      sgdCls: 'ov fz sgd spg' + (go === 1 ? ' go' : go === 2 ? ' still' : ''),\n")
+        rs, fs = 'go: 0, sp: 0, ', ', go: 0, sp: 0'
     return ('class Component extends DCLogic {\n' + head
             + '  renderVals() {\n' + init
             + "    var st = this.state || {};\n"
@@ -5310,7 +5387,7 @@ def page_js(kind):
             + "      isReveal: ph === 'reveal',\n"
             + vals
             + f"      toPush: function () {{ {on['push']}self.setState({{ ph: '{'reveal' if kind == 'miss' else 'push'}' }}); }},\n"
-            + (f"      toReveal: function () {{ self.setState({{ {rs}ph: 'reveal' }}); {on['tap'].strip()} }},\n" if sg else
+            + (f"      toReveal: function () {{ self.setState({{ {rs}ph: 'reveal' }}); {on['tap'].strip()} }},\n" if sg or spg else
                f"      toReveal: function () {{ {on['tap']}self.setState({{ ph: 'reveal' }}); }},\n")
             + f"      toForm: function () {{ {on['form']}self.setState({{ ph: 'form'{fs} }}); }}\n"
             + "    };\n"
@@ -5318,7 +5395,7 @@ def page_js(kind):
             + "}\n")
 
 
-SOUND_W, SOUND_H = 2200, 3550     # 神様的中・超神様的中（第4.51版）の 段を 足して 高く（下の 4つの 箱まで ぜんぶ 入る）
+SOUND_W, SOUND_H = 2200, 4000     # 神様的中・超神様的中（第4.51版）・超プレミアム神様的中（第4.52版）の 段を 足して 高く（下の 4つの 箱まで ぜんぶ 入る）
 SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目もり（秒）
     ('hit', '的中ボタン', '当たったとき・ハ長調（明るく軽く）', 'ピロリン↑（鐘が3つ上がる）＋キラキラ', ('#C8281F', '#FF9A3C'), .5),
     ('big', 'デカ的中ボタン', '3連単が当たったとき・ニ長調・重く重低音で（速く勢いよく）', 'ドゥン（重低音）＋キュイーン↑（低めから）＋低いうなり', ('#7B4CFF', '#FF3BB8'), .5),
@@ -5330,10 +5407,12 @@ SND_INFO = (   # キー・見出し・小見出し・PUSHの音・色・目も�
      ('#6E5F6B', '#FF8DC0', '#FFD3E5', '#6E5F6B'), 1.0),
     ('gd', '神様的中', '3連単の当たりに 超大穴と 大穴以上 ※仮<br>ホ長調・雷と 金管と 鐘と 合唱', 'ど的中と同じ（PUSHの音は 分けない）※仮',
      ('#2F6BFF', '#3FD0FF', '#FFC41F', '#FFE97A', '#C8281F', '#B07A00'), 1.0),
-    ('sgd', '超神様的中', '神様的中の 8回に1回 ※仮（いちばん上）<br>動画の 絵に 合わせた 音：ホ長調・雷と 小判と 金管と 合唱と 神社の 鈴', 'ど的中と同じ（PUSHの音は 分けない）※仮',
+    ('sgd', '超神様的中', '神様的中の 8回に1回 ※仮<br>動画の 絵に 合わせた 音：ホ長調・雷と 小判と 金管と 合唱と 神社の 鈴', 'ど的中と同じ（PUSHの音は 分けない）※仮',
      ('#FFC41F', '#FFE97A', '#E8382F', '#8A1C10', '#FFC41F'), 1.0),
+    ('spg', '超プレミアム神様的中', '超神様的中の 4回に1回（いちばん上）<br>超プレミアムの 音 → き！で ブツッ → バグ・まっ暗・宇宙の カットイン → 超神様の 音＋声', 'ど的中と同じ（PUSHの音は 分けない）',
+     ('#FF8DC0', '#6E5F6B', '#2A1259', '#E8382F', '#FFC41F', '#FFE97A'), 1.0),
 )
-PUSH_OF = dict(pc='fz', zp='fz', gd='fz', sgd='fz')     # PUSHの音が ほかと 同じ もの（プレミアム・超プレミアム・神様・超神様は ど的中の PUSH の音）
+PUSH_OF = dict(pc='fz', zp='fz', gd='fz', sgd='fz', spg='fz')     # PUSHの音が ほかと 同じ もの（プレミアム・超プレミアム・神様・超神様・超プレミアム神様は ど的中の PUSH の音）
 SN_CLS = dict(gd='kami', sgd='skami')     # 段の class（gd は メモの 外わくの class と 同じなので かえる）
 
 
@@ -5361,6 +5440,7 @@ def snd_events():
         'zp': pc_events(True),
         'gd': gd_events(),
         'sgd': sgd_events(),
+        'spg': spg_events(),
     }
 
 
@@ -5395,7 +5475,7 @@ def sgd_events():
             (o1 + T1['COL'][0], o1 + T1['DOME'][1], 'ザァッ↓ → ドーン＋ゴゴゴ・ゴォォォ → ブォォン↑・シュワーッ↑', '光の 滝が 床に 当たる → 嵐・光の 玉が 床から 上がる'),
             (o1 + T1['SURGE'][0], o1 + T1['GOLD'][0], 'ギュイーン・ドガーン・パチパチ・バリバリッ・ドーン・ジジジ・バリッ・ヒュンッ → キュゥゥン↑',
              '電気の 光・下の 火花の 爆発・上から 下への 雷・玉の 電気・玉から はしへの 雷・岩 → 玉が 小さく'),
-            (o1 + T1['GOLD'][1], o2, 'ドガーン!!＋ジャラジャラ＋シュワーッ↑ → パァーン', '金の 爆発 → まっ白'),
+            (o1 + T1['GOLD'][1], o2, 'ドガーン!!＋ジャラジャラ → ああぁぁ（合唱）＋ふわぁ＋キラキラ → シュワッ↑', '金の 爆発 → 金粉が 舞う 白い 光（1.5秒）'),
             (o2 + h1[0], o2 + h1[2], 'ゴォォッ → ズーン!!＋ジャーン（ミ）＋どら＋合唱', '「万馬券（きせき）」が 左から すべって きて 着地'),
             (o2 + h2[0], o2 + h2[2], 'ゴォォッ → ズーン!!＋ジャーン（ラ）', '「天眼（テンゲル）」が 右から'),
             (o2 + T2['WB'][0], o2 + T2['WC'][0], 'シュワーッ↑ → ドーン＋どら＋ジャーン → ああぁぁ（合唱）＋キラーン×2', '白 → 4行の 文（光が すべる 2回）'),
@@ -5406,6 +5486,31 @@ def sgd_events():
             (o3 + T3['TURN'][1], SG.FILM, 'パッパッパーン＋ああぁぁ（合唱）＋ビリビリ・バチッ＋キラーン×2＋シャン・シャン・シャン', '鳥居の 中の 神様的中 おめでとう御座います（字の 雷）'),
             (RES - .15, RES + .2, 'シャラララ↑ → ポンッ', '白い 光 → ボード'),
             (t0b, t0b + .24, 'ピン・ピン・ピン → キラリーン＋ジャラジャラ（小判）', '買い目（0.08秒おき）→ 払戻の 合計')]
+
+
+def spg_events():
+    """超プレミアム神様的中（第4.52版）の タップの 音の 中身（0秒＝押した 瞬間：超プレミアム 0〜6.0秒 → 昇格 → 超神様の 動画。動画の 読みこみが 遅れたら その ぶん うしろへ）"""
+    T = PC.PC_T
+    S, land = T['S'], T['IN'] * .72
+    a, f = SG.UP_AT, SG.SPG_FILM
+    g, c = a + 59 / SG.FPS, a + 89 / SG.FPS            # バグ 59コマ → まっ暗 30コマ → 宇宙の カットイン（flat/kami_glitch.py・kami_cutin.py）
+    ft = SG.film_times()
+    o2, o3 = SG.OFS[1], SG.OFS[2]
+    fan = f + o3 + ft['kami_film3.py']['TT']['TURN'][1]
+    return [(0, None, 'ポン＋キラリン', '押した（超プレミアムど的中の ふり）'), (.5, T['FILL'], 'ポロポロ（オルゴール）', 'ハートが 降って つもる'),
+            (T['BURST'], T['BURST'] + T['CHAIN'], 'パーン＋ポポポポン', 'ハートが はじける'), (T['W'][1], None, 'キラーーン', '白い 光'),
+            (S[0], S[0] + land, 'シュッ → 声「どぉ！」', '① ど！'), (S[1], S[1] + land, 'シュッ → 声「てぇ！」', '② て！'), (S[2], S[2] + land, 'シュッ → 声「きぃ！」', '③ き！'),
+            (a, g, 'ブツッ＋ガッ!! → ブーン・ガガッ・バチッ・チッ → ヒュゥゥン↓ プツッ', 'き！で 画面が 止まって 2秒 バグる → 線に ちぢんで 消える'),
+            (g, c, '無音', 'まっ暗（1秒）'),
+            (c, c + 1.3, 'ヒュゥゥン・ドスッ → ゴオォォォ↑キィィン → バシュゥン!!＋キィーン', '宇宙の カットイン：隕石 → 大きな 隕石 → 青い 光'),
+            (c + 1.3, c + 2.3, 'ドッゴォォォン!!＋声「いやーーーーん！！！」＋バリバリッ・ドーン', '大きな 爆発・惑星を はしる 雷'),
+            (c + 2.3, f, 'バシュッ・キィン・ヴォン → ズゥン → シュゥゥン↓', '黄色 → 赤 → 黒 → 赤い 惑星 → 光が 小さく'),
+            (f, f + o2, 'キュイッ↑ → ドガーン!! → 嵐・雷 → 金の 爆発 → 合唱＋キラキラ', '超神様の 動画（動画が 動きだした 時から）：金の 嵐 → 金粉の 白い 光'),
+            (f + o2, f + o3, 'ズーン!!×2 → ジャーン＋合唱＋キラーン×2', '金の 立体の 字 → 4行の 文'),
+            (f + o3, fan, 'ドガーン＋ジャラジャラ・ドン×4・バチバチ → 大爆発 → グォォ↑・シャララン', '神・様・的・中 と 小判 → 鳥居'),
+            (fan, f + SG.FILM, 'パッパッパーン → すぅっ・声「おめでとう御座います！」→ 声「いやーーーーん！」', '鳥居の 中の 神様的中 おめでとう御座います'),
+            (f + SG.RES - .15, f + SG.RES + .2, 'シャラララ↑ → ポンッ', '白い 光 → ボード'),
+            (f + SG.T0B, f + SG.T0B + .24, 'ピン・ピン・ピン → キラリーン＋ジャラジャラ', '買い目 → 払戻の 合計')]
 
 
 def pc_events(with_voice=False):
@@ -5470,7 +5575,7 @@ def sound_page():
     R = FZ_T['R']
     secs = ''
     for key, name, sub, pdesc, cols, step in SND_INFO:
-        wp, wt = WAVES[f'sfx_{PUSH_OF.get(key, key)}_push'], WAVES[f'sfx_{key}']
+        wp, wt = WAVES[f'sfx_{PUSH_OF.get(key, key)}_push'], WAVES['sfx_spg_flow' if key == 'spg' else f'sfx_{key}']     # 超プレミアム神様的中は 3つの 音を つなげた 形
         evs = evs_all[key]
         items = ''.join(f'<li><span class="no">{i}</span><span class="tx"><span class="tm">{ssec(t0)}{"〜" + ssec(t1) if t1 else ""}秒</span> <b>{snd}</b> <span class="wh">{what}</span></span></li>'
                         for i, (t0, t1, snd, what) in enumerate(evs, 1))
@@ -5487,8 +5592,9 @@ def sound_page():
     <div class="sr">{wave_svg(key, name, wt, evs, cols, step)}<ol class="ev">{items}</ol></div>
   </section>'''
     keys = [k for k, *_ in SND_INFO]
-    urls = ',\n      '.join(f"{k}_push: '/_blob/{blobs[f'snd_{PUSH_OF.get(k, k)}_push']}', {k}: '/_blob/{blobs[f'snd_{k}']}'" for k in keys)
-    vals = ',\n      '.join(f"p_{k}: play('{k}'), a_{k}: on === '{k}' ? 'true' : 'false'" for k in [x for k in keys for x in (f'{k}_push', k)])
+    urls = ',\n      '.join(f"{k}_push: '/_blob/{blobs[f'snd_{PUSH_OF.get(k, k)}_push']}', {k}: '/_blob/{blobs[f'snd_{k}']}'" + (f", spg_up: '/_blob/{blobs['snd_spg_up']}'" if k == 'spg' else '')
+                           for k in keys)
+    vals = ',\n      '.join(f"p_{k}: {'flow' if k == 'spg' else f'play({chr(39)}{k}{chr(39)})'}, a_{k}: on === '{k}' ? 'true' : 'false'" for k in [x for k in keys for x in (f'{k}_push', k)])
     box = '<div class="box"><h3>{}</h3><ul>{}</ul></div>'.format
     boxes = (box('鳴らすとき', '<li><b>PUSHの音</b>：PUSHが出た瞬間（結果を記録して当たりのとき。3つのボタンのうち出た1つの音だけ）</li>'
                  '<li><b>隠れど的中</b>：PUSHが出たときはデカの音・タップでど的中の音（見た目もデカ → ど的中）。<b>ハズレは音なし</b></li>'
@@ -5496,12 +5602,13 @@ def sound_page():
                  '<li><b>超プレミアムど的中（手書き・鉛筆）</b>：PUSHが出たときは ど的中の音・タップで 超プレミアムの音（プレミアムの 音の ①〜⑤を 声に した もの。秒は 同じ：super_premium.py は premium_cute.py の PC_T を そのまま 使う）</li>'
                  '<li><b>神様的中</b>：PUSHが出たときは ど的中の音・タップで 神様の音 <b>※仮</b>（秒は kami.py の GD_T）</li>'
                  '<li><b>超神様的中</b>：PUSHが出たときは ど的中の音・タップで 動画を 再生し、<b>動画が 動きだした 時に</b> 超神様の音を その 時刻から（絵と 音が ずれない）<b>※仮</b>（秒は 動画の 時刻・kami_super.py）</li>'
+                 f'<li><b>超プレミアム神様的中</b>：PUSHが出たときは ど的中の音・タップで 超プレミアムの音（sfx_zp）→ {ssec(SG.UP_AT)}秒（き！）で 止めて、昇格の 動画が 動きだした 時に 昇格の音（sfx_spg_up）→ 超神様の 動画が 動きだした 時に 声つきの 超神様の音（sfx_spg）を、昇格の音の のこりに 重ねて 鳴らす（どれも 動画の 時刻から・絵と 音が ずれない）</li>'
                  '<li><b>タップの音</b>：PUSHを押した瞬間が0秒。画面の動きと同じ時刻で、見本の画面（となりの3つ）でも同じに鳴る</li>'
                  '<li>「とじる」・ほかの画面へ移る・アプリを閉じる → すぐ止める。鳴っている途中で次の音が鳴るときは、前の音を止めてから</li>')
              + box('iPhoneでの鳴らし方（アプリ）', '<li><b>消音スイッチ（マナーモード）なら鳴らさない</b>・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）。音量はiPhoneの音量のまま</li>'
                    '<li>設定に「効果音」オン／オフ（最初はオン）<b>※仮</b></li>'
-                   f'<li>「視差効果を減らす」がオン：的中・デカは同じ音。ど的中は動きが短い（1秒真っ暗 → 結果）ので、押して1秒後に、ど的中の音の{ssec(R)}秒（結果のドォン・パッパッパーン）から鳴らす。プレミアムも 1秒後に その音の{ssec(PC.PC_T['RES'])}秒（ハートが 上へ・ボード）から・神様も 1秒後に その音の{ssec(GD.GD_T['RES'])}秒（ボード）から・超神様は 動画を 出さずに さいごの 1まい → 1秒後に その音の{ssec(SG.STILL_FROM)}秒（ボードの 少し 前）から <b>※仮</b>（見本の画面も同じ）</li>')
-             + box('大きさとファイル', '<li>10こ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz・sfx_pc（プレミアムど的中（かわいいど的中）のタップの音）・sfx_zp（超プレミアムど的中のタップの音）・sfx_gd（神様的中のタップの音）・sfx_sgd（超神様的中のタップの音）。プレミアム・超プレミアム・神様・超神様の PUSHの音は ど的中と同じ（AAC 160kbps・m4a・ぜんぶで約1.5MB）</li>'
+                   f'<li>「視差効果を減らす」がオン：的中・デカは同じ音。ど的中は動きが短い（1秒真っ暗 → 結果）ので、押して1秒後に、ど的中の音の{ssec(R)}秒（結果のドォン・パッパッパーン）から鳴らす。プレミアムも 1秒後に その音の{ssec(PC.PC_T['RES'])}秒（ハートが 上へ・ボード）から・神様も 1秒後に その音の{ssec(GD.GD_T['RES'])}秒（ボード）から・超神様と 超プレミアム神様は 動画を 出さずに 超神様の さいごの 1まい → 1秒後に 超神様の音の{ssec(SG.STILL_FROM)}秒（ボードの 少し 前）から <b>※仮</b>（見本の画面も同じ）</li>')
+             + box('大きさとファイル', '<li>12こ：sfx_hit_push・sfx_hit・sfx_big_push・sfx_big・sfx_fz_push・sfx_fz・sfx_pc（プレミアムど的中（かわいいど的中）のタップの音）・sfx_zp（超プレミアムど的中のタップの音）・sfx_gd（神様的中のタップの音）・sfx_sgd（超神様的中のタップの音）・sfx_spg_up（超プレミアム神様的中の 昇格の音）・sfx_spg（超プレミアム神様的中の 超神様の音：sfx_sgd に 声を 足した もの）。プレミアム・超プレミアム・神様・超神様・超プレミアム神様の PUSHの音は ど的中と同じ・超プレミアム神様の はじめは 超プレミアムの音（AAC 160kbps・m4a・ぜんぶで約2.1MB）</li>'
                    '<li>大きさはそろえて、強いボタンほど少し大きく（的中 −16〜−17・デカ −13〜−14・ど的中と 神様と 超神様 −13 LUFS）。いちばん大きい所も −1dB 以下（音割れしない）</li>'
                    '<li><b>デカとど的中は低音と重低音</b>：重低音はスマホのスピーカーからはほとんど出ないので、ひずませて作った倍音で低音を感じるようにして、ジャーンやファンファーレには高めの音も小さく重ねた。イヤホン・ヘッドホンだと重低音まで聞こえる。スマホのスピーカーでは的中より少し小さめに聞こえることがある</li>'
                    '<li>買い目の音は見本の行の数（的中・デカ2行・ど的中3行）。4行以上だと合計が出る前に「チャリーン」が鳴るので、アプリでは行と合計の音を分けて、出るたびに鳴らす（あとで作る）<b>※仮</b></li>')
@@ -5510,6 +5617,7 @@ def sound_page():
                    '<li>ど的中は gen_fx.py の時刻（FZ_T・MT_T）、プレミアムは premium_cute.py の時刻（PC_T・SCREENS）、神様は kami.py の時刻（GD_T）、超神様は 動画の 絵の スクリプト（flat/kami_film*.py）の 時刻（kami_super.py の film_events）を読むので、動きを変えたら作り直すだけで音もそろう：python3 gen_sfx.py &lt;フォルダ&gt; → ffmpeg で m4a に</li>'
                    '<li><b>超神様の 音</b>：動画の 絵の 時刻に 合わせて 一から 作った：金の 嵐（光の 爆発・光の 滝・ドーム・雷・岩・金の 爆発）→ 重たい 金の ズーン（万馬券・天眼）→ 4行の 文の ジャーンと 合唱 → 小判の ジャラジャラ（コインより 低く 長く ひびく 小判の 音を 作った）と 神・様・的・中 の ドン・字の 雷の バチバチ → 小判の 大爆発 → 鳥居が 見えて 神社の 鈴の シャララン → ファンファーレ → ボード</li>'
                    '<li><b>神様の 音</b>：はじめは 光の 爆発の ドガーン → 嵐の 低い うなりと 光の 滝の ゴォォォ・ドームが ひろがる ドンと ブォォン↑・ピンクの 電気の ギュイーン・大きな 雷の バリバリッと ドーン・ドームの 電気の ビリビリ・ジジジ・バチッ・光の 帯の シュンッ・岩の ヒュンッ → 金の 輪の ドガーンと ジャラジャラ → 金の 字は 金管と 合唱の ジャーン（ミ → ラ）・どら・キラキラ → 金の 粒の ジャラジャラと 神・様・的・中 の ドン → ホ長調の 金管の ファンファーレ（合唱も 録音では なく 計算で 作った）</li>'
+                   '<li><b>超プレミアム神様的中の 音</b>：き！で ブツッ＋ガッ!!（画面が 止まる）→ 電気の うなりの ブーン・ずれ方が かわる たびの ガガッ・バチッ・チッ → 画面が 消える 間は 音も 消える → ヒュゥゥン↓ プツッ → 無音（まっ暗） → 宇宙の カットイン（隕石の ヒュゥゥン・ドスッ → 大きな 隕石 → バシュゥン!! → ドッゴォォォン!!＋声「いやーーーーん！！！」＋惑星を はしる 雷）→ 超神様の 音＋鳥居で 声「おめでとう御座います！」「いやーーーーん！」</li>'
                    '<li><b>超プレミアムの 声</b>（どぉ！てぇ！きぃ！ちゅ！う！）も 録音や 声の データは 使わず、人の 声の しくみ（のどの ふるえ → 口の 中の ひびき）を 計算で まねて 作った（gen_sfx.py の voice）</li>'
                    '<li>見本の キャンバスは 音だけの mp4 を 受け付けなくなったので、プレミアム・超プレミアム・神様・超神様の音は m4a を base64 の テキスト（.txt）にして入れ、見本の画面で もどして 鳴らす（アプリでは m4a のまま）</li>'))
     return f'''<!doctype html>
@@ -5541,6 +5649,7 @@ body{{margin:0}}
 .sn.zp{{--c:#6E5F6B;border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#6E5F6B,#FF8DC0,#FFD3E5,#6E5F6B) border-box}}
 .sn.kami{{--c:#A36F00;border:2px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#2F6BFF,#3FD0FF,#FFC41F,#FFE97A,#C8281F,#B07A00) border-box}}
 .sn.skami{{--c:#B0261A;border:3px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FFC41F,#FFE97A,#E8382F,#8A1C10,#FFC41F) border-box}}
+.sn.spg{{--c:#B0261A;border:3px solid transparent;background:linear-gradient(#FFFFFF,#FFFFFF) padding-box,linear-gradient(90deg,#FF8DC0,#6E5F6B,#2A1259,#E8382F,#FFC41F,#FFE97A) border-box}}
 .sn h2{{margin:0;font-size:19px;line-height:1.3;color:#161F3D}}
 .sn h2 small{{display:block;margin-top:4px;font-size:12.5px;font-weight:700;color:#8A6A38}}
 .pl{{display:flex;align-items:center;gap:10px;width:100%;height:48px;margin-top:12px;padding:0 16px;border-radius:12px;border:2px solid var(--c);background:#FFFFFF;color:#161F3D;font-family:"BIZ UDPGothic",sans-serif;font-weight:700;font-size:15px;text-align:left;cursor:pointer}}
@@ -5568,8 +5677,8 @@ body{{margin:0}}
 <div class="gd">
   <div class="hdr">
     <div>
-      <h1 class="t1">効果音（的中ボタン・デカ的中ボタン・ど的中ボタン・プレミアムど的中・神様的中・超神様的中）</h1>
-      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回、全体を重く重低音に・ど的中は全体を低音と重低音で、「どてき！！」からは爆発のようにずっしり重く）。動きもパチンコの当たりのように速く・勢いよくした。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。<b>ど的中のフリーズは押した瞬間</b>（まさちゃんの指定。送ってくれたパチスロのフリーズの動画のように、ドンッ＋ビーーッ…ブツッ（電子音がいきなり消える）→ 細い電気のバチバチ → 無音。動画の音は使わず、似た感じに作った）。<b>プレミアムど的中（かわいいど的中）</b>は どの着せ替えでも ど的中の 6回に1回：オルゴールと鐘で かわいく（ど・て・き・ちゅ・う ＝ ド・レ・ミ・ファ・ソ → 最後の ど的中で 高い ド）。<b>超プレミアムど的中</b>（プレミアムの 8回に1回）は 同じ音の ①〜⑤が <b>声「どぉ！てぇ！きぃ！ちゅ！う！」</b>（まさちゃんの指定。録音ではなく 計算で 作った 声）。<b>神様的中</b>（3連単の 当たりに 超大穴と、ほかに 大穴以上 ※仮）は 送ってくれた 3つの 動画の 流れに 合わせて 新しく 作った 音（動画の 音は 使っていない）：嵐の 雷と 爆発 → 金管と 合唱の ジャーン → 金の 粒の ジャラジャラと 神・様・的・中 の ドン → ホ長調の ファンファーレ。<b>超神様的中</b>（神様的中の 8回に1回 ※仮）は 1コマずつ 描いた 動画の 絵に 合わせて 作った 音（動画が 動きだした 時に、その 時刻から 鳴らす）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
+      <h1 class="t1">効果音（的中ボタン・デカ的中ボタン・ど的中ボタン・プレミアムど的中・神様的中・超神様的中・超プレミアム神様的中）</h1>
+      <p class="t2">まさちゃんの指定：3つのボタンに効果音（的中はOK・デカはタップでキュウィンを3回、全体を重く重低音に・ど的中は全体を低音と重低音で、「どてき！！」からは爆発のようにずっしり重く）。動きもパチンコの当たりのように速く・勢いよくした。送ってくれた3つの動画は音が入っていなかったので、それぞれの動きに合わせて新しく作った（全部プログラムで作った音。録音や、ほかの音は使っていない）。<b>ど的中のフリーズは押した瞬間</b>（まさちゃんの指定。送ってくれたパチスロのフリーズの動画のように、ドンッ＋ビーーッ…ブツッ（電子音がいきなり消える）→ 細い電気のバチバチ → 無音。動画の音は使わず、似た感じに作った）。<b>プレミアムど的中（かわいいど的中）</b>は どの着せ替えでも ど的中の 6回に1回：オルゴールと鐘で かわいく（ど・て・き・ちゅ・う ＝ ド・レ・ミ・ファ・ソ → 最後の ど的中で 高い ド）。<b>超プレミアムど的中</b>（プレミアムの 8回に1回）は 同じ音の ①〜⑤が <b>声「どぉ！てぇ！きぃ！ちゅ！う！」</b>（まさちゃんの指定。録音ではなく 計算で 作った 声）。<b>神様的中</b>（3連単の 当たりに 超大穴と、ほかに 大穴以上 ※仮）は 送ってくれた 3つの 動画の 流れに 合わせて 新しく 作った 音（動画の 音は 使っていない）：嵐の 雷と 爆発 → 金管と 合唱の ジャーン → 金の 粒の ジャラジャラと 神・様・的・中 の ドン → ホ長調の ファンファーレ。<b>超神様的中</b>（神様的中の 8回に1回 ※仮）は 1コマずつ 描いた 動画の 絵に 合わせて 作った 音（動画が 動きだした 時に、その 時刻から 鳴らす）。<b>超プレミアム神様的中</b>（超神様的中の 4回に1回）は 超プレミアムの 音で はじまり、き！で ブツッと 止まって バグ・まっ暗・宇宙の カットインの 音 → 超神様の 音に 声「おめでとう御座います！」「いやーーーーん！」（3つの 音を つなげて 鳴らす）。▶で聞ける（もう一度押すと止まる）。となりの3つの見本の画面も、「記録する」と「PUSH」のタップで同じ音が鳴る。iPhoneが消音（マナーモード）だと鳴らないことがある。</p>
     </div>
     <button class="stop" type="button" onClick="{{{{stop}}}}">{STOP_SVG}とめる</button>
   </div>{secs}
@@ -5583,7 +5692,7 @@ class Component extends DCLogic {{
       {urls}
     }};
   }}
-{SFX_JS_TXT}  renderVals() {{
+{SFX_JS_LAYER}  renderVals() {{
     this.sfxInit();
     var st = this.state || {{}};
     var on = st.on || '';
@@ -5594,6 +5703,15 @@ class Component extends DCLogic {{
         self.sfx(k, 0, 0, function () {{ self.setState({{ on: '' }}); }});
         self.setState({{ on: k }});
       }};
+    }};
+    var flow = function () {{
+      // 超プレミアム神様的中：超プレミアムの 音（{ssec(SG.UP_AT)}秒で 止める）→ 昇格の 音 → 超神様の 音（声つき：{ssec(SG.SPG_FILM)}秒〜）を つなげて 鳴らす
+      if (on === 'spg') {{ self.hush(); self.setState({{ on: '' }}); return; }}
+      self.hush();
+      self.sfxAt('zp', 0, 0, {SG.UP_AT:g});
+      self.sfxAt('spg_up', 0, {SG.UP_AT:g});
+      self.sfxAt('spg', 0, {SG.SPG_FILM:.4f}, 0, function () {{ self.setState({{ on: '' }}); }});
+      self.setState({{ on: 'spg' }});
     }};
     return {{
       {vals},
@@ -5607,7 +5725,7 @@ class Component extends DCLogic {{
 '''
 
 
-MEMO_W, MEMO_H = 2200, 2500     # 第4.51版：超神様的中の 説明を 足して 160px 高く
+MEMO_W, MEMO_H = 2200, 2700     # 第4.51版：超神様的中の 説明を 足して 160px 高く・第4.52版：超プレミアム神様的中の 説明を 足して 200px 高く
 
 
 def memo_page():
@@ -5663,7 +5781,7 @@ body{{margin:0}}
 </style>
 </helmet>
 <div class="gd">
-  <h1 class="t1">的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）・隠れど的中・ハズレ・プレミアムど的中・神様的中・超神様的中</h1>
+  <h1 class="t1">的中ボタン・デカ的中ボタン・フリーズ的中ボタン（デフォルト）・隠れど的中・ハズレ・プレミアムど的中・神様的中・超神様的中・超プレミアム神様的中</h1>
   <p class="t2">まさちゃんの指定：記録して <b>当たり → 的中ボタン</b>、<b>3連単が当たり → デカ的中ボタン</b>、<b>3連単の当たりに超大穴（10〜12番人気）の馬 → フリーズ的中ボタン</b>、<b>デカ的中の2〜7回に1回（ランダム）→ 隠れど的中</b>（デカのPUSHを押すと、そのまま、ど的中）、<b>ハズレ → ボタンなしでボードだけ</b>。タップすると<b>壁紙のテーマのボード</b>が出て、当たった買い目を報告する（<b>馬がボードを持つのはやめた</b>。的中もハズレも、ボードはテーマに沿った形）。フリーズは、まさちゃんの送ってくれたパチスロのフリーズの動画のように（台の絵や文字は使わない）：虹色にギラギラ光るめちゃくちゃデカいPUSH → <b>タップした瞬間にフリーズ</b>（まさちゃんの指定。白く光る → 横に流れるノイズ → 青い画面に白い光と細い電気 → 青白い横一本線に1pxの電気がバチバチ → 点に縮んで消える）→ 真っ暗のまま1.5秒 → 虹色ネオンのカット（「どてき！！」「ど！ど！ど！ど！」）→「ど的中！！！！」（そろってから1.5秒）→ <b>虹色の大当たりの画面</b>に、上に「ど的中」・まん中からボード。<b>文字はパチンコのロゴのような筆の字と虹色</b>（まさちゃんの指定。写真の字の形は使わず、筆の動きから描いた）。視覚酔いしないように、画面全体が回る・迫る・ゆれる動きはしない。となりの6つの画面は、タップで動く見本（どれもデフォルト＝全テーマ共通の動き・ボードは牧場。6つ目は プレミアムど的中）。</p>
   <div class="rows">
     <section class="grp"><h2>的中ボタン<small>当たったとき</small></h2><div class="sts">{hit}</div></section>
@@ -5682,18 +5800,19 @@ body{{margin:0}}
       <li><b>プレミアムど的中（かわいいど的中）</b>：<b>どの着せ替えでも</b>、ど的中が出るたびに<b>6回に1回（ランダム）</b>。PUSHは ど的中と同じ → タップで ハートが 降って つもる → はじけて 白い光 → ハートを だいた ポニーが「ど！・て！・き！・ちゅ！・う！」（1文字ずつ）→ ハートに つつまれた「ど的中」→ その着せ替えの ど的中の ボード。見本は「プレミアムど的中」・作り方は premium_cute.py。隠れど的中では 出さない <b>※仮</b></li>
       <li><b>超プレミアムど的中（手書き・鉛筆）</b>：<b>どの着せ替えでも</b>、<b>プレミアムど的中の 8回に1回（ランダム）</b>＝ど的中の 48回に1回（超プレミアムの 時は プレミアムは 出ない）。PUSHは ど的中と同じ → タップで はじめの プレミアムど的中と 同じ 流れ（ハートが 降って つもる → はじけて 白い光 → ハートを だいた ポニーが「ど！・て！・き！・ちゅ！・う！」→ ハートに つつまれた「ど的中」→ その着せ替えの ど的中の ボード）を、<b>鉛筆で 描いた 感じ</b>に（細い 鉛筆の 線を うすい 線で もう1回 なぞる・はしが 少し 行きすぎて 交わる・ぬりが 少し ずれる・紙の ざらざら）。音は プレミアムの 音の ①〜⑤が 声「どぉ！てぇ！きぃ！ちゅ！う！」（sfx_zp・まさちゃんの指定）。見本は「超プレミアムど的中」・作り方は super_premium.py と rough.py。隠れど的中では 出さない <b>※仮</b></li>
       <li><b>神様的中</b>（まさちゃんの指定）：<b>3連単の 当たりの 3頭に 超大穴（10〜12番人気）と、ほかに 大穴以上（7〜12番人気）が 1頭 以上</b> <b>※仮</b>。ど的中・プレミアム・超プレミアムより 先（神様の 時は ほかは 出ない）<b>※仮</b>。PUSHは ど的中と同じ <b>※仮</b> → タップで 送ってくれた 3つの 動画と 同じ 流れ（絵と 音は 一から 作った）：① 光の 爆発 → 白 → 赤い 炎の 一瞬 → 青い 嵐（太い 光の 滝と しぶき・ガラスの ような 光の ドームが 床から ひろがって だんだん 大きく・ピンクの 電気の 光・画面を 横切る 大きな 雷・ドームの ふちの ジリジリと 肩の ピンクの 電気・白い 光の 帯・とんでくる 岩）→ 立体の 金の 輪と 金の 爆発・金の 粒 → 白 ② 金の 雲の 空に 金の 立体の 字：「万馬券（きせき）」の 寄り → 「天眼（テンゲル）」の 寄り → 白 → 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」③ 白 → 金の 粒が はじけて「神」→「様」→「的」→「中」の 寄り → 金の 粒の 大爆発の 中に「神様／的中」→ ひいて 金の 鳥居（額に 天眼）→ その着せ替えの ど的中の 形の ボード（見出しは「<b>神様的中！！！</b>」（第4.51版・まさちゃんの指定。前は「ど的中！！！」）・帯は「超大穴 ⑪ 大穴 ⑧ が3連単に！」・両方の 馬番に 輪 <b>※仮</b>）。見本は「神様的中」・作り方は kami.py と flat/kami_art.py・flat/kami_storm.py（絵 24まい）。音は sfx_gd</li>
-      <li><b>超神様的中</b>（第4.51版・まさちゃんの指定「これを超神様的中ボタンにして！」）：<b>神様的中が 出るたびに 8回に1回（ランダム）</b> <b>※仮</b>（超神様的中の 時は 神様的中は 出ない。数え方は 超プレミアムど的中と 同じ）。PUSHは ど的中と同じ <b>※仮</b> → タップで <b>1コマずつ 描いた 動画</b>（1170×2532・30コマ/秒・12.5秒・音なし）：① 金の 嵐（光の 爆発 → 光の 滝 → 床から 上がる 光の 玉と 雷 → 金の 爆発 → 白）② 金の 立体の 字（重たい 金が ズーン：「万馬券（きせき）」は 左から・「天眼（テンゲル）」は 右から → 4行の 文）③ 雷を まとった「神」「様」「的」「中」の 寄りと 回りながら とぶ 小判 → 小判の 大爆発 → 朱ぬりの 鳥居（額に 天眼）の 中に「神様的中 おめでとう御座います」（字の まわりを 雷が 不定期に ビリビリ）→ 白い 光 → 見出し「<b>超神様的中！！！</b>」の ボード（帯は 神様的中と 同じ <b>※仮</b>）。<b>動画は 押す 前に 読んでおき、押した 瞬間に 再生</b>・音（sfx_sgd：動画の 絵の 時刻に 合わせて 作った）は 動画が 動きだした 時刻から 鳴らして 絵と そろえる。見本は「超神様的中」・作り方は kami_super.py と flat/kami_film.py・kami_film2.py・kami_film3.py（動画は キャンバスの sgd_film）</li>
+      <li><b>超神様的中</b>（第4.51版・まさちゃんの指定「これを超神様的中ボタンにして！」）：<b>神様的中が 出るたびに 8回に1回（ランダム）</b> <b>※仮</b>（超神様的中の 時は 神様的中は 出ない。数え方は 超プレミアムど的中と 同じ）。PUSHは ど的中と同じ <b>※仮</b> → タップで <b>1コマずつ 描いた 動画</b>（1170×2532・30コマ/秒・{SG.FILM:.1f}秒・音なし）：① 金の 嵐（光の 爆発 → 光の 滝 → 床から 上がる 光の 玉と 雷 → 金の 爆発 → <b>金粉が 舞う 白い 光 1.5秒</b>）② 金の 立体の 字（重たい 金が ズーン：「万馬券（きせき）」は 左から・「天眼（テンゲル）」は 右から → 4行の 文）③ 雷を まとった「神」「様」「的」「中」の 寄りと 回りながら とぶ 小判 → 小判の 大爆発 → 朱ぬりの 鳥居（額に 天眼）の 中に「神様的中 おめでとう御座います」（字の まわりを 雷が 不定期に ビリビリ）→ 白い 光 → 見出し「<b>超神様的中！！！</b>」の ボード（帯は 神様的中と 同じ <b>※仮</b>）。<b>動画は 押す 前に 読んでおき、押した 瞬間に 再生</b>・音（sfx_sgd：動画の 絵の 時刻に 合わせて 作った）は 動画が 動きだした 時刻から 鳴らして 絵と そろえる。見本は「超神様的中」・作り方は kami_super.py と flat/kami_film.py・kami_white.py・kami_film2.py・kami_film3.py（動画は キャンバスの sgd_film。第4.52版で 金粉の 白い 光を 足して さいごを 0.4秒 のばした 新しい 動画に。<b>超プレミアム神様的中と 同じ 動画</b>）</li>
+      <li><b>超プレミアム神様的中</b>（第4.52版・まさちゃんの指定「これ超プレミアム神様的中ボタンとして追加して！」）：<b>超神様的中が 出るたびに 4回に1回（ランダム）</b>（超プレミアム神様的中の 時は 超神様的中は 出ない。数え方は 超プレミアムど的中と 同じ）。PUSHは ど的中と同じ → タップで <b>超プレミアムど的中の ふり</b>（鉛筆で 描いた ハートが つもって はじけ → ハートを だいた ポニーが「ど！・て！・き！」）→ <b>③「き！」（{SG.UP_AT:g}秒）で 画面が 止まって 2秒 バグる</b>（よこの 帯が ずれる・色が ずれる・電気・ついたり 消えたり → 横一本の 線に ちぢんで 消える）→ <b>まっ暗 1秒</b> → <b>宇宙の カットイン</b>（隕石 → 青い 光 → 大きな 爆発と 惑星を はしる 雷・声「いやーーーーん！！！」→ 黄 → 赤 → 黒 → 赤い 惑星 → まん中の 光が 小さく）→ <b>超神様的中の 動画</b>（同じ 動画・鳥居で 声「おめでとう御座います！」「いやーーーーん！」）→ 見出し「<b>超神様的中！！！</b>」の ボード <b>※仮</b>。昇格の 動画（バグ → まっ暗 → カットイン：{SG.UP:.2f}秒・音なし・キャンバスの spg_up）と 超神様の 動画は <b>押す 前に 読んでおき、押した 瞬間に 一度 動かして 止めて おく</b>（iPhone で あとから 再生できる ように）。音は 動画が 動きだした 時刻から（超プレミアム sfx_zp → 昇格 sfx_spg_up → 超神様＋声 sfx_spg）。見本は「超プレミアム神様的中」・作り方は kami_super.py（spg_…）・super_premium.py（①〜③）・flat/kami_glitch.py・kami_cutin.py</li>
     </ul></section>
   </div>
   <div class="boxes">
-    <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>神様的中</b>（3連単の 3頭に 超大穴と、ほかに 大穴以上＝7〜12番人気が いる <b>※仮</b>。その 8回に1回は <b>超神様的中</b> <b>※仮</b>）＞ <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり。2〜7回に1回は<b>隠れど的中</b>）＞ <b>的中</b>（それ以外の当たり）</li><li><b>ハズレ</b>（当たりが1つもない）：PUSHは出さずに、ハズレのボードだけ</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
+    <div class="box"><h3>出るとき</h3><ul><li>結果を<b>記録したとき</b>だけ（あとで直したとき・まとめて入れた記録・中止では出ない）</li><li>出るのは1つだけ。強い順に <b>神様的中</b>（3連単の 3頭に 超大穴と、ほかに 大穴以上＝7〜12番人気が いる <b>※仮</b>。その 8回に1回は <b>超神様的中</b> <b>※仮</b>・さらに その 4回に1回は <b>超プレミアム神様的中</b>）＞ <b>フリーズ</b>（3連単が当たって、その3頭に超大穴＝10〜12番人気がいる。13番人気より下は入れない）＞ <b>デカ</b>（3連単が当たり。2〜7回に1回は<b>隠れど的中</b>）＞ <b>的中</b>（それ以外の当たり）</li><li><b>ハズレ</b>（当たりが1つもない）：PUSHは出さずに、ハズレのボードだけ</li><li>人気は、そのレースを判定したときの単勝オッズの順（判定の超大穴 J・K・L と同じ）。人気がわからないレースはフリーズにしない（デカ）<b>※仮</b></li><li>お知らせ（発走15分後）から開いて記録したときも同じ</li></ul></div>
     <div class="box"><h3>流れと時間（的中・デカ・ハズレ）</h3><ul><li><b>的中</b>：押す → 0.3秒 ボードが下から → 0.95秒「的中！」→ 1.15秒〜 買い目 → 1.8秒 とじる</li><li><b>デカ</b>（パチンコの当たりのように速く・勢いよく）：押す → 0.04秒 白く光る・爆発・虹の光の筋 → 0.1・0.25・0.4秒 虹の輪（キュウィン×3・だんだん大きく）→ 0.38秒 ボードがドンと落ちてくる（0.55秒 着地・光の破片）→ 0.7秒「デカ的中!!」がたたきつけるように → 0.9秒〜 買い目（0.08秒おき）→ 1.4秒 とじる</li><li><b>ハズレ</b>：記録する → 暗い幕 → 0.1秒 ボードが静かに出る（0.4秒）→ 0.45秒〜 買い目（0.08秒おき）→ 0.85秒 とじる</li><li><b>PUSHは横長の長方形（角は丸い）</b>。上下に0.9秒（デカは0.8秒・大きく・まわりに虹の輪）でくり返す</li></ul></div>
     <div class="box"><h3>フリーズの流れと時間</h3><ul><li><b>PUSH</b>：横340×縦170・角46px（デカの1.2倍）。虹色が流れる面・ラメ・白い光がサッと走る・白と紫のふち・まわりに虹の輪。上下に22px・0.85秒／1.3秒ごとにブルブルッ／画面のふちが虹色に光る</li><li><b>押した瞬間にフリーズ（0秒〜）</b>（まさちゃんの指定：前のバグる画面はやめた。送ってくれたパチスロのフリーズの動画のような動き。台の絵は使わない）：1コマ＝1/30秒。白く光る（青いブロックが丸く集まる・縦に抜けた線）→ 0.07秒〜 明るい色の帯が横に流れる（コマごとに場所が変わる・下に緑と黄色）→ 0.2秒〜 まぶしい帯のある水色に赤い粒 → {sec(B)}秒 青い画面にまぶしい横の帯・<b>まん中の白い光がふくらむ・しぼむ</b>・弓なりの電気・縦の点々 → {sec(W)}秒 まわりが暗くなって<b>青白い横一本線</b>（まん中にフレア）・<b>線にまとわりつく電気がバチバチ</b>（いちばん細い線＝芯0.8px・枝0.5px。中点をずらして細かくギザギザ・枝分かれ・1コマごとに形が変わる）→ {sec(Z)}秒 線が両はしから点に縮んで消える（光の粒が下へ落ちながら散る）→ <b>真っ暗のまま1.5秒</b>（フリーズの間）。走査線（1px）は {sec(W)}秒まで</li><li><b>虹色ネオンのカット（{sec(M)}〜{sec(R)}秒・5つ）</b>：まさちゃんの指定の文字。<b>パチンコのロゴのような筆の字と虹色</b>（虹色の面・左上のふちが白く光る・上半分につや・こげ茶と金と黒のふち・金の立体・まわりに光。brush.py）。「どてき！！」「ど！」は<b>1文字ずつ大きく</b>、押した直後のPUSHのように乱れる（赤と水色のずれ・横にずれる帯・まわりに小さなブロック）。文字は<b>たたきつけるように出て</b>（0.16秒）、<b>ずっとガクガクふるえる</b>（左右上下と傾き・1秒に4回。筆の字は明るさの差が大きいので、光の点めつが多くならないように前より少なく）。<b>パチンコの当たりのように速く・激しく</b>：「！」「ど！」「ど的中」が出るたびに<b>爆発</b>（星形の光がはじける・衝撃の輪・光の破片が飛び散る）。場所・大きさ・向きはバラバラ：真っ暗から大爆発 → テンゲルのアイコンのネオンに「ど」「て」「き」「！」と大きな「！」（{sec(M)}秒〜）→ 星空に「どてき！！」（左上から右下へ階段・{sec(M + MT_T['T2'])}秒〜）→ ネオンのギザギザに大きな「どてき！！」×2（画面からはみ出る・{sec(M + MT_T['T3'])}秒〜）→ 星空に大きな「ど！」×4（{sec(M + MT_T['T4'])}秒〜・0.17秒おき）→ <b>ネオンのパチンコの当たりのような虹色</b>（{sec(T5)}秒〜）（黒に光る虹の光線・虹の輪・白く光るまん中と星・きらめき）に「ど的中」（光がサッと走る）「！！！！」（<b>そろってから1.5秒</b>）。<b>この背景だけ動く</b>：光の波が光線にそって外へ流れる（0.45秒ごと）・虹の輪が外へ広がって消える・まん中がふくらむ（回らない）。ほかのカットの背景は止まったまま</li><li><b>{sec(R)}秒 結果</b>：白く光る → <b>虹色の大当たりの画面</b>（まさちゃんの指定。「ど的中」から虹色の光線と白い細い光線・まん中の白い光・虹の輪が外へ広がる（1.8秒ごと・2つ）・虹色のきらめきが上る・光線は止まったまま回さない）で爆発、上に「ど的中」（筆の字・うしろで虹色の炎がゆらゆら・光がサッと走る・きらめき・SUPER LONGSHOT）・まん中からボードがドンと出る → {sec(R + .3)}秒「ど的中！！！」（隠れど的中は「隠れど的中！！！」）→ {sec(R + .45)}秒〜 買い目（0.08秒おき）→ {sec(R + .45 + .24 + .25)}秒 とじる</li><li><b>隠れど的中</b>：デカのPUSH → タップで、ここに書いた流れと同じ（押した瞬間にフリーズ）</li></ul></div>
     <div class="box"><h3>重ねる順（下から）</h3><ul><li><b>的中・デカ・ハズレ</b>：暗い幕 → 光（ハズレはなし）→ <b>テーマのボード</b>（ふち＝背景のもよう → 上の帯と見出し → カードと買い目 → すみの飾り。文字はHTML）→ 紙ふぶき → とじる → （デカ）白い光</li><li><b>フリーズ・隠れど的中</b>：黒 → 虹色の大当たりの画面（虹色の光線・白い光線・虹の輪・虹色のきらめき・コイン・テーマのボード・「ど的中」と虹色の炎・紙ふぶき）→ ネオンのカット（5つ・文字・白い光）→ 押した瞬間のフリーズ（白い画面・横に流れる帯・水色の画面・青い画面・まぶしい帯・白い光・ブロックと粒・走査線・横一本線・フレア・電気・光の粒）→ 白い光 → とじる</li></ul></div>
     <div class="box"><h3>ボードに書くもの</h3><ul><li>見出し（的中！・デカ的中!!・ど的中！！！・隠れど的中！！！・神様的中！！！・超神様的中！！！・ハズレ。全角の「！」が3つ続くところは字の間をつめる）・R・買い目（券種・馬番・金額・払戻）・払戻の合計。ユーザーが自分で入れた買い目だけ（判定の画面に点数・組番を出さない決まりはそのまま）</li><li>当たりは当たった買い目だけ。<b>ハズレは入れた買い目を全部</b>（払戻0円）・小見出しは「9R の買い目」</li><li>デカ・フリーズ・隠れど的中は3連単の行がいちばん上で虹色の枠（フリーズは光が走る）</li><li><b>フリーズ</b>：上に「ど的中」（筆の字・虹色の炎）・見出しの下に「超大穴 ⑪ 11番人気が3連単に！」の帯・3連単の行の超大穴の馬番に虹色の輪。<b>隠れど的中</b>：帯は「隠れ　デカ的中が ど的中に化けた！」</li><li>払戻が長いと、その行の払戻だけ次の行へ（右によせる）。帯のぶんボードが長いので、フリーズは6行まで（7つ以上は上から5行＋「ほか○点」<b>※仮</b>）</li></ul></div>
     <div class="box"><h3>テーマ（壁紙）ごとに変えるところ</h3><ul><li><b>結果のボード</b>：判定画面と同じ変数と飾り（boards.py が themes20.py・判定画面から読む）。新しい絵はいらない</li><li>PUSHの色（--pushA・--pushB・--pushC・--rim・--rimD）・光の色（--ray）</li><li><b>フリーズは全テーマ共通</b>（変わるのはボードだけ）。回る虹（虹のぐるぐる）は使わない（虹色は流れるだけ）</li><li><b>カッコいい（金色）</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒と金の ぷるんぷるん</b>（黒いつやの面・金のふち・金の字。下を中心に、つぶれる → のびる をくり返す。見本「的中ボタン（カッコいい）」）・壁紙の馬の<b>おしりが3秒に1回 ぷるん</b>（gold.py。視差効果を減らすなら止まる）</li><li><b>牧場</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>芝生でできたPUSH</b>（芝の面・まわりに葉・下に土・小さな花。上の葉がそよぐ・押すと芝の葉と花びらが舞う。見本「的中ボタン（牧場）」）・壁紙の馬が<b>右から左へ、左から右へ行ったり来たり</b>（片道1〜8秒・毎回ちがう速さ。速いと走る。着いたらふり向く）。<b>8〜22秒ごとに1回立ち止まって、芝生を食べる か こっちを見てしっぽを3回ふる</b>（ranch.py。視差効果を減らすなら止まる）</li><li><b>桜</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>桜がついたPUSH</b>（桜色の面・左上に桜の枝（花3つ・つぼみ・若葉）・右下にも花。枝がゆれて花びらがひらひら落ちる・押すと花びらが舞う。見本「的中ボタン（桜）」）・壁紙に<b>いつも桜の花びらが降っている</b>（28まい・奥は小さくゆっくり・手前は大きく・くるくる回って裏返る。壁紙の絵の上に重ねる SVG・sakura.py。視差効果を減らすなら消える）</li><li><b>海</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>海の模様のPUSH</b>（青海波・下に流れる白い波・上る泡・右上に浮き輪・左下に ひとで。押すと水しぶき。見本「的中ボタン（海）」）・壁紙は<b>馬がいつも走っていて、景色が右から左へ流れてくり返す</b>（いまの馬のギャロップ10コマ・空と雲 28秒／海 7秒／砂浜 2.3秒で1まいぶん。flat/sea_run.py の絵＋sea_wall.py。視差効果を減らすなら止まった絵）</li><li><b>紅葉</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>紅葉がついたPUSH</b>（朱色の面・左上と右下に枝ともみじ（赤・朱・橙・山吹）・面にもみじ。枝がゆれて もみじがひらひら落ちる・押すと もみじが舞う。見本「的中ボタン（紅葉）」）・壁紙に<b>いつも紅葉が降っている</b>（もみじ18枚・ゆらゆら／くるくる回って裏返る・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・momiji.py。視差効果を減らすなら消える）</li><li><b>雪</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>雪が積もったPUSH</b>（氷の色の面・上に雪がこんもり（前に3か所たれる）・下につらら・面に雪の結晶。雪の上がきらっ・ときどき雪のかたまりがポロッ・前を雪がふわふわ降る・押すと雪けむりがボフッ。見本「的中ボタン（雪）」）・壁紙に<b>いつも雪が降っている</b>（雪つぶ40こ＋結晶6こ・ふわふわゆれる・奥は小さくゆっくり。壁紙の絵の上に重ねる SVG・yuki.py。視差効果を減らすなら消える）</li><li><b>お正月</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>初日の出が映ったPUSH</b>（面に夜明けの空・右回りに回る金の光・初日の出・小さな富士山・金の雲・きらっと光る星・ななめに通る光。左下と右上に金の雲・押すと金の星と金の粉が広がる。見本「的中ボタン（お正月）」）・壁紙は<b>初日の出の光が右回りでいつも回る</b>（絵を「光より うしろ」と「光より前」の2まいに分けて、あいだの光12本を太陽のまん中で36秒に1回り。初日の出は<b>富士山の まん中</b>（頂上の まうえ）・<b>馬は 動かさない</b>（いまの絵のまま）。flat/newyear_banner.py --layers・newyear_wall.py。視差効果を減らすなら回らない）</li><li><b>桜・紅葉・雪の馬</b>（まさちゃんの指定）：壁紙の馬が<b>ときどき 首を下げて 草を食べる</b>（足は 4本とも 動かさない＝いまの絵のまま。紅葉の馬は 上げていた 手前の前足を 地面に おろした・5〜10秒ごとに 首を 1.6秒で ゆっくり地面まで下げて、1〜5秒 頭を小さく動かしながら 草を食べて、1.6秒で上げる。どれも ランダム（約2分で くり返し）。いまの絵と同じ馬・同じカメラで描いた55コマ（首の とちゅうは 頭の動く はばが そろう 47だんかい）の 動く所だけを 動きの はやさに合わせて めくる＝なめらか。flat/step_run.py・step_plan.py・step_wall.py。視差効果を減らすなら いまの絵）</li><li><b>競馬新聞</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>新聞でできたPUSH</b>（面が新聞の紙面：題字・赤い◎・記事の行・折り目・どきどきする赤い「号外」。見出しの「PUSH」は黒に赤いずれの影・厚みは かさねた新聞の束・押すと新聞の切れはしが舞う。見本「的中ボタン（競馬新聞）」）・壁紙は<b>墨の馬がいつも走っている</b>（いまの絵と同じ墨の馬・同じカメラで、ギャロップ1回10コマ・0.5秒。紙と字ごと馬の所だけ切りぬいて重ねる。flat/news_run.py・news_wall.py。視差効果を減らすなら止まった絵）</li><li><b>水墨画</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>墨画でできたPUSH</b>（面が墨画：和紙・にじむ遠い山・太い筆の一画に紙の色で抜いた「PUSH」・朱の落款「馬」・墨のしずくがにじむ・霧が横切る。左上に円相・押すと墨が飛び散る。見本「的中ボタン（水墨画）」）・壁紙は<b>2頭がいつも走っている</b>（いまの絵と同じ騎手と馬2頭・同じカメラ・同じ筆で、ギャロップ1回10コマ・足の運びをずらして競り合う。紙・山・地面ごと2頭の所だけ切りぬいて重ねる。flat/sumi_run.py・ink_wall.py。視差効果を減らすなら止まった絵）</li><li><b>メリーゴーランド</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>メリーゴーランドのPUSH</b>（上に しま模様の屋根と旗・面に金の柱の小さな木馬が回りながら上下・まわりの電球が交互に光る・押すと金の星とハートが広がる。見本「的中ボタン（メリーゴーランド）」）・壁紙は<b>木馬が柱にそって上下する</b>（2頭が交互に2.8秒で1往復・金の輪も一緒・床の影は上がると小さく。下の絵＋木馬はページの SVG・屋根と電球のうしろを通る。flat/carousel_banner.py --base・carousel_wall.py。視差効果を減らすなら止まる）</li><li><b>星座</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>星でできたPUSH</b>（夜空の面に 星座の「PUSH」：光る字の形・金の線・点ごとの星がきらっ・ふちの帯の小さい星を光が回る・ときどき流れ星・右上に三日月・押すと金の星と きらきらが広がる。見本「的中ボタン（星座）」）・壁紙は<b>うしろの星がゆっくり流れて、ペガサスがいつも きらきら。8秒に1回、鼻の頭から しっぽの先へ 星が つぎつぎに キラキラ</b>（同じ星を右から左へ流す・明るい星は速く暗い星はゆっくり・三日月のうしろを通る・星座の星が かわるがわる きらっ・外の線を光が回る。鼻 → 頭 → 首 → 背中 → しっぽの先の道すじを 光が1.8秒で進み、近い星から きらっ（翼と足の星は 少しおくれて）。下の絵＋星はページの SVG。flat/pegasus_banner.py --base・stars_wall.py。視差効果を減らすなら止まる）</li><li><b>勝負服</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>勝負服でできたPUSH</b>（面は黄色に青のひし形の勝負服の布・つやの光が流れる・白い縫い目・両がわに青い袖（黄の輪）がはためく・上に えり・押すと4色のひし形が広がる。見本「的中ボタン（勝負服）」）・壁紙は<b>馬がいつも走り、うしろの柄が右から左へ流れて くり返す</b>（いまの馬と同じ形・同じカメラでギャロップ10コマ・もくもくは うしろへ流れる。背景はコマ割りの柄を1まいにして くり返す。flat/silks_run.py・silks_wall.py。視差効果を減らすなら止まる）</li><li><b>ネオン</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>ネオンでできたPUSH</b>（夜のガラスの板に ピンクのネオン管の「PUSH」・水色のネオン管のわくを光が回る・ときどき「S」がちらっと暗くなる・まわりに ネオンの星と いなずま・押すと ネオン管のかけらと光の輪が広がる。見本「的中ボタン（ネオン）」）・壁紙は<b>馬がいつも走り、10秒に1回 流れ星が右上の空を流れる</b>（いまの馬と同じ形・同じカメラでギャロップ10コマ。flat/neon_run.py・neon_wall.py。視差効果を減らすなら止まった絵）</li><li><b>ドット絵</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>ドットでできたPUSH</b>（ぜんぶ5pxのドット・テーマと同じ16色：灰色の台に赤いボタン・太いドットの字「PUSH」（上は白・下は黄色）・面の上を ななめの光が ドットずつ通る・左に ▶ のカーソル・左上に回る金貨・右に きらっ・上下の動きも わくの光の輪も カクカク。押すと へこんで カクカク大きくなって消え、金貨・ハート・きらっ・ブロックが飛んで ちかちか消える。見本「的中ボタン（ドット絵）」）・壁紙は<b>馬がいつも走り、うしろの丘と雲が 右から左へ ゆっくり流れて くり返す（遠いので ゆっくり：丘は 画面のはばを 約24秒・雲は その半分の速さ。馬が止まる時は 景色も止まり、走りだすと だんだん もとの速さに）。走りだしてから4〜13秒（毎回ちがう）で ジャンプか一回転して こっちを1秒見てから また走りだす。20〜23秒に1回 立ち止まって2秒立つ</b>（いまのドットの馬と同じ形・同じカメラ。ジャンプ：けり出して 足をたたんで跳ぶ（地面に かげ）→ おりる（土けむり）→ こっちを向く／一回転：小さく跳ねて くるっと回って こっちを向いて おりる。こっちを1秒見て（まばたき）→ かまえる。立ち止まる：すべって止まる（土けむり）→ 立って待つ → かまえる。走りだしは どれも けり出す → 1歩め ゆっくり → 2歩め 少し速く → 全速（ギャロップ8コマ・0.5秒）。景色は 空・雲と丘（はば200ドットで くり返す・1ドットずつ動く）・前の景色（コース・さく・ゴール板・「GO!」）に分けて重ねる（ずれていない時は いまの絵と同じ）。決めておいた順番を87秒で1回り。ページを開くと「かまえる」から。下の絵とコマは ロスなしで、ドットは ぼかさない。flat/pixel_run.py・pixel_wall.py。視差効果を減らすなら止まった絵）</li><li><b>花火</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>花火でできたPUSH</b>（夏の夜空の面に 仕掛け花火の「PUSH」：字の線にそって 金の火の玉がならび ぱちぱち またたく・字の下から 金の火の粉が こぼれ落ちる・ふちに ピンク → 金の光の線・まわりの4か所で 小さな花火が かわるがわる開く。押すと 金・ピンク・水色の光のすじが 3重に開く大きな花火。見本「的中ボタン（花火）」）・壁紙は<b>花火4つを 少しずつずらして打ち上げ（光の玉が1秒で上がる）→ 咲いて → 4.7秒かけて 散り散りに消える（光の粒が ばらばらに広がって落ち、またたきながら消える・火の粉が落ちる）→ 4つが消えはじめた所で 馬の花火を打ち上げ → 1秒で咲いて 4.7秒で消える → 3秒後に また打ち上げ。3〜6回に1回は 5つ一斉</b>（足す光の絵を 光の粒ごとに8組に分けて重ねる：ぜんぶ足すと いつもの絵。175秒で1回り。flat/fireworks_banner.py --layers・fireworks_wall.py。視差効果を減らすなら いつもの絵）</li><li><b>子供向け</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>毛糸でできたPUSH</b>（ピンクの毛糸で編んだ面に クリーム色の太い毛糸で書いた「PUSH」：より目のある1本の毛糸・字ごとに ぴょこんと はねる・ふちの内がわの縫い目が ぐるっと すすむ・黄色いフェルトのふち。右下に 水色の毛糸玉と編み棒・左上に フェルトの星・左下に ハート・右上に ボタン。押すと むにゅっと つぶれて はじけ、毛糸のぽんぽん・ハート・星・ボタン・毛糸のきれはしが広がる。見本「的中ボタン（子供向け）」）・壁紙は<b>毛糸玉が左から右へ ころころ転がり（馬とロボットの うしろを通る）、ロボットの黒目と 馬のボタンの目が 追いかける（馬は 頭の下を通る時に のぞきこむ）→ ゆっくりになって止まる → 馬が ぴょん・ぴょんと跳ねて喜ぶ（ハートが3つ）→ ロボットが 拾いに とことこ → 足が当たって うっかり蹴っちゃう（あせ）→ あわてて追いかけて、毛糸玉といっしょに 右へ フェードアウト → 1秒後に 毛糸玉を 手に持って 右から戻ってくる（馬に見せる）→ 2秒後に 左へポーン（馬の上を越えて 左の外へ）→ 外に出てから 1.7秒あけて また左から 転がってくる。3〜8回に1回（ばらばら）は、追いかけようとした ロボットが 故障（ガクッ・目が ぐるぐる・アンテナが へにゃっ・火花・けむり）→ 馬が 前足を上げて 首を上にあげ「ヒヒーン！」→ ロボットが ピコーンと復活して 取りにいく（あとは いつもと同じ）。べつの 3〜8回に1回は、ロボットが 治らず（プスン）、馬が ぴょこぴょこ 取りにいって くわえて戻り、首を ふり上げて 左へポーン（そのあと ロボットは 再起動して もとの場所へ）</b>（いつもの絵と同じ部品を重ねて、動く所だけ動かす。ロボットは アンテナ・腕・足・体と頭に分けて動かす。馬は 向き・はねる・立ち上がる で動かす。9回ぶんを 132秒で1回り。kids.py・kids_wall.py。視差効果を減らすなら いつもの絵）</li><li><b>かわいい</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>ハートでできたPUSH</b>（ピンクの面に 白いハートを ならべて書いた「PUSH」：ハートが 左から右へ 波のように どきどき ふくらむ・白いふちに ピンクのハートが ぐるっと ならんで かわるがわる ちかっ・上に 大きいリボン（ゆらゆら）・両がわから 小さいハートが ふわふわ のぼる。押すと どきっと ふくらんで はじけ、ハートとキラキラが広がり、ハートの形の輪が広がる。見本「的中ボタン（かわいい）」）・壁紙は<b>小さいハート・大きいハート・リボンが いつも ゆれていて（ふわふわ・どきどき・ゆらゆら）、8秒で1回り：1〜5秒で ポニーは ぴょこぴょこ右へ・大きいハートは ふわっと左へ 近づいて、5秒で 鼻とハートが当たる（ハートが むにゅっ・ぽよん）→ その場所で ポニーが ぴょーん・ぴょんと飛び跳ねて喜ぶ（ハートが3つ）→ 6.4〜7.9秒で すーっと なめらかに もとの場所へ。それとは べつに 3〜9秒ごと（毎回ちがう）に こっちを1回見て、その3秒後に ゆっくり こっちを見て、1秒後に 2度見（目が まんまる・ぴょん・「！」）</b>（いつもの絵と同じ部品を重ねて、動く所だけ動かす。こっちを見る時は 頭だけ くるっと回して 正面の顔に。8回ぶんを96秒で1回り。cute.py・cute_wall.py。視差効果を減らすなら いつもの絵）</li><li><b>夕焼け</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>夕日の映ったPUSH</b>（面に夕焼け：こい紫 → 赤紫 → だいだい → 金の空・うすい雲の筋が ゆっくり流れる・水平線に しずみかけの夕日（まわりの光が ふわっと ふくらむ）・下は 夕日が映った水（光の筋が ゆらゆら）・鳥が2羽 はばたく・ときどき ななめに光が通る。クリーム色と さんご色のふち・こい紫の厚み・白い「PUSH」。右上を 鳥が3羽 ただよい、左下に 夕日の光が きらっ。押すと ふわっと ふくらんで はじけ、夕日の光の粒・きらっ・鳥が広がり、夕日の色の 光の輪が広がる。見本「的中ボタン（夕焼け）」）・壁紙は<b>馬がいつも走っていて（いまの絵と同じ馬のシルエットで ギャロップ10コマ・0.5秒・たてがみとしっぽが波打つ）、地面の草が 左から右へ 流れて くり返す（馬が左向きなので 前へ進んで見える）。10秒で1回り：1〜3秒で 夕日が丘のうしろへ ゆっくり沈んで だんだん暗くなり 3秒で真っ暗 → 3秒から 夕日が 地平線の下を上がってきて 4秒に顔を出し（3〜4秒は真っ暗）→ 明るくなりながら ゆっくり上がって 6秒で もとの位置</b>（空・夕日・地面・走るコマは flat/sunset_run.py の絵・暗くなるのは ページの幕。sunset_wall.py。視差効果を減らすなら いつもの絵）</li><li><b>ナイター</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>ナイター照明に照らされたPUSH</b>（面に ナイターのコース：夜空・星が ちかっ・スタンドの観客の光が ちらちら・白い柵・ダートの光だまり。上の左右に 照明（ランプの粒・十字と横に長い光）があって、ボタンへ 光のすじが ゆっくり ゆれながら当たる。あたたかい白とアンバーのふち・白い「PUSH」に照明の光。押すと ふわっと ふくらんで はじけ、照明の光の粒と きらっ が広がり、アンバーの光の輪。見本「的中ボタン（ナイター）」）・壁紙は<b>3頭が いつも走っていて、景色が右から左へ流れて くり返す（空とスタンドと照明は ゆっくり・奥の柵とダート・手前の柵ほど速い）。1〜5秒ごと（毎回ちがう）に となりどうしの順位が入れかわり（追いぬく）、照明がついてから 20秒で ゴール板が流れてきて 1着の鼻先を通る（板が ふわっと光る）→ 3頭が ゆっくり止まって（景色も止まる）5秒かけて 真っ暗に → 7秒 表彰（スポットライトの中に 勝った馬・騎手のガッツポーズ・優勝のレイ・金の「1着」のバッジ・紙ふぶき・カメラの光）→ 1秒で暗く → 2秒目に 照明が1つずつ ぱっとついて「スタート！」・3頭が走りだす。1着は レースごとに ばらばら（6レースで3頭とも2回・つづけて同じ馬はない）</b>（いまの絵と同じ馬と騎手・同じカメラで ギャロップ10コマ・0.5秒・影と うしろへ流れる砂けむりつき。止まる・立つ・走りだすは 足の運びが だんだん ゆっくり／速くなる 18コマ。表彰の絵は 1頭ずつ。背景は くり返せるように描き直した（照明は等間かくに）。1レース34秒・204秒で1回り。flat/night_run.py・night_wall.py。視差効果を減らすなら いまの絵）</li><li><b>大理石</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>大理石でできたPUSH</b>（面に 白い大理石：あたたかい白の地・灰色と金の すじ・うちがわに 金の細い二重のわく・上に つやの光・ときどき ななめに 光がすっと通る・すみに 光の きらっ。金のふち（あいだに 大理石の白い帯）・こい金の厚み・「PUSH」は しっぽり明朝の 金ぱくの字を 彫ったように。左右に 金の月桂樹の枝が ゆっくり ゆれる・金の きらっ。押すと まん中から ぴしっと ひびが走って くだけ（強く光らせない）、大理石の かけらと 金ぱく・きらっ が広がり、金の 光の輪が広がる。見本「的中ボタン（大理石）」）・壁紙は<b>像の馬が 8秒ごとに うしろを2度見して、くるっと 反対を向く：1〜2秒で ゆっくり うしろへ ふり向く（首と頭が こちらがわを通って 反対を向く）→ 前へもどって → 2.45秒に ぱっと 2度見（少し行きすぎて もどる）→ 3〜5秒の 2秒で 体ごと くるっと 反対向きに（こちらを向きながら回る・頭は うしろを見たまま 体が追いつく）。8秒後に 同じことを 反対へ（16秒で もとの向き）。ふり向いたあとの 休みに、9〜17秒ごと（ばらばら）で ヒヒィーン（体を起こして 首を上げ 頭をふり上げ、前足を 交互に 前へ 打ち出して 頭を少しふる・字はなし）か、右を向いている時だけ 台ごと ずっ！ずっ！と5回 右へすべって 画面の外へ消え（すべるたびに 台の下に 粉が ふわっ）、しばらくして 左を向いて 画面の右から ずっ！ずっ！と5回 もとの場所へ もどる（24秒）</b>（いまの絵と同じ場面・同じカメラ・同じ光で、像を 3D のまま動かして描いた コマ（像と台のまわりだけ：ふり向き 28・体が回る 58・ヒヒィーン 76）を めくる。すべる時は 像と台と影の絵を 背景だけの絵の上で 動かす（はじめと おわりは 止まっている時に いまの絵と ふわっと入れかえて、つなぎ目が見えない）。出来事の順番は 192秒で1回り。flat/marble_run.py・marble_wall.py。視差効果を減らすなら いまの絵）</li><li><b>開運</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>小判でできたPUSH</b>（ボタンが まるごと 小判：よこ長の だ円・金の地・内がわの だ円の線・たての ござ目・左右のはしに 桜の刻印・上に つやの光・ときどき ななめに 光がすっと通る・すみに 光の きらっ。明るい金のふち・下に 小判が2まい 重なった厚み・「PUSH」は 刻印のように 彫った字（Zen Antique Soft）。左右に 小さな小判が ふわふわ・金の キラッ。押すと ちゃりんと ちぢんで ふくらみ（強く光らせない）、小判と 丸い金貨・金の粉・キラッ が ふん水のように 上へ はじけて 落ち、金の 光の輪が広がる。見本「的中ボタン（開運）」）・壁紙は<b>いつも まわりに 小判が 上から下へ 降っている（うしろの小判は 蹄鉄と招き馬の うしろを通る・ゆれて くるっと 回り、ときどき きらっ）。招き馬の あげた右前足は 立体（まさちゃん「招くときはもっと腕動かして」「招く腕は立体にみてるようにして」：太さのある前足と 厚みのある ひづめを 3D で動かした コマ）。8秒ごとに：1〜2秒 ひづめが 前へ・うしろへ がたがた（前へ おれかけて 引っかかる・ふちの厚みが見える）→ 少し うしろへ ためて → 3秒で 一気に ひじから 前へ たおれて、ひづめが 手首で おれて 振り下ろす（近づいて 大きく・ひづめの 裏が見える）→ もどる。それとは べつに 11〜19秒ごと（ばらばら）に、首を上げて 上を向き（目も上を見る）、口を開けて ヒヒィーン（字はなし・頭と口が ふるえる・耳が たおれる・しっぽを ふる）と 鳴きながら 招く（前足を 前へ たおして もどす を 2〜3回）</b>（いつもの絵と同じ部品を重ねて、頭・顔・耳・たてがみ・しっぽを 動かす。右前足は 21コマを よこに ならべた帯を 窓の中で ずらして めくる。ヒヒィーンの順番は 96秒で1回り。flat/lucky_banner.py の parts・flat/lucky_maneki.py の rig・flat/lucky_arm.py・lucky_wall.py。視差効果を減らすなら いつもの絵）</li><li><b>黒板</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>黒板にチョークで書いたPUSH</b>（ボタンが 小さな黒板：緑の黒板に 消したあとの もや・木目の 木の枠・下に チョーク受け（白・黄・ピンクのチョークと 小さな黒板消し）。黒板に チョークで書いた 立体のボタン（上の面と 下の厚み・厚みに ななめの線）と「PUSH」（Yomogi・チョークの ざらざら）・左上に 黄色い星・右下に ピンクの花丸。まわりに チョークの星が きらっ・光の輪は チョークの点線。押すと ぎゅっと ちぢんで ふくらみ（強く光らせない）、チョークの粉が ふわっ・チョークのかけら（白・黄・ピンク）と 星が はじけて 落ち、まん中に ピンクのチョークで 花丸を さっと書く（花丸は 1本の線：うずまき → 花びら・線は 外に はみ出さない）。見本「的中ボタン（黒板）」）・壁紙は<b>10秒ごとに：1〜2.9秒で 黒板消しが たてに ゆっくり ごしごしして 馬を消す（こすった所に チョークの もやが残って ゆっくり うすくなる・チョークの粉が 落ちる）→ 3.5〜7.4秒で チョークが ゆっくり つぎの馬を書く（外の線を 鼻先から ひと回り → 地面の線 → しっぽから頭へ ジグザグに ぬる）。馬は 3種類を じゅんばんに：走る馬（いまの絵）→ くらと ゼッケン「1」をつけた競走馬（ゼッケンは 黄色のチョーク）→ 立っている馬</b>（いまの絵と同じ 3D の馬と チョークの ぬり方で描いた3頭。書く・消すは 馬の絵・もやの残る黒板で ぬった 線の のび（stroke-dashoffset）で、書きおわり・消しおわりに 同じ見た目の絵と 入れかえる。黒板消しとチョークは ページの SVG。30秒で1回り。flat/chalk_banner.py・flat/chalk_run.py・chalk_wall.py。視差効果を減らすなら いまの絵）</li><li><b>シルバー帯</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>シルバーでできたPUSH</b>（ボタンが まるごと みがいた銀の板：上は 空の映りこみ・まん中に 地平の映りこみ（こい帯）・下は また明るく・こまかい ヘアライン・上に つやの光。「PUSH」は 銀の 立体の字（こいふち・下に 厚み）。<b>めちゃくちゃ輝く</b>：光の帯が 1.8秒ごとに ななめに すうっと通り（2本）、通った字のかどが きらっ・面の あちこちで 0.32秒ごとに きらっ・ふちの こい線を 光が2つ ぐるっと回る・まわりで 大きい きらっ（横に のびる光）・光の粒が 下から上へ のぼる・まわりに 白い光。押すと ぎゅっと ちぢんで ふくらみ（強く光らせない）、銀の かけら・きらっ・光の粒が はじけ、まん中に 横に のびる光・銀の 光の輪が 2重に広がる。見本「的中ボタン（シルバー帯）」）・壁紙は<b>いつも 銀の馬の像が キラキラ輝く</b>（きらめき（14か所）が 4秒に2回ずつ ばらばらの順で きらっ（像の上を 左から右へ 通って 体を 光らせる 光の帯は まさちゃん「いらない」で やめた）・像の上の こまかい光の粒が ちかっ・光の粒が しっぽ・おしり・後ろ足から うしろへ ふわっと流れる・うしろの光の輪を 光が10秒で1回り（像の うしろを通る）。顔のすじは まさちゃん「もう少しフラット目に」で 平らにした（ゴールド帯も）。いまの絵と きらめきを ぬいた絵は flat/metal_run.py・metal_wall.py。視差効果を減らすなら いまの絵）</li><li><b>ゴールド帯</b>（まさちゃんの指定）：シルバー帯と同じ作りを金に。的中ボタンのPUSHは<b>ゴールドでできたPUSH</b>（みがいた金の板・金の 立体の字「PUSH」。<b>めちゃくちゃ輝く</b>：シルバー帯と同じ 光の帯・きらっ・ふちを回る光・のぼる光の粒を 金に・まわりに 金の光。押すと 金の かけら（金ぱく）・金の きらっ・金の 光の輪。見本「的中ボタン（ゴールド帯）」）・壁紙は<b>いつも 金の馬の像が 金に キラキラ輝く</b>（金の きらめき（光の帯は やめた）・うしろへ流れる 金の粉・光の輪を回る光。視差効果を減らすなら いまの絵）</li><li><b>マスター帯</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>説明書の上の絵と 同じ 長方形の テンゲルの PUSHが 緑の雷を まとう</b>（横長の ボタン 300×164：説明書の上の絵・版の行を 消した所（「テンゲル」の札の下）に 金の「PUSH」・金と紺のふち。明るい緑と 濃い緑の いなずま 32本が ふちに そって 1本ずつ ついたり消えたり（1回に 2〜6回 ちらちら・そのたび 形が かわる・線は いちばん細く・外へ 枝わかれ）・火花が 外へ とぶ。押すと ぎゅっと ちぢんで ふくらみ（強く光らせない）、いなずまが ふちから まわりへ ほとばしり（2回 ちらっ）、緑と白の 火花・ボタンの形の 緑の 光の輪が 2重に広がる。見本「的中ボタン（マスター帯）」）・壁紙は エンブレムの馬は 動かさず（元の絵のまま）、<b>いつも おしりから 後ろ足の まわりの 数字（0と1）が かわるがわる 反対の数字に（右から左へ 波のように）、枠じゅうに 明るい緑と 濃い緑の いなずまが ビリビリ（44本が 1本ずつ ついたり消えたり・いちばん細い線）・ときどき 枠から 大きな いなずま</b>（flat/tengel_run.py・tengel_wall.py。視差効果を減らすなら いまの絵）</li><li><b>クリスマス</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>クリスマスツリーのPUSH</b>（ボタンが まるごと クリスマスツリー：いちばん下の だんに「PUSH」・上に 2だんと 金の星・だんの ふちに 雪・金の かざり・赤と青と金の玉・あかりが ゆっくり またたく・まわりに 雪が ふる。押すと ちぢんで ふくらみ（強く光らせない）、金の星と 玉と 雪の結晶が はじけて 金の 光の輪。見本「的中ボタン（クリスマス）」）・壁紙は<b>サンタさんと クリスマスツリーと トナカイの カチューシャの馬</b>（雪の夜の町・プレゼント。flat/xmas_banner.py。いつも 雪が降って、15秒ごとに 5〜12秒の どこかで 馬が プレゼントを 食べようとして、サンタさんが あわてて 右へ逃げ、ようすを見ながら もどる：xmas_wall.py）</li><li><b>ハロウィン</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>かぼちゃのPUSH</b>（ボタンが まるごと ジャック・オー・ランタン：光る 三角の目・「PUSH」は 光る口・中の光が ゆっくり ゆらぐ・まわりに こうもりと あめ。押すと ちぢんで ふくらみ、あめ・こうもり・小さな かぼちゃ・光の粒が はじけて オレンジの 光の輪。見本「的中ボタン（ハロウィン）」）・壁紙は<b>ドクロと ドラキュラと 光る かぼちゃと 魔女の帽子の馬</b>（満月・お城・こうもり。flat/halloween_banner.py。8〜11秒ごとに ドラキュラが マントを パタパタさせて 少しだけ 飛ぶけれど 落ちて、ドクロと かぼちゃが 笑う・5回に1回は 上へ 飛んで 消え、2秒後に 落ちてくる・馬は いつも ドラキュラを 目で追う：halloween_wall.py）</li><li><b>バレンタイン</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>チョコのPUSH</b>（ボタンが まるごと 板チョコ：四角の くぼみ・ピンクの すじ・ピンクの 包み紙・チョコに うかした「PUSH」・ときどき つやが通る・まわりに ハートのチョコと トリュフ。押すと チョコの かけら・ハート・トリュフが はじけて ピンクの 光の輪。見本「的中ボタン（バレンタイン）」）・壁紙は<b>カップルと チョコと 赤いリボンの馬</b>（ハートの チョコを わたす 女の子・てれる 男の子・上から とろける チョコ。flat/valentine_banner.py。いつも ハートが ふわふわ動き、馬は いつも カップルを 目で追う・10秒ごとに カップルが 馬を なでにいき、馬は 耳を 前に向けて しっぽを 3回 たてに ふって よろこぶ・6回に1回は 馬が ブチギレて カップルが 吹っ飛び、あせって 立ちあがって もどる：couple_wall.py・flat/couple_run.py）</li><li><b>ホワイトデー</b>（まさちゃんの指定）：的中ボタンのPUSHは<b>マシュマロのPUSH</b>（ボタンが まるごと ふわふわの マシュマロ：ぽよん ぽよんと ゆれる・水色の まるい「PUSH」・まわりに ピンクと水色の マシュマロ・水色の リボン。押すと ふにゃっと つぶれて ふくらみ、マシュマロ・キラッ・ハートが はじけて 水色の 光の輪。見本「的中ボタン（ホワイトデー）」）・壁紙は<b>カップルと マシュマロと 水色のリボンの馬</b>（マシュマロの びんを わたす 男の子・よろこぶ 女の子・マシュマロみたいな 雲。flat/whiteday_banner.py。バレンタインと 同じ 動き（カップルの上の ハートが いつも ふわふわ・10秒ごとに なでにいく・6回に1回は ブチギレ）：couple_wall.py・flat/couple_run.py）</li></ul></div>
     <div class="box"><h3>光と見やすさ</h3><ul><li><b>視覚酔いしないように</b>：画面全体が回る・迫る（トンネル）・流れる・ゆれる動きはしない。背景は止めて、動くのは文字（ポンと出る・乱れる・ふるえる）・小さな光・きらめきと、「ど的中！！！！」と結果の背景の光の波と輪だけ（外へ広がる・回らない）。虹色が流れるのは4秒で1回りよりゆっくり</li><li>強く光るのは<b>画面のどの点でも1秒に3回まで</b>（光の点めつで気分が悪くなる人がいるため。スマホは画面が目に近いので、画面の10%の広さでも数えた）。動画の明るさを1コマずつ・点ごとに測って確かめた。画面全体が白く光るのは デカの0.04秒（一瞬まっ白）・フリーズの押した瞬間（白い画面。横に流れる帯は明るい色どうしで、切りかわっても点めつにならないようにした）・{sec(R)}秒（弱め）だけ。爆発の光は小さな範囲で1回ずつ。デカの虹の輪は同じ所が何回も光らないように大きさを変えた・虹の光の筋はゆっくり回す（30秒で1回り）・押したあとの暗い幕はPUSHの画面の暗さのまま始める（いったん明るくなってまた暗くなると、白い光の前にもう1回光ってしまう）。ハズレは光らない。<b>神様的中</b>：画面の 大きな 光は 白（押した 瞬間・①→②・②の 中・②→③）と ③の 金の 粒の 大きい 爆発 3回で、どの 1秒にも 3回 以下（あいだの 金の 粒は 小さく）。① の 電気は 細い 線で、ピンクの 電気の かたまりは 0.2秒 同じ 所で ふるえて 消える（ビリビリは 小さな パチッで）・大きな 雷は 1本 0.09秒で 同じ 所は 1回・光の 滝の すじは 細かく・ドームは 床から ひろがり、そのあとは ゆっくり 大きく（背景・滝・光の 帯は 動かさない）・金の 輪と 金の 爆発は ゆっくり ひろげる。動くのは 字・岩・金の 粒で、背景は 止める（ひいて 金の 鳥居が 見えるのは さいごの 1回だけ）。<b>超神様的中</b>：動画を 1コマずつ・点ごとに 測って、1秒に 4回 以上 光る 所は いちばん 多い 時でも 画面の 5.8%（10% 以下）。字の 雷は 1コマで つき 2コマで 消え、同じ 所には 12コマ あけて 出す・小判は 光らせすぎない</li><li>iPhoneの「視差効果を減らす」がオンなら：フリーズ（プチュン）・ネオンのカット・虹の輪・炎のゆらゆら・きらめき・紙ふぶき・PUSHの動きを止める。押すと1秒真っ暗 → 虹色の画面と「ど的中」（上）・ボードをふわっと出す。<b>超神様的中</b>は 動画を 出さずに さいごの 1まい（鳥居の 中の 神様的中）→ 1.3秒から ボード（動画が 4秒 たっても 動かない 時も 同じ）。効果音は右の「効果音のメモ」（見本の画面もタップで鳴る）</li></ul></div>
-    <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし。<b>超神様的中だけは 動画</b>：H.264・音なし 約9.6MB＋さいごの 1まい WebP 約0.2MB）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
+    <div class="box"><h3>容量</h3><ul><li><b>ボードに絵は使わない</b>（テーマの色・もよう・飾りのSVGとCSSだけ。見出しの字はテーマの見出しのフォント）。フリーズで足す絵は、テンゲルのアイコンから作った<b>ネオンの線画のマスク2枚</b>だけ（芯 1024 約59KB・光 512 約40KB。neon_icon.py。T1 の背景）。ほかの虹・文字・炎・ギザギザ・電気・ノイズはCSSとSVG</li><li>バグる画面をやめたので、<b>押した瞬間の画面の絵（スクリーンショット）はいらない</b>（前はアプリで撮る予定だった）</li><li>動きは全部CSS（動画なし。<b>超神様的中・超プレミアム神様的中だけは 動画</b>：超神様の 動画 H.264・音なし 約10.2MB（2つの ボタンで 同じ 動画を 使う）＋さいごの 1まい WebP 約0.2MB＋超プレミアム神様の 昇格の 動画 約5.1MB）・新しいフォントなし（テーマのフォント・Dela Gothic One・BIZ UDPゴシック）。<b>ど的中の筆の字はフォントではなくSVGの形</b>（brush.py で筆の動きから描いた6文字：ど・て・き・！・的・中。brush_glyphs.json 約12KB。金の立体とまわりの光は CSS の drop-shadow）</li></ul></div>
   </div>
 </div>
 </x-dc>
