@@ -1,0 +1,2 @@
+2026-10-23 18:25:13.244 appintentsmetadataprocessor[2283:10251] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/runner/work/TENGEL/TENGEL/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')

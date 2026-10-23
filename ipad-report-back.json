@@ -1,0 +1,32 @@
+{
+ "phase": 1,
+ "device": "ipad",
+ "page": "back",
+ "basic": {
+  "href": "tengel://localhost/",
+  "secure": true,
+  "native": true,
+  "info": {
+   "device": "phone",
+   "build": "1",
+   "version": "1.0"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPad; CPU OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 375,
+  "h": 647,
+  "dpr": 2,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "25px"
+ },
+ "errors": [],
+ "at": "2026-10-23T19:00:29.731Z"
+}
