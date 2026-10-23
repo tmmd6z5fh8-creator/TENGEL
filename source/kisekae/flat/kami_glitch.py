@@ -6,7 +6,7 @@
      ちぢんで 点に なって 消える（プツッ）→ 宇宙の カットイン（kami_cutin.py）→ 超神様的中の 動画
    もとの 絵（き！の 画面）は 見本の ページ（Fx_SuperPremium）の 6.0秒の 1まい（capture_page.py で 写す）。
    点めつ：画面 ぜんぶが 消えるのは 0.53秒ごとに 3回＋さいごの 1回（どの 1秒にも 2回 まで）。そのほかの チカチカは 明るさを そろえた 色の ずれと 帯で 出す
-   消えた あとは まっ暗 1秒（BLACK_TAIL）→ 超プレミアムの ポニーに 隕石が 向かって くる（kami_pony.py）
+   消えた あとは まっ暗 1秒（BLACK_TAIL）→ 宇宙の カットイン
    python3 flat/kami_glitch.py <き！の 1まい（png）> <出力フォルダ> [コマ番号（1〜）…] → g001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np

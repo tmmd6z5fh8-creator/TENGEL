@@ -1997,35 +1997,6 @@ def cutin_mix(mx, r, CI, o=0.0):
     mx.add(v, tv, VOICE_IYAN[2], rv=.25)
 
 
-def read_pony():
-    sys.path.insert(0, os.path.join(HERE, 'flat'))
-    import kami_pony
-    return kami_pony
-
-
-def bomb_whistle(d, rng, f0=2300, f1=700):
-    """ヒュゥゥゥ↓：上から 落ちて くる（高い 音が 下がりながら だんだん 大きく）"""
-    n = n_(d)
-    t = tl(n)
-    u = np.clip(t / d, 0, 1)
-    f = f0 * (f1 / f0) ** (u ** 1.4)
-    x = np.sin(phase(f * (1 + .006 * np.sin(2 * np.pi * 7 * t)), n)) + .15 * bp(rng.standard_normal(n), 1500, 6000)
-    return fade(x * (.08 + .92 * u ** 2), .01, .02)
-
-
-def pony_mix(mx, r, KP, o=0.0):
-    """ポニーに 隕石が 向かって くる（1.6秒）：ゴゴゴ（地ひびき）＋ゴオォォ（炎）が だんだん 大きく・ヒュゥゥゥ↓（落ちて くる）・ヒュンッ（隕石ごと）"""
-    d = KP.N / KP.FPS
-    u = np.clip(tl(n_(d + .1)) / d, 0, 1)
-    mx.add(rumble(d + .1, r, 120, 7) * (.25 + .75 * u ** 1.5), o, .42, rv=.25)
-    mx.add(fire_roar(d + .1, r, 1600, 1100, 4.0) * (.1 + .9 * u ** 2), o, .5, np.linspace(.7, .1, 12), rv=.25)
-    mx.add(bomb_whistle(d + .05, r), o, .16, np.linspace(.6, 0, 12), rv=.35)
-    for (t0, p0, p1, ta, sz, b) in KP.METEORS:
-        pan = float(np.clip(p0[0] / KP.W * 2 - 1, -1, 1)) * .8
-        dd = max(.3, d - t0)
-        mx.add(whoosh(dd, r, 2600, 600), o + t0, .12 + .1 * b, np.linspace(pan, pan * .3, 12), rv=.25)
-
-
 def read_glitch():
     sys.path.insert(0, os.path.join(HERE, 'flat'))
     import kami_glitch
@@ -2100,16 +2071,14 @@ def rng_d(r, a, b):
 
 def sfx_sgd_up():
     """超神様的中の 昇格（超神様的中の 4回に1回 ※仮）の 音：0秒＝き！で 画面が 止まる → 2秒 バグ → まっ暗 1秒（音も なし）
-       → ポニーに 隕石が 向かって くる（2.97〜4.57秒）→ 宇宙の カットイン（4.57〜8.17秒）。
-       このあと 超神様の 動画と 音（sfx_sgd）が つづく。超プレミアムど的中の 音（sfx_zp）は き！の 所（押してから 6秒）で 止める"""
-    KG, KP, CI = read_glitch(), read_pony(), read_cutin()
+       → 宇宙の カットイン（2.97〜6.57秒）。このあと 超神様の 動画と 音（sfx_sgd）が つづく。
+       超プレミアムど的中の 音（sfx_zp）は き！の 所（押してから 6秒）で 止める"""
+    KG, CI = read_glitch(), read_cutin()
     g = KG.N / KG.FPS
-    gp = g + KP.N / KP.FPS
-    mx = Mix(gp + CI.N / CI.FPS + 1.2, 73)
+    mx = Mix(g + CI.N / CI.FPS + 1.2, 73)
     r = mx.rng
     glitch_mix(mx, r, KG, 0.0)
-    pony_mix(mx, r, KP, g)
-    cutin_mix(mx, r, CI, gp)
+    cutin_mix(mx, r, CI, g)
     return mx.render(1.5, target=-13, bass=True)
 
 

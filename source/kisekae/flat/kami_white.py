@@ -3,8 +3,10 @@
    白い 光の 中で、まん中が ほんのり 金色に 息を して、うすい 金の 光の すじが ゆっくり 回る。
    まさちゃん「三枚目のシーンは、キラキラの演出を金粉が舞ってる豪華な演出にして！」→ キラキラを 金粉に：こまかい 金の 粒（遠い ほど 小さい）・
    ひらひら 回る 金箔（向きが かわると キラッと 光る）・手前を ぼけた 大きな 金箔が とおる。ゆっくり 落ちながら ゆれて、まん中の まわりを 少し 回る
-   はじめと おわりの 7コマで ① の さいごの 1まい・② の はじめの 1まいに そろえる。画面は ずっと 白に 近い 明るさ（点めつに ならない）
-   python3 flat/kami_white.py <① の さいごの 1まい> <② の はじめの 1まい> <出力フォルダ> → w001.png … w040.png（何回 作っても 同じ）"""
+   はじめの 7コマで ① の さいごの 1まいに そろえる。画面は ずっと 白に 近い 明るさ（点めつに ならない）
+   まさちゃん「この金粉のシーンから画面白くなるシーンいらない！ 金粉のシーンから次のシーンに入って！」→ 金粉は さいごまで 消さずに、
+   ② の はじめの 8コマ（白 → ② の 絵）にも 金粉を かさねて（だんだん 消える）、白だけの 画面を はさまずに ② へ 入る（TAIL）
+   python3 flat/kami_white.py <① の さいごの 1まい> <出力フォルダ> <② の 1コマめ> … <② の 8コマめ> → w001.png … w040.png・x001.png … x008.png（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
 import cv2
@@ -106,12 +108,27 @@ def dust(img, t, env):
     return img * (1 - ac) + np.float32((1.0, .99, .94)) * ac
 
 
+TAIL = 8                               # ② の はじめの コマにも 金粉を かさねる 数（白だけの 画面を はさまない）
+
+
 def frame(a, b, k):
     """a・b：① の さいご・② の はじめ（RGB 0〜1）。k：0〜NW-1"""
     t = k / FPS
     u = (k + 1) / (NW + 1)
     img = a * (1 - u) + b * u
-    env = sstep(0, 7, k) * (1 - sstep(NW - 8, NW - 1, k))
+    return np.clip(glitter(img, t, sstep(0, 7, k)), 0, 1)
+
+
+def tail_frame(c, j):
+    """② の j コマめ（0〜）に 金粉を かさねる（② の 絵が 出て くると だんだん 消える）"""
+    env = 1 - sstep(2, TAIL - 1, j)
+    if env <= 0:
+        return c
+    return np.clip(glitter(c, (NW + j) / FPS, env), 0, 1)
+
+
+def glitter(img, t, env):
+    """白い 光の 中の 金：まん中の ほんのり 金色・光の すじ・金粉（env：こさ）"""
     if env <= 0:
         return img
     rr, ang = grid()
@@ -123,20 +140,30 @@ def frame(a, b, k):
     k_ = ((g + rays) * env)[..., None]
     img = img * (1 - k_) + GOLD * k_
     # 金粉（ひらひら 落ちながら キラッ）
-    img = dust(img, t, env)
-    return np.clip(img, 0, 1)
+    return dust(img, t, env)
 
 
-def main(pa, pb, out):
+def load(p):
+    x = cv2.cvtColor(cv2.imread(p), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    assert x.shape[:2] == (H, W), (p, x.shape)
+    return x
+
+
+def save(p, x):
+    cv2.imwrite(p, cv2.cvtColor((np.clip(x, 0, 1) * 255 + .5).astype(np.uint8), cv2.COLOR_RGB2BGR))
+
+
+def main(pa, out, pbs):
     os.makedirs(out, exist_ok=True)
-    a = cv2.cvtColor(cv2.imread(pa), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
-    b = cv2.cvtColor(cv2.imread(pb), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
-    assert a.shape[:2] == (H, W) and b.shape[:2] == (H, W)
+    assert len(pbs) == TAIL, len(pbs)
+    a = load(pa)
+    bs = [load(p) for p in pbs]
     for k in range(NW):
-        im = (frame(a, b, k) * 255 + .5).astype(np.uint8)
-        cv2.imwrite(os.path.join(out, f'w{k + 1:03d}.png'), cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
-    print('w', NW)
+        save(os.path.join(out, f'w{k + 1:03d}.png'), frame(a, bs[0], k))
+    for j, c in enumerate(bs):
+        save(os.path.join(out, f'x{j + 1:03d}.png'), tail_frame(c, j))
+    print('w', NW, 'x', TAIL)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    main(sys.argv[1], sys.argv[2], sys.argv[3:])
