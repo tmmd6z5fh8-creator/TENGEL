@@ -1,23 +1,26 @@
 # 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
-#   python3 test_fx_flash.py [hit,big,fz,hidden,miss]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   python3 test_fx_flash.py [hit,big,fz,hidden,miss,pc,zp,gd,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
+#   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。
+#   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5)
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4)
+FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
 pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').read()
 assert "window.__NATIVE = location.protocol === 'tengel:';" in html
 open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
-for f in ('fz_ncore.webp', 'fz_nglow.webp'):   # ネオンの線画（手元で作ったもの。なければ線画なしで数える）
-    src = os.path.join(W, 'ios', 'fx_assets', f)
-    if os.path.exists(src): shutil.copy(src, os.path.join(SRV, 'APP', f))
+if os.path.isdir(FX_DIR):   # ネオンの線画・プレミアムと 神様の 絵（手元で作ったもの。なければ 絵なしで数える）
+    for f in os.listdir(FX_DIR):
+        if f.endswith('.webp'): shutil.copy(os.path.join(FX_DIR, f), os.path.join(SRV, 'APP', f))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 SPEC = {'r': 9, 'n': 12, 'ranks': {'6': 1, '2': 2, '10': 3, '4': 5, '7': 4, '11': 11, '1': 9, '3': 8, '5': 7, '9': 6, '8': 12, '12': 10},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 6, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 6]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 9}]}
@@ -32,6 +35,20 @@ try:
         if pg.locator('#gateGo').count(): pg.click('#gateGo'); pg.wait_for_timeout(600)
         for kind in KINDS:
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
+            if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
+                for f in ('sgd_film', 'spg_up'):
+                    mp4 = os.path.join(FX_DIR, f + '.mp4')
+                    if not os.path.exists(mp4) or not shutil.which('ffmpeg'):
+                        print(f'  ⚠️ {f}.mp4 が ない（ios/fx_assets/）か ffmpeg が ない'); continue
+                    fd = os.path.join(d, f); os.makedirs(fd); t0 = time.time()
+                    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'f%04d.png')], check=True)
+                    nfr = len(os.listdir(fd))
+                    r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), fd, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
+                    out = r.stdout.strip().split('\n'); worst = out[-1] if out else ''; bad = out[0] if out else ''
+                    ok = r.returncode == 0 and '窓 0個' in bad
+                    print(('  ✅ ' if ok else '  ❌ ') + f'{f}.mp4：{nfr}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
+                    if not ok: fails.append(f + ': ' + (r.stderr[-300:] if r.returncode else bad))
+                continue
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: %r }, s))" % kind, SPEC); pg.wait_for_timeout(400)
             idx = 0; t0 = time.time()
             if kind != 'miss':

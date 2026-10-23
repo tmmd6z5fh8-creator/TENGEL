@@ -1096,7 +1096,9 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         paintAuto();
         // 記録が0件なのに自動バックアップに記録がある（保存場所が消えた）→ 戻す？（ポイントの台帳も一緒に戻る）
         const W = window.TengelWallet; if (W) await W.ready;
-        const wn = saved && saved.wallet && Array.isArray(saved.wallet.events) ? saved.wallet.events.length : 0;
+        // 台帳に 初回の プレゼント（gift-first）しか ない ときは「中身あり」と 見ない（開き直す たびに「戻す？」が 出て しまう：第5弾で 直した）
+        const sw = saved && saved.wallet;
+        const wn = sw ? ((Array.isArray(sw.events) ? sw.events.filter(e => e && e.id !== 'gift-first').length : 0) + (Array.isArray(sw.paid) ? sw.paid.length : 0) + (sw.counted && typeof sw.counted === 'object' ? Object.keys(sw.counted).length : 0)) : 0;
         if (!TengelLocal.mem.bets.size && (n || (wn && W && W.isEmpty()))) { offerRestore(saved); return; }
         autoHold = false; scheduleAuto(800);
       });

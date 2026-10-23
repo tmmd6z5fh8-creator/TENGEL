@@ -62,7 +62,20 @@ if r.returncode == 0:
     check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" in html and 'setFx' in html and 'fz_nglow.webp' in html and 'sfx_fz.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); from build_fx import ASSET_FILES
     have = [f for f in ASSET_FILES if f in res]
-    check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば8こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
+    check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば{len(ASSET_FILES)}こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
+    # 第5弾：特別な 演出（16.3）。見本の CSS と HTML を 束ねた __FX の reveal（pc・zp・gd・sgd・spg）・絵と 音と 動画の 名前・動画の <video>（fx.js）・Swift の Range（動画の 部分読み）
+    from build_fx import FILMS, STILL, ART, SFX
+    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'zp', 'gd', 'sgd', 'spg')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'gd', 'sgd', 'spg_up', 'spg')]) and 'pm_face_F.webp' in html and 'gd_dome.webp' in html
+          and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.gd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000],
+          'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾）')
+    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and len(ASSET_FILES) == 2 + 12 + 38 + 24 + 1 + 2, f'絵と音と動画の 数：ネオン 2・音 12・プレミアム 38・神様 24・さいごの 1まい 1・動画 2（{len(ASSET_FILES)}）')
+    fxd = os.path.join(W, 'ios', 'fx_assets')
+    if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
+        sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
+        films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
+        check(16e6 < films_sz < 17e6 and 21e6 < sz < 24e6, f'絵と音と動画の 大きさ：動画 2本 約16.3MB・ぜんぶで 約22MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
+    af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
+    check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
     check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
     # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
