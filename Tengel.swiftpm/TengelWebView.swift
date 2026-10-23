@@ -115,8 +115,30 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         #endif
         self.webView = webView
         AppFiles.clearSharedFiles()
+        // App内課金：新しい取引（更新・返金・ほかの端末での購入）が届いたら、Webの画面に知らせる（台帳に足すのはWeb側）
+        Store.shared.onTransaction = { [weak self] tx in self?.event("iap", tx) }
+        Store.shared.start()
         webView.load(URLRequest(url: AppSchemeHandler.startURL))
         return webView
+    }
+
+    /// アプリ → Webの画面への知らせ（window.__nativeEvent(name, payload)）
+    private func event(_ name: String, _ payload: Any) {
+        guard let webView else { return }
+        let js = "window.__nativeEvent && window.__nativeEvent(\(Self.jsonLiteral(name)), \(Self.jsonLiteral(payload)))"
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    /// 拡大（2本指）：ふだんは viewport の決まり（最大3倍）で拡大できる。演出・アプリを開いた時の画面のときは 1倍にもどして止める
+    private func zoom(_ p: [String: Any]) {
+        guard let webView else { return }
+        let sv = webView.scrollView
+        if p["reset"] as? Bool == true, sv.zoomScale != 1 {
+            sv.setZoomScale(1, animated: true)
+        }
+        if let lock = p["lock"] as? Bool {
+            sv.pinchGestureRecognizer?.isEnabled = !lock
+        }
     }
 
     /// アプリの版などを、Webの画面が読む前に入れておく（window.__NATIVE_INFO）
@@ -209,6 +231,20 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         case "layout":
             // テスト用：時計・電波・ホームバーに重なる分の測り方
             reply(id, ok: true, value: (webView?.superview as? WebHostView)?.layoutInfo ?? [:])
+        case "zoom":
+            // 拡大を1倍にもどす・2本指の拡大を止める／もどす（{ reset, lock }）
+            zoom(payload as? [String: Any] ?? [:])
+            reply(id, ok: true, value: ["zoom": webView?.scrollView.zoomScale ?? 1, "pinch": webView?.scrollView.pinchGestureRecognizer?.isEnabled ?? true])
+        case "marker":
+            // キーチェーンの「しるし」（初回プレゼント・サブスクの取引の番号）。ユーザーのデータは入れない
+            reply(id, ok: true, value: Markers.handle(payload as? [String: Any] ?? [:]))
+        case "iap":
+            // App内課金（商品・買う・復元・届いている取引・終わらせる）
+            let p = payload as? [String: Any] ?? [:]
+            Task { [weak self] in
+                let r = await Store.shared.handle(p)
+                self?.reply(id, ok: true, value: r)
+            }
         #if DEBUG
         case "selftest":
             SelfTest.save(payload)

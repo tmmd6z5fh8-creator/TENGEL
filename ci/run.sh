@@ -4,7 +4,7 @@
 #  2) Swift 6 の厳しいチェックでも作れるか（Swift Playgrounds が Package.swift を作り直したとき用）
 #  3) 実機（iPhone・iPad）用に Release で作れるか（署名なし）
 #  4) iPhoneのシミュレーター：1回目（記録を保存・自動バックアップ・画面のスクショ）→ 2回目（開き直しても記録が残る・保存場所を消す）→ 3回目（「戻す？」→ 戻す）
-#  5) iPadのシミュレーター：1回目だけ
+#  5) iPadのシミュレーター：1回目だけ（iPhone用のアプリなので、互換モードで iPhone の大きさの画面になる。スクショで確かめる）
 # 結果は results/（summary.txt・ログ・report-*.json・スクショ）。ワークフローが ios-ci-<ランナー> ブランチに置く
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -90,6 +90,12 @@ say "== app: $(basename "$APP")"
 plutil -convert xml1 -o "$OUT/Info.plist.xml" "$APP/Info.plist"
 BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
 say "   bundle id: $BID  version: $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist") ($(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist"))"
+# iPhone用のアプリ（21章）：UIDeviceFamily は 1（iPhone）だけ・向きは縦だけ・起動の画面の設定（UILaunchScreen。iOS 27 の SDK で作るときに必要）がある
+FAM=$(/usr/libexec/PlistBuddy -c "Print UIDeviceFamily" "$APP/Info.plist" 2>/dev/null | grep -E '^\s*[0-9]+' | tr -d ' ' | tr '\n' ',')
+ORI=$(/usr/libexec/PlistBuddy -c "Print UISupportedInterfaceOrientations~iphone" "$APP/Info.plist" 2>/dev/null | grep -c UIInterfaceOrientation)
+ORIPAD=$(/usr/libexec/PlistBuddy -c "Print UISupportedInterfaceOrientations~ipad" "$APP/Info.plist" 2>/dev/null | grep -c UIInterfaceOrientation)
+LS=$(/usr/libexec/PlistBuddy -c "Print UILaunchScreen" "$APP/Info.plist" > /dev/null 2>&1 && echo yes || echo no)
+say "   iphone-only: UIDeviceFamily=${FAM:-?} orientations(iphone)=${ORI:-0} orientations(ipad)=${ORIPAD:-0} launchscreen=$LS $([ "$FAM" = "1," ] && [ "${ORI:-0}" = "1" ] && [ "$LS" = "yes" ] && echo OK || echo CHECK)"
 say "   web files: $(grep -cE '\.(html|webp|jpg)$' "$OUT/app-files.txt")  index.html at: $(grep 'index.html' "$OUT/app-files.txt" | tr '\n' ' ')"
 
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
@@ -124,7 +130,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="main settings backup about cm rec report-1 manual manual-item report-manual back report-back"
+P1="gate-first main points settings backup about cm rec report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
