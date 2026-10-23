@@ -76,6 +76,8 @@ def sgd_css():
 .ov.fz.sgd.still{{--t0:{sec(STILL_T0)}}}
 .ov.fz.sgd.still .sgk{{animation:fadeIn .5s ease-out {sec(STILL_BOARD - .15)} both}}
 .ov.fz.sgd.still .hb{{visibility:visible;animation:fadeIn .5s ease-out {sec(STILL_BOARD)} both!important}}
+/* ど的中の ボードの 見出し（.fz .bh）は 7.2秒（ど的中の R+.3）に たたきつける 決まり → さいごの 1まいの 時は ボードと いっしょに（{sec(STILL_BOARD + .3)}）ふわっと 出す（視差効果を減らす の 1.6秒と 同じ 形） */
+.ov.fz.sgd.still .bh{{animation:fadeIn .4s ease-out {sec(STILL_BOARD + .3)} both,rbowText 1.2s linear {sec(STILL_BOARD + .3)} infinite}}
 '''
 
 

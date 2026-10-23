@@ -474,6 +474,9 @@ try:
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'spg' }, s))", spec([11, 8, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1200)
         cst2 = pg.evaluate('TengelFx.current()')
         check(cst2['kind'] == 'spg' and cst2['film'] == 2 and pg.locator('#fxOv .ov.sgd.spg.still').count() == 1 and pg.locator('#fxOv .ov.spz.gone').count() == 1, f'超プレミアム神様的中で 動画が 読めない → 超プレミアムの 画面を 消して さいごの 1まい → ボード（{cst2}）')
+        pg.wait_for_timeout(900)   # 押して 2.1秒（さいごの 1まい → 1.3秒 ボード → 1.6秒 見出し）
+        bh2 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sgd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText }; })()")
+        check(bh2['op'] == '1' and bh2['vis'] == 'visible' and bh2['t'] == '超神様的中！！！', f'さいごの 1まいの ときの ボードの 見出し「超神様的中！！！」は ボードと いっしょに 出る（ど的中の 7.2秒を 待たない）（{bh2}）')
         pg.evaluate('TengelFx.close()')
         if HAVE_FILMS:
             pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', spg_up: 'spg_up.webm' }")
