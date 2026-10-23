@@ -29,7 +29,7 @@
     document.head.appendChild(st);
   }
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const calm = () => (S.calm == null ? reduced() : !!S.calm);
+  const calm = () => !!S.calm || reduced();   // iPhone の「視差効果を減らす」が オンなら いつも 控えめ（CSS の @media も 効く）。設定は それに 足す 形
   const rand = () => (typeof window.TengelFx === 'object' && typeof window.TengelFx._rand === 'function' ? window.TengelFx._rand() : Math.random());
   function emit(phase, kind) { try { document.dispatchEvent(new CustomEvent('tengel:fx', { detail: { phase: phase, kind: kind || (cur && cur.kind) || null } })); } catch (e) { /* なし */ } }
 
@@ -160,7 +160,8 @@
   window.addEventListener('pagehide', hush);
 
   // ---------- 出す ----------
-  function fit() { if (!cur) return; const k = Math.min(window.innerWidth / 390, window.innerHeight / 844); cur.stage.style.setProperty('--fxk', (isFinite(k) && k > 0 ? k : 1).toFixed(4)); }
+  // 舞台（390×844）を 画面に 入る 大きさに（縦横の 比は 変えない・1倍に 近ければ 1倍＝字が ぼけない）※仮
+  function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
   function open(kind, spec, supers, quiet) {
     close(true); css();
     const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '');
