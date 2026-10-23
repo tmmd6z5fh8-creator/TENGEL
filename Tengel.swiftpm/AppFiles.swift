@@ -28,7 +28,13 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
             body = AppFiles.webFile(named: name).flatMap { try? Data(contentsOf: $0) }
         }
         if let body {
-            respond(urlSchemeTask, url: url, status: 200, type: AppFiles.mimeType(for: name), body: body)
+            // 動画（超神様的中・超プレミアム神様的中の mp4：第5弾）は、再生のしくみが「Range: bytes=〜」で少しずつ読む → その部分だけ 206 で返す
+            if let range = Self.byteRange(urlSchemeTask.request.value(forHTTPHeaderField: "Range"), total: body.count) {
+                respond(urlSchemeTask, url: url, status: 206, type: AppFiles.mimeType(for: name), body: body.subdata(in: range),
+                        extra: ["Content-Range": "bytes \(range.lowerBound)-\(range.upperBound - 1)/\(body.count)"])
+            } else {
+                respond(urlSchemeTask, url: url, status: 200, type: AppFiles.mimeType(for: name), body: body)
+            }
         } else {
             respond(urlSchemeTask, url: url, status: 404, type: "text/plain; charset=utf-8", body: Data("not found".utf8))
         }
@@ -36,8 +42,27 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
 
-    private func respond(_ task: WKURLSchemeTask, url: URL, status: Int, type: String, body: Data) {
-        let headers = ["Content-Type": type, "Content-Length": String(body.count), "Cache-Control": "no-store"]
+    /// "bytes=100-199"・"bytes=100-"・"bytes=-200" → その範囲（ファイルの中に入るところだけ）。読めないときや範囲外は nil（ぜんぶを 200 で返す）
+    static func byteRange(_ header: String?, total: Int) -> Range<Int>? {
+        guard let header, total > 0, header.lowercased().hasPrefix("bytes="),
+              let spec = header.dropFirst(6).split(separator: ",").first else { return nil }
+        let parts = spec.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+        guard parts.count == 2 else { return nil }
+        if parts[0].isEmpty {
+            guard let suffix = Int(parts[1]), suffix > 0 else { return nil }
+            return max(0, total - suffix)..<total
+        }
+        guard let start = Int(parts[0]), start >= 0, start < total else { return nil }
+        let end = parts[1].isEmpty ? total - 1 : min(Int(parts[1]) ?? (total - 1), total - 1)
+        guard end >= start else { return nil }
+        return start..<(end + 1)
+    }
+
+    private func respond(_ task: WKURLSchemeTask, url: URL, status: Int, type: String, body: Data, extra: [String: String] = [:]) {
+        var headers = ["Content-Type": type, "Content-Length": String(body.count), "Cache-Control": "no-store", "Accept-Ranges": "bytes"]
+        for (key, value) in extra {
+            headers[key] = value
+        }
         guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers) else {
             task.didFailWithError(URLError(.cannotParseResponse))
             return
