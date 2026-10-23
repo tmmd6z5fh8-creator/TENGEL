@@ -122,6 +122,7 @@
   - App内課金（StoreKit 2・Store.swift）：製品IDは store/listing7.py と同じ（points500〜4000・sub2000／4400／9200）。**App Store Connect に同じIDの製品・サブスクのグループを作ってからでないと「製品がない」になる**。取引は台帳に書いてから `finish`（書く前にアプリが落ちても、次に開いたときの未処理の取引で足す）。「購入を復元」はサブスクの権利を見直す（消耗型のパックは Apple の決まりで戻らない＝台帳は自動バックアップから）
   - 自動バックアップ（アプリの中のファイル）には台帳も入れる（保存場所が消えたときに戻せる）。共有シートで渡す手で作るバックアップには入れない（人に渡せるファイルに台帳を入れない）
 - **開いたときの画面**（19章）：`#gate`（build_pwa.py の APP_BODY ＋ points_ui.js）。はじめては説明（参考情報・20歳・ポイント）と「はじめる」、2回目からは2秒のロゴ。localStorage `tengel.gateSeen`。テストは `GATE_SKIP`／`gate()` で閉じる
+- **「テンゲルⅢ」の Ⅲ は 3本の棒**（Web版の 上の帯と 同じ見た目＝`--font-mark:'Hiragino Sans','Yu Gothic',sans-serif`。Dela Gothic One の Ⅲ は 横棒つきで 見た目が ちがうので、上の帯・開いた ときの 画面（#gate・.glogo）の em に `--font-mark` を あてる。2026/10/23 まさちゃんの 指定。絵や 結果の 画像に 書く ときも 同じ）
 - 説明書（manual/content_app.html の「ポイント」）・「このアプリについて」（プライバシー：台帳・しるし・App内課金・消し方）・store/listing7.py（対応OSの行・ポイントの説明・審査へのメモ）も直した。Web版・claude.ai版は変わらない（points.js／points_ui.js は入らない・`window.TengelWallet` なし）
 - 確かめる：`node test_points.js`・`node test_ocr_local.js`・`python3 test_native.py`（にせもののアプリ：App内課金・しるし・拡大のロックも偽物）・`python3 test_iphone_only.py`・`python3 test_appname.py`・`python3 test_dataentry.py`。`ios` ブランチにpush → GitHubのMac（ios/ci/selftest.js に gate・points の確認、run.sh に iPhone用だけの確認）。test_fix.py・test_slots.py は第1弾の前から時間切れで落ちる（第1弾のせいではない・あとで直す）
 - まさちゃんがやること：App Store Connect で製品（4つ）とサブスクのグループ（3つ）を作る → TestFlight で iPhone と iPad（互換モード）の見た目・2本指の拡大・初回プレゼント・買う（サンドボックス）・入れ直して初回プレゼントが出ないこと・キーチェーンの同期（2台）を確かめる（作業用指示書の 18.2）

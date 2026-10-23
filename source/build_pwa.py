@@ -62,7 +62,7 @@ if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
         CM['srcApp'] = 'cm/tengel3_cm_app.mp4?v=' + _h('tengel3_cm_app.mp4')
 # App Store版だけ：アプリを開いた時の画面（19章）の入れ物を最初から出しておく（画面が一瞬見えないように。中身は points_ui.js）・
 # 2本指の拡大はOK・ダブルタップでは拡大しない（touch-action: manipulation）
-APP_HEAD = ('<style>body{touch-action:manipulation}#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B}</style>'
+APP_HEAD = ('<style>body{touch-action:manipulation}#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B;font-family:"Hiragino Sans",sans-serif}</style>'
             if TARGET == 'app' else '')
 APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="はじめに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
 head = f'''<!DOCTYPE html>

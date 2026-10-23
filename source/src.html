@@ -14,6 +14,7 @@
   --w1:#FFFFFF; --w1i:#151515; --w2:#1A1A1A; --w2i:#FFFFFF; --w3:#D3232D; --w3i:#FFFFFF; --w4:#1E5BBE; --w4i:#FFFFFF;
   --w5:#F3CF1E; --w5i:#151515; --w6:#1D8A3B; --w6i:#FFFFFF; --w7:#F07E19; --w7i:#151515; --w8:#F38DB6; --w8i:#151515;
   --font-display:'Dela Gothic One','Hiragino Sans','Yu Gothic',sans-serif;
+  --font-mark:'Hiragino Sans','Yu Gothic',sans-serif; /* 「テンゲルⅢ」の Ⅲ：3本の棒（Dela Gothic One の 横棒つきの Ⅲ は 使わない・まさちゃんの 指定 2026/10/23） */
   --font-body:'BIZ UDPGothic','Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic UI','Meiryo',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
   --r:10px; --gap:14px;
@@ -48,7 +49,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
 .brand h1{font-family:var(--font-display);font-weight:400;font-size:22px;margin:0;letter-spacing:.04em;line-height:1.2}
-.brand h1 em{font-style:normal;color:var(--lamp)}
+.brand h1 em{font-style:normal;color:var(--lamp);font-family:var(--font-mark)}
 .brand .ver{font-size:12px;opacity:.75;letter-spacing:.06em}
 .dbpill{margin-left:auto;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid rgba(243,240,230,.3);white-space:nowrap}
 .dbpill.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#5FD39A;margin-right:6px;vertical-align:1px}
