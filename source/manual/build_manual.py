@@ -63,6 +63,7 @@ ITEMS = [
     dict(id='mother', g='data', t='マザーデータ', d='参考的中率のもとになるデータ（3つ）', ic='db', kw='マザーデータ 基盤データ Excel JRA 船橋'),
     dict(id='racedata', g='data', t='レースのデータを入れる', d='判定＋着順でマザーデータに1行・一覧で直す', ic='plusbox', kw='マザーデータ 入れる 着順 払戻 一覧 直す 消す 手で入れる CSV 書き出す 足す 入れ替える'),
     dict(id='dataupdate', g='data', t='大井のデータを新しくする', d='分析シートと分析表を姫に送るだけ', ic='sync', kw='更新 分析シート 分析表 姫 突き合わせ'),
+    dict(id='points', g='set', t='ポイント・Pカスタム・ミッション', d='1レース200P・買う・解放・記録でもらう', ic='yen', kw='ポイント 200P 買う サブスク Pカスタム 解放 券種 ミッション 消える 復元'),
     dict(id='zones', g='set', t='買い目編集', d='区分ごとの馬単と3着を変える', ic='sliders', kw='カスタム 買い目 編集 初期'),
     dict(id='apikey', g='set', t='画像の読み取り（APIキー）', d='キーの作り方と料金', ic='key', kw='APIキー Anthropic 料金 モデル'),
     dict(id='backup', g='set', t='アプリの更新とバックアップ', d='記録を守る・機種変更', ic='shield', kw='バックアップ 機種変更 戻す 更新'),
@@ -136,7 +137,7 @@ APP_FONTS = ('<style>'
 # App Store版で出さない項目（ホーム画面に追加・チャットでデータを送る流れはWeb版だけ）
 APP_SKIP = ('install', 'dataupdate', 'apikey')   # App Store版は画像の読み取りにAPIキーを使わない（端末の中で読む）
 # Web版で出さない項目（App Storeのアップデート・データの更新はApp Store版だけ）
-WEB_SKIP = ('update',)
+WEB_SKIP = ('update', 'points')   # ポイント・Pカスタム・ミッションも App Store版だけ
 # App Store版だけ名前を変える項目（アプリの更新は「アップデート」の項目にあるので）
 APP_ITEM = {'backup': {'t': 'バックアップ', 'd': '記録を守る・機種変更・自動バックアップ'}}
 SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}'

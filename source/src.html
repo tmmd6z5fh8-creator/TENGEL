@@ -447,6 +447,8 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
           <div class="f s2"><label for="fN">出走頭数</label><input type="number" id="fN" inputmode="numeric" placeholder="12"></div>
           <div class="f s2"><span class="lab">コース</span><div class="seg" id="fSurf"><button type="button" data-v="ダ" aria-pressed="true">ダ</button><button type="button" data-v="芝" aria-pressed="false">芝</button></div></div>
           <div class="f s4"><span class="lab">馬場状態</span><div class="seg" id="fBaba"><button type="button" data-v="良" aria-pressed="false">良</button><button type="button" data-v="稍重" aria-pressed="false">稍重</button><button type="button" data-v="重" aria-pressed="false">重</button><button type="button" data-v="不良" aria-pressed="false">不良</button></div></div>
+          <div class="f s3" id="fRnameWrap" hidden><label for="fRname">レース名（任意）</label><input id="fRname" autocomplete="off" maxlength="30" placeholder="画像から読めたら入るよ"></div>
+          <div class="f s3" id="fStartWrap" hidden><label for="fStart">発走時刻（任意）</label><input type="time" id="fStart"></div>
         </div>
         <datalist id="venues"></datalist>
       </div>
@@ -568,13 +570,16 @@ const venueKey = v => VENUES[v] || ('v' + [...v].map(c => c.codePointAt(0).toStr
 const idFor = (date, venue, r) => date.replace(/-/g, '') + '-' + venueKey(venue || '大井') + '-' + String(r).padStart(2, '0');
 const storeGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const storeSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+// App Store版（アプリの中）だけの機能：ポイント（読み込み200P・解放・ミッション）、レース名・発走時刻の欄。Web版の動きは変えない
+const NATIVE_APP = !!window.__NATIVE;
+const Wallet = () => (NATIVE_APP && window.TengelWallet) || null;
 function toast(msg, ms = 2400) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms); }
 
 
 // ===== state =====
 // recs/derived = テンゲル基盤データ（マザーデータ・races）… アプリからは書き換えない
 // bets          = 買ったレースの記録（bets）… 実測・回収の「月ごとの収支」だけに使う
-const blankForm = () => ({ id: null, venue: '大井', date: todayJST(), r: '', dist: '', surface: 'ダ', baba: '', n: '', rows: [], tan1: '', s1: '', s1combo: '', s5: '', s5combo: '', s10: '', s10combo: '' });
+const blankForm = () => ({ id: null, venue: '大井', date: todayJST(), r: '', dist: '', surface: 'ダ', baba: '', n: '', rows: [], tan1: '', s1: '', s1combo: '', s5: '', s5combo: '', s10: '', s10combo: '', rname: '', start: '', pid: null });
 // 入力例（架空のレース）。初めて開いたときと「入力例を入れる」で使う
 const exampleForm = () => Object.assign(blankForm(), { example: true, venue: '大井', r: '8', dist: '1400', surface: 'ダ', baba: '稍重', n: '14', s1: '41.3', s1combo: '6-2-10', s5: '58.2', s10: '84.0',
   rows: [[1, 12.4, '3.0-4.6'], [2, 4.1, '1.6-2.2'], [3, 31.5, '6.1-9.8'], [4, 9.8, '2.6-3.9'], [5, 18.2, '4.0-6.2'], [6, 2.4, '1.1-1.3'], [7, 7.6, '2.1-3.1'], [8, 54.0, '9.4-15.0'], [9, 25.9, '5.2-8.1'], [10, 6.3, '1.9-2.7'], [11, 14.7, '3.3-5.1'], [12, 88.6, '13.2-21.1'], [13, 40.2, '7.7-12.2'], [14, 120.5, '18.4-29.6']].map(([no, tan, fuku]) => ({ no, tan: String(tan), fuku })) });
@@ -983,9 +988,11 @@ function slotHome(s, venue) {
 }
 const motherHome = venue => Slots.on ? slotHome(slotObj(Slots.active), venue) : venue === '大井';
 const otherHome = venue => Slots.on ? Slots.list.find(s => !s.active && s.usable && slotHome(s, venue)) || null : null;
+// マザーデータの枠（2つ目・3つ目）はApp Store版ではPカスタムで解放（15,000P）。解放していない枠は🔒
+const slotLocked = n => { const W = Wallet(); return !!(W && !W.slotUnlocked(n)); };
 function slotChipsHTML() {
   if (!Slots.on) return '';
-  return `<div class="slotbar" role="group" aria-label="マザーデータ"><span class="sl-lab">マザーデータ</span>${Slots.list.map(s => `<button type="button" class="slotchip${s.active ? ' on' : ''}${s.count ? '' : ' empty'}" data-slot="${s.n}" aria-pressed="${s.active}"><b>${esc(s.name)}</b><span>${s.count ? s.usable + '走' : '空'}</span></button>`).join('')}</div>`;
+  return `<div class="slotbar" role="group" aria-label="マザーデータ"><span class="sl-lab">マザーデータ</span>${Slots.list.map(s => { const lk = slotLocked(s.n); return `<button type="button" class="slotchip${s.active ? ' on' : ''}${s.count ? '' : ' empty'}${lk ? ' lock' : ''}" data-slot="${s.n}" aria-pressed="${s.active}"><b>${esc(s.name)}</b><span>${lk ? '🔒' : s.count ? s.usable + '走' : '空'}</span></button>`; }).join('')}</div>`;
 }
 function paintSlotBars() { for (const el of $$('[data-slotbar]')) el.innerHTML = slotChipsHTML(); }
 function refreshSlots() {
@@ -996,11 +1003,14 @@ function refreshSlots() {
 }
 async function switchSlot(n) {
   const s = slotObj(n); if (!s || s.active) return;
+  if (slotLocked(n)) { toast(`「${s.name}」は、設定タブの「Pカスタム」で解放すると使えるよ（15,000P）`, 3600); return; }
   if (!s.count) { toast(`「${s.name}」はまだ空だよ。設定タブの「マザーデータ」から入れてね`, 3600); return; }
   try { await window.TengelLocal.slots.setActive(n); toast(`マザーデータを「${s.name}」にしたよ`); }
   catch (err) { toast('切り替えられなかったよ：' + (err && err.message || err), 3600); }
 }
 document.addEventListener('tengel:slots', refreshSlots);
+// ポイント・解放が変わったら（App Store版）：マザーデータの🔒・券種の🔒を描き直す
+document.addEventListener('tengel:wallet', () => { paintSlotBars(); if (st.tab === 'judge') renderRecCard(currentJudge()); if (st.tab === 'rec' && !inputBusy('#recList')) renderRec(); });
 document.addEventListener('click', e => { const b = e.target.closest('.slotchip, .slotchip-go'); if (b && b.dataset.slot) switchSlot(+b.dataset.slot); });
 
 // ===== tabs =====
@@ -1010,6 +1020,7 @@ function setTab(t) {
   $$('[role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
   $('#v-judge').hidden = t !== 'judge'; $('#v-win5').hidden = t !== 'win5'; $('#v-rec').hidden = t !== 'rec'; $('#v-stats').hidden = t !== 'stats'; $('#v-set').hidden = t !== 'set';
   if (t === 'rec') renderRec(); if (t === 'stats') renderStats(); if (t === 'set') renderSet(); if (t === 'win5') renderWin5();
+  if (t === 'judge') renderRecCard(currentJudge());   // 設定（解放・マザーデータ）が変わっていたら描き直す（変わっていなければそのまま）
   document.dispatchEvent(new CustomEvent('tengel:tab', { detail: t }));
   storeSet('tengel.tab', t); window.scrollTo(0, 0);
   if (typeof updateMini === 'function') updateMini();
@@ -1020,7 +1031,9 @@ $$('[role=tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset
 const fR = $('#fR');
 fR.innerHTML = '<option value="">—</option>' + Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}R</option>`).join('');
 $('#venues').innerHTML = Object.keys(VENUES).map(v => `<option value="${v}">`).join('');
-const bindings = [['fVenue', 'venue'], ['fDate', 'date'], ['fR', 'r'], ['fDist', 'dist'], ['fN', 'n'], ['fTan1', 'tan1'], ['fS1', 's1'], ['fS1c', 's1combo'], ['fS5', 's5'], ['fS5c', 's5combo'], ['fS10', 's10'], ['fS10c', 's10combo']];
+const bindings = [['fVenue', 'venue'], ['fDate', 'date'], ['fR', 'r'], ['fDist', 'dist'], ['fN', 'n'], ['fTan1', 'tan1'], ['fS1', 's1'], ['fS1c', 's1combo'], ['fS5', 's5'], ['fS5c', 's5combo'], ['fS10', 's10'], ['fS10c', 's10combo'], ['fRname', 'rname'], ['fStart', 'start']];
+// レース名・発走時刻の欄はApp Store版だけ（同じレースの読み直しの見分け・あとで結果確認のお知らせに使う）
+if (NATIVE_APP) { $('#fRnameWrap').hidden = false; $('#fStartWrap').hidden = false; }
 function formToUI() {
   const f = st.form;
   for (const [id, k] of bindings) $('#' + id).value = f[k] ?? '';
@@ -1407,13 +1420,26 @@ $('#ocrFile').addEventListener('change', async e => {
   /*@/web-only*/
   try {
     const d = await st.sample.json(typeof prompt === 'string' ? prompt : '', { images: files });
+    // App Store版：1レースの読み込みに200P（同じレースの読み直し・同じ5連の予想の中は0P）。足りないときは読み取った中身を入れない
+    const W = Wallet();
+    let paid = null;
+    // 200Pを使うのは、オッズ（単勝の表か3連単1位）が読めたとき。レース情報しか読めなかったときは使わない
+    if (W && d && typeof d === 'object' && ocrPick(d).got.some(g => /^単勝|3連単1位/.test(g))) {
+      paid = await W.readCharge({ form: st.form, ocr: d, w5: st.w5edit ? { date: st.w5.date } : null });
+      if (!paid.ok) { msg.innerHTML = `<div class="banner bad">ポイントが足りないよ（読み込みに <b>${paid.need}P</b>・いま ${paid.have}P）。ポイントを買うと読み取れるよ。<div class="row" style="margin-top:8px"><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button></div></div>`; return; }
+    }
     applyOCR(d || {});
+    if (paid && paid.ok) {
+      if (!st.w5edit) { st.form.pid = paid.pid; storeSet('tengel.form', st.form); }
+      const note = paid.charged ? `${W.COST.read}P 使ったよ（残り ${W.total().toLocaleString('ja-JP')}P）` : paid.free === 'w5' ? '同じ5連の予想の読み込みなので 0P だよ' : '同じレースの読み直しなので 0P だよ';
+      const box = $('#ocrMsg .banner'); if (box) box.insertAdjacentHTML('beforeend', `<br><span class="small">${esc(note)}</span>`);
+    }
   } catch (err) {
     ocrFail(err);
   } finally { btn.disabled = false; }
 });
-function applyOCR(d) {
-  // いったん別の入れ物に読み取って、1つでも読めたときだけ入力欄に入れる（何も読めなかったら、いまの入力はそのまま）
+// 読み取った中身を、いまの入力に重ねた形にする（まだ入力欄には入れない）。got＝読めた項目・miss＝読めなかった項目
+function ocrPick(d) {
   const f = Object.assign({}, st.form), got = [], miss = [];
   const N = v => { const n = parseFloat(z2h(v)); return isFinite(n) ? n : null; };
   const put = (k, v, lab) => { if (v != null && v !== '') { f[k] = String(v); got.push(lab); } else miss.push(lab); };
@@ -1422,6 +1448,8 @@ function applyOCR(d) {
   put('r', N(d.r), 'R'); put('dist', N(d.dist), '距離'); put('n', N(d.n), '頭数');
   if (d.surface === '芝' || d.surface === 'ダ') f.surface = d.surface;
   if (['良', '稍重', '重', '不良'].includes(d.baba)) { f.baba = d.baba; got.push('馬場'); } else miss.push('馬場');
+  // レース名・発走時刻（App Store版：同じレースの読み直しの見分けに使う。読めたときだけ入れる）
+  if (NATIVE_APP) { if (d.rname) { f.rname = String(d.rname).slice(0, 30); got.push('レース名'); } if (d.start && /^\d{1,2}:\d{2}$/.test(d.start)) { f.start = d.start.padStart(5, '0'); got.push('発走'); } }
   const hs = Array.isArray(d.horses) ? d.horses.filter(h => h && N(h.no) && N(h.tan)) : [];
   if (hs.length) { f.rows = hs.map(h => ({ no: N(h.no), tan: String(N(h.tan)), fuku: h.fuku == null ? '' : String(h.fuku) })); got.push(`単勝${hs.length}頭`); if (!hs.some(h => h.fuku)) miss.push('複勝'); }
   else miss.push('単勝');
@@ -1429,11 +1457,18 @@ function applyOCR(d) {
     const o = d[k]; const v = o && N(o.odds);
     if (v) { f[k] = String(v); f[k + 'combo'] = o.combo ? String(o.combo) : ''; got.push(lab); } else miss.push(lab);
   }
-  if (!got.length) { $('#ocrMsg').innerHTML = '<div class="banner warn">オッズの表が見つからなかったよ。<b>単勝・複勝の表</b>（馬番と単勝・複勝のオッズ）と<b>3連単の人気順</b>が、大きくはっきり写るように撮り直してみてね。手で入れてもOKだよ。</div>'; return; }
+  return { f, got, miss };
+}
+const OCR_NONE = '<div class="banner warn">オッズの表が見つからなかったよ。<b>単勝・複勝の表</b>（馬番と単勝・複勝のオッズ）と<b>3連単の人気順</b>が、大きくはっきり写るように撮り直してみてね。手で入れてもOKだよ。</div>';
+function applyOCR(d) {
+  // いったん別の入れ物に読み取って、1つでも読めたときだけ入力欄に入れる（何も読めなかったら、いまの入力はそのまま）
+  const { f, got, miss } = ocrPick(d);
+  if (!got.length) { $('#ocrMsg').innerHTML = OCR_NONE; return false; }
   f.id = null; f.extra = 0; f.hp = null;
   st.form = f;
   formToUI(); changed();
   $('#ocrMsg').innerHTML = `<div class="banner ${miss.length ? 'warn' : 'info'}">読み取った：${esc(got.join('・'))}${miss.length ? `<br>読めなかった：<b>${esc(miss.join('・'))}</b>　→ 手で入れてね` : ''}<br><span class="small">読み間違いがないか、オッズと頭数だけは画面と見比べてね。</span></div>`;
+  return true;
 }
 
 
@@ -1474,8 +1509,10 @@ function nosOf(b) {
 }
 // 買った券種：馬単・3連単はテンゲルの「買ったゾーン」と着順で自動判定（テンゲルの仕組みのまま）。
 // ほかの券種（単勝・複勝・馬連・ワイド・3連複）はテンゲルのゾーンがないので、回収額で判定（入っていたら的中・0なら外れ・空なら結果待ち）
-const BET_TYPES = ['単勝', '複勝', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
+// App Store版は枠複・枠単も（回収額で判定）。単勝・馬単・3連単はいつでも使えて、ほかはPカスタムで解放（Web版は今までどおり7券種）
+const BET_TYPES = NATIVE_APP ? ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'] : ['単勝', '複勝', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
 const ZONE_TYPES = ['馬単', '3連単'];
+const typeLocked = t => { const W = Wallet(); return !!(W && W.typeLocked(t)); };
 const typesOf = b => b.types && b.types.length ? b.types : ['馬単'];
 // 券種ごとの金額 {stake, payout}（数値）。amt がない前の記録は、券種が1つならその券種に合計を入れる。2つ以上なら分けられないので null
 function amtOf(b, t) {
@@ -1636,13 +1673,13 @@ function mSlotDefault(race) {
   let n = 0;
   if (race.isOi !== false) { const s = race.mother ? Slots.list.find(x => x.name === race.mother) : null; n = s ? s.n : Slots.active; }
   else { const alt = otherHome(race.venue || ''); n = alt ? alt.n : 0; }
-  if (n && window.TengelMother.find(n, race.date, race.r)) return 0;
+  if (n && (window.TengelMother.find(n, race.date, race.r) || slotLocked(n))) return 0;
   return n;
 }
 function motherFieldHTML(v, ctx) {
   if (!motherOn()) return '';
   const sel = v.mslot != null ? +v.mslot : (ctx.defSlot || 0);
-  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
+  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.filter(s => !slotLocked(s.n) || sel === s.n).map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
   return `<div class="f s6 mfld" data-k="mfld"><span class="lab">マザーデータにも入れる（参考的中率・実測に使うレースのデータになるよ）</span>
     <div class="mrow"><select data-k="mslot" aria-label="入れるマザーデータ">${opts}</select></div>
     <div class="mpays" data-k="mpays"${sel ? '' : ' hidden'}><label>馬単の払戻（100円）<input type="number" inputmode="numeric" data-k="upay" value="${esc(v.upay || '')}" placeholder="あれば"></label><label>3連単の払戻（100円）<input type="number" inputmode="numeric" data-k="spay" value="${esc(v.spay || '')}" placeholder="あれば"></label></div>
@@ -1680,7 +1717,7 @@ function recFormHTML(v, ctx) {
   return `<div class="recbox recf" data-id="${esc(v.id || '')}" data-scope="${ctx.scope}" data-sfx="${esc(sfx)}">
     <div class="recstatus" data-k="status"></div>
     <div class="fields">
-      <div class="f s6"><span class="lab">買った券種（いくつでも選べるよ）</span><div class="toggles bettypes" data-k="types">${BET_TYPES.map(t => `<button type="button" data-v="${t}" aria-pressed="${v.types.includes(t)}">${t}</button>`).join('')}</div></div>
+      <div class="f s6"><span class="lab">買った券種（いくつでも選べるよ${NATIVE_APP ? '・🔒はPカスタムで解放' : ''}）</span><div class="toggles bettypes" data-k="types">${BET_TYPES.map(t => { const lk = typeLocked(t) && !v.types.includes(t); return `<button type="button" data-v="${t}" class="${lk ? 'lock' : ''}" aria-pressed="${v.types.includes(t)}"${lk ? ' data-locked="1"' : ''}>${t}</button>`; }).join('')}</div></div>
       <div class="f s6"><span class="lab">券種ごとの金額（円）：購入額 → 回収額（外れは0）</span><div class="amts" data-k="amts">${amtRowsHTML(v, sfx)}</div><div class="small muted" data-k="amtsum"></div>${v.legacy ? '<div class="small muted">前の記録は券種ごとに分けていないから、合計を先頭の券種に入れてあるよ（分けたいときは直して保存してね）</div>' : ''}</div>
       ${(ctx.zones || []).length ? `<div class="f s6" data-k="buyzf"${v.types.some(t => ZONE_TYPES.includes(t)) ? '' : ' hidden'}><span class="lab">買ったゾーン（押して選んでね・馬単と3連単の判定に使うよ）</span><div class="toggles zbuy" data-k="buyz">${ctx.zones.map((z, i) => `<button type="button" data-v="${esc(zKey(z))}" aria-pressed="${(v.buyZ || []).includes(zKey(z))}">第${i + 1}　${esc(z.label)}</button>`).join('')}</div></div>` : ''}
       <div class="f s3"><span class="lab">着順の入れ方</span><div class="seg" data-k="mode"><button type="button" data-v="no" aria-pressed="${v.mode === 'no'}"${ctx.canNo ? '' : ' disabled'}>馬番</button><button type="button" data-v="nin" aria-pressed="${v.mode === 'nin'}">人気</button></div></div>
@@ -1772,6 +1809,7 @@ function wireRecf(container) {
     if (grp === 'buyz') { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); }
     else if (grp === 'types') {
       const on = b.getAttribute('aria-pressed') !== 'true';
+      if (on && b.dataset.locked) { toast(`${b.dataset.v}は、設定タブの「Pカスタム」で解放すると選べるよ（1つ500P）`, 3600); return; }
       if (!on && $$('[data-k=types] button[aria-pressed=true]', box).length === 1) { toast('券種は1つ以上選んでね'); return; }
       b.setAttribute('aria-pressed', String(on));
       const v = readRecf(box), wrap = $('[data-k=amts]', box);
@@ -1810,8 +1848,7 @@ async function saveRecf(box, extBtn) {
     id = J.id; if (!id) return fail('日付とレース番号を入れてね');
     horses = J.horses.map(h => ({ no: h.no, tan: h.tan }));
     const f = st.form;
-    base = { date: f.date, venue: J.venue, r: +f.r, dist: +f.dist, surface: f.surface, baba: f.baba, n: +f.n, tan1: J.x.tan1, s1: J.x.s1, s5: J.s5, s10: J.s10,
-      s1combo: f.s1combo || '', s5combo: f.s5combo || '', s10combo: f.s10combo || '', horses: J.horses.map(h => ({ no: h.no, tan: h.tan, fuku: h.fukuRaw || null })), snap: snapOf(J), judgeText: buildText(J), hp: f.hp || null };
+    base = { ...raceBase(J), judgeText: buildText(J) };
   } else { id = box.dataset.id; const b = st.bets.get(id); if (!b) return; horses = b.horses || []; }
   const p = parseResStr(v.res, v.mode, horses); if (p.err) return fail(p.err);
   const types = v.types.length ? v.types : ['馬単'], amt = {};
@@ -1836,6 +1873,7 @@ async function saveRecf(box, extBtn) {
     const isNew = !st.bets.has(id);
     await writeBet(id, isNew ? { ...base, ...fields, createdAt: fields.updatedAt } : (base ? { ...base, ...fields } : fields), isNew);
     if (scope === 'judge' && st.draft) st.draft.dirty = false;
+    countMission({ ...(prevB || {}), ...(base || {}), ...fields, id });
     let mmsg = '';
     if (mslot && mRes) {
       try {
@@ -1852,10 +1890,15 @@ async function saveRecf(box, extBtn) {
   finally { btns.forEach(x => x.disabled = false); }
 }
 function raceBase(J) {
-  const f = st.form;
-  return { date: f.date, venue: J.venue, r: +f.r, dist: +f.dist, surface: f.surface, baba: f.baba, n: +f.n, tan1: J.x.tan1, s1: J.x.s1, s5: J.s5, s10: J.s10,
+  const f = st.form, prev = st.bets.get(J.id) || {};
+  const o = { date: f.date, venue: J.venue, r: +f.r, dist: +f.dist, surface: f.surface, baba: f.baba, n: +f.n, tan1: J.x.tan1, s1: J.x.s1, s5: J.s5, s10: J.s10,
     s1combo: f.s1combo || '', s5combo: f.s5combo || '', s10combo: f.s10combo || '', horses: J.horses.map(h => ({ no: h.no, tan: h.tan, fuku: h.fukuRaw || null })), snap: snapOf(J), hp: f.hp || null };
+  // App Store版：レース名・発走時刻と、200Pを使って読み込んだしるし（pid。ミッションに数える）
+  if (NATIVE_APP) { o.rname = f.rname || prev.rname || ''; o.start = f.start || prev.start || ''; o.pid = f.pid || prev.pid || null; }
+  return o;
 }
+// 記録を保存したら、ミッション（記録したレースの数）に数える（App Store版・200Pを使って読み込んだレースだけ。同じレースは1回）
+function countMission(b) { const W = Wallet(); if (W && b) W.countRace(b).catch(() => {}); }
 async function saveJudgeOnly(btn) {
   if (!st.db) return toast('記録に接続できていないよ');
   const J = currentJudge(); if (!J.ok) return toast('先に判定に必要な項目を入れてね');
@@ -1867,6 +1910,7 @@ async function saveJudgeOnly(btn) {
     const ref = st.db.collection('bets').doc(J.id);
     if (st.bets.has(J.id)) await ref.update(base);
     else await ref.set({ ...base, types: ['馬単'], buyZ: [], stake: null, payout: null, other: '', p1: null, p2: null, p3: null, n1: null, n2: null, n3: null, note: '', createdAt: now });
+    countMission({ ...base, id: J.id });
     toast(`${J.venue}${J.x.r}R の判定を保存したよ`);
   } catch (e) { writeErr(e); }
   finally { btn.disabled = false; }
@@ -1883,7 +1927,7 @@ function renderRecCard(J, force) {
   const id = J.id, b = st.bets.get(id) || null, canNo = J.horses.length > 0;
   const focused = card.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
   const zones = snapOf(J).zones;
-  const sig = [id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', st.canWrite, !!st.db, zones.map(zKey).join(','), motherOn() ? Slots.list.map(s => s.n + ':' + s.count + ':' + s.name).join(',') : ''].join('|');
+  const sig = [id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', st.canWrite, !!st.db, zones.map(zKey).join(','), motherOn() ? Slots.list.map(s => s.n + ':' + s.count + ':' + s.name + (slotLocked(s.n) ? 'L' : '')).join(',') : '', BET_TYPES.filter(typeLocked).join('')].join('|');
   if (!force && card.dataset.sig === sig) { const box = $('.recf', card); if (box) updateRecPreview(box); return; }
   if (focused && card.dataset.id === id && !force) { const box = $('.recf', card); if (box) updateRecPreview(box); return; }
   if (!st.draft || st.draft.id !== id || !st.draft.dirty) st.draft = draftFrom(b ? { ...b, id } : { id }, canNo);
@@ -1978,7 +2022,7 @@ $('#rFilters').addEventListener('click', e => { const b = e.target.closest('.fch
 const dlabel = d => { const [y, m, dd] = d.split('-'); const wd = '日月火水木金土'[new Date(+y, +m - 1, +dd).getDay()]; return `${+m}/${+dd}（${wd}）`; };
 function loadBetToForm(b) {
   st.form = Object.assign(blankForm(), { venue: b.venue || '大井', date: b.date, r: String(b.r), dist: String(b.dist ?? ''), surface: b.surface || 'ダ', baba: b.baba || '', n: String(b.n ?? ''), tan1: String(b.tan1 ?? ''), s1: String(b.s1 ?? ''), s5: b.s5 == null ? '' : String(b.s5), s10: b.s10 == null ? '' : String(b.s10), s1combo: b.s1combo || '', s5combo: b.s5combo || '', s10combo: b.s10combo || '',
-    rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null });
+    rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null, rname: b.rname || '', start: b.start || '', pid: b.pid || null });
   st.draft = null; formToUI(); storeSet('tengel.form', st.form); setTab('judge'); renderResult(); toast(`${dlabel(b.date)} ${b.venue || '大井'}${b.r}R を開いたよ`);
 }
 // 書き出し

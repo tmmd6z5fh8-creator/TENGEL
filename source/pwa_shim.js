@@ -33,8 +33,16 @@ if (window.__NATIVE) (function () {
     readText: function (b64) { return call('ocr', { data: b64 }); },
     // テスト用：時計・電波・ホームバーに重なる分の測り方
     layout: function () { return call('layout', {}); },
-    loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+    loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); },
+    // 拡大（2本指）：{ reset: 1倍にもどす, lock: 拡大を止める／もどす }（演出・アプリを開いた時の画面で使う）
+    zoom: function (o) { return call('zoom', o || {}); },
+    // キーチェーンの「しるし」（初回プレゼント・サブスクの取引の番号）：{ ok, value, has }。ユーザーのデータは入れない
+    marker: function (op, key, value) { return call('marker', { op: op, key: key, value: value }); },
+    // App内課金（StoreKit 2）：op＝products・buy・restore・unfinished・current・finish・status
+    iap: function (op, p) { return call('iap', Object.assign({ op: op }, p || {})); }
   };
+  // アプリからの知らせ（新しい取引など）：window.__nativeEvent(name, payload) → document の 'tengel:native'
+  window.__nativeEvent = function (name, payload) { try { document.dispatchEvent(new CustomEvent('tengel:native', { detail: { name: name, payload: payload } })); } catch (e) {} };
   // コピーは、アプリがiPhoneのクリップボードに直接入れる
   try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: function (t) { return call('copy', String(t)); } } }); } catch (e) {}
 })();

@@ -59,7 +59,9 @@ DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！�
 
 ◆サブスク（1か月・自動更新・価格は税込）
 ''' + '\n'.join(f'・{s[2]}：月額{yen(tax(s[6]))}' + (f'（うちボーナス{s[5]:,}P）' if s[5] else '') for s in SUBS) + '''
-・サブスクで届いたポイントは、届いた日から30日間使えます
+・サブスクで届いたポイントは、届いた日から30日間使えます（次の月のポイントが届いても、期限までは残ります）
+・無料トライアルはありません
+・ポイントはこの端末の中だけに保存されます。アプリを削除すると、ポイント・解放したもの・記録は消え、もどせません
 
 ◆自動更新のサブスクについて
 ・お支払い：購入を確定したときに、Apple Accountに請求されます
@@ -83,7 +85,7 @@ DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！�
 プライバシーポリシー：''' + WEB + '''privacy.html
 
 ◆対応OS
-iOS 16以降のiPhone、iPadOS 16以降のiPad'''
+iOS 16以降のiPhone（iPadOS 16以降のiPadでも、iPhoneと同じ画面で使えます）'''
 KEYWORDS = '3連単,三連単,万馬券,回収率,オッズ分析,データ分析,競馬アプリ,穴狙い'
 SUPPORT_URL = WEB + 'support.html'
 PRIVACY_URL = WEB + 'privacy.html'
@@ -96,7 +98,10 @@ Points (in-app currency):
 - New users receive 1,500 points on first launch (no purchase needed).
 - Judging a race (reading the user's screenshots on the device and showing the result) uses 200 points. Building a 5-race pick uses 200 points.
 - Points can unlock more bet types for the record (500 points each) and an extra data slot (15,000 points).
-- Points are sold as consumable in-app purchases and granted monthly by auto-renewable subscriptions (Settings > ポイント). Purchased points never expire.
+- Points are sold as consumable in-app purchases and granted monthly by auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points can be used for 30 days from delivery. There is no free trial.
+- Points, unlocks and records are stored only on the device. The app tells the user before buying that deleting the app erases them; only a small marker (first-launch gift received, subscription transaction IDs already credited) is kept in the Keychain so the same points cannot be granted twice.
+- On first launch the app shows a notice screen (horse-race betting is for ages 20+, play responsibly, the app does not sell betting tickets and promises no profit) that the user confirms with 「はじめる」.
+- The app is iPhone-only (UIDeviceFamily 1, portrait). On iPad it runs in iPhone compatibility mode.
 
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.

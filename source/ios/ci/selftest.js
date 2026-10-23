@@ -43,11 +43,34 @@
     rows: [[1, 12.4, '3.0-4.6'], [2, 4.1, '1.6-2.2'], [3, 31.5, '6.1-9.8'], [4, 9.8, '2.6-3.9'], [5, 18.2, '4.0-6.2'], [6, 2.4, '1.1-1.3'], [7, 7.6, '2.1-3.1'], [8, 54.0, '9.4-15.0'], [9, 25.9, '5.2-8.1'], [10, 6.3, '1.9-2.7'], [11, 14.7, '3.3-5.1'], [12, 88.6, '13.2-21.1'], [13, 40.2, '7.7-12.2'], [14, 120.5, '18.4-29.6']].map(function (x) { return { no: x[0], tan: String(x[1]), fuku: x[2] }; }) };
   var isManual = /manual\.html$/.test(location.pathname);
 
+  // アプリを開いた時の画面（19章）：はじめては「はじめる」を押す、2回目からはタップでとばす（その前にスクショ）
+  async function gate(shot) {
+    var g = await waitFor(function () { var x = document.querySelector('#gate'); return x && !x.hidden ? x : null; }, 4000);
+    if (!g) return 'none';
+    var kind = document.querySelector('#gateGo') ? 'first' : 'splash';
+    if (shot) await mark('gate-' + kind);
+    for (var i = 0; i < 20; i++) {
+      var go = document.querySelector('#gateGo'); if (go) go.click(); else g.click();
+      await sleep(250);
+      if (g.hidden) break;
+    }
+    return kind;
+  }
   async function ready() {
     await loaded();
     await waitFor(function () { return window.TengelLocal; }, 20000);
     await window.TengelLocal.ready.catch(function () {});
-    await sleep(1200);
+    await sleep(600);
+    window.__gate = await gate(PH === 1 && !sessionStorage.getItem('st1done'));
+    if (window.TengelWallet) await window.TengelWallet.ready;
+    await sleep(600);
+  }
+  // ポイント（App Store版）：残高・できごと・キーチェーンのしるし・拡大の状態
+  async function wallet() {
+    var W = window.TengelWallet; if (!W) return null;
+    var m = await TengelNative.marker('get', 'gift-first').catch(function (e) { return { error: String(e) }; });
+    var z = await TengelNative.zoom({}).catch(function (e) { return { error: String(e) }; });
+    return { total: W.total(), balance: W.balance(), events: W.events().map(function (e) { return e.id + ':' + e.amount; }), counted: W.countedN(), gift: m, zoom: z, viewport: (document.querySelector('meta[name=viewport]') || {}).content, gate: window.__gate };
   }
   function basic() {
     var TL = window.TengelLocal;
@@ -70,6 +93,7 @@
     await ready();
     var R = { phase: 1, device: DEV };
     R.basic = basic();
+    await step(R, 'wallet', wallet);
     await mark('main');
     await step(R, 'save', async function () {
       var card = document.querySelector('#recCard');
@@ -105,6 +129,9 @@
         venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
         s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines };
     });
+    await step(R, 'wallet2', wallet);
+    // App内課金：商品（シミュレーターでは App Store Connect の設定がないので、読めないことが多い。読めなくてもアプリは動く）
+    await step(R, 'iap', async function () { return await TengelNative.iap('products'); });
     await step(R, 'layout', async function () { var L = await TengelNative.layout(); L.cssTop = getComputedStyle(document.documentElement).getPropertyValue('--top-inset'); L.cssBottom = getComputedStyle(document.documentElement).getPropertyValue('--bottom-inset'); L.padTop = getComputedStyle(document.documentElement).paddingTop; L.padBottom = getComputedStyle(document.documentElement).paddingBottom; return L; });
     // App Storeの版（アプリがAppleに聞く）・データの更新（GitHub Pages を tengel:// から読めるか＝CORS）・マザーデータに入ったか
     await step(R, 'store', async function () { return await TengelNative.storeInfo(); });
@@ -134,7 +161,8 @@
     var nc = document.querySelector('#nuCheck'); if (nc) nc.click();
     var sc = document.querySelector('#sdCheck'); if (sc) sc.click();
     await sleep(4000);
-    R.settings = { update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null, cmPoster: (function () { var i = document.querySelector('#setCM img'); return i ? i.naturalWidth : -1; })() };
+    var ptc = document.querySelector('#setPoints'); if (ptc) { ptc.scrollIntoView({ block: 'start' }); await sleep(500); await mark('points'); }
+    R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null, cmPoster: (function () { var i = document.querySelector('#setCM img'); return i ? i.naturalWidth : -1; })() };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
     R.settings.backup = bk ? bk.innerText : null;
@@ -163,7 +191,7 @@
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);
     await sleep(500);
-    sessionStorage.setItem('st1', 'done');
+    sessionStorage.setItem('st1', 'done'); sessionStorage.setItem('st1done', '1');
     location.href = 'manual.html';
   }
   async function manualPage() {
@@ -193,6 +221,7 @@
     var R = { phase: 2, device: DEV };
     R.basic = basic();
     R.persist = { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), form: !!localStorage.getItem('tengel.form') };
+    await step(R, 'wallet', wallet);
     await sleep(2500);
     await step(R, 'autobackup', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, at: s.at } : null; });
     await step(R, 'deleteDB', function () {
@@ -210,11 +239,13 @@
     var box = await waitFor(function () { return document.querySelector('#nativeRestore'); }, 20000);
     R.offer = box ? box.innerText : null;
     R.before = { bets: TengelLocal.mem.bets.size, races: TengelLocal.mem.races.size };
+    await step(R, 'walletBefore', wallet);   // 保存場所を消したあと：初回の1,500Pはもう出ない（キーチェーンのしるし）
     await mark('offer');
     var yes = document.querySelector('#nativeRestore [data-nr=yes]'); if (yes) yes.click();
     await waitFor(function () { return TengelLocal.mem.bets.size > 0; }, 10000);
     await sleep(800);
     R.after = { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), toast: (document.querySelector('#toast') || {}).textContent, offer: !!document.querySelector('#nativeRestore') };
+    await step(R, 'walletAfter', wallet);   // 戻すと台帳も戻る
     await mark('restored');
     await sleep(1500);
     await step(R, 'autobackup', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, at: s.at } : null; });

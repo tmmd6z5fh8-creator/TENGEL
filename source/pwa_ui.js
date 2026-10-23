@@ -305,7 +305,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
 </div>`}
 <div class="card setsec" id="setBackup">
   <h2>バックアップ（記録を守る）</h2>
-  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'
+  ${NATIVE ? '<p class="hint">記録はこのアプリの中に入っているよ。アプリの中にも<b>自動でバックアップ</b>しているけど、機種変更やアプリを消しちゃったときのために、ときどき<b>ファイルに保存</b>してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。ポイント・解放したものはファイルには入らないよ（この端末の中だけ）。</p>'
     : '<p class="hint">記録はこのiPhoneの中だけに入っているよ。ときどき保存しておくと、機種変更やアイコンを消しちゃったときに戻せるよ（ファイルアプリやLINEのKeepなどに保存してね）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。</p>'}
   <dl class="kvs"><dt>記録</dt><dd id="sbCount">—</dd><dt>最後のバックアップ</dt><dd id="sbLast">まだしてないよ</dd>${NATIVE ? '<dt>自動バックアップ</dt><dd id="sbAuto">—</dd>' : ''}</dl>
   <div class="row"><button class="btn primary" type="button" id="pwaBackup">バックアップを保存</button><button class="btn" type="button" id="pwaRestore">バックアップから戻す</button><input type="file" id="pwaRestoreFile" accept=".json,application/json" hidden></div>
@@ -318,7 +318,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   function goSettings(sec) {
     const tb = document.querySelector('.tabbar [data-tab=set]');
     if (tb && getComputedStyle(tb.parentNode).display !== 'none') tb.click(); else { const t2 = document.querySelector('.tabs-top [data-tab=set]'); if (t2) t2.click(); }
-    setTimeout(() => { const s = document.getElementById({ ocr: 'setOcr', backup: 'setBackup', mother: 'setMother', data: 'setData', update: 'setUpdate' }[sec] || 'setMother'); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
+    setTimeout(() => { const s = document.getElementById({ ocr: 'setOcr', backup: 'setBackup', mother: 'setMother', data: 'setData', update: 'setUpdate', points: 'setPoints', custom: 'setCustom', mission: 'setMission' }[sec] || 'setMother'); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
   }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-goset]'); if (b) { e.preventDefault(); goSettings(b.dataset.goset); } });
 
@@ -328,9 +328,16 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   const curEdit = () => editN || L().active();
   const srcText = s => (s.n === 1 && s.source === 'app' ? 'アプリに入っていた大井データ' : s.source === 'excel' ? `Excel${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'csv' ? `CSV${s.file ? '「' + esc(s.file) + '」' : ''}から（${when(s.at)}）` : s.source === 'paste' ? `貼り付けで（${when(s.at)}）` : s.source === 'input' ? 'アプリで入力' : '')
     + (s.inputN && s.source !== 'input' ? `・自分で足したレース ${s.inputN}走` : '');
+  // マザーデータの枠（2つ目・3つ目）はApp Store版ではPカスタムで解放（15,000P）。解放していない枠は🔒で、編集も使うもできない
+  const slotLocked = n => !!(NATIVE && window.TengelWallet && !window.TengelWallet.slotUnlocked(n));
   function slotRowHTML(s, en) {
     const how = s.count ? `${s.count}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ</span>'}` : 'まだ空だよ';
     const src = s.count ? srcText(s) : '';
+    if (slotLocked(s.n)) return `<div class="slotrow lock" data-n="${s.n}">
+      <div><div class="sr-name"><span class="sr-no">${s.n}</span><b>${esc(s.name)}</b></div>
+        <div class="sr-sub">Pカスタムで解放すると使えるよ（15,000P）。自分のExcelや判定したレースで、自分だけのマザーデータを作れるよ</div></div>
+      <div class="sr-act"><button class="btn primary" type="button" data-gopt="custom">解放する</button></div>
+    </div>`;
     return `<div class="slotrow${s.active ? ' on' : ''}${en === s.n ? ' edit' : ''}" data-n="${s.n}">
       <div><div class="sr-name"><span class="sr-no">${s.n}</span><b>${esc(s.name)}</b>${s.active ? '<span class="chip cus">使用中</span>' : ''}</div>
         <div class="sr-sub">${how}${src ? '<br>' + src : ''}</div></div>
@@ -339,7 +346,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   }
   function paintSlots(forcePanel) {
     const box = $('#slotList'); if (!box) return;
-    const en = curEdit(), list = L().info();
+    let en = curEdit(); const list = L().info();
+    if (slotLocked(en)) { editN = null; en = curEdit(); if (slotLocked(en)) en = 1; }
     box.innerHTML = list.map(s => slotRowHTML(s, en)).join('');
     const ed = $('#slotEdit');
     const busy = ed.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
@@ -475,6 +483,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#slotList').onclick = e => {
       const b = e.target.closest('[data-sact]'); if (!b) return;
       const n = +b.closest('.slotrow').dataset.n;
+      if (slotLocked(n)) { toast('この枠は、設定タブの「Pカスタム」で解放すると使えるよ（15,000P）', 3600); return; }
       if (b.dataset.sact === 'use') {
         const nm = L().info().find(x => x.n === n).name;
         L().setActive(n).then(() => toast(`マザーデータを「${nm}」にしたよ`)).catch(err => toast('切り替えられなかったよ：' + (err && err.message || err), 3600));
@@ -821,7 +830,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <div class="row"><button class="btn" type="button" id="nuCheck">新しい版があるか確認</button><a class="btn primary" id="nuOpen" hidden target="_blank" rel="noopener" href="#">App Storeで更新する</a></div>
   <p class="small" id="nuMsg" style="margin:8px 0 0"></p>
   <p class="hint">アプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>。</p>
-  <div class="banner warn">⚠️ アプリを削除すると、中の記録も一緒に消えちゃうの。削除する前に、下の「バックアップを保存」でファイルに保存してね。</div>
+  <div class="banner warn">⚠️ アプリを削除すると、中の記録・ポイント・解放したものも一緒に消えて、もどせないの。削除する前に、下の「バックアップを保存」で記録をファイルに保存してね（ポイントはファイルに入らないよ）。</div>
 </div>
 <div class="card setsec" id="setData">
   <h2>データの更新</h2>
@@ -944,7 +953,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     if (NATIVE) paintAuto();
   }
   // バックアップの中身（記録・買い目の設定・マザーデータの名前と使う番号・2・3つ目・Excelで入れた大井データ）。APIキーは入れない
-  async function makeBackup() {
+  // auto＝アプリの中の自動バックアップ：ポイントの台帳（wallet）も入れる。書き出すバックアップ（共有シート）には入れない（書きかえて増やせないように）
+  async function makeBackup(auto) {
     const bets = Array.from(TengelLocal.mem.bets.values());
     const zones = await TengelLocal.getSetting('zones').catch(() => undefined);
     const meta = await TengelLocal.motherMeta().catch(() => null);
@@ -953,6 +963,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     else { const add = L().rows(1).filter(r => r && r.src); if (add.length) data.motherAdd = add; }   // アプリに入っているデータに、自分で足したレース
     data.slots = { names: L().names(), active: L().active(), data: {} };
     [2, 3].forEach(n => { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; });
+    if (auto && window.TengelWallet) { const w = window.TengelWallet.snapshot(); if (w) data.wallet = w; }
     return { data, zones, nSlots: Object.keys(data.slots.data).length };
   }
   // バックアップから戻す（同じレースの記録は新しい方を残す・マザーデータは新しいときだけ）。返り値＝お知らせの文
@@ -968,10 +979,16 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       msg.push(d.settings.zones ? '買い目の設定も戻したよ' : '買い目は初期の設定にしたよ');
     }
     const last = rs => rs.reduce((m, r) => r.date > m ? r.date : m, '');
+    // ポイントの台帳（アプリの中の自動バックアップにだけ入っている）。書き出したファイルには入っていない
+    if (d.wallet && d.auto && window.TengelWallet) {
+      const w = window.TengelWallet;
+      if (w.isEmpty()) { const ok = await w.restore(d.wallet).catch(() => false); if (ok) msg.push(`ポイント（${w.total().toLocaleString('ja-JP')}P）も戻したよ`); }
+    }
     if (d.slots) {
       for (const n of [1, 2, 3]) if (d.slots.names && d.slots.names[n]) await L().rename(n, d.slots.names[n]);
       for (const n of [2, 3]) {
         const doc = d.slots.data && d.slots.data[n]; if (!doc || !Array.isArray(doc.rows) || !doc.rows.length) continue;
+        if (slotLocked(n)) { msg.push(`「${L().names()[n]}」の枠は解放していないので、そのデータは入れなかったよ`); continue; }
         const cur = L().rows(n), bl = last(doc.rows), cl = last(cur);
         if (!cur.length || bl > cl || (bl === cl && doc.rows.length > cur.length)) { await L().replace(n, doc.rows, { source: doc.source || 'excel', file: doc.file || '' }); msg.push(`「${L().names()[n]}」のデータ${doc.rows.length}走も戻したよ`); }
       }
@@ -994,7 +1011,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   function wireBackup() {
     paintBackup();
     $('#pwaBackup').onclick = async () => {
-      const { data, zones, nSlots } = await makeBackup();
+      const { data, zones, nSlots } = await makeBackup(false);
       const bets = data.bets, name = 'テンゲル記録_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.json', text = JSON.stringify(data);
       const doneMsg = how => { $('#pwaBkInfo').textContent = `記録${bets.length}件${zones ? '・買い目の設定' : ''}・マザーデータの名前${data.mother ? '・大井データ' : ''}${data.motherAdd ? `・自分で入れたレース${data.motherAdd.length}走` : ''}${nSlots ? `・マザーデータ${nSlots}つ分` : ''}を${how}よ`; TengelLocal.putMeta({ id: 'backup', at: data.at, n: bets.length }).then(paintBackup); };
       if (NATIVE) {
@@ -1030,7 +1047,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     autoT = null;
     autoChain = autoChain.then(async () => {
       if (autoHold || TengelLocal.memOnly()) return;
-      const { data } = await makeBackup(); data.auto = true;
+      if (window.TengelWallet) await window.TengelWallet.ready;
+      const { data } = await makeBackup(true); data.auto = true;
       await window.TengelNative.saveBackup(JSON.stringify(data));
       lastAuto = { at: data.at, n: data.bets.length }; paintAuto();
     }).catch(() => { /* 次に保存したときに、また書く */ });
@@ -1046,8 +1064,9 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       document.head.appendChild(st);
     }
     const n = saved.bets.length, box = document.createElement('div');
+    const wn = saved.wallet && Array.isArray(saved.wallet.events) ? saved.wallet.events.length : 0;
     box.id = 'nativeRestore'; box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'nrTitle');
-    box.innerHTML = `<div class="nrbox"><h3 id="nrTitle">前の記録が見つかったよ</h3><p>このアプリの中の自動バックアップに、買ったレースの記録が<b>${n}件</b>あるよ（${esc(when(saved.at) || '日時不明')}）。いまのアプリには記録が入っていないの。戻す？</p>`
+    box.innerHTML = `<div class="nrbox"><h3 id="nrTitle">前の記録が見つかったよ</h3><p>このアプリの中の自動バックアップに、買ったレースの記録が<b>${n}件</b>${wn ? 'とポイントの台帳' : ''}あるよ（${esc(when(saved.at) || '日時不明')}）。いまのアプリには記録が入っていないの。戻す？</p>`
       + '<div class="row"><button class="btn primary" type="button" data-nr="yes">記録を戻す</button><button class="btn ghost" type="button" data-nr="no">戻さない</button></div></div>';
     document.body.appendChild(box);
     box.addEventListener('click', e => {
@@ -1071,11 +1090,14 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && autoT) { clearTimeout(autoT); runAuto(); } });
     TengelLocal.ready.then(() => {
       if (TengelLocal.memOnly()) return;
-      return window.TengelNative.loadBackup().then(saved => {
+      return window.TengelNative.loadBackup().then(async saved => {
         const n = saved && Array.isArray(saved.bets) ? saved.bets.length : 0;
         if (saved && saved.at) lastAuto = { at: saved.at, n };
         paintAuto();
-        if (!TengelLocal.mem.bets.size && n) { offerRestore(saved); return; }
+        // 記録が0件なのに自動バックアップに記録がある（保存場所が消えた）→ 戻す？（ポイントの台帳も一緒に戻る）
+        const W = window.TengelWallet; if (W) await W.ready;
+        const wn = saved && saved.wallet && Array.isArray(saved.wallet.events) ? saved.wallet.events.length : 0;
+        if (!TengelLocal.mem.bets.size && (n || (wn && W && W.isEmpty()))) { offerRestore(saved); return; }
         autoHold = false; scheduleAuto(800);
       });
     }).catch(() => {});

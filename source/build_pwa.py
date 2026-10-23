@@ -60,6 +60,11 @@ if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
     # App Store版のアプリの中で見せる版（最後の案内がアプリの言い方）。アプリはこれを公開中のWeb版から読む
     if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm_app.mp4')):
         CM['srcApp'] = 'cm/tengel3_cm_app.mp4?v=' + _h('tengel3_cm_app.mp4')
+# App Store版だけ：アプリを開いた時の画面（19章）の入れ物を最初から出しておく（画面が一瞬見えないように。中身は points_ui.js）・
+# 2本指の拡大はOK・ダブルタップでは拡大しない（touch-action: manipulation）
+APP_HEAD = ('<style>body{touch-action:manipulation}#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B}</style>'
+            if TARGET == 'app' else '')
+APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="はじめに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
 head = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -67,6 +72,7 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
+{APP_HEAD}
 <script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('ocr_local.js', encoding='utf8').read()}
@@ -74,8 +80,12 @@ head = f'''<!DOCTYPE html>
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>
-'''
-html = head + page + '\n<script>\n' + open('pwa_ui.js', encoding='utf8').read() + '\n</script>\n</body></html>\n'
+{APP_BODY}'''
+html = head + page + '\n<script>\n' + open('pwa_ui.js', encoding='utf8').read() + '\n</script>\n'
+if TARGET == 'app':
+    # ポイント・Pカスタム・ミッション・アプリを開いた時の画面・拡大（App Store版だけ。Web版の動きは変えない）
+    html += '<script>\n' + open('points.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('points_ui.js', encoding='utf8').read() + '\n</script>\n'
+html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
 open(f'{out}/index.html', 'w', encoding='utf8').write(html)

@@ -106,6 +106,21 @@
     }
     // 頭数
     if ((m = /(\d{1,2})\s*頭/.exec(text))) { var n = +m[1]; if (n >= 2 && n <= 18) H.n = n; }
+    // 発走時刻（「発走 18:05」「18:05 発走」。なければ 9:00〜21:59 の時刻が1つだけのとき）：同じレースの読み直しの見分けに使う
+    H.start = null;
+    if ((m = /発走\s*[:：]?\s*(\d{1,2}):(\d{2})/.exec(text)) || (m = /(\d{1,2}):(\d{2})\s*発走/.exec(text))) H.start = pad(m[1]) + ':' + m[2];
+    else {
+      var times = [], tre = /(?:^|[^\d:])(\d{1,2}):(\d{2})(?![\d:])/g;
+      while ((m = tre.exec(text))) { var hh = +m[1], mm = +m[2]; if (hh >= 9 && hh <= 21 && mm <= 59) times.push(pad(hh) + ':' + m[2]); }
+      if (times.length === 1) H.start = times[0];
+    }
+    // レース名（「第9競走 ○○特別」のように、R のあとに続く言葉。ない・読めないときは null。推測はしない）
+    H.rname = null;
+    if ((m = /(?:第\s*\d{1,2}\s*(?:競走|レース)|\d{1,2}\s*R(?![A-Za-z]))[^\S\n]+([^\s　]{2,20}(?:[^\S\n]+(?!ダ|芝|障|\d|発走|馬場)[^\s　]{1,12})?)/.exec(text))) {
+      var nm = m[1].replace(/\s+/g, '');
+      var bad = /^(ダート|ダ|芝|障害)?\d|^(発走|馬場|天候|単勝|複勝|馬連|馬単|ワイド|3連|オッズ|人気|出馬表|結果|締切|確定|頭|m)/.test(nm) || /(頭|m|倍|分|時|円)$/.test(nm) || BABA.indexOf(nm) >= 0 || STOP.indexOf(nm) >= 0;
+      if (!bad && /[一-龥ぁ-んァ-ヶA-Za-z]/.test(nm)) H.rname = nm;
+    }
     return H;
   }
   function pad(x) { return String(+x).padStart(2, '0'); }
@@ -226,13 +241,13 @@
     var all = rs.map(function (r) { return r.text; });
     var H = header(rs, all);
     var hs = horses(rs), tri = trifecta(rs);
-    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, horses: hs, tri: tri, lines: (lines || []).length };
+    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, horses: hs, tri: tri, lines: (lines || []).length };
   }
   // 画像（1〜3枚）をまとめる：項目ごとに最初に読めたもの。単勝の表は馬の数がいちばん多い画像、3連単は人気順の行がいちばん多い画像
   function parse(images) {
     var docs = (images || []).map(parseOne);
-    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, horses: null, s1: null, s5: null, s10: null };
-    ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
+    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, horses: null, s1: null, s5: null, s10: null };
+    ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n', 'start', 'rname'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
     var best = null; docs.forEach(function (d) { if (d.horses && (!best || d.horses.length > best.length)) best = d.horses; });
     if (best) {
       D.horses = best.map(function (h) { return { no: h.no, tan: h.tan, fuku: h.fuku || null }; });

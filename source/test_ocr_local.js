@@ -79,5 +79,14 @@ for (const [name, lines] of [['C 3連単 人気順（セルごと）', c], ['C 3
   const r = O.parse([[{ text: 'ようこそ', x: 0.1, y: 0.1, w: 0.3, h: 0.03 }, { text: 'お知らせ 10月14日', x: 0.1, y: 0.2, w: 0.3, h: 0.03 }]]);
   check(r.horses === null && r.s1 === null && r.r === null && r.n === null, '表のない画面：何も入れない（推測しない）');
 }
+// 発走時刻・レース名（同じレースの読み直しの見分けに使う。読めないときは null・推測しない）
+{
+  const L = (ts) => ts.map((t, i) => ({ text: t, x: 0.05, y: 0.05 + i * 0.04, w: 0.6, h: 0.03 }));
+  check(O.parse([a]).start === '18:05' && O.parse([a]).rname === null && O.parse([c]).start === null, 'A：発走 18:05・レース名はなし（C：時刻なし）');
+  check(O.parseOne(L(['○○競馬場 第9競走 はなまる特別', 'ダ1400m 12頭 馬場:良 発走 15:40'])).rname === 'はなまる特別', 'レース名：第9競走のあとの言葉');
+  check(O.parseOne(L(['12R 東京盃 ダ1200m 発走 20:10'])).rname === '東京盃' && O.parseOne(L(['第9競走 C2 選抜 ダ1400m'])).rname === 'C2選抜', 'レース名：距離の手前まで・2語までつなぐ');
+  check(O.parseOne(L(['9R 良 12頭'])).rname === null && O.parseOne(L(['9R ダ1400m 発走15:40'])).rname === null && O.parseOne(L(['9R ダ1400m 発走15:40'])).start === '15:40', '馬場・距離はレース名にしない・「発走15:40」も読む');
+  check(O.parseOne(L(['10:30 12R', '13:45 3連単'])).start === null && O.parseOne(L(['3連単 締切 16:20'])).start === '16:20', '時刻が2つあると決めない・1つなら発走とみなす');
+}
 console.log('FAILS', fails.length, fails);
 process.exit(fails.length ? 1 : 0);

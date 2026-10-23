@@ -22,6 +22,9 @@ def build(target, out, **env):
     subprocess.run(['python3', 'build_pwa.py', out], check=True, stdout=subprocess.DEVNULL, env=e)
 
 
+# アプリを開いた時の画面（19章・App Store版）は、このテストでは見ないので、出たらすぐ閉じる
+GATE_SKIP = "try { localStorage.setItem('tengel.gateSeen', '1'); } catch (e) {} document.addEventListener('DOMContentLoaded', function () { var t = setInterval(function () { var g = document.querySelector('#gate'); if (!g) return; if (g.hidden) { clearInterval(t); return; } var b = document.querySelector('#gateGo'); (b || g).click(); }, 100); setTimeout(function () { clearInterval(t); }, 8000); });"
+
 def native(out):
     p = os.path.join(out, 'index.html'); h = open(p, encoding='utf8').read()
     assert "window.__NATIVE = location.protocol === 'tengel:';" in h
@@ -213,6 +216,7 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
 """
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, locale='ja-JP')
         ctx.add_init_script(FAKE)
+        ctx.add_init_script(GATE_SKIP)
         form_app = dict(form, venue='')
         ctx.add_init_script(SEED % json.dumps(json.dumps(form_app, ensure_ascii=False)))
         ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))

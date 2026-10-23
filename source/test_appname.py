@@ -48,6 +48,9 @@ for f in ('index.html', 'manual.html'):
     open(pth, 'w', encoding='utf8').write(h)
 APPURL = f'http://localhost:{PORT}/APP/'
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
+# アプリを開いた時の画面（19章・App Store版）は、このテストでは見ないので、出たらすぐ閉じる
+GATE_SKIP = "try { localStorage.setItem('tengel.gateSeen', '1'); } catch (e) {} document.addEventListener('DOMContentLoaded', function () { var t = setInterval(function () { var g = document.querySelector('#gate'); if (!g) return; if (g.hidden) { clearInterval(t); return; } var b = document.querySelector('#gateGo'); (b || g).click(); }, 100); setTimeout(function () { clearInterval(t); }, 8000); });"
+
 FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };
 window.__bridge = [];
@@ -69,6 +72,7 @@ try:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, locale='ja-JP', timezone_id='Asia/Tokyo')
         ctx.add_init_script(FAKE)
+        ctx.add_init_script(GATE_SKIP)
         ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
         pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(APPURL); pg.wait_for_timeout(1800)

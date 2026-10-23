@@ -57,10 +57,13 @@
 | cm_media/ | CM（紹介動画・2026.10.12-5〜）。tengel3_cm.mp4（前置き15秒＋スロット新台CM風30秒＝45秒・1080×1920・30MB以下）と poster.jpg（表紙）。build_pwa.py が cm/ に置いて、設定タブの「テンゲルのCM」から全画面で見られる。動画は大きいのでサービスワーカーでしまわない（表紙だけしまう）。入れ替えたら ?v= が自動で変わる |
 | cm/ | CMの作り方（cm2.html＝本編・pro.html＝前置き・cm2_shots.py＝アプリの画面を撮る・bgm2.py／pro_bgm.py＝音・render.py／render_pro.py＝1コマずつ撮る・assets/）。`sh cm/make.sh` で cm_media/ を作り直す。CMでは「大井」「第13改訂版」の文字は出さない（Web版の画面は cm2_shots.py の SCRUB_JS で消す・App Store版は `TARGET=app` でApp Store版の画面を撮る → shots_app/・`SHOTS=shots_app` で使う） |
 | test_cm.py | CMのテスト（設定タブの説明書の下・押すと全画面・×／外側／Escで閉じる・動画はしまわない・表紙はしまう・電波がないときのお知らせ） |
-| build_ios.py | iPhone・iPadアプリ（App Store用・Swift Playgrounds の App）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
-| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・iPhoneとiPad・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・App Storeの版・画像の文字の読み取り・外のリンクはSafari。`WebHostView`＝Web画面の入れ物：時計・電波（ステータスバー）やホームバーに重なる分を測って `--top-inset`／`--bottom-inset` として渡す）・StoreCheck.swift（App Storeに出ている版を Apple の lookup で調べる。送るのはアプリのIDと国だけ）・TextReader.swift（画像の文字を端末の中で読む：Vision の VNRecognizeTextRequest・ja/en・位置つき）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
+| build_ios.py | iPhone用アプリ（App Store用・Swift Playgrounds の App。iPadでは互換モードで動く）を組み立てる：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm と Tengel.swiftpm.zip。画面はWeb版と同じ（build_pwa.py の index.html・説明書・CMの表紙）を Resources/ に名前だけで並べる（Swift Playgrounds がフォルダを平らにするので。PNGは入れない） |
+| ios/Tengel.swiftpm | アプリのSwiftの枠：Package.swift（名前「テンゲル」・jp.tengel.app・版 displayVersion/bundleVersion・**iPhone用だけ（`.phone`）・縦向きだけ**・カメラの説明）・TengelApp.swift（画面）・TengelWebView.swift（Web画面とアプリのつなぎ：共有シート・コピー・自動バックアップ・App Storeの版・画像の文字の読み取り・外のリンクはSafari・拡大のロック（`zoom`）・しるし（`marker`）・App内課金（`iap`）・アプリ→画面の知らせ `window.__nativeEvent`。`WebHostView`＝Web画面の入れ物：時計・電波（ステータスバー）やホームバーに重なる分を測って `--top-inset`／`--bottom-inset` として渡す）・StoreCheck.swift（App Storeに出ている版を Apple の lookup で調べる。送るのはアプリのIDと国だけ）・TextReader.swift（画像の文字を端末の中で読む：Vision の VNRecognizeTextRequest・ja/en・位置つき）・Markers.swift（キーチェーンの「しるし」：初回プレゼント `gift-first`・サブスクのPを足した取引 `granted-sub`。iCloudキーチェーンで同期・アプリを消しても残る）・Store.swift（StoreKit 2：ポイントのパック4つ・サブスク3つ。買う・戻す・未処理の取引・いまの権利・サブスクの状態。取引は画面が台帳に書いてから `finish`）・AppFiles.swift（tengel://localhost/ で Resources を出す・自動バックアップのファイル・テスト用の SelfTest は Debug だけ）・Assets.xcassets（アイコンは icons/icon_master_en.png を build_ios.py が入れる） |
+| points.js | ポイントの台帳（App Store版だけ・画面は持たない `TengelPoints`）：出来事（買った・サブスクで届いた・プレゼント・ミッション・使った・ロック解除）の一覧から残高を出す。サブスクのPは届いてから30日・買ったPとプレゼントのPは期限なし・使う順はサブスク→パック→無料。1レース200P（読み直しは0P：同じレースの見分け `raceKey`／`sameRace`）・券種のロック解除500P・マザーデータの枠15,000P・ミッション（200Pを使ったレースの記録 8・15・25・40…300走→あとは100走ごとに2000P）。テストは test_points.js |
+| points_ui.js | ポイントの画面と保存（App Store版だけ・build_pwa.py が TARGET=app のときだけ入れる）：台帳は IndexedDB の meta `wallet`（自動バックアップにも入る・手で作るバックアップには入れない）・初回プレゼント1500Pはキーチェーンのしるしで1回だけ・App内課金（買う・戻す・開いたときの未処理の取引）・読み取りのときに200P（オッズが読めたときだけ・足りなければ買う案内）・ミッションの受け取り・券種と枠のロック解除・設定タブの「ポイント」「Pカスタム」「ミッション」カード・上の帯の残高・開いたときの画面（`#gate`：はじめては説明＋「はじめる」、2回目からは2秒）・拡大のロック（2本指で拡大できる。設定で切れる）。`window.TengelWallet` で src.html・pwa_ui.js から使う |
+| test_iphone_only.py | Package.swift が iPhone用だけ（`.phone`）・縦向きだけになっているか（Swift Playgrounds の「App の設定」を触ると戻ることがあるので、アップロードの前に必ず） |
 | ios/ci/ | GitHubのMacでの確認（run.sh・selftest.js・ios.yml）。`ios` ブランチ（Tengel.swiftpm＋ci/＋.github/workflows/ios.yml）にpushすると、Swift 5・Swift 6・Release（実機）で作って、iPhone・iPadのシミュレーターで記録の保存・開き直し・自動バックアップから戻す・画面のスクショを確かめる。結果は `ios-ci-macos-15`・`ios-ci-macos-26` ブランチ（summary.txt・report-*.json・shots/） |
-| test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：画像の読み取り（端末の中の文字認識のかわりに架空のオッズ画面の文字を返す → 入力欄に入る・外に通信しない・APIキーの欄がない）・「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・Web版は今までどおり |
+| test_native.py | アプリ版の画面のテスト（にせもののアプリをつなぐ）：画像の読み取り（端末の中の文字認識のかわりに架空のオッズ画面の文字を返す → 入力欄に入る・外に通信しない・APIキーの欄がない）・「アプリの版」カード・自動バックアップ（保存のたび・APIキーは入れない・台帳は入れる）・共有シート（バックアップ・CSV）・コピー・記録0件のとき「戻す？」→ 戻す／戻さない・CMは公開中のWeb版から・ポイント（初回プレゼント1回だけ・読み取りで200P・読み直し0P・足りないとき・買う／サブスク（にせもののApp内課金）・未処理の取引・ミッション・券種と枠のロック解除・開いたときの画面・拡大のロック）・Web版は今までどおり |
 | legal/ | 「このアプリについて」（設定タブのいちばん下：ご利用にあたって＝参考情報・20歳・相談先／非公式のアプリ・商標の表記／プライバシーポリシー／特定商取引法に基づく表記／フォントのライセンス）と、公開するページ（legal/privacy.html・tokushoho.html・support.html）。中身は build_legal.py、販売する人の欄は legal.json（seller・email・address・phone）。**欄が空のページは公開しない**（deploy.sh が「まだなし」と出す）。確認用は `python3 legal/build_legal.py preview <フォルダ>`（空の欄を【要記入】にして全部作る） |
 | ios/fonts/ | App Store版に入れるフォント（BIZ UDPGothic・Dela Gothic One・IBM Plex Mono。SIL OFL 1.1・ファイルはそのまま。入手元とライセンスは ios/fonts/README.md）。App Store版は Google Fonts に通信しない |
 | manual/content_app.html | App Store版の説明書で入れ替える項目（このアプリでできること・マザーデータ・APIキー・バックアップ・困ったとき）。App Store版では「iPhoneに入れる」「データを新しくする（Web版）」は出さない（build_manual.py の mode='app'）。「アップデート」はApp Store版だけ（`WEB_SKIP`・写真 upd_* は `TARGET=app` の shots.py が、前の版のデータを入れたアプリとにせもののApp Store（1.1）で撮る）。`{{mother}}` はアプリに入れるデータの走数に置きかわる |
@@ -75,7 +78,7 @@
 3. `node test_engine.js` / `python3 test_kubun.py` / `python3 mkxlsx.py && python3 mkxlsx2.py && python3 mkslotdata.py && python3 mkrawfiles.py` / `python3 test_fix.py` / `OLD_APP=<古い版を git archive した場所> python3 test_pwa.py` / `python3 test_slots.py`（今の公開版→新しい版の更新を試す。版の文字は前より大きく）
 4. gh-pagesにコミットしてpush
 
-## iPhone・iPadアプリ（App Store用。2026.10.12〜お試し版）
+## iPhoneアプリ（App Store用。2026.10.12〜お試し版。2026/10/23から iPhone用だけ＝iPadは互換モード）
 - 上の帯・説明書の上のバー・下のタブは、時計・電波（ステータスバー）・ホームバーに重ならないようにしてある：CSS は `--sat`／`--sab`（`max(env(safe-area-inset-*), var(--top-inset／--bottom-inset))`）を使う。`--top-inset` などはアプリ（WebHostView）が実際の重なりを測って入れる（Swift Playgrounds のプレビューなど、安全な範囲が正しく伝わらない場所の保険。ふつうの端末では 0 で、env() のとおり）
 - 画面はWeb版と同じ。アプリの中では `tengel://localhost/index.html` で開くので、`window.__NATIVE`（pwa_shim.js）が true になって、アプリ版として動く：
   - 設定タブ：「アプリの更新」（いまの版・App Storeに新しい版があれば「App Storeで更新する」。更新そのものは App Store）・「データの更新」（公開している data/mother_app.json を読んで、1つ目のマザーデータを新しくする。自分で入れたレース・記録はそのまま）・バックアップは共有シートで渡す・「自動バックアップ」の欄
@@ -107,6 +110,21 @@
   - 貼る文：store/listing7.py（App内課金：製品ID jp.tengel.app.points500〜4000・サブスク jp.tengel.app.sub2000／4400／9200・価格は税抜×1.1の税込）・掲載キット：store/kit7.py
 - 画面は cm2_shots.py の `CM7=1`（ポイントの帯・ロック・購入はテスト用ブラウザの中で足して撮るイメージ・`CM_PTS_BAL` で保有ポイント）。**アプリでポイントを作ったら、本物の画面で撮り直してから出す**（審査 2.3）
 - 説明文の「購入したポイントに有効期限はありません」「サブスクで届いたポイントは30日」は審査 3.1.1 に合わせた形。紹介特典は作り方と審査を確かめてから、プロモーション用テキストに入れる
+
+## App Store版 第1弾（2026/10/23〜・iPhone用・拡大・ポイント・Pカスタム・ミッション・開いたときの画面）
+アップデート指示書（第4.54版・claude/テンゲル_AppStore版_アップデート指示書.md）の第1弾を入れた。作業の順と確かめ方は claude/テンゲル_第1弾_作業用指示書.md。
+- **iPhone用だけ**（21章）：Package.swift の `supportedDeviceFamilies: [.phone]`・縦向きだけ。iPadでは iPadOS が iPhone の画面をまん中に出す（互換モード）。Swift Playgrounds の「App の設定」を触ると作り直されて iPad・横向きが戻ることがあるので、アップロードの前に `python3 test_iphone_only.py`（ios/ci/run.sh も Info.plist で確かめる）
+- **拡大**：viewport は `maximum-scale=3`（2本指で拡大できる・ダブルタップの拡大はしない＝`touch-action:manipulation`）。設定の「拡大」でロック（`maximum-scale=1,user-scalable=no`＋アプリ側 `zoom:{lock,reset}` で元の大きさに戻してピンチを切る）
+- **ポイント**（4〜6章・11章）：台帳は points.js・画面と保存は points_ui.js。アプリの中（IndexedDB meta `wallet`）だけに置く・外に送らない・アプリを消すと台帳も消える（5章のとおり）。キーチェーンには「しるし」だけ（初回プレゼント・サブスクのPを足した取引）→ 入れ直しても初回プレゼントは2回出ない・サブスクの同じ取引で2回足さない
+  - 読み取りで200P：画像から単勝か3連単1位が読めたときだけ使う（何も読めなければ0P）。同じレースの読み直しは0P（読んだレースに `pid` を持たせて、日付・開催場・R／レース名・発走・距離で見分ける。ocr_local.js がレース名 `rname`・発走 `start` も読む）。5重勝の読み取りも200P
+  - 無料の券種は単勝・馬単・3連単。ほかの6券種は1つ500Pで解除（Pカスタム）・マザーデータの2つ目・3つ目の枠は15,000P。ロックの券種・枠は記録・設定で選べない（鍵のしるし）
+  - ミッション（8章）：200Pを使ったレースの記録だけ数える（同じレースは1回）。設定の「ミッション」で受け取る
+  - App内課金（StoreKit 2・Store.swift）：製品IDは store/listing7.py と同じ（points500〜4000・sub2000／4400／9200）。**App Store Connect に同じIDの製品・サブスクのグループを作ってからでないと「製品がない」になる**。取引は台帳に書いてから `finish`（書く前にアプリが落ちても、次に開いたときの未処理の取引で足す）。「購入を復元」はサブスクの権利を見直す（消耗型のパックは Apple の決まりで戻らない＝台帳は自動バックアップから）
+  - 自動バックアップ（アプリの中のファイル）には台帳も入れる（保存場所が消えたときに戻せる）。共有シートで渡す手で作るバックアップには入れない（人に渡せるファイルに台帳を入れない）
+- **開いたときの画面**（19章）：`#gate`（build_pwa.py の APP_BODY ＋ points_ui.js）。はじめては説明（参考情報・20歳・ポイント）と「はじめる」、2回目からは2秒のロゴ。localStorage `tengel.gateSeen`。テストは `GATE_SKIP`／`gate()` で閉じる
+- 説明書（manual/content_app.html の「ポイント」）・「このアプリについて」（プライバシー：台帳・しるし・App内課金・消し方）・store/listing7.py（対応OSの行・ポイントの説明・審査へのメモ）も直した。Web版・claude.ai版は変わらない（points.js／points_ui.js は入らない・`window.TengelWallet` なし）
+- 確かめる：`node test_points.js`・`node test_ocr_local.js`・`python3 test_native.py`（にせもののアプリ：App内課金・しるし・拡大のロックも偽物）・`python3 test_iphone_only.py`・`python3 test_appname.py`・`python3 test_dataentry.py`。`ios` ブランチにpush → GitHubのMac（ios/ci/selftest.js に gate・points の確認、run.sh に iPhone用だけの確認）。test_fix.py・test_slots.py は第1弾の前から時間切れで落ちる（第1弾のせいではない・あとで直す）
+- まさちゃんがやること：App Store Connect で製品（4つ）とサブスクのグループ（3つ）を作る → TestFlight で iPhone と iPad（互換モード）の見た目・2本指の拡大・初回プレゼント・買う（サンドボックス）・入れ直して初回プレゼントが出ないこと・キーチェーンの同期（2台）を確かめる（作業用指示書の 18.2）
 
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
