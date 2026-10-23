@@ -1689,17 +1689,17 @@ def glassring(f, d, rng, rate=8.0):
     return fade(x * am, .002, .05)
 
 
-def cutin_mix(mx, r, CI):
+def cutin_mix(mx, r, CI, o=0.0):
     """宇宙の カットイン（0〜1.7秒）：
        ゴォォ（宇宙の うなり）＋キュイィン↑（太陽が ギラッと 大きく）→ バシュッ!!（色が 反転）→ チッ・チッ・チッ・チッ（色が かわる たび）
        → ヴォン（青）→ キィン（赤・太陽が もっと 大きく）→ ドォォン!!＋ワァン・ワァン・ワァン（白い 反転の 中を 衝撃波の 波紋）＋ガラスの ひびき
        → スッ（暗く：音が いったん ひく）→ シャーン↑（惑星が もどる）"""
-    seg = {m: (a / CI.FPS, b / CI.FPS) for a, b, m in CI.SEQ}
+    seg = {m: (a / CI.FPS + o, b / CI.FPS + o) for a, b, m in CI.SEQ}
     r0, r1 = seg['R']
-    dd = r1 + .1
-    mx.add(rumble(dd, r, 90, 6) * np.linspace(.3, 1, n_(dd)), 0, .32, rv=.3)
-    mx.add(cuin(500, 2600, r1 + .03, r1, r), 0, .14, rv=.3)
-    mx.add(nsweep(r1, 800, 9000, .5, r) * np.linspace(0, 1, n_(r1)) ** 2, 0, .25, rv=.35)
+    dd = r1 - r0 + .1
+    mx.add(rumble(dd, r, 90, 6) * np.linspace(.3, 1, n_(dd)), r0, .32, rv=.3)
+    mx.add(cuin(500, 2600, r1 - r0 + .03, r1 - r0, r), r0, .14, rv=.3)
+    mx.add(nsweep(r1 - r0, 800, 9000, .5, r) * np.linspace(0, 1, n_(r1 - r0)) ** 2, r0, .25, rv=.35)
     h1 = seg['Ncyan'][0]                                                                   # バシュッ!!（反転）
     mx.add(explosion(r, .5, 1.6), h1, .5, rv=.25)
     mx.add(boom(120, 40, .7, .25, .03, 2.4, r), h1, .7 * FZ_LOW, rv=.1)
@@ -1734,16 +1734,88 @@ def cutin_mix(mx, r, CI):
         mx.add(bell(mtof(m), .7, idx=1.1, tau=.3), t3 + .03 * i, .07, (i / 3 - .5) * .8, rv=.45)
 
 
-def sfx_sgd_ci():
-    """超神様的中＋宇宙の カットイン（超神様的中の 4回に1回 ※仮）：0〜1.7秒 カットイン → 1.7秒から 超神様の 音（sfx_sgd と 同じ 中身を ずらす）"""
-    CI = read_cutin()
-    ci = CI.N / CI.FPS
-    SG, ev = read_sgd()
-    mx = Mix(ci + SG.T0B + 2.0, 72)
+def read_glitch():
+    sys.path.insert(0, os.path.join(HERE, 'flat'))
+    import kami_glitch
+    return kami_glitch
+
+
+def powerdown(d, rng):
+    """ヒュゥゥン↓：画面が 線に ちぢむ（高い 音が 下がって 消える）＋さいごに プツッ"""
+    n = n_(d)
+    t = tl(n)
+    f = 2400 * (90 / 2400) ** np.clip(t / d, 0, 1)
+    x = .6 * np.sin(phase(f, n)) + .25 * np.sign(np.sin(phase(f * .5, n)))
+    x = x * np.clip(1 - t / d, 0, 1) ** .7
+    k = n_(d - .012)
+    if k < n:
+        x[k:k + n_(.004)] += .9 * np.sign(rng.standard_normal(min(n_(.004), n - k)))
+    return fade(x, .002, .004)
+
+
+def hum(d, rng, f=58.0):
+    """ブーン：電気の うなり（四角い 波・ゆれる・ジジジ）"""
+    n = n_(d)
+    t = tl(n)
+    x = .55 * np.sign(np.sin(phase(f * (1 + .02 * np.sin(2 * np.pi * 3 * t)), n))) + .3 * np.sign(np.sin(phase(f * 2.003, n))) + .2 * np.sin(phase(f * 6, n))
+    x = lp(x, 3500, 2) + .25 * bp(rng.standard_normal(n), 2500, 9000) * (.5 + .5 * np.sign(np.sin(2 * np.pi * 11 * t)))
+    return fade(x, .004, .02)
+
+
+def glitch_mix(mx, r, KG, o=0.0):
+    """昇格の バグ（2秒・kami_glitch.py の BLACK・STATES・COLLAPSE に 合わせる）：
+       ブツッ＋ガッ!!（き！で 画面が 止まる）→ ブーン（電気の うなり）＋ガガッ（ずれ方が かわる たび）＋バチッ（電気）＋チッ（色が 入れかわる）
+       → 画面が 消える 間は 音も 消える → ヒュゥゥン↓ プツッ（線に ちぢんで 消える）"""
+    fps = KG.FPS
+    dur = KG.COLLAPSE[0] / fps
+    mx.add(glitch('thud', .12, r), o, .9, rv=.05)                                         # ガッ!!
+    mx.add(glitch('zip', .1, r), o, .6, -.5, rv=.05)
+    mx.add(glitch('zip', .1, r), o + .01, .6, .5, rv=.05)
+    mx.add(boom(110, 38, .6, .2, .03, 2.4, r, grit=.2), o, .6 * FZ_LOW, rv=.1)
+    mx.add(arc_zap(.18, r, 1600), o, .45, rv=.15)
+    mx.add(hum(dur, r) * np.linspace(1, .8, n_(dur)), o + .02, .26, rv=.1)                # ブーン
+    mx.add(crackle(dur, 120, r), o, .14, -.3, rv=.15)
+    mx.add(crackle(dur, 120, r), o, .14, .3, rv=.15)
+    for k, c in enumerate(KG.STATES[1:]):                                                  # ガガッ（ずれ方が かわる）
+        t = o + c / fps
+        mx.add(glitch(('zip', 'buzz')[k % 2], rng_d(r, .05, .12), r), t, .5, r.uniform(-.6, .6), rv=.05)
+        mx.add(glitch('thud', .06, r), t, .35, rv=.05)
+    for fi in range(KG.COLLAPSE[0]):                                                       # バチッ（電気：ときどき）
+        if fi in KG.BLACK or r.random() > .3:
+            continue
+        mx.add(arc_zap(.06, r, 1200), o + fi / fps, .32, r.uniform(-.7, .7), rv=.15)
+    for fi in range(2, KG.COLLAPSE[0], 6):                                                 # チッ（色が 入れかわる）
+        if fi in KG.BLACK:
+            continue
+        mx.add(glitch('tick', .02, r), o + fi / fps, .25, (-.4, .4)[(fi // 6) % 2], rv=.05)
+    bl = sorted(KG.BLACK)                                                                  # 画面が 消える 間は 音も 消す（ついたり 消えたり）
+    i = 0
+    while i < len(bl):
+        j = i
+        while j + 1 < len(bl) and bl[j + 1] == bl[j] + 1:
+            j += 1
+        mx.duck(o + bl[i] / fps, o + (bl[j] + 1) / fps, -30.0, ramp=.004)
+        mx.add(glitch('tick', .015, r), o + (bl[j] + 1) / fps, .4, rv=.05)                 # もどる 時に チッ
+        i = j + 1
+    c0, c1, c2 = (o + v / fps for v in KG.COLLAPSE)                                        # ヒュゥゥン↓ プツッ
+    mx.duck(c0, c2 + .2, -18.0, ramp=.01)
+    mx.add(powerdown(c2 - c0 + .02, r), c0, .5, rv=.2)
+
+
+def rng_d(r, a, b):
+    return float(r.uniform(a, b))
+
+
+def sfx_sgd_up():
+    """超神様的中の 昇格（超神様的中の 4回に1回 ※仮）の 音：0秒＝き！で 画面が 止まる → 2秒 バグ → 宇宙の カットイン（2〜3.7秒）。
+       このあと 超神様の 動画と 音（sfx_sgd）が つづく。超プレミアムど的中の 音（sfx_zp）は き！の 所（押してから 6秒）で 止める"""
+    KG, CI = read_glitch(), read_cutin()
+    g = KG.N / KG.FPS
+    mx = Mix(g + CI.N / CI.FPS + 1.2, 73)
     r = mx.rng
-    cutin_mix(mx, r, CI)
-    sgd_mix(mx, r, SG, ev, ci)
-    return mx.render(1.8, target=-13, bass=True)
+    glitch_mix(mx, r, KG, 0.0)
+    cutin_mix(mx, r, CI, g)
+    return mx.render(1.5, target=-13, bass=True)
 
 
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
