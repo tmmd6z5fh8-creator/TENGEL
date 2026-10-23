@@ -1017,6 +1017,143 @@ def voice(syl, note, rng, d=None):
     return fade(out, .001, .02)
 
 
+# ---------- 声の ことば：超プレミアムの 声（voice）と 同じ しくみ（フォルマント合成）で 音を つないで ことばに ----------
+# まさちゃん「一枚目のこの爆発のシーンで、超プレミアムど的中演出で使っている声で、いやーーーん！！！て音声入れて！」
+#           「二枚目のシーンで、超プレミアムど的中演出で使っている声で、おめでとう御座います入れて！」
+VOWELS['a'] = ((920, 1450, 2950, 4000, 4950, 6300, 7600, 9000), (90, 110, 160, 250, 300, 500, 700, 900))
+_WIDE = (90, 160, 220, 300, 350, 500, 700, 900)
+PH = dict(  # 音の かた：F（口の ひびき 8つ）・B（はば）・av（声の 大きさ）・burst（破裂：高さの 下・上・大きさ・長さ）・asp（息：長さ・大きさ）・fric（こすれる 音：下・上・大きさ）
+    y=dict(F=(300, 2550, 3300, 4300, 5000, 6400, 7700, 9100), B=(70, 140, 220, 260, 300, 500, 700, 900), av=.85),
+    m=dict(F=(290, 1150, 2350, 3700, 4900, 6200, 7600, 9000), B=(70, 350, 450, 550, 650, 750, 850, 950), av=.36),
+    n=dict(F=(290, 1650, 2650, 3800, 4900, 6200, 7600, 9000), B=(70, 350, 450, 550, 650, 750, 850, 950), av=.36),
+    N=dict(F=(300, 1350, 2550, 3800, 4900, 6200, 7600, 9000), B=(70, 300, 420, 550, 650, 750, 850, 950), av=.5),
+    d=dict(F=(250, 1700, 2700, 3900, 4900, 6200, 7600, 9000), B=_WIDE, av=.1, burst=(3000, 6500, 1.3, .006)),
+    g=dict(F=(260, 1950, 2500, 3900, 4900, 6200, 7600, 9000), B=_WIDE, av=.1, burst=(1500, 3800, 1.5, .01)),
+    t=dict(F=(320, 1750, 2700, 3900, 4900, 6200, 7600, 9000), B=(250, 200, 250, 300, 350, 500, 700, 900), av=0.0, burst=(3000, 8000, 2.0, .006), asp=(.022, .35)),
+    s=dict(F=(350, 1650, 2800, 3900, 4900, 6200, 7600, 9000), B=(250, 200, 250, 300, 350, 500, 700, 900), av=0.0, fric=(4200, 9500, .55)),
+    z=dict(F=(280, 1650, 2700, 3900, 4900, 6200, 7600, 9000), B=(120, 180, 240, 300, 350, 500, 700, 900), av=.3, fric=(3500, 8500, .45)),
+    U=dict(F=VOWELS['u'][0], B=(200, 200, 250, 300, 350, 500, 700, 900), av=0.0, asp=(1.0, .28)))     # 声の 出ない う（「ます」の す）
+for _v, (_F, _B) in VOWELS.items():
+    PH[_v] = dict(F=_F, B=_B, av=1.0)
+IYAN = (('i', .09, 72), ('y', .06, (76, 78)), ('a', .64, (78, 73)), ('N', .24, (72, 68)))          # いやーーーん！！！（ぐっと 上がって ゆれながら 下がる）
+OMEDETOU = (('o', .11, (69, 70)), ('m', .06, 73), ('e', .10, 75), ('d', .03, None), ('e', .09, 75), ('t', .045, None), ('o', .10, 74),
+            ('o', .13, (74, 72.5)), ('g', .035, None), ('o', .08, 72), ('z', .06, 73), ('a', .10, 75), ('i', .09, 74), ('m', .05, 73),
+            ('a', .11, (73, 71.5)), ('s', .085, None), ('U', .07, None))                              # おめでとう御座います（明るく）
+
+
+def _tract_tracks(x, Fk, Bk):
+    for F, B in zip(Fk, Bk):
+        x = _reson(x, F, B)
+    return x
+
+
+def say(seq, rng, vib=.32):
+    """ことば（音の ならび：(音, 長さ, 高さ（MIDI・(はじめ, おわり)・None）)）→ 声。母音の 大きさ（RMS）を 0.25 に そろえる（voice と 同じ）"""
+    starts = np.cumsum([0.0] + [d for _, d, _ in seq])
+    D = float(starts[-1])
+    n = n_(D + .03)
+    t = tl(n)
+    tin = {'stop': .045, 'nas': .03, 'v': .05, 'fric': .02}
+
+    def kind(p):
+        return 'stop' if p in 'dgt' else 'nas' if p in 'mnN' else 'fric' if p in 'szU' else 'v'
+    # 口の ひびき（となりの 音へ なめらかに：止める 音の あとは 母音へ すばやく）
+    keysF = [[] for _ in range(8)]
+    keysB = [[] for _ in range(8)]
+    for i, (p, d, _) in enumerate(seq):
+        s0, s1 = starts[i], starts[i + 1]
+        prev = kind(seq[i - 1][0]) if i else 'v'
+        a = s0 + (0.0 if i == 0 else min(d * .45, {'stop': .045, 'nas': .028, 'fric': .03, 'v': .035}[prev] if kind(p) == 'v' else .012))
+        b = s1 - (min(d * .45, .02) if kind(p) == 'v' and i + 1 < len(seq) and kind(seq[i + 1][0]) == 'v' else (0.0 if kind(p) == 'stop' else min(d * .3, .01)))
+        if b < a:
+            a = b = (s0 + s1) / 2
+        for k in range(8):
+            keysF[k] += [(a, PH[p]['F'][k]), (b, PH[p]['F'][k])]
+            keysB[k] += [(a, PH[p]['B'][k]), (b, PH[p]['B'][k])]
+    Fk = [_track(sorted(kf) + [(t[-1] + 1e-3, kf[-1][1])], n) for kf in keysF]
+    Bk = [_track(sorted(kb) + [(t[-1] + 1e-3, kb[-1][1])], n) for kb in keysB]
+    # 声の 大きさ（音ごと・つなぎは 8ミリ秒）。さいごの 音は 後ろ半分で 消える
+    ka = [(0.0, 0.0)]
+    rr = .008
+    for i, (p, d, _) in enumerate(seq):
+        s0, s1 = starts[i], starts[i + 1]
+        av = PH[p]['av']
+        if i == len(seq) - 1 and av > 0:
+            ka += [(s0 + rr, av), (s0 + d * .4, av), (s1, 0.0)]
+        else:
+            ka += [(s0 + rr, av), (s1 - rr, av)]
+    ka.append((t[-1] + 1e-3, 0.0))
+    av = _track(sorted(ka), n)
+    # 声の 高さ：出だしは 少し 下から すくい上げる・長い 母音は ゆれ（ビブラート）・さいごは 下がる
+    kn = []
+    first = True
+    for i, (p, d, note) in enumerate(seq):
+        if note is None:
+            continue
+        s0, s1 = starts[i], starts[i + 1]
+        if isinstance(note, tuple):
+            pts = [(s0 + d * .15, note[0]), (s1 - d * .15, note[1])]
+        else:
+            pts = [((s0 + s1) / 2, note)]
+        if first:
+            kn.append((s0, pts[0][1] - 2.0))
+            first = False
+        kn += pts
+    kn.append((D, kn[-1][1] - 2.5))
+    st = _track(kn, n)
+    vb = np.zeros(n)
+    for i, (p, d, _) in enumerate(seq):
+        if PH[p]['av'] >= 1.0 and d > .25:
+            s0, s1 = starts[i], starts[i + 1]
+            ramp = np.clip((t - s0 - .14) / .1, 0, 1) * (t < s1)
+            vb += vib * np.sin(2 * np.pi * 6.0 * (t - s0)) * ramp
+    jit = lp(rng.standard_normal(n), 30, 1)
+    jit = jit / (np.std(jit) + 1e-12) * .12
+    f0 = 440.0 * 2 ** ((st + vb + jit - 69) / 12)
+    # 声帯の 音（voice と 同じ）
+    up = 4
+    ph = np.cumsum(np.repeat(f0, up) / (SR * up)) % 1.0
+    oq = .62
+    tau = ph / oq
+    g = signal.resample_poly(np.where(ph < oq, 2 * tau - 3 * tau ** 2, 0.0), 1, up)[:n]
+    g = lp(g, 7000, 1)
+    gate = signal.resample_poly((ph < oq).astype(float), 1, up)[:n]
+    shim = lp(rng.standard_normal(n), 40, 1)
+    shim = 1 + .04 * shim / (np.std(shim) + 1e-12)
+    breath = hp(rng.standard_normal(n), 400) * (.35 + .65 * gate)
+    voiced = _tract_tracks(g * av * shim + breath * .05 * av, Fk, Bk)
+    vm = av > .9
+    k_ = .25 / (np.sqrt(np.mean(voiced[vm] ** 2)) + 1e-12)
+    voiced *= k_
+    air = hp(g * av * shim + breath * .08 * av, 3200, 2)
+    out = voiced + air / (np.sqrt(np.mean(air[vm] ** 2)) + 1e-12) * .25 * PC_AIR
+    # 息・破裂・こすれる 音
+    for i, (p, d, _) in enumerate(seq):
+        s0, s1 = starts[i], starts[i + 1]
+        P = PH[p]
+        if P.get('asp'):
+            ad, aa = P['asp']
+            a0, a1 = (s0, s1) if p == 'U' else (s1, s1 + ad)
+            e = _track([(0, 0), (a0, 0), (a0 + .004, 1), (a1 - .006, .7), (a1 + .01, 0), (t[-1] + 1e-3, 0)], n)
+            asp = _tract_tracks(hp(rng.standard_normal(n), 300) * e, Fk, Bk)
+            m = e > .5
+            out = out + asp / (np.sqrt(np.mean(asp[m] ** 2)) + 1e-12) * .25 * aa
+        if P.get('burst'):
+            lo, hi, ba, bd = P['burst']
+            e = np.exp(-np.maximum(t - s1, 0) / max(bd / 2.5, 1e-4)) * (t >= s1) * (t < s1 + bd * 2)
+            out = out + _noise(rng, n, lo, hi) * e * .25 * ba
+        if P.get('fric'):
+            lo, hi, fa = P['fric']
+            f0_ = s0 + (.012 if p == 'z' else 0.0)
+            e = _track([(0, 0), (f0_, 0), (f0_ + .015, 1), (s1 - .01, 1), (s1 + .008, 0), (t[-1] + 1e-3, 0)], n)
+            out = out + _noise(rng, n, lo, hi) * e * .25 * fa
+    out = signal.sosfilt(signal.tf2sos(*biquad('shelf_hi', 4500, .7071, 3.0)), out)
+    out = hp(out, 90)
+    return fade(out, .002, .03)
+
+
+VOICE_IYAN = (.1, -8.0)          # いやーーーん！！！：カットインの 大きな 爆発の はじまりから 0.1秒・その 間 まわりを 8dB 小さく
+VOICE_OMEDETOU = (.62, -6.0)     # おめでとう御座います：鳥居の ファンファーレ（パッパッパーン）の 大きな 和音の あと・その 間 まわりを 6dB 小さく
 PC_VOICE = (('do', 69), ('te', 71), ('ki', 72), ('chu', 72), ('u', 74))    # ①〜⑤の 声：どぉ！（A4）・てぇ！（B4）・きぃ！（C5）・ちゅ！（C5）・う！（D5）。だんだん 高く
 PC_AIR = .05                                                                      # 声の 高い 所の 明るさ（母音の 大きさに たいして）
 PC_VOICE_G = 1.1                                                                  # 声の 大きさ（ミックスの 中で：ほかの 音より 前に）
@@ -1445,13 +1582,14 @@ def sfx_sgd():
           → ブォォン↑・シュワーッ↑（ドームが 床から 上がる）＋ギュイーン（電気の 光）＋ドガーン・パチパチ（下の 火花の 爆発）
           ＋バリバリッ・ドーン（上から 下への 雷 6本・形が かわる たびに バチッ）＋ジジジ・ビリビリ（ドームの 電気）＋バリッ（玉から 画面の はしへの 雷）＋ヒュンッ（岩）
           ＋キュゥゥン↑（玉が 小さく なる）→ キィン（金の 光が 集まる）→ ドガーン!!＋ジャラジャラ（金の 爆発）→ シュワーッ↑ → パァーン（まっ白）
-       ② 金の 字（1.6〜6.3秒）：ゴォォッ（左から すべって くる）→ ズーン!!（万馬券：ミの ジャーン＋どら＋合唱）→ ゴォォッ（右から）→ ズーン!!（天眼：ラ）
+       ② 金の 字（2.93〜7.63秒：白い 光の あと）：ゴォォッ（左から すべって くる）→ ズーン!!（万馬券：ミの ジャーン＋どら＋合唱）→ ゴォォッ（右から）→ ズーン!!（天眼：ラ）
           → シュワーッ↑ → ドーン＋どら＋ジャーン（4行の 文：ホ長調）＋ああぁぁ（合唱）＋キラーン（光が すべる 2回）→ シュワーッ↑
-       ③ 神様的中（6.3〜12.5秒）：ドガーン＋ジャラジャラ（小判が はじける）・ドン（神）→ ヒュオッ（大きな 小判が 横切る）・ドン（様）→ ドガーン＋ジャラジャラ・ドン（的）
+       ③ 神様的中（7.63〜13.83秒）：ドガーン＋ジャラジャラ（小判が はじける）・ドン（神）→ ヒュオッ（大きな 小判が 横切る）・ドン（様）→ ドガーン＋ジャラジャラ・ドン（的）
           → ヒュオッ・ドン（中）（ドンは だんだん 高く）＋バチバチ（字の ふちを はしる 雷）・バリバリッ（外へ はしる 雷）
           → ドガーン!!＋ジャラジャラジャラ（小判の 大爆発）＋ジャーン（神様的中）→ グォォ↑＋ドロロロ（ひいて 鳥居）＋シャララン（神社の 鈴）
-          → パッパッパーン（ファンファーレ）＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
-       → 白い 光：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判の ジャラジャラ"""
+          → パッパッパーン（ファンファーレ）＋声「おめでとう御座います」＋ああぁぁ（合唱）＋ビリビリ・バチッ（字の 雷：不定期）＋キラーン（光が すべる 2回）＋シャン・シャン・シャン
+       → 白い 光：シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋小判の ジャラジャラ
+       ① と ② の 間の 白い 光（1.5秒：kami_super.NW）は ああぁぁ（合唱）＋ふわぁ＋キラキラ → シュワッ↑"""
     SG, ev = read_sgd()
     mx = Mix(SG.T0B + 2.0, 71)
     sgd_mix(mx, mx.rng, SG, ev, 0.0)
@@ -1534,6 +1672,12 @@ def sgd_mix(mx, r, SG, ev, o=0.0):
     mx.add(crash(r, 2.2, .8), gk, .32, .3, rv=.45)
     for i, m in enumerate((64, 68, 71, 76, 80, 83)):
         mx.add(bell(mtof(m + 12), 2.0, idx=1.6, tau=.7), gk + .012 * i, .18, (i / 5 - .5) * .9, rv=.5)
+    wd = o2 + .2 - gk                                                                            # 白い 光に つつまれる（1.5秒）：ああぁぁ＋ふわぁ＋キラキラ → シュワッ↑（② へ）
+    if wd > .6:
+        mx.add(choir((64, 68, 71, 76, 80), wd, r, .35, .6), gk + .08, .42, rv=.7)
+        mx.add(pad((52, 59, 64, 68, 71), wd, .4, .6, .22), gk + .1, .2, rv=.6)
+        sparkle(mx, gk + .3, wd - .5, 14, (96, 100, 103, 105, 108), .045, r)
+        mx.add(nsweep(.45, 600, 7000, .5, r) * np.linspace(0, 1, n_(.45)) ** 2, o2 - .32, .18, rv=.35)
     # ======== ② 金の 字：重たい 金が ズーン（万馬券 ← 左から・天眼 ← 右から）========
     for (ha, hl, he), ch, side in ((ev['HEAVY'][0], E, -1), (ev['HEAVY'][1], A_, 1)):
         a, l, e = o2 + ha, o2 + hl, o2 + he
@@ -1659,6 +1803,10 @@ def sgd_mix(mx, r, SG, ev, o=0.0):
     mx.add(koban(1900, r, .55), tt + .06, .15, .25, rv=.25)
     mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
     kjingle(mx, RES + .1, 1.8, 28, .2 * FZ_MID, r, curve=1.8)
+    v = say(OMEDETOU, np.random.default_rng(79))                                             # 声「おめでとう御座います」（鳥居の 中の 神様的中 おめでとう御座います：超プレミアムの 声）
+    tv = fz + VOICE_OMEDETOU[0]
+    mx.duck(tv, tv + len(v) / SR - .05, VOICE_OMEDETOU[1], ramp=.05)
+    mx.add(v, tv, PC_VOICE_G, rv=.22)
 
 
 # ---------- 超神様的中の 宇宙の カットイン（超神様的中の 4回に1回 ※仮：flat/kami_cutin.py の SEQ・RIPPLE に 合わせる） ----------
@@ -1714,10 +1862,10 @@ def suck(d, rng, f0=2600, f1=260):
 def cutin_mix(mx, r, CI, o=0.0):
     """宇宙の カットイン 第2版（flat/kami_cutin.py の SEQ・隕石・雷・爆発・波紋に 合わせる・o 秒 ずらす）：
        ゴォォ（宇宙の うなり）＋ヒュゥゥン（隕石が 落ちる：1つずつ・当たると ドスッ）＋ゴオォォォ↑キィィン（大きな 隕石が せまる）
-       → バシュゥン!!＋キィーン（当たって 青い 光に つつまれる）→ ドッゴォォォン!!（大きな 爆発）＋バリバリッ・ドーン（惑星を はしる 雷）
+       → バシュゥン!!＋キィーン（当たって 青い 光に つつまれる）→ ドッゴォォォン!!（大きな 爆発）＋声「いやーーーん！！！」＋バリバリッ・ドーン（惑星を はしる 雷）
        ＋パチパチ（火花）＋ワァン（衝撃波）→ シャラララ↑（まん中の 光が あらわれる）
-       → バシュッ（黄色）→ キィン（赤）→ ヴォン（黒）→ ドォォン!!＋ゴォォッ（火の 輪）＋ドン・ドン（あちこちの 爆発）＋バリッ（黄色と 赤の 雷）＋ワァン（波紋）
-       → ズゥン（赤い 惑星）＋パチパチ・ゴォォ（のこる 火）＋バリバリッ（のこる 雷）→ シュゥゥン↓（まん中の 光が 小さく なる）→ 超神様の 音へ"""
+       → バシュッ（黄色）→ キィン（赤）→ ヴォン（黒）→ ドォォン!!＋ゴォォッ（火の 輪）＋バリッ（黄色と 赤の 雷）＋ワァン（波紋）
+       → ズゥン（赤い 惑星）＋バリバリッ（のこる 雷）→ シュゥゥン↓（まん中の 光が 小さく なる）→ 超神様の 音へ"""
     fps = CI.FPS
     seg = {m: (a / fps + o, b / fps + o) for a, b, m in CI.SEQ}
     W = float(CI.W)
@@ -1795,10 +1943,6 @@ def cutin_mix(mx, r, CI, o=0.0):
         mx.add(glassring(mtof((96, 93, 91)[k]), .8, r), ts + tlch + .02, (.08, .06, .05)[k], (-.5, .5, 0)[k], rv=.5)
         if k in CI.FIRE_RINGS:                                                              # ゴォォッ（火の 輪）
             mx.add(fire_roar(.8, r), ts + tlch, .32, (-.3, .3)[k % 2], rv=.35)
-    for (df, x, y, R0) in CI.NW_BURSTS:                                                      # ドン（あちこちの 爆発）
-        t = (CI.RIPPLE['f0'] + df) / fps + o
-        mx.add(explosion(r, .32, 1.35), t, .3, pan_x(x), rv=.3)
-        mx.add(crackle(.3, 200, r), t + .03, .12, pan_x(x), rv=.3)
     for (f0, ang) in CI.NBOLTS:                                                              # バリッ（黄色と 赤の 雷）
         t = f0 / fps + o
         xe = CI.edge_point(CI.F, ang)[0]
@@ -1807,13 +1951,14 @@ def cutin_mix(mx, r, CI, o=0.0):
     # --- 赤い 惑星（爆発と 雷は のこる）→ まん中の 光が 小さく なる ---
     t3, t3e = seg['R3']
     mx.add(boom(70, 30, .7, .3, .05, 2.0, r, grit=.05), t3, .45 * FZ_LOW, rv=.15)
-    mx.add(fire_roar(.9, r, 1500, 250, .5), t3, .22, rv=.3)
-    mx.add(crackle(.7, 120, r), t3, .14, -.4, rv=.3)
-    mx.add(crackle(.7, 120, r), t3 + .05, .14, .4, rv=.3)
     k0, k1 = (t3 + v / fps for v in CI.R3_SHRINK)                                            # シュゥゥン↓
     mx.add(suck(k1 - k0 + .1, r), k0, .22, rv=.4)
     mx.duck(k0 + .1, t3e + .3, -10.0, ramp=.25)                                              # 超神様の 音へ ゆずる
     mx.add(bell(mtof(103), .5, idx=.8, tau=.2, glock=0), k1 - .02, .05, rv=.5)               # チン（小さな 光）
+    v = say(IYAN, np.random.default_rng(78))                                                 # 声「いやーーーん！！！」（大きな 爆発：超プレミアムの 声）
+    tv = tb + VOICE_IYAN[0]
+    mx.duck(tv, tv + len(v) / SR - .05, VOICE_IYAN[1], ramp=.04)
+    mx.add(v, tv, PC_VOICE_G, rv=.22)
 
 
 def read_glitch():

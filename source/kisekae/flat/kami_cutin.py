@@ -12,9 +12,10 @@
      1.1〜1.3秒 一瞬 青い 光に つつまれる（二枚目の 青い 宇宙の 光）
      1.3〜2.3秒 まん中で 大きな 爆発（火の 玉・惑星の 上を 広がる 衝撃波・火花）・惑星に 大きな 雷が はしる → まん中の 光が あらわれる
      2.3〜2.8秒 黄色（反転）→ 赤い 宇宙 → 黒い 宇宙（前の 青を 黒に）
-     2.8〜3.9秒 白い 反転の 中を 衝撃波の 波紋：波に のって 黄色と 赤の 火の 輪・あちこちで 爆発・まん中から 外へ 黄色と 赤の 雷
-     3.9〜4.7秒 赤い 惑星に もどる（惑星の 上の 爆発と 雷は のこる）→ まん中の 光が 小さく なって まわりが 暗く なる
+     2.8〜3.9秒 白い 反転の 中を 衝撃波の 波紋：波に のって 黄色と 赤の 火の 輪・まん中から 外へ 黄色と 赤の 雷
+     3.9〜4.7秒 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なって まわりが 暗く なる
        → 超神様の 動画の はじめの 小さな 光（同じ 所）に つなぐ
+   まさちゃん「一枚目、二枚目、三枚目のような小さな爆破のエフェクト消して！」→ 白い 反転の 中の 小さな 爆発と 赤い 惑星に のこる 火は 消した
    点めつ：画面の 大きな 明るさの 入れかわりは 青い 光・黄色・赤・白・赤 の 時だけ（黄色 → 赤 → 黒 は 0.17秒ずつ）。雷は 同じ 所に つづけて 出さない・
      火の 輪は 2つ だけ。反転の 中の 色は 明るさを そろえて 色だけ かえる
    python3 flat/kami_cutin.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
@@ -45,8 +46,8 @@ SEQ = ((0, 33, 'M'),         # 赤い 宇宙・まん中は まだ 光らない�
        (69, 74, 'Nyel'),     # 反転（黄色）
        (74, 79, 'R2'),       # 赤い 宇宙
        (79, 84, 'K'),        # 黒い 宇宙（前の 青を 黒に）
-       (84, 117, 'Nwhite'),  # 白い 反転の 中を 衝撃波の 波紋＋黄色と 赤の 爆発と 雷
-       (117, 141, 'R3'))     # 赤い 惑星に もどる（爆発と 雷は のこる）→ まん中の 光が 小さく なる
+       (84, 117, 'Nwhite'),  # 白い 反転の 中を 衝撃波の 波紋＋黄色と 赤の 火の 輪と 雷
+       (117, 141, 'R3'))     # 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なる
 N = SEQ[-1][1]
 IMPACT, BOOM = 33, 39                 # 大きな 隕石が 当たる コマ・爆発の はじまりの コマ
 EXPO = .78                            # 光の 量（ふちを くっきり・反転の 黒い 帯は ふちに そって 細く）
@@ -634,21 +635,6 @@ def fireball(img, cx, cy, R, heat, smoke, a, seed=0.0, squash=2.4, gain=1.9, lif
     sub += fire_col(T) * (D * gain)[..., None]
 
 
-def fireball_disp(out, cx, cy, R, heat, a, seed=0.0, fade=1.0):
-    """火の 玉（画面の 色に 重ねる：白い 反転の 上でも 見える ように）。明るさは まん中から ふちへ なめらかに 下がるだけ・炎の もようは 色あいで
-       （白い 中で 明るさが ちらちら かわらない ＝ 点めつに しない）"""
-    box = box_of(cx, cy, R * 1.35)
-    if box is None or heat <= .005:
-        return
-    x0, y0, x1, y1 = box
-    q, n, n2, n3 = fire_fields(cx, cy, R, a, seed, 1.0, box)
-    qn, D, T = fire_T(q, n, n2, n3, heat)
-    af = (np.clip(KS.smoothstep(1.05, .62, q + .3 * (n - .5)) * (.75 + .25 * np.clip(T * 2.5, 0, 1)), 0, 1) * fade)[..., None]
-    fc = np.clip(fire_col(np.clip(T * 1.25 + .18, 0, 1.05)) * 1.15, 0, 1)
-    sub = out[y0:y1, x0:x1]
-    sub[:] = sub * (1 - af) + fc * af
-
-
 # ---------------------------------------------------------------- 大きな 爆発（まん中）
 def boom_R(a):
     return 160.0 + 640.0 * (1 - math.exp(-a / .16))
@@ -987,35 +973,6 @@ def fire_ring(out, fi, k):
     out[:] = out * (1 - a) + fire_lum(T, Lf) * a
 
 
-NW_BURSTS = ((3, 300, 1500, 230), (7, 900, 760, 200), (11, 820, 1750, 250), (15, 200, 900, 180), (19, 640, 2150, 260),
-             (23, 1000, 1250, 210), (27, 380, 520, 190))   # 白い 反転の 中の 爆発：(f0 から の コマ, x, y, 大きさ)
-
-
-def nwhite_bursts(out, fi):
-    for k, (df, x, y, R0) in enumerate(NW_BURSTS):
-        age = (fi - RIPPLE['f0'] - df) / FPS
-        if not (0 <= age < .42):
-            continue
-        R = R0 * (.25 + .75 * (1 - math.exp(-age / .1)))
-        heat = 1.25 * math.exp(-age / .2)                       # はじめは 黄色く 光る
-        fade = 1.0 - sstep(.18, .4, age)
-        fireball_disp(out, x, y, R, heat, age, seed=k * 1.3, fade=fade)
-
-
-R3_FIRES = tuple((x, y, R0) for (df, x, y, R0) in NW_BURSTS if depth_at(x, y) > 40) + \
-    ((sd_xy(480, 40)[0], sd_xy(480, 40)[1], 130), (sd_xy(-560, 70)[0], sd_xy(-560, 70)[1], 150))   # 赤い 惑星に のこる 火（惑星の 上の 爆発と ふちの 2つ）
-
-
-def r3_fires(img, fi):
-    k = fi - SEQ[-1][0]
-    heat = .62 * (1 - sstep(4, 18, k))
-    smoke = .55 * (1 - sstep(10, 22, k))
-    t = fi / FPS
-    for i, (x, y, R0) in enumerate(R3_FIRES):
-        R = R0 * .55 * (1 + .05 * math.sin(fi * .5 + i * 1.7))
-        fireball(img, x, y, R * 1.15, heat, smoke, .4 + .3 * t, seed=2.0 + i, squash=1.0, gain=1.4, lift=.6, flat=1.35)
-
-
 # ---------------------------------------------------------------- 1コマ
 def frame_M(fi):
     t = fi / FPS
@@ -1080,7 +1037,6 @@ def frame_Nwhite(fi):
     neg = rgb_split(neg, 3.0 * math.exp(-(fi - RIPPLE['f0']) / 6.0), TILT)
     for k in FIRE_RINGS:
         fire_ring(neg, fi, k)
-    nwhite_bursts(neg, fi)
     nwhite_bolts(neg, fi)
     return neg
 
@@ -1092,7 +1048,6 @@ def frame_R3(fi):
     sun = 1.0 - .9 * sh
     expo = EXPO * (1 - .965 * sstep(R3_SHRINK[0] + 2, N - SEQ[-1][0] - 1, k))
     img = scene_lin('R', t, sun=sun, I=0.0, rim=1.0 - .7 * sh)
-    r3_fires(img, fi)
     planet_bolts(img, fi, 1.0 - sh)
     img *= expo / EXPO
     fl = np.zeros_like(img)
