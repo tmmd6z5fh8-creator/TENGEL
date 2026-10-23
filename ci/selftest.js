@@ -111,14 +111,17 @@
     await step(R, 'fx', async function () {
       var F = window.TengelFx; if (!F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[6, 2, 10]], n: 18 }, { t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: 'ワイド', state: '不的中', hits: [], n: 9 }], ranks: { 6: 1, 2: 2, 10: 3 } };
+      // 画面の 進み（1秒に 何コマ 描けたか）：シミュレーターでは 演出の 間 描くのが 止まる ことが ある（実機で 確かめる）
+      function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
       var kind = F.show(Object.assign({ force: 'big' }, spec));
-      await sleep(900);
-      var res = { kind: kind, push: !!document.querySelector('#fxOv .push.big'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
+      var fpsPush = await fps(1000);
+      var res = { kind: kind, fpsPush: fpsPush, push: !!document.querySelector('#fxOv .push.big'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
         stage: (function () { var st = document.querySelector('#fxOv .fxs'); return st ? { k: st.style.getPropertyValue('--fxk'), w: innerWidth, h: innerHeight } : null; })(),
         decide: [F.decide(Object.assign({}, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })).kind, F.decide(spec).kind, F.decide({ rows: [{ t: '馬単', state: '的中', hits: [[6, 2]] }] }).kind, F.decide({ rows: [{ t: '馬単', state: '不的中', hits: [] }] }).kind] };
       for (var k of ['fz_nglow.webp', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       await mark('fx-push');
-      F.tap(); await sleep(1800);
+      F.tap(); res.fpsReveal = await fps(1000);
+      await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
       var rb = document.querySelector('#fxOv .rb');
       res.board = rb ? { cls: rb.className, title: rb.querySelector('.bh').innerText, sub: rb.querySelector('.bsub').innerText, rows: Array.from(rb.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' '); }), closeVis: getComputedStyle(document.querySelector('#fxOv .close')).visibility } : null;
       await mark('fx-board');
@@ -126,7 +129,8 @@
       F.show(Object.assign({ force: 'fz' }, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })); await sleep(600);
       res.fzPush = !!document.querySelector('#fxOv .push.fz');
       await mark('fx-fz-push');
-      F.tap(); await sleep(7600);
+      F.tap(); res.fpsFz = await fps(1000); await sleep(6600);
+      await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
       res.fz = { rib: (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null, title: (document.querySelector('#fxOv .rb .bh') || {}).innerText || null, closeVis: getComputedStyle(document.querySelector('#fxOv .close')).visibility, finOpacity: getComputedStyle(document.querySelector('#fxOv .ov.fz .fin')).opacity };
       await mark('fx-fz-result');
       F.close(); await sleep(200);
