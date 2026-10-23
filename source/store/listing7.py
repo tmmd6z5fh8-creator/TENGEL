@@ -97,18 +97,20 @@ The app does NOT offer real-money gambling: there is no betting, no purchase of 
 Points (in-app currency):
 - New users receive 1,500 points on first launch (no purchase needed).
 - Judging a race (reading the user's screenshots on the device and showing the result) uses 200 points. Building a 5-race pick uses 200 points.
-- Points can unlock more bet types for the record (500 points each) and an extra data slot (15,000 points).
+- Points can unlock more bet types for the record (500 each), an extra data slot (15,000) and cosmetic themes (1,000-7,000).
 - Points are sold as consumable in-app purchases and granted monthly by auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points can be used for 30 days from delivery. There is no free trial.
-- Points, unlocks and records are stored only on the device. The app tells the user before buying that deleting the app erases them; only a small marker (first-launch gift received, subscription transaction IDs already credited) is kept in the Keychain so the same points cannot be granted twice.
+- Points, unlocks and records are stored only on the device (the app says before buying that deleting the app erases them); only a small Keychain marker (gift received, credited subscription transactions) prevents granting the same points twice.
 - On first launch the app shows a notice screen (horse-race betting is for ages 20+, play responsibly, the app does not sell betting tickets and promises no profit) that the user confirms with 「はじめる」.
 - The app is iPhone-only (UIDeviceFamily 1, portrait). On iPad it runs in iPhone compatibility mode.
 
 Reservations and notifications:
-- After a judgment the user picks horses inside the suggested zones and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip this race). This only stores the user's own planned picks on the device for bookkeeping; nothing is purchased.
-- If the race start time was read from the screenshot (or entered), the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！" / check the result). It uses UNUserNotificationCenter only; there is no server and no remote push. The user is asked for notification permission at the first reservation and can turn the notifications off in Settings > 結果確認のお知らせ.
+- After a judgment the user picks horses inside the suggested zones and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip). This only stores the user's own planned picks on the device; nothing is purchased.
+- If the race start time is known, the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！"). UNUserNotificationCenter only; no server, no remote push. Permission is asked at the first reservation; notifications can be turned off in Settings > 結果確認のお知らせ.
 - The user then enters the finishing order (or reads it from a result screenshot, on the device) and the app shows hit/miss per bet type for their own record.
 
-Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short CSS/SVG animation (no video) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch (AVAudioSession ambient) and mix with other apps' audio. Flashing stays under 3 per second at any point; the user can turn effects off or use the reduced-motion version in Settings > 的中の演出 (it also follows iOS Reduce Motion).
+Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short CSS/SVG animation (no video) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch and mix with other apps' audio. Flashing stays under 3 per second; effects can be turned off or reduced in Settings > 的中の演出 (also follows iOS Reduce Motion).
+
+Themes (Settings > 着せ替え): 30 cosmetic themes (colors, bundled OFL fonts, an animated header picture, PUSH and board style); 26 unlock with points, 3 are rewards for owning 8/16/25 themes. Assets are bundled (CSS/SVG/WebP, no video, no download); animation stops with Reduce Motion.
 
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.

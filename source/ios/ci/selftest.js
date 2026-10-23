@@ -137,6 +137,42 @@
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
+    // 第4弾：着せ替え。テーマを 切り替えて（解放の 確認は test_native）判定タブの 上の絵・色・字・テーマの 的中PUSH と ボードを 確かめる。
+    // 見本の絵（ks_<id>.webp）は リポジトリに 入れないので、CIでは 404（なしでも 動く ことを 確かめる）。字（ks の WOFF2）と ks_<id>.json は 入っている
+    await step(R, 'kisekae', async function () {
+      var K = window.TengelKisekae; if (!K) return { on: false };
+      await K.ready;
+      var res = { list: K.list().length, groups: Array.from(new Set(K.list().map(function (t) { return t.group; }))), current0: K.current(), count: K.count(), usableSakura: K.usable('sakura'), band: K.band, files: {} };
+      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
+      await K.apply('sakura'); await sleep(900);
+      document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
+      var bn = document.querySelector('#ksBnr');
+      res.sakura = { ks: document.documentElement.dataset.ks, loaded: K.loaded(), bnr: bn ? { hidden: bn.hidden, h: bn.getBoundingClientRect().height, w: bn.getBoundingClientRect().width, k: bn.style.getPropertyValue('--ksk'), anims: bn.getAnimations({ subtree: true }).length, inner: !!bn.querySelector('.bnrw') } : null,
+        bg: getComputedStyle(document.body).backgroundColor, font: getComputedStyle(document.body).fontFamily.slice(0, 40), hfont: getComputedStyle(document.querySelector('.brand h1')).fontFamily.slice(0, 30),
+        fontLoaded: document.fonts.check('700 16px "Kaisei Decol"'), themeCss: !!document.querySelector('#ksTheme') && document.querySelector('#ksTheme').textContent.length, scrollW: document.documentElement.scrollWidth };
+      await mark('ks-judge');
+      var F = window.TengelFx;
+      F.show({ r: 8, n: 14, rows: [{ t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: '単勝', state: '的中', hits: [[6]], n: 3 }], ranks: { 6: 1, 2: 2 }, force: 'hit' }); await sleep(600);
+      res.push = { cls: (document.querySelector('#fxOv .push') || {}).className, svg: !!document.querySelector('#fxOv .push svg'), theme: (F.current() || {}).theme };
+      await mark('ks-push');
+      F.tap(); await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
+      var rb = document.querySelector('#fxOv .rb');
+      res.board = rb ? { cls: rb.className, title: rb.querySelector('.bh').innerText, orn: !!rb.querySelector('.orn'), pressed: (document.querySelector('#fxOv .pressed') || {}).className } : null;
+      await mark('ks-board');
+      F.close(); await sleep(200);
+      document.querySelector('.tabbar [data-tab=set]').click(); await sleep(400);
+      var card = document.querySelector('#setKisekae');
+      if (card) { card.scrollIntoView({ block: 'start' }); await sleep(300); }
+      res.card = card ? { tiles: card.querySelectorAll('.kst').length, on: (card.querySelector('.kst.on') || {}).dataset ? card.querySelector('.kst.on').dataset.ks : null, locks: card.querySelectorAll('.kst.lock').length, names: Array.from(card.querySelectorAll('.kst .ksn')).slice(0, 6).map(function (e) { return e.innerText; }) } : null;
+      await mark('ks-set');
+      await K.apply('tengel'); await sleep(900);
+      document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
+      res.tengel = { ks: document.documentElement.dataset.ks, bg: getComputedStyle(document.body).backgroundColor, anims: (document.querySelector('#ksBnr') || { getAnimations: function () { return []; } }).getAnimations({ subtree: true }).length, scrollW: document.documentElement.scrollWidth };
+      await mark('ks-tengel');
+      await K.apply('default'); await sleep(400);
+      res.back = { ks: document.documentElement.dataset.ks || null, bnrHidden: (document.querySelector('#ksBnr') || {}).hidden };
+      return res;
+    });
     await sleep(2800);
     await step(R, 'autobackup', async function () {
       var s = await TengelNative.loadBackup();

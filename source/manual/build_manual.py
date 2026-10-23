@@ -37,6 +37,7 @@ ICONS = {
     'alert': '<path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/>',
     'copy': '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
     'plusbox': '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/>',
+    'palette': '<path d="M12 3a9 9 0 0 0 0 18c1.4 0 2.2-.9 2.2-2 0-.6-.3-1-.7-1.4-.4-.4-.6-.8-.6-1.3 0-1 .9-1.8 2-1.8H16a5 5 0 0 0 5-5c0-3.6-4-6.5-9-6.5z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7.5" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/><circle cx="17.5" cy="11" r="1.2"/>',
     'x': '<path d="M6 6l12 12M18 6 6 18"/>',
     'send': '<path d="M21 3 3 10.5l7 2.5 2.5 7z"/><path d="m10 13 5-5"/>',
 }
@@ -64,6 +65,7 @@ ITEMS = [
     dict(id='racedata', g='data', t='レースのデータを入れる', d='判定＋着順でマザーデータに1行・一覧で直す', ic='plusbox', kw='マザーデータ 入れる 着順 払戻 一覧 直す 消す 手で入れる CSV 書き出す 足す 入れ替える'),
     dict(id='dataupdate', g='data', t='大井のデータを新しくする', d='分析シートと分析表を姫に送るだけ', ic='sync', kw='更新 分析シート 分析表 姫 突き合わせ'),
     dict(id='points', g='set', t='ポイント・Pカスタム・ミッション', d='1レース200P・買う・解放・記録でもらう', ic='yen', kw='ポイント 200P 買う サブスク Pカスタム 解放 券種 ミッション 消える 復元'),
+    dict(id='kisekae', g='set', t='着せ替え（壁紙）', d='30のテーマ・ポイントで解放・帯の壁紙', ic='palette', kw='着せ替え 壁紙 テーマ 解放 帯 シルバー帯 ゴールド帯 マスター帯 色 字 上の絵 的中ボタン ボード'),
     dict(id='zones', g='set', t='買い目編集', d='区分ごとの馬単と3着を変える', ic='sliders', kw='カスタム 買い目 編集 初期'),
     dict(id='apikey', g='set', t='画像の読み取り（APIキー）', d='キーの作り方と料金', ic='key', kw='APIキー Anthropic 料金 モデル'),
     dict(id='backup', g='set', t='アプリの更新とバックアップ', d='記録を守る・機種変更', ic='shield', kw='バックアップ 機種変更 戻す 更新'),
@@ -137,7 +139,7 @@ APP_FONTS = ('<style>'
 # App Store版で出さない項目（ホーム画面に追加・チャットでデータを送る流れはWeb版だけ）
 APP_SKIP = ('install', 'dataupdate', 'apikey')   # App Store版は画像の読み取りにAPIキーを使わない（端末の中で読む）
 # Web版で出さない項目（App Storeのアップデート・データの更新はApp Store版だけ）
-WEB_SKIP = ('update', 'points')   # ポイント・Pカスタム・ミッションも App Store版だけ
+WEB_SKIP = ('update', 'points', 'kisekae')   # ポイント・Pカスタム・ミッション・着せ替えも App Store版だけ
 # App Store版だけ名前を変える項目（アプリの更新は「アップデート」の項目にあるので）
 APP_ITEM = {'backup': {'t': 'バックアップ', 'd': '記録を守る・機種変更・自動バックアップ'}}
 SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}'
