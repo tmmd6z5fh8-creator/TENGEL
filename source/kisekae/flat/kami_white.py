@@ -1,6 +1,8 @@
 """超神様的中の 動画：① と ② の 間の 白い 光（40コマ・1.33秒）。① の さいごの まっ白 1コマと ② の はじめの 白 4コマと あわせて 1.5秒
    まさちゃん「四枚目のシーンのあと、白い光に包まれるシーンは、1.5秒に伸ばして！」（四枚目＝① の さいごの 金の 爆発）
-   白い 光の 中で、まん中が ほんのり 金色に 息を して、うすい 金の 光の すじが ゆっくり 回り、金の キラキラが ふわっと 光っては 消える（少しずつ 上へ）。
+   白い 光の 中で、まん中が ほんのり 金色に 息を して、うすい 金の 光の すじが ゆっくり 回る。
+   まさちゃん「三枚目のシーンは、キラキラの演出を金粉が舞ってる豪華な演出にして！」→ キラキラを 金粉に：こまかい 金の 粒（遠い ほど 小さい）・
+   ひらひら 回る 金箔（向きが かわると キラッと 光る）・手前を ぼけた 大きな 金箔が とおる。ゆっくり 落ちながら ゆれて、まん中の まわりを 少し 回る
    はじめと おわりの 7コマで ① の さいごの 1まい・② の はじめの 1まいに そろえる。画面は ずっと 白に 近い 明るさ（点めつに ならない）
    python3 flat/kami_white.py <① の さいごの 1まい> <② の はじめの 1まい> <出力フォルダ> → w001.png … w040.png（何回 作っても 同じ）"""
 import os, sys, math, random
@@ -11,7 +13,6 @@ W, H = 1170, 2532
 NW, FPS = 40, 30
 C = (580.0, 1180.0)                    # 光の まん中（超神様の 動画の はじめの 光と 同じ 所）
 GOLD = np.float32((1.0, .84, .5))      # うすい 金（RGB）
-SPK = np.float32((1.0, .74, .26))      # キラキラの 金
 
 
 def sstep(e0, e1, x):
@@ -30,16 +31,79 @@ def grid():
     return _G['g']
 
 
-def sparkle_list():
-    rng = random.Random(4400)
+GOLDS = (np.float32((.8, .56, .14)), np.float32((.9, .68, .2)), np.float32((.97, .79, .3)), np.float32((1.0, .88, .45)), np.float32((1.0, .95, .7)))   # 金の 色（向きで かわる：こい 金 → 明るい 金 → 光る）
+
+
+def dust_list():
+    """金粉：(種類, x, y, 大きさ, 落ちる 速さ, ゆれ（はば・速さ・位相）, 回る 角度・速さ, かたむき・速さ, こさ)。far＝こまかい 粒・mid＝粒・leaf＝金箔・fg＝手前の ぼけた 金箔"""
+    rng = np.random.default_rng(4500)
     out = []
-    for _ in range(46):
-        out.append(dict(t0=rng.uniform(-.2, NW / FPS - .3), life=rng.uniform(.45, .9), x=rng.uniform(40, W - 40), y=rng.uniform(150, H - 150),
-                        s=rng.uniform(.6, 1.4), vy=-rng.uniform(20, 60), rot=rng.uniform(0, math.pi / 4)))
+    for kind, n, s0, s1, a0, a1 in (('far', 1800, .9, 2.0, .5, .8), ('mid', 800, 2.0, 4.2, .65, .95), ('leaf', 160, 8.0, 22.0, .85, 1.0), ('fg', 14, 26.0, 46.0, .22, .32)):
+        for _ in range(n):
+            out.append(dict(kind=kind, x=rng.uniform(-60, W + 60), y=rng.uniform(-120, H + 60), s=rng.uniform(s0, s1),
+                            vy=rng.uniform(18, 80) * (1.8 if kind == 'fg' else 1.0), sw=rng.uniform(5, 28), sf=rng.uniform(1.2, 3.5), sp=rng.uniform(0, 2 * math.pi),
+                            rot=rng.uniform(0, math.pi), vr=rng.uniform(-5, 5), tl=rng.uniform(0, 2 * math.pi), vt=rng.uniform(3, 12),
+                            a=rng.uniform(a0, a1), pts=rng.uniform(.6, 1.0, 5)))
     return out
 
 
-SP = sparkle_list()
+DUST = dust_list()
+
+
+def dust(img, t, env):
+    """金粉を 重ねる（同じ 色の 粒を まとめて 描いて 色ごとに 重ねる）"""
+    masks = [np.zeros((H, W), np.float32) for _ in GOLDS]
+    glint = np.zeros((H, W), np.float32)
+    fg = [np.zeros((H, W), np.float32) for _ in GOLDS]
+    sw = .1 * t                                                      # まん中の まわりを 少し 回る
+    cs, sn = math.cos(sw), math.sin(sw)
+    for p in DUST:
+        x = p['x'] + p['sw'] * math.sin(p['sf'] * t + p['sp'])
+        y = p['y'] + p['vy'] * t
+        dx, dy = x - C[0], y - C[1]
+        x, y = C[0] + dx * cs - dy * sn, C[1] + dx * sn + dy * cs
+        if not (-60 < x < W + 60 and -60 < y < H + 60):
+            continue
+        c = math.cos(p['tl'] + p['vt'] * t)                           # 向き（-1〜1）：表が こっちを 向くと 明るく
+        ci = min(len(GOLDS) - 1, int((c * .5 + .5) * (len(GOLDS) - .01)))
+        g = abs(c) ** 12                                             # キラッ
+        a = p['a'] * env
+        s = p['s']
+        w = max(.6, s * (.22 + .78 * abs(c)))
+        ang = math.degrees(p['rot'] + p['vr'] * t)
+        if p['kind'] in ('far', 'mid'):
+            cv2.ellipse(masks[ci], (int(x * 8), int(y * 8)), (int(s * 8), int(w * 8)), ang, 0, 360, float(a), -1, cv2.LINE_AA, shift=3)
+        else:
+            th = math.radians(ang)
+            pts = []
+            for j, rr in enumerate(p['pts']):
+                q = 2 * math.pi * j / 5 + .3
+                px, py = math.cos(q) * s * rr, math.sin(q) * w * rr
+                pts.append((x + px * math.cos(th) - py * math.sin(th), y + px * math.sin(th) + py * math.cos(th)))
+            if p['kind'] == 'fg':                                     # 手前の ぼけた 金（まるい 光）
+                cv2.circle(fg[min(len(GOLDS) - 1, ci + 1)], (int(x * 8), int(y * 8)), int(s * 8), float(a), -1, cv2.LINE_AA, shift=3)
+            else:
+                cv2.fillPoly(masks[ci], [np.int32(np.array(pts) * 8)], float(a), cv2.LINE_AA, shift=3)
+                if g > .35:                                         # 光る 時は ふちも 光る
+                    cv2.polylines(glint, [np.int32(np.array(pts) * 8)], True, float(g * env * .8), 2, cv2.LINE_AA, shift=3)
+        if p['kind'] in ('mid', 'leaf') and g > .35:                 # 光る 時の 十字の 光
+            L = (s * 2.2 + 10) * g
+            for q in (math.radians(ang), math.radians(ang + 90)):
+                cv2.line(glint, (int((x - L * math.cos(q)) * 8), int((y - L * math.sin(q)) * 8)), (int((x + L * math.cos(q)) * 8), int((y + L * math.sin(q)) * 8)),
+                         float(g * env), 2, cv2.LINE_AA, shift=3)
+            cv2.circle(glint, (int(x * 8), int(y * 8)), int((s * .6 + 2) * 8), float(g * env), -1, cv2.LINE_AA, shift=3)
+    for m, col in zip(masks, GOLDS):
+        m = cv2.GaussianBlur(m, (0, 0), .7)[..., None]
+        img = img * (1 - m) + col * m
+    for m, col in zip(fg, GOLDS):                                    # 手前の ぼけた 金（まるい 光）
+        m = cv2.GaussianBlur(m, (0, 0), 10)[..., None]
+        img = img * (1 - m) + col * m
+    g1 = cv2.GaussianBlur(glint, (0, 0), 1.0)
+    g2 = cv2.GaussianBlur(glint, (0, 0), 6)
+    ag = np.clip(g1 * 1.1 + g2 * .5, 0, .9)[..., None]                # 光る 金の 十字（白の 上でも 見える 金色）
+    img = img * (1 - ag) + np.float32((1.0, .78, .26)) * ag
+    ac = np.clip(cv2.GaussianBlur(glint, (0, 0), .6) * 1.4 - .35, 0, 1)[..., None]   # まん中は 白く 光る
+    return img * (1 - ac) + np.float32((1.0, .99, .94)) * ac
 
 
 def frame(a, b, k):
@@ -58,21 +122,8 @@ def frame(a, b, k):
     rays = (w1 ** 6 * .6 + w2 ** 8 * .4) * np.exp(-rr / 1700.0) * np.clip(rr / 160.0, 0, 1) * .1
     k_ = ((g + rays) * env)[..., None]
     img = img * (1 - k_) + GOLD * k_
-    # キラキラ（十字の 光・ふわっと 光って 消える・少しずつ 上へ）
-    m = np.zeros((H, W), np.float32)
-    for p in SP:
-        age = t - p['t0']
-        if not 0 <= age <= p['life']:
-            continue
-        e = math.sin(math.pi * age / p['life']) ** 2 * env
-        x, y = p['x'], p['y'] + p['vy'] * age
-        L = 34 * p['s'] * (.6 + .4 * e)
-        for th in (p['rot'], p['rot'] + math.pi / 2):
-            dx, dy = L * math.cos(th), L * math.sin(th)
-            cv2.line(m, (int((x - dx) * 8), int((y - dy) * 8)), (int((x + dx) * 8), int((y + dy) * 8)), float(e * .8), 2, cv2.LINE_AA, shift=3)
-        cv2.circle(m, (int(x * 8), int(y * 8)), int(5 * p['s'] * 8), float(e), -1, cv2.LINE_AA, shift=3)
-    m = np.clip(cv2.GaussianBlur(m, (0, 0), 1.2) * 1.4 + cv2.GaussianBlur(m, (0, 0), 6) * .9, 0, 1)[..., None] * .6
-    img = img * (1 - m) + SPK * m
+    # 金粉（ひらひら 落ちながら キラッ）
+    img = dust(img, t, env)
     return np.clip(img, 0, 1)
 
 

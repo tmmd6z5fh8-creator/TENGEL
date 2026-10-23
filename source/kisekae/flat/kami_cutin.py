@@ -2,7 +2,7 @@
    第1版：まさちゃん「超神様的中ボタンを追加して！ 超神様的中の4回に1回ランダムで発生」「送った一個目の動画のようなカットインの素材を作成したい！」
      （宇宙エフェクト 28枚・聞いたら「超神様的中に カットイン」「画面いっぱい」）→ 送ってくれた 絵は 見るだけ（なぞらない・字「Heat.」は 使わない）。
      惑星の ふち（ななめの 地平線）・まん中で ギラッと 光る 太陽・とぶ 岩 を 一から 計算で 描いた（1.7秒）
-   第2版：まさちゃん「ここ中心に光ってるところを最初は光らせずに隕石が落ちて、一瞬二枚目の画像の光に包まれるシーンを入れて、中心が大きな爆発と
+   第2版（4.7秒 → 第3版 3.6秒・108コマ）：まさちゃん「ここ中心に光ってるところを最初は光らせずに隕石が落ちて、一瞬二枚目の画像の光に包まれるシーンを入れて、中心が大きな爆発と
      地球に大きな雷が走り、中心の光が現れる、その後の黄色、赤色、青色、グレーのシーンを青色を黒に色にして、三枚目の画像のグレーの中心から外側へ
      波打つ演出を黄色と赤色の爆発と雷が混じった演出にして！ その後に四枚目の画像(爆発や雷は残ったまま)中心の光が小さくなり、超神様的中演出に繋げて！
      ここの超神様的中に繋げるためのシーンは、今の指示を追加して秒数が伸びるのは問題ない！」（一枚目＝赤い 宇宙・二枚目＝青い 宇宙・三枚目＝白い 反転の 波紋・
@@ -12,10 +12,10 @@
      1.1〜1.3秒 一瞬 青い 光に つつまれる（二枚目の 青い 宇宙の 光）
      1.3〜2.3秒 まん中で 大きな 爆発（火の 玉・惑星の 上を 広がる 衝撃波・火花）・惑星に 大きな 雷が はしる → まん中の 光が あらわれる
      2.3〜2.8秒 黄色（反転）→ 赤い 宇宙 → 黒い 宇宙（前の 青を 黒に）
-     2.8〜3.9秒 白い 反転の 中を 衝撃波の 波紋：波に のって 黄色と 赤の 火の 輪・まん中から 外へ 黄色と 赤の 雷
-     3.9〜4.7秒 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なって まわりが 暗く なる
+     2.8〜3.6秒 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なって まわりが 暗く なる
        → 超神様の 動画の はじめの 小さな 光（同じ 所）に つなぐ
    まさちゃん「一枚目、二枚目、三枚目のような小さな爆破のエフェクト消して！」→ 白い 反転の 中の 小さな 爆発と 赤い 惑星に のこる 火は 消した
+   まさちゃん「一枚目、二枚目のこのシーンいらない！」（白い 反転の 波紋の はじめと おわり）→ 白い 反転の 波紋の 場面（火の 輪・雷）は まるごと 消した
    点めつ：画面の 大きな 明るさの 入れかわりは 青い 光・黄色・赤・白・赤 の 時だけ（黄色 → 赤 → 黒 は 0.17秒ずつ）。雷は 同じ 所に つづけて 出さない・
      火の 輪は 2つ だけ。反転の 中の 色は 明るさを そろえて 色だけ かえる
    python3 flat/kami_cutin.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
@@ -46,13 +46,10 @@ SEQ = ((0, 33, 'M'),         # 赤い 宇宙・まん中は まだ 光らない�
        (69, 74, 'Nyel'),     # 反転（黄色）
        (74, 79, 'R2'),       # 赤い 宇宙
        (79, 84, 'K'),        # 黒い 宇宙（前の 青を 黒に）
-       (84, 117, 'Nwhite'),  # 白い 反転の 中を 衝撃波の 波紋＋黄色と 赤の 火の 輪と 雷
-       (117, 141, 'R3'))     # 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なる
+       (84, 108, 'R3'))      # 赤い 惑星に もどる（雷は のこる）→ まん中の 光が 小さく なる
 N = SEQ[-1][1]
 IMPACT, BOOM = 33, 39                 # 大きな 隕石が 当たる コマ・爆発の はじまりの コマ
 EXPO = .78                            # 光の 量（ふちを くっきり・反転の 黒い 帯は ふちに そって 細く）
-RIPPLE = dict(f0=84, speed=2200.0, lam=112.0, width=150.0, amp=72.0, decay=.5, launch=(0.0, .08, .17))   # 衝撃波（秒は f0 から）
-FIRE_RINGS = (0,)                     # 火の 輪に する 波紋（launch の 番号：1つ＝同じ 所の 点めつを ふやさない）
 R3_SHRINK = (6, 21)                   # 赤い 惑星に もどって から まん中の 光が 小さく なる コマ（R3 の はじめから）
 
 
@@ -535,32 +532,6 @@ def fire_col(T):
     return np.stack([np.interp(T, xs, cs[:, i]) for i in range(3)], -1).astype(np.float32)
 
 
-def fire_lut():
-    """火の 色あい（T）× 明るさ（光の 量 L）→ 画面の 色（どの 色あいでも 明るさは L）"""
-    def f():
-        Ts = np.linspace(0, 1.05, 48, dtype=np.float32)
-        Ls = np.linspace(0, 1, 48, dtype=np.float32)
-        lut = np.zeros((48, 48, 3), np.float32)
-        for i, T in enumerate(Ts):
-            c = np.clip(fire_col(np.float32([max(T, .2)]))[0] * 1.15, 0, 1)
-            for j, L in enumerate(Ls):
-                lut[i, j] = match_lum(c, float(L))
-        return lut
-    return KF.cache('ci2_firelut', f)
-
-
-def fire_lum(T, L):
-    lut = fire_lut()
-    ti = np.clip(np.asarray(T, np.float32) / 1.05 * 47, 0, 47)
-    li = np.clip(np.asarray(L, np.float32) * 47, 0, 47) * np.ones_like(ti)
-    t0 = np.minimum(ti.astype(np.int32), 46)
-    l0 = np.minimum(li.astype(np.int32), 46)
-    ft = (ti - t0)[..., None]
-    fl = (li - l0)[..., None]
-    c00, c01, c10, c11 = lut[t0, l0], lut[t0, l0 + 1], lut[t0 + 1, l0], lut[t0 + 1, l0 + 1]
-    return ((c00 * (1 - fl) + c01 * fl) * (1 - ft) + (c10 * (1 - fl) + c11 * fl) * ft).astype(np.float32)
-
-
 def fire_tex():
     def f():
         return (KS.fbm(H, W, 9, 801, 5).astype(np.float32), KS.fbm(H, W, 23, 811, 4).astype(np.float32))
@@ -729,7 +700,7 @@ PBOLTS = (  # (出る コマ, 種類, 長さ（コマ）, 先の 太さ（画素
     (39, 'L', 6, 16), (39, 'Rr', 6, 16), (41, 'D1', 5, 18), (43, 'D2', 5, 18), (46, 'L2', 5, 14), (48, 'R2', 5, 14),
     (51, 'D3', 5, 18), (54, 'L', 5, 15), (57, 'Rr', 5, 15), (60, 'D1', 5, 16), (63, 'D2', 4, 16),
     (70, 'L2', 4, 13), (75, 'D3', 4, 15), (80, 'R2', 4, 13),       # 黄色・赤・黒の 間も 1本ずつ
-    (118, 'L2', 5, 13), (123, 'D2', 5, 15), (128, 'Rr', 4, 13))    # 赤い 惑星に もどった 後（雷は のこる）
+    (85, 'L2', 5, 13), (90, 'D2', 5, 15), (95, 'Rr', 4, 13))       # 赤い 惑星に もどった 後（雷は のこる）
 BOLT_GLOW = ((0, (1, 1, 1), 1.5), (3, (1, .86, .5), 1.5), (10, (1, .55, .15), .95), (30, (1, .32, .08), .45))   # 金（超神様の 雷と 同じ 色）
 
 
@@ -783,64 +754,13 @@ def planet_bolts(img, fi, gain=1.0):
         glow_add(img, m * gain, BOLT_GLOW)
 
 
-def edge_point(c, ang):
-    a = math.radians(ang)
-    dx, dy = math.cos(a), math.sin(a)
-    best = 1e9
-    for lim, d, o in ((-30.0, dx, c[0]), (W + 30.0, dx, c[0]), (-30.0, dy, c[1]), (H + 30.0, dy, c[1])):
-        if abs(d) > 1e-6:
-            k = (lim - o) / d
-            if k > 0:
-                best = min(best, k)
-    return c[0] + dx * best, c[1] + dy * best
-
-
-NBOLTS = ((86, -118), (91, 158), (96, -36), (102, 100), (108, -168))   # 白い 反転の 中の 雷：(出る コマ, 向き（度）)
-NB_COL = dict(red=col(.92, .16, .04), yel=col(1.0, .82, .16), core=col(1.0, .98, .82))
-
-
-def nwhite_bolts(out, fi):
-    """まん中から 外へ はしる 黄色と 赤の 雷（白い 反転の 上に 重ねる）"""
-    for k, (f0, ang) in enumerate(NBOLTS):
-        age = fi - f0
-        if not (0 <= age < 4):
-            continue
-        g = env_g(age, 4)
-        seed = 9700 + k * 37
-        st = (F[0] + 70 * math.cos(math.radians(ang)), F[1] + 70 * math.sin(math.radians(ang)))
-        en = edge_point(F, ang)
-        pts, macro, rs = bolt_points(seed, fi, st, en, ('zig', 'wander', 'step')[k % 3])
-        grow = min(1.0, (age + 1) / 2)
-        m = np.zeros((H, W), np.float32)
-        draw_taper(m, pts, 3.0, 15.0, g, grow)
-        Ltot = poly_len(macro)[-1]
-        for i in range(1, len(macro) - 1):
-            if rs.random() < .5 or grow < i / (len(macro) - 1):
-                continue
-            p, q = macro[i], macro[i + 1]
-            ang2 = math.atan2(q[1] - p[1], q[0] - p[0]) + rs.choice((-1, 1)) * rs.uniform(.5, 1.0)
-            ln = Ltot * rs.uniform(.12, .24)
-            br = KF.fine_jag(random.Random(seed + 2 + i), [p, (p[0] + ln * math.cos(ang2), p[1] + ln * math.sin(ang2))], (.25, .3, .35))
-            draw_taper(m, br, 2.0, 7.0, g * .8)
-        m1 = KF.fblur(m, 4)
-        m2 = KF.fblur(m, 14)
-        m3 = KF.fblur(m, 40)
-        ar = np.clip(m3 * 2.4 + m2 * .9, 0, .85)[..., None]
-        out[:] = out * (1 - ar) + NB_COL['red'] * ar
-        ay = np.clip(m1 * 2.0 + m2 * .7, 0, 1)[..., None]
-        out[:] = out * (1 - ay) + NB_COL['yel'] * ay
-        ac = np.clip(m * 1.3, 0, 1)[..., None]
-        out[:] = out * (1 - ac) + NB_COL['core'] * ac
-
-
 # ---------------------------------------------------------------- 反転（ネガ）・色の かえ方
 def luma(x):
     return x[..., 0] * .2126 + x[..., 1] * .7152 + x[..., 2] * .0722
 
 
 RAMPS = dict(  # 反転した 明るさ（0＝もとの いちばん 明るい 所）→ 色
-    Nyel=((0, (0, 0, 0)), (.18, (.45, .02, .02)), (.4, (1.0, .32, .05)), (.62, (1.0, .82, .12)), (.82, (1.0, .97, .6)), (1, (1.0, .97, .96))),
-    Nwhite=((0, (0, 0, .02)), (.22, (.02, .06, .18)), (.45, (.12, .45, .65)), (.7, (.62, .86, .95)), (.88, (.96, .95, .98)), (1, (1.0, .96, .98))))
+    Nyel=((0, (0, 0, 0)), (.18, (.45, .02, .02)), (.4, (1.0, .32, .05)), (.62, (1.0, .82, .12)), (.82, (1.0, .97, .6)), (1, (1.0, .97, .96))))
 
 
 def s2l(c):
@@ -912,67 +832,6 @@ def rgb_split(img, px, ang=0.0):
     return out
 
 
-# ---------------------------------------------------------------- 衝撃波の 波紋（白い 反転の 中）
-def ripple_field(fi):
-    """まん中から 広がる 輪：外向きの ずれ（画素）"""
-    d, s, v, rf = planet_coords()
-    t = (fi - RIPPLE['f0']) / FPS
-    disp = np.zeros((H, W), np.float32)
-    for k, tl in enumerate(RIPPLE['launch']):
-        age = t - tl
-        if age < 0:
-            continue
-        Rk = 40 + RIPPLE['speed'] * age
-        A = RIPPLE['amp'] * math.exp(-age / RIPPLE['decay']) * (1.0 - .25 * k)
-        env = np.exp(-((rf - Rk) / RIPPLE['width']) ** 2) * (1 / (1 + rf / 1400.0))
-        inner = np.clip((Rk - rf) / 600.0, 0, 1) * math.exp(-age / .25) * .18
-        disp += A * (env + inner * np.exp(-(rf / max(1.0, Rk)) ** 2)) * np.sin(2 * np.pi * (rf - Rk) / RIPPLE['lam'])
-    return disp
-
-
-def apply_ripple(img, disp, ca=.08):
-    xx, yy = grid()
-    d, s, v, rf = planet_coords()
-    ux, uy = (xx - F[0]) / np.maximum(rf, 1), (yy - F[1]) / np.maximum(rf, 1)
-    out = np.empty_like(img)
-    for ch, k in ((0, 1 + ca), (1, 1.0), (2, 1 - ca)):
-        mx = (xx - ux * disp * k).astype(np.float32)
-        my = (yy - uy * disp * k).astype(np.float32)
-        out[..., ch] = cv2.remap(img[..., ch], mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-    gy, gx = np.gradient(disp)
-    edge = np.clip(gx * ux + gy * uy, -1, 1)
-    out += (edge * .045)[..., None]
-    return np.clip(out, 0, 1)
-
-
-def fire_ring(out, fi, k):
-    """波紋に のって ひろがる 黄色と 赤の 火の 輪（白い 反転の 上に 重ねる）"""
-    tl = RIPPLE['launch'][k]
-    age = (fi - RIPPLE['f0']) / FPS - tl
-    if age <= 0:
-        return
-    life = 1.0 if age < .22 else max(0.0, 1 - (age - .22) / .5)
-    if life <= 0:
-        return
-    Rk = 40 + RIPPLE['speed'] * age
-    th = 120.0 + 300.0 * age
-    d, s, v, rf = planet_coords()
-    x = (Rk - rf) / th
-    t1, t2 = fire_tex()
-    z = max(Rk, 150.0) / 520.0
-    box = (0, 0, W, H)
-    n = .6 * tex_sample(t2, F[0], F[1], z, .7 * k, box) + .4 * tex_sample(t1, F[0], F[1], z * .8, -.4 * k, box)
-    n3 = tex_sample(t2, F[0], F[1], z * .4, 1.3 + k, box)
-    ridge = 1 - np.abs(2 * n3 - 1)                                   # 炎の 舌（色あいで 見せる）
-    xf = x + .35 * (n - .5) * (1 - KS.smoothstep(0, .4, x))          # 前の ふちは ギザギザ（明るさが まわりと ほぼ 同じ 所なので 点めつに ならない）
-    prof = np.where(xf < 0, np.exp(-(xf * th / 26.0) ** 2), 1.0 - KS.smoothstep(.8, 1.8, x))
-    a = (np.clip(prof * (1.0 + .1 * (n - .5)), 0, 1) * life)[..., None]
-    xc = np.clip(x, 0, 1.5)
-    T = np.clip(1.0 - .47 * xc + .35 * (n - .5) + .25 * (ridge - .5), .25, 1.05 - .5 * xc / 1.5)
-    Lf = .72 - .56 * KS.smoothstep(0, 1.5, x)                        # 火の 明るさ（光の 量）：前は 明るい 黄色・後ろは 暗い 赤（なめらかに 1回 下がるだけ）
-    out[:] = out * (1 - a) + fire_lum(T, Lf) * a
-
-
 # ---------------------------------------------------------------- 1コマ
 def frame_M(fi):
     t = fi / FPS
@@ -1028,19 +887,6 @@ def frame_color(fi, m, k):
     return rgb_split(out, (4.0 if m == 'R2' else 5.0) if k == 0 else 0.0, TILT)
 
 
-def frame_Nwhite(fi):
-    t = fi / FPS
-    img = scene_lin('R', t, sun=1.0, I=1.5)
-    neg = negative(finish(img), 'Nwhite')
-    disp = ripple_field(fi)
-    neg = apply_ripple(neg, disp)
-    neg = rgb_split(neg, 3.0 * math.exp(-(fi - RIPPLE['f0']) / 6.0), TILT)
-    for k in FIRE_RINGS:
-        fire_ring(neg, fi, k)
-    nwhite_bolts(neg, fi)
-    return neg
-
-
 def frame_R3(fi):
     t = fi / FPS
     k = fi - SEQ[-1][0]
@@ -1053,9 +899,7 @@ def frame_R3(fi):
     fl = np.zeros_like(img)
     flare(fl, 'R', 1.75 - .7 * sh, kz=math.sqrt(1.75) * (1 - .9 * sh))    # まん中の 光：小さく なる（明るさは のこす）
     img += fl
-    out = finish(img)
-    disp = ripple_field(fi)
-    return apply_ripple(out, disp * .8 * (1 - sh), ca=.03)
+    return finish(img)
 
 
 def frame(fi):
@@ -1068,8 +912,6 @@ def frame(fi):
         out = frame_Boom(fi)
     elif m in ('Nyel', 'R2', 'K'):
         out = frame_color(fi, m, k)
-    elif m == 'Nwhite':
-        out = frame_Nwhite(fi)
     else:
         out = frame_R3(fi)
     return (np.clip(out, 0, 1) * 255 + .5).astype(np.uint8)
