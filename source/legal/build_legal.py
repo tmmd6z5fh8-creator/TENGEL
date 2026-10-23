@@ -120,7 +120,7 @@ def tokushoho(c, mark=False):
 
 
 def fonts_html():
-    """アプリに入れたフォントの著作権表示とライセンス（SIL OFL 1.1）"""
+    """アプリに入れたフォントの著作権表示とライセンス（SIL OFL 1.1）。着せ替えの字（ios/fonts/ks/・第4弾）は 使う字だけに しぼった もの（OFL の 条件どおり 著作権と ライセンスは そのまま。Reserved Font Name は どれにも 無い）"""
     rows = [('BIZ UDPGothic', 'OFL-BIZUDPGothic.txt'), ('Dela Gothic One', 'OFL-DelaGothicOne.txt'), ('IBM Plex Mono', 'OFL-IBMPlexMono.txt')]
     out, body = [], None
     for name, f in rows:
@@ -130,8 +130,19 @@ def fonts_html():
         m = re.search(r'-{10,}\s*\nSIL OPEN FONT LICENSE.*', rest, re.S)
         assert m, f
         body = body or m.group(0)
+    ks = []
+    kj = os.path.join(FONTS_DIR, 'ks', 'fonts.json')
+    if os.path.exists(kj):
+        fams = []
+        for r in json.load(open(kj, encoding='utf-8'))['fonts']:
+            if r['family'] not in fams:
+                fams.append(r['family'])
+        for fam in fams:
+            t = open(os.path.join(FONTS_DIR, 'ks', 'OFL-' + fam.replace(' ', '') + '.txt'), encoding='utf-8').read().strip()
+            ks.append(f'<li><b>{esc(fam)}</b><br><span class="small">{esc(t.split(chr(10), 1)[0])}</span></li>')
     return ('<p>このアプリでは、次のフォントを SIL Open Font License, Version 1.1 にしたがって使っています（フォントのファイルは変えていません）。</p><ul>' + ''.join(out) + '</ul>'
-            f'<pre class="ofl">{esc(body)}</pre>')
+            + (('<p>着せ替え（壁紙）の字には、次のフォントを同じライセンスにしたがって使っています。アプリを小さくするため、画面で使う文字だけを残した版です（著作権とライセンスの表示はそのまま。予約されたフォント名はありません）。</p><ul>' + ''.join(ks) + '</ul>') if ks else '')
+            + f'<pre class="ofl">{esc(body)}</pre>')
 
 
 def about(target):
