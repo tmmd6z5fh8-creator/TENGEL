@@ -1,0 +1,89 @@
+{
+ "phase": 3,
+ "device": "iphone",
+ "offer": "前の記録が見つかったよ\nこのアプリの中の自動バックアップに、買ったレースの記録が1件とポイントの台帳があるよ（今日 18:36）。いまのアプリには記録が入っていないの。戻す？\n\n記録を戻す\n戻さない",
+ "before": {
+  "bets": 0,
+  "races": 290
+ },
+ "walletBefore": {
+  "total": 1500,
+  "balance": {
+   "total": 1500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "zoom": 1,
+   "pinch": true
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "splash"
+ },
+ "after": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "toast": "記録1件を戻したよ（同じレースは新しい方を残したよ）。買い目は初期の設定にしたよ",
+  "offer": false
+ },
+ "walletAfter": {
+  "total": 1500,
+  "balance": {
+   "total": 1500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "zoom": 1,
+   "pinch": true
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "splash"
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-10-23T18:36:34.520Z"
+ },
+ "errors": [],
+ "at": "2026-10-23T18:36:39.882Z"
+}

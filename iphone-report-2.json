@@ -1,0 +1,76 @@
+{
+ "phase": 2,
+ "device": "iphone",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "version": "1.0",
+   "build": "1",
+   "device": "phone"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 402,
+  "h": 812,
+  "dpr": 3,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "34px"
+ },
+ "persist": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "form": true
+ },
+ "wallet": {
+  "total": 1500,
+  "balance": {
+   "total": 1500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500"
+  ],
+  "counted": 0,
+  "gift": {
+   "error": "error:-34018",
+   "ok": false
+  },
+  "zoom": {
+   "pinch": true,
+   "zoom": 1
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "splash"
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-10-23T18:36:09.553Z"
+ },
+ "deleteDB": "ok",
+ "errors": [],
+ "at": "2026-10-23T18:36:12.834Z"
+}

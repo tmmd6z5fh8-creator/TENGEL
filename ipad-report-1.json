@@ -1,0 +1,514 @@
+{
+ "phase": 1,
+ "device": "ipad",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "device": "phone",
+   "version": "1.0",
+   "build": "1"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 0,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPad; CPU OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 375,
+  "h": 647,
+  "dpr": 2,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "0px"
+ },
+ "wallet": {
+  "total": 1500,
+  "balance": {
+   "total": 1500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "pinch": true,
+   "zoom": 1
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "first"
+ },
+ "notify": {
+  "ok": true,
+  "auth": "notDetermined"
+ },
+ "save": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "rsv": {
+   "state": "reserved",
+   "types": [
+    "馬単",
+    "3連単"
+   ],
+   "points": 99,
+   "zones": [
+    "中穴→人気",
+    "人気→大穴"
+   ]
+  },
+  "card": "買い目\n\n予約ずみ（結果待ち）\n発走時刻を入れるとお知らせできるよ（レース情報の「発走時刻」）\n買い目を確認（馬単・3連単）\n結果を入れる（記録タブ）\n選び直して予約し直す\n予約を消す\n読み直して馬を選び直したら「予約し直す」で上書きするよ（同じレースは1つ・ポイントは使わないよ）。\n",
+  "toast": "✅ 8R の買い目を予約したよ。結果は記録タブで入れてね",
+  "reserve": true,
+  "rate": true,
+  "omakase": true,
+  "pct": [
+   "選んだ馬で 8.2%・3連単 5.1%（n=98）　※全部選んでいるのでゾーンと同じ",
+   "選んだ馬で 7.1%・3連単 6.1%（n=98）　※全部選んでいるのでゾーンと同じ"
+  ]
+ },
+ "fx": {
+  "kind": "big",
+  "fpsPush": 17,
+  "push": true,
+  "css": true,
+  "settings": {
+   "effects": true,
+   "calm": null,
+   "sound": true
+  },
+  "calm": false,
+  "reduced": false,
+  "sfx": {
+   "ctx": true,
+   "fetched": true,
+   "playing": false,
+   "more": 0
+  },
+  "assets": {
+   "fz_nglow.webp": 404,
+   "sfx_big.m4a": 404
+  },
+  "stage": {
+   "k": "0.7666",
+   "w": 375,
+   "h": 647
+  },
+  "decide": [
+   "fz",
+   "big",
+   "hit",
+   "miss"
+  ],
+  "fpsReveal": 14,
+  "board": {
+   "cls": "rb big t-default",
+   "title": "デカ的中!!",
+   "sub": "8R の券種ごとの結果",
+   "rows": [
+    "3連単 的中 6 → 2 → 10 ",
+    "馬単 的中 6 → 2 ",
+    "ワイド 不的中 "
+   ],
+   "closeVis": "visible"
+  },
+  "fzPush": true,
+  "fpsFz": 21,
+  "fz": {
+   "rib": "超大穴\n10\n11番人気が3連単に！\n",
+   "title": "ど的中！！！",
+   "closeVis": "visible",
+   "finOpacity": "1"
+  },
+  "closed": true
+ },
+ "fx5": {
+  "decide": {
+   "kind": "gd",
+   "supers": [
+    {
+     "no": 11,
+     "rank": 11
+    }
+   ],
+   "bigs": [
+    {
+     "no": 8,
+     "rank": 8
+    }
+   ]
+  },
+  "lottery": [
+   "pc",
+   "gd"
+  ],
+  "films": [
+   "sgd_film",
+   "spg_up"
+  ],
+  "assets": {
+   "gd_dome.webp": 404,
+   "pm_face_F.webp": 404,
+   "sgd_film.mp4": 404,
+   "sgd_last.webp": 404,
+   "sfx_gd.m4a": 404
+  },
+  "gd": {
+   "kind": "gd",
+   "push": true,
+   "fps": 2,
+   "parts": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "title": "神様的中！！！",
+   "rib": "超大穴\n11\n大穴\n8\nが3連単に！\n",
+   "closeVis": "visible"
+  },
+  "pc": {
+   "kind": "pc",
+   "push": true,
+   "fps": 4,
+   "parts": [
+    1,
+    1,
+    5,
+    1,
+    1
+   ],
+   "fps4": 10,
+   "title": "ど的中！！！",
+   "closeVis": "visible"
+  },
+  "sgd": {
+   "kind": "sgd",
+   "push": true,
+   "cur": {
+    "kind": "sgd",
+    "phase": "reveal",
+    "quiet": false,
+    "theme": null,
+    "film": 2,
+    "sp": 0
+   },
+   "ov": "ov fz sgd still",
+   "video": true,
+   "title": "超神様的中！！！",
+   "closeVis": "visible",
+   "holder": 1
+  },
+  "closed": true
+ },
+ "kisekae": {
+  "list": 30,
+  "groups": [
+   "定番",
+   "季節・行事",
+   "競馬",
+   "和・アート",
+   "レトロ・ポップ",
+   "帯"
+  ],
+  "current0": "default",
+  "count": 0,
+  "usableSakura": false,
+  "band": {
+   "silver": 8,
+   "golden": 16,
+   "tengel": 25
+  },
+  "files": {
+   "ks_sakura.json": 200,
+   "ks_banner_ranch.svg": 200,
+   "fonts/KaiseiDecol-700.woff2": 200,
+   "ks_3b3f002de6b9b1c35fec1c32400e1494.webp": 404
+  },
+  "sakura": {
+   "ks": "sakura",
+   "loaded": true,
+   "bnr": {
+    "hidden": false,
+    "h": 153.828125,
+    "w": 375,
+    "k": "0.9615",
+    "anims": 85,
+    "inner": true
+   },
+   "bg": "rgb(255, 246, 248)",
+   "font": "\"Zen Kaku Gothic New\", \"BIZ UDPGothic\", ",
+   "hfont": "\"Kaisei Decol\", \"Dela Gothic O",
+   "fontLoaded": true,
+   "themeCss": 31196,
+   "scrollW": 375
+  },
+  "push": {
+   "cls": "push sk",
+   "svg": true,
+   "theme": "sakura"
+  },
+  "board": {
+   "cls": "rb hit t-sakura",
+   "title": "的中！",
+   "orn": true,
+   "pressed": "pressed sk"
+  },
+  "card": {
+   "tiles": 30,
+   "on": "sakura",
+   "locks": 29,
+   "names": [
+    "いつもの",
+    "牧場",
+    "かわいいお馬さん",
+    "毛糸のお馬とロボット",
+    "ぷりけつのお馬",
+    "桜"
+   ]
+  },
+  "tengel": {
+   "ks": "tengel",
+   "bg": "rgb(10, 27, 34)",
+   "anims": 240,
+   "scrollW": 375
+  },
+  "back": {
+   "ks": null,
+   "bnrHidden": true
+  }
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-10-23T18:46:52.394Z",
+  "auto": true,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "keys": [
+   "app",
+   "appVer",
+   "at",
+   "bets",
+   "settings",
+   "slots",
+   "wallet",
+   "auto"
+  ],
+  "hasKey": false
+ },
+ "copy": true,
+ "downloads": true,
+ "ocr": {
+  "local": true,
+  "ms": 10681,
+  "raw": {
+   "ok": true,
+   "n": 68,
+   "ms": 5031,
+   "sample": [
+    "大井競馬第9競走",
+    "ダ1400m",
+    "12頭 馬場：良発走 18:0510月14日（水）",
+    "枠",
+    "馬番",
+    "1"
+   ]
+  },
+  "venue": "大井",
+  "date": "2026-10-14",
+  "r": 9,
+  "dist": 1400,
+  "surface": "ダ",
+  "baba": "良",
+  "n": 12,
+  "horses": 12,
+  "h6": {
+   "no": 6,
+   "tan": 2.4,
+   "fuku": "1.1-1.3"
+  },
+  "h12": {
+   "no": 12,
+   "tan": 88.6,
+   "fuku": "13.2-21.1"
+  },
+  "s1": {
+   "combo": "6-2-10",
+   "odds": 18.5
+  },
+  "s5": {
+   "combo": "2-10-6",
+   "odds": 41.3
+  },
+  "s10": {
+   "combo": "6-10-7",
+   "odds": 84
+  },
+  "docs": [
+   {
+    "lines": 69,
+    "horses": 12,
+    "tri": 0
+   },
+   {
+    "lines": 45,
+    "horses": 0,
+    "tri": 15
+   }
+  ],
+  "lines": [
+   69,
+   45
+  ]
+ },
+ "wallet2": {
+  "total": 1500,
+  "balance": {
+   "total": 1500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "pinch": true,
+   "zoom": 1
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "first"
+ },
+ "iap": {
+  "ok": true,
+  "products": [],
+  "missing": [
+   "jp.tengel.app.points500",
+   "jp.tengel.app.points1000",
+   "jp.tengel.app.points2000",
+   "jp.tengel.app.points4000",
+   "jp.tengel.app.sub2000",
+   "jp.tengel.app.sub4400",
+   "jp.tengel.app.sub9200"
+  ]
+ },
+ "layout": {
+  "height": 647,
+  "safeBottom": 0,
+  "statusBar": 20,
+  "windowHeight": 667,
+  "top": 0,
+  "safeTop": 20,
+  "bottom": 0,
+  "y": 20,
+  "cssTop": "0px",
+  "cssBottom": "0px",
+  "padTop": "0px",
+  "padBottom": "0px"
+ },
+ "store": {
+  "version": "",
+  "found": false,
+  "date": "",
+  "notes": "",
+  "error": "",
+  "url": ""
+ },
+ "data": {
+  "ok": true,
+  "ver": "2026-10-09b",
+  "n": 290,
+  "newer": false,
+  "cur": "2026-10-09b"
+ },
+ "mother": {
+  "n": 290,
+  "input": []
+ },
+ "fonts": {
+  "status": "loaded",
+  "loaded": [
+   "BIZ UDPGothic",
+   "Dela Gothic One",
+   "IBM Plex Mono"
+  ]
+ },
+ "video": {
+  "ok": true,
+  "dur": 45,
+  "w": 1080,
+  "h": 1920
+ },
+ "settings": {
+  "points": "ポイント\n\n1,500P\n買ったP 0（うちサブスク 0）・もらったP 1,500\nポイントを買う\nサブスク\nくわしく\n1レースの読み込み（画像の読み取りから判定まで）に 200P 使うよ。同じレースを読み直すときは 0P。買ったPから先に使うよ（サブスクのP → パックのP → もらったP）。\n⚠️ アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません。ポイントはこの端末の中だけに入っているよ（ほかの端末には同期しないよ）。\n",
+  "custom": "Pカスタム\n\nPカスタムで、自分だけのテンゲルを育てよう！\nポイントで、使える券種とマザーデータの枠を増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。\n券種（記録・買い目の予約で選べるもの）\nはじめから：単勝・馬単・3連単\n複勝\n1つ 500P\n解放する\n枠複\n1つ 500P\n解放する\n枠単\n1つ 500P\n解放する\n馬連\n1つ 500P\n解放する\nワイド\n1つ 500P\n解放する\n3連複\n1つ 500P\n解放する\nマザーデータの枠（自分のデータで参考的中率を出す）\n1つ目はアプリに入っているデータ。2つ目・3つ目を解放すると、Excelや判定したレースで自分だけのマザーデータを作れるよ。\n2つ目「マザーデータ2」\n1つ 15,000P\nPが足りない\n3つ目「マザーデータ3」\n1つ 15,000P\nPが足りない\n",
+  "mission": "ミッション\n\n200Pを使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。いま 0レース・次は 8レースで 500P\n\n8レース記録　500P\nあと 8レース（0/8）\n壁紙のミッション\n設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま 0枚\n壁紙を8枚あつめる　シルバー帯の壁紙\nあと 8枚（0/8）\n壁紙を16枚あつめる　ゴールド帯の壁紙\nあと 16枚（0/16）\n壁紙を25枚あつめる　マスター帯の壁紙\nあと 25枚（0/25）\n",
+  "update": "アプリの更新\n\nいまの版\n1.0（1）\n中身 2026.10.14-2\nApp Store\nまだApp Storeに出ていないよ\n新しい版があるか確認\nApp Storeでは、まだ見つからなかったよ（公開されると、ここで確かめられるよ）\nアプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ。\n⚠️ アプリを削除すると、中の記録・ポイント・解放したものも一緒に消えて、もどせないの。削除する前に、下の「バックアップを保存」で記録をファイルに保存してね（ポイントはファイルに入らないよ）。\n",
+  "data": "データの更新\n\nいまのデータ\n290走（7/20〜10/9）\nデータの版 2026-10-09b\n最後に確認\n今日 18:47\n新しいデータがあるか確認\nいまのデータが最新だよ✨\n1つ目のマザーデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しいレースが入った版にできるよ。読むのはレースのデータだけ。入れても、自分で入れたレース・買ったレースの記録・買い目の設定はそのまま。前のデータは「ひとつ前のデータに戻す」で戻せるよ。\n",
+  "cmPoster": 540,
+  "backup": "バックアップ（記録を守る）\n\n記録はこのアプリの中に入っているよ。アプリの中にも自動でバックアップしているけど、機種変更やアプリを消しちゃったときのために、ときどきファイルに保存してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。ポイント・解放したものはファイルには入らないよ（この端末の中だけ）。\n記録\n1件\n最後のバックアップ\nまだしてないよ\n自動バックアップ\n今日 18:46（記録1件）\nバックアップを保存\nバックアップから戻す\n"
+ },
+ "about": {
+  "text": "このアプリについて\n\nアプリ\nテンゲル 1.0（1）\nご利用にあたって\nテンゲルは、過去のレースのデータから傾向を分析して表示する道具です。参考的中率などは過去の実測で、これからの的中や利益を約束するものではありません。\n馬券を買うかどうか、何を買うかは、ご自身の判断でお決めください。\n馬券は20歳になってから。20歳未満の方は、法律により馬券を購入できません。\n競馬は無理のない範囲で楽しみましょう。のめり込みが心配なときは、ひとりで悩まずに相談してください。\nギャンブル依存症予防回復支援センター「サポートコール」0120-683-705（年中無休・24時間・通話料無料）\n相談窓口の案内（内閣官房 ギャンブル等依存症対策推進本部）\nはじめに（競馬の注意・アプリの注意・楽しみ方）\n非公式のアプリです・商標について\nテンゲルは個人が開発した非公式のアプリです。競馬の主催者・団体とは関係ありません。\n\niPhone、iPad、Safariは、米国およびその他の国で登録されたApple Inc.の商標です。iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。\nExcelは、米国Microsoft Corporationの米国およびその他の国における登録商標または商標です。\nそのほか、記載されている会社名・団体名・商品名・サービス名は、各社・各団体の商標または登録商標です。\nプライバシーポリシー\nフォントのライセンス\n",
+  "fonts": true,
+  "tokusho": false
+ },
+ "cm": {
+  "modal": true,
+  "rs": 4,
+  "t": 0.5180962083331735,
+  "paused": false,
+  "err": null,
+  "src": "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0"
+ },
+ "outside": [
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1792780911066",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1792781226482",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json?t=1792781228761",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm_app.mp4?v=d71806b0"
+ ],
+ "errors": [],
+ "at": "2026-10-23T18:47:48.362Z"
+}
