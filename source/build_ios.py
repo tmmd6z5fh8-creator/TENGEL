@@ -50,6 +50,17 @@ assert not any(n.endswith('.png') for n in names), 'PNGは入れない（Xcode�
 res = os.path.join(pkg, 'Resources'); os.makedirs(res)
 for name, src in files.items():
     shutil.copy(os.path.join(web, src), os.path.join(res, name))
+# 的中ボタンの絵と音（第3弾）：手元で作ったもの（kisekae/build_fx_assets.py → ios/fx_assets/ か FX_ASSETS=<フォルダ>）を入れる。
+# リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは音なし・ネオンの線画なしで動く）
+sys.path.insert(0, os.path.join(W, 'kisekae'))
+from build_fx import ASSET_FILES
+fx_dir = os.environ.get('FX_ASSETS') or os.path.join(W, 'ios', 'fx_assets')
+fx_have = [f for f in ASSET_FILES if os.path.exists(os.path.join(fx_dir, f))]
+for f in fx_have:
+    assert f.lower() not in names, f
+    shutil.copy(os.path.join(fx_dir, f), os.path.join(res, f)); files[f] = f
+if len(fx_have) != len(ASSET_FILES):
+    print('※ 的中ボタンの絵と音が', len(ASSET_FILES) - len(fx_have), 'こ ない（', fx_dir, '）。python3 kisekae/build_fx_assets.py で作れるよ（CIではなしのまま）')
 
 # アイコン（1024×1024・透明なし）
 icon = Image.open(os.path.join(W, 'icons', 'icon_master_en.png'))

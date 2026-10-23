@@ -584,17 +584,17 @@ FREEZE_CSS = r'''
 .orb{position:absolute;left:50%;top:46%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
   background:radial-gradient(circle,#FFFFFF 0 9%,#C8FFE0 18%,#3CFF9A 34%,rgba(60,255,154,.35) 52%,rgba(60,255,154,0) 70%);animation:orb 1.2s ease-in-out infinite alternate}
 @keyframes orb{from{transform:scale(.94)}to{transform:scale(1.04)}}
-/* 筆の字（まさちゃんの指定「パチンコのロゴのような字体とレインボーカラー」）：brush.py で描いた筆の形（フォントなし・写真の字の形は使わない）。
+/* 筆の字（まさちゃんの指定「パチンコのロゴのような字体とレインボーカラー」）：brush.py で描いた筆の形（フォントなし・写真の字の形は使わない）。class は .bzg（ボードの見出しの最後の字 .bz（boards.py）とかぶらないように。第4.56版）。
    下から：金の立体（CSS の drop-shadow を5つ重ねる・金 → こげ茶）→ 黒いふち → 金のふち → こげ茶の細いふち → 面（白 → 虹色を右下に少しずらして重ねる＝左上のふちが白く光る → 上半分につや）。まわりに白と色の光 */
 .bzd{position:absolute;width:0;height:0;overflow:hidden}
-.bz{position:absolute;left:0;top:0;overflow:visible}
-.bz .k{fill:#0A0014;stroke:#0A0014;stroke-width:120px;stroke-linejoin:round}
-.bz .g{fill:url(#bzGd);stroke:url(#bzGd);stroke-width:76px;stroke-linejoin:round}
-.bz .d{fill:#3A1200;stroke:#3A1200;stroke-width:22px;stroke-linejoin:round}
-.bz .w{fill:#FFFFFF}
-.bz .h{fill:url(#bzGl)}
+.bzg{position:absolute;left:0;top:0;overflow:visible}
+.bzg .k{fill:#0A0014;stroke:#0A0014;stroke-width:120px;stroke-linejoin:round}
+.bzg .g{fill:url(#bzGd);stroke:url(#bzGd);stroke-width:76px;stroke-linejoin:round}
+.bzg .d{fill:#3A1200;stroke:#3A1200;stroke-width:22px;stroke-linejoin:round}
+.bzg .w{fill:#FFFFFF}
+.bzg .h{fill:url(#bzGl)}
 /* 光がサッと走る（「ど的中」だけ・1.1秒ごと） */
-.bz .shn{animation:bzSh 1.1s ease-in-out var(--sd) infinite}
+.bzg .shn{animation:bzSh 1.1s ease-in-out var(--sd) infinite}
 @keyframes bzSh{0%{transform:translateX(0)}60%,100%{transform:translateX(var(--s1))}}
 /* T5「ど的中」「！」：ポンと出て少し傾いたまま止まる */
 .bzt{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--w) / -2);opacity:0;transform:rotate(var(--r));
@@ -735,7 +735,7 @@ FREEZE_CSS = r'''
   .ov.fz{--t0:1.9s}
   .ov.fz .fin{animation:fadeIn .6s ease-out 1s both!important}
   .ov.fz .frr,.ov.fz .dfl,.ov.fz .ffl path{animation:none!important}
-  .ov.fz .bz .shn{display:none}
+  .ov.fz .bzg .shn{display:none}
   .ov.fz .dlg{animation:none!important;opacity:1}
   .ov.fz .hb{animation:fadeIn .5s ease-out 1.3s both!important}
   .fz .bh{animation:fadeIn .4s ease-out 1.6s both!important}
@@ -4709,16 +4709,16 @@ def bz_svg(wd, glow, defs=True, flat=False):
     """筆の字の絵：金の立体（drop-shadow を重ねる）とまわりの光は CSS の filter（大きさに合わせる）。flat：filter なし（横ズレの帯用・軽く）"""
     fs = wd['fs']
     if flat:
-        return f'<svg class="bz" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" aria-hidden="true">{wd["stack"]}</svg>'
+        return f'<svg class="bzg" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" aria-hidden="true">{wd["stack"]}</svg>'
     ex = ' '.join(f'drop-shadow({fs * .0063:.2f}px {fs * .0126:.2f}px 0 {c})' for c in BZ_EX)
     flt = f'filter:{ex} drop-shadow(0 0 {fs * .025:.1f}px rgba(255,255,255,.75)) drop-shadow(0 0 {fs * .08:.1f}px {glow})'
-    return (f'<svg class="bz" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" style="{flt}" aria-hidden="true">'
+    return (f'<svg class="bzg" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" style="{flt}" aria-hidden="true">'
             f'{wd["defs"] if defs else ""}{wd["stack"]}</svg>')
 
 
 def bz_sil(wd, cls):
     """色ずれ用の影（字の形＋黒いふちの太さ・赤か水色）"""
-    return f'<svg class="bz {cls}" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" aria-hidden="true"><use href="#bw{wd["n"]}" class="k"></use></svg>'
+    return f'<svg class="bzg {cls}" viewBox="{wd["vb"]}" width="{wd["W"]:g}" height="{wd["H"]:g}" aria-hidden="true"><use href="#bw{wd["n"]}" class="k"></use></svg>'
 
 
 def bzt(text, cx, cy, fs, d, pal, r=0, z=1, **kw):

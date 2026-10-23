@@ -148,6 +148,7 @@ try:
             for k, v in zip(('p1', 'p2', 'p3'), res.split('-')): fm.locator(f'[data-k={k}]').fill(v)
             fm.locator('[data-k=stake][data-t="馬単"]').fill(stake); fm.locator('[data-k=payout][data-t="馬単"]').fill(pay)
             fm.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(200); fm.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
+            pg.evaluate("window.TengelFx && TengelFx.close()")   # 的中ボタン（第3弾）の画面をとじる
             pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         save('船橋', '2026-10-21', 9, '1-2-3', '600', '0')
         save('', '2026-10-21', 10, '1-2-3', '400', '0')

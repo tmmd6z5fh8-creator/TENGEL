@@ -429,6 +429,9 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .betrow .bc .hitc{background:var(--ok-bg);color:var(--ok);border-radius:4px;padding:0 3px;font-weight:700}
 .betrow .bc .refc{text-decoration:line-through;color:var(--muted)}
 .rsvtop .lrows{margin-bottom:4px}
+.fxrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.fxrow .fxlab{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fxrow .seg{flex:none;width:150px}
 .rsvtop h3{font-size:14px;margin:12px 0 8px;display:flex;gap:10px;align-items:baseline}
 .rsvtop h3 .muted{font-weight:400;font-size:12.5px}
 .rsvtop details.given summary{cursor:pointer;font-size:14px;font-weight:700;margin:12px 0 8px}
@@ -609,6 +612,8 @@ const Wallet = () => (NATIVE_APP && window.TengelWallet) || null;
 const Reserve = () => (NATIVE_APP && window.TengelReserve) || null;
 const CRate = () => (NATIVE_APP && window.TengelCustomRate) || null;
 const Native = () => (NATIVE_APP && window.TengelNative) || null;
+// App Store版（第3弾）：的中ボタン（fx.js）
+const Fx = () => (NATIVE_APP && window.TengelFx) || null;
 function toast(msg, ms = 2400) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms); }
 
 
@@ -2239,6 +2244,46 @@ document.addEventListener('tengel:wallet', notifyCard);
 document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { notifyCard(); paintNotifyCard(); } });
 document.addEventListener('tengel:notify', () => { syncNotify().then(() => { if (st.tab === 'judge') renderRsvCard(currentJudge(), true); }); });
 
+// --- 的中ボタン（第3弾・10章）：結果を保存したあとに 1つだけ出す（ど的中＞デカ的中＞的中／当たりなし＝ハズレのボード）。
+//     出さないとき：中止・全部返還（※仮）・あとで記録を直したとき（一度出した記録＝rsv.fx が入っている）・まだ結果待ちの券種があるとき。中身は fx.js
+function fxAfterSave(b, j, res, done, fields) {
+  const F = Fx(); if (!F || !done || res.abandoned || (b.rsv && b.rsv.fx) || j.state === '返還' || j.state === '結果待ち' || j.state === '—') return null;
+  const ranks = {}; rankOrder(b.horses || []).forEach((no, i) => { ranks[no] = i + 1; });
+  const types = (b.rsv.types && b.rsv.types.length) ? b.rsv.types : typesOf(b);
+  const rows = types.map(t => { const p = j.per[t] || { state: '—', hit: [], n: 0 }; return { t, state: p.state, hits: p.hit || [], n: p.n || 0 }; });
+  let kind = null;
+  try { kind = F.show({ id: b.id, r: b.r, n: +b.n || 0, rows, ranks }); } catch (e) { kind = null; }
+  if (kind) writeBet(b.id, { rsv: { ...fields.rsv, fx: kind } }, false).catch(() => {});   // 出した印（同じ記録を直しても、もう出さない）
+  return kind;
+}
+// 設定タブ：的中の演出（的中エフェクト／演出を控えめにする／効果音）
+function fxCard() {
+  const F = Fx(); if (!F || $('#setFx')) return;
+  const set = $('#v-set'); if (!set) return;
+  const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setFx'; c.style.marginBottom = 'var(--gap)';
+  const seg = (k, lab, hint) => `<div class="fxrow"><div class="fxlab"><b>${lab}</b><span class="small muted">${hint}</span></div><div class="seg" data-fx="${k}"><button type="button" data-v="1" aria-pressed="true">オン</button><button type="button" data-v="0" aria-pressed="false">オフ</button></div></div>`;
+  c.innerHTML = `<h2>的中の演出</h2><p class="hint">予約したレースの結果を保存すると、当たりの大きさに合わせて PUSH ボタン・演出・結果のボード（券種ごとの結果）が出るよ。</p>`
+    + seg('effects', '的中エフェクト', 'オフにすると、PUSH・演出・効果音なしで、結果のボードだけを静かに出すよ')
+    + seg('calm', '演出を控えめにする', 'まぶしい光や速い動きを減らすよ。この端末の「視差効果を減らす」がオンなら、はじめからオン')
+    + seg('sound', '効果音', 'PUSHが出たときと押したときの音。消音スイッチがオンのときは鳴らないよ');
+  const after = $('#setNotify') || $('#setMission'); if (after && after.nextSibling) set.insertBefore(c, after.nextSibling); else if (after) set.appendChild(c); else set.insertBefore(c, set.firstChild);
+  c.addEventListener('click', e => {
+    const b = e.target.closest('.seg[data-fx] button'); if (!b) return;
+    const k = b.parentElement.dataset.fx, on = b.dataset.v === '1';
+    F.set({ [k]: on }); paintFxCard();
+    toast({ effects: on ? '的中エフェクトをオンにしたよ' : '的中エフェクトをオフにしたよ（結果のボードだけ出すよ）', calm: on ? '演出を控えめにするよ' : '演出をいつもの形にしたよ', sound: on ? '効果音をオンにしたよ' : '効果音をオフにしたよ' }[k]);
+  });
+  paintFxCard();
+}
+function paintFxCard() {
+  const F = Fx(), c = $('#setFx'); if (!F || !c) return;
+  const s = F.get(), val = { effects: s.effects !== false, calm: F.calm(), sound: s.sound !== false };
+  $$('.seg[data-fx]', c).forEach(sg => { const on = !!val[sg.dataset.fx]; $$('button', sg).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === '1') === on))); });
+}
+document.addEventListener('tengel:wallet', fxCard);
+document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { fxCard(); paintFxCard(); } });
+document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') paintFxCard(); });
+
 // --- 予約したレースの結果（12章）：券種ごとに 的中／不的中／返還 ---
 function rsvJudge(b) { const R = Reserve(); return R && b && b.rsv && b.rsv.bets ? R.judge(b.rsv.bets, b.rsv.result || { p: [[], [], []] }, +b.n || 0) : null; }
 function rsvStatus(b) {
@@ -2358,7 +2403,9 @@ async function saveRsvf(box, btn) {
     await syncNotify();
     const per = done ? '　' + (b.rsv.types || []).map(t => `${t} ${j.per[t] ? j.per[t].state : '—'}`).join('・') : '';
     const msg = done ? `保存できたよ（${j.state}）${per}${mmsg}` : `保存したよ（まだ結果待ち）${mmsg}`;
-    setSaveMsg(id, true, msg); toast('✅ ' + msg, 4200);
+    setSaveMsg(id, true, msg);
+    const fxKind = fxAfterSave(b, j, res, done, fields);
+    if (!fxKind) toast('✅ ' + msg, 4200);
   } catch (e) { setSaveMsg(id, false, errText(e)); writeErr(e); }
   finally { if (btn) btn.disabled = false; }
 }
@@ -2370,7 +2417,7 @@ $('#recList').addEventListener('click', e => {
   if (grp === 'abandon') { $$('button', b.parentElement).forEach(x => x.setAttribute('aria-pressed', String(x === b))); updateRsvPreview(box); return; }
   const a = b.dataset.act;
   if (a === 'rimg') { const fi = $('[data-k=rimgfile]', box); if (fi) fi.click(); }
-  else if (a === 'rsave') saveRsvf(box, b);
+  else if (a === 'rsave') { const F = Fx(); if (F) { try { F.prime(); } catch (fe) { /* 音なしでも保存はする */ } } saveRsvf(box, b); }
 });
 $('#recList').addEventListener('change', e => {
   const t = e.target; if (!t.matches || !t.matches('.rsvf [data-k=rimgfile]')) return;

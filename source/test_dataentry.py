@@ -81,6 +81,7 @@ def save_result_app(pg, res, upay='', spay=''):
     if spay: f.locator('[data-k=spay]').fill(spay)
     f.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(250)
     f.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
+    pg.evaluate("window.TengelFx && TengelFx.close()")   # 的中ボタン（第3弾）の画面をとじる
     pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
 
 

@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 // テンゲル（iPhone・iPadのアプリ）
@@ -5,9 +6,11 @@ import SwiftUI
 // 記録はアプリの中に保存して、アプリの中のファイルにも自動でバックアップする（AppFiles.swift）。
 /// 起動のときにやること：結果確認のお知らせ（Notify.swift）の受け口を、アプリが起動し終わる前に入れる
 /// （押されたお知らせでアプリが開いたときに、そのお知らせを受けとるため）
+/// ・的中ボタンの効果音（第3弾）：消音スイッチ（マナーモード）なら鳴らさない・ほかのアプリの音楽は止めずに重ねる（AVAudioSession の ambient）
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         Notify.shared.install()
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         return true
     }
 }

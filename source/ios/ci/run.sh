@@ -3,7 +3,7 @@
 #  1) Swift 5（いまの Package.swift）でシミュレーター用に作る
 #  2) Swift 6 の厳しいチェックでも作れるか（Swift Playgrounds が Package.swift を作り直したとき用）
 #  3) 実機（iPhone・iPad）用に Release で作れるか（署名なし）
-#  4) iPhoneのシミュレーター：1回目（記録を保存・自動バックアップ・画面のスクショ）→ 2回目（開き直しても記録が残る・保存場所を消す）→ 3回目（「戻す？」→ 戻す）
+#  4) iPhoneのシミュレーター：1回目（買い目を予約・的中ボタンの演出・自動バックアップ・画面のスクショ）→ 2回目（開き直しても記録が残る・保存場所を消す）→ 3回目（「戻す？」→ 戻す）
 #  5) iPadのシミュレーター：1回目だけ（iPhone用のアプリなので、互換モードで iPhone の大きさの画面になる。スクショで確かめる）
 # 結果は results/（summary.txt・ログ・report-*.json・スクショ）。ワークフローが ios-ci-<ランナー> ブランチに置く
 set -uo pipefail
@@ -130,7 +130,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main points settings backup about cm rec report-1 manual manual-item report-manual back report-back"
+P1="gate-first main fx-push fx-board fx-fz-push fx-fz-result points settings backup about cm rec report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1

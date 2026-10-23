@@ -1,3 +1,4 @@
+# できた絵と音（ios/fx_assets/：kisekae/build_fx_assets.py で作る）は公開のリポジトリに入れない（アップデート指示書 1章の11）。build_ios.py が Resources/ に入れる
 tengel3.html
 chk*.js
 pchk*.js
@@ -11,3 +12,5 @@ hist_test.json
 __pycache__/
 t5/
 ios_out/
+srv_fx/
+ios/fx_assets/

@@ -4,7 +4,7 @@
 // 結果は window.webkit.messageHandlers.tengel に { name:'selftest', payload:{ file, text } } で渡す → アプリが Documents/ に書く。
 //   mark-<名前>.txt … CIがスクショを撮る合図（出したあと2.5秒そのままにする）
 //   report-<名前>.json … 結果
-// 1回目：記録を1件保存（マザーデータにも入る）→ 自動バックアップ・App Storeの版・データの更新（GitHub Pages）・画像の読み取り（端末の中の文字認識：ci/ocr/ の架空のオッズ画面）・
+// 1回目：買い目を予約（記録）→ 的中ボタン（第3弾：デカ・ど的中の演出とボード）→ 自動バックアップ・App Storeの版・データの更新（GitHub Pages）・画像の読み取り（端末の中の文字認識：ci/ocr/ の架空のオッズ画面）・
 //        時計・電波に重なる分の測り方・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
@@ -105,6 +105,33 @@
       await sleep(400);
       var b = Array.from(TengelLocal.mem.bets.values())[0];
       return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
+    });
+    // 第3弾：的中ボタン。CIの保存は予約まで（結果は入れない）なので、演出を直接出して確かめる：デカ的中の PUSH → タップ → いつものボード／ど的中の PUSH → 結果の画面。
+    // 絵と音のファイル（fz_nglow.webp・sfx_*.m4a）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）
+    await step(R, 'fx', async function () {
+      var F = window.TengelFx; if (!F) return { on: false };
+      var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[6, 2, 10]], n: 18 }, { t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: 'ワイド', state: '不的中', hits: [], n: 9 }], ranks: { 6: 1, 2: 2, 10: 3 } };
+      var kind = F.show(Object.assign({ force: 'big' }, spec));
+      await sleep(900);
+      var res = { kind: kind, push: !!document.querySelector('#fxOv .push.big'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
+        stage: (function () { var st = document.querySelector('#fxOv .fxs'); return st ? { k: st.style.getPropertyValue('--fxk'), w: innerWidth, h: innerHeight } : null; })(),
+        decide: [F.decide(Object.assign({}, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })).kind, F.decide(spec).kind, F.decide({ rows: [{ t: '馬単', state: '的中', hits: [[6, 2]] }] }).kind, F.decide({ rows: [{ t: '馬単', state: '不的中', hits: [] }] }).kind] };
+      for (var k of ['fz_nglow.webp', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
+      await mark('fx-push');
+      F.tap(); await sleep(1800);
+      var rb = document.querySelector('#fxOv .rb');
+      res.board = rb ? { cls: rb.className, title: rb.querySelector('.bh').innerText, sub: rb.querySelector('.bsub').innerText, rows: Array.from(rb.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' '); }), closeVis: getComputedStyle(document.querySelector('#fxOv .close')).visibility } : null;
+      await mark('fx-board');
+      F.close(); await sleep(300);
+      F.show(Object.assign({ force: 'fz' }, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })); await sleep(600);
+      res.fzPush = !!document.querySelector('#fxOv .push.fz');
+      await mark('fx-fz-push');
+      F.tap(); await sleep(7600);
+      res.fz = { rib: (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null, title: (document.querySelector('#fxOv .rb .bh') || {}).innerText || null, closeVis: getComputedStyle(document.querySelector('#fxOv .close')).visibility, finOpacity: getComputedStyle(document.querySelector('#fxOv .ov.fz .fin')).opacity };
+      await mark('fx-fz-result');
+      F.close(); await sleep(200);
+      res.closed = !document.querySelector('#fxOv');
+      return res;
     });
     await sleep(2800);
     await step(R, 'autobackup', async function () {

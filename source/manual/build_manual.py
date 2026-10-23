@@ -55,7 +55,7 @@ ITEMS = [
     dict(id='result', g='judge', t='判定結果の見方', d='層・推奨ゾーン・3着・参考的中率', ic='layers', kw='判定 層 ゾーン 推奨 3着 参考的中率 旧本線 A層 B層 C層'),
     dict(id='pick', g='judge', t='買う馬を選ぶ', d='番号を押して「買う／買わない」を切り替え', ic='pick', kw='馬番 選ぶ うすい 買う馬'),
     dict(id='record', g='rec', t='結果と収支を記録する', d='券種・金額・買ったゾーン・着順', ic='yen', kw='記録 保存 券種 購入額 回収額 着順 未購入 払い戻し'),
-    dict(id='hit', g='rec', t='当たり外れの決まり方', d='例で見る「的中」と「不的中」', ic='check', kw='的中 不的中 結果待ち 当たり 外れ'),
+    dict(id='hit', g='rec', t='当たり外れの決まり方', d='例で見る「的中」と「不的中」', ic='check', kw='的中 不的中 結果待ち 当たり 外れ 的中ボタン PUSH 演出 デカ的中 ど的中 ボード 効果音 控えめ'),
     dict(id='records', g='rec', t='記録タブ', d='一覧・直す・判定画面で開く・書き出し', ic='list', kw='一覧 書き出し コピー Excel 削除'),
     dict(id='win5', g='win5', t='WIN5の組み立て方', d='5レース・予算・1着ゾーン・買う馬', ic='ticket', kw='WIN5 予算 点数 ランダム 推奨'),
     dict(id='win5rec', g='win5', t='WIN5の結果と記録', d='1着の馬番で○×・払戻を保存', ic='trophy', kw='WIN5 結果 払戻 記録'),

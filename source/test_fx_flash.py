@@ -1,0 +1,60 @@
+# 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
+#   python3 test_fx_flash.py [hit,big,fz,hidden,miss]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
+#   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
+import os, shutil, subprocess, sys, time
+from playwright.sync_api import sync_playwright
+W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
+SRV = os.path.join(W, 'srv_fx'); PORT = 8796
+OUT = os.path.join(W, 't5', 'fx_frames')
+KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5)
+shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
+subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
+subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
+pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').read()
+assert "window.__NATIVE = location.protocol === 'tengel:';" in html
+open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+for f in ('fz_ncore.webp', 'fz_nglow.webp'):   # ネオンの線画（手元で作ったもの。なければ線画なしで数える）
+    src = os.path.join(W, 'ios', 'fx_assets', f)
+    if os.path.exists(src): shutil.copy(src, os.path.join(SRV, 'APP', f))
+srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
+SPEC = {'r': 9, 'n': 12, 'ranks': {'6': 1, '2': 2, '10': 3, '4': 5, '7': 4, '11': 11, '1': 9, '3': 8, '5': 7, '9': 6, '8': 12, '12': 10},
+        'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 6, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 6]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 9}]}
+STEP = """(t) => { const ov = document.getElementById('fxOv'); if (!ov) return -1; const as = ov.getAnimations({ subtree: true }); as.forEach(a => { try { a.pause(); a.currentTime = t * 1000; } catch (e) {} }); return as.length; }"""
+fails = []
+try:
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', reduced_motion='no-preference')
+        pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg.goto(f'http://localhost:{PORT}/APP/'); pg.wait_for_timeout(1500)
+        if pg.locator('#gateGo').count(): pg.click('#gateGo'); pg.wait_for_timeout(600)
+        for kind in KINDS:
+            d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
+            pg.evaluate("(s) => TengelFx.show(Object.assign({ force: %r }, s))" % kind, SPEC); pg.wait_for_timeout(400)
+            idx = 0; t0 = time.time()
+            if kind != 'miss':
+                for i in range(60):
+                    n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
+                tap = idx
+                pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
+            else:
+                tap = 0
+            frames = int(AFTER[kind] * 60)
+            for i in range(frames):
+                n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
+            pg.evaluate('TengelFx.close()')
+            r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
+            out = r.stdout.strip().split('\n')
+            worst = out[-1] if out else ''
+            bad = out[0] if out else ''
+            ok = r.returncode == 0 and '窓 0個' in bad
+            print(('  ✅ ' if ok else '  ❌ ') + f'{kind}：{idx}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
+            if not ok: fails.append(kind + ': ' + (r.stderr[-300:] if r.returncode else bad))
+        if errs: print('  ⚠️ ページのエラー:', errs[:5]); fails.append('pageerror')
+        b.close()
+finally:
+    srv.terminate()
+print('結果：', 'NG ' + str(len(fails)) if fails else 'OK')
+sys.exit(1 if fails else 0)

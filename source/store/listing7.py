@@ -108,6 +108,8 @@ Reservations and notifications:
 - If the race start time was read from the screenshot (or entered), the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！" / check the result). It uses UNUserNotificationCenter only; there is no server and no remote push. The user is asked for notification permission at the first reservation and can turn the notifications off in Settings > 結果確認のお知らせ.
 - The user then enters the finishing order (or reads it from a result screenshot, on the device) and the app shows hit/miss per bet type for their own record.
 
+Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short CSS/SVG animation (no video) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch (AVAudioSession ambient) and mix with other apps' audio. Flashing stays under 3 per second at any point; the user can turn effects off or use the reduced-motion version in Settings > 的中の演出 (it also follows iOS Reduce Motion).
+
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.
 2. 「オッズ画像から読み取る」 (Read odds from images) recognizes text in the screenshots the user selects entirely on the device (Vision). No image or text leaves the device.
@@ -189,6 +191,7 @@ ANSWERS = {
         'ポイントの期限：審査3.1.1で「買ったポイントは期限切れにできない」。説明文は「購入したポイントは期限なし・サブスクで届いたポイントは30日」にしてある',
         '紹介特典：作り方（サーバー／Appleのオファーコード）と審査3.1.1に合うかを確かめてから、プロモーション用テキストに入れる',
         '結果確認のお知らせ：ローカル通知だけ（プッシュ通知の権限・サーバーは使わない）。App Store Connect の「App のプライバシー」はデータ収集なしのまま',
+        '的中ボタン（第3弾）：演出は CSS と SVG・音はアプリの中の m4a（通信なし・お金は出さない・1秒に3回までの点めつ・設定でオフと控えめ）。審査へのメモに書いてある',
     ],
 }
 MEDIA = {
