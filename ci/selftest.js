@@ -95,14 +95,16 @@
     R.basic = basic();
     await step(R, 'wallet', wallet);
     await mark('main');
+    // 第2弾：判定画面の下は「買い目」のカード → 「買い目を予約」で記録（bets）に rsv が入る。CIでは通知の許可のダイアログを出さない（お知らせはオフ）
+    await step(R, 'notify', async function () { var s = await TengelNative.notify('status'); await TengelLocal.putSetting('notify', false); return s; });
     await step(R, 'save', async function () {
       var card = document.querySelector('#recCard');
-      setVal(card.querySelector('[data-k=stake][data-t="馬単"]'), '1800');
-      setVal(card.querySelector('[data-k=res]'), '7-6-2');
-      setVal(card.querySelector('[data-k=payout][data-t="馬単"]'), '5230');
-      await sleep(300); card.querySelector('[data-act=save]').click();
+      var btn = card.querySelector('[data-rsv=reserve]'); if (!btn) throw new Error('no reserve button: ' + card.innerText.slice(0, 120));
+      btn.click();
       await waitFor(function () { return TengelLocal.mem.bets.size > 0; }, 8000);
-      return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), toast: (document.querySelector('#toast') || {}).textContent };
+      await sleep(400);
+      var b = Array.from(TengelLocal.mem.bets.values())[0];
+      return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
     });
     await sleep(2800);
     await step(R, 'autobackup', async function () {

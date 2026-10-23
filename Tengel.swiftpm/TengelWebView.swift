@@ -118,6 +118,8 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         // App内課金：新しい取引（更新・返金・ほかの端末での購入）が届いたら、Webの画面に知らせる（台帳に足すのはWeb側）
         Store.shared.onTransaction = { [weak self] tx in self?.event("iap", tx) }
         Store.shared.start()
+        // 結果確認のお知らせが押されたら、Webの画面に知らせる（そのレースの結果入力へ）
+        Notify.shared.onOpen = { [weak self] p in self?.event("notify", p) }
         webView.load(URLRequest(url: AppSchemeHandler.startURL))
         return webView
     }
@@ -243,6 +245,13 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             let p = payload as? [String: Any] ?? [:]
             Task { [weak self] in
                 let r = await Store.shared.handle(p)
+                self?.reply(id, ok: true, value: r)
+            }
+        case "notify":
+            // 結果確認のお知らせ（許可・入れ直し・押されたお知らせ）。文はWebの画面が決める
+            let p = payload as? [String: Any] ?? [:]
+            Task { [weak self] in
+                let r = await Notify.shared.handle(p)
                 self?.reply(id, ok: true, value: r)
             }
         #if DEBUG
