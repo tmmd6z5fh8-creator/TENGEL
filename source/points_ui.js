@@ -139,7 +139,9 @@
   async function readCharge(o) {
     await walletReady;
     const form = o.form || {}, d = o.ocr || {};
-    const race = { date: d.date || form.date || '', venue: String(d.venue || form.venue || ''), r: +(d.r || form.r) || 0, rname: d.rname || form.rname || '', start: d.start || form.start || '', dist: +(d.dist || form.dist) || 0 };
+    // 読んだ画像に レース名・発走時刻が なければ、いまの入力のものを使う。ただし 別のレース（日付・開催場・R のどれかがちがう）を読んだときは引きつがない（同じレースの見分けをまちがえないため）
+    const sameAsForm = (!d.r || !form.r || +d.r === +form.r) && (!d.date || !form.date || d.date === form.date) && (!d.venue || !form.venue || P.vnorm(d.venue) === P.vnorm(form.venue));
+    const race = { date: d.date || form.date || '', venue: String(d.venue || form.venue || ''), r: +(d.r || form.r) || 0, rname: d.rname || (sameAsForm ? form.rname : '') || '', start: d.start || (sameAsForm ? form.start : '') || '', dist: +(d.dist || form.dist) || 0 };
     const stamp = e => { Object.assign(e, { date: e.date || race.date, venue: e.venue || race.venue, r: e.r || race.r, rname: e.rname || race.rname, start: e.start || race.start, dist: e.dist || race.dist, last: new Date().toISOString() }); };
     if (o.w5) {
       const key = 'w5:' + (o.w5.date || 'x'), hit = W.paid.find(e => e.w5 === key);

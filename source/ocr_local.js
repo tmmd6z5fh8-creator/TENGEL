@@ -260,7 +260,69 @@
     D._docs = docs.map(function (d) { return { lines: d.lines, horses: d.horses ? d.horses.length : 0, tri: d.tri ? d.tri.count : 0 }; });
     return D;
   }
-  var API = { parse: parse, parseOne: parseOne, rows: rows, tokens: tokens, norm: norm };
+  // ---- 結果の画面（着順と払戻）：予約したレースの結果入力に使う（第2弾・12.1 ※仮：見本の画像をもらったら直す） ----
+  //  読むもの：1〜3着の馬番（同着も）・取消／除外の馬番・レースの中止・券種ごとの払戻（組番 → 円）
+  //  着順の表：「着順 枠 馬番 馬名 …」の行（見出しの「馬番」の位置に近い数字を馬番にする）、見出しがなければ「着順 (枠) 馬番」の数の並び、「1着 6」の形
+  //  払戻の表：「単勝 6 240円」「馬単 6-2 1,120円」「3連単 6-2-10 12,340円」…（三連単・枠連 も読む）
+  var PAYTYPE = { '単勝': '単勝', '複勝': '複勝', '枠連': '枠複', '枠複': '枠複', '枠単': '枠単', '馬連': '馬連', '馬単': '馬単', 'ワイド': 'ワイド', '3連複': '3連複', '三連複': '3連複', '3連単': '3連単', '三連単': '3連単' };
+  var RE_MONEY = /^\d{1,3}(?:,\d{3})+$|^\d{3,7}$/;
+  function payType(t) { var k = String(t).replace(/^三/, '3').replace(/\s/g, ''); return PAYTYPE[k] || null; }
+  function resultOne(lines) {
+    var rs = rows(lines), out = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, places: 0, payRows: 0 };
+    var xNo = null, xWaku = null, inPay = false;
+    rs.forEach(function (r) {
+      var tk = r.toks, txt = r.text;
+      // レースの中止（馬の「競走中止」は別。発走取消・開催中止・レース中止）
+      if (/(レース|競走|開催|発走)\s*(中止|取消|取り止め)/.test(txt) && !/\d+\s*着/.test(txt) && !/^\s*\d/.test(txt)) { if (/(開催|レース|発走)/.test(txt)) out.abandoned = true; }
+      // 見出し：「馬番」の位置
+      var hdr = null; tk.forEach(function (t) { if (/^馬番$/.test(t.t) || t.t === '馬' && tk[tk.indexOf(t) + 1] && tk[tk.indexOf(t) + 1].t === '番') hdr = t; });
+      if (hdr && /着/.test(txt)) { xNo = (hdr.x + hdr.xe) / 2; var w = tk.find(function (t) { return /^枠(番)?$/.test(t.t); }); xWaku = w ? (w.x + w.xe) / 2 : null; return; }
+      // 払戻の行：先頭が券種
+      var ty = tk.length ? payType(tk[0].t) : null;
+      if (!ty && tk.length > 1 && tk[0].t === '3' && /^連(単|複)$/.test(tk[1].t)) { ty = PAYTYPE['3' + tk[1].t]; tk = tk.slice(1); }
+      if (ty) {
+        inPay = true;
+        var i = 1, nos = [];
+        for (; i < tk.length; i++) { var t = tk[i], pm = /^(\d{1,2})-(\d{1,2})$/.exec(t.t); if (t.k === 'combo') { var m = RE.combo.exec(t.t); nos = [+m[1], +m[2], +m[3]]; i++; break; } if (pm) { nos = [+pm[1], +pm[2]]; i++; break; } if (t.k === 'int' && +t.t >= 1 && +t.t <= 18) { nos.push(+t.t); if (tk[i + 1] && tk[i + 1].k === 'dash') { i++; continue; } i++; break; } if (nos.length) break; }
+        var yen = null;
+        for (; i < tk.length; i++) { var u = tk[i].t.replace(/円$/, ''); if (RE_MONEY.test(u) && num(u) >= 100 && num(u) % 10 === 0) { yen = num(u); break; } }
+        var size = { '単勝': 1, '複勝': 1, '枠複': 2, '枠単': 2, '馬連': 2, '馬単': 2, 'ワイド': 2, '3連複': 3, '3連単': 3 }[ty];
+        if (nos.length === size && yen != null) { if (!out.pay[ty]) out.pay[ty] = {}; out.pay[ty][nos.join('-')] = yen; out.payRows++; }
+        return;
+      }
+      if (inPay) return;
+      // 着順の行
+      var ints = []; tk.forEach(function (t, k) { if (t.k === 'int' && +t.t >= 1 && +t.t <= 18) ints.push({ v: +t.t, k: k, xc: (t.x + t.xe) / 2 }); });
+      if (!ints.length) return;
+      var scratched = /(取消|除外)/.test(txt) && !/競走中止/.test(txt);
+      var place = null, no = null;
+      if (tk[ints[0].k + 1] && /^着/.test(tk[ints[0].k + 1].t) && ints.length >= 2) { place = ints[0].v; no = ints[1].v; }   // 「1着 6」
+      else if (xNo != null) {
+        var cand = ints.slice(); if (ints[0].k === 0 && !scratched) { place = ints[0].v; cand = ints.slice(1); }
+        if (cand.length) { var best = cand.reduce(function (a, b) { return Math.abs(b.xc - xNo) < Math.abs(a.xc - xNo) ? b : a; }); no = best.v; }
+      } else if (scratched) no = ints[0].k === 0 && ints.length >= 2 ? ints[1].v : ints[0].v;
+      else if (ints[0].k === 0) {
+        if (ints.length >= 3 && ints[1].k === 1 && ints[2].k === 2 && ints[1].v <= 8) { place = ints[0].v; no = ints[2].v; }
+        else if (ints.length >= 2 && ints[1].k === 1) { place = ints[0].v; no = ints[1].v; }
+      }
+      if (no == null) return;
+      if (scratched) { if (out.cancel.indexOf(no) < 0) out.cancel.push(no); return; }
+      if (place != null && place >= 1 && place <= 3 && out.p[place - 1].indexOf(no) < 0 && out.p.every(function (g) { return g.indexOf(no) < 0; })) { out.p[place - 1].push(no); out.places++; }
+    });
+    return out;
+  }
+  // 画像（1〜3枚）をまとめる：着順はいちばん多く読めた画像、払戻は全部合わせる
+  function parseResult(images) {
+    var docs = (images || []).map(resultOne), D = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, got: [] };
+    var best = null; docs.forEach(function (d) { if (!best || d.places > best.places) best = d; });
+    if (best && best.places) { D.p = best.p; }
+    docs.forEach(function (d) { d.cancel.forEach(function (c) { if (D.cancel.indexOf(c) < 0) D.cancel.push(c); }); if (d.abandoned) D.abandoned = true; Object.keys(d.pay).forEach(function (t) { D.pay[t] = Object.assign(D.pay[t] || {}, d.pay[t]); }); });
+    if (D.p[0].length) D.got.push('1着'); if (D.p[1].length) D.got.push('2着'); if (D.p[2].length) D.got.push('3着');
+    if (D.cancel.length) D.got.push('取消・除外'); if (D.abandoned) D.got.push('中止');
+    var pt = Object.keys(D.pay); if (pt.length) D.got.push('払戻（' + pt.join('・') + '）');
+    return D;
+  }
+  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm };
   root.TengelOCR = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

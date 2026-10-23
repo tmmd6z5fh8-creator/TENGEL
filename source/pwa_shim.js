@@ -39,7 +39,9 @@ if (window.__NATIVE) (function () {
     // キーチェーンの「しるし」（初回プレゼント・サブスクの取引の番号）：{ ok, value, has }。ユーザーのデータは入れない
     marker: function (op, key, value) { return call('marker', { op: op, key: key, value: value }); },
     // App内課金（StoreKit 2）：op＝products・buy・restore・unfinished・current・finish・status
-    iap: function (op, p) { return call('iap', Object.assign({ op: op }, p || {})); }
+    iap: function (op, p) { return call('iap', Object.assign({ op: op }, p || {})); },
+    // 結果確認のお知らせ（端末の中から出す）：op＝status・permission・sync（items:[{id, at, title, body, race}]）・pending・opened
+    notify: function (op, p) { return call('notify', Object.assign({ op: op }, p || {})); }
   };
   // アプリからの知らせ（新しい取引など）：window.__nativeEvent(name, payload) → document の 'tengel:native'
   window.__nativeEvent = function (name, payload) { try { document.dispatchEvent(new CustomEvent('tengel:native', { detail: { name: name, payload: payload } })); } catch (e) {} };
@@ -520,26 +522,33 @@ if (window.__NATIVE) (function () {
   }
   /*@/web-only*/
   // アプリ版：画像の文字はこの端末の中で読む（AppleのVision。APIキーも料金もいらない・どこにも送らない）。表の組み立ては ocr_local.js
+  // 画像（1〜3枚）→ 読めた文字と位置（画像ごと）
+  function readAllLocal(files) {
+    if (!window.TengelOCR) return Promise.reject({ code: 'ocr_failed', message: 'no parser' });
+    return Promise.all(files.map(function (f) { return toJpeg(f, 2600, 0.92); })).then(function (imgs) {
+      var one = function (i) {
+        if (i >= imgs.length) return Promise.resolve([]);
+        return window.TengelNative.readText(imgs[i]).then(function (r) {
+          if (!r || !r.ok) throw { code: r && r.error === 'image_rejected' ? 'image_rejected' : 'ocr_failed', message: r && r.error };
+          return one(i + 1).then(function (rest) { return [r.lines || []].concat(rest); });
+        });
+      };
+      return one(0);
+    });
+  }
   var sample = window.__NATIVE ? {
     local: true,
     limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
     json: function (prompt, opt) {
-      var files = ((opt && opt.images) || []).slice(0, 3);
-      if (!window.TengelOCR) return Promise.reject({ code: 'ocr_failed', message: 'no parser' });
-      return Promise.all(files.map(function (f) { return toJpeg(f, 2600, 0.92); })).then(function (imgs) {
-        var one = function (i) {
-          if (i >= imgs.length) return Promise.resolve([]);
-          return window.TengelNative.readText(imgs[i]).then(function (r) {
-            if (!r || !r.ok) throw { code: r && r.error === 'image_rejected' ? 'image_rejected' : 'ocr_failed', message: r && r.error };
-            return one(i + 1).then(function (rest) { return [r.lines || []].concat(rest); });
-          });
-        };
-        return one(0);
-      }).then(function (all) {
+      return readAllLocal(((opt && opt.images) || []).slice(0, 3)).then(function (all) {
         var d = window.TengelOCR.parse(all);
         d._lines = all.map(function (l) { return l.length; });
         return d;
       });
+    },
+    // 結果の画面（着順・払戻）：予約したレースの結果入力（第2弾・12.1）。同じく端末の中で読む
+    result: function (opt) {
+      return readAllLocal(((opt && opt.images) || []).slice(0, 3)).then(function (all) { return window.TengelOCR.parseResult(all); });
     }
   } : (typeof sampleWeb !== 'undefined' ? sampleWeb : null);
   // ファイルの保存（記録タブの「CSVで保存」）：アプリ版だけ。共有シートで渡す（閉じたら declined）

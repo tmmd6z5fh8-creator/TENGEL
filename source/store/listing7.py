@@ -103,6 +103,11 @@ Points (in-app currency):
 - On first launch the app shows a notice screen (horse-race betting is for ages 20+, play responsibly, the app does not sell betting tickets and promises no profit) that the user confirms with 「はじめる」.
 - The app is iPhone-only (UIDeviceFamily 1, portrait). On iPad it runs in iPhone compatibility mode.
 
+Reservations and notifications:
+- After a judgment the user picks horses inside the suggested zones and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip this race). This only stores the user's own planned picks on the device for bookkeeping; nothing is purchased.
+- If the race start time was read from the screenshot (or entered), the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！" / check the result). It uses UNUserNotificationCenter only; there is no server and no remote push. The user is asked for notification permission at the first reservation and can turn the notifications off in Settings > 結果確認のお知らせ.
+- The user then enters the finishing order (or reads it from a result screenshot, on the device) and the app shows hit/miss per bet type for their own record.
+
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.
 2. 「オッズ画像から読み取る」 (Read odds from images) recognizes text in the screenshots the user selects entirely on the device (Vision). No image or text leaves the device.
@@ -183,6 +188,7 @@ ANSWERS = {
         'App Storeで選べる価格に「176円」などがあるか（なければ近い価格に合わせて、説明文と画面写真も直す）',
         'ポイントの期限：審査3.1.1で「買ったポイントは期限切れにできない」。説明文は「購入したポイントは期限なし・サブスクで届いたポイントは30日」にしてある',
         '紹介特典：作り方（サーバー／Appleのオファーコード）と審査3.1.1に合うかを確かめてから、プロモーション用テキストに入れる',
+        '結果確認のお知らせ：ローカル通知だけ（プッシュ通知の権限・サーバーは使わない）。App Store Connect の「App のプライバシー」はデータ収集なしのまま',
     ],
 }
 MEDIA = {

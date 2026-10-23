@@ -136,11 +136,19 @@ try:
         pg.evaluate("TengelLocal.slots.setActive(1)"); pg.wait_for_timeout(600)
         # ---- 記録：（参考）・収支・CSV ----
         def save(venue, date, r, res, stake, pay):
-            f = dict(f0, venue=venue, date=date, r=str(r))
+            # App Store版（第2弾）：判定画面で「買い目を予約」→ 記録タブの予約レースで着順（馬番）と払戻を入れて「結果を保存」
+            f = dict(f0, venue=venue, date=date, r=str(r), rows=[{"no": no, "tan": str(t), "fuku": fk} for no, t, fk in [(1, 12.4, '3.0-4.6'), (2, 4.1, '1.6-2.2'), (3, 31.5, '6.1-9.8'), (4, 9.8, '2.6-3.9'), (5, 18.2, '4.0-6.2'), (6, 2.4, '1.1-1.3'), (7, 7.6, '2.1-3.1'), (8, 54.0, '9.4-15.0'), (9, 25.9, '5.2-8.1'), (10, 6.3, '1.9-2.7'), (11, 14.7, '3.3-5.1'), (12, 88.6, '13.2-21.1')]], n='12')
             pg.evaluate("(f) => { localStorage.setItem('tengel.form', f); }", json.dumps(f, ensure_ascii=False)); pg.reload(); pg.wait_for_timeout(1400)
             card = pg.locator('#recCard')
-            card.locator('[data-k=stake][data-t="馬単"]').fill(stake); card.locator('[data-k=res]').fill(res); card.locator('[data-k=payout][data-t="馬単"]').fill(pay)
-            pg.wait_for_timeout(200); card.locator('[data-act=save]').click(); pg.wait_for_timeout(900)
+            card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
+            rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
+            pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+            row = pg.locator(f'#recList .lrow[data-id="{rid}"]'); row.locator('.lmain').click(); pg.wait_for_timeout(400)
+            fm = row.locator('.rsvf')
+            for k, v in zip(('p1', 'p2', 'p3'), res.split('-')): fm.locator(f'[data-k={k}]').fill(v)
+            fm.locator('[data-k=stake][data-t="馬単"]').fill(stake); fm.locator('[data-k=payout][data-t="馬単"]').fill(pay)
+            fm.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(200); fm.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
+            pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         save('船橋', '2026-10-21', 9, '1-2-3', '600', '0')
         save('', '2026-10-21', 10, '1-2-3', '400', '0')
         pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(600)

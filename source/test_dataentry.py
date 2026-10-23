@@ -66,6 +66,24 @@ def save_result(pg, res, upay='', spay='', other=None):
     card.locator('[data-act=save]').click(); pg.wait_for_timeout(900)
 
 
+def save_result_app(pg, res, upay='', spay=''):
+    """App Store版（第2弾）：判定画面で「買い目を予約」→ 記録タブの予約レースで着順を入れて「結果を保存」（マザーデータにも入れるは、はじめの入れ先のまま）"""
+    card = pg.locator('#recCard')
+    if card.locator('[data-rsv=redo]').count(): card.locator('[data-rsv=redo]').click(); pg.wait_for_timeout(200)
+    card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
+    rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
+    pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+    row = pg.locator(f'#recList .lrow[data-id="{rid}"]')
+    if not row.locator('.rsvf').count(): row.locator('.lmain').click(); pg.wait_for_timeout(400)
+    f = row.locator('.rsvf'); nos = res.split('.')
+    for k, v in zip(('p1', 'p2', 'p3'), nos): f.locator(f'[data-k={k}]').fill(v)
+    if upay: f.locator('[data-k=upay]').fill(upay)
+    if spay: f.locator('[data-k=spay]').fill(spay)
+    f.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(250)
+    f.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
+    pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
+
+
 def open_set(pg):
     pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(500)
 
@@ -226,8 +244,8 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         check(ba.is_visible() and '1.1' in ba.inner_text() and ba.locator('a.btn').get_attribute('href').startswith('https://apps.apple.com/'), f'上に「App Storeに新しい版（1.1）」→ App Storeを開く（{ba.inner_text() if ba.count() else None}）')
         check(bd.is_visible() and '290走' in bd.inner_text(), f'上に「新しいデータがあるよ（290走）」（{bd.inner_text() if bd.count() else None}）')
         check(count(pg, 1) == 280 and pg.evaluate("TengelLocal.slots.info()[0].name") == 'マザーデータ1', 'はじめはアプリに入っている280走（マザーデータ1）')
-        # 判定したレースを入れる（開催場は空）
-        save_result(pg, '6.2.10', '1230', '', other='未購入')
+        # 判定したレースを入れる（開催場は空）。App Store版は 予約 → 記録タブで結果（第2弾）
+        save_result_app(pg, '6.2.10', '1230', '')
         check(count(pg, 1) == 281 and row(pg, 1, '20261014-m1-08') and row(pg, 1, '20261014-m1-08')['venue'] == '', f'開催場が空でも、1つ目に入る（id 20261014-m1-08・開催場は空：{count(pg, 1)}走）')
         open_set(pg)
         up = pg.locator('#setUpdate')

@@ -64,6 +64,8 @@ if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
 # 2本指の拡大はOK・ダブルタップでは拡大しない（touch-action: manipulation）
 APP_HEAD = ('<style>body{touch-action:manipulation}#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B;font-family:"Hiragino Sans",sans-serif}</style>'
             if TARGET == 'app' else '')
+# App Store版だけ：買い目の組と判定（reserve.js）・買い目カスタムの%（custom_rate.js）。画面（src.html）より先に読む
+APP_LIBS = ('\n<script>\n' + open('reserve.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('custom_rate.js', encoding='utf8').read() + '\n</script>') if TARGET == 'app' else ''
 APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="はじめに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
 head = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
@@ -76,7 +78,7 @@ head = f'''<!DOCTYPE html>
 <script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('ocr_local.js', encoding='utf8').read()}
-</script>
+</script>{APP_LIBS}
 <script>
 {open('pwa_shim.js', encoding='utf8').read()}
 </script></head><body>

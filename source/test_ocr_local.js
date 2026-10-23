@@ -88,5 +88,31 @@ for (const [name, lines] of [['C 3連単 人気順（セルごと）', c], ['C 3
   check(O.parseOne(L(['9R 良 12頭'])).rname === null && O.parseOne(L(['9R ダ1400m 発走15:40'])).rname === null && O.parseOne(L(['9R ダ1400m 発走15:40'])).start === '15:40', '馬場・距離はレース名にしない・「発走15:40」も読む');
   check(O.parseOne(L(['10:30 12R', '13:45 3連単'])).start === null && O.parseOne(L(['3連単 締切 16:20'])).start === '16:20', '時刻が2つあると決めない・1つなら発走とみなす');
 }
+// 結果の画面（着順と払戻）：予約したレースの結果入力（第2弾・12.1 ※仮）
+{
+  const L = (ts, x0 = 0.05) => ts.map((t, i) => ({ text: t, x: x0, y: 0.05 + i * 0.035, w: 0.8, h: 0.025 }));
+  // 表（見出しあり）＋払戻。4着・除外の馬・競走中止の馬は着に入れない
+  const A = L(['レース結果 第9競走 はなまる特別', '着順 枠 馬番 馬名 性齢 斤量 騎手 タイム 人気', '1 3 6 ハナ 牡4 56.0 きしゅ 1:25.3 2', '2 1 2 フタ 牝3 54.0 きしゅ 1:25.5 1', '3 6 10 トオ 牡5 57.0 きしゅ 1:25.9 3',
+    '4 2 4 ヨン 牡4 56.0 きしゅ 1:26.0 5', '5 11 ゴ 牡6 56.0 きしゅ 競走除外', '7 7 ナナ 牡3 55.0 きしゅ 競走中止', '払戻金', '単勝 6 240円 2人気', '複勝 6 120円', '複勝 2 180円', '複勝 10 310円',
+    '枠連 1-3 1,230円', '馬連 2-6 530円', 'ワイド 2-6 220円', 'ワイド 6-10 410円', '馬単 6-2 1,120円', '3連複 2-6-10 2,340円', '三連単 6-2-10 12,340円']);
+  const r = O.parseResult([A]);
+  console.log('結果A', JSON.stringify(r));
+  check(JSON.stringify(r.p) === JSON.stringify([[6], [2], [10]]) && JSON.stringify(r.cancel) === JSON.stringify([11]) && !r.abandoned, '結果A：1〜3着の馬番（見出しの「馬番」の列）・除外の馬・競走中止は着に入れない');
+  check(r.pay['単勝']['6'] === 240 && r.pay['複勝']['2'] === 180 && r.pay['複勝']['10'] === 310 && r.pay['枠複']['1-3'] === 1230 && r.pay['馬連']['2-6'] === 530 && r.pay['ワイド']['6-10'] === 410 && r.pay['馬単']['6-2'] === 1120 && r.pay['3連複']['2-6-10'] === 2340 && r.pay['3連単']['6-2-10'] === 12340,
+    '結果A：払戻（枠連→枠複・三連単→3連単・「1,230円」）' + JSON.stringify(r.pay));
+  // 「1着 6」の形・2着同着・見出しなし
+  const B = L(['1着 6 ハナ', '2着 2 フタ', '2着 10 トオ（同着）', '4着 4 ヨン', '取消 11 ゴ']);
+  const rb = O.parseResult([B]);
+  check(JSON.stringify(rb.p) === JSON.stringify([[6], [2, 10], []]) && JSON.stringify(rb.cancel) === JSON.stringify([11]), '結果B：「1着 6」の形・2着同着・取消：' + JSON.stringify(rb.p));
+  // 見出しなしの表「着 馬番 馬名」（枠なし）と「着 枠 馬番 馬名」
+  const C = L(['1 6 ハナ 2.4', '2 2 フタ 4.1', '3 10 トオ 6.3']);
+  const D = L(['1 3 6 ハナ', '2 1 2 フタ', '3 6 10 トオ']);
+  check(JSON.stringify(O.parseResult([C]).p) === JSON.stringify([[6], [2], [10]]) && JSON.stringify(O.parseResult([D]).p) === JSON.stringify([[6], [2], [10]]), '結果C・D：見出しなし（着 馬番／着 枠 馬番）');
+  // 中止・何も読めない
+  check(O.parseResult([L(['第9競走 レース中止（馬場不良のため）'])]).abandoned === true && O.parseResult([L(['ようこそ', 'お知らせ'])]).got.length === 0, 'レース中止・表のない画面は何も入れない');
+  // 2枚：着順の画像＋払戻の画像
+  const r2 = O.parseResult([B, L(['払戻金', '単勝 6 240円', '馬単 6-2 1,120円'])]);
+  check(JSON.stringify(r2.p) === JSON.stringify([[6], [2, 10], []]) && r2.pay['馬単']['6-2'] === 1120 && r2.got.includes('払戻（単勝・馬単）'), '2枚をまとめる（着順＋払戻）：' + r2.got.join('・'));
+}
 console.log('FAILS', fails.length, fails);
 process.exit(fails.length ? 1 : 0);
