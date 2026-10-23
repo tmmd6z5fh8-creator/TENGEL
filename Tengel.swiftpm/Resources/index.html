@@ -3615,7 +3615,7 @@ function fxCard() {
   const seg = (k, lab, hint) => `<div class="fxrow"><div class="fxlab"><b>${lab}</b><span class="small muted">${hint}</span></div><div class="seg" data-fx="${k}"><button type="button" data-v="1" aria-pressed="true">オン</button><button type="button" data-v="0" aria-pressed="false">オフ</button></div></div>`;
   c.innerHTML = `<h2>的中の演出</h2><p class="hint">予約したレースの結果を保存すると、当たりの大きさに合わせて PUSH ボタン・演出・結果のボード（券種ごとの結果）が出るよ。</p>`
     + seg('effects', '的中エフェクト', 'オフにすると、PUSH・演出・効果音なしで、結果のボードだけを静かに出すよ')
-    + seg('calm', '演出を控えめにする', 'まぶしい光や速い動きを減らすよ。この端末の「視差効果を減らす」がオンなら、はじめからオン')
+    + seg('calm', '演出を控えめにする', 'まぶしい光や速い動きを減らすよ。この端末の「視差効果を減らす」がオンなら、いつも控えめ')
     + seg('sound', '効果音', 'PUSHが出たときと押したときの音。消音スイッチがオンのときは鳴らないよ');
   const after = $('#setNotify') || $('#setMission'); if (after && after.nextSibling) set.insertBefore(c, after.nextSibling); else if (after) set.appendChild(c); else set.insertBefore(c, set.firstChild);
   c.addEventListener('click', e => {
@@ -3630,6 +3630,7 @@ function paintFxCard() {
   const F = Fx(), c = $('#setFx'); if (!F || !c) return;
   const s = F.get(), val = { effects: s.effects !== false, calm: F.calm(), sound: s.sound !== false };
   $$('.seg[data-fx]', c).forEach(sg => { const on = !!val[sg.dataset.fx]; $$('button', sg).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === '1') === on))); });
+  const off = $('.seg[data-fx=calm] button[data-v="0"]', c); if (off) off.disabled = F.reduced();   
 }
 document.addEventListener('tengel:wallet', fxCard);
 document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { fxCard(); paintFxCard(); } });
@@ -6027,7 +6028,7 @@ window.__FX={"css":"\n#fxOv{position:fixed;inset:0;z-index:80;background:var(--f
     document.head.appendChild(st);
   }
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const calm = () => (S.calm == null ? reduced() : !!S.calm);
+  const calm = () => !!S.calm || reduced();   
   const rand = () => (typeof window.TengelFx === 'object' && typeof window.TengelFx._rand === 'function' ? window.TengelFx._rand() : Math.random());
   function emit(phase, kind) { try { document.dispatchEvent(new CustomEvent('tengel:fx', { detail: { phase: phase, kind: kind || (cur && cur.kind) || null } })); } catch (e) {   } }
 
@@ -6158,7 +6159,8 @@ window.__FX={"css":"\n#fxOv{position:fixed;inset:0;z-index:80;background:var(--f
   window.addEventListener('pagehide', hush);
 
   
-  function fit() { if (!cur) return; const k = Math.min(window.innerWidth / 390, window.innerHeight / 844); cur.stage.style.setProperty('--fxk', (isFinite(k) && k > 0 ? k : 1).toFixed(4)); }
+  
+  function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
   function open(kind, spec, supers, quiet) {
     close(true); css();
     const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '');
