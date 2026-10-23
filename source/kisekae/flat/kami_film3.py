@@ -33,7 +33,9 @@ import kami_koban as KB
 S = 3.0
 W, H = KF.W, KF.H
 FPS = 30
-N = 186                               # 6.2秒（第4.50版：さいごの 字の 場面を 2秒 のばした）
+N0 = 186                              # 6.2秒（第4.50版：さいごの 字の 場面を 2秒 のばした）。雷・キラッの 乱数は この 長さで 作る（前の コマは かわらない）
+XN = 50                               # さいごの 場面を さらに のばす コマ（第4.53版：声「おめぇでぇとぉうぅ、ごぉざぁいぃますぅぅ！いやーーーーん！」が ボードの 前に 言いおわる ように）
+N = N0 + XN                           # 7.87秒
 SSA = 2                               # 側面は 2倍で 描いて もどす
 FOCAL = 1500.0                        # カメラ（絵の 画素）
 ENV_R = 2600.0                        # 映りこみの 空までの きょり（1000 単位）
@@ -45,7 +47,7 @@ TT = dict(WIN=(0.0, .05, .3),                                          # 白（�
           BU=((0.0, 1, .55), (.5, 0, None), (1.05, 1, 1.62), (1.57, 0, None), (2.1, 2, None)),
           # 金の 粒（時刻・強さ 0＝大きな 粒が 手前を 横切る（光らない）・1＝はじける・2＝いちばん 大きい・寄りが かわる 時に 消す 時刻）
           LOGO=2.15, TURN=(2.15, 3.0),                                 # 神様／的中／おめでとう／御座います！（ななめ → 正面へ 回りながら ひく）
-          SHINE=((3.1, 3.75), (5.15, 5.8)))                            # 光が すべる（2回）
+          SHINE=((3.1, 3.75), (5.15, 5.8), (7.1, 7.75)))               # 光が すべる（3回：3回めは のばした 所）
 
 
 def smoothstep(e0, e1, x):
@@ -880,11 +882,17 @@ def glints(img, obj, Hs, t, seed):
         return
     m = np.zeros((H, W), np.float32)
     rng = random.Random(seed)
+    rx = random.Random(seed + 9001)                                  # のばした 所（N0 から あと）の キラッ：べつの 乱数（前の コマは かわらない）
+    px = (XN / FPS) / (N0 / FPS + .2)
     for (gx, gy) in g:
-        t0 = rng.uniform(-.2, N / FPS)
+        t0 = rng.uniform(-.2, N0 / FPS)
         dur = rng.uniform(.26, .42)
+        t1x = rx.uniform(N0 / FPS, N / FPS) if rx.random() < px else -9.0
         if not (t0 <= t <= t0 + dur):
-            continue
+            if t1x <= t <= t1x + dur:
+                t0 = t1x
+            else:
+                continue
         p = Hs @ np.array([gx, gy, 1.0])
         x, y = p[0] / p[2], p[1] / p[2]
         if not (0 <= x < W and 0 <= y < H):
@@ -1022,32 +1030,42 @@ def elec_events():
                     ev.append(dict(kind='out', key=j, f0=int(round(tt * FPS)), life=5, ci=ci, i=i, da=rng.uniform(-.5, .5),
                                    Lpx=rng.uniform(260, 520), style=rng.choice(('zig', 'zig', 'step')), seed=rng.randrange(1 << 30)))
                     mark(p, int(round(tt * FPS)), 5)
-        # さいごの 字
-        t = ELEC_LOGO0
-        while t < N / FPS - .08:
-            runner('logo', t)
-            if rng.random() < .5:
-                runner('logo', t + rng.choice((0.0, 1 / FPS)))
-            t += rng.choice((.02, .03, .05, .07, .09, .12, .16))
-        t = ELEC_LOGO0 + .1
-        while t < N / FPS - .15:                                  # 字から 字へ とぶ 雷
-            r = pick('logo', t)
-            if r is not None:
-                o, R, Tv, ci, i, p = r
-                best = []
-                for cj, c in enumerate(o['outl']):
-                    if cj == ci:
-                        continue
-                    sc_, _ = ol_screen(c['P'], c['N'], R, Tv)
-                    d = np.hypot(sc_[:, 0] - p[0], sc_[:, 1] - p[1])
-                    ok = np.flatnonzero((d > 110) & (d < 360))
-                    best += [(cj, int(q)) for q in ok[::3]]
-                if best:
-                    cj, q = best[rng.randrange(len(best))]
-                    ev.append(dict(kind='jump', key='logo', f0=int(round(t * FPS)), life=4, ci=ci, i=i, cj=cj, q=q,
-                                   style=rng.choice(('zig', 'zig', 'step', 'wander')), seed=rng.randrange(1 << 30)))
-                    mark(p, int(round(t * FPS)), 4)
-            t += rng.uniform(.12, .3)
+        # さいごの 字：N0 まで 前と 同じ 乱数（前の コマは かわらない）→ のばした 所（第4.53版）は べつの 乱数
+        def logo_runs(t, t_end):
+            while t < t_end:
+                runner('logo', t)
+                if rng.random() < .5:
+                    runner('logo', t + rng.choice((0.0, 1 / FPS)))
+                t += rng.choice((.02, .03, .05, .07, .09, .12, .16))
+            return t
+
+        def logo_jumps(t, t_end):
+            while t < t_end:                                  # 字から 字へ とぶ 雷
+                r = pick('logo', t)
+                if r is not None:
+                    o, R, Tv, ci, i, p = r
+                    best = []
+                    for cj, c in enumerate(o['outl']):
+                        if cj == ci:
+                            continue
+                        sc_, _ = ol_screen(c['P'], c['N'], R, Tv)
+                        d = np.hypot(sc_[:, 0] - p[0], sc_[:, 1] - p[1])
+                        ok = np.flatnonzero((d > 110) & (d < 360))
+                        best += [(cj, int(q)) for q in ok[::3]]
+                    if best:
+                        cj, q = best[rng.randrange(len(best))]
+                        ev.append(dict(kind='jump', key='logo', f0=int(round(t * FPS)), life=4, ci=ci, i=i, cj=cj, q=q,
+                                       style=rng.choice(('zig', 'zig', 'step', 'wander')), seed=rng.randrange(1 << 30)))
+                        mark(p, int(round(t * FPS)), 4)
+                t += rng.uniform(.12, .3)
+            return t
+
+        t_run = logo_runs(ELEC_LOGO0, N0 / FPS - .08)
+        t_jmp = logo_jumps(ELEC_LOGO0 + .1, N0 / FPS - .15)
+        if XN:
+            rng = random.Random(4748)
+            logo_runs(max(t_run, N0 / FPS), N / FPS - .08)
+            logo_jumps(max(t_jmp, N0 / FPS), N / FPS - .15)
         return ev
     return KF.cache('elecev', f)
 
