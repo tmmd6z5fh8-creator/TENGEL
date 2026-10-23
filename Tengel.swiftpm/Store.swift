@@ -153,7 +153,7 @@ final class Store {
         let f = ISO8601DateFormatter()
         var d: [String: Any] = ["id": String(tx.id), "originalId": String(tx.originalID), "product": tx.productID,
                                 "kind": subIDs.contains(tx.productID) ? "sub" : "pack", "date": f.string(from: tx.purchaseDate),
-                                "revoked": tx.revocationDate != nil, "env": "\(tx.environment)"]
+                                "revoked": tx.revocationDate != nil, "env": tx.environment.rawValue]
         if let e = tx.expirationDate { d["expires"] = f.string(from: e) }
         if let r = tx.revocationDate { d["revokedAt"] = f.string(from: r) }
         return d
