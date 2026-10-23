@@ -4478,7 +4478,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const n = saved.bets.length, box = document.createElement('div');
     const wn = saved.wallet && Array.isArray(saved.wallet.events) ? saved.wallet.events.length : 0;
     box.id = 'nativeRestore'; box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'nrTitle');
-    box.innerHTML = `<div class="nrbox"><h3 id="nrTitle">前の記録が見つかったよ</h3><p>このアプリの中の自動バックアップに、買ったレースの記録が<b>${n}件</b>${wn ? 'とポイントの台帳' : ''}あるよ（${esc(when(saved.at) || '日時不明')}）。いまのアプリには記録が入っていないの。戻す？</p>`
+    box.innerHTML = `<div class="nrbox"><h3 id="nrTitle">前の記録が見つかったよ</h3><p>このアプリの中の自動バックアップに、買ったレースの記録が<b>${n}件</b>${wn ? 'とポイントの台帳が' : ''}あるよ（${esc(when(saved.at) || '日時不明')}）。いまのアプリには記録が入っていないの。戻す？</p>`
       + '<div class="row"><button class="btn primary" type="button" data-nr="yes">記録を戻す</button><button class="btn ghost" type="button" data-nr="no">戻さない</button></div></div>';
     document.body.appendChild(box);
     box.addEventListener('click', e => {
