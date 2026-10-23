@@ -12,6 +12,8 @@
   const A = window.__FX;
   const $ = (s, r) => (r || document).querySelector(s);
   const TL = () => window.TengelLocal, WL = () => window.TengelWallet, RS = () => window.TengelReserve;
+  // 着せ替え（第4弾・kisekae.js）：いまのテーマの 的中PUSH（面・押したあと・はじけるかけら）と ボードの飾り。いつもの・読めていないときは null（いつもの形）
+  const KS = () => { try { const k = window.TengelKisekae; return k && k.on && k.fx ? k.fx() : null; } catch (e) { return null; } };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUPER = [10, 12];                 // 超大穴＝単勝人気 10〜12番人気（判定の J・K・L）。13番人気より下は入れない
   const HIDDEN_KEY = 'tengel.fxhidden';   // 隠れど的中の数（端末の中だけ）
@@ -111,7 +113,8 @@
     let rib = '';
     if (kind === 'hidden') rib = '<div class="zrib"><b class="zt">隠れ</b><span>デカ的中が ど的中に化けた！</span></div>';
     else if (kind === 'fz' && supers && supers.length) rib = `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, spec && spec.n, true)).join('')}<span>${supers.map(s => esc(s.rank) + '番人気').join('・')}が3連単に！</span></div>`;
-    return `<div class="rb ${k} t-default"><div class="hd"><div class="bh${kind === 'miss' ? '' : ' logo'}">${titleHTML(kind)}</div><div class="bsub">${sub}</div>${rib}</div><div class="card">${A.board.orn}<ul class="brows">${rows}</ul></div></div>`;
+    const ks = KS(), tid = ks ? ks.tid : 'default', orn = ks ? ks.orn : A.board.orn;   // ボードはそのテーマの形（16.4）。CSS は kisekae.js が入れる
+    return `<div class="rb ${k} t-${tid}"><div class="hd"><div class="bh${kind === 'miss' ? '' : ' logo'}">${titleHTML(kind)}</div><div class="bsub">${sub}</div>${rib}</div><div class="card">${orn}<ul class="brows">${rows}</ul></div></div>`;
   }
 
   // ---------- 音（Web Audio：先に読んで、押した瞬間を0秒にして動きとそろえる） ----------
@@ -169,15 +172,16 @@
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: kind, spec: spec || {}, supers: supers || [], ov: ov, stage: stage, quiet: !!quiet, phase: '' };
+    cur = { kind: kind, spec: spec || {}, supers: supers || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (kind === 'miss' || quiet) reveal(); else push();
   }
   function push() {
     if (!cur) return;
-    const k = cur.kind;
-    cur.stage.innerHTML = A.push[k === 'hidden' ? 'big' : k];
+    const k = cur.kind, ks = k === 'hit' ? KS() : null;
+    cur.theme = ks && ks.push && ks.pc ? ks : null;      // 的中の PUSH はそのテーマの形（16.2.1）。デカ・ど的中は全テーマ共通
+    cur.stage.innerHTML = cur.theme ? A.push.hit_t.split('{{PC}}').join(' ' + cur.theme.pc).replace('{{SVG}}', cur.theme.push.svg) : A.push[k === 'hidden' ? 'big' : k];
     cur.phase = 'push'; cur.ov.classList.remove('rv');
     sfx(SND[k][0]);
     emit('push');
@@ -185,7 +189,8 @@
   function reveal() {
     if (!cur || cur.phase === 'reveal') return;
     const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers);
-    const tpl = A.reveal[cur.quiet ? 'miss' : (k === 'hidden' ? 'fz' : k)];
+    const th = !cur.quiet && k === 'hit' ? (cur.theme || null) : null;
+    const tpl = th ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : (k === 'hidden' ? 'fz' : k)];
     let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
     cur.stage.innerHTML = html;
@@ -223,7 +228,7 @@
 
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced,
-    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet } : null), tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src }), _rand: null
+    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null } : null), tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src }), _rand: null
   };
   css();
   if (TL() && TL().ready) TL().ready.then(loadSettings).catch(loadSettings); else loadSettings();

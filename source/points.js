@@ -21,6 +21,8 @@
   var SUB_DAYS = 30;
   // 記録のミッション（8.2）：記録したレースの数 → もらえるP。300のあとは100レースごとに2,000P
   var MISSIONS = [[8, 500], [15, 1000], [25, 1000], [40, 1200], [60, 1200], [85, 1400], [100, 1400], [130, 1600], [160, 1600], [200, 1800], [240, 1800], [300, 2000]];
+  // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙（シルバー帯 8枚・ゴールド帯 16枚・マスター帯 25枚）。受け取ると 0P の mission と unlock-theme:<帯> を足す
+  var WALL_MISSIONS = [[8, 'silver', 'シルバー帯の壁紙'], [16, 'golden', 'ゴールド帯の壁紙'], [25, 'tengel', 'マスター帯の壁紙']];
   var FREE_TYPES = ['単勝', '馬単', '3連単'];
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
@@ -150,6 +152,17 @@
     return out;
   }
 
+  // ---- 壁紙のミッション（帯の壁紙）----
+  function wallMissions(count, events) {
+    return WALL_MISSIONS.map(function (m) { var id = 'mission-wall-' + m[0], claimed = has(events, id); return { id: id, n: m[0], theme: m[1], label: m[2], done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
+  }
+  function wallMissionEvents(m, device, now) {
+    return [mk('mission-wall-' + m.n, 'mission', 'free', 0, iso(now), { what: m.label, theme: m.theme }),
+      mk('unlock-theme:' + m.theme, 'unlock', '', 0, iso(now), { use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:' + m.theme, device: device || 'x' })];
+  }
+  // ポイントで解放した壁紙の枚数（帯の壁紙は数えない）
+  function wallCount(events) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)); }).length; }
+
   // ---- レースの見分け方（読み直し0P・ミッションの数え方）----
   function vnorm(v) { return String(v || '').normalize('NFKC').replace(/\s/g, '').replace(/(競馬場|競馬)$/, ''); }
   // ミッション：日付＋開催場＋R（開催場が空なら空のまま）
@@ -166,7 +179,7 @@
 
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
-    missions: missions, missionAt: missionAt, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
+    missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -91,6 +91,9 @@ if TARGET == 'app':
     sys.path.insert(0, os.path.join(HERE, 'kisekae'))
     import build_fx as _fx
     html += '<script>\n' + _fx.bundle_js() + '\n</script>\n<script>\n' + open('fx.js', encoding='utf8').read() + '\n</script>\n'
+    # 着せ替え（第4弾）：30テーマの変数・共通の形・@font-face（window.__KS）と kisekae.js。テーマごとの大きい分（壁紙・PUSH・ボード）は ks_<id>.json（下で書く）
+    import build_kisekae as _ks
+    html += '<script>\n' + _ks.bundle_js() + '\n</script>\n<script>\n' + open('kisekae.js', encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
@@ -104,6 +107,14 @@ if TARGET == 'app':
     os.makedirs(f'{out}/fonts')
     for f in _bm.APP_FONT_FILES:
         shutil.copy(os.path.join(HERE, 'ios', 'fonts', f), f'{out}/fonts/{f}')
+    # 着せ替えの字（しぼった WOFF2：kisekae/build_fonts.py → ios/fonts/ks/）
+    for f in _ks.font_files():
+        shutil.copy(os.path.join(HERE, 'ios', 'fonts', 'ks', f), f'{out}/fonts/{f}')
+    # 着せ替えのテーマごとの分（ks_<id>.json・定番4の止まった絵の SVG）。出さない言葉が無いことも確かめる
+    KS_IDS = _ks.write_payloads(out, _fx.load_gen_fx())
+    for f in sorted(os.listdir(out)):
+        if f.startswith('ks_') and f.endswith('.json'):
+            _at.check_clean(open(f'{out}/{f}', encoding='utf8').read(), f)
 # 公開するページ（プライバシーポリシー・特定商取引法に基づく表記・サポート）：販売する人の欄（legal/legal.json）が入っているものだけ
 LEGAL = _bl.pages(out) if TARGET == 'web' else []
 if CM:

@@ -176,6 +176,14 @@
   }
   const countedN = () => W ? Object.keys(W.counted).length : 0;
   async function claim(id) {
+    if (/^mission-wall-/.test(String(id))) {     // 壁紙のミッション（帯の壁紙・第4弾）
+      const wm = P.wallMissions(P.wallCount(W.events), W.events).find(x => x.id === id);
+      if (!wm || !wm.claimable) return;
+      P.wallMissionEvents(wm, device(), Date.now()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
+      await save(); paintAll();
+      toast(`✅ ${wm.label}を受け取ったよ！ 設定の「着せ替え」で使えるよ`, 4000);
+      return;
+    }
     const m = P.missions(countedN(), W.events).find(x => x.id === id);
     if (!m || !m.claimable) return;
     W.events.push(P.missionEvent(m, Date.now()));
@@ -261,7 +269,12 @@
     box.innerHTML = h;
   }
   const TYPE_NAMES = { '複勝': '複勝', '枠複': '枠複', '枠単': '枠単', '馬連': '馬連', 'ワイド': 'ワイド', '3連複': '3連複' };
-  function unlockName(key) { const k = String(key || ''); if (k.startsWith('type:')) return k.slice(5); if (k.startsWith('slot:')) { const n = +k.slice(5); try { return (TL.slots.names() || {})[n] || `マザーデータ${n}`; } catch (e) { return `マザーデータ${n}`; } } return k; }
+  function unlockName(key) {
+    const k = String(key || ''); if (k.startsWith('type:')) return k.slice(5);
+    if (k.startsWith('slot:')) { const n = +k.slice(5); try { return (TL.slots.names() || {})[n] || `マザーデータ${n}`; } catch (e) { return `マザーデータ${n}`; } }
+    if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } return `壁紙 ${k.slice(6)}`; }
+    return k;
+  }
   function paintCustom() {
     const box = $('#setCustom .ptbody'); if (!box || !W) return;
     const t = total(), conf = paintCustom.conf || '';
@@ -283,11 +296,16 @@
     h += '<div>';
     ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
     h += '</div>';
+    // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙
+    const wn = P.wallCount(W.events), wms = P.wallMissions(wn, W.events);
+    h += `<h3 style="margin:14px 0 4px">壁紙のミッション</h3><p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
+    wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
+    h += '</div>';
     box.innerHTML = h;
   }
   function paintBadge() {
     const tb = $('.tabbar [data-tab=set]'); if (!tb || !W) return;
-    const on = P.missions(countedN(), W.events).some(m => m.claimable);
+    const on = P.missions(countedN(), W.events).some(m => m.claimable) || P.wallMissions(P.wallCount(W.events), W.events).some(m => m.claimable);
     let d = tb.querySelector('.tbdg'); if (on && !d) { d = document.createElement('span'); d.className = 'tbdg'; d.setAttribute('aria-label', '受け取れるミッションがあるよ'); tb.appendChild(d); } else if (!on && d) d.remove();
   }
   function paintHint() {
@@ -318,7 +336,7 @@
   function goSettings(sec) {
     const tb = $('.tabbar [data-tab=set]');
     if (tb && getComputedStyle(tb.parentNode).display !== 'none') tb.click(); else { const t2 = $('.tabs-top [data-tab=set]'); if (t2) t2.click(); }
-    const id = { points: 'setPoints', custom: 'setCustom', mission: 'setMission' }[sec] || 'setPoints';
+    const id = { points: 'setPoints', custom: 'setCustom', mission: 'setMission', kisekae: 'setKisekae' }[sec] || 'setPoints';
     if (sec === 'points') { paintPoints.ui = { show: 'buy' }; paintPoints(); loadProducts(false).then(paintPoints); }
     setTimeout(() => { const s = document.getElementById(id); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
   }

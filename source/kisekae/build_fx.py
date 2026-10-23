@@ -178,6 +178,17 @@ PUSH_HIT = '''<div class="ov">
 </div>'''
 
 
+# テーマの的中PUSH（第4弾・16.2.1）：{{PC}}＝クラスの頭（' sk' など）・{{SVG}}＝面の SVG（kisekae.js が ks_<id>.json から渡す）
+PUSH_HIT_T = '''<div class="ov">
+  <div class="dim"></div>
+  <div class="pbox">
+    <button class="push{{PC}}" type="button" data-fx="tap" aria-label="的中ボタン">{{SVG}}<span>PUSH</span></button>
+    <div class="pshadow{{PC}}"></div>
+    <p class="tap{{PC}}">タップ！</p>
+  </div>
+</div>'''
+
+
 def push_big(G):
     return f'''<div class="ov big">
   <div class="dim"></div>
@@ -204,6 +215,18 @@ def reveal_hit(G):
     <div class="dim"></div>
     <div class="rays"></div>
     <div class="pressed"></div>
+    <div class="hb">{{{{BOARD}}}}</div>
+    <div class="conf">{G.confetti(28, 2)}</div>
+    {CLOSE}
+  </div>'''
+
+
+def reveal_hit_t(G):
+    """テーマの的中の押したあと（16.2.1）：{{PRESSED}}＝押したあとの面・{{BURST}}＝そのテーマの はじけるかけら（見本の page() と同じ重ね方）"""
+    return f'''<div class="ov hit" style="--n:{{{{N}}}}">
+    <div class="dim"></div>
+    <div class="rays"></div>
+    <div class="pressed{{{{PC}}}}">{{{{PRESSED}}}}</div>{{{{BURST}}}}
     <div class="hb">{{{{BOARD}}}}</div>
     <div class="conf">{G.confetti(28, 2)}</div>
     {CLOSE}
@@ -287,8 +310,8 @@ def css_all(G):
 
 def bundle():
     G = load_gen_fx()
-    return dict(css=css_all(G), push=dict(hit=PUSH_HIT, big=push_big(G), fz=push_fz(G)),
-                reveal=dict(hit=reveal_hit(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G)),
+    return dict(css=css_all(G), push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), fz=push_fz(G)),
+                reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G)),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), t=dict(R=G.FZ_T['R']))
 
 

@@ -65,6 +65,31 @@ if r.returncode == 0:
     check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば8こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
     check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
+    # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
+    import json as _json, re as _re
+    ks_json = [f for f in res if _re.fullmatch(r'ks_[a-z]+\.json', f)]
+    check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sakura\\"]' in html and "@font-face{font-family:'Kaisei Decol'" in html and 'fonts/KaiseiDecol-700.woff2' in html,
+          'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
+    check(len(ks_json) == 30 and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')), f'テーマごとの ks_<id>.json が 30こ と 定番4の止まった絵（{len(ks_json)}）')
+    sk = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_sakura.json'), encoding='utf8'))
+    check(sk['bnr'] and '<div class="bnrw">' in sk['bnr']['html'] and 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp' in sk['bnr']['html'] and '#ksBnr .bnrw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
+          and sk['push']['pc'] == 'sk' and '<svg' in sk['push']['svg'] and 'class="clips sk"' in sk['push']['burst'] and '.fxs .push.sk' in sk['push']['css'] and '.fxs .rb.t-sakura{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
+          'ks_sakura.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・桜の PUSH（面・はじける花びら・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
+    for f in ks_json:
+        txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
+        for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):
+            if w in txt: fails.append(f'{f} に {w}')
+    fonts_ks = _json.load(open(os.path.join(W, 'ios', 'fonts', 'ks', 'fonts.json'), encoding='utf8'))
+    check(len(fonts_ks['fonts']) >= 40 and all(r['file'] in res for r in fonts_ks['fonts']) and all(os.path.exists(os.path.join(W, 'ios', 'fonts', 'ks', 'OFL-' + r['family'].replace(' ', '') + '.txt')) for r in fonts_ks['fonts']) and fonts_ks['total'] < 4_000_000,
+          f'テーマの字（しぼった WOFF2 {len(fonts_ks["fonts"])}こ・{fonts_ks["total"] / 1e6:.1f}MB）が Resources/ に入る・OFL の全文がある')
+    # しぼった字に 画面の言葉が ぜんぶ入っている（UI の文字がふえたら kisekae/build_fonts.py を もう一度）
+    sys.path.insert(0, os.path.join(W, 'kisekae')); import build_fonts as _bf
+    have_b = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_body.txt'), encoding='utf8').read())
+    need_b = set(_bf.body_chars()) - have_b
+    check(not need_b, f'しぼった字に 画面の言葉が ぜんぶ入っている（足りない字 {len(need_b)}：{"".join(sorted(need_b))[:30]}）→ 足りなければ python3 kisekae/build_fonts.py')
+    ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
+    check(len(ks_imgs) in (0, 98) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 98), f'着せ替えの絵：手元にあれば98こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ）')
+    check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
 ap2 = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'TengelApp.swift'), encoding='utf8').read(); af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
 check('import AVFoundation' in ap2 and 'setCategory(.ambient' in ap2 and '.mixWithOthers' in ap2, '効果音：消音スイッチなら鳴らさない・ほかのアプリの音楽は止めない（AVAudioSession ambient）')
 check('case "m4a": return "audio/mp4"' in af, 'アプリの中の音のファイル（m4a）を Web の画面に渡せる')

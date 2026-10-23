@@ -44,6 +44,9 @@ for f in sorted(os.listdir(os.path.join(web, 'fonts'))):
     files[f] = 'fonts/' + f   # フォント（SIL OFL 1.1・ファイルはそのまま。ライセンスは「このアプリについて」）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
     files['poster.jpg'] = 'cm/poster.jpg'   # CMの表紙（動画は大きいので入れない。見るときに公開中のWeb版から読む）
+for f in sorted(os.listdir(web)):
+    if f.startswith('ks_') and (f.endswith('.json') or f.endswith('.svg')):
+        files[f] = f   # 着せ替え（第4弾）：テーマごとの壁紙・PUSH・ボード（ks_<id>.json）と 定番4の止まった絵
 names = [n.lower() for n in files]
 assert len(names) == len(set(names)), '同じ名前のファイルがあるよ'
 assert not any(n.endswith('.png') for n in names), 'PNGは入れない（Xcodeが変換してしまうことがある）'
@@ -61,6 +64,25 @@ for f in fx_have:
     shutil.copy(os.path.join(fx_dir, f), os.path.join(res, f)); files[f] = f
 if len(fx_have) != len(ASSET_FILES):
     print('※ 的中ボタンの絵と音が', len(ASSET_FILES) - len(fx_have), 'こ ない（', fx_dir, '）。python3 kisekae/build_fx_assets.py で作れるよ（CIではなしのまま）')
+# 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
+# リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
+import build_kisekae as _ks
+ks_dir = _ks.BLOB_DIR
+import re as _re
+ks_ids = set()
+for f in list(files):
+    if f.startswith('ks_') and f.endswith('.json'):
+        ks_ids |= set(_re.findall(r'ks_([0-9a-f]{32})\.', open(os.path.join(web, f), encoding='utf8').read()))
+ks_ids |= set(t['thumb'][3:-5] for t in _ks.theme_list() if _re.fullmatch(r'ks_[0-9a-f]{32}\.webp', t['thumb']))
+ks_have = 0
+for bid in sorted(ks_ids):
+    name = _ks.asset_name(bid)
+    src_f = os.path.join(ks_dir, name[3:])
+    if os.path.exists(src_f):
+        assert name.lower() not in names, name
+        shutil.copy(src_f, os.path.join(res, name)); files[name] = name; ks_have += 1
+if ks_have != len(ks_ids):
+    print('※ 着せ替えの絵が', len(ks_ids) - ks_have, 'こ ない（', ks_dir, '）。キャンバスから集める（アップデート指示書 16.1 の 絵の入れ方）。CIではなしのまま')
 
 # アイコン（1024×1024・透明なし）
 icon = Image.open(os.path.join(W, 'icons', 'icon_master_en.png'))

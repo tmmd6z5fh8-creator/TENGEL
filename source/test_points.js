@@ -76,5 +76,21 @@ check(P.sameRace(a, { date: '2026-10-10', venue: 'どこか', r: 8 }), '同じ�
 check(P.sameRace(a, { date: '2026-10-10', rname: 'テスト 特別', start: '15:40', dist: '1400' }), 'レース名・距離・発走時刻が同じ → 同じレース（Rがなくても）');
 check(!P.sameRace(a, { date: '2026-10-11', venue: '', r: 8 }) && !P.sameRace(a, { date: '2026-10-10', venue: '', r: 9 }) && !P.sameRace({ date: '2026-10-10', venue: 'あ', r: 8 }, { date: '2026-10-10', venue: 'い', r: 8 }), '別の日・別のR・別の開催場 → 別のレース');
 check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2026-10-10', venue: '', r: 8, pid: 'p2' }], { date: '2026-10-10', venue: '', r: 8 }).pid === 'p2' && P.findPaid([], a) === null, '払ったレースの一覧から見つける');
+// 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数（帯は数えない）→ 8・16・25枚で帯の壁紙。受け取ると 0P の mission と unlock-theme:<帯>
+{
+  const T0 = D('2026-11-05');
+  let ev = [P.giftEvent(T0)];
+  for (const t of ['sakura', 'sea', 'autumn', 'snow', 'newyear', 'news', 'ink']) ev = P.unlock(ev, 'theme:' + t, 0, 'd1', T0);
+  check(P.wallCount(ev) === 7 && P.wallMissions(7, ev).map(m => m.claimable + '/' + m.done).join() === 'false/false,false/false,false/false' && P.wallMissions(7, ev)[0].label === 'シルバー帯の壁紙' && P.WALL_MISSIONS.map(m => m[0]).join() === '8,16,25', '7枚：まだ（8・16・25枚）');
+  ev = P.unlock(ev, 'theme:stars', 0, 'd1', T0);
+  const wm = P.wallMissions(P.wallCount(ev), ev);
+  check(P.wallCount(ev) === 8 && wm[0].claimable && !wm[1].claimable && wm[0].id === 'mission-wall-8' && wm[0].theme === 'silver', '8枚：シルバー帯が受け取れる');
+  const add = P.wallMissionEvents(wm[0], 'd1', T0);
+  ev = ev.concat(add);
+  const b = P.balance(ev, T0);
+  check(add.length === 2 && add[0].id === 'mission-wall-8' && add[0].amount === 0 && add[1].id === 'unlock-theme:silver' && add[1].amount === 0 && P.unlocked(ev, 'theme:silver') && b.total === 1500 && b.free === 1500, '受け取ると 0P の mission と unlock-theme:silver（ポイントは変わらない）');
+  check(P.wallCount(ev) === 8 && P.wallMissions(8, ev)[0].claimed && !P.wallMissions(8, ev)[0].claimable, '帯の壁紙は枚数に数えない・受け取りずみ');
+  check(P.unlock(ev, 'theme:silver', 0, 'd1', T0).length === ev.length, '同じ解放は2回足さない');
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

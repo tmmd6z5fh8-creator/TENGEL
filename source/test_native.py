@@ -339,7 +339,7 @@ try:
         # ---- 的中ボタン（第3弾・10章）：単勝・馬単の当たり（3連単なし）→ 的中の PUSH → タップ → いつものボード（券種ごとの結果・お金なし）→ とじる ----
         ov = pg.locator('#fxOv')
         sx = pg.evaluate('TengelFx.sfxState()')
-        check(ov.count() == 1 and ov.locator('.fxs .ov .push').count() == 1 and ov.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'push', 'quiet': False} and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
+        check(ov.count() == 1 and ov.locator('.fxs .ov .push').count() == 1 and ov.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'push', 'quiet': False, 'theme': None} and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
               f'保存 → 的中の PUSH が出る（3連単なしの当たり＝的中）・拡大は止める（{pg.evaluate("TengelFx.current()")}）')
         check(sx['ctx'] and sx['fetched'] and 'sfx_hit_push.m4a' in pg.evaluate("performance.getEntriesByType('resource').map(e => e.name).join()"), f'「結果を保存」を押したときに音の準備（AudioContext・音のファイルを読む）（{sx}）')
         check(pg.locator('#toast').is_hidden() or '保存できたよ' not in pg.locator('#toast').inner_text(), '演出が出るときは、お知らせの帯は出さない（ボードが結果を見せる）')
@@ -504,6 +504,120 @@ try:
         check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ms.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and '次は 15レース' in ms.inner_text(), '受け取ると 500P（無償の枠）・印が消える・次は15レース')
         pg.screenshot(path=os.path.join(W, 't4', 'native_mission.png'), full_page=False)
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
+        # ---- 着せ替え（第4弾・9章・16.1・16.1.1・16.2.1・16.4）：設定の「着せ替え」・30テーマ・名前と値段（9.1）・解放（P）→ 着せ替わる・上の絵（動く壁紙）・テーマの的中PUSHとボード・帯のミッション（8.3） ----
+        pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
+        ks = pg.locator('#setKisekae')
+        check(ks.count() == 1 and ks.locator('.kst').count() == 30 and ks.locator('.ksg').count() == 6 and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 29 and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
+              '設定に「着せ替え」：6つの組・30テーマ・いつものが使用中・ほかの29はカギ')
+        names = ks.locator('.kst .ksn').all_inner_texts()
+        check(names[:5] == ['いつもの', '牧場', 'かわいいお馬さん', '毛糸のお馬とロボット', 'ぷりけつのお馬'] and names[5:16] == ['桜', '海', '夕焼け', '紅葉', '雪', 'お正月', '花火', 'クリスマス', 'ハロウィン', 'バレンタイン', 'ホワイトデー']
+              and names[16:20] == ['ナイター', '競馬新聞', '勝負服', '招き馬'] and names[20:22] == ['水墨画', '大理石の馬'] and names[22:27] == ['ネオン', 'ドット', '黒板', 'メリーゴーランド', '星座'] and names[27:] == ['シルバー帯', 'ゴールド帯', 'マスター帯'],
+              f'9.1 の名前と並び（定番5・季節・行事11・競馬4・和・アート2・レトロ・ポップ5・帯3）：{names[:6]}…')
+        locks = ks.locator('.kst .kslock').all_inner_texts()
+        check(locks.count('🔒 1,000P') == 5 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 4 and locks.count('🔒 4,000P') == 8 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を8枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 1 and locks.count('🔒 壁紙を25枚あつめると') == 1,
+              '値段（9.1）：1,000P×5・2,000P×6・3,000P×4・4,000P×8・7,000P×3・帯は 8・16・25枚')
+        check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
+              '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
+        # 招き馬（7,000P・いま 7,000P）→ 確認が出る → やめる。1,000P 使ったあと（6,000P）だと「Pが足りないよ」と「ポイントを買う」
+        ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
+        cf = ks.locator('.ksconf')
+        check(cf.count() == 1 and '「招き馬」を 7,000Pを使って解放する？（いま 7,000P）' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1, f'カギの壁紙をタップ → 「○○Pを使って解放する？（いま △△P）」（{cf.inner_text()[:50]}）')
+        cf.locator('[data-ksact=cancel]').click(); pg.wait_for_timeout(200)
+        check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
+        # 桜（1,000P）を解放 → 着せ替わる
+        ks.locator('.kst[data-ks=sakura]').click(); pg.wait_for_timeout(300)
+        ks.locator('.ksconf [data-ksact=unlock]').click(); pg.wait_for_timeout(1200)
+        check(pg.evaluate('TengelWallet.total()') == 6000 and pg.evaluate("TengelWallet.unlocked('theme:sakura')") and pg.evaluate("document.documentElement.dataset.ks") == 'sakura' and pg.evaluate("TengelKisekae.current()") == 'sakura' and pg.evaluate("TengelKisekae.loaded()")
+              and ks.locator('.kst.on').get_attribute('data-ks') == 'sakura' and ks.locator('.kst[data-ks=sakura] .kslock').count() == 0 and ks.locator('.kst[data-ks=sakura] .ksbadge').inner_text() == '使用中' and '壁紙：1/26枚' in ks.inner_text() and pg.evaluate("localStorage.getItem('tengel.kisekae')") == 'sakura',
+              f'解放する → 1,000P 使って 桜に着せ替わる（台帳 unlock-theme:sakura・使用中・1/26枚・端末に覚える）')
+        check(pg.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(255, 246, 248)' and 'Zen Kaku Gothic New' in pg.evaluate("getComputedStyle(document.body).fontFamily") and 'Kaisei Decol' in pg.evaluate("getComputedStyle(document.querySelector('.brand h1')).fontFamily")
+              and pg.evaluate("getComputedStyle(document.querySelector('.top')).borderBottomColor") == 'rgb(238, 157, 184)' and pg.evaluate("getComputedStyle(document.querySelector('.tabbar button[aria-selected=true]')).backgroundColor") == 'rgb(252, 227, 235)',
+              '桜の色と字：背景・本文（Zen Kaku Gothic New）・見出し（Kaisei Decol）・上の帯のふち・タブ')
+        check(pg.evaluate("document.fonts.check('700 16px \"Kaisei Decol\"') || [...document.fonts].some(f => f.family.replace(/\"/g, '') === 'Kaisei Decol')") and 'KaiseiDecol-700.woff2' in pg.evaluate("[...document.styleSheets].map(s => { try { return [...s.cssRules].filter(r => r instanceof CSSFontFaceRule).map(r => r.cssText).join() } catch (e) { return '' } }).join()"),
+              'テーマの字はアプリの中のフォント（fonts/KaiseiDecol-700.woff2・Google に通信しない）')
+        # 帯：シルバー帯をタップ → ミッションの案内（まだ使えない）
+        ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(300)
+        check('壁紙を8枚あつめて、ミッションで受け取ると使えるよ（いま 1枚）' in pg.locator('#toast').inner_text() and pg.evaluate("TengelKisekae.current()") == 'sakura', '帯の壁紙をタップ → ミッションの案内（いま 1枚）')
+        pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(300)
+        check('解放：壁紙「桜」' in pg.locator('#setPoints .pthist').inner_text() and '-1,000P' in pg.locator('#setPoints .pthist').inner_text(), 'ポイントの履歴に「解放：壁紙「桜」」')
+        pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(200)
+        pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_set.png'), full_page=False)
+        # 判定タブ：上の帯 → 桜の上の絵（動く壁紙・390×160）→ レース情報
+        pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(600)
+        bn = pg.locator('#ksBnr')
+        bb = bn.bounding_box()
+        check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.bnrw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
+              and pg.evaluate("document.querySelector('#ksBnr').getAnimations({ subtree: true }).length") > 10 and bn.evaluate("e => e.previousElementSibling") is None and bn.evaluate("e => e.nextElementSibling.id") == 'w5Banner',
+              f'判定タブのいちばん上に 桜の上の絵（390×160・花びらと馬の動き・{pg.evaluate("document.querySelector(\'#ksBnr\').getAnimations({ subtree: true }).length")}の動き）')
+        check(pg.evaluate("document.documentElement.scrollWidth") <= 390 and pg.evaluate("document.querySelector('#fxCss') !== null && document.querySelector('#ksTheme').textContent.includes('.fxs .rb.t-sakura')"), '横にはみ出さない・テーマのボードの CSS が入っている')
+        # 「演出を控えめにする」→ 壁紙も止まった絵（.calm）。もどすと動く。アプリが裏（判定タブ以外）では .pause
+        pg.evaluate("TengelFx.set({ calm: true })"); pg.wait_for_timeout(100)
+        check(bn.evaluate("e => e.classList.contains('calm')"), '演出を控えめにする → 壁紙は止まった絵（.calm）')
+        pg.evaluate("TengelFx.set({ calm: false })"); pg.wait_for_timeout(100)
+        check(not bn.evaluate("e => e.classList.contains('calm')"), 'もどすと動く')
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(200)
+        check(bn.evaluate("e => e.classList.contains('pause')"), '判定タブが見えていない間は壁紙の動きを止める（.pause ※仮）')
+        pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(200)
+        check(not bn.evaluate("e => e.classList.contains('pause')"), '判定タブにもどると動く')
+        # 的中ボタン：桜の PUSH（面の SVG・はじける花びら）→ 桜のボード。デカ的中の PUSH は全テーマ共通・ボードは桜
+        pg.evaluate("(s) => TengelFx.show(s)", spec(None, [('馬単', '的中', [[6, 2]]), ('単勝', '的中', [[6]])])); pg.wait_for_timeout(300)
+        fk = pg.locator('#fxOv')
+        check(fk.locator('.push.sk svg').count() >= 1 and fk.locator('.pshadow.sk').count() == 1 and fk.locator('.tap.sk').inner_text() == 'タップ！' and pg.evaluate('TengelFx.current()')['theme'] == 'sakura', '的中 → 桜の PUSH（桜の枝と花の面・タップ！）')
+        pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_push.png'), full_page=False)
+        fk.locator('.push').click(force=True); pg.wait_for_timeout(2300)
+        check(fk.locator('.pressed.sk svg').count() >= 1 and fk.locator('.fxs .ov.hit .petals, .fxs .ov.hit .clips, .fxs .ov.hit [class*=pet]').count() >= 1 and 't-sakura' in fk.locator('.rb').get_attribute('class') and fk.locator('.rb .bh').text_content() == '的中！' and fk.locator('.rb .orn').count() == 1 and fk.locator('.rb .brows li').count() == 3,
+              '押すと 桜の花びらが舞って → 桜のボード（すみに桜の飾り・券種ごとの行）')
+        pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_board.png'), full_page=False)
+        pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
+        pg.evaluate("(s) => TengelFx.show(s)", spec([8, 5, 2])); pg.wait_for_timeout(300)
+        check(fk.locator('.push.big').count() == 1 and fk.locator('.push.sk').count() == 0 and pg.evaluate('TengelFx.current()')['theme'] is None, 'デカ的中の PUSH は全テーマ共通（16.2.1）')
+        fk.locator('.push').click(force=True); pg.wait_for_timeout(800)
+        check('t-sakura' in fk.locator('.rb').get_attribute('class') and fk.locator('.rb.big .bh').text_content() == 'デカ的中!!', 'デカ的中のボードは桜')
+        pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
+        # 開き直しても桜（起動の瞬間から色が出る）
+        pg.reload()
+        ks0 = pg.evaluate("document.documentElement.dataset.ks")
+        pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(1200)
+        check(ks0 == 'sakura' and pg.evaluate("TengelKisekae.current()") == 'sakura' and not pg.locator('#ksBnr').evaluate('e => e.hidden'), f'開き直しても桜（開いた瞬間から：{ks0}）')
+        # 壁紙のミッション（8.3）：ポイントで解放した壁紙が 8枚 → 「受け取る」→ シルバー帯が使える（帯は枚数に数えない）
+        pg.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); for (const t of ['sea', 'autumn', 'snow', 'newyear', 'news', 'ink', 'stars']) w.events.push({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: 0, at: new Date().toISOString(), use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:' + t, device: 'x' }); await TengelLocal.putMeta(w); })()""")
+        pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(1200)
+        check(pg.evaluate("TengelKisekae.count()") == 8 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 1, '壁紙を8枚解放 → 受け取れるミッションの印')
+        pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
+        wm = pg.locator('#setMission')
+        check('壁紙のミッション' in wm.inner_text() and 'いま 8枚' in wm.inner_text() and '壁紙を8枚あつめる' in wm.inner_text() and wm.locator('[data-pt=claim][data-id="mission-wall-8"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wall-16"]').count() == 0 and 'あと 8枚（8/16）' in wm.inner_text(),
+              'ミッションに「壁紙のミッション」：8枚で「受け取る」・16枚は あと8枚')
+        wm.locator('[data-pt=claim][data-id="mission-wall-8"]').click(); pg.wait_for_timeout(700)
+        check(pg.evaluate("TengelWallet.unlocked('theme:silver')") and pg.evaluate("TengelKisekae.usable('silver')") and pg.evaluate("TengelKisekae.count()") == 8 and pg.evaluate('TengelWallet.total()') == 6000 and wm.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and 'シルバー帯の壁紙を受け取ったよ' in pg.locator('#toast').inner_text(),
+              '受け取る → シルバー帯が使える（0P・枚数は8のまま・印が消える）')
+        check(ks.locator('.kst[data-ks=silver] .kslock').count() == 0 and ks.locator('.kst[data-ks=golden] .kslock').inner_text() == '🔒 壁紙を16枚あつめると', '着せ替えのカード：シルバー帯のカギが外れる・ゴールド帯は16枚')
+        ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(1200)
+        check(pg.evaluate("TengelKisekae.current()") == 'silver' and pg.evaluate("document.documentElement.dataset.ks") == 'silver' and ks.locator('.kst.on').get_attribute('data-ks') == 'silver', 'シルバー帯に着せ替わる')
+        pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(500)
+        check(pg.locator('#ksBnr .mxsw').count() == 1 and pg.evaluate("document.documentElement.scrollWidth") <= 390, 'シルバー帯の上の絵（像と きらめき）・横にはみ出さない')
+        # 全テーマ：文字と背景のコントラスト 4.5以上（判定・設定の主な文字）・横にはみ出さない・馬番の枠の色は同じ・絵がなくても落ちない（この srv には絵がない）
+        CONTRAST = """() => {
+          const lum = c => { const m = c.match(/[\\d.]+/g); if (!m || m.length < 3) return null; const a = m.length > 3 ? +m[3] : 1; if (a < .99) return null; const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(+m[0]) + .7152 * f(+m[1]) + .0722 * f(+m[2]); };
+          const bgOf = el => { for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); if (cs.backgroundImage !== 'none') return 'img'; const L = lum(cs.backgroundColor); if (L != null) return L; } return lum(getComputedStyle(document.body).backgroundColor); };
+          const out = [];
+          const sels = ['.brand h1', '.card h2', '.f > label', '.hint', '.btn.primary', '.seg button[aria-pressed=true]', '.tabbar button', '.tabbar button[aria-selected=true]', '.chip', '.fchip', '.zrank', '.zflow', '.lbadge .ll', 'input[type=number]', '.ocrHint, #ocrHint', '.ptnote', '#setKisekae .ksn', '#setKisekae .ksd', '#setKisekae .kslock', '.msrow .md', '.pthist li'];
+          sels.forEach(s => { const el = document.querySelector(s); if (!el || !el.offsetParent) return; const cs = getComputedStyle(el); const L1 = lum(cs.color), bg = bgOf(el); if (L1 == null || bg == null || bg === 'img') return; const c = (Math.max(L1, bg) + .05) / (Math.min(L1, bg) + .05); out.push([s, +c.toFixed(2)]); });
+          return out; }"""
+        low, wide, wk = [], [], []
+        for tid in pg.evaluate("TengelKisekae.list().map(t => t.id)"):
+            pg.evaluate("(id) => TengelKisekae.apply(id)", tid); pg.wait_for_timeout(350)
+            for tab in ('judge', 'set'):
+                pg.click(f'.tabbar button[data-tab={tab}]'); pg.wait_for_timeout(120)
+                for sel, c in pg.evaluate(CONTRAST):
+                    if c < (3.0 if '.lbadge' in sel else 4.5): low.append(f'{tid} {tab} {sel} {c}')   # 層の字（46px）は大きい字＝3.0 以上
+                if pg.evaluate("document.documentElement.scrollWidth") > 390: wide.append(tid + ' ' + tab)
+            w2 = pg.evaluate("[1,2,3,4,5,6,7,8].map(i => { const e = document.createElement('span'); e.className = 'num w' + i; document.body.appendChild(e); const c = getComputedStyle(e).backgroundColor; e.remove(); return c; })")
+            if w2 != ['rgb(255, 255, 255)', 'rgb(26, 26, 26)', 'rgb(211, 35, 45)', 'rgb(30, 91, 190)', 'rgb(243, 207, 30)', 'rgb(29, 138, 59)', 'rgb(240, 126, 25)', 'rgb(243, 141, 182)']: wk.append(tid)
+        check(not low, f'全30テーマ：主な文字と背景のコントラスト 4.5以上（層の大きい字は 3.0以上）（{len(low)}こ 低い：{low[:6]}）')
+        check(not wide and not wk, f'全30テーマ：横にはみ出さない（{wide[:4]}）・馬番の枠の色はどのテーマでも同じ（{wk[:4]}）')
+        pg.evaluate("TengelKisekae.apply('default')"); pg.wait_for_timeout(500)
+        check(pg.evaluate("document.documentElement.dataset.ks") is None and pg.locator('#ksBnr').evaluate('e => e.hidden') and pg.evaluate("document.querySelector('#ksTheme').textContent === ''"), 'いつものにもどす → 上の絵なし・テーマの CSS なし')
+        pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         # ---- バックアップを保存（共有シート） ----
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
         pg.evaluate('window.__bridge = []')
@@ -550,7 +664,7 @@ try:
         pg.wait_for_timeout(2200)
         check(store['backup'] == before, '聞いている間は自動バックアップを書かない（前の記録を守る）')
         box.locator('[data-nr=yes]').click(); pg.wait_for_timeout(1200)
-        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（7,000P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 7000, '「記録を戻す」→ 記録とポイントの台帳が戻る')
+        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（6,000P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 6000, '「記録を戻す」→ 記録とポイントの台帳が戻る（着せ替えで 1,000P 使ったあと）')
         pg.wait_for_timeout(800)
         check(len(json.loads(store['backup'])['bets']) == 3 and json.loads(store['backup'])['wallet']['events'], '戻したあとも自動バックアップに記録と台帳')
         # ---- もう一度消えた → 「戻さない」 ----
@@ -573,6 +687,7 @@ try:
         check(w['native'] is False and w['bridge'] is None and p2.locator('#suCheck').count() == 1 and p2.locator('#sbAuto').count() == 0 and p2.locator('#setUpdate h2').inner_text() == 'アプリの更新', 'Web版：アプリの印は出ない（更新の確認・バックアップは今までどおり）')
         check(p2.locator('#setNotify').count() == 0 and p2.evaluate("typeof window.TengelReserve === 'undefined' && typeof window.TengelCustomRate === 'undefined'"), 'Web版：お知らせの設定・予約の仕組みは入らない')
         check(p2.locator('#setFx').count() == 0 and p2.evaluate("typeof window.TengelFx === 'undefined' && typeof window.__FX === 'undefined' && !document.querySelector('#fxCss')"), 'Web版：的中ボタン（演出・設定）は入らない')
+        check(p2.locator('#setKisekae').count() == 0 and p2.locator('#ksBnr').count() == 0 and p2.evaluate("typeof window.TengelKisekae === 'undefined' && typeof window.__KS === 'undefined' && !document.querySelector('#ksCss') && !document.documentElement.dataset.ks"), 'Web版：着せ替え（カード・上の絵・テーマの CSS）は入らない')
         p2.click('.tabbar button[data-tab=judge]'); p2.wait_for_timeout(400)
         check(p2.locator('#recCard h2').inner_text().startswith('結果・収支の記録') and p2.locator('#omakaseBtn').count() == 0 and p2.locator('#result .rnav').count() == 0 and not [t for t in p2.locator('#result .zref').all_inner_texts() if '選んだ馬で' in t] and p2.locator('#saveJudge').count() == 1, 'Web版：判定画面は今までどおり（結果・収支の記録・お任せなし・矢印なし・%なし・判定と結果を保存）')
         p2.click('.tabbar button[data-tab=rec]'); p2.wait_for_timeout(300); p2.click('#recExportBtn'); p2.wait_for_timeout(300)
