@@ -5,11 +5,31 @@ import UserNotifications
 ///  ・Webの画面が「予約したレース」の一覧（発走の15分後の時刻つき）を渡す → 近い順に64件まで入れ直す（sync）
 ///  ・押されたら Webの画面に知らせる（window.__nativeEvent('notify', { race })）。Webがまだ開いていない（アプリを閉じていた）ときは取っておいて、開いたときに渡す（opened）
 ///  ・お知らせの文は Webの画面が決める（開催場・R・レース名＝読んだ名前・入れた名前だけ）
+///  UNUserNotificationCenter の返事（UNNotificationRequest など）は Sendable ではないので、nonisolated の関数の中で読んで、文字列や数だけを返す（Swift 6 の厳しいチェックでも通る形）
+private let notifyPrefix = "tengel-race-"
+private let notifyMax = 64
+
+/// Webの画面から受けとる1件（Sendable）
+private struct SyncItem: Sendable {
+    let id: String
+    let at: Double   // ミリ秒
+    let title: String
+    let body: String
+    let race: String?
+}
+
+/// 待っているお知らせ1件（Sendable）
+private struct PendingItem: Sendable {
+    let id: String
+    let title: String
+    let body: String
+    let at: Int?
+    let race: String?
+}
+
 @MainActor
 final class Notify: NSObject, UNUserNotificationCenterDelegate {
     static let shared = Notify()
-    static let prefix = "tengel-race-"
-    static let maxPending = 64
 
     /// 押されたお知らせを Webの画面へ
     var onOpen: (([String: Any]) -> Void)?
@@ -26,24 +46,26 @@ final class Notify: NSObject, UNUserNotificationCenterDelegate {
     func handle(_ p: [String: Any]) async -> [String: Any] {
         switch p["op"] as? String ?? "" {
         case "status":
-            return ["ok": true, "auth": await authName()]
+            return ["ok": true, "auth": await Self.authName()]
         case "permission":
             do {
-                let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                return ["ok": true, "granted": granted, "auth": await authName()]
+                let granted = try await Self.requestPermission()
+                return ["ok": true, "granted": granted, "auth": await Self.authName()]
             } catch {
-                return ["ok": false, "granted": false, "error": error.localizedDescription, "auth": await authName()]
+                return ["ok": false, "granted": false, "error": error.localizedDescription, "auth": await Self.authName()]
             }
         case "sync":
-            let items = p["items"] as? [[String: Any]] ?? []
-            let n = await sync(items)
-            return ["ok": true, "scheduled": n, "auth": await authName()]
+            let items = (p["items"] as? [[String: Any]] ?? []).compactMap { it -> SyncItem? in
+                guard let id = it["id"] as? String, !id.isEmpty, let at = (it["at"] as? NSNumber)?.doubleValue else { return nil }
+                return SyncItem(id: id, at: at, title: (it["title"] as? String) ?? "結果を確認しよう！", body: (it["body"] as? String) ?? "", race: it["race"] as? String)
+            }
+            let n = await Self.sync(items)
+            return ["ok": true, "scheduled": n, "auth": await Self.authName()]
         case "pending":
-            let reqs = await UNUserNotificationCenter.current().pendingNotificationRequests()
-            let list: [[String: Any]] = reqs.filter { $0.identifier.hasPrefix(Self.prefix) }.map { r in
-                var d: [String: Any] = ["id": String(r.identifier.dropFirst(Self.prefix.count)), "title": r.content.title, "body": r.content.body]
-                if let t = r.trigger as? UNTimeIntervalNotificationTrigger, let d2 = t.nextTriggerDate() { d["at"] = Int(d2.timeIntervalSince1970 * 1000) }
-                if let race = r.content.userInfo["race"] as? String { d["race"] = race }
+            let list: [[String: Any]] = await Self.pendingItems().map { x in
+                var d: [String: Any] = ["id": x.id, "title": x.title, "body": x.body]
+                if let at = x.at { d["at"] = at }
+                if let race = x.race { d["race"] = race }
                 return d
             }
             return ["ok": true, "list": list]
@@ -56,7 +78,15 @@ final class Notify: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private func authName() async -> String {
+    /// 押されたお知らせを Webの画面へ（まだ開いていなければ取っておく）
+    func opened(_ race: String, id: String) {
+        let p: [String: Any] = ["race": race, "id": id]
+        if let f = onOpen { f(p) } else { pendingOpen = p }
+    }
+
+    // MARK: UNUserNotificationCenter（nonisolated：返事を文字列・数にしてから返す）
+
+    private nonisolated static func authName() async -> String {
         let s = await UNUserNotificationCenter.current().notificationSettings()
         switch s.authorizationStatus {
         case .authorized: return "authorized"
@@ -68,35 +98,39 @@ final class Notify: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    private nonisolated static func requestPermission() async throws -> Bool {
+        try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+    }
+
+    private nonisolated static func pendingItems() async -> [PendingItem] {
+        let reqs = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        return reqs.filter { $0.identifier.hasPrefix(notifyPrefix) }.map { r in
+            var at: Int? = nil
+            if let t = r.trigger as? UNTimeIntervalNotificationTrigger, let d = t.nextTriggerDate() { at = Int(d.timeIntervalSince1970 * 1000) }
+            return PendingItem(id: String(r.identifier.dropFirst(notifyPrefix.count)), title: r.content.title, body: r.content.body, at: at, race: r.content.userInfo["race"] as? String)
+        }
+    }
+
     /// 待たせるお知らせをまとめて入れ直す：テンゲルのものを全部消して、これからの分を近い順に64件まで入れる
-    private func sync(_ items: [[String: Any]]) async -> Int {
+    private nonisolated static func sync(_ items: [SyncItem]) async -> Int {
         let center = UNUserNotificationCenter.current()
         let reqs = await center.pendingNotificationRequests()
-        let mine = reqs.map(\.identifier).filter { $0.hasPrefix(Self.prefix) }
+        let mine = reqs.map(\.identifier).filter { $0.hasPrefix(notifyPrefix) }
         if !mine.isEmpty { center.removePendingNotificationRequests(withIdentifiers: mine) }
         let now = Date().timeIntervalSince1970 * 1000
-        let future = items.compactMap { it -> (Double, [String: Any])? in
-            guard let at = (it["at"] as? NSNumber)?.doubleValue, at > now + 1000, let id = it["id"] as? String, !id.isEmpty else { return nil }
-            return (at, it)
-        }.sorted { $0.0 < $1.0 }.prefix(Self.maxPending)
+        let future = items.filter { $0.at > now + 1000 }.sorted { $0.at < $1.at }.prefix(notifyMax)
         var n = 0
-        for (at, it) in future {
+        for it in future {
             let content = UNMutableNotificationContent()
-            content.title = (it["title"] as? String) ?? "結果を確認しよう！"
-            content.body = (it["body"] as? String) ?? ""
+            content.title = it.title
+            content.body = it.body
             content.sound = .default
-            if let race = it["race"] as? String { content.userInfo = ["race": race] }
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, (at - now) / 1000), repeats: false)
-            let req = UNNotificationRequest(identifier: Self.prefix + (it["id"] as? String ?? ""), content: content, trigger: trigger)
+            if let race = it.race { content.userInfo = ["race": race] }
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, (it.at - now) / 1000), repeats: false)
+            let req = UNNotificationRequest(identifier: notifyPrefix + it.id, content: content, trigger: trigger)
             do { try await center.add(req); n += 1 } catch { continue }
         }
         return n
-    }
-
-    /// 押されたお知らせを Webの画面へ（まだ開いていなければ取っておく）
-    func opened(_ race: String, id: String) {
-        let p: [String: Any] = ["race": race, "id": id]
-        if let f = onOpen { f(p) } else { pendingOpen = p }
     }
 
     // MARK: UNUserNotificationCenterDelegate（アプリを開いているときも出す・押されたら知らせる）
@@ -108,7 +142,7 @@ final class Notify: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         let req = response.notification.request
         let race = req.content.userInfo["race"] as? String ?? ""
-        let id = req.identifier.hasPrefix(Self.prefix) ? String(req.identifier.dropFirst(Self.prefix.count)) : req.identifier
+        let id = req.identifier.hasPrefix(notifyPrefix) ? String(req.identifier.dropFirst(notifyPrefix.count)) : req.identifier
         Task { @MainActor in Notify.shared.opened(race, id: id) }
         completionHandler()
     }
