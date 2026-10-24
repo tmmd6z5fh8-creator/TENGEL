@@ -60,6 +60,12 @@ final class WebHostView: UIView {
             }
         }
         let bottom = window.safeAreaInsets.bottom - (window.bounds.maxY - me.maxY)
+        // iPad で アプリを 画面いっぱいに 動かす とき（Swift Playgrounds の ▶ など）、時計・電池の 帯の 高さが 0 と 返って くる ことが ある
+        // → 画面いっぱいの 窓で 上の あきが 0 なら、iPad の 時計の 帯の 高さ（ホームバーの ある iPad は 24pt・ホームボタンの iPad は 20pt）を 足す（第4.59版・まさちゃんの iPad の 画面）
+        if top <= 0, me.minY <= 0, UIDevice.current.userInterfaceIdiom == .pad,
+           window.frame.origin == .zero, window.bounds.size == (window.windowScene?.screen ?? window.screen).bounds.size {
+            top = window.safeAreaInsets.bottom > 0 ? 24 : 20
+        }
         return (Int(max(0, top).rounded()), Int(max(0, bottom).rounded()))
     }
 
