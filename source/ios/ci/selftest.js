@@ -241,6 +241,13 @@
     // App内課金：商品（シミュレーターでは App Store Connect の設定がないので、読めないことが多い。読めなくてもアプリは動く）
     await step(R, 'iap', async function () { return await TengelNative.iap('products'); });
     await step(R, 'layout', async function () { var L = await TengelNative.layout(); L.cssTop = getComputedStyle(document.documentElement).getPropertyValue('--top-inset'); L.cssBottom = getComputedStyle(document.documentElement).getPropertyValue('--bottom-inset'); L.padTop = getComputedStyle(document.documentElement).paddingTop; L.padBottom = getComputedStyle(document.documentElement).paddingBottom; return L; });
+    // 第4.59版：上の帯の 所有ポイント（購入・サブスク）・説明書は マザーデータの 札の すぐ 左・iPad で 画面いっぱいなら 上に 24px（互換モードでは つかない）
+    await step(R, 'topbar', function () {
+      var p = document.querySelector('#ptsPill'), m = document.querySelector('#manBtn'), d = document.querySelector('#dbpill'), h = document.querySelector('header.top');
+      var r = function (x) { return x ? x.getBoundingClientRect() : null; };
+      return { pill: p ? p.innerText.replace(/\s+/g, ' ') : null, manual: m ? { right: r(m).right, top: r(m).top } : null, badge: d ? { left: r(d).left, right: r(d).right, top: r(d).top } : null,
+               headerTop: h ? r(h).top : null, topInset: document.documentElement.style.getPropertyValue('--top-inset'), topInset2: document.documentElement.style.getPropertyValue('--top-inset2'), w: innerWidth, test: !!window.__TEST, testTag: !!document.querySelector('#testTag') };
+    });
     // App Storeの版（アプリがAppleに聞く）・データの更新（GitHub Pages を tengel:// から読めるか＝CORS）・マザーデータに入ったか
     await step(R, 'store', async function () { return await TengelNative.storeInfo(); });
     await step(R, 'data', async function () {

@@ -19,6 +19,18 @@ if (window.__NATIVE) (function () {
       try { h.postMessage({ id: id, name: name, payload: payload }); } catch (e) { delete pend[id]; rej(e); }
     });
   }
+  // iPad で アプリを 画面いっぱいに 動かす とき（Swift Playgrounds の ▶）、時計・電池の 帯の 高さが アプリにも Web にも 0 と 伝わる ことが ある → 上の帯が 時計と 重なる。
+  // 幅が iPad の 広さ（700px 以上＝iPhone の 大きさの 窓では ない）で、上の帯が 画面の いちばん上（0）に ある ときは 24px あける（第4.59版・まさちゃんの iPad の 画面）
+  function padTop() {
+    try {
+      if (window.innerWidth < 700) return;
+      var top = document.querySelector('header.top'); if (!top) return;
+      var r = top.getBoundingClientRect(); if (window.scrollY > 0 || r.top > 0.5) return;
+      document.documentElement.style.setProperty('--top-inset2', '24px');
+    } catch (e) { /* なし */ }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(padTop, 0); }); else setTimeout(padTop, 0);
+  window.addEventListener('resize', function () { setTimeout(padTop, 50); });
   window.TengelNative = {
     call: call,
     info: window.__NATIVE_INFO || {},   // アプリの版（アプリが最初に入れる）

@@ -3,6 +3,7 @@ out = sys.argv[1] if len(sys.argv) > 1 else 'pwa'
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 作る形：web＝Web版（ホーム画面のアプリ・GitHub Pages）／app＝App Store版のアプリの中身（build_ios.py が使う）
 TARGET = os.environ.get('TARGET', 'web')
+TEST = TARGET == 'app' and os.environ.get('TENGEL_TEST') == '1'   # テスト版（第4.59版）：はじめから 10,000P・設定に「テスト版の道具」。App Store には 出さない
 assert TARGET in ('web', 'app'), TARGET
 
 
@@ -73,9 +74,9 @@ head = f'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="テンゲルⅢ">
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
-<style>:root{{color-scheme:light;--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
+<style>:root{{color-scheme:light;--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px),var(--top-inset2,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 {APP_HEAD}
-<script>window.__APP_VER={json.dumps(APP_VER)};window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};{'window.__TEST=true;' if TEST else ''}window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('ocr_local.js', encoding='utf8').read()}
 </script>{APP_LIBS}

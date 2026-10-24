@@ -178,6 +178,13 @@
 - 確かめる：`python3 test_native.py`（どれが出るか（18.2 の 例）・くじ・的中エフェクト オフ・控えめの pc と sgd・動画の 流れ（Chromium は H.264 が 読めないので ios/fx_assets の mp4 から 同じ 絵の webm を 作って 同じ 名前の かわりに）・読めない 時の still・spg の 6.0秒 → 昇格 → 超神様 → ボード・pc／zp／gd の 部品と ボード・桜の テーマでも）・`python3 test_fx_flash.py pc,zp,gd,film`（点めつ）・`python3 test_iphone_only.py`（__FX の reveal・絵と 音と 動画の 名前と 数と 大きさ・Swift の Range）。CI の selftest（`fx5`）は 神様・プレミアム・超神様（動画なし → still）を 直接 出して 写す
 - まさちゃんに 見せる 仮の 所：くじの 決め方（数えかたは しない）・神様の 読み方（超大穴 2頭でも 神様）・神様と 超神様の PUSH（ど的中と 同じ）・ボードの 帯（超大穴と 大穴）と 見出し・動画が 読めない 時の 形（さいごの 1まい → 1.3秒）・控えめの 音の 位置
 
+## App Store版 上の帯の 直しと テスト版（2026/10/25〜・アップデート指示書 第4.59版の 22章）
+
+まさちゃんが Swift Playgrounds で iPad で 動かした 画面から：①上の帯が 時計・電池と 重なる（iPad で 画面いっぱいの とき）→ `TengelWebView.swift` の `WebHostView.insets`（iPad・画面いっぱいの 窓で 上の あきが 0 なら 24pt／ホームボタンの iPad は 20pt）と `pwa_shim.js` の `padTop`（幅 700px 以上で 上の帯が いちばん上なら `--top-inset2: 24px`）の 2重で あける。②説明書の ボタンを マザーデータの 札の すぐ 左に（`points_ui.js` の CSS）。③ロゴの 右に 所有ポイント「購入 ○P・サブスク ○P」（`points_ui.js` の `topBar`・押すと 設定の ポイントへ。購入P＝パックで 買ったP＋もらったP ※仮）。
+
+- **テスト版**：`TENGEL_TEST=1 python3 build_ios.py <出力>` → `TengelTest.swiftpm`（.zip）。名前は「テンゲル テスト」（bundle id は 同じ）。`build_pwa.py` が `window.__TEST=true` を 入れ、`points_ui.js` が **はじめから 10,000P**（`gift-test`：初回の 1,500P と 合わせて ちょうど 10,000P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタン 10種を 直接 出す）を 出す。**App Store には 出さない**（ふつうの zip は `Tengel.swiftpm.zip`）。
+- テスト：`test_native.py`（上の帯の 札と 説明書の 置き場・幅 820px の あき・Web版は かわらない・テスト版の 10,000P と 道具）・`test_iphone_only.py`（Swift と Web の 直し・テスト版の Package.swift）。
+
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
 - 判定画面のいちばん上の絵（390×160）：kisekae/svg/banner_*.svg。作り直すときは `python3 kisekae/<ranch|cute|elegant|kids|gold>.py <出力フォルダ>`（art.py の部品で描く・すべてオリジナル）。子供向けの上の帯の背景は knit_tile.svg（12×10のくり返し）

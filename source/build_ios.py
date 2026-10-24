@@ -23,7 +23,8 @@ web = os.path.join(tmp, 'web')
 subprocess.run(['node', 'build.js'], cwd=W, check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', web], cwd=W, check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, TARGET='app'))
 
-pkg = os.path.join(out, 'Tengel.swiftpm')
+TEST = os.environ.get('TENGEL_TEST') == '1'   # テスト版（第4.59版）：TENGEL_TEST=1 python3 build_ios.py <出力>（はじめから 10,000P・設定に「テスト版の道具」・名前は「テンゲル テスト」・TengelTest.swiftpm）。App Store には 出さない
+pkg = os.path.join(out, 'TengelTest.swiftpm' if TEST else 'Tengel.swiftpm')
 shutil.rmtree(pkg, ignore_errors=True)
 shutil.copytree(os.path.join(W, 'ios', 'Tengel.swiftpm'), pkg, ignore=shutil.ignore_patterns('.DS_Store', 'Resources', 'AppIcon.png', '.build', '.swiftpm'))
 # 版の番号（アップデートのとき）
@@ -33,6 +34,10 @@ if IOS_VERSION:
     ps = ps.replace(f'displayVersion: "{cur_v}"', f'displayVersion: "{IOS_VERSION}"')
 if IOS_BUILD:
     ps = ps.replace(f'bundleVersion: "{cur_b}"', f'bundleVersion: "{IOS_BUILD}"')
+if TEST:
+    assert ps.count('name: "テンゲル",') == 2, 'Package.swift の 名前の 形が かわった'
+    ps = ps.replace('        .iOSApplication(\n            name: "テンゲル",', '        .iOSApplication(\n            name: "テンゲル テスト",')
+    assert 'テンゲル テスト' in ps
 open(pk, 'w', encoding='utf8').write(ps)
 VER = (IOS_VERSION or cur_v, IOS_BUILD or cur_b)
 
@@ -90,7 +95,7 @@ assert icon.size == (1024, 1024), icon.size
 icon.convert('RGB').save(os.path.join(pkg, 'Assets.xcassets', 'AppIcon.appiconset', 'AppIcon.png'), optimize=True)
 
 # iPadに送る用のzip（フォルダごと。Macの「._」ファイルなどは入れない）
-zpath = os.path.join(out, 'Tengel.swiftpm.zip')
+zpath = os.path.join(out, ('TengelTest' if TEST else 'Tengel') + '.swiftpm.zip')
 if os.path.exists(zpath): os.remove(zpath)
 with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
     for root, dirs, fs in os.walk(pkg):

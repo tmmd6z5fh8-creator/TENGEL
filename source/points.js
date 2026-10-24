@@ -105,7 +105,7 @@
     if (!o) return null;
     return mk(id, 'refund', o.bucket, -Math.abs(+o.amount || 0), tx.revokedAt && tms(tx.revokedAt) ? new Date(tms(tx.revokedAt)).toISOString() : iso(now), { product: o.product, tx: String(tx.id) });
   }
-  function giftEvent(now) { return mk('gift-first', 'gift', 'free', COST.gift, iso(now), { what: '初回プレゼント' }); }
+  function giftEvent(now, amount, id, what) { return mk(id || 'gift-first', 'gift', 'free', amount || COST.gift, iso(now), { what: what || '初回プレゼント' }); }   // amount・id・what は テスト版の P だけ
   function missionEvent(m, now) { return mk('mission-rec-' + m.n, 'mission', 'free', m.reward, iso(now), { what: m.label }); }
   // 使う：1日ごと・端末ごとに1件にまとめる（spend-<端末>-<日付>）。返り値は新しい一覧（足りないときは null）
   function spend(events, amount, what, device, now) {

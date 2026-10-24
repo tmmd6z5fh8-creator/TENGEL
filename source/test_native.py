@@ -23,6 +23,12 @@ for f in ('index.html', 'manual.html'):
         html = html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;')
     open(pth, 'w', encoding='utf8').write(html)
 APPURL = f'http://localhost:{PORT}/APP/'
+# テスト版（第4.59版：TENGEL_TEST=1）：はじめから 10,000P・設定に「テスト版の道具」。App Store には 出さない
+subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'TEST')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app', TENGEL_TEST='1'))
+pth = os.path.join(SRV, 'TEST', 'index.html'); html = open(pth, encoding='utf8').read()
+assert 'window.__TEST=true;' in html and 'window.__TEST=true;' not in open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read() and 'window.__TEST=true;' not in open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read()
+open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+TESTURL = f'http://localhost:{PORT}/TEST/'
 # 第5弾：超神様の 動画（H.264）は Chromium で 読めないので、手元の 動画（ios/fx_assets/*.mp4）から 同じ 絵の 小さな webm を 作って（t5/films/ に とっておく）同じ 名前の かわりに 読ませる
 FILMS_DIR = os.path.join(W, 't5', 'films')
 for f in ('sgd_film', 'spg_up'):
@@ -174,6 +180,10 @@ try:
         check(order == ['setPoints', 'setCustom', 'setMission'], f'設定タブの上に ポイント・Pカスタム・ミッション（{order}）')
         pt = pg.locator('#setPoints').inner_text()
         check(pg.evaluate('TengelWallet.total()') == 1500 and '1,500P' in pt and 'もらったP 1,500' in pt and store['markers'].get('gift-first'), f'はじめてのプレゼント 1,500P（もらったP）・キーチェーンにしるし（{list(store["markers"])}）')
+        # 第4.59版：上の帯の 所有ポイント（購入P＝パック＋もらったP・サブスクP）と 説明書の 置き場（マザーデータの 札の すぐ 左）・テスト版の 印は ない
+        hb = pg.evaluate("(() => { const p = document.querySelector('#ptsPill'), m = document.querySelector('#manBtn'), d = document.querySelector('#dbpill'), b = document.querySelector('header.top .brand'); if (!p || !m || !d) return null; const r = x => x.getBoundingClientRect(); return { txt: p.innerText.replace(/\\s+/g, ' '), afterBrand: b.nextElementSibling === p, order: m.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : 0, mRight: r(m).right, dLeft: r(d).left, dRight: r(d).right, mTop: r(m).top, dTop: r(d).top, w: innerWidth, tag: !!document.querySelector('#testTag'), gopt: p.dataset.gopt }; })()")
+        check(hb and '購入 1,500P' in hb['txt'] and 'サブスク 0P' in hb['txt'] and hb['afterBrand'] and hb['gopt'] == 'points' and not hb['tag'], f'上の帯：ロゴの 右に 所有ポイント「購入 1,500P・サブスク 0P」（押すと 設定の ポイントへ）・テスト版の 印は ない（{hb}）')
+        check(hb and hb['order'] == 1 and ((abs(hb['mTop'] - hb['dTop']) < 8 and hb['mRight'] <= hb['dLeft'] + 1 and hb['dLeft'] - hb['mRight'] < 24 and hb['dRight'] >= hb['w'] - 24) or (hb['mTop'] < hb['dTop'] - 8 and hb['mRight'] >= hb['w'] - 24)), f'上の帯：説明書は マザーデータの 札の すぐ 左で 右よせ（札が 2行目に 回る ときは 1行目の 右はし）（{hb}）')
         check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません' in pt and '200P' in pt and '買ったPから先に使う' in pt, 'ポイントのカード：消えることの注意・1レース200P・使う順')
         cu = pg.locator('#setCustom').inner_text()
         check('Pカスタムで、自分だけのテンゲルを育てよう！' in cu and 'はじめから：単勝・馬単・3連単' in cu and cu.count('500P') >= 6 and '15,000P' in cu and pg.locator('#setCustom [data-pt=unlock1]').count() == 8, 'Pカスタム：券種6つ（1つ500P）・マザーデータの枠2つ（15,000P）')
@@ -800,6 +810,7 @@ try:
         check(w['native'] is False and w['bridge'] is None and p2.locator('#suCheck').count() == 1 and p2.locator('#sbAuto').count() == 0 and p2.locator('#setUpdate h2').inner_text() == 'アプリの更新', 'Web版：アプリの印は出ない（更新の確認・バックアップは今までどおり）')
         check(p2.locator('#setNotify').count() == 0 and p2.evaluate("typeof window.TengelReserve === 'undefined' && typeof window.TengelCustomRate === 'undefined'"), 'Web版：お知らせの設定・予約の仕組みは入らない')
         check(p2.locator('#setFx').count() == 0 and p2.evaluate("typeof window.TengelFx === 'undefined' && typeof window.__FX === 'undefined' && !document.querySelector('#fxCss')"), 'Web版：的中ボタン（演出・設定）は入らない')
+        check(p2.locator('#ptsPill').count() == 0 and p2.locator('#testTag').count() == 0 and p2.locator('#ptsCss').count() == 0 and p2.evaluate("getComputedStyle(document.querySelector('#dbpill')).marginLeft") != '0px', 'Web版：上の帯の 所有ポイント・説明書の 置き場は かわらない')
         check(p2.locator('#setKisekae').count() == 0 and p2.locator('#ksBnr').count() == 0 and p2.evaluate("typeof window.TengelKisekae === 'undefined' && typeof window.__KS === 'undefined' && !document.querySelector('#ksCss') && !document.documentElement.dataset.ks"), 'Web版：着せ替え（カード・上の絵・テーマの CSS）は入らない')
         p2.click('.tabbar button[data-tab=judge]'); p2.wait_for_timeout(400)
         check(p2.locator('#recCard h2').inner_text().startswith('結果・収支の記録') and p2.locator('#omakaseBtn').count() == 0 and p2.locator('#result .rnav').count() == 0 and not [t for t in p2.locator('#result .zref').all_inner_texts() if '選んだ馬で' in t] and p2.locator('#saveJudge').count() == 1, 'Web版：判定画面は今までどおり（結果・収支の記録・お任せなし・矢印なし・%なし・判定と結果を保存）')
@@ -809,6 +820,36 @@ try:
         p2.locator('#abPrivacy summary').click(); p2.wait_for_timeout(100)
         wv = p2.locator('#setAbout').inner_text()
         check('ご利用にあたって' in wv and 'Google Fonts' in wv and p2.locator('#abFonts').count() == 0, 'Web版の「このアプリについて」（Google Fonts の説明・フォントのライセンスはなし）')
+        # ---- 第4.59版：iPad で 画面いっぱいに 動かす とき（幅 700px 以上・時計の 帯の 高さが 0 と 伝わる）→ 上の帯を 24px あける ----
+        ctx4 = b.new_context(viewport={'width': 820, 'height': 1180}, device_scale_factor=1, locale='ja-JP'); ctx4.add_init_script(FAKE)
+        ctx4.expose_binding('__saveBackup', lambda s, t: None); ctx4.expose_binding('__marker', marker)
+        p4 = ctx4.new_page(); p4.on('pageerror', lambda e: errs.append('IPAD ' + str(e)))
+        p4.goto(APPURL); p4.wait_for_timeout(1200); gate(p4); p4.wait_for_timeout(400)
+        ip = p4.evaluate("(() => { const r = document.querySelector('header.top').getBoundingClientRect(); return { top: r.top, ti2: document.documentElement.style.getPropertyValue('--top-inset2'), pill: !!document.querySelector('#ptsPill') }; })()")
+        check(ip['ti2'] == '24px' and abs(ip['top'] - 24) < 1 and ip['pill'], f'iPad の 幅（820px）で 上の あきが 0 なら 24px あけて、上の帯が 時計と 重ならない（{ip}）')
+        p4.evaluate("document.querySelector('#ptsPill').click()"); p4.wait_for_timeout(500)
+        check(p4.locator('#v-set').is_visible() and p4.locator('#setPoints').is_visible(), '所有ポイントを 押すと 設定の ポイントへ')
+        ctx4.close()
+        # ---- 第4.59版：テスト版（TENGEL_TEST=1）：はじめから 10,000P・テスト版の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタンを ためす）----
+        store['markers'].clear()
+        ctx5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx5.add_init_script(FAKE)
+        ctx5.expose_binding('__saveBackup', lambda s, t: None); ctx5.expose_binding('__marker', marker)
+        p5 = ctx5.new_page(); p5.on('pageerror', lambda e: errs.append('TEST ' + str(e)))
+        p5.goto(TESTURL); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(700)
+        tb = p5.evaluate("(() => ({ total: TengelWallet.total(), tag: (document.querySelector('#testTag') || {}).innerText, pill: document.querySelector('#ptsPill').innerText.replace(/\\s+/g, ' '), first: document.querySelector('#v-set > .card').id, btns: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.innerText), ev: TengelWallet.events().map(e => e.id + ':' + e.amount) }))()")
+        check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and '購入 10,000P' in tb['pill'] and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', 'ど的中', '隠れど的中', 'ハズレ', 'プレミアムど的中', '超プレミアムど的中', '神様的中', '超神様的中', '超プレミアム神様的中'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500'],
+              f'テスト版：はじめから ちょうど 10,000P（初回の 1,500P＋テスト版の 8,500P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（{tb}）')
+        p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(300)
+        p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(400)
+        check(p5.evaluate('TengelWallet.total()') == 20000 and '購入 20,000P' in p5.locator('#ptsPill').inner_text().replace('\n', ' '), 'テスト版：「10,000P 足す」で 20,000P（上の帯も かわる）')
+        p5.locator('#setTest [data-test=fx][data-kind=gd]').click(); p5.wait_for_timeout(500)
+        check(p5.locator('#fxOv .push.fz').count() == 1 and p5.evaluate("TengelFx.current().kind") == 'gd', 'テスト版：「神様的中」を 押すと ど的中の PUSH（神様的中）が 出る（くじは ひかない）')
+        p5.evaluate('TengelFx.close()'); p5.wait_for_timeout(200)
+        p5.locator('#setTest [data-test=fx][data-kind=miss]').click(); p5.wait_for_timeout(600)
+        check(p5.locator('#fxOv .rb.miss').count() == 1 and p5.locator('#fxOv .rb .bh').inner_text() == 'ハズレ', 'テスト版：「ハズレ」で ハズレの ボード')
+        p5.evaluate('TengelFx.close()')
+        check(p5.evaluate("!!document.querySelector('#setTest')") and pg.evaluate("!document.querySelector('#setTest') && !window.__TEST"), 'App Store版（ふつうの 作り方）には テスト版の 道具も 印も ない')
+        ctx5.close()
         # ---- App Store版の説明書 ----
         p3 = ctx.new_page(); p3.on('pageerror', lambda e: errs.append('MANUAL ' + str(e)))
         p3.goto(APPURL + 'manual.html'); p3.wait_for_timeout(1200)

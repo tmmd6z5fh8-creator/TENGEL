@@ -3,7 +3,7 @@
 #     Swift Playgrounds の「App の設定」を変えると Package.swift が作り直されて .pad や横向きがもどることがあるので、アップロードの前にも通す
 #   ・アプリ（Swift）に、拡大（zoom）・キーチェーンのしるし（marker）・App内課金（iap）のお願いの受け口がある
 #   ・build_ios.py が作る Package.swift も同じ
-import os, re, subprocess, sys, tempfile
+import os, re, shutil, subprocess, sys, tempfile
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 fails = []
 
@@ -76,6 +76,10 @@ if r.returncode == 0:
         check(16e6 < films_sz < 17e6 and 21e6 < sz < 24e6, f'絵と音と動画の 大きさ：動画 2本 約16.3MB・ぜんぶで 約22MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
+    # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない
+    wv = open(os.path.join(out, 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read()
+    check('userInterfaceIdiom == .pad' in wv and 'safeAreaInsets.bottom > 0 ? 24 : 20' in wv and '--top-inset2' in html and 'var(--top-inset2,0px)' in html, 'iPad で 画面いっぱいの とき 上の帯を 時計の 帯の ぶん あける（Swift の 24/20pt・Web の 24px）')
+    check('window.__TEST=true;' not in html and 'テスト版の道具' in html and 'gift-test' in html, 'ふつうの 作り方：テスト版の 印（__TEST=true）は 入って いない（道具の コードは あるが 動かない）')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
     check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
     # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
@@ -106,5 +110,15 @@ if r.returncode == 0:
 ap2 = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'TengelApp.swift'), encoding='utf8').read(); af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
 check('import AVFoundation' in ap2 and 'setCategory(.ambient' in ap2 and '.mixWithOthers' in ap2, '効果音：消音スイッチなら鳴らさない・ほかのアプリの音楽は止めない（AVAudioSession ambient）')
 check('case "m4a": return "audio/mp4"' in af, 'アプリの中の音のファイル（m4a）を Web の画面に渡せる')
+# 第4.59版：テスト版（TENGEL_TEST=1）：TengelTest.swiftpm・名前「テンゲル テスト」・index.html に __TEST・絵と 音と 動画は ふつうと 同じ 入れ方（ここでは なしで 作る）
+out2 = tempfile.mkdtemp()
+r2 = subprocess.run([sys.executable, 'build_ios.py', out2], capture_output=True, text=True, env=dict(os.environ, TENGEL_TEST='1', FX_ASSETS='/nonexistent', KISEKAE_ASSETS='/nonexistent'))
+check(r2.returncode == 0 and os.path.isdir(os.path.join(out2, 'TengelTest.swiftpm')) and os.path.exists(os.path.join(out2, 'TengelTest.swiftpm.zip')), 'テスト版：TENGEL_TEST=1 python3 build_ios.py → TengelTest.swiftpm（.zip）' + ('' if r2.returncode == 0 else '：' + (r2.stderr or r2.stdout)[-300:]))
+if r2.returncode == 0:
+    ps2 = open(os.path.join(out2, 'TengelTest.swiftpm', 'Package.swift'), encoding='utf8').read()
+    h2 = open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'index.html'), encoding='utf8').read()
+    check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app"' in ps2 and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2, 'テスト版：アプリの 名前は「テンゲル テスト」・bundle id と iPhone用は ふつうと 同じ')
+    check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
+shutil.rmtree(out2, ignore_errors=True)
 print('結果：', 'OK' if not fails else f'{len(fails)}件おかしい')
 raise SystemExit(1 if fails else 0)

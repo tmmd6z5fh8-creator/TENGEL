@@ -313,7 +313,7 @@
     if (!paintHint.base) paintHint.base = el.textContent;
     el.textContent = `${paintHint.base}・1レース 200P（いま ${pts(total())}）`;
   }
-  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); }
+  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); }
   async function onClick(e) {
     const b = e.target.closest('[data-pt]'); if (!b) return;
     const act = b.dataset.pt;
@@ -396,11 +396,71 @@
     const first = ab.querySelector('details'); if (first) ab.insertBefore(d, first); else ab.appendChild(d);
   }
 
+  // ---------- 上の帯：所有ポイント（購入P・サブスクP）・説明書の 置き場（第4.59版・まさちゃんの指定 2026-10-25） ----------
+  // 購入P＝パックで 買ったP＋もらったP（消えない）・サブスクP＝サブスクの P（届いた 日から 30日）※仮。押すと 設定の ポイントへ
+  function topBar() {
+    if (!document.getElementById('ptsCss')) {
+      const st = document.createElement('style'); st.id = 'ptsCss';
+      st.textContent = '.manbtn{margin-left:auto!important;order:0!important}#dbpill{margin-left:0}'
+        + '#ptsPill{display:inline-flex;align-items:stretch;flex:none;margin:0;border-radius:999px;border:1px solid rgba(243,240,230,.3);background:rgba(243,240,230,.08);color:var(--night-ink);font:inherit;font-size:11.5px;line-height:1.3;white-space:nowrap;cursor:pointer;padding:0;overflow:hidden}'
+        + '#ptsPill .pp{display:inline-flex;align-items:baseline;gap:4px;padding:4px 9px}#ptsPill .pp+.pp{border-left:1px solid rgba(243,240,230,.25)}'
+        + '#ptsPill .pl{font-size:10px;opacity:.8;letter-spacing:.04em}#ptsPill .pv{font-family:var(--font-mono);font-weight:700;font-size:12.5px}#ptsPill .pv small{font-size:10px;margin-left:1px}'
+        + '#ptsPill:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
+        + '#testTag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;background:#E2A23B;color:#1B1F2A}'
+        + '#setTest{margin-bottom:var(--gap)}#setTest .row{flex-wrap:wrap}#setTest .btn{font-size:12.5px;padding:7px 10px}';
+      document.head.appendChild(st);
+    }
+    const top = $('header.top .top-in'), brand = $('header.top .brand');
+    if (!top || !brand) return;
+    let pill = $('#ptsPill');
+    if (!pill) {
+      pill = document.createElement('button'); pill.type = 'button'; pill.id = 'ptsPill'; pill.setAttribute('data-gopt', 'points'); pill.setAttribute('aria-label', '所有ポイント（押すと設定のポイントへ）');
+      brand.insertAdjacentElement('afterend', pill);
+      if (window.__TEST && !$('#testTag')) { const t = document.createElement('span'); t.id = 'testTag'; t.textContent = 'テスト版'; pill.insertAdjacentElement('afterend', t); }
+    }
+    const b = W ? B() : { paid_pack: 0, paid_sub: 0, free: 0 };
+    const buy = b.paid_pack + b.free, sub = b.paid_sub;
+    pill.innerHTML = `<span class="pp"><span class="pl">購入</span><span class="pv">${yen(buy)}<small>P</small></span></span><span class="pp"><span class="pl">サブスク</span><span class="pv">${yen(sub)}<small>P</small></span></span>`;
+    pill.title = `購入P ${yen(buy)}（買ったP ${yen(b.paid_pack)}＋もらったP ${yen(b.free)}）・サブスクP ${yen(sub)}`;
+  }
+
+  // ---------- テスト版（TENGEL_TEST=1 で 作った アプリだけ・App Store には 出さない）：はじめから 10,000P・設定の いちばん上に「テスト版の道具」 ----------
+  const TEST_GIFT = 10000;
+  async function testGift() {
+    if (!window.__TEST || !W || P.has(W.events, 'gift-test')) return;
+    const need = TEST_GIFT - total(); if (need <= 0) return;   // 初回の 1,500P と 合わせて ちょうど 10,000P に（しるしが あって 1,500P が 出ない 端末では 10,000P）
+    W.events.push(P.giftEvent(Date.now(), need, 'gift-test', 'テスト版のポイント'));
+    await save(); paintAll();
+    toast(`🧪 テスト版：はじめから ${pts(TEST_GIFT)} 入って いるよ`, 3200);
+  }
+  const TEST_FX = [['hit', '的中'], ['big', 'デカ的中'], ['fz', 'ど的中'], ['hidden', '隠れど的中'], ['miss', 'ハズレ'], ['pc', 'プレミアムど的中'], ['zp', '超プレミアムど的中'], ['gd', '神様的中'], ['sgd', '超神様的中'], ['spg', '超プレミアム神様的中']];
+  // ためす 結果：14頭・3連単 11→8→2（11＝11番人気の 超大穴・8＝8番人気の 大穴・2＝2番人気）・馬単 11→8 的中・ワイド 不的中（的中は 馬単だけ・ハズレは 当たりなし）
+  function testSpec(kind) {
+    const tri = { t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, um = { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }, wd = { t: 'ワイド', state: '不的中', hits: [], n: 6 };
+    const rows = kind === 'miss' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), Object.assign({}, um, { state: '不的中', hits: [] }), wd] : kind === 'hit' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), um, wd] : [tri, um, wd];
+    return { r: 9, n: 14, rows: rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 }, force: kind };
+  }
+  function testCard() {
+    if (!window.__TEST) return;
+    const set = $('#v-set'); if (!set || $('#setTest')) return;
+    const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setTest';
+    c.innerHTML = '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。はじめから 10,000P 入って いるよ。</p>'
+      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button></div>'
+      + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
+      + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>';
+    set.insertBefore(c, set.firstChild);
+    c.addEventListener('click', async e => {
+      const b = e.target.closest('[data-test]'); if (!b) return;
+      if (b.dataset.test === 'pts') { W.events.push(P.giftEvent(Date.now(), TEST_GIFT, 'gift-test-' + Date.now(), 'テスト版のポイント')); await save(); paintAll(); toast(`テスト用に ${pts(TEST_GIFT)}を 足したよ（いま ${pts(total())}）`, 2600); }
+      else if (b.dataset.test === 'fx' && window.TengelFx) { try { window.TengelFx.prime(); } catch (x) { /* なし */ } window.TengelFx.show(testSpec(b.dataset.kind)); }
+    });
+  }
+
   // ---------- 起動 ----------
   let resolveReady; const walletReady = new Promise(r => { resolveReady = r; });
   async function boot() {
     gateOpen();
-    cards();
+    cards(); testCard();
     try {
       await TL.ready;
       const doc = await TL.getMeta('wallet').catch(() => null);
@@ -410,6 +470,7 @@
     resolveReady();
     paintAll();
     try { await giftCheck(); } catch (e) { /* つぎに開いたとき */ }
+    try { await testGift(); } catch (e) { /* テスト版だけ */ }
     pullTransactions().catch(() => {});
     refreshSubStatus().catch(() => {});
   }
@@ -421,10 +482,10 @@
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },
     // まだ何も使っていない（初回プレゼントだけ・読み込みも記録もなし）なら「空」＝自動バックアップの台帳を戻してよい
-    isEmpty: () => !W || (!W.events.some(e => e.id !== 'gift-first') && !W.paid.length && !Object.keys(W.counted).length)
+    isEmpty: () => !W || (!W.events.some(e => !/^gift-(first|test)/.test(e.id)) && !W.paid.length && !Object.keys(W.counted).length)
   };
   document.addEventListener('tengel:slots', () => { if (W) { paintCustom(); } });
-  document.addEventListener('tengel:tab', e => { if (e.detail === 'set' && W) { paintAll(); aboutGate(); } });
+  document.addEventListener('tengel:tab', e => { if (e.detail === 'set' && W) { paintAll(); aboutGate(); testCard(); } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   setTimeout(aboutGate, 50);
 })();

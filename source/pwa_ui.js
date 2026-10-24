@@ -1098,7 +1098,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         const W = window.TengelWallet; if (W) await W.ready;
         // 台帳に 初回の プレゼント（gift-first）しか ない ときは「中身あり」と 見ない（開き直す たびに「戻す？」が 出て しまう：第5弾で 直した）
         const sw = saved && saved.wallet;
-        const wn = sw ? ((Array.isArray(sw.events) ? sw.events.filter(e => e && e.id !== 'gift-first').length : 0) + (Array.isArray(sw.paid) ? sw.paid.length : 0) + (sw.counted && typeof sw.counted === 'object' ? Object.keys(sw.counted).length : 0)) : 0;
+        const wn = sw ? ((Array.isArray(sw.events) ? sw.events.filter(e => e && !/^gift-(first|test)/.test(e.id)).length : 0) + (Array.isArray(sw.paid) ? sw.paid.length : 0) + (sw.counted && typeof sw.counted === 'object' ? Object.keys(sw.counted).length : 0)) : 0;
         if (!TengelLocal.mem.bets.size && (n || (wn && W && W.isEmpty()))) { offerRestore(saved); return; }
         autoHold = false; scheduleAuto(800);
       });
