@@ -548,13 +548,15 @@ try:
             imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_|sd_/.test(i.src)).length")
             check(okp and po.locator(f'.fxs .ov.fz.{cls}').count() == 1 and all(have.values()) and po.locator('.rb.fz .bh').text_content() == title and ribs in po.locator('.rb .zrib').text_content() and imgs_bad == 0 and po.locator('.rb .brows li.top .bt').text_content() == '3連単',   # ボードは まだ 見えない（text_content）
                   f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
-            if kind == 'sd':   # 第4.66版：紫電の 絵の 名前（sd_….webp 15まい）・ロゴの 字（ど・！×3・的中）・雷 3本・画面の 大きな 光は 白 2つと 金 1つ・ボードは 7.75秒
+            if kind == 'sd':   # 第4.66版・第4.67版：紫電の 絵の 名前（sd_….webp 16まい）・ロゴの 字（ど・！×3・的中）・切り裂き 28本・まとう 電気と 大きな 雷・画面の 大きな 光は 白 1つと 弾ける 光 1つ・ボードは 8.05秒
                 srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
                 tex = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => i.src.split('/').pop())")
-                check(len(srcs) == 15 and all(s_.startswith('sd_') and s_.endswith('.webp') for s_ in srcs) and tex == ['sd_t_do.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_hit.webp']
-                      and po.locator('.ov.sd .sdbt').count() == 3 and po.locator('.ov.sd .sdw').count() == 2 and po.locator('.ov.sd .sdgf').count() == 1 and po.locator('.ov.sd .sdsh i').count() == 14 and po.locator('.ov.sd .sdgy').count() == 7
-                      and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).animationDelay").split(',')[0].strip() == '7.75s' and pg.evaluate("window.__FX.t.SD") == 7.6 and pg.evaluate("window.__FX.art.sd.length") == 15,
-                      f'紫電：絵 15まい（{len(srcs)}）・ロゴは ど → ！！！ → 的中（{tex}）・雷 3・白 2・金の 光 1・かけら 14・ただよう 的中 7・ボードは 7.75秒')
+                nb, na, nsl = po.locator('.ov.sd .sdbt').count(), po.locator('.ov.sd .sdar').count(), po.locator('.ov.sd .sdsl').count()
+                css_sd = pg.evaluate("document.getElementById('fxCss').textContent")
+                check(len(srcs) == 14 and all(s_.startswith('sd_') and s_.endswith('.webp') for s_ in srcs) and 'sd_stream.webp' in (po.locator('.ov.sd .sdstm').get_attribute('style') or '') and 'sd_streaks.webp' in css_sd and tex == ['sd_t_do.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_hit.webp']
+                      and nb >= 10 and na >= 20 and nsl == 28 and po.locator('.ov.sd .sdsl.bk').count() == 9 and po.locator('.ov.sd .sdw').count() == 1 and po.locator('.ov.sd .sdgf').count() == 1 and po.locator('.ov.sd .sdsh i').count() == 18 and po.locator('.ov.sd .sdgy').count() == 7
+                      and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).animationDelay").split(',')[0].strip() == '8.05s' and pg.evaluate("window.__FX.t.SD") == 7.9 and pg.evaluate("window.__FX.art.sd.length") == 16,
+                      f'紫電：絵 16まい（img 14＋CSS の 光の 川と 光の 筋：{len(srcs)}）・ロゴは ど → ！！！ → 的中（{tex}）・大きな 雷 {nb}・まとう 電気 {na}コマ・切り裂き {nsl}（黒 9）・白 1・弾ける 光 1・かけら 18・ただよう 的中 7・ボードは 8.05秒')
                 sizes = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => [Math.round(i.getBoundingClientRect().top), Math.round(i.getBoundingClientRect().height)])")
                 check(sizes[1][1] > sizes[2][1] > sizes[3][1] and sizes[1][0] < sizes[2][0] < sizes[3][0] and sizes[4][0] > sizes[0][0], f'「！」は 上から 下へ 小さく（まさちゃんの 指定）・「的中」は いちばん 下（上と 高さ：{sizes}）')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)

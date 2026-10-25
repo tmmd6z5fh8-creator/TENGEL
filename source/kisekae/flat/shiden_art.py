@@ -9,7 +9,8 @@
        sd_fire_p1〜3 … 紫の 炎（3まい：ページが 入れかわりで 燃やす）。すき通し
        sd_fire_o1〜3 … 赤い 炎（同じ 形で 色だけ 赤・金）
        sd_glyph    … 炎の 中を ただよう「的中」の 字（送ってくれた 動画の「鬼」の 字の 所：まさちゃん「鬼の文字を的中に変えて」）
-       sd_streaks  … 金と 虹の 光の 筋（放射・まわして ズーム）
+       sd_streaks  … 金と 虹の 光の 筋（放射：ガラスの かけらの 面に 使う）
+       sd_stream   … 金と 虹の 光の 川（横に 流れる・左右が つながる 1まい：②の 切り裂きの 下で 横に 流す）
        sd_rtex     … 虹の ノイズの 布（さいごの 背景・流す）
        sd_t_do     …「ど」（炎の 金の 立体の 字・Dela Gothic One）
        sd_t_ex     …「！」（同じ 作り。CSS で 3つ・上から 下へ 小さく）
@@ -243,6 +244,40 @@ def streaks(out, seed=71):
     return 'sd_streaks'
 
 
+# ---------------------------------------------------------------- 金と 虹の 光の 川（横に つながる）
+def stream(out, seed=77):
+    """横に 流れる 金と 虹の 光の 川：上下に 虹の 色・細い 横の 筋が たくさん・まん中に 白い しん・左右は つながる（x の 周期 関数だけで 作る）。
+       明るさの 変化は 横に 長く ゆるやか（流しても 1点の 明るさが 1秒に 1〜2回しか 変わらない：点めつの ため）"""
+    W, H = 1600, 420
+    rng = np.random.default_rng(seed)
+    ys = (np.arange(H, dtype=np.float32)[:, None] / H) * np.ones((1, W), np.float32)
+    xs = (np.arange(W, dtype=np.float32)[None, :] / W) * np.ones((H, 1), np.float32)
+    v = ys - .5
+    # 細い 横の 筋（行ごとの こさ：縦に 細かく・横には 1〜3周期の ゆるい 波で 筋の 端が できる）
+    line = rng.uniform(0, 1, (H, 1)).astype(np.float32)
+    line = cv2.GaussianBlur(line, (0, 0), 0.01, sigmaY=1.1)
+    line = smoothstep(.15, .85, line)
+    lum = np.zeros((H, W), np.float32)
+    for k, amp in ((1, .5), (2, .35), (3, .15)):
+        ph = rng.uniform(0, 2 * np.pi, (H, 1)).astype(np.float32)
+        ph = cv2.GaussianBlur(ph, (0, 0), 0.01, sigmaY=6)
+        lum += amp * (np.sin(2 * np.pi * k * xs + ph) * .5 + .5)
+    lum = smoothstep(.25, .9, lum)
+    body = np.exp(-(v / .4) ** 2)
+    core = np.exp(-(v / .065) ** 2) * (.75 + .25 * (np.sin(2 * np.pi * xs + .7) * .5 + .5))
+    hue = (ys * 1.0 + .02 * np.sin(2 * np.pi * xs)) % 1.0                        # 上から 下へ 虹（赤 → 紫）
+    col = ramp(hue, ((0, (255, 50, 90)), (.17, (255, 160, 40)), (.33, (255, 236, 80)), (.5, (80, 240, 130)), (.67, (60, 170, 255)), (.84, (200, 80, 255)), (1, (255, 50, 90))))
+    gold = hexc('#FFD24A')
+    mixr = np.clip(.35 + 1.4 * np.abs(v), 0, .9)[..., None]                      # まん中は 金・外ほど 虹
+    col = col * mixr + gold * (1 - mixr)
+    t = np.clip((.45 + .55 * lum) * (.4 + .6 * line) * body * 1.5, 0, 1)
+    img = col * t[..., None] + np.array([1, 1, 1], np.float32) * (core * (.65 + .35 * lum) + np.clip(t - .8, 0, 1) * 1.2)[..., None]
+    a = np.clip(t * 1.3 + core, 0, 1)
+    save(np.dstack([np.clip(img, 0, 1) * a[..., None], a]), os.path.join(out, 'sd_stream.webp'), q=82)
+    put_lay('sd_stream', W / S2X, H / S2X)
+    return 'sd_stream'
+
+
 # ---------------------------------------------------------------- 虹の ノイズの 布
 def rtex(out, seed=81):
     W, H = W_ * S2X, H_ * S2X
@@ -393,7 +428,7 @@ def build(out, names=None):
         LAY.update(json.load(open(lay_path, encoding='utf-8')))
     todo = {
         'sd_horse': lambda: horse(out), 'sd_bg': lambda: bg(out), 'sd_fire': lambda: fires(out), 'sd_glyph': lambda: glyph(out), 'sd_streaks': lambda: streaks(out),
-        'sd_rtex': lambda: rtex(out), 'sd_t_do': lambda: fire_letter(out, 'sd_t_do', 'ど', 150), 'sd_t_ex': lambda: fire_letter(out, 'sd_t_ex', '！', 150),
+        'sd_rtex': lambda: rtex(out), 'sd_stream': lambda: stream(out), 'sd_t_do': lambda: fire_letter(out, 'sd_t_do', 'ど', 150), 'sd_t_ex': lambda: fire_letter(out, 'sd_t_ex', '！', 150),
         'sd_t_hit': lambda: hit_logo(out), 'sd_flare': lambda: flare(out)}
     made = []
     for key, fn in todo.items():
