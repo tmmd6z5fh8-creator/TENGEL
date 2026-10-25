@@ -2,7 +2,7 @@
    - 絵そのものは変えない（金と紺の盾のエンブレム・騎手を乗せて走る馬・TENGER の金の文字・「テンゲル」の金の札）
    - 下の小さな「バージョン …」の行だけ消す（まわりの紺でぬりつぶす：App Store 版に決まった版の名前を出さないため）
    - 内側のパネルの中から、横長（780×320）に切り出す（パネルのふちの線は入れない）
-   python3 flat/tengel_banner.py <出力.webp> [元の絵]（元の絵は、なければ manual/tools/banner_src.webp＝前の 1200×655）
+   python3 flat/tengel_banner.py <出力.webp> [元の絵]（元の絵は、なければ manual/tools/banner_src.jpg＝まさちゃんの 1408×768。1200×655 に 縮めて 使う）
    ※ 第4.59版から アプリの マスター帯の 壁紙と PUSH の 絵は manual/tools/banner_hd.py（文字を 描き直した 2340×960・1800×982）で 作る。ここは 見本（キャンバス）と 数字の 場所の 元"""
 import sys, os
 import numpy as np
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'r3d'))
 from style2d import save_webp
 
 W, Hh = 780, 320
-SRC = os.path.join(HERE, '..', '..', 'manual', 'tools', 'banner_src.webp')   # 元の 絵（1200×655・文字は 前の まま）。第4.59版から 説明書の 上の絵（manual/banner.webp）は 2400×1310 の 描き直した 絵（manual/tools/banner_hd.py）で、アプリの 壁紙と PUSH の 絵も そこから 作る
+SRC = os.path.join(HERE, '..', '..', 'manual', 'tools', 'banner_src.jpg')   # 元の 絵（まさちゃんの バナー 1408×768・文字は 前の まま）。第4.59版から 説明書の 上の絵（manual/banner.webp）は 2400×1310 の 描き直した 絵（manual/tools/banner_hd.py）で、アプリの 壁紙と PUSH の 絵も そこから 作る
 CROP = (82, 124, 1118, 549)          # 元の絵（1200×655）から切り出す所：パネル（x 66〜1134・y 〜581）の中で、絵の中身がまん中に来る（下のすみの丸みは入れない）
 VER = (600, 436, 990, 470)           # 「バージョン …」の行のある所
 
@@ -21,7 +21,9 @@ def clean_full(src=SRC):
     """「バージョン …」の行を消した 元の絵（1200×655・BGR：外の すじの わくも ふくむ）と 消した所のマスク。
        的中ボタン（マスター帯の 長方形の PUSH：flat/tengel_run.py）は この絵を そのまま 使う"""
     im = cv2.imread(src, cv2.IMREAD_COLOR)
-    assert im is not None and im.shape[:2] == (655, 1200), (src, None if im is None else im.shape)
+    assert im is not None, src
+    if im.shape[:2] != (655, 1200):
+        im = cv2.resize(im, (1200, 655), interpolation=cv2.INTER_AREA)   # まさちゃんの 1408×768 など → この ファイルの 座標（1200×655）
     g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     x0, y0, x1, y1 = VER
     sub = g[y0:y1, x0:x1]
