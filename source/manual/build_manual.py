@@ -277,7 +277,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 
 <main id="home" class="wrap">
 <header class="hero">
-<img class="banner" src="{imgdir}/banner.webp" width="1200" height="655" alt="TENGER テンゲル　独自の統計・オッズ分析による馬券検討支援システム">
+<img class="banner" src="{imgdir}/banner.webp" width="1200" height="655" alt="TENGER テンゲル　独自の統計・オッズ分析による競馬検討支援システム">
 <div class="hero-text">
 <p class="eyebrow">アプリの使い方</p>
 <h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
