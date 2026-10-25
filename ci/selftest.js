@@ -212,9 +212,10 @@
         res.conf = { tile: (card.querySelector('.kst.cf') || {}).dataset ? card.querySelector('.kst.cf').dataset.ks : null, role: lk.getAttribute('role'), text: cf ? cf.innerText.replace(/\n/g, '／') : null,
           unlock: !!un, cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
-        lk.scrollIntoView({ block: 'center' }); await sleep(300);
+        var lk2 = card.querySelector('.kst.cf') || lk;                      // paint() で タイルは 作り直されるので、もう一度 さがす
+        lk2.scrollIntoView({ block: 'center' }); await sleep(300);
         await mark('ks-conf');
-        lk.click(); await sleep(300);
+        lk2.click(); await sleep(300);
         res.conf.closed = !card.querySelector('.ksconf');
       } else { res.conf = null; await mark('ks-conf'); }
       await K.apply('tengel'); await sleep(900);
