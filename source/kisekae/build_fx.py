@@ -14,7 +14,8 @@
    第5弾（16.3 の 特別な 演出）：プレミアムど的中（pc・premium_cute.py）・超プレミアムど的中（zp・super_premium.py）・神様的中（gd・kami.py）・
      超神様的中（sgd・kami_super.py：動画）・超プレミアム神様的中（spg：超プレミアムの ①〜③ → 昇格の 動画 → 超神様の 動画）の CSS と 押したあとの HTML も 束ねる。
      絵（premium_blobs.json・kami_blobs.json の 名前.webp）・動画（sgd_film.mp4・spg_up.mp4）・さいごの 1まい（sgd_last.webp）・音 6こ も Resources に 入れる
-     （build_fx_assets.py・build_fx_films.py で 手元に 作る）。動画は fx.js が <video> を 作って 舞台に 置く（art＝先に 読む 絵・films＝動画・t＝秒の きまり）"""
+     （build_fx_assets.py・build_fx_films.py で 手元に 作る）。動画は fx.js が <video> を 作って 舞台に 置く（art＝先に 読む 絵・films＝動画・t＝秒の きまり）
+   第4.66版：ど的中・紫電（sd・shiden.py：黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中）。絵 15まい（shiden_blobs.json）と 音 1こ（sfx_sd）を 足す"""
 import json
 import os
 import re
@@ -23,23 +24,25 @@ import sys
 K = os.path.dirname(os.path.abspath(__file__))
 ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp')
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
-           pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a')   # 第5弾：特別な 演出の 音 6こ（16.5）
+           pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音 6こ（16.5）
+           sd='sfx_sd.m4a')                                                                                                  # 第4.66版：ど的中・紫電の 音
 FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4')      # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
 STILL = dict(sgd_last='sgd_last.webp')                           # 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
 
 
 def blob_names():
-    """見本の 絵の 名前（premium_blobs.json・kami_blobs.json）→ {名前: id}"""
+    """見本の 絵の 名前（premium_blobs.json・kami_blobs.json・shiden_blobs.json）→ {名前: id}"""
     out = {}
-    for fn in ('premium_blobs.json', 'kami_blobs.json'):
+    for fn in ('premium_blobs.json', 'kami_blobs.json', 'shiden_blobs.json'):
         out.update(json.load(open(os.path.join(K, fn), encoding='utf-8')))
     return out
 
 
 ART = dict(pm=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'premium_blobs.json'), encoding='utf-8'))),     # プレミアムど的中の 絵 38まい（約2.1MB）
            gd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'kami_blobs.json'), encoding='utf-8'))),        # 神様的中の 絵 24まい（約1.7MB）
+           sd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'shiden_blobs.json'), encoding='utf-8'))),      # ど的中・紫電の 絵 15まい（約0.9MB・第4.66版）
            sgd=[STILL['sgd_last']])
-ART_FILES = sorted(set(ART['pm'] + ART['gd'] + ART['sgd']))
+ART_FILES = sorted(set(ART['pm'] + ART['gd'] + ART['sd'] + ART['sgd']))
 ASSET_FILES = sorted(ASSETS.values()) + sorted(SFX.values()) + ART_FILES + sorted(FILMS.values())
 
 
@@ -389,6 +392,14 @@ def reveal_sgd(G):
   </div>'''
 
 
+def reveal_sd(G):
+    """ど的中・紫電（第4.66版）：shiden.py の sd_layers（絵は sd_….webp）"""
+    return f'''<div class="ov fz sd" style="--n:{{{{N}}}}">
+    {G.SD.sd_layers('{{BOARD}}')}
+    {CLOSE}
+  </div>'''
+
+
 def reveal_spg(G):
     """超プレミアム神様的中：超プレミアムど的中の ①〜③（spz：き！で stop → 昇格の 動画が 動きだしたら gone）＋ 超神様（spg）。動画 2つ（spu・sgv）は fx.js が 舞台に 置く"""
     return f'''<div class="ov fz zp spz">
@@ -434,7 +445,7 @@ def css_all(G):
     vars_rule = m.group(0).replace('.ph{', '.fxs{', 1)
     css = vars_rule + '\n' + tail + G.HIT_CSS + G.MISS_CSS + G.BIG_CSS + G.BURST_CSS + G.fz_css() + boards.board_css(['default'])
     # 第5弾：特別な 演出（16.3）。動画の 入れもの .ph .sgv／.ph .spu は 舞台（.fxs）の 中の .sgv／.spu に
-    css += G.PC.pc_css() + G.SP.zp_css() + G.GD.gd_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu')
+    css += G.PC.pc_css() + G.SP.zp_css() + G.GD.gd_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu') + G.SD.sd_css()
     assert '.ph ' not in css, '見本の ページの 入れもの（.ph）が 残っているよ'
     # 見本の絵（キャンバスの /_blob/…）→ アプリの中のファイル
     for key in ('fz_nglow', 'fz_ncore'):
@@ -449,14 +460,14 @@ def css_all(G):
 def bundle():
     G = load_gen_fx()
     css, names = css_all(G)
-    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('pc', reveal_pc), ('zp', reveal_zp), ('gd', reveal_gd), ('sgd', reveal_sgd), ('spg', reveal_spg))}
+    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('pc', reveal_pc), ('zp', reveal_zp), ('gd', reveal_gd), ('sgd', reveal_sgd), ('spg', reveal_spg), ('sd', reveal_sd))}
     for k, h in fx5.items():
         assert '{{BOARD}}' in h and '{{N}}' in h and 'data-fx="close"' in h, k
     SG = G.SG
     return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), big_t=push_big_t(G), fz=push_fz(G), fz_t=push_fz_t(G)),
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
-                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'],
+                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'], SD=G.SD.SD_T['RES'],
                        SG=dict(FILM=round(SG.FILM, 4), RES=round(SG.RES, 4), STILL_FROM=round(SG.STILL_FROM, 4), STILL_WAIT=SG.STILL_WAIT, STILL_BOARD=round(SG.STILL_BOARD, 4),
                                UP_AT=SG.UP_AT, UP=round(SG.UP, 4), SPG_FILM=round(SG.SPG_FILM, 4), WAIT_MAX=SG.WAIT_MAX)))
 

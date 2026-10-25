@@ -173,6 +173,18 @@
       res.sgd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sgd.closeVis = closeVis(); res.sgd.holder = document.querySelectorAll('#fxVh video').length;
       await mark('fx-sgd-still');
       F.close(); await sleep(200);
+      // 第4.66版：ど的中・紫電（黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中 → ボード：7.75秒）。PUSH は ど的中と 同じ（虹色なし・1.4倍）
+      res.sd = { kind: F.show(Object.assign({ force: 'sd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
+      await sleep(400); F.tap(); res.sd.fps = await fps(1000);
+      res.sd.parts = ['.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
+      res.sd.imgs = document.querySelectorAll('#fxOv .ov.sd img').length; res.sd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.sd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
+      await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（赤い 炎・バグる）
+      await sleep(3000); res.sd.fps5 = await fps(1000);            // ロゴの ころ
+      await mark('fx-sd-logo');
+      await waitFor(function () { return closeVis() === 'visible'; }, 10000);
+      res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
+      await mark('fx-sd-board');
+      F.close(); await sleep(200);
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
@@ -208,13 +220,14 @@
       var lk = card && card.querySelector('.kst.lock[data-ks=lucky]');
       if (lk) {
         lk.click(); await sleep(400);
-        var cf = card.querySelector('.kst.cf .ksconf'), un = cf && cf.querySelector('[data-ksact=unlock]'), lkb = card.querySelector('.kst[data-ks=lucky] .kslock');
+        var cf = card.querySelector('.kst.cf .ksconf'), un = cf && (cf.querySelector('[data-ksact=unlock]') || cf.querySelector('.btn')), lkb = card.querySelector('.kst[data-ks=lucky] .kslock');   // P が 足りない ときは「ポイントを買う」で 測る
         res.conf = { tile: (card.querySelector('.kst.cf') || {}).dataset ? card.querySelector('.kst.cf').dataset.ks : null, role: lk.getAttribute('role'), text: cf ? cf.innerText.replace(/\n/g, '／') : null,
-          unlock: !!un, cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
+          unlock: !!(cf && cf.querySelector('[data-ksact=unlock]')), buy: !!(cf && cf.querySelector('[data-gopt=points]')), cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
-        lk.scrollIntoView({ block: 'center' }); await sleep(300);
+        var lk2 = card.querySelector('.kst.cf') || lk;                      // paint() で タイルは 作り直されるので、もう一度 さがす
+        lk2.scrollIntoView({ block: 'center' }); await sleep(300);
         await mark('ks-conf');
-        lk.click(); await sleep(300);
+        lk2.click(); await sleep(300);
         res.conf.closed = !card.querySelector('.ksconf');
       } else { res.conf = null; await mark('ks-conf'); }
       await K.apply('tengel'); await sleep(900);

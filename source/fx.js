@@ -3,6 +3,7 @@
 //   隠れど的中＝デカ的中の 2〜7回に1回（ランダム。数は端末の中だけ：記録・バックアップには入れない）→ 見た目はデカの PUSH・押すと ど的中の演出
 //   第5弾（16.3 の 特別な 演出・くじは ※仮）：ど的中の 6回に1回は プレミアムど的中（pc）・その 8回に1回は 超プレミアムど的中（zp）／
 //     神様的中の 8回に1回は 超神様的中（sgd：1コマずつ 描いた 動画）・その 4回に1回は 超プレミアム神様的中（spg：超プレミアムの ふり → き！で 昇格の 動画 → 超神様の 動画）
+//   第4.66版（まさちゃんの 指定・※仮）：プレミアムに ならなかった ど的中の 2回に1回は ど的中・紫電（sd：黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中）。PUSH・ボード・音の 段は ど的中と 同じ
 //     どれも PUSH は ど的中と 同じ・どの 着せ替えでも 出る・隠れど的中では 出ない・的中エフェクト オフでは くじを ひかない
 //   流れ：PUSH（上下に動く）→ タップ → 演出 → いつものボード（券種ごとの 結果・お金は出さない：16.4）→「とじる」
 //   見本（kisekae/gen_fx.py・boards.py・premium_cute.py・super_premium.py・kami.py・kami_super.py）の CSS と HTML は kisekae/build_fx.py が window.__FX に束ねる。
@@ -26,11 +27,11 @@
   const HIDDEN_KEY = 'tengel.fxhidden';   // 隠れど的中の数（端末の中だけ）
   const SETTING = 'fx';
   // PUSHが出たときの音・押したときの音（隠れど的中：PUSHはデカの音・押すとど的中の音。プレミアム・神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
-  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], hidden: ['big_push', 'fz'], pc: ['fz_push', 'pc'], zp: ['fz_push', 'zp'], gd: ['fz_push', 'gd'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'] };
-  const FZ_PUSH = { fz: 1, pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
-  const BOARD_OF = { hidden: 'fz', pc: 'fz', zp: 'fz', gd: 'fz', sgd: 'fz', spg: 'fz' };   // ボードの 形（ど的中の 形）
-  const TITLE_OF = { pc: 'fz', zp: 'fz', spg: 'sgd' };                                      // ボードの 見出し（A.board.titles の キー）
-  const LOT = { pc: 1 / 6, zp: 1 / 8, sgd: 1 / 8, spg: 1 / 4 };                             // くじ（※仮）：ど的中 → プレミアム → 超プレミアム／神様 → 超神様 → 超プレミアム神様
+  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], hidden: ['big_push', 'fz'], pc: ['fz_push', 'pc'], zp: ['fz_push', 'zp'], gd: ['fz_push', 'gd'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'] };
+  const FZ_PUSH = { fz: 1, pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1, sd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
+  const BOARD_OF = { hidden: 'fz', pc: 'fz', zp: 'fz', gd: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz' };   // ボードの 形（ど的中の 形）
+  const TITLE_OF = { pc: 'fz', zp: 'fz', spg: 'sgd', sd: 'fz' };                                     // ボードの 見出し（A.board.titles の キー）
+  const LOT = { pc: 1 / 6, zp: 1 / 8, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };                           // くじ（※仮）：ど的中 → プレミアム → 超プレミアム／ど的中の 残りの 2回に1回 紫電（第4.66版）／神様 → 超神様 → 超プレミアム神様
   let S = { effects: true, calm: null, sound: true };
   let cur = null;
 
@@ -108,7 +109,7 @@
   }
   // 特別な 演出の くじ（※仮・数えかたは しない）：ど的中 → 6分の1 で プレミアム → その 8分の1 で 超プレミアム／神様 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様
   function lottery(kind) {
-    if (kind === 'fz') return rand() < LOT.pc ? (rand() < LOT.zp ? 'zp' : 'pc') : 'fz';
+    if (kind === 'fz') return rand() < LOT.pc ? (rand() < LOT.zp ? 'zp' : 'pc') : (rand() < LOT.sd ? 'sd' : 'fz');
     if (kind === 'gd') return rand() < LOT.sgd ? (rand() < LOT.spg ? 'spg' : 'sgd') : 'gd';
     return kind;
   }
@@ -311,7 +312,7 @@
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
   // 出る 前に 絵を 読んで おく（プレミアム 38まい・神様 24まい・超神様の さいごの 1まい・動画）
   function preload(kind) {
-    const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
+    const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
   }
@@ -330,9 +331,9 @@
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
   // 的中 1.0・デカ的中（隠れど的中の PUSH も）1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
-  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
+  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, sd: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
   const RBW = { pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1 };
-  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
+  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
   // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
   function pboxHTML(th, label) {
     const pc = th ? ' ' + th.pc : '';
@@ -376,6 +377,7 @@
       else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
       else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t.PC, 1);             // 控えめ：1秒後に ボードの 所から ※仮
       else if (k === 'gd' && calm()) sfx(SND[k][1], A.t.GD, 1);
+      else if (k === 'sd' && calm()) sfx(SND[k][1], A.t.SD, 1);                             // 控えめ：1秒後に ボードの 所から（第4.66版）
       else sfx(SND[k][1]);
     }
     emit('reveal');

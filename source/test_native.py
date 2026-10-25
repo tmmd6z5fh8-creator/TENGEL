@@ -457,7 +457,9 @@ try:
         # ---- 第5弾（16.3）：特別な 演出。くじ（※仮）→ PUSH は ど的中と 同じ → 押したあと → そのテーマの ど的中の 形の ボード ----
         pg.evaluate("window.__seq = arr => { let i = 0; TengelFx._rand = () => arr[Math.min(i++, arr.length - 1)]; }")   # 乱数を 順に 決める（1つめ：プレミアム／超神様の くじ・2つめ：超プレミアム／超プレミアム神様の くじ）
         LOTS = [pg.evaluate("(a) => { const o = []; for (const k of ['fz', 'gd', 'big']) { window.__seq(a); o.push(TengelFx.lottery(k)); } return o; }", a) for a in ([0, 0], [0.1, 0.9], [0.12, 0.3], [0.13, 0.5], [0.2], [0.99])]
-        check(LOTS == [['zp', 'spg', 'big'], ['pc', 'sgd', 'big'], ['pc', 'sgd', 'big'], ['pc', 'gd', 'big'], ['fz', 'gd', 'big'], ['fz', 'gd', 'big']], f'くじ：ど的中 → 6分の1 で プレミアム → その 8分の1 で 超プレミアム／神様 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様（{LOTS}）')
+        check(LOTS == [['zp', 'spg', 'big'], ['pc', 'sgd', 'big'], ['pc', 'sgd', 'big'], ['pc', 'gd', 'big'], ['sd', 'gd', 'big'], ['fz', 'gd', 'big']], f'くじ：ど的中 → 6分の1 で プレミアム → その 8分の1 で 超プレミアム・残りの 2分の1 で 紫電（第4.66版）／神様 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様（{LOTS}）')
+        LOTS2 = [pg.evaluate("(a) => { window.__seq(a); return TengelFx.lottery('fz'); }", a) for a in ([0.5, 0.49], [0.5, 0.5], [0.2, 0.99])]
+        check(LOTS2 == ['sd', 'fz', 'fz'], f'紫電の くじ：プレミアムに ならなかった ど的中の 2つめの 乱数が .5 未満なら 紫電・それ以外は ど的中（{LOTS2}）')
         pg.evaluate("window.__seq([0.1, 0.9])")
         kk = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 8, 2], [('馬単', '的中', [[11, 8]]), ('ワイド', '不的中', [])])); pg.wait_for_timeout(300)
         so = pg.locator('#fxOv')
@@ -536,15 +538,25 @@ try:
         # プレミアムど的中・超プレミアムど的中・神様的中（CSS と SVG）：押したあとの 部品と ボード
         for kind, cls, parts, title, ribs in (('pc', 'pm', ('.pmbg', '.pmp', '.pms', '.pmf', '.pmw'), 'ど的中！！！', '11番人気が3連単に！'),
                                               ('zp', 'zp', ('.zpbg', '.zpp', '.zps', '.zpf', '.zpgr'), 'ど的中！！！', '11番人気が3連単に！'),
-                                              ('gd', 'gd', ('.gdk', '.gdA', '.gdB', '.gdC'), '神様的中！！！', 'が3連単に！')):
+                                              ('gd', 'gd', ('.gdk', '.gdA', '.gdB', '.gdC'), '神様的中！！！', 'が3連単に！'),
+                                              ('sd', 'sd', ('.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'), 'ど的中！！！', '11番人気が3連単に！')):
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: '%s' }, s))" % kind, spec([11, 8, 2] if kind == 'gd' else [11, 6, 2], [('馬単', '的中', [[11, 6]])])); pg.wait_for_timeout(200)
             po = pg.locator('#fxOv')
-            okp = po.locator('.ov.fz .pbox.rbw .push .rbf').count() == 1 and f'k-{kind}' in po.get_attribute('class')
+            okp = (po.locator('.ov.fz .pbox.rbw .push .rbf').count() == (0 if kind == 'sd' else 1)) and f'k-{kind}' in po.get_attribute('class') and (kind != 'sd' or pg.evaluate('TengelFx.current()')['pz'] == 1.4)   # 紫電の PUSH は ど的中と 同じ（1.4倍・虹色なし）
             pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(400)
             have = {p_: po.locator(f'.ov.{cls} {p_}').count() for p_ in parts}
-            imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_/.test(i.src)).length")
+            imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_|sd_/.test(i.src)).length")
             check(okp and po.locator(f'.fxs .ov.fz.{cls}').count() == 1 and all(have.values()) and po.locator('.rb.fz .bh').text_content() == title and ribs in po.locator('.rb .zrib').text_content() and imgs_bad == 0 and po.locator('.rb .brows li.top .bt').text_content() == '3連単',   # ボードは まだ 見えない（text_content）
                   f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
+            if kind == 'sd':   # 第4.66版：紫電の 絵の 名前（sd_….webp 15まい）・ロゴの 字（ど・！×3・的中）・雷 3本・画面の 大きな 光は 白 2つと 金 1つ・ボードは 7.75秒
+                srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
+                tex = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => i.src.split('/').pop())")
+                check(len(srcs) == 15 and all(s_.startswith('sd_') and s_.endswith('.webp') for s_ in srcs) and tex == ['sd_t_do.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_hit.webp']
+                      and po.locator('.ov.sd .sdbt').count() == 3 and po.locator('.ov.sd .sdw').count() == 2 and po.locator('.ov.sd .sdgf').count() == 1 and po.locator('.ov.sd .sdsh i').count() == 14 and po.locator('.ov.sd .sdgy').count() == 7
+                      and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).animationDelay").split(',')[0].strip() == '7.75s' and pg.evaluate("window.__FX.t.SD") == 7.6 and pg.evaluate("window.__FX.art.sd.length") == 15,
+                      f'紫電：絵 15まい（{len(srcs)}）・ロゴは ど → ！！！ → 的中（{tex}）・雷 3・白 2・金の 光 1・かけら 14・ただよう 的中 7・ボードは 7.75秒')
+                sizes = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => [Math.round(i.getBoundingClientRect().top), Math.round(i.getBoundingClientRect().height)])")
+                check(sizes[1][1] > sizes[2][1] > sizes[3][1] and sizes[1][0] < sizes[2][0] < sizes[3][0] and sizes[4][0] > sizes[0][0], f'「！」は 上から 下へ 小さく（まさちゃんの 指定）・「的中」は いちばん 下（上と 高さ：{sizes}）')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx._rand = null")
         # 着せ替えの テーマで：プレミアムの ボードは その テーマの ど的中の 形（第4弾・16.4）
@@ -873,7 +885,7 @@ try:
         p5 = ctx5.new_page(); p5.on('pageerror', lambda e: errs.append('TEST ' + str(e)))
         p5.goto(TESTURL); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(700)
         tb = p5.evaluate("(() => ({ total: TengelWallet.total(), tag: (document.querySelector('#testTag') || {}).innerText, pill: document.querySelector('#ptsPill').innerText.replace(/\\s+/g, ' '), first: document.querySelector('#v-set > .card').id, btns: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.innerText), ev: TengelWallet.events().map(e => e.id + ':' + e.amount) }))()")
-        check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and '購入 10,000P' in tb['pill'] and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', 'ど的中', '隠れど的中', 'ハズレ', 'プレミアムど的中', '超プレミアムど的中', '神様的中', '超神様的中', '超プレミアム神様的中'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500'],
+        check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and '購入 10,000P' in tb['pill'] and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', 'ど的中', '隠れど的中', 'ハズレ', 'プレミアムど的中', '超プレミアムど的中', '神様的中', '超神様的中', '超プレミアム神様的中', 'ど的中・紫電'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500'],
               f'テスト版：はじめから ちょうど 10,000P（初回の 1,500P＋テスト版の 8,500P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（{tb}）')
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(300)
         p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(400)
