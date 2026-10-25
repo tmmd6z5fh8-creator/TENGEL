@@ -108,6 +108,8 @@
     c.addEventListener('click', onClick);
     paint();
   }
+  // 解放エフェクト（第4.60版：fx.js の TengelFx.unlock）：解放した 壁紙の タイルの 上で 金の 輪・つや・粒・「解放！」・チャイム
+  function unlockFx(id) { try { const el = $(`#setKisekae .kst[data-ks="${id}"]`); if (el && window.TengelFx && window.TengelFx.unlock) window.TengelFx.unlock(el, { text: '解放！' }); } catch (e) { /* なし */ } }
   function lockLabel(t) {
     if (t.price) return `<span class="kslock">🔒 ${esc(pts(t.price))}</span>`;
     if (t.band) return `<span class="kslock">🔒 壁紙を${t.band}枚あつめると</span>`;
@@ -152,7 +154,7 @@
         let ok = false;
         try { ok = await wallet().unlock('theme:' + id, t.price); } catch (x) { ok = false; }
         conf = '';
-        if (ok) { toast(`✅ 「${t.name}」を解放したよ（残り ${pts(wallet().total())}）`, 3600); emit('unlock'); await apply(id, true); }
+        if (ok) { toast(`✅ 「${t.name}」を解放したよ（残り ${pts(wallet().total())}）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
         else { toast(`Pが足りないよ（${pts(t.price)}いる・いま ${pts(wallet().total())}）`, 3600); paint(); }
         return;
       }

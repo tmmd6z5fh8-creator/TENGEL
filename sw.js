@@ -1,6 +1,6 @@
 // テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
 // （記録・買い目・基盤データはiPhoneの中のデータベースにあって、ここでは触らない）
-const CACHE = 'tengel3-2026.10.25-4-2026-10-09b';
+const CACHE = 'tengel3-2026.10.25-5-2026-10-09b';
 // 説明書の写真は別のしまい場所（写真が変わったときだけ入れ直す。アプリの更新のたびには読まない）
 const MCACHE = 'tengel3-manual-857ba1af';
 const SHELL = ['./', './index.html', './manual.html', './manifest.webmanifest', './icon3-180.png', './icon3-192.png', './icon3-512.png', './icon3-maskable-512.png', './cm/poster.jpg?v=867c5e22'];

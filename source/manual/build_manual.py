@@ -323,7 +323,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
         path = os.path.join(out, 'tengel-manual.html')
     elif app:
         page = f'''<!DOCTYPE html>
-<html lang="ja" data-app="1" data-hint="5重勝、読み取り、的中"><head><meta charset="utf-8">
+<html lang="ja" data-app="1" data-hint="単勝5連勝、読み取り、的中"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>テンゲル 説明書</title>
 {APP_FONTS}
@@ -333,7 +333,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 {body}</body></html>
 '''
         path = os.path.join(out, 'manual.html')
-        page = AT.app_manual_page(page)   # コメントを消す・WIN5→5重勝・出さない言葉が残っていたら止める
+        page = AT.app_manual_page(page)   # コメントを消す・WIN5→単勝5連勝・出さない言葉が残っていたら止める
     else:
         page = f'''<!DOCTYPE html>
 <html lang="ja" data-hint="WIN5、APIキー、的中"><head><meta charset="utf-8">

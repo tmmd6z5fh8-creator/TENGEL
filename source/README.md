@@ -186,6 +186,18 @@
 - **テスト版**：`TENGEL_TEST=1 python3 build_ios.py <出力>` → `TengelTest.swiftpm`（.zip）。名前は「テンゲル テスト」（bundle id は 同じ）。`build_pwa.py` が `window.__TEST=true` を 入れ、`points_ui.js` が **はじめから 10,000P**（`gift-test`：初回の 1,500P と 合わせて ちょうど 10,000P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタン 10種を 直接 出す）を 出す。**App Store には 出さない**（ふつうの zip は `Tengel.swiftpm.zip`）。
 - テスト：`test_native.py`（上の帯の 札と 説明書の 置き場・幅 820px の あき・Web版は かわらない・テスト版の 10,000P と 道具）・`test_iphone_only.py`（Swift と Web の 直し・テスト版の Package.swift）。
 
+### iPad の テスト版の 画面からの 7つの 直し（第4.60版・2026/10/25・まさちゃんの 指定）
+
+まさちゃんが テスト版を iPad で 一通り ためした 10まいの 画面から。**どれも App Store版（`TARGET=app`・`NATIVE_APP`）だけ。Web版は 今までどおり**（アップデート指示書 第4.60版の 23章）。
+
+- **「5重勝」→「単勝5連勝」**：`app_target.py` の WIN5 の 言いかえ（`('WIN5', '単勝5連勝', 31)`・説明の 文・`MANUAL_SEC`・`MANUAL_PAGE`）・`manual/content_app.html`・`manual/build_manual.py` の data-hint・`legal/build_legal.py`・`store/listing7.py`・`store/kit7.py`・`cm/cm2_shots.py` の 言いかえ。「5重勝」は 残さない（`test_appname.py`）。CM の 動画と App Store の スクショは まだ 前の 言葉（「5重勝も」「単勝5連予想」）＝作り直すなら `sh store/make7.sh`。
+- **実測の ③④に C層×非該当の 行を 出さない**：`src.html` の `STAT_KUBUN`（App Store版は A・B・C1・C2）。
+- **見直し基準の 進み具合は 0 から**：`reviewCard`（App Store版）は 使う人が 判定して 着順を 入れ、「マザーデータにも入れる」で 入れた レース（`src＝input` の 行）だけで 数える。期間は 問わない。表の 上に 1行の 説明。
+- **「くわしく」→「詳しく」**（`points_ui.js`・説明書）。「詳」を しぼった フォントに 足した（`python3 kisekae/build_fonts.py /home/claude/google/fonts/ofl`：`ios/fonts/ks/`・本文 862字）。
+- **判定画面の「全STEPを表示」の 代わりに 人気順位の 表**：`rankTableHTML(J)`（レース・全頭の 人気／番号（枠の 色の 札）／記号／単勝／複勝・3連単の 1位 5位 10位＝STEP0 の 中身）。全文コピーは 今までどおり 全STEP。テストは `window.__judgeText()` で 全文を 読む（`#outText` は App Store版に ない）。
+- **解放エフェクト**：`fx.js` の `TengelFx.unlock(el, { text })`＝解放した 項目の 上で 金の 輪（1.7秒）・つや 1回・少し ふくらむ（`.unlk`）＋ 粒 22こ（控えめ 10・視差効果を減らす なら なし：`.unlkb`）＋「解放！」の 字（`.unlkt`）＋ その場で 作る チャイム（C6・E6・G6。効果音オフなら 鳴らない）。見える 所に なければ 動かして から。出す 所：券種・マザーデータの 枠（`points_ui.js` `unlock2`：`.ptitem[data-key]`）・壁紙（`kisekae.js` `unlock`：`.kst[data-ks]`）・ミッションの「受け取る」（`claim`：`.msrow[data-mid]`・「受け取り！」／「+500P」）。
+- テスト：`test_native.py`（232項目：上の 6つ＋Web版は かわらない）・`test_appname.py`（5重勝なし・人気順位の 表・全文）・`test_iphone_only.py`（字の 漏れ）。
+
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
 - 判定画面のいちばん上の絵（390×160）：kisekae/svg/banner_*.svg。作り直すときは `python3 kisekae/<ranch|cute|elegant|kids|gold>.py <出力フォルダ>`（art.py の部品で描く・すべてオリジナル）。子供向けの上の帯の背景は knit_tile.svg（12×10のくり返し）

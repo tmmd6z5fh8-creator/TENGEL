@@ -8,7 +8,7 @@ F = {f['key']: f for f in L['fields']}
 IAP = L['iap']
 HAS_PREV = os.path.exists(os.path.join(OUT, 'media', 'prev_iphone.mp4'))
 esc = lambda s: html.escape(str(s or ''))
-SHOTS = ['即判定（1500Pプレゼント）', 'スクショを入れるだけ', 'ゾーンまで判定', '買い目編集', '買う馬を選ぶ', 'Pカスタム', 'マザーデータ', '単勝5連予想', '収支の記録', 'サブスク']
+SHOTS = ['即判定（1500Pプレゼント）', 'スクショを入れるだけ', 'ゾーンまで判定', '買い目編集', '買う馬を選ぶ', 'Pカスタム', 'マザーデータ', '単勝5連勝', '収支の記録', 'サブスク']
 
 
 def field(key, label=None, note=None, mono=False):

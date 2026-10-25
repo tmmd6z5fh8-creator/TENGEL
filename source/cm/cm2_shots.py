@@ -217,7 +217,7 @@ SCRUB_JS = r"""() => {
 
 
 RENAME_JS = r"""() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n = 0;
-  while (w.nextNode()) { const t = w.currentNode; if (/5重勝/.test(t.nodeValue)) { t.nodeValue = t.nodeValue.replace(/5重勝/g, '単勝5連予想'); n++; } } return n; }"""
+  while (w.nextNode()) { const t = w.currentNode; if (/5重勝/.test(t.nodeValue)) { t.nodeValue = t.nodeValue.replace(/5重勝|単勝5連勝/g, '単勝5連勝'); n++; } } return n; }"""
 
 
 # 第7弾：上の「テンゲルⅢ」のⅢを、CMの題名と同じ3本の棒の字に（Noto Sans CJK JP Black・まさちゃんの指定 2026/10/16。画面に足して撮るだけ・アプリは変えない）

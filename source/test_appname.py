@@ -4,7 +4,7 @@
 #  ・開催場：はじめは空・空ならふつうの判定・アプリに入っているデータの開催場（しるし）ならふつうの判定・ちがえば【参考判定】
 #  ・マザーデータの名前ははじめ「マザーデータ1〜3」・自分で入れたデータは名前に開催場が入っていればふつうの判定・切り替えの案内
 #  ・アプリに入っているレースを判定すると、そのレース自身を外して参考値を出す（自己参照の除外）
-#  ・期間の「最新」・5重勝・上の版の表示（カスタムのときだけ）
+#  ・期間の「最新」・単勝5連勝・上の版の表示（カスタムのときだけ）
 #  ・記録：開催場を入れたレースの「（参考）」・収支の「うち参考判定のレース」・CSVの開催場は入れたものだけ
 #  ・Web版は今までどおり（大井・第13改訂版・WIN5 のまま）
 import importlib.util, json, os, re, shutil, subprocess, time
@@ -64,7 +64,7 @@ DOM_TEXT = """() => { document.querySelectorAll('details').forEach(d => d.open =
   out.push(document.title); return out.join('\\n'); }"""
 # 判定画面から読む：【参考判定】の印・切り替えの案内・判定の全文（STEP0〜T3）
 RES = """(() => { const refs = [...document.querySelectorAll('#result .chip.ref')]; const go = document.querySelector('#result .slotchip-go');
-  const full = (document.querySelector('#outText') || {}).textContent || '';
+  const full = window.__judgeText ? window.__judgeText() : ((document.querySelector('#outText') || {}).textContent || '');   // 第4.60版：App Store版の 判定画面に「全STEPを表示」は ない（全文コピーと 同じ 文を 作る）
   return { isOi: !refs.length, ref: refs.length, refTxt: refs.map(c => c.textContent).join(), alt: go ? go.dataset.slot : null, full,
     chips: [...document.querySelectorAll('#result .vhead .chip')].map(c => c.textContent).join('|') }; })()"""
 try:
@@ -84,9 +84,10 @@ try:
             check(not bad_words(txt), f'タブ「{t}」に出さない言葉がない（{bad_words(txt)}）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         pg.click('#sampleBtn'); pg.wait_for_timeout(300)
-        full = pg.locator('#outText').text_content()
+        full = pg.evaluate('window.__judgeText()')
+        check(pg.locator('#outText').count() == 0 and pg.locator('#result .rankbox').count() == 1 and pg.locator('#result .rankbox table.rank tbody tr').count() == 14, '判定画面：「全STEPを表示」の 代わりに 人気順位の 表（14頭）')
         check(not bad_words(full), f'判定の全文（STEP0〜T3）に出さない言葉がない（{bad_words(full)}）')
-        check('5重勝' in ''.join(seen) and pg.locator('.tabbar button[data-tab=win5]').inner_text().strip() == '5重勝', 'WIN5 は「5重勝」')
+        check('単勝5連勝' in ''.join(seen) and '5重勝' not in ''.join(seen) and pg.locator('.tabbar button[data-tab=win5]').inner_text().strip() == '単勝5連勝', 'WIN5 は「単勝5連勝」（5重勝は 残らない）')
         check(pg.locator('.brand .ver').inner_text().strip() == '', f'上の版の表示はなし（「{pg.locator(".brand .ver").inner_text()}」）')
         check(pg.input_value('#fVenue') == '' and pg.get_attribute('#fVenue', 'placeholder') == '空でもOK', '開催場ははじめ空（空でもOK）')
         names = pg.evaluate('TengelLocal.slots.names()')

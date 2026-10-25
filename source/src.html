@@ -161,6 +161,16 @@ textarea{font-size:14px;resize:vertical}
 .numbers .zl{font-weight:700;color:var(--muted);white-space:nowrap}
 details.full{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 details.full summary{cursor:pointer;font-weight:700;font-size:14px}
+.rankbox{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.rankbox .rkh{font-weight:700;font-size:14px;margin-bottom:6px}
+.rankbox .small{margin:4px 0}
+.rankbox table.rank{margin-top:6px;width:auto;min-width:min(100%,360px);font-variant-numeric:tabular-nums}
+.rankbox table.rank td{text-align:center}
+.rankbox table.rank tr.z1 td:nth-child(3){color:var(--ninki,#2F6BFF);font-weight:700}
+.rankbox table.rank tr.z2 td:nth-child(3){color:var(--chuana,#2E9E5B);font-weight:700}
+.rankbox table.rank tr.z3 td:nth-child(3){color:var(--oana,#D9822B);font-weight:700}
+.rankbox table.rank tr.z4 td:nth-child(3){color:var(--chooana,#C23B5A);font-weight:700}
+.rankbox table.rank tr.muted td{color:var(--muted)}
 pre.out{white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0 0;max-height:none;overflow-x:auto}
 
 /* ledger */
@@ -1296,7 +1306,7 @@ function renderResult() {
   h += `<div class="row" style="margin-top:4px"><button class="btn primary" type="button" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>全文コピー</button>
     ${st.w5edit || (NATIVE_APP && Reserve()) ? '' : `<button class="btn primary" type="button" id="saveJudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>${st.bets.has(J.id) ? '判定と結果を上書き保存' : '判定と結果を保存'}</button>`}</div>
     ${st.w5edit ? `<p class="small muted" style="margin:0">WIN5のレースは、ここでは保存しないよ。WIN5タブで5レースまとめて記録してね。</p>` : NATIVE_APP && Reserve() ? '<p class="small muted" style="margin:0">買い目は下の「買い目」で予約するよ（結果は記録タブで入れるよ）。</p>' : st.form.example ? '<p class="small muted" style="margin:0">入力例は保存できないよ。本番のレースを入れてね。</p>' : '<p class="small muted" style="margin:0">' + (st.bets.has(J.id) ? '記録タブに保存済み。' : '') + '下の「結果・収支の記録」に入れた着順・購入額・回収額も一緒に保存するよ。結果がまだなら空のままでOK（結果待ちで保存）。</p>'}<div data-k="savemsg" data-id="${esc(J.id || '')}" hidden></div></div>
-    <details class="full"><summary>全STEPを表示（STEP0〜T3）</summary><pre class="out" id="outText">${esc(buildText(J))}</pre></details>`;
+    ${NATIVE_APP ? rankTableHTML(J) : `<details class="full"><summary>全STEPを表示（STEP0〜T3）</summary><pre class="out" id="outText">${esc(buildText(J))}</pre></details>`}`;
   box.innerHTML = h;
   $('#copyAll').addEventListener('click', ev => copyText(buildText(J), ev.currentTarget, $('#outText')));
   const om = $('#omakaseBtn'); if (om) om.addEventListener('click', () => omakase(J));
@@ -1305,6 +1315,22 @@ function renderResult() {
 }
 
 // ===== full text (指示書の出力フォーマット) =====
+// App Store版の 判定画面：「全STEPを表示」の 代わりに、人気順位の 表（STEP0 の 中身：レース・全頭の 人気／番号／記号／単勝（複勝）・3連単の 1位 5位 10位）を 出す
+// （2026/10/25 まさちゃん「ここの全STEPを表示消して！その代わり、この人気順位を表示するようにして！」）。全文コピーは 今までどおり 全STEP
+function rankTableHTML(J) {
+  const x = J.x, arrow = s => String(s || '').replace(/[-－ー‐ｰ\s]+/g, '→');
+  const so = (v, cb) => v == null ? '読取不可' : (cb ? arrow(cb) + ' / ' : '') + fmt(v) + '倍';
+  const fk = J.horses.some(hh => hh.fuku != null);
+  let h = `<div class="rankbox"><div class="rkh">人気順位</div><div class="small">開催場：${esc(J.venue || '—')}　レース：${esc(x.r)}R　／　出走頭数：${esc(x.n)}頭　／　距離：${esc(x.dist)}m（${esc(J.surface)}）　／　馬場状態：${esc(x.baba)}</div>`;
+  if (J.horses.length) {
+    h += `<div class="scroll"><table class="t rank"><thead><tr><th>人気</th><th>番号</th><th>記号</th><th>単勝</th>${fk ? '<th>複勝</th>' : ''}</tr></thead><tbody>`;
+    J.horses.forEach(hh => { h += `<tr class="${hh.sym === 'M' ? 'muted' : 'z' + ({ A: 1, B: 1, C: 1, D: 2, E: 2, F: 2, G: 3, H: 3, I: 3, J: 4, K: 4, L: 4 })[hh.sym]}"><td>${hh.rank}</td><td><span class="num ${wakuCls(hh.no, J.maxNo)}">${hh.no}</span></td><td>${hh.sym}</td><td>${fmt(hh.tan)}</td>${fk ? `<td>${hh.fuku == null ? '—' : esc(hh.fukuRaw || fmt(hh.fuku))}</td>` : ''}</tr>`; });
+    h += '</tbody></table></div>';
+  } else h += `<div class="small">単勝1位：${fmt(x.tan1)}倍（全頭のオッズ一覧なし）</div>`;
+  h += `<div class="small">3連単1位：${so(x.s1, J.s1combo)}　3連単5位：${so(J.s5, J.s5combo)}　3連単10位：${so(J.s10, J.s10combo)}</div></div>`;
+  return h;
+}
+window.__judgeText = () => { const J = currentJudge(); return J && J.ok ? buildText(J) : ''; };   // テスト用：いまの 判定の 全文（STEP0〜T3）。App Store版の 判定画面には「全STEPを表示」が ないので ここから 読む
 function buildText(J) {
   const S = J.S, c = J.c, x = J.x, k = c.kubun, K = S.k[k], sep = '━━━━━━━━━━━━', o = [];
   const n3All = Object.values(S.k).reduce((s, q) => s + q.n3, 0);
@@ -1394,8 +1420,8 @@ function buildText(J) {
 async function copyText(text, btn, pre) {
   try { await navigator.clipboard.writeText(text); toast('コピーしたよ'); }
   catch {
-    if (pre) { const d = pre.closest('details'); if (d) d.open = true; const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
-    toast('コピーできなかったので文章を選択したよ。長押しでコピーしてね', 3600);
+    if (pre) { const d = pre.closest('details'); if (d) d.open = true; const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('コピーできなかったので文章を選択したよ。長押しでコピーしてね', 3600); }
+    else toast('コピーできなかったよ', 3000);
   }
 }
 
@@ -2571,6 +2597,8 @@ function renderMoney() {
 
 // ===== stats =====
 $('#perChips').addEventListener('click', e => { const b = e.target.closest('.fchip'); if (!b) return; st.per = b.dataset.v; $$('#perChips .fchip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderMother(); });
+// 実測の ③④に 出す 区分：App Store版は C層・非該当（序盤R・n が ほとんど ない）の 行を 出さない（2026/10/25 まさちゃん「C層×非該当のゾーン消して！」）。Web版は 今までどおり
+const STAT_KUBUN = NATIVE_APP ? ['A', 'B', 'C1', 'C2'] : ['A', 'B', 'C0', 'C1', 'C2'];
 function renderMother() {
   const body = $('#statsBody');
   if (st.dbState !== 'on') { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">${st.dbState === 'connecting' ? '基盤データを読み込み中…' : '基盤データに接続できません'}</div><p>①〜⑦は、テンゲル基盤データ（${esc(motherName())}）から計算するよ。</p></div>`; $('#motherNote').textContent = ''; return; }
@@ -2590,11 +2618,11 @@ function renderMother() {
   h += `<tr class="sub"><td>全体</td><td>${rs.length}</td><td>100%</td><td>${pct(cnt(r => r.ana), rs.length)}</td><td>${pct(cnt(r => r.nn), rs.length)}</td><td>${pct(hit, rs.length)}</td><td>${pct(cnt(r => r.hit12), rs.length)}</td></tr></tbody></table></div><p class="hint">穴決着＝1着か2着に大穴（7〜9番人気）・超大穴（10〜12番人気）</p></div>`;
   // ④ レース判定
   h += `<div class="card"><h2>④ 区分ごとのレース判定（STEP4③）</h2><div class="scroll"><table class="t"><thead><tr><th>区分</th><th>n</th><th>人気→人気率</th><th>穴絡み率</th><th class="l">判定</th></tr></thead><tbody>`;
-  for (const k of ['A', 'B', 'C0', 'C1', 'C2']) { const K = S.k[k], ht = T.hantei(K); h += `<tr><td>${T.KUBUN_LABEL[k].replace('（固定）', '×固定').replace('・', '×')}</td><td>${K.n}</td><td>${K.n >= 5 ? pct(K.nn, K.n) : '—'}</td><td>${K.n >= 5 ? pct(K.ana, K.n) : '—'}</td><td class="l"><span class="chip ${ht.cls}">${ht.mark}${K.n < 5 ? '※データ不足' : ''}</span></td></tr>`; }
+  for (const k of STAT_KUBUN) { const K = S.k[k], ht = T.hantei(K); h += `<tr><td>${T.KUBUN_LABEL[k].replace('（固定）', '×固定').replace('・', '×')}</td><td>${K.n}</td><td>${K.n >= 5 ? pct(K.nn, K.n) : '—'}</td><td>${K.n >= 5 ? pct(K.ana, K.n) : '—'}</td><td class="l"><span class="chip ${ht.cls}">${ht.mark}${K.n < 5 ? '※データ不足' : ''}</span></td></tr>`; }
   h += `</tbody></table></div><p class="hint">⚠️【薄】人気→人気率55%以上／・【並】30〜55%未満（n<5も）／◎【厚】30%未満。払戻が無い間の代理指標</p></div>`;
   // ③ 推奨ゾーン的中
   h += `<div class="card wide"><h2>③ 推奨ゾーンの的中（STEP3・STEP4②／T2）</h2><div class="scroll"><table class="t"><thead><tr><th>区分</th><th class="l">馬単ゾーン</th><th>n</th><th>的中</th><th>参考的中率</th><th class="l">3着2本</th><th>馬単的中時の3着</th><th>帯全体（第12の帯）</th></tr></thead><tbody>`;
-  for (const k of ['A', 'B', 'C0', 'C1', 'C2']) {
+  for (const k of STAT_KUBUN) {
     const K = S.k[k]; const band = k === 'C1' ? '第1段階' : k === 'C2' ? '第2段階' : null;
     T.SETS[k].forEach((z, i) => { const B = band ? S.band12[band] : null, bc = B ? T.zoneCount(B.pairs, z) : 0, tz = T.THIRD[k] ? (T.THIRD[k][i] || []) : []; h += `<tr><td>${i === 0 ? T.KUBUN_LABEL[k] + (T.isCustom(k) ? ' <span class="chip cus">カスタム</span>' : '') : ''}</td><td class="l">第${i + 1} ${z.label}${z.prov ? ' <span class="prov">暫定</span>' : ''}</td><td>${K.n}</td><td>${K.hit[i]}</td><td>${pct(K.hit[i], K.n)}</td><td class="l">${tz.length ? tz.join('・') + (T.THIRD_PROV[k] && T.THIRD_PROV[k][i] ? ' <span class="prov">暫定</span>' : '') : '見送り'}</td><td>${tz.length ? `${K.tri3[i]}/${K.hit3n[i]}` : '—'}</td><td>${B ? `${pct(bc, B.n)}（${bc}/${B.n}）` : '—'}</td></tr>`; });
     h += `<tr class="sub"><td></td><td class="l">計</td><td>${K.n}</td><td>${K.hitTot}</td><td>${pct(K.hitTot, K.n)}</td><td class="l">${T.THIRD[k] ? `3連単ゾーン的中 ${K.triTot}/${K.n3}` : '3着は見送り'}</td><td>${T.THIRD[k] ? pct(K.triTot, K.hitIn3) : '—'}</td><td></td></tr>`;
@@ -2655,15 +2683,19 @@ function recoveryCard(all) {
   return h;
 }
 function reviewCard(all) {
-  const d13 = all.filter(r => r.per === '第13新規'), since = all.filter(r => r.per === '新規' || r.per === '第13新規');
+  // App Store版：進み具合は、使う人が 判定して 着順を 入れた レース（マザーデータに 入れた src＝input の 行）だけで 数える。アプリに 入っている データは 数えない＝0 から 始まる
+  // （2026/10/25 まさちゃん「データは0にして！ユーザーがクリアしていけばいいから！」）。期間も 問わない（使う人の レースは 全部 新しい）。Web版は 今までどおり
+  const mine = NATIVE_APP;
+  if (mine) all = all.filter(r => r.src === 'input');
+  const d13 = mine ? all : all.filter(r => r.per === '第13新規'), since = mine ? all : all.filter(r => r.per === '新規' || r.per === '第13新規');
   const B13 = d13.filter(r => r.L === 'B'), Bhit = B13.filter(r => r.hit);
   const b3 = { 人気: 0, 中穴: 0, 大穴: 0, 他: 0 }; Bhit.forEach(r => { if (!r.z3) return; b3[['人気', '中穴', '大穴'].includes(r.z3) ? r.z3 : '他']++; });
   const C1 = since.filter(r => r.kubun === 'C1'), Cg = since.filter(r => r.kubun === 'C1' || r.kubun === 'C2');
   const C20 = d13.filter(r => r.c20 === '比20以上' && (r.kubun === 'C1' || r.kubun === 'C2'));
   const Cearly = all.filter(r => r.L === 'C' && r.r <= 3);
-  const others = {}; (Slots.on && Slots.active !== 1 ? [] : st.derived).filter(r => !r.isOi && r.has12).forEach(r => { others[r.venue] = (others[r.venue] || 0) + 1; });
+  const others = {}; (Slots.on && Slots.active !== 1 ? [] : st.derived).filter(r => !r.isOi && r.has12 && (!mine || r.src === 'input')).forEach(r => { others[r.venue] = (others[r.venue] || 0) + 1; });
   const item = (lab, v, goal, desc) => `<div class="pi"><div class="pl"><span>${lab}</span><b>${v}/${goal}</b></div><div class="bar"><i style="width:${Math.min(100, v / goal * 100)}%"></i></div>${desc ? `<div class="pd">${desc}</div>` : ''}</div>`;
-  let h = `<div class="card" style="margin-top:var(--gap)"><h2>見直し基準の進み具合</h2><div class="prog">`;
+  let h = `<div class="card" style="margin-top:var(--gap)"><h2>見直し基準の進み具合</h2>${mine ? '<p class="hint" style="margin:0 0 8px">判定して着順を入れて、マザーデータにも入れたレースで進むよ（アプリに入っているデータは数えないよ）。</p>' : ''}<div class="prog">`;
   h += item('【最優先①】第13新規のB層（馬単払戻あり）', B13.filter(r => r.pay != null).length, 30, `B層 ${B13.length}走中。そろったら本線と旧本線の回収率を⑦で比べる`);
   h += item('【最優先②】第13新規のB層で馬単ゾーン的中', Bhit.length, 10, `的中レースの3着：人気${b3.人気}・中穴${b3.中穴}・大穴${b3.大穴}。中穴が大穴より多ければ「人気・中穴」を検討`);
   h += item('【最優先③】新規以降のC層・第1段階', C1.length, 20, `中穴→中穴の的中 ${C1.filter(r => r.pair === '中穴→中穴').length}走`);

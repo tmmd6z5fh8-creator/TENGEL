@@ -182,6 +182,7 @@
       P.wallMissionEvents(wm, device(), Date.now()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
       await save(); paintAll();
       toast(`✅ ${wm.label}を受け取ったよ！ 設定の「着せ替え」で使えるよ`, 4000);
+      unlockFx(`#setMission .msrow[data-mid="${id}"]`, '受け取り！');
       return;
     }
     const m = P.missions(countedN(), W.events).find(x => x.id === id);
@@ -189,8 +190,11 @@
     W.events.push(P.missionEvent(m, Date.now()));
     await save();
     toast(`🎉 ${m.label}の ${pts(m.reward)} を受け取ったよ（合計 ${pts(total())}）`, 4000);
+    unlockFx(`#setMission .msrow[data-mid="${id}"]`, `+${pts(m.reward)}`);
   }
 
+  // 解放エフェクト（第4.60版：fx.js の TengelFx.unlock。項目の 上で 金の 輪・つや・粒・「解放！」・チャイム）
+  function unlockFx(sel, text) { try { const el = typeof sel === 'string' ? $(sel) : sel; if (el && window.TengelFx && window.TengelFx.unlock) window.TengelFx.unlock(el, { text }); } catch (e) { /* なし */ } }
   // ---------- 解放（Pカスタム） ----------
   const unlocked = key => !!(W && P.unlocked(W.events, key));
   const typeLocked = t => P.ALL_TYPES.includes(t) && !P.FREE_TYPES.includes(t) && !unlocked('type:' + t);
@@ -247,7 +251,7 @@
     if (lots.length) h += `<p class="ptnote">サブスクのP：${lots.map(L => `${yen(L.remain)}P は ${dayOf(L.expires)}まで`).join('・')}（届いた日から30日。次の月のPが届いても、期限までは使えるよ）</p>`;
     if (b.lost) h += `<p class="ptnote">期限が切れて消えたサブスクのP：${yen(b.lost)}P</p>`;
     h += giftNote;
-    h += `<div class="row" style="margin-top:10px"><button class="btn primary" type="button" data-pt="show" data-v="buy" aria-pressed="${ui.show === 'buy'}">ポイントを買う</button><button class="btn" type="button" data-pt="show" data-v="sub" aria-pressed="${ui.show === 'sub'}">サブスク</button><button class="btn ghost" type="button" data-pt="show" data-v="hist" aria-pressed="${ui.show === 'hist'}">くわしく</button></div>`;
+    h += `<div class="row" style="margin-top:10px"><button class="btn primary" type="button" data-pt="show" data-v="buy" aria-pressed="${ui.show === 'buy'}">ポイントを買う</button><button class="btn" type="button" data-pt="show" data-v="sub" aria-pressed="${ui.show === 'sub'}">サブスク</button><button class="btn ghost" type="button" data-pt="show" data-v="hist" aria-pressed="${ui.show === 'hist'}">詳しく</button></div>`;
     h += `<p class="hint">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったPから先に使うよ（サブスクのP → パックのP → もらったP）。</p>`;
     const price = id => { const p = (products || []).find(x => x.id === id); return p ? p.price : `${yen(P.PRODUCTS[id].yen)}円`; };
     if (ui.show === 'buy') {
@@ -281,10 +285,10 @@
     const btn = (key, cost) => { const ok = t >= cost; return conf === key ? `<button class="btn primary" type="button" data-pt="unlock2" data-key="${esc(key)}" data-cost="${cost}">${pts(cost)}を使って解放する（いま ${pts(t)}）</button><button class="btn ghost" type="button" data-pt="unlock0">やめる</button>` : `<button class="btn ${ok ? 'primary' : ''}" type="button" data-pt="unlock1" data-key="${esc(key)}" data-cost="${cost}">${ok ? '解放する' : 'Pが足りない'}</button>`; };
     let h = `<p class="hint" style="margin:0 0 6px"><b>Pカスタムで、自分だけのテンゲルを育てよう！</b></p><p class="hint" style="margin:0">ポイントで、使える券種とマザーデータの枠を増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。</p>`;
     h += `<h3 style="margin:12px 0 6px">券種（記録・買い目の予約で選べるもの）</h3><p class="ptnote" style="margin:0">はじめから：単勝・馬単・3連単</p><div class="ptlist">`;
-    P.UNLOCK_TYPES.forEach(tp => { const key = 'type:' + tp, on = unlocked(key); h += `<div class="ptitem${on ? ' on' : ''}"><div><div class="pn">${esc(TYPE_NAMES[tp] || tp)}</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.type)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.type)}</div></div>`; });
+    P.UNLOCK_TYPES.forEach(tp => { const key = 'type:' + tp, on = unlocked(key); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(TYPE_NAMES[tp] || tp)}</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.type)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.type)}</div></div>`; });
     h += `</div><h3 style="margin:14px 0 6px">マザーデータの枠（自分のデータで参考的中率を出す）</h3><p class="ptnote" style="margin:0">1つ目はアプリに入っているデータ。2つ目・3つ目を解放すると、Excelや判定したレースで自分だけのマザーデータを作れるよ。</p><div class="ptlist">`;
     let names = {}; try { names = TL.slots.names() || {}; } catch (e) { /* なし */ }
-    [2, 3].forEach(n => { const key = 'slot:' + n, on = slotUnlocked(n); h += `<div class="ptitem${on ? ' on' : ''}"><div><div class="pn">${n}つ目「${esc(names[n] || 'マザーデータ' + n)}」</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.slot)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.slot)}</div></div>`; });
+    [2, 3].forEach(n => { const key = 'slot:' + n, on = slotUnlocked(n); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${n}つ目「${esc(names[n] || 'マザーデータ' + n)}」</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.slot)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.slot)}</div></div>`; });
     h += '</div>';
     box.innerHTML = h;
   }
@@ -294,12 +298,12 @@
     const next = ms.find(m => !m.done);
     let h = `<p class="hint" style="margin:0 0 8px">200Pを使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。いま <b>${n}レース</b>${next ? `・次は ${next.n}レースで ${pts(next.reward)}` : ''}</p>`;
     h += '<div>';
-    ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
+    ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
     h += '</div>';
     // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙
     const wn = P.wallCount(W.events), wms = P.wallMissions(wn, W.events);
     h += `<h3 style="margin:14px 0 4px">壁紙のミッション</h3><p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
-    wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
+    wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow" data-mid="${esc(m.id)}"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
     h += '</div>';
     box.innerHTML = h;
   }
@@ -330,6 +334,7 @@
       if (ok) { toast(`✅ ${unlockName(key)}を解放したよ（残り ${pts(total())}）`, 3600); try { document.dispatchEvent(new CustomEvent('tengel:slots')); } catch (x) { /* なし */ } }
       else toast(`Pが足りないよ（${pts(cost)}いる・いま ${pts(total())}）`, 3600);
       paintCustom();
+      if (ok) unlockFx(`#setCustom .ptitem[data-key="${key}"]`, '解放！');
     }
   }
   // 設定タブの中の場所へ（ほかの画面の「ポイントを買う」ボタンなど）

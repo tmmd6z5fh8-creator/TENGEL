@@ -378,8 +378,75 @@
     if (b.dataset.fx === 'tap') reveal(); else if (b.dataset.fx === 'close') close();
   });
 
+  // ---------- 解放エフェクト（第4.60版・まさちゃん「ポイントで、解放した時が分かりにくいから、解放エフェクトをつけて！壁紙とかも一緒で！」） ----------
+  // ポイントで 券種・マザーデータの枠・壁紙を 解放した とき／ミッションを 受け取った ときに、その 項目（カード・タイル）の 上で：
+  //   金の 輪が ふわっと 光って 消える・つやが 1回 走る・少し ふくらむ（.unlk）＋ まん中から 金と 白の 粒が とびちる（.unlkb）＋「解放！」の 字が ポンと 出て 上へ 消える（.unlkt）＋ 短い チャイム（S.sound のとき）
+  //   点めつは なし（つやは 1回だけ）・効果は 項目の 大きさだけ（画面の 1割 未満）。「的中エフェクト」が オフなら 字だけ・「控えめ」なら 粒を へらす・「視差効果を減らす」なら ほぼ 動かさない
+  const UNLOCK_CSS = '.unlk{position:relative;z-index:1;animation:unlkPop .7s cubic-bezier(.2,1.4,.4,1) both}'
+    + '.unlk::before{content:"";position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;z-index:2;border:2px solid rgba(255,214,102,.95);box-shadow:0 0 18px rgba(255,200,70,.8),inset 0 0 16px rgba(255,220,120,.4);animation:unlkRing 1.7s ease-out both}'
+    + '.unlk::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;background:linear-gradient(105deg,rgba(255,255,255,0) 32%,rgba(255,255,255,.6) 50%,rgba(255,255,255,0) 68%) 120% 0/220% 100% no-repeat;animation:unlkShine 1s ease-out .12s both}'
+    + '@keyframes unlkPop{0%{transform:scale(1)}35%{transform:scale(1.035)}100%{transform:scale(1)}}'
+    + '@keyframes unlkRing{0%{opacity:0}12%{opacity:1}100%{opacity:0}}'
+    + '@keyframes unlkShine{0%{background-position:120% 0}100%{background-position:-120% 0}}'
+    + '.unlkb{position:fixed;z-index:9000;pointer-events:none;width:0;height:0;overflow:visible}'
+    + '.unlkb i{position:absolute;left:0;top:0;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);animation:unlkFly var(--d) cubic-bezier(.1,.8,.3,1) var(--w) both}'
+    + '.unlkb i.sp{border-radius:0;background:none;box-shadow:none;width:0;height:0;margin:0;font:700 var(--s)/1 sans-serif;color:var(--c);text-shadow:0 0 8px var(--c);transform-origin:50% 50%}'
+    + '.unlkb i.sp::before{content:"\\2726";position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2)}'
+    + '@keyframes unlkFly{0%{transform:translate(0,0) scale(.3);opacity:0}12%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1);opacity:0}}'
+    + '.unlkt{position:fixed;z-index:9001;pointer-events:none;transform:translate(-50%,-50%);font:400 28px/1 "Dela Gothic One",sans-serif;letter-spacing:.04em;color:#FFF4C8;white-space:nowrap;'
+    + 'text-shadow:-1.5px 0 #7A4E08,1.5px 0 #7A4E08,0 -1.5px #7A4E08,0 1.5px #7A4E08,-1px -1px #7A4E08,1px -1px #7A4E08,-1px 1px #7A4E08,1px 1px #7A4E08,0 3px 0 #5A3806,0 0 10px rgba(255,235,170,.9),0 0 22px rgba(255,190,60,.9),0 0 40px rgba(255,170,30,.6);animation:unlkTxt 1.6s ease-out both}'
+    + '@keyframes unlkTxt{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}32%{transform:translate(-50%,-50%) scale(1)}70%{opacity:1;transform:translate(-50%,-56%) scale(1)}100%{opacity:0;transform:translate(-50%,-110%) scale(1)}}'
+    + '@media (prefers-reduced-motion:reduce){.unlk,.unlk::before,.unlk::after{animation:none!important}.unlkb i{animation-duration:.01s!important}.unlkt{animation:unlkTxtCalm 1.6s ease-out both!important}}'
+    + '@keyframes unlkTxtCalm{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}';
+  function unlockCss() {
+    if ($('#fxUnlkCss')) return;
+    const st = document.createElement('style'); st.id = 'fxUnlkCss'; st.textContent = UNLOCK_CSS; document.head.appendChild(st);
+  }
+  // 解放の チャイム（ファイルは 使わず、その場で 作る：C6・E6・G6 の 3つの 音を 少しずつ ずらして・上に 細い きらめき）
+  function unlockChime() {
+    if (!S.sound) return false;
+    const c = actx(); if (!c) return false;
+    try {
+      const t0 = c.currentTime + .02, g = c.createGain(); g.gain.value = .0001; g.connect(c.destination);
+      [[1046.5, 0], [1318.5, .09], [1568, .18], [2093, .3]].forEach(([f, dt], i) => {
+        const o = c.createOscillator(); o.type = i === 3 ? 'triangle' : 'sine'; o.frequency.value = f;
+        const e = c.createGain(); e.gain.setValueAtTime(.0001, t0 + dt); e.gain.exponentialRampToValueAtTime(i === 3 ? .06 : .16, t0 + dt + .012); e.gain.exponentialRampToValueAtTime(.0001, t0 + dt + (i === 3 ? .9 : .55));
+        o.connect(e); e.connect(c.destination); o.start(t0 + dt); o.stop(t0 + dt + 1);
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  // el：解放した 項目（カード・タイル）。opts.text：まん中に 出す 字（はじめは「解放！」）・opts.scroll：見える 所へ 動かす（はじめは する）
+  function unlock(el, opts) {
+    opts = opts || {};
+    if (!el || !el.getBoundingClientRect) return false;
+    unlockCss();
+    if (opts.scroll !== false) { try { const r0 = el.getBoundingClientRect(); if (r0.top < 60 || r0.bottom > innerHeight - 60) el.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' }); } catch (e) { /* なし */ } }
+    const go = () => {
+      const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      if (S.effects) {
+        el.classList.remove('unlk'); void el.offsetWidth; el.classList.add('unlk');
+        setTimeout(() => el.classList.remove('unlk'), 1800);
+        const n = reduced() ? 0 : calm() ? 10 : 22, b = document.createElement('div'); b.className = 'unlkb'; b.style.left = cx + 'px'; b.style.top = cy + 'px';
+        const cols = ['#FFD966', '#FFF3C4', '#FFC433', '#FFFFFF', '#F6B73C'];
+        let hh = '';
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rand() * .5, d = Math.min(220, Math.max(r.width, r.height) * (.45 + rand() * .55)) + 30 * rand(), sp = i % 4 === 0;
+          hh += `<i class="${sp ? 'sp' : ''}" style="--x:${(Math.cos(a) * d).toFixed(0)}px;--y:${(Math.sin(a) * d * .7 - 10).toFixed(0)}px;--s:${(sp ? 14 + rand() * 10 : 5 + rand() * 7).toFixed(0)}px;--c:${cols[i % cols.length]};--d:${(0.7 + rand() * .5).toFixed(2)}s;--w:${(rand() * .12).toFixed(2)}s"></i>`;
+        }
+        b.innerHTML = hh; document.body.appendChild(b); setTimeout(() => b.remove(), 1600);
+      }
+      const t = document.createElement('div'); t.className = 'unlkt'; t.textContent = opts.text || '解放！'; t.style.left = cx + 'px'; t.style.top = cy + 'px';
+      document.body.appendChild(t); setTimeout(() => t.remove(), 1700);
+      unlockChime();
+      emit('unlock');
+    };
+    if (opts.scroll !== false && !reduced()) setTimeout(go, 260); else go();
+    return true;
+  }
+
   window.TengelFx = {
-    on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced,
+    on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
     video: video, _rand: null
