@@ -107,6 +107,10 @@ def run(out):
     #    不透明に なって、馬の まわりの 広い 四角で つぶが 消えていた）。
     # 下の 止まった絵（光のつぶなし）→ 光のつぶの 層 → このシート の 順に 重ねると、いまの絵と ほぼ 同じ 見た目で 光のつぶだけ 動かせる
     bgc = np.clip(bg, 0, 1)
+    # 壁紙の いちばん下の 止まった絵は 背景だけ（馬も 光のつぶも なし）：neon_static.webp。
+    #   前は いまの絵（馬入り）を 下に しいていたので、すき通しの コマの 馬と 下の 止まった 馬の 足が 二重に 見えた
+    #   （2026/10/25 まさちゃん「馬の足とか馬の絵が重なって、しかも停止していたり、完全にバグってるから直して！」）。馬は コマだけに
+    NB.save_webp(bgc, f'{out}/neon_static.webp')
     sheet = np.zeros((ch, cw * N_FRAMES, 4), np.float32)
     for i, (fr, sil) in enumerate(zip(frames, sils)):
         frc = np.clip(fr, 0, 1)

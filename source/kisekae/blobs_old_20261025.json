@@ -1,13 +1,15 @@
 {
- "memo": "2026/10/25 第4.63版で 差しかえる 前の 絵の id（ios/kisekae_blobs/ に 残っている。もどす 時の ため）",
+ "memo": "2026/10/25 第4.63版・第4.64版で 差しかえる 前の 絵の id（ios/kisekae_blobs/ に 残っている。もどす 時の ため）",
  "removed": {
   "blobs20.json": {
    "sakura_old": "3b3f002de6b9b1c35fec1c32400e1494",
-   "marble_old": "ea10d9d64912ff5996f8d11ed7f17586"
+   "marble_old": "ea10d9d64912ff5996f8d11ed7f17586",
+   "sakura_463": "d6c8ae594bf8e602ac078f7f727e9a28"
   },
   "neon_blobs.json": {
    "static_old": "7a14258f48e068a0b26cbfdd62afb86d",
-   "run_old": "a332f6602c1082258990e8f89b8a441c"
+   "run_old": "a332f6602c1082258990e8f89b8a441c",
+   "static_463": "ee987943ede57906aacb788688763ebb"
   },
   "pixel_blobs.json": {
    "run_old": "543497cbcaf1f7b859a39fcb259c7d7f"
@@ -23,7 +25,8 @@
    "plate_old": "28e73f1d2c0b0f06e8534c81e510b539"
   },
   "step_blobs.json": {
-   "sakura.sheet_old": "76d5f6b54a85e15cfae3b83adde4778e"
+   "sakura.sheet_old": "76d5f6b54a85e15cfae3b83adde4778e",
+   "sakura.sheet_463": "fc13c57bb02af4cbf0a5102917c3f983"
   }
  }
 }

@@ -106,6 +106,7 @@
     const after = $('#setMission');
     if (after && after.nextSibling) set.insertBefore(c, after.nextSibling); else if (after) set.appendChild(c); else set.insertBefore(c, set.firstChild);
     c.addEventListener('click', onClick);
+    c.addEventListener('keydown', onKey);
     paint();
   }
   // 解放エフェクト（第4.60版：fx.js の TengelFx.unlock）：解放した 壁紙の タイルの 上で 金の 輪・つや・粒・「解放！」・チャイム
@@ -115,28 +116,31 @@
     if (t.band) return `<span class="kslock">🔒 壁紙を${t.band}枚あつめると</span>`;
     return '';
   }
+  // 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中（カギの 下）に 出す。前は 一覧の 上に 1本の 帯で 出していた
+  //   （2026/10/25 まさちゃん「赤のところは消して、解放されていない壁紙をタップしたら下に、解放、ボタンが出てくるようにして！」）。
+  //   タイルは <div role="button">（中に 本物の ボタンを 置くため）。もう一度 タイルを タップすると 閉じる
+  function confBox(t, total) {
+    const ok = total >= t.price;
+    return `<span class="ksconf" role="group" aria-label="解放の確認"><span class="kscq">${esc(pts(t.price))}を使って解放する？<small>いま ${esc(pts(total))}</small></span>`
+      + (ok ? `<button class="btn primary" type="button" data-ksact="unlock" data-id="${esc(t.id)}">解放する</button>`
+        : `<span class="kscq muted">Pが足りないよ</span><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button>`)
+      + '<button class="btn ghost" type="button" data-ksact="cancel">やめる</button></span>';
+  }
   function paint() {
     const box = $('#setKisekae .ksbody'); if (!box) return;
     const cur = byId[curId] || byId.default, n = count(), total = wallet() ? wallet().total() : 0;
     let h = `<p class="hint" style="margin:0 0 4px">いまのテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
-    h += `<p class="ptnote" style="margin:0">ポイントで解放した壁紙：<b>${n}</b>/${A.paid.length}枚（8・16・25枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。</p>`;
-    if (conf && byId[conf]) {
-      const t = byId[conf], ok = total >= t.price;
-      h += `<div class="ksconf" role="group" aria-label="解放の確認"><span>「<b>${esc(t.name)}</b>」を ${esc(pts(t.price))}を使って解放する？（いま ${esc(pts(total))}）</span>`
-        + (ok ? `<button class="btn primary" type="button" data-ksact="unlock" data-id="${esc(conf)}">解放する</button>`
-          : `<span class="muted">Pが足りないよ</span><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button>`)
-        + '<button class="btn ghost" type="button" data-ksact="cancel">やめる</button></div>';
-    }
+    h += `<p class="ptnote" style="margin:0">ポイントで解放した壁紙：<b>${n}</b>/${A.paid.length}枚（8・16・25枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
     const groups = [];
     A.themes.forEach(t => { let g = groups.find(x => x.name === t.group); if (!g) { g = { name: t.group, items: [] }; groups.push(g); } g.items.push(t); });
     groups.forEach(g => {
       h += `<h3 class="ksg">${esc(g.name)}<small>${g.items.length}</small></h3><div class="ksgrid">`;
       g.items.forEach(t => {
-        const on = t.id === curId, can = usable(t.id);
-        h += `<button type="button" class="kst${on ? ' on' : ''}${can ? '' : ' lock'}" data-ks="${esc(t.id)}" aria-pressed="${on}" aria-label="${esc(t.name)}${on ? '（使用中）' : can ? '' : t.price ? `（${pts(t.price)}で解放）` : `（壁紙を${t.band}枚あつめると）`}">`
+        const on = t.id === curId, can = usable(t.id), cf = conf === t.id && !!t.price;
+        h += `<div role="button" tabindex="0" class="kst${on ? ' on' : ''}${can ? '' : ' lock'}${cf ? ' cf' : ''}" data-ks="${esc(t.id)}" aria-pressed="${on}" aria-expanded="${cf}" aria-label="${esc(t.name)}${on ? '（使用中）' : can ? '' : t.price ? `（${pts(t.price)}で解放）` : `（壁紙を${t.band}枚あつめると）`}">`
           + `<img class="ksth" src="${esc(t.thumb)}" alt="" loading="lazy" decoding="async">`
           + `<span class="ksn">${esc(t.name)}</span><span class="ksd">${esc(t.desc)}</span>`
-          + (on ? '<span class="ksbadge">使用中</span>' : '') + (can ? '' : lockLabel(t)) + '</button>';
+          + (on ? '<span class="ksbadge">使用中</span>' : '') + (can ? '' : lockLabel(t)) + (cf ? confBox(t, total) : '') + '</div>';
       });
       h += '</div>';
     });
@@ -159,12 +163,24 @@
         return;
       }
     }
+    if (e.target.closest('.ksconf')) return;          // 確認の 文字の 所を 押しても 何も しない
     const b = e.target.closest('.kst'); if (!b) return;
     const id = b.dataset.ks, t = byId[id]; if (!t) return;
     if (id === curId) return;
     if (usable(id)) { await apply(id, true); toast(`「${t.name}」に着せ替えたよ`); return; }
-    if (t.price) { conf = id; paint(); const c = $('#setKisekae .ksconf'); if (c) c.scrollIntoView({ block: 'nearest' }); return; }
+    if (t.price) {
+      if (conf === id) { conf = ''; paint(); return; }   // もう一度 タップ → 閉じる
+      conf = id; paint();
+      const c = $('#setKisekae .kst.cf'); if (c) c.scrollIntoView({ block: 'nearest' });
+      return;
+    }
     if (t.band) { toast(`壁紙を${t.band}枚あつめて、ミッションで受け取ると使えるよ（いま ${count()}枚）`, 3600); }
+  }
+  // タイルは <div role="button">：Enter か スペースで 押す
+  function onKey(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const b = e.target.closest('.kst'); if (!b || e.target !== b) return;
+    e.preventDefault(); b.click();
   }
 
   // ---------- 起動 ----------

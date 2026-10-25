@@ -27,11 +27,14 @@ CANOPY = [(90, 60, 120, 260), (20, 140, 70, 90), (210, 20, 80, 120), (700, 40, 1
 
 
 def tree(img, x0, y0, side, seed):
-    """幹（150）と 太い枝 5本は 前と 同じ（同じ 乱数）。そのあと、枝の 先から 細い 枝を 花の かたまりの 中へ のばす（別の 乱数・2026/10/25）：
+    """幹（150）と 太い枝 5本は 前と 同じ 乱数で 形を 決める。そのあと、枝の 先から 細い 枝を 花の かたまりの 中へ のばす（別の 乱数・2026/10/25）：
        前は 枝の 先が 花の 下の 空で 終わっていて、木と 花の あいだが あいていた（まさちゃん「桜の木と桜の花との距離が長いから違和感なく繋げて！」）。
-       返り値の tips は 細い 枝の 先（ここに 花の かたまりを 足す）"""
+       2026/10/25 その2（まさちゃん「左側の黄丸のところ、桜の花まで木が届いていないから違和感なく届かせて、右側の青丸の枝いらないから消して！」）：
+       - 左の木（side 1）：幹の 先を 花の 中まで のばし（細く なって 花に 消える）、低い 枝も ふくめて 5本 ぜんぶの 先から 細い 枝を 花の 方へ。
+         幹の 先にも 細い 枝。花は 呼び出し元が 幹の 先の まわり（EXTRA）と 細い 枝の 先・まん中に 足す
+       - 右の木（side -1）：先が 低い 枝（y > 175・馬の しっぽへ 長く のびていた 2本）は 描かない（乱数の 順は 同じ）
+       返り値の tips は 細い 枝の 先と 幹の 先（ここに 花の かたまりを 足す）"""
     r = np.random.default_rng(seed)
-    trunk = []
     polys = []
     pts = flow((x0, y0), math.radians(-90 + side * 12), 150, 10, rng=r, wave=0.6)
     polys.append(lock_poly(pts, 30, 12))
@@ -41,18 +44,29 @@ def tree(img, x0, y0, side, seed):
         a = math.radians(-90 + side * r.uniform(25, 70))
         b = flow(pts[j], a, r.uniform(60, 130), 8, rng=r, wave=0.8, phase=k)
         wdt = r.uniform(7, 12)
+        if side < 0 and b[-1][1] > 175:                    # 右の木の 低い 枝は 描かない
+            continue
         polys.append(lock_poly(b, wdt, 2))
         branches.append((b, a, wdt))
     r2 = np.random.default_rng(seed + 100)
     tips = []
+    if side > 0:                                           # 左の木：幹の 先を 花の 中へ（12 → 4 に 細く）。先に 細い 枝 2本
+        ext = flow(pts[-1], math.radians(-90 + side * 12), 44, 5, rng=r2, wave=0.5, phase=2)
+        polys.append(lock_poly(ext, 12.5, 4))
+        tips.append(tuple(ext[-1]))
+        for m_, da in enumerate((-28, 22)):
+            e = flow(ext[-2], math.radians(-90 + da), r2.uniform(30, 44), 5, rng=r2, wave=0.7, phase=m_)
+            polys.append(lock_poly(e, 3.0, 1.4))
+            tips.append(tuple(e[-1]))
     for k, (b, a, wdt) in enumerate(branches):
-        if b[-1][1] > 175:                                 # 低い 枝（右の木の 馬の しっぽへ のびる 枝）は そのまま（花は 高い 所に）
+        if side < 0 and b[-1][1] > 175:                    # （右の木で 描かなかった 枝には 来ない）
             continue
         # 枝の 先から、いちばん 近い 花の かたまりの 方へ 少し 向きを 変えて、細い 枝を 2本：長い 1本（花の 中まで）と 短い 1本
         cx, cy = min(CANOPY, key=lambda c: (c[0] - b[-1][0]) ** 2 + (c[1] - b[-1][1]) ** 2)[:2]
         to_c = math.atan2(cy - b[-1][1], cx - b[-1][0])
         a_c = a + 0.5 * math.atan2(math.sin(to_c - a), math.cos(to_c - a))          # 枝の 向きと 花への 向きの まん中
-        for m_, (da, L) in enumerate(((math.radians(r2.uniform(-6, 6)), r2.uniform(85, 125)), (side * math.radians(r2.uniform(14, 30)), r2.uniform(40, 70)))):
+        low = b[-1][1] > 175                               # 左の木の 低い 枝：長い 細い 枝は 少し 長く（花まで とどくように）
+        for m_, (da, L) in enumerate(((math.radians(r2.uniform(-6, 6)), r2.uniform(85, 125) + (25 if low else 0)), (side * math.radians(r2.uniform(14, 30)), r2.uniform(40, 70)))):
             e = flow(b[-1], a_c + da, L, 7, rng=r2, wave=0.7, phase=k + m_)
             polys.append(lock_poly(e, 2.6 if m_ else 3.4, 1.4))
             tips.append(tuple(e[-1]))
@@ -75,10 +89,12 @@ for cx, cy, rr, n in CANOPY:
         cv2.circle(blossom, (int(x * 4), int(y * 4)), int(r0 * 4), 1.0, -1, cv2.LINE_AA, shift=2)
         cv2.circle(shade, (int((x + 3) * 4), int((y + 4) * 4)), int(r0 * 4), 1.0, -1, cv2.LINE_AA, shift=2)
 # 細い 枝の 先と まん中に 小さな 花の かたまり（枝が 花の 中に 消える・木と 花が つながる。別の 乱数＝上の かたまりは 前と 同じ）
+# ＋ 左の木の 幹の 先の まわりの かたまり（EXTRA・2026/10/25 その2：幹が 花の 中へ 入って 見える）
+EXTRA = [(110, 160, 42, 60)]
 rng_t = np.random.default_rng(221)
-for (cx, cy) in tips1 + tips2:
-    for i in range(34):
-        a = rng_t.uniform(0, 2 * math.pi); d = 30 * math.sqrt(rng_t.random())
+for (cx, cy, rr, n) in [(x, y, 30, 34) for (x, y) in tips1 + tips2] + EXTRA:
+    for i in range(n):
+        a = rng_t.uniform(0, 2 * math.pi); d = rr * math.sqrt(rng_t.random())
         x, y = cx + math.cos(a) * d * 1.15, cy + math.sin(a) * d * 0.8
         r0 = rng_t.uniform(6, 12)
         cv2.circle(blossom, (int(x * 4), int(y * 4)), int(r0 * 4), 1.0, -1, cv2.LINE_AA, shift=2)

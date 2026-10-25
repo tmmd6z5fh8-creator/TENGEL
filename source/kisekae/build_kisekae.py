@@ -284,7 +284,15 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #setKisekae .kst .ksbadge{position:absolute;top:5px;left:5px;padding:1px 6px;border-radius:999px;background:var(--primary);color:var(--primary-ink);font-size:10px;font-weight:800}
 #setKisekae .kst .kslock{display:block;margin:4px 7px 0;padding:2px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #setKisekae .kst.lock .ksth{filter:saturate(.55) brightness(.92)}
-#setKisekae .ksconf{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px}
+#setKisekae .kst:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+/* 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中・カギの 下に 出る（前は 一覧の 上の 1本の 帯） */
+#setKisekae .kst.cf{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
+#setKisekae .kst .ksconf{display:flex;flex-direction:column;gap:5px;margin:6px 6px 0;padding:7px 7px 6px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;line-height:1.35;animation:ksCf .18s ease-out}
+#setKisekae .kst .ksconf .kscq{display:block;font-weight:800;letter-spacing:-.02em}
+#setKisekae .kst .ksconf .kscq small{display:block;font-size:10.5px;font-weight:600;color:var(--muted)}
+#setKisekae .kst .ksconf .btn{width:100%;min-height:34px;padding:5px 4px;font-size:12.5px;line-height:1.2;white-space:normal;border-radius:8px;cursor:pointer}
+#setKisekae .kst .ksconf .btn.ghost{min-height:28px;font-size:11.5px;color:var(--muted)}
+@keyframes ksCf{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 #setKisekae .ksnums{display:flex;align-items:center;gap:5px;margin-top:8px;flex-wrap:wrap}
 '''
 

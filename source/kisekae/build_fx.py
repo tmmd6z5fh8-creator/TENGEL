@@ -196,6 +196,9 @@ def rename_inline(html, names, kf='fx'):
 # ---------------------------------------------------------------- アプリ用の足し
 # 舞台：画面のまん中に 390×844 を置いて、縦横の比を変えずに画面に入る大きさにする（--fxk は fx.js が決める：16.3「画面の大きさ」※仮）
 # 的中（k-hit）の ボードの まわりも デカ的中と 同じ 暗さ（2026/10/25 まさちゃん「的中の結果ボードの背景がおかしい。デカ的中以降の結果ボードの背景と形合わせて！」）
+# .fxs .ov.hit の もどし（第4.64版）：的中の 重ねる画面（.ov.hit）に、アプリの 記録の 札の CSS（src.html の .hit＝角の丸み 999px・字 12px・内がわの あき）が
+#   かかっていた。overflow:hidden と 合わさって 暗さと 光の筋が 丸い カプセルに 切りぬかれ、iPad の 縦長の 画面では 四すみが 明るいまま だった
+#   （2026/10/25 まさちゃん「的中ボタンだけ画面角が丸くなってるから、デカ的中以降と合わせて」）
 STAGE_CSS = r'''
 #fxOv{position:fixed;inset:0;z-index:80;background:var(--fxbd,rgba(24,14,4,.62));overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 #fxOv.rv.k-hit,#fxOv.rv.k-big,#fxOv.rv.k-hidden{--fxbd:rgba(6,4,18,.86)}
@@ -207,6 +210,8 @@ html.fxon,html.fxon body{overflow:hidden!important}
 .fxs *{box-sizing:border-box}
 .fxs .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .fxs .ov{z-index:20}
+/* 的中の 重ねる画面（.ov.hit）に かかる アプリの 記録の 札の CSS（src.html の .hit）を もとに もどす（下の Python の コメント） */
+.fxs .ov.hit{border-radius:0;padding:0;font-size:inherit;font-weight:inherit;white-space:normal}
 .fxs button{-webkit-appearance:none;appearance:none;font-family:inherit}
 .fxs .push span{display:block}
 /* ボード：お金は出さない（16.4・第4.53版）。券種ごとに 1行：券種・結果（的中／不的中／返還）・当たった 組番（3つまで＋ほか○点）。当たりのない 券種は うすく */

@@ -87,7 +87,7 @@ THEMED = dict(
 )
 AUTUMN_BLOB = '/_blob/1c869ee9f9195c4625d3997d66463e57'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
 SNOW_BLOB = '/_blob/6683d421d2b9e7e0503e7173da2288ba'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
-SAKURA_BLOB = '/_blob/d6c8ae594bf8e602ac078f7f727e9a28'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
+SAKURA_BLOB = '/_blob/39558c280310609ad0a65971ed217991'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
 
 
 def step_data():
@@ -370,9 +370,11 @@ HIT_CSS = r'''
 /* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
 /* うしろの 暗さは デカ的中 以降と 同じ（まん中は 少し うすく・まわりは 濃い。前は 一様な 62% の 暗さで、うしろの 画面の 字が 透けて 見えた） */
 .ov.hit .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
-.rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
+/* 光の筋の 大きさと 消え方は デカ的中の 虹の筋（.rbow：1100px・まん中 10% まで そのまま・60% で 消える）と 同じに。前は 900px・18%〜62% で、
+   iPad の 縦長の 画面では 筋が 画面の 四すみまで とどかず、暗い 画面の 中に 角の 丸い 光の 形が 見えた（まさちゃん「的中ボタンだけ画面角が丸くなってる」） */
+.rays{position:absolute;z-index:4;left:50%;top:44%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
-  -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);
+  -webkit-mask-image:radial-gradient(circle,#000 0 10%,transparent 60%);mask-image:radial-gradient(circle,#000 0 10%,transparent 60%);
   animation:raysIn .6s ease-out .2s both,spin 22s linear infinite}
 .hit .hb{animation:riseUp .7s cubic-bezier(.2,1.35,.4,1) .3s both,fxH .001s linear .3s backwards}
 @keyframes riseUp{from{transform:translateY(720px)}to{transform:translateY(0)}}

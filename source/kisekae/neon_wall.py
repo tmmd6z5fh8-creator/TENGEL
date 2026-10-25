@@ -5,7 +5,8 @@
      （2026/10/25 まさちゃん「ネオンの黄色丸の中の小さな光は常にキラキラと光りながら動いているようにして！」）
    - 右上の空（馬のうしろの空・太陽の上）を、STAR_S 秒に1回 流れ星が右上から左下へ流れる（白いしんに水色とピンクの光の尾・1秒たらず）。
      流れ星は 馬のコマにかからない所を通る
-   - 視差効果を減らす（prefers-reduced-motion）なら、走るコマ・流れ星・光のつぶの層を消して いまの止まった絵だけ（止まった絵は blobs20 の 光のつぶ入り）
+   - いちばん下の 止まった絵は 背景だけ（馬も 光のつぶも なし・neon_static.webp）。馬は すき通しの コマだけ（下に 止まった 馬が あると 足が 二重に 見える）
+   - 視差効果を減らす（prefers-reduced-motion）なら、流れ星と きらめく 粒を 消し、馬は コマ0 で 止め、光のつぶの 層は 止めて 置く
    - キャンバスでは /_blob/<id>（neon_blobs.json の run）・切りぬく場所とコマ数は neon_run.json
    クラスの名前は nq…（的中ボタンの .nn とは別）
    python3 neon_wall.py --judge <Judge_Neon.dc.html> <neon_blobs.json> <neon_run.json>  → 判定画面の上の絵を「走る馬と流れ星」に書きかえる（何回やっても同じ）"""
@@ -34,27 +35,76 @@ def star_svg():
             '<circle r="8" fill="#2EEBFF" opacity=".55" filter="url(#nqB)"/><circle r="3" fill="#FFFFFF"/></g></svg>')
 
 
+TW_N = 8                                       # きらめきの 予定（プログラム）の 数。粒は どれかを 使い、速さと ずらしを 粒ごとに 変える
+
+
+def twinkle_programs(rnd):
+    """きらめく 粒の 明るさの 予定を TW_N 本（[(1回りの秒, [(秒, 明るさ)…])]・明るさは --w の 何倍か）。
+       ふだんは うすく（0.18〜0.32）、1回りの あいだに ランダムに：ぱっと 強く 光って すっと もどる（flare・1.3倍まで）／ふっと 消える（out・0.15〜0.9秒）／
+       ちかちか 2〜4回（blip）。マスター帯の 壁紙の 雷（tengel_wall.py：1本ずつ べつべつに ついたり 消えたり）と 同じ 考え方で、粒ごとに 見え方が ちがう
+       （2026/10/25 まさちゃん「テンゲルの壁紙のテンゲルアイコンのように、ランダムにキラキラさせて、それぞれが消えたり、より光ったりして、ランダムな見え方にして！」）"""
+    progs = []
+    for p in range(TW_N):
+        P = rnd.uniform(3.6, 6.8)
+        base = rnd.uniform(.18, .32)
+        pts = [(0.0, base)]
+        t = rnd.uniform(.1, .6)
+        while t < P - 1.0:
+            kind = rnd.choice(('flare', 'flare', 'out', 'blip'))
+            if kind == 'flare':
+                r, d, pk = rnd.uniform(.06, .14), rnd.uniform(.3, .7), rnd.uniform(.9, 1.3)
+                pts += [(t, base), (t + r, pk), (t + r + d, base)]
+                t += r + d
+            elif kind == 'out':
+                d = rnd.uniform(.15, .9)
+                pts += [(t, base), (t + .05, 0.0), (t + d, 0.0), (t + d + .05, base)]
+                t += d + .1
+            else:
+                for k in range(rnd.randint(2, 4)):
+                    f, pk = rnd.uniform(.05, .1), rnd.uniform(.75, 1.0)
+                    pts += [(t, base * .5), (t + f * .4, pk), (t + f, base * .5)]
+                    t += f + rnd.uniform(.07, .16)
+                pts.append((t, base))
+            t += rnd.uniform(.25, 1.1)
+        pts.append((P, base))
+        progs.append((P, pts))
+    return progs
+
+
+def twinkle_css(progs):
+    """予定 → @keyframes nqK0〜（明るさは opacity:calc(var(--w) * 倍)・1 を こえる 分は 1 に なる）"""
+    out = []
+    for p, (P, pts) in enumerate(progs):
+        kf = ''.join(f'{t / P * 100:.2f}%{{opacity:calc(var(--w) * {v:.2f})}}' for t, v in pts)
+        out.append(f'@keyframes nqK{p}{{{kf}}}')
+    return ''.join(out)
+
+
 def dust_html(run):
-    """光のつぶの 層（足す光の 絵・ゆっくり ただよう）と、きらめく 粒（<i>：明るさが ふわふわ かわる・少し ゆれる）"""
+    """光のつぶの 層（足す光の 絵・ゆっくり ただよう）と、きらめく 粒（<b>：明るさが 予定（nqK0〜）どおりに ランダムに かわる・少し ゆれる）。(html, 箱, 予定)"""
     d = run['dust']
     bx, by, bw, bh = (v / 2 for v in d['box'])
     cols = d['cols']
     rnd = random.Random(57)
+    progs = twinkle_programs(random.Random(91))
     out = [f'<i class="nqd" aria-hidden="true"></i><div class="nqp" aria-hidden="true">']
     for i, (x, y, ci, w, size) in enumerate(d['sparks']):
-        dur = 0.9 + rnd.random() * 1.3                                          # またたき 1回（0.9〜2.2秒）
+        p = rnd.randrange(TW_N)                                                   # どの 予定か
+        dur = progs[p][0] * rnd.uniform(.85, 1.2)                                 # 1回りの 速さも 粒ごとに
         sw = max(1.4, min(3.2, size * 1.1))                                      # 粒の 大きさ（画面の px）
-        out.append(f'<b style="left:{x / 2:.1f}px;top:{y / 2:.1f}px;--c:{cols[ci]};--w:{w:.2f};--s:{sw:.1f}px;--d:{dur:.2f}s;--l:{-rnd.random() * dur:.2f}s;'
+        out.append(f'<b class="k{p}" style="left:{x / 2:.1f}px;top:{y / 2:.1f}px;--c:{cols[ci]};--w:{w:.2f};--s:{sw:.1f}px;--d:{dur:.2f}s;--l:{-rnd.random() * dur:.2f}s;'
                    f'--m:{1.5 + rnd.random() * 2.5:.2f}s;--mx:{rnd.uniform(-3, 3):.1f}px;--my:{rnd.uniform(-1.5, 1.5):.1f}px"></b>')
     out.append('</div>')
-    return ''.join(out), (bx, by, bw, bh)
+    return ''.join(out), (bx, by, bw, bh), progs
 
 
 def inline(blobs, run, alt=ALT):
     """(html, css)。blobs：static（いまの止まった絵・光のつぶなし）・dust（光のつぶの 足す光）・run（走るコマ：馬だけの すき通し）→ '/_blob/<id>'。run：neon_run.json"""
     x0, y0, cw, ch = (v // 2 for v in run['cell'])
     n = run['frames']
-    dh, (bx, by, bw, bh) = dust_html(run)
+    dh, (bx, by, bw, bh), progs = dust_html(run)
+    # いちばん下は 背景だけの 止まった絵（static＝馬も 光のつぶも なし・flat/neon_run.py の neon_static.webp）。馬は すき通しの コマだけ。
+    #   前は 馬入りの いまの絵を 下に しいていたので、コマの 馬の 足と 下の 止まった 馬の 足が 二重に 見えた（2026/10/25 まさちゃん「馬の足とか馬の絵が重なって…」）
     html = (f'<div class="nqw" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["static"]}" alt="">'
             f'{dh}<div class="nqh"><div class="nqr"></div></div>{star_svg()}</div>')
     css = ('.nqw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;isolation:isolate}'
@@ -64,13 +114,15 @@ def inline(blobs, run, alt=ALT):
            'mix-blend-mode:plus-lighter;will-change:transform;animation:nqDx 5.2s ease-in-out infinite alternate,nqDy 3.1s ease-in-out infinite alternate}'
            '@keyframes nqDx{from{margin-left:-3px}to{margin-left:3px}}'
            '@keyframes nqDy{from{transform:translateY(-1.5px)}to{transform:translateY(1.5px)}}'
-           # きらめく 粒：明るさ 0.15〜1 で ふわふわ（粒ごとに 0.9〜2.2秒・ずらす）・小さく ゆれる。色の まわりに 光（box-shadow）
+           # きらめく 粒：明るさは 予定（nqK0〜7・twinkle_programs）どおりに ランダムに（ぱっと 強く・ふっと 消える・ちかちか）・粒ごとに 予定と 速さと ずらしが ちがう。
+           #   小さく ゆれる。色の まわりに 光（box-shadow）
            '.nqw .nqp{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none;mix-blend-mode:plus-lighter}'
            '.nqw .nqp b{position:absolute;display:block;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;'
            'background:var(--c);box-shadow:0 0 3px var(--c),0 0 6px var(--c);opacity:0;will-change:opacity,transform;'
-           'animation:nqTw var(--d) ease-in-out infinite var(--l),nqMv var(--m) ease-in-out infinite alternate var(--l)}'
-           '@keyframes nqTw{0%,100%{opacity:calc(var(--w) * .15)}50%{opacity:var(--w)}}'
-           '@keyframes nqMv{from{transform:translate(calc(var(--mx) * -1),calc(var(--my) * -1))}to{transform:translate(var(--mx),var(--my))}}'
+           'animation:nqK0 var(--d) linear var(--l) infinite,nqMv var(--m) ease-in-out infinite alternate var(--l)}'
+           + ''.join(f'.nqw .nqp b.k{p}{{animation-name:nqK{p},nqMv}}' for p in range(1, TW_N))
+           + twinkle_css(progs)
+           + '@keyframes nqMv{from{transform:translate(calc(var(--mx) * -1),calc(var(--my) * -1))}to{transform:translate(var(--mx),var(--my))}}'
            f'.nqw .nqh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
            f'.nqw .nqr{{width:{n * cw}px;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;'
            f'animation:nqRun {RUN_S}s steps({n}) infinite}}'
@@ -81,7 +133,8 @@ def inline(blobs, run, alt=ALT):
            f'@keyframes nqStar{{0%{{opacity:0;transform:translate({STAR["x0"]}px,{STAR["y0"]}px)}}1.5%{{opacity:1}}'
            f'7%{{opacity:1}}9.5%{{opacity:0;transform:translate({STAR["x1"]}px,{STAR["y1"]}px)}}'
            f'100%{{opacity:0;transform:translate({STAR["x1"]}px,{STAR["y1"]}px)}}}}'
-           '@media (prefers-reduced-motion:reduce){.nqw .nqh,.nqw .nqs,.nqw .nqd,.nqw .nqp{display:none}}')
+           # 視差効果を減らす：流れ星と きらめく 粒は 消す。馬は コマ0 で 止める（下の絵に 馬が ないので 消さない）・光のつぶの 層は 止めて 置く
+           '@media (prefers-reduced-motion:reduce){.nqw .nqs,.nqw .nqp{display:none}.nqw .nqr,.nqw .nqd{animation:none}}')
     return html, css
 
 

@@ -639,13 +639,24 @@ try:
         locks = ks.locator('.kst .kslock').all_inner_texts()
         check(locks.count('🔒 1,000P') == 5 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 4 and locks.count('🔒 4,000P') == 8 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を8枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 1 and locks.count('🔒 壁紙を25枚あつめると') == 1,
               '値段（9.1）：1,000P×5・2,000P×6・3,000P×4・4,000P×8・7,000P×3・帯は 8・16・25枚')
-        check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
+        check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_39558c280310609ad0a65971ed217991.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
               '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
-        # 招き馬（7,000P・いま 7,000P）→ 確認が出る → やめる。1,000P 使ったあと（6,000P）だと「Pが足りないよ」と「ポイントを買う」
+        # 招き馬（7,000P・いま 7,000P）→ タップした タイルの 中（カギの 下）に 確認が出る（第4.64版：前は 一覧の 上の 帯）→ やめる。
+        # 1,000P 使ったあと（6,000P）だと「Pが足りないよ」と「ポイントを買う」
+        check(ks.locator('.kst').first.evaluate("e => e.tagName + '/' + e.getAttribute('role') + '/' + e.tabIndex") == 'DIV/button/0', '壁紙の タイルは <div role=button tabindex=0>（中に 本物の ボタンを 置くため）')
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         cf = ks.locator('.ksconf')
-        check(cf.count() == 1 and '「招き馬」を 7,000Pを使って解放する？（いま 7,000P）' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1, f'カギの壁紙をタップ → 「○○Pを使って解放する？（いま △△P）」（{cf.inner_text()[:50]}）')
-        cf.locator('[data-ksact=cancel]').click(); pg.wait_for_timeout(200)
+        check(cf.count() == 1 and ks.locator('.kst[data-ks=lucky].cf .ksconf').count() == 1 and ks.locator('.kst[data-ks=lucky]').get_attribute('aria-expanded') == 'true'
+              and '7,000Pを使って解放する？' in cf.inner_text() and 'いま 7,000P' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1 and cf.locator('[data-ksact=cancel]').count() == 1,
+              f'カギの壁紙をタップ → その タイルの 中に 「○○Pを使って解放する？ いま △△P」「解放する」「やめる」（{cf.inner_text()[:50]!r}）')
+        cfb = ks.locator('.kst[data-ks=lucky]').bounding_box(); unb = cf.locator('[data-ksact=unlock]').bounding_box(); lkb = ks.locator('.kst[data-ks=lucky] .kslock').bounding_box()
+        check(cfb and unb and lkb and unb['y'] > lkb['y'] + lkb['height'] - 1 and unb['x'] >= cfb['x'] and unb['x'] + unb['width'] <= cfb['x'] + cfb['width'] + 1 and unb['y'] + unb['height'] <= cfb['y'] + cfb['height'] + 1,
+              '「解放する」は カギ（🔒 7,000P）の 下・タイルの 中')
+        check(ks.locator('.ksbody > .ksconf').count() == 0 and ks.locator('.ksbody > div.ksconf').count() == 0, '一覧の 上の 確認の 帯は ない')
+        ks.locator('.kst[data-ks=lucky]').click(position={'x': 10, 'y': 10}); pg.wait_for_timeout(200)
+        check(ks.locator('.ksconf').count() == 0 and ks.locator('.kst.cf').count() == 0, 'もう一度 タイルを タップ → 閉じる')
+        ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
+        ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
         check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
         # 桜（1,000P）を解放 → 着せ替わる
         ks.locator('.kst[data-ks=sakura]').click(); pg.wait_for_timeout(300)
@@ -669,7 +680,7 @@ try:
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(600)
         bn = pg.locator('#ksBnr')
         bb = bn.bounding_box()
-        check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.bnrw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
+        check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.bnrw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_39558c280310609ad0a65971ed217991.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
               and pg.evaluate("document.querySelector('#ksBnr').getAnimations({ subtree: true }).length") > 10 and bn.evaluate("e => e.previousElementSibling") is None and bn.evaluate("e => e.nextElementSibling.id") == 'w5Banner',
               f'判定タブのいちばん上に 桜の上の絵（390×160・花びらと馬の動き・{pg.evaluate("document.querySelector(\'#ksBnr\').getAnimations({ subtree: true }).length")}の動き）')
         check(pg.evaluate("document.documentElement.scrollWidth") <= 390 and pg.evaluate("document.querySelector('#fxCss') !== null && document.querySelector('#ksTheme').textContent.includes('.fxs .rb.t-sakura')"), '横にはみ出さない・テーマのボードの CSS が入っている')

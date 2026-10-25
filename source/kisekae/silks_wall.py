@@ -18,16 +18,28 @@ def inline(blobs, run, alt=ALT):
     P = run['period'] // 2
     x0, y0, cw, ch = (v // 2 for v in run['cell'])
     n = run['frames']
-    # 背景は くり返しの 1まいを 2つ つなげた 1まいの 絵（tile2）を <img> で 置いて 流す。前は <div> の background-image（repeat-x）だったが、
-    # iPad で 壁紙を 3.5倍に 拡大すると その 層は 8000画素を こえて タイルに 分けて 描かれ、1まい分 もどる 瞬間に まだ 描かれていない タイルが 見えて
-    # 画面が 一瞬 白く なった。<img> は 絵の 画素数（2424×320）の まま GPU で 拡大されるので、もどる 瞬間も 同じ 絵が そのまま 見える
-    #（2026/10/25 まさちゃん「勝負服、の画面がリピートされている時に、画面が一瞬白くなる、繋ぎ目なくして！」）
-    html = (f'<div class="sbw" role="img" aria-label="{alt}"><img class="sbb" src="{blobs["tile2"]}" alt="" draggable="false">'
+    # 背景は くり返しの 1まいを 2つ つなげた 1まいの 絵（tile2・2424×320＝ページの 1212×160）を <img> で 置いて 流す。
+    # 1まい分（P）流れたら はじめに もどる（左はしの 390px と P から 390px は 同じ 絵なので、もどる 瞬間に 絵は 変わらない）。
+    # iPad では 壁紙を 2〜3.5倍に 拡大するので、流れる 層は 画面より ずっと 大きく、合成の 層は タイルに 分けて 描かれる。
+    # 2026/10/25 その1：<div> の background-image（repeat-x）→ <img>（まさちゃん「画面がリピートされている時に、画面が一瞬白くなる、繋ぎ目なくして！」）
+    # 2026/10/25 その2（まさちゃん「まだ一瞬画面が白くなる…よく確認して！」）：もどる 瞬間に 見せる 所（層の 左はし 390px）は、14秒 ずっと 画面の 外に あって
+    #   その タイルが 捨てられて いるので、もどった 瞬間に 描き直しが 間に 合わず 白く 見えた と 考えて、2つの 仕組みで 白を 出さない：
+    #   ① 流れる 絵を 2まい（a・b）にして 14秒ごとに 交代する：動いている 方が 1まい分 流れ おわったら 消え（opacity 0）、もう 1まいが
+    #      その 瞬間に 左はし（translateX 0）で 現れて 流れだす。待っている 方は 14秒間 ずっと 左はしに 置いたまま（見えないだけ）なので、
+    #      見せる 所の タイルは 描かれて いる。交代は 同じ 絵の 同じ 所どうし（絵は 変わらない）
+    #   ② いちばん 下に 同じ 絵（tile2）を 止めて しく（sbb0）：流れる 層が 一瞬 描けなくても、もどる 瞬間の 絵と 同じ 絵が 下に 見える＝白く ならない
+    #   （A：0〜14秒 流れる → 14秒で 左はしへ もどって 消える（step-start）→ 28秒で 現れる／B：0〜14秒 左はしで 消えている（step-end）→ 14秒で 現れて 流れる）
+    html = (f'<div class="sbw" role="img" aria-label="{alt}">'
+            f'<img class="sbb0" src="{blobs["tile2"]}" alt="" draggable="false">'
+            f'<img class="sbb a" src="{blobs["tile2"]}" alt="" draggable="false">'
+            f'<img class="sbb b" src="{blobs["tile2"]}" alt="" draggable="false">'
             '<div class="sbh"><div class="sbr"></div></div></div>')
     css = ('.sbw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
-           f'.sbw .sbb{{position:absolute;left:0;top:0;width:{2 * P}px;height:160px;max-width:none;display:block;will-change:transform;'
-           f'animation:sbFlow {FLOW_S}s linear infinite}}'
-           f'@keyframes sbFlow{{to{{transform:translateX(-{P}px)}}}}'
+           f'.sbw .sbb0,.sbw .sbb{{position:absolute;left:0;top:0;width:{2 * P}px;height:160px;max-width:none;display:block}}'
+           f'.sbw .sbb{{will-change:transform,opacity;animation-duration:{2 * FLOW_S}s;animation-timing-function:linear;animation-iteration-count:infinite}}'
+           '.sbw .sbb.a{animation-name:sbFlowA}.sbw .sbb.b{animation-name:sbFlowB}'
+           f'@keyframes sbFlowA{{0%{{transform:translateX(0);opacity:1}}50%{{transform:translateX(-{P}px);opacity:1;animation-timing-function:step-start}}100%{{transform:translateX(0);opacity:0}}}}'
+           f'@keyframes sbFlowB{{0%{{transform:translateX(0);opacity:0;animation-timing-function:step-end}}50%{{transform:translateX(0);opacity:1}}100%{{transform:translateX(-{P}px);opacity:1}}}}'
            f'.sbw .sbh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
            f'.sbw .sbr{{width:{n * cw}px;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;'
            f'animation:sbRun {RUN_S}s steps({n}) infinite}}'

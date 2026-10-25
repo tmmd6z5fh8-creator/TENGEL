@@ -182,7 +182,7 @@
       var K = window.TengelKisekae; if (!K) return { on: false };
       await K.ready;
       var res = { list: K.list().length, groups: Array.from(new Set(K.list().map(function (t) { return t.group; }))), current0: K.current(), count: K.count(), usableSakura: K.usable('sakura'), band: K.band, files: {} };
-      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
+      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_39558c280310609ad0a65971ed217991.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
       await K.apply('sakura'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       var bn = document.querySelector('#ksBnr');
@@ -204,6 +204,19 @@
       if (card) { card.scrollIntoView({ block: 'start' }); await sleep(300); }
       res.card = card ? { tiles: card.querySelectorAll('.kst').length, on: (card.querySelector('.kst.on') || {}).dataset ? card.querySelector('.kst.on').dataset.ks : null, locks: card.querySelectorAll('.kst.lock').length, names: Array.from(card.querySelectorAll('.kst .ksn')).slice(0, 6).map(function (e) { return e.innerText; }) } : null;
       await mark('ks-set');
+      // 第4.64版：カギの 壁紙を タップ → その タイルの 中（カギの 下）に 確認（「○Pを使って解放する？」「解放する」「やめる」）。一覧の 上の 帯は ない。もう一度 タップで 閉じる
+      var lk = card && card.querySelector('.kst.lock[data-ks=lucky]');
+      if (lk) {
+        lk.click(); await sleep(400);
+        var cf = card.querySelector('.kst.cf .ksconf'), un = cf && cf.querySelector('[data-ksact=unlock]'), lkb = card.querySelector('.kst[data-ks=lucky] .kslock');
+        res.conf = { tile: (card.querySelector('.kst.cf') || {}).dataset ? card.querySelector('.kst.cf').dataset.ks : null, role: lk.getAttribute('role'), text: cf ? cf.innerText.replace(/\n/g, '／') : null,
+          unlock: !!un, cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
+          below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
+        lk.scrollIntoView({ block: 'center' }); await sleep(300);
+        await mark('ks-conf');
+        lk.click(); await sleep(300);
+        res.conf.closed = !card.querySelector('.ksconf');
+      } else { res.conf = null; await mark('ks-conf'); }
       await K.apply('tengel'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       res.tengel = { ks: document.documentElement.dataset.ks, bg: getComputedStyle(document.body).backgroundColor, anims: (document.querySelector('#ksBnr') || { getAnimations: function () { return []; } }).getAnimations({ subtree: true }).length, scrollW: document.documentElement.scrollWidth };
