@@ -61,6 +61,35 @@ def horse(out):
     rgb, a, R = S2.horse_illust(Hm.REAR, (50, 60, 560, 1090), W, H, facing='right', azim=25, elev=6, body=('#160A1E', '#0B0411'), mane=('#1C0C28', '#0E0514'),
                                 line='#2A1238', mode='flow', ss=2, name='sd_horse', wind_ang=-math.pi / 2, mane_len=1.5, tail_len=1.25, mane_scale=1.45)
     a = np.clip(a, 0, 1).astype(np.float32)
+    # しっぽ（第4.69版・まさちゃん「馬の尻尾直して！赤線のように」：おしりから 左下へ ふさふさと 流れる 房 11）。
+    # 絵の 左に あきを 足して（PADL）、そこへ 描く。体の 形は そのまま
+    PADL = 280
+    rgb = np.pad(rgb, ((0, 0), (PADL, 0), (0, 0)))
+    a = np.pad(a, ((0, 0), (PADL, 0)))
+    for k_ in ('eye', 'poll', 'muzzle'):
+        R[k_] = np.asarray(R[k_], float) + (PADL, 0)
+    R['tail'] = np.asarray(R['tail'], float) + (PADL, 0)
+    if 'm' in R and R['m'] is not None:
+        R['m'] = np.pad(R['m'], ((0, 0), (PADL * R['m'].shape[1] // W, 0)))
+    tl = R['tail']
+    root = tl[0] + (tl[1] - tl[0]) * .12
+    rng_t = np.random.default_rng(17)
+    polys = []
+    for k_ in range(15):                                             # 太い 房（根もとは 太く・先は 細く ばらける）
+        a0 = math.radians(127 + (k_ - 7) * 3.2 + rng_t.normal(0, 2.0))
+        L_ = 250 * rng_t.uniform(.8, 1.1)
+        pts = S2.flow(tl[0] + (tl[1] - tl[0]) * rng_t.uniform(0, .25) + rng_t.normal(0, 6, 2), a0, L_, 18, wind=.03, wind_ang=math.radians(122), rng=rng_t, wave=1.6, phase=k_ * .7)
+        polys.append(S2.lock_poly(pts, rng_t.uniform(46, 64), 1.5, taper=.9))
+    for k_ in range(9):                                              # 先の ほうの 細い 毛の 束
+        a0 = math.radians(127 + rng_t.uniform(-16, 16))
+        L_ = 270 * rng_t.uniform(.85, 1.12)
+        pts = S2.flow(tl[0] + (tl[1] - tl[0]) * rng_t.uniform(0, .25) + rng_t.normal(0, 6, 2), a0, L_, 18, wind=.03, wind_ang=math.radians(122), rng=rng_t, wave=2.0, phase=k_ * 1.3)
+        polys.append(S2.lock_poly(pts, rng_t.uniform(12, 20), 1.0, taper=.8))
+    ta = S2.poly_aa(a.shape, polys)
+    tail_col = ramp(np.clip(rng_t.random() * 0 + .5, 0, 1) * np.ones(a.shape, np.float32), ((0, (14, 6, 20)), (1, (14, 6, 20))))
+    rgb = rgb * a[..., None] + tail_col * (ta * (1 - a))[..., None]
+    a = np.clip(a + ta * (1 - a), 0, 1)
+    rgb = np.where(a[..., None] > 1e-4, rgb / np.maximum(a, 1e-4)[..., None], 0)
     H2, W2 = a.shape
     # 体の 色：下は 黒・上へ 少し 紫（光は 上から）
     ys = (np.arange(H2, dtype=np.float32)[:, None] / H2) * np.ones((1, W2), np.float32)
@@ -356,8 +385,10 @@ def build(out, names=None):
     shiden_cuts.SA = sys.modules[__name__]                     # 同じ LAY に 書く（python3 flat/shiden_art.py で 動かした ときも）
     made += shiden_cuts.build(out, names)
     # いま 使う 絵だけ のこす（前の 版の sd_streaks・sd_stream などは 消す）
-    keep = {'sd_horse', 'sd_bg', 'sd_glyph', 'sd_rtex', 'sd_t_do', 'sd_t_ex', 'sd_t_hit', 'sd_c0', 'sd_rbs', 'sd_c1', 'sd_c2', 'sd_eye', 'sd_c5', 'sd_c6',
-            'sd_w_bg', 'sd_w_near', 'sd_w_fire1', 'sd_w_fire2', 'sd_w_prism', 'sd_c16', 'sd_c17', 'sd_c18', 'sd_c19', 'sd_pillar'} | {f'sd_fire_{c}{k}' for c in 'po' for k in (1, 2, 3)}
+    import shiden_face
+    keep = {'sd_horse', 'sd_bg', 'sd_glyph', 'sd_rtex', 'sd_t_do', 'sd_t_ex', 'sd_t_hit', 'sd_c0', 'sd_rbs', 'sd_c1', 'sd_c2', 'sd_dk', 'sd_bw', 'sd_bwc',
+            'sd_chr', 'sd_crk', 'sd_c5', 'sd_boom', 'sd_c6', 'sd_w_bg', 'sd_w_near', 'sd_w_fire1', 'sd_w_fire2', 'sd_w_fire3', 'sd_w_prism', 'sd_w_hoof',
+            'sd_c16', 'sd_c16r', 'sd_c16b', 'sd_c17', 'sd_c18', 'sd_c19', 'sd_pillar'} | {f'sd_fire_{c}{k}' for c in 'po' for k in (1, 2, 3)} | {f'sd_rf{i:02d}' for i in range(shiden_face.N)}
     for k in list(LAY):
         if k not in keep:
             del LAY[k]

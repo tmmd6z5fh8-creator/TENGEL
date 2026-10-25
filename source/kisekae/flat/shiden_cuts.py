@@ -1,24 +1,20 @@
-"""紫電（第4.68版）：まさちゃんが 送ってくれた GIF（21コマ・4.28秒：送ってくれた 動画の 1.55秒〜5.00秒）の 1コマずつに 合わせた 絵（WebP）。
-   まさちゃん「え？ファイルのこの、画像からこの画像まで確認して！は確認してないってこと？ もう一度送る！」
-   GIF の 絵・人物・機械・字は 使わない・なぞらない。もらうのは コマの 順・長さ・色・形の 種類だけ。
-   人物の 代わりは テンゲルの 黒い 馬（r3d の 3Dの 馬）、機械の 代わりは 銀の 金属の 黒い 馬（赤い 目）、白い 線の 文字は「的中」。
-   色は GIF の コマの とおり（まさちゃんの「青」は GIF 16 の 水色）。
+"""紫電（第4.68版〜第4.69版）：見本の 動画（1.55秒〜5.00秒）の コマに 合わせた ② の 絵（WebP）。
+   第4.68版：まさちゃん「え？ファイルのこの、画像からこの画像まで確認して！は確認してないってこと？ もう一度送る！」（GIF 21コマ）
+   第4.69版：まさちゃん「もう一度動画みて作り直して！ 二枚目の写真は左から右に切り裂くんだよ！ 三枚目の馬の顔は動きをつけて長めにして！ リアルに！」
+            「8秒くらいあっていいからね！」→ 動画を コマ送りで 見て、GIF に なかった コマ（暗い 影と 青緑の 雷・白黒の ネガ・色ずれの 割れた 画面・
+            白と 桃色の ひび・だいだいの 爆発・反転の 赤と 青）を 足し、② を 約8.6秒に。顔は flat/shiden_face.py（リアルな 3D の 黒い 馬の 顔：12コマ）。
+            「画面を切るのをコーンじゃなくて馬の蹄にして！」→ 世界を 切り裂くのは 馬の 蹄（flat/shiden_hoof.py）。
+            「このシーンの青丸の模様と馬いらない！」→ 鏡の 世界の 宇宙の 窓と 銀の 金属の 馬を やめた。
+   動画の 絵・人物・機械・字は 使わない・なぞらない。もらうのは コマの 順・長さ・色・形の 種類だけ。
+   人物の 代わりは テンゲルの 黒い 馬（r3d の 3Dの 馬）、機械の 代わりは 銀の 金属の 馬（赤い 目）、白い 線の 文字は「的中」。
    出す 絵（shiden_art.py の build から 呼ぶ。大きさは shiden_layers.json・id は shiden_blobs.json。どれも 画面と 同じ 390×844 の 2倍）：
-     sd_c0      … GIF 0（0.20秒）：白黒の 煙・白い 線の「的中」と うず・黒い 馬（白い ふち）
-     sd_rbs     … GIF 0：虹色の 光の 筋（緑・紫・白・桃：ななめ・すき通し）
-     sd_c1      … GIF 1（0.24秒）：赤い 炎の 馬が 横に ずれる バグの 1コマ
-     sd_eye     … GIF 3〜4（0.08＋0.12秒）：光る 目の ドアップ（白い 光に 焼けた 馬の 顔・うすい 紫と 白・桃色）
-     sd_c5      … GIF 5（0.08秒）：赤黒い 筋の 画面を 白い ギザギザの 裂け目が 横に 裂く・右上に 虹色の ずれ
-     sd_c6      … GIF 6（0.12秒）：緑と 黒の 筋の 画面を 黒い 裂け目が 横に 裂く・裂け目の 中に 炎
-     sd_w_bg    … GIF 7〜15（2.12秒）：割れた 鏡の かけらの 世界（上に 黒い 宇宙の 窓・右に 白い 光・まん中に 赤い 角と ピンクの 光・下に 銀の 金属の 馬）
-     sd_w_near  … 手前の かけら（ふちの 大きな ぼけた かけら・炎の 上を とぶ 小さな かけら）
-     sd_w_fire1・sd_w_fire2 … 上と 下から まん中の 光へ 集まって 右上へ 抜ける 大きな 炎（すき通し・2まいを ゆっくり 入れかえる）
-     sd_w_prism … 左の 虹色の プリズム（すき通し・炎の 下）
-     sd_c16     … GIF 16（0.12秒）：白い 地に 水色の かけら・まん中に 横に 広い 黒い 穴と 炎
-     sd_c17     … GIF 17（0.08秒）：まん中が 黒い 穴・まわりは 銀の かけら・白い かたまり
-     sd_c18     … GIF 18（0.08秒）：黒の 中を かけらが 外へ（金の 小さな 光は CSS）
-     sd_c19     … GIF 19〜20（0.84秒）：暗い 緑に 金の 輪（横の 光は sd_flare と CSS）
-     sd_pillar  … GIF 16〜20：左右の 炎の 柱（すき通し・右は 左右 反転で 使う）"""
+     sd_c0・sd_rbs … 白黒の 煙・白い 線の「的中」・黒い 馬・虹色の 光の 筋 ／ sd_c1 … 炎と 桃色の バグ ／ sd_c2 … 明るい 炎（桃色の 雷は SVG）
+     sd_dk  … 暗い 画面・まっ黒な 馬の 影・赤い 目・青緑の 雷 ／ sd_bw・sd_bwc … 白黒の ネガ・水色の 反転
+     sd_rf00〜 … リアルな 馬の 顔（shiden_face.py）
+     sd_chr … 色ずれの 割れた 白黒 ／ sd_crk … 白と 桃色・黒い 裂け目と ひび ／ sd_c5 … 赤黒い うずと 白い 裂け目 ／ sd_boom … だいだいの 爆発と 黒い 裂け目 ／ sd_c6 … 緑と 黒の うずと 黒い 裂け目
+     sd_w_bg・sd_w_near・sd_w_fire1〜3・sd_w_prism … 割れた 鏡の かけらの 世界（かけら・ピンクの 光・集まる 炎・虹色。第4.69版：宇宙の 窓と 銀の 金属の 馬は やめた）
+     sd_w_hoof … 世界を 左から 右へ 切り裂く 馬の 蹄（flat/shiden_hoof.py：3D の 黒い 馬の 足・灰色の 蹄・焼けた 蹄鉄・すき通し）
+     sd_c16・sd_c16r・sd_c16b … 白と 水色・黒と 赤・白と 青の 割れた 画面と 穴 ／ sd_c17 … 黒い 穴と 白い かけら ／ sd_c18 … 黒と 金の 光 ／ sd_c19 … 緑に 金の 輪 ／ sd_pillar … 左右の 炎の 柱"""
 import os, sys, math, random
 import numpy as np
 import cv2
@@ -270,7 +266,7 @@ def horse_layer(out):
     """① の 馬（sd_horse）：(rgb, a)・置き場所（2倍：x, y, w, h）"""
     import shiden
     rgb, a = load('sd_horse', out)
-    x0, y0, w = shiden.HORSE_A
+    x0, y0, w = shiden.horse_a(SA.LAY['sd_horse'])                 # いま 作った 馬の 絵の 大きさで（第4.69版：しっぽ）
     h = w * SA.LAY['sd_horse']['h'] / SA.LAY['sd_horse']['w']
     return rgb, a, (x0 * 2, y0 * 2, w * 2, h * 2)
 
@@ -402,172 +398,7 @@ def cut_fire(out):
     return 'sd_c2'
 
 
-# ---------------------------------------------------------------- GIF 3〜4：光る 目の ドアップ
-def horse_cam(pose, e, t, fov, W, H, body, mane, line, mane_scale, mane_len, tail_len, wind_ang, ss=2, name='cu', line_w=6, light=(0.45, 0.8, 0.5)):
-    """style2d.horse_illust と 同じ 描き方で、カメラ（e, t, fov）を じかに 決める（顔の ドアップ用）"""
-    import style2d as S2
-    R = S2.render_horse(pose, e, t, fov, W, H, ss=ss, name=name)
-    rgb = S2.cel(R, body[0], body[1], light=light, bands=(0.18, 0.72), eye='#2A2030', hoof='#6A5A50')
-    hair, ha = S2.mane_tail(R, (H, W), mane[0], mane[1], mode='flow', scale=mane_scale, seed=5, tail_len=tail_len, mane_len=mane_len, wind_ang=wind_ang)
-    A = R['a']
-    ln = S2.edges(R, width=line_w) * np.clip(A, 0, 1)
-    out = np.zeros((H, W, 3), np.float32)
-    a = np.zeros((H, W), np.float32)
-    out = S2.over(out, rgb, A); a = np.maximum(a, A)
-    out = S2.over(out, hair, ha); a = np.clip(a + ha * (1 - a), 0, 1)
-    out = S2.over(out, S2.hexc(line), ln * 0.9)
-    out = np.where(a[..., None] > 1e-4, out / np.maximum(a, 1e-4)[..., None], 0)
-    return out, a, R
-
-
-_HEAD = {}
-
-
-def head_close(out, W=W2, H=H2):
-    """馬の 顔の ドアップ（目が 左の まん中より 上）：全身の カメラから 顔へ ズーム（fov を せまく）→ (rgb, a, R)。1回だけ 描く"""
-    if (W, H) in _HEAD:
-        return _HEAD[(W, H)]
-    cache = os.environ.get('SHIDEN_HEAD_CACHE')          # ためす 時：描いた 顔を 取って おく（作り直しを 速く）
-    if cache and os.path.exists(cache):
-        z = np.load(cache)
-        _HEAD[(W, H)] = (z['rgb'], z['a'], dict(eye=tuple(z['eye'])))
-        return _HEAD[(W, H)]
-    rgb, a, R = _head_close(out, W, H)
-    if cache:
-        np.savez_compressed(cache, rgb=rgb, a=a, eye=np.array(R['eye']))
-    _HEAD[(W, H)] = (rgb, a, dict(eye=tuple(R['eye'])))
-    return _HEAD[(W, H)]
-
-
-def _head_close(out, W, H):
-    import style2d as S2
-    import horse3d as Hm
-    S2.TMP = os.path.join(out, '_tmp')
-    os.makedirs(S2.TMP, exist_ok=True)
-    W0, H0 = 300, 560
-    fov0 = 26.0
-    e0, t0 = S2.frame_horse(Hm.REAR, (25, 30, 280, 545), W0, H0, facing='right', azim=25, elev=6, fov=fov0)
-    R0 = S2.render_horse(Hm.REAR, e0, t0, fov0, W0, H0, ss=1, name='cu0')
-    P = S2.world_pos(R0)
-    ex, ey = R0['eye']
-    mx, my = R0['muzzle']
-    def wp(x, y):
-        xi, yi = int(round(x)), int(round(y))
-        for rr in range(0, 8):
-            for dy in range(-rr, rr + 1):
-                for dx in range(-rr, rr + 1):
-                    p = P[min(H0 - 1, max(0, yi + dy)), min(W0 - 1, max(0, xi + dx))]
-                    if not np.isnan(p).any():
-                        return p
-        raise RuntimeError('顔が 見つからない')
-    pe = wp(ex, ey)
-    pm = wp(ex + (mx - ex) * .55, ey + (my - ey) * .55)
-    tgt = pe + (pm - pe) * .12                      # 目より 少し 口の ほうを 見る → 目は 画面の 左より（0.39, 0.44）
-    k = 9.0                                         # ズーム（顔が 画面 いっぱい）
-    fov = math.degrees(2 * math.atan(math.tan(math.radians(fov0) / 2) / k))
-    hscale = H / H0 * k                             # 全身の 絵に くらべた 大きさ
-    rgb, a, R = horse_cam(Hm.REAR, e0, tgt, fov, W, H, body=('#3A1840', '#1E0A24'), mane=('#3A1A44', '#1A0A20'), line='#2A0E30',
-                          mane_scale=.55 * hscale, mane_len=1.3, tail_len=1.0, wind_ang=-math.pi / 2, ss=2, name='cu1', line_w=10, light=(-0.35, 0.8, 0.5))
-    return rgb, a, R
-
-
-def eye_glow(img, ex, ey, scale=1.0, ang=-18.0, wide=1.0):
-    """大きな 光る 目（アーモンド形の 黒い くぼみの 中に 白 → 黄 → だいだい → 赤の 光の 玉）と まわりの 光"""
-    H, W = img.shape[:2]
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    a = math.radians(ang)
-    u = ((xx - ex) * math.cos(a) + (yy - ey) * math.sin(a)) / (95 * scale)
-    v = (-(xx - ex) * math.sin(a) + (yy - ey) * math.cos(a)) / (58 * scale)
-    almond = np.clip(1 - (np.abs(u) ** 1.6 + np.abs(v) ** 2.2), 0, 1)
-    sock = smoothstep(0, .08, almond)
-    img = img * (1 - sock[..., None] * .9) + hexc('#2A0408') * (sock * .9)[..., None]
-    rr = np.sqrt((xx - ex) ** 2 + (yy - ey) ** 2) / scale
-    orb = smoothstep(0, .25, almond)
-    img = img + orb[..., None] * (hexc('#FFFFFF') * np.exp(-(rr / 30) ** 2)[..., None] * 1.8 + hexc('#FFE070') * np.exp(-(rr / 52) ** 2)[..., None] * 1.3
-                                  + hexc('#FF8A20') * np.exp(-((rr - 62) / 18) ** 2)[..., None] * 1.0 + hexc('#FF3A2A') * np.exp(-(rr / 90) ** 2)[..., None] * .7)
-    img = img + (hexc('#FFD27A') * np.exp(-(rr / 150) ** 1.3)[..., None] * .55 + hexc('#FF5AB4') * np.exp(-(rr / 420) ** 1.2)[..., None] * .35) * wide
-    return img
-
-
-def strands(r, H, W, n, box, ang0, length, width):
-    """たてがみ・前がみの 毛の たば（細長い 曲がった 帯）→ (毛の こさ 0〜1, ふちの 光 0〜1)"""
-    hair = np.zeros((H, W), np.float32)
-    hi = np.zeros((H, W), np.float32)
-    for _ in range(n):
-        x0, y0 = r.uniform(box[0], box[2]), r.uniform(box[1], box[3])
-        a = math.radians(ang0 + r.uniform(-14, 14))
-        L = length * r.uniform(.6, 1.2)
-        bend = r.uniform(-.5, .5)
-        w0 = width * r.uniform(.5, 1.2)
-        pts_l, pts_r, mid = [], [], []
-        for k in range(14):
-            t = k / 13
-            aa = a + bend * t
-            x = x0 + math.cos(a) * L * t + math.cos(aa + math.pi / 2) * bend * 60 * t * t
-            y = y0 + math.sin(a) * L * t + math.sin(aa + math.pi / 2) * bend * 60 * t * t
-            ww = w0 * (1 - t) ** .8 + 1
-            nx, ny = -math.sin(aa), math.cos(aa)
-            pts_l.append((x + nx * ww, y + ny * ww))
-            pts_r.append((x - nx * ww, y - ny * ww))
-            mid.append((x + nx * ww * .7, y + ny * ww * .7))
-        poly = np.array(pts_l + pts_r[::-1], np.float32)
-        cv2.fillPoly(hair, [np.round(poly * 16).astype(np.int32)], 1.0, cv2.LINE_AA, shift=4)
-        cv2.polylines(hi, [np.round(np.array(mid) * 16).astype(np.int32)], False, 1.0, 2, cv2.LINE_AA, shift=4)
-    return np.clip(hair, 0, 1), np.clip(hi, 0, 1) * np.clip(hair, 0, 1)
-
-
-def eye_close(out, seed=109):
-    """GIF 3〜4：白い 光に 焼けた 馬の 顔の ドアップ（うすい 紫と 白・目の まわりは 桃色）・大きく 光る 目（上に まぶたの 線）・
-       前に たれる 白い 毛の たば（紫の ふち線）・目から 右上への 光の 筋（GIF の コマと 同じ 白っぽい 色）"""
-    W, H = W2, H2
-    rgb, a, R = head_close(out)
-    ex, ey = R['eye']
-    r = random.Random(seed)
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    f = fbm(H, W, 3, seed, 4)
-    bg = ramp(f, ((0, (112, 78, 160)), (.5, (170, 132, 210)), (1, (230, 210, 246))))
-    bg = np.clip(bg + radial(H, W, W * .1, H * .02, W * .8, 1.3)[..., None] * .5, 0, 1)
-    # 顔：明るさの 段を うす紫の 色へ（なめらかに）
-    lum = cv2.GaussianBlur(rgb, (0, 0), 9).mean(-1)
-    inside = a > .5
-    med = float(np.median(lum[inside]))
-    shadow = cv2.GaussianBlur(np.clip((med - lum) / max(med * .4, 1e-4), 0, 1), (0, 0), 6)       # 暗い 段（影）
-    d0 = dist_in(inside.astype(np.float32))
-    u = .6 + .3 * (1 - yy / H) - .4 * shadow - .24 * np.exp(-d0 / 50) + .1 * (fbm(H, W, 4, seed + 8, 3) - .5)
-    col = ramp(np.clip(u, 0, 1), ((0, (96, 54, 126)), (.35, (160, 116, 190)), (.7, (214, 186, 234)), (1, (244, 230, 252))))
-    fur = cv2.GaussianBlur(noise(H, W, 300, seed + 2), (0, 0), .8, sigmaY=3)
-    col = col * (.9 + .16 * fur[..., None])
-    col = np.clip(col + radial(H, W, W * .1, H * .02, W * .75, 1.3)[..., None] * .35, 0, 1)      # 左上の 白い 光
-    rr = np.sqrt((xx - ex) ** 2 + (yy - ey) ** 2)
-    sk = np.exp(-(rr / 300) ** 1.4) * .7                                                      # 目の まわりの 桃色の はだ
-    col = col * (1 - sk[..., None]) + hexc('#E8708E') * sk[..., None]
-    d = dist_in((a > .5).astype(np.float32))
-    col = col * (1 - (np.exp(-d / 5) * (a > .5) * .8)[..., None]) + hexc('#7A4A96') * (np.exp(-d / 5) * (a > .5) * .8)[..., None]   # 顔の ふちの 線（紫）
-    img = bg * (1 - a[..., None]) + col * a[..., None]
-    # 前に たれる 白い 毛の たば（左上から ななめ 下へ・紫の ふち線・目に かからない）
-    hair, hl = strands(r, H, W, 9, (-120, -160, W * .75, H * .06), 70, 1150, 70)
-    keep = 1 - np.exp(-(rr / 210) ** 2)
-    hair, hl = hair * keep, hl * keep
-    hcol = ramp(np.clip(.55 + .45 * fbm(H, W, 6, seed + 4, 3), 0, 1), ((0, (200, 170, 226)), (.6, (236, 220, 248)), (1, (255, 252, 255))))
-    img = img * (1 - hair[..., None]) + hcol * hair[..., None]
-    edge = np.clip(hair - cv2.erode(hair, np.ones((5, 5), np.uint8)), 0, 1)
-    img = img * (1 - edge[..., None] * .85) + hexc('#6A3A8A') * (edge * .85)[..., None]
-    img = img * (1 - hl[..., None] * .4) + hexc('#8A5AAA') * (hl * .4)[..., None]
-    # まぶたの 線（目の 上の こい 弧）・まつ毛（こい 紫）
-    lid = np.zeros((H, W), np.float32)
-    pts = [(ex - 270 + 540 * t, ey - 100 - 100 * math.sin(math.pi * t) + 36 * t) for t in np.linspace(0, 1, 30)]
-    cv2.polylines(lid, [np.round(np.array(pts) * 16).astype(np.int32)], False, 1.0, 20, cv2.LINE_AA, shift=4)
-    for t in np.linspace(.15, .85, 7):
-        x, y = ex - 270 + 540 * t, ey - 100 - 100 * math.sin(math.pi * t) + 36 * t
-        cv2.line(lid, (int(x * 16), int(y * 16)), (int((x + 60 * (t - .5) - 8) * 16), int((y - 64) * 16)), 1.0, 7, cv2.LINE_AA, shift=4)
-    img = img * (1 - lid[..., None] * .9) + hexc('#3A1446') * (lid * .9)[..., None]
-    img = eye_glow(img, ex, ey, 2.3, -16, wide=.3)
-    # 光の 筋（目から ななめ 右上へ：白い 黄色・太く）
-    s1 = np.exp(-((((yy - ey) + (xx - ex) * .42)) / 14) ** 2) * np.clip(1 - rr / 1000, 0, 1) * (xx > ex)
-    img = img + hexc('#FFF2B8') * s1[..., None] * .9 + hexc('#FFE08A') * cv2.GaussianBlur(s1, (0, 0), 14)[..., None] * .6
-    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_eye.webp'), q=82)
-    SA.put_lay('sd_eye', 390, 844, eye=[round(float(ex) / 2, 1), round(float(ey) / 2, 1)])
-    return 'sd_eye', (rgb, a, R)
+# GIF 3〜4（目の ドアップ）は 第4.69版から リアルな 馬の 顔の コマ（flat/shiden_face.py：sd_rf00〜）
 
 
 # ---------------------------------------------------------------- GIF 5・6：裂け目
@@ -647,7 +478,7 @@ def bezier(p, t):
 
 # ---------------------------------------------------------------- GIF 7〜15：割れた 鏡の かけらの 世界（GIF 10 を 横に 置いて 作り直し）
 #   上：黒い 宇宙の 窓（星・銀の ギザギザの ふちと 赤い 光の 線）／右：白い 光の 筋と 白い 水晶／左：虹色の プリズム
-#   まん中：左から のびる 赤い 角（つの）の 口に ピンクの 光・上と 下から 大きな 炎の 流れが 集まって 右へ 抜ける
+#   まん中：ピンクの 光（第4.68版の 赤い 角は 第4.69版で やめて 馬の 蹄に）・上と 下から 大きな 炎の 流れが 集まって 右へ 抜ける
 #   下：銀の 金属の 黒い 馬（何重もの 白い ふち線・赤い 目）と 暗い 金属の 輪
 def streak_tex(seed, ang_deg, sx=60, sy=4, W=W2, H=H2):
     """流れの 向き（画面の 角度°・下向きが ＋）に のびた 筋の もよう 0〜1"""
@@ -752,7 +583,6 @@ STREAMS = (                                                  # 2倍の 座標：
     (((-180, 280), (40, 360), (230, 640), (CXs + 10, CYs - 40)), 360, 110, 2800, 38),
     (((-180, 1460), (40, 1380), (230, 1070), (CXs + 10, CYs + 40)), 380, 110, 2800, -38),
     (((CXs - 10, CYs), (540, 820), (680, 700), (960, 560)), 120, 300, 1700, -24))
-CONE = dict(mx=330.0, rx=56.0, ry=176.0, ax=30.0, t0=22.0, b0=30.0)      # 赤い 角：口の まん中 x・口の 半径・左の はし・左の 上下の 幅
 
 
 def jag_poly(r, corners, n, amp, spike=.2, spike_amp=3.0):
@@ -790,22 +620,8 @@ def neon_line(m_out_d, at, wd):
     return np.exp(-((m_out_d - at) / wd) ** 2)
 
 
-def cone_geo(W=W2, H=H2):
-    """赤い 角の 形：(角 全体の 0〜1, 口の 楕円の 0〜1, 角の 面の 上下の 位置 v 0〜1)"""
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    c = CONE
-    mx, my, rx, ry, ax = c['mx'], CYs, c['rx'], c['ry'], c['ax']
-    body = fillm([(ax, my - c['t0']), (mx, my - ry), (mx, my + ry), (ax, my + c['b0'])], W, H)
-    ell = cv2.GaussianBlur((((xx - mx) / rx) ** 2 + ((yy - my) / ry) ** 2 <= 1).astype(np.float32), (0, 0), 1.2)
-    cone = np.clip(body * (xx < mx) + ell, 0, 1)
-    top_y = (my - c['t0']) + (xx - ax) / (mx - ax) * (-ry + c['t0'])
-    bot_y = (my + c['b0']) + (xx - ax) / (mx - ax) * (ry - c['b0'])
-    v = np.clip((yy - top_y) / np.maximum(bot_y - top_y, 1), 0, 1)
-    return cone, ell, v
-
-
 def mirror_world(out, seed=131):
-    """GIF 7〜15 の 下じき（GIF 10 を 横に 置いて 作り直し）"""
+    """GIF 7〜15 の 下じき（GIF 10 を 横に 置いて 作り直し）。第4.69版：上の 宇宙の 窓・下の 金属の 馬と 輪と 赤い 線は やめて、かけらの 世界に"""
     W, H = W2, H2
     r = random.Random(seed)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -813,21 +629,8 @@ def mirror_world(out, seed=131):
     f2 = fbm(H, W, 9, seed + 2, 4)
     # 1) 下じき：赤黒い 闇に 灰色の 金属の むら
     img = ramp(f, ((0, (6, 3, 6)), (.45, (30, 8, 14)), (.68, (86, 26, 40)), (.85, (150, 120, 128)), (1, (210, 200, 206))))
-    # 2) 上：黒い 宇宙の 窓（星）・銀の ギザギザの ふち・赤い 光の 線
-    win = fillm(jag_poly(r, [(250, 170), (520, 100), (720, 140), (740, 470), (580, 540), (370, 500), (240, 400)], 18, 9, .3, 3.2))
-    d_in = dist_in(win)
-    d_out = cv2.distanceTransform((win < .5).astype(np.uint8), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
-    space = np.zeros((H, W, 3), np.float32) + hexc('#030208')
-    space = space + hexc('#5A1A6A') * (smoothstep(.55, .9, fbm(H, W, 4, seed + 5, 4)) * .35)[..., None]
-    stars = (noise(H, W, 700, seed + 6, cv2.INTER_NEAREST) > .985).astype(np.float32)
-    stars = cv2.GaussianBlur(stars, (0, 0), .7) * 2.2
-    space = space + stars[..., None] * np.array([1, .95, 1], np.float32)
-    img = img * (1 - win[..., None]) + space * win[..., None]
-    band = (d_in < 26) * win
-    img = img * (1 - band[..., None]) + chrome_band(d_in, 26, f2) * band[..., None]
-    img = img + hexc('#FFFFFF') * (np.exp(-((d_in - 3) / 1.6) ** 2) * win * .8)[..., None]
-    neon = neon_line(d_out, 5, 2.4) * (win < .5)
-    img = img + hexc('#FF2A40') * neon[..., None] + hexc('#FF2050') * cv2.GaussianBlur(neon, (0, 0), 7)[..., None] * .8
+    # 2) （第4.69版：上の 黒い 宇宙の 窓は やめた・まさちゃん「このシーンの青丸の模様と馬いらない！」）
+    win = np.zeros((H, W), np.float32)
     # 3) 右：白い 光の 筋
     rr_r = np.sqrt(((xx - (W + 60)) / 1.0) ** 2 + ((yy - 640) / 1.25) ** 2)
     light = np.exp(-(rr_r / 340) ** 1.5)
@@ -838,16 +641,7 @@ def mirror_world(out, seed=131):
         cv2.line(ray, (int((W + 60) * 16), int(640 * 16)), (int((W + 60 + L * math.cos(a0)) * 16), int((640 + L * math.sin(a0)) * 16)), r.uniform(.3, 1), int(r.uniform(3, 14)), cv2.LINE_AA, shift=4)
     ray = cv2.GaussianBlur(ray, (0, 0), 4) * np.exp(-(rr_r / 520) ** 1.4)
     img = img + ((light * 1.1 + ray * .8) * (1 - win))[..., None] * np.array([1, .97, 1], np.float32)
-    # 4) 下：暗い 金属の 輪（白い ふち）
-    rings = np.zeros((H, W), np.float32)
-    dark = np.zeros((H, W), np.float32)
-    for k, rad in enumerate((560, 470, 390, 320, 255)):
-        e = np.sqrt(((xx - W * .74) / 1.0) ** 2 + ((yy - H * 1.0) / .62) ** 2)
-        rings = np.maximum(rings, np.exp(-((e - rad) / (3.2 + k * .4)) ** 2) * (.6 + .4 * smoothstep(.3, .7, fbm(H, W, 6, seed + 30 + k, 3))))
-        dark = np.maximum(dark, smoothstep(rad + 6, rad - 30, e) * (.55 + .1 * k))
-    metal = ramp(np.clip(f2 * 1.2 - .1, 0, 1), ((0, (8, 8, 12)), (.5, (40, 40, 50)), (.8, (88, 88, 104)), (1, (150, 152, 170))))
-    img = img * (1 - dark[..., None] * .92) + metal * (dark * .92)[..., None]
-    img = img + hexc('#E8ECF8') * rings[..., None] * .9 + hexc('#FF4AC8') * cv2.GaussianBlur(rings, (0, 0), 9)[..., None] * .35
+    # 4) （第4.69版：下の 暗い 金属の 輪は やめた）
     # 5) かけら（上と ふちに たくさん・右は 白・左は 虹色・ところどころ 赤）
     def how(r_, x, y):
         k = r_.random()
@@ -868,61 +662,13 @@ def mirror_world(out, seed=131):
     gaps = smoothstep(.34, .44, fbm(H, W, 7, seed + 41, 3))
     sa = sa * gaps * (1 - win * .9)
     img = img * (1 - sa[..., None]) + sh * sa[..., None]
-    # 6) まん中：左から のびる 赤い 角（つの）・口の 中は 暗い 赤・ピンクの 光
-    mx, my, rx, ry = CONE['mx'], CYs, CONE['rx'], CONE['ry']
-    cone, ell, v = cone_geo()
-    # 角の 面：上が 明るい だいだい → 下は こい 赤（つやの 筋）
-    cc = ramp(v, ((0, (255, 170, 90)), (.12, (255, 120, 50)), (.3, (230, 60, 30)), (.6, (150, 20, 16)), (.85, (80, 8, 10)), (1, (150, 30, 24))))
-    cc = cc + hexc('#FFE0B0') * np.exp(-((v - .1) / .03) ** 2)[..., None] * .6
-    inner = (((xx - mx) / (rx * .82)) ** 2 + ((yy - my) / (ry * .9)) ** 2 <= 1).astype(np.float32)
-    inner = cv2.GaussianBlur(inner, (0, 0), 2)
-    inside = ramp(np.clip((xx - (mx - rx)) / (rx * 2), 0, 1), ((0, (40, 6, 8)), (.6, (110, 30, 34)), (1, (230, 120, 170))))
-    cc = cc * (1 - inner[..., None]) + inside * inner[..., None]
-    rimm = np.exp(-((np.sqrt(((xx - mx) / rx) ** 2 + ((yy - my) / ry) ** 2) - 1) / .035) ** 2)
-    cc = cc + hexc('#FFD8F0') * rimm[..., None] * .9
-    img = img * (1 - cone[..., None]) + cc * cone[..., None]
-    # ピンクの 光（角の 口から 右へ）
+    # 6) まん中：ピンクの 光（第4.69版：赤い 角は やめた。世界を 切り裂くのは 馬の 蹄 sd_w_hoof：flat/shiden_hoof.py）
     rr = np.sqrt(((xx - (CXs + 30)) / 1.0) ** 2 + ((yy - CYs) / 1.25) ** 2)
     img = img + hexc('#FF7AD8') * np.exp(-(rr / 130) ** 2)[..., None] * .85 + hexc('#FFD8F6') * np.exp(-(rr / 70) ** 2)[..., None] * .75
-    # 7) 下：銀の 金属の 黒い 馬（何重もの 白い ふち線・外に 赤い 光の 線・赤い 目）
-    hr, ha = load('sd_horse', out)
-    sc = 1.42
-    lw, lh = SA.LAY['sd_horse']['w'] * 2, SA.LAY['sd_horse']['h'] * 2
-    exh, eyh = SA.LAY['sd_horse']['eye']
-    ex2, ey2 = W * .76, H * .73
-    px, py = ex2 - exh * 2 * sc, ey2 - eyh * 2 * sc
-    M = place(np.zeros((H, W, 3), np.float32), np.ones(hr.shape, np.float32), ha, px, py, lw * sc, lh * sc)[..., 0]
-    Hr = place(np.zeros((H, W, 3), np.float32), hr, ha, px, py, lw * sc, lh * sc)
-    mm = (M > .5).astype(np.float32)
-    dh = dist_in(mm)
-    dho = cv2.distanceTransform((mm < .5).astype(np.uint8), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
-    lum = Hr.mean(-1) / np.maximum(M, 1e-3)
-    met = ramp(np.clip(lum * 1.5 + (f2 - .5) * .5, 0, 1), ((0, (12, 12, 18)), (.45, (44, 44, 56)), (.75, (96, 98, 116)), (1, (190, 194, 210))))
-    spec = smoothstep(.6, .66, fbm(H, W, 5, seed + 61, 3)) * smoothstep(.2, .5, f2)
-    gloss = cv2.GaussianBlur(smoothstep(.56, .7, fbm(H, W, 3, seed + 63, 3)), (0, 0), 14) * np.clip(dh / 30, 0, 1)
-    met = met + spec[..., None] * .55 + gloss[..., None] * np.array([.75, .76, .85], np.float32)
-    cont = sum(np.exp(-((dh - k) / 1.7) ** 2) * w for k, w in ((4, 1.0), (14, .8), (27, .55), (44, .35)))
-    met = met * (1 - np.clip(cont, 0, 1)[..., None]) + hexc('#F4F6FF') * np.clip(cont, 0, 1)[..., None]
-    img = img * (1 - M[..., None]) + met * M[..., None]
-    hn = neon_line(dho, 6, 2.2) * (mm < .5)
-    img = img + hexc('#FF2A40') * hn[..., None] + hexc('#FF2A50') * cv2.GaussianBlur(hn, (0, 0), 8)[..., None] * .7
-    rre = np.sqrt((xx - ex2) ** 2 + (yy - ey2) ** 2)
-    img = img + hexc('#FF2030') * np.exp(-(rre / 40) ** 2)[..., None] * 1.6 + hexc('#FFFFFF') * np.exp(-(rre / 13) ** 2)[..., None]
-    # 8) 赤い 光の 線（下の ほうの ギザギザ）
-    neon2 = np.zeros((H, W), np.float32)
-    for _ in range(7):
-        x0, y0 = r.uniform(W * .2, W + 40), r.uniform(H * .62, H + 40)
-        pts = [(x0, y0)]
-        for k in range(r.randint(3, 6)):
-            a = r.uniform(0, 2 * math.pi)
-            L = r.uniform(50, 180)
-            pts.append((pts[-1][0] + L * math.cos(a), pts[-1][1] + L * math.sin(a)))
-        cv2.polylines(neon2, [np.round(np.array(pts) * 16).astype(np.int32)], False, 1.0, r.randint(2, 4), cv2.LINE_AA, shift=4)
-    img = img + hexc('#FF2A48') * neon2[..., None] + hexc('#FF3A6A') * cv2.GaussianBlur(neon2, (0, 0), 6)[..., None] * .8
+    # 7)・8) （第4.69版：下の 銀の 金属の 馬と 赤い 光の 線は やめた・まさちゃん「馬いらない！」）
     # 9) 手前の かけら（少し）・明るい ところの にじみ
     specs2 = ((60, (-60, -60, W + 60, H + 60), (6, 22), how),)
     sh2, sa2 = shard_layer(seed + 77, specs2)
-    sa2 = sa2 * (1 - cone)
     img = img * (1 - sa2[..., None]) + sh2 * sa2[..., None]
     br = np.clip(img - .72, 0, 1)
     img = img + glow_of(br, ((6, .45), (20, .28)))
@@ -981,7 +727,7 @@ def mirror_prism(out, seed=151):
     sh, sa = shard_layer(seed + 9, ((260, (-40, H * .36, W * .46, H * .72), (6, 26), how),))
     col = col * (1 - sa[..., None] * .7) + np.clip(sh, 0, 1) * (sa * .7)[..., None]
     reg = smoothstep(W * .5, W * .08, xx + 40 * (q1 - .5)) * smoothstep(H * .35, H * .42, yy + 60 * (q2 - .5)) * smoothstep(H * .74, H * .66, yy + 60 * (q2 - .5))
-    a = np.clip(reg * .95, 0, 1) * (1 - cone_geo()[0])
+    a = np.clip(reg * .95, 0, 1)
     SA.save(np.dstack([col * a[..., None], a]), os.path.join(out, 'sd_w_prism.webp'), q=80)
     SA.put_lay('sd_w_prism', 390, 844)
     return 'sd_w_prism'
@@ -1098,10 +844,235 @@ def pillar(out, seed=171):
     return 'sd_pillar'
 
 
+# ---------------------------------------------------------------- 第4.69版：見本の 動画を コマ送りで 見て 足した コマ
+def cut_shadow(out, seed=181):
+    """動画 1.70・1.93秒：画面が 暗く なり 馬は まっ黒な 影・赤く 光る 目・右に 青緑の 雷（sd_dk）"""
+    W, H = W2, H2
+    import shiden
+    base = scene_a_flat(out, bright=True)
+    img = base * np.array([.6, .28, .36], np.float32)                     # 暗く した 炎（まだ 見える）
+    hr, ha, (x, y, w, h) = horse_layer(out)
+    blk = np.zeros((H, W, 3), np.float32) + hexc('#050207')
+    M = place(np.zeros((H, W, 3), np.float32), np.ones(hr.shape, np.float32), ha, x, y, w, h)[..., 0]
+    img = img * (1 - M[..., None]) + blk * M[..., None]
+    ex, ey = shiden.horse_a(SA.LAY['sd_horse'])[0] + SA.LAY['sd_horse']['eye'][0] * shiden.HORSE_K, shiden.horse_a(SA.LAY['sd_horse'])[1] + SA.LAY['sd_horse']['eye'][1] * shiden.HORSE_K
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    rr = np.sqrt((xx - ex * 2) ** 2 + (yy - ey * 2) ** 2)
+    img = img + hexc('#FF1830') * np.exp(-(rr / 70) ** 1.4)[..., None] * 1.3 + hexc('#FFFFFF') * np.exp(-(rr / 14) ** 2)[..., None]
+    # 青緑の 雷（右から 下へ・枝つき）
+    r = random.Random(seed)
+    bolt = np.zeros((H, W), np.float32)
+    for (a, b) in (((W * .82, -20), (W * .55, H * .62)), ((W * .9, H * .2), (W * .72, H * .95))):
+        pts = disp(r, a, b, (.14, .18, .24, .3, .34))
+        cv2.polylines(bolt, [np.round(np.array(pts) * 16).astype(np.int32)], False, 1.0, 4, cv2.LINE_AA, shift=4)
+        for _ in range(3):
+            i = r.randrange(2, len(pts) - 2)
+            q = pts[i]
+            ang = math.atan2(b[1] - a[1], b[0] - a[0]) + r.choice((-1, 1)) * r.uniform(.5, 1.1)
+            L = r.uniform(60, 160)
+            br = disp(r, q, (q[0] + L * math.cos(ang), q[1] + L * math.sin(ang)), (.4, .45))
+            cv2.polylines(bolt, [np.round(np.array(br) * 16).astype(np.int32)], False, .8, 2, cv2.LINE_AA, shift=4)
+    img = img + hexc('#E8FFFF') * bolt[..., None] + hexc('#28E0C8') * cv2.GaussianBlur(bolt, (0, 0), 6)[..., None] * 1.2 + hexc('#2A6CFF') * cv2.GaussianBlur(bolt, (0, 0), 18)[..., None] * .8
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_dk.webp'), q=78)
+    SA.put_lay('sd_dk', 390, 844)
+    return 'sd_dk'
+
+
+def cut_bw(out, seed=183):
+    """動画 2.03〜2.10秒：白黒の ネガ（黒い 地に 太い 白い 線・下は 白く ぬれる）＝ sd_bw と、水色に 反転した 1コマ sd_bwc"""
+    W, H = W2, H2
+    base = scene_a_flat(out, bright=True)
+    L = cv2.GaussianBlur(base.mean(-1), (0, 0), 5)
+    hr, ha, (x, y, w, h) = horse_layer(out)
+    M = place(np.zeros((H, W, 3), np.float32), np.ones(hr.shape, np.float32), ha, x, y, w, h)[..., 0]
+    lines = np.zeros((H, W), np.float32)
+    m = (L > .6).astype(np.uint8)                                         # 明るい 所の 形の ふちを 太い 白い 線に（ほそい 線は 出さない）
+    cs, _ = cv2.findContours(m, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+    for c in cs:
+        if len(c) > 120:
+            cv2.polylines(lines, [c], True, 1.0, 14, cv2.LINE_AA)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    fillw = (L > .82).astype(np.float32) * smoothstep(H * .35, H * .62, yy)   # 下の 明るい 所は 白く ぬる
+    fillw = np.maximum(fillw, (cv2.GaussianBlur(fbm(H, W, 5, seed + 3, 3), (0, 0), 3) > .62).astype(np.float32) * smoothstep(H * .55, H * .8, yy))
+    mb = (M > .5).astype(np.uint8)
+    edge = cv2.morphologyEx(mb, cv2.MORPH_GRADIENT, np.ones((15, 15), np.uint8)).astype(np.float32)
+    img = np.clip(lines + fillw, 0, 1) * (1 - M) + edge
+    r = random.Random(seed)
+    for _ in range(26):                                                   # 白い かけら
+        pts = shard_pts(r, r.uniform(0, W), r.uniform(0, H), r.uniform(10, 40), (1.2, 3))
+        cv2.fillPoly(img, [np.round(np.array(pts) * 16).astype(np.int32)], 1.0, cv2.LINE_AA, shift=4)
+    img = np.clip(cv2.GaussianBlur(img, (0, 0), .8) * 1.15, 0, 1)
+    save_rgb(np.dstack([img, img, img]), os.path.join(out, 'sd_bw.webp'), q=80)
+    SA.put_lay('sd_bw', 390, 844)
+    # 水色の 反転：白い 地・こい 青の 線・うすい 水色の むら
+    inv = 1 - img
+    f = fbm(H, W, 4, seed + 1, 3)
+    col = ramp(np.clip(inv * .9 + f * .2, 0, 1), ((0, (10, 30, 210)), (.35, (40, 120, 255)), (.7, (170, 235, 255)), (1, (250, 254, 255))))
+    save_rgb(np.clip(col, 0, 1), os.path.join(out, 'sd_bwc.webp'), q=80)
+    SA.put_lay('sd_bwc', 390, 844)
+    return ['sd_bw', 'sd_bwc']
+
+
+def cut_chroma(out, seed=185):
+    """動画 2.27〜2.30秒：黒と 白の 割れた 画面・ふちが 赤と 水色と 青に ずれる（sd_chr）"""
+    W, H = W2, H2
+    r = random.Random(seed)
+    m = np.zeros((H, W), np.float32)
+    for _ in range(80):                                                   # 白い 大きな 割れた 形
+        pts = shard_pts(r, r.uniform(-60, W + 60), r.uniform(-60, H + 60), r.uniform(60, 240), (1.2, 3.2))
+        cv2.fillPoly(m, [np.round(np.array(pts) * 16).astype(np.int32)], r.uniform(.55, 1.0), cv2.LINE_AA, shift=4)
+    cx_, cy_ = W * .5, H * .48
+    for k in range(26):                                                   # まん中から 外への ひび（放射）
+        a_ = 2 * math.pi * k / 26 + r.uniform(-.1, .1)
+        pts = disp(r, (cx_, cy_), (cx_ + math.cos(a_) * 1100, cy_ + math.sin(a_) * 1100), (.1, .14, .18))
+        cv2.polylines(m, [np.round(np.array(pts) * 16).astype(np.int32)], False, 1.0, r.randint(3, 7), cv2.LINE_AA, shift=4)
+    for _ in range(34):                                                   # 黒い 割れた 形（上に 重ねる）
+        pts = shard_pts(r, r.uniform(-60, W + 60), r.uniform(-60, H + 60), r.uniform(40, 180), (1.4, 3.4))
+        cv2.fillPoly(m, [np.round(np.array(pts) * 16).astype(np.int32)], 0.0, cv2.LINE_AA, shift=4)
+    tm = tear_mask(r, H * .52, 120, -.12, n=40, amp=26, spike=.4)
+    m = m * (1 - tm)
+    edge = np.abs(cv2.Sobel(cv2.GaussianBlur(m, (0, 0), 1.5), cv2.CV_32F, 1, 0, ksize=3)) + np.abs(cv2.Sobel(cv2.GaussianBlur(m, (0, 0), 1.5), cv2.CV_32F, 0, 1, ksize=3))
+    edge = np.clip(edge * 2.5, 0, 1)
+    img = np.dstack([m, m, m]) * .9
+    for col, dx, dy in (((1, .15, .2), 9, 0), ((.2, .95, 1), -9, 3), ((.25, .35, 1), 0, -7)):
+        e2 = np.roll(np.roll(edge, dx, 1), dy, 0)
+        img = img + np.array(col, np.float32) * e2[..., None] * .9
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_chr.webp'), q=78)
+    SA.put_lay('sd_chr', 390, 844)
+    return 'sd_chr'
+
+
+def cut_crack(out, seed=187):
+    """動画 2.33〜2.35秒：白と 桃色の 明るい 画面・左から 黒い ギザギザの 裂け目・黒い ひびの 線・左上に 炎の 筋（sd_crk）"""
+    W, H = W2, H2
+    r = random.Random(seed)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    f = fbm(H, W, 5, seed, 4)
+    img = ramp(f, ((0, (255, 200, 214)), (.5, (255, 232, 238)), (1, (255, 252, 252))))
+    img = img * (1 - radial(H, W, W * .78, H * .58, W * .55, 1.2)[..., None] * np.array([0, .25, .18], np.float32))
+    # 黒い 裂け目（左から 右へ 細く なる）
+    top = jag_edge(r, -40, W * .95, H * .5 - 78, H * .5 - 4, 36, 12, .4, 3.2)
+    bot = jag_edge(r, -40, W * .95, H * .5 + 70, H * .5 + 3, 36, 12, .4, 3.2)
+    tear = fillm(top + bot[::-1])
+    for _ in range(9):                                                    # とげ
+        x0 = r.uniform(0, W * .7)
+        pts = [(x0, H * .5), (x0 + r.uniform(30, 90), H * .5 + r.choice((-1, 1)) * r.uniform(40, 110)), (x0 + r.uniform(60, 140), H * .5)]
+        cv2.fillPoly(tear, [np.round(np.array(pts) * 16).astype(np.int32)], 1.0, cv2.LINE_AA, shift=4)
+    # ひび（左の くもの 巣）
+    cr = np.zeros((H, W), np.float32)
+    cx, cy = W * .12, H * .48
+    for k in range(9):
+        a = 2 * math.pi * k / 9 + r.uniform(-.2, .2)
+        pts = disp(r, (cx, cy), (cx + math.cos(a) * r.uniform(220, 420), cy + math.sin(a) * r.uniform(220, 420)), (.12, .16, .2))
+        cv2.polylines(cr, [np.round(np.array(pts) * 16).astype(np.int32)], False, 1.0, 3, cv2.LINE_AA, shift=4)
+    for rad in (90, 170, 260):
+        pts = [(cx + math.cos(t) * rad * r.uniform(.9, 1.1), cy + math.sin(t) * rad * r.uniform(.9, 1.1)) for t in np.linspace(0, 2 * math.pi, 14)]
+        cv2.polylines(cr, [np.round(np.array(pts) * 16).astype(np.int32)], True, 1.0, 2, cv2.LINE_AA, shift=4)
+    cr = cr * smoothstep(W * .55, W * .3, xx)
+    img = img * (1 - np.clip(tear + cr, 0, 1)[..., None])
+    fire = np.zeros((H, W, 3), np.float32)
+    streaks(r, fire, W * .2, H * .3, math.radians(-14), 360, 40, 70, FIRE_COLS, (1, 3))
+    img = img * (1 - np.clip(fire.max(-1), 0, 1)[..., None] * .6) + fire + glow_of(fire, ((3, .5), (10, .3)))
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_crk.webp'), q=78)
+    SA.put_lay('sd_crk', 390, 844)
+    return 'sd_crk'
+
+
+def cut_boom(out, seed=189):
+    """動画 2.40秒：だいだいと 黄色の 大きな 爆発・光の 筋と 火花・まん中を 黒い 裂け目（sd_boom）"""
+    W, H = W2, H2
+    r = random.Random(seed)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    cx, cy = W * .48, H * .44
+    rr = np.sqrt((xx - cx) ** 2 + ((yy - cy) * .8) ** 2)
+    ang = np.arctan2(yy - cy, xx - cx)
+    rays = np.zeros((H, W), np.float32)
+    for _ in range(46):
+        a0 = r.uniform(-math.pi, math.pi); wd = r.uniform(.01, .05)
+        rays += np.exp(-((np.angle(np.exp(1j * (ang - a0)))) / wd) ** 2) * r.uniform(.4, 1)
+    heat = np.clip(np.exp(-(rr / 260) ** 1.2) * 1.3 + rays * np.exp(-(rr / 700)) * .5 + fbm(H, W, 8, seed, 4) * .25, 0, 1.4)
+    img = ramp(np.clip(heat, 0, 1), ((0, (90, 20, 4)), (.3, (220, 80, 10)), (.55, (255, 160, 30)), (.8, (255, 230, 110)), (1, (255, 255, 235))))
+    sp = np.zeros((H, W, 3), np.float32)
+    for _ in range(4):
+        streaks(r, sp, cx, cy, r.uniform(-math.pi, math.pi), 700, 300, 60, FIRE_COLS, (1, 3))
+    img = img + sp * .7
+    tm = tear_mask(r, H * .52, 50, .02, n=50, amp=12, spike=.45, spike_amp=3.5)
+    img = img * (1 - tm[..., None])
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_boom.webp'), q=78)
+    SA.put_lay('sd_boom', 390, 844)
+    return 'sd_boom'
+
+
+STREAMS3 = (                                                 # 第4.69版：寄った あとの 炎（上と 下から 光の 右で 1つに なる「＞」）
+    (((-180, 300), (60, 380), (300, 640), (CXs + 130, CYs - 10)), 360, 120, 2800, 36),
+    (((-180, 1440), (60, 1360), (300, 1090), (CXs + 130, CYs + 10)), 380, 120, 2800, -36),
+    (((CXs + 60, CYs), (CXs + 120, CYs - 20), (CXs + 170, CYs - 10), (CXs + 220, CYs)), 160, 40, 500, 0))
+
+
+def mirror_fire3(out):
+    img = fire_stream(157, STREAMS3)
+    SA.save(img, os.path.join(out, 'sd_w_fire3.webp'), q=80)
+    SA.put_lay('sd_w_fire3', 390, 844)
+    return 'sd_w_fire3'
+
+
+def cut_invert_red(out, seed=191):
+    """動画 4.75秒：黒い 地・赤く ぬった 大きな 穴・黒い かけら・右へ 炎（sd_c16r）"""
+    W, H = W2, H2
+    r = random.Random(seed)
+    img = np.zeros((H, W, 3), np.float32) + hexc('#060203')
+    pts = []
+    for k in range(44):
+        a = 2 * math.pi * k / 44
+        rr = r.uniform(.8, 1.12)
+        pts.append((W * .5 + math.cos(a) * W * .47 * rr, H * .5 + math.sin(a) * H * .2 * rr))
+    hole = fillm(pts)
+    red = ramp(fbm(H, W, 6, seed, 4), ((0, (150, 0, 8)), (.6, (225, 10, 20)), (1, (255, 60, 40))))
+    img = img * (1 - hole[..., None]) + red * hole[..., None]
+    fire = np.zeros((H, W, 3), np.float32)
+    streaks(r, fire, W * .35, H * .5, math.radians(-12), 560, 160, 260, FIRE_COLS, (1, 3))
+    img = img + fire * .9 + glow_of(fire, ((4, .6),))
+    def how(r_, x, y):
+        return dict(fill=(.02, .01, .015), outline=((.55, .05, .08), r_.randint(2, 4)), edge=0)
+    sh, sa = shard_layer(seed, ((40, (-60, -60, W + 60, H * .32), (50, 140), how), (40, (-60, H * .68, W + 60, H + 60), (50, 140), how), (12, (-60, H * .3, W + 60, H * .7), (24, 70), how)))
+    img = img * (1 - sa[..., None]) + sh * sa[..., None]
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_c16r.webp'), q=78)
+    SA.put_lay('sd_c16r', 390, 844)
+    return 'sd_c16r'
+
+
+def cut_invert_blue(out, seed=193):
+    """動画 4.78秒：白い 地・まん中の 帯に こい 青と 水色の かけらが ぎっしり・右に 炎（sd_c16b）"""
+    W, H = W2, H2
+    r = random.Random(seed)
+    img = np.ones((H, W, 3), np.float32) * hexc('#F6FAFF')
+    BL = ((.05, .2, .85), (.1, .45, 1.0), (.35, .75, 1.0), (.02, .1, .55))
+    def how(r_, x, y):
+        return dict(fill=BL[r_.randrange(len(BL))], outline=((.8, .95, 1), r_.randint(1, 3)), edge=0)
+    sh, sa = shard_layer(seed, ((260, (-60, H * .3, W + 60, H * .7), (14, 60), how), (30, (-60, -60, W + 60, H + 60), (10, 40), how)))
+    img = img * (1 - sa[..., None]) + sh * sa[..., None]
+    fire = np.zeros((H, W, 3), np.float32)
+    streaks(r, fire, W * .55, H * .5, math.radians(-8), 420, 120, 140, FIRE_COLS, (1, 3))
+    img = img * (1 - np.clip(fire.max(-1), 0, 1)[..., None] * .7) + fire
+    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_c16b.webp'), q=78)
+    SA.put_lay('sd_c16b', 390, 844)
+    return 'sd_c16b'
+
+
 def build(out, names=None):
-    todo = dict(sd_c0=lambda: cut_gray(out), sd_rbs=lambda: rainbow_bands(out), sd_c1=lambda: cut_glitch(out), sd_c2=lambda: cut_fire(out), sd_eye=lambda: eye_close(out)[0],
-                sd_c5=lambda: cut_tear(out, 'red'), sd_c6=lambda: cut_tear(out, 'green'), sd_w_bg=lambda: mirror_world(out), sd_w_near=lambda: mirror_near(out),
-                sd_w_fire=lambda: mirror_fire(out), sd_w_prism=lambda: mirror_prism(out), sd_c16=lambda: cut_invert(out), sd_c17=lambda: cut_hole(out),
+    def face():
+        import shiden_face
+        return shiden_face.build(out, SA=SA)
+
+    def hoof():
+        import shiden_hoof
+        return shiden_hoof.build_asset(out, SA=SA)
+    todo = dict(sd_c0=lambda: cut_gray(out), sd_rbs=lambda: rainbow_bands(out), sd_c1=lambda: cut_glitch(out), sd_c2=lambda: cut_fire(out),
+                sd_dk=lambda: cut_shadow(out), sd_bw=lambda: cut_bw(out), sd_rf=face, sd_chr=lambda: cut_chroma(out), sd_crk=lambda: cut_crack(out),
+                sd_c5=lambda: cut_tear(out, 'red'), sd_boom=lambda: cut_boom(out), sd_c6=lambda: cut_tear(out, 'green'),
+                sd_w_bg=lambda: mirror_world(out), sd_w_near=lambda: mirror_near(out), sd_w_fire=lambda: mirror_fire(out), sd_w_fire3=lambda: mirror_fire3(out),
+                sd_w_prism=lambda: mirror_prism(out), sd_w_hoof=hoof,
+                sd_c16=lambda: cut_invert(out), sd_c16r=lambda: cut_invert_red(out), sd_c16b=lambda: cut_invert_blue(out), sd_c17=lambda: cut_hole(out),
                 sd_c18=lambda: cut_dark(out), sd_c19=lambda: cut_ring(out), sd_pillar=lambda: pillar(out))
     made = []
     for k, fn in todo.items():

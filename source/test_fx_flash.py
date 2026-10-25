@@ -10,7 +10,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=10.2)   # 第4.66版：ど的中・紫電 sd 10.2秒（第4.68版：ボード 8.64秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=14.4)   # 第4.66版：ど的中・紫電 sd 14.4秒（第4.69版：ボード 12.88秒）
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
