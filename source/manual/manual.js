@@ -55,6 +55,8 @@
   // ---- アプリに戻る（iPhoneアプリの中だけ） ----
   const backToApp = e => {
     e.preventDefault();
+    // アプリの 中の 重ねた 窓（iframe）で 開いている とき（App Store版・第4.62版）：ページを 移らず、アプリに「閉じて」と 伝える（アプリの 画面は そのまま）
+    if (window.parent && window.parent !== window) { try { window.parent.postMessage({ tengel: 'manual-close' }, '*'); return; } catch (err) { /* 伝えられなければ 下へ */ } }
     let fromApp = false;
     try { fromApp = !!document.referrer && new URL(document.referrer).origin === location.origin && !/manual\.html/.test(document.referrer); } catch (err) { fromApp = false; }
     if (fromApp && history.length > 1) history.back(); else location.href = './';

@@ -58,6 +58,10 @@ assert not any(n.endswith('.png') for n in names), 'PNGは入れない（Xcode�
 res = os.path.join(pkg, 'Resources'); os.makedirs(res)
 for name, src in files.items():
     shutil.copy(os.path.join(web, src), os.path.join(res, name))
+# 日本語の 言葉の ファイル（第4.62版）：Package.swift の defaultLocalization: "ja" と いっしょに、アプリが「日本語に 対応している」と iOS に 伝える
+# → 写真を 選ぶ 窓（フォトライブラリ・写真を撮る・ファイルを選択）など iOS の 部品が 日本語に なる（まさちゃん「画像読み込みの案内、日本語にして！」）。中身は 使わない
+os.makedirs(os.path.join(res, 'ja.lproj'))
+open(os.path.join(res, 'ja.lproj', 'Localizable.strings'), 'w', encoding='utf8').write('/* テンゲル：日本語 */\n"tengel" = "テンゲル";\n')
 # 的中ボタンの絵と音（第3弾）：手元で作ったもの（kisekae/build_fx_assets.py → ios/fx_assets/ か FX_ASSETS=<フォルダ>）を入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは音なし・ネオンの線画なしで動く）
 sys.path.insert(0, os.path.join(W, 'kisekae'))

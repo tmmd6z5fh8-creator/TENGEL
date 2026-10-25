@@ -88,6 +88,8 @@ html = head + page + '\n<script>\n' + open('pwa_ui.js', encoding='utf8').read() 
 if TARGET == 'app':
     # ポイント・Pカスタム・ミッション・アプリを開いた時の画面・拡大（App Store版だけ。Web版の動きは変えない）
     html += '<script>\n' + open('points.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('points_ui.js', encoding='utf8').read() + '\n</script>\n'
+    # テンキー（第4.62版）：数字の 欄で iOS の キーボードが 出ない とき（Apple Pencil・Swift Playgrounds の 画面）に アプリの 中の テンキーを 出す（App Store版だけ）
+    html += '<script>\n' + open('numpad.js', encoding='utf8').read() + '\n</script>\n'
     # 的中ボタン（第3弾）：見本の CSS と HTML（kisekae/gen_fx.py・boards.py）を束ねた window.__FX と、動かす fx.js。絵と音は build_ios.py が Resources/ に入れる（リポジトリには入れない）
     sys.path.insert(0, os.path.join(HERE, 'kisekae'))
     import build_fx as _fx

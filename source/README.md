@@ -205,6 +205,15 @@
 - **デカ的中・ど的中・特別な 演出の PUSH も 壁紙の テーマの PUSH**（16.2.1 の 決めを 作った）：`fx.js` の `push()` は どの 種類でも そのテーマの PUSH（いつもの＝赤い PUSH）を `A.push.big_t`／`fz_t`（`build_fx.py`：デカ・ど的中の 画面の まわりは 今までの まま・まん中の `.pbox` に PUSH・影・「タップ！」）に 入れる。大きさの 段 `PZ`＝的中 1・デカ（隠れど的中の PUSH も）1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6（`.pbox.pz{transform:scale(--pz)}`。幅 372px・高さ 480px で 頭打ち＝マスター帯の 300px は 1.24 まで）。虹色 `RBW`（プレミアム〜超プレミアム神様）＝うしろで まわる 虹の 光 `.rba`＋ 面に 流れる 虹の 色 `.rbf`（`mix-blend-mode:color`：形・模様・明るさは そのテーマの まま）。デカ的中の 押した あとは `.pzw`（同じ 倍）の 中に そのテーマの `.pressed` と かけら（`reveal_big` の `{{PC}}`・`{{PRESSED}}`・`{{BURST}}`・`{{PZ}}`）。`TengelFx.current().pz` で 倍が 読める。ど的中は 虹色では ない（まさちゃんの 言い方を「虹色は ど的中より 上」と 読んだ ※仮）。
 - テスト：`test_native.py`（段・虹色・テーマ）・`ios/ci/selftest.js`（`.pbox.pz`・`.rbw .rbf`）。
 
+### テスト版を iPad で 使った 画面からの 3つの 直し（第4.62版・2026/10/25・まさちゃんの 指定）
+
+どれも App Store版（`TARGET=app`）だけ。Web版は 今までどおり（テンキーも 説明書の 窓も 入らない）。
+
+- **画像を 読む ときの 窓（写真ライブラリ／写真を撮る／ファイルを選択）が 英語**：この 窓は iOS が「その アプリの 言葉」で 出す。アプリが 言葉を 宣言して いなかった（`CFBundleDevelopmentRegion` が en・lproj なし）ので 英語に なっていた → `ios/Tengel.swiftpm/Package.swift` に `defaultLocalization: "ja"`、`build_ios.py` が `Resources/ja.lproj/Localizable.strings`（1行）を 入れる。CI の `Info.plist.xml`（`CFBundleDevelopmentRegion`＝ja）と `app-files.txt`（`ja.lproj`）で 確かめる。本当に 日本語で 出るかは まさちゃんの iPad で。
+- **記録の 結果の 欄・単勝5連勝の 欄が 打てない**（iPad で キーボードが 出て いない。手もとの Chromium では 打てる）→ `numpad.js`（`build_pwa.py` が app だけ 入れる・`window.__NATIVE` で なければ 何も しない）：数字の 欄（`inputmode=numeric|decimal`・`type=number`）に 入って 0.65秒 たっても `visualViewport` の 高さが 縮まない（＝キーボードが 出ていない）なら、画面の 下に テンキー `#numPad`（`7 8 9 ⌫`／`4 5 6 -`／`1 2 3 .`／`次へ 0 完了`）。`input`（次へ・完了で `change`）を 出すので ○×・合計・保存は 手で 打った ときと 同じ。キーボードで 打てている（trusted な `keydown`）なら しまって その あとは 出さない。`window.TengelNumpad = {show, hide, state, _reset}`。原因が ペンシル（スクリブル）か Playgrounds の ▶ かは まさちゃんに 聞く（指示書 17章の 56・※仮）。
+- **説明書を 開いて 戻ると アプリを 開いた 時の 画面に なる**（`manual.html` へ ページを 移っていた）→ `pwa_ui.js`：`manual.html` への リンクを 押したら ページを 移らず、重ねた 窓 `#manOv`（`<iframe src="manual.html">`・`html.manon` で うしろの スクロールを 止める）で 開く。`manual/manual.js` の「アプリに戻る」「×」は、窓の 中なら `parent.postMessage({tengel:'manual-close'})` → 窓を 消して 見ていた 画面の まま。`window.TengelManual = {open, close, isOpen}`。
+- テスト：`test_native.py`（テンキー・説明書の 窓・Web版には ない）・`test_iphone_only.py`（`defaultLocalization: "ja"`・`ja.lproj`）。見本の 画面：`t11_pad.py`（スクラッチ）。
+
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
 - 判定画面のいちばん上の絵（390×160）：kisekae/svg/banner_*.svg。作り直すときは `python3 kisekae/<ranch|cute|elegant|kids|gold>.py <出力フォルダ>`（art.py の部品で描く・すべてオリジナル）。子供向けの上の帯の背景は knit_tile.svg（12×10のくり返し）

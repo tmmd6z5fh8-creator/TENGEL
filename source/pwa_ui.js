@@ -1105,6 +1105,41 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     }).catch(() => {});
   }
 
+  // ---- 説明書を アプリの 中で 開く（App Store版・第4.62版）：ページを 移らず、重ねた 窓（iframe）で 開いて、「アプリに戻る」で そのまま 戻る ----
+  // 前は manual.html に 移っていたので、戻ると アプリが 開き直されて「アプリを 開いた 時の 画面」が また 出た（まさちゃん「説明書開くと一度アプリ立ち上げ画面になってしまう、そのままアプリに戻せるようにして！」）。
+  // Web版（ホーム画面の アプリ）は 今までどおり ページを 移る
+  let manPrev = null;
+  function openManual(href) {
+    if ($('#manOv')) return;
+    if (!$('#manOvCss')) {
+      const st = document.createElement('style'); st.id = 'manOvCss';
+      st.textContent = '#manOv{position:fixed;inset:0;z-index:60;background:var(--bg,#ECEEF3)}'
+        + '#manOv iframe{position:absolute;left:0;top:var(--sat,0px);width:100%;height:calc(100% - var(--sat,0px) - var(--sab,0px));border:0;background:var(--bg,#ECEEF3)}'
+        + 'html.manon{overflow:hidden}';
+      document.head.appendChild(st);
+    }
+    const ov = document.createElement('div'); ov.id = 'manOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '説明書');
+    const fr = document.createElement('iframe'); fr.title = '説明書'; fr.src = href || 'manual.html'; ov.appendChild(fr);
+    manPrev = { focus: document.activeElement, overflow: document.documentElement.style.overflow };
+    document.documentElement.classList.add('manon'); document.body.appendChild(ov);
+    fr.addEventListener('load', () => { try { const u = String(fr.contentWindow.location.href); if (u && !/manual\.html/.test(u)) closeManual(); } catch (e) { /* 読めなければ そのまま */ } });   // 中で アプリの ページに 行ったら 閉じる（念のため）
+    try { fr.focus(); } catch (e) { /* なし */ }
+  }
+  function closeManual() {
+    const ov = $('#manOv'); if (!ov) return;
+    ov.remove(); document.documentElement.classList.remove('manon');
+    if (manPrev) { document.documentElement.style.overflow = manPrev.overflow || ''; const f = manPrev.focus; manPrev = null; const b = $('#manBtn'); if (b && b.focus) b.focus({ preventScroll: true }); else if (f && f.focus) f.focus({ preventScroll: true }); }
+  }
+  if (NATIVE) {
+    document.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a[href]'); if (!a) return;
+      const href = a.getAttribute('href') || ''; if (!/^manual\.html(#|$)/.test(href)) return;
+      e.preventDefault(); openManual(href);
+    });
+    window.addEventListener('message', e => { if (e.data && e.data.tengel === 'manual-close') closeManual(); });
+    window.TengelManual = { open: openManual, close: closeManual, isOpen: () => !!$('#manOv') };
+  }
+
   // ---- 説明書（manual.html）への入口：上のバーと設定タブ ----
   const BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>';
   function manualEntry() {
