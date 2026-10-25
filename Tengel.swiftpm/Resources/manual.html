@@ -1059,6 +1059,8 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
   
   const backToApp = e => {
     e.preventDefault();
+    
+    if (window.parent && window.parent !== window) { try { window.parent.postMessage({ tengel: 'manual-close' }, '*'); return; } catch (err) {   } }
     let fromApp = false;
     try { fromApp = !!document.referrer && new URL(document.referrer).origin === location.origin && !/manual\.html/.test(document.referrer); } catch (err) { fromApp = false; }
     if (fromApp && history.length > 1) history.back(); else location.href = './';

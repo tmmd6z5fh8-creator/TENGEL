@@ -97,6 +97,10 @@ ORIPAD=$(/usr/libexec/PlistBuddy -c "Print UISupportedInterfaceOrientations~ipad
 LS=$(/usr/libexec/PlistBuddy -c "Print UILaunchScreen" "$APP/Info.plist" > /dev/null 2>&1 && echo yes || echo no)
 say "   iphone-only: UIDeviceFamily=${FAM:-?} orientations(iphone)=${ORI:-0} orientations(ipad)=${ORIPAD:-0} launchscreen=$LS $([ "$FAM" = "1," ] && [ "${ORI:-0}" = "1" ] && [ "$LS" = "yes" ] && echo OK || echo CHECK)"
 say "   web files: $(grep -cE '\.(html|webp|jpg)$' "$OUT/app-files.txt")  index.html at: $(grep 'index.html' "$OUT/app-files.txt" | tr '\n' ' ')"
+# 第4.62版：アプリの 言葉は 日本語（写真を 選ぶ 窓などが 日本語に なる）：CFBundleDevelopmentRegion=ja・ja.lproj が 入っている
+REG=$(/usr/libexec/PlistBuddy -c "Print CFBundleDevelopmentRegion" "$APP/Info.plist" 2>/dev/null)
+LPROJ=$(grep -c 'ja.lproj' "$OUT/app-files.txt")
+say "   language: CFBundleDevelopmentRegion=${REG:-?} ja.lproj files=$LPROJ localizations=$(/usr/libexec/PlistBuddy -c 'Print CFBundleLocalizations' "$APP/Info.plist" 2>/dev/null | grep -vE '^\s*(Array|\{|\}|\(|\))' | tr -d ' ' | tr '\n' ',') $([ "$REG" = "ja" ] && [ "$LPROJ" -ge 1 ] && echo OK || echo CHECK)"
 
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
 shot() {
@@ -130,7 +134,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main fx-push fx-board fx-fz-push fx-fz-result fx-gd fx-gd-board fx-pc fx-pc-board fx-sgd-still ks-judge ks-push ks-board ks-set ks-tengel points settings backup about cm rec report-1 manual manual-item report-manual back report-back"
+P1="gate-first main fx-push fx-board fx-fz-push fx-fz-result fx-gd fx-gd-board fx-pc fx-pc-board fx-sgd-still ks-judge ks-push ks-board ks-set ks-tengel points settings backup about cm rec numpad manual-ov manual-ov-item report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1

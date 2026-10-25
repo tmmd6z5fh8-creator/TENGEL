@@ -126,6 +126,13 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         Store.shared.start()
         // 結果確認のお知らせが押されたら、Webの画面に知らせる（そのレースの結果入力へ）
         Notify.shared.onOpen = { [weak self] p in self?.event("notify", p) }
+        // キーボードが 出た／しまった を Webの 画面に 知らせる（数字の 欄で キーボードが 出なければ アプリの 中の テンキーを 出す：第4.62版）
+        for (name, open) in [(UIResponder.keyboardWillShowNotification, true), (UIResponder.keyboardWillHideNotification, false)] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] n in
+                let h = (n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height ?? 0
+                Task { @MainActor in self?.event("keyboard", ["open": open, "height": Double(h)]) }
+            }
+        }
         webView.load(URLRequest(url: AppSchemeHandler.startURL))
         return webView
     }
@@ -178,7 +185,8 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             return .allow
         }
         // テンゲルの外のページ（http・https・メールなど）は、Safariなどアプリの外で開く
-        if navigationAction.targetFrame?.isMainFrame != false {
+        //（説明書は アプリの 中の 重ねた 窓（iframe）で 開くので、その 中の リンクを 押した ときも 外で 開く：第4.62版）
+        if navigationAction.targetFrame?.isMainFrame != false || navigationAction.navigationType == .linkActivated {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
             return .cancel
         }

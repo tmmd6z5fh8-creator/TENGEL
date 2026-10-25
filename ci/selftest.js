@@ -302,6 +302,43 @@
     // 記録タブ
     tab('rec'); await sleep(900); window.scrollTo(0, 0); await sleep(300);
     await mark('rec');
+    // 第4.62版：テンキー（数字の 欄に 入って 0.65秒 キーボードが 出なければ 出る。スクリプトの focus() では キーボードは 出ないので、ここでは 出る はず）
+    await step(R, 'numpad', async function () {
+      tab('win5'); await sleep(800);
+      var f = document.querySelector('#w5Win0');
+      if (!f || !window.TengelNumpad) return { field: !!f, numpad: !!window.TengelNumpad };
+      f.scrollIntoView({ block: 'center' }); await sleep(300); f.focus(); await sleep(1100);
+      var s1 = TengelNumpad.state(), out = { shown: s1.open, target: s1.target, vh: s1.vh, base: s1.base, hw: s1.hw, kb: s1.kb, active: document.activeElement.id };
+      var b = document.querySelector('#numPad button[data-k="7"]'); if (b) b.click(); await sleep(150);
+      out.value = f.value; out.activeAfter = document.activeElement.id;
+      var np = document.querySelector('#numPad'); if (np) { var r = np.getBoundingClientRect(); out.box = { top: Math.round(r.top), h: Math.round(r.height), bottom: Math.round(innerHeight - r.bottom) }; }
+      await mark('numpad');
+      var d = document.querySelector('#numPad button[data-k="done"]'); if (d) d.click(); await sleep(250);
+      out.closed = !TengelNumpad.state().open; out.activeDone = document.activeElement.tagName;
+      setVal(f, '');
+      return out;
+    });
+    // 第4.62版：説明書は アプリの 中の 重ねた 窓（iframe）で 開く：ページは そのまま・「アプリに戻る」で 窓が 閉じる
+    await step(R, 'manualOv', async function () {
+      tab('rec'); await sleep(600);
+      var b = document.querySelector('#manBtn'); if (!b || !window.TengelManual) return { btn: !!b, api: !!window.TengelManual };
+      var href0 = location.href; b.click();
+      var fr = await waitFor(function () { var f = document.querySelector('#manOv iframe'); return f && f.contentDocument && f.contentDocument.readyState === 'complete' && f.contentDocument.querySelector('#home') ? f : null; }, 10000);
+      var out = { overlay: !!document.querySelector('#manOv'), loaded: !!fr, href: location.href, same: location.href === href0 };
+      if (!fr) { await mark('manual-ov'); await mark('manual-ov-item'); TengelManual.close(); return out; }
+      await sleep(1200);
+      var doc = fr.contentDocument, imgs = Array.prototype.slice.call(doc.images);
+      out.src = fr.src; out.title = doc.title; out.imgs = imgs.length; out.loaded = imgs.filter(function (i) { return i.complete && i.naturalWidth > 0; }).length;
+      var sel = document.querySelector('.tabbar [aria-selected=true]'); out.tab = sel ? sel.dataset.tab : null;
+      await mark('manual-ov');
+      var row = doc.querySelector('.mrow'); if (row) { row.click(); await sleep(900); out.item = { hash: doc.location.hash, page: !(doc.querySelector('#page') || { hidden: true }).hidden, close: !!doc.querySelector('#closeApp:not([hidden])') }; }
+      await mark('manual-ov-item');
+      var c = doc.querySelector('#closeApp:not([hidden])') || doc.querySelector('#toApp'); if (c) c.click(); await sleep(800);
+      out.closed = !document.querySelector('#manOv'); out.hrefAfter = location.href; out.gate = !!document.querySelector('#gateGo'); out.scroll = document.documentElement.classList.contains('manon');
+      var sel2 = document.querySelector('.tabbar [aria-selected=true]'); out.tabAfter = sel2 ? sel2.dataset.tab : null;
+      if (!out.closed) TengelManual.close();
+      return out;
+    });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);

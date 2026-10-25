@@ -12,6 +12,7 @@ import AppleProductTypes
 
 let package = Package(
     name: "テンゲル",
+    defaultLocalization: "ja",   // アプリの 言葉は 日本語：写真を 選ぶ 窓（フォトライブラリ・写真を撮る・ファイルを選択）など iOS の 部品も 日本語に なる（第4.62版・まさちゃん「画像読み込みの案内、日本語にして！」）
     platforms: [
         .iOS("16.0")
     ],
