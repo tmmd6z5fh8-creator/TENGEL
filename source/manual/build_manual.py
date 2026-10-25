@@ -286,7 +286,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 </div>
 </header>
 
-<div class="search" role="search">{icon('search')}<label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="{'さがす（例：5重勝、読み取り、的中率）' if app else 'さがす（例：WIN5、APIキー、的中率）'}" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
+<div class="search" role="search">{icon('search')}<label class="sr" for="q">説明書の中をさがす</label><input id="q" type="search" placeholder="{'さがす（例：単勝5連勝、読み取り、的中率）' if app else 'さがす（例：WIN5、APIキー、的中率）'}" autocomplete="off" enterkeyhint="search"><button class="qx" id="qx" type="button" aria-label="さがす言葉を消す" hidden>×</button></div>
 <p class="qinfo" id="qinfo" hidden></p>
 
 <section id="start" aria-labelledby="st-h">

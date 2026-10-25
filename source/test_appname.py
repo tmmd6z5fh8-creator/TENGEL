@@ -39,6 +39,7 @@ home = re.search(r'window\.__MOTHER_HOME=(\[[^\]]*\]);', app_html)
 mom = json.loads(re.search(r'window\.__MOTHER=(\[.*?\]);window\.__MOTHER_DROP', app_html).group(1))
 check(home and json.loads(home.group(1)) == [AT.fnv('大井')] and all(r['venue'] == '' and '-m1-' in r['id'] for r in mom) and len(mom) == 290,
       f'アプリに入れるデータ：開催場の名前なし・しるしだけ（{home.group(1) if home else None}・{len(mom)}走）')
+check('5重勝' not in man_html and 'さがす（例：単勝5連勝、読み取り、的中率）' in man_html, 'App Store版の 説明書に「5重勝」が 残らない（さがすの 例も 単勝5連勝）')
 web_html = open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read()
 check('大井 第13改訂版' in web_html and '>WIN5<' in web_html and 'window.__MOTHER_HOME=[' not in web_html and 'window.__DATA_URL=' not in web_html, 'Web版は今までどおり（大井 第13改訂版・WIN5・開催場のしるしやデータの更新先は入れない）')
 for f in ('index.html', 'manual.html'):
