@@ -5264,8 +5264,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     if ($('#manOv')) return;
     if (!$('#manOvCss')) {
       const st = document.createElement('style'); st.id = 'manOvCss';
-      st.textContent = '#manOv{position:fixed;inset:0;z-index:60;background:var(--bg,#ECEEF3)}'
-        + '#manOv iframe{position:absolute;left:0;top:var(--sat,0px);width:100%;height:calc(100% - var(--sat,0px) - var(--sab,0px));border:0;background:var(--bg,#ECEEF3)}'
+      st.textContent = '#manOv{position:fixed;inset:0;z-index:60;background:#0a1b22}'   /* 説明書の 背景の 色（manual.css の --bg）：時計の 帯と 下の あきも 同じ 色に */
+        + '#manOv iframe{position:absolute;left:0;top:var(--sat,0px);width:100%;height:calc(100% - var(--sat,0px) - var(--sab,0px));border:0;background:#0a1b22}'
         + 'html.manon{overflow:hidden}';
       document.head.appendChild(st);
     }

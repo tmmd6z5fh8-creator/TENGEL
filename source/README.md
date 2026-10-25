@@ -94,7 +94,7 @@
   - 記録や設定を保存するたび（1.5秒まとめて）、アプリの中のファイル（Application Support/tengel-autobackup.json・アプリを開いて最初に書くときに前のを -prev に残す）にもバックアップ。APIキーは入れない
   - 開いたときに記録が0件なのに自動バックアップに記録がある（保存場所が消えた）→「前の記録が見つかったよ。戻す？」（聞いている間は自動バックアップを書かない）
   - 記録タブの書き出しに「CSVで保存」（共有シート）・コピーはアプリが直接クリップボードへ・サービスワーカーは使わない・CMの動画は公開中のWeb版から読む
-- 作る：`python3 build_ios.py <出力フォルダ>` → Tengel.swiftpm.zip をiPadの「ファイル」に保存 → 開いて（解凍して）Swift Playgrounds で開く → ▶︎
+- 作る：`APP_VER=<deploy.sh と 同じ 版> python3 build_ios.py <出力フォルダ>`（APP_VER は 設定の「いまの版」の「中身 ○○」と 説明書の「アプリ ○○」に 出る。2026.10.25-7 から つけて 作る。つけないと 2026.10.14-2 の まま） → Tengel.swiftpm.zip をiPadの「ファイル」に保存 → 開いて（解凍して）Swift Playgrounds で開く → ▶︎
 - 確かめる：`python3 test_native.py`（画面）・`ios` ブランチにpush（GitHubのMacで作ってシミュレーターで動かす。ios/ci/）
 - アプリの版を上げるときは `IOS_VERSION=1.1 IOS_BUILD=2 python3 build_ios.py <出力>`（Package.swift の displayVersion・bundleVersion を書きかえて作る。App Storeに出すたびに IOS_BUILD は前より大きく）
 - 中身は `TARGET=app python3 build_pwa.py <出力>`（build_ios.py が呼ぶ）：フォントはアプリの中（ios/fonts）・説明書はApp Store版・「姫に送って」「まさちゃんの」はお客さん向けの言い方・「このアプリについて」はApp Store版（プライバシーにCM・自動バックアップ、フォントのライセンスつき）
