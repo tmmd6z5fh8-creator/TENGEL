@@ -179,7 +179,8 @@
       res.sd.parts = ['.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
       res.sd.imgs = document.querySelectorAll('#fxOv .ov.sd img').length; res.sd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.sd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
       await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（赤い 炎・バグる）
-      await sleep(3000); res.sd.fps5 = await fps(1000);            // ロゴの ころ
+      await sleep(1700); await mark('fx-sd-slash');                // 3.5秒ごろ（切り裂き：第4.67版）
+      await sleep(1300); res.sd.fps5 = await fps(1000);            // ロゴの ころ
       await mark('fx-sd-logo');
       await waitFor(function () { return closeVis() === 'visible'; }, 10000);
       res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
@@ -221,6 +222,7 @@
       if (lk) {
         lk.click(); await sleep(400);
         var cf = card.querySelector('.kst.cf .ksconf'), un = cf && (cf.querySelector('[data-ksact=unlock]') || cf.querySelector('.btn')), lkb = card.querySelector('.kst[data-ks=lucky] .kslock');   // P が 足りない ときは「ポイントを買う」で 測る
+        lk = card.querySelector('.kst[data-ks=lucky]') || lk;                                                                    // paint() で タイルは 作り直されるので、測る 前に さがし直す
         res.conf = { tile: (card.querySelector('.kst.cf') || {}).dataset ? card.querySelector('.kst.cf').dataset.ks : null, role: lk.getAttribute('role'), text: cf ? cf.innerText.replace(/\n/g, '／') : null,
           unlock: !!(cf && cf.querySelector('[data-ksact=unlock]')), buy: !!(cf && cf.querySelector('[data-gopt=points]')), cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
