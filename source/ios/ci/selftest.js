@@ -115,7 +115,7 @@
       function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
       var kind = F.show(Object.assign({ force: 'big' }, spec));
       var fpsPush = await fps(1000);
-      var res = { kind: kind, fpsPush: fpsPush, push: !!document.querySelector('#fxOv .push.big'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
+      var res = { kind: kind, fpsPush: fpsPush, push: !!document.querySelector('#fxOv .ov.big .pbox.pz .push'), pz: (document.querySelector('#fxOv .pbox') || { style: { getPropertyValue: function () { return ''; } } }).style.getPropertyValue('--pz'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
         stage: (function () { var st = document.querySelector('#fxOv .fxs'); return st ? { k: st.style.getPropertyValue('--fxk'), w: innerWidth, h: innerHeight } : null; })(),
         decide: [F.decide(Object.assign({}, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })).kind, F.decide(spec).kind, F.decide({ rows: [{ t: '馬単', state: '的中', hits: [[6, 2]] }] }).kind, F.decide({ rows: [{ t: '馬単', state: '不的中', hits: [] }] }).kind] };
       for (var k of ['fz_nglow.webp', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
@@ -127,7 +127,7 @@
       await mark('fx-board');
       F.close(); await sleep(300);
       F.show(Object.assign({ force: 'fz' }, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })); await sleep(600);
-      res.fzPush = !!document.querySelector('#fxOv .push.fz');
+      res.fzPush = !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'); res.fzPz = (document.querySelector('#fxOv .pbox') || { style: { getPropertyValue: function () { return ''; } } }).style.getPropertyValue('--pz');
       await mark('fx-fz-push');
       F.tap(); res.fpsFz = await fps(1000); await sleep(6600);
       await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
@@ -147,7 +147,7 @@
       var res = { decide: F.decide(spec), lottery: [F.lottery('fz'), F.lottery('gd')], films: Object.keys(window.__FX.films || {}), assets: {} };
       for (var k of ['gd_dome.webp', 'pm_face_F.webp', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_gd.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       // 神様的中
-      res.gd = { kind: F.show(Object.assign({ force: 'gd' }, spec)), push: !!document.querySelector('#fxOv .push.fz') };
+      res.gd = { kind: F.show(Object.assign({ force: 'gd' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
       await sleep(400); F.tap(); res.gd.fps = await fps(1000);
       res.gd.parts = ['.gdk', '.gdA', '.gdB', '.gdC'].map(function (c) { return !!document.querySelector('#fxOv .ov.gd ' + c); });
       await mark('fx-gd');
@@ -156,7 +156,7 @@
       await mark('fx-gd-board');
       F.close(); await sleep(300);
       // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤ → ど的中 → ボード：11.02秒）
-      res.pc = { kind: F.show(Object.assign({ force: 'pc' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .push.fz') };
+      res.pc = { kind: F.show(Object.assign({ force: 'pc' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
       await sleep(400); F.tap(); res.pc.fps = await fps(1000);
       res.pc.parts = ['.pmbg', '.pmp', '.pms', '.pmf', '.pmw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.pm ' + c).length; });
       await sleep(3200); res.pc.fps4 = await fps(1000);   // ポニーの ① の ころ
@@ -166,7 +166,7 @@
       await mark('fx-pc-board');
       F.close(); await sleep(300);
       // 超神様的中（動画が ない → still）
-      res.sgd = { kind: F.show(Object.assign({ force: 'sgd' }, spec)), push: !!document.querySelector('#fxOv .push.fz') };
+      res.sgd = { kind: F.show(Object.assign({ force: 'sgd' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
       await sleep(400); F.prime(); F.tap(); await sleep(400);
       res.sgd.cur = F.current(); res.sgd.ov = (document.querySelector('#fxOv .ov.sgd') || {}).className || null; res.sgd.video = !!document.querySelector('#fxOv video');
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);

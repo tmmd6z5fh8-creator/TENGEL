@@ -39,7 +39,18 @@
     if ($('#fxCss')) return;
     const st = document.createElement('style'); st.id = 'fxCss';
     st.textContent = A.css + '\n.fxs .ov.quiet .bh,.fxs .ov.quiet .zrib,.fxs .ov.quiet .n.zx,.fxs .ov.quiet .brows li.top::after{animation:none!important}\n'
-      + '#fxVh{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}\n';
+      + '#fxVh{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}\n'
+      // 第4.60版：テーマの PUSH を デカ・ど的中・特別な 演出でも 使う。.pbox.pz＝--pz 倍（的中 1・デカ 1.2・ど 1.4・それより 上 1.6）・.pzw＝押された PUSH も 同じ 倍・
+      // .rbw＝虹色（うしろに まわる 虹の 光（ぼかし）＋ PUSH の 色が 3秒で 虹を 一周）。点めつは なし
+      + '.fxs .pbox.pz{transform:scale(var(--pz,1));transform-origin:50% 50%}'
+      + '.fxs .pzw{position:absolute;inset:0;z-index:3;pointer-events:none;transform:scale(var(--pz,1));transform-origin:50% calc(50% - 40px)}'
+      + '.fxs .pbox.rbw .rba{position:absolute;z-index:0;left:50%;top:var(--ry);width:var(--rw);height:var(--rh);margin:calc(var(--rh) / -2) 0 0 calc(var(--rw) / -2);border-radius:50%;pointer-events:none;'
+      + 'background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);filter:blur(16px);opacity:.9;animation:pzSpin 2.2s linear infinite}'
+      + '.fxs .pbox.rbw .push .rbf{position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;mix-blend-mode:color;opacity:.95;'
+      + 'background:repeating-linear-gradient(100deg,#FF3B3B 0,#FF9F1A 42px,#FFE53B 84px,#3BE26A 126px,#2FD6FF 168px,#4C6BFF 210px,#B34CFF 252px,#FF3BB8 294px,#FF3B3B 336px) 0 0/341.2px 100%;animation:pzFlow 1.6s linear infinite}'
+      + '@keyframes pzFlow{to{background-position:341.2px 0}}@keyframes pzSpin{to{rotate:360deg}}'
+      + '@media (prefers-reduced-motion:reduce){.fxs .pbox.rbw .rba,.fxs .pbox.rbw .push .rbf{animation:none}}'
+      + '.fxs .calm .pbox.rbw .push .rbf{animation-duration:3.2s}.fxs .calm .pbox.rbw .rba{animation-duration:4.4s}\n';
     document.head.appendChild(st);
   }
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -311,17 +322,40 @@
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, timers: [], on: 0, sp: 0, u: null, v: null };
+    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, u: null, v: null };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (!quiet) preload(kind);
     if (kind === 'miss' || quiet) reveal(); else push();
   }
+  // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
+  // 的中 1.0・デカ的中（隠れど的中の PUSH も）1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
+  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
+  const RBW = { pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1 };
+  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
+  // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
+  function pboxHTML(th, label) {
+    const pc = th ? ' ' + th.pc : '';
+    return `<button class="push${pc}" type="button" data-fx="tap" aria-label="${esc(label)}">${th ? th.push.svg : ''}<span>PUSH</span></button><div class="pshadow${pc}"></div><p class="tap${pc}">タップ！</p>`;
+  }
   function push() {
     if (!cur) return;
-    const k = cur.kind, ks = k === 'hit' ? KS() : null;
-    cur.theme = ks && ks.push && ks.pc ? ks : null;      // 的中の PUSH はそのテーマの形（16.2.1）。デカ・ど的中・特別な 演出は全テーマ共通
-    cur.stage.innerHTML = cur.theme ? A.push.hit_t.split('{{PC}}').join(' ' + cur.theme.pc).replace('{{SVG}}', cur.theme.push.svg) : A.push[FZ_PUSH[k] ? 'fz' : (k === 'hidden' ? 'big' : k)];
+    const k = cur.kind, ks = KS();
+    cur.theme = ks && ks.push && ks.pc ? ks : null;      // PUSH は どの 種類でも そのテーマの 形（第4.60版。前は 的中だけ＝16.2.1）
+    if (k === 'hit') cur.stage.innerHTML = cur.theme ? A.push.hit_t.split('{{PC}}').join(' ' + cur.theme.pc).replace('{{SVG}}', cur.theme.push.svg) : A.push.hit;
+    else {
+      cur.stage.innerHTML = A.push[FZ_PUSH[k] ? 'fz_t' : 'big_t'].replace('{{PBOX}}', pboxHTML(cur.theme, PLABEL[k] || 'PUSH'));
+      const box = cur.stage.querySelector('.pbox'), btn = box && box.querySelector('.push');
+      const w = (btn && btn.offsetWidth) || 200, h = (btn && btn.offsetHeight) || 100;
+      cur.pz = Math.max(1, Math.min(PZ[k] || 1, 372 / w, 480 / h));
+      if (box) {
+        box.style.setProperty('--pz', cur.pz.toFixed(3));
+        if (RBW[k]) {   // 虹色：うしろに まわる 虹の 光（ぼかし）＋ PUSH の 面に 流れる 虹の 色（色だけ 重ねる＝形と 明るさは そのテーマの まま）
+          box.classList.add('rbw'); box.insertAdjacentHTML('afterbegin', `<i class="rba" aria-hidden="true" style="--rw:${Math.round(w * 1.45)}px;--rh:${Math.round(h * 1.7)}px;--ry:${Math.round(h / 2)}px"></i>`);
+          if (btn) btn.insertAdjacentHTML('beforeend', '<i class="rbf" aria-hidden="true"></i>');
+        }
+      }
+    }
     cur.phase = 'push'; cur.ov.classList.remove('rv');
     sfx(SND[k][0]);
     emit('push');
@@ -329,8 +363,9 @@
   function reveal() {
     if (!cur || cur.phase === 'reveal') return;
     const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers, cur.bigs);
-    const th = !cur.quiet && k === 'hit' ? (cur.theme || null) : null;
-    const tpl = th ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : (k === 'hidden' ? 'fz' : k)];
+    const th = !cur.quiet && (k === 'hit' || k === 'big') ? (cur.theme || null) : null;
+    let tpl = th && k === 'hit' ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : (k === 'hidden' ? 'fz' : k)];
+    if (!cur.quiet && k === 'big') tpl = tpl.split('{{PC}}').join(th ? ' ' + th.pc : '').replace('{{PRESSED}}', th ? th.push.pressed : '').replace('{{BURST}}', th ? th.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.2));   // 押された PUSH も そのテーマの 形・同じ 大きさ
     let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
     cur.stage.innerHTML = html;
@@ -447,7 +482,7 @@
 
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
-    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp } : null),
+    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pz: cur.pz } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
     video: video, _rand: null
   };

@@ -59,9 +59,9 @@ OLD = [('default', 1, 'いつもの', 'Default', ['Dela+Gothic+One']),
 
 # すみの飾り（判定画面のカードと同じ所）：かわいい＝リボン・子供向け＝フェルトの星（判定画面の絵そのまま）。
 # いつもの・牧場・カッコいいは判定画面に飾りがないので、ボード用に小さく描いた（金の星・蹄鉄・金の王冠）
+# いつもの（default）の 金の星は なし（2026/10/25 まさちゃん「右側中央の星いらない！」：ボードの 右上に 出ていた 星）
 ORN_OLD = {
-    'default': ('0 0 44 44', '<path d="M22 4 L26.6 16.4 L39.8 16.9 L29.4 25 L33 37.8 L22 30.4 L11 37.8 L14.6 25 L4.2 16.9 L17.4 16.4 Z" fill="#E2A23B" stroke="#161F3D" stroke-width="2.2" stroke-linejoin="round"></path>'
-                '<path d="M22 10 L24.6 17.6" stroke="#FFF1C8" stroke-width="2" stroke-linecap="round"></path>'),
+    'default': ('0 0 44 44', ''),
     'ranch': ('0 0 44 44', '<path d="M11 33 C5 25 6 11 15 7 C19 5.2 25 5.2 29 7 C38 11 39 25 33 33 L28.6 30.6 C32.4 24.6 32 14.6 26.4 12.2 C23.8 11.2 20.2 11.2 17.6 12.2 C12 14.6 11.6 24.6 15.4 30.6 Z" '
               'fill="#B98A3A" stroke="#5A3A1A" stroke-width="2" stroke-linejoin="round"></path>'
               '<path d="M13 31.6 L16.8 29.4 M27.2 29.4 L31 31.6" stroke="#5A3A1A" stroke-width="2.2" stroke-linecap="round"></path>'

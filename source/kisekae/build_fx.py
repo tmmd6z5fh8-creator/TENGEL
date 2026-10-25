@@ -254,10 +254,29 @@ def push_big(G):
 </div>'''
 
 
+def push_big_t(G):
+    """デカ的中（と 隠れど的中）の PUSH の 画面：壁紙の テーマの PUSH（{{PBOX}}＝fx.js が そのテーマの PUSH・影・「タップ！」を 入れて、.pbox を --pz 倍に）
+       第4.60版・まさちゃん「的中ボタン以降も壁紙のテーマにあったpushボタンで作成して！」。まわり（暗さ・きらめき）は デカ的中の まま"""
+    return f'''<div class="ov big">
+  <div class="dim"></div>
+  <div class="spk">{G.sparkles(22, 5)}</div>
+  <div class="pbox pz">{{{{PBOX}}}}</div>
+</div>'''
+
+
 def push_fz(G):
     h = G.fz_push().replace('onClick="{{toReveal}}"', 'data-fx="tap"')
     assert 'data-fx="tap"' in h and '{{' not in h
     return f'<div class="ov fz">\n    {h}\n  </div>'
+
+
+def push_fz_t(G):
+    """ど的中・特別な 演出（プレミアム〜超プレミアム神様）の PUSH の 画面：壁紙の テーマの PUSH（{{PBOX}}）。まわり（暗さ・虹の 光・光の すじ・ふち・わく・きらめき）は ど的中の まま。
+       ど的中は 的中より 一回り 大きく（--pz）、それより 上は もう一回り 大きく 虹色（.rbw：fx.js が つける）"""
+    h = G.fz_push().replace('onClick="{{toReveal}}"', 'data-fx="tap"')
+    h2 = re.sub(r'<div class="pbox">[\s\S]*?<p class="tap fz">タップ!!</p>\s*</div>', '<div class="pbox pz">{{PBOX}}</div>', h)
+    assert h2 != h and '{{PBOX}}' in h2 and 'class="push fz"' not in h2 and '.pbox' not in h2
+    return f'<div class="ov fz">\n    {h2}\n  </div>'
 
 
 CLOSE = '<button class="close" type="button" data-fx="close">とじる</button>'
@@ -295,7 +314,7 @@ def reveal_big(G):
     return f'''<div class="ov big rv" style="--n:{{{{N}}}}">
     <div class="dim"></div>
     {layers}
-    <div class="pressed big"></div>
+    <div class="pzw" style="--pz:{{{{PZ}}}}"><div class="pressed{{{{PC}}}}">{{{{PRESSED}}}}</div>{{{{BURST}}}}</div>
     <div class="hb">{{{{BOARD}}}}</div>
     <div class="conf">{G.confetti(34, 3, rainbow=True)}</div>
     <div class="flash"></div>
@@ -428,7 +447,7 @@ def bundle():
     for k, h in fx5.items():
         assert '{{BOARD}}' in h and '{{N}}' in h and 'data-fx="close"' in h, k
     SG = G.SG
-    return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), fz=push_fz(G)),
+    return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), big_t=push_big_t(G), fz=push_fz(G), fz_t=push_fz_t(G)),
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
                 t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'],
