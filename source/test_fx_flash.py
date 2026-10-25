@@ -2,7 +2,8 @@
 #   python3 test_fx_flash.py [hit,big,fz,hidden,miss,pc,zp,gd,sd,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
-#   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd 9.2秒
+#   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd
+#   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。sd は ③ を 動画が 動いた 形（go）で 写し、0〜7.6秒の コマを 動画の コマ（60コマ/秒）に おきかえて つないで 数える（動画が 手元に ある とき）
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -10,7 +11,8 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=14.4)   # 第4.66版：ど的中・紫電 sd 14.4秒（第4.69版：ボード 12.88秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=12.0)   # 第4.66版：ど的中・紫電（第4.70版：動画 7.6秒 → ③ → ボード 10.38秒）
+SD_C = 7.6                                                                                         # 紫電の ② の 動画の 長さ（shiden.py の SD_T['C']）
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
@@ -36,7 +38,7 @@ try:
         for kind in KINDS:
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
             if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
-                for f in ('sgd_film', 'spg_up'):
+                for f in ('sgd_film', 'spg_up', 'sd_film'):
                     mp4 = os.path.join(FX_DIR, f + '.mp4')
                     if not os.path.exists(mp4) or not shutil.which('ffmpeg'):
                         print(f'  ⚠️ {f}.mp4 が ない（ios/fx_assets/）か ffmpeg が ない'); continue
@@ -56,12 +58,26 @@ try:
                     n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 tap = idx
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
+                if kind == 'sd':   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
+                    pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.sd'); o.classList.remove('still'); o.classList.add('go'); })()"); pg.wait_for_timeout(200)
             else:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
                 n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
             pg.evaluate('TengelFx.close()')
+            if kind == 'sd':
+                mp4 = os.path.join(FX_DIR, 'sd_film.mp4')
+                if os.path.exists(mp4) and shutil.which('ffmpeg'):
+                    fd = os.path.join(d, '_film'); os.makedirs(fd)
+                    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'g%04d.png')], check=True)
+                    ng = len(os.listdir(fd))
+                    for i in range(min(ng, int(SD_C * 60))):
+                        shutil.copy(os.path.join(fd, f'g{i:04d}.png'), os.path.join(d, f'f{tap + i:04d}.png'))
+                    shutil.rmtree(fd)
+                    print(f'  紫電：0〜{SD_C}秒は 動画の コマ（{min(ng, int(SD_C * 60))}コマ）')
+                else:
+                    print('  ⚠️ sd_film.mp4 が ない（③ だけ 数える）')
             r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = r.stdout.strip().split('\n')
             worst = out[-1] if out else ''

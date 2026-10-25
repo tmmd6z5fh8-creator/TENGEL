@@ -7,8 +7,8 @@
        pm_….webp 38まい … プレミアムど的中の 絵（flat/premium_art.py・約2.1MB）
        gd_….webp 24まい … 神様的中の 絵（flat/kami_art.py・flat/kami_storm.py・約1.7MB）
        sfx_pc・sfx_zp・sfx_gd・sfx_sgd・sfx_spg_up・sfx_spg … 特別な 演出の 音 6こ（gen_sfx.py：超神様・超プレミアム神様の 音は 動画の 絵の 時刻を 読むので 少し かかる）
-       第4.66版：sd_….webp 15まい（ど的中・紫電の 絵：flat/shiden_art.py・約0.9MB・馬の 影は r3d の 3Dの 馬なので 1分 ほど かかる）・sfx_sd.m4a（紫電の 音）
-       sgd_film.mp4・sgd_last.webp・spg_up.mp4 … 動画 2本と さいごの 1まいは build_fx_films.py で 作る（時間が かかる）。ここでは 作らない（ない ときは 知らせる）
+       第4.66版：sd_….webp（ど的中・紫電の 絵：flat/shiden_art.py。第4.70版：③ の 4まい）・sfx_sd.m4a（紫電の 音）
+       sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4 … 動画 3本と さいごの 1まいは build_fx_films.py で 作る（時間が かかる）。ここでは 作らない（ない ときは 知らせる）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）
    ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）"""
 import os

@@ -65,15 +65,15 @@ if r.returncode == 0:
     check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば{len(ASSET_FILES)}こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
     # 第5弾：特別な 演出（16.3）。見本の CSS と HTML を 束ねた __FX の reveal（pc・zp・gd・sgd・spg）・絵と 音と 動画の 名前・動画の <video>（fx.js）・Swift の Range（動画の 部分読み）
     from build_fx import FILMS, STILL, ART, SFX
-    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'zp', 'gd', 'sgd', 'spg', 'sd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'gd', 'sgd', 'spg_up', 'spg', 'sd')]) and 'pm_face_F.webp' in html and 'gd_dome.webp' in html and 'sd_horse.webp' in html
+    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'zp', 'gd', 'sgd', 'spg', 'sd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'gd', 'sgd', 'spg_up', 'spg', 'sd')]) and 'pm_face_F.webp' in html and 'gd_dome.webp' in html and 'sd_t_hit.webp' in html and 'sd_horse.webp' not in html and 'sd_film.mp4' in html
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.gd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000],
-          'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様・紫電の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版）')
-    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and len(ART['sd']) == 51 and len(ASSET_FILES) == 2 + 13 + 38 + 24 + 51 + 1 + 2, f'絵と音と動画の 数：ネオン 2・音 13・プレミアム 38・神様 24・紫電 51・さいごの 1まい 1・動画 2（{len(ASSET_FILES)}）')
+          'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様・紫電の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.70版：紫電の ② は 動画）')
+    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and len(ART['sd']) == 4 and len(FILMS) == 3 and len(ASSET_FILES) == 2 + 13 + 38 + 24 + 4 + 1 + 3, f'絵と音と動画の 数：ネオン 2・音 13・プレミアム 38・神様 24・紫電 4（第4.70版）・さいごの 1まい 1・動画 3（{len(ASSET_FILES)}）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
-        check(16e6 < films_sz < 17e6 and 23e6 < sz < 27e6, f'絵と音と動画の 大きさ：動画 2本 約16.3MB・ぜんぶで 約25MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
+        check(19e6 < films_sz < 21e6 and 25e6 < sz < 28.5e6, f'絵と音と動画の 大きさ：動画 3本 約20.0MB（第4.70版：紫電の 動画 約3.6MB を 足した）・ぜんぶで 約26.7MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない

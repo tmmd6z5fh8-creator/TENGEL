@@ -15,7 +15,8 @@
      超神様的中（sgd・kami_super.py：動画）・超プレミアム神様的中（spg：超プレミアムの ①〜③ → 昇格の 動画 → 超神様の 動画）の CSS と 押したあとの HTML も 束ねる。
      絵（premium_blobs.json・kami_blobs.json の 名前.webp）・動画（sgd_film.mp4・spg_up.mp4）・さいごの 1まい（sgd_last.webp）・音 6こ も Resources に 入れる
      （build_fx_assets.py・build_fx_films.py で 手元に 作る）。動画は fx.js が <video> を 作って 舞台に 置く（art＝先に 読む 絵・films＝動画・t＝秒の きまり）
-   第4.66版：ど的中・紫電（sd・shiden.py：黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中）。絵 15まい（shiden_blobs.json）と 音 1こ（sfx_sd）を 足す"""
+   第4.66版：ど的中・紫電（sd・shiden.py）。絵（shiden_blobs.json）と 音 1こ（sfx_sd）を 足す。
+   第4.70版：紫電の ② は 動画（sd_film.mp4・flat/shiden_film.py）＋ ③ の 絵 4まい。動画は 超神様と 同じく fx.js が <video class="sgv"> で 舞台に 置く"""
 import json
 import os
 import re
@@ -26,7 +27,8 @@ ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp')
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
            pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音 6こ（16.5）
            sd='sfx_sd.m4a')                                                                                                  # 第4.66版：ど的中・紫電の 音
-FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4')      # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
+FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4',     # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
+             sd_film='sd_film.mp4')                             # 第4.70版：ど的中・紫電の ② の 動画（flat/shiden_film.py）
 STILL = dict(sgd_last='sgd_last.webp')                           # 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
 
 
@@ -40,7 +42,7 @@ def blob_names():
 
 ART = dict(pm=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'premium_blobs.json'), encoding='utf-8'))),     # プレミアムど的中の 絵 38まい（約2.1MB）
            gd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'kami_blobs.json'), encoding='utf-8'))),        # 神様的中の 絵 24まい（約1.7MB）
-           sd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'shiden_blobs.json'), encoding='utf-8'))),      # ど的中・紫電の 絵 15まい（約0.9MB・第4.66版）
+           sd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'shiden_blobs.json'), encoding='utf-8'))),      # ど的中・紫電の ③ の 絵 4まい（第4.70版：② は 動画）
            sgd=[STILL['sgd_last']])
 ART_FILES = sorted(set(ART['pm'] + ART['gd'] + ART['sd'] + ART['sgd']))
 ASSET_FILES = sorted(ASSETS.values()) + sorted(SFX.values()) + ART_FILES + sorted(FILMS.values())
@@ -393,7 +395,7 @@ def reveal_sgd(G):
 
 
 def reveal_sd(G):
-    """ど的中・紫電（第4.66版）：shiden.py の sd_layers（絵は sd_….webp）"""
+    """ど的中・紫電（第4.66版）：shiden.py の sd_layers（第4.70版：② の 動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝③ の 止めた 絵）"""
     return f'''<div class="ov fz sd" style="--n:{{{{N}}}}">
     {G.SD.sd_layers('{{BOARD}}')}
     {CLOSE}
@@ -414,7 +416,7 @@ def reveal_spg(G):
 def blob_files(G):
     """見本の /_blob/<id> → アプリの 中の ファイル名"""
     m = {G.blobs[k]: v for k, v in (('fz_nglow', ASSETS['nglow']), ('fz_ncore', ASSETS['ncore']), ('sgd_last', STILL['sgd_last']))}
-    m.update({G.blobs[k]: v for k, v in FILMS.items()})
+    m.update({G.blobs[k]: v for k, v in FILMS.items() if k in G.blobs})     # 見本の ページに ある 動画（紫電の 動画は アプリだけ）
     m.update({bid: name + '.webp' for name, bid in blob_names().items()})
     return m
 
@@ -467,7 +469,7 @@ def bundle():
     return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), big_t=push_big_t(G), fz=push_fz(G), fz_t=push_fz_t(G)),
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
-                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'], SD=G.SD.SD_T['RES'],
+                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'], SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
                        SG=dict(FILM=round(SG.FILM, 4), RES=round(SG.RES, 4), STILL_FROM=round(SG.STILL_FROM, 4), STILL_WAIT=SG.STILL_WAIT, STILL_BOARD=round(SG.STILL_BOARD, 4),
                                UP_AT=SG.UP_AT, UP=round(SG.UP, 4), SPG_FILM=round(SG.SPG_FILM, 4), WAIT_MAX=SG.WAIT_MAX)))
 

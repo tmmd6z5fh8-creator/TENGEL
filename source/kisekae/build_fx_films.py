@@ -7,6 +7,8 @@
      sgd_last.webp … 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
      spg_up.mp4   … 超プレミアム神様的中の 昇格の 動画：超プレミアムど的中の 6.0秒（き！）の 1まい（flat/capture_page.py・Playwright の Chromium）→
                      flat/kami_glitch.py バグ 59＋まっ暗 30 コマ → flat/kami_cutin.py 宇宙の カットイン 108コマ ＝ 197コマ・6.57秒（約5MB）
+     sd_film.mp4  … 第4.70版：ど的中・紫電の ② の 動画（flat/shiden_film.py：リアルな 馬の 顔 120 → 蹄の カットイン 72 → 光の 玉 36 ＝ 228コマ・7.6秒・
+                     780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
 import os
@@ -106,10 +108,24 @@ def spg_up():
     encode(comb, len(seq), 'spg_up.mp4')
 
 
+# ---------------------------------------------------------------- 紫電の ② の 動画（第4.70版）
+def sd_film():
+    sd = os.path.join(work, 'sd')
+    sys.path.insert(0, FLAT)
+    import shiden as SDM
+    n = int(round(SDM.FILM['END'] * SDM.FILM['FPS']))
+    run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), sd])          # できて いる コマは とばす（作りかけから つづける）
+    assert all(os.path.exists(os.path.join(sd, f'f{i:03d}.png')) for i in range(n)), '紫電の コマが そろって いない'
+    run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), '--encode', sd, os.path.join(out, 'sd_film.mp4')])
+    print('sd_film.mp4', f'{os.path.getsize(os.path.join(out, "sd_film.mp4")) / 1e6:.2f}MB', f'{n}コマ', flush=True)
+
+
 if __name__ == '__main__':
-    which = os.environ.get('FILMS', 'sgd,spg').split(',')
+    which = os.environ.get('FILMS', 'sgd,spg,sd').split(',')
     if 'sgd' in which:
         sgd_film()
     if 'spg' in which:
         spg_up()
-    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4') if os.path.exists(os.path.join(out, f))])
+    if 'sd' in which:
+        sd_film()
+    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4') if os.path.exists(os.path.join(out, f))])

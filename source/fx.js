@@ -3,14 +3,15 @@
 //   隠れど的中＝デカ的中の 2〜7回に1回（ランダム。数は端末の中だけ：記録・バックアップには入れない）→ 見た目はデカの PUSH・押すと ど的中の演出
 //   第5弾（16.3 の 特別な 演出・くじは ※仮）：ど的中の 6回に1回は プレミアムど的中（pc）・その 8回に1回は 超プレミアムど的中（zp）／
 //     神様的中の 8回に1回は 超神様的中（sgd：1コマずつ 描いた 動画）・その 4回に1回は 超プレミアム神様的中（spg：超プレミアムの ふり → き！で 昇格の 動画 → 超神様の 動画）
-//   第4.66版（まさちゃんの 指定・※仮）：プレミアムに ならなかった ど的中の 2回に1回は ど的中・紫電（sd：黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中）。PUSH・ボード・音の 段は ど的中と 同じ
+//   第4.66版（まさちゃんの 指定・※仮）：プレミアムに ならなかった ど的中の 2回に1回は ど的中・紫電（sd）。PUSH・ボード・音の 段は ど的中と 同じ
+//     第4.70版：② は 1コマずつ 3D で 描いた 動画（sd_film：リアルな 馬の 顔 → 蹄が 画面を 切り裂く → 光の 玉）→ ③ ど！！！的中（CSS と SVG）→ ボード
 //     どれも PUSH は ど的中と 同じ・どの 着せ替えでも 出る・隠れど的中では 出ない・的中エフェクト オフでは くじを ひかない
 //   流れ：PUSH（上下に動く）→ タップ → 演出 → いつものボード（券種ごとの 結果・お金は出さない：16.4）→「とじる」
 //   見本（kisekae/gen_fx.py・boards.py・premium_cute.py・super_premium.py・kami.py・kami_super.py）の CSS と HTML は kisekae/build_fx.py が window.__FX に束ねる。
 //   舞台は 390×844 を画面に合わせて縮める（16.3 ※仮）
 //   音：kisekae/gen_sfx.py の音（m4a・アプリの中のファイル）を Web Audio で。「結果を保存」を押したときに準備する（iPhone は押す操作の中でないと鳴らないことがある）
-//   動画（超神様的中・超プレミアム神様的中）：アプリの中の mp4 を <video> で。押した 瞬間（タップの 中）に 再生 → 動きだした 時（playing）を 0秒に して 音と ボードの 時計を そろえる。
-//     4秒 たっても 動かない・読めない・視差効果を減らす／控えめ → さいごの 1まい → 1.3秒 ボード（※仮）
+//   動画（超神様的中・超プレミアム神様的中・紫電）：アプリの中の mp4 を <video> で。押した 瞬間（タップの 中）に 再生 → 動きだした 時（playing）を 0秒に して 音と ボードの 時計を そろえる。
+//     4秒 たっても 動かない・読めない・視差効果を減らす／控えめ → さいごの 1まい（紫電は ③ の ロゴを 止めた 絵）→ 1.3秒 ボード（※仮）
 //   設定：的中エフェクト（オフ＝PUSH・演出・音なしでボードだけ静かに）・演出を控えめにする（iPhone の視差効果を減らすと同じ形。はじめはその設定に合わせる）・効果音（はじめはオン ※仮）
 //   ほかの画面から：window.TengelFx（decide・show・close・prime・get・set…）。Web版（ホーム画面のアプリ）では何もしない
 (function () {
@@ -236,7 +237,24 @@
   function wake(v) { try { v.currentTime = 0; } catch (e) { /* なし */ } try { const p = v.play(); if (p && p.catch) p.catch(() => {}); v.pause(); } catch (e) { /* なし */ } }   // タップの 中で 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）
   function later(fn, ms) { const t = setTimeout(() => { if (cur && cur.timers) cur.timers = cur.timers.filter(x => x !== t); fn(); }, ms); if (cur) cur.timers.push(t); return t; }
   function clearTimers() { if (!cur) return; cur.timers.forEach(clearTimeout); cur.timers = []; }
-  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), spzOv = () => (cur ? $('.ov.spz', cur.stage) : null);
+  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), spzOv = () => (cur ? $('.ov.spz', cur.stage) : null), sdOv = () => (cur ? $('.ov.sd', cur.stage) : null);
+  // ど的中・紫電（第4.70版）：② は 動画（sd_film）。押した 瞬間に 再生 → 動きだした 時（playing）を 0秒に して 音と ③（go）。4秒 たっても 動かない・読めない・控えめ → ③ の ロゴを 止めた 絵（still）→ 1.3秒 ボード
+  function sdGo() {
+    const v = video('sd_film'); cur.v = v; cur.on = 0;
+    if (!v || v.error || calm()) { sdStill(); return; }
+    cur.stage.appendChild(v); v.className = 'sgv';
+    try { v.currentTime = 0; } catch (e) { /* なし */ }
+    tryPlay(v, sdStill);
+    later(() => { if (cur && !cur.on) sdStill(); }, A.t.SG.WAIT_MAX * 1000);
+  }
+  function sdStill() {
+    if (!cur || cur.on === 2) return;
+    clearTimers(); cur.on = 2;
+    if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
+    const ov = sdOv(); if (ov) ov.classList.add('still');
+    sfx('sd', A.t.SDS.FROM, A.t.SDS.WAIT);
+    emit('still');
+  }
   // 超神様的中：押した 瞬間に 動画を 再生。動きだした 時（playing）を 0秒に して 音と ボード（go）。4秒 たっても 動かない・視差効果を減らす／控えめ → さいごの 1まい（still）
   function sgdGo() {
     const v = video('sgd_film'); cur.v = v; cur.on = 0;
@@ -286,6 +304,11 @@
       sfx('sgd', v.currentTime || 0);
       v.classList.add('on'); const ov = sgdOv(); if (ov) ov.classList.add('go');
       emit('film');
+    } else if (cur.kind === 'sd' && name === 'sd_film') {
+      cur.on = 1; clearTimers();
+      sfx('sd', v.currentTime || 0);
+      v.classList.add('on'); const ov = sdOv(); if (ov) ov.classList.add('go');
+      emit('film');
     } else if (cur.kind === 'spg' && name === 'spg_up' && cur.sp === 1) {
       cur.sp = 2; clearTimers();
       sfx('spg_up', v.currentTime || 0);
@@ -303,18 +326,22 @@
     }
   }
   function onEnded(name) { if (cur && cur.kind === 'spg' && name === 'spg_up' && cur.sp === 2) spgFilm(); }
-  function onError(name) { if (cur && cur.phase === 'reveal' && !cur.on && (cur.kind === 'sgd' || cur.kind === 'spg')) sgdStill(); }   // 読めなかったら（どちらの 動画でも）さいごの 1まい ※仮
-  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg')) return; if (cur.on === 1) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
+  function onError(name) {   // 読めなかったら（どちらの 動画でも）さいごの 1まい ※仮
+    if (!cur || cur.phase !== 'reveal' || cur.on) return;
+    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill(); else if (cur.kind === 'sd' && name === 'sd_film') sdStill();
+  }
+  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd')) return; if (cur.on === 1) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
   function vidBack() { if (!cur || cur.on !== 1 || !cur.v) return; try { const p = cur.v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* なし */ } }
 
   // ---------- 出す ----------
   // 舞台（390×844）を 画面に 入る 大きさに（縦横の 比は 変えない・1倍に 近ければ 1倍＝字が ぼけない）※仮
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
-  // 出る 前に 絵を 読んで おく（プレミアム 38まい・神様 24まい・超神様の さいごの 1まい・動画）
+  // 出る 前に 絵を 読んで おく（プレミアム 38まい・神様 24まい・紫電 4まい・超神様の さいごの 1まい・動画）
   function preload(kind) {
     const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
+    if (kind === 'sd') video('sd_film');
   }
   function open(kind, spec, supers, bigs, quiet) {
     close(true); css();
@@ -374,10 +401,10 @@
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();
       else if (k === 'spg') spgGo();
+      else if (k === 'sd') sdGo();                                                           // 第4.70版：動画 → ③（音は 動画が 動きだした 時から）
       else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
       else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t.PC, 1);             // 控えめ：1秒後に ボードの 所から ※仮
       else if (k === 'gd' && calm()) sfx(SND[k][1], A.t.GD, 1);
-      else if (k === 'sd' && calm()) sfx(SND[k][1], A.t.SD, 1);                             // 控えめ：1秒後に ボードの 所から（第4.66版）
       else sfx(SND[k][1]);
     }
     emit('reveal');

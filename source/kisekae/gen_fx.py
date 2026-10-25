@@ -36,7 +36,7 @@ import premium_cute as PC          # プレミアムど的中（かわいいど�
 import super_premium as SP         # 超プレミアムど的中（手書き・鉛筆）：プレミアムど的中の 8回に1回（はじめの プレミアムと 同じ 流れ・線は 細い 鉛筆の 線）
 import kami as GD                  # 神様的中：3連単の 当たりに 超大穴と 大穴以上（青い 嵐 → 金の 字の 文 → 金の 粒と 神・様・的・中 → 金の 鳥居の 中の 神様的中）
 import kami_super as SG            # 超神様的中（第4.51版）：神様的中の 8回に1回 ※仮（1コマずつ 描いた 動画 ①②③ → 超神様的中の ボード）
-import shiden as SD                # ど的中・紫電（第4.66版・まさちゃんの 指定）：ど的中の 2回に1回 ※仮（黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中）
+import shiden as SD                # ど的中・紫電（第4.66版・まさちゃんの 指定）：ど的中の 2回に1回 ※仮（第4.70版：② は 3D の 動画 → ③ 光が 弾けて ど！！！ 的中）
 
 K = os.path.dirname(os.path.abspath(__file__))
 P = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'
