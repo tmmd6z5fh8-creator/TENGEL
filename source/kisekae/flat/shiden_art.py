@@ -9,13 +9,11 @@
        sd_fire_p1〜3 … 紫の 炎（3まい：ページが 入れかわりで 燃やす）。すき通し
        sd_fire_o1〜3 … 赤い 炎（同じ 形で 色だけ 赤・金）
        sd_glyph    … 炎の 中を ただよう「的中」の 字（送ってくれた 動画の「鬼」の 字の 所：まさちゃん「鬼の文字を的中に変えて」）
-       sd_streaks  … 金と 虹の 光の 筋（放射：ガラスの かけらの 面に 使う）
-       sd_stream   … 金と 虹の 光の 川（横に 流れる・左右が つながる 1まい：②の 切り裂きの 下で 横に 流す）
        sd_rtex     … 虹の ノイズの 布（さいごの 背景・流す）
        sd_t_do     …「ど」（炎の 金の 立体の 字・Dela Gothic One）
        sd_t_ex     …「！」（同じ 作り。CSS で 3つ・上から 下へ 小さく）
        sd_t_hit    …「的中」（虹色の つやの 立体の 字・黒い ふちと 白い 内ふち）
-       sd_flare    … 金の レンズの 光（横の 光の 線と 輪）
+       ② の 絵（第4.68版：送ってくれた GIF の 1コマずつ）は flat/shiden_cuts.py（sd_c0・sd_rbs・sd_c1・sd_eye・sd_c5・sd_c6・sd_w_…・sd_c16〜19・sd_pillar）
    python3 flat/shiden_art.py <出力フォルダ> [名前 …]   → <名前>.webp・shiden_layers.json・shiden_blobs.json"""
 import sys, os, json, math, hashlib
 import numpy as np
@@ -213,71 +211,6 @@ def glyph(out):
     return 'sd_glyph'
 
 
-# ---------------------------------------------------------------- 金と 虹の 光の 筋
-def streaks(out, seed=71):
-    W = H = 1000
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    cx = cy = W / 2
-    ang = np.arctan2(yy - cy, xx - cx)
-    r = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) / (W / 2)
-    rng = np.random.default_rng(seed)
-    t = np.zeros((H, W), np.float32)
-    for n, wd, sf, g in ((110, .7, 1.8, 1.3), (48, 1.4, 1.3, .8), (20, 2.6, 1.1, .5)):
-        for _ in range(n):
-            a0 = rng.uniform(-np.pi, np.pi)
-            w0 = rng.uniform(.3, 1.0) * wd * np.pi / 160
-            da = np.angle(np.exp(1j * (ang - a0)))
-            t = np.maximum(t, np.clip(1 - np.abs(da) / w0, 0, 1) ** sf * rng.uniform(.3, 1.0) * g)
-    fall = np.clip(1 - r / 1.0, 0, 1) ** .6 * np.clip(r / .06, 0, 1)
-    t = t * fall
-    hue = (ang / (2 * np.pi) + .5) % 1.0
-    rainbow = ramp(hue, ((0, (255, 60, 60)), (.17, (255, 170, 40)), (.33, (255, 240, 80)), (.5, (80, 230, 120)), (.67, (70, 180, 255)), (.84, (190, 90, 255)), (1, (255, 60, 60))))
-    gold = hexc('#FFCF4A')
-    col = gold[None, None, :] * .4 + rainbow * .6
-    t = np.clip(t * 1.6, 0, 1.4)
-    img = col * np.clip(t, 0, 1)[..., None] + np.array([1, 1, 1], np.float32) * (np.clip(t - .8, 0, 1) * 1.4)[..., None]
-    img = img + gold[None, None, :] * (cv2.GaussianBlur(np.clip(t, 0, 1), (0, 0), 14) * .35 * fall)[..., None]
-    core = np.exp(-(r / .12) ** 2)
-    img = img + hexc('#FFF6D0') * core[..., None] * .9
-    save_rgb(np.clip(img, 0, 1), os.path.join(out, 'sd_streaks.webp'), q=82)
-    put_lay('sd_streaks', W / S2X, H / S2X)
-    return 'sd_streaks'
-
-
-# ---------------------------------------------------------------- 金と 虹の 光の 川（横に つながる）
-def stream(out, seed=77):
-    """横に 流れる 金と 虹の 光の 川：上下に 虹の 色・細い 横の 筋が たくさん・まん中に 白い しん・左右は つながる（x の 周期 関数だけで 作る）。
-       明るさの 変化は 横に 長く ゆるやか（流しても 1点の 明るさが 1秒に 1〜2回しか 変わらない：点めつの ため）"""
-    W, H = 1600, 420
-    rng = np.random.default_rng(seed)
-    ys = (np.arange(H, dtype=np.float32)[:, None] / H) * np.ones((1, W), np.float32)
-    xs = (np.arange(W, dtype=np.float32)[None, :] / W) * np.ones((H, 1), np.float32)
-    v = ys - .5
-    # 細い 横の 筋（行ごとの こさ：縦に 細かく・横には 1〜3周期の ゆるい 波で 筋の 端が できる）
-    line = rng.uniform(0, 1, (H, 1)).astype(np.float32)
-    line = cv2.GaussianBlur(line, (0, 0), 0.01, sigmaY=1.1)
-    line = smoothstep(.15, .85, line)
-    lum = np.zeros((H, W), np.float32)
-    for k, amp in ((1, .5), (2, .35), (3, .15)):
-        ph = rng.uniform(0, 2 * np.pi, (H, 1)).astype(np.float32)
-        ph = cv2.GaussianBlur(ph, (0, 0), 0.01, sigmaY=6)
-        lum += amp * (np.sin(2 * np.pi * k * xs + ph) * .5 + .5)
-    lum = smoothstep(.25, .9, lum)
-    body = np.exp(-(v / .4) ** 2)
-    core = np.exp(-(v / .065) ** 2) * (.75 + .25 * (np.sin(2 * np.pi * xs + .7) * .5 + .5))
-    hue = (ys * 1.0 + .02 * np.sin(2 * np.pi * xs)) % 1.0                        # 上から 下へ 虹（赤 → 紫）
-    col = ramp(hue, ((0, (255, 50, 90)), (.17, (255, 160, 40)), (.33, (255, 236, 80)), (.5, (80, 240, 130)), (.67, (60, 170, 255)), (.84, (200, 80, 255)), (1, (255, 50, 90))))
-    gold = hexc('#FFD24A')
-    mixr = np.clip(.35 + 1.4 * np.abs(v), 0, .9)[..., None]                      # まん中は 金・外ほど 虹
-    col = col * mixr + gold * (1 - mixr)
-    t = np.clip((.45 + .55 * lum) * (.4 + .6 * line) * body * 1.5, 0, 1)
-    img = col * t[..., None] + np.array([1, 1, 1], np.float32) * (core * (.65 + .35 * lum) + np.clip(t - .8, 0, 1) * 1.2)[..., None]
-    a = np.clip(t * 1.3 + core, 0, 1)
-    save(np.dstack([np.clip(img, 0, 1) * a[..., None], a]), os.path.join(out, 'sd_stream.webp'), q=82)
-    put_lay('sd_stream', W / S2X, H / S2X)
-    return 'sd_stream'
-
-
 # ---------------------------------------------------------------- 虹の ノイズの 布
 def rtex(out, seed=81):
     W, H = W_ * S2X, H_ * S2X
@@ -402,24 +335,6 @@ def hit_logo(out, em_px=150):
     return 'sd_t_hit'
 
 
-# ---------------------------------------------------------------- 金の レンズの 光
-def flare(out):
-    W, H = 900, 300
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    cx, cy = W / 2, H / 2
-    line = np.exp(-((yy - cy) / 2.2) ** 2) * np.clip(1 - np.abs(xx - cx) / (W * .5), 0, 1) ** .7
-    line2 = np.exp(-((yy - cy) / 9.0) ** 2) * np.clip(1 - np.abs(xx - cx) / (W * .5), 0, 1) ** 1.6 * .5
-    core = np.exp(-(((xx - cx) / 40) ** 2 + ((yy - cy) / 18) ** 2))
-    ring_r = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    ring = np.exp(-((ring_r - 120) / 3.0) ** 2) * .55
-    t = np.clip((line + line2 + core * 1.3 + ring) * 1.5, 0, 1.8)
-    col = hexc('#FFD24A')[None, None, :] * np.clip(t, 0, 1)[..., None] + np.array([1, 1, 1], np.float32) * np.clip(t - .8, 0, 1)[..., None]
-    a = np.clip(t, 0, 1)
-    save(np.dstack([np.clip(col, 0, 1) * a[..., None], a]), os.path.join(out, 'sd_flare.webp'), q=85)
-    put_lay('sd_flare', W / S2X, H / S2X)
-    return 'sd_flare'
-
-
 # ---------------------------------------------------------------- 作る
 def build(out, names=None):
     os.makedirs(out, exist_ok=True)
@@ -427,9 +342,9 @@ def build(out, names=None):
     if os.path.exists(lay_path):
         LAY.update(json.load(open(lay_path, encoding='utf-8')))
     todo = {
-        'sd_horse': lambda: horse(out), 'sd_bg': lambda: bg(out), 'sd_fire': lambda: fires(out), 'sd_glyph': lambda: glyph(out), 'sd_streaks': lambda: streaks(out),
-        'sd_rtex': lambda: rtex(out), 'sd_stream': lambda: stream(out), 'sd_t_do': lambda: fire_letter(out, 'sd_t_do', 'ど', 150), 'sd_t_ex': lambda: fire_letter(out, 'sd_t_ex', '！', 150),
-        'sd_t_hit': lambda: hit_logo(out), 'sd_flare': lambda: flare(out)}
+        'sd_horse': lambda: horse(out), 'sd_bg': lambda: bg(out), 'sd_fire': lambda: fires(out), 'sd_glyph': lambda: glyph(out),
+        'sd_rtex': lambda: rtex(out), 'sd_t_do': lambda: fire_letter(out, 'sd_t_do', 'ど', 150), 'sd_t_ex': lambda: fire_letter(out, 'sd_t_ex', '！', 150),
+        'sd_t_hit': lambda: hit_logo(out)}
     made = []
     for key, fn in todo.items():
         if names and key not in names:
@@ -437,10 +352,19 @@ def build(out, names=None):
         r = fn()
         made += r if isinstance(r, list) else [r]
         print('made', r, flush=True)
+    import shiden_cuts                                         # ② の 絵（① の 馬・炎の 絵を 使うので あとで）
+    shiden_cuts.SA = sys.modules[__name__]                     # 同じ LAY に 書く（python3 flat/shiden_art.py で 動かした ときも）
+    made += shiden_cuts.build(out, names)
+    # いま 使う 絵だけ のこす（前の 版の sd_streaks・sd_stream などは 消す）
+    keep = {'sd_horse', 'sd_bg', 'sd_glyph', 'sd_rtex', 'sd_t_do', 'sd_t_ex', 'sd_t_hit', 'sd_c0', 'sd_rbs', 'sd_c1', 'sd_c2', 'sd_eye', 'sd_c5', 'sd_c6',
+            'sd_w_bg', 'sd_w_near', 'sd_w_fire1', 'sd_w_fire2', 'sd_w_prism', 'sd_c16', 'sd_c17', 'sd_c18', 'sd_c19', 'sd_pillar'} | {f'sd_fire_{c}{k}' for c in 'po' for k in (1, 2, 3)}
+    for k in list(LAY):
+        if k not in keep:
+            del LAY[k]
     json.dump(LAY, open(lay_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     # id（中身の md5）→ shiden_blobs.json（見本の /_blob/<id> と 同じ 形で 参照する）
     bl_path = os.path.join(K, 'shiden_blobs.json')
-    bl = json.load(open(bl_path, encoding='utf-8')) if os.path.exists(bl_path) else {}
+    bl = {}
     for nm in LAY:
         fn = os.path.join(out, nm + '.webp')
         if os.path.exists(fn):

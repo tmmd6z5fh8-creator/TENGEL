@@ -179,7 +179,7 @@
       res.sd.parts = ['.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
       res.sd.imgs = document.querySelectorAll('#fxOv .ov.sd img').length; res.sd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.sd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
       await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（赤い 炎・バグる）
-      await sleep(1700); await mark('fx-sd-slash');                // 3.5秒ごろ（切り裂き：第4.67版）
+      await sleep(1700); await mark('fx-sd-world');                // 3.5秒ごろ（割れた 鏡の 世界：第4.68版）
       await sleep(1300); res.sd.fps5 = await fps(1000);            // ロゴの ころ
       await mark('fx-sd-logo');
       await waitFor(function () { return closeVis() === 'visible'; }, 10000);

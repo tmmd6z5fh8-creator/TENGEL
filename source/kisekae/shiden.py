@@ -7,16 +7,20 @@
    第4.67版・まさちゃん「一枚目から二枚目までのシーンを無くして、…三枚目から四枚目までの画像を確認して、フレーム数を増やしていいから画面を切り裂いて、虹色、白、青、黒が入れ替わり入って激しく
    最後の光が弾けて、ど！！！的中が画面から出てくるように作成して！ ど！！！的中は、もっと全体的に雷を纏って激しく、不定期にど！！！的中にまとった雷が画面の全方位にビリビリと届く演出も入れて」
    → ②の「金の 光の 筋の ため」と「砕けて ロゴが 落ちて くる」を やめて、②を「切り裂き」に・ロゴは 光が 弾けた あとに 画面から 出てくる・雷を まとう
+   第4.68版・まさちゃん「え？ファイルのこの、画像からこの画像まで確認して！は確認してないってこと？ もう一度送る！」（送ってくれた GIF：21コマ・4.28秒）
+   → ②を 送ってくれた GIF の 1コマずつに 合わせて 作り直した（第4.67版の 帯の 切り裂きは やめた）。GIF の 絵・人物・機械・字は 使わない・なぞらない。
    押した あと（0秒＝押した 瞬間）：
-     ① 紫の 炎（0〜2.9秒）：紫の 夜に 金の 水晶の かけら → 黒い 馬の 影が ぐっと 寄って 立ち上がる（紫の ふちの 光）→ 十字の 光が 2回 → 目が 赤く 光って 炎が 紫から 赤へ
-        → 炎の 中を「的中」の 字が ただよって 上がる → 馬の 影が バグる（横に ずれる・色が ずれる・走査線）→ 墨が 画面を 黒く ぬる → 白
-     ② 切り裂き（2.84〜4.75秒）：金と 虹の 光の 川が 横に 走る 暗い 画面（白い 馬の 影が にじむ）を、切り裂きが 次々に 走る：虹色・白・青・黒の 帯が 入れかわりに 画面を 切る（4つの 波・計 28本）
-        → さいごの 波は 黒（画面が 黒に 沈む）→ ガラスが とびちる・金の 光の 線と 輪 → 光が 弾ける（金 → 白）
-     ③ ど！！！的中（5.2秒〜）：弾けた 光の 中から「ど」「！」×3（上から 下へ 小さく）「的中」が 白熱の まま 画面から 出てきて、金と 虹の 色に 冷める（ドンッ：画面の 揺れ・金の 粒）
-        → ロゴ 全体に 雷を まとう（ふちを はう 小さな 電気が ずっと ジリジリ）・不定期に 大きな 雷が ロゴから 画面の 全方位（上下左右の ふち）へ ビリビリと 届く → 脈うつ・火の 粉 → ボード（7.9秒）
-   絵（ios/fx_assets の sd_….webp・id は shiden_blobs.json・大きさは shiden_layers.json）。ほかは CSS と SVG（十字の 光・走査線・切り裂き・ガラスの かけら・雷・光の 粒・火の 粉）
-   点めつ：画面の 大きな 光は 白（①→②）・十字の 光（2回）・墨・光が 弾ける（金 → 白）だけ。切り裂きは 1本ごとに 画面の 一部だけを 切り、同じ 所は 1秒に 2〜3回しか 変わらない（波は 0.55秒ごと）。
-   炎は 3まいを ゆっくり 入れかえる。雷は 細い 線（面積が 小さい）。どの 1点も 1秒に 3回 以下（test_fx_flash.py sd）"""
+     ① 紫の 炎（0〜1.5秒）：紫の 夜に 金の 水晶の かけら → 黒い 馬の 影が ぐっと 寄って 立ち上がる → 十字の 光が 2回 → 目が 赤く 光って 炎が 紫から 赤へ → 炎の 中を「的中」の 字が ただよう
+     ② GIF の 21コマ（1.5〜5.86秒：秒は GIF の 長さ。0.08秒の コマは 0.1秒）：
+        GIF 0（1.5〜1.7）白黒の 煙・白い 線の「的中」・黒い 馬・虹色の 光の 筋 → GIF 1（1.7〜1.94）赤い 炎の 馬が 横に ずれる バグ → GIF 2（1.94〜2.14）炎の 場面に 桃色の 雷
+        → GIF 3（2.14〜2.24）光る 目の ドアップに 黒い 切り裂きと 黄色い 光 → GIF 4（2.24〜2.36）目の ドアップ → GIF 5（2.36〜2.46）赤黒い 画面を 白い 裂け目が 裂く
+        → GIF 6（2.46〜2.58）青と 黒の 画面を 黒い 裂け目が 裂く → GIF 7〜15（2.58〜4.7）割れた 鏡の かけらの 世界（左から 金の 炎の 流れが まん中の ピンクの 光へ・左に 虹色の プリズム・右下に 赤い 目の 黒い 馬・寄って いく）
+        → GIF 16（4.7〜4.82）白と 水色に 反転した かけらと 黒い 穴 → GIF 17（4.82〜4.92）黒い 穴と 銀の かけら → GIF 18（4.92〜5.02）黒の 中に 金の 小さな 光
+        → GIF 19〜20（5.02〜5.86）暗い 緑に 金の 輪と 横に 伸びる 光（だんだん 強く）。GIF 16〜20 は 左右に 炎の 柱
+     ③ ど！！！的中（5.86秒〜）：光が 弾けて、その 中から「ど」「！」×3（上から 下へ 小さく）「的中」が 白熱の まま 画面から 出てきて 金と 虹に 冷める（6.42秒）
+        → ロゴ 全体に 雷を まとう（ずっと ジリジリ）・不定期に 大きな 雷が 画面の 全方位へ → 8.64秒 ボード
+   絵（ios/fx_assets の sd_….webp・id は shiden_blobs.json・大きさは shiden_layers.json）：① と ロゴは flat/shiden_art.py、② は flat/shiden_cuts.py。ほかは CSS と SVG
+   点めつ：② の コマの 切りかえは GIF の 長さ（0.1〜0.24秒）。どの 1点も 1秒に 3回 以下（test_fx_flash.py sd で 確かめる）"""
 import os, json, math, random
 
 K = os.path.dirname(os.path.abspath(__file__))
@@ -25,29 +29,27 @@ W_, H_ = 390.0, 844.0
 CX = 195.0
 
 # ---------------------------------------------------------------- 時刻（秒・押した 瞬間が 0）
-SD_T = dict(A=(0.0, 2.9),                       # ① 紫の 炎（見える 間）
+SD_T = dict(A=(0.0, 2.14),                      # ① 紫の 炎（見える 間：GIF 2 の 終わりまで）
             HORSE=(0.0, .38),                   # 馬の 影が 寄って 止まる
             CROSS=(.72, .98),                   # 十字の 光 2回（目・画面の まん中）
             EYES=1.18,                          # 目が 赤く 光る → 炎が 赤へ（EYES〜EYES+.6 で 入れかわる）
-            GLY=(1.05, 2.75),                   # 「的中」の 字が ただよう（出はじめ・おわり）
-            GLITCH=(1.56, 1.84),                # バグる 2回（それぞれ GL_D 秒）
-            INK=2.32,                           # 墨（INK_D 秒で 広がって INK_H 秒 黒）
-            WB=(2.78, 2.84, 2.9, 3.06),         # 白（① → ②）
-            B=(2.84, 5.3),                      # ② 切り裂き（見える 間）
-            WAVES=(3.0, 3.55, 4.1),             # 切り裂きの 波（虹色・白・青 の 入れかわり：1波 7本・SL_GAP 秒ずつ）
-            BLACK=4.62,                         # さいごの 波：黒（画面が 黒に 沈む）
-            SHAT=(4.74, 5.3),                   # ガラスの かけら（小さな 三角）が とびちる
-            FLARE=(4.84, 5.42),                 # 金の 光の 線
-            RING=(4.9, 5.32),                   # 金の 輪が ひろがる
-            GF=(5.1, 5.18, 5.62, 5.95),         # 光が 弾ける（金色の 光：出る・いちばん・ロゴが 出きる まで そのまま・消える）
-            C=5.1,                              # ③ の はじまり
-            LOGO=5.24, EMERGE=.44,              # ど！！！的中が 光の 中から 出てくる（はじまり・かかる 時間）
-            LAND=5.68,                          # 出きった 瞬間（ドンッ：揺れ・金の 粒）
-            ARCS=(5.6, 8.3),                    # ロゴに まとう 電気（ずっと）
-            BOLTS=((5.68, 2), (5.98, 1), (6.08, 2), (6.5, 1), (6.62, 1), (6.98, 2), (7.3, 1), (7.42, 2), (7.78, 1), (8.1, 1)),   # 大きな 雷（時刻・本数）：不定期
-            RES=7.9)                            # ボード
-GL_D, INK_D, INK_H = .14, .16, .22              # バグる 1回の 長さ・墨が 広がる 時間・黒い 時間
-SL_N, SL_GAP, SL_D = 7, .055, .06               # 切り裂き：1波の 本数・1本ごとの ずれ・1本が 切れて 色が つく まで
+            GLY=(1.05, 2.1),                    # 「的中」の 字が ただよう（出はじめ・おわり）
+            C0=(1.5, 1.7),                      # GIF 0：白黒の 煙・虹色の 光の 筋
+            C1=(1.7, 1.94),                     # GIF 1：横に ずれる バグ
+            LT=(1.94, 2.14),                    # GIF 2：炎の 場面に 桃色の 雷
+            EYE=(2.14, 2.24, 2.36),             # GIF 3（切り裂き つき）・GIF 4
+            C5=(2.36, 2.46),                    # GIF 5：赤黒い 画面・白い 裂け目
+            C6=(2.46, 2.58),                    # GIF 6：青と 黒の 画面・黒い 裂け目
+            W=(2.58, 4.7),                      # GIF 7〜15：割れた 鏡の かけらの 世界
+            C16=(4.7, 4.82), C17=(4.82, 4.92), C18=(4.92, 5.02),   # GIF 16・17・18
+            C19=(5.02, 5.86),                   # GIF 19〜20：暗い 緑・金の 輪・横の 光
+            GF=(5.86, 5.94, 6.36, 6.69),        # 光が 弾ける（金色の 光：出る・いちばん・ロゴが 出きる まで そのまま・消える）
+            C=5.86,                             # ③ の はじまり
+            LOGO=5.98, EMERGE=.44,              # ど！！！的中が 光の 中から 出てくる（はじまり・かかる 時間）
+            LAND=6.42,                          # 出きった 瞬間（ドンッ：揺れ・金の 粒）
+            ARCS=(6.34, 9.04),                  # ロゴに まとう 電気（ずっと）
+            BOLTS=((6.42, 2), (6.72, 1), (6.82, 2), (7.24, 1), (7.36, 1), (7.72, 2), (8.04, 1), (8.16, 2), (8.52, 1), (8.84, 1)),   # 大きな 雷（時刻・本数）：不定期
+            RES=8.64)                           # ボード
 AR_DT = .085                                    # まとう 電気の 1コマ
 # ロゴの 置き場所（まん中の x・y・絵の 表示の 幅）：絵は 字の まわりに 光の あきが ある（shiden_art.py の pad）ので、字より 大きい
 LOGO = dict(sd_t_do=(150.0, 232.0, 400.0), e1=(305.0, 212.0, 278.0), e2=(323.0, 336.0, 196.0), e3=(336.0, 420.0, 130.0), sd_t_hit=(CX, 586.0, 474.0))
@@ -133,31 +135,24 @@ def glyphs(n=7, seed=21):
     return o
 
 
-def glitch():
-    """馬の 影が バグる（GLITCH の 2回）：横に 切った 帯が 左右に ずれる（色も ずれる）＋ 赤と 水色の ずれた 影 ＋ 走査線。ずれは 小さめ（点めつの 面積を 小さく）"""
+def pink_bolts():
+    """GIF 2：炎の 場面を 走る 桃色の 雷（3本・ちらつく）"""
     T = SD_T
-    x0, y0, w = HORSE_A
-    h = w * LAY['sd_horse']['h'] / LAY['sd_horse']['w']
-    rng = random.Random(7)
+    t0, t1 = T['LT']
+    rng = random.Random(41)
     o = ''
-    for gi, t in enumerate(T['GLITCH']):
-        # 帯：馬の 高さを 9つに 切る（高さは ばらばら）
-        cuts = sorted([0.0, 1.0] + [rng.random() for _ in range(8)])
-        for a, b in zip(cuts, cuts[1:]):
-            if b - a < .02:
-                continue
-            dx = rng.choice((-1, 1)) * rng.uniform(5, 15)
-            o += (f'<img class="sdgs" src="{blob("sd_horse")}" alt="" style="left:{x0:.0f}px;top:{y0:.0f}px;width:{w:.0f}px;height:{h:.1f}px;'
-                  f'clip-path:inset({a * h:.1f}px 0 {(1 - b) * h:.1f}px 0);--dx:{dx:.0f}px;--hue:{rng.uniform(-70, 70):.0f}deg;'
-                  f'animation:sdGs {sec(GL_D)} steps(4,jump-none) {sec(t)} both{hide(t, t + GL_D)}">')
-        for cls, dx in (('r', 7), ('c', -7)):
-            o += (f'<img class="sdrgb {cls}" src="{blob("sd_horse")}" alt="" style="left:{x0 + dx:.0f}px;top:{y0 + (2 if cls == "r" else -2):.0f}px;width:{w:.0f}px;height:{h:.1f}px;'
-                  f'animation:sdIn .001s linear {sec(t)} both{hide(t, t + GL_D)}">')
-        for _ in range(5):
-            y = rng.uniform(80, 800)
-            o += (f'<i class="sdsb" style="top:{y:.0f}px;height:{rng.uniform(2, 7):.0f}px;--o:{rng.uniform(.25, .5):.2f};'
-                  f'animation:sdSb {sec(GL_D)} steps(3,jump-none) {sec(t + rng.uniform(0, .03))} both{hide(t, t + GL_D + .03)}"></i>')
-    return o
+    for (a, b) in (((-20, 120), (400, 610)), ((300, -20), (120, 860)), ((410, 300), (-20, 520))):
+        main = _disp(rng, a, b, (.12, .16, .22, .3, .36))
+        paths = [_path(main)]
+        for _ in range(3):
+            i = rng.randrange(2, len(main) - 2)
+            bx, by = main[i]
+            L = rng.uniform(40, 110)
+            ang = math.atan2(b[1] - a[1], b[0] - a[0]) + rng.choice((-1, 1)) * rng.uniform(.5, 1.1)
+            paths.append(_path(_disp(rng, (bx, by), (bx + L * math.cos(ang), by + L * math.sin(ang)), (.4, .45))))
+        d = ''.join(f'<path d="{p_}"/>' for p_ in paths)
+        o += f'<g class="g1">{d}</g><g class="g2">{d}</g><g class="g3">{d}</g>'
+    return f'<svg class="sdpb" viewBox="0 0 390 844" aria-hidden="true" style="animation:sdPb {sec(t1 - t0)} steps(2,jump-none) {sec(t0)} both{hide(t0, t1)}">{o}</svg>'
 
 
 def scene_a():
@@ -167,112 +162,118 @@ def scene_a():
     c1, c2 = T['CROSS']
     ex, ey = eye_pos()
     x0, y0, w = HORSE_A
-    i0 = T['INK']
-    return f'''<div class="sdA" aria-hidden="true" style="animation:sdIn .001s linear 0s both{hide(None, T['WB'][1])}">
+    return f'''<div class="sdA" aria-hidden="true" style="animation:sdIn .001s linear 0s both{hide(None, a1)}">
       {_img('sd_bg', -20, -40, W_ + 40, H_ + 80, 'sdbg', f'animation:sdBg {sec(a1 - a0)} linear 0s both')}
       <i class="sdau"></i>
       {fires()}
       {_img('sd_horse', x0, y0, w, None, 'sdho', f'animation:sdHo {sec(h1 - h0)} cubic-bezier(.15,.75,.3,1) {sec(h0)} both,sdBr 1.3s ease-in-out {sec(h1)} infinite alternate')}
       <i class="sdey" style="left:{ex - 46:.0f}px;top:{ey - 46:.0f}px;animation:sdEy .5s ease-out {sec(T['EYES'])} both,sdEyP .9s ease-in-out {sec(T['EYES'] + .5)} infinite alternate{hide(T['EYES'])}"></i>
       <div class="sdgl">{glyphs()}</div>
-      {glitch()}
       {cross(ex, ey, 440, c1, .3)}
       {cross(CX, 430, 980, c2, .36, ' big')}
-      <i class="sdink" style="animation:sdInk {sec(INK_D + INK_H + .14)} linear {sec(i0)} both{hide(i0, i0 + INK_D + INK_H + .14)}"></i>
     </div>'''
 
 
-# ---------------------------------------------------------------- ② 切り裂き（虹色・白・青・黒が 入れかわりに 画面を 切る）
-SL_COLORS = (('rb', 'wh', 'bl', 'rb', 'wh', 'rb', 'bl'), ('bl', 'rb', 'wh', 'bl', 'rb', 'bk', 'wh'), ('wh', 'bl', 'rb', 'wh', 'bk', 'rb', 'bl'))   # 波ごとの 色の 順（rb＝虹色・wh＝白・bl＝青・bk＝黒）
-SL_ANG = ((-28, -22, -34, -18, -30, -25, -36), (62, 70, 55, 66, 74, 58, 68), (24, 30, 18, 34, 27, 21, 38))                                     # 波ごとの 角度（度・横が 0）：波の 中は 同じ 向きの 扇で、波ごとに 向きを かえる
+# ---------------------------------------------------------------- ② 送ってくれた GIF の 1コマずつ（第4.68版）
+def cut(name, t0, t1, cls='', anim=''):
+    """1コマの 絵（画面 いっぱい）：t0 に 出て t1 に 消える（anim＝ほかの 動き）"""
+    return _img(name, 0, 0, W_, H_, 'sdcut' + (' ' + cls if cls else ''), f'animation:sdIn .001s linear {sec(t0)} both{anim}{hide(t0, t1)}')
 
 
-SL_SHAPES = ('polygon(0 50%,9% 0,100% 20%,100% 80%,9% 100%)', 'polygon(0 18%,100% 0,100% 58%,90% 100%,0 82%)', 'polygon(0 0,100% 28%,100% 72%,0 100%)',
-             'polygon(0 30%,8% 0,100% 50%,8% 100%,0 70%)', 'polygon(0 40%,100% 0,94% 100%,0 60%)')      # 切り裂きの 形（先が 細い 刃の あと：帯の 箱の 中の %）
+def slash_svg():
+    """GIF 3：目の ドアップを ななめに 走る 黒い 切り裂き（ギザギザ）と 黄色い 光の 筋"""
+    rng = random.Random(43)
+    top = _disp(rng, (-30, 300), (420, 70), (.03, .05, .06))
+    bot = _disp(rng, (-30, 352), (420, 110), (.03, .05, .06))
+    poly = ' '.join(f'{x:.0f},{y:.0f}' for x, y in top + bot[::-1])
+    return (f'<polygon points="{poly}" fill="#000"/>'
+            f'<path d="M-30 690 L420 330" stroke="#FFF2B0" stroke-width="16" stroke-opacity=".35" stroke-linecap="round"/>'
+            f'<path d="M-30 690 L420 330" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>')
 
 
-def slashes():
-    """切り裂き：波ごとに 7本の 刃の あと（同じ 向きの 扇・画面を だいたい 1回 おおう）が SL_GAP 秒ずつ 走る。
-       1本＝まわした 細長い 箱（刃の あとの 形に 切りぬく）が、切れた 瞬間に 線から 開いて（scaleY 0 → 1）色（虹色・白・青・黒）が つく。上の ふちに 白い 刃の 光。
-       同じ 所を 切るのは 波ごとに 1本くらい（帯の 幅 64〜118px・7等分の 間は 106〜133px：点めつ＝1点の 明るさの 変化は 1秒に 2〜4回）。さいごの 波（BLACK）は 黒だけ 7本（幅 120〜190px・画面が 黒に 沈む）。
-       白い つや（左から 右へ 走る 光）は 点めつが 増えるので 入れない"""
-    T = SD_T
-    rng = random.Random(31)
+def world_sparks(n=40, seed=51):
+    """GIF 7〜15：左から まん中の 光へ 吸いこまれる 光の 粒（くり返し）"""
+    rng = random.Random(seed)
     o = ''
-    waves = [(t, SL_COLORS[k], SL_ANG[k]) for k, t in enumerate(T['WAVES'])] + [(T['BLACK'], ('bk',) * SL_N, (-40, 50, -10, 80, 20, -65, 35))]
-    BW = 1400.0
-    for wi, (t0, cols, angs) in enumerate(waves):
-        order = list(range(SL_N))
-        rng.shuffle(order)
-        for n, k in enumerate(order):
-            # 位置：扇の 向きに 直交する 方向に 画面を 7等分 した あたり（少し ばらす）
-            u = (k + .5) / SL_N + rng.uniform(-.06, .06)
-            a = math.radians(angs[k])
-            nx, ny = -math.sin(a), math.cos(a)
-            span = abs(nx) * W_ + abs(ny) * H_
-            cx, cy = CX + nx * (u - .5) * span, 430.0 + ny * (u - .5) * span
-            w = rng.uniform(64, 118) if cols[k] != 'bk' else rng.uniform(120, 190)
-            t = t0 + n * SL_GAP
-            shape = SL_SHAPES[rng.randrange(len(SL_SHAPES))]
-            flip = rng.random() < .5
-            o += (f'<i class="sdsl {cols[k]}" style="left:{cx - BW / 2:.0f}px;top:{cy - w / 2:.0f}px;width:{BW:.0f}px;height:{w:.0f}px;--a:{angs[k] + (180 if flip else 0)}deg;clip-path:{shape};'
-                  f'--bx:{rng.uniform(0, 100):.0f}% {rng.uniform(0, 100):.0f}%;animation:sdSl {sec(SL_D)} cubic-bezier(.2,.9,.3,1) {sec(t)} both{hide(t)}">'
-                  f'<b class="ed" style="animation:sdEd .26s linear {sec(t)} both"></b></i>')
+    for _ in range(n):
+        y0 = rng.uniform(260, 620)
+        s = rng.uniform(2.5, 6)
+        o += (f'<i style="left:{CX - s / 2:.1f}px;top:{430 - s / 2:.1f}px;width:{s:.1f}px;height:{s:.1f}px;--x:{-rng.uniform(230, 420):.0f}px;--y:{y0 - 430:.0f}px;'
+              f'animation:sdSp {rng.uniform(.45, .8):.2f}s cubic-bezier(.4,0,.9,.7) {-rng.uniform(0, .8):.2f}s infinite"></i>')
     return o
 
 
-def rings(times):
-    return ''.join(f'<i class="sdrg" style="animation:sdRg .7s cubic-bezier(.1,.6,.3,1) {sec(t)} both{hide(t, t + .7)}"></i>' for t in times)
-
-
-def scene_b():
-    """② 切り裂き：暗い 画面に 金と 虹の 光の 川（横に 流れる）・白く にじむ 馬の 影（色の ずれた 影 2つ）→ 切り裂きの 波 → 黒 → ガラスの かけら・金の 光の 線・金の 輪 → 光が 弾ける"""
-    T = SD_T
-    b0, b1 = T['B']
-    hw = 380.0
-    hh = hw * LAY['sd_horse']['h'] / LAY['sd_horse']['w']
-    f0, f1 = T['FLARE']
-    r0, r1 = T['RING']
-    return f'''<div class="sdB" aria-hidden="true" style="animation:sdIn .001s linear {sec(b0)} both{hide(b0, T['GF'][1])}">
-      <i class="sdbb"></i>
-      <i class="sdstm" style="--img:url({blob('sd_stream')});--sw:{LAY['sd_stream']['w']:g}px;--sh:{LAY['sd_stream']['h']:g}px"></i>
-      {_img('sd_horse', CX - hw / 2 + 9, 430 - hh / 2 + 4, hw, hh, 'sdgh c')}
-      {_img('sd_horse', CX - hw / 2 - 9, 430 - hh / 2 - 4, hw, hh, 'sdgh m')}
-      {_img('sd_horse', CX - hw / 2, 430 - hh / 2, hw, hh, 'sdgh w')}
-      <div class="sdsls">{slashes()}</div>
-      <div class="sdsh">{shards()}</div>
-      {_img_c('sd_flare', CX, 430, 560.0, 'sdfr', f'animation:sdFr {sec(f1 - f0)} cubic-bezier(.2,.7,.3,1) {sec(f0)} both{hide(f0, f1)}')}
-      {rings((r0, r0 + .14, r0 + .28))}
-    </div>'''
-
-
-# ---------------------------------------------------------------- ③ ど！！！的中（光の 中から 出てくる・雷を まとう）
-def shards(n=18, seed=11, cx=CX, cy=430.0):
-    """ガラスの かけら：まん中から 外へ とびちる 小さな 三角（40〜130px・clip-path）。まわりながら 遠ざかって 消える。
-       画面 ぜんぶを おおう 大きな くさびは やめた（同じ 所を 何度も 明るく したり 暗く したり して 点めつに なる）"""
-    T = SD_T
-    s0, s1 = T['SHAT']
+def flyers(t, dur, n=16, seed=53):
+    """GIF 18：黒の 中を かけらが 外へ とぶ（小さな 三角）"""
     rng = random.Random(seed)
     o = ''
     for i in range(n):
         a = 2 * math.pi * (i + rng.uniform(-.3, .3)) / n
-        r0 = rng.uniform(20, 90)
-        px, py = cx + r0 * math.cos(a), cy + r0 * math.sin(a)
-        L = rng.uniform(40, 130)
-        w = L * rng.uniform(.25, .55)
-        ang = a + rng.uniform(-.4, .4)
-        tip = (px + L * math.cos(ang), py + L * math.sin(ang))
-        nx, ny = -math.sin(ang) * w / 2, math.cos(ang) * w / 2
-        pts = ((px + nx, py + ny), tip, (px - nx, py - ny))
-        poly = ','.join(f'{x:.0f}px {y:.0f}px' for x, y in pts)
-        dist = rng.uniform(260, 520)
-        dl = s0 + rng.uniform(0, .06)
-        dur = s1 - dl
-        o += (f'<i style="clip-path:polygon({poly});--x:{dist * math.cos(a):.0f}px;--y:{dist * math.sin(a):.0f}px;--r:{rng.uniform(-90, 90):.0f}deg;--o:{rng.uniform(.8, 1):.2f};'
-              f'animation:sdSh {sec(dur)} cubic-bezier(.2,.5,.6,1) {sec(dl)} both{hide(dl, dl + dur)}"></i>')
+        r0 = rng.uniform(30, 120)
+        px, py = CX + r0 * math.cos(a), 422 + r0 * math.sin(a) * 1.6
+        L = rng.uniform(16, 48)
+        w = L * rng.uniform(.3, .6)
+        tip = (px + L * math.cos(a), py + L * math.sin(a))
+        nx, ny = -math.sin(a) * w / 2, math.cos(a) * w / 2
+        poly = ','.join(f'{x:.0f}px {y:.0f}px' for x, y in ((px + nx, py + ny), tip, (px - nx, py - ny)))
+        d = rng.uniform(160, 340)
+        o += (f'<i style="clip-path:polygon({poly});--x:{d * math.cos(a):.0f}px;--y:{d * math.sin(a) * 1.4:.0f}px;--r:{rng.uniform(-80, 80):.0f}deg;'
+              f'animation:sdFly {sec(dur)} cubic-bezier(.2,.5,.6,1) {sec(t)} both"></i>')
     return o
 
 
+def scene_b():
+    """② GIF の 1コマずつ（GIF 2 の 間は ① の 場面に 桃色の 雷：scene_a）"""
+    T = SD_T
+    c0, c1 = T['C0'], T['C1']
+    e0, e1, e2 = T['EYE']
+    w0, w1 = T['W']
+    c18, c19 = T['C18'], T['C19']
+    p0, p1 = T['C16'][0], T['GF'][1]
+    c5, c17 = T['C5'], T['C17']
+    o = f'<div class="sdB" aria-hidden="true" style="animation:sdIn .001s linear {sec(c0[0])} both{hide(c0[0], T["GF"][1])}">'
+    o += (f'<div class="sdc0" style="animation:sdIn .001s linear {sec(c0[0])} both{hide(c0[0], c0[1])}">'
+          + _img('sd_c0', 0, 0, W_, H_, 'sdcut', f'animation:sdC0z {sec(c0[1] - c0[0])} linear {sec(c0[0])} both')
+          + _img('sd_rbs', -30, 0, W_ + 60, H_, 'sdrbs', f'animation:sdRbs {sec(c0[1] - c0[0])} linear {sec(c0[0])} both')
+          + '</div>')
+    o += _img('sd_c1', -12, 0, W_ + 24, H_, 'sdcut', f'animation:sdIn .001s linear {sec(c1[0])} both{hide(c1[0], c1[1])}')     # ゆらさない（点めつ）
+    lt = T['LT']
+    o += (f'<div class="sdc2" style="animation:sdIn .001s linear {sec(lt[0])} both{hide(lt[0], lt[1])}">'
+          + _img('sd_c2', 0, 0, W_, H_, 'sdcut', f'animation:sdC0z {sec(lt[1] - lt[0])} linear {sec(lt[0])} both') + pink_bolts() + '</div>')
+    o += (f'<div class="sdeye" style="animation:sdEyeZ {sec(e2 - e0)} linear {sec(e0)} both{hide(e0, e2)}">'
+          + _img('sd_eye', 0, 0, W_, H_, 'sdcut')
+          + f'<svg class="sdslash" viewBox="0 0 390 844" aria-hidden="true" style="animation:sdIn .001s linear {sec(e0)} both{hide(e0, e1)}">{slash_svg()}</svg>'
+          + '</div>')
+    o += cut('sd_c5', *c5)
+    o += cut('sd_c6', *T['C6'])
+    wa = f'{sec(w1 - w0)} cubic-bezier(.3,.2,.6,1) {sec(w0)} both'
+    o += (f'<div class="sdw" style="animation:sdIn .001s linear {sec(w0)} both{hide(w0, w1)}">'
+          + _img('sd_w_bg', 0, 0, W_, H_, 'sdwbg', f'animation:sdWz {wa}')
+          + _img('sd_w_fire1', -20, 0, W_ + 40, H_, 'sdwf', f'animation:sdWf {wa},sdWf1 .9s ease-in-out {sec(w0)} infinite alternate')
+          + _img('sd_w_fire2', -20, 0, W_ + 40, H_, 'sdwf', f'animation:sdWf {wa},sdWf2 .9s ease-in-out {sec(w0)} infinite alternate')
+          + _img('sd_w_prism', 0, 0, W_, H_, 'sdwpr', f'animation:sdWz {wa},sdPr .6s ease-in-out {sec(w0)} infinite alternate')
+          + f'<i class="sdcore" style="animation:sdCore .5s ease-in-out {sec(w0)} infinite alternate"></i>'
+          + f'<div class="sdwsp">{world_sparks()}</div>'
+          + _img('sd_w_near', 0, 0, W_, H_, 'sdwn', f'animation:sdWn {sec(w1 - w0)} cubic-bezier(.3,.1,.7,1) {sec(w0)} both')
+          + '</div>')
+    o += cut('sd_c16', *T['C16'])
+    o += cut('sd_c17', *c17, anim=f',sdC17z {sec(c17[1] - c17[0])} linear {sec(c17[0])} both')
+    o += (f'<div class="sdc18" style="animation:sdIn .001s linear {sec(c18[0])} both{hide(c18[0], c18[1])}">'
+          + _img('sd_c18', 0, 0, W_, H_, 'sdcut')
+          + f'<div class="sdfly">{flyers(c18[0], c18[1] - c18[0] + .02)}</div>'
+          + f'<i class="sdspk" style="animation:sdSpk {sec(c18[1] - c18[0])} ease-in {sec(c18[0])} both"></i>'
+          + '</div>')
+    o += (f'<div class="sdc19" style="animation:sdIn .001s linear {sec(c19[0])} both{hide(c19[0], T["GF"][1])}">'
+          + _img('sd_c19', 0, 0, W_, H_, 'sdcut', f'animation:sdC19z {sec(c19[1] - c19[0])} linear {sec(c19[0])} both')
+          + f'<i class="sdc19g" style="animation:sdC19g {sec(c19[1] - c19[0])} cubic-bezier(.5,0,.9,.5) {sec(c19[0])} both"></i>'
+          + f'<i class="sdc19f" style="animation:sdC19f {sec(c19[1] - c19[0])} cubic-bezier(.5,0,.9,.5) {sec(c19[0])} both"></i>'
+          + '</div>')
+    o += _img('sd_pillar', -22, 0, 60, H_, 'sdpil', f'animation:sdIn .001s linear {sec(p0)} both,sdPil .3s ease-in-out {sec(p0)} infinite alternate{hide(p0, p1)}')
+    o += _img('sd_pillar', W_ - 38, 0, 60, H_, 'sdpil r', f'animation:sdIn .001s linear {sec(p0)} both,sdPil .3s ease-in-out {sec(p0 - .15)} infinite alternate{hide(p0, p1)}')
+    return o + '</div>'
+
+
+# ---------------------------------------------------------------- ③ ど！！！的中（光の 中から 出てくる・雷を まとう）
 def _disp(rng, a, b, rough):
     pts = [a, b]
     for r in rough:
@@ -466,40 +467,25 @@ def scene_c():
     </div>'''
 
 
-# ---------------------------------------------------------------- 白い 光・層
-def white(cls, w):
-    t0, t1, t2, t3 = w
-    d = t3 - t0
-    return (f'<div class="sdw" aria-hidden="true" style="animation:sdW{cls} {sec(d)} linear {sec(t0)} both{hide(t0, t3)}"></div>',
-            f'@keyframes sdW{cls}{{0%{{opacity:0}}{(t1 - t0) / d * 100:.1f}%{{opacity:1}}{(t2 - t0) / d * 100:.1f}%{{opacity:1}}100%{{opacity:0}}}}')
-
-
-WHITES = (('b', 'WB'),)
-
-
+# ---------------------------------------------------------------- 層
 def sd_layers(board_html):
-    """押したあと（下から）：① 紫の 炎 → ② 切り裂き → ③ 光が 弾けて ど！！！的中（雷を まとう）→ 白い 光 → ボード（board_html）"""
-    T = SD_T
-    wh = ''.join(white(k, T[n])[0] for k, n in WHITES)
+    """押したあと（下から）：① 紫の 炎 → ② GIF の 1コマずつ → ③ 光が 弾けて ど！！！的中（雷を まとう）→ ボード（board_html）"""
     return f'''<div class="sdk" aria-hidden="true"></div>
     {scene_a()}
     {scene_b()}
     {scene_c()}
-    {wh}
     <div class="hb">{board_html}</div>
-    <p class="sr">ど的中！紫の 炎の 中に 黒い 馬の 影が 立ち上がり、目が 赤く 光る。画面が バグって 墨に 沈み、虹色・白・青・黒の 切り裂きが 走る。光が 弾けて「ど！！！的中」が 雷を まとって 出てくる</p>'''
+    <p class="sr">ど的中！紫の 炎の 中に 黒い 馬の 影が 立ち上がり、目が 赤く 光る。白黒の 煙と 虹色の 光・桃色の 雷・光る 目・赤と 青の 裂け目・割れた 鏡の 世界の 金の 炎・黒い 穴・緑の 光の 輪。光が 弾けて「ど！！！的中」が 雷を まとって 出てくる</p>'''
 
 
 def sd_css():
     T = SD_T
-    wk = '\n'.join(white(k, T[n])[1] for k, n in WHITES)
     g0, g1, g2, g3 = T['GF']
     gd = g3 - g0
     e0 = T['EYES']
     a0, a1 = T['A']
-    ink_tot = INK_D + INK_H + .14
     return f'''
-/* ---------- ど的中・紫電（sd）：shiden.py（絵は flat/shiden_art.py・十字の 光・走査線・切り裂き・ガラスの かけら・雷・光の 粒・火の 粉は CSS と SVG） ---------- */
+/* ---------- ど的中・紫電（sd）：shiden.py（① と ロゴの 絵は flat/shiden_art.py・② の 絵は flat/shiden_cuts.py・十字の 光・雷・光の 粒・火の 粉は CSS と SVG） ---------- */
 .ov.fz.sd{{--t0:{sec(T['RES'] + .45)};--tc:.3s}}
 @keyframes sdH{{0%,100%{{visibility:hidden}}}}
 @keyframes sdIn{{from{{opacity:0}}to{{opacity:1}}}}
@@ -508,6 +494,7 @@ def sd_css():
 .ov.sd .sdA,.ov.sd .sdB,.ov.sd .sdC{{position:absolute;inset:0;overflow:hidden;pointer-events:none}}
 .ov.sd img{{position:absolute;display:block;max-width:none}}
 .ov.sd .sdA i,.ov.sd .sdB i,.ov.sd .sdC i{{position:absolute;display:block}}
+.ov.sd .sdB > div{{position:absolute;inset:0}}
 /* ① 紫の 炎 */
 .ov.sd .sdbg{{transform-origin:50% 55%}}
 @keyframes sdBg{{from{{transform:scale(1)}}to{{transform:scale(1.1)}}}}
@@ -531,13 +518,6 @@ def sd_css():
 .ov.sd .sdgl{{position:absolute;inset:0}}
 .ov.sd .sdgy{{opacity:0;transform-origin:50% 50%}}
 @keyframes sdGy{{0%{{opacity:0;transform:translate(0,0) scale(.7) rotate(0)}}18%{{opacity:1}}72%{{opacity:.9}}100%{{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.08) rotate(var(--r))}}}}
-.ov.sd .sdgs{{filter:hue-rotate(var(--hue))}}
-@keyframes sdGs{{0%{{transform:translateX(var(--dx))}}50%{{transform:translateX(calc(var(--dx) * -.7))}}100%{{transform:translateX(calc(var(--dx) * .4))}}}}
-.ov.sd .sdrgb{{opacity:.55;mix-blend-mode:screen}}
-.ov.sd .sdrgb.r{{filter:brightness(1.4) sepia(1) saturate(9) hue-rotate(-40deg)}}
-.ov.sd .sdrgb.c{{filter:brightness(1.4) sepia(1) saturate(9) hue-rotate(140deg)}}
-.ov.sd .sdsb{{left:0;width:100%;background:rgba(150,220,255,var(--o))}}
-@keyframes sdSb{{0%{{transform:translateY(0)}}100%{{transform:translateY(-40px)}}}}
 .ov.sd .sdcx{{opacity:0;border-radius:50%;transform-origin:50% 50%;
   background:linear-gradient(90deg,transparent 48.6%,#FFFFFF 50%,transparent 51.4%),linear-gradient(0deg,transparent 48.6%,#FFFFFF 50%,transparent 51.4%),
   linear-gradient(45deg,transparent 49.4%,rgba(255,255,255,.7) 50%,transparent 50.6%),linear-gradient(-45deg,transparent 49.4%,rgba(255,255,255,.7) 50%,transparent 50.6%),
@@ -545,40 +525,56 @@ def sd_css():
 .ov.sd .sdcx.big{{background:linear-gradient(90deg,transparent 48.8%,#FFFFFF 50%,transparent 51.2%),linear-gradient(0deg,transparent 48.8%,#FFFFFF 50%,transparent 51.2%),
   radial-gradient(circle,#FFFFFF 0 5%,rgba(255,240,255,.9) 10%,rgba(230,170,255,.45) 20%,rgba(180,80,255,0) 38%)}}
 @keyframes sdCx{{0%{{opacity:0;transform:scale(.25) rotate(-8deg)}}30%{{opacity:1}}100%{{opacity:0;transform:scale(1.25) rotate(6deg)}}}}
-.ov.sd .sdink{{inset:0;opacity:0;transform-origin:46% 52%;
-  background:radial-gradient(circle at 30% 38%,#000 0 30%,transparent 36%),radial-gradient(circle at 72% 58%,#000 0 34%,transparent 40%),radial-gradient(circle at 50% 50%,#000 0 42%,transparent 50%),radial-gradient(circle at 58% 22%,#000 0 22%,transparent 28%),radial-gradient(circle at 36% 78%,#000 0 26%,transparent 32%),
-  radial-gradient(circle at 14% 58%,#000 0 14%,transparent 19%),radial-gradient(circle at 84% 30%,#000 0 12%,transparent 17%),radial-gradient(circle at 66% 86%,#000 0 16%,transparent 21%),radial-gradient(circle at 22% 14%,#000 0 10%,transparent 14%),radial-gradient(circle at 90% 78%,#000 0 9%,transparent 13%)}}
-@keyframes sdInk{{0%{{opacity:1;transform:scale(.3) rotate(-14deg)}}{INK_D / ink_tot * 100:.1f}%{{opacity:1;transform:scale(1.7) rotate(0)}}{(INK_D + INK_H) / ink_tot * 100:.1f}%{{opacity:1;transform:scale(1.9) rotate(2deg)}}100%{{opacity:0;transform:scale(2) rotate(2deg)}}}}
-/* 白い 光 */
-.ov.sd .sdw{{position:absolute;inset:0;background:#FFFFFF;opacity:0;pointer-events:none;z-index:8}}
-{wk}
-/* ② 切り裂き：金と 虹の 光の 川・白く にじむ 馬の 影・虹色／白／青／黒の 帯・ガラスの かけら・金の 光の 線・輪 */
-.ov.sd .sdbb{{inset:0;background:radial-gradient(ellipse 70% 55% at 50% 51%,#140826,#0A0314 55%,#030108)}}
-.ov.sd .sdstm{{left:0;top:280px;width:100%;height:300px;background:var(--img) 0 50%/{LAY['sd_stream']['w'] * 300 / LAY['sd_stream']['h']:.0f}px 300px repeat-x;animation:sdStm 1.9s linear infinite;opacity:.95}}
-@keyframes sdStm{{to{{background-position:-{LAY['sd_stream']['w'] * 300 / LAY['sd_stream']['h']:.0f}px 50%}}}}
-.ov.sd .sdgh{{transform-origin:50% 50%;animation:sdGh 2.6s ease-in-out infinite alternate}}
-.ov.sd .sdgh.w{{filter:grayscale(1) invert(1) brightness(1.1) contrast(1.2);opacity:.42;mix-blend-mode:screen}}
-.ov.sd .sdgh.c{{filter:grayscale(1) invert(1) sepia(1) saturate(6) hue-rotate(150deg);opacity:.3;mix-blend-mode:screen;animation-delay:-.9s}}
-.ov.sd .sdgh.m{{filter:grayscale(1) invert(1) sepia(1) saturate(6) hue-rotate(260deg);opacity:.3;mix-blend-mode:screen;animation-delay:-1.7s}}
-@keyframes sdGh{{from{{transform:scale(1) translateX(0)}}to{{transform:scale(1.06) translateX(6px)}}}}
-.ov.sd .sdsls{{position:absolute;inset:0}}
-.ov.sd .sdsl{{opacity:0;transform-origin:50% 50%;overflow:hidden}}
-.ov.sd .sdsl b{{position:absolute;display:block}}
-.ov.sd .sdsl.rb{{background:url({blob('sd_rtex')}) var(--bx)/620px 1340px}}
-.ov.sd .sdsl.wh{{background:linear-gradient(90deg,#FFFFFF,#F2F8FF 40%,#FFFFFF 70%,#E8F0FF)}}
-.ov.sd .sdsl.bl{{background:repeating-linear-gradient(-30deg,rgba(255,255,255,.35) 0 2px,rgba(255,255,255,0) 2px 11px),linear-gradient(90deg,#1437FF,#3A8CFF 35%,#0B1CB8 60%,#6CD4FF)}}
-.ov.sd .sdsl.bk{{background:#000}}
-@keyframes sdSl{{0%{{opacity:1;transform:rotate(var(--a)) scaleY(.03)}}100%{{opacity:1;transform:rotate(var(--a)) scaleY(1)}}}}
-.ov.sd .sdsl .ed{{left:0;right:0;top:0;height:3px;background:#FFFFFF;box-shadow:0 0 8px 3px rgba(255,255,255,.9)}}
-@keyframes sdEd{{0%,45%{{opacity:1}}100%{{opacity:0}}}}
-.ov.sd .sdsh{{position:absolute;inset:0}}
-.ov.sd .sdsh i{{inset:0;opacity:0;transform-origin:50% 51%;
-  background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(190,225,255,.45) 38%,rgba(255,236,170,.7) 70%,rgba(255,255,255,.85)),url({blob('sd_streaks')}) 50% 51%/1300px 1300px no-repeat,#1A0830}}
-@keyframes sdSh{{0%{{opacity:var(--o);transform:translate(0,0) rotate(0) scale(1)}}100%{{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1.12)}}}}
-.ov.sd .sdfr{{opacity:0;transform-origin:50% 50%;mix-blend-mode:screen}}
-@keyframes sdFr{{0%{{opacity:0;transform:scaleX(.1) scaleY(.6)}}25%{{opacity:1;transform:scaleX(1.25) scaleY(1)}}100%{{opacity:0;transform:scaleX(1.9) scaleY(.7)}}}}
-.ov.sd .sdrg{{left:50%;top:430px;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(255,225,150,.9);box-shadow:0 0 14px 3px rgba(255,190,70,.6),inset 0 0 10px 2px rgba(255,190,70,.4);opacity:0}}
-@keyframes sdRg{{0%{{opacity:0;transform:scale(.2)}}15%{{opacity:1}}100%{{opacity:0;transform:scale(7)}}}}
+/* GIF 2：桃色の 雷 */
+.ov.sd .sdpb{{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible}}
+.ov.sd .sdpb path{{fill:none;stroke-linecap:round;stroke-linejoin:round}}
+.ov.sd .sdpb .g1 path{{stroke:#FF3CD2;stroke-width:40;stroke-opacity:.34}}
+.ov.sd .sdpb .g2 path{{stroke:#FFA6EC;stroke-width:13;stroke-opacity:.9}}
+.ov.sd .sdpb .g3 path{{stroke:#FFFFFF;stroke-width:5}}
+@keyframes sdPb{{0%{{opacity:1}}50%{{opacity:.55}}100%{{opacity:1}}}}
+/* ② GIF の 1コマずつ */
+.ov.sd .sdcut{{transform-origin:50% 50%}}
+@keyframes sdC0z{{from{{transform:scale(1.04)}}to{{transform:scale(1)}}}}
+.ov.sd .sdrbs{{opacity:.95}}
+@keyframes sdRbs{{from{{transform:translate(-26px,14px)}}to{{transform:translate(26px,-14px)}}}}
+.ov.sd .sdeye{{transform-origin:40% 45%}}
+@keyframes sdEyeZ{{from{{transform:scale(1)}}to{{transform:scale(1.07)}}}}
+.ov.sd .sdslash{{position:absolute;left:0;top:0;width:390px;height:844px;overflow:visible}}
+.ov.sd .sdw{{overflow:hidden}}
+.ov.sd .sdwbg,.ov.sd .sdwpr{{transform-origin:50% 51%}}
+@keyframes sdWz{{from{{transform:scale(1) rotate(-1.2deg)}}to{{transform:scale(1.13) rotate(1.2deg)}}}}
+@keyframes sdPr{{from{{opacity:.75}}to{{opacity:1}}}}
+.ov.sd .sdwf{{transform-origin:50% 51%}}
+@keyframes sdWf{{from{{transform:translateX(-8px) scale(1)}}to{{transform:translateX(6px) scale(1.12)}}}}
+@keyframes sdWf1{{from{{opacity:1}}to{{opacity:.45}}}}
+@keyframes sdWf2{{from{{opacity:.45}}to{{opacity:1}}}}
+.ov.sd .sdcore{{left:{CX - 85:.0f}px;top:{430 - 85:.0f}px;width:170px;height:170px;border-radius:50%;transform-origin:50% 50%;mix-blend-mode:screen;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,240,252,.85) 12%,rgba(255,150,226,.6) 34%,rgba(255,100,210,.2) 52%,rgba(255,80,200,0) 64%)}}
+@keyframes sdCore{{from{{transform:scale(.92)}}to{{transform:scale(1.14)}}}}
+.ov.sd .sdwsp{{position:absolute;inset:0}}
+.ov.sd .sdwsp i{{border-radius:50%;background:#FFF6D8;box-shadow:0 0 6px 1px #FFC94A;opacity:0}}
+@keyframes sdSp{{0%{{opacity:0;transform:translate(var(--x),var(--y)) scale(1.2)}}20%{{opacity:1}}100%{{opacity:0;transform:translate(0,0) scale(.3)}}}}
+.ov.sd .sdwn{{transform-origin:50% 51%;opacity:.95}}
+@keyframes sdWn{{from{{transform:scale(1)}}to{{transform:scale(1.32)}}}}
+@keyframes sdC17z{{from{{transform:scale(1)}}to{{transform:scale(1.06)}}}}
+.ov.sd .sdfly{{position:absolute;inset:0}}
+.ov.sd .sdfly i{{inset:0;background:linear-gradient(135deg,#FFFFFF,#C8D4E8 40%,#4A5068 70%,#E8F0FF)}}
+@keyframes sdFly{{from{{transform:translate(0,0) rotate(0)}}to{{transform:translate(var(--x),var(--y)) rotate(var(--r))}}}}
+.ov.sd .sdspk{{left:{CX - 170:.0f}px;top:{422 - 45:.0f}px;width:340px;height:90px;border-radius:50%;transform-origin:50% 50%;
+  background:radial-gradient(ellipse 22% 34% at 50% 50%,#FFFFFF 0,#FFFFFF 18%,#FFF2A0 34%,rgba(255,220,80,.75) 55%,rgba(255,200,40,0) 100%),linear-gradient(90deg,rgba(255,230,120,0),rgba(255,244,170,1) 50%,rgba(255,230,120,0)) 50% 50%/100% 4px no-repeat}}
+@keyframes sdSpk{{from{{transform:scale(.7,.7)}}to{{transform:scale(1.3,1)}}}}
+@keyframes sdC19z{{from{{transform:scale(1)}}to{{transform:scale(1.04)}}}}
+.ov.sd .sdc19g{{left:{CX - 300:.0f}px;top:{422 - 190:.0f}px;width:600px;height:380px;border-radius:50%;transform-origin:50% 50%;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 50% 40% at 50% 50%,#FFFFFF 0,#FFFFFF 10%,#FFFBD0 20%,#FFEA70 32%,rgba(210,255,110,.7) 50%,rgba(120,255,140,0) 78%)}}
+@keyframes sdC19g{{0%{{opacity:.75;transform:scale(.55,.45)}}100%{{opacity:1;transform:scale(1.15,1)}}}}
+.ov.sd .sdc19f{{left:-40px;top:{422 - 22:.0f}px;width:470px;height:44px;transform-origin:50% 50%;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,255,240,1) 0,rgba(255,240,140,.9) 10%,rgba(255,220,80,.35) 40%,rgba(255,210,60,0) 100%),
+  linear-gradient(90deg,rgba(255,236,120,.2),rgba(255,248,190,1) 25%,#FFFFFF 50%,rgba(255,248,190,1) 75%,rgba(255,236,120,.2)) 50% 50%/100% 8px no-repeat,
+  linear-gradient(90deg,rgba(255,236,120,0),rgba(255,236,120,.5) 30%,rgba(255,240,150,.7) 50%,rgba(255,236,120,.5) 70%,rgba(255,236,120,0)) 50% 50%/100% 26px no-repeat}}
+@keyframes sdC19f{{0%{{opacity:.8;transform:scaleX(.6)}}100%{{opacity:1;transform:scaleX(1.1) scaleY(1.5)}}}}
+.ov.sd .sdpil{{transform-origin:50% 50%}}
+.ov.sd .sdpil.r{{transform:scaleX(-1)}}
+@keyframes sdPil{{from{{opacity:.85}}to{{opacity:1}}}}
 /* ③ 光が 弾けて ど！！！的中が 出てくる・雷を まとう */
 .ov.sd .sdrt{{opacity:.55}}
 @keyframes sdRt{{from{{transform:translateY(0)}}to{{transform:translateY(-60px)}}}}
@@ -619,7 +615,7 @@ def sd_css():
 /* 視差効果を減らす：① ② と 光・雷・粒を 出さない。③の 虹の 布の 上に ロゴ（動かさない）→ 1.3秒から ボードを ふわっと */
 @media (prefers-reduced-motion:reduce){{
   .ov.fz.sd{{--t0:1.9s}}
-  .ov.sd .sdA,.ov.sd .sdB,.ov.sd .sdw,.ov.sd .sdgf,.ov.sd .sdco,.ov.sd .sdbo,.ov.sd .sdem{{display:none}}
+  .ov.sd .sdA,.ov.sd .sdB,.ov.sd .sdgf,.ov.sd .sdco,.ov.sd .sdbo,.ov.sd .sdem{{display:none}}
   .ov.sd .sdC{{animation:fadeIn .5s ease-out .2s both!important}}
   .ov.sd .sdrt{{animation:none!important}}
   .ov.sd .sdt{{animation:none!important;opacity:1;transform:none;filter:none}}

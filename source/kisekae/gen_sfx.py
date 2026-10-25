@@ -2129,11 +2129,10 @@ def slash_snd(rng, d=.22, hi=True):
 
 def sfx_sd():
     """ど的中・紫電の タップの 音（秒は shiden.py の SD_T）：
-       ① ドォン＋グォォ（馬の 影が ぐっと 寄る）＋紫の 炎の ゴォォ（低い うなり）→ キィン・キィン（十字の 光 2回）→ ジジッ＋シャキーン（目が 赤く 光る）→ 炎が 赤く ゴォォッ
-         → ティン…（ただよう 的中の 字）→ ジッ・ブッ・プツッ（バグる 2回）→ ボッ（墨：低い ゆれ）→ パァーン（白）
-       ② 切り裂き：ザシュッ・シャッ・ズバッ（波ごとに 7本・色で 音が ちがう：虹色＝キュイン・白＝シャキン・青＝バチッ・黒＝ドッ）＋光の 川の ゴォー（横に 走る）＋低い うなりが 上がって いく
-         → 黒の 波：ドン・ドン…（重く）→ パリーン（ガラス）＋ズバァン（金の 光の 線）＋キィィン↑（輪）→ ドガーン!!（光が 弾ける）
-       ③ グォン↑（ど！！！的中が 画面から 出てくる）→ ドガーン!!＋ジャーン＋ジャラジャラ＋シャーン（出きった 瞬間）→ ジリジリ（まとう 電気・ずっと）＋バリバリッ（大きな 雷・不定期）
+       ① ドォン＋グォォ（馬の 影が ぐっと 寄る）＋紫の 炎の ゴォォ → キィン・キィン（十字の 光 2回）→ ジジッ＋シャキーン（目が 赤く 光る）→ 炎が 赤く ゴォォッ → ティン…（ただよう 的中の 字）
+       ② 送ってくれた GIF の 1コマずつ（第4.68版）：シュワッ↑＋ジジッ（白黒と 虹）→ ブーッ・ジジジ（バグ）→ バリバリッ・ドーン（桃色の 雷）→ ザシュッ＋キィン（目の 切り裂き）→ バリッ（赤い 裂け目）→ ズバッ（青い 裂け目）
+         → ドガーン（鏡の 世界）＋ゴォォォ（炎の 流れ）＋グォォォ↑＋ドッ・ドッ・ドッ…（だんだん 速く）＋キラキラ → パリーン（白と 水色）→ ドッ（黒い 穴）→ シュン↑（金の 光）→ キィィィン↑（緑の 光の 輪）→ ドガーン!!（弾ける）
+       ③ グォン↑（ど！！！的中が 出てくる）→ ドガーン!!＋ジャーン＋ジャラジャラ＋シャーン（出きった 瞬間）→ ジリジリ（まとう 電気・ずっと）＋バリバリッ（大きな 雷・不定期）
          → 低い ドン（脈）→ シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル"""
     SD = read_sd()
     T = SD.SD_T
@@ -2164,57 +2163,66 @@ def sfx_sd():
     for jj in range(7):
         tj = g0 + (g1 - g0 - 1.0) * jj / 6 + r.uniform(0, .1)
         mx.add(tine(mtof((91, 95, 98, 100, 103)[jj % 5]), .7, .3), tj, .07, r.uniform(-.6, .6), rv=.45)
-    for t in T['GLITCH']:                                                                    # バグる：ジッ・ブッ・プツッ
-        mx.add(glitch('zip', SD.GL_D, r), t, .4, -.3, rv=.05)
-        mx.add(glitch('buzz', SD.GL_D * .8, r), t + .02, .3, .3, rv=.05)
-        mx.add(glitch('thud', .08, r), t, .45, rv=.05)
-        mx.add(glitch('tick', .03, r), t + SD.GL_D, .3, rv=.05)
-    i0 = T['INK']                                                                            # 墨：ボッ＋こもる
-    mx.add(whomp(.6, r, 120, 36), i0, .7 * FZ_LOW, rv=.15)
-    mx.add(nlow(.35, 1800, 150, .1, r) * np.exp(-tl(n_(.35)) / .12), i0, .3, rv=.2)
-    mx.duck(i0 + SD.INK_D, T['WB'][1], -8.0, .05)
-    w0 = T['WB'][0]                                                                          # 白（① → ②）：パァーン
-    mx.add(explosion(r, .7, 1.2), w0, .6, rv=.3)
-    for i, m in enumerate((76, 83, 88)):
-        mx.add(bell(mtof(m), 1.0, idx=1.3, tau=.4), w0 + .02 * i, .12, (-.3, 0, .3)[i], rv=.5)
-    # --- ② 切り裂き：光の 川の ゴォー・低い うなりが 上がる・刃の 音（色ごと）・黒の 波は 重く ---
-    b0, b1 = T['B']
-    db = T['BLACK'] - b0 + .3
-    mx.add(nsweep(db, 900, 2600, .9, r) * (.4 + .6 * np.linspace(0, 1, n_(db)) ** 1.3), b0, .22, rv=.3)   # ゴォー（光の 川）
-    mx.add(growl(40, 170, db, db, 2.4), b0, .22, rv=.25)                                      # 低い うなりが 上がる
-    rng2 = random.Random(5)
-    waves = [(t, SD.SL_COLORS[k]) for k, t in enumerate(T['WAVES'])] + [(T['BLACK'], ('bk',) * SD.SL_N)]
-    for wi, (tw, cols) in enumerate(waves):
-        order = list(range(SD.SL_N))
-        rng2.shuffle(order)
-        for n, k in enumerate(order):
-            t = tw + n * SD.SL_GAP
-            c = cols[k]
-            pan = r.uniform(-.8, .8)
-            mx.add(slash_snd(r, .2, c != 'bk'), t, .5 if c != 'bk' else .35, pan, rv=.2)        # ザシュッ
-            if c == 'rb':
-                mx.add(kyuin(900, 2400, .3), t + .01, .16, pan, rv=.3)                       # キュイン（虹色）
-            elif c == 'wh':
-                mx.add(bell(mtof(103), .5, idx=1.5, tau=.18), t + .01, .14, pan, rv=.35)     # シャキン（白）
-            elif c == 'bl':
-                mx.add(arc_zap(.16, r, 1200), t, .3, pan, rv=.2)                             # バチッ（青）
-            else:
-                mx.add(kick(120, 40, .35, 2.2, .14, .3, r), t, .55 * FZ_LOW, rv=.08)         # ドッ（黒）
-                mx.add(explosion(r, .35, 1.0), t, .3, rv=.1)
-    # 黒に 沈んだ あと：パリーン（ガラス）・ズバァン（金の 光の 線）・キィィン↑（輪）→ ドガーン!!（光が 弾ける）
-    s0, s1 = T['SHAT']
-    mx.add(crackle(.6, 800, r) * np.exp(-tl(n_(.6)) / .25), s0, .45, rv=.3)
-    for jj in range(10):
-        mx.add(glassring(r.uniform(2400, 5200), .9, r, r.uniform(6, 12)), s0 + r.uniform(0, .12), .1, r.uniform(-.8, .8), rv=.5)
-    mx.add(laser(5200, 900, .7, r), T['FLARE'][0] + .03, .32, rv=.35)
-    r0, r1 = T['RING']
-    nr = n_(T['GF'][0] - r0 + .1)
-    tr = tl(nr)
-    mx.add(np.sin(phase(1800 + 3400 * (tr / tr[-1]) ** 2, nr)) * np.minimum(tr / .05, 1) * (.3 + .7 * tr / tr[-1]), r0, .14, rv=.35)   # キィィン↑
-    for jj, tq in enumerate((r0, r0 + .14, r0 + .28)):
-        mx.add(bell(mtof(88 + 4 * jj), .6, idx=1.2, tau=.25), tq, .1, (jj - 1) * .4, rv=.45)
-    gf0 = T['GF'][0]
-    mx.add(explosion(r, 1.5, .95), gf0, 1.0, rv=.25)                                          # ドガーン!!（弾ける）
+    # --- ② 送ってくれた GIF の 1コマずつ（第4.68版）---
+    c0 = T['C0'][0]                                                                          # GIF 0：白黒の 煙＋虹色の 筋：シュワッ↑＋ジジッ＋キラ
+    mx.add(nsweep(.24, 1500, 9000, .5, r) * np.linspace(.3, 1, n_(.24)), c0, .32, -.3, rv=.3)
+    mx.add(glitch('zip', .12, r), c0, .35, .3, rv=.05)
+    mx.add(bell(mtof(96), .5, idx=1.2, tau=.2), c0 + .02, .12, rv=.45)
+    c1 = T['C1'][0]                                                                          # GIF 1：横に ずれる バグ：ブーッ・ジジジ・ゴォッ
+    mx.add(glitch('buzz', .22, r), c1, .32, -.3, rv=.05)
+    mx.add(glitch('zip', .2, r), c1 + .03, .25, .3, rv=.05)
+    mx.add(fire_roar(.4, r, 2600, 900, .3), c1, .3, rv=.25)
+    lt = T['LT'][0]                                                                          # GIF 2：桃色の 雷：バリバリッ・ドーン
+    mx.add(arc_zap(.26, r, 1300), lt, .5, -.2, rv=.25)
+    mx.add(crackle(.26, 650, r), lt, .35, .3, rv=.2)
+    mx.add(boom(85, 28, .9, .3, .04, 2.4, r), lt + .01, .6 * FZ_LOW, rv=.1)
+    e0, e1, e2 = T['EYE']                                                                    # GIF 3：切り裂き ザシュッ＋キィン（光る 目）
+    mx.add(slash_snd(r, .26), e0, .6, -.3, rv=.2)
+    mx.add(cuin(1800, 3600, .45, .04, r), e0 + .02, .22, .2, rv=.4)
+    mx.add(bell(mtof(100), .5, idx=1.2, tau=.25), e1, .1, rv=.45)
+    c5 = T['C5'][0]                                                                          # GIF 5：赤：バリッ（白く 裂ける）
+    mx.add(explosion(r, .35, 1.3), c5, .45, rv=.1)
+    mx.add(slash_snd(r, .18), c5, .4, .3, rv=.15)
+    c6 = T['C6'][0]                                                                          # GIF 6：青：ズバッ・バチッ
+    mx.add(slash_snd(r, .18, False), c6, .45, -.3, rv=.15)
+    mx.add(arc_zap(.12, r, 900), c6, .3, rv=.2)
+    w0, w1 = T['W']                                                                          # GIF 7〜15：鏡の 世界：ドガーン（入る）・ゴォォォ（炎の 流れ）・グォォォ↑（ため）・パリパリ・キラキラ
+    dw = w1 - w0
+    mx.add(explosion(r, 1.0, 1.0), w0, .7, rv=.25)
+    mx.add(boom(95, 30, 1.2, .4, .05, 2.6, r), w0, .8 * FZ_LOW, rv=.15)
+    tw = tl(n_(dw))
+    mx.add(fire_roar(dw + .1, r, 3200, 1400, 2.5) * (.6 + .4 * np.linspace(0, 1, n_(dw + .1))), w0, .32, rv=.3)
+    mx.add(growl(36, 230, dw, dw, 2.6), w0, .26, rv=.25)
+    mx.add(nsweep(dw, 300, 6500, .6, r) * np.linspace(0, 1, n_(dw)) ** 1.5, w0, .26, rv=.35)
+    mx.add(crackle(dw, 140, r) * np.linspace(.3, 1, n_(dw)), w0, .22, rv=.2)
+    for jj in range(14):                                                                     # キラキラ（かけら）
+        mx.add(glassring(r.uniform(2400, 5600), .7, r, r.uniform(6, 12)), w0 + r.uniform(0, dw - .3), .06, r.uniform(-.8, .8), rv=.5)
+    tp, gap = w0 + .35, .42                                                                  # ドッ・ドッ・ドッ…（だんだん 速く：ため）
+    while tp < w1 - .05:
+        u = (tp - w0) / dw
+        mx.add(kick(120 + 40 * u, 42, .35, 2.2, .14, .25, r), tp, (.45 + .5 * u) * FZ_LOW, rv=.08)
+        tp += gap
+        gap = max(.12, gap * .84)
+    c16 = T['C16'][0]                                                                        # GIF 16：白と 水色：パリーン
+    mx.add(crackle(.35, 900, r) * np.exp(-tl(n_(.35)) / .15), c16, .45, rv=.3)
+    mx.add(explosion(r, .5, 1.4), c16, .45, rv=.2)
+    for jj in range(8):
+        mx.add(glassring(r.uniform(2600, 5200), .8, r, r.uniform(6, 12)), c16 + r.uniform(0, .08), .09, r.uniform(-.8, .8), rv=.5)
+    c17 = T['C17'][0]                                                                        # GIF 17：黒い 穴：ドッ
+    mx.add(kick(110, 38, .45, 2.4, .16, .3, r), c17, .7 * FZ_LOW, rv=.08)
+    mx.add(whomp(.45, r, 110, 34), c17, .4, rv=.12)
+    c18 = T['C18'][0]                                                                        # GIF 18：金の 小さな 光：シュン↑・キラ
+    mx.add(nsweep(.16, 2500, 9000, .5, r), c18, .22, rv=.3)
+    mx.add(bell(mtof(98), .6, idx=1.2, tau=.3), c18 + .02, .14, rv=.45)
+    g0, g1 = T['C19']                                                                        # GIF 19〜20：キィィィン↑（光が 強く なる）・低い うなり
+    dg = g1 - g0 + .05
+    ng = n_(dg)
+    tg = tl(ng)
+    mx.add(np.sin(phase(1500 + 3800 * (tg / dg) ** 2, ng)) * np.minimum(tg / .05, 1) * (.25 + .75 * tg / dg), g0, .16, rv=.35)
+    mx.add(rumble(dg, r, 150, 10) * np.linspace(.4, 1, ng), g0, .35, rv=.2)
+    mx.add(growl(41, 110, dg, dg, 2.4), g0, .2, rv=.2)
+    gf0 = T['GF'][0]                                                                         # 光が 弾ける：ドガーン!!
+    mx.add(explosion(r, 1.5, .95), gf0, 1.0, rv=.25)
     mx.add(boom(100, 30, 1.6, .5, .06, 2.6, r), gf0, .95 * FZ_LOW, rv=.15)
     mx.add(lcrash(r, 1.6, .5), gf0 + .02, .18 * FZ_MID, rv=.35)
     # --- ③ ど！！！的中が 出てくる：グォン↑ → 出きった 瞬間 ドガーン!!＋ジャーン＋ジャラジャラ ---

@@ -68,12 +68,12 @@ if r.returncode == 0:
     check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'zp', 'gd', 'sgd', 'spg', 'sd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'gd', 'sgd', 'spg_up', 'spg', 'sd')]) and 'pm_face_F.webp' in html and 'gd_dome.webp' in html and 'sd_horse.webp' in html
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.gd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000],
           'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様・紫電の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版）')
-    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and len(ART['sd']) == 16 and len(ASSET_FILES) == 2 + 13 + 38 + 24 + 16 + 1 + 2, f'絵と音と動画の 数：ネオン 2・音 13・プレミアム 38・神様 24・紫電 16・さいごの 1まい 1・動画 2（{len(ASSET_FILES)}）')
+    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and len(ART['sd']) == 30 and len(ASSET_FILES) == 2 + 13 + 38 + 24 + 30 + 1 + 2, f'絵と音と動画の 数：ネオン 2・音 13・プレミアム 38・神様 24・紫電 30・さいごの 1まい 1・動画 2（{len(ASSET_FILES)}）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
-        check(16e6 < films_sz < 17e6 and 22e6 < sz < 25e6, f'絵と音と動画の 大きさ：動画 2本 約16.3MB・ぜんぶで 約23MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
+        check(16e6 < films_sz < 17e6 and 23e6 < sz < 27e6, f'絵と音と動画の 大きさ：動画 2本 約16.3MB・ぜんぶで 約25MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない
