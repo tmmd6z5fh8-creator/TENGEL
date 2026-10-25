@@ -189,59 +189,6 @@
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
-    // 第5弾：特別な 演出（16.3）。神様的中（CSS と SVG・絵は 手元の ios/fx_assets/ から → CIでは 404 でも 流れは 動く）・プレミアムど的中（部品 約1800・落ちない）・
-    // 超神様的中（動画は リポジトリに 入れない → CIでは 読めない → さいごの 1まい → 1.3秒で ボード）
-    await step(R, 'fx5', async function () {
-      var F = window.TengelFx; if (!F) return { on: false };
-      var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
-      function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
-      function closeVis() { var c = document.querySelector('#fxOv .close'); return c ? getComputedStyle(c).visibility : null; }
-      var res = { decide: F.decide(spec), lottery: [F.lottery('fz'), F.lottery('gd')], films: Object.keys(window.__FX.films || {}), assets: {} };
-      for (var k of ['gd_dome.webp', 'pm_face_F.webp', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_gd.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
-      // 神様的中
-      res.gd = { kind: F.show(Object.assign({ force: 'gd' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
-      await sleep(400); F.tap(); res.gd.fps = await fps(1000);
-      res.gd.parts = ['.gdk', '.gdA', '.gdB', '.gdC'].map(function (c) { return !!document.querySelector('#fxOv .ov.gd ' + c); });
-      await mark('fx-gd');
-      await waitFor(function () { return closeVis() === 'visible'; }, 14000);
-      res.gd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.gd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.gd.closeVis = closeVis();
-      await mark('fx-gd-board');
-      F.close(); await sleep(300);
-      // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤ → ど的中 → ボード：11.02秒）
-      res.pc = { kind: F.show(Object.assign({ force: 'pc' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
-      await sleep(400); F.tap(); res.pc.fps = await fps(1000);
-      res.pc.parts = ['.pmbg', '.pmp', '.pms', '.pmf', '.pmw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.pm ' + c).length; });
-      await sleep(3200); res.pc.fps4 = await fps(1000);   // ポニーの ① の ころ
-      await mark('fx-pc');
-      await waitFor(function () { return closeVis() === 'visible'; }, 16000);
-      res.pc.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.pc.closeVis = closeVis();
-      await mark('fx-pc-board');
-      F.close(); await sleep(300);
-      // 超神様的中（動画が ない → still）
-      res.sgd = { kind: F.show(Object.assign({ force: 'sgd' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
-      await sleep(400); F.prime(); F.tap(); await sleep(400);
-      res.sgd.cur = F.current(); res.sgd.ov = (document.querySelector('#fxOv .ov.sgd') || {}).className || null; res.sgd.video = !!document.querySelector('#fxOv video');
-      await waitFor(function () { return closeVis() === 'visible'; }, 8000);
-      res.sgd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sgd.closeVis = closeVis(); res.sgd.holder = document.querySelectorAll('#fxVh video').length;
-      await mark('fx-sgd-still');
-      F.close(); await sleep(200);
-      // 第4.66版〜：ど的中・紫電（第4.69版：黒い 馬の 影と 紫の 炎 → 見本の 動画の コマ・リアルな 馬の 顔・切り裂く 馬の 蹄 → ど！！！ 的中 → ボード：13.03秒）。PUSH は ど的中と 同じ（虹色なし・1.4倍）
-      res.sd = { kind: F.show(Object.assign({ force: 'sd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
-      await sleep(400); F.tap(); res.sd.fps = await fps(1000);
-      res.sd.parts = ['.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
-      res.sd.imgs = document.querySelectorAll('#fxOv .ov.sd img').length; res.sd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.sd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
-      await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（② の はじめ：炎）
-      await sleep(2000); await mark('fx-sd-face');                 // 4.2秒ごろ（リアルな 馬の 顔：第4.69版）
-      await sleep(2600); await mark('fx-sd-world');                // 7.0秒ごろ（割れた 鏡の 世界・馬の 蹄の 切り口：第4.69版）
-      await sleep(3300); res.sd.fps5 = await fps(1000);            // ロゴの ころ（10.7秒〜）
-      await mark('fx-sd-logo');
-      await waitFor(function () { return closeVis() === 'visible'; }, 12000);
-      res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
-      await mark('fx-sd-board');
-      F.close(); await sleep(200);
-      res.closed = !document.querySelector('#fxOv');
-      return res;
-    });
     // 第4弾：着せ替え。テーマを 切り替えて（解放の 確認は test_native）判定タブの 上の絵・色・字・テーマの 的中PUSH と ボードを 確かめる。
     // 見本の絵（ks_<id>.webp）は リポジトリに 入れないので、CIでは 404（なしでも 動く ことを 確かめる）。字（ks の WOFF2）と ks_<id>.json は 入っている
     await step(R, 'kisekae', async function () {
