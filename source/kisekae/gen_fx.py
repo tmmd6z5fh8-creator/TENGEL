@@ -4146,11 +4146,11 @@ AU_CSS = mt_css('au')
 # 1回目「テンゲルのアイコンのpushボタンが緑の雷を纏っている」→ 3回目（説明書の上の絵の スクショ）「テンゲルのアイコンpushボタン 写真みたいな長方形にして！」
 TG_W, TG_H, TG_R = 300, 164, 15     # 説明書の上の絵（1200×655）と 同じ 横長・角の丸み（説明書の ページでは 357px で 18）
 TG_GREEN = dict(core='#F4FFF8', mid='#6BFFAE', glow='#26FF82')
-TG_PUSH = (200.9, 135, 27)          # 「PUSH」の まん中の x・字の下の線・字の大きさ：消した 版の行の所（「テンゲル」の札の下。札の まん中は 元の絵の x 803.5）
+TG_PUSH = (200.9, 115.7, 27)        # 「PUSH」の まん中の x・字の下の線・字の大きさ：「テンゲル」の札の下（札の まん中は 元の絵の x 803.5）。字の下の線は 盾の 下の とがり（第4.59版・まさちゃん「テンゲルpushボタンだけは、左のテンゲルアイコンに文字の高さ合わせて！」：面の絵は manual/tools/banner_hd.py の PUSH_LAYOUT＝TENGER の 上を 盾の 上に、PUSH の 下を 盾の 下に。前は 135＝消した 版の行の所）
 
 
 def tg_push_img():
-    """ボタンの 面の絵（キャンバスの id：tengel_blobs.json の push＝flat/tengel_run.py の tengel_push.webp：説明書の上の絵から 版の行を 消しただけ）"""
+    """ボタンの 面の絵（キャンバスの id：tengel_blobs.json の push。第4.59版から manual/tools/banner_hd.py の PUSH_LAYOUT の 絵＝文字を 上に ずらして 盾の 高さに。前は flat/tengel_run.py の tengel_push.webp：説明書の上の絵から 版の行を 消しただけ）"""
     return '/_blob/' + json.load(open(f'{K}/tengel_blobs.json'))['push']
 
 
@@ -4257,8 +4257,8 @@ def tg_bolt_css():
 
 def tg_face_svg(sfx=''):
     """テンゲルの 長方形の PUSH：面（300×164・角の丸み15で 切りぬく）＝ 説明書の上の絵と 同じ（外の すじの わく・パネル・盾のエンブレム・
-       TENGER の金の文字・「テンゲル」の金の札）。消した 版の行の所（札の下）に 金の「PUSH」（上は 明るい金・まん中は こい金・こげ茶のふち・下に 厚み）。
-       上に うすい つやの光"""
+       TENGER の金の文字・「テンゲル」の金の札。第4.59版から 面の絵は 文字を 上に ずらした 版＝banner_hd.py の PUSH_LAYOUT）。札の下に 金の「PUSH」
+       （上は 明るい金・まん中は こい金・こげ茶のふち・下に 厚み。字の下の線は 盾の 下の とがり：TG_PUSH）。上に うすい つやの光"""
     K_, T_, G_ = (f'tg{c}{sfx}' for c in 'KTG')
     W, H = TG_W, TG_H
     px, py, fs = TG_PUSH
