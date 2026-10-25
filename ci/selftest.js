@@ -182,7 +182,7 @@
       var K = window.TengelKisekae; if (!K) return { on: false };
       await K.ready;
       var res = { list: K.list().length, groups: Array.from(new Set(K.list().map(function (t) { return t.group; }))), current0: K.current(), count: K.count(), usableSakura: K.usable('sakura'), band: K.band, files: {} };
-      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
+      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
       await K.apply('sakura'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       var bn = document.querySelector('#ksBnr');
@@ -277,7 +277,7 @@
     var sc = document.querySelector('#sdCheck'); if (sc) sc.click();
     await sleep(4000);
     var ptc = document.querySelector('#setPoints'); if (ptc) { ptc.scrollIntoView({ block: 'start' }); await sleep(500); await mark('points'); }
-    R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null, cmPoster: (function () { var i = document.querySelector('#setCM img'); return i ? i.naturalWidth : -1; })() };
+    R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
     R.settings.backup = bk ? bk.innerText : null;
@@ -288,17 +288,8 @@
     await sleep(600);
     R.about = ab ? { text: ab.innerText.slice(0, 1500), fonts: !!ab.querySelector('#abFonts'), tokusho: !!ab.querySelector('#abTokusho') } : null;
     await mark('about');
-    // CM（全画面で再生）
-    var cmb = document.querySelector('#setCM [data-cm=play]'); if (cmb) cmb.scrollIntoView({ block: 'center' }); await sleep(300);
-    if (cmb) cmb.click();
-    await step(R, 'cm', async function () {
-      var v = await waitFor(function () { return document.querySelector('#cmModal video'); }, 3000);
-      if (!v) return { modal: false };
-      await waitFor(function () { return v.readyState >= 2 && v.currentTime > 0.3; }, 12000);
-      return { modal: true, rs: v.readyState, t: v.currentTime, paused: v.paused, err: v.error && v.error.code, src: v.currentSrc };
-    });
-    await mark('cm');
-    var cl = document.querySelector('#cmModal .cmclose'); if (cl) cl.click(); await sleep(400);
+    // CM の カードは App Store版の 設定には ない（2026/10/25）
+    R.cm = { card: !!document.querySelector('#setCM'), modal: !!document.querySelector('#cmModal') };
     // 記録タブ
     tab('rec'); await sleep(900); window.scrollTo(0, 0); await sleep(300);
     await mark('rec');
