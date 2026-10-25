@@ -195,9 +195,10 @@ def rename_inline(html, names, kf='fx'):
 
 # ---------------------------------------------------------------- アプリ用の足し
 # 舞台：画面のまん中に 390×844 を置いて、縦横の比を変えずに画面に入る大きさにする（--fxk は fx.js が決める：16.3「画面の大きさ」※仮）
+# 的中（k-hit）の ボードの まわりも デカ的中と 同じ 暗さ（2026/10/25 まさちゃん「的中の結果ボードの背景がおかしい。デカ的中以降の結果ボードの背景と形合わせて！」）
 STAGE_CSS = r'''
 #fxOv{position:fixed;inset:0;z-index:80;background:var(--fxbd,rgba(24,14,4,.62));overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-#fxOv.rv.k-big,#fxOv.rv.k-hidden{--fxbd:rgba(6,4,18,.86)}
+#fxOv.rv.k-hit,#fxOv.rv.k-big,#fxOv.rv.k-hidden{--fxbd:rgba(6,4,18,.86)}
 #fxOv.rv.k-fz{--fxbd:#000000}
 #fxOv.k-fz:not(.rv){--fxbd:rgba(5,2,14,.9)}
 html.fxon,html.fxon body{overflow:hidden!important}

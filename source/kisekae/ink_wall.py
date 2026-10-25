@@ -7,6 +7,7 @@
    クラスの名前は ik…（競馬新聞の news_wall.py と同じ形）
    python3 ink_wall.py --judge <Judge_Ink.dc.html> <ink_blobs.json> <ink_run.json>  → 判定画面の上の絵を「走る2頭」に書きかえる（何回やっても同じ）"""
 import sys, os, re, json
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 
 ALT = '和紙に墨の線と灰色のぼかしでえがいた、騎手を乗せて競り合う2頭の競走馬と、朱色の落款のイラスト（2頭がいつも走っている）'
 RUN_S = .52                                  # ギャロップ1回の秒
@@ -20,7 +21,7 @@ def inline(blobs, run, alt=ALT):
             '<div class="ikh"><div class="ikr"></div></div></div>')
     css = ('.ikw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
            '.ikw .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
-           f'.ikw .ikh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
+           f'.ikw .ikh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}' + feather('.ikw .ikh', x0, y0, cw, ch) +
            f'.ikw .ikr{{width:{n * cw}px;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;'
            f'animation:ikRun {RUN_S}s steps({n}) infinite}}'
            f'@keyframes ikRun{{to{{transform:translateX(-{n * cw}px)}}}}'

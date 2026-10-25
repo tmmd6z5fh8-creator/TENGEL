@@ -22,12 +22,13 @@
    python3 halloween_wall.py --judge <Judge_Halloween.dc.html> <halloween_blobs.json> <halloween_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 halloween_wall.py --plan                                                                       → 予定（はじまる秒）"""
 import sys, os, re, json, math, random
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, 'flat'))
 import event_art as A
 
 ALT = ('むらさきの夜の満月とお城を背に、魔女の帽子をかぶった芦毛の競走馬（むらさきのゼッケン1）と、マントをひろげるドラキュラ、光るかぼちゃとドクロのイラスト'
-       '（ときどき ドラキュラが マントを パタパタさせて 少しだけ 飛ぶけれど、うまく 飛べずに 落ちて、ドクロと かぼちゃが 笑う。5回に1回は 上へ 飛んでいって 消え、'
+       '（星が またたき、小さな こうもりが 羽ばたいて 飛ぶ。ときどき ドラキュラが マントを パタパタさせて 少しだけ 飛ぶけれど、うまく 飛べずに 落ちて、ドクロと かぼちゃが 笑う。5回に1回は 上へ 飛んでいって 消え、'
        '2秒後に 落ちてくる。馬は いつも ドラキュラを 目で追っている）')
 GAP = (8.0, 11.0)                # つぎの回まで（まさちゃん「8秒〜11秒に一回リピート」：はじまりから はじまりまで）
 N_EV = 10                        # 1回りの 回数
@@ -488,7 +489,7 @@ def horse_css(blob, run, T):
         r, c = divmod(f, cols)
         body += f'{",".join(by[f])}{{transform:{tr(-c * (cw + 2 * g), -r * (ch + 2 * g))}}}'
     html = '<div class="hlH"><div class="hlHx"></div></div>'
-    css = (f'.hl .hlH{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
+    css = (f'.hl .hlH{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden}}' + feather('.hl .hlH', ax, ay, cw, ch) +
            f'.hl .hlHx{{position:absolute;left:-{g}px;top:-{g}px;width:{sw}px;height:{sh}px;background:url({blob}) 0 0/{sw}px {sh}px no-repeat;'
            f'animation:hlHA {LOOP:g}s step-end infinite;will-change:transform}}@keyframes hlHA{{{body}}}')
     return html, css
@@ -593,17 +594,78 @@ def scene_css(T):
 
 
 # ---------------------------------------------------------------- ページ
+# ---------------------------------------------------------------- 星と こうもり（2026/10/25 まさちゃん「ハロウィンの背景は、星と小さなコウモリ常に動いてるようにして！」）
+#   下の絵（base）からは 星と こうもりを ぬいて（flat/halloween_banner.py を HALLOWEEN_SKY_PLAIN=1）、ページの SVG で 描く：
+#   星＝いまの絵と 同じ 60こ（同じ 乱数の 種 31 で 同じ 場所・大きさ・こさ。満月の まわりは なし）が、それぞれ ちがう 速さ（1.6〜3.4秒）で またたく。
+#   こうもり＝いまの絵と 同じ 5ひき（同じ 場所・大きさ）が、羽を パタパタ（0.42〜0.5秒に 1回・左右の 羽を 体に 向けて たたむ）しながら、
+#   その 場所の まわりを ひらひら 飛ぶ（左右 ±12〜16px・上下 ±5〜7px・ゆっくり）。星も こうもりも 馬の コマ（.hlH）の 下に 置く
+#   （コマの シートには いまの絵と 同じ 星が 入っている＝コマの 四角の 中の 星は 動かない。こうもりは コマの 四角に かからない）
+STARS_N, STARS_SEED, STAR_BAND, MOON = 60, 31, 150, (600, 92, 70)
+BATS = ((140, 52, 0.62), (196, 84, 0.42), (430, 40, 0.5), (712, 160, 0.38), (520, 150, 0.32))
+BAT_INK = '#1A1028'
+BAT_WING = ('M0,-4 Q-6,-10 -10,-6 Q-18,-16 -30,-14 Q-26,-8 -28,-2 Q-22,-4 -18,2 Q-14,-2 -10,4 Q-6,0 0,6 Z')   # 左の 羽（体の 線 x=0 まで）。右は 左右を かえす
+BAT_BODY = 'M0,-4 Q-2,-7 -3.2,-5 L-3,-11 L-1,-6 L1,-6 L3,-11 L3.2,-5 Q2,-7 0,-4 Z M-2.2,-4 L2.2,-4 L2.2,6 L-2.2,6 Z'   # 耳と 体のまん中（羽の つなぎ目が すかない ように）
+
+
+def stars():
+    """いまの絵の 星（x, y, 半径, こさ）：flat/halloween_banner.py と 同じ 乱数の 順（絵の 画素 780×320）"""
+    import numpy as np
+    rng = np.random.default_rng(STARS_SEED)
+    out = []
+    mx, my, mr = MOON
+    for i in range(STARS_N):
+        x, y = rng.uniform(0, 780), rng.uniform(0, STAR_BAND)
+        if (x - mx) ** 2 + (y - my) ** 2 < mr ** 2:
+            continue
+        r, a = rng.uniform(0.6, 1.4), rng.uniform(0.4, 0.9)
+        out.append((x, y, r, a))
+    return out
+
+
+def sky_svg():
+    """星と こうもりの SVG（画面の px・390×160）。星は .hlS（またたき）・こうもりは .hlT（ひらひら）> .hlTb（パタパタ）> 左右の 羽"""
+    import random
+    rnd = random.Random(7)
+    out = ['<svg class="hlSky" viewBox="0 0 390 160" width="390" height="160" aria-hidden="true">']
+    for i, (x, y, r, a) in enumerate(stars()):
+        dur = 1.6 + rnd.random() * 1.8
+        out.append(f'<circle class="hlS" cx="{x / 2:.1f}" cy="{y / 2:.1f}" r="{r * .5 + .3:.2f}" fill="#FFFFFF" style="--a:{a:.2f};--d:{dur:.2f}s;--l:{-rnd.random() * dur:.2f}s"/>')
+    for i, (x, y, sc) in enumerate(BATS):
+        fl = (0.42, 0.5, 0.46, 0.44, 0.48)[i]
+        out.append(f'<g transform="translate({x / 2:g} {y / 2:g}) scale({sc / 2:g})"><g class="hlT" style="--tx:{(12, 16, 14, 10, 11)[i] / (sc / 2):.1f}px;--px:{(5.3, 6.1, 4.7, 5.7, 6.5)[i]}s;--pl:{-i * 1.3:.1f}s">'
+                   f'<g class="hlTy" style="--ty:{(5, 7, 6, 4, 5)[i] / (sc / 2):.1f}px;--py:{(2.3, 2.9, 2.1, 2.6, 3.3)[i]}s;--pl:{-i * 1.3:.1f}s">'
+                   f'<g class="hlTb" style="--f:{fl}s;--fl:{-i * .11:.2f}s"><path class="hlTw" d="{BAT_WING}" fill="{BAT_INK}"/><path class="hlTw r" d="{BAT_WING}" fill="{BAT_INK}"/></g>'
+                   f'<path d="{BAT_BODY}" fill="{BAT_INK}"/><circle cx="-2.4" cy="-3" r="1.2" fill="#FFD34A"/><circle cx="2.4" cy="-3" r="1.2" fill="#FFD34A"/></g></g></g>')
+    out.append('</svg>')
+    return ''.join(out)
+
+
+def sky_css():
+    # 星も こうもりも 馬の コマ（.hlH）より 下（DOM の 順。z-index は つけない）
+    return ('.hl .hlS{opacity:var(--a);animation:hlTw var(--d) ease-in-out infinite var(--l)}'
+            '@keyframes hlTw{0%,100%{opacity:var(--a)}50%{opacity:calc(var(--a) * .25)}}'
+            '.hl .hlT{animation:hlFx var(--px) ease-in-out infinite alternate var(--pl)}'
+            '.hl .hlTy{animation:hlFy var(--py) ease-in-out infinite alternate var(--pl)}'
+            '@keyframes hlFx{from{transform:translateX(calc(var(--tx) * -1))}to{transform:translateX(var(--tx))}}'
+            '@keyframes hlFy{from{transform:translateY(calc(var(--ty) * -1))}to{transform:translateY(var(--ty))}}'
+            # 羽：形の 箱（fill-box）の 右はし（x=0＝体の 線）を 中心に 横に たたむ。右の 羽は 同じ 形を 左右に かえして（scale(-1,1)）
+            '.hl .hlTw{transform-box:fill-box;transform-origin:100% 50%;animation:hlFlap var(--f) ease-in-out infinite alternate var(--fl)}'
+            '.hl .hlTw.r{animation-name:hlFlapR}'
+            '@keyframes hlFlap{from{transform:scale(1,1)}to{transform:scale(.55,1.08)}}'
+            '@keyframes hlFlapR{from{transform:scale(-1,1)}to{transform:scale(-.55,1.08)}}')
+
+
 def inline(blobs, run, alt=ALT):
-    """(html, css)。blobs：still（いまの止まった絵）・base（動く時の 下の絵）・look（馬の コマの シート）→ '/_blob/<id>'。run：halloween_run.json"""
+    """(html, css)。blobs：still（いまの止まった絵）・base（動く時の 下の絵：星と こうもりなし）・look（馬の コマの シート）→ '/_blob/<id>'。run：halloween_run.json"""
     check_schedule(PLAN, LOOP)
     T = tracks()
     hh, hc = horse_css(blobs['look'], run, T)
     html = (f'<div class="hl" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["still"]}" alt="">'
-            f'<img class="hlB" src="{blobs["base"]}" alt="">{hh}{scene_svg()}</div>')
+            f'<img class="hlB" src="{blobs["base"]}" alt="">{sky_svg()}{hh}{scene_svg()}</div>')
     css = ('.hl{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
            '.hl .bnr,.hl .hlB{position:absolute;left:0;top:0;width:390px;height:160px;display:block;object-fit:cover;object-position:50% 50%}'
            '.hl svg{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
-           + hc + scene_css(T)
+           + sky_css() + hc + scene_css(T)
            + '@media (prefers-reduced-motion:reduce){.hl .hlB,.hl .hlH,.hl svg{display:none}}')
     return html, css
 

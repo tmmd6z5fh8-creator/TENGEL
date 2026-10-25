@@ -198,8 +198,9 @@ BOARD_CSS = r'''
 .rb.miss .bh{color:var(--hdInk);text-shadow:none}
 .rb.miss .bp,.rb.miss .btot b{color:var(--sub)}
 .rb.miss .bp{font-weight:700}
-/* デカ的中：まわりが光る・見出しは虹色（黒いふち）・3連単の行は虹色のふち */
-.rb.big{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 26px 6px rgba(255,236,160,.85),0 18px 38px rgba(0,0,0,.45)}
+/* 的中・デカ的中：まわりが光る 白い ふち（的中も デカ的中と 同じ 形：2026/10/25 まさちゃん「デカ的中以降の結果ボードの背景と形合わせて！」。前の 的中は 細い うすい 白の ふちだけ）
+   デカ的中は さらに 見出しは虹色（黒いふち）・3連単の行は虹色のふち */
+.rb.hit,.rb.big{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 26px 6px rgba(255,236,160,.85),0 18px 38px rgba(0,0,0,.45)}
 .rb.big .bh,.rb.fz .bh{background:linear-gradient(90deg,#FF3B3B,#FF9F1A,#FFD21A,#2DBB55,#1FA8E0,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);background-size:200% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
   filter:drop-shadow(1.5px 0 0 #1E1030) drop-shadow(-1.5px 0 0 #1E1030) drop-shadow(0 1.5px 0 #1E1030) drop-shadow(0 -1.5px 0 #1E1030) drop-shadow(0 3px 0 rgba(0,0,0,.25))}

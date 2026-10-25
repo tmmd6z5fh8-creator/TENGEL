@@ -213,8 +213,8 @@ try:
               '非公式のアプリ・商標の表記（iPhone・Excel。App Store版は競馬の団体・商標の名前を出さない・Claudeも使わない）')
         pg.locator('#abPrivacy summary').click(); pg.wait_for_timeout(100)
         pv = pg.locator('#abPrivacy').inner_text()
-        check('開発者が集めることも、受け取ることもありません' in pv and 'GitHub Pages' in pv and 'Google' not in pv and '自動バックアップ' in pv and 'Anthropic' not in pv and 'APIキー' not in pv and '端末の中（iOS・iPadOS の文字認識の機能）で読み取ります' in pv,
-              'プライバシーポリシー（App Store版：Googleなし・自動バックアップ・CM・画像の読み取りは端末の中でAPIキーなし）')
+        check('CM（紹介動画）' not in pv and '開発者が集めることも、受け取ることもありません' in pv and 'GitHub Pages' in pv and 'Google' not in pv and '自動バックアップ' in pv and 'Anthropic' not in pv and 'APIキー' not in pv and '端末の中（iOS・iPadOS の文字認識の機能）で読み取ります' in pv,
+              'プライバシーポリシー（App Store版：Googleなし・自動バックアップ・CMの 項目なし・画像の読み取りは端末の中でAPIキーなし）')
         pg.locator('#abFonts summary').click(); pg.wait_for_timeout(100)
         fo = pg.locator('#abFonts').inner_text()
         check('Kaisei Decol' in fo and 'M PLUS Rounded 1c' in fo and 'Rounded M+' in fo and '画面で使う文字だけを残した版' in fo and fo.count('Copyright') >= 30, 'フォントのライセンス：着せ替えの字 29ファミリー（使う字だけの版・著作権の表示）も並ぶ（第4弾）')
@@ -639,7 +639,7 @@ try:
         locks = ks.locator('.kst .kslock').all_inner_texts()
         check(locks.count('🔒 1,000P') == 5 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 4 and locks.count('🔒 4,000P') == 8 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を8枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 1 and locks.count('🔒 壁紙を25枚あつめると') == 1,
               '値段（9.1）：1,000P×5・2,000P×6・3,000P×4・4,000P×8・7,000P×3・帯は 8・16・25枚')
-        check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
+        check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
               '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
         # 招き馬（7,000P・いま 7,000P）→ 確認が出る → やめる。1,000P 使ったあと（6,000P）だと「Pが足りないよ」と「ポイントを買う」
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
@@ -669,7 +669,7 @@ try:
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(600)
         bn = pg.locator('#ksBnr')
         bb = bn.bounding_box()
-        check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.bnrw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_3b3f002de6b9b1c35fec1c32400e1494.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
+        check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.bnrw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_d6c8ae594bf8e602ac078f7f727e9a28.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
               and pg.evaluate("document.querySelector('#ksBnr').getAnimations({ subtree: true }).length") > 10 and bn.evaluate("e => e.previousElementSibling") is None and bn.evaluate("e => e.nextElementSibling.id") == 'w5Banner',
               f'判定タブのいちばん上に 桜の上の絵（390×160・花びらと馬の動き・{pg.evaluate("document.querySelector(\'#ksBnr\').getAnimations({ subtree: true }).length")}の動き）')
         check(pg.evaluate("document.documentElement.scrollWidth") <= 390 and pg.evaluate("document.querySelector('#fxCss') !== null && document.querySelector('#ksTheme').textContent.includes('.fxs .rb.t-sakura')"), '横にはみ出さない・テーマのボードの CSS が入っている')
@@ -767,15 +767,9 @@ try:
         pg.evaluate('window.__bridge = []'); pg.click('#recCopy'); pg.wait_for_timeout(400)
         cp = [x for x in pg.evaluate('window.__bridge') if x['name'] == 'copy']
         check(len(cp) == 1 and cp[0]['payload'].startswith('日付') and 'コピーしたよ' in pg.locator('#toast').inner_text(), 'コピー → アプリのクリップボードへ')
-        # ---- CM：動画は公開中のWeb版から ----
+        # ---- CM：App Store版の 設定には 出さない（2026/10/25 まさちゃん「設定に入ってるCMを見る機能消して！」。Web版は 今までどおり） ----
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
-        pg.route('https://tmmd6z5fh8-creator.github.io/**', lambda route: route.fulfill(status=404, body=''))
-        pg.locator('#setCM button.btn.primary').click(); pg.wait_for_timeout(300)
-        src = pg.locator('#cmModal video').get_attribute('src')
-        cmd = pg.evaluate('window.__CM')
-        want = 'https://tmmd6z5fh8-creator.github.io/TENGEL/' + (cmd.get('srcApp') or cmd['src'])
-        check(src == want and (not cmd.get('srcApp') or 'tengel3_cm_app.mp4?v=' in src), f'CMの動画は公開中のWeb版から・アプリ用の版（{src[44:90]}…）')
-        pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+        check(pg.locator('#setCM').count() == 0 and pg.locator('#cmModal').count() == 0 and 'CMを見る' not in pg.locator('#v-set').inner_text(), 'App Store版：設定に「テンゲルのCM」の カードは ない')
         # ---- 保存場所が消えた → 「戻す？」 → 戻す ----
         before = store['backup']
         pg.evaluate("new Promise(r => { const q = indexedDB.deleteDatabase('tengel3'); q.onsuccess = q.onerror = q.onblocked = () => r(); })")
@@ -820,6 +814,7 @@ try:
         p2.click('#sampleBtn'); p2.wait_for_timeout(900)
         check(p2.locator('#result details.full').count() == 1 and p2.locator('#result .rankbox').count() == 0, 'Web版：判定画面に「全STEPを表示」が あって、人気順位の 表は ない')
         check(p2.evaluate("typeof window.TengelNumpad === 'undefined' && typeof window.TengelManual === 'undefined' && !document.querySelector('#numPad')") and p2.locator('#manBtn').get_attribute('href') == 'manual.html', 'Web版：テンキーと 説明書の 重ねた 窓は 入らない（説明書は ページを 移る）')
+        check(p2.locator('#setCM').count() == 1 and '▶ CMを見る' in p2.locator('#setCM').inner_text(), 'Web版：設定の「テンゲルのCM」は 今までどおり')
         check(p2.locator('#recCard h2').inner_text().startswith('結果・収支の記録') and p2.locator('#omakaseBtn').count() == 0 and p2.locator('#result .rnav').count() == 0 and not [t for t in p2.locator('#result .zref').all_inner_texts() if '選んだ馬で' in t] and p2.locator('#saveJudge').count() == 1, 'Web版：判定画面は今までどおり（結果・収支の記録・お任せなし・矢印なし・%なし・判定と結果を保存）')
         p2.click('.tabbar button[data-tab=rec]'); p2.wait_for_timeout(300); p2.click('#recExportBtn'); p2.wait_for_timeout(300)
         check(not p2.locator('#recSave').is_visible(), 'Web版：「CSVで保存」は出ない（今までどおり）')

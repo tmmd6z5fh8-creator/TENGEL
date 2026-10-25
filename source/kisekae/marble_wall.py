@@ -22,6 +22,7 @@
    python3 marble_wall.py --judge <Judge_Marble.dc.html> <marble_blobs.json> <marble_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 marble_wall.py --plan <marble_run.json>  → 出来事の予定とコマの予定"""
 import sys, re, json, math, random
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 
 ALT = ('金の帯の台の上の岩で、後ろ足で立ち上がる白い大理石の馬の像（波打つたてがみ・台までとどくしっぽ）と月桂樹のイラスト'
        '（8秒ごとに 像の馬が うしろを2度見して、くるっと 反対を向く。ときどき いななく・右を向いている時は 台ごと ずっずっと 外へ出て もどってくる）')
@@ -276,7 +277,8 @@ def inline(blobs, run, alt=ALT):
     css = ('.mww{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
            '.mww .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
            '.mww i{position:absolute;display:block;font-style:normal;pointer-events:none}'
-           f'.mww .mwF{{left:{x0}px;top:{y0}px;width:{fw}px;height:{fh}px;background-repeat:no-repeat;animation-timing-function:step-end;animation-iteration-count:infinite}}')
+           f'.mww .mwF{{left:{x0}px;top:{y0}px;width:{fw}px;height:{fh}px;background-repeat:no-repeat;animation-timing-function:step-end;animation-iteration-count:infinite}}'
+           + feather('.mww .mwF', x0, y0, fw, fh))
     html = f'<div class="mww" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["base"]}" alt="">'
     for key, cls in (('look', 'mwS'), ('turnB', 'mwB'), ('turnD', 'mwD'), ('neighL', 'mwNL'), ('neighR', 'mwNR')):
         sh = run['sheets'][key]

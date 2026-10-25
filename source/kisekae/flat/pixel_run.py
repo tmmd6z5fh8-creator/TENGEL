@@ -201,6 +201,9 @@ def save_lossless(img, path):
     cv2.imwrite(path, cv2.cvtColor(u8, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_WEBP_QUALITY, 101])     # 101＝ロスなし
 
 
+EYE_PX = []                                      # frame() が 描いた 目の 画素（コマごと。run() の add() で すき通しの 印に 足す）
+
+
 def frame(pose, cam, ground, name, dy=None, yaw=0.0, lift=0.0, eyes='near', shade=False, by=None):
     """1コマ：背景（宙なら かげ）→ 馬（「GO!」は add で）。pose の hair は たてがみとしっぽ。dy がなければ、いちばん低い ひづめを 地面から lift 上に
        （by：体のまん中を この高さに。ひづめは地面より下へは行かない）。yaw：馬が回って見える角度（カメラと明るい側を回す）"""
@@ -215,6 +218,7 @@ def frame(pose, cam, ground, name, dy=None, yaw=0.0, lift=0.0, eyes='near', shad
         cx = scene(c).project(np.array([body_center(p)]))[0][0][0]
         shadow(img, cx, ground, max(4.0, 9.0 - lift * .45))
     img, R = PX.horse(img, p, c, name=name, hair=pose.get('hair'), light=rot_y(LIGHT, yaw), eyes=eyes)
+    EYE_PX.append(list(R.get('eye_px', [])))                                 # このコマの 目の 画素（add() が 拾う）
     return img, R, dy, c
 
 
@@ -293,11 +297,12 @@ def run(out, sample=None):
     orig, _ = PX.horse(orig)
     PX.go_text(orig)
     dys, ground = run_dy(cam)
-    frames, info = [], []
+    frames, info, eyes_px = [], [], []
 
     def add(name, img, dy):
         frames.append(PX.go_text(img))
         info.append((name, round(dy, 2)))
+        eyes_px.append(EYE_PX[-1] if EYE_PX else [])                          # そのコマの 目の 画素（白い 雲と 同じ 色でも すき通しに しない）
 
     for f in range(N_RUN):                                                  # 走る
         img, R, dy, c = frame(run_pose(f / N_RUN), cam, ground, f'pxrun{f}', dy=dys[f])
@@ -356,7 +361,12 @@ def run(out, sample=None):
     cw, ch = x1 - x0, y1 - y0
     ref = PX.go_text(PX.background())                                       # 馬のいない絵
     assert np.array_equal(layered(), ref), '重ねた景色が いまの絵とちがう'
-    rgba = [np.dstack([fr, np.any(np.abs(fr - ref) > 1e-6, -1).astype(np.float32)]) for fr in frames]   # 馬（土けむり・かげ）だけ
+    rgba = []
+    for fr, epx in zip(frames, eyes_px):                                   # 馬（土けむり・かげ）だけ。目の 画素は 背景（白い 雲）と 同じ 色でも 馬の 一部
+        a = np.any(np.abs(fr - ref) > 1e-6, -1)
+        for ex, ey in epx:
+            a[ey, ex] = True
+        rgba.append(np.dstack([fr, a.astype(np.float32)]))
     sheet = np.concatenate([fr[y0:y1, x0:x1] for fr in rgba], 1)
     save_lossless_rgba(sheet, f'{out}/pixel_run.webp')                      # ドットのまま（1倍）
     save_lossless_rgba(far_sheet(), f'{out}/pixel_far.webp')

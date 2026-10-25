@@ -1167,7 +1167,9 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   }
 
   // ---- CM（紹介動画）：設定タブの説明書の下から見る。動画は大きいので、見るときにネットから読む（iPhoneにはしまわない） ----
+  //      App Store版には 出さない（2026/10/25 まさちゃん「設定に入ってるCMを見る機能消して！」。Web版は 今までどおり）
   function cmEntry() {
+    if (NATIVE) return;
     const CM = window.__CM; if (!CM) return;
     if (!document.getElementById('cmCss')) {
       const st = document.createElement('style'); st.id = 'cmCss';

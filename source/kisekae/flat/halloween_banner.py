@@ -19,6 +19,7 @@ import event_art as A
 W, Hh = 780, 320
 out = sys.argv[1]
 BASE = os.environ.get('HALLOWEEN_BASE') == '1'      # 動く壁紙の 下の絵（ドラキュラ・顔のある かぼちゃ・ドクロは halloween_wall.py が ページの SVG で 動かす）
+PLAIN = os.environ.get('HALLOWEEN_SKY_PLAIN') == '1'   # 星と こうもりも 描かない（halloween_wall.py が ページの SVG で またたかせ・飛ばす。乱数の 順は 同じに 進める）
 rng = np.random.default_rng(31)
 yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
 
@@ -33,13 +34,16 @@ for i in range(60):
     x, y = rng.uniform(0, W), rng.uniform(0, 150)
     if (x - mx) ** 2 + (y - my) ** 2 < 70 ** 2:
         continue
-    img = over(img, hexc('#FFFFFF'), soft_circle(Hh, W, x, y, rng.uniform(0.6, 1.4), 0.8) * rng.uniform(0.4, 0.9))
+    r_, a_ = rng.uniform(0.6, 1.4), rng.uniform(0.4, 0.9)          # 乱数の 順は 前の まま（半径 → こさ）
+    if not PLAIN:
+        img = over(img, hexc('#FFFFFF'), soft_circle(Hh, W, x, y, r_, 0.8) * a_)
 # 遠くの丘・お城・はだかの木
 hill = 236 - 30 * np.exp(-((xx - 640) / 120) ** 2) + 5 * np.sin(xx / 40)
 img = over(img, hexc('#2C1846'), np.clip((yy - hill) / 2 + .5, 0, 1))
 lay = A.g(A.castle('#2C1846', '#FFC94A'), 650, 214, 0.78) + A.g(A.bare_tree('#1E1230'), 752, 262, 0.95)
-for x, y, s in ((140, 52, 0.62), (196, 84, 0.42), (430, 40, 0.5), (712, 160, 0.38), (520, 150, 0.32)):
-    lay += A.g(A.bat(s, '#1A1028'), x, y)
+if not PLAIN:
+    for x, y, s in ((140, 52, 0.62), (196, 84, 0.42), (430, 40, 0.5), (712, 160, 0.38), (520, 150, 0.32)):
+        lay += A.g(A.bat(s, '#1A1028'), x, y)
 rgb, a = svg_layer(lay, W, Hh)
 img = over(img, rgb, a)
 # 地面（くさむら）

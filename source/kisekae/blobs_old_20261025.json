@@ -1,0 +1,29 @@
+{
+ "memo": "2026/10/25 第4.63版で 差しかえる 前の 絵の id（ios/kisekae_blobs/ に 残っている。もどす 時の ため）",
+ "removed": {
+  "blobs20.json": {
+   "sakura_old": "3b3f002de6b9b1c35fec1c32400e1494",
+   "marble_old": "ea10d9d64912ff5996f8d11ed7f17586"
+  },
+  "neon_blobs.json": {
+   "static_old": "7a14258f48e068a0b26cbfdd62afb86d",
+   "run_old": "a332f6602c1082258990e8f89b8a441c"
+  },
+  "pixel_blobs.json": {
+   "run_old": "543497cbcaf1f7b859a39fcb259c7d7f"
+  },
+  "halloween_blobs.json": {
+   "base_decor": "5874792f5afcf0001d625326a578fc5e"
+  },
+  "sunset_blobs.json": {
+   "sky_birds": "/_blob/32c04ae73da39562ac658bfb22dc1956"
+  },
+  "marble_blobs.json": {
+   "base_old": "ea10d9d64912ff5996f8d11ed7f17586",
+   "plate_old": "28e73f1d2c0b0f06e8534c81e510b539"
+  },
+  "step_blobs.json": {
+   "sakura.sheet_old": "76d5f6b54a85e15cfae3b83adde4778e"
+  }
+ }
+}

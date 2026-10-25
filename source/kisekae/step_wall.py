@@ -11,6 +11,7 @@
      （flat/step_run.py --sheet が書く）
    クラスの名前は テーマごとに skh（桜）・mjh（紅葉）・ykh（雪）"""
 import json
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 import step_plan
 
 PREFIX = dict(sakura='skh', autumn='mjh', snow='ykh')
@@ -63,7 +64,7 @@ def sprite(theme, blobs, run):
     sw, sh = cols * (cw + 2 * g), rows * (ch + 2 * g)
     T_ms, kf = keyframes(theme, run)
     html = f'<div class="{p}" aria-hidden="true"><div class="{p}x"></div></div>'
-    css = (f'.{p}{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden;pointer-events:none}}'
+    css = (f'.{p}{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden;pointer-events:none}}' + feather(f'.{p}', ax, ay, cw, ch) +
            f'.{p}x{{position:absolute;left:-{g}px;top:-{g}px;width:{sw}px;height:{sh}px;background:url({blobs[theme]["sheet"]}) 0 0/{sw}px {sh}px no-repeat;'
            f'animation:{p}A {T_ms}ms step-end infinite;will-change:transform}}'
            f'@keyframes {p}A{{{kf}}}')

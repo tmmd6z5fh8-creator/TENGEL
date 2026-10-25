@@ -7,6 +7,7 @@
    クラスの名前は ns…
    python3 news_wall.py --judge <Judge_News.dc.html> <news_blobs.json> <news_run.json>  → 判定画面の上の絵を「走る馬」に書きかえる（何回やっても同じ）"""
 import sys, os, re, json
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 
 ALT = '競馬新聞の紙面のような、題字と馬柱、墨の筆でえがいた馬のイラスト（馬がいつも走っている）'
 RUN_S = .5                                   # ギャロップ1回の秒
@@ -20,7 +21,7 @@ def inline(blobs, run, alt=ALT):
             '<div class="nsh"><div class="nsr"></div></div></div>')
     css = ('.nsw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
            '.nsw .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
-           f'.nsw .nsh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
+           f'.nsw .nsh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}' + feather('.nsw .nsh', x0, y0, cw, ch) +
            f'.nsw .nsr{{width:{n * cw}px;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;'
            f'animation:nsRun {RUN_S}s steps({n}) infinite}}'
            f'@keyframes nsRun{{to{{transform:translateX(-{n * cw}px)}}}}'

@@ -20,6 +20,7 @@
    python3 xmas_wall.py --judge <Judge_Xmas.dc.html> <xmas_blobs.json> <xmas_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 xmas_wall.py --plan                                                           → 予定（はじまる秒）"""
 import sys, os, re, json, math, random
+from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, 'flat'))
 import event_art as A
@@ -226,7 +227,7 @@ def horse_css(blob, run, starts):
         r, c = divmod(f, cols)
         body += f'{",".join(by[f])}{{transform:{tr(-c * (cw + 2 * g), -r * (ch + 2 * g))}}}'
     html = '<div class="xwH"><div class="xwHx"></div></div>'
-    css = (f'.xw .xwH{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
+    css = (f'.xw .xwH{{position:absolute;left:{ax}px;top:{ay}px;width:{cw}px;height:{ch}px;overflow:hidden}}' + feather('.xw .xwH', ax, ay, cw, ch) +
            f'.xw .xwHx{{position:absolute;left:-{g}px;top:-{g}px;width:{sw}px;height:{sh}px;background:url({blob}) 0 0/{sw}px {sh}px no-repeat;'
            f'animation:xwHA {LOOP:g}s step-end infinite;will-change:transform}}@keyframes xwHA{{{body}}}')
     return html, css

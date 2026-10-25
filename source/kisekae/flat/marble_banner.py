@@ -101,28 +101,140 @@ def compose(img, R, sc, cam):
     return laurel(img, 620, 170, 120, math.radians(110), math.radians(250), -1)
 
 
-# 金の月桂樹（左右）
+# 金の月桂樹（左右）：本物の 金の 月桂冠のように（2026/10/25 まさちゃん「大理石の左右の赤丸の中のものをもっとリアルに金ピカにして！」）
+#   前は 平らな 金色（たての グラデーション 1枚）の 細い 茎と ひし形の 葉だった → 太い 丸い 茎（光の すじ）・細長く とがった 月桂樹の 葉を
+#   茎の 先の 向きに そろえて 2列（少しずつ 重なる）・葉ごとに 金属の 照り（横方向の 明暗の 帯・葉脈の 線・先の 小さな 光）・金の 実（丸い 玉）・
+#   うすい 落ち影。4倍で 描いて 縮める
+LAUREL_COL = dict(shadow='#5E3F0C', dark='#8E6516', base='#C99A2E', light='#EFCF6C', hi='#FFF3C4', edge='#7A5611')
+
+
+def _leaf_poly(p, d, n_, L, w, curve):
+    """葉の 形（細長く 先が とがる・少し そる）。p：つけ根・d：葉の 向き（単位）・n_：横（単位）・L：長さ・w：はば・curve：そり（横への ずれ）"""
+    pts = []
+    for i in range(13):                                        # 片がわ（つけ根 → 先）
+        t = i / 12
+        half = w * math.sin(math.pi * t) ** 0.8 * (1 - 0.15 * t)
+        c = curve * t * t
+        pts.append(p + d * (L * t) + n_ * (half + c))
+    for i in range(12, -1, -1):                                 # もう片がわ（先 → つけ根）
+        t = i / 12
+        half = w * math.sin(math.pi * t) ** 0.8 * (1 - 0.15 * t)
+        c = curve * t * t
+        pts.append(p + d * (L * t) + n_ * (-half + c))
+    return np.array(pts)
+
+
 def laurel(img, cx, cy, r, a0, a1, flip):
-    m = np.zeros((Hh, W), np.float32)
-    stem = []
-    for k in range(40):
-        a = a0 + (a1 - a0) * k / 39
-        stem.append((cx + math.cos(a) * r * flip, cy + math.sin(a) * r))
-    stem = np.array(stem)
-    cv2.polylines(m, [np.round(stem * 16).astype(np.int32)], False, 1.0, 3 * 16 // 16, cv2.LINE_AA, shift=4)
-    leaves = []
-    for k in range(2, 40, 3):
-        p = stem[k]; d = stem[min(k + 1, 39)] - stem[k - 1]; d /= np.linalg.norm(d)
+    S = 4
+    H4, W4 = Hh * S, W * S
+    yy4, xx4 = np.mgrid[0:H4, 0:W4].astype(np.float32) / S          # 1倍の 座標
+    C = {k: hexc(v) for k, v in LAUREL_COL.items()}
+    col = np.zeros((H4, W4, 3), np.float32)
+    acc = np.zeros((H4, W4), np.float32)                             # 金の ぜんたいの α（影に 使う）
+    light = np.array([-0.55, -0.83])                                 # 光の 向き（左上から）
+
+    def paint(mask, rgb):
+        nonlocal col, acc
+        m = mask[..., None]
+        col = col * (1 - m) + rgb * m
+        acc = np.maximum(acc, mask)
+
+    def fill_aa(polys, shape=(H4, W4)):
+        m = np.zeros(shape, np.uint8)
+        for q in polys:
+            cv2.fillPoly(m, [np.round(np.asarray(q) * S * 16).astype(np.int32)], 255, cv2.LINE_AA, shift=4)
+        return m.astype(np.float32) / 255
+
+    # ---- 茎（丸い 金の 棒）：太さ 4.2px・暗い → 明るい → 光の すじ
+    n = 72
+    stem = np.array([(cx + math.cos(a) * r * flip, cy + math.sin(a) * r) for a in np.linspace(a0, a1, n)])
+    def stroke(pts, wpx, val, off=(0, 0)):
+        m = np.zeros((H4, W4), np.uint8)
+        q = np.round((pts + np.array(off)) * S * 16).astype(np.int32)
+        cv2.polylines(m, [q], False, 255, max(1, int(round(wpx * S))), cv2.LINE_AA, shift=4)
+        return m.astype(np.float32) / 255
+    paint(stroke(stem, 4.4, 1), C['dark'])
+    paint(stroke(stem, 3.0, 1, (0.0, -0.3)), C['base'])
+    paint(stroke(stem, 1.4, 1, (-0.4, -0.9)), C['light'])
+    paint(stroke(stem, 0.6, 1, (-0.6, -1.2)) * 0.9, C['hi'])
+
+    # ---- 葉：茎に そって 2列（左右）に、先の 向きへ 傾けて。つけ根が 先の 葉の 下に 少し 重なる
+    rng = np.random.default_rng(5)
+    leaves = []                                                        # (poly, p, d, n_, L, w, sgn)
+    for k in range(3, n - 2, 4):
+        p = stem[k]
+        d = stem[min(k + 2, n - 1)] - stem[k - 2]; d = d / np.linalg.norm(d)   # 成長の 向き（茎の 先へ）
         nrm_ = np.array([-d[1], d[0]])
-        for sgn in (1, -1):
-            tip = p + nrm_ * sgn * 15 + d * 6
-            mid = (p + tip) / 2
-            q = [p, mid + nrm_ * 3 * sgn + d * 4, tip, mid - nrm_ * 2 * sgn - d * 2]
-            leaves.append(np.array(q))
-    m = np.maximum(m, poly_aa((Hh, W), leaves))
-    gold = grad_v(Hh, W, [(0, '#F3D27A'), (0.5, '#C9952B'), (1, '#F0CF7A')])
-    img = over(img, hexc('#8A6514'), np.roll(m, 1, 0) * 0.6)
-    return over(img, gold, m)
+        for j, sgn in enumerate((1, -1)):
+            ang = math.radians(38 + rng.uniform(-6, 6)) * sgn           # 茎から 開く 角度
+            dl = np.array([d[0] * math.cos(ang) - d[1] * math.sin(ang), d[0] * math.sin(ang) + d[1] * math.cos(ang)])
+            nl = np.array([-dl[1], dl[0]])
+            L = 23 + rng.uniform(-2.5, 2.5)
+            w = 4.6 + rng.uniform(-0.5, 0.5)
+            base_pt = p + nrm_ * sgn * 1.2 - d * 2.5                      # つけ根は 茎の 少し うしろ
+            poly = _leaf_poly(base_pt, dl, nl, L, w, curve=-sgn * 1.6)
+            leaves.append((poly, base_pt, dl, nl, L, w, sgn))
+    # 奥（茎の はじめ）から 手前へ 順に 描く（先の 葉が 上に 重なる）。計算は 葉の まわりの 四角だけ（速さの ため）
+    for poly, p, dl, nl, L, w, sgn in leaves:
+        bx0, by0 = max(0, int(poly[:, 0].min() * S) - 3), max(0, int(poly[:, 1].min() * S) - 3)
+        bx1, by1 = min(W4, int(poly[:, 0].max() * S) + 4), min(H4, int(poly[:, 1].max() * S) + 4)
+        if bx1 <= bx0 or by1 <= by0:
+            continue
+        sl = (slice(by0, by1), slice(bx0, bx1))
+        m_full = fill_aa([poly])
+        m = m_full[sl]
+        if m.max() <= 0:
+            continue
+        # 葉の 中の 座標：t（つけ根 0 → 先 1）・u（まん中 0 → ふち ±1）
+        rx, ry = xx4[sl] - p[0], yy4[sl] - p[1]
+        t = (rx * dl[0] + ry * dl[1]) / L
+        half = np.maximum(w * np.sin(np.pi * np.clip(t, 0, 1)) ** 0.8 * (1 - 0.15 * np.clip(t, 0, 1)), 0.3)
+        u = (rx * nl[0] + ry * nl[1] - (-sgn * 1.6) * np.clip(t, 0, 1) ** 2) / half
+        # 金属の 照り：光の 向きと 葉の 横の 向きで 明るい 帯の 位置が きまる。帯の 両がわは 暗く・ふちは もっと 暗く
+        lit = float(nl[0] * light[0] + nl[1] * light[1])                 # 光が 当たる がわ（-1〜1）
+        band = np.exp(-((u - 0.35 * lit) ** 2) / (2 * 0.33 ** 2))        # 明るい 帯
+        glint = np.exp(-((u - 0.35 * lit) ** 2) / (2 * 0.12 ** 2)) * np.exp(-((t - 0.42) ** 2) / (2 * 0.16 ** 2))   # 小さな 強い 光
+        shade_side = np.clip(-u * lit, 0, 1) ** 1.5 * 0.55                 # 光の 反対がわは 暗く
+        edge = np.clip((np.abs(u) - 0.78) / 0.22, 0, 1) * 0.6             # ふち
+        tipd = np.clip((t - 0.86) / 0.14, 0, 1) * 0.25                     # 先は 少し 暗く（厚みが ある 感じ）
+        rgb = C['base'][None, None, :] * np.ones((by1 - by0, bx1 - bx0, 1), np.float32)
+        rgb = rgb * (1 - band[..., None] * 0.85) + C['light'] * band[..., None] * 0.85
+        rgb = rgb * (1 - glint[..., None] * 0.9) + C['hi'] * glint[..., None] * 0.9
+        rgb = rgb * (1 - shade_side[..., None]) + C['dark'] * shade_side[..., None]
+        rgb = rgb * (1 - edge[..., None]) + C['edge'] * edge[..., None]
+        rgb = rgb * (1 - tipd[..., None]) + C['dark'] * tipd[..., None]
+        # 葉脈：まん中の 細い 暗い 線と、その 光が 当たる がわの 細い 明るい 線
+        vein = np.exp(-(u ** 2) / (2 * 0.07 ** 2)) * (t > 0.06) * (t < 0.94)
+        vein_hi = np.exp(-((u - 0.16 * lit) ** 2) / (2 * 0.05 ** 2)) * (t > 0.1) * (t < 0.9)
+        rgb = rgb * (1 - vein[..., None] * 0.55) + C['edge'] * vein[..., None] * 0.55
+        rgb = rgb * (1 - vein_hi[..., None] * 0.5) + C['hi'] * vein_hi[..., None] * 0.5
+        col[sl] = col[sl] * (1 - m[..., None]) + rgb * m[..., None]
+        acc[sl] = np.maximum(acc[sl], m)
+    # ---- 金の 実（丸い 玉）：3つおきの 節に 2こ
+    for k in range(5, n - 4, 12):
+        p = stem[k]; d = stem[k + 1] - stem[k - 1]; d = d / np.linalg.norm(d); nrm_ = np.array([-d[1], d[0]])
+        for sgn, off in ((1, 0.0), (-1, 2.0)):
+            c0 = p + nrm_ * sgn * 3.6 + d * off
+            rr = 2.4
+            bx0, by0 = max(0, int((c0[0] - rr - 1) * S)), max(0, int((c0[1] - rr - 1) * S))
+            bx1, by1 = min(W4, int((c0[0] + rr + 2) * S)), min(H4, int((c0[1] + rr + 2) * S))
+            sl = (slice(by0, by1), slice(bx0, bx1))
+            dist = np.sqrt((xx4[sl] - c0[0]) ** 2 + (yy4[sl] - c0[1]) ** 2)
+            m = np.clip((rr - dist) * S * 0.9 + 0.5, 0, 1)
+            hx, hy = c0[0] + light[0] * rr * 0.45, c0[1] + light[1] * rr * 0.45
+            sp = np.exp(-((xx4[sl] - hx) ** 2 + (yy4[sl] - hy) ** 2) / (2 * (rr * 0.42) ** 2))
+            dk = np.clip((dist / rr) ** 2, 0, 1) * 0.55
+            rgb = C['base'] * (1 - dk[..., None]) + C['dark'] * dk[..., None]
+            rgb = rgb * (1 - sp[..., None] * 0.95) + C['hi'] * sp[..., None] * 0.95
+            col[sl] = col[sl] * (1 - m[..., None]) + rgb * m[..., None]
+            acc[sl] = np.maximum(acc[sl], m)
+    # ---- 1倍に 縮めて 重ねる：うすい 落ち影（右下へ 2px・ぼかし）→ 金
+    a1x = cv2.resize(acc, (W, Hh), interpolation=cv2.INTER_AREA)
+    rgb1 = cv2.resize(np.where(acc[..., None] > 0, col, 0), (W, Hh), interpolation=cv2.INTER_AREA)
+    rgb1 = np.where(a1x[..., None] > 1e-4, rgb1 / np.maximum(a1x[..., None], 1e-4), 0)
+    sh = blur(np.roll(np.roll(a1x, 3, 0), 2, 1), 2.2) * 0.42
+    img = over(img, hexc('#5A4420'), sh)
+    return over(img, rgb1, a1x)
 
 
 def cleanup():

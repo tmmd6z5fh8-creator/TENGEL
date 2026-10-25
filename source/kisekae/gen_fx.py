@@ -87,7 +87,7 @@ THEMED = dict(
 )
 AUTUMN_BLOB = '/_blob/1c869ee9f9195c4625d3997d66463e57'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
 SNOW_BLOB = '/_blob/6683d421d2b9e7e0503e7173da2288ba'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
-SAKURA_BLOB = '/_blob/3b3f002de6b9b1c35fec1c32400e1494'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
+SAKURA_BLOB = '/_blob/d6c8ae594bf8e602ac078f7f727e9a28'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
 
 
 def step_data():
@@ -365,8 +365,11 @@ COMMON_CSS = r'''body{margin:0}
 @media (prefers-reduced-motion:reduce){.push,.pshadow,.push::after,.halo b,.tap,.conf i,.rays,.rbow,.ring,.glow,.spk b{animation:none!important}.conf,.pressed,.push::after{display:none}.hb{animation:fadeIn .5s ease-out .2s both!important}}
 '''
 
+# 的中の うしろの 暗さと ボードの ふちは デカ的中と 同じに（2026/10/25 まさちゃん「的中の結果ボードの背景がおかしい。デカ的中以降の結果ボードの背景と形合わせて！」。ふちは boards.py の .rb.hit）
 HIT_CSS = r'''
 /* ---------- 的中：あたたかい光 → ボードが下から出る ---------- */
+/* うしろの 暗さは デカ的中 以降と 同じ（まん中は 少し うすく・まわりは 濃い。前は 一様な 62% の 暗さで、うしろの 画面の 字が 透けて 見えた） */
+.ov.hit .dim{background:radial-gradient(circle at 50% 46%,rgba(60,30,90,.55),rgba(6,4,18,.86) 70%)}
 .rays{position:absolute;z-index:4;left:50%;top:44%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;
   background:repeating-conic-gradient(var(--ray) 0 7deg,transparent 7deg 18deg);
   -webkit-mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);mask-image:radial-gradient(circle,#000 0 18%,transparent 62%);

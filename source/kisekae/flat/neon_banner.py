@@ -52,6 +52,52 @@ def rider(pose=None, cam=None, name='neon2'):
     return render_rider(BOX, W, Hh, azim=55, elev=6, ss=2, name=name, js=1.15, pose=pose, cam=cam)
 
 
+NO_DUST = os.environ.get('NEON_NO_DUST') == '1'    # 光のつぶを 絵に 入れない（壁紙では 別の 層で 動かす）
+DUST_COLS = ('#FF2BD6', '#2EEBFF', '#B36BFF', '#FFE45C')
+
+
+def dust_particles(hip):
+    """光のつぶ 240こ の もと（いまの絵と 同じ 乱数の 順・seed 57）：(x, y, 種類 'dot'／'line', 大きさ s か 長さ L, 色の 番号, こさ w)。絵の 画素 780×320。
+       hip：光のつぶの 中心（腰）"""
+    pr = np.random.default_rng(57)
+    cx_, cy_ = hip
+    out = []
+    for i in range(240):
+        r = abs(pr.normal(0, 1)) * 95 + 8
+        a = math.pi + pr.normal(0, 0.55)
+        x = cx_ + math.cos(a) * r * 1.25 + 10
+        y = cy_ + math.sin(a) * r * 0.55 + 30 + pr.normal(0, 12)
+        if not (0 <= x < W and 0 <= y < Hh):
+            continue
+        s = max(0.6, pr.normal(1.3, 0.5)) * (1.25 - r / 300)
+        if pr.random() < 0.3:                                          # 短い光の筋
+            L = 4 + pr.random() * 8
+            kind, size = 'line', L
+        else:
+            kind, size = 'dot', s
+        w = float(np.clip(1.15 - r / 260, 0.25, 1))
+        ci = int(pr.integers(0, 4))
+        out.append((float(x), float(y), kind, float(size), ci, w))
+    return out
+
+
+def dust_light(hip):
+    """光のつぶの 足す光（RGB・0〜1）：いまの絵の img = img + dust_light(hip) と 同じ"""
+    dots = np.zeros((Hh, W), np.float32); dcol = np.zeros((Hh, W, 3), np.float32)
+    pcols = [hexc(c) for c in DUST_COLS]
+    for x, y, kind, size, ci, w in dust_particles(hip):
+        d = np.zeros((Hh, W), np.float32)
+        if kind == 'line':
+            L = size
+            cv2.line(d, (int(x * 16), int(y * 16)), (int((x - L) * 16), int((y + L * 0.12) * 16)), 1.0, 2, cv2.LINE_AA, shift=4)
+        else:
+            cv2.circle(d, (int(x * 16), int(y * 16)), int(size * 16), 1.0, -1, cv2.LINE_AA, shift=4)
+        dots = np.maximum(dots, d * w)
+        dcol += d[..., None] * pcols[ci] * w
+    dcol = np.where(dots[..., None] > 1e-4, dcol / np.maximum(dcol.max(-1, keepdims=True), 1e-4) * dots[..., None], 0)
+    return blur(dcol, 3.5) * 0.9 + dcol * 0.9
+
+
 def hip_px(R):
     """光のつぶの中心（腰）"""
     return R['scene'].project(np.array([np.array([R['S']['hip'][0], R['S']['hip'][1], 0.0])]))[0][0][:2]
@@ -119,31 +165,12 @@ def compose(img, R, hip=None, hair=0.0, dbg=None):
     rein = cv2.resize(rein, (W, Hh), interpolation=cv2.INTER_AREA)
 
     # ---------- うしろのネオンの光のつぶ（砂ぼこりのかわり） ----------
-    pr = np.random.default_rng(57)
-    cx_, cy_ = hip_px(R) if hip is None else hip
-    dots = np.zeros((Hh, W), np.float32); dcol = np.zeros((Hh, W, 3), np.float32)
-    pcols = [hexc('#FF2BD6'), hexc('#2EEBFF'), hexc('#B36BFF'), hexc('#FFE45C')]
-    for i in range(240):
-        r = abs(pr.normal(0, 1)) * 95 + 8
-        a = math.pi + pr.normal(0, 0.55)
-        x = cx_ + math.cos(a) * r * 1.25 + 10
-        y = cy_ + math.sin(a) * r * 0.55 + 30 + pr.normal(0, 12)
-        if not (0 <= x < W and 0 <= y < Hh):
-            continue
-        s = max(0.6, pr.normal(1.3, 0.5)) * (1.25 - r / 300)
-        d = np.zeros((Hh, W), np.float32)
-        if pr.random() < 0.3:                                          # 短い光の筋
-            L = 4 + pr.random() * 8
-            cv2.line(d, (int(x * 16), int(y * 16)), (int((x - L) * 16), int((y + L * 0.12) * 16)), 1.0, 2, cv2.LINE_AA, shift=4)
-        else:
-            cv2.circle(d, (int(x * 16), int(y * 16)), int(s * 16), 1.0, -1, cv2.LINE_AA, shift=4)
-        w = np.clip(1.15 - r / 260, 0.25, 1)
-        dots = np.maximum(dots, d * w)
-        dcol += d[..., None] * pcols[pr.integers(0, 4)] * w
-    dcol = np.where(dots[..., None] > 1e-4, dcol / np.maximum(dcol.max(-1, keepdims=True), 1e-4) * dots[..., None], 0)
+    #   NEON_NO_DUST=1 なら ここでは 描かない：壁紙（neon_wall.py）が 光のつぶだけの 絵（dust_layer）と きらめく 粒を 別の 層で 重ねて 動かす
+    #   （2026/10/25 まさちゃん「ネオンの黄色丸の中の小さな光は常にキラキラと光りながら動いているようにして！」）
+    if not NO_DUST:
+        img = img + dust_light(hip_px(R) if hip is None else hip)                    # 光のつぶ（馬のうしろ・足す光）
 
     # ---------- 重ねる ----------
-    img = img + blur(dcol, 3.5) * 0.9 + dcol * 0.9                                  # 光のつぶ（馬のうしろ）
     img = over(img, hexc('#060312'), sil * 0.88)                                     # 形の中は暗く（うしろの格子をかくす）
     img = img + blur(sil, 10)[..., None] * hexc('#4A1A8A') * 0.18                   # 形のまわりのうすい光
     glow_c = cfull * line[..., None]

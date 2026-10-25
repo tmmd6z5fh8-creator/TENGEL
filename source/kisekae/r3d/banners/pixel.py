@@ -70,12 +70,15 @@ def horse(img, pose=None, cam=None, name='pix', hair=None, light=(0.3, 0.8, 0.5)
     m = (body | (ha > 0.45)).astype(np.uint8)
     edge = (cv2.dilate(m, np.ones((3, 3), np.uint8)) - m).astype(bool)
     img[edge & (np.arange(Hh)[:, None] < 60)] = PAL['black']
-    # 目
+    # 目（描いた 画素の 場所を R['eye_px'] に 残す：pixel_run.py が コマを 切りぬく ときの すき通しの 印に 使う。
+    #   正面の 右目が 白い 雲の 上に 重なると「背景と 同じ 色」と 見なされて すき通しに なり、雲が 流れると 空の 青が のぞいていた
+    #   （2026/10/25 まさちゃん「ドットの馬が画面側を見た時に右目が青になっている白に統一して！」））
+    R['eye_px'] = []
     if eyes == 'near':
-        ex, ey = R['eye']; img[int(round(ey)), int(round(ex))] = PAL['white']
+        ex, ey = R['eye']; ex, ey = int(round(ex)), int(round(ey)); img[ey, ex] = PAL['white']; R['eye_px'].append((ex, ey))
     elif eyes == 'both':
         for q in R['scene'].project(np.array(R['S']['eyes']))[0]:
-            img[int(round(q[1])), int(round(q[0]))] = PAL['white']
+            ex, ey = int(round(q[0])), int(round(q[1])); img[ey, ex] = PAL['white']; R['eye_px'].append((ex, ey))
     R['cam'] = (e, t)
     return img, R
 

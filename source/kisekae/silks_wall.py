@@ -14,14 +14,18 @@ RUN_S = .5                                    # ギャロップ1回の秒
 
 
 def inline(blobs, run, alt=ALT):
-    """(html, css)。blobs：tile（背景）・run（走るコマ）→ '/_blob/<id>'。run：silks_run.json"""
+    """(html, css)。blobs：tile（背景・1まい）・tile2（背景を 2つ つなげた 1まい・<img> で 流す）・run（走るコマ）→ '/_blob/<id>'。run：silks_run.json"""
     P = run['period'] // 2
     x0, y0, cw, ch = (v // 2 for v in run['cell'])
     n = run['frames']
-    html = (f'<div class="sbw" role="img" aria-label="{alt}"><div class="sbb"></div>'
+    # 背景は くり返しの 1まいを 2つ つなげた 1まいの 絵（tile2）を <img> で 置いて 流す。前は <div> の background-image（repeat-x）だったが、
+    # iPad で 壁紙を 3.5倍に 拡大すると その 層は 8000画素を こえて タイルに 分けて 描かれ、1まい分 もどる 瞬間に まだ 描かれていない タイルが 見えて
+    # 画面が 一瞬 白く なった。<img> は 絵の 画素数（2424×320）の まま GPU で 拡大されるので、もどる 瞬間も 同じ 絵が そのまま 見える
+    #（2026/10/25 まさちゃん「勝負服、の画面がリピートされている時に、画面が一瞬白くなる、繋ぎ目なくして！」）
+    html = (f'<div class="sbw" role="img" aria-label="{alt}"><img class="sbb" src="{blobs["tile2"]}" alt="" draggable="false">'
             '<div class="sbh"><div class="sbr"></div></div></div>')
     css = ('.sbw{position:relative;flex:none;width:390px;height:160px;overflow:hidden}'
-           f'.sbw .sbb{{position:absolute;left:0;top:0;width:{2 * P}px;height:160px;background:url({blobs["tile"]}) 0 0/{P}px 160px repeat-x;'
+           f'.sbw .sbb{{position:absolute;left:0;top:0;width:{2 * P}px;height:160px;max-width:none;display:block;will-change:transform;'
            f'animation:sbFlow {FLOW_S}s linear infinite}}'
            f'@keyframes sbFlow{{to{{transform:translateX(-{P}px)}}}}'
            f'.sbw .sbh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
