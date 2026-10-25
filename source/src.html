@@ -1529,7 +1529,8 @@ function ocrPick(d) {
     if (d.rname) { f.rname = String(d.rname).slice(0, 30); got.push('レース名'); } if (d.start && /^\d{1,2}:\d{2}$/.test(d.start)) { f.start = d.start.padStart(5, '0'); got.push('発走'); }
   }
   const hs = Array.isArray(d.horses) ? d.horses.filter(h => h && N(h.no) && N(h.tan)) : [];
-  if (hs.length) { f.rows = hs.map(h => ({ no: N(h.no), tan: String(N(h.tan)), fuku: h.fuku == null ? '' : String(h.fuku) })); got.push(`単勝${hs.length}頭`); if (!hs.some(h => h.fuku)) miss.push('複勝'); }
+  // App Store版（NATIVE_APP）は 複勝を 読まない（第4.65版・まさちゃん「複勝読み取り機能は無くして！別に無くて大丈夫！」：読めない ことが 多く、判定にも いらない）。Web版は 今までどおり
+  if (hs.length) { f.rows = hs.map(h => ({ no: N(h.no), tan: String(N(h.tan)), fuku: NATIVE_APP || h.fuku == null ? '' : String(h.fuku) })); got.push(`単勝${hs.length}頭`); if (!NATIVE_APP && !hs.some(h => h.fuku)) miss.push('複勝'); }
   else miss.push('単勝');
   for (const [k, lab] of [['s1', '3連単1位'], ['s5', '3連単5位'], ['s10', '3連単10位']]) {
     const o = d[k]; const v = o && N(o.odds);
@@ -2202,7 +2203,8 @@ async function reserveRace(J, giveUp) {
 }
 async function cancelReserve(id, btn) {
   if (btn && !btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'ほんとに消す？'; return; }
-  try { await st.db.collection('bets').doc(id).delete(); st.rsvEdit = false; await syncNotify(); toast('予約を消したよ（お知らせも消したよ）'); renderResult(); } catch (e) { writeErr(e); }
+  const wasDone = !!(st.bets.get(id) && st.bets.get(id).rsv && st.bets.get(id).rsv.state === 'done');
+  try { await st.db.collection('bets').doc(id).delete(); st.rsvEdit = false; await syncNotify(); toast(wasDone ? '記録を消したよ' : '予約を消したよ（お知らせも消したよ）'); renderResult(); } catch (e) { writeErr(e); }
 }
 
 // --- 結果確認のお知らせ（13章）：発走の15分後（日本時間）。待たせるお知らせはまとめて入れ直す（近い順に64件はアプリ側） ---
@@ -2288,7 +2290,7 @@ function fxCard() {
   const set = $('#v-set'); if (!set) return;
   const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setFx'; c.style.marginBottom = 'var(--gap)';
   const seg = (k, lab, hint) => `<div class="fxrow"><div class="fxlab"><b>${lab}</b><span class="small muted">${hint}</span></div><div class="seg" data-fx="${k}"><button type="button" data-v="1" aria-pressed="true">オン</button><button type="button" data-v="0" aria-pressed="false">オフ</button></div></div>`;
-  c.innerHTML = `<h2>的中の演出</h2><p class="hint">予約したレースの結果を保存すると、当たりの大きさに合わせて PUSH ボタン・演出・結果のボード（券種ごとの結果）が出るよ。</p>`
+  c.innerHTML = `<h2>的中の演出</h2><p class="hint">予約したレースの結果を決めると、当たりの大きさに合わせて PUSH ボタン・演出・結果のボード（券種ごとの結果）が出るよ。オフなら 出さずに そのまま 金額の 欄へ。</p>`
     + seg('effects', '的中エフェクト', 'オフにすると、PUSH・演出・効果音なしで、結果のボードだけを静かに出すよ')
     + seg('calm', '演出を控えめにする', 'まぶしい光や速い動きを減らすよ。この端末の「視差効果を減らす」がオンなら、いつも控えめ')
     + seg('sound', '効果音', 'PUSHが出たときと押したときの音。消音スイッチがオンのときは鳴らないよ');
@@ -2334,35 +2336,61 @@ function rsvTopHTML() {
 }
 const isPendingRsv = b => !!(b.rsv && (b.rsv.state === 'reserved' || b.rsv.state === 'given'));
 // 予約したレースの結果入力の欄（買い目は出さない。「買い目を確認」で見る）
-function rsvFormHTML(b) {
+//   第4.65版（まさちゃん「結果と的中金額とかの入力分けて！…結果を入力 → 的中ボタンの演出（オフなら そのまま 次）→ 金額入力（後からでもできるよ）→ 記録」）：
+//   3つの 形（mode）。result＝結果だけ（結果待ちの 予約）／amount＝結果を 決めた 直後（演出の あと）の 金額の 欄だけ／edit＝記録を あとから 直す（全部）
+function rsvMode(b) { return !b.rsv || b.rsv.state !== 'done' ? 'result' : (st.rsvAmt === b.id ? 'amount' : 'edit'); }
+// 結果の画像から 読んだ 払戻の 表 → 当たった 組の 払戻の 合計（券種ごと・払戻の 欄が 空の ときの はじめの 値）
+function rsvPayFromImage(b, t) {
+  const R = Reserve(), pm = b.rsv && b.rsv.result && b.rsv.result.pay && b.rsv.result.pay[t]; if (!R || !pm) return '';
+  const j = R.judge(b.rsv.bets, b.rsv.result, +b.n || 0), per = j.per[t]; if (!per) return '';
+  const sum = per.hit.reduce((a, c) => a + (pm[c.join('-')] || 0), 0);
+  return per.state === '的中' && sum ? String(sum) : (per.state === '不的中' ? '0' : '');
+}
+function rsvFormHTML(b, mode) {
+  mode = mode || rsvMode(b);
   const rs = b.rsv, res = rs.result || { p: [[], [], []], cancel: [], abandoned: false, pay: {} }, sfx = 'rsv-' + b.id, sn = b.snap || {};
   const v = draftFrom(b, true), amtv = { types: rs.types || [], amt: {}, other: '' };
-  (rs.types || []).forEach(t => { const a = (b.amt && b.amt[t]) || {}; amtv.amt[t] = { stake: a.stake == null ? '' : String(a.stake), payout: a.payout == null ? '' : String(a.payout) }; });
+  (rs.types || []).forEach(t => { const a = (b.amt && b.amt[t]) || {}; amtv.amt[t] = { stake: a.stake == null ? '' : String(a.stake), payout: a.payout == null ? rsvPayFromImage(b, t) : String(a.payout) }; });
   const g = i => (res.p[i] || []).join('-');
-  return `<div class="recbox rsvf" data-id="${esc(b.id)}" data-sfx="${esc(sfx)}">
-    <div class="recstatus" data-k="status"></div>
-    <details class="full" data-k="betsee"><summary>買い目を確認（${esc((rs.types || []).join('・'))}）</summary><div data-k="betlist">${betListHTML(rs.bets, rs.types, rsvJudge(b))}</div></details>
-    <div class="fields" style="margin-top:10px">
+  const resultFields = `
       <div class="f s6"><span class="lab">着順（馬番）。同着は「6.2」のように2頭</span><div class="pl"><input data-k="p1" data-dash inputmode="decimal" autocomplete="off" placeholder="1着" aria-label="1着の馬番" value="${esc(g(0))}"><input data-k="p2" data-dash inputmode="decimal" autocomplete="off" placeholder="2着" aria-label="2着の馬番" value="${esc(g(1))}"><input data-k="p3" data-dash inputmode="decimal" autocomplete="off" placeholder="3着" aria-label="3着の馬番" value="${esc(g(2))}"></div><div class="plab" data-k="plab"></div></div>
       <div class="f s3"><label for="cancel-${sfx}">取消・除外の馬番（あれば）</label><input id="cancel-${sfx}" data-k="cancel" data-dash inputmode="decimal" autocomplete="off" placeholder="例 4.11" value="${esc((res.cancel || []).join('-'))}"></div>
       <div class="f s3"><span class="lab">レース</span><div class="seg" data-k="abandon"><button type="button" data-v="" aria-pressed="${!res.abandoned}">行われた</button><button type="button" data-v="1" aria-pressed="${!!res.abandoned}">中止（全部返還）</button></div></div>
       <div class="f s3"><label for="start-${sfx}">発走時刻（お知らせ用）</label><input type="time" id="start-${sfx}" data-k="start" value="${esc(rs.start || b.start || '')}"></div>
-      <div class="f s3"><span class="lab">結果の画像（着順・払戻を読むよ）</span><div class="row"><button class="btn" type="button" data-act="rimg">📷 結果の画像から読む</button><input type="file" accept="image/*" multiple hidden data-k="rimgfile"></div></div>
+      <div class="f s3"><span class="lab">結果の画像（着順・払戻を読むよ）</span><div class="row"><button class="btn" type="button" data-act="rimg">📷 結果の画像から読む</button><input type="file" accept="image/*" multiple hidden data-k="rimgfile"></div></div>`;
+  const amountFields = `
       <div class="f s6"><span class="lab">券種ごとの金額（円）：購入額 → 払戻（外れは0・返還は空でOK）</span><div class="amts" data-k="amts">${amtRowsHTML(amtv, sfx)}</div><div class="small muted" data-k="amtsum"></div></div>
       ${motherFieldHTML(v, { defSlot: mSlotDefault({ date: b.date, r: b.r, venue: b.venue, isOi: sn.isOi, mother: sn.mother }) })}
-      <div class="f s6"><label for="note-${sfx}">メモ</label><input id="note-${sfx}" data-k="note" value="${esc(b.note || '')}" placeholder="メモ"></div>
+      <div class="f s6"><label for="note-${sfx}">メモ</label><input id="note-${sfx}" data-k="note" value="${esc(b.note || '')}" placeholder="メモ"></div>`;
+  const fields = mode === 'result' ? resultFields : mode === 'amount' ? amountFields : resultFields + amountFields;
+  const lead = mode === 'result' ? '<p class="hint" style="margin:10px 0 0">まず<b>結果</b>を入れてね。「結果を決める」を押すと、的中の演出のあとに<b>金額</b>を入れる欄が出るよ（金額は後からでも入れられるよ）。</p>'
+    : mode === 'amount' ? '<div class="banner info" style="margin-top:10px">結果を記録したよ。つづけて<b>金額</b>を入れてね。<b>金額の入力は後からでもできるよ！</b>（この行を開けば いつでも 直せるよ）</div>' : '';
+  const buttons = mode === 'result' ? `<button class="btn primary" type="button" data-act="rsave">結果を決める</button><button class="btn" type="button" data-act="load">判定画面で開く</button><button class="btn ghost" type="button" data-act="rdel">予約を消す</button>`
+    : mode === 'amount' ? `<button class="btn primary" type="button" data-act="rsave">記録する</button><button class="btn" type="button" data-act="rlater">あとで入れる</button>`
+      : `<button class="btn primary" type="button" data-act="rsave">記録を保存</button><button class="btn" type="button" data-act="load">判定画面で開く</button><button class="btn ghost" type="button" data-act="rdel">記録を消す</button>`;
+  return `<div class="recbox rsvf" data-id="${esc(b.id)}" data-sfx="${esc(sfx)}" data-mode="${mode}">
+    <div class="recstatus" data-k="status"></div>
+    <details class="full" data-k="betsee"><summary>買い目を確認（${esc((rs.types || []).join('・'))}）</summary><div data-k="betlist">${betListHTML(rs.bets, rs.types, rsvJudge(b))}</div></details>${lead}
+    <div class="fields" style="margin-top:10px">${fields}
     </div>
     <p class="hint" data-k="hint" style="margin:0"></p>
-    <div class="row"><button class="btn primary" type="button" data-act="rsave">結果を保存</button><button class="btn" type="button" data-act="load">判定画面で開く</button><button class="btn ghost" type="button" data-act="rdel">予約を消す</button></div>
+    <div class="row">${buttons}</div>
     <div data-k="savemsg" data-id="${esc(b.id)}" hidden></div>
   </div>`;
 }
+// 欄を 読む。欄が ない 部分（結果だけの 形の 金額・金額だけの 形の 結果）は、いまの 記録の 値を そのまま 使う
 function readRsvf(box, b) {
-  const R = Reserve(), val = k => { const i = $(`[data-k=${k}]`, box); return i ? i.value.trim() : ''; };
-  const result = { p: [R.parseNos(val('p1')), R.parseNos(val('p2')), R.parseNos(val('p3'))], cancel: R.parseNos(val('cancel')), abandoned: $('[data-k=abandon] button[aria-pressed=true]', box)?.dataset.v === '1', pay: (b.rsv.result && b.rsv.result.pay) || {} };
-  const amt = {}; (b.rsv.types || []).forEach(t => { const si = $(`[data-k=stake][data-t="${t}"]`, box), pi = $(`[data-k=payout][data-t="${t}"]`, box); amt[t] = { stake: si ? si.value.trim() : '', payout: pi ? pi.value.trim() : '' }; });
-  const ms = $('[data-k=mslot]', box);
-  return { result, amt, start: val('start'), note: $('[data-k=note]', box)?.value || '', mslot: ms ? +ms.value : undefined, upay: val('upay'), spay: val('spay') };
+  const R = Reserve(), mode = box.dataset.mode || 'edit', val = k => { const i = $(`[data-k=${k}]`, box); return i ? i.value.trim() : ''; };
+  const cur = b.rsv.result || { p: [[], [], []], cancel: [], abandoned: false, pay: {} };
+  const result = mode === 'amount' ? { p: (cur.p || [[], [], []]).map(x => x || []), cancel: cur.cancel || [], abandoned: !!cur.abandoned, pay: cur.pay || {} }
+    : { p: [R.parseNos(val('p1')), R.parseNos(val('p2')), R.parseNos(val('p3'))], cancel: R.parseNos(val('cancel')), abandoned: $('[data-k=abandon] button[aria-pressed=true]', box)?.dataset.v === '1', pay: cur.pay || {} };
+  const amt = {};
+  (b.rsv.types || []).forEach(t => {
+    if (mode === 'result') { const a = (b.amt && b.amt[t]) || {}; amt[t] = { stake: a.stake == null ? '' : String(a.stake), payout: a.payout == null ? '' : String(a.payout) }; return; }
+    const si = $(`[data-k=stake][data-t="${t}"]`, box), pi = $(`[data-k=payout][data-t="${t}"]`, box); amt[t] = { stake: si ? si.value.trim() : '', payout: pi ? pi.value.trim() : '' };
+  });
+  const ms = $('[data-k=mslot]', box), noteEl = $('[data-k=note]', box);
+  return { mode, result, amt, start: mode === 'amount' ? (b.rsv.start || b.start || '') : val('start'), note: noteEl ? noteEl.value : (b.note || ''), mslot: ms ? +ms.value : undefined, upay: val('upay'), spay: val('spay') };
 }
 // 着順（馬番）→ 人気順位（同着は先頭のならび）
 function rsvRanks(b, result) { const R = Reserve(), o = R.orders(result)[0] || [], ord = rankOrder(b.horses || []); return { nos: o, ranks: o.map(no => { const i = ord.indexOf(no); return i < 0 ? null : i + 1; }) }; }
@@ -2379,8 +2407,9 @@ function updateRsvPreview(box) {
   const bal = pay - stake, detail = j.state === '結果待ち' ? (j.placed ? `あと${j.placed < 2 ? '2着' : '3着'}まで入れると決まるよ` : '1着・2着・3着の馬番を入れてね（結果の画像からも読めるよ）') : `券種ごと：${(b.rsv.types || []).map(t => `${t} ${j.per[t] ? j.per[t].state : '—'}`).join('・')}`;
   $('[data-k=status]', box).innerHTML = `<span class="stc ${j.state === '的中' ? 'hit' : j.state === '結果待ち' ? 'wait' : j.state === '不的中' ? 'miss' : 'skip'}" style="font-size:14px">${j.state === '—' ? '結果待ち' : j.state}</span><span class="sub">${esc(detail)}</span>${any ? `<span class="balance ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}" style="margin-left:auto">${yen(stake)}→${yen(pay)}（${signYen(bal)}円）</span>` : ''}`;
   const hint = $('[data-k=hint]', box), hits = (b.rsv.types || []).filter(t => j.per[t] && j.per[t].state === '的中' && !toNum(v.amt[t].payout));
-  hint.textContent = hits.length ? `${hits.join('・')}が的中だよ！払戻を入れてね💰（結果の画像に払戻があれば自動で入るよ）` : '';
-  if (motherOn()) paintMother(box, { date: b.date, r: +b.r, venue: b.venue || '', isOi: (b.snap || {}).isOi }, v, { ranks: rk.ranks });
+  hint.textContent = v.mode === 'result' ? (hits.length ? `${hits.join('・')}が的中だよ🎯「結果を決める」を押すと、演出のあとに払戻を入れられるよ` : '')
+    : (hits.length ? `${hits.join('・')}が的中だよ！払戻を入れてね💰（結果の画像に払戻があれば自動で入るよ）` : '');
+  if (motherOn() && $('[data-k=mslot]', box)) paintMother(box, { date: b.date, r: +b.r, venue: b.venue || '', isOi: (b.snap || {}).isOi }, v, { ranks: rk.ranks });
 }
 // 結果の画像（12.1）：着順・取消・中止・払戻を欄に入れる（読めたところだけ）
 async function readResultImage(box, files) {
@@ -2398,19 +2427,21 @@ async function readResultImage(box, files) {
     const v = readRsvf(box, b), j = R.judge(b.rsv.bets, v.result, +b.n || 0);
     (b.rsv.types || []).forEach(t => { const pi = $(`[data-k=payout][data-t="${t}"]`, box), pm = d.pay[t]; if (!pi || !pm || pi.value.trim() !== '') return; const per = j.per[t]; if (!per) return; const sum = per.hit.reduce((a, c) => a + (pm[c.join('-')] || 0), 0); if (per.state === '的中' && sum) pi.value = String(sum); else if (per.state === '不的中') pi.value = '0'; });
     updateRsvPreview(box);
-    hint.textContent = `読み取った：${d.got.join('・')}。${['1着', '2着', '3着'].filter(x => !d.got.includes(x)).length ? '読めなかった着順は手で入れてね。' : ''}まちがいがないか確かめて保存してね`;
+    hint.textContent = `読み取った：${d.got.join('・')}。${['1着', '2着', '3着'].filter(x => !d.got.includes(x)).length ? '読めなかった着順は手で入れてね。' : ''}まちがいがないか確かめて${box.dataset.mode === 'result' ? '「結果を決める」を押してね' : '保存してね'}`;
   } catch (e) { hint.textContent = OCR_ERR[e && e.code] || '読み取りに失敗したよ。もう一度試すか、手で入れてね'; }
 }
 async function saveRsvf(box, btn) {
   const id = box.dataset.id, b = st.bets.get(id); if (!b || !b.rsv) return;
   const fail = t => { setSaveMsg(id, false, t); toast('❌ ' + t, 4200); };
   if (!st.db) return fail('まだデータに接続中だよ。数秒待ってもう一度押してね');
-  const R = Reserve(), v = readRsvf(box, b), res = v.result;
+  const R = Reserve(), v = readRsvf(box, b), res = v.result, mode = v.mode;
   const bad = R.orders(res)[0] && R.orders(res)[0].filter(no => !(b.horses || []).some(h => +h.no === no));
   if (bad && bad.length) return fail(`オッズの一覧にない馬番があるよ（${bad.join('・')}）`);
   const flat = res.p.flat(); if (new Set(flat).size !== flat.length) return fail('同じ馬番が2つの着に入っているよ');
   const j = R.judge(b.rsv.bets, res, +b.n || 0), rk = rsvRanks(b, res);
   const done = res.abandoned || j.placed >= 2;
+  if (mode === 'result' && !done) return fail(j.placed ? `あと${j.placed < 2 ? '2着' : '3着'}まで入れると結果が決まるよ（中止なら「中止」を選んでね）` : '1着・2着の馬番を入れてね（結果の画像からも読めるよ・中止なら「中止」）');
+  if (mode === 'result' && done) st.rsvAmt = id;            // 結果が 決まった → この行は 次に 金額の 欄で 出す（演出の うしろで 入れかわる）
   const amt = {}; let stake = null, payout = null;
   (b.rsv.types || []).forEach(t => { const a = v.amt[t] || {}, sv = toNum(a.stake), stt = j.per[t] ? j.per[t].state : ''; let pv = toNum(a.payout); if (pv == null && done) pv = stt === '返還' ? sv : (stt === '不的中' ? 0 : null); amt[t] = { stake: sv, payout: pv }; if (sv != null) stake = (stake || 0) + sv; if (pv != null) payout = (payout || 0) + pv; });
   const now = new Date().toISOString();
@@ -2429,13 +2460,22 @@ async function saveRsvf(box, btn) {
     }
     await syncNotify();
     const per = done ? '　' + (b.rsv.types || []).map(t => `${t} ${j.per[t] ? j.per[t].state : '—'}`).join('・') : '';
-    const msg = done ? `保存できたよ（${j.state}）${per}${mmsg}` : `保存したよ（まだ結果待ち）${mmsg}`;
+    const msg = mode === 'result' ? `結果を記録したよ（${j.state}）${per}` : mode === 'amount' ? `金額を記録したよ（${j.state}）${per}${mmsg}` : done ? `保存できたよ（${j.state}）${per}${mmsg}` : `保存したよ（まだ結果待ち）${mmsg}`;
+    if (mode === 'amount') st.rsvAmt = null;                 // 金額まで 入れた → 次に 開いた ときは 全部の 欄（あとから 直す 形）
     setSaveMsg(id, true, msg);
-    const fxKind = fxAfterSave(b, j, res, done, fields);
+    // 的中ボタンの 演出：結果が 決まった ときだけ（1レースに 1回）。設定の「的中エフェクト」が オフなら 出さずに そのまま 金額の 欄へ（第4.65版）
+    const F = Fx(), fxKind = F && F.get && F.get().effects === false ? null : fxAfterSave(b, j, res, done, fields);
     if (!fxKind) toast('✅ ' + msg, 4200);
+    if (mode === 'result' && done && fxKind) rsvAfterFx = id;   // 演出を 閉じたら 金額の 欄へ スクロール
   } catch (e) { setSaveMsg(id, false, errText(e)); writeErr(e); }
   finally { if (btn) btn.disabled = false; }
 }
+let rsvAfterFx = null;
+document.addEventListener('tengel:fx', e => {
+  if (!e.detail || e.detail.phase !== 'close' || !rsvAfterFx) return;
+  const id = rsvAfterFx; rsvAfterFx = null;
+  const box = $(`#recList .rsvf[data-id="${CSS.escape(id)}"]`); if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+});
 // 予約したレースの欄の操作（記録タブ）
 $('#recList').addEventListener('click', e => {
   const box = e.target.closest('.rsvf'); if (!box) return;
@@ -2445,6 +2485,7 @@ $('#recList').addEventListener('click', e => {
   const a = b.dataset.act;
   if (a === 'rimg') { const fi = $('[data-k=rimgfile]', box); if (fi) fi.click(); }
   else if (a === 'rsave') { const F = Fx(); if (F) { try { F.prime(); } catch (fe) { /* 音なしでも保存はする */ } } saveRsvf(box, b); }
+  else if (a === 'rlater') { st.rsvAmt = null; st.open = null; toast('金額は あとから この行を 開いて 入れられるよ', 3600); renderRec(); }
 });
 $('#recList').addEventListener('change', e => {
   const t = e.target; if (!t.matches || !t.matches('.rsvf [data-k=rimgfile]')) return;
@@ -2479,7 +2520,7 @@ function renderRec() {
   const top = rsvTopHTML();
   $('#recSummary').textContent = all.length ? `${st.ym.m ? st.ym.m + '月' : st.ym.y + '年'}：購入${A.n}走（的中${A.hit}・不的中${A.miss}・結果待ち${A.wait}・払い戻し${A.refund}）・未購入${A.skip}走　購入${yen(A.stake)}円 → 回収${yen(A.pay)}円（${signYen(A.bal)}円）` : '';
   const rows = all.filter(b => statusFilter[st.rf](betStatus(b).s)).sort((a, b) => b.date.localeCompare(a.date) || (a.venue || '').localeCompare(b.venue || '', 'ja') || a.r - b.r);
-  const emptyMsg = NATIVE_APP && Reserve() ? '予約したレースの結果を保存すると、ここに並ぶよ。' : '判定画面の下にある「結果・収支の記録」から保存すると、ここに並ぶよ。';
+  const emptyMsg = NATIVE_APP && Reserve() ? '予約したレースの結果を決めると、ここに並ぶよ。' : '判定画面の下にある「結果・収支の記録」から保存すると、ここに並ぶよ。';
   if (!all.length) { list.innerHTML = top + `<div class="card empty" style="margin-top:var(--gap)"><div class="big">この${st.ym.m ? '月' : '年'}の記録はまだないよ</div><p>${emptyMsg}</p></div>`; for (const box of $$('.rsvf', list)) updateRsvPreview(box); return; }
   if (!rows.length) { list.innerHTML = top + `<div class="card empty" style="margin-top:var(--gap)"><p>条件に合う記録はないよ。</p></div>`; for (const box of $$('.rsvf', list)) updateRsvPreview(box); return; }
   const groups = new Map(); for (const b of rows) { if (!groups.has(b.date)) groups.set(b.date, []); groups.get(b.date).push(b); }
@@ -2503,6 +2544,7 @@ function buyRowText(b) {
   if (!Array.isArray(b.buyZ)) return zs.map(z => z.label).join('・');
   const xs = buyLabels(b); return xs.length ? '買った：' + xs.join('・') : '買ったゾーン未選択';
 }
+// App Store版（NATIVE_APP）では「保存した判定（STEP0〜T3）」と 判定の 1行（層・比・ゾーン）は 出さない（第4.65版・まさちゃん「テンゲルの構造をバラしてしまうから表示しないようにして！」）。Web版は 今までどおり
 function recRow(b) {
   const open = st.open === b.id, s = betStatus(b), sn = b.snap || {}, L = sn.L || '?';
   const bal = payoutOf(b) - stakeOf(b);
@@ -2512,7 +2554,7 @@ function recRow(b) {
   return `<div class="lrow" data-id="${esc(b.id)}"><button class="lmain" type="button" aria-expanded="${open}"><span class="lr-r">${b.r}R</span><span class="lb L${L}">${L}</span>
     <span class="lmid"><span class="k">${(b.venue && b.venue !== '大井') ? esc(b.venue) + '（参考）' : ''}${esc((T.KUBUN_LABEL[sn.kubun] || '').replace('（固定）', ''))}<span class="muted" style="font-weight:400"> ${esc(typesOf(b).join('・'))}</span></span><span class="s">${esc(res)}　${esc(buyRowText(b))}</span></span>
     <span class="lend"><span class="stc ${s.cls}">${s.s}</span>${s.s !== '未購入' && !s.given ? (toNum(b.stake) == null ? '<span class="flag">購入額未入力</span>' : s.rsv && s.s === '結果待ち' ? `<span class="lmoney">${yen(stakeOf(b))}→—</span>` : `<span class="lmoney ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}">${yen(stakeOf(b))}→${yen(payoutOf(b))}</span>`) : ''}${motherOn() && b.mslot && b.mid && window.TengelMother.has(b.mslot, b.mid) ? '<span class="chip mchip">マザー入り</span>' : ''}</span></button>
-    ${open ? `<div class="ledit">${b.rsv && b.rsv.bets && Reserve() ? rsvFormHTML(b) : recFormHTML({ ...draftFrom(b, (b.horses || []).length > 0), id: b.id }, { scope: 'rec', canNo: (b.horses || []).length > 0, buttons, zones: sn.zones || [], defSlot: mSlotDefault({ date: b.date, r: b.r, venue: b.venue, isOi: sn.isOi, mother: sn.mother }) })}${b.judgeText ? `<details class="full"><summary>保存した判定（STEP0〜T3）</summary><div class="row" style="margin-top:8px"><button class="btn" type="button" data-act="copyj">全文コピー</button></div><pre class="out">${esc(b.judgeText)}</pre></details>` : ''}<p class="small muted" style="margin:8px 0 0">判定（${esc(sn.ver || '')}）：${esc(T.LAYER_LABEL[L] || '')}・比${hiTxt(sn.hi)}・${esc((sn.zones || []).map((z, i) => '第' + (i + 1) + ' ' + z.label + (sn.third ? '→（' + sn.third[i] + '）' : '')).join('　'))}</p></div>` : ''}</div>`;
+    ${open ? `<div class="ledit">${b.rsv && b.rsv.bets && Reserve() ? rsvFormHTML(b) : recFormHTML({ ...draftFrom(b, (b.horses || []).length > 0), id: b.id }, { scope: 'rec', canNo: (b.horses || []).length > 0, buttons, zones: sn.zones || [], defSlot: mSlotDefault({ date: b.date, r: b.r, venue: b.venue, isOi: sn.isOi, mother: sn.mother }) })}${!NATIVE_APP && b.judgeText ? `<details class="full"><summary>保存した判定（STEP0〜T3）</summary><div class="row" style="margin-top:8px"><button class="btn" type="button" data-act="copyj">全文コピー</button></div><pre class="out">${esc(b.judgeText)}</pre></details>` : ''}${NATIVE_APP ? '' : `<p class="small muted" style="margin:8px 0 0">判定（${esc(sn.ver || '')}）：${esc(T.LAYER_LABEL[L] || '')}・比${hiTxt(sn.hi)}・${esc((sn.zones || []).map((z, i) => '第' + (i + 1) + ' ' + z.label + (sn.third ? '→（' + sn.third[i] + '）' : '')).join('　'))}</p>`}</div>` : ''}</div>`;
 }
 wireRecf($('#recList'));
 $('#recList').addEventListener('click', e => {

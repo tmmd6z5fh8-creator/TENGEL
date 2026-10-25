@@ -146,11 +146,15 @@ try:
             rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
             pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
             row = pg.locator(f'#recList .lrow[data-id="{rid}"]'); row.locator('.lmain').click(); pg.wait_for_timeout(400)
+            # 第4.65版：まず 結果（着順）→「結果を決める」→ 演出 → 金額の 欄 →「記録する」
             fm = row.locator('.rsvf')
             for k, v in zip(('p1', 'p2', 'p3'), res.split('-')): fm.locator(f'[data-k={k}]').fill(v)
-            fm.locator('[data-k=stake][data-t="馬単"]').fill(stake); fm.locator('[data-k=payout][data-t="馬単"]').fill(pay)
-            fm.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(200); fm.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
+            fm.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(200); fm.locator('[data-act=rsave]').click(); pg.wait_for_timeout(1200)
             pg.evaluate("window.TengelFx && TengelFx.close()")   # 的中ボタン（第3弾）の画面をとじる
+            pg.wait_for_timeout(400)
+            fm = row.locator('.rsvf')
+            fm.locator('[data-k=stake][data-t="馬単"]').fill(stake); fm.locator('[data-k=payout][data-t="馬単"]').fill(pay)
+            fm.locator('[data-k=payout][data-t="馬単"]').dispatch_event('input'); pg.wait_for_timeout(200); fm.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
             pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         save('船橋', '2026-10-21', 9, '1-2-3', '600', '0')
         save('', '2026-10-21', 10, '1-2-3', '400', '0')
