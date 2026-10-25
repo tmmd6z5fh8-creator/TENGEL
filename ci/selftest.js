@@ -173,16 +173,17 @@
       res.sgd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sgd.closeVis = closeVis(); res.sgd.holder = document.querySelectorAll('#fxVh video').length;
       await mark('fx-sgd-still');
       F.close(); await sleep(200);
-      // 第4.66版：ど的中・紫電（黒い 馬の 影と 紫の 炎 → 金の 光の 筋 → 砕けて ど！！！ 的中 → ボード：7.75秒）。PUSH は ど的中と 同じ（虹色なし・1.4倍）
+      // 第4.66版〜：ど的中・紫電（第4.69版：黒い 馬の 影と 紫の 炎 → 見本の 動画の コマ・リアルな 馬の 顔・切り裂く 馬の 蹄 → ど！！！ 的中 → ボード：13.03秒）。PUSH は ど的中と 同じ（虹色なし・1.4倍）
       res.sd = { kind: F.show(Object.assign({ force: 'sd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
       await sleep(400); F.tap(); res.sd.fps = await fps(1000);
       res.sd.parts = ['.sdk', '.sdA', '.sdB', '.sdC', '.sdlogo', '.sdw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
       res.sd.imgs = document.querySelectorAll('#fxOv .ov.sd img').length; res.sd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.sd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
-      await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（赤い 炎・バグる）
-      await sleep(1700); await mark('fx-sd-world');                // 3.5秒ごろ（割れた 鏡の 世界：第4.68版）
-      await sleep(1300); res.sd.fps5 = await fps(1000);            // ロゴの ころ
+      await sleep(400); await mark('fx-sd');                       // 1.8秒ごろ（② の はじめ：炎）
+      await sleep(2000); await mark('fx-sd-face');                 // 4.2秒ごろ（リアルな 馬の 顔：第4.69版）
+      await sleep(2600); await mark('fx-sd-world');                // 7.0秒ごろ（割れた 鏡の 世界・馬の 蹄の 切り口：第4.69版）
+      await sleep(3300); res.sd.fps5 = await fps(1000);            // ロゴの ころ（10.7秒〜）
       await mark('fx-sd-logo');
-      await waitFor(function () { return closeVis() === 'visible'; }, 10000);
+      await waitFor(function () { return closeVis() === 'visible'; }, 12000);
       res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
       await mark('fx-sd-board');
       F.close(); await sleep(200);
