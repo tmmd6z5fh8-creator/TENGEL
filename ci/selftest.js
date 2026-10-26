@@ -186,6 +186,19 @@
       res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
       await mark('fx-sd-board');
       F.close(); await sleep(200);
+      // 第4.77版：ノーマルど的中（nd：押すと 1秒 真っ暗（プチュンは なし）→ 動画 nd_film.mp4（光の 玉 → シルバーの 競走馬と 騎手 → 芝に 落ちる 3D の ど！的中）→ ボード 10.05秒）。
+      // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード。PUSH は ど的中と 同じ（虹色なし・1.4倍）
+      res.nd = { kind: F.show(Object.assign({ force: 'nd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
+      await sleep(400); F.prime(); F.tap(); res.nd.fps = await fps(1000);
+      res.nd.parts = ['.nds', '.ndk', '.pc', '.hb'].map(function (c) { return document.querySelectorAll('#fxOv .ov.nd ' + c).length; });
+      res.nd.imgs = document.querySelectorAll('#fxOv .ov.nd img').length; res.nd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.nd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
+      await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
+      res.nd.cur = F.current(); res.nd.ov = (document.querySelector('#fxOv .ov.nd') || {}).className || null; res.nd.holder = !!document.querySelector('#fxVh video[data-film=nd_film]');
+      await mark('fx-nd');                                         // 動画の さいごの 1まい（still）
+      await waitFor(function () { return closeVis() === 'visible'; }, 8000);
+      res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
+      await mark('fx-nd-board');
+      F.close(); await sleep(200);
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
