@@ -485,7 +485,7 @@ def storm_tex(seed=211):
             det2 = fbm(N_, N_, 18, 3, seed=seed + 320 + k)
             r_ = np.sqrt(u_ ** 2 + v_ ** 2) * (1.0 + (det - .5) * .9 + (det2 - .5) * .25)
             dens = np.clip(1 - smoothstep(.45, 1.0, r_), 0, 1)
-            dens = dens * (0.65 + 0.5 * det)
+            dens = dens * (0.65 + 0.5 * det) * (1 - smoothstep(.72, .97, np.sqrt(u_ ** 2 + v_ ** 2)))   # 絵の 四角の ふちでは 0（第4.71版：ゆっくりの 間に 雲の 切れめの たての 線が 見えないように）
             gx = cv2.Sobel(cv2.GaussianBlur(dens, (0, 0), 3), cv2.CV_32F, 1, 0, ksize=5) / 60
             shade = np.clip(0.18 + 0.9 * smoothstep(-0.7, 0.9, u_ + (det - .5) * .8) - gx * 2.0, 0, 1.4)      # 右（光の 方）ほど 明るい
             rim = np.clip((1 - smoothstep(.15, .55, dens)) * smoothstep(-.1, .8, u_) * (dens > .02), 0, 1)     # 光の 方の うすい ふちが 光る
