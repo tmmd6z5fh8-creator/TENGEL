@@ -8,7 +8,12 @@
      左 だいだい／右 むらさきの 横の 光・走る 光の 筋）。「ど」「！」＝金・「的中」＝つやのある 虹色（上から 下へ 赤 → むらさき）・ふちは 銀・横は 金・板は 黒。
    - 置き場所の 単位：1 ＝ 画面の 100px（390×844 の 画面）。ロゴの まん中（画面の 195, 400）が ロゴの 原点
    - 蹄の 場面の 縦書きの「的中」（title_layout）も 同じ しくみ（虹色・字の あいだが 蹄の 切る 高さ）
-   - 2倍の 大きさで 描いて 縮める（K_SS）。描くのは ロゴが 入る 箱だけ（screen_rect）"""
+   - 2倍の 大きさで 描いて 縮める（K_SS）。描くのは ロゴが 入る 箱だけ（screen_rect）
+   第4.76版・まさちゃん「画像のど！！！と的中の間に金色と虹色でできた、青丸のあたりに、極、って文字入れて！」
+   「極もう二回り大きく！ 角度は、的中と同じ水平にして！ あともっとリアルに！」「でかすぎ！ 極もう一回り小さく！」
+   → 「極」を「ど」と「的中」の あいだ（まん中より 少し 左）に 手前へ 浮かせて 置く（的中と 同じ 水平）。字の 形は Noto Sans CJK JP Black
+     （SIL OFL：Dela Gothic One の「極」は すきまが 小さくて 立体に すると つぶれる）。前の 面は みがいた 金・面取りは 見る 向きで 色が かわる
+     虹色の 金属（ホログラム）・横は 金・うしろに うすい こい ふち・うしろの「ど」「的中」に 影を おとす"""
 import os, sys, math
 import numpy as np
 import cv2
@@ -19,13 +24,22 @@ sys.path.insert(0, HERE)
 from h3d import Scene, nrm, load
 
 # 字（字・横の 太さの 倍率・字の 間）と 置き場所（画面の px：字の 黒い 所の 箱 x0, y0, x1, y1）
-GLYPHS = {'do': ('ど', 1.0, -40), 'ex': ('！', 1.35, -40), 'hit': ('的中', 1.0, -70), 'teki': ('的', 1.0, 0), 'chu': ('中', 1.0, 0)}
+GLYPHS = {'do': ('ど', 1.0, -40), 'ex': ('！', 1.35, -40), 'hit': ('的中', 1.0, -70), 'teki': ('的', 1.0, 0), 'chu': ('中', 1.0, 0),
+          'kyoku': ('極', 1.0, 0)}
+KY_BOX = (98, 357, 272, 531)                 # 第4.76版：「極」（「ど」と「的中」の あいだ：はばと まん中だけ 使う・高さは 字の 形の まま）
+KYOKU_GLYPH = ('M336 57V-63H976V57ZM794 500 721 484 722 601C722 616 723 651 723 651H607L622 705H952V825H357V705H489C474 647 457 587 441 542L569 525L576 546H603C602 298 600 209 588 189C581 177 573 173 561 174C546 173 521 174 492 177C508 147 521 101 522 69C562 68 600 69 626 74C654 80 675 90 695 119C701 129 706 144 709 166C730 146 754 114 767 93C792 114 814 139 833 166C854 138 878 113 905 93C923 124 959 168 985 190C949 212 918 243 891 279C925 367 944 476 954 607L884 621L863 619H739V513H835C830 481 825 449 818 420C809 446 801 473 794 500ZM137 855V653H40V521H128C107 410 65 282 15 207C34 174 62 120 74 83C97 121 119 170 137 225V-95H266V308C281 271 295 233 304 206L357 284V137H451V208H571V511H357V330C332 374 286 452 266 482V521H347V653H266V855ZM451 416H476V303H451ZM720 416C734 367 750 319 769 276C753 243 734 215 712 193C717 240 719 311 720 416Z',
+               (15, -95, 985, 855), 1000)   # 「極」の 形（Noto Sans CJK JP Black・SIL OFL 1.1：path（1000 単位・y は 上向き）・箱・送り）
 LAYOUT = [('do', (53, 224, 283, 452)), ('e1', (291, 182, 336, 290)), ('e2', (300, 296, 335, 380)), ('e3', (309, 387, 336, 452)),
-          ('hit', (12, 466, 378, 624))]
+          ('kyoku', KY_BOX), ('hit', (12, 466, 378, 624))]     # 「的中」は さいご（HIT_Y）
+PART_Z = {'kyoku': .55}                       # 第4.76版：手前へ（「ど」「的中」の 前に 浮かぶ）
+PART_RZ = {'kyoku': 0.0}                      # かたむき（度）：的中と 同じ 水平
+PART_PLATE = {'kyoku': .04}                   # うしろの 板（こい ふち）の 太さ（ふつうは PLATE[0]：字の すきまを うめない）
+PART_BEV = {'kyoku': 1.0}                     # 面取りの 大きさの 倍率
+PART_HZ = {'kyoku': .8}                       # 厚みの 倍率（横が 見えすぎない）
 ORIGIN = (195.0, 400.0)                       # ロゴの 原点（画面の px）
 HZ, BEV, DOME = 0.2, 0.05, (0.025, 0.10)      # 厚みの 半分・面取り・ふくらみ（高さ・はば）＝「ど」と「的中」の 大きさで。「！」は 小さく
 PLATE = (0.065, 0.07)                         # うしろの 板：字より 外へ・うしろへ
-M_GOLD, M_HIT, M_PLATE = 1, 2, 3
+M_GOLD, M_HIT, M_PLATE, M_KYOKU = 1, 2, 3, 4
 CAM_DIR, CAM_DIST, CAM_FOV = (0.2, -0.13, 1.0), 11.0, 42.0
 K_TEX = 0.9                                   # 字の 絵の 細かさ（1000 単位 → 画素）
 _SDF = {}
@@ -42,7 +56,11 @@ def sdf(key, cache):
         return _SDF[key]
     import kami_art as KA
     text, sxk, tr = GLYPHS[key]
-    items, box, _ = KA.run([(c, 1.0) for c in text], track=tr)
+    if key == 'kyoku':                                                                 # 第4.76版：「極」は Noto Sans CJK JP Black の 形
+        d_, (bx0, by0, bx1, by1), _ = KYOKU_GLYPH
+        items, box = [(d_, 0.0, 0.0, 1.0)], (bx0, -by1, bx1, -by0)
+    else:
+        items, box, _ = KA.run([(c, 1.0) for c in text], track=tr)
     a = KA.mask(items, box, K_TEX, 120)
     if sxk != 1.0:
         a = cv2.resize(a, (int(round(a.shape[1] * sxk)), a.shape[0]), interpolation=cv2.INTER_CUBIC)
@@ -83,7 +101,7 @@ def parts(cache, layout=None):
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         lx = (cx - ORIGIN[0]) / 100 + (tcx - icx) * sx
         ly = (ORIGIN[1] - cy) / 100 - (tcy - icy) * sx
-        out.append((name, key, np.array([lx, ly, 0.0]), sx))
+        out.append((name, key, np.array([lx, ly, PART_Z.get(name, 0.0)]), sx))
     return out
 
 
@@ -112,7 +130,7 @@ def corners(layout=None):
     ys = [(ORIGIN[1] - b[1]) / 100 for _, b in L] + [(ORIGIN[1] - b[3]) / 100 for _, b in L]
     m = PLATE[0] + .08
     x0, x1, y0, y1 = min(xs) - m, max(xs) + m, min(ys) - m, max(ys) + m
-    z0, z1 = -(HZ + PLATE[1] + .06), HZ + DOME[0] + .06
+    z0, z1 = -(HZ + PLATE[1] + .06), HZ + DOME[0] + .06 + max([PART_Z.get(n, 0.0) for n, _ in L])
     return np.array([[x, y, z] for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)])
 
 
@@ -155,7 +173,7 @@ def render(prefix, W, H, rot=(0, 0, 0), pos=(0, 0, 0), cache=None, K=K_SS, layou
     sc.camera(eye, tgt, fov)
     sc.bounce(0)
     sc.env((0.5, 0.45, 0.4), (0.2, 0.15, 0.12), (0.02, 0.015, 0.02))                 # 色は 2D で 計算（ここは AO の ため だけ）
-    for mid in (M_GOLD, M_HIT, M_PLATE):
+    for mid in (M_GOLD, M_HIT, M_PLATE, M_KYOKU):
         sc.mat(mid, 0, (0.9, 0.9, 0.9), 0.2)
     Rl = rot_xyz(*rot)
     P = np.asarray(pos, float)
@@ -168,13 +186,17 @@ def render(prefix, W, H, rot=(0, 0, 0), pos=(0, 0, 0), cache=None, K=K_SS, layou
         if not os.path.exists(tfn):
             sd.astype(np.float32).tofile(tfn)
         sc.raw(f'tex {tid} {sd.shape[1]} {sd.shape[0]} {tfn}')
-        sc.glyph(Rl @ c + P, sx, hz, bev, tid, R=Rl.T, mat=M_HIT if key in ('hit', 'teki', 'chu') else M_GOLD, dome=DOME[0] * k, domew=DOME[1] * k)
+        Rp = Rl @ rot_xyz(0.0, 0.0, PART_RZ.get(name, 0.0))                          # 第4.76版：字ごとの かたむき（「極」）
+        mat = M_HIT if key in ('hit', 'teki', 'chu') else M_KYOKU if key == 'kyoku' else M_GOLD
+        hzp = hz * PART_HZ.get(name, 1.0)
+        sc.glyph(Rl @ c + P, sx, hzp, bev * PART_BEV.get(name, 1.0), tid, R=Rp.T, mat=mat, dome=DOME[0] * k, domew=DOME[1] * k)
         tid += 1
-        pfn = os.path.join(cache, f'tex_{key}_plate.f32')
+        pk = PART_PLATE.get(name, PLATE[0])
+        pfn = os.path.join(cache, f'tex_{key}_plate.f32' if pk == PLATE[0] else f'tex_{key}_plate{int(round(pk * 1000))}.f32')
         if not os.path.exists(pfn):
-            (sd - PLATE[0] / sx).astype(np.float32).tofile(pfn)
+            (sd - pk / sx).astype(np.float32).tofile(pfn)
         sc.raw(f'tex {tid} {sd.shape[1]} {sd.shape[0]} {pfn}')
-        sc.glyph(Rl @ (c + np.array([0, 0, -PLATE[1]])) + P, sx, hz - 0.03 * k, bev * .8, tid, R=Rl.T, mat=M_PLATE)
+        sc.glyph(Rl @ (c + np.array([0, 0, -PLATE[1]])) + P, sx, hzp - 0.03 * k, bev * .8, tid, R=Rp.T, mat=M_PLATE)
         tid += 1
     R = sc.render(prefix)
     x0, y0, x1, y1 = rect
@@ -230,7 +252,8 @@ def env(R, sweep=None, flash=None):
 
 
 HIT_Y = ((ORIGIN[1] - LAYOUT[-1][1][1]) / 100, (ORIGIN[1] - LAYOUT[-1][1][3]) / 100)   # 的中 の 上と 下（ロゴの 中の y）
-DO_Y = ((ORIGIN[1] - min(b[1] for k, b in LAYOUT if k != 'hit')) / 100, (ORIGIN[1] - max(b[3] for k, b in LAYOUT if k != 'hit')) / 100)   # 「ど」「！」の 上と 下（第4.73版：虹の ど）
+DO_Y = ((ORIGIN[1] - min(b[1] for k, b in LAYOUT if k not in ('hit', 'kyoku'))) / 100, (ORIGIN[1] - max(b[3] for k, b in LAYOUT if k not in ('hit', 'kyoku'))) / 100)   # 「ど」「！」の 上と 下（第4.73版：虹の ど）
+KY_Y = ((ORIGIN[1] - KY_BOX[1]) / 100, (ORIGIN[1] - KY_BOX[3]) / 100)          # 第4.76版：「極」の 上と 下（面取りの 虹）
 _RAIN = None
 
 
@@ -247,7 +270,8 @@ def rainbow(u):
 
 PALETTES = {   # ロゴの 色。face・bev・side＝「ど」「！」の 金属（前の 面・面取り・横）・do＝'rainbow' なら「ど」「！」の 前の 面も 虹・hit＝「的中」の 前の 面（rainbow か 金属の 色）・
                # plate＝うしろの 板・gain＝映り込みの 明るさ。第4.72版〜第4.73版の 細切れの 色（赤・青・緑・紫・金・白・虹）は 第4.74版で 細切れを やめたので 消した
-    'gold': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit='rainbow', hbev=(.95, .95, .97), plate=(.05, .045, .05), gain=1.0),      # 本物：金と 虹
+    'gold': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit='rainbow', hbev=(.95, .95, .97), plate=(.05, .045, .05), gain=1.0,
+                 kface=(1.0, .66, .22)),      # 本物：金と 虹（kface＝第4.76版の「極」の 前の 面の 金）
 }
 
 
@@ -266,7 +290,7 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     face = _ss(.8, .9, fz)
     bev = _ss(.35, .55, fz) * (1 - face)
     side = 1 - _ss(.35, .55, fz)
-    is_g = np.abs(m - M_GOLD) < .5; is_h = np.abs(m - M_HIT) < .5; is_p = np.abs(m - M_PLATE) < .5
+    is_g = np.abs(m - M_GOLD) < .5; is_h = np.abs(m - M_HIT) < .5; is_p = np.abs(m - M_PLATE) < .5; is_k = np.abs(m - M_KYOKU) < .5
     P = PALETTES[pal]
     gface, gbev, gside = (np.array(P[k], np.float32) for k in ('face', 'bev', 'side'))
     F0 = (is_g[..., None]) * (gface * face[..., None] + gbev * bev[..., None] + gside * side[..., None])
@@ -274,6 +298,7 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     hface = np.array(P['hit'], np.float32) if hmetal else np.zeros(3, np.float32)
     F0 = F0 + (is_h[..., None]) * (hface * face[..., None] + np.array(P['hbev'], np.float32) * bev[..., None] + gside * side[..., None])
     F0 = F0 + is_p[..., None] * np.array(P['plate'], np.float32)
+    F0 = F0 + is_k[..., None] * (np.array(P.get('kface', P['face']), np.float32) * face[..., None] + gbev * bev[..., None] + gside * side[..., None])   # 第4.76版：「極」は 金
     fres = (1 - cosv) ** 5
     F = F0 + (1 - F0) * fres[..., None] * (F0.max(2, keepdims=True) > 0)
     col = F * E * (.35 + .65 * ao[..., None]) * P.get('gain', 1.0)
@@ -293,6 +318,22 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
         paint2 = rainbow(u2) * (.5 + .3 * lit)[..., None] + (0.01 + 0.3 * fres)[..., None] * np.minimum(E, 1.2) + .07 * band
         gf = (is_g & (face > .01))[..., None]
         col = np.where(gf, paint2 * face[..., None] + col * (1 - face[..., None]), col)
+    if is_k.any():                                                                     # 第4.76版：「極」
+        # 面取り：見る 向きで 色が かわる 虹色の 金属（ホログラム）＝面の 向きと 映り込みで 色相が まわる・映り込みの 明るさで 光る
+        uk = (KY_Y[0] - ql[..., 1]) / (KY_Y[0] - KY_Y[1])                            # 左上（赤）→ 右下（むらさき）の 虹 ＋ 見る 向きで 少し ずれる
+        ux = (ql[..., 0] - (KY_BOX[0] - ORIGIN[0]) / 100) / ((KY_BOX[2] - KY_BOX[0]) / 100)
+        irid = rainbow(np.clip(.62 * uk + .38 * ux + .12 * (Rf[..., 1] + Rf[..., 0]), 0, 1))
+        elum = np.minimum(E.mean(2, keepdims=True), 2.2)
+        paintk = irid * (.22 + .9 * elum) + .35 * band + (0.03 + 0.5 * fres)[..., None] * np.minimum(E, 1.6)
+        kb = np.clip(bev * 1.2, 0, 1)
+        col = np.where(is_k[..., None], paintk * kb[..., None] + col * (1 - kb[..., None]), col)
+        # うしろの「ど」「的中」に おとす 影（光は 左上 → 影は 右下へ ずれて ぼける）
+        km = ((is_k | (is_p & (np.abs(dep - dep[is_k].mean()) < .35 if is_k.any() else False))) & (A > .5)).astype(np.float32)
+        sh = cv2.GaussianBlur(km, (0, 0), 7 * K)
+        Msh = np.float32([[1, 0, 11 * K], [0, 1, 15 * K]])
+        sh = cv2.warpAffine(sh, Msh, (sh.shape[1], sh.shape[0]))
+        back = (~is_k & (km < .5))[..., None]
+        col = np.where(back, col * (1 - .6 * np.clip(sh, 0, 1))[..., None], col)
     if heat > 0:                                                                       # 白熱 → 黄 → だいだい → ふだん（ふちから 先に 冷める）
         inner = cv2.distanceTransform(((A > .5) & ~is_p).astype(np.uint8), cv2.DIST_L2, 3) / (14.0 * K)
         h = np.clip((heat - .35 * (1 - np.clip(inner, 0, 1))) / .65, 0, 1) if heat < 1 else np.ones_like(A)
