@@ -151,6 +151,18 @@ class Scene:
         h = np.linalg.norm(b - a) / 2
         self.raw(f'ccone {op} ' + self._f(k, mat, shell, c, h, ra, rb, rnd, basis_y(b - a, side)))
 
+    def tex(self, tid, arr, path):
+        """2Dの 距離の 絵（単位は 画素・中が マイナス）を ファイルに 書いて 読ませる（glyph で 使う）"""
+        a = np.ascontiguousarray(arr, np.float32)
+        a.tofile(path)
+        self.raw(f'tex {int(tid)} {a.shape[1]} {a.shape[0]} {path}')
+
+    def glyph(self, c, sx, hz, bev, tid, R=None, op='U', k=0.0, mat=0, shell=0.0, dome=0.0, domew=0.1):
+        """2Dの 距離の 絵（tex）を 厚み 2hz で のばした 形（面取り bev・前の 面は ふちから domew の 間で dome だけ ふくらむ）。
+           R＝世界→ローカル（ローカルの z が 厚みの 向き）"""
+        R = np.eye(3) if R is None else np.asarray(R, float)
+        self.raw(f'glyph {op} ' + self._f(k, mat, shell, c, sx, hz, bev, tid, R, dome, domew))
+
     def render(self, path_prefix, txt=None, quiet=True):
         txt = txt or path_prefix + '.txt'
         with open(txt, 'w') as f:

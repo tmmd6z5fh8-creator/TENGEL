@@ -16,7 +16,8 @@
      絵（premium_blobs.json・kami_blobs.json の 名前.webp）・動画（sgd_film.mp4・spg_up.mp4）・さいごの 1まい（sgd_last.webp）・音 6こ も Resources に 入れる
      （build_fx_assets.py・build_fx_films.py で 手元に 作る）。動画は fx.js が <video> を 作って 舞台に 置く（art＝先に 読む 絵・films＝動画・t＝秒の きまり）
    第4.66版：ど的中・紫電（sd・shiden.py）。絵（shiden_blobs.json）と 音 1こ（sfx_sd）を 足す。
-   第4.70版：紫電の ② は 動画（sd_film.mp4・flat/shiden_film.py）＋ ③ の 絵 4まい。動画は 超神様と 同じく fx.js が <video class="sgv"> で 舞台に 置く"""
+   第4.70版：紫電の ② は 動画（sd_film.mp4・flat/shiden_film.py）＋ ③ の 絵 4まい。動画は 超神様と 同じく fx.js が <video class="sgv"> で 舞台に 置く
+   第4.71版：紫電は はじめから おわりまで 動画（ど！！！的中も 3D）＋ さいごの 1まい（sd_last.webp）。押した 瞬間に ど的中と 同じ プチュン（FZ_HTML）と その 音（sfx_sdp）"""
 import json
 import os
 import re
@@ -26,23 +27,23 @@ K = os.path.dirname(os.path.abspath(__file__))
 ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp')
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
            pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音 6こ（16.5）
-           sd='sfx_sd.m4a')                                                                                                  # 第4.66版：ど的中・紫電の 音
+           sd='sfx_sd.m4a', sdp='sfx_sdp.m4a')                                                                               # 第4.66版：ど的中・紫電の 音・第4.71版：押した 瞬間の プチュンの 音
 FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4',     # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
-             sd_film='sd_film.mp4')                             # 第4.70版：ど的中・紫電の ② の 動画（flat/shiden_film.py）
-STILL = dict(sgd_last='sgd_last.webp')                           # 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+             sd_film='sd_film.mp4')                             # 第4.70版：ど的中・紫電の 動画（flat/shiden_film.py：第4.71版 ど！！！的中まで）
+STILL = dict(sgd_last='sgd_last.webp', sd_last='sd_last.webp')   # 超神様・紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
 
 
 def blob_names():
-    """見本の 絵の 名前（premium_blobs.json・kami_blobs.json・shiden_blobs.json）→ {名前: id}"""
+    """見本の 絵の 名前（premium_blobs.json・kami_blobs.json）→ {名前: id}"""
     out = {}
-    for fn in ('premium_blobs.json', 'kami_blobs.json', 'shiden_blobs.json'):
+    for fn in ('premium_blobs.json', 'kami_blobs.json'):
         out.update(json.load(open(os.path.join(K, fn), encoding='utf-8')))
     return out
 
 
 ART = dict(pm=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'premium_blobs.json'), encoding='utf-8'))),     # プレミアムど的中の 絵 38まい（約2.1MB）
            gd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'kami_blobs.json'), encoding='utf-8'))),        # 神様的中の 絵 24まい（約1.7MB）
-           sd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'shiden_blobs.json'), encoding='utf-8'))),      # ど的中・紫電の ③ の 絵 4まい（第4.70版：② は 動画）
+           sd=[STILL['sd_last']],                                                                                  # ど的中・紫電の 動画の さいごの 1まい（第4.71版）
            sgd=[STILL['sgd_last']])
 ART_FILES = sorted(set(ART['pm'] + ART['gd'] + ART['sd'] + ART['sgd']))
 ASSET_FILES = sorted(ASSETS.values()) + sorted(SFX.values()) + ART_FILES + sorted(FILMS.values())
@@ -395,9 +396,10 @@ def reveal_sgd(G):
 
 
 def reveal_sd(G):
-    """ど的中・紫電（第4.66版）：shiden.py の sd_layers（第4.70版：② の 動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝③ の 止めた 絵）"""
+    """ど的中・紫電（第4.66版）：shiden.py の sd_layers（動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝さいごの 1まい）。
+       第4.71版：押した 瞬間の プチュン（ど的中と 同じ FZ_HTML・動画を 待たずに 動く）"""
     return f'''<div class="ov fz sd" style="--n:{{{{N}}}}">
-    {G.SD.sd_layers('{{BOARD}}')}
+    {G.SD.sd_layers('{{BOARD}}', STILL['sd_last'], G.FZ_HTML)}
     {CLOSE}
   </div>'''
 
@@ -415,7 +417,7 @@ def reveal_spg(G):
 
 def blob_files(G):
     """見本の /_blob/<id> → アプリの 中の ファイル名"""
-    m = {G.blobs[k]: v for k, v in (('fz_nglow', ASSETS['nglow']), ('fz_ncore', ASSETS['ncore']), ('sgd_last', STILL['sgd_last']))}
+    m = {G.blobs[k]: v for k, v in (('fz_nglow', ASSETS['nglow']), ('fz_ncore', ASSETS['ncore']), ('sgd_last', STILL['sgd_last'])) if k in G.blobs}
     m.update({G.blobs[k]: v for k, v in FILMS.items() if k in G.blobs})     # 見本の ページに ある 動画（紫電の 動画は アプリだけ）
     m.update({bid: name + '.webp' for name, bid in blob_names().items()})
     return m

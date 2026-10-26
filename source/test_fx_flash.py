@@ -3,7 +3,8 @@
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
 #   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd
-#   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。sd は ③ を 動画が 動いた 形（go）で 写し、0〜7.6秒の コマを 動画の コマ（60コマ/秒）に おきかえて つないで 数える（動画が 手元に ある とき）
+#   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。第4.71版：紫電は 押した 瞬間の プチュン（CSS）→ はじめから おわりまで 動画 → ボード（CSS）。
+#     sd は 動画が 動いた 形（go）で、幕（.ov.sd）の 背景に その 時刻の 動画の コマ（60コマ/秒）を 入れて プチュン・ボードと いっしょに 写して 数える（動画が 手元に ある とき）
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -11,8 +12,8 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=12.0)   # 第4.66版：ど的中・紫電（第4.70版：動画 7.6秒 → ③ → ボード 10.38秒）
-SD_C = 7.6                                                                                         # 紫電の ② の 動画の 長さ（shiden.py の SD_T['C']）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+SDBG = "(u) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.sd'); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
@@ -51,6 +52,16 @@ try:
                     print(('  ✅ ' if ok else '  ❌ ') + f'{f}.mp4：{nfr}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
                     if not ok: fails.append(f + ': ' + (r.stderr[-300:] if r.returncode else bad))
                 continue
+            sdf = 0
+            if kind == 'sd':   # 紫電の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
+                mp4 = os.path.join(FX_DIR, 'sd_film.mp4')
+                if os.path.exists(mp4) and shutil.which('ffmpeg'):
+                    fd = os.path.join(SRV, 'APP', '_sdf'); shutil.rmtree(fd, ignore_errors=True); os.makedirs(fd)
+                    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'g%04d.png')], check=True)
+                    sdf = len(os.listdir(fd))
+                    print(f'  紫電：動画の コマ {sdf}（60コマ/秒）を 幕の 背景に して 写す')
+                else:
+                    print('  ⚠️ sd_film.mp4 が ない（プチュンと ボードだけ 数える）')
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: %r }, s))" % kind, SPEC); pg.wait_for_timeout(400)
             idx = 0; t0 = time.time()
             if kind != 'miss':
@@ -64,20 +75,13 @@ try:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
-                n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
+                n = pg.evaluate(STEP, i / 60)
+                if kind == 'sd' and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
+                    pg.evaluate(SDBG, f'_sdf/g{min(i, sdf - 1):04d}.png')
+                pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
             pg.evaluate('TengelFx.close()')
             if kind == 'sd':
-                mp4 = os.path.join(FX_DIR, 'sd_film.mp4')
-                if os.path.exists(mp4) and shutil.which('ffmpeg'):
-                    fd = os.path.join(d, '_film'); os.makedirs(fd)
-                    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'g%04d.png')], check=True)
-                    ng = len(os.listdir(fd))
-                    for i in range(min(ng, int(SD_C * 60))):
-                        shutil.copy(os.path.join(fd, f'g{i:04d}.png'), os.path.join(d, f'f{tap + i:04d}.png'))
-                    shutil.rmtree(fd)
-                    print(f'  紫電：0〜{SD_C}秒は 動画の コマ（{min(ng, int(SD_C * 60))}コマ）')
-                else:
-                    print('  ⚠️ sd_film.mp4 が ない（③ だけ 数える）')
+                shutil.rmtree(os.path.join(SRV, 'APP', '_sdf'), ignore_errors=True)
             r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = r.stdout.strip().split('\n')
             worst = out[-1] if out else ''

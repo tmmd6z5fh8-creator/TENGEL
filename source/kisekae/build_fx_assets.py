@@ -7,8 +7,9 @@
        pm_….webp 38まい … プレミアムど的中の 絵（flat/premium_art.py・約2.1MB）
        gd_….webp 24まい … 神様的中の 絵（flat/kami_art.py・flat/kami_storm.py・約1.7MB）
        sfx_pc・sfx_zp・sfx_gd・sfx_sgd・sfx_spg_up・sfx_spg … 特別な 演出の 音 6こ（gen_sfx.py：超神様・超プレミアム神様の 音は 動画の 絵の 時刻を 読むので 少し かかる）
-       第4.66版：sd_….webp（ど的中・紫電の 絵：flat/shiden_art.py。第4.70版：③ の 4まい）・sfx_sd.m4a（紫電の 音）
-       sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4 … 動画 3本と さいごの 1まいは build_fx_films.py で 作る（時間が かかる）。ここでは 作らない（ない ときは 知らせる）
+       第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）
+       sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp … 動画 3本と さいごの 1まい 2まいは build_fx_films.py で 作る（時間が かかる）。
+       ここでは 作らない（ない ときは 知らせる）。第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）
    ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）"""
 import os
@@ -37,14 +38,14 @@ except Exception as e:   # noqa: BLE001
 
 # 2) 第5弾の 絵（プレミアムど的中 38まい・神様的中 24まい）
 if os.environ.get('ART', '1') != '0':
-    for name, script in (('プレミアムど的中の 絵', 'premium_art.py'), ('神様的中の 絵', 'kami_art.py'), ('ど的中・紫電の 絵', 'shiden_art.py')):
+    for name, script in (('プレミアムど的中の 絵', 'premium_art.py'), ('神様的中の 絵', 'kami_art.py')):
         try:
             subprocess.run([sys.executable, os.path.join(K, 'flat', script), out], check=True, stdout=subprocess.DEVNULL)
             made.append(name)
         except Exception as e:   # noqa: BLE001
             skipped.append(f'{name}（{e}）')
 
-# 3) 効果音（12こ）
+# 3) 効果音（14こ）
 ff = shutil.which('ffmpeg')
 if os.environ.get('SFX', '1') != '0':
     try:

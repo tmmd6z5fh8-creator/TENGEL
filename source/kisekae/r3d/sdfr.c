@@ -20,6 +20,9 @@
      torus OP k mat shell cx cy cz Rb rs R9
      ctorus OP k mat shell cx cy cz Rb rs half R9
      ccone OP k mat shell cx cy cz h r1 r2 rnd R9
+     tex id W H path                     2Dの 距離の 絵（float32・W×H・単位は 画素・中が マイナス）：字の 形など
+     glyph OP k mat shell cx cy cz sx hz bev texid R9 [dome domew]   2Dの 距離の 絵を 厚み 2hz で のばした 形（sx＝1画素の 長さ・bev＝ふちの 面取り 45°・
+                                         dome＝ふちから domew の 間で 前の 面が ふくらむ 高さ）
    OP: U（なめらか結合）/ S（引く）/ I（交わり）  R9 = 世界→ローカルの回転（行）
 */
 #include <stdio.h>
@@ -51,7 +54,9 @@ static inline float sminf(float a, float b, float k) {
 static inline float smaxf(float a, float b, float k) { return -sminf(-a, -b, k); }
 static inline float smoothstepf(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0.f, 1.f); return t * t * (3.f - 2.f * t); }
 
-enum { T_SPH, T_ELL, T_RCONE, T_RBOX, T_TORUS, T_CTORUS, T_CCONE };
+enum { T_SPH, T_ELL, T_RCONE, T_RBOX, T_TORUS, T_CTORUS, T_CCONE, T_GLYPH };
+typedef struct { int W, H; float *d; } Tex;
+static Tex texs[32];
 enum { O_U, O_S, O_I };
 
 typedef struct {
@@ -146,6 +151,28 @@ static inline float prim_d(const Prim *P, v3 p) {
         float cbx = qx - k1x + k2x * tt, cby = qy - k1y + k2y * tt;
         float s = (cbx < 0.0f && cay < 0.0f) ? -1.0f : 1.0f;
         d = s * sqrtf(fminf(cax * cax + cay * cay, cbx * cbx + cby * cby)) - P->rnd;
+    } break;
+    case T_GLYPH: {
+        /* 2Dの 距離の 絵（字）を のばして 面取り：ローカルの x・y が 絵の 面（y は 上向き）、z が 厚み */
+        v3 q = rot(P->R, vsub(p, P->c));
+        const Tex *T = &texs[(int)P->r1];
+        float sx = P->h.x, hz = P->h.y, bev = P->h.z;
+        float u = q.x / sx + T->W * 0.5f, vv = -q.y / sx + T->H * 0.5f;
+        float cu = clampf(u, 0.5f, T->W - 0.5f), cv = clampf(vv, 0.5f, T->H - 0.5f);
+        float outd = sqrtf((u - cu) * (u - cu) + (vv - cv) * (vv - cv));
+        float fu = cu - 0.5f, fv = cv - 0.5f;
+        int iu = (int)fu, iv = (int)fv;
+        if (iu > T->W - 2) iu = T->W - 2; if (iv > T->H - 2) iv = T->H - 2;
+        if (iu < 0) iu = 0; if (iv < 0) iv = 0;
+        float tu = fu - iu, tv = fv - iv;
+        const float *r0 = T->d + (size_t)iv * T->W + iu, *r1 = r0 + T->W;
+        float sd = mixf(mixf(r0[0], r0[1], tu), mixf(r1[0], r1[1], tu), tv);
+        float d2 = (sd + outd) * sx;
+        float hze = hz;
+        if (P->b.x > 0.f && d2 < 0.f) { float tt = clampf(-d2 / P->b.y, 0.f, 1.f); hze += P->b.x * tt * (2.f - tt); }   /* ふちから 中へ ふくらむ */
+        float dz = fabsf(q.z) - hze;
+        d = fmaxf(fmaxf(d2, dz), (d2 + dz + bev) * 0.70710678f);
+        if (P->b.x > 0.f) d *= 0.85f;
     } break;
     default: d = 1e9f;
     }
@@ -510,6 +537,16 @@ int main(int argc, char **argv) {
         else if (!strcmp(kw, "amb")) sscanf(rest, "%f %f %f", &amb.x, &amb.y, &amb.z);
         else if (!strcmp(kw, "grad")) sscanf(rest, "%f %f %f %f %f %f %f %f %f", &gtop.x, &gtop.y, &gtop.z, &ghor.x, &ghor.y, &ghor.z, &gbot.x, &gbot.y, &gbot.z);
         else if (!strcmp(kw, "bounce")) sscanf(rest, "%d", &bounce);
+        else if (!strcmp(kw, "tex")) {
+            int id, tw, th; char path[512];
+            if (sscanf(rest, "%d %d %d %511s", &id, &tw, &th, path) == 4 && id >= 0 && id < 32) {
+                FILE *tf = fopen(path, "rb");
+                if (!tf) { fprintf(stderr, "tex: cannot open %s\n", path); continue; }
+                texs[id].W = tw; texs[id].H = th; texs[id].d = malloc((size_t)tw * th * 4);
+                if (fread(texs[id].d, 4, (size_t)tw * th, tf) != (size_t)tw * th) fprintf(stderr, "tex: short read %s\n", path);
+                fclose(tf);
+            }
+        }
         else if (!strcmp(kw, "nocull")) sscanf(rest, "%d", &nocull);
         else if (!strcmp(kw, "cullm")) sscanf(rest, "%f", &cullm);
         else if (!strcmp(kw, "lobe")) { Lobe *L = &lobes[nlobes++]; sscanf(rest, "%f %f %f %f %f %f %f", &L->d.x, &L->d.y, &L->d.z, &L->col.x, &L->col.y, &L->col.z, &L->sharp); L->d = norm(L->d); }
@@ -551,7 +588,7 @@ int main(int argc, char **argv) {
             int t = -1;
             if (!strcmp(kw, "sph")) t = T_SPH; else if (!strcmp(kw, "ell")) t = T_ELL; else if (!strcmp(kw, "rcone")) t = T_RCONE;
             else if (!strcmp(kw, "rbox")) t = T_RBOX; else if (!strcmp(kw, "torus")) t = T_TORUS; else if (!strcmp(kw, "ctorus")) t = T_CTORUS;
-            else if (!strcmp(kw, "ccone")) t = T_CCONE;
+            else if (!strcmp(kw, "ccone")) t = T_CCONE; else if (!strcmp(kw, "glyph")) t = T_GLYPH;
             if (t < 0) { fprintf(stderr, "unknown: %s\n", kw); continue; }
             P.type = t;
             float a[40]; int na = 0; char *s = rest;
@@ -571,6 +608,13 @@ int main(int argc, char **argv) {
             case T_TORUS: P.c = v(q[0], q[1], q[2]); P.r1 = q[3]; P.r2 = q[4]; memcpy(P.R, q + 5, 9 * sizeof(float)); P.bc = P.c; P.br = q[3] + q[4]; break;
             case T_CTORUS: P.c = v(q[0], q[1], q[2]); P.r1 = q[3]; P.r2 = q[4]; P.half = q[5]; memcpy(P.R, q + 6, 9 * sizeof(float)); P.bc = P.c; P.br = q[3] + q[4]; break;
             case T_CCONE: P.c = v(q[0], q[1], q[2]); P.h = v(q[3], 0, 0); P.r1 = q[4]; P.r2 = q[5]; P.rnd = q[6]; memcpy(P.R, q + 7, 9 * sizeof(float)); P.bc = P.c; P.br = sqrtf(q[3] * q[3] + fmaxf(q[4], q[5]) * fmaxf(q[4], q[5])) + q[6]; break;
+            case T_GLYPH: {
+                P.c = v(q[0], q[1], q[2]); P.h = v(q[3], q[4], q[5]); P.r1 = q[6]; memcpy(P.R, q + 7, 9 * sizeof(float)); P.bc = P.c;
+                if (na >= 3 + 16 + 2) { P.b = v(q[16], fmaxf(q[17], 1e-4f), 0); }
+                const Tex *T = &texs[(int)q[6]];
+                float hw = T->W * 0.5f * q[3], hh = T->H * 0.5f * q[3];
+                P.br = sqrtf(hw * hw + hh * hh + q[4] * q[4]);
+            } break;
             }
             P.br += P.shell;
             prims[nprims] = P;

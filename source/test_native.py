@@ -31,7 +31,7 @@ open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.p
 TESTURL = f'http://localhost:{PORT}/TEST/'
 # 第5弾：超神様の 動画（H.264）は Chromium で 読めないので、手元の 動画（ios/fx_assets/*.mp4）から 同じ 絵の 小さな webm を 作って（t5/films/ に とっておく）同じ 名前の かわりに 読ませる
 FILMS_DIR = os.path.join(W, 't5', 'films')
-for f in ('sgd_film', 'spg_up', 'sd_film'):   # 第4.70版：紫電の ② の 動画も
+for f in ('sgd_film', 'spg_up', 'sd_film'):   # 第4.70版〜：紫電の 動画も
     mp4, webm = os.path.join(W, 'ios', 'fx_assets', f + '.mp4'), os.path.join(FILMS_DIR, f + '.webm')
     if not os.path.exists(webm) and os.path.exists(mp4) and shutil.which('ffmpeg'):
         os.makedirs(FILMS_DIR, exist_ok=True)
@@ -483,10 +483,10 @@ try:
         pg.evaluate('TengelFx.close()')
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(400)
         csd = pg.evaluate('TengelFx.current()')
-        check(csd['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdgf')).display") == 'none' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdbo')).display") == 'none',
-              f'控えめの 紫電：動画を 出さず ③ の ロゴを 止めた 絵（still）・金の 光と 雷は 出さない（第4.70版）（{csd}）')
+        check(csd['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sds')).display") == 'block' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).display") == 'none',
+              f'控えめの 紫電：プチュンも 動画も 出さず 動画の さいごの 1まい（still）（第4.71版）（{csd}）')
         pg.wait_for_timeout(1500)
-        check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdlogo .sdt')).opacity") == '1', '控えめの 紫電：1.3秒で ボードが ふわっと 出る（ロゴは 止めた まま うすく）')
+        check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdk')).opacity") == '1', '控えめの 紫電：1.3秒で ボードが ふわっと 出る（うしろは 少し 暗く）')
         pg.evaluate('TengelFx.close()')
         pg.evaluate("TengelFx.set({ calm: null })")
         # 動画（Chromium では H.264 が 読めないので、同じ 絵の webm を 同じ 名前の かわりに 読ませる。なければ 動かない 時の 形を 確かめる）
@@ -542,31 +542,35 @@ try:
                   '超神様の 動画の 14.33秒で ボード「超神様的中！！！」（帯は 超大穴と 大穴）')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
             check(pg.locator('#fxVh video[data-film=sgd_film]').count() == 1 and pg.locator('#fxVh video[data-film=spg_up]').count() == 1 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0)"), '「とじる」→ 動画 2つとも 止めて 置き場へ')
-        # 第4.70版：紫電の ② は 動画（sd_film）。動きだしたら go（幕が すきとおる）→ 7.6秒から ③ → 10.53秒 ボード／読めない → ③ の 止めた 絵（still）→ 1.3秒 ボード
+        # 第4.71版：紫電は 押した 瞬間に プチュン（CSS・動画を 待たない）→ 動画（sd_film）が 動きだしたら go（幕が すきとおる）→ 10.05秒 ボード／読めない → さいごの 1まい（still）→ 1.3秒 ボード
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', spg_up: 'spg_up.webm', sd_film: 'sd_film.webm' }")
         HAVE_SD = pg.evaluate("fetch('sd_film.webm', { method: 'HEAD' }).then(r => r.ok).catch(() => false)")
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2], [('馬単', '的中', [[11, 6]])])); pg.wait_for_timeout(300)
         check(pg.locator('#fxVh video[data-film=sd_film]').count() == 1 and pg.evaluate("document.querySelector('#fxVh video[data-film=sd_film]').preload") == 'auto', '紫電の 動画も 出る 前に <video>（preload=auto）を 作って 読んでおく（第4.70版）')
-        pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()')
+        pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(120)
+        pc0 = pg.evaluate("(() => { const p = document.querySelector('#fxOv .ov.sd .pc'); const a = p && p.getAnimations ? p.getAnimations() : []; const h = getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')); return { vis: p ? getComputedStyle(p).visibility : '', run: a.length > 0 && a.every(x => x.playState === 'running'), hb: h.visibility === 'hidden' || h.opacity === '0' }; })()")
+        check(pc0['vis'] == 'visible' and pc0['run'] and pc0['hb'], f'紫電：押した 瞬間に プチュン（ど的中と 同じ。動画を 待たずに 動く）・ボードは まだ（第4.71版）（{pc0}）')
         if HAVE_SD:
             pg.wait_for_function("() => (TengelFx.current() || {}).film === 1", timeout=6000)
             v = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv.on'); return v ? { paused: v.paused, film: v.getAttribute('data-film') } : null; })()")
             check(v is not None and v['paused'] is False and v['film'] == 'sd_film' and pg.locator('#fxOv .ov.sd.go').count() == 1 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd')).backgroundColor") == 'rgba(0, 0, 0, 0)' and 'film:sd' in pg.evaluate('window.__fxEv')
-                  and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdC')).visibility") == 'hidden' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0',
-                  f'紫電：押すと ② の 動画が 舞台で 動きだす（go・幕が すきとおる）・③ と ボードは まだ 出ない（{v}）')
-            pg.wait_for_timeout(8400)
-            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdC')).visibility") == 'visible' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0', '紫電：7.6秒から ③（ど！！！的中）・ボードは まだ')
-            pg.wait_for_timeout(3000)
+                  and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0',
+                  f'紫電：押すと 動画が 舞台で 動きだす（go・幕が すきとおる）・ボードは まだ 出ない（{v}）')
+            pg.wait_for_timeout(1500)
+            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).visibility") == 'hidden', '紫電：プチュンは 約1秒で おわる（あとは 動画）')
+            pg.wait_for_timeout(7600)
+            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0', '紫電：9秒すぎ（ど！！！的中の 2.5秒）は まだ ボードを 出さない')
+            pg.wait_for_timeout(1900)
             check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .close')).visibility") == 'visible' and pg.locator('#fxOv .rb.fz .bh').inner_text() == 'ど的中！！！',
-                  '紫電：10.53秒で ボード「ど的中！！！」→「とじる」')
+                  '紫電：10.05秒で ボード「ど的中！！！」→「とじる」')
         else:
             print('  ⚠️ 紫電の 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', spg_up: 'spg_up.webm', sd_film: 'nai_sd_film.webm' }")   # ない 名前 → error → still
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1200)
         cst3 = pg.evaluate('TengelFx.current()')
-        check(cst3['kind'] == 'sd' and cst3['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv .ov.sd.go').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdC')).visibility") == 'visible',
-              f'紫電で 動画が 読めない → ③ の ロゴを 止めた 絵（still）（{cst3}）')
+        check(cst3['kind'] == 'sd' and cst3['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv .ov.sd.go').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sds')).display") == 'block',
+              f'紫電で 動画が 読めない → 動画の さいごの 1まい（still）（{cst3}）')
         pg.wait_for_timeout(1400)
         bh3 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText, hb: getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity }; })()")
         check(bh3['op'] == '1' and bh3['hb'] == '1' and bh3['t'] == 'ど的中！！！', f'紫電の still：1.3秒で ボード・見出しも ボードと いっしょに（{bh3}）')
@@ -575,7 +579,7 @@ try:
         for kind, cls, parts, title, ribs in (('pc', 'pm', ('.pmbg', '.pmp', '.pms', '.pmf', '.pmw'), 'ど的中！！！', '11番人気が3連単に！'),
                                               ('zp', 'zp', ('.zpbg', '.zpp', '.zps', '.zpf', '.zpgr'), 'ど的中！！！', '11番人気が3連単に！'),
                                               ('gd', 'gd', ('.gdk', '.gdA', '.gdB', '.gdC'), '神様的中！！！', 'が3連単に！'),
-                                              ('sd', 'sd', ('.sdC', '.sdbk', '.sdwh', '.sdgf', '.sdlogo'), 'ど的中！！！', '11番人気が3連単に！')):
+                                              ('sd', 'sd', ('.sds', '.sdk', '.pc'), 'ど的中！！！', '11番人気が3連単に！')):
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: '%s' }, s))" % kind, spec([11, 8, 2] if kind == 'gd' else [11, 6, 2], [('馬単', '的中', [[11, 6]])])); pg.wait_for_timeout(200)
             po = pg.locator('#fxOv')
             okp = (po.locator('.ov.fz .pbox.rbw .push .rbf').count() == (0 if kind == 'sd' else 1)) and f'k-{kind}' in po.get_attribute('class') and (kind != 'sd' or pg.evaluate('TengelFx.current()')['pz'] == 1.4)   # 紫電の PUSH は ど的中と 同じ（1.4倍・虹色なし）
@@ -584,17 +588,13 @@ try:
             imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_|sd_/.test(i.src)).length")
             check(okp and po.locator(f'.fxs .ov.fz.{cls}').count() == 1 and all(have.values()) and po.locator('.rb.fz .bh').text_content() == title and ribs in po.locator('.rb .zrib').text_content() and imgs_bad == 0 and po.locator('.rb .brows li.top .bt').text_content() == '3連単',   # ボードは まだ 見えない（text_content）
                   f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
-            if kind == 'sd':   # 第4.66版〜：紫電の 絵の 名前（第4.70版：③ の sd_….webp 4まい・② は 動画）・ロゴの 字（ど・！×3・的中）・まとう 電気と 大きな 雷・ボードは 10.53秒
+            if kind == 'sd':   # 第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）。さいごの 1まいと プチュン（ど的中と 同じ 部品）・ボードは 10.05秒
                 srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
-                tex = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => i.src.split('/').pop())")
-                nb, na = po.locator('.ov.sd .sdbt').count(), po.locator('.ov.sd .sdar').count()
-                check(srcs == ['sd_rtex.webp', 'sd_t_do.webp', 'sd_t_ex.webp', 'sd_t_hit.webp'] and tex == ['sd_t_do.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_ex.webp', 'sd_t_hit.webp']
-                      and po.locator('.ov.sd .sdA, .ov.sd .sdB, .ov.sd .sdk').count() == 0 and nb >= 10 and na >= 20 and po.locator('.ov.sd .sdgf').count() == 1
-                      and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.53s both')") and pg.evaluate("window.__FX.t.SD") == 10.38
-                      and pg.evaluate("window.__FX.art.sd.length") == 4 and pg.evaluate("window.__FX.t.SDS") == {'FROM': 10.28, 'WAIT': 1.0},
-                      f'紫電（第4.70版）：③ の 絵 4まい（{srcs}）・① ② の 絵は なし（② は 動画 sd_film.mp4）・ロゴは ど → ！！！ → 的中（{tex}）・大きな 雷 {nb}・まとう 電気 {na}コマ・ボードは 10.53秒')
-                sizes = pg.evaluate("[...document.querySelectorAll('#fxOv .ov.sd .sdlogo .sdt')].map(i => [Math.round(i.getBoundingClientRect().top), Math.round(i.getBoundingClientRect().height)])")
-                check(sizes[1][1] > sizes[2][1] > sizes[3][1] and sizes[1][0] < sizes[2][0] < sizes[3][0] and sizes[4][0] > sizes[0][0], f'「！」は 上から 下へ 小さく（まさちゃんの 指定）・「的中」は いちばん 下（上と 高さ：{sizes}）')
+                check(srcs == ['sd_last.webp'] and po.locator('.ov.sd .pc .pcl').count() == 1 and po.locator('.ov.sd .pc .pca path').count() > 20
+                      and po.locator('.ov.sd .sdC, .ov.sd .sdlogo, .ov.sd .sdbt, .ov.sd .sdar').count() == 0
+                      and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.05s both')") and pg.evaluate("window.__FX.t.SD") == 9.9
+                      and pg.evaluate("window.__FX.art.sd") == ['sd_last.webp'] and pg.evaluate("window.__FX.t.SDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.sdp") == 'sfx_sdp.m4a',
+                      f'紫電（第4.71版）：絵は さいごの 1まい だけ（{srcs}）・押した 瞬間の プチュンは ど的中と 同じ 部品・音は sfx_sdp・ボードは 10.05秒')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx._rand = null")
         # 着せ替えの テーマで：プレミアムの ボードは その テーマの ど的中の 形（第4弾・16.4）

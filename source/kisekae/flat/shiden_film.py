@@ -1,17 +1,21 @@
-"""紫電（第4.70版）：② を 1コマずつ 3D で 描いた 動画に（sd_film.mp4・30コマ/秒・音なし）
-   まさちゃん「一枚目の画像から、二枚目の画像までの映像まで消して！ 三枚目のシーンからヒズメカットインまでのシーン消して、雑すぎる！
-   もっと二枚目の馬みたいに蹄カットインをリアルな映像で作成して！ あと蹄カットインのあとから四枚目までのシーン消して！
-   四枚目の光はもっと立体的に、リアルもっと強く発光した映像にして！ 蹄カットインの背景は、もっとリアルに立体的で、激しい映像にして！
-   あと蹄カットインは、蹄が画面を切り裂いてるイメージね！ めちゃくちゃリアルで立体感のある表現にして！ 馬の顔のシーンもっと長くていい！ 動き方は任せる！
-   あくまで参考にするのは、おくってるファイルの画像と動きをもとにしてね！ 求めているのは、全部二枚目の写真のようなリアルなエフェクトにしてほしい！」
-   → ② は 3つの 場面だけ（どれも 3D で 光と つやまで 計算した 絵）：
-     A 馬の 顔（0〜FACE 秒）：闇から 青むらさきの 光の 中に 黒い 馬の 横顔が 浮かぶ → 頭が 上がって こちらを 向き・耳が 立ち・鼻から 白い 息・
-       たてがみが なびく → 目に 火が ともって 強く 光る → カメラが 目へ 寄って 目の 光が 画面を つつむ
-     B 蹄の カットイン（FACE〜HOOF 秒）：むらさきの 雷雲の 中を 前へ 突き進む（雲の 層・雷・火の粉・とんでくる かけら）→ 焼けた 蹄鉄の 蹄が 左から
-       画面を 切り裂いて 右へ（まん中で ゆっくり）→ 切り口が 光って 画面の ガラスが 割れて とぶ → 切り口が 開いて 光が あふれる
-     C 光（HOOF〜FILM 秒）：深い 緑の 空間に 白熱の 光の 玉・まわる 金の 輪・光の 筋・集まる 金の 粒 → 光が ふくらんで 画面が 光で うまる（→ ③ ど！！！的中）
+"""紫電（第4.71版）：押した 瞬間から 1コマずつ 3D で 描いた 動画（sd_film.mp4・30コマ/秒・音なし）
+   第4.70版・まさちゃん「…馬の顔のシーンもっと長くていい！ 動き方は任せる！ … 求めているのは、全部二枚目の写真のようなリアルなエフェクトにしてほしい！」
+   第4.71版・まさちゃん「ど！的中演出のプチュン演出をボタンタップした瞬間に入るようにして！ プチュンして0.8秒で、一枚目の馬の顔が暗闇から目だけを光らせて、
+   徐々に顔がみえる、暗闇から目が光り顔が全部見えて(今の馬の顔の演出と繋げて)、蹄カットインに入るまでを2秒くらいにして！ 二枚目の蹄カットインの入りの映像を1.3秒にして、
+   奥の光りから、的中(縦文字で)が画面近くまで飛んできて、0.8秒停止、すぐに蹄カットインで的中の文字を的と中の真ん中から切り裂いて、画面が光りに包まれてど！！！的中が出てくる。
+   ど！！！的中表示2.5秒にして！」（ほかの ことばは shiden.py）
+   → どの 場面も 3D で 光と つやまで 計算した 絵：
+     はじめの 黒（0〜BLACK 秒）：押した 瞬間の プチュン（CSS：shiden.py）の 下・プチュンの あと 真っ暗 0.8秒
+     A 馬の 顔（BLACK〜FACE 秒）：暗闇に 目だけが 光る → だんだん 青むらさきの 光で 顔が 見えて くる → 頭が 上がって こちらを 向き・耳が 立ち・鼻から 白い 息・
+       たてがみが なびく → 目の 火が 強く なって あふれる → カメラが 目へ 寄って 目の 光が 画面を つつむ
+     B 蹄の カットイン（FACE〜HOOF 秒）：むらさきの 雷雲の 中を 前へ 突き進む（雲の 層・雷・火の粉・とんでくる かけら）・奥の 光から 縦書きの 3D の「的中」
+       （flat/shiden_logo.py）が 画面の 近くまで とんでくる → 0.8秒 止まる → 焼けた 蹄鉄の 蹄が 左から「的」と「中」の あいだを 切り裂いて 右へ（まん中で ゆっくり）
+       → 切り口が 光って 画面の ガラスが 割れて とぶ → 切り口が 開いて 光が あふれ 画面が 光に つつまれる
+     D ど！！！的中（HOOF〜FILM 秒）：光の 中から 白熱の 3D の ロゴ（flat/shiden_logo.py）が 手前へ とんでくる → ドンッ（金の かけら・衝撃の 輪・ゆれ）
+       → 金と 虹に 冷める → 雷を まとう・大きな 雷・光の 筋 →（ボードは CSS）
    python3 flat/shiden_film.py <作業フォルダ> [はじめの コマ] [おわりの コマ]   （コマ f%03d.png。SCALE=0.5 で ためしの 小さい 絵）
-   python3 flat/shiden_film.py --encode <作業フォルダ> <出力.mp4>"""
+   python3 flat/shiden_film.py --encode <作業フォルダ> <出力.mp4>
+   python3 flat/shiden_film.py --last <作業フォルダ> <出力.webp>          （さいごの 1まい＝sd_last.webp）"""
 import os, sys, math, json
 import numpy as np
 import cv2
@@ -25,15 +29,17 @@ from hair2d import HairBuf, guide
 from fire2d import aces, to_srgb
 from paint import fbm, blur, smoothstep
 
-import shiden as SDM                             # 時刻の きまり（shiden.py の FILM：音・③ と そろえる）
+import shiden as SDM                             # 時刻の きまり（shiden.py の FILM：音・CSS と そろえる）
 F = SDM.FILM
 FPS = F['FPS']                                   # 30コマ/秒
-FACE, HOOF, FILM = F['FACE'], F['HOOF'], F['END']   # 場面の おわりの 秒（A 顔 4.0・B 蹄 6.4・C 光 7.6）
-NF = int(round(FILM * FPS))                      # 228コマ
+BLACK, FACE, HOOF, FILM = F['BLACK'], F['FACE'], F['HOOF'], F['END']   # 区切りの 秒（黒 1.8・A 顔 3.8・B 蹄 7.4・D ど！！！的中 10.5）
+NF = int(round(FILM * FPS))                      # 315コマ
 W0, H0 = F['W'], F['H']                          # 動画の 大きさ（画面 390×844 の 2倍）
 SC = float(os.environ.get('SCALE', '1'))         # ためす とき 0.5
 W, H = int(W0 * SC), int(H0 * SC)
 S = W / 780.0                                    # 長さの 倍率（780 の 時 1）
+
+
 
 
 # ================================================================ 道具
@@ -109,21 +115,23 @@ def save_png(img, path):
 
 # ================================================================ A 馬の 顔
 FOV = 34.0
-FACE_KEYS = [  # 秒: 頭の 角度・耳・カメラ（横から まわる u・上下 v・距離）・目の 画面の 場所
+FACE_LEN = FACE - BLACK                          # 顔の 場面の 長さ（2.0秒）。この 場面の 秒は BLACK からの 秒
+FACE_KEYS = [  # 秒: 頭の 角度・耳・カメラ（横から まわる u・上下 v・距離）・目の 画面の 場所（第4.70版の 4秒の 動きを 2秒に）
     (0.0, dict(ha=-45, ear=-16, u=.08, v=.07, dist=2.8, ex=.53, ey=.36)),
-    (1.0, dict(ha=-41, ear=-8, u=.14, v=.06, dist=2.5, ex=.52, ey=.36)),
-    (2.2, dict(ha=-32, ear=12, u=.31, v=.03, dist=2.0, ex=.49, ey=.36)),
-    (3.0, dict(ha=-27, ear=22, u=.42, v=.0, dist=1.62, ex=.47, ey=.36)),
-    (3.55, dict(ha=-25, ear=24, u=.46, v=-.01, dist=1.12, ex=.47, ey=.38)),
-    (4.0, dict(ha=-24, ear=25, u=.48, v=-.02, dist=0.72, ex=.48, ey=.41)),
+    (0.55, dict(ha=-41, ear=-6, u=.15, v=.06, dist=2.45, ex=.52, ey=.36)),
+    (1.1, dict(ha=-32, ear=12, u=.31, v=.03, dist=2.0, ex=.49, ey=.36)),
+    (1.5, dict(ha=-27, ear=22, u=.42, v=.0, dist=1.62, ex=.47, ey=.36)),
+    (1.78, dict(ha=-25, ear=24, u=.46, v=-.01, dist=1.12, ex=.47, ey=.38)),
+    (2.0, dict(ha=-24, ear=25, u=.48, v=-.02, dist=0.72, ex=.48, ey=.41)),
 ]
 PUFFS = F['PUFFS']                               # 鼻から 白い 息（秒）
 
 
 def face_state(t):
     d = {k: float(spline(t, [(a, b[k]) for a, b in FACE_KEYS])) for k in FACE_KEYS[0][1]}
-    d['g'] = float(spline(t, [(0, 0.0), (0.9, 0.0), (2.0, .4), (2.9, 1.0), (3.55, 1.7), (4.0, 3.0)]))    # 目の 光（1 を こえると あふれる）
-    d['L'] = ss(0.0, 1.1, t)                                                                               # 光が ともる（闇から 浮かぶ）
+    e0, (e1, e2) = F['EYE_ON'], F['EYE']
+    d['g'] = max(0.0, float(spline(t, [(0, 0.0), (e0 * .6, .9), (e0 + .1, .62), (e1, .8), (e2, 1.15), (1.78, 1.7), (FACE_LEN, 3.0)])))   # 目の 光：暗闇で まず 目だけ ともる（1 を こえると あふれる）
+    d['L'] = ss(F['LIT'][0], F['LIT'][1], t)                                                               # 顔を 照らす 光が だんだん ともる（暗闇から 浮かぶ）
     return d
 
 
@@ -174,7 +182,7 @@ def face_render(st, prefix):
     sc.camera(cam, tgt, FOV)
     sc.bounce(1)
     cd = nrm(cam - tgt)
-    k = 0.15 + 0.85 * L
+    k = 0.03 + 0.97 * L                                                          # はじめは 暗闇（目の 光だけ）
     sc.env(tuple(np.array((0.006, 0.002, 0.012)) * k), tuple(np.array((0.010, 0.004, 0.018)) * k), (0.002, 0.001, 0.004), (0.0008, 0.0003, 0.0014))
     sc.lobe(nrm(-cd + np.array([0.35, 0.55, 0.0])), tuple(np.array((1.1, 0.28, 0.95)) * k), 6.0)
     sc.lobe(nrm(np.array([-0.2, 1.0, -0.3])), tuple(np.array((0.18, 0.16, 0.26)) * k), 8.0)
@@ -253,11 +261,11 @@ def face_frame(t, R, M, seed=7):
     ex, ey = M['eye']
     mz = np.array(M['muzzle']); pl = np.array(M['poll'])
     hl = np.linalg.norm(mz - np.array([ex, ey]))
-    hs = hl / (817 * S)                                                          # 頭の 大きさ（寄ると 大きく：3.0秒で 1）
+    hs = hl / (817 * S)                                                          # 頭の 大きさ（寄ると 大きく：1.5秒で 1）
     hd = (mz - np.array([ex, ey])) / (hl + 1e-6)
     # ---------- 背景（ゆっくり 流れる もや・頭の うしろの 光・右上の 桃色・左下の 青） ----------
     ty = (yy / H)[..., None]
-    bg = np.array([0.004, 0.0015, 0.009]) * (1 - ty) + np.array([0.0015, 0.0008, 0.004]) * ty
+    bg = (np.array([0.004, 0.0015, 0.009]) * (1 - ty) + np.array([0.0015, 0.0008, 0.004]) * ty) * (0.1 + 0.9 * L)    # はじめは まっ暗（目の 光だけ）
     ox, oy = int((t * 30 * S) % W), int((t * 12 * S) % H)
     haze = tx['haze'][oy:oy + H, ox:ox + W]
     back = np.exp(-(((xx - ex - 120 * S * hs) / (W * .55)) ** 2 + ((yy - ey + 40 * S) / (H * .32)) ** 2)) * (0.55 + 0.7 * haze)
@@ -346,7 +354,7 @@ def face_frame(t, R, M, seed=7):
             + np.array([2.2, 0.6, 0.08]) * np.exp(-((rr - 22) / 6) ** 2)[..., None]) * orb[..., None]
     halo = np.array([1.0, 0.25, 0.04]) * np.exp(-(rr / 34) ** 1.4)[..., None] + np.array([0.12, 0.02, 0.05]) * np.exp(-(rr / 110) ** 1.2)[..., None]
     flare = np.exp(-(((yy - ey) / (3.0 * S * max(hs, .6))) ** 2)) * np.exp(-(np.abs(xx - ex) / (90 * S * hs * (1 + 1.5 * max(0, g - 1)))) ** 1.3)
-    img = img + (glow + halo) * (0.15 + 0.85 * gg) + flare[..., None] * np.array([1.6, 0.8, 0.35]) * gg * 0.6
+    img = img + (glow + halo) * (0.15 * min(1.0, gg / .3) + 0.85 * gg) + flare[..., None] * np.array([1.6, 0.8, 0.35]) * gg * 0.6
     if g > 1:                                                                    # あふれる 光（十字の 筋・広い にじみ）
         over = g - 1
         rr2 = np.sqrt((xx - ex) ** 2 + (yy - ey) ** 2)
@@ -374,7 +382,7 @@ def face_frame(t, R, M, seed=7):
     alp = (0.7 * (1 - w1[..., 0]) + 0.5 * w1[..., 0]) * (1 - w2[..., 0]) + 0.45 * w2[..., 0]
     out = out + (alp[..., None] * col) * (1 - out) * (0.72 * L)
     # ---------- おわり：目の 光が 画面を つつむ ----------
-    fl = ss(F['RUSH'], FACE, t)
+    fl = ss(F['RUSH'], FACE_LEN, t)
     if fl > 0:
         rr2 = np.sqrt((xx - ex) ** 2 + (yy - ey) ** 2) / (W * (.15 + 1.4 * fl ** 1.5))
         wash = np.clip(np.exp(-rr2 ** 2) * fl ** .8 * 1.6, 0, 1)[..., None]
@@ -389,7 +397,9 @@ import shiden_hoof as SH
 T_IN, (T_SLOW0, T_SLOW1), T_OUT = F['H_IN'], F['H_SLOW'], F['H_OUT']   # 蹄（場面の 中の 秒）：入る・まん中で ゆっくり・抜ける
 T_OPEN = F['H_OPEN']                                          # 切り口が 開く
 T_ZOOM = F['H_ZOOM']                                          # 切り口の 光へ 寄る
-T_B = HOOF - FACE                                             # 場面の 長さ（2.4秒）
+T_B = HOOF - FACE                                             # 場面の 長さ（3.6秒）
+T_FLY0, T_FLY1 = F['T_FLY']                                   # 縦書きの 的中が 奥の 光から とんでくる・止まる（〜蹄）
+H_SHIFT = F['H_SHIFT'] / FPS                                  # 蹄の 3D（第4.70版と 同じ 動き）を おそく した 秒（とっておいた 3D の 名前に 使う）
 Y0 = 0.47                                                     # 切り口の 高さ（H の 割合）＝つま先の 高さ
 
 
@@ -427,11 +437,17 @@ def cut_time(xs):
     return np.interp(xs, xp, ts, left=-1.0, right=99.0)
 
 
+def world_speed(x):
+    """まわりの 速さ：的中が 止まって いる 間は ゆっくり（0.4）・蹄が まん中の 間は もっと ゆっくり（0.28＝スローモーション）"""
+    hold = ss(T_FLY1 - .1, T_FLY1 + .12, x) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .15, x))
+    slow = ss(T_SLOW0 - .08, T_SLOW0 + .05, x) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .1, x))
+    return 1 - .6 * hold - .12 * slow
+
+
 def world_time(tau):
-    """まわりの 時間（蹄が まん中で ゆっくりの 間は まわりも ゆっくり＝スローモーション）"""
-    k = np.linspace(0, tau, 120)
-    sp = 1 - 0.72 * np.array([ss(T_SLOW0 - .08, T_SLOW0 + .05, x) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .1, x)) for x in k])
-    return float(np.trapezoid(sp, k))
+    """まわりの 時間（速さ world_speed を 足した もの）"""
+    k = np.linspace(0, tau, 160)
+    return float(np.trapezoid(np.array([world_speed(x) for x in k]), k))
 
 
 STORM = {}
@@ -499,6 +515,90 @@ def storm_tex(seed=211):
 
 
 BOLTS = ((F['H_BOLTS'][0], (.18, .22), (.44, .05)), (F['H_BOLTS'][1], (.84, .12), (.6, .3)))   # 雷：秒・はじまりと おわり（画面の 割合）
+
+
+# ---------------- 縦書きの 3D の 的中（flat/shiden_logo.py の 字の しくみ）
+import shiden_logo as SL
+
+_CDIR = nrm(np.array(SL.CAM_DIR, float))
+TITLE = {}
+S0T = .045                                                     # とびはじめの 大きさ（とまった 時を 1）
+ROT0T = (10.0, -34.0, 7.0)                                     # とびはじめの 向き（度）
+
+
+def title_setup():
+    """縦書きの 的中の 置き場所・虹の 上下・とびはじめの 場所（奥の 光の まん中に 見える 所）"""
+    if 'lay' not in TITLE:
+        TITLE['lay'] = lay = SL.title_layout(TITLE['cache'])
+        ys = [b[1] for _, b in lay] + [b[3] for _, b in lay]
+        TITLE['hy'] = ((SL.ORIGIN[1] - min(ys)) / 100, (SL.ORIGIN[1] - max(ys)) / 100)
+        cl = np.array([0.0, (SL.ORIGIN[1] - SL.TITLE_Y) / 100, 0.0])                        # 的と 中の あいだ（ロゴの 中）
+        D0 = SL.CAM_DIST * (1 / S0T - 1)
+        cam = SL.camera()
+        eye, tgt, fov = cam
+        fw = nrm(tgt - eye); rt = nrm(np.cross(fw, (0, 1, 0))); up = np.cross(rt, fw)
+        th = math.tan(math.radians(fov) / 2); asp = W / H
+        px, py = W * .5, H * .44                                                             # 雷雲の トンネルの 奥の 光（storm の まん中）
+        rd = nrm(fw + rt * ((2 * px / W - 1) * th * asp) + up * ((1 - 2 * py / H) * th))
+        R0 = SL.rot_xyz(*ROT0T)
+        z = (-_CDIR * D0 + R0 @ cl - eye) @ fw                                               # その 奥行きで 光の まん中を 通る 点
+        Pc = eye + rd * (z / (rd @ fw))
+        TITLE['pos0'] = Pc - R0 @ cl
+        TITLE['D0'] = D0
+    return TITLE
+
+
+def title_pose(tau):
+    """場面の 秒 τ → 的中の 向き（度）・場所。まだ 出ない → None（奥の 光から だんだん おそく なって 画面の 近くで 止まる）"""
+    if tau < T_FLY0:
+        return None
+    T = title_setup()
+    u = min(1.0, (tau - T_FLY0) / (T_FLY1 - T_FLY0))
+    e = 1 - (1 - u) ** 2.6
+    s = S0T ** (1 - e)
+    rr = (1 - e) ** 1.3
+    rot = tuple(r * rr for r in ROT0T)
+    D = SL.CAM_DIST * (1 / s - 1)
+    pos = -_CDIR * D + (T['pos0'] + _CDIR * T['D0']) * (D / T['D0'])
+    return rot, pos, u
+
+
+def title_light(tau):
+    """的中に 映る 光：雷雲の むらさき（左右）・うしろの 光・雷（その 間だけ）・止まって いる 間に 光の 筋が 走る"""
+    fl = [(nrm(np.array([-.92, .2, .3])), np.array([1.0, .35, 1.9]) * .55), (nrm(np.array([.9, .3, .3])), np.array([.8, .35, 1.8]) * .5),
+          (nrm(np.array([0, -.95, .3])), np.array([.5, .2, 1.2]) * .4)]
+    for (tb, p0, p1) in BOLTS:
+        a = tau - tb
+        if -0.001 < a < .22:
+            d2 = np.array([(p0[0] + p1[0]) / 2 - .5, (p0[1] + p1[1]) / 2 - .44])
+            fl.append((nrm(np.array([d2[0], -d2[1], .35])), np.array([1.6, 1.3, 2.6]) * 2.2 * math.exp(-a / .06)))
+    sw = None
+    if T_FLY1 + .12 <= tau <= T_FLY1 + .7:
+        sw = -46 + 72 * ss(0, 1, (tau - T_FLY1 - .12) / .58)
+    return fl, sw
+
+
+def title_layer(tau, work):
+    """縦書きの 的中の 1まい（色・すき通し・箱）。止まって からは 形を 1回だけ 描いて 光だけ 計算し直す"""
+    TITLE.setdefault('cache', os.path.join(work, '_logo'))
+    os.makedirs(TITLE['cache'], exist_ok=True)
+    pz = title_pose(tau)
+    if pz is None:
+        return None
+    rot, pos, u = pz
+    T = title_setup()
+    rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
+    heat = 1 - ss(T_FLY0 + .1, T_FLY0 + .8, tau)                                             # 光の 中から 出る ときは 白熱
+    fl, sw = title_light(tau)
+    if u >= 1.0:
+        if 'rest' not in T:
+            T['rest'] = SL.render(os.path.join(rd_, 'title_rest'), W, H, rot, pos, T['cache'], layout=T['lay'])
+        g = T['rest']
+    else:
+        g = SL.render(os.path.join(rd_, f'title_{int(round(tau * FPS)):03d}'), W, H, rot, pos, T['cache'], layout=T['lay'])
+    if g[0] is None:
+        return None
+    return SL.layer(None, W, H, rot, pos, sweep=sw, flash=fl, heat=heat, hit_y=T['hy'], gbuf=g)
 
 
 def bolt_mask(rng, p0, p1, thick):
@@ -627,8 +727,8 @@ def storm(tau, seed=211):
         er = np.clip(m - cv2.erode(m, np.ones((3, 3), np.uint8), iterations=max(1, int(R_ * .08))), 0, 1)
         img[y0:y1, x0:x1] = img[y0:y1, x0:x1] * (1 - (m * fog)[..., None]) + (np.array([0.005, 0.0035, 0.011]) + side[..., None] * np.array([0.03, 0.012, 0.05]))[None] * (m * fog)[..., None] \
             + (er * side * fog)[..., None] * np.array([1.0, 0.4, 1.3])
-    # 外への ぶれ（前へ 突き進む 速さ：スローモーションの 間は 弱く）
-    spd = 1 - 0.72 * ss(T_SLOW0 - .08, T_SLOW0 + .05, tau) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .1, tau))
+    # 外への ぶれ（前へ 突き進む 速さ：止まって いる 間・スローモーションの 間は 弱く）
+    spd = world_speed(tau)
     img = zoom_blur(img, cx, cy, 0.10 * spd, 9)
     # 雨と 光の 粒（手前へ とぶ 長い 筋）
     ln = np.zeros((H, W), np.float32)
@@ -834,6 +934,11 @@ def hoof_frame(tau, work, seed=5):
     yy, xx = grid()
     T = tear_line()
     bg = storm(tau)
+    # ---------- 縦書きの 3D の 的中（奥の 光から とんできて 止まる：切り口と いっしょに 上下に 分かれる） ----------
+    tl = title_layer(tau, work)
+    if tl is not None:
+        col, A, (x0, y0, x1, y1) = tl
+        bg[y0:y1, x0:x1] = bg[y0:y1, x0:x1] * (1 - A[..., None]) + col
     # ---------- 画面が 切れる（上は 上へ・下は 下へ ずれて、あいだから 光） ----------
     d = opening(tau)
     yt = T['y']
@@ -889,7 +994,7 @@ def hoof_frame(tau, work, seed=5):
     # ---------- 3D の 蹄 ----------
     if T_IN - .05 <= tau <= T_OUT + .06:
         rd = os.path.join(work, '_r'); os.makedirs(rd, exist_ok=True)
-        hl, ha, hg, Mk = hoof_layer(tau, os.path.join(rd, f'hoof2_{int(round(tau * FPS)):03d}'), seed)
+        hl, ha, hg, Mk = hoof_layer(tau, os.path.join(rd, f'hoof2_{int(round((tau - H_SHIFT) * FPS)):03d}'), seed)
         tx_, ty_ = Mk['toe'][0]
         ox, oy = toe_x(tau) * W - tx_, Y0 * H - ty_ + 4 * S
         L_ = abs(toe_v(tau)) * W / 60.0
@@ -914,12 +1019,13 @@ def hoof_frame(tau, work, seed=5):
             img = img + spk[..., None] * np.array([3.0, 1.5, .5]) + blur(spk, 4 * S)[..., None] * np.array([1.2, .4, .1])
     # ---------- 寄る（切り口の 光へ）・ゆれ ----------
     zm = 1 + 4.0 * ss(T_ZOOM, T_B, tau) ** 2.2
-    shake = 0.0
-    for ti, amp in ((T_IN + .02, 7), (T_OPEN, 16)):
+    sx = sy = 0.0
+    for ti, ax, ay in ((T_IN + .02, 6, 0), (T_OPEN, 0, 12)):                        # ゆれ：1回 ぐっと ずれて もどる（ふるえない＝ふちが 点めつ しない）
         a = tau - ti
-        if a > 0:
-            shake += amp * S * math.exp(-a / .14)
-    sx = shake * math.sin(tau * 97); sy = shake * math.cos(tau * 83)
+        if 0 < a < .45:
+            k_ = math.sin(math.pi * min(a / .2, 1.0)) * math.exp(-a / .14)
+            sx += ax * S * k_; sy += ay * S * k_
+    shake = abs(sx) + abs(sy)
     if zm > 1.001 or shake > .3:
         cxz, cyz = W * .5, Y0 * H
         M = np.float32([[zm, 0, cxz - zm * cxz + sx], [0, zm, cyz - zm * cyz + sy]])
@@ -945,177 +1051,433 @@ def render_hoof(work, i0, i1):
         print('hoof', i, flush=True)
 
 
-# ================================================================ C 光（深い 緑の 空間の 光の 玉と 金の 輪）
-LIGHT = {}
+# ================================================================ D ど！！！的中（3D の ロゴ：flat/shiden_logo.py）
+T_D = FILM - HOOF                                              # 場面の 長さ（3.1秒）
+L_IN, L_LAND, L_ARCS = F['L_IN'], F['L_LAND'], F['L_ARCS']
+L_HOT, L_WASH, L_SWEEP = F['L_HOT'], F['L_WASH'], F['L_SWEEP']
+L_BOLTS = tuple((round(L_LAND + t, 3), n) for t, n in F['L_BOLTS'])   # 大きな 雷（場面の 秒・本数）
+WASH_COL = np.array([1.0, .93, .78])                           # 蹄の 場面の さいごの 光の 色（つなぎめ）
+S0, KIN = .06, 1.5                                              # ロゴが 出る ときの 大きさ（遠く）・近づき方（だんだん 速く）
+ROT0 = (-16.0, 26.0, -9.0)                                      # 出る ときの 向き（度：x・y・z）
+LOGO = {}
 
 
-def light_tex(seed=401):
-    if not LIGHT:
+def logo_pose(lam):
+    """場面の 秒 λ → ロゴの 向き（度）・場所（世界）・大きさ（とまった 時を 1）。まだ 出ない → None
+       光の 中から 遠くの 小さい 白熱の ロゴが まわりながら だんだん 速く 手前へ → L_LAND で ドンッ（少し 手前へ 出て もどる・うなずく）
+       → あとは ゆっくり ゆれて 寄る（映り込みが 動いて 立体に 見える）"""
+    if lam < L_IN:
+        return None
+    if lam < L_LAND:
+        u = (lam - L_IN) / (L_LAND - L_IN)
+        s = S0 ** (1 - u ** KIN)
+        e = (1 - u) ** 1.8
+        rot = tuple(r * e for r in ROT0)
+    else:
+        a = lam - L_LAND
+        s = 1 + .11 * math.sin(math.pi * a / .11) * math.exp(-a / .085) + .03 * ss(.4, T_D - L_LAND, a)
+        k = ss(.15, .8, a)
+        rot = (-1.6 * math.sin(2 * math.pi * a / 2.1 + .4) * k + 3.0 * math.sin(math.pi * a / .13) * math.exp(-a / .09),
+               3.2 * math.sin(2 * math.pi * a / 2.6) * k,
+               -.8 * math.sin(2 * math.pi * a / 3.1 + 1.0) * k)
+    pos = -_CDIR * SL.CAM_DIST * (1 / s - 1)
+    return rot, pos, s
+
+
+def logo_center():
+    if 'c' not in LOGO:
+        LOGO['c'] = SL.project(np.zeros(3), SL.camera(), W, H)[0][0]
+    return LOGO['c']
+
+
+def heat_of(lam):
+    return 1 - ss(L_HOT[0], L_HOT[1], lam)
+
+
+def sweep_of(lam):
+    """走る 光の 筋（映り込む 向き：度）。ない 時は None"""
+    for a, b in L_SWEEP:
+        if a <= lam <= b:
+            return -48 + 78 * ss(0, 1, (lam - a) / (b - a))
+    return None
+
+
+ARC_L = (((-.95, .25, .2), (1.0, .45, 2.2), .9, 0.0), ((.95, .1, .25), (.9, .4, 2.0), 1.1, 1.3), ((-.4, -.9, .2), (.8, .3, 1.8), .7, 2.1),
+         ((.5, -.85, .2), (1.0, .4, 2.1), 1.3, .4), ((.1, .98, .2), (.9, .5, 2.0), .8, 2.7))   # まとう 電気の 光（向き・色・ゆらぎの 速さ・位相）：面取りと 横に 映る
+
+
+def d_tex(seed=611):
+    """背景の 雲（つなぎめの ない 大きな もよう 2まい）・金の かけら・火の粉"""
+    if 'c1' not in LOGO:
         rng = np.random.default_rng(seed)
-        LIGHT['fog'] = fbm(H, W * 2, 200 * S, 5, seed=seed)
-        LIGHT['occ'] = fbm(256, 256, 18, 4, seed=seed + 1)
-        LIGHT['plasma'] = fbm(512, 1024, 26, 6, seed=seed + 2)                       # 玉の 表面（経度 × 緯度）
-        LIGHT['plasma2'] = fbm(512, 1024, 9, 4, seed=seed + 5)                      # 細かい つぶつぶ
-        P = []
-        for i in range(240):                                                  # 光の 玉へ 集まる 金の 粒（らせん）
-            P.append(dict(a=rng.uniform(0, 6.28), r=rng.uniform(.35, 1.4), z=rng.uniform(-.6, .6), w=rng.uniform(.6, 1.6) * rng.choice((-1, 1)),
-                          ph=rng.uniform(0, 1), b=rng.uniform(.4, 1.0), sz=rng.uniform(.6, 1.8)))
-        LIGHT['pts'] = P
-        LIGHT['bok'] = [(rng.uniform(-.1, 1.1), rng.uniform(-.1, 1.1), rng.uniform(18, 46), rng.uniform(.3, 1.0), rng.uniform(0, 6.28)) for _ in range(14)]   # 手前の ぼけた 光の 粒
-        LIGHT['prom'] = [(rng.uniform(0, 6.28), rng.uniform(.25, .6), rng.uniform(.25, .7), rng.uniform(.5, 1.0), rng.uniform(0, 6.28)) for _ in range(9)]   # 玉の ふちから 立ちのぼる 光の アーチ
-    return LIGHT
+        h2, w2 = int(H * .75) + 8, int(W * .75) + 8                                  # 画面の 1.5倍 を 半分の 細かさで（ゆっくり 寄っても はしが 出ない）
+        for k, (sc_, oc) in enumerate(((150, 6), (70, 5))):
+            n = fbm(h2, w2, sc_ * S, oc, seed=seed + 11 * k)
+            n = (n - n.min()) / (n.max() - n.min() + 1e-6)
+            n = 1 - np.abs(2 * n - 1) ** .85                                         # もくもく（billow）
+            n = (n - n.min()) / (n.max() - n.min() + 1e-6)
+            g = cv2.GaussianBlur(n.astype(np.float32), (0, 0), 1.2)
+            gx = cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=5) / 30
+            gy = cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=5) / 30
+            LOGO[f'c{k + 1}'] = (g, gx, gy)
+        FL = []
+        for i in range(170):                                                  # ドンッで とびちる 金の かけら（3D の 回る 薄い 板）
+            a = rng.uniform(0, 6.28); r0 = rng.uniform(.02, .3)
+            sp = rng.uniform(.55, 1.9) * (1.25 if i % 3 else .8)
+            FL.append(dict(x=math.cos(a) * r0, y=math.sin(a) * r0 * .8, vx=math.cos(a) * sp, vy=math.sin(a) * sp * .85 - rng.uniform(.1, .5),
+                           s=rng.uniform(2.2, 6.5), w=rng.uniform(8, 22) * rng.choice((-1, 1)), ph=rng.uniform(0, 6.28), life=rng.uniform(1.0, 1.9),
+                           back=(i % 3 == 0), tint=rng.uniform(0, 1)))
+        LOGO['fl'] = FL
+        EM = []
+        for i in range(110):                                                  # 下から 立ちのぼる 火の粉
+            EM.append(dict(t0=rng.uniform(L_LAND - .2, T_D), x=rng.uniform(-.05, 1.05), vy=rng.uniform(.10, .26), life=rng.uniform(1.4, 2.6),
+                           sw=rng.uniform(.01, .04), f=rng.uniform(.6, 1.6), ph=rng.uniform(0, 6.28), s=rng.uniform(1.0, 2.6), b=rng.uniform(.5, 1.0)))
+        LOGO['em'] = EM
+    return LOGO
 
 
-RINGS = ((1.65, 0.38, 70, .9, 0.0), (2.15, 0.62, -55, -.7, 1.3), (2.75, 0.22, 20, .5, 2.4), (5.6, 0.30, 8, .12, 0.0))   # 金の 輪：大きさ（玉の 何倍）・かたむき・向き（°）・回る 速さ・位相
-
-
-def ring_pts(rad, tilt, rot, ph, cx, cy, n=360):
-    """3D の 輪（玉の まわり）→ 画面の 点・奥（+）か 手前（−）か"""
-    th = np.linspace(0, 2 * math.pi, n) + ph
-    x, y, z = np.cos(th) * rad, np.zeros(n), np.sin(th) * rad
-    ct, st_ = math.cos(tilt), math.sin(tilt)
-    y, z = y * ct - z * st_, y * st_ + z * ct                       # 横の 軸で かたむける
-    cr, sr = math.cos(math.radians(rot)), math.sin(math.radians(rot))
-    x, y = x * cr - y * sr, x * sr + y * cr                         # 画面の 中で まわす
-    return np.c_[cx + x, cy + y], z, th
-
-
-def light_frame(lam, seed=401):
-    """光の 場面（場面の 秒 λ：0〜1.2）→ 0〜1 の sRGB
-       白熱の 光の 玉（まわる 表面の もよう・ふちの 光の アーチ）・3D の 金の 輪（奥は 玉の うしろ・手前は 前）・らせんで 集まる 金の 粒・緑の 光の 筋・手前の ぼけた 粒"""
-    LT = light_tex(seed)
+def cloud(key, cx, cy, zoom, rot, drift):
+    """雲の もよう（画面の まん中を 中心に ゆっくり 寄る・まわる・流れる）→ こさ・明るさの 向き（x, y）"""
     yy, xx = grid()
-    T_C = FILM - HOOF
-    cx, cy = W * .5, H * .45
-    zoom = 1 + .18 * lam + .25 * ss(.8, T_C, lam) ** 2
-    ch = 1 + 2.6 * ss(F['L_CHARGE'], T_C, lam) ** 1.6                           # 光が 強く なる（ため）
-    R0 = W * .085 * zoom * (1 + .25 * ss(.85, T_C, lam))
-    rr = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    # ---------- 背景：深い 緑の 闇・光に 照らされた もや ----------
-    img = np.zeros((H, W, 3), np.float32) + np.array([0.0012, 0.005, 0.0025])
-    ox = int((lam * 60 * S) % W)
-    fog = LT['fog'][:, ox:ox + W]
-    lit = np.exp(-(rr / (W * .55 * zoom)) ** 1.3)
-    img = img + (lit * (.3 + 1.0 * fog ** 1.5))[..., None] * np.array([0.018, 0.055, 0.02]) * ch ** .5
-    # ---------- 光の 筋（もやの すきまから 外へ） ----------
-    occ = cv2.resize(LT['occ'], (W, H))
-    src = (np.exp(-(rr / (R0 * 1.7)) ** 2) * smoothstep(.5, .72, occ))[..., None] * np.array([1.0, 1.4, .5]) * ch
-    rays = zoom_blur(src, cx, cy, 3.2, 18)
-    img = img + rays * .42
-    # ---------- 輪の 奥の 半分（玉の うしろ） ----------
-    front = []
+    n, gx, gy = d_tex()[key]
+    h2, w2 = n.shape
+    cs, sn = math.cos(rot), math.sin(rot)
+    dx, dy = (xx - cx) / zoom, (yy - cy) / zoom
+    u = (cs * dx - sn * dy) * .5 + w2 / 2 + drift[0]
+    v = (sn * dx + cs * dy) * .5 + h2 / 2 + drift[1]
+    u, v = u.astype(np.float32), v.astype(np.float32)
+    return [cv2.remap(a, u, v, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT) for a in (n, gx, gy)]
 
-    def ring_draw(segs):
-        rl = np.zeros((H, W), np.float32); rh = np.zeros((H, W), np.float32); rk = np.zeros((H, W), np.float32)
-        for seg, gl, wid, dep in segs:
-            cv2.polylines(rl, [seg], False, float((.35 + .65 * gl) * dep), wid, cv2.LINE_AA, shift=4)
-            cv2.polylines(rh, [seg], False, float(gl ** 6 * dep), max(1, wid // 2), cv2.LINE_AA, shift=4)
-            if gl > .985:                                                           # つやの いちばん 明るい 所：きらり
-                cv2.circle(rk, (int(seg[1][0]), int(seg[1][1])), int(wid * 16 * .5), float(dep), -1, cv2.LINE_AA, shift=4)
-        return rl, rh, rk
 
-    def ring_add(img, rl, rh, rk):
-        spk = blur(rk, 1.5 * S)
-        star = zoom_blur(spk[..., None] * np.array([1.0, .9, .6]), cx, cy, .06, 6)
-        return (img + rl[..., None] * np.array([1.9, 1.25, .38]) + rh[..., None] * np.array([3.4, 3.0, 2.0]) + blur(rl, 5 * S)[..., None] * np.array([.9, .7, .18])
-                + blur(rl, 18 * S)[..., None] * np.array([.25, .2, .05]) + star * 6.0 + blur(rk, 6 * S)[..., None] * np.array([2.0, 1.6, .6]))
-    back = []
-    for (k, (rad, tilt, rot, spd, ph)) in enumerate(RINGS):
-        pts, z, th = ring_pts(rad * R0, tilt + .15 * math.sin(lam * 1.3 + k), rot + lam * 12 * spd, ph + lam * spd * 2.2, cx, cy)
-        wid = max(1, int((6.0 if k < 3 else 2.4) * S * zoom))
-        for i in range(len(pts) - 1):
-            seg = np.round(pts[i:i + 2] * 16).astype(np.int32)
-            gl = .5 + .5 * math.cos(th[i] * 3 - lam * 5 + k)              # 金の つやが 輪を 走る
-            dep = .55 + .45 * (1 - z[i] / (rad * R0 + 1e-6)) / 2             # 奥ほど 少し 暗い（3D）
-            (back if z[i] > 0 else front).append((seg, gl, wid, dep))
-    img = ring_add(img, *ring_draw(back))
-    # ---------- 光の 玉（まわる 表面・ふちの 光・白熱の しん） ----------
-    d = rr / R0
-    inside = d < 1.0
-    zz = np.sqrt(np.clip(1 - d ** 2, 0, 1))
-    ux, uy = (xx - cx) / R0, (yy - cy) / R0
-    rot_ = lam * .9                                                              # 玉が まわる（たての 軸）
-    tl_ = .35                                                                    # 軸の かたむき
-    x3 = ux * math.cos(rot_) + zz * math.sin(rot_)
-    z3 = -ux * math.sin(rot_) + zz * math.cos(rot_)
-    y3 = uy * math.cos(tl_) - z3 * math.sin(tl_)
-    z3 = uy * math.sin(tl_) + z3 * math.cos(tl_)
-    lon = (np.arctan2(x3, z3) / (2 * math.pi) + .5) * 1024
-    lat = (np.arccos(np.clip(y3, -1, 1)) / math.pi) * 511
-    pl = cv2.remap(LT['plasma'], lon.astype(np.float32), lat.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
-    pl2 = cv2.remap(LT['plasma2'], (lon * 1.0).astype(np.float32), lat.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
-    gran = smoothstep(.3, .78, pl * .7 + pl2 * .45)
-    limb = zz ** .45                                                             # ふちほど 暗い（球に 見える）
-    surf = inside[..., None] * (np.array([1.05, 1.15, .5]) * (.1 + 1.7 * gran ** 1.3)[..., None] * limb[..., None]
-                                + np.array([.9, .9, .7]) * np.exp(-(d / .38) ** 2)[..., None] * .5)
-    rim = np.exp(-((d - 1.0) / .05) ** 2)[..., None] * np.array([1.3, 1.7, .7])  # ふちの 光の 輪（大気）
-    corona = np.exp(-np.clip(d - 1, 0, None) * 4.0)[..., None] * np.array([1.0, 1.5, .45]) * (d > .98)[..., None] + np.exp(-(d / 3.0) ** 1.3)[..., None] * np.array([.24, .38, .1])
-    # ふちから 立ちのぼる 光の アーチ（ゆっくり 動く）
-    pr = np.zeros((H, W), np.float32)
-    for (a0, h_, w_, b_, ph_) in LT['prom']:
-        a1 = a0 + lam * .4
-        span = w_ * .6
-        ts = np.linspace(0, 1, 40)
-        hgt = 1 + h_ * np.sin(np.pi * ts) * (.8 + .2 * math.sin(lam * 3 + ph_))
-        ang = a1 - span / 2 + span * ts
-        P_ = np.c_[cx + np.cos(ang) * hgt * R0, cy + np.sin(ang) * hgt * R0]
-        cv2.polylines(pr, [np.round(P_ * 16).astype(np.int32)], False, float(b_), max(1, int(2.2 * S * zoom)), cv2.LINE_AA, shift=4)
-    pr = blur(pr, 1.2 * S) * (d > .96)
-    disc = np.clip((1.0 - d) / (1.5 / R0) + .5, 0, 1)[..., None]                 # 玉は うしろ（光の 筋・奥の 輪）を かくす
-    img = img * (1 - disc * .85) + surf * ch + (rim + corona) * ch + pr[..., None] * np.array([1.4, 1.8, .7]) * ch + blur(pr, 6 * S)[..., None] * np.array([.6, .9, .3]) * ch
-    # ---------- 輪の 手前の 半分（玉の 前を 通る） ----------
-    img = ring_add(img, *ring_draw(front))
-    # ---------- 集まる 金の 粒（らせんを えがいて 玉へ） ----------
-    pk = np.zeros((H, W), np.float32)
-    for P_ in LT['pts']:
-        u = (P_['ph'] + lam * .55) % 1.0
-        r_ = P_['r'] * (1 - u) ** 1.4 + .05
-        a = P_['a'] + P_['w'] * u * 4
-        x = cx + math.cos(a) * r_ * W * .55 * zoom
-        y = cy + math.sin(a) * r_ * W * .55 * zoom * .55 + P_['z'] * r_ * W * .3
-        r2 = P_['r'] * (1 - max(0, u - .012)) ** 1.4 + .05
-        a2 = P_['a'] + P_['w'] * max(0, u - .012) * 4
-        x2 = cx + math.cos(a2) * r2 * W * .55 * zoom
-        y2 = cy + math.sin(a2) * r2 * W * .55 * zoom * .55 + P_['z'] * r2 * W * .3
-        cv2.line(pk, (int(x2 * 16), int(y2 * 16)), (int(x * 16), int(y * 16)), float(P_['b'] * (.3 + .7 * u) * .7), max(1, int(P_['sz'] * S * 1.2)), cv2.LINE_AA, shift=4)
-        cv2.circle(pk, (int(x * 16), int(y * 16)), max(1, int(P_['sz'] * S * 1.3 * 16)), float(P_['b'] * (.4 + .6 * u)), -1, cv2.LINE_AA, shift=4)
-    img = img + pk[..., None] * np.array([2.2, 1.9, .7]) + blur(pk, 3 * S)[..., None] * np.array([1.0, .85, .25])
-    # ---------- 横の 光の 筋（レンズ）・十字 ----------
-    streak = np.exp(-(np.abs(yy - cy) / (2.6 * S * zoom)) ** 1.2) * np.exp(-(np.abs(xx - cx) / (W * .6)) ** 1.4)
-    streak2 = np.exp(-(np.abs(yy - cy) / (14 * S * zoom)) ** 1.5) * np.exp(-(np.abs(xx - cx) / (W * .45)) ** 1.6)
-    lens = 1 - .75 * disc * (1 - ss(F['L_CHARGE'], T_C, lam))                  # 玉の 上の レンズの 筋は うすく（玉の もようが 見える）
-    img = img + (streak[..., None] * np.array([1.4, 1.7, 1.0]) + streak2[..., None] * np.array([.25, .45, .15])) * ch * lens
-    vstreak = np.exp(-(np.abs(xx - cx) / (2.0 * S * zoom)) ** 1.2) * np.exp(-(np.abs(yy - cy) / (H * .07)) ** 1.4)
-    img = img + vstreak[..., None] * np.array([1.0, 1.2, .6]) * ch * .35 * lens
-    # ---------- 手前の ぼけた 光の 粒（奥行き） ----------
-    bk = np.zeros((H, W), np.float32)
-    for (bx, by, br, bb, ph_) in LT['bok']:
-        x = (bx * W + lam * 40 * S * math.cos(ph_)) ; y = (by * H - lam * 70 * S)
-        cv2.circle(bk, (int(x * 4), int(y * 4)), int(br * S * zoom * 4), float(bb * (.6 + .4 * math.sin(lam * 4 + ph_))), -1, cv2.LINE_AA, shift=2)
-    bk = blur(bk, 3 * S)
-    img = img + bk[..., None] * np.array([.06, .10, .03]) * (.6 + .4 * ch)
+def d_bg(lam, bolt_glow):
+    """背景：ロゴの うしろの 強い 光（白 → むらさき）を 暗い 雷雲が さえぎる（光に 近い 雲の ふちが 銀に 光る）・雲の すきまから 外へ 光の 筋・
+       ドンッで 光が ふくらみ 衝撃の 輪"""
+    yy, xx = grid()
+    cx, cy = logo_center()
+    rr = np.sqrt(((xx - cx) / W) ** 2 + ((yy - cy) / W) ** 2)
+    op = 1 - ss(0.0, .55, lam)                                                  # はじめは 画面を つつむ 光 → ちぢむ
+    a = lam - L_LAND
+    land = math.exp(-a / .25) if a >= 0 else 0.0
+    puls = 1 + .05 * math.sin(2 * math.pi * .8 * lam) * ss(L_LAND, L_LAND + .5, lam)
+    k = (1 + 1.2 * land + 1.8 * op) * puls
+    core = np.exp(-(rr / (.13 + .5 * op + .06 * land)) ** 2)
+    mid = np.exp(-rr / (.22 + .3 * op))
+    far = np.exp(-rr / .7)
+    light = (core[..., None] * np.array([1.5, 1.3, 1.75]) * 2.6 + mid[..., None] * np.array([.55, .2, 1.0]) * .75
+             + far[..., None] * np.array([.1, .025, .2]) * .3) * k
+    # 雲（2まい：ゆっくり 寄って まわる＝奥行き）
+    n1, g1x, g1y = cloud('c1', cx, cy, 1 + .06 * lam, .03 * lam, (12 * lam, -18 * lam))
+    n2, g2x, g2y = cloud('c2', cx, cy, 1 + .1 * lam, -.05 * lam, (-20 * lam, -10 * lam))
+    d1 = smoothstep(.38, .78, n1)
+    d2 = smoothstep(.45, .85, n2)
+    dens = np.clip(d1 * .9 + d2 * .55, 0, 1)
+    T = np.clip(1 - .94 * dens, 0, 1)                                           # 雲を ぬける 光
+    # 光に 向いた 側（ロゴの 方）が 明るい：雲の こさの かたむきと 光の 向き
+    lx, ly = (cx - xx) / (rr * W + 1e-3), (cy - yy) / (rr * W + 1e-3)
+    facing = np.clip(.5 - (g1x * lx + g1y * ly) * 1.6 - (g2x * lx + g2y * ly) * .8, 0, 1.4)
+    edge = np.clip(dens * (1 - dens) * 4, 0, 1)
+    lit = (core * 1.2 + mid * .9 + far * .15)
+    body = dens * (.012 + .05 * lit * facing)
+    img = light * T[..., None]
+    img = img + (edge * facing * lit * .9)[..., None] * np.array([1.0, .78, 1.15])          # 銀の ふち
+    img = img + body[..., None] * np.array([.9, .45, 1.6])
+    img = img + (dens * bolt_glow)[..., None] * np.array([1.1, .75, 2.2])                   # 雷が 雲を 照らす
+    # 光の 筋（雲の すきまから 外へ）
+    src = light * T[..., None] * smoothstep(.05, .3, rr)[..., None]
+    img = img + zoom_blur(np.minimum(src, 2.5), cx, cy, 1.0, 14) * .42
+    # 衝撃の 輪（ドンッ：背景を ゆがめる・ふちが 光る）
+    if 0 <= a < .65:
+        rs = W * (.12 + 1.55 * (1 - math.exp(-a / .22)))
+        st_ = math.exp(-a / .18)
+        r_px = rr * W
+        bump = np.exp(-((r_px - rs) / (34 * S)) ** 2) * st_
+        sc_ = 1 - 26 * S * bump / np.maximum(r_px, 1)
+        mx = (cx + (xx - cx) * sc_).astype(np.float32)
+        my = (cy + (yy - cy) * sc_).astype(np.float32)
+        img = cv2.remap(img, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        ring = np.exp(-((r_px - rs) / (8 * S)) ** 2) * st_
+        img = img + ring[..., None] * np.array([2.4, 1.9, 1.2]) + bump[..., None] * np.array([.5, .3, .8]) * .6
+    img = img * (.55 + .45 * (1 - smoothstep(.3, 1.0, rr)))[..., None] + np.array([0.003, 0.0015, 0.007])   # まわりは 暗く
+    return img
+
+
+def zig(rng, pts, rough, iters):
+    """折れ線を ジグザグに（まん中に 点を 足して 横へ ずらす を くりかえす）"""
+    P = np.asarray(pts, float)
+    for _ in range(iters):
+        d = P[1:] - P[:-1]
+        L = np.linalg.norm(d, axis=1, keepdims=True) + 1e-6
+        nv = np.c_[-d[:, 1], d[:, 0]] / L
+        mids = (P[:-1] + P[1:]) / 2 + nv * rng.normal(0, 1, (len(d), 1)) * L * rough
+        Q = np.empty((len(P) + len(mids), 2))
+        Q[0::2], Q[1::2] = P, mids
+        P = Q
+    return P
+
+
+def poly(m, P, val, w):
+    cv2.polylines(m, [np.round(P * 16).astype(np.int32)], False, float(val), max(1, int(round(w))), cv2.LINE_AA, shift=4)
+
+
+def contours(Afull):
+    """ロゴの ふち（外の 線ごと：点・外向き）"""
+    cs, _ = cv2.findContours((Afull > .5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    out = []
+    for c in cs:
+        c = c[:, 0, :].astype(np.float32)
+        if len(c) < 40:
+            continue
+        c = c[::2]
+        t = np.roll(c, -3, 0) - np.roll(c, 3, 0)
+        nv = np.c_[t[:, 1], -t[:, 0]]
+        nv /= np.linalg.norm(nv, axis=1, keepdims=True) + 1e-6
+        q = np.round(c + nv * 4).astype(int)
+        q[:, 0] = np.clip(q[:, 0], 0, W - 1); q[:, 1] = np.clip(q[:, 1], 0, H - 1)
+        inside = Afull[q[:, 1], q[:, 0]] > .5
+        nv[inside] *= -1
+        out.append((c, nv))
+    return out
+
+
+def arcs(lam, cons, fi, seed=733):
+    """ロゴに まとう 電気（ふちを はう・外へ はねる・字と 字の あいだを とぶ）→ 芯の 明るさ（0〜）"""
+    m = np.zeros((H, W), np.float32)
+    if not cons:
+        return m
+    k = ss(L_ARCS, L_ARCS + .25, lam)
+    lens = np.array([len(c) for c, _ in cons], float)
+    pr = lens / lens.sum()
+    allp = np.concatenate([c for c, _ in cons]); alln = np.concatenate([n for _, n in cons])
+    owner = np.concatenate([np.full(len(c), j) for j, (c, _) in enumerate(cons)])
+    NA = 16
+    for j in range(NA):
+        life = 3
+        age = (fi + j) % life
+        gen = (fi + j) // life
+        rb = np.random.default_rng(seed * 1000 + j * 97 + gen * 7919)
+        rj = np.random.default_rng(seed + fi * 131 + j)
+        env_ = (1.0, .78, .5)[age] * k * rb.uniform(.6, 1.0)
+        typ = rb.random()
+        ci = rb.choice(len(cons), p=pr)
+        c, nv = cons[ci]
+        i = int(rb.integers(len(c)))
+        if typ < .55:                                                          # ふちを はう
+            L = int(rb.integers(10, 32))
+            idx = (i + np.arange(0, L * 3, 3)) % len(c)
+            h = (rb.uniform(2, 7) + 3 * np.sin(np.linspace(0, 3.14, len(idx)))) * S
+            base = c[idx] + nv[idx] * h[:, None]
+            P = zig(rj, base, .22, 2)
+            poly(m, P, env_, 1.3 * S)
+        elif typ < .85:                                                        # 外へ はねる（枝つき）
+            ang = math.atan2(nv[i][1], nv[i][0]) + rb.uniform(-.6, .6)
+            Ln = rb.uniform(28, 90) * S
+            p1 = c[i] + np.array([math.cos(ang), math.sin(ang)]) * Ln
+            P = zig(rj, [c[i], p1], .2, 5)
+            poly(m, P, env_, 1.4 * S)
+            q = P[len(P) // 2]
+            a2 = ang + rb.choice((-1, 1)) * rb.uniform(.5, 1.0)
+            P2 = zig(rj, [q, q + np.array([math.cos(a2), math.sin(a2)]) * Ln * .45], .22, 4)
+            poly(m, P2, env_ * .7, 1.0 * S)
+        else:                                                                  # 字と 字の あいだを とぶ
+            d = np.linalg.norm(allp - c[i], axis=1)
+            ok = np.nonzero((d > 24 * S) & (d < 150 * S) & (owner != ci))[0]
+            if len(ok) == 0:
+                continue
+            q = allp[ok[int(rb.integers(len(ok)))]]
+            mid = (c[i] + q) / 2 + (nv[i] - 0) * rb.uniform(5, 18) * S
+            P = zig(rj, [c[i], mid, q], .18, 4)
+            poly(m, P, env_ * 1.1, 1.5 * S)
+    return m
+
+
+def bolt_dir_end(p0, d):
+    """p0 から 向き d に 画面の ふちの 少し 外まで"""
+    ts = []
+    for k_, lim in ((0, -.04 * W), (0, 1.04 * W), (1, -.04 * H), (1, 1.04 * H)):
+        if abs(d[k_]) > 1e-6:
+            t = (lim - p0[k_]) / d[k_]
+            if t > 0:
+                ts.append(t)
+    return p0 + d * min(ts)
+
+
+BOLT_I = (1.0, .85, .5, .25, .08)                                             # 大きな 雷の 明るさ（30コマ/秒の コマごと：1回 光って 消える＝点めつを ふやさない）
+
+
+def big_bolts(lam, cons, seed=757):
+    """不定期の 大きな 雷（ロゴの ふちから 画面の 全方位の ふちへ・枝つき）→（芯, 雲を 照らす 光, ロゴに 映る 光 [(画面の 向き, 強さ)]）"""
+    core = np.zeros((H, W), np.float32)
+    lights = []
+    if not cons:
+        return core, core, lights
+    allp = np.concatenate([c for c, _ in cons]); alln = np.concatenate([n for _, n in cons])
+    for (tb, nb) in L_BOLTS:
+        fi = int(math.floor((lam - tb) * FPS + 1e-6))
+        if not 0 <= fi < len(BOLT_I):
+            continue
+        inten = BOLT_I[fi]
+        rng = np.random.default_rng(seed + int(tb * 1000))
+        a0 = rng.uniform(0, 6.28)
+        for j in range(nb):
+            tgt = a0 + j * 6.28 / nb + rng.uniform(-.5, .5)
+            want = np.array([math.cos(tgt), math.sin(tgt)])
+            sc_ = alln @ want
+            cand = np.nonzero(sc_ > .8)[0]
+            i = int(cand[rng.integers(len(cand))]) if len(cand) else int(np.argmax(sc_))
+            p0 = allp[i]
+            d = nrm(alln[i] * .5 + want * .5)
+            p1 = bolt_dir_end(p0, d)
+            rj = np.random.default_rng(seed + int(tb * 1000) + j * 31 + fi * 7)     # 光る たびに 形が 少し かわる
+            rs = np.random.default_rng(seed + int(tb * 1000) + j * 31)
+            P = zig(rs, [p0, p1], .2, 6)
+            P = P + rj.normal(0, 1.2 * S, P.shape) * np.linspace(0, 1, len(P))[:, None]
+            poly(core, P, inten, 3.0 * S)
+            for b in range(3):                                                 # 枝
+                k0 = int(rs.integers(len(P) // 5, len(P) * 3 // 4))
+                q = P[k0]
+                dd = P[min(len(P) - 1, k0 + 8)] - q
+                ang = math.atan2(dd[1], dd[0]) + rs.choice((-1, 1)) * rs.uniform(.35, .9)
+                Lb = np.linalg.norm(p1 - p0) * rs.uniform(.15, .35)
+                P2 = zig(rs, [q, q + np.array([math.cos(ang), math.sin(ang)]) * Lb], .22, 5)
+                poly(core, P2, inten * .65, 1.6 * S)
+            lights.append((d, inten))
+    glow = blur(core, 30 * S) * 3.0
+    return core, glow, lights
+
+
+def flakes(lam, front):
+    """ドンッで とびちる 金の かけら（回る 薄い 板：こちらを 向いた 時に きらり）→ 線形の 色"""
+    out = np.zeros((H, W, 3), np.float32)
+    a = lam - L_LAND
+    if a <= 0:
+        return out
+    cx, cy = logo_center()
+    for P_ in d_tex()['fl']:
+        if P_['back'] == front or a > P_['life']:
+            continue
+        def at(t):
+            dr = (1 - math.exp(-t / .35)) * .35                                   # 空気で おそく なる
+            return (cx + (P_['x'] + P_['vx'] * dr * 2.4) * W, cy + (P_['y'] + P_['vy'] * dr * 2.4) * W + 420 * S * t * t)
+        x, y = at(a)
+        x2, y2 = at(max(0, a - 1 / 60))
+        ang = P_['ph'] + P_['w'] * a
+        face = abs(math.cos(ang))
+        gl = face ** 10
+        fade = 1 - ss(.7, 1.0, a / P_['life'])
+        sz = P_['s'] * S * (1.15 if front else .8)
+        col = (np.array([2.0, 1.35, .42]) * (1 - P_['tint']) + np.array([2.2, 1.7, .9]) * P_['tint']) * (.25 + .9 * face + 4.0 * gl) * fade
+        m = np.zeros((H, W), np.float32)
+        cv2.ellipse(m, (int(x * 16), int(y * 16)), (int(sz * 16), int(max(1, sz * (.25 + .75 * face)) * 16)), math.degrees(ang * .7) % 360, 0, 360, 1.0, -1, cv2.LINE_AA, shift=4)
+        cv2.line(m, (int(x2 * 16), int(y2 * 16)), (int(x * 16), int(y * 16)), .35, max(1, int(sz * .5)), cv2.LINE_AA, shift=4)
+        out += m[..., None] * col
+    return out
+
+
+def embers(lam):
+    """下から 立ちのぼる 火の粉（ゆれながら・ちらちら）→ 線形の 色"""
+    m = np.zeros((H, W), np.float32)
+    for E in d_tex()['em']:
+        a = lam - E['t0']
+        if not 0 < a < E['life']:
+            continue
+        u = a / E['life']
+        x = (E['x'] + E['sw'] * math.sin(E['f'] * a * 6.28 + E['ph'])) * W
+        y = (1.06 - E['vy'] * a * 1.6) * H
+        x2 = (E['x'] + E['sw'] * math.sin(E['f'] * (a - .04) * 6.28 + E['ph'])) * W
+        y2 = (1.06 - E['vy'] * (a - .04) * 1.6) * H
+        b = E['b'] * ss(0, .12, u) * (1 - ss(.65, 1, u)) * (.75 + .25 * math.sin(a * 17 + E['ph']))
+        cv2.line(m, (int(x2 * 16), int(y2 * 16)), (int(x * 16), int(y * 16)), float(b), max(1, int(E['s'] * S)), cv2.LINE_AA, shift=4)
+    return m[..., None] * np.array([3.0, 1.25, .28]) + blur(m, 3 * S)[..., None] * np.array([1.2, .4, .08])
+
+
+def star_glints(col, A):
+    """ロゴの いちばん 明るい つや → 十字の 光（レンズの きらり）"""
+    lum = col.max(2)
+    hi = np.clip(lum - 2.6, 0, 3.0) * A
+    if hi.max() <= 0:
+        return np.zeros_like(col)
+    hi = blur(hi, 1.0 * S)
+    L = int(46 * S) | 1
+    k1 = np.exp(-np.abs(np.linspace(-1, 1, L)) * 5).astype(np.float32)
+    k1 /= k1.sum()
+    st = cv2.filter2D(hi, -1, k1[None, :]) + cv2.filter2D(hi, -1, k1[:, None])
+    return st[..., None] * np.array([1.0, .92, .8]) * 2.2
+
+
+def logo_frame(lam, work, fi, seed=811):
+    """ど！！！的中 の 1コマ（場面の 秒 λ）→ 0〜1 の sRGB"""
+    yy, xx = grid()
+    cx, cy = logo_center()
+    # ---------- 3D の ロゴ（光は 2D で：映り込み・白熱・走る 光の 筋・まとう 電気と 大きな 雷の 光） ----------
+    pose = logo_pose(lam)
+    lay = None
+    g = (None, None)
+    Afull = np.zeros((H, W), np.float32)
+    if pose is not None:
+        rot, pos, s = pose
+        rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
+        cache = os.path.join(work, '_logo'); os.makedirs(cache, exist_ok=True)
+        g = SL.render(os.path.join(rd_, f'logo_{fi:03d}'), W, H, rot, pos, cache)              # 形（光は あとで：雷の 光の 前に ふちを 知る）
+    if g[0] is not None:
+        K = SL.K_SS
+        x0, y0, x1, y1 = g[1]
+        w_, h_ = (x1 - x0) // K, (y1 - y0) // K
+        Afull[y0 // K:y0 // K + h_, x0 // K:x0 // K + w_] = cv2.resize(g[0]['a'], (w_, h_), interpolation=cv2.INTER_AREA)
+    cons = contours(Afull) if g[0] is not None else []
+    bc, bglow, blights = big_bolts(lam, cons)
+    if g[0] is not None:
+        flash = []
+        k = ss(L_ARCS, L_ARCS + .3, lam)
+        for d, c_, f_, ph in ARC_L:
+            flash.append((nrm(np.array(d)), np.array(c_) * .6 * k * (.55 + .45 * math.sin(2 * math.pi * f_ * lam + ph))))
+        for d2, it in blights:
+            flash.append((nrm(np.array([d2[0], -d2[1], .45])), np.array([1.6, 1.2, 2.6]) * it))
+        lay = SL.layer(None, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam), gbuf=g)
+    # ---------- 背景・うしろの かけら ----------
+    img = d_bg(lam, bglow)
+    img = img + flakes(lam, front=False)
+    # ---------- ロゴ ----------
+    if lay is not None:
+        col, A, (x0, y0, x1, y1) = lay
+        reg = img[y0:y1, x0:x1]
+        img[y0:y1, x0:x1] = reg * (1 - A[..., None]) + col
+        g = 1 - ss(0, .3, heat_of(lam))
+        if g > 0:
+            st = star_glints(col, A) * g
+            img[y0:y1, x0:x1] += st
+        # まとう 電気の うすい 光（ふちの まわり）
+        aura = blur(Afull, 10 * S) * (1 - Afull)                                              # 字の 外だけ
+        k = ss(L_ARCS, L_ARCS + .4, lam) * (.8 + .2 * math.sin(lam * 2 * math.pi * .9))
+        img = img + np.clip(aura, 0, 1)[..., None] * np.array([.3, .1, .65]) * k
+    # ---------- 電気・雷・手前の かけら・火の粉 ----------
+    ac = arcs(lam, cons, fi)
+    img = img + ac[..., None] * np.array([2.6, 2.3, 3.4]) + blur(ac, 2.5 * S)[..., None] * np.array([1.1, .45, 2.2]) + blur(ac, 9 * S)[..., None] * np.array([.35, .1, .8])
+    img = img + bc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(bc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + bglow[..., None] * np.array([.12, .05, .28])
+    img = img + flakes(lam, front=True)
+    img = img + embers(lam)
+    # ---------- ドンッ（光・ゆれ） ----------
+    a = lam - L_LAND
+    expo = 1.0 + (.55 * math.exp(-a / .08) if a >= 0 else 0.0)
+    if 0 <= a < .4:                                                              # ドンッ：下へ ぐっと 沈んで もどる（1回だけ・ふるえない＝ふちが 点めつ しない）
+        k_ = math.sin(math.pi * min(a / .22, 1.0)) * math.exp(-a / .15)
+        M = np.float32([[1, 0, -3 * S * k_], [0, 1, 11 * S * k_]])
+        img = cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
     img = bloom(img, 1.0)
-    out = finish(img * .85, seed + int(lam * 100), vig=.6, ca=.003)
-    # はじめ：白い 光から（前の 場面の おわりと つながる）・おわり：光が 画面を うめる
-    w0 = 1 - ss(0.0, 0.28, lam)
-    if w0 > 0:
-        out = out * (1 - w0) + np.array([1.0, .93, .78]) * w0
-    w1 = ss(F['L_WASH'], T_C, lam) ** 1.5
-    if w1 > 0:
-        rr2 = rr / (W * (.2 + 1.4 * w1))
-        wash = np.clip(np.exp(-rr2 ** 2) * 1.5 * w1 + w1 * .5, 0, 1)[..., None]
-        out = out * (1 - wash) + np.array([1.0, .97, .82]) * wash
+    out = finish(img * expo, seed + fi, vig=.55, ca=.003)
+    w = 1 - ss(L_WASH[0], L_WASH[1], lam)                                       # はじめ：蹄の 場面の 光の 白から
+    if w > 0:
+        out = out * (1 - w) + WASH_COL * w
     return np.clip(out, 0, 1)
 
 
-def render_light(work, i0, i1):
+def render_logo(work, i0, i1):
     a, b = int(round(HOOF * FPS)), NF
     for i in range(max(i0, a), min(i1, b)):
         if os.path.exists(frame_path(work, i)):
             continue
         lam = i / FPS - HOOF
-        save_png(light_frame(lam), frame_path(work, i))
-        print('light', i, flush=True)
+        save_png(logo_frame(lam, work, i), frame_path(work, i))
+        print('logo', i, flush=True)
 
 
 # ================================================================ 書く
@@ -1145,16 +1507,24 @@ def frame_path(work, i):
     return os.path.join(work, f'f{i:03d}.png')
 
 
+def render_black(work, i0, i1):
+    """はじめの 黒（押した 瞬間の プチュン（CSS）の 下・真っ暗 0.8秒）"""
+    for i in range(max(i0, 0), min(i1, int(round(BLACK * FPS)))):
+        if not os.path.exists(frame_path(work, i)):
+            save_png(np.zeros((H, W, 3), np.float32), frame_path(work, i))
+
+
 def render_face(work, i0, i1):
-    """顔の コマ（3D は 2コマに 1回：あいだの コマは となりの 2つを まぜる）"""
+    """顔の コマ（3D は はじめ 2コマに 1回・あいだの コマは となりの 2つを まぜる。動きが 速い 1.4秒 から は 毎コマ）"""
     rd = os.path.join(work, '_r'); os.makedirs(rd, exist_ok=True)
     cache = {}
+    a0 = int(round(BLACK * FPS))
 
     def R_of(j):
         if j in cache:
             return cache[j]
-        tj = j / FPS
-        pre = os.path.join(rd, f'face{j:03d}')
+        tj = j / FPS - BLACK
+        pre = os.path.join(rd, f'face4_{j:03d}')
         R = load_r(pre, W, H, ('rgb', 'a'))
         if R is None:
             R = face_render(face_state(tj), pre)
@@ -1163,14 +1533,14 @@ def render_face(work, i0, i1):
         for k in list(cache):
             if k < j - 4:
                 del cache[k]
-                drop_r(os.path.join(rd, f'face{k:03d}'), ('rgb', 'a'))
+                drop_r(os.path.join(rd, f'face4_{k:03d}'), ('rgb', 'a'))
         return R
     nface = int(round(FACE * FPS))
-    for i in range(i0, min(i1, nface)):
+    for i in range(max(i0, a0), min(i1, nface)):
         if os.path.exists(frame_path(work, i)):
             continue
-        t = i / FPS
-        if i % 2 == 0 or i + 1 >= nface:
+        t = i / FPS - BLACK
+        if (i - a0) % 2 == 0 or t >= 1.4 or i + 1 >= nface:
             R = R_of(i)
         else:
             Ra, Rb = R_of(i - 1), R_of(i + 1)
@@ -1182,7 +1552,13 @@ def render_face(work, i0, i1):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == '--encode':
+    if sys.argv[1] == '--last':
+        work, out = sys.argv[2], sys.argv[3]
+        im = cv2.imread(frame_path(work, NF - 1))
+        assert im is not None and im.shape[:2] == (H0, W0), 'さいごの コマが 読めない'
+        cv2.imwrite(out, im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+        print(out, os.path.getsize(out))
+    elif sys.argv[1] == '--encode':
         work, out = sys.argv[2], sys.argv[3]
         import subprocess
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', os.path.join(work, 'f%03d.png'),
@@ -1192,6 +1568,7 @@ if __name__ == '__main__':
         work = sys.argv[1]; os.makedirs(work, exist_ok=True)
         i0 = int(sys.argv[2]) if len(sys.argv) > 2 else 0
         i1 = int(sys.argv[3]) if len(sys.argv) > 3 else NF
+        render_black(work, i0, i1)
         render_face(work, i0, i1)
         render_hoof(work, i0, i1)
-        render_light(work, i0, i1)
+        render_logo(work, i0, i1)

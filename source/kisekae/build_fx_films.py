@@ -1,4 +1,4 @@
-"""特別な 演出の 動画 2本と さいごの 1まい（App Store版 第5弾：アップデート指示書 15章・16.3）を 手元で 作る。できた ファイルは リポジトリに 入れない（1章の11）：
+"""特別な 演出の 動画と さいごの 1まい（App Store版 第5弾：アップデート指示書 15章・16.3）を 手元で 作る。できた ファイルは リポジトリに 入れない（1章の11）：
      python3 build_fx_films.py [<出力フォルダ>] [<作業フォルダ>]     （何も指定しないと source/ios/fx_assets/。作業フォルダは その中の _films/）
    作るもの（1コマずつ 計算で 描く 絵なので 時間が かかる：数十分）
      sgd_film.mp4 … 超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）：flat/kami_film.py ① 金の 嵐 48コマ → flat/kami_white.py 金粉の 白い 光 40コマ
@@ -7,8 +7,9 @@
      sgd_last.webp … 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
      spg_up.mp4   … 超プレミアム神様的中の 昇格の 動画：超プレミアムど的中の 6.0秒（き！）の 1まい（flat/capture_page.py・Playwright の Chromium）→
                      flat/kami_glitch.py バグ 59＋まっ暗 30 コマ → flat/kami_cutin.py 宇宙の カットイン 108コマ ＝ 197コマ・6.57秒（約5MB）
-     sd_film.mp4  … 第4.70版：ど的中・紫電の ② の 動画（flat/shiden_film.py：リアルな 馬の 顔 120 → 蹄の カットイン 72 → 光の 玉 36 ＝ 228コマ・7.6秒・
-                     780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
+     sd_film.mp4  … ど的中・紫電の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
+                     → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
+     sd_last.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
 import os
@@ -108,7 +109,7 @@ def spg_up():
     encode(comb, len(seq), 'spg_up.mp4')
 
 
-# ---------------------------------------------------------------- 紫電の ② の 動画（第4.70版）
+# ---------------------------------------------------------------- 紫電の 動画と さいごの 1まい（第4.70版・第4.71版）
 def sd_film():
     sd = os.path.join(work, 'sd')
     sys.path.insert(0, FLAT)
@@ -118,6 +119,8 @@ def sd_film():
     assert all(os.path.exists(os.path.join(sd, f'f{i:03d}.png')) for i in range(n)), '紫電の コマが そろって いない'
     run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), '--encode', sd, os.path.join(out, 'sd_film.mp4')])
     print('sd_film.mp4', f'{os.path.getsize(os.path.join(out, "sd_film.mp4")) / 1e6:.2f}MB', f'{n}コマ', flush=True)
+    run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), '--last', sd, os.path.join(out, 'sd_last.webp')])
+    print('sd_last.webp', f'{os.path.getsize(os.path.join(out, "sd_last.webp")) / 1e6:.2f}MB', flush=True)
 
 
 if __name__ == '__main__':
@@ -128,4 +131,4 @@ if __name__ == '__main__':
         spg_up()
     if 'sd' in which:
         sd_film()
-    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4') if os.path.exists(os.path.join(out, f))])
+    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp') if os.path.exists(os.path.join(out, f))])
