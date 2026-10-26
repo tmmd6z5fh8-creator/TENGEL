@@ -1,4 +1,4 @@
-"""ノーマルど的中（第4.77版）：動画（30コマ/秒・780×1688・8.2秒・時刻は normal_do.py の FILM）。まさちゃんの 言葉は normal_do.py。
+"""ノーマルど的中（第4.77版）：動画（30コマ/秒・780×1688・10.5秒・時刻は normal_do.py の FILM）。まさちゃんの 言葉は normal_do.py。
    - 送ってくれた 画像・動画は 色と 雰囲気・動きの 見本だけ。絵・形は すべて 一から 作る。
    - 上からの 場面（〜5.45秒）：世界（m）：地面は y＝0（芝：刈った すじ・黄みの ある 所）。光の 玉は (0, 1.2, 0)。カメラは 斜め 上から。
      馬（シルバーの 競走馬）と 騎手（金の 勝負服・白い そで）は 3D（horse3d・nd_horse の 騎手）を「馬から 見た カメラ」で 描く（かたむきの ぶんは 画面で もどす）。
@@ -897,6 +897,7 @@ def burst_layer(t):
 # 芝に負けない立体的でリアルに作成して！ あと、常に不定期に輝きを放っているようにして！」
 T_SHOT2 = F['SHOT2']
 SWP20, SWP21 = F['SWEEP2']
+SWP30, SWP31 = F['SWEEP3']
 EYE2 = np.array([0.0, 0.45, 3.2])                 # 芝から 45cm・玉から 3.2m
 TGT2 = np.array([0.0, 0.69, 0.0])                 # 少し 見上げる（玉が 画面の 上 1/3 に 大きく）
 FW2, RT2, UP2 = cam_axes(EYE2, TGT2)
@@ -1216,7 +1217,7 @@ def logo_layer(t, work, fi):
     cache = os.path.join(work, '_logo'); os.makedirs(cache, exist_ok=True)
     heat = .55 * math.exp(-(t - LG1) / .14) if t >= LG1 else 0.0               # 着いた 瞬間 少し 白く 光る
     sweep = None
-    for a0, a1 in ((SWP0, SWP1), (SWP20, SWP21)):
+    for a0, a1 in ((SWP0, SWP1), (SWP20, SWP21), (SWP30, SWP31)):
         if a0 <= t <= a1:
             sweep = -48 + 78 * ss(0, 1, (t - a0) / (a1 - a0))
     flash = [(nrm(np.array([0.0, .2, 1.0])), np.array([.7, 1.0, .6]) * .5)]
@@ -1269,25 +1270,34 @@ def aura2(t, Af):
 
 
 GL = {}
+GLINT_REF = 6.8                                   # キラッの 場所を 決める 字の 形（おちついた 時・光の 筋の ない 時）
 
 
-def glint_points(Af, Cf):
-    """キラッと 光る 所の 候補（字の 明るい ふち）"""
+def glint_points(work):
+    """キラッと 光る 所の 候補（字の 明るい ふち）。どの コマを どの プロセスで 描いても 同じに なる ように、きまった 時刻の 字から 作って 作業フォルダに 置く"""
     if 'pts' not in GL:
-        lum = Cf.mean(2)
-        er = cv2.erode((Af > .5).astype(np.uint8), np.ones((3, 3), np.uint8))
-        edge = (Af > .5) & (er == 0)
-        cand = np.argwhere((Af > .9) & (lum > np.percentile(lum[Af > .9], 85)) | edge)
-        GL['pts'] = cand[:, ::-1].astype(f32)
+        fn = os.path.join(work, '_glint_pts.npy')
+        if os.path.exists(fn):
+            GL['pts'] = np.load(fn)
+        else:
+            Cf, Af = logo_layer(GLINT_REF, work, 9000 + os.getpid() % 1000)
+            lum = Cf.mean(2)
+            er = cv2.erode((Af > .5).astype(np.uint8), np.ones((3, 3), np.uint8))
+            edge = (Af > .5) & (er == 0)
+            cand = np.argwhere((Af > .9) & (lum > np.percentile(lum[Af > .9], 85)) | edge)
+            GL['pts'] = cand[:, ::-1].astype(f32)
+            tmp = fn[:-4] + f'_{os.getpid()}.npy'
+            np.save(tmp, GL['pts'])
+            os.replace(tmp, fn)
     return GL['pts']
 
 
-def glints(t, Af, Cf):
+def glints(t, work):
     """不定期な キラッ（normal_do.GLINT_T の 時刻・字の 明るい 所に 十字の 光）"""
     m = np.zeros((H, W), f32)
     if t < ND.GLINT_T[0] - .01:
         return np.zeros((H, W, 3), f32)
-    pts = glint_points(Af, Cf)
+    pts = glint_points(work)
     if len(pts) == 0:
         return np.zeros((H, W, 3), f32)
     for i, t0 in enumerate(ND.GLINT_T):
@@ -1385,14 +1395,14 @@ def shot2(t, work, fi):
             img = img * (1 - bits[1][..., None]) + bits[0] * bits[1][..., None]
     img = img * (1 - G['front_a'][..., None]) + G['front_c'] * (.25 + .75 * vis * sc_)[..., None]
     if Cf is not None:
-        img = img + glints(t, Af, Cf)
+        img = img + glints(t, work)
     # 着地の ゆれ・ゆっくり 近づく
     a = t - LG1
     sx = sy = 0.0
     if 0 <= a < .5:                                                              # ドスン（ゆっくり 1回半：細い 輪が こまかく ふるえて 点めつ しない ように）
         e = math.exp(-a / .09)
         sx, sy = 5 * S * e * math.sin(2 * math.pi * a / .2), 14 * S * e * math.cos(2 * math.pi * a / .16)
-    z = 1 + .035 * ss(T_SHOT2, T_END, t)
+    z = 1 + .05 * ss(T_SHOT2, T_END, t)
     M = np.float32([[z, 0, W * .5 * (1 - z) + sx], [0, z, H * .45 * (1 - z) + sy]])
     img = cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
     # 光に つつまれた ところから
