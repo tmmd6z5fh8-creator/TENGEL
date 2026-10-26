@@ -197,7 +197,8 @@
       res.nd.imgs = document.querySelectorAll('#fxOv .ov.nd img').length; res.nd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.nd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
       await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
       res.nd.cur = F.current(); res.nd.ov = (document.querySelector('#fxOv .ov.nd') || {}).className || null; res.nd.holder = !!document.querySelector('#fxVh video[data-film=nd_film]');
-      res.nd.ndp = !!document.querySelector('#fxOv .ov.ndp'); await sleep(900); res.nd.ndpGone = !document.querySelector('#fxOv .ov.ndp');   // 押した PUSH の 画面は 暗く なりきったら 消える
+      res.nd.ndt = !!document.querySelector('#fxOv .ov.nd .ndt .pressed'); await sleep(1200);   // 第4.79版：押した 画面（PUSH の 画面とは 別）は 約1秒で 消える
+      res.nd.ndtGone = getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).visibility === 'hidden';
       await mark('fx-nd');                                         // 動画の さいごの 1まい（still）
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);
       res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
