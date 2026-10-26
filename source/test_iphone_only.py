@@ -73,7 +73,7 @@ if r.returncode == 0:
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
-        check(19e6 < films_sz < 21e6 and 25e6 < sz < 28.5e6, f'絵と音と動画の 大きさ：動画 3本 約20.0MB（第4.70版：紫電の 動画 約3.6MB を 足した）・ぜんぶで 約26.7MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
+        check(21.5e6 < films_sz < 23.5e6 and 28e6 < sz < 30.5e6, f'絵と音と動画の 大きさ：動画 3本 約22.4MB（第4.71版：紫電の 動画 約6.1MB・10.5秒）・ぜんぶで 約29.2MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない
