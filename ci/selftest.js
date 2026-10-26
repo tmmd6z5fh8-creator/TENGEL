@@ -177,7 +177,7 @@
       // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still：プチュンは 出さない）→ 1.3秒で ボード。PUSH は ど的中と 同じ（虹色なし・1.4倍）
       res.sd = { kind: F.show(Object.assign({ force: 'sd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
       await sleep(400); F.prime(); F.tap(); res.sd.fps = await fps(1000);
-      // 第4.77版：極ど的中（紫電）は ノーマルど的中の 動画から 入る（CIでは 動画が ない → すぐ ブラックアウト → 0.5秒 → 極ど的中 → still）
+      // 第4.77版：極ど的中（紫電）は ノーマルど的中の 動画から 入る（CIでは 動画が ない → すぐ 極ど的中 → still）
       res.sd.pre0 = (F.current() || {}).pre; res.sd.nd0 = !!document.querySelector('#fxOv .ov.nd');
       await waitFor(function () { return (F.current() || {}).film === 2; }, 12000);
       res.sd.parts = ['.sds', '.sdk', '.pc', '.hb'].map(function (c) { return document.querySelectorAll('#fxOv .ov.sd ' + c).length; });
@@ -197,6 +197,7 @@
       res.nd.imgs = document.querySelectorAll('#fxOv .ov.nd img').length; res.nd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.nd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
       await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
       res.nd.cur = F.current(); res.nd.ov = (document.querySelector('#fxOv .ov.nd') || {}).className || null; res.nd.holder = !!document.querySelector('#fxVh video[data-film=nd_film]');
+      res.nd.ndp = !!document.querySelector('#fxOv .ov.ndp'); await sleep(900); res.nd.ndpGone = !document.querySelector('#fxOv .ov.ndp');   // 押した PUSH の 画面は 暗く なりきったら 消える
       await mark('fx-nd');                                         // 動画の さいごの 1まい（still）
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);
       res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
