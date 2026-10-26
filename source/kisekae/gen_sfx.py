@@ -2355,8 +2355,8 @@ def sfx_sd():
         mx.add(glassring(r.uniform(2400, 5600), .7, r, r.uniform(6, 12)), hi + r.uniform(.05, ho - hi + .35), .07, r.uniform(-.8, .8), rv=.5)
     mx.add(nsweep(.22, 2500, 700, .6, r) * np.sin(np.pi * np.linspace(0, 1, n_(.22))), s1, .4, np.linspace(.1, .95, 20), rv=.2)   # ビュッ（右へ 抜ける）
     sh0, sh1 = hb + F['H_SHAKE'][0], hb + F['H_SHAKE'][1]                                          # 第4.73版：抜けた 直後 画面が 大きく 左右に ゆれる：ドドドッ＋ゴゴゴ
-    for jj in range(3):
-        tk = sh0 + .045 + jj / 11.0
+    for jj in range(2):                                                                            # 第4.74版：右へ ドッ → 左へ ドッ（すぐ 大爆発）
+        tk = sh0 + .045 + jj * .119
         mx.add(kick(95, 34, .3, 2.6, .09, .3, r), tk, .5 * FZ_LOW * math.exp(-jj / 1.8), (.4, -.4)[jj % 2], rv=.1)
         mx.add(nsweep(.09, 300, 1400, .8, r) * np.sin(np.pi * np.linspace(0, 1, n_(.09))), tk - .03, .2 * math.exp(-jj / 1.8), (-.6, .6)[jj % 2], rv=.15)
     mx.add(rumble(sh1 - sh0 + .2, r, 120, 11), sh0, .4, rv=.2)

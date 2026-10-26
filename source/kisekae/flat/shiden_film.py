@@ -1387,7 +1387,7 @@ def screen_shake(tau):
     a = tau - T_SHAKE[0]
     if not 0 <= a < T_SHAKE[1] - T_SHAKE[0]:
         return 0.0
-    return 96 * S * math.exp(-a / .15) * math.sin(2 * math.pi * 5.5 * a) * (1 - ss(T_SHAKE[1] - T_SHAKE[0] - .08, T_SHAKE[1] - T_SHAKE[0], a))
+    return 96 * S * math.exp(-a / .18) * math.sin(2 * math.pi * 4.2 * a) * (1 - ss(T_SHAKE[1] - T_SHAKE[0] - .08, T_SHAKE[1] - T_SHAKE[0], a))   # 第4.74版：右へ 大きく → 左へ（すぐ 大爆発・点めつ 16.6）
 
 
 # ================================================================ 第4.74版：大爆発（蹄の 場面の さいご → ど！！！的中の はじめ に つづく）
@@ -1405,7 +1405,7 @@ def boom_tex(seed=4401):
         rng = np.random.default_rng(seed)
         BOOM['sp'] = [dict(a=rng.uniform(0, 6.28), v=rng.uniform(600, 3000) * S, life=rng.uniform(.5, 1.7), b=rng.uniform(.5, 1.0),
                            w=max(1, int(round(rng.uniform(1.0, 2.6) * S))), d=rng.uniform(0, .08), hot=rng.uniform(0, 1), r0=rng.uniform(.02, .12) * W)
-                      for i in range(340)]
+                      for i in range(260)]
     return BOOM
 
 
@@ -1415,7 +1415,7 @@ def boom_sample(tex, u, v):
 
 
 def boom_layer(img, te):
-    """爆発（爆発からの 秒 te）を 絵（線形）に 重ねる：火の玉（白 → 黄 → だいだい → 赤 → むらさきの すす）・けむり・衝撃の 輪（2つ）・光の 筋"""
+    """爆発（爆発からの 秒 te）を 絵（線形）に 重ねる：火の玉（白 → 黄 → だいだい → 赤 → むらさきの すす）・けむり・衝撃の 輪・光の 筋"""
     if te < 0 or te >= BOOM_END:
         return img
     T = boom_tex()
@@ -1438,9 +1438,9 @@ def boom_layer(img, te):
     # 光の 筋（火の玉の 光が 外へ）
     if te < 1.2:
         img = img + zoom_blur(np.minimum(emis, 3.0), cx, cy, .9, 12) * (.55 * math.exp(-te / .35))
-    # 衝撃の 輪（うしろを ゆがめる・ふちが 光る）：速い 輪と おそい 輪
+    # 衝撃の 輪（うしろを ゆがめる・ふちが 光る）
     rp = np.sqrt(dx * dx + dy * dy)
-    for t0, sp_, wd, k_ in ((0.0, .26, 40, 1.0), (.07, .42, 30, .6)):
+    for t0, sp_, wd, k_ in ((0.0, .26, 40, 1.0),):                                # 衝撃の 輪は 1つ（点めつ 16.6：輪が 通る たびに 1回 光る）
         a = te - t0
         if 0 <= a < .75:
             rs = W * (.08 + 1.9 * (1 - math.exp(-a / sp_)))
@@ -1472,7 +1472,7 @@ def boom_sparks(te):
         f = (1 - ss(.55, 1.0, a / P['life'])) * P['b']
         cv2.line(mh if P['hot'] > .6 else m, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), float(f), P['w'], cv2.LINE_AA, shift=4)
     return (m[..., None] * np.array([3.0, 1.4, .35]) + mh[..., None] * np.array([3.2, 2.8, 2.2])
-            + blur(m + mh, 3 * S)[..., None] * np.array([1.2, .45, .12]))
+            + blur(m + mh, 3 * S)[..., None] * np.array([.7, .27, .07]))           # 点めつ 16.6：にじみは ひかえめ
 
 
 SHT = {}
@@ -1509,9 +1509,9 @@ def shatter_setup(seed=5150):
         dist = float(np.hypot(*d)) + 1e-3
         dirv = d / dist
         up = -1.0 if c[1] < float(line_y(c[0])) else 1.0                         # 切り口の 上は 上へ・下は 下へ
-        v = dirv * rng.uniform(700, 1800) * S + np.array([0.0, up * rng.uniform(250, 700) * S])
-        cells.append(dict(box=(x0, y0, x1, y1), m=mk, c=c, v=v, w=rng.uniform(-260, 260), kz=rng.uniform(1.2, 3.4),
-                          dly=dist / (4200 * S), e=np.clip(mk - cv2.erode(mk, np.ones((3, 3), np.uint8)), 0, 1)))
+        v = dirv * rng.uniform(1100, 2600) * S + np.array([0.0, up * rng.uniform(400, 1000) * S])   # 速く 吹きとぶ（D の はじめ＝0.38秒 までに 消える）
+        cells.append(dict(box=(x0, y0, x1, y1), m=mk, c=c, v=v, w=rng.uniform(-320, 320), kz=rng.uniform(1.6, 4.0),
+                          dly=dist / (9000 * S), e=np.clip(mk - cv2.erode(mk, np.ones((3, 3), np.uint8)), 0, 1)))
     SHT['cells'] = cells
     return SHT
 
@@ -1541,12 +1541,11 @@ def shatter(img, a, behind):
         if bx1 <= bx0 or by1 <= by0:
             continue
         Mb = M.copy(); Mb[0, 2] -= bx0; Mb[1, 2] -= by0
-        f = 1 - ss(.16, .36, ad)                                                  # とびながら 消える
+        f = 1 - ss(.10, .26, ad)                                                  # とびながら 消える（いちばん 遠い かけらも D の はじめ までに 消える）
         wc = cv2.warpAffine(src, Mb, (bx1 - bx0, by1 - by0), flags=cv2.INTER_LINEAR) * f
         wa = cv2.warpAffine(C['m'], Mb, (bx1 - bx0, by1 - by0), flags=cv2.INTER_LINEAR) * f
         we = cv2.warpAffine(C['e'], Mb, (bx1 - bx0, by1 - by0), flags=cv2.INTER_LINEAR) * f
-        gl = .6 + .8 * abs(math.cos(math.radians(C['w'] * ad) * 2))
-        out[by0:by1, bx0:bx1] += wc + we[..., None] * np.array([1.0, .9, 1.25]) * gl
+        out[by0:by1, bx0:bx1] += wc + we[..., None] * np.array([.6, .55, .75])     # ふちが 光る（点めつ 16.6：きらきら させない）
         al[by0:by1, bx0:bx1] += wa
     k = np.maximum(al, 1.0)
     out = out / k[..., None]
@@ -1811,7 +1810,7 @@ def hoof_frame(tau, work, seed=5):
     a_ = tau - T_FLY1
     expo = 1.0 + (.6 * math.exp(-a_ / .07) if a_ >= 0 else 0.0)                              # デーン：たたきつけた 瞬間 ぱっと 明るく（1回）
     if ab >= 0:
-        expo += .35 * math.exp(-ab / .06)                                                     # 大爆発：ぱっと 明るく（1回）
+        expo += .15 * math.exp(-ab / .06)                                                     # 大爆発：ぱっと 明るく（1回・点めつ 16.6 で ひかえめ）
     ca = .004 + (.012 * math.exp(-a_ / .1) if a_ >= 0 else 0.0) + (.012 * math.exp(-(tau - T_OUT) / .1) if tau >= T_OUT else 0.0)
     out = finish(img * 1.6 * expo, seed + int(tau * 100), vig=.5, ca=ca)
     w0 = 1 - ss(0.0, 0.3, tau)                                                   # はじめ：目の 光の 白から（前の 場面と つながる）
