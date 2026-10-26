@@ -5,7 +5,7 @@
 #   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd
 #   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。第4.71版：紫電は 押した 瞬間の プチュン（CSS）→ はじめから おわりまで 動画 → ボード（CSS）。
 #     sd は 動画が 動いた 形（go）で、幕（.ov.sd）の 背景に その 時刻の 動画の コマ（60コマ/秒）を 入れて プチュン・ボードと いっしょに 写して 数える（動画が 手元に ある とき）
-#   第4.77版：ノーマルど的中 nd（押すと 1秒 真っ暗 → はじめから おわりまで 動画 nd_film.mp4 → ボード 7.45秒）：sd と 同じ やり方で 数える
+#   第4.77版：ノーマルど的中 nd（押すと 1秒 真っ暗 → はじめから おわりまで 動画 nd_film.mp4 → ボード 7.75秒）：sd と 同じ やり方で 数える
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -13,7 +13,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5, nd=8.6)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5, nd=8.9)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)

@@ -10,8 +10,8 @@
      sd_film.mp4  … ど的中・紫電の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
                      → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
      sd_last.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
-     nd_film.mp4  … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）
-                     → はじける → 3D の ど！的中（flat/shiden_logo.py）＋ 光の オーラと 輪っか ＝ 237コマ・7.9秒・780×1688・CRF 20。2コアで 約25分）。FILMS=nd で これだけ 作る
+     nd_film.mp4  … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
+                     → 光に つつまれる → 低い 目線（芝・大きな 玉）に 3D の ど！的中（flat/shiden_logo.py）が 落ちて くる ＝ 246コマ・8.2秒・780×1688・CRF 20。2コアで 約25分）。FILMS=nd で これだけ 作る
      nd_last.webp … ノーマルど的中の 動画の さいごの 1まい
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
