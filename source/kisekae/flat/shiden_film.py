@@ -1,4 +1,4 @@
-"""紫電（第4.71版・第4.72版）：押した 瞬間から 1コマずつ 3D で 描いた 動画（sd_film.mp4・30コマ/秒・音なし）
+"""紫電（第4.71版〜第4.73版）：押した 瞬間から 1コマずつ 3D で 描いた 動画（sd_film.mp4・30コマ/秒・音なし）
    第4.70版・まさちゃん「…馬の顔のシーンもっと長くていい！ 動き方は任せる！ … 求めているのは、全部二枚目の写真のようなリアルなエフェクトにしてほしい！」
    第4.71版・まさちゃん「ど！的中演出のプチュン演出をボタンタップした瞬間に入るようにして！ プチュンして0.8秒で、一枚目の馬の顔が暗闇から目だけを光らせて、
    徐々に顔がみえる、暗闇から目が光り顔が全部見えて(今の馬の顔の演出と繋げて)、蹄カットインに入るまでを2秒くらいにして！ 二枚目の蹄カットインの入りの映像を1.3秒にして、
@@ -7,18 +7,22 @@
    第4.72版・まさちゃん「…目が光ってから1秒ほど、少し光りが揺らいで！ …的中は出てきた時に！もっと派手なエフェクト追加して！ デーーーん！…
    蹄カットインは、もっと画面を切り裂いてるような演出に…的中(縦の文字)も切り裂かれてる演出で… ど！！！的中、の時よりも遥かに激しい演出にして！
    文字を大きく振動させたり、色と大きさが違う、ど！！！的中を細切れで入れてド派手な演出にしたり！」「…切り裂いた箇所に細かく砕けるガラスの演出と、
-   …蹄が通った箇所を黒と紫の細かい雷が不定期に切り裂かれた切り口に纏ってる演出も… 蹄にも同様に黒と紫の細かい雷を纏わせて！」（ほかの ことばは shiden.py）
+   …蹄が通った箇所を黒と紫の細かい雷が不定期に切り裂かれた切り口に纏ってる演出も… 蹄にも同様に黒と紫の細かい雷を纏わせて！」
+   第4.73版・まさちゃん「…真ん中の光と同じくらいの大きなか、画面が近づくにつれて的中文字は今と同じ大きくして！ …切り裂く演出に入る直前に間が起きて、
+   画面をスローで壊しながら蹄がカットインしてくる。的中ボタンは、切り裂かれるタイミングに合わせて大きく振動し、切り口の近くは文字が欠けていたり、割れていたりするようにする。
+   蹄カットインの直後は、画面自体が、大きく左右に動くようにして！ …カラフルなど！！！的中演出は消して！金と白、虹色のだけにして！」（ほかの ことばは shiden.py）
    → どの 場面も 3D で 光と つやまで 計算した 絵：
      はじめの 黒（0〜BLACK 秒）：押した 瞬間の プチュン（CSS：shiden.py）の 下・プチュンの あと 真っ暗 0.8秒
      A 馬の 顔（BLACK〜FACE 秒）：暗闇に 目だけが 光る（約1秒 光が ゆらぐ）→ だんだん 青むらさきの 光で 顔が 見えて くる → 頭が 上がって こちらを 向き・耳が 立ち・鼻から 白い 息・
        たてがみが なびく → 目の 火が 強く なって あふれる → カメラが 目へ 寄って 目の 光が 画面を つつむ
      B 蹄の カットイン（FACE〜HOOF 秒）：むらさきの 雷雲の 中を 前へ 突き進む（雲の 層・雷・火の粉・とんでくる かけら）・奥の 光から 縦書きの 3D の「的中」
-       （flat/shiden_logo.py）が 画面の 近くまで とんでくる → デーン（白い 光・後光・衝撃の 輪・火花・字に 雷）→ 0.8秒 止まる → 焼けた 蹄鉄の 蹄
-       （黒と 紫の 雷を まとう）が 左から 画面を 右上がりに 斜めに 切り裂いて 右へ（「的」と「中」の あいだの まん中を 通って 字も 切る・まん中で ゆっくり）
+       （flat/shiden_logo.py）が 奥の 光と 同じくらいの 大きさから だんだん 大きく 画面の 近くまで とんでくる → デーン（白い 光・後光・衝撃の 輪・火花・字に 雷）
+       → 止まる → 間（まわりが 止まって 暗く なる）→ 焼けた 蹄鉄の 蹄（黒と 紫の 雷を まとう）が 左から 突っこんで すぐ スローモーションで 画面を こわしながら
+       右上がりに 斜めに 切り裂いて 右へ（「的」と「中」の あいだの まん中を 通って 字も 切る・切られる 的中は 大きく 振動して 切り口の ふちが 欠け ひびが 入る）
        → 通った 所から 画面の ガラスが 細かく 割れて（光る 割れ目・かけらごとに ずれる）細かい かけらが とぶ・切り口の ふちに 黒と 紫の 細かい 雷が 不定期に まとう
-       → 切り口が 光って 開き（上と 下が 切り口に そって ずれる）光が あふれ 画面が 光に つつまれる
+       → 抜けた 直後 画面ごと 大きく 左右に ゆれる・切り口が 光って 開き（上と 下が 切り口に そって ずれる）光が あふれ 画面が 光に つつまれる
      D ど！！！的中（HOOF〜FILM 秒）：光の 中から 白熱の 3D の ロゴ（flat/shiden_logo.py）が 手前へ とんでくる → ドンッ（大きく 振動・金の かけら・衝撃の 輪）
-       → 金と 虹に 冷める → 色と 大きさの ちがう ど！！！的中の 細切れ 6つ（赤・青・緑・銀・紫・金の 寄り：背景も カットごとに ちがう）
+       → 金と 虹に 冷める → 金・白・虹の 大きさの ちがう ど！！！的中の 細切れ 6つ（ぜんぶ 金・ぜんぶ 白・ぜんぶ 虹・白と 虹・虹と 金・本物の「ど」の 寄り：背景も カットごとに ちがう）
        → 本物が もう一度 ドドーン（白熱で たたきつけて 振動）→ 雷を まとう・大きな 雷 →（ボードは CSS）
    python3 flat/shiden_film.py <作業フォルダ> [はじめの コマ] [おわりの コマ]   （コマ f%03d.png。SCALE=0.5 で ためしの 小さい 絵）
    python3 flat/shiden_film.py --encode <作業フォルダ> <出力.mp4>
@@ -413,6 +417,8 @@ import shiden_hoof as SH
 
 T_IN, (T_SLOW0, T_SLOW1), T_OUT = F['H_IN'], F['H_SLOW'], F['H_OUT']   # 蹄（場面の 中の 秒）：入る・まん中で ゆっくり・抜ける
 T_OPEN = F['H_OPEN']                                          # 切り口が 開く
+T_PAUSE = F['H_PAUSE']                                        # 第4.73版：切り裂く 直前の 間（止まる・音が 消える）
+T_SHAKE = F['H_SHAKE']                                        # 第4.73版：蹄が 抜けた 直後に 画面ごと 大きく 左右に ゆれる
 T_ZOOM = F['H_ZOOM']                                          # 切り口の 光へ 寄る
 T_B = HOOF - FACE                                             # 場面の 長さ（3.6秒）
 T_FLY0, T_FLY1 = F['T_FLY']                                   # 縦書きの 的中が 奥の 光から とんでくる・止まる（〜蹄）
@@ -433,8 +439,8 @@ def herm(u, p0, p1, m0, m1):
 
 
 def toe_x(tau):
-    """つま先の 画面の x（W の 割合）：速く 入る → まん中で ゆっくり → 速く 抜ける"""
-    segs = ((T_IN, T_SLOW0, -0.12, 0.36, 3.4, 0.55), (T_SLOW0, T_SLOW1, 0.36, 0.58, 0.55, 0.55), (T_SLOW1, T_OUT, 0.58, 1.75, 0.55, 9.0))
+    """つま先の 画面の x（W の 割合）：速く 入る → すぐ スローモーション（画面を こわしながら 字の あいだを 切る：第4.73版）→ 速く 抜ける"""
+    segs = ((T_IN, T_SLOW0, -0.12, 0.06, 3.4, 1.3), (T_SLOW0, T_SLOW1, 0.06, 0.72, 1.3, 0.9), (T_SLOW1, T_OUT, 0.72, 1.75, 0.9, 9.0))   # 第4.73版
     if tau <= T_IN:
         return -0.12 - (T_IN - tau) * 3.4
     for a, b, p0, p1, v0, v1 in segs:
@@ -465,7 +471,8 @@ def world_speed(x):
     """まわりの 速さ：的中が 止まって いる 間は ゆっくり（0.4）・蹄が まん中の 間は もっと ゆっくり（0.28＝スローモーション）"""
     hold = ss(T_FLY1 - .1, T_FLY1 + .12, x) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .15, x))
     slow = ss(T_SLOW0 - .08, T_SLOW0 + .05, x) * (1 - ss(T_SLOW1 - .05, T_SLOW1 + .1, x))
-    return 1 - .6 * hold - .12 * slow
+    pause = ss(T_PAUSE[0] - .06, T_PAUSE[0] + .1, x) * (1 - ss(T_IN - .02, T_IN + .06, x))    # 第4.73版：間（ほぼ 止まる）
+    return max(.03, 1 - .6 * hold - .12 * slow - .35 * pause)
 
 
 def world_time(tau):
@@ -546,7 +553,7 @@ import shiden_logo as SL
 
 _CDIR = nrm(np.array(SL.CAM_DIR, float))
 TITLE = {}
-S0T = .045                                                     # とびはじめの 大きさ（とまった 時を 1）
+S0T = .38                                                      # とびはじめの 大きさ（とまった 時を 1）。第4.73版：奥の 光と 同じくらいの 大きさから（.045 → .38）
 ROT0T = (10.0, -34.0, 7.0)                                     # とびはじめの 向き（度）
 
 
@@ -579,7 +586,7 @@ def title_pose(tau):
         return None
     T = title_setup()
     u = min(1.0, (tau - T_FLY0) / (T_FLY1 - T_FLY0))
-    e = u ** 1.5
+    e = u ** 1.15                                                                          # 第4.73版：はじめから だんだん 大きく（さいごに 一気に ではなく）
     s = S0T ** (1 - e)
     rr = (1 - u) ** 1.5
     rot = tuple(r * rr for r in ROT0T)
@@ -602,8 +609,9 @@ def title_light(tau):
             d2 = np.array([(p0[0] + p1[0]) / 2 - .5, (p0[1] + p1[1]) / 2 - .44])
             fl.append((nrm(np.array([d2[0], -d2[1], .35])), np.array([1.6, 1.3, 2.6]) * 2.2 * math.exp(-a / .06)))
     sw = None
-    if T_FLY1 + .12 <= tau <= T_FLY1 + .7:
-        sw = -46 + 72 * ss(0, 1, (tau - T_FLY1 - .12) / .58)
+    t1 = T_PAUSE[0] - .02                                                                  # 第4.73版：間の 前に 走りおえる
+    if T_FLY1 + .12 <= tau <= t1:
+        sw = -46 + 72 * ss(0, 1, (tau - T_FLY1 - .12) / (t1 - T_FLY1 - .12))
     return fl, sw
 
 
@@ -631,7 +639,12 @@ def title_layer(tau, work):
         g = SL.render(os.path.join(rd_, f'title_{int(round(tau * FPS)):03d}'), W, H, rot, pos, T['cache'], layout=T['lay'])
     if g[0] is None:
         return None
-    return SL.layer(None, W, H, rot, pos, sweep=sw, flash=fl, heat=heat, hit_y=T['hy'], gbuf=g)
+    lay = SL.layer(None, W, H, rot, pos, sweep=sw, flash=fl, heat=heat, hit_y=T['hy'], gbuf=g)
+    k = ss(T_FLY0, T_FLY0 + .3, tau)                                                         # 第4.73版：奥の 光の 中から ふわっと 出る（はじめから 大きいので）
+    if lay is not None and k < 1:
+        col, A, box = lay
+        lay = (col * k, A * k, box)
+    return lay
 
 
 def bolt_mask(rng, p0, p1, thick):
@@ -968,7 +981,7 @@ TFX = {}
 def title_rays(tau):
     """デーン（第4.72版）：たたきつけた 瞬間から 的中の うしろに 金と 白の 光の 筋（後光）と まん中の 光 → 蹄が 来る ころに ひく（線形の 色・なし → None）"""
     a = tau - T_FLY1
-    fade = 1 - ss(T_IN - .15, T_IN + .15, tau)
+    fade = 1 - ss(T_PAUSE[0] - .12, T_PAUSE[0] + .08, tau)                         # 第4.73版：間の 前に ひく
     if a < 0 or fade <= 0:
         return None
     if 'th' not in TFX:
@@ -1027,6 +1040,20 @@ def title_sparks(tau, seed=903):
     return out
 
 
+_GT = None
+
+
+def gtime(tau):
+    """第4.73版：こわれる 画面の 時間（ガラスの 割れ・かけら・字の かけらと ひび）：蹄が 字の あいだを 切る 間は スローモーション（0.3倍）"""
+    global _GT
+    if _GT is None:
+        ts = np.linspace(-1.0, T_B + 1.0, 4001)
+        sp = 1 - .7 * smoothstep(T_SLOW0 - .06, T_SLOW0 + .04, ts) * (1 - smoothstep(T_SLOW1 - .04, T_SLOW1 + .08, ts))
+        cum = np.concatenate([[0.0], np.cumsum((sp[1:] + sp[:-1]) * .5 * np.diff(ts))])
+        _GT = (ts, cum - np.interp(0.0, ts, cum))
+    return np.interp(tau, _GT[0], _GT[1])
+
+
 GLASS = {}
 
 
@@ -1061,7 +1088,7 @@ def glass_setup(seed=313):
     dly = rng.uniform(0, .05, N)
     tx = T['tx']
     xf = np.clip(ix - dperp[iy, ix] * math.sin(ANG), 0, W - 1).astype(np.int32)    # 切り口の 上の 足の x
-    tc = tx[xf] + np.abs(dperp[iy, ix]) / (1700 * S) + dly[cid]
+    tc = gtime(tx[xf]) + np.abs(dperp[iy, ix]) / (1700 * S) + dly[cid]                # 第4.73版：ガラスの 時間で（スローモーションの 間は ゆっくり 割れて いく）
     G = GLASS
     G['tc'] = np.full((H, W), np.inf, np.float32); G['tc'][iy, ix] = tc
     G['ox'] = np.zeros((H, W), np.float32); G['ox'][iy, ix] = ox[cid]
@@ -1084,16 +1111,18 @@ def glass_setup(seed=313):
     return G
 
 
-def glass_crack(bg, tau):
+def glass_crack(bg, tau, AF=None):
     """割れが とどいた 所の 画面の ガラス：かけらごとに 少し ずれて（屈折）明るさが ちがう・割れ目が 光る（切り口の 光が もれる）"""
     G = glass_setup()
-    vis = (G['tc'] <= tau).astype(np.float32)
+    vis = (G['tc'] <= gtime(tau)).astype(np.float32)
     if vis.max() <= 0:
         return bg
     yy, xx = grid()
     out = cv2.remap(bg, xx + G['ox'] * vis, yy + G['oy'] * vis, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
     out = out * (1 + (G['gain'] - 1) * vis)[..., None]
     cr = G['crack'] * vis
+    if AF is not None:                                                                 # 第4.73版：字の 上では ひかえめ（字の かけ・ひびを 見せる）
+        cr = cr * (1 - .55 * np.clip(AF, 0, 1))
     return out + cr[..., None] * np.array([2.0, 1.75, 2.4]) + blur(cr, 1.6 * S)[..., None] * np.array([.7, .45, 1.1])
 
 
@@ -1105,7 +1134,7 @@ def glass_fine(img, tau, yt, d):
     for D in G['fine']:
         xi = int(np.clip(D['x'], 0, W - 1))
         t0 = (T['tx'][xi] if D['wave'] == 0 else max(T_OPEN, T['tx'][xi])) + D['delay']
-        a = tau - t0
+        a = float(gtime(tau) - gtime(t0))                                       # 第4.73版：スローモーションの 間は ゆっくり とぶ
         if not 0 < a < D['life']:
             continue
         k = a / D['life']
@@ -1191,11 +1220,171 @@ def cut_bolts(tau, fi, d, seed=941):
     return md, mb
 
 
+TD = {}
+
+
+def title_damage(work):
+    """第4.73版：切り口の 近くの 字の かけ（つま先が 通ると 字から 欠けて とぶ）と 字の 中へ 走る ひび。
+       止まった 的中の 形と 色から 1回だけ 作る（かけらの 色は その 場所の 字の 色）"""
+    if TD:
+        return TD
+    T = title_setup()
+    if 'rest' not in T:
+        rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
+        T['rest'] = SL.render(os.path.join(rd_, 'title_rest'), W, H, (0.0, 0.0, 0.0), np.zeros(3), T['cache'], layout=T['lay'])
+    fl, _ = title_light(T_IN)
+    col, A, (x0, y0, x1, y1) = SL.layer(None, W, H, (0.0, 0.0, 0.0), np.zeros(3), flash=fl, heat=0.0, hit_y=T['hy'], gbuf=T['rest'])
+    Af = np.zeros((H, W), np.float32); Af[y0:y1, x0:x1] = A
+    Cf = np.zeros((H, W, 3), np.float32); Cf[y0:y1, x0:x1] = col / np.maximum(A, 1e-3)[..., None]
+    rng = np.random.default_rng(1207)
+    nv = np.array([math.sin(ANG), math.cos(ANG)])                                # 切り口に 直角（右下 向き）
+    tv = np.array([math.cos(ANG), -math.sin(ANG)])                               # 切り口の 向き（右上）
+    tx = tear_line()['tx']
+    rows = np.nonzero((Af > .5).any(1))[0]
+    ytop, ybot = float(rows.min()), float(rows.max())                            # かけらの 色：字の 前の 面と 同じ 虹（上 赤 → 下 むらさき）
+    chips, tries = [], 0
+    while len(chips) < 170 and tries < 6000:
+        tries += 1
+        x = rng.uniform(.08, .92) * W
+        sg = rng.choice((-1, 1))
+        off = sg * (rng.uniform(0, 1) ** 1.6) * 46 * S                                   # 切り口に 近いほど 多く 欠ける（ふちが ギザギザに）
+        c = np.array([x, float(line_y(x))]) + nv * off
+        ci = (int(np.clip(c[1], 0, H - 1)), int(np.clip(c[0], 0, W - 1)))
+        if Af[ci] < .6:
+            continue
+        nvx = int(rng.integers(4, 7))
+        a_ = np.sort(rng.uniform(0, 6.28, nvx)); r_ = rng.uniform(.5, 1.0, nvx)
+        sz = rng.uniform(10, 34) * S * (1.3 - .6 * abs(off) / (46 * S))            # 切り口に 近いほど 大きく 欠ける
+        chips.append(dict(c=c, poly=np.c_[np.cos(a_) * r_, np.sin(a_) * r_] * sz, t0=float(gtime(tx[ci[1]])) + rng.uniform(0, .05),
+                          v=nv * sg * rng.uniform(60, 360) * S + tv * rng.uniform(30, 300) * S, w=rng.uniform(-12, 12),
+                          col=SL.rainbow(np.array([np.clip((c[1] - ytop) / (ybot - ytop), 0, 1)]))[0] * .8 + .04,
+                          life=rng.uniform(.5, 1.1)))
+    cracks = []
+    for i in range(44):
+        x = rng.uniform(.1, .9) * W
+        sg = rng.choice((-1, 1))
+        p0 = np.array([x, float(line_y(x))]) + nv * sg * 3 * S
+        ang = math.atan2(nv[1] * sg, nv[0] * sg) + rng.uniform(-.75, .75)
+        L = rng.uniform(40, 160) * S
+        P = zig(rng, [p0, p0 + np.array([math.cos(ang), math.sin(ang)]) * L], .18, 4)
+        br = []
+        for b in range(int(rng.integers(0, 3))):
+            k0 = int(rng.integers(len(P) // 4, len(P) - 1))
+            a2 = ang + rng.choice((-1, 1)) * rng.uniform(.5, 1.1)
+            br.append(zig(rng, [P[k0], P[k0] + np.array([math.cos(a2), math.sin(a2)]) * L * rng.uniform(.25, .5)], .2, 3))
+        cracks.append(dict(P=P, br=br, t0=float(gtime(tx[int(np.clip(x, 0, W - 1))])) + rng.uniform(0, .05), grow=rng.uniform(.1, .25)))
+    # 切り口の ふちの 大きな かけ（上と 下 べつべつの ギザギザ：深さ 4〜44px・つま先が 通った 所から）
+    yy, xx = grid()
+    dperp = (yy - line_y(xx)) * math.cos(ANG)
+    xf = np.clip(xx - dperp * math.sin(ANG), 0, W - 1)
+    bite = np.zeros((H, W), np.float32)
+    for sg in (-1, 1):
+        kx, kd, x_ = [], [], -20.0 * S
+        while x_ < W + 20 * S:
+            kx.append(x_); kd.append(rng.uniform(4, 44) * S * (1 if rng.random() < .7 else .3))
+            x_ += rng.uniform(10, 34) * S
+        dep = np.interp(xf, kx, kd)
+        side = (dperp * sg > 0)
+        bite = np.maximum(bite, side * (1 - smoothstep(dep - .8 * S, dep + .8 * S, np.abs(dperp))))
+    TD['bite'] = (bite * (Af > .02)).astype(np.float32)
+    TD['bite_t'] = gtime(tx[xf.astype(np.int32)]).astype(np.float32)
+    TD.update(chips=chips, cracks=cracks)
+    return TD
+
+
+def title_break(colF, AF, tau, work):
+    """字の かけ（欠けた 所は すき通る）と ひび（暗い 線と 明るい ふち）を 的中に（ガラスの 時間で だんだん）"""
+    D = title_damage(work)
+    gt = float(gtime(tau))
+    hole = np.zeros((H, W), np.float32)
+    for C in D['chips']:
+        if gt >= C['t0']:
+            cv2.fillPoly(hole, [np.round((C['poly'] + C['c']) * 16).astype(np.int32)], 1.0, cv2.LINE_AA, shift=4)
+    cr = np.zeros((H, W), np.float32); hi = np.zeros((H, W), np.float32)
+    for K in D['cracks']:
+        k = (gt - K['t0']) / K['grow']
+        if k <= 0:
+            continue
+        k = min(1.0, k)
+        for P in [K['P']] + K['br']:
+            Q = P[:max(2, int(round(len(P) * k)))]
+            poly(cr, Q, 1.0, 2.8 * S)
+            poly(hi, Q + np.array([2.0, 2.0]) * S, .9, 1.3 * S)
+    hole = np.maximum(hole, D['bite'] * (D['bite_t'] <= gt))                       # 切り口の ふちが ギザギザに 欠ける
+    if hole.max() > 0:
+        AF = AF * (1 - hole); colF = colF * (1 - hole)[..., None]
+    if cr.max() > 0:
+        a = np.clip(AF, 0, 1)
+        m = np.clip(cr * a, 0, 1)
+        colF = colF * (1 - .92 * m)[..., None] + (hi * a * (1 - m))[..., None] * np.array([2.2, 2.1, 2.4])
+    return colF, AF
+
+
+def title_chips(img, tau):
+    """字から 欠けて とぶ かけら（字の 色・回って きらり・ガラスの 時間で：スローモーションの 間は ゆっくり）"""
+    if not TD:
+        return img
+    gt = float(gtime(tau))
+    for C in TD['chips']:
+        a = gt - C['t0']
+        if not 0 < a < C['life']:
+            continue
+        pos = C['c'] + C['v'] * a + np.array([0.0, 560 * S]) * a * a
+        ang = C['w'] * a
+        cs, sn = math.cos(ang), math.sin(ang)
+        sq = .4 + .6 * abs(math.cos(ang * .8))
+        pts = np.c_[C['poly'][:, 0] * cs - C['poly'][:, 1] * sn * sq, C['poly'][:, 0] * sn + C['poly'][:, 1] * cs * sq] + pos
+        x0, y0 = int(max(0, pts[:, 0].min() - 3)), int(max(0, pts[:, 1].min() - 3))
+        x1, y1 = int(min(W, pts[:, 0].max() + 4)), int(min(H, pts[:, 1].max() + 4))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        m = np.zeros((y1 - y0, x1 - x0), np.float32)
+        P = np.round((pts - (x0, y0)) * 16).astype(np.int32)
+        cv2.fillPoly(m, [P], 1.0, cv2.LINE_AA, shift=4)
+        e = np.zeros_like(m)
+        cv2.polylines(e, [P], True, 1.0, max(1, int(1.1 * S)), cv2.LINE_AA, shift=4)
+        al = 1 - ss(.7, 1.0, a / C['life'])
+        gl = abs(math.cos(ang)) ** 6
+        col = C['col'] * (.75 + .9 * gl)
+        reg = img[y0:y1, x0:x1]
+        img[y0:y1, x0:x1] = reg * (1 - (m * al)[..., None]) + col * (m * al)[..., None] + (e * al)[..., None] * np.array([1.2, 1.1, 1.4]) * (.4 + 1.4 * gl)
+    return img
+
+
+def title_vib(tau):
+    """第4.73版：切られる 的中が 大きく 振動：つま先が 字に ふれた 瞬間 ガッ・ガッ（ぶれ つき）→ 切って いる 間は 速く ふるえる 二重の 像 → 抜けたら おさまる。
+       コマごとに 行ったり 来たり させない（点めつの きまり 16.6）→（いまの ずれ x, y, 前の コマの ずれ x, y, ふるえの はば）"""
+    t0 = float(cut_time(np.array([.2 * W]))[0])                                  # つま先が 字に ふれる
+    if tau < t0 - 1e-6 or tau > T_OUT + .35:
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+    A_ = 26 * S
+
+    def jolt(t):
+        j = int(round((t - t0) * FPS))
+        return {0: (1.0, .3), 1: (-.6, -.2)}.get(j, (0.0, 0.0)) if t >= t0 - 1e-6 else (0.0, 0.0)
+    jx, jy = jolt(tau)
+    px, py = jolt(tau - 1 / FPS)
+    j = int(round((tau - t0) * FPS))
+    amp = A_ * .5 * (1 - ss(T_OUT, T_OUT + .35, tau)) if j >= 2 else 0.0
+    return jx * A_, jy * A_, px * A_, py * A_, amp
+
+
+def screen_shake(tau):
+    """第4.73版：蹄が 抜けた 直後に 画面ごと 大きく 左右に ゆれる（ずれ px）：大きく ふって だんだん おさまる"""
+    a = tau - T_SHAKE[0]
+    if not 0 <= a < T_SHAKE[1] - T_SHAKE[0]:
+        return 0.0
+    return 96 * S * math.exp(-a / .15) * math.sin(2 * math.pi * 5.5 * a) * (1 - ss(T_SHAKE[1] - T_SHAKE[0] - .08, T_SHAKE[1] - T_SHAKE[0], a))
+
+
 def hoof_frame(tau, work, seed=5):
     """蹄の カットインの 1コマ（場面の 秒 τ）→ 0〜1 の sRGB"""
     yy, xx = grid()
     T = tear_line()
     bg = storm(tau)
+    pz = ss(T_PAUSE[0] - .04, T_PAUSE[0] + .12, tau) * (1 - ss(T_IN - .02, T_IN + .05, tau))   # 第4.73版：間（まわりが 暗く 止まる）
+    if pz > 0:
+        bg = bg * (1 - .45 * pz)
     # ---------- デーン（第4.72版）：うしろの 後光・衝撃の 輪 ----------
     ry = title_rays(tau)
     if ry is not None:
@@ -1205,20 +1394,37 @@ def hoof_frame(tau, work, seed=5):
     tl = title_layer(tau, work)
     if tl is not None:
         col, A, (x0, y0, x1, y1) = tl
-        bg[y0:y1, x0:x1] = bg[y0:y1, x0:x1] * (1 - A[..., None]) + col
+        colF = np.zeros((H, W, 3), np.float32); AF = np.zeros((H, W), np.float32)
+        colF[y0:y1, x0:x1] = col; AF[y0:y1, x0:x1] = A
+        if tau >= T_IN - .05:                                                                 # 第4.73版：切り口の 近くの 字が 欠ける・割れる
+            colF, AF = title_break(colF, AF, tau, work)
+        vx, vy, pvx, pvy, vamp = title_vib(tau)                                               # 第4.73版：切られる 的中が 大きく 振動
+        if vamp > .3 or abs(vx) + abs(pvx) > .3:
+            NSB = 8
+            acc_c = np.zeros_like(colF); acc_a = np.zeros_like(AF)
+            for j in range(NSB):
+                if vamp > .3:                                                                 # ふるえる 二重の 像（左右 対称）
+                    ph = 2 * math.pi * (j + .5) / NSB
+                    M = np.float32([[1, 0, vamp * math.sin(ph)], [0, 1, .3 * vamp * math.sin(2 * ph)]])
+                else:                                                                         # ガッ（前の コマの 場所から ぶれ）
+                    f = j / (NSB - 1) * .7
+                    M = np.float32([[1, 0, vx + (pvx - vx) * f], [0, 1, vy + (pvy - vy) * f]])
+                acc_c += cv2.warpAffine(colF, M, (W, H), flags=cv2.INTER_LINEAR)
+                acc_a += cv2.warpAffine(AF, M, (W, H), flags=cv2.INTER_LINEAR)
+            colF, AF = acc_c / NSB, acc_a / NSB
+        bg = bg * (1 - np.clip(AF, 0, 1)[..., None]) + colF
         a_ = tau - T_FLY1
-        if a_ >= 0 and tau < T_IN + .3:                                                        # 止まって いる 間 字に 雷を まとう・火花
-            Af = np.zeros((H, W), np.float32); Af[y0:y1, x0:x1] = A
-            kk = ss(0, .08, a_) * (1 - ss(T_IN, T_IN + .3, tau)) * (1.3 if a_ < .25 else 1.0)
-            ac = arcs(0.0, contours(Af), int(round(tau * FPS)), seed=921, k=kk)
+        if a_ >= 0 and tau < T_PAUSE[0] + .15:                                                 # 止まって いる 間 字に 雷を まとう・火花（間で 止める）
+            kk = ss(0, .08, a_) * (1 - ss(T_PAUSE[0] - .05, T_PAUSE[0] + .1, tau)) * (1.3 if a_ < .25 else 1.0)
+            ac = arcs(0.0, contours(AF), int(round(tau * FPS)), seed=921, k=kk)
             bg = bg + ac[..., None] * np.array([2.6, 2.3, 3.4]) + blur(ac, 2.5 * S)[..., None] * np.array([1.1, .45, 2.2]) + blur(ac, 9 * S)[..., None] * np.array([.35, .1, .8])
-            aura = blur(Af, 12 * S) * (1 - Af)
+            aura = blur(AF, 12 * S) * (1 - AF)
             bg = bg + np.clip(aura, 0, 1)[..., None] * np.array([.5, .3, .9]) * kk
-        sp = title_sparks(tau)
+        sp = title_sparks(tau) * (1 - ss(T_PAUSE[0] - .1, T_PAUSE[0] + .05, tau))
         if sp.max() > 0:
             bg = bg + sp[..., None] * np.array([3.0, 2.2, 1.0]) + blur(sp, 3 * S)[..., None] * np.array([1.2, .7, .2])
     # ---------- 第4.72版：つま先が 通った 所から 画面の ガラスが 細かく 割れる（割れ目が 光る・かけらごとに ずれる） ----------
-    bg = glass_crack(bg, tau)
+    bg = glass_crack(bg, tau, AF if tl is not None else None)
     # ---------- 画面が 切れる（上は 上へ・下は 下へ ずれて、あいだから 光） ----------
     d = opening(tau)
     yt = T['y']
@@ -1260,7 +1466,7 @@ def hoof_frame(tau, work, seed=5):
     # ガラスの かけら（つま先が 通った 所から 割れて 上下へ・手前へ とぶ）
     for D in T['shards']:
         t0 = float(np.interp(D['x'], np.arange(W), T['tx']))
-        a = tau - t0
+        a = float(gtime(tau) - gtime(t0))                                       # 第4.73版：スローモーションの 間は ゆっくり とぶ
         if not 0 < a < D['life']:
             continue
         k = a / D['life']
@@ -1284,6 +1490,7 @@ def hoof_frame(tau, work, seed=5):
         img = img + (e * al)[..., None] * np.array([1.4, 1.1, 1.6]) * (0.4 + 1.2 * gl)
     fi = int(round(tau * FPS))
     img = glass_fine(img, tau, yt, d)                                                         # 第4.72版：細かく 砕けた ガラス
+    img = title_chips(img, tau)                                                               # 第4.73版：字から 欠けて とぶ かけら
     md, mb = cut_bolts(tau, fi, d)                                                           # 第4.72版：切り口の ふちに まとう 黒と 紫の 細かい 雷（光の にじみの あとで かさねる：黒い 芯が 光に とけない）
     # ---------- 3D の 蹄 ----------
     if T_IN - .05 <= tau <= T_OUT + .06:
@@ -1324,18 +1531,26 @@ def hoof_frame(tau, work, seed=5):
                 cv2.line(spk, (int(x2 * 16), int(y2 * 16)), (int(x1 * 16), int(y1 * 16)), float(1 - age / .28), max(1, int(1.6 * S)), cv2.LINE_AA, shift=4)
             img = img + spk[..., None] * np.array([3.0, 1.5, .5]) + blur(spk, 4 * S)[..., None] * np.array([1.2, .4, .1])
     # ---------- 寄る（切り口の 光へ）・ゆれ ----------
-    zm = 1 + 4.0 * ss(T_ZOOM, T_B, tau) ** 2.2
+    zm = (1 + 4.0 * ss(T_ZOOM, T_B, tau) ** 2.2) * (1 + .035 * ss(T_PAUSE[0], T_IN, tau) * (1 - ss(T_IN, T_IN + .25, tau)))   # 第4.73版：間で 少し 寄る
     sx = sy = 0.0
-    for ti, ax, ay in ((T_FLY1, 0, 14), (T_IN + .02, 6, 0), (T_OPEN, 12 * math.sin(ANG), 12 * math.cos(ANG))):   # ゆれ：1回 ぐっと ずれて もどる（ふるえない＝ふちが 点めつ しない）
+    for ti, ax, ay in ((T_FLY1, 0, 14), (T_IN + .02, 16, 5)):                                 # ゆれ：1回 ぐっと ずれて もどる（第4.73版：蹄が 入る ドガッを 大きく）
         a = tau - ti
         if 0 < a < .45:
             k_ = math.sin(math.pi * min(a / .2, 1.0)) * math.exp(-a / .14)
             sx += ax * S * k_; sy += ay * S * k_
     shake = abs(sx) + abs(sy)
-    if zm > 1.001 or shake > .3:
+    shk, pshk = screen_shake(tau), screen_shake(tau - 1 / FPS)                              # 第4.73版：抜けた 直後の 大きな 左右の ゆれ
+    if zm > 1.001 or shake > .3 or abs(shk) + abs(pshk) > .3:
         cxz, cyz = W * .5, Y0 * H
-        M = np.float32([[zm, 0, cxz - zm * cxz + sx], [0, zm, cyz - zm * cyz + sy]])
-        img = cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        M = np.float32([[zm, 0, cxz - zm * cxz + sx + shk], [0, zm, cyz - zm * cyz + sy]])
+        if abs(shk) + abs(pshk) > .3:                                                         # ぶれ つき（前の コマの 場所から いまの 場所へ）
+            acc = np.zeros_like(img)
+            for j in range(6):
+                Mj = M.copy(); Mj[0, 2] += (pshk - shk) * j / 5 * .8
+                acc += cv2.warpAffine(img, Mj, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+            img = acc / 6
+        else:
+            img = cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
         md, mb = (cv2.warpAffine(x, M, (W, H), flags=cv2.INTER_LINEAR) for x in (md, mb))
     wash = ss(F['H_WASH'], T_B, tau)
     img = bloom(img, 1.0)
@@ -1851,14 +2066,16 @@ def logo_frame(lam, work, fi, seed=811):
 
 
 # ---------------------------------------------------------------- 第4.72版：色と 大きさの ちがう ど！！！的中 の 細切れ（0.2秒ずつ）
-CUTS = (   # pal＝色（shiden_logo の PALETTES）・s＝大きさ（とまった 本物を 1）・rot＝向き（度）・q＝ロゴの 中の 点（原点からの px・下が +）を 画面の at（割合）へ・
-           # bg＝背景の もよう・c1＝奥の 光・c2＝まわり・ln＝線（線形の 色：明るさは 0.1 未満＝点めつに ならない）。カットの 中では ロゴも 背景も 動かさない
-    dict(pal='red', s=1.12, rot=(-8.0, 16.0, -8.0), q=(0, 0), at=(.5, .45), bg='burst', c1=(2.4, .3, .1), c2=(.42, .018, .01), ln=(.36, .016, .008)),
-    dict(pal='blue', s=.7, rot=(14.0, -30.0, 6.0), q=(0, 0), at=(.47, .4), bg='streak', c1=(.45, 1.0, 2.8), c2=(.02, .045, .34), ln=(.03, .08, .6)),
-    dict(pal='green', s=.98, rot=(-12.0, 24.0, 2.0), q=(0, 0), at=(.52, .55), bg='rings', c1=(.35, 2.2, .7), c2=(.01, .16, .04), ln=(.012, .1, .03)),
-    dict(pal='silver', s=.9, rot=(6.0, 38.0, -4.0), q=(0, 0), at=(.5, .47), bg='slash', c1=(1.5, 1.6, 1.9), c2=(.06, .065, .09), ln=(.085, .09, .12)),
-    dict(pal='purple', s=1.1, rot=(10.0, -16.0, 9.0), q=(0, 0), at=(.5, .44), bg='storm', c1=(1.5, .55, 2.9), c2=(.16, .025, .38), ln=(.12, .02, .36)),
-    dict(pal='gold', s=1.45, rot=(-5.0, 12.0, -4.0), q=(-27, -62), at=(.53, .42), bg='gold', c1=(2.8, 1.5, .3), c2=(.36, .13, .02), ln=(.36, .15, .03)),
+CUTS = (   # pal＝色（shiden_logo の PALETTES：第4.73版は 金・白・虹 だけ）・s＝大きさ（とまった 本物を 1）・rot＝向き（度）・q＝ロゴの 中の 点（原点からの px・下が +）を 画面の at（割合）へ・
+           # bg＝背景の もよう・c1＝奥の 光・c2＝まわり・ln＝線（線形の 色）。背景も 金・白・虹 と 黒（まさちゃん「カラフルなど！！！的中演出は消して！金と白、虹色のだけにして！」）。
+           # カットの 中では ロゴも 背景も 動かさない
+    dict(pal='gold_all', s=1.12, rot=(-8.0, 16.0, -8.0), q=(0, 0), at=(.5, .45), bg='burst', c1=(2.6, 1.5, .35), c2=(.3, .12, .02), ln=(.36, .17, .03)),       # ① ぜんぶ 金・金の 集中線
+    dict(pal='white', s=.7, rot=(14.0, -30.0, 6.0), q=(0, 0), at=(.47, .4), bg='streak', c1=(1.5, 1.6, 1.9), c2=(.035, .04, .06), ln=(.09, .095, .12)),     # ② ぜんぶ 白（小さく 上）・白い 速さの 線
+    dict(pal='rainbow', s=.98, rot=(-12.0, 24.0, 2.0), q=(0, 0), at=(.52, .55), bg='prism', c1=(1.5, 1.4, 1.6), c2=(.035, .03, .045), ln=(.3, .3, .3)),     # ③ ぜんぶ 虹（下の 方）・虹の 集中線
+    dict(pal='silver', s=.9, rot=(6.0, 38.0, -4.0), q=(0, 0), at=(.5, .47), bg='slash', c1=(1.5, 1.6, 1.9), c2=(.05, .055, .07), ln=(.085, .09, .12)),      # ④ 白と 虹（横を 向く）・白い 切りあと
+    dict(pal='rainbow_gold', s=1.1, rot=(10.0, -16.0, 9.0), q=(0, 0), at=(.5, .44), bg='storm', c1=(1.6, 1.5, 1.7), c2=(.045, .045, .06), ln=(.1, .1, .12),
+         ec=(.8, .8, .9), bc=(3.2, 3.1, 3.4), bg2=(1.1, 1.0, 1.4)),                                                                                          # ⑤ 虹と 金・白い 雷雲と 雷
+    dict(pal='gold', s=1.45, rot=(-5.0, 12.0, -4.0), q=(-27, -62), at=(.53, .42), bg='gold', c1=(2.8, 1.5, .3), c2=(.36, .13, .02), ln=(.36, .15, .03)),   # ⑥ 本物（金と 虹）の「ど」の 寄り
 )
 
 
@@ -1935,6 +2152,11 @@ def cut_bg(k, u, cx, cy):
     m = np.zeros((H, W), np.float32)
     if kind in ('burst', 'gold'):
         m = focus_lines(k, cx, cy, u)
+    elif kind == 'prism':                                                        # 第4.73版：虹の 集中線（向きで 色が かわる）
+        th = np.arctan2(yy - cy, xx - cx)
+        rb = SL.rainbow(((th + math.pi) / (2 * math.pi) * 1.0) % 1.0)
+        img = img + (focus_lines(k, cx, cy, u)[..., None] * rb) * ln
+        m = np.zeros((H, W), np.float32)
     elif kind == 'streak':                                                       # 横の 速さの 線（左へ とぶ）
         for i in range(120):
             y = rng.uniform(0, H); L = rng.uniform(.25, .9) * W; v = rng.uniform(1800, 3600) * S
@@ -1958,7 +2180,7 @@ def cut_bg(k, u, cx, cy):
     elif kind == 'storm':                                                        # 雷雲（雲の ふちが 光る）＋ 雷（2コマ目から 1回）
         n1, g1x, g1y = cloud('c1', cx, cy, 1.3, .4, (40, 10))
         dens = smoothstep(.36, .8, n1)
-        img = img * (1 - .85 * dens)[..., None] + (dens * (1 - dens) * 4 * (core * 1.2 + mid))[..., None] * np.array([.8, .45, 1.3]) * .6
+        img = img * (1 - .85 * dens)[..., None] + (dens * (1 - dens) * 4 * (core * 1.2 + mid))[..., None] * np.array(C.get('ec', (.8, .45, 1.3))) * .6
         f = int(round(u * FPS))
         if 1 <= f <= 3:
             inten = (1.0, .6, .25)[f - 1]
@@ -1970,7 +2192,7 @@ def cut_bg(k, u, cx, cy):
                 p1 = bolt_dir_end(p0, np.array([math.cos(a0), math.sin(a0)]))
                 P = zig(rs, [p0, p1], .2, 6)
                 poly(core_, P, inten, 2.4 * S)
-            img = img + core_[..., None] * np.array([3.0, 2.6, 4.0]) + blur(core_, 5 * S)[..., None] * np.array([1.0, .4, 2.2])
+            img = img + core_[..., None] * np.array(C.get('bc', (3.0, 2.6, 4.0))) + blur(core_, 5 * S)[..., None] * np.array(C.get('bg2', (1.0, .4, 2.2)))
     if kind == 'gold':                                                           # きらめき（小さい 十字：2コマずつ）
         f = int(round(u * FPS))
         st = np.zeros((H, W), np.float32)

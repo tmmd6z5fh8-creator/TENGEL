@@ -230,6 +230,7 @@ def env(R, sweep=None, flash=None):
 
 
 HIT_Y = ((ORIGIN[1] - LAYOUT[-1][1][1]) / 100, (ORIGIN[1] - LAYOUT[-1][1][3]) / 100)   # 的中 の 上と 下（ロゴの 中の y）
+DO_Y = ((ORIGIN[1] - min(b[1] for k, b in LAYOUT if k != 'hit')) / 100, (ORIGIN[1] - max(b[3] for k, b in LAYOUT if k != 'hit')) / 100)   # 「ど」「！」の 上と 下（第4.73版：虹の ど）
 _RAIN = None
 
 
@@ -244,14 +245,15 @@ def rainbow(u):
     return _RAIN[np.clip((u * 511).astype(np.int32), 0, 511)]
 
 
-PALETTES = {   # 第4.72版：色の ちがう ど！！！的中（細切れの カット）。face・bev・side＝「ど」「！」の 金属（前の 面・面取り・横）・hit＝「的中」の 前の 面（rainbow か 金属の 色）・
-               # plate＝うしろの 板・gain＝映り込みの 明るさ（色の ついた 金属は 少し 暗く：白く とばない＝色が こく 見える）
-    'gold': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit='rainbow', hbev=(.95, .95, .97), plate=(.05, .045, .05), gain=1.0),
-    'red': dict(face=(.95, .06, .04), bev=(1.0, .36, .26), side=(.45, .02, .01), hit=(.95, .1, .06), hbev=(1.0, .55, .4), plate=(.06, .01, .01), gain=.62),
-    'blue': dict(face=(.04, .2, 1.0), bev=(.4, .68, 1.0), side=(.01, .07, .45), hit=(.06, .3, 1.0), hbev=(.5, .75, 1.0), plate=(.01, .02, .07), gain=.5),
-    'green': dict(face=(.06, .9, .3), bev=(.5, 1.0, .65), side=(.01, .35, .1), hit=(.1, .95, .35), hbev=(.6, 1.0, .7), plate=(.01, .05, .02), gain=.58),
-    'silver': dict(face=(.9, .92, .96), bev=(1.0, 1.0, 1.0), side=(.5, .52, .6), hit='rainbow', hbev=(.95, .95, .97), plate=(.04, .04, .05), gain=.8),
-    'purple': dict(face=(.55, .12, 1.0), bev=(.85, .6, 1.0), side=(.22, .03, .5), hit=(.6, .15, 1.0), hbev=(.9, .7, 1.0), plate=(.04, .01, .07), gain=.62),
+PALETTES = {   # 第4.72版：色の ちがう ど！！！的中（細切れの カット）。第4.73版：金・白・虹 だけ（まさちゃん「カラフルなど！！！的中演出は消して！金と白、虹色のだけにして！」）。
+               # face・bev・side＝「ど」「！」の 金属（前の 面・面取り・横）・do＝'rainbow' なら「ど」「！」の 前の 面も 虹・hit＝「的中」の 前の 面（rainbow か 金属の 色）・
+               # plate＝うしろの 板・gain＝映り込みの 明るさ
+    'gold': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit='rainbow', hbev=(.95, .95, .97), plate=(.05, .045, .05), gain=1.0),      # 本物：金と 虹
+    'gold_all': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit=(1.0, .64, .20), hbev=(1.0, .84, .48), plate=(.05, .045, .05), gain=1.0),   # ぜんぶ 金
+    'white': dict(face=(.9, .92, .96), bev=(1.0, 1.0, 1.0), side=(.5, .52, .6), hit=(.9, .92, .96), hbev=(1.0, 1.0, 1.0), plate=(.04, .04, .05), gain=.8),      # ぜんぶ 白（銀）
+    'silver': dict(face=(.9, .92, .96), bev=(1.0, 1.0, 1.0), side=(.5, .52, .6), hit='rainbow', hbev=(.95, .95, .97), plate=(.04, .04, .05), gain=.8),          # 白と 虹
+    'rainbow': dict(face=(.9, .92, .96), bev=(.95, .95, .97), side=(.5, .52, .6), do='rainbow', hit='rainbow', hbev=(.95, .95, .97), plate=(.04, .04, .05), gain=.8),   # ぜんぶ 虹
+    'rainbow_gold': dict(face=(.9, .92, .96), bev=(1.0, .84, .48), side=(.85, .45, .1), do='rainbow', hit=(1.0, .64, .20), hbev=(1.0, .84, .48), plate=(.05, .045, .05), gain=.9),  # 虹と 金
 }
 
 
@@ -292,6 +294,11 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     paint = rain * (.5 + .3 * lit)[..., None] + (0.01 + 0.3 * fres)[..., None] * np.minimum(E, 1.2) + .07 * band
     hf = (is_h & (face > .01) & (not hmetal))[..., None]
     col = np.where(hf, paint * face[..., None] + col * (1 - face[..., None]), col)
+    if P.get('do') == 'rainbow':                                                       # 第4.73版：「ど」「！」の 前の 面も 虹（上から 赤 → むらさき）
+        u2 = (DO_Y[0] - ql[..., 1]) / (DO_Y[0] - DO_Y[1])
+        paint2 = rainbow(u2) * (.5 + .3 * lit)[..., None] + (0.01 + 0.3 * fres)[..., None] * np.minimum(E, 1.2) + .07 * band
+        gf = (is_g & (face > .01))[..., None]
+        col = np.where(gf, paint2 * face[..., None] + col * (1 - face[..., None]), col)
     if heat > 0:                                                                       # 白熱 → 黄 → だいだい → ふだん（ふちから 先に 冷める）
         inner = cv2.distanceTransform(((A > .5) & ~is_p).astype(np.uint8), cv2.DIST_L2, 3) / (14.0 * K)
         h = np.clip((heat - .35 * (1 - np.clip(inner, 0, 1))) / .65, 0, 1) if heat < 1 else np.ones_like(A)
