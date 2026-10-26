@@ -28,7 +28,7 @@ ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp')
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
            pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音 6こ（16.5）
            sd='sfx_sd.m4a', sdp='sfx_sdp.m4a',                                                                               # 第4.66版：ど的中・紫電の 音・第4.71版：押した 瞬間の プチュンの 音
-           nd='sfx_nd.m4a')                                                                                                  # 第4.77版：ノーマルど的中の 音
+           nd='sfx_nd.m4a', ndt='sfx_ndt.m4a')                                                                               # 第4.77版：ノーマルど的中の 音・第4.79版：押した 瞬間の 音
 FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4',     # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
              sd_film='sd_film.mp4',                             # 第4.70版：ど的中・紫電の 動画（flat/shiden_film.py：第4.71版 ど！！！的中まで）
              nd_film='nd_film.mp4')                             # 第4.77版：ノーマルど的中の 動画（flat/normal_film.py）
@@ -410,7 +410,7 @@ def reveal_sd(G):
 
 def reveal_nd(G):
     """ノーマルど的中（第4.77版）：normal_do.py の nd_layers（動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝さいごの 1まい）。
-       プチュンは なし（押すと 1秒 真っ暗 → 動画）"""
+       プチュンは なし（押すと 1秒 真っ暗 → 動画）。第4.79版：押した 画面（PUSH の 画面とは 別：押された PUSH が ポチッと へこんで うすい 光の 輪 → 暗く。爆発は 入れない）"""
     return f'''<div class="ov fz nd" style="--n:{{{{N}}}}">
     {G.ND.nd_layers('{{BOARD}}', STILL['nd_last'])}
     {CLOSE}

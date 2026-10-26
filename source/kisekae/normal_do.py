@@ -10,11 +10,14 @@
    （完成版の 光に つつまれた 場面を 見て）「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」
    → 極ど的中（紫電・sd）は この 動画から 入る（SD_UP：fx.js の sdPre／sdBlack／sdUp）
    （第4.78版・極ど的中の 入りの ためしを 見て）「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」「あと、ブラックアウトのタイミングが遅い、白い光りに包まれると同時にプチュンさせて！」
-   → 押した PUSH の 画面を その場で 止めて（押した 形）DIM 秒で 暗く する（PRESS）・極ど的中は 白い 光に つつまれた 瞬間に すぐ プチュン（SD_UP）
+   → 押した PUSH の 画面を その場で 止めて（押した 形）DIM 秒で 暗く する・極ど的中は 白い 光に つつまれた 瞬間に すぐ プチュン（SD_UP）
+   （第4.79版・第4.78版を 見て）「タップ感が足りないから、タップ画面とは別にして欲しい！ タップ感が分かるようにして！」
+   → PUSH の 画面とは 別の 押した 画面（TAP：暗い 幕に 押された PUSH が ポチッと へこんで うすい 光の 輪 → 暗く）・押した 瞬間に 音 sfx_ndt（ポチッ・トンッ・キラン）
+   「やりすぎには気をつけて！ タップ感が分かればいいから！」→ 星形の 爆発・まん中の 光・ゆれは やめて 控えめに
    送ってくれた 画像・動画は 色と 雰囲気・動きの 見本に するだけ。絵・形は 一から 作る（なぞらない）。
    動画（flat/normal_film.py・馬の 走りは flat/nd_horse.py・「ど！的中」は flat/shiden_logo.py の 3D）・音（gen_sfx.py の sfx_nd）は 一から 作る。
    押した あと（0秒＝押した 瞬間・動画が 動きだした 瞬間）：
-     P 押した PUSH の 画面が その場で 止まって（押した 形）0.1秒から 0.62秒で 暗く なる（ポンッ・シュウゥン↓）→ 1秒まで 真っ暗（プチュンは なし）
+     P 押した 画面（PUSH の 画面とは 別）：押された PUSH が ポチッと へこんで うすい 光の 輪（ポチッ・トンッ・キラン）→ 0.35秒から 暗く → 1秒まで 真っ暗（プチュンは なし）
      A 光の 玉（1.0秒〜）：暗闇に 光の 点 → 若草色の 光の 玉（芝から 1.2m 浮く）・金の 輪 3つ・光の 筋・光の 粒・玉の 光で 芝が 見える
      B 馬（2.0〜5.2秒）：玉の まん中から シルバーの 競走馬と 騎手が とびおりて、芝の うずまき（画面で 右まわり・1周半・さいごは 上を 右へ）を ギャロップ
      C 光る（5.0〜5.65秒）：玉が ふくらんで 強く 光り → 光に つつまれる → 低い 目線の 場面（芝の 上・うしろに 大きな 光の 玉と 金の 輪）
@@ -61,8 +64,11 @@ GLINT_T = _glints()
 # → 第4.78版「ブラックアウトのタイミングが遅い、白い光りに包まれると同時にプチュンさせて！」）：
 # 押すと この 動画（音も）→ AT 秒（白い 光に つつまれた 瞬間：まっ白に なる コマ 160 の すぐ あと）で 動画と 音を 止めて すぐ（BLACK＝0）極ど的中（プチュン → 動画 sd_film → ボード）
 SD_UP = dict(AT=5.34, BLACK=0.0)
-# 押した 瞬間（第4.78版・まさちゃん「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」）：PUSH の 画面を その場で 止めて（押した 形）DELAY 秒から DIM 秒で 暗く
-PRESS = dict(DELAY=.1, DIM=.62)
+# 押した 画面（第4.79版・まさちゃん「タップ感が足りないから、タップ画面とは別にして欲しい！ タップ感が分かるようにして！」
+# 第4.78版「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」の PUSH の 画面を 止めて 暗く する 形は やめた）：
+# PUSH の 画面とは 別の 暗い 幕に 押された PUSH（的中・デカ的中と 同じ 形・そのテーマ）が PRESS 秒で ポチッと へこんで もどりながら 消える・RING の うすい 光の 輪 → DARK から 暗く → END で 消える
+# （まさちゃん「やりすぎには気をつけて！ タップ感が分かればいいから！」：星形の 爆発・まん中の 光・ゆれは 入れない）
+TAP = dict(PRESS=.62, RING=(.03, .45), DARK=(.35, .9), END=1.05, Y=382)
 assert FILM['BURST'] < SD_UP['AT'] < FILM['WHITE'][1]
 ND_T = dict(FILM=(0.0, FILM['END']), ORB=FILM['ORB_IN'][0], RUN=FILM['RUN'], BURST=FILM['BURST'], LOGO=FILM['LOGO'][0], LAND=FILM['LOGO'][1],
             SWEEP=FILM['SWEEP'][0], RES=FILM['RES'])
@@ -78,15 +84,17 @@ def sec(v):
     return f'{v:.3f}'.rstrip('0').rstrip('.') + 's'
 
 
-SR = ('ど的中！画面が 暗く なり、暗闇から 金の 輪を まとった 光の 玉が 現れる。玉の まん中から 騎手を 乗せた 銀色の 馬が とびだして 芝の 上で うずまきを 描いて 走り、'
+SR = ('ど的中！押した ボタンが 光って はじけ、画面が 暗く なり、暗闇から 金の 輪を まとった 光の 玉が 現れる。玉の まん中から 騎手を 乗せた 銀色の 馬が とびだして 芝の 上で うずまきを 描いて 走り、'
       '玉が 強く 光る。大きな 光の 玉の 前の 芝の 上に、金と 虹の 立体の「ど！的中」が 上から 落ちて きて、キラキラと 輝く')
 
 
-def nd_layers(board_html, last_url):
-    """押したあと（下から）：（動画は fx.js が 舞台に 置く video.sgv）→ さいごの 1まい（still の 時）→ ボードの うしろを 少し 暗く → ボード（board_html）。
-       プチュンは なし（押すと 1秒 真っ暗 → 動画）"""
+def nd_layers(board_html, last_url, burst=''):
+    """押したあと（下から）：（動画は fx.js が 舞台に 置く video.sgv）→ さいごの 1まい（still の 時）→ ボードの うしろを 少し 暗く → 押した 画面（.ndt：
+       暗い 幕・まん中の 光・押された PUSH（{{PZ}}・{{PC}}・{{PRESSED}}・{{BURST}} は fx.js が テーマで うめる：デカ的中と 同じ）・はじける 火花 burst）→ ボード（board_html）。
+       プチュンは なし（押すと 押した 画面 → 1秒まで 真っ暗 → 動画）"""
     return f'''<img class="nds" src="{last_url}" alt="">
     <div class="ndk" aria-hidden="true"></div>
+    <div class="ndt" aria-hidden="true"><div class="ndtb"></div><div class="pzw" style="--pz:{{{{PZ}}}}"><div class="pressed{{{{PC}}}}">{{{{PRESSED}}}}</div>{{{{BURST}}}}<i class="ndtr"></i></div>{burst}</div>
     <div class="hb">{board_html}</div>
     <p class="sr">{SR}</p>'''
 
@@ -96,15 +104,21 @@ def nd_css():
     return f'''
 /* ---------- ノーマルど的中（nd）：normal_do.py（第4.77版：押すと 1秒 真っ暗 → 動画 nd_film.mp4＝flat/normal_film.py・ど！的中は flat/shiden_logo.py の 3D・プチュンは なし） ---------- */
 /* 押してから 動画が 動きだす まで（読みこみ）は 黒。動きだしたら（go）幕は すきとおって 動画（video.sgv）が 見える → {sec(BOARD)} ボード */
-/* 押した 瞬間（.ndp：fx.js が 押した PUSH の 画面に つける・極ど的中の 入りも）：その場で 止めて（押した 形）{sec(PRESS['DELAY'])}から {sec(PRESS['DIM'])}で 暗く → 暗く なりきったら fx.js が 消す */
-.ov.ndp{{z-index:40;pointer-events:none}}
-.ov.ndp *:not(.ndfk),.ov.ndp *::before,.ov.ndp *::after{{animation-play-state:paused!important}}
-.ov.ndp .pbox{{scale:.94;transition:scale .12s ease-out}}
-.ov.ndp .ndfk{{position:absolute;inset:0;z-index:60;background:#000;opacity:0;pointer-events:none;animation:ndDim {sec(PRESS['DIM'])} cubic-bezier(.4,0,.8,.5) {sec(PRESS['DELAY'])} both}}
-@keyframes ndDim{{from{{opacity:0}}to{{opacity:1}}}}
+/* 押した 画面（.ndt：第4.79版・極ど的中の 入りも）：PUSH の 画面とは 別の 暗い 幕（PUSH の 画面の 暗さ・すけない）に 押された PUSH（.pressed：そのテーマの 形）が
+   ポチッと へこんで もどりながら 消える（{sec(TAP['PRESS'])}）・うすい 光の 輪（.ndtr）→ {sec(TAP['DARK'][0])}から 暗く → {sec(TAP['END'])}で 消える（下は 動画の はじめの 黒）。
+   動画を 待たずに 押した 瞬間から 動く。まさちゃん「やりすぎには気をつけて！ タップ感が分かればいいから！」→ 爆発・光・ゆれは 入れない */
+.ov.fz.nd .ndt{{position:absolute;inset:0;z-index:20;pointer-events:none;animation:fxH .001s linear {sec(TAP['END'])} forwards}}
+.ov.fz.nd .ndt .pressed{{animation:ndtP {sec(TAP['PRESS'])} cubic-bezier(.25,.7,.35,1) both,fxH .001s linear {sec(TAP['PRESS'])} forwards}}
+@keyframes ndtP{{0%{{transform:scale(1)}}16%{{transform:scale(.88);filter:brightness(1.25)}}38%{{transform:scale(.95);filter:brightness(1.08);opacity:1}}100%{{transform:scale(.97);filter:brightness(.7);opacity:0}}}}
+.ov.fz.nd .ndt .ndtr{{position:absolute;z-index:4;left:50%;top:calc(50% - 40px);width:226px;height:126px;margin:-63px 0 0 -113px;border-radius:38px;border:3px solid rgba(255,232,150,.9);
+  box-shadow:0 0 10px rgba(255,220,120,.7);opacity:0;pointer-events:none;animation:ndtR {sec(TAP['RING'][1] - TAP['RING'][0])} ease-out {sec(TAP['RING'][0])} both}}
+@keyframes ndtR{{0%{{opacity:.95;transform:scale(.9)}}100%{{opacity:0;transform:scale(1.3)}}}}
+.ov.fz.nd .ndtb{{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,#21113A,#05030F 70%);animation:ndtB {sec(TAP['DARK'][1] - TAP['DARK'][0])} ease-in {sec(TAP['DARK'][0])} both}}
+@keyframes ndtB{{from{{opacity:1}}to{{opacity:0}}}}
+.fxs.calm .ov.fz.nd .ndt{{display:none}}
 .ov.fz.nd{{--t0:{sec(T['RES'] + .45)};--tc:.3s;z-index:31;background:#000}}
 .ov.fz.nd.go{{background:transparent}}
-.ov.fz.nd:not(.go):not(.still) *{{animation-play-state:paused!important}}
+.ov.fz.nd:not(.go):not(.still) *:not(.ndt):not(.ndt *){{animation-play-state:paused!important}}
 .ov.fz.nd .nds{{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:none}}
 .ov.fz.nd.still .nds{{display:block}}
 .ov.fz.nd .ndk{{position:absolute;inset:0;background:rgba(2,8,3,.55);opacity:0;pointer-events:none}}

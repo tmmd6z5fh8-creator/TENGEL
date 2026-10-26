@@ -7,7 +7,7 @@
        pm_….webp 38まい … プレミアムど的中の 絵（flat/premium_art.py・約2.1MB）
        gd_….webp 24まい … 神様的中の 絵（flat/kami_art.py・flat/kami_storm.py・約1.7MB）
        sfx_pc・sfx_zp・sfx_gd・sfx_sgd・sfx_spg_up・sfx_spg … 特別な 演出の 音 6こ（gen_sfx.py：超神様・超プレミアム神様の 音は 動画の 絵の 時刻を 読むので 少し かかる）
-       第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）。第4.77版：sfx_nd.m4a（ノーマルど的中の 音）
+       第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）。第4.77版：sfx_nd.m4a（ノーマルど的中の 音）。第4.79版：sfx_ndt.m4a（ノーマルど的中・極ど的中の 押した 瞬間の 音：ポチッ・トンッ・キラン）
        sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp・nd_film.mp4・nd_last.webp … 動画 4本と さいごの 1まい 3まいは build_fx_films.py で 作る（時間が かかる）。
        ここでは 作らない（ない ときは 知らせる）。第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）

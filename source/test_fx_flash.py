@@ -8,7 +8,7 @@
 #   第4.77版：ノーマルど的中 nd（押すと 1秒 真っ暗 → はじめから おわりまで 動画 nd_film.mp4（10.5秒）→ ボード 10.05秒）：sd と 同じ やり方で 数える
 #   第4.77版：極ど的中（紫電 sd）は ノーマルど的中の 動画から 入る → 5.34秒（白い 光に つつまれた 瞬間）で すぐ 極ど的中（プチュン → 動画）。
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
-#     nd：押した PUSH の 画面が その場で 止まって 暗く なる（.ndp：本物は 暗く なりきったら fx.js が 消す → ここでは 0.75秒で 消す）
+#     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -32,7 +32,7 @@ if os.path.isdir(FX_DIR):   # ネオンの線画・プレミアムと 神様の 
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 SPEC = {'r': 9, 'n': 12, 'ranks': {'6': 1, '2': 2, '10': 3, '4': 5, '7': 4, '11': 11, '1': 9, '3': 8, '5': 7, '9': 6, '8': 12, '12': 10},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 6, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 6]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 9}]}
-STEP = """(t) => { const ov = document.getElementById('fxOv'); if (!ov) return -1; const as = ov.getAnimations({ subtree: true }); as.forEach(a => { try { const el = a.effect && a.effect.target; if (el && el.closest && el.closest('.ndp') && !(el.classList && el.classList.contains('ndfk'))) { a.pause(); return; } a.pause(); a.currentTime = t * 1000; } catch (e) {} }); return as.length; }"""   # 第4.77版：押した PUSH の 画面（.ndp）の 中は 押した 時の まま 止める（暗く なる 幕 .ndfk だけ 進める）
+STEP = """(t) => { const ov = document.getElementById('fxOv'); if (!ov) return -1; const as = ov.getAnimations({ subtree: true }); as.forEach(a => { try { a.pause(); a.currentTime = t * 1000; } catch (e) {} }); return as.length; }"""
 fails = []
 try:
     with sync_playwright() as p:
@@ -92,10 +92,7 @@ try:
                     blk = Image.new('RGB', (390, 844), (0, 0, 0))
                     for _ in range(int(round(SDUP['BLACK'] * 60))):
                         blk.save(os.path.join(d, f'f{idx:04d}.png')); idx += 1
-                pg.evaluate('TengelFx.tap()')
-                if kind in ('sd', 'nd'):   # 押した PUSH の 画面を 暗く する 幕（.ndfk）だけ 動きだす 前に 0秒で 止める（あとで 戻すと animationend が 出て 消えて しまう）
-                    pg.evaluate("document.querySelectorAll('#fxOv .ndfk').forEach(k => k.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }))")
-                pg.wait_for_timeout(300)
+                pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
                 if kind == 'sd':   # 第4.77版：ここでは 動画が 読めない → すぐ ブラックアウト → 0.5秒 → 極ど的中の 幕
                     pg.wait_for_function("() => !!document.querySelector('#fxOv .ov.sd')", timeout=10000)
                 if kind in ('sd', 'nd'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
@@ -104,8 +101,6 @@ try:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
-                if kind in ('sd', 'nd') and i == 45:   # 押した PUSH の 画面（.ndp）は 暗く なりきったら 消える（本物は animationend）
-                    pg.evaluate("document.querySelectorAll('#fxOv .ov.ndp').forEach(e => e.remove())")
                 n = pg.evaluate(STEP, i / 60)
                 if kind in ('sd', 'nd') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
                     pg.evaluate(SDBG, [f'_sdf/g{min(i, sdf - 1):04d}.png', kind])

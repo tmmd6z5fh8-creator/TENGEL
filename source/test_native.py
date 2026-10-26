@@ -552,16 +552,16 @@ try:
               '極ど的中（紫電）の 動画と 入りの ノーマルど的中の 動画も 出る 前に <video>（preload=auto）を 作って 読んでおく（第4.70版・第4.77版）')
         pg.evaluate("window.__fxEv = []; window.__fxT = {}; document.addEventListener('tengel:fx', e => { if (!window.__fxT[e.detail.phase]) window.__fxT[e.detail.phase] = performance.now(); })")
         pg.evaluate("window.__fxT0 = performance.now()"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(120)
-        pr0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = o && o.querySelector('.hb'); const k = document.querySelector('#fxOv .ov.ndp .ndfk'); const a = k && k.getAnimations ? k.getAnimations() : []; return { nd: !!o, sd: !!document.querySelector('#fxOv .ov.sd'), pc: document.querySelectorAll('#fxOv .pc').length, hb: !h || getComputedStyle(h).visibility === 'hidden' || getComputedStyle(h).opacity === '0', pre: (TengelFx.current() || {}).pre, ndp: !!document.querySelector('#fxOv .ov.ndp .pbox .push'), dim: a.length === 1 && a[0].playState === 'running' }; })()")
-        check(pr0['nd'] and not pr0['sd'] and pr0['pc'] == 0 and pr0['hb'] and pr0['pre'] in (1, 2) and pr0['ndp'] and pr0['dim'],
-              f'極ど的中（第4.77版）：押すと まず ノーマルど的中の 幕（プチュンなし・ボードなし）・押した PUSH の 画面が その場で 止まって 暗く なる（{pr0}）')
+        pr0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = o && o.querySelector('.hb'); const pr = o && o.querySelector('.ndt .pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; return { nd: !!o, sd: !!document.querySelector('#fxOv .ov.sd'), pc: document.querySelectorAll('#fxOv .pc').length, hb: !h || getComputedStyle(h).visibility === 'hidden' || getComputedStyle(h).opacity === '0', pre: (TengelFx.current() || {}).pre, push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', ring: document.querySelectorAll('#fxOv .ov.nd .ndt .ndtr').length, bx: document.querySelectorAll('#fxOv .ov.nd .ndt .bx').length }; })()")
+        check(pr0['nd'] and not pr0['sd'] and pr0['pc'] == 0 and pr0['hb'] and pr0['pre'] in (1, 2) and pr0['push'] == 0 and pr0['press'] and pr0['ring'] == 1 and pr0['bx'] == 0,
+              f'極ど的中（第4.77版・第4.79版）：押すと まず ノーマルど的中の 幕（プチュンなし・ボードなし）・PUSH の 画面とは 別の 押した 画面（押された PUSH が ポチッと へこむ・うすい 光の 輪・爆発は なし）（{pr0}）')
         if HAVE_SD:
             pg.wait_for_function("() => (TengelFx.current() || {}).pre === 2", timeout=6000)
             v = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv.on'); return v ? { paused: v.paused, film: v.getAttribute('data-film') } : null; })()")
             check(v is not None and v['paused'] is False and v['film'] == 'nd_film' and pg.locator('#fxOv .ov.nd.go').count() == 1 and 'pre:sd' in pg.evaluate('window.__fxEv') and pg.evaluate('TengelFx.current()')['film'] == 0,
                   f'極ど的中：ノーマルど的中の 動画が 舞台で 動きだす（{v}）')
-            pg.wait_for_function("() => !document.querySelector('#fxOv .ov.ndp')", timeout=3000)
-            check(pg.locator('#fxOv .ov.ndp').count() == 0 and (TengelFx_pre := pg.evaluate('TengelFx.current().pre')) == 2, f'極ど的中：押した PUSH の 画面は 暗く なりきったら 消える（ノーマルの 動画が 見える）（pre {TengelFx_pre}）')
+            pg.wait_for_function("() => getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).visibility === 'hidden'", timeout=3000)
+            check((TengelFx_pre := pg.evaluate('TengelFx.current().pre')) == 2, f'極ど的中：押した 画面は 約1秒で 消える（ノーマルの 動画が 見える）（pre {TengelFx_pre}）')
             pg.wait_for_function("() => (TengelFx.current() || {}).pre === 4", timeout=9000)
             up = pg.evaluate("(() => { const p = document.querySelector('#fxOv .ov.sd .pc'); const a = p && p.getAnimations ? p.getAnimations() : []; const h = getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')); return { nd: !!document.querySelector('#fxOv .ov.nd'), vid: document.querySelectorAll('#fxOv video.sgv.on').length, vis: p ? getComputedStyle(p).visibility : '', run: a.length > 0 && a.every(x => x.playState === 'running'), hb: h.visibility === 'hidden' || h.opacity === '0', t: Math.round(window.__fxT.up - window.__fxT.pre), gap: Math.round(window.__fxT.up - window.__fxT.blackout), ndv: document.querySelector('#fxVh video[data-film=nd_film]').paused }; })()")
             check(not up['nd'] and up['vis'] == 'visible' and up['run'] and up['hb'] and 5100 <= up['t'] <= 5800 and up['gap'] <= 30 and up['ndv'] and 'blackout:sd' in pg.evaluate('window.__fxEv') and 'up:sd' in pg.evaluate('window.__fxEv'),
@@ -605,11 +605,11 @@ try:
               and po.locator('.ov.fz .pbox.pz .push').count() == 1 and po.locator('.pbox.rbw').count() == 0 and 'k-nd' in po.get_attribute('class') and pg.evaluate('TengelFx.current()')['pz'] == 1.4,
               f'ノーマルど的中（第4.77版）：くじの ど的中（乱数 0.5・0.9）→ nd・PUSH は ど的中と 同じ（1.4倍）・動画を 出る 前に 読んでおく（{kn}）')
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
-        nd0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')); const p = document.querySelector('#fxOv .ov.ndp'); const k = p && p.querySelector('.ndfk'); const a = k && k.getAnimations ? k.getAnimations() : []; const pa = p ? p.querySelector('.pbox').getAnimations({ subtree: true }).filter(x => x instanceof CSSAnimation) : []; return { pc: document.querySelectorAll('#fxOv .ov.nd .pc').length, bg: getComputedStyle(o).backgroundColor, cls: o.className, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), ndp: !!(p && p.querySelector('.pbox .push')), z: p ? getComputedStyle(p).zIndex : '', dim: a.length === 1 && a[0].playState === 'running', frozen: pa.every(x => x.playState === 'paused'), sc: p ? getComputedStyle(p.querySelector('.pbox')).scale : '' }; })()")
+        nd0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; const g = t && t.querySelector('.ndtr'); return { pc: document.querySelectorAll('#fxOv .ov.nd .pc').length, bg: getComputedStyle(o).backgroundColor, cls: o.className, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', glow: !!(g && g.getAnimations().length), bx: t ? t.querySelectorAll('.bx').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '' }; })()")
         check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last.webp'] and 'fz' in nd0['cls'],   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
               f'ノーマルど的中：押すと 暗く なる（プチュンは なし）・ボードは まだ・絵は 動画の さいごの 1まい だけ（{nd0}）')
-        check(nd0['ndp'] and nd0['z'] == '40' and nd0['dim'] and nd0['frozen'] and nd0['sc'] not in ('', 'none', '1'),
-              f'ノーマルど的中（第4.78版）：押した PUSH の 画面が その場で 止まって（押した 形）上に のこり、0.1秒から 0.62秒で 暗く なる（いきなり 暗く しない）（{nd0}）')
+        check(nd0['push'] == 0 and nd0['press'] and nd0['pz'] == '1.4' and nd0['glow'] and nd0['bx'] == 0 and nd0['z'] == '20' and nd0['vis'] == 'visible' and pg.evaluate("window.__FX.sfx.ndt") == 'sfx_ndt.m4a',
+              f'ノーマルど的中（第4.79版）：押すと PUSH の 画面とは 別の 押した 画面（押された PUSH が 1.4倍の まま ポチッと へこむ・うすい 光の 輪・爆発は なし・音 sfx_ndt）（{nd0}）')
         if HAVE_ND:
             pg.wait_for_function("() => (TengelFx.current() || {}).film === 1", timeout=6000)
             v = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv.on'); return v ? { paused: v.paused, film: v.getAttribute('data-film') } : null; })()")
@@ -617,8 +617,8 @@ try:
                   and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')).opacity") == '0',
                   f'ノーマルど的中：動画が 舞台で 動きだす（go・幕が すきとおる）・ボードは まだ（{v}）')
             pg.evaluate("window.__goT = performance.now()")
-            pg.wait_for_function("() => !document.querySelector('#fxOv .ov.ndp')", timeout=3000)
-            check(pg.locator('#fxOv .ov.ndp').count() == 0, 'ノーマルど的中：押した PUSH の 画面は 暗く なりきったら 消える（動画が 見える）')
+            pg.wait_for_function("() => getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).visibility === 'hidden'", timeout=3000)
+            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).visibility") == 'hidden', 'ノーマルど的中：押した 画面は 約1秒で 消える（動画が 見える）')
             pg.wait_for_function("() => performance.now() - window.__goT > 9300", timeout=12000)
             check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')).opacity") == '0', 'ノーマルど的中：9.3秒の ところ（ど！的中が 芝で 光って いる：のばした 場面）は まだ ボードを 出さない')
             pg.wait_for_function("() => performance.now() - window.__goT > 11000", timeout=4000)

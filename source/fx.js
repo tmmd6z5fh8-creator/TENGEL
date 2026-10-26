@@ -273,13 +273,6 @@
     tryPlay(v, sdBlack);
     later(() => { if (cur && cur.pre === 1) sdBlack(); }, A.t.SG.WAIT_MAX * 1000);
   }
-  function dropKeep(keep) {                                          // 押した PUSH の 画面：暗く なりきったら 消す（動画が 見える ように）
-    const dk = keep.querySelector('.ndfk');
-    const fin = () => { if (keep.parentNode) keep.parentNode.removeChild(keep); };
-    if (dk) dk.addEventListener('animationend', fin, { once: true });
-    const tick = () => { if (!keep.parentNode) return; const a = dk && dk.getAnimations ? dk.getAnimations()[0] : null; if (!a || a.playState === 'finished') fin(); else setTimeout(tick, 400); };
-    setTimeout(tick, 1200);
-  }
   function sdWatch(me, v) {                                          // 動画の 時刻を 1コマごとに 見る（光に つつまれた 瞬間を のがさない）
     if (cur !== me || cur.pre !== 2) return;
     if ((v.currentTime || 0) >= A.t.SDUP.AT || v.ended) { sdBlack(); return; }
@@ -316,7 +309,7 @@
     clearTimers(); cur.on = 2;
     if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
     const ov = ndOv(); if (ov) ov.classList.add('still');
-    sfx('nd', A.t.NDS.FROM, A.t.NDS.WAIT);
+    sfx('nd', A.t.NDS.FROM, A.t.NDS.WAIT, true);
     emit('still');
   }
   // 超神様的中：押した 瞬間に 動画を 再生。動きだした 時（playing）を 0秒に して 音と ボード（go）。4秒 たっても 動かない・視差効果を減らす／控えめ → さいごの 1まい（still）
@@ -370,7 +363,7 @@
       emit('film');
     } else if (cur.kind === 'sd' && name === 'nd_film' && cur.pre === 1) {   // 極ど的中の 入り：ノーマルど的中の 動画が 動きだした
       cur.pre = 2; clearTimers();
-      sfx('nd', v.currentTime || 0);
+      sfx('nd', v.currentTime || 0, 0, true);                    // 押した 瞬間の 音（ndt）を 止めずに 重ねる
       v.classList.add('on'); const ov = ndOv(); if (ov) ov.classList.add('go');
       const me = cur; requestAnimationFrame(() => sdWatch(me, v));
       later(sdBlack, Math.max(0, A.t.SDUP.AT - (v.currentTime || 0) + .6) * 1000);   // 時刻が 進まない 時の ため
@@ -382,7 +375,7 @@
       emit('film');
     } else if (cur.kind === 'nd' && name === 'nd_film') {
       cur.on = 1; clearTimers();
-      sfx('nd', v.currentTime || 0);
+      sfx('nd', v.currentTime || 0, 0, true);                    // 押した 瞬間の 音（ndt）を 止めずに 重ねる
       v.classList.add('on'); const ov = ndOv(); if (ov) ov.classList.add('go');
       emit('film');
     } else if (cur.kind === 'spg' && name === 'spg_up' && cur.sp === 1) {
@@ -476,16 +469,16 @@
     if (!cur.quiet && k === 'big') tpl = tpl.split('{{PC}}').join(th ? ' ' + th.pc : '').replace('{{PRESSED}}', th ? th.push.pressed : '').replace('{{BURST}}', th ? th.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.2));   // 押された PUSH も そのテーマの 形・同じ 大きさ
     let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
-    if (k === 'sd' && !cur.quiet && !calm() && A.reveal.nd && A.films && A.films.nd_film) {   // 第4.77版：極ど的中は ノーマルど的中の 幕と 動画から（光に つつまれた 瞬間に ブラックアウト）
+    if (k === 'sd' && !cur.quiet && !calm() && A.reveal.nd && A.films && A.films.nd_film) {   // 第4.77版：極ど的中は ノーマルど的中の 幕と 動画から（白い 光に つつまれた 瞬間に プチュン）
       cur.sdHtml = html; cur.pre = 1;
       html = A.reveal.nd.replace('{{BOARD}}', '').replace('{{N}}', '1');
     }
-    // 第4.78版（まさちゃん「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」）：ノーマルど的中・極ど的中の 入りは 押した PUSH の 画面を その場で 止めて（押した 形）暗く → 動画
-    const keep = !cur.quiet && !calm() && (k === 'nd' || cur.pre) ? cur.stage.querySelector('.ov.fz') : null;
-    if (keep) {
-      keep.classList.add('ndp'); keep.insertAdjacentHTML('beforeend', '<i class="ndfk" aria-hidden="true"></i>');
-      keep.insertAdjacentHTML('beforebegin', html); dropKeep(keep);
-    } else cur.stage.innerHTML = html;
+    // 第4.79版（まさちゃん「タップ感が足りないから、タップ画面とは別にして欲しい！ タップ感が分かるようにして！」）：ノーマルど的中・極ど的中の 入りは
+    // PUSH の 画面とは 別の 押した 画面（.ndt）：押された PUSH（デカ的中と 同じ：そのテーマの 形・同じ 大きさ）が ポチッと へこむ・うすい 光の 輪 → 暗く → 動画（「やりすぎには気をつけて！」：爆発なし）
+    const tapScr = !cur.quiet && (k === 'nd' || cur.pre);
+    if (tapScr) { const t2 = cur.theme || null; html = html.split('{{PC}}').join(t2 ? ' ' + t2.pc : '').replace('{{PRESSED}}', t2 ? t2.push.pressed : '').replace('{{BURST}}', t2 ? t2.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.4)); }
+    cur.stage.innerHTML = html;
+    if (tapScr && !calm()) sfx('ndt');                                                     // 押した 瞬間の 音（ポチッ・トンッ・キラン：動画を 待たない）
     cur.phase = 'reveal'; cur.ov.classList.add('rv');
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();
