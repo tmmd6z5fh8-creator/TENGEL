@@ -1,4 +1,4 @@
-"""紫電（第4.71版〜第4.74版）：押した 瞬間から 1コマずつ 3D で 描いた 動画（sd_film.mp4・30コマ/秒・音なし）
+"""紫電（第4.71版〜第4.75版）：押した 瞬間から 1コマずつ 3D で 描いた 動画（sd_film.mp4・30コマ/秒・音なし）
    第4.70版・まさちゃん「…馬の顔のシーンもっと長くていい！ 動き方は任せる！ … 求めているのは、全部二枚目の写真のようなリアルなエフェクトにしてほしい！」
    第4.71版・まさちゃん「ど！的中演出のプチュン演出をボタンタップした瞬間に入るようにして！ プチュンして0.8秒で、一枚目の馬の顔が暗闇から目だけを光らせて、
    徐々に顔がみえる、暗闇から目が光り顔が全部見えて(今の馬の顔の演出と繋げて)、蹄カットインに入るまでを2秒くらいにして！ 二枚目の蹄カットインの入りの映像を1.3秒にして、
@@ -12,7 +12,8 @@
    画面をスローで壊しながら蹄がカットインしてくる。的中ボタンは、切り裂かれるタイミングに合わせて大きく振動し、切り口の近くは文字が欠けていたり、割れていたりするようにする。
    蹄カットインの直後は、画面自体が、大きく左右に動くようにして！ …カラフルなど！！！的中演出は消して！金と白、虹色のだけにして！」
    第4.74版・まさちゃん「…ど！！！的中の大きさ別のカットはいらないって意味ね！ 三枚目の的中は、もっとおっきく演出を入れて！ …画面も切り裂くタイミング大きく振動して！
-   …もっと爆発的なインパクトのあるフェードアウトにして！ フェードアウトとともにド派手に爆発したエフェクトからど！！！的中が出てくるようにして！」（ほかの ことばは shiden.py）
+   …もっと爆発的なインパクトのあるフェードアウトにして！ フェードアウトとともにド派手に爆発したエフェクトからど！！！的中が出てくるようにして！」
+   第4.75版・まさちゃん「最後のど！！！的中、のところもっと出てきた時に爆破とか、火花とか、雷とかど！！！的中を派手に見せるための演出追加して！」（ほかの ことばは shiden.py）
    → どの 場面も 3D で 光と つやまで 計算した 絵：
      はじめの 黒（0〜BLACK 秒）：押した 瞬間の プチュン（CSS：shiden.py）の 下・プチュンの あと 真っ暗 0.8秒
      A 馬の 顔（BLACK〜FACE 秒）：暗闇に 目だけが 光る（約1秒 光が ゆらぐ）→ だんだん 青むらさきの 光で 顔が 見えて くる → 頭が 上がって こちらを 向き・耳が 立ち・鼻から 白い 息・
@@ -27,6 +28,8 @@
        → 大爆発（第4.74版）：切られた 画面が かけらに なって 吹きとび、うしろに 火の玉・衝撃の 輪・火の粉
      D ど！！！的中（HOOF〜FILM 秒）：大爆発の 火の玉の 中から 白熱の 3D の ロゴ（flat/shiden_logo.py）が 手前へ とびだす → ドンッ（大きく 振動・金の かけら・衝撃の 輪）
        → 金と 虹に 冷める → 雷を まとう・大きな 雷・光の 筋 →（ボードは CSS）。第4.74版：細切れと ドドーンは やめた
+       第4.75版：ドンッで 画面の ふちから ロゴへ 雷 4本（logo_strikes）・ロゴの うしろから 火の 輪の 大爆発（land_blast）・字の ふちから 金と 白の 火花（land_sparks）→
+       ボードまで まわりで 爆発 7回（bursts_layer：もこもこの 火の玉・burst_sparks：金と 虹の 火花）・ロゴの 下から 火花の 滝（fountain）
    python3 flat/shiden_film.py <作業フォルダ> [はじめの コマ] [おわりの コマ]   （コマ f%03d.png。SCALE=0.5 で ためしの 小さい 絵）
    python3 flat/shiden_film.py --encode <作業フォルダ> <出力.mp4>
    python3 flat/shiden_film.py --last <作業フォルダ> <出力.webp>          （さいごの 1まい＝sd_last.webp）"""
@@ -2203,6 +2206,213 @@ def star_glints(col, A):
     return st[..., None] * np.array([1.0, .92, .8]) * 2.2
 
 
+# ================================================================ 第4.75版：ど！！！的中を 派手に（ドンッで 大爆発・金の 火花・雷が 落ちる → ボードまで まわりで 爆発・火花・雷が つづく）
+L_STRIKES = tuple((round(L_LAND + t, 3), n) for t, n in F['L_STRIKES'])      # ロゴへ 落ちる 雷（場面の 秒・本数）
+L_BURSTS = tuple((round(L_LAND + t, 3), x, y, r) for t, x, y, r in F['L_BURSTS'])   # まわりの 爆発（場面の 秒・画面の 場所・大きさ）
+L_FOUNT = tuple(round(L_LAND + t, 3) for t in F['L_FOUNT'])                  # ロゴの 下から ふる 火花（場面の 秒）
+D_STRIKES = (((-.04, .06), (.2, .33)), ((1.04, .03), (.78, .24)), ((-.04, .97), (.12, .72)), ((1.04, .94), (.88, .72)))   # 画面の ふち → ロゴ（左上・右上・左下・右下）
+
+
+def logo_strikes(lam, seed=1931):
+    """ドンッで 画面の ふちから ロゴへ 落ちる 大きな 雷（1回 光って 消える）→（芯, 雲を 照らす 光, ロゴに 映る 光 [(画面の 向き, 強さ)]）"""
+    core = np.zeros((H, W), np.float32)
+    lights = []
+    for (tb, nb) in L_STRIKES:
+        fi = int(math.floor((lam - tb) * FPS + 1e-6))
+        if not 0 <= fi < len(STRIKE_I):
+            continue
+        inten = STRIKE_I[fi]
+        for j in range(nb):
+            p0, p1 = D_STRIKES[j % len(D_STRIKES)]
+            rs = np.random.default_rng(seed + int(tb * 1000) + j * 31)
+            rj = np.random.default_rng(seed + int(tb * 1000) + j * 31 + fi * 7)
+            P = zig(rs, [np.array(p0) * (W, H), np.array(p1) * (W, H)], .2, 6)
+            P = P + rj.normal(0, 1.2 * S, P.shape) * np.linspace(0, 1, len(P))[:, None]
+            poly(core, P, inten, 3.6 * S)
+            for b in range(3):                                                 # 枝
+                k0 = int(rs.integers(len(P) // 5, len(P) * 3 // 4))
+                q = P[k0]; dd = P[min(len(P) - 1, k0 + 8)] - q
+                ang = math.atan2(dd[1], dd[0]) + rs.choice((-1, 1)) * rs.uniform(.35, .9)
+                Lb = np.linalg.norm(P[-1] - P[0]) * rs.uniform(.12, .3)
+                poly(core, zig(rs, [q, q + np.array([math.cos(ang), math.sin(ang)]) * Lb], .22, 5), inten * .6, 1.6 * S)
+            d = np.array(p0) * (W, H) - np.array(p1) * (W, H)
+            lights.append((d / (np.linalg.norm(d) + 1e-6), inten))
+    return core, blur(core, 34 * S) * 3.2, lights
+
+
+def fire_ramp(temp):
+    xs = np.array([k for k, _ in BOOM_RAMP], np.float32)
+    return np.stack([np.interp(temp, xs, np.array([c[i] for _, c in BOOM_RAMP], np.float32)) for i in range(3)], -1)
+
+
+def land_blast(img, a):
+    """ドンッの 大爆発（ロゴの うしろ）：火の 輪が 画面の ふちまで ひろがる（衝撃の 輪と 同じ 速さ）・けむり（a＝ドンッからの 秒）。
+       まん中の 光は 白熱の ロゴと 衝撃の 輪の 光に まかせる（字の ふちを 何回も 光らせない＝点めつ 16.6）"""
+    if not 0 <= a < 1.3:
+        return img
+    T = boom_tex()
+    yy, xx = grid()
+    cx, cy = logo_center()
+    dx, dy = xx - cx, yy - cy
+    rp = np.sqrt(dx * dx + dy * dy)
+    # 火の 輪（ふちは もこもこ・熱い 白 → 黄 → だいだい → 赤 → けむり）
+    rs = W * (.12 + 1.55 * (1 - math.exp(-a / .22))) * .93
+    th = W * (.07 + .13 * ss(0, .45, a))
+    n = .6 * boom_sample(T['n1'], dx / (W * .42) + .7, dy / (W * .42) - .4) + .4 * boom_sample(T['n2'], dx / (W * .2) - a * .3, dy / (W * .2) + a * .2)
+    band = np.exp(-((rp - rs) / th) ** 2)
+    fl = np.clip(band * (.55 + 1.3 * (n - .5)) * 1.35, 0, 1.2)
+    cool = math.exp(-a / .38)
+    temp = np.clip(fl * 1.0 * cool + .1 * band * cool, 0, .95)                  # 白く とばさない（だいだいと 赤の 火）
+    emis = fire_ramp(temp) * (fl * (.55 * math.exp(-a / .3) + .12 * (1 - ss(.5, 1.2, a))))[..., None]
+    smoke = np.clip(fl * smoothstep(.4, .08, temp) * (1 - ss(.6, 1.3, a)) * .8, 0, .6)
+    img = img * (1 - smoke)[..., None] + emis + (smoke * (1 - smoke))[..., None] * np.array([.03, .012, .04])
+    return img
+
+
+BURST = {}
+
+
+def burst_tex(i, seed=2203):
+    """まわりの 爆発 ごとの 火花（形・色）・もようの ずれ"""
+    if i not in BURST:
+        rng = np.random.default_rng(seed + i * 101)
+        rainbow = (i % 2 == 1)
+        sp = []
+        for k in range(55):
+            if rainbow:                                                          # 虹の 火花（色を まわす）
+                h = (k / 55 + rng.uniform(-.03, .03)) % 1.0
+                c = np.array([abs(h * 6 - 3) - 1, 2 - abs(h * 6 - 2), 2 - abs(h * 6 - 4)])
+                col = np.clip(c, 0, 1) * 2.4 + .35
+            else:                                                                # 金と 白の 火花
+                col = np.array([3.0, 1.55, .38]) if rng.random() < .7 else np.array([3.2, 2.8, 2.1])
+            sp.append(dict(a=rng.uniform(0, 6.28), v=rng.uniform(.45, 1.0), life=rng.uniform(.45, 1.0), d=rng.uniform(0, .05),
+                           w=max(1, int(round(rng.uniform(1.2, 2.6) * S))), col=col, b=rng.uniform(.6, 1.0)))
+        BURST[i] = dict(sp=sp, ox=rng.uniform(-1, 1), oy=rng.uniform(-1, 1))
+    return BURST[i]
+
+
+def bursts_layer(img, lam):
+    """まわりの 爆発（うしろ）：小さな 火の玉（白 → 黄 → だいだい → 赤 → けむり）と まわりの 光"""
+    T = boom_tex()
+    for i, (tb, bx, by, br) in enumerate(L_BURSTS):
+        a = lam - tb
+        if not 0 <= a < 1.2:
+            continue
+        B = burst_tex(i)
+        R0 = br * W * 1.35
+        px, py = bx * W, by * H
+        rb_ = int(R0 * 3.2)
+        x0, x1 = max(0, int(px - rb_)), min(W, int(px + rb_))
+        y0, y1 = max(0, int(py - rb_)), min(H, int(py + rb_))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+        dx, dy = xx - px, yy - py
+        R = R0 * (.3 + .7 * (1 - math.exp(-a / .07)) + .25 * ss(.1, 1.1, a))      # 一気に ふくらんで もこもこ ひろがる
+        r = np.sqrt(dx * dx + dy * dy) / R
+        n = .55 * boom_sample(T['n1'], dx / (R * 1.1) + B['ox'], dy / (R * 1.1) + B['oy']) + .45 * boom_sample(T['n2'], dx / (R * .55) + a * .5 - B['oy'], dy / (R * .55) - a * .4 + B['ox'])
+        edge = r + .85 * (n - .5)                                                 # もこもこの ふち（火の かたまり）
+        dens = 1 - smoothstep(.5, 1.0, edge)
+        cool = math.exp(-a / .28)
+        temp = np.clip((1.0 - r) * 1.15 + 1.7 * (n - .5) + .25, 0, 1.5) * cool     # 明るい 火の かたまりと 暗い 赤の すきま
+        glow = 1.25 * math.exp(-a / .14) + .35 * (1 - ss(.3, .9, a))
+        emis = fire_ramp(temp) * (dens * glow * (.55 + .9 * n))[..., None]
+        emis = emis + (np.exp(-(r / .35) ** 2) * 2.2 * math.exp(-a / .05))[..., None] * np.array([1.0, .95, .85])   # はじめの 閃光（白）
+        smoke = np.clip(dens * smoothstep(.42, .08, temp) * (1 - ss(.45, 1.15, a)) * 1.2, 0, .8)
+        halo = np.exp(-(np.sqrt(dx * dx + dy * dy) / (R0 * .9)) ** 2) * (.35 * math.exp(-a / .12))   # 箱の ふちで 0 に なる はば
+        sub = img[y0:y1, x0:x1]
+        sub = sub * (1 - smoke)[..., None] + emis + (smoke * (1 - smoke))[..., None] * np.array([.03, .012, .04]) + halo[..., None] * np.array([1.5, .95, .42])
+        img[y0:y1, x0:x1] = sub
+    return img
+
+
+def spark_lines(out, sparks, a, cx, cy, spd, grav, trail=.045):
+    """火花を 線で 描く（まん中から 外へ・空気で おそく なる・重さで 落ちる）"""
+    for P in sparks:
+        t = a - P['d']
+        if not 0 < t < P['life']:
+            continue
+        v = P['v'] * spd
+
+        def at(u):
+            dr = v * .38 * (1 - math.exp(-u / .38))
+            return cx + math.cos(P['a']) * dr, cy + math.sin(P['a']) * dr + grav * u * u
+        x1, y1 = at(t); x0, y0 = at(max(0.0, t - trail))
+        f = (1 - ss(.5, 1.0, t / P['life'])) * P['b'] * (.8 + .2 * math.sin(t * 40 + P['a'] * 7))
+        c = P['col'] * f
+        cv2.line(out, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), (float(c[0]), float(c[1]), float(c[2])), P['w'], cv2.LINE_AA, shift=4)
+
+
+LSP = {}
+LOGO_BOX = ((.12, .3, .72, .6), (.56, .21, .88, .56), (.03, .57, .99, .75))     # ロゴの おおよその 箱（ど・！・的中：画面の 割合）
+
+
+def land_sparks(a, seed=2417):
+    """ドンッで ロゴの ふちから 外へ とびちる 金と 白の 火花（a＝ドンッからの 秒）→ 線形の 色（手前）。
+       ロゴの 上は とおらない（字の 上で 光ったり 消えたり しない＝点めつ 16.6）"""
+    out = np.zeros((H, W, 3), np.float32)
+    if not 0 < a < 1.3:
+        return out
+    if 'sp' not in LSP:
+        rng = np.random.default_rng(seed)
+        sp = []
+        cx, cy = logo_center()
+        while len(sp) < 130:
+            x0, y0, x1, y1 = LOGO_BOX[rng.choice(3, p=(.4, .2, .4))]
+            side = rng.integers(4)
+            u = rng.uniform(0, 1)
+            px, py = ((x0 + u * (x1 - x0), y0), (x1, y0 + u * (y1 - y0)), (x0 + u * (x1 - x0), y1), (x0, y0 + u * (y1 - y0)))[side]
+            nx, ny = ((0, -1), (1, 0), (0, 1), (-1, 0))[side]
+            off = rng.uniform(40, 80) * S                                         # 字の ふちから 少し 外で 生まれる（ふちを 何回も 光らせない）
+            px, py = px * W + nx * off, py * H + ny * off
+            if any(b[0] * W - 20 * S < px < b[2] * W + 20 * S and b[1] * H - 20 * S < py < b[3] * H + 20 * S for b in LOGO_BOX):
+                continue                                                          # 字の 上・すぐ そば → やめ
+            ang = math.atan2(ny + (py - cy) / H * 1.2, nx + (px - cx) / W * 1.2) + rng.uniform(-.45, .45)
+            sp.append(dict(a=ang, v=rng.uniform(.45, 1.0), life=rng.uniform(.4, 1.0), d=rng.uniform(0, .05), x=px, y=py,
+                           w=max(1, int(round(rng.uniform(1.2, 2.4) * S))), b=rng.uniform(.55, 1.0),
+                           col=np.array([3.0, 1.6, .4]) if rng.random() < .65 else np.array([3.2, 2.9, 2.2])))
+        LSP['sp'] = sp
+    for P in LSP['sp']:
+        spark_lines(out, (P,), a, P['x'], P['y'], 2600 * S, 650 * S, trail=.04)
+    return out + blur(out, 2.5 * S) * .45
+
+
+def burst_sparks(lam):
+    """まわりの 爆発の 火花（金と 白・虹 を こうごに）→ 線形の 色（手前）"""
+    out = np.zeros((H, W, 3), np.float32)
+    for i, (tb, bx, by, br) in enumerate(L_BURSTS):
+        a = lam - tb
+        if not 0 < a < 1.1:
+            continue
+        spark_lines(out, burst_tex(i)['sp'], a, bx * W, by * H, br * W * 8.0, 700 * S, trail=.06)   # 火の玉の 外まで 飛ぶ
+    return out + blur(out, 2.5 * S) * .45
+
+
+def fountain(lam, seed=2591):
+    """ロゴの 下から ふる 金の 火花（火花の 滝）→ 線形の 色（手前）"""
+    out = np.zeros((H, W), np.float32)
+    t0, t1 = L_FOUNT
+    if lam < t0:
+        return np.zeros((H, W, 3), np.float32)
+    if 'fo' not in LSP:
+        rng = np.random.default_rng(seed)
+        nf = int((t1 - t0) * 35)
+        LSP['fo'] = [dict(t=t0 + rng.uniform(0, t1 - t0), x=rng.uniform(.08, .95), vx=rng.uniform(-60, 60), vy=rng.uniform(40, 260),
+                          life=rng.uniform(.45, .85), b=rng.uniform(.5, 1.0), w=max(1, int(round(rng.uniform(1.0, 2.2) * S)))) for i in range(nf)]
+    yb = .757 * H
+    for P in LSP['fo']:
+        u = lam - P['t']
+        if not 0 < u < P['life']:
+            continue
+
+        def at(t):
+            return P['x'] * W + P['vx'] * S * t, yb + P['vy'] * S * t + 1500 * S * t * t
+        x1, y1 = at(u); x0, y0 = at(max(0.0, u - .035))
+        f = P['b'] * (1 - ss(.6, 1.0, u / P['life'])) * ss(0, .06, u)
+        cv2.line(out, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), float(f), P['w'], cv2.LINE_AA, shift=4)
+    return out[..., None] * np.array([3.0, 1.5, .36]) + blur(out, 2.5 * S)[..., None] * np.array([1.0, .4, .08])
+
+
 def logo_frame(lam, work, fi, seed=811):
     """ど！！！的中 の 1コマ（場面の 秒 λ）→ 0〜1 の sRGB。第4.74版：はじめは 蹄の 場面の さいごの 大爆発の つづき（火の玉の 中から ロゴが 出る）"""
     yy, xx = grid()
@@ -2236,19 +2446,22 @@ def logo_frame(lam, work, fi, seed=811):
             Afull = cv2.warpAffine(Afull, Mv(vx, vy, vr), (W, H), flags=cv2.INTER_LINEAR)
     cons = contours(Afull) if g[0] is not None else []
     bc, bglow, blights = big_bolts(lam, cons)
+    sc, sglow, slights = logo_strikes(lam)                                       # 第4.75版：ドンッで ロゴへ 雷が 落ちる
     if g[0] is not None:
         flash = []
         k = ss(L_ARCS, L_ARCS + .3, lam)
         for d, c_, f_, ph in ARC_L:
             flash.append((nrm(np.array(d)), np.array(c_) * .6 * k * (.55 + .45 * math.sin(2 * math.pi * f_ * lam + ph))))
-        for d2, it in blights:
+        for d2, it in blights + [(d_, it_ * .4) for d_, it_ in slights]:                       # 第4.75版：ロゴへ 落ちる 雷は 字に うすく 映る（字の ふちを 何回も 光らせない）
             flash.append((nrm(np.array([d2[0], -d2[1], .45])), np.array([1.6, 1.2, 2.6]) * it))
         lay = SL.layer(None, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam), gbuf=g)
     # ---------- 背景・うしろの かけら ----------
-    img = d_bg(lam, bglow)
+    img = d_bg(lam, bglow + sglow * .5)
     te = lam - BOOM_D                                                            # 第4.74版：大爆発の つづき（火の玉・けむり・衝撃の 輪・火の粉）
     if te < BOOM_END:
         img = boom_layer(img, te)
+    img = land_blast(img, lam - L_LAND)                                          # 第4.75版：ドンッの 大爆発（ロゴの うしろ）
+    img = bursts_layer(img, lam)                                                 # 第4.75版：まわりで 爆発が つづく
     img = img + flakes(lam, front=False)
     # ---------- ロゴ（振動は ぶれ つき：前の コマの 場所から いまの 場所へ） ----------
     if lay is not None:
@@ -2280,8 +2493,10 @@ def logo_frame(lam, work, fi, seed=811):
     ac = arcs(lam, cons, fi)
     img = img + ac[..., None] * np.array([2.6, 2.3, 3.4]) + blur(ac, 2.5 * S)[..., None] * np.array([1.1, .45, 2.2]) + blur(ac, 9 * S)[..., None] * np.array([.35, .1, .8])
     img = img + bc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(bc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + bglow[..., None] * np.array([.12, .05, .28])
+    img = img + sc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(sc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + sglow[..., None] * np.array([.12, .05, .28])
     img = img + flakes(lam, front=True)
     img = img + embers(lam)
+    img = img + land_sparks(lam - L_LAND) + burst_sparks(lam) + fountain(lam)   # 第4.75版：金の 火花・まわりの 爆発の 火花（金と 虹）・火花の 滝
     if te < BOOM_END:
         img = img + boom_sparks(te)                                              # 爆発の 火の粉（手前）
     # ---------- ドンッ（光・色の にじみ） ----------
