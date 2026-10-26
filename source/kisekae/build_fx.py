@@ -400,7 +400,8 @@ def reveal_sgd(G):
 
 def reveal_sd(G):
     """ど的中・紫電（第4.66版）：shiden.py の sd_layers（動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝さいごの 1まい）。
-       第4.71版：押した 瞬間の プチュン（ど的中と 同じ FZ_HTML・動画を 待たずに 動く）"""
+       第4.71版：押した 瞬間の プチュン（ど的中と 同じ FZ_HTML・動画を 待たずに 動く）。
+       第4.77版：極ど的中は 押すと まず ノーマルど的中の 幕（reveal_nd）と 動画（fx.js の sdPre）→ 光に つつまれた 瞬間に ブラックアウト（sdBlack）→ 0.5秒 → この 幕に 入れかわって プチュン（sdUp）"""
     return f'''<div class="ov fz sd" style="--n:{{{{N}}}}">
     {G.SD.sd_layers('{{BOARD}}', STILL['sd_last'], G.FZ_HTML)}
     {CLOSE}
@@ -484,7 +485,7 @@ def bundle():
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
                 t=dict(R=G.FZ_T['R'], PC=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'], SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
-                       ND=G.ND.ND_T['RES'], NDS=dict(FROM=G.ND.STILL_FROM, WAIT=G.ND.STILL_WAIT),
+                       ND=G.ND.ND_T['RES'], NDS=dict(FROM=G.ND.STILL_FROM, WAIT=G.ND.STILL_WAIT), SDUP=dict(G.ND.SD_UP),
                        SG=dict(FILM=round(SG.FILM, 4), RES=round(SG.RES, 4), STILL_FROM=round(SG.STILL_FROM, 4), STILL_WAIT=SG.STILL_WAIT, STILL_BOARD=round(SG.STILL_BOARD, 4),
                                UP_AT=SG.UP_AT, UP=round(SG.UP, 4), SPG_FILM=round(SG.SPG_FILM, 4), WAIT_MAX=SG.WAIT_MAX)))
 

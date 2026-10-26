@@ -6,6 +6,8 @@
 #   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。第4.71版：紫電は 押した 瞬間の プチュン（CSS）→ はじめから おわりまで 動画 → ボード（CSS）。
 #     sd は 動画が 動いた 形（go）で、幕（.ov.sd）の 背景に その 時刻の 動画の コマ（60コマ/秒）を 入れて プチュン・ボードと いっしょに 写して 数える（動画が 手元に ある とき）
 #   第4.77版：ノーマルど的中 nd（押すと 1秒 真っ暗 → はじめから おわりまで 動画 nd_film.mp4（10.5秒）→ ボード 10.05秒）：sd と 同じ やり方で 数える
+#   第4.77版：極ど的中（紫電 sd）は ノーマルど的中の 動画から 入る → 5.43秒（光に つつまれて まっ白）で ブラックアウト → 0.5秒 真っ暗 → 極ど的中（プチュン → 動画）。
+#     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.43秒ぶん）と 真っ黒の コマ（0.5秒ぶん）を ならべて から、極ど的中の 幕を 写す
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -16,6 +18,7 @@ KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', '
 AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5, nd=11.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
+sys.path.insert(0, os.path.join(W, 'kisekae')); from normal_do import SD_UP as SDUP   # 第4.77版：極ど的中の 入り
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
@@ -54,6 +57,18 @@ try:
                     if not ok: fails.append(f + ': ' + (r.stderr[-300:] if r.returncode else bad))
                 continue
             sdf = 0
+            pre = []   # 極ど的中の 入り（ノーマルど的中の 動画の コマ）
+            if kind == 'sd':
+                mp4 = os.path.join(FX_DIR, 'nd_film.mp4')
+                if os.path.exists(mp4) and shutil.which('ffmpeg'):
+                    pd = os.path.join(OUT, '_sd_pre'); shutil.rmtree(pd, ignore_errors=True); os.makedirs(pd)
+                    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(pd, 'p%04d.png')], check=True)
+                    n_at = int(round(SDUP['AT'] * 60))
+                    pre = [os.path.join(pd, f'p{i:04d}.png') for i in range(n_at)]
+                    assert all(os.path.exists(x) for x in pre)
+                    print(f'  sd：入りの ノーマルど的中の コマ {n_at}（{SDUP["AT"]}秒）→ 真っ黒 {int(round(SDUP["BLACK"] * 60))}コマ → 極ど的中')
+                else:
+                    print('  ⚠️ nd_film.mp4 が ない（極ど的中の 入りは 数えない）')
             if kind in ('sd', 'nd'):   # 紫電・ノーマルど的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
                 mp4 = os.path.join(FX_DIR, kind + '_film.mp4')
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
@@ -69,7 +84,16 @@ try:
                 for i in range(60):
                     n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 tap = idx
+                if pre:   # 極ど的中の 入り：ノーマルど的中の 動画の コマ → ブラックアウト（真っ黒）
+                    from PIL import Image
+                    for x in pre:
+                        shutil.copy(x, os.path.join(d, f'f{idx:04d}.png')); idx += 1
+                    blk = Image.new('RGB', (390, 844), (0, 0, 0))
+                    for _ in range(int(round(SDUP['BLACK'] * 60))):
+                        blk.save(os.path.join(d, f'f{idx:04d}.png')); idx += 1
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
+                if kind == 'sd':   # 第4.77版：ここでは 動画が 読めない → すぐ ブラックアウト → 0.5秒 → 極ど的中の 幕
+                    pg.wait_for_function("() => !!document.querySelector('#fxOv .ov.sd')", timeout=10000)
                 if kind in ('sd', 'nd'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
                     pg.evaluate("(c) => { const o = document.querySelector('#fxOv .ov.' + c); o.classList.remove('still'); o.classList.add('go'); }", kind); pg.wait_for_timeout(200)
             else:
@@ -83,6 +107,8 @@ try:
             pg.evaluate('TengelFx.close()')
             if kind in ('sd', 'nd'):
                 shutil.rmtree(os.path.join(SRV, 'APP', '_sdf'), ignore_errors=True)
+            if pre:
+                shutil.rmtree(os.path.join(OUT, '_sd_pre'), ignore_errors=True)
             r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = r.stdout.strip().split('\n')
             worst = out[-1] if out else ''

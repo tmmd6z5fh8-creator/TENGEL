@@ -253,10 +253,45 @@
   function sdStill() {
     if (!cur || cur.on === 2) return;
     clearTimers(); cur.on = 2;
+    if (cur.pre && cur.pre < 4) { if (cur.v) park(cur.v); cur.v = null; cur.pre = 4; cur.stage.innerHTML = cur.sdHtml; }   // ノーマルの 動画から 入る とちゅう → 極ど的中の 幕に
     if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
     const ov = sdOv(); if (ov) ov.classList.add('still');
     sfx('sd', A.t.SDS.FROM, A.t.SDS.WAIT);
     emit('still');
+  }
+  // 極ど的中（紫電）の 入り（第4.77版・まさちゃん「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」）：
+  // 押すと ノーマルど的中の 幕と 動画（nd_film・音 nd）→ 動画の SDUP.AT 秒（光に つつまれて まっ白）で ブラックアウト（動画を 消して 音も 止める）→ SDUP.BLACK 秒 真っ暗
+  // → 極ど的中の 幕（cur.sdHtml）で 第4.71版の 押した 瞬間と 同じ（プチュン（音 sdp）→ 動画 sd_film → ボード）。pre：1＝ノーマルの 動画を 待つ・2＝動いて いる・3＝ブラックアウト・4＝極ど的中
+  // ノーマルの 動画が ない・読めない・4秒 たっても 動かない → すぐ ブラックアウト → 極ど的中。控えめ → ノーマルの 動画は 出さず 極ど的中の さいごの 1まい（第4.71版と 同じ）
+  function sdPre() {
+    const v = video('nd_film'), s = video('sd_film'); cur.v = v; cur.on = 0;
+    if (!v || v.error) { sdBlack(); return; }
+    cur.stage.appendChild(v); v.className = 'sgv';
+    if (s && !s.error) wake(s);                                      // iPhone：タップの 中で 一度 動かして おく（あとで 再生できる ように）
+    try { v.currentTime = 0; } catch (e) { /* なし */ }
+    tryPlay(v, sdBlack);
+    later(() => { if (cur && cur.pre === 1) sdBlack(); }, A.t.SG.WAIT_MAX * 1000);
+  }
+  function sdWatch(me, v) {                                          // 動画の 時刻を 1コマごとに 見る（光に つつまれた 瞬間を のがさない）
+    if (cur !== me || cur.pre !== 2) return;
+    if ((v.currentTime || 0) >= A.t.SDUP.AT || v.ended) { sdBlack(); return; }
+    requestAnimationFrame(() => sdWatch(me, v));
+  }
+  function sdBlack() {
+    if (!cur || cur.kind !== 'sd' || !cur.pre || cur.pre >= 3) return;
+    cur.pre = 3; clearTimers(); hush();
+    if (cur.v) park(cur.v);                                          // ブラックアウト：ノーマルの 動画を 消す（幕は 黒）
+    cur.v = null;
+    const ov = ndOv(); if (ov) ov.classList.remove('go');
+    emit('blackout');
+    later(sdUp, A.t.SDUP.BLACK * 1000);
+  }
+  function sdUp() {
+    if (!cur || cur.kind !== 'sd' || cur.pre !== 3) return;
+    cur.pre = 4; cur.on = 0;
+    cur.stage.innerHTML = cur.sdHtml;                                // 極ど的中の 幕（黒・プチュンは ここから 動く）
+    sfx('sdp'); sdGo();
+    emit('up');
   }
   // ノーマルど的中（第4.77版）：押した 瞬間に 動画（nd_film：はじめの 1秒は 真っ暗・プチュンは なし）を 再生 → 動きだした 時（playing）を 0秒に して 音（nd）と ボード（go）。
   // 4秒 たっても 動かない・読めない・控えめ → 動画の さいごの 1まい（still）→ 1.3秒 ボード
@@ -325,7 +360,14 @@
       sfx('sgd', v.currentTime || 0);
       v.classList.add('on'); const ov = sgdOv(); if (ov) ov.classList.add('go');
       emit('film');
-    } else if (cur.kind === 'sd' && name === 'sd_film') {
+    } else if (cur.kind === 'sd' && name === 'nd_film' && cur.pre === 1) {   // 極ど的中の 入り：ノーマルど的中の 動画が 動きだした
+      cur.pre = 2; clearTimers();
+      sfx('nd', v.currentTime || 0);
+      v.classList.add('on'); const ov = ndOv(); if (ov) ov.classList.add('go');
+      const me = cur; requestAnimationFrame(() => sdWatch(me, v));
+      later(sdBlack, Math.max(0, A.t.SDUP.AT - (v.currentTime || 0) + .6) * 1000);   // 時刻が 進まない 時の ため
+      emit('pre');
+    } else if (cur.kind === 'sd' && name === 'sd_film' && !(cur.pre && cur.pre < 4)) {
       cur.on = 1; clearTimers();
       sfx('sd', v.currentTime || 0, 0, true);                    // 押した 瞬間の プチュンの 音（sdp）を 止めずに 重ねる
       v.classList.add('on'); const ov = sdOv(); if (ov) ov.classList.add('go');
@@ -354,10 +396,13 @@
   function onEnded(name) { if (cur && cur.kind === 'spg' && name === 'spg_up' && cur.sp === 2) spgFilm(); }
   function onError(name) {   // 読めなかったら（どちらの 動画でも）さいごの 1まい ※仮
     if (!cur || cur.phase !== 'reveal' || cur.on) return;
-    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill(); else if (cur.kind === 'sd' && name === 'sd_film') sdStill(); else if (cur.kind === 'nd' && name === 'nd_film') ndStill();
+    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill();
+    else if (cur.kind === 'sd' && name === 'nd_film' && cur.pre && cur.pre < 3) sdBlack();       // 極ど的中の 入りの ノーマルの 動画が 読めない → すぐ ブラックアウト → 極ど的中
+    else if (cur.kind === 'sd' && name === 'sd_film' && !(cur.pre && cur.pre < 4)) sdStill();   // 極ど的中の 動画（入りの とちゅうは 極ど的中に なってから sdGo で）
+    else if (cur.kind === 'nd' && name === 'nd_film') ndStill();
   }
-  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd' || cur.kind === 'nd')) return; if (cur.on === 1) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
-  function vidBack() { if (!cur || cur.on !== 1 || !cur.v) return; try { const p = cur.v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* なし */ } }
+  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd' || cur.kind === 'nd')) return; if (cur.on === 1 || cur.pre === 2) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
+  function vidBack() { if (!cur || !(cur.on === 1 || cur.pre === 2) || !cur.v) return; try { const p = cur.v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* なし */ } }
 
   // ---------- 出す ----------
   // 舞台（390×844）を 画面に 入る 大きさに（縦横の 比は 変えない・1倍に 近ければ 1倍＝字が ぼけない）※仮
@@ -367,7 +412,7 @@
     const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
-    if (kind === 'sd') video('sd_film');
+    if (kind === 'sd') { video('sd_film'); video('nd_film'); }          // 第4.77版：極ど的中は ノーマルど的中の 動画から 入る
     if (kind === 'nd') video('nd_film');
   }
   function open(kind, spec, supers, bigs, quiet) {
@@ -377,7 +422,7 @@
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, u: null, v: null };
+    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (!quiet) preload(kind);
@@ -423,11 +468,16 @@
     if (!cur.quiet && k === 'big') tpl = tpl.split('{{PC}}').join(th ? ' ' + th.pc : '').replace('{{PRESSED}}', th ? th.push.pressed : '').replace('{{BURST}}', th ? th.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.2));   // 押された PUSH も そのテーマの 形・同じ 大きさ
     let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
+    if (k === 'sd' && !cur.quiet && !calm() && A.reveal.nd && A.films && A.films.nd_film) {   // 第4.77版：極ど的中は ノーマルど的中の 幕と 動画から（光に つつまれた 瞬間に ブラックアウト）
+      cur.sdHtml = html; cur.pre = 1;
+      html = A.reveal.nd.replace('{{BOARD}}', '').replace('{{N}}', '1');
+    }
     cur.stage.innerHTML = html;
     cur.phase = 'reveal'; cur.ov.classList.add('rv');
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();
       else if (k === 'spg') spgGo();
+      else if (k === 'sd' && cur.pre) sdPre();                                              // 第4.77版：ノーマルど的中の 動画 → ブラックアウト → 極ど的中
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
       else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
       else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
@@ -539,7 +589,7 @@
 
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
-    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pz: cur.pz } : null),
+    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
     video: video, _rand: null
   };
