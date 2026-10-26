@@ -259,9 +259,10 @@
     sfx('sd', A.t.SDS.FROM, A.t.SDS.WAIT);
     emit('still');
   }
-  // 極ど的中（紫電）の 入り（第4.77版・まさちゃん「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」）：
-  // 押すと ノーマルど的中の 幕と 動画（nd_film・音 nd）→ 動画の SDUP.AT 秒（光に つつまれて まっ白）で ブラックアウト（動画を 消して 音も 止める）→ SDUP.BLACK 秒 真っ暗
-  // → 極ど的中の 幕（cur.sdHtml）で 第4.71版の 押した 瞬間と 同じ（プチュン（音 sdp）→ 動画 sd_film → ボード）。pre：1＝ノーマルの 動画を 待つ・2＝動いて いる・3＝ブラックアウト・4＝極ど的中
+  // 極ど的中（紫電）の 入り（第4.77版・まさちゃん「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」
+  // → 第4.78版「ブラックアウトのタイミングが遅い、白い光りに包まれると同時にプチュンさせて！」）：
+  // 押すと ノーマルど的中の 幕と 動画（nd_film・音 nd）→ 動画の SDUP.AT 秒（白い 光に つつまれた 瞬間）で 動画と 音を 止めて すぐ（SDUP.BLACK＝0）
+  // 極ど的中の 幕（cur.sdHtml）で 第4.71版の 押した 瞬間と 同じ（プチュン（音 sdp）→ 動画 sd_film → ボード）。pre：1＝ノーマルの 動画を 待つ・2＝動いて いる・3＝切りかえ・4＝極ど的中
   // ノーマルの 動画が ない・読めない・4秒 たっても 動かない → すぐ ブラックアウト → 極ど的中。控えめ → ノーマルの 動画は 出さず 極ど的中の さいごの 1まい（第4.71版と 同じ）
   function sdPre() {
     const v = video('nd_film'), s = video('sd_film'); cur.v = v; cur.on = 0;
@@ -272,6 +273,13 @@
     tryPlay(v, sdBlack);
     later(() => { if (cur && cur.pre === 1) sdBlack(); }, A.t.SG.WAIT_MAX * 1000);
   }
+  function dropKeep(keep) {                                          // 押した PUSH の 画面：暗く なりきったら 消す（動画が 見える ように）
+    const dk = keep.querySelector('.ndfk');
+    const fin = () => { if (keep.parentNode) keep.parentNode.removeChild(keep); };
+    if (dk) dk.addEventListener('animationend', fin, { once: true });
+    const tick = () => { if (!keep.parentNode) return; const a = dk && dk.getAnimations ? dk.getAnimations()[0] : null; if (!a || a.playState === 'finished') fin(); else setTimeout(tick, 400); };
+    setTimeout(tick, 1200);
+  }
   function sdWatch(me, v) {                                          // 動画の 時刻を 1コマごとに 見る（光に つつまれた 瞬間を のがさない）
     if (cur !== me || cur.pre !== 2) return;
     if ((v.currentTime || 0) >= A.t.SDUP.AT || v.ended) { sdBlack(); return; }
@@ -280,11 +288,11 @@
   function sdBlack() {
     if (!cur || cur.kind !== 'sd' || !cur.pre || cur.pre >= 3) return;
     cur.pre = 3; clearTimers(); hush();
-    if (cur.v) park(cur.v);                                          // ブラックアウト：ノーマルの 動画を 消す（幕は 黒）
+    if (cur.v) park(cur.v);                                          // ノーマルの 動画を 消す
     cur.v = null;
     const ov = ndOv(); if (ov) ov.classList.remove('go');
     emit('blackout');
-    later(sdUp, A.t.SDUP.BLACK * 1000);
+    if (A.t.SDUP.BLACK > 0) later(sdUp, A.t.SDUP.BLACK * 1000); else sdUp();   // 第4.78版：白い 光に つつまれた 瞬間に すぐ プチュン（まさちゃん「白い光りに包まれると同時にプチュンさせて！」）
   }
   function sdUp() {
     if (!cur || cur.kind !== 'sd' || cur.pre !== 3) return;
@@ -472,7 +480,12 @@
       cur.sdHtml = html; cur.pre = 1;
       html = A.reveal.nd.replace('{{BOARD}}', '').replace('{{N}}', '1');
     }
-    cur.stage.innerHTML = html;
+    // 第4.78版（まさちゃん「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」）：ノーマルど的中・極ど的中の 入りは 押した PUSH の 画面を その場で 止めて（押した 形）暗く → 動画
+    const keep = !cur.quiet && !calm() && (k === 'nd' || cur.pre) ? cur.stage.querySelector('.ov.fz') : null;
+    if (keep) {
+      keep.classList.add('ndp'); keep.insertAdjacentHTML('beforeend', '<i class="ndfk" aria-hidden="true"></i>');
+      keep.insertAdjacentHTML('beforebegin', html); dropKeep(keep);
+    } else cur.stage.innerHTML = html;
     cur.phase = 'reveal'; cur.ov.classList.add('rv');
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();

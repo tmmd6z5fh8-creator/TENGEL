@@ -9,10 +9,12 @@
    （ためし3の さいごの 場面を 見て）「このシーン2.3秒伸ばして！」
    （完成版の 光に つつまれた 場面を 見て）「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」
    → 極ど的中（紫電・sd）は この 動画から 入る（SD_UP：fx.js の sdPre／sdBlack／sdUp）
+   （第4.78版・極ど的中の 入りの ためしを 見て）「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」「あと、ブラックアウトのタイミングが遅い、白い光りに包まれると同時にプチュンさせて！」
+   → 押した PUSH の 画面を その場で 止めて（押した 形）DIM 秒で 暗く する（PRESS）・極ど的中は 白い 光に つつまれた 瞬間に すぐ プチュン（SD_UP）
    送ってくれた 画像・動画は 色と 雰囲気・動きの 見本に するだけ。絵・形は 一から 作る（なぞらない）。
    動画（flat/normal_film.py・馬の 走りは flat/nd_horse.py・「ど！的中」は flat/shiden_logo.py の 3D）・音（gen_sfx.py の sfx_nd）は 一から 作る。
    押した あと（0秒＝押した 瞬間・動画が 動きだした 瞬間）：
-     P 真っ暗 1秒（プチュンは なし）
+     P 押した PUSH の 画面が その場で 止まって（押した 形）0.1秒から 0.62秒で 暗く なる（ポンッ・シュウゥン↓）→ 1秒まで 真っ暗（プチュンは なし）
      A 光の 玉（1.0秒〜）：暗闇に 光の 点 → 若草色の 光の 玉（芝から 1.2m 浮く）・金の 輪 3つ・光の 筋・光の 粒・玉の 光で 芝が 見える
      B 馬（2.0〜5.2秒）：玉の まん中から シルバーの 競走馬と 騎手が とびおりて、芝の うずまき（画面で 右まわり・1周半・さいごは 上を 右へ）を ギャロップ
      C 光る（5.0〜5.65秒）：玉が ふくらんで 強く 光り → 光に つつまれる → 低い 目線の 場面（芝の 上・うしろに 大きな 光の 玉と 金の 輪）
@@ -55,9 +57,12 @@ def _glints():
 
 
 GLINT_T = _glints()
-# 極ど的中（紫電・sd）の 入り（まさちゃん「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」）：
-# 押すと この 動画（音も）→ AT 秒（光に つつまれて 画面が まっ白：コマ 161〜166）で ブラックアウト（動画を 消して 音も 止める）→ BLACK 秒 真っ暗 → 極ど的中（プチュン → 動画 sd_film → ボード）
-SD_UP = dict(AT=5.43, BLACK=.5)
+# 極ど的中（紫電・sd）の 入り（まさちゃん「極ど的中演出は、ノーマル的中演出の一枚目の画像の光りに画面が包まれた瞬間に、画面がブラックアウトして、極ど的中演出が始まるようにして！」
+# → 第4.78版「ブラックアウトのタイミングが遅い、白い光りに包まれると同時にプチュンさせて！」）：
+# 押すと この 動画（音も）→ AT 秒（白い 光に つつまれた 瞬間：まっ白に なる コマ 160 の すぐ あと）で 動画と 音を 止めて すぐ（BLACK＝0）極ど的中（プチュン → 動画 sd_film → ボード）
+SD_UP = dict(AT=5.34, BLACK=0.0)
+# 押した 瞬間（第4.78版・まさちゃん「タップしてからいきなり暗くなってるから、もう少しわかりやすくして！」）：PUSH の 画面を その場で 止めて（押した 形）DELAY 秒から DIM 秒で 暗く
+PRESS = dict(DELAY=.1, DIM=.62)
 assert FILM['BURST'] < SD_UP['AT'] < FILM['WHITE'][1]
 ND_T = dict(FILM=(0.0, FILM['END']), ORB=FILM['ORB_IN'][0], RUN=FILM['RUN'], BURST=FILM['BURST'], LOGO=FILM['LOGO'][0], LAND=FILM['LOGO'][1],
             SWEEP=FILM['SWEEP'][0], RES=FILM['RES'])
@@ -91,6 +96,12 @@ def nd_css():
     return f'''
 /* ---------- ノーマルど的中（nd）：normal_do.py（第4.77版：押すと 1秒 真っ暗 → 動画 nd_film.mp4＝flat/normal_film.py・ど！的中は flat/shiden_logo.py の 3D・プチュンは なし） ---------- */
 /* 押してから 動画が 動きだす まで（読みこみ）は 黒。動きだしたら（go）幕は すきとおって 動画（video.sgv）が 見える → {sec(BOARD)} ボード */
+/* 押した 瞬間（.ndp：fx.js が 押した PUSH の 画面に つける・極ど的中の 入りも）：その場で 止めて（押した 形）{sec(PRESS['DELAY'])}から {sec(PRESS['DIM'])}で 暗く → 暗く なりきったら fx.js が 消す */
+.ov.ndp{{z-index:40;pointer-events:none}}
+.ov.ndp *:not(.ndfk),.ov.ndp *::before,.ov.ndp *::after{{animation-play-state:paused!important}}
+.ov.ndp .pbox{{scale:.94;transition:scale .12s ease-out}}
+.ov.ndp .ndfk{{position:absolute;inset:0;z-index:60;background:#000;opacity:0;pointer-events:none;animation:ndDim {sec(PRESS['DIM'])} cubic-bezier(.4,0,.8,.5) {sec(PRESS['DELAY'])} both}}
+@keyframes ndDim{{from{{opacity:0}}to{{opacity:1}}}}
 .ov.fz.nd{{--t0:{sec(T['RES'] + .45)};--tc:.3s;z-index:31;background:#000}}
 .ov.fz.nd.go{{background:transparent}}
 .ov.fz.nd:not(.go):not(.still) *{{animation-play-state:paused!important}}
