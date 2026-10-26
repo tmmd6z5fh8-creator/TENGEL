@@ -30,10 +30,10 @@
   const HIDDEN_KEY = 'tengel.fxhidden';   // 隠れど的中の数（端末の中だけ）
   const SETTING = 'fx';
   // PUSHが出たときの音・押したときの音（隠れど的中：PUSHはデカの音・押すとど的中の音。プレミアム・神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
-  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], hidden: ['big_push', 'fz'], pc: ['fz_push', 'pc'], zp: ['fz_push', 'zp'], gd: ['fz_push', 'gd'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'] };
-  const FZ_PUSH = { fz: 1, pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1, sd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
-  const BOARD_OF = { hidden: 'fz', pc: 'fz', zp: 'fz', gd: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz' };   // ボードの 形（ど的中の 形）
-  const TITLE_OF = { pc: 'fz', zp: 'fz', spg: 'sgd', sd: 'fz' };                                     // ボードの 見出し（A.board.titles の キー）
+  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], hidden: ['big_push', 'fz'], pc: ['fz_push', 'pc'], zp: ['fz_push', 'zp'], gd: ['fz_push', 'gd'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'] };
+  const FZ_PUSH = { fz: 1, pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1, sd: 1, nd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
+  const BOARD_OF = { hidden: 'fz', pc: 'fz', zp: 'fz', gd: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz' };   // ボードの 形（ど的中の 形）
+  const TITLE_OF = { pc: 'fz', zp: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };                                     // ボードの 見出し（A.board.titles の キー）
   const LOT = { pc: 1 / 6, zp: 1 / 8, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };                           // くじ（※仮）：ど的中 → プレミアム → 超プレミアム／ど的中の 残りの 2回に1回 紫電（第4.66版）／神様 → 超神様 → 超プレミアム神様
   let S = { effects: true, calm: null, sound: true };
   let cur = null;
@@ -112,7 +112,7 @@
   }
   // 特別な 演出の くじ（※仮・数えかたは しない）：ど的中 → 6分の1 で プレミアム → その 8分の1 で 超プレミアム／神様 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様
   function lottery(kind) {
-    if (kind === 'fz') return rand() < LOT.pc ? (rand() < LOT.zp ? 'zp' : 'pc') : (rand() < LOT.sd ? 'sd' : 'fz');
+    if (kind === 'fz') return rand() < LOT.pc ? (rand() < LOT.zp ? 'zp' : 'pc') : (rand() < LOT.sd ? 'sd' : 'nd');   // 第4.77版：紫電で ない ど的中は ノーマルど的中（nd：動画）
     if (kind === 'gd') return rand() < LOT.sgd ? (rand() < LOT.spg ? 'spg' : 'sgd') : 'gd';
     return kind;
   }
@@ -239,7 +239,7 @@
   function wake(v) { try { v.currentTime = 0; } catch (e) { /* なし */ } try { const p = v.play(); if (p && p.catch) p.catch(() => {}); v.pause(); } catch (e) { /* なし */ } }   // タップの 中で 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）
   function later(fn, ms) { const t = setTimeout(() => { if (cur && cur.timers) cur.timers = cur.timers.filter(x => x !== t); fn(); }, ms); if (cur) cur.timers.push(t); return t; }
   function clearTimers() { if (!cur) return; cur.timers.forEach(clearTimeout); cur.timers = []; }
-  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), spzOv = () => (cur ? $('.ov.spz', cur.stage) : null), sdOv = () => (cur ? $('.ov.sd', cur.stage) : null);
+  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), spzOv = () => (cur ? $('.ov.spz', cur.stage) : null), sdOv = () => (cur ? $('.ov.sd', cur.stage) : null), ndOv = () => (cur ? $('.ov.nd', cur.stage) : null);
   // ど的中・紫電（第4.71版）：押した 瞬間に プチュン（CSS と 音 sdp）・動画（sd_film）を 再生 → 動きだした 時（playing）を 0秒に して 音（sd：プチュンの 音に 重ねる）と ボード（go）。
   // 4秒 たっても 動かない・読めない・控えめ → 動画の さいごの 1まい（still：プチュンは 出さない）→ 1.3秒 ボード
   function sdGo() {
@@ -256,6 +256,24 @@
     if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
     const ov = sdOv(); if (ov) ov.classList.add('still');
     sfx('sd', A.t.SDS.FROM, A.t.SDS.WAIT);
+    emit('still');
+  }
+  // ノーマルど的中（第4.77版）：押した 瞬間に 動画（nd_film：はじめの 1秒は 真っ暗・プチュンは なし）を 再生 → 動きだした 時（playing）を 0秒に して 音（nd）と ボード（go）。
+  // 4秒 たっても 動かない・読めない・控えめ → 動画の さいごの 1まい（still）→ 1.3秒 ボード
+  function ndGo() {
+    const v = video('nd_film'); cur.v = v; cur.on = 0;
+    if (!v || v.error || calm()) { ndStill(); return; }
+    cur.stage.appendChild(v); v.className = 'sgv';
+    try { v.currentTime = 0; } catch (e) { /* なし */ }
+    tryPlay(v, ndStill);
+    later(() => { if (cur && !cur.on) ndStill(); }, A.t.SG.WAIT_MAX * 1000);
+  }
+  function ndStill() {
+    if (!cur || cur.on === 2) return;
+    clearTimers(); cur.on = 2;
+    if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
+    const ov = ndOv(); if (ov) ov.classList.add('still');
+    sfx('nd', A.t.NDS.FROM, A.t.NDS.WAIT);
     emit('still');
   }
   // 超神様的中：押した 瞬間に 動画を 再生。動きだした 時（playing）を 0秒に して 音と ボード（go）。4秒 たっても 動かない・視差効果を減らす／控えめ → さいごの 1まい（still）
@@ -312,6 +330,11 @@
       sfx('sd', v.currentTime || 0, 0, true);                    // 押した 瞬間の プチュンの 音（sdp）を 止めずに 重ねる
       v.classList.add('on'); const ov = sdOv(); if (ov) ov.classList.add('go');
       emit('film');
+    } else if (cur.kind === 'nd' && name === 'nd_film') {
+      cur.on = 1; clearTimers();
+      sfx('nd', v.currentTime || 0);
+      v.classList.add('on'); const ov = ndOv(); if (ov) ov.classList.add('go');
+      emit('film');
     } else if (cur.kind === 'spg' && name === 'spg_up' && cur.sp === 1) {
       cur.sp = 2; clearTimers();
       sfx('spg_up', v.currentTime || 0);
@@ -331,9 +354,9 @@
   function onEnded(name) { if (cur && cur.kind === 'spg' && name === 'spg_up' && cur.sp === 2) spgFilm(); }
   function onError(name) {   // 読めなかったら（どちらの 動画でも）さいごの 1まい ※仮
     if (!cur || cur.phase !== 'reveal' || cur.on) return;
-    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill(); else if (cur.kind === 'sd' && name === 'sd_film') sdStill();
+    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill(); else if (cur.kind === 'sd' && name === 'sd_film') sdStill(); else if (cur.kind === 'nd' && name === 'nd_film') ndStill();
   }
-  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd')) return; if (cur.on === 1) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
+  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd' || cur.kind === 'nd')) return; if (cur.on === 1) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
   function vidBack() { if (!cur || cur.on !== 1 || !cur.v) return; try { const p = cur.v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* なし */ } }
 
   // ---------- 出す ----------
@@ -341,10 +364,11 @@
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
   // 出る 前に 絵を 読んで おく（プレミアム 38まい・神様 24まい・紫電と 超神様の さいごの 1まい・動画）
   function preload(kind) {
-    const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
+    const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
     if (kind === 'sd') video('sd_film');
+    if (kind === 'nd') video('nd_film');
   }
   function open(kind, spec, supers, bigs, quiet) {
     close(true); css();
@@ -361,9 +385,9 @@
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
   // 的中 1.0・デカ的中（隠れど的中の PUSH も）1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
-  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, sd: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
+  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, sd: 1.4, nd: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
   const RBW = { pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1 };
-  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
+  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
   // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
   function pboxHTML(th, label) {
     const pc = th ? ' ' + th.pc : '';
@@ -405,6 +429,7 @@
       if (k === 'sgd') sgdGo();
       else if (k === 'spg') spgGo();
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
+      else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
       else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
       else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t.PC, 1);             // 控えめ：1秒後に ボードの 所から ※仮
       else if (k === 'gd' && calm()) sfx(SND[k][1], A.t.GD, 1);

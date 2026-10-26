@@ -10,6 +10,9 @@
      sd_film.mp4  … ど的中・紫電の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
                      → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
      sd_last.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+     nd_film.mp4  … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）
+                     → はじける → 3D の ど！的中（flat/shiden_logo.py）＋ 光の オーラと 輪っか ＝ 237コマ・7.9秒・780×1688・CRF 20。2コアで 約25分）。FILMS=nd で これだけ 作る
+     nd_last.webp … ノーマルど的中の 動画の さいごの 1まい
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
 import os
@@ -123,12 +126,28 @@ def sd_film():
     print('sd_last.webp', f'{os.path.getsize(os.path.join(out, "sd_last.webp")) / 1e6:.2f}MB', flush=True)
 
 
+# ---------------------------------------------------------------- ノーマルど的中の 動画と さいごの 1まい（第4.77版）
+def nd_film():
+    nd = os.path.join(work, 'nd')
+    sys.path.insert(0, K)
+    import normal_do as NDM
+    n = int(round(NDM.FILM['END'] * NDM.FILM['FPS']))
+    run([sys.executable, os.path.join(FLAT, 'normal_film.py'), nd])          # できて いる コマは とばす（作りかけから つづける）
+    assert all(os.path.exists(os.path.join(nd, f'f{i:03d}.png')) for i in range(n)), 'ノーマルど的中の コマが そろって いない'
+    run([sys.executable, os.path.join(FLAT, 'normal_film.py'), '--encode', nd, os.path.join(out, 'nd_film.mp4')])
+    print('nd_film.mp4', f'{os.path.getsize(os.path.join(out, "nd_film.mp4")) / 1e6:.2f}MB', f'{n}コマ', flush=True)
+    run([sys.executable, os.path.join(FLAT, 'normal_film.py'), '--last', nd, os.path.join(out, 'nd_last.webp')])
+    print('nd_last.webp', f'{os.path.getsize(os.path.join(out, "nd_last.webp")) / 1e6:.2f}MB', flush=True)
+
+
 if __name__ == '__main__':
-    which = os.environ.get('FILMS', 'sgd,spg,sd').split(',')
+    which = os.environ.get('FILMS', 'sgd,spg,sd,nd').split(',')
     if 'sgd' in which:
         sgd_film()
     if 'spg' in which:
         spg_up()
     if 'sd' in which:
         sd_film()
-    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp') if os.path.exists(os.path.join(out, f))])
+    if 'nd' in which:
+        nd_film()
+    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp') if os.path.exists(os.path.join(out, f))])

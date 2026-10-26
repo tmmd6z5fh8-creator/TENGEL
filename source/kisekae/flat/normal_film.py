@@ -1,0 +1,1092 @@
+"""ノーマルど的中（第4.77版）：動画（30コマ/秒・780×1688・7.9秒・時刻は normal_do.py の FILM）。
+   まさちゃん「pushボタンをタップしたら暗闇から、一枚目の画像の玉が現れて、玉の中心から馬が二枚目の線に合わせて走り出して一周半したら玉が弾けて、
+   玉の光に包まれて、ど！的中が現れるようにしてみて！ リアルな画質で作成して！」
+   「馬の走ってる動きの演出リアルにして！ 光りに当たる影とかもリアルにして！」「馬もっと小さくていい！ 走ってる演出が地面から滑ってるように見えるから、
+   しっかり地面を走ってる演出にして！」「あとど！的中の周りを光りのオーラで輝かせて！！！」「馬もう一回り小さくていいよ！ あと、ど！的中のの周りに
+   光りの輪っかが輝いてる演出にして！」「馬の動き方、この動画を参考にして！」「馬の形もジョッキー乗せた状態で、この動画の馬を参考に作成して！」
+   「馬の色はシルバーにして！ あと尻尾もリアルにね！」
+   - 送ってくれた 画像・動画は 色と 雰囲気・動きの 見本だけ。絵・形は すべて 一から 作る（なぞらない）。
+   - 世界（m）：地面は y＝0（砂の 地面）。光の 玉は (0, 1.2, 0)。カメラは 斜め 上から。
+   - 馬（シルバーの 競走馬）と 騎手（金の 勝負服・白い そで）は 3D（horse3d・nd_horse の 騎手）を「馬から 見た カメラ」で 描く。
+     走りは nd_horse（玉の まん中から とびおりて 地面の うずまきを ギャロップ・ひづめは 地面で すべらない）。
+     光は 玉の 点光源（影つき）＋ 照らされた 地面からの 照りかえし。たてがみ・しっぽは 銀の 毛（2D の 毛の 束）。
+   - 地面：砂（凸凹で 光る 粒）・玉の 光だまり・馬と 騎手の 影（玉の 光の 大きさで ぼける）・ひづめの あと・金に 光る ひづめの あと・砂けむり・とぶ 砂。
+   - 光の 玉・輪・光の 筋・粒は 2D（3D の 点を 写して 描く）。「ど！的中」は shiden_logo の 3D（！は 1つ）＋ まわりに 光の オーラと 光の 輪っか。
+   python3 flat/normal_film.py <作業フォルダ> [はじめの コマ] [おわりの コマ]   （SCALE=0.5 で ためしの 小さい 絵）
+   python3 flat/normal_film.py --encode <作業フォルダ> <出力.mp4>  /  --last <作業フォルダ> <出力.webp>"""
+import os, sys, math
+import numpy as np
+import cv2
+HERE = os.path.dirname(os.path.abspath(__file__))
+K = os.path.join(HERE, '..')
+sys.path.insert(0, os.path.join(K, 'r3d'))
+sys.path.insert(0, K)
+sys.path.insert(0, HERE)
+from h3d import Scene, nrm
+import horse3d as Hm
+from hair2d import HairBuf
+from paint import fbm, blur, smoothstep
+import shiden_film as SF                          # 仕上げの 道具（bloom・finish・zoom_blur・save_png）
+import shiden_logo as SL
+import normal_do as ND
+import nd_horse as NH
+
+F = ND.FILM
+FPS = F['FPS']
+W0, H0 = F['W'], F['H']
+W, H, S = SF.W, SF.H, SF.S
+NF = int(round(F['END'] * FPS))
+ss, grid, bloom, finish, zoom_blur = SF.ss, SF.grid, SF.bloom, SF.finish, SF.zoom_blur
+TMP = os.environ.get('ND_TMP', '/tmp/nd_r')
+os.makedirs(TMP, exist_ok=True)
+f32 = np.float32
+
+# ================================================================ 世界と カメラ
+FOV = 50.0
+O = NH.O                                          # 光の 玉の まん中（地面から 1.2m）
+EYE = O + 20.0 * np.array([0.0, math.sin(math.radians(30)), math.cos(math.radians(30))])
+TGT = np.array([0.0, 0.62, 0.0])
+ORB_R = 0.42                                      # 玉の 半径（m）
+
+
+def cam_axes(eye=EYE, tgt=TGT):
+    fw = nrm(tgt - eye); rt = nrm(np.cross(fw, (0, 1, 0))); up = np.cross(rt, fw)
+    return fw, rt, up
+
+
+FW, RT, UP = cam_axes()
+TH = math.tan(math.radians(FOV) * .5)
+
+
+def project(P):
+    """世界の 点 → 画面の px と 奥行き（カメラの 前向きの m）"""
+    P = np.atleast_2d(np.asarray(P, float))
+    d = P - EYE
+    xc, yc, zc = d @ RT, d @ UP, d @ FW
+    return np.stack([(xc / zc / (TH * W / H) + 1) * .5 * W, (1 - yc / zc / TH) * .5 * H], -1), zc
+
+
+OC, OZ = project(O)
+OC = OC[0]; OZ = float(OZ[0])
+PX_M = H / (2 * OZ * TH)                          # 玉の 奥行きで 1m は 何 px
+
+
+def px_per_m(z):
+    return H / (2 * np.asarray(z, float) * TH)
+
+
+def orb_px():
+    return ORB_R * PX_M
+
+
+# ================================================================ 時刻
+T_BLACK = F['BLACK']
+ORB0, ORB1 = F['ORB_IN']
+RING0, RING1 = F['RINGS']
+RUN0, RUN1 = F['RUN']
+SW0, SW1 = F['SWELL']
+T_BURST = F['BURST']
+WH0, WH1 = F['WHITE']
+LG0, LG1 = F['LOGO']
+HOT0, HOT1 = F['HOT']
+SWP0, SWP1 = F['SWEEP']
+T_RES, T_END = F['RES'], F['END']
+T_LAND = NH.T_LAND
+H_END = WH0 + .12                                 # 馬は 光に つつまれて 見えなく なる
+
+
+def orb_level(t):
+    """玉の 明るさ・大きさ（0 → 1：光の 点 → 玉）"""
+    return ss(ORB0, ORB1, t)
+
+
+def swell(t):
+    return ss(SW0, SW1, t)
+
+
+ORB_COL = np.array([.80, 1.0, .70], f32)          # 玉の 光の 色（若草色の 白）
+GOLD = np.array([2.4, 1.85, .75], f32)
+
+
+def orb_I(t):
+    """玉の 光の 強さ（地面・馬・砂けむり）"""
+    return orb_level(t) * (1 + 1.8 * swell(t)) * (1 + .35 * math.exp(-max(t - RUN0, 0) / .12) * (t >= RUN0))
+
+
+def irr(P, t):
+    """玉の 光（向きを 問わない 受け手：砂けむり・とぶ 砂）"""
+    d = np.linalg.norm(np.atleast_2d(P) - O, axis=-1)
+    return orb_I(t) * 3.2 / (d ** 1.5 + .3)
+
+
+# ================================================================ 地面（砂）：画面の 画素ごとの 地面の 場所（カメラは 動かない）
+GEO = {}
+
+
+def ground_geo():
+    if not GEO:
+        yy, xx = grid()
+        nx = ((xx + .5) / W * 2 - 1) * TH * W / H
+        ny = (1 - (yy + .5) / H * 2) * TH
+        dxyz = [FW[i] + nx * RT[i] + ny * UP[i] for i in range(3)]
+        tt = -EYE[1] / dxyz[1]                                                  # 画面は ぜんぶ 地平より 下
+        GEO['X'] = (EYE[0] + dxyz[0] * tt).astype(f32)
+        GEO['Z'] = (EYE[2] + dxyz[2] * tt).astype(f32)
+        GEO['zc'] = tt.astype(f32)                                              # カメラの 前向きの 奥行き
+        rl = np.sqrt(1 + nx * nx + ny * ny)
+        GEO['cosf'] = (1 / rl).astype(f32)                                      # 光の 道の 長さ → 前向きの 奥行き
+        GEO['foot'] = (tt * rl * 2 * TH / H / np.maximum(-dxyz[1] / rl, .05)).astype(f32)   # 1画素の 地面の 大きさ（m）
+    return GEO
+
+
+def _h2(i, j, sd):
+    h = np.sin(i * 127.1 + j * 311.7 + sd * 74.7) * 43758.5453
+    return h - np.floor(h)
+
+
+def vnoise(X, Z, cell, sd):
+    """世界に 固定の なめらかな ノイズ（0〜1）"""
+    x = X / cell; z = Z / cell
+    i = np.floor(x); j = np.floor(z)
+    fx = x - i; fz = z - j
+    ux = fx * fx * fx * (fx * (fx * 6 - 15) + 10); uz = fz * fz * fz * (fz * (fz * 6 - 15) + 10)
+    a = _h2(i, j, sd); b = _h2(i + 1, j, sd); c = _h2(i, j + 1, sd); d = _h2(i + 1, j + 1, sd)
+    return a + (b - a) * ux + (c - a) * uz + (a - b - c + d) * ux * uz
+
+
+def ground_tex():
+    """砂の 色（albedo）と 凸凹の 向き（法線）：一度 作って TMP に のこす"""
+    g = ground_geo()
+    if 'alb' in g:
+        return g
+    fn = os.path.join(TMP, f'ndground_{W}x{H}_v3.npz')
+    if os.path.exists(fn):
+        z = np.load(fn)
+        g['alb'], g['N'] = z['alb'], z['N']
+        return g
+    X, Z, foot = g['X'].astype(np.float64), g['Z'].astype(np.float64), g['foot'].astype(np.float64)
+    ow = lambda cell: np.clip((cell / np.maximum(foot, 1e-4) - 1.5) / 2.5, 0, 1)   # 画素より 細かい もようは 消す（ちらつかない）
+    OCT = ((1.9, .022, 1), (.6, .011, 2), (.2, .005, 3), (.065, .0025, 4), (.022, .0012, 5))
+    def hgt(x, z):
+        return sum((vnoise(x, z, c, sd) - .5) * a * ow(c) for c, a, sd in OCT)
+    e = .003
+    h0 = hgt(X, Z)
+    gx = (hgt(X + e, Z) - h0) / e
+    gz = (hgt(X, Z + e) - h0) / e
+    N = np.dstack([-gx, np.ones_like(gx), -gz])
+    N /= np.linalg.norm(N, axis=2, keepdims=True)
+    v1 = vnoise(X, Z, 2.6, 11); v2 = vnoise(X, Z, .5, 12); v3 = vnoise(X, Z, .1, 13); v4 = vnoise(X, Z, .025, 14)
+    tone = .8 + .3 * (v1 - .5) * 2 * .5 + .2 * (v2 - .5) * ow(.5) + .24 * (v3 - .5) * ow(.1) + .34 * (v4 - .5) * ow(.025)
+    peb = vnoise(X, Z, .03, 21)
+    pk = np.clip((peb - .8) * 5, 0, 1) * ow(.03)
+    dark = np.clip((vnoise(X, Z, .045, 22) - .82) * 5, 0, 1) * ow(.045)
+    alb = np.array([.215, .178, .132])[None, None] * (tone * (1 + .4 * pk - .35 * dark))[..., None]
+    g['alb'], g['N'] = alb.astype(f32), N.astype(f32)
+    tmp = fn[:-4] + f'_{os.getpid()}.npz'
+    np.savez(tmp, alb=g['alb'], N=g['N'])
+    os.replace(tmp, fn)
+    return g
+
+
+KG = 6.0                                          # 地面の 光の 強さ
+AMB = np.array([.018, .023, .028], f32)           # 夜空の うすい 光（月）
+
+
+def ground_E(t, X, Z, N):
+    """玉の 光（地面）：やわらかく 弱く なる（遠くも 少し 見える）"""
+    lx, ly, lz = O[0] - X, O[1] - 0.0, O[2] - Z
+    d = np.sqrt(lx * lx + ly * ly + lz * lz)
+    ndl = (N[..., 0] * lx + N[..., 1] * ly + N[..., 2] * lz) / d
+    return orb_I(t) * KG * np.maximum(ndl, 0) ** .7 / (d ** 1.3 + .3)
+
+
+# ---------------------------------------------------------------- 影（玉の 光：馬と 騎手を 線分の かたまりで）
+SH_MAX = 2.4                                      # 影を 描く 長さ（馬から m：遠くは うすく）
+
+
+def _seg_dist(P0, P1, Q0, Q1):
+    """線分 P（N 本）と 線分 Q（M 本）の いちばん 近い きょり と P の 上の 位置（0〜1）"""
+    d1 = P1 - P0; d2 = Q1 - Q0
+    r = P0[:, None] - Q0[None]
+    a = (d1 * d1).sum(-1)[:, None]
+    e = (d2 * d2).sum(-1)[None] + 1e-12
+    f = (d2[None] * r).sum(-1)
+    c = (d1[:, None] * r).sum(-1)
+    b = (d1[:, None] * d2[None]).sum(-1)
+    den = a * e - b * b
+    s = np.where(den > 1e-12, np.clip((b * f - c * e) / np.maximum(den, 1e-12), 0, 1), 0.0)
+    tq = (b * s + f) / e
+    s = np.where(tq < 0, np.clip(-c / a, 0, 1), np.where(tq > 1, np.clip((b - c) / a, 0, 1), s))
+    tq = np.clip((b * s + f) / e, 0, 1)
+    p = P0[:, None] + d1[:, None] * s[..., None]
+    q = Q0[None] + d2[None] * tq[..., None]
+    return np.linalg.norm(p - q, axis=-1), s
+
+
+def shadow_region(caps, P):
+    """影が 落ちる 画面の 箱"""
+    pts = []
+    for a, b, r in caps:
+        for q in (a, b):
+            pts.append([q[0], 0.0, q[2]])
+            if q[1] < O[1] - .05:
+                sp = O + (q - O) * (O[1] / (O[1] - q[1]))
+            else:
+                dv = np.array([q[0] - O[0], 0.0, q[2] - O[2]])
+                sp = P + dv / (np.linalg.norm(dv) + 1e-9) * SH_MAX
+            dv = sp - P
+            L_ = np.linalg.norm(dv)
+            if L_ > SH_MAX:
+                sp = P + dv / L_ * SH_MAX
+            pts.append([sp[0], 0.0, sp[2]])
+    q, z = project(np.array(pts))
+    pad = 6
+    x0, y0 = int(max(0, q[:, 0].min() - pad)), int(max(0, q[:, 1].min() - pad))
+    x1, y1 = int(min(W, q[:, 0].max() + pad)), int(min(H, q[:, 1].max() + pad))
+    return x0, y0, x1, y1
+
+
+def horse_shadow(caps, P, box):
+    """箱の 中の 地面の 光の 通り（1＝影なし）：玉は 半径 ORB_R の 光（影の ふちが ぼける）"""
+    x0, y0, x1, y1 = box
+    g = ground_geo()
+    X, Z = g['X'][y0:y1, x0:x1].ravel(), g['Z'][y0:y1, x0:x1].ravel()
+    G = np.stack([X, np.zeros_like(X), Z], 1).astype(np.float64)
+    A = np.array([c[0] for c in caps]); B = np.array([c[1] for c in caps]); R_ = np.array([c[2] for c in caps])
+    vis = np.ones(len(G))
+    for k in range(0, len(G), 16000):
+        Gk = G[k:k + 16000]
+        dd, sk = _seg_dist(Gk, np.broadcast_to(O, Gk.shape), A, B)
+        cl = np.maximum(ORB_R * sk, 1e-3)                                              # その 所での 光の 広がり
+        occ = np.clip((R_[None] + cl - dd) / (2 * cl), 0, 1) * np.minimum(1.0, 1.6 * R_[None] / cl)
+        vis[k:k + 16000] = np.prod(1 - occ * .92, axis=1)
+    dist = np.hypot(X - P[0], Z - P[2])
+    vis = 1 - (1 - vis) * np.clip((SH_MAX - dist) / (SH_MAX * .4), 0, 1)
+    return vis.reshape(y1 - y0, x1 - x0).astype(f32)
+
+
+# ---------------------------------------------------------------- ひづめの あと・金の あと・砂けむり・とぶ 砂（時刻は nd_horse の events）
+EV = []
+
+
+def events():
+    if not EV:
+        for e in NH.events(H_END + .2):
+            fr = NH.frame_at(e[0])
+            EV.append(dict(t=e[0], leg=e[1], kind=e[2], p=np.asarray(e[3], float), h=fr['Rm'][:, 0].copy(), side=np.cross(fr['Rm'][:, 0], (0, 1, 0))))
+    return EV
+
+
+def prints_apply(t, N, alb, box_all):
+    """ひづめの あと（くぼみ＋ うしろへ けった 砂の もり上がり）：法線と 色を その 場所だけ かえる。box_all＝(x0, y0) の ずれ"""
+    g = ground_geo()
+    sc = NH.S_H / 0.5
+    for e in events():
+        if e['kind'] != 'td' or e['t'] > t:
+            continue
+        hv = e['h']; c = e['p'] - hv * .06 * sc
+        rr = .12 * sc
+        q, z = project(np.array([[c[0] - rr, 0, c[2] - rr], [c[0] + rr, 0, c[2] + rr], [c[0] - rr, 0, c[2] + rr], [c[0] + rr, 0, c[2] - rr]]))
+        x0, y0 = int(max(0, q[:, 0].min() - 2)), int(max(0, q[:, 1].min() - 2))
+        x1, y1 = int(min(W, q[:, 0].max() + 3)), int(min(H, q[:, 1].max() + 3))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        X, Z = g['X'][y0:y1, x0:x1], g['Z'][y0:y1, x0:x1]
+        age = min((t - e['t']) / .06, 1.0)
+        dx, dz = X - c[0], Z - c[2]
+        sg = .034 * sc
+        dent = -.011 * sc * age * np.exp(-(dx * dx + dz * dz) / (sg * sg))
+        mx, mz = dx + hv[0] * .07 * sc, dz + hv[2] * .07 * sc
+        sm = .05 * sc
+        mound = .005 * sc * age * np.exp(-(mx * mx + mz * mz) / (sm * sm))
+        hx = dent * (-2 * dx / (sg * sg)) + mound * (-2 * mx / (sm * sm))
+        hz = dent * (-2 * dz / (sg * sg)) + mound * (-2 * mz / (sm * sm))
+        n = N[y0:y1, x0:x1]
+        nn = np.dstack([n[..., 0] - hx, n[..., 1], n[..., 2] - hz])
+        N[y0:y1, x0:x1] = nn / np.linalg.norm(nn, axis=2, keepdims=True)
+        alb[y0:y1, x0:x1] *= (1 - .22 * np.clip(-dent / (.011 * sc), 0, 1))[..., None]
+
+
+def gold_marks(t):
+    """金に 光る ひづめの あと・広がる 光の 輪（着く とき）・着地の 大きな 光の 輪 → 地面の 光（線形）"""
+    g = ground_geo()
+    out = np.zeros((H, W), f32)
+    sc = NH.S_H / 0.5
+    items = [(e['t'], e['p'] - e['h'] * .06 * sc, 1.0) for e in events() if e['kind'] == 'td' and 0 <= t - e['t'] < .7]
+    if 0 <= t - T_LAND < 1.2:
+        items.append((T_LAND, NH.frame_at(T_LAND)['P'], 3.0))
+    for t0, c, big in items:
+        a = t - t0
+        if big > 1:
+            R_ = 1.9 * (1 - math.exp(-a / .25)); wd = .04 + .12 * a; I = 1.3 * math.exp(-a / .22)
+            core = 1.2 * math.exp(-a / .18); cr = .45
+        else:
+            R_ = .03 + .35 * a ** .8; wd = .01 + .02 * a; I = .28 * math.exp(-a / .12)
+            core = .8 * math.exp(-a / .25); cr = .04 * sc
+        rr = R_ + 3 * wd + cr
+        q, z = project(np.array([[c[0] - rr, 0, c[2] - rr], [c[0] + rr, 0, c[2] + rr], [c[0] - rr, 0, c[2] + rr], [c[0] + rr, 0, c[2] - rr]]))
+        x0, y0 = int(max(0, q[:, 0].min() - 2)), int(max(0, q[:, 1].min() - 2))
+        x1, y1 = int(min(W, q[:, 0].max() + 3)), int(min(H, q[:, 1].max() + 3))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        X, Z = g['X'][y0:y1, x0:x1], g['Z'][y0:y1, x0:x1]
+        d = np.hypot(X - c[0], Z - c[2])
+        out[y0:y1, x0:x1] += I * np.exp(-((d - R_) / wd) ** 2) + core * np.exp(-(d / cr) ** 2)
+    return out
+
+
+def trail_marks(t):
+    """馬の 通った あと（地面）：金の 光の すじ（うしろ 1秒ぶん・だんだん 消える）"""
+    if t < T_LAND:
+        return None
+    m = np.zeros((H, W), f32)
+    ts = np.linspace(max(T_LAND, t - 1.0), t, 70)
+    P = np.array([NH.frame_at(x)['P'] for x in ts])
+    q, z = project(P)
+    for i in range(len(P) - 1):
+        k = ((i + 1) / (len(P) - 1)) ** 1.8
+        w = max(1, int(round((1.0 + 3.0 * k) * S * (OZ / z[i]))))
+        cv2.line(m, (int(q[i][0] * 16), int(q[i][1] * 16)), (int(q[i + 1][0] * 16), int(q[i + 1][1] * 16)), float(k), w, cv2.LINE_AA, shift=4)
+    m *= 1 - ss(T_BURST - .05, T_BURST + .1, t)
+    return m
+
+
+def ground_layer(t, st=None, caps=None):
+    """地面の 色（線形）と 奥行き"""
+    g = ground_tex()
+    N, alb = g['N'], g['alb']
+    if any(e['kind'] == 'td' and e['t'] <= t for e in events()):
+        N = N.copy(); alb = alb.copy()
+        prints_apply(t, N, alb, (0, 0))
+    E = ground_E(t, g['X'], g['Z'], N)
+    if caps is not None:
+        box = shadow_region(caps, st['P'] if st is not None else np.zeros(3))
+        x0, y0, x1, y1 = box
+        if x1 > x0 and y1 > y0:
+            E[y0:y1, x0:x1] *= horse_shadow(caps, st['P'], box)
+    col = alb * (E[..., None] * ORB_COL + AMB)
+    gm = gold_marks(t)
+    tr = trail_marks(t)
+    em = gm if tr is None else gm + tr * .55
+    col = col + em[..., None] * GOLD * .55 + blur(em, 3 * S)[..., None] * GOLD * .25
+    return col.astype(f32)
+
+
+# ---------------------------------------------------------------- 砂けむり（やわらかい もこもこ）・とぶ 砂（小さな 粒）
+PUFFS, CLODS = [], []
+
+
+def dust_lists():
+    if PUFFS:
+        return
+    rng = np.random.default_rng(5)
+    sc = NH.S_H / 0.5
+    up = np.array([0.0, 1.0, 0.0])
+    for e in events():
+        hv, sd = e['h'], e['side']
+        if e['kind'] == 'lo':                                                      # ける ときの 砂けむり・とぶ 砂
+            PUFFS.append(dict(t0=e['t'], p=e['p'] - hv * .03, v=-hv * .55 + up * .28 + rng.normal(0, .06, 3), r0=.03 * sc, r1=.2 * sc, a=.30, life=.75))
+            for k in range(9):
+                v = -hv * rng.uniform(.9, 2.6) + up * rng.uniform(.8, 2.0) + sd * rng.normal(0, .45)
+                CLODS.append(dict(t0=e['t'], p=e['p'] + up * .01, v=v * sc ** .5, r=rng.uniform(.004, .011) * sc, b=rng.uniform(.6, 1.2)))
+        else:                                                                      # 着く ときの 小さな 砂けむり
+            PUFFS.append(dict(t0=e['t'], p=e['p'].copy(), v=up * .15 + rng.normal(0, .05, 3), r0=.02 * sc, r1=.11 * sc, a=.18, life=.55))
+    P0 = NH.frame_at(T_LAND)['P']
+    for k in range(12):                                                            # 着地：まわりへ 大きな 砂けむり・砂の 粒
+        ang = 2 * math.pi * k / 12 + rng.uniform(-.2, .2)
+        dv = np.array([math.cos(ang), 0.0, math.sin(ang)])
+        PUFFS.append(dict(t0=T_LAND, p=P0 + dv * .12, v=dv * rng.uniform(.8, 1.4) + up * .3, r0=.08, r1=.42, a=.34, life=1.2))
+    for k in range(46):
+        ang = rng.uniform(0, 2 * math.pi)
+        dv = np.array([math.cos(ang), 0.0, math.sin(ang)])
+        CLODS.append(dict(t0=T_LAND, p=P0 + dv * .1 + up * .01, v=dv * rng.uniform(.8, 2.6) + up * rng.uniform(1.0, 2.6), r=rng.uniform(.005, .014), b=rng.uniform(.6, 1.2)))
+
+
+def puff_state(p_, t):
+    a = t - p_['t0']
+    if a < 0 or a > p_['life']:
+        return None
+    pos = p_['p'] + p_['v'] * .45 * (1 - math.exp(-a / .45))
+    r = p_['r0'] + (p_['r1'] - p_['r0']) * (1 - math.exp(-a / .28))
+    al = p_['a'] * ss(0, .05, a) * (1 - ss(p_['life'] * .35, p_['life'], a))
+    return pos, r, al
+
+
+def dust_layer(t, img, zref, front):
+    """砂けむりと とぶ 砂を img に 重ねる（front＝馬より 手前の もの・うしろの もの）。zref＝馬の 奥行き（なし＝全部 うしろ）"""
+    dust_lists()
+    T_ = tex()
+    yy, xx = grid()
+    lvl = orb_I(t)
+    if lvl <= 0:
+        return img
+    for p_ in PUFFS:
+        r_ = puff_state(p_, t)
+        if r_ is None:
+            continue
+        pos, rad, al = r_
+        q, z = project(pos)
+        z = float(z[0])
+        if (zref is not None and (z < zref) != front) or (zref is None and front):
+            continue
+        rp = rad * float(px_per_m(z))
+        if rp < .6:
+            continue
+        cx, cy = q[0]
+        x0, y0 = int(max(0, cx - 2.6 * rp)), int(max(0, cy - 2.6 * rp))
+        x1, y1 = int(min(W, cx + 2.6 * rp + 1)), int(min(H, cy + 2.6 * rp + 1))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        dx, dy = (xx[y0:y1, x0:x1] - cx) / rp, (yy[y0:y1, x0:x1] - cy) / rp
+        n = sample(T_['n2'], dx * .35 + p_['t0'] * 3.1, dy * .35 + (t - p_['t0']) * .4)
+        m = np.exp(-(dx * dx + dy * dy) * .55) * (.55 + .9 * n) * al
+        vdir = nrm(pos - EYE); ldir = nrm(O - pos)
+        fwd = 1 + 2.2 * max(0.0, float(vdir @ ldir)) ** 4                         # 玉の 光を うしろから 受けると 明るく ひかる
+        c = np.array([.34, .29, .22], f32) * float(irr(pos, t)[0]) * fwd * ORB_COL + AMB * 2
+        img[y0:y1, x0:x1] = img[y0:y1, x0:x1] * (1 - m[..., None]) + c * m[..., None]
+    for c_ in CLODS:
+        a = t - c_['t0']
+        if a < 0:
+            continue
+        v = c_['v']
+        th_ = (v[1] + math.sqrt(v[1] ** 2 + 2 * 9.8 * max(c_['p'][1], 0))) / 9.8     # 地面に 落ちる まで
+        def at(x):
+            x = min(max(x, 0.0), th_)
+            return c_['p'] + v * x + np.array([0.0, -4.9 * x * x, 0.0])
+        if a > th_ + .35:
+            continue
+        al = 1.0 if a <= th_ else 1 - (a - th_) / .35
+        p1, p0 = at(a), at(a - 1 / 60)
+        q, z = project(np.array([p1, p0]))
+        z0 = float(z[0])
+        if (zref is not None and (z0 < zref) != front) or (zref is None and front):
+            continue
+        rp = max(.5, c_['r'] * float(px_per_m(z0)))
+        c = np.array([.30, .25, .19], f32) * float(irr(p1, t)[0]) * c_['b'] * ORB_COL + AMB
+        lay = np.zeros((H, W), f32)
+        cv2.line(lay, (int(q[1][0] * 16), int(q[1][1] * 16)), (int(q[0][0] * 16), int(q[0][1] * 16)), 1.0, max(1, int(round(rp * 1.6))), cv2.LINE_AA, shift=4)
+        x0, y0 = int(max(0, min(q[:, 0]) - rp - 3)), int(max(0, min(q[:, 1]) - rp - 3))
+        x1, y1 = int(min(W, max(q[:, 0]) + rp + 4)), int(min(H, max(q[:, 1]) + rp + 4))
+        if x1 > x0 and y1 > y0:
+            m = lay[y0:y1, x0:x1] * al
+            img[y0:y1, x0:x1] = img[y0:y1, x0:x1] * (1 - m[..., None]) + c * m[..., None]
+    return img
+
+
+# ================================================================ 馬と 騎手（3D）：馬から 見た カメラで 描く
+def _lin(hx):
+    hx = hx.lstrip('#')
+    return tuple((int(hx[i:i + 2], 16) / 255) ** 2.2 for i in (0, 2, 4))
+
+
+COAT = _lin('#C3C7CE')                            # シルバー（銀色の 毛：つやで 光る）
+SILK, SLEEVE, HELMET = _lin('#E7B03A'), _lin('#F3F3EF'), _lin('#E7B03A')
+HAIR = np.array([.50, .52, .56], f32)             # 銀の たてがみ・しっぽ
+
+
+def _mats(sc):
+    sc.mat(NH.M_COAT, 1, COAT, 0.27, 0.55, 0.16, 4.0)
+    sc.mat(NH.M_EYE, 1, (0.004, 0.003, 0.003), 0.06, 0.0, 0.0, 0.0)
+    sc.mat(NH.M_HOOF, 1, (0.035, 0.033, 0.032), 0.4, 0.2, 0.0, 0.0)
+    sc.mat(NH.M_SILK, 1, SILK, 0.30, 0.35, 0.35, 3.0)
+    sc.mat(NH.M_SLEEVE, 1, SLEEVE, 0.32, 0.35, 0.30, 3.0)
+    sc.mat(NH.M_HELMET, 1, HELMET, 0.16, 0.35, 0.10, 3.0)
+    sc.mat(NH.M_PANTS, 1, (0.66, 0.66, 0.68), 0.6, 0.25, 0.10, 3.0)
+    sc.mat(NH.M_BOOT, 1, (0.012, 0.012, 0.014), 0.3, 0.30, 0.05, 3.0)
+    sc.mat(NH.M_CLOTH, 1, (0.72, 0.72, 0.74), 0.75, 0.2, 0.0, 3.0)
+    sc.mat(NH.M_SADDLE, 1, (0.02, 0.016, 0.014), 0.4, 0.3, 0.05, 3.0)
+    sc.mat(NH.M_GOGGLE, 1, (0.02, 0.02, 0.03), 0.08, 0.5, 0.0, 3.0)
+
+
+def _tail_strands(st, S, sc3, t, rng):
+    """しっぽ（3D の 毛の 束を 写す）：根元から うしろ・少し 下へ 流れ、走りに 合わせて 上下・左右に 波うつ。もとの 点は 毛の 束ごと"""
+    s_ = st['s']
+    Rm = st['Rm']
+    hv = Rm[:, 0]; upv = Rm[:, 1]; sdv = Rm[:, 2]
+    ta = S['tail_pts']
+    root = NH.to_world(st, [ta[2][0], ta[2][1], 0.0])
+    g = st['g']
+    locks = []
+    L_tail = 1.15 * s_                                                             # しっぽの 長さ（m）
+    for k in range(18):
+        a0 = rng.uniform(-1, 1); b0 = rng.uniform(-1, 1)
+        L_ = L_tail * rng.uniform(.7, 1.08)
+        n = 16
+        pts = []
+        for i in range(n + 1):
+            u = i / n
+            wave = math.sin(2 * math.pi * (g * 1.0 - u * .9) + k * .4)
+            wav2 = math.sin(2 * math.pi * (g * 1.0 - u * .7) + 1.3 + k * .25)
+            back = u * L_
+            drop = (.10 + .30 * u * u) * L_ * u - .12 * L_ * math.sin(2 * math.pi * (g - .15)) * u * u
+            lat = (.05 * a0 * u + .07 * wave * u * u) * L_
+            vrt = (.04 * b0 * u + .05 * wav2 * u * u) * L_
+            spread = (.06 + .28 * u) * L_tail
+            p = root - hv * back - upv * (drop - vrt) + sdv * (lat + a0 * spread * .35 * u) + upv * b0 * spread * .25 * u
+            pts.append(p)
+        locks.append(np.array(pts))
+    return locks
+
+
+def horse_sample(t, seed=41):
+    """1つの 時刻の 馬と 騎手：色（線形・すき通しを かけた もの）・すき通し・奥行き（カメラの 前向きの m）・その ほか"""
+    st = NH.state(t)
+    B, Rm, s_ = st['B'], st['Rm'], st['s']
+    Lref = NH.LREF
+    to_l = lambda q: Lref + Rm.T @ (np.asarray(q, float) - B) / s_
+    eye_l, tgt_l = to_l(EYE), to_l(TGT)
+    c2, cz = project(B)
+    rad = 1.9 * s_ * H / (2 * float(cz[0]) * TH)
+    wx0, wy0 = c2[0][0] - rad, c2[0][1] - rad * 1.1
+    wx1, wy1 = c2[0][0] + rad, c2[0][1] + rad * .9
+    if wx1 < 0 or wy1 < 0 or wx0 > W or wy0 > H:
+        return None
+    # 馬が かたむく（ロール）と、馬から 見た カメラの 絵は 画面の まん中を 軸に まわる（sdfr の カメラは 上を y に とる）→ 描いた あと もどす（Mw）
+    fw_l = nrm(tgt_l - eye_l); rt_l = nrm(np.cross(fw_l, (0, 1, 0))); up_l = np.cross(rt_l, fw_l)
+    def proj_l(Q):
+        d = np.atleast_2d(np.asarray(Q, float)) - eye_l
+        xc, yc, zc_ = d @ rt_l, d @ up_l, d @ fw_l
+        return np.stack([(xc / zc_ / (TH * W / H) + 1) * .5 * W, (1 - yc / zc_ / TH) * .5 * H], -1)
+    lq = [Lref + np.array(v) for v in ((0, 0, 0), (.8, 0, 0), (0, .8, 0), (0, 0, .8), (.6, .6, .6))]
+    Mw = cv2.estimateAffinePartial2D(proj_l(lq).astype(f32), project(np.array([NH.to_world(st, q) for q in lq]))[0].astype(f32))[0]
+    Mi = cv2.invertAffineTransform(Mw)
+    cs = np.array([[wx0, wy0], [wx1, wy0], [wx0, wy1], [wx1, wy1]], f32)
+    lc = cs @ Mi[:, :2].T + Mi[:, 2]
+    x0, y0 = int(max(0, lc[:, 0].min())), int(max(0, lc[:, 1].min()))
+    x1, y1 = int(min(W, lc[:, 0].max())), int(min(H, lc[:, 1].max()))
+    if x1 - x0 < 4 or y1 - y0 < 4:
+        return None
+    sc = Scene()
+    sc.image(W, H, 2, (x0, y0, x1, y1))
+    sc.camera(eye_l, tgt_l, FOV)
+    sc.bounce(0)
+    sc.env((0.010, 0.014, 0.012), (0.008, 0.011, 0.008), (0.012, 0.012, 0.009), (0.004, 0.005, 0.004))
+    lv = orb_I(t)
+    ol = to_l(O)
+    dO = max(np.linalg.norm(B - O), .5)
+    sc.plight(ol, tuple(np.array([9.0, 10.5, 7.5]) * lv * dO ** .6 / (s_ * s_)), 6, 1)    # 玉（影つき：玉の 大きさで ぼける）
+    gE = float(ground_E(t, np.array([st['P'][0]]), np.array([st['P'][2]]), np.array([[0.0, 1.0, 0.0]]))[0])
+    sc.light(nrm(Rm.T @ np.array([0.0, -1.0, 0.0])), tuple(np.array([.20, .17, .12]) * ORB_COL * gE * 1.1), 10, 0)   # 照らされた 砂からの 照りかえし（下から）
+    sc.light(nrm(Rm.T @ (-FW + np.array([0.0, .9, 0.0]))), (0.11, 0.13, 0.16), 10, 0)                              # 夜空の うすい 光
+    kr = ss(RING0, RING0 + .35, t) * (1 - ss(T_BURST, T_BURST + .12, t))
+    sc.light(nrm(Rm.T @ (-FW * .5 + np.array([0.0, 1.0, 0.0]))), tuple(np.array([.40, .32, .13]) * kr), 10, 0)      # 金の 輪の 光（上・手前から）
+    _mats(sc)
+    S3, J = NH.build_racer(sc, st)
+    R = sc.render(os.path.join(TMP, f'h{os.getpid()}'))
+    P = lambda pts: project(np.array([NH.to_world(st, q) for q in np.atleast_2d(np.asarray(pts, float))]))[0]   # 馬の 中の 点 → 画面
+    rgb, A, D = R['rgb'], np.clip(R['a'], 0, 1), R['d']
+    if R['a'].shape[0] == H:
+        rgb, A, D = rgb[y0:y1, x0:x1], A[y0:y1, x0:x1], D[y0:y1, x0:x1]
+        M = np.round(R['m'][y0:y1, x0:x1]).astype(int)
+    else:
+        M = np.round(R['m']).astype(int)
+    # 足先を 少し こい 灰色に（銀の 馬：ひざ・飛節の 下 → ひづめ）：馬から 見た カメラの 画素の 3D の 場所で
+    yy_, xx_ = np.mgrid[y0:y1, x0:x1].astype(f32)
+    nx = ((xx_ + .5) / W * 2 - 1) * TH * W / H; ny = (1 - (yy_ + .5) / H * 2) * TH
+    rd = fw_l[None, None] + rt_l[None, None] * nx[..., None] + up_l[None, None] * ny[..., None]
+    rl = np.linalg.norm(rd, axis=2)
+    rd /= rl[..., None]
+    Pl = eye_l[None, None] + rd * D[..., None]
+    near = np.zeros(A.shape, f32)
+    dzs = st['pose'].get('leg_dz', {})
+    for k, top in (('FL', 'kn'), ('FR', 'kn'), ('HL', 'hk'), ('HR', 'hk')):
+        Fk = S3[k]
+        dz = dzs.get(k, 0.0)
+        zz = (0.1395 if k[0] == 'F' else 0.145) * Fk['z']
+        q0 = np.array([*(np.asarray(Fk[top]) + (np.asarray(Fk['ft']) - np.asarray(Fk[top])) * .1), zz + dz * .5])
+        q1 = np.array([*np.asarray(Fk['hf']), zz + dz])
+        dv = q1 - q0
+        tt = np.clip(((Pl - q0) * dv).sum(-1) / (dv @ dv), 0, 1)
+        dist = np.linalg.norm(Pl - (q0 + tt[..., None] * dv), axis=-1)
+        near = np.maximum(near, np.clip((.11 - dist) / .03, 0, 1) * (.35 + .65 * tt))
+    coat = (M == NH.M_COAT).astype(f32) * near * .55
+    rgb = rgb * (1 - coat[..., None] * .7)
+    zl = np.where(A > .01, D * s_ / rl, 1e9).astype(f32)                         # カメラの 前向きの 奥行き（世界 m）
+    colL = np.zeros((H, W, 3), f32); AL = np.zeros((H, W), f32); DL = np.full((H, W), 1e9, f32)
+    colL[y0:y1, x0:x1] = rgb * A[..., None]
+    AL[y0:y1, x0:x1] = A
+    DL[y0:y1, x0:x1] = zl
+    col = cv2.warpAffine(colL, Mw, (W, H), flags=cv2.INTER_LINEAR)
+    Af = cv2.warpAffine(AL, Mw, (W, H), flags=cv2.INTER_LINEAR)
+    Df = cv2.warpAffine(DL, Mw, (W, H), flags=cv2.INTER_NEAREST, borderValue=1e9)
+    x0, y0, x1, y1 = int(max(0, wx0)), int(max(0, wy0)), int(min(W, wx1)), int(min(H, wy1))
+    # ---- たてがみ・前髪（銀の 毛：走る 向きと 反対へ なびく）・しっぽ（3D の 毛の 束）
+    rng = np.random.default_rng(seed)
+    hb = HairBuf(H, W, ss=2)
+    sz = rad / 120.0
+    sv = project(B + Rm[:, 0] * .3)[0][0] - c2[0]
+    back = -sv / (np.linalg.norm(sv) + 1e-6)
+    ba = math.atan2(back[1], back[0])
+    ts = np.linspace(0, 1, 40)
+    crest = P(np.c_[Hm.bez(S3['crest'], ts), np.zeros(len(ts))])
+    throat = P(np.c_[Hm.bez(S3['throat'], ts), np.zeros(len(ts))])
+    nC = len(crest)
+    from hair2d import guide
+    for i in range(4, nC - 4, 2):                                                     # たてがみ：首に そって うしろへ 寝る 短い 毛（風で 少し 立つ）
+        q = crest[i]
+        tg = crest[i - 2] - crest[min(i + 2, nC - 1)]
+        tg = tg / (np.linalg.norm(tg) + 1e-6)
+        upn = np.array([-tg[1], tg[0]])
+        if upn @ (q - throat[i]) < 0:
+            upn = -upn
+        dv = tg * math.cos(.45) + upn * math.sin(.45)
+        ang = math.atan2(dv[1], dv[0]) + .12 * math.sin(i * .9 + st['g'] * 6.28)
+        L_ = (5.5 + 3.5 * math.sin(i / nC * math.pi)) * sz
+        gg = guide(q, ang, L_, 6, rng, lambda x, y, aa, tt_: 0.0, wave=.6, phase=i + st['g'] * 6)
+        hb.lock(gg, 6, rng, spread=.8 * sz, clump=0.7, wmin=0.3, wmax=0.6, rimk=1.0)
+    locks = _tail_strands(st, S3, sc, t, rng)
+    for Lk in locks:                                                                  # しっぽ：細い 毛の 束（根元は まとまり・先は 広がる）
+        q2 = project(Lk)[0]
+        hb.lock(q2, 7, rng, spread=1.0 * sz, clump=0.5, wmin=0.25, wmax=0.6, rimk=1.4, tip_frac=(0.7, 1.0))
+    cov, rimw, cnt = hb.result(k=0.5)
+    # 毛の 色：銀（玉の 光の 強さ・ふちの 光）・こい 所ほど 少し 暗い
+    lvh = float(irr(B, t)[0])
+    hair = HAIR * (.05 + .38 * lvh) * ORB_COL + np.clip(rimw, 0, 1.6)[..., None] * ORB_COL * (.2 + .7 * lvh) * .45
+    hair = hair * (1.0 - .35 * np.clip(cnt / (cnt.max() + 1e-6) * 2, 0, 1))[..., None]
+    col = col * (1 - cov[..., None]) + hair * cov[..., None]
+    Af = np.clip(Af + cov * (1 - Af), 0, 1)
+    zt = float(project(locks[0][0])[1][0])
+    Df = np.where((cov > .05) & (Df > 1e8), zt, Df)
+    # ---- 頭の ベルト・手綱（こげ茶の 革）
+    tack = np.zeros((H, W), f32)
+    mz = P([Hm.head_pt(S3, 0.56, -0.03)])[0]
+    mo = P([Hm.head_pt(S3, 0.50, -0.10, 0.05)])[0]
+    po = P([Hm.v3(S3['poll'])])[0]
+    hnd = P([J['hand1']])[0]
+    mid = (mo + hnd) / 2 + np.array([0.0, 3.0 * sz])
+    pts = [(1 - u) ** 2 * mo + 2 * (1 - u) * u * mid + u ** 2 * hnd for u in np.linspace(0, 1, 12)]
+    cv2.polylines(tack, [(np.asarray(pts) * 16).astype(np.int32)], False, 1.0, max(1, int(round(1.2 * sz))), cv2.LINE_AA, shift=4)
+    cv2.polylines(tack, [(np.asarray([mo, (mo + po) / 2, po]) * 16).astype(np.int32)], False, 1.0, max(1, int(round(1.0 * sz))), cv2.LINE_AA, shift=4)
+    tack *= .85
+    col = col * (1 - tack[..., None]) + np.array([.03, .02, .015], f32) * lvh * tack[..., None]
+    Af = np.clip(Af + tack * (1 - Af), 0, 1)
+    return dict(col=col, A=Af, D=Df, st=st, S=S3, J=J, box=(x0, y0, x1, y1))
+
+
+def horse_layer(t):
+    """馬と 騎手（3つの 時刻を 重ねて 動きの ぶれ：ひづめが 地面に 着いて いる 所は ぶれない）"""
+    if not RUN0 <= t <= H_END:
+        return None
+    k = 1 / (3 * FPS)
+    sm = [horse_sample(min(max(t + o, RUN0), H_END)) for o in (-k, 0.0, k)]
+    sm = [x for x in sm if x is not None]
+    if not sm:
+        return None
+    c = sum(x['col'] for x in sm) / len(sm)
+    a = sum(x['A'] for x in sm) / len(sm)
+    mid = sm[len(sm) // 2]
+    D = np.minimum.reduce([x['D'] for x in sm])
+    return dict(col=c, A=a, D=D, st=mid['st'], S=mid['S'], J=mid['J'])
+
+
+# ================================================================ 光の 玉・輪・粒・光の 筋
+TEX = {}
+
+
+def tex():
+    if not TEX:
+        rng = np.random.default_rng(7)
+        for k, (sc_, oc) in (('n1', (40, 5)), ('n2', (14, 4))):
+            n = fbm(256, 256, sc_, oc, seed=31 + len(TEX))
+            TEX[k] = ((n - n.min()) / (n.max() - n.min() + 1e-6)).astype(f32)
+        TEX['bokeh'] = [dict(x=rng.uniform(-.1, 1.1), y=rng.uniform(-.05, 1.05), r=rng.uniform(14, 52), a=rng.uniform(.05, .16),
+                             vx=rng.uniform(-6, 6), vy=rng.uniform(-10, -2), ph=rng.uniform(0, 6.28)) for i in range(18)]
+        TEX['pt'] = [dict(r=rng.uniform(.6, 4.4), ph=rng.uniform(0, 6.28), w=rng.uniform(.5, 1.6) * rng.choice((1, 1, 1, -1)), y=rng.normal(0, .5),
+                          life=rng.uniform(.7, 1.6), t0=rng.uniform(0, 1.6), out=rng.uniform(.2, 1.4), b=rng.uniform(.4, 1.0)) for i in range(150)]
+        n = fbm(512, 512, 22, 4, seed=77)
+        TEX['ray'] = ((n - n.min()) / (n.max() - n.min() + 1e-6)).astype(f32)
+    return TEX
+
+
+def sample(t_, u, v):
+    u, v = np.broadcast_arrays(np.asarray(u, f32), np.asarray(v, f32))
+    return cv2.remap(t_, (u % 1.0 * (t_.shape[1] - 1)).astype(f32), (v % 1.0 * (t_.shape[0] - 1)).astype(f32), cv2.INTER_LINEAR)
+
+
+RINGS = (dict(r=3.7, tilt=6.0, yaw=12.0, w=1.0, sp=.55, beads=3),              # 大きな 輪（ほぼ 水平）
+         dict(r=1.85, tilt=-38.0, yaw=58.0, w=1.15, sp=-.8, beads=2),             # ななめの 輪（地面に とどかない）
+         dict(r=1.2, tilt=74.0, yaw=-32.0, w=1.25, sp=1.2, beads=2))              # 立った 輪
+
+
+def ring_grow(t):
+    return .05 + .95 * (1 - (1 - ss(RING0, RING1, t)) ** 2) + .25 * swell(t)
+
+
+def ring_pts(R_, t, n=360):
+    a = np.linspace(0, 2 * math.pi, n, endpoint=False)
+    ty, tw = math.radians(R_['tilt']), math.radians(R_['yaw'])
+    rad = R_['r'] * ring_grow(t)
+    P = np.stack([np.cos(a) * rad, np.zeros_like(a), np.sin(a) * rad], 1)
+    Rx = np.array([[1, 0, 0], [0, math.cos(ty), -math.sin(ty)], [0, math.sin(ty), math.cos(ty)]])
+    Ry = np.array([[math.cos(tw), 0, math.sin(tw)], [0, 1, 0], [-math.sin(tw), 0, math.cos(tw)]])
+    return P @ (Ry @ Rx).T + O, a
+
+
+def draw_rings(t, front, hD=None):
+    """金の 輪（front＝玉より 手前の 半分 か うしろの 半分）→ 線形の 色。hD＝馬の 奥行き（馬より うしろの 所は 描かない）"""
+    m = np.zeros((H, W), f32)
+    k = ss(RING0, RING0 + .35, t) * (1 - ss(T_BURST, T_BURST + .12, t))
+    if k <= 0:
+        return np.zeros((H, W, 3), f32)
+    for j, R_ in enumerate(RINGS):
+        P, a = ring_pts(R_, t)
+        q, z = project(P)
+        nearer = z < OZ
+        for i in range(len(P)):
+            i2 = (i + 1) % len(P)
+            if nearer[i] != front or P[i][1] < 0.02:
+                continue
+            x0, y0 = q[i]; x1, y1 = q[i2]
+            if hD is not None:
+                xi, yi = int(min(max(x0, 0), W - 1)), int(min(max(y0, 0), H - 1))
+                if hD[yi, xi] < z[i]:
+                    continue
+            br = (.55 + .45 * (z[i] < OZ)) * R_['w']
+            cv2.line(m, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), float(br), max(1, int(round(2.2 * S))), cv2.LINE_AA, shift=4)
+        for b in range(R_['beads']):
+            ang = (b / R_['beads']) * 2 * math.pi + t * R_['sp'] * 2.2
+            i = int((ang % (2 * math.pi)) / (2 * math.pi) * len(P)) % len(P)
+            if nearer[i] != front:
+                continue
+            if hD is not None:
+                xi, yi = int(min(max(q[i][0], 0), W - 1)), int(min(max(q[i][1], 0), H - 1))
+                if hD[yi, xi] < z[i]:
+                    continue
+            cv2.circle(m, (int(q[i][0] * 16), int(q[i][1] * 16)), int(5.5 * S * 16), 2.2, -1, cv2.LINE_AA, shift=4)
+    m *= k
+    return m[..., None] * np.array([2.4, 1.9, 0.9], f32) + blur(m, 3 * S)[..., None] * np.array([1.3, 1.0, .35], f32) + blur(m, 14 * S)[..., None] * np.array([.5, .45, .15], f32)
+
+
+def orb_layer(t):
+    """光の 玉（白 → 若草色・もやもや 動く 表面・ふちの とげ）と 大きな 光（線形の 色）・玉の 形（すき通し）"""
+    T = tex()
+    yy, xx = grid()
+    lv = orb_level(t)
+    if lv <= 0:
+        return np.zeros((H, W, 3), f32), np.zeros((H, W), f32)
+    sw = swell(t)
+    R = orb_px() * (.15 + .85 * ss(ORB0 + .2, ORB1, t)) * (1 + .7 * sw)
+    dx, dy = xx - OC[0], yy - OC[1]
+    rr = np.sqrt(dx * dx + dy * dy)
+    r = rr / R
+    ang = np.arctan2(dy, dx)
+    n = sample(T['n1'], dx / (R * 3.2) + t * .07, dy / (R * 3.2) - t * .05) * .6 + sample(T['n2'], dx / (R * 1.6) - t * .11, dy / (R * 1.6) + t * .09) * .4
+    body = np.clip(1 - r ** 2, 0, 1) ** .5 * (.75 + .5 * n)
+    spikes = np.clip(1 - np.abs(r - 1.02) / .35, 0, 1) * (sample(T['ray'], ang / 6.283 * 3 + t * .05, r * .2) ** 3) * 2.2
+    core = np.exp(-(r / .55) ** 2) * 3.0
+    glow = np.exp(-(rr / (R * 2.6)) ** 2) * .8 + np.exp(-(rr / (R * 7.0)) ** 1.2) * .07
+    birth = 1 + .6 * math.exp(-max(t - RUN0, 0) / .1) * (t >= RUN0)                  # 馬が 生まれる 瞬間 少し 強く
+    out = ((body * 2.2 + core + spikes)[..., None] * np.array([1.0, 1.0, .85], f32) + glow[..., None] * np.array([.55, .85, .35], f32)) * lv * (1 + 1.6 * sw) * birth
+    alpha = np.clip((1 - r) * 3, 0, 1) * lv
+    return out, alpha.astype(f32)
+
+
+def god_rays(t, base):
+    T = tex()
+    lv = orb_level(t)
+    if lv <= .02:
+        return np.zeros((H, W, 3), f32)
+    yy, xx = grid()
+    dx, dy = xx - OC[0], yy - OC[1]
+    ang = np.arctan2(dy, dx)
+    rr = np.sqrt(dx * dx + dy * dy)
+    msk = sample(T['ray'], ang / 6.283 * 2 + t * .012, rr * .0004) ** 3.0
+    src = base * (msk * np.exp(-rr / (W * .45)))[..., None]
+    return zoom_blur(np.minimum(src, 2.5), OC[0], OC[1], 2.2, 14) * (.28 * lv)
+
+
+def lens_streak(t):
+    lv = orb_level(t) * (1 + 1.4 * swell(t))
+    if lv <= 0:
+        return np.zeros((H, W, 3), f32)
+    yy, xx = grid()
+    v = np.exp(-((yy - OC[1]) / (2.2 * S)) ** 2) * np.exp(-np.abs(xx - OC[0]) / (W * .55))
+    v2 = np.exp(-((yy - OC[1]) / (9 * S)) ** 2) * np.exp(-np.abs(xx - OC[0]) / (W * .3))
+    return (v * 1.6 + v2 * .35)[..., None] * np.array([.75, 1.0, .7], f32) * lv
+
+
+def particles(t, hD=None):
+    """光の 粒（玉の まわりを まわりながら 外へ・短い 金の すじ）"""
+    T = tex()
+    m = np.zeros((H, W), f32)
+    lv = ss(ORB0 + .3, ORB1 + .3, t) * (1 - ss(T_BURST, T_BURST + .2, t))
+    if lv <= 0:
+        return np.zeros((H, W, 3), f32)
+    for Pp in T['pt']:
+        a_ = ((t - Pp['t0']) % Pp['life']) / Pp['life']
+        def at(tt):
+            rad = Pp['r'] * (1 + Pp['out'] * tt) * ring_grow(t)
+            ph = Pp['ph'] + Pp['w'] * tt * 1.6
+            return O + np.array([rad * math.cos(ph), Pp['y'] * (1 + tt), rad * math.sin(ph)])
+        p1 = at(a_)
+        if p1[1] < .03:
+            continue
+        q, z = project([p1, at(max(0.0, a_ - .025))])
+        if hD is not None:
+            xi, yi = int(min(max(q[0][0], 0), W - 1)), int(min(max(q[0][1], 0), H - 1))
+            if hD[yi, xi] < z[0]:
+                continue
+        f = Pp['b'] * math.sin(math.pi * a_)
+        cv2.line(m, (int(q[1][0] * 16), int(q[1][1] * 16)), (int(q[0][0] * 16), int(q[0][1] * 16)), float(f), max(1, int(round(1.6 * S))), cv2.LINE_AA, shift=4)
+    m *= lv
+    return m[..., None] * np.array([2.6, 2.1, 1.0], f32) + blur(m, 2 * S)[..., None] * np.array([.9, .7, .25], f32)
+
+
+def bokeh(t):
+    T = tex()
+    yy, xx = grid()
+    out = np.zeros((H, W), f32)
+    lv = orb_level(t)
+    for B in T['bokeh']:
+        x = (B['x'] * W + B['vx'] * t * S * 4)
+        y = (B['y'] * H + B['vy'] * t * S * 4)
+        r = B['r'] * S
+        x0, x1 = int(max(0, x - r - 2)), int(min(W, x + r + 2)); y0, y1 = int(max(0, y - r - 2)), int(min(H, y + r + 2))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        d = np.sqrt((xx[y0:y1, x0:x1] - x) ** 2 + (yy[y0:y1, x0:x1] - y) ** 2)
+        out[y0:y1, x0:x1] += np.clip((r - d) / (2.5 * S), 0, 1) * (.6 + .4 * np.clip(d / r, 0, 1)) * B['a'] * (.8 + .2 * math.sin(t * 1.3 + B['ph']))
+    return out[..., None] * np.array([.35, .6, .25], f32) * lv * .45
+
+
+def haze(t):
+    """玉の まわりの 空気の 光（うすい もや）"""
+    yy, xx = grid()
+    lv = orb_level(t)
+    d = np.sqrt(((xx - OC[0]) / W) ** 2 + ((yy - OC[1]) / W) ** 2)
+    g = np.exp(-d / .45) * .03 + np.exp(-d / 1.2) * .008
+    return g[..., None] * np.array([.35, .7, .3], f32) * lv * (1 + 1.5 * swell(t))
+
+
+def leap_trail(t, hD=None):
+    """玉から とびだす 馬の うしろの 光の すじ（とびおりる あいだ → 消える）"""
+    if not RUN0 < t < T_LAND + .6:
+        return None
+    m = np.zeros((H, W), f32)
+    ts = np.linspace(RUN0, min(t, T_LAND), 40)
+    P = np.array([NH.frame_at(x)['B'] for x in ts])
+    q, z = project(P)
+    fade = 1 - ss(T_LAND, T_LAND + .6, t)
+    for i in range(len(P) - 1):
+        k = ((i + 1) / (len(P) - 1)) ** 1.4 * fade
+        w = max(1, int(round((1.5 + 3.5 * k) * S)))
+        cv2.line(m, (int(q[i][0] * 16), int(q[i][1] * 16)), (int(q[i + 1][0] * 16), int(q[i + 1][1] * 16)), float(k), w, cv2.LINE_AA, shift=4)
+    return m[..., None] * GOLD * .9 + blur(m, 5 * S)[..., None] * GOLD * .45
+
+
+# ================================================================ はじける・光に つつまれる
+def burst_layer(t):
+    a = t - T_BURST
+    if a < -.02:
+        return None
+    yy, xx = grid()
+    rr = np.sqrt((xx - OC[0]) ** 2 + (yy - OC[1]) ** 2)
+    R = W * (.05 + 1.6 * (1 - math.exp(-max(a, 0) / .12)))
+    core = np.exp(-(rr / max(R, 1)) ** 2) * (4.0 * math.exp(-max(a, 0) / .35))
+    ring = np.exp(-((rr - R * 1.05) / (14 * S)) ** 2) * (1.6 * math.exp(-max(a, 0) / .18))
+    white = ss(WH0, WH0 + .08, t) * (1 - ss(WH1 - .2, WH1, t))
+    return (core + ring)[..., None] * np.array([1.0, 1.0, .85], f32) + white * np.array([2.2, 2.4, 2.0], f32)
+
+
+# ================================================================ ど！的中（3D：shiden_logo の 形・！は 1つ）＋ 光の オーラ ＋ 光の 輪っか
+ND_LAYOUT = [('do', (30, 226, 260, 452)), ('e1', (276, 224, 372, 452)), ('hit', (12, 466, 378, 624))]
+ND_HIT_Y = ((SL.ORIGIN[1] - 466) / 100, (SL.ORIGIN[1] - 624) / 100)
+_CDIR = nrm(np.array(SL.CAM_DIR))
+LOGO_C = (195.0 * W / 390, 425.0 * H / 844)       # ロゴの まん中（画面）
+
+
+def logo_pose(t):
+    if t < LG0:
+        return None
+    if t < LG1:
+        u = (t - LG0) / (LG1 - LG0)
+        s = .08 ** (1 - u ** 1.6)
+        rot = (-10 * (1 - u) ** 2, 18 * (1 - u) ** 2, 0.0)
+    else:
+        a = t - LG1
+        s = 1 + .1 * math.sin(math.pi * a / .11) * math.exp(-a / .09) + .025 * ss(.3, T_END - LG1, a)
+        k = ss(.15, .8, a)
+        rot = (-1.4 * math.sin(2 * math.pi * a / 2.3 + .4) * k + 2.5 * math.sin(math.pi * a / .13) * math.exp(-a / .09),
+               2.6 * math.sin(2 * math.pi * a / 2.8) * k, 0.0)
+    pos = -_CDIR * SL.CAM_DIST * (1 / s - 1)
+    return rot, pos, s
+
+
+def logo_layer(t, work, fi):
+    pose = logo_pose(t)
+    if pose is None:
+        return None
+    rot, pos, s = pose
+    rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
+    cache = os.path.join(work, '_logo'); os.makedirs(cache, exist_ok=True)
+    heat = 1 - ss(HOT0, HOT1, t)
+    sweep = (-48 + 78 * ss(0, 1, (t - SWP0) / (SWP1 - SWP0))) if SWP0 <= t <= SWP1 else None
+    flash = [(nrm(np.array([0.0, .2, 1.0])), np.array([.7, 1.0, .6]) * .5)]
+    g = SL.render(os.path.join(rd_, f'ndlogo_{fi:03d}'), W, H, rot, pos, cache, layout=ND_LAYOUT)
+    if g[0] is None:
+        return None
+    return SL.layer(None, W, H, rot, pos, sweep=sweep, flash=flash, heat=heat, layout=ND_LAYOUT, hit_y=ND_HIT_Y, gbuf=g)
+
+
+def logo_bg(t):
+    """ど！的中 の うしろ：若草色と 金の 光の 筋・まん中の 光（光に つつまれた あと）"""
+    yy, xx = grid()
+    T = tex()
+    cx, cy = W * .5, H * .44
+    dx, dy = xx - cx, yy - cy
+    rr = np.sqrt(dx * dx + dy * dy)
+    ang = np.arctan2(dy, dx)
+    k = ss(WH1 - .25, WH1 + .2, t)
+    rays = (sample(T['ray'], ang / 6.283 * 3 + t * .02, .3) ** 3) * np.exp(-rr / (W * .9)) * 1.4
+    core = np.exp(-(rr / (W * .42)) ** 2) * .9
+    return (rays[..., None] * np.array([.6, .9, .4], f32) * .8 + core[..., None] * np.array([.8, .95, .6], f32) * .85 + np.array([.006, .01, .005], f32)) * k
+
+
+def aura(t, Afull):
+    """ど！的中 の まわりの 光の オーラ（字の 形に そって ゆらめく 光・ゆっくり 息を するように）"""
+    k = ss(LG1 - .05, LG1 + .45, t)
+    if k <= 0:
+        return np.zeros((H, W, 3), f32)
+    T = tex()
+    yy, xx = grid()
+    br = 1 + .12 * math.sin(2 * math.pi * (t - LG1) / 1.6)
+    a1 = blur(Afull, 4 * S); a2 = blur(Afull, 13 * S); a3 = blur(Afull, 34 * S)
+    dx, dy = xx - LOGO_C[0], yy - LOGO_C[1]
+    ang = np.arctan2(dy, dx)
+    rr = np.sqrt(dx * dx + dy * dy) / W
+    fl = sample(T['n2'], ang / 6.283 * 5, rr * 2.2 - t * .35) * .65 + sample(T['n1'], ang / 6.283 * 9 + .3, rr * 3.4 - t * .5) * .35   # 外へ ゆらめく 光
+    out = a1[..., None] * np.array([1.6, 1.45, 1.0], f32) * 1.1 + a2[..., None] * np.array([1.5, 1.15, .45], f32) * .9 \
+        + (a3 * (.55 + .9 * fl))[..., None] * np.array([.75, 1.0, .45], f32) * 1.25
+    return out * k * br * (1 - Afull[..., None] * .6)
+
+
+HALO = (dict(rx=.57, ry=.15, rot=-13.0, cy=.0, w=1.0, sp=.32, beads=3),         # 光の 輪っか（画面の はばに 対して）
+        dict(rx=.50, ry=.21, rot=21.0, cy=.02, w=.9, sp=-.24, beads=2),
+        dict(rx=.47, ry=.09, rot=-6.0, cy=.11, w=.8, sp=.4, beads=2))                 # 的中の まわり
+
+
+def halo_rings(t, front):
+    """ど！的中 の まわりを まわる 光の 輪っか（うしろの 半分は 字の うしろ・手前の 半分は 字の 前）"""
+    k = ss(LG1, LG1 + .4, t)
+    if k <= 0:
+        return np.zeros((H, W, 3), f32)
+    m = np.zeros((H, W), f32)
+    grow = .35 + .65 * (1 - (1 - ss(LG1, LG1 + .45, t)) ** 3) + .04 * math.sin(math.pi * min((t - LG1) / .45, 1.0))
+    for j, Hd in enumerate(HALO):
+        n = 240
+        a = np.linspace(0, 2 * math.pi, n, endpoint=False)
+        rx, ry = Hd['rx'] * W * .5 * 2 * grow, Hd['ry'] * W * .5 * 2 * grow
+        cr, sr = math.cos(math.radians(Hd['rot'])), math.sin(math.radians(Hd['rot']))
+        ex, ey = rx * np.cos(a), ry * np.sin(a)
+        X = LOGO_C[0] + ex * cr - ey * sr
+        Y = LOGO_C[1] + Hd['cy'] * H + ex * sr + ey * cr
+        isf = np.sin(a) > 0                                                        # 下の 半分が 手前
+        sh = .55 + .45 * np.sin(a + t * Hd['sp'] * 3.0) ** 2                          # 輪の 上を 光が 流れる
+        for i in range(n):
+            if isf[i] != front:
+                continue
+            i2 = (i + 1) % n
+            cv2.line(m, (int(X[i] * 16), int(Y[i] * 16)), (int(X[i2] * 16), int(Y[i2] * 16)), float(Hd['w'] * sh[i] * (.75 + .25 * front)),
+                     max(1, int(round(6.0 * S))), cv2.LINE_AA, shift=4)
+        for b in range(Hd['beads']):
+            ab = (b / Hd['beads']) * 2 * math.pi + (t - LG1) * Hd['sp'] * 2 * math.pi
+            if (math.sin(ab) > 0) != front:
+                continue
+            x = LOGO_C[0] + rx * math.cos(ab) * cr - ry * math.sin(ab) * sr
+            y = LOGO_C[1] + Hd['cy'] * H + rx * math.cos(ab) * sr + ry * math.sin(ab) * cr
+            cv2.circle(m, (int(x * 16), int(y * 16)), int(8.0 * S * 16), 2.4, -1, cv2.LINE_AA, shift=4)
+            for ga in (0.0, math.pi / 2):                                          # 光の 粒の きらめき（十字）
+                L_ = 34 * S
+                cv2.line(m, (int((x - L_ * math.cos(ga)) * 16), int((y - L_ * math.sin(ga)) * 16)), (int((x + L_ * math.cos(ga)) * 16), int((y + L_ * math.sin(ga)) * 16)),
+                         1.2, max(1, int(round(2.0 * S))), cv2.LINE_AA, shift=4)
+    m *= k
+    return m[..., None] * np.array([3.2, 2.5, 1.1], f32) + blur(m, 4 * S)[..., None] * np.array([2.2, 1.65, .5], f32) \
+        + blur(m, 10 * S)[..., None] * np.array([1.3, 1.0, .3], f32) + blur(m, 24 * S)[..., None] * np.array([.7, .55, .15], f32)
+
+
+# ================================================================ 1コマ
+def frame(t, work, fi):
+    hl = horse_layer(t)
+    hD = hl['D'] if hl is not None else None
+    caps = NH.capsules(hl['st'], hl['S'], hl['J']) if hl is not None and t >= T_LAND - .05 else None
+    img = ground_layer(t, hl['st'] if hl is not None else None, caps)
+    img = img + haze(t) + bokeh(t)
+    base, oa = orb_layer(t)
+    img = img + god_rays(t, base)
+    img = img + draw_rings(t, False, hD)
+    zh = float(project(hl['st']['B'])[1][0]) if hl is not None else None
+    img = dust_layer(t, img, zh, False)
+    lt = leap_trail(t, hD)
+    if lt is not None:
+        img = img + lt
+    behind = hl is not None and t >= RUN0 + .25 and zh > OZ + .1                 # 馬が 玉の うしろ
+    if hl is not None and behind:
+        img = img * (1 - hl['A'][..., None]) + hl['col']
+        img = img * (1 - oa[..., None] * .85) + base
+    else:
+        img = img + base
+        if hl is not None:
+            x = min(max((t - RUN0) / NH.LEAP, 0.0), 1.0)
+            em = (1 - x) ** 1.5                                                        # 玉から 生まれる ときは 光って いる
+            img = img * (1 - hl['A'][..., None]) + hl['col'] + (hl['A'] * em)[..., None] * np.array([1.4, 1.6, 1.1], f32)
+    img = dust_layer(t, img, zh, True)
+    img = img + draw_rings(t, True, hD) + particles(t, hD) + lens_streak(t)
+    bl = burst_layer(t)
+    if bl is not None:
+        img = img + bl
+    if t >= WH1 - .3:
+        k = ss(WH1 - .3, WH1, t)
+        img = img * (1 - k) + logo_bg(t) * k if t < WH1 else logo_bg(t)
+        lay = logo_layer(t, work, fi)
+        if lay is not None:
+            col, A, (x0, y0, x1, y1) = lay
+            Afull = np.zeros((H, W), f32)
+            Afull[y0:y1, x0:x1] = A
+            img = img + aura(t, Afull) + halo_rings(t, False)
+            img[y0:y1, x0:x1] = img[y0:y1, x0:x1] * (1 - A[..., None]) + col
+            img = img + halo_rings(t, True)
+        bl2 = burst_layer(t)
+        if bl2 is not None and t < WH1 + .3:
+            img = img + bl2 * (1 - ss(WH1 - .1, WH1 + .3, t))
+    img = bloom(img, 1.0)
+    out = finish(img, 811 + fi, vig=.55, ca=.003)
+    if t < T_BLACK + .05:
+        out = out * ss(T_BLACK - .05, T_BLACK + .05, t)                                   # はじめの 1秒は 真っ暗（タップ → 暗く → 光の 点）
+    return np.clip(out, 0, 1)
+
+
+def frame_path(work, i):
+    return os.path.join(work, f'f{i:03d}.png')
+
+
+def render(work, i0, i1):
+    for i in range(max(i0, 0), min(i1, NF)):
+        if os.path.exists(frame_path(work, i)):
+            continue
+        t = round(i / FPS, 6)
+        if t < T_BLACK - .05:
+            img = np.zeros((H, W, 3), f32)
+        else:
+            img = frame(t, work, i)
+        SF.save_png(img, frame_path(work, i))
+        print('nd', i, flush=True)
+
+
+if __name__ == '__main__':
+    if sys.argv[1] == '--last':
+        work, out = sys.argv[2], sys.argv[3]
+        im = cv2.imread(frame_path(work, NF - 1))
+        assert im is not None and im.shape[:2] == (H0, W0), 'さいごの コマが 読めない'
+        cv2.imwrite(out, im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+        print(out, os.path.getsize(out))
+    elif sys.argv[1] == '--encode':
+        work, out = sys.argv[2], sys.argv[3]
+        import subprocess
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', os.path.join(work, 'f%03d.png'),
+                        '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-tag:v', 'avc1', '-an', out], check=True)
+        print(out, os.path.getsize(out))
+    else:
+        work = sys.argv[1]; os.makedirs(work, exist_ok=True)
+        i0 = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+        i1 = int(sys.argv[3]) if len(sys.argv) > 3 else NF
+        render(work, i0, i1)

@@ -2453,10 +2453,106 @@ def sfx_sd():
     return mx.render(1.8, target=-13, bass=True)
 
 
+def read_nd():
+    """normal_do.py の 時刻（第4.77版：ノーマルど的中）"""
+    sys.path.insert(0, HERE)
+    import normal_do
+    return normal_do
+
+
+def hoofbeat(rng, g=1.0):
+    """ドッ：ひづめが 地面を うつ（低い 打つ 音＋土の ザッ）"""
+    x = kick(110, 55, .16, 2.2, .045, .45, rng) * .9
+    n = n_(.16)
+    t = tl(n)
+    dirt = bp(rng.standard_normal(n), 600, 3500) * np.exp(-t / .03) * .45
+    return fade((x[:n] if x.ndim == 1 else x[:n, 0]) + dirt, .001, .02) * g
+
+
+def sfx_nd():
+    """ノーマルど的中の 音（第4.77版。秒は normal_do.py の FILM・ND_T。0秒は 動画が 動きだした 瞬間＝押した 瞬間。プチュンは なし）：
+       （真っ暗 1秒・しーん）→ キィィン（光の 点）→ ヴォォン＋ファァ（光の 玉が ふくらむ・和音）・シュワァ（金の 輪が ひろがる）・きらきら
+       → ドドッ ドドッ（馬が 玉から とびだして うずまきで 走る：ひづめ 4つ／1歩・だんだん 大きく・左右に うごく）＋ブルルッ（鼻息）
+       → ヒュオォォ↑（玉が ふくらむ）→ パァァン!!＋シャーン（はじける・光に つつまれる）→ グォン↑（ど！的中 が とびだす）
+       → ドンッ＋ジャーン＋どら＋ジャラジャラ（ドンッ）→ キラーン（光の 筋）→ シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル"""
+    NDm = read_nd()
+    F = NDm.FILM
+    RES = F['RES']
+    t0b = RES + .45
+    mx = Mix(t0b + 2.0, 97)
+    r = mx.rng
+    o0, o1 = F['ORB_IN']
+    # ===== A 光の 玉 =====
+    mx.add(kyuin(2400, 5200, .9, .05, .2), o0, .1, rv=.5)                                    # キィィン（光の 点）
+    mx.add(whomp(1.4, r, 90, 40), o0 + .1, .3, rv=.4)                                      # ヴォォン
+    mx.add(pad((52, 56, 59, 64, 68), F['RUN'][1] - o0 + .4, .9, .6, .45), o0 + .15, .2, rv=.45)   # ファァ（和音：ホ長調）
+    mx.add(nsweep(.9, 400, 6000, .5, r) * np.sin(np.pi * np.linspace(0, 1, n_(.9))) ** 2, F['RINGS'][0], .18, rv=.45)   # シュワァ（輪）
+    sparkle(mx, o0 + .3, 1.6, 16, (88, 91, 95, 100, 103), .07, r)
+    # ===== B 馬：玉から とびおりる（シュバッ）→ 着地（ドンッ・ザザッ）→ ギャロップ（ひづめの 音は 動画の 足が 地面に 着く 時刻：flat/nd_horse.py）=====
+    r0, r1 = F['RUN']
+    sys.path.insert(0, os.path.join(HERE, 'flat'))
+    import nd_horse as NHm
+    mx.add(whoosh(.42, r, 2600, 500), r0 - .02, .22, -.2, rv=.3)                               # シュバッ（とびだす）
+    sparkle(mx, r0, .5, 8, (91, 95, 98, 103), .05, r)
+    tl_ = NHm.T_LAND
+    mx.add(kick(90, 40, .3, 2.6, .06, .5, r), tl_, .5 * FZ_LOW, -.25, rv=.2)                    # ドンッ（着地）
+    n_d = n_(.5)
+    mx.add(bp(r.standard_normal(n_d), 500, 4000) * np.exp(-tl(n_d) / .12) * .6, tl_ + .01, .3, -.2, rv=.3)   # ザザッ（砂）
+    for tt, leg, pan in NHm.steps():
+        if tt <= tl_ + 1e-3:
+            continue
+        p_ = NHm.frame_at(tt)['P']
+        near = min(max((p_[2] + 4.0) / 8.0, 0.0), 1.0)                                           # 手前（カメラに 近い）ほど 大きく
+        gl = (.55 + .45 * near) * (1.0 if leg[0] == 'H' else .85)
+        mx.add(hoofbeat(r, gl), tt, .34, float(np.clip(pan, -1, 1)) * .75, rv=.18)
+    mx.add(snort(.45, r), tl_ + .7, .14, -.3, rv=.3)                                            # ブルルッ
+    mx.add(snort(.4, r), tl_ + 2.0, .12, .4, rv=.3)
+    # ===== C はじける =====
+    s0, s1 = F['SWELL']
+    tb = F['BURST']
+    mx.add(cuin(500, 3400, tb - s0 + .05, .9, r), s0, .22, rv=.4)                          # ヒュオォォ↑
+    mx.add(nsweep(tb - s0, 800, 9000, .5, r) * np.linspace(.1, 1, n_(tb - s0)) ** 2, s0, .2, rv=.4)
+    mx.add(explosion(r, 1.2, 1.4), tb, .55, rv=.35)                                        # パァァン!!
+    mx.add(lcrash(r, 2.2, .7), tb + .01, .25 * FZ_MID, -.4, rv=.45)
+    mx.add(lcrash(r, 2.2, .7), tb + .01, .25 * FZ_MID, .4, rv=.45)
+    mx.add(boom(100, 30, 1.2, .4, .05, 2.4, r), tb, .5 * FZ_LOW, rv=.2)
+    sparkle(mx, tb + .05, .8, 18, (91, 95, 98, 100, 103, 107), .08, r)
+    # ===== D ど！的中 =====
+    lg0, lg1 = F['LOGO']
+    mx.add(nsweep(lg1 - lg0, 500, 5000, .6, r) * np.linspace(.2, 1, n_(lg1 - lg0)) ** 1.5, lg0, .22, rv=.3)   # グォン↑
+    mx.add(explosion(r, 1.4, .9), lg1, .85, rv=.2)                                         # ドンッ
+    mx.add(boom(105, 28, 1.6, .5, .06, 2.8, r), lg1, 1.0 * FZ_LOW, rv=.15)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):                                       # ジャーン
+        mx.add(brass(m, .75, r), lg1 + .03, .28 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
+    mx.add(stab((40, 52), .5, r, 2.2, .6), lg1 + .02, .28 * FZ_MID, rv=.15)
+    mx.add(gong(mtof(47), 2.2, .8, r), lg1 + .04, .3 * FZ_MID, rv=.45)
+    coins(mx, lg1 + .08, 1.0, 30, .2 * FZ_MID, r)
+    mx.add(pad((40, 47, 52, 56), RES - lg1, .2, .6, .5), lg1 + .1, .2, rv=.35)
+    sw0, sw1 = F['SWEEP']
+    for jj, m in enumerate((96, 100, 103, 108)):                                           # キラーン
+        mx.add(tine(mtof(m), .8, .35), sw0 + .06 * jj, .07, (jj / 3 - .5) * .9, rv=.5)
+    # ===== ボード =====
+    for jj, m in enumerate((88, 90, 92, 95, 97, 100, 102, 104)):
+        mx.add(tine(mtof(m), .6, .25), RES - .2 + .03 * jj, .08, (jj % 2 * 2 - 1) * .4, rv=.4)
+    mx.add(pop(560, 260, .14, r, .2), RES + .2, .5, rv=.15)
+    for i, m in enumerate((56, 59, 64)):
+        mx.add(bell(mtof(m), .7, idx=1.4, tau=.3), t0b + .08 * i, .22 * FZ_MID, rv=.3)
+    tt = t0b + .08 * 3
+    mx.add(bell(mtof(64), 1.4, idx=1.3, tau=.6), tt, .28 * FZ_MID, rv=.45)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 1.6, idx=1.4, tau=.6), tt + .015 * i, .14, (-.3, -.1, .1, .3)[i], rv=.45)
+    mx.add(coin(1500, r, .5), tt, .2, -.2, rv=.25)
+    mx.add(coin(1900, r, .45), tt + .06, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
+    medals(mx, RES + .1, 1.8, 26, .2 * FZ_MID, r)
+    return mx.render(1.8, target=-13, bass=True)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
           ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd), ('sfx_sgd', sfx_sgd),
           ('sfx_spg_up', sfx_sgd_up), ('sfx_spg', sfx_spg),     # 第4.52版：超プレミアム神様的中（昇格の 音・動画の 音）
-          ('sfx_sd', sfx_sd), ('sfx_sdp', sfx_sdp))              # 第4.66版：ど的中・紫電・第4.71版：紫電の 押した 瞬間の プチュン
+          ('sfx_sd', sfx_sd), ('sfx_sdp', sfx_sdp),              # 第4.66版：ど的中・紫電・第4.71版：紫電の 押した 瞬間の プチュン
+          ('sfx_nd', sfx_nd))                                    # 第4.77版：ノーマルど的中
 
 def spg_flow(zp, up, spg):
     """超プレミアム神様的中の 流れ（押した 瞬間が 0秒）：超プレミアム（き！の 6.0秒で ブツッ）→ 昇格（6.0秒〜）→ 超神様＋声（12.57秒〜）。

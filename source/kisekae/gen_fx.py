@@ -37,6 +37,7 @@ import super_premium as SP         # 超プレミアムど的中（手書き・�
 import kami as GD                  # 神様的中：3連単の 当たりに 超大穴と 大穴以上（青い 嵐 → 金の 字の 文 → 金の 粒と 神・様・的・中 → 金の 鳥居の 中の 神様的中）
 import kami_super as SG            # 超神様的中（第4.51版）：神様的中の 8回に1回 ※仮（1コマずつ 描いた 動画 ①②③ → 超神様的中の ボード）
 import shiden as SD                # ど的中・紫電（第4.66版・まさちゃんの 指定）：ど的中の 2回に1回 ※仮（第4.71版：プチュン → 3D の 動画：暗闇に 光る 目 → 縦書きの 的中を 切り裂く 蹄 → 3D の ど！！！的中）
+import normal_do as ND             # ノーマルど的中（第4.77版・まさちゃんの 指定）：ど的中で 紫電に ならなかった とき（押すと 1秒 真っ暗 → 光の 玉 → 玉から 白い 馬が うずまきで 走る → 玉が はじけて 光 → 3D の ど！的中）
 
 K = os.path.dirname(os.path.abspath(__file__))
 P = f'{K}/canvas/project' if os.path.isdir(f'{K}/canvas/project') else f'{K}/mock'

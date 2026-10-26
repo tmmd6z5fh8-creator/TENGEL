@@ -1,10 +1,11 @@
 # 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
-#   python3 test_fx_flash.py [hit,big,fz,hidden,miss,pc,zp,gd,sd,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   python3 test_fx_flash.py [hit,big,fz,hidden,miss,pc,zp,gd,sd,nd,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
 #   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd
 #   第4.70版：紫電の ② は 動画（sd_film.mp4）→ ③ は CSS。第4.71版：紫電は 押した 瞬間の プチュン（CSS）→ はじめから おわりまで 動画 → ボード（CSS）。
 #     sd は 動画が 動いた 形（go）で、幕（.ov.sd）の 背景に その 時刻の 動画の コマ（60コマ/秒）を 入れて プチュン・ボードと いっしょに 写して 数える（動画が 手元に ある とき）
+#   第4.77版：ノーマルど的中 nd（押すと 1秒 真っ暗 → はじめから おわりまで 動画 nd_film.mp4 → ボード 7.45秒）：sd と 同じ やり方で 数える
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -12,8 +13,8 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'hidden', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
-SDBG = "(u) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.sd'); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, hidden=9.5, pc=13.1, zp=12.6, gd=10.4, sd=11.5, nd=8.6)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
@@ -39,7 +40,7 @@ try:
         for kind in KINDS:
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
             if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
-                for f in ('sgd_film', 'spg_up', 'sd_film'):
+                for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film'):
                     mp4 = os.path.join(FX_DIR, f + '.mp4')
                     if not os.path.exists(mp4) or not shutil.which('ffmpeg'):
                         print(f'  ⚠️ {f}.mp4 が ない（ios/fx_assets/）か ffmpeg が ない'); continue
@@ -53,15 +54,15 @@ try:
                     if not ok: fails.append(f + ': ' + (r.stderr[-300:] if r.returncode else bad))
                 continue
             sdf = 0
-            if kind == 'sd':   # 紫電の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
-                mp4 = os.path.join(FX_DIR, 'sd_film.mp4')
+            if kind in ('sd', 'nd'):   # 紫電・ノーマルど的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
+                mp4 = os.path.join(FX_DIR, kind + '_film.mp4')
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
                     fd = os.path.join(SRV, 'APP', '_sdf'); shutil.rmtree(fd, ignore_errors=True); os.makedirs(fd)
                     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'g%04d.png')], check=True)
                     sdf = len(os.listdir(fd))
-                    print(f'  紫電：動画の コマ {sdf}（60コマ/秒）を 幕の 背景に して 写す')
+                    print(f'  {kind}：動画の コマ {sdf}（60コマ/秒）を 幕の 背景に して 写す')
                 else:
-                    print('  ⚠️ sd_film.mp4 が ない（プチュンと ボードだけ 数える）')
+                    print(f'  ⚠️ {kind}_film.mp4 が ない（CSS と ボードだけ 数える）')
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: %r }, s))" % kind, SPEC); pg.wait_for_timeout(400)
             idx = 0; t0 = time.time()
             if kind != 'miss':
@@ -69,18 +70,18 @@ try:
                     n = pg.evaluate(STEP, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 tap = idx
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
-                if kind == 'sd':   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
-                    pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.sd'); o.classList.remove('still'); o.classList.add('go'); })()"); pg.wait_for_timeout(200)
+                if kind in ('sd', 'nd'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
+                    pg.evaluate("(c) => { const o = document.querySelector('#fxOv .ov.' + c); o.classList.remove('still'); o.classList.add('go'); }", kind); pg.wait_for_timeout(200)
             else:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
                 n = pg.evaluate(STEP, i / 60)
-                if kind == 'sd' and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
-                    pg.evaluate(SDBG, f'_sdf/g{min(i, sdf - 1):04d}.png')
+                if kind in ('sd', 'nd') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
+                    pg.evaluate(SDBG, [f'_sdf/g{min(i, sdf - 1):04d}.png', kind])
                 pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
             pg.evaluate('TengelFx.close()')
-            if kind == 'sd':
+            if kind in ('sd', 'nd'):
                 shutil.rmtree(os.path.join(SRV, 'APP', '_sdf'), ignore_errors=True)
             r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = r.stdout.strip().split('\n')
