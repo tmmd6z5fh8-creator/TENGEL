@@ -31,7 +31,8 @@
        → 金と 虹に 冷める → 雷を まとう・大きな 雷・光の 筋 →（ボードは CSS）。第4.74版：細切れと ドドーンは やめた
        第4.75版：ドンッで 画面の ふちから ロゴへ 雷 4本（logo_strikes）・ロゴの うしろから 火の 輪の 大爆発（land_blast）・字の ふちから 金と 白の 火花（land_sparks）→
        ボードまで まわりで 爆発 7回（bursts_layer：もこもこの 火の玉・burst_sparks：金と 虹の 火花）・ロゴの 下から 火花の 滝（fountain）
-       第4.76版：ロゴに「極」（flat/shiden_logo.py の KY_BOX・PART_Z：「ど」と「的中」の あいだの 手前・金と 虹の 金属・影）
+       第4.76版：ロゴに「極」（flat/shiden_logo.py の KY_BOX・PART_Z：「ど」と「的中」の あいだの 手前・金と 虹の 金属・影）・
+       「極」の ふちから 画面の 外へ 不定期に ばらばらの 向きへ 雷（kyoku_bolts：FILM['L_KBOLTS']）
    python3 flat/shiden_film.py <作業フォルダ> [はじめの コマ] [おわりの コマ]   （コマ f%03d.png。SCALE=0.5 で ためしの 小さい 絵）
    python3 flat/shiden_film.py --encode <作業フォルダ> <出力.mp4>
    python3 flat/shiden_film.py --last <作業フォルダ> <出力.webp>          （さいごの 1まい＝sd_last.webp）"""
@@ -2213,6 +2214,46 @@ L_STRIKES = tuple((round(L_LAND + t, 3), n) for t, n in F['L_STRIKES'])      # �
 L_BURSTS = tuple((round(L_LAND + t, 3), x, y, r) for t, x, y, r in F['L_BURSTS'])   # まわりの 爆発（場面の 秒・画面の 場所・大きさ）
 L_FOUNT = tuple(round(L_LAND + t, 3) for t in F['L_FOUNT'])                  # ロゴの 下から ふる 火花（場面の 秒）
 D_STRIKES = (((-.04, .06), (.2, .33)), ((1.04, .03), (.78, .24)), ((-.04, .97), (.12, .72)), ((1.04, .94), (.88, .72)))   # 画面の ふち → ロゴ（左上・右上・左下・右下）
+L_KBOLTS = tuple((round(L_LAND + t, 3), n) for t, n in F['L_KBOLTS'])        # 第4.76版：「極」から 画面の 外へ 雷（場面の 秒・本数）
+
+
+def kyoku_bolts(lam, kcons, seed=3313):
+    """第4.76版：「極」の ふちから 画面の 外へ 不定期に ばらばらの 向きへ 走る 雷（枝つき・1回 光って 消える）→（芯, 雲を 照らす 光）。
+       字には 映さない（何本も 出るので ロゴ ぜんたいを 何回も 光らせない＝点めつ 16.6）"""
+    core = np.zeros((H, W), np.float32)
+    if not kcons:
+        return core, core
+    allp = np.concatenate([c for c, _ in kcons]); alln = np.concatenate([n for _, n in kcons])
+    for (tb, nb) in L_KBOLTS:
+        fi = int(math.floor((lam - tb) * FPS + 1e-6))
+        if not 0 <= fi < len(BOLT_I):
+            continue
+        inten = BOLT_I[fi]
+        rng = np.random.default_rng(seed + int(tb * 1000))
+        a0 = rng.uniform(0, 6.28)
+        for j in range(nb):
+            tgt = a0 + j * 6.28 / nb + rng.uniform(-.6, .6)
+            want = np.array([math.cos(tgt), math.sin(tgt)])
+            sc_ = alln @ want
+            cand = np.nonzero(sc_ > .7)[0]
+            pick = rng.integers(1 << 30)
+            i = int(cand[pick % len(cand)]) if len(cand) else int(np.argmax(sc_))
+            p0 = allp[i]
+            d = nrm(alln[i] * .35 + want * .65)
+            p1 = bolt_dir_end(p0, d)                                                # 画面の ふちの 少し 外まで
+            rs = np.random.default_rng(seed + int(tb * 1000) + j * 31)
+            rj = np.random.default_rng(seed + int(tb * 1000) + j * 31 + fi * 7)
+            P = zig(rs, [p0, p1], .22, 6)
+            P = P + rj.normal(0, 1.2 * S, P.shape) * np.linspace(0, 1, len(P))[:, None]
+            poly(core, P, inten, 2.2 * S)
+            for b in range(3):                                                 # 枝
+                k0 = int(rs.integers(len(P) // 6, len(P) * 3 // 4))
+                q = P[k0]
+                dd = P[min(len(P) - 1, k0 + 8)] - q
+                ang = math.atan2(dd[1], dd[0]) + rs.choice((-1, 1)) * rs.uniform(.35, .95)
+                Lb = np.linalg.norm(p1 - p0) * rs.uniform(.12, .32)
+                poly(core, zig(rs, [q, q + np.array([math.cos(ang), math.sin(ang)]) * Lb], .22, 5), inten * .6, 1.2 * S)
+    return core, blur(core, 26 * S) * 1.1
 
 
 def logo_strikes(lam, seed=1931):
@@ -2448,6 +2489,13 @@ def logo_frame(lam, work, fi, seed=811):
             Afull = cv2.warpAffine(Afull, Mv(vx, vy, vr), (W, H), flags=cv2.INTER_LINEAR)
     cons = contours(Afull) if g[0] is not None else []
     bc, bglow, blights = big_bolts(lam, cons)
+    Kmask = np.zeros((H, W), np.float32)                                           # 第4.76版：「極」の 形（雷の もと）
+    if g[0] is not None:
+        mk = ((np.abs(g[0]['m'] - SL.M_KYOKU) < .5) & (g[0]['a'] > .5)).astype(np.float32)
+        Kmask[y0 // K:y0 // K + h_, x0 // K:x0 // K + w_] = cv2.resize(mk, (w_, h_), interpolation=cv2.INTER_AREA)
+        if jolt:
+            Kmask = cv2.warpAffine(Kmask, Mv(vx, vy, vr), (W, H), flags=cv2.INTER_LINEAR)
+    kc, kglow = kyoku_bolts(lam, contours(Kmask) if Kmask.max() > .5 else [])
     sc, sglow, slights = logo_strikes(lam)                                       # 第4.75版：ドンッで ロゴへ 雷が 落ちる
     if g[0] is not None:
         flash = []
@@ -2458,7 +2506,7 @@ def logo_frame(lam, work, fi, seed=811):
             flash.append((nrm(np.array([d2[0], -d2[1], .45])), np.array([1.6, 1.2, 2.6]) * it))
         lay = SL.layer(None, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam), gbuf=g)
     # ---------- 背景・うしろの かけら ----------
-    img = d_bg(lam, bglow + sglow * .5)
+    img = d_bg(lam, bglow + sglow * .5 + kglow * .2)
     te = lam - BOOM_D                                                            # 第4.74版：大爆発の つづき（火の玉・けむり・衝撃の 輪・火の粉）
     if te < BOOM_END:
         img = boom_layer(img, te)
@@ -2496,6 +2544,7 @@ def logo_frame(lam, work, fi, seed=811):
     img = img + ac[..., None] * np.array([2.6, 2.3, 3.4]) + blur(ac, 2.5 * S)[..., None] * np.array([1.1, .45, 2.2]) + blur(ac, 9 * S)[..., None] * np.array([.35, .1, .8])
     img = img + bc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(bc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + bglow[..., None] * np.array([.12, .05, .28])
     img = img + sc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(sc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + sglow[..., None] * np.array([.12, .05, .28])
+    img = img + kc[..., None] * np.array([3.2, 2.9, 4.0]) + blur(kc, 4 * S)[..., None] * np.array([1.4, .6, 2.6]) + kglow[..., None] * np.array([.04, .015, .09])   # 第4.76版：「極」から 外へ 雷
     img = img + flakes(lam, front=True)
     img = img + embers(lam)
     img = img + land_sparks(lam - L_LAND) + burst_sparks(lam) + fountain(lam)   # 第4.75版：金の 火花・まわりの 爆発の 火花（金と 虹）・火花の 滝
