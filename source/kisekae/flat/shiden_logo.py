@@ -244,9 +244,20 @@ def rainbow(u):
     return _RAIN[np.clip((u * 511).astype(np.int32), 0, 511)]
 
 
-def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, heat=0.0, K=K_SS, hit_y=None):
+PALETTES = {   # 第4.72版：色の ちがう ど！！！的中（細切れの カット）。face・bev・side＝「ど」「！」の 金属（前の 面・面取り・横）・hit＝「的中」の 前の 面（rainbow か 金属の 色）・
+               # plate＝うしろの 板・gain＝映り込みの 明るさ（色の ついた 金属は 少し 暗く：白く とばない＝色が こく 見える）
+    'gold': dict(face=(1.0, .64, .20), bev=(1.0, .84, .48), side=(.85, .45, .1), hit='rainbow', hbev=(.95, .95, .97), plate=(.05, .045, .05), gain=1.0),
+    'red': dict(face=(.95, .06, .04), bev=(1.0, .36, .26), side=(.45, .02, .01), hit=(.95, .1, .06), hbev=(1.0, .55, .4), plate=(.06, .01, .01), gain=.62),
+    'blue': dict(face=(.04, .2, 1.0), bev=(.4, .68, 1.0), side=(.01, .07, .45), hit=(.06, .3, 1.0), hbev=(.5, .75, 1.0), plate=(.01, .02, .07), gain=.5),
+    'green': dict(face=(.06, .9, .3), bev=(.5, 1.0, .65), side=(.01, .35, .1), hit=(.1, .95, .35), hbev=(.6, 1.0, .7), plate=(.01, .05, .02), gain=.58),
+    'silver': dict(face=(.9, .92, .96), bev=(1.0, 1.0, 1.0), side=(.5, .52, .6), hit='rainbow', hbev=(.95, .95, .97), plate=(.04, .04, .05), gain=.8),
+    'purple': dict(face=(.55, .12, 1.0), bev=(.85, .6, 1.0), side=(.22, .03, .5), hit=(.6, .15, 1.0), hbev=(.9, .7, 1.0), plate=(.04, .01, .07), gain=.62),
+}
+
+
+def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, heat=0.0, K=K_SS, hit_y=None, pal='gold'):
     """sdfr の バッファ（render の 箱の 中）→ ロゴの 色（線形・すき通しを かけた もの）と すき通し（どちらも 箱の 中・K 倍）。
-       W, H＝K 倍の 画面の 大きさ。heat＝白熱（1＝まっ白 → 0＝ふだん：ふちから 先に 冷める）"""
+       W, H＝K 倍の 画面の 大きさ。heat＝白熱（1＝まっ白 → 0＝ふだん：ふちから 先に 冷める）。pal＝色（PALETTES）"""
     n, A, m, ao, dep = Rb['n'], Rb['a'], Rb['m'], Rb['ao'], Rb['d']
     cam = camera()
     rd = rays(cam, W, H, rect)
@@ -260,13 +271,16 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     bev = _ss(.35, .55, fz) * (1 - face)
     side = 1 - _ss(.35, .55, fz)
     is_g = np.abs(m - M_GOLD) < .5; is_h = np.abs(m - M_HIT) < .5; is_p = np.abs(m - M_PLATE) < .5
-    gface, gbev, gside = np.array([1.0, .64, .20], np.float32), np.array([1.0, .84, .48], np.float32), np.array([.85, .45, .1], np.float32)
+    P = PALETTES[pal]
+    gface, gbev, gside = (np.array(P[k], np.float32) for k in ('face', 'bev', 'side'))
     F0 = (is_g[..., None]) * (gface * face[..., None] + gbev * bev[..., None] + gside * side[..., None])
-    F0 = F0 + (is_h[..., None]) * (np.array([.95, .95, .97], np.float32) * bev[..., None] + gside * side[..., None])
-    F0 = F0 + is_p[..., None] * np.array([.05, .045, .05], np.float32)
+    hmetal = not isinstance(P['hit'], str)
+    hface = np.array(P['hit'], np.float32) if hmetal else np.zeros(3, np.float32)
+    F0 = F0 + (is_h[..., None]) * (hface * face[..., None] + np.array(P['hbev'], np.float32) * bev[..., None] + gside * side[..., None])
+    F0 = F0 + is_p[..., None] * np.array(P['plate'], np.float32)
     fres = (1 - cosv) ** 5
     F = F0 + (1 - F0) * fres[..., None] * (F0.max(2, keepdims=True) > 0)
-    col = F * E * (.35 + .65 * ao[..., None])
+    col = F * E * (.35 + .65 * ao[..., None]) * P.get('gain', 1.0)
     # 的中 の 前の 面：つやのある 虹色（ロゴの 中の 高さで 上から 下へ：字に はりつく）
     eye = cam[0].astype(np.float32)
     pw = eye + rd * np.maximum(dep, 0)[..., None]
@@ -276,7 +290,7 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     rain = rainbow(u)
     lit = .75 + .25 * np.clip(nl[..., 1] * .5 + .5, 0, 1)
     paint = rain * (.5 + .3 * lit)[..., None] + (0.01 + 0.3 * fres)[..., None] * np.minimum(E, 1.2) + .07 * band
-    hf = (is_h & (face > .01))[..., None]
+    hf = (is_h & (face > .01) & (not hmetal))[..., None]
     col = np.where(hf, paint * face[..., None] + col * (1 - face[..., None]), col)
     if heat > 0:                                                                       # 白熱 → 黄 → だいだい → ふだん（ふちから 先に 冷める）
         inner = cv2.distanceTransform(((A > .5) & ~is_p).astype(np.uint8), cv2.DIST_L2, 3) / (14.0 * K)
@@ -287,13 +301,13 @@ def shade(Rb, rect, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, 
     return col * A[..., None], A
 
 
-def layer(prefix, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, heat=0.0, cache=None, K=K_SS, layout=None, hit_y=None, gbuf=None):
+def layer(prefix, W, H, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None, heat=0.0, cache=None, K=K_SS, layout=None, hit_y=None, gbuf=None, pal='gold'):
     """3D の ロゴの 1まい（W×H の 画面）→（色・すき通し（箱の 中）, 箱 x0, y0, x1, y1）。見えない → None
        gbuf＝前に 描いた 形（render の 結果：同じ 向き・場所なら 光だけ 計算し直す）"""
     Rb, rect = gbuf if gbuf is not None else render(prefix, W, H, rot, pos, cache, K, layout)
     if Rb is None:
         return None
-    col, A = shade(Rb, rect, W * K, H * K, rot, pos, sweep, flash, heat, K, hit_y)
+    col, A = shade(Rb, rect, W * K, H * K, rot, pos, sweep, flash, heat, K, hit_y, pal)
     x0, y0, x1, y1 = rect
     w, h = (x1 - x0) // K, (y1 - y0) // K
     col = cv2.resize(col, (w, h), interpolation=cv2.INTER_AREA)
