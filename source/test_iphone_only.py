@@ -113,6 +113,12 @@ if r.returncode == 0:
           and [len([k for k, _ in kfb if _re.fullmatch(pre + r'\d+', k)]) for pre in ('kbnqL', 'kbnqM', 'kbnqS')] == [16, 16, 8] and all('var(' not in body for _, body in kfb)
           and '.nqw .nqp i,#ksBnr .nqw .nqp .ln{animation:none!important}' in nc,
           f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし・視差効果を減らす ときは 止まる）・光のつぶの 絵（dust）は 使わない（第4.87版）・光の 横線（筋）は 長く ランダムに のびちぢみ（予定 8本・第4.88版）')
+    # 第4.90版：お正月の 馬に 羊の 着ぐるみ（上の 絵の 前の 1まいと 止まった 絵を 入れかえ・絵の 説明も）
+    nyj = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_newyear.json'), encoding='utf8'))
+    nys = _json.dumps(nyj, ensure_ascii=False)
+    check('ks_71103dfe1944fc7f65705100d4c4455b.webp' in nys and 'ks_8a0dd088ce2e9027f40cbf18a14bf4f1.webp' in nys and 'ac724e18f8d2213f131e7dd2c347cfd0' not in nys
+          and '羊の着ぐるみ' in nyj['bnr']['html'] and '金のたてがみ' not in nys,
+          'ks_newyear.json：お正月の 馬は 羊の 着ぐるみ（光より 前の 絵 71103dfe…・うしろの 絵は 同じ・絵の 説明に「羊の着ぐるみ」）（第4.90版）')
     for f in ks_json:
         txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
         for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):

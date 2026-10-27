@@ -77,7 +77,8 @@ def rope(a, b, sag, w, c1, c2, n=6, edge='#7A0A10'):
 
 
 def acc_newyear(m):
-    """首のつけねの紅白の綱と金の鈴"""
+    """首のつけねの紅白の綱と金の鈴。第4.90版：羊の 着ぐるみ（flat/sheep_suit.py：もこもこの 体と フード・角・耳。たてがみは 中に しまう）
+       （まさちゃん「来年は羊年だから、この馬に羊の着ぐるみを被せてほしい！」）。NEWYEAR_NO_SHEEP=1 で 前の 形"""
     p = m['p1u']
     top, bot, ax = m['collar'](0.12)
     dv = unit(bot - top)
@@ -89,7 +90,13 @@ def acc_newyear(m):
     out += [circ(bell, br, '#E9B949'), circ(bell + V(-br * 0.3, -br * 0.3), br * 0.33, '#FFF0B8'),
             stroke(f'M{f2(bell[0] - br * 0.7)},{f2(bell[1] + br * 0.29)} H{f2(bell[0] + br * 0.7)}', '#9A6A14', 0.018 * p),
             circ(bell + V(0, br * 0.6), br * 0.17, '#7A4A10')]
-    return dict(neck=out)
+    if os.environ.get('NEWYEAR_NO_SHEEP') == '1':
+        return dict(neck=out)
+    from sheep_suit import sheep_acc
+    d = sheep_acc(m)
+    d.pop('_reg', None)
+    d['neck'] = out
+    return d
 
 
 def acc_snow(m):

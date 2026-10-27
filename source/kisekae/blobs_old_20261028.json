@@ -1,0 +1,13 @@
+{
+ "memo": "2026/10/28 第4.90版で 差しかえる 前の 絵の id（ios/kisekae_blobs/ に 残っている。もどす 時の ため）：お正月の 馬に 羊の 着ぐるみ（flat/sheep_suit.py）",
+ "replaced": {
+  "newyear": {
+   "old": "c697c139473623cb0aca69da61a099c1",
+   "new": "dff0a6c1b6d44a312a31c2bab25f3595"
+  },
+  "newyear.top": {
+   "old": "ac724e18f8d2213f131e7dd2c347cfd0",
+   "new": "71103dfe1944fc7f65705100d4c4455b"
+  }
+ }
+}

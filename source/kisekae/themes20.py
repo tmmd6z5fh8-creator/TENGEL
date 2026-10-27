@@ -816,7 +816,7 @@ THEMES = [
                  fonts='見出し：Kiwi Maru<br>本文：Zen Maru Gothic', shape='角丸16px・カードに積もった雪・雪の水玉の背景・帯に舞う雪・すみに雪の結晶・的中ボタンは雪が積もったPUSH',
                  pic='雪の原っぱ・雪をかぶった木・水色のマフラーの芦毛の競走馬（馬らしい形の、ぺたっとした色の絵・首を下げて草を食べる）・白い息・降る雪')),
 
- dict(id='newyear', cat=2, name='午年', desc='赤と金・お正月', title='午年・お正月（赤×金）', banner='newyear', alt='赤い青海波の背景に富士山と初日の出、前足を上げる白い競走馬（金のたてがみ・赤い頭のベルト・首に紅白の綱と金の鈴・ゼッケン1）のイラスト',
+ dict(id='newyear', cat=2, name='午年', desc='赤と金・お正月', title='午年・お正月（赤×金）', banner='newyear', alt='赤い青海波の背景に富士山と初日の出、羊の着ぐるみ（もこもこの毛のフード・くるっと巻いた角・羊の耳）を着て前足を上げる白い競走馬（赤い頭のベルト・首に紅白の綱と金の鈴・ゼッケン1）のイラスト',
       fonts=['Yuji+Syuku', 'Zen+Kaku+Gothic+New:wght@500;700'],
       v=dict(bg='#FBF4E8', ink='#3A1A12', sub='#7A4E3A', card='#FFFDF8', cardB='1.5px solid #E2BE6A', cardO='1px solid #F1DFB2', cardS='0 3px 0 #EBD7A8',
              radius='10px', rs='8px', font='"Zen Kaku Gothic New"', dfont='"Yuji Syuku"', dw='400', logo='#F5D27A', logoS='0 2px 0 #7A0A0E',
@@ -832,7 +832,7 @@ THEMES = [
       orn=orn_newyear(),
       guide=dict(colors=[('#C8161D', '朱赤'), ('#E8B33A', '金'), ('#FFE6A3', '薄い金'), ('#FBF4E8', '背景'), ('#3A1A12', '文字')],
                  fonts='見出し：Yuji Syuku（筆の字）<br>本文：Zen角ゴシック New', shape='角丸10px・金の二重枠・帯に青海波・赤い札・すみに梅の花・的中ボタンは初日の出が映ったPUSH',
-                 pic='赤い青海波・初日の出（光が右回りに回る）と富士山・金の雲・紅白の綱と金の鈴の白い競走馬（馬らしい形の、ぺたっとした色の絵）・「午」の印')),
+                 pic='赤い青海波・初日の出（光が右回りに回る）と富士山・金の雲・羊の着ぐるみ（もこもこの毛・巻いた角・羊の耳）を着た白い競走馬（紅白の綱と金の鈴。馬らしい形の、ぺたっとした色の絵）・「午」の印')),
 
  dict(id='fireworks', cat=2, name='花火', desc='夜空・夏祭り', title='花火（夜空×ピンク・黄）', banner='fireworks', alt='夜空に上がる花火と、金とピンクの光の線でえがいた、かける馬（しっぽはしだれ柳の花火）、ちょうちんのイラスト',
       fonts=['Potta+One', 'M+PLUS+1p:wght@500;700'],

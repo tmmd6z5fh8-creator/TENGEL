@@ -350,12 +350,19 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     marks['hooves'] = hooves
     marks['ground'] = max(h[1] for h in hooves)
     marks['bottom'] = float(np.nonzero(inside.any(1))[0].max() + 1) / s       # 馬の体のいちばん下（ひづめの下のふち）
+    # 第4.90版：着ぐるみ（お正月の 羊）の ための 目印（3倍）：世界の 位置・骨・頭の 所・奥の 足と 耳・頭の 向き（使わない テーマは なにも かわらない）
+    marks.update(Pn=Pn, S=S, far=far, u2=u2, head_sc=HEAD_SC, neck_mid=neck_mid, tsh=tsh, W=W, Hh=Hh)
     extra = acc(marks) if acc is not None else {}
 
     # ---------------- 重ね（3倍） ----------------
     if extra.get('dapples'):                                               # まだら（雪）：胴の中だけ
         torso = body_mask & ~head & (m == 1)
         layer(extra['dapples'], mask=torso.astype(np.float32))
+    if extra.get('suit'):                                                  # 着ぐるみ（第4.90版・お正月の 羊）：体の 上・布と 鞍の 下（ふちは 体の 外へ はみ出す）
+        layer(extra['suit'])
+        if extra.get('suit_shade') is not None:                            # 光の 当たらない 面（3倍の こさ, 色）
+            comp(hexc(extra['suit_shade'][1]), extra['suit_shade'][0])
+        layer(extra.get('suit_over', []))
     cl_parts = [path(cloth_d, pal['cloth']), stroke(f'M{f2(x0 - 2)},{f2(trim_y)} H{f2(x1 + 2)}', pal['clothTrim'], 0.05 * p1u)]
     cl_parts += extra.get('cloth', [])
     layer(cl_parts, mask=body_mask.astype(np.float32))
@@ -421,7 +428,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     fb_ = P1(hp(0.0, 0.075, 0.03 * side))
     mane_parts.append(path(tuft(fb_, P1(hp(0.21, 0.075, 0.075 * side)), 0.08 * p1u, bend=0.12, side=-fx), pal['maneD']))
     mane_parts.append(path(tuft(fb_, P1(hp(0.18, 0.10, 0.07 * side)), 0.07 * p1u, bend=0.10, side=fx), pal['mane']))
-    layer(mane_parts)
+    if not extra.get('no_mane'):                                           # 着ぐるみの 中に たてがみと 前髪を しまう（第4.90版・お正月の 羊）
+        layer(mane_parts)
     layer(extra.get('neck', []))
 
     # 顔：目・鼻の穴・口・頭のベルト・はみ・手綱

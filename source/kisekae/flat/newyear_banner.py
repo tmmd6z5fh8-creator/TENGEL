@@ -1,5 +1,6 @@
 """午年（お正月）（780×320）：赤地に金の雲・富士山と初日の出・「午」の丸い印・金の粉は前の r3d/banners/newyear.py のまま（同じ乱数の順）、
    馬だけ描き直す → 馬らしい形の、ぺたっとした色の競走馬（第2版・horse_flat）：前足を高く上げる白い馬（金のたてがみ・赤い頭のベルト・首に紅白の綱と金の鈴・赤に金のふちの布）
+   第4.90版：馬に 羊の 着ぐるみ（もこもこの 毛の 体と フード・巻いた 角・羊の 耳・たてがみは 中に しまう：flat/sheep_suit.py）
    python3 flat/newyear_banner.py <出力.webp>
    python3 flat/newyear_banner.py --layers <フォルダ>   → 初日の出の光を回すための2まい（まさちゃん「初日の出の太陽から出る光が、右回りで常に動いている」）：
      newyear_bg.webp  … 光より うしろ（赤地と青海波だけ・すき通しなし）
@@ -69,7 +70,8 @@ def render(mode='full', base=None):
     img = cloud_band(img, 20, 236, 300, 26)
     img = cloud_band(img, 330, 286, 260, 24)
     img = cloud_band(img, 600, 52, 160, 22)
-    # かわいい競走馬（flat/cute_themes.py・前足を高く上げる白い馬（金のたてがみ・赤い頭のベルト・首に紅白の綱と金の鈴・赤に金のふちの布））
+    # かわいい競走馬（flat/cute_themes.py・前足を高く上げる白い馬（赤い頭のベルト・首に紅白の綱と金の鈴・赤に金のふちの布））。
+    # 第4.90版：羊の 着ぐるみ（flat/sheep_suit.py・まさちゃん「来年は羊年だから、この馬に羊の着ぐるみを被せてほしい！」）
     if os.environ.get('CUTE_NO_HORSE') != '1':
         img = draw_cute(img, 'newyear', W, Hh)
     # 「午」の丸い印
