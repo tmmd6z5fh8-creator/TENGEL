@@ -29,27 +29,45 @@ def load(blobs_json, run_json):
     return {t: {k: f'/_blob/{v}' for k, v in d.items()} for t, d in b.items()}, json.load(open(run_json))
 
 
-def keyframes(theme, run):
-    """(くり返しの ミリ秒, keyframes の中身)：コマごとに、そのコマを出す時（%）を まとめて translate を1つ"""
+def by_frame(theme, run):
+    """(くり返しの ミリ秒, {コマ: [そのコマを出す時（%）…]})：コマ0 は さいご（100%）も"""
     r = run[theme]
     assert r['names'] == step_plan.frames(theme), 'コマの名前が step_plan とちがう（コマを描きなおす）'
     T_ms, tl = step_plan.timeline(theme, r['lower'], seed=r['plan']['seed'], k=r['plan']['k'])
     assert T_ms == r['plan']['loop_ms'] and len(tl) == r['plan']['changes'], '時間わりが step_run.json とちがう'
-    cols = r['cols']
-    cw, ch = (v // 2 for v in r['cell'])
-    g = r.get('pad', 0) // 2
     by = {}
     for ms, f in tl:
         by.setdefault(f, []).append(ms)
     pct = lambda ms: f'{ms * 100 / T_ms:.3f}'.rstrip('0').rstrip('.') + '%'
-    out = []
+    out = {}
     for f in sorted(by):
         sel = [pct(ms) for ms in by[f]] + (['100%'] if f == 0 else [])
         assert len(set(sel)) == len(sel)
+        out[f] = sel
+    return T_ms, out
+
+
+def keyframes(theme, run):
+    """(くり返しの ミリ秒, keyframes の中身)：コマごとに、そのコマを出す時（%）を まとめて translate を1つ"""
+    r = run[theme]
+    cols = r['cols']
+    cw, ch = (v // 2 for v in r['cell'])
+    g = r.get('pad', 0) // 2
+    T_ms, by = by_frame(theme, run)
+    out = []
+    for f, sel in by.items():
         row, col = divmod(f, cols)
         x, y = -col * (cw + 2 * g), -row * (ch + 2 * g)
         out.append(f'{",".join(sel)}{{transform:translate({x}px,{y}px)}}')
     return T_ms, ''.join(out)
+
+
+def follow(theme, run, pts):
+    """(くり返しの ミリ秒, keyframes の中身)：コマと 同じ 時間わりで、コマごとの 点 pts[コマ]（画面の px）へ translate
+       （第4.87版：雪の 白い 息が 鼻に ついて いく。step-end で 使う）"""
+    T_ms, by = by_frame(theme, run)
+    f1 = lambda v: f'{v:.1f}'.rstrip('0').rstrip('.')
+    return T_ms, ''.join(f'{",".join(sel)}{{transform:translate({f1(pts[f][0])}px,{f1(pts[f][1])}px)}}' for f, sel in by.items())
 
 
 def sprite(theme, blobs, run):

@@ -64,13 +64,17 @@ def skeleton(pose):
     S['poll'] = crest[3] + (adir(th + nr + bend + 40) * 0.03)
     S['head_ang'] = pose['head_ang']
     # 前足
+    # cannon_ext：足ごとに 管（ひざ〜球節）を のばす m（{'FL': …}）。ない／0 なら いままでと 1バイトも ちがわない
+    #   （第4.87版・まさちゃん「青丸の脚が地面から浮いてしまってるから直して！」：立つ馬の 前足の ひづめが うしろ足より 7〜9画素 上に 浮いていた。
+    #    ひざから 上は かえないので、頭や 首の コマ（ハロウィン・ホワイトデー）は そのまま 重なる）
+    cext = pose.get('cannon_ext') or {}
     for side, z in (('L', 1), ('R', -1)):
         a = pose['fore'][side]
         s0 = S['scap']
         ps = s0 + adir(th - 58) * 0.42
         el = ps + adir(a[0]) * 0.30
         kn = el + adir(a[1]) * 0.41
-        ft = kn + adir(a[2]) * 0.28
+        ft = kn + adir(a[2]) * (0.28 + cext.get('F' + side, 0.0))
         co = ft + adir(a[3]) * 0.13
         hf = co + adir(a[3] - 30) * 0.085
         S['F' + side] = dict(s0=s0, ps=ps, el=el, kn=kn, ft=ft, co=co, hf=hf, z=z, ang=a)
@@ -79,7 +83,7 @@ def skeleton(pose):
         hj = S['hip']
         st = hj + adir(a[0]) * 0.43
         hk = st + adir(a[1]) * 0.47
-        ft = hk + adir(a[2]) * 0.29
+        ft = hk + adir(a[2]) * (0.29 + cext.get('H' + side, 0.0))
         co = ft + adir(a[3]) * 0.13
         hf = co + adir(a[3] - 28) * 0.09
         S['H' + side] = dict(hj=hj, st=st, hk=hk, ft=ft, co=co, hf=hf, z=z, ang=a)

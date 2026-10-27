@@ -95,9 +95,20 @@ if r.returncode == 0:
           'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
     check(len(ks_json) == 30 and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')), f'テーマごとの ks_<id>.json が 30こ と 定番4の止まった絵（{len(ks_json)}）')
     sk = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_sakura.json'), encoding='utf8'))
-    check(sk['bnr'] and '<div class="bnrw">' in sk['bnr']['html'] and 'ks_39558c280310609ad0a65971ed217991.webp' in sk['bnr']['html'] and '#ksBnr .bnrw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
+    check(sk['bnr'] and '<div class="bnrw">' in sk['bnr']['html'] and 'ks_cbcbaeebec4470155b1587d5a5c8fe00.webp' in sk['bnr']['html'] and '#ksBnr .bnrw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
           and sk['push']['pc'] == 'sk' and '<svg' in sk['push']['svg'] and 'class="clips sk"' in sk['push']['burst'] and '.fxs .push.sk' in sk['push']['css'] and '.fxs .rb.t-sakura{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
           'ks_sakura.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・桜の PUSH（面・はじける花びら・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
+    # 第4.87版：雪の 白い 息（ページが いつも 動かす・鼻に ついて いく・視差効果を減らす ときは 止まった 3つ）・ネオンの 光のつぶ（236こ ばらばら・keyframes に 変数なし・光のつぶの 絵なし）
+    sn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_snow.json'), encoding='utf8'))
+    nn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_neon.json'), encoding='utf8'))
+    sh, sc, nh, nc = sn['bnr']['html'], sn['bnr']['css'], nn['bnr']['html'], nn['bnr']['css']
+    check('<div class="ykb" aria-hidden="true">' in sh and sh.count('animation-name:kbykbP0') == 5 and '<div class="ykbs" aria-hidden="true">' in sh and sh.count('<i style="left:') >= 3
+          and '#ksBnr .ykb{' in sc and '@keyframes kbykbA{' in sc and '@keyframes kbykbP04{' in sc and '.ykbs{display:block}' in sc,
+          'ks_snow.json：白い 息は ページで（鼻の 前で 玉 5こが じゅんに 生まれて 流れる・鼻に ついて いく keyframes・視差効果を減らす ときは 止まった 3つ）（第4.87版）')
+    kfb = _re.findall(r'@keyframes ([\w-]+)\{((?:[^{}]*\{[^{}]*\})*)\}', nc)
+    check(nh.count('<i class="') == 236 and nh.count('<b class="ln"') == 63 and 'nqd' not in nh + nc and '70fc21205005d11eddef8ebd6c78ee31' not in nh + nc
+          and len([k for k, _ in kfb if k.startswith('kbnqL')]) == 16 and all('var(' not in body for _, body in kfb),
+          f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし）・光のつぶの 絵（dust）は 使わない（第4.87版）')
     for f in ks_json:
         txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
         for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):
@@ -111,7 +122,7 @@ if r.returncode == 0:
     need_b = set(_bf.body_chars()) - have_b
     check(not need_b, f'しぼった字に 画面の言葉が ぜんぶ入っている（足りない字 {len(need_b)}：{"".join(sorted(need_b))[:30]}）→ 足りなければ python3 kisekae/build_fonts.py')
     ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
-    check(len(ks_imgs) in (0, 100) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 100), f'着せ替えの絵：手元にあれば100こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ）')
+    check(len(ks_imgs) in (0, 99) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 99), f'着せ替えの絵：手元にあれば99こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')

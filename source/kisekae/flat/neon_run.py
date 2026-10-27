@@ -4,15 +4,18 @@
      体の傾き・首・頭は いまの絵の形を中心に少しゆれ、たてがみとしっぽは波打つ（1回で1周）
    - コマごとに、地面についているひづめの高さをそろえる（カメラを上下にずらして描く）。宙のコマは前後を結んだ山なり・上下は なめらかに
    - 夜空・太陽・格子・星は いまの絵と同じ。馬が動く所だけを切りぬいて横に並べた1まい（neon_run.webp・馬と騎手と その光だけの すき通し）。
-     うしろの光のつぶは 別の 絵（neon_dust.webp・足す光）と きらめく 粒（neon_run.json の dust.sparks）で、ページが 動かす（2026/10/25〜）。
-     ページでは いまの絵（光のつぶなし）の同じ場所に 光のつぶ → コマ（steps）の 順で 重ねる（neon_wall.py）
-   python3 flat/neon_run.py <出力フォルダ>  → neon_run.webp・neon_run.json（切りぬく場所・コマ数・上下）（sdfr がいる。1コマ約8秒）"""
+     うしろの光のつぶは 絵に 入れず、ページが つぶ 1つずつを 動かす（neon_run.json の dust.parts・neon_wall.py）。
+     第4.87版（まさちゃん「六枚目のネオンは、お尻から出る光が全体的にそれぞれランダムに動いたり消えたり、輝いたりしてないから直して！」）：
+     前は 光のつぶの 足す光の 絵（neon_dust.webp）が まとめて ただよい、明るい 44こだけが きらめいて いた → 236こ ぜんぶを ばらばらに
+     ページでは 背景だけの 止まった絵 → 光のつぶ → コマ（steps）の 順で 重ねる（neon_wall.py）
+   python3 flat/neon_run.py <出力フォルダ>  → neon_run.webp・neon_static.webp・neon_run.json（切りぬく場所・コマ数・上下・光のつぶ）（sdfr がいる。1コマ約8秒）
+   python3 flat/neon_run.py --dust <neon_run.json>  → neon_run.json の 光のつぶ（dust）だけ 書きなおす（コマは 描かない）"""
 import sys, os, math, json
 import numpy as np
 import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-os.environ['NEON_NO_DUST'] = '1'   # 光のつぶは 絵に 入れない（別の 層：neon_dust.webp と きらめく 粒。2026/10/25 まさちゃん「小さな光は常にキラキラと光りながら動いているようにして！」）
+os.environ['NEON_NO_DUST'] = '1'   # 光のつぶは 絵に 入れない（ページが つぶ 1つずつを 動かす。2026/10/25 まさちゃん「小さな光は常にキラキラと光りながら動いているようにして！」・第4.87版）
 import neon_banner as NB
 from neon_rider import POSE, Hm
 from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at
@@ -120,22 +123,17 @@ def run(out):
         sheet[:, i * cw:(i + 1) * cw, :3] = frc[y0:y1, x0:x1]
         sheet[:, i * cw:(i + 1) * cw, 3] = a[y0:y1, x0:x1]
     save_rgba(f'{out}/neon_run.webp', sheet[..., :3], sheet[..., 3], q=90)
-    # 光のつぶの 層（足す光：mix-blend-mode:plus-lighter で 重ねる → いまの絵と 同じ）：つぶの ある 所だけ 切りぬく
-    L = np.clip(NB.dust_light(hip0), 0, 1)
-    la = L.max(-1)
-    ys, xs = np.nonzero(la > 1 / 255)
-    dx0, dy0 = max(0, (xs.min() - 4) // 2 * 2), max(0, (ys.min() - 4) // 2 * 2)
-    dx1, dy1 = min(NB.W, -(-(xs.max() + 5) // 2) * 2), min(NB.Hh, -(-(ys.max() + 5) // 2) * 2)
-    lrgb = np.where(la[..., None] > 1e-6, L / np.maximum(la[..., None], 1e-6), 0)
-    save_rgba(f'{out}/neon_dust.webp', lrgb[dy0:dy1, dx0:dx1], la[dy0:dy1, dx0:dx1], q=92)
-    # きらめく 粒：つぶの うち 明るくて 大きい もの（上から 44こ）。x・y は 絵の 画素
-    parts = NB.dust_particles(hip0)
-    parts = sorted(parts, key=lambda t: -(t[5] * (t[3] if t[2] == 'dot' else 1.2)))[:44]
-    sparks = [[round(x, 1), round(y, 1), ci, round(w, 2), round(size if kind == 'dot' else 1.3, 2)] for x, y, kind, size, ci, w in parts]
     info = dict(size=[NB.W, NB.Hh], cell=[int(x0), int(y0), int(cw), int(ch)], frames=N_FRAMES, dy=[round(v, 2) for v in dys],
-                hip=[round(float(hip0[0]), 2), round(float(hip0[1]), 2)], dust=dict(box=[int(dx0), int(dy0), int(dx1 - dx0), int(dy1 - dy0)], cols=list(NB.DUST_COLS), sparks=sparks))
+                hip=[round(float(hip0[0]), 2), round(float(hip0[1]), 2)], dust=dust_info(hip0))
     json.dump(info, open(f'{out}/neon_run.json', 'w'), ensure_ascii=False)
-    print(json.dumps({k: v for k, v in info.items() if k != 'dust'}, ensure_ascii=False), 'dust box', info['dust']['box'], 'sparks', len(sparks))
+    print(json.dumps({k: v for k, v in info.items() if k != 'dust'}, ensure_ascii=False), 'dust parts', len(info['dust']['parts']))
+
+
+def dust_info(hip):
+    """光のつぶ（いまの絵と 同じ 236こ・NB.dust_particles）：[x, y, 種類（0 点／1 筋）, 大きさ（点の 半径／筋の 長さ）, 色の 番号, こさ]。
+       x・y・大きさは 絵の 画素（780×320）。center は つぶの 雲の まん中（腰から 少し うしろ下・つぶが 流れ出す もと）"""
+    parts = [[round(x, 1), round(y, 1), 0 if kind == 'dot' else 1, round(size, 2), ci, round(w, 2)] for x, y, kind, size, ci, w in NB.dust_particles(hip)]
+    return dict(cols=list(NB.DUST_COLS), center=[round(float(hip[0]) + 10, 1), round(float(hip[1]) + 30, 1)], parts=parts)
 
 
 def save_rgba(path, rgb, a, q=90):
@@ -143,5 +141,10 @@ def save_rgba(path, rgb, a, q=90):
     cv2.imwrite(path, cv2.cvtColor(u8, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, q])
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and sys.argv[1] == '--dust':          # 光のつぶだけ 書きなおす（第4.87版）
+    info = json.load(open(sys.argv[2]))
+    info['dust'] = dust_info(info['hip'])
+    json.dump(info, open(sys.argv[2], 'w'), ensure_ascii=False)
+    print('dust parts', len(info['dust']['parts']))
+elif __name__ == '__main__':
     run(sys.argv[1])

@@ -64,6 +64,7 @@ def horse(img, pose=None, cam=None, name='pix', hair=None, light=(0.3, 0.8, 0.5)
     img[body & (l <= 0.2)] = PAL['horse2']
     p = world_pos(R)
     legs = np.nan_to_num((p[..., 1] - R['S']['ground']) < 0.38).astype(bool) & body
+    legs |= hoof_tips(p, R['S']) & body                                 # 第4.87版：宙に ある 足の ひづめも
     img[legs] = PAL['black']
     img[(ha > 0.45) & ~body] = PAL['mane']
     # 輪郭（1ドット）
@@ -81,6 +82,40 @@ def horse(img, pose=None, cam=None, name='pix', hair=None, light=(0.3, 0.8, 0.5)
             ex, ey = int(round(q[0])), int(round(q[1])); img[ey, ex] = PAL['white']; R['eye_px'].append((ex, ey))
     R['cam'] = (e, t)
     return img, R
+
+
+HOOF_L = 0.34          # 黒い 足先（ひづめ）：ひづめの 先から 足に そって この m まで（地面に ついた 足は いままでの「地面から 0.38m」と ほぼ 同じ）
+LEG_R = 0.075          # 足の 太さの 半分（これより 足の 線に 近い 画素だけ）
+
+
+def hoof_tips(p, S):
+    """ひづめの 先から 足の 線（ひづめ → つなぎ → 球節 → ひざ／飛節）に そって HOOF_L m までの 画素（第4.87版・まさちゃん
+       「ドットの馬が走ると蹄が無くなる瞬間があるから直して！」：いままでは 地面から 0.38m より 下だけを 黒く したので、
+       足を たたんで 宙に ある コマでは ひづめが 茶色に なって 消えていた）。z は horse3d.build と 同じ（前足 0.1395・後ろ足 0.1452）"""
+    P = np.nan_to_num(p, nan=99.0)
+    out = np.zeros(P.shape[:2], bool)
+    for k in ('FL', 'FR', 'HL', 'HR'):
+        L = S[k]
+        z = L['z']
+        if k[0] == 'F':
+            pts = [(L['hf'], 0.1395 * z), (L['co'], 0.1395 * z), (L['ft'], 0.1395 * z), (L['kn'], 0.1442 * z)]
+        else:
+            pts = [(L['hf'], 0.1452 * z), (L['co'], 0.1452 * z), (L['ft'], 0.1452 * z), (L['hk'], 0.1518 * z)]
+        Q = [np.array([q[0], q[1], zz], np.float32) for q, zz in pts]
+        best = np.full(P.shape[:2], 9.0, np.float32)
+        arc = np.full(P.shape[:2], 9.0, np.float32)
+        acc = 0.0
+        for a_, b_ in zip(Q, Q[1:]):
+            d = b_ - a_
+            L2 = float(np.dot(d, d)) or 1e-9
+            t = np.clip(np.sum((P - a_) * d, -1) / L2, 0, 1)
+            dist = np.linalg.norm(P - (a_ + t[..., None] * d), axis=-1)
+            closer = dist < best
+            best = np.where(closer, dist, best)
+            arc = np.where(closer, acc + t * L2 ** .5, arc)
+            acc += L2 ** .5
+        out |= (best < LEG_R) & (arc < HOOF_L)
+    return out
 
 
 def go_text(img):

@@ -35,7 +35,8 @@ POSES = {
                  hind_near=[-66, -116, -92, -62], hind_far=[-56, -122, -94, -64]),
     'prance': dict(theta=8.0, neck_rot=-8.0, head_ang=-62.0, tail=[-130, -108], tail_kind='sway',
                    fore_near=[-84, -8, -98, -132], fore_far=[-120, -94, -90, -62],
-                   hind_near=[-56, -114, -88, -60], hind_far=[-66, -120, -94, -64]),
+                   hind_near=[-48, -124, -84, -58], hind_far=[-56, -128, -88, -60]),    # 第4.87版：うしろ足を 少し 曲げて 腰を おとす（前は [-56, -114, -88, -60]・[-66, -120, -94, -64]：
+                                                                                       #  支える 前足が 地面から 22画素 浮いていた。cute_themes の SPOTS の ext で 前足も のばす）
     'gallop': dict(theta=3.0, neck_rot=-22.0, head_ang=-46.0, tail=[-160, -150], tail_kind='fly',
                    fore_near=[-66, -28, -38, -22], fore_far=[-122, -22, -145, -172],
                    hind_near=[-116, -154, -128, -148], hind_far=[-60, -104, -74, -48]),
@@ -63,6 +64,19 @@ def make_pose(name, facing):
         out['ear_rot'] = P['ear_rot']
     if P.get('brow'):                                              # おこった まゆ（'angry'：同じ。なければ いままでと同じ）
         out['brow'] = P['brow']
+    if P.get('cannon_ext'):                                        # 足の 管を のばす（{'F'+L/R…}：horse3d.skeleton の cannon_ext。draw_horse が spec の ext から 入れる）
+        out['cannon_ext'] = dict(P['cannon_ext'])
+    return out
+
+
+def with_ext(pose, spec, facing):
+    """spec の ext＝(手前の前足, 奥の前足) の 管を のばす m（第4.87版：前足の ひづめを 地面に つける）を pose に 入れる。ない なら そのまま"""
+    ext = spec.get('ext')
+    if not ext or os.environ.get('FLAT_NO_EXT') == '1':              # FLAT_NO_EXT=1：のばさない（いままでの 絵と くらべる ため）
+        return pose
+    near, far = ('L', 'R') if facing == 'right' else ('R', 'L')
+    out = dict(pose)
+    out['cannon_ext'] = {'F' + near: float(ext[0]), 'F' + far: float(ext[1])}
     return out
 
 
@@ -135,7 +149,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     pal.setdefault('muzzleShade', mix(pal['shade'], pal['muzzle'], 0.40))
     facing = spec['facing']
     fx = 1.0 if facing == 'right' else -1.0
-    pose = make_pose(spec['pose'], facing)
+    pose0 = make_pose(spec['pose'], facing)
+    pose = with_ext(pose0, spec, facing)                                 # 第4.87版：前足の 管を のばして ひづめを 地面に（カメラは のばす 前の 形で 決める＝いままでと 同じ）
     Hm.HEAD_SCALE = HEAD_SC
     W3, H3 = W * s, Hh * s
     tmp, tmp0 = proc_tmp(), S2.TMP
@@ -144,7 +159,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         if spec.get('cam'):                                              # カメラを決めて描く（走るコマ：どのコマも同じカメラ）
             e, t = spec['cam']
         else:
-            e, t = frame_horse(pose, tuple(v * s for v in spec['box']), W3, H3, facing=facing, azim=spec.get('azim', 0.0), elev=spec.get('elev', 3.0))
+            e, t = frame_horse(pose0, tuple(v * s for v in spec['box']), W3, H3, facing=facing, azim=spec.get('azim', 0.0), elev=spec.get('elev', 3.0))
         if spec.get('cam_out') is not None:                              # 決めたカメラを返す（ほかのコマで使う）
             spec['cam_out'][:] = [e, t]
         R = render_body(pose, e, t, 26, W3, H3, name, tmp, throat=spec.get('throat'))

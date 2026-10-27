@@ -302,6 +302,34 @@ def calm_edges(f0, x0, y0, x1, y1, reach=EDGE_REACH):
     return x0, y0, x1, y1
 
 
+def breath_points(name, cams):
+    """第4.87版（まさちゃん「二枚目の馬の鼻から出てる息は常に動かして！」）：コマごとの 鼻の穴の 前（白い 息の 出る 所・絵の 画素 780×320）と
+       1m の 画素・前の むき（左 -1／右 1）。cute_themes.acc_snow の mz（m['P1'](m['hp'](0.58, 0, 0))）・p1u と 同じ（描かずに 計算で）。息は 壁紙の ページ（yuki.py）が 描く"""
+    import cute_themes as C
+    from horse_flat import make_pose, with_ext, HEAD_SC
+    from h3d import Scene
+    th, sp = THEMES[name], C.SPOTS[name]
+    e, t = cams[name]
+    sc = Scene()
+    sc.image(W * 3, Hh * 3)
+    sc.camera(np.asarray(e, float), np.asarray(t, float), 26)
+    P1 = lambda p3: sc.project(np.asarray([p3], float))[0][0][:2] / 3
+    hs0 = Hm.HEAD_SCALE
+    Hm.HEAD_SCALE = HEAD_SC
+    pts = []
+    try:
+        for fn in SP.frames(name):
+            S = Hm.skeleton(with_ext(make_pose(pose_of(name, fn), th['facing']), sp, th['facing']))
+            q = P1(Hm.head_pt(S, 0.58, 0.0, 0.0))
+            pts.append([round(float(q[0]), 2), round(float(q[1]), 2)])
+            if fn == 'U0':
+                wv = Hm.v3(np.asarray(S['withers'], float))
+                u = float(np.linalg.norm(P1(wv) - P1(wv + np.array([1.0, 0, 0]))))
+    finally:
+        Hm.HEAD_SCALE = hs0
+    return pts, round(u, 3), (-1 if th['facing'] == 'left' else 1)
+
+
 def make_sheet(name, frdir, outdir, run_json):
     """コマ（<frdir>/<name>_fNN.png）→ 動く所（どれかの コマで コマ0と ちがう画素をまとめた四角）を切りぬいて、
        よこ COLS に並べた1まい（<outdir>/<name>_step.webp・ロスなし）。コマの まわりには のりしろ（PAD・絵の となりの画素）をつける
@@ -338,15 +366,18 @@ def make_sheet(name, frdir, outdir, run_json):
     run = json.load(open(run_json)) if os.path.exists(run_json) else {}
     run[name] = dict(frames=N, names=fns, lower=levels(name), cols=COLS, rows=rows, cell=[cw, ch], pad=P, at=[int(x0), int(y0)], size=[W, Hh],
                      plan=dict(seed=SP.SEEDS[name], k=k, loop_ms=loop_ms, changes=len(tl)))
+    if name == 'snow':                                 # 第4.87版：白い 息は ページで（コマごとの 鼻の 場所と 1m の 画素）
+        cams = json.load(open(os.path.join(os.path.dirname(os.path.abspath(run_json)), 'step_cams.json')))
+        run[name]['breath'], run[name]['breath_u'], run[name]['breath_fx'] = breath_points(name, cams)
     txt = json.dumps(run, ensure_ascii=False, indent=1)
     for nm in run:                                     # コマの名前・下げぐあいの 並びは 1行に
-        for key in ('names', 'lower'):
+        for key in ('names', 'lower', 'breath'):
             if key in run[nm]:
                 txt = txt.replace(json.dumps(run[nm][key], ensure_ascii=False, indent=1).replace('\n', '\n  '),
                                   json.dumps(run[nm][key], ensure_ascii=False))
     open(run_json, 'w').write(txt)
     kb = os.path.getsize(f'{outdir}/{name}_step.webp') / 1024
-    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', {k_: v for k_, v in run[name].items() if k_ not in ('names', 'lower')})
+    print(name, 'sheet', sh.shape[1], 'x', sh.shape[0], f'{kb:.0f}KB', {k_: v for k_, v in run[name].items() if k_ not in ('names', 'lower', 'breath')})
 
 
 if __name__ == '__main__':

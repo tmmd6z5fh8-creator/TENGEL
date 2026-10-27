@@ -3,6 +3,7 @@
    馬の形は horse_flat（3Dの馬の形を、ぺたっとした色でぬる）。飾りは馬の目印（首・耳・布）に合わせて置く。
    形はすべて一から作ったオリジナル"""
 import math
+import os
 import numpy as np
 import cv2
 from cute_horse import smooth, V, unit, f2, path, stroke, circ, ell, mix
@@ -39,17 +40,21 @@ PALS = {
                      bodyShade='#E2EAF3'),
 }
 # ポーズ・置き場所（馬の絵がちょうど入る箱 x0, y0, x1, y1：下のふち＝ひづめ）・向き・影の色
+# ext：(手前の前足, 奥の前足) の 管を のばす m（第4.87版・まさちゃん「青丸の脚が地面から浮いてしまってるから直して！」）。
+#   左向きの 立つ馬は 前足の ひづめが うしろ足より 7〜9画素（1倍）上に 浮いていた（3Dの 前足が 少し 短い＋前が 奥に ある）→
+#   画面で うしろ足の ひづめより 2画素 上（奥に ある ぶん）まで おろす（ひざから 上は そのまま・カメラも そのまま）。
+#   お正月（prance）は 体を 起こした ぶん 支える 前足が 22画素 浮いていた → うしろ足を 少し 曲げて（腰を おとす）・支える 前足を のばす
 SPOTS = {
-    'newyear': dict(pose='prance', facing='left', box=(376, 50, 610, 296), azim=-6, shadow=('#6A0A0E', 0.30)),
-    'snow': dict(pose='stand', facing='left', box=(394, 54, 627, 294), azim=-6, shadow=('#6E86A6', 0.30)),
+    'newyear': dict(pose='prance', facing='left', box=(376, 50, 610, 296), azim=-6, shadow=('#6A0A0E', 0.30), ext=(0.0, 0.149)),
+    'snow': dict(pose='stand', facing='left', box=(394, 54, 627, 294), azim=-6, shadow=('#6E86A6', 0.30), ext=(0.0677, 0.0775)),
     'autumn': dict(pose='walk', facing='right', box=(290, 59, 523, 294), azim=6, shadow=('#7A3A16', 0.30)),
     'sea': dict(pose='gallop', facing='right', box=(280, 64, 572, 266), azim=6, shadow=('#8A6A3A', 0.22)),
-    'sakura': dict(pose='stand', facing='left', box=(421, 52, 649, 296), azim=-6, shadow=('#6A8A5A', 0.24),
+    'sakura': dict(pose='stand', facing='left', box=(421, 52, 649, 296), azim=-6, shadow=('#6A8A5A', 0.24), ext=(0.0659, 0.0761),
                    throat=dict(neck_k=0.03, amount=0.5, jowl=1.0, chest=1.0)),          # のど元すっきり（まさちゃんのオレンジの線）
     'xmas': dict(pose='stand', facing='right', box=(300, 66, 512, 298), azim=6, shadow=('#8FA9C8', 0.30)),
-    'halloween': dict(pose='stand', facing='left', box=(262, 74, 478, 300), azim=-6, shadow=('#0E0818', 0.45)),
+    'halloween': dict(pose='stand', facing='left', box=(262, 74, 478, 300), azim=-6, shadow=('#0E0818', 0.45), ext=(0.067, 0.0765)),
     'valentine': dict(pose='stand', facing='right', box=(100, 62, 318, 298), azim=6, shadow=('#C9708E', 0.30)),
-    'whiteday': dict(pose='stand', facing='left', box=(470, 62, 688, 298), azim=-6, shadow=('#8FB4D6', 0.30)),
+    'whiteday': dict(pose='stand', facing='left', box=(470, 62, 688, 298), azim=-6, shadow=('#8FB4D6', 0.30), ext=(0.0663, 0.0747)),
 }
 
 
@@ -117,13 +122,19 @@ def acc_snow(m):
     for (u, v, r) in ((0.80, 0.30, 0.10), (0.67, 0.17, 0.075), (0.90, 0.53, 0.07), (0.63, 0.43, 0.085), (0.76, 0.67, 0.065),
                       (0.97, 0.24, 0.07), (0.86, 0.10, 0.06), (0.55, 0.62, 0.06), (0.0, 0.56, 0.065), (-0.07, 0.36, 0.055), (0.06, 0.74, 0.05)):
         dap.append(circ(V(xw + (xb - xw) * u, yt + v * p), r * p, '#CBD4E0'))
-    # 白い息（鼻の前に3つ）
-    mz = m['P1'](m['hp'](0.58, 0.0, 0.0))                             # 鼻の穴の前から
+    # 白い息（鼻の前に3つ）。第4.87版（まさちゃん「二枚目の馬の鼻から出てる息は常に動かして！」）：絵には 描かない（BAKED_BREATH）。
+    #   壁紙の ページ（yuki.py）が 鼻の 前から いつも ふわっと 出して 前へ 流れて 消える 息を 描く（鼻の 場所は コマごとに step_run.json の breath）
     front = []
-    for i, (d, r) in enumerate(((0.10, 0.062), (0.22, 0.088), (0.36, 0.11))):
-        c = mz + V(fx * d * p, 0.01 * p - i * 0.026 * p)
-        front.append(circ(c, r * p, '#FFFFFF', 'fill-opacity=".72"'))
+    if BAKED_BREATH:
+        mz = m['P1'](m['hp'](0.58, 0.0, 0.0))                         # 鼻の穴の前から
+        for i, (d, r) in enumerate(BREATH):
+            c = mz + V(fx * d * p, 0.01 * p - i * 0.026 * p)
+            front.append(circ(c, r * p, '#FFFFFF', 'fill-opacity=".72"'))
     return dict(neck=neck, dapples=dap, front=front)
+
+
+BAKED_BREATH = os.environ.get('SNOW_BAKED_BREATH') == '1'           # 白い息を 絵に 描く（第4.86版までの 形・もどす ため）
+BREATH = ((0.10, 0.062), (0.22, 0.088), (0.36, 0.11))               # 前の 3つの 息（鼻からの きょり・大きさ：m の p1u 倍）。yuki.py の 止まった 形も これ
 
 
 def maple(c, r, rot, col):

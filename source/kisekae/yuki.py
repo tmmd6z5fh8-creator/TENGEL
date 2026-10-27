@@ -8,7 +8,9 @@
    claude.ai のキャンバスは、アップロードした SVG の <style> を消してしまうので、キャンバスの判定画面には じかに入れる（inline・動きの CSS はページの <style>）：
      python3 yuki.py <出力フォルダ>                               → yuki_fall.svg（ファイルの形・<style>つき・390×160・背景なし）
      python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html>  → ＋判定画面の上の絵を「絵＋降る雪」の形に書きかえる
-     python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が ときどき 首を下げて 草を食べる（step_wall.py）"""
+     python3 yuki.py <出力フォルダ> --judge <Judge_Snow.dc.html> --step <step_blobs.json> <step_run.json>  → ＋馬が ときどき 首を下げて 草を食べる（step_wall.py）
+   白い 息（第4.87版・まさちゃん「二枚目の馬の鼻から出てる息は常に動かして！」）：絵には 描かず（flat/cute_themes.py の BAKED_BREATH）、
+   ページで 鼻の 前から いつも ふわっと 出す（breath）。鼻の 場所は コマごとに step_run.json の breath（flat/step_run.py --sheet が 書く）。"""
 import sys, os, math, re, random
 
 W, H = 390, 160
@@ -19,6 +21,20 @@ EDGE = '#8FB3D6'                       # 雪のふちの水色（判定画面の
 INLINE_IDS = ('ykC1', 'ykC2', 'ykG')
 # 層：(ゆれの幅 px, 組ごとのゆれの秒)
 LAYERS = ((3, (3.4, 4.1)), (6, (3.0, 3.6)), (10, (2.6, 3.2)))
+# 白い 息（第4.87版）：鼻の 前で 小さく 生まれた 玉が、前へ 出て → ふくらみながら 上へ ただよって 消える。
+#   BR_GAP 秒ごとに 1つ（いつも 4つくらいが 鼻の 前に 並んで 流れる＝第4.86版までの 絵の 3つの 息が 動き出した 形）。
+#   息 1回（はいて すう）＝ BR_CYCLE 秒の 中で、はく ときの 玉は 大きく こく・すう ときは 小さく うすく（BR_POW）
+BR_CYCLE, BR_LIFE, BR_GAP = 3.0, 2.4, 0.6
+BR_POW = (1.0, 0.96, 0.86, 0.68, 0.56)                   # 玉ごとの つよさ（BR_CYCLE ÷ BR_GAP ＝ 5こ）
+# 形：(時 0〜1, 前へ m, 下へ m, 半径 m, こさ) の 並び（m は 馬の 大きさ＝1m の 画素で 画面の px に）。0 は まっすぐ・1 は 上へ・2 は 前へ 長く
+BR_PATHS = (
+    ((0, .02, .01, .02, 0), (.07, .07, .014, .05, .8), (.32, .20, .004, .082, .7), (.65, .35, -.03, .108, .44), (1, .48, -.08, .126, 0)),
+    ((0, .02, .01, .022, 0), (.07, .065, .012, .052, .76), (.32, .18, -.01, .088, .66), (.65, .31, -.06, .118, .4), (1, .42, -.13, .138, 0)),
+    ((0, .02, .01, .018, 0), (.07, .075, .016, .046, .78), (.32, .22, .01, .076, .68), (.65, .39, -.01, .1, .42), (1, .54, -.045, .114, 0)),
+)
+BR_R = 7                               # 玉の もとの 半径（px）：scale で 大きさを 変える
+# 止まった 形（視差効果を減らす とき）：第4.86版までの 絵の 3つの 息と 同じ（鼻からの きょり・大きさ・上へ 0.026m ずつ）
+BR_STILL = ((0.10, 0.062), (0.22, 0.088), (0.36, 0.11))
 
 
 def crystal(arm):
@@ -107,6 +123,45 @@ def fall_svg(kn='yk', css=True, cls=''):
             f'<defs>{st}{defs}</defs><g class="ykf">{body}</g></svg>')
 
 
+def breath(run, p='ykb'):
+    """白い 息（ページに じかに 入れる HTML と CSS）。鼻に ついて いく 入れもの（step_wall.follow：コマと 同じ 時間わり）の 中で 玉が ふわっと 出て 消える"""
+    import step_wall
+    r = run['snow']
+    pts = [(x / 2, y / 2) for x, y in r['breath']]          # 絵の 画素（780×320）→ 画面の px（390×160）
+    u, fx = r['breath_u'] / 2, r['breath_fx']
+    T_ms, kf = step_wall.follow('snow', run, pts)
+    f1 = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.')
+    k = BR_LIFE / BR_CYCLE
+    css = (f'.{p}{{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;animation:{p}A {T_ms}ms step-end infinite}}'
+           f'@keyframes {p}A{{{kf}}}'
+           f'.{p} i{{position:absolute;left:-{BR_R}px;top:-{BR_R}px;width:{2 * BR_R}px;height:{2 * BR_R}px;border-radius:50%;opacity:0;'
+           f'background:radial-gradient(closest-side,#FFFFFF 58%,rgba(255,255,255,.82) 76%,rgba(255,255,255,0));'
+           f'animation:{p}P00 {BR_CYCLE}s linear infinite;will-change:transform,opacity}}')
+    html = f'<div class="{p}" aria-hidden="true">'
+    for n, pw in enumerate(BR_POW):                       # 玉ごとに 形（3つを じゅんに）と つよさ（大きさ・こさ）を 決めた keyframes
+        steps = []
+        for t, d, dy, rad, o in BR_PATHS[n % len(BR_PATHS)]:
+            pc = f1(t * k * 100) + '%'
+            tf = 'ease-out' if t < .3 else 'ease-in-out'
+            sc = rad * u / BR_R * (0.8 + 0.2 * pw)
+            steps.append(f'{pc}{{transform:translate({f1(fx * d * u)}px,{f1(dy * u)}px) scale({f1(sc)});opacity:{f1(o * pw)};animation-timing-function:{tf}}}')
+        steps.append('100%{opacity:0}')
+        css += f'@keyframes {p}P{n:02d}{{{"".join(steps)}}}'
+        html += f'<i style="animation-name:{p}P{n:02d};animation-delay:{f1(n * BR_GAP)}s"></i>'
+    html += '</div>'
+    # 視差効果を減らす：馬は コマ0（壁紙の 絵）の まま → 息も 止まった 3つ（鼻は コマ0 の 場所）
+    x0, y0 = pts[0]
+    html += f'<div class="{p}s" aria-hidden="true">'
+    for i, (d, rad) in enumerate(BR_STILL):
+        cx, cy, rr = x0 + fx * d * u, y0 + (0.01 - i * 0.026) * u, rad * u
+        html += f'<i style="left:{f1(cx - rr)}px;top:{f1(cy - rr)}px;width:{f1(2 * rr)}px;height:{f1(2 * rr)}px"></i>'
+    html += '</div>'
+    css += (f'.{p}s{{display:none;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none}}'
+            f'.{p}s i{{position:absolute;border-radius:50%;background:#FFFFFF;opacity:.72}}'
+            f'@media (prefers-reduced-motion:reduce){{.{p}{{display:none}}.{p}s{{display:block}}}}')
+    return html, css
+
+
 def inline(blob, alt=ALT, p='sn', step=None):
     """ページにじかに入れる形：<div class="bnrw">（壁紙の絵の <img class="bnr"> ＋ 雪の <svg class="ykfall">）と、ページの <style> に入れる CSS。戻り値 (html, css)"""
     s = fall_svg(kn=f'{p}k', css=False, cls='ykfall')
@@ -118,6 +173,9 @@ def inline(blob, alt=ALT, p='sn', step=None):
         import step_wall
         hh, hc = step_wall.sprite('snow', *step)
         alt = step_wall.alt_with(alt)
+        if 'breath' in step[1].get('snow', {}):     # 白い 息（第4.87版：鼻の 前から いつも 動く）
+            bh, bc = breath(step[1])
+            hh, hc = hh + bh, hc + bc
     html = f'<div class="bnrw"><img class="bnr" src="{blob}" alt="{alt}">{hh}{s}</div>'
     css = (hc + '.bnrw{position:relative;flex:none;overflow:hidden}.bnrw .ykfall{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
            + fall_css('.bnrw', f'{p}k', tag=False))

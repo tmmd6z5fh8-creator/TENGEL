@@ -88,8 +88,8 @@ THEMED = dict(
     hit_whiteday=dict(base='hit', tid='whiteday', banner='whiteday', push='wd', fonts=BY_ID['whiteday']['fonts']),   # ホワイトデー：マシュマロのPUSH・壁紙は いつも ハートが 動き、10秒ごとに カップルが 馬を なでにいく（6回に1回は 馬が ブチギレる：couple_wall.py）
 )
 AUTUMN_BLOB = '/_blob/1c869ee9f9195c4625d3997d66463e57'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
-SNOW_BLOB = '/_blob/6683d421d2b9e7e0503e7173da2288ba'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
-SAKURA_BLOB = '/_blob/39558c280310609ad0a65971ed217991'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
+SNOW_BLOB = '/_blob/d40eb4335a6c206ddb43600f56cca435'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
+SAKURA_BLOB = '/_blob/cbcbaeebec4470155b1587d5a5c8fe00'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
 
 
 def step_data():
