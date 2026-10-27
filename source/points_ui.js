@@ -171,7 +171,7 @@
     W.counted[key] = new Date().toISOString();
     await save();
     const n = countedN(), claim = P.missions(n, W.events).filter(m => m.claimable);
-    toast(claim.length ? `🏆 ${n}レース目の記録。受け取れるミッションがあるよ（設定タブ）` : `ミッション：記録 ${n}レース目`, 3600);
+    toast(claim.length ? `🏆 ${n}レース目の記録。受け取れるミッションがあるよ（上の「ミッション」で受け取れるよ）` : `ミッション：記録 ${n}レース目`, 3600);
     return true;
   }
   const countedN = () => W ? Object.keys(W.counted).length : 0;
@@ -182,7 +182,7 @@
       P.wallMissionEvents(wm, device(), Date.now()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
       await save(); paintAll();
       toast(`✅ ${wm.label}を受け取ったよ！ 設定の「着せ替え」で使えるよ`, 4000);
-      unlockFx(`#setMission .msrow[data-mid="${id}"]`, '受け取り！');
+      unlockFx(msRowSel(id), '受け取り！');
       return;
     }
     const m = P.missions(countedN(), W.events).find(x => x.id === id);
@@ -190,8 +190,10 @@
     W.events.push(P.missionEvent(m, Date.now()));
     await save();
     toast(`🎉 ${m.label}の ${pts(m.reward)} を受け取ったよ（合計 ${pts(total())}）`, 4000);
-    unlockFx(`#setMission .msrow[data-mid="${id}"]`, `+${pts(m.reward)}`);
+    unlockFx(msRowSel(id), `+${pts(m.reward)}`);
   }
+  // 受け取りの 効果を 出す 行：ミッションの 窓（第4.82版）が 開いて いれば その 行・そうでなければ 設定タブの カードの 行
+  const msRowSel = id => ($('#msOv') ? `#msOv .msrow[data-mid="${id}"]` : `#setMission .msrow[data-mid="${id}"]`);
 
   // 解放エフェクト（第4.60版：fx.js の TengelFx.unlock。項目の 上で 金の 輪・つや・粒・「解放！」・チャイム）
   function unlockFx(sel, text) { try { const el = typeof sel === 'string' ? $(sel) : sel; if (el && window.TengelFx && window.TengelFx.unlock) window.TengelFx.unlock(el, { text }); } catch (e) { /* なし */ } }
@@ -292,20 +294,79 @@
     h += '</div>';
     box.innerHTML = h;
   }
-  function paintMission() {
-    const box = $('#setMission .ptbody'); if (!box || !W) return;
+  // ポイントミッション（記録の数）の 行：いちばん 上は つぎの ミッション・その 下に 受け取れる／受け取りずみ
+  function missionRowsHtml() {
     const n = countedN(), ms = P.missions(n, W.events);
     const next = ms.find(m => !m.done);
     let h = `<p class="hint" style="margin:0 0 8px">200Pを使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。いま <b>${n}レース</b>${next ? `・次は ${next.n}レースで ${pts(next.reward)}` : ''}</p>`;
     h += '<div>';
-    ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
-    h += '</div>';
-    // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙
+    ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
+    return h + '</div>';
+  }
+  // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙
+  function wallRowsHtml() {
     const wn = P.wallCount(W.events), wms = P.wallMissions(wn, W.events);
-    h += `<h3 style="margin:14px 0 4px">壁紙のミッション</h3><p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
-    wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow" data-mid="${esc(m.id)}"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
-    h += '</div>';
-    box.innerHTML = h;
+    let h = `<p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
+    wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
+    return h + '</div>';
+  }
+  function paintMission() {
+    const box = $('#setMission .ptbody'); if (!box || !W) return;
+    box.innerHTML = `<p class="hint" style="margin:0 0 8px">ミッションは、画面の上の<b>「ミッション」</b>からも見られるよ（受け取りもできるよ）。</p>` + missionRowsHtml()
+      + '<h3 style="margin:14px 0 4px">壁紙のミッション</h3>' + wallRowsHtml();
+  }
+  // ---------- ミッションの 窓（第4.82版・まさちゃん「ミッションの達成状況分かりにくいから、説明書とかポイント表示とかが入ってあたりに別項目として、ミッションて欄追加して！
+  //   壁紙ミッション ポイントミッション 見直し基準進捗状況」「受け取りもそこでできるようにして！」）：上の帯の「ミッション」を 押すと 開く。
+  //   ポイントミッション（記録の 数）・壁紙ミッション・見直し基準の 進み具合（実測・回収タブと 同じ：chk1.js の TengelReview）。受け取るも ここで ----------
+  const TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a1 1 0 0 0-1 1 4 4 0 0 0 4 4M17 6h3a1 1 0 0 1 1 1 4 4 0 0 1-4 4"/></svg>';
+  function claimableN() { if (!W) return 0; return P.missions(countedN(), W.events).filter(m => m.claimable).length + P.wallMissions(P.wallCount(W.events), W.events).filter(m => m.claimable).length; }
+  function reviewHtml() {
+    try { if (window.TengelReview) return window.TengelReview() || ''; } catch (e) { /* なし */ }
+    return '';
+  }
+  function paintMissionOv() {
+    const ov = $('#msOv'); if (!ov || !W) return;
+    const n = claimableN();
+    $('.msn', ov).textContent = n ? `受け取れるのが ${n}つ！` : '';
+    $('#msPts', ov).innerHTML = missionRowsHtml();
+    $('#msWall', ov).innerHTML = wallRowsHtml();
+    const rv = reviewHtml();
+    $('#msRev', ov).innerHTML = rv || '<div class="card"><h2>見直し基準の進み具合</h2><p class="hint" style="margin:0">マザーデータに接続してから見られるよ（実測・回収タブと同じものだよ）。</p></div>';
+  }
+  let msPrev = null;
+  function openMissions() {
+    if (!W || $('#msOv')) return;
+    const ov = document.createElement('div'); ov.id = 'msOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ミッション');
+    ov.innerHTML = `<div class="msh"><h2>${TROPHY}ミッション</h2><span class="msn"></span><button class="btn" type="button" data-ms="close">とじる</button></div>`
+      + '<div class="msb"><div class="card setsec"><h2>ポイントミッション</h2><div class="ptbody" id="msPts"></div></div>'
+      + '<div class="card setsec"><h2>壁紙ミッション</h2><div class="ptbody" id="msWall"></div></div><div id="msRev"></div>'
+      + '<p class="hint" style="margin:0 0 6px">ポイントミッションは、200Pを使って判定して記録したレースの数（Excelなどでまとめて入れた記録は数えないよ）。見直し基準は、判定して着順を入れて、マザーデータにも入れたレースで進むよ。</p></div>';
+    ov.addEventListener('click', e => { const c = e.target.closest('[data-ms]'); if (c && c.dataset.ms === 'close') { closeMissions(); return; } onClick(e); });
+    msPrev = document.activeElement;
+    document.documentElement.classList.add('mson'); document.body.appendChild(ov);
+    paintMissionOv();
+    try { $('[data-ms=close]', ov).focus({ preventScroll: true }); } catch (e) { /* なし */ }
+  }
+  function closeMissions() {
+    const ov = $('#msOv'); if (!ov) return;
+    ov.remove(); document.documentElement.classList.remove('mson');
+    const b = $('#msBtn'); if (b && b.focus) b.focus({ preventScroll: true }); else if (msPrev && msPrev.focus) msPrev.focus({ preventScroll: true });
+    msPrev = null;
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#msOv')) closeMissions(); });
+  // 上の帯の「ミッション」（説明書の となり）：つぎの ミッションの 進み具合（いま／つぎ）と、受け取れる 数の 赤い 印
+  function missionBtn() {
+    const top = $('header.top .top-in'); if (!top) return;
+    let b = $('#msBtn');
+    if (!b) {
+      b = document.createElement('button'); b.type = 'button'; b.id = 'msBtn'; b.className = 'manbtn msbtn'; b.setAttribute('aria-label', 'ミッション（押すと開くよ）');
+      b.addEventListener('click', openMissions);
+      top.insertBefore(b, $('#manBtn') || $('#dbpill') || null);
+    }
+    const n = W ? countedN() : 0, next = W ? P.missions(n, W.events).find(m => !m.done) : null, c = claimableN();
+    b.innerHTML = `${TROPHY}ミッション${next ? `<span class="mp">${n}/${next.n}</span>` : ''}${c ? `<span class="mbd" aria-label="受け取れるミッション ${c}つ">${c}</span>` : ''}`;
+    b.classList.toggle('hot', c > 0);
+    b.title = c ? `受け取れるミッションが ${c}つ あるよ` : next ? `つぎのミッション：${next.n}レース記録で ${pts(next.reward)}（いま ${n}レース）` : 'ミッション';
   }
   function paintBadge() {
     const tb = $('.tabbar [data-tab=set]'); if (!tb || !W) return;
@@ -317,7 +378,7 @@
     if (!paintHint.base) paintHint.base = el.textContent;
     el.textContent = `${paintHint.base}・1レース 200P（いま ${pts(total())}）`;
   }
-  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); }
+  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); paintMissionOv(); }
   async function onClick(e) {
     const b = e.target.closest('[data-pt]'); if (!b) return;
     const act = b.dataset.pt;
@@ -412,6 +473,19 @@
         + '#ptsPill .pl{font-size:10px;opacity:.8;letter-spacing:.04em}#ptsPill .pv{font-family:var(--font-mono);font-weight:700;font-size:12.5px}#ptsPill .pv small{font-size:10px;margin-left:1px}'
         + '#ptsPill:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
         + '#testTag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;background:#E2A23B;color:#1B1F2A}'
+        /* 上の帯の「ミッション」（第4.82版）：説明書の 左。iPhone では 3段に なる（ミッション・説明書 → マザーデータの 印）ので 段の あいだは せまく */
+        + 'header.top .top-in{row-gap:8px}#msBtn{margin-left:auto!important;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;line-height:1.5;position:relative}#manBtn{margin-left:0!important}'
+        + '#msBtn .mp{font-family:var(--font-mono);font-size:11px;font-weight:700;opacity:.85;margin-left:1px}'
+        + '#msBtn .mbd{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;margin-left:2px;box-shadow:0 0 0 2px var(--night)}'
+        + '#msBtn.hot{background:rgba(226,162,59,.34);border-color:var(--lamp)}'
+        + '#msOv{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}'
+        + '#msOv .msh{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat,0px) + 10px) 16px 10px;background:var(--ks-hd,var(--night));color:var(--night-ink);border-bottom:var(--ks-hdB,3px solid var(--lamp))}'
+        + '#msOv .msh h2{margin:0;flex:none;display:inline-flex;align-items:center;gap:7px;font-size:17px;font-weight:700;letter-spacing:.02em}#msOv .msh h2 svg{width:19px;height:19px;color:var(--lamp)}'
+        + '#msOv .msh .msn{flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--lamp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        + '#msOv .msh .btn{flex:none;padding:6px 12px;background:rgba(243,240,230,.1);color:var(--night-ink);border-color:rgba(243,240,230,.35)}'
+        + '#msOv .msb{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:var(--gap) 16px calc(var(--sab,0px) + 28px)}#msOv .msb .card{margin:0 0 var(--gap)}#msOv #msRev .card{margin-top:0!important}'
+        + '#msOv .msrow.can{background:var(--ok-bg);margin:0 -8px;padding:8px;border-radius:8px;border-top:0}'
+        + 'html.mson{overflow:hidden}@media (max-width:599px){#dbpill{margin-left:auto}}'
         + '#setTest{margin-bottom:var(--gap)}#setTest .row{flex-wrap:wrap}#setTest .btn{font-size:12.5px;padding:7px 10px}';
       document.head.appendChild(st);
     }
@@ -484,7 +558,7 @@
   window.TengelWallet = {
     on: true, ready: walletReady, COST: P.COST,
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,
-    readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose,
+    readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions,
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },

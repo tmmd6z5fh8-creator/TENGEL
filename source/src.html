@@ -2748,6 +2748,8 @@ function reviewCard(all) {
   h += `</div></div>`;
   return h;
 }
+// ミッションの 窓（points_ui.js・第4.82版：上の帯の「ミッション」）にも 見直し基準の 進み具合を 出す（実測・回収タブと 同じ）
+window.TengelReview = () => (st.dbState === 'on' ? reviewCard(st.derived.filter(r => r.inStats)) : '');
 
 function motherNote() {
   const all = st.derived, n = all.filter(r => r.inStats).length;

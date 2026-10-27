@@ -784,11 +784,24 @@ try:
         pg.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); for (let i = 1; i <= 8; i++) w.counted['2026-10-0' + i + '||1'] = new Date().toISOString(); await TengelLocal.putMeta(w); })()""")
         pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(1200)
         check(pg.locator('.tabbar [data-tab=set] .tbdg').count() == 1, '受け取れるミッションがあると設定タブに印')
+        # 第4.82版：上の帯の「ミッション」（説明書の 左・つぎまでの 数・受け取れる 数の 赤い 印）→ 押すと ミッションの 窓（ポイント・壁紙・見直し基準）→ そこで 受け取る
+        mb = pg.evaluate("() => { const b = document.querySelector('#msBtn'); if (!b) return null; const r = b.getBoundingClientRect(), m = document.querySelector('#manBtn').getBoundingClientRect(); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot'), bd: (b.querySelector('.mbd') || {}).innerText, left: r.right <= m.left + 1 && Math.abs(r.y - m.y) < 2, inTop: !!b.closest('header.top') }; }")
+        check(bool(mb) and mb['t'] == 'ミッション 10/15 1' and mb['hot'] and mb['bd'] == '1' and mb['left'] and mb['inTop'], f'上の帯に「ミッション」（説明書の左・つぎまで 10/15・受け取れる 1 の赤い印）（{mb}）')
+        pg.click('#msBtn'); pg.wait_for_timeout(500)
+        ov = pg.locator('#msOv')
+        ovt = ov.inner_text() if ov.count() else ''
+        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() >= 6 and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
+              '「ミッション」を押すと ミッションの窓：ポイントミッション（受け取る 1つ）・壁紙ミッション（3つ）・見直し基準の進み具合（実測・回収タブと同じ 6つ以上）')
+        ov.locator('#msPts [data-pt=claim]').click(); pg.wait_for_timeout(700)
+        mb2 = pg.evaluate("() => { const b = document.querySelector('#msBtn'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot') }; }")
+        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取りずみ' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 10/15' and not mb2['hot'],
+              f'窓で「受け取る」→ 500P（無償の枠）・窓の行は受け取りずみ・上の「ミッション」の赤い印と設定タブの印が消える（{mb2}）')
+        pg.screenshot(path=os.path.join(W, 't4', 'native_mission_ov.png'), full_page=False)
+        ov.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
+        check(pg.locator('#msOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')") and pg.evaluate("document.activeElement && document.activeElement.id") == 'msBtn', '「とじる」で窓が閉じる（「ミッション」にもどる）')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         ms = pg.locator('#setMission')
-        check('いま 10レース' in ms.inner_text() and ms.locator('[data-pt=claim]').count() == 1 and '受け取れるよ' in ms.inner_text(), 'ミッション：10レース（8＋予約・諦めた2）で「受け取る」')
-        ms.locator('[data-pt=claim]').click(); pg.wait_for_timeout(600)
-        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ms.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and '次は 15レース' in ms.inner_text(), '受け取ると 500P（無償の枠）・印が消える・次は15レース')
+        check('いま 10レース' in ms.inner_text() and ms.locator('[data-pt=claim]').count() == 0 and '次は 15レース' in ms.inner_text() and '画面の上の' in ms.inner_text(), '設定タブのミッションも 受け取りずみ・次は15レース（上の「ミッション」の案内つき）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_mission.png'), full_page=False)
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         # ---- 着せ替え（第4弾・9章・16.1・16.1.1・16.2.1・16.4）：設定の「着せ替え」・30テーマ・名前と値段（9.1）・解放（P）→ 着せ替わる・上の絵（動く壁紙）・テーマの的中PUSHとボード・帯のミッション（8.3） ----
@@ -885,6 +898,7 @@ try:
         wm = pg.locator('#setMission')
         check('壁紙のミッション' in wm.inner_text() and 'いま 8枚' in wm.inner_text() and '壁紙を8枚あつめる' in wm.inner_text() and wm.locator('[data-pt=claim][data-id="mission-wall-8"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wall-16"]').count() == 0 and 'あと 8枚（8/16）' in wm.inner_text(),
               'ミッションに「壁紙のミッション」：8枚で「受け取る」・16枚は あと8枚')
+        check(pg.evaluate("() => { const b = document.querySelector('#msBtn'); return b.classList.contains('hot') && b.querySelector('.mbd').innerText === '1'; }"), '上の「ミッション」にも 受け取れる 1 の赤い印（壁紙）')
         wm.locator('[data-pt=claim][data-id="mission-wall-8"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate("TengelWallet.unlocked('theme:silver')") and pg.evaluate("TengelKisekae.usable('silver')") and pg.evaluate("TengelKisekae.count()") == 8 and pg.evaluate('TengelWallet.total()') == 6000 and wm.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and 'シルバー帯の壁紙を受け取ったよ' in pg.locator('#toast').inner_text(),
               '受け取る → シルバー帯が使える（0P・枚数は8のまま・印が消える）')
