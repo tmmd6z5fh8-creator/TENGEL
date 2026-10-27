@@ -861,17 +861,49 @@ def sfx_fz():
 
 
 # ---------- プレミアムど的中（かわいいど的中・ハ長調・オルゴールと鐘で かわいく。PUSHの音は ど的中と同じ） ----------
-def read_pc_times():
-    """premium_cute.py から PC_T（時刻）と SCREENS（①〜⑤：字・顔・入ってくる方）を読む（見本の動きと音の時刻をそろえるため）"""
+def read_pc_times(name='PC_T'):
+    """premium_cute.py から PC_T（時刻）と SCREENS（①〜⑤：字・顔・入ってくる方）を読む（見本の動きと音の時刻をそろえるため）。
+       第4.80版：プレミアムは PM_T（①〜⑤が 1つ 1.0秒）・超プレミアムは PC_T（1.2秒の まま）"""
     tree = ast.parse(open(f'{HERE}/premium_cute.py', encoding='utf-8').read())
     pc = sc = None
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
-            if node.targets[0].id == 'PC_T':
+            if node.targets[0].id == name:
                 pc = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
             elif node.targets[0].id == 'SCREENS':
                 sc = ast.literal_eval(node.value)
     return pc, sc
+
+
+def read_pc_drop():
+    """premium_cute.py から 第4.80版の 最後の DROP（落ちはじめ・落ちる 時間）・JELLY（小さな ハートの はね）・HEAP（ハートの 山が できる 時）・
+       PC_RES（プレミアムの ボード：超プレミアムは PC_T の RES）を 読む"""
+    tree = ast.parse(open(f'{HERE}/premium_cute.py', encoding='utf-8').read())
+    out = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            k = node.targets[0].id
+            if k in ('DROP', 'JELLY', 'HEAP'):
+                out[k] = {kw.arg: ast.literal_eval(kw.value) for kw in node.value.keywords}
+            elif k == 'PC_RES':
+                out[k] = ast.literal_eval(node.value)
+    return out['DROP'], out['JELLY'], out['HEAP'], out['PC_RES']
+
+
+def boing(f, d=.6, depth=.3, rate=9.0, tau=.22):
+    """ボヨン：ゼリーの ゆれの 音（音の 高さが ゆれながら 少し 下がる・すぐ 小さく：第4.80版 プレミアムど的中の 着地）"""
+    n = n_(d)
+    t = tl(n)
+    fr = f * (1 - .3 * (1 - np.exp(-t / .25))) * (1 + depth * np.exp(-t / (tau * 1.2)) * np.sin(2 * np.pi * rate * t))
+    ph = phase(fr, n)
+    return fade((np.sin(ph) + .25 * np.sin(2 * ph)) * env(n, .004, tau), .002, .05)
+
+
+def blip(f0, f1, d=.09):
+    """ぴょこん：すっと 上がる 短い 音"""
+    n = n_(d)
+    t = tl(n)
+    return fade(np.sin(phase(f0 * (f1 / f0) ** (t / d), n)) * env(n, .002, d * .5), .001, .02)
 
 
 def tine(f, d=1.2, tau=.6):
@@ -1223,9 +1255,14 @@ def sfx_pc(with_voice=False):
        with_voice=True（超プレミアムど的中：sfx_zp）：止まった 時の 鐘と チュッ を 声「どぉ！」「てぇ！」「きぃ！」「ちゅ！」「う！」に（voice：だんだん 高く・その 間 まわりを 小さく）。
          まさちゃん「プレミアムど的中、音を変えて！ … これでおとだせる？」→「これ超プレミアムど的中の音声に使用して！」（超プレミアムだけ 声・プレミアムは 前の 音）
        → FIN ふわっ → ジャーン（ど的中・高い ド）→ ドクン・ドクン（ハートの 鼓動）・シャララ↑（のぼる ハート）
+       第4.80版 プレミアム（with_voice=False）：①〜⑤は 1つ 1.0秒（PM_T）。FIN：ポポポポ↑（画面の 下に ハートの 地面が つもる）→ ヒューン↓（上から 落ちてくる）
+       → 先が 地面に 着く（FIN＋DROP の AT＋T）で ボヨン＋ズボッ・ずぶずぶ（刺さって うまる）＋ジャーン＋ポポポン（弾ける）→ ころころ↓（こぼれ落ちる）・
+       ぴょこん／ぽよ（小さな ハート）・ぷるるん → シャララ↑ → PC_RES ヒューン↑ …（超プレミアムは 前の まま）
        → RES ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 ピン・ピン・ピン（0.08秒おき）→ 合計 キラリーン"""
-    T, SC = read_pc_times()
+    T, SC = read_pc_times('PC_T' if with_voice else 'PM_T')                       # 第4.80版：プレミアムは ①〜⑤が 1つ 1.0秒（PM_T）
     S, IN, FIN, RES, FILL, B = T['S'], T['IN'], T['FIN'], T['RES'], T['FILL'], T['BURST']
+    if not with_voice:                                                             # 第4.80版：プレミアムは ハートの 地面 → 落ちて 刺さる
+        D, J, HP, RES = read_pc_drop()
     W1 = T['W'][1]
     t0b = RES + .45                                                                # ボードの 行（gen_fx の --t0）
     mx = Mix(t0b + 2.4, 41)
@@ -1299,9 +1336,38 @@ def sfx_pc(with_voice=False):
     for k, (syl, note, ts) in enumerate(vq):                                        # 声：その 間 まわりの 音を 小さく（PC_DUCK dB）して のせる
         mx.duck(ts, ts + SYL[syl]['d'], PC_DUCK[k])
         mx.add(voice(syl, note, vr), ts, PC_VOICE_G, rv=.22)
-    # --- FIN：ふわっ → ジャーン（ど的中・高い ド）---
-    hit = FIN + .28
-    mx.add(nsweep(.3, 400, 3000, .45, r) * np.linspace(0, 1, n_(.3)) ** 2, FIN, .1, rv=.3)
+    # --- FIN：ふわっ → ジャーン（ど的中・高い ド）／第4.80版 プレミアム：ヒューン↓ → 着地で ジャーン ---
+    if with_voice:
+        hit = FIN + .28
+        mx.add(nsweep(.3, 400, 3000, .45, r) * np.linspace(0, 1, n_(.3)) ** 2, FIN, .1, rv=.3)
+    else:
+        f0 = FIN + D['AT']                                                         # 落ちはじめ
+        land = f0 + D['T']
+        hit = land + .01
+        h0, h1 = FIN + HP['T'][0], FIN + HP['T'][1]
+        for k in range(12):                                                        # ポポポポ↑（ハートの 山が 下から つもる：だんだん 高く）
+            tk = h0 + .1 + (h1 - h0 - .14) * k / 11
+            mx.add(pop(700 + 70 * k, 420 + 40 * k, .07, r, .1), tk, .1, r.uniform(-.6, .6), rv=.15)
+            if k % 3 == 0:
+                mx.add(tine(mtof((72, 76, 79, 84)[k // 3]), .5, .2), tk, .05, rv=.3)
+        n = n_(D['T'] + .03)
+        t = tl(n)
+        u = np.clip(t / D['T'], 0, 1)
+        fr = 1500 * (380 / 1500) ** u * (1 + .012 * np.sin(2 * np.pi * 7 * t))
+        mx.add(fade(np.sin(phase(fr, n)) * (.25 + .75 * u ** 1.5), .01, .03), f0, .17, rv=.25)        # ヒューン↓（上から 落ちてくる）
+        mx.add(nsweep(D['T'], 3500, 500, .5, r) * np.linspace(.2, 1, n_(D['T'])) ** 2, f0, .09, rv=.2)
+        mx.add(boing(220, .62), land, .3, rv=.2)                              # ボヨン（ドスン・ポポポン（弾ける）は 下の ジャーンと いっしょ）
+        mx.add(kick(110, 40, .55, 1.5, .16, .05, r), land + .02, .32, rv=.05)  # ズボッ（地面に 刺さる）
+        n = n_(.5)
+        mx.add(fade(nsweep(.5, 700, 140, .9, r) * np.exp(-tl(n) / .16), .004, .08), land + .03, .12, rv=.15)   # ずぶずぶ（うまる）
+        for k, m in enumerate((96, 93, 91, 88, 86, 84)):                      # ころころ↓（こぼれ落ちる）
+            mx.add(tine(mtof(m), .4, .15), land + .14 + .07 * k, .055, (-.5, .5)[k % 2], rv=.3)
+        H, g_, t0s = J['SMALL']
+        th = 2 * math.sqrt(2 * g_ * H) / g_
+        mx.add(blip(900, 1700), land + t0s, .07, .4, rv=.25)                  # ぴょこん（小さな ハート）
+        mx.add(boing(560, .3, .25, 11, .1), land + t0s + th, .07, .4, rv=.2)  # ぽよ
+        mx.add(boing(320, .42, .22, 8, .14), land + .4, .1, rv=.2)           # ぷるるん（ゆれの 山）
+        mx.add(boing(280, .5, .2, 6, .18), land + .55 + .86 * .25, .07, -.3, rv=.25)   # ぷるん（ボードまで 左右に 大きく ゆれる：premium_cute の JELLY の SUS）
     for i, m in enumerate((60, 64, 67, 72, 76, 79)):
         mx.add(brass(m + 12, 1.1, r), hit, .09, (i / 5 - .5) * .8, rv=.35)
     for i, m in enumerate((84, 88, 91, 96)):
@@ -1313,13 +1379,14 @@ def sfx_pc(with_voice=False):
     for k in range(6):
         mx.add(pop(1600 + 140 * k, 1000, .06, r, .1), hit + .02 + .03 * k, .1, r.uniform(-.8, .8), rv=.2)
     mx.add(pad((48, 60, 64, 67, 72), RES - FIN + .6, .3, .6, .4), FIN, .15, rv=.45)
-    # ドクン・ドクン（ハートの 鼓動：大きくなる 2回）
-    for tb in (FIN + .5, FIN + 1.4):
-        for k, dt in enumerate((.16, .42)):
-            mx.add(kick(110, 50, .35, 1.6, .1, .05, r), tb + dt, (.5, .36)[k], rv=.08)
+    # ドクン・ドクン（ハートの 鼓動：大きくなる 2回：超プレミアムだけ。第4.80版 プレミアムは ぷるるん）
+    if with_voice:
+        for tb in (FIN + .5, FIN + 1.4):
+            for k, dt in enumerate((.16, .42)):
+                mx.add(kick(110, 50, .35, 1.6, .1, .05, r), tb + dt, (.5, .36)[k], rv=.08)
     # シャララ↑（のぼる ハート）
     for k in range(3):
-        t = FIN + .6 + .55 * k
+        t = (FIN + .6 if with_voice else hit + .3) + .55 * k
         for j, m in enumerate((84, 86, 88, 91, 93, 96, 98, 100)):
             mx.add(tine(mtof(m), .6, .25), t + .045 * j, .045, r.uniform(-.6, .6), rv=.4)
     # --- RES：ヒューン↑（ハートが 上へ）→ ポンッ（ボード）→ 買い目 → 合計 ---

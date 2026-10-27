@@ -69,7 +69,7 @@ if r.returncode == 0:
           and 'nd_film.mp4' in html and 'nd_last.webp' in html and '.fxs .ov.fz.nd' in html
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.gd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000],
           'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版：ノーマルど的中は 動画と さいごの 1まい）')
-    check(len(ART['pm']) == 38 and len(ART['gd']) == 24 and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 16 + 38 + 24 + 3 + 4, f'絵と音と動画の 数：ネオン 2・音 16（第4.77版：ノーマルど的中・第4.79版：押した 瞬間）・プレミアム 38・神様 24・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4（{len(ASSET_FILES)}）')
+    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and len(ART['gd']) == 24 and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 16 + 43 + 24 + 3 + 4, f'絵と音と動画の 数：ネオン 2・音 16（第4.77版：ノーマルど的中・第4.79版：押した 瞬間）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・神様 24・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4（{len(ASSET_FILES)}）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

@@ -110,7 +110,11 @@ def gate(pg):
         if not g.count() or g.evaluate('e => e.hidden'):
             return
         if pg.locator('#gateGo').count():
-            pg.locator('#gateGo').click()
+            if not g.evaluate("e => e.classList.contains('fade')"):   # 消えて いく 間（fade）は もう 押さない（消えると ボタンが なくなって 待ちつづける）
+                try:
+                    pg.locator('#gateGo').click(timeout=3000)
+                except Exception:
+                    pass
         else:
             try:
                 g.click(timeout=500)
@@ -654,6 +658,28 @@ try:
             imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_|sd_/.test(i.src)).length")
             check(okp and po.locator(f'.fxs .ov.fz.{cls}').count() == 1 and all(have.values()) and po.locator('.rb.fz .bh').text_content() == title and ribs in po.locator('.rb .zrib').text_content() and imgs_bad == 0 and po.locator('.rb .brows li.top .bt').text_content() == '3連単',   # ボードは まだ 見えない（text_content）
                   f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
+            if kind == 'pc':   # 第4.80版：①〜⑤は 1つ 1.0秒・ハートの 地面が できて、ゼリーの ハートが 上から 落ちて 地面に 刺さって 1/3 うまる → ぷるんぷるん・まわりの ハートが おされる／弾ける／こぼれ落ちる／ずれる・背景の ハートは ずっと ぷりんぷりん
+                fsrc = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.pm .pmf img')].map(i => i.src.split('/').pop()))].sort()")
+                fcss = pg.evaluate("window.__FX.css")
+                pcm = pg.evaluate("""() => { const q = s => document.querySelector('#fxOv .ov.pm ' + s); const cs = s => getComputedStyle(q(s));
+                    return { fj: cs('.pmf .pmfj').animationName, fw: cs('.pmf .pmfw').animationName, fg: cs('.pmf .pmfg').animationName, fs: cs('.pmf .pmfs').animationName,
+                             f: cs('.pmf').animationName, fz: cs('.pmf').zIndex, hpz: cs('.pmhp').zIndex, hzz: cs('.pmhz').zIndex, hz: cs('.hb').zIndex, bob: cs('.pmbg .pmj b').animationName,
+                             heap: document.querySelectorAll('#fxOv .ov.pm .pmhp > i[class^="pm"]').length, spill: document.querySelectorAll('#fxOv .ov.pm .pmsp > i').length,
+                             pop: document.querySelectorAll('#fxOv .ov.pm .pmhp > i[style*="pmHP"]').length, shift: document.querySelectorAll('#fxOv .ov.pm i[style*="pmSh"]').length,
+                             cush: document.querySelectorAll('#fxOv .ov.pm .pmhp > i[style*="pmCu"]').length, ring: document.querySelectorAll('#fxOv .ov.pm .pmhp .pmgr').length,
+                             shadow: document.querySelectorAll('#fxOv .ov.pm .pmhp .pmfc').length, win: document.querySelectorAll('#fxOv .ov.pm .pmf .pmfw.pmfn').length,
+                             push: document.querySelectorAll('#fxOv .ov.pm .pmhp > i[style*="pmPu"]').length,
+                             purin: document.querySelectorAll('#fxOv .ov.pm .pmhp > i[style*="--pl:"]').length, wall: document.querySelectorAll('#fxOv .ov.pm .pmbh i[style*="pmBW"]').length,
+                             pms: [...document.querySelectorAll('#fxOv .ov.pm .pms')].map(e => getComputedStyle(e).animationDelay.split(',')[0].trim()),
+                             pk: (() => { const c = getComputedStyle(q('.pmpk')); return c.animationDelay.split(', ').pop() === '7.6s' && c.animationFillMode.split(', ').pop() === 'forwards'; })() }; }""")
+                check(fsrc == ['pm_fin.webp', 'pm_fin_g.webp', 'pm_fin_n.webp', 'pm_fin_s.webp', 'pm_fin_sh.webp', 'pm_fin_w.webp'] and pcm['f'].startswith('fxpmDrop') and 'fxpmUp' in pcm['f']
+                      and pcm['fj'].startswith('fxpmFJ') and 'fxpmFI' in pcm['fj'] and pcm['fw'] == 'fxpmFW' and pcm['fg'] == 'fxpmFG' and pcm['fs'] == 'fxpmFS' and pcm['bob'] == 'fxpmPurin'
+                      and pcm['fz'] == '7' and pcm['hpz'] == '8' and pcm['hzz'] == '5' and pcm['hz'] == '9' and pcm['heap'] >= 80 and pcm['spill'] >= 10 and pcm['pop'] >= 4 and pcm['shift'] >= 15
+                      and pcm['push'] >= 10 and pcm['purin'] >= 60 and pcm['wall'] >= 100 and '@keyframes fxpmPB' in fcss and '@keyframes fxpmBW' in fcss and 'fxpmPB 1.72s linear var(--pl,99s)' in fcss and '@keyframes fxpmPu{0.00%' in fcss and '@keyframes fxpmCu{0.00%' in fcss and pcm['cush'] == 1 and pcm['ring'] == 1 and pcm['shadow'] == 1 and pcm['win'] == 1 and pcm['pms'] == ['3s', '4s', '5s', '6s', '7s'] and pcm['pk']
+                      and 'fxpmDrop 1.41s linear 8.45s both' in fcss and 'translateY(-45.43px)' in fcss and 'translateY(56.44px)' in fcss
+                      and 'fxpmFJ 2.35s linear 8.45s both' in fcss and 'fxpmUp .5s cubic-bezier(.3,.8,.3,1) 10.3s forwards' in fcss
+                      and 'fxpmBeat' not in fcss and pg.evaluate("window.__FX.t.PC") == 10.3 and pg.evaluate("window.__FX.t.ZP") == 10.9,
+                      f'プレミアムど的中（第4.80版）：①〜⑤は 3・4・5・6・7秒（1つ 1.0秒）・最後の ハートは 6まいの 絵（体・星空・字・つや・小さな ハート・かげ）・8.45秒から 落ちて 8.91秒に 先が ハートの 地面に 着いて 1/3 うまる（下げ −45.43 → 56.44px）→ ぷるんぷるん・ボードまで 大きな ハート（2.35秒）・地面の ハート（pmPB）・まわりの ハートの 壁（pmBW）が 大きく ぷるんぷるん・地面の ハート（もや 5・大きな ハート 7・地面 8・ボード 9）・前へ おされる・弾ける・こぼれる・ずれる・クッション・光線は 7.6秒から 描かない・背景の ハートは ぷりんぷりん・ボードは 10.3秒（超プレミアムは 10.9秒）（{fsrc}・{pcm}）')
             if kind == 'sd':   # 第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）。さいごの 1まいと プチュン（ど的中と 同じ 部品）・ボードは 10.05秒
                 srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
                 check(srcs == ['sd_last.webp'] and po.locator('.ov.sd .pc .pcl').count() == 1 and po.locator('.ov.sd .pc .pca path').count() > 20

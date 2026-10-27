@@ -22,7 +22,7 @@
          ハート・前足の 形の まわりの つやつやの ピンクの わと 白 → ピンクの 光。ページで 外へ 広がる）
        pm_heart：つやつやの 大きな ハート（こい ピンクの わく・虹色の 星空）／ pm_hoof：前足（首の 横の 肩から ハートの 山の 前を おりて、
          ひづめで ハートの 左右の ふちを 上から つかむ：肩・うで・ふわふわの 毛・ひづめ・ハートに 落ちる かげ）
-       pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin：最後の 大きな ハートの「ど的中」（小さな ハートつき）
+       pm_t0〜pm_t4：ハートの 字（ど！・て！・き！・ちゅ！・う！）／ pm_fin…：最後の 大きな ゼリーの ハートの「ど的中」（第4.80版：体（わく）・星空・つや・字・小さな ハート・かげの 6まい）
        pm_bg：パチンコの 大当たりのような 虹色の 背景 ／ pm_jelly：つやつやの ゼリーの ハート 6色（よこに ならべた 1まい）
    - つや（まさちゃん「プレミアムど的中の馬とハートもっと光沢とプルンプルン感まして！」）：白い 毛は coat（形 ぜんたいの ふくらみの かげ・
      くっきりした 白い つや・ふちの 白い すじ・下の ピンクの はねかえり。顔は 頭・ほお・鼻先の 玉ごとの つや：ell_union_normals）・
@@ -699,7 +699,7 @@ def dens(z):
 def head_k(v):
     return HEAD_K * HEAD_SC[v]
 HOOF_R = .072 * 2 * HS                            # ひづめの 大きさ（場所は 前足の HOOF_AT）
-HEART_KY = .94                                    # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート）
+HEART_KY = PC.HEART_KY                            # ハートの 高さ（はばに 対して 少し ひくく：まさちゃんの 絵の ハート。premium_cute.py に うつした：第4.80版）
 
 
 def neck(cv, v, th, ph=0.0):
@@ -912,7 +912,7 @@ def glow(cv, a, w=2.0, s=7.0, k=.85):
 
 
 # ---------------------------------------------------------------- ハート（まさちゃんの 絵の ハート：ふくらんだ 形・くぼみは 浅い）
-HEART_K = ((0, -.5), (-.2, -.94), (-1.0, -1.0), (-1.02, -.4), (-1.04, .12), (-.44, .52), (0, .88))   # 左半分の 3次ベジェ（くぼみ → 左の 山 → とがった 先）
+HEART_K = PC.HEART_K                              # 左半分の 3次ベジェ（くぼみ → 左の 山 → とがった 先。premium_cute.py に うつした：第4.80版）
 
 
 def heart_d(cx, cy, s, ky=1.0):
@@ -1144,11 +1144,15 @@ def aura_center(v):
 
 
 # ---------------------------------------------------------------- 字（ど！ など：PC.GLYPHS の 線を 太く・虹色・つや）
-def word(cv, text, cx, cy, s, w=17.0, gap=-4, seed=3):
+def word(cv, text, cx, cy, s, w=17.0, gap=-4, seed=3, alone=False):
+    """字（alone：字だけの 板＝下の 絵が ない。かげは 下に たらす かわりに 板に 描く：第4.80版 最後の ハートの 字）"""
     d, total, balls = PC.word_d(text, cx, cy, s, gap)
     W = w * s
     sh = stroke_mask(cv, d, W + 18 * s)
-    cv.tint(blur(np.roll(sh, int(cv.px(4 * s)), 0), cv.px(2.5 * s)), hexc('#6E1030'), .55)
+    if alone:
+        cv.put(hexc('#6E1030'), blur(np.roll(sh, int(cv.px(4 * s)), 0), cv.px(2.5 * s)) * .4)
+    else:
+        cv.tint(blur(np.roll(sh, int(cv.px(4 * s)), 0), cv.px(2.5 * s)), hexc('#6E1030'), .55)
     cv.put(hexc('#6E1030'), blur(np.roll(sh, int(cv.px(3 * s)), 0), cv.px(1.2 * s)) * .5)
     o = stroke_mask(cv, d, W + 17 * s)
     ex, ey = edge_dir(o, cv.px(1.5 * s))
@@ -1346,16 +1350,176 @@ def jelly_sheet():
     return cv
 
 
-def final_layer():
-    """最後の 大きな ハート：つやつやの ハートに 虹色の「ど的中」・右上に 小さな ゼリーの ハート・まわりの 白い 光"""
-    cv = Cv(PC.FIN_BOX)
+# ---------------------------------------------------------------- 最後の ゼリーの ハート（第4.80版）
+# まさちゃん「ど的中のハートは、上から落ちてきて地面にハートが積み重なってるところに落ちてくる演出にして！ 落ちてきた、ハートのど的中が落ちてきた時に
+#  プルンプルンして、光沢とゼリーのようなような柔らかい演出にして！ … 立体的でリアルな画質でよろしく！」
+# → 1まいの 絵を 部品に 分けて、ページで べつべつに 動かす（premium_cute.py の fin_html）：
+#   pm_fin（体：ゼリーの わく・気ぽう・ふちの 光。星空の 所は 穴）・pm_fin_n（星空：レンズで ゆがむ 虹の 星空・わくの 下まで 広い）・
+#   pm_fin_g（つや：ゆれる 時に 体の 上を すべる 白い 光）・
+#   pm_fin_w（ど的中：体より おくれて ゆれる＝中が やわらかい）・pm_fin_s（右上の 小さな ハート：着地で ぴょこんと はねる）・
+#   pm_fin_sh（うしろの ハートに 落ちる かげ：ぼけて いるので 1倍の 画素）
+FIN_LENS = 15.0                                   # 中の 虹の 星空を ドームの レンズで ゆがめる 強さ（画面px：ふちほど 外へ のびて 見える＝ふくらんだ ゼリーの 中）
+FIN_BUBBLES = 16                                  # わくの ゼリーの 中の 小さな 気ぽう
+FIN_SHADOW = (10.0, 20.0, 11.0, .5)               # うしろに 落ちる かげ：右・下へ ずらす（画面px）・ぼかし・こさ
+FIN_DOME = 1.15                                   # ハート ぜんたいの ふくらみの 強さ（わくの 光の 当たり方に 足す：左上が 明るく 右下が こい＝立体）
+FIN_BLEED = 26.0                                  # 星空の 板を わくの 下まで 広げる はば（画面px：ゼリーの 中の 星空と 字は わくより 小さく ゆれる＝ずれても すきまが 出ない。外の ふちの 4px 内まで）
+_FIN = {}
+
+
+def soft_rrect(cv, cx, cy, rx, ry, rot=0.0, feather=.4, p=4.0):
+    """やわらかい 角まるの 四角（つやの 窓の うつりこみ）"""
+    r = math.radians(rot)
+    dx, dy = cv.X - cx, cv.Y - cy
+    u = np.abs((dx * math.cos(r) + dy * math.sin(r)) / rx)
+    v = np.abs((-dx * math.sin(r) + dy * math.cos(r)) / ry)
+    q = (u ** p + v ** p) ** (1 / p)
+    return np.clip((1 - q) / max(1e-3, feather), 0, 1).astype(np.float32)
+
+
+def glass_split(cv, gv, a, lobes, k=1.0):
+    """glass と 同じ ガラスの ドームの つや。かげは 星空の 板（cv）に・白い 光は つやの 板（gv）に"""
+    G = GLASS
+    R = max(2.0, float(dist_in(a).max()))
+    n = normals(height(a, R, soft=.2), R * .55)
+    hv = np.clip(n @ HALF, 0, 1)
+    d = np.clip(n @ LIGHT, 0, 1)
+    cv.tint(np.clip((.55 - d) / .5, 0, 1) * a, hexc('#5A0E6E'), G['shade'] * k)
+    gv.put(hexc('#FFFFFF'), hv ** 10 * G['sheen'] * k * a)
+    di = dist_in(a) / cv.sc
+    for lx, ly, ac, aw, st in lobes:
+        ang = np.degrees(np.arctan2(cv.Y - ly, cv.X - lx))
+        da = np.abs((ang - ac + 180) % 360 - 180) / aw
+        taper = np.clip(1 - da, 0, 1)
+        w0, w1 = G['cres'][0], G['cres'][1] * (.35 + .65 * taper)
+        band = smoothstep(w0, w0 + 2.5, di) * (1 - smoothstep(w1, w1 + 4.0, di))
+        gv.put(hexc('#FFFFFF'), band * np.clip(taper * 1.6, 0, 1) * st * k * a)
+    ex, ey = edge_dir(a, cv.px(2.0))
+    rb = np.clip(ex * .55 + ey * .85, 0, 1) ** 2
+    cv.put(hexc('#FFF0F8'), np.clip(1 - np.abs(di - 6.0) / 3.5, 0, 1) * rb * G['rb'] * k * a)   # 右下の 内がわの 明るい 三日月（ゼリーを とおった 光：体）
+    gv.put(hexc('#FFFFFF'), smoothstep(G['hot_e'][0], G['hot_e'][1], hv) * G['hot'] * k * a)
+
+
+def bubbles(cv, area, seed, n=FIN_BUBBLES):
+    """ゼリーの 中の 小さな 気ぽう（うすい わと 白い 点）"""
+    rnd = np.random.default_rng(seed)
+    ys, xs = np.nonzero(area > .95)
+    if len(xs) == 0:
+        return
+    for i in rnd.integers(0, len(xs), n):
+        x, y = cv.box[0] + (xs[i] + .5) / cv.sc, cv.box[1] + (ys[i] + .5) / cv.sc
+        r = float(rnd.uniform(1.4, 3.8))
+        c, m = cv.sub_mask(soft_ell(cv, x, y, r * 1.6, r * 1.6, 0, .2), 2)
+        ring = np.clip(soft_ell(c, x, y, r, r, 0, .3) - soft_ell(c, x, y, r * .66, r * .66, 0, .45), 0, 1)
+        sub_area = area[int(round((c.box[1] - cv.box[1]) * cv.sc)):, int(round((c.box[0] - cv.box[0]) * cv.sc)):][:c.H, :c.W]
+        c.put(hexc('#FFE8F4'), ring * .6 * sub_area)
+        c.tint(soft_ell(c, x + r * .2, y + r * .25, r * .7, r * .7, 0, .6) * sub_area, hexc('#B0145E'), .18)
+        c.put(hexc('#FFFFFF'), soft_ell(c, x - r * .38, y - r * .38, r * .3, r * .3, 0, .6) * .95 * sub_area)
+
+
+def lens_nebula(cv, inner, seed, cx, cy, s, ic, si, area=None):
+    """中の 虹の 星空（nebula・キラキラ・ぼけた 光の 玉）を ドームの レンズで ゆがめて 描く（ふちほど 外へ のびる＝ふくらんだ ゼリーの 中に ある）。
+       area：描く 所（星空の 板は わくの 下まで 広く：ゆれて ずれても すきまが 出ない）"""
+    tmp = Cv(cv.box, cv.sc)
+    nebula(tmp, grow(inner, cv.px(FIN_LENS + 6)), seed, ic[0], ic[1], si)
+    glitter(tmp, inner, 320, seed + 1, r=(.35, 1.1), op=(.45, 1.0))
+    glitter(tmp, inner, 26, seed + 2, r=(1.6, 3.4), op=(.7, 1.0), star=1.0)
+    for bx, by, br, op in ((-.45, -.35, .1, .35), (.42, -.42, .08, .3), (.3, .25, .12, .25), (-.25, .3, .07, .3), (.05, -.6, .06, .35)):
+        tmp.put(hexc('#FFFFFF'), soft_ell(tmp, cx + bx * s, cy + by * s, br * s, br * s, 0, .25) * op * inner)
+    nn = normals(height(inner, cv.px(si * .75), soft=.3), cv.px(si * .55))
+    K = cv.px(FIN_LENS)
+    yy, xx = np.mgrid[0:cv.H, 0:cv.W].astype(np.float32)
+    w = cv2.remap(tmp.img, xx - nn[..., 0] * K, yy - nn[..., 1] * K, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+    a = np.clip(w[..., 3], 1e-4, 1)
+    cv.put(w[..., :3] / a[..., None], inner if area is None else area)
+
+
+def jelly_big_heart(cv, gv, wv, cx, cy, s, seed=17):
+    """最後の 大きな ゼリーの ハート（big_heart と 同じ 形・色）：ハート ぜんたいの ドーム（左上から 光・右下は こく）・わくは こい ピンクの ゼリー
+       （下の あつい 所は こく・光の 反対がわの ふちが 中から 光る・気ぽう）・ふちに まわりの 光（フレネル）・中の 虹の 星空は ドームの レンズで ゆがむ・
+       わくの かげが 星空に 落ちる。くっきりした つや（わくの つや・わくの すじ・ガラスの 三日月・窓の うつりこみ）は gv（つやの 板）に・
+       中の 星空は wv（星空の 板：わくの 下まで FIN_BLEED 広く）に。cv（体）は わくだけ（星空の 所は 穴：fin_hole）→ (外の 形, 中の 形)"""
+    outer = cv.mask(P(heart_d(cx, cy, s, HEART_KY)))
+    ic = (cx, cy + s * .03)
+    si = s * .84
+    inner = cv.mask(P(heart_d(ic[0], ic[1], si, HEART_KY)))
+    outline(cv, outer, 3.4)
+    frame = np.clip(outer - inner, 0, 1)
+    # ふくらみ：ハート ぜんたいの ドーム（nd）＋ わくの まるみ（nt）
+    nd = normals(height(outer, cv.px(s * .7), soft=.3), cv.px(s * .5))
+    do, di = dist_in(outer), dist_out(inner)
+    u = np.clip(do / np.maximum(do + di, 1e-3), 0, 1)
+    h = blur((np.sin(np.pi * np.clip(u * .9 + .05, 0, 1)) ** .55).astype(np.float32), cv.px(1.6))
+    nt = normals(h, cv.px(s * .09))
+    n = nt.copy()
+    n[..., :2] += nd[..., :2] * FIN_DOME
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    d, sp = lit(n, 34)
+    cv.put(ramp(np.clip(-.02 + 1.05 * d, 0, 1), FRAME), outer)
+    # ゼリー：光の 反対がわ（右下）の 外の ふちは こい かげ・その 内がわ（星空の ふちの 近く）は ゼリーを とおった 光で 明るい・
+    # 下の 先の 近くに 光が あつまる・光の がわの ふちに 細い 明るい すじ
+    away = np.clip(-(nd[..., 0] * LIGHT[0] + nd[..., 1] * LIGHT[1]) / .6, 0, 1)
+    cv.tint(away * (1 - smoothstep(cv.px(3.0), cv.px(18.0), do)) * frame, hexc('#6E0838'), .5)
+    cv.tint(np.clip((cv.Y - (cy + s * .05)) / (s * .85), 0, 1) * frame, hexc('#8E0D4A'), .18)
+    cv.add(hexc('#FFC4E2'), away ** 1.2 * (1 - smoothstep(cv.px(1.5), cv.px(15.0), di)) * .65 * frame)
+    cv.add(hexc('#FFD9EC'), soft_ell(cv, cx + s * .1, cy + s * .66, s * .2, s * .08, -40, .9) * .55 * frame)
+    toward = np.clip((nd[..., 0] * LIGHT[0] + nd[..., 1] * LIGHT[1]) / .6, 0, 1)
+    cv.put(hexc('#FFE8F4'), toward * (1 - smoothstep(cv.px(1.0), cv.px(4.5), do)) * .55 * frame)
+    rimv = np.clip(n[..., 0] * .45 + n[..., 1] * .85, 0, 1) * np.clip(1 - n[..., 2], 0, 1)
+    cv.add(hexc('#FFC2E0'), rimv * .45 * frame)
+    cv.put(hexc('#FFFFFF'), np.clip(sp * 1.4, 0, 1) * .35 * frame)                      # 広い つや（体と いっしょに 動く）
+    bubbles(cv, frame, seed + 5)
+    gv.put(hexc('#FFFFFF'), smoothstep(.32, .58, sp) * .95 * frame)                       # くっきりした つや（すべる）
+    # 中の 星空（レンズ：星空の 板）・わくの かげ（光の 方の ふちから 星空へ）
+    lens_nebula(wv, inner, seed, cx, cy, s, ic, si, area=np.minimum(grow(inner, wv.px(FIN_BLEED)), np.clip((do - cv.px(4.0)) / cv.px(1.0), 0, 1)))
+    ex, ey = edge_dir(inner, cv.px(2.0))
+    toward = np.clip((ex * LIGHT[0] + ey * LIGHT[1]) / .75, 0, 1)
+    wv.tint(toward * (1 - smoothstep(0, cv.px(16.0), dist_in(inner))) * inner, hexc('#2A0640'), .38)
+    # 中の ふち：こい 赤の 線と 白い 線
+    ring = np.clip(grow(inner, cv.px(2.2)) - inner, 0, 1)
+    cv.put(OUT, ring)
+    wl = np.clip(inner - np.clip((dist_in(inner) - cv.px(1.6)) / cv.px(1.2), 0, 1), 0, 1) * inner
+    cv.put(hexc('#FFFFFF'), np.clip(dist_in(inner) / cv.px(.8), 0, 1) * wl * .85)
+    # わくの つや（すべる）：左上の 大きな 光（わくの まん中の すじ）・右の 山の 光・下の 小さな 光・点
+    mid = stroke_mask(cv, heart_d(cx, cy + s * .015, s * .92, HEART_KY), s * .05)
+    gv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, cx - s * .62, cy - s * .55, s * .5, s * .32, -38, .7) * 1.4, 0, 1) * blur(mid, cv.px(.6)) * .95)
+    mid2 = stroke_mask(cv, heart_d(cx, cy + s * .015, s * .92, HEART_KY), s * .032)
+    gv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, cx + s * .55, cy - s * .72, s * .3, s * .18, 20, .7) * 1.4, 0, 1) * blur(mid2, cv.px(.5)) * .85)
+    gv.put(hexc('#FFFFFF'), np.clip(soft_ell(cv, cx + s * .62, cy + s * .2, s * .22, s * .14, -48, .8) * 1.3, 0, 1) * blur(mid2, cv.px(.5)) * .5)
+    for px_, py_, r_ in ((-.93, -.12, .03), (.14, -.83, .026), (-.2, .72, .02)):
+        gv.put(hexc('#FFFFFF'), soft_ell(cv, cx + px_ * s, cy + py_ * s * HEART_KY, s * r_, s * r_, 0, .4) * .95)
+    # ガラスの ドーム（三日月の 光は つや・かげは 体）と 窓の うつりこみ（左上の 角まるの 四角 2つ：つや）
+    glass_split(wv, gv, inner, GLASS_LOBES(ic, si, ic[1] - .45 * si * HEART_KY), HEART_GLOSS)
+    wx, wy = ic[0] - .36 * si, ic[1] - .5 * si * HEART_KY
+    pane = soft_rrect(cv, wx, wy, .2 * si, .075 * si, -34, .45) + soft_rrect(cv, wx + .2 * si, wy - .13 * si, .07 * si, .05 * si, -34, .5)
+    gv.put(hexc('#FFFFFF'), np.clip(pane, 0, 1) * .5 * inner)
+    return outer, inner
+
+
+def fin_hole(cv, inner):
+    """体の 板の 星空の 所を 穴に（中の ふちの 白い 線は のこす：星空の 板が ずれても ふちが かくす）"""
+    core = smoothstep(cv.px(2.6), cv.px(3.6), dist_in(inner))
+    cv.img *= (1 - core)[..., None]
+
+
+def final_parts():
+    """最後の ゼリーの ハートの 部品（body・window・gloss・word・small・shadow の 板。1回だけ 作る）"""
+    if _FIN:
+        return _FIN
     cx, cy = PC.FIN_C
     s = PC.FIN_S
-    big_heart(cv, cx, cy, s, seed=17)
-    word(cv, 'ど的中', cx - 4, cy - 6, .98 * s / 165, w=14, gap=-4, seed=19)
-    glossy_heart(cv, cx + s * .76, cy - s * .55, 23 * s / 165, '#FF5FA6', '#FFC2DE', '#DD3484', rot=14)
-    glow(cv, np.maximum(cv.img[..., 3], cv.mask(P(heart_d(cx, cy, s, HEART_KY)))))
-    return cv
+    box = PC.FIN_BOX
+    body, gl, wd, sm, nb = Cv(box), Cv(box), Cv(box), Cv(box), Cv(box)
+    outer, inner = jelly_big_heart(body, gl, nb, cx, cy, s, seed=17)
+    word(wd, 'ど的中', cx - 4, cy - 6, .98 * s / 165, w=14, gap=-4, seed=19, alone=True)
+    glossy_heart(sm, cx + s * .76, cy - s * .55, 23 * s / 165, '#FF5FA6', '#FFC2DE', '#DD3484', rot=14)
+    glow(body, outer, k=.6)
+    fin_hole(body, inner)
+    dx, dy, bl, k = FIN_SHADOW
+    sh = Cv((box[0] - 20, box[1] - 20, box[2] + 40 + dx * 2, box[3] + 40 + dy * 2), sc=1)
+    a = sh.mask(P(heart_d(cx, cy, s, HEART_KY)))
+    sh.put(hexc('#6A0E3E'), blur(np.roll(np.roll(a, int(dy), 0), int(dx), 1), bl) * k)
+    _FIN.update(body=body, gloss=gl, word=wd, small=sm, shadow=sh, window=nb)
+    return _FIN
 
 
 
@@ -1372,7 +1536,9 @@ def _layers():
             L[f'pm_{p}_{v}'] = lambda p=p, v=v: pony_parts(v)[p]
         L[f'pm_aura_{v}'] = lambda v=v: aura_layer(v)
     L.update(pm_heart=heart_layer, pm_hoof=hooves, **{f'pm_t{i}': (lambda i=i: text_layer(i)) for i in range(5)},
-             pm_fin=final_layer, pm_bg=background, pm_jelly=jelly_sheet)
+             pm_fin=lambda: final_parts()['body'], pm_fin_g=lambda: final_parts()['gloss'], pm_fin_w=lambda: final_parts()['word'],
+             pm_fin_s=lambda: final_parts()['small'], pm_fin_sh=lambda: final_parts()['shadow'], pm_fin_n=lambda: final_parts()['window'],
+             pm_bg=background, pm_jelly=jelly_sheet)
     return L
 
 

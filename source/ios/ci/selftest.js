@@ -155,12 +155,17 @@
       res.gd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.gd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.gd.closeVis = closeVis();
       await mark('fx-gd-board');
       F.close(); await sleep(300);
-      // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤ → ど的中 → ボード：11.02秒）
+      // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤（1つ 1.0秒）→ ハートの 地面に ど的中が 落ちて 刺さる → ボード：10.42秒・第4.80版）
       res.pc = { kind: F.show(Object.assign({ force: 'pc' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
-      await sleep(400); F.tap(); res.pc.fps = await fps(1000);
-      res.pc.parts = ['.pmbg', '.pmp', '.pms', '.pmf', '.pmw'].map(function (c) { return document.querySelectorAll('#fxOv .ov.pm ' + c).length; });
+      await sleep(400); F.tap(); var pcT = Date.now(); res.pc.fps = await fps(1000);
+      res.pc.parts = ['.pmbg', '.pmp', '.pms', '.pmf', '.pmw', '.pmfj', '.pmhz', '.pmhp', '.pmsp'].map(function (c) { return document.querySelectorAll('#fxOv .ov.pm ' + c).length; });
       await sleep(3200); res.pc.fps4 = await fps(1000);   // ポニーの ① の ころ
       await mark('fx-pc');
+      // 第4.80版：ハートの 地面が できて、ゼリーの ハートが 上から 落ちて 8.91秒に 先が 地面に 着いて 1/3 うまる → ぷるんぷるん（10.3秒に 上へ）→ 9.5秒ごろを 写す
+      await sleep(Math.max(0, 9500 - (Date.now() - pcT)));
+      var pmf = document.querySelector('#fxOv .ov.pm .pmf');
+      res.pc.land = { t: Date.now() - pcT, tf: pmf ? getComputedStyle(pmf).transform : null, heap: document.querySelectorAll('#fxOv .ov.pm .pmhp > i').length };
+      await mark('fx-pc-land');
       await waitFor(function () { return closeVis() === 'visible'; }, 16000);
       res.pc.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.pc.closeVis = closeVis();
       await mark('fx-pc-board');

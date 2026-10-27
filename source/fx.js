@@ -487,7 +487,7 @@
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
       else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
       else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
-      else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t.PC, 1);             // 控えめ：1秒後に ボードの 所から ※仮
+      else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t[k === 'pc' ? 'PC' : 'ZP'], 1);   // 控えめ：1秒後に ボードの 所から ※仮（第4.80版：プレミアムは 0.4秒 おそい）
       else if (k === 'gd' && calm()) sfx(SND[k][1], A.t.GD, 1);
       else sfx(SND[k][1]);
     }
