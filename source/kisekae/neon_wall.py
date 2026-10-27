@@ -7,6 +7,10 @@
      ふわっと 出て → お尻から うしろへ 流れながら（向き・速さ・ゆれ・長さは つぶごと）ぱっと 強く 光る／ふっと 消える／ちかちか → すっと 消えて もとの 場所から また。
      動きと 明るさの 予定は LIFE_K 本（life_programs）を つぶごとに 1つ（流れる 向きが お尻からの 向きに 近い もの）・長さと ずらしは つぶごと。
      CSS の 変数（var()）は keyframes の 中で 使わない（iOS 16.3 までの WebKit は keyframes の 中の 変数が 効かない ことが ある）
+   - 光の 横線（筋・63こ。第4.88版・まさちゃん「一枚目のネオンもっと光の横線長くしてランダムにして！」）：
+     長さは いまの絵の 筋の 2.4〜4.2倍（画面で 約5〜25px）を 筋ごとに ランダム・太さも 2とおり。筋の 入れもの（.ln）が
+     のびちぢみ（横 0.5〜1.75倍・かたむき −3.5〜−10.5°）の 予定 STRETCH_K 本の どれかで 1.6〜4.2秒ごとに ゆらぐ。
+     筋の 一生（予定は 点と 同じ）は 光る ときに 横は 少しだけ・たては 大きく（細い 光が ぱっと 太く 明るく）
    - 右上の空（馬のうしろの空・太陽の上）を、STAR_S 秒に1回 流れ星が右上から左下へ流れる（白いしんに水色とピンクの光の尾・1秒たらず）。
      流れ星は 馬のコマにかからない所を通る
    - いちばん下の 止まった絵は 背景だけ（馬も 光のつぶも なし・neon_static.webp）。馬は すき通しの コマだけ（下に 止まった 馬が あると 足が 二重に 見える）
@@ -42,7 +46,9 @@ def star_svg():
 LIFE_K = 16                                    # 光のつぶの 一生の 予定（プログラム）の 数
 LIFE_S = (2.6, 6.2)                            # つぶの 一生（秒）：つぶごとに この あいだで
 DOT_Z = (1.2, 1.6, 2.0, 2.5)                   # 点の 大きさ（画面の px・4つに まとめる）
-LINE_Z = (2.4, 3.4, 4.4, 5.6)                  # 筋の 長さ（画面の px）
+LINE_LEN = (2.4, 4.2)                          # 筋の 長さ：いまの絵の 筋（4〜12画素）の この 倍の あいだで ランダム（画面の px で 約5〜25px・第4.88版）
+STRETCH_K = 8                                  # 筋の のびちぢみの 予定の 数（かたむきも 予定ごとに 少し ちがう）
+STRETCH_S = (1.6, 4.2)                         # のびちぢみ 1回りの 秒（筋ごとに ランダム）
 W_Q = (.25, .5, .75, 1.0)                      # こさ（4つに まとめる）
 LINE_TILT = -math.degrees(math.atan(.12))      # 筋の かたむき（いまの絵と 同じ：うしろの はしが 少し 下）
 
@@ -90,27 +96,51 @@ def life_programs(rnd):
     return progs
 
 
-def life_css(progs, pre='nqL'):
-    """予定 → @keyframes nqL0〜（opacity と transform：数は ぜんぶ 書きこみ・変数なし）"""
-    f2 = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.') if abs(v) >= .005 else '0'
+F2 = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.') if abs(v) >= .005 else '0'
+PC = lambda t: f'{t * 100:.2f}'.rstrip('0').rstrip('.') + '%'
+
+
+def life_css(progs, pre='nqL', line=False):
+    """予定 → @keyframes nqL0〜（opacity と transform：数は ぜんぶ 書きこみ・変数なし）。
+       line：筋（nqM0〜）は 光る ときの 大きさを 横は 少しだけ（1＋(k−1)×0.4）・たては k（細い 光が ぱっと 太く）"""
     out = []
     for p, pr in enumerate(progs):
         seen, kf = set(), ''
         for t, x, y, v, k in pr['stops']:
-            pc = f'{t * 100:.2f}'.rstrip('0').rstrip('.') + '%'
+            pc = PC(t)
             assert pc not in seen, (p, pc)
             seen.add(pc)
-            kf += f'{pc}{{opacity:{f2(v)};transform:translate({f2(x)}px,{f2(y)}px) scale({f2(k)})}}'
+            sc = f'{F2(1 + (k - 1) * .4)},{F2(k)}' if line else F2(k)
+            kf += f'{pc}{{opacity:{F2(v)};transform:translate({F2(x)}px,{F2(y)}px) scale({sc})}}'
         out.append(f'@keyframes {pre}{p}{{{kf}}}')
     return ''.join(out)
 
 
+def stretch_programs(rnd):
+    """筋の のびちぢみの 予定 STRETCH_K 本：dict(tilt＝かたむき（度）, pts＝[(時 0〜1, 横の 倍)…])。はじめと おわりは 同じ（くり返しの つなぎめ）"""
+    progs = []
+    for j in range(STRETCH_K):
+        tilt = rnd.uniform(-10.5, -3.5)
+        s0 = rnd.uniform(.75, 1.2)
+        ts = sorted({round(rnd.uniform(.1, .9), 2) for _ in range(rnd.randint(3, 5))})
+        progs.append(dict(tilt=tilt, pts=[(0.0, s0)] + [(t, rnd.uniform(.5, 1.75)) for t in ts] + [(1.0, s0)]))
+    return progs
+
+
+def stretch_css(sprogs, pre='nqS'):
+    """のびちぢみ → @keyframes nqS0〜（筋の 入れもの：かたむけて 横に のばす・入れものの 左上＝筋の 頭が 中心）"""
+    return ''.join(f'@keyframes {pre}{j}{{' + ''.join(f'{PC(t)}{{transform:rotate({sp["tilt"]:.1f}deg) scaleX({F2(v)})}}' for t, v in sp['pts']) + '}'
+                   for j, sp in enumerate(sprogs))
+
+
 def dust_html(run):
-    """光のつぶ 236こ（<i>：点は まるい 光・筋は 細い 光の 線（<b class="ln"> で かたむける））。(html, 予定)"""
+    """光のつぶ 236こ（<i>：点は まるい 光・筋は 細い 光の 線（<b class="ln s…"> で かたむけて のびちぢみ））。(html, 予定, のびちぢみの 予定)"""
     d = run['dust']
     cx, cy = d['center']
     rnd = random.Random(57)
+    rl = random.Random(73)                    # 筋の 長さ・太さ・のびちぢみ（点の 乱数の 順は かえない）
     progs = life_programs(random.Random(91))
+    sprogs = stretch_programs(random.Random(29))
     near = lambda v, zs: min(range(len(zs)), key=lambda i: abs(zs[i] - v))
     out = ['<div class="nqp" aria-hidden="true">']
     for x, y, kind, size, ci, w in d['parts']:
@@ -119,33 +149,38 @@ def dust_html(run):
         p = min(range(LIFE_K), key=lambda i: abs(math.remainder(progs[i]['a'] - a, 2 * math.pi)))
         dur = rnd.uniform(*LIFE_S)
         tm = f'animation-duration:{dur:.2f}s;animation-delay:{-rnd.random() * dur:.2f}s'
-        cls = f'k{p} w{ci}{near(w, W_Q)}'
+        col = f'w{ci}{near(w, W_Q)}'
         if kind == 0:
-            out.append(f'<i class="z{near(size * 1.05, DOT_Z)} {cls}" style="left:{x / 2:.1f}px;top:{y / 2:.1f}px;{tm}"></i>')
+            out.append(f'<i class="z{near(size * 1.05, DOT_Z)} k{p} {col}" style="left:{x / 2:.1f}px;top:{y / 2:.1f}px;{tm}"></i>')
         else:
-            out.append(f'<b class="ln" style="left:{x / 2:.1f}px;top:{y / 2:.1f}px"><i class="q{near(size / 2, LINE_Z)} {cls}" style="{tm}"></i></b>')
+            L = size / 2 * rl.uniform(*LINE_LEN)                                # 筋の 長さ（画面の px）
+            j, sd = rl.randrange(STRETCH_K), rl.uniform(*STRETCH_S)
+            th = ' t2' if rl.random() < .35 else ''
+            out.append(f'<b class="ln s{j}" style="left:{x / 2:.1f}px;top:{y / 2:.1f}px;animation-duration:{sd:.2f}s;animation-delay:{-rl.random() * sd:.2f}s">'
+                       f'<i class="m{p} {col}{th}" style="width:{L:.1f}px;{tm}"></i></b>')
     out.append('</div>')
-    return ''.join(out), progs
+    return ''.join(out), progs, sprogs
 
 
-def dust_css(run, progs):
-    """光のつぶの CSS（足す光で 重ねる・色と こさ・大きさ・予定）"""
+def dust_css(run, progs, sprogs):
+    """光のつぶの CSS（足す光で 重ねる・色と こさ・大きさ・予定・筋の のびちぢみ）"""
     cols = run['dust']['cols']
     rgb = lambda c: tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
     css = ('.nqw .nqp{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none;mix-blend-mode:plus-lighter}'
            '.nqw .nqp i{position:absolute;display:block;border-radius:50%;opacity:.8;animation:nqL0 4s linear infinite}'
-           f'.nqw .nqp .ln{{position:absolute;width:0;height:0;transform:rotate({LINE_TILT:.2f}deg)}}'
-           '.nqw .nqp .ln i{left:auto;right:0;top:-.5px;height:1px;border-radius:.5px;transform-origin:100% 50%}')
+           f'.nqw .nqp .ln{{position:absolute;width:0;height:0;transform:rotate({LINE_TILT:.2f}deg);animation:nqS0 3s ease-in-out infinite}}'
+           '.nqw .nqp .ln i{left:auto;right:0;top:-.5px;height:1px;border-radius:.5px;transform-origin:100% 50%;animation-name:nqM0}'
+           '.nqw .nqp .ln i.t2{top:-.7px;height:1.4px}')
     for i, z in enumerate(DOT_Z):
         css += f'.nqw .nqp .z{i}{{width:{z}px;height:{z}px;margin:-{z / 2:g}px 0 0 -{z / 2:g}px}}'
-    for i, z in enumerate(LINE_Z):
-        css += f'.nqw .nqp .q{i}{{width:{z}px}}'
     for ci, c in enumerate(cols):                  # 色と こさ：まん中は その色・まわりに 光（いまの絵の ぼかした 光と 同じくらい）
         r, g, b = rgb(c)
         for j, w in enumerate(W_Q):
             col = f'rgba({r},{g},{b},{w:g})'
             css += f'.nqw .nqp .w{ci}{j}{{background:{col};box-shadow:0 0 2px {col},0 0 5px {col}}}'
     css += ''.join(f'.nqw .nqp .k{p}{{animation-name:nqL{p}}}' for p in range(1, LIFE_K)) + life_css(progs)
+    css += ''.join(f'.nqw .nqp .ln i.m{p}{{animation-name:nqM{p}}}' for p in range(1, LIFE_K)) + life_css(progs, 'nqM', line=True)
+    css += ''.join(f'.nqw .nqp .ln.s{j}{{animation-name:nqS{j}}}' for j in range(1, STRETCH_K)) + stretch_css(sprogs)
     return css
 
 
@@ -153,7 +188,7 @@ def inline(blobs, run, alt=ALT):
     """(html, css)。blobs：static（いまの止まった絵・光のつぶなし）・run（走るコマ：馬だけの すき通し）→ '/_blob/<id>'。run：neon_run.json"""
     x0, y0, cw, ch = (v // 2 for v in run['cell'])
     n = run['frames']
-    dh, progs = dust_html(run)
+    dh, progs, sprogs = dust_html(run)
     # いちばん下は 背景だけの 止まった絵（static＝馬も 光のつぶも なし・flat/neon_run.py の neon_static.webp）。馬は すき通しの コマだけ。
     #   前は 馬入りの いまの絵を 下に しいていたので、コマの 馬の 足と 下の 止まった 馬の 足が 二重に 見えた（2026/10/25 まさちゃん「馬の足とか馬の絵が重なって…」）
     html = (f'<div class="nqw" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["static"]}" alt="">'
@@ -161,7 +196,7 @@ def inline(blobs, run, alt=ALT):
     css = ('.nqw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;isolation:isolate}'
            '.nqw .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
            # 光のつぶ：足す光（plus-lighter）で 下の絵に 重ねる。1つずつ ばらばらに 流れて 光って 消える（dust_css・第4.87版）
-           + dust_css(run, progs) +
+           + dust_css(run, progs, sprogs) +
            f'.nqw .nqh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
            f'.nqw .nqr{{width:{n * cw}px;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;'
            f'animation:nqRun {RUN_S}s steps({n}) infinite}}'
@@ -173,7 +208,8 @@ def inline(blobs, run, alt=ALT):
            f'7%{{opacity:1}}9.5%{{opacity:0;transform:translate({STAR["x1"]}px,{STAR["y1"]}px)}}'
            f'100%{{opacity:0;transform:translate({STAR["x1"]}px,{STAR["y1"]}px)}}}}'
            # 視差効果を減らす：流れ星は 消す。馬は コマ0 で 止める（下の絵に 馬が ないので 消さない）・光のつぶは もとの 場所に 止めて 置く（こさ 0.8）
-           '@media (prefers-reduced-motion:reduce){.nqw .nqs{display:none}.nqw .nqr,.nqw .nqp i{animation:none}}')
+           #   つぶと 筋は 予定の クラス（.k3・.m3・.s3）が 名前を 入れなおすので !important で 止める
+           '@media (prefers-reduced-motion:reduce){.nqw .nqs{display:none}.nqw .nqr{animation:none}.nqw .nqp i,.nqw .nqp .ln{animation:none!important}}')
     return html, css
 
 

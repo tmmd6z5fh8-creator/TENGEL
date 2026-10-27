@@ -106,9 +106,10 @@ if r.returncode == 0:
           and '#ksBnr .ykb{' in sc and '@keyframes kbykbA{' in sc and '@keyframes kbykbP04{' in sc and '.ykbs{display:block}' in sc,
           'ks_snow.json：白い 息は ページで（鼻の 前で 玉 5こが じゅんに 生まれて 流れる・鼻に ついて いく keyframes・視差効果を減らす ときは 止まった 3つ）（第4.87版）')
     kfb = _re.findall(r'@keyframes ([\w-]+)\{((?:[^{}]*\{[^{}]*\})*)\}', nc)
-    check(nh.count('<i class="') == 236 and nh.count('<b class="ln"') == 63 and 'nqd' not in nh + nc and '70fc21205005d11eddef8ebd6c78ee31' not in nh + nc
-          and len([k for k, _ in kfb if k.startswith('kbnqL')]) == 16 and all('var(' not in body for _, body in kfb),
-          f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし）・光のつぶの 絵（dust）は 使わない（第4.87版）')
+    check(nh.count('<i class="') == 236 and nh.count('<b class="ln s') == 63 and 'nqd' not in nh + nc and '70fc21205005d11eddef8ebd6c78ee31' not in nh + nc
+          and [len([k for k, _ in kfb if _re.fullmatch(pre + r'\d+', k)]) for pre in ('kbnqL', 'kbnqM', 'kbnqS')] == [16, 16, 8] and all('var(' not in body for _, body in kfb)
+          and '.nqw .nqp i,#ksBnr .nqw .nqp .ln{animation:none!important}' in nc,
+          f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし・視差効果を減らす ときは 止まる）・光のつぶの 絵（dust）は 使わない（第4.87版）・光の 横線（筋）は 長く ランダムに のびちぢみ（予定 8本・第4.88版）')
     for f in ks_json:
         txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
         for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):

@@ -128,10 +128,12 @@ def carousel_horse(pal, ow=6.0):
     g.append(f'<g transform="translate({HC[0]} {HC[1]}) scale({HS}) translate({-HC[0]} {-HC[1]})">')
     # 鼻のまわり（少し色）
     g.append(f'<path d="{smooth([(316, 70), (330, 86), (332, 100), (322, 112), (306, 112), (300, 96), (306, 80)])}" fill="{pal["muzzle"]}"/>')
-    # 頭の飾り（金のベルト）
-    g.append(f'<path d="{smooth([(300, 52), (296, 76), (300, 104)], closed=False)}" fill="none" stroke="{L}" stroke-width="{ow * 2.4:.1f}" stroke-linecap="round"/>')
-    g.append(f'<path d="{smooth([(300, 52), (296, 76), (300, 104)], closed=False)}" fill="none" stroke="{GOLD}" stroke-width="{ow * 1.1:.1f}" stroke-linecap="round"/>')
-    g.append(shape('M297,78 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0', pal['rosette'], L, ow * 0.6))
+    # 頭の飾り（金のベルト＝鼻の まわりの 紐）。第4.88版（まさちゃん「二枚目のメリーゴーランドの馬の口の紐青線の位置にして！」）：
+    #   前は 目の うしろから あごへ たて（(300,52)→(300,104)）。→ 鼻すじの 上の ふち から あごの 下へ ななめ（顔の 向きに 直角＝鼻に まく 紐・鼻の 色の ところの すぐ うしろ）
+    band = [(315.5, 64.5), (301.6, 83.4), (286.5, 101.5)]
+    g.append(f'<path d="{smooth(band, closed=False)}" fill="none" stroke="{L}" stroke-width="{ow * 2.4:.1f}" stroke-linecap="round"/>')
+    g.append(f'<path d="{smooth(band, closed=False)}" fill="none" stroke="{GOLD}" stroke-width="{ow * 1.1:.1f}" stroke-linecap="round"/>')
+    g.append(shape('M301.2,83.2 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0', pal['rosette'], L, ow * 0.6))
     # 目（たて長の黒目＋光）・まつ毛・ほっぺ
     g.append(f'<ellipse cx="281" cy="62" rx="6.5" ry="8" fill="{L}"/>')
     g.append('<circle cx="283.2" cy="58.6" r="2.4" fill="#FFFFFF"/>')
