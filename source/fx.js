@@ -1,7 +1,7 @@
 // 的中ボタン（App Store版 第3弾：アップデート指示書 10章・16.2〜16.6）
 //   結果を保存したあとに 1つだけ出す（強い順）：神様的中（3連単の当たりの3頭に 超大穴＝10〜12番人気と、ほかに 大穴以上＝7〜12番人気）＞ ど的中（3連単の当たりの3頭に 超大穴）＞ デカ的中（3連単の当たり）＞ 的中（ほかの当たり）／当たりなし＝ハズレ（ボードだけ・音なし）
 //   隠れど的中＝デカ的中の 2〜7回に1回（ランダム。数は端末の中だけ：記録・バックアップには入れない）→ 見た目はデカの PUSH・押すと ど的中の演出
-//   第5弾（16.3 の 特別な 演出・くじは ※仮）：ど的中の 6回に1回は プレミアムど的中（pc）・その 8回に1回は 超プレミアムど的中（zp）／
+//   第5弾（16.3 の 特別な 演出・くじは ※仮）：ど的中の 6回に1回は プレミアムど的中（pc）・その 8回に1回は 超プレミアムど的中（zp：第4.86版で なし）／
 //     神様的中の 8回に1回は 超神様的中（sgd：1コマずつ 描いた 動画）・その 4回に1回は 超プレミアム神様的中（spg：超プレミアムの ふり → き！で 昇格の 動画 → 超神様の 動画）
 //   第4.66版（まさちゃんの 指定・※仮）：プレミアムに ならなかった ど的中の 2回に1回は ど的中・紫電（sd）。PUSH・ボード・音の 段は ど的中と 同じ
 //     第4.70版：② は 1コマずつ 3D で 描いた 動画（sd_film：リアルな 馬の 顔 → 蹄が 画面を 切り裂く → 光の 玉）→ ③ ど！！！的中（CSS と SVG）→ ボード
@@ -16,6 +16,9 @@
 //     4秒 たっても 動かない・読めない・視差効果を減らす／控えめ → さいごの 1まい → 1.3秒 ボード（※仮）
 //   設定：的中エフェクト（オフ＝PUSH・演出・音なしでボードだけ静かに）・演出を控えめにする（iPhone の視差効果を減らすと同じ形。はじめはその設定に合わせる）・効果音（はじめはオン ※仮）
 //   ほかの画面から：window.TengelFx（decide・show・close・prime・get・set…）。Web版（ホーム画面のアプリ）では何もしない
+//   第4.86版（まさちゃん「あと一枚目の的中ボタン各種の、赤い×が書いてある演出消して！」）：隠れど的中・超プレミアムど的中・神様的中は なし。
+//     デカ的中は いつも デカ的中・プレミアムど的中は 超プレミアムに ならない・神様の 条件（超大穴と ほかに 大穴以上）は 8回に1回 超神様的中
+//     （その 4回に1回 超プレミアム神様的中）・のこりは ど的中の くじ（プレミアム／極ど的中／ノーマルど的中）。超プレミアム神様的中の はじめの ふりは 超プレミアムの まま
 (function () {
   'use strict';
   if (!window.__NATIVE || !window.__FX) return;
@@ -27,14 +30,13 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUPER = [10, 12];                 // 超大穴＝単勝人気 10〜12番人気（判定の J・K・L）。13番人気より下は入れない
   const BIG = [7, 9];                     // 大穴＝7〜9番人気（神様的中：超大穴と いっしょに 3連単に）
-  const HIDDEN_KEY = 'tengel.fxhidden';   // 隠れど的中の数（端末の中だけ）
   const SETTING = 'fx';
-  // PUSHが出たときの音・押したときの音（隠れど的中：PUSHはデカの音・押すとど的中の音。プレミアム・神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
-  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], hidden: ['big_push', 'fz'], pc: ['fz_push', 'pc'], zp: ['fz_push', 'zp'], gd: ['fz_push', 'gd'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'] };
-  const FZ_PUSH = { fz: 1, pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1, sd: 1, nd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
-  const BOARD_OF = { hidden: 'fz', pc: 'fz', zp: 'fz', gd: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz' };   // ボードの 形（ど的中の 形）
-  const TITLE_OF = { pc: 'fz', zp: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };                                     // ボードの 見出し（A.board.titles の キー）
-  const LOT = { pc: 1 / 6, zp: 1 / 8, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };                           // くじ（※仮）：ど的中 → プレミアム → 超プレミアム／ど的中の 残りの 2回に1回 紫電（第4.66版）／神様 → 超神様 → 超プレミアム神様
+  // PUSHが出たときの音・押したときの音（プレミアム・超神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
+  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'] };
+  const FZ_PUSH = { fz: 1, pc: 1, sgd: 1, spg: 1, sd: 1, nd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
+  const BOARD_OF = { pc: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz' };   // ボードの 形（ど的中の 形）
+  const TITLE_OF = { pc: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };              // ボードの 見出し（A.board.titles の キー）
+  const LOT = { pc: 1 / 6, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };              // くじ（※仮）：ど的中 → プレミアム／のこりの 2回に1回 紫電（第4.66版）／神様の 条件 → 超神様 → 超プレミアム神様
   let S = { effects: true, calm: null, sound: true };
   let cur = null;
 
@@ -78,6 +80,7 @@
   // ---------- どれが出るか（10章） ----------
   // spec = { r, n（頭数）, rows: [{ t（券種）, state（的中／不的中／返還）, hits: [[馬番…]…], n（点数） }…]（予約した順）, ranks: { 馬番: 人気順位 } }
   // → { kind: miss／hit／big／fz／gd, supers: [{ no, rank }…]（超大穴）, bigs: [{ no, rank }…]（大穴：神様のとき） }
+  //   gd＝神様の 条件（第4.86版：神様的中は なし → くじで 超神様・超プレミアム神様・ど的中の どれか）
   function decide(spec) {
     const rows = (spec && spec.rows) || [];
     if (!rows.some(x => x.state === '的中')) return { kind: 'miss', supers: [], bigs: [] };
@@ -97,23 +100,11 @@
     });
     return { kind: god ? 'gd' : supers.length ? 'fz' : 'big', supers: supers, bigs: god ? bigs : [] };
   }
-  // 隠れど的中の数（※仮）：デカ的中が出るたびに数えて、2〜7回目（ランダム）の1回を隠れど的中に。出たら次の回数をまた 2〜7 から決める。本物のど的中は数えない
-  const nextHidden = () => 2 + Math.floor(rand() * 6);
-  function hiddenState() {
-    try { const o = JSON.parse(localStorage.getItem(HIDDEN_KEY) || 'null'); if (o && o.n >= 2 && o.n <= 7 && o.c >= 0) return { c: +o.c, n: +o.n }; } catch (e) { /* なし */ }
-    return { c: 0, n: nextHidden() };
-  }
-  function rollHidden() {
-    const h = hiddenState(); h.c += 1;
-    let hid = false;
-    if (h.c >= h.n) { hid = true; h.c = 0; h.n = nextHidden(); }
-    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(h)); } catch (e) { /* 覚えられなくてもOK */ }
-    return hid;
-  }
-  // 特別な 演出の くじ（※仮・数えかたは しない）：ど的中 → 6分の1 で プレミアム → その 8分の1 で 超プレミアム／神様 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様
+  // 特別な 演出の くじ（※仮・数えかたは しない）：ど的中 → 6分の1 で プレミアム／のこりの 2回に1回 極ど的中（紫電）・ほかは ノーマルど的中。
+  // 神様の 条件 → 8分の1 で 超神様（その 4分の1 で 超プレミアム神様）・のこりは ど的中の くじ（第4.86版：神様的中・超プレミアムど的中は なし）
   function lottery(kind) {
-    if (kind === 'fz') return rand() < LOT.pc ? (rand() < LOT.zp ? 'zp' : 'pc') : (rand() < LOT.sd ? 'sd' : 'nd');   // 第4.77版：紫電で ない ど的中は ノーマルど的中（nd：動画）
-    if (kind === 'gd') return rand() < LOT.sgd ? (rand() < LOT.spg ? 'spg' : 'sgd') : 'gd';
+    if (kind === 'fz') return rand() < LOT.pc ? 'pc' : (rand() < LOT.sd ? 'sd' : 'nd');   // 第4.77版：紫電で ない ど的中は ノーマルど的中（nd：動画）
+    if (kind === 'gd') return rand() < LOT.sgd ? (rand() < LOT.spg ? 'spg' : 'sgd') : lottery('fz');
     return kind;
   }
 
@@ -147,12 +138,11 @@
     const h = t.endsWith('！！！') ? esc(head.slice(0, -2)) + '<span class="bx3">！！</span>' : esc(head);
     return `${h}<span class="bz${last === '！' ? ' bzx' : ''}">${esc(last)}</span>`;
   }
-  // 帯：ど的中・プレミアム・超プレミアム＝超大穴の 馬番と 人気／神様・超神様・超プレミアム神様＝超大穴と 大穴の 馬番（※仮）／隠れ＝デカ的中が ど的中に化けた
+  // 帯：ど的中・プレミアム・極・ノーマル＝超大穴の 馬番と 人気／超神様・超プレミアム神様＝超大穴と 大穴の 馬番（※仮）
   function ribbonHTML(kind, spec, supers, bigs) {
     const n = spec && spec.n;
-    if (kind === 'hidden') return '<div class="zrib"><b class="zt">隠れ</b><span>デカ的中が ど的中に化けた！</span></div>';
     if (!supers || !supers.length) return '';
-    if (kind === 'gd' || kind === 'sgd' || kind === 'spg') {
+    if (kind === 'sgd' || kind === 'spg') {
       const bg = bigs && bigs.length ? `<b class="zt">大穴</b>${bigs.map(s => num(s.no, n, true)).join('')}` : '';
       return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}${bg}<span>が3連単に！</span></div>`;
     }
@@ -408,9 +398,9 @@
   // ---------- 出す ----------
   // 舞台（390×844）を 画面に 入る 大きさに（縦横の 比は 変えない・1倍に 近ければ 1倍＝字が ぼけない）※仮
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
-  // 出る 前に 絵を 読んで おく（プレミアム 38まい・神様 24まい・紫電と 超神様の さいごの 1まい・動画）
+  // 出る 前に 絵を 読んで おく（プレミアム 38まい・紫電と ノーマルど的中と 超神様の さいごの 1まい・動画）
   function preload(kind) {
-    const names = kind === 'pc' ? A.art.pm : kind === 'gd' ? A.art.gd : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
+    const names = kind === 'pc' ? A.art.pm : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
     if (kind === 'sd') { video('sd_film'); video('nd_film'); }          // 第4.77版：極ど的中は ノーマルど的中の 動画から 入る
@@ -430,10 +420,10 @@
     if (kind === 'miss' || quiet) reveal(); else push();
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
-  // 的中 1.0・デカ的中（隠れど的中の PUSH も）1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
-  const PZ = { hit: 1, big: 1.2, hidden: 1.2, fz: 1.4, sd: 1.4, nd: 1.4, pc: 1.6, zp: 1.6, gd: 1.6, sgd: 1.6, spg: 1.6 };
-  const RBW = { pc: 1, zp: 1, gd: 1, sgd: 1, spg: 1 };
-  const PLABEL = { big: 'デカ的中ボタン', hidden: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', zp: '超プレミアムど的中ボタン', gd: '神様的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
+  // 的中 1.0・デカ的中 1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
+  const PZ = { hit: 1, big: 1.2, fz: 1.4, sd: 1.4, nd: 1.4, pc: 1.6, sgd: 1.6, spg: 1.6 };
+  const RBW = { pc: 1, sgd: 1, spg: 1 };
+  const PLABEL = { big: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
   // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
   function pboxHTML(th, label) {
     const pc = th ? ' ' + th.pc : '';
@@ -465,7 +455,7 @@
     if (!cur || cur.phase === 'reveal') return;
     const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers, cur.bigs);
     const th = !cur.quiet && (k === 'hit' || k === 'big') ? (cur.theme || null) : null;
-    let tpl = th && k === 'hit' ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : (k === 'hidden' ? 'fz' : k)];
+    let tpl = th && k === 'hit' ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : k];
     if (!cur.quiet && k === 'big') tpl = tpl.split('{{PC}}').join(th ? ' ' + th.pc : '').replace('{{PRESSED}}', th ? th.push.pressed : '').replace('{{BURST}}', th ? th.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.2));   // 押された PUSH も そのテーマの 形・同じ 大きさ
     let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
@@ -486,9 +476,8 @@
       else if (k === 'sd' && cur.pre) sdPre();                                              // 第4.77版：ノーマルど的中の 動画 → ブラックアウト → 極ど的中
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
       else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
-      else if ((k === 'fz' || k === 'hidden') && calm()) sfx(SND[k][1], A.t.R, 1);           // 控えめ：1秒後に 結果の 所から
-      else if ((k === 'pc' || k === 'zp') && calm()) sfx(SND[k][1], A.t[k === 'pc' ? 'PC' : 'ZP'], 1);   // 控えめ：1秒後に ボードの 所から ※仮（第4.80版：プレミアムは 0.4秒 おそい）
-      else if (k === 'gd' && calm()) sfx(SND[k][1], A.t.GD, 1);
+      else if (k === 'fz' && calm()) sfx(SND[k][1], A.t.R, 1);                              // 控えめ：1秒後に 結果の 所から
+      else if (k === 'pc' && calm()) sfx(SND[k][1], A.t.PC, 1);                             // 控えめ：1秒後に ボードの 所から ※仮
       else sfx(SND[k][1]);
     }
     emit('reveal');
@@ -505,16 +494,14 @@
     try { if (WL() && WL().lockZoom) WL().lockZoom(false); } catch (e) { /* なし */ }
     if (!silent) emit('close', c.kind);
   }
-  // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。隠れど的中の数は進めない・くじも ひかない）
+  // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。くじは ひかない）
   function show(spec) {
     if (!spec) return null;
     const d = decide(spec), quiet = !S.effects;
     let kind = d.kind;
     if (spec.force) kind = spec.force;
-    else if (!quiet) {   // 的中エフェクト オフのときは くじを ひかない ※仮
-      if (kind === 'big' && rollHidden()) kind = 'hidden';
-      else kind = lottery(kind);
-    }
+    else if (!quiet) kind = lottery(kind);   // 的中エフェクト オフのときは くじを ひかない ※仮
+    else if (kind === 'gd') kind = 'fz';      // 第4.86版：神様的中は なし → 静かな ボードの 見出しは ど的中
     open(kind, spec, d.supers, d.bigs, quiet);
     return kind;
   }
@@ -596,7 +583,7 @@
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
-    tap: () => { if (cur && cur.phase === 'push') reveal(); }, hidden: hiddenState, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
+    tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
     video: video, _rand: null
   };
   css();

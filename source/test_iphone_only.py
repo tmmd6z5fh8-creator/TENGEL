@@ -59,22 +59,27 @@ if r.returncode == 0:
     check(all(os.path.exists(os.path.join(out, 'Tengel.swiftpm', f)) for f in ('Markers.swift', 'Store.swift', 'Notify.swift')), 'Markers.swift・Store.swift・Notify.swift が入っている')
     check('TengelReserve' in html and 'TengelCustomRate' in html and 'parseResult' in html and 'omakaseBtn' in html, 'アプリの画面に 買い目の予約・%・結果の画像の読み取り・テンゲルにお任せ が入っている（第2弾）')
     # 第3弾：的中ボタン（見本の CSS/HTML を束ねた __FX・fx.js・設定のカード）。絵と音は手元の ios/fx_assets/ から Resources/ へ（リポジトリには入れない）
-    check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" in html and 'setFx' in html and 'fz_nglow.webp' in html and 'sfx_fz.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）')
+    check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" not in html and 'setFx' in html and 'fz_nglow.webp' in html and 'sfx_fz.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）・隠れど的中の 数（tengel.fxhidden）は 使わない（第4.86版）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); from build_fx import ASSET_FILES
     have = [f for f in ASSET_FILES if f in res]
     check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば{len(ASSET_FILES)}こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
-    # 第5弾：特別な 演出（16.3）。見本の CSS と HTML を 束ねた __FX の reveal（pc・zp・gd・sgd・spg）・絵と 音と 動画の 名前・動画の <video>（fx.js）・Swift の Range（動画の 部分読み）
+    # 第5弾：特別な 演出（16.3）。見本の CSS と HTML を 束ねた __FX の reveal（pc・sgd・spg・sd・nd）・絵と 音と 動画の 名前・動画の <video>（fx.js）・Swift の Range（動画の 部分読み）
+    # 第4.86版：隠れど的中・超プレミアムど的中・神様的中は なし（押したあと・神様の 絵と 音・CSS は 入れない。超プレミアムの CSS と 音は 超プレミアム神様が 使うので のこる）
     from build_fx import FILMS, STILL, ART, SFX
-    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'zp', 'gd', 'sgd', 'spg', 'sd', 'nd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'gd', 'sgd', 'spg_up', 'spg', 'sd', 'sdp', 'nd', 'ndt')]) and 'pm_face_F.webp' in html and 'gd_dome.webp' in html and 'sd_last.webp' in html and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film.mp4' in html
+    import json as _json
+    FXJ = _json.JSONDecoder().raw_decode(html.split('window.__FX=')[1])[0]
+    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'sgd', 'spg', 'sd', 'nd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'sgd', 'spg_up', 'spg', 'sd', 'sdp', 'nd', 'ndt')]) and 'pm_face_F.webp' in html and 'sd_last.webp' in html and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film.mp4' in html
           and 'nd_film.mp4' in html and 'nd_last.webp' in html and '.fxs .ov.fz.nd' in html
-          and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.gd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000],
-          'アプリの画面に 特別な 演出（プレミアム・超プレミアム・神様・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版：ノーマルど的中は 動画と さいごの 1まい）')
-    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and len(ART['gd']) == 24 and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 16 + 43 + 24 + 3 + 4, f'絵と音と動画の 数：ネオン 2・音 16（第4.77版：ノーマルど的中・第4.79版：押した 瞬間）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・神様 24・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4（{len(ASSET_FILES)}）')
+          and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000]
+          and sorted(FXJ['reveal']) == ['big', 'fz', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
+          and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
+          'アプリの画面に 特別な 演出（プレミアム・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版）・第4.86版：隠れど的中・超プレミアムど的中・神様的中は 入って いない')
+    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4, f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4（{len(ASSET_FILES)}）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
-        check(29.2e6 < films_sz < 31.2e6 and 36.4e6 < sz < 38.4e6, f'絵と音と動画の 大きさ：動画 4本 約30.2MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒）・ぜんぶで 約37.4MB（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
+        check(29.2e6 < films_sz < 31.2e6 and 34.4e6 < sz < 36.4e6, f'絵と音と動画の 大きさ：動画 4本 約30.2MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒）・ぜんぶで 約35.4MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない

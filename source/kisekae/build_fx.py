@@ -26,7 +26,8 @@ import sys
 K = os.path.dirname(os.path.abspath(__file__))
 ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp')
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
-           pc='sfx_pc.m4a', zp='sfx_zp.m4a', gd='sfx_gd.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音 6こ（16.5）
+           pc='sfx_pc.m4a', zp='sfx_zp.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音（16.5）。第4.86版：神様的中（gd）は なし・
+                                                                                                                       #  超プレミアムの 音（zp）は 超プレミアム神様の はじめに 使うので のこす
            sd='sfx_sd.m4a', sdp='sfx_sdp.m4a',                                                                               # 第4.66版：ど的中・紫電の 音・第4.71版：押した 瞬間の プチュンの 音
            nd='sfx_nd.m4a', ndt='sfx_ndt.m4a')                                                                               # 第4.77版：ノーマルど的中の 音・第4.79版：押した 瞬間の 音
 FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4',     # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
@@ -43,12 +44,14 @@ def blob_names():
     return out
 
 
+# 第4.86版（まさちゃん「あと一枚目の的中ボタン各種の、赤い×が書いてある演出消して！」）：隠れど的中・超プレミアムど的中・神様的中は アプリから 消した
+#  （くじで 出ない・テスト版の ボタンも なし）。神様的中の 絵 24まい（約1.7MB）・音・CSS・押したあと（reveal_gd）と 超プレミアムど的中の 押したあと（reveal_zp）は
+#  アプリに 入れない（作る 道具 kami.py・kami_art.py・super_premium.py は のこす：超プレミアム神様的中が 超プレミアムの ①〜③と CSS を 使う）
 ART = dict(pm=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'premium_blobs.json'), encoding='utf-8'))),     # プレミアムど的中の 絵 38まい（約2.1MB）
-           gd=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'kami_blobs.json'), encoding='utf-8'))),        # 神様的中の 絵 24まい（約1.7MB）
            sd=[STILL['sd_last']],                                                                                  # ど的中・紫電の 動画の さいごの 1まい（第4.71版）
            nd=[STILL['nd_last']],                                                                                  # ノーマルど的中の 動画の さいごの 1まい（第4.77版）
            sgd=[STILL['sgd_last']])
-ART_FILES = sorted(set(ART['pm'] + ART['gd'] + ART['sd'] + ART['nd'] + ART['sgd']))
+ART_FILES = sorted(set(ART['pm'] + ART['sd'] + ART['nd'] + ART['sgd']))
 ASSET_FILES = sorted(ASSETS.values()) + sorted(SFX.values()) + ART_FILES + sorted(FILMS.values())
 
 
@@ -210,7 +213,7 @@ def rename_inline(html, names, kf='fx'):
 #   （2026/10/25 まさちゃん「的中ボタンだけ画面角が丸くなってるから、デカ的中以降と合わせて」）
 STAGE_CSS = r'''
 #fxOv{position:fixed;inset:0;z-index:80;background:var(--fxbd,rgba(24,14,4,.62));overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-#fxOv.rv.k-hit,#fxOv.rv.k-big,#fxOv.rv.k-hidden{--fxbd:rgba(6,4,18,.86)}
+#fxOv.rv.k-hit,#fxOv.rv.k-big{--fxbd:rgba(6,4,18,.86)}
 #fxOv.rv.k-fz{--fxbd:#000000}
 #fxOv.k-fz:not(.rv){--fxbd:rgba(5,2,14,.9)}
 html.fxon,html.fxon body{overflow:hidden!important}
@@ -374,7 +377,7 @@ def reveal_pc(G):
   </div>'''
 
 
-def reveal_zp(G):
+def reveal_zp(G):   # 第4.86版から アプリに 入れない（超プレミアムど的中は なし）
     """超プレミアムど的中（手書き・鉛筆）：super_premium.py の zp_layers（絵なし）"""
     return f'''<div class="ov fz zp" style="--n:{{{{N}}}}">
     {G.SP.zp_layers('{{BOARD}}')}
@@ -382,7 +385,7 @@ def reveal_zp(G):
   </div>'''
 
 
-def reveal_gd(G):
+def reveal_gd(G):   # 第4.86版から アプリに 入れない（神様的中は なし）
     """神様的中：kami.py の gd_layers（絵は gd_….webp）"""
     return f'''<div class="ov fz gd" style="--n:{{{{N}}}}">
     {G.GD.gd_layers('{{BOARD}}')}
@@ -449,7 +452,7 @@ def board_parts():
     vb, body = t['orn']
     oc = ' o34' if vb.endswith('44 34') else ' o40' if vb.endswith('40 40') else ''
     orn = f'<svg class="orn{oc}" viewBox="{vb}" aria-hidden="true">{body}</svg>' if body else ''
-    return dict(orn=orn, titles=dict(boards.TITLES))
+    return dict(orn=orn, titles={k: v for k, v in boards.TITLES.items() if k not in ('hidden', 'gd')})   # 第4.86版：隠れど的中・神様的中は なし
 
 
 def css_all(G):
@@ -462,7 +465,7 @@ def css_all(G):
     vars_rule = m.group(0).replace('.ph{', '.fxs{', 1)
     css = vars_rule + '\n' + tail + G.HIT_CSS + G.MISS_CSS + G.BIG_CSS + G.BURST_CSS + G.fz_css() + boards.board_css(['default'])
     # 第5弾：特別な 演出（16.3）。動画の 入れもの .ph .sgv／.ph .spu は 舞台（.fxs）の 中の .sgv／.spu に
-    css += G.PC.pc_css() + G.SP.zp_css() + G.GD.gd_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu') + G.SD.sd_css() + G.ND.nd_css()
+    css += G.PC.pc_css() + G.SP.zp_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu') + G.SD.sd_css() + G.ND.nd_css()
     assert '.ph ' not in css, '見本の ページの 入れもの（.ph）が 残っているよ'
     # 見本の絵（キャンバスの /_blob/…）→ アプリの中のファイル
     for key in ('fz_nglow', 'fz_ncore'):
@@ -477,14 +480,14 @@ def css_all(G):
 def bundle():
     G = load_gen_fx()
     css, names = css_all(G)
-    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('pc', reveal_pc), ('zp', reveal_zp), ('gd', reveal_gd), ('sgd', reveal_sgd), ('spg', reveal_spg), ('sd', reveal_sd), ('nd', reveal_nd))}
+    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('pc', reveal_pc), ('sgd', reveal_sgd), ('spg', reveal_spg), ('sd', reveal_sd), ('nd', reveal_nd))}   # 第4.86版：zp・gd は なし
     for k, h in fx5.items():
         assert '{{BOARD}}' in h and '{{N}}' in h and 'data-fx="close"' in h, k
     SG = G.SG
     return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), big_t=push_big_t(G), fz=push_fz(G), fz_t=push_fz_t(G)),
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
-                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_RES, ZP=G.PC.PC_T['RES'], GD=G.GD.GD_T['RES'], SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
+                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_RES, SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
                        ND=G.ND.ND_T['RES'], NDS=dict(FROM=G.ND.STILL_FROM, WAIT=G.ND.STILL_WAIT), SDUP=dict(G.ND.SD_UP),
                        SG=dict(FILM=round(SG.FILM, 4), RES=round(SG.RES, 4), STILL_FROM=round(SG.STILL_FROM, 4), STILL_WAIT=SG.STILL_WAIT, STILL_BOARD=round(SG.STILL_BOARD, 4),
                                UP_AT=SG.UP_AT, UP=round(SG.UP, 4), SPG_FILM=round(SG.SPG_FILM, 4), WAIT_MAX=SG.WAIT_MAX)))
