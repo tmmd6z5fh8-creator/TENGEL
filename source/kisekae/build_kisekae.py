@@ -229,6 +229,8 @@ def theme_css(t):
 
 
 # 共通の形（どのテーマでも：--ks-… の変数で）。Web版の CSS には触らない（html[data-ks] の中だけ）
+# 第4.85版（まさちゃん「ところどころ字体が違ったり、文字の太さが違ったり、文字の大きさが違うから、全体的に直して！ それぞれの壁紙のベースとなる字体に！」）：
+#  選ぶ画面の 字の 太さを 700 まで・大きさを そろえた（下の /* 字 */）。この 文字列は そのまま アプリに 入るので、名前は ここ（Python の コメント）に 書く
 COMMON_CSS = r'''
 html[data-ks] body{background-color:var(--bg)}
 html[data-ks] .top{background:var(--ks-hd);border-bottom:var(--ks-hdB)}
@@ -272,24 +274,25 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #ksBnr .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #ksBnr.pause *{animation-play-state:paused!important}
 /* 選ぶ画面（設定 › 着せ替え） */
-#setKisekae .ksg{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:13.5px;font-weight:800}
-#setKisekae .ksg small{display:inline-flex;align-items:center;height:19px;padding:0 7px;border-radius:999px;border:1px solid currentColor;font-size:10.5px;font-weight:700;opacity:.75}
+/* 字：太さは 700 まで（800 だと テーマの 本文の 字に 800 が なく、見出し用の 900 の 字（見出しの 字だけ しぼった もの）が 選ばれて、ない 字が 端末の 字に なる＝字体が まざる）。大きさも そろえる（第4.85版） */
+#setKisekae .ksg{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:13.5px;font-weight:700}
+#setKisekae .ksg small{display:inline-flex;align-items:center;height:19px;padding:0 7px;border-radius:999px;border:1px solid currentColor;font-size:11px;font-weight:700;opacity:.75}
 #setKisekae .ksg::after{content:"";flex:1;height:1px;background:currentColor;opacity:.2}
 #setKisekae .ksgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 #setKisekae .kst{position:relative;display:flex;flex-direction:column;align-items:stretch;padding:0 0 6px;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:inherit;overflow:hidden;text-align:left;cursor:pointer;font:inherit}
 #setKisekae .kst.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
 #setKisekae .kst .ksth{display:block;width:100%;height:58px;object-fit:cover;background:var(--line)}
-#setKisekae .kst .ksn{display:block;padding:6px 7px 0;font-size:12.5px;font-weight:800;line-height:1.25;letter-spacing:-.02em}
-#setKisekae .kst .ksd{display:block;padding:1px 7px 0;font-size:10.5px;color:var(--muted);line-height:1.3}
-#setKisekae .kst .ksbadge{position:absolute;top:5px;left:5px;padding:1px 6px;border-radius:999px;background:var(--primary);color:var(--primary-ink);font-size:10px;font-weight:800}
-#setKisekae .kst .kslock{display:block;margin:4px 7px 0;padding:2px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#setKisekae .kst .ksn{display:block;padding:6px 7px 0;font-size:13px;font-weight:700;line-height:1.25}
+#setKisekae .kst .ksd{display:block;padding:1px 7px 0;font-size:11.5px;color:var(--muted);line-height:1.3}
+#setKisekae .kst .ksbadge{position:absolute;top:5px;left:5px;padding:1px 6px;border-radius:999px;background:var(--primary);color:var(--primary-ink);font-size:10.5px;font-weight:700}
+#setKisekae .kst .kslock{display:block;margin:4px 7px 0;padding:2px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #setKisekae .kst.lock .ksth{filter:saturate(.55) brightness(.92)}
 #setKisekae .kst:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 /* 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中・カギの 下に 出る（前は 一覧の 上の 1本の 帯） */
 #setKisekae .kst.cf{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
-#setKisekae .kst .ksconf{display:flex;flex-direction:column;gap:5px;margin:6px 6px 0;padding:7px 7px 6px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;line-height:1.35;animation:ksCf .18s ease-out}
-#setKisekae .kst .ksconf .kscq{display:block;font-weight:800;letter-spacing:-.02em}
-#setKisekae .kst .ksconf .kscq small{display:block;font-size:10.5px;font-weight:600;color:var(--muted)}
+#setKisekae .kst .ksconf{display:flex;flex-direction:column;gap:5px;margin:6px 6px 0;padding:7px 7px 6px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font-size:12px;line-height:1.35;animation:ksCf .18s ease-out}
+#setKisekae .kst .ksconf .kscq{display:block;font-weight:700}
+#setKisekae .kst .ksconf .kscq small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
 #setKisekae .kst .ksconf .btn{width:100%;min-height:34px;padding:5px 4px;font-size:12.5px;line-height:1.2;white-space:normal;border-radius:8px;cursor:pointer}
 #setKisekae .kst .ksconf .btn.ghost{min-height:28px;font-size:11.5px;color:var(--muted)}
 @keyframes ksCf{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}

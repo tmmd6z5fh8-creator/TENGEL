@@ -300,7 +300,7 @@
   function paintPointsOv() {
     const ov = $('#ptOv'); if (!ov || !W) return;
     const b = bal();
-    $('.msn', ov).textContent = `いま ${pts(b.total)}`;
+    $('.msn', ov).textContent = `合計 ${pts(b.total)}`;
     $('#ptBal', ov).innerHTML = balanceHtml(b) + `<p class="hint" style="margin:8px 0 0">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったPから先に使うよ（サブスクのP → パックのP → もらったP）。</p>`;
     $('#ptBuy', ov).innerHTML = packsHtml();
     $('#ptSub', ov).innerHTML = subsHtml();

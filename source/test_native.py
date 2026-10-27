@@ -759,14 +759,14 @@ try:
         # 第4.84版（まさちゃん「このポイントの欄タップしたら、所持ポイントの確認と、ポイント&サブスクの購入選択画面が出てくるようにして！」）：「ポイントを買う」も 上の帯の 所有ポイントも ポイントの 窓
         po = pg.locator('#ptOv')
         pot = po.inner_text() if po.count() else ''
-        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and 'いま 100P' in pot and '所持ポイント' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
+        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and '合計 100P' in pot and '所持ポイント' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
               f'「ポイントを買う」→ ポイントの窓（所持ポイント 100P・パック 4つ・サブスク 3つ）')
         # 買う（App内課金のかわり）：1,000P → 届く → finish（窓の 中で）
         pg.evaluate("window.__txn = 500; window.__iap.buy['jp.tengel.app.points1000'] = () => ({ ok: true, state: 'ok', tx: { id: String(++window.__txn), originalId: 'o1', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: false } }); 0")
         pg.evaluate("window.__bridge = []")
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         fin = [x for x in pg.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
-        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and 'いま 1,100P' in po.inner_text() and '購入 1,100P' in pg.locator('#ptsPill').inner_text().replace('\n', ' '), '窓で 1,000Pのパックを買う → 1,100P（窓と 上の帯も かわる）・台帳に書いてから取引を終わらせる（finish）')
+        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and '合計 1,100P' in po.inner_text() and '購入 1,100P' in pg.locator('#ptsPill').inner_text().replace('\n', ' '), '窓で 1,000Pのパックを買う → 1,100P（窓と 上の帯も かわる）・台帳に書いてから取引を終わらせる（finish）')
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate('TengelWallet.total()') == 2100, 'もう一度買う（別の取引）→ 2,100P')
         pg.evaluate("window.__iap.buy['jp.tengel.app.points500'] = () => ({ ok: false, state: 'cancelled' }); 0")
@@ -775,7 +775,7 @@ try:
         po.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
         check(pg.locator('#ptOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')"), 'ポイントの窓を とじる')
         pg.click('#ptsPill'); pg.wait_for_timeout(500)
-        check(pg.locator('#ptOv').count() == 1 and 'いま 2,100P' in pg.locator('#ptOv').inner_text(), '上の帯の 所有ポイントを 押すと ポイントの窓（いま 2,100P）')
+        check(pg.locator('#ptOv').count() == 1 and '合計 2,100P' in pg.locator('#ptOv').inner_text(), '上の帯の 所有ポイントを 押すと ポイントの窓（いま 2,100P）')
         pg.locator('#ptOv [data-ms=hist]').click(); pg.wait_for_timeout(600)
         check(pg.locator('#ptOv').count() == 0 and pg.locator('#v-set').is_visible() and pg.locator('#setPoints [data-pt=restore]').count() == 1, '窓の「ポイントの履歴・購入を復元」→ 設定タブのポイント（詳しく）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
