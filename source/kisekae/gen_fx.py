@@ -3762,11 +3762,29 @@ KB_CSS = (KB_CSS.replace('"SP"', '"' + ss_uri("<svg xmlns='http://www.w3.org/200
 KK_CHALK, KK_YEL, KK_PINK = '#F3F1E7', '#F6E27F', '#F4A6C0'
 
 
-def kk_filter(fid, seed=5):
-    """チョークの ざらざら（ところどころ すける・ふちが けば立つ）"""
-    return (f'<filter id="{fid}" x="-10%" y="-20%" width="120%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="2" seed="{seed}" result="n"/>'
-            '<feDisplacementMap in="SourceGraphic" in2="n" scale="1.7" result="d"/>'
-            '<feComposite in="d" in2="n" operator="arithmetic" k1="0" k2="1" k3="-.4" k4=".1"/></filter>')
+def kk_chalk(d, color, w, op=1.0, seed=0):
+    """チョークの 線（第4.89版：SVG の フィルタ（feTurbulence・feDisplacementMap）を 使わない。
+       iPad の アプリ（iPhone の 画面を 大きく 見せる）では WebKit が フィルタの 絵を 低い 解像度で 描く ため ぼやけて いた
+       （まさちゃん「黒板のpushボタン、画質がぼやけすぎてるから直して！」）→ 線だけで チョークの 感じ：
+       粉の にじみ（太くて うすい 線 2本）＋ 本線に 細かい 切れ目（dasharray）＋ 少し ずらした 細い 点線 2本（けば立ち）。
+       親の <g> の fill="none" stroke-linecap="round" stroke-linejoin="round" を 使う"""
+    rnd = random.Random(seed)
+    dash = ' '.join(f'{rnd.uniform(2.2, 6.5):.1f} {rnd.uniform(.3, .9):.2f}' for _ in range(6))
+    out = (f'<path d="{d}" stroke="{color}" stroke-width="{w * 3:.2f}" opacity="{op * .05:.2f}"/>'
+           f'<path d="{d}" stroke="{color}" stroke-width="{w * 1.8:.2f}" opacity="{op * .11:.2f}"/>'
+           f'<path d="{d}" stroke="{color}" stroke-width="{w}" opacity="{op * .9:.2f}" stroke-dasharray="{dash}"/>')
+    for _ in range(2):
+        dash2 = ' '.join(f'{rnd.uniform(.6, 2.6):.1f} {rnd.uniform(1.2, 3.4):.2f}' for _ in range(6))
+        out += (f'<path d="{d}" stroke="{color}" stroke-width="{w * .5:.2f}" opacity="{op * .5:.2f}" stroke-dasharray="{dash2}" '
+                f'transform="translate({rnd.uniform(-.7, .7):.2f} {rnd.uniform(-.7, .7):.2f})"/>')
+    return out
+
+
+def kk_specks(x0, y0, x1, y1, n, seed, color, rmin=.25, rmax=.65, omin=.25, omax=.75):
+    """ランダムな 小さな 点（黒板の 色）：字の 形で クリップして、チョークの 粉の 抜け（フィルタなし・第4.89版）"""
+    rnd = random.Random(seed)
+    return ''.join(f'<circle cx="{rnd.uniform(x0, x1):.1f}" cy="{rnd.uniform(y0, y1):.1f}" r="{rnd.uniform(rmin, rmax):.2f}" fill="{color}" opacity="{rnd.uniform(omin, omax):.2f}"/>'
+                   for _ in range(n))
 
 
 def kk_rough(pts, seed, j=.55, closed=True):
@@ -3793,32 +3811,40 @@ def kk_star(x, y, r, k=.45):
 
 def kk_face_svg(sfx=''):
     """黒板の的中ボタン：PUSHの面＝小さな黒板（200×100）。消したあとの もや・チョークで書いた 立体のボタン（上の面と 下の厚み・厚みに ななめの線）と
-       「PUSH」（Yomogi・チョークの ざらざら）・左上に 黄色い星・右下に ピンクの花丸・下に 白い点々。sfx：id のうしろにつける字"""
+       「PUSH」（Yomogi・チョークの ざらざら）・左上に 黄色い星・右下に ピンクの花丸・下に 白い点々。sfx：id のうしろにつける字。
+       第4.89版：SVG の フィルタを やめて 線だけで チョークに（kk_chalk・kk_specks：iPad で ぼやけて いた）"""
     F = f'kkC{sfx}'
     top = kk_rrect(30, 17, 170, 63, 15)
     bot = [(x, y + 9) for x, y in top if y > 40]
     side = 'M30 42V51M170 42V51'
     hatch = ''.join(f'M{x} 71l3 -6' for x in range(46, 156, 9))
+    T = 'font-family="Yomogi,sans-serif" font-size="34" letter-spacing="3" text-anchor="middle"'
     body = ('<rect width="200" height="100" fill="#24423A"/>'
             '<ellipse cx="54" cy="26" rx="58" ry="20" fill="#FFFFFF" opacity=".045"/><ellipse cx="150" cy="78" rx="62" ry="22" fill="#FFFFFF" opacity=".04"/>'
             '<path d="M6 88Q54 74 104 86T198 78" fill="none" stroke="#FFFFFF" stroke-opacity=".05" stroke-width="12" stroke-linecap="round"/>'
-            f'<g filter="url(#{F})" fill="none" stroke-linecap="round" stroke-linejoin="round">'
-            f'<path d="{kk_rough(bot, 3, closed=False)}" stroke="{KK_CHALK}" stroke-width="2.2" opacity=".85"/>'
-            f'<path d="{side}" stroke="{KK_CHALK}" stroke-width="2.2" opacity=".85"/>'
-            f'<path d="{hatch}" stroke="{KK_CHALK}" stroke-width="1.3" opacity=".5"/>'
-            f'<path d="{kk_rough(top, 1)}" stroke="{KK_CHALK}" stroke-width="2.6"/>'
-            f'<path d="{kk_rough(top, 2, .8)}" stroke="{KK_CHALK}" stroke-width="1.2" opacity=".55"/>'
-            f'<path d="{kk_rough(kk_star(15, 17, 8), 4, .3)}" stroke="{KK_YEL}" stroke-width="1.8"/>'
-            f'<path d="{hanamaru_d(181, 80, 13)}" stroke="{KK_PINK}" stroke-width="1.5"/>'
-            f'<path d="M12 84h3M20 88h2M182 14h3M188 20h2" stroke="{KK_CHALK}" stroke-width="1.6" opacity=".7"/>'
+            f'<defs><clipPath id="{F}t"><text x="100" y="51" {T}>PUSH</text></clipPath></defs>'
+            '<g fill="none" stroke-linecap="round" stroke-linejoin="round">'
+            + kk_chalk(kk_rough(bot, 3, closed=False), KK_CHALK, 2.2, .85, 1)
+            + kk_chalk(side, KK_CHALK, 2.2, .85, 2)
+            + kk_chalk(hatch, KK_CHALK, 1.3, .5, 3)
+            + kk_chalk(kk_rough(top, 1), KK_CHALK, 2.6, 1.0, 4)
+            + kk_chalk(kk_rough(top, 2, .8), KK_CHALK, 1.2, .55, 5)
+            + kk_chalk(kk_rough(kk_star(15, 17, 8), 4, .3), KK_YEL, 1.8, 1.0, 6)
+            + kk_chalk(hanamaru_d(181, 80, 13), KK_PINK, 1.5, 1.0, 7)
+            + f'<path d="M12 84h3M20 88h2M182 14h3M188 20h2" stroke="{KK_CHALK}" stroke-width="1.6" opacity=".7"/>'
             '</g>'
-            f'<text x="100" y="51" text-anchor="middle" font-family="Yomogi,sans-serif" font-size="34" letter-spacing="3" fill="#F7F5EC" filter="url(#{F})">PUSH</text>')
-    return (f'<i class="kkf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100"><defs>{kk_filter(F)}</defs>{body}</svg></i>')
+            # PUSH：粉の にじみ（太い ふち・うすい 2つ）＋ けば立ち（点線の ふち・ずらし 2つ）＋ ぬり ＋ 字の 中に ランダムな 黒板色の 点（粉の 抜け・字で クリップ）
+            f'<g {T} fill="none" stroke="#F7F5EC" stroke-linecap="round">'
+            '<text x="100" y="51" stroke-width="3.6" opacity=".05">PUSH</text><text x="100" y="51" stroke-width="2" opacity=".11">PUSH</text>'
+            '<text x="100.6" y="50.6" stroke-width=".8" stroke-dasharray=".5 1.9" opacity=".5">PUSH</text>'
+            '<text x="99.5" y="51.5" stroke-width=".8" stroke-dasharray=".4 2.3" stroke-dashoffset="1" opacity=".45">PUSH</text></g>'
+            f'<text x="100" y="51" {T} fill="#F7F5EC" stroke="#F7F5EC" stroke-width=".4" opacity=".94">PUSH</text>'
+            f'<g clip-path="url(#{F}t)">{kk_specks(44, 24, 156, 54, 420, 21, "#24423A")}</g>')
+    return f'<i class="kkf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100">{body}</svg></i>'
 
 
 def kk_decor_svg(sfx=''):
-    """PUSHのまわり：木の枠の 木目・下に チョーク受け（白・黄・ピンクのチョークと 小さな黒板消し）・上の左右に チョークの星が きらっ（.kktw）"""
-    F = f'kkD{sfx}'
+    """PUSHのまわり：木の枠の 木目・下に チョーク受け（白・黄・ピンクのチョークと 小さな黒板消し）・上の左右に チョークの星が きらっ（.kktw）。第4.89版：フィルタなし"""
     grain = ('M-7 -5.5H207M-7 -2.5H207M-7 102.5H207M-7 105.5H207'
              'M-5.5 0V100M-2.5 0V100M202.5 0V100M205.5 0V100')
     tray = ('<rect x="-16" y="117" width="232" height="8" rx="2.5" fill="#8A5A2B"/><rect x="-16" y="122" width="232" height="3" rx="1.5" fill="#5E3A18"/>'
@@ -3827,11 +3853,11 @@ def kk_decor_svg(sfx=''):
             f'<rect x="65" y="112" width="13" height="5.5" rx="2.75" fill="{KK_PINK}"/>'
             '<g transform="translate(172 110)"><rect x="-19" y="2.5" width="38" height="5" rx="1.5" fill="#EDE8DC"/><rect x="-19" y="-1.5" width="38" height="5.5" rx="2" fill="#2F4F8C"/>'
             '<rect x="-19" y="-1.5" width="38" height="9" rx="2" fill="none" stroke="#1C2B4A" stroke-width="1"/></g>')
-    tw = ''.join(f'<g class="kktw" style="transform-origin:{x}px {y}px;animation-delay:{dl}s"><path d="{kk_rough(kk_star(x, y, r), 9 + i, .25)}" stroke="{c}" stroke-width="1.8"/></g>'
+    tw = ''.join(f'<g class="kktw" style="transform-origin:{x}px {y}px;animation-delay:{dl}s">{kk_chalk(kk_rough(kk_star(x, y, r), 9 + i, .25), c, 1.8, 1.0, 31 + i)}</g>'
                  for i, (x, y, r, c, dl) in enumerate(((-24, -14, 7, KK_CHALK, 0), (226, -12, 6, KK_YEL, -1.1), (-30, 104, 5, KK_PINK, -.6), (232, 100, 5.5, KK_CHALK, -1.7))))
-    return (f'<i class="kkd" aria-hidden="true"><svg viewBox="-40 -30 280 180" width="280" height="180"><defs>{kk_filter(F, 8)}</defs>'
+    return (f'<i class="kkd" aria-hidden="true"><svg viewBox="-40 -30 280 180" width="280" height="180">'
             f'<path d="{grain}" stroke="#5E3A18" stroke-opacity=".45" stroke-width=".8" fill="none"/>{tray}'
-            f'<g filter="url(#{F})" fill="none" stroke-linecap="round" stroke-linejoin="round">{tw}</g></svg></i>')
+            f'<g fill="none" stroke-linecap="round" stroke-linejoin="round">{tw}</g></svg></i>')
 
 
 def chalk_push_svg(sfx=''):
@@ -3865,9 +3891,11 @@ def chalk_burst(n=26, seed=53):
         z = rnd.uniform(18, 24) if k != 's' else rnd.uniform(16, 22)
         r = rnd.choice((-1, 1)) * rnd.uniform(160, 420)
         out += f'<i class="{k}" style="--x:{x:.0f}px;--y:{y:.0f}px;--z:{z:.0f}px;--r:{r:.0f}deg;--d:{rnd.uniform(0, .12):.2f}s"></i>'
-    hm = (f'<svg class="hm" viewBox="-110 -110 220 220" width="220" height="220"><defs>{kk_filter("kkB", 11)}</defs>'
-          f'<g filter="url(#kkB)" fill="none" stroke="{KK_PINK}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">'
-          f'<path class="hs" pathLength="100" d="{hanamaru_d(0, 0, 82, N=90)}"/></g></svg>')
+    # 花丸：フィルタなし（第4.89版）。粉の にじみ（太くて うすい 線）と 本線を 同じ 速さで 書く（.hs）
+    hd = hanamaru_d(0, 0, 82, N=90)
+    hm = (f'<svg class="hm" viewBox="-110 -110 220 220" width="220" height="220">'
+          f'<g fill="none" stroke="{KK_PINK}" stroke-linecap="round" stroke-linejoin="round">'
+          f'<path class="hs" pathLength="100" d="{hd}" stroke-width="13" opacity=".1"/><path class="hs" pathLength="100" d="{hd}" stroke-width="5" opacity=".92"/></g></svg>')
     return f'<div class="clips kk" aria-hidden="true">{out}{hm}</div>'
 
 

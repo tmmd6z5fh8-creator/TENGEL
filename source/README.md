@@ -555,6 +555,16 @@
   壁紙の 木馬は ページの SVG（`carousel_wall.py`）なので そのまま かわる。止まった絵（`blobs20.json` の carousel・選ぶ 画面の 絵）は 作り直し（`b8f487b9…` → `a626b948…`・前の id は `kisekae/blobs_old_20261027.json`）。下の絵（base）は 木馬が ないので 同じ。
 - テスト：`test_iphone_only.py`（ネオン：筋 63こ・のびちぢみ 8本・止める）・`test_native.py`・`test_ks_flash.py`（ネオン・メリーゴーランド）。
 
+### 黒板の PUSH の ぼやけ・ツリーと かぼちゃの 虹・海の ボードの 波・選ぶ画面の 壁紙の 動き（第4.89版・2026/10/27・まさちゃんの 指定）
+
+まさちゃん「一枚目の黒板のpushボタン、画質がぼやけすぎてるから直して！」「二枚目、三枚目のクリスマスツリーとカボチャのpushボタン、虹色が全然pushボタンに合ってないから直して！」「四枚目の海の結果ボード、赤丸のところ波の模様が、不自然だか自然にして！」「五枚目の壁紙選択画面のところ、普段は壁紙は動かさないで、タップして選択しているときだけ壁紙が動くようにして！解放前、解放後どっちも！」
+
+- **黒板の PUSH**（`kisekae/gen_fx.py` の `kk_face_svg`・`kk_decor_svg`・`chalk_burst`、`themes20.py` の `orn_chalk`）：チョークの ざらざらを SVG の フィルタ（`feTurbulence`＋`feDisplacementMap`＋`feComposite`）で 作って いた → iPad の WebKit は フィルタの 絵を 低い 解像度で 描く ため、PUSH の 字・星・花丸だけ ぼやけて いた（同じ SVG の フィルタなしの チョーク受けは くっきり）。→ **フィルタを やめて 線だけで チョーク**（`kk_chalk`：粉の にじみ（太くて うすい 線 2本）＋ 細かい 切れ目の 本線（`stroke-dasharray`）＋ 少し ずらした 細い 点線 2本。「PUSH」は にじみの ふち＋けば立ちの 点線＋ぬり＋字の 形で クリップした 黒板色の 点 420こ（`kk_specks`・`<clipPath>` の `<text>`））。押したあとの 花丸（`.hm`）と カードの すみの 花丸も 同じ。
+- **ツリー・かぼちゃの 虹**（プレミアムど的中・超神様・超プレミアム神様の PUSH＝`fx.js` の `RBW`）：前は どの テーマも ボタンの 四角（200×100）に 虹の 帯（`.rbf`・`mix-blend-mode:color`）を 重ねて いた → 四角が すき通った テーマ（クリスマス・ハロウィン・牧場・ドット）では ツリーや かぼちゃの まわりに 四角い 虹が 出て いた。→ `getComputedStyle` で ボタンの 四角に 色（背景）が ある テーマだけ `.rbf`。ない テーマは **PUSH の 面の SVG（`<i class="…f">`）の 中に、絵の 形で 切りぬいた 虹**（`rbwSvg`：中身を `<g id>` に まとめ → `<mask style="mask-type:alpha"><use href="#id"/></mask>` で 切りぬいた `userSpaceOnUse` の くり返しの 虹の `<rect>`（`mix-blend-mode:color`）を `<animateTransform>`（SMIL）で 1周期ぶん 動かす）。まわりの 飾り（`…d`）は そのまま。視差効果を減らす なら 動かさない・控えめは 3.2秒。
+- **海の 結果ボード**（`kisekae/boards.py` の `BOARD_EXTRA`・`board_theme_css`／`build_kisekae.board_part`）：上の帯（見出し）の 下の 波（`.hd::after`）が、帯の 丸い すみ（16px）の 外に 四角く はみ出し、右の はしで 波が 途中で 切れて いた → 帯の **下の すみを 角に**（`border-radius:var(--radius) var(--radius) 0 0`：波が 帯の 下の ふちに なる）・波は 帯の 横はば（334px）に **ちょうど 12こ**（`background-size:calc(100% / 12) 9px`）。判定画面の 上の帯は そのまま。
+- **選ぶ画面の 壁紙**（`kisekae.js`・`build_kisekae.py`）：タイルの 絵は ふだん **止まった 絵**（牧場・ぷりけつの SVG の 小さな絵は `animation:none!important` を 足して 止める）。**タップして 選んだ タイルだけ**（解放後＝使用中・解放前＝解放の 確認を 開いた タイル）、判定タブと 同じ 動く 壁紙（`ks_<id>.json` の `bnr`）を 小さく 重ねて 動かす（`.kslive › .kslv`：390×160 を `--kss`＝max(タイルの 横/390, 58/160) 倍）。CSS は `#ksBnr` → `#setKisekae .kslv`、`@keyframes` の 名前は `kp` を 足して 判定タブの 壁紙と ぶつからない ように（`rescope`：テーマどうしで 同じ 名前の `@keyframes` が ある）。設定タブが 見えて いない 間は 止める（`.pause`）・控えめは `.calm`。確認を 閉じると 使用中の タイルに もどる。
+- テスト：`test_native.py`（確認を 開いた カギの タイルだけ 動く・使用中の タイルだけ 動く・クリスマスの プレミアムの PUSH は `.rbf` なし・面の SVG だけ 虹）・`test_iphone_only.py`（止めた SVG・`.kslive`・`rbwSvg`）・`test_ks_flash.py chalk,xmas,halloween --push`。
+
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
 - 判定画面のいちばん上の絵（390×160）：kisekae/svg/banner_*.svg。作り直すときは `python3 kisekae/<ranch|cute|elegant|kids|gold>.py <出力フォルダ>`（art.py の部品で描く・すべてオリジナル）。子供向けの上の帯の背景は knit_tile.svg（12×10のくり返し）

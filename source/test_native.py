@@ -694,6 +694,16 @@ try:
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'pc' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
         rbk = pg.locator('#fxOv .rb')
         check(rbk.count() == 1 and 't-sakura' in rbk.get_attribute('class') and 'fz' in rbk.get_attribute('class') and pg.locator('#fxOv .ov.pm').count() == 1, f'桜の テーマでも プレミアムど的中は 同じ・ボードは 桜の ど的中の 形（{rbk.get_attribute("class")}）')
+        pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
+        # 第4.89版：ボタンの 四角が すき通った テーマ（クリスマスの ツリー）の 虹は、四角い .rbf を 重ねず、SVG の 中に 絵の 形で 切りぬいた 虹（.rbwo・mask）
+        pg.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.events.push({ id: 'unlock-theme:xmas', kind: 'unlock', bucket: '', amount: 0, at: new Date().toISOString(), use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:xmas', device: 'x' }); await TengelLocal.putMeta(w); })()""")
+        pg.wait_for_timeout(400); pg.evaluate("TengelKisekae.apply('xmas')"); pg.wait_for_timeout(800)
+        pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'pc' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(400)
+        rb = pg.evaluate("""() => ({ rbf: document.querySelectorAll('#fxOv .pbox.rbw .push .rbf').length, rbw: document.querySelectorAll('#fxOv .pbox.rbw').length, svg: document.querySelectorAll('#fxOv .pbox.rbw .push svg').length,
+          o: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo').length, mask: document.querySelectorAll('#fxOv .pbox.rbw .push svg mask use').length, anim: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo animateTransform').length,
+          blend: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push svg .rbwo')).mixBlendMode, bg: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push')).backgroundColor })""")
+        check(rb['rbw'] == 1 and rb['rbf'] == 0 and rb['svg'] == 2 and rb['o'] == 1 and rb['mask'] == 1 and rb['anim'] == 1 and rb['blend'] == 'color' and rb['bg'] in ('rgba(0, 0, 0, 0)', 'transparent'),
+              f'第4.89版：クリスマスの プレミアムの PUSH は 四角い 虹（.rbf）なし・面の 絵（ツリー）だけに 絵の 形の 虹（まわりの 飾りは そのまま）（{rb}）')
         pg.evaluate('TengelFx.close()'); pg.evaluate("TengelKisekae.apply('default')"); pg.wait_for_timeout(400)
         pg.evaluate("TengelFx.set({ calm: null })")
         sv = pg.evaluate("TengelLocal.getSetting('fx')")
@@ -847,8 +857,19 @@ try:
         check(cfb and unb and lkb and unb['y'] > lkb['y'] + lkb['height'] - 1 and unb['x'] >= cfb['x'] and unb['x'] + unb['width'] <= cfb['x'] + cfb['width'] + 1 and unb['y'] + unb['height'] <= cfb['y'] + cfb['height'] + 1,
               '「解放する」は カギ（🔒 7,000P）の 下・タイルの 中')
         check(ks.locator('.ksbody > .ksconf').count() == 0 and ks.locator('.ksbody > div.ksconf').count() == 0, '一覧の 上の 確認の 帯は ない')
+        # 第4.89版：選ぶ画面の 壁紙は ふだん 止まった 絵。タップして 選んだ タイル（解放前＝確認を 開いた タイル）だけ、判定タブと 同じ 動く 壁紙を 小さく 重ねて 動かす
+        pg.wait_for_timeout(900)
+        lv = pg.evaluate("""() => { const t = document.querySelector('#setKisekae .kst.lv'); const el = t && t.querySelector('.kslv');
+          const run = el ? el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length : -1;
+          const others = [...document.querySelectorAll('#setKisekae .kst:not(.lv)')].reduce((n, e) => n + e.getAnimations({ subtree: true }).length, 0);
+          const st = document.querySelector('#ksPrev'); const css = st ? st.textContent : '';
+          return { id: t ? t.dataset.ks : null, n: document.querySelectorAll('#setKisekae .kst.lv').length, run: run, others: others, scoped: css.indexOf('#setKisekae .kslv') >= 0 && css.indexOf('#ksBnr') < 0, kp: /@keyframes kpkb/.test(css),
+            kss: el ? parseFloat(getComputedStyle(el).getPropertyValue('--kss')) : 0, img: !!document.querySelector('#setKisekae .kst.lv .ksth') }; }""")
+        check(lv['id'] == 'lucky' and lv['n'] == 1 and lv['run'] > 0 and lv['others'] == 0 and lv['scoped'] and lv['kp'] and 0.3 < lv['kss'] < 1 and lv['img'],
+              f'第4.89版：確認を 開いた カギの タイル（招き馬）だけ 動く 壁紙が 重なる（ほかの タイルは 止まった 絵・CSS は #setKisekae .kslv に・@keyframes は kp…）（{lv}）')
         ks.locator('.kst[data-ks=lucky]').click(position={'x': 10, 'y': 10}); pg.wait_for_timeout(200)
-        check(ks.locator('.ksconf').count() == 0 and ks.locator('.kst.cf').count() == 0, 'もう一度 タイルを タップ → 閉じる')
+        check(ks.locator('.ksconf').count() == 0 and ks.locator('.kst.cf').count() == 0 and ks.locator('.kst.lv').count() == 0 and pg.evaluate("document.querySelector('#ksPrev').textContent") == '',
+              'もう一度 タイルを タップ → 閉じる（動く 壁紙も 消える：いつもの は 動く 絵が ないので どの タイルも 止まった まま）')
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
         check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
@@ -861,6 +882,12 @@ try:
         check(pg.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(255, 246, 248)' and 'Zen Kaku Gothic New' in pg.evaluate("getComputedStyle(document.body).fontFamily") and 'Kaisei Decol' in pg.evaluate("getComputedStyle(document.querySelector('.brand h1')).fontFamily")
               and pg.evaluate("getComputedStyle(document.querySelector('.top')).borderBottomColor") == 'rgb(238, 157, 184)' and pg.evaluate("getComputedStyle(document.querySelector('.tabbar button[aria-selected=true]')).backgroundColor") == 'rgb(252, 227, 235)',
               '桜の色と字：背景・本文（Zen Kaku Gothic New）・見出し（Kaisei Decol）・上の帯のふち・タブ')
+        pg.wait_for_timeout(900)
+        lv = pg.evaluate("""() => { const t = document.querySelector('#setKisekae .kst.lv'); const el = t && t.querySelector('.kslv');
+          return { id: t ? t.dataset.ks : null, on: !!(t && t.classList.contains('on')), run: el ? el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length : -1,
+            others: [...document.querySelectorAll('#setKisekae .kst:not(.lv)')].reduce((n, e) => n + e.getAnimations({ subtree: true }).length, 0), ranch: document.querySelector('#setKisekae .kst[data-ks=ranch] .ksth').getAttribute('src') }; }""")
+        check(lv['id'] == 'sakura' and lv['on'] and lv['run'] > 0 and lv['others'] == 0 and lv['ranch'] == 'ks_banner_ranch.svg',
+              f'第4.89版：解放して 使用中に なった 桜の タイルだけ 動く（ほかは 止まった 絵）（{lv}）')
         check(pg.evaluate("document.fonts.check('700 16px \"Kaisei Decol\"') || [...document.fonts].some(f => f.family.replace(/\"/g, '') === 'Kaisei Decol')") and 'KaiseiDecol-700.woff2' in pg.evaluate("[...document.styleSheets].map(s => { try { return [...s.cssRules].filter(r => r instanceof CSSFontFaceRule).map(r => r.cssText).join() } catch (e) { return '' } }).join()"),
               'テーマの字はアプリの中のフォント（fonts/KaiseiDecol-700.woff2・Google に通信しない）')
         # 帯：シルバー帯をタップ → ミッションの案内（まだ使えない）

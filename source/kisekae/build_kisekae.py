@@ -287,6 +287,13 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #setKisekae .kst .ksbadge{position:absolute;top:5px;left:5px;padding:1px 6px;border-radius:999px;background:var(--primary);color:var(--primary-ink);font-size:10.5px;font-weight:700}
 #setKisekae .kst .kslock{display:block;margin:4px 7px 0;padding:2px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #setKisekae .kst.lock .ksth{filter:saturate(.55) brightness(.92)}
+#setKisekae .kst .kslive{position:absolute;left:0;top:0;width:100%;height:58px;overflow:hidden;pointer-events:none}
+#setKisekae .kst .kslv{position:absolute;left:50%;top:50%;width:390px;height:160px;margin:-80px 0 0 -195px;transform:scale(var(--kss,.3625));transform-origin:50% 50%;overflow:hidden;color:var(--ink);font-family:"BIZ UDPGothic",sans-serif;-webkit-font-smoothing:antialiased}
+#setKisekae .kst .kslv *{box-sizing:border-box}
+#setKisekae .kst .kslv .bnr{display:block;width:390px;height:160px;object-fit:cover;max-width:none}
+#setKisekae .kst .kslv img{max-width:none}
+#setKisekae .kst .kslv .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#setKisekae .kst .kslv.pause *{animation-play-state:paused!important}
 #setKisekae .kst:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 /* 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中・カギの 下に 出る（前は 一覧の 上の 1本の 帯） */
 #setKisekae .kst.cf{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
@@ -460,11 +467,7 @@ def _push_css(G, pc):
 
 def board_part(tid):
     t = BY_ID[tid]
-    root = f'.rb.t-{tid}'
-    css = f'{root}{{{boards.theme_vars(t)}}}'
-    if t['rules']:
-        css += '\n' + boards.scoped(t['rules'], root)
-    css = BF.scope(css, '.fxs', 'fx')
+    css = BF.scope(boards.board_theme_css(tid), '.fxs', 'fx')     # 変数・飾り・ボードだけの 直し（boards.BOARD_EXTRA：第4.89版 海の 波）
     vb, body = t['orn']
     oc = ' o34' if vb.endswith('44 34') else ' o40' if vb.endswith('40 40') else ''
     orn = f'<svg class="orn{oc}" viewBox="{vb}" aria-hidden="true">{body}</svg>' if body else ''
@@ -514,8 +517,12 @@ def write_payloads(out, G=None):
             ids.add(m.group(1))
         open(os.path.join(out, f'ks_{tid}.json'), 'w', encoding='utf-8').write(s)
     for tid, fn in BANNER_SVG.items():
-        import shutil
-        shutil.copy(os.path.join(K, 'svg', fn), os.path.join(out, 'ks_' + fn))
+        # 選ぶ画面の タイルの 絵：止まった 絵に（牧場・ぷりけつの SVG は 動く CSS が 入って いる → animation:none を 足す。第4.89版：
+        #   まさちゃん「普段は壁紙は動かさないで、タップして選択しているときだけ壁紙が動くようにして！」。判定タブの 上の絵は 別（inline））
+        svg = open(os.path.join(K, 'svg', fn), encoding='utf-8').read()
+        if '</style>' in svg:
+            svg = svg.replace('</style>', '*{animation:none!important}</style>', 1)
+        open(os.path.join(out, 'ks_' + fn), 'w', encoding='utf-8').write(svg)
     return sorted(ids)
 
 

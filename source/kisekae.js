@@ -16,7 +16,7 @@
   const KEY = 'tengel.kisekae', SETTING = 'kisekae';
   const byId = {}; A.themes.forEach(t => { byId[t.id] = t; });
   let curId = 'default', payload = null, loading = null, conf = '';
-  const cache = {};
+  const cache = {}, pcache = {};
   function toast(m, ms) { const t = $('#toast'); if (!t) return; t.textContent = m; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms || 2600); }
   function emit(phase) { try { document.dispatchEvent(new CustomEvent('tengel:kisekae', { detail: { phase: phase, id: curId } })); } catch (e) { /* なし */ } }
 
@@ -116,6 +116,47 @@
     if (t.band) return `<span class="kslock">🔒 壁紙を${t.band}枚あつめると</span>`;
     return '';
   }
+  // 選ぶ画面の 壁紙の 動き（第4.89版・まさちゃん「普段は壁紙は動かさないで、タップして選択しているときだけ壁紙が動くようにして！解放前、解放後どっちも！」）：
+  //   タイルの 絵は ふだん 止まった 絵（牧場・ぷりけつの SVG も 止める）。タップして 選んだ タイル＝使用中（解放後）か 解放の 確認を 開いた タイル（解放前）だけ、
+  //   判定タブの 上の絵と 同じ 動く 壁紙（ks_<id>.json の bnr）を 小さく 重ねて 動かす（.kslive › .kslv）。CSS は #ksBnr → #setKisekae .kslv に、@keyframes の 名前は kp を 足して、
+  //   判定タブの 壁紙と ぶつからない ように（テーマどうしで 同じ 名前の @keyframes が ある）。設定タブが 見えていない 間は 止める（.pause）・控えめは .calm
+  const liveId = () => conf || curId;
+  function liveStyle() {
+    let st = $('#ksPrev');
+    if (!st) { st = document.createElement('style'); st.id = 'ksPrev'; document.head.appendChild(st); }
+    return st;
+  }
+  function rescope(id, bnr) {
+    if (!pcache[id]) {
+      const names = []; const re = /@keyframes (kb[\w-]+)/g; let m;
+      while ((m = re.exec(bnr.css))) if (names.indexOf(m[1]) < 0) names.push(m[1]);
+      names.sort((a, b) => b.length - a.length);
+      let css = bnr.css.split('#ksBnr').join('#setKisekae .kslv'), html = bnr.html;
+      names.forEach(n => { const rx = new RegExp('\\b' + n + '\\b', 'g'); css = css.replace(rx, 'kp' + n); html = html.replace(rx, 'kp' + n); });
+      pcache[id] = { css: css, html: html };
+    }
+    return pcache[id];
+  }
+  function fitLive() {
+    const w = $('#setKisekae .kst .kslive'); if (!w) return;
+    const W = w.clientWidth || 118, H = w.clientHeight || 58;
+    w.style.setProperty('--kss', Math.max(W / 390, H / 160).toFixed(4));
+  }
+  function motionLive() {
+    const el = $('#setKisekae .kst .kslv'); if (!el) return;
+    const F = FX(), v = $('#v-set');
+    el.classList.toggle('calm', !!(F && F.calm && F.calm()));
+    el.classList.toggle('pause', !!document.hidden || !!(v && v.hidden));
+  }
+  async function paintLive() {
+    const id = liveId(), el = $('#setKisekae .kst .kslv'), st = liveStyle();
+    if (!el || id === 'default') { st.textContent = ''; return; }
+    const p = await load(id);
+    if (liveId() !== id || el !== $('#setKisekae .kst .kslv')) return;     // 待つ 間に 変わった
+    if (!p || !p.bnr || !p.bnr.html) { st.textContent = ''; el.innerHTML = ''; return; }
+    const r = rescope(id, p.bnr);
+    st.textContent = r.css; el.innerHTML = r.html; fitLive(); motionLive();
+  }
   // 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中（カギの 下）に 出す。前は 一覧の 上に 1本の 帯で 出していた
   //   （2026/10/25 まさちゃん「赤のところは消して、解放されていない壁紙をタップしたら下に、解放、ボタンが出てくるようにして！」）。
   //   タイルは <div role="button">（中に 本物の ボタンを 置くため）。もう一度 タイルを タップすると 閉じる
@@ -136,9 +177,10 @@
     groups.forEach(g => {
       h += `<h3 class="ksg">${esc(g.name)}<small>${g.items.length}</small></h3><div class="ksgrid">`;
       g.items.forEach(t => {
-        const on = t.id === curId, can = usable(t.id), cf = conf === t.id && !!t.price;
-        h += `<div role="button" tabindex="0" class="kst${on ? ' on' : ''}${can ? '' : ' lock'}${cf ? ' cf' : ''}" data-ks="${esc(t.id)}" aria-pressed="${on}" aria-expanded="${cf}" aria-label="${esc(t.name)}${on ? '（使用中）' : can ? '' : t.price ? `（${pts(t.price)}で解放）` : `（壁紙を${t.band}枚あつめると）`}">`
+        const on = t.id === curId, can = usable(t.id), cf = conf === t.id && !!t.price, lv = t.id === liveId() && t.id !== 'default';
+        h += `<div role="button" tabindex="0" class="kst${on ? ' on' : ''}${can ? '' : ' lock'}${cf ? ' cf' : ''}${lv ? ' lv' : ''}" data-ks="${esc(t.id)}" aria-pressed="${on}" aria-expanded="${cf}" aria-label="${esc(t.name)}${on ? '（使用中）' : can ? '' : t.price ? `（${pts(t.price)}で解放）` : `（壁紙を${t.band}枚あつめると）`}">`
           + `<img class="ksth" src="${esc(t.thumb)}" alt="" loading="lazy" decoding="async">`
+          + (lv ? '<div class="kslive" aria-hidden="true"><div class="kslv"></div></div>' : '')
           + `<span class="ksn">${esc(t.name)}</span><span class="ksd">${esc(t.desc)}</span>`
           + (on ? '<span class="ksbadge">使用中</span>' : '') + (can ? '' : lockLabel(t)) + (cf ? confBox(t, total) : '') + '</div>';
       });
@@ -147,6 +189,7 @@
     h += '<p class="ptnote" style="margin-top:12px">馬番の枠の色は、どのテーマでも同じだよ（読み間違えないように）</p>'
       + '<div class="ksnums" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(i => `<span class="num w${i}">${i}</span>`).join('') + '</div>';
     box.innerHTML = h;
+    paintLive();
   }
   async function onClick(e) {
     const a = e.target.closest('[data-ksact]');
@@ -200,14 +243,14 @@
     paint();
   })();
   document.addEventListener('tengel:wallet', () => { paint(); if (!usable(curId)) apply('default', true); });
-  document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { card(); paint(); } motion(); if (e.detail === 'judge') fitBnr(); });
-  document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') motion(); });
-  document.addEventListener('visibilitychange', motion);
-  window.addEventListener('resize', fitBnr);
+  document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { card(); paint(); } motion(); motionLive(); if (e.detail === 'judge') fitBnr(); });
+  document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') { motion(); motionLive(); } });
+  document.addEventListener('visibilitychange', () => { motion(); motionLive(); });
+  window.addEventListener('resize', () => { fitBnr(); fitLive(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', card);
 
   window.TengelKisekae = {
     on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx,
-    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion
+    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, live: liveId
   };
 })();

@@ -221,16 +221,27 @@ BOARD_CSS = r'''
 '''
 
 
+# ボードだけの 直し（判定画面の 上の帯には 入れない）。第4.89版：海の 上の帯（見出し）の 下の 波（.hd::after）が、帯の 丸い すみの 外に 四角く はみ出て
+#   右の はしで 波が 途中で 切れて いた（まさちゃん「海の結果ボード、赤丸のところ波の模様が、不自然だか自然にして！」）
+#   → 帯の 下の すみは 角（波が 帯の 下の ふちに なる）・波は 帯の 横はば（334px）に ちょうど 12こ 入る 大きさ（切れない）
+BOARD_EXTRA = dict(sea='{root} .hd{{border-radius:var(--radius) var(--radius) 0 0}}{root} .hd::after{{background-size:calc(100% / 12) 9px}}')
+
+
+def board_theme_css(tid):
+    """1テーマ分の ボードの CSS（変数・飾り・ボードだけの 直し）。root は .rb.t-<id>"""
+    t = BY_ID[tid]
+    root = f'.rb.t-{tid}'
+    css = f'{root}{{{theme_vars(t)}}}'
+    if t['rules']:
+        css += '\n' + scoped(t['rules'], root)
+    if tid in BOARD_EXTRA:
+        css += '\n' + BOARD_EXTRA[tid].format(root=root)
+    return css
+
+
 def board_css(ids):
     """ボードの共通の形＋テーマ（ids）の変数と飾り"""
-    out = [BOARD_CSS]
-    for tid in ids:
-        t = BY_ID[tid]
-        root = f'.rb.t-{tid}'
-        out.append(f'{root}{{{theme_vars(t)}}}')
-        if t['rules']:
-            out.append(scoped(t['rules'], root))
-    return '\n'.join(out) + '\n'
+    return '\n'.join([BOARD_CSS] + [board_theme_css(tid) for tid in ids]) + '\n'
 
 
 def font_links(ids, extra=()):

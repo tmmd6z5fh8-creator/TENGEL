@@ -48,12 +48,15 @@
       + '#fxVh{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}\n'
       // 第4.60版：テーマの PUSH を デカ・ど的中・特別な 演出でも 使う。.pbox.pz＝--pz 倍（的中 1・デカ 1.2・ど 1.4・それより 上 1.6）・.pzw＝押された PUSH も 同じ 倍・
       // .rbw＝虹色（うしろに まわる 虹の 光（ぼかし）＋ PUSH の 色が 3秒で 虹を 一周）。点めつは なし
+      // 第4.89版：ボタンの 四角に 色が ない テーマ（ツリー・かぼちゃ・牧場・ドット）は .rbf を 重ねず、PUSH の SVG の 中に「絵の 形で 切りぬいた 虹」を 入れる（rbwSvg）
+      //   （前は どの テーマも 四角い .rbf を 重ねて いたので、ツリーや かぼちゃの まわりに 四角い 虹が 出て いた）
       + '.fxs .pbox.pz{transform:scale(var(--pz,1));transform-origin:50% 50%}'
       + '.fxs .pzw{position:absolute;inset:0;z-index:3;pointer-events:none;transform:scale(var(--pz,1));transform-origin:50% calc(50% - 40px)}'
       + '.fxs .pbox.rbw .rba{position:absolute;z-index:0;left:50%;top:var(--ry);width:var(--rw);height:var(--rh);margin:calc(var(--rh) / -2) 0 0 calc(var(--rw) / -2);border-radius:50%;pointer-events:none;'
       + 'background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);filter:blur(16px);opacity:.9;animation:pzSpin 2.2s linear infinite}'
       + '.fxs .pbox.rbw .push .rbf{position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;mix-blend-mode:color;opacity:.95;'
       + 'background:repeating-linear-gradient(100deg,#FF3B3B 0,#FF9F1A 42px,#FFE53B 84px,#3BE26A 126px,#2FD6FF 168px,#4C6BFF 210px,#B34CFF 252px,#FF3BB8 294px,#FF3B3B 336px) 0 0/341.2px 100%;animation:pzFlow 1.6s linear infinite}'
+      + '.fxs .pbox.rbw .push svg .rbwo{mix-blend-mode:color;opacity:.95}'
       + '@keyframes pzFlow{to{background-position:341.2px 0}}@keyframes pzSpin{to{rotate:360deg}}'
       + '@media (prefers-reduced-motion:reduce){.fxs .pbox.rbw .rba,.fxs .pbox.rbw .push .rbf{animation:none}}'
       + '.fxs .calm .pbox.rbw .push .rbf{animation-duration:3.2s}.fxs .calm .pbox.rbw .rba{animation-duration:4.4s}\n';
@@ -443,13 +446,44 @@
         box.style.setProperty('--pz', cur.pz.toFixed(3));
         if (RBW[k]) {   // 虹色：うしろに まわる 虹の 光（ぼかし）＋ PUSH の 面に 流れる 虹の 色（色だけ 重ねる＝形と 明るさは そのテーマの まま）
           box.classList.add('rbw'); box.insertAdjacentHTML('afterbegin', `<i class="rba" aria-hidden="true" style="--rw:${Math.round(w * 1.45)}px;--rh:${Math.round(h * 1.7)}px;--ry:${Math.round(h / 2)}px"></i>`);
-          if (btn) btn.insertAdjacentHTML('beforeend', '<i class="rbf" aria-hidden="true"></i>');
+          if (btn) {
+            const cs = getComputedStyle(btn), solid = cs.backgroundImage !== 'none' || !/^(rgba\(\d+, \d+, \d+, 0\)|transparent)$/.test(cs.backgroundColor);
+            if (solid) btn.insertAdjacentHTML('beforeend', '<i class="rbf" aria-hidden="true"></i>');   // ボタンの 四角に 色が ある テーマ：四角に 虹（角の 丸みも 同じ）
+            else {   // 四角が すき通った テーマ（第4.89版）：PUSH の 面の 絵（<i class="…f">：ツリー・かぼちゃ・芝・ドットの 台）だけ、絵の 形で 切りぬいた 虹。まわりの 飾り（…d）は そのまま
+              let faces = [...btn.querySelectorAll('i')].filter(i => /^[a-z]+f$|^turf$/.test(i.className || '')).map(i => i.querySelector('svg')).filter(Boolean);
+              if (!faces.length) faces = [...btn.querySelectorAll('svg')];
+              faces.forEach(rbwSvg);
+            }
+          }
         }
       }
     }
     cur.phase = 'push'; cur.ov.classList.remove('rv');
     sfx(SND[k][0]);
     emit('push');
+  }
+  // PUSH の SVG の 中に、絵の 形（alpha の mask）で 切りぬいた 虹の 帯を 入れる（第4.89版：ツリー・かぼちゃ など 四角で ない PUSH）。
+  //   虹は userSpaceOnUse の くり返しの グラデーション。rect を 1周期ぶん 動かす（SMIL）と 色が 流れる。色だけ 重ねる（mix-blend-mode:color：形と 明るさは 絵の まま）
+  let rbwN = 0;
+  function rbwSvg(svg) {
+    const NS = 'http://www.w3.org/2000/svg', n = ++rbwN;
+    let vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+    if (vb.length !== 4 || vb.some(v => !isFinite(v))) vb = [0, 0, svg.clientWidth || 200, svg.clientHeight || 100];
+    const vx = vb[0], vy = vb[1], vw = vb[2], vh = vb[3];
+    const g = document.createElementNS(NS, 'g'); g.id = 'rbwG' + n;
+    while (svg.firstChild) g.appendChild(svg.firstChild);
+    svg.appendChild(g);
+    const defs = document.createElementNS(NS, 'defs');
+    const cols = ['#FF3B3B', '#FF9F1A', '#FFE53B', '#3BE26A', '#2FD6FF', '#4C6BFF', '#B34CFF', '#FF3BB8', '#FF3B3B'];
+    defs.innerHTML = `<linearGradient id="rbwP${n}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${vw}" y2="${(vh * .25).toFixed(1)}" spreadMethod="repeat">`
+      + cols.map((c, i) => `<stop offset="${(i / (cols.length - 1)).toFixed(3)}" stop-color="${c}"/>`).join('') + '</linearGradient>'
+      + `<mask id="rbwM${n}" style="mask-type:alpha;-webkit-mask-type:alpha" maskUnits="userSpaceOnUse" x="${vx - vw}" y="${vy - vh}" width="${vw * 3}" height="${vh * 3}"><use href="#rbwG${n}"/></mask>`;
+    svg.appendChild(defs);
+    const og = document.createElementNS(NS, 'g'); og.setAttribute('class', 'rbwo'); og.setAttribute('mask', `url(#rbwM${n})`);
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', String(vx - vw * 2)); r.setAttribute('y', String(vy - vh)); r.setAttribute('width', String(vw * 4)); r.setAttribute('height', String(vh * 3)); r.setAttribute('fill', `url(#rbwP${n})`);
+    if (!reduced()) r.innerHTML = `<animateTransform attributeName="transform" type="translate" from="0 0" to="${vw} 0" dur="${calm() ? 3.2 : 1.6}s" repeatCount="indefinite"/>`;
+    og.appendChild(r); svg.appendChild(og);
   }
   function reveal() {
     if (!cur || cur.phase === 'reveal') return;

@@ -436,11 +436,13 @@ def hanamaru_d(cx, cy, size, n=9, turns=2.5, h=1.6, end=0.0, r0=0.05, N=120, nd=
 
 
 def orn_chalk():
-    """すみの 花丸（ピンクのチョーク）：1本の線の うずまきと 花びら（まさちゃん「ちゃんと綺麗な花丸にして」）"""
-    return ("<defs><filter id='ck' x='-10%' y='-10%' width='120%' height='120%'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' seed='9' result='n'/>"
-            "<feDisplacementMap in='SourceGraphic' in2='n' scale='1.3' result='d'/><feComposite in='d' in2='n' operator='arithmetic' k1='0' k2='1' k3='-.35' k4='.1'/></filter></defs>"
-            f"<g filter='url(#ck)' fill='none' stroke='#F4A6C0' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'>"
-            f"<path d='{hanamaru_d(22, 22, 19.6)}'/></g>")
+    """すみの 花丸（ピンクのチョーク）：1本の線の うずまきと 花びら（まさちゃん「ちゃんと綺麗な花丸にして」）。
+       第4.89版：SVG の フィルタ（feTurbulence）を やめて 線だけで チョークに（iPad で ぼやける）：粉の にじみ＋切れ目の ある 本線＋ずらした 細い 点線"""
+    d = hanamaru_d(22, 22, 19.6)
+    return ("<g fill='none' stroke='#F4A6C0' stroke-linecap='round' stroke-linejoin='round'>"
+            f"<path d='{d}' stroke-width='5.5' opacity='.1'/>"
+            f"<path d='{d}' stroke-width='2.3' opacity='.9' stroke-dasharray='4.1 .5 2.8 .6 5.2 .4 3.3 .7'/>"
+            f"<path d='{d}' stroke-width='1.1' opacity='.5' stroke-dasharray='1.4 2.1 .8 2.6 2.2 1.7' transform='translate(.45 -.35)'/></g>")
 
 
 def orn_carousel():
