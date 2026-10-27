@@ -213,8 +213,10 @@
   function css() {
     if ($('#ptCss')) return;
     const st = document.createElement('style'); st.id = 'ptCss';
-    st.textContent = '#setPoints .ptbal{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}#setPoints .ptbig{font-family:var(--font-display);font-size:34px;line-height:1.1}'
-      + '#setPoints .ptbig small{font-size:16px;margin-left:2px}#setPoints .ptsub{font-size:12.5px;color:var(--muted)}'
+    st.textContent = '#setPoints .ptbal,#ptOv .ptbal{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}#setPoints .ptbig,#ptOv .ptbig{font-family:var(--font-display);font-size:34px;line-height:1.1}'
+      + '#setPoints .ptbig small,#ptOv .ptbig small{font-size:16px;margin-left:2px}#setPoints .ptsub,#ptOv .ptsub{font-size:12.5px;color:var(--muted)}'
+      + '.ptbk{display:grid;gap:6px;margin-top:8px}.ptbk>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)}'
+      + '.ptbk span{display:flex;flex-direction:column;font-weight:700;font-size:13.5px}.ptbk small{font-size:11px;font-weight:400;color:var(--muted)}.ptbk b{font-family:var(--font-mono);font-size:16px;white-space:nowrap}'
       + '.ptlist{display:grid;gap:8px;margin-top:10px}.ptitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}'
       + '.ptitem.on{border-color:var(--ok);background:var(--ok-bg)}.ptitem .pn{font-weight:700}.ptitem .pd{font-size:12px;color:var(--muted)}.ptitem .pp{font-family:var(--font-mono);font-weight:700;white-space:nowrap}'
       + '.pthist{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}.pthist li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:5px 0;border-top:1px solid var(--line)}.pthist .plus{color:var(--ok);font-weight:700}.pthist .minus{color:var(--bad)}'
@@ -244,26 +246,43 @@
     paintAll();
   }
   const bal = () => B();
+  // 所持ポイント（合計 → 内わけ：買ったP（パック）・サブスクのP・もらったP。まさちゃん「自分のポイントが、購入したポイントが何ポイントで、サブスクでもらった何ポイントかわかるようにして！」）
+  function balanceHtml(b) {
+    const lots = b.lots.filter(L => !L.expired && L.remain > 0).sort((x, y) => Date.parse(x.expires) - Date.parse(y.expires));
+    let h = `<div class="ptbal"><span class="ptbig">${yen(b.total)}<small>P</small></span><span class="ptsub">いま使えるポイント（3つの合計）</span></div>`;
+    h += `<div class="ptbk"><div><span>買ったP<small>パック・期限なし</small></span><b>${pts(b.paid_pack)}</b></div>`
+      + `<div><span>サブスクのP<small>届いた日から30日</small></span><b>${pts(b.paid_sub)}</b></div>`
+      + `<div><span>もらったP<small>はじめてのプレゼント・ミッション</small></span><b>${pts(b.free)}</b></div></div>`;
+    if (lots.length) h += `<p class="ptnote">サブスクのP：${lots.map(L => `${yen(L.remain)}P は ${dayOf(L.expires)}まで`).join('・')}（届いた日から30日。次の月のPが届いても、期限までは使えるよ）</p>`;
+    if (b.lost) h += `<p class="ptnote">期限が切れて消えたサブスクのP：${yen(b.lost)}P</p>`;
+    if (W.gift && W.gift.state === 'already') h += '<p class="ptnote">はじめてのプレゼント（1,500P）は、前にこのアプリを入れたときに受け取りずみだよ。</p>';
+    return h;
+  }
+  const price = id => { const p = (products || []).find(x => x.id === id); return p ? p.price : `${yen(P.PRODUCTS[id].yen)}円`; };
+  // パック（買う）の 一覧
+  function packsHtml() {
+    let h = `<div class="ptlist">${P.PACKS.map(id => { const Pd = P.PRODUCTS[id]; return `<div class="ptitem"><div><div class="pn">${esc(Pd.name)}</div><div class="pd">${yen(Pd.points)}P（期限なし）</div></div><div class="row"><span class="pp">${esc(price(id))}</span><button class="btn primary" type="button" data-pt="buy" data-id="${id}">買う</button></div></div>`; }).join('')}</div>`;
+    h += prodErr ? `<p class="ptnote">⚠️ ${esc(prodErr)}。値段は税込のめやす。買うときはApp Storeの表示が正しいよ</p>` : '';
+    return h;
+  }
+  // サブスクの 一覧（加入中・次の 更新）
+  function subsHtml() {
+    const active = (subStatus && subStatus.active) || [];
+    let h = `<div class="ptlist">${P.SUBS.map(id => { const Pd = P.PRODUCTS[id], on = active.find(x => x.product === id); return `<div class="ptitem${on ? ' on' : ''}"><div><div class="pn">${esc(Pd.name)}${on ? '　<span class="chip">加入中</span>' : ''}</div><div class="pd">毎月 ${yen(Pd.points)}P${Pd.bonus ? `（うち ${yen(Pd.bonus)}P おまけ）` : ''}・届いた日から30日 使えるよ${on && on.expires ? `・次の更新 ${dayOf(on.expires)}${on.willRenew === false ? '（更新しない）' : ''}` : ''}</div></div><div class="row"><span class="pp">月 ${esc(price(id))}</span>${on ? '' : `<button class="btn primary" type="button" data-pt="buy" data-id="${id}">はじめる</button>`}</div></div>`; }).join('')}</div>`;
+    h += `<p class="ptnote">無料トライアルはないよ。プランの変更・解約は、端末の「設定」→ Apple ID → サブスクリプション。解約しても、届いたPは期限（30日）まで使えるよ。</p>`;
+    h += prodErr ? `<p class="ptnote">⚠️ ${esc(prodErr)}</p>` : '';
+    return h;
+  }
   function paintPoints() {
     const box = $('#setPoints .ptbody'); if (!box || !W) return;
     const b = bal(), ui = paintPoints.ui || (paintPoints.ui = { show: '' });
-    const lots = b.lots.filter(L => !L.expired && L.remain > 0).sort((x, y) => Date.parse(x.expires) - Date.parse(y.expires));
-    const giftNote = W.gift && W.gift.state === 'already' ? '<p class="ptnote">はじめてのプレゼント（1,500P）は、前にこのアプリを入れたときに受け取りずみだよ。</p>' : '';
-    let h = `<div class="ptbal"><span class="ptbig">${yen(b.total)}<small>P</small></span><span class="ptsub">買ったP ${yen(b.paid_pack + b.paid_sub)}（うちサブスク ${yen(b.paid_sub)}）・もらったP ${yen(b.free)}</span></div>`;
-    if (lots.length) h += `<p class="ptnote">サブスクのP：${lots.map(L => `${yen(L.remain)}P は ${dayOf(L.expires)}まで`).join('・')}（届いた日から30日。次の月のPが届いても、期限までは使えるよ）</p>`;
-    if (b.lost) h += `<p class="ptnote">期限が切れて消えたサブスクのP：${yen(b.lost)}P</p>`;
-    h += giftNote;
+    let h = balanceHtml(b);
     h += `<div class="row" style="margin-top:10px"><button class="btn primary" type="button" data-pt="show" data-v="buy" aria-pressed="${ui.show === 'buy'}">ポイントを買う</button><button class="btn" type="button" data-pt="show" data-v="sub" aria-pressed="${ui.show === 'sub'}">サブスク</button><button class="btn ghost" type="button" data-pt="show" data-v="hist" aria-pressed="${ui.show === 'hist'}">詳しく</button></div>`;
     h += `<p class="hint">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったPから先に使うよ（サブスクのP → パックのP → もらったP）。</p>`;
-    const price = id => { const p = (products || []).find(x => x.id === id); return p ? p.price : `${yen(P.PRODUCTS[id].yen)}円`; };
     if (ui.show === 'buy') {
-      h += `<div class="ptlist">${P.PACKS.map(id => { const Pd = P.PRODUCTS[id]; return `<div class="ptitem"><div><div class="pn">${esc(Pd.name)}</div><div class="pd">${yen(Pd.points)}P（期限なし）</div></div><div class="row"><span class="pp">${esc(price(id))}</span><button class="btn primary" type="button" data-pt="buy" data-id="${id}">買う</button></div></div>`; }).join('')}</div>`;
-      h += prodErr ? `<p class="ptnote">⚠️ ${esc(prodErr)}。値段は税込のめやす。買うときはApp Storeの表示が正しいよ</p>` : '';
+      h += packsHtml();
     } else if (ui.show === 'sub') {
-      const active = (subStatus && subStatus.active) || [];
-      h += `<div class="ptlist">${P.SUBS.map(id => { const Pd = P.PRODUCTS[id], on = active.find(x => x.product === id); return `<div class="ptitem${on ? ' on' : ''}"><div><div class="pn">${esc(Pd.name)}${on ? '　<span class="chip">加入中</span>' : ''}</div><div class="pd">毎月 ${yen(Pd.points)}P${Pd.bonus ? `（うち ${yen(Pd.bonus)}P おまけ）` : ''}・届いた日から30日 使えるよ${on && on.expires ? `・次の更新 ${dayOf(on.expires)}${on.willRenew === false ? '（更新しない）' : ''}` : ''}</div></div><div class="row"><span class="pp">月 ${esc(price(id))}</span>${on ? '' : `<button class="btn primary" type="button" data-pt="buy" data-id="${id}">はじめる</button>`}</div></div>`; }).join('')}</div>`;
-      h += `<p class="ptnote">無料トライアルはないよ。プランの変更・解約は、端末の「設定」→ Apple ID → サブスクリプション。解約しても、届いたPは期限（30日）まで使えるよ。</p>`;
-      h += prodErr ? `<p class="ptnote">⚠️ ${esc(prodErr)}</p>` : '';
+      h += subsHtml();
     } else if (ui.show === 'hist') {
       const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
       const lab = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? `ミッション：${e.what || ''}` : e.kind === 'unlock' ? `解放：${unlockName(e.what)}` : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
@@ -273,6 +292,42 @@
     }
     h += `<div class="banner warn">⚠️ <b>アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません。</b>ポイントはこの端末の中だけに入っているよ（ほかの端末には同期しないよ）。</div>`;
     box.innerHTML = h;
+    paintPointsOv();
+  }
+  // ---------- ポイントの 窓（第4.84版・まさちゃん「このポイントの欄タップしたら、所持ポイントの確認と、ポイント&サブスクの購入選択画面が出てくるようにして！」）：
+  //   上の帯の 所有ポイント（と「ポイントを買う」の ボタン）を 押すと 開く。所持ポイント・ポイントを 買う（パック）・サブスク を 1つの 窓に。履歴・復元は 設定タブの ポイントの「詳しく」へ ----------
+  const COIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.7 0-2.5 1-2.5 2s.8 1.7 2.5 2 2.5 1 2.5 2-.8 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5M12 6.5V8M12 16v1.5"/></svg>';
+  function paintPointsOv() {
+    const ov = $('#ptOv'); if (!ov || !W) return;
+    const b = bal();
+    $('.msn', ov).textContent = `いま ${pts(b.total)}`;
+    $('#ptBal', ov).innerHTML = balanceHtml(b) + `<p class="hint" style="margin:8px 0 0">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったPから先に使うよ（サブスクのP → パックのP → もらったP）。</p>`;
+    $('#ptBuy', ov).innerHTML = packsHtml();
+    $('#ptSub', ov).innerHTML = subsHtml();
+  }
+  let ptPrev = null;
+  function openPoints() {
+    if (!W || $('#ptOv')) return;
+    const ov = document.createElement('div'); ov.id = 'ptOv'; ov.className = 'tgov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ポイント');
+    ov.innerHTML = `<div class="msh"><h2>${COIN}ポイント</h2><span class="msn"></span><button class="btn" type="button" data-ms="close">とじる</button></div>`
+      + '<div class="msb"><div class="card setsec"><h2>所持ポイント</h2><div class="ptbody" id="ptBal"></div></div>'
+      + '<div class="card setsec"><h2>ポイントを買う（パック・期限なし）</h2><div class="ptbody" id="ptBuy"></div></div>'
+      + '<div class="card setsec"><h2>サブスク（毎月とどく）</h2><div class="ptbody" id="ptSub"></div></div>'
+      + '<div class="row" style="margin:0 0 8px"><button class="btn ghost" type="button" data-ms="hist">ポイントの履歴・購入を復元（設定タブ）</button></div>'
+      + '<div class="banner warn">⚠️ <b>アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません。</b>ポイントはこの端末の中だけに入っているよ（ほかの端末には同期しないよ）。</div></div>';
+    ov.addEventListener('click', e => { const c = e.target.closest('[data-ms]'); if (c && c.dataset.ms === 'close') { closePoints(); return; } if (c && c.dataset.ms === 'hist') { closePoints(); goSettings('points', 'hist'); return; } onClick(e); });
+    ptPrev = document.activeElement;
+    document.documentElement.classList.add('mson'); document.body.appendChild(ov);
+    paintPointsOv();
+    try { $('[data-ms=close]', ov).focus({ preventScroll: true }); } catch (e) { /* なし */ }
+    loadProducts(false).then(() => paintPointsOv()).catch(() => {});
+    refreshSubStatus().catch(() => {});
+  }
+  function closePoints() {
+    const ov = $('#ptOv'); if (!ov) return;
+    ov.remove(); if (!$('.tgov')) document.documentElement.classList.remove('mson');
+    const b = $('#ptsPill'); if (b && b.focus) b.focus({ preventScroll: true }); else if (ptPrev && ptPrev.focus) ptPrev.focus({ preventScroll: true });
+    ptPrev = null;
   }
   const TYPE_NAMES = { '複勝': '複勝', '枠複': '枠複', '枠単': '枠単', '馬連': '馬連', 'ワイド': 'ワイド', '3連複': '3連複' };
   function unlockName(key) {
@@ -338,7 +393,7 @@
   let msPrev = null;
   function openMissions() {
     if (!W || $('#msOv')) return;
-    const ov = document.createElement('div'); ov.id = 'msOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ミッション');
+    const ov = document.createElement('div'); ov.id = 'msOv'; ov.className = 'tgov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ミッション');
     ov.innerHTML = `<div class="msh"><h2>${TROPHY}ミッション</h2><span class="msn"></span><button class="btn" type="button" data-ms="close">とじる</button></div>`
       + '<div class="msb"><div class="card setsec"><h2>ポイントミッション</h2><div class="ptbody" id="msPts"></div></div>'
       + '<div class="card setsec"><h2>壁紙ミッション</h2><div class="ptbody" id="msWall"></div></div><div id="msRev"></div>'
@@ -351,11 +406,11 @@
   }
   function closeMissions() {
     const ov = $('#msOv'); if (!ov) return;
-    ov.remove(); document.documentElement.classList.remove('mson');
+    ov.remove(); if (!$('.tgov')) document.documentElement.classList.remove('mson');
     const b = $('#msBtn'); if (b && b.focus) b.focus({ preventScroll: true }); else if (msPrev && msPrev.focus) msPrev.focus({ preventScroll: true });
     msPrev = null;
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#msOv')) closeMissions(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('#ptOv')) closePoints(); else if ($('#msOv')) closeMissions(); });
   // 上の帯の ならび：ロゴ → 所有ポイント → 説明書 →（テスト版の 印）→ ミッション →（段の きりかえ）→ マザーデータの 札（説明書は pwa_ui.js が あとから 入れる ことが あるので、描く たびに そろえる）
   function orderTop(top) {
     const seq = [$('.brand', top), $('#ptsPill'), $('#manBtn'), $('#testTag'), $('#msBtn'), $('.tbrk', top), $('#dbpill')].filter(Boolean);
@@ -390,7 +445,7 @@
     if (!paintHint.base) paintHint.base = el.textContent;
     el.textContent = `${paintHint.base}・1レース 200P（いま ${pts(total())}）`;
   }
-  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); paintMissionOv(); }
+  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); dbPillLink(); paintMissionOv(); }
   async function onClick(e) {
     const b = e.target.closest('[data-pt]'); if (!b) return;
     const act = b.dataset.pt;
@@ -411,14 +466,21 @@
     }
   }
   // 設定タブの中の場所へ（ほかの画面の「ポイントを買う」ボタンなど）
-  function goSettings(sec) {
+  function goSettings(sec, show) {
     const tb = $('.tabbar [data-tab=set]');
     if (tb && getComputedStyle(tb.parentNode).display !== 'none') tb.click(); else { const t2 = $('.tabs-top [data-tab=set]'); if (t2) t2.click(); }
-    const id = { points: 'setPoints', custom: 'setCustom', mission: 'setMission', kisekae: 'setKisekae' }[sec] || 'setPoints';
-    if (sec === 'points') { paintPoints.ui = { show: 'buy' }; paintPoints(); loadProducts(false).then(paintPoints); }
+    const id = { points: 'setPoints', custom: 'setCustom', mission: 'setMission', kisekae: 'setKisekae', mother: 'setMother' }[sec] || 'setPoints';
+    if (sec === 'points') { paintPoints.ui = { show: show || 'buy' }; paintPoints(); loadProducts(false).then(paintPoints); }
     setTimeout(() => { const s = document.getElementById(id); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
   }
-  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-gopt]'); if (b) { e.preventDefault(); goSettings(b.dataset.gopt); } });
+  // data-gopt="points"（上の帯の 所有ポイント・「ポイントを買う」の ボタン）は ポイントの 窓（第4.84版）。ほかは 設定タブの その 場所へ
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-gopt]'); if (b) { e.preventDefault(); if (b.dataset.gopt === 'points') openPoints(); else goSettings(b.dataset.gopt); } });
+  // 上の帯の マザーデータの 札 → 設定タブの マザーデータ（第4.84版・まさちゃん「マザーデータをタップしたら設定のマザーデータのところに飛ぶようにして！」）
+  function dbPillLink() {
+    const d = $('#dbpill'); if (!d || d.dataset.gopt) return;
+    d.dataset.gopt = 'mother'; d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', 'マザーデータ（押すと設定のマザーデータへ）'); d.style.cursor = 'pointer';
+    d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goSettings('mother'); } });
+  }
 
   // ---------- 拡大（2本指）：ふだんは3倍まで。演出・アプリを開いた時の画面では1倍にもどして止める ----------
   const VP = 'width=device-width,initial-scale=1,viewport-fit=cover';
@@ -496,13 +558,13 @@
         + '#msBtn .mbd{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 6px 0 5px;border-radius:7px;background:#D4F5A6;color:#1F3A0E;font-family:var(--font-mono);font-size:12px;font-weight:700;line-height:1;margin-left:4px}'
         + '#msBtn .mbd svg{width:12px;height:12px;color:#1F3A0E}'
         + '#msBtn.hot{background:rgba(226,162,59,.34);border-color:var(--lamp)}'
-        + '#msOv{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}'
-        + '#msOv .msh{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat,0px) + 10px) 16px 10px;background:var(--ks-hd,var(--night));color:var(--night-ink);border-bottom:var(--ks-hdB,3px solid var(--lamp))}'
-        + '#msOv .msh h2{margin:0;flex:none;display:inline-flex;align-items:center;gap:7px;font-size:17px;font-weight:700;letter-spacing:.02em}#msOv .msh h2 svg{width:19px;height:19px;color:var(--lamp)}'
-        + '#msOv .msh .msn{flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--lamp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-        + '#msOv .msh .btn{flex:none;padding:6px 12px;background:rgba(243,240,230,.1);color:var(--night-ink);border-color:rgba(243,240,230,.35)}'
-        + '#msOv .msb{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:var(--gap) 16px calc(var(--sab,0px) + 28px)}#msOv .msb .card{margin:0 0 var(--gap)}#msOv #msRev .card{margin-top:0!important}'
-        + '#msOv .msrow.can{background:var(--ok-bg);margin:0 -8px;padding:8px;border-radius:8px;border-top:0}'
+        + '.tgov{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}'
+        + '.tgov .msh{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat,0px) + 10px) 16px 10px;background:var(--ks-hd,var(--night));color:var(--night-ink);border-bottom:var(--ks-hdB,3px solid var(--lamp))}'
+        + '.tgov .msh h2{margin:0;flex:none;display:inline-flex;align-items:center;gap:7px;font-size:17px;font-weight:700;letter-spacing:.02em}.tgov .msh h2 svg{width:19px;height:19px;color:var(--lamp)}'
+        + '.tgov .msh .msn{flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--lamp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        + '.tgov .msh .btn{flex:none;padding:6px 12px;background:rgba(243,240,230,.1);color:var(--night-ink);border-color:rgba(243,240,230,.35)}'
+        + '.tgov .msb{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:var(--gap) 16px calc(var(--sab,0px) + 28px)}.tgov .msb .card{margin:0 0 var(--gap)}#msOv #msRev .card{margin-top:0!important}'
+        + '.tgov .msrow.can{background:var(--ok-bg);margin:0 -8px;padding:8px;border-radius:8px;border-top:0}'
         + 'html.mson{overflow:hidden}'
         + '#setTest{margin-bottom:var(--gap)}#setTest .row{flex-wrap:wrap}#setTest .btn{font-size:12.5px;padding:7px 10px}'
         + '@media (max-width:899px){.tbrk{display:block}#dbpill{margin-left:auto}}'
@@ -514,7 +576,7 @@
     if (!top || !brand) return;
     let pill = $('#ptsPill');
     if (!pill) {
-      pill = document.createElement('button'); pill.type = 'button'; pill.id = 'ptsPill'; pill.setAttribute('data-gopt', 'points'); pill.setAttribute('aria-label', '所有ポイント（押すと設定のポイントへ）');
+      pill = document.createElement('button'); pill.type = 'button'; pill.id = 'ptsPill'; pill.setAttribute('data-gopt', 'points'); pill.setAttribute('aria-label', '所有ポイント（押すとポイントの窓：所持ポイント・買う・サブスク）');
       brand.insertAdjacentElement('afterend', pill);
       if (window.__TEST && !$('#testTag')) { const t = document.createElement('span'); t.id = 'testTag'; t.textContent = 'テスト版'; pill.insertAdjacentElement('afterend', t); }
     }
@@ -579,7 +641,7 @@
   window.TengelWallet = {
     on: true, ready: walletReady, COST: P.COST,
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,
-    readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions,
+    readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions, openPoints, closePoints,
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },
