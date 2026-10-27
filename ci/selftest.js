@@ -210,7 +210,7 @@
       var K = window.TengelKisekae; if (!K) return { on: false };
       await K.ready;
       var res = { list: K.list().length, groups: Array.from(new Set(K.list().map(function (t) { return t.group; }))), current0: K.current(), count: K.count(), usableSakura: K.usable('sakura'), band: K.band, files: {} };
-      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_39558c280310609ad0a65971ed217991.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
+      for (var k of ['ks_sakura.json', 'ks_banner_ranch.svg', 'fonts/KaiseiDecol-700.woff2', 'ks_cbcbaeebec4470155b1587d5a5c8fe00.webp']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
       await K.apply('sakura'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       var bn = document.querySelector('#ksBnr');
