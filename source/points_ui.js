@@ -319,6 +319,8 @@
   //   壁紙ミッション ポイントミッション 見直し基準進捗状況」「受け取りもそこでできるようにして！」）：上の帯の「ミッション」を 押すと 開く。
   //   ポイントミッション（記録の 数）・壁紙ミッション・見直し基準の 進み具合（実測・回収タブと 同じ：chk1.js の TengelReview）。受け取るも ここで ----------
   const TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a1 1 0 0 0-1 1 4 4 0 0 0 4 4M17 6h3a1 1 0 0 1 1 1 4 4 0 0 1-4 4"/></svg>';
+  // 受け取れる 数の 印：メッセージ（ふきだし）の 絵＋数（まさちゃん「メッセージのマークを背景つけて、メッセージが溜まってるよ！って分かりやすくして！」）
+  const BUBBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>';
   function claimableN() { if (!W) return 0; return P.missions(countedN(), W.events).filter(m => m.claimable).length + P.wallMissions(P.wallCount(W.events), W.events).filter(m => m.claimable).length; }
   function reviewHtml() {
     try { if (window.TengelReview) return window.TengelReview() || ''; } catch (e) { /* なし */ }
@@ -354,7 +356,15 @@
     msPrev = null;
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#msOv')) closeMissions(); });
-  // 上の帯の「ミッション」（説明書の となり）：つぎの ミッションの 進み具合（いま／つぎ）と、受け取れる 数の 赤い 印
+  // 上の帯の ならび：ロゴ → 所有ポイント → 説明書 →（テスト版の 印）→ ミッション →（段の きりかえ）→ マザーデータの 札（説明書は pwa_ui.js が あとから 入れる ことが あるので、描く たびに そろえる）
+  function orderTop(top) {
+    const seq = [$('.brand', top), $('#ptsPill'), $('#manBtn'), $('#testTag'), $('#msBtn'), $('.tbrk', top), $('#dbpill')].filter(Boolean);
+    let prev = null;
+    for (const el of seq) { if (prev && prev.nextElementSibling !== el) prev.insertAdjacentElement('afterend', el); prev = el; }
+  }
+  // 上の帯の「ミッション」（説明書の 下の 段・右よせ）：つぎの ミッションの 進み具合（いま／つぎ）と、受け取れる 数（水色の 数字だけ。まさちゃん「ミッションの①みたいな通知してくれてる◯は水色にして！」
+  //   →「ミッション通知①の通知◯いらないかも！ 数字だけでいいや！」→「通知の数字、具ぎりが無くて分かりにくいから、メッセージのマークを背景つけて、メッセージが溜まってるよ！って分かりやすくして！」
+  //   ＝四角に ふきだしの 絵と 数。色は まさちゃん「メッセージのマークの色、薄い黄緑にして！」＝うすい 黄緑 #D4F5A6）
   function missionBtn() {
     const top = $('header.top .top-in'); if (!top) return;
     let b = $('#msBtn');
@@ -363,8 +373,10 @@
       b.addEventListener('click', openMissions);
       top.insertBefore(b, $('#manBtn') || $('#dbpill') || null);
     }
+    if (!$('.tbrk', top)) { const k = document.createElement('i'); k.className = 'tbrk'; k.setAttribute('aria-hidden', 'true'); b.insertAdjacentElement('afterend', k); }
+    orderTop(top);
     const n = W ? countedN() : 0, next = W ? P.missions(n, W.events).find(m => !m.done) : null, c = claimableN();
-    b.innerHTML = `${TROPHY}ミッション${next ? `<span class="mp">${n}/${next.n}</span>` : ''}${c ? `<span class="mbd" aria-label="受け取れるミッション ${c}つ">${c}</span>` : ''}`;
+    b.innerHTML = `${TROPHY}ミッション${next ? `<span class="mp">${n}/${next.n}</span>` : ''}${c ? `<span class="mbd" aria-label="受け取れるミッション ${c}つ">${BUBBLE}${c}</span>` : ''}`;
     b.classList.toggle('hot', c > 0);
     b.title = c ? `受け取れるミッションが ${c}つ あるよ` : next ? `つぎのミッション：${next.n}レース記録で ${pts(next.reward)}（いま ${n}レース）` : 'ミッション';
   }
@@ -467,16 +479,22 @@
   function topBar() {
     if (!document.getElementById('ptsCss')) {
       const st = document.createElement('style'); st.id = 'ptsCss';
-      st.textContent = '.manbtn{margin-left:auto!important;order:0!important}#dbpill{margin-left:0}'
+      /* 上の帯の ならび（第4.83版・まさちゃん「説明書をポイントの横に配置できない？ その下にミッション、その下にマザーデータ」）：
+         ロゴ・所有ポイント・説明書 ／ ミッション ／ マザーデータの 札（iPhone：3段。ミッションと 札は 右よせ・ミッションの あとで 段を かえる .tbrk）。
+         iPad の たて（〜899px）は 2段：ロゴ・ポイント・説明書 … ミッション ／ 札（右よせ）。広い 画面（900px〜）は 1段：ロゴ・ポイント・説明書 … ミッション・札。
+         iPhone（〜599px）の 所有ポイントは「購入／サブスク」の 字を 上・P を 下の 2行に（横に 説明書が 入る はば） */
+      st.textContent = '.manbtn{order:0!important}#manBtn{margin-left:0!important}#msBtn{margin-left:auto!important}#dbpill{margin-left:0}.brand .ver:empty{display:none}.tbrk{display:none;flex-basis:100%;height:0;margin:-8px 0 0}'
+
         + '#ptsPill{display:inline-flex;align-items:stretch;flex:none;margin:0;border-radius:999px;border:1px solid rgba(243,240,230,.3);background:rgba(243,240,230,.08);color:var(--night-ink);font:inherit;font-size:11.5px;line-height:1.3;white-space:nowrap;cursor:pointer;padding:0;overflow:hidden}'
         + '#ptsPill .pp{display:inline-flex;align-items:baseline;gap:4px;padding:4px 9px}#ptsPill .pp+.pp{border-left:1px solid rgba(243,240,230,.25)}'
         + '#ptsPill .pl{font-size:10px;opacity:.8;letter-spacing:.04em}#ptsPill .pv{font-family:var(--font-mono);font-weight:700;font-size:12.5px}#ptsPill .pv small{font-size:10px;margin-left:1px}'
         + '#ptsPill:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
         + '#testTag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;background:#E2A23B;color:#1B1F2A}'
         /* 上の帯の「ミッション」（第4.82版）：説明書の 左。iPhone では 3段に なる（ミッション・説明書 → マザーデータの 印）ので 段の あいだは せまく */
-        + 'header.top .top-in{row-gap:8px}#msBtn{margin-left:auto!important;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;line-height:1.5;position:relative}#manBtn{margin-left:0!important}'
+        + 'header.top .top-in{row-gap:8px}#msBtn{cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;line-height:1.5;position:relative}'
         + '#msBtn .mp{font-family:var(--font-mono);font-size:11px;font-weight:700;opacity:.85;margin-left:1px}'
-        + '#msBtn .mbd{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;margin-left:2px;box-shadow:0 0 0 2px var(--night)}'
+        + '#msBtn .mbd{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 6px 0 5px;border-radius:7px;background:#D4F5A6;color:#1F3A0E;font-family:var(--font-mono);font-size:12px;font-weight:700;line-height:1;margin-left:4px}'
+        + '#msBtn .mbd svg{width:12px;height:12px;color:#1F3A0E}'
         + '#msBtn.hot{background:rgba(226,162,59,.34);border-color:var(--lamp)}'
         + '#msOv{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}'
         + '#msOv .msh{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat,0px) + 10px) 16px 10px;background:var(--ks-hd,var(--night));color:var(--night-ink);border-bottom:var(--ks-hdB,3px solid var(--lamp))}'
@@ -485,8 +503,11 @@
         + '#msOv .msh .btn{flex:none;padding:6px 12px;background:rgba(243,240,230,.1);color:var(--night-ink);border-color:rgba(243,240,230,.35)}'
         + '#msOv .msb{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:var(--gap) 16px calc(var(--sab,0px) + 28px)}#msOv .msb .card{margin:0 0 var(--gap)}#msOv #msRev .card{margin-top:0!important}'
         + '#msOv .msrow.can{background:var(--ok-bg);margin:0 -8px;padding:8px;border-radius:8px;border-top:0}'
-        + 'html.mson{overflow:hidden}@media (max-width:599px){#dbpill{margin-left:auto}}'
-        + '#setTest{margin-bottom:var(--gap)}#setTest .row{flex-wrap:wrap}#setTest .btn{font-size:12.5px;padding:7px 10px}';
+        + 'html.mson{overflow:hidden}'
+        + '#setTest{margin-bottom:var(--gap)}#setTest .row{flex-wrap:wrap}#setTest .btn{font-size:12.5px;padding:7px 10px}'
+        + '@media (max-width:899px){.tbrk{display:block}#dbpill{margin-left:auto}}'
+        + '@media (max-width:599px){header.top .top-in{column-gap:8px}'
+        + '#ptsPill .pp{flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 6px 2px}#ptsPill .pl{font-size:9px;line-height:11px;letter-spacing:.02em}#ptsPill .pv{font-size:12px;line-height:14px}#ptsPill .pv small{font-size:9.5px}}';
       document.head.appendChild(st);
     }
     const top = $('header.top .top-in'), brand = $('header.top .brand');
