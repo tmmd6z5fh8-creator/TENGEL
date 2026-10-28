@@ -601,7 +601,7 @@
 まさちゃん「課金パック1500円 新しい壁紙 作成して！」（11枚：海賊・競馬場（上から見た）・宇宙・パドック・深海・恐竜時代・切り絵・浮世絵風・スチームパンク・近未来都市・七夕（7月）と それぞれの 動き）・聞いて 決めた こと：買ったあと 読み込みで 順に 解放（5レースごと・11枚で 55レース・上の 順）／パックだけ（ポイントでは 解放 できない）／壁紙ミッション（帯 8・16・25枚）の 枚数に 数える／一式で 作る（動く 上の絵・色・字・形・テーマの 的中PUSH・結果ボード）
 
 - **商品**：非消耗型（買い切り）`jp.tengel.app.wallpack1`・1,500円（`points.js` の `PRODUCTS`（kind `unlock`・what `wallpack`）・`WALLPACK`・`Store.swift` の `unlockIDs`）。台帳には `tx-<取引>`（0P）。返金（`refund-<取引>`）で 使えなくなる。開いた ときの いま 有効な もの（`current`）・「購入を復元」で もどる（結果ボードカスタムと 同じ しくみ：`points.js` の `owned(events, what)`）。
-- **解放**（`points.js` の `packUnlocked`・`packNext`）：買った あとに **200P を 使って 読み込んだ レース**（`points_ui.js` の `readCharge` → `packRead`：読み直し 0P・5連の 予想は 数えない）の 数 ÷ 5 枚（最大 11）。順番は `kisekae/pack/__init__.py` の `ORDER`（海賊 → 競馬場 → 宇宙 → パドック → 深海 → 恐竜時代 → 切り絵 → 浮世絵風 → スチームパンク → 近未来都市 → 七夕）。進み具合は 台帳（`wallet` の `pack.reads`）＝アプリを 消すと 0。解放すると 画面の 上に お知らせ（`#ksNote`：小さな 絵と「着せ替える」・6.5秒）・設定の タイルに 解放エフェクト。
+- **解放**（`points.js` の `packUnlocked`・`packNext`）：買った あとに **200P を 使って 読み込んだ レース**（`points_ui.js` の `readCharge` → `packRead`：読み直し 0P・5連の 予想は 数えない）の 数 ÷ 5 枚（最大 11）。順番は `kisekae/pack/__init__.py` の `ORDER`（海賊 → 競馬場 → 宇宙 → パドック → 深海 → 恐竜時代 → 切り絵 → 浮世絵風 → スチームパンク → 近未来都市 → 七夕）。進み具合は 台帳（`wallet` の `pack.reads`）＝アプリを 消すと 0。解放すると 画面の 上に お知らせ（`#ksNote`：小さな 絵と「着せ替える」・6.5秒・出て いる 間は 動かない）・設定の タイルに 解放エフェクト。
 - **帯の 壁紙の ミッション**：`wallCount(events, パックで 解放した 枚数)`（ポイントの 26枚 ＋ パックの 11枚 ＝ 37枚 から 数える）。
 - **選ぶ画面**（`kisekae.js`）：いちばん 上の 組「壁紙パック」。買う 前＝組の 見出しの 下に「新しい壁紙 11枚の パック」「1,500円で買う」（App Store の 表示価格）・「購入を復元」・解放の きまり。カギの タイル（🔒 壁紙パック）を 押すと その 下に「1,500円で買う」と 動く 見本。買った あと＝「壁紙パック 解放 n/11」・つぎの「○○」まで あと 何レース・バー。まだの タイルは 🔒 あと○レース（押すと あと 何レースか）。
 - **壁紙**（`kisekae/pack/<id>.py`：`THEME`（themes20 と 同じ 形・cat 7）・`banner(B)`・`PUSH`）。上の絵は 部品ごとの 絵（SVG の data URI。ページに じかの <svg> と id は 使わない）と 馬の コマの シート（いままでと 同じ 馬＝`horse_flat`：`kisekae/pack/make/<id>_art.py`・`make/sheets.py`）を 重ねて CSS だけで 動かす。止まった 絵（選ぶ画面の 小さな 絵・視差効果を減らす）は 見本の ページで 写した 絵（`pack/blobs.json` の `still`）。絵は `ios/kisekae_blobs/`（git に 入れない）。
@@ -619,7 +619,7 @@
   - ⑪**七夕**（`tanabata`・天の川と短冊・字 Yuji Mai／Zen Maru Gothic・天の川の パネルに 短冊の PUSH（tn））：夜空の 天の川・光の 橋・夜の 町・上の すみに 笹（色とりどりの 短冊（字は なし）・紙の 星・輪かざり）。金の たてがみと 星の 布の 白い 馬（horse_flat・10コマ）。動き：馬が 天の川の 光の 橋を 左から 右へ 渡る（11秒ごと・星の 粉の 尾）・短冊と 笹が それぞれ ゆれる・天の川の 星が 流れる・織姫と 彦星の 星と 小さな 星が ゆっくり またたく
 - 組み込み：`themes20.py`（`THEMES += pack.themes()`・`CATS[7]`）・`boards.py`（`CAT_ORDER` に 7）・`gen_fx.py`（`THEMED` の `hit_<id>`・`theme_banner`）・`push_events.py`（的中ボタンの 記号）・`build_kisekae.py`（組・`pack` の 印・止まった 絵・`__KS.pack`）・`build_fonts.py`（新しい 見出しの 字 7つ：Zen Antique・Train One・Stick・Kaisei HarunoUmi・Yuji Boku・Zen Kurenaido・Shippori Antique B1）。
 - 「このアプリについて」の プライバシーポリシー（壁紙パックの 進み具合・App内課金に 壁紙パック）と 特定商取引法の 表記（アプリの 中の 購入・引渡時期：買った あとに 読み込んだ レースの 数で 順に）・説明書（着せ替えの 説明に 壁紙パック）。
-- テスト：`test_points.js`（商品・解放の 数・つぎ・帯の ミッションの 枚数・返金）・`test_native.py`（壁紙パック：いちばん 上の 組・買う・読み込みで 解放・お知らせから 着せ替え・帯の ミッション・返金・購入を復元。前の 着せ替えの 確かめも 41テーマに）・`test_iphone_only.py`（商品 ID・ks_<id>.json 41こ・絵の 数）・`test_ks_flash.py`（11枚の 壁紙と PUSH）・CI の `selftest.js`（壁紙パックの 組と 1枚目の 壁紙）。
+- テスト：`test_points.js`（商品・解放の 数・つぎ・帯の ミッションの 枚数・返金）・`test_native.py`（320：壁紙パック＝いちばん 上の 組・買う・読み込みで 解放・お知らせから 着せ替え・帯の ミッション・返金・購入を復元。前の 着せ替えの 確かめも 41テーマに）・`test_iphone_only.py`（商品 ID・ks_<id>.json 41こ・絵の 数）・`test_ks_flash.py`（11枚の 壁紙と PUSH）・CI の `selftest.js`（壁紙パックの 組と 1枚目の 壁紙）。
 - App Store Connect：非消耗型の App内課金 `jp.tengel.app.wallpack1`（参照名 壁紙パック・1,500円）を 作る（まさちゃん）。
 
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
