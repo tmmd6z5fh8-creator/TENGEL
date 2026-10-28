@@ -124,6 +124,15 @@ def sd_film():
     print('sd_film.mp4', f'{os.path.getsize(os.path.join(out, "sd_film.mp4")) / 1e6:.2f}MB', f'{n}コマ', flush=True)
     run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), '--last', sd, os.path.join(out, 'sd_last.webp')])
     print('sd_last.webp', f'{os.path.getsize(os.path.join(out, "sd_last.webp")) / 1e6:.2f}MB', flush=True)
+    bcx_phantom(sd)
+
+
+def bcx_phantom(sd):
+    """第4.91版：結果ボードカスタム「出世馬」の 8回目からの 幻の 馬＝極ど的中の 紫の 馬。紫電の 動画の コマ 60（暗闇に 目だけが 光る）・70（顔が 見える）を そのまま 絵に"""
+    from PIL import Image
+    for i, name in ((60, 'bcx_ph0.webp'), (70, 'bcx_ph1.webp')):
+        Image.open(os.path.join(sd, f'f{i:03d}.png')).convert('RGB').save(os.path.join(out, name), 'WEBP', quality=80, method=6)
+        print(name, f'{os.path.getsize(os.path.join(out, name)) / 1e3:.0f}KB', flush=True)
 
 
 # ---------------------------------------------------------------- ノーマルど的中の 動画と さいごの 1まい（第4.77版）
@@ -150,4 +159,6 @@ if __name__ == '__main__':
         sd_film()
     if 'nd' in which:
         nd_film()
+    if 'bcx' in which and os.path.isdir(os.path.join(work, 'sd')):     # FILMS=bcx：紫電の コマから 幻の 馬の 絵だけ
+        bcx_phantom(os.path.join(work, 'sd'))
     print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp') if os.path.exists(os.path.join(out, f))])

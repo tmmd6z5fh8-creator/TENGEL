@@ -43,8 +43,9 @@ check('__nativeEvent' in wv and 'Store.shared.start()' in wv, 'App内課金の�
 mk = nocom(open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Markers.swift'), encoding='utf8').read())
 check('kSecAttrSynchronizable' in mk and 'kSecClassGenericPassword' in mk and 'ThisDeviceOnly' not in mk, 'キーチェーンのしるしは iCloudキーチェーンで同期する形')
 st = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Store.swift'), encoding='utf8').read()
-for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200'):
+for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200', 'boardcustom'):
     check(f'"jp.tengel.app.{pid}"' in st, f'App内課金の商品ID：jp.tengel.app.{pid}')
+check('static let unlockIDs = ["jp.tengel.app.boardcustom"]' in st and 'packIDs + subIDs + unlockIDs' in st and 'return "unlock"' in st and 'case "current": return ["ok": true, "list": await current()]' in st, '第4.91版：結果ボードカスタム（非消耗型・買い切り）：商品の 一覧に 入る・取引の 種類は unlock・いま 有効な もの（current）を Webの 画面に 渡す')
 check('Transaction.updates' in st and 'Transaction.unfinished' in st and 'AppStore.sync()' in st and '.finish()' in st, 'StoreKit 2：取引の更新・終わっていない取引・購入を復元・終わらせる')
 # build_ios.py が作る Package.swift
 out = tempfile.mkdtemp()
@@ -74,7 +75,10 @@ if r.returncode == 0:
           and sorted(FXJ['reveal']) == ['big', 'fz', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
           and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
           'アプリの画面に 特別な 演出（プレミアム・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版）・第4.86版：隠れど的中・超プレミアムど的中・神様的中は 入って いない')
-    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4, f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4（{len(ASSET_FILES)}）')
+    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4 + 2 and ASSET_FILES[:2] == ['bcx_ph0.webp', 'bcx_ph1.webp'], f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4・結果ボードカスタムの 幻の 馬 2（第4.91版）（{len(ASSET_FILES)}）')
+    check('root.TengelBoardArt = {' in html and 'root.TengelBoardPhantom = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html and 'bcx_ph0.webp' in html
+          and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('root.TengelBoardPhantom = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {'),
+          'アプリの画面に 結果ボードカスタム（絵・幻の 馬・飾りの しくみ・設定の カード・商品）が入っている（第4.91版）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

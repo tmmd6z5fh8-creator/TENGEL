@@ -204,6 +204,29 @@
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
+    // 第4.91版：結果ボードカスタム（買い切り）。シミュレーターでは App内課金の 商品が 読めない ことが 多いので、買わずに 設定の「▶ 見る」と 同じ ためしで 飾りを 出す。
+    // 横断幕（登場：1秒で 止まる）と 出世馬 8連続（幻の 馬＝極ど的中の 紫の 馬の 絵は リポジトリに 入れない → CIでは SVG の 馬・ボードが 飛んで もどる）
+    await step(R, 'board', async function () {
+      var T = window.TengelBoard, F = window.TengelFx, Wl = window.TengelWallet; if (!T || !F) return { on: false };
+      var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
+      var res = { items: T.items().length, info: Wl && Wl.board ? Wl.board.info() : null, card: !!document.querySelector('#setBoard'), tiles: document.querySelectorAll('#setBoard .bct').length, buy: (document.querySelector('#setBoard [data-bcact=buy]') || {}).innerText || null };
+      if (res.info) { delete res.info.items; delete res.info.need; }
+      F.preview(spec, 'hit', { item: 'banner' }); await sleep(2600);
+      var hb = document.querySelector('#fxOv .hb'), c = document.querySelector('#fxOv .close');
+      res.banner = hb ? { bcx: hb.dataset.bcx || '', cls: hb.className, parts: hb.querySelectorAll('.bcx').length, close: c ? Math.round(c.getBoundingClientRect().top) : null } : null;
+      await mark('board-banner');
+      F.close(); await sleep(300);
+      F.preview(spec, 'hit', { item: 'rise', streak: 8 }); await sleep(3300);
+      hb = document.querySelector('#fxOv .hb');
+      res.rise8 = { ph: !!document.querySelector('#fxOv .bcph'), svg: !!document.querySelector('#fxOv .bcph svg'), fly: !!(hb && hb.classList.contains('bcfly')) };
+      await mark('board-rise8');
+      await sleep(3300);
+      hb = document.querySelector('#fxOv .hb');
+      res.rise8b = { ph: !!document.querySelector('#fxOv .bcph'), items: hb ? hb.querySelectorAll('.bc-it').length : 0, rib: (document.querySelector('#fxOv .bc-rib') || {}).textContent || null };
+      await mark('board-rise8-back');
+      F.close(); await sleep(200);
+      return res;
+    });
     // 第4弾：着せ替え。テーマを 切り替えて（解放の 確認は test_native）判定タブの 上の絵・色・字・テーマの 的中PUSH と ボードを 確かめる。
     // 見本の絵（ks_<id>.webp）は リポジトリに 入れないので、CIでは 404（なしでも 動く ことを 確かめる）。字（ks の WOFF2）と ks_<id>.json は 入っている
     await step(R, 'kisekae', async function () {

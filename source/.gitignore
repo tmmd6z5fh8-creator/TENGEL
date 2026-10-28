@@ -13,5 +13,6 @@ __pycache__/
 t5/
 ios_out/
 srv_fx/
+srv_bcx/
 ios/fx_assets/
 ios/kisekae_blobs/

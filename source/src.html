@@ -2274,13 +2274,13 @@ document.addEventListener('tengel:notify', () => { syncNotify().then(() => { if 
 
 // --- 的中ボタン（第3弾・10章）：結果を保存したあとに 1つだけ出す（ど的中＞デカ的中＞的中／当たりなし＝ハズレのボード）。
 //     出さないとき：中止・全部返還（※仮）・あとで記録を直したとき（一度出した記録＝rsv.fx が入っている）・まだ結果待ちの券種があるとき。中身は fx.js
-function fxAfterSave(b, j, res, done, fields) {
+function fxAfterSave(b, j, res, done, fields, streak) {
   const F = Fx(); if (!F || !done || res.abandoned || (b.rsv && b.rsv.fx) || j.state === '返還' || j.state === '結果待ち' || j.state === '—') return null;
   const ranks = {}; rankOrder(b.horses || []).forEach((no, i) => { ranks[no] = i + 1; });
   const types = (b.rsv.types && b.rsv.types.length) ? b.rsv.types : typesOf(b);
   const rows = types.map(t => { const p = j.per[t] || { state: '—', hit: [], n: 0 }; return { t, state: p.state, hits: p.hit || [], n: p.n || 0 }; });
   let kind = null;
-  try { kind = F.show({ id: b.id, r: b.r, n: +b.n || 0, rows, ranks }); } catch (e) { kind = null; }
+  try { kind = F.show({ id: b.id, r: b.r, n: +b.n || 0, rows, ranks, streak: streak == null ? null : streak }); } catch (e) { kind = null; }
   if (kind) writeBet(b.id, { rsv: { ...fields.rsv, fx: kind } }, false).catch(() => {});   // 出した印（同じ記録を直しても、もう出さない）
   return kind;
 }
@@ -2440,6 +2440,7 @@ async function saveRsvf(box, btn) {
   const flat = res.p.flat(); if (new Set(flat).size !== flat.length) return fail('同じ馬番が2つの着に入っているよ');
   const j = R.judge(b.rsv.bets, res, +b.n || 0), rk = rsvRanks(b, res);
   const done = res.abandoned || j.placed >= 2;
+  const wasJudged = !!(b.rsv && b.rsv.judged);              // 前に 結果を 決めた ことが ある（直した とき）：出世馬の 連続には 数えない
   if (mode === 'result' && !done) return fail(j.placed ? `あと${j.placed < 2 ? '2着' : '3着'}まで入れると結果が決まるよ（中止なら「中止」を選んでね）` : '1着・2着の馬番を入れてね（結果の画像からも読めるよ・中止なら「中止」）');
   if (mode === 'result' && done) st.rsvAmt = id;            // 結果が 決まった → この行は 次に 金額の 欄で 出す（演出の うしろで 入れかわる）
   const amt = {}; let stake = null, payout = null;
@@ -2463,8 +2464,11 @@ async function saveRsvf(box, btn) {
     const msg = mode === 'result' ? `結果を記録したよ（${j.state}）${per}` : mode === 'amount' ? `金額を記録したよ（${j.state}）${per}${mmsg}` : done ? `保存できたよ（${j.state}）${per}${mmsg}` : `保存したよ（まだ結果待ち）${mmsg}`;
     if (mode === 'amount') st.rsvAmt = null;                 // 金額まで 入れた → 次に 開いた ときは 全部の 欄（あとから 直す 形）
     setSaveMsg(id, true, msg);
+    // 結果ボードカスタム「出世馬」（第4.91版）：結果が はじめて 決まった レースで 連続的中を 数える（どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。中止・全部返還は 数えない）
+    let streak = null;
+    if (done && !wasJudged && !res.abandoned && (j.state === '的中' || j.state === '不的中')) { const Wl = Wallet(); if (Wl && Wl.board) { try { streak = await Wl.board.result(id, j.state === '的中'); } catch (se) { streak = null; } } }
     // 的中ボタンの 演出：結果が 決まった ときだけ（1レースに 1回）。設定の「的中エフェクト」が オフなら 出さずに そのまま 金額の 欄へ（第4.65版）
-    const F = Fx(), fxKind = F && F.get && F.get().effects === false ? null : fxAfterSave(b, j, res, done, fields);
+    const F = Fx(), fxKind = F && F.get && F.get().effects === false ? null : fxAfterSave(b, j, res, done, fields, streak);
     if (!fxKind) toast('✅ ' + msg, 4200);
     if (mode === 'result' && done && fxKind) rsvAfterFx = id;   // 演出を 閉じたら 金額の 欄へ スクロール
   } catch (e) { setSaveMsg(id, false, errText(e)); writeErr(e); }

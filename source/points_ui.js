@@ -3,6 +3,8 @@
 //  ・アプリを消すと台帳も消える（5章）。キーチェーンには「しるし」だけ：初回プレゼント（gift-first）・サブスクのPを足した取引（granted-sub）
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
+//  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
+//    21こを 順に 解放（points.js の BOARD）。使うのは 1つ（board.sel）。出世馬の 連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）
 //  ・ほかの画面から使う窓口：window.TengelWallet
 (function () {
   'use strict';
@@ -21,13 +23,17 @@
   const emit = () => { try { document.dispatchEvent(new CustomEvent('tengel:wallet')); } catch (e) { /* なし */ } };
 
   // ---------- 台帳（アプリの中） ----------
-  // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態） }
+  // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態）,
+  //                   board{ reads（買った あとに 読み込んだ レース）, sel（使う もの・'none'＝なし）, streak（出世馬：連続的中）, res[]（連続に 数えた レース） } }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
-  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '' });
+  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, sel: '', streak: 0, res: [] } });
   function normalize(w) {
     const o = Object.assign(blank(), w && typeof w === 'object' ? w : {});
     o.id = 'wallet'; o.events = Array.isArray(o.events) ? o.events.filter(Boolean) : []; o.paid = Array.isArray(o.paid) ? o.paid : []; o.counted = o.counted && typeof o.counted === 'object' ? o.counted : {};
+    o.board = Object.assign({ reads: 0, sel: '', streak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
+    if (!Array.isArray(o.board.res)) o.board.res = [];
+    o.board.reads = Math.max(0, Math.floor(+o.board.reads || 0)); o.board.streak = Math.max(0, Math.floor(+o.board.streak || 0));
     if (!o.device) o.device = newId();
     return o;
   }
@@ -78,18 +84,21 @@
   async function takeTx(tx, src) {
     if (!tx || !tx.id) return 0;
     let added = 0;
+    const isUnlock = (P.PRODUCTS[tx.product] || {}).kind === 'unlock';
     if (tx.revoked) {
       const rf = P.refundEvent(W.events, tx, Date.now());
-      if (rf) { W.events.push(rf); added = rf.amount; await save(); toast(`返金があったので ${pts(-rf.amount)} を引いたよ`, 4000); }
+      if (rf) { W.events.push(rf); added = rf.amount; await save(); toast(isUnlock ? '返金があったので、結果ボードカスタムを使えなくしたよ' : `返金があったので ${pts(-rf.amount)} を引いたよ`, 4000); if (isUnlock) boardEmit('refund'); }
     } else if (!P.has(W.events, 'tx-' + tx.id)) {
       const done = tx.kind === 'sub' ? await grantedSubs() : [];
       if (tx.kind === 'sub' && done.includes(String(tx.id))) { /* 入れ直し・ほかの端末で、もうこの取引のPは足してある */ }
       else {
+        const had = P.boardOwned(W.events);
         const e = P.txEvent(W.events, tx, Date.now());
         if (e) {
           W.events.push(e); added = e.amount; await save();
           if (tx.kind === 'sub') await rememberSub(tx.id);
-          if (src !== 'buy') toast(`✨ ${P.PRODUCTS[tx.product] ? P.PRODUCTS[tx.product].name : ''}の ${pts(e.amount)} が届いたよ`, 4000);
+          if (e.kind === 'unlock') { if (!had) { boardEmit('owned', { src }); if (src !== 'buy') toast((src === 'update' ? '✨ 結果ボードカスタムが届いたよ' : '✅ 結果ボードカスタムを もどしたよ') + (W.board.reads ? '' : '（解放は これから 読み込む レースの 数で）'), 4600); } }
+          else if (src !== 'buy') toast(`✨ ${P.PRODUCTS[tx.product] ? P.PRODUCTS[tx.product].name : ''}の ${pts(e.amount)} が届いたよ`, 4000);
         }
       }
     }
@@ -100,15 +109,22 @@
     const r = await iap('unfinished');
     if (r && r.ok && Array.isArray(r.list)) for (const tx of r.list) await takeTx(tx, 'boot');
   }
+  // 買い切り（結果ボードカスタム）は いま 有効な もの（Apple の currentEntitlements）にも ある：入れ直し・ほかの 端末でも アプリを 開くと もどる
+  async function pullEntitlements() {
+    const r = await iap('current');
+    if (r && r.ok && Array.isArray(r.list)) for (const tx of r.list) if (tx && tx.kind === 'unlock') await takeTx(tx, 'boot');
+  }
   document.addEventListener('tengel:native', e => { const d = e.detail || {}; if (d.name === 'iap' && d.payload && W) takeTx(d.payload, 'update'); });
   async function buy(id, btn) {
     const Pd = P.PRODUCTS[id]; if (!Pd) return;
+    const label = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'App Store…'; }
     const r = await iap('buy', { id });
-    if (btn) { btn.disabled = false; btn.textContent = Pd.kind === 'sub' ? 'はじめる' : '買う'; }
+    if (btn) { btn.disabled = false; btn.textContent = label || (Pd.kind === 'sub' ? 'はじめる' : '買う'); }
     if (r && r.ok && r.tx) {
       const added = await takeTx(r.tx, 'buy');
-      toast(added ? `✅ ${pts(added)} が届いたよ（合計 ${pts(total())}）` : '✅ 買えたよ（このPはもう入っているよ）', 4000);
+      if (Pd.kind === 'unlock') toast(P.boardOwned(W.events) ? `🎉 ${Pd.name}を買ったよ！ これから 読み込む レース 5つで 1つめが 解放されるよ` : '✅ 買えたよ', 4800);
+      else toast(added ? `✅ ${pts(added)} が届いたよ（合計 ${pts(total())}）` : '✅ 買えたよ（このPはもう入っているよ）', 4000);
       if (Pd.kind === 'sub') refreshSubStatus();
     } else if (r && r.state === 'cancelled') { /* やめた */ }
     else if (r && r.state === 'pending') toast('承認待ちだよ。承認されたらPが届くよ（アプリを開いたときに入るよ）', 4600);
@@ -120,10 +136,12 @@
     if (btn) { btn.disabled = false; btn.textContent = '購入を復元'; }
     if (!r || !r.ok) { toast('復元できなかったよ：' + ((r && r.error) || '不明'), 4200); return; }
     let added = 0;
+    const had = P.boardOwned(W.events);
     for (const tx of (r.unfinished || [])) added += await takeTx(tx, 'restore');
-    for (const tx of (r.current || [])) if (tx.kind === 'sub') added += await takeTx(tx, 'restore');
+    for (const tx of (r.current || [])) if (tx.kind === 'sub' || tx.kind === 'unlock') added += await takeTx(tx, 'restore');
     await refreshSubStatus();
-    toast(added ? `✅ ${pts(added)} を足したよ` : '✅ Appleと合わせたよ（足すPはなかったよ）', 4000);
+    const got = !had && P.boardOwned(W.events);
+    toast(added ? `✅ ${pts(added)} を足したよ${got ? '・結果ボードカスタムを もどしたよ' : ''}` : got ? '✅ 結果ボードカスタムを もどしたよ' + (W.board.reads ? '' : '（解放は これから 読み込む レースの 数で）') : '✅ Appleと合わせたよ（足すものはなかったよ）', 4600);
   }
   async function refreshSubStatus() { const r = await iap('status'); subStatus = r && r.ok ? r : null; paintPoints(); }
 
@@ -157,8 +175,53 @@
     const same = P.findPaid(W.paid.filter(e => !e.w5), race);
     if (same) { stamp(same); await save(); return { ok: true, charged: false, free: 'same', pid: same.pid }; }
     if (!charge(P.COST.read, READ_WHAT(race))) return { ok: false, need: P.COST.read, have: total() };
-    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid(); await save();
+    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid();
+    const bu = boardRead();
+    await save();
+    if (bu) boardEmit('unlock', { item: bu.id, no: bu.no });
     return { ok: true, charged: true, free: null, pid: e.pid };
+  }
+
+  // ---------- 結果ボードカスタム（第4.91版）----------
+  function boardEmit(phase, d) { try { document.dispatchEvent(new CustomEvent('tengel:board', { detail: Object.assign({ phase }, d || {}) })); } catch (e) { /* なし */ } }
+  // 買った あとの 読み込み（200P を 使った 1レース）を 数える。新しく 解放した ものを 返す（はじめて なら それを 使う ものに）
+  function boardRead() {
+    if (!W || !P.boardOwned(W.events)) return null;
+    const bd = W.board, before = P.boardUnlocked(bd.reads);
+    bd.reads = (+bd.reads || 0) + 1;
+    const after = P.boardUnlocked(bd.reads);
+    if (after <= before) return null;
+    const it = P.BOARD_ITEMS[after - 1];
+    if (!bd.sel) bd.sel = it.id;
+    return it;
+  }
+  function boardInfo() {
+    const owned = !!W && P.boardOwned(W.events), bd = (W && W.board) || { reads: 0, sel: '', streak: 0 };
+    const n = owned ? P.boardUnlocked(bd.reads) : 0;
+    return { owned, reads: owned ? bd.reads : 0, n, next: owned ? P.boardNext(bd.reads) : null, sel: bd.sel || '', streak: bd.streak || 0, items: P.BOARD_ITEMS, need: P.BOARD_NEED };
+  }
+  // いま ボードに つける もの（買って いて・解放ずみで・選んで いる もの）。なし なら ''
+  function boardActive() {
+    const i = boardInfo(); if (!i.owned || !i.sel || i.sel === 'none') return '';
+    const it = P.BOARD_ITEMS.find(x => x.id === i.sel);
+    return it && it.no <= i.n ? it.id : '';
+  }
+  async function boardSelect(id) {
+    await walletReady;
+    const i = boardInfo();
+    if (id !== 'none') { const it = P.BOARD_ITEMS.find(x => x.id === id); if (!it || !i.owned || it.no > i.n) return false; }
+    W.board.sel = id; await save(); boardEmit('select', { item: id });
+    return true;
+  }
+  // 出世馬：結果を 決めた レース（同じ レースは 1回）。どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。返り値：いまの 連続の 数
+  async function boardResult(id, hit) {
+    await walletReady;
+    const bd = W.board, key = String(id || '');
+    if (key && bd.res.includes(key)) return bd.streak;
+    bd.streak = hit ? (+bd.streak || 0) + 1 : 0;
+    if (key) { bd.res.push(key); if (bd.res.length > 400) bd.res = bd.res.slice(-300); }
+    await save();
+    return bd.streak;
   }
 
   // ---------- ミッション：記録したレースを数える ----------
@@ -334,6 +397,7 @@
     const k = String(key || ''); if (k.startsWith('type:')) return k.slice(5);
     if (k.startsWith('slot:')) { const n = +k.slice(5); try { return (TL.slots.names() || {})[n] || `マザーデータ${n}`; } catch (e) { return `マザーデータ${n}`; } }
     if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } return `壁紙 ${k.slice(6)}`; }
+    if (k === 'board') return '結果ボードカスタム（買い切り）';
     return k;
   }
   function paintCustom() {
@@ -445,7 +509,7 @@
     if (!paintHint.base) paintHint.base = el.textContent;
     el.textContent = `${paintHint.base}・1レース 200P（いま ${pts(total())}）`;
   }
-  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); dbPillLink(); paintMissionOv(); }
+  function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); dbPillLink(); paintMissionOv(); try { paintTestBoard(); } catch (e) { /* なし */ } }
   async function onClick(e) {
     const b = e.target.closest('[data-pt]'); if (!b) return;
     const act = b.dataset.pt;
@@ -603,7 +667,7 @@
   function testSpec(kind) {
     const tri = { t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, um = { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }, wd = { t: 'ワイド', state: '不的中', hits: [], n: 6 };
     const rows = kind === 'miss' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), Object.assign({}, um, { state: '不的中', hits: [] }), wd] : kind === 'hit' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), um, wd] : [tri, um, wd];
-    return { r: 9, n: 14, rows: rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 }, force: kind };
+    return { r: 9, n: 14, rows: rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 }, force: kind, streak: kind === 'miss' ? 0 : Math.max(1, (W && W.board && W.board.streak) || 1) };
   }
   function testCard() {
     if (!window.__TEST) return;
@@ -612,14 +676,29 @@
     c.innerHTML = '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。はじめから 10,000P 入って いるよ。</p>'
       + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button></div>'
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
-      + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>';
+      + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
+      + '<p class="hint" style="margin:10px 0 6px">結果ボードカスタム（App Store の 買い物は しない）：<span id="testBoard"></span></p>'
+      + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +5</button><button type="button" class="btn" data-test="ball">全部 解放</button><button type="button" class="btn" data-test="bst">連続的中 +1</button><button type="button" class="btn" data-test="bst0">連続 0</button></div>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
       if (b.dataset.test === 'pts') { W.events.push(P.giftEvent(Date.now(), TEST_GIFT, 'gift-test-' + Date.now(), 'テスト版のポイント')); await save(); paintAll(); toast(`テスト用に ${pts(TEST_GIFT)}を 足したよ（いま ${pts(total())}）`, 2600); }
       else if (b.dataset.test === 'fx' && window.TengelFx) { try { window.TengelFx.prime(); } catch (x) { /* なし */ } window.TengelFx.show(testSpec(b.dataset.kind)); }
+      else if (b.dataset.test === 'bown') { if (!P.boardOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-' + now, product: P.BOARD.product, date: new Date(now).toISOString() }, now)); await save(); boardEmit('owned', { src: 'test' }); toast('🧪 結果ボードカスタムを 買ったことにしたよ', 2600); } }
+      else if (b.dataset.test === 'bread' || b.dataset.test === 'ball') {
+        if (!P.boardOwned(W.events)) { toast('先に「買ったことにする」を 押してね', 2600); return; }
+        const n0 = P.boardUnlocked(W.board.reads);
+        W.board.reads = b.dataset.test === 'ball' ? P.BOARD_NEED[P.BOARD_NEED.length - 1] : W.board.reads + 5;
+        const n1 = P.boardUnlocked(W.board.reads);
+        if (n1 > n0 && !W.board.sel) W.board.sel = P.BOARD_ITEMS[n1 - 1].id;
+        await save(); if (n1 > n0) boardEmit('unlock', { item: P.BOARD_ITEMS[n1 - 1].id, no: n1, many: n1 - n0 });
+      }
+      else if (b.dataset.test === 'bst' || b.dataset.test === 'bst0') { W.board.streak = b.dataset.test === 'bst' ? W.board.streak + 1 : 0; await save(); }
+      paintTestBoard();
     });
+    paintTestBoard();
   }
+  function paintTestBoard() { const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/21・連続的中 ${i.streak}`; }
 
   // ---------- 起動 ----------
   let resolveReady; const walletReady = new Promise(r => { resolveReady = r; });
@@ -636,13 +715,16 @@
     paintAll();
     try { await giftCheck(); } catch (e) { /* つぎに開いたとき */ }
     try { await testGift(); } catch (e) { /* テスト版だけ */ }
-    pullTransactions().catch(() => {});
+    pullTransactions().then(pullEntitlements).catch(() => {});
     refreshSubStatus().catch(() => {});
   }
   window.TengelWallet = {
     on: true, ready: walletReady, COST: P.COST,
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,
     readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions, openPoints, closePoints,
+    // 結果ボードカスタム（第4.91版・bcx.js が 使う）
+    board: { info: boardInfo, active: boardActive, select: boardSelect, result: boardResult, buy: btn => buy(P.BOARD.product, btn), restore: btn => restore(btn),
+      price: () => price(P.BOARD.product), products: () => loadProducts(false) },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },

@@ -1,7 +1,7 @@
 import Foundation
 import StoreKit
 
-/// App内課金（StoreKit 2）：ポイントのパック（消耗型）とサブスク（1か月・自動更新）。
+/// App内課金（StoreKit 2）：ポイントのパック（消耗型）とサブスク（1か月・自動更新）と 結果ボードカスタム（非消耗型・買い切り：第4.91版）。
 /// 買う・届く・終わらせる（finish）はここ。ポイントを台帳に足すのはWebの画面（points_ui.js）で、
 /// 台帳に書けたら Web → アプリ に finish をお願いする（書く前には終わらせない）。
 /// 新しい取引（更新・返金・ほかの端末での購入）は Transaction.updates で届くので、Webの画面に知らせる（window.__nativeEvent('iap', …)）。
@@ -10,7 +10,16 @@ final class Store {
     static let shared = Store()
     static let packIDs = ["jp.tengel.app.points500", "jp.tengel.app.points1000", "jp.tengel.app.points2000", "jp.tengel.app.points4000"]
     static let subIDs = ["jp.tengel.app.sub2000", "jp.tengel.app.sub4400", "jp.tengel.app.sub9200"]
-    static var allIDs: [String] { packIDs + subIDs }
+    /// 非消耗型（買い切り）：結果ボードカスタム。買った あとも いま 有効な もの（currentEntitlements）に 入るので、入れ直し・ほかの 端末でも もどせる
+    static let unlockIDs = ["jp.tengel.app.boardcustom"]
+    static var allIDs: [String] { packIDs + subIDs + unlockIDs }
+
+    /// 取引の 種類（Webの画面に 渡す 名前）
+    static func kindOf(_ id: String) -> String {
+        if subIDs.contains(id) { return "sub" }
+        if unlockIDs.contains(id) { return "unlock" }
+        return "pack"
+    }
 
     private var products: [String: Product] = [:]
     private var listener: Task<Void, Never>?
@@ -38,7 +47,7 @@ final class Store {
             products = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
             let rows: [[String: Any]] = Self.allIDs.compactMap { id in
                 guard let p = products[id] else { return nil }
-                var d: [String: Any] = ["id": id, "title": p.displayName, "price": p.displayPrice, "kind": Self.subIDs.contains(id) ? "sub" : "pack",
+                var d: [String: Any] = ["id": id, "title": p.displayName, "price": p.displayPrice, "kind": Self.kindOf(id),
                                         "amount": NSDecimalNumber(decimal: p.price).doubleValue, "currency": p.priceFormatStyle.currencyCode]
                 if let s = p.subscription { d["period"] = "\(s.subscriptionPeriod.value)\(s.subscriptionPeriod.unit)" }
                 return d
@@ -87,7 +96,7 @@ final class Store {
         return out
     }
 
-    /// いま有効なもの（サブスクの今の期間・まだ終わらせていない消耗型）。「購入を復元」でAppleと合わせたあとに見る
+    /// いま有効なもの（サブスクの今の期間・まだ終わらせていない消耗型・買い切り）。「購入を復元」でAppleと合わせたあと・アプリを開いたときに見る
     func current() async -> [[String: Any]] {
         var out: [[String: Any]] = []
         for await result in Transaction.currentEntitlements {
@@ -152,7 +161,7 @@ final class Store {
     static func dict(_ tx: Transaction) -> [String: Any] {
         let f = ISO8601DateFormatter()
         var d: [String: Any] = ["id": String(tx.id), "originalId": String(tx.originalID), "product": tx.productID,
-                                "kind": subIDs.contains(tx.productID) ? "sub" : "pack", "date": f.string(from: tx.purchaseDate),
+                                "kind": kindOf(tx.productID), "date": f.string(from: tx.purchaseDate),
                                 "revoked": tx.revocationDate != nil, "env": tx.environment.rawValue]
         if let e = tx.expirationDate { d["expires"] = f.string(from: e) }
         if let r = tx.revocationDate { d["revokedAt"] = f.string(from: r) }

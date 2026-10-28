@@ -13,7 +13,9 @@
     'jp.tengel.app.points4000': { kind: 'pack', points: 4000, bonus: 0, name: '4,000ポイント', yen: 1408 },
     'jp.tengel.app.sub2000': { kind: 'sub', points: 2000, bonus: 0, name: '月2,000Pプラン', yen: 638 },
     'jp.tengel.app.sub4400': { kind: 'sub', points: 4400, bonus: 400, name: '月4,400Pプラン', yen: 1276 },
-    'jp.tengel.app.sub9200': { kind: 'sub', points: 9200, bonus: 1000, name: '月9,200Pプラン', yen: 1914 }
+    'jp.tengel.app.sub9200': { kind: 'sub', points: 9200, bonus: 1000, name: '月9,200Pプラン', yen: 1914 },
+    // 第4.91版：結果ボードカスタム（買い切り・非消耗型）。1回 買えば ずっと（機種変更・入れ直しは「購入を復元」）
+    'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 2200 }
   };
   var PACKS = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points2000', 'jp.tengel.app.points4000'];
   var SUBS = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400', 'jp.tengel.app.sub9200'];
@@ -27,6 +29,34 @@
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
   var BUCKETS = ['paid_sub', 'paid_pack', 'free'];
+  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、21こを 番号の 順に 1つずつ 解放する
+  //   1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜21：8レースごと（全部で 138レース）。読み直し（0P）・5連の 予想は 数えない
+  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[5, 5], [5, 6], [5, 7], [6, 8]] };
+  var BOARD_NEED = (function () { var out = [], n = 0; BOARD.steps.forEach(function (st) { for (var i = 0; i < st[0]; i++) { n += st[1]; out.push(n); } }); return out; })();
+  // 21こ（番号の 順＝解放の 順）。when：all＝いつも・hit＝的中の とき・big＝デカ的中から 上・miss＝ハズレの とき
+  var BOARD_ITEMS = [
+    ['orbit', 'ボードを一周', 'ボードのまわりを、馬がぐるぐる走る', 'all'],
+    ['goal', 'ゴール板', 'ボードの下の帯を走って、ゴールに駆け込む', 'all'],
+    ['peek', 'ひょっこり', 'ボードの下から馬が顔を出して、まばたき', 'all'],
+    ['nap', '上でお昼寝', 'ボードの上で馬が寝そべって、しっぽがゆらゆら', 'all'],
+    ['hang', 'ぶら下がり', 'ボードの角に子馬がぶら下がって、足をぱたぱた', 'all'],
+    ['cheer', 'ハズレの励まし', 'ハズレのとき、馬がボードにもたれて「次いこ！」', 'miss'],
+    ['crowd', '観客席', 'ボードの下で、観客の馬たちが歓声と拍手', 'all'],
+    ['selfie', '自撮り', '馬が自撮り棒で、ボードといっしょにパシャ', 'all'],
+    ['bite', 'くわえて持つ', '馬がボードのすみをくわえて持つ', 'all'],
+    ['stand', '馬がボード発表', '立った馬がボードを持つ（下は脚だけ見える）', 'all'],
+    ['banner', '横断幕', '馬がボードを持って走ってくる', 'all'],
+    ['stamp', '蹄のハンコ', '的中のとき、数字のない所に「的中」スタンプをドン', 'hit'],
+    ['flower', 'お花が咲く', 'ボードのまわりにお花が咲く（暗いテーマは色を合わせる）', 'all'],
+    ['pop', 'ぽよん', '下から出てきて、着地でぷるんと弾む', 'all'],
+    ['drop', 'ドスン', '上から落ちてきて、少しつぶれて戻る', 'all'],
+    ['flip', 'カードめくり', '裏向きで出てきて、くるっと表になる', 'all'],
+    ['slide', 'すべり込み', '横からシュッと入って、ピタッと止まる', 'all'],
+    ['float', 'ふわふわ', '出たあと、ゆっくり上下に浮く', 'all'],
+    ['thump', '大きな的中', 'デカ的中から上のとき、ボードが「ドン！」と1回跳ねる', 'big'],
+    ['droop', 'ハズレ', 'ハズレのとき、少しだけ傾いて、しょんぼり', 'miss'],
+    ['rise', '出世馬', '連続で当たると、ボードのまわりの飾りが豪華になっていく', 'hit']
+  ].map(function (r, i) { return { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i] }; });
 
   function iso(d) { return (d instanceof Date ? d : new Date(d || Date.now())).toISOString(); }
   function tms(s) { var t = Date.parse(s); return isFinite(t) ? t : 0; }
@@ -93,6 +123,7 @@
     if ((events || []).some(function (e) { return e && e.id === id; })) return null;
     var at = tx.date && tms(tx.date) ? new Date(tms(tx.date)).toISOString() : iso(now);
     if (P.kind === 'sub') return mk(id, 'sub', 'paid_sub', P.points, at, { bonus: P.bonus, product: tx.product, tx: String(tx.id), otx: String(tx.originalId || ''), expires: addDays(at, SUB_DAYS) });
+    if (P.kind === 'unlock') return mk(id, 'unlock', '', 0, at, { what: P.what, product: tx.product, tx: String(tx.id), otx: String(tx.originalId || ''), use: { paid_sub: 0, paid_pack: 0, free: 0 } });
     return mk(id, 'purchase', 'paid_pack', P.points, at, { product: tx.product, tx: String(tx.id), otx: String(tx.originalId || '') });
   }
   // 返金（取引に revocationDate がついた）→ できごと。元の取引が台帳になければ null
@@ -132,6 +163,29 @@
   }
   function unlocked(events, key) { var id = 'unlock-' + key; return (events || []).some(function (e) { return e && e.id === id; }); }
   function has(events, id) { return (events || []).some(function (e) { return e && e.id === id; }); }
+
+  // ---- 結果ボードカスタム（第4.91版）----
+  // 買った（取引の できごと tx-… の unlock・what＝board）か。返金（refund-<取引>）が あれば 買って いない
+  function boardOwned(events) {
+    var es = events || [], own = false;
+    es.forEach(function (e) {
+      if (!e || e.kind !== 'unlock' || e.what !== 'board') return;
+      if (e.tx && es.some(function (r) { return r && r.id === 'refund-' + e.tx; })) return;
+      own = true;
+    });
+    return own;
+  }
+  // 読み込んだ レースの 数 → 解放した 数（0〜21）
+  function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
+  // つぎに 解放する もの（全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
+  function boardNext(reads) {
+    var n = boardUnlocked(reads); if (n >= BOARD_ITEMS.length) return null;
+    var it = BOARD_ITEMS[n];
+    return { item: it, need: it.need, left: it.need - (+reads || 0), from: n ? BOARD_NEED[n - 1] : 0 };
+  }
+  // 出世馬の 飾りの 段（第4.91版・まさちゃんの 指定）：1回目＝クラッカーと花束・2回目＝金メダルとスポットライト・3回目＝トロフィーと金粉・
+  //   4〜7回目＝黄金の どでかい冠と 金の 札束（大量）・8回目から＝幻の 馬（咆哮・ボードが 飛んで いく・暗い 雷 3秒 → ボードが もどる）→ 冠と 札束
+  function riseTier(streak) { var k = +streak || 0; return k <= 0 ? 0 : k >= 8 ? 8 : k >= 4 ? 4 : k; }
 
   // ---- ミッション（記録の数）----
   function missionAt(i) {
@@ -179,6 +233,7 @@
 
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
+    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, riseTier: riseTier,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

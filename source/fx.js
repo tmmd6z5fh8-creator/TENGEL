@@ -246,7 +246,7 @@
   function sdStill() {
     if (!cur || cur.on === 2) return;
     clearTimers(); cur.on = 2;
-    if (cur.pre && cur.pre < 4) { if (cur.v) park(cur.v); cur.v = null; cur.pre = 4; cur.stage.innerHTML = cur.sdHtml; }   // ノーマルの 動画から 入る とちゅう → 極ど的中の 幕に
+    if (cur.pre && cur.pre < 4) { if (cur.v) park(cur.v); cur.v = null; cur.pre = 4; cur.stage.innerHTML = cur.sdHtml; boardCustom(); }   // ノーマルの 動画から 入る とちゅう → 極ど的中の 幕に
     if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
     const ov = sdOv(); if (ov) ov.classList.add('still');
     sfx('sd', A.t.SDS.FROM, A.t.SDS.WAIT);
@@ -284,6 +284,7 @@
     if (!cur || cur.kind !== 'sd' || cur.pre !== 3) return;
     cur.pre = 4; cur.on = 0;
     cur.stage.innerHTML = cur.sdHtml;                                // 極ど的中の 幕（黒・プチュンは ここから 動く）
+    boardCustom();
     sfx('sdp'); sdGo();
     emit('up');
   }
@@ -409,7 +410,7 @@
     if (kind === 'sd') { video('sd_film'); video('nd_film'); }          // 第4.77版：極ど的中は ノーマルど的中の 動画から 入る
     if (kind === 'nd') video('nd_film');
   }
-  function open(kind, spec, supers, bigs, quiet) {
+  function open(kind, spec, supers, bigs, quiet, direct) {
     close(true); css();
     const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '');
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'レースの結果');
@@ -420,7 +421,8 @@
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (!quiet) preload(kind);
-    if (kind === 'miss' || quiet) reveal(); else push();
+    if (direct && cur) { cur.bcItem = direct.item || ''; cur.bcStreak = direct.streak; }
+    if (kind === 'miss' || quiet || direct) reveal(); else push();
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
   // 的中 1.0・デカ的中 1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
@@ -485,6 +487,11 @@
     if (!reduced()) r.innerHTML = `<animateTransform attributeName="transform" type="translate" from="0 0" to="${vw} 0" dur="${calm() ? 3.2 : 1.6}s" repeatCount="indefinite"/>`;
     og.appendChild(r); svg.appendChild(og);
   }
+  // 結果ボードカスタム（第4.91版・bcx.js）：ボード（.hb）が ある 画面に なったら 飾りを つける（ボードが 出おわってから 動く）
+  function boardCustom() {
+    if (!cur) return;
+    try { if (window.TengelBoard && window.TengelBoard.decorate) window.TengelBoard.decorate(cur.stage, { kind: cur.kind, quiet: cur.quiet, calm: calm(), spec: cur.spec, item: cur.bcItem || '', streak: cur.bcStreak }); } catch (e) { /* 飾りなしで 出す */ }
+  }
   function reveal() {
     if (!cur || cur.phase === 'reveal') return;
     const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers, cur.bigs);
@@ -504,6 +511,7 @@
     cur.stage.innerHTML = html;
     if (tapScr && !calm()) sfx('ndt');                                                     // 押した 瞬間の 音（ポチッ・トンッ・キラン：動画を 待たない）
     cur.phase = 'reveal'; cur.ov.classList.add('rv');
+    boardCustom();
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();
       else if (k === 'spg') spgGo();
@@ -527,6 +535,13 @@
     document.documentElement.classList.remove('fxon');
     try { if (WL() && WL().lockZoom) WL().lockZoom(false); } catch (e) { /* なし */ }
     if (!silent) emit('close', c.kind);
+  }
+  // 結果ボードカスタムを ためす（設定 › 結果ボードカスタム：PUSH なしで すぐ 結果の 画面。o.item＝つける もの・o.streak＝出世馬の 連続の 数）
+  function preview(spec, kind, o) {
+    if (!spec) return null;
+    const d = decide(spec);
+    open(kind || d.kind, spec, d.supers, d.bigs, false, o || {});
+    return kind || d.kind;
   }
   // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。くじは ひかない）
   function show(spec) {
@@ -615,7 +630,8 @@
   }
 
   window.TengelFx = {
-    on: true, T: A.t, decide: decide, show: show, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
+    on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
+    audio: () => (S.sound ? actx() : null),
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
     video: video, _rand: null

@@ -68,7 +68,7 @@ def strip_text(path):
 
 def body_chars():
     txt = ''
-    for f in ('src.html', 'pwa_ui.js', 'points_ui.js', 'points.js', 'reserve.js', 'custom_rate.js', 'fx.js', 'kisekae.js', 'pwa_shim.js'):
+    for f in ('src.html', 'pwa_ui.js', 'points_ui.js', 'points.js', 'reserve.js', 'custom_rate.js', 'fx.js', 'kisekae.js', 'pwa_shim.js', 'bcx.js', 'bcx_art.js'):   # 第4.91版：結果ボードカスタム（設定の カード）
         p = os.path.join(SRC, f)
         if os.path.exists(p):
             txt += strip_text(p)

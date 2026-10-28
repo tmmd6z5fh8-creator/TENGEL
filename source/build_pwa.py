@@ -97,6 +97,9 @@ if TARGET == 'app':
     # 着せ替え（第4弾）：30テーマの変数・共通の形・@font-face（window.__KS）と kisekae.js。テーマごとの大きい分（壁紙・PUSH・ボード）は ks_<id>.json（下で書く）
     import build_kisekae as _ks
     html += '<script>\n' + _ks.bundle_js() + '\n</script>\n<script>\n' + open('kisekae.js', encoding='utf8').read() + '\n</script>\n'
+    # 結果ボードカスタム（第4.91版）：馬と 小物の 絵（bcx_art.js）・幻の 馬の 形（bcx_phantom.js：kisekae/board_phantom.py）・飾りと 選ぶ 画面（bcx.js）
+    for _f in ('bcx_art.js', 'bcx_phantom.js', 'bcx.js'):
+        html += '<script>\n' + open(_f, encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
