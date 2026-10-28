@@ -11,7 +11,8 @@
    第4.94版（まさちゃん「黄丸の脚の雷はもっと線細く！」「脚の雷の光が通ったところに光の線が残っているような演出して！」）：
      雷の 線を 細く（芯は 半分・まわりの 光は うすく）。ひづめの 通った あとに 水色の 光の すじ（pack/make/future_art.py の trail：
      ギャロップ 1回りに 20コマ）が 残って、レーンと 同じ はやさで うしろへ 流れて 0.5秒で うすく 消える（光で 絵を 描いた ような あと）。
-     レーンの 流れる はやさは 地面に ついた ひづめの はやさ（run の speed＝約200px／秒。前は 260px／秒で ひづめが 少し すべって 見えた）"""
+     レーンの 流れる はやさは 地面に ついた ひづめの はやさ（run の speed＝約200px／秒。前は 260px／秒で ひづめが 少し すべって 見えた）
+   第4.95版：足もとの 雷と 光の すじを もっと うすく（雷 0.45・すじ 0.4 の こさ：まさちゃん「もっと薄くていいよ！」）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -25,6 +26,8 @@ LANE_SPEED = 260    # レーンの 光の 流れ（px／秒）：馬の シー�
 
 
 # ---------------------------------------------------------------- 背景
+BOLT_OP, TRAIL_OP = .45, .4     # 第4.95版：足もとの 雷と 光の すじの こさ（まさちゃん「もっと薄くていいよ！」：前は 1）
+
 def sky_svg():
     defs = ("<linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#050816'/><stop offset='.45' stop-color='#0E1534'/>"
             "<stop offset='.8' stop-color='#1E1E52'/><stop offset='1' stop-color='#2C2364'/></linearGradient>"
@@ -272,14 +275,14 @@ def banner(B):
             css += (f'.ftw .ftB.b{v}{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;overflow:hidden;opacity:0;'
                     f'animation:ftZap .3s step-end {f(-0.1 * v, 2)}s infinite}}'
                     f'.ftw .ftB.b{v}>i{{left:0;top:0;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({bo["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
-                    f'animation:ftRun {RUN}s steps({n}) infinite}}')
+                    f'opacity:{BOLT_OP};animation:ftRun {RUN}s steps({n}) infinite}}')
         css += kf('ftZap', [(0, 'opacity:1'), (33.33, 'opacity:0'), (100, 'opacity:0')])
         tr = B.get('trail')
         if tr:
             tn, (tw, th), (tx, ty) = tr['frames'], tr['cell'], tr['at']
             css += (f'.ftw .ftTr{{left:{f(tx / 2)}px;top:{f(ty / 2)}px;width:{f(tw / 2)}px;height:{f(th / 2)}px;overflow:hidden}}'
                     f'.ftw .ftTr>i{{left:0;top:0;width:{f(tn * tw / 2)}px;height:{f(th / 2)}px;background:url({tr["url"]}) 0 0/{f(tn * tw / 2)}px {f(th / 2)}px no-repeat;'
-                    f'animation:ftTrail {RUN}s steps({tn}) infinite}}'
+                    f'opacity:{TRAIL_OP};animation:ftTrail {RUN}s steps({tn}) infinite}}'
                     + kf('ftTrail', [(100, f'transform:translateX({f(-tn * tw / 2)}px)')]))
     for cls, d, top, sc, sec, dl, col, gl in CARS:
         w, h = 86 * sc, 18 * sc
