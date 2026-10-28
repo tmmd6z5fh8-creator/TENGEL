@@ -3,7 +3,8 @@
      紙と 紙の あいだには やわらかい かげ（重なりの 奥行き）・紙の すじ（ざらっと した 手ざわり）。
      馬は 赤い 紙の 紙人形（体に 切りぬきの もよう・白い 紙が 下から のぞく・ティールの 鞍の 布・ぎざぎざの たてがみ）。足と しっぽは 金の ピンで とめた 別の 紙
    動き：馬の 足が ピンを 中心に ぱたぱた（ななめの 2本ずつ 交互）・体が ぴょこぴょこ 上下・しっぽが ゆれる。景色の 紙が 右から 左へ 流れる（遠いほど ゆっくり＝奥行き）・
-     太陽が ゆっくり 回る・紙の 鳥が はばたいて 横切る。強く 光らせない"""
+     太陽が ゆっくり 回る・紙の 鳥が はばたいて 横切る。強く 光らせない
+   第4.93版：足の ぱたぱたを 少し ゆっくり（1回り 0.5 → 0.68秒）・鳥の はねは 根もとを 体の 背中に 重ねて、根もとを 中心に はばたく（はなれて 見えない）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -16,7 +17,7 @@ BODY = [(18, 36), (22, 29), (32, 26.5), (46, 28.5), (56, 26), (62, 20), (67, 13)
         (90, 27.5), (83, 26.5), (77, 24.5), (72, 30), (67.5, 39), (65, 47), (61, 53), (48, 55), (31, 54), (22, 50.5), (16.5, 43)]
 EAR = [(70.6, 8.6), (73, -2.6), (76.4, 6.8)]
 PIV = dict(fn=(60, 45), hn=(25.5, 43), ff=(63, 44), hf=(29, 42), tail=(18.5, 33))     # ピンの 所（手前／奥の 前足・うしろ足・しっぽ）
-LEG_PER = 0.5          # 足の ぱたぱた 1回り（秒）
+LEG_PER = 0.68         # 足の ぱたぱた 1回り（秒）（第4.93版：まさちゃん「馬の脚の動きを少しゆっくりにして！」0.5 → 0.68）
 
 
 def paper_defs(seed=4, blur=1.1):
@@ -248,7 +249,8 @@ def bird_svg():
 
 
 def wing_svg():
-    return doc(16, 10, paper("M2 9 Q6 1 14 2 Q11 6 8 9 Z", '#5274AE', sh=None, tex=False), defs=paper_defs(1))
+    """はね（根もと＝下の 2〜8 が 体の 背中に 重なる：第4.93版 まさちゃん「鳥の羽が身体と離れてるからくっつけて！」）"""
+    return doc(16, 10, paper("M1.6 9.4 Q5.6 1 14 2 Q11.4 6 8.6 9.4 Q5 10.4 1.6 9.4 Z", '#5274AE', sh=None, tex=False), defs=paper_defs(1))
 
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
@@ -284,7 +286,7 @@ def banner(B):
            '.kgw .kgBd{left:0;top:0;width:20px;height:12px}'
            '.kgw .kgBd>img{position:absolute;display:block}'
            '.kgw .kgBb{left:0;top:0;width:20px;height:12px}'
-           '.kgw .kgWg{left:4px;top:-5px;width:12px;height:8px;transform-origin:50% 100%;animation:kgWing .38s ease-in-out infinite alternate}'
+           '.kgw .kgWg{left:5px;top:0;width:12px;height:8px;transform-origin:31% 86%;animation:kgWing .38s ease-in-out infinite alternate}'
            '.kgw .kgBd.b1{animation:kgB1 22s linear infinite}'
            '.kgw .kgBd.b2{animation:kgB2 22s linear -9s infinite}'
            f'.kgw .kgH{{left:{HX}px;top:{HY}px;width:{f(100 * s)}px;height:{f(80 * s)}px}}'

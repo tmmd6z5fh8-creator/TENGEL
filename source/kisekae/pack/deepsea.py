@@ -1,7 +1,9 @@
 """壁紙パック ⑤深海（まさちゃんの 指定「タツノオトシゴ（海の馬🐴）たちのレース。泡がぷくぷく」）
    上の絵：青い 深い 海。上から 光の すじ・遠くの 岩の かげ・ゆれる 海そう・さんご・砂の 海の 底。
-     騎手の 帽子と ゼッケン（星）を つけた タツノオトシゴ 4ひき（オレンジ・黄・ピンク・ミント）が 右へ レース。
+     顔が 馬の 顔（耳・たてがみ・前髪・鼻すじ・鼻の あな：第4.93版）の タツノオトシゴ 4ひき（オレンジ・黄・ピンク・ミント）が 右へ レース。
+     耳に 色の メンコ（耳の 覆い）と 同じ 色の 頭絡・体に 星の ゼッケン。
    動き：景色が 右から 左へ 流れる（遠いほど ゆっくり・タツノオトシゴが 前へ 進んで 見える）・4ひきが 前へ 出たり 下がったり して 順位が 入れかわる・
+     （口から 泡は 馬の 口から）・
      上下に ゆれて 背びれが ぱたぱた・口から 泡が ぷくぷく・海の 底から 泡の 列・光の すじが ゆっくり ゆらぐ・遠くを 小さな 魚の むれと くらげ・
      32秒に 1回 ゴールの 門（さんごの 柱と チェックの 旗）が 海の 底と 同じ 速さで 通りすぎる。強く 光らせない"""
 import math
@@ -11,12 +13,19 @@ ID = 'deepsea'
 WATER = ('#2386B8', '#0F4C7A', '#072646')
 TILE = 390          # 流れる 帯の 1まいの はば
 
-# タツノオトシゴ：背骨の 点（右向き：口の 先 → 頭 → 首 → おなか → しっぽの うず）と (背中がわ, おなかがわ) の はば（絵の 単位。1ぴき 60×104）
-SPINE = [((52, 22), (1.6, 1.6)), ((44, 21), (1.9, 1.9)), ((37, 19), (2.7, 2.9)), ((28, 15), (8.4, 7.2)), ((20, 20.5), (8.2, 6.2)),
+# タツノオトシゴ：背骨の 点（右向き：首 → おなか → しっぽの うず）と (背中がわ, おなかがわ) の はば（絵の 単位。1ぴき 60×104）
+# 第4.93版（まさちゃん「竜の落とし子の顔を馬の顔にして！」）：頭は 馬の 頭（HEAD）。背骨は 首の 上（頭の うら）から
+SPINE = [((27, 17), (4.8, 5.4)), ((21, 22.5), (6.6, 6.0)),
          ((16, 31), (5.6, 6.4)), ((17, 43), (6.6, 11)), ((20, 56), (7, 13.4)), ((20, 68), (6, 10)), ((17, 78), (4.3, 5.6)),
          ((15, 88), (3.4, 3.9)), ((19, 96), (2.8, 3.1)), ((27, 99.5), (2.3, 2.5)), ((34, 94.5), (1.9, 2.0)), ((34.5, 87.5), (1.6, 1.6)),
          ((29.5, 84), (1.25, 1.25)), ((25.5, 87.5), (0.95, 0.95)), ((27.5, 91.5), (0.6, 0.6))]
-# 色：(体, かげ, 明るい おなか, ふし, ひれ)・帽子と ゼッケン：(地, 星と すじ)
+# 馬の 頭（右向き・少し 下を 向く：耳の うしろ → ひたい → 鼻すじ → 鼻 → くちびる → あご → ほお → のど）
+HEAD = [(24.5, 6.5), (28.5, 5.4), (33.6, 7.2), (39.6, 11), (45.2, 15.4), (49.6, 19.4), (52.6, 23), (53.6, 26.4), (52.8, 29.4), (50.4, 31.2),
+        (47, 31.8), (43, 31), (38.4, 29.6), (33.6, 27.6), (30, 24.6), (26.6, 19.8), (24, 13)]
+EAR_N = [(27.2, 7.8), (27.6, 3.2), (29.4, -1.8), (31.4, 2.6), (31.6, 7)]          # 手前の 耳
+EAR_F = [(24.2, 8.4), (23.4, 3.6), (24, -0.8), (26.4, 2.8), (27.6, 7.4)]           # 奥の 耳
+MOUTH = (52, 29.4)                                                                 # 口（泡が 出る 所）
+# 色：(体, かげ, 明るい おなか, ふし（たてがみ）, ひれ)・メンコ（耳の 覆い）と 頭絡と ゼッケン：(地, 星と すじ)
 RIDERS = [dict(col=('#F59A3C', '#D9772A', '#FFC98A', '#B95A1A', '#FFE3B0'), cap=('#E8384A', '#FFFFFF')),
           dict(col=('#F7CC45', '#DDA92A', '#FFE79A', '#B8860F', '#FFF4C8'), cap=('#2F6FD6', '#FFFFFF')),
           dict(col=('#F27D96', '#D65E78', '#FFB8C6', '#B04460', '#FFE0E8'), cap=('#2EAA6A', '#FFFFFF')),
@@ -73,10 +82,13 @@ def seahorse_svg(rider, far=0.0, fin=False):
     pts, back, front = _outline()
     d = P(back + front[::-1])
     defs = (f"<linearGradient id='g' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='{shade}'/><stop offset='.55' stop-color='{body}'/><stop offset='1' stop-color='{light}'/></linearGradient>"
-            f"<clipPath id='c'><path d='{d}'/></clipPath>")
-    o = f"<path d='{d}' fill='url(#g)'/><g clip-path='url(#c)'>"
-    o += f"<path d='{P([(x - 3.5, y) for x, y in front[40:96]], False)}' fill='none' stroke='{light}' stroke-width='5' opacity='.5'/>"
-    for i in range(36, len(pts) - 2, 6):                       # ふし（輪の すじ）
+            f"<clipPath id='c'><path d='{d}'/></clipPath>"
+            f"<linearGradient id='hg' gradientUnits='userSpaceOnUse' x1='24' y1='8' x2='52' y2='30'><stop offset='0' stop-color='{body}'/><stop offset='.6' stop-color='{body}'/>"
+            f"<stop offset='1' stop-color='{mix(body, light, .45)}'/></linearGradient>")
+    o = mane_svg(rider, tint, back, pts) + f"<path d='{smooth(EAR_F, True, .5)}' fill='{mix(c1, '#000000', .3)}'/>"
+    o += f"<path d='{d}' fill='url(#g)'/><g clip-path='url(#c)'>"
+    o += f"<path d='{P([(x - 3.5, y) for x, y in front[16:72]], False)}' fill='none' stroke='{light}' stroke-width='5' opacity='.5'/>"
+    for i in range(12, len(pts) - 2, 6):                       # ふし（輪の すじ）
         bx, by = back[i]
         fx, fy = front[i]
         o += f"<path d='M{f(bx)} {f(by)} Q{f((bx + fx) / 2)} {f((by + fy) / 2 + 1.2)} {f(fx)} {f(fy)}' fill='none' stroke='{ridge}' stroke-width='.8' opacity='.5'/>"
@@ -86,17 +98,70 @@ def seahorse_svg(rider, far=0.0, fin=False):
     for x, y, r in ((30, 52, 1.1), (27, 61, .8), (22, 74, .7), (31, 57.5, .6)):
         o += f"<circle cx='{x}' cy='{y}' r='{r}' fill='#FFFFFF' opacity='.65'/>"
     o += '</g>'
-    o += (f"<path d='M24.6 17 Q21 22 23 27' fill='none' stroke='{ridge}' stroke-width='1' stroke-linecap='round' opacity='.7'/>"      # ほお
-          f"<ellipse cx='52.4' cy='22' rx='1.3' ry='2.2' fill='{ridge}' opacity='.8'/>"                                            # 口
-          f"<path d='M21 27 Q14 25 13.5 30 Q16 32 21.5 30 Z' fill='{finc}' opacity='.8'/>"                                          # 胸びれ
-          f"<circle cx='29.5' cy='15.5' r='4.2' fill='{tint('#FFFFFF')}'/><circle cx='30.4' cy='15.9' r='3' fill='#1E2A3A'/>"
-          f"<circle cx='31.4' cy='14.6' r='1.1' fill='#FFFFFF'/><circle cx='29.4' cy='17.2' r='.5' fill='#FFFFFF' opacity='.8'/>")
-    o += (f"<path d='M14 13 Q14 1.5 24.5 1 Q33.5 1 34.5 10.5 Q25 13.6 14 13 Z' fill='{c1}'/>"          # 騎手の 帽子（つば・すじ・ぼたん）
-          f"<path d='M23.2 1.2 Q26 1 27.2 1.4 L28.6 11.6 Q26.4 12.2 24.4 12.4 Z' fill='{c2}'/>"
-          f"<path d='M31.5 9.6 Q38 9 41 12.4 Q36.4 13.2 31 12.4 Z' fill='{mix(c1, '#000000', .25)}'/>"
-          f"<circle cx='24.6' cy='1.6' r='1.6' fill='{c2}'/>"
-          f"<path d='M17 5.5 Q19.5 2.6 23 2.2' fill='none' stroke='#FFFFFF' stroke-width='1.3' stroke-linecap='round' opacity='.5'/>")
+    o += head_svg(rider, tint, back, pts)
     return doc(60, 104, o, vb=vb, defs=defs)
+
+
+def mane_svg(rider, tint, back, pts):
+    """たてがみ：耳の うしろから 首の 背中がわに そって（ふさふさ・体の ふちに 少し 重ねて 体の うしろに 描く）"""
+    ridge = tint(rider['col'][3])
+    top = [(24.8, 5.6), (24.4, 9.0), (24.0, 12.2)]
+    nrm = [(-.95, -.3), (-.96, -.25), (-.9, -.42)]
+    for i in range(0, 25):
+        bx, by = back[i]
+        px, py = pts[i]
+        L = math.hypot(bx - px, by - py) or 1
+        top.append((bx, by))
+        nrm.append(((bx - px) / L, (by - py) / L))
+    outer, inner = [], []
+    n = len(top)
+    for k, ((x, y), (nx, ny)) in enumerate(zip(top, nrm)):
+        t = k / (n - 1)
+        amp = (3.9 if k % 4 in (0, 1) else 2.3) * (1 - .55 * t) + .4
+        outer.append((x + nx * amp, y + ny * amp))
+        inner.append((x - nx * 1.2, y - ny * 1.2))
+    d = smooth(outer + inner[::-1], True, .45)
+    o = f"<path d='{d}' fill='{ridge}'/>"
+    for j in range(4):                                                   # 毛の すじ
+        sel = top[2 + j * 6: 2 + j * 6 + 9]
+        nn = nrm[2 + j * 6: 2 + j * 6 + 9]
+        if len(sel) < 3:
+            continue
+        ln = [(x + nx * 1.4, y + ny * 1.4) for (x, y), (nx, ny) in zip(sel, nn)]
+        o += f"<path d='{P(ln, False)}' fill='none' stroke='{mix(ridge, '#000000', .25)}' stroke-width='.7' stroke-linecap='round' opacity='.55'/>"
+    return o
+
+
+def head_svg(rider, tint, back, pts):
+    """馬の 頭（右向き）：頭・前髪・手前の 耳（メンコ）・目・鼻の あな・口・ほお・頭絡"""
+    body, shade, light, ridge, finc = (tint(c) for c in rider['col'])
+    c1, c2 = (tint(c) for c in rider['cap'])
+    o = f"<path d='{smooth(HEAD, True, .5)}' fill='url(#hg)'/>"
+    o += f"<path d='M36.2 9.8 Q43 13.4 48.6 20.4' fill='none' stroke='{light}' stroke-width='2.2' stroke-linecap='round' opacity='.45'/>"   # 鼻すじの 光
+    o += f"<path d='M31.8 19.6 Q31.8 26.4 37.4 28.4' fill='none' stroke='{shade}' stroke-width='.9' stroke-linecap='round' opacity='.75'/>"    # ほおの まるみ
+    o += f"<ellipse cx='41.4' cy='25' rx='2.8' ry='1.7' fill='#FF8FA3' opacity='.3'/>"
+    # 前髪
+    o += smooth_hair([(26.4, 6.0), (28.8, 7.2), (31.4, 10.6), (30.6, 13.6), (29.2, 10.8), (27.6, 12.4), (27.4, 9.0)], ridge)
+    # 手前の 耳（メンコ：耳の 覆い。ふちに 白い すじ）
+    o += f"<path d='{smooth(EAR_N, True, .5)}' fill='{c1}'/>"
+    o += f"<path d='M27.6 6.4 Q29.6 5.2 31.6 6' fill='none' stroke='{c2}' stroke-width='1.2' stroke-linecap='round'/>"
+    o += f"<path d='M28.6 4.2 Q29.3 1 29.6 -.4' fill='none' stroke='#FFFFFF' stroke-width='.8' stroke-linecap='round' opacity='.45'/>"
+    # 目（大きめ・やさしい）
+    o += (f"<ellipse cx='34.2' cy='13.6' rx='2.9' ry='3.1' fill='{tint('#FFFFFF')}'/><circle cx='34.8' cy='14' r='2.15' fill='#1E2A3A'/>"
+          f"<circle cx='35.5' cy='13' r='.8' fill='#FFFFFF'/><circle cx='34' cy='15.1' r='.38' fill='#FFFFFF' opacity='.8'/>"
+          f"<path d='M31.2 11.6 Q34 9.4 37.2 11.4' fill='none' stroke='{shade}' stroke-width='.8' stroke-linecap='round'/>")
+    # 鼻の あなと 口
+    o += (f"<path d='M48.8 22.4 Q51 21 51.8 23.4 Q50.8 24.6 49.2 24 Z' fill='{ridge}' opacity='.85'/>"
+          f"<path d='M48 29.4 Q50.4 30.6 52.8 29' fill='none' stroke='{ridge}' stroke-width='.85' stroke-linecap='round'/>")
+    # 頭絡（ほお革と 鼻革：メンコと 同じ 色・金具は 白）
+    o += (f"<path d='M47.2 28.6 Q41.6 25 37 22 Q31.6 16.4 28.4 9.8' fill='none' stroke='{c1}' stroke-width='1.3' stroke-linecap='round'/>"
+          f"<path d='M45.8 15.8 Q43.8 23.8 45.4 31.4' fill='none' stroke='{c1}' stroke-width='1.6' stroke-linecap='round'/>"
+          f"<circle cx='44.8' cy='26.8' r='1' fill='{c2}'/>")
+    return o
+
+
+def smooth_hair(pts, col):
+    return f"<path d='{smooth(pts, True, .45)}' fill='{col}'/>"
 
 
 # ---------------------------------------------------------------- 景色
@@ -249,7 +314,7 @@ def gate_svg():
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     still = B.get('still')
-    alt = ('青い深い海で、騎手の帽子と星のゼッケンをつけたオレンジ・黄・ピンク・ミントのタツノオトシゴ4ひきがレースしている。'
+    alt = ('青い深い海で、馬の顔（耳・たてがみ・色のメンコと頭絡）で星のゼッケンをつけたオレンジ・黄・ピンク・ミントのタツノオトシゴ4ひきがレースしている。'
            '上から光のすじ、海の底に海そう・さんご・ひとで・貝のイラスト（景色が流れて、順位が入れかわり、泡がぷくぷく上る）')
     html = f'<div class="dsw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
@@ -298,8 +363,8 @@ def banner(B):
                 f'transform-origin:{f(w * 0.45)}px {f(h * 0.4)}px}}'
                 f'.dsw .dsH.h{i} .dsB>img{{width:{f(w)}px;height:{f(h)}px}}'
                 f'.dsw .dsH.h{i} .dsFn{{transform-origin:{f(15 / 60 * w)}px {f(58 / 104 * h)}px}}')
-        # 口から 泡（口の 先：絵の (53, 22)）
-        mx, my = 53 / 60 * w, 21 / 104 * h
+        # 口から 泡（馬の 口：絵の MOUTH）
+        mx, my = (MOUTH[0] + 1.5) / 60 * w, MOUTH[1] / 104 * h
         for j in range(3):
             css += f'.dsw .dsH.h{i} .dsBb.b{j}{{left:{f(mx - 3.5)}px;top:{f(my - 3.5)}px;animation-delay:{f(-(i * 1.1 + j * 0.42), 2)}s;width:{f(5 + j * 1.6)}px;height:{f(5 + j * 1.6)}px}}'
         # 前後（順位が 入れかわる）・上下の ゆれ
@@ -353,27 +418,31 @@ def wave_strip():
 
 
 def orn():
-    """すみの 飾り（44×44）：帽子を かぶった 小さな タツノオトシゴ（ページに じかに 置くので id なし）"""
+    """すみの 飾り（44×44）：馬の 顔の 小さな タツノオトシゴ（メンコと 星の ゼッケン。ページに じかに 置くので id なし・平らな 色）"""
     r = RIDERS[0]
     body, shade, light, ridge, finc = r['col']
     c1, c2 = r['cap']
     pts, back, front = _outline(5)
     d = P(back + front[::-1])
-    o = (f"<g transform='translate(9 1.6) scale(.4)'>"
+    o = (f"<g transform='translate(8 1.4) scale(.4)'>"
          f"<path d='M14.6 49.5 Q2.6 49 1.2 57.6 Q2.6 66.6 15 66.4 Z' fill='{finc}'/>"
+         + mane_svg(r, lambda c: c, back, pts)
+         + f"<path d='{smooth(EAR_F, True, .5)}' fill='{mix(c1, '#000000', .3)}'/>"
          f"<path d='{d}' fill='{body}' stroke='{shade}' stroke-width='1.4'/>"
+         f"<path d='{smooth(HEAD, True, .5)}' fill='{body}' stroke='{shade}' stroke-width='1.4'/>"
          f"<path d='M4 38.2 L35.6 34.3 L36.4 45.4 L5 49.6 Z' fill='{c1}'/>"
          f"<path d='{star_d(23.5, 41.8, 4, 1.7)}' fill='{c2}'/>"
-         f"<circle cx='29.5' cy='15.5' r='4.6' fill='#FFFFFF'/><circle cx='30.4' cy='15.9' r='3.2' fill='#1E2A3A'/><circle cx='31.4' cy='14.6' r='1.2' fill='#FFFFFF'/>"
-         f"<path d='M14 13 Q14 1.5 24.5 1 Q33.5 1 34.5 10.5 Q25 13.6 14 13 Z' fill='{c1}'/><path d='M23.2 1.2 Q26 1 27.2 1.4 L28.6 11.6 Q26.4 12.2 24.4 12.4 Z' fill='{c2}'/>"
-         f"<path d='M31.5 9.6 Q38 9 41 12.4 Q36.4 13.2 31 12.4 Z' fill='{mix(c1, '#000000', .25)}'/></g>"
-         "<circle cx='34' cy='12' r='3.2' fill='none' stroke='#BFF3FF' stroke-width='1.1'/><circle cx='38' cy='5' r='2' fill='none' stroke='#BFF3FF' stroke-width='1'/>")
+         f"<path d='{smooth(EAR_N, True, .5)}' fill='{c1}'/>"
+         f"<ellipse cx='34.2' cy='13.6' rx='3.2' ry='3.4' fill='#FFFFFF'/><circle cx='34.8' cy='14' r='2.4' fill='#1E2A3A'/><circle cx='35.6' cy='12.9' r='.9' fill='#FFFFFF'/>"
+         f"<path d='M48.8 22.4 Q51 21 51.8 23.4 Q50.8 24.6 49.2 24 Z' fill='{ridge}'/>"
+         f"<path d='M45.8 15.8 Q43.8 23.8 45.4 31.4' fill='none' stroke='{c1}' stroke-width='2'/></g>"
+         "<circle cx='36' cy='13' r='3.2' fill='none' stroke='#BFF3FF' stroke-width='1.1'/><circle cx='39.6' cy='6' r='2' fill='none' stroke='#BFF3FF' stroke-width='1'/>")
     return o
 
 
 THEME = dict(
     id=ID, cat=7, name='深海', desc='タツノオトシゴのレース', title='深海（紺×ミント×さんご）', banner=ID,
-    alt='青い深い海で、騎手の帽子と星のゼッケンをつけたオレンジ・黄・ピンク・ミントのタツノオトシゴ4ひきがレースしている。上から光のすじ、海の底に海そう・さんご・ひとで・貝のイラスト',
+    alt='青い深い海で、馬の顔（耳・たてがみ・色のメンコと頭絡）で星のゼッケンをつけたオレンジ・黄・ピンク・ミントのタツノオトシゴ4ひきがレースしている。上から光のすじ、海の底に海そう・さんご・ひとで・貝のイラスト',
     fonts=['Kiwi+Maru:wght@500', 'M+PLUS+Rounded+1c:wght@500;700;800'],
     v=dict(bg='#0B2340', ink='#EAF6FF', sub='#A9C6DD', card='#11304F', cardB='1px solid #22547A', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.35)',
            radius='16px', rs='12px', font='"M PLUS Rounded 1c"', dfont='"Kiwi Maru"', dw='500', logo='#7FF0E2', logoS='0 0 12px rgba(95,224,208,.5)',
@@ -391,8 +460,8 @@ THEME = dict(
          ('.card', 'background-image:radial-gradient(circle at 100% 0,rgba(95,224,208,.10),transparent 45%)')],
     orn=orn(),
     guide=dict(colors=[('#0B2340', '深い海'), ('#3DD1C1', 'ミント'), ('#FF8A7A', 'さんご'), ('#11304F', 'カード'), ('#EAF6FF', '文字')],
-               fonts='見出し：Kiwi Maru<br>本文：M PLUS Rounded 1c', shape='角丸16px・まるい ボタン・帯の 下の ふちが まるい 波と 泡・泡の 背景・すみに 帽子の タツノオトシゴ・的中ボタンは 貝と 真珠の PUSH',
-               pic='青い 深い 海・光の すじ・騎手の 帽子と 星の ゼッケンの タツノオトシゴ 4ひきの レース・海そう・さんご・ひとで・貝・泡・くらげ・魚の むれ・ゴールの 門'),
+               fonts='見出し：Kiwi Maru<br>本文：M PLUS Rounded 1c', shape='角丸16px・まるい ボタン・帯の 下の ふちが まるい 波と 泡・泡の 背景・すみに 馬の 顔の タツノオトシゴ・的中ボタンは 貝と 真珠の PUSH',
+               pic='青い 深い 海・光の すじ・馬の 顔（メンコと 頭絡）と 星の ゼッケンの タツノオトシゴ 4ひきの レース・海そう・さんご・ひとで・貝・泡・くらげ・魚の むれ・ゴールの 門'),
 )
 
 
