@@ -1,14 +1,18 @@
 """七夕の 壁紙（壁紙パック・第4.93版〜第4.94版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
    ページで 左右に うらがえす）。同じ カメラで 描くので どの シートも 同じ 所に かさなる（anchor＝ひづめの まん中と 地面：780×320 の 絵の 中）。
    ・run：ギャロップ 10コマ（flat/sea_run.py と 同じ 足の 動き：4回に 1回 振り向いて 駆け寄る とき）
-   ・walk：常歩 12コマ（左うしろ → 左前 → 右うしろ → 右前 の 4拍子。地面に ついた ひづめは 同じ はやさで うしろへ＝meta の speed：コマの 画素／秒）
-   ・love：首と ほおを すりよせる 8コマ（4本の 足は 地面・首を 下げて 前へ のばして もどす・頭を すこし かたむける：2頭を 半回り ずらすと すりすり）
+   ・walk：常歩 12コマ（左うしろ → 左前 → 右うしろ → 右前 の 4拍子。meta の step：地面に ついた ひづめが 1コマで うしろへ 動く 画素＝体が 前へ 進む 画素）
+   ・love：2頭 いっしょの 絵（首を からめて すりすり）11コマ。0〜2：立った 形 → からめた 形 の とちゅう（会った とき・はなれる ときは 逆に）・3〜10：すりすりの 8コマ
+     （織姫の 馬は 首を 下げて 前へ のばし、彦星の 馬の 首と 胸に ほおを よせる。彦星の 馬は 首を 上げて 前へ のばし、織姫の 馬の 首の うしろから あごを のせる。
+     2頭を 半回り ずらして 首を 上下・前後に ゆらす＝ほおと 首を すりあわせる）。彦星の 馬は うらがえして 右に 置き（ひづめの まん中の 間 PAIR_D）、
+     手前ほど 大きい ぶん（k＝1−u×K_SLOPE）を 小さく する（PAIR_SH＝1−K_SLOPE×PAIR_D×HS）。重ねる 順は 彦星の 馬 → 織姫の 馬（手前）
    ・prance：振り向いた とき 前足を 上げる 1コマ・stand：立った 1コマ
    ・織姫の 馬（o）：白い 体・桃色が かった 白い たてがみ・桃色の 布（白い 花の もよう・金の ふち）・前髪の 上に 花の かざり・首の 根もとから うしろへ なびく 羽衣
    ・彦星の 馬（h）：明るい 栗毛・こげ茶の たてがみ・青い 布（金の 星）・首に 青い ひもと 金の 鈴（牛かいの 鈴）
    ・まわりに やわらかい 星の 光（ぼかした ふち）・走る コマは 地面に ついた ひづめの うしろに 小さな 星の 粉
-   python3 kisekae/pack/make/tanabata_art.py [o h] [run walk love prance]
-     → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の tanabata.<o|h>_<run|stand|walk|love|prance>"""
+   python3 kisekae/pack/make/tanabata_art.py [o h] [run walk prance]  → tanabata.<o|h>_<run|stand|walk|prance>
+   python3 kisekae/pack/make/tanabata_art.py love                       → tanabata.love（2頭 いっしょ）
+     → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json"""
 import math
 import os
 import sys
@@ -220,20 +224,74 @@ def walk_stance(g):
     return [k for k in HOOF_ORDER if ((g - OFF[k]) % 1.0) < ST]
 
 
-LOVE_N = 8
+HUG_N = 8                       # すりすりの コマ
+HUG_E = (0.25, 0.5, 0.75)       # 立った 形 → からめた 形 の とちゅうの コマ
+PAIR_D = 180.0                  # 2頭の ひづめの まん中の 間（織姫の 馬の 絵の 画素）
+K_SLOPE = 0.0008                # 手前ほど 大きく：k(u)＝1−u×K_SLOPE（u：天の川に そった 画面の 画素・右上が ＋。pack/tanabata.py と 同じ）
+HS = 0.34                       # 馬の 絵（2倍）→ 画面（pack/tanabata.py と 同じ）
+PAIR_SH = round(1 - K_SLOPE * PAIR_D * HS, 5)
 
 
-def love_pose(g):
-    """首を 前へ 下げて のばし（相手の 首に ほおを よせる）→ もどす。頭は すこし かたむく。足は 4本とも 地面"""
+def hug_pose(who, g, e=1.0):
+    """首を からめて すりすり（g：すりすりの 位相 0〜1・e：0＝立った 形 → 1＝からめた 形）。
+       o：首を 下げて 前へ のばす（相手の 首と 胸に ほお）・h：首を 上げて 前へ のばす（相手の 首の うしろから あご）。h は 半回り ずらす"""
     from horse_flat import TAILS
     w = 2 * math.pi
-    c = math.sin(w * g)
-    tufts = [((a[0], a[1] + .02 * c * (i + 1) / 3), (b[0] + .03 * c * (i + 1) / 3, b[1]), (c_[0] + .06 * math.sin(w * g - .9) * (i + 1) / 3, c_[1]), wm)
+    gg = g + (0.5 if who == 'h' else 0.0)
+    c, c2, c3 = math.sin(w * gg), math.cos(w * gg), math.sin(w * gg + 0.6)
+    if who == 'o':
+        tgt = dict(neck_rot=-14 + 4 * c, neck_bend=-30 + 5 * c, neck_len=1.15 + 0.03 * c2, head_ang=-58 + 6 * c3)
+    else:
+        tgt = dict(neck_rot=-4 + 4 * c, neck_bend=10 + 4 * c, neck_len=1.15 + 0.03 * c2, head_ang=-30 + 6 * c3)
+    st = dict(neck_rot=STAND['neck_rot'], neck_bend=0.0, neck_len=1.0, head_ang=STAND['head_ang'])
+    p = {k: round(st[k] + (tgt[k] - st[k]) * e, 3) for k in tgt}
+    sw = c * e
+    tufts = [((a[0], a[1] + .02 * sw * (i + 1) / 3), (b[0] + .03 * sw * (i + 1) / 3, b[1]), (c_[0] + .06 * math.sin(w * gg - .9) * e * (i + 1) / 3, c_[1]), wm)
              for i, (a, b, c_, wm) in enumerate(TAILS['sway'])]
-    return dict(theta=round(0.8 * c, 2), neck_rot=round(-21 + 6 * c, 2), head_ang=round(-40 + 7 * math.sin(w * g + 0.7), 2),
-                tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
+    return dict(theta=round(0.6 * sw, 2), tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
                 fore_near=[-118, -86, -88, -60], fore_far=[-124, -92, -90, -60],
-                hind_near=[-62, -118, -92, -62], hind_far=[-58, -116, -92, -62])
+                hind_near=[-62, -118, -92, -62], hind_far=[-58, -116, -92, -62], **p)
+
+
+def build_pair(out=None):
+    """2頭 いっしょの 絵（首を からめて すりすり）：tanabata.love"""
+    from sheets import camera, W2, H2
+    import json
+    bl = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['tanabata']
+    anchor = bl['o_run']['anchor']
+    ax, ay = anchor
+    gs = [(0.0, e) for e in HUG_E] + [(i / HUG_N, 1.0) for i in range(HUG_N)]
+    layers = {}
+    for who in ('o', 'h'):
+        pal = PALS[who]
+        cam, _ = camera(pal, SPOT, '', f'pktn{who}ref')
+        frames, _ = render(pal, SPOT, [hug_pose(who, g, e) for g, e in gs], acc=acc_factory(who, None), number='', tag=f'pktn{who}hug', workers=2, cam=cam)
+        glow = glow_fn(GLOW[who])
+        out_l = []
+        for i, (rgb, a, hv) in enumerate(frames):
+            dy = GROUND - max(h[1] for h in hv)
+            if who == 'o':
+                M = np.float32([[1, 0, 0], [0, 1, dy]])
+            else:                                     # うらがえして 右へ・少し 小さく（ひづめの まん中を 中心に）
+                s_ = PAIR_SH
+                M = np.float32([[-s_, 0, ax + PAIR_D + s_ * ax], [0, s_, ay - s_ * (ay - dy)]])
+            pre = cv2.warpAffine(rgb * a[..., None], M, (W2, H2), flags=cv2.INTER_LINEAR)
+            A = cv2.warpAffine(a, M, (W2, H2), flags=cv2.INTER_LINEAR)
+            out_l.append(glow(i, pre, A))
+        layers[who] = out_l
+    comp = []
+    for (pre_h, A_h), (pre_o, A_o) in zip(layers['h'], layers['o']):
+        pre = pre_o + pre_h * (1 - A_o[..., None])
+        A = A_o + A_h * (1 - A_o)
+        rgb = np.where(A[..., None] > 1e-4, pre / np.maximum(A, 1e-4)[..., None], 0).astype(np.float32)
+        comp.append((rgb, A.astype(np.float32), []))
+    u8, meta = make_sheet(comp, [0.0] * len(comp))
+    meta.update(anchor=anchor, D=PAIR_D, sh=PAIR_SH, trans=len(HUG_E), loop=HUG_N)
+    if out:
+        preview_png(u8, os.path.join(out, 'tn_love.png'), bg=(20, 28, 70))
+    bid = save_webp(u8, quality=90)
+    record('tanabata', 'love', bid, meta)
+    print('love', bid, meta, flush=True)
 
 
 def _sheet(who, poses, stance, tag, cam, glow_col):
@@ -274,14 +332,6 @@ def build_more(who, kinds, out=None):
         bid = save_webp(u8, quality=90)
         record('tanabata', f'{who}_walk', bid, meta)
         print(f'{who}_walk', bid, meta, flush=True)
-    if 'love' in kinds:
-        u8, meta, frames, dys = _sheet(who, [love_pose(i / LOVE_N) for i in range(LOVE_N)], None, f'pktn{who}l', cam, GLOW[who])
-        meta['anchor'] = anchor
-        if out:
-            preview_png(u8, os.path.join(out, f'tn_{who}_love.png'), bg=(20, 28, 70))
-        bid = save_webp(u8, quality=90)
-        record('tanabata', f'{who}_love', bid, meta)
-        print(f'{who}_love', bid, meta, flush=True)
     if 'prance' in kinds:
         from horse_flat import POSES
         pr = dict(POSES['prance'])
@@ -325,8 +375,10 @@ def build(who, out=None):
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+    if 'love' in args:
+        build_pair(os.environ.get('OUT'))
     whos = [a for a in args if a in ('o', 'h')] or ['o', 'h']
-    kinds = [a for a in args if a in ('run', 'walk', 'love', 'prance')] or ['run', 'walk', 'love', 'prance']
+    kinds = [a for a in args if a in ('run', 'walk', 'prance')] or ([] if 'love' in args else ['run', 'walk', 'prance'])
     for who in whos:
         if 'run' in kinds:
             build(who, os.environ.get('OUT'))
