@@ -1,6 +1,7 @@
 """壁紙パック ②競馬場（上から見た）（まさちゃんの 指定「真上から見たコース。馬群が周回して、ゴール前で1頭が抜け出す」
    第4.93版の 直し「赤丸の雲の影はもう少し雲っぽくして！青丸の馬達をもっとリアルな🐎にして！12秒に一回ランダムにゴールするようにして！」
-   第4.94版の 直し「競馬場は、馬の身体をすり抜けて順位が変わってしまってるから、もっと馬小さくして、違和感なくして！」）
+   第4.94版の 直し「競馬場は、馬の身体をすり抜けて順位が変わってしまってるから、もっと馬小さくして、違和感なくして！」
+   第4.95版の 直し「赤四角のあたりにいる観客に歓声をあげていることが上から見てわかるように少し動きをつけて！」）
    上の絵：真上から 見た 競馬場。外がわの 芝コース（白い 内ラチ・外ラチ・ハロン棒）・内がわの ダートコース・まん中の 芝生（刈った すじ）と 池（噴水）と 蹄鉄の 形の 花だん・
      下に スタンドの 屋根と お客さん・まわりに 木。ゴールは 下の 直線の 右（赤と白の ゴール板・白い 線）。
    馬（第4.93版）：真上から 見た サラブレッドと 騎手（こし・胴・肩・首・頭・耳・前髪・たてがみ・顔の 白い すじ・ギャロップで 前後に のびる 4本の 足・なびく しっぽ・
@@ -11,7 +12,9 @@
      いちばん うしろの 馬が 横に だれも いない 時に 外の 進路へ 出て、外を 加速して 全部の 馬を 外から 抜き、先頭で ゴール →
      ゴールの あと 馬群の 先頭で もとの 進路へ もどる（前に だれも いない 所で 横へ）→ その 進路の 馬が そろって ゆっくり 1つ うしろへ。
      8周（96秒）で 8頭が 1回ずつ 勝つ（毎回 ちがう 馬）。体は どこでも 重ならない（進路の 間は 馬の はばより 広い・コーナーでも）。
-     雲の かげ（まるい もこもこが かこむ 雲の 形・ふちは やわらかい）が 3つ ゆっくり 流れる・池の 噴水の 波紋が ひろがる"""
+     雲の かげ（まるい もこもこが かこむ 雲の 形・ふちは やわらかい）が 3つ ゆっくり 流れる・池の 噴水の 波紋が ひろがる。
+   お客さん（第4.95版）：下の スタンドの 前（真上から 見た 肩と 頭）と 両はしの 芝。馬群が 前を 通る 時（12秒の 1周に 合わせて 左から 右へ）に
+     ぴょこぴょこ はねて・手を あげて・タオルを ふる。馬群が 近い ほど・ゴールの 前ほど 動く 人が ふえる（crowd_parts・絵は make/course_art.py の course.crowd）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, kf, img, rnd, reduced, fly_burst, fly_css, piece, mix, smooth
 
@@ -128,19 +131,14 @@ def ground_svg():
     for x, y, r in trees:
         o += (f"<circle cx='{x + 2}' cy='{y + 3}' r='{r}' fill='#24502A' opacity='.35'/><circle cx='{x}' cy='{y}' r='{r}' fill='#3E8E45'/>"
               f"<circle cx='{f(x - r * 0.3)}' cy='{f(y - r * 0.3)}' r='{f(r * 0.55)}' fill='#55A85A'/><circle cx='{f(x - r * 0.4)}' cy='{f(y - r * 0.45)}' r='{f(r * 0.22)}' fill='#7CC47A'/>")
-    # スタンド（下）：屋根・前の お客さん（外ラチと スタンドの あいだ）
+    # スタンド（下）：屋根（前の お客さんは 外ラチと スタンドの あいだ：crowd_parts）
     o += ("<rect x='56' y='152' width='270' height='12' rx='1.5' fill='#5A6670' opacity='.35'/>"
           "<rect x='54' y='151' width='270' height='12' rx='1.5' fill='#EEF0F2'/>"
           "<rect x='54' y='151' width='270' height='1.6' fill='#FFFFFF'/>")
     for i in range(54):
         x = 58 + i * 4.95
         o += f"<path d='M{f(x)} 153.4 v7' stroke='#C9CED4' stroke-width='.8'/>"
-    for i in range(150):
-        x = R0.uniform(56, 322)
-        o += f"<circle cx='{f(x)}' cy='{f(R0.uniform(147.2, 149.8))}' r='.95' fill='{R0.choice(('#E85A5A', '#4A7BD0', '#F2C14E', '#FFFFFF', '#3A3A44', '#F28A3B', '#2FA35A'))}'/>"
-    for i in range(16):
-        x = R0.uniform(10, 50) if i < 8 else R0.uniform(332, 386)
-        o += f"<circle cx='{f(x)}' cy='{f(R0.uniform(150, 158))}' r='1.1' fill='{R0.choice(('#E85A5A', '#4A7BD0', '#F2C14E', '#FFFFFF', '#3A3A44'))}'/>"
+    # お客さんは 動く 部品（crowd_parts・第4.95版）
     # ゴール（下の 直線）：白い 線・ゴール板（赤と 白の 丸い 札：内ラチの 内がわ）・決勝審判の 小さな 塔（外ラチの 外）
     gy0, gy1 = YB - TURF_W / 2, YB + TURF_W / 2
     o += f"<path d='M{FIN_X} {gy0} V{gy1}' stroke='#FFFFFF' stroke-width='1.6' opacity='.95'/>"
@@ -491,18 +489,308 @@ CLOUDS = [  # (はば, 高さ, 種, 秒, はじめ, おわり, おくれ)
 ]
 
 
+# ---------------------------------------------------------------- お客さん（第4.95版：まさちゃんの 指定「赤四角のあたりにいる観客に歓声をあげていることが上から見てわかるように少し動きをつけて！」）
+#   前の スタンドの お客さん（外ラチと 屋根の あいだ に 2列・真上から 見た 肩と 頭）と 両はしの 芝の お客さん。横に 12に 区切って（区切りごとに 部品）、
+#   馬群が 近くを 走る 時（12秒の 1周に 合わせる）に 歓声：ぴょこぴょこ 上下（1秒に 2回・1px まで）・手を あげる（肩から 手）・タオルを ふる。
+#   馬群が 近い ほど・ゴールの 前ほど 動く 人が ふえる（3つの 組：すぐ 動く 人・まん中・いちばん 盛り上がった 時だけ）。ふだんも ときどき ぴょこっと する・手を あげる。
+#   動きは 位置の 小さな 上下と 小さな 手・タオル（色が ちかちか かわる 所は ない）
+CR_SHIRT = ('#E85A5A', '#4A7BD0', '#F2C14E', '#FFFFFF', '#3A3A44', '#F28A3B', '#2FA35A', '#E88AB0')
+CR_HAIR = ('#2A1E18', '#4A3A30', '#1E1E22', '#8A6A3A', '#5A4636')
+CR_SKIN = ('#F2D2B6', '#E8BE98', '#D4A47C')
+CR_TOWEL = ('#FFFFFF', '#FFD23F', '#E23B3B', '#2B6FD0', '#2FA35A')
+CR_SEG = 10                                           # 前の スタンドの 区切り（そのほか 左はし・右はしの 芝）
+CR_BOB = 0.5                                          # ぴょこぴょこ 1回の 秒
+CR_TH = (0.12, 0.34, 0.58)                            # 組ごとの ぴょこぴょこ しはじめる 盛り上がり
+CR_TH_HAND = (0.30, 0.52, 0.74)                       # 組ごとの 手を あげる 盛り上がり
+
+
+def crowd_people():
+    """お客さん：[(x, y, 服, 髪, はだ, 区切り, 組, タオル)]（区切り：0〜9 前の スタンド・10 左はし・11 右はし）"""
+    R0 = rnd(41)
+    out = []
+    for row, y in enumerate((147.4, 149.6)):
+        n = 62
+        for i in range(n):
+            x = 58.5 + (i + 0.5 * row) * (263.0 / n) + R0.uniform(-0.45, 0.45)
+            seg = min(CR_SEG - 1, int((x - 56) / (268.0 / CR_SEG)))
+            if abs(x - FIN_X) < 6.5:                                        # 決勝審判の 小さな 塔の 所には いない
+                continue
+            out.append((x, y + R0.uniform(-0.25, 0.25), R0.choice(CR_SHIRT), R0.choice(CR_HAIR), R0.choice(CR_SKIN), seg,
+                        R0.choices((0, 1, 2), (0.4, 0.35, 0.25))[0], R0.choice(CR_TOWEL) if R0.random() < 0.13 else None))
+    for i in range(16):
+        left = i < 8
+        x = R0.uniform(12, 48) if left else R0.uniform(334, 384)
+        out.append((x, R0.uniform(151.5, 157.5), R0.choice(CR_SHIRT), R0.choice(CR_HAIR), R0.choice(CR_SKIN), CR_SEG if left else CR_SEG + 1,
+                    R0.choices((0, 1, 2), (0.4, 0.35, 0.25))[0], R0.choice(CR_TOWEL) if R0.random() < 0.2 else None))
+    return out
+
+
+def seg_center(seg):
+    if seg == CR_SEG:
+        return 30.0
+    if seg == CR_SEG + 1:
+        return 359.0
+    return 56 + (seg + 0.5) * 268.0 / CR_SEG
+
+
+def crowd_level(xc, dt=0.05, bonus=True):
+    """区切りの まん中 xc の 盛り上がり（0〜1）を 1周（12秒）の 時刻ごとに：馬群が 下の 半分で 近くを 走る ほど・ゴールの 前ほど 大きい"""
+    n = int(round(LAP / dt))
+    raw = []
+    for i in range(n):
+        tau = i * dt
+        near = 0.0
+        for k in range(len(SILKS)):
+            sp, d, _ = race_at(k, tau)
+            x, y, _ = at(sp, d)
+            if y > 108:
+                near += max(0.0, 1 - abs(x - xc) / 48.0)
+        v = min(1.0, near / 2.6)
+        if bonus and abs(xc - FIN_X) < 64:                                  # ゴールの 前は もっと
+            v += 0.45 * max(0.0, 1 - abs(tau - T_FIN) / 1.3) * (1 - abs(xc - FIN_X) / 64)
+        raw.append(min(1.0, v))
+    w = int(0.6 / dt)
+    return [sum(raw[(i + j) % n] for j in range(-w, w + 1)) / (2 * w + 1) for i in range(n)]
+
+
+def person_svg(p, ox, oy, hands=False):
+    """真上から 見た 1人（肩・頭）。hands：あげた 手（肩から 手）"""
+    x, y, shirt, hair, skin = p[0] - ox, p[1] - oy, p[2], p[3], p[4]
+    if hands:
+        o = ''
+        for sg in (-1, 1):
+            o += (f"<path d='M{f(x + sg * 1.0)} {f(y - 0.1)} L{f(x + sg * 1.7)} {f(y - 0.85)}' stroke='{shirt}' stroke-width='.62' stroke-linecap='round'/>"
+                  f"<circle cx='{f(x + sg * 1.78)}' cy='{f(y - 0.95)}' r='.42' fill='{skin}'/>")
+        return o
+    return (f"<ellipse cx='{f(x)}' cy='{f(y + 0.15)}' rx='1.3' ry='.85' fill='{shirt}'/>"
+            f"<ellipse cx='{f(x + 0.2)}' cy='{f(y + 0.35)}' rx='1.25' ry='.7' fill='#000000' opacity='.12'/>"
+            f"<circle cx='{f(x)}' cy='{f(y - 0.05)}' r='.72' fill='{hair}'/>")
+
+
+def towel_body(col, ox, oy):
+    """タオル（3×2.2 の 中：2.6×1.1 の 布と 手で もつ 所）"""
+    return (f"<rect x='{f(ox + 0.2)}' y='{f(oy + 0.2)}' width='2.6' height='1.1' rx='.25' fill='{col}'/>"
+            f"<rect x='{f(ox + 0.2)}' y='{f(oy + 1.0)}' width='2.6' height='.3' fill='#000000' opacity='.12'/>"
+            f"<path d='M{f(ox + 1.5)} {f(oy + 1.3)} V{f(oy + 2.1)}' stroke='#8A949E' stroke-width='.3'/>")
+
+
+TW_W, TW_H = 3.0, 2.2
+
+
+def crowd_groups():
+    """お客さんの 組（区切り×組）：[(名前, 区切り, 組, (x0, y0, w, h), 人たち)]"""
+    ppl = crowd_people()
+    out = []
+    for seg in range(CR_SEG + 2):
+        for ph in range(3):
+            grp = [p for p in ppl if p[5] == seg and p[6] == ph]
+            if not grp:
+                continue
+            x0, x1 = min(p[0] for p in grp) - 2.6, max(p[0] for p in grp) + 2.6
+            y0, y1 = min(p[1] for p in grp) - 3.0, max(p[1] for p in grp) + 1.2
+            out.append((f'g{seg}x{ph}', seg, ph, (x0, y0, x1 - x0, y1 - y0), grp))
+    return out
+
+
+def crowd_sheet():
+    """お客さんの 絵（1まい・make/course_art.py が 3倍の 画素の WebP に）の 中の 場所（画面の px）：
+       {'cells': {名前: ((人の x, y), (手の x, y))}, 'towels': {色: (x, y)}, 'size': (w, h)}"""
+    cells, towels = {}, {}
+    x = y = rowh = 0.0
+    WMAX, GAP = 132.0, 1.0
+
+    def put(w, h):
+        nonlocal x, y, rowh
+        if x + w > WMAX:
+            x, y, rowh = 0.0, y + rowh + GAP, 0.0
+        at_ = (x, y)
+        x += w + GAP
+        rowh = max(rowh, h)
+        return at_
+    for name, seg, ph, (x0, y0, w, h), grp in crowd_groups():
+        cells[name] = (put(w, h), put(w, h))
+    for col in CR_TOWEL:
+        towels[col] = put(TW_W, TW_H)
+    return dict(cells=cells, towels=towels, size=(WMAX, y + rowh))
+
+
+def crowd_sprite_svg():
+    """crowd_sheet の 場所に 人（肩と 頭）・あげた 手・タオルを 描いた SVG（画面の px）"""
+    sh = crowd_sheet()
+    o = ''
+    for name, seg, ph, (x0, y0, w, h), grp in crowd_groups():
+        (px, py), (hx, hy) = sh['cells'][name]
+        o += ''.join(person_svg(p, x0 - px, y0 - py) for p in grp)
+        o += ''.join(person_svg(p, x0 - hx, y0 - hy, hands=True) for p in grp)
+    for col, (tx, ty) in sh['towels'].items():
+        o += towel_body(col, tx, ty)
+    w, h = sh['size']
+    return doc(w, h, o)
+
+
+def _shift(a, b):
+    """b を 何コマ ずらすと a に いちばん 合うか（1周で まわして）"""
+    n = len(a)
+    best, bk = -1.0, 0
+    for k in range(n):
+        v = sum(a[i] * b[(i - k) % n] for i in range(n))
+        if v > best:
+            best, bk = v, k
+    return bk
+
+
+def crowd_plan():
+    """区切りごとの 盛り上がりを、まん中の 区切りの 盛り上がり（ひな形）を ずらした もの と みる（keyframes を 3組で すませる）。
+       → (ひな形, {区切り: ずらす 秒}, ゴール前の 区切り)"""
+    dt = 0.05
+    ref = crowd_level(seg_center(CR_SEG // 2), dt, bonus=False)
+    shift = {}
+    for seg in range(CR_SEG + 2):
+        lv = crowd_level(seg_center(seg), dt, bonus=False)
+        shift[seg] = _shift(lv, ref) * dt
+    fin = {seg for seg in range(CR_SEG) if abs(seg_center(seg) - FIN_X) < 40}
+    return ref, shift, fin
+
+
+def _bob_keys(lv, ph, seed):
+    """組 ph の ぴょこぴょこ（12秒の keyframes）：盛り上がりが CR_TH より 上の 間 1秒に 2回 はねる（高さ 0.5〜1px：盛り上がるほど 高い）・
+       ふだんも ときどき 1回（組 0 は 3回・ほかは 1回）"""
+    n = len(lv)
+    dt = LAP / n
+    R0 = rnd(seed)
+    nj = int(LAP / CR_BOB)
+    idle = set(R0.sample(range(nj - 1), 3 if ph == 0 else 1))
+    rows = [(0.0, 0.0)]
+    for j in range(nj - 1):
+        t0 = 0.17 * ph + j * CR_BOB
+        lvl = lv[int(t0 / dt) % n]
+        if lvl > CR_TH[ph]:
+            a = 0.5 + 0.5 * min(1.0, lvl)
+        elif j in idle:
+            a = 0.4
+        else:
+            continue
+        if rows[-1][1] != 0.0 or rows[-1][0] < t0 - 1e-6:
+            rows.append((t0, 0.0))
+        rows.append((t0 + CR_BOB * 0.45, -a))
+        rows.append((t0 + CR_BOB * 0.9, 0.0))
+    rows.append((LAP, 0.0))
+    out = []
+    for t, v in rows:
+        if out and abs(out[-1][0] - t) < 1e-6:
+            out[-1] = (t, v)
+        else:
+            out.append((t, v))
+    return [(t / LAP * 100, f'transform:translateY({f(v)}px)' if v else 'transform:none') for t, v in out]
+
+
+def _hand_keys(lv, ph, seed):
+    """組 ph の あげた 手（12秒の keyframes・opacity）：盛り上がりが CR_TH_HAND より 上の 間（0.6秒 以上）・ふだんも 1回 1.2秒（組 0・1）"""
+    n = len(lv)
+    dt = LAP / n
+    on = [v > CR_TH_HAND[ph] for v in lv]
+    R0 = rnd(seed)
+    if ph < 2:                                                              # ときどき 手を あげる（盛り上がって いない 時に）
+        cand = [i for i in range(n) if not any(on[(i + j) % n] for j in range(-30, 54))]
+        if cand:
+            i0 = R0.choice(cand)
+            for j in range(int(1.2 / dt)):
+                on[(i0 + j) % n] = True
+    if not any(on):
+        return None
+    k0 = next(i for i in range(n) if not on[i]) if not all(on) else 0       # 手を おろして いる 所から 数える（12秒を またぐ 窓も 1つに）
+    wins, i = [], 0
+    while i < n:
+        if on[(k0 + i) % n]:
+            j = i
+            while j < n and on[(k0 + j) % n]:
+                j += 1
+            if (j - i) * dt >= 0.6:
+                wins.append(((k0 + i) * dt, (k0 + j) * dt))
+            i = j
+        else:
+            i += 1
+    pts = []
+    for a, b in wins:
+        pts += [(a - 0.15, 0), (a, 1), (b, 1), (b + 0.15, 0)]
+    if not pts:
+        return None
+
+    def val(t):                                                             # 時刻 t（12秒で まわる）の opacity
+        t %= LAP
+        for a, b in wins:
+            for off in (-LAP, 0.0, LAP):
+                a2, b2 = a + off, b + off
+                if a2 - 0.15 <= t <= b2 + 0.15:
+                    if t < a2:
+                        return (t - a2 + 0.15) / 0.15
+                    if t > b2:
+                        return (b2 + 0.15 - t) / 0.15
+                    return 1.0
+        return 0.0
+    ts = sorted({0.0, LAP} | {t % LAP for t, _ in pts})
+    return [(t / LAP * 100, f'opacity:{f(val(t) if t < LAP else val(0.0))}') for t in ts]
+
+
+def crowd_parts(B):
+    """お客さんの html と css（区切り×組 ごとに 1つの 動く 入れもの：人・あげた 手・タオル）。絵は B['crowd']（なければ 出さない）"""
+    cr = B.get('crowd')
+    if not cr:
+        return '', ''
+    sh = crowd_sheet()
+    sw, shh = sh['size']
+    ref, shift, fin = crowd_plan()
+    html = ''
+    bg = f"background:url({cr['url']}) 0 0/{f(sw)}px {f(shh)}px no-repeat"
+    css = ('.csw .csP{will-change:transform}'
+           '.csw .csP b{position:absolute;display:block;left:0;top:0}'
+           f'.csw .csP .cp,.csw .csP .ca,.csw .csP .cT{{{bg}}}'
+           f'.csw .csP .cT{{width:{f(TW_W)}px;height:{f(TW_H)}px;transform-origin:50% 95%;animation:csTw .7s ease-in-out infinite alternate}}')
+    css += kf('csTw', [(0, 'transform:rotate(-28deg)'), (100, 'transform:rotate(28deg)')])
+    for col, (tx, ty) in sh['towels'].items():
+        css += f'.csw .csP .cT.t{CR_TOWEL.index(col)}{{background-position:{f(-tx)}px {f(-ty)}px}}'
+    for ph in range(3):                                                     # ひな形の ぴょこぴょこ と 手（組ごと）
+        css += kf(f'csB{ph}', _bob_keys(ref, ph, 13 + ph))
+        hk = _hand_keys(ref, ph, 7 + ph)
+        if hk:
+            css += kf(f'csA{ph}', hk)
+    for name, seg, ph, (x0, y0, w, h), grp in crowd_groups():
+        q = max(0, ph - 1) if seg in fin else ph                            # ゴールの 前は 盛り上がりやすい 組の 動きに
+        (px, py), (hx, hy) = sh['cells'][name]
+        dl = (shift[seg] + 0.29 * ph) % LAP - LAP                          # 馬群が 近くを 通る 時に 合わせる（ひな形を shift 秒 おくらせる）
+        hk = _hand_keys(ref, q, 7 + q)
+        html += f'<i class="csP {name}"><b class="cp"></b>'
+        if hk:
+            html += '<b class="ch"><b class="ca"></b>'
+            for k, p in enumerate(t for t in grp if t[7]):
+                html += (f'<b class="cT t{CR_TOWEL.index(p[7])}" style="left:{f(p[0] - x0 - TW_W / 2)}px;top:{f(p[1] - y0 - 3.0)}px;'
+                         f'animation-delay:{f(-0.23 * k - 0.11 * seg)}s"></b>')
+            html += '</b>'
+        html += '</i>'
+        css += (f'.csw .{name}{{left:{f(x0)}px;top:{f(y0)}px;width:{f(w)}px;height:{f(h)}px;animation:csB{q} {f(LAP)}s ease-in-out {f(dl, 2)}s infinite}}'
+                f'.csw .{name} .cp,.csw .{name} .ch,.csw .{name} .ca{{width:{f(w)}px;height:{f(h)}px}}'
+                f'.csw .{name} .cp{{background-position:{f(-px)}px {f(-py)}px}}'
+                f'.csw .{name} .ca{{background-position:{f(-hx)}px {f(-hy)}px}}')
+        if hk:
+            css += f'.csw .{name} .ch{{opacity:0;animation:csA{q} {f(LAP)}s linear {f(dl, 2)}s infinite}}'
+    return html, css
+
+
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     still = B.get('still')
     hs = B.get('horses')
     alt = ('真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド、まわりに木。'
            'いろいろな勝負服の騎手を乗せた8頭のサラブレッドが芝コースを2つの進路にならんで周回して、12秒ごとに馬群のうしろの1頭が外の進路へ出て、'
-           '外から全部の馬を抜いて先頭でゴールする（勝つ馬は毎回ちがう・馬どうしは重ならない）。雲のかげがゆっくり流れる')
+           '外から全部の馬を抜いて先頭でゴールする（勝つ馬は毎回ちがう・馬どうしは重ならない）。下のスタンドのお客さんは、馬群が前を通ると'
+           'ぴょこぴょこはねて手をあげたりタオルをふったりして歓声をあげる（ゴールの前ほどにぎやか）。雲のかげがゆっくり流れる')
     hw, hh = CW * HS2, CH * HS2
     html = f'<div class="csw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('csG', ground_svg())
     html += img('csRp a', ripple_svg()) + img('csRp b', ripple_svg())
+    ch, cc = crowd_parts(B)                                                 # お客さん（第4.95版：歓声）
+    html += ch
     if hs:
         for k in range(len(SILKS)):
             html += f'<i class="csH h{k}"><b></b></i>'
@@ -530,7 +818,8 @@ def banner(B):
         css += f'.csw .csCl.c{c}{{width:{w}px;height:{h}px;animation:csC{c} {f(sec)}s linear {f(dl)}s infinite}}'
         css += kf(f'csC{c}', [(0, f'transform:translate({p0[0]}px,{p0[1]}px)'), (100, f'transform:translate({p1[0]}px,{p1[1]}px)')])
     css += kf('csRip', [(0, 'opacity:.85;transform:scale(.25)'), (100, 'opacity:0;transform:scale(1.25)')])
-    css += reduced('.csw .csG,.csw .csRp,.csw .csH,.csw .csCl') if still else ''
+    css += cc
+    css += reduced('.csw .csG,.csw .csRp,.csw .csP,.csw .csH,.csw .csCl') if still else ''
     return html, css
 
 
@@ -564,7 +853,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='競馬場', desc='上から見たコース', title='競馬場（芝の緑×白いラチ×ゴール板の赤）', banner=ID,
-    alt='真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド。いろいろな勝負服の騎手を乗せたサラブレッドの馬群が周回して、12秒ごとに1頭が外の進路から抜け出して先頭でゴールする（勝つ馬は毎回ちがう・馬どうしは重ならない）',
+    alt='真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド。いろいろな勝負服の騎手を乗せたサラブレッドの馬群が周回して、12秒ごとに1頭が外の進路から抜け出して先頭でゴールする（勝つ馬は毎回ちがう・馬どうしは重ならない）。馬群が前を通るとスタンドのお客さんが手をあげて歓声をあげる',
     fonts=['Train+One', 'M+PLUS+1:wght@500;700'],
     v=dict(bg='#EEF5EA', ink='#17301C', sub='#4D6A50', card='#FFFFFF', cardB='1.5px solid #CFE3C8', cardO='0 solid transparent', cardS='0 3px 0 #DCEBD5',
            radius='14px', rs='10px', font='"M PLUS 1"', dfont='"Train One"', dw='400', logo='#FFFFFF', logoS='0 2px 0 #14401E',
@@ -583,7 +872,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#23733A', '芝'), ('#FFFFFF', 'ラチ'), ('#D33A30', 'ゴール板'), ('#C8A272', 'ダート'), ('#EEF5EA', '背景')],
                fonts='見出し：Train One<br>本文：M PLUS 1', shape='角丸14px・丸いボタン・帯の下に 白い ラチ・芝の すじの 背景・カードの 上に 赤白の しま・すみに ゴール板・的中ボタンは 上から 見た コースの PUSH',
-               pic='真上から 見た 競馬場：芝コース・ダートコース・池と 蹄鉄の 花だん・スタンド・木・真上から 見た サラブレッドと 騎手 8頭の 馬群（2つの 進路・12秒ごとに ゴール・毎回 ちがう 馬が 外の 進路から 抜け出す・体は 重ならない）・雲の かげ'),
+               pic='真上から 見た 競馬場：芝コース・ダートコース・池と 蹄鉄の 花だん・スタンド・木・真上から 見た サラブレッドと 騎手 8頭の 馬群（2つの 進路・12秒ごとに ゴール・毎回 ちがう 馬が 外の 進路から 抜け出す・体は 重ならない）・スタンドの お客さんの 歓声（馬群が 前を 通ると はねて 手を あげる・タオルを ふる）・雲の かげ'),
 )
 
 

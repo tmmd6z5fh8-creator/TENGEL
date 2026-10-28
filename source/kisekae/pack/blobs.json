@@ -1,5 +1,13 @@
 {
  "course": {
+  "crowd": {
+   "id": "7adf06ffaeab3f444d1a152187524cac",
+   "scale": 3,
+   "size": [
+    132.0,
+    94.38
+   ]
+  },
   "horses": {
    "cell": [
     88,
@@ -11,7 +19,7 @@
    "scale": 3
   },
   "still": {
-   "id": "2cce695290e58031cac95812baabc535",
+   "id": "8ce66ec1d725901b6d9bd74838d8c4dc",
    "size": [
     780,
     320

@@ -1,11 +1,14 @@
 """壁紙パック ④パドック（まさちゃんの 指定「馬がパドックを歩きまわる」
    第4.93版の 直し「ランダムで馬が首を激しく振ったり、うんちしたり、早歩きになったり、首を下げて歩いたりするようにして！」
-   第4.94版の 直し「パドックの馬地面から脚が浮いたり地面についたりしてるから安定して同じ場所で歩かせて！あと脚の動きもう少しスムーズにして！」）
+   第4.94版の 直し「パドックの馬地面から脚が浮いたり地面についたりしてるから安定して同じ場所で歩かせて！あと脚の動きもう少しスムーズにして！」
+   第4.95版の 直し「赤四角のあたりにいる観客達に少しだけ動きをつけて！」）
    上の絵：スタンドから 見た パドック。手前の 道を 右へ 3頭（ゼッケン 2・5・7）、おくの 道を 左へ 3頭（1・4・8・小さく）が 歩く
      （いままでと 同じ 馬）。まん中に 芝生と 花だん、白い さく、うしろに お客さんの スタンドと 木、上に 小さな 旗の ひも。
    常歩（第4.94版）：1回り 1.25秒・24コマ（pack/make/paddock_gait.py：ひづめの 道を 先に 決めて 足の 角度を 逆に 解く）。
      地面に ついて いる ひづめは どの コマ・どの シートでも 同じ 地面の 線（道の 同じ 高さ）に つく。体は ほんの 少し 上下・影は 地面に 止まった まま。
    動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・雲が ゆっくり 流れる。
+     スタンドの お客さん（第4.95版・crowd_parts）：頭が ゆっくり 左右に ゆれる 人（3組）と、人ごとに ちがう 1回り（24〜35秒）の ばらばらの 時に
+     立ち上がる・手を あげる 人（1だん 6人）。
    ときどきの 動き（第4.93版）：馬ごとに 長い 1回り（手前 67.5秒・おく 60／90秒）の 中の ばらばらの 時に（PLAN）、
      首を 激しく 振る（上へ ぶんっと 振り上げて おろす・1回りに 2回・たてがみが はねる）／首を 下げて 歩く（下げていく → 下げて 歩く → 上げていく）／
      早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で ゆっくり 歩いて 前後の ずれを もどす＝となりの 馬に 追いつかない）／
@@ -25,8 +28,10 @@ RAIL = '#F6F4EE'
 
 
 # ---------------------------------------------------------------- 絵
-def back_svg():
-    """うしろ：空・木・お客さんの スタンド（小さな 色の つぶ）・おくの 外の さく・おくの 道"""
+def back_svg(people=None):
+    """うしろ：空・木・お客さんの スタンド（小さな 色の つぶ）・おくの 外の さく・おくの 道。
+       第4.95版：動く お客さん（crowd_roles：立ち上がる・手を あげる 人は 描かない・頭が ゆれる 人は 体だけ）。people：お客さん [(だん, 番号, x, y, 服, 髪)] を 入れる list"""
+    roles = crowd_roles()
     defs = ("<linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#9ED2F0'/><stop offset='1' stop-color='#DDF0F8'/></linearGradient>"
             "<linearGradient id='p' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#D9C08A'/><stop offset='1' stop-color='#E8D3A0'/></linearGradient>")
     o = f"<rect width='{W}' height='60' fill='url(#s)'/>"
@@ -47,7 +52,14 @@ def back_svg():
         for i in range(70):
             x = i * 5.6 + R.uniform(-1.2, 1.2) + (k % 2) * 2.8
             c = R.choice(('#E8574A', '#3E6FC2', '#F2C14E', '#FFFFFF', '#5A4A42', '#2E8A5A', '#E88AB0', '#3A3A44', '#F0E0C8'))
-            o += f"<rect x='{f(x - 1.7)}' y='{f(y + 2)}' width='3.4' height='4' rx='1.2' fill='{c}'/><circle cx='{f(x)}' cy='{f(y + 1)}' r='1.5' fill='{R.choice(('#2A1E18', '#4A3A30', '#E8D2B8', '#1E1E22'))}'/>"
+            hc = R.choice(('#2A1E18', '#4A3A30', '#E8D2B8', '#1E1E22'))
+            if people is not None:
+                people.append((k, i, x, y, c, hc))
+            role = roles.get((k, i))
+            if role is None or role[0] == 'w':                              # 動かない 人・頭が ゆれる 人の 体
+                o += f"<rect x='{f(x - 1.7)}' y='{f(y + 2)}' width='3.4' height='4' rx='1.2' fill='{c}'/>"
+            if role is None:
+                o += f"<circle cx='{f(x)}' cy='{f(y + 1)}' r='1.5' fill='{hc}'/>"
     o += "<rect x='0' y='60' width='390' height='3' fill='#9A9EA6'/>"
     # おくの 外の さく
     o += f"<rect x='0' y='60' width='390' height='44' fill='url(#p)'/>"
@@ -131,6 +143,90 @@ def pennants_svg(w=W, h=24):
         y = 4 + 10 * 4 * t * (1 - t) * 1.0
         o += f"<path d='M{f(x - 4)} {f(y)} L{f(x + 4)} {f(y)} L{f(x)} {f(y + 8)} Z' fill='{cols[i % len(cols)]}'/>"
     return doc(w, h, o)
+
+
+# ---------------------------------------------------------------- スタンドの お客さん（第4.95版：まさちゃんの 指定「赤四角のあたりにいる観客達に少しだけ動きをつけて！」）
+#   3だんの お客さんの うち：頭が ゆっくり 左右に ゆれる 人（3組・2.8〜4.1秒で 0.4px）と、ばらばらの 時に 立ち上がる・手を あげる 人（1だん 6人）。
+#   動きは 位置の 小さな 上下と 左右・手は ふわっと 出る（色が ちかちか かわる 所は ない）
+CR_SKIN = ('#F2D2B6', '#E8BE98', '#D4A47C')
+CR_PANTS = ('#3A3A44', '#4A5A78', '#5A4A42')
+
+
+def crowd_roles():
+    """お客さんの 役：{(だん, 番号): ('w', 組) 頭が ゆれる ／ ('a', 番号) 立ち上がる・手を あげる}"""
+    R = rnd(77)
+    roles = {}
+    for k in range(3):
+        base = R.uniform(0, 11.6)
+        for j in range(6):                                                  # 1だん 6人（ちらばる ように）
+            i = int(base + j * 11.6 + R.uniform(-2, 2)) % 70
+            roles[(k, i)] = ('a', len([r for r in roles.values() if r[0] == 'a']))
+        free = [i for i in range(70) if (k, i) not in roles]
+        for n, i in enumerate(R.sample(free, 14)):
+            roles[(k, i)] = ('w', n % 3)
+    return roles
+
+
+SWAY = ((2.8, 0.0), (3.4, -1.1), (4.1, -2.3))           # 頭の ゆれ：(秒（行って もどる）, おくれ)
+
+
+def actor_keys(n, cyc):
+    """立ち上がる・手を あげる 人 n の 1回り（cyc 秒）の keyframes：(体の 上下, 手)"""
+    R = rnd(300 + n)
+    kind = R.choice(('stand', 'hands', 'both', 'stand', 'hands'))
+    t0 = R.uniform(0.5, cyc - 4.5)
+    dur = {'stand': 2.2, 'hands': 1.6, 'both': 2.6}[kind]
+    up, hand = [(0, 0.0)], [(0, 0.0)]
+    if kind in ('stand', 'both'):
+        up += [(t0, 0.0), (t0 + 0.4, -1.6), (t0 + dur - 0.4, -1.6), (t0 + dur, 0.0)]
+    if kind in ('hands', 'both'):
+        a = t0 + (0.35 if kind == 'both' else 0.0)
+        b = t0 + dur - (0.3 if kind == 'both' else 0.0)
+        hand += [(a, 0.0), (a + 0.25, 1.0), (b - 0.25, 1.0), (b, 0.0)]
+    if R.random() < 0.5:                                                    # もう 1回 手だけ（半分の 人）
+        t1 = (t0 + dur + R.uniform(3.0, cyc - dur - 4.0)) % cyc
+        if t1 + 1.4 < cyc and (t1 > t0 + dur + 1 or t1 + 1.4 < t0 - 1):
+            ev = sorted(hand[1:] + [(t1, 0.0), (t1 + 0.25, 1.0), (t1 + 1.15, 1.0), (t1 + 1.4, 0.0)])
+            hand = [(0, 0.0)] + ev
+    up.append((cyc, 0.0))
+    hand.append((cyc, 0.0))
+    return ([(t / cyc * 100, f'transform:translateY({f(v)}px)' if v else 'transform:none') for t, v in up],
+            [(t / cyc * 100, f'opacity:{f(v)}') for t, v in hand] if len(hand) > 2 else None)
+
+
+def crowd_parts(ppl):
+    """動く お客さんの html と css（頭が ゆれる 3組・立ち上がる／手を あげる 人）"""
+    roles = crowd_roles()
+    html, css = '', ''
+    top = 36
+    for g, (sec, dl) in enumerate(SWAY):                                    # 頭が ゆれる
+        heads = ''.join(f"<circle cx='{f(x)}' cy='{f(y + 1 - top)}' r='1.5' fill='{hc}'/>" for k, i, x, y, c, hc in ppl if roles.get((k, i)) == ('w', g))
+        html += img(f'pkCw w{g}', doc(W, 24, heads))
+        css += f'.pkw .pkCw.w{g}{{left:0;top:{top}px;width:{W}px;height:24px;animation:pkSw {f(sec)}s ease-in-out {f(dl)}s infinite alternate}}'
+    css += kf('pkSw', [(0, 'transform:translateX(-.4px)'), (100, 'transform:translateX(.4px)')])
+    css += '.pkw .pkCa{overflow:hidden}.pkw .pkCa>i{position:absolute;display:block;left:0;top:0;width:8px;height:13px}.pkw .pkCa img{position:absolute;display:block;left:0;top:0;width:8px;height:13px}'
+    for k, i, x, y, c, hc in ppl:                                           # 立ち上がる・手を あげる（いすの 線より 下は 見えない＝立つと 足が 出る）
+        role = roles.get((k, i))
+        if not role or role[0] != 'a':
+            continue
+        n = role[1]
+        R = rnd(500 + n)
+        skin, pants = R.choice(CR_SKIN), R.choice(CR_PANTS)
+        ox, oy = x - 4, y - 5
+        body = (f"<rect x='{f(x - 1.5 - ox)}' y='{f(y + 5.2 - oy)}' width='3' height='2.6' rx='.6' fill='{pants}'/>"
+                f"<rect x='{f(x - 1.7 - ox)}' y='{f(y + 2 - oy)}' width='3.4' height='4' rx='1.2' fill='{c}'/>"
+                f"<circle cx='{f(x - ox)}' cy='{f(y + 1 - oy)}' r='1.5' fill='{hc}'/>")
+        arms = ''.join(f"<path d='M{f(x + sg * 1.35 - ox)} {f(y + 2.9 - oy)} L{f(x + sg * 2.4 - ox)} {f(y - 1.0 - oy)}' stroke='{c}' stroke-width='1' stroke-linecap='round'/>"
+                       f"<circle cx='{f(x + sg * 2.5 - ox)}' cy='{f(y - 1.4 - oy)}' r='.7' fill='{skin}'/>" for sg in (-1, 1))
+        cyc = 24 + 2 * (n % 6) + R.uniform(0, 1.5)                           # 人ごとに ちがう 1回り（ばらばら）
+        ku, kh = actor_keys(n, cyc)
+        name = f'pa{n}'
+        html += f'<i class="pkCa {name}"><i>' + img('', doc(8, 13, body)) + (img('ar', doc(8, 13, arms)) if kh else '') + '</i></i>'
+        css += (f'.pkw .pkCa.{name}{{left:{f(ox)}px;top:{f(oy)}px;width:8px;height:11px}}'
+                f'.pkw .pkCa.{name}>i{{animation:{name}U {f(cyc, 2)}s ease-in-out infinite}}' + kf(f'{name}U', ku))
+        if kh:
+            css += f'.pkw .pkCa.{name} .ar{{opacity:0;animation:{name}H {f(cyc, 2)}s linear infinite}}' + kf(f'{name}H', kh)
+    return html, css
 
 
 # ---------------------------------------------------------------- 馬の 歩きと ときどきの 動き（第4.93版）
@@ -376,10 +472,13 @@ def banner(B):
     still = B.get('still')
     alt = ('スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。手前は右へ3頭（ゼッケン2・5・7）、おくは左へ3頭（ゼッケン1・4・8）。'
            'ひづめはいつも地面について、なめらかな足どりで歩く。ときどき首を激しく振ったり、首を下げて歩いたり、早歩きになったり、うんちをしたりする。'
-           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木、上に小さな旗のひも')
+           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（頭をゆらしたり、ときどき立ち上がったり手をあげたりする）と木、上に小さな旗のひも')
     html = f'<div class="pkw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
-    html += img('pkBk', back_svg())
+    ppl = []
+    html += img('pkBk', back_svg(ppl))
+    ch, cc = crowd_parts(ppl)                                              # 動く お客さん（第4.95版）
+    html += ch
     html += f'<i class="pkCl" style="background-image:url(&quot;{durl(clouds_svg())}&quot;)"></i>'
     css = ('.pkw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#DDF0F8}'
            '.pkw>*{position:absolute;display:block}'
@@ -408,7 +507,8 @@ def banner(B):
     html += '</div>'
     css += (kf('pkCloud', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-W}px)')])
             + kf('pkSway', [(0, 'transform:rotate(-.6deg)'), (50, 'transform:rotate(.6deg)'), (100, 'transform:rotate(-.6deg)')]))
-    css += reduced('.pkw .pkBk,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn,.pkw .pkDg') if still else ''
+    css += cc
+    css += reduced('.pkw .pkBk,.pkw .pkCw,.pkw .pkCa,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn,.pkw .pkDg') if still else ''
     return html, css
 
 
@@ -444,7 +544,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='パドック', desc='歩く馬たち', title='パドック（芝の緑×白いさく×金）', banner=ID,
-    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちがひづめを地面につけてなめらかに歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木',
+    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちがひづめを地面につけてなめらかに歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（少し動く）と木',
     fonts=['Kaisei+HarunoUmi:wght@700', 'Zen+Maru+Gothic:wght@500;700'],
     v=dict(bg='#F3F1E6', ink='#22301E', sub='#56664E', card='#FFFFFF', cardB='1.5px solid #D6DCC8', cardO='0 solid transparent', cardS='0 3px 0 #E2E6D6',
            radius='14px', rs='10px', font='"Zen Maru Gothic"', dfont='"Kaisei HarunoUmi"', dw='700', logo='#F6E7B8', logoS='0 2px 0 #163A22',
@@ -463,7 +563,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2F6B3E', '芝の 緑'), ('#1F6B45', 'ボタン'), ('#B8862A', '金'), ('#F6F4EE', '白い さく'), ('#F3F1E6', '背景')],
                fonts='見出し：Kaisei HarunoUmi<br>本文：Zen Maru Gothic', shape='角丸14px・帯は 芝の 緑で 下に 白い さく・芝生の しまの 背景・すみに ロゼット・的中ボタンは ゼッケンの PUSH',
-               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ・1回り 24コマの なめらかな 足・ひづめは いつも 同じ 地面の 線に つく）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド・旗の ひも'),
+               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ・1回り 24コマの なめらかな 足・ひづめは いつも 同じ 地面の 線に つく）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド（頭が ゆれる・ときどき 立ち上がる・手を あげる）・旗の ひも'),
 )
 
 

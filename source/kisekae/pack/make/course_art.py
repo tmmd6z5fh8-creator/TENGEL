@@ -3,7 +3,9 @@
    前かがみの 騎手＝ヘルメット・勝負服の せなか（もよう）・うで・白い ズボンの ひざ・ブーツ・手綱・鞍の 下の 布・影）。
    8頭 × NF コマを 1まい（たて 8行・よこ NF コマ）の すき通しの WebP に する（画面の 3倍の 画素：まわしても ぼやけない）。
    大きさは course.HS2（第4.94版：0.95 → 0.70＝前の 7割4分・まさちゃんの 指定「もっと馬小さくして」）
-   python3 kisekae/pack/make/course_art.py [--out DIR]   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の course.horses"""
+   第4.95版：前の スタンドの お客さん（真上から 見た 肩と 頭・あげた 手・タオル）の 絵も 1まいに（course.crowd_sprite_svg → course.crowd）
+   python3 kisekae/pack/make/course_art.py [--out DIR] [--crowd]   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の course.horses
+     （--crowd：お客さんの 絵だけ → course.crowd）"""
 import os
 import sys
 
@@ -15,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from sheets import save_webp, record, preview_png  # noqa: E402  (sys.path に flat・pack の 親を 足す)
 from cute_horse import svg_rgba  # noqa: E402
-from pack.course import SILKS, NF, CW, CH, HS2, top_sheet  # noqa: E402
+from pack.course import SILKS, NF, CW, CH, HS2, top_sheet, crowd_sheet, crowd_sprite_svg  # noqa: E402
 
 SC = 3                     # 画面の px あたりの 画素
 
@@ -40,9 +42,31 @@ def build(out=None):
     return bid
 
 
+def build_crowd(out=None):
+    """お客さんの 絵（人・あげた 手・タオル：course.crowd_sheet の 場所）を 3倍の 画素の WebP に"""
+    w, h = crowd_sheet()['size']
+    pw, ph = round(w * SC), round(h * SC)
+    pm = svg_rgba(crowd_sprite_svg(), pw, ph)
+    a = pm[..., 3:4]
+    rgb = np.where(a > 1e-4, pm[..., :3] / np.maximum(a, 1e-4), 0)
+    u8 = (np.clip(np.concatenate([rgb, a], -1), 0, 1) * 255 + .5).astype(np.uint8)
+    if out:
+        os.makedirs(out, exist_ok=True)
+        preview_png(u8, os.path.join(out, 'course_crowd.png'), bg=(201, 216, 184))
+    bid = save_webp(u8, quality=92)
+    meta = dict(size=[round(w, 2), round(h, 2)], scale=SC)
+    record('course', 'crowd', bid, meta)
+    print('crowd', bid, meta, u8.shape, flush=True)
+    return bid
+
+
 if __name__ == '__main__':
     o = None
     for a in sys.argv[1:]:
         if a.startswith('--out='):
             o = a.split('=', 1)[1]
-    build(o)
+    if '--crowd' in sys.argv[1:]:
+        build_crowd(o)
+    else:
+        build(o)
+        build_crowd(o)
