@@ -67,8 +67,8 @@ def neon(i, pre, A):
 
 # ---------------------------------------------------------------- 足もとの 雷（第4.93版）
 BOLT_CORE = hexc('#F2FFFF')
-BOLT_MID = hexc('#7FEFFF')
-BOLT_GLOW = hexc('#2FCFFF')
+BOLT_MID = hexc('#5FDCFF')
+BOLT_GLOW = hexc('#1FA8FF')
 
 
 def jag(R, p0, ang, L, n=5, jit=0.32):
@@ -98,7 +98,7 @@ def bolts_layer(hooves, seed, ground):
         if on_ground:
             angs = [R.choice((172, 186)) + R.uniform(-8, 8), R.uniform(-12, 8), R.uniform(100, 150)]
         for a in angs:
-            L = R.uniform(14, 26) * (1.0 if on_ground else 0.85)
+            L = R.uniform(16, 30) * (1.0 if on_ground else 0.85)
             pts = jag(R, base, a, L, n=R.choice((4, 5, 6)))
             lines.append(pts)
             if R.random() < 0.55:                                  # 枝
@@ -117,9 +117,9 @@ def bolts_layer(hooves, seed, ground):
         cv2.polylines(mid, [q], False, 1.0, 5, cv2.LINE_AA, shift=2)
     mid = np.clip(cv2.GaussianBlur(mid, (0, 0), 1.6), 0, 1)
     glow = np.clip(cv2.GaussianBlur(mid, (0, 0), 5.0) * 1.1, 0, 1)
-    A = np.clip(core * 0.95 + mid * 0.55 + glow * 0.35, 0, 1)
-    pre = (BOLT_CORE[None, None, :] * (core * 0.95)[..., None] + BOLT_MID[None, None, :] * (mid * 0.55 * (1 - core * 0.95))[..., None]
-           + BOLT_GLOW[None, None, :] * (glow * 0.35 * (1 - np.clip(core * 0.95 + mid * 0.55, 0, 1)))[..., None])
+    A = np.clip(core * 0.95 + mid * 0.7 + glow * 0.5, 0, 1)
+    pre = (BOLT_CORE[None, None, :] * (core * 0.95)[..., None] + BOLT_MID[None, None, :] * (mid * 0.7 * (1 - core * 0.95))[..., None]
+           + BOLT_GLOW[None, None, :] * (glow * 0.5 * (1 - np.clip(core * 0.95 + mid * 0.7, 0, 1)))[..., None])
     return pre, A
 
 

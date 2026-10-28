@@ -4,7 +4,10 @@
      （水色に 光る たてがみと しっぽ・光の ふちどり：pack/make/future_art.py）が 走る。いろいろな 高さを 空飛ぶ 車が 行き来する。
    動き（CSS だけ）：馬は いつも 走る（10コマを 0.48秒）。レーンの 光の すじと 支柱は 速く・近くの ビルは ゆっくり・遠くの ビルは もっと ゆっくり 流れる。
      空飛ぶ 車（近く・中くらい・遠く）が 光の 尾を 引いて 右へ 左へ（いろいろな 速さと 間）。馬の うしろに 光の すじ。
-     ホログラムの 看板は ゆっくり ゆらぐ。窓の 光は 動かさない（強く 光らせない・点めつ なし）"""
+     ホログラムの 看板は ゆっくり ゆらぐ。窓の 光は 動かさない（強く 光らせない・点めつ なし）
+   第4.93版（まさちゃん「常に足元に青い雷を纏っているようにして！」）：馬の 足もとに いつも 青い 雷。ひづめの まわりの 光の もやは 馬の シートに、
+     ぱちぱち 走る 細い 雷は 雷だけの シート 3まい（pack/make/future_art.py の bolt0〜2：馬と 同じ 10コマ・同じ 場所）を 馬と いっしょに めくりながら、
+     0.1秒ずつ 入れかえる（雷が コマごとの ひづめに ついて いく・小さい ので 点めつの 面積は ごく 小さい）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -206,7 +209,7 @@ CARS = [  # (クラス, 向き, 上, 大きさ倍, 秒, 遅れ, 体の色, 光)
 def banner(B):
     run = B.get('run')
     still = B.get('still')
-    alt = ('夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が走るイラスト。まわりを空飛ぶ車が光の尾を引いて行き来し、'
+    alt = ('夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が、足もとに青い雷をまといながら走るイラスト。まわりを空飛ぶ車が光の尾を引いて行き来し、'
            '遠くに光る窓の高いビルと塔、浮かぶホログラムの看板')
     html = f'<div class="ftw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
@@ -225,6 +228,9 @@ def banner(B):
         html += img(f'ftSk s{k}', streak_svg())
     if run:
         html += '<i class="ftH"><i></i></i>'
+        for v in range(3):                                             # 足もとの 雷（3とおりを 0.1秒ずつ）
+            if f'bolt{v}' in B:
+                html += f'<i class="ftB b{v}"><i></i></i>'
     for cls, d, top, sc, sec, dl, col, gl in CARS:
         if top >= LANE_Y:
             html += img(f'ftCar {cls}', car_svg(body=col, body2=mix(col, '#3A4A7A', 0.5), glow=gl, left=d < 0))
@@ -252,6 +258,15 @@ def banner(B):
                 f'.ftw .ftH>i{{left:0;top:0;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({run["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
                 f'animation:ftRun {RUN}s steps({n}) infinite}}'
                 + kf('ftRun', [(100, f'transform:translateX({f(-n * cw / 2)}px)')]))
+        for v in range(3):
+            bo = B.get(f'bolt{v}')
+            if not bo:
+                continue
+            css += (f'.ftw .ftB.b{v}{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;overflow:hidden;opacity:0;'
+                    f'animation:ftZap .3s step-end {f(-0.1 * v, 2)}s infinite}}'
+                    f'.ftw .ftB.b{v}>i{{left:0;top:0;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({bo["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
+                    f'animation:ftRun {RUN}s steps({n}) infinite}}')
+        css += kf('ftZap', [(0, 'opacity:1'), (33.33, 'opacity:0'), (100, 'opacity:0')])
     for cls, d, top, sc, sec, dl, col, gl in CARS:
         w, h = 86 * sc, 18 * sc
         css += f'.ftw .ftCar.{cls}{{left:0;top:{top}px;width:{f(w)}px;height:{f(h)}px;animation:ftCar{cls} {f(sec)}s linear {f(dl)}s infinite}}'
@@ -304,7 +319,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='近未来都市', desc='光のレーン', title='近未来都市（夜×水色の光）', banner=ID,
-    alt='夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が走り、まわりを空飛ぶ車が光の尾を引いて行き来するイラスト',
+    alt='夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が足もとに青い雷をまとって走り、まわりを空飛ぶ車が光の尾を引いて行き来するイラスト',
     fonts=['Stick', 'Zen+Kaku+Gothic+New:wght@500;700'],
     v=dict(bg='#0B1024', ink='#EAF3FF', sub='#9FB2D6', card='#121A36', cardB='1px solid #2A3A70', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.4)',
            radius='12px', rs='8px', font='"Zen Kaku Gothic New"', dfont='"Stick"', dw='400', logo='#7FEFFF', logoS='0 0 12px rgba(63,224,255,.55)',
@@ -323,7 +338,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#0B1024', '夜'), (CY, '光の水色'), (MG, '赤むらさき'), ('#121A36', 'カード'), ('#EAF3FF', '文字')],
                fonts='見出し：Stick<br>本文：Zen Kaku Gothic New', shape='角丸12px・暗い カード（上に 光の 線）・帯の 下に 光の レーン・回路の 背景・すみに 空飛ぶ 車・的中ボタンは ホログラムの PUSH',
-               pic='夜の 未来の 町・光る 窓の ビルと 塔・ホログラムの 看板・空飛ぶ 車・光の レーンを 走る 黒い 馬（水色に 光る たてがみ）'),
+               pic='夜の 未来の 町・光る 窓の ビルと 塔・ホログラムの 看板・空飛ぶ 車・光の レーンを 走る 黒い 馬（水色に 光る たてがみ・足もとに いつも 青い 雷）'),
 )
 
 
