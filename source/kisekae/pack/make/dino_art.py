@@ -103,30 +103,13 @@ def caveman(m, i, kind):
     fur, furd = L['fur']
     hair, haird = L['hair']
     front, back = [], []
-    # ---- おくの 手（ふり上げた 武器）：馬の うしろに しく（体と 頭に かくれる 所は かくれる）
-    Cf = C + fwd * 0.02 * p
-    if L['weapon'] == 'club':
-        sw = 26 * wave                                                   # こん棒を ふる
-        Ef = Cf + rot(up, -40 + sw * 0.5) * 0.17 * p
-        Hf = Ef + rot(up, -10 + sw) * 0.16 * p
-        ang = lean - 90 - 34 + sw
-        cl = Hf + rot(V(1, 0), ang) * 0.22 * p
-        back.append(bone(cl, ang, 0.56 * p, 0.10 * p))
-    else:
-        sw = 8 * wave
-        Ef = Cf + rot(up, 25 + sw * 0.5) * 0.17 * p
-        Hf = Ef + rot(up, 5 + sw) * 0.16 * p
-        ang = lean - 90 + 20 + sw
-        u = rot(V(1, 0), ang)
-        nrm = V(-u[1], u[0])
-        a_, b_ = Hf - u * 0.24 * p, Hf + u * 0.52 * p
-        back.append(limb(a_, b_, 0.045 * p, 0.038 * p, '#7A5430'))
-        tip = [b_ + u * 0.17 * p, b_ + nrm * 0.06 * p - u * 0.015 * p, b_ - u * 0.03 * p, b_ - nrm * 0.06 * p - u * 0.015 * p]
-        back.append(path(smooth(tip), '#6E6864') + path(smooth([b_ + u * 0.13 * p, b_ + nrm * 0.028 * p, b_ - nrm * 0.028 * p]), '#A49E98'))
-        back.append(limb(b_ - u * 0.05 * p, b_ + u * 0.02 * p, 0.07 * p, 0.07 * p, '#C49A5E'))
-    back.append(limb(Cf, Ef, 0.11 * p, 0.09 * p, skd))
-    back.append(limb(Ef, Hf, 0.09 * p, 0.08 * p, skd))
-    back.append(circ(Hf, 0.06 * p, skd))
+    # ---- おくの 手（手綱を にぎる）：馬の うしろに しく（体に かくれる・手は き甲の 上）
+    Hn = V(wx(-0.10), top(wx(-0.10)) - 0.06 * p)
+    Cf = C + fwd * 0.05 * p
+    En = (Cf + Hn) / 2 + up * -0.06 * p
+    back.append(limb(Cf, En, 0.11 * p, 0.09 * p, skd))
+    back.append(limb(En, Hn, 0.09 * p, 0.075 * p, skd))
+    back.append(circ(Hn, 0.06 * p, skd))
     # ---- 手前の 足（馬の 横に そって 前へ・ひざから 下へ たれる）
     K = S + rot(V(0.25 * p, 0.10 * p), 4 * wave)
     F = K + V(-0.06 * p, 0.25 * p)
@@ -160,14 +143,6 @@ def caveman(m, i, kind):
         q = C * (1 - v_) + (hb * (1 - u_) + hf * u_) * v_ + up * 0.02 * p
         front.append(ell(q, 0.03 * p, 0.02 * p, R.uniform(0, 180), L['spot']))
     front.append(stroke(smooth([sb + fwd * 0.05 * p + up * 0.03 * p, (C + belly) / 2 + fwd * 0.03 * p], closed=False), furd, 0.035 * p))   # 片がけの ひも
-    # ---- 手前の 手（手綱を にぎる）
-    Hn = V(wx(-0.10), top(wx(-0.10)) - 0.06 * p)
-    Sh = sf - up * 0.02 * p
-    En = (Sh + Hn) / 2 + up * -0.07 * p + fwd * -0.02 * p
-    front.append(limb(Sh, En, 0.115 * p, 0.095 * p, sk))
-    front.append(limb(En, Hn, 0.095 * p, 0.08 * p, sk))
-    front.append(circ(Hn, 0.065 * p, sk))
-    front.append(stroke(smooth([Hn + V(-0.04 * p, -0.015 * p), Hn + V(0.0, 0.03 * p), Hn + V(0.04 * p, 0.0)], closed=False), skd, 0.016 * p))
     # ---- 頭（ぼさぼさの 髪・大きな 目・まるい 鼻・にっこり）
     front.append(limb(C, Hc - up * 0.10 * p, 0.10 * p, 0.10 * p, sk))
     nh = 13
@@ -203,6 +178,30 @@ def caveman(m, i, kind):
         front.append(path(smooth([mo + V(-0.01 * p, 0.012 * p), mo + V(0.03 * p, 0.008 * p), mo + V(0.015 * p, 0.03 * p)]), '#E86A5A'))
     else:
         front.append(bone(Hc + rot(V(hr * 1.1, 0), -118), -24, 0.22 * p, 0.045 * p))           # 髪に 骨の 飾り
+    # ---- 手前の 手（ふり上げた 武器）：頭の 横・うしろへ ふり上げて ギャロップに 合わせて ふる
+    Sh = C - fwd * 0.03 * p + up * 0.01 * p
+    if L['weapon'] == 'club':
+        sw = 22 * wave
+        En = Sh + rot(up, -78 + sw * 0.4) * 0.16 * p
+        Hw = En + rot(up, -28 + sw) * 0.15 * p
+        ang = lean - 90 - 38 + sw
+        front.append(bone(Hw + rot(V(1, 0), ang) * 0.20 * p, ang, 0.54 * p, 0.10 * p))
+    else:
+        sw = 7 * wave
+        En = Sh + rot(up, -70 + sw * 0.4) * 0.16 * p
+        Hw = En + rot(up, -12 + sw) * 0.15 * p
+        ang = lean - 90 + 26 + sw
+        u = rot(V(1, 0), ang)
+        nrm = V(-u[1], u[0])
+        a_, b_ = Hw - u * 0.26 * p, Hw + u * 0.50 * p
+        front.append(limb(a_, b_, 0.045 * p, 0.038 * p, '#7A5430'))
+        tip = [b_ + u * 0.17 * p, b_ + nrm * 0.06 * p - u * 0.015 * p, b_ - u * 0.03 * p, b_ - nrm * 0.06 * p - u * 0.015 * p]
+        front.append(path(smooth(tip), '#6E6864') + path(smooth([b_ + u * 0.13 * p, b_ + nrm * 0.028 * p, b_ - nrm * 0.028 * p]), '#A49E98'))
+        front.append(limb(b_ - u * 0.05 * p, b_ + u * 0.02 * p, 0.07 * p, 0.07 * p, '#C49A5E'))
+    front.append(limb(Sh, En, 0.115 * p, 0.095 * p, sk))
+    front.append(limb(En, Hw, 0.095 * p, 0.085 * p, sk))
+    front.append(circ(Hw, 0.068 * p, sk))
+    front.append(stroke(smooth([Hw + V(-0.04 * p, 0.0), Hw + V(0.0, 0.035 * p), Hw + V(0.04 * p, 0.01 * p)], closed=False), skd, 0.016 * p))
     return dict(front=front, back=back)
 
 
