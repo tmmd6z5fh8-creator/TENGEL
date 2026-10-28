@@ -7,7 +7,11 @@
      ホログラムの 看板は ゆっくり ゆらぐ。窓の 光は 動かさない（強く 光らせない・点めつ なし）
    第4.93版（まさちゃん「常に足元に青い雷を纏っているようにして！」）：馬の 足もとに いつも 青い 雷。ひづめの まわりの 光の もやは 馬の シートに、
      ぱちぱち 走る 細い 雷は 雷だけの シート 3まい（pack/make/future_art.py の bolt0〜2：馬と 同じ 10コマ・同じ 場所）を 馬と いっしょに めくりながら、
-     0.1秒ずつ 入れかえる（雷が コマごとの ひづめに ついて いく・小さい ので 点めつの 面積は ごく 小さい）"""
+     0.1秒ずつ 入れかえる（雷が コマごとの ひづめに ついて いく・小さい ので 点めつの 面積は ごく 小さい）
+   第4.94版（まさちゃん「黄丸の脚の雷はもっと線細く！」「脚の雷の光が通ったところに光の線が残っているような演出して！」）：
+     雷の 線を 細く（芯は 半分・まわりの 光は うすく）。ひづめの 通った あとに 水色の 光の すじ（pack/make/future_art.py の trail：
+     ギャロップ 1回りに 20コマ）が 残って、レーンと 同じ はやさで うしろへ 流れて 0.5秒で うすく 消える（光で 絵を 描いた ような あと）。
+     レーンの 流れる はやさは 地面に ついた ひづめの はやさ（run の speed＝約200px／秒。前は 260px／秒で ひづめが 少し すべって 見えた）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -17,7 +21,7 @@ CY = '#3FE0FF'      # 水色の 光
 MG = '#FF4FD8'      # 赤むらさきの 光
 LANE_Y = 129        # レーンの 上の 面（馬の ひづめ）
 RUN = 0.48          # ギャロップ 1回（10コマ）
-LANE_SPEED = 260    # レーンの 光の 流れ（px／秒）
+LANE_SPEED = 260    # レーンの 光の 流れ（px／秒）：馬の シートに speed が あれば それ（地面に ついた ひづめと 同じ＝すべらない）
 
 
 # ---------------------------------------------------------------- 背景
@@ -209,8 +213,8 @@ CARS = [  # (クラス, 向き, 上, 大きさ倍, 秒, 遅れ, 体の色, 光)
 def banner(B):
     run = B.get('run')
     still = B.get('still')
-    alt = ('夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が、足もとに青い雷をまといながら走るイラスト。まわりを空飛ぶ車が光の尾を引いて行き来し、'
-           '遠くに光る窓の高いビルと塔、浮かぶホログラムの看板')
+    alt = ('夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が、足もとに細い青い雷をまといながら走るイラスト。ひづめの通ったあとに水色の光のすじが残って、'
+           'うしろへ流れながら消えていく。まわりを空飛ぶ車が光の尾を引いて行き来し、遠くに光る窓の高いビルと塔、浮かぶホログラムの看板')
     html = f'<div class="ftw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('ftSky', sky_svg())
@@ -227,6 +231,8 @@ def banner(B):
     for k in range(4):
         html += img(f'ftSk s{k}', streak_svg())
     if run:
+        if B.get('trail'):                                             # ひづめの 通った あとの 光の すじ（馬の うしろ）
+            html += '<i class="ftTr"><i></i></i>'
         html += '<i class="ftH"><i></i></i>'
         for v in range(3):                                             # 足もとの 雷（3とおりを 0.1秒ずつ）
             if f'bolt{v}' in B:
@@ -237,6 +243,7 @@ def banner(B):
     html += '</div>'
 
     lane_w = 130
+    lane_v = (run or {}).get('speed') or LANE_SPEED
     css = ('.ftw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#0E1534}'
            '.ftw img,.ftw i{position:absolute;display:block}'
            '.ftw .bnr{left:0;top:0;width:390px;height:160px;object-fit:cover}'
@@ -246,7 +253,7 @@ def banner(B):
            '.ftw .ftMid{left:0;top:40px;width:652px;height:96px;background-size:260px 96px;background-repeat:repeat-x;animation:ftMid 9s linear infinite;will-change:transform}'
            '.ftw .ftHo{left:40px;top:30px;width:64px;height:36px;animation:ftHolo 5.6s ease-in-out infinite;will-change:opacity,transform}'
            '.ftw .ftBl{left:0;top:130px;width:600px;height:30px;background-size:200px 30px;background-repeat:repeat-x;animation:ftBelow 3.2s linear infinite;will-change:transform}'
-           f'.ftw .ftLn{{left:0;top:{LANE_Y - 1}px;width:{390 + lane_w}px;height:34px;background-size:{lane_w}px 34px;background-repeat:repeat-x;animation:ftLane {f(lane_w / LANE_SPEED, 4)}s linear infinite;will-change:transform}}'
+           f'.ftw .ftLn{{left:0;top:{LANE_Y - 1}px;width:{390 + lane_w}px;height:34px;background-size:{lane_w}px 34px;background-repeat:repeat-x;animation:ftLane {f(lane_w / lane_v, 4)}s linear infinite;will-change:transform}}'
            f'.ftw .ftPool{{left:110px;top:{LANE_Y - 7}px;width:170px;height:16px;border-radius:50%;background:radial-gradient(closest-side,rgba(63,224,255,.42),rgba(63,224,255,0))}}'
            '.ftw .ftSk{width:90px;height:4px;opacity:0;animation:ftStreak 1.1s linear infinite;will-change:transform,opacity}'
            '.ftw .ftCar{will-change:transform}')
@@ -267,6 +274,13 @@ def banner(B):
                     f'.ftw .ftB.b{v}>i{{left:0;top:0;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({bo["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
                     f'animation:ftRun {RUN}s steps({n}) infinite}}')
         css += kf('ftZap', [(0, 'opacity:1'), (33.33, 'opacity:0'), (100, 'opacity:0')])
+        tr = B.get('trail')
+        if tr:
+            tn, (tw, th), (tx, ty) = tr['frames'], tr['cell'], tr['at']
+            css += (f'.ftw .ftTr{{left:{f(tx / 2)}px;top:{f(ty / 2)}px;width:{f(tw / 2)}px;height:{f(th / 2)}px;overflow:hidden}}'
+                    f'.ftw .ftTr>i{{left:0;top:0;width:{f(tn * tw / 2)}px;height:{f(th / 2)}px;background:url({tr["url"]}) 0 0/{f(tn * tw / 2)}px {f(th / 2)}px no-repeat;'
+                    f'animation:ftTrail {RUN}s steps({tn}) infinite}}'
+                    + kf('ftTrail', [(100, f'transform:translateX({f(-tn * tw / 2)}px)')]))
     for cls, d, top, sc, sec, dl, col, gl in CARS:
         w, h = 86 * sc, 18 * sc
         css += f'.ftw .ftCar.{cls}{{left:0;top:{top}px;width:{f(w)}px;height:{f(h)}px;animation:ftCar{cls} {f(sec)}s linear {f(dl)}s infinite}}'
@@ -319,7 +333,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='近未来都市', desc='光のレーン', title='近未来都市（夜×水色の光）', banner=ID,
-    alt='夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が足もとに青い雷をまとって走り、まわりを空飛ぶ車が光の尾を引いて行き来するイラスト',
+    alt='夜の未来の町の空にのびる光のレーンを、水色に光るたてがみの黒い馬が足もとに細い青い雷をまとって走り、ひづめのあとに光のすじが残るイラスト。まわりを空飛ぶ車が光の尾を引いて行き来する',
     fonts=['Stick', 'Zen+Kaku+Gothic+New:wght@500;700'],
     v=dict(bg='#0B1024', ink='#EAF3FF', sub='#9FB2D6', card='#121A36', cardB='1px solid #2A3A70', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.4)',
            radius='12px', rs='8px', font='"Zen Kaku Gothic New"', dfont='"Stick"', dw='400', logo='#7FEFFF', logoS='0 0 12px rgba(63,224,255,.55)',
@@ -338,7 +352,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#0B1024', '夜'), (CY, '光の水色'), (MG, '赤むらさき'), ('#121A36', 'カード'), ('#EAF3FF', '文字')],
                fonts='見出し：Stick<br>本文：Zen Kaku Gothic New', shape='角丸12px・暗い カード（上に 光の 線）・帯の 下に 光の レーン・回路の 背景・すみに 空飛ぶ 車・的中ボタンは ホログラムの PUSH',
-               pic='夜の 未来の 町・光る 窓の ビルと 塔・ホログラムの 看板・空飛ぶ 車・光の レーンを 走る 黒い 馬（水色に 光る たてがみ・足もとに いつも 青い 雷）'),
+               pic='夜の 未来の 町・光る 窓の ビルと 塔・ホログラムの 看板・空飛ぶ 車・光の レーンを 走る 黒い 馬（水色に 光る たてがみ・足もとに いつも 細い 青い 雷・ひづめの あとに 残って 流れる 光の すじ）'),
 )
 
 

@@ -84,6 +84,8 @@ def caveman(m, i, kind):
     """原始人を 馬の 背中に。front＝手前の 足・体・頭・手前の 手（馬の 上）／back＝おくの 手と 武器（馬の うしろに しく＝体と 頭の うしろ）。
        m：draw_horse の 目印（p1u・wx・cloth_top）・i：コマ（ギャロップに 合わせて 上下・こん棒と やりを ふる）"""
     p = m['p1u']
+    shock = kind.endswith('_s')                                         # 第4.94版：ティラノに びっくり（両手を 上げて 口を あける）
+    kind = kind[:-2] if shock else kind
     L = LOOK[kind]
     g = i / N
     wave = math.sin(2 * math.pi * g)
@@ -92,7 +94,7 @@ def caveman(m, i, kind):
     ys = top(xs) + 0.005 * p
     xa, xb = wx(-0.16), wx(-0.60)
     slope = math.degrees(math.atan2(top(xa) - top(xb), xa - xb))
-    lean = 20 + slope + 4.0 * wave                                       # 前へ かがむ（度）
+    lean = (2 + slope + 3.0 * wave) if shock else (20 + slope + 4.0 * wave)   # 前へ かがむ（度）・びっくりは のけぞる
     S = V(xs, ys)
     up = rot(V(0, -1), lean)
     fwd = rot(V(1, 0), lean)
@@ -107,6 +109,9 @@ def caveman(m, i, kind):
     Hn = V(wx(-0.10), top(wx(-0.10)) - 0.06 * p)
     Cf = C + fwd * 0.05 * p
     En = (Cf + Hn) / 2 + up * -0.06 * p
+    if shock:
+        En = Cf + rot(up, 34 + 6 * wave) * 0.16 * p
+        Hn = En + rot(up, 14 + 6 * wave) * 0.15 * p
     back.append(limb(Cf, En, 0.11 * p, 0.09 * p, skd))
     back.append(limb(En, Hn, 0.09 * p, 0.075 * p, skd))
     back.append(circ(Hn, 0.06 * p, skd))
@@ -163,19 +168,25 @@ def caveman(m, i, kind):
         q1 = Hc + rot(V(hr * 1.4, 0), a - 10)
         front.append(path(smooth([q0 + rot(V(0.025 * p, 0), a + 90), q1, q0 - rot(V(0.025 * p, 0), a + 90)]), hair))
     ec = Hc + V(0.07 * p, -0.015 * p)
-    front.append(ell(ec, 0.03 * p, 0.036 * p, 0, '#2A1A10') + circ(ec + V(0.009 * p, -0.012 * p), 0.012 * p, '#FFFFFF'))
-    front.append(stroke(smooth([ec + V(-0.05 * p, -0.05 * p), ec + V(0.0, -0.068 * p), ec + V(0.045 * p, -0.055 * p)], closed=False), haird, 0.026 * p))
+    if shock:                                                            # 目を まるく 見ひらく・まゆが 上がる
+        front.append(ell(ec, 0.042 * p, 0.05 * p, 0, '#FFFFFF') + ell(ec, 0.042 * p, 0.05 * p, 0, 'none', f'stroke="#2A1A10" stroke-width="{f2(0.012 * p)}"')
+                     + circ(ec + V(0.006 * p, 0.0), 0.016 * p, '#2A1A10'))
+        front.append(stroke(smooth([ec + V(-0.055 * p, -0.085 * p), ec + V(0.0, -0.11 * p), ec + V(0.05 * p, -0.09 * p)], closed=False), haird, 0.026 * p))
+    else:
+        front.append(ell(ec, 0.03 * p, 0.036 * p, 0, '#2A1A10') + circ(ec + V(0.009 * p, -0.012 * p), 0.012 * p, '#FFFFFF'))
+        front.append(stroke(smooth([ec + V(-0.05 * p, -0.05 * p), ec + V(0.0, -0.068 * p), ec + V(0.045 * p, -0.055 * p)], closed=False), haird, 0.026 * p))
     nz = Hc + V(0.165 * p, 0.035 * p)
     front.append(circ(nz, 0.045 * p, skd) + circ(nz + V(-0.006 * p, -0.008 * p), 0.034 * p, sk))
     front.append(circ(Hc + V(0.045 * p, 0.065 * p), 0.03 * p, '#F29A7A'))
     mo = Hc + V(0.10 * p, 0.095 * p)
-    front.append(path(smooth([mo + V(-0.05 * p, -0.012 * p), mo + V(0.055 * p, -0.02 * p), mo + V(0.03 * p, 0.035 * p), mo + V(-0.02 * p, 0.03 * p)]), '#7A2A1A'))
-    front.append(path(smooth([mo + V(-0.01 * p, 0.012 * p), mo + V(0.03 * p, 0.008 * p), mo + V(0.015 * p, 0.03 * p)]), '#E86A5A'))
+    mouth = (lambda: [ell(mo + V(0.005 * p, 0.012 * p), 0.04 * p, 0.05 * p, 0, '#5A1A10'), ell(mo + V(0.008 * p, 0.035 * p), 0.026 * p, 0.018 * p, 0, '#E86A5A')]) if shock else \
+        (lambda: [path(smooth([mo + V(-0.05 * p, -0.012 * p), mo + V(0.055 * p, -0.02 * p), mo + V(0.03 * p, 0.035 * p), mo + V(-0.02 * p, 0.03 * p)]), '#7A2A1A'),
+                  path(smooth([mo + V(-0.01 * p, 0.012 * p), mo + V(0.03 * p, 0.008 * p), mo + V(0.015 * p, 0.03 * p)]), '#E86A5A')])
+    front += mouth()
     if L['beard']:
         bd = [Hc + rot(V(hr * 0.98, 0), a) for a in (8, 34, 60, 86, 112, 132)]
         front.append(path(smooth([Hc + rot(V(hr * 0.78, 0), 2)] + bd + [Hc + rot(V(hr * 0.7, 0), 140)], sharp=[2, 4, 6]), hair))
-        front.append(path(smooth([mo + V(-0.05 * p, -0.012 * p), mo + V(0.055 * p, -0.02 * p), mo + V(0.03 * p, 0.035 * p), mo + V(-0.02 * p, 0.03 * p)]), '#7A2A1A'))
-        front.append(path(smooth([mo + V(-0.01 * p, 0.012 * p), mo + V(0.03 * p, 0.008 * p), mo + V(0.015 * p, 0.03 * p)]), '#E86A5A'))
+        front += mouth()
     else:
         front.append(bone(Hc + rot(V(hr * 1.1, 0), -118), -24, 0.22 * p, 0.045 * p))           # 髪に 骨の 飾り
     # ---- 手前の 手（ふり上げた 武器）：頭の 横・うしろへ ふり上げて ギャロップに 合わせて ふる
@@ -185,12 +196,21 @@ def caveman(m, i, kind):
         En = Sh + rot(up, -78 + sw * 0.4) * 0.16 * p
         Hw = En + rot(up, -28 + sw) * 0.15 * p
         ang = lean - 90 - 38 + sw
+        if shock:
+            sw = 8 * wave
+            En = Sh + rot(up, -30 + sw) * 0.16 * p
+            Hw = En + rot(up, -12 + sw) * 0.16 * p
+            ang = lean - 90 - 14 + sw
         front.append(bone(Hw + rot(V(1, 0), ang) * 0.20 * p, ang, 0.54 * p, 0.10 * p))
     else:
         sw = 7 * wave
         En = Sh + rot(up, -70 + sw * 0.4) * 0.16 * p
         Hw = En + rot(up, -12 + sw) * 0.15 * p
         ang = lean - 90 + 26 + sw
+        if shock:
+            En = Sh + rot(up, -26 + sw) * 0.16 * p
+            Hw = En + rot(up, -8 + sw) * 0.16 * p
+            ang = lean - 90 + 8 + sw
         u = rot(V(1, 0), ang)
         nrm = V(-u[1], u[0])
         a_, b_ = Hw - u * 0.26 * p, Hw + u * 0.50 * p
@@ -226,7 +246,8 @@ def spf(frames, stance):
 
 
 def build(name, out=None):
-    pal, spot = (NEAR, SPOT_NEAR) if name == 'near' else (FAR, SPOT_FAR)
+    base = name[:-2] if name.endswith('_s') else name
+    pal, spot = (NEAR, SPOT_NEAR) if base == 'near' else (FAR, SPOT_FAR)
     poses = long_tail(gallop_poses(N))
     frames, cam = render(pal, spot, poses, acc=acc_for(name), number='', tag='pkdn2' + name, workers=2)
     st = gallop_stance(N)
@@ -246,5 +267,5 @@ def build(name, out=None):
 
 
 if __name__ == '__main__':
-    for nm in (sys.argv[1:] or ['near', 'far']):
+    for nm in (sys.argv[1:] or ['near', 'far', 'near_s', 'far_s']):
         build(nm, os.environ.get('OUT'))

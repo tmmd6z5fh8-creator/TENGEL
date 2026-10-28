@@ -1,11 +1,14 @@
-"""七夕の 壁紙（壁紙パック・第4.93版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）の ギャロップ（flat/sea_run.py と 同じ 足の 動き）と
-   立って 顔を 少し 前へ 出した 1コマ（まん中で 会った とき）。どちらも 右を 向いて 描く（左へ 走る ときは ページで 左右に うらがえす）。
-   ・織姫の 馬（o）：白い 体・桃色が かった 白い たてがみ・桃色の 布（白い 花の もよう・金の ふち）・前髪の 上に 花の かざり（桃色・白・うす桃の 花と 葉）・
-     き甲から 背中を こえて うしろへ ふわっと なびく 羽衣（うすい 桃色の すきとおる 布・走る コマごとに ゆれる）
+"""七夕の 壁紙（壁紙パック・第4.93版〜第4.94版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
+   ページで 左右に うらがえす）。同じ カメラで 描くので どの シートも 同じ 所に かさなる（anchor＝ひづめの まん中と 地面：780×320 の 絵の 中）。
+   ・run：ギャロップ 10コマ（flat/sea_run.py と 同じ 足の 動き：4回に 1回 振り向いて 駆け寄る とき）
+   ・walk：常歩 12コマ（左うしろ → 左前 → 右うしろ → 右前 の 4拍子。地面に ついた ひづめは 同じ はやさで うしろへ＝meta の speed：コマの 画素／秒）
+   ・love：首と ほおを すりよせる 8コマ（4本の 足は 地面・首を 下げて 前へ のばして もどす・頭を すこし かたむける：2頭を 半回り ずらすと すりすり）
+   ・prance：振り向いた とき 前足を 上げる 1コマ・stand：立った 1コマ
+   ・織姫の 馬（o）：白い 体・桃色が かった 白い たてがみ・桃色の 布（白い 花の もよう・金の ふち）・前髪の 上に 花の かざり・首の 根もとから うしろへ なびく 羽衣
    ・彦星の 馬（h）：明るい 栗毛・こげ茶の たてがみ・青い 布（金の 星）・首に 青い ひもと 金の 鈴（牛かいの 鈴）
    ・まわりに やわらかい 星の 光（ぼかした ふち）・走る コマは 地面に ついた ひづめの うしろに 小さな 星の 粉
-   python3 kisekae/pack/make/tanabata_art.py [o h]   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の tanabata.o_run・o_stand・h_run・h_stand
-     （meta の anchor＝ひづめの まん中と 地面：780×320 の 絵の 中の 場所。ページは ここを 天の川の 道に 合わせる）"""
+   python3 kisekae/pack/make/tanabata_art.py [o h] [run walk love prance]
+     → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の tanabata.<o|h>_<run|stand|walk|love|prance>"""
 import math
 import os
 import sys
@@ -175,6 +178,124 @@ def glow_fn(col):
     return glow
 
 
+# ---------------------------------------------------------------- 常歩（4拍子）と すりすり
+WALK_N = 12
+ST = 0.62          # 足が 地面に ついて いる 長さ（1回りの 割合）
+F_KEYS = [(0.00, [-114, -80, -80, -56]), (0.31, [-126, -92, -92, -62]), (0.60, [-136, -106, -106, -78]),
+          (0.74, [-128, -78, -150, -150]), (0.88, [-110, -62, -92, -82])]
+H_KEYS = [(0.00, [-52, -110, -82, -56]), (0.31, [-62, -118, -94, -64]), (0.60, [-73, -127, -109, -81]),
+          (0.74, [-58, -128, -66, -40]), (0.88, [-50, -114, -72, -50])]
+OFF = dict(HL=0.00, FL=0.25, HR=0.50, FR=0.75)
+
+
+def _ease(t):
+    return t * t * (3 - 2 * t)
+
+
+def _leg_at(keys, p):
+    p %= 1.0
+    ks = keys + [(keys[0][0] + 1.0, keys[0][1])]
+    for (p0, a0), (p1, a1) in zip(ks, ks[1:]):
+        if p0 <= p <= p1:
+            t = (p - p0) / (p1 - p0)
+            if p1 > ST:
+                t = _ease(t)
+            return [round(x0 + (x1 - x0) * t, 2) for x0, x1 in zip(a0, a1)]
+    return keys[0][1]
+
+
+def walk_pose(g):
+    from horse_flat import TAILS
+    leg = lambda k: _leg_at(F_KEYS if k[0] == 'F' else H_KEYS, g - OFF[k])
+    w = 2 * math.pi
+    wave = math.sin(w * g)
+    tufts = [((a[0], a[1] + .015 * wave * (i + 1) / 3), (b[0] + .02 * wave * (i + 1) / 3, b[1]), (c[0] + .05 * math.sin(w * g - .9) * (i + 1) / 3, c[1]), wm)
+             for i, (a, b, c, wm) in enumerate(TAILS['sway'])]
+    return dict(theta=round(0.6 * math.sin(w * 2 * g), 2), neck_rot=round(-7 + 2.4 * math.cos(w * 2 * (g - 0.1)), 2), head_ang=round(-55 + 1.6 * math.sin(w * 2 * g), 2),
+                tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
+                fore_near=leg('FL'), fore_far=leg('FR'), hind_near=leg('HL'), hind_far=leg('HR'))
+
+
+def walk_stance(g):
+    return [k for k in HOOF_ORDER if ((g - OFF[k]) % 1.0) < ST]
+
+
+LOVE_N = 8
+
+
+def love_pose(g):
+    """首を 前へ 下げて のばし（相手の 首に ほおを よせる）→ もどす。頭は すこし かたむく。足は 4本とも 地面"""
+    from horse_flat import TAILS
+    w = 2 * math.pi
+    c = math.sin(w * g)
+    tufts = [((a[0], a[1] + .02 * c * (i + 1) / 3), (b[0] + .03 * c * (i + 1) / 3, b[1]), (c_[0] + .06 * math.sin(w * g - .9) * (i + 1) / 3, c_[1]), wm)
+             for i, (a, b, c_, wm) in enumerate(TAILS['sway'])]
+    return dict(theta=round(0.8 * c, 2), neck_rot=round(-21 + 6 * c, 2), head_ang=round(-40 + 7 * math.sin(w * g + 0.7), 2),
+                tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
+                fore_near=[-118, -86, -88, -60], fore_far=[-124, -92, -90, -60],
+                hind_near=[-62, -118, -92, -62], hind_far=[-58, -116, -92, -62])
+
+
+def _sheet(who, poses, stance, tag, cam, glow_col):
+    pal = PALS[who]
+    frames, _ = render(pal, SPOT, poses, acc=acc_factory(who, None), number='', tag=tag, workers=2, cam=cam)
+    if stance is None:
+        dys = [GROUND - max(h[1] for h in fr[2]) for fr in frames]
+    else:
+        dys = ground_dy(frames, stance, GROUND, 0.0)
+    u8, meta = make_sheet(frames, dys, extra=glow_fn(glow_col))
+    meta['dy'] = [round(float(d), 2) for d in dys]
+    return u8, meta, frames, dys
+
+
+def build_more(who, kinds, out=None):
+    """常歩・すりすり・前足を 上げる コマ（ギャロップと 同じ カメラ・同じ anchor）"""
+    from sheets import camera
+    import json
+    pal = PALS[who]
+    cam, _ = camera(pal, SPOT, '', f'pktn{who}ref')
+    bl = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['tanabata']
+    anchor = bl[f'{who}_run']['anchor']
+    if 'walk' in kinds:
+        gs = [i / WALK_N for i in range(WALK_N)]
+        st = [walk_stance(g) for g in gs]
+        u8, meta, frames, dys = _sheet(who, [walk_pose(g) for g in gs], st, f'pktn{who}w', cam, GLOW[who])
+        # 地面に ついた ひづめの うしろへ 動く はやさ（コマの 画素／コマ）
+        vals = []
+        for i in range(WALK_N):
+            j = (i + 1) % WALK_N
+            for k in st[i]:
+                if k in st[j]:
+                    vals.append(frames[i][2][HOOF_ORDER.index(k)][0] - frames[j][2][HOOF_ORDER.index(k)][0])
+        meta['step'] = round(sum(vals) / len(vals), 3)
+        meta['anchor'] = anchor
+        if out:
+            preview_png(u8, os.path.join(out, f'tn_{who}_walk.png'), bg=(20, 28, 70))
+        bid = save_webp(u8, quality=90)
+        record('tanabata', f'{who}_walk', bid, meta)
+        print(f'{who}_walk', bid, meta, flush=True)
+    if 'love' in kinds:
+        u8, meta, frames, dys = _sheet(who, [love_pose(i / LOVE_N) for i in range(LOVE_N)], None, f'pktn{who}l', cam, GLOW[who])
+        meta['anchor'] = anchor
+        if out:
+            preview_png(u8, os.path.join(out, f'tn_{who}_love.png'), bg=(20, 28, 70))
+        bid = save_webp(u8, quality=90)
+        record('tanabata', f'{who}_love', bid, meta)
+        print(f'{who}_love', bid, meta, flush=True)
+    if 'prance' in kinds:
+        from horse_flat import POSES
+        pr = dict(POSES['prance'])
+        frames, _ = render(pal, SPOT, [pr], acc=acc_factory(who, None), number='', tag=f'pktn{who}p', workers=1, cam=cam)
+        hy = max(frames[0][2][HOOF_ORDER.index(k)][1] for k in ('HL', 'HR'))
+        u8, meta = make_sheet(frames, [GROUND - hy], extra=glow_fn(GLOW[who]))
+        meta['anchor'] = anchor
+        if out:
+            preview_png(u8, os.path.join(out, f'tn_{who}_prance.png'), bg=(20, 28, 70))
+        bid = save_webp(u8, quality=90)
+        record('tanabata', f'{who}_prance', bid, meta)
+        print(f'{who}_prance', bid, meta, flush=True)
+
+
 def build(who, out=None):
     pal = PALS[who]
     stance = gallop_stance(N)
@@ -203,5 +324,12 @@ def build(who, out=None):
 
 
 if __name__ == '__main__':
-    for who in (sys.argv[1:] or ['o', 'h']):
-        build(who, os.environ.get('OUT'))
+    args = sys.argv[1:]
+    whos = [a for a in args if a in ('o', 'h')] or ['o', 'h']
+    kinds = [a for a in args if a in ('run', 'walk', 'love', 'prance')] or ['run', 'walk', 'love', 'prance']
+    for who in whos:
+        if 'run' in kinds:
+            build(who, os.environ.get('OUT'))
+        more = [k for k in kinds if k != 'run']
+        if more:
+            build_more(who, more, os.environ.get('OUT'))

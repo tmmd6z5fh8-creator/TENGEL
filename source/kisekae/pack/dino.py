@@ -18,7 +18,7 @@ from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d
 ID = 'dino'
 RUN_S = 0.5        # ギャロップ 1回の 秒
 GROUND_S = 2.5     # 手前の 地面が 1まい 流れる 秒（ひづめの 動きに 合わせる）
-MID_S = 9.0        # しげみが 1まい 流れる 秒
+MID_S = 5.75       # しげみが 1まい 流れる 秒（第4.94版：背景の 恐竜を 9秒・6秒ごとに 通す ため 少し 速く＝67.8px／秒）
 VX, VY = 84, 44    # 火山の 口（第4.93版：噴火が 上の 絵に おさまる ように 少し 低く）
 LAVA_K = (112 - VY) / 80.0   # 溶岩の すじの 長さ（火山の 高さに 合わせる）
 
@@ -186,9 +186,11 @@ def ground_svg(w=W, h=44, seed=23):
 SC, SCD, SCL, SCS = '#7E9E5E', '#5D7A44', '#B8C98A', '#6A8A4E'
 BRO = (196, 126)            # 首の 長い 恐竜の 箱（はば・高さ）。足の 下＝y 120
 BRO_NECK = (72, 58)         # 首の 根もと（箱の 中）
-NECK_L = (27.0, 23.0, 19.0)  # 首の ふしの 長さ
-NECK_W = ((21, 17), (17, 13.5), (13.5, 11))
-GRAZE_S = 12.0              # 食べる 1回り（秒）
+NECK_N = 8                  # 第4.94版：首は 8つの 短い ふし（まがりを みんなで 分けて なめらかな 弓なりに：まさちゃん「首の角度、動き方がおかしいから自然にして！」）
+NECK_SEG = 9.0              # ふし 1つの 長さ（首 ぜんぶで 72）
+NECK_W = [21.0 - 10.5 * k / NECK_N for k in range(NECK_N + 1)]   # 関節ごとの 太さ（根もと 21 → 頭 10.5）
+BRO_S = 9.0                 # 首の 長い 恐竜が 通る 間かく（秒）＝1回りで 1回 食べる
+STEGO_S = 6.0               # 背中に 板の ある 恐竜が 通る 間かく（秒）
 
 
 def bro_part(name):
@@ -228,31 +230,33 @@ def bro_part(name):
 
 
 def neck_seg(k):
-    """首の ふし k（関節が 絵の (ox, oy)・左へ のびる）。返り値：(svg, ox, oy, w, h)"""
-    L = NECK_L[k]
-    w0, w1 = NECK_W[k]
-    ox, oy = L + w1 / 2 + 2, w0 / 2 + 2
-    w, h = ox + w0 / 2 + 2, w0 + 4
+    """首の ふし k（関節が 絵の (ox, oy)・左へ のびる・はしは まるい＝となりの ふしと 重なって 角が 出ない）。返り値：(svg, ox, oy, w, h)"""
+    L = NECK_SEG
+    w0, w1 = NECK_W[k], NECK_W[k + 1]
+    ox, oy = L + w1 / 2 + 1, w0 / 2 + 1
+    w, h = ox + w0 / 2 + 1, w0 + 2
     T_ = lambda x, y: (x + ox, y + oy)
     a, b = T_(0, -w0 / 2), T_(-L, -w1 / 2)
     c, d = T_(-L, w1 / 2), T_(0, w0 / 2)
     o = (f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])} A{f(w1 / 2)} {f(w1 / 2)} 0 0 0 {f(c[0])} {f(c[1])} L{f(d[0])} {f(d[1])} A{f(w0 / 2)} {f(w0 / 2)} 0 0 0 {f(a[0])} {f(a[1])} Z' fill='{SC}'/>")
-    a, b = T_(1, w0 * 0.3), T_(-L, w1 * 0.3)
-    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{SCL}' stroke-width='{f(w1 * 0.32)}' stroke-linecap='round' opacity='.7'/>"
-    a, b = T_(0, -w0 * 0.28), T_(-L * 0.9, -w1 * 0.3)
+    a, b = T_(0, w0 * 0.3), T_(-L, w1 * 0.3)                              # のどの 明るい すじ（となりと つながる）
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{SCL}' stroke-width='{f(w0 * 0.3)}' stroke-linecap='round' opacity='.7'/>"
+    a, b = T_(0, -w0 * 0.27), T_(-L, -w1 * 0.27)                          # 首の 上の 光
     o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='#9CBC78' stroke-width='1.6' stroke-linecap='round' opacity='.55'/>"
-    for j in range(2):
-        x, y = T_(-L * (0.3 + 0.4 * j), -w0 * 0.12)
-        o += f"<ellipse cx='{f(x)}' cy='{f(y)}' rx='2.2' ry='1.5' fill='{SCS}' opacity='.75'/>"
+    if k % 2 == 0:
+        x, y = T_(-L * 0.5, -w0 * 0.05)
+        o += f"<ellipse cx='{f(x)}' cy='{f(y)}' rx='{f(1.6 + w0 * 0.05)}' ry='{f(1.1 + w0 * 0.03)}' fill='{SCS}' opacity='.75'/>"
     return doc(w, h, o), ox, oy, w, h
 
 
 def bro_head():
-    """頭（首の 先が 絵の (ox, oy)・左へ のびる）：まるい 鼻・目・にっこり・あご（もぐもぐ は 別の 部品 jaw）"""
-    ox, oy, w, h = 26, 9, 30, 18
-    o = (f"<path d='M{ox + 3} {oy - 5.6} C{ox - 6} {oy - 8.4} {ox - 18} {oy - 7.4} {ox - 23.4} {oy - 2.6} C{ox - 26} {oy} {ox - 25} {oy + 3.6} {ox - 21} {oy + 4.4} "
-         f"L{ox - 6} {oy + 5} C{ox} {oy + 5.4} {ox + 3.4} {oy + 3} {ox + 3} {oy - 5.6} Z' fill='{SC}'/>")
-    o += f"<path d='M{ox - 21} {oy - 2.8} C{ox - 15} {oy - 6.6} {ox - 6} {oy - 6.8} {ox + 1} {oy - 4.6}' fill='none' stroke='#9CBC78' stroke-width='1.6' stroke-linecap='round' opacity='.6'/>"
+    """頭（首の 先が 絵の (ox, oy)・左へ のびる）：首の 先に なめらかに つながる まるい 頭の うしろ・まるい 鼻・目・にっこり"""
+    ox, oy, w, h = 28, 10, 32, 20
+    r0 = NECK_W[-1] / 2
+    o = (f"<path d='M{f(ox + r0 * 0.6)} {f(oy - r0)} C{ox - 5} {oy - 8.2} {ox - 17} {oy - 7.6} {ox - 23.4} {oy - 2.8} C{ox - 26} {oy - 0.2} {ox - 25.2} {oy + 3.6} {ox - 21} {oy + 4.4} "
+         f"L{ox - 7} {oy + 5} C{f(ox - 1)} {f(oy + r0)} {f(ox + r0 * 0.6)} {f(oy + r0)} {f(ox + r0 * 0.6)} {f(oy + r0 * 0.4)} Z' fill='{SC}'/>")
+    o += f"<circle cx='{ox}' cy='{oy}' r='{f(r0)}' fill='{SC}'/>"
+    o += f"<path d='M{ox - 21} {oy - 3} C{ox - 15} {oy - 6.8} {ox - 6} {oy - 7} {ox + 1} {oy - 4.6}' fill='none' stroke='#9CBC78' stroke-width='1.6' stroke-linecap='round' opacity='.6'/>"
     o += f"<circle cx='{ox - 9}' cy='{oy - 2.4}' r='1.9' fill='#1E2414'/><circle cx='{ox - 9.6}' cy='{oy - 3}' r='.7' fill='#FFFFFF'/>"
     o += f"<circle cx='{ox - 22.4}' cy='{oy - 1.4}' r='.9' fill='#2E3A20'/>"
     o += f"<path d='M{ox - 22} {oy + 2.4} Q{ox - 16} {oy + 4.6} {ox - 10} {oy + 2.6}' fill='none' stroke='#2E3A20' stroke-width='1' stroke-linecap='round'/>"
@@ -261,10 +265,21 @@ def bro_head():
 
 
 def neck_poses():
-    """首の ふしの 向き（画面の 角度・度：180＝左）と 頭の 向き。up＝首を 上げて まわりを 見る・down＝しだを 食べる"""
-    up = (208, 220, 228, 192)
-    down = (196, 128, 104, 112)
+    """首の 形＝(根もとの 向き φ0・ふしごとの まがり δ・頭の 向き)（画面の 角度・度：180＝左・270＝上）。
+       up＝首を ゆるい 弓なりに 上げて まわりを 見る・down＝首を なめらかに 下へ まげて しだを 食べる"""
+    up = (204.0, 3.4, 192.0)
+    down = (194.0, -12.0, 102.0)
     return up, down
+
+
+def neck_rel(pose, look=0.0, chew=0.0):
+    """首の 形 → 関節ごとの CSS の 回転（はじめは 根もとの 向き−180、あとは まがり δ・最後は 頭）"""
+    a0, d, ah = pose
+    d_last = d + chew * 0.4
+    ang = [a0 + d * k for k in range(NECK_N - 1)] + [a0 + d * (NECK_N - 2) + d_last]
+    rel = [ang[0] - 180.0] + [ang[k] - ang[k - 1] for k in range(1, NECK_N)]
+    rel.append(ah + look + chew - ang[-1])
+    return rel
 
 
 STEGO = (150, 82)
