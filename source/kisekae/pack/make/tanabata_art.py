@@ -19,7 +19,7 @@ from cute_horse import smooth, path, stroke, circ, ell, unit, V, f2  # noqa: E40
 
 N = 10
 GROUND = 218
-SPOT = dict(pose='gallop', facing='right', box=(40, 40, 296, 222), azim=6, shadow=('#000000', 0.0))
+SPOT = dict(pose='gallop', facing='right', box=(170, 40, 426, 222), azim=6, shadow=('#000000', 0.0))   # うしろに 羽衣が なびく ぶん 右へ
 PALS = dict(
     o=dict(body='#FFFFFF', shade='#DCCFE6', muzzle='#FBF5FA', mane='#FBE6F0', maneD='#EBC3D8', hoof='#B8A0BC', eye='#2A2040',
            blush='#F6B2C8', tack='#E2B04E', ring='#FFF1C8', cloth='#EE8CB6', clothTrim='#F7D27A', num='#FFF6D8', saddle='#7E3A62',
@@ -68,22 +68,8 @@ def top_y(m, x):
     return float(col.min()) / s if len(col) else None
 
 
-def hagoromo(m, ph):
-    """羽衣：き甲から 背中に そって、こしの うしろから ふわっと 上へ なびく うすい 布（ph：ゆれの 位相 0〜1）"""
-    p, fx = m['p1u'], m['fx']
-    xs = [m['wx'](t) for t in (0.10, -0.25, -0.6, -0.95, -1.18)]
-    top = []
-    for x in xs:
-        y = top_y(m, x)
-        top.append(V(x, (y if y is not None else m['cloth'][2]) - 0.025 * p))
-    w = 2 * math.pi
-    tail = []
-    last = top[-1]
-    for k in range(1, 6):
-        x = last[0] - fx * 0.2 * k * p
-        y = last[1] - 0.05 * k * p + 0.055 * p * math.sin(w * ph - k * 1.1) * (k / 5)
-        tail.append(V(x, y))
-    center = top + tail
+def _band(center, w0, w1, tip=0.3):
+    """中心の 線に そった 帯（はばは w0 → w1・先は 細く）の 点"""
     n = len(center)
     left, right = [], []
     for i, c in enumerate(center):
@@ -91,15 +77,37 @@ def hagoromo(m, ph):
         b = center[min(n - 1, i + 1)]
         d = unit(b - a)
         nv = V(-d[1], d[0])
-        hw = (0.022 + 0.05 * (i / (n - 1))) * p
+        hw = w0 + (w1 - w0) * (i / (n - 1))
         if i == n - 1:
-            hw *= 0.35
+            hw *= tip
         left.append(c + nv * hw)
         right.append(c - nv * hw)
-    poly = left + right[::-1]
-    out = [path(smooth(poly), '#F7C3DC', 'fill-opacity=".62"'),
-           stroke(smooth(center, closed=False), '#FFFFFF', 0.012 * p, 'stroke-opacity=".55"'),
-           stroke(smooth(left, closed=False), '#F08DB6', 0.008 * p, 'stroke-opacity=".55"')]
+    return left, right
+
+
+def hagoromo(m, ph):
+    """羽衣：首の 根もとに かけた うすい 布の 2本の はしが、背中の 上を うしろへ 浮かんで なびく（S字に ゆれる・ph：ゆれの 位相 0〜1）"""
+    p, fx = m['p1u'], m['fx']
+    w = 2 * math.pi
+    top, bot, ax = m['collar'](0.08)
+    out = []
+    # 首の 根もとの 輪（布を かけた ところ）
+    dv = unit(bot - top)
+    mid = (top + bot) / 2 - ax * 0.03 * p
+    ring_l, ring_r = _band([top - dv * 0.01 * p, mid, bot + dv * 0.01 * p], 0.035 * p, 0.035 * p, 1.0)
+    out.append(path(smooth(ring_l + ring_r[::-1]), '#F6B3D3', 'fill-opacity=".9"'))
+    # 2本の はし（き甲から うしろへ）
+    start = top + V(-fx * 0.02 * p, -0.02 * p)
+    for k, (col, lift, amp, phs, L) in enumerate((('#F7B5D5', 0.10, 0.07, 0.0, 1.55), ('#E6D3F8', 0.20, 0.06, 0.35, 1.35))):
+        center = []
+        for j in range(9):
+            t = j / 8
+            x = start[0] - fx * t * L * p
+            y = start[1] - (lift * t + 0.06 * t * t) * p + amp * p * math.sin(w * (ph + phs) - t * 5.0) * t
+            center.append(V(x, y))
+        left, right = _band(center, 0.03 * p, 0.065 * p, 0.25)
+        out.append(path(smooth(left + right[::-1]), col, 'fill-opacity=".86"'))
+        out.append(stroke(smooth(center[1:], closed=False), '#FFFFFF', 0.012 * p, 'stroke-opacity=".7"'))
     return out
 
 
@@ -114,14 +122,14 @@ def acc_factory(who, stance=None):
                     out['cloth'] += flower(V(x0 + (x1 - x0) * tx, yt + (trim - yt) * ty), r * p, '#FFFFFF', '#F6C945', '#F7C3DC')
                 up = V(0, -1)
                 hd = unit(m['head_dir'])
-                base = m['forelock'] + (m['poll'] - m['forelock']) * 0.35 + up * 0.03 * p
-                for a in (-30, 40):                                                  # 葉
+                base = m['poll'] + (m['forelock'] - m['poll']) * 0.45 + up * 0.06 * p     # 耳の 前（前髪の 上）
+                for a in (-40, 20, 150):                                             # 葉
                     r = math.radians(a)
-                    q = base + V(math.cos(r), math.sin(r)) * 0.05 * p * fx - up * 0.01 * p
-                    out['head'].append(ell(q, 0.045 * p, 0.018 * p, a * fx, '#5DBB6A'))
-                out['head'] += flower(base + hd * 0.035 * p, 0.05 * p, '#F49AC1', '#F6C945', '#D9709E')
-                out['head'] += flower(base - hd * 0.035 * p + up * 0.03 * p, 0.044 * p, '#FFFFFF', '#F6C945', '#E8A6C6')
-                out['head'] += flower(base - hd * 0.005 * p - up * 0.035 * p, 0.036 * p, '#FBD0E2', '#F6C945', '#E8A6C6')
+                    q = base + V(math.cos(r) * fx, math.sin(r)) * 0.08 * p
+                    out['head'].append(ell(q, 0.07 * p, 0.026 * p, a * fx, '#5DBB6A', f'stroke="#3E8A4A" stroke-width="{f2(0.006 * p)}"'))
+                out['head'] += flower(base + hd * 0.05 * p + up * 0.01 * p, 0.085 * p, '#F49AC1', '#F6C945', '#D9709E')
+                out['head'] += flower(base - hd * 0.06 * p + up * 0.05 * p, 0.075 * p, '#FFFFFF', '#F6C945', '#E8A6C6')
+                out['head'] += flower(base - hd * 0.01 * p - up * 0.04 * p, 0.06 * p, '#FBD0E2', '#F6C945', '#E8A6C6')
                 out['front'] += hagoromo(m, i / N if stance is not None else 0.3)
             else:
                 cx, cy = (x0 + x1) / 2, (yt + trim) / 2 + 0.03 * p

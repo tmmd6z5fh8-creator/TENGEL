@@ -38,7 +38,7 @@ def ease(t):
 
 
 # ---------------------------------------------------------------- 首振り
-TOSS_KEYS = [(0.0, 0.0), (1 / 6, 0.78), (2 / 6, 1.0), (3 / 6, 0.42), (4 / 6, -0.28), (5 / 6, -0.14), (1.0, 0.0)]
+TOSS_KEYS = [(0.0, 0.0), (1 / 6, 0.80), (2 / 6, 1.0), (3 / 6, 0.36), (4 / 6, -0.42), (5 / 6, -0.20), (1.0, 0.0)]
 
 
 def toss(u):
@@ -56,8 +56,8 @@ def pose_shake(g):
     p = PA.pose_at(g)
     s = toss(2 * g)                           # 1回りに 2回
     sl = toss(2 * g - 1 / 12)                 # 頭は 少し おくれる
-    p['neck_rot'] = round(p['neck_rot'] + 15.0 * s, 3)
-    p['head_ang'] = round(p['head_ang'] + 21.0 * sl, 3)
+    p['neck_rot'] = round(p['neck_rot'] + 21.0 * s, 3)
+    p['head_ang'] = round(p['head_ang'] + 30.0 * sl, 3)
     p['ear_rot'] = round(-16.0 * max(0.0, s), 3)
     return p
 

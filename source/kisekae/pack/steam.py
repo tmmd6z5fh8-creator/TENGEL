@@ -1,10 +1,15 @@
 """壁紙パック ⑨スチームパンク（まさちゃんの 指定「歯車で動く機械仕掛けの馬。蒸気がしゅっ」）
    上の絵：夕ぐれの 工場の 町（工場・えんとつ・時計台・ガスタンク）・飛行船・石だたみの 道。左上と 右上に 大きな 歯車。
      まん中を 真ちゅうの 機械の 馬が 速足で 走る：ボイラーの 胴（びょう・銅の 帯・のぞき窓の 中で 歯車が 回る・圧力計）・えんとつ・
-     板を 重ねた 首と 頭（こはく色の ランプの 目）・銅の ひれの たてがみ・銅線の しっぽ。肩と 腰の 大きな 歯車が 回って、
-     機関車の 動輪のように 連結棒が 回り、足（ひざに 小さな 歯車・鉄の すね・鉄の ひづめ）が 動く。
-   動き（CSS だけ・1回り 0.84秒の 速足）：足は ひづめが 地面に つく 間は 道と 同じ 速さで うしろへ（すべらない）・宙では ひざを まげて 前へ。
-     歯車が 回る・連結棒が 円を えがく・頭が うなずく・しっぽが ゆれる・体が 少し 上下。道と 町が 流れる（遠いほど ゆっくり）・飛行船が ゆっくり 横切る。
+     本物の 馬の 形の 首（上が 弓なり・板を 重ねた よろい・のどに 銅の 管）と 頭（ひたい・目の 上の まゆの 板・こはく色の ランプの 目・
+     長い 鼻すじの 板・まるい ほおの 板と あごの 歯車・銅の 鼻先と 鼻の あなの すきま・口・耳 2まい・前髪）・
+     流れる 毛の 房の たてがみ（銅と 真ちゅうの うすい 板）・銅線の しっぽ。肩と 腰の 大きな 歯車が 回って、機関車の 動輪のように 連結棒が 回る。
+     第4.93版（まさちゃん「後ろ脚の動き方が変だから実際の馬の動きに合わせて！顔と立髪をもっとリアルな馬に近くして！」）：
+     足は 本物の 馬の 関節：うしろ足＝腰 → もも（しりの 筋肉の 板）→ ひざ（前へ）→ すね → 飛節（うしろへ 出る かかと・けんの 鉄の 棒）→ 管 → 球節 → つなぎ → ひづめ
+     （ひざと 飛節は いっしょに まがる）・前足＝ひじ → 前腕 → ひざ（歯車）→ 管 → 球節 → つなぎ → ひづめ。
+   動き（CSS だけ・1回り 0.84秒の 速足＝ななめの 2本が いっしょ）：ひづめは 地面に ついて いる 間 道と 同じ 速さで うしろへ（すべらない）・
+     最後に かかとから 上がって つま先で けり、宙では ひざと 飛節を まげて ひづめを うしろへ 折って 前へ はこぶ。体は 足が 地面に ついた まん中で 少し 下がる。
+     歯車が 回る・連結棒が 円を えがく・頭が うなずく・たてがみが ゆれる・しっぽが ゆれる。道と 町が 流れる（遠いほど ゆっくり）・飛行船が ゆっくり 横切る。
      えんとつから 蒸気が 「しゅっ しゅっ」（3.6秒ごとに 3つ）・鼻から 「しゅっ」（7.2秒ごと）。強く 光らせない"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
@@ -19,17 +24,28 @@ FE = dict(l='#7A7672', m='#4E4A48', d='#2E2B2A', dd='#1A1817')                  
 FAR = 0.38          # 奥の 足を 暗く する 量
 
 # ---------------------------------------------------------------- 馬の 形（舞台の 座標・右向き）
+# 第4.93版：足は 本物の 馬の 関節（まさちゃん「後ろ脚の動き方が変だから実際の馬の動きに合わせて」）
+#   うしろ足：腰 → もも → ひざ（前へ 出る）→ すね → 飛節（うしろへ 出る）→ 管 → 球節 → つなぎ → ひづめ。
+#     ひざと 飛節は いっしょに まがる（管は いつも ももより DELTA 度 立つ：本物の 馬の しくみ）
+#   前足：ひじ → 前腕 → ひざ（まがると 前へ 出る）→ 管 → 球節 → つなぎ → ひづめ。地面に ついて いる 間は ひざが のびた まま
+#   速足：ななめの 2本が いっしょ（左前と 右うしろ・右前と 左うしろ）。ひづめは 地面に ついて いる 間 道と 同じ 速さで うしろへ（すべらない）・
+#     最後に かかとから 上がって つま先で けり、宙では ひづめが うしろへ 折れて 前へ はこぶ
 T = 0.84            # 速足の 1回り（秒）
 NS = 24             # 1回りを 何コマで 書くか（あいだは なめらかに つなぐ）
-GROUND = 146        # ひづめの 下
-SH = (238, 92)      # 肩の 軸
-HP = (164, 90)      # 腰の 軸
-L1, L2 = 29.0, 29.0
+GROUND = 146        # ひづめの 底
+SH = (240, 92)      # 前足の 軸（ひじ）
+HP = (166, 88)      # うしろ足の 軸（腰）
+LA, LB = 25.5, 19.0                 # 前：前腕・管
+LF, LG, LC = 18.4, 21.9, 13.6       # うしろ：もも・すね・管
+LP = 7.0            # つなぎ（球節 → 蹄冠）
+HOOF_H = 5.2        # ひづめの 高さ
+DELTA = 20.0        # うしろ足：管は ももより 20° 立つ
 STRIDE = 28.0       # ひづめが 地面に ついて いる 間に うしろへ 進む 長さ
-LIFT = 10.0         # 宙で ひづめを 上げる 高さ
-SPEED = STRIDE / (T / 2)          # 道の 速さ（px／秒）＝ひづめが うしろへ 進む 速さ
+LIFT_F, LIFT_H = 9.0, 7.0           # 宙で ひづめを 上げる 高さ（前・うしろ）
+XOFF = dict(f=2.0, h=-3.0)          # ひづめの まん中の 前後（軸から）
+SPEED = STRIDE / (T / 2)            # 道の 速さ（px／秒）＝ひづめが うしろへ 進む 速さ
 ROAD_W = 120
-BOB = 1.2
+BOB = 1.4
 CRANK = 7.5         # 肩と 腰の 歯車の クランクの 半径
 OFFS = dict(fl=0.0, hr=0.0, fr=0.5, hl=0.5)      # 速足：ななめの 足が いっしょ
 
@@ -39,53 +55,118 @@ def ease(u):
 
 
 def bob(t):
-    """体の 上下（1回りに 2回・宙の 足が いちばん 上の とき 少し 高い）"""
-    return -BOB * math.cos(4 * math.pi * t) * 0.5 - BOB * 0.5
+    """体の 上下：ななめの 2本が 地面に ついた まん中（t＝.25・.75）で いちばん 低い"""
+    return -BOB * 0.5 * math.cos(4 * math.pi * t)
 
 
-def hoof_target(q, y0):
-    """足の 位相 q の ひづめの 場所（軸から の ずれ・前が +x・下が +y）"""
+def hoof_path(q, front):
+    """足の 位相 q の ひづめの 底の まん中（軸から の ずれ・前が +x・上が −y）と 傾き（度：＋＝つま先を 軸に かかとが 上がる／宙で うしろへ 折れる）"""
+    lift = LIFT_F if front else LIFT_H
     if q < 0.5:
         u = q / 0.5
-        return STRIDE / 2 - STRIDE * u, y0
+        tilt = 0.0 if u < 0.85 else 24.0 * ((u - 0.85) / 0.15) ** 1.5      # けり出し：最後の 15% で かかとが 上がる
+        return STRIDE / 2 - STRIDE * u, 0.0, tilt
     u = (q - 0.5) / 0.5
-    return -STRIDE / 2 + STRIDE * ease(u), y0 - LIFT * math.sin(math.pi * u) ** 1.2
+    x = -STRIDE / 2 + STRIDE * ease(u)
+    y = -lift * math.sin(math.pi * u) ** 1.1
+    tilt = 24.0 + 36.0 * math.sin(math.pi / 2 * u / 0.55) if u < 0.55 else 60.0 * (1 - (u - 0.55) / 0.45) ** 1.3
+    return x, y, tilt
 
 
-def ik(x, y, knee_fwd):
-    """2つの 骨（L1・L2）で 軸から (x, y) に ひづめを とどかせる 角度（たてから 前へ ＋・度）：上の 骨・下の 骨（どちらも 画面での 向き）"""
-    d = math.hypot(x, y)
-    d = min(d, L1 + L2 - 0.01)
-    a = math.atan2(x, y)
-    c = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)
+def rot(v, deg):
+    a = math.radians(deg)
+    return (v[0] * math.cos(a) - v[1] * math.sin(a), v[0] * math.sin(a) + v[1] * math.cos(a))
+
+
+HOOF_REL = dict(heel=(-3.1, 4.9), toe=(5.5, 4.9), top_f=(2.7, -0.3), top_b=(-2.7, 0.3))      # ひづめ（蹄冠から・傾き 0）
+
+
+def coronet_at(bx, by, tilt):
+    """ひづめの 底の まん中 (bx, by)・傾き → 蹄冠（つなぎの 下の はし）。つま先を 軸に 回す"""
+    toe = (bx + 4.6, by)
+    c0 = (bx - 0.9, by - 4.9)
+    v = rot((c0[0] - toe[0], c0[1] - toe[1]), -tilt)
+    return toe[0] + v[0], toe[1] + v[1]
+
+
+def ik2(px, py, tx, ty, l1, l2):
+    """前足：ひじ → ひざ → 球節（ひざは まがると 前へ 出る）。画面の 角度（x 右・y 下）"""
+    dx, dy = tx - px, ty - py
+    d = min(math.hypot(dx, dy), l1 + l2 - 1e-3)
+    a = math.atan2(dy, dx)
+    c = (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)
     b = math.acos(max(-1.0, min(1.0, c)))
-    a1 = a + b if knee_fwd else a - b
-    kx, ky = L1 * math.sin(a1), L1 * math.cos(a1)
-    a2 = math.atan2(x - kx, y - ky)
-    return math.degrees(a1), math.degrees(a2)
+    a1 = a - b
+    kx, ky = px + l1 * math.cos(a1), py + l1 * math.sin(a1)
+    return (kx, ky), math.degrees(a1), math.degrees(math.atan2(ty - ky, tx - kx))
 
 
-def leg_keys(name):
-    """足の 上の 骨の 角度・下の 骨の 角度（上の 骨から の 差）の コマ（NS+1 こ）。CSS の rotate は 前へ ＝ マイナス"""
+def hind_ik(px, py, tx, ty):
+    """うしろ足：腰 → ひざ（もも LF）→ 飛節（すね LG）→ 球節（管 LC：ももより DELTA 立つ）。ももの 向きを さがす（飛節は ひざより うしろ）"""
+    best = None
+    for k in range(1801):
+        af = math.radians(25 + k * 0.05)
+        ac = af + math.radians(DELTA)
+        sx, sy = px + LF * math.cos(af), py + LF * math.sin(af)
+        rx, ry = tx - LC * math.cos(ac), ty - LC * math.sin(ac)
+        if rx > sx - 2:
+            continue
+        err = abs(math.hypot(rx - sx, ry - sy) - LG)
+        if best is None or err < best[0]:
+            best = (err, af, ac, (sx, sy), (rx, ry))
+    err, af, ac, st, hk = best
+    return st, hk, math.degrees(af), math.degrees(math.atan2(hk[1] - st[1], hk[0] - st[0])), math.degrees(ac), err
+
+
+def leg_solve(name):
+    """1回り（NS+1 コマ）の 骨の 向き（画面の 角度）と 関節の 場所"""
     front = name[0] == 'f'
     piv = SH if front else HP
-    up, lo = [], []
+    out = []
     for i in range(NS + 1):
         t = i / NS
         q = (t + OFFS[name]) % 1.0
-        y0 = GROUND - (piv[1] + bob(t))
-        x, y = hoof_target(q, y0)
-        a1, a2 = ik(x, y, knee_fwd=front)
-        up.append(-a1)
-        lo.append(-(a2 - a1))
-    # 角度の つなぎ目（-180〜180 の とび）を なくす
-    for arr in (up, lo):
+        px, py = piv[0], piv[1] + bob(t)
+        hx, hy, tilt = hoof_path(q, front)
+        bx, by = piv[0] + XOFF['f' if front else 'h'] + hx, GROUND + hy
+        cx, cy = coronet_at(bx, by, tilt)
+        alpha = 58.0 + tilt * 0.4                                         # つなぎの 立ち（地面から）。届かない ときは 立てる
+        lim = (LA + LB - 0.6) if front else (LF + LG + LC) * 0.97
+        while True:
+            fx_, fy_ = cx - LP * math.cos(math.radians(alpha)), cy - LP * math.sin(math.radians(alpha))
+            if math.hypot(fx_ - px, fy_ - py) <= lim or alpha >= 88:
+                break
+            alpha += 0.5
+        ap = math.degrees(math.atan2(cy - fy_, cx - fx_))                  # つなぎ（球節 → 蹄冠）
+        if front:
+            kn, a1, a2 = ik2(px, py, fx_, fy_, LA, LB)
+            segs = [a1, a2, ap]
+            joints = [(px, py), kn, (fx_, fy_), (cx, cy)]
+        else:
+            st, hk, af, ag, ac, err = hind_ik(px, py, fx_, fy_)
+            segs = [af, ag, ac, ap]
+            joints = [(px, py), st, hk, (fx_, fy_), (cx, cy)]
+        out.append(dict(segs=segs, hoof=-tilt, joints=joints, bottom=(bx, by), tilt=tilt))
+    return out
+
+
+def leg_keys(name):
+    """CSS の 回転（関節ごと：はじめは 骨の 向き、あとは 1つ上の 骨から の 差。最後は ひづめ）の コマ（NS+1 こ）"""
+    fr = leg_solve(name)
+    series = []
+    nseg = len(fr[0]['segs'])
+    for j in range(nseg + 1):
+        arr = []
+        for f_ in fr:
+            ab = [a - 90.0 for a in f_['segs']] + [f_['hoof']]          # 下向きが 0・時計回りが ＋
+            arr.append(ab[j] if j == 0 else ab[j] - ab[j - 1])
         for i in range(1, len(arr)):
             while arr[i] - arr[i - 1] > 180:
                 arr[i] -= 360
             while arr[i] - arr[i - 1] < -180:
                 arr[i] += 360
-    return up, lo
+        series.append(arr)
+    return series
 
 
 # ---------------------------------------------------------------- 部品の 絵
@@ -129,51 +210,149 @@ def dark(c, k=FAR):
     return {kk: mix(v, '#1E1410', k) for kk, v in c.items()}
 
 
-def upper_svg(front, far=False):
-    """足の 上の 骨（真ちゅうの 板）：軸（上の まん中・絵の (12, 4)）から 下へ L1。ひざに 小さな 輪"""
+def _bolt(x, y, r, c, far=False):
+    """関節の ボルト（輪と まん中の 穴・光）"""
+    return (f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(r)}' fill='{c['m']}' stroke='{c['dd']}' stroke-width='.8'/>"
+            f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(r * 0.42)}' fill='{c['dd']}'/>"
+            f"<path d='M{f(x - r * 0.62)} {f(y - r * 0.2)} A{f(r * 0.66)} {f(r * 0.66)} 0 0 1 {f(x + r * 0.1)} {f(y - r * 0.64)}' fill='none' stroke='{c['hl'] if 'hl' in c else c['l']}' stroke-width='.8' stroke-linecap='round' opacity='.8'/>")
+
+
+# 足の 部品：どれも 自分の 軸（関節）を 絵の 中の (ox, oy) に おいて、骨は 下（+y）へ のびる。返り値：(svg, ox, oy, w, h)
+def seg_thigh(far=False):
+    """うしろ足の もも（腰の 軸 → ひざ）：馬の しりの 大きな 筋肉の 形の 真ちゅうの 板（うしろへ ふくらむ・ひざで 細く）"""
     c = dark(BR) if far else BR
-    w0, w1 = (15, 9) if front else (17, 10)
-    x = 12
-    o = (f"<path d='M{f(x - w0 / 2)} 4 Q{f(x)} -2 {f(x + w0 / 2)} 4 L{f(x + w1 / 2)} {f(4 + L1)} Q{f(x)} {f(8 + L1)} {f(x - w1 / 2)} {f(4 + L1)} Z' "
-         f"fill='{c['m']}' stroke='{c['dd']}' stroke-width='1' stroke-linejoin='round'/>"
-         f"<path d='M{f(x - w0 / 2 + 2)} 6 L{f(x - w1 / 2 + 1.6)} {f(2 + L1)}' stroke='{c['hl']}' stroke-width='1.4' stroke-linecap='round' opacity='.75'/>"
-         f"<path d='M{f(x + w0 / 2 - 1.6)} 7 L{f(x + w1 / 2 - 1.4)} {f(2 + L1)}' stroke='{c['d']}' stroke-width='1.2' stroke-linecap='round' opacity='.8'/>")
-    for k in range(3):
-        yy = 10 + k * 7
-        o += f"<circle cx='{x}' cy='{yy}' r='.9' fill='{c['dd']}'/>"
-    o += f"<rect x='{f(x - w0 / 2 + 1)}' y='{f(4 + L1 * 0.55)}' width='{f(w0 - 2 - (w0 - w1) * 0.55)}' height='2.4' rx='.8' fill='{(dark(CU) if far else CU)['m']}'/>"
-    return doc(24, 12 + L1, o)
+    cu = dark(CU) if far else CU
+    ox, oy, w, h = 19, 15, 33, 44
+    T_ = lambda x, y: (x + ox, y + oy)
+    pts = [(-13, -6), (-17, 4), (-15.4, 14), (-9.4, 20.6), (-4, LF + 3.6), (2.8, LF + 3.6), (6.2, LF - 1.2), (8.6, 10), (8.6, 0), (5.4, -8.6), (-4.4, -11.8)]
+    o = f"<path d='{smooth([T_(*q) for q in pts], True, 0.32)}' fill='{c['m']}' stroke='{c['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+    o += f"<path d='{smooth([T_(*q) for q in ((4.2, -6.2), (6.4, 1), (6.4, 10), (4.4, LF - 2))], False, 0.35)}' fill='none' stroke='{c['hl'] if 'hl' in c else c['l']}' stroke-width='1.6' stroke-linecap='round' opacity='.75'/>"
+    o += f"<path d='{smooth([T_(*q) for q in ((-12.6, 3), (-11.6, 12), (-7.4, 18), (-3, LF + 1.4))], False, 0.35)}' fill='none' stroke='{c['d']}' stroke-width='1.6' stroke-linecap='round' opacity='.8'/>"
+    a, b = T_(-13.4, 8.6), T_(6.9, 6.2)                                  # 銅の 帯
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])} L{f(b[0] - 0.4)} {f(b[1] + 3)} L{f(a[0] + 0.6)} {f(a[1] + 3.4)} Z' fill='{cu['m']}' stroke='{cu['dd']}' stroke-width='.6'/>"
+    for q in ((-9.6, 1.6), (-5, -6.4), (3, -6.6), (-10.4, 14), (-1, 15.6)):
+        x, y = T_(*q)
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.9' fill='{c['dd']}'/>"
+    return doc(w, h, o), ox, oy, w, h
 
 
-def lower_svg(front, far=False):
-    """足の 下の 骨（鉄の すね・まん中に 真ちゅうの 輪）と 鉄の ひづめ：ひざ（絵の (10, 3)）から 下へ L2"""
-    c = dark(FE, 0.2) if far else FE
+def seg_gaskin(far=False):
+    """うしろ足の すね（ひざ → 飛節）：真ちゅうの 柱・うしろに 飛節の 出っぱり（かかと）と けんの 鉄の 棒"""
+    c = dark(BR) if far else BR
+    fe = dark(FE, 0.2) if far else FE
+    ox, oy, w, h = 10, 5, 19, 36
+    T_ = lambda x, y: (x + ox, y + oy)
+    body = [(-4.6, -1.4), (4.6, -1.4), (3.6, LG - 2), (2.6, LG + 1.6), (-3.2, LG + 1.6), (-4.2, LG - 3)]
+    o = f"<path d='{P([T_(*q) for q in body])}' fill='{c['m']}' stroke='{c['dd']}' stroke-width='1' stroke-linejoin='round'/>"
+    a, b = T_(-2.6, 1), T_(-1.8, LG - 3)
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{c['hl'] if 'hl' in c else c['l']}' stroke-width='1.3' stroke-linecap='round' opacity='.75'/>"
+    knob = [(-3.4, LG - 6.6), (-7.6, LG - 3.4), (-7.4, LG + 0.2), (-4.4, LG + 2.2), (-1, LG + 1)]       # 飛節の かかと
+    o += f"<path d='{smooth([T_(*q) for q in knob], True, 0.3)}' fill='{c['d']}' stroke='{c['dd']}' stroke-width='.9'/>"
+    a, b = T_(-4.4, 1.6), T_(-6.6, LG - 2.6)                               # けん（鉄の 棒）
+    o += (f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{fe['dd']}' stroke-width='2.4' stroke-linecap='round'/>"
+          f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{fe['l']}' stroke-width='.8' stroke-linecap='round' opacity='.8'/>")
+    for yy in (5.5, 11.5):
+        x, y = T_(0.2, yy)
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.85' fill='{c['dd']}'/>"
+    x, y = T_(0, 0)
+    o += _bolt(x, y, 3.6, c)                                                # ひざの ボルト
+    return doc(w, h, o), ox, oy, w, h
+
+
+def seg_forearm(far=False):
+    """前足の 前腕（ひじ → ひざ）：上が 太い 真ちゅうの 板（筋肉の 形）・銅の 帯"""
+    c = dark(BR) if far else BR
+    cu = dark(CU) if far else CU
+    ox, oy, w, h = 9, 4, 18, 34
+    T_ = lambda x, y: (x + ox, y + oy)
+    pts = [(-5.6, -1), (6.4, -1.6), (5.2, 9), (3.8, LA - 1), (3, LA + 1.6), (-3, LA + 1.6), (-3.6, LA - 1), (-5.2, 10)]
+    o = f"<path d='{smooth([T_(*q) for q in pts], True, 0.22)}' fill='{c['m']}' stroke='{c['dd']}' stroke-width='1' stroke-linejoin='round'/>"
+    a, b = T_(4.2, 1), T_(2.6, LA - 2)
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{c['hl'] if 'hl' in c else c['l']}' stroke-width='1.4' stroke-linecap='round' opacity='.75'/>"
+    a, b = T_(-4.4, 2), T_(-2.8, LA - 2)
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{c['d']}' stroke-width='1.3' stroke-linecap='round' opacity='.8'/>"
+    y0 = LA * 0.46
+    a = T_(-4.8, y0)
+    o += f"<rect x='{f(a[0])}' y='{f(a[1])}' width='{f(9.4)}' height='2.6' rx='.8' fill='{cu['m']}' stroke='{cu['dd']}' stroke-width='.5'/>"
+    for yy in (4, 17):
+        x, y = T_(0.4, yy)
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.85' fill='{c['dd']}'/>"
+    return doc(w, h, o), ox, oy, w, h
+
+
+def seg_cannon(front, far=False):
+    """管（ひざ／飛節 → 球節）：鉄の すね・まん中に 真ちゅうの 輪。うしろ足は 上に 飛節の ボルト"""
+    fe = dark(FE, 0.2) if far else FE
     b = dark(BR) if far else BR
-    x = 10
-    o = (f"<rect x='{x - 3}' y='2' width='6' height='{f(L2 - 6)}' rx='2.4' fill='{c['m']}' stroke='{c['dd']}' stroke-width='.8'/>"
-         f"<rect x='{x - 2.2}' y='3' width='1.4' height='{f(L2 - 9)}' rx='.7' fill='{c['l']}' opacity='.8'/>"
-         f"<rect x='{x - 4}' y='{f(L2 * 0.42)}' width='8' height='4' rx='1.4' fill='{b['m']}' stroke='{b['dd']}' stroke-width='.7'/>")
-    # ひづめ（前が 少し 長い・底に 蹄鉄の 帯）
-    hy = 3 + L2 - 6
-    o += (f"<path d='M{x - 5} {f(hy)} H{x + 4.2} L{x + 6.6} {f(hy + 6.4)} H{x - 5.8} Z' fill='{c['d']}' stroke='{c['dd']}' stroke-width='.8' stroke-linejoin='round'/>"
-          f"<rect x='{x - 6}' y='{f(hy + 5.2)}' width='12.8' height='1.8' rx='.6' fill='{b['d']}'/>"
-          f"<path d='M{x - 4} {f(hy + 1.2)} H{x + 3}' stroke='{c['l']}' stroke-width='.9' opacity='.6'/>")
-    return doc(20, 6 + L2, o)
+    L = LB if front else LC
+    ox, oy, w, h = 6, 5, 12, int(L + 9)
+    T_ = lambda x, y: (x + ox, y + oy)
+    a = T_(-3, -1)
+    o = (f"<rect x='{f(a[0])}' y='{f(a[1])}' width='6' height='{f(L + 2)}' rx='2.4' fill='{fe['m']}' stroke='{fe['dd']}' stroke-width='.8'/>"
+         f"<rect x='{f(a[0] + 0.8)}' y='{f(a[1] + 1)}' width='1.4' height='{f(L)}' rx='.7' fill='{fe['l']}' opacity='.8'/>")
+    a = T_(-3.9, L * 0.44)
+    o += f"<rect x='{f(a[0])}' y='{f(a[1])}' width='7.8' height='3.6' rx='1.3' fill='{b['m']}' stroke='{b['dd']}' stroke-width='.6'/>"
+    if not front:
+        x, y = T_(0, 0)
+        o += _bolt(x, y, 3.3, b)                                            # 飛節の ボルト
+    return doc(w, h, o), ox, oy, w, h
+
+
+def seg_pastern(far=False):
+    """つなぎ（球節 → 蹄冠）：上に 球節の 丸い 鉄の 玉（真ちゅうの ふち）"""
+    fe = dark(FE, 0.2) if far else FE
+    b = dark(BR) if far else BR
+    ox, oy, w, h = 5, 5, 10, int(LP + 8)
+    T_ = lambda x, y: (x + ox, y + oy)
+    a = T_(-2.2, 0)
+    o = f"<rect x='{f(a[0])}' y='{f(a[1])}' width='4.4' height='{f(LP + 1)}' rx='1.8' fill='{fe['m']}' stroke='{fe['dd']}' stroke-width='.7'/>"
+    x, y = T_(0, 0)
+    o += (f"<circle cx='{f(x)}' cy='{f(y)}' r='3.4' fill='{fe['m']}' stroke='{b['d']}' stroke-width='1.1'/>"
+          f"<circle cx='{f(x - 1)}' cy='{f(y - 1)}' r='1' fill='{fe['l']}' opacity='.9'/>")
+    return doc(w, h, o), ox, oy, w, h
+
+
+def seg_hoof(far=False):
+    """ひづめ（蹄冠が 軸・傾き 0 で 底が 水平）：鉄の ひづめ・底に 真ちゅうの 蹄鉄"""
+    fe = dark(FE, 0.2) if far else FE
+    b = dark(BR) if far else BR
+    ox, oy, w, h = 5, 3, 13, 10
+    T_ = lambda q: (q[0] + ox, q[1] + oy)
+    hr = HOOF_REL
+    pts = [T_(hr['top_b']), T_(hr['top_f']), T_(hr['toe']), T_(hr['heel'])]
+    o = f"<path d='{P(pts)}' fill='{fe['d']}' stroke='{fe['dd']}' stroke-width='.8' stroke-linejoin='round'/>"
+    a, c2 = T_((hr['heel'][0] - 0.3, hr['heel'][1] - 1.5)), T_((hr['toe'][0] + 0.2, hr['toe'][1] - 1.5))
+    o += f"<rect x='{f(a[0])}' y='{f(a[1])}' width='{f(c2[0] - a[0])}' height='1.6' rx='.6' fill='{b['d']}'/>"
+    a, c2 = T_((-1.8, 1.4)), T_((2.4, 1.2))
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(c2[0])} {f(c2[1])}' stroke='{fe['l']}' stroke-width='.8' opacity='.6'/>"
+    return doc(w, h, o), ox, oy, w, h
 
 
 def body_svg():
     """胴（ボイラー）・えんとつ・首・のぞき窓の 中の 暗い 所・圧力計の 盤・しっぽの 根もと（絵は 舞台の 座標）"""
     o = ''
-    # 首（板を 重ねた 柱：胴の 前から 頭へ）
-    neck = [(234, 74), (246, 64), (265, 44), (279, 34), (289, 44), (262, 70), (252, 84)]
-    o += f"<path d='{smooth(neck, True, 0.35)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
-    for k in range(5):
-        t = k / 5
-        ax, ay = 246 + (279 - 246) * t, 64 + (34 - 64) * t
-        bx, by = 252 + (289 - 252) * t, 84 + (44 - 84) * t
-        o += f"<path d='M{f(ax - 1)} {f(ay)} Q{f((ax + bx) / 2 + 3)} {f((ay + by) / 2 + 2)} {f(bx)} {f(by)}' fill='none' stroke='{BR['dd']}' stroke-width='.9' opacity='.75'/>"
-        o += f"<circle cx='{f((ax + bx) / 2 + 1)}' cy='{f((ay + by) / 2 + 1)}' r='.9' fill='{BR['dd']}'/>"
-    o += f"<path d='M249 66 L268 46' stroke='{BR['hl']}' stroke-width='1.6' stroke-linecap='round' opacity='.7'/>"
+    # 首（第4.93版：本物の 馬の 首の 形＝上が 弓なりの たてがみの 線・下は のどの 線。板を 重ねた よろいの ような 真ちゅう・のどに 銅の 管）
+    o += f"<path d='{smooth(NECK, True, 0.3)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+    hl = [(226, 64), (236, 53), (249, 42), (263, 33), (276, 27)]
+    o += f"<path d='{smooth([(x + 3, y + 4) for x, y in hl], False, 0.35)}' fill='none' stroke='{BR['l']}' stroke-width='5' stroke-linecap='round' opacity='.75'/>"
+    o += f"<path d='{smooth([(x + 2, y + 2.4) for x, y in hl], False, 0.35)}' fill='none' stroke='{BR['hl']}' stroke-width='1.4' stroke-linecap='round' opacity='.7'/>"
+    for k in range(1, 6):                                                # 板の つなぎ目（首を よこぎる）と びょう
+        t = k / 6
+        a = crest_at(t)
+        b = throat_at(t)
+        m = ((a[0] + b[0]) / 2 + 2.2, (a[1] + b[1]) / 2 + 1.2)
+        o += f"<path d='M{f(a[0] + 0.6)} {f(a[1] + 1.2)} Q{f(m[0])} {f(m[1])} {f(b[0] - 0.6)} {f(b[1] - 0.6)}' fill='none' stroke='{BR['dd']}' stroke-width='.9' opacity='.8'/>"
+        for u in (0.3, 0.55, 0.8):
+            x = a[0] + (b[0] - a[0]) * u + 1.2
+            y = a[1] + (b[1] - a[1]) * u + 1.4
+            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
+    # のどの 銅の 管（胸 → のど）と 留め金
+    pipe = [(250, 94), (254, 82), (261, 70), (269, 59), (277, 50)]
+    o += (f"<path d='{smooth(pipe, False, 0.35)}' fill='none' stroke='{CU['dd']}' stroke-width='4.4' stroke-linecap='round'/>"
+          f"<path d='{smooth(pipe, False, 0.35)}' fill='none' stroke='{CU['m']}' stroke-width='3' stroke-linecap='round'/>"
+          f"<path d='{smooth([(x - 0.8, y - 0.6) for x, y in pipe], False, 0.35)}' fill='none' stroke='{CU['hl']}' stroke-width='.9' stroke-linecap='round' opacity='.7'/>")
+    for x, y in pipe[1:4]:
+        o += f"<rect x='{f(x - 3)}' y='{f(y - 1.2)}' width='6' height='2.4' rx='.8' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.5' transform='rotate(-35 {f(x)} {f(y)})'/>"
     # 胴（ボイラー）
     o += (f"<rect x='150' y='62' width='104' height='40' rx='19' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.3'/>"
           f"<rect x='153' y='65' width='98' height='9' rx='4.5' fill='{BR['l']}' opacity='.9'/>"
@@ -208,46 +387,174 @@ def body_svg():
     return doc(W, H, o)
 
 
+# 首と 頭の 形（第4.93版：本物の 馬に 近く）
+NECK = [(222, 64), (232, 54), (246, 42), (262, 32), (276, 25), (285, 23), (290, 30), (289, 40), (285, 45), (278, 53), (269, 63), (261, 75), (256, 87), (253, 99),
+        (238, 99), (224, 78)]
+POLL = (284, 24)                    # うなじ（頭の 軸の ちかく）
+HEAD_ANG = 41.0                     # 頭の 向き（鼻すじ・水平から 下へ）
+HEAD_SC = 1.0
+HEAD_BOX = (270, 4, 58, 70)         # 頭の 絵の 箱（舞台の 座標：左上・はば・高さ）
+HEAD_PIV = (285, 36)                # うなずく 軸
+
+
+def crest_at(t):
+    """首の 上の 線（き甲 t=0 → うなじ t=1）"""
+    pts = NECK[:6]
+    return _along(pts, t)
+
+
+def throat_at(t):
+    """首の 下の 線（胸 t=0 → のど t=1）"""
+    pts = [NECK[13], NECK[12], NECK[11], NECK[10], NECK[9], NECK[8]]
+    return _along(pts, t)
+
+
+def _along(pts, t):
+    L = [0.0]
+    for a, b in zip(pts, pts[1:]):
+        L.append(L[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+    d = t * L[-1]
+    for i in range(len(pts) - 1):
+        if L[i + 1] >= d:
+            u = (d - L[i]) / max(1e-6, L[i + 1] - L[i])
+            return (pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u)
+    return pts[-1]
+
+
+def hpt(x, y):
+    """頭の 中の 点（うなじが 原点・x は 鼻すじに そって 鼻へ・y は あごの がわ）→ 舞台の 座標"""
+    a = math.radians(HEAD_ANG)
+    ux, uy = math.cos(a), math.sin(a)
+    vx, vy = -math.sin(a), math.cos(a)
+    return (POLL[0] + (x * ux + y * vx) * HEAD_SC, POLL[1] + (x * uy + y * vy) * HEAD_SC)
+
+
+HEAD_OUT = [(0, 0), (8, -1.3), (20, -0.7), (31, 0.4), (39.5, 1.6), (43.4, 3.8), (44.6, 6.8), (44, 9.8), (41.6, 10.9), (42.4, 12.4), (39.6, 14.6),
+            (35.4, 14.2), (28, 15.8), (20, 18.4), (12, 19.8), (6, 18), (2.4, 13.4), (1.6, 7.6), (2.6, 3.2)]
+
+
 def head_svg():
-    """頭（板を 重ねた 馬の 顔・こはく色の ランプの 目・耳・鼻の 穴の すきま・はみの 輪）：うなずく 軸は 絵の (14, 22)＝舞台の (282, 34)"""
-    ox, oy = 268, 12       # 絵の 左上（舞台の 座標）
-    tr = lambda x, y: (x - ox, y - oy)
-    face = [tr(*p) for p in ((278, 30), (283, 20), (292, 17), (304, 26), (318, 42), (318, 49), (311, 53), (300, 52), (290, 48), (281, 41))]
-    o = f"<path d='{smooth(face, True, 0.3)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
-    o += f"<path d='{P([tr(285, 22), tr(293, 19), tr(306, 30), tr(296, 30)])}' fill='{BR['l']}' opacity='.85'/>"
-    o += f"<path d='{P([tr(306, 31), tr(317, 43), tr(317, 48), tr(304, 40)])}' fill='{BR['d']}' opacity='.55'/>"
-    for a, b in (((294, 22), (290, 46)), ((304, 30), (300, 51))):    # 板の つなぎ目
-        o += f"<path d='M{f(tr(*a)[0])} {f(tr(*a)[1])} L{f(tr(*b)[0])} {f(tr(*b)[1])}' stroke='{BR['dd']}' stroke-width='.8' opacity='.7'/>"
-    for p in ((292, 25), (297, 33), (302, 40), (295, 44)):
-        x, y = tr(*p)
-        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.8' fill='{BR['dd']}'/>"
-    # 耳（2まい）
-    for ex, ey, c in ((283, 21, BR['d']), (288, 18, BR['m'])):
-        x, y = tr(ex, ey)
-        o += f"<path d='M{f(x - 3)} {f(y + 2)} L{f(x - 1.6)} {f(y - 10)} L{f(x + 3.4)} {f(y + 1.2)} Z' fill='{c}' stroke='{BR['dd']}' stroke-width='.9' stroke-linejoin='round'/>"
-    # 銅の 鼻の 先・鼻の 穴の すきま
-    x, y = tr(313, 45)
-    o += (f"<path d='M{f(x - 4)} {f(y - 6)} L{f(x + 5)} {f(y - 3)} L{f(x + 5)} {f(y + 4)} L{f(x - 2)} {f(y + 7)} Z' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.8'/>"
-          f"<path d='M{f(x)} {f(y - 2)} h3 M{f(x - 0.4)} {f(y + 0.6)} h3.4 M{f(x - 0.8)} {f(y + 3.2)} h3' stroke='{CU['dd']}' stroke-width='.9' stroke-linecap='round'/>")
-    # 目（こはく色の ランプ・まわりに やわらかい 光の 輪）
-    x, y = tr(296, 28)
-    o += (f"<circle cx='{f(x)}' cy='{f(y)}' r='6.2' fill='#FFB648' opacity='.22'/>"
-          f"<circle cx='{f(x)}' cy='{f(y)}' r='3.9' fill='{BR['dd']}'/><circle cx='{f(x)}' cy='{f(y)}' r='2.8' fill='#FFB648'/>"
-          f"<circle cx='{f(x - 0.8)}' cy='{f(y - 0.9)}' r='1' fill='#FFF0C8'/>")
-    # はみの 輪と 手綱の かわりの 鎖
-    x, y = tr(303, 49)
-    o += f"<circle cx='{f(x)}' cy='{f(y)}' r='2.6' fill='none' stroke='{CU['l']}' stroke-width='1.2'/>"
-    return doc(56, 48, o)
-
-
-def mane_svg():
-    """たてがみ：首の 上の ふちに ならぶ 銅の ひれ（うしろへ ねる）"""
+    """頭（第4.93版：本物の 馬の 頭の 形を 真ちゅうの 板で）：ひたい・目の くぼみと まゆの 板・長い 鼻すじの 板・まるい ほお（あごの 歯車）・
+       銅の 鼻先（鼻の あなの すきま）・口・あご・耳 2まい・前髪。目は こはく色の ランプ。うなずく 軸は 絵の (HEAD_PIV − HEAD_BOX)"""
+    bx, by, bw, bh = HEAD_BOX
+    tr = lambda q: (q[0] - bx, q[1] - by)
+    H_ = lambda x, y: tr(hpt(x, y))
     o = ''
-    for k in range(6):
-        t = k / 6
-        x, y = 265 - (265 - 240) * t, 42 + (64 - 42) * t
-        o += (f"<path d='M{f(x)} {f(y)} Q{f(x - 6)} {f(y - 9)} {f(x - 13)} {f(y - 7)} Q{f(x - 7)} {f(y - 2)} {f(x - 4)} {f(y + 5)} Z' "
-              f"fill='{CU['m'] if k % 2 else CU['l']}' stroke='{CU['dd']}' stroke-width='.8' stroke-linejoin='round'/>")
+    # 耳（奥 → 手前）：うなじから 少し 前へ 立つ
+    for (b0, b1, tip, c) in (((-1.2, -0.6), (3.4, -1.4), (-6.4, -12.2), BR['d']), ((1.6, -0.9), (6.2, -1.4), (-2.6, -12.8), BR['m'])):
+        pa, pb, pt_ = H_(*b0), H_(*b1), H_(*tip)
+        mid = ((pa[0] + pt_[0]) / 2 - 1.2, (pa[1] + pt_[1]) / 2)
+        mid2 = ((pb[0] + pt_[0]) / 2 + 1.6, (pb[1] + pt_[1]) / 2 + 0.6)
+        o += (f"<path d='M{f(pa[0])} {f(pa[1])} Q{f(mid[0])} {f(mid[1])} {f(pt_[0])} {f(pt_[1])} Q{f(mid2[0])} {f(mid2[1])} {f(pb[0])} {f(pb[1])} Z' "
+              f"fill='{c}' stroke='{BR['dd']}' stroke-width='.9' stroke-linejoin='round'/>")
+        ci = ((pa[0] * 0.3 + pb[0] * 0.7 + pt_[0]) / 2, (pa[1] * 0.3 + pb[1] * 0.7 + pt_[1]) / 2)
+        o += f"<path d='M{f(pa[0] * 0.5 + pb[0] * 0.5)} {f(pa[1] * 0.5 + pb[1] * 0.5 - 0.6)} Q{f(ci[0])} {f(ci[1])} {f(pt_[0] + 0.4)} {f(pt_[1] + 1.6)}' fill='none' stroke='{CU['m']}' stroke-width='1.6' stroke-linecap='round' opacity='.85'/>"
+    # 顔の 形
+    o += f"<path d='{smooth([H_(*q) for q in HEAD_OUT], True, 0.28)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+    # 鼻すじの 板（明るい）と まん中の すじ
+    nas = [H_(10, 0.4), H_(39, 2.4), H_(40, 6.4), H_(13, 5.8)]
+    o += f"<path d='{smooth(nas, True, 0.2)}' fill='{BR['l']}' opacity='.9'/>"
+    a, b = H_(14, 1.6), H_(38, 3.2)
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{BR['hl']}' stroke-width='1.2' stroke-linecap='round' opacity='.8'/>"
+    # 板の つなぎ目（鼻すじと ほおの さかい・まゆ）
+    seam = [H_(9, 6.6), H_(20, 8.0), H_(32, 9.2), H_(38, 9.6)]
+    o += f"<path d='{smooth(seam, False, 0.3)}' fill='none' stroke='{BR['dd']}' stroke-width='.8' opacity='.75'/>"
+    # まるい ほお（あごの 筋肉）：少し 暗い 板と びょうの 輪・まん中に あごの 歯車
+    cc = H_(10.5, 12.4)
+    o += (f"<circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='6.1' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.9'/>"
+          f"<path d='M{f(cc[0] - 4.8)} {f(cc[1] - 1.8)} A5.2 5.2 0 0 1 {f(cc[0] + 1.4)} {f(cc[1] - 5)}' fill='none' stroke='{BR['l']}' stroke-width='1.2' stroke-linecap='round' opacity='.7'/>")
+    for k in range(8):
+        a_ = 2 * math.pi * k / 8
+        o += f"<circle cx='{f(cc[0] + math.cos(a_) * 4.6)}' cy='{f(cc[1] + math.sin(a_) * 4.6)}' r='.65' fill='{BR['dd']}'/>"
+    o += f"<path d='{gear_d(cc[0], cc[1], 2.8, 2.2, 8)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.6'/><circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='.9' fill='{CU['dd']}'/>"
+    # あごの 下の ふち（暗い）
+    jaw = [H_(14, 19.2), H_(22, 17.6), H_(30, 15.4), H_(36, 14.2)]
+    o += f"<path d='{smooth(jaw, False, 0.3)}' fill='none' stroke='{BR['d']}' stroke-width='2' stroke-linecap='round' opacity='.7'/>"
+    # 銅の 鼻先（くちびるまで）と 鼻の あなの すきま
+    mz = [H_(35, 1.0), H_(43.4, 3.8), H_(44.6, 6.8), H_(44, 9.8), H_(41.6, 10.9), H_(37, 10.6), H_(34, 8)]
+    o += f"<path d='{smooth(mz, True, 0.25)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.8' stroke-linejoin='round'/>"
+    a, b = H_(36.4, 2.6), H_(42.6, 4.6)
+    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['hl']}' stroke-width='1' stroke-linecap='round' opacity='.75'/>"
+    nc = H_(40.2, 5.8)
+    o += f"<ellipse cx='{f(nc[0])}' cy='{f(nc[1])}' rx='2.7' ry='1.7' transform='rotate({f(HEAD_ANG + 12)} {f(nc[0])} {f(nc[1])})' fill='{CU['dd']}'/>"
+    for k in range(3):
+        a, b = H_(38.8 + k * 1.0, 4.9 + k * 0.5), H_(39.8 + k * 1.0, 6.9 + k * 0.5)
+        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['l']}' stroke-width='.5' opacity='.8'/>"
+    # 口（くちびるの あいだ）と あご先
+    a, b = H_(43.6, 10.6), H_(37.6, 11.2)
+    o += f"<path d='M{f(a[0])} {f(a[1])} Q{f((a[0] + b[0]) / 2)} {f((a[1] + b[1]) / 2 + 0.8)} {f(b[0])} {f(b[1])}' fill='none' stroke='{BR['dd']}' stroke-width='1' stroke-linecap='round'/>"
+    ch = [H_(42.4, 12.4), H_(39.6, 14.6), H_(35.4, 14.2), H_(37.6, 11.6)]
+    o += f"<path d='{smooth(ch, True, 0.25)}' fill='{CU['d']}' opacity='.85'/>"
+    # 目：まゆの 板（目の 上の くぼみ）・アーモンド形の こはく色の ランプ
+    ec = H_(13.6, 3.4)
+    br_ = [H_(9.4, 0.8), H_(13.6, -0.2), H_(18.2, 1.6), H_(16.4, 2.4), H_(11.4, 2.2)]
+    o += f"<path d='{smooth(br_, True, 0.3)}' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.6'/>"
+    o += (f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='4.2' ry='2.9' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648' opacity='.22'/>"
+          f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='3.1' ry='2.0' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='{BR['dd']}'/>"
+          f"<ellipse cx='{f(ec[0] + 0.2)}' cy='{f(ec[1])}' rx='2.3' ry='1.45' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648'/>"
+          f"<circle cx='{f(ec[0] + 0.9)}' cy='{f(ec[1] + 0.2)}' r='.9' fill='#7A3A0A'/><circle cx='{f(ec[0] - 0.4)}' cy='{f(ec[1] - 0.5)}' r='.6' fill='#FFF0C8'/>")
+    for q in ((22, 4.6), (30, 5.6), (24, 12.6), (31, 11.8)):
+        x, y = H_(*q)
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
+    # はみの 輪
+    rg = H_(37.6, 11.0)
+    o += f"<circle cx='{f(rg[0])}' cy='{f(rg[1])}' r='2.3' fill='none' stroke='{CU['l']}' stroke-width='1.1'/>"
+    # 前髪（耳の あいだから ひたいへ：銅と 真ちゅうの 細い 板）
+    for k, (L, bend, c) in enumerate(((10.5, 2.2, CU['m']), (8.6, 1.4, BR['l']), (7.2, 2.6, CU['l']))):
+        p0 = H_(1.0 + k * 0.9, -1.2)
+        p1 = H_(4.6 + k * 1.2, 1.2 + bend)
+        p2 = H_(L + k * 0.6, 3.2 + k * 0.5)
+        o += (f"<path d='M{f(p0[0] - 1.1)} {f(p0[1])} Q{f(p1[0] - 1.4)} {f(p1[1])} {f(p2[0])} {f(p2[1])} Q{f(p1[0] + 1.2)} {f(p1[1] - 0.8)} {f(p0[0] + 1.3)} {f(p0[1] - 0.4)} Z' "
+              f"fill='{c}' stroke='{CU['dd']}' stroke-width='.5' stroke-linejoin='round'/>")
+    return doc(bw, bh, o)
+
+
+def mane_svg(layer=0):
+    """たてがみ（第4.93版：流れる 毛の 房を 銅と 真ちゅうの うすい 板で）：首の 上の 線から うしろ（き甲の 方）へ なびいて 首の 横に たれる 房を、
+       き甲 → うなじ の 順に 重ねる（頭に 近い 房が 上）。layer 0＝房の うらの 暗い かげ（首の 上の ふちの 外に のぞく 厚み）・1＝房"""
+    o = ''
+    n = 11
+    locks = []
+    for k in range(n):
+        t0 = 0.04 + 0.92 * k / n
+        t1 = 0.04 + 0.92 * (k + 1.7) / n
+        t1 = min(t1, 0.995)
+        a, b = crest_at(t0), crest_at(t1)
+        tx, ty = b[0] - a[0], b[1] - a[1]
+        tl = math.hypot(tx, ty) or 1
+        tx, ty = tx / tl, ty / tl
+        nx, ny = ty, -tx
+        if ny > 0:
+            nx, ny = -nx, -ny                                             # 首の 外がわ（上）
+        tm = (t0 + t1) / 2
+        prof = 0.6 + 0.4 * math.sin(math.pi * (0.1 + 0.8 * tm))
+        L = (15.5 + 6.5 * prof) * (1.08 if k % 3 == 1 else 0.92 if k % 3 == 2 else 1.0)
+        dx, dy = -tx * 0.86 - nx * 0.5, -ty * 0.86 - ny * 0.5              # うしろへ なびいて 首の 横へ
+        dl = math.hypot(dx, dy)
+        dx, dy = dx / dl, dy / dl
+        lift = 1.4 if layer == 0 else 0.0
+        A = (a[0] + nx * (1.0 + lift), a[1] + ny * (1.0 + lift))
+        Bp = (b[0] + nx * (1.4 + lift), b[1] + ny * (1.4 + lift))
+        tip = (A[0] + dx * L - nx * (2.0 - lift), A[1] + dy * L - ny * (2.0 - lift))
+        # 外がわの ふち（B → 先）は ふくらむ・内がわ（先 → A）は へこむ
+        c1 = (Bp[0] + dx * L * 0.45 + nx * 4.2, Bp[1] + dy * L * 0.45 + ny * 4.2)
+        c2 = (tip[0] + nx * 2.2 - dx * 3.0, tip[1] + ny * 2.2 - dy * 3.0)
+        c3 = (A[0] + dx * L * 0.55 - nx * 1.2, A[1] + dy * L * 0.55 - ny * 1.2)
+        locks.append((k, A, Bp, tip, c1, c2, c3, nx, ny, dx, dy, L))
+    for k, A, Bp, tip, c1, c2, c3, nx, ny, dx, dy, L in locks:           # き甲 → うなじ（頭に 近い 房が 上）
+        if layer == 0:
+            fill, edge = mix(CU['dd'], '#1E1410', 0.15), CU['dd']
+        else:
+            fill, edge = (CU['m'], CU['dd']) if k % 2 == 0 else (BR['m'], BR['dd'])
+        o += (f"<path d='M{f(Bp[0])} {f(Bp[1])} Q{f(c1[0])} {f(c1[1])} {f(tip[0])} {f(tip[1])} Q{f(c3[0])} {f(c3[1])} {f(A[0])} {f(A[1])} Z' "
+              f"fill='{fill}' stroke='{edge}' stroke-width='.8' stroke-linejoin='round'/>")
+        if layer:
+            hlc = CU['hl'] if k % 2 == 0 else BR['hl']
+            m0 = ((A[0] + Bp[0]) / 2 + nx * 0.6, (A[1] + Bp[1]) / 2 + ny * 0.6)
+            o += (f"<path d='M{f(m0[0])} {f(m0[1])} Q{f(m0[0] + dx * L * 0.5 + nx * 1.6)} {f(m0[1] + dy * L * 0.5 + ny * 1.6)} {f(tip[0] * 0.7 + m0[0] * 0.3)} {f(tip[1] * 0.7 + m0[1] * 0.3)}' "
+                  f"fill='none' stroke='{hlc}' stroke-width='.9' stroke-linecap='round' opacity='.75'/>")
+            o += (f"<path d='M{f(A[0] * 0.6 + Bp[0] * 0.4)} {f(A[1] * 0.6 + Bp[1] * 0.4)} Q{f(c3[0] + nx * 0.8)} {f(c3[1] + ny * 0.8)} {f(tip[0] * 0.85 + A[0] * 0.15)} {f(tip[1] * 0.85 + A[1] * 0.15)}' "
+                  f"fill='none' stroke='{edge}' stroke-width='.6' stroke-linecap='round' opacity='.6'/>")
     return doc(W, H, o)
 
 
@@ -469,10 +776,21 @@ def prop_svg():
 LEGS = ('hr', 'fr', 'hl', 'fl')        # 描く 順（奥 → 手前）
 
 
+def leg_parts(front, far):
+    """足の 部品（関節の 順）：前＝前腕・管・つなぎ・ひづめ／うしろ＝もも・すね・管・つなぎ・ひづめ"""
+    if front:
+        return [('fa', seg_forearm(far)), ('cn', seg_cannon(True, far)), ('ps', seg_pastern(far)), ('hf', seg_hoof(far))]
+    return [('th', seg_thigh(far)), ('gs', seg_gaskin(far)), ('cn', seg_cannon(False, far)), ('ps', seg_pastern(far)), ('hf', seg_hoof(far))]
+
+
+def leg_lens(front):
+    return [LA, LB, LP] if front else [LF, LG, LC, LP]
+
+
 def banner(B):
     still = B.get('still')
-    alt = ('夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬が速足で走るイラスト。肩と腰の大きな歯車が回って連結棒が回り、'
-           '足が動く。のぞき窓の中でも歯車が回り、えんとつと鼻から蒸気がしゅっと出る。空に飛行船、左上と右上に大きな歯車')
+    alt = ('夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬が速足で走るイラスト。本物の馬のような頭と首、流れるたてがみ。'
+           '肩と腰の大きな歯車が回って連結棒が回り、ひざと飛節のある本物の馬と同じ形の足が動く。のぞき窓の中でも歯車が回り、えんとつと鼻から蒸気がしゅっと出る。空に飛行船、左上と右上に大きな歯車')
     html = f'<div class="gww" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('gwSky', sky_svg())
@@ -482,16 +800,25 @@ def banner(B):
     html += img('gwG1', gear_svg(46, 22, BR, spokes=6)) + img('gwG2', gear_svg(30, 15, CU, spokes=5)) + img('gwG3', gear_svg(20, 11, BR, spokes=0))
     html += f'<i class="gwRd" style="background-image:url(&quot;{durl(road_svg())}&quot;)"></i>'
     html += '<i class="gwSh"></i>'
-    # 馬（体ごと 少し 上下）
+    # 馬（体ごと 少し 上下）。足は 関節ごとの 入れもの（.j0 → .j1 → …：本物の 馬の 関節・LEG_PARTS）
+    def leg(nm, far):
+        parts = leg_parts(nm[0] == 'f', far)
+        o = f'<i class="gwL {nm}">'
+        close = ''
+        for j, (cls, (svg, ox_, oy_, w_, h_)) in enumerate(parts):
+            o += f'<i class="j{j}">' + img(cls, svg)
+            if nm[0] == 'f' and cls == 'cn':
+                o += img('kg', gear_svg(5.2, 8, dark(BR) if far else BR, spokes=0, size=14))
+            close += '</i>'
+        return o + close + '</i>'
     h = '<i class="gwH">'
     for nm in ('hr', 'fr'):
-        h += f'<i class="gwL {nm}">' + img('u', upper_svg(nm[0] == 'f', True)) + '<i class="k">' + img('l', lower_svg(nm[0] == 'f', True)) + '</i></i>'
-    h += img('gwTl', tail_svg()) + img('gwBd', body_svg()) + img('gwMn', mane_svg())
+        h += leg(nm, True)
+    h += img('gwTl', tail_svg()) + img('gwMb', mane_svg(0)) + img('gwBd', body_svg()) + img('gwMn', mane_svg(1))
     h += '<i class="gwWn">' + img('gwWg1', gear_svg(9, 10, BR, spokes=4, size=22)) + img('gwWg2', gear_svg(6, 8, CU, spokes=0, size=16)) + img('gwWg3', gear_svg(5, 7, BR, spokes=0, size=14)) + '</i>'
     h += img('gwWr', window_svg()) + img('gwNd', needle_svg()) + img('gwHd', head_svg())
     for nm in ('hl', 'fl'):
-        kg = img('kg', gear_svg(5.2, 8, BR, spokes=0, size=14))
-        h += f'<i class="gwL {nm}">' + img('u', upper_svg(nm[0] == 'f')) + '<i class="k">' + img('l', lower_svg(nm[0] == 'f')) + kg + '</i></i>'
+        h += leg(nm, False)
     h += img('gwDh', gear_svg(13, 12, BR, spokes=5, size=30)) + img('gwDs', gear_svg(13, 12, BR, spokes=5, size=30))
     h += img('gwRod', rod_svg())
     h += '</i>'
@@ -520,9 +847,11 @@ def banner(B):
            '.gww .gwG3{left:356px;top:-14px;width:44px;height:44px;animation:gwRotR 12s linear infinite}'
            # 馬
            '.gww .gwH{left:0;top:0;width:390px;height:160px;animation:gwBob ' + f(T) + 's linear infinite;will-change:transform}'
-           '.gww .gwBd,.gww .gwMn{left:0;top:0;width:390px;height:160px}'
+           '.gww .gwBd{left:0;top:0;width:390px;height:160px}'
            '.gww .gwTl{left:126px;top:68px;width:34px;height:42px;transform-origin:26px 4px;animation:gwTail ' + f(T) + 's ease-in-out infinite}'
-           '.gww .gwHd{left:265px;top:16px;width:56px;height:48px;transform-origin:14px 22px;animation:gwHead ' + f(T) + 's ease-in-out infinite}'
+           f'.gww .gwHd{{left:{HEAD_BOX[0]}px;top:{HEAD_BOX[1]}px;width:{HEAD_BOX[2]}px;height:{HEAD_BOX[3]}px;transform-origin:{HEAD_PIV[0] - HEAD_BOX[0]}px {HEAD_PIV[1] - HEAD_BOX[1]}px;animation:gwHead {f(T)}s ease-in-out infinite}}'
+           '.gww .gwMb,.gww .gwMn{left:0;top:0;width:390px;height:160px;transform-origin:250px 46px;animation:gwMane ' + f(T) + 's ease-in-out infinite}'
+           '.gww .gwMb{animation-delay:-' + f(T * 0.18, 3) + 's}'
            '.gww .gwWn{left:183.5px;top:70.5px;width:25px;height:25px;border-radius:50%;overflow:hidden}'
            '.gww .gwWg1{left:-1px;top:-2px;width:22px;height:22px;animation:gwRot ' + f(T * 2) + 's linear infinite}'
            '.gww .gwWg2{left:13px;top:10px;width:16px;height:16px;animation:gwRotR ' + f(T * 2 * 8 / 10) + 's linear infinite}'
@@ -532,23 +861,25 @@ def banner(B):
            '.gww .gwDh{left:' + f(HP[0] - 15) + 'px;top:' + f(HP[1] - 15) + 'px;width:30px;height:30px;animation:gwRot ' + f(T) + 's linear infinite}'
            '.gww .gwDs{left:' + f(SH[0] - 15) + 'px;top:' + f(SH[1] - 15) + 'px;width:30px;height:30px;animation:gwRot ' + f(T) + 's linear infinite}'
            '.gww .gwRod{left:' + f(HP[0] - 4) + 'px;top:' + f(HP[1] - 5) + 'px;width:' + f(SH[0] - HP[0] + 8) + 'px;height:' + f(10 + max(0, SH[1] - HP[1])) + 'px;animation:gwRod ' + f(T) + 's linear infinite}'
-           # 足：軸の 所に はば 0 の 入れもの（上の 骨を 回す）→ ひざの 入れもの（下の 骨を 回す）
-           '.gww .gwL{width:0;height:0;transform-origin:0 0}'
-           '.gww .gwL .u{left:-12px;top:-4px;width:24px;height:' + f(12 + L1) + 'px}'
-           '.gww .gwL .k{left:0;top:' + f(L1) + 'px;width:0;height:0;transform-origin:0 0}'
-           '.gww .gwL .l{left:-10px;top:-3px;width:20px;height:' + f(6 + L2) + 'px}'
+           # 足：関節の 所に はば 0 の 入れもの（.j0 は 腰／ひじ・つぎは 1つ上の 骨の 先）。中の 絵は 自分の 関節を 原点に
+           '.gww .gwL,.gww .gwL i{width:0;height:0;transform-origin:0 0}'
            '.gww .gwL .kg{left:-7px;top:-7px;width:14px;height:14px;animation:gwRotR ' + f(T / 2) + 's linear infinite}'
            # 蒸気
            '.gww .gwPf{left:204px;top:20px;width:34px;height:26px;opacity:0;transform-origin:50% 80%;animation:gwPuff 3.6s ease-out infinite;will-change:transform,opacity}'
            '.gww .gwPf.p1{animation-delay:.28s}.gww .gwPf.p2{animation-delay:.56s}'
-           '.gww .gwJt{left:315px;top:42px;width:70px;height:18px;opacity:0;transform-origin:0 50%;animation:gwJet 7.2s ease-out 1.8s infinite;will-change:transform,opacity}')
+           f'.gww .gwJt{{left:{f(hpt(43, 6)[0] - 2)}px;top:{f(hpt(43, 6)[1] - 9)}px;width:70px;height:18px;opacity:0;transform-origin:0 50%;animation:gwJet 7.2s ease-out 1.8s infinite;will-change:transform,opacity}}')
     for nm in LEGS:
         piv = SH if nm[0] == 'f' else HP
-        css += f'.gww .gwL.{nm}{{left:{f(piv[0])}px;top:{f(piv[1])}px;animation:gwU{nm} {f(T)}s linear infinite}}'
-        css += f'.gww .gwL.{nm} .k{{animation:gwK{nm} {f(T)}s linear infinite}}'
-        up, lo = leg_keys(nm)
-        css += kf(f'gwU{nm}', [(100 * i / NS, f'transform:rotate({f(a, 2)}deg)') for i, a in enumerate(up)])
-        css += kf(f'gwK{nm}', [(100 * i / NS, f'transform:rotate({f(a, 2)}deg)') for i, a in enumerate(lo)])
+        parts = leg_parts(nm[0] == 'f', nm in ('hr', 'fr'))
+        lens = leg_lens(nm[0] == 'f')
+        css += f'.gww .gwL.{nm}{{left:{f(piv[0])}px;top:{f(piv[1])}px}}'
+        for j, (cls, (svg, ox_, oy_, w_, h_)) in enumerate(parts):
+            sel = f'.gww .gwL.{nm} ' + ' > '.join(f'.j{k}' for k in range(j + 1))
+            top = 0 if j == 0 else lens[j - 1]
+            css += f'{sel}{{left:0;top:{f(top, 2)}px;animation:gwJ{nm}{j} {f(T)}s linear infinite}}'
+            css += f'{sel} > .{cls}{{left:{f(-ox_)}px;top:{f(-oy_)}px;width:{f(w_)}px;height:{f(h_)}px}}'
+        for j, arr in enumerate(leg_keys(nm)):
+            css += kf(f'gwJ{nm}{j}', [(100 * i / NS, f'transform:rotate({f(a, 2)}deg)') for i, a in enumerate(arr)])
     css += kf('gwBob', [(100 * i / NS, f'transform:translateY({f(bob(i / NS), 2)}px)') for i in range(NS + 1)])
     css += kf('gwRod', [(100 * i / NS, f'transform:translate({f(CRANK * math.cos(2 * math.pi * i / NS + math.pi), 2)}px,{f(CRANK * math.sin(2 * math.pi * i / NS + math.pi), 2)}px)') for i in range(NS + 1)])
     css += (kf('gwRot', [(0, 'transform:rotate(0)'), (100, 'transform:rotate(360deg)')])
@@ -558,7 +889,8 @@ def banner(B):
             + kf('gwRoad', [(0, 'transform:translateX(0)'), (100, f'transform:translateX(-{ROAD_W}px)')])
             + kf('gwAir', [(0, 'transform:translate(400px,0)'), (50, 'transform:translate(150px,5px)'), (100, 'transform:translate(-100px,0)')])
             + kf('gwProp', [(0, 'transform:scaleY(1)'), (50, 'transform:scaleY(.2)'), (100, 'transform:scaleY(1)')])
-            + kf('gwHead', [(0, 'transform:rotate(-2deg)'), (25, 'transform:rotate(2.2deg)'), (50, 'transform:rotate(-2deg)'), (75, 'transform:rotate(2.2deg)'), (100, 'transform:rotate(-2deg)')])
+            + kf('gwHead', [(0, 'transform:rotate(-1.6deg)'), (25, 'transform:rotate(1.8deg)'), (50, 'transform:rotate(-1.6deg)'), (75, 'transform:rotate(1.8deg)'), (100, 'transform:rotate(-1.6deg)')])
+            + kf('gwMane', [(0, 'transform:rotate(0deg)'), (25, 'transform:rotate(.7deg)'), (50, 'transform:rotate(0deg)'), (75, 'transform:rotate(.7deg)'), (100, 'transform:rotate(0deg)')])
             + kf('gwTail', [(0, 'transform:rotate(-7deg)'), (50, 'transform:rotate(6deg)'), (100, 'transform:rotate(-7deg)')])
             + kf('gwNeedle', [(0, 'transform:rotate(-30deg)'), (40, 'transform:rotate(18deg)'), (55, 'transform:rotate(8deg)'), (70, 'transform:rotate(22deg)'), (100, 'transform:rotate(-30deg)')])
             # えんとつの 蒸気：1つ 1.6秒（3.6秒の うち 44%）。ふくらんで うしろ（左）上へ 流れて 消える
@@ -606,7 +938,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='スチームパンク', desc='歯車の馬', title='スチームパンク（真ちゅう×銅×夕ぐれ）', banner=ID,
-    alt='夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬が速足で走る。肩と腰の大きな歯車が回り、えんとつと鼻から蒸気がしゅっと出るイラスト',
+    alt='夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬（本物の馬のような頭と首・流れるたてがみ・ひざと飛節のある足）が速足で走る。肩と腰の大きな歯車が回り、えんとつと鼻から蒸気がしゅっと出るイラスト',
     fonts=['Kaisei+Tokumin:wght@800', 'Murecho:wght@500;700'],
     v=dict(bg='#EFE2C6', ink='#2C2016', sub='#6A5640', card='#FBF4E2', cardB='1.5px solid #C9A86A', cardO='0 solid transparent', cardS='0 3px 0 #D9C092',
            radius='10px', rs='8px', font='"Murecho"', dfont='"Kaisei Tokumin"', dw='800', logo='#F0C76A', logoS='0 2px 0 #1E140C',
@@ -625,7 +957,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2E2420', '鉄'), ('#C99A3E', '真ちゅう'), ('#9A5528', '銅のボタン'), ('#2F6A62', '青さび'), ('#EFE2C6', '背景')],
                fonts='見出し：Kaisei Tokumin<br>本文：Murecho', shape='角丸10px・帯は 鉄の色で 下に 真ちゅうの びょうの 帯・うすい 歯車の 背景・すみに かみ合う 歯車・的中ボタンは 歯車と 圧力計の PUSH',
-               pic='夕ぐれの 工場の 町・飛行船・石だたみ・大きな 歯車・真ちゅうと 銅の 機械仕掛けの 馬（歯車と 連結棒で 足が 動く・えんとつと 鼻から 蒸気）'),
+               pic='夕ぐれの 工場の 町・飛行船・石だたみ・大きな 歯車・真ちゅうと 銅の 機械仕掛けの 馬（本物の 馬の 頭と 首・流れる たてがみ・ひざと 飛節の ある 足で 速足・歯車と 連結棒・えんとつと 鼻から 蒸気）'),
 )
 
 

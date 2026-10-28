@@ -1,21 +1,28 @@
-"""壁紙パック ⑪七夕（まさちゃんの 指定「七夕（7月）：天の川を渡る馬と、ゆれる短冊」）
+"""壁紙パック ⑪七夕（まさちゃんの 指定「七夕（7月）：天の川を渡る馬と、ゆれる短冊」→ 第4.93版「馬の 道と 馬は 消して、天の川の 両はしから 織姫と 彦星の 馬が
+   出会いたくて 天の川を 行ったり 来たり」）
    上の絵：夏の 夜空に ななめに 流れる 天の川（星の つぶと やわらかい 光）。川の 左上に 織姫星・右下に 彦星。
-     白い 馬（うすい 金の たてがみ・紺の 布に 金の 星：pack/make/tanabata_art.py）が、川に かかる 光の 橋を 左から 右へ 走って 渡る。
-     左上と 右上から 笹の 枝。色とりどりの 短冊（字は 書かない）・紙の 星・紙の くさりが さがる。下に 夜の 町の 丘と 家の あかり。
-   動き（CSS だけ）：馬は 11秒ごとに 橋を 渡る（8.4秒で 左から 右へ・山なりに 少し かたむく・うしろに 星の つぶが 流れる）。
-     短冊と 笹の 葉は いつも ゆらゆら（ひとつずつ ちがう 速さ）。天の川の 星が ゆっくり 流れる。星は ゆっくり 小さく またたく（強く 光らせない）"""
+     天の川の 左下の はしから 織姫の 馬（白い 馬・桃色の 布・花の かざり・うすい 桃色の 羽衣）、右上の はしから 彦星の 馬（明るい 栗毛・青い 布・首に 金の 鈴）が
+     天の川の すじに そって 走って くる（pack/make/tanabata_art.py：ギャロップ 10コマと 立って 鼻を よせる 1コマ）。
+     左上と 右上から 笹の 枝。色とりどりの 短冊（字は 書かない）・紙の 星・紙の くさりが さがる。下に 夜の 町の 丘と 家の あかり（馬は 町の うしろから 出て くる）。
+   動き（CSS だけ・14秒の 1回り）：2頭が 両はしから 走って きて（天の川の 向きに かたむき・手前ほど 大きく）まん中で 会う → 鼻を よせて 小さな ハートと 星の キラッ →
+     くるっと うしろを 向いて また 両はしへ 走って もどる → くり返す。短冊と 笹の 葉は いつも ゆらゆら。天の川の 星が ゆっくり 流れる。星は ゆっくり 小さく
+     またたく（強く 光らせない）"""
 import math
-from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
+from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, heart_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
 ID = 'tanabata'
 CODE = 'tn'
 RUN = 0.48           # ギャロップ 1回（10コマ）
-CROSS = 11.0         # 渡る 1回り（秒）
-GO = 0.76            # そのうち 渡って いる 割合
-HS = 0.42            # 馬の 絵の 大きさ（2倍の 絵 → 画面）
+HS = 0.34            # 馬の 絵の 大きさ（2倍の 絵 → 画面）
 GOLD = '#F4D27A'
 COLORS = ['#E8475A', '#F6C945', '#4A8FE0', '#3FB27F', '#9A6ADE', '#F49AC1', '#F4F1FF']
 BAND = ((-20, 150), (410, -20))     # 天の川の まん中の 線（左下 → 右上）
+CYCLE = 14.0                        # 行って 会って もどる 1回り（秒）
+NOSE = (417, 89)                    # 立った コマの 鼻先（780×320 の 絵の 中）
+U_FAR = 330.0                       # 天の川の まん中から の 道のり：はし（外）
+U_MEET = (NOSE[0] - 290.2) * HS + 2.5   # 会う 所（鼻先が 少し あいて 向き合う）
+T_ARR, T_TURN, T_GO, T_GONE, T_BACK = 4.7, 7.8, 8.2, 13.4, 13.7   # 着く・ふりむく・走りだす・外へ 出る・向きを もどす（外で）
+YOFF = 30.0                         # ひづめの 道（天の川の まん中の 線より 下：2頭とも 上の絵に おさまる）
 
 
 def band_y(x):
@@ -24,6 +31,8 @@ def band_y(x):
 
 
 BAND_ANG = math.degrees(math.atan2(BAND[1][1] - BAND[0][1], BAND[1][0] - BAND[0][0]))
+BAND_D = (math.cos(math.radians(BAND_ANG)), math.sin(math.radians(BAND_ANG)))     # 右上へ 向かう 向き
+CENTER = (195.0, band_y(195) + YOFF)
 
 
 # ---------------------------------------------------------------- 背景
@@ -68,29 +77,6 @@ def river_svg(w=200, h=60, seed=12):
         for dx in ((0, -w) if x > w - 3 else (0, w) if x < 3 else (0,)):
             o += f"<circle cx='{f(x + dx)}' cy='{f(y)}' r='{r}' fill='{col}' opacity='{f(R.uniform(.45, 1))}'/>"
     return doc(w, h, o)
-
-
-def bridge_svg():
-    """光の 橋（川に かかる 山なりの 光の 点の ならび）"""
-    o = ''
-    for i in range(70):
-        t = i / 69
-        x = -10 + 410 * t
-        y = arc_y(x) + 6
-        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(1.1 + 0.6 * math.sin(math.pi * t))}' fill='#FFF4D6' opacity='{f(0.5 + 0.35 * math.sin(math.pi * t))}'/>"
-    o = f"<path d='{arc_d()}' fill='none' stroke='#FFE9B8' stroke-width='7' opacity='.12' stroke-linecap='round'/><path d='{arc_d()}' fill='none' stroke='#FFF4D6' stroke-width='2.4' opacity='.18' stroke-linecap='round'/>" + o
-    return doc(W, H, o)
-
-
-def arc_y(x):
-    """光の 橋の 高さ（x の 所）：はしは 112・まん中が いちばん 高い 80"""
-    u = min(1, max(0, (x + 10) / 410))
-    return 112 - 32 * math.sin(math.pi * u)
-
-
-def arc_d():
-    pts = [(-10 + 410 * i / 40, arc_y(-10 + 410 * i / 40) + 6) for i in range(41)]
-    return P(pts, False)
 
 
 def big_star(c='#FFF6E0', glow='#FFE9B0'):
@@ -203,40 +189,102 @@ def sprig(side):
 
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
-def horse_path(n=24):
-    """馬（コマの 入れものの 左上）の 道：(%, x, y, 角度)。橋の 上を 山なりに 左から 右へ"""
-    out = []
-    for i in range(n + 1):
-        u = i / n
-        cx = -110 + 600 * u                     # 馬の まん中（x）
-        y = arc_y(cx) + 6                        # 橋の 高さ（ひづめ）
-        dx = 1.0
-        dy = arc_y(cx + dx) - arc_y(cx - dx)
-        a = math.degrees(math.atan2(dy, 2 * dx))
-        out.append((GO * 100 * u, cx, y, a))
-    return out
+def _ease_out(x):
+    return 1 - (1 - x) ** 2
+
+
+def _ease_in(x):
+    return x * x
+
+
+def _u(t):
+    """まん中から の 道のり（2頭 同じ：織姫は −・彦星は ＋）"""
+    if t < T_ARR:
+        return U_FAR - (U_FAR - U_MEET) * _ease_out(t / T_ARR)
+    if t < T_GO:
+        return U_MEET
+    if t < T_GONE:
+        return U_MEET + (U_FAR - U_MEET) * _ease_in((t - T_GO) / (T_GONE - T_GO))
+    return U_FAR
+
+
+def _pt(u):
+    return CENTER[0] + BAND_D[0] * u, CENTER[1] + BAND_D[1] * u
+
+
+def _k(u):
+    """手前（左下）ほど 大きく"""
+    return 1 - u * 0.0006
+
+
+def _face(who, t):
+    """向き（1＝右・−1＝左）。織姫は はじめ 右（まん中へ）、彦星は はじめ 左"""
+    first = 1 if who == 'o' else -1
+    return first if (t < T_TURN or t >= T_BACK) else -first
+
+
+def horse_frames(who, anchor):
+    """馬の 入れものの 動き（14秒・こまかい 点を まっすぐ つなぐ）：天の川に そって 走る・会う・ふりむく・もどる"""
+    ax, ay = anchor[0] * HS, anchor[1] * HS
+    sg = -1 if who == 'o' else 1
+    times = [i * 0.1 for i in range(int(CYCLE * 10) + 1)]
+    for t in (T_ARR, T_TURN, T_GO, T_GONE, T_BACK):
+        times += [t - 0.001, t]
+    times = sorted(set(round(t, 4) for t in times if 0 <= t <= CYCLE))
+    stops = []
+    for t in times:
+        u = sg * _u(t)
+        x, y = _pt(u)
+        k = HS * _k(u) / HS
+        sx = k * _face(who, t)
+        stops.append((t / CYCLE * 100, f'transform:translate({f(x - ax)}px,{f(y - ay)}px) rotate({f(BAND_ANG)}deg) scale({f(sx, 3)},{f(k, 3)})'))
+    return stops
+
+
+def meet_point():
+    """2頭の 鼻先の まん中（会う 所）"""
+    pts = []
+    for who in ('o', 'h'):
+        sg = -1 if who == 'o' else 1
+        u = sg * U_MEET
+        x, y = _pt(u)
+        k = _k(u)
+        dx, dy = (NOSE[0] - 290.2) * HS * k * (-sg), (NOSE[1] - 218) * HS * k
+        a = math.radians(BAND_ANG)
+        pts.append((x + dx * math.cos(a) - dy * math.sin(a), y + dx * math.sin(a) + dy * math.cos(a)))
+    return (pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2
+
+
+def heart_svg():
+    o = (f"<path d='{heart_d(12, 12, 10)}' fill='#F7A3C8' stroke='#FFFFFF' stroke-width='1.4'/>"
+         f"<path d='{heart_d(12, 12, 10)}' fill='none' stroke='#E5609A' stroke-width='.6' opacity='.6'/>"
+         "<ellipse cx='8' cy='8' rx='2.6' ry='1.7' fill='#FFFFFF' opacity='.75' transform='rotate(-30 8 8)'/>")
+    return doc(24, 24, o)
 
 
 def banner(B):
-    run = B.get('run')
     still = B.get('still')
-    alt = ('夏の夜空にななめに流れる天の川に光の橋がかかり、金のたてがみの白い馬が左から右へ走って渡るイラスト。'
-           '川の左上に織姫星、右下に彦星。左上と右上の笹の枝に、色とりどりの短冊と紙の星と紙のくさりがゆれる。下に夜の町のあかり')
+    hs = {w: (B.get(f'{w}_run'), B.get(f'{w}_stand')) for w in ('o', 'h')}
+    ok = all(r and s_ for r, s_ in hs.values())
+    alt = ('夏の夜空にななめに流れる天の川の両はしから、花のかざりと桃色の羽衣の白い馬（織姫の馬）と、青い布の栗毛の馬（彦星の馬）が走ってきて、'
+           'まん中で鼻をよせて小さなハートが浮かび、またそれぞれのはしへもどっていくイラスト。川の左上に織姫星、右下に彦星。'
+           '左上と右上の笹の枝に、色とりどりの短冊と紙の星と紙のくさりがゆれる。下に夜の町のあかり')
     html = f'<div class="tnw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('tnSky', sky_svg())
     html += f'<i class="tnRv"><i style="background-image:url(&quot;{durl(river_svg())}&quot;)"></i></i>'
-    html += img('tnBr', bridge_svg())
     html += img('tnBs v', big_star('#FFF6E0', '#CFE0FF')) + img('tnBs a', big_star('#FFF0D6', '#FFD9A0'))
     tw = tw_star()
     for k in range(8):
         html += img(f'tnTw t{k}', tw)
+    if ok:
+        for w in ('o', 'h'):
+            html += f'<i class="tnHo {w}"><i class="g"><i></i></i><i class="s"></i></i>'
+        html += img('tnHt', heart_svg())
+        sp = doc(10, 10, f"<path d='{sparkle_d(5, 5, 4.8, 0.14)}' fill='#FFF1C4'/>")
+        for k in range(4):
+            html += img(f'tnSp p{k}', sp)
     html += img('tnTn', town_svg())
-    # 馬と 星の つぶの 尾
-    if run:
-        for k in range(6):
-            html += img(f'tnDs d{k}', doc(10, 10, f"<path d='{sparkle_d(5, 5, 4.6, 0.16)}' fill='#FFF4D6'/><circle cx='5' cy='5' r='1.2' fill='#FFFFFF'/>"))
-        html += '<i class="tnH"><i></i></i>'
     # 笹（手前）
     for side in ('l', 'r'):
         pts, lv, hang = sprig(side)
@@ -257,7 +305,7 @@ def banner(B):
     css = ('.tnw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#141F56}'
            '.tnw img,.tnw i{position:absolute;display:block}'
            '.tnw .bnr{left:0;top:0;width:390px;height:160px;object-fit:cover}'
-           '.tnw .tnSky,.tnw .tnBr,.tnw .tnTn,.tnw .tnBc{left:0;top:0;width:390px;height:160px}'
+           '.tnw .tnSky,.tnw .tnTn,.tnw .tnBc{left:0;top:0;width:390px;height:160px}'
            # 天の川の 星の 流れ：帯の 向きに 回した 入れものの 中を 横に 流す（ふちは ぼかす）
            f'.tnw .tnRv{{left:{f(cx - 300)}px;top:{f(cy - 30)}px;width:600px;height:60px;transform-origin:300px 30px;transform:rotate({f(BAND_ANG)}deg);overflow:hidden;'
            '-webkit-mask-image:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent)}'
@@ -265,34 +313,43 @@ def banner(B):
            '.tnw .tnBs{width:24px;height:24px;animation:tnBig 4.8s ease-in-out infinite}'
            '.tnw .tnBs.v{left:126px;top:22px}.tnw .tnBs.a{left:250px;top:104px;animation-delay:-2.4s}'
            '.tnw .tnTw{width:10px;height:10px;opacity:.2;animation:tnTw 3.6s ease-in-out infinite}'
-           '.tnw .tnDs{width:10px;height:10px;opacity:0}'
            '.tnw .tnTz{transform-origin:50% 0}'
            '.tnw .tnLv{width:38px;height:38px;transform-origin:50% 50%}')
     for k, (x, y, d) in enumerate(((176, 18, 0), (214, 52, -1.2), (60, 70, -2.0), (330, 70, -0.6), (150, 120, -2.6), (368, 112, -1.6), (232, 22, -3.0), (24, 96, -0.3))):
         css += f'.tnw .tnTw.t{k}{{left:{x - 5}px;top:{y - 5}px;animation-delay:{f(d)}s}}'
-    if run:
-        n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
-        w, h = cw * HS, ch * HS
-        # 馬の コマの 入れもの：絵の 下の まん中（ひづめ あたり）を 道に 合わせる
-        hx, hy = w * 0.5, (218 - ay) * HS          # ひづめ（地面に ついた コマの 地面＝2倍の 絵で 218）
-        css += (f'.tnw .tnH{{left:0;top:0;width:{f(w)}px;height:{f(h)}px;overflow:hidden;transform-origin:{f(hx)}px {f(hy)}px;'
-                f'animation:tnCross {f(CROSS)}s linear infinite;will-change:transform}}'
-                f'.tnw .tnH>i{{left:0;top:0;width:{f(n * w)}px;height:{f(h)}px;background:url({run["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;'
-                f'animation:tnRun {RUN}s steps({n}) infinite}}'
-                + kf('tnRun', [(100, f'transform:translateX({f(-n * w)}px)')]))
-        pth = horse_path()
-        stops = [(p, f'transform:translate({f(x - hx)}px,{f(y - hy)}px) rotate({f(a)}deg)') for p, x, y, a in pth]
-        stops.append((100, f'transform:translate({f(pth[-1][1] - hx)}px,{f(pth[-1][2] - hy)}px)'))
-        css += kf('tnCross', stops)
-        # 星の つぶの 尾：馬と 同じ 道を 少し おくれて（うしろ足の あたり）。おくれる ほど 小さく うすく
-        for k in range(6):
-            dl = 0.14 * (k + 1)
-            sc = 1.0 - k * 0.12
-            st = [(p, f'opacity:{f(0.95 - k * 0.13)};transform:translate({f(x - w * 0.28)}px,{f(y - 10 - 4 * math.sin(k))}px) scale({f(sc)}) rotate({k * 30}deg)') for p, x, y, a in pth]
-            st[0] = (0, st[0][1].replace(f'opacity:{f(0.95 - k * 0.13)}', 'opacity:0'))
-            st.append((GO * 100 + 0.5, 'opacity:0;transform:translate(400px,100px)'))
-            st.append((100, 'opacity:0;transform:translate(400px,100px)'))
-            css += f'.tnw .tnDs.d{k}{{left:0;top:0;animation:tnDs{k} {f(CROSS)}s linear {f(dl)}s infinite backwards}}' + kf(f'tnDs{k}', st)
+    if ok:
+        # 馬：780×320 の 絵の 場所 × HS の 入れもの。ひづめの まん中（anchor）を 天の川の 道に 合わせて 回す・大きさ・向き
+        for w in ('o', 'h'):
+            run, st = hs[w]
+            anchor = run.get('anchor', [290.2, 218])
+            ax, ay = anchor[0] * HS, anchor[1] * HS
+            n, (cw, ch), (gx, gy) = run['frames'], run['cell'], run['at']
+            (sw_, sh_), (sx_, sy_) = st['cell'], st['at']
+            css += (f'.tnw .tnHo.{w}{{left:0;top:0;width:{f(780 * HS)}px;height:{f(320 * HS)}px;transform-origin:{f(ax)}px {f(ay)}px;'
+                    f'animation:tnGo{w} {f(CYCLE)}s linear infinite;will-change:transform}}'
+                    f'.tnw .tnHo.{w} .g{{left:{f(gx * HS)}px;top:{f(gy * HS)}px;width:{f(cw * HS)}px;height:{f(ch * HS)}px;overflow:hidden;'
+                    f'animation:tnGv {f(CYCLE)}s step-end infinite}}'
+                    f'.tnw .tnHo.{w} .g>i{{left:0;top:0;width:{f(n * cw * HS)}px;height:{f(ch * HS)}px;background:url({run["url"]}) 0 0/{f(n * cw * HS)}px {f(ch * HS)}px no-repeat;'
+                    f'animation:tnRun {RUN}s steps({n}) {"0s" if w == "o" else "-.24s"} infinite}}'
+                    f'.tnw .tnHo.{w} .s{{left:{f(sx_ * HS)}px;top:{f(sy_ * HS)}px;width:{f(sw_ * HS)}px;height:{f(sh_ * HS)}px;'
+                    f'background:url({st["url"]}) 0 0/{f(sw_ * HS)}px {f(sh_ * HS)}px no-repeat;opacity:0;animation:tnSv {f(CYCLE)}s step-end infinite}}'
+                    + kf(f'tnGo{w}', horse_frames(w, anchor)))
+        P_ = lambda t: t / CYCLE * 100
+        css += (kf('tnRun', [(100, 'transform:translateX(-100%)')])
+                + kf('tnGv', [(0, 'opacity:1'), (P_(T_ARR), 'opacity:0'), (P_(T_GO), 'opacity:1'), (100, 'opacity:1')])
+                + kf('tnSv', [(0, 'opacity:0'), (P_(T_ARR), 'opacity:1'), (P_(T_GO), 'opacity:0'), (100, 'opacity:0')]))
+        # ハートと 星の キラッ（会った とき）
+        mx, my = meet_point()
+        css += (f'.tnw .tnHt{{left:{f(mx - 9)}px;top:{f(my - 27)}px;width:18px;height:18px;opacity:0;transform-origin:50% 80%;animation:tnHeart {f(CYCLE)}s linear infinite}}'
+                + kf('tnHeart', [(0, 'opacity:0;transform:translateY(4px) scale(.3)'), (P_(5.0), 'opacity:0;transform:translateY(4px) scale(.3)'),
+                                 (P_(5.4), 'opacity:1;transform:translateY(0) scale(1.08)'), (P_(5.7), 'opacity:1;transform:translateY(-1px) scale(1)'),
+                                 (P_(7.0), 'opacity:1;transform:translateY(-7px) scale(1)'), (P_(7.6), 'opacity:0;transform:translateY(-11px) scale(.95)'),
+                                 (100, 'opacity:0;transform:translateY(-11px) scale(.95)')]))
+        for k, (dx, dy, d) in enumerate(((-17, -20, 5.3), (15, -24, 5.6), (-11, -3, 6.1), (19, -6, 6.4))):
+            css += (f'.tnw .tnSp.p{k}{{left:{f(mx + dx - 5)}px;top:{f(my + dy - 5)}px;width:10px;height:10px;opacity:0;animation:tnSp{k} {f(CYCLE)}s linear infinite}}'
+                    + kf(f'tnSp{k}', [(0, 'opacity:0;transform:scale(.4)'), (P_(d), 'opacity:0;transform:scale(.4)'), (P_(d + .35), 'opacity:.95;transform:scale(1) rotate(20deg)'),
+                                      (P_(d + .7), 'opacity:.15;transform:scale(.5) rotate(40deg)'), (P_(d + 1.05), 'opacity:.9;transform:scale(.9) rotate(60deg)'),
+                                      (P_(d + 1.45), 'opacity:0;transform:scale(.4) rotate(80deg)'), (100, 'opacity:0;transform:scale(.4)')]))
     # 笹・短冊（さがる 所に 置いて、上の はしを 中心に ゆらす）
     R = rnd(3)
     for side in ('l', 'r'):
@@ -359,7 +416,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='七夕', desc='天の川と短冊', title='七夕（夏の夜空×短冊）', banner=ID,
-    alt='夏の夜空に流れる天の川を、金のたてがみの白い馬が光の橋の上を走って渡り、笹の枝に色とりどりの短冊がゆれるイラスト',
+    alt='夏の夜空に流れる天の川の両はしから、織姫の馬（花のかざりと桃色の羽衣の白い馬）と彦星の馬（青い布の栗毛の馬）が走ってきて、まん中で会うイラスト。笹の枝に色とりどりの短冊がゆれる',
     fonts=['Yuji+Mai', 'Zen+Maru+Gothic:wght@500;700'],
     v=dict(bg='#0F1838', ink='#F3F4FF', sub='#AEB8E0', card='#18234C', cardB='1px solid #33407A', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.35)',
            radius='16px', rs='12px', font='"Zen Maru Gothic"', dfont='"Yuji Mai"', dw='400', logo='#FFE9A8', logoS='0 0 10px rgba(244,210,122,.45)',
@@ -378,7 +435,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#0F1838', '夜空'), (GOLD, '金の星'), ('#E8475A', '赤の短冊'), ('#3FB27F', '笹'), ('#18234C', 'カード')],
                fonts='見出し：Yuji Mai<br>本文：Zen Maru Gothic', shape='角丸16px・夜空の カード・帯の 下に 紙の くさり・星と 短冊の 背景・すみに 笹と 短冊・的中ボタンは 天の川の PUSH',
-               pic='夏の 夜空の 天の川と 光の 橋・織姫星と 彦星・橋を 渡る 白い 馬・笹の 枝の 色とりどりの 短冊・紙の 星と くさり・夜の 町'),
+               pic='夏の 夜空の 天の川・織姫星と 彦星・天の川の 両はしから 走って きて まん中で 会う 織姫の 馬と 彦星の 馬（小さな ハート）・笹の 枝の 色とりどりの 短冊・紙の 星と くさり・夜の 町'),
 )
 
 

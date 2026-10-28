@@ -1,9 +1,15 @@
 """壁紙パック ②宇宙（まさちゃんの 指定「月面を走る馬。うしろに地球、ときどき流れ星」）
    上の絵：月の 上を、ガラスの ヘルメットを かぶった 芦毛の 馬（pack/make/space_art.py）が 走る。うしろの 空に 青い 地球（右上）と 星。
      遠くの 月の 山と クレーター・手前の 月の 地面（くぼみ・石）。遠くの 山に 小さな 旗（金の 蹄鉄）。
-   動き：馬は いつも 走って いる（月なので ゆっくり・ふわっと 高く 浮く。影は 浮くと 小さく）・地面と 遠くの 山が 流れる（遠いほど ゆっくり）・
+   動き：馬は いつも 走って いる（月なので ゆっくり）・地面と 遠くの 山が 流れる（遠いほど ゆっくり）・
      ひづめの うしろに 月の 砂ぼこりが ふわっと 立つ・地球が ゆっくり 回る（雲は 少し 速く）・星が ゆっくり またたく・
-     ときどき 流れ星（19秒に 3回・細い 光の すじ・強く 光らせない）"""
+     ときどき 流れ星（19秒に 3回・細い 光の すじ・強く 光らせない）
+   第4.93版（まさちゃん「8秒に一回UFOが馬を見に来る演出入れて！ あと、足がしっかり地面についてるかも確認！ 5秒に一回宙に浮いてしまう演出入れて！」）：
+     ・地面：ギャロップの 地面に ついた ひづめが 地面の 線（132px）に そろう（コマの シートの 浮きを 小さく）・影は その 線の 上（前は 8px 下に あって 浮いて 見えた）
+     ・5秒に 1回 ふわっと 宙に 浮く（月の 重力：1秒で 22px 上がって 少し ただよい、1秒で おりる。鼻先が 少し 上を 向く・影は 小さく うすく・
+       浮いて いる 間は 砂ぼこりが 出ない・おりた ときに 砂ぼこりが ふわっ）
+     ・8秒に 1回 UFO（銀の 円盤と ガラスの 屋根・中に 小さな 緑の 宇宙人）が 右上から 飛んで きて 馬の 背中の 上で とまり、宇宙人が 乗りだして のぞく・
+       やわらかい 光の すじ（ゆっくり 出て ゆっくり 消える・点めつ しない）→ 左上へ 飛んで いく"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -12,6 +18,11 @@ RUN_S = 0.62       # ギャロップ 1回の 秒（月なので ゆっくり）
 GROUND_S = 3.1     # 手前の 地面が 1まい（390px）流れる 秒（ひづめの 動きに 合わせる：海の 壁紙の 0.48秒／2.3秒 から ギャロップの 秒と 馬の 大きさで）
 HILL_S = 26.0      # 遠くの 山が 1まい 流れる 秒
 SHOOT = 19.0       # 流れ星の 1回り（秒）
+FLOAT = 5.0        # ふわっと 浮く 1回り（秒）
+UFO_T = 8.0        # UFO が 見に くる 1回り（秒）
+UFO_AT = (128, -2) # UFO が とまる 所（左上・ページの px）：馬の 背中の 上（頭や たてがみに 重ならない・浮いた 馬とも ぶつからない）
+UFO_K = 0.79       # UFO の 大きさ（絵 56×30 の 倍）
+RISE = 22          # ふわっと 浮く 高さ（px：ヘルメットが 上の はしに かからない）
 EARTH = (320, 64, 38)      # 地球の 中心と 半径（下の ほうは 遠くの 山に かくれる＝月から 見る 地球の出）
 HZ = 104           # 遠くの 山の すそ（だいたいの 地平線）
 
@@ -217,12 +228,56 @@ def twinkle_svg():
     return doc(12, 12, f"<path d='{sparkle_d(6, 6, 5.6, 0.14)}' fill='#FFFFFF'/><circle cx='6' cy='6' r='1.1' fill='#FFFFFF'/>")
 
 
+def ufo_saucer():
+    """UFO の 円盤（56×30：まん中 28・円盤の まん中の 高さ 20）：銀の 円盤・下の こい 輪・ふちの 小さな 明かり・屋根の ガラスの ふちと つや（中身は 別）"""
+    defs = ("<linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#F4F7FF'/><stop offset='.45' stop-color='#C3CBE0'/>"
+            "<stop offset='.6' stop-color='#9AA4C2'/><stop offset='1' stop-color='#5E6888'/></linearGradient>")
+    o = ("<path d='M2 20 C2 13 54 13 54 20 C54 26.5 2 26.5 2 20 Z' fill='url(#g)' stroke='#3E4868' stroke-width='.8'/>"
+         "<path d='M4 19 C12 15.6 44 15.6 52 19' fill='none' stroke='#FFFFFF' stroke-width='.9' stroke-linecap='round' opacity='.75'/>"
+         "<ellipse cx='28' cy='25.6' rx='12' ry='2.4' fill='#3E4868'/><ellipse cx='28' cy='25' rx='9' ry='1.4' fill='#8FD3FF' opacity='.65'/>")
+    for k, c in enumerate(('#FFD166', '#7CE0FF', '#FF8FB1', '#FFD166', '#7CE0FF')):
+        t = (k + 0.5) / 5
+        o += f"<circle cx='{f(6 + t * 44)}' cy='{f(21.6 + math.sin(math.pi * t) * 1.6)}' r='1.25' fill='{c}'/>"
+    o += ("<path d='M16 14.6 C16.6 4.4 39.4 4.4 40 14.6' fill='none' stroke='#DDF4FF' stroke-width='.9'/>"
+          "<path d='M19.4 11.6 C20.6 7.6 24.6 6 28 5.8' fill='none' stroke='#FFFFFF' stroke-width='1.3' stroke-linecap='round' opacity='.8'/>")
+    return doc(56, 30, o, defs=defs)
+
+
+def ufo_dome():
+    """屋根の ガラス（すき通った 水色）"""
+    defs = ("<radialGradient id='d' cx='.38' cy='.3' r='.85'><stop offset='0' stop-color='#E9FBFF' stop-opacity='.7'/><stop offset='.6' stop-color='#7FD3F5' stop-opacity='.45'/>"
+            "<stop offset='1' stop-color='#2E7FB8' stop-opacity='.55'/></radialGradient>")
+    return doc(56, 30, "<path d='M16 14.8 C16.6 4.4 39.4 4.4 40 14.8 Z' fill='url(#d)'/>", defs=defs)
+
+
+def ufo_alien():
+    """中の 小さな 宇宙人（緑の 頭・大きな 黒い 目・つの 2本）。12×12（目は 右を 向く）"""
+    o = ("<path d='M4.2 2.6 L3.4 .6 M7.8 2.6 L8.8 .6' stroke='#5CC46A' stroke-width='.8' stroke-linecap='round'/>"
+         "<circle cx='3.4' cy='.7' r='.8' fill='#B6F07A'/><circle cx='8.8' cy='.7' r='.8' fill='#B6F07A'/>"
+         "<path d='M6 2.2 C9.4 2.2 10.6 4.6 10.4 6.8 C10.2 9.4 8 11 6 11 C4 11 1.8 9.4 1.6 6.8 C1.4 4.6 2.6 2.2 6 2.2 Z' fill='#7EDB7A'/>"
+         "<ellipse cx='4.4' cy='6.2' rx='1.3' ry='1.8' transform='rotate(-14 4.4 6.2)' fill='#141820'/>"
+         "<ellipse cx='7.9' cy='6.2' rx='1.3' ry='1.8' transform='rotate(14 7.9 6.2)' fill='#141820'/>"
+         "<circle cx='4.8' cy='5.5' r='.42' fill='#FFFFFF'/><circle cx='8.3' cy='5.5' r='.42' fill='#FFFFFF'/>"
+         "<path d='M5 9 Q6 9.7 7 9' fill='none' stroke='#2E6E3A' stroke-width='.55' stroke-linecap='round'/>")
+    return doc(12, 12, o)
+
+
+def ufo_beam():
+    """UFO の 下の やわらかい 光の すじ（上が 細く 下へ ひろがる・下ほど うすい）。60×74"""
+    defs = ("<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#DFF6FF' stop-opacity='.9'/><stop offset='.55' stop-color='#9FE0FF' stop-opacity='.45'/>"
+            "<stop offset='1' stop-color='#9FE0FF' stop-opacity='0'/></linearGradient>"
+            "<linearGradient id='e' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#FFFFFF' stop-opacity='0'/><stop offset='.5' stop-color='#FFFFFF' stop-opacity='.35'/>"
+            "<stop offset='1' stop-color='#FFFFFF' stop-opacity='0'/></linearGradient>")
+    return doc(60, 74, "<path d='M22 0 H38 L60 74 H0 Z' fill='url(#b)'/><path d='M26 0 H34 L42 74 H18 Z' fill='url(#e)' opacity='.6'/>", defs=defs)
+
+
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     run = B.get('run')
     still = B.get('still')
     alt = ('星空の月面を、ガラスのヘルメットをかぶった芦毛の競走馬（紺のゼッケン1）が走る。うしろの空に青い地球、遠くに月の山と小さな旗のイラスト'
-           '（馬はいつも走っていて、月の地面が流れ、砂ぼこりがふわっと立ち、ときどき流れ星）')
+           '（馬はいつも走っていて、月の地面が流れ、砂ぼこりがふわっと立つ。ときどき馬がふわっと宙に浮いて、ゆっくりおりる。'
+           'ときどき小さな宇宙人の乗ったUFOが飛んできて、馬の上でとまってのぞきこみ、また飛んでいく。ときどき流れ星）')
     ex, ey, er = EARTH
     html = f'<div class="ucw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
@@ -237,11 +292,13 @@ def banner(B):
         html += img(f'ucSh s{k}', shoot_svg())
     html += f'<i class="ucHl" style="background-image:url(&quot;{durl(hills_svg())}&quot;)"></i>'
     html += f'<i class="ucGd" style="background-image:url(&quot;{durl(ground_svg())}&quot;)"></i>'
-    html += '<i class="ucSd"></i>'
-    for k in range(4):
-        html += img(f'ucDs d{k}', dust_svg())
+    html += '<i class="ucSw"><i class="ucSd"></i></i>'                 # 影（浮くと 小さく）
+    html += '<i class="ucDw">' + ''.join(img(f'ucDs d{k}', dust_svg()) for k in range(4)) + '</i>'   # 砂ぼこり（浮いて いる 間は 出ない）
+    html += img('ucLd l0', dust_svg()) + img('ucLd l1', dust_svg())     # おりた ときの 砂ぼこり
     if run:
-        html += '<i class="ucH"><i></i></i>'
+        html += '<i class="ucFl"><i class="ucH"><i></i></i></i>'        # 5秒に 1回 ふわっと 浮く
+    html += ('<i class="ucU"><i class="ucUb">' + img('ucBm', ufo_beam()) + '</i><i class="ucUr"><i class="ucUt">'
+             + img('ucUd', ufo_dome()) + img('ucUa', ufo_alien()) + img('ucUs', ufo_saucer()) + '</i></i></i>')   # 8秒に 1回 UFO
     html += '</div>'
 
     css = ('.ucw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#0C1333}'
@@ -258,7 +315,21 @@ def banner(B):
            '.ucw .ucSh{left:0;top:0;width:70px;height:6px;opacity:0;transform-origin:66px 3px;will-change:transform,opacity}'
            f'.ucw .ucHl{{left:0;top:{HZ - 28}px;width:{2 * W + 2}px;height:40px;background-size:{W}px 40px;background-repeat:repeat-x;animation:ucHill {HILL_S}s linear infinite}}'
            f'.ucw .ucGd{{left:0;top:{H - 58 + 2}px;width:{2 * W + 2}px;height:58px;background-size:{W}px 58px;background-repeat:repeat-x;animation:ucGround {GROUND_S}s linear infinite}}'
-           '.ucw .ucDs{width:20px;height:14px;opacity:0;will-change:transform,opacity}')
+           '.ucw .ucDs{width:20px;height:14px;opacity:0;will-change:transform,opacity}'
+           '.ucw .ucSw>*,.ucw .ucDw>*,.ucw .ucFl>*,.ucw .ucU *{position:absolute;display:block}'
+           '.ucw .ucSw,.ucw .ucDw,.ucw .ucFl{left:0;top:0;width:390px;height:160px}'
+           f'.ucw .ucDw{{animation:ucDw {FLOAT}s linear infinite}}'
+           f'.ucw .ucFl{{transform-origin:165px 100px;animation:ucFloat {FLOAT}s linear infinite;will-change:transform}}'
+           f'.ucw .ucLd{{width:20px;height:14px;opacity:0;animation:ucLand {FLOAT}s linear infinite;will-change:transform,opacity}}'
+           '.ucw .ucLd.l0{left:192px;top:124px}.ucw .ucLd.l1{left:104px;top:125px;animation-delay:-.06s}'
+           # UFO（56×30）：とまる 所は UFO_AT
+           f'.ucw .ucU{{left:0;top:0;width:56px;height:30px;opacity:0;transform-origin:0 0;animation:ucUfo {UFO_T}s linear infinite;will-change:transform,opacity}}'
+           f'.ucw .ucUb{{left:-2px;top:22px;width:60px;height:74px;opacity:0;animation:ucBeam {UFO_T}s linear infinite}}'
+           '.ucw .ucBm{left:0;top:0;width:60px;height:74px}'
+           '.ucw .ucUr{left:0;top:0;width:56px;height:30px;animation:ucBob 1.7s ease-in-out infinite alternate}'
+           f'.ucw .ucUt{{left:0;top:0;width:56px;height:30px;transform-origin:28px 20px;animation:ucTilt {UFO_T}s linear infinite}}'
+           '.ucw .ucUd,.ucw .ucUs{left:0;top:0;width:56px;height:30px}'
+           f'.ucw .ucUa{{left:22px;top:4.6px;width:12px;height:12px;transform-origin:6px 11px;animation:ucPeek {UFO_T}s linear infinite}}')
     if run:
         n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
         w, h = cw / 2, ch / 2
@@ -274,8 +345,13 @@ def banner(B):
             t = (hi - d) / (hi - lo) if hi > lo else 0
             stops.append((100 * i / n, f'transform:scale({f(1 - 0.32 * t, 3)},{f(1 - 0.25 * t, 3)});opacity:{f(0.55 - 0.25 * t, 3)}'))
         stops.append((100, stops[0][1]))
-        css += (f'.ucw .ucSd{{left:{f(ax / 2 + w * 0.22)}px;top:136px;width:{f(w * 0.62)}px;height:9px;border-radius:50%;background:radial-gradient(closest-side,rgba(10,12,24,.85),rgba(10,12,24,0));'
-                f'animation:ucShad {RUN_S}s step-end infinite}}' + kf('ucShad', stops))
+        g = run.get('ground', 132.0)
+        hx0, hx1 = run.get('hx', [ax / 2 + w * 0.2, ax / 2 + w * 0.84])
+        sw_ = (hx1 - hx0) * 0.66
+        scx = (hx0 + hx1) / 2
+        css += (f'.ucw .ucSd{{left:{f(scx - sw_ / 2)}px;top:{f(g - 3.5)}px;width:{f(sw_)}px;height:9px;border-radius:50%;background:radial-gradient(closest-side,rgba(10,12,24,.85),rgba(10,12,24,0));'
+                f'animation:ucShad {RUN_S}s step-end infinite}}' + kf('ucShad', stops)
+                + f'.ucw .ucSw{{transform-origin:{f(scx)}px {f(g + 1)}px;animation:ucSwF {FLOAT}s linear infinite}}')
         # 砂ぼこり：うしろ足の あたりから うしろへ ふわっと（ギャロップ 2回に 1こ）
         hx = ax / 2 + w * 0.2
         for k in range(4):
@@ -300,7 +376,41 @@ def banner(B):
             + kf('ucDust', [(0, 'opacity:0;transform:translate(0,0) scale(.35)'), (6, 'opacity:.85;transform:translate(-12px,-4px) scale(.6)'),
                             (45, 'opacity:.45;transform:translate(-118px,-12px) scale(1.15)'), (72, 'opacity:0;transform:translate(-190px,-15px) scale(1.35)'),
                             (100, 'opacity:0;transform:translate(-190px,-15px) scale(1.35)')]))   # 砂ぼこりは 地面と いっしょに うしろへ（月なので ゆっくり 上へ）
-    css += reduced('.ucw .ucSky,.ucw .ucTw,.ucw .ucGl,.ucw .ucE,.ucw .ucSh,.ucw .ucHl,.ucw .ucGd,.ucw .ucSd,.ucw .ucDs,.ucw .ucH') if still else ''
+    # 5秒に 1回 ふわっと 浮く（0.3秒から 1秒で RISE px 上へ → ただよう → 1秒で おりる＝2.9秒）。影は 小さく うすく・砂ぼこりは 止める・おりた ときに ふわっ
+    F = lambda t: 100 * t / FLOAT
+    css += kf('ucFloat', [(0, 'transform:translateY(0) rotate(0)'), (F(0.3), 'transform:translateY(0) rotate(0);animation-timing-function:cubic-bezier(.2,.7,.35,1)'),
+                          (F(1.3), f'transform:translateY({-RISE}px) rotate(-3deg);animation-timing-function:ease-in-out'),
+                          (F(1.9), f'transform:translateY({-RISE - 1.5}px) rotate(-1.2deg);animation-timing-function:cubic-bezier(.55,0,.85,.55)'),
+                          (F(2.9), 'transform:translateY(0) rotate(1.4deg);animation-timing-function:ease-out'), (F(3.15), 'transform:translateY(0) rotate(0)'),
+                          (100, 'transform:translateY(0) rotate(0)')])
+    css += kf('ucSwF', [(0, 'transform:scale(1);opacity:1'), (F(0.3), 'transform:scale(1);opacity:1;animation-timing-function:cubic-bezier(.2,.7,.35,1)'),
+                        (F(1.3), 'transform:scale(.5);opacity:.45;animation-timing-function:ease-in-out'), (F(1.9), 'transform:scale(.48);opacity:.42;animation-timing-function:cubic-bezier(.55,0,.85,.55)'),
+                        (F(2.9), 'transform:scale(1);opacity:1'), (100, 'transform:scale(1);opacity:1')])
+    css += kf('ucDw', [(0, 'opacity:1'), (F(0.3), 'opacity:1'), (F(0.55), 'opacity:0'), (F(2.9), 'opacity:0'), (F(3.0), 'opacity:1'), (100, 'opacity:1')])
+    css += kf('ucLand', [(0, 'opacity:0;transform:translate(0,0) scale(.4)'), (F(2.88), 'opacity:0;transform:translate(0,0) scale(.4)'),
+                         (F(2.92), 'opacity:.85;transform:translate(0,0) scale(.5)'), (F(3.5), 'opacity:.5;transform:translate(-75px,-7px) scale(1.25)'),
+                         (F(3.8), 'opacity:0;transform:translate(-113px,-9px) scale(1.45)'), (100, 'opacity:0;transform:translate(-113px,-9px) scale(1.45)')])
+    # 8秒に 1回 UFO：右上から 来て（0.8〜2.2秒）馬の 上で とまる（〜5.6秒・宇宙人が のぞく・光の すじ）→ 左上へ（〜6.6秒）
+    U = lambda t: 100 * t / UFO_T
+    ux, uy = UFO_AT
+    K = f'scale({UFO_K})'
+    css += kf('ucUfo', [(0, f'opacity:0;transform:translate(430px,-44px) {K}'), (U(0.8), f'opacity:1;transform:translate(430px,-44px) {K};animation-timing-function:ease-out'),
+                        (U(1.6), f'opacity:1;transform:translate({ux + 80}px,{uy - 12}px) {K};animation-timing-function:ease-out'),
+                        (U(2.2), f'opacity:1;transform:translate({ux}px,{uy}px) {K};animation-timing-function:ease-in-out'),
+                        (U(3.3), f'opacity:1;transform:translate({ux - 6}px,{uy + 1}px) {K};animation-timing-function:ease-in-out'),
+                        (U(4.6), f'opacity:1;transform:translate({ux + 4}px,{uy}px) {K};animation-timing-function:ease-in-out'),
+                        (U(5.6), f'opacity:1;transform:translate({ux}px,{uy}px) {K};animation-timing-function:cubic-bezier(.5,0,.9,.6)'),
+                        (U(6.6), f'opacity:1;transform:translate(-90px,-48px) {K}'), (U(6.62), f'opacity:0;transform:translate(-90px,-48px) {K}'),
+                        (100, f'opacity:0;transform:translate(430px,-44px) {K}')])
+    css += kf('ucTilt', [(0, 'transform:rotate(-12deg)'), (U(1.6), 'transform:rotate(-10deg)'), (U(2.2), 'transform:rotate(2deg)'), (U(2.6), 'transform:rotate(0)'),
+                         (U(3.0), 'transform:rotate(-8deg)'), (U(5.0), 'transform:rotate(-7deg)'), (U(5.6), 'transform:rotate(0)'), (U(6.0), 'transform:rotate(-14deg)'),
+                         (U(6.6), 'transform:rotate(-14deg)'), (100, 'transform:rotate(-12deg)')])
+    css += kf('ucPeek', [(0, 'transform:translate(0,3px) rotate(0)'), (U(2.5), 'transform:translate(0,3px) rotate(0)'),
+                         (U(2.85), 'transform:translate(-2px,-1.4px) rotate(-14deg)'), (U(5.0), 'transform:translate(-2px,-1.4px) rotate(-14deg)'),
+                         (U(5.35), 'transform:translate(0,3px) rotate(0)'), (100, 'transform:translate(0,3px) rotate(0)')])
+    css += kf('ucBeam', [(0, 'opacity:0'), (U(2.6), 'opacity:0'), (U(3.1), 'opacity:.36'), (U(4.9), 'opacity:.36'), (U(5.4), 'opacity:0'), (100, 'opacity:0')])
+    css += kf('ucBob', [(0, 'transform:translateY(-1.2px)'), (100, 'transform:translateY(1.2px)')])
+    css += reduced('.ucw .ucSky,.ucw .ucTw,.ucw .ucGl,.ucw .ucE,.ucw .ucSh,.ucw .ucHl,.ucw .ucGd,.ucw .ucSw,.ucw .ucDw,.ucw .ucLd,.ucw .ucFl,.ucw .ucU') if still else ''
     return html, css
 
 
@@ -338,7 +448,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='宇宙', desc='月面と地球', title='宇宙（紺×月の銀×星の金）', banner=ID,
-    alt='星空の月面を、ガラスのヘルメットをかぶった芦毛の競走馬（紺のゼッケン1）が走る。うしろの空に青い地球、遠くに月の山と小さな旗のイラスト',
+    alt='星空の月面を、ガラスのヘルメットをかぶった芦毛の競走馬（紺のゼッケン1）が走る。うしろの空に青い地球、遠くに月の山と小さな旗。ときどき小さな宇宙人の乗ったUFOが馬を見にくるイラスト',
     fonts=['Tsukimi+Rounded:wght@700', 'Zen+Kaku+Gothic+New:wght@500;700'],
     v=dict(bg='#0B1028', ink='#EEF2FF', sub='#A9B3D6', card='#151C3C', cardB='1px solid #2B3566', cardO='0 solid transparent', cardS='0 8px 22px rgba(0,0,0,.4)',
            radius='16px', rs='12px', font='"Zen Kaku Gothic New"', dfont='"Tsukimi Rounded"', dw='700', logo='#F4F7FF', logoS='0 0 12px rgba(143,211,255,.55)',
@@ -357,7 +467,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#0B1028', '宇宙'), ('#3E7BFA', 'ボタン'), ('#8FD3FF', '地球の青'), ('#F2D16B', '星の金'), ('#C9D2E6', '月の銀')],
                fonts='見出し：Tsukimi Rounded（月見）<br>本文：Zen Kaku Gothic New', shape='角丸16px・まるい ボタン・帯の 下に 星の 軌道・星の 背景・すみに わの ある 星と 三日月・的中ボタンは UFOの PUSH',
-               pic='星空の 月面・ガラスの ヘルメットの 芦毛の 馬（ギャロップ）・青い 地球・遠くの 月の 山と 小さな 旗・ときどき 流れ星'),
+               pic='星空の 月面・ガラスの ヘルメットの 芦毛の 馬（ギャロップ・ときどき ふわっと 浮く）・青い 地球・遠くの 月の 山と 小さな 旗・ときどき 馬を 見に くる UFO・ときどき 流れ星'),
 )
 
 

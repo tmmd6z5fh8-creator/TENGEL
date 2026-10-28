@@ -5,7 +5,7 @@
      ゴールの あとは ゆっくり 馬群に もどる（くり返し）。馬は 真上から 見た 形の 2コマ（足を のばす・あつめる）を めくる。
      雲の かげが ゆっくり 横切る・池の 噴水の 波紋が ひろがる"""
 import math
-from .common import W, H, f, durl, curi, tile, doc, P, kf, img, rnd, reduced, fly_burst, fly_css, piece, mix
+from .common import W, H, f, durl, curi, tile, doc, P, kf, img, rnd, reduced, fly_burst, fly_css, piece, mix, smooth
 
 ID = 'course'
 
@@ -15,7 +15,7 @@ YT, YB = YC - R, YC + R              # 上の 直線（22）・下の 直線（1
 TURF_W = 22                          # 芝コースの はば（まん中 ±11）
 DIRT_W = 13                          # ダートコースの はば
 FIN_X = 270                          # ゴール（下の 直線）
-LAP = 16.0                           # 1周の 秒
+LAP = 12.0                           # 1周の 秒（第4.93版：12秒に 1回 ゴール）
 SEG = [('s', FIN_X, XB), ('c', XB, 90, -90), ('s', XB, XA), ('c', XA, 270, 90), ('s', XA, FIN_X)]
 HS = 1.2                             # 馬の 大きさ（絵の 26×14 → 31.2×16.8）
 
@@ -183,37 +183,240 @@ def horse_sheet(silk, sleeve, cap, coat):
     return doc(52, 14, out)
 
 
-def keys_for(k, n=96):
-    """馬 k の 1周（LAP 秒）の 場所と 向き（@keyframes）。馬群の 位置（列と 内外）＋ 小さな ゆらぎ・抜け出す 馬は ゴール前で 前へ（外を 通る）"""
-    base = [(0, -5), (-5, 2), (-13, -6), (-15, 6), (-23, 0), (-27, -6), (-31, 5), (-39, -1)][k]
+# ---------------------------------------------------------------- 真上から 見た サラブレッドと 騎手（第4.93版：上の絵の 馬。的中ボタンの まわりの 小さな 馬は 上の horse_sheet の まま）
+NF = 6                      # ギャロップ 1回の コマ
+GAL = 0.42                  # ギャロップ 1回の 秒
+CW, CH = 42, 18             # 1コマの 大きさ（絵の 単位・右向き・鼻先が 右）
+HS2 = 0.95                  # 絵の 単位 → 画面の px（1頭 約 40×17px）
+PATS = ['hoop', 'plain', 'sash', 'halves', 'plain', 'dots', 'hoop', 'sash']          # 勝負服の もよう（せなか）
+MANES = ['#1C1410', '#140E0C', '#6A3416', '#120E0C', '#7E4218', '#1C1410', '#8C867E', '#1A1210']   # たてがみと しっぽ
+LEGS = ['#2A1E18', '#1E1612', '#7A4422', '#1A1412', '#8E5226', '#2A1E18', '#A8A29A', '#241A14']    # 足の 下の ほう
+# 胴の 形：(せなかの 線の x, 半分の はば)。しっぽの 根もと → 鼻先（1単位 ≒ 9.4cm）。NECK0 より 前（首と 頭）は のびる（reach）
+BODY = [(7.2, 0.0), (7.5, 1.6), (8.4, 2.6), (10.0, 3.1), (12.2, 3.3), (14.6, 3.38), (17.0, 3.3), (19.2, 3.15), (21.0, 2.9), (22.6, 2.5),
+        (24.0, 2.22), (26.0, 1.98), (28.0, 1.74), (29.6, 1.52), (30.5, 1.45), (31.5, 1.66), (33.0, 1.5), (34.6, 1.22), (35.8, 0.98), (36.7, 0.72),
+        (37.2, 0.34), (37.35, 0.0)]
+NECK0 = 23.0
+BLAZE = [True, False, False, True, False, True, False, False]           # 顔の 白い すじ
+
+
+def _sp(pts, close=True):
+    return smooth([(round(x, 2), round(y, 2)) for x, y in pts], close)
+
+
+def _leg(o, x0, y0, x1, y1, x2, y2, col, low, w0, w1):
+    """足（つけ根 → ひざ／飛節 → ひづめ）：上は 毛色・下は 濃い 色・ひづめ"""
+    o += f"<path d='M{f(x0)} {f(y0)} L{f(x1)} {f(y1)}' stroke='{col}' stroke-width='{f(w0)}' stroke-linecap='round'/>"
+    o += f"<path d='M{f(x1)} {f(y1)} L{f(x2)} {f(y2)}' stroke='{low}' stroke-width='{f(w1)}' stroke-linecap='round'/>"
+    o += f"<ellipse cx='{f(x2)}' cy='{f(y2)}' rx='.48' ry='.42' fill='#141010'/>"
+    return o
+
+
+def top_frame(k, fi, ox):
+    """馬 k の ギャロップの コマ fi（0〜NF-1）。ox：シートの 中の 左はし。右向き・まん中の 線 y=9（光は 左上から：下がわに かげ）"""
+    silk, sleeve, cap, coat = SILKS[k]
+    mane, low, pat = MANES[k], LEGS[k], PATS[k]
+    th = fi / NF
+    c2 = math.cos(2 * math.pi * th)
+    reach = 0.5 + 0.5 * c2                            # 首を のばす（前足を のばす とき）
+    yc = 9.0
+    nx = lambda x: x if x < NECK0 else x + 0.9 * reach * (x - NECK0) / (37.5 - NECK0)
+    X = lambda x: ox + nx(x)
+    shade = mix(coat, '#000000', 0.30)
+    light = mix(coat, '#FFFFFF', 0.28)
+    o = f"<ellipse cx='{f(ox + 20.5)}' cy='{f(yc + 0.8)}' rx='15.5' ry='4.0' fill='#14300F' opacity='.28' filter='url(#sb)'/>"   # 影
+    # 足：ギャロップ（左右で ずれる）。前足は 首の 下から 前へ、うしろ足は こしの うしろへ のびる
+    for s_, lag in ((1, 0.0), (-1, 0.16)):
+        e = 0.5 + 0.5 * math.cos(2 * math.pi * (th - lag))
+        fx_ = 20.5 + 11.5 * e                         # 前の ひづめ
+        o = _leg(o, ox + 21.0, yc + s_ * 1.4, ox + nx(21.0 + (fx_ - 21.0) * 0.52), yc + s_ * (1.75 + 0.6 * e), ox + nx(fx_), yc + s_ * (1.55 + 0.45 * e), coat, low, 1.3, 0.78)
+        e2 = 0.5 + 0.5 * math.cos(2 * math.pi * (th - lag - 0.07))
+        hx_ = 15.0 - 10.6 * e2                        # うしろの ひづめ
+        o = _leg(o, ox + 11.8, yc + s_ * 1.7, ox + 11.8 + (hx_ - 11.8) * 0.48 - 0.5 * (1 - e2), yc + s_ * (2.15 + 0.55 * e2), ox + hx_, yc + s_ * (1.8 + 0.4 * e2), coat, low, 1.4, 0.8)
+    # しっぽ（根もとは 太く、うしろへ なびく）
+    cl = []
+    for i in range(10):
+        t = i / 9
+        x = 8.0 - 7.2 * t
+        y = yc + 0.85 * math.sin(2 * math.pi * (0.75 * t - th)) * t
+        hw = 1.0 * (1 - t) ** 0.6 + 0.18
+        cl.append((x, y, hw))
+    o += f"<path d='{_sp([(ox + x, y - w) for x, y, w in cl] + [(ox + x, y + w) for x, y, w in cl][::-1])}' fill='{mane}'/>"
+    # 胴・首・頭：毛色 → 下がわの かげ（体の 形で 切る）→ つや
+    pu = [(X(x), yc - w) for x, w in BODY]
+    pl = [(X(x), yc + w) for x, w in BODY[::-1][1:-1]]
+    body = _sp(pu + pl)
+    o += f"<path d='{body}' fill='{coat}'/>"
+    o += f"<g clip-path='url(#bc{fi})'><path d='{_sp([(X(x), yc + w * 0.30) for x, w in BODY] + [(X(x), yc + w + 1) for x, w in BODY[::-1]])}' fill='{shade}'/></g>"
+    o += f"<path d='{_sp([(ox + 8.6, yc - 1.2), (ox + 11.2, yc - 2.2), (ox + 13.6, yc - 1.4), (ox + 11.0, yc - 0.6)])}' fill='{light}' opacity='.55'/>"      # こしの つや
+    o += f"<path d='{_sp([(ox + 18.6, yc - 1.8), (ox + 21.0, yc - 2.2), (ox + 22.4, yc - 1.2), (ox + 20.2, yc - 0.9)])}' fill='{light}' opacity='.45'/>"   # 肩の つや
+    o += f"<path d='M{f(ox + 7.9)} {f(yc)} L{f(ox + 11.4)} {f(yc)}' stroke='{shade}' stroke-width='.32' opacity='.7' stroke-linecap='round'/>"           # こしの みぞ
+    # 頭：白い すじ・耳・前髪・目・鼻の あな
+    if BLAZE[k]:
+        o += f"<path d='{_sp([(X(32.0), yc - 0.3), (X(33.0), yc - 0.24), (X(35.4), yc - 0.28), (X(36.6), yc - 0.38), (X(36.9), yc), (X(36.6), yc + 0.38), (X(35.4), yc + 0.28), (X(33.0), yc + 0.24), (X(32.0), yc + 0.3)])}' fill='#F2EEE6'/>"
+    for s_ in (-1, 1):
+        o += f"<ellipse cx='{f(X(32.6))}' cy='{f(yc + s_ * 1.25)}' rx='.36' ry='.2' fill='#120C0A'/>"
+        o += f"<ellipse cx='{f(X(36.9))}' cy='{f(yc + s_ * 0.36)}' rx='.2' ry='.13' fill='{shade}'/>"
+    xp = X(30.3)
+    for s_ in (-1, 1):                                                                                              # 耳（前向き 外へ）
+        o += f"<path d='M{f(xp - 0.7)} {f(yc + s_ * 0.6)} Q{f(xp + 0.3)} {f(yc + s_ * 2.05)} {f(xp + 1.35)} {f(yc + s_ * 1.85)} Q{f(xp + 0.65)} {f(yc + s_ * 0.95)} {f(xp - 0.7)} {f(yc + s_ * 0.6)} Z' fill='{coat}' stroke='{shade}' stroke-width='.22'/>"
+        o += f"<path d='M{f(xp - 0.2)} {f(yc + s_ * 0.85)} Q{f(xp + 0.45)} {f(yc + s_ * 1.6)} {f(xp + 1.0)} {f(yc + s_ * 1.6)}' fill='none' stroke='{shade}' stroke-width='.3' opacity='.7'/>"
+    # たてがみ（首の 上の まん中から 少し 下がわへ）と 前髪
+    mp = [(X(22.4), yc - 0.4), (X(24.4), yc + 0.05), (X(26.4), yc + 0.55), (X(28.4), yc + 0.62), (X(30.0), yc + 0.4), (X(30.6), yc + 0.05),
+          (X(30.2), yc - 0.35), (X(28.2), yc - 0.3), (X(26.0), yc - 0.4), (X(24.0), yc - 0.7)]
+    o += f"<path d='{_sp(mp)}' fill='{mane}'/>"
+    o += f"<path d='M{f(xp - 0.2)} {f(yc - 0.32)} Q{f(xp + 1.5)} {f(yc + 0.05)} {f(xp - 0.2)} {f(yc + 0.36)} Z' fill='{mane}'/>"
+    bx = X(35.6)
+    # 騎手（前かがみ）：鞍の 下の 布・ひざ・ブーツ・せなか（勝負服）・うで・手袋・手綱・ヘルメット
+    jx = -0.16 * c2
+    for s_ in (-1, 1):
+        o += f"<path d='M{f(ox + 16.4)} {f(yc + s_ * 3.22)} L{f(ox + 19.4)} {f(yc + s_ * 3.08)}' stroke='#FFFFFF' stroke-width='.55' stroke-linecap='round'/>"
+        kx, ky = ox + 22.0 + jx, yc + s_ * 2.9
+        o += f"<path d='M{f(ox + 19.6 + jx)} {f(yc + s_ * 1.1)} L{f(kx)} {f(ky)}' stroke='#F4F1EA' stroke-width='1.2' stroke-linecap='round'/>"
+        o += f"<path d='M{f(kx)} {f(ky)} L{f(kx - 1.6)} {f(ky + s_ * 0.3)}' stroke='#151112' stroke-width='1.0' stroke-linecap='round'/>"
+    tx = ox + 21.0 + jx
+    torso = (f"M{f(tx - 1.9)} {f(yc - 1.4)} Q{f(tx + 0.4)} {f(yc - 2.35)} {f(tx + 1.9)} {f(yc - 1.8)} Q{f(tx + 2.65)} {f(yc)} {f(tx + 1.9)} {f(yc + 1.8)} "
+             f"Q{f(tx + 0.4)} {f(yc + 2.35)} {f(tx - 1.9)} {f(yc + 1.4)} Q{f(tx - 2.6)} {f(yc)} {f(tx - 1.9)} {f(yc - 1.4)} Z")
+    o += f"<path d='{torso}' fill='{silk}'/>"
+    if pat == 'hoop':
+        o += f"<g clip-path='url(#jt{fi})'><path d='M{f(tx - 0.75)} {f(yc - 3)} V{f(yc + 3)} M{f(tx + 0.75)} {f(yc - 3)} V{f(yc + 3)}' stroke='{sleeve}' stroke-width='.62'/></g>"
+    elif pat == 'sash':
+        o += f"<g clip-path='url(#jt{fi})'><path d='M{f(tx - 2.2)} {f(yc - 2.4)} L{f(tx + 2.2)} {f(yc + 2.4)}' stroke='{sleeve}' stroke-width='.92'/></g>"
+    elif pat == 'halves':
+        o += f"<g clip-path='url(#jt{fi})'><rect x='{f(tx - 3)}' y='{f(yc)}' width='6' height='3' fill='{sleeve}'/></g>"
+    elif pat == 'dots':
+        for dx_, dy_ in ((-1.0, -0.9), (0.5, -1.15), (-0.5, 0.75), (0.9, 0.85)):
+            o += f"<circle cx='{f(tx + dx_)}' cy='{f(yc + dy_)}' r='.42' fill='{sleeve}'/>"
+    o += f"<g clip-path='url(#jt{fi})'><rect x='{f(tx - 3)}' y='{f(yc + 0.9)}' width='6' height='2' fill='#000000' opacity='.16'/></g>"
+    o += f"<path d='{torso}' fill='none' stroke='{mix(silk, '#000000', .35)}' stroke-width='.2'/>"
+    hx = X(25.6)
+    for s_ in (-1, 1):
+        o += f"<path d='M{f(tx + 1.4)} {f(yc + s_ * 1.6)} Q{f(tx + 2.8)} {f(yc + s_ * 1.75)} {f(hx)} {f(yc + s_ * 1.1)}' fill='none' stroke='{sleeve}' stroke-width='.85' stroke-linecap='round'/>"
+        o += f"<path d='M{f(hx)} {f(yc + s_ * 1.1)} Q{f(X(30.5))} {f(yc + s_ * 1.3)} {f(bx)} {f(yc + s_ * 0.9)}' fill='none' stroke='{mix(coat, '#000000', .55)}' stroke-width='.16' opacity='.8'/>"
+        o += f"<circle cx='{f(hx)}' cy='{f(yc + s_ * 1.0)}' r='.36' fill='#F4F1EA'/>"
+    hcx = ox + 23.0 + jx
+    o += f"<circle cx='{f(hcx + 0.2)}' cy='{f(yc + 0.3)}' r='1.5' fill='#000000' opacity='.18'/>"
+    o += f"<circle cx='{f(hcx)}' cy='{f(yc)}' r='1.45' fill='{cap}' stroke='{mix(cap, '#000000', .35)}' stroke-width='.18'/>"
+    o += f"<path d='M{f(hcx + 1.15)} {f(yc - 0.95)} Q{f(hcx + 2.05)} {f(yc)} {f(hcx + 1.15)} {f(yc + 0.95)}' fill='none' stroke='{mix(cap, '#000000', .45)}' stroke-width='.42' stroke-linecap='round'/>"
+    o += f"<circle cx='{f(hcx - 0.35)}' cy='{f(yc - 0.42)}' r='.42' fill='#FFFFFF' opacity='.5'/>"
+    defs = f"<clipPath id='jt{fi}'><path d='{torso}'/></clipPath><clipPath id='bc{fi}'><path d='{body}'/></clipPath>"
+    return o, defs
+
+
+def top_sheet(k):
+    """馬 k の ギャロップの シート（右向き・NF コマ・横に ならべる）"""
+    silk, sleeve, cap, coat = SILKS[k]
+    shade = mix(coat, '#000000', 0.30)
+    light = mix(coat, '#FFFFFF', 0.20)
+    defs = (f"<linearGradient id='cg' x1='0' y1='{f(9 - 3.8)}' x2='0' y2='{f(9 + 3.8)}' gradientUnits='userSpaceOnUse'>"
+            f"<stop offset='0' stop-color='{shade}'/><stop offset='.3' stop-color='{coat}'/><stop offset='.5' stop-color='{light}'/>"
+            f"<stop offset='.7' stop-color='{coat}'/><stop offset='1' stop-color='{shade}'/></linearGradient>"
+            "<filter id='sb' x='-20%' y='-60%' width='140%' height='220%'><feGaussianBlur stdDeviation='.9'/></filter>")
+    body = ''
+    for fi in range(NF):
+        o, d = top_frame(k, fi, fi * CW)
+        body += o
+        defs += d
+    return doc(CW * NF, CH, body, defs=defs)
+
+
+# ---------------------------------------------------------------- レース（第4.93版：1周 12秒・周ごとに ちがう 馬が 抜け出して 勝つ）
+NL = 6                                                # 1回り（72秒）の 周回数
+WINNERS = [4, 1, 6, 2, 7, 3]                          # 周ごとの 勝ち馬（ランダムに 見える ように ばらばらの 順）
+SLOTS = [(0, -6.2), (-15, 0), (-30, 6.2), (-44, -6.2), (-59, 0), (-74, 6.2), (-88, -6.2), (-103, 0)]   # 馬群の 中の 場所（前うしろ・内外：3つの 進路を ずらして）
+AHEAD = 22                                            # ゴールで 先頭より 前へ
+OUT_LANE = 9.6                                        # 抜け出す・もどる ときの 外の 進路
+GAIN = 0.30                                           # 抜け出す 馬の はやさ（馬群より 3割 はやい）
+U_BACK = 300                                          # ゴールの あと 馬群に もどりおわる
+
+
+def _ease(q):
+    q = min(1.0, max(0.0, q))
+    return q * q * (3 - 2 * q)
+
+
+def surge_from(k):
+    """馬 k が 勝つ 周の 抜け出し はじめ（ゴールから の 道のり）：うしろの 馬ほど 早く 動く"""
+    return L - max(285.0, (AHEAD - SLOTS[k][0]) / GAIN)
+
+
+def race_at(k, t):
+    """馬 k の 時刻 t（0〜NL×LAP）の (コースの 上の 道のり s, 外へ d, 上に 重ねるか)"""
     v = L / LAP
-    rows, prev = [], None
+    j = int(t // LAP) % NL
+    u = v * (t % LAP)                                                     # 先頭の いる 所（ゴールから）
+    ds, dl = SLOTS[k]
+    wob = 1.6 * math.sin(2 * math.pi * t / LAP * 2 + k * 1.7) + 0.8 * math.sin(2 * math.pi * t / (LAP * 3) + k)
+    lane = dl + 0.45 * math.sin(2 * math.pi * t / LAP + k * 2.1)
+    top = False
+    us = surge_from(k)
+    if WINNERS[j] == k and u >= us:                                       # この 周の 勝ち馬：外へ 出て 加速 → ゴールで 先頭
+        q = (u - us) / (L - us)
+        e = _ease(q)
+        ds = ds + (AHEAD - ds) * e
+        lane = lane + (OUT_LANE - lane) * _ease(q * 3.0)
+        wob *= 1 - e
+        top = True
+    elif WINNERS[(j - 1) % NL] == k and u <= U_BACK:                      # 前の 周の 勝ち馬：ゴールの あと 外を ゆっくり もとの 場所へ
+        q = u / U_BACK
+        e = _ease(q)
+        ds = AHEAD + (ds - AHEAD) * e
+        lane = OUT_LANE + (lane - OUT_LANE) * _ease((q - 0.7) / 0.3)
+        wob *= e
+        top = True
+    return u + ds + wob, lane, top
+
+
+def keys_for(k, dt=0.05, tol=0.45, tol_a=2.0):
+    """馬 k の 1回り（NL 周）の 場所と 向き（@keyframes）。こまかく 計算して、まっすぐ つないで よい 所は まびく"""
+    T = NL * LAP
+    n = int(round(T / dt))
+    pts, prev = [], None
     for i in range(n + 1):
-        t = i / n * LAP
-        u = (v * t) % L                                                  # 先頭の いる 所（ゴールから）
-        wob = 2.2 * math.sin(2 * math.pi * (i / n) * 2 + k * 1.7)
-        lane = base[1] + 1.2 * math.sin(2 * math.pi * (i / n) + k)
-        ds = 0.0
-        if k == WIN:
-            # 4コーナー（u 430）から 外へ 出て 加速 → ゴールで 先頭から 2馬身前（+38）→ ゴールの あと（u 0〜330）で ゆっくり もどる
-            if u >= 430:
-                q = (u - 430) / (L - 430)
-                e = q * q * (3 - 2 * q)
-                ds, lane = 38 * e, base[1] + 5.5 * min(1.0, q * 2.2)
-            elif u <= 330:
-                q = u / 330
-                e = q * q * (3 - 2 * q)
-                ds, lane = 38 * (1 - e), base[1] + 5.5 * (1 - min(1.0, q * 1.6))
-            wob *= 0.3
-        s = u + base[0] + ds + wob
-        x, y, hd = at(s, lane)
-        if prev is not None:                                             # 向きを つなげる（359° → 1° で 回らない ように）
+        t = i * dt
+        s, d, _ = race_at(k, t)
+        x, y, hd = at(s, d)
+        if prev is not None:
             while hd - prev > 180:
                 hd -= 360
             while hd - prev < -180:
                 hd += 360
         prev = hd
-        rows.append((i / n * 100, f'transform:translate({f(x - 13 * HS, 1)}px,{f(y - 7 * HS, 1)}px) rotate({f(hd, 1)}deg)'))
+        pts.append((t, x, y, hd))
+    keep = [0]
+    a = 0
+    b = a + 2
+    while b <= n:
+        ta, xa, ya, ha = pts[a]
+        tb, xb, yb, hb = pts[b]
+        bad = False
+        for i in range(a + 1, b):
+            ti, xi, yi, hi = pts[i]
+            q = (ti - ta) / (tb - ta)
+            if (abs(xa + (xb - xa) * q - xi) > tol or abs(ya + (yb - ya) * q - yi) > tol or abs(ha + (hb - ha) * q - hi) > tol_a):
+                bad = True
+                break
+        if bad:
+            a = b - 1
+            keep.append(a)
+            b = a + 2
+        else:
+            b += 1
+    if keep[-1] != n:
+        keep.append(n)
+    hw, hh = CW * HS2, CH * HS2
+    return [(pts[i][0] / T * 100, f'transform:translate({f(pts[i][1] - hw / 2, 1)}px,{f(pts[i][2] - hh / 2, 1)}px) rotate({f(pts[i][3], 1)}deg)') for i in keep]
+
+
+def z_keys(k):
+    """抜け出す 馬は ほかの 馬の 上に（z-index）"""
+    T = NL * LAP
+    rows, cur = [], None
+    for i in range(int(T / 0.1) + 1):
+        t = i * 0.1
+        z = 3 if race_at(k, t)[2] else 1
+        if z != cur:
+            rows.append((t / T * 100, f'z-index:{z}'))
+            cur = z
     return rows
 
 
@@ -221,46 +424,70 @@ def ripple_svg():
     return doc(30, 14, "<ellipse cx='15' cy='7' rx='13' ry='6' fill='none' stroke='#FFFFFF' stroke-width='1.2'/>")
 
 
-def cloud_svg(w=150, h=70, seed=2):
-    """雲の かげ（ぼんやり 暗い）"""
+def cloud_svg(w, h, seed):
+    """雲の かげ：まるい もこもこが まわりを かこむ 雲の 形（ふちは 少し ぼかす・まん中は 少し こい）"""
     R0 = rnd(seed)
-    o = "<defs><filter id='b' x='-30%' y='-30%' width='160%' height='160%'><feGaussianBlur stdDeviation='7'/></filter></defs><g filter='url(#b)' fill='#0E2A10' opacity='.16'>"
-    for i in range(6):
-        o += f"<ellipse cx='{f(w * 0.2 + i * w * 0.12 + R0.uniform(-6, 6))}' cy='{f(h / 2 + R0.uniform(-8, 8))}' rx='{f(R0.uniform(18, 30))}' ry='{f(R0.uniform(12, 20))}'/>"
-    return doc(w, h, o + '</g>')
+    cx, cy = w / 2, h / 2
+    rx, ry = w * 0.31, h * 0.25
+    n = 10
+    puffs = [(cx, cy, None)]
+    for i in range(n):
+        a = 2 * math.pi * (i + R0.uniform(-0.18, 0.18)) / n
+        r = h * (0.17 + 0.07 * R0.random()) * (1.12 if math.sin(a) < 0 else 0.92)          # 上がわの もこもこを 大きく
+        puffs.append((cx + math.cos(a) * rx, cy + math.sin(a) * ry, r))
+    o = f"<defs><filter id='b' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='{f(w * 0.014 + 0.6, 1)}'/></filter>"
+    o += f"<filter id='c' x='-30%' y='-30%' width='160%' height='160%'><feGaussianBlur stdDeviation='{f(w * 0.05, 1)}'/></filter></defs>"
+    body = f"<ellipse cx='{f(cx, 1)}' cy='{f(cy, 1)}' rx='{f(rx * 1.02, 1)}' ry='{f(ry * 1.05, 1)}'/>" + ''.join(f"<circle cx='{f(x, 1)}' cy='{f(y, 1)}' r='{f(r, 1)}'/>" for x, y, r in puffs[1:])
+    o += f"<g filter='url(#b)' fill='#0E2A10' opacity='.15'>{body}</g>"
+    o += f"<ellipse cx='{f(cx, 1)}' cy='{f(cy, 1)}' rx='{f(rx * 0.8, 1)}' ry='{f(ry * 0.75, 1)}' fill='#0E2A10' opacity='.07' filter='url(#c)'/>"
+    return doc(w, h, o)
+
+
+CLOUDS = [  # (はば, 高さ, 種, 秒, はじめ, おわり, おくれ)
+    (176, 104, 3, 64.0, (-190, -20), (400, 70), 0.0),
+    (136, 82, 8, 78.0, (-150, 60), (400, -30), -30.0),
+    (110, 66, 13, 92.0, (-120, 100), (400, 30), -62.0),
+]
 
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     still = B.get('still')
+    hs = B.get('horses')
     alt = ('真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド、まわりに木。'
-           'いろいろな勝負服の8頭の馬群が芝コースを周回して、ゴール前で黄色の勝負服の馬が抜け出す')
-    hw, hh = 26 * HS, 14 * HS
+           'いろいろな勝負服の騎手を乗せた8頭のサラブレッドが芝コースを周回して、12秒ごとにゴール前で1頭が外から抜け出して先頭でゴールする（勝つ馬は毎回ちがう）。雲のかげがゆっくり流れる')
+    hw, hh = CW * HS2, CH * HS2
     html = f'<div class="csw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('csG', ground_svg())
     html += img('csRp a', ripple_svg()) + img('csRp b', ripple_svg())
-    for k, (silk, sleeve, cap, coat) in enumerate(SILKS):
-        html += f'<i class="csH h{k}"><b style="background-image:url(&quot;{durl(horse_sheet(silk, sleeve, cap, coat))}&quot;)"></b></i>'
-    html += img('csCl a', cloud_svg(150, 70, 2)) + img('csCl b', cloud_svg(120, 60, 7))
+    if hs:
+        for k in range(len(SILKS)):
+            html += f'<i class="csH h{k}"><b></b></i>'
+    for c, (w, h, seed, *_r) in enumerate(CLOUDS):
+        html += img(f'csCl c{c}', cloud_svg(w, h, seed))
     html += '</div>'
     css = ('.csw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#4E9A4A}'
            '.csw>*{position:absolute;display:block}'
            '.csw .bnr,.csw .csG{left:0;top:0;width:390px;height:160px}'
-           f'.csw .csH{{left:0;top:0;width:{f(hw)}px;height:{f(hh)}px;will-change:transform}}'
-           f'.csw .csH>b{{display:block;width:{f(hw)}px;height:{f(hh)}px;background-size:{f(2 * hw)}px {f(hh)}px;background-repeat:no-repeat;animation:csGal .26s steps(1) infinite}}'
            '.csw .csRp{left:139px;top:65px;width:30px;height:14px;opacity:0;animation:csRip 3.2s ease-out infinite}'
            '.csw .csRp.b{animation-delay:-1.6s}'
-           '.csw .csCl{top:0;left:0;will-change:transform}'
-           '.csw .csCl.a{width:150px;height:70px;animation:csCa 46s linear infinite}'
-           '.csw .csCl.b{width:120px;height:60px;animation:csCb 46s linear -23s infinite}')
-    for k in range(len(SILKS)):
-        css += f'.csw .csH.h{k}{{animation:csR{k} {f(LAP)}s linear infinite}}.csw .csH.h{k}>b{{animation-delay:{f(-0.07 * k, 2)}s}}'
-        css += kf(f'csR{k}', keys_for(k))
-    css += (kf('csGal', [(0, 'background-position:0 0'), (50, f'background-position:{f(-hw)}px 0'), (100, 'background-position:0 0')])
-            + kf('csRip', [(0, 'opacity:.85;transform:scale(.25)'), (100, 'opacity:0;transform:scale(1.25)')])
-            + kf('csCa', [(0, 'transform:translate(-160px,10px)'), (100, 'transform:translate(400px,60px)')])
-            + kf('csCb', [(0, 'transform:translate(-130px,70px)'), (100, 'transform:translate(400px,20px)')]))
+           '.csw .csCl{top:0;left:0;z-index:5;will-change:transform}')
+    if hs:
+        n, rows = hs['frames'], hs['rows']
+        css += (f'.csw .csH{{left:0;top:0;width:{f(hw)}px;height:{f(hh)}px;overflow:hidden;will-change:transform}}'
+                f'.csw .csH>b{{display:block;width:{f(n * hw)}px;height:{f(hh)}px;background:url({hs["url"]}) 0 0/{f(n * hw)}px {f(rows * hh)}px no-repeat;'
+                f'animation:csGal {f(GAL)}s steps({n}) infinite}}')
+        css += kf('csGal', [(100, f'transform:translateX({f(-n * hw)}px)')])
+        T = NL * LAP
+        for k in range(len(SILKS)):
+            css += (f'.csw .csH.h{k}{{animation:csR{k} {f(T)}s linear infinite,csZ{k} {f(T)}s step-end infinite}}'
+                    f'.csw .csH.h{k}>b{{background-position:0 {f(-k * hh)}px;animation-delay:{f(-0.053 * k * 7 % GAL, 3)}s}}')
+            css += kf(f'csR{k}', keys_for(k)) + kf(f'csZ{k}', z_keys(k))
+    for c, (w, h, seed, sec, p0, p1, dl) in enumerate(CLOUDS):
+        css += f'.csw .csCl.c{c}{{width:{w}px;height:{h}px;animation:csC{c} {f(sec)}s linear {f(dl)}s infinite}}'
+        css += kf(f'csC{c}', [(0, f'transform:translate({p0[0]}px,{p0[1]}px)'), (100, f'transform:translate({p1[0]}px,{p1[1]}px)')])
+    css += kf('csRip', [(0, 'opacity:.85;transform:scale(.25)'), (100, 'opacity:0;transform:scale(1.25)')])
     css += reduced('.csw .csG,.csw .csRp,.csw .csH,.csw .csCl') if still else ''
     return html, css
 

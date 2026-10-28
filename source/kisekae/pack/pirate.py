@@ -354,18 +354,18 @@ STANDS = ('front', 'up1', 'up', 'down1', 'down')     # pirate_art.STANDS と 同
 # ('stop', [(形, 秒)…], 向きを かえる 時刻（止まって から の 秒・なし＝None）) ／ ('walk', 1回りの 数, 向き：+1 右・-1 左)
 # 歩く 区間は 1回り（1.25秒）の 数・止まる 区間も 1.25秒の 倍数（歩きだす ときの 足の 形が いつも 同じ）。はじめは 左を 向いて 宝箱の 前
 PLAN = [
-    ('stop', [('front', 1.0), ('down1', .15), ('down', 1.45), ('down1', .15), ('front', 1.0)], 2.95),
+    ('stop', [('front', 1.0), ('down1', .15), ('down', 1.45), ('down1', .15), ('front', 1.0)], 2.95),   # 宝箱の 前：のぞきこむ → 右を 向く
     ('walk', 2, 1),
-    ('stop', [('front', .5), ('up1', .15), ('up', 1.2), ('up1', .15), ('front', .5)], None),
+    ('stop', [('front', .5), ('up1', .15), ('up', 1.2), ('up1', .15), ('front', .5)], None),          # 見上げる（旗・空）
     ('walk', 2, 1),
-    ('stop', [('front', 1.0), ('down1', .15), ('down', .9), ('down1', .15), ('front', 1.55)], 2.85),
+    ('stop', [('front', 1.0), ('down1', .15), ('down', .9), ('down1', .15), ('front', 1.55)], 2.85),   # 舵輪の うしろ：下を 見る → 左を 向く
     ('walk', 3, -1),
     ('stop', [('front', .4), ('up1', .15), ('up', .4), ('up1', .15), ('front', .15)], None),
-    ('walk', 3, -1),
-    ('stop', [('front', .45), ('down1', .15), ('down', 1.9), ('down1', .15), ('front', 1.1)], 3.1),
-    ('walk', 1, 1),
+    ('walk', 2, -1),
+    ('stop', [('front', .6), ('down1', 1.8), ('front', 1.35)], 3.2),                                   # 宝箱を ながめる → 右を 向く
+    ('walk', 2, 1),
     ('stop', [('front', .6), ('up1', .15), ('up', .95), ('up1', .15), ('front', .65)], None),
-    ('walk', 3, 1),
+    ('walk', 1, 1),
     ('stop', [('front', .9), ('down1', .15), ('down', .6), ('down1', .15), ('front', .7)], 2.0),
     ('walk', 2, -1),
 ]
@@ -407,23 +407,27 @@ def walk_keys(speed, cx):
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
-    cap = B.get('captain')
+    wk, sd = B.get('walk'), B.get('stand')
     still = B.get('still')
-    alt = ('海賊船の甲板で、三角帽と赤いスカーフの芦毛の馬の船長が、金貨と宝石があふれる宝箱を見ている。右に舵輪と、白い蹄鉄の海賊旗。'
-           '手すりのむこうに青い海と空と宝島のイラスト（船が波でゆれて、旗がなびき、金貨がキラッと光る）')
+    alt = ('海賊船の甲板を、三角帽と赤いスカーフの芦毛の馬の船長が歩きまわる。左に金貨と宝石があふれる宝箱、右に舵輪と、白い蹄鉄の海賊旗。'
+           '手すりのむこうに青い海と空と宝島のイラスト（船が波で少しゆれて、ときどき遠くを黒い帆の海賊船が通り、旗がなびき、金貨がキラッと光る。'
+           '船長は歩いたり、止まって宝箱をのぞいたり空を見上げたり、向きをかえたりする）')
     html = f'<div class="prw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += ('<div class="prW">' + img('prSky', sky_svg()) + f'<i class="prCl" style="background-image:url(&quot;{durl(clouds_svg())}&quot;)"></i>'
              + f'<i class="prWv a" style="background-image:url(&quot;{durl(waves_svg(120, 24, 3, .8))}&quot;)"></i>'
              + f'<i class="prWv b" style="background-image:url(&quot;{durl(waves_svg(150, 30, 9, .6))}&quot;)"></i>'
-             + img('prGl g1', gull_svg()) + img('prGl g2', gull_svg()) + '</div>')
+             + img('prGl g1', gull_svg()) + img('prGl g2', gull_svg())
+             + '<i class="prSp a"><i>' + img('prSi', ship_svg(False)) + '</i></i>'
+             + '<i class="prSp b"><i>' + img('prSi', ship_svg(True)) + '</i></i>' + '</div>')
     html += img('prRl', railing_svg()) + img('prFp', flagpole_svg())
     fl = flag_svg()
     NF = 32
     html += '<i class="prFg">' + ''.join(f'<b style="left:{f(i * 74 / NF)}px;background-position:{f(-i * 74 / NF)}px 0;--mx:{f(-i * 74 / NF)}px;animation-delay:{f(-1.6 * i / NF, 3)}s;--a:{f(0.5 + 2.9 * (NF - i) / NF)}px"></b>' for i in range(NF)) + '</i>'
-    html += img('prDk', deck_svg()) + img('prSt', stand_svg()) + img('prWh', wheel_svg())
-    if cap:
-        html += '<i class="prCp"></i>'
+    html += img('prDk', deck_svg())
+    if wk and sd:                                                       # 船長（宝箱と 舵輪の うしろを 歩く）
+        html += '<i class="prHm"><i class="prHf"><i class="prHw"><i></i></i><i class="prHs"><i></i></i></i></i>'
+    html += img('prSt', stand_svg()) + img('prWh', wheel_svg())
     html += img('prCh', chest_svg())
     gl = glint_svg()
     for k in range(6):
@@ -444,6 +448,13 @@ def banner(B):
            f'.prw .prWv.a{{top:{OY + HZ + 2}px;height:24px;width:{WW + 120}px;background-size:120px 24px;animation:prWa 7s linear infinite}}'
            f'.prw .prWv.b{{top:{OY + HZ + 22}px;height:30px;width:{WW + 150}px;background-size:150px 30px;animation:prWb 5s linear infinite}}'
            '.prw .prGl{width:22px;height:10px;left:0;top:0}'
+           # 海賊船：8秒に 1回（16秒で 右から 左・左から 右）。船は 波で ゆれる（.prSi）
+           f'.prw .prSp{{left:0;top:0;width:56px;height:47px;opacity:0;will-change:transform}}'
+           f'.prw .prSp.a{{animation:prShA {f(SHIP_T)}s linear infinite}}'
+           f'.prw .prSp.b{{width:46px;height:39px;animation:prShB {f(SHIP_T)}s linear infinite}}'
+           '.prw .prSp>i{position:absolute;inset:0;transform-origin:50% 88%;animation:prBob 2.6s ease-in-out infinite alternate}'
+           '.prw .prSp.b>i{animation-delay:-1.1s}'
+           '.prw .prSi{position:absolute;left:0;top:0;width:100%;height:100%}'
            '.prw .prGl.g1{animation:prG1 16s linear infinite}'
            '.prw .prGl.g2{width:15px;height:7px;animation:prG2 16s linear -6s infinite}'
            # 船（そのまま）
@@ -457,25 +468,59 @@ def banner(B):
            f'.prw .prWh{{left:290px;top:58px;width:72px;height:72px;animation:prWheel {ROCK}s ease-in-out infinite;will-change:transform}}'
            '.prw .prCh{left:2px;top:4px;width:124px;height:152px}'
            '.prw .prGt{width:17px;height:17px;opacity:0;animation:prGlint 4.2s ease-in-out infinite;will-change:transform,opacity}')
-    if cap:
-        n, (cw, ch), (ax, ay) = cap['frames'], cap['cell'], cap['at']
-        css += f'.prw .prCp{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;background:url({cap["url"]}) 0 0/{f(cw / 2)}px {f(ch / 2)}px no-repeat}}'
+    if wk and sd:
+        T, pos, flip, walking, frame = walk_keys(wk['speed'], wk['cx'])
+        pc = lambda t: 100 * t / T
+        n, (cw, ch), (ax, ay) = wk['frames'], wk['cell'], wk['at']
+        sn, (sw, sh), (sx, sy) = sd['frames'], sd['cell'], sd['at']
+        css += ('.prw .prHm,.prw .prHf,.prw .prHw,.prw .prHs{position:absolute;display:block}'
+                '.prw .prHm,.prw .prHf{left:0;top:0;width:390px;height:160px}'
+                f'.prw .prHm{{animation:prHm {f(T)}s linear infinite;will-change:transform}}'
+                f'.prw .prHf{{transform-origin:{f(wk["cx"])}px 140px;animation:prHf {f(T)}s linear infinite}}'
+                f'.prw .prHw{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;overflow:hidden;animation:prHw {f(T)}s step-end infinite}}'
+                f'.prw .prHw>i{{display:block;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({wk["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
+                f'animation:prWalk {WALK_C}s steps({n}) infinite}}'
+                f'.prw .prHs{{left:{f(sx / 2)}px;top:{f(sy / 2)}px;width:{f(sw / 2)}px;height:{f(sh / 2)}px;overflow:hidden;animation:prHs {f(T)}s step-end infinite}}'
+                f'.prw .prHs>i{{display:block;width:{f(sn * sw / 2)}px;height:{f(sh / 2)}px;background:url({sd["url"]}) 0 0/{f(sn * sw / 2)}px {f(sh / 2)}px no-repeat;'
+                f'animation:prLook {f(T)}s step-end infinite}}'
+                + kf('prWalk', [(100, f'transform:translateX({f(-n * cw / 2)}px)')])
+                + kf('prHm', [(pc(t), f'transform:translateX({f(x)}px)') for t, x in pos])
+                + kf('prHf', [(pc(t), f'transform:scaleX({f(sc, 3)})') for t, sc in flip] + [(100, f'transform:scaleX({f(flip[0][1])})')]))
+        vis = [(pc(t), f'opacity:{w}') for t, w in walking]
+        css += kf('prHw', vis) + kf('prHs', [(p_, 'opacity:' + str(1 - int(v_[-1]))) for p_, v_ in vis])
+        look, last = [], 0
+        for t, k in frame:
+            k = last if k is None else k
+            last = k
+            look.append((pc(t), f'transform:translateX({f(-k * sw / 2)}px)'))
+        css += kf('prLook', look + [(100, look[0][1])])
     for k, (x, y, d) in enumerate(((36, 95, 0.0), (64, 88, 0.7), (86, 98, 1.4), (50, 104, 2.1), (74, 104, 2.8), (111, 145, 3.5))):
         css += f'.prw .prGt.t{k}{{left:{x - 8.5}px;top:{y - 8.5}px;animation-delay:{f(d, 2)}s}}'
-    css += (kf('prRock', [(0, f'transform:rotate({-ROT}deg) translateY(-3.5px)'), (25, 'transform:rotate(0deg) translateY(2px)'), (50, f'transform:rotate({ROT}deg) translateY(-3.5px)'), (75, 'transform:rotate(0deg) translateY(2px)'), (100, f'transform:rotate({-ROT}deg) translateY(-3.5px)')])
-            + kf('prWheel', [(0, 'transform:rotate(-14deg)'), (50, 'transform:rotate(12deg)'), (100, 'transform:rotate(-14deg)')])
+    up, dn = BOB
+    css += (kf('prRock', [(0, f'transform:rotate({-ROT}deg) translateY({-up}px)'), (25, f'transform:rotate(0deg) translateY({dn}px)'), (50, f'transform:rotate({ROT}deg) translateY({-up}px)'),
+                          (75, f'transform:rotate(0deg) translateY({dn}px)'), (100, f'transform:rotate({-ROT}deg) translateY({-up}px)')])
+            + kf('prWheel', [(0, f'transform:rotate({-WHEEL[0]}deg)'), (50, f'transform:rotate({WHEEL[1]}deg)'), (100, f'transform:rotate({-WHEEL[0]}deg)')])
             + kf('prFlow', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-WW}px)')])
             + kf('prWa', [(0, 'transform:translateX(0)'), (100, 'transform:translateX(-120px)')])
             + kf('prWb', [(0, 'transform:translateX(0)'), (100, 'transform:translateX(-150px)')])
             + kf('prFlag', [(0, 'transform:translateY(calc(var(--a) * -1))'), (50, 'transform:translateY(var(--a))'), (100, 'transform:translateY(calc(var(--a) * -1))')])
             + kf('prFlagS', [(0, 'opacity:0'), (25, 'opacity:.24'), (50, 'opacity:0'), (100, 'opacity:0')])
             + kf('prGlint', [(0, 'opacity:0;transform:scale(.2) rotate(0)'), (8, 'opacity:1;transform:scale(1) rotate(25deg)'), (16, 'opacity:0;transform:scale(.3) rotate(45deg)'), (100, 'opacity:0;transform:scale(.2)')]))
+    # 海賊船：a＝右から 左（0〜7.2秒・へさきは 左）・b＝左から 右（8〜15.2秒・少し 小さく 遠く・へさきは 右）
+    wa, wb = OY + HZ + 6 - 41.8, OY + HZ + 3 - 34.7        # 水の 線（ship_svg の 48 を 大きさに 合わせて）を 水平線の 少し 手前に
+    T8 = SHIP_T
+    css += kf('prShA', [(0, f'opacity:1;transform:translate({WW + 10}px,{wa}px)'), (100 * 7.2 / T8, f'opacity:1;transform:translate(-70px,{wa}px)'),
+                        (100 * 7.21 / T8, f'opacity:0;transform:translate(-70px,{wa}px)'), (100, f'opacity:0;transform:translate({WW + 10}px,{wa}px)')])
+    css += kf('prShB', [(0, f'opacity:0;transform:translate(-60px,{wb}px)'), (100 * 7.99 / T8, f'opacity:0;transform:translate(-60px,{wb}px)'),
+                        (100 * 8.0 / T8, f'opacity:1;transform:translate(-60px,{wb}px)'), (100 * 15.2 / T8, f'opacity:1;transform:translate({WW + 8}px,{wb}px)'),
+                        (100 * 15.21 / T8, f'opacity:0;transform:translate({WW + 8}px,{wb}px)'), (100, f'opacity:0;transform:translate(-60px,{wb}px)')])
+    css += kf('prBob', [(0, 'transform:translateY(-.7px) rotate(-2.2deg)'), (100, 'transform:translateY(.7px) rotate(2deg)')])
     # かもめ：右から 左へ（ゆっくり 上下しながら）
     g1 = [(0, 470, 40), (25, 380, 30), (50, 270, 38), (75, 150, 28), (100, 20, 34)]
     g2 = [(0, 480, 58), (30, 360, 50), (60, 240, 56), (100, 70, 48)]
     css += kf('prG1', [(p, f'transform:translate({x}px,{y}px)') for p, x, y in g1])
     css += kf('prG2', [(p, f'transform:translate({x}px,{y}px)') for p, x, y in g2])
-    css += reduced('.prw .prW,.prw .prRl,.prw .prFp,.prw .prFg,.prw .prDk,.prw .prSt,.prw .prWh,.prw .prCp,.prw .prCh,.prw .prGt') if still else ''
+    css += reduced('.prw .prW,.prw .prRl,.prw .prFp,.prw .prFg,.prw .prDk,.prw .prSt,.prw .prWh,.prw .prHm,.prw .prCh,.prw .prGt') if still else ''
     return html, css
 
 
@@ -516,7 +561,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='海賊', desc='宝箱と海賊旗', title='海賊（木×金×海）', banner=ID,
-    alt='海賊船の甲板で、三角帽と赤いスカーフの芦毛の馬の船長が、金貨と宝石があふれる宝箱を見ている。右に舵輪と、白い蹄鉄の海賊旗。手すりのむこうに青い海と空と宝島のイラスト',
+    alt='海賊船の甲板を、三角帽と赤いスカーフの芦毛の馬の船長が歩きまわる。左に金貨と宝石があふれる宝箱、右に舵輪と、白い蹄鉄の海賊旗。手すりのむこうに青い海と空と宝島、ときどき遠くを通る黒い帆の海賊船のイラスト',
     fonts=['Zen+Antique', 'Zen+Kaku+Gothic+New:wght@500;700'],
     v=dict(bg='#F2E6CC', ink='#2E2216', sub='#6A543A', card='#FFF9EC', cardB='1.5px solid #D8BF8A', cardO='0 solid transparent', cardS='0 3px 0 #E4D2A8',
            radius='12px', rs='9px', font='"Zen Kaku Gothic New"', dfont='"Zen Antique"', dw='400', logo='#F2C14E', logoS='0 2px 0 #241406',
@@ -535,7 +580,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#3E2615', '木'), ('#F2C14E', '金'), ('#A8322A', 'ボタン'), ('#1F4F6E', '海'), ('#F2E6CC', '背景')],
                fonts='見出し：Zen Antique<br>本文：Zen Kaku Gothic New', shape='角丸12px・帯は 木の色で 下に ロープ・宝の地図の 背景・すみに 海賊旗と 金貨・的中ボタンは 宝箱のPUSH',
-               pic='海賊船の 甲板・三角帽の 芦毛の 馬の 船長・ふたの あいた 宝箱（金貨・宝石・真珠）・舵輪・白い 蹄鉄の 海賊旗・海と 空と 宝島'),
+               pic='海賊船の 甲板・甲板を 歩きまわる 三角帽の 芦毛の 馬の 船長・ふたの あいた 宝箱（金貨・宝石・真珠）・舵輪・白い 蹄鉄の 海賊旗・海と 空と 宝島・ときどき 通る 海賊船'),
 )
 
 

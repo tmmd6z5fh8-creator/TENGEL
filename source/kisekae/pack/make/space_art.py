@@ -1,5 +1,7 @@
 """宇宙の 壁紙（壁紙パック・第4.92版）の 馬：いままでの 壁紙と 同じ 馬（horse_flat）を 芦毛（銀に 近い 白）に して、頭に 宇宙の ヘルメット（ガラスの 玉・
-   首の ところに 銀の 輪）・紺の 布（金の ふち・金の 星）。月の 上なので ギャロップを ゆっくり（コマを めくる はやさは ページ）・宙に 浮く 高さを 大きく（LIFT）。
+   首の ところに 銀の 輪）・紺の 布（金の ふち・金の 星）。月の 上なので ギャロップを ゆっくり（コマを めくる はやさは ページ）。
+   第4.93版（まさちゃん「足がしっかり地面についてるかも確認！」）：宙に 浮く 高さ（LIFT）を 16 → 6 に（ほかの 壁紙と 同じ ふつうの ギャロップ・
+   地面に ついて いる ひづめは 地面の 線＝GROUND に そろう）。ふわっと 浮くのは ページで 5秒に 1回（space.py）
    python3 kisekae/pack/make/space_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の space.run（コマの シート）"""
 import math
 import os
@@ -60,7 +62,10 @@ def acc_for(i):
 
 
 if __name__ == '__main__':
-    u8, meta, frames, cam = gallop_sheet(PAL, SPOT, acc=acc_for, n=N, number='1', tag='pkspace', ground=GROUND, lift=16.0, workers=1)
+    u8, meta, frames, cam = gallop_sheet(PAL, SPOT, acc=acc_for, n=N, number='1', tag='pkspace', ground=GROUND, lift=6.0, workers=1)
+    xs = [h[0] for fr in frames for h in fr[2]]
+    meta['hx'] = [round(min(xs) / 2, 2), round(max(xs) / 2, 2)]        # ひづめの 左右の はし（ページの px）：影の 置き場
+    meta['ground'] = GROUND / 2
     out = os.environ.get('OUT')
     if out:
         preview_png(u8, os.path.join(out, 'space_run.png'), bg=(20, 26, 52))
