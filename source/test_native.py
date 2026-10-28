@@ -62,7 +62,7 @@ window.__iap = { products: [
   { id: 'jp.tengel.app.points500', title: '500ポイント', price: '¥176', kind: 'pack' }, { id: 'jp.tengel.app.points1000', title: '1,000ポイント', price: '¥352', kind: 'pack' },
   { id: 'jp.tengel.app.points2000', title: '2,000ポイント', price: '¥704', kind: 'pack' }, { id: 'jp.tengel.app.points4000', title: '4,000ポイント', price: '¥1,408', kind: 'pack' },
   { id: 'jp.tengel.app.sub2000', title: '月2,000Pプラン', price: '¥638', kind: 'sub' }, { id: 'jp.tengel.app.sub4400', title: '月4,400Pプラン', price: '¥1,276', kind: 'sub' }, { id: 'jp.tengel.app.sub9200', title: '月9,200Pプラン', price: '¥1,914', kind: 'sub' },
-  { id: 'jp.tengel.app.boardcustom', title: '結果ボードカスタム', price: '¥2,200', kind: 'unlock' }],
+  { id: 'jp.tengel.app.boardcustom', title: '結果ボードカスタム', price: '¥2,200', kind: 'unlock' }, { id: 'jp.tengel.app.wallpack1', title: '壁紙パック', price: '¥1,500', kind: 'unlock' }],
   buy: {}, unfinished: [], finished: [], current: [], active: [] };
 window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
   window.__bridge.push({ name: m.name, payload: m.payload && m.payload.data ? { data: '(' + m.payload.data.length + ')' } : m.payload });
@@ -837,15 +837,19 @@ try:
         # ---- 着せ替え（第4弾・9章・16.1・16.1.1・16.2.1・16.4）：設定の「着せ替え」・30テーマ・名前と値段（9.1）・解放（P）→ 着せ替わる・上の絵（動く壁紙）・テーマの的中PUSHとボード・帯のミッション（8.3） ----
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         ks = pg.locator('#setKisekae')
-        check(ks.count() == 1 and ks.locator('.kst').count() == 30 and ks.locator('.ksg').count() == 6 and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 29 and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
-              '設定に「着せ替え」：6つの組・30テーマ・いつものが使用中・ほかの29はカギ')
+        NPK = pg.evaluate("TengelKisekae.pack().ids.length")                # 第4.92版：壁紙パックの テーマ（いちばん 上の 組・買う まで カギ）
+        check(ks.count() == 1 and ks.locator('.kst').count() == 30 + NPK and ks.locator('.ksg').count() == 7 and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 29 + NPK and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
+              f'設定に「着せ替え」：7つの組（壁紙パック＋6）・{30 + NPK}テーマ・いつものが使用中・ほかの{29 + NPK}はカギ')
         names = ks.locator('.kst .ksn').all_inner_texts()
+        PKN = ['海賊', '競馬場', '宇宙', 'パドック', '深海', '恐竜時代', '切り絵', '浮世絵風', 'スチームパンク', '近未来都市', '七夕']
+        check(names[:NPK] == [n for n, t in zip(PKN, ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future', 'tanabata']) if t in pg.evaluate("TengelKisekae.pack().ids")], f'壁紙パックの 名前と 並び（{names[:NPK]}）')
+        names = names[NPK:]
         check(names[:5] == ['いつもの', '牧場', 'かわいいお馬さん', '毛糸のお馬とロボット', 'ぷりけつのお馬'] and names[5:16] == ['桜', '海', '夕焼け', '紅葉', '雪', 'お正月', '花火', 'クリスマス', 'ハロウィン', 'バレンタイン', 'ホワイトデー']
               and names[16:20] == ['ナイター', '競馬新聞', '勝負服', '招き馬'] and names[20:22] == ['水墨画', '大理石の馬'] and names[22:27] == ['ネオン', 'ドット', '黒板', 'メリーゴーランド', '星座'] and names[27:] == ['シルバー帯', 'ゴールド帯', 'マスター帯'],
               f'9.1 の名前と並び（定番5・季節・行事11・競馬4・和・アート2・レトロ・ポップ5・帯3）：{names[:6]}…')
         locks = ks.locator('.kst .kslock').all_inner_texts()
-        check(locks.count('🔒 1,000P') == 5 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 4 and locks.count('🔒 4,000P') == 8 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を8枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 1 and locks.count('🔒 壁紙を25枚あつめると') == 1,
-              '値段（9.1）：1,000P×5・2,000P×6・3,000P×4・4,000P×8・7,000P×3・帯は 8・16・25枚')
+        check(locks.count('🔒 1,000P') == 5 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 4 and locks.count('🔒 4,000P') == 8 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を8枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 1 and locks.count('🔒 壁紙を25枚あつめると') == 1 and locks.count('🔒 壁紙パック') == NPK,
+              '値段（9.1）：1,000P×5・2,000P×6・3,000P×4・4,000P×8・7,000P×3・帯は 8・16・25枚・壁紙パック（買い切り）')
         check(ks.locator('.kst[data-ks=sakura] .ksth').get_attribute('src') == 'ks_cbcbaeebec4470155b1587d5a5c8fe00.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
               '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
         # 招き馬（7,000P・いま 7,000P）→ タップした タイルの 中（カギの 下）に 確認が出る（第4.64版：前は 一覧の 上の 帯）→ やめる。
@@ -880,8 +884,8 @@ try:
         ks.locator('.kst[data-ks=sakura]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=unlock]').click(); pg.wait_for_timeout(1200)
         check(pg.evaluate('TengelWallet.total()') == 6000 and pg.evaluate("TengelWallet.unlocked('theme:sakura')") and pg.evaluate("document.documentElement.dataset.ks") == 'sakura' and pg.evaluate("TengelKisekae.current()") == 'sakura' and pg.evaluate("TengelKisekae.loaded()")
-              and ks.locator('.kst.on').get_attribute('data-ks') == 'sakura' and ks.locator('.kst[data-ks=sakura] .kslock').count() == 0 and ks.locator('.kst[data-ks=sakura] .ksbadge').inner_text() == '使用中' and '壁紙：1/26枚' in ks.inner_text() and pg.evaluate("localStorage.getItem('tengel.kisekae')") == 'sakura',
-              f'解放する → 1,000P 使って 桜に着せ替わる（台帳 unlock-theme:sakura・使用中・1/26枚・端末に覚える）')
+              and ks.locator('.kst.on').get_attribute('data-ks') == 'sakura' and ks.locator('.kst[data-ks=sakura] .kslock').count() == 0 and ks.locator('.kst[data-ks=sakura] .ksbadge').inner_text() == '使用中' and '壁紙：1/37枚' in ks.inner_text() and pg.evaluate("localStorage.getItem('tengel.kisekae')") == 'sakura',
+              f'解放する → 1,000P 使って 桜に着せ替わる（台帳 unlock-theme:sakura・使用中・1/37枚（ポイントの 26枚＋壁紙パックの 11枚）・端末に覚える）')
         check(pg.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(255, 246, 248)' and 'Zen Kaku Gothic New' in pg.evaluate("getComputedStyle(document.body).fontFamily") and 'Kaisei Decol' in pg.evaluate("getComputedStyle(document.querySelector('.brand h1')).fontFamily")
               and pg.evaluate("getComputedStyle(document.querySelector('.top')).borderBottomColor") == 'rgb(238, 157, 184)' and pg.evaluate("getComputedStyle(document.querySelector('.tabbar button[aria-selected=true]')).backgroundColor") == 'rgb(252, 227, 235)',
               '桜の色と字：背景・本文（Zen Kaku Gothic New）・見出し（Kaisei Decol）・上の帯のふち・タブ')
@@ -1202,6 +1206,76 @@ try:
         check(p6.evaluate("TengelWallet.board.info().owned") and 'もどしたよ' in p6.locator('#toast').inner_text() and p6.evaluate("TengelWallet.board.info().n") == 21, f'購入を復元 → もどる（この 端末の 進み具合は そのまま）（{p6.locator("#toast").inner_text()}）')
         p6.screenshot(path=os.path.join(W, 't4', 'native_board_custom.png'), full_page=False)
         ctx6.close()
+        # ---- 第4.92版：壁紙パック（買い切り 1,500円・非消耗型 jp.tengel.app.wallpack1）：着せ替えの いちばん上の 組・買う／購入を復元・読み込み 5レースごとに 1枚ずつ 解放・
+        #      帯の 壁紙の ミッションに 数える・返金で 使えなくなる・復元で もどる ----
+        m7 = {}
+
+        def marker7(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': m7[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': m7.pop(key, None); return {'ok': True}
+            v = m7.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        ctx7 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx7.add_init_script(FAKE)
+        ctx7.expose_binding('__saveBackup', lambda s, t: None); ctx7.expose_binding('__marker', marker7)
+        p7 = ctx7.new_page(); p7.on('pageerror', lambda e: errs.append('PACK ' + str(e)))
+        p7.goto(APPURL); p7.wait_for_timeout(1500); gate(p7); p7.wait_for_timeout(700)
+        p7.click('.tabbar button[data-tab=set]'); p7.wait_for_timeout(600)
+        PKI = """() => { const c = document.querySelector('#setKisekae'); if (!c) return null; const g = c.querySelector('h3.ksg'); const box = c.querySelector('.kspk');
+          const pk = TengelKisekae.pack(); const tiles = pk.ids.map(id => c.querySelector(`.kst[data-ks="${id}"]`)).filter(Boolean);
+          return { first: g ? g.firstChild.textContent : '', buy: (c.querySelector('.kspk [data-ksact=pkbuy]') || {}).innerText || '', restore: !!c.querySelector('.kspk [data-ksact=pkrestore]'),
+            box: box ? box.innerText : '', ids: pk.ids, order: pk.order, tiles: tiles.length, locks: tiles.filter(t => t.querySelector('.kslock')).map(t => t.querySelector('.kslock').innerText),
+            owned: pk.owned, n: pk.n, reads: pk.reads }; }"""
+        k0 = p7.evaluate(PKI)
+        check(bool(k0) and k0['first'] == '壁紙パック' and k0['buy'] == '¥1,500で買う' and k0['restore'] and k0['tiles'] == len(k0['ids']) >= 1 and all('壁紙パック' in x for x in k0['locks']) and len(k0['locks']) == len(k0['ids'])
+              and k0['order'][:2] == ['pirate', 'course'] and len(k0['order']) == 11 and not k0['owned'],
+              f'第4.92版：着せ替えの いちばん上に「壁紙パック」の 組（¥1,500で買う・購入を復元・カギの 壁紙 {k0 and k0["tiles"]}枚・解放の 順は 海賊 → 競馬場 → … の 11枚）（{k0 and {k: k0[k] for k in ("first", "buy", "tiles", "ids")}}）')
+        check(not p7.evaluate("TengelKisekae.usable('pirate')") and p7.evaluate("TengelKisekae.usable('default')"), '買う 前は 壁紙パックの 壁紙は 使えない（ポイントでも 解放 できない）')
+        p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(400)
+        check(p7.locator('#setKisekae .kst.cf[data-ks=pirate] [data-ksact=pkbuy]').count() == 1, 'カギの 壁紙を 押すと その 下に「¥1,500で買う」')
+        p7.evaluate("window.__iap.buy['jp.tengel.app.wallpack1'] = () => ({ ok: true, state: 'ok', tx: { id: '8001', originalId: 'o8001', product: 'jp.tengel.app.wallpack1', kind: 'unlock', date: new Date().toISOString(), revoked: false } }); window.__bridge = []; 0")
+        p7.locator('#setKisekae .kst.cf [data-ksact=pkbuy]').click(); p7.wait_for_timeout(900)
+        fin7 = [x for x in p7.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
+        k1 = p7.evaluate(PKI)
+        check(k1['owned'] and k1['n'] == 0 and p7.evaluate('TengelWallet.total()') == 1500 and len(fin7) == 1 and fin7[0]['payload']['id'] == '8001' and '買ったよ' in p7.locator('#toast').inner_text()
+              and '解放 0/11' in k1['box'] and 'あと 5レース' in k1['box'] and not k1['buy'] and k1['locks'][0] == '🔒 あと5レース',
+              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・箱は 進み具合（解放 0/11・つぎの「海賊」まで あと 5レース）（{k1["box"]!r}）')
+        p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(300)
+        check('あと 5レース' in p7.locator('#toast').inner_text(), f'買った あと・解放 前に 押す → あと 何レースか（{p7.locator("#toast").inner_text()}）')
+        RD7 = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-21', venue: '大井', r: r }, ocr: {} })"
+        for r in range(1, 5): p7.evaluate(RD7, r)
+        p7.wait_for_timeout(200)
+        check(p7.evaluate("TengelKisekae.pack().reads") == 4 and p7.evaluate("TengelKisekae.pack().n") == 0 and not p7.evaluate("TengelKisekae.usable('pirate')"), '4レース 読み込む → まだ 解放 なし')
+        p7.evaluate(RD7, 5); p7.wait_for_timeout(500)
+        t7 = p7.locator('#ksNote').inner_text() if p7.locator('#ksNote').count() else ''
+        check(p7.evaluate("TengelKisekae.pack().n") == 1 and p7.evaluate("TengelKisekae.usable('pirate')") and '「海賊」' in t7 and p7.locator('#ksNote [data-ksnote=pirate]').count() == 1 and p7.evaluate("TengelPoints.wallCount(TengelWallet.events(), TengelWallet.pack.info().n)") == 1,
+              f'5レース目 → 1枚目「海賊」が 解放（画面の 上に 小さな 絵と「着せ替える」の お知らせ・帯の ミッションの 枚数 1）（{t7!r}）')
+        p7.locator('#ksNote [data-ksnote=pirate]').click(); p7.wait_for_timeout(1500)
+        check(p7.evaluate("TengelKisekae.current()") == 'pirate' and p7.locator('#ksNote').count() == 0, 'お知らせの「着せ替える」→ すぐ「海賊」に 着せ替わる')
+        p7.evaluate("TengelKisekae.apply('default')"); p7.wait_for_timeout(600)
+        rr7 = p7.evaluate(RD7, 5)
+        check(not rr7['charged'] and p7.evaluate("TengelKisekae.pack().reads") == 5, '同じ レースの 読み直し（0P）は 数えない')
+        p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(1500)
+        check(p7.evaluate("TengelKisekae.current()") == 'pirate' and p7.evaluate("document.documentElement.dataset.ks") == 'pirate' and p7.evaluate("!!document.querySelector('#ksBnr .prw')"), '解放した「海賊」に 着せ替えられる（上の 絵も）')
+        # 35レース（7枚）＋ ポイントで 1枚 ＝ 8枚 → シルバー帯の ミッションが 受け取れる
+        p7.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.pack.reads = 35; w.events.push({ id: 'unlock-theme:sakura', kind: 'unlock', bucket: '', amount: 0, at: new Date().toISOString(), use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:sakura', device: 'x' }); await TengelLocal.putMeta(w); })()""")
+        for _ in range(3):
+            p7.goto(APPURL); p7.wait_for_timeout(900); gate(p7)
+            try:
+                p7.wait_for_selector('.tabbar button[data-tab=set]', timeout=15000); p7.wait_for_timeout(1000); break
+            except Exception:
+                pass
+        wm7 = p7.evaluate("(() => { const w = TengelWallet; return TengelPoints.wallMissions(TengelPoints.wallCount(w.events(), w.pack.info().n), w.events()).map(m => [m.n, m.claimable]); })()")
+        check(p7.evaluate("TengelKisekae.pack().n") == 7 and wm7[0] == [8, True] and wm7[1] == [16, False], f'壁紙パックの 7枚 ＋ ポイントの 1枚 ＝ 8枚 → シルバー帯の 壁紙が ミッションで 受け取れる（{wm7}）')
+        # 返金 → 使えなくなる（いつもの に もどる）・購入を復元 → もどる（この 端末の 進み具合は そのまま）
+        p7.evaluate("window.__nativeEvent('iap', { id: '8001', originalId: 'o8001', product: 'jp.tengel.app.wallpack1', kind: 'unlock', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); p7.wait_for_timeout(900)
+        check(not p7.evaluate("TengelKisekae.pack().owned") and not p7.evaluate("TengelKisekae.usable('pirate')") and p7.evaluate("TengelKisekae.current()") == 'default' and '返金' in p7.locator('#toast').inner_text(),
+              f'返金 → 壁紙パックの 壁紙は 使えなくなる（いつもの に もどる）（{p7.locator("#toast").inner_text()}）')
+        p7.click('.tabbar button[data-tab=set]'); p7.wait_for_timeout(500)
+        p7.evaluate("window.__iap.current = [{ id: '8002', originalId: 'o8001', product: 'jp.tengel.app.wallpack1', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
+        p7.locator('#setKisekae .kspk [data-ksact=pkrestore]').click(); p7.wait_for_timeout(900)
+        check(p7.evaluate("TengelKisekae.pack().owned") and p7.evaluate("TengelKisekae.pack().n") == 7 and 'もどしたよ' in p7.locator('#toast').inner_text(), f'購入を復元 → もどる（解放 7枚 の まま）（{p7.locator("#toast").inner_text()}）')
+        p7.screenshot(path=os.path.join(W, 't4', 'native_wall_pack.png'), full_page=False)
+        ctx7.close()
         # ---- 第4.59版：テスト版（TENGEL_TEST=1）：はじめから 10,000P・テスト版の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタンを ためす）----
         store['markers'].clear()
         ctx5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx5.add_init_script(FAKE)
@@ -1282,7 +1356,7 @@ try:
         check(uf['unlk'] and uf['on'] and uf['burst'] >= 10 and uf['text'] == '解放！' and uf['css'], f'第4.60版：券種を 解放すると、その 項目の 上に 解放エフェクト（金の 輪と つや・粒・「解放！」）（{uf}）')
         p5.wait_for_timeout(2000)
         check(p5.evaluate("!document.querySelector('.unlk') && !document.querySelector('.unlkb') && !document.querySelector('.unlkt')"), '第4.60版：解放エフェクトは 2秒で 消える')
-        ksid = p5.evaluate("(() => { const t = document.querySelector('#setKisekae .kst.lock'); return t ? t.dataset.ks : null; })()")
+        ksid = p5.evaluate("(() => { const t = [...document.querySelectorAll('#setKisekae .kst.lock')].find(e => (TengelKisekae.list().find(x => x.id === e.dataset.ks) || {}).price); return t ? t.dataset.ks : null; })()")   # ポイントで 解放する 壁紙（壁紙パックの カギは 買う）
         p5.locator(f'#setKisekae .kst[data-ks="{ksid}"]').click(); p5.wait_for_timeout(300)
         p5.locator('#setKisekae [data-ksact=unlock]').click(); p5.wait_for_timeout(1100)
         kf = p5.evaluate(f"({{ unlk: !!document.querySelector('#setKisekae .kst[data-ks=\"{ksid}\"].unlk'), on: !!document.querySelector('#setKisekae .kst[data-ks=\"{ksid}\"].on'), text: (document.querySelector('.unlkt') || {{}}).innerText, cur: TengelKisekae.current() }})")

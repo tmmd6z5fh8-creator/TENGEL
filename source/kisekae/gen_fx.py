@@ -87,6 +87,9 @@ THEMED = dict(
     fz_zp=dict(base='fz', premium='hand'),   # 超プレミアムど的中（手書き・鉛筆）：プレミアムど的中の 8回に1回（ランダム）＝ど的中の 48回に1回（まさちゃんの指定）。PUSHは ど的中と 同じ・押すと 鉛筆で 描いた ハートが つもって はじけ、白い 光 → 鉛筆で 描いた ハートを だいた ポニーが ど！・て！・き！・ちゅ！・う！ → 鉛筆で 描いた ハートに つつまれた ど的中（super_premium.py・rough.py）→ その着せ替えの ど的中の ボード
     hit_whiteday=dict(base='hit', tid='whiteday', banner='whiteday', push='wd', fonts=BY_ID['whiteday']['fonts']),   # ホワイトデー：マシュマロのPUSH・壁紙は いつも ハートが 動き、10秒ごとに カップルが 馬を なでにいく（6回に1回は 馬が ブチギレる：couple_wall.py）
 )
+import pack as PK                  # 壁紙パック（第4.92版・11枚）：上の絵・的中ボタン・色は テーマごとの ファイル（pack/<id>.py）
+for _t in PK.IDS:
+    THEMED['hit_' + _t] = dict(base='hit', tid=_t, banner=_t, push=PK.push_code(_t), fonts=BY_ID[_t]['fonts'])
 AUTUMN_BLOB = '/_blob/1c869ee9f9195c4625d3997d66463e57'    # 紅葉の上の絵（WebP・blobs20.json の autumn）。もみじはこの上に SVG を重ねる（momiji.py）
 SNOW_BLOB = '/_blob/d40eb4335a6c206ddb43600f56cca435'      # 雪の上の絵（WebP・blobs20.json の snow）。降る雪はこの上に SVG を重ねる（yuki.py）
 SAKURA_BLOB = '/_blob/cbcbaeebec4470155b1587d5a5c8fe00'    # 桜の上の絵（WebP・blobs20.json の sakura）。花びらはこの上に SVG を重ねる（sakura.py）
@@ -183,6 +186,8 @@ def theme_banner(name):
                                           # 置く場所は couple_run.json）・カップルと ハートと 手前の チョコ・マシュマロは ページの SVG（couple_wall.py）
         import couple_wall
         return couple_wall.inline(name, couple_wall.load_blobs(f'{K}/couple_blobs.json', name), json.load(open(f'{K}/couple_run.json'))[name])
+    if name in PK.IDS:                    # 壁紙パック（第4.92版）：部品ごとの 絵（SVG）と 馬の コマの シート（pack/blobs.json）を 重ねて CSS で 動かす（pack/<id>.py の banner）
+        return PK.banner(name)
     raise KeyError(name)
 
 

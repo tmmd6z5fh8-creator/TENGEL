@@ -5,6 +5,8 @@
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
 //    21こを 順に 解放（points.js の BOARD）。使うのは 1つ（board.sel）。出世馬の 連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）
+//  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
+//    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・ほかの画面から使う窓口：window.TengelWallet
 (function () {
   'use strict';
@@ -24,16 +26,19 @@
 
   // ---------- 台帳（アプリの中） ----------
   // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態）,
-  //                   board{ reads（買った あとに 読み込んだ レース）, sel（使う もの・'none'＝なし）, streak（出世馬：連続的中）, res[]（連続に 数えた レース） } }
+  //                   board{ reads（買った あとに 読み込んだ レース）, sel（使う もの・'none'＝なし）, streak（出世馬：連続的中）, res[]（連続に 数えた レース） },
+  //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） } }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
-  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, sel: '', streak: 0, res: [] } });
+  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, sel: '', streak: 0, res: [] }, pack: { reads: 0 } });
   function normalize(w) {
     const o = Object.assign(blank(), w && typeof w === 'object' ? w : {});
     o.id = 'wallet'; o.events = Array.isArray(o.events) ? o.events.filter(Boolean) : []; o.paid = Array.isArray(o.paid) ? o.paid : []; o.counted = o.counted && typeof o.counted === 'object' ? o.counted : {};
     o.board = Object.assign({ reads: 0, sel: '', streak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
     if (!Array.isArray(o.board.res)) o.board.res = [];
     o.board.reads = Math.max(0, Math.floor(+o.board.reads || 0)); o.board.streak = Math.max(0, Math.floor(+o.board.streak || 0));
+    o.pack = Object.assign({ reads: 0 }, o.pack && typeof o.pack === 'object' ? o.pack : {});
+    o.pack.reads = Math.max(0, Math.floor(+o.pack.reads || 0));
     if (!o.device) o.device = newId();
     return o;
   }
@@ -84,20 +89,20 @@
   async function takeTx(tx, src) {
     if (!tx || !tx.id) return 0;
     let added = 0;
-    const isUnlock = (P.PRODUCTS[tx.product] || {}).kind === 'unlock';
+    const Pd = P.PRODUCTS[tx.product] || {}, isUnlock = Pd.kind === 'unlock', what = Pd.what || '';
     if (tx.revoked) {
       const rf = P.refundEvent(W.events, tx, Date.now());
-      if (rf) { W.events.push(rf); added = rf.amount; await save(); toast(isUnlock ? '返金があったので、結果ボードカスタムを使えなくしたよ' : `返金があったので ${pts(-rf.amount)} を引いたよ`, 4000); if (isUnlock) boardEmit('refund'); }
+      if (rf) { W.events.push(rf); added = rf.amount; await save(); toast(isUnlock ? `返金があったので、${Pd.name}を使えなくしたよ` : `返金があったので ${pts(-rf.amount)} を引いたよ`, 4000); if (isUnlock) unlockEmit(what, 'refund'); }
     } else if (!P.has(W.events, 'tx-' + tx.id)) {
       const done = tx.kind === 'sub' ? await grantedSubs() : [];
       if (tx.kind === 'sub' && done.includes(String(tx.id))) { /* 入れ直し・ほかの端末で、もうこの取引のPは足してある */ }
       else {
-        const had = P.boardOwned(W.events);
+        const had = isUnlock && P.owned(W.events, what);
         const e = P.txEvent(W.events, tx, Date.now());
         if (e) {
           W.events.push(e); added = e.amount; await save();
           if (tx.kind === 'sub') await rememberSub(tx.id);
-          if (e.kind === 'unlock') { if (!had) { boardEmit('owned', { src }); if (src !== 'buy') toast((src === 'update' ? '✨ 結果ボードカスタムが届いたよ' : '✅ 結果ボードカスタムを もどしたよ') + (W.board.reads ? '' : '（解放は これから 読み込む レースの 数で）'), 4600); } }
+          if (e.kind === 'unlock') { if (!had) { unlockEmit(what, 'owned', { src }); if (src !== 'buy') toast((src === 'update' ? `✨ ${Pd.name}が届いたよ` : `✅ ${Pd.name}を もどしたよ`) + (unlockReads(what) ? '' : '（解放は これから 読み込む レースの 数で）'), 4600); } }
           else if (src !== 'buy') toast(`✨ ${P.PRODUCTS[tx.product] ? P.PRODUCTS[tx.product].name : ''}の ${pts(e.amount)} が届いたよ`, 4000);
         }
       }
@@ -123,7 +128,7 @@
     if (btn) { btn.disabled = false; btn.textContent = label || (Pd.kind === 'sub' ? 'はじめる' : '買う'); }
     if (r && r.ok && r.tx) {
       const added = await takeTx(r.tx, 'buy');
-      if (Pd.kind === 'unlock') toast(P.boardOwned(W.events) ? `🎉 ${Pd.name}を買ったよ！ これから 読み込む レース 5つで 1つめが 解放されるよ` : '✅ 買えたよ', 4800);
+      if (Pd.kind === 'unlock') toast(P.owned(W.events, Pd.what) ? (Pd.what === 'wallpack' ? `🎉 ${Pd.name}を買ったよ！ これから 読み込む レース 5つごとに 新しい 壁紙が 1枚ずつ 解放されるよ` : `🎉 ${Pd.name}を買ったよ！ これから 読み込む レース 5つで 1つめが 解放されるよ`) : '✅ 買えたよ', 4800);
       else toast(added ? `✅ ${pts(added)} が届いたよ（合計 ${pts(total())}）` : '✅ 買えたよ（このPはもう入っているよ）', 4000);
       if (Pd.kind === 'sub') refreshSubStatus();
     } else if (r && r.state === 'cancelled') { /* やめた */ }
@@ -136,12 +141,13 @@
     if (btn) { btn.disabled = false; btn.textContent = '購入を復元'; }
     if (!r || !r.ok) { toast('復元できなかったよ：' + ((r && r.error) || '不明'), 4200); return; }
     let added = 0;
-    const had = P.boardOwned(W.events);
+    const had = { board: P.boardOwned(W.events), wallpack: P.packOwned(W.events) };
     for (const tx of (r.unfinished || [])) added += await takeTx(tx, 'restore');
     for (const tx of (r.current || [])) if (tx.kind === 'sub' || tx.kind === 'unlock') added += await takeTx(tx, 'restore');
     await refreshSubStatus();
-    const got = !had && P.boardOwned(W.events);
-    toast(added ? `✅ ${pts(added)} を足したよ${got ? '・結果ボードカスタムを もどしたよ' : ''}` : got ? '✅ 結果ボードカスタムを もどしたよ' + (W.board.reads ? '' : '（解放は これから 読み込む レースの 数で）') : '✅ Appleと合わせたよ（足すものはなかったよ）', 4600);
+    const got = [['board', '結果ボードカスタム'], ['wallpack', '壁紙パック']].filter(x => !had[x[0]] && P.owned(W.events, x[0]));
+    const gotTxt = got.map(x => x[1]).join('・');
+    toast(added ? `✅ ${pts(added)} を足したよ${got.length ? '・' + gotTxt + 'を もどしたよ' : ''}` : got.length ? `✅ ${gotTxt}を もどしたよ` + (got.some(x => unlockReads(x[0])) ? '' : '（解放は これから 読み込む レースの 数で）') : '✅ Appleと合わせたよ（足すものはなかったよ）', 4600);
   }
   async function refreshSubStatus() { const r = await iap('status'); subStatus = r && r.ok ? r : null; paintPoints(); }
 
@@ -176,14 +182,35 @@
     if (same) { stamp(same); await save(); return { ok: true, charged: false, free: 'same', pid: same.pid }; }
     if (!charge(P.COST.read, READ_WHAT(race))) return { ok: false, need: P.COST.read, have: total() };
     const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid();
-    const bu = boardRead();
+    const bu = boardRead(), pk = packRead();
     await save();
     if (bu) boardEmit('unlock', { item: bu.id, no: bu.no });
+    if (pk) packEmit('unlock', { no: pk });
     return { ok: true, charged: true, free: null, pid: e.pid };
   }
 
   // ---------- 結果ボードカスタム（第4.91版）----------
   function boardEmit(phase, d) { try { document.dispatchEvent(new CustomEvent('tengel:board', { detail: Object.assign({ phase }, d || {}) })); } catch (e) { /* なし */ } }
+  // 買い切り（結果ボードカスタム・壁紙パック）の お知らせ・買った あとに 読み込んだ 数
+  function unlockEmit(what, phase, d) { if (what === 'wallpack') packEmit(phase, d); else boardEmit(phase, d); }
+  function unlockReads(what) { return what === 'wallpack' ? (W.pack.reads || 0) : (W.board.reads || 0); }
+
+  // ---------- 壁紙パック（第4.92版）----------
+  // tengel:wallpack：phase＝owned（買った・もどした）・unlock（no 枚目を 解放）・refund（返金）。kisekae.js が 選ぶ画面と お知らせを 出す
+  function packEmit(phase, d) { try { document.dispatchEvent(new CustomEvent('tengel:wallpack', { detail: Object.assign({ phase }, d || {}) })); } catch (e) { /* なし */ } }
+  // 買った あとの 読み込み（200P を 使った 1レース）を 数える。新しく 解放した 枚目（1〜11）を 返す（なければ 0）
+  function packRead() {
+    if (!W || !P.packOwned(W.events)) return 0;
+    const before = P.packUnlocked(W.pack.reads);
+    W.pack.reads = (+W.pack.reads || 0) + 1;
+    const after = P.packUnlocked(W.pack.reads);
+    return after > before ? after : 0;
+  }
+  function packInfo() {
+    const owned = !!W && P.packOwned(W.events), reads = owned ? (W.pack.reads || 0) : 0;
+    return { owned, reads, n: owned ? P.packUnlocked(reads) : 0, next: owned ? P.packNext(reads) : null, every: P.WALLPACK.every, total: P.WALLPACK.n };
+  }
+  const packN = () => packInfo().n;
   // 買った あとの 読み込み（200P を 使った 1レース）を 数える。新しく 解放した ものを 返す（はじめて なら それを 使う ものに）
   function boardRead() {
     if (!W || !P.boardOwned(W.events)) return null;
@@ -240,7 +267,7 @@
   const countedN = () => W ? Object.keys(W.counted).length : 0;
   async function claim(id) {
     if (/^mission-wall-/.test(String(id))) {     // 壁紙のミッション（帯の壁紙・第4弾）
-      const wm = P.wallMissions(P.wallCount(W.events), W.events).find(x => x.id === id);
+      const wm = P.wallMissions(P.wallCount(W.events, packN()), W.events).find(x => x.id === id);
       if (!wm || !wm.claimable) return;
       P.wallMissionEvents(wm, device(), Date.now()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
       await save(); paintAll();
@@ -398,6 +425,7 @@
     if (k.startsWith('slot:')) { const n = +k.slice(5); try { return (TL.slots.names() || {})[n] || `マザーデータ${n}`; } catch (e) { return `マザーデータ${n}`; } }
     if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } return `壁紙 ${k.slice(6)}`; }
     if (k === 'board') return '結果ボードカスタム（買い切り）';
+    if (k === 'wallpack') return '壁紙パック（買い切り）';
     return k;
   }
   function paintCustom() {
@@ -424,8 +452,8 @@
   }
   // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙
   function wallRowsHtml() {
-    const wn = P.wallCount(W.events), wms = P.wallMissions(wn, W.events);
-    let h = `<p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
+    const wn = P.wallCount(W.events, packN()), wms = P.wallMissions(wn, W.events);
+    let h = `<p class="hint" style="margin:0 0 4px">設定の「着せ替え」でポイントを使って解放した壁紙と、壁紙パックで解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま <b>${wn}枚</b></p><div>`;
     wms.forEach(m => { const w = Math.min(100, Math.round(wn / m.n * 100)); h += `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">壁紙を${m.n}枚あつめる　<span class="muted" style="font-weight:400">${esc(m.label)}</span></div><div class="md">${m.claimed ? '受け取りずみ' : m.done ? '受け取れるよ！' : `あと ${m.n - wn}枚（${wn}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
     return h + '</div>';
   }
@@ -440,7 +468,7 @@
   const TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a1 1 0 0 0-1 1 4 4 0 0 0 4 4M17 6h3a1 1 0 0 1 1 1 4 4 0 0 1-4 4"/></svg>';
   // 受け取れる 数の 印：メッセージ（ふきだし）の 絵＋数（まさちゃん「メッセージのマークを背景つけて、メッセージが溜まってるよ！って分かりやすくして！」）
   const BUBBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>';
-  function claimableN() { if (!W) return 0; return P.missions(countedN(), W.events).filter(m => m.claimable).length + P.wallMissions(P.wallCount(W.events), W.events).filter(m => m.claimable).length; }
+  function claimableN() { if (!W) return 0; return P.missions(countedN(), W.events).filter(m => m.claimable).length + P.wallMissions(P.wallCount(W.events, packN()), W.events).filter(m => m.claimable).length; }
   function reviewHtml() {
     try { if (window.TengelReview) return window.TengelReview() || ''; } catch (e) { /* なし */ }
     return '';
@@ -501,7 +529,7 @@
   }
   function paintBadge() {
     const tb = $('.tabbar [data-tab=set]'); if (!tb || !W) return;
-    const on = P.missions(countedN(), W.events).some(m => m.claimable) || P.wallMissions(P.wallCount(W.events), W.events).some(m => m.claimable);
+    const on = P.missions(countedN(), W.events).some(m => m.claimable) || P.wallMissions(P.wallCount(W.events, packN()), W.events).some(m => m.claimable);
     let d = tb.querySelector('.tbdg'); if (on && !d) { d = document.createElement('span'); d.className = 'tbdg'; d.setAttribute('aria-label', '受け取れるミッションがあるよ'); tb.appendChild(d); } else if (!on && d) d.remove();
   }
   function paintHint() {
@@ -678,7 +706,9 @@
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
       + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
       + '<p class="hint" style="margin:10px 0 6px">結果ボードカスタム（App Store の 買い物は しない）：<span id="testBoard"></span></p>'
-      + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +5</button><button type="button" class="btn" data-test="ball">全部 解放</button><button type="button" class="btn" data-test="bst">連続的中 +1</button><button type="button" class="btn" data-test="bst0">連続 0</button></div>';
+      + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +5</button><button type="button" class="btn" data-test="ball">全部 解放</button><button type="button" class="btn" data-test="bst">連続的中 +1</button><button type="button" class="btn" data-test="bst0">連続 0</button></div>'
+      + '<p class="hint" style="margin:10px 0 6px">壁紙パック（App Store の 買い物は しない）：<span id="testPack"></span></p>'
+      + '<div class="row"><button type="button" class="btn" data-test="pown">買ったことにする</button><button type="button" class="btn" data-test="pread">読み込み +5</button><button type="button" class="btn" data-test="pall">全部 解放</button></div>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
@@ -694,11 +724,22 @@
         await save(); if (n1 > n0) boardEmit('unlock', { item: P.BOARD_ITEMS[n1 - 1].id, no: n1, many: n1 - n0 });
       }
       else if (b.dataset.test === 'bst' || b.dataset.test === 'bst0') { W.board.streak = b.dataset.test === 'bst' ? W.board.streak + 1 : 0; await save(); }
+      else if (b.dataset.test === 'pown') { if (!P.packOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-pack-' + now, product: P.WALLPACK.product, date: new Date(now).toISOString() }, now)); await save(); packEmit('owned', { src: 'test' }); toast('🧪 壁紙パックを 買ったことにしたよ', 2600); } }
+      else if (b.dataset.test === 'pread' || b.dataset.test === 'pall') {
+        if (!P.packOwned(W.events)) { toast('先に「買ったことにする」（壁紙パック）を 押してね', 2600); return; }
+        const n0 = P.packUnlocked(W.pack.reads);
+        W.pack.reads = b.dataset.test === 'pall' ? P.WALLPACK.every * P.WALLPACK.n : W.pack.reads + P.WALLPACK.every;
+        const n1 = P.packUnlocked(W.pack.reads);
+        await save(); if (n1 > n0) packEmit('unlock', { no: n1, many: n1 - n0 });
+      }
       paintTestBoard();
     });
     paintTestBoard();
   }
-  function paintTestBoard() { const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/21・連続的中 ${i.streak}`; }
+  function paintTestBoard() {
+    const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/21・連続的中 ${i.streak}`;
+    const ep = $('#testPack'); if (ep) { const k = packInfo(); ep.textContent = `${k.owned ? '買った' : 'まだ'}・読み込み ${k.reads}・解放 ${k.n}/${k.total}`; }
+  }
 
   // ---------- 起動 ----------
   let resolveReady; const walletReady = new Promise(r => { resolveReady = r; });
@@ -725,6 +766,8 @@
     // 結果ボードカスタム（第4.91版・bcx.js が 使う）
     board: { info: boardInfo, active: boardActive, select: boardSelect, result: boardResult, buy: btn => buy(P.BOARD.product, btn), restore: btn => restore(btn),
       price: () => price(P.BOARD.product), products: () => loadProducts(false) },
+    // 壁紙パック（第4.92版・kisekae.js が 使う）
+    pack: { info: packInfo, buy: btn => buy(P.WALLPACK.product, btn), restore: btn => restore(btn), price: () => price(P.WALLPACK.product), products: () => loadProducts(false) },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },

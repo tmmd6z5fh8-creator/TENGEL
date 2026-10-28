@@ -1,0 +1,414 @@
+"""壁紙パック ②競馬場（上から見た）（まさちゃんの 指定「真上から見たコース。馬群が周回して、ゴール前で1頭が抜け出す」）
+   上の絵：真上から 見た 競馬場。外がわの 芝コース（白い 内ラチ・外ラチ・ハロン棒）・内がわの ダートコース・まん中の 芝生（刈った すじ）と 池（噴水）と 蹄鉄の 形の 花だん・
+     下に スタンドの 屋根と お客さん・まわりに 木。ゴールは 下の 直線の 右（赤と白の ゴール板・白い 線）。
+   動き：8頭の 馬群が 芝コースを 左回りに 周回する（1周 16秒）。4コーナーから 黄色の 勝負服の 馬が 外へ 出て 加速し、ゴール前で 抜け出して 先頭で ゴール。
+     ゴールの あとは ゆっくり 馬群に もどる（くり返し）。馬は 真上から 見た 形の 2コマ（足を のばす・あつめる）を めくる。
+     雲の かげが ゆっくり 横切る・池の 噴水の 波紋が ひろがる"""
+import math
+from .common import W, H, f, durl, curi, tile, doc, P, kf, img, rnd, reduced, fly_burst, fly_css, piece, mix
+
+ID = 'course'
+
+# ---------------------------------------------------------------- コースの 形（芝コースの まん中の 線：下の 直線 → 右の カーブ → 上の 直線 → 左の カーブ）
+XA, XB, YC, R = 98, 292, 78, 56      # 直線の 左右の はし・まん中の 高さ・カーブの 半径
+YT, YB = YC - R, YC + R              # 上の 直線（22）・下の 直線（134）
+TURF_W = 22                          # 芝コースの はば（まん中 ±11）
+DIRT_W = 13                          # ダートコースの はば
+FIN_X = 270                          # ゴール（下の 直線）
+LAP = 16.0                           # 1周の 秒
+SEG = [('s', FIN_X, XB), ('c', XB, 90, -90), ('s', XB, XA), ('c', XA, 270, 90), ('s', XA, FIN_X)]
+HS = 1.2                             # 馬の 大きさ（絵の 26×14 → 31.2×16.8）
+
+
+def _segs():
+    out = []
+    for sg in SEG:
+        if sg[0] == 's':
+            out.append(('s', sg[1], sg[2], abs(sg[2] - sg[1])))
+        else:
+            out.append(('c', sg[1], sg[2], sg[3], math.radians(abs(sg[2] - sg[3])) * R))
+    return out
+
+
+SEGS = _segs()
+L = sum(s[-1] for s in SEGS)          # 1周の 長さ（約 740）
+
+
+def at(s, d=0.0):
+    """芝コースの まん中の 線で ゴールから s（左回り）・外へ d の 点と 向き°（0＝右・90＝下）"""
+    s %= L
+    for sg in SEGS:
+        n = sg[-1]
+        if s <= n:
+            if sg[0] == 's':
+                x0, x1 = sg[1], sg[2]
+                if x1 > x0:                       # 下の 直線（右へ）
+                    return x0 + s, YB + d, 0.0
+                return x0 - s, YT - d, 180.0      # 上の 直線（左へ）
+            cx, a0, a1 = sg[1], sg[2], sg[3]
+            ph = math.radians(a0 - (s / n) * (a0 - a1))      # φ は へっていく（左回り）
+            rr = R + d
+            x, y = cx + rr * math.cos(ph), YC + rr * math.sin(ph)
+            hd = math.degrees(math.atan2(-math.cos(ph), math.sin(ph)))
+            return x, y, hd
+        s -= n
+    return at(0, d)
+
+
+# ---------------------------------------------------------------- 絵
+def stadium_d(r, x0=XA, x1=XB, yc=YC):
+    """競馬場の 形（直線と 半円）：まん中の 線から 半径 r"""
+    return (f'M{f(x0)} {f(yc - r)} H{f(x1)} A{f(r)} {f(r)} 0 0 1 {f(x1)} {f(yc + r)} H{f(x0)} A{f(r)} {f(r)} 0 0 1 {f(x0)} {f(yc - r)} Z')
+
+
+def ground_svg():
+    """止まった 下の 絵：まわりの 芝・木・スタンド・コース・まん中の 芝生・池・花だん・ゴール板"""
+    R0 = rnd(4)
+    ro, ri = R + TURF_W / 2, R - TURF_W / 2            # 芝コースの 外・内
+    rd = ri - DIRT_W                                    # ダートの 内
+    defs = ("<pattern id='mw' width='16' height='16' patternUnits='userSpaceOnUse' patternTransform='rotate(28)'>"
+            "<rect width='16' height='16' fill='#5DAF54'/><rect width='8' height='16' fill='#67B95C'/></pattern>"
+            "<pattern id='tf' width='12' height='12' patternUnits='userSpaceOnUse' patternTransform='rotate(90)'>"
+            "<rect width='12' height='12' fill='#7FC66C'/><rect width='6' height='12' fill='#86CC72'/></pattern>"
+            "<pattern id='og' width='18' height='18' patternUnits='userSpaceOnUse' patternTransform='rotate(-20)'>"
+            "<rect width='18' height='18' fill='#4E9A4A'/><rect width='9' height='18' fill='#549F4F'/></pattern>"
+            "<radialGradient id='pd' cx='.4' cy='.35' r='.7'><stop offset='0' stop-color='#8ED4F2'/><stop offset='1' stop-color='#3E96CC'/></radialGradient>")
+    o = f"<rect width='{W}' height='{H}' fill='url(#og)'/>"
+    # 外の 道（コースの まわりの うすい 通路）
+    o += f"<path d='{stadium_d(ro + 6)}' fill='#C9D8B8'/>"
+    o += f"<path d='{stadium_d(ro + 3)}' fill='#9CC58A'/>"
+    # 芝コース・ダート・まん中の 芝生
+    o += f"<path d='{stadium_d(ro)}' fill='url(#tf)'/>"
+    o += f"<path d='{stadium_d(ri)}' fill='#C8A272'/>"
+    for k in range(5):                                                            # ダートの 砂の すじ（ハローの あと）
+        o += f"<path d='{stadium_d(ri - 2.2 - k * 2.2)}' fill='none' stroke='#B8925F' stroke-width='.5' opacity='.6'/>"
+    o += f"<path d='{stadium_d(rd)}' fill='url(#mw)'/>"
+    # ラチ（白い 柵：外ラチ・芝の 内ラチ・ダートの 内ラチ）と 影
+    for rr, w in ((ro, 1.6), (ri, 1.4), (rd, 1.2)):
+        o += f"<path d='{stadium_d(rr)}' fill='none' stroke='#2E5A2A' stroke-width='{w + 1}' opacity='.25' transform='translate(.8 1.2)'/>"
+        o += f"<path d='{stadium_d(rr)}' fill='none' stroke='#FFFFFF' stroke-width='{w}'/>"
+    # ハロン棒（内ラチに そって 小さな 色の 印）
+    for k in range(12):
+        x, y, hd = at(k * L / 12, -TURF_W / 2 - 1.5)
+        c = '#E23B3B' if k % 3 == 0 else '#2B6FD0' if k % 3 == 1 else '#F2C14E'
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='1.5' fill='{c}' stroke='#FFFFFF' stroke-width='.6'/>"
+    # まん中の 芝生：池（噴水）・蹄鉄の 形の 花だん・小道
+    o += "<path d='M122 90 C140 102 170 104 196 96 C220 88 240 90 262 98' fill='none' stroke='#E8DFC8' stroke-width='3' stroke-linecap='round' opacity='.85'/>"
+    px, py = 150, 72
+    o += (f"<ellipse cx='{px + 1.5}' cy='{py + 2}' rx='34' ry='15' fill='#2E6A3A' opacity='.35'/>"
+          f"<path d='M{px - 34} {py} C{px - 34} {py - 12} {px - 14} {py - 17} {px + 4} {py - 15} C{px + 24} {py - 14} {px + 36} {py - 8} {px + 34} {py + 2} "
+          f"C{px + 32} {py + 12} {px + 12} {py + 16} {px - 8} {py + 15} C{px - 26} {py + 14} {px - 34} {py + 9} {px - 34} {py} Z' fill='url(#pd)' stroke='#D9CBA8' stroke-width='1.6'/>"
+          f"<path d='M{px - 26} {py - 6} q10 -6 22 -6' fill='none' stroke='#FFFFFF' stroke-width='1.4' stroke-linecap='round' opacity='.6'/>"
+          f"<circle cx='{px + 4}' cy='{py}' r='3.4' fill='#E8F6FC' stroke='#B8D8E8' stroke-width='.8'/><circle cx='{px + 4}' cy='{py}' r='1.4' fill='#FFFFFF'/>")
+    hx, hy = 236, 72                                                              # 蹄鉄の 花だん（U が 上に ひらく）
+    so, si = [], []
+    for k in range(29):
+        a = math.radians(-205 + 230 * k / 28)
+        so.append((hx + math.cos(a) * 20, hy - math.sin(a) * 18))
+        si.append((hx + math.cos(a) * 11, hy - math.sin(a) * 9.5))
+    o += f"<path d='{P(so + si[::-1])}' fill='#8B6A3E' transform='translate(1 1.4)' opacity='.35'/>"
+    o += f"<path d='{P(so + si[::-1])}' fill='#7A5A32'/>"
+    for k in range(40):
+        t = R0.random()
+        a = math.radians(-200 + 220 * t)
+        rr = R0.uniform(12.6, 18.6)
+        x, y = hx + math.cos(a) * rr, hy - math.sin(a) * rr * 0.9
+        c = R0.choice(('#F25C7A', '#FFD23F', '#FFFFFF', '#F28A3B', '#C86BE0'))
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(R0.uniform(1.1, 1.8))}' fill='{c}'/>"
+    # まわりの 木（上と 左右）
+    trees = [(8, 6, 9), (30, 3, 7), (52, 2, 6), (330, 3, 8), (354, 6, 9), (380, 4, 7), (6, 40, 8), (12, 70, 7), (5, 104, 9), (14, 132, 7),
+             (382, 38, 8), (376, 72, 7), (384, 104, 8), (378, 132, 7), (200, 1, 5), (232, 1, 6), (164, 1, 5), (118, 2, 6), (270, 2, 6)]
+    for x, y, r in trees:
+        o += (f"<circle cx='{x + 2}' cy='{y + 3}' r='{r}' fill='#24502A' opacity='.35'/><circle cx='{x}' cy='{y}' r='{r}' fill='#3E8E45'/>"
+              f"<circle cx='{f(x - r * 0.3)}' cy='{f(y - r * 0.3)}' r='{f(r * 0.55)}' fill='#55A85A'/><circle cx='{f(x - r * 0.4)}' cy='{f(y - r * 0.45)}' r='{f(r * 0.22)}' fill='#7CC47A'/>")
+    # スタンド（下）：屋根・前の お客さん（外ラチと スタンドの あいだ）
+    o += ("<rect x='56' y='152' width='270' height='12' rx='1.5' fill='#5A6670' opacity='.35'/>"
+          "<rect x='54' y='151' width='270' height='12' rx='1.5' fill='#EEF0F2'/>"
+          "<rect x='54' y='151' width='270' height='1.6' fill='#FFFFFF'/>")
+    for i in range(54):
+        x = 58 + i * 4.95
+        o += f"<path d='M{f(x)} 153.4 v7' stroke='#C9CED4' stroke-width='.8'/>"
+    for i in range(150):
+        x = R0.uniform(56, 322)
+        o += f"<circle cx='{f(x)}' cy='{f(R0.uniform(147.2, 149.8))}' r='.95' fill='{R0.choice(('#E85A5A', '#4A7BD0', '#F2C14E', '#FFFFFF', '#3A3A44', '#F28A3B', '#2FA35A'))}'/>"
+    for i in range(16):
+        x = R0.uniform(10, 50) if i < 8 else R0.uniform(332, 386)
+        o += f"<circle cx='{f(x)}' cy='{f(R0.uniform(150, 158))}' r='1.1' fill='{R0.choice(('#E85A5A', '#4A7BD0', '#F2C14E', '#FFFFFF', '#3A3A44'))}'/>"
+    # ゴール（下の 直線）：白い 線・ゴール板（赤と 白の 丸い 札：内ラチの 内がわ）・決勝審判の 小さな 塔（外ラチの 外）
+    gy0, gy1 = YB - TURF_W / 2, YB + TURF_W / 2
+    o += f"<path d='M{FIN_X} {gy0} V{gy1}' stroke='#FFFFFF' stroke-width='1.6' opacity='.95'/>"
+    o += (f"<circle cx='{FIN_X + 1.2}' cy='{gy0 - 5}' r='4.8' fill='#1E3A1E' opacity='.3'/>"
+          f"<circle cx='{FIN_X}' cy='{gy0 - 6}' r='4.8' fill='#FFFFFF'/><circle cx='{FIN_X}' cy='{gy0 - 6}' r='3.6' fill='#E23B3B'/><circle cx='{FIN_X}' cy='{gy0 - 6}' r='1.6' fill='#FFFFFF'/>")
+    o += f"<rect x='{FIN_X - 4}' y='{gy1 + 1.2}' width='8' height='5' rx='1' fill='#D9DEE4' stroke='#8A949E' stroke-width='.6'/>"
+    return doc(W, H, o, defs=defs)
+
+
+SILKS = [  # (勝負服, 袖, 帽子, 毛色)
+    ('#FFFFFF', '#2B6FD0', '#FFFFFF', '#8A5230'),
+    ('#2A2A30', '#E23B3B', '#2A2A30', '#5A3A28'),
+    ('#E23B3B', '#FFFFFF', '#E23B3B', '#A0612F'),
+    ('#2B6FD0', '#F2C14E', '#2B6FD0', '#3A2A24'),
+    ('#FFD23F', '#1E1E24', '#FFD23F', '#C27A3E'),     # 抜け出す 馬（黄色）
+    ('#2FA35A', '#FFFFFF', '#2FA35A', '#7A4A2A'),
+    ('#F28A3B', '#2A2A30', '#F28A3B', '#D9D2C8'),
+    ('#F37BB2', '#2B6FD0', '#F37BB2', '#6A4232'),
+]
+WIN = 4                                              # 抜け出す 馬
+
+
+def horse_sheet(silk, sleeve, cap, coat):
+    """真上から 見た 馬と 騎手（右向き）の 2コマ：足を のばす／あつめる（よこ 2コマ・1コマ 26×14）"""
+    mane = mix(coat, '#000000', 0.45)
+    lg = mix(coat, '#000000', 0.3)
+    out = ''
+    for k in range(2):
+        ox = k * 26
+        o = f"<ellipse cx='{ox + 12.5}' cy='8' rx='10.5' ry='4.2' fill='#1C3A18' opacity='.28'/>"
+        if k == 0:            # のばした 足：前足は 首の 下から 前へ・うしろ足は しっぽの よこから うしろへ（よこには 出さない）
+            for (x0, y0, x1, y1) in ((16.4, 5.6, 21.4, 5.0), (16.4, 8.4, 20.6, 9.0), (5.6, 5.8, 1.6, 5.0), (5.6, 8.2, 1.8, 9.0)):
+                o += f"<path d='M{ox + x0} {y0} L{ox + x1} {y1}' stroke='{lg}' stroke-width='1.3' stroke-linecap='round'/>"
+        else:                 # あつめた 足：体の 下（少しだけ 見える）
+            for (x0, y0, x1, y1) in ((14.2, 5.0, 15.6, 4.2), (14.2, 9.0, 15.6, 9.8), (7.8, 5.0, 6.6, 4.2), (7.8, 9.0, 6.6, 9.8)):
+                o += f"<path d='M{ox + x0} {y0} L{ox + x1} {y1}' stroke='{lg}' stroke-width='1.2' stroke-linecap='round'/>"
+        o += (f"<path d='M{ox + 3.6} 7 L{ox + 0.4} {6.2 if k == 0 else 5.6} L{ox + 0.6} {7.8 if k == 0 else 8.6} Z' fill='{mane}'/>"       # しっぽ
+              f"<ellipse cx='{ox + 10.8}' cy='7' rx='7.8' ry='3.2' fill='{coat}'/>"
+              f"<path d='M{ox + 16} 5.4 Q{ox + 19.6} 5.6 {ox + 21.8} 6.2 Q{ox + 23.6} 7 {ox + 21.8} 7.8 Q{ox + 19.6} 8.4 {ox + 16} 8.6 Z' fill='{coat}'/>"   # 首と 頭
+              f"<path d='M{ox + 15.6} 6.4 Q{ox + 18.6} 6.6 {ox + 20.6} 7 Q{ox + 18.6} 7.4 {ox + 15.6} 7.6 Z' fill='{mane}'/>"
+              f"<circle cx='{ox + 20.4}' cy='6.1' r='.55' fill='{mane}'/><circle cx='{ox + 20.4}' cy='7.9' r='.55' fill='{mane}'/>"
+              f"<rect x='{ox + 8.4}' y='3.9' width='4.4' height='6.2' rx='1' fill='#FFFFFF'/>"                                               # ゼッケン
+              f"<path d='M{ox + 12.6} 4.6 L{ox + 16.4} 5.8 M{ox + 12.6} 9.4 L{ox + 16.4} 8.2' stroke='{sleeve}' stroke-width='1.5' stroke-linecap='round'/>"   # 腕（手綱へ）
+              f"<ellipse cx='{ox + 11.6}' cy='7' rx='2.6' ry='3' fill='{silk}' stroke='{mix(silk, '#000000', .3)}' stroke-width='.4'/>"
+              f"<circle cx='{ox + 13.3}' cy='7' r='1.55' fill='{cap}' stroke='{mix(cap, '#000000', .35)}' stroke-width='.4'/>")
+        out += o
+    return doc(52, 14, out)
+
+
+def keys_for(k, n=96):
+    """馬 k の 1周（LAP 秒）の 場所と 向き（@keyframes）。馬群の 位置（列と 内外）＋ 小さな ゆらぎ・抜け出す 馬は ゴール前で 前へ（外を 通る）"""
+    base = [(0, -5), (-5, 2), (-13, -6), (-15, 6), (-23, 0), (-27, -6), (-31, 5), (-39, -1)][k]
+    v = L / LAP
+    rows, prev = [], None
+    for i in range(n + 1):
+        t = i / n * LAP
+        u = (v * t) % L                                                  # 先頭の いる 所（ゴールから）
+        wob = 2.2 * math.sin(2 * math.pi * (i / n) * 2 + k * 1.7)
+        lane = base[1] + 1.2 * math.sin(2 * math.pi * (i / n) + k)
+        ds = 0.0
+        if k == WIN:
+            # 4コーナー（u 430）から 外へ 出て 加速 → ゴールで 先頭から 2馬身前（+38）→ ゴールの あと（u 0〜330）で ゆっくり もどる
+            if u >= 430:
+                q = (u - 430) / (L - 430)
+                e = q * q * (3 - 2 * q)
+                ds, lane = 38 * e, base[1] + 5.5 * min(1.0, q * 2.2)
+            elif u <= 330:
+                q = u / 330
+                e = q * q * (3 - 2 * q)
+                ds, lane = 38 * (1 - e), base[1] + 5.5 * (1 - min(1.0, q * 1.6))
+            wob *= 0.3
+        s = u + base[0] + ds + wob
+        x, y, hd = at(s, lane)
+        if prev is not None:                                             # 向きを つなげる（359° → 1° で 回らない ように）
+            while hd - prev > 180:
+                hd -= 360
+            while hd - prev < -180:
+                hd += 360
+        prev = hd
+        rows.append((i / n * 100, f'transform:translate({f(x - 13 * HS, 1)}px,{f(y - 7 * HS, 1)}px) rotate({f(hd, 1)}deg)'))
+    return rows
+
+
+def ripple_svg():
+    return doc(30, 14, "<ellipse cx='15' cy='7' rx='13' ry='6' fill='none' stroke='#FFFFFF' stroke-width='1.2'/>")
+
+
+def cloud_svg(w=150, h=70, seed=2):
+    """雲の かげ（ぼんやり 暗い）"""
+    R0 = rnd(seed)
+    o = "<defs><filter id='b' x='-30%' y='-30%' width='160%' height='160%'><feGaussianBlur stdDeviation='7'/></filter></defs><g filter='url(#b)' fill='#0E2A10' opacity='.16'>"
+    for i in range(6):
+        o += f"<ellipse cx='{f(w * 0.2 + i * w * 0.12 + R0.uniform(-6, 6))}' cy='{f(h / 2 + R0.uniform(-8, 8))}' rx='{f(R0.uniform(18, 30))}' ry='{f(R0.uniform(12, 20))}'/>"
+    return doc(w, h, o + '</g>')
+
+
+# ---------------------------------------------------------------- 上の絵（HTML と CSS）
+def banner(B):
+    still = B.get('still')
+    alt = ('真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド、まわりに木。'
+           'いろいろな勝負服の8頭の馬群が芝コースを周回して、ゴール前で黄色の勝負服の馬が抜け出す')
+    hw, hh = 26 * HS, 14 * HS
+    html = f'<div class="csw" role="img" aria-label="{alt}">'
+    html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
+    html += img('csG', ground_svg())
+    html += img('csRp a', ripple_svg()) + img('csRp b', ripple_svg())
+    for k, (silk, sleeve, cap, coat) in enumerate(SILKS):
+        html += f'<i class="csH h{k}"><b style="background-image:url(&quot;{durl(horse_sheet(silk, sleeve, cap, coat))}&quot;)"></b></i>'
+    html += img('csCl a', cloud_svg(150, 70, 2)) + img('csCl b', cloud_svg(120, 60, 7))
+    html += '</div>'
+    css = ('.csw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#4E9A4A}'
+           '.csw>*{position:absolute;display:block}'
+           '.csw .bnr,.csw .csG{left:0;top:0;width:390px;height:160px}'
+           f'.csw .csH{{left:0;top:0;width:{f(hw)}px;height:{f(hh)}px;will-change:transform}}'
+           f'.csw .csH>b{{display:block;width:{f(hw)}px;height:{f(hh)}px;background-size:{f(2 * hw)}px {f(hh)}px;background-repeat:no-repeat;animation:csGal .26s steps(1) infinite}}'
+           '.csw .csRp{left:139px;top:65px;width:30px;height:14px;opacity:0;animation:csRip 3.2s ease-out infinite}'
+           '.csw .csRp.b{animation-delay:-1.6s}'
+           '.csw .csCl{top:0;left:0;will-change:transform}'
+           '.csw .csCl.a{width:150px;height:70px;animation:csCa 46s linear infinite}'
+           '.csw .csCl.b{width:120px;height:60px;animation:csCb 46s linear -23s infinite}')
+    for k in range(len(SILKS)):
+        css += f'.csw .csH.h{k}{{animation:csR{k} {f(LAP)}s linear infinite}}.csw .csH.h{k}>b{{animation-delay:{f(-0.07 * k, 2)}s}}'
+        css += kf(f'csR{k}', keys_for(k))
+    css += (kf('csGal', [(0, 'background-position:0 0'), (50, f'background-position:{f(-hw)}px 0'), (100, 'background-position:0 0')])
+            + kf('csRip', [(0, 'opacity:.85;transform:scale(.25)'), (100, 'opacity:0;transform:scale(1.25)')])
+            + kf('csCa', [(0, 'transform:translate(-160px,10px)'), (100, 'transform:translate(400px,60px)')])
+            + kf('csCb', [(0, 'transform:translate(-130px,70px)'), (100, 'transform:translate(400px,20px)')]))
+    css += reduced('.csw .csG,.csw .csRp,.csw .csH,.csw .csCl') if still else ''
+    return html, css
+
+
+# ================================================================== 色・字・形（themes20 と 同じ 形）
+def tile_turf():
+    """背景の もよう：芝の 刈った すじ（ななめ）と 小さな 蹄の あと（うすく）"""
+    o = ("<rect width='60' height='60' fill='none'/>"
+         "<path d='M-10 30 L30 -10 M0 60 L60 0 M30 70 L70 30' stroke='#DDEBD6' stroke-width='14' opacity='.55'/>")
+    for x, y, a in ((14, 44, -20), (44, 18, 25)):
+        o += (f"<g transform='translate({x} {y}) rotate({a})' opacity='.28'><path d='M-3.4 2.6 C-4.4 -1 -2.6 -4 0 -4 C2.6 -4 4.4 -1 3.4 2.6 L2.2 2 C2.8 -.6 1.8 -2.6 0 -2.6 "
+              "C-1.8 -2.6 -2.8 -.6 -2.2 2 Z' fill='#6E8F62'/></g>")
+    return tile(60, 60, o)
+
+
+def rail_strip():
+    """上の 帯の 下の ふちの 白い ラチ（柵：横木と 柱）"""
+    o = ("<rect y='1' width='14' height='2.6' fill='#FFFFFF'/><rect y='3.4' width='14' height='.8' fill='#9FB79A'/>"
+         "<rect x='5.5' y='1' width='2.4' height='7' fill='#FFFFFF'/><rect x='5.5' y='7' width='2.4' height='1' fill='#9FB79A'/>")
+    return tile(14, 8, o)
+
+
+def orn():
+    """すみの 飾り（44×44）：ゴール板（赤と 白の 丸い 札）と 白い 柵"""
+    return ("<path d='M22 14 V41' stroke='#8A949E' stroke-width='2.4' stroke-linecap='round'/>"
+            "<circle cx='22.8' cy='15.4' r='12.6' fill='#1E3A1E' opacity='.25'/>"
+            "<circle cx='22' cy='14' r='12.6' fill='#FFFFFF' stroke='#C9CED4' stroke-width='1'/><circle cx='22' cy='14' r='9.6' fill='#E23B3B'/>"
+            "<circle cx='22' cy='14' r='4.6' fill='#FFFFFF'/><circle cx='22' cy='14' r='1.8' fill='#E23B3B'/>"
+            "<path d='M2 34 H42 M2 39 H42' stroke='#FFFFFF' stroke-width='2.4' stroke-linecap='round'/>"
+            "<path d='M8 32 V42 M36 32 V42' stroke='#FFFFFF' stroke-width='2.4' stroke-linecap='round'/>")
+
+
+THEME = dict(
+    id=ID, cat=7, name='競馬場', desc='上から見たコース', title='競馬場（芝の緑×白いラチ×ゴール板の赤）', banner=ID,
+    alt='真上から見た競馬場のイラスト。白い柵の芝コースと内がわのダートコース、まん中の芝生に池と蹄鉄の形の花だん、下にスタンド。いろいろな勝負服の馬群が周回して、ゴール前で黄色の勝負服の馬が抜け出す',
+    fonts=['Train+One', 'M+PLUS+1:wght@500;700'],
+    v=dict(bg='#EEF5EA', ink='#17301C', sub='#4D6A50', card='#FFFFFF', cardB='1.5px solid #CFE3C8', cardO='0 solid transparent', cardS='0 3px 0 #DCEBD5',
+           radius='14px', rs='10px', font='"M PLUS 1"', dfont='"Train One"', dw='400', logo='#FFFFFF', logoS='0 2px 0 #14401E',
+           iii='#FFFFFF', iiiB='0 solid transparent', iiiR='2px', hd='linear-gradient(180deg,#2F8A44,#23733A)', hdInk='#FFFFFF', hdB='0 solid transparent',
+           mBg='rgba(0,0,0,.14)', mLine='rgba(255,255,255,.55)', mInk='#FFFFFF', pill='rgba(0,0,0,.16)', pillLine='rgba(255,255,255,.35)', pillInk='#FFFFFF',
+           coin='#E23B3B', coinInk='#FFFFFF', badge='#EAF5E6', badgeInk='#1E6A34', badgeB='1.5px solid #CFE3C8', tagBg='#F1F8EE', tagInk='#25552E',
+           tagLine='#CFE3C8', warnBg='#FCE6E4', warnInk='#A8231B', zBg='#F8FCF6', zB='1.5px solid #E2EFDC', znBg='#D33A30', znInk='#FFFFFF',
+           znB='0 solid transparent', znR='999px', znS='none', acc='#1E6A34', nR='7px', w2B='0 solid transparent', sep='1.5px dashed #CFE3C8',
+           btn='#23733A', btnInk='#FFFFFF', btnB='0 solid transparent', btnR='999px', btnS='0 3px 0 #164D26', btn2='#FFFFFF', btn2Ink='#1E6A34',
+           btn2B='1.5px solid #A9CF9E', tab='#FFFFFF', tabB='1px solid #CFE3C8', tabInk='#4D6A50', tabOn='#E3F2DE', tabOnInk='#1E6A34', tabR='14px',
+           sel='#23733A', selInk='#FFFFFF', h1='#1E6A34'),
+    chk=dict(hd=['#2F8A44', '#23733A']),
+    css=[('', 'background-image:' + curi(tile_turf()) + ';background-size:60px 60px'),
+         ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-8px;height:8px;background:' + curi(rail_strip()) + ' 0 0/14px 8px repeat-x'),
+         ('.card::before', 'content:"";position:absolute;left:14px;right:14px;top:0;height:3px;border-radius:0 0 3px 3px;background:repeating-linear-gradient(90deg,#E23B3B 0 10px,#FFFFFF 10px 20px);opacity:.85')],
+    orn=orn(),
+    guide=dict(colors=[('#23733A', '芝'), ('#FFFFFF', 'ラチ'), ('#D33A30', 'ゴール板'), ('#C8A272', 'ダート'), ('#EEF5EA', '背景')],
+               fonts='見出し：Train One<br>本文：M PLUS 1', shape='角丸14px・丸いボタン・帯の下に 白い ラチ・芝の すじの 背景・カードの 上に 赤白の しま・すみに ゴール板・的中ボタンは 上から 見た コースの PUSH',
+               pic='真上から 見た 競馬場：芝コース・ダートコース・池と 蹄鉄の 花だん・スタンド・木・8頭の 馬群（ゴール前で 黄色の 勝負服の 馬が 抜け出す）'),
+)
+
+
+# ================================================================== 的中ボタン：上から 見た コースの PUSH（cs）
+def _st(r):
+    x0, x1, yc = 50, 150, 50
+    return f'M{x0} {yc - r} H{x1} A{r} {r} 0 0 1 {x1} {yc + r} H{x0} A{r} {r} 0 0 1 {x0} {yc - r} Z'
+
+
+def push_face(sfx=''):
+    """ボタン（200×100）が 上から 見た コース：外の 芝の 帯（白い ラチ）・内の ダート・まん中の 芝生（すじ）・ゴール板"""
+    o = f'<path d="{_st(50)}" fill="#4E9A4A"/><path d="{_st(48)}" fill="#86CC72"/><path d="{_st(36)}" fill="#C8A272"/><path d="{_st(28)}" fill="#5DAF54"/>'
+    for k in range(9):
+        x = 26 + k * 18
+        o += f'<path d="M{x} 22 L{x + 10} 78" stroke="#67B95C" stroke-width="8" opacity=".9"/>'
+    for r, w in ((48, 2.4), (36, 2), (28, 1.8)):
+        o += f'<path d="{_st(r)}" fill="none" stroke="#FFFFFF" stroke-width="{w}"/>'
+    o += ('<path d="M138 86 V98" stroke="#FFFFFF" stroke-width="2.4"/>'
+          '<circle cx="138" cy="80" r="5.6" fill="#FFFFFF"/><circle cx="138" cy="80" r="4.2" fill="#E23B3B"/><circle cx="138" cy="80" r="1.8" fill="#FFFFFF"/>')
+    clip = f'<clipPath id="csC{sfx}"><path d="{_st(50)}"/></clipPath>'
+    return (f'<i class="csf" aria-hidden="true"><svg viewBox="0 0 200 100" width="200" height="100"><defs>{clip}</defs>'
+            f'<g clip-path="url(#csC{sfx})">{o}</g></svg></i>')
+
+
+def push_decor(sfx=''):
+    """コースの まわりを 小さな 馬（真上から）が 3頭 ぐるぐる 回る（.csrun）"""
+    return '<i class="csd" aria-hidden="true">' + ''.join(f'<b class="csrun r{k}"><i style="background-image:url(&quot;{durl(horse_sheet(*SILKS[j]))}&quot;)"></i></b>' for k, j in enumerate((4, 2, 3))) + '</i>'
+
+
+def _push_keys(n=48):
+    """PUSH の まわりの 道（ボタンの 外の だ円）を 左回りに 1周"""
+    rows, prev = [], None
+    for i in range(n + 1):
+        a = -2 * math.pi * i / n
+        x, y = 100 + 116 * math.cos(a), 50 + 64 * math.sin(a)
+        hd = math.degrees(math.atan2(-64 * math.cos(a), 116 * math.sin(a)))
+        if prev is not None:
+            while hd - prev > 180:
+                hd -= 360
+            while hd - prev < -180:
+                hd += 360
+        prev = hd
+        rows.append((i / n * 100, f'transform:translate({f(x - 19.5, 1)}px,{f(y - 10.5, 1)}px) rotate({f(hd, 1)}deg)'))
+    return rows
+
+
+def _shoe(c1='#F2C14E', c2='#8A5A14'):
+    so, si = [], []
+    for k in range(25):
+        a = math.radians(-205 + 230 * k / 24)
+        so.append((12 + math.cos(a) * 10, 12 - math.sin(a) * 10.6))
+        si.append((12 + math.cos(a) * 6, 12 - math.sin(a) * 6.6))
+    return doc(24, 24, f"<path d='{P(so + si[::-1])}' fill='{c1}' stroke='{c2}' stroke-width='1.2'/>")
+
+
+def _clod():
+    return doc(20, 16, "<path d='M2 10 C2 4 8 2 12 3 C17 4 19 8 18 11 C17 14 12 15 8 14 C4 14 2 13 2 10 Z' fill='#7A5A32'/><path d='M4 6 L3 1 M8 4 L8 0 M12 4 L14 0 M16 6 L18 2' stroke='#4E9A4A' stroke-width='2' stroke-linecap='round'/>")
+
+
+def _flag():
+    o = "<path d='M3 1 V22' stroke='#8A949E' stroke-width='1.6' stroke-linecap='round'/>"
+    for i in range(4):
+        for j in range(3):
+            o += f"<rect x='{4 + i * 4}' y='{2 + j * 4}' width='4' height='4' fill='{'#1E1E24' if (i + j) % 2 == 0 else '#FFFFFF'}'/>"
+    return doc(22, 24, o)
+
+
+PIECES = dict(sh=piece(_shoe()), cl=piece(_clod()), fl=piece(_flag()), rs='border-radius:50% 0 50% 50%;background:radial-gradient(circle at 40% 40%,#FF8FA8,#E23B5A 70%)')
+
+
+def push_burst():
+    return fly_burst('cs', ['sh', 'cl', 'fl', 'sh', 'rs', 'cl'], 28, 52, sizes=dict(sh=(15, 20), cl=(13, 17), fl=(16, 21), rs=(8, 11)))
+
+
+PUSH_CSS = r'''
+/* ---------- 競馬場の的中ボタン：上から見たコースのPUSH（壁紙パック） ----------
+   ボタンが まるごと 上から 見た コース（外の 芝の 帯と 白い ラチ・ダート・まん中の 芝生の すじ・ゴール板）。まわりを 小さな 馬 3頭が ぐるぐる 回る。
+   上下の 動きは 的中と 同じ。押すと コースが ちぢんで ふくらみ（強く 光らせない）、蹄鉄・芝の かたまり・チェッカーの 旗・バラが はじけて 落ち、白い 光の 輪が 広がる */
+.cs{--pushA:#4E9A4A;--pushB:#164D26;--pushC:#86CC72;--rim:#FFFFFF;--rimD:#164D26}
+.push.cs{--pr:50px;border-radius:50px;background:#4E9A4A;box-shadow:0 0 0 3px #FFFFFF,0 7px 0 3px #164D26,0 20px 28px rgba(0,30,0,.4)}
+.push.cs span{font:400 42px/1 "Train One",sans-serif;letter-spacing:.06em;color:#FFFFFF;text-shadow:0 2px 0 #164D26,0 0 10px rgba(255,255,255,.4)}
+.push.cs::after{border-radius:70px;border-color:rgba(255,255,255,.9)}
+.cs .csf{position:absolute;left:0;top:0;width:200px;height:100px;border-radius:50px;overflow:hidden;pointer-events:none;font-style:normal}
+.cs .csf svg{display:block;width:200px;height:100px}
+.cs .csd{position:absolute;left:0;top:0;width:200px;height:100px;pointer-events:none;z-index:3;font-style:normal}
+.cs .csrun{position:absolute;left:0;top:0;width:39px;height:21px;animation:csRun 5.4s linear infinite}
+.cs .csrun>i{display:block;width:39px;height:21px;background-size:78px 21px;background-repeat:no-repeat;animation:csPg .26s steps(1) infinite}
+.cs .csrun.r1{animation-delay:-1.8s}.cs .csrun.r2{animation-delay:-3.6s}
+@keyframes csPg{0%{background-position:0 0}50%{background-position:-39px 0}100%{background-position:0 0}}
+.pshadow.cs{width:210px}
+.tap.cs{font-family:"Train One",sans-serif;font-weight:400;color:#E9F8E2;letter-spacing:.12em;text-shadow:0 2px 0 #164D26,0 0 10px rgba(255,255,255,.5)}
+.pressed.cs{border-radius:50px;background:#4E9A4A;box-shadow:0 0 0 3px #FFFFFF,0 7px 0 3px #164D26;animation-name:csPress,fxH}
+@keyframes csPress{0%{transform:scale(1)}22%{transform:scale(.92)}45%{transform:scale(1.06)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
+@media (prefers-reduced-motion:reduce){.cs .csrun,.cs .csrun>i{animation:none}.cs .csd,.clips.cs{display:none}}
+''' + kf('csRun', _push_keys()) + '\n' + fly_css('cs', 'rgba(255,255,255,.9)', PIECES)
+
+PUSH = dict(code='cs', face=push_face, decor=push_decor, burst=push_burst, css=PUSH_CSS)

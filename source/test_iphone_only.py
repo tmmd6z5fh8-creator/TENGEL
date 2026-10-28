@@ -43,9 +43,9 @@ check('__nativeEvent' in wv and 'Store.shared.start()' in wv, 'App内課金の�
 mk = nocom(open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Markers.swift'), encoding='utf8').read())
 check('kSecAttrSynchronizable' in mk and 'kSecClassGenericPassword' in mk and 'ThisDeviceOnly' not in mk, 'キーチェーンのしるしは iCloudキーチェーンで同期する形')
 st = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Store.swift'), encoding='utf8').read()
-for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200', 'boardcustom'):
+for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200', 'boardcustom', 'wallpack1'):
     check(f'"jp.tengel.app.{pid}"' in st, f'App内課金の商品ID：jp.tengel.app.{pid}')
-check('static let unlockIDs = ["jp.tengel.app.boardcustom"]' in st and 'packIDs + subIDs + unlockIDs' in st and 'return "unlock"' in st and 'case "current": return ["ok": true, "list": await current()]' in st, '第4.91版：結果ボードカスタム（非消耗型・買い切り）：商品の 一覧に 入る・取引の 種類は unlock・いま 有効な もの（current）を Webの 画面に 渡す')
+check('static let unlockIDs = ["jp.tengel.app.boardcustom", "jp.tengel.app.wallpack1"]' in st and 'packIDs + subIDs + unlockIDs' in st and 'return "unlock"' in st and 'case "current": return ["ok": true, "list": await current()]' in st, '第4.91版：結果ボードカスタム・第4.92版：壁紙パック（非消耗型・買い切り）：商品の 一覧に 入る・取引の 種類は unlock・いま 有効な もの（current）を Webの 画面に 渡す')
 check('Transaction.updates' in st and 'Transaction.unfinished' in st and 'AppStore.sync()' in st and '.finish()' in st, 'StoreKit 2：取引の更新・終わっていない取引・購入を復元・終わらせる')
 # build_ios.py が作る Package.swift
 out = tempfile.mkdtemp()
@@ -97,7 +97,10 @@ if r.returncode == 0:
     ks_json = [f for f in res if _re.fullmatch(r'ks_[a-z]+\.json', f)]
     check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sakura\\"]' in html and "@font-face{font-family:'Kaisei Decol'" in html and 'fonts/KaiseiDecol-700.woff2' in html,
           'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
-    check(len(ks_json) == 30 and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')), f'テーマごとの ks_<id>.json が 30こ と 定番4の止まった絵（{len(ks_json)}）')
+    sys.path.insert(0, os.path.join(W, 'kisekae')); import pack as _pack
+    n_ks = 30 + len(_pack.IDS)                                           # 第4.92版：壁紙パックの 11枚
+    check(len(ks_json) == n_ks and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')) and all(f'ks_{t}.json' in res for t in _pack.IDS),
+          f'テーマごとの ks_<id>.json が {n_ks}こ（30＋壁紙パック {len(_pack.IDS)}）と 定番4の止まった絵（{len(ks_json)}）')
     rsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_ranch.svg'), encoding='utf8').read(); gsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_gold.svg'), encoding='utf8').read()
     check('*{animation:none!important}</style>' in rsvg and '*{animation:none!important}</style>' in gsvg and '.kslive{' in html and '.kslv{' in html and 'rescope' in html and 'rbwSvg' in html and 'mask-type:alpha' in html,
           '第4.89版：選ぶ画面の 牧場・ぷりけつの 小さな絵は 止めた SVG・選んだ タイルだけ 動く 壁紙（.kslive）・形の ある PUSH の 虹は SVG の 中（rbwSvg・mask）')
@@ -136,7 +139,8 @@ if r.returncode == 0:
     need_b = set(_bf.body_chars()) - have_b
     check(not need_b, f'しぼった字に 画面の言葉が ぜんぶ入っている（足りない字 {len(need_b)}：{"".join(sorted(need_b))[:30]}）→ 足りなければ python3 kisekae/build_fonts.py')
     ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
-    check(len(ks_imgs) in (0, 99) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 99), f'着せ替えの絵：手元にあれば99こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ）')
+    n_pk = len({v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()})   # 第4.92版：壁紙パックの 絵（馬の コマの シート・止まった 絵：pack/blobs.json）
+    check(len(ks_imgs) in (0, 99 + n_pk) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 99 + n_pk), f'着せ替えの絵：手元にあれば99こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')

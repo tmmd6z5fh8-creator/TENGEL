@@ -38,7 +38,10 @@ FOLDER = {'BIZ UDPMincho': 'bizudpmincho', 'Cherry Bomb One': 'cherrybombone', '
           'Potta One': 'pottaone', 'Rampart One': 'rampartone', 'Reggae One': 'reggaeone', 'RocknRoll One': 'rocknrollone', 'Shippori Mincho': 'shipporimincho',
           'Shippori Mincho B1': 'shipporiminchob1', 'Tsukimi Rounded': 'tsukimirounded', 'Yomogi': 'yomogi', 'Yuji Mai': 'yujimai', 'Yuji Syuku': 'yujisyuku',
           'Yusei Magic': 'yuseimagic', 'Zen Antique Soft': 'zenantiquesoft', 'Zen Kaku Gothic New': 'zenkakugothicnew', 'Zen Maru Gothic': 'zenmarugothic',
-          'Zen Old Mincho': 'zenoldmincho'}
+          'Zen Old Mincho': 'zenoldmincho',
+          # 第4.92版：壁紙パックの 見出しの 字（海賊・競馬場・パドック・恐竜時代・切り絵・浮世絵風 など）
+          'Zen Antique': 'zenantique', 'Train One': 'trainone', 'Stick': 'stick', 'Kaisei HarunoUmi': 'kaiseiharunoumi', 'Yuji Boku': 'yujiboku',
+          'Zen Kurenaido': 'zenkurenaido', 'Shippori Antique B1': 'shipporiantiqueb1'}
 WNAME = {100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black'}
 IN_APP = ('BIZ UDPGothic', 'Dela Gothic One')   # もうアプリに入っている（ios/fonts・丸ごと）
 

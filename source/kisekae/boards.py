@@ -116,7 +116,7 @@ def _new_themes():
 THEMES_ALL = _old_themes() + _new_themes()
 BY_ID = {t['id']: t for t in THEMES_ALL}
 # キャンバスと同じ並び：定番 → 季節・行事 → 競馬 → 和・アート → 帯（ミッション）→ レトロ・ポップ
-CAT_ORDER = [1, 2, 3, 4, 6, 5]
+CAT_ORDER = [1, 2, 3, 4, 6, 5, 7]          # 7：壁紙パック（第4.92版）
 ORDERED = [t for c in CAT_ORDER for t in THEMES_ALL if t['cat'] == c]
 
 

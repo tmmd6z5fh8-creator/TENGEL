@@ -274,6 +274,23 @@
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       res.tengel = { ks: document.documentElement.dataset.ks, bg: getComputedStyle(document.body).backgroundColor, anims: (document.querySelector('#ksBnr') || { getAnimations: function () { return []; } }).getAnimations({ subtree: true }).length, scrollW: document.documentElement.scrollWidth };
       await mark('ks-tengel');
+      // 第4.92版：壁紙パック（買い切り・11枚）。いちばん 上の 組・買う 箱（買う 前）。絵の 部品（SVG）は アプリの 中に ある ので CI でも 動く（馬の コマと 止まった 絵は 404）
+      if (K.pack) {
+        var pk = K.pack();
+        document.querySelector('.tabbar [data-tab=set]').click(); await sleep(400);
+        var kc = document.querySelector('#setKisekae');
+        res.pack = { ids: pk.ids, n: pk.ids.length, owned: pk.owned, first: kc && kc.querySelector('h3.ksg') ? kc.querySelector('h3.ksg').firstChild.textContent : null, buy: !!(kc && kc.querySelector('.kspk [data-ksact=pkbuy]')),
+          usable: pk.ids.length ? K.usable(pk.ids[0]) : null };
+        if (kc && kc.querySelector('.kspk')) { kc.querySelector('.kspk').scrollIntoView({ block: 'start' }); await sleep(300); }
+        await mark('ks-pack');
+        if (pk.ids.length) {
+          await K.apply(pk.ids[0]); await sleep(900);
+          document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(500);
+          var pb = document.querySelector('#ksBnr');
+          res.pack.wall = { ks: document.documentElement.dataset.ks, anims: pb ? pb.getAnimations({ subtree: true }).length : -1, imgs: pb ? pb.querySelectorAll('img').length : -1, scrollW: document.documentElement.scrollWidth };
+          await mark('ks-pack-wall');
+        }
+      }
       await K.apply('default'); await sleep(400);
       res.back = { ks: document.documentElement.dataset.ks || null, bnrHidden: (document.querySelector('#ksBnr') || {}).hidden };
       return res;

@@ -116,5 +116,30 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(rf.id === 'refund-700' && rf.amount === 0 && !P.boardOwned(ev) && P.balance(ev, D('2026-11-07')).total === 1500, '返金 → 持って いない（ポイントは そのまま）');
   check(P.wallCount(ev) === 0 && !P.unlocked(ev, 'board'), '壁紙の 枚数・ポイントの 解放には 数えない');
 }
+{
+  console.log('壁紙パック（第4.92版：買い切り 1,500円・11枚・読み込み 5レースごとに 1枚・帯の ミッションに 数える）');
+  const D = s => new Date(s + 'T12:00:00+09:00').toISOString();
+  const T0 = D('2026-11-10');
+  const tx = (id, product, date) => ({ id, originalId: 'o' + id, product, date: D(date) });
+  const Pd = P.PRODUCTS['jp.tengel.app.wallpack1'];
+  check(Pd && Pd.kind === 'unlock' && Pd.what === 'wallpack' && Pd.yen === 1500 && Pd.points === 0 && P.WALLPACK.product === 'jp.tengel.app.wallpack1' && P.WALLPACK.every === 5 && P.WALLPACK.n === 11, '商品：jp.tengel.app.wallpack1（買い切り・1,500円・5レースごと・11枚）');
+  check(P.PACKS.indexOf('jp.tengel.app.wallpack1') < 0 && P.SUBS.indexOf('jp.tengel.app.wallpack1') < 0, 'ポイントの パック・サブスクの 一覧には 入らない');
+  let ev = [P.giftEvent(T0)];
+  check(!P.packOwned(ev) && !P.boardOwned(ev), '買う 前は 持って いない');
+  const pt = P.txEvent(ev, tx('800', 'jp.tengel.app.wallpack1', '2026-11-10'));
+  ev.push(pt);
+  check(pt.id === 'tx-800' && pt.kind === 'unlock' && pt.what === 'wallpack' && pt.amount === 0 && P.packOwned(ev) && !P.boardOwned(ev), '買うと tx-800（unlock・wallpack・0P）で 持って いる（結果ボードカスタムとは 別）');
+  check(P.txEvent(ev, tx('800', 'jp.tengel.app.wallpack1', '2026-11-10')) === null, '同じ 取引は 2回 足さない');
+  check(P.balance(ev, T0).total === 1500, 'ポイントは 増えも 減りも しない');
+  check([0, 4, 5, 9, 10, 25, 49, 50, 54, 55, 99].map(P.packUnlocked).join() === '0,0,1,1,2,5,9,10,10,11,11', '解放の 数（5レースごとに 1枚・55で 11枚・それ以上は 11）');
+  const nx = P.packNext(7);
+  check(nx.no === 2 && nx.need === 10 && nx.left === 3 && nx.from === 5 && P.packNext(0).no === 1 && P.packNext(0).left === 5 && P.packNext(55) === null, 'つぎ：7レース → 2枚目まで あと3（10）・全部 解放なら なし');
+  check(P.wallCount(ev) === 0 && P.wallCount(ev, 3) === 3 && P.wallCount(ev, 0) === 0, '帯の ミッションの 枚数：パックで 解放した 枚数を 足す');
+  const ev2 = ev.concat([{ id: 'unlock-theme:sakura', kind: 'unlock', bucket: '', amount: -1000, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 1000 }, what: 'theme:sakura' }]);
+  check(P.wallCount(ev2, 7) === 8 && P.wallMissions(P.wallCount(ev2, 7), ev2)[0].claimable, 'ポイントの 1枚 ＋ パックの 7枚 ＝ 8枚 → シルバー帯が 受け取れる');
+  const rf = P.refundEvent(ev, { id: '800', revokedAt: D('2026-11-11') });
+  ev.push(rf);
+  check(rf.id === 'refund-800' && !P.packOwned(ev) && P.balance(ev, D('2026-11-11')).total === 1500, '返金 → 持って いない（ポイントは そのまま）');
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

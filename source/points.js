@@ -15,7 +15,9 @@
     'jp.tengel.app.sub4400': { kind: 'sub', points: 4400, bonus: 400, name: '月4,400Pプラン', yen: 1276 },
     'jp.tengel.app.sub9200': { kind: 'sub', points: 9200, bonus: 1000, name: '月9,200Pプラン', yen: 1914 },
     // 第4.91版：結果ボードカスタム（買い切り・非消耗型）。1回 買えば ずっと（機種変更・入れ直しは「購入を復元」）
-    'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 2200 }
+    'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 2200 },
+    // 第4.92版：壁紙パック（買い切り・非消耗型）。新しい 壁紙 11枚。買った あとに 読み込んだ レース 5つごとに 1枚ずつ 解放（ポイントでは 買えない）
+    'jp.tengel.app.wallpack1': { kind: 'unlock', what: 'wallpack', points: 0, bonus: 0, name: '壁紙パック', yen: 1500 }
   };
   var PACKS = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points2000', 'jp.tengel.app.points4000'];
   var SUBS = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400', 'jp.tengel.app.sub9200'];
@@ -165,16 +167,17 @@
   function has(events, id) { return (events || []).some(function (e) { return e && e.id === id; }); }
 
   // ---- 結果ボードカスタム（第4.91版）----
-  // 買った（取引の できごと tx-… の unlock・what＝board）か。返金（refund-<取引>）が あれば 買って いない
-  function boardOwned(events) {
+  // 買った（取引の できごと tx-… の unlock・what＝board／wallpack）か。返金（refund-<取引>）が あれば 買って いない
+  function owned(events, what) {
     var es = events || [], own = false;
     es.forEach(function (e) {
-      if (!e || e.kind !== 'unlock' || e.what !== 'board') return;
+      if (!e || e.kind !== 'unlock' || e.what !== what) return;
       if (e.tx && es.some(function (r) { return r && r.id === 'refund-' + e.tx; })) return;
       own = true;
     });
     return own;
   }
+  function boardOwned(events) { return owned(events, 'board'); }
   // 読み込んだ レースの 数 → 解放した 数（0〜21）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
   // つぎに 解放する もの（全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
@@ -182,6 +185,17 @@
     var n = boardUnlocked(reads); if (n >= BOARD_ITEMS.length) return null;
     var it = BOARD_ITEMS[n];
     return { item: it, need: it.need, left: it.need - (+reads || 0), from: n ? BOARD_NEED[n - 1] : 0 };
+  }
+  // 壁紙パック（第4.92版・まさちゃんの 指定）：買い切り 1,500円・11枚。買った あとに 読み込んだ レース（200P で 読んだ 1レース・読み直しと 5連の 予想は 数えない）
+  //   5つごとに 1枚ずつ 解放（55レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（8・16・25枚）の 枚数に 数える
+  var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 11 };
+  function packOwned(events) { return owned(events, 'wallpack'); }
+  function packUnlocked(reads) { return Math.min(WALLPACK.n, Math.floor((+reads || 0) / WALLPACK.every)); }
+  // つぎに 解放する 1枚（全部 解放ずみ なら null）：{ no（1〜11）, need（その 読み込みの 数）, left（あと いくつ）, from（ひとつ前の 数）}
+  function packNext(reads) {
+    var n = packUnlocked(reads); if (n >= WALLPACK.n) return null;
+    var need = (n + 1) * WALLPACK.every;
+    return { no: n + 1, need: need, left: need - (+reads || 0), from: n * WALLPACK.every };
   }
   // 出世馬の 飾りの 段（第4.91版・まさちゃんの 指定）：1回目＝クラッカーと花束・2回目＝金メダルとスポットライト・3回目＝トロフィーと金粉・
   //   4〜7回目＝黄金の どでかい冠と 金の 札束（大量）・8回目から＝幻の 馬（咆哮・ボードが 飛んで いく・暗い 雷 3秒 → ボードが もどる）→ 冠と 札束
@@ -214,8 +228,8 @@
     return [mk('mission-wall-' + m.n, 'mission', 'free', 0, iso(now), { what: m.label, theme: m.theme }),
       mk('unlock-theme:' + m.theme, 'unlock', '', 0, iso(now), { use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:' + m.theme, device: device || 'x' })];
   }
-  // ポイントで解放した壁紙の枚数（帯の壁紙は数えない）
-  function wallCount(events) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)); }).length; }
+  // 解放した壁紙の枚数（ポイントで 解放した 壁紙 ＋ 壁紙パックで 解放した 枚数 packN。帯の壁紙は数えない）
+  function wallCount(events, packN) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)); }).length + Math.max(0, Math.floor(+packN || 0)); }
 
   // ---- レースの見分け方（読み直し0P・ミッションの数え方）----
   function vnorm(v) { return String(v || '').normalize('NFKC').replace(/\s/g, '').replace(/(競馬場|競馬)$/, ''); }
@@ -233,7 +247,8 @@
 
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
-    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, riseTier: riseTier,
+    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, riseTier: riseTier, owned: owned,
+    WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

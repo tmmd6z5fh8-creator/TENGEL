@@ -403,6 +403,15 @@ BURSTS = dict(xm=xm_burst, hw=hw_burst, vl=vl_burst, wd=wd_burst)
 CSS = dict(xm=XM_CSS, hw=HW_CSS, vl=VL_CSS, wd=WD_CSS)
 
 
+# 壁紙パック（第4.92版）の 的中ボタン（pack/<id>.py の PUSH）も ここに 足す（gen_fx・build_kisekae は CODES・FACES・BURSTS・CSS を 見る）
+import pack as _pack  # noqa: E402
+for _c, _p in _pack.push_codes().items():
+    FACES[_c] = (_p['face'], _p['decor'])
+    BURSTS[_c] = _p['burst']
+    CSS[_c] = _p['css']
+CODES = tuple(CODES) + tuple(c for c in _pack.push_codes() if c not in CODES)
+
+
 def push_svg(code, sfx=''):
     face, decor = FACES[code]
     return face(sfx) + decor(sfx)

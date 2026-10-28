@@ -22,6 +22,7 @@ if K not in sys.path:
 import boards  # noqa: E402
 import build_fx as BF  # noqa: E402
 from themes20 import THEMES as T20  # noqa: E402
+import pack as PK  # noqa: E402
 
 THEMES_ALL = boards.THEMES_ALL
 BY_ID = boards.BY_ID
@@ -37,7 +38,9 @@ for _p, _ids in ((1000, ('sakura', 'sea', 'autumn', 'snow', 'newyear')), (2000, 
 BAND = dict(silver=8, golden=16, tengel=25)             # 帯の壁紙：ポイントで解放した壁紙の枚数（8.3）
 PAID = sorted(PRICE)                                     # ポイントで解放する 26枚
 assert len(PAID) == 26 and sum(PRICE.values()) == 82000, (len(PAID), sum(PRICE.values()))
-GROUPS = [('定番', ['default', 'ranch', 'cute', 'kids', 'gold']),
+# 第4.92版：壁紙パック（買い切り 1,500円・11枚・pack/）は いちばん上の 組（買う ボタンと 解放の 進み具合は kisekae.js が 組の 上に 出す）
+GROUPS = [('壁紙パック', list(PK.IDS)),
+          ('定番', ['default', 'ranch', 'cute', 'kids', 'gold']),
           ('季節・行事', ['sakura', 'sea', 'sunset', 'autumn', 'snow', 'newyear', 'fireworks', 'xmas', 'halloween', 'valentine', 'whiteday']),
           ('競馬', ['night', 'news', 'silks', 'lucky']),
           ('和・アート', ['ink', 'marble']),
@@ -304,6 +307,26 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #setKisekae .kst .ksconf .btn.ghost{min-height:28px;font-size:11.5px;color:var(--muted)}
 @keyframes ksCf{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 #setKisekae .ksnums{display:flex;align-items:center;gap:5px;margin-top:8px;flex-wrap:wrap}
+/* 壁紙パック（第4.92版）：組の 見出しの 下の 買う 箱・解放の 進み具合 */
+#setKisekae .kspk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin:0 0 10px;padding:10px 12px;border:1.5px solid var(--primary);border-radius:12px;background:var(--surface)}
+#setKisekae .kspk.on{grid-template-columns:minmax(0,1fr)}
+#setKisekae .kspkt b{display:block;font-size:14px;font-weight:700;line-height:1.3}
+#setKisekae .kspkt small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted);line-height:1.35}
+#setKisekae .kspk .btn.primary{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
+#setKisekae .kspkn{grid-column:1 / -1;margin:0;font-size:11.5px;line-height:1.45;color:var(--muted)}
+#setKisekae .kspkr{grid-column:1 / -1;display:flex;justify-content:flex-end}
+#setKisekae .kspkr .btn{min-height:30px;padding:4px 10px;font-size:12px}
+#setKisekae .kspkb{height:7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+#setKisekae .kspkb i{display:block;height:100%;border-radius:inherit;background:var(--primary)}
+#setKisekae .kst .kslock.pk{white-space:normal;overflow:visible;line-height:1.3;padding:3px 6px}
+/* 壁紙パックの 解放の お知らせ（画面の 上・小さな 絵と「着せ替える」） */
+#ksNote{position:fixed;left:50%;top:calc(var(--sat,0px) + 10px);z-index:80;transform:translateX(-50%);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:min(92vw,420px);padding:8px 10px;border-radius:14px;background:var(--surface);color:var(--ink);border:2px solid var(--primary);box-shadow:0 8px 22px rgba(0,0,0,.28);font-size:12.5px;line-height:1.4;animation:ksNote 6.5s ease-out both}
+#ksNote img{width:72px;height:30px;border-radius:7px;object-fit:cover;display:block}
+#ksNote b{display:block;font-size:14px;font-weight:700}
+#ksNote .btn{min-height:34px;padding:5px 10px;font-size:12.5px;white-space:nowrap}
+@keyframes ksNote{0%{opacity:0;transform:translate(-50%,-14px)}6%{opacity:1;transform:translate(-50%,0)}90%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+@media (prefers-reduced-motion:reduce){#ksNote{animation:ksNoteC 6.5s linear both}}
+@keyframes ksNoteC{0%{opacity:0}5%{opacity:1}92%{opacity:1}100%{opacity:0}}
 '''
 
 
@@ -324,10 +347,15 @@ def theme_list():
                 thumb = 'ks_' + BANNER_SVG[tid]
             elif tid == 'default':
                 thumb = asset_name(THUMB_DEFAULT)
+            elif tid in PK.IDS:
+                thumb = asset_name(PK.still_id(tid)) if PK.still_id(tid) else ''
             else:
                 thumb = asset_name(BLOBS20[tid])
-            out.append(dict(id=tid, name=name, desc=desc, group=gname, price=PRICE.get(tid, 0), band=BAND.get(tid, 0), dark=is_dark(t), thumb=thumb,
-                            alt=(t20['alt'] if t20 else ''), fonts=[t['v']['font'].strip('"'), t['v']['dfont'].strip('"')], pc=push_code(tid)))
+            row = dict(id=tid, name=name, desc=desc, group=gname, price=PRICE.get(tid, 0), band=BAND.get(tid, 0), dark=is_dark(t), thumb=thumb,
+                       alt=(t20['alt'] if t20 else ''), fonts=[t['v']['font'].strip('"'), t['v']['dfont'].strip('"')], pc=push_code(tid))
+            if tid in PK.IDS:
+                row['pack'] = PK.ORDER.index(tid) + 1          # 壁紙パックの 解放の 順（1〜11：読み込み 5レースごと）
+            out.append(row)
     return out
 
 
@@ -337,6 +365,8 @@ def push_code(tid):
     if th:
         return th.get('push', '')
     # gen_fx を読まずに 知る（build_fonts など）：見本の THEMED と同じ表
+    if tid in PK.IDS:
+        return PK.push_code(tid)
     return dict(gold='gp', ranch='gr', sakura='sk', sea='se', autumn='mo', snow='yk', newyear='ny', news='np', ink='nk', carousel='mg', stars='sz', neon='nn', pixel='dp',
                 fireworks='hn', kids='ke', cute='kw', sunset='ss', night='nb', marble='mb', lucky='kb', silks='sj', chalk='kk', silver='ag', golden='au', tengel='tg',
                 xmas='xm', halloween='hw', valentine='vl', whiteday='wd').get(tid, '')
@@ -528,7 +558,8 @@ def write_payloads(out, G=None):
 
 def bundle():
     css = COMMON_CSS + '\n'.join(theme_css(BY_ID[tid]) for tid in ORDER) + '\n' + fontface_css()
-    return dict(themes=theme_list(), css=css, band=dict(BAND), paid=PAID, v=1)
+    return dict(themes=theme_list(), css=css, band=dict(BAND), paid=PAID, v=1,
+                pack=dict(ids=list(PK.IDS), order=list(PK.ORDER), product=PK.PRODUCT, every=PK.EVERY, name=PK.CAT_NAME))
 
 
 def bundle_js():
