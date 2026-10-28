@@ -5,7 +5,9 @@
    - 地面に ついて いる ひづめが 地面に くる ように 上下を そろえる（sheets.ground_dy）。前足は うしろ足より 少し 短いので 管を のばす（ext）
    - 手前の 3頭（右向き・2・5・7）と おくの 3頭（左向き・小さく・1・4・8）。毛色と 布の 色は 馬ごと
    - ページは シートを めくりながら 横へ 動かす：歩く はやさ（CSS の px／秒）は、地面に ついた ひづめが すべらない はやさ（コマの ひづめの 動きから 出す：speed）
-   python3 kisekae/pack/make/paddock_art.py [名前…]   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の paddock.<名前>（シートと speed）"""
+   第4.94版：常歩の シートは make/paddock_moves.py が 作る（paddock_gait.py：24コマ・ひづめの 道を 先に 決めて 足の 角度を 逆に 解く＝ひづめが いつも 同じ 地面の 線）。
+   この ファイルは 馬の 毛色・布の 色・置き場（HORSES・pal・BOX_NEAR・BOX_FAR）と 1回りの 秒（CYCLE）を わたす。下の 12コマの 足（F_KEYS・H_KEYS・build）は 第4.93版までの もの
+   （python3 kisekae/pack/make/paddock_art.py は もう シートを 作らない：paddock_moves.py を 使う）"""
 import math
 import os
 import sys
@@ -131,6 +133,4 @@ def build(name, out=None):
 
 
 if __name__ == '__main__':
-    names = sys.argv[1:] or list(HORSES)
-    for nm in names:
-        build(nm, os.environ.get('OUT'))
+    sys.exit('第4.94版から 常歩の シートは paddock_moves.py で 作ります（24コマ）：python3 kisekae/pack/make/paddock_moves.py [名前…]')

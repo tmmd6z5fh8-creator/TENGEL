@@ -1,18 +1,22 @@
 """壁紙パック ④パドック（まさちゃんの 指定「馬がパドックを歩きまわる」
-   第4.93版の 直し「ランダムで馬が首を激しく振ったり、うんちしたり、早歩きになったり、首を下げて歩いたりするようにして！」）
+   第4.93版の 直し「ランダムで馬が首を激しく振ったり、うんちしたり、早歩きになったり、首を下げて歩いたりするようにして！」
+   第4.94版の 直し「パドックの馬地面から脚が浮いたり地面についたりしてるから安定して同じ場所で歩かせて！あと脚の動きもう少しスムーズにして！」）
    上の絵：スタンドから 見た パドック。手前の 道を 右へ 3頭（ゼッケン 2・5・7）、おくの 道を 左へ 3頭（1・4・8・小さく）が 歩く
-     （いままでと 同じ 馬・常歩の コマ：pack/make/paddock_art.py）。まん中に 芝生と 花だん、白い さく、うしろに お客さんの スタンドと 木、上に 小さな 旗の ひも。
+     （いままでと 同じ 馬）。まん中に 芝生と 花だん、白い さく、うしろに お客さんの スタンドと 木、上に 小さな 旗の ひも。
+   常歩（第4.94版）：1回り 1.25秒・24コマ（pack/make/paddock_gait.py：ひづめの 道を 先に 決めて 足の 角度を 逆に 解く）。
+     地面に ついて いる ひづめは どの コマ・どの シートでも 同じ 地面の 線（道の 同じ 高さ）に つく。体は ほんの 少し 上下・影は 地面に 止まった まま。
    動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・雲が ゆっくり 流れる。
    ときどきの 動き（第4.93版）：馬ごとに 長い 1回り（手前 67.5秒・おく 60／90秒）の 中の ばらばらの 時に（PLAN）、
      首を 激しく 振る（上へ ぶんっと 振り上げて おろす・1回りに 2回・たてがみが はねる）／首を 下げて 歩く（下げていく → 下げて 歩く → 上げていく）／
      早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で ゆっくり 歩いて 前後の ずれを もどす＝となりの 馬に 追いつかない）／
      うんち（手前の 3頭：しっぽを 上げて 丸い うんちが 4つ ぽとぽと 落ちる。地面に ついた うんちは その 場所に 9秒 残って 消える）。
-     行動ごとの コマの シート（pack/make/paddock_moves.py）は 足の 動きが 常歩と 同じで コマ0が 同じ 形 → 見える シートを 回りの つぎめで 切りかえる（visibility の step-end）"""
+     行動ごとの コマの シート（pack/make/paddock_moves.py：常歩・首振り 24コマ・首下げ 24コマ×3まい・うんち 48コマ）は 足の 動きが 常歩と 同じで コマ0が 同じ 形
+     → 見える シートを 回りの つぎめで 切りかえる（visibility の step-end）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
 ID = 'paddock'
-CYCLE = 1.25       # 歩く 1回りの 秒（paddock_art.CYCLE と 同じ）
+CYCLE = 1.25       # 歩く 1回りの 秒（paddock_art.CYCLE と 同じ。コマの 数は シートの meta：常歩 24）
 NEAR = ('n2', 'n5', 'n7')
 FAR = ('f1', 'f4', 'f8')
 FAR_K = 1.0        # おくの 馬の シートは はじめから 小さく 描いて いる（そのまま）
@@ -264,16 +268,17 @@ def _vis_keys(windows, Lh, show_outside=False):
 def horse_parts(nm, B, group, k_idx):
     """1頭の html と css（動く 入れもの・常歩／早歩き／ゆっくり／首振り／首下げ／うんちの シート・地面の うんち）"""
     m = B[nm]
-    n, (cw, ch), (ax, ay) = m['frames'], m['cell'], m['at']
+    ax, ay = m['at']
     lays = {'w': m}
-    for kind in ('s', 'd', 'p'):
+    for kind in ('s', 'dl', 'dd', 'dr', 'p'):
         if f'{nm}_{kind}' in B:
             lays[kind] = B[f'{nm}_{kind}']
+    has_d = all(k in lays for k in ('dl', 'dd', 'dr'))
     lo = min((l['at'][0] - ax) / 2 for l in lays.values())
     hi = max((l['at'][0] - ax) / 2 + l['cell'][0] / 2 for l in lays.values())
     meta = dict(m, _span=(lo, hi))
     evs, segs, pos, D, v, dirn, s0 = schedule(nm, meta, group, k_idx)
-    evs = [(t, c) for t, c in evs if (c[0] != 's' or 's' in lays) and (c[0] != 'd' or 'd' in lays) and (c != 'p' or 'p' in lays)]
+    evs = [(t, c) for t, c in evs if (c[0] != 's' or 's' in lays) and (c[0] != 'd' or has_d) and (c != 'p' or 'p' in lays)]
     Lh = PLAN[nm][0]
     dl = -(k_idx * PASS[group] / 3 + 0.41 * k_idx + (3.3 if group == 'far' else 0.0))   # 馬ごとの ずれ：1/3 ずつ はなれて 歩く・足が そろわない ように
     name = f'pk{nm}'
@@ -318,12 +323,12 @@ def horse_parts(nm, B, group, k_idx):
         elif c == 'p':
             win['p'].append((t, t + 2 * CYCLE))
     busy = [w for k, ws in win.items() if k != 'w' for w in ws]
-    LAY = [('w', 'w', CYCLE, 0, n), ('f', 'w', FAST, 0, n), ('sl', 'w', SLOW, 0, n), ('s', 's', CYCLE, 0, 12),
-           ('dl', 'd', CYCLE, 0, 12), ('dd', 'd', CYCLE, 12, 12), ('dr', 'd', CYCLE, 24, 12), ('p', 'p', 2 * CYCLE, 0, 24)]
-    for key, src, per, f0, nf in LAY:
+    LAY = [('w', 'w', CYCLE), ('f', 'w', FAST), ('sl', 'w', SLOW), ('s', 's', CYCLE), ('dl', 'dl', CYCLE), ('dd', 'dd', CYCLE), ('dr', 'dr', CYCLE), ('p', 'p', 2 * CYCLE)]
+    for key, src, per in LAY:                                            # 常歩・首振り・首下げ（3まい）は 1回りで 24コマ・うんちは 2回りで 48コマ（シートの meta）
         if src not in lays or (key != 'w' and not win[key]):
             continue
         l = lays[src]
+        f0, nf = 0, l['frames']
         lw, lh = l['cell'][0] / 2, l['cell'][1] / 2
         tot = l['frames'] * lw
         lx, ly = (l['at'][0] - ax) / 2, (l['at'][1] - ay) / 2
@@ -339,10 +344,10 @@ def horse_parts(nm, B, group, k_idx):
     dung_html, dung_css = '', ''
     if 'p' in lays and win['p']:
         pm = lays['p']
-        fall = pm.get('fall', 4)
+        fall = pm.get('fall', 8)
         for wi, (t0, t1) in enumerate(win['p']):
             for di, d in enumerate(pm.get('drops', [])):
-                tl_ = t0 + (d['f'] + fall) * (2 * CYCLE / 24)
+                tl_ = t0 + (d['f'] + fall) * (2 * CYCLE / pm['frames'])
                 X = pos(_dist(segs, v, tl_))
                 r = d['r'] / 2
                 xs, ys = X + (d['x'] - ax) / 2, d['g'] / 2
@@ -370,7 +375,8 @@ def dung_svg(r):
 def banner(B):
     still = B.get('still')
     alt = ('スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。手前は右へ3頭（ゼッケン2・5・7）、おくは左へ3頭（ゼッケン1・4・8）。'
-           'ときどき首を激しく振ったり、首を下げて歩いたり、早歩きになったり、うんちをしたりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木、上に小さな旗のひも')
+           'ひづめはいつも地面について、なめらかな足どりで歩く。ときどき首を激しく振ったり、首を下げて歩いたり、早歩きになったり、うんちをしたりする。'
+           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木、上に小さな旗のひも')
     html = f'<div class="pkw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('pkBk', back_svg())
@@ -438,7 +444,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='パドック', desc='歩く馬たち', title='パドック（芝の緑×白いさく×金）', banner=ID,
-    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木',
+    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちがひづめを地面につけてなめらかに歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木',
     fonts=['Kaisei+HarunoUmi:wght@700', 'Zen+Maru+Gothic:wght@500;700'],
     v=dict(bg='#F3F1E6', ink='#22301E', sub='#56664E', card='#FFFFFF', cardB='1.5px solid #D6DCC8', cardO='0 solid transparent', cardS='0 3px 0 #E2E6D6',
            radius='14px', rs='10px', font='"Zen Maru Gothic"', dfont='"Kaisei HarunoUmi"', dw='700', logo='#F6E7B8', logoS='0 2px 0 #163A22',
@@ -457,7 +463,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2F6B3E', '芝の 緑'), ('#1F6B45', 'ボタン'), ('#B8862A', '金'), ('#F6F4EE', '白い さく'), ('#F3F1E6', '背景')],
                fonts='見出し：Kaisei HarunoUmi<br>本文：Zen Maru Gothic', shape='角丸14px・帯は 芝の 緑で 下に 白い さく・芝生の しまの 背景・すみに ロゼット・的中ボタンは ゼッケンの PUSH',
-               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド・旗の ひも'),
+               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ・1回り 24コマの なめらかな 足・ひづめは いつも 同じ 地面の 線に つく）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド・旗の ひも'),
 )
 
 
