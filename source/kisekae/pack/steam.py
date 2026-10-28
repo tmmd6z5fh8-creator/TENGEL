@@ -10,7 +10,14 @@
    動き（CSS だけ・1回り 0.84秒の 速足＝ななめの 2本が いっしょ）：ひづめは 地面に ついて いる 間 道と 同じ 速さで うしろへ（すべらない）・
      最後に かかとから 上がって つま先で けり、宙では ひざと 飛節を まげて ひづめを うしろへ 折って 前へ はこぶ。体は 足が 地面に ついた まん中で 少し 下がる。
      歯車が 回る・連結棒が 円を えがく・頭が うなずく・たてがみが ゆれる・しっぽが ゆれる。道と 町が 流れる（遠いほど ゆっくり）・飛行船が ゆっくり 横切る。
-     えんとつから 蒸気が 「しゅっ しゅっ」（3.6秒ごとに 3つ）・鼻から 「しゅっ」（7.2秒ごと）。強く 光らせない"""
+     えんとつから 蒸気が 「しゅっ しゅっ」（3.6秒ごとに 3つ）・鼻から 「しゅっ」。強く 光らせない
+     第4.94版（まさちゃん「スチームパンクは、16秒に一回、馬がオーバーヒートして、背中の煙突が爆発して、口をパックリ開けて、破壊光線を打つようにして！」）：
+     16秒に 1回（1回りの 4秒め から 7秒 ほど）：体が ゆっくり 赤く 熱く なり（2.4秒・まわりに だいだいの もや）、圧力計の 針が 上がって ふるえ、
+     板の すきまから 蒸気が しゅー → えんとつが 爆発（火の玉が 0.3秒 かけて ふくらむ・うしろに 黒い けむり・火の 粉・ふたが 回りながら 上へ 飛んで、
+     3秒 あとに 回りながら 落ちて きて のる）→ 頭を 上げて 口を ぱっくり（頭を 上の 頭と 下あごに 分けて、ほおの 歯車が ちょうつがい。
+     口の 中は 3まいの くさび＝あごと いっしょ・半分の 角度・上の 頭に つく で、とじて いる 間は 上の 頭と あごの うしろに かくれる）→
+     口に 光を ためて 右へ 破壊光線（白い しんと まわりの だいだいの 光の もや・右の はしで 光が はじける。0.3秒 かけて 明るく、0.35秒 かけて 消える）→
+     口を とじて 頭を もどし、ゆっくり さめる。速足は ずっと つづく（足は すべらない）。鼻の 蒸気は オーバーヒートの ない ころに 16秒に 2回"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -377,8 +384,6 @@ def body_svg():
     # えんとつ（胴の 上・き甲の 少し うしろ）
     o += (f"<path d='M214 64 L216 46 H226 L228 64 Z' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='1'/>"
           f"<path d='M217 47 L216 63' stroke='{CU['hl']}' stroke-width='1.2' opacity='.7'/>"
-          f"<rect x='212.5' y='41' width='17' height='6' rx='1.6' fill='{FE['m']}' stroke='{FE['dd']}' stroke-width='.9'/>"
-          f"<rect x='213.5' y='41.6' width='15' height='1.6' rx='.8' fill='{FE['l']}'/>"
           f"<rect x='214' y='54' width='14' height='2.6' fill='{BR['d']}'/>")
     # 鞍の かわりの 銅の 座（き甲の うしろ）と 番号板の かわりの 歯車の しるし
     o += (f"<path d='M186 62.6 Q198 56 210 62.6 Z' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.9'/>")
@@ -433,80 +438,234 @@ HEAD_OUT = [(0, 0), (8, -1.3), (20, -0.7), (31, 0.4), (39.5, 1.6), (43.4, 3.8), 
             (35.4, 14.2), (28, 15.8), (20, 18.4), (12, 19.8), (6, 18), (2.4, 13.4), (1.6, 7.6), (2.6, 3.2)]
 
 
-def head_svg():
-    """頭（第4.93版：本物の 馬の 頭の 形を 真ちゅうの 板で）：ひたい・目の くぼみと まゆの 板・長い 鼻すじの 板・まるい ほお（あごの 歯車）・
-       銅の 鼻先（鼻の あなの すきま）・口・あご・耳 2まい・前髪。目は こはく色の ランプ。うなずく 軸は 絵の (HEAD_PIV − HEAD_BOX)"""
+# ---- 第4.94版：口が あく 頭（まさちゃん「16秒に一回、馬がオーバーヒートして、背中の煙突が爆発して、口をパックリ開けて、破壊光線を打つようにして！」）
+#   頭を 上の 頭（目・耳・鼻すじ・ほおの 歯車）と 下あごに 分ける。下あごは ほおの 歯車を ちょうつがいに して ひらく。
+#   口の 中（こい 色・歯）は 下あごと いっしょに 回り、とじて いる 間は 見えない（上の 頭の うしろ・opacity 0）
+HINGE = (10.5, 12.4)        # あごの ちょうつがい（頭の 座標）＝ほおの 歯車の 中心
+LIP = (43.6, 10.4)          # くちびるの 先（口の 線＝ちょうつがい → くちびる）
+JAW_MAX = 26.0              # 口を あける 角度（度）
+CHEEK_R = 6.1
+MO_UP, MO_DN, MO_R = 10.0, 2.6, 32.4     # 口の 中の くさび：口の 線より 上・下の 角度（とじて いる とき かくれる はば）・長さ
+
+
+def mouth_y(x):
+    """口の 線の y（頭の 座標）"""
+    return HINGE[1] + (LIP[1] - HINGE[1]) * (x - HINGE[0]) / (LIP[0] - HINGE[0])
+
+
+def hrot(p, deg, c=HINGE):
+    """頭の 座標で 点 p を c の まわりに deg 度（あごが あく 向きが ＋）"""
+    a = math.radians(deg)
+    x, y = p[0] - c[0], p[1] - c[1]
+    return (c[0] + x * math.cos(a) - y * math.sin(a), c[1] + x * math.sin(a) + y * math.cos(a))
+
+
+def _arc(c, r, a0, a1, n):
+    return [(c[0] + r * math.cos(math.radians(a0 + (a1 - a0) * k / n)), c[1] + r * math.sin(math.radians(a0 + (a1 - a0) * k / n))) for k in range(n + 1)]
+
+
+# 上の 頭の りんかく：うなじ → 鼻すじ → 鼻先 → くちびる → 口の 線を うしろへ → ほおの 歯車の ふち → のど
+UPPER_OUT = (HEAD_OUT[:8] + [(43.9, 10.2)] + [(x, mouth_y(x)) for x in (40.0, 34.0, 28.0, 22.0)]
+             + _arc(HINGE, CHEEK_R, -3.5, 76.0, 4) + [(8.4, 18.9), (6, 18), (2.4, 13.4), (1.6, 7.6), (2.6, 3.2)])
+# 下あご：口の 線（ちょうつがい → くちびる）→ あご先 → あごの 下 → ちょうつがいの まわり（ほおの 歯車の 下に かくれる）
+JAW_OUT = ([(x, mouth_y(x)) for x in (16.4, 22.0, 28.0, 34.0, 40.0)] + [LIP, (43.3, 11.6), (42.4, 12.4), (39.6, 14.6), (35.4, 14.2), (28, 15.8), (20, 18.4), (13.4, 18.5)]
+           + _arc(HINGE, 5.9, 95.0, 345.0, 6))
+
+
+def head_part(part):
+    """頭の 部品（絵は HEAD_BOX の 箱・舞台の 座標で 重なる）：upper（上の 頭）・jaw（下あご）・mouth_a／b／c（口の 中と 歯）・heat_u／heat_j（熱で 赤く）"""
     bx, by, bw, bh = HEAD_BOX
     tr = lambda q: (q[0] - bx, q[1] - by)
     H_ = lambda x, y: tr(hpt(x, y))
     o = ''
-    # 耳（奥 → 手前）：うなじから 少し 前へ 立つ
-    for (b0, b1, tip, c) in (((-1.2, -0.6), (3.4, -1.4), (-6.4, -12.2), BR['d']), ((1.6, -0.9), (6.2, -1.4), (-2.6, -12.8), BR['m'])):
-        pa, pb, pt_ = H_(*b0), H_(*b1), H_(*tip)
-        mid = ((pa[0] + pt_[0]) / 2 - 1.2, (pa[1] + pt_[1]) / 2)
-        mid2 = ((pb[0] + pt_[0]) / 2 + 1.6, (pb[1] + pt_[1]) / 2 + 0.6)
-        o += (f"<path d='M{f(pa[0])} {f(pa[1])} Q{f(mid[0])} {f(mid[1])} {f(pt_[0])} {f(pt_[1])} Q{f(mid2[0])} {f(mid2[1])} {f(pb[0])} {f(pb[1])} Z' "
-              f"fill='{c}' stroke='{BR['dd']}' stroke-width='.9' stroke-linejoin='round'/>")
-        ci = ((pa[0] * 0.3 + pb[0] * 0.7 + pt_[0]) / 2, (pa[1] * 0.3 + pb[1] * 0.7 + pt_[1]) / 2)
-        o += f"<path d='M{f(pa[0] * 0.5 + pb[0] * 0.5)} {f(pa[1] * 0.5 + pb[1] * 0.5 - 0.6)} Q{f(ci[0])} {f(ci[1])} {f(pt_[0] + 0.4)} {f(pt_[1] + 1.6)}' fill='none' stroke='{CU['m']}' stroke-width='1.6' stroke-linecap='round' opacity='.85'/>"
-    # 顔の 形
-    o += f"<path d='{smooth([H_(*q) for q in HEAD_OUT], True, 0.28)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
-    # 鼻すじの 板（明るい）と まん中の すじ
-    nas = [H_(10, 0.4), H_(39, 2.4), H_(40, 6.4), H_(13, 5.8)]
-    o += f"<path d='{smooth(nas, True, 0.2)}' fill='{BR['l']}' opacity='.9'/>"
-    a, b = H_(14, 1.6), H_(38, 3.2)
-    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{BR['hl']}' stroke-width='1.2' stroke-linecap='round' opacity='.8'/>"
-    # 板の つなぎ目（鼻すじと ほおの さかい・まゆ）
-    seam = [H_(9, 6.6), H_(20, 8.0), H_(32, 9.2), H_(38, 9.6)]
-    o += f"<path d='{smooth(seam, False, 0.3)}' fill='none' stroke='{BR['dd']}' stroke-width='.8' opacity='.75'/>"
-    # まるい ほお（あごの 筋肉）：少し 暗い 板と びょうの 輪・まん中に あごの 歯車
-    cc = H_(10.5, 12.4)
-    o += (f"<circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='6.1' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.9'/>"
-          f"<path d='M{f(cc[0] - 4.8)} {f(cc[1] - 1.8)} A5.2 5.2 0 0 1 {f(cc[0] + 1.4)} {f(cc[1] - 5)}' fill='none' stroke='{BR['l']}' stroke-width='1.2' stroke-linecap='round' opacity='.7'/>")
-    for k in range(8):
-        a_ = 2 * math.pi * k / 8
-        o += f"<circle cx='{f(cc[0] + math.cos(a_) * 4.6)}' cy='{f(cc[1] + math.sin(a_) * 4.6)}' r='.65' fill='{BR['dd']}'/>"
-    o += f"<path d='{gear_d(cc[0], cc[1], 2.8, 2.2, 8)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.6'/><circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='.9' fill='{CU['dd']}'/>"
-    # あごの 下の ふち（暗い）
-    jaw = [H_(14, 19.2), H_(22, 17.6), H_(30, 15.4), H_(36, 14.2)]
-    o += f"<path d='{smooth(jaw, False, 0.3)}' fill='none' stroke='{BR['d']}' stroke-width='2' stroke-linecap='round' opacity='.7'/>"
-    # 銅の 鼻先（くちびるまで）と 鼻の あなの すきま
-    mz = [H_(35, 1.0), H_(43.4, 3.8), H_(44.6, 6.8), H_(44, 9.8), H_(41.6, 10.9), H_(37, 10.6), H_(34, 8)]
-    o += f"<path d='{smooth(mz, True, 0.25)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.8' stroke-linejoin='round'/>"
-    a, b = H_(36.4, 2.6), H_(42.6, 4.6)
-    o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['hl']}' stroke-width='1' stroke-linecap='round' opacity='.75'/>"
-    nc = H_(40.2, 5.8)
-    o += f"<ellipse cx='{f(nc[0])}' cy='{f(nc[1])}' rx='2.7' ry='1.7' transform='rotate({f(HEAD_ANG + 12)} {f(nc[0])} {f(nc[1])})' fill='{CU['dd']}'/>"
-    for k in range(3):
-        a, b = H_(38.8 + k * 1.0, 4.9 + k * 0.5), H_(39.8 + k * 1.0, 6.9 + k * 0.5)
-        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['l']}' stroke-width='.5' opacity='.8'/>"
-    # 口（くちびるの あいだ）と あご先
-    a, b = H_(43.6, 10.6), H_(37.6, 11.2)
-    o += f"<path d='M{f(a[0])} {f(a[1])} Q{f((a[0] + b[0]) / 2)} {f((a[1] + b[1]) / 2 + 0.8)} {f(b[0])} {f(b[1])}' fill='none' stroke='{BR['dd']}' stroke-width='1' stroke-linecap='round'/>"
-    ch = [H_(42.4, 12.4), H_(39.6, 14.6), H_(35.4, 14.2), H_(37.6, 11.6)]
-    o += f"<path d='{smooth(ch, True, 0.25)}' fill='{CU['d']}' opacity='.85'/>"
-    # 目：まゆの 板（目の 上の くぼみ）・アーモンド形の こはく色の ランプ
-    ec = H_(13.6, 3.4)
-    br_ = [H_(9.4, 0.8), H_(13.6, -0.2), H_(18.2, 1.6), H_(16.4, 2.4), H_(11.4, 2.2)]
-    o += f"<path d='{smooth(br_, True, 0.3)}' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.6'/>"
-    o += (f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='4.2' ry='2.9' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648' opacity='.22'/>"
-          f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='3.1' ry='2.0' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='{BR['dd']}'/>"
-          f"<ellipse cx='{f(ec[0] + 0.2)}' cy='{f(ec[1])}' rx='2.3' ry='1.45' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648'/>"
-          f"<circle cx='{f(ec[0] + 0.9)}' cy='{f(ec[1] + 0.2)}' r='.9' fill='#7A3A0A'/><circle cx='{f(ec[0] - 0.4)}' cy='{f(ec[1] - 0.5)}' r='.6' fill='#FFF0C8'/>")
-    for q in ((22, 4.6), (30, 5.6), (24, 12.6), (31, 11.8)):
-        x, y = H_(*q)
-        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
-    # はみの 輪
-    rg = H_(37.6, 11.0)
-    o += f"<circle cx='{f(rg[0])}' cy='{f(rg[1])}' r='2.3' fill='none' stroke='{CU['l']}' stroke-width='1.1'/>"
-    # 前髪（耳の あいだから ひたいへ：銅と 真ちゅうの 細い 板）
-    for k, (L, bend, c) in enumerate(((10.5, 2.2, CU['m']), (8.6, 1.4, BR['l']), (7.2, 2.6, CU['l']))):
-        p0 = H_(1.0 + k * 0.9, -1.2)
-        p1 = H_(4.6 + k * 1.2, 1.2 + bend)
-        p2 = H_(L + k * 0.6, 3.2 + k * 0.5)
-        o += (f"<path d='M{f(p0[0] - 1.1)} {f(p0[1])} Q{f(p1[0] - 1.4)} {f(p1[1])} {f(p2[0])} {f(p2[1])} Q{f(p1[0] + 1.2)} {f(p1[1] - 0.8)} {f(p0[0] + 1.3)} {f(p0[1] - 0.4)} Z' "
-              f"fill='{c}' stroke='{CU['dd']}' stroke-width='.5' stroke-linejoin='round'/>")
-    return doc(bw, bh, o)
+    defs = ''
+    if part == 'jaw':
+        o += f"<path d='{smooth([H_(*q) for q in JAW_OUT], True, 0.22)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+        a, b = H_(18, mouth_y(18) + 1.6), H_(40, mouth_y(40) + 1.3)                 # 口の 線の 下の 明るい ふち
+        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{BR['l']}' stroke-width='1.3' stroke-linecap='round' opacity='.8'/>"
+        jw = [H_(14, 19.2), H_(22, 17.6), H_(30, 15.4), H_(36, 14.2)]             # あごの 下の ふち（暗い）
+        o += f"<path d='{smooth(jw, False, 0.3)}' fill='none' stroke='{BR['d']}' stroke-width='2' stroke-linecap='round' opacity='.7'/>"
+        ch = [H_(43.3, 11.0), H_(42.4, 12.4), H_(39.6, 14.6), H_(35.4, 14.2), H_(37.6, 11.6)]   # 銅の あご先
+        o += f"<path d='{smooth(ch, True, 0.25)}' fill='{CU['d']}' opacity='.85'/>"
+        for q in ((24, 13.4), (31, 12.6)):
+            x, y = H_(*q)
+            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
+    elif part in ('mouth_a', 'mouth_b', 'mouth_c'):
+        # 口の 中（3まい・どれも ちょうつがいが 頂点の くさび）：とじて いる 間は 上の 頭（口の 線より 上 MO_UP 度まで）と
+        #   あご（下 MO_DN 度まで）の うしろに かくれる。A＝あごと いっしょに 回る・B＝半分の 角度で 回る・C＝上の 頭に つく。
+        #   3まいで いつも 0〜あいた 角度 の すきまを ふさぐ（JAW_MAX ≦ 2×(MO_UP＋MO_DN)）
+        lo_a, hi_a = (-MO_UP, 0.0) if part == 'mouth_a' else (-MO_UP, MO_DN)
+        R0 = MO_R
+        base = math.degrees(math.atan2(LIP[1] - HINGE[1], LIP[0] - HINGE[0]))
+        pts = [HINGE] + [(HINGE[0] + R0 * math.cos(math.radians(base + a_)), HINGE[1] + R0 * math.sin(math.radians(base + a_)))
+                         for a_ in [lo_a + (hi_a - lo_a) * k / 6 for k in range(7)]]
+        o += f"<path d='{P([H_(*q) for q in pts])}' fill='#3A1208'/>"
+        if part == 'mouth_c':                                            # 上の 歯（真ちゅう：口の 線から 下へ）
+            for x in (25.0, 30.0, 35.0, 40.0):
+                t = ((x - 1.7, mouth_y(x - 1.7)), (x, mouth_y(x) + 2.6), (x + 1.7, mouth_y(x + 1.7)))
+                o += f"<path d='{P([H_(*q) for q in t])}' fill='{BR['hl']}' stroke='{BR['d']}' stroke-width='.5' stroke-linejoin='round'/>"
+            g = H_(36, mouth_y(36) + 1)                                  # 奥の 赤い 光
+            o += f"<circle cx='{f(g[0])}' cy='{f(g[1])}' r='5' fill='#C8401A' opacity='.45'/>"
+        if part == 'mouth_a':                                            # 下の 歯（あごの 口の 線から 上へ）
+            for x in (23.0, 28.0, 33.0, 38.0):
+                t = ((x - 1.6, mouth_y(x - 1.6)), (x, mouth_y(x) - 2.6), (x + 1.6, mouth_y(x + 1.6)))
+                o += f"<path d='{P([H_(*q) for q in t])}' fill='{BR['hl']}' stroke='{BR['d']}' stroke-width='.5' stroke-linejoin='round'/>"
+    elif part in ('heat_u', 'heat_j'):                                   # 熱で 赤く（opacity で 上げ下げ）
+        out = UPPER_OUT if part == 'heat_u' else JAW_OUT
+        o += f"<path d='{smooth([H_(*q) for q in out], True, 0.22 if part == 'heat_j' else 0.28)}' fill='#E8301A' opacity='.56'/>"
+        if part == 'heat_u':
+            a, b = H_(14, 1.6), H_(38, 3.2)
+            o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='#FFD27A' stroke-width='1.6' stroke-linecap='round' opacity='.7'/>"
+    else:                                                                # upper：上の 頭
+        for (b0, b1, tip, c) in (((-1.2, -0.6), (3.4, -1.4), (-6.4, -12.2), BR['d']), ((1.6, -0.9), (6.2, -1.4), (-2.6, -12.8), BR['m'])):   # 耳（奥 → 手前）
+            pa, pb, pt_ = H_(*b0), H_(*b1), H_(*tip)
+            mid = ((pa[0] + pt_[0]) / 2 - 1.2, (pa[1] + pt_[1]) / 2)
+            mid2 = ((pb[0] + pt_[0]) / 2 + 1.6, (pb[1] + pt_[1]) / 2 + 0.6)
+            o += (f"<path d='M{f(pa[0])} {f(pa[1])} Q{f(mid[0])} {f(mid[1])} {f(pt_[0])} {f(pt_[1])} Q{f(mid2[0])} {f(mid2[1])} {f(pb[0])} {f(pb[1])} Z' "
+                  f"fill='{c}' stroke='{BR['dd']}' stroke-width='.9' stroke-linejoin='round'/>")
+            ci = ((pa[0] * 0.3 + pb[0] * 0.7 + pt_[0]) / 2, (pa[1] * 0.3 + pb[1] * 0.7 + pt_[1]) / 2)
+            o += f"<path d='M{f(pa[0] * 0.5 + pb[0] * 0.5)} {f(pa[1] * 0.5 + pb[1] * 0.5 - 0.6)} Q{f(ci[0])} {f(ci[1])} {f(pt_[0] + 0.4)} {f(pt_[1] + 1.6)}' fill='none' stroke='{CU['m']}' stroke-width='1.6' stroke-linecap='round' opacity='.85'/>"
+        o += f"<path d='{smooth([H_(*q) for q in UPPER_OUT], True, 0.28)}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+        nas = [H_(10, 0.4), H_(39, 2.4), H_(40, 6.4), H_(13, 5.8)]                # 鼻すじの 板（明るい）と まん中の すじ
+        o += f"<path d='{smooth(nas, True, 0.2)}' fill='{BR['l']}' opacity='.9'/>"
+        a, b = H_(14, 1.6), H_(38, 3.2)
+        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{BR['hl']}' stroke-width='1.2' stroke-linecap='round' opacity='.8'/>"
+        seam = [H_(9, 6.6), H_(20, 8.0), H_(32, 9.2), H_(38, 9.6)]
+        o += f"<path d='{smooth(seam, False, 0.3)}' fill='none' stroke='{BR['dd']}' stroke-width='.8' opacity='.75'/>"
+        mz = [H_(35, 1.0), H_(43.4, 3.8), H_(44.6, 6.8), H_(44, 9.8), H_(41.6, 10.7), H_(37, 10.6), H_(34, 8)]   # 銅の 鼻先（上くちびるまで）
+        o += f"<path d='{smooth(mz, True, 0.25)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.8' stroke-linejoin='round'/>"
+        a, b = H_(36.4, 2.6), H_(42.6, 4.6)
+        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['hl']}' stroke-width='1' stroke-linecap='round' opacity='.75'/>"
+        nc = H_(40.2, 5.8)
+        o += f"<ellipse cx='{f(nc[0])}' cy='{f(nc[1])}' rx='2.7' ry='1.7' transform='rotate({f(HEAD_ANG + 12)} {f(nc[0])} {f(nc[1])})' fill='{CU['dd']}'/>"
+        for k in range(3):
+            a, b = H_(38.8 + k * 1.0, 4.9 + k * 0.5), H_(39.8 + k * 1.0, 6.9 + k * 0.5)
+            o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{CU['l']}' stroke-width='.5' opacity='.8'/>"
+        a, b = H_(43.8, 10.3), H_(36.6, 10.9)                                         # 上くちびるの ふち
+        o += f"<path d='M{f(a[0])} {f(a[1])} L{f(b[0])} {f(b[1])}' stroke='{BR['dd']}' stroke-width='1' stroke-linecap='round'/>"
+        ec = H_(13.6, 3.4)                                                             # 目：まゆの 板・アーモンド形の こはく色の ランプ
+        br_ = [H_(9.4, 0.8), H_(13.6, -0.2), H_(18.2, 1.6), H_(16.4, 2.4), H_(11.4, 2.2)]
+        o += f"<path d='{smooth(br_, True, 0.3)}' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.6'/>"
+        o += (f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='4.2' ry='2.9' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648' opacity='.22'/>"
+              f"<ellipse cx='{f(ec[0])}' cy='{f(ec[1])}' rx='3.1' ry='2.0' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='{BR['dd']}'/>"
+              f"<ellipse cx='{f(ec[0] + 0.2)}' cy='{f(ec[1])}' rx='2.3' ry='1.45' transform='rotate({f(HEAD_ANG - 6)} {f(ec[0])} {f(ec[1])})' fill='#FFB648'/>"
+              f"<circle cx='{f(ec[0] + 0.9)}' cy='{f(ec[1] + 0.2)}' r='.9' fill='#7A3A0A'/><circle cx='{f(ec[0] - 0.4)}' cy='{f(ec[1] - 0.5)}' r='.6' fill='#FFF0C8'/>")
+        for q in ((22, 4.6), (30, 5.6)):
+            x, y = H_(*q)
+            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
+        rg = H_(37.6, 11.0)                                                            # はみの 輪
+        o += f"<circle cx='{f(rg[0])}' cy='{f(rg[1])}' r='2.3' fill='none' stroke='{CU['l']}' stroke-width='1.1'/>"
+        cc = H_(*HINGE)                                                                # まるい ほお：あごの ちょうつがいの 歯車
+        o += (f"<circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='{CHEEK_R}' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.9'/>"
+              f"<path d='M{f(cc[0] - 4.8)} {f(cc[1] - 1.8)} A5.2 5.2 0 0 1 {f(cc[0] + 1.4)} {f(cc[1] - 5)}' fill='none' stroke='{BR['l']}' stroke-width='1.2' stroke-linecap='round' opacity='.7'/>")
+        for k in range(8):
+            a_ = 2 * math.pi * k / 8
+            o += f"<circle cx='{f(cc[0] + math.cos(a_) * 4.6)}' cy='{f(cc[1] + math.sin(a_) * 4.6)}' r='.65' fill='{BR['dd']}'/>"
+        o += f"<path d='{gear_d(cc[0], cc[1], 2.8, 2.2, 8)}' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.6'/><circle cx='{f(cc[0])}' cy='{f(cc[1])}' r='.9' fill='{CU['dd']}'/>"
+        for k, (L, bend, c) in enumerate(((10.5, 2.2, CU['m']), (8.6, 1.4, BR['l']), (7.2, 2.6, CU['l']))):   # 前髪
+            p0 = H_(1.0 + k * 0.9, -1.2)
+            p1 = H_(4.6 + k * 1.2, 1.2 + bend)
+            p2 = H_(L + k * 0.6, 3.2 + k * 0.5)
+            o += (f"<path d='M{f(p0[0] - 1.1)} {f(p0[1])} Q{f(p1[0] - 1.4)} {f(p1[1])} {f(p2[0])} {f(p2[1])} Q{f(p1[0] + 1.2)} {f(p1[1] - 0.8)} {f(p0[0] + 1.3)} {f(p0[1] - 0.4)} Z' "
+                  f"fill='{c}' stroke='{CU['dd']}' stroke-width='.5' stroke-linejoin='round'/>")
+    return doc(bw, bh, o, defs=defs)
+
+
+# ---- オーバーヒートの 部品
+OH_S = 16.0                 # 1回り（秒）
+OH_AT = 4.0                 # 1回りの 中で はじまる 時刻
+OH_TILT = -40.0             # 光線を うつ とき 頭を 上げる 角度（うなずく 軸の まわり）
+BEAM_DIR = 6.0              # 光線の 向き（画面で 水平から 下へ 度）
+BEAM_L = 150.0              # 光線の 長さ（右の はしの 外まで）
+MOUTH = (42.35, 17.75)      # 口の あいだ（あいた とき・頭の 座標）＝光線の 出る 所
+CHIM = (221.0, 41.0)        # えんとつの 口（舞台の 座標）
+
+
+def cap_svg():
+    """えんとつの ふた（爆発で 飛んで、あとで 落ちて もどる）：絵の (1, 1)＝舞台の (212.5, 41)"""
+    return doc(19, 8, f"<rect x='1' y='1' width='17' height='6' rx='1.6' fill='{FE['m']}' stroke='{FE['dd']}' stroke-width='.9'/>"
+                      f"<rect x='2' y='1.6' width='15' height='1.6' rx='.8' fill='{FE['l']}'/>")
+
+
+def heat_svg():
+    """熱で 赤く 光る 色（胴・首・えんとつに 重ねる。opacity で ゆっくり 上げ下げ）"""
+    defs = "<linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FF5A22'/><stop offset='1' stop-color='#C8180A'/></linearGradient>"
+    o = (f"<g fill='url(#h)' opacity='.6'><path d='{smooth(NECK, True, 0.3)}'/><rect x='150' y='62' width='104' height='40' rx='19'/>"
+         "<path d='M214 64 L216 46 H226 L228 64 Z'/></g>")
+    for x in (172, 206, 236):                                            # 銅の 帯が 明るく
+        o += f"<rect x='{x - 1.3}' y='63.4' width='2.6' height='37.2' rx='1.3' fill='#FFC266' opacity='.75'/>"
+    o += "<rect x='160' y='66.2' width='84' height='2.6' rx='1.3' fill='#FFE29A' opacity='.6'/>"
+    return doc(W, H, o, defs=defs)
+
+
+def halo_svg():
+    """熱の まわりの もや（体の うしろ・だいだい）"""
+    defs = ("<radialGradient id='g' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#FF8A3A' stop-opacity='.7'/>"
+            "<stop offset='.6' stop-color='#FF5A1E' stop-opacity='.28'/><stop offset='1' stop-color='#FF4A10' stop-opacity='0'/></radialGradient>")
+    return doc(184, 104, "<ellipse cx='92' cy='52' rx='92' ry='52' fill='url(#g)'/>", defs=defs)
+
+
+def fireball_svg():
+    """えんとつの 爆発の 火の玉（下の まん中が えんとつの 口）"""
+    defs = ("<radialGradient id='f' cx='.5' cy='.62' r='.58'><stop offset='0' stop-color='#FFFBE6'/><stop offset='.28' stop-color='#FFE27A'/>"
+            "<stop offset='.62' stop-color='#FF9A2E'/><stop offset='1' stop-color='#D8401A'/></radialGradient>")
+    R = rnd(7)
+    pts = []
+    for k in range(20):                                                  # もこもこ ふくらむ 火の かたまり（上の ほうが 高く のびる）
+        a = -math.pi / 2 + 2 * math.pi * k / 20
+        up = max(0.0, -math.sin(a))
+        r = (12.6 + (2.2 if k % 2 == 0 else 0.0) + R.uniform(-0.8, 0.8)) * (1.0 + 0.3 * up)
+        pts.append((24 + math.cos(a) * r, 30 + math.sin(a) * r * 0.92))
+    o = f"<path d='{smooth(pts, True, 0.5)}' fill='url(#f)'/>"
+    for x, y, r in ((17, 22, 5.5), (30, 20, 6), (24, 14, 5)):           # 中の もこもこ（明るい）
+        o += f"<circle cx='{x}' cy='{y}' r='{r}' fill='#FFD25A' opacity='.55'/>"
+    o += "<ellipse cx='24' cy='31' rx='8' ry='6.4' fill='#FFFFFF' opacity='.7'/>"
+    return doc(48, 46, o, defs=defs)
+
+
+def spark_svg():
+    return doc(6, 6, "<circle cx='3' cy='3' r='2.2' fill='#FFD25A'/><circle cx='3' cy='3' r='1' fill='#FFFBE6'/>")
+
+
+def charge_svg():
+    """口の 中で ためる 光（光線の 根もと）"""
+    defs = ("<radialGradient id='c' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#FFFFFF'/><stop offset='.3' stop-color='#FFF2B0'/>"
+            "<stop offset='.6' stop-color='#FFB040' stop-opacity='.6'/><stop offset='1' stop-color='#FF7A20' stop-opacity='0'/></radialGradient>")
+    return doc(32, 32, "<circle cx='16' cy='16' r='16' fill='url(#c)'/>", defs=defs)
+
+
+def beam_svg(core=False):
+    """破壊光線（左の はしが 口・右へ のびる）：core＝白い しん・ほか＝まわりの 光の もや"""
+    L = BEAM_L
+    if core:
+        h = 12
+        defs = ("<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FFE89A'/><stop offset='.3' stop-color='#FFFFFF'/>"
+                "<stop offset='.7' stop-color='#FFFFFF'/><stop offset='1' stop-color='#FFE89A'/></linearGradient>")
+        o = f"<path d='M6 1.5 H{f(L)} V10.5 H6 A4.5 4.5 0 0 1 6 1.5 Z' fill='url(#b)'/>"
+    else:
+        h = 34
+        defs = ("<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FF7A2A' stop-opacity='0'/><stop offset='.3' stop-color='#FF9A3A' stop-opacity='.45'/>"
+                "<stop offset='.5' stop-color='#FFD25A' stop-opacity='.9'/><stop offset='.7' stop-color='#FF9A3A' stop-opacity='.45'/><stop offset='1' stop-color='#FF7A2A' stop-opacity='0'/></linearGradient>")
+        o = f"<path d='M14 0 H{f(L)} V34 H14 A17 17 0 0 1 14 0 Z' fill='url(#b)'/>"
+        for k, x in enumerate((30, 62, 94, 126)):                        # 光の もやの つぶ
+            o += f"<ellipse cx='{x}' cy='{17 + (-6 if k % 2 else 6)}' rx='5' ry='2.2' fill='#FFF2B0' opacity='.5'/>"
+    return doc(L, h, o, defs=defs)
+
+
+def splash_svg():
+    """光線の 先で はじける 光（右の はし）"""
+    defs = ("<radialGradient id='s' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#FFFFFF'/><stop offset='.35' stop-color='#FFE89A' stop-opacity='.9'/>"
+            "<stop offset='1' stop-color='#FF9A3A' stop-opacity='0'/></radialGradient>")
+    o = "<circle cx='22' cy='22' r='22' fill='url(#s)'/>"
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        L = 20 if k % 2 == 0 else 13
+        x1, y1 = 22 + math.cos(a) * L, 22 + math.sin(a) * L
+        xa, ya = 22 + math.cos(a + 0.16) * 6, 22 + math.sin(a + 0.16) * 6
+        xb, yb = 22 + math.cos(a - 0.16) * 6, 22 + math.sin(a - 0.16) * 6
+        o += f"<path d='M{f(xa)} {f(ya)} L{f(x1)} {f(y1)} L{f(xb)} {f(yb)} Z' fill='#FFF6C8' opacity='.9'/>"
+    o += "<circle cx='22' cy='22' r='9' fill='none' stroke='#FFFFFF' stroke-width='1.6' opacity='.8'/>"
+    return doc(44, 44, o, defs=defs)
 
 
 def mane_svg(layer=0):
@@ -790,7 +949,9 @@ def leg_lens(front):
 def banner(B):
     still = B.get('still')
     alt = ('夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬が速足で走るイラスト。本物の馬のような頭と首、流れるたてがみ。'
-           '肩と腰の大きな歯車が回って連結棒が回り、ひざと飛節のある本物の馬と同じ形の足が動く。のぞき窓の中でも歯車が回り、えんとつと鼻から蒸気がしゅっと出る。空に飛行船、左上と右上に大きな歯車')
+           '肩と腰の大きな歯車が回って連結棒が回り、ひざと飛節のある本物の馬と同じ形の足が動く。のぞき窓の中でも歯車が回り、えんとつと鼻から蒸気がしゅっと出る。'
+           '16秒に1回オーバーヒートして体が赤く熱くなり、圧力計の針がふり切れて、背中のえんとつが爆発してふたが飛び、口をぱっくりあけて右へ光線をうつ（光はゆっくり明るくなって消える）。'
+           '空に飛行船、左上と右上に大きな歯車')
     html = f'<div class="gww" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('gwSky', sky_svg())
@@ -811,12 +972,17 @@ def banner(B):
                 o += img('kg', gear_svg(5.2, 8, dark(BR) if far else BR, spokes=0, size=14))
             close += '</i>'
         return o + close + '</i>'
-    h = '<i class="gwH">'
+    h = '<i class="gwH">' + img('gwHa', halo_svg())
     for nm in ('hr', 'fr'):
         h += leg(nm, True)
-    h += img('gwTl', tail_svg()) + img('gwMb', mane_svg(0)) + img('gwBd', body_svg()) + img('gwMn', mane_svg(1))
+    h += img('gwTl', tail_svg()) + img('gwMb', mane_svg(0)) + img('gwBd', body_svg()) + img('gwHt', heat_svg()) + img('gwCp', cap_svg()) + img('gwMn', mane_svg(1))
     h += '<i class="gwWn">' + img('gwWg1', gear_svg(9, 10, BR, spokes=4, size=22)) + img('gwWg2', gear_svg(6, 8, CU, spokes=0, size=16)) + img('gwWg3', gear_svg(5, 7, BR, spokes=0, size=14)) + '</i>'
-    h += img('gwWr', window_svg()) + img('gwNd', needle_svg()) + img('gwHd', head_svg())
+    h += img('gwWr', window_svg()) + '<i class="gwNw">' + img('gwNd', needle_svg()) + '</i>'
+    # 頭：上げる 入れもの（オーバーヒート）→ うなずく 入れもの → 下あご（ほおの 歯車で ひらく：口の 中・あご・熱）・上の 頭・熱・ためる 光・光線
+    h += ('<i class="gwHw"><i class="gwHn">' + img('gwMo c', head_part('mouth_c')) + '<i class="gwJb">' + img('gwMo b', head_part('mouth_b')) + '</i>'
+          + '<i class="gwJw">' + img('gwMo a', head_part('mouth_a')) + img('gwJa', head_part('jaw')) + img('gwJh', head_part('heat_j')) + '</i>'
+          + img('gwHd', head_part('upper')) + img('gwHh', head_part('heat_u')) + img('gwCg', charge_svg())
+          + '<i class="gwBm">' + img('gwBg', beam_svg()) + img('gwBc', beam_svg(True)) + img('gwSp', splash_svg()) + '</i></i></i>')
     for nm in ('hl', 'fl'):
         h += leg(nm, False)
     h += img('gwDh', gear_svg(13, 12, BR, spokes=5, size=30)) + img('gwDs', gear_svg(13, 12, BR, spokes=5, size=30))
@@ -827,10 +993,17 @@ def banner(B):
     for k in range(3):
         html += img(f'gwPf p{k}', puff_svg(3 + k))
     html += img('gwJt', jet_svg())
+    # オーバーヒート：すきまから しゅー（4か所）・えんとつの 爆発（火の玉・黒い けむり・火の 粉）
+    for k in range(4):
+        html += img(f'gwHs s{k}', jet_svg())
+    for k in range(5):
+        html += img(f'gwSm m{k}', puff_svg(11 + k, 40, 30, '#6A605C', '#4A423F'))
+    html += img('gwFb', fireball_svg())
+    for k in range(6):
+        html += img(f'gwSk k{k}', spark_svg())
     html += '</div>'
 
     # ---- CSS
-    sky_uri = durl(skyline_svg())
     css = ('.gww{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#8E6458}'
            '.gww img,.gww i{position:absolute;display:block}'
            '.gww .bnr{left:0;top:0;width:390px;height:160px;object-fit:cover}'
@@ -847,9 +1020,8 @@ def banner(B):
            '.gww .gwG3{left:356px;top:-14px;width:44px;height:44px;animation:gwRotR 12s linear infinite}'
            # 馬
            '.gww .gwH{left:0;top:0;width:390px;height:160px;animation:gwBob ' + f(T) + 's linear infinite;will-change:transform}'
-           '.gww .gwBd{left:0;top:0;width:390px;height:160px}'
+           '.gww .gwBd,.gww .gwHt{left:0;top:0;width:390px;height:160px}'
            '.gww .gwTl{left:126px;top:68px;width:34px;height:42px;transform-origin:26px 4px;animation:gwTail ' + f(T) + 's ease-in-out infinite}'
-           f'.gww .gwHd{{left:{HEAD_BOX[0]}px;top:{HEAD_BOX[1]}px;width:{HEAD_BOX[2]}px;height:{HEAD_BOX[3]}px;transform-origin:{HEAD_PIV[0] - HEAD_BOX[0]}px {HEAD_PIV[1] - HEAD_BOX[1]}px;animation:gwHead {f(T)}s ease-in-out infinite}}'
            '.gww .gwMb,.gww .gwMn{left:0;top:0;width:390px;height:160px;transform-origin:250px 46px;animation:gwMane ' + f(T) + 's ease-in-out infinite}'
            '.gww .gwMb{animation-delay:-' + f(T * 0.18, 3) + 's}'
            '.gww .gwWn{left:183.5px;top:70.5px;width:25px;height:25px;border-radius:50%;overflow:hidden}'
@@ -857,7 +1029,8 @@ def banner(B):
            '.gww .gwWg2{left:13px;top:10px;width:16px;height:16px;animation:gwRotR ' + f(T * 2 * 8 / 10) + 's linear infinite}'
            '.gww .gwWg3{left:2px;top:14px;width:14px;height:14px;animation:gwRotR ' + f(T * 2 * 7 / 10) + 's linear infinite}'
            '.gww .gwWr{left:181px;top:68px;width:30px;height:30px}'
-           '.gww .gwNd{left:216px;top:78px;width:12px;height:12px;animation:gwNeedle 2.6s ease-in-out infinite}'
+           '.gww .gwNw{left:222px;top:84px;width:0;height:0;transform-origin:0 0}'
+           '.gww .gwNd{left:-6px;top:-6px;width:12px;height:12px;animation:gwNeedle 2.6s ease-in-out infinite}'
            '.gww .gwDh{left:' + f(HP[0] - 15) + 'px;top:' + f(HP[1] - 15) + 'px;width:30px;height:30px;animation:gwRot ' + f(T) + 's linear infinite}'
            '.gww .gwDs{left:' + f(SH[0] - 15) + 'px;top:' + f(SH[1] - 15) + 'px;width:30px;height:30px;animation:gwRot ' + f(T) + 's linear infinite}'
            '.gww .gwRod{left:' + f(HP[0] - 4) + 'px;top:' + f(HP[1] - 5) + 'px;width:' + f(SH[0] - HP[0] + 8) + 'px;height:' + f(10 + max(0, SH[1] - HP[1])) + 'px;animation:gwRod ' + f(T) + 's linear infinite}'
@@ -867,7 +1040,102 @@ def banner(B):
            # 蒸気
            '.gww .gwPf{left:204px;top:20px;width:34px;height:26px;opacity:0;transform-origin:50% 80%;animation:gwPuff 3.6s ease-out infinite;will-change:transform,opacity}'
            '.gww .gwPf.p1{animation-delay:.28s}.gww .gwPf.p2{animation-delay:.56s}'
-           f'.gww .gwJt{{left:{f(hpt(43, 6)[0] - 2)}px;top:{f(hpt(43, 6)[1] - 9)}px;width:70px;height:18px;opacity:0;transform-origin:0 50%;animation:gwJet 7.2s ease-out 1.8s infinite;will-change:transform,opacity}}')
+           f'.gww .gwJt{{left:{f(hpt(43, 6)[0] - 2)}px;top:{f(hpt(43, 6)[1] - 9)}px;width:70px;height:18px;opacity:0;transform-origin:0 50%;animation:gwJet {f(OH_S)}s ease-out infinite;will-change:transform,opacity}}')
+    # 頭：上げる 入れもの・うなずく 入れもの（どちらも 舞台の 座標・軸は うなずく 軸）・下あご（ほおの 歯車が 軸）
+    bx, by, bw, bh = HEAD_BOX
+    hg = hpt(*HINGE)
+    mo = hpt(*MOUTH)
+    css += (f'.gww .gwHw,.gww .gwHn,.gww .gwJw,.gww .gwJb,.gww .gwBm{{width:0;height:0}}'
+            f'.gww .gwHw{{left:0;top:0;transform-origin:{HEAD_PIV[0]}px {HEAD_PIV[1]}px;animation:gwTilt {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwHn{{left:0;top:0;transform-origin:{HEAD_PIV[0]}px {HEAD_PIV[1]}px;animation:gwHead {f(T)}s ease-in-out infinite}}'
+            f'.gww .gwJw,.gww .gwJb{{left:0;top:0;transform-origin:{f(hg[0])}px {f(hg[1])}px;animation:gwJaw {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwJb{{animation-name:gwJawH}}'
+            f'.gww .gwHd,.gww .gwHh,.gww .gwMo,.gww .gwJa,.gww .gwJh{{left:{bx}px;top:{by}px;width:{bw}px;height:{bh}px}}'
+            f'.gww .gwHh,.gww .gwJh{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
+            f'.gww .gwCg{{left:{f(mo[0] - 16)}px;top:{f(mo[1] - 16)}px;width:32px;height:32px;opacity:0;animation:gwCharge {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwBm{{left:{f(mo[0])}px;top:{f(mo[1])}px;transform:rotate({f(BEAM_DIR - OH_TILT)}deg);transform-origin:0 0}}'
+            f'.gww .gwBg{{left:-14px;top:-17px;width:{f(BEAM_L)}px;height:34px;transform-origin:14px 50%;opacity:0;animation:gwBeamG {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwBc{{left:-6px;top:-6px;width:{f(BEAM_L)}px;height:12px;transform-origin:6px 50%;opacity:0;animation:gwBeamC {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwSp{{left:{f(66 - 22)}px;top:-22px;width:44px;height:44px;opacity:0;animation:gwSplash {f(OH_S)}s ease-in-out infinite}}'
+            # 熱（体）・もや・ふた・圧力計の 針
+            f'.gww .gwHt{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
+            f'.gww .gwHa{{left:113px;top:26px;width:184px;height:104px;opacity:0;animation:gwHalo {f(OH_S)}s linear infinite}}'
+            f'.gww .gwCp{{left:211.5px;top:40px;width:19px;height:8px;animation:gwCap {f(OH_S)}s linear infinite}}'
+            f'.gww .gwNw{{animation:gwGauge {f(OH_S)}s ease-in-out infinite}}'
+            # 爆発
+            f'.gww .gwFb{{left:{f(CHIM[0] - 24)}px;top:{f(CHIM[1] - 42)}px;width:48px;height:46px;transform-origin:50% 92%;opacity:0;animation:gwFire {f(OH_S)}s ease-out infinite}}'
+            '.gww .gwSm{left:' + f(CHIM[0] - 20) + 'px;top:' + f(CHIM[1] - 24) + 'px;width:40px;height:30px;opacity:0;will-change:transform,opacity}'
+            '.gww .gwSk{left:' + f(CHIM[0] - 3) + 'px;top:' + f(CHIM[1] - 4) + 'px;width:6px;height:6px;opacity:0}'
+            '.gww .gwHs{width:28px;height:8px;opacity:0;transform-origin:0 50%}')
+
+    def ev(name, pts):
+        return cycle_kf(name, [(OH_AT + e, d) for e, d in pts], OH_S)
+    # 熱：ゆっくり 赤く（2.4秒）→ 光線の 間 そのまま → ゆっくり さめる（2秒）
+    css += ev('gwHeat', [(0, 'opacity:0'), (0.3, 'opacity:.04'), (1.2, 'opacity:.3'), (1.9, 'opacity:.65'), (2.4, 'opacity:.92'), (3.2, 'opacity:1'), (5.0, 'opacity:1'), (7.2, 'opacity:0')])
+    css += ev('gwHalo', [(0, 'opacity:0'), (0.8, 'opacity:0'), (2.4, 'opacity:.75'), (5.0, 'opacity:.8'), (7.0, 'opacity:0')])
+    # 圧力計の 針：だんだん 上がって ふるえ、爆発で ふり切れる → さめると もどる（中の 針の ゆれは そのまま）
+    css += ev('gwGauge', [(0, 'transform:rotate(0deg)'), (0.6, 'transform:rotate(8deg)'), (1.1, 'transform:rotate(34deg)'), (1.35, 'transform:rotate(28deg)'), (1.6, 'transform:rotate(48deg)'),
+                          (1.8, 'transform:rotate(43deg)'), (2.0, 'transform:rotate(62deg)'), (2.15, 'transform:rotate(57deg)'), (2.3, 'transform:rotate(76deg)'), (2.42, 'transform:rotate(98deg)'),
+                          (2.6, 'transform:rotate(91deg)'), (2.8, 'transform:rotate(97deg)'), (3.0, 'transform:rotate(92deg)'), (3.5, 'transform:rotate(97deg)'), (4.0, 'transform:rotate(93deg)'),
+                          (4.5, 'transform:rotate(97deg)'), (5.0, 'transform:rotate(94deg)'), (5.6, 'transform:rotate(60deg)'), (6.3, 'transform:rotate(0deg)')])
+    # えんとつの ふた：ふるえて → 爆発で 回りながら 上へ 飛ぶ（画面の 外）→ 3秒 あとに 回りながら 落ちて きて のる（はねる）
+    cap = [(0, 'transform:translate(0,0) rotate(0deg)'), (1.4, 'transform:translate(0,0) rotate(0deg)'), (1.55, 'transform:translate(.5px,-.6px) rotate(3deg)'),
+           (1.7, 'transform:translate(-.4px,0) rotate(-2deg)'), (1.85, 'transform:translate(.6px,-.8px) rotate(4deg)'), (2.0, 'transform:translate(-.5px,-.3px) rotate(-3deg)'),
+           (2.15, 'transform:translate(.6px,-1px) rotate(5deg)'), (2.3, 'transform:translate(-.4px,-.6px) rotate(-4deg)'),
+           (2.4, 'transform:translate(0,-1px) rotate(0deg);animation-timing-function:ease-out'), (3.0, 'transform:translate(-26px,-76px) rotate(-270deg)'),
+           (6.0, 'transform:translate(2px,-76px) rotate(-180deg);animation-timing-function:ease-in'), (6.42, 'transform:translate(0,0) rotate(0deg);animation-timing-function:ease-out'),
+           (6.56, 'transform:translate(0,-6px) rotate(0deg);animation-timing-function:ease-in'), (6.7, 'transform:translate(0,0) rotate(0deg);animation-timing-function:ease-out'),
+           (6.78, 'transform:translate(0,-1.6px) rotate(0deg);animation-timing-function:ease-in'), (6.86, 'transform:translate(0,0) rotate(0deg)')]
+    css += ev('gwCap', cap)
+    # 火の玉：0.32秒 かけて 明るく ふくらみ → 上へ 上がって けむりに なって 消える
+    css += ev('gwFire', [(0, 'opacity:0;transform:scale(.2)'), (2.38, 'opacity:0;transform:scale(.2)'), (2.7, 'opacity:1;transform:scale(1.3)'),
+                         (3.05, 'opacity:.95;transform:translateY(-6px) scale(1.55)'), (3.5, 'opacity:.6;transform:translateY(-14px) scale(1.7)'), (3.95, 'opacity:0;transform:translateY(-22px) scale(1.85)')])
+    for k in range(5):                                                   # 黒い けむり：ふくらんで うしろ（左）上へ
+        t0 = 2.6 + 0.08 * k
+        dx = (-14, -30, 6, -46, -20)[k]
+        css += (f'.gww .gwSm.m{k}{{animation:gwSm{k} {f(OH_S)}s ease-out infinite}}'
+                + ev(f'gwSm{k}', [(0, 'opacity:0;transform:translate(0,0) scale(.4)'), (t0, 'opacity:0;transform:translate(0,0) scale(.4)'),
+                                  (t0 + 0.3, f'opacity:.9;transform:translate({f(dx * 0.3)}px,-10px) scale(1)'),
+                                  (t0 + 1.4, f'opacity:.75;transform:translate({dx}px,{-30 - 6 * k}px) scale(1.9)'),
+                                  (t0 + 2.8, f'opacity:0;transform:translate({f(dx * 1.6)}px,{-48 - 8 * k}px) scale(2.6)')]))
+    R = rnd(29)
+    for k in range(6):                                                   # 火の 粉：放物線で 飛び 散る
+        vx = (-1 if k % 2 else 1) * R.uniform(14, 44)
+        vy = R.uniform(18, 34)
+        st = [(0, 'opacity:0;transform:translate(0,0)'), (2.4, 'opacity:0;transform:translate(0,0)'), (2.42, 'opacity:1;transform:translate(0,0)')]
+        for i in range(1, 7):
+            u = i / 6
+            x, y = vx * u, -vy * 4 * u * (1 - u) + 30 * u * u
+            st.append((2.42 + 1.0 * u, f'opacity:{f(1 if u < 0.7 else (1 - u) / 0.3)};transform:translate({f(x)}px,{f(y)}px)'))
+        css += f'.gww .gwSk.k{k}{{animation:gwSk{k} {f(OH_S)}s linear infinite}}' + ev(f'gwSk{k}', st)
+    # すきまから しゅー（だんだん 熱く なる 間）・さめる ときに 2か所
+    jets = [((172, 63), -128, (0.9, 1.7, 5.9)), ((237, 63), -62, (1.25, 2.05, 6.2)), ((192, 101), 152, (1.5, 2.2)), ((262, 46), -36, (1.05, 1.85))]
+    for k, ((x, y), ang, times) in enumerate(jets):
+        st = [(0, f'opacity:0;transform:rotate({ang}deg) scaleX(.2)')]
+        for t0 in times:
+            big = 1.5 if t0 > 5 else 1.0
+            st += [(t0, f'opacity:0;transform:rotate({ang}deg) scaleX(.2)'), (t0 + 0.06, f'opacity:.9;transform:rotate({ang}deg) scaleX({f(0.8 * big)})'),
+                   (t0 + 0.4, f'opacity:0;transform:rotate({ang}deg) scaleX({f(1.3 * big)})')]
+        css += f'.gww .gwHs.s{k}{{left:{x}px;top:{y - 4}px;animation:gwHs{k} {f(OH_S)}s ease-out infinite}}' + ev(f'gwHs{k}', st)
+    # 頭を 上げて（ふた が 飛んだ あと）→ 口を ぱっくり → ためる 光 → 光線（0.3秒 かけて 明るく）→ 消えて（0.35秒）→ 口を とじて 頭を もどす
+    css += ev('gwTilt', [(0, 'transform:rotate(0deg)'), (2.7, 'transform:rotate(0deg)'), (3.05, f'transform:rotate({f(OH_TILT)}deg)'), (3.8, f'transform:rotate({f(OH_TILT - 1)}deg)'),
+                         (4.4, f'transform:rotate({f(OH_TILT + 0.6)}deg)'), (5.0, f'transform:rotate({f(OH_TILT - 0.8)}deg)'), (5.4, f'transform:rotate({f(OH_TILT)}deg)'), (5.95, 'transform:rotate(0deg)')])
+    jaw = [(0, 0), (2.85, 0), (3.12, JAW_MAX), (3.6, JAW_MAX - 2), (4.1, JAW_MAX), (4.6, JAW_MAX - 2), (5.1, JAW_MAX), (5.32, JAW_MAX), (5.6, 0)]
+    css += ev('gwJaw', [(e, f'transform:rotate({f(a)}deg)') for e, a in jaw])
+    css += ev('gwJawH', [(e, f'transform:rotate({f(a / 2)}deg)') for e, a in jaw])        # 口の 中の まん中の 1まい（半分の 角度）
+    css += ev('gwCharge', [(0, 'opacity:0;transform:scale(.3)'), (3.0, 'opacity:0;transform:scale(.3)'), (3.32, 'opacity:1;transform:scale(1.1)'), (3.6, 'opacity:.95;transform:scale(.95)'),
+                           (4.0, 'opacity:1;transform:scale(1.12)'), (4.4, 'opacity:.95;transform:scale(1)'), (4.8, 'opacity:1;transform:scale(1.12)'), (5.15, 'opacity:.95;transform:scale(1)'),
+                           (5.5, 'opacity:0;transform:scale(.5)')])
+    css += ev('gwBeamG', [(0, 'opacity:0;transform:scale(0,1)'), (3.22, 'opacity:0;transform:scale(0,1)'), (3.52, 'opacity:.85;transform:scale(1,1)'), (3.9, 'opacity:.82;transform:scale(1,.93)'),
+                          (4.3, 'opacity:.85;transform:scale(1,1.06)'), (4.7, 'opacity:.82;transform:scale(1,.93)'), (5.15, 'opacity:.85;transform:scale(1,1)'), (5.5, 'opacity:0;transform:scale(1,.3)')])
+    css += ev('gwBeamC', [(0, 'opacity:0;transform:scale(0,1)'), (3.22, 'opacity:0;transform:scale(0,1)'), (3.52, 'opacity:1;transform:scale(1,1)'), (3.9, 'opacity:1;transform:scale(1,.9)'),
+                          (4.3, 'opacity:1;transform:scale(1,1.05)'), (4.7, 'opacity:1;transform:scale(1,.9)'), (5.15, 'opacity:1;transform:scale(1,1)'), (5.48, 'opacity:0;transform:scale(1,.2)')])
+    css += ev('gwSplash', [(0, 'opacity:0;transform:scale(.3) rotate(0deg)'), (3.35, 'opacity:0;transform:scale(.3) rotate(0deg)'), (3.65, 'opacity:1;transform:scale(1.05) rotate(20deg)'),
+                           (4.0, 'opacity:.9;transform:scale(.92) rotate(40deg)'), (4.4, 'opacity:1;transform:scale(1.08) rotate(60deg)'), (4.8, 'opacity:.9;transform:scale(.92) rotate(80deg)'),
+                           (5.15, 'opacity:1;transform:scale(1.04) rotate(100deg)'), (5.5, 'opacity:0;transform:scale(.6) rotate(120deg)')])
+    # 鼻の 蒸気：16秒に 2回（オーバーヒートの ない ころ）
+    jet0, jet1, jet2 = 'opacity:0;transform:scaleX(.1) translateY(0)', 'opacity:.95;transform:scaleX(1) translateY(1px)', 'opacity:0;transform:scaleX(1.25) translateY(4px)'
+    css += cycle_kf('gwJet', [(1.4, jet0), (1.58, jet1), (2.26, jet2), (13.0, jet0), (13.18, jet1), (13.86, jet2)], OH_S)
     for nm in LEGS:
         piv = SH if nm[0] == 'f' else HP
         parts = leg_parts(nm[0] == 'f', nm in ('hr', 'fr'))
@@ -896,13 +1164,18 @@ def banner(B):
             # えんとつの 蒸気：1つ 1.6秒（3.6秒の うち 44%）。ふくらんで うしろ（左）上へ 流れて 消える
             + kf('gwPuff', [(0, 'opacity:0;transform:translate(0,2px) scale(.25)'), (4, 'opacity:.95;transform:translate(-2px,-3px) scale(.5)'),
                             (24, 'opacity:.7;transform:translate(-24px,-14px) scale(1.15)'), (44, 'opacity:0;transform:translate(-52px,-24px) scale(1.7)'),
-                            (100, 'opacity:0;transform:translate(-52px,-24px) scale(1.7)')])
-            # 鼻の 蒸気：しゅっ（0.2秒で のびて 0.8秒で 消える）
-            + kf('gwJet', [(0, 'opacity:0;transform:scaleX(.1) translateY(0)'), (2.5, 'opacity:.95;transform:scaleX(1) translateY(1px)'),
-                           (12, 'opacity:0;transform:scaleX(1.25) translateY(4px)'), (100, 'opacity:0;transform:scaleX(1.25) translateY(4px)')]))
+                            (100, 'opacity:0;transform:translate(-52px,-24px) scale(1.7)')]))
     if still:
         css += reduced('.gww>*:not(.bnr)')
     return html, css
+
+
+def cycle_kf(name, stops, total):
+    """[(秒, 宣言)] → 1回り total 秒の keyframes（0% と 100% は 最初の 形）"""
+    stops = sorted(stops, key=lambda q: q[0])
+    first = stops[0][1]
+    lst = [(0, first)] + [(max(0.0, min(100.0, 100 * t / total)), d) for t, d in stops] + [(100, first)]
+    return kf(name, lst)
 
 
 # ================================================================== 色・字・形（themes20 と 同じ 形）
@@ -938,7 +1211,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='スチームパンク', desc='歯車の馬', title='スチームパンク（真ちゅう×銅×夕ぐれ）', banner=ID,
-    alt='夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬（本物の馬のような頭と首・流れるたてがみ・ひざと飛節のある足）が速足で走る。肩と腰の大きな歯車が回り、えんとつと鼻から蒸気がしゅっと出るイラスト',
+    alt='夕ぐれの工場の町の石だたみを、真ちゅうと銅でできた機械仕掛けの馬（本物の馬のような頭と首・流れるたてがみ・ひざと飛節のある足）が速足で走る。肩と腰の大きな歯車が回り、えんとつと鼻から蒸気がしゅっと出て、ときどきオーバーヒートしてえんとつが爆発し、口から光線をうつイラスト',
     fonts=['Kaisei+Tokumin:wght@800', 'Murecho:wght@500;700'],
     v=dict(bg='#EFE2C6', ink='#2C2016', sub='#6A5640', card='#FBF4E2', cardB='1.5px solid #C9A86A', cardO='0 solid transparent', cardS='0 3px 0 #D9C092',
            radius='10px', rs='8px', font='"Murecho"', dfont='"Kaisei Tokumin"', dw='800', logo='#F0C76A', logoS='0 2px 0 #1E140C',
@@ -957,7 +1230,8 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2E2420', '鉄'), ('#C99A3E', '真ちゅう'), ('#9A5528', '銅のボタン'), ('#2F6A62', '青さび'), ('#EFE2C6', '背景')],
                fonts='見出し：Kaisei Tokumin<br>本文：Murecho', shape='角丸10px・帯は 鉄の色で 下に 真ちゅうの びょうの 帯・うすい 歯車の 背景・すみに かみ合う 歯車・的中ボタンは 歯車と 圧力計の PUSH',
-               pic='夕ぐれの 工場の 町・飛行船・石だたみ・大きな 歯車・真ちゅうと 銅の 機械仕掛けの 馬（本物の 馬の 頭と 首・流れる たてがみ・ひざと 飛節の ある 足で 速足・歯車と 連結棒・えんとつと 鼻から 蒸気）'),
+               pic='夕ぐれの 工場の 町・飛行船・石だたみ・大きな 歯車・真ちゅうと 銅の 機械仕掛けの 馬（本物の 馬の 頭と 首・流れる たてがみ・ひざと 飛節の ある 足で 速足・歯車と 連結棒・えんとつと 鼻から 蒸気）・'
+                   '16秒に 1回 オーバーヒート（赤く 熱く なって 圧力計が ふり切れ、えんとつが 爆発して ふたが 飛び、口を ぱっくり あけて 右へ 光線）'),
 )
 
 

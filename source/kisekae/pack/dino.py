@@ -10,6 +10,17 @@
      ・火山：8秒に 1回 噴火（溶岩の 柱・溶岩の つぶ・けむり・斜面の 溶岩が 明るく）。4回に 1回は 大噴火（もっと 高く・岩が 飛ぶ・大きな けむり）で、
        128秒の 1回りの 中で 何回目が 大噴火かが かわる（8・56・80・96秒）。あかりは ゆっくり（強く 光らせない）
      ・首の 長い 恐竜は 歩かない（足は 地面に 止まった まま）：しげみと 同じ はやさで 流れる 背景（18秒ごと・背中に 板の ある 恐竜と 9秒 ずらして いつも どれか 見える）
+   第4.94版（まさちゃん「青丸の恐竜の首の角度、動き方がおかしいから自然にして！黄丸は9秒１回赤丸は6秒に一回背景に通るようにして！
+     17秒に１回、ティラノサウルスが出てきて、それを馬達で避ける演出いれて！」）：
+     ・首の 長い 恐竜の 首は 8つの 短い ふしの くさり（根もと 21 → 頭 10.5 に 細く・はしは まるく 重なる）。まがりを ふしで 同じに 分けて いつも なめらかな 弓なり。
+       上げる・下げる ときは 根もとの 向きと まがりを いっしょに かえる（首 ぜんぶが しなる・頭は 首の 先に ついた まま）。首の 根もとは 体の うしろから 出る
+     ・しげみを 少し 速く（5.75秒で 390px）：首の 長い 恐竜は 9秒で 画面を 通りぬけて すぐ 次が 入る＝9秒に 1回。
+       背中に 板の ある 恐竜は 2頭が 12秒の 1回りを 6秒 ずらして＝6秒に 1回（首の 長い 恐竜の 首と 頭に 重ならない ずらし）。足は 地面に 止まった まま
+     ・17秒に 1回 ティラノサウルス（オリジナル：大きな 頭・小さな 手・しまの せなか・太い もも）が 右から 走って きて、頭を 上げて 口を あけて ほえる（ほえる 線）。
+       2頭の 馬は 上（おく）と 下（手前）に わかれて よけ、ティラノは その あいだを 左へ 走りぬける → 馬は もとの ならびに もどる。
+       原始人は びっくり（目と 口が まるく・武器を まっすぐ 上げる シートに 入れかえ）・頭の 上に 「！」。強い 光は なし。
+       ティラノの 足は もも → すね → 足の くさりで、地面に ついた 足は 地面と 同じ はやさで うしろへ（すべらない）
+     ・小さな 恐竜は ティラノの 出ない ころに 17秒に 1回
    動き：馬は いつも ならんで 走る・地面（足あと・小石）と しげみと 背景の 恐竜が 流れる（遠いほど ゆっくり）・翼竜が はばたいて 横切る・
      ときどき 小さな 恐竜が 馬と ならんで 走って 追いこす・火山の けむりが もくもく 上がる"""
 import math
@@ -319,6 +330,122 @@ def stego_svg(part):
     return doc(w, h, o)
 
 
+# ---- ティラノサウルス（第4.94版：まさちゃん「17秒に1回、ティラノサウルスが出てきて、それを馬達で避ける演出いれて！」）
+#   オリジナルの かわいめの ティラノ（大きな 頭・小さな 手・しまの せなか）。絵は 右向きで 作って ページで 左右を 反転（左へ 走る）。
+#   右から 走って きて ほえる（頭を 上げて 口を あける・ほえる 線）→ 2頭の 馬が 上下に わかれた あいだを 走りぬけて 左へ。
+TREX_S = 17.0               # 1回り（秒）
+TREX_AT = 3.0               # 1回りの 中で 出て くる 時刻（秒）
+TREX_RUN = 0.36             # 足の 1回り（秒）
+TREX_V = 300.0              # 画面での はやさ（px／秒・左へ）
+TREX_SC = 0.8               # 大きさ
+TREX_GROUND = 138           # 足の 下（画面の y）
+TR_BOX = (-10, 0, 164, 104)  # 絵の 箱（左・上・はば・高さ：右向きの 座標）
+TR_HIP = (60, 56)
+TR_LT, TR_LS = 21.0, 22.0   # もも・すね
+TR_ANK = 8.0                # 足首の 高さ
+TR_C, TR_D, TR_S2, TR_B = '#C46A3E', '#8E4426', '#A4502E', '#F6DCAE'
+
+
+def trex_part(name, far=False):
+    """ティラノの 部品（右向き・TR_BOX の 座標・足は 関節が 原点）"""
+    c, d, s2, b = (mix(TR_C, '#2A1410', .3), mix(TR_D, '#2A1410', .3), mix(TR_S2, '#2A1410', .3), mix(TR_B, '#2A1410', .3)) if far else (TR_C, TR_D, TR_S2, TR_B)
+    bx, by, bw, bh = TR_BOX
+    o = ''
+    if name == 'tail':
+        o += f"<path d='M44 40 C26 36 10 32 -8 26 C6 36 22 48 42 60 Z' fill='{c}'/>"
+        for k, x in enumerate((30, 18, 6)):
+            o += f"<path d='M{x} {31 + k * -1.6} q2 4 1 8' fill='none' stroke='{s2}' stroke-width='2.4' stroke-linecap='round'/>"
+        o += f"<path d='M40 56 C26 48 12 40 -4 30' fill='none' stroke='{b}' stroke-width='2.2' stroke-linecap='round' opacity='.6'/>"
+    elif name == 'body':
+        o += f"<ellipse cx='62' cy='48' rx='34' ry='22' transform='rotate(-14 62 48)' fill='{c}'/>"
+        o += f"<path d='M78 34 C86 28 94 24 102 22 L108 38 C100 44 92 50 86 56 Z' fill='{c}'/>"          # 首
+        o += f"<path d='M40 62 C56 74 82 66 96 50 C88 58 70 66 52 64 Z' fill='{b}'/>"                  # おなか
+        for k, (x, y) in enumerate(((50, 30), (62, 27), (74, 25), (86, 25))):                        # せなかの しま
+            o += f"<path d='M{x} {y} q3 5 1 10' fill='none' stroke='{s2}' stroke-width='3' stroke-linecap='round'/>"
+    elif name in ('arm',):
+        o += f"<path d='M88 56 C94 58 98 62 100 66 L97 67 C95 64 92 61 87 60 Z' fill='{d if far else c}'/>"
+        o += f"<path d='M100 66 l3 1 M100 66 l1.6 3' stroke='{b}' stroke-width='1.4' stroke-linecap='round'/>"
+    elif name == 'head':
+        o += (f"<path d='M96 24 C100 12 116 6 132 10 C142 12 150 18 151 26 C152 32 148 35 142 35 L106 38 C100 38 94 32 96 24 Z' fill='{c}'/>"
+              f"<path d='M100 14 C112 8 128 8 142 14' fill='none' stroke='{s2}' stroke-width='2.4' stroke-linecap='round' opacity='.8'/>"
+              f"<path d='M110 15 q6 -4 12 -1' fill='none' stroke='{d}' stroke-width='2.6' stroke-linecap='round'/>")       # まゆ
+        o += "<circle cx='117' cy='21' r='5.6' fill='#FFFFFF'/><circle cx='118.6' cy='21.6' r='3.2' fill='#2A1410'/><circle cx='119.6' cy='20.4' r='1.1' fill='#FFFFFF'/>"
+        o += f"<ellipse cx='145' cy='20' rx='1.6' ry='1' fill='{d}'/>"
+        for k in range(6):                                               # 上の 歯
+            x = 112 + k * 6
+            o += f"<path d='M{x} 35.6 l2.2 4 l2.2 -4 Z' fill='#FFFDF2'/>"
+        o += f"<ellipse cx='128' cy='29' rx='3' ry='1.8' fill='#F09A78' opacity='.55'/>"
+    elif name == 'jaw':                                                  # 下あご（ちょうつがい 102,38）＋上に 口の 中（とじると 頭の うしろに かくれる）
+        o += "<path d='M101 38.4 L116 30 L130 23 L143 18.6 L147.4 22 L148 39 C140 41.4 120 42.4 104 41 Z' fill='#6E1A14'/>"
+        o += "<path d='M112 40.6 C122 42.2 134 41.6 143 38.8' fill='none' stroke='#E8666A' stroke-width='3' stroke-linecap='round'/>"
+        o += (f"<path d='M102 36 C110 40 126 41 142 38 C146 37 148 39 146 42 C140 48 120 50 106 46 C100 44 98 40 102 36 Z' fill='{c}'/>"
+              f"<path d='M106 44 C120 48 134 46 144 41' fill='none' stroke='{b}' stroke-width='2' stroke-linecap='round' opacity='.7'/>")
+        for k in range(5):                                               # 下の 歯
+            x = 116 + k * 6
+            o += f"<path d='M{x} 39.6 l2 -3.6 l2 3.6 Z' fill='#FFFDF2'/>"
+    return doc(bw, bh, o, vb=f'{bx} {by} {bw} {bh}')
+
+
+def trex_leg_seg(kind, far=False):
+    """足の ふし（関節が 原点・下へ のびる）：thigh（太い もも）・shin（すね）・foot（足首と 3本の ゆび）。返り値：(svg, ox, oy, w, h)"""
+    c, d, b = (mix(TR_C, '#2A1410', .3), mix(TR_D, '#2A1410', .3), mix(TR_B, '#2A1410', .3)) if far else (TR_C, TR_D, TR_B)
+    if kind == 'thigh':                                                  # 太い もも（上が ふくらむ・ふちに こい 線で 体と 分ける）
+        ox, oy, w, h = 17, 17, 34, 46
+        L = TR_LT
+        o = (f"<path d='M{ox - 15} {oy - 4} C{ox - 16} {oy + 10} {ox - 8} {oy + L - 2} {ox - 4} {oy + L + 2} C{ox} {oy + L + 6} {ox + 6} {oy + L + 4} {ox + 7} {oy + L} "
+             f"C{ox + 12} {oy + 12} {ox + 16} {oy + 2} {ox + 14} {oy - 8} C{ox + 10} {oy - 16} {ox - 10} {oy - 16} {ox - 15} {oy - 4} Z' fill='{c}' stroke='{d}' stroke-width='1.6'/>")
+        o += f"<path d='M{ox + 8} {oy - 8} C{ox + 11} {oy - 1} {ox + 9} {oy + 8} {ox + 5} {oy + 15}' fill='none' stroke='{b}' stroke-width='2.4' stroke-linecap='round' opacity='.55'/>"
+        o += f"<path d='M{ox - 9} {oy - 2} q-2 9 2 17' fill='none' stroke='{d}' stroke-width='2' stroke-linecap='round' opacity='.5'/>"
+    elif kind == 'shin':
+        ox, oy, w, h = 9, 8, 18, 34
+        L = TR_LS
+        o = (f"<path d='M{ox - 6.4} {oy} C{ox - 6} {oy + 8} {ox - 4.6} {oy + L - 6} {ox - 3.6} {oy + L} L{ox + 3.6} {oy + L} C{ox + 4.4} {oy + L - 6} {ox + 6} {oy + 8} {ox + 6.4} {oy} Z' fill='{c}' stroke='{d}' stroke-width='1.2'/>"
+             f"<circle cx='{ox}' cy='{oy}' r='6.6' fill='{c}'/>")
+    else:                                                                # 足首 → つま先（地面に ふむ 形・前が +x）
+        ox, oy, w, h = 7, 6, 30, 16
+        A = TR_ANK
+        o = (f"<path d='M{ox - 4} {oy - 3} L{ox + 4} {oy - 3} L{ox + 7} {oy + A - 2.4} L{ox + 18} {oy + A - 1.6} C{ox + 21} {oy + A - 1} {ox + 21.4} {oy + A + 1.6} {ox + 18.6} {oy + A + 1.6} "
+             f"L{ox - 5} {oy + A + 1.6} C{ox - 6.4} {oy + A} {ox - 6} {oy + 2} {ox - 4} {oy - 3} Z' fill='{c}' stroke='{d}' stroke-width='1.2' stroke-linejoin='round'/>")
+        for k in range(3):                                               # つめ
+            o += f"<path d='M{ox + 12 + k * 3.2} {oy + A + 1.6} l2.2 .9' stroke='#FFFDF2' stroke-width='1.6' stroke-linecap='round'/>"
+    return doc(w, h, o), ox, oy, w, h
+
+
+def trex_leg_keys(off):
+    """走る 足（右向き）：足首の 通る 道（地面に ついて いる 間は うしろへ まっすぐ＝地面と 同じ はやさ・宙は 上げて 前へ）→ もも・すね・足の 回転（NT+1 コマ）"""
+    NT = 16
+    stride = (TREX_V - 189.0) * TREX_RUN / 2 / TREX_SC                  # 地面に ついた 足が うしろへ 進む 長さ（絵の 座標）
+    lift = 13.0
+    out = ([], [], [])
+    for i in range(NT + 1):
+        q = (i / NT + off) % 1.0
+        if q < 0.5:
+            u = q / 0.5
+            ax, ay, toe = 4 + stride / 2 - stride * u, 100 - TR_ANK, 0.0
+        else:
+            u = (q - 0.5) / 0.5
+            e = 0.5 - 0.5 * math.cos(math.pi * u)
+            ax, ay = 4 - stride / 2 + stride * e, 100 - TR_ANK - lift * math.sin(math.pi * u)
+            toe = 34 * math.sin(math.pi * u)                             # 宙では つま先が 下へ
+        px, py = TR_HIP[0], TR_HIP[1] + trex_bob(q)                     # 腰は からだと いっしょに 上下（足の 下は 地面の まま）
+        tx, ty = px + ax, ay
+        dx, dy = tx - px, ty - py
+        dd = min(math.hypot(dx, dy), TR_LT + TR_LS - 0.01)
+        a = math.atan2(dy, dx)
+        cc = (TR_LT ** 2 + dd ** 2 - TR_LS ** 2) / (2 * TR_LT * dd)
+        bb = math.acos(max(-1.0, min(1.0, cc)))
+        a1 = a - bb                                                      # ひざは 前（+x）
+        kx, ky = px + TR_LT * math.cos(a1), py + TR_LT * math.sin(a1)
+        a2 = math.atan2(ty - ky, tx - kx)
+        r1 = math.degrees(a1) - 90
+        r2 = math.degrees(a2) - 90 - r1
+        r3 = toe - (r1 + r2)
+        out[0].append(r1)
+        out[1].append(r2)
+        out[2].append(r3)
+    return out
+
+
 # ---- 火山の 噴火（第4.93版：8秒に 1回・4回に 1回は 大噴火＝長い 1回りの 中で 大噴火の 順番が かわる）
 ERUPT_S = 8.0
 BIG_TOTAL = 128.0
@@ -435,12 +562,59 @@ def wing_svg():
 LAYOUT = dict(near=(-4, 0), far=(40, 0))      # 馬の シートの ずらし（1倍の 画素：右・下）
 
 
+def bang_svg():
+    """びっくりの しるし（白い ふきだしに 赤い「！」の 形）"""
+    o = ("<path d='M9 1 C14 1 17 4 17 9 C17 14 14 17 10 17 L6.6 21 L7.2 16.6 C3.6 15.8 1 13 1 9 C1 4 4 1 9 1 Z' fill='#FFFFFF' stroke='#5A3A1E' stroke-width='1.4' stroke-linejoin='round'/>"
+         "<path d='M7.5 4 L10.5 4 L9.8 10.8 L8.2 10.8 Z' fill='#E0402A'/><circle cx='9' cy='13.4' r='1.6' fill='#E0402A'/>")
+    return doc(18, 22, o)
+
+
+def trex_roar():
+    """ほえる 線（口の 前：絵の 座標 148〜182）"""
+    o = ''
+    for k, r in enumerate((8.0, 14.0, 20.0)):
+        o += (f"<path d='M{f(150 + r * 0.25)} {f(34 - r * 0.9)} Q{f(152 + r)} 38 {f(150 + r * 0.25)} {f(42 + r * 0.9)}' fill='none' stroke='#FFFFFF' "
+              f"stroke-width='{f(3.0 - k * 0.5)}' stroke-linecap='round' opacity='{f(0.95 - k * 0.22)}'/>")
+    return doc(34, 76, o, vb='148 0 34 76')
+
+
+def trex_html():
+    """ティラノの 部品の ならび（反転する 箱の 中・絵の 座標＋10＝箱の 左から）"""
+    def chain(cls, far):
+        th, sh, ft = (trex_leg_seg(k, far) for k in ('thigh', 'shin', 'foot'))
+        return (f'<i class="tl0 {cls}">' + img('tth', th[0]) + '<i class="tl1">' + img('tsh', sh[0]) + '<i class="tl2">' + img('tft', ft[0]) + '</i></i></i>')
+    o = '<i class="dnTx"><i class="dnTb">'
+    o += img('dnT tail', trex_part('tail'))
+    o += chain('lf', True)
+    o += img('dnT body', trex_part('body'))
+    o += img('dnT arm', trex_part('arm'))
+    o += '<i class="dnTh"><i class="dnTn">' + img('dnT jaw', trex_part('jaw')) + img('dnT head', trex_part('head')) + img('dnTr', trex_roar()) + '</i></i>'
+    o += chain('ln', False)
+    o += '</i></i>'
+    return o
+
+
+def trex_bob(q):
+    """からだの 上下（絵の 座標・下が +）：どちらかの 足が 地面の まん中で いちばん 下"""
+    return -1.6 * math.cos(4 * math.pi * q)
+
+
+# ---- ティラノの 出る 時の ながれ（e＝出てから の 秒）
+TX_X0, TX_X1 = 532.0, -6.0          # 反転した 箱の 右はし（画面の x）：右の 外 → 左の 外
+TX_TOP = TREX_GROUND - 101.4 * TREX_SC
+TX_ROAR = (0.22, 0.95)              # ほえる（頭を 上げて 口を あける）
+DODGE = (0.0, 0.42, 1.78, 2.45)     # 馬が よける（よけ はじめ・よけ おわり・もどり はじめ・もどり おわり）
+SHOCK = (0.12, 1.9)                 # 原始人が びっくり（武器を 上げる）
+
+
 def banner(B):
     near, far = B.get('near'), B.get('far')
+    near_s, far_s = B.get('near_s'), B.get('far_s')
     still = B.get('still')
     alt = ('むかしの大地で、けむりをはく火山と首の長い大きな恐竜・背中に板のある恐竜・草を食べるトリケラトプス・空の翼竜の横を、'
            '原始人が乗った鹿毛と芦毛の馬（長いたてがみとしっぽ）がならんで走るイラスト（馬はいつも走っていて、地面としげみと恐竜が流れ、'
-           '原始人は骨のこん棒と石のやりをふる。火山は8秒に1回噴火して、ときどき大噴火）')
+           '首の長い恐竜は首をなめらかに上げ下げしてしだを食べる。火山は8秒に1回噴火して、ときどき大噴火。17秒に1回ティラノサウルスが'
+           '右から走ってきてほえ、2頭の馬が上と下にわかれてよけたあいだを走りぬける）')
     html = f'<div class="dnw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('dnSky', sky_svg()) + img('dnGl', glow_svg())
@@ -462,24 +636,27 @@ def banner(B):
         html += img(f'dnRk r{k}', rock_svg())
     for k in range(2):
         html += f'<i class="dnPt q{k}">' + img('dnPb', ptero_svg()) + img('dnPw', wing_svg()) + '</i>'
-    # 背景の 恐竜（しげみと 同じ はやさで 流れる）
+    # 背景の 恐竜（しげみと 同じ はやさで 流れる）：首の 長い 恐竜（首は 8つの ふしの くさり・体の うしろから 出る）→ 背中に 板の ある 恐竜（2頭 交代）
     up, down = neck_poses()
-    segs = [neck_seg(k) for k in range(3)]
+    segs = [neck_seg(k) for k in range(NECK_N)]
     hd = bro_head()
     chain = ''
-    for k, (svg, ox_, oy_, w_, h_) in enumerate(segs):
-        chain += f'<i class="n{k}">' + img(f'ns{k}', svg)
-    chain += '<i class="hd">' + img('hh', hd[0]) + '</i>' + '</i>' * 3
-    html += ('<i class="dnBr">' + ''.join(img(f'dnB {k}', bro_part(k)) for k in ('shadow', 'legF', 'tail', 'body', 'legN')) + chain
-             + img('dnB fern', bro_part('fern')) + '</i>')
-    html += '<i class="dnSt">' + img('dnS tail', stego_svg('tail')) + img('dnS body', stego_svg('body')) + img('dnS head', stego_svg('head')) + '</i>'
+    for k in range(NECK_N):
+        chain += f'<i class="n{k}">' + img(f'ns{k}', segs[k][0])
+    chain += '<i class="hd">' + img('hh', hd[0]) + '</i>' + '</i>' * NECK_N
+    html += ('<i class="dnBr">' + ''.join(img(f'dnB {k}', bro_part(k)) for k in ('shadow', 'legF', 'tail')) + chain
+             + ''.join(img(f'dnB {k}', bro_part(k)) for k in ('body', 'legN', 'fern')) + '</i>')
+    for k in range(2):
+        html += f'<i class="dnSt t{k}">' + img('dnS tail', stego_svg('tail')) + img('dnS body', stego_svg('body')) + img('dnS head', stego_svg('head')) + '</i>'
     html += f'<i class="dnMd" style="background-image:url(&quot;{durl(mid_svg())}&quot;)"></i>'
     html += f'<i class="dnGd" style="background-image:url(&quot;{durl(ground_svg())}&quot;)"></i>'
+    bang = img('dnEx', bang_svg())
     if far:
-        html += '<i class="dnH h2"><i></i></i>'
+        html += '<i class="dnDg g2"><i class="dnH h2"><i></i></i>' + ('<i class="dnH h2s"><i></i></i>' if far_s else '') + bang + '</i>'
     html += '<i class="dnRx">' + ''.join(img(f'dnR {k}', runner_part(k)) for k in ('legF', 'body', 'legN')) + '</i>'
+    html += trex_html()
     if near:
-        html += '<i class="dnH h1"><i></i></i>'
+        html += '<i class="dnDg g1"><i class="dnH h1"><i></i></i>' + ('<i class="dnH h1s"><i></i></i>' if near_s else '') + bang + '</i>'
     html += '</div>'
 
     # ---- はやさ：地面は 手前の 馬の 地面に ついた ひづめと 同じ はやさ（すべらない）。おくの 馬は 1回りの 秒を かえて 同じ はやさに
@@ -545,42 +722,49 @@ def banner(B):
               (3.6 + k * 0.25, f'opacity:.6;transform:translate({VX - 20 + dx}px,{VY - 66}px) scale(2.2)'),
               (7.0 + k * 0.25, f'opacity:0;transform:translate({VX - 12 + dx * 1.5}px,{VY - 88}px) scale(2.8)')]
         css += f'.dnw .dnBs.s{k}{{animation:dnBs{k} {BIG_TOTAL}s linear infinite}}' + events_kf(f'dnBs{k}', st, BIG_TOTAL, BIG_AT)
-    # 背景の 恐竜：しげみ（MID_S 秒で 390px）と 同じ はやさで 右から 左へ（18秒ごと・2頭は 9秒 ずらす）
+    # ---- 背景の 恐竜：しげみ（MID_S 秒で 390px）と 同じ はやさで 右から 左へ。足は 地面に 止まった まま
+    #   首の 長い 恐竜：9秒で 画面を 通りぬけ、すぐ 次が 入る（9秒に 1回）。背中に 板の ある 恐竜：2頭が 12秒の 1回りを 6秒 ずらして（6秒に 1回）
     vmid = W / MID_S
     bw, bh = BRO
     sw_, sh_ = STEGO
-    cyc = 18.0
-    for cls, wdt, top, kfn, delay in (('dnBr', bw, 118 - 120, 'dnBro', -12.77), ('dnSt', sw_, 118 - 79, 'dnSte', -3.77)):
-        x0, x1 = 400, -wdt - 14
-        pct = 100 * ((x0 - x1) / vmid) / cyc
-        css += (f'.dnw .{cls}{{left:0;top:{top}px;width:{wdt}px;height:{bh if cls == "dnBr" else sh_}px;animation:{kfn} {cyc}s linear {f(delay)}s infinite;will-change:transform}}'
-                + kf(kfn, [(0, f'transform:translateX({x0}px)'), (pct, f'transform:translateX({x1}px)'), (100, f'transform:translateX({x1}px)')]))
+    bro_d = -3.5                                                          # 首の 長い 恐竜の ずらし（0秒で 画面の まん中・しだを 食べて いる）
+    bx0, bx1 = 400, -bw - 14
+    css += (f'.dnw .dnBr{{left:0;top:-2px;width:{bw}px;height:{bh}px;animation:dnBro {BRO_S}s linear {bro_d}s infinite;will-change:transform}}'
+            + kf('dnBro', [(0, f'transform:translateX({bx0}px)'), (100, f'transform:translateX({f((bx0 - vmid * BRO_S), 2)}px)')]))
+    sx0, sx1 = 400, -sw_ - 14
+    s_cyc = 2 * STEGO_S
+    s_run = (sx0 - sx1) / vmid
+    for k in range(2):
+        enter = (bro_d + 0.9 + k * STEGO_S) % s_cyc                     # 首の 長い 恐竜より 0.9秒 あと（からだの 前に 少し 重なる）→ 6秒ごと
+        css += f'.dnw .dnSt.t{k}{{left:0;top:{118 - 79}px;width:{sw_}px;height:{sh_}px;animation:dnSte {f(s_cyc)}s linear {f(enter - s_cyc, 3)}s infinite;will-change:transform}}'
+    css += kf('dnSte', [(0, f'transform:translateX({sx0}px)'), (100 * s_run / s_cyc, f'transform:translateX({sx1}px)'), (100, f'transform:translateX({sx1}px)')])
     css += (f'.dnw .dnBr>img{{position:absolute;left:0;top:0;width:{bw}px;height:{bh}px}}'
             f'.dnw .dnB.tail{{transform-origin:150px 64px;animation:dnTail 4.2s ease-in-out infinite}}'
-            f'.dnw .dnBr i{{width:0;height:0;transform-origin:0 0;animation-duration:{GRAZE_S}s;animation-timing-function:ease-in-out;animation-iteration-count:infinite}}'
-            f'.dnw .dnBr .n0{{left:{BRO_NECK[0]}px;top:{BRO_NECK[1]}px;animation-name:dnN0}}'
-            f'.dnw .dnBr .n1{{left:{-NECK_L[0]}px;top:0;animation-name:dnN1}}'
-            f'.dnw .dnBr .n2{{left:{-NECK_L[1]}px;top:0;animation-name:dnN2}}'
-            f'.dnw .dnBr .hd{{left:{-NECK_L[2]}px;top:0;animation-name:dnNh}}')
+            f'.dnw .dnBr i{{width:0;height:0;transform-origin:0 0;animation-duration:{BRO_S}s;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-delay:{bro_d}s}}'
+            f'.dnw .dnBr .n0{{left:{BRO_NECK[0]}px;top:{BRO_NECK[1]}px;animation-name:dnN0}}')
+    for k in range(1, NECK_N):
+        css += f'.dnw .dnBr .n{k}{{left:{f(-NECK_SEG)}px;top:0;animation-name:dnN{k}}}'
+    css += f'.dnw .dnBr .hd{{left:{f(-NECK_SEG)}px;top:0;animation-name:dnNh}}'
     for k, (svg, ox_, oy_, w_, h_) in enumerate(segs):
         css += f'.dnw .dnBr .ns{k}{{left:{f(-ox_)}px;top:{f(-oy_)}px;width:{f(w_)}px;height:{f(h_)}px}}'
     css += f'.dnw .dnBr .hh{{left:{f(-hd[1])}px;top:{f(-hd[2])}px;width:{f(hd[3])}px;height:{f(hd[4])}px}}'
-    # 首の 動き：上げて まわりを 見る → 下げて しだを 食べる（もぐもぐ）→ 上げる
-    def rel(pose, look=0.0, chew=0.0):
-        a0, a1, a2, ah = pose
-        a2 += chew * 0.5
-        ah += look + chew
-        return (a0 - 180, a1 - a0, a2 - a1, ah - a2)
-    seq = [(0, rel(up)), (1.3, rel(up, 12)), (2.4, rel(up, -6)), (3.4, rel(up)), (5.2, rel(down)), (6.0, rel(down, 0, 7)), (6.8, rel(down)), (7.6, rel(down, 0, 7)),
-           (8.4, rel(down)), (9.2, rel(down, 0, 7)), (10.0, rel(down)), (11.6, rel(up)), (12.0, rel(up))]
-    for j, nm in enumerate(('dnN0', 'dnN1', 'dnN2', 'dnNh')):
-        css += kf(nm, [(100 * t / GRAZE_S, f'transform:rotate({f(v_[j], 2)}deg)') for t, v_ in seq])
+    # 首の 動き（9秒）：上げて まわりを 見る → 首を ぜんぶ なめらかに まげて 下げる → しだを もぐもぐ → なめらかに 上げる → まわりを 見る
+    seq = [(0.0, neck_rel(up)), (0.9, neck_rel(up, 9)), (1.6, neck_rel(up, 3)), (3.0, neck_rel(down)), (3.45, neck_rel(down, 0, 8)), (3.85, neck_rel(down)),
+           (4.25, neck_rel(down, 0, 8)), (4.65, neck_rel(down)), (5.05, neck_rel(down, 0, 8)), (5.5, neck_rel(down)), (6.9, neck_rel(up)), (7.8, neck_rel(up, -7)),
+           (8.6, neck_rel(up)), (BRO_S, neck_rel(up))]
+    for j in range(NECK_N + 1):
+        nm = f'dnN{j}' if j < NECK_N else 'dnNh'
+        css += kf(nm, [(100 * t / BRO_S, f'transform:rotate({f(v_[j], 2)}deg)') for t, v_ in seq])
     css += (f'.dnw .dnSt>img{{position:absolute;left:0;top:0;width:{sw_}px;height:{sh_}px}}'
             '.dnw .dnS.tail{transform-origin:120px 56px;animation:dnTail 3.6s ease-in-out infinite}'
             '.dnw .dnS.head{transform-origin:36px 54px;animation:dnSHead 2.8s ease-in-out infinite}'
+            '.dnw .dnSt.t1 .dnS.head{animation-delay:-1.3s}'
             + kf('dnSHead', [(0, 'transform:rotate(0deg)'), (50, 'transform:rotate(-6deg)'), (100, 'transform:rotate(0deg)')]))
-    # 馬（2頭）：シートの 地面に ついた ひづめが 地面と 同じ はやさで うしろへ（おくの 馬は 1回りの 秒を かえる）
-    for k, (cls, meta, delay, key) in enumerate((('h1', near, 0.0, 'near'), ('h2', far, 0.17, 'far'))):
+    # ---- ティラノ（17秒に 1回）と 馬の よけかた
+    def ev(name, pts):
+        return cycle_kf(name, [(TREX_AT + e, d) for e, d in pts], TREX_S)
+    # 馬（2頭）：シートの 地面に ついた ひづめが 地面と 同じ はやさで うしろへ（おくの 馬は 1回りの 秒を かえる）。びっくりの シートと 入れかえ
+    for k, (cls, meta, delay, key) in enumerate((('h1', near, 0.0, 'near'), ('h2', far, 0.17, 'far'), ('h1s', near_s, 0.0, 'near'), ('h2s', far_s, 0.17, 'far'))):
         if not meta:
             continue
         n, (cw, ch), (ax, ay) = meta['frames'], meta['cell'], meta['at']
@@ -591,13 +775,69 @@ def banner(B):
                 f'.dnw .dnH.{cls}>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({meta["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;'
                 f'animation:dnRun{k + 1} {f(run, 4)}s steps({n}) {f(-delay, 3)}s infinite}}'
                 + kf(f'dnRun{k + 1}', [(100, f'transform:translateX({f(-n * w)}px)')]))
-    # 小さな 恐竜：16秒に 1回 うしろから 走って きて、馬を 追いこして 右へ（足は 0.32秒で 1歩）
-    css += ('.dnw .dnRx{left:0;top:100px;width:60px;height:46px;animation:dnRace 16s linear infinite;will-change:transform}'
+    s0, s1 = SHOCK
+    if near_s or far_s:
+        css += ('.dnw .dnH.h1,.dnw .dnH.h2{animation:dnCalm 17s linear infinite}.dnw .dnH.h1s,.dnw .dnH.h2s{opacity:0;animation:dnShock 17s linear infinite}'
+                + ev('dnCalm', [(0, 'opacity:1'), (s0, 'opacity:1'), (s0 + 0.02, 'opacity:0'), (s1, 'opacity:0'), (s1 + 0.02, 'opacity:1')])
+                + ev('dnShock', [(0, 'opacity:0'), (s0, 'opacity:0'), (s0 + 0.02, 'opacity:1'), (s1, 'opacity:1'), (s1 + 0.02, 'opacity:0')]))
+    d0, d1, d2, d3 = DODGE
+    for cls, (ddx, ddy), (ex, ey) in (('g1', (2, 10), (150, 22)), ('g2', (-2, -9), (224, 12))):
+        css += (f'.dnw .dnDg.{cls}{{left:0;top:0;width:0;height:0;animation:dnDg{cls} {TREX_S}s ease-in-out infinite}}'
+                + ev(f'dnDg{cls}', [(0, 'transform:translate(0,0)'), (d0, 'transform:translate(0,0)'), (d1, f'transform:translate({ddx}px,{ddy}px)'),
+                                    (d2, f'transform:translate({ddx}px,{ddy}px)'), (d3, 'transform:translate(0,0)')])
+                + f'.dnw .dnDg.{cls} .dnEx{{left:{ex}px;top:{ey}px;width:18px;height:22px;transform-origin:6px 22px;opacity:0;animation:dnEx {TREX_S}s linear infinite}}')
+    css += ev('dnEx', [(0, 'opacity:0;transform:scale(0)'), (s0, 'opacity:0;transform:scale(0)'), (s0 + 0.1, 'opacity:1;transform:scale(1.25)'),
+                       (s0 + 0.2, 'opacity:1;transform:scale(1)'), (1.45, 'opacity:1;transform:scale(1)'), (1.7, 'opacity:0;transform:scale(.8)')])
+    css += '.dnw .dnDg.g2 .dnEx{animation-delay:-.06s}'
+    # ティラノの 体（反転した 箱：右から 左へ 走る）
+    D = (TX_X0 - TX_X1) / TREX_V
+    r0, r1 = TX_ROAR
+    css += (f'.dnw .dnTx{{left:0;top:0;width:0;height:0;transform-origin:0 0;animation:dnTx {TREX_S}s linear infinite}}'
+            + kf('dnTx', [(0, f'transform:translate({f(TX_X0)}px,{f(TX_TOP)}px) scale(-{TREX_SC},{TREX_SC})'),                     # 右の 外で まつ
+                          (100 * TREX_AT / TREX_S, f'transform:translate({f(TX_X0)}px,{f(TX_TOP)}px) scale(-{TREX_SC},{TREX_SC})'),
+                          (100 * (TREX_AT + D) / TREX_S, f'transform:translate({f(TX_X1)}px,{f(TX_TOP)}px) scale(-{TREX_SC},{TREX_SC})'),   # 左の 外へ ぬけて
+                          (100, f'transform:translate({f(TX_X1)}px,{f(TX_TOP)}px) scale(-{TREX_SC},{TREX_SC})')])                            # 左の 外で まつ（次の 回は 右の 外から）
+            + f'.dnw .dnTb,.dnw .dnTh,.dnw .dnTn{{left:0;top:0;width:0;height:0}}'
+            + f'.dnw .dnTx .dnT{{left:0;top:0;width:164px;height:104px}}'
+            + f'.dnw .dnTb{{animation:dnTBob {f(TREX_RUN / 2, 3)}s linear infinite}}'
+            + kf('dnTBob', [(100 * i / 8, f'transform:translateY({f(trex_bob(i / 16), 2)}px)') for i in range(9)])
+            + f'.dnw .dnT.tail{{transform-origin:54px 44px;animation:dnTTail {f(TREX_RUN, 3)}s ease-in-out infinite}}'
+            + kf('dnTTail', [(0, 'transform:rotate(-3deg)'), (50, 'transform:rotate(3deg)'), (100, 'transform:rotate(-3deg)')])
+            + f'.dnw .dnT.arm{{transform-origin:98px 57px;animation:dnTArm {f(TREX_RUN, 3)}s ease-in-out infinite}}'
+            + kf('dnTArm', [(0, 'transform:rotate(-12deg)'), (50, 'transform:rotate(10deg)'), (100, 'transform:rotate(-12deg)')])
+            + f'.dnw .dnTh{{transform-origin:108px 30px;animation:dnTHead {TREX_S}s ease-in-out infinite}}'
+            + ev('dnTHead', [(0, 'transform:rotate(0deg)'), (r0 - 0.04, 'transform:rotate(0deg)'), (r0 + 0.12, 'transform:rotate(-15deg)'), (r1 - 0.2, 'transform:rotate(-13deg)'),
+                             (r1, 'transform:rotate(0deg)')])
+            + f'.dnw .dnTn{{transform-origin:108px 30px;animation:dnTNod {f(TREX_RUN / 2, 3)}s ease-in-out infinite alternate}}'
+            + kf('dnTNod', [(0, 'transform:rotate(1.5deg)'), (100, 'transform:rotate(-1.5deg)')])
+            + f'.dnw .dnT.jaw{{transform-origin:112px 38px;animation:dnTJaw {TREX_S}s ease-in-out infinite}}'
+            + ev('dnTJaw', [(0, 'transform:rotate(0deg)'), (r0, 'transform:rotate(0deg)'), (r0 + 0.14, 'transform:rotate(22deg)'), (r0 + 0.32, 'transform:rotate(18deg)'),
+                            (r0 + 0.48, 'transform:rotate(22deg)'), (r1 - 0.12, 'transform:rotate(20deg)'), (r1, 'transform:rotate(0deg)')])
+            + f'.dnw .dnTr{{left:158px;top:0;width:34px;height:76px;transform-origin:2px 38px;opacity:0;animation:dnTRoar {TREX_S}s ease-in-out infinite}}'
+            + ev('dnTRoar', [(0, 'opacity:0;transform:scale(.6)'), (r0 + 0.08, 'opacity:0;transform:scale(.6)'), (r0 + 0.2, 'opacity:1;transform:scale(1)'),
+                             (r0 + 0.34, 'opacity:.8;transform:scale(1.18)'), (r0 + 0.48, 'opacity:1;transform:scale(.95)'), (r0 + 0.62, 'opacity:.8;transform:scale(1.16)'),
+                             (r1 - 0.06, 'opacity:0;transform:scale(1.3)')]))
+    # 足（くさり：もも → すね → 足）。地面に ついた 足は 地面と 同じ はやさで うしろへ（すべらない）
+    keys = trex_leg_keys(0.0)
+    th, sh, ft = (trex_leg_seg(k) for k in ('thigh', 'shin', 'foot'))
+    css += (f'.dnw .dnTx .tl0{{left:{TR_HIP[0] - TR_BOX[0]}px;top:{TR_HIP[1]}px}}.dnw .dnTx .tl1{{left:0;top:{f(TR_LT)}px}}.dnw .dnTx .tl2{{left:0;top:{f(TR_LS)}px}}'
+            f'.dnw .dnTx .tl0,.dnw .dnTx .tl1,.dnw .dnTx .tl2{{width:0;height:0;transform-origin:0 0;animation-duration:{f(TREX_RUN, 3)}s;animation-timing-function:linear;animation-iteration-count:infinite}}'
+            '.dnw .dnTx .tl0{animation-name:dnTL0}.dnw .dnTx .tl1{animation-name:dnTL1}.dnw .dnTx .tl2{animation-name:dnTL2}'
+            f'.dnw .dnTx .lf,.dnw .dnTx .lf i{{animation-delay:{f(-TREX_RUN / 2, 3)}s}}'
+            f'.dnw .dnTx .tth{{left:{-th[1]}px;top:{-th[2]}px;width:{th[3]}px;height:{th[4]}px}}'
+            f'.dnw .dnTx .tsh{{left:{-sh[1]}px;top:{-sh[2]}px;width:{sh[3]}px;height:{sh[4]}px}}'
+            f'.dnw .dnTx .tft{{left:{-ft[1]}px;top:{-ft[2]}px;width:{ft[3]}px;height:{ft[4]}px}}')
+    nt = len(keys[0]) - 1
+    for j in range(3):
+        css += kf(f'dnTL{j}', [(100 * i / nt, f'transform:rotate({f(keys[j][i], 1)}deg)') for i in range(nt + 1)])
+    # 小さな 恐竜：17秒に 1回（ティラノの 出ない ころ：8.5〜13.3秒）うしろから 走って きて、馬を 追いこして 右へ（足は 0.32秒で 1歩）
+    css += (f'.dnw .dnRx{{left:0;top:100px;width:60px;height:46px;animation:dnRace {TREX_S}s linear infinite;will-change:transform}}'
             '.dnw .dnRx>img{position:absolute;left:0;top:0;width:60px;height:46px}'
             '.dnw .dnR.body{animation:dnRBob .16s ease-in-out infinite alternate}'
             '.dnw .dnR.legN{transform-origin:29px 25px;animation:dnRLeg .32s linear infinite}'
             '.dnw .dnR.legF{transform-origin:29px 25px;animation:dnRLeg .32s linear -.16s infinite}'
-            + kf('dnRace', [(0, 'transform:translate(-70px,0)'), (4, 'transform:translate(-70px,0)'), (34, 'transform:translate(420px,-3px)'), (100, 'transform:translate(420px,-3px)')])
+            + kf('dnRace', [(0, 'transform:translate(-70px,0)'), (100 * 8.5 / TREX_S, 'transform:translate(-70px,0)'), (100 * 13.3 / TREX_S, 'transform:translate(420px,-3px)'),
+                            (100, 'transform:translate(420px,-3px)')])
             + kf('dnRBob', [(0, 'transform:translateY(0)'), (100, 'transform:translateY(-1.6px)')])
             + kf('dnRLeg', [(0, 'transform:rotate(-34deg)'), (50, 'transform:rotate(30deg)'), (100, 'transform:rotate(-34deg)')]))
     # けむり：火山の 口から 右上へ もくもく（6秒・1秒ずつ ずらす）
@@ -654,7 +894,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='恐竜時代', desc='火山と恐竜', title='恐竜時代（シダの緑×溶岩×土）', banner=ID,
-    alt='むかしの大地で、噴火する火山と首の長い恐竜・背中に板のある恐竜・草を食べるトリケラトプス・空の翼竜の横を、原始人が乗った鹿毛と芦毛の馬（長いたてがみとしっぽ）がならんで走るイラスト',
+    alt='むかしの大地で、噴火する火山と首の長い恐竜・背中に板のある恐竜・草を食べるトリケラトプス・空の翼竜の横を、原始人が乗った鹿毛と芦毛の馬（長いたてがみとしっぽ）がならんで走り、ときどきティラノサウルスが走ってきて馬がよけるイラスト',
     fonts=['Yuji+Boku', 'M+PLUS+1p:wght@500;700'],
     v=dict(bg='#EEF0DC', ink='#26281A', sub='#5C5E40', card='#FFFDF2', cardB='1.5px solid #CFD2A6', cardO='0 solid transparent', cardS='0 3px 0 #DADDB4',
            radius='14px', rs='10px', font='"M PLUS 1p"', dfont='"Yuji Boku"', dw='400', logo='#FFC15A', logoS='0 2px 0 #1A2410',
@@ -673,7 +913,8 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2C4220', 'シダの 緑'), ('#D8582A', '溶岩'), ('#FFC15A', '火の あかり'), ('#EEF0DC', '背景'), ('#26281A', '文字')],
                fonts='見出し：Yuji Boku<br>本文：M PLUS 1p', shape='角丸14px・帯は シダの 緑で 下に たれる 葉・足あとの 背景・すみに 恐竜の たまご・的中ボタンは 溶岩の 石の PUSH',
-               pic='8秒に 1回 噴火する 火山（ときどき 大噴火）・しだを 食べる 首の 長い 恐竜と 背中に 板の ある 恐竜（背景と いっしょに 流れる）・トリケラトプス・翼竜・原始人が 乗って ならんで 走る 鹿毛と 芦毛の 馬'),
+               pic='8秒に 1回 噴火する 火山（ときどき 大噴火）・首を なめらかに 上げ下げして しだを 食べる 首の 長い 恐竜（9秒に 1回 通る）と 背中に 板の ある 恐竜（6秒に 1回 通る）・'
+                   'トリケラトプス・翼竜・17秒に 1回 ほえながら 走って くる ティラノサウルス（2頭の 馬が 上と 下に よけて 原始人は びっくり）・原始人が 乗って ならんで 走る 鹿毛と 芦毛の 馬'),
 )
 
 
