@@ -28,7 +28,7 @@ SPOT = dict(pose='gallop', facing='right', box=(250, 70, 520, 262), azim=6, shad
 GROUND = 258
 CYCLE = 0.48       # ギャロップ 1回の 秒（future.RUN と 同じ）
 NT = 20            # 光の すじの コマ（1回りに 20＝0.024秒ごと）
-FADE = 0.5         # 光の すじが 消える までの 秒
+FADE = 0.55        # 光の すじが 消える までの 秒
 
 
 def acc_factory(i):
@@ -167,18 +167,18 @@ def trail_layer(hvs, j, u2):
         t0s = np.arange(t - FADE, t_last + 1e-9, dt)
         pts = [(hoof_at(hvs, k, t0) - np.array([u2 * (t - t0), 0.0]), t - t0) for t0 in t0s]
         for (p, age), (q, _) in zip(pts, pts[1:]):
-            a = 0.85 * max(0.0, 1 - age / FADE) ** 1.6
+            a = 0.95 * max(0.0, 1 - age / FADE) ** 1.25
             if a <= 0.01:
                 continue
             P = (int(round(p[0] * 4)), int(round(p[1] * 4)))
             Q = (int(round(q[0] * 4)), int(round(q[1] * 4)))
-            cv2.line(core, P, Q, a, 1, cv2.LINE_AA, shift=2)
-            cv2.line(glow, P, Q, a, 3, cv2.LINE_AA, shift=2)
-    glow = np.clip(cv2.GaussianBlur(glow, (0, 0), 2.4) * 1.2, 0, 1)
-    cc, gc = hexc('#D8FAFF'), hexc('#2FCFFF')
+            cv2.line(core, P, Q, a, 2, cv2.LINE_AA, shift=2)
+            cv2.line(glow, P, Q, a, 5, cv2.LINE_AA, shift=2)
+    glow = np.clip(cv2.GaussianBlur(glow, (0, 0), 2.6) * 1.25, 0, 1)
+    cc, gc = hexc('#C8F6FF'), hexc('#29C6FF')
     core = np.clip(core, 0, 1)
-    A = np.clip(core * 0.9 + glow * 0.42, 0, 1)
-    pre = cc[None, None, :] * (core * 0.9)[..., None] + gc[None, None, :] * (glow * 0.42 * (1 - core * 0.9))[..., None]
+    A = np.clip(core * 0.9 + glow * 0.5, 0, 1)
+    pre = cc[None, None, :] * (core * 0.9)[..., None] + gc[None, None, :] * (glow * 0.5 * (1 - core * 0.9))[..., None]
     return pre, A
 
 
