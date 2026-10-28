@@ -324,7 +324,7 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #ksNote img{width:72px;height:30px;border-radius:7px;object-fit:cover;display:block}
 #ksNote b{display:block;font-size:14px;font-weight:700}
 #ksNote .btn{min-height:34px;padding:5px 10px;font-size:12.5px;white-space:nowrap}
-@keyframes ksNote{0%{opacity:0;transform:translate(-50%,-14px)}6%{opacity:1;transform:translate(-50%,0)}90%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+@keyframes ksNote{0%{opacity:0;transform:translate(-50%,-14px)}6%{opacity:1;transform:translate(-50%,0)}90%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
 @media (prefers-reduced-motion:reduce){#ksNote{animation:ksNoteC 6.5s linear both}}
 @keyframes ksNoteC{0%{opacity:0}5%{opacity:1}92%{opacity:1}100%{opacity:0}}
 '''
