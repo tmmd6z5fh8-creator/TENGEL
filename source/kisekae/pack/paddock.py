@@ -1,8 +1,13 @@
-"""壁紙パック ④パドック（まさちゃんの 指定「馬がパドックを歩きまわる」）
+"""壁紙パック ④パドック（まさちゃんの 指定「馬がパドックを歩きまわる」
+   第4.93版の 直し「ランダムで馬が首を激しく振ったり、うんちしたり、早歩きになったり、首を下げて歩いたりするようにして！」）
    上の絵：スタンドから 見た パドック。手前の 道を 右へ 3頭（ゼッケン 2・5・7）、おくの 道を 左へ 3頭（1・4・8・小さく）が 歩く
      （いままでと 同じ 馬・常歩の コマ：pack/make/paddock_art.py）。まん中に 芝生と 花だん、白い さく、うしろに お客さんの スタンドと 木、上に 小さな 旗の ひも。
-   動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・
-     雲が ゆっくり 流れる"""
+   動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・雲が ゆっくり 流れる。
+   ときどきの 動き（第4.93版）：馬ごとに 長い 1回り（手前 67.5秒・おく 60／90秒）の 中の ばらばらの 時に（PLAN）、
+     首を 激しく 振る（上へ ぶんっと 振り上げて おろす・1回りに 2回・たてがみが はねる）／首を 下げて 歩く（下げていく → 下げて 歩く → 上げていく）／
+     早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で ゆっくり 歩いて 前後の ずれを もどす＝となりの 馬に 追いつかない）／
+     うんち（手前の 3頭：しっぽを 上げて 丸い うんちが 4つ ぽとぽと 落ちる。地面に ついた うんちは その 場所に 9秒 残って 消える）。
+     行動ごとの コマの シート（pack/make/paddock_moves.py）は 足の 動きが 常歩と 同じで コマ0が 同じ 形 → 見える シートを 回りの つぎめで 切りかえる（visibility の step-end）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -124,57 +129,280 @@ def pennants_svg(w=W, h=24):
     return doc(w, h, o)
 
 
+# ---------------------------------------------------------------- 馬の 歩きと ときどきの 動き（第4.93版）
+FAST, SLOW = CYCLE / 1.5, CYCLE * 1.5           # 早歩き・ゆっくり 歩きの 1回り（常歩の シートを はやく／おそく めくる＝横の はやさも 1.5倍／2/3倍）
+PASS = dict(near=22.5, far=30.0)                 # 舞台を 1回 横切る 秒（3頭が 1/3 ずつ ずれて 歩く）
+# 馬ごとの 1回りの 秒と、通る 回ごとの 行動（s1・s2：首振り 1・2回り／d2・d3：首を 下げて 2・3回り（下げていく・上げていく 1回りずつ を 足す）／p：うんち／f：早歩き）
+#   早歩きの あとには 見えない 所で ゆっくり 歩く（3.75秒）＝ 1回りで 前後の ずれが もどる（となりの 馬に 追いつかない）
+PLAN = {
+    'n2': (67.5, [['s2'], ['f'], ['p']]),
+    'n5': (67.5, [['d3'], ['p'], ['s1', 'f']]),
+    'n7': (67.5, [['p'], ['d2'], ['f', 's2']]),
+    'f1': (60.0, [['s2'], ['d3']]),
+    'f4': (90.0, [['f'], ['s1'], ['d2']]),
+    'f8': (60.0, [['d2'], ['f', 's2']]),
+}
+DUNG_STAY = 9.0                                  # 地面の うんちが 残る 秒（そのあと 1.2秒で 消える）
+
+
+def _ev_len(code):
+    if code[0] == 's':
+        return int(code[1]) * CYCLE
+    if code[0] == 'd':
+        return (int(code[1]) + 2) * CYCLE
+    if code == 'p':
+        return 2 * CYCLE
+    if code == 'f':
+        return 2 * CYCLE
+    raise KeyError(code)
+
+
+def _grid(code):
+    return 2 * CYCLE if code in ('p', 'f') else CYCLE
+
+
+def _segments(evs, Lh):
+    """歩く はやさの 区間 [(t0, t1, 倍率)]"""
+    marks = sorted([(t, t + _ev_len(c) if c != 'w' else t + 2 * SLOW, 1.5 if c == 'f' else 2 / 3) for t, c in evs if c in ('f', 'w')])
+    segs, t = [], 0.0
+    for a, b, k in marks:
+        if a > t:
+            segs.append((t, a, 1.0))
+        segs.append((a, b, k))
+        t = b
+    if t < Lh:
+        segs.append((t, Lh, 1.0))
+    return segs
+
+
+def _dist(segs, v, t):
+    s = 0.0
+    for a, b, k in segs:
+        if t <= a:
+            break
+        s += v * k * (min(t, b) - a)
+    return s
+
+
+def schedule(nm, meta, group, k_idx):
+    """馬 nm の 1回り：行動の ならび [(時刻, 記号)]・はやさの 区間・場所の 関数"""
+    Lh, plan = PLAN[nm]
+    P = PASS[group]
+    v = meta['speed']
+    D = v * P
+    lo, hi = meta['_span']                        # 全部の シートの 横の はし（入れものの 左から：左がわ・右がわ）
+    dirn = 1 if group == 'near' else -1
+    if dirn > 0:
+        x_lo, x_hi = -hi - 3, -hi - 3 + D
+    else:
+        x_hi, x_lo = W - lo + 3, W - lo + 3 - D
+    vis = (-lo - 22, W - hi + 22)                 # 行動は 舞台に ほぼ 入って いる 間に（はしが 少し 切れて も よい）
+    s0 = D * 0.02                                                     # 1回りの はじめは 舞台の 外（入って くる 前）。馬どうしの ずれは ページの おくれ（delay）で
+    R = rnd(sum(map(ord, nm)) * 7)
+    evs = []
+
+    def pos(s):
+        q = (s0 + s) % D
+        return x_lo + q if dirn > 0 else x_hi - q
+
+    def free(a, b):
+        return all(b <= t or a >= t + (_ev_len(c) if c != 'w' else 2 * SLOW) for t, c in evs)
+
+    def seen(segs, t0, t1):
+        return all(vis[0] <= pos(_dist(segs, v, tt)) <= vis[1] for tt in (t0, (t0 + t1) / 2, t1))
+
+    def hidden(segs, t0, t1):
+        return all(not (vis[0] - 30 <= pos(_dist(segs, v, tt)) <= vis[1] + 30) for tt in (t0, (t0 + t1) / 2, t1))
+
+    def cands(code, pi=None):
+        g, ln, out, t = _grid(code), _ev_len(code), [], 0.0
+        while t + ln <= Lh - 0.01:
+            segs = _segments(evs + [(t, code)], Lh)
+            if free(t - 1.0, t + ln + 1.0) and seen(segs, t, t + ln):
+                if pi is None or int((s0 + _dist(segs, v, t)) // D) % len(plan) == pi:
+                    out.append(t)
+            t += g
+        return out
+
+    for pi, codes in enumerate(plan):
+        for code in codes:
+            cand = cands(code, pi) or cands(code)
+            if not cand:
+                continue
+            t = cand[int(R.uniform(0.2, 0.8) * len(cand))]
+            evs.append((t, code))
+            if code == 'f':                                              # 早歩きの あとに ゆっくり 歩く（なるべく 見えない 所で）
+                ln = _ev_len(code)
+                t2s = [k * 2 * SLOW for k in range(int(Lh // (2 * SLOW)) + 1) if k * 2 * SLOW >= t + ln + 1.0 and k * 2 * SLOW + 2 * SLOW <= Lh]
+                t2s = [t2 for t2 in t2s if free(t2, t2 + 2 * SLOW)]
+                hid = [t2 for t2 in t2s if hidden(_segments(evs + [(t2, 'w')], Lh), t2, t2 + 2 * SLOW)]
+                if hid or t2s:
+                    evs.append(((hid or t2s)[0], 'w'))
+                else:                                                    # 入らなければ 早歩きを やめる
+                    evs.remove((t, code))
+    evs.sort()
+    segs = _segments(evs, Lh)
+    return evs, segs, pos, D, v, dirn, s0
+
+
+def _vis_keys(windows, Lh, show_outside=False):
+    """見える 区間（[(t0, t1)]）→ visibility の @keyframes（step-end）"""
+    rows = [(0, 'visibility:visible' if show_outside else 'visibility:hidden')]
+    for a, b in sorted(windows):
+        rows.append((a / Lh * 100, 'visibility:hidden' if show_outside else 'visibility:visible'))
+        rows.append((b / Lh * 100, 'visibility:visible' if show_outside else 'visibility:hidden'))
+    rows.append((100, rows[0][1]))
+    out = []
+    for p, d in rows:                                                    # 同じ 所の つづきは まとめる
+        if out and abs(out[-1][0] - p) < 1e-6:
+            out[-1] = (p, d)
+        else:
+            out.append((p, d))
+    return out
+
+
+def horse_parts(nm, B, group, k_idx):
+    """1頭の html と css（動く 入れもの・常歩／早歩き／ゆっくり／首振り／首下げ／うんちの シート・地面の うんち）"""
+    m = B[nm]
+    n, (cw, ch), (ax, ay) = m['frames'], m['cell'], m['at']
+    lays = {'w': m}
+    for kind in ('s', 'd', 'p'):
+        if f'{nm}_{kind}' in B:
+            lays[kind] = B[f'{nm}_{kind}']
+    lo = min((l['at'][0] - ax) / 2 for l in lays.values())
+    hi = max((l['at'][0] - ax) / 2 + l['cell'][0] / 2 for l in lays.values())
+    meta = dict(m, _span=(lo, hi))
+    evs, segs, pos, D, v, dirn, s0 = schedule(nm, meta, group, k_idx)
+    evs = [(t, c) for t, c in evs if (c[0] != 's' or 's' in lays) and (c[0] != 'd' or 'd' in lays) and (c != 'p' or 'p' in lays)]
+    Lh = PLAN[nm][0]
+    dl = -(k_idx * PASS[group] / 3 + 0.41 * k_idx + (3.3 if group == 'far' else 0.0))   # 馬ごとの ずれ：1/3 ずつ はなれて 歩く・足が そろわない ように
+    name = f'pk{nm}'
+    s_tot = _dist(segs, v, Lh)
+
+    def time_at_dist(sd):
+        a_, b_ = 0.0, Lh
+        for _ in range(60):
+            mid = (a_ + b_) / 2
+            if _dist(segs, v, mid) < sd:
+                a_ = mid
+            else:
+                b_ = mid
+        return (a_ + b_) / 2
+    # 入れものの 横の 動き：はやさの 区間の さかい と 舞台の はしで 反対の はしへ（見えない 所）
+    wraps = [time_at_dist(kk * D - s0) for kk in range(1, int((s0 + s_tot) // D) + 2) if 0 < kk * D - s0 < s_tot - 1e-6]
+    keyt = sorted(set([0.0, Lh] + [a_ for a_, b_, k_ in segs] + [b_ for a_, b_, k_ in segs]))
+    rows = []
+    for t in sorted(set(keyt + wraps)):
+        s = _dist(segs, v, t)
+        if any(abs(t - w_) < 1e-9 for w_ in wraps):
+            rows.append((t / Lh * 100, f'transform:translateX({f(pos(s - 1e-6), 1)}px)'))
+            rows.append((t / Lh * 100 + 0.002, f'transform:translateX({f(pos(s + 1e-6), 1)}px)'))
+        else:
+            rows.append((t / Lh * 100, f'transform:translateX({f(pos(s), 1)}px)'))
+    html = f'<i class="pkH {nm}">'
+    css = f'.pkw .pkH.{nm}{{top:{f(ay / 2)}px;animation:{name}X {f(Lh)}s linear {f(dl, 3)}s infinite}}' + kf(f'{name}X', rows)
+    # 見える 区間
+    win = {k: [] for k in ('w', 'f', 'sl', 's', 'dl', 'dd', 'dr', 'p')}
+    for t, c in evs:
+        if c == 'f':
+            win['f'].append((t, t + 2 * CYCLE))
+        elif c == 'w':
+            win['sl'].append((t, t + 2 * SLOW))
+        elif c[0] == 's':
+            win['s'].append((t, t + _ev_len(c)))
+        elif c[0] == 'd':
+            nd = int(c[1])
+            win['dl'].append((t, t + CYCLE))
+            win['dd'].append((t + CYCLE, t + CYCLE * (1 + nd)))
+            win['dr'].append((t + CYCLE * (1 + nd), t + CYCLE * (2 + nd)))
+        elif c == 'p':
+            win['p'].append((t, t + 2 * CYCLE))
+    busy = [w for k, ws in win.items() if k != 'w' for w in ws]
+    LAY = [('w', 'w', CYCLE, 0, n), ('f', 'w', FAST, 0, n), ('sl', 'w', SLOW, 0, n), ('s', 's', CYCLE, 0, 12),
+           ('dl', 'd', CYCLE, 0, 12), ('dd', 'd', CYCLE, 12, 12), ('dr', 'd', CYCLE, 24, 12), ('p', 'p', 2 * CYCLE, 0, 24)]
+    for key, src, per, f0, nf in LAY:
+        if src not in lays or (key != 'w' and not win[key]):
+            continue
+        l = lays[src]
+        lw, lh = l['cell'][0] / 2, l['cell'][1] / 2
+        tot = l['frames'] * lw
+        lx, ly = (l['at'][0] - ax) / 2, (l['at'][1] - ay) / 2
+        vk = _vis_keys(busy, Lh, show_outside=True) if key == 'w' else _vis_keys(win[key], Lh)
+        html += f'<i class="pkL {key}"><i></i></i>'
+        css += (f'.pkw .pkH.{nm}>.pkL.{key}{{left:{f(lx)}px;top:{f(ly)}px;width:{f(lw)}px;height:{f(lh)}px;animation:{name}V{key} {f(Lh)}s step-end {f(dl, 3)}s infinite}}'
+                f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(lh)}px no-repeat;'
+                f'animation:{name}F{key} {f(per, 4)}s steps({nf}) {f(dl, 3)}s infinite}}'
+                + kf(f'{name}V{key}', vk)
+                + kf(f'{name}F{key}', [(0, f'transform:translateX({f(-f0 * lw)}px)'), (100, f'transform:translateX({f(-(f0 + nf) * lw)}px)')]))
+    html += '</i>'
+    # 地面の うんち（落ちた 所に 残って、しばらく して 消える）
+    dung_html, dung_css = '', ''
+    if 'p' in lays and win['p']:
+        pm = lays['p']
+        fall = pm.get('fall', 4)
+        for wi, (t0, t1) in enumerate(win['p']):
+            for di, d in enumerate(pm.get('drops', [])):
+                tl_ = t0 + (d['f'] + fall) * (2 * CYCLE / 24)
+                X = pos(_dist(segs, v, tl_))
+                r = d['r'] / 2
+                xs, ys = X + (d['x'] - ax) / 2, d['g'] / 2
+                cls = f'pkDg {nm}{wi}{di}'
+                dung_html += f'<img class="{cls}" src="{durl(dung_svg(r))}" alt="">'
+                a = tl_ / Lh * 100
+                b = (tl_ + DUNG_STAY) / Lh * 100
+                c = (tl_ + DUNG_STAY + 1.2) / Lh * 100
+                rows = [(0, 'opacity:0'), (a, 'opacity:0'), (a + 0.002, 'opacity:1'), (min(b, 99.99), 'opacity:1'), (min(c, 100), 'opacity:0'), (100, 'opacity:0')]
+                dung_css += (f'.pkw .pkDg.{nm}{wi}{di}{{left:{f(xs - 2 * r, 1)}px;top:{f(ys - 2 * r, 1)}px;width:{f(4 * r, 2)}px;height:{f(4 * r, 2)}px;'
+                             f'animation:pkDg{nm}{wi}{di} {f(Lh)}s linear {f(dl, 3)}s infinite}}' + kf(f'pkDg{nm}{wi}{di}', rows))
+    return html, css, dung_html, dung_css, evs
+
+
+def dung_svg(r):
+    """地面の うんち 1つ（4r × 4r の 絵の まん中：まわりの 影・ふち・まん中・つや）"""
+    s = 4 * r
+    c = s / 2
+    return doc(s, s, f"<ellipse cx='{f(c)}' cy='{f(c + r * 0.86)}' rx='{f(r * 1.1)}' ry='{f(r * 0.32)}' fill='#3A2A10' opacity='.22'/>"
+                     f"<circle cx='{f(c)}' cy='{f(c)}' r='{f(r)}' fill='#3E2C14'/><circle cx='{f(c - 0.12 * r)}' cy='{f(c - 0.12 * r)}' r='{f(r * 0.8)}' fill='#5A4220'/>"
+                     f"<circle cx='{f(c - 0.38 * r)}' cy='{f(c - 0.4 * r)}' r='{f(r * 0.26)}' fill='#8A6A3A' opacity='.9'/>", vb=f'0 0 {f(s)} {f(s)}')
+
+
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     still = B.get('still')
     alt = ('スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。手前は右へ3頭（ゼッケン2・5・7）、おくは左へ3頭（ゼッケン1・4・8）。'
-           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木、上に小さな旗のひも（馬はいつも歩いている）')
+           'ときどき首を激しく振ったり、首を下げて歩いたり、早歩きになったり、うんちをしたりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木、上に小さな旗のひも')
     html = f'<div class="pkw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('pkBk', back_svg())
     html += f'<i class="pkCl" style="background-image:url(&quot;{durl(clouds_svg())}&quot;)"></i>'
-    for nm in FAR:
-        if nm in B:
-            html += f'<i class="pkH {nm}"><i></i></i>'
-    html += img('pkIn', infield_svg()) + img('pkLn', lane_svg())
-    for nm in NEAR:
-        if nm in B:
-            html += f'<i class="pkH {nm}"><i></i></i>'
-    html += img('pkPn', pennants_svg())
-    html += '</div>'
     css = ('.pkw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#DDF0F8}'
            '.pkw>*{position:absolute;display:block}'
            '.pkw .bnr{left:0;top:0;width:390px;height:160px;object-fit:cover}'
            '.pkw .pkBk,.pkw .pkIn,.pkw .pkLn{left:0;top:0;width:390px;height:160px}'
            f'.pkw .pkCl{{left:0;top:0;width:{2 * W + 2}px;height:34px;background-size:{W}px 34px;background-repeat:repeat-x;animation:pkCloud 80s linear infinite}}'
            '.pkw .pkPn{left:0;top:-2px;width:390px;height:24px;transform-origin:50% 0;animation:pkSway 4.2s ease-in-out infinite}'
-           '.pkw .pkH{left:0;top:0;overflow:hidden;will-change:transform}')
-    keys = ''
-    for group, names in (('near', NEAR), ('far', FAR)):
-        ms = [(nm, B[nm]) for nm in names if nm in B]
-        if not ms:
-            continue
-        # 同じ 組は 同じ はやさ・同じ 1回り（3頭を 1/3 ずつ ずらす）
-        v = sum(m.get('speed', 30) for _, m in ms) / len(ms)
-        wmax = max(m['cell'][0] / 2 for _, m in ms)
-        D = W + wmax + 30
-        T = D / v
-        for k, (nm, m) in enumerate(ms):
-            n, (cw, ch), (ax, ay) = m['frames'], m['cell'], m['at']
-            w, h = cw / 2, ch / 2
-            css += (f'.pkw .pkH.{nm}{{top:{f(ay / 2)}px;width:{f(w)}px;height:{f(h)}px;animation:pk{group}{k} {f(T, 3)}s linear {f(-T * k / len(ms) - T * 0.18, 3)}s infinite}}'
-                    f'.pkw .pkH.{nm}>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({m["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;'
-                    f'animation:pkWalk{nm} {CYCLE}s steps({n}) {f(-CYCLE * k * 0.37, 3)}s infinite}}'
-                    + kf(f'pkWalk{nm}', [(100, f'transform:translateX({f(-n * w)}px)')]))
-            if group == 'near':
-                x0, x1 = -w - 14, W + 14
+           '.pkw .pkH{left:0;top:0;width:0;height:0;will-change:transform}'
+           '.pkw .pkL{position:absolute;display:block;overflow:hidden}'
+           '.pkw .pkL>i{display:block}'
+           '.pkw .pkDg{display:block}')
+    far_h, near_h, dung_h = '', '', ''
+    for group, names in (('far', FAR), ('near', NEAR)):
+        for k, nm in enumerate(names):
+            if nm not in B:
+                continue
+            h, c, dh, dc, _ = horse_parts(nm, B, group, k)
+            css += c + dc
+            dung_h += dh
+            if group == 'far':
+                far_h += h
             else:
-                x0, x1 = W + 14, -w - 14
-            keys += kf(f'pk{group}{k}', [(0, f'transform:translateX({f(x0)}px)'), (100, f'transform:translateX({f(x1)}px)')])
-    css += keys
+                near_h += h
+    html += far_h + img('pkIn', infield_svg()) + img('pkLn', lane_svg()) + dung_h + near_h
+    html += img('pkPn', pennants_svg())
+    html += '</div>'
     css += (kf('pkCloud', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-W}px)')])
             + kf('pkSway', [(0, 'transform:rotate(-.6deg)'), (50, 'transform:rotate(.6deg)'), (100, 'transform:rotate(-.6deg)')]))
-    css += reduced('.pkw .pkBk,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn') if still else ''
+    css += reduced('.pkw .pkBk,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn,.pkw .pkDg') if still else ''
     return html, css
 
 
@@ -210,7 +438,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='パドック', desc='歩く馬たち', title='パドック（芝の緑×白いさく×金）', banner=ID,
-    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木',
+    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンドと木',
     fonts=['Kaisei+HarunoUmi:wght@700', 'Zen+Maru+Gothic:wght@500;700'],
     v=dict(bg='#F3F1E6', ink='#22301E', sub='#56664E', card='#FFFFFF', cardB='1.5px solid #D6DCC8', cardO='0 solid transparent', cardS='0 3px 0 #E2E6D6',
            radius='14px', rs='10px', font='"Zen Maru Gothic"', dfont='"Kaisei HarunoUmi"', dw='700', logo='#F6E7B8', logoS='0 2px 0 #163A22',
@@ -229,7 +457,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2F6B3E', '芝の 緑'), ('#1F6B45', 'ボタン'), ('#B8862A', '金'), ('#F6F4EE', '白い さく'), ('#F3F1E6', '背景')],
                fonts='見出し：Kaisei HarunoUmi<br>本文：Zen Maru Gothic', shape='角丸14px・帯は 芝の 緑で 下に 白い さく・芝生の しまの 背景・すみに ロゼット・的中ボタンは ゼッケンの PUSH',
-               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ）・芝生と 花だん・白い さく・お客さんの スタンド・旗の ひも'),
+               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド・旗の ひも'),
 )
 
 

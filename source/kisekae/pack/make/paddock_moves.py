@@ -13,7 +13,6 @@ import json
 import math
 import os
 import sys
-from multiprocessing import Pool
 
 import numpy as np
 import cv2
@@ -30,6 +29,8 @@ POOP = NEAR                      # うんちは 手前の 3頭（おくの 馬�
 DROPS = [(6, 0.0), (7, 0.9), (8, -0.6), (10, 0.5)]   # うんち：(落ちはじめる コマ, 横の ずれ×半径)
 FALL = 4                         # 落ちる コマ数（約0.42秒）
 DUNG = ('#5A4220', '#3E2C14', '#8A6A3A')             # うんちの 色（まん中・ふち・つや）
+DUNG_R = 0.064                   # うんちの 半径（m：ほんとうより 大きく＝画面で 見える ように）
+OLD_DUNG_R = 0.040               # 第4.93版の はじめに 描いた 大きさ（regrow で 描き直す 前）
 
 
 def ease(t):
@@ -181,7 +182,9 @@ def render_group(names, kind, workers=2):
     job = dict(spot=spot, cam=cam, horses=horses, kind=kind, W=W2, H=H2)
     jobs = [(i, pose, over) for i, (g, pose, over) in enumerate(frs)]
     if workers > 1:
-        with Pool(workers, initializer=_init_mv, initargs=(job,)) as pool:
+        import multiprocessing as mp
+        ctx = mp.get_context('spawn')            # fork だと 親の ライブラリの ロックを ひきついで 止まる ことが ある
+        with ctx.Pool(workers, initializer=_init_mv, initargs=(job,)) as pool:
             res = pool.map(_draw_mv, jobs, chunksize=1)
     else:
         _init_mv(job)
@@ -219,7 +222,7 @@ def build_sheet(nm, kind, frs, gs, box, facing, out=None):
     extra = None
     if kind == 'p':
         root, bd, p1u = frs[0][3], frs[0][4], frs[0][5]
-        rb = 0.040 * p1u                                    # うんちの 半径（2倍の 画素）
+        rb = DUNG_R * p1u                                   # うんちの 半径（2倍の 画素：ほんとうより 少し 大きく＝見える ように）
         for k, (st, dx) in enumerate(DROPS):
             r0, bd0 = frs[st][3], frs[st][4]
             x = r0[0] + bd0[0] * 0.03 * p1u + dx * rb
@@ -228,12 +231,9 @@ def build_sheet(nm, kind, frs, gs, box, facing, out=None):
 
         def extra(i, pre, A):
             for d in drops:
-                k = i - d['f']
-                if 0 <= k < FALL:
-                    t = (k + 0.6) / FALL
-                    y = d['y0'] + (d['g'] - d['y0']) * t * t
-                    rr = d['r'] * (0.75 + 0.25 * min(1.0, t * 2))
-                    pre, A = dung_ball(pre, A, d['x'], y, rr)
+                q = drop_at(d, i)
+                if q:
+                    pre, A = dung_ball(pre, A, *q)
             return pre, A
     u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra)
     meta['dy'] = [round(float(d), 2) for d in dys]
@@ -241,12 +241,56 @@ def build_sheet(nm, kind, frs, gs, box, facing, out=None):
     if drops:
         meta['drops'] = drops
         meta['fall'] = FALL
+        meta['dung_r'] = DUNG_R
     if out:
         preview_png(u8, os.path.join(out, f'paddock_{nm}_{kind}.png'), bg=(196, 170, 120))
     bid = save_webp(u8, quality=90)
     record('paddock', f'{nm}_{kind}', bid, meta)
     print(nm, kind, bid, {k: v for k, v in meta.items() if k not in ('dy', 'drops')}, flush=True)
     return bid, meta
+
+
+def drop_at(d, i):
+    """コマ i の 落ちて いる うんち d の (x, y, 半径)。落ちて いない／地面に ついた（ページの 部品）なら None"""
+    k = i - d['f']
+    if not 0 <= k < FALL:
+        return None
+    t = (k + 0.6) / FALL
+    return d['x'], d['y0'] + (d['g'] - d['y0']) * t * t, d['r'] * (0.75 + 0.25 * min(1.0, t * 2))
+
+
+def regrow(names=POOP):
+    """できて いる うんちの シートの 落ちる うんちを いまの DUNG_R の 大きさで 描き直す（3Dを 描き直さない：前の 小さな 玉は 大きな 玉で かくれる）"""
+    import json
+    from sheets import BLOB_DIR, PACK
+    for nm in names:
+        meta = json.load(open(os.path.join(PACK, 'blobs.json'), encoding='utf-8'))['paddock'][f'{nm}_p']
+        img = cv2.imread(os.path.join(BLOB_DIR, meta['id'] + '.webp'), cv2.IMREAD_UNCHANGED)
+        rgba = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA).astype(np.float32) / 255
+        n, (cw, ch), (ax, ay) = meta['frames'], meta['cell'], meta['at']
+        g0 = PA.BOX_NEAR[3] - 4
+        drops = []
+        for d in meta['drops']:
+            r0 = d['r'] / OLD_DUNG_R if meta.get('dung_r') is None else d['r'] / meta['dung_r']      # p1u
+            rb = DUNG_R * r0
+            drops.append(dict(d, r=round(rb, 2), g=round(g0 - rb * 0.86, 2)))
+        for i in range(n):
+            a = rgba[:, i * cw:(i + 1) * cw, 3]
+            pre = rgba[:, i * cw:(i + 1) * cw, :3] * a[..., None]
+            for d in drops:
+                q = drop_at(d, i)
+                if q:
+                    x, y, rr = q
+                    pre, a = dung_ball(pre, a, x - ax, y - ay, rr)
+            rgba[:, i * cw:(i + 1) * cw, :3] = np.where(a[..., None] > 1e-4, pre / np.maximum(a, 1e-4)[..., None], 0)
+            rgba[:, i * cw:(i + 1) * cw, 3] = a
+        u8 = (np.clip(rgba, 0, 1) * 255 + .5).astype(np.uint8)
+        bid = save_webp(u8, quality=90)
+        meta2 = {k: v for k, v in meta.items() if k != 'id'}
+        meta2['drops'] = drops
+        meta2['dung_r'] = DUNG_R
+        record('paddock', f'{nm}_p', bid, meta2)
+        print(nm, 'p regrow', bid, flush=True)
 
 
 def dung_ball(pre, A, x, y, r):
@@ -297,6 +341,9 @@ def main():
     if out:
         os.makedirs(out, exist_ok=True)
     names = args or list(NEAR + FAR)
+    if '--regrow' in opts:
+        regrow([n for n in names if n in POOP])
+        return
     for grp in (NEAR, FAR):
         nms = [n for n in names if n in grp]
         if not nms:
