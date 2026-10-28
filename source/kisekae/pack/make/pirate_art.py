@@ -1,13 +1,17 @@
-"""海賊の 壁紙（壁紙パック・第4.92版）の 馬の 船長：いままでの 壁紙と 同じ 馬（horse_flat）に、三角帽（金の ふち・金の 蹄鉄の しるし・赤い 羽）・
-   赤い スカーフ・布の すみに 金の 蹄鉄。左を 向いて 宝箱を 見て 立つ（止まった 1コマ）。
-   python3 kisekae/pack/make/pirate_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の pirate.captain"""
+"""海賊の 壁紙（壁紙パック）の 馬の 船長：いままでの 壁紙と 同じ 馬（horse_flat）に、三角帽（金の ふち・金の 蹄鉄の しるし・赤い 羽）・
+   赤い スカーフ・布の すみに 金の 蹄鉄。
+   第4.93版（まさちゃん「馬は、ランダムに船を歩き回るようにして！」）：甲板を 歩きまわる コマ（常歩＝4拍子・12コマ・右向き。左向きは ページで 反転）と、
+   止まって まわりを 見る コマ（前を 見る・見上げる 2つ・のぞきこむ 2つ＝5コマ）。どちらも 同じ カメラ・同じ 地面の 高さ（甲板の 奥：宝箱と 舵輪の うしろを 歩く）。
+   足の 動きは 常歩（左うしろ → 左前 → 右うしろ → 右前・1本の 足は 1回りの 62% 地面に つく：パドックと 同じ 考え方を ここに 写した）。
+   歩く はやさ（ページの px／秒）は 地面に ついた ひづめが すべらない はやさ（コマの ひづめの 動きから 出す）。
+   python3 kisekae/pack/make/pirate_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の pirate.walk・pirate.stand（前の pirate.captain は 消す）"""
 import math
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import still_sheet, save_webp, record, preview_png, FLAT  # noqa: E402
+from sheets import still_sheet, save_webp, record, preview_png, FLAT, render, make_sheet, HOOF_ORDER, PACK  # noqa: E402
 import numpy as np  # noqa: E402
 from cute_horse import smooth, path, stroke, circ, ell, unit, V, f2  # noqa: E402
 
@@ -90,11 +94,133 @@ def acc(m):
     return dict(head=hat, neck=neck, cloth=cloth)
 
 
-if __name__ == '__main__':
-    u8, meta, fr = still_sheet(PAL, SPOT, acc=acc, number='', tag='pkpirate', shadow=('#2A1A0E', 0.32))
-    out = os.environ.get('OUT')
+# ---------------------------------------------------------------- 歩く（常歩）：パドックの 壁紙と 同じ 考え方（キー・位相・すべらない はやさ）
+N = 12             # 1回りの コマ
+CYCLE = 1.25       # 1回りの 秒（ページと 同じ）
+ST = 0.62          # 足が 地面に ついて いる 長さ（1回りの 割合）
+F_KEYS = [(0.00, [-114, -80, -80, -56]), (0.31, [-126, -92, -92, -62]), (0.60, [-136, -106, -106, -78]),
+          (0.74, [-128, -78, -150, -150]), (0.88, [-110, -62, -92, -82])]
+H_KEYS = [(0.00, [-52, -110, -82, -56]), (0.31, [-62, -118, -94, -64]), (0.60, [-73, -127, -109, -81]),
+          (0.74, [-58, -128, -66, -40]), (0.88, [-50, -114, -72, -50])]
+OFF = dict(HL=0.00, FL=0.25, HR=0.50, FR=0.75)
+BOX = (232, 78, 438, 280)       # 2倍の 画素：甲板の 奥（ひづめ＝280 → 画面の 140px）。宝箱（下の はし 146px）・舵輪の 台（154px）より 奥
+SPOT_W = dict(pose='stand', facing='right', box=BOX, azim=6, shadow=('#2A1A0E', 0.0), ext=(0.06, 0.06))
+GROUND = BOX[3] - 4
+
+
+def ease(t):
+    return t * t * (3 - 2 * t)
+
+
+def leg_at(keys, p):
+    p %= 1.0
+    ks = keys + [(keys[0][0] + 1.0, keys[0][1])]
+    for (p0, a0), (p1, a1) in zip(ks, ks[1:]):
+        if p0 <= p <= p1:
+            t = (p - p0) / (p1 - p0)
+            if p1 > ST:
+                t = ease(t)
+            return [round(x0 + (x1 - x0) * t, 2) for x0, x1 in zip(a0, a1)]
+    return keys[0][1]
+
+
+def walk_pose(g):
+    from horse_flat import TAILS
+    leg = lambda k: leg_at(F_KEYS if k[0] == 'F' else H_KEYS, g - OFF[k])
+    w = 2 * math.pi
+    wave = math.sin(w * g)
+    tufts = [((a[0], a[1] + .015 * wave * (i + 1) / 3), (b[0] + .02 * wave * (i + 1) / 3, b[1]), (c[0] + .05 * math.sin(w * g - .9) * (i + 1) / 3, c[1]), wm)
+             for i, (a, b, c, wm) in enumerate(TAILS['sway'])]
+    return dict(theta=round(0.6 * math.sin(w * 2 * g), 2), neck_rot=round(-6 + 2.4 * math.cos(w * 2 * (g - 0.1)), 2), head_ang=round(-55 + 1.6 * math.sin(w * 2 * g), 2),
+                tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
+                fore_near=leg('FL'), fore_far=leg('FR'), hind_near=leg('HL'), hind_far=leg('HR'))
+
+
+def stance(g):
+    return [k for k in HOOF_ORDER if ((g - OFF[k]) % 1.0) < ST]
+
+
+def stand_pose(kind):
+    """止まった 形：front（前を 見る）・up1／up（見上げる：首を 上げて 鼻を 上へ）・down1／down（のぞきこむ：首を 下げて 下を 見る）"""
+    from horse_flat import POSES
+    P = {k: (list(v) if isinstance(v, list) else v) for k, v in POSES['stand'].items()}
+    P['tail_kind'] = 'hang'
+    if kind == 'up1':
+        P.update(neck_rot=2.0, head_ang=-48.0)
+    elif kind == 'up':
+        P.update(neck_rot=8.0, head_ang=-38.0)
+    elif kind == 'down1':
+        P.update(neck_bend=-22.0, neck_len=1.04, head_ang=-66.0)
+    elif kind == 'down':
+        P.update(neck_bend=-46.0, neck_len=1.08, head_ang=-80.0)
+    return P
+
+
+STANDS = ('front', 'up1', 'up', 'down1', 'down')
+
+
+def walk_speed(frames, legs):
+    """地面に ついて いる ひづめが すべらない 横の はやさ（2倍の 画素／コマ）"""
+    n = len(frames)
+    vals = []
+    for i in range(n):
+        j = (i + 1) % n
+        for k in legs[i]:
+            if k in legs[j]:
+                vals.append(frames[i][2][HOOF_ORDER.index(k)][0] - frames[j][2][HOOF_ORDER.index(k)][0])
+    return sum(vals) / len(vals) if vals else 0.0
+
+
+def drop(theme, name):
+    """blobs.json から 使わなく なった 絵の 名前を 消す（record と 同じ ロック）"""
+    import fcntl
+    import json
+    p = os.path.join(PACK, 'blobs.json')
+    with open(p + '.lock', 'w') as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        d = json.load(open(p, encoding='utf-8'))
+        if name in d.get(theme, {}):
+            del d[theme][name]
+            tmp = p + '.tmp'
+            json.dump(d, open(tmp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+            os.replace(tmp, p)
+        fcntl.flock(lk, fcntl.LOCK_UN)
+
+
+def acc_i(i):
+    return acc
+
+
+def build(out=None):
+    import horse_flat as HF
+    poses = [walk_pose(i / N) for i in range(N)] + [stand_pose(k) for k in STANDS]
+    frames, cam = render(PAL, SPOT_W, poses, acc=acc_i, number='', tag='pkpiw', workers=2)
+    wf, sf = frames[:N], frames[N:]
+    legs = [stance(i / N) for i in range(N)]
+    from sheets import ground_dy
+    dys = ground_dy(wf, legs, GROUND, lift=0.0)
+    v = walk_speed(wf, legs)
+    xs = [h[0] for fr in wf for h in fr[2]]
+    sh = ('#2A1A0E', (min(xs) + max(xs)) / 2, GROUND + 2.5, (max(xs) - min(xs)) * 0.5, 5.0, 0.26)
+    u8, meta = make_sheet(wf, dys, shadow=sh)
+    meta['dy'] = [round(float(d), 2) for d in dys]
+    meta['speed'] = round(abs(v) / 2 * N / CYCLE, 2)            # ページの px／秒（右向きに 進む）
+    meta['cx'] = round((BOX[0] + BOX[2]) / 4, 2)                # 馬の まん中（ページの px）：左向きは ここを 中心に 反転
+    sdy = [GROUND - max(h[1] for h in fr[2]) for fr in sf]      # 止まった 形：4本の ひづめが 地面に
+    u8s, meta_s = make_sheet(sf, sdy, shadow=sh)
+    meta_s['dy'] = [round(float(d), 2) for d in sdy]
+    meta_s['names'] = list(STANDS)
     if out:
-        preview_png(u8, os.path.join(out, 'captain.png'), bg=(120, 160, 190))
-    bid = save_webp(u8, quality=92)
-    record('pirate', 'captain', bid, meta)
-    print('captain', bid, meta)
+        preview_png(u8, os.path.join(out, 'pirate_walk.png'), bg=(170, 120, 70))
+        preview_png(u8s, os.path.join(out, 'pirate_stand.png'), bg=(170, 120, 70))
+    bid = save_webp(u8, quality=90)
+    record('pirate', 'walk', bid, meta)
+    bids = save_webp(u8s, quality=90)
+    record('pirate', 'stand', bids, meta_s)
+    drop('pirate', 'captain')
+    print('walk', bid, meta)
+    print('stand', bids, meta_s)
+
+
+if __name__ == '__main__':
+    build(os.environ.get('OUT'))

@@ -1,8 +1,13 @@
 """壁紙パック ①海賊（まさちゃんの 指定「海賊船の甲板に、蹄鉄マークの海賊旗。宝箱の金貨がキラッと光って、波で船がゆれる」）
-   上の絵：海賊船の 甲板。左に ふたの あいた 宝箱（金貨・宝石・真珠）・まん中に 三角帽の 馬の 船長（pack/make/pirate_art.py）・右に 舵輪と 旗ざお。
+   上の絵：海賊船の 甲板。左に ふたの あいた 宝箱（金貨・宝石・真珠）・甲板を 歩きまわる 三角帽の 馬の 船長（pack/make/pirate_art.py）・右に 舵輪と 旗ざお。
      旗ざおの 上に 黒い 海賊旗（白い 蹄鉄と ぶっちがいの 骨）。手すりの むこうに 海・空・宝島。
    動き：船が 波で ゆれる（甲板は そのまま、手すりの むこうの 海と 空が かたむいて 上下する＝6秒）・旗が なびく・舵輪が ゆれに 合わせて 少し 回る・
-     雲が 流れる・波が 流れる・かもめが 飛ぶ・宝箱の 金貨が キラッと 光る（小さな 光が 順に・強く 光らせない）"""
+     雲が 流れる・波が 流れる・かもめが 飛ぶ・宝箱の 金貨が キラッと 光る（小さな 光が 順に・強く 光らせない）
+   第4.93版（まさちゃん「船の揺れの演出もう少し弱くして！ あと、8秒に一回海賊船が背景に通るようにして！ あと、馬は、ランダムに船を歩き回るようにして！」）：
+     ゆれは 半分（かたむき 1.7°・上下 2px くらい・舵輪 ±7°）。8秒に 1回 小さな 海賊船（黒い 帆に 白い 蹄鉄）が 水平線の 近くを 通る
+     （16秒で 右から 左・左から 右の 2回。少し 大きさと 高さを かえる・波で 上下に ゆれる）。
+     船長は 40秒の 1回りの 中で 歩く（常歩の 12コマ・すべらない はやさ）・止まって まわりを 見る（前・見上げる・のぞきこむ）・くるっと 向きを かえる を
+     ばらばらの 長さで（宝箱と 舵輪の うしろを 通る）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, box, rnd, reduced, fly_burst, fly_css, piece
 
@@ -13,7 +18,11 @@ SKY = ('#4C9AD6', '#9AD2EF', '#FCE6BC')
 SEA = ('#3A97C4', '#1E6E9E', '#174F7A')
 WOOD = dict(l='#B98652', m='#8E5E34', d='#5E3A1E', dd='#3C2412', hi='#D9AD72')
 GOLD = dict(l='#FFE58A', m='#F2C14E', d='#C8902A', dd='#8A5A14')
-ROT = 3.4          # 船の ゆれ（度）
+ROT = 1.7          # 船の ゆれ（度）：第4.93版 3.4 → 1.7（まさちゃん「もう少し弱くして！」）
+BOB = (1.8, 1.0)   # ゆれの 上下（px：上・下）：第4.93版 (3.5, 2) → 半分くらい
+WHEEL = (7, 6)     # 舵輪の 回る 角度（度）：第4.93版 (14, 12) → 半分
+SHIP_T = 16.0      # 海賊船の 1回り（秒）：8秒に 1回 通る（右から 左・左から 右）
+WALK_C = 1.25      # 船長の 歩く 1回り（秒：pirate_art.CYCLE と 同じ）
 ROCK = 6.0         # ゆれの 1回り（秒）
 
 # 世界（手すりの むこう：空・雲・島・海）は 舞台より 大きく（かたむけても すみが 見えない）。世界の 座標＝舞台の 座標 + (OX, OY)
@@ -97,6 +106,42 @@ def waves_svg(w=120, h=26, seed=3, op=0.75):
 
 def gull_svg():
     return doc(22, 10, "<path d='M1 6 Q5 0 11 5 Q17 0 21 6 Q17 3 11 7.5 Q5 3 1 6 Z' fill='#FFFFFF' stroke='#3A4A5A' stroke-width='.7'/>")
+
+
+def ship_svg(right=False):
+    """遠くを 通る 海賊船（横から・左が へさき）：こげ茶の 船体（明るい 帯・小さな 砲門・高い とも）・へさきの 斜しょう・2本の 帆柱に 黒い 四角の 帆
+       （ふくらむ・大きい 帆に 白い 蹄鉄）・てっぺんに 小さな 黒い 旗と 赤い 吹き流し・水の 白い すじ。right=True は 右向き（反転）。大きさ 64×54（水の 線＝48）"""
+    o = ''
+    # 水の すじ（船の 下と うしろ）
+    o += "<path d='M6 48.6 Q22 47.2 40 48.2 T62 48.6' fill='none' stroke='#E8F7FD' stroke-width='1.2' stroke-linecap='round' opacity='.85'/>"
+    o += "<path d='M44 50.4 Q52 49.6 62 50.6' fill='none' stroke='#E8F7FD' stroke-width='.9' stroke-linecap='round' opacity='.6'/>"
+    # 帆柱と 綱
+    o += ("<path d='M24 41 V9' stroke='#4A2E1A' stroke-width='1.3'/><path d='M40 41 V5' stroke='#4A2E1A' stroke-width='1.4'/>"
+          "<path d='M8 36 L24 9 M24 9 L40 5 M40 5 L54 34' fill='none' stroke='#5A4030' stroke-width='.5' opacity='.85'/>"
+          "<path d='M4 37.5 L12 33.5' stroke='#4A2E1A' stroke-width='1'/>")
+    # 帆（黒・ふくらむ）
+    sails = ((24, 12, 9.5, 11), (24, 25, 11, 10), (40, 8, 11, 12), (40, 22, 13.5, 13))
+    for cx, top, hw, hh in sails:
+        o += (f"<path d='M{cx - hw} {top} Q{cx} {top + 2.2} {cx + hw} {top} Q{cx + hw - 1.2} {top + hh / 2} {cx + hw + 0.4} {top + hh} "
+              f"Q{cx} {top + hh + 2.6} {cx - hw - 0.4} {top + hh} Q{cx - hw + 1.2} {top + hh / 2} {cx - hw} {top} Z' fill='#1C1A20'/>"
+              f"<path d='M{cx - hw} {top} Q{cx} {top + 2.2} {cx + hw} {top}' fill='none' stroke='#4A4450' stroke-width='.7'/>"
+              f"<path d='M{cx - hw * 0.4} {top + 1.6} Q{cx - hw * 0.5} {top + hh / 2} {cx - hw * 0.4} {top + hh + 0.8}' fill='none' stroke='#34303A' stroke-width='.6'/>")
+        o += f"<path d='M{cx - hw - 0.6} {top - 0.4} H{cx + hw + 0.6}' stroke='#4A2E1A' stroke-width='.9'/>"
+    # 大きい 帆の 白い 蹄鉄（U が 上に ひらく）
+    o += f"<path d='{horseshoe_d(40, 28.6, 4.6, 2.7)}' fill='#F2EEE6'/>"
+    # てっぺんの 旗と 吹き流し
+    o += ("<path d='M40.2 5 H47 L45.6 7 L47 9 H40.2 Z' fill='#16141A'/><circle cx='43.4' cy='7' r='.9' fill='#F2EEE6'/>"
+          "<path d='M24.2 9 L30 10 L24.2 11 Z' fill='#C8322A'/>")
+    # 船体
+    o += ("<path d='M4 38.6 L56 37.4 L60 31.6 L62 31.6 L60.4 41 Q57 47.6 48 48 H14 Q8 47.6 6 43.6 Z' fill='#4A2E1A'/>"
+          "<path d='M5.2 40.6 L59.6 39.4 L59.2 41.6 L5.8 42.6 Z' fill='#8A5A34'/>"
+          "<path d='M50 37.6 L56 37.4 L60 31.6 L62 31.6 L61.4 34.6 L56.8 39 L50 39.2 Z' fill='#5E3A20'/>")
+    for x in (14, 22, 30, 38, 46):
+        o += f"<rect x='{x}' y='43.4' width='2.2' height='1.8' fill='#1A1210'/>"
+    o += "<path d='M5 44.6 Q30 46.6 58 44.2' fill='none' stroke='#2E1C10' stroke-width='.6' opacity='.7'/>"
+    if right:
+        o = f"<g transform='translate(64 0) scale(-1 1)'>{o}</g>"
+    return doc(64, 54, o)
 
 
 def railing_svg():
@@ -302,6 +347,62 @@ def stand_svg():
 def glint_svg():
     """金貨の キラッ（小さな 4つ角の 光）"""
     return doc(16, 16, f"<path d='{sparkle_d(8, 8, 7.6, 0.16)}' fill='#FFFDF0'/><circle cx='8' cy='8' r='1.8' fill='#FFFFFF'/>")
+
+
+# ---------------------------------------------------------------- 船長の 歩き方（40秒の 1回り）
+STANDS = ('front', 'up1', 'up', 'down1', 'down')     # pirate_art.STANDS と 同じ じゅん
+# ('stop', [(形, 秒)…], 向きを かえる 時刻（止まって から の 秒・なし＝None）) ／ ('walk', 1回りの 数, 向き：+1 右・-1 左)
+# 歩く 区間は 1回り（1.25秒）の 数・止まる 区間も 1.25秒の 倍数（歩きだす ときの 足の 形が いつも 同じ）。はじめは 左を 向いて 宝箱の 前
+PLAN = [
+    ('stop', [('front', 1.0), ('down1', .15), ('down', 1.45), ('down1', .15), ('front', 1.0)], 2.95),
+    ('walk', 2, 1),
+    ('stop', [('front', .5), ('up1', .15), ('up', 1.2), ('up1', .15), ('front', .5)], None),
+    ('walk', 2, 1),
+    ('stop', [('front', 1.0), ('down1', .15), ('down', .9), ('down1', .15), ('front', 1.55)], 2.85),
+    ('walk', 3, -1),
+    ('stop', [('front', .4), ('up1', .15), ('up', .4), ('up1', .15), ('front', .15)], None),
+    ('walk', 3, -1),
+    ('stop', [('front', .45), ('down1', .15), ('down', 1.9), ('down1', .15), ('front', 1.1)], 3.1),
+    ('walk', 1, 1),
+    ('stop', [('front', .6), ('up1', .15), ('up', .95), ('up1', .15), ('front', .65)], None),
+    ('walk', 3, 1),
+    ('stop', [('front', .9), ('down1', .15), ('down', .6), ('down1', .15), ('front', .7)], 2.0),
+    ('walk', 2, -1),
+]
+TURN = 0.36        # くるっと 向きを かえる 秒
+
+
+def walk_keys(speed, cx):
+    """PLAN → 動きの キー（時刻・値）。返り値：(1回りの 秒, 位置, 向き, 歩いて いるか, 止まった 形)"""
+    step = speed * WALK_C
+    t, x, face = 0.0, 0.0, -1
+    pos, flip, walking, frame = [(0.0, 0.0)], [(0.0, face)], [(0.0, 0)], []
+    for blk in PLAN:
+        if blk[0] == 'walk':
+            _, n, d = blk
+            assert d == face, (blk, face)
+            dur = n * WALK_C
+            walking.append((t, 1))
+            x += d * n * step
+            t += dur
+            pos.append((t, x))
+            walking.append((t, 0))
+            frame.append((t - dur, None))
+        else:
+            _, looks, turn = blk
+            dur = sum(d for _, d in looks)
+            assert abs(dur / WALK_C - round(dur / WALK_C)) < 1e-6, (dur, blk)
+            tt = t
+            for nm, d in looks:
+                frame.append((tt, STANDS.index(nm)))
+                tt += d
+            pos.append((t + dur, x))
+            if turn is not None:
+                flip += [(t + turn, face), (t + turn + TURN / 2, face * 0.06), (t + turn + TURN, -face)]
+                face = -face
+            t += dur
+    assert abs(x) < 1e-6 and face == -1, (x, face)
+    return t, pos, flip, walking, frame
 
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
