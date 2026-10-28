@@ -412,7 +412,7 @@
   }
   function open(kind, spec, supers, bigs, quiet, direct) {
     close(true); css();
-    const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '');
+    const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '') + (direct ? ' pv' : '');   // pv＝ためし（押された PUSH と はじける 絵は 出さない：bcx.js）
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'レースの結果');
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);

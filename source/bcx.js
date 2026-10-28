@@ -186,6 +186,8 @@
     '.fxs .hb.bcfly .rb{animation:bcFly .75s cubic-bezier(.45,0,.8,.55) both}@keyframes bcFly{0%{transform:none;opacity:1;filter:blur(0)}12%{transform:translate(-10px,6px) rotate(-3deg);opacity:1;filter:blur(0)}30%{opacity:.3;filter:blur(7px)}100%{transform:translate(460px,-760px) rotate(38deg) scale(.55);opacity:.12;filter:blur(10px)}}',
     '.fxs .hb.bcback .rb{animation:bcBack .6s cubic-bezier(.4,0,1,1) both}@keyframes bcBack{0%{transform:translateY(-980px) rotate(8deg)}78%{transform:translateY(0) rotate(0) scale(1)}86%{transform:scale(1.08,.86)}94%{transform:scale(.97,1.03)}100%{transform:none}}',
     '.fxs .hb.bcwait .bc-it,.fxs .hb.bcwait .bc-rain,.fxs .hb.bcwait .bc-rib{visibility:hidden}',
+    // ためし（設定の「▶ 見る」：TengelFx.preview）は PUSH を 押して いないので、押された PUSH と はじける 絵は 出さない
+    '#fxOv.pv .ov > .pressed,#fxOv.pv .ov > .clips{display:none!important}',
     // 解放の お知らせ（画面の 上）
     '#bcNote{position:fixed;left:50%;top:calc(var(--sat,0px) + 10px);z-index:80;transform:translateX(-50%);max-width:92vw;padding:9px 16px 10px;border-radius:14px;background:linear-gradient(180deg,#FFF8DC,#FFE7A3);color:#4A3206;',
     'font:700 13.5px/1.45 "BIZ UDPGothic",sans-serif;box-shadow:0 0 0 2px #FFFFFF,0 8px 22px rgba(0,0,0,.28);pointer-events:none;animation:bcNote 4.2s ease-out both;text-align:center}',
