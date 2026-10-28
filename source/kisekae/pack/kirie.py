@@ -4,7 +4,8 @@
      馬は 赤い 紙の 紙人形（体に 切りぬきの もよう・白い 紙が 下から のぞく・ティールの 鞍の 布・ぎざぎざの たてがみ）。足と しっぽは 金の ピンで とめた 別の 紙
    動き：馬の 足が ピンを 中心に ぱたぱた（ななめの 2本ずつ 交互）・体が ぴょこぴょこ 上下・しっぽが ゆれる。景色の 紙が 右から 左へ 流れる（遠いほど ゆっくり＝奥行き）・
      太陽が ゆっくり 回る・紙の 鳥が はばたいて 横切る。強く 光らせない
-   第4.93版：足の ぱたぱたを 少し ゆっくり（1回り 0.5 → 0.68秒）・鳥の はねは 根もとを 体の 背中に 重ねて、根もとを 中心に はばたく（はなれて 見えない）"""
+   第4.93版：足の ぱたぱたを 少し ゆっくり（1回り 0.5 → 0.68秒）・鳥の はねは 根もとを 体の 背中に 重ねて、根もとを 中心に はばたく（はなれて 見えない）・
+     馬を 下げて ひづめが 手前の 草の 地面に つく（足が ななめで ひづめが 上がる ぶん だけ 体を 下げる＝いちばん 下の ひづめが いつも 地面・うしろ足は ピンが 高い ぶん 長く・影は 地面に）"""
 import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
@@ -12,7 +13,9 @@ ID = 'kirie'
 RED, REDD, CREAM, MAROON, TEAL, GOLD = '#D8473A', '#A63328', '#FFF4E0', '#7E2424', '#2F8A84', '#E2B24A'
 TILE = 390
 # 馬（紙人形）：絵の 単位（100×80・右向き）→ 舞台の px（SC 倍）。左上 HX, HY
-SC, HX, HY = 1.12, 104, 46
+# 第4.93版（まさちゃん「馬が地面に脚が付いてないからつけて！」）：馬を 下げて、いちばん 下の ひづめが いつも 手前の 草の 地面（GROUND）に つく
+SC, HX, HY = 1.12, 104, 55.5
+GROUND = HY + (45 + 6 + 30.8) * SC     # 足が まっすぐ 下の とき の ひづめの 下（舞台の px）＝ 手前の 草の 中
 BODY = [(18, 36), (22, 29), (32, 26.5), (46, 28.5), (56, 26), (62, 20), (67, 13), (72, 8), (79, 6.5), (86, 10), (92, 15.5), (96, 21), (94.5, 26.5),
         (90, 27.5), (83, 26.5), (77, 24.5), (72, 30), (67.5, 39), (65, 47), (61, 53), (48, 55), (31, 54), (22, 50.5), (16.5, 43)]
 EAR = [(70.6, 8.6), (73, -2.6), (76.4, 6.8)]
@@ -70,15 +73,16 @@ def body_svg():
 
 def leg_svg(col, hind=False):
     """足：ピンの 所＝(0,0)・下へ。絵の 箱 -9〜9 × -7〜35"""
-    if hind:
-        pts = [(-6, -3), (-2, -6), (4, -4.5), (5.4, 4), (3.6, 13), (1.6, 22), (2.4, 26.4), (4.2, 30.6), (-3.6, 30.8), (-2.6, 26.4), (-3.2, 21),
+    if hind:                                                   # うしろ足は ピンが 2 上なので 管を 2 長く（ひづめの 高さを 前足と そろえる）
+        pts = [(-6, -3), (-2, -6), (4, -4.5), (5.4, 4), (3.6, 13), (1.6, 24), (2.4, 28.4), (4.2, 32.6), (-3.6, 32.8), (-2.6, 28.4), (-3.2, 23),
                (-6.2, 14.4), (-5.6, 8)]
     else:
         pts = [(-5.2, -3), (-1, -5.6), (4.4, -3.4), (4.6, 6), (3.4, 15), (2.4, 23), (3, 26.6), (4.6, 30.6), (-3.4, 30.8), (-2.6, 26.4), (-2.8, 22),
                (-3.6, 14), (-4.8, 4)]
     d = smooth(pts, True, .35)
-    hoof = P([(-3.6, 27.6), (3.6, 27.6), (4.6, 30.8), (-3.6, 30.9)])
-    return doc(18, 42, paper(d, col) + f"<path d='{hoof}' fill='{mix(col, '#000000', .45)}'/>", vb='-9 -7 18 42', defs=paper_defs(7))
+    dy = 2 if hind else 0
+    hoof = P([(-3.6, 27.6 + dy), (3.6, 27.6 + dy), (4.6, 30.8 + dy), (-3.6, 30.9 + dy)])
+    return doc(18, 42 + dy, paper(d, col) + f"<path d='{hoof}' fill='{mix(col, '#000000', .45)}'/>", vb=f'-9 -7 18 {42 + dy}', defs=paper_defs(7))
 
 
 def tail_svg():
@@ -290,12 +294,13 @@ def banner(B):
            '.kgw .kgBd.b1{animation:kgB1 22s linear infinite}'
            '.kgw .kgBd.b2{animation:kgB2 22s linear -9s infinite}'
            f'.kgw .kgH{{left:{HX}px;top:{HY}px;width:{f(100 * s)}px;height:{f(80 * s)}px}}'
-           f'.kgw .kgSh{{position:absolute;left:{f(14 * s)}px;top:{f(76 * s)}px;width:{f(60 * s)}px;height:{f(6 * s)}px;border-radius:50%;background:rgba(60,40,20,.22);animation:kgShd {LEG_PER / 2}s ease-in-out infinite alternate}}'
-           f'.kgw .kgB{{position:absolute;left:0;top:0;width:{f(100 * s)}px;height:{f(80 * s)}px;animation:kgBob {LEG_PER / 2}s ease-in-out infinite alternate}}'
+           f'.kgw .kgSh{{position:absolute;left:{f(14 * s)}px;top:{f(GROUND - HY - 3 * s)}px;width:{f(60 * s)}px;height:{f(6 * s)}px;border-radius:50%;background:rgba(60,40,20,.26);animation:kgShd {LEG_PER}s ease-in-out infinite}}'
+           f'.kgw .kgB{{position:absolute;left:0;top:0;width:{f(100 * s)}px;height:{f(80 * s)}px;animation:kgBob {LEG_PER}s ease-in-out infinite}}'
            '.kgw .kgB>img{position:absolute;display:block}'
            f'.kgw .kgBody{{left:0;top:0;width:{f(100 * s)}px;height:{f(80 * s)}px}}'
            f'.kgw .kgT{{left:{f((PIV["tail"][0] - 19) * s)}px;top:{f((PIV["tail"][1] - 4 + 6) * s)}px;width:{f(24 * s)}px;height:{f(34 * s)}px;transform-origin:{f(19 * s)}px {f(4 * s)}px;animation:kgTail {LEG_PER * 2}s ease-in-out infinite alternate}}'
-           f'.kgw .kgL{{width:{f(18 * s)}px;height:{f(42 * s)}px;transform-origin:{f(9 * s)}px {f(7 * s)}px}}')
+           f'.kgw .kgL{{width:{f(18 * s)}px;height:{f(42 * s)}px;transform-origin:{f(9 * s)}px {f(7 * s)}px}}'
+           f'.kgw .kgL.hn,.kgw .kgL.hf{{height:{f(44 * s)}px}}')
     for k, key in ((0, 'fn'), (1, 'hn'), (2, 'ff'), (3, 'hf')):
         px, py = PIV[key]
         # 体の 絵は viewBox の 上が -6（6 だけ 下に ずれる）
@@ -307,8 +312,9 @@ def banner(B):
             + kf('kgSun', [(0, 'transform:rotate(0)'), (100, 'transform:rotate(360deg)')])
             + kf('kgLegA', [(0, 'transform:rotate(28deg)'), (50, 'transform:rotate(-30deg)'), (100, 'transform:rotate(28deg)')])
             + kf('kgLegB', [(0, 'transform:rotate(-30deg)'), (50, 'transform:rotate(28deg)'), (100, 'transform:rotate(-30deg)')])
-            + kf('kgBob', [(0, 'transform:translateY(0) rotate(-1.2deg)'), (100, 'transform:translateY(-4px) rotate(1deg)')])
-            + kf('kgShd', [(0, 'transform:scale(1);opacity:1'), (100, 'transform:scale(.86);opacity:.75')])
+            # 足の 角度（kgLegA・B：28° → -30° → 28°）で ひづめが 上がる ぶん だけ 体を 下げる（足が まっすぐ＝25%・75% で いちばん 上）
+            + kf('kgBob', [(0, 'transform:translateY(4.04px)'), (25, 'transform:translateY(0)'), (50, 'transform:translateY(4.62px)'), (75, 'transform:translateY(0)'), (100, 'transform:translateY(4.04px)')])
+            + kf('kgShd', [(0, 'transform:scale(1);opacity:1'), (25, 'transform:scale(.92);opacity:.85'), (50, 'transform:scale(1);opacity:1'), (75, 'transform:scale(.92);opacity:.85'), (100, 'transform:scale(1);opacity:1')])
             + kf('kgTail', [(0, 'transform:rotate(-14deg)'), (100, 'transform:rotate(12deg)')])
             + kf('kgWing', [(0, 'transform:scaleY(1)'), (100, 'transform:scaleY(-.7)')])
             + kf('kgB1', [(0, 'transform:translate(-30px,30px)'), (30, 'transform:translate(110px,18px)'), (60, 'transform:translate(250px,28px)'), (100, 'transform:translate(420px,14px)')])
