@@ -379,6 +379,11 @@ try:
         check(ov.count() == 1 and ov.locator('.fxs .ov .push').count() == 1 and ov.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'push', 'quiet': False, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1} and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
               f'保存 → 的中の PUSH が出る（3連単なしの当たり＝的中）・拡大は止める（{pg.evaluate("TengelFx.current()")}）')
         check(sx['ctx'] and sx['fetched'] and 'sfx_hit_push.m4a' in pg.evaluate("performance.getEntriesByType('resource').map(e => e.name).join()"), f'「結果を保存」を押したときに音の準備（AudioContext・音のファイルを読む）（{sx}）')
+        # 第4.109版：保存の たびに 音 15こ・動画 4本・絵 ぜんぶを 読むのを やめた → PUSH の 音 3こ ＋ 出す 演出（的中）の 音だけ・動画は 作らない
+        res9 = pg.evaluate("performance.getEntriesByType('resource').map(e => e.name.split('/').pop())")
+        check(sorted(sx['keys']) == ['big_push', 'fz_push', 'hit', 'hit_push'] and pg.locator('#fxVh video').count() == 0
+              and not any(n.endswith('.mp4') or n.startswith(('sfx_sgd', 'sfx_spg', 'sfx_zp', 'sfx_pc', 'sfx_sd', 'sfx_nd', 'sfx_fz.', 'fz_n', 'pm_', 'sgd_last', 'sd_last', 'nd_last')) for n in res9),
+              f'保存の たびに 読むのは PUSH の 音 3こと 出す 演出（的中）の 音だけ・ほかの 演出の 音・動画・絵は 読まない（第4.109版）（{sorted(sx["keys"])}・動画 {pg.locator("#fxVh video").count()}）')
         check(pg.locator('#toast').is_hidden() or '保存できたよ' not in pg.locator('#toast').inner_text(), '演出が出るときは、お知らせの帯は出さない（ボードが結果を見せる）')
         f9 = pg.locator('#recList .rsvf')
         check(f9.get_attribute('data-mode') == 'amount' and '結果を記録したよ（的中）' in f9.locator('[data-k=savemsg]').inner_text() and '単勝 的中' in f9.locator('[data-k=savemsg]').inner_text(), '演出の うしろで 行は 金額の 欄（mode=amount）に 入れかわる・欄の下には 結果を記録したよ（券種ごとの結果）')
@@ -433,16 +438,18 @@ try:
               f'第4.86版：隠れど的中は なし（デカ的中は いつも デカ的中・数も 数えない）・ど的中の くじは 乱数 0 でも プレミアム（超プレミアムど的中は なし）（{seq}）')
         pg.evaluate("TengelFx._rand = () => 0.99")   # ここからは くじを 外す（第4.77版：くじの ど的中は ノーマルど的中（nd）なので、CSS の ど的中は force で 出す）
         pg.wait_for_timeout(1900)
-        # ど的中：虹色の超デカ PUSH → 押した瞬間にフリーズ → 結果（超大穴の帯・3連単の行の超大穴の馬番に輪）
-        pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'fz' }, s))", spec([11, 6, 2], [('馬単', '的中', [[11, 6], [6, 2]]), ('ワイド', '不的中', [])])); pg.wait_for_timeout(200)
+        # ど的中：第4.109版から 前の CSS の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れない（くじで 出ない）→ force:'fz' は ノーマルど的中（nd）。
+        #   PUSH は ど的中の 形（そのテーマの PUSH を 1.4倍）・動画が 読めない（テストの mp4）→ さいごの 1まい → 1.3秒で ボード（超大穴の帯・3連単の行の超大穴の馬番に輪）
+        kf = pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'fz' }, s))", spec([11, 6, 2], [('馬単', '的中', [[11, 6], [6, 2]]), ('ワイド', '不的中', [])])); pg.wait_for_timeout(200)
         fo = pg.locator('#fxOv')
-        check(fo.locator('.ov.fz .pbox.pz .push').count() == 1 and fo.locator('.push.fz').count() == 0 and fo.locator('.pbox.rbw').count() == 0 and fo.locator('.aura, .prays, .edge, .frame').count() == 4 and fo.locator('.tap').inner_text() == 'タップ！' and 'k-fz' in fo.get_attribute('class') and pg.evaluate('TengelFx.current()')['pz'] == 1.4, 'ど的中：そのテーマの PUSH を 1.4倍（虹色では ない）・まわりは ど的中の 虹の 光（第4.60版）')
-        fo.locator('.push').click(force=True); pg.wait_for_timeout(300)
-        check(fo.locator('.fxs .ov.fz .pc').count() == 1 and fo.locator('.fxs .ov.fz .mt .sc').count() == 5 and fo.locator('.fxs .ov.fz .fin .dlg').count() == 1 and fo.locator('.rb.fz').count() == 1,
-              'ど的中の押したあと：フリーズ（.pc）・ネオンのカット5つ・結果（ど的中の筆の字・ボード）が重なっている')
+        check(kf == 'nd' and fo.locator('.ov.fz .pbox.pz .push').count() == 1 and fo.locator('.push.fz').count() == 0 and fo.locator('.pbox.rbw').count() == 0 and fo.locator('.aura, .prays, .edge, .frame').count() == 4 and fo.locator('.tap').inner_text() == 'タップ！' and 'k-nd' in fo.get_attribute('class') and pg.evaluate('TengelFx.current()')['pz'] == 1.4
+              and pg.evaluate("window.__FX.reveal.fz") is None and pg.evaluate("window.__FX.push.fz") is None and pg.evaluate("window.__FX.push.big") is None and pg.evaluate("window.__FX.sfx.fz") is None and pg.evaluate("window.__FX.assets.nglow") is None,
+              f'ど的中（第4.109版）：force の fz は ノーマルど的中（nd）・そのテーマの PUSH を 1.4倍（虹色では ない）・前の ど的中の 押したあと・テーマの ない PUSH・音・ネオンの 絵は 入って いない（{kf}）')
+        fo.locator('.push').click(force=True); pg.wait_for_timeout(2200)
         zx = fo.locator('.rb .brows li.top .n.zx')
-        check(fo.locator('.rb.fz .bh').text_content() == 'ど的中！！！' and '超大穴' in fo.locator('.rb .zrib').text_content() and '11番人気が3連単に！' in fo.locator('.rb .zrib').text_content() and zx.count() == 1 and zx.text_content() == '11' and fo.locator('.rb .brows li').nth(1).locator('.bc').count() == 2,
-              f'ど的中のボード（結果の画面は6.9秒から）：「ど的中！！！」・帯「超大穴 11 11番人気が3連単に！」・3連単の 11 に虹色の輪・馬単の当たり2つ（{fo.locator(".rb .zrib").text_content()}）')
+        check(fo.locator('.fxs .ov.fz.nd').count() == 1 and fo.locator('.nic').count() == 0 and fo.locator('.rb.fz .bh').text_content() == 'ど的中！！！' and '超大穴' in fo.locator('.rb .zrib').text_content() and '11番人気が3連単に！' in fo.locator('.rb .zrib').text_content() and zx.count() == 1 and zx.text_content() == '11' and fo.locator('.rb .brows li').nth(1).locator('.bc').count() == 2
+              and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')).opacity") == '1',
+              f'ど的中の ボード（ノーマルど的中の さいごの 1まい → 1.3秒）：「ど的中！！！」・帯「超大穴 11 11番人気が3連単に！」・3連単の 11 に虹色の輪・馬単の当たり2つ（{fo.locator(".rb .zrib").text_content()}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         # 設定：的中エフェクト オフ → PUSH・演出なしでボードだけ静かに／演出を控えめにする → .calm／効果音
         pg.evaluate("TengelFx.set({ effects: false })"); pg.wait_for_timeout(100)
@@ -455,7 +462,8 @@ try:
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'fz' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200)
         check(pg.locator('#fxOv .fxs.calm .ov.fz .pbox.pz .push').count() == 1 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .aura')).animationName") == 'none', '演出を控えめにする：ど的中の まわりの 動きが止まる（視差効果を減らすと同じ形）')
         pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(200)
-        check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.fz .pc')).display") == 'none' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.fz .mt')).display") == 'none', '控えめ：フリーズ・ネオンのカットは出さない（1秒真っ暗 → 結果をふわっと）')
+        cfz = pg.evaluate('TengelFx.current()')
+        check(cfz['kind'] == 'nd' and cfz['film'] == 2 and pg.locator('#fxOv .ov.nd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0, f'控えめ：ど的中（ノーマル）は 動画を 出さず さいごの 1まい（still）→ ボード（{cfz}）')
         pg.evaluate('TengelFx.close()')
         # ---- 第5弾（16.3）：特別な 演出。くじ（※仮）→ PUSH は ど的中と 同じ → 押したあと → そのテーマの ど的中の 形の ボード ----
         pg.evaluate("window.__seq = arr => { let i = 0; TengelFx._rand = () => arr[Math.min(i++, arr.length - 1)]; }")   # 乱数を 順に 決める（1つめ：プレミアム／超神様の くじ・2つめ：超プレミアム／超プレミアム神様の くじ）
@@ -515,7 +523,7 @@ try:
         else:
             print('  ⚠️ 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
-        check(pg.locator('#fxOv').count() == 0 and pg.locator('#fxVh video[data-film=sgd_film]').count() == 1 and pg.locator('#fxVh video[data-film=spg_up]').count() == 1 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '「とじる」→ 動画は 止めて はじめに もどして 置き場へ（prime で 2つとも 作って ある）')
+        check(pg.locator('#fxOv').count() == 0 and pg.locator('#fxVh video[data-film=sgd_film]').count() == 1 and pg.locator('#fxVh video[data-film=spg_up]').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '（第4.109版：超神様だけ 出した ときは 昇格の 動画 spg_up は 読まない）「とじる」→ 動画は 止めて はじめに もどして 置き場へ（動画は 出す 演出の 分だけ 作る）')
         # 動画が 読めない 時（ファイルが ない）→ さいごの 1まい → 1.3秒 ボード
         pg.evaluate("window.__FX.films = { sgd_film: 'nai_sgd_film.webm', spg_up: 'nai_spg_up.webm' }")   # ない 名前 → error → still
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'spg' }, s))", spec([11, 8, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1200)
@@ -646,7 +654,7 @@ try:
               f'ノーマルど的中の still：1.3秒で ボード・音は sfx_nd（still は 9.8秒から）・ボードは 動画の 10.05秒（{bh4}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         # プレミアムど的中・紫電（CSS と SVG）：押したあとの 部品と ボード（第4.86版：超プレミアムど的中・神様的中は なし）
-        check(sorted(pg.evaluate("Object.keys(window.__FX.reveal)")) == ['big', 'fz', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and pg.evaluate("window.__FX.art.gd") is None and pg.evaluate("window.__FX.sfx.gd") is None
+        check(sorted(pg.evaluate("Object.keys(window.__FX.reveal)")) == ['big', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and pg.evaluate("window.__FX.art.gd") is None and pg.evaluate("window.__FX.sfx.gd") is None
               and pg.evaluate("window.__FX.sfx.zp") == 'sfx_zp.m4a' and 'gd' not in pg.evaluate("Object.keys(window.__FX.board.titles)") and 'hidden' not in pg.evaluate("Object.keys(window.__FX.board.titles)"),
               '第4.86版：隠れど的中・超プレミアムど的中・神様的中の 押したあと・神様の 絵と 音・見出しは 入って いない（超プレミアムの 音は 超プレミアム神様の はじめに 使う）')
         for kind, cls, parts, title, ribs in (('pc', 'pm', ('.pmbg', '.pmp', '.pms', '.pmf', '.pmw'), 'ど的中！！！', '11番人気が3連単に！'),

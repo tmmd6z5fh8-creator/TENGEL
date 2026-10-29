@@ -25,7 +25,9 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
             body = SelfTest.file(named: name)
             #endif
         } else {
-            body = AppFiles.webFile(named: name).flatMap { try? Data(contentsOf: $0) }
+            // 第4.109版：ファイルは メモリに 写す だけ（.alwaysMapped）。前は 動画の「Range」の たびに ファイルを まるごと 読み直して いた
+            // （11MB の 動画なら 1回ごとに 11MB）→ 写して おけば 使う 所だけ 読む（subdata は その 範囲だけ）。写せない ときは 前と 同じ 読み方
+            body = AppFiles.webFile(named: name).flatMap { (try? Data(contentsOf: $0, options: .alwaysMapped)) ?? (try? Data(contentsOf: $0)) }
         }
         if let body {
             // 動画（超神様的中・超プレミアム神様的中の mp4：第5弾）は、再生のしくみが「Range: bytes=〜」で少しずつ読む → その部分だけ 206 で返す

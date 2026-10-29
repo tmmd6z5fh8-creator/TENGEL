@@ -127,12 +127,14 @@ APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data', 'ocr_done'}
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">')
-# App Store版：Google に通信しないで、アプリに入れたフォントを使う（ios/fonts。ファイルはそのまま）
-APP_FONT_FILES = ['BIZUDPGothic-Regular.ttf', 'BIZUDPGothic-Bold.ttf', 'DelaGothicOne-Regular.ttf', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf']
+# App Store版：Google に通信しないで、アプリに入れたフォントを使う（ios/fonts）。
+# 第4.109版：BIZ UDPGothic と Dela Gothic One は 字は そのままで WOFF2 に（ios/fonts/make_woff2.py・約11.8MB → 約5.6MB・しぼらない）。
+#   IBM Plex Mono は 予約名「Plex」が ある ので もとの TTF の まま（OFL 1.1：形式を かえるのは 改変）
+APP_FONT_FILES = ['BIZUDPGothic-Regular.woff2', 'BIZUDPGothic-Bold.woff2', 'DelaGothicOne-Regular.woff2', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf']
 APP_FONTS = ('<style>'
-             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}"
-             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}"
-             "@font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}"
+             "@font-face{font-family:'Dela Gothic One';src:url('fonts/DelaGothicOne-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}"
              "@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}"
              "@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap}"
              '</style>')

@@ -12,6 +12,8 @@
 //   見本（kisekae/gen_fx.py・boards.py・premium_cute.py・super_premium.py・kami.py・kami_super.py）の CSS と HTML は kisekae/build_fx.py が window.__FX に束ねる。
 //   舞台は 390×844 を画面に合わせて縮める（16.3 ※仮）
 //   音：kisekae/gen_sfx.py の音（m4a・アプリの中のファイル）を Web Audio で。「結果を保存」を押したときに準備する（iPhone は押す操作の中でないと鳴らないことがある）
+//   第4.109版：「結果を保存」の たびに 音 15こ・動画 4本・絵 ぜんぶを 先に 読むのを やめた（メモリ 20〜40MB）。押した ときは AudioContext と PUSH の 音 3こ だけ・
+//     出す 演出が 決まったら（open → preload）その 演出の 音と 絵と 動画だけ 読む。前の ど的中（fz：フリーズ・ネオンの カット）の 押したあと・音・絵は 入れない
 //   動画（超神様的中・超プレミアム神様的中・紫電）：アプリの中の mp4 を <video> で。押した 瞬間（タップの 中）に 再生 → 動きだした 時（playing）を 0秒に して 音と ボードの 時計を そろえる。
 //     4秒 たっても 動かない・読めない・視差効果を減らす／控えめ → さいごの 1まい → 1.3秒 ボード（※仮）
 //   設定：的中エフェクト（オフ＝PUSH・演出・音なしでボードだけ静かに）・演出を控えめにする（iPhone の視差効果を減らすと同じ形。はじめはその設定に合わせる）・効果音（はじめはオン ※仮）
@@ -32,8 +34,12 @@
   const BIG = [7, 9];                     // 大穴＝7〜9番人気（神様的中：超大穴と いっしょに 3連単に）
   const SETTING = 'fx';
   // PUSHが出たときの音・押したときの音（プレミアム・超神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
-  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], fz: ['fz_push', 'fz'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'] };
-  const FZ_PUSH = { fz: 1, pc: 1, sgd: 1, spg: 1, sd: 1, nd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
+  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'] };
+  // 第4.109版：演出ごとに 使う 音（出す 演出が 決まったら これだけ 読んで ほどく）・PUSH の 音（「結果を保存」を 押した ときに 読む）
+  const NEED = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp', 'spg_up', 'spg'],
+    sd: ['fz_push', 'ndt', 'nd', 'sdp', 'sd'], nd: ['fz_push', 'ndt', 'nd'] };
+  const PUSH_SFX = ['hit_push', 'big_push', 'fz_push'];
+  const FZ_PUSH = { pc: 1, sgd: 1, spg: 1, sd: 1, nd: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
   const BOARD_OF = { pc: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz' };   // ボードの 形（ど的中の 形）
   const TITLE_OF = { pc: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };              // ボードの 見出し（A.board.titles の キー）
   const LOT = { pc: 1 / 6, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };              // くじ（※仮）：ど的中 → プレミアム／のこりの 2回に1回 紫電（第4.66版）／神様の 条件 → 超神様 → 超プレミアム神様
@@ -161,10 +167,15 @@
 
   // ---------- 音（Web Audio：先に読んで、押した瞬間を0秒にして動きとそろえる） ----------
   const SX = { raw: {}, buf: {}, ctx: null, src: null, more: [], id: 0, fetched: false, ok: 0 };
-  function fetchAll() {
-    if (SX.fetched || typeof fetch !== 'function') return;
-    SX.fetched = true;
-    Object.keys(A.sfx).forEach(k => { SX.raw[k] = fetch(A.sfx[k], { cache: 'force-cache' }).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null); });
+  // 第4.109版：音は 使う 分だけ 読む（前は fetchAll で 15こ ぜんぶ 読んで、prime で ぜんぶ ほどいて いた＝ほどいた 音だけで 約40MB）
+  function want(keys) {
+    if (typeof fetch !== 'function') return;
+    (keys || []).forEach(k => { if (A.sfx[k] && !SX.raw[k]) SX.raw[k] = fetch(A.sfx[k], { cache: 'force-cache' }).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null); });
+  }
+  function ready(keys) {   // 読んで、AudioContext が あれば ほどいて おく（押す 前に：鳴らす 時に 遅れない）
+    want(keys);
+    if (!S.sound || !SX.ctx) return;
+    (keys || []).forEach(k => bufOf(SX.ctx, k));
   }
   function decode(c, b) { return new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }); }
   function actx() {
@@ -173,23 +184,23 @@
     return SX.ctx;
   }
   function bufOf(c, k) { if (!SX.buf[k] && SX.raw[k]) SX.buf[k] = SX.raw[k].then(b => (b ? decode(c, b.slice(0)) : null)); return SX.buf[k] || Promise.resolve(null); }
-  // 「結果を保存」を押したとき（押す操作の中）に呼ぶ：音の準備（消音スイッチなら鳴らさない＝ambient）・ネオンの絵の先読み・動画の 先読み
+  // 「結果を保存」を押したとき（押す操作の中）に呼ぶ：音の準備（消音スイッチなら鳴らさない＝ambient・AudioContext を 起こす）・PUSH の 音 3こ・結果ボードカスタムの 絵（小さい）。
+  // 第4.109版：ほかの 音・動画・演出の 絵は 出す 演出が 決まってから（open → preload）。前は ここで 音 15こ・動画 4本（約30MB）・絵 ぜんぶを 毎回 読んで いた
   function prime() {
     try { if (navigator.audioSession && 'type' in navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* 使えないiOS */ }
-    fetchAll();
+    want(PUSH_SFX); SX.fetched = true;
     try { Object.keys(A.assets).forEach(k => { const im = new Image(); im.src = A.assets[k]; }); } catch (e) { /* なし */ }
-    try { Object.keys(A.films || {}).forEach(video); } catch (e) { /* なし */ }
     if (!S.sound) return false;
     const c = actx(); if (!c) return false;
     if (!SX.ok) { SX.ok = 1; try { const s0 = c.createBufferSource(); s0.buffer = c.createBuffer(1, 1, 22050); s0.connect(c.destination); s0.start(0); } catch (e) { /* なし */ } }
-    Object.keys(SX.raw).forEach(k => bufOf(c, k));
+    PUSH_SFX.forEach(k => bufOf(c, k));
     return true;
   }
   // 音 k を、いまを0秒として from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）。layer＝前の音を止めずに重ねる（超プレミアム神様の 超神様の音）
   function sfx(k, from, wait, layer) {
     if (!layer) hush();
     if (!S.sound) return;
-    fetchAll();
+    want([k]);
     const c = actx(); if (!c || !SX.raw[k]) return;
     const id = SX.id, t0 = Date.now(); from = from || 0; wait = wait || 0;
     bufOf(c, k).then(buf => {
@@ -404,6 +415,7 @@
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
   // 出る 前に 絵を 読んで おく（プレミアム 38まい・紫電と ノーマルど的中と 超神様の さいごの 1まい・動画）
   function preload(kind) {
+    ready(NEED[kind]);                                                   // 第4.109版：その 演出の 音だけ 読んで ほどく
     const names = kind === 'pc' ? A.art.pm : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
     if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
@@ -426,9 +438,9 @@
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
   // 的中 1.0・デカ的中 1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
-  const PZ = { hit: 1, big: 1.2, fz: 1.4, sd: 1.4, nd: 1.4, pc: 1.6, sgd: 1.6, spg: 1.6 };
+  const PZ = { hit: 1, big: 1.2, sd: 1.4, nd: 1.4, pc: 1.6, sgd: 1.6, spg: 1.6 };
   const RBW = { pc: 1, sgd: 1, spg: 1 };
-  const PLABEL = { big: 'デカ的中ボタン', fz: 'ど的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
+  const PLABEL = { big: 'デカ的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン' };
   // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
   function pboxHTML(th, label) {
     const pc = th ? ' ' + th.pc : '';
@@ -518,7 +530,6 @@
       else if (k === 'sd' && cur.pre) sdPre();                                              // 第4.77版：ノーマルど的中の 動画 → ブラックアウト → 極ど的中
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
       else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
-      else if (k === 'fz' && calm()) sfx(SND[k][1], A.t.R, 1);                              // 控えめ：1秒後に 結果の 所から
       else if (k === 'pc' && calm()) sfx(SND[k][1], A.t.PC, 1);                             // 控えめ：1秒後に ボードの 所から ※仮
       else sfx(SND[k][1]);
     }
@@ -539,16 +550,19 @@
   // 結果ボードカスタムを ためす（設定 › 結果ボードカスタム：PUSH なしで すぐ 結果の 画面。o.item＝つける もの・o.streak＝出世馬の 連続の 数）
   function preview(spec, kind, o) {
     if (!spec) return null;
-    const d = decide(spec);
-    open(kind || d.kind, spec, d.supers, d.bigs, false, o || {});
-    return kind || d.kind;
+    const d = decide(spec), k = shown(kind || d.kind, false);
+    open(k, spec, d.supers, d.bigs, false, o || {});
+    return k;
   }
+  // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）と 神様的中（gd）の 押したあとは アプリに 入って いない（くじで 出ない）。
+  // 決めて 出す とき（テスト・CI の force・ためし）は ノーマルど的中（nd）に する。静かな ボード（的中エフェクト オフ）は ど的中の ボードの まま
+  function shown(kind, quiet) { return !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }
   // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。くじは ひかない）
   function show(spec) {
     if (!spec) return null;
     const d = decide(spec), quiet = !S.effects;
     let kind = d.kind;
-    if (spec.force) kind = spec.force;
+    if (spec.force) kind = shown(spec.force, quiet);
     else if (!quiet) kind = lottery(kind);   // 的中エフェクト オフのときは くじを ひかない ※仮
     else if (kind === 'gd') kind = 'fz';      // 第4.86版：神様的中は なし → 静かな ボードの 見出しは ど的中
     open(kind, spec, d.supers, d.bigs, quiet);
@@ -633,7 +647,7 @@
     on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     audio: () => (S.sound ? actx() : null),
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
-    tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length }),
+    tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),
     video: video, _rand: null
   };
   css();

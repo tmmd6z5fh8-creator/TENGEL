@@ -5,12 +5,16 @@ App Store版のアプリ（build_ios.py）だけが使う。Web版は今まで�
 
 | ファイル | フォント | 著作権 | ライセンス |
 |---|---|---|---|
-| BIZUDPGothic-Regular.ttf / BIZUDPGothic-Bold.ttf | BIZ UDPGothic | Copyright 2022 The BIZ UDGothic Project Authors | OFL-BIZUDPGothic.txt |
-| DelaGothicOne-Regular.ttf | Dela Gothic One | Copyright 2020 The Dela Gothic Project Authors | OFL-DelaGothicOne.txt |
+| BIZUDPGothic-Regular.ttf / BIZUDPGothic-Bold.ttf（アプリには .woff2） | BIZ UDPGothic | Copyright 2022 The BIZ UDGothic Project Authors | OFL-BIZUDPGothic.txt |
+| DelaGothicOne-Regular.ttf（アプリには .woff2） | Dela Gothic One | Copyright 2020 The Dela Gothic Project Authors | OFL-DelaGothicOne.txt |
 | IBMPlexMono-Medium.ttf / IBMPlexMono-SemiBold.ttf | IBM Plex Mono | Copyright © 2017 IBM Corp. with Reserved Font Name "Plex" | OFL-IBMPlexMono.txt |
 
 - 入手元：github.com/google/fonts（ofl/bizudpgothic・ofl/delagothicone・ofl/ibmplexmono、コミット bd8f81ddb5c74d5c8897b36ad88b440266245103）
-- **ファイルは変えない**（縮める・形式を変えるとOFLの「改変」になる。IBM Plex には予約名「Plex」がある）
+- **TTF は 入手した まま 変えない**（ほかの 道具（CM・絵を 作る スクリプト）も 使う・WOFF2 の もと）
+- **第4.109版**：アプリに 入れるのは、Reserved Font Name が 無い BIZ UDPGothic（2つ）と Dela Gothic One を **字は そのまま（しぼらない）で WOFF2 に した もの**
+  （`python3 ios/fonts/make_woff2.py`：約11.8MB → 約5.6MB。もどすと 字の 並び・cmap・幅・形・name の 表が もとの TTF と 同じ ことを 確かめる。DSIG＝電子署名の 表だけは WOFF2 の きまりで 入らない）。
+  形式を かえるのは OFL の「改変」に あたるが、予約名が 無い ので 名前は そのまま 使える（著作権と ライセンスは フォントの 中の name の 表と OFL-<Family>.txt・「このアプリについて」に そのまま）。
+  **IBM Plex Mono は 予約名「Plex」が ある ので もとの TTF の まま**（2つで 約0.28MB）
 - ライセンスの全文はアプリの「設定 → このアプリについて → フォントのライセンス」で見られる（build_ios.py が入れる）
 
 ## 着せ替えの字（ks/・第4弾・2026/10/24〜）

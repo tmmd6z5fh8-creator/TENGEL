@@ -107,7 +107,8 @@
       return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
     });
     // 第3弾：的中ボタン。CIの保存は予約まで（結果は入れない）なので、演出を直接出して確かめる：デカ的中の PUSH → タップ → いつものボード／ど的中の PUSH → 結果の画面。
-    // 絵と音のファイル（fz_nglow.webp・sfx_*.m4a）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）
+    // 絵と音のファイル（sfx_*.m4a など）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）。
+    // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れて いない → force:'fz' は ノーマルど的中（nd）に なる（PUSH と ボードは ど的中の 形）
     await step(R, 'fx', async function () {
       var F = window.TengelFx; if (!F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[6, 2, 10]], n: 18 }, { t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: 'ワイド', state: '不的中', hits: [], n: 9 }], ranks: { 6: 1, 2: 2, 10: 3 } };
@@ -118,7 +119,7 @@
       var res = { kind: kind, fpsPush: fpsPush, push: !!document.querySelector('#fxOv .ov.big .pbox.pz .push'), pz: (document.querySelector('#fxOv .pbox') || { style: { getPropertyValue: function () { return ''; } } }).style.getPropertyValue('--pz'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
         stage: (function () { var st = document.querySelector('#fxOv .fxs'); return st ? { k: st.style.getPropertyValue('--fxk'), w: innerWidth, h: innerHeight } : null; })(),
         decide: [F.decide(Object.assign({}, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })).kind, F.decide(spec).kind, F.decide({ rows: [{ t: '馬単', state: '的中', hits: [[6, 2]] }] }).kind, F.decide({ rows: [{ t: '馬単', state: '不的中', hits: [] }] }).kind] };
-      for (var k of ['fz_nglow.webp', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
+      for (var k of ['sfx_fz_push.m4a', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       await mark('fx-push');
       F.tap(); res.fpsReveal = await fps(1000);
       await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);

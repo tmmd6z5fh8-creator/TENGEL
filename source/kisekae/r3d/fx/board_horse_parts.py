@@ -32,8 +32,8 @@ os.makedirs(OUT, exist_ok=True)
 D = 3                                    # CSS の 1px の 画素
 K = D * 350 / 672                        # board_horse.py の 1画素 → この 絵の 画素（1.5625）
 # 部品の 四角（CSS px。頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝ボードの 左下から）と 動きの 中心。bcx.js の HBX と 同じ
-HBX = dict(head=[196, -142, 128, 172], fore=[223, -25, 66, 51], hind=[242, -30, 100, 124], tail=[314, -46, 33, 96], eye=[248, -121, 26, 26],
-           headO=[272, 12], hindO=[292, -18], tailO=[327, -61], legL=[242, -4], legR=[271, -5], eyeC=[261, -108], muzzle=[211, -64], poll=[267, -113])
+HBX = dict(head=[196, -142, 128, 172], fore=[138, -30, 106, 56], hind=[242, -30, 100, 124], tail=[314, -46, 33, 96], eye=[248, -121, 26, 26],
+           headO=[272, 12], hindO=[292, -18], tailO=[327, -61], eyeC=[261, -108], muzzle=[211, -64], poll=[267, -113])
 # board_horse.py の はじめの 絵と 同じ 形（しっぽだけ 1.4倍）
 cfg = dict(theta=68, azim=42, elev=6, neck=-44, head=-30, fov=26, fl=[-48, 12, 88, -40], fr=[-40, 22, 92, -45], spread=2.2,
            hl=[-58, -112, -86, -60], hr=[-64, -118, -90, -62],
@@ -219,105 +219,88 @@ colF, aF, _ = paint(RF)
 colB, aB, rgbB = paint(RB)
 yy = np.mgrid[0:Hh, 0:W][0]
 
-# ---- 前足（第4.108版・まさちゃん 23:56「前脚不自然だから自然に見えるように直して！」）：2Dで 描く（3Dの 馬と 同じ 色・線）。
-#      2本とも 胸の 前（首の 付け根の 近く）：管は 胸から 下りて くる（上の はしは 胸に とける）→ 球節が ボードの 上の ふちに のる
-#      （ふちの 上で 少し ふくらむ）→ 短い つなぎが 前へ 下がる → ひづめ（下が 広い 壁・こい 色の つま先・小さな つや・つなぎとの さかいの 線）が
-#      ふちの 前に かかる。ひづめの 下と 球節の 下に うすい 影。白い ふち（ほかの 部品の .bco と 同じ 見え方）は 絵に 入れる
-#      （影に 白い ふちが つかない ように）。胸の 前では 白い ふちを 出さない（胸から 生えて 見える ように）。2本は 少し ちがう 向き
-LEG = dict(L=dict(at=HBX['legL'], rot=-3.0, sc=1.25, tilt=12.0), R=dict(at=HBX['legR'], rot=4.0, sc=1.3, tilt=18.0))   # tilt：管の かたむき（上が 胸の おくへ）
-LSS = 4                                                   # 4倍で 描いて 縮める（なめらかな ふち）
-CAN_TOP, CAN_FADE = -14.0, 7.0                            # 管の 上の はし（球節の 中心からの 高さ・足の 目もり）と 胸に とける 長さ
-BEHIND = np.clip(np.maximum(aB, mane_a), 0, 1) * (yy < BY0)   # 足の うしろが 胸や 首（ボードの 上の ふちより 上）
+# ---- 前足（第4.109版・まさちゃん 01:18「どう見てもおかしいよ… 2枚目の写真のようにして！ 赤は消すところ！ 茶色は、脚の形のイメージ！ 自然にして！」・
+#      01:21「茶色の脚イメージは黄丸のところね！」）：はじめの 絵（board_horse.py）の 前足に もどす（3Dの 足：丸い 上の はしは 球節・ひづめは こい 色の 輪。
+#      場所・向き・大きさも はじめの 絵と 同じ）。
+#      ・ボードの 上の ふちより 上：足 ぜんぶ ＋ うしろ側の くさび（足の うしろの ふちから ななめに ボードの 上の ふちへ ＝ 管が ボードの うしろから
+#        上がって きて ふちの 上で 曲がる 形。左の 足は 小さな 三角・右の 足は 胸の 前から ふちまでの 大きな 三角で 胸と すき間なく つながる）
+#      ・ふちより 下：ひづめと その 上の つなぎ だけ（はじめの 絵で ひづめの うしろ・下に 出て いた 切れはしは 消す）
+#      線は 外の ふちだけ（くさびの ななめ・つなぎの うしろの 切り口）。ボードの ふちで 切れる 所（足が ボードの うしろへ 入る 所）には 線を 引かない
+WEDGE = dict(FL=dict(apex=-6.0, foot=5.0), FR=dict(apex=-17.5, foot=242.0))   # くさび：上の はしの 高さ（ボードの 上の ふちから CSS px）と 下の 右の はし（FL：足の うしろの ふちから ＋px／FR：x）
+LW = 3.0                                                  # 新しく 引く 線の 太さ（画素。3Dの 線と 同じ）
+P3 = world_pos(RF)
+PROJ = {k: {kk: sc_.project(np.array([vv]))[0][0] for kk, vv in v.items()} for k, v in segs.items()}
+yy_, xx_ = np.mgrid[0:Hh, 0:W]
 
 
-def leg_shapes(tilt):
-    """前足 1本の 形（球節の まん中が 0,0 の 近く・足の 目もり・y は 下が ＋）。管（胸から 下りて くる）・球節・つなぎ・ひづめ"""
-    t = math.tan(math.radians(tilt))
-    def ax(y, w):                                                                  # 管の 高さ y の 所の 左と 右（はば w）
-        x = 0.4 + t * (-1.0 - y)
-        return (x - w / 2, y), (x + w / 2, y)
-    (bl, br), (tl, tr) = ax(-1.0, 10.6), ax(CAN_TOP - 1.0, 9.0)
-    can = [(-6.4, -0.8), br, tr, tl]                                               # 前の 線は つなぎの 前の 線へ そのまま つながる
-    cnb = [(br[0] - 2.6, br[1]), br, tr, (tr[0] - 2.2, tr[1])]                    # 管の うしろ側の かげ
-    bul = [(0.8 + 6.5 * math.cos(q), -1.0 + 4.7 * math.sin(q)) for q in np.linspace(0, 2 * math.pi, 48, endpoint=False)]
-    pas = [(-6.4, -0.8), (4.4, 0.6), (1.2, 9.2), (-8.8, 7.9)]
-    hoof = [(-9.6, 7.5), (-4.0, 7.0), (1.6, 8.6), (2.8, 12.2), (3.8, 16.2), (3.1, 18.0), (1.4, 18.8), (-4.0, 19.2), (-10.2, 18.6), (-12.3, 17.6), (-12.8, 16.2), (-11.4, 11.8)]
-    toe = [(-12.1, 14.2), (3.4, 14.6), (3.8, 16.2), (3.1, 18.0), (1.4, 18.8), (-4.0, 19.2), (-10.2, 18.6), (-12.3, 17.6), (-12.8, 16.2)]
-    band = [(3.0, 2.0), (4.4, 0.6), (1.2, 9.2), (0.6, 9.1)]                           # つなぎの うしろ側の 細い かげ
-    cor = [(-9.8, 8.0), (-6.4, 9.0), (-3.0, 9.4), (0.0, 9.3), (1.8, 8.8)]              # つなぎと ひづめの さかい
-    hil = [(-8.9, 10.3), (-10.1, 13.0), (-11.0, 16.0)]                                # ひづめの つや
-    sole = (-4.6, 19.4)
-    return can, cnb, bul, pas, hoof, toe, band, cor, hil, sole
+def dseg(p0, p1):
+    d = p1 - p0
+    t = np.clip(np.nansum((P3 - p0) * d, -1) / np.dot(d, d), 0, 1)
+    q = p0 + t[..., None] * d
+    return np.nan_to_num(np.linalg.norm(P3 - q, axis=-1), nan=9)
 
 
-def draw_legs():
-    """前足 2本 → 画面 ぜんたいの (色, アルファ)。管の 上の はしは 線ごと うすく して 胸に とかす"""
-    col = np.zeros((Hh, W, 3), np.float32); al = np.zeros((Hh, W), np.float32)
-    soles = {}
-    for key in ('L', 'R'):
-        L = LEG[key]; cx, cy = L['at']; a = math.radians(L['rot']); k = L['sc']
-        can, cnb, bul, pas, hoof, toe, band, cor, hil, sole = leg_shapes(L['tilt'])
-        x0, y0, bw, bh = cx - 30, cy - 32, 62, 64                                   # この 足を 描く 四角（CSS）
-        Wl, Hl = int(bw * D * LSS), int(bh * D * LSS)
-        def tp(pt):
-            x, y = pt[0] * k, pt[1] * k
-            return cx + x * math.cos(a) - y * math.sin(a), cy + x * math.sin(a) + y * math.cos(a)
-        def poly(pts):
-            return np.array([[((tp(p)[0] - x0) * D * LSS) * 16, ((tp(p)[1] - y0) * D * LSS) * 16] for p in pts], np.int64).astype(np.int32)
-        def mask(pts):
-            m = np.zeros((Hl, Wl), np.uint8)
-            cv2.fillPoly(m, [poly(pts)], 255, cv2.LINE_AA, shift=4)
-            return m.astype(np.float32) / 255
-        def line(pts, w):
-            m = np.zeros((Hl, Wl), np.uint8)
-            cv2.polylines(m, [poly(pts)], False, 255, max(1, int(round(w * D * LSS))), cv2.LINE_AA, shift=4)
-            return m.astype(np.float32) / 255
-        mC, mCB, mB, mP, mH, mT, mN = mask(can), mask(cnb), mask(bul), mask(pas), mask(hoof), mask(toe), mask(band)
-        yy_, xx_ = np.mgrid[0:Hl, 0:Wl].astype(np.float32)
-        X, Y = x0 + xx_ / (D * LSS), y0 + yy_ / (D * LSS)                            # ボードの 左上からの CSS px
-        ly = (-math.sin(a) * (X - cx) + math.cos(a) * (Y - cy)) / k                    # 足の 目もりの 高さ
-        fade = np.clip((ly - CAN_TOP) / CAN_FADE, 0, 1)                               # 管の 上の はし → 胸に とける
-        sil = np.clip(mC + mB + mP + mH, 0, 1)
-        ker = lambda r: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
-        silb = cv2.morphologyEx((sil > 0.5).astype(np.uint8), cv2.MORPH_CLOSE, ker(int(round(1.0 * D * LSS))))   # 形の つぎめの 小さな 段を ならす
-        sil = np.maximum(sil, silb.astype(np.float32))
-        outer = cv2.dilate(silb, ker(int(round(0.55 * D * LSS)))).astype(np.float32)
-        ring = np.clip(outer - cv2.erode(silb, ker(int(round(0.6 * D * LSS)))).astype(np.float32), 0, 1)
-        bx0, by0 = int(round(BX0 + x0 * D)), int(round(BY0 + y0 * D))
-        beh = cv2.resize(np.ascontiguousarray(BEHIND[by0:by0 + int(bh * D), bx0:bx0 + int(bw * D)]), (Wl, Hl), interpolation=cv2.INTER_LINEAR)
-        white = np.clip(cv2.dilate(silb, ker(int(round(1.45 * D * LSS)))).astype(np.float32) - outer, 0, 1) * (1 - beh)
-        c = np.zeros((Hl, Wl, 3), np.float32)
-        c[:] = hexc(cfg['body'][0])
-        c = over(c, hexc(cfg['body'][1]), np.clip(mN * (1 - mH) + mCB * (1 - mB) * 0.5, 0, 1))
-        c = over(c, hexc(cfg['hoof']), mH)
-        c = over(c, hexc('#241812'), mT * mH * 0.55)
-        c = over(c, hexc('#8C7262'), line(hil, 0.9) * mH * 0.55)
-        c = over(c, hexc(cfg['line']), line(cor, 0.85) * 0.9)
-        c = over(c, hexc(cfg['line']), ring * 0.95)
-        c = over(c, np.ones(3, np.float32), white * 0.9)
-        A = np.clip(np.maximum(np.maximum(outer, sil), white * 0.9), 0, 1) * fade
-        # ひづめの 下と、球節が ふちに のる 所の うすい 影（ボードの 上だけ）
-        sx, sy = tp(sole)
-        def blob(ex_, ey_, rx, ry, v):
-            px, py = (ex_ - x0) * D * LSS, (ey_ - y0) * D * LSS
-            return np.clip(v * np.exp(-(((xx_ - px) / (rx * D * LSS)) ** 2 + ((yy_ - py) / (ry * D * LSS)) ** 2) * 2.2), 0, 1)
-        ex1, ey1 = tp((5.0, 1.0))
-        sh = np.clip(blob(sx, sy + 0.4, 9.5, 2.6, 0.40) + blob(ex1, max(ey1, cy) + 2.2, 11.0, 2.4, 0.32), 0, 0.5) * (Y > 0.2)
-        sh = sh * (1 - A)
-        C = c * A[..., None] + hexc('#28140A') * sh[..., None]
-        At = np.clip(A + sh, 0, 1)
-        C1 = cv2.resize(C, (int(bw * D), int(bh * D)), interpolation=cv2.INTER_AREA)
-        A1 = cv2.resize(At, (int(bw * D), int(bh * D)), interpolation=cv2.INTER_AREA)
-        px0, py0 = bx0, by0
-        dst = (slice(py0, py0 + A1.shape[0]), slice(px0, px0 + A1.shape[1]))
-        prem = C1 + col[dst] * al[dst][..., None] * (1 - A1[..., None])
-        al[dst] = A1 + al[dst] * (1 - A1)
-        col[dst] = np.where(al[dst][..., None] > 1e-4, prem / np.maximum(al[dst], 1e-4)[..., None], 0)
-        soles[key] = (round(sx, 1), round(sy, 1))
-    return col, al, soles
+def aa_poly(polys, close=True, width=None):
+    """CSS の 点（ボードの 左上から）の 多角形・線 → 画面の 0〜1（4倍で 描いて 縮める）"""
+    m4 = np.zeros((Hh * 4, W * 4), np.uint8)
+    for poly in polys:
+        pts = np.array([[(BX0 + px * D) * 4 * 16, (BY0 + py * D) * 4 * 16] for px, py in poly], np.int64).astype(np.int32)
+        if width is None:
+            cv2.fillPoly(m4, [pts], 255, cv2.LINE_AA, shift=4)
+        else:
+            cv2.polylines(m4, [pts], close, 255, max(1, int(round(width * 4))), cv2.LINE_AA, shift=4)
+    return cv2.resize(m4, (W, Hh), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 
 
-foreC, foreA, SOLES = draw_legs()
+def back_x(mk, yc):
+    """その 高さ（CSS）の 足の うしろ（右）の ふち（CSS）"""
+    xs = np.nonzero(mk[int(round(BY0 + yc * D))])[0]
+    return (xs.max() + 1 - BX0) / D
+
+
+def build_fore():
+    mF = RF['m']
+    legs = ((mF == 7) | ((mF == 6) & (yy_ < (BY0 + BY1) / 2))) & (RF['a'] > 0.02)
+    hoofm = (mF == 6) & legs
+    dist = {k: np.minimum.reduce([dseg(sg[a_], sg[b_]) for a_, b_ in (('el', 'kn'), ('kn', 'ft'), ('ft', 'co'), ('co', 'hf'))]) for k, sg in segs.items()}
+    own = {k: legs & (dist[k] <= dist[o]) for k, o in (('FL', 'FR'), ('FR', 'FL'))}
+    up = yy_ < BY0
+    upf = np.clip(BY0 - yy_, 0, 1).astype(np.float32)                      # ふちより 上（画素の 中の わりあい）
+    keepM, wedgeM, lineM = (np.zeros((Hh, W), np.float32) for _ in range(3))
+    hooves = {}
+    for k, mk in own.items():
+        sg, pr = segs[k], PROJ[k]
+        nearp = np.minimum(dseg(sg['ft'], sg['co']), dseg(sg['co'], sg['hf'])) < cfg['cut_r']   # 球節〜つなぎ〜ひづめ
+        hk = hoofm & mk
+        u = pr['hf'] - pr['co']; u = u / np.linalg.norm(u)                    # ひづめの 向き（下へ）
+        v = np.array([-u[1], u[0]]) if -u[1] > 0 else np.array([u[1], -u[0]])   # それに 直角で うしろ（右）へ
+        t = (xx_ - pr['co'][0]) * v[0] + (yy_ - pr['co'][1]) * v[1]
+        tmax = float(np.percentile(t[hk], 99.7))                              # ひづめの うしろの ふち
+        ytop = np.full(W, -1e9)
+        for c in np.nonzero(hk.any(0))[0]:
+            ytop[c] = np.nonzero(hk[:, c])[0].min()                           # 列ごとの ひづめの 上の はし
+        low = (hk | (nearp & mk & (yy_ <= ytop[None, :] + 1))).astype(np.float32) * np.clip(tmax - t + 0.5, 0, 1)
+        low = np.maximum(low, hk.astype(np.float32))                          # ふちより 下に のこす 所（ひづめと その 上の つなぎ）
+        keepM = np.maximum(keepM, mk.astype(np.float32) * upf + low * (1 - upf))
+        # くさび（足の うしろの ふちから 3px 内がわ まで ぬって、もとの うしろの 線を かくす）
+        ya = WEDGE[k]['apex']; xa = back_x(mk & up, ya); x0b = back_x(mk & up, -0.4)
+        xb = x0b + WEDGE[k]['foot'] if k == 'FL' else WEDGE[k]['foot']
+        wedgeM = np.maximum(wedgeM, aa_poly([[(xa - 3.0, ya - 1.0), (xa, ya), (xb, 0.0), (x0b - 3.0, 0.0)]]) * upf)
+        nx, ny = -ya, -(xb - xa); nn = math.hypot(nx, ny); nx, ny = nx / nn, ny / nn   # ななめの 外むき
+        o_ = LW / 2 / D
+        lineM = np.maximum(lineM, aa_poly([[(xa - o_ * nx, ya - o_ * ny), (xb - o_ * nx, -o_ * ny)]], close=False, width=LW) * upf)
+        # つなぎの うしろの 切り口（ふちより 下・ひづめの うしろの ふちの つづき）
+        lineM = np.maximum(lineM, ((np.abs(t - (tmax - LW / 2)) < LW / 2 + 0.5) & ~up & (low > 0.5) & ~hk).astype(np.float32))
+        hooves[k] = hk
+    a = np.clip(np.maximum(keepM * np.clip(aF, 0, 1), wedgeM), 0, 1)
+    body = (legs & up) & (cv2.erode(legs.astype(np.uint8), np.ones((7, 7), np.uint8)) > 0)
+    legcol = np.median(colF[body], axis=0)                                    # 足の 色（3Dの 足の まん中の 色）
+    c = colF * (1 - wedgeM[..., None]) + legcol * wedgeM[..., None]
+    c = c * (1 - lineM[..., None] * 0.92) + hexc(cfg['line']) * lineM[..., None] * 0.92
+    return c, a, hooves
+
+
+foreC, foreA, HOOVES = build_fore()
 
 # ---- 部品 ----
 headC, headA = ov(colB, aB, mane_rgb, mane_a)
@@ -397,7 +380,8 @@ if MEASURE:
     print('ちょうどの 四角（CSS px）:', json.dumps(got))
     print('目の 中心（ボードの 左上から）:', round((ex - BX0) / D, 1), round((ey - BY0) / D, 1), ' 目の 大きさ:', round(r / D, 2), ' 目の 向き:', round(math.degrees(math.atan2(u_[1], u_[0])) - 90, 1),
           ' しっぽの 根もと（左下から）:', round((tail0[0] - BX0) / D, 1), round((tail0[1] - BY1) / D, 1))
-    print('鼻先:', [round((v - o) / D, 1) for v, o in zip(RB['muzzle'], (BX0, BY0))], ' 頭の てっぺん（poll）:', [round((v - o) / D, 1) for v, o in zip(RB['poll'], (BX0, BY0))], ' ひづめの 下:', SOLES)
+    print('鼻先:', [round((v - o) / D, 1) for v, o in zip(RB['muzzle'], (BX0, BY0))], ' 頭の てっぺん（poll）:', [round((v - o) / D, 1) for v, o in zip(RB['poll'], (BX0, BY0))], ' ひづめの 下（CSS・ボードの 上の ふちから）:', {k: round(((np.nonzero(h.any(1))[0].max() + 1) - BY0) / D, 1) for k, h in HOOVES.items()},
+          ' ひづめの 横:', {k: [round((np.nonzero(h.any(0))[0].min() - BX0) / D, 1), round((np.nonzero(h.any(0))[0].max() + 1 - BX0) / D, 1)] for k, h in HOOVES.items()})
     shutil.rmtree(TMP, ignore_errors=True)
     sys.exit(0)
 

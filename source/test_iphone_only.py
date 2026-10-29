@@ -60,7 +60,7 @@ if r.returncode == 0:
     check(all(os.path.exists(os.path.join(out, 'Tengel.swiftpm', f)) for f in ('Markers.swift', 'Store.swift', 'Notify.swift')), 'Markers.swift・Store.swift・Notify.swift が入っている')
     check('TengelReserve' in html and 'TengelCustomRate' in html and 'parseResult' in html and 'omakaseBtn' in html, 'アプリの画面に 買い目の予約・%・結果の画像の読み取り・テンゲルにお任せ が入っている（第2弾）')
     # 第3弾：的中ボタン（見本の CSS/HTML を束ねた __FX・fx.js・設定のカード）。絵と音は手元の ios/fx_assets/ から Resources/ へ（リポジトリには入れない）
-    check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" not in html and 'setFx' in html and 'fz_nglow.webp' in html and 'sfx_fz.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）・隠れど的中の 数（tengel.fxhidden）は 使わない（第4.86版）')
+    check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" not in html and 'setFx' in html and 'fz_nglow.webp' not in html and 'fz_ncore.webp' not in html and 'sfx_fz.m4a' not in html and 'sfx_fz_push.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）・隠れど的中の 数（tengel.fxhidden）は 使わない（第4.86版）・前の ど的中の ネオンの 絵と 音は 入れない（第4.109版）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); from build_fx import ASSET_FILES
     have = [f for f in ASSET_FILES if f in res]
     check(len(have) in (0, len(ASSET_FILES)) and (not os.path.isdir(os.path.join(W, 'ios', 'fx_assets')) or len(have) == len(ASSET_FILES)), f'的中ボタンの絵と音：手元にあれば{len(ASSET_FILES)}こ全部 Resources/ に入る・なければ入れずに作れる（{len(have)}こ）')
@@ -72,10 +72,10 @@ if r.returncode == 0:
     check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('pc', 'sgd', 'spg', 'sd', 'nd')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('pc', 'zp', 'sgd', 'spg_up', 'spg', 'sd', 'sdp', 'nd', 'ndt')]) and 'pm_face_F.webp' in html and 'sd_last.webp' in html and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film.mp4' in html
           and 'nd_film.mp4' in html and 'nd_last.webp' in html and '.fxs .ov.fz.nd' in html
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.pm' in html and '.fxs .ov.fz.zp' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000]
-          and sorted(FXJ['reveal']) == ['big', 'fz', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
+          and sorted(FXJ['reveal']) == ['big', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and sorted(FXJ['push']) == ['big_t', 'fz_t', 'hit', 'hit_t'] and 'fz' not in FXJ['sfx'] and '.nic' not in FXJ['css'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
           and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
           'アプリの画面に 特別な 演出（プレミアム・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版）・第4.86版：隠れど的中・超プレミアムど的中・神様的中は 入って いない')
-    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4 + 2 + 5 and ASSET_FILES[:7] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_ph0.webp', 'bcx_ph1.webp'], f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4・結果ボードカスタムの 幻の 馬 2（第4.91版）・ボードを持つ馬の 部品 5（第4.108版）（{len(ASSET_FILES)}）')
+    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 14 + 43 + 3 + 4 + 2 + 5 and ASSET_FILES[:7] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_ph0.webp', 'bcx_ph1.webp'], f'絵と音と動画の 数：音 14（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4・結果ボードカスタムの 幻の 馬 2（第4.91版）・ボードを持つ馬の 部品 5（第4.108版）（{len(ASSET_FILES)}）')
     check('root.TengelBoardArt = {' in html and 'root.TengelBoardPhantom = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html and 'bcx_ph0.webp' in html
           and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('root.TengelBoardPhantom = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {'),
           'アプリの画面に 結果ボードカスタム（絵・幻の 馬・飾りの しくみ・設定の カード・商品）が入っている（第4.91版）')
@@ -94,22 +94,28 @@ if r.returncode == 0:
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
         check(29.2e6 < films_sz < 31.2e6 and 34.4e6 < sz < 36.4e6, f'絵と音と動画の 大きさ：動画 4本 約30.2MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒）・ぜんぶで 約35.4MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
-    check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME')
+    check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af and 'options: .alwaysMapped' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME・ファイルは メモリに 写す だけ（第4.109版：Range の たびに まるごと 読まない）')
+    # 第4.109版：基本の フォント（BIZ UDPGothic 2つ・Dela Gothic One）は 字は そのままで WOFF2（ios/fonts/make_woff2.py）・IBM Plex Mono（予約名「Plex」）は TTF の まま
+    check(all(f in res for f in ('BIZUDPGothic-Regular.woff2', 'BIZUDPGothic-Bold.woff2', 'DelaGothicOne-Regular.woff2', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf'))
+          and not any(f in res for f in ('BIZUDPGothic-Regular.ttf', 'BIZUDPGothic-Bold.ttf', 'DelaGothicOne-Regular.ttf'))
+          and "url('fonts/BIZUDPGothic-Regular.woff2') format('woff2')" in html and "url('fonts/DelaGothicOne-Regular.woff2') format('woff2')" in html and "url('fonts/IBMPlexMono-Medium.ttf') format('truetype')" in html
+          and subprocess.run(['python3', os.path.join(W, 'ios', 'fonts', 'make_woff2.py'), '--check'], capture_output=True).returncode == 0,
+          '基本の フォント：BIZ UDPGothic・Dela Gothic One は WOFF2（字の 形は もとの TTF と 同じ）・IBM Plex Mono は TTF の まま（第4.109版）')
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない
     wv = open(os.path.join(out, 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read()
     check('userInterfaceIdiom == .pad' in wv and 'safeAreaInsets.bottom > 0 ? 24 : 20' in wv and '--top-inset2' in html and 'var(--top-inset2,0px)' in html, 'iPad で 画面いっぱいの とき 上の帯を 時計の 帯の ぶん あける（Swift の 24/20pt・Web の 24px）')
     check('window.__TEST=true;' not in html and 'テスト版の道具' in html and 'gift-test' in html, 'ふつうの 作り方：テスト版の 印（__TEST=true）は 入って いない（道具の コードは あるが 動かない）')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
-    check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
+    check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz_push.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
     # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
     import json as _json, re as _re
     ks_json = [f for f in res if _re.fullmatch(r'ks_[a-z]+\.json', f)]
     check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sakura\\"]' in html and "@font-face{font-family:'Kaisei Decol'" in html and 'fonts/KaiseiDecol-700.woff2' in html,
           'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); import pack as _pack
-    n_ks = 30 + len(_pack.IDS)                                           # 第4.92版：壁紙パックの 11枚
+    n_ks = 29 + len(_pack.IDS)                                           # 第4.92版：壁紙パックの 11枚・第4.109版：いつもの（default）の ks_default.json は 入れない（kisekae.js が 読まない）
     check(len(ks_json) == n_ks and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')) and all(f'ks_{t}.json' in res for t in _pack.IDS),
-          f'テーマごとの ks_<id>.json が {n_ks}こ（30＋壁紙パック {len(_pack.IDS)}）と 定番4の止まった絵（{len(ks_json)}）')
+          f'テーマごとの ks_<id>.json が {n_ks}こ（いつもの 以外の 29＋壁紙パック {len(_pack.IDS)}・ks_default.json は なし）と 定番4の止まった絵（{len(ks_json)}）')
     rsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_ranch.svg'), encoding='utf8').read(); gsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_gold.svg'), encoding='utf8').read()
     check('*{animation:none!important}</style>' in rsvg and '*{animation:none!important}</style>' in gsvg and '.kslive{' in html and '.kslv{' in html and 'rescope' in html and 'rbwSvg' in html and 'mask-type:alpha' in html,
           '第4.89版：選ぶ画面の 牧場・ぷりけつの 小さな絵は 止めた SVG・選んだ タイルだけ 動く 壁紙（.kslive）・形の ある PUSH の 虹は SVG の 中（rbwSvg・mask）')

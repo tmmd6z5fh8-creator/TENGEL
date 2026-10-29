@@ -437,8 +437,8 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -142, 128, 172], fore: [223, -25, 66, 51], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
-    legL: [242, -4], legR: [271, -5], eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
+  const HBX = { head: [196, -142, 128, 172], fore: [138, -30, 106, 56], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
+    eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
     const as = FXA(), H = o.H;
