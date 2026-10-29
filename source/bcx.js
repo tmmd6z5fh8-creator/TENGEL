@@ -174,7 +174,7 @@
     '.fxs .hb.bcgo .bc-hbx{animation:bcHbX .95s linear 1.55s 1 none}.fxs .hb.bcgo .bc-hbp{animation:bcHbP .8s ease-out 2.55s 1 none}',
     '.fxs .hb .bc-hbd i{position:absolute;width:7px;height:10px}.fxs .hb.bcgo .bc-hbd i{animation:bcHbD .75s cubic-bezier(.2,.7,.4,1) var(--d) 1 none}',
     hbCss(),
-    // 前足（.bc-hbf）の 白い ふちと 影は 絵の 中（影に 白い ふちが つかない ように：CSS の 影は つけない）
+    // 前足（.bc-hbf）の 白い ふちと 影は 絵の 中（胸の 前と ボードの うしろへ 入る 切り口には 白い ふちを つけない ため：CSS の .bco は つけない）
     '.fxs .hb:not(.bchbv) .bc-hbsv,.fxs .hb.bchbv .bc-hbr{display:none}',
     // 21：8回目から（幻の 馬＝極ど的中の 紫の 馬：動画の 2まい bcx_ph0（暗闇に 目だけ）・bcx_ph1（顔が 見える）。ない とき（CI）は SVG の 紫の 馬）。
     //   舞台（.ov）の 上に 暗い 雷の 幕・馬・目の 光・鼻の 息・咆哮の 輪。ボードは 吹きとんで 3秒後に もどる
@@ -437,8 +437,8 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -142, 128, 172], fore: [138, -30, 106, 56], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
-    eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
+  const HBX = { head: [196, -144, 128, 174], fore: [136, -34, 107, 63], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -63],
+    eyeC: [261, -111], muzzle: [211, -67], poll: [267, -116] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
     const as = FXA(), H = o.H;
@@ -476,7 +476,7 @@
   function hbVec(o, hidden) {
     const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
     let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
-    s += box('bco bc-hbf', 229, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:44px 10px');   // 胸の 前（絵の 前足と 同じ 所）
+    s += box('bco bc-hbf', 229, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:44px 10px');   // SVG の 馬の 胸の 前
     s += box('bco bc-hbf', 258, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(5)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:15px 10px');
     s += `<div class="bcx bk bco bc-hbl" style="left:246px;top:${f(o.H - 14)}px;width:100px;height:${f(lh + 14)}px;transform-origin:50% 0"><svg viewBox="0 -14 100 ${f(lh + 14)}" preserveAspectRatio="none">`
       + `<g class="bc-hbt" style="transform-origin:84px -6px"><path d="M80 -8 C90 ${f(lh * .3)} 92 ${f(lh * .65)} 88 ${f(lh * .95)} C84 ${f(lh * .7)} 80 ${f(lh * .45)} 74 -8 Z" fill="${c.n}"/></g>`
