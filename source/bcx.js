@@ -1,5 +1,6 @@
 // ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28）=====
-//   買い切り 2,200円（App内課金の 非消耗型 jp.tengel.app.boardcustom）。買った あとに 読み込んだ レースの 数で 21こを 番号の 順に 解放（points.js の BOARD）。
+//   買い切り 2,200円（App内課金の 非消耗型 jp.tengel.app.boardcustom）。買った あとに 読み込んだ レースの 数で 22こを 番号の 順に 解放（points.js の BOARD）。
+//   第4.108版：22「ボードを持つ馬」（いちばん はじめの 頃の 馬：絵は kisekae/r3d/fx/board_horse_parts.py の 部品 5まい。ない とき（CI）は SVG の 馬）
 //   使うのは 1つだけ（設定の「結果ボードカスタム」で 選ぶ）。どの 壁紙の ボードにも 重ねられる 形（ボードの 外がわ・登場の しかた・ボードの 動き）。
 //   作る ときの きまり：ボードの 数字と 見出しには 飾りを 重ねない／飾りの 馬は うすい ふち取りと 影（.bco）／リボンや 旗の 色は テーマの アクセント色（--bcA）／
 //   大きく 動くのは 出てくる ときだけ（1秒で ピタッと 止める）／「とじる」は 動かさない（ボードの 外の 部品）／視差効果を減らす・演出を控えめ・的中エフェクト オフは 動かさない（.bcst）
@@ -22,7 +23,7 @@
   const BIG = { big: 1, fz: 1, nd: 1, sd: 1, pc: 1, sgd: 1, spg: 1 };
   const CLOSE_TOP = 734;          // 舞台（390×844）の「とじる」の 上の はし
   const HB_TOP = 196;             // ボード（.hb）の 上の はし
-  const ENTER = { pop: 1, drop: 1, flip: 1, slide: 1, banner: 1 };   // 登場の しかたを かえる もの（.hb の アニメーションの 名前を 入れかえる）
+  const ENTER = { pop: 1, drop: 1, flip: 1, slide: 1, banner: 1, carry: 1 };   // 登場の しかたを かえる もの（.hb の アニメーションの 名前を 入れかえる）
   let uid = 0;
 
   // ---------- CSS（いつも 同じ 分） ----------
@@ -159,6 +160,16 @@
     '.fxs .hb.bcst .bc-dust i{opacity:.9}',
     '.fxs .hb .bc-rain i{position:absolute;left:var(--x);top:-200px;width:var(--w);opacity:0}',
     '.fxs .hb.bcgo .bc-rain i{animation:bcRain var(--t) cubic-bezier(.4,0,.8,.6) var(--d) both}@keyframes bcRain{0%{opacity:0;transform:translateY(0) rotate(var(--r0))}10%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(var(--y)) rotate(var(--r1))}}',
+    // 22 ボードを持つ馬：下から ボードを かかえて 出てくる（1秒・着地で 少し はずむ）→ 頭と首・後ろ足が ぷるぷる（別々の 速さ）・しっぽを ときどき ふる・まばたき
+    '.fxs .hb .bcx img{display:block;width:100%;height:100%;-webkit-user-drag:none;user-select:none}',
+    '.fxs .hb.bce-carry{animation-name:bcECarry!important;animation-duration:1s!important;animation-timing-function:linear!important;transform-origin:50% 100%}',
+    '@keyframes bcECarry{0%{opacity:1;transform:translateY(660px);animation-timing-function:cubic-bezier(.18,.72,.36,1)}46%{transform:translateY(-16px);animation-timing-function:ease-in}'
+      + '60%{transform:translateY(0) scale(1.03,.95);animation-timing-function:ease-out}74%{transform:translateY(-5px) scale(.99,1.02);animation-timing-function:ease-in}86%{transform:translateY(0) scale(1.01,.99)}100%{opacity:1;transform:none}}',
+    '.fxs .hb.bcgo .bc-hbh{animation:bcHbH 3.1s linear infinite}.fxs .hb.bcgo .bc-hbl{animation:bcHbL 2.3s linear infinite -.7s}',
+    '.fxs .hb.bcgo .bc-hbt{animation:bcHbT 7.9s ease-in-out infinite .6s}.fxs .hb .bc-hbe{opacity:0}.fxs .hb.bcgo .bc-hbe{animation:bcHbE 5.3s linear infinite 1.4s}',
+    hbCss(),
+    '.fxs .hb .bc-hbf{filter:drop-shadow(0 0 .8px rgba(255,255,255,.9)) drop-shadow(0 2px 2px rgba(0,0,0,.3))}',
+    '.fxs .hb:not(.bchbv) .bc-hbsv,.fxs .hb.bchbv .bc-hbr{display:none}',
     // 21：8回目から（幻の 馬＝極ど的中の 紫の 馬：動画の 2まい bcx_ph0（暗闇に 目だけ）・bcx_ph1（顔が 見える）。ない とき（CI）は SVG の 紫の 馬）。
     //   舞台（.ov）の 上に 暗い 雷の 幕・馬・目の 光・鼻の 息・咆哮の 輪。ボードは 吹きとんで 3秒後に もどる
     '.fxs .bcph{position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden}',
@@ -232,7 +243,7 @@
     return h;
   }
 
-  // ---------- 21こ：部品を 作る（W＝350・H＝ボードの 高さ・sp＝ボードの 下の すき間・st＝動かさない） ----------
+  // ---------- 22こ：部品を 作る（W＝350・H＝ボードの 高さ・sp＝ボードの 下の すき間・st＝動かさない） ----------
   const B = {};
   // 1 ボードを一周：前を 右へ（ボードの 下）→ うしろを 上へ → 上を 左へ（ボードの うしろ・上に 見える）→ うしろを 下へ
   B.orbit = o => {
@@ -413,6 +424,64 @@
     html += rib(lab, true);
     return { html, phantom: tier === 8 && !o.st, go: () => { if (!o.st && tier !== 8) snd('coins'); } };
   };
+
+  // 22 ボードを持つ馬（第4.108版・まさちゃんの 指定）：いちばん はじめの 頃の 馬。うしろから ボードを かかえて 下から 出てくる（着地で 少し はずむ）
+  //   → 頭と首・後ろ足が ぷるぷる（重い ボードを 持って ふんばる：別々の 速さ）・しっぽを ときどき ふる・まばたき。前足（ボードの 上の ふちに かかる ひづめ）は 動かさない
+  //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
+  //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
+  //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
+  const HBX = { head: [196, -156, 128, 184], fore: [167, -67, 90, 85], hind: [241, -30, 100, 134], tail: [313, -46, 32, 108], eye: [252, -136, 25, 25], headO: [280, 10], hindO: [290, -20], tailO: [325, -42] };
+  const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
+  B.carry = o => {
+    const as = FXA(), H = o.H;
+    const at = (k, bot) => { const b = HBX[k]; return { x: b[0], y: bot ? H + b[1] : b[1], w: b[2], h: b[3] }; };
+    const org = (k, pv, bot) => { const b = at(k, bot), q = HBX[pv]; return `${f(q[0] - b.x)}px ${f((bot ? H + q[1] : q[1]) - b.y)}px`; };
+    const pos = r => `left:${f(r.x)}px;top:${f(r.y)}px;width:${f(r.w)}px;height:${f(r.h)}px`;
+    const ok = Object.keys(HBA).every(k => as[HBA[k]]);
+    let html = '';
+    if (ok) {
+      const src = k => esc(as[HBA[k]]), h = at('head'), e = at('eye');
+      html += `<div class="bcx bk bco bc-hbr bc-hbt" style="${pos(at('tail', 1))};transform-origin:${org('tail', 'tailO', 1)}"><img class="bchbi" src="${src('tail')}" alt=""></div>`
+        + `<div class="bcx bk bco bc-hbr bc-hbl" style="${pos(at('hind', 1))};transform-origin:${org('hind', 'hindO', 1)}"><img class="bchbi" src="${src('hind')}" alt=""></div>`
+        + `<div class="bcx bk bco bc-hbr bc-hbh" style="${pos(h)};transform-origin:${org('head', 'headO')}"><img class="bchbi" src="${src('head')}" alt="">`
+        + `<img class="bchbi bc-hbe" src="${src('eye')}" alt="" style="position:absolute;left:${f(e.x - h.x)}px;top:${f(e.y - h.y)}px;width:${f(e.w)}px;height:${f(e.h)}px"></div>`
+        + `<div class="bcx bc-hbr bc-hbf" style="${pos(at('fore'))}"><img class="bchbi" src="${src('fore')}" alt=""></div>`;
+    }
+    html += hbVec(o, ok);
+    return { html, enter: 'carry', start: () => setTimeout(() => snd('thump'), 470) };
+  };
+  // 22 の 絵が ない とき：SVG の 馬（頭と首は ボードの うしろ・ひづめは 上の ふちに かける・下は 後ろ足と しっぽ）。hidden＝ふだんは かくす（絵が 読めない ときに 出す）
+  function hbVec(o, hidden) {
+    const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
+    let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
+    s += box('bco', 198, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(8)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
+    s += box('bco', 240, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
+    s += `<div class="bcx bk bco bc-hbl" style="left:246px;top:${f(o.H - 14)}px;width:100px;height:${f(lh + 14)}px;transform-origin:50% 0"><svg viewBox="0 -14 100 ${f(lh + 14)}" preserveAspectRatio="none">`
+      + `<g class="bc-hbt" style="transform-origin:84px -6px"><path d="M80 -8 C90 ${f(lh * .3)} 92 ${f(lh * .65)} 88 ${f(lh * .95)} C84 ${f(lh * .7)} 80 ${f(lh * .45)} 74 -8 Z" fill="${c.n}"/></g>`
+      + `<path d="M22 -14 L40 -14 L38 ${f(lh - 8)} L24 ${f(lh - 8)} Z" fill="${c.b}"/><path d="M56 -14 L74 -14 L72 ${f(lh - 8)} L58 ${f(lh - 8)} Z" fill="${c.s}"/>`
+      + `${A.hoof(c, 31, lh, 0, 6, 15)}${A.hoof(c, 65, lh, 0, 6, 15)}</svg></div>`;
+    return hidden ? `<div class="bc-hbsv">${s}</div>` : s;
+  }
+  // 22：ぷるぷる（頭と首 10回/秒・後ろ足 11回/秒：強い 時と 弱い 時が ある）・しっぽ（ばらばらの 間と 大きさで ふる）・まばたき の keyframes（決まった 乱数：いつも 同じ）
+  function hbCss() {
+    let sd = 7;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return (sd - 1) / 2147483646; };
+    const jit = (name, dur, hz, amp, rot, env) => {
+      const n = Math.round(dur * hz) * 2;
+      const lv = p => { for (let i = 1; i < env.length; i++) if (p <= env[i][0]) { const p0 = env[i - 1][0], a0 = env[i - 1][1], p1 = env[i][0], a1 = env[i][1]; return a0 + (a1 - a0) * (p - p0) / (p1 - p0); } return env[env.length - 1][1]; };
+      let k = '';
+      for (let i = 0; i <= n; i++) {
+        const p = i / n, e = i === 0 || i === n ? 0 : lv(p), sg = i % 2 ? 1 : -1;
+        k += `${f(p * 100)}%{transform:translate(${f(sg * amp * e * (.55 + .45 * rnd()))}px,${f((rnd() - .5) * amp * e)}px) rotate(${f(-sg * rot * e * (.5 + .5 * rnd()))}deg)}`;
+      }
+      return `@keyframes ${name}{${k}}`;
+    };
+    return jit('bcHbH', 3.1, 10, .6, .6, [[0, 1], [.38, 1], [.46, .2], [.62, .25], [.7, .9], [.92, .9], [1, 1]])
+      + jit('bcHbL', 2.3, 11, .55, .7, [[0, .3], [.2, .3], [.28, 1], [.66, 1], [.74, .25], [1, .3]])
+      + '@keyframes bcHbT{0%,18%,37%,53%,66%,75%,88%,100%{transform:rotate(0)}6%{transform:rotate(9deg)}10%{transform:rotate(-5deg)}14%{transform:rotate(3deg)}'
+      + '41%{transform:rotate(-11deg)}45%{transform:rotate(7deg)}49%{transform:rotate(-3deg)}69%{transform:rotate(5deg)}72%{transform:rotate(-2deg)}90.5%{transform:rotate(13deg)}93%{transform:rotate(-8deg)}96%{transform:rotate(4deg)}}'
+      + '@keyframes bcHbE{0%,91%{opacity:0}91.4%,93.6%{opacity:1}94%,100%{opacity:0}}';
+  }
 
   // ---------- 走って きた 馬を 止める（いまの 足の 形から ふつうに 立つ 形へ なめらかに） ----------
   function settleAt(hb, sel, ms, cls) {
@@ -662,12 +731,12 @@
     const seen = seenN();
     let h = '<p class="hint" style="margin:0 0 8px">結果のボード（的中・ハズレの 結果）に、馬の 飾りや 動きを つけられるよ。<b>どの 壁紙の ボードにも 使える</b>よ。使うのは 1つだけ。</p>';
     if (!i.owned) {
-      h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>21種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
-      h += '<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜21：8レースごと／ぜんぶで 138レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>';
+      h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
+      h += '<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜22：8レースごと／ぜんぶで 146レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>';
       h += '<div class="row" style="margin-top:6px"><button class="btn ghost" type="button" data-bcact="restore">購入を復元</button></div>';
     } else {
       const nx = i.next, done = !nx, pct = done ? 100 : Math.round((i.reads - nx.from) / (nx.need - nx.from) * 100);
-      h += `<div class="bcprog"><b>解放 ${i.n}/21</b>　<span class="muted" style="font-size:12.5px">買ってから 読み込んだ レース：${i.reads}</span><div class="bar"><i style="width:${pct}%"></i></div>`
+      h += `<div class="bcprog"><b>解放 ${i.n}/${ITEMS.length}</b>　<span class="muted" style="font-size:12.5px">買ってから 読み込んだ レース：${i.reads}</span><div class="bar"><i style="width:${pct}%"></i></div>`
         + `<span style="font-size:12.5px">${done ? 'ぜんぶ 解放したよ！' : `つぎの「${esc(nx.item.name)}」まで あと <b>${nx.left}</b>レース`}</span></div>`;
     }
     h += '<div class="bcgrid">';
@@ -762,6 +831,8 @@
       if (tile && v && !v.hidden && FX() && FX().unlock) FX().unlock(tile, { text: '解放！' });
     }
   });
+  // 22「ボードを持つ馬」の 絵が 読めない（絵なしの CI など）→ その ボードは SVG の 馬に（error は 上へ 伝わらないので つかまえる 側で 聞く）
+  document.addEventListener('error', e => { const t = e.target; if (t && t.classList && t.classList.contains('bchbi')) { const hb = t.closest('.hb'); if (hb) hb.classList.add('bchbv'); } }, true);
   document.addEventListener('tengel:wallet', () => { if ($('#setBoard')) paint(); });
   document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'close') stopAll(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
@@ -770,6 +841,6 @@
   window.addEventListener('resize', fitThumbs);
   setTimeout(card, 60);
 
-  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, _B: B, _phantom: phantom };
+  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, _B: B, _phantom: phantom, _HBX: HBX };
   css();
 })();

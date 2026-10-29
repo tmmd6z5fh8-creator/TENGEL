@@ -75,10 +75,19 @@ if r.returncode == 0:
           and sorted(FXJ['reveal']) == ['big', 'fz', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
           and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
           'アプリの画面に 特別な 演出（プレミアム・超神様・超プレミアム神様・紫電・ノーマルど的中の CSS と HTML・絵と 音と 動画の 名前・動画の しくみ）が入っている（第5弾・第4.66版・第4.71版・第4.77版）・第4.86版：隠れど的中・超プレミアムど的中・神様的中は 入って いない')
-    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4 + 2 and ASSET_FILES[:2] == ['bcx_ph0.webp', 'bcx_ph1.webp'], f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4・結果ボードカスタムの 幻の 馬 2（第4.91版）（{len(ASSET_FILES)}）')
+    check(len(ART['pm']) == 43 and all(f'pm_fin{x}.webp' in ART['pm'] for x in ('', '_n', '_g', '_w', '_s', '_sh')) and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last.webp'] and ART['nd'] == ['nd_last.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 2 + 15 + 43 + 3 + 4 + 2 + 5 and ASSET_FILES[:7] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_ph0.webp', 'bcx_ph1.webp'], f'絵と音と動画の 数：ネオン 2・音 15（第4.86版：神様的中の 音は なし）・プレミアム 43（第4.80版：最後の ゼリーの ハートは 体・星空・つや・字・小さな ハート・かげの 6まい）・さいごの 1まい 3（超神様・紫電・ノーマルど的中）・動画 4・結果ボードカスタムの 幻の 馬 2（第4.91版）・ボードを持つ馬の 部品 5（第4.108版）（{len(ASSET_FILES)}）')
     check('root.TengelBoardArt = {' in html and 'root.TengelBoardPhantom = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html and 'bcx_ph0.webp' in html
           and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('root.TengelBoardPhantom = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {'),
           'アプリの画面に 結果ボードカスタム（絵・幻の 馬・飾りの しくみ・設定の カード・商品）が入っている（第4.91版）')
+    # 第4.108版：結果ボードカスタム 22「ボードを持つ馬」：部品の 四角（bcx.js の HBX）と 絵を 作る 道具（kisekae/r3d/fx/board_horse_parts.py の HBX）が 同じ・アプリの 画面に 絵の 名前
+    import re as _re2
+    def _hbx(txt, pat):
+        m = _re2.search(pat, txt, _re2.S)
+        return {k: [int(x) for x in v.split(',')] for k, v in _re2.findall(r'(\w+)[:=]\s*\[([-\d,\s]+)\]', m.group(1))} if m else None
+    hbx_js = _hbx(open(os.path.join(W, 'bcx.js'), encoding='utf8').read(), r'const HBX = \{(.*?)\};')
+    hbx_py = _hbx(open(os.path.join(W, 'kisekae', 'r3d', 'fx', 'board_horse_parts.py'), encoding='utf8').read(), r'HBX = dict\((.*?)\)\n')
+    check(bool(hbx_js) and hbx_js == hbx_py and len(hbx_js) == 8 and all(v in html for v in ('bcx_hb_head.webp', 'bcx_hb_fore.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_hb_eye.webp')) and 'bcECarry' in html,
+          f'結果ボードカスタム 22「ボードを持つ馬」：部品の 四角が 絵を 作る 道具と 同じ（{hbx_js}）・絵の 名前と 登場の 動き（bcECarry）が 入って いる（第4.108版）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

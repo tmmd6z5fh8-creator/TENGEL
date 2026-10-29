@@ -31,11 +31,12 @@
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
   var BUCKETS = ['paid_sub', 'paid_pack', 'free'];
-  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、21こを 番号の 順に 1つずつ 解放する
-  //   1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜21：8レースごと（全部で 138レース）。読み直し（0P）・5連の 予想は 数えない
-  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[5, 5], [5, 6], [5, 7], [6, 8]] };
+  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、22こを 番号の 順に 1つずつ 解放する
+  //   1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜22：8レースごと（全部で 146レース）。読み直し（0P）・5連の 予想は 数えない
+  //   第4.108版：22「ボードを持つ馬」（いちばん はじめの 頃の ボード）を 出世馬の あとに 足した（8レース・146レース目）
+  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[5, 5], [5, 6], [5, 7], [7, 8]] };
   var BOARD_NEED = (function () { var out = [], n = 0; BOARD.steps.forEach(function (st) { for (var i = 0; i < st[0]; i++) { n += st[1]; out.push(n); } }); return out; })();
-  // 21こ（番号の 順＝解放の 順）。when：all＝いつも・hit＝的中の とき・big＝デカ的中から 上・miss＝ハズレの とき
+  // 22こ（番号の 順＝解放の 順）。when：all＝いつも・hit＝的中の とき・big＝デカ的中から 上・miss＝ハズレの とき
   var BOARD_ITEMS = [
     ['orbit', 'ボードを一周', 'ボードのまわりを、馬がぐるぐる走る', 'all'],
     ['goal', 'ゴール板', 'ボードの下の帯を走って、ゴールに駆け込む', 'all'],
@@ -57,7 +58,8 @@
     ['float', 'ふわふわ', '出たあと、ゆっくり上下に浮く', 'all'],
     ['thump', '大きな的中', 'デカ的中から上のとき、ボードが「ドン！」と1回跳ねる', 'big'],
     ['droop', 'ハズレ', 'ハズレのとき、少しだけ傾いて、しょんぼり', 'miss'],
-    ['rise', '出世馬', '連続で当たると、ボードのまわりの飾りが豪華になっていく', 'hit']
+    ['rise', '出世馬', '連続で当たると、ボードのまわりの飾りが豪華になっていく', 'hit'],
+    ['carry', 'ボードを持つ馬', '馬がうしろからボードを抱えて、下から出てくる', 'all']
   ].map(function (r, i) { return { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i] }; });
 
   function iso(d) { return (d instanceof Date ? d : new Date(d || Date.now())).toISOString(); }
@@ -178,7 +180,7 @@
     return own;
   }
   function boardOwned(events) { return owned(events, 'board'); }
-  // 読み込んだ レースの 数 → 解放した 数（0〜21）
+  // 読み込んだ レースの 数 → 解放した 数（0〜22）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
   // つぎに 解放する もの（全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
   function boardNext(reads) {

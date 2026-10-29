@@ -4,7 +4,7 @@
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
-//    21こを 順に 解放（points.js の BOARD）。使うのは 1つ（board.sel）。出世馬の 連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）
+//    22こを 順に 解放（points.js の BOARD・第4.108版で 22「ボードを持つ馬」を 足した）。使うのは 1つ（board.sel）。出世馬の 連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）
 //  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
 //    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・ほかの画面から使う窓口：window.TengelWallet
@@ -737,7 +737,7 @@
     paintTestBoard();
   }
   function paintTestBoard() {
-    const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/21・連続的中 ${i.streak}`;
+    const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/${P.BOARD_ITEMS.length}・連続的中 ${i.streak}`;
     const ep = $('#testPack'); if (ep) { const k = packInfo(); ep.textContent = `${k.owned ? '買った' : 'まだ'}・読み込み ${k.reads}・解放 ${k.n}/${k.total}`; }
   }
 

@@ -92,12 +92,13 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.wallCount(ev) === 8 && P.wallMissions(8, ev)[0].claimed && !P.wallMissions(8, ev)[0].claimable, '帯の壁紙は枚数に数えない・受け取りずみ');
   check(P.unlock(ev, 'theme:silver', 0, 'd1', T0).length === ev.length, '同じ解放は2回足さない');
 }
-// 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）・買った あとに 読み込んだ レースの 数で 21こを 順に 解放・出世馬の 段
+// 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）・買った あとに 読み込んだ レースの 数で 22こを 順に 解放・出世馬の 段（第4.108版：22「ボードを持つ馬」を 足した）
 {
   const T0 = D('2026-11-06');
   check(P.PRODUCTS['jp.tengel.app.boardcustom'] && P.PRODUCTS['jp.tengel.app.boardcustom'].kind === 'unlock' && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 2200 && P.BOARD.product === 'jp.tengel.app.boardcustom', '商品：jp.tengel.app.boardcustom（買い切り・2,200円）');
-  check(P.BOARD_NEED.join() === '5,10,15,20,25,31,37,43,49,55,62,69,76,83,90,98,106,114,122,130,138', '解放の 数：1〜5は5ごと・6〜10は6ごと・11〜15は7ごと・16〜21は8ごと（全部で138レース）');
-  check(P.BOARD_ITEMS.length === 21 && P.BOARD_ITEMS.map(i => i.name).join('・') === 'ボードを一周・ゴール板・ひょっこり・上でお昼寝・ぶら下がり・ハズレの励まし・観客席・自撮り・くわえて持つ・馬がボード発表・横断幕・蹄のハンコ・お花が咲く・ぽよん・ドスン・カードめくり・すべり込み・ふわふわ・大きな的中・ハズレ・出世馬', '21こ（まさちゃんの 指定の 順）');
+  check(P.BOARD_NEED.join() === '5,10,15,20,25,31,37,43,49,55,62,69,76,83,90,98,106,114,122,130,138,146', '解放の 数：1〜5は5ごと・6〜10は6ごと・11〜15は7ごと・16〜22は8ごと（全部で146レース）');
+  check(P.BOARD_ITEMS.length === 22 && P.BOARD_ITEMS.map(i => i.name).join('・') === 'ボードを一周・ゴール板・ひょっこり・上でお昼寝・ぶら下がり・ハズレの励まし・観客席・自撮り・くわえて持つ・馬がボード発表・横断幕・蹄のハンコ・お花が咲く・ぽよん・ドスン・カードめくり・すべり込み・ふわふわ・大きな的中・ハズレ・出世馬・ボードを持つ馬', '22こ（まさちゃんの 指定の 順・第4.108版：22「ボードを持つ馬」は 出世馬の あと）');
+  check(P.BOARD_ITEMS[21].id === 'carry' && P.BOARD_ITEMS[21].no === 22 && P.BOARD_ITEMS[21].when === 'all' && P.BOARD_ITEMS[21].need === 146 && P.BOARD_ITEMS[20].need === 138, '22「ボードを持つ馬」：いつも（的中・ハズレ）・146レース目（出世馬は 138 の まま）');
   check(P.BOARD_ITEMS.filter(i => i.when === 'miss').map(i => i.id).join() === 'cheer,droop' && P.BOARD_ITEMS.filter(i => i.when === 'hit').map(i => i.id).join() === 'stamp,rise' && P.BOARD_ITEMS.filter(i => i.when === 'big').map(i => i.id).join() === 'thump', 'ハズレの ときだけ：励まし・ハズレ／的中の ときだけ：ハンコ・出世馬／デカ的中から 上：大きな的中');
   let ev = [P.giftEvent(T0)];
   check(!P.boardOwned(ev), '買う 前は 持って いない');
@@ -107,9 +108,9 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.txEvent(ev, tx('700', 'jp.tengel.app.boardcustom', '2026-11-06')) === null, '同じ 取引は 2回 足さない（購入を復元しても 1回）');
   const b0 = P.balance(ev, T0);
   check(b0.total === 1500 && b0.paidIn === 0, 'ポイントは 増えも 減りも しない（買い切りは ポイントでは ない）');
-  check(P.boardUnlocked(0) === 0 && P.boardUnlocked(4) === 0 && P.boardUnlocked(5) === 1 && P.boardUnlocked(25) === 5 && P.boardUnlocked(30) === 5 && P.boardUnlocked(31) === 6 && P.boardUnlocked(55) === 10 && P.boardUnlocked(62) === 11 && P.boardUnlocked(90) === 15 && P.boardUnlocked(98) === 16 && P.boardUnlocked(137) === 20 && P.boardUnlocked(138) === 21 && P.boardUnlocked(500) === 21, '解放の 数（5→1・25→5・31→6・55→10・62→11・90→15・98→16・138→21）');
+  check(P.boardUnlocked(0) === 0 && P.boardUnlocked(4) === 0 && P.boardUnlocked(5) === 1 && P.boardUnlocked(25) === 5 && P.boardUnlocked(30) === 5 && P.boardUnlocked(31) === 6 && P.boardUnlocked(55) === 10 && P.boardUnlocked(62) === 11 && P.boardUnlocked(90) === 15 && P.boardUnlocked(98) === 16 && P.boardUnlocked(137) === 20 && P.boardUnlocked(138) === 21 && P.boardUnlocked(145) === 21 && P.boardUnlocked(146) === 22 && P.boardUnlocked(500) === 22, '解放の 数（5→1・25→5・31→6・55→10・62→11・90→15・98→16・138→21・146→22）');
   const nx = P.boardNext(29);
-  check(nx.item.id === 'cheer' && nx.need === 31 && nx.left === 2 && nx.from === 25 && P.boardNext(138) === null && P.boardNext(0).item.id === 'orbit' && P.boardNext(0).left === 5, 'つぎ：29レース → 6「ハズレの励まし」まで あと2（31）・全部 解放なら なし');
+  check(nx.item.id === 'cheer' && nx.need === 31 && nx.left === 2 && nx.from === 25 && P.boardNext(146) === null && P.boardNext(138).item.id === 'carry' && P.boardNext(138).left === 8 && P.boardNext(138).from === 138 && P.boardNext(0).item.id === 'orbit' && P.boardNext(0).left === 5, 'つぎ：29レース → 6「ハズレの励まし」まで あと2（31）・138レース → 22「ボードを持つ馬」まで あと8・全部 解放なら なし');
   check([0, 1, 2, 3, 4, 5, 7, 8, 9, 30].map(P.riseTier).join() === '0,1,2,3,4,4,4,8,8,8', '出世馬の 段：1・2・3・4〜7は4・8から 8');
   const rf = P.refundEvent(ev, { id: '700', revokedAt: D('2026-11-07') });
   ev.push(rf);

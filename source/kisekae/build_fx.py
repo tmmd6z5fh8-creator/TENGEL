@@ -25,7 +25,9 @@ import sys
 
 K = os.path.dirname(os.path.abspath(__file__))
 ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp',
-              bcxph0='bcx_ph0.webp', bcxph1='bcx_ph1.webp')   # 第4.91版：結果ボードカスタム「出世馬」の 幻の 馬（極ど的中の 紫の 馬：動画の コマ 60・70。build_fx_films.py の sd_film）
+              bcxph0='bcx_ph0.webp', bcxph1='bcx_ph1.webp',   # 第4.91版：結果ボードカスタム「出世馬」の 幻の 馬（極ど的中の 紫の 馬：動画の コマ 60・70。build_fx_films.py の sd_film）
+              bcxhbh='bcx_hb_head.webp', bcxhbf='bcx_hb_fore.webp', bcxhbl='bcx_hb_hind.webp', bcxhbt='bcx_hb_tail.webp', bcxhbe='bcx_hb_eye.webp')
+#   第4.108版：結果ボードカスタム 22「ボードを持つ馬」の 部品（頭と首・前足・後ろ足・しっぽ・目を とじた 所：r3d/fx/board_horse_parts.py。build_fx_assets.py で 作る）
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
            pc='sfx_pc.m4a', zp='sfx_zp.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音（16.5）。第4.86版：神様的中（gd）は なし・
                                                                                                                        #  超プレミアムの 音（zp）は 超プレミアム神様の はじめに 使うので のこす

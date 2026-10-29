@@ -1100,8 +1100,8 @@ try:
           on: (c.querySelector('.bct.on') || {}).dataset ? (c.querySelector('.bct.on') || { dataset: {} }).dataset.bc || '' : '', prog: (c.querySelector('.bcprog') || {}).innerText || '', news: c.querySelectorAll('.bcnew').length,
           names: [...c.querySelectorAll('.bct .bcn')].map(x => x.innerText.replace(/^\\d+/, '').replace('NEW', '').trim()) }; }"""
         bi = p6.evaluate(BCI)
-        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 22 and bi['locks'] == 21 and bi['buy'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 21 and bi['fit'] == 22 and bi['names'][:4] == ['なし', 'ボードを一周', 'ゴール板', 'ひょっこり'] and bi['names'][-1] == '出世馬' and len(bi['names']) == 22,
-              f'第4.91版：設定の「結果ボードカスタム」は 着せ替えの 下・なし＋21こ（🔒）・¥2,200で買う・購入を復元・▶ 見る・小さな 見本（{bi and {k: bi[k] for k in ("after", "tiles", "locks", "buy", "see", "fit")}}）')
+        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 23 and bi['locks'] == 22 and bi['buy'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 22 and bi['fit'] == 23 and bi['names'][:4] == ['なし', 'ボードを一周', 'ゴール板', 'ひょっこり'] and bi['names'][-2:] == ['出世馬', 'ボードを持つ馬'] and len(bi['names']) == 23,
+              f'第4.91版：設定の「結果ボードカスタム」は 着せ替えの 下・なし＋22こ（🔒・第4.108版：22「ボードを持つ馬」は 出世馬の あと）・¥2,200で買う・購入を復元・▶ 見る・小さな 見本（{bi and {k: bi[k] for k in ("after", "tiles", "locks", "buy", "see", "fit")}}）')
         p6.locator('#setBoard .bct[data-bc=goal]').click(); p6.wait_for_timeout(300)
         check('買うと' in p6.locator('#toast').inner_text() and '10レース' in p6.locator('#toast').inner_text(), f'買う 前に タイルを 押す → 案内（{p6.locator("#toast").inner_text()}）')
         p6.locator('#setBoard [data-bcact=see][data-id=nap]').click(); p6.wait_for_timeout(1600)
@@ -1113,15 +1113,15 @@ try:
         p6.locator('#setBoard [data-bcact=buy]').click(); p6.wait_for_timeout(900)
         fin6 = [x for x in p6.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
         bi = p6.evaluate(BCI)
-        check(p6.evaluate("TengelWallet.board.info().owned") and p6.evaluate('TengelWallet.total()') == 1500 and len(fin6) == 1 and fin6[0]['payload']['id'] == '7001' and '買ったよ' in p6.locator('#toast').inner_text() and not bi['buy'] and '解放 0/21' in bi['prog'] and 'あと 5レース' in bi['prog'],
-              f'¥2,200で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/21・つぎ まで あと 5レース）（{bi["prog"]!r}）')
+        check(p6.evaluate("TengelWallet.board.info().owned") and p6.evaluate('TengelWallet.total()') == 1500 and len(fin6) == 1 and fin6[0]['payload']['id'] == '7001' and '買ったよ' in p6.locator('#toast').inner_text() and not bi['buy'] and '解放 0/22' in bi['prog'] and 'あと 5レース' in bi['prog'],
+              f'¥2,200で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/22・つぎ まで あと 5レース）（{bi["prog"]!r}）')
         RD = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-20', venue: '大井', r: r }, ocr: {} })"
         for r in range(1, 5): p6.evaluate(RD, r)
         p6.wait_for_timeout(200)
         check(p6.evaluate("TengelWallet.board.info().reads") == 4 and p6.evaluate("TengelWallet.board.info().n") == 0 and p6.locator('#bcNote').count() == 0, '4レース 読み込む → まだ 解放 なし')
         rr = p6.evaluate(RD, 5); p6.wait_for_timeout(400)
         bi = p6.evaluate(BCI)
-        check(rr['charged'] and p6.evaluate("TengelWallet.board.info().n") == 1 and p6.evaluate("TengelWallet.board.active()") == 'orbit' and p6.locator('#bcNote').count() == 1 and 'ボードを一周' in p6.locator('#bcNote').inner_text() and bi['on'] == 'orbit' and bi['locks'] == 20 and bi['news'] == 1,
+        check(rr['charged'] and p6.evaluate("TengelWallet.board.info().n") == 1 and p6.evaluate("TengelWallet.board.active()") == 'orbit' and p6.locator('#bcNote').count() == 1 and 'ボードを一周' in p6.locator('#bcNote').inner_text() and bi['on'] == 'orbit' and bi['locks'] == 21 and bi['news'] == 1,
               f'5レース目 → 1「ボードを一周」が 解放（画面の 上に お知らせ・はじめての 解放は そのまま 使う・NEW）（{bi["on"]}・{bi["locks"]}）')
         rr = p6.evaluate(RD, 5)
         check(not rr['charged'] and p6.evaluate("TengelWallet.board.info().reads") == 5 and p6.evaluate('TengelWallet.total()') == 500, '同じ レースの 読み直し（0P）は 数えない')
@@ -1158,8 +1158,8 @@ try:
         h2 = p6.evaluate(HB6); bub = p6.evaluate("(document.querySelector('#fxOv .bc-bub') || {}).textContent || ''")
         p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         check(p6.evaluate("TengelWallet.board.active()") == 'cheer' and h1['bcx'] == '' and h2['bcx'] == 'cheer' and '次いこ！' in bub, f'「ハズレの励まし」は ハズレの ときだけ（的中には つかない）・「次いこ！」（{h1["bcx"]!r}・{h2["bcx"]!r}）')
-        # 全部 解放（138レース）→ 登場の しかた（ぽよん）・控えめは 止まった 形
-        p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board.reads = 138; w.board.sel = 'pop'; await TengelLocal.putMeta(w); })()""")
+        # 全部 解放（146レース）→ 登場の しかた（ぽよん）・控えめは 止まった 形
+        p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board.reads = 146; w.board.sel = 'pop'; await TengelLocal.putMeta(w); })()""")
         reopen6()
         p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(500)
         h1 = p6.evaluate(HB6)
@@ -1170,13 +1170,25 @@ try:
         h2 = p6.evaluate(HB6)
         p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate("TengelFx.set({ calm: false })")
-        check(p6.evaluate("TengelWallet.board.info().n") == 21 and 'bce-pop' in h1['cls'] and 'bcgo' in h1b['cls'] and h2['bcx'] == 'pop' and 'bcst' in h2['cls'] and 'bce-pop' not in h2['cls'],
+        check(p6.evaluate("TengelWallet.board.info().n") == 22 and 'bce-pop' in h1['cls'] and 'bcgo' in h1b['cls'] and h2['bcx'] == 'pop' and 'bcst' in h2['cls'] and 'bce-pop' not in h2['cls'],
               f'全部 解放・「ぽよん」は 出る ときの 動き（.bce-pop → 出おわると .bcgo）・演出を控えめに すると 動かさずに 出す（.bcst）（{h1["cls"]}・{h2["cls"]}）')
         # 大きな的中（デカ的中から 上だけ）
         p6.evaluate("TengelWallet.board.select('thump')"); p6.wait_for_timeout(200)
         p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(2600); h1 = p6.evaluate(HB6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate(SHOW6, ['big', SPEC6]); p6.wait_for_timeout(3600); h2 = p6.evaluate(HB6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         check(h1['bcx'] == '' and h2['bcx'] == 'thump', f'「大きな的中」は デカ的中から 上だけ（的中には つかない）（{h1["bcx"]!r}・{h2["bcx"]!r}）')
+        # 第4.108版：22「ボードを持つ馬」：的中にも ハズレにも つく・下から ボードを かかえて 出てくる（.bce-carry → 出おわると .bcgo）・頭と首・後ろ足・しっぽ・前足の 部品・
+        #   「とじる」は 動かない・控えめは 止まった 形。この テストは 絵（ios/fx_assets の bcx_hb_*.webp）を 置かないので SVG の 馬（.bchbv）
+        p6.evaluate("TengelWallet.board.select('carry')"); p6.wait_for_timeout(200)
+        CR6 = "() => { const hb = document.querySelector('#fxOv .hb'), c = document.querySelector('#fxOv .close'); if (!hb) return null; const r = c.getBoundingClientRect(), vis = s => [...hb.querySelectorAll(s)].filter(e => e.getClientRects().length).length; return { bcx: hb.dataset.bcx || '', cls: hb.className, an: getComputedStyle(hb).animationName, head: vis('.bc-hbh'), legs: vis('.bc-hbl'), tail: vis('.bc-hbt'), imgs: hb.querySelectorAll('img.bchbi').length, close: [Math.round(r.left), Math.round(r.top)] }; }"
+        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(500); c1 = p6.evaluate(CR6); p6.wait_for_timeout(2400); c1b = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        p6.evaluate(SHOW6, ['miss', MISS6]); p6.wait_for_timeout(1800); c2 = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        p6.evaluate("TengelFx.set({ calm: true })")
+        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(2600); c3 = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        p6.evaluate("TengelFx.set({ calm: false })")
+        check(c1 and c1['bcx'] == 'carry' and 'bce-carry' in c1['cls'] and c1['an'].startswith('bcECarry') and 'bcgo' in c1b['cls'] and 'bchbv' in c1b['cls'] and c1b['imgs'] == 5 and c1b['head'] >= 1 and c1b['legs'] >= 1 and c1b['tail'] >= 1
+              and c2 and c2['bcx'] == 'carry' and 'bcgo' in c2['cls'] and c1b['close'] == h0['close'] and c2['close'] == h0['close'] and c3['bcx'] == 'carry' and 'bcst' in c3['cls'] and 'bce-carry' not in c3['cls'],
+              f'第4.108版：22「ボードを持つ馬」は 的中にも ハズレにも つく・下から 出てくる（bcECarry → .bcgo）・頭と首・後ろ足・しっぽ（絵が ない ときは SVG の 馬）・「とじる」は 動かない・控えめは 止まった 形（{c1 and c1["cls"]}・{c1b["cls"]}・{c3["cls"]}）')
         # 出世馬：連続的中の 数（同じ レースは 1回・ハズレで 0）→ 1・2・3・4・8 の 飾り
         p6.evaluate("TengelWallet.board.select('rise')"); p6.wait_for_timeout(200)
         sk = [p6.evaluate("(a) => TengelWallet.board.result(a[0], a[1])", a) for a in (['x1', True], ['x1', True], ['x2', True], ['x3', False], ['x4', True])]
@@ -1203,7 +1215,7 @@ try:
         check(not p6.evaluate("TengelWallet.board.info().owned") and h1['bcx'] == '' and '返金' in p6.locator('#toast').inner_text() and p6.locator('#setBoard [data-bcact=buy]').count() == 1, f'返金 → 使えなくなる（飾りなし・カードは また「買う」）（{p6.locator("#toast").inner_text()}）')
         p6.evaluate("window.__iap.current = [{ id: '7002', originalId: 'o7001', product: 'jp.tengel.app.boardcustom', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
         p6.locator('#setBoard [data-bcact=restore]').click(); p6.wait_for_timeout(900)
-        check(p6.evaluate("TengelWallet.board.info().owned") and 'もどしたよ' in p6.locator('#toast').inner_text() and p6.evaluate("TengelWallet.board.info().n") == 21, f'購入を復元 → もどる（この 端末の 進み具合は そのまま）（{p6.locator("#toast").inner_text()}）')
+        check(p6.evaluate("TengelWallet.board.info().owned") and 'もどしたよ' in p6.locator('#toast').inner_text() and p6.evaluate("TengelWallet.board.info().n") == 22, f'購入を復元 → もどる（この 端末の 進み具合は そのまま）（{p6.locator("#toast").inner_text()}）')
         p6.screenshot(path=os.path.join(W, 't4', 'native_board_custom.png'), full_page=False)
         ctx6.close()
         # ---- 第4.92版：壁紙パック（買い切り 1,500円・非消耗型 jp.tengel.app.wallpack1）：着せ替えの いちばん上の 組・買う／購入を復元・読み込み 5レースごとに 1枚ずつ 解放・

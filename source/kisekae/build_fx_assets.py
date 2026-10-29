@@ -10,6 +10,8 @@
        第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）。第4.77版：sfx_nd.m4a（ノーマルど的中の 音）。第4.79版：sfx_ndt.m4a（ノーマルど的中・極ど的中の 押した 瞬間の 音：ポチッ・トンッ・キラン）
        sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp・nd_film.mp4・nd_last.webp … 動画 4本と さいごの 1まい 3まいは build_fx_films.py で 作る（時間が かかる）。
        ここでは 作らない（ない ときは 知らせる）。第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）
+     第4.108版：bcx_hb_head・bcx_hb_fore・bcx_hb_hind・bcx_hb_tail・bcx_hb_eye.webp … 結果ボードカスタム 22「ボードを持つ馬」の 部品 5まい
+       （r3d/fx/board_horse_parts.py：3Dの 馬を 2回 描いて 頭と首・前足・後ろ足・しっぽ・目を とじた 所に 分ける・約26KB・1分ほど）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）
    ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）"""
 import os
@@ -44,6 +46,13 @@ if os.environ.get('ART', '1') != '0':
             made.append(name)
         except Exception as e:   # noqa: BLE001
             skipped.append(f'{name}（{e}）')
+
+    # 第4.108版：結果ボードカスタム 22「ボードを持つ馬」の 部品 5まい
+    try:
+        subprocess.run([sys.executable, os.path.join(K, 'r3d', 'fx', 'board_horse_parts.py'), out], check=True, stdout=subprocess.DEVNULL)
+        made.append('ボードを持つ馬の 部品')
+    except Exception as e:   # noqa: BLE001
+        skipped.append(f'ボードを持つ馬の 部品（{e}）')
 
 # 3) 効果音（14こ）
 ff = shutil.which('ffmpeg')
