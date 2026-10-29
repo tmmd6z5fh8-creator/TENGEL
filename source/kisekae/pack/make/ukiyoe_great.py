@@ -16,9 +16,16 @@
    第4.99版 まさちゃん「やっぱり二枚目のような波にして、リアルで立体的に波がでてきて、消えていく表現にして！」：第4.98版の かわいい 平らな 大波を やめて
      この 絵に もどし、浮世絵の ぼかし（bokashi）で 立体の かげを つける（shade：波の 体は 根もとへ いくほど 濃く・波の 先の 下の くぼみは さらに 濃く・
      白い 背中は 下の 左ほど 明るい 青へ。UK_FLAT=1 で ぼかし なし）。動き（3秒の 波の 一生・奥行き）は pack/ukiyoe.py の CSS。
+   第4.100版 まさちゃん「波の先端だけ動くの変だから、波が出てきて、徐々に水平になっていくようにして！今だと今ある絵が伸び縮みしてて変だから、
+     ちゃんと形を変えながらリアルに出てきたり、水平になっていったりして！」「大波は出てきてから水平になるまで、もっと早くして！」
+     「大波の動作も止まったり鈍いとへんだからリアルに！」：絵を のばしたり ちぢめたり（scale）しない。波の 一生を 1まいずつ 描いた コマ（life）に する：
+       海の 中から うしろへ ねた 波が 立ち上がり（うつす・回す・かたむける・頭の 巻き c −1→0）→ 神奈川沖浪裏（止まらずに すぎる）→
+       波の 先を 投げ出して 前へ のりだし（c 0→1）→ 落ちる（c→1.6）→ 左の 根もとを 軸に 前へ たおれて 低く なり 水平に（海の 線の 下へ）。
+       絵の 中身は いつも 同じ 大きさ（回す・うつす・高い 所ほど 前へ かたむける・頭の 巻き＝形が かわる）。24コマ／秒・1.9秒・海の 線（CSS 112）で 切る。
+       コマごとに 中身の ある 四角だけ 切りぬいて 1まいの シートに つめる（pack/ukiyoe.py が step-end で 入れかえる）。爪の 下の しぶきの 点も コマの 中で とぶ。
    しくみ：空を 色の つながりで ぬりつぶして（黒い 線で 止まる）波を とりだす → 明るさで 4つの 色に 分ける（細い 黒い 線は 濃い 藍）→
-     絵 2まい：wave＝[body・dots（爪から 落ちる しぶきの 点）]（2倍の 画素の 横ならび）・crest＝頭の コマ（CS の c の じゅん・8れつの ます目）
-   python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave・ukiyoe.crest"""
+     絵 1まい：wave＝波の 一生の コマ（life：2倍の 画素・コマごとの 四角を つめた シート）
+   python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave（ukiyoe.crest は 消す）"""
 import math
 import os
 import sys
@@ -38,16 +45,10 @@ PIVOT = (480, 330)                  # 波の 先（頭）を 回す 中心（元
 SPLIT = [(318, 118), (420, 232), (480, 330), (522, 425), (560, 520)]    # 体と 頭の さかいめ（左上 → 右下・右がわが 頭）
 D_IN = 150.0                        # さかいめから この 距離（元の 画素）で ゆがみが いっぱいに なる
 Y_STOP = (390.0, 520.0)             # この 高さ（元の 画素）より 下は ゆがめない（波の 根もと）
-BAND = 18.0                         # 頭の コマの ふちの ぼかし（元の 画素：ゆがみ 0 の 所で 体と 重ねる）
 PAL = dict(white=(246, 241, 227), light=(178, 199, 222), mid=(84, 112, 160), dark=(27, 37, 92))    # 浮世絵の 平らな 色
 SKY_SEEDS = [(600, 40), (950, 100), (800, 180), (600, 450), (620, 540), (900, 450), (150, 120), (20, 150), (1100, 300), (700, 300), (700, 520)]
-COLS = 8                            # 頭の コマの ます目の れつ
 
-# 頭の コマの 巻きの 強さ c（pack/ukiyoe.py が 時に 当てる：c<0 もり上がる・0 神奈川沖浪裏・0<c≦1 投げ出す・c>1 くずれる）
-CS = ([round(-1 + i / 20, 4) for i in range(20)] + [0.0]
-      + [round(i / 18, 4) for i in range(1, 19)] + [round(1 + 0.6 * i / 16, 4) for i in range(1, 17)])
-
-
+# 頭の 巻きの 強さ c（c<0 もり上がる・0 神奈川沖浪裏・0<c≦1 投げ出す・c>1 くずれる）→ 回す・のばす・落とす
 def warp_params(c):
     """c → (回す 角度 θ°・外へ のばす ε・下へ 落とす 元の 画素)"""
     if c <= 0:
@@ -147,14 +148,11 @@ def weight(xx, yy):
     return _ss(0, D_IN, signed_dist(xx, yy)) * (1 - _ss(Y_STOP[0], Y_STOP[1], yy))
 
 
-def inverse_map(c, h, w, ox, oy, iters=7):
-    """出口の 画素 → もとの 画素（元の 画像の 座標）：前へ 写す 式を くり返しで 逆に 解く"""
+def crest_inv(c, X, Y, iters=7):
+    """頭の ゆがみの 逆（元の 画像の 座標の 点 → ゆがめる 前の 点）：前へ 写す 式を くり返しで 逆に 解く"""
     th, ep, drop = warp_params(c)
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    xx += ox
-    yy += oy
-    qx, qy = xx - PIVOT[0], yy - PIVOT[1]
-    px, py = xx.copy(), yy.copy()
+    qx, qy = X - PIVOT[0], Y - PIVOT[1]
+    px, py = X.copy(), Y.copy()
     for _ in range(iters):
         s = weight(px, py)
         ph = -math.radians(th) * s
@@ -163,7 +161,7 @@ def inverse_map(c, h, w, ox, oy, iters=7):
         ry = qy - drop * s
         px = PIVOT[0] + k * (cs * qx - sn * ry)
         py = PIVOT[1] + k * (sn * qx + cs * ry)
-    return px - ox, py - oy
+    return px, py
 
 
 def extract(src):
@@ -310,74 +308,158 @@ def down(pre, w2, h2):
     return np.clip(np.concatenate([col, sm[..., 3:4] * 255.0], -1), 0, 255).astype(np.uint8)
 
 
-def build(src, out=None):
-    rgb, bm, dm = extract(src)
-    if os.environ.get('UK_SHARP') != '1':                              # 第4.97版：泡の 爪を 少し まるく（UK_SHARP=1 で 第4.96版の とがった 爪）
-        rgb, bm = roundify(rgb, bm)
-    rgb = shade(rgb, bm)                                               # 第4.99版：ぼかしで 立体の かげ（UK_FLAT=1 で なし）
-    h, w = bm.shape
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    ox, oy = CROP[0], CROP[1]
-    X, Y = xx + ox, yy + oy                                            # 元の 画像の 座標
-    s0 = weight(X, Y)
-    moving = s0 > 0                                                    # 動く 所（頭）：体から ぬく
-    sd = signed_dist(X, Y)
-    af = _ss(-BAND, 0, sd) * (1 - _ss(Y_STOP[1], Y_STOP[1] + BAND, Y))   # 頭の コマの アルファ（ゆがみ 0 の ふちで 体と 重なる）
-    W2, H2 = int(round(w * SC * Z)), int(round(h * SC * Z))
-    body = down(np.dstack([rgb * (bm * ~moving)[..., None], bm * ~moving]), W2, H2)
-    dots = down(np.dstack([rgb * dm[..., None], dm]), W2, H2)
-    pre = np.dstack([rgb * (bm * af)[..., None], bm * af]).astype(np.float32)
-    frames = []
-    for c in CS:
-        mx, my = inverse_map(c, h, w, ox, oy)
-        frames.append(cv2.remap(pre, mx.astype(np.float32), my.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0))
-    # 頭の コマの 箱：どの コマでも 見える 所を ぜんぶ ふくむ（2倍の 画素の きりの よい 所へ）
-    al = np.max([f[..., 3] for f in frames], 0) > 1e-3
-    ys, xs = np.nonzero(al)
-    k = 3                                                              # 元の 画素 → 2倍の 画素 は 1.5 で わる：3の 倍数で 切る
-    x0, y0 = (xs.min() // k) * k, (ys.min() // k) * k
-    x1, y1 = min(w, -(-(xs.max() + 1) // k) * k), min(h, -(-(ys.max() + 1) // k) * k)
-    fw, fh = int(round((x1 - x0) * SC * Z)), int(round((y1 - y0) * SC * Z))
-    cells = [down(f[y0:y1, x0:x1], fw, fh) for f in frames]
-    rows = -(-len(cells) // COLS)
-    grid = np.zeros((rows * fh, COLS * fw, 4), np.uint8)
-    for i, c_ in enumerate(cells):
-        r, q = divmod(i, COLS)
-        grid[r * fh:(r + 1) * fh, q * fw:(q + 1) * fw] = c_
-    wave_sheet = np.concatenate([body, dots], 1)
-    if out:
-        os.makedirs(out, exist_ok=True)
-        bg = (241, 230, 207)
+# ---------------------------------------------------------------- 第4.100版：波の 一生の コマ（life）
+FPS = 24                            # コマ／秒
+T_END = 1.9                         # 出て きて から 水平に なる まで（秒）：この あと 次の 波 まで 何も 出さない（pack/ukiyoe.py の WAVE_T＝3秒）
+CANVAS = (870, 330)                 # コマの 絵（crop の 画素）：右へ 90 の よゆう・下は 海の 線（crop y 330＝CSS 112：手前の 小波の 根もとの 少し 上）で 切る
+P0 = (430.0, 330.0)                 # 回す 中心（波の 根もとの まん中・海の 線：crop の 画素）
+LEFT = (-60.0, 330.0)               # 前へ たおれる 中心（左の 根もと）
+HB = 330.0                          # かたむける 高さの もと（海の 線＝crop y 330 から 上へ）
+# 鍵の 形（秒, 回す°（＋＝時計まわり＝前へ）, 回す 中心, 右へ, 下へ（crop px）, かたむき（高い 所ほど 右へ）, 頭の 巻き c）
+LIFE_KEYS = [
+    (0.00, -14.0, P0, 0, 330, -.25, -1.0),      # 海の 中（うしろへ ねた 低い うねり：見えない）
+    (0.30, -9.0, P0, 0, 165, -.18, -.75),       # 海から 出て くる
+    (0.55, -3.0, P0, 0, 45, -.06, -.3),         # 立ち上がる・頭が 立って 爪が のびる
+    (0.75, 0.0, P0, 0, 0, 0.0, 0.0),            # 神奈川沖浪裏（止まらずに すぎる）
+    (0.95, 1.5, LEFT, 0, 3, .05, .6),           # 波の 先を 投げ出す
+    (1.12, 3.0, LEFT, 0, 8, .09, 1.0),          # のりだす
+    (1.32, 6.0, LEFT, 0, 16, .11, 1.42),        # 落ちる
+    (1.55, 14.0, LEFT, 0, 30, .13, 1.6),        # 前へ たおれて 低く
+    (1.75, 25.0, LEFT, 0, 48, .14, 1.6),
+    (1.90, 36.0, LEFT, 0, 70, .14, 1.6),        # 水平（海の 線の 下）
+]
+DOTS = (.50, .75, 1.40)             # 爪の 下の しぶきの 点：出はじめ・とびはじめ・消える（秒）
 
-        def flat(u8):
-            a = u8[..., 3:4] / 255.0
-            return (u8[..., :3] * a + np.array(bg, np.float32) * (1 - a))[..., ::-1].astype(np.uint8)
-        cv2.imwrite(os.path.join(out, 'great_wave.png'), flat(wave_sheet))
-        cv2.imwrite(os.path.join(out, 'great_crest.png'), flat(grid))
-        for i in (0, 10, 20, 29, 38, 46, 54):                          # 体と 重ねた ためし
-            comp = np.full((H2, W2, 3), bg, np.float32)
-            for u8, (px_, py_) in ((body, (0, 0)), (cells[i], (int(round(x0 * SC * Z)), int(round(y0 * SC * Z))))):
-                a = u8[..., 3:4] / 255.0
-                sub = comp[py_:py_ + u8.shape[0], px_:px_ + u8.shape[1]]
-                sub[:] = u8[..., :3] * a + sub * (1 - a)
-            cv2.imwrite(os.path.join(out, f'great_c{i:02d}.png'), comp[..., ::-1].astype(np.uint8))
-    meta_w = dict(cell=[W2, H2], size=[round(w * SC, 2), round(h * SC, 2)], frames=2, parts=['body', 'dots'])
-    meta_c = dict(cell=[fw, fh], cols=COLS, rows=rows, cs=list(CS), at=[round(x0 * SC, 3), round(y0 * SC, 3)],
-                  size=[round((x1 - x0) * SC, 3), round((y1 - y0) * SC, 3)])
-    return wave_sheet, grid, meta_w, meta_c
+
+def _rig(a, piv, tx, ty):
+    """piv の まわりに a° 回して (tx, ty) うつす → P0 の まわりの 回しと うつしに なおす"""
+    r = math.radians(a)
+    c, s = math.cos(r), math.sin(r)
+    vx, vy = P0[0] - piv[0], P0[1] - piv[1]
+    return a, c * vx - s * vy + piv[0] + tx - P0[0], s * vx + c * vy + piv[1] + ty - P0[1]
+
+
+def life_fn():
+    """鍵の 形を なめらかに つなぐ（形 ごとに PCHIP：止まらない・行きすぎない）→ t → (回す°, 右へ, 下へ, かたむき, c)"""
+    from scipy.interpolate import PchipInterpolator
+    ts = [k[0] for k in LIFE_KEYS]
+    rg = [_rig(a, p, x, y) for _, a, p, x, y, _, _ in LIFE_KEYS]
+    fs = [PchipInterpolator(ts, [r[i] for r in rg]) for i in range(3)] + [PchipInterpolator(ts, [k[5] for k in LIFE_KEYS]),
+                                                                         PchipInterpolator(ts, [k[6] for k in LIFE_KEYS])]
+    return lambda t: tuple(float(f(min(max(t, 0.0), T_END))) for f in fs)
+
+
+def life_frame(t, pre, pred, fn):
+    """t 秒の コマ（crop の 画素・前もって アルファを かけた RGBA）：出口の 点 → うつす・回す・かたむけるの 逆 → 頭の 巻きの 逆 → 元の 絵"""
+    a, tx, ty, lean, c = fn(t)
+    W_, H_ = CANVAS
+    yy, xx = np.mgrid[0:H_, 0:W_].astype(np.float32)
+    x, y = xx - tx, yy - ty
+    r = math.radians(-a)
+    cs, sn = math.cos(r), math.sin(r)
+    dx, dy = x - P0[0], y - P0[1]
+    x, y = P0[0] + dx * cs - dy * sn, P0[1] + dx * sn + dy * cs
+    h = np.clip(HB - y, 0, None) / HB
+    x = x - lean * HB * h ** 1.6
+    sx, sy = crest_inv(c, x + CROP[0], y + CROP[1])
+    sx, sy = (sx - CROP[0]).astype(np.float32), (sy - CROP[1]).astype(np.float32)
+    out = cv2.remap(pre, sx, sy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    d0, d1, d2 = DOTS
+    if d0 < t < d2:                                                     # しぶきの 点：爪の 下に あらわれ、投げ出す ときに 前へ とんで 落ちる
+        k = min(1.0, (t - d0) / .2) * min(1.0, (d2 - t) / .25)
+        u = max(0.0, (t - d1) / (d2 - d1))
+        d = cv2.remap(pred, sx - 45 * u, sy - 110 * u * u, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0) * k
+        out = d + out * (1 - d[..., 3:4])
+    out[-1, :, :] *= .5                                                  # 海の 線で 切る（ふちを なめらかに）
+    return out
+
+
+def pack_cells(cells):
+    """コマ（RGBA u8・それぞれ 大きさが ちがう）を 1まいに つめる（高い じゅんに 段に ならべる）→ (シート, [(x, y)])"""
+    order = sorted(range(len(cells)), key=lambda i: -cells[i].shape[0])
+    WMAX = 2400
+    pos = [None] * len(cells)
+    x = y = rowh = 0
+    for i in order:
+        h, w = cells[i].shape[:2]
+        if x + w > WMAX and x > 0:
+            x, y, rowh = 0, y + rowh + 2, 0
+        pos[i] = (x, y)
+        x += w + 2
+        rowh = max(rowh, h)
+    SW = max(p[0] + cells[i].shape[1] for i, p in enumerate(pos))
+    SH = max(p[1] + cells[i].shape[0] for i, p in enumerate(pos))
+    sheet = np.zeros((SH, SW, 4), np.uint8)
+    for i, (px, py) in enumerate(pos):
+        h, w = cells[i].shape[:2]
+        sheet[py:py + h, px:px + w] = cells[i]
+    return sheet, pos
+
+
+def build_life(src, out=None):
+    rgb, bm, dm = extract(src)
+    if os.environ.get('UK_SHARP') != '1':                              # 第4.97版：泡の 爪を 少し まるく
+        rgb, bm = roundify(rgb, bm)
+    rgb = shade(rgb, bm)                                               # 第4.99版：ぼかしで 立体の かげ
+    pre = np.dstack([rgb * bm[..., None], bm]).astype(np.float32)
+    pred = np.dstack([np.full_like(rgb, 246.0) * dm[..., None], dm]).astype(np.float32)
+    fn = life_fn()
+    W_, H_ = CANVAS
+    W2, H2 = int(round(W_ * SC * Z)), int(round(H_ * SC * Z))
+    n = int(round(T_END * FPS))
+    cells, boxes = [], []
+    for k in range(1, n + 1):
+        fr = down(life_frame(k / FPS, pre, pred, fn), W2, H2)
+        al = fr[..., 3] > 2
+        if not al.any():
+            cells.append(np.zeros((2, 2, 4), np.uint8))
+            boxes.append([0, 0, 2, 2])
+            continue
+        ys, xs = np.nonzero(al)
+        x0, y0 = max(0, xs.min() - 1), max(0, ys.min() - 1)
+        x1, y1 = min(W2, xs.max() + 2), min(H2, ys.max() + 2)
+        x0 -= x0 % 2
+        y0 -= y0 % 2
+        cells.append(fr[y0:y1, x0:x1])
+        boxes.append([int(x0), int(y0), int(x1 - x0), int(y1 - y0)])
+        if out and k % 4 == 0:
+            os.makedirs(out, exist_ok=True)
+            a = fr[..., 3:4] / 255.0
+            cv2.imwrite(os.path.join(out, f'life_{k:02d}.png'), (fr[..., :3] * a + np.array((241, 230, 207)) * (1 - a))[..., ::-1].astype(np.uint8))
+    sheet, pos = pack_cells(cells)
+    meta = dict(z=Z, fps=FPS, t_end=T_END, canvas=[round(W_ * SC, 2), round(H_ * SC, 2)], sheet=[int(sheet.shape[1]), int(sheet.shape[0])],
+                cells=[[p[0], p[1], b[2], b[3], b[0], b[1]] for p, b in zip(pos, boxes)])   # シートの x・y・はば・高さ・コマの 中の x・y（2倍の 画素）
+    return sheet, meta
+
+
+def forget(theme, name):
+    """blobs.json から 使わなく なった 絵を 消す（record と 同じ ロック）"""
+    import fcntl
+    import json
+    from sheets import PACK
+    p = os.path.join(PACK, 'blobs.json')
+    with open(p + '.lock', 'w') as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        d = json.load(open(p, encoding='utf-8'))
+        if d.get(theme, {}).pop(name, None) is not None:
+            tmp = p + '.tmp'
+            json.dump(d, open(tmp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+            os.replace(tmp, p)
+        fcntl.flock(lk, fcntl.LOCK_UN)
 
 
 def main(src, out=None, save=False):
-    ws, grid, mw, mc = build(src, out)
-    print('wave', ws.shape, mw, flush=True)
-    print('crest', grid.shape, {k: v for k, v in mc.items() if k != 'cs'}, flush=True)
+    sheet, meta = build_life(src, out)
+    print('life', sheet.shape, len(meta['cells']), 'frames', flush=True)
+    if out:
+        from sheets import preview_png
+        preview_png(sheet, os.path.join(out, 'life_sheet.png'), bg=(241, 230, 207))
     if save:
         from sheets import save_webp, record
-        bid = save_webp(ws, quality=90)
-        record('ukiyoe', 'wave', bid, mw)
-        cid = save_webp(grid, quality=82)
-        record('ukiyoe', 'crest', cid, mc)
-        print('wave', bid, 'crest', cid, flush=True)
+        bid = save_webp(sheet, quality=84)
+        record('ukiyoe', 'wave', bid, meta)
+        forget('ukiyoe', 'crest')
+        print('wave', bid, os.path.getsize(os.path.join(os.environ.get('KISEKAE_ASSETS') or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(HERE))), 'ios', 'kisekae_blobs'), bid + '.webp')), flush=True)
 
 
 if __name__ == '__main__':
