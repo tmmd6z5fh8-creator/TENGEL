@@ -6,11 +6,11 @@
              いつもの（default）のボード（boards.py）・アプリ用の足し（舞台・お金なしの行）。
              全部の選択子を .fxs（390×844 の舞台）の中だけに効かせ、@keyframes の名前に fx を付ける（アプリの CSS とかぶらない）。
              「視差効果を減らす」の @media の中身は .fxs.calm にも効かせる（設定の「演出を控えめにする」：16.6）
-     push  … PUSHの画面（hit・big・fz）。隠れど的中は big の PUSH
-     reveal… 押したあと（hit・big・miss・fz）。{{BOARD}} にボード・{{N}} に行の数が入る。隠れど的中は fz の押したあと
+     push  … PUSHの画面（hit・hit_t・big_t・fz_t）。第4.109版：テーマの ない big・fz の PUSH は 入れない（使って いない）
+     reveal… 押したあと（hit・big・miss・特別な 演出）。{{BOARD}} にボード・{{N}} に行の数が入る。第4.109版：前の ど的中（fz）は 入れない（くじで 出ない）
      board … ボードの部品（すみの飾り・見出し）。行は fx.js が作る（券種ごとの 結果・お金なし：16.4）
      sfx   … 効果音のファイル名（アプリの Resources に入れる。リポジトリには入れない：1章の11）
-   見本の /_blob/… の絵は、アプリの中のファイル（fz_nglow.webp・fz_ncore.webp）に置きかえる。
+   見本の /_blob/… の絵は、アプリの中のファイルに置きかえる（第4.109版：ネオンの カットの 絵 fz_nglow・fz_ncore と その CSS（.nic）は 入れない）。
    第5弾（16.3 の 特別な 演出）：プレミアムど的中（pc・premium_cute.py）・超プレミアムど的中（zp・super_premium.py）・神様的中（gd・kami.py）・
      超神様的中（sgd・kami_super.py：動画）・超プレミアム神様的中（spg：超プレミアムの ①〜③ → 昇格の 動画 → 超神様の 動画）の CSS と 押したあとの HTML も 束ねる。
      絵（premium_blobs.json・kami_blobs.json の 名前.webp）・動画（sgd_film.mp4・spg_up.mp4）・さいごの 1まい（sgd_last.webp）・音 6こ も Resources に 入れる
