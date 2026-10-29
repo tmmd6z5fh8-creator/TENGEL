@@ -545,6 +545,8 @@ def write_payloads(out, G=None):
         assert '/_blob/' not in s, tid
         for m in re.finditer(r'ks_([0-9a-f]{32})\.', s):
             ids.add(m.group(1))
+        if tid == 'default':
+            continue   # 第4.109版：いつもの（default）は kisekae.js が 読まない（load('default') は null・ボードの 形は __FX の css）→ ks_default.json は 作らない
         open(os.path.join(out, f'ks_{tid}.json'), 'w', encoding='utf-8').write(s)
     for tid, fn in BANNER_SVG.items():
         # 選ぶ画面の タイルの 絵：止まった 絵に（牧場・ぷりけつの SVG は 動く CSS が 入って いる → animation:none を 足す。第4.89版：
