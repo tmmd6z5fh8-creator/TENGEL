@@ -426,11 +426,12 @@
   };
 
   // 22 ボードを持つ馬（第4.108版・まさちゃんの 指定）：いちばん はじめの 頃の 馬。うしろから ボードを かかえて 下から 出てくる（着地で 少し はずむ）
-  //   → 頭と首・後ろ足が ぷるぷる（重い ボードを 持って ふんばる：別々の 速さ）・しっぽを ときどき ふる・まばたき。前足（ボードの 上の ふちに かかる ひづめ）は 動かさない
+  //   → 頭と首・後ろ足が ぷるぷる（重い ボードを 持って ふんばる：別々の 速さ）・しっぽを ときどき ふる・まばたき。前足（ボードの 上の ふちに かかる 短い 足と ひづめ）は 動かさない
+  //   形は はじめの 絵（board_horse.py）と 同じ（まさちゃん 23:19・23:21「胴体の長さも2枚目の長さがベスト！」「二枚目くらいの前脚の長さが理想！」）
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -156, 128, 184], fore: [167, -67, 90, 85], hind: [241, -30, 100, 134], tail: [313, -46, 32, 108], eye: [252, -136, 25, 25], headO: [280, 10], hindO: [290, -20], tailO: [325, -42] };
+  const HBX = { head: [196, -142, 128, 172], fore: [136, -32, 100, 63], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
     const as = FXA(), H = o.H;
@@ -454,8 +455,8 @@
   function hbVec(o, hidden) {
     const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
     let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
-    s += box('bco', 198, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(8)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
-    s += box('bco', 240, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
+    s += box('bco', 146, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(8)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
+    s += box('bco', 200, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
     s += `<div class="bcx bk bco bc-hbl" style="left:246px;top:${f(o.H - 14)}px;width:100px;height:${f(lh + 14)}px;transform-origin:50% 0"><svg viewBox="0 -14 100 ${f(lh + 14)}" preserveAspectRatio="none">`
       + `<g class="bc-hbt" style="transform-origin:84px -6px"><path d="M80 -8 C90 ${f(lh * .3)} 92 ${f(lh * .65)} 88 ${f(lh * .95)} C84 ${f(lh * .7)} 80 ${f(lh * .45)} 74 -8 Z" fill="${c.n}"/></g>`
       + `<path d="M22 -14 L40 -14 L38 ${f(lh - 8)} L24 ${f(lh - 8)} Z" fill="${c.b}"/><path d="M56 -14 L74 -14 L72 ${f(lh - 8)} L58 ${f(lh - 8)} Z" fill="${c.s}"/>`

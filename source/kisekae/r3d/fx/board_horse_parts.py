@@ -3,11 +3,13 @@
    → bcx_hb_head.webp（頭と首）・bcx_hb_fore.webp（前足）・bcx_hb_hind.webp（後ろ足）・bcx_hb_tail.webp（しっぽ）・bcx_hb_eye.webp（目を とじた 所）
    もとは いちばん はじめの 頃の「馬が うしろから ボードを 持つ」絵（board_horse.py：その 絵は そのまま）。まさちゃん（2026/10/29）
    「赤丸の前脚不自然だから自然にして！青丸の頭と後ろ脚をプルプル振動させて！黄丸の尻尾あと少しだけ長くして、ランダムに振って！」で
-     ・前足：前腕 → ひざ → 管 → 球節 → ひづめ。胸は ボードの うしろ・ひざで 曲げて、ひづめが ボードの 上の ふちに かかる（ふちの 前へ 少し まるまる）
      ・しっぽ：1.4倍の 長さ。頭と首・後ろ足・しっぽは 別の 絵（アプリで 別に 動かす：bcx.js の B.carry）
+   まさちゃん（23:19・23:21）「前脚長すぎ、蹄が乗ってるくらいでいい！胴体の長さも2枚目の長さがベスト！」「蹄と少し足が見えるくらい！二枚目くらいの前脚の長さが理想！」で
+     ・馬の 形・カメラ・ボードの ふちは board_horse.py の はじめの 絵と 同じ（頭と首の 高さ・後ろ足の 長さ・前足の 見える 長さ）。大きさだけ CSS の 1px＝3画素に
+     ・前足：ふちの 上に 短い 足と ひづめ。ボードの 前に 出すのは 球節から 下（つなぎと ひづめ）だけ（はじめの 絵で ひづめの 下に 出て いた 管の 切れはしは 出さない）
    描き方：3Dの 馬（horse3d.py）を 2回 描く。① ぜんぶ（前足の 前腕から 下だけ 素材 7）→ 前足の 形（ほかの 所に かくれた 所は 入れない）・後ろ足
      ② 前足の 前腕から 下を 消した 馬 → 頭と首（前足の うしろに なる 胸や 首も ぜんぶ ある：頭だけ ふるえても すき間が 出ない）
-   大きさ：CSS の 1px を 3画素（ボードの 横は 350px）。絵の 場所は ボードの 左上（頭と首・前足）・左下（後ろ足・しっぽ）からの px で、bcx.js の HBX と 同じ
+   大きさ：CSS の 1px を 3画素（ボードの 横は 350px＝board_horse.py の 672画素）。絵の 場所は ボードの 左上（頭と首・前足）・左下（後ろ足・しっぽ）からの px で、bcx.js の HBX と 同じ
    （--measure：いまの 絵が ちょうど 入る 四角を 出す。ちがって いたら 止まる）。乱数の 種が 決まって いるので、何回 作っても 同じ"""
 import sys, os, math, json, inspect, tempfile, shutil, atexit
 import numpy as np, cv2
@@ -24,21 +26,18 @@ MEASURE = '--measure' in sys.argv
 os.makedirs(OUT, exist_ok=True)
 
 D = 3                                    # CSS の 1px の 画素
-X0, Y0 = -20, -166                       # 絵の 左上（ボードの 左上からの CSS px）
-WC, HREF, BELOW = 410, 185, 104          # 絵の 横（CSS px）・描く ときの ボードの 高さ・ボードの 下に 描く 高さ
+K = D * 350 / 672                        # board_horse.py の 1画素 → この 絵の 画素（1.5625）
 # 部品の 四角（CSS px。頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝ボードの 左下から）と 動きの 中心。bcx.js の HBX と 同じ
-HBX = dict(head=[196, -156, 128, 184], fore=[167, -67, 90, 85], hind=[241, -30, 100, 134], tail=[313, -46, 32, 108], eye=[252, -136, 25, 25],
-           headO=[280, 10], hindO=[290, -20], tailO=[325, -42])
-cfg = dict(theta=70, azim=40, elev=6, neck=-44, head=-30, fov=26,
-           fl=[-8, 78, -48, -102], fr=[-12, 74, -52, -106], spread=1.6,
+HBX = dict(head=[196, -142, 128, 172], fore=[136, -32, 100, 63], hind=[242, -30, 100, 124], tail=[314, -46, 33, 96], eye=[248, -121, 26, 26],
+           headO=[272, 12], hindO=[292, -18], tailO=[327, -61])
+# board_horse.py の はじめの 絵と 同じ 形（しっぽだけ 1.4倍）
+cfg = dict(theta=68, azim=42, elev=6, neck=-44, head=-30, fov=26, fl=[-48, 12, 88, -40], fr=[-40, 22, 92, -45], spread=2.2,
            hl=[-58, -112, -86, -60], hr=[-64, -118, -90, -62],
            body=['#C27237', '#9A5327'], mane=['#5A2E14', '#3E1E0C'], line='#4A2614', hoof='#3A2A22', light=[0.55, 0.75, -0.55],
-           bands=[0.02, 0.72], box=[160, -140, 352, 263], head_h=150, right=347, top_pad=2, ss=2, head_scale=1.22, eye_k=0.10, mane_len=1.0, tail_len=1.4, seed=7, cut_r=0.10)
+           bands=[0.02, 0.72], box=[290, 30, 700, 880], board=[24, 696], board_h=440, top_pad=6, ss=2, head_scale=1.22, eye_k=0.10, mane_len=1.0, tail_len=1.4, seed=7, cut_r=0.10)
 Hm.HEAD_SCALE = cfg['head_scale']
-W, Hh = WC * D, (-Y0 + HREF + BELOW) * D
-BX0 = -X0 * D                            # ボードの 左の はし（画素）
-BY0 = -Y0 * D                            # ボードの 上の ふち（画素）
-BY1 = BY0 + HREF * D                     # ボードの 下の ふち（画素）
+W, Hh = round(720 * K), round(900 * K)  # board_horse.py の 720×900
+BX0 = cfg['board'][0] * K                # ボードの 左の はし（画素）
 TMP = tempfile.mkdtemp(prefix='hbparts_')
 atexit.register(shutil.rmtree, TMP, True)   # 下書き（1回 約140MB）は おわったら 消す
 S2.TMP = TMP                             # 下書きは 自分の フォルダへ（ほかの 絵と いっしょに 作っても まざらない）
@@ -110,10 +109,6 @@ def render(eye, tgt, name, mode):
     return R
 
 
-def css2px(x, y):
-    return (x - X0) * D, (y - Y0) * D
-
-
 def fore_segs(S):
     sp = cfg['spread']
     out = {}
@@ -126,32 +121,13 @@ def fore_segs(S):
     return out
 
 
-# ---- カメラ：前の ひづめの つけね（つなぎの 下の はし）が ボードの 上の ふちの 少し 上（top_pad）・頭の てっぺんが ふちの 上 head_h px・
-#      馬の 右の はしが right px に くる ように（frame_horse で 入れて から、小さく 描いた 形で 3回 なおす） ----
+# ---- カメラと ボードの ふち：board_horse.py と 同じ（馬が box に 入る・ボードの 上の ふちは 低い ほうの 球節の 少し 下・下の ふちは その 440画素 下） ----
 SK = Hm.skeleton(pose)
 segs = fore_segs(SK)
-bx = cfg['box']
-p0, p1 = css2px(bx[0], bx[1]), css2px(bx[2], bx[3])
-eye, tgt = frame_horse(pose, (p0[0], p0[1], p1[0], p1[1]), W, Hh, facing='left', azim=cfg['azim'], elev=cfg['elev'], fov=cfg['fov'])
-q = 4
-for it in range(4):
-    sc_ = Scene(); sc_.image(W, Hh, 1); sc_.camera(eye, tgt, cfg['fov'])
-    co_px = max(sc_.project(np.array([segs[k]['co']]))[0][0][1] for k in segs)
-    Rq = render_horse(pose, eye, tgt, cfg['fov'], W // q, Hh // q, ss=1, name='fit')
-    ys, xs = np.nonzero(Rq['a'] > 0.5)
-    top_px, right_px = ys.min() * q, (xs.max() + 1) * q
-    s = (co_px - top_px) / (cfg['head_h'] * D)               # 1 より 大きい → 大きすぎる（カメラを 下げる）
-    cx, cy = W / 2, Hh / 2
-    co2, right2 = cy + (co_px - cy) / s, cx + (right_px - cx) / s
-    dy = (BY0 - cfg['top_pad'] * D) - co2
-    dx = (cfg['right'] - X0) * D - right2
-    fw = (tgt - eye) / np.linalg.norm(tgt - eye)
-    dist = np.linalg.norm(tgt - eye) * s
-    rt = np.cross(fw, (0, 1, 0)); rt /= np.linalg.norm(rt)
-    up = np.cross(rt, fw)
-    wpp = 2 * dist * math.tan(math.radians(cfg['fov']) / 2) / Hh
-    tgt = tgt - rt * dx * wpp + up * dy * wpp
-    eye = tgt - fw * dist
+eye, tgt = frame_horse(pose, tuple(v * K for v in cfg['box']), W, Hh, facing='left', azim=cfg['azim'], elev=cfg['elev'], fov=cfg['fov'])
+sc_ = Scene(); sc_.image(W, Hh, 1); sc_.camera(eye, tgt, cfg['fov'])
+BY0 = max(sc_.project(np.array([segs[k]['ft']]))[0][0][1] for k in segs) + cfg['top_pad'] * K   # ボードの 上の ふち（画素）
+BY1 = BY0 + cfg['board_h'] * K                                                                   # ボードの 下の ふち（画素）
 shift = 0.0
 RF = render(eye, tgt, 'full', 'tag')     # ぜんぶ（前足の 前腕から 下＝素材 7）
 RB = render(eye, tgt, 'body', 'drop')    # 前足の 前腕から 下なし
@@ -252,8 +228,9 @@ def dseg(p0, p1):
 
 m = RF['m']
 low = np.zeros((Hh, W), bool)
-for k, s in segs.items():
-    low |= (dseg(s['ft'], s['co']) < cfg['cut_r']) | (dseg(s['co'], s['hf']) < cfg['cut_r'])
+for k, sg in segs.items():                           # 球節〜つなぎ〜ひづめの 近く（管＝ひざ〜球節の ほうが 近い 所は 入れない：ボードの うしろ）
+    dl = np.minimum(dseg(sg['ft'], sg['co']), dseg(sg['co'], sg['hf']))
+    low |= (dl < cfg['cut_r']) & (dl < dseg(sg['kn'], sg['ft']))
 foreM = ((m == 7) | ((m == 6) & (yy < (BY0 + BY1) / 2))) & (RF['a'] > 0.02) & ((yy < BY0) | low)
 foreA = cv2.GaussianBlur(cv2.dilate(foreM.astype(np.float32), np.ones((3, 3), np.uint8)), (3, 3), 0.7) * np.clip(aF, 0, 1)
 
@@ -284,13 +261,13 @@ LAYERS = dict(head=(headC, headA, 'top'), fore=(colF, foreA, 'top'), hind=(colF,
 def box_px(b, ref):
     x, y, w, h = b
     py0 = BY0 if ref == 'top' else BY1
-    return int(round((x - X0) * D)), int(round(py0 + y * D)), int(round(w * D)), int(round(h * D))
+    return int(round(BX0 + x * D)), int(round(py0 + y * D)), int(round(w * D)), int(round(h * D))
 
 
 def tight(a, ref, thr=0.02, clip=None):
     ys, xs = np.nonzero(a > thr)
     py0 = BY0 if ref == 'top' else BY1
-    x0, x1 = xs.min() / D + X0, (xs.max() + 1) / D + X0
+    x0, x1 = (xs.min() - BX0) / D, (xs.max() + 1 - BX0) / D
     y0, y1 = (ys.min() - py0) / D, (ys.max() + 1 - py0) / D
     return [math.floor(x0) - 2, math.floor(y0) - 2, math.ceil(x1 - x0) + 4, math.ceil(y1 - y0) + 4]
 
@@ -330,10 +307,10 @@ if PREVIEW:
     save_png(np.clip(img, 0, 1), PREVIEW)
 if MEASURE:
     ys_, xs_ = np.nonzero(aF > 0.5)
-    print('馬の 四角（ボードの 左上から CSS px）:', round(xs_.min() / D + X0, 1), round((ys_.min() - BY0) / D, 1), round(xs_.max() / D + X0, 1), round((ys_.max() - BY0) / D, 1), ' 上下の ずらし:', round(shift / D, 1))
+    print('馬の 四角（ボードの 左上から CSS px）:', round((xs_.min() - BX0) / D, 1), round((ys_.min() - BY0) / D, 1), round((xs_.max() - BX0) / D, 1), round((ys_.max() - BY0) / D, 1), ' 下の ふちから:', round((ys_.max() - BY1) / D, 1))
     got = {k: tight(a, ref) for k, (c, a, ref) in lay.items()}
     print('ちょうどの 四角（CSS px）:', json.dumps(got))
-    print('目の 中心（ボードの 左上から）:', round(ex / D + X0, 1), round((ey - BY0) / D, 1), ' しっぽの 根もと（左下から）:', round(tail0[0] / D + X0, 1), round((tail0[1] - BY1) / D, 1))
+    print('目の 中心（ボードの 左上から）:', round((ex - BX0) / D, 1), round((ey - BY0) / D, 1), ' しっぽの 根もと（左下から）:', round((tail0[0] - BX0) / D, 1), round((tail0[1] - BY1) / D, 1))
     shutil.rmtree(TMP, ignore_errors=True)
     sys.exit(0)
 
@@ -341,13 +318,14 @@ from PIL import Image
 bad = []
 for k, (c, a, ref) in lay.items():
     x, y, w, h = box_px(HBX[k], ref)
-    assert x >= 0 and y >= 0 and x + w <= W and y + h <= Hh, (k, x, y, w, h)
-    # 四角の 外に 見える 所が ない こと（切った ふちは のぞく）
+    # 四角の 外に 見える 所が ない こと（切った ふちは のぞく）。四角が 絵の 外に 出る 所は すき通しで うめる
     outside = a.copy()
-    outside[y:y + h, x:x + w] = 0
+    outside[max(0, y):max(0, y + h), max(0, x):max(0, x + w)] = 0
     if outside.max() > 0.04:
         bad.append(f'{k}：四角の 外に 絵が ある（{outside.max():.2f}）')
-    rgba = np.dstack([np.clip(c[y:y + h, x:x + w], 0, 1), np.clip(a[y:y + h, x:x + w], 0, 1)])
+    rgba = np.zeros((h, w, 4), np.float32)
+    sy0, sx0, sy1, sx1 = max(0, y), max(0, x), min(Hh, y + h), min(W, x + w)
+    rgba[sy0 - y:sy1 - y, sx0 - x:sx1 - x] = np.dstack([np.clip(c[sy0:sy1, sx0:sx1], 0, 1), np.clip(a[sy0:sy1, sx0:sx1], 0, 1)])
     u8 = (rgba * 255 + .5).astype(np.uint8)
     Image.fromarray(u8, 'RGBA').save(os.path.join(OUT, f'bcx_hb_{k}.webp'), 'WEBP', quality=86, method=6)
     print(f'bcx_hb_{k}.webp', f'{w}×{h}', f'{os.path.getsize(os.path.join(OUT, f"bcx_hb_{k}.webp")) / 1e3:.1f}KB', flush=True)
