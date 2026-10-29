@@ -10,7 +10,8 @@
        上の はしは 頭の 帯の 下に かくれる（平らな 海が 見えない）。いちばん 手前の 層の 体は 石の 土手の うしろまで。
      おくの 層ほど 小さく かすむ（かすみの 色を まぜる）。層の 場所・大きさ・うねり は pack/ukiyoe.py の RB_ROWS と RB_*。
      第4.104版〜第4.105版の 動く 小波の 帯（ukiyoe.mini）は やめた（blobs.json から 消す）。
-   大波の 絵（make/ukiyoe_great.py）を 作り直したら、これも 作り直す：
+   大波の 絵（make/ukiyoe_great.py）を 作り直したら、これも 作り直す（第4.107版で 大波の コマを のびない 形に 作り直した ときは
+   作り直して いない：いまの ukiyoe.ribbon は 第4.106版の 大波の コマ 26〜40 から 作った もの。いま 動かすと 小波の 形が 少し かわる）：
    python3 kisekae/pack/make/ukiyoe_mini.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.ribbon"""
 import math
 import os
