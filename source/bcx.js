@@ -437,7 +437,7 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -145, 128, 175], fore: [136, -34, 107, 63], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -64],
+  const HBX = { head: [196, -145, 128, 175], fore: [135, -48, 99, 46], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -64],
     eyeC: [261, -111], muzzle: [211, -67], poll: [267, -116] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
@@ -448,12 +448,14 @@
     const ok = Object.keys(HBA).every(k => as[HBA[k]]);
     let html = '';
     if (ok) {
-      const src = k => esc(as[HBA[k]]), h = at('head'), e = at('eye');
+      // 前足（第4.111版）：ひづめの 下は ボードの 白い 輪の 上に のる（的中・大的中 3px／ハズレ 1.5px：ハズレは 1.5px 下げる）
+      const src = k => esc(as[HBA[k]]), h = at('head'), e = at('eye'), fo = at('fore');
+      if (o.miss) fo.y += 1.5;
       html += `<div class="bcx bk bco bc-hbr bc-hbt" style="${pos(at('tail', 1))};transform-origin:${org('tail', 'tailO', 1)}"><img class="bchbi" src="${src('tail')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbl" style="${pos(at('hind', 1))};transform-origin:${org('hind', 'hindO', 1)}"><img class="bchbi" src="${src('hind')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbh" style="${pos(h)};transform-origin:${org('head', 'headO')}"><img class="bchbi" src="${src('head')}" alt="">`
         + `<img class="bchbi bc-hbe" src="${src('eye')}" alt="" style="position:absolute;left:${f(e.x - h.x)}px;top:${f(e.y - h.y)}px;width:${f(e.w)}px;height:${f(e.h)}px">${hbPanic(h)}</div>`
-        + `<div class="bcx bc-hbr bc-hbf" style="${pos(at('fore'))};transform-origin:${f(273 - at('fore').x)}px ${f(-at('fore').y)}px"><img class="bchbi" src="${src('fore')}" alt=""></div>`;
+        + `<div class="bcx bc-hbr bc-hbf" style="${pos(fo)};transform-origin:${f(273 - fo.x)}px ${f(-fo.y)}px"><img class="bchbi" src="${src('fore')}" alt=""></div>`;
     }
     html += hbVec(o, ok);
     return { html, enter: 'carry', start: () => setTimeout(() => snd('thump'), 470),
