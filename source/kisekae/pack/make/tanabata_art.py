@@ -1,4 +1,4 @@
-"""七夕の 壁紙（壁紙パック・第4.93版〜第4.94版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
+"""七夕の 壁紙（壁紙パック・第4.93版〜第4.95版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
    ページで 左右に うらがえす）。同じ カメラで 描くので どの シートも 同じ 所に かさなる（anchor＝ひづめの まん中と 地面：780×320 の 絵の 中）。
    ・run：ギャロップ 10コマ（flat/sea_run.py と 同じ 足の 動き：4回に 1回 振り向いて 駆け寄る とき）
    ・walk：常歩 12コマ（左うしろ → 左前 → 右うしろ → 右前 の 4拍子。meta の step：地面に ついた ひづめが 1コマで うしろへ 動く 画素＝体が 前へ 進む 画素）
@@ -7,11 +7,14 @@
      2頭を 半回り ずらして 首を 上下・前後に ゆらす＝ほおと 首を すりあわせる）。彦星の 馬は うらがえして 右に 置き（ひづめの まん中の 間 PAIR_D）、
      手前ほど 大きい ぶん（k＝1−u×K_SLOPE）を 小さく する（PAIR_SH＝1−K_SLOPE×PAIR_D×HS）。重ねる 順は 彦星の 馬 → 織姫の 馬（手前）
    ・prance：振り向いた とき 前足を 上げる 1コマ・stand：立った 1コマ
+   ・look：首だけ 振り返る 3コマ（0＝首を 起こす・1＝とちゅう・2＝振り返る。体は 立った まま。首の 根もとより 先を 左右 うらがえして き甲を 中心に 起こし、
+     体の うしろに 重ねる＝首は き甲の むこうから 出て、頭は 背中の 上で うしろを 見る。うらがえす 首と 頭は 羽衣なしで 描いた 絵から 切りとる）
    ・織姫の 馬（o）：白い 体・桃色が かった 白い たてがみ・桃色の 布（白い 花の もよう・金の ふち）・前髪の 上に 花の かざり・首の 根もとから うしろへ なびく 羽衣
    ・彦星の 馬（h）：明るい 栗毛・こげ茶の たてがみ・青い 布（金の 星）・首に 青い ひもと 金の 鈴（牛かいの 鈴）
    ・まわりに やわらかい 星の 光（ぼかした ふち）・走る コマは 地面に ついた ひづめの うしろに 小さな 星の 粉
    python3 kisekae/pack/make/tanabata_art.py [o h] [run walk prance]  → tanabata.<o|h>_<run|stand|walk|prance>
    python3 kisekae/pack/make/tanabata_art.py love                       → tanabata.love（2頭 いっしょ）
+   python3 kisekae/pack/make/tanabata_art.py look [o h]                 → tanabata.<o|h>_look（首だけ 振り返る）
      → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json"""
 import math
 import os
@@ -118,7 +121,8 @@ def hagoromo(m, ph):
     return out
 
 
-def acc_factory(who, stance=None):
+def acc_factory(who, stance=None, scarf=True):
+    """飾り（scarf＝False：羽衣を 描かない＝振り返る コマの 首と 頭だけを 切りとる 用）"""
     def factory(i):
         def acc(m):
             p, fx = m['p1u'], m['fx']
@@ -137,7 +141,8 @@ def acc_factory(who, stance=None):
                 out['head'] += flower(base + hd * 0.05 * p + up * 0.01 * p, 0.085 * p, '#F49AC1', '#F6C945', '#D9709E')
                 out['head'] += flower(base - hd * 0.06 * p + up * 0.05 * p, 0.075 * p, '#FFFFFF', '#F6C945', '#E8A6C6')
                 out['head'] += flower(base - hd * 0.01 * p - up * 0.04 * p, 0.06 * p, '#FBD0E2', '#F6C945', '#E8A6C6')
-                out['front'] += hagoromo(m, i / N if stance is not None else 0.3)
+                if scarf:
+                    out['front'] += hagoromo(m, i / N if stance is not None else 0.3)
             else:
                 cx, cy = (x0 + x1) / 2, (yt + trim) / 2 + 0.03 * p
                 out['cloth'].append(f'<path d="{star_path(cx, cy, 0.085 * p, 0.036 * p)}" fill="#F7D27A" stroke="#B8902E" stroke-width="{f2(0.008 * p)}"/>')
@@ -251,6 +256,80 @@ def hug_pose(who, g, e=1.0):
     return dict(theta=round(0.6 * sw, 2), tail=[-118, -100], tail_kind='sway', tail_tufts=tufts,
                 fore_near=[-118, -86, -88, -60], fore_far=[-124, -92, -90, -60],
                 hind_near=[-62, -118, -92, -62], hind_far=[-58, -116, -92, -62], **p)
+
+
+# ---------------------------------------------------------------- 首だけ 振り返る（体は そのまま）
+LOOK = dict(STAND, neck_rot=12.0, neck_bend=12.0, neck_len=1.12, head_ang=-34.0)     # 首を 上げて 頭を 起こす（振り返る 前と、振り返った 首と 頭の 元）
+LOOK_ROT = 14.0          # うらがえした 首と 頭を 起こす 角度（度・き甲を 中心に）
+LOOK_MID = -0.5          # 振り返る とちゅう（うらがえした 首と 頭を 横に ちぢめる：ななめ うしろを 向いた ところ）
+
+
+def _side(T, B, X, Y):
+    """直線 T→B の どちらがわか（＜0：首の がわ）"""
+    return (B[0] - T[0]) * (Y - T[1]) - (B[1] - T[1]) * (X - T[0])
+
+
+def look_frames(who):
+    """首だけ 振り返る 3コマ：0＝首を 上げて 頭を 起こす・1＝とちゅう（うらがえした 首と 頭を 横に ちぢめる）・2＝振り返る（首の 根もとから 先を 左右 うらがえして
+       き甲の うしろへ 起こし、体の うしろに 重ねる＝首は き甲の むこうから 出て、頭は 背中の 上で うしろを 見る）。返り値：[(rgb, a, hooves)]（地面 合わせ ずみ）"""
+    from sheets import camera, W2, H2
+    from horse_flat import draw_horse
+    pal = PALS[who]
+    cam, _ = camera(pal, SPOT, '', f'pktn{who}ref')
+    got = {}
+
+    def draw(scarf, tag):
+        mk = {}
+        base = acc_factory(who, None, scarf)(0)
+
+        def acc(m):
+            mk['collar'] = [np.array(x, float) for x in m['collar'](0.0)[:2]]
+            return base(m)
+        rgb, a, m = draw_horse(dict(SPOT, pose=LOOK, cam=cam), pal, W2, H2, acc=acc, number='', name=f'pktn{who}{tag}')
+        return rgb.astype(np.float32), a.astype(np.float32), [tuple(map(float, h)) for h in m['hooves']], mk['collar']
+
+    rgb, a, hv, (T0, B0) = draw(True, 'lk')                  # 体（羽衣つき）と 0コマ目
+    prgb, pa, _, _ = draw(False, 'lkp')                      # 首と 頭（羽衣なし）
+    Y, X = np.mgrid[0:H2, 0:W2].astype(np.float32)
+    L = float(np.linalg.norm(B0 - T0))
+    sd = _side(T0, B0, X, Y)
+    upper = Y < B0[1] + 2
+    keep = np.where(upper, np.clip(sd / (L * 1.5) + 0.5, 0, 1), 1.0).astype(np.float32)        # 体：首の 根もとより 先を 消す
+    take = np.where(upper, np.clip(-sd / (L * 1.5) + 0.5, 0, 1), 0.0).astype(np.float32)       # 首と 頭
+    bA = a * keep
+    bP = rgb * bA[..., None]
+    pA = pa * take
+    pP = prgb * pA[..., None]
+
+    def place(sx, rot):
+        """首と 頭を き甲（T0）を 中心に 横へ sx 倍（−1＝うらがえし）して rot 度 起こす → 体の うしろに 重ねる"""
+        c, s_ = math.cos(math.radians(rot)), math.sin(math.radians(rot))
+        A2 = np.array([[c, -s_], [s_, c]], np.float32) @ np.array([[sx, 0], [0, 1]], np.float32)
+        t = T0 - A2 @ T0
+        Mx = np.hstack([A2, t[:, None]]).astype(np.float32)
+        wP = cv2.warpAffine(pP, Mx, (W2, H2), flags=cv2.INTER_LINEAR)
+        wA = cv2.warpAffine(pA, Mx, (W2, H2), flags=cv2.INTER_LINEAR)
+        A = bA + wA * (1 - bA)
+        P = bP + wP * (1 - bA[..., None])
+        return np.where(A[..., None] > 1e-4, P / np.maximum(A, 1e-4)[..., None], 0).astype(np.float32), A.astype(np.float32)
+
+    frames = [(rgb, a, hv), place(LOOK_MID, LOOK_ROT) + (hv,), place(-1.0, LOOK_ROT) + (hv,)]
+    return frames
+
+
+def build_look(who, out=None):
+    """首だけ 振り返る 3コマ：tanabata.<o|h>_look"""
+    import json
+    bl = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['tanabata']
+    frames = look_frames(who)
+    dys = [GROUND - max(h[1] for h in fr[2]) for fr in frames]
+    u8, meta = make_sheet(frames, dys, extra=glow_fn(GLOW[who]))
+    meta['anchor'] = bl[f'{who}_run']['anchor']
+    if out:
+        preview_png(u8, os.path.join(out, f'tn_{who}_look.png'), bg=(20, 28, 70))
+    bid = save_webp(u8, quality=90)
+    record('tanabata', f'{who}_look', bid, meta)
+    print(f'{who}_look', bid, meta, flush=True)
 
 
 def build_pair(out=None):
@@ -377,8 +456,11 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     if 'love' in args:
         build_pair(os.environ.get('OUT'))
+    for who in [a for a in args if a in ('o', 'h')] or ['o', 'h']:
+        if 'look' in args:
+            build_look(who, os.environ.get('OUT'))
     whos = [a for a in args if a in ('o', 'h')] or ['o', 'h']
-    kinds = [a for a in args if a in ('run', 'walk', 'prance')] or ([] if 'love' in args else ['run', 'walk', 'prance'])
+    kinds = [a for a in args if a in ('run', 'walk', 'prance')] or ([] if ('love' in args or 'look' in args) else ['run', 'walk', 'prance'])
     for who in whos:
         if 'run' in kinds:
             build(who, os.environ.get('OUT'))
