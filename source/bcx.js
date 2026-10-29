@@ -437,8 +437,8 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -142, 128, 172], fore: [203, -18, 73, 43], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
-    legL: [222, -4], legR: [258, -5], eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
+  const HBX = { head: [196, -142, 128, 172], fore: [223, -25, 66, 51], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
+    legL: [242, -4], legR: [271, -5], eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
     const as = FXA(), H = o.H;
@@ -476,8 +476,8 @@
   function hbVec(o, hidden) {
     const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
     let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
-    s += box('bco bc-hbf', 209, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:64px 10px');
-    s += box('bco bc-hbf', 244, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(5)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:29px 10px');
+    s += box('bco bc-hbf', 229, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:44px 10px');   // 胸の 前（絵の 前足と 同じ 所）
+    s += box('bco bc-hbf', 258, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(5)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:15px 10px');
     s += `<div class="bcx bk bco bc-hbl" style="left:246px;top:${f(o.H - 14)}px;width:100px;height:${f(lh + 14)}px;transform-origin:50% 0"><svg viewBox="0 -14 100 ${f(lh + 14)}" preserveAspectRatio="none">`
       + `<g class="bc-hbt" style="transform-origin:84px -6px"><path d="M80 -8 C90 ${f(lh * .3)} 92 ${f(lh * .65)} 88 ${f(lh * .95)} C84 ${f(lh * .7)} 80 ${f(lh * .45)} 74 -8 Z" fill="${c.n}"/></g>`
       + `<path d="M22 -14 L40 -14 L38 ${f(lh - 8)} L24 ${f(lh - 8)} Z" fill="${c.b}"/><path d="M56 -14 L74 -14 L72 ${f(lh - 8)} L58 ${f(lh - 8)} Z" fill="${c.s}"/>`
