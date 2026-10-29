@@ -12,7 +12,9 @@
      第4.104版〜第4.105版の 動く 小波の 帯（ukiyoe.mini）は やめた（blobs.json から 消す）。
    大波の 絵（make/ukiyoe_great.py）を 作り直したら、これも 作り直す（第4.107版で 大波の コマを のびない 形に 作り直した ときは
    作り直して いない：いまの ukiyoe.ribbon は 第4.106版の 大波の コマ 26〜40 から 作った もの。いま 動かすと 小波の 形が 少し かわる）：
-   python3 kisekae/pack/make/ukiyoe_mini.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.ribbon"""
+   python3 kisekae/pack/make/ukiyoe_mini.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.ribbon
+   第4.108版：層ごとの 波の 頭の 線（帯の 上の ふち）を はかって ukiyoe.ribbon の edge に 入れる（pack/ukiyoe.py の 帆かけ舟が
+   すぐ 前の 層の 波の 頭に のって 上下し かたむく）。絵を 作り直さずに edge だけ 入れる：python3 kisekae/pack/make/ukiyoe_mini.py --edge"""
 import math
 import os
 import sys
@@ -249,6 +251,31 @@ def layer(U, regs, k, z):
     return crest, bod, bt / Z
 
 
+def edges(big, rows, z, tile, thr=.5, q=.02):
+    """層ごとの 波の 頭の 帯の 上の ふち（こさ thr を こえる 所：その 上は すけて うしろが 見える）を 画面の 1px ごとに はかる（第4.108版）。
+       返り値：層ごとの 文字（帯の 上から 下へ の px を q px 単位の 16進 2けたで 1px ごとに ならべた もの）。big：シート（色 4つ・4つ目が こさ）"""
+    out = []
+    for cy, ch, by, bh, bt in rows:
+        a = big[cy:cy + ch, :, 3].astype(np.float64) / 255
+        c = np.arange(a.shape[1])
+        i = np.argmax(a > thr, axis=0)
+        v0, v1 = a[np.maximum(i - 1, 0), c], a[i, c]
+        e = np.where(i == 0, 0.0, i - 1 + (thr - v0) / np.maximum(1e-6, v1 - v0))     # シートの 画素（帯の 上から）
+        e = e.reshape(tile, -1).mean(1) / z                                            # 画面の px（1px ごと）
+        out.append(''.join('%02x' % int(round(min(255.0, x / q))) for x in e))
+    return out
+
+
+def edge_only():
+    """いまの ukiyoe.ribbon の 絵は そのまま、波の 頭の 線（edge）だけ はかって blobs.json に 入れる（第4.108版）"""
+    R = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['ukiyoe']['ribbon']
+    big = cv2.imread(os.path.join(BLOB_DIR, R['id'] + '.webp'), cv2.IMREAD_UNCHANGED)
+    meta = {k: v for k, v in R.items() if k != 'id'}
+    meta['edge'] = edges(big, R['rows'], R['z'], R['tile'])
+    record('ukiyoe', 'ribbon', R['id'], meta)
+    print('ribbon edge', R['id'], [len(e) for e in meta['edge']], flush=True)
+
+
 def main(out=None):
     B = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['ukiyoe']['wave']
     z = B['z']
@@ -273,7 +300,8 @@ def main(out=None):
         preview_png(big, os.path.join(out, 'uk_ribbon.png'), bg=(241, 230, 207))
     rid = save_webp(big, quality=84)
     # rows：[頭の 帯の y, 高さ, 体の y, 高さ, 体の 上の はし（頭の 帯の 上から・画面の px）]（シートの 画素）
-    rmeta = dict(z=U.RB_Z, tile=U.RB_TILE, sheet=[big.shape[1], big.shape[0]], rows=rows)
+    back = cv2.imread(os.path.join(BLOB_DIR, rid + '.webp'), cv2.IMREAD_UNCHANGED)       # できた 絵から 波の 頭の 線を はかる（第4.108版）
+    rmeta = dict(z=U.RB_Z, tile=U.RB_TILE, sheet=[big.shape[1], big.shape[0]], rows=rows, edge=edges(back, rows, U.RB_Z, U.RB_TILE))
     record('ukiyoe', 'ribbon', rid, rmeta)
     from ukiyoe_great import forget
     forget('ukiyoe', 'mini')                                          # 第4.104版〜第4.105版の 動く 小波の 帯（もう 使わない）
@@ -282,4 +310,7 @@ def main(out=None):
 
 if __name__ == '__main__':
     a = [x for x in sys.argv[1:] if not x.startswith('--')]
-    main(a[0] if a else os.environ.get('OUT'))
+    if '--edge' in sys.argv:
+        edge_only()
+    else:
+        main(a[0] if a else os.environ.get('OUT'))
