@@ -113,93 +113,110 @@ PEEL = [(4.25, 214, 1.5), (4.5, 184, 1.35), (4.75, 154, 1.2), (5.0, 124, 1.1), (
 FOAM_W, FOAM_L, FOAM_M, FOAM_LINE = '#F6F1E3', '#B2C7DE', '#5470A0', '#1B255C'   # 浮世絵の 平らな 色（シートと 同じ）
 
 
-def hk_claw(x, y, ang, L, w, curl=1, kids=2, seed=0, fill=FOAM_W, line=FOAM_LINE, lw=.6, tot=None):
-    """爪の ような 泡の 指：根もと (x, y) から 向き ang° に のびて、先へ いくほど 強く curl の 向きへ 巻く（細く とがる）。外がわに 小さな 指（kids）。根もとは まるい"""
+def _hexmix(a, b, t):
+    """2つの 色（#RRGGBB）の あいだ"""
+    a_ = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    b_ = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return '#' + ''.join('%02X' % round(x + (y - x) * t) for x, y in zip(a_, b_))
+
+
+# ---------------------------------------------------------------- 小波（第4.97版：まさちゃん「小波を作成してを何層か入れ替わりで上下させて波を表現して
+#   波の動きに合わせて少し大きくなったり、小さくなったりして！」「🌊自体をもう少し波の先や小波など丸い絵に変えて！」）
+# まるい 小さな 波（右へ 巻く 頭に 白い 泡の かさ・下の ふちは まるい でっぱり 3つ・巻いた 先に まるい 泡・頭の 下に 巻きの かげ・明るい すじ）を
+# 横に ならべた 列を 4つ（おくの 列ほど 小さく うすく かすむ）。列ごとに 上下（となりの 列と 逆）・横に ゆれ、波の 一生に 合わせて ふくらむ（くずれる 時が いちばん 大きい）
+# （top：上の絵の y・H：列の 高さ・w：波 1つの はば・h：頭の 高さ・haze：かすみ・lw：線・bob：上下 px・drift：横 px・dT：横の 1往復 秒・sy／sx：ふくらみ）
+ROW_W, ROW_X = 470, -40               # 列の はば と 左の はし（横に ゆれても はしが 見えない）
+ROWS = [dict(top=83, H=13, w=15, h=4.8, seed=3, haze=.45, lw=.45, bob=.6, drift=2.0, dT=5.4, sy=(.97, 1.05), sx=.01),
+        dict(top=87, H=16, w=19, h=6.2, seed=4, haze=.25, lw=.5, bob=.9, drift=3.0, dT=6.6, sy=(.93, 1.12), sx=.02),
+        dict(top=92, H=19, w=24, h=7.8, seed=5, haze=.1, lw=.6, bob=1.3, drift=3.6, dT=7.2, sy=(.88, 1.22), sx=.03),
+        dict(top=97, H=23, w=30, h=9.6, seed=6, haze=0.0, lw=.7, bob=1.8, drift=4.4, dT=8.4, sy=(.84, 1.30), sx=.04)]
+BOB_T = 2.6                           # 列の 上下 1回（秒）：となりの 列は 半分 ずらす＝入れかわりに 上下
+# しぶきの つぶ（列の 頭から 上へ はねて 左へ 流れる）：(列, 列の 中の x, くり返し（上下 何回分：2 か 4）, 何回目の 上がり, ずらす 秒)
+#   列が 上がりきる 少し 前に はねる（となりの 列とは 逆の 時）。同じ 時に はねるのは 1列に 2〜3こ まで
+PUFFS = [(2, 58, 4, 0, 0.0), (2, 150, 4, 1, .15), (2, 238, 4, 0, -.2), (2, 332, 4, 1, -.1),
+         (3, 66, 4, 0, .1), (3, 130, 4, 1, -.15), (3, 198, 4, 0, -.25), (3, 264, 4, 1, .2), (3, 350, 4, 0, .05), (3, 418, 4, 1, -.05)]
+
+
+def wavelet_parts(x0, base, w, h):
+    """小さな 波 1つ（右へ 巻く）→ (上の ふちの パス・泡の かさ・巻いた 先の 泡（x, y, r）・巻きの かげ・明るい すじ)"""
+    cx, top = x0 + 0.58 * w, base - h
+    lipx, lipy = x0 + 0.86 * w, base - 0.50 * h
+    edge = (f"C{f(x0 + 0.22 * w)} {f(base - 0.05 * h)} {f(x0 + 0.34 * w)} {f(top + 0.10 * h)} {f(cx)} {f(top)} "
+            f"C{f(cx + 0.18 * w)} {f(top - 0.04 * h)} {f(lipx + 0.06 * w)} {f(top + 0.22 * h)} {f(lipx)} {f(lipy)} "
+            f"C{f(lipx - 0.04 * w)} {f(lipy + 0.16 * h)} {f(lipx - 0.12 * w)} {f(lipy + 0.10 * h)} {f(lipx - 0.10 * w)} {f(lipy + 0.02 * h)} "
+            f"C{f(lipx - 0.06 * w)} {f(lipy + 0.40 * h)} {f(x0 + 0.90 * w)} {f(base)} {f(x0 + w)} {f(base)} ")
+    fx0, fy0 = x0 + 0.30 * w, base - 0.42 * h
+    foam = (f"M{f(fx0)} {f(fy0)} C{f(x0 + 0.38 * w)} {f(top + 0.18 * h)} {f(x0 + 0.46 * w)} {f(top + 0.02 * h)} {f(cx)} {f(top)} "
+            f"C{f(cx + 0.18 * w)} {f(top - 0.04 * h)} {f(lipx + 0.06 * w)} {f(top + 0.22 * h)} {f(lipx)} {f(lipy)} "
+            f"C{f(lipx - 0.03 * w)} {f(lipy + 0.14 * h)} {f(lipx - 0.12 * w)} {f(lipy + 0.12 * h)} {f(lipx - 0.11 * w)} {f(lipy + 0.02 * h)} ")
+    bumps = [(lipx - 0.11 * w, lipy + 0.02 * h), (x0 + 0.62 * w, top + 0.42 * h), (x0 + 0.48 * w, top + 0.44 * h), (fx0, fy0)]
+    for (ax, ay), (bx, by) in zip(bumps, bumps[1:]):                    # 下の ふちの まるい でっぱり 3つ
+        foam += f"Q{f((ax + bx) / 2)} {f((ay + by) / 2 + 0.20 * h)} {f(bx)} {f(by)} "
+    foam += 'Z'
+    ball = (lipx - 0.035 * w, lipy - 0.02 * h, 0.075 * w)
+    curl = (f"M{f(lipx - 0.10 * w)} {f(lipy + 0.06 * h)} Q{f(lipx - 0.02 * w)} {f(lipy + 0.42 * h)} {f(x0 + 0.95 * w)} {f(base - 0.12 * h)} "
+            f"Q{f(lipx - 0.05 * w)} {f(lipy + 0.30 * h)} {f(lipx - 0.10 * w)} {f(lipy + 0.06 * h)} Z")
+    streak = f"M{f(x0 + 0.40 * w)} {f(base - 0.18 * h)} Q{f(x0 + 0.62 * w)} {f(top + 0.55 * h)} {f(x0 + 0.78 * w)} {f(lipy + 0.30 * h)}"
+    return edge, foam, ball, curl, streak
+
+
+def ripple_row_svg(k):
+    """小波の 列 k（0＝いちばん おく）：ROW_W × H（画面の px）。波の 体は 上が 明るく 下が 濃い 藍・墨の ふち"""
+    p = ROWS[k]
+    W_, H_, w, h, hz, lw = ROW_W, p['H'], p['w'], p['h'], p['haze'], p['lw']
+    R = rnd(p['seed'])
+    base = h + 2.5
+    top_c, mid_c, bot_c = _hexmix('#86A7C9', '#F1E6CF', hz * .6), _hexmix('#3E5F94', '#C9D3DE', hz * .7), _hexmix(AI['d'], '#9DB2C9', hz * .7)
+    foam_c, line_c = _hexmix(FOAM_W, '#F1E6CF', hz * .3), _hexmix(FOAM_LINE, '#7D8FB0', hz * .7)
+    st_c, curl_c = _hexmix(FOAM_L, '#E6E3D8', hz * .5), _hexmix('#24356E', '#8FA2C2', hz * .7)
+    defs = (f"<linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='{top_c}'/><stop offset='{f(h / H_ * .9, 3)}' stop-color='{mid_c}'/>"
+            f"<stop offset='1' stop-color='{bot_c}'/></linearGradient>")
+    x, parts = -R.uniform(0, w * .5), []
+    while x < W_:
+        ww, hh = w * R.uniform(.85, 1.15), h * R.uniform(.8, 1.15)
+        parts.append((x, ww, hh))
+        x += ww
+    d = f"M{f(parts[0][0])} {f(H_)} L{f(parts[0][0])} {f(base)} "
+    st = cu = fo = bl = ''
+    for x0, ww, hh in parts:
+        e, fm, (bx, by, br), c_, s_ = wavelet_parts(x0, base, ww, hh)
+        d += e
+        cu += f"<path d='{c_}' fill='{curl_c}' opacity='.8'/>"
+        st += f"<path d='{s_}' fill='none' stroke='{st_c}' stroke-width='{f(lw * 1.4)}' stroke-linecap='round' opacity='.85'/>"
+        fo += f"<path d='{fm}' fill='{foam_c}' stroke='{line_c}' stroke-width='{f(lw)}' stroke-linejoin='round'/>"
+        bl += f"<circle cx='{f(bx)}' cy='{f(by)}' r='{f(br)}' fill='{foam_c}' stroke='{line_c}' stroke-width='{f(lw * .9)}'/>"
+    d += f"L{f(parts[-1][0] + parts[-1][1])} {f(H_)} Z"
+    o = f"<path d='{d}' fill='url(#g)' stroke='{line_c}' stroke-width='{f(lw)}' stroke-linejoin='round'/>" + cu + st + fo + bl
+    return doc(W_, H_, o, defs=defs)
+
+
+def puff_svg(seed=51, w=30, h=18):
+    """小波の 頭から はねる しぶき（右下の 頭から 左上へ ひらく 白い つぶと うすい もや）"""
+    defs = "<filter id='bl' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='1.6'/></filter>"
     R = rnd(seed)
-    n = 16
-    tot = math.radians(tot if tot is not None else R.uniform(210, 270))
-    a0 = math.radians(ang)
-    c, th = [], []
-    px, py = x, y
-    for i in range(n + 1):
-        s = i / n
-        t = a0 + curl * tot * s * s
-        c.append((px, py))
-        th.append(t)
-        px += math.cos(t) * L / n
-        py += math.sin(t) * L / n
-    left, right = [], []
-    for i, ((cx, cy), t) in enumerate(zip(c, th)):
-        s = i / n
-        hw = w * (1 - 0.9 * s ** .8) / 2
-        nx, ny = -math.sin(t), math.cos(t)
-        left.append((cx + nx * hw, cy + ny * hw))
-        right.append((cx - nx * hw, cy - ny * hw))
-    out = ''
-    for k in range(kids):
-        s = 0.3 + 0.28 * k + R.uniform(-.05, .05)
-        i = min(n, int(s * n))
-        t = th[i]
-        side = -curl
-        hw = w * (1 - .9 * s ** .8) / 2 * 0.8
-        out += hk_claw(c[i][0] - math.sin(t) * side * hw, c[i][1] + math.cos(t) * side * hw, math.degrees(t) - curl * R.uniform(35, 60), L * R.uniform(.38, .5), w * .55,
-                       curl, 0, seed * 7 + k + 1, fill, line, lw * .85)
-    cap = []
-    t0 = th[0]
-    for k in range(1, 6):
-        q = math.pi * k / 6
-        cap.append((c[0][0] - math.cos(t0) * math.sin(q) * w * .5 + math.sin(t0) * math.cos(q) * w * .5,
-                    c[0][1] - math.sin(t0) * math.sin(q) * w * .5 - math.cos(t0) * math.cos(q) * w * .5))
-    poly = left + [(c[-1][0] + math.cos(th[-1]) * w * .12, c[-1][1] + math.sin(th[-1]) * w * .12)] + right[::-1] + cap[::-1]
-    out += f"<path d='{smooth(poly, True, .5)}' fill='{fill}' stroke='{line}' stroke-width='{f(lw)}' stroke-linejoin='round'/>"
-    return out
-
-
-def _along(pts, t):
-    """折れ線の 道のり t（0〜1）の 点と 向き（rad）"""
-    seg, L = [], 0.0
-    for a, b in zip(pts, pts[1:]):
-        d = math.hypot(b[0] - a[0], b[1] - a[1])
-        seg.append((a, b, L, d))
-        L += d
-    s_ = t * L
-    for a, b, l0, d in seg:
-        if s_ <= l0 + d or (a, b, l0, d) == seg[-1]:
-            u = (s_ - l0) / d if d else 0
-            return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u), math.atan2(b[1] - a[1], b[0] - a[0])
-
-
-def foam_svg(seed=21, w=72, h=36):
-    """波の 根もとで はじける 白い 泡：大きさの ちがう 泡の 山 3つ（北斎の 泡の ように 爪の 指が 上と 外へ・平らな 色）"""
-    R = rnd(seed)
-    o = ''
-    for k, (cx, top, rw, cl) in enumerate(((16, 17, 14, FOAM_L), (54, 15, 15, FOAM_L), (35, 7, 19, FOAM_W))):   # 奥の 2つ → 手前の まん中
-        mound = [(cx - rw, h), (cx - rw * .86, top + (h - top) * .45), (cx - rw * .5, top + 3), (cx, top), (cx + rw * .5, top + 3), (cx + rw * .86, top + (h - top) * .45), (cx + rw, h)]
-        o += f"<path d='{smooth(mound, True, .5)}' fill='{cl}' stroke='{FOAM_LINE}' stroke-width='.7'/>"
-        if cl == FOAM_W:                                                 # 手前の 山の 下の 明るい 青
-            o += f"<path d='{smooth([(cx - rw * .7, h), (cx - rw * .45, h - 7), (cx, h - 9), (cx + rw * .45, h - 7), (cx + rw * .7, h)], True, .5)}' fill='{FOAM_L}'/>"
-        arc = [(cx - rw * .8, top + (h - top) * .5), (cx - rw * .45, top + 2.4), (cx, top - .4), (cx + rw * .45, top + 2.4), (cx + rw * .8, top + (h - top) * .5)]
-        nk = 4 if rw < 16 else 6
-        for i in range(nk):
-            t = (i + .5) / nk
-            (x, y), an = _along(arc, t)
-            L = R.uniform(6.5, 9.5) * (1.15 if cl == FOAM_W else 1)
-            o += hk_claw(x, y, math.degrees(an) - 90 + R.uniform(-25, 25), L, L * .34, 1 if t > .5 else -1, 2, seed * 10 + k * 9 + i,
-                         FOAM_W if (i + k) % 3 else FOAM_L, FOAM_LINE, .55)
-    return doc(w, h, o)
+    o = "<ellipse cx='16' cy='10' rx='9' ry='4' fill='#FFFFFF' opacity='.35' filter='url(#bl)' transform='rotate(-18 16 10)'/>"
+    for i in range(18):
+        a = math.radians(R.uniform(-170, -95))
+        d = R.uniform(2, 15) ** .9
+        x, y = w - 7 + math.cos(a) * d * 1.25, h - 3 + math.sin(a) * d * .8
+        if 0 < x < w and 0 < y < h:
+            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(R.uniform(.45, 1.15) * (1.1 - d / 30))}' fill='#FBFAF4' opacity='{f(R.uniform(.7, 1))}'/>"
+    return doc(w, h, o, defs=defs)
 
 
 def burst_svg(seed=11, w=90, h=70):
-    """くずれた ときに はねる しぶき（下の まん中から 上へ ひらく 白い 点）"""
+    """くずれた ときに はねる しぶき（下の まん中から 上へ ひらく 白い 点・うすい もや）"""
+    defs = "<filter id='bl' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='3.2'/></filter>"
     R = rnd(seed)
-    o = ''
+    o = (f"<ellipse cx='{w / 2}' cy='{h - 18}' rx='24' ry='13' fill='#FFFFFF' opacity='.4' filter='url(#bl)'/>"
+         f"<ellipse cx='{w / 2 - 14}' cy='{h - 34}' rx='15' ry='8' fill='#FFFFFF' opacity='.28' filter='url(#bl)'/>")
     for i in range(80):
         a = math.radians(R.uniform(-160, -20))
         d = R.uniform(4, 62) ** .95
         x, y = w / 2 + math.cos(a) * d * .9, h - 4 + math.sin(a) * d
         if 0 < x < w and 0 < y < h:
             o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(R.uniform(.6, 1.7))}' fill='#FBFAF4' opacity='{f(R.uniform(.7, 1))}'/>"
-    return doc(w, h, o)
+    return doc(w, h, o, defs=defs)
 
 
 def mist_svg(w=90, h=40):
@@ -209,36 +226,6 @@ def mist_svg(w=90, h=40):
          "<ellipse cx='36' cy='18' rx='22' ry='8' fill='#FFFFFF' opacity='.42' filter='url(#bl)'/>"
          "<ellipse cx='16' cy='22' rx='14' ry='6' fill='#FFFFFF' opacity='.3' filter='url(#bl)'/>")
     return doc(w, h, o, defs=defs)
-
-
-def foam_band_svg(kind='f', w=280, h=40, seed=31):
-    """くずれた 波の 白い 泡の かたまり（波の 根もとを 横に つつむ 帯）：北斎の 泡の ように 爪の 指が 上と 外へ のびる 山が ならぶ（平らな 色）。
-       kind＝'b' おくの 列（明るい 青の 山・白い 爪）・'f' 手前の 列（白い 山・下に 明るい 青）"""
-    R = rnd(seed + (0 if kind == 'f' else 50))
-    o = ''
-    back = kind == 'b'
-    x = R.uniform(4, 12) - (14 if back else 0)
-    k = 0
-    while x < w + 10:
-        rw = R.uniform(13, 19) * (1.08 if back else 1)
-        top = R.uniform(4, 11) if back else R.uniform(11, 19)
-        cl = FOAM_L if back else FOAM_W
-        mound = [(x - rw, h), (x - rw * .86, top + (h - top) * .45), (x - rw * .5, top + 3), (x, top), (x + rw * .5, top + 3), (x + rw * .86, top + (h - top) * .45), (x + rw, h)]
-        o += f"<path d='{smooth(mound, True, .5)}' fill='{cl}' stroke='{FOAM_LINE}' stroke-width='.7'/>"
-        if not back:
-            o += f"<path d='{smooth([(x - rw * .7, h), (x - rw * .45, h - 8), (x, h - 10), (x + rw * .45, h - 8), (x + rw * .7, h)], True, .5)}' fill='{FOAM_L}'/>"
-        arc = [(x - rw * .8, top + (h - top) * .5), (x - rw * .45, top + 2.4), (x, top - .4), (x + rw * .45, top + 2.4), (x + rw * .8, top + (h - top) * .5)]
-        nk = 5
-        for i in range(nk):
-            t = (i + .5) / nk
-            (cx_, cy_), an = _along(arc, t)
-            L = R.uniform(6.5, 9.5) * (1.1 if not back else 1)
-            o += hk_claw(cx_, cy_, math.degrees(an) - 90 + R.uniform(-25, 25), L, L * .34, 1 if t > .5 else -1, 2, seed * 10 + k * 9 + i,
-                         FOAM_W if (i + k) % 3 or back else FOAM_L, FOAM_LINE, .55)
-        x += rw * R.uniform(1.15, 1.45)
-        k += 1
-    o += f"<rect x='0' y='{h - 6}' width='{w}' height='6' fill='{FOAM_L if back else FOAM_W}'/>"
-    return doc(w, h, o)
 
 
 def spray_svg(seed=41, w=84, h=44):
@@ -255,17 +242,6 @@ def spray_svg(seed=41, w=84, h=44):
         if 0 < y < h:
             o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(r)}' fill='#FBFAF4' opacity='{f(R.uniform(.65, 1) * (1 - .45 * u))}'/>"
     return doc(w, h, o, defs=defs)
-
-
-def crests_svg(w=130, h=22):
-    """沖の 小さな 波頭（白い 泡の 弧・くり返し）"""
-    o = ''
-    for x, y in ((10, 12), (58, 6), (96, 16)):
-        for dx in (-w, 0, w):
-            xx = x + dx
-            o += (f"<path d='M{xx} {y + 4} q7 -9 16 -2' fill='none' stroke='#F7F1E2' stroke-width='1.6' stroke-linecap='round'/>"
-                  f"<circle cx='{xx + 15}' cy='{y + 1.6}' r='1.4' fill='#F7F1E2'/>")
-    return doc(w, h, o)
 
 
 def _wrap(x, w=TILE, pad=50):
@@ -292,16 +268,22 @@ def pine(x, base, h, lean, s=1.0):
     return o
 
 
+PN_UP = 20                 # 松並木の 絵の 上の よゆう（第4.97版：まさちゃん「この赤丸の木のところおかしいから自然に直して！」＝高い 松の てっぺんの 葉が
+                           #   絵の 上の はしで 切れて、平たい 黒い 刃の ように 見えて いた → 絵を 上へ 20px 高く して 葉を ぜんぶ 描く）
+PN_H = 62 + PN_UP
+
+
 def pines_svg():
-    """松並木（街道の むこうがわ・くり返し）と 石の 土手"""
-    o = (f"<path d='M0 54 H{TILE} V62 H0 Z' fill='#9A8C70'/><path d='M0 54 H{TILE} V55.6 H0 Z' fill='#B9AD92'/>")
+    """松並木（街道の むこうがわ・くり返し）と 石の 土手。上に PN_UP の よゆう（いちばん 高い 松の てっぺんの 葉まで 切れずに 入る）"""
+    u = PN_UP
+    o = (f"<path d='M0 {54 + u} H{TILE} V{62 + u} H0 Z' fill='#9A8C70'/><path d='M0 {54 + u} H{TILE} V{55.6 + u} H0 Z' fill='#B9AD92'/>")
     for i in range(14):                                                     # 石がき の 目地
         x = i * TILE / 14
-        o += f"<path d='M{f(x)} 55.6 V62' stroke='#7A6C52' stroke-width='.7'/>"
+        o += f"<path d='M{f(x)} {55.6 + u} V{62 + u}' stroke='#7A6C52' stroke-width='.7'/>"
     for x, h, lean in ((40, 50, .5), (130, 62, -.3), (215, 46, .4), (300, 58, .2), (372, 52, -.4)):
         for xx in _wrap(x, pad=40):
-            o += pine(xx, 56, h, lean)
-    return doc(TILE, 62, o)
+            o += pine(xx, 56 + u, h, lean)
+    return doc(TILE, PN_H, o)
 
 
 def road_svg():
@@ -634,8 +616,54 @@ def _win(name, keys):
     return kf(name, st)
 
 
+def sea_amp(t):
+    """t 秒の 海の ふくらみ（0〜1）：大波が もり上がる 間に ふえ、くずれる 時が いちばん 大きく、沈む 間に しずまる（9秒で 1回り・つなぎめで 同じ）"""
+    if t < W_RISE[1]:
+        return .22 + .38 * _ss(t / W_RISE[1])
+    if t < W_PEAK[1]:
+        return .6 + .1 * _ss((t - W_PEAK[0]) / (W_PEAK[1] - W_PEAK[0]))
+    if t < W_PITCH[1]:
+        return .7 + .15 * _ss((t - W_PITCH[0]) / (W_PITCH[1] - W_PITCH[0]))
+    if t < 5.4:
+        return .85 + .15 * _ss((t - W_PITCH[1]) / (5.4 - W_PITCH[1]))
+    if t < 8.2:
+        return 1.0 - _ss((t - 5.4) / 2.8)
+    return .22 * _ss((t - 8.2) / (WAVE_T - 8.2))
+
+
+def row_stops(k, step=.15):
+    """小波の 列 k の ふくらみ（根もとが 軸：高さ sy・横 sx）＝ 0.15秒ごとの 点"""
+    p = ROWS[k]
+    (s0, s1), sx = p['sy'], p['sx']
+    out, t = [], 0.0
+    while t < WAVE_T + 1e-6:
+        a = sea_amp(t)
+        out.append((_pc(t), f'transform:scale({f(1 + sx * a, 4)},{f(s0 + (s1 - s0) * a, 4)})'))
+        t = round(t + step, 6)
+    return out
+
+
+def row_crests(k):
+    """小波の 列 k の 波の 頭（しぶきが はねる 所：列の 中の x, y）。ripple_row_svg と 同じ 乱数の じゅん"""
+    p = ROWS[k]
+    R = rnd(p['seed'])
+    w, h = p['w'], p['h']
+    base = h + 2.5
+    x, out = -R.uniform(0, w * .5), []
+    while x < ROW_W:
+        ww, hh = w * R.uniform(.85, 1.15), h * R.uniform(.8, 1.15)
+        out.append((x + .72 * ww, base - .9 * hh))
+        x += ww
+    return out
+
+
+def puff_place(k, x):
+    """しぶきの つぶを いちばん 近い 波の 頭へ"""
+    return min(row_crests(k), key=lambda c: abs(c[0] - x))
+
+
 def wave_life_css():
-    """しぶきの 点・頭から 吹き飛ぶ しぶきと もや・白い 水が 走る・白い 泡の かたまり"""
+    """しぶきの 点・頭から 吹き飛ぶ しぶきと もや・くずれた 所で はねる しぶき・小波の 列の ふくらみ／上下／横ゆれ・小波の 頭の しぶき"""
     o0, o1 = 'opacity:0', 'opacity:1'
     css = ''
     # 爪から 落ちる しぶきの 点（神奈川沖浪裏の 点）：もり上がる 終わりに 爪の 下に あらわれ、投げ出す ときに 前へ とんで 落ちる・もう 1まいは 投げ出す ときだけ
@@ -652,16 +680,24 @@ def wave_life_css():
     for nm, t0 in (('ukMs1', 3.8), ('ukMs2', 4.5)):
         css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.8)'), (t0, f'{o0};transform:translate(0,0) scale(.8)'),
                          (t0 + .6, 'opacity:.9;transform:translate(-8px,-3px) scale(1.05)'), (t0 + 2.8, f'{o0};transform:translate(-54px,-11px) scale(1.4)')])
-    # 白い 水が 波の 根もとを 右から 左へ 走る（落ちた 所から じゅんに はじけて ひろがり、泡の かたまりに なる）
+    # 波の 先が 落ちた 所で はねる しぶき（右から 左へ じゅんに：小波の 列の うしろから ふき上がって、つぶが 落ちて 左へ 流れる）
     for k, (t0, x, sc) in enumerate(PEEL):
-        css += _win(f'ukPl{k}', [(0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'), (t0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'),
-                                 (t0 + .35, f'{o1};transform:scale({f(sc, 3)},{f(sc, 3)})'), (t0 + .9, f'opacity:.95;transform:translateY(-2px) scale({f(1.1 * sc, 3)},{f(1.05 * sc, 3)})'),
-                                 (t0 + 1.8, f'{o0};transform:translateY(4px) scale({f(1.3 * sc, 3)},{f(.8 * sc, 3)})')])
-    # 白い 泡の かたまり：くずれる ときに もり上がって 波を つつみ、次の 波が もり上がる 間に ひろがって うすく なる
-    for nm, d in (('ukFbB', 0.0), ('ukFbF', 0.2)):
-        css += _win(nm, [(0, f'{o1};transform:translateY(0) scale(1,1)'), (0.3 - d / 2, f'{o1};transform:translateY(0) scale(1,1)'),
-                         (1.9 - d, f'{o0};transform:translateY(6px) scale(1.1,.75)'), (5.6 + d, f'{o0};transform:translateY(12px) scale(.92,.45)'),
-                         (7.2 + d, f'{o1};transform:translateY(0) scale(1,1)')])
+        css += _win(f'ukBu{k}', [(0, f'{o0};transform:translate(0,5px) scale({f(.3 * sc, 3)})'), (t0, f'{o0};transform:translate(0,5px) scale({f(.3 * sc, 3)})'),
+                                 (t0 + .35, f'opacity:.95;transform:translate(-1px,0) scale({f(.8 * sc, 3)})'),
+                                 (t0 + .95, f'opacity:.85;transform:translate(-4px,-5px) scale({f(1.05 * sc, 3)})'),
+                                 (t0 + 1.8, f'{o0};transform:translate(-9px,3px) scale({f(1.15 * sc, 3)})')])
+    # 小波の 列：ふくらみ（9秒）・上下（となりの 列と 逆）・横ゆれ
+    for k, p in enumerate(ROWS):
+        css += kf(f'ukRwL{k}', row_stops(k))
+        css += kf(f'ukRwB{k}', [(0, f'transform:translateY({f(-p["bob"])}px)'), (100, f'transform:translateY({f(p["bob"])}px)')])
+        css += kf(f'ukRwD{k}', [(0, f'transform:translateX({f(-p["drift"])}px)'), (100, f'transform:translateX({f(p["drift"])}px)')])
+    # 小波の 頭から はねる しぶき（列が 上がりきる 少し 前から：上へ はねて 左へ 流れて 消える）
+    for n in (2, 4):
+        P_ = n * BOB_T
+        q = lambda s_: s_ / P_ * 100
+        css += kf(f'ukPf{n}', [(0, f'{o0};transform:translate(0,1px) scale(.5)'), (q(.32), 'opacity:.9;transform:translate(-1px,-1px) scale(.85)'),
+                               (q(.95), 'opacity:.6;transform:translate(-4px,-4px) scale(1.05)'), (q(1.6), f'{o0};transform:translate(-8px,-2px) scale(1.15)'),
+                               (100, f'{o0};transform:translate(-8px,-2px) scale(1.15)')])
     return css
 
 
@@ -670,28 +706,36 @@ def banner(B):
     run = B.get('run')
     still = B.get('still')
     alt = ('浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（白い背中、濃い藍に白いすじ、'
-           '爪のような白い泡の先、爪から落ちるしぶきの点）。波は白い泡の中から高くもり上がり、いちばん高くなると波の先が前へ投げ出されて爪が下へ巻きこみ、'
-           'しぶきの点が前へとんで落ち、頭からしぶきともやがうしろへ吹き飛ぶ。落ちた所で白い泡がはじけて白い水が根もとを走り、波はくずれて白い泡の中へ沈んで消え、'
-           '泡がひろがってうすくなる中から次の波がもり上がる。'
+           'まるい爪のような白い泡の先、爪から落ちるしぶきの点）。海はまるい小波の列が何層もかさなって入れかわりに上下し、大波の動きに合わせてふくらんだりしずまったりする。'
+           '大波は小波の中から高くもり上がり、いちばん高くなると波の先が前へ投げ出されて爪が下へ巻きこみ、しぶきの点が前へとんで落ち、頭からしぶきともやがうしろへ吹き飛ぶ。'
+           '落ちた所で白いしぶきがふき上がり、大波はくずれて小波の中へ沈んで消え、また次の波がもり上がる。小波の頭からもときどき潮しぶきがはねる。'
            '沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走る。'
            'ときどき街道のむこうから、ちょんまげに羽織と袴、刀を二本さしたお侍さんが一人か二人歩いてきて、馬とすれちがうときに会釈する。右上に朱の印のイラスト')
+    foam = B.get('foam')                     # 小波の 列・しぶき（make/ukiyoe_foam.py の 絵の シート）
+    parts = foam['parts'] if foam else {}
+
+    def row(k):
+        if f'rw{k}' not in parts:
+            return ''
+        pf = ''.join(f'<i class="ukPf ukF pf{i % 2} q{i}"></i>' for i, (r, *_) in enumerate(PUFFS) if r == k and 'pf0' in parts)
+        return f'<i class="ukRw r{k}"><i class="d"><i class="b"><i class="im ukF rw{k}"></i>{pf}</i></i></i>'
+
     html = f'<div class="ukw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
-    html += img('ukSky', sky_svg()) + img('ukKs', kasumi_svg()) + img('ukSea', sea_svg()) + img('ukBt', boat_svg())
-    html += f'<i class="ukCr" style="background-image:url(&quot;{durl(crests_svg())}&quot;)"></i>'
+    html += img('ukSky', sky_svg()) + img('ukKs', kasumi_svg()) + img('ukSea', sea_svg())
+    html += row(0) + row(1)                  # おくの 小波 2列（大波と 舟の うしろ）
+    html += img('ukBt', boat_svg())
     wave, crest = B.get('wave'), B.get('crest')
     if wave:                                 # 神奈川沖浪裏の 大波（make/ukiyoe_great.py：体・頭の コマ・しぶきの 点）
         html += ('<i class="ukWg"><i class="ukW body"></i>' + ('<i class="ukCf"></i>' if crest else '')
                  + '<i class="ukW dots d1"></i><i class="ukW dots d2"></i></i>')
-    foam = B.get('foam')                     # 白い 泡と しぶき（make/ukiyoe_foam.py の 絵の シート：SVG の まま だと 1MB ほど 重い）
-    if foam:
+    if 'sp1' in parts:
         html += '<i class="ukSp s1 ukF sp1"></i><i class="ukSp s2 ukF sp2"></i>'
     html += img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
-    if foam:
-        html += '<i class="ukFb b ukF band_b"></i>'
-        for k in range(len(PEEL)):           # 白い 水が 走る（右から 左へ じゅんに はじける）
-            html += f'<i class="ukPl p{k}">' + (f'<i class="bs ukF bs{k}"></i>' if k < 2 else '') + f'<i class="fm ukF fm{k}"></i></i>'
-        html += '<i class="ukFb f ukF band_f"></i>'
+    html += row(2)                           # 大波の 根もとを かくす 小波
+    if 'bs0' in parts:                       # 波の 先が 落ちた 所で ふき上がる しぶき（右から 左へ）
+        html += ''.join(f'<i class="ukBu u{k} ukF bs{k % 2}"></i>' for k in range(len(PEEL)))
+    html += row(3)                           # いちばん 手前の 小波
     html += f'<i class="ukPn" style="background-image:url(&quot;{durl(pines_svg())}&quot;)"></i>'
     html += f'<i class="ukRd" style="background-image:url(&quot;{durl(road_svg())}&quot;)"></i>'
     if run:
@@ -713,23 +757,34 @@ def banner(B):
            '.ukw .ukSky,.ukw .ukKs,.ukw .ukSea{left:0;top:0;width:390px;height:160px}'
            '.ukw .ukKs{animation:ukKs 20s ease-in-out infinite}'
            '.ukw .ukBt{left:166px;top:72px;width:38px;height:29px;transform-origin:50% 90%;animation:ukBoat 3.6s ease-in-out infinite}'
-           '.ukw .ukCr{left:130px;top:94px;width:390px;height:22px;background-size:130px 22px;background-repeat:repeat-x;animation:ukCrest 9s linear infinite}'
            f'.ukw .ukMs{{width:90px;height:40px;opacity:0}}.ukw .ukMs.m1{{left:112px;top:-6px;animation:ukMs1 {f(WAVE_T)}s linear infinite}}'
            f'.ukw .ukMs.m2{{left:146px;top:2px;animation:ukMs2 {f(WAVE_T)}s linear infinite}}'
            f'.ukw .ukSp{{left:87px;top:-18px;width:84px;height:44px;opacity:0;transform-origin:78px 32px}}'
            f'.ukw .ukSp.s1{{animation:ukSp1 {f(WAVE_T)}s linear infinite}}.ukw .ukSp.s2{{top:-12px;animation:ukSp2 {f(WAVE_T)}s linear infinite}}'
-           f'.ukw .ukFb{{left:-24px;top:80px;width:280px;height:40px;opacity:0;transform-origin:50% 100%}}'
-           f'.ukw .ukFb.b{{animation:ukFbB {f(WAVE_T)}s linear infinite}}.ukw .ukFb.f{{top:84px;animation:ukFbF {f(WAVE_T)}s linear infinite}}'
-           '.ukw .ukPl{width:90px;height:70px;opacity:0;transform-origin:45px 70px}'
-           '.ukw .ukPl>i{position:absolute;display:block}.ukw .ukPl .bs{left:0;top:0;width:90px;height:70px}.ukw .ukPl .fm{left:9px;top:34px;width:72px;height:36px}'
-           + ''.join(f'.ukw .ukPl.p{k}{{left:{f(x - 45)}px;top:40px;animation:ukPl{k} {f(WAVE_T)}s linear infinite}}' for k, (t0, x, sc) in enumerate(PEEL))
-           + f'.ukw .ukPn{{left:0;top:56px;width:{2 * TILE}px;height:62px;background-size:{TILE}px 62px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
+           # 小波の 列（外：ふくらみ・d：横ゆれ・b：上下）
+           f'.ukw .ukRw{{left:{ROW_X}px;width:{ROW_W}px;transform-origin:50% 100%}}'
+           '.ukw .ukRw i{position:absolute;display:block}'
+           f'.ukw .ukRw .d,.ukw .ukRw .b,.ukw .ukRw .im{{left:0;top:0;width:{ROW_W}px;height:100%}}'
+           '.ukw .ukPf{width:30px;height:18px;opacity:0;transform-origin:23px 15px}'
+           '.ukw .ukBu{width:90px;height:70px;opacity:0;transform-origin:45px 66px}'
+           + ''.join(f'.ukw .ukBu.u{k}{{left:{f(x - 45)}px;top:40px;animation:ukBu{k} {f(WAVE_T)}s linear infinite}}' for k, (t0, x, sc) in enumerate(PEEL))
+           + f'.ukw .ukPn{{left:0;top:{56 - PN_UP}px;width:{2 * TILE}px;height:{PN_H}px;background-size:{TILE}px {PN_H}px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
            f'.ukw .ukRd{{left:0;top:116px;width:{2 * TILE}px;height:26px;background-size:{TILE}px 26px;background-repeat:repeat-x;animation:ukFlow {ROAD_S}s linear infinite}}'
            f'.ukw .ukBk{{left:0;top:136px;width:{2 * TILE}px;height:28px;background-size:{TILE}px 28px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * .82, 3)}s linear infinite}}'
            '.ukw .ukSl{left:364px;top:6px;width:18px;height:18px}'
            f'.ukw .ukSm{{left:0;top:{f(SM_TOP)}px;width:{f(SM_W * SM_K)}px;height:{f(SM_H * SM_K)}px;overflow:hidden;transform:translateX(500px)}}'
            f'.ukw .ukSm>i{{position:absolute;display:block;left:0;top:0;height:{f(SM_H * SM_K)}px;background-repeat:no-repeat}}'
            f'.ukw .ukSm .w{{width:{f(12 * SM_W * SM_K)}px}}.ukw .ukSm .b{{width:{f(len(BOW) * SM_W * SM_K)}px;opacity:0}}')
+    for k, p in enumerate(ROWS):                # 列ごとの 場所と 動き（となりの 列は 上下が 逆・横ゆれも 逆）
+        css += (f'.ukw .ukRw.r{k}{{top:{p["top"]}px;height:{p["H"]}px;animation:ukRwL{k} {f(WAVE_T)}s linear infinite}}'
+                f'.ukw .ukRw.r{k} .d{{animation:ukRwD{k} {f(p["dT"])}s ease-in-out infinite {"alternate" if k % 2 == 0 else "alternate-reverse"}}}'
+                f'.ukw .ukRw.r{k} .b{{animation:ukRwB{k} {f(BOB_T)}s ease-in-out {"0s" if k % 2 == 0 else f"{f(-BOB_T)}s"} infinite alternate}}')
+    for i, (k, x, n, m, dt) in enumerate(PUFFS):  # 小波の 頭の しぶき：列が 上がりきる 0.3秒 前から
+        cx, cy = puff_place(k, x - ROW_X)
+        peak = (0.0 if k % 2 == 0 else BOB_T) + m * 2 * BOB_T
+        P_ = n * BOB_T
+        s0 = (peak - 0.3 + dt) % P_
+        css += f'.ukw .ukPf.q{i}{{left:{f(cx - 23)}px;top:{f(cy - 15)}px;animation:ukPf{n} {f(P_)}s linear {f(-((P_ - s0) % P_), 3)}s infinite}}'
     if sam:                     # 1まいの シート：行（a の 歩く・会釈・b の …）を background-position で えらぶ
         zs = SM_K / sam['z']
         (sw, sh), rp = sam['sheet'], sam['row']
@@ -743,11 +798,11 @@ def banner(B):
     if wave:
         n = wave['frames']
         gw, gh = wave['size']
-        parts = wave['parts']
+        wparts = wave['parts']
         css += (f'.ukw .ukWg{{left:{WB[0]}px;top:{WB[1]}px;width:{f(gw)}px;height:{f(gh)}px;opacity:0;transform-origin:{f(gw * .45)}px {f(gh)}px;'
                 f'animation:ukLife {f(WAVE_T)}s linear infinite}}'
                 f'.ukw .ukW{{position:absolute;left:0;top:0;width:{f(gw)}px;height:{f(gh)}px;background:url({wave["url"]}) 0 0/{f(n * gw)}px {f(gh)}px no-repeat}}'
-                f'.ukw .ukW.dots{{background-position:{f(-parts.index("dots") * gw)}px 0}}'
+                f'.ukw .ukW.dots{{background-position:{f(-wparts.index("dots") * gw)}px 0}}'
                 f'.ukw .ukW.d1{{animation:ukDot1 {f(WAVE_T)}s linear infinite}}.ukw .ukW.d2{{opacity:0;animation:ukDot2 {f(WAVE_T)}s linear infinite}}'
                 + kf('ukLife', life_stops()))
         if crest:                                   # 頭の コマ（巻きの 強さ c の じゅん）：c が 今の 時に あう コマを step-end で
@@ -757,11 +812,11 @@ def banner(B):
             css += (f'.ukw .ukCf{{position:absolute;left:{f(ax, 3)}px;top:{f(ay, 3)}px;width:{f(fw)}px;height:{f(fh)}px;'
                     f'background:url({crest["url"]}) 0 0/{f(cols * fw)}px {f(rows * fh)}px no-repeat;animation:ukCf {f(WAVE_T)}s step-end infinite}}'
                     + kf('ukCf', crest_stops(crest['cs'], cols, fw, fh)))
-    if foam:                                        # 泡と しぶきの 部品は 1まいの シートの 中の 場所で えらぶ
+    if foam:                                        # 小波と しぶきの 部品は 1まいの シートの 中の 場所で えらぶ
         z_ = foam['z']
         sw_, sh_ = foam['sheet']
-        css += f'.ukw .ukF{{background:url({foam["url"]}) 0 0/{f(sw_ / z_)}px {f(sh_ / z_)}px no-repeat}}'
-        css += ''.join(f'.ukw .ukF.{nm}{{background-position:{f(-x_ / z_)}px {f(-y_ / z_)}px}}' for nm, (x_, y_, w_, h_) in foam['parts'].items())
+        css += f'.ukw .ukF{{background:url({foam["url"]}) 0 0/{f(sw_ / z_, 3)}px {f(sh_ / z_, 3)}px no-repeat}}'
+        css += ''.join(f'.ukw .ukF.{nm}{{background-position:{f(-x_ / z_, 3)}px {f(-y_ / z_, 3)}px}}' for nm, (x_, y_, w_, h_) in parts.items())
     css += samurai_css()
     if run:
         n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
@@ -770,7 +825,6 @@ def banner(B):
                 f'.ukw .ukH>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({run["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;animation:ukRun .48s steps({n}) infinite}}'
                 + kf('ukRun', [(100, f'transform:translateX({f(-n * w)}px)')]))
     css += (kf('ukFlow', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-TILE}px)')])
-            + kf('ukCrest', [(0, 'transform:translateX(0)'), (100, 'transform:translateX(-130px)')])
             + kf('ukKs', [(0, 'transform:translateX(-8px)'), (50, 'transform:translateX(10px)'), (100, 'transform:translateX(-8px)')])
             + kf('ukBoat', [(0, 'transform:translateY(0) rotate(-3deg)'), (50, 'transform:translateY(2px) rotate(3deg)'), (100, 'transform:translateY(0) rotate(-3deg)')])
             + wave_life_css())

@@ -1,6 +1,6 @@
-"""浮世絵風の 壁紙（壁紙パック・第4.96版）の 白い 泡と しぶきを 絵（WebP）に する：pack/ukiyoe.py の SVG（くずれた 波の 白い 泡の かたまり 2列・
-   白い 水が 走る ときの 泡の 山 5つ・はじける しぶき 2つ・頭から 吹き飛ぶ しぶき 2つ）を ブラウザ（Chromium）で 2倍に 描いて 1まいの シートに ならべる。
-   北斎の 泡の 爪の 指が 多くて、SVG の まま だと 上の絵の HTML が 1MB ほど 重く なるため。ページでは 部品の 背景に して background-position で えらぶ
+"""浮世絵風の 壁紙（壁紙パック）の 小波の 列と しぶきを 絵（WebP）に する：pack/ukiyoe.py の SVG（第4.97版：まるい 小波の 列 4つ・
+   波の 先が 落ちた 所で ふき上がる しぶき 2つ・小波の 頭の しぶき 2つ・大波の 頭から 吹き飛ぶ しぶき 2つ）を ブラウザ（Chromium）で 3倍に 描いて
+   1まいの シートに ならべる（SVG の まま だと 上の絵の HTML が 重く なるため・3倍＝iPhone でも ふちが くっきり）。ページでは 部品の 背景に して background-position で えらぶ
    python3 kisekae/pack/make/ukiyoe_foam.py → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.foam"""
 import os
 import sys
@@ -11,16 +11,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))          # kisekae
 from sheets import save_webp, record, preview_png  # noqa: E402
 import numpy as np  # noqa: E402
 
-Z = 2
+Z = 3
 GAP = 4
 
 
 def items():
     """[(名前, svg, 幅, 高さ)]（画面の px）"""
     from pack import ukiyoe as U
-    out = [('band_b', U.foam_band_svg('b'), 280, 40), ('band_f', U.foam_band_svg('f'), 280, 40)]
-    out += [(f'fm{k}', U.foam_svg(21 + k), 72, 36) for k in range(len(U.PEEL))]
-    out += [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44)]
+    out = [(f'rw{k}', U.ripple_row_svg(k), U.ROW_W, p['H']) for k, p in enumerate(U.ROWS)]
+    out += [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('pf0', U.puff_svg(51), 30, 18), ('pf1', U.puff_svg(53), 30, 18),
+            ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44)]
     return out
 
 

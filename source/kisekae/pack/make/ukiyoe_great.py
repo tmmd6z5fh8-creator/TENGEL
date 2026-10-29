@@ -11,6 +11,8 @@
      ゆがめ方：さかいめ（SPLIT）から 波の 先へ いくほど 強く、根もと PIVOT の まわりに 回して（θ）・外へ のばして（ε）・下へ 落とす（drop）。
        さかいめと 下の はしでは ゆがみが 0（なめらかに 0 から）＝体（body）と つなぎめが ずれない・すき間も 二重も 出ない。
      体（body）は 動く 所（頭）を ぬいた 止まった 絵。頭の コマを 上に 重ねる（動きは pack/ukiyoe.py の CSS）。
+   第4.97版 まさちゃん「🌊自体をもう少し波の先や小波など丸い絵に変えて！」：泡の 爪を 少し まるく（roundify：細い 線の 先を まるい 筆に・
+     泡の 色を 少し なめらかに・外の ふちを 少し ふとらせて 線を 引き直す。波の 体の 白い すじと 点は そのまま）。UK_SHARP=1 で とがった 爪（第4.96版）。
    しくみ：空を 色の つながりで ぬりつぶして（黒い 線で 止まる）波を とりだす → 明るさで 4つの 色に 分ける（細い 黒い 線は 濃い 藍）→
      絵 2まい：wave＝[body・dots（爪から 落ちる しぶきの 点）]（2倍の 画素の 横ならび）・crest＝頭の コマ（CS の c の じゅん・8れつの ます目）
    python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave・ukiyoe.crest"""
@@ -211,6 +213,59 @@ def extract(src):
     return rgb[sl], body_m[sl].astype(np.float32), dots_m[sl].astype(np.float32)
 
 
+def _disk(r):
+    k = int(round(2 * r + 1))
+    return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+
+
+def _nearest(lab, holes, allowed):
+    """holes の 画素を、allowed の 色の いちばん 近い 画素の 色で うめる"""
+    known = (~holes) & np.isin(lab, allowed)
+    _, idx = cv2.distanceTransformWithLabels((~known).astype(np.uint8), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
+    ky, kx = np.nonzero(known)
+    lut = np.zeros(idx.max() + 1, np.uint8)
+    lut[idx[ky, kx]] = lab[ky, kx]
+    return np.where(holes, lut[idx], lab)
+
+
+def roundify(rgb, bm):
+    """第4.97版 まさちゃん「🌊自体をもう少し波の先や小波など丸い絵に変えて！」：泡の 爪（白・明るい 青と 細い 濃い 藍の 線）を 少し まるく。
+       細い 線は ぼかして しきいで 太さを そろえ 先を まるく（まるい 筆の 線）・泡の 色は 少し なめらかに・外の ふちは 少し ふとらせて まるく して 線を 引き直す。
+       波の 体（濃い 藍に 白い すじと 点）は そのまま（泡の 多い 所だけ）。→ (rgb, bm)"""
+    pal = np.array([PAL['white'], PAL['light'], PAL['mid'], PAL['dark']], np.float32)
+    lab = np.argmin(((rgb[..., None, :] - pal[None, None]) ** 2).sum(-1), -1).astype(np.uint8)
+    a0 = bm > 0
+    lab[~a0] = 4
+    dark = lab == 3
+    thick = cv2.morphologyEx(dark.astype(np.uint8), cv2.MORPH_OPEN, _disk(2)).astype(bool)
+    line = dark & ~thick
+    fill = _nearest(lab, line, [0, 1, 2, 3, 4])
+    ms = [cv2.GaussianBlur((fill == k).astype(np.float32), (0, 0), 1.6) for k in range(5)]
+    sm = np.argmax(np.stack(ms, -1), -1).astype(np.uint8)
+    lm = cv2.GaussianBlur(line.astype(np.float32), (0, 0), 1.2) > 0.32           # 線：先が まるい 筆
+    # 外の ふち：小さな かけら（しぶきに ちかい）は そのまま・大きい かたまりは 少し ふとらせて まるく
+    n, cc, st, _ = cv2.connectedComponentsWithStats(a0.astype(np.uint8), 8)
+    small = np.isin(cc, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] < 60])
+    big = (a0 & ~small).astype(np.uint8)
+    a1 = cv2.erode(cv2.dilate(big, _disk(2.5)), _disk(1.25))
+    a1 = (cv2.GaussianBlur(a1.astype(np.float32), (0, 0), 1.5) > 0.5) | (cv2.GaussianBlur(big.astype(np.float32), (0, 0), 1.5) > 0.5)
+    out = sm.copy()
+    out = _nearest(out, a1 & (out == 4), [0, 1, 2, 3])
+    out[lm] = 3
+    foam = ((lab == 0) | (lab == 1)).astype(np.float32)
+    zone = cv2.dilate((cv2.GaussianBlur(foam, (0, 0), 8.0) > 0.35).astype(np.uint8), _disk(4)).astype(bool)   # 泡の 多い 所
+    res = np.where(zone, out, lab)
+    grow = a1 & ~a0
+    res[grow] = np.where(zone, out, 3)[grow]
+    res[~a1] = 4
+    ring = a1 & ~cv2.erode(a1.astype(np.uint8), _disk(1.0)).astype(bool)          # 外の ふちの 線（引き直し）
+    res[ring] = 3
+    res[small] = lab[small]                                                      # 小さな かけらは もとの まま
+    alpha = (res != 4)
+    col = pal[np.minimum(res, 3)]
+    return col, alpha.astype(np.float32)
+
+
 def down(pre, w2, h2):
     """前もって アルファを かけた 色（元の 画素）→ 2倍の 画素の RGBA u8（ふちが なめらか）"""
     sm = cv2.resize(pre, (w2, h2), interpolation=cv2.INTER_AREA)
@@ -221,6 +276,8 @@ def down(pre, w2, h2):
 
 def build(src, out=None):
     rgb, bm, dm = extract(src)
+    if os.environ.get('UK_SHARP') != '1':                              # 第4.97版：泡の 爪を 少し まるく（UK_SHARP=1 で 第4.96版の とがった 爪）
+        rgb, bm = roundify(rgb, bm)
     h, w = bm.shape
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     ox, oy = CROP[0], CROP[1]
