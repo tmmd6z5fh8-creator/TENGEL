@@ -12,7 +12,10 @@
    赤四角の小波は、大波と同じ絵の質感にして！あと小波の形は3枚目と同じ感じにして！」「三枚目の赤線の小波のように！」）→
    第4.101版「小波この真ん中の第4に書き足した赤線に合わせて作成して！あともっと大波によせた絵にして！」「あと大波は水平に近くにつれて横長になり、走ってる馬を超えて水平になった方が速度的にもリアルかも！」→
    第4.102版「小波の形を全て統一せずに、バラバラにして！」「小波の絵は一枚目の赤丸みたいにして！」「あと小波はもっと波っぽく動いて！」→
-   第4.103版「ダメだ小波だけがどうしても納得いかない。絵を大波に似せた小波で作成して」「そしたら大波が崩れはじめて横長になったあたりの大波にして！あと小波は上の白い波と少し青の海が目立つ部分だけが見えるようにして、海が動いているようにして！」）
+   第4.103版「ダメだ小波だけがどうしても納得いかない。絵を大波に似せた小波で作成して」「そしたら大波が崩れはじめて横長になったあたりの大波にして！あと小波は上の白い波と少し青の海が目立つ部分だけが見えるようにして、海が動いているようにして！」→
+   第4.104版「小波もう少し大きくして、海が埋まるように数を増やして！」「あと小波と海と地面と地面の間に隙間ができてて不自然だから、隙間が見えないように調整して！」
+   「小波は同じ絵だから数を増やして何層かに重ねて自然に見えるようにして！」「あと、大波も今の大きさと一段高さが下がってサイズが小さくなった2層に重ねて、
+   お互いに出るタイミングをずらして大波の唐突に絵が浮いてるよいには見えないようにして！」）
    大波は 葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 左の 大波と 同じ 形（まさちゃんの 指定・いちばん 高い 時）。
    第4.99版：第4.98版の かわいい 平らな 大波を やめて 第4.97版の 絵（泡の 爪を 少し まるく）に もどし、ぼかしの かげで 立体的に した。
    第4.100版：大波は 波の 一生を 1まいずつ 描いた コマ（make/ukiyoe_great.py の life：24コマ／秒）に して、絵を のばしたり ちぢめたり しない。
@@ -26,14 +29,19 @@
    第4.103版：小波は 大波の 一生の コマの うち くずれはじめて 横長に なった 所（コマ 28〜39）を そのまま 小さく 使う（同じ シート・絵を 足さない）。
      上の 白い 波と 少しの 青だけ 見せて（その 下は 列の 海の 線で 切る）、1つずつ 海の 線の 下から 上がって 白い 波が 前へ たおれながら 右へ のび、
      また 沈む（うすく しない）。生きて いる 間 ずっと 右へ 進む＝海が 動いて 見える。
+   第4.104版：小波を 大きく（前の 1.3倍 ほど）・数を ふやして 4列に 重ねた（おく → 手前：16・13・11・10こ）。海が 小波で うまり、
+     いちばん 手前の 列の 下の はしは 石の 土手の うしろ（海と 地面の 間に すき間が 見えない）・ほかの 列の 下の はしは ぼかして 海に とける。
+     小波の コマは 同じ 大きさの 箱に ならべた 帯（make/ukiyoe_mini.py → ukiyoe.mini）で、箱の 中の 背景の 場所だけ を ずらす（数が 多くても かるい）。
+     大波は 2つ：いまの 大波と、ひとまわり 小さくて 低い 大波（0.7倍・手前に 重ねる・少し 右）。出る 時を 1.5秒 ずらして、いつも どちらかが
+     小波の 中から 立ち上がって いる（大波の 絵が とつぜん 浮かんで 見えない）。
    上の絵：和紙の 地・空の 上に 藍の ぼかし・赤い 日・藍の ぼかしの 山なみ・かすみ（横の 雲の 帯）。
      左に 神奈川沖浪裏の 大波（画像から 切りぬいて 浮世絵の 平らな 4つの 色＝白・明るい 青・藍・濃い 藍 に まとめた 絵。
      白い 背中・爪の 泡・濃い 藍の 体と 白い すじ・内がわの 明るい 青・爪から 落ちる しぶきの 点。空・題箋・落款は すける・舟と 人・富士山は 入れない。
      泡の 爪は 少し まるく・ぼかし（bokashi）で 根もとと 巻きの 下を 濃く・白い 背中の 下を 明るい 青に）。
      海は 小波（大波が くずれはじめて 横長に なった 所の 上の 白い 波と 少しの 青：大波と 同じ 絵を 小さく・1つずつ 大きさと コマが ちがう）が
-     列 2つ（おく＝大波の うしろ・手前＝大波の 前）と 潮しぶき。
+     列 4つ（おくの 2列＝大波の うしろ・手前の 2列＝大波の 前）と 潮しぶき。大波は 2つ（いまの 大波と、手前に 小さく 低い 大波）。
      沖に 帆かけ舟。手前に 海ぞいの 街道（松並木・土の 道・草の 土手）。白い 馬（朱の 布と 手綱・墨の 輪郭：pack/make/ukiyoe_art.py）が 街道を 右へ 走る。右上に 朱の 印（白い 蹄鉄）
-   動き（3秒に 1回 大波：出て きて から 水平に なる まで 約1.9秒・止まらずに）：
+   動き（3秒に 1回 大波：出て きて から 水平に なる まで 約1.9秒・止まらずに。小さい 大波は 1.5秒 おくれて 同じ 一生）：
      海の 中から うしろへ ねた 波が 出て きて 立ち上がり（頭が 立って 爪が のびる）→ 神奈川沖浪裏（止まらずに すぎる）→ 波の 先が 前へ 投げ出されて 爪が 下へ
      巻きこみ、しぶきの 点が 前へ とび、頭から しぶきと もやが うしろ（左）へ 吹き飛ぶ → 波の 先が 落ちて 白い 水に なり、
      大波は 前へ たおれて 低く なりながら 横長に のびて 右へ 走る（白い 水の 先で 潮しぶきが 左から 右へ じゅんに ふき上がる）→ 走る 馬を 追いこして、
@@ -130,45 +138,66 @@ PEEL = [(1.12, 214, 1.1), (1.25, 232, 1.05), (1.38, 254, 1.0), (1.51, 280, .95),
 #   馬（x 190〜312）の うしろを とおって 追いこす（馬は 手前）
 
 
-# ---------------------------------------------------------------- 小波（第4.97版 → … → 第4.102版 → 第4.103版：まさちゃん「ダメだ小波だけがどうしても納得いかない。
-#   絵を大波に似せた小波で作成して」「そしたら大波が崩れはじめて横長になったあたりの大波にして！あと小波は上の白い波と少し青の海が目立つ部分だけが
-#   見えるようにして、海が動いているようにして！」）
-# 小波は 大波の 子ども（小さな 大波）：大波の 一生の コマ（make/ukiyoe_great.py の life＝ukiyoe.wave の シート）の うち、くずれはじめて 横長に なった 所
-#   （コマ 28〜39：波の 先が 白い 水に 落ちて、前へ たおれながら 横に のびる 所）を そのまま 小さく 使う（0.17〜0.31倍・絵を 足さない・同じ シート）。
-#   上の 白い 波（白い 背中・藍の 巻いた 泡の 爪）と その 下の 少しの 青だけ が 見える（MW_D：絵の 上から 44px より 下は 列の 海の 線で 切る）。
-#   左右に うら返さない・のばしたり ちぢめたり しない（たて横 同じ 倍率の まま・コマを step-end で 入れかえる）。
+# ---------------------------------------------------------------- 小波（第4.97版 → … → 第4.103版 → 第4.104版：まさちゃん「小波もう少し大きくして、海が埋まるように
+#   数を増やして！」「あと小波と海と地面と地面の間に隙間ができてて不自然だから、隙間が見えないように調整して！」「小波は同じ絵だから数を増やして何層かに
+#   重ねて自然に見えるようにして！」）
+# 小波は 大波の 子ども（小さな 大波・第4.103版）：大波の 一生の コマの うち くずれはじめて 横長に なった 所（コマ 28〜39）を そのまま 小さく 使う
+#   （たて横 同じ 倍率・左右に うら返さない・絵を 足さない）。上の 白い 波と 少しの 青だけ 見せる（MN_D より 下は 列の 海の 線で 切る）。
+#   第4.104版：数を ふやしても かるく 動く ように、コマ 28〜39 を 同じ 大きさの 箱に ならべた 帯（make/ukiyoe_mini.py → ukiyoe.mini）に して、
+#   箱の 中の 背景の 場所だけ を step-end で ずらす（はば・高さは 動かさない）。
+# 列は 4つ（おく → 手前）：おくほど 小さく（0.12〜0.15 → 0.33〜0.40倍）・ゆっくり・かすむ。手前の 列ほど 下で、すぐ うしろの 列の 下の はしを かくす。
+#   いちばん 手前の 列の 海の 線（y 112.5）は 石の 土手（y 110〜）の うしろ＝海と 地面の 間に すき間が 見えない。ほかの 列の 下の はしは ぼかす（mask）。
 # 動き（海が 動いて 見える）：小波 1つずつ 海の 線の 下から 上がって きて（0〜16%）、コマが すすんで 白い 波が 前へ たおれながら 右へ のび
-#   （16〜80%・すこし 上下）、また 海の 線の 下へ 沈む（〜92%：うすく しない）。生きて いる 間 ずっと 右へ 進む（MW_ROWS の dx）。
-#   1つずつ コマの はんい（MW_VARS）・倍率・長さ・ずれが ちがう＝となりどうしは 似ない。おくの 列は 小さく ゆっくり かすむ。
+#   （12〜80%・すこし 上下）、また 海の 線の 下へ 沈む（〜92%：うすく しない）。生きて いる 間 ずっと 右へ 進む（列の dx）。
+#   1つずつ コマの はんい（MN_VARS）・倍率・長さ・ずれ・場所が ちがう（となりどうしは 同じ はんいに しない）。
 #   列 ぜんたいは 大波に 合わせて 少し ふくらむ（たて横 同じ 倍率・大波が 水平に なる 間が いちばん 大きい）
-MW_D = 44.0                           # 見せる 深さ（大波の コマの 絵の px）：上の 白い 波＋少しの 青
-MW_SINK = MW_D + 6                    # 沈む ときの 深さ（絵の px）：見せる 所が ぜんぶ 海の 線の 下へ
-MW_KEEP = .85                         # コマが すすむと 上の はしが 下がる ぶんを この わりあい だけ もどす（白い 波が 少しずつ 低く なる）
-MW_ROWS = [dict(clip=100.0, dx=12, swell=1.04, rise=.8, haze=.88, head=6),
-           dict(clip=108.0, dx=18, swell=1.08, rise=1.6, haze=1.0, head=8)]
-MW_VARS = dict(a=(28, 34), b=(29, 36), c=(30, 37), d=(31, 38), e=(32, 39))     # コマの はんい（1 から かぞえる ukiyoe.wave の cells）
-# 小波 1つずつ（はじめの 左の x（大波の 絵の 左の はし）・倍率 s・コマの はんい v・一生の 長さ P 秒・ずれ ph（0〜1）・pf：頭の しぶき）
-MW_WAVES = [
-    [dict(x=-40, s=.19, v='b', P=5.2, ph=.05), dict(x=8, s=.17, v='d', P=4.6, ph=.41), dict(x=56, s=.21, v='a', P=5.6, ph=.77),
-     dict(x=104, s=.18, v='e', P=4.9, ph=.23), dict(x=150, s=.20, v='c', P=5.4, ph=.59), dict(x=198, s=.17, v='b', P=4.4, ph=.95),
-     dict(x=244, s=.21, v='d', P=5.8, ph=.31), dict(x=292, s=.18, v='a', P=4.8, ph=.67), dict(x=338, s=.20, v='e', P=5.1, ph=.13)],
-    [dict(x=-70, s=.28, v='c', P=4.3, ph=.50, pf=True), dict(x=-10, s=.31, v='a', P=3.8, ph=.86), dict(x=52, s=.26, v='e', P=4.6, ph=.22, pf=True),
-     dict(x=112, s=.30, v='b', P=4.0, ph=.58), dict(x=172, s=.27, v='d', P=4.4, ph=.94, pf=True), dict(x=230, s=.29, v='c', P=3.9, ph=.30),
-     dict(x=290, s=.26, v='a', P=4.7, ph=.66, pf=True), dict(x=346, s=.30, v='e', P=4.1, ph=.02)],
-]
-MW_T = (.12, .80)                     # コマが すすむ 間（0〜1）
-MW_PUFF = 2.0                         # 頭の しぶきの 大きさ（大波の 絵の px の 倍：小波と いっしょに 小さく なる）
+MN_D = 44.0                           # 見せる 深さ（大波の 絵の px）：上の 白い 波＋少しの 青
+MN_SINK = MN_D + 8                    # 沈む ときの 深さ（絵の px）
+MN_ROWS = [dict(clip=98.0, n=16, s=(.12, .15), P=(6.6, 8.4), dx=6, swell=1.02, rise=.3, haze=.8, fade=2.5, seed=31),
+           dict(clip=102.5, n=13, s=(.18, .22), P=(5.6, 7.0), dx=9, swell=1.04, rise=.7, haze=.9, fade=3.0, seed=32),
+           dict(clip=107.0, n=11, s=(.25, .30), P=(4.7, 5.9), dx=13, swell=1.06, rise=1.1, haze=1.0, fade=3.5, seed=33),
+           dict(clip=112.5, n=10, s=(.33, .40), P=(3.9, 5.0), dx=17, swell=1.08, rise=1.6, haze=1.0, fade=0, seed=34, pf=4)]
+MN_BACK = 2                           # おくの 2列は 大波の うしろ・手前の 2列は 大波の 前
+MN_VARS = dict(a=(0, 6), b=(1, 8), c=(2, 9), d=(3, 10), e=(4, 11))     # 帯の コマの はんい（0＝コマ 28）
+MN_T = (.12, .80)                     # コマが すすむ 間（0〜1）
+MN_PUFF = 2.0                         # 頭の しぶきの 大きさ（大波の 絵の px の 倍：小波と いっしょに 小さく なる）
+MN_CW = 321.5                         # 帯の 1コマの はば（大波の 絵の px：make/ukiyoe_mini.py）
 
 
-def mw_top(wave, k):
-    """コマ k（1 から）の 上の はしの y（大波の 絵の px）"""
-    return wave['cells'][k - 1][5] / wave['z']
+def mn_waves(k):
+    """列 k の 小波 1つずつ（x：箱の 左・s：倍率・v：コマの はんい・P：一生の 長さ・ph：ずれ・dy：上下の ずれ・pf：頭の しぶき）。
+       見える 所（箱の はばの 25〜95%）が 上の絵の はしから はしまで とぎれない ように ならべる"""
+    p = MN_ROWS[k]
+    R = rnd(p['seed'])
+    n = p['n']
+    wm = MN_CW * sum(p['s']) / 2
+    x0, x1 = -0.75 * wm, 392 - 0.3 * wm
+    out, prev = [], None
+    for i in range(n):
+        v = R.choice([c for c in MN_VARS if c != prev])
+        prev = v
+        step = (x1 - x0) / (n - 1)
+        out.append(dict(x=x0 + i * step + R.uniform(-.28, .28) * step, s=R.uniform(*p['s']), v=v, P=R.uniform(*p['P']),
+                        ph=(i * .618 + R.uniform(-.08, .08)) % 1, dy=R.uniform(-.9, .9)))
+    if p.get('pf'):
+        for i in range(1, n, max(1, n // p['pf'])):
+            out[i]['pf'] = True
+    return out
 
 
-def mw_row_top(k):
-    """列 k の 箱の 上の y（いちばん 大きい 小波が ふくらんでも 入る＋しぶきの よゆう）"""
-    p = MW_ROWS[k]
-    return p['clip'] - max(w['s'] for w in MW_WAVES[k]) * (MW_D + 4) * p['swell'] - p['head']
+MN_WAVES = [mn_waves(k) for k in range(len(MN_ROWS))]
+
+
+def mn_row_top(k, mini):
+    """列 k の 箱の 上の y（いちばん 大きい 小波が ふくらんで ゆれても 入る＋しぶきの よゆう）"""
+    p = MN_ROWS[k]
+    return p['clip'] - max(w['s'] for w in MN_WAVES[k]) * (MN_D + max(mini['tops']) + 6) * p['swell'] - 1.5 - (8 if p.get('pf') else 0)
+
+
+# 大波の 2つ目（第4.104版：まさちゃん「大波も今の大きさと一段高さが下がってサイズが小さくなった2層に重ねて、お互いに出るタイミングをずらして」）：
+#   いまの 大波と 同じ コマ・しぶきを、根もと（海の 線 y 112・大波の 左の はし）を 中心に G2_S 倍に して 少し 右へ（G2_DX）・手前に 重ねる。
+#   1.5秒 おくれて 同じ 一生（いつも どちらかが 小波の 中から 立ち上がって いる＝大波の 絵が とつぜん 浮かんで 見えない）
+G2_S, G2_DX, G2_LAG = 0.7, 70, 1.5
 
 
 def puff_svg(seed=51, w=40, h=26):
@@ -536,33 +565,25 @@ def life_css(wave):
     return kf('ukWv', st)
 
 
-def mini_css(wave):
-    """小波（大波が くずれはじめて 横長に なった 所の コマ）：コマの はんい v ごとに コマを step-end で 出す（上の はしが 下がる ぶんを MW_KEEP だけ もどす）・
+def mini_css(mini):
+    """小波（第4.104版：帯 ukiyoe.mini）：コマの はんい v ごとに 背景の 場所を step-end で ずらす（はば・高さは 動かさない）・
        海の 線の 下から 上がって 少し 上下して また 沈む（うすく しない）・頭の しぶき（0.3秒 以上 かけて あらわれ、上へ はねて 左へ 流れて 消える）"""
-    z = wave['z']
-    cells = wave['cells']
     css = ''
-    for v, (f0, f1) in MW_VARS.items():
-        t0 = mw_top(wave, f0)
-
-        def put(k):
-            x, y, w, h, ox, oy = cells[k - 1]
-            dy = (oy / z - t0) * MW_KEEP
-            return (f'transform:translate({f(ox / z, 2)}px,{f(oy / z - dy, 2)}px);width:{f(w / z, 2)}px;height:{f(h / z, 2)}px;'
-                    f'background-position:{f(-x / z, 2)}px {f(-y / z, 2)}px')
-        seq = list(range(f0, f1 + 1))
-        a, b = MW_T
-        st = [(0, put(f0))]
+    stp = mini['step']
+    for v, (i0, i1) in MN_VARS.items():
+        seq = list(range(i0, i1 + 1))
+        a, b = MN_T
+        st = [(0, f'background-position:{f(-i0 * stp, 2)}px 0')]
         for j, k in enumerate(seq):
-            st.append((round((a + (b - a) * j / len(seq)) * 100, 3), put(k)))
-        st.append((100, put(f1)))
+            st.append((round((a + (b - a) * j / len(seq)) * 100, 3), f'background-position:{f(-k * stp, 2)}px 0'))
+        st.append((100, f'background-position:{f(-i1 * stp, 2)}px 0'))
         css += kf(f'ukNf{v}', st)
     E_UP, E_IO, E_DN = 'cubic-bezier(.25,.6,.35,1)', 'ease-in-out', 'cubic-bezier(.55,0,.75,.45)'
-    css += kf('ukNu', [(0, f'transform:translateY({f(MW_SINK)}px);animation-timing-function:{E_UP}'),
+    css += kf('ukNu', [(0, f'transform:translateY({f(MN_SINK)}px);animation-timing-function:{E_UP}'),
                        (16, f'transform:translateY(0);animation-timing-function:{E_IO}'),
                        (42, f'transform:translateY(-4px);animation-timing-function:{E_IO}'),
                        (66, f'transform:translateY(0);animation-timing-function:{E_DN}'),
-                       (92, f'transform:translateY({f(MW_SINK)}px)'), (100, f'transform:translateY({f(MW_SINK)}px)')])
+                       (92, f'transform:translateY({f(MN_SINK)}px)'), (100, f'transform:translateY({f(MN_SINK)}px)')])
     o0 = 'opacity:0'
     css += kf('ukNpA', [(0, f'{o0};transform:translate(0,2px) scale(.45)'), (26, f'{o0};transform:translate(0,2px) scale(.45)'),
                          (36, 'opacity:.95;transform:translate(-2px,-2px) scale(.85)'), (46, 'opacity:.7;transform:translate(-6px,-6px) scale(1.05)'),
@@ -588,7 +609,7 @@ def sea_amp(t):
 
 def row_stops(k, step=.1):
     """小波の 列 k の ふくらみ（根もとが 軸：上がる px と たて横 同じ 倍率＝のばさない）＝ 0.1秒ごとの 点"""
-    p = MW_ROWS[k]
+    p = MN_ROWS[k]
     out, t = [], 0.0
     while t < WAVE_T + 1e-6:
         a = sea_amp(t)
@@ -616,8 +637,8 @@ def wave_life_css():
                                  (t0 + .3, f'opacity:.95;transform:translate(-1px,0) scale({f(.8 * sc, 3)})'),
                                  (t0 + .45, f'opacity:.9;transform:translate(-3px,-3px) scale({f(.95 * sc, 3)})'),
                                  (t0 + .8, f'{o0};transform:translate(-7px,2px) scale({f(1.1 * sc, 3)})')])
-    # 小波（第4.103版：小さな 大波）：列の ふくらみ（3秒・大波に 合わせて）と 右へ 進む（列の dx）。一生の コマと 頭の しぶきは mini_css（大波の シートが いる）
-    for k, p in enumerate(MW_ROWS):
+    # 小波（第4.104版：小さな 大波 4列）：列の ふくらみ（3秒・大波に 合わせて）と 右へ 進む（列の dx）。一生の コマと 頭の しぶきは mini_css（帯が いる）
+    for k, p in enumerate(MN_ROWS):
         css += kf(f'ukRwL{k}', row_stops(k))
         css += kf(f'ukNx{k}', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({f(p["dx"])}px)')])
     return css
@@ -631,37 +652,43 @@ def banner(B):
            'まるい爪のような白い泡の先、爪から落ちるしぶきの点。根もとと巻きの下は濃い藍のぼかし）。三秒ごとに、うしろへねた波が海の中から出てきて立ち上がり、'
            'いちばん高くなると止まらずに波の先が前へ投げ出されて爪が下へ巻きこみ、しぶきの点が前へとび、頭からしぶきともやがうしろへ吹き飛ぶ。'
            '波の先が落ちて白い水になり、大波は前へたおれて低くなりながら横長にのびて右へ走り、白い水の先で潮しぶきがつぎつぎにふき上がる。'
-           '走る馬を追いこして、馬の右で水平になり、手前の小波のむこうへ消える。'
-           '海には小波が二列にならぶ（大波がくずれはじめて横長になったところの、上の白い波と少しの青だけが見える。大波と同じ絵を小さくしたもの）。'
+           '走る馬を追いこして、馬の右で水平になり、手前の小波のむこうへ消える。手前には、ひとまわり小さく低い大波が重なり、一・五秒おくれて同じように立ち上がってくずれる。'
+           '海は小波でうまる（大波がくずれはじめて横長になったところの、上の白い波と少しの青だけが見える。大波と同じ絵を小さくしたものが四列に重なり、おくほど小さくかすむ）。'
            'ひとつずつ海の中から上がってきて、白い波が前へたおれながら右へのび、また海の中へ沈み、海がずっと右へ動いて見える。大波が水平になるときに列がふくらむ。'
            '沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走る。'
            'ときどき街道のむこうから、ちょんまげに羽織と袴、刀を二本さしたお侍さんが一人か二人歩いてきて、馬とすれちがうときに会釈する。右上に朱の印のイラスト')
     foam = B.get('foam')                     # しぶき（make/ukiyoe_foam.py の 絵の シート）
     parts = foam['parts'] if foam else {}
-    wave = B.get('wave')                     # 大波の 一生の コマ（小波も 同じ シートを 小さく 使う）
+    wave = B.get('wave')                     # 大波の 一生の コマ
+    mini = B.get('mini')                     # 小波（第4.104版：大波の コマ 28〜39 を 同じ 大きさの 箱に ならべた 帯：make/ukiyoe_mini.py）
 
-    def row(k):                              # 小波 1つずつ（くずれはじめた 大波の コマ）：外＝右へ 進む・ukNs＝倍率（たて横 同じ）・ukNu＝上がる／沈む・ukNv＝コマ
-        if not (wave and wave.get('cells')):
+    def row(k):                              # 小波 1つずつ：ukNo＝右へ 進む・ukNs＝倍率（たて横 同じ）・ukNu＝上がる／沈む・ukNb＝帯の 箱（背景の 場所で コマ）
+        if not mini:
             return ''
         o = f'<i class="ukRw ukR{k}">'
-        for i, w in enumerate(MW_WAVES[k]):
-            o += (f'<i class="ukNo ukQ{k}{i}"><i class="ukNs"><i class="ukNu"><i class="ukNv ukNw"></i>'
+        for i, w in enumerate(MN_WAVES[k]):
+            o += (f'<i class="ukNo ukQ{k}x{i}"><i class="ukNs"><i class="ukNu"><i class="ukNb"></i>'
                   + (f'<i class="ukNp"><i class="ukPf ukF pf{i % 2}"></i></i>' if w.get('pf') and 'pf0' in parts else '') + '</i></i></i>')
+        return o + '</i>'
+
+    def big(g):                              # 大波（g1：いまの 大波・g2：小さく 低い 大波＝同じ コマと しぶきを 0.7倍・1.5秒 おくれ）
+        o = f'<i class="ukG g{g}">'
+        if wave and wave.get('cells'):
+            o += '<i class="ukWv"></i>'
+        if 'sp1' in parts:
+            o += '<i class="ukSp s1 ukF sp1"></i><i class="ukSp s2 ukF sp2"></i>'
+        o += img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
+        if 'bs0' in parts:                   # 波の 先が 落ちた 所で ふき上がる しぶき
+            o += ''.join(f'<i class="ukBu u{k} ukF bs{k % 2}"></i>' for k in range(len(PEEL)))
         return o + '</i>'
 
     html = f'<div class="ukw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('ukSky', sky_svg()) + img('ukKs', kasumi_svg()) + img('ukSea', sea_svg())
-    html += row(0)                           # おくの 小波（大波と 舟の うしろ）
+    html += ''.join(row(k) for k in range(MN_BACK))                  # おくの 小波 2列（大波と 舟の うしろ）
     html += img('ukBt', boat_svg())
-    if wave and wave.get('cells'):           # 神奈川沖浪裏の 大波（make/ukiyoe_great.py の 波の 一生の コマ）
-        html += '<i class="ukWv"></i>'
-    if 'sp1' in parts:
-        html += '<i class="ukSp s1 ukF sp1"></i><i class="ukSp s2 ukF sp2"></i>'
-    html += img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
-    if 'bs0' in parts:                       # 波の 先が 落ちた 所で ふき上がる しぶき（右から 左へ）
-        html += ''.join(f'<i class="ukBu u{k} ukF bs{k % 2}"></i>' for k in range(len(PEEL)))
-    html += row(1)                           # 手前の 小波（大波は この むこうへ 消える）
+    html += big(1) + big(2)                  # 神奈川沖浪裏の 大波 2つ（make/ukiyoe_great.py の 波の 一生の コマ）
+    html += ''.join(row(k) for k in range(MN_BACK, len(MN_ROWS)))    # 手前の 小波 2列（大波は この むこうへ 消える・いちばん 手前は 石の 土手の うしろまで）
     html += f'<i class="ukPn" style="background-image:url(&quot;{durl(pines_svg())}&quot;)"></i>'
     html += f'<i class="ukRd" style="background-image:url(&quot;{durl(road_svg())}&quot;)"></i>'
     if run:
@@ -683,16 +710,17 @@ def banner(B):
            '.ukw .ukSky,.ukw .ukKs,.ukw .ukSea{left:0;top:0;width:390px;height:160px}'
            '.ukw .ukKs{animation:ukKs 20s ease-in-out infinite}'
            '.ukw .ukBt{left:166px;top:72px;width:38px;height:29px;transform-origin:50% 90%;animation:ukBoat 3.6s ease-in-out infinite}'
+           '.ukw .ukG{left:0;top:0;width:390px;height:160px}.ukw .ukG>*{position:absolute;display:block}'
+           f'.ukw .ukG.g2{{transform:translateX({f(G2_DX)}px) scale({f(G2_S)});transform-origin:{WB[0]}px 112px}}'
            f'.ukw .ukMs{{width:90px;height:40px;opacity:0}}.ukw .ukMs.m1{{left:112px;top:-6px;animation:ukMs1 {f(WAVE_T)}s linear infinite}}'
            f'.ukw .ukMs.m2{{left:146px;top:2px;animation:ukMs2 {f(WAVE_T)}s linear infinite}}'
            f'.ukw .ukSp{{left:87px;top:-18px;width:84px;height:44px;opacity:0;transform-origin:78px 32px}}'
            f'.ukw .ukSp.s1{{animation:ukSp1 {f(WAVE_T)}s linear infinite}}.ukw .ukSp.s2{{top:-12px;animation:ukSp2 {f(WAVE_T)}s linear infinite}}'
-           # 小波の 列（外：大波に 合わせた ふくらみ・海の 線で 切る／ukNo：右へ 進む・ukNs：倍率・ukNv：大波の コマ）
+           # 小波の 列（外：大波に 合わせた ふくらみ・海の 線で 切る／ukNo：右へ 進む・ukNs：倍率・ukNb：帯の 箱）
            '.ukw .ukRw{left:0;width:390px;height:30px}'
            '.ukw .ukRw i{position:absolute;display:block}'
-           '.ukw .ukRw .ukNs{left:0;top:0;width:420px;height:110px;transform-origin:0 0}'
-           '.ukw .ukRw .ukNu{left:0;top:0;width:420px;height:110px}'
-           '.ukw .ukRw .ukNv{left:0;top:0;width:0;height:0;animation-timing-function:step-end}'
+           '.ukw .ukRw .ukNs{left:0;top:0;transform-origin:0 0}'
+           '.ukw .ukRw .ukNu{left:0;top:0}'
            '.ukw .ukRw .ukNp{left:0;top:0;width:40px;height:26px}'
            '.ukw .ukRw .ukPf{left:0;top:0;width:40px;height:26px;opacity:0;transform-origin:33px 23px}'
            '.ukw .ukBu{width:90px;height:70px;opacity:0;transform-origin:45px 66px}'
@@ -704,29 +732,39 @@ def banner(B):
            f'.ukw .ukSm{{left:0;top:{f(SM_TOP)}px;width:{f(SM_W * SM_K)}px;height:{f(SM_H * SM_K)}px;overflow:hidden;transform:translateX(500px)}}'
            f'.ukw .ukSm>i{{position:absolute;display:block;left:0;top:0;height:{f(SM_H * SM_K)}px;background-repeat:no-repeat}}'
            f'.ukw .ukSm .w{{width:{f(12 * SM_W * SM_K)}px}}.ukw .ukSm .b{{width:{f(len(BOW) * SM_W * SM_K)}px;opacity:0}}')
-    for k, p in enumerate(MW_ROWS):             # 列ごとの 箱（海の 線で 切る＝上の 白い 波と 少しの 青だけ 見える・根もとが 軸で ふくらむ・おくは かすむ）
-        top = mw_row_top(k)
-        css += (f'.ukw .ukRw.ukR{k}{{top:{f(top, 2)}px;height:{f(p["clip"] - top, 2)}px;overflow:hidden;'
-                + (f'opacity:{f(p["haze"])};' if p['haze'] < 1 else '')
-                + f'transform-origin:50% {f(p["clip"] - top, 2)}px;animation:ukRwL{k} {f(WAVE_T)}s linear infinite}}')
-        for i, w in enumerate(MW_WAVES[k]):        # 小波 1つずつ：はじめの 場所（コマの 上の はしから MW_D の 所が 海の 線）・倍率・コマ・長さ・ずれ
-            if not wave:
-                break
-            sc, P_ = w['s'], w['P']
-            f0, f1 = MW_VARS[w['v']]
-            dl = f(-w['ph'] * P_, 2)
-            an = f'{f(P_)}s {dl}s infinite'
-            css += (f'.ukw .ukRw.ukR{k} .ukQ{k}{i}{{left:{f(w["x"])}px;top:{f(p["clip"] - top - (mw_top(wave, f0) + MW_D) * sc, 2)}px;'
-                    f'animation:ukNx{k} {f(P_)}s linear {dl}s infinite}}'
-                    f'.ukw .ukRw.ukR{k} .ukQ{k}{i} .ukNs{{transform:scale({f(sc, 3)})}}'
-                    f'.ukw .ukRw.ukR{k} .ukQ{k}{i} .ukNu{{animation:ukNu {an}}}'
-                    f'.ukw .ukRw.ukR{k} .ukQ{k}{i} .ukNv{{animation:ukNf{w["v"]} {an};animation-timing-function:step-end}}')
-            if w.get('pf') and foam:
-                x_, y_, w_, h_, ox_, oy_ = wave['cells'][f0 - 1]
-                tx_, ty_ = (ox_ + w_) / wave['z'] - 22, mw_top(wave, f0) + 12          # 白い 波の 右の 巻き（大波の 絵の px）
-                css += (f'.ukw .ukRw.ukR{k} .ukQ{k}{i} .ukNp{{transform:translate({f(tx_ - 33 * MW_PUFF, 2)}px,{f(ty_ - 23 * MW_PUFF, 2)}px) scale({f(MW_PUFF)});'
-                        f'transform-origin:0 0}}'
-                        f'.ukw .ukRw.ukR{k} .ukQ{k}{i} .ukPf{{animation:ukNpA {f(P_)}s linear {dl}s infinite}}')
+    if mini:                                    # 小波の 帯（ukiyoe.mini）：箱の 大きさは 1コマ・背景の 場所で コマを えらぶ
+        z_ = mini['z']
+        cw_, ch_ = mini['px'][0] / z_, mini['px'][1] / z_
+        css += (f'.ukw .ukRw .ukNs,.ukw .ukRw .ukNu{{width:{f(cw_, 2)}px;height:{f(ch_, 2)}px}}'
+                f'.ukw .ukRw .ukNb{{left:0;top:0;width:{f(cw_, 2)}px;height:{f(ch_, 2)}px;'
+                f'background:url({mini["url"]}) 0 0/{f(mini["sheet"][0] / z_, 2)}px {f(mini["sheet"][1] / z_, 2)}px no-repeat}}')
+        tops = mini['tops']
+        for k, p in enumerate(MN_ROWS):         # 列ごとの 箱（海の 線で 切る＝上の 白い 波と 少しの 青だけ 見える・根もとが 軸で ふくらむ・おくは かすむ・下の はしは ぼかす）
+            top = mn_row_top(k, mini)
+            hh = p['clip'] - top
+            fd = p['fade']
+            mask = (f'-webkit-mask-image:linear-gradient(#000 {f(hh - fd, 2)}px,transparent {f(hh, 2)}px);'
+                    f'mask-image:linear-gradient(#000 {f(hh - fd, 2)}px,transparent {f(hh, 2)}px);') if fd else ''
+            css += (f'.ukw .ukRw.ukR{k}{{top:{f(top, 2)}px;height:{f(hh, 2)}px;overflow:hidden;' + mask
+                    + (f'opacity:{f(p["haze"])};' if p['haze'] < 1 else '')
+                    + f'transform-origin:50% {f(hh, 2)}px;animation:ukRwL{k} {f(WAVE_T)}s linear infinite}}')
+            for i, w in enumerate(MN_WAVES[k]):    # 小波 1つずつ：はじめの 場所（コマの 上の はしから MN_D の 所が 海の 線）・倍率・コマ・長さ・ずれ
+                sc, P_ = w['s'], w['P']
+                i0 = MN_VARS[w['v']][0]
+                dl = f(-w['ph'] * P_, 2)
+                an = f'{f(P_)}s {dl}s infinite'
+                q = f'.ukw .ukRw.ukR{k} .ukQ{k}x{i}'
+                css += (f'{q}{{left:{f(w["x"], 2)}px;top:{f(hh - (tops[i0] + MN_D) * sc + w["dy"], 2)}px;animation:ukNx{k} {f(P_)}s linear {dl}s infinite}}'
+                        f'{q} .ukNs{{transform:scale({f(sc, 3)})}}'
+                        f'{q} .ukNu{{animation:ukNu {an}}}'
+                        f'{q} .ukNb{{animation:ukNf{w["v"]} {an};animation-timing-function:step-end}}')
+                if w.get('pf') and foam and wave:
+                    x_, y_, w_, h_, ox_, oy_ = wave['cells'][mini['f0'] + i0 - 1]
+                    tx_, ty_ = (ox_ + w_) / wave['z'] - mini['x0'] - 22, tops[i0] + 12          # 白い 波の 右の 巻き（帯の 箱の px）
+                    css += (f'{q} .ukNp{{transform:translate({f(tx_ - 33 * MN_PUFF, 2)}px,{f(ty_ - 23 * MN_PUFF, 2)}px) scale({f(MN_PUFF)});'
+                            f'transform-origin:0 0}}'
+                            f'{q} .ukPf{{animation:ukNpA {f(P_)}s linear {dl}s infinite}}')
+        css += mini_css(mini)
     if sam:                     # 1まいの シート：行（a の 歩く・会釈・b の …）を background-position で えらぶ
         zs = SM_K / sam['z']
         (sw, sh), rp = sam['sheet'], sam['row']
@@ -737,13 +775,12 @@ def banner(B):
     else:
         css += (f'.ukw .ukSm .w{{background-size:{f(12 * SM_W * SM_K)}px {f(SM_H * SM_K)}px}}'
                 f'.ukw .ukSm .b{{background-size:{f(len(BOW) * SM_W * SM_K)}px {f(SM_H * SM_K)}px}}')
-    if wave and wave.get('cells'):             # 大波：コマを step-end で 入れかえ（のばさない・ちぢめない）。小波（小さな 大波）も 同じ シート
+    if wave and wave.get('cells'):             # 大波：コマを step-end で 入れかえ（のばさない・ちぢめない）
         z = wave['z']
         sw_, sh_ = wave['sheet']
         css += (f'.ukw .ukWv{{left:{WB[0]}px;top:{WB[1]}px;width:0;height:0;opacity:0;'
                 f'background:url({wave["url"]}) 0 0/{f(sw_ / z, 2)}px {f(sh_ / z, 2)}px no-repeat;animation:ukWv {f(WAVE_T)}s step-end infinite}}'
-                f'.ukw .ukNw{{background:url({wave["url"]}) 0 0/{f(sw_ / z, 2)}px {f(sh_ / z, 2)}px no-repeat}}'
-                + life_css(wave) + mini_css(wave))
+                + life_css(wave))
     if foam:                                        # 小波と しぶきの 部品は 1まいの シートの 中の 場所で えらぶ
         z_ = foam['z']
         sw_, sh_ = foam['sheet']
@@ -760,6 +797,7 @@ def banner(B):
             + kf('ukKs', [(0, 'transform:translateX(-8px)'), (50, 'transform:translateX(10px)'), (100, 'transform:translateX(-8px)')])
             + kf('ukBoat', [(0, 'transform:translateY(0) rotate(-3deg)'), (50, 'transform:translateY(2px) rotate(3deg)'), (100, 'transform:translateY(0) rotate(-3deg)')])
             + wave_life_css())
+    css += f'.ukw.ukw .ukG.g2 *{{animation-delay:{f(-G2_LAG)}s}}'       # 小さい 大波は 1.5秒 おくれ（ほかの animation の 書き方より 強く）
     css += reduced('.ukw>:not(.bnr)') if still else ''
     return html, css
 
@@ -799,7 +837,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='浮世絵風', desc='大波と街道', title='浮世絵風（藍×和紙×朱）', banner=ID,
-    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（白い背中・濃い藍に白いすじ・まるい爪の泡：三秒ごとに海の中から出てきて立ち上がり、波の先を投げ出して潮しぶきを上げ、前へたおれながら横長にのびて右へ走り、走る馬を追いこして水平になって消える）。海には大波がくずれはじめて横長になったところの上の白い波（大波と同じ絵を小さくした小波）が二列にならび、ひとつずつ海の中から上がって右へのび、また沈んで、海がずっと動いて見える。沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
+    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（白い背中・濃い藍に白いすじ・まるい爪の泡：三秒ごとに海の中から出てきて立ち上がり、波の先を投げ出して潮しぶきを上げ、前へたおれながら横長にのびて右へ走り、走る馬を追いこして水平になって消える。手前にはひとまわり小さく低い大波が重なり、一・五秒おくれて同じように立ち上がる）。海は大波がくずれはじめて横長になったところの上の白い波（大波と同じ絵を小さくした小波）が四列に重なってうまり、ひとつずつ海の中から上がって右へのび、また沈んで、海がずっと動いて見える。沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
     fonts=['Shippori+Antique+B1', 'Zen+Old+Mincho:wght@600;700'],
     v=dict(bg='#F3EBDC', ink='#2A2420', sub='#6A5D4E', card='#FBF7EE', cardB='1px solid #DCCDB2', cardO='0 solid transparent', cardS='0 2px 0 #E5D8C0',
            radius='8px', rs='6px', font='"Zen Old Mincho"', dfont='"Shippori Antique B1"', dw='400', logo='#F4EFE4', logoS='0 2px 0 #10223F',
@@ -818,8 +856,8 @@ THEME = dict(
                fonts='見出し：Shippori Antique B1<br>本文：Zen Old Mincho', shape='角丸8px・帯は 藍の ぼかしで 下に 波頭・波と 千鳥の 背景・すみに 朱の 印・的中ボタンは 題箋の PUSH',
                pic='和紙の 地・藍の ぼかしの 空・赤い 日・山なみ・かすみ・神奈川沖浪裏の 形の 大波（白い 背中・濃い 藍に 白い すじ・まるい 爪の 泡・ぼかしの かげ：'
                    '3秒ごとに 海の 中から 出て きて 立ち上がり、波の 先を 投げ出して しぶきが とび、前へ たおれて 低く なりながら 横長に のびて 右へ 走り、白い 水の 先で 潮しぶき・'
-                   '走る 馬を 追いこして 水平に なって 消える）・'
-                   '小波 2列（大波が くずれはじめて 横長に なった 所の 上の 白い 波と 少しの 青＝大波と 同じ 絵を 小さく・1つずつ 海の 線から 上がって 右へ のび、'
+                   '走る 馬を 追いこして 水平に なって 消える。手前に 小さく 低い 大波が 1.5秒 おくれて 重なる）・'
+                   '小波 4列（大波が くずれはじめて 横長に なった 所の 上の 白い 波と 少しの 青＝大波と 同じ 絵を 小さく・おくほど 小さく かすむ・1つずつ 海の 線から 上がって 右へ のび、'
                    'また 沈む＝海が 動いて 見える・大波が 水平に なる と 列が ふくらむ）・'
                    '帆かけ舟・松並木の 街道・朱の 布の 白い 馬（墨の 輪郭）・ときどき すれちがう お侍さん・朱の 印'),
 )

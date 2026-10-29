@@ -27,6 +27,8 @@
      くずれて 低く なる 間に 横長に のびて 右へ 走る（のばす ゆがみ D：左の 根もと（XS[0]）では 0・白い 背中の 上で ふえて 頭（XS[1]）より 右は
      そのまま D だけ 右へ＝頭の 絵は のびない・白い 背中が 長く なる。scaleX では ない）。波の 先と 白い 水は 走る 馬（CSS x 190〜312）を こえて、
      約 CSS x 360 で 水平に（2.05秒）。コマの 絵は 右へ ひろく（CANVAS 1260）。
+   第4.104版：小波（小さな 大波）は この コマの 28〜39 を 同じ 大きさの 箱に ならべた 帯（make/ukiyoe_mini.py → ukiyoe.mini）。
+     この 絵を 作り直したら make/ukiyoe_mini.py も 動かす。
    しくみ：空を 色の つながりで ぬりつぶして（黒い 線で 止まる）波を とりだす → 明るさで 4つの 色に 分ける（細い 黒い 線は 濃い 藍）→
      絵 1まい：wave＝波の 一生の コマ（life：2倍の 画素・コマごとの 四角を つめた シート）
    python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave（ukiyoe.crest は 消す）"""
