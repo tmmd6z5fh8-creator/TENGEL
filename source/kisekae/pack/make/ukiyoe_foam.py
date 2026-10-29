@@ -1,7 +1,7 @@
-"""浮世絵風の 壁紙（壁紙パック）の 小波と しぶきを 絵（WebP）に する：pack/ukiyoe.py の SVG（第4.98版：先の 少し とがった 小波（細い 白い 泡の かさ・
-   白い 丸なし）を 列ごとに 形 4つ・波の 先が 落ちた 所で ふき上がる しぶき 2つ・小波の 頭の しぶき 2つ・大波の 頭から 吹き飛ぶ しぶき 2つ・
-   爪から 前へ とぶ しぶきの つぶ 2つ）を ブラウザ（Chromium）で 3倍に 描いて 1まいの シートに ならべる（SVG の まま だと 上の絵の HTML が 重く なるため・
-   3倍＝iPhone でも ふちが くっきり）。ページでは 部品の 背景に して background-position で えらぶ（小波は 1つずつ べつの 部品で 動く）
+"""浮世絵風の 壁紙（壁紙パック）の 小波と しぶきを 絵（WebP）に する：pack/ukiyoe.py の SVG（第4.99版：先の 少し とがった 大きめの 小波（細い 白い 泡の かさ・
+   白い 丸なし）を 列 2つ × 形 3つ・波の 先が 落ちた 所で ふき上がる しぶき 2つ・小波の 頭の しぶき 2つ・大波の 頭から 吹き飛ぶ しぶき 2つ）を
+   ブラウザ（Chromium）で 3倍に 描いて 1まいの シートに ならべる（SVG の まま だと 上の絵の HTML が 重く なるため・3倍＝iPhone でも ふちが くっきり）。
+   ページでは 部品の 背景に して background-position で えらぶ（小波は 1つずつ べつの 部品で 動く）。爪の 下の しぶきの 点は 大波の 絵（make/ukiyoe_great.py）の 中
    python3 kisekae/pack/make/ukiyoe_foam.py → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.foam"""
 import os
 import sys
@@ -25,7 +25,7 @@ def items():
             svg, w, h = U.small_wave_svg(k, v)
             out.append((f'sw{k}{v}', svg, w, h))
     out += [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('pf0', U.puff_svg(51), 40, 26), ('pf1', U.puff_svg(53), 40, 26),
-            ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44), ('dt0', U.drops_svg(61), 44, 34), ('dt1', U.drops_svg(63), 44, 34)]
+            ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44)]
     return out
 
 
