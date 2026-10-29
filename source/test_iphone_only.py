@@ -86,7 +86,7 @@ if r.returncode == 0:
         return {k: [int(x) for x in v.split(',')] for k, v in _re2.findall(r'(\w+)[:=]\s*\[([-\d,\s]+)\]', m.group(1))} if m else None
     hbx_js = _hbx(open(os.path.join(W, 'bcx.js'), encoding='utf8').read(), r'const HBX = \{(.*?)\};')
     hbx_py = _hbx(open(os.path.join(W, 'kisekae', 'r3d', 'fx', 'board_horse_parts.py'), encoding='utf8').read(), r'HBX = dict\((.*?)\)\n')
-    check(bool(hbx_js) and hbx_js == hbx_py and len(hbx_js) == 8 and all(v in html for v in ('bcx_hb_head.webp', 'bcx_hb_fore.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_hb_eye.webp')) and 'bcECarry' in html,
+    check(bool(hbx_js) and hbx_js == hbx_py and len(hbx_js) == 13 and all(v in html for v in ('bcx_hb_head.webp', 'bcx_hb_fore.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_hb_eye.webp')) and 'bcECarry' in html,
           f'結果ボードカスタム 22「ボードを持つ馬」：部品の 四角が 絵を 作る 道具と 同じ（{hbx_js}）・絵の 名前と 登場の 動き（bcECarry）が 入って いる（第4.108版）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):

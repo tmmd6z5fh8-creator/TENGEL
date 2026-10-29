@@ -1,6 +1,6 @@
 # 結果ボードカスタム（App Store版 第4.91版）の 出世馬 8連続（幻の 馬・暗い 雷）の 光の 点めつ（16.6）
 #   python3 test_bcx_flash.py [rise8,carry]   （時間が かかるので、ふだんの テストとは 別に 動かす。コマは t5/fx_frames/bcx_<名前>/ に 残す）
-#   第4.108版：22「ボードを持つ馬」（carry）：「▶ 見る」の すぐ あと から 6秒（下から 出てくる 1秒 → 頭と首・後ろ足の ぷるぷる・しっぽ・まばたき）を
+#   第4.108版：22「ボードを持つ馬」（carry）：「▶ 見る」の すぐ あと から 6秒（下から 出てくる 1秒 → 頭と首・後ろ足の ぷるぷる・しっぽ・まばたき → 1.5秒後に 1回 落としそうに なって あせる）を
 #     同じ やり方（1/60秒ずつ・その 時に ある アニメーションは 今の 時刻から 進める）で 写して 数える。絵（ios/fx_assets/bcx_hb_*.webp）が なければ SVG の 馬
 #   幻の 馬は 時刻の しかけ（setTimeout）で 幕・馬・雷・ボードの 飛んで もどる 動きを つけるので、その しかけを 1/60秒ずつ 進める しかけに かえて（TengelBoard._phantom）、
 #   その 時に 生まれた CSS の アニメーションは 生まれた 時刻から の 時間に そろえて 止めて 写す（test_fx_flash.py と 同じ 60コマ/秒）→ kisekae/flash_px.py で 数える
@@ -72,7 +72,9 @@ SETUP22 = """() => {
     V.track.forEach(o => { try { o.a.currentTime = Math.max(0, t - o.at); } catch (e) { /* 消えた */ } });
     if (V.go < 0 && hb.classList.contains('bcgo')) V.go = t;
     const sh = hb.querySelector('.bc-hbh:not(.bc-hbsv *)') || hb.querySelector('.bc-hbh');
-    return { go: V.go, n: V.track.length, vec: hb.classList.contains('bchbv'), tr: sh ? getComputedStyle(sh).animationName : '' };
+    const rb = hb.querySelector('.rb'), mt = new DOMMatrix(getComputedStyle(rb).transform);
+    if (V.go >= 0 && t - V.go > 1400) V.slip = Math.max(V.slip || 0, Math.abs(mt.f));     // 第4.108版：落としそうに なる（出おわって 1.5秒後）
+    return { go: V.go, n: V.track.length, vec: hb.classList.contains('bchbv'), tr: sh ? getComputedStyle(sh).animationName.split(',')[0].trim() : '', slip: V.slip || 0 };
   };
   return { hb: hb.className };
 }"""
@@ -116,13 +118,13 @@ try:
                 r = pg.evaluate('(t) => window.__vt.step(t)', i * 1000 / 60)
                 pg.screenshot(path=os.path.join(OUT, f'f{i:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844})
             pg.evaluate('TengelFx.close()')
-            ok_seq = 900 < r['go'] < 1800 and r['tr'] == 'bcHbH' and r['vec'] == (not art22)
-            print(('  ✅ ' if ok_seq else '  ❌ ') + f'ボードを持つ馬の 流れ：出おわって ぷるぷる {r["go"]:.0f}ms・頭と首の 動き {r["tr"]}（絵：{"部品 5まい" if not r["vec"] else "SVG"}）（{st}）')
+            ok_seq = 900 < r['go'] < 1800 and r['tr'] == 'bcHbH' and r['vec'] == (not art22) and r['slip'] > 5
+            print(('  ✅ ' if ok_seq else '  ❌ ') + f'ボードを持つ馬の 流れ：出おわって ぷるぷる {r["go"]:.0f}ms・頭と首の 動き {r["tr"]}・落としそうに なる（いちばん 下がって {r["slip"]:.1f}px）（絵：{"部品 5まい" if not r["vec"] else "SVG"}）（{st}）')
             if not ok_seq: fails.append('carry seq')
             rr = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), OUT, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = rr.stdout.strip().split('\n'); worst = out[-1] if out else ''; bad = out[0] if out else ''
             ok = rr.returncode == 0 and '窓 0個' in bad
-            print(('  ✅ ' if ok else '  ❌ ') + f'ボードを持つ馬（下から 出てくる → ぷるぷる・しっぽ・まばたき）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
+            print(('  ✅ ' if ok else '  ❌ ') + f'ボードを持つ馬（下から 出てくる → ぷるぷる・しっぽ・まばたき・落としそうに なって あせる）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
             if not ok: fails.append('carry flash: ' + (rr.stderr[-300:] if rr.returncode else bad))
         if errs: print('  ⚠️ ページのエラー:', errs[:5]); fails.append('pageerror')
         b.close()

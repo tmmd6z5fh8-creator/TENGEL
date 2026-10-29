@@ -165,10 +165,16 @@
     '.fxs .hb.bce-carry{animation-name:bcECarry!important;animation-duration:1s!important;animation-timing-function:linear!important;transform-origin:50% 100%}',
     '@keyframes bcECarry{0%{opacity:1;transform:translateY(660px);animation-timing-function:cubic-bezier(.18,.72,.36,1)}46%{transform:translateY(-16px);animation-timing-function:ease-in}'
       + '60%{transform:translateY(0) scale(1.03,.95);animation-timing-function:ease-out}74%{transform:translateY(-5px) scale(.99,1.02);animation-timing-function:ease-in}86%{transform:translateY(0) scale(1.01,.99)}100%{opacity:1;transform:none}}',
-    '.fxs .hb.bcgo .bc-hbh{animation:bcHbH 3.1s linear infinite}.fxs .hb.bcgo .bc-hbl{animation:bcHbL 2.3s linear infinite -.7s}',
-    '.fxs .hb.bcgo .bc-hbt{animation:bcHbT 7.9s ease-in-out infinite .6s}.fxs .hb .bc-hbe{opacity:0}.fxs .hb.bcgo .bc-hbe{animation:bcHbE 5.3s linear infinite 1.4s}',
+    '.fxs .hb.bcgo .bc-hbh{animation:bcHbH 3.1s linear infinite,bcHbJ 1.4s linear 1.5s 1 none}.fxs .hb.bcgo .bc-hbl{animation:bcHbL 2.3s linear infinite -.7s,bcHbS .85s linear 1.5s 1 none}',
+    '.fxs .hb.bcgo .bc-hbt{animation:bcHbT 7.9s ease-in-out infinite .6s}.fxs .hb .bc-hbe{opacity:0}.fxs .hb.bcgo .bc-hbe{animation:bcHbE 5.3s linear infinite .5s}',
+    // 22：1回だけ ボードを 落としそうに なって あせる（出おわって 1.5秒後・1.4秒：ずり落ちる → 頭が びくっ・目を 見ひらく・汗・後ろ足が じたばた → 持ち直す → ふぅ）。
+    //   まさちゃん「あと一回ボード落としそうになって焦るエフェクト追加して！」（大きく 動くのは 出てくる ときだけ の きまりの 例外：幻の 馬と 同じ）。前足は ボードと いっしょに 動く
+    '.fxs .hb.bcgo.bcx-carry .rb{transform-origin:273px 0;animation:bcHbSlip 1.4s linear 1.5s 1 none}.fxs .hb.bcgo .bc-hbf{animation:bcHbSlip 1.4s linear 1.5s 1 none}',
+    '.fxs .hb .bc-hbw,.fxs .hb .bc-hbx,.fxs .hb .bc-hbp,.fxs .hb .bc-hbd i{opacity:0}.fxs .hb.bcgo .bc-hbw{animation:bcHbW 1.4s linear 1.5s 1 none}',
+    '.fxs .hb.bcgo .bc-hbx{animation:bcHbX .95s linear 1.55s 1 none}.fxs .hb.bcgo .bc-hbp{animation:bcHbP .8s ease-out 2.55s 1 none}',
+    '.fxs .hb .bc-hbd i{position:absolute;width:7px;height:10px}.fxs .hb.bcgo .bc-hbd i{animation:bcHbD .75s cubic-bezier(.2,.7,.4,1) var(--d) 1 none}',
     hbCss(),
-    '.fxs .hb .bc-hbf{filter:drop-shadow(0 0 .8px rgba(255,255,255,.9)) drop-shadow(0 2px 2px rgba(0,0,0,.3))}',
+    // 前足（.bc-hbf）の 白い ふちと 影は 絵の 中（影に 白い ふちが つかない ように：CSS の 影は つけない）
     '.fxs .hb:not(.bchbv) .bc-hbsv,.fxs .hb.bchbv .bc-hbr{display:none}',
     // 21：8回目から（幻の 馬＝極ど的中の 紫の 馬：動画の 2まい bcx_ph0（暗闇に 目だけ）・bcx_ph1（顔が 見える）。ない とき（CI）は SVG の 紫の 馬）。
     //   舞台（.ov）の 上に 暗い 雷の 幕・馬・目の 光・鼻の 息・咆哮の 輪。ボードは 吹きとんで 3秒後に もどる
@@ -431,7 +437,8 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -142, 128, 172], fore: [136, -32, 100, 63], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61] };
+  const HBX = { head: [196, -142, 128, 172], fore: [203, -18, 73, 43], hind: [242, -30, 100, 124], tail: [314, -46, 33, 96], eye: [248, -121, 26, 26], headO: [272, 12], hindO: [292, -18], tailO: [327, -61],
+    legL: [222, -4], legR: [258, -5], eyeC: [261, -108], muzzle: [211, -64], poll: [267, -113] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
     const as = FXA(), H = o.H;
@@ -445,18 +452,32 @@
       html += `<div class="bcx bk bco bc-hbr bc-hbt" style="${pos(at('tail', 1))};transform-origin:${org('tail', 'tailO', 1)}"><img class="bchbi" src="${src('tail')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbl" style="${pos(at('hind', 1))};transform-origin:${org('hind', 'hindO', 1)}"><img class="bchbi" src="${src('hind')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbh" style="${pos(h)};transform-origin:${org('head', 'headO')}"><img class="bchbi" src="${src('head')}" alt="">`
-        + `<img class="bchbi bc-hbe" src="${src('eye')}" alt="" style="position:absolute;left:${f(e.x - h.x)}px;top:${f(e.y - h.y)}px;width:${f(e.w)}px;height:${f(e.h)}px"></div>`
-        + `<div class="bcx bc-hbr bc-hbf" style="${pos(at('fore'))}"><img class="bchbi" src="${src('fore')}" alt=""></div>`;
+        + `<img class="bchbi bc-hbe" src="${src('eye')}" alt="" style="position:absolute;left:${f(e.x - h.x)}px;top:${f(e.y - h.y)}px;width:${f(e.w)}px;height:${f(e.h)}px">${hbPanic(h)}</div>`
+        + `<div class="bcx bc-hbr bc-hbf" style="${pos(at('fore'))};transform-origin:${f(273 - at('fore').x)}px ${f(-at('fore').y)}px"><img class="bchbi" src="${src('fore')}" alt=""></div>`;
     }
     html += hbVec(o, ok);
-    return { html, enter: 'carry', start: () => setTimeout(() => snd('thump'), 470) };
+    return { html, enter: 'carry', start: () => setTimeout(() => snd('thump'), 470),
+      go: hb => { if (o.st) return; setTimeout(() => { if (hb.isConnected) snd('slip'); }, 1500); setTimeout(() => { if (hb.isConnected) snd('phew'); }, 2560); } };
   };
+  // 22：あせる 所の 部品（頭と首の 入れもの の 中：頭と いっしょに 動く）。見ひらいた 目（白目＋小さな 黒目）・汗 3つ・「！」の 形・鼻の 息（ふぅ）
+  function hbPanic(h) {
+    const q = HBX, ec = q.eyeC, mz = q.muzzle, pl = q.poll, rel = (x, y) => [f(x - h.x), f(y - h.y)];
+    const [ex, ey] = rel(ec[0], ec[1]), [mx, my] = rel(mz[0] - 7, mz[1] - 1), [px, py] = rel(pl[0], pl[1]);
+    let s = `<div class="bc-hbw" style="position:absolute;left:${f(+ex - 11)}px;top:${f(+ey - 11)}px;width:22px;height:22px"><svg viewBox="-11 -11 22 22" aria-hidden="true"><circle r="8.8" fill="#FFFFFF" stroke="#4A2614" stroke-width="1.3"/>`
+      + '<circle cx="-1.2" cy="-.4" r="3.1" fill="#1A1008"/><circle cx="-2.2" cy="-1.6" r="1.1" fill="#FFFFFF"/></svg></div>';
+    const drop = '<svg viewBox="-3.5 -5.5 7 10" aria-hidden="true"><path d="M0 -5 C2.6 -1.4 3.2 .6 3.2 1.6 C3.2 3.4 1.8 4.4 0 4.4 C-1.8 4.4 -3.2 3.4 -3.2 1.6 C-3.2 .6 -2.6 -1.4 0 -5 Z" fill="#8FD8FF" stroke="#2F6FA8" stroke-width=".9"/><path d="M-1.4 .4 C-1.4 -.8 -.8 -1.8 -.2 -2.4" stroke="#FFFFFF" stroke-width=".9" fill="none" stroke-linecap="round"/></svg>';
+    s += `<div class="bc-hbd" style="position:absolute;left:${px}px;top:${py}px;width:0;height:0">`
+      + [[-14, -6, -12, -10, -24, 1.6], [2, -14, 6, -15, 12, 1.68], [12, -4, 15, -7, 30, 1.76]].map(([x, y, dx, dy, r, d]) => `<i style="left:${x}px;top:${y}px;--x:${dx}px;--y:${dy}px;--r:${r}deg;--d:${d}s">${drop}</i>`).join('') + '</div>';
+    s += `<div class="bc-hbx" style="position:absolute;left:${f(+px + 22)}px;top:${f(+py - 30)}px;width:12px;height:24px;transform-origin:50% 100%"><svg viewBox="0 0 12 24" aria-hidden="true"><rect x="3.2" y="1" width="5.6" height="14.5" rx="2.8" fill="#FFE27A" stroke="#B0141B" stroke-width="1.4"/><circle cx="6" cy="20.4" r="2.9" fill="#FFE27A" stroke="#B0141B" stroke-width="1.4"/></svg></div>`;
+    s += `<div class="bc-hbp" style="position:absolute;left:${f(+mx - 9)}px;top:${f(+my - 7)}px;width:18px;height:14px"><svg viewBox="-9 -7 18 14" aria-hidden="true">${A.puff(5.5)}</svg></div>`;
+    return s;
+  }
   // 22 の 絵が ない とき：SVG の 馬（頭と首は ボードの うしろ・ひづめは 上の ふちに かける・下は 後ろ足と しっぽ）。hidden＝ふだんは かくす（絵が 読めない ときに 出す）
   function hbVec(o, hidden) {
     const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
     let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
-    s += box('bco', 146, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(8)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
-    s += box('bco', 200, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`);
+    s += box('bco bc-hbf', 209, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(-6)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:64px 10px');
+    s += box('bco bc-hbf', 244, -10, 26, 22, '-13 -11 26 22', `<g transform="rotate(5)">${A.hoof(c, 0, 9, 0, 9, 11)}</g>`, 'transform-origin:29px 10px');
     s += `<div class="bcx bk bco bc-hbl" style="left:246px;top:${f(o.H - 14)}px;width:100px;height:${f(lh + 14)}px;transform-origin:50% 0"><svg viewBox="0 -14 100 ${f(lh + 14)}" preserveAspectRatio="none">`
       + `<g class="bc-hbt" style="transform-origin:84px -6px"><path d="M80 -8 C90 ${f(lh * .3)} 92 ${f(lh * .65)} 88 ${f(lh * .95)} C84 ${f(lh * .7)} 80 ${f(lh * .45)} 74 -8 Z" fill="${c.n}"/></g>`
       + `<path d="M22 -14 L40 -14 L38 ${f(lh - 8)} L24 ${f(lh - 8)} Z" fill="${c.b}"/><path d="M56 -14 L74 -14 L72 ${f(lh - 8)} L58 ${f(lh - 8)} Z" fill="${c.s}"/>`
@@ -481,7 +502,19 @@
       + jit('bcHbL', 2.3, 11, .55, .7, [[0, .3], [.2, .3], [.28, 1], [.66, 1], [.74, .25], [1, .3]])
       + '@keyframes bcHbT{0%,18%,37%,53%,66%,75%,88%,100%{transform:rotate(0)}6%{transform:rotate(9deg)}10%{transform:rotate(-5deg)}14%{transform:rotate(3deg)}'
       + '41%{transform:rotate(-11deg)}45%{transform:rotate(7deg)}49%{transform:rotate(-3deg)}69%{transform:rotate(5deg)}72%{transform:rotate(-2deg)}90.5%{transform:rotate(13deg)}93%{transform:rotate(-8deg)}96%{transform:rotate(4deg)}}'
-      + '@keyframes bcHbE{0%,6%{opacity:0}6.4%,8.6%{opacity:1}9%,100%{opacity:0}}';
+      + '@keyframes bcHbE{0%,6%{opacity:0}6.4%,8.6%{opacity:1}9%,100%{opacity:0}}'
+      // 22：落としそうに なる（ボードと 前足：右の 前足の 近くを 中心に 左が 大きく 下がる → じたばた → 持ち上げて 少し 上へ → もどる）
+      + '@keyframes bcHbSlip{0%{transform:none;animation-timing-function:cubic-bezier(.55,0,1,.7)}16%{transform:translateY(9px) rotate(-2.6deg);animation-timing-function:ease-out}22%{transform:translateY(11px) rotate(-3deg)}'
+      + '30%{transform:translateY(9.5px) rotate(-2.4deg)}38%{transform:translateY(10.6px) rotate(-2.9deg)}46%{transform:translateY(10px) rotate(-2.6deg);animation-timing-function:cubic-bezier(.3,0,.3,1)}'
+      + '68%{transform:translateY(-3px) rotate(.6deg);animation-timing-function:ease-in-out}80%{transform:translateY(1px) rotate(-.2deg)}90%{transform:translateY(-.4px) rotate(0)}100%{transform:none}}'
+      + '@keyframes bcHbJ{0%{transform:none}8%{transform:translate(2px,-4px) rotate(4deg)}12%{transform:translate(2.6px,-5px) rotate(5deg)}18%{transform:translate(1.8px,-4.2px) rotate(4.4deg)}'
+      + '24%{transform:translate(2.8px,-4.8px) rotate(5deg)}30%{transform:translate(1.9px,-4.1px) rotate(4.3deg)}36%{transform:translate(2.7px,-4.9px) rotate(4.9deg)}42%{transform:translate(2px,-4.3px) rotate(4.5deg)}'
+      + '56%{transform:translate(1px,-2px) rotate(2deg)}72%{transform:translate(-.6px,.8px) rotate(-1deg)}86%{transform:translate(0,.3px) rotate(-.3deg)}100%{transform:none}}'
+      + jit('bcHbS', .85, 16, 1.6, 2.2, [[0, 1], [.66, 1], [1, 0]])
+      + '@keyframes bcHbW{0%{opacity:0}3%{opacity:1}66%{opacity:1}72%,100%{opacity:0}}'
+      + '@keyframes bcHbX{0%{opacity:0;transform:scale(.3)}12%{opacity:1;transform:scale(1.25)}22%{transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}'
+      + '@keyframes bcHbD{0%{opacity:0;transform:translate(0,0) scale(.5)}15%{opacity:1}60%{opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}100%{opacity:0;transform:translate(calc(var(--x) * 1.3),calc(var(--y) + 14px)) rotate(var(--r)) scale(.85)}}'
+      + '@keyframes bcHbP{0%{opacity:0;transform:translate(0,0) scale(.4)}20%{opacity:.95}100%{opacity:0;transform:translate(-16px,5px) scale(1.35)}}';
   }
 
   // ---------- 走って きた 馬を 止める（いまの 足の 形から ふつうに 立つ 形へ なめらかに） ----------
@@ -586,6 +619,8 @@
       else if (name === 'coins') { for (let i = 0; i < 10; i++) { const fq = 2600 + Math.random() * 1600; tone('triangle', fq, fq * 1.02, .18, .07, i * .06 + Math.random() * .03); } }
       else if (name === 'rumble') { noise(3.2, .5, 'lowpass', 140, .8, 0, .4); }
       else if (name === 'crack') { noise(.35, .55, 'highpass', 1200, .8); noise(1.2, .4, 'lowpass', 220, .8, .05, .02); }
+      else if (name === 'slip') { tone('sine', 1100, 380, .24, .1); noise(.22, .07, 'bandpass', 1800, 2.2, .01, .02); }   // 22：ずり落ちる
+      else if (name === 'phew') { noise(.38, .06, 'bandpass', 1100, .9, 0, .1); tone('sine', 660, 700, .14, .06, .02); tone('sine', 880, 930, .2, .05, .14); }   // 22：ふぅ
       else if (name === 'roar') {
         // 咆哮：のこぎり波の うなり（ゆれる 高さ）＋ ざらざらの 息（帯の 音）＋ ひずみ
         const o = c.createOscillator(), o2 = c.createOscillator(), vib = c.createOscillator(), vg = c.createGain(), ws = c.createWaveShaper(), g = c.createGain(), fl = c.createBiquadFilter();

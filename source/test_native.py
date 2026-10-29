@@ -1181,14 +1181,29 @@ try:
         #   「とじる」は 動かない・控えめは 止まった 形。この テストは 絵（ios/fx_assets の bcx_hb_*.webp）を 置かないので SVG の 馬（.bchbv）
         p6.evaluate("TengelWallet.board.select('carry')"); p6.wait_for_timeout(200)
         CR6 = "() => { const hb = document.querySelector('#fxOv .hb'), c = document.querySelector('#fxOv .close'); if (!hb) return null; const r = c.getBoundingClientRect(), vis = s => [...hb.querySelectorAll(s)].filter(e => e.getClientRects().length).length; return { bcx: hb.dataset.bcx || '', cls: hb.className, an: getComputedStyle(hb).animationName, head: vis('.bc-hbh'), legs: vis('.bc-hbl'), tail: vis('.bc-hbt'), imgs: hb.querySelectorAll('img.bchbi').length, close: [Math.round(r.left), Math.round(r.top)] }; }"
-        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(500); c1 = p6.evaluate(CR6); p6.wait_for_timeout(2400); c1b = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        SLIP6 = "() => { const rb = document.querySelector('#fxOv .hb .rb'); return rb ? rb.getAnimations().filter(a => a.animationName === 'bcHbSlip').length : -1; }"
+        CL6 = "() => { const r = document.querySelector('#fxOv .close').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }"
+        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(500); c1 = p6.evaluate(CR6); p6.wait_for_timeout(2400); c1b = p6.evaluate(CR6)
+        # 第4.108版：1回だけ ボードを 落としそうに なる（出おわって 1.5秒後・1.4秒）：その 間も「とじる」は 動かない・おわったら もう 起きない
+        sl = {'on': False, 'close': None, 'again': False}
+        try:
+            p6.wait_for_function("() => { const rb = document.querySelector('#fxOv .hb .rb'); return rb && rb.getAnimations().some(a => a.animationName === 'bcHbSlip' && a.playState === 'running' && a.currentTime > 1600); }", timeout=8000)
+            sl['on'] = True; sl['close'] = p6.evaluate(CL6); sl['tf'] = p6.evaluate("getComputedStyle(document.querySelector('#fxOv .hb .rb')).transform")
+            p6.wait_for_function("() => { const rb = document.querySelector('#fxOv .hb .rb'); return rb && !rb.getAnimations().some(a => a.animationName === 'bcHbSlip'); }", timeout=8000)
+            p6.wait_for_timeout(2500); sl['again'] = p6.evaluate(SLIP6) != 0
+        except Exception as e:
+            print('   （落としそうに なる 所：', str(e)[:80], '）')
+        p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate(SHOW6, ['miss', MISS6]); p6.wait_for_timeout(1800); c2 = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate("TengelFx.set({ calm: true })")
-        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(2600); c3 = p6.evaluate(CR6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(2600); c3 = p6.evaluate(CR6); p6.wait_for_timeout(2600); c3s = p6.evaluate(SLIP6); c3a = p6.evaluate("getComputedStyle(document.querySelector('#fxOv .hb .rb')).animationName")
+        p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate("TengelFx.set({ calm: false })")
         check(c1 and c1['bcx'] == 'carry' and 'bce-carry' in c1['cls'] and c1['an'].startswith('bcECarry') and 'bcgo' in c1b['cls'] and 'bchbv' in c1b['cls'] and c1b['imgs'] == 5 and c1b['head'] >= 1 and c1b['legs'] >= 1 and c1b['tail'] >= 1
               and c2 and c2['bcx'] == 'carry' and 'bcgo' in c2['cls'] and c1b['close'] == h0['close'] and c2['close'] == h0['close'] and c3['bcx'] == 'carry' and 'bcst' in c3['cls'] and 'bce-carry' not in c3['cls'],
               f'第4.108版：22「ボードを持つ馬」は 的中にも ハズレにも つく・下から 出てくる（bcECarry → .bcgo）・頭と首・後ろ足・しっぽ（絵が ない ときは SVG の 馬）・「とじる」は 動かない・控えめは 止まった 形（{c1 and c1["cls"]}・{c1b["cls"]}・{c3["cls"]}）')
+        check(sl['on'] and sl['close'] == h0['close'] and sl.get('tf', 'none') != 'none' and not sl['again'] and c3s == 0 and c3a == 'none',
+              f'第4.108版：22「ボードを持つ馬」：1回だけ ボードを 落としそうに なる（その 間も「とじる」は 動かない・おわったら もう 起きない）・控えめなら 起きない（{sl}・{c3s}・{c3a}）')
         # 出世馬：連続的中の 数（同じ レースは 1回・ハズレで 0）→ 1・2・3・4・8 の 飾り
         p6.evaluate("TengelWallet.board.select('rise')"); p6.wait_for_timeout(200)
         sk = [p6.evaluate("(a) => TengelWallet.board.result(a[0], a[1])", a) for a in (['x1', True], ['x1', True], ['x2', True], ['x3', False], ['x4', True])]
