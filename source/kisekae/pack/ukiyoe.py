@@ -537,6 +537,128 @@ def samurai_css():
     return css
 
 
+# ---------------------------------------------------------------- 波の 一生（第4.96版）の 時の ながれ
+def _ss(u):
+    u = min(1.0, max(0.0, u))
+    return u * u * (3 - 2 * u)
+
+
+def _pc(t):
+    return t / WAVE_T * 100
+
+
+def _lerp(a, b, u):
+    return tuple(x + (y - x) * u for x, y in zip(a, b))
+
+
+def wave_state(t):
+    """t 秒の 波の 箱の 形（右へ・下へ・横・高さ・かたむき）と こさ"""
+    if t < W_RISE[1]:
+        st = _lerp(WG_LOW, WG_PEAK, _ss((t - W_RISE[0]) / (W_RISE[1] - W_RISE[0])))
+    elif t < W_PEAK[1]:
+        st = _lerp(WG_PEAK, WG_PEAK2, _ss((t - W_PEAK[0]) / (W_PEAK[1] - W_PEAK[0])))
+    elif t < W_PITCH[1]:
+        st = _lerp(WG_PEAK2, WG_PITCH, _ss((t - W_PITCH[0]) / (W_PITCH[1] - W_PITCH[0])))
+    elif t < W_SINK[0]:
+        st = WG_PITCH
+    else:
+        st = _lerp(WG_PITCH, WG_SUNK, _ss((t - W_SINK[0]) / (W_SINK[1] - W_SINK[0])))
+    a0, a1, b0, b1 = W_FADE
+    op = _ss((t - a0) / (a1 - a0)) * (1 - _ss((t - b0) / (b1 - b0)))
+    return st, op
+
+
+def life_stops(step=.15):
+    """波の 箱の transform と こさ（0.15秒ごとの 点を まっすぐ つなぐ＝なめらか）"""
+    out, t = [], 0.0
+    while t < WAVE_T + 1e-6:
+        (tx, ty, sx, sy, sk), op = wave_state(t)
+        out.append((_pc(t), f'opacity:{f(op, 3)};transform:translate({f(tx, 2)}px,{f(ty, 2)}px) skewX({f(sk, 2)}deg) scale({f(sx, 4)},{f(sy, 4)})'))
+        t = round(t + step, 6)
+    return out
+
+
+def crest_c(t):
+    """t 秒の 頭の 巻きの 強さ c（もり上がる −1→0・いちばん 高い 0・投げ出す 0→1・落ちる 1→1.6）"""
+    if t < W_RISE[1]:
+        return -1 + _ss((t - W_RISE[0]) / (W_RISE[1] - W_RISE[0]))
+    if t < W_PITCH[0]:
+        return 0.0
+    if t < W_PITCH[1]:
+        return ((t - W_PITCH[0]) / (W_PITCH[1] - W_PITCH[0])) ** 1.5
+    if t < W_FALL[1]:
+        u = (t - W_FALL[0]) / (W_FALL[1] - W_FALL[0])
+        return 1 + 0.6 * (1 - (1 - u) ** 2)
+    return 1.6
+
+
+def crest_stops(cs, cols, fw, fh):
+    """頭の コマ：それぞれの コマを、c が その コマと となりの コマの まん中を こえた 時から 出す（step-end）"""
+    ts = [i * 0.01 for i in range(int(WAVE_T * 100) + 1)]
+    cv = [crest_c(t) for t in ts]
+    order = list(range(len(cs)))
+    out = []
+    for i in order:
+        if i == 0:
+            t0 = 0.0
+        else:
+            mid = (cs[i - 1] + cs[i]) / 2
+            t0 = next((t for t, c in zip(ts, cv) if c >= mid - 1e-9 and t > 0), WAVE_T)
+        r, q = divmod(i, cols)
+        out.append((t0, f'background-position:{f(-q * fw, 3)}px {f(-r * fh, 3)}px'))
+    out.sort(key=lambda x: x[0])
+    stops, seen = [], set()
+    for t0, d in out:
+        p = round(_pc(t0), 3)
+        if p in seen:
+            stops[-1] = (p, d)
+            continue
+        seen.add(p)
+        stops.append((p, d))
+    return stops
+
+
+def _win(name, keys):
+    """[(秒, 宣言)] → @keyframes（はしの 0% と 100% を 足す）"""
+    st = [(_pc(t), d) for t, d in keys]
+    if st[0][0] > 0:
+        st.insert(0, (0, keys[0][1]))
+    if st[-1][0] < 100:
+        st.append((100, keys[-1][1]))
+    return kf(name, st)
+
+
+def wave_life_css():
+    """しぶきの 点・頭から 吹き飛ぶ しぶきと もや・白い 水が 走る・白い 泡の かたまり"""
+    o0, o1 = 'opacity:0', 'opacity:1'
+    css = ''
+    # 爪から 落ちる しぶきの 点（神奈川沖浪裏の 点）：もり上がる 終わりに 爪の 下に あらわれ、投げ出す ときに 前へ とんで 落ちる・もう 1まいは 投げ出す ときだけ
+    css += _win('ukDot1', [(0, f'{o0};transform:translate(-4px,-8px)'), (2.3, f'{o0};transform:translate(-4px,-8px)'), (2.9, f'{o1};transform:translate(0,0)'),
+                           (3.9, f'{o1};transform:translate(0,0)'), (4.6, 'opacity:.9;transform:translate(4px,8px)'), (5.4, f'{o0};transform:translate(9px,20px)'),
+                           (5.42, f'{o0};transform:translate(-4px,-8px)')])
+    css += _win('ukDot2', [(0, f'{o0};transform:translate(-4px,-9px)'), (3.9, f'{o0};transform:translate(-4px,-9px)'), (4.3, 'opacity:.95;transform:translate(-1px,-3px)'),
+                           (5.0, 'opacity:.7;transform:translate(5px,10px)'), (5.8, f'{o0};transform:translate(10px,22px)')])
+    # 頭から うしろ（左）へ 吹き飛ぶ しぶき（点の 帯）と もや
+    for nm, t0 in (('ukSp1', 4.0), ('ukSp2', 4.6)):
+        css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.4)'), (t0, f'{o0};transform:translate(0,0) scale(.4)'),
+                         (t0 + .5, 'opacity:.9;transform:translate(-6px,-2px) scale(.8)'), (t0 + 1.6, 'opacity:.6;transform:translate(-24px,-7px) scale(1.1)'),
+                         (t0 + 2.6, f'{o0};transform:translate(-42px,-11px) scale(1.3)')])
+    for nm, t0 in (('ukMs1', 4.1), ('ukMs2', 4.7)):
+        css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.8)'), (t0, f'{o0};transform:translate(0,0) scale(.8)'),
+                         (t0 + .6, 'opacity:.8;transform:translate(-8px,-2px) scale(1)'), (t0 + 2.7, f'{o0};transform:translate(-50px,-9px) scale(1.3)')])
+    # 白い 水が 波の 根もとを 右から 左へ 走る（落ちた 所から じゅんに はじけて ひろがり、泡の かたまりに なる）
+    for k, (t0, x, sc) in enumerate(PEEL):
+        css += _win(f'ukPl{k}', [(0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'), (t0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'),
+                                 (t0 + .35, f'{o1};transform:scale({f(sc, 3)},{f(sc, 3)})'), (t0 + .9, f'opacity:.95;transform:translateY(-2px) scale({f(1.1 * sc, 3)},{f(1.05 * sc, 3)})'),
+                                 (t0 + 1.8, f'{o0};transform:translateY(4px) scale({f(1.3 * sc, 3)},{f(.8 * sc, 3)})')])
+    # 白い 泡の かたまり：くずれる ときに もり上がって 波を つつみ、次の 波が もり上がる 間に ひろがって うすく なる
+    for nm, d in (('ukFbB', 0.0), ('ukFbF', 0.2)):
+        css += _win(nm, [(0, f'{o1};transform:translateY(0) scale(1,1)'), (0.4 - d, f'{o1};transform:translateY(0) scale(1,1)'),
+                         (2.4 - d, f'{o0};transform:translateY(6px) scale(1.1,.75)'), (4.7 + d, f'{o0};transform:translateY(12px) scale(.92,.45)'),
+                         (6.3 + d, f'{o1};transform:translateY(0) scale(1,1)')])
+    return css
+
+
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
     run = B.get('run')
@@ -550,12 +672,15 @@ def banner(B):
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     html += img('ukSky', sky_svg()) + img('ukKs', kasumi_svg()) + img('ukSea', sea_svg()) + img('ukBt', boat_svg())
     html += f'<i class="ukCr" style="background-image:url(&quot;{durl(crests_svg())}&quot;)"></i>'
-    wave = B.get('wave')
-    if wave:                                 # 神奈川沖浪裏の 大波（make/ukiyoe_great.py の 絵の シート：体・波の 先と 爪 4まい・しぶきの 点）
-        lips = [p for p in wave['parts'] if p.startswith('lip')]
-        html += ('<i class="ukWg"><i class="ukW body"></i>' + ''.join(f'<i class="ukW lip {p}"></i>' for p in lips)
+    wave, crest = B.get('wave'), B.get('crest')
+    if wave:                                 # 神奈川沖浪裏の 大波（make/ukiyoe_great.py：体・頭の コマ・しぶきの 点）
+        html += ('<i class="ukWg"><i class="ukW body"></i>' + ('<i class="ukCf"></i>' if crest else '')
                  + '<i class="ukW dots d1"></i><i class="ukW dots d2"></i></i>')
-    html += img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg()) + img('ukFm', foam_svg()) + img('ukBs', burst_svg())
+    html += img('ukSp s1', spray_svg(41)) + img('ukSp s2', spray_svg(43)) + img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
+    html += img('ukFb b', foam_band_svg('b'))
+    for k in range(len(PEEL)):               # 白い 水が 走る（右から 左へ じゅんに はじける）
+        html += f'<i class="ukPl p{k}">' + (img('bs', burst_svg(11 + k)) if k < 2 else '') + img('fm', foam_svg(21 + k)) + '</i>'
+    html += img('ukFb f', foam_band_svg('f'))
     html += f'<i class="ukPn" style="background-image:url(&quot;{durl(pines_svg())}&quot;)"></i>'
     html += f'<i class="ukRd" style="background-image:url(&quot;{durl(road_svg())}&quot;)"></i>'
     if run:
@@ -578,9 +703,15 @@ def banner(B):
            '.ukw .ukKs{animation:ukKs 20s ease-in-out infinite}'
            '.ukw .ukBt{left:166px;top:72px;width:38px;height:29px;transform-origin:50% 90%;animation:ukBoat 3.6s ease-in-out infinite}'
            '.ukw .ukCr{left:130px;top:94px;width:390px;height:22px;background-size:130px 22px;background-repeat:repeat-x;animation:ukCrest 9s linear infinite}'
-           f'.ukw .ukMs{{width:90px;height:40px;opacity:0;animation:ukMist {f(WAVE_T)}s linear infinite}}.ukw .ukMs.m1{{left:118px;top:-4px}}.ukw .ukMs.m2{{left:150px;top:4px;animation-delay:-.35s}}'
-           f'.ukw .ukFm{{left:124px;top:84px;width:72px;height:36px;opacity:0;transform-origin:36px 36px;animation:ukFoam {f(WAVE_T)}s ease-out infinite}}'
-           f'.ukw .ukBs{{left:116px;top:46px;width:90px;height:70px;opacity:0;transform-origin:45px 66px;animation:ukBurst {f(WAVE_T)}s linear infinite}}'
+           f'.ukw .ukMs{{width:90px;height:40px;opacity:0}}.ukw .ukMs.m1{{left:112px;top:-6px;animation:ukMs1 {f(WAVE_T)}s linear infinite}}'
+           f'.ukw .ukMs.m2{{left:146px;top:2px;animation:ukMs2 {f(WAVE_T)}s linear infinite}}'
+           f'.ukw .ukSp{{left:87px;top:-18px;width:84px;height:44px;opacity:0;transform-origin:78px 32px}}'
+           f'.ukw .ukSp.s1{{animation:ukSp1 {f(WAVE_T)}s linear infinite}}.ukw .ukSp.s2{{top:-12px;animation:ukSp2 {f(WAVE_T)}s linear infinite}}'
+           f'.ukw .ukFb{{left:-24px;top:80px;width:280px;height:40px;opacity:0;transform-origin:50% 100%}}'
+           f'.ukw .ukFb.b{{animation:ukFbB {f(WAVE_T)}s linear infinite}}.ukw .ukFb.f{{top:84px;animation:ukFbF {f(WAVE_T)}s linear infinite}}'
+           '.ukw .ukPl{width:90px;height:70px;opacity:0;transform-origin:45px 70px}'
+           '.ukw .ukPl>img{position:absolute;display:block}.ukw .ukPl .bs{left:0;top:0;width:90px;height:70px}.ukw .ukPl .fm{left:9px;top:34px;width:72px;height:36px}'
+           + ''.join(f'.ukw .ukPl.p{k}{{left:{f(x - 45)}px;top:40px;animation:ukPl{k} {f(WAVE_T)}s linear infinite}}' for k, (t0, x, sc) in enumerate(PEEL))
            f'.ukw .ukPn{{left:0;top:56px;width:{2 * TILE}px;height:62px;background-size:{TILE}px 62px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
            f'.ukw .ukRd{{left:0;top:116px;width:{2 * TILE}px;height:26px;background-size:{TILE}px 26px;background-repeat:repeat-x;animation:ukFlow {ROAD_S}s linear infinite}}'
            f'.ukw .ukBk{{left:0;top:136px;width:{2 * TILE}px;height:28px;background-size:{TILE}px 28px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * .82, 3)}s linear infinite}}'
@@ -601,18 +732,20 @@ def banner(B):
     if wave:
         n = wave['frames']
         gw, gh = wave['size']
-        px_, py_ = wave['pivot']
         parts = wave['parts']
-        lips = [p for p in parts if p.startswith('lip')]
-        css += (f'.ukw .ukWg{{left:{WB[0]}px;top:{WB[1]}px;width:{f(gw)}px;height:{f(gh)}px;transform-origin:{f(gw * .36)}px {f(gh)}px;animation:ukSurge {f(WAVE_T)}s ease-in-out infinite}}'
+        css += (f'.ukw .ukWg{{left:{WB[0]}px;top:{WB[1]}px;width:{f(gw)}px;height:{f(gh)}px;opacity:0;transform-origin:{f(gw * .45)}px {f(gh)}px;'
+                f'animation:ukLife {f(WAVE_T)}s linear infinite}}'
                 f'.ukw .ukW{{position:absolute;left:0;top:0;width:{f(gw)}px;height:{f(gh)}px;background:url({wave["url"]}) 0 0/{f(n * gw)}px {f(gh)}px no-repeat}}'
-                f'.ukw .ukW.lip{{transform-origin:{f(px_)}px {f(py_)}px;animation-duration:{f(WAVE_T)}s;animation-timing-function:ease-in-out;animation-iteration-count:infinite}}'
-                + ''.join(f'.ukw .ukW.{p}{{background-position:{f(-parts.index(p) * gw)}px 0;animation-name:ukLip{k + 1}}}' for k, p in enumerate(lips))
-                + f'.ukw .ukW.dots{{background-position:{f(-parts.index("dots") * gw)}px 0}}'
-                f'.ukw .ukW.d1{{animation:ukDot1 {f(WAVE_T)}s linear infinite}}.ukw .ukW.d2{{opacity:0;animation:ukDot2 {f(WAVE_T)}s linear infinite}}')
-        for k in range(len(lips)):                  # 先の まい ほど 大きく 回る（根もとは 少し・爪の 先は いちばん）＝波の 先が しなって 巻きこむ
-            w_ = (k + 1) / len(lips)
-            css += kf(f'ukLip{k + 1}', [(t_, f'transform:rotate({f(a_ * w_, 3)}deg)') for t_, a_ in LIP_KEYS])
+                f'.ukw .ukW.dots{{background-position:{f(-parts.index("dots") * gw)}px 0}}'
+                f'.ukw .ukW.d1{{animation:ukDot1 {f(WAVE_T)}s linear infinite}}.ukw .ukW.d2{{opacity:0;animation:ukDot2 {f(WAVE_T)}s linear infinite}}'
+                + kf('ukLife', life_stops()))
+        if crest:                                   # 頭の コマ（巻きの 強さ c の じゅん）：c が 今の 時に あう コマを step-end で
+            (cw2, ch2), cols, rows = crest['cell'], crest['cols'], crest['rows']
+            fw, fh = cw2 / 2, ch2 / 2
+            ax, ay = crest['at']
+            css += (f'.ukw .ukCf{{position:absolute;left:{f(ax, 3)}px;top:{f(ay, 3)}px;width:{f(fw)}px;height:{f(fh)}px;'
+                    f'background:url({crest["url"]}) 0 0/{f(cols * fw)}px {f(rows * fh)}px no-repeat;animation:ukCf {f(WAVE_T)}s step-end infinite}}'
+                    + kf('ukCf', crest_stops(crest['cs'], cols, fw, fh)))
     css += samurai_css()
     if run:
         n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
@@ -624,22 +757,7 @@ def banner(B):
             + kf('ukCrest', [(0, 'transform:translateX(0)'), (100, 'transform:translateX(-130px)')])
             + kf('ukKs', [(0, 'transform:translateX(-8px)'), (50, 'transform:translateX(10px)'), (100, 'transform:translateX(-8px)')])
             + kf('ukBoat', [(0, 'transform:translateY(0) rotate(-3deg)'), (50, 'transform:translateY(2px) rotate(3deg)'), (100, 'transform:translateY(0) rotate(-3deg)')])
-            # 波 ぜんたい：ゆっくり もり上がって 前へ せり出す（根もとが 軸）→ ゆっくり もどる
-            + kf('ukSurge', [(0, 'transform:translate(0,0) scale(1,1)'), (52, 'transform:translate(4px,0) scale(1.024,1.024)'),
-                             (70, 'transform:translate(3px,0) scale(1.016,1.016)'), (100, 'transform:translate(0,0) scale(1,1)')])
-            # しぶきの 点：いつもの 点が 前へ とんで 落ちて 消え、見えない 間に もとの 所へ もどって ゆっくり あらわれる・もう 1まいは 巻く ときだけ
-            + kf('ukDot1', [(0, 'opacity:1;transform:translate(0,0)'), (46, 'opacity:1;transform:translate(0,0)'), (60, 'opacity:.9;transform:translate(3px,5px)'),
-                            (74, 'opacity:0;transform:translate(6px,14px)'), (74.2, 'opacity:0;transform:translate(0,0)'), (100, 'opacity:1;transform:translate(0,0)')])
-            + kf('ukDot2', [(0, 'opacity:0;transform:translate(-3px,-6px)'), (52, 'opacity:0;transform:translate(-3px,-6px)'), (60, 'opacity:.95;transform:translate(0,-2px)'),
-                            (72, 'opacity:.7;transform:translate(5px,9px)'), (84, 'opacity:0;transform:translate(9px,19px)'), (100, 'opacity:0;transform:translate(9px,19px)')])
-            # 波の 上の もや：巻く ときに うしろ（左）へ 吹き飛ぶ
-            + kf('ukMist', [(0, 'opacity:0;transform:translate(0,0) scale(.8)'), (40, 'opacity:0;transform:translate(0,0) scale(.8)'), (52, 'opacity:.85;transform:translate(-8px,-2px) scale(1)'),
-                            (80, 'opacity:0;transform:translate(-48px,-8px) scale(1.25)'), (100, 'opacity:0;transform:translate(-48px,-8px) scale(1.25)')])
-            # 根もとで 白い 泡が はじけて ひろがる・白い しぶき
-            + kf('ukFoam', [(0, 'opacity:0;transform:scale(.5,.2)'), (56, 'opacity:0;transform:scale(.5,.2)'), (64, 'opacity:1;transform:scale(1,1)'),
-                            (80, 'opacity:.75;transform:translateX(4px) scale(1.25,.86)'), (94, 'opacity:0;transform:translateX(7px) scale(1.42,.7)'), (100, 'opacity:0;transform:translateX(7px) scale(1.42,.7)')])
-            + kf('ukBurst', [(0, 'opacity:0;transform:translateY(0) scale(.3)'), (60, 'opacity:0;transform:translateY(0) scale(.3)'), (66, 'opacity:1;transform:translateY(0) scale(1)'),
-                             (80, 'opacity:.8;transform:translateY(8px) scale(1.06)'), (92, 'opacity:0;transform:translateY(20px) scale(1.1)'), (100, 'opacity:0;transform:translateY(20px) scale(1.1)')]))
+            + wave_life_css())
     css += reduced('.ukw>:not(.bnr)') if still else ''
     return html, css
 
