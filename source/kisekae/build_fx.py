@@ -24,11 +24,12 @@ import re
 import sys
 
 K = os.path.dirname(os.path.abspath(__file__))
-ASSETS = dict(nglow='fz_nglow.webp', ncore='fz_ncore.webp',
-              bcxph0='bcx_ph0.webp', bcxph1='bcx_ph1.webp',   # 第4.91版：結果ボードカスタム「出世馬」の 幻の 馬（極ど的中の 紫の 馬：動画の コマ 60・70。build_fx_films.py の sd_film）
+# 第4.109版：前の ど的中（fz）の ネオンの カットの 絵（fz_nglow.webp・fz_ncore.webp）は アプリに 入れない（その 押したあと reveal.fz は くじで 出ない ので 消した）
+ASSETS = dict(bcxph0='bcx_ph0.webp', bcxph1='bcx_ph1.webp',   # 第4.91版：結果ボードカスタム「出世馬」の 幻の 馬（極ど的中の 紫の 馬：動画の コマ 60・70。build_fx_films.py の sd_film）
               bcxhbh='bcx_hb_head.webp', bcxhbf='bcx_hb_fore.webp', bcxhbl='bcx_hb_hind.webp', bcxhbt='bcx_hb_tail.webp', bcxhbe='bcx_hb_eye.webp')
 #   第4.108版：結果ボードカスタム 22「ボードを持つ馬」の 部品（頭と首・前足・後ろ足・しっぽ・目を とじた 所：r3d/fx/board_horse_parts.py。build_fx_assets.py で 作る）
-SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a', fz='sfx_fz.m4a',
+# 第4.109版：前の ど的中の 音（sfx_fz.m4a）は 入れない（ど的中の PUSH の 音 fz_push は プレミアム・紫電・ノーマル・超神様が 使う）
+SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a',
            pc='sfx_pc.m4a', zp='sfx_zp.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音（16.5）。第4.86版：神様的中（gd）は なし・
                                                                                                                        #  超プレミアムの 音（zp）は 超プレミアム神様の はじめに 使うので のこす
            sd='sfx_sd.m4a', sdp='sfx_sdp.m4a',                                                                               # 第4.66版：ど的中・紫電の 音・第4.71版：押した 瞬間の プチュンの 音
@@ -174,6 +175,23 @@ def scope(css, prefix='.fxs', kf='fx'):
         return out
     main = emit(rules, prefix, True)
     return '\n'.join(main + ['/* 設定の「演出を控えめにする」＝視差効果を減らすと同じ形（16.6） */'] + calm_rules) + '\n'
+
+
+def drop_rules(css, bad):
+    """CSS から 選択子が bad の 行を 消す（いくつかの 選択子の うち bad の ものだけ 消す・@media の 中も。コメントは 消える）"""
+    out = []
+    for sel, body in split_rules(css):
+        if sel.startswith('@media'):
+            inner = drop_rules(body, bad)
+            if inner.strip():
+                out.append(sel + '{' + inner + '}')
+        elif sel.startswith('@'):
+            out.append(sel + '{' + body + '}')
+        else:
+            segs = [x.strip() for x in split_top(sel, ',') if not bad(x)]
+            if segs:
+                out.append(','.join(segs) + '{' + body + '}')
+    return '\n'.join(out) + '\n'
 
 
 def kf_names(css):
@@ -436,7 +454,7 @@ def reveal_spg(G):
 
 def blob_files(G):
     """見本の /_blob/<id> → アプリの 中の ファイル名"""
-    m = {G.blobs[k]: v for k, v in (('fz_nglow', ASSETS['nglow']), ('fz_ncore', ASSETS['ncore']), ('sgd_last', STILL['sgd_last'])) if k in G.blobs}
+    m = {G.blobs[k]: v for k, v in (('sgd_last', STILL['sgd_last']),) if k in G.blobs}   # 第4.109版：ネオンの 絵（fz_nglow・fz_ncore）は もう 使わない
     m.update({G.blobs[k]: v for k, v in FILMS.items() if k in G.blobs})     # 見本の ページに ある 動画（紫電の 動画は アプリだけ）
     m.update({bid: name + '.webp' for name, bid in blob_names().items()})
     return m
@@ -470,9 +488,11 @@ def css_all(G):
     # 第5弾：特別な 演出（16.3）。動画の 入れもの .ph .sgv／.ph .spu は 舞台（.fxs）の 中の .sgv／.spu に
     css += G.PC.pc_css() + G.SP.zp_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu') + G.SD.sd_css() + G.ND.nd_css()
     assert '.ph ' not in css, '見本の ページの 入れもの（.ph）が 残っているよ'
-    # 見本の絵（キャンバスの /_blob/…）→ アプリの中のファイル
+    # 第4.109版：前の ど的中（fz）の ネオンの カット（.nic・絵 fz_nglow／fz_ncore）の 行は 入れない（その 押したあと reveal.fz を 消した）
+    css = drop_rules(css, lambda sel: re.search(r'\.nic\b', sel))
     for key in ('fz_nglow', 'fz_ncore'):
-        assert '/_blob/' + G.blobs[key] in css, key
+        assert '/_blob/' + G.blobs[key] not in css, key
+    # 見本の絵（キャンバスの /_blob/…）→ アプリの中のファイル
     css = deblob(css, G, 'css')
     out = scope(css)
     # 選択子に付けた .fxs は、舞台そのもの（.fxs{…}）にも付いてしまう → 舞台の変数の行だけ直す
@@ -487,8 +507,10 @@ def bundle():
     for k, h in fx5.items():
         assert '{{BOARD}}' in h and '{{N}}' in h and 'data-fx="close"' in h, k
     SG = G.SG
-    return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big=push_big(G), big_t=push_big_t(G), fz=push_fz(G), fz_t=push_fz_t(G)),
-                reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, fz=reveal_fz(G), **fx5),
+    # 第4.109版：テーマの ない PUSH（big・fz）と 前の ど的中の 押したあと（fz：フリーズ・ネオンの カット）は 入れない
+    #   （PUSH は いつも big_t・fz_t の 中に テーマの PUSH か いつもの 赤い PUSH（fx.js の pboxHTML）・ど的中は くじで pc／sd／nd に なる）
+    return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big_t=push_big_t(G), fz_t=push_fz_t(G)),
+                reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
                 t=dict(R=G.FZ_T['R'], PC=G.PC.PC_RES, SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
                        ND=G.ND.ND_T['RES'], NDS=dict(FROM=G.ND.STILL_FROM, WAIT=G.ND.STILL_WAIT), SDUP=dict(G.ND.SD_UP),
