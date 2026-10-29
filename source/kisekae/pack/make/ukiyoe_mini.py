@@ -1,18 +1,18 @@
-"""浮世絵風の 壁紙（壁紙パック）の 小波（小さな 大波）の 絵の 帯（WebP）を 作る。
-   第4.104版 まさちゃん「小波もう少し大きくして、海が埋まるように数を増やして！」「小波は同じ絵だから数を増やして何層かに重ねて自然に見えるようにして！」：
-     小波は 第4.103版と 同じ「小さな 大波」（大波の 一生の コマ＝ukiyoe.wave の シートの うち、くずれはじめて 横長に なった 所＝コマ 28〜39）。
-     数を ふやしても かるく 動く ように、その 12コマを 同じ 大きさの 箱に ならべた 1本の 帯に する（ページでは 箱の 中で 帯を transform だけで
-     ずらして コマを 入れかえる＝はば・高さ・背景の 場所を 動かさない）。
-   1コマ：大波の コマの 絵（シートの 中の 四角）を そのまま 写す（絵を 足さない・左右に うら返さない）。
-     たては コマ 28 の 上の はしを 0 に して、コマが すすんで 上の はしが 下がる ぶんの 85% を もどす（第4.103版の MW_KEEP と 同じ：白い 波が 少しずつ 低く なる）。
-     上から D_CELL（大波の 絵の px）まで だけ 入れる（その 下は 列の 海の 線より 下＝見えない）。
-   第4.105版 まさちゃん「小波達をいい感じに繋げて何層か作成し、海が波で見えなくなってほしい！」：
-     同じ コマ（28〜39）を つないだ 波の 帯（リボン）4層も 作る（ukiyoe.ribbon）。帯の 1本は はば 390px で くり返す 絵：コマを 右から 左へ
-     すきまなく 重ね（左の 波の 巻きが 右の 波の 白い 背中に かぶさる）、頭から RB_D より 下は ぼかして、波の 頭の 線より 下は ぜんぶ
-     大波の 体と 同じ 藍の 体（藍 → 濃い 藍の ぼかし・明るい 青の 帯・白い すじ）で うめる（平らな 海が 見えない）。おくの 層ほど 小さく かすむ。
-     層の 大きさ・高さ・かすみ は pack/ukiyoe.py の RB_ROWS。
+"""浮世絵風の 壁紙（壁紙パック）の 小波の 層（WebP）を 作る。
+   第4.106版 まさちゃん「小波を各層ごとに絵をつなげて一個の層を一つの絵みたいに小波が個々にならないようにして！
+   あと小波の青の部分画面上に見えるところ増やして！」：
+     小波の 層 4つを、それぞれ 1まいの つながった 絵に した（ukiyoe.ribbon：1つの 層＝はば 390px で くり返す 絵 2本）。
+     ・波の 頭（ukRc）：大波の 一生の コマ（ukiyoe.wave の シート）の うち くずれはじめて 横長に なった 所（コマ 26〜40）の
+       頭の 線に そって ほどいた 帯（墨の 線・白い 泡・その 下の 爪と 藍の 顔）を 切れめ なく つないで、ゆるく うねる 頭の 線
+       （トロコイド：頭が 少し とがり、谷は ひろい・前（右）が 少し 急）に そって 巻きもどした もの。列ごとに 白の 下の はし
+       （爪の はじまり）を そろえて 白い 泡を うすく（頭の 所だけ 少し 厚く）、爪の すき間と その 下は 藍＝青が ふえる。
+     ・波の 体（ukRb）：大波の 体と 同じ 藍の ぼかしに 明るい 青の 短い 弧（さざなみ・上に 墨の ふち）。
+       上の はしは 頭の 帯の 下に かくれる（平らな 海が 見えない）。いちばん 手前の 層の 体は 石の 土手の うしろまで。
+     おくの 層ほど 小さく かすむ（かすみの 色を まぜる）。層の 場所・大きさ・うねり は pack/ukiyoe.py の RB_ROWS と RB_*。
+     第4.104版〜第4.105版の 動く 小波の 帯（ukiyoe.mini）は やめた（blobs.json から 消す）。
    大波の 絵（make/ukiyoe_great.py）を 作り直したら、これも 作り直す：
-   python3 kisekae/pack/make/ukiyoe_mini.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.mini と ukiyoe.ribbon"""
+   python3 kisekae/pack/make/ukiyoe_mini.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.ribbon"""
+import math
 import os
 import sys
 
@@ -24,11 +24,228 @@ import json  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 
-F0, F1 = 28, 39            # コマの はんい（1 から かぞえる ukiyoe.wave の cells）
-KEEP = .85                 # 上の はしが 下がる ぶんを もどす わりあい
-D_CELL = 58.0              # 帯の 高さ（大波の 絵の px）：見せる 深さ 44＋上下の ゆれ＋コマが 下がる ぶん
-Z = 1.4                    # 帯の 細かさ（大波の 絵の 1px あたりの 画素：小波は いちばん 大きくて 0.42倍・iPhone の 3倍で 1.26）
-GAP = 2                    # コマの 間（画素）
+FRAMES = (26, 28, 30, 32, 34, 36, 38, 40)    # 使う コマ（1 から かぞえる ukiyoe.wave の cells）：くずれはじめて 横長に なった 大波
+TRIM = (14, 22)                              # 使える 列の かたまりの 左右の はしを けずる（シートの 画素）
+PAL = dict(white=(246, 241, 227), light=(178, 199, 222), mid=(84, 112, 160), dark=(27, 37, 92))     # make/ukiyoe_great.py と 同じ 浮世絵の 色
+HAZE = (206, 218, 230)                       # かすみの 色（空の 下の 方）
+BODY_C = (52, 78, 136)                       # 体の 上の 色（頭の 帯の 下地も 同じ 色）
+INK = (24, 32, 82)
+
+
+def frame(sheet, cells, k):
+    """コマ k（色×アルファ・アルファ：0..1）"""
+    x, y, w, h, ox, oy = cells[k - 1]
+    im = sheet[y:y + h, x:x + w].astype(np.float32) / 255.0
+    im[..., :3] *= im[..., 3:4]
+    return im
+
+
+def unroll(im, Dr, sig=2.5, up=3.0):
+    """頭の 線（いちばん 上の 不透明な 所を ならした 線）に そって ほどく：行 0 が 線の up 上・下へ Dr 行"""
+    a = im[..., 3]
+    has = (a > .5).any(axis=0)
+    top = np.argmax(a > .5, axis=0).astype(np.float32)
+    cols = np.arange(im.shape[1], dtype=np.float32)
+    top = np.interp(cols, cols[has], top[has]).astype(np.float32)
+    base = cv2.GaussianBlur(top[None, :], (0, 0), sig)[0] - up
+    my = (base[None, :] + np.arange(Dr, dtype=np.float32)[:, None]).astype(np.float32)
+    mx = np.tile(cols[None, :], (Dr, 1)).astype(np.float32)
+    U = cv2.remap(im, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    U[:, ~has] = 0
+    return U, has
+
+
+def col_align(im, cap, gw, Dc, thr, Dr=220, sig=5.0, valid_a=.75, wthr=.7):
+    """ほどいた 帯で、列ごとに 白い 泡の 下の はし（濃い 藍の 爪が はじまる 所）を そろえる。
+       出す 行：0..cap（頭の 墨の 線）・cap..cap+gw（爪の すぐ 上の 白い 泡）・その 下 Dc（爪と 藍の 顔）。
+       返り値：(帯, 使える 列の かたまり [(x0, x1)…])"""
+    U, has = unroll(im, Dr)
+    a = U[..., 3]
+    col = U[..., :3] / np.maximum(a[..., None], 1e-4)
+    dark = (a > .5) & (col[..., 0] < thr)
+    dark[:8] = False
+    white = (a > .5) & (col[..., 0] > .82) & (col[..., 2] > .8)
+    W_ = U.shape[1]
+    yw = np.array([np.argmax(dark[:, x]) if dark[:, x].any() else -1 for x in range(W_)], np.float32)
+    ok = (yw > 0) & has
+    sw = np.zeros(W_, np.float32)
+    sa = np.zeros(W_, np.float32)
+    for x in np.where(ok)[0]:
+        y0 = int(yw[x])
+        if y0 - gw < cap + 1 or y0 + Dc > Dr:
+            ok[x] = False
+            continue
+        sw[x] = white[y0 - gw:y0, x].mean()                  # 爪の 上が 白い 泡か
+        sa[x] = a[y0:y0 + Dc, x].mean()                      # 爪と 顔が つまって いるか
+    k_ = np.ones(15, np.float32) / 15
+    n_ = np.maximum(np.convolve(ok.astype(np.float32), k_, mode='same'), 1e-3)
+    ok = ok & (np.convolve(sw * ok, k_, mode='same') / n_ > wthr) & (np.convolve(sa * ok, k_, mode='same') / n_ > valid_a)
+    xs = np.arange(W_, dtype=np.float32)
+    if ok.sum() < 20:
+        return None, []
+    yws = cv2.GaussianBlur(np.interp(xs, xs[ok], yw[ok]).astype(np.float32)[None, :], (0, 0), sig)[0]
+    Dout = cap + gw + Dc
+    v = np.arange(Dout, dtype=np.float32)[:, None]
+    src = np.where(v < cap, v, np.where(v < cap + gw, yws[None, :] - gw + (v - cap), yws[None, :] + (v - cap - gw)))
+    R = cv2.remap(U, np.tile(xs[None, :], (Dout, 1)), src.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    okd = cv2.dilate(ok.astype(np.uint8)[None, :], np.ones((1, 5), np.uint8))[0].astype(bool)
+    runs, x = [], 0
+    while x < W_:
+        if okd[x]:
+            x0 = x
+            while x < W_ and okd[x]:
+                x += 1
+            if x - x0 >= 40:
+                runs.append((x0, x))
+        x += 1
+    return R, runs
+
+
+def sources(sheet, cells, U):
+    """つなぐ 材料：コマ FRAMES の 爪と 顔の ある 所（波の 右がわ）の 帯（下の はしは ぼかす）"""
+    regs = []
+    for k in FRAMES:
+        R, runs = col_align(frame(sheet, cells, k), U.RB_CAP, U.RB_GW, U.RB_DC, U.RB_THR)
+        for x0, x1 in runs:
+            if x0 < .3 * R.shape[1]:                              # 白い 背中の 所は 使わない
+                continue
+            a, b = x0 + TRIM[0], x1 - TRIM[1]
+            if b - a > 60:
+                regs.append(R[:, a:b])
+    n = regs[0].shape[0]
+    fade = np.clip((n - np.arange(n)) / U.RB_FADE, 0, 1)[:, None, None]
+    return [r * fade for r in regs]
+
+
+def assemble(regs, Lf, rng, XF=24, Lmin=80, Lmax=170):
+    """材料を 右へ つないで はば Lf の くり返す 帯に（つなぎめと くり返しの はしは XF で まぜる）"""
+    Dr = regs[0].shape[0]
+    S = np.zeros((Dr, int(Lf) + XF + 600, 4), np.float32)
+    x, prev = 0, None
+    while x < Lf + XF:
+        i = int(rng.integers(0, len(regs)))
+        if i == prev:
+            i = (i + 1) % len(regs)
+        prev = i
+        R = regs[i]
+        L = min(int(rng.integers(Lmin, Lmax)), R.shape[1] - 2)
+        s0 = int(rng.integers(0, max(1, R.shape[1] - L)))
+        seg = R[:, s0:s0 + L]
+        w = seg.shape[1]
+        if x == 0:
+            S[:, :w] = seg
+            x = w
+        else:
+            ramp = np.clip(np.arange(w) / XF, 0, 1)[None, :, None]
+            xa = x - XF
+            S[:, xa:xa + w] = S[:, xa:xa + w] * (1 - ramp) + seg * ramp
+            x = xa + w
+    Lf = int(Lf)
+    ramp = np.clip(np.arange(XF) / XF, 0, 1)[None, :, None]
+    T = S[:, :Lf].copy()
+    T[:, :XF] = S[:, Lf:Lf + XF] * (1 - ramp) + S[:, :XF] * ramp
+    return T
+
+
+def troch(r, n=400):
+    """トロコイド（頭が 少し とがり 谷は ひろい）：t（0..1）→ 高さ（0..1：t=0.5 が 頭）"""
+    ph = np.linspace(-np.pi, np.pi, n)
+    X = (ph + np.pi - r * np.sin(ph + np.pi)) / (2 * np.pi)
+    Y = (np.cos(ph) + 1) / 2
+    return lambda t: np.interp(t, X, Y)
+
+
+def crest_line(n, A, W, rng, r, peak, jit=(.8, 1.2), hmin=.7, sm=5):
+    """くり返す 波の 頭の 線（0..A：大きい ほど 下）：n この 頭（前＝右が 少し 急：peak）"""
+    xs = np.arange(W, dtype=np.float64)
+    ws = rng.uniform(*jit, n)
+    ws = ws / ws.sum() * W
+    edges = np.concatenate([[0], np.cumsum(ws)])
+    y = np.zeros(W)
+    g = math.log(.5) / math.log(peak)
+    F = troch(r)
+    for i in range(n):
+        a, b = edges[i], edges[i + 1]
+        h = A * rng.uniform(hmin, 1.0)
+        t = np.clip((xs - a) / (b - a), 0, 1)
+        m = (xs >= a) & (xs < b)
+        y[m] = (A - h * F(t ** g))[m]
+    yy = np.concatenate([y, y, y]).astype(np.float32)
+    return cv2.GaussianBlur(yy[None, :], (sm | 1, 1), 0)[0][W:2 * W]
+
+
+def body(H, W, seed, u, gap=2.0, lw=.5, L=(10, 18), h=(.5, .9), dens=.8, y_first=1.2, ink_a=.5, alpha=.6):
+    """波の 体（くり返す）：藍の ぼかし（上は BODY_C・下は 濃い 藍）に 明るい 青の 短い 弧（さざなみ：まん中が 上がる・上に 墨の ふち）。
+       u：画面の 1px あたりの 画素 × 大きさ"""
+    R = np.random.default_rng(seed)
+    yy = np.linspace(0, 1, H)[:, None, None]
+    tc, bc = np.array(BODY_C, np.float32) / 255, np.array(PAL['dark'], np.float32) / 255
+    img = np.repeat(tc * (1 - yy ** .7) + bc * yy ** .7, W, axis=1).astype(np.float32)
+    light, ink = np.array(PAL['light'], np.float32) / 255, np.array(INK, np.float32) / 255
+    SS = 4
+    big = np.zeros((H * SS, W * SS), np.float32)
+    edge = np.zeros_like(big)
+    y0 = y_first * u
+    while y0 < H - 1:
+        x = R.uniform(0, 1) * L[1] * u
+        while x < W + L[1] * u:
+            ln, hh = R.uniform(*L) * u, R.uniform(*h) * u
+            t = np.linspace(0, 1, 24)
+            pts = np.stack([np.linspace(x, x + ln, 24), y0 + R.uniform(-.25, .25) * u - hh * np.sin(np.pi * t) ** 1.2], 1) * SS
+            for dx in (-W, 0, W):                                      # くり返しの はしで つながる
+                cv2.polylines(big, [(pts + np.array([dx * SS, 0])).astype(np.int32)], False, 1.0, thickness=max(1, int(round(lw * u * SS))), lineType=cv2.LINE_AA)
+                cv2.polylines(edge, [(pts + np.array([dx * SS, -lw * u * SS * .9])).astype(np.int32)], False, 1.0, thickness=max(1, int(round(.35 * u * SS))), lineType=cv2.LINE_AA)
+            x += ln * R.uniform(1.25, 1.9) / dens
+        y0 += gap * u * R.uniform(.85, 1.15)
+    m = cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA)[..., None]
+    e = cv2.resize(edge, (W, H), interpolation=cv2.INTER_AREA)[..., None] * (1 - m)
+    img = img * (1 - e * ink_a) + ink * e * ink_a
+    return img * (1 - m * alpha) + light * m * alpha
+
+
+def layer(U, regs, k, z):
+    """層 k：(頭の 帯 RGBA, 体 RGB, 体の 上の はし（頭の 帯の 上から：画面の px）)"""
+    p = U.RB_ROWS[k]
+    Z = U.RB_Z
+    rng = np.random.default_rng(p['seed'])
+    s = p['s']
+    T = assemble(regs, U.RB_TILE * z / s, rng)
+    f_ = Z * s / z                                                   # シートの 画素 → 出す 画素
+    Wo, Ho = U.RB_TILE * Z, int(round(T.shape[0] * f_))
+    Tb = cv2.resize(T, (Wo, Ho), interpolation=cv2.INTER_AREA)
+    A = p['A'] * Z
+    yc = crest_line(p['n'], A, Wo, rng, U.RB_R, U.RB_PEAK)
+    Tc = (U.RB_CAP + U.RB_GW) * f_                                   # 墨の 線と 白い 泡の 厚さ（出す 画素）
+    ext = U.RB_BETA * (A - yc)                                       # 頭ほど 白い 泡が 厚い
+    Hc = int(math.ceil(A + Ho + ext.max())) + 2
+    d = np.arange(Hc, dtype=np.float32)[:, None] - yc[None, :].astype(np.float32)
+    mm = (1 + ext / Tc)[None, :].astype(np.float32)
+    my = np.where(d < Tc * mm, d / mm, d - Tc * (mm - 1)).astype(np.float32)
+    mx = np.tile(np.arange(Wo, dtype=np.float32)[None, :], (Hc, 1))
+    C = cv2.remap(Tb, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    # 爪の すき間と 帯の 下は 藍の 下地（体の 上の 色）：墨の 線の 下から・帯の 下の はしで ぼかす
+    b0 = U.RB_BSTART * s * Z
+    fd = U.RB_FADE / z * s * Z
+    ab = np.clip((my - b0) / 1.5, 0, 1) * np.clip((Ho - my) / fd, 0, 1)
+    bc = np.array(BODY_C, np.float32) / 255
+    C = C + np.concatenate([bc[None, None, :] * ab[..., None], ab[..., None]], 2) * (1 - C[..., 3:4])
+    # 体の 上の はし：頭の 線の いちばん 下より 下（体が 頭の 上に 出ない）・頭の 帯の 下地が 体の 上の はしを かくす
+    bt = int(math.ceil(A + b0 + 1))
+    cover = (yc + ext + Ho - fd).min()
+    assert cover >= bt + 1, (k, cover, bt)
+    nxt = U.RB_ROWS[k + 1] if k + 1 < len(U.RB_ROWS) else None
+    bot = min(U.RB_BOT, nxt['top'] + nxt['A'] + U.RB_UNDER) if nxt else U.RB_BOT
+    Hb = int(round((bot - p['top']) * Z)) - bt
+    bd = body(Hb, Wo, p['seed'] + 7, Z * max(.5, s * 3.0))
+    if p['haze']:
+        hz = np.array(HAZE, np.float32) / 255
+        C[..., :3] = C[..., :3] * (1 - p['haze']) + hz * C[..., 3:4] * p['haze']
+        bd = bd * (1 - p['haze']) + hz * p['haze']
+    a = np.clip(C[..., 3:4], 1e-4, 1)
+    crest = np.concatenate([np.clip(C[..., :3] / a, 0, 1) * 255, np.clip(C[..., 3:4], 0, 1) * 255], 2).astype(np.uint8)
+    crest[..., :3][crest[..., 3] == 0] = 0
+    bod = np.concatenate([np.clip(bd, 0, 1) * 255, np.full(bd.shape[:2] + (1,), 255, np.float32)], 2).astype(np.uint8)
+    return crest, bod, bt / Z
 
 
 def main(out=None):
@@ -36,169 +253,30 @@ def main(out=None):
     z = B['z']
     sheet = cv2.imread(os.path.join(BLOB_DIR, B['id'] + '.webp'), cv2.IMREAD_UNCHANGED)
     sheet = cv2.cvtColor(sheet, cv2.COLOR_BGRA2RGBA)
-    cells = B['cells']
-    top0 = cells[F0 - 1][5]
-    xs0 = min(cells[k - 1][4] for k in range(F0, F1 + 1))
-    xs1 = max(cells[k - 1][4] + cells[k - 1][2] for k in range(F0, F1 + 1))
-    cw, ch = xs1 - xs0, int(round(D_CELL * z))                       # 1コマの 箱（シートの 画素＝大波の 絵の px × z）
-    tiles = []
-    for k in range(F0, F1 + 1):
-        x, y, w, h, ox, oy = cells[k - 1]
-        img = np.zeros((ch, cw, 4), np.uint8)
-        dy = int(round(oy - (oy - top0) * KEEP - top0))                  # 箱の 上から（シートの 画素）
-        src = sheet[y:y + h, x:x + w]
-        y0, y1 = max(0, dy), min(ch, dy + h)
-        if y1 > y0:
-            img[y0:y1, ox - xs0:ox - xs0 + w] = src[y0 - dy:y1 - dy]
-        tiles.append(img)
-    s = Z / z                                                         # シートの 画素 → 帯の 画素
-    tw, th = int(round(cw * s)), int(round(ch * s))
-    strip = np.zeros((th, len(tiles) * (tw + GAP) - GAP, 4), np.uint8)
-    for i, im in enumerate(tiles):
-        # 色は アルファを かけてから 小さく（ふちが 黒く にじまない）
-        a = im[..., 3:4].astype(np.float32) / 255
-        pm = np.concatenate([im[..., :3].astype(np.float32) * a, a * 255], 2)
-        sm = cv2.resize(pm, (tw, th), interpolation=cv2.INTER_AREA)
-        al = np.clip(sm[..., 3:4], 0, 255)
-        rgb = np.where(al > 0, sm[..., :3] / np.maximum(al, 1e-3) * 255, 0)
-        strip[:, i * (tw + GAP):i * (tw + GAP) + tw] = np.concatenate([np.clip(rgb, 0, 255), al], 2).astype(np.uint8)
+    from pack import ukiyoe as U
+    regs = sources(sheet, B['cells'], U)
+    gap = 4
+    parts, rows, y = [], [], 0
+    for k in range(len(U.RB_ROWS)):
+        crest, bod, bt = layer(U, regs, k, z)
+        rows.append([y, crest.shape[0], y + crest.shape[0] + gap, bod.shape[0], round(bt, 4)])
+        parts += [crest, bod]
+        y += crest.shape[0] + bod.shape[0] + 2 * gap
+    Wd = U.RB_TILE * U.RB_Z
+    big = np.zeros((y - gap, Wd, 4), np.uint8)
+    for (cy, ch, by, bh, _), (crest, bod) in zip(rows, zip(parts[::2], parts[1::2])):
+        big[cy:cy + ch] = crest
+        big[by:by + bh] = bod
     if out:
         os.makedirs(out, exist_ok=True)
-        preview_png(strip, os.path.join(out, 'uk_mini.png'), bg=(84, 112, 160))
-    bid = save_webp(strip, quality=84)
-    tops = [round((cells[k - 1][5] - (cells[k - 1][5] - top0) * KEEP - top0) / z, 3) for k in range(F0, F1 + 1)]
-    meta = dict(z=Z, f0=F0, n=len(tiles), cell=[round(cw / z, 3), round(ch / z, 3)], step=round((tw + GAP) / Z, 4), px=[tw, th], gap=GAP,
-                sheet=[strip.shape[1], strip.shape[0]], x0=round(xs0 / z, 3), top0=round(top0 / z, 3), tops=tops)
-    record('ukiyoe', 'mini', bid, meta)
-    print('mini', bid, meta, strip.shape, flush=True)
-    from pack import ukiyoe as U
-    rb, rows = ribbons(U, sheet, cells, z)
-    if out:
-        preview_png(rb, os.path.join(out, 'uk_ribbon.png'), bg=(241, 230, 207))
-    rid = save_webp(rb, quality=84)
-    rmeta = dict(z=U.RB_Z, tile=U.RB_TILE, sheet=[rb.shape[1], rb.shape[0]], rows=[[y, h, round(t['top'] - U.RB_PAD, 2), vm] for (y, h, vm), t in zip(rows, U.RB_ROWS)])
+        preview_png(big, os.path.join(out, 'uk_ribbon.png'), bg=(241, 230, 207))
+    rid = save_webp(big, quality=84)
+    # rows：[頭の 帯の y, 高さ, 体の y, 高さ, 体の 上の はし（頭の 帯の 上から・画面の px）]（シートの 画素）
+    rmeta = dict(z=U.RB_Z, tile=U.RB_TILE, sheet=[big.shape[1], big.shape[0]], rows=rows)
     record('ukiyoe', 'ribbon', rid, rmeta)
-    print('ribbon', rid, rmeta, rb.shape, flush=True)
-
-
-PAL = dict(white=(246, 241, 227), light=(178, 199, 222), mid=(84, 112, 160), dark=(27, 37, 92))     # make/ukiyoe_great.py と 同じ 浮世絵の 色
-HAZE = (206, 218, 230)                                                                                 # かすみの 色（空の 下の 方）
-
-
-def _body(h, w, seed, R3):
-    """帯の 体：藍の ぼかし（上は 藍・下は 濃い 藍）に 明るい 青の 帯と 白い すじ（ゆるい 波の 線：大波の 前の 面の ように）"""
-    Rg = np.random.default_rng(seed)
-    yy = np.linspace(0, 1, h)[:, None, None]
-    top_c, bot_c = np.array((70, 98, 150), np.float32), np.array(PAL['dark'], np.float32)
-    img = np.repeat(top_c * (1 - yy) + bot_c * yy, w, axis=1)
-    xs = np.arange(w)
-    light, white = np.array(PAL['light'], np.float32), np.array(PAL['white'], np.float32)
-    lw = max(1, int(round(R3 * .6)))
-    for i in range(int(h / (3 * R3)) + 2):
-        y0 = Rg.uniform(0, h)
-        amp = Rg.uniform(.5, 1.3) * R3
-        per = w / int(Rg.integers(3, 7))                                  # くり返しの はばで ちょうど つながる 波の 線
-        ph = Rg.uniform(0, 6.28)
-        ys = (y0 + amp * np.sin(xs / per * 6.28 + ph)).astype(int)
-        gap = int(Rg.integers(28, 46)) * R3
-        for x in range(w):
-            yi = ys[x]
-            if 0 <= yi < h - lw:
-                img[yi:yi + lw, x] = img[yi:yi + lw, x] * .35 + light * .65
-            yw = yi + lw + 1
-            if 0 <= yw < h - lw and (x // gap + i) % 3 != 0:
-                img[yw:yw + lw, x] = img[yw:yw + lw, x] * .3 + white * .7
-    return img
-
-
-def _cut(im, z, d_top, d_fade):
-    """コマ（色・アルファ）の 上から d_top だけ（その 下は d_fade で ぼかす：大波の 絵の px）"""
-    im = im.copy()
-    yy = np.arange(im.shape[0])[:, None] / z
-    im[..., 3] *= np.clip((d_top - yy) / d_fade, 0, 1)
-    return im
-
-
-def ribbons(U, sheet, cells, z):
-    """つないだ 波の 帯 4層（U.RB_ROWS）を 1まいの シートに たてに ならべる"""
-    R3, TW = U.RB_Z, U.RB_TILE
-    Wd = int(TW * R3)
-    frames = []
-    for k in range(F0, F1 + 1):
-        x, y, w, h, ox, oy = cells[k - 1]
-        im = sheet[y:y + h, x:x + w].astype(np.float32)
-        a = im[..., 3:4] / 255.0
-        frames.append(_cut(np.concatenate([im[..., :3] * a, a], 2), z, U.RB_D, U.RB_FADE))      # 色×アルファ・アルファ（0..1）
-    tiles, rows = [], []
-    for r, p in enumerate(U.RB_ROWS):
-        Rg = np.random.default_rng(p['seed'])
-        top = p['top'] - U.RB_PAD
-        H = int(round((U.RB_BOT - top) * R3))
-        # 1回り（TW）ぶんの 波の ならび：となりと 同じ コマに しない・倍率と 高さを 少し ずつ かえる
-        items, x, prev = [], 0.0, -1
-        while x < TW:
-            k = int(Rg.integers(0, len(frames)))
-            if k == prev:
-                k = (k + 3) % len(frames)
-            prev = k
-            s = Rg.uniform(*p['s'])
-            cw = frames[k].shape[1] / z * s
-            items.append((x, k, s, Rg.uniform(-.8, 1.0)))
-            x += cw * Rg.uniform(U.RB_STEP - .06, U.RB_STEP + .06)
-        fx = TW / x                                                       # ならびの 長さを TW に そろえる（くり返しで つながる）
-        allits = [(xi * fx + rep * TW, k, s, dy) for rep in (-1, 0, 1) for xi, k, s, dy in items]
-        allits.sort(key=lambda t: -t[0])                                  # 右から 左へ 重ねる（左の 波が 上）
-        pad = Wd
-        can = np.zeros((H, Wd + 2 * pad, 4), np.float32)
-        for xi, k, s, dy in allits:
-            f_ = s * R3 / z
-            src0 = frames[k]
-            nw, nh = max(1, int(round(src0.shape[1] * f_))), max(1, int(round(src0.shape[0] * f_)))
-            src = cv2.resize(src0, (nw, nh), interpolation=cv2.INTER_AREA)
-            y0 = int(round((U.RB_PAD + dy) * R3))
-            x0 = int(round(xi * R3)) + pad
-            ya, yb = max(0, y0), min(H, y0 + nh)
-            xa, xb = max(0, x0), min(can.shape[1], x0 + nw)
-            if yb <= ya or xb <= xa:
-                continue
-            sv = src[ya - y0:yb - y0, xa - x0:xb - x0]
-            dv = can[ya:yb, xa:xb]
-            a = sv[..., 3:4]
-            dv[..., :3] = sv[..., :3] + dv[..., :3] * (1 - a)
-            dv[..., 3:4] = a + dv[..., 3:4] * (1 - a)
-        tile = can[:, pad:pad + Wd]
-        # 波の 頭の 線（いちばん 上の 不透明な 所：波の ない 列は となりを つなぐ・くり返しの はしも つなぐ・少し なめらかに）より 下を 体で うめる
-        alpha = tile[..., 3]
-        has = alpha.max(axis=0) > .5
-        env = np.argmax(alpha > .5, axis=0).astype(np.float32)
-        cols = np.arange(Wd)
-        cx = np.concatenate([cols[has] - Wd, cols[has], cols[has] + Wd])
-        env = np.interp(cols, cx, np.concatenate([env[has]] * 3)).astype(np.float32)
-        kk = int(R3 * 3) | 1
-        envs = cv2.GaussianBlur(np.tile(env[None, :], (1, 3)), (kk * 3, 1), 0)[0, Wd:2 * Wd]
-        env = np.maximum(env, envs) + U.RB_DROP * R3
-        below = np.arange(H)[:, None] >= env[None, :]
-        bd = _body(H, Wd, p['seed'] + 7, R3)
-        a = alpha[..., None]
-        col = tile[..., :3] / np.maximum(a, 1e-4)
-        col = np.where(below[..., None], col * a + bd * (1 - a), col)
-        al = np.where(below, 1.0, alpha)
-        if p.get('haze'):
-            col = col * (1 - p['haze']) + np.array(HAZE, np.float32) * p['haze']
-        out = np.concatenate([np.clip(col, 0, 255), np.clip(al * 255, 0, 255)[..., None]], 2).astype(np.uint8)
-        out[..., :3][out[..., 3] == 0] = 0
-        vmax = float((env.max() - env.min()) / R3)                       # 頭の 線の でこぼこ（画面の px：動く 小波が かくれる 深さに）
-        tiles.append(out)
-        rows.append((H, round(vmax + U.RB_DROP, 2)))
-    gap = 4
-    SH = sum(t.shape[0] for t in tiles) + gap * (len(tiles) - 1)
-    big = np.zeros((SH, Wd, 4), np.uint8)
-    y, meta_rows = 0, []
-    for t, (H, vm) in zip(tiles, rows):
-        big[y:y + H] = t
-        meta_rows.append([y, H, vm])
-        y += H + gap
-    return big, meta_rows
+    from ukiyoe_great import forget
+    forget('ukiyoe', 'mini')                                          # 第4.104版〜第4.105版の 動く 小波の 帯（もう 使わない）
+    print('ribbon', rid, rmeta, big.shape, os.path.getsize(os.path.join(BLOB_DIR, rid + '.webp')), flush=True)
 
 
 if __name__ == '__main__':

@@ -2,8 +2,9 @@
    第4.103版 まさちゃん「ダメだ小波だけがどうしても納得いかない。絵を大波に似せた小波で作成して」：
      小波は 大波の 子ども（小さな 大波）＝ 大波の 一生の コマ（make/ukiyoe_great.py の life・ukiyoe.wave の シート）を pack/ukiyoe.py で そのまま
      小さく 使う（絵を 足さない）。この シートには もう 小波を 入れない（第4.100版〜第4.102版の 小波の 絵＝small_wave は やめた）。
-   しぶき（波の 先が 落ちた 所で ふき上がる しぶき 2つ・小波の 頭の しぶき 2つ・大波の 頭から 吹き飛ぶ しぶき 2つ）は pack/ukiyoe.py の SVG を
-   ブラウザ（Chromium）で 3倍に 描く。ぜんぶ 1まいの シートに ならべる（ページでは 部品の 背景に して background-position で えらぶ）
+   しぶき（波の 先が 落ちた 所で 横へ ひろがる しぶき 1つ・大波の 頭から 吹き飛ぶ しぶき 2つ・第4.106版：大波が 沈みはじめて から 水平に なる まで
+   白い 水の 先で 高く ふき上がる 潮しぶき 2つ＝plume_svg）は pack/ukiyoe.py の SVG を ブラウザ（Chromium）で 3倍に 描く。
+   ぜんぶ 1まいの シートに ならべる（ページでは 部品の 背景に して background-position で えらぶ）。第4.106版で 小波の 頭の しぶき（pf）は やめた
    python3 kisekae/pack/make/ukiyoe_foam.py [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.foam"""
 import os
 import sys
@@ -21,8 +22,8 @@ GAP = 4
 def items():
     """[(名前, svg, 幅, 高さ)]（画面の px）"""
     from pack import ukiyoe as U
-    return [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('pf0', U.puff_svg(51), 40, 26), ('pf1', U.puff_svg(53), 40, 26),
-            ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44)]
+    return [('bs0', U.burst_svg(11), 90, 70), ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44),
+            ('pl0', U.plume_svg(61), U.PL_W, U.PL_H), ('pl1', U.plume_svg(67), U.PL_W, U.PL_H)]
 
 
 def main(out=None):
