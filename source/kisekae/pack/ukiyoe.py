@@ -2,17 +2,20 @@
    （ランダム）に 出会う」→ 第4.94版「四枚目の 波の 浮世絵を 正確に 参考に・5個目の 動画（実際の 波）の 動きを 参考に」→
    第4.95版「波だけ七枚目の画像と形を全く同じにして！」「波の動きが不自然だから滑らかにもっと自然にして！」→
    第4.96版「浮世絵の赤丸の波はもっと動きを出してリアルにして！波飛沫とか波の高さが変わったりとか！リアルな波の映像から波ができてから消えていく動きを
-   勉強して、浮世絵に転用して！」）
+   勉強して、浮世絵に転用して！」→ 第4.97版「🌊自体をもう少し波の先や小波など丸い絵に変えて！」「小波を作成してを何層か入れ替わりで上下させて波を表現して
+   波の動きに合わせて少し大きくなったり、小さくなったりして！あとは潮飛沫の演出入れてリアルにして！」「この赤丸の木のところおかしいから自然に直して！」）
    大波は 葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 左の 大波と 同じ 形（まさちゃんの 指定・いちばん 高い 時）。
    上の絵：和紙の 地・空の 上に 藍の ぼかし・赤い 日・藍の ぼかしの 山なみ・かすみ（横の 雲の 帯）。
      左に 神奈川沖浪裏の 大波（make/ukiyoe_great.py：画像から 切りぬいて 浮世絵の 平らな 4つの 色＝白・明るい 青・藍・濃い 藍 に まとめた 絵。
      白い 背中・爪の 泡・濃い 藍の 体と 白い すじ・内がわの 明るい 青・爪から 落ちる しぶきの 点。空・題箋・落款は すける・舟と 人・富士山は 入れない。
-     体と、波の 先（爪の ある 頭）を 巻きの 強さの じゅんに なめらかに ゆがめた 55コマ）。白い 泡と しぶき（make/ukiyoe_foam.py の シート）。
+     体と、波の 先（爪の ある 頭）を 巻きの 強さの じゅんに なめらかに ゆがめた 55コマ。第4.97版：泡の 爪を 少し まるく）。
+     海は まるい 小波の 列 4つ（おくほど 小さく かすむ）と 潮しぶき（make/ukiyoe_foam.py の シート）。
      沖に 帆かけ舟。手前に 海ぞいの 街道（松並木・土の 道・草の 土手）。白い 馬（朱の 布と 手綱・墨の 輪郭：pack/make/ukiyoe_art.py）が 街道を 右へ 走る。右上に 朱の 印（白い 蹄鉄）
    動き（本物の 波の 動画を 参考に 波の 一生・9秒の 1回り・形は 1つの まま なめらかに つづけて 動く＝入れかえ・すけ なし）：
-     前の 波の 白い 泡の 中から 波が もり上がる（高さ 約6割 → 10割・うしろへ 起きて いた 頭が 立って 爪が のびる）→ いちばん 高い 時は 神奈川沖浪裏 そのまま →
+     小波の 中から 波が もり上がる（高さ 約6割 → 10割・うしろへ 起きて いた 頭が 立って 爪が のびる）→ いちばん 高い 時は 神奈川沖浪裏 そのまま →
      波の 先が 前へ 投げ出されて 爪が 下へ 巻きこむ・しぶきの 点が 前へ とんで 落ちる・頭から しぶきと もやが うしろ（左）へ 吹き飛ぶ →
-     落ちた 所で 白い 泡が はじけて、白い 水が 波の 根もとを 右から 左へ 走る → 波が くずれて 沈み、白い 泡の かたまりに つつまれて 消える → 泡が ひろがって うすく なる 中から 次の 波。
+     落ちた 所で 潮しぶきが ふき上がって 右から 左へ 走る → 波が くずれて 小波の 中へ 沈んで 消える → 次の 波。
+     小波の 列は 入れかわりに 上下し（となりの 列と 逆）・横に ゆれ・大波に 合わせて ふくらむ（くずれる 時が いちばん 大きく、沈むと しずまる）。小波の 頭から ときどき 潮しぶきが はねる。
      舟が ゆれる・かすみが ゆっくり ただよう・街道と 松並木と 土手が 右から 左へ 流れる（馬が 前へ 進んで 見える）。
      9秒に 1回 お侍さん（一から 描いた：ちょんまげ・羽織と しまの 袴・刀 2本・白い 足袋）が 1人 か 2人（45秒の 1回りで 1・2・2・1・1人）、街道の 手前を むこうから 歩いて
      きて、馬と すれちがう ときに 会釈して 歩いて いく（歩く はやさは 街道の 流れる はやさ＋歩幅・会釈の 間は 足が 地面に ついた まま 流れる＝足が すべらない）。強く 光らせない"""
@@ -109,7 +112,7 @@ WG_PEAK = (0.0, 0.0, 1.0, 1.0, 0.0)        # 神奈川沖浪裏
 WG_PEAK2 = (1.0, 0.0, 1.012, 1.012, 0.0)   # いちばん 高い まま 少し せり出す
 WG_PITCH = (3.0, 1.0, 1.01, 1.0, -3.0)     # 波の 先を 投げ出して 前へ かたむく
 WG_SUNK = (8.0, 44.0, 1.04, .74, -6.0)     # くずれて 沈んだ
-PEEL = [(4.25, 214, 1.5), (4.5, 184, 1.35), (4.75, 154, 1.2), (5.0, 124, 1.1), (5.25, 94, 1.0)]   # 白い 水が 走る（はじける 時・上の絵の x・大きさ）
+PEEL = [(4.25, 214, 1.5), (4.5, 184, 1.35), (4.75, 154, 1.2), (5.0, 124, 1.1), (5.25, 94, 1.0)]   # 波の 先が 落ちた 所で 潮しぶきが ふき上がる（時・上の絵の x・大きさ：右から 左へ）
 FOAM_W, FOAM_L, FOAM_M, FOAM_LINE = '#F6F1E3', '#B2C7DE', '#5470A0', '#1B255C'   # 浮世絵の 平らな 色（シートと 同じ）
 
 
@@ -190,17 +193,18 @@ def ripple_row_svg(k):
     return doc(W_, H_, o, defs=defs)
 
 
-def puff_svg(seed=51, w=30, h=18):
-    """小波の 頭から はねる しぶき（右下の 頭から 左上へ ひらく 白い つぶと うすい もや）"""
-    defs = "<filter id='bl' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='1.6'/></filter>"
+def puff_svg(seed=51, w=40, h=26):
+    """小波の 頭から はねる 潮しぶき（右下の 頭から 左上へ ひらく 白い つぶと うすい もや）"""
+    defs = "<filter id='bl' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='2'/></filter>"
     R = rnd(seed)
-    o = "<ellipse cx='16' cy='10' rx='9' ry='4' fill='#FFFFFF' opacity='.35' filter='url(#bl)' transform='rotate(-18 16 10)'/>"
-    for i in range(18):
-        a = math.radians(R.uniform(-170, -95))
-        d = R.uniform(2, 15) ** .9
-        x, y = w - 7 + math.cos(a) * d * 1.25, h - 3 + math.sin(a) * d * .8
+    o = (f"<ellipse cx='{w - 17}' cy='{h - 10}' rx='12' ry='5.5' fill='#FFFFFF' opacity='.42' filter='url(#bl)' transform='rotate(-20 {w - 17} {h - 10})'/>"
+         f"<ellipse cx='{w - 27}' cy='{h - 15}' rx='7' ry='3.5' fill='#FFFFFF' opacity='.3' filter='url(#bl)'/>")
+    for i in range(28):
+        a = math.radians(R.uniform(-172, -92))
+        d = R.uniform(2, 22) ** .92
+        x, y = w - 7 + math.cos(a) * d * 1.3, h - 3 + math.sin(a) * d * .85
         if 0 < x < w and 0 < y < h:
-            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(R.uniform(.45, 1.15) * (1.1 - d / 30))}' fill='#FBFAF4' opacity='{f(R.uniform(.7, 1))}'/>"
+            o += f"<circle cx='{f(x)}' cy='{f(y)}' r='{f(R.uniform(.55, 1.35) * (1.15 - d / 40))}' fill='#FBFAF4' opacity='{f(R.uniform(.75, 1))}'/>"
     return doc(w, h, o, defs=defs)
 
 
@@ -695,9 +699,9 @@ def wave_life_css():
     for n in (2, 4):
         P_ = n * BOB_T
         q = lambda s_: s_ / P_ * 100
-        css += kf(f'ukPf{n}', [(0, f'{o0};transform:translate(0,1px) scale(.5)'), (q(.32), 'opacity:.9;transform:translate(-1px,-1px) scale(.85)'),
-                               (q(.95), 'opacity:.6;transform:translate(-4px,-4px) scale(1.05)'), (q(1.6), f'{o0};transform:translate(-8px,-2px) scale(1.15)'),
-                               (100, f'{o0};transform:translate(-8px,-2px) scale(1.15)')])
+        css += kf(f'ukPf{n}', [(0, f'{o0};transform:translate(0,2px) scale(.45)'), (q(.32), 'opacity:.95;transform:translate(-2px,-2px) scale(.85)'),
+                               (q(.95), 'opacity:.7;transform:translate(-6px,-6px) scale(1.05)'), (q(1.7), f'{o0};transform:translate(-11px,-3px) scale(1.2)'),
+                               (100, f'{o0};transform:translate(-11px,-3px) scale(1.2)')])
     return css
 
 
@@ -765,7 +769,7 @@ def banner(B):
            f'.ukw .ukRw{{left:{ROW_X}px;width:{ROW_W}px;transform-origin:50% 100%}}'
            '.ukw .ukRw i{position:absolute;display:block}'
            f'.ukw .ukRw .d,.ukw .ukRw .b,.ukw .ukRw .im{{left:0;top:0;width:{ROW_W}px;height:100%}}'
-           '.ukw .ukPf{width:30px;height:18px;opacity:0;transform-origin:23px 15px}'
+           '.ukw .ukPf{width:40px;height:26px;opacity:0;transform-origin:33px 23px}'
            '.ukw .ukBu{width:90px;height:70px;opacity:0;transform-origin:45px 66px}'
            + ''.join(f'.ukw .ukBu.u{k}{{left:{f(x - 45)}px;top:40px;animation:ukBu{k} {f(WAVE_T)}s linear infinite}}' for k, (t0, x, sc) in enumerate(PEEL))
            + f'.ukw .ukPn{{left:0;top:{56 - PN_UP}px;width:{2 * TILE}px;height:{PN_H}px;background-size:{TILE}px {PN_H}px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
@@ -784,7 +788,7 @@ def banner(B):
         peak = (0.0 if k % 2 == 0 else BOB_T) + m * 2 * BOB_T
         P_ = n * BOB_T
         s0 = (peak - 0.3 + dt) % P_
-        css += f'.ukw .ukPf.q{i}{{left:{f(cx - 23)}px;top:{f(cy - 15)}px;animation:ukPf{n} {f(P_)}s linear {f(-((P_ - s0) % P_), 3)}s infinite}}'
+        css += f'.ukw .ukPf.q{i}{{left:{f(cx - 33)}px;top:{f(cy - 23)}px;animation:ukPf{n} {f(P_)}s linear {f(-((P_ - s0) % P_), 3)}s infinite}}'
     if sam:                     # 1まいの シート：行（a の 歩く・会釈・b の …）を background-position で えらぶ
         zs = SM_K / sam['z']
         (sw, sh), rp = sam['sheet'], sam['row']
@@ -866,7 +870,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='浮世絵風', desc='大波と街道', title='浮世絵風（藍×和紙×朱）', banner=ID,
-    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（爪のような白い泡の先と、爪から落ちるしぶきの点：もり上がって巻きこみ、くずれて白い泡になる）、沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
+    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（まるい爪のような白い泡の先と、爪から落ちるしぶきの点：小波の中からもり上がって巻きこみ、潮しぶきを上げてくずれ、小波の中へ沈む）。海はまるい小波の列が入れかわりに上下する。沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
     fonts=['Shippori+Antique+B1', 'Zen+Old+Mincho:wght@600;700'],
     v=dict(bg='#F3EBDC', ink='#2A2420', sub='#6A5D4E', card='#FBF7EE', cardB='1px solid #DCCDB2', cardO='0 solid transparent', cardS='0 2px 0 #E5D8C0',
            radius='8px', rs='6px', font='"Zen Old Mincho"', dfont='"Shippori Antique B1"', dw='400', logo='#F4EFE4', logoS='0 2px 0 #10223F',
@@ -883,8 +887,9 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[(AI['d'], '藍'), ('#B8362A', '朱'), ('#F3EBDC', '和紙'), (AI['l'], '水あさぎ'), ('#2A2420', '墨')],
                fonts='見出し：Shippori Antique B1<br>本文：Zen Old Mincho', shape='角丸8px・帯は 藍の ぼかしで 下に 波頭・波と 千鳥の 背景・すみに 朱の 印・的中ボタンは 題箋の PUSH',
-               pic='和紙の 地・藍の ぼかしの 空・赤い 日・山なみ・かすみ・「神奈川沖浪裏」の 形の 大波（白い 背中・濃い 藍に 白い すじ・爪の ような 白い 泡・しぶきの 点：'
-                   '白い 泡の 中から 高く もり上がり、波の 先が 投げ出されて 巻きこむ と しぶきが とび、落ちた 所で 白い 泡が はじけて 走り、くずれて 泡の 中へ 消えると 次の 波）・'
+               pic='和紙の 地・藍の ぼかしの 空・赤い 日・山なみ・かすみ・「神奈川沖浪裏」の 形の 大波（白い 背中・濃い 藍に 白い すじ・まるい 爪の ような 白い 泡・しぶきの 点：'
+                   '小波の 中から 高く もり上がり、波の 先が 投げ出されて 巻きこむ と しぶきが とび、落ちた 所で 潮しぶきが ふき上がり、くずれて 小波の 中へ 消えると 次の 波）・'
+                   'まるい 小波の 列（入れかわりに 上下・大波に 合わせて ふくらむ・頭から 潮しぶき）・'
                    '帆かけ舟・松並木の 街道・朱の 布の 白い 馬（墨の 輪郭）・ときどき すれちがう お侍さん・朱の 印'),
 )
 

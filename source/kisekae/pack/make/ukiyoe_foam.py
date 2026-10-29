@@ -19,7 +19,7 @@ def items():
     """[(名前, svg, 幅, 高さ)]（画面の px）"""
     from pack import ukiyoe as U
     out = [(f'rw{k}', U.ripple_row_svg(k), U.ROW_W, p['H']) for k, p in enumerate(U.ROWS)]
-    out += [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('pf0', U.puff_svg(51), 30, 18), ('pf1', U.puff_svg(53), 30, 18),
+    out += [('bs0', U.burst_svg(11), 90, 70), ('bs1', U.burst_svg(12), 90, 70), ('pf0', U.puff_svg(51), 40, 26), ('pf1', U.puff_svg(53), 40, 26),
             ('sp1', U.spray_svg(41), 84, 44), ('sp2', U.spray_svg(43), 84, 44)]
     return out
 

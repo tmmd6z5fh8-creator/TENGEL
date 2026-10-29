@@ -240,14 +240,14 @@ def roundify(rgb, bm):
     thick = cv2.morphologyEx(dark.astype(np.uint8), cv2.MORPH_OPEN, _disk(2)).astype(bool)
     line = dark & ~thick
     fill = _nearest(lab, line, [0, 1, 2, 3, 4])
-    ms = [cv2.GaussianBlur((fill == k).astype(np.float32), (0, 0), 1.6) for k in range(5)]
+    ms = [cv2.GaussianBlur((fill == k).astype(np.float32), (0, 0), 2.0) for k in range(5)]
     sm = np.argmax(np.stack(ms, -1), -1).astype(np.uint8)
-    lm = cv2.GaussianBlur(line.astype(np.float32), (0, 0), 1.2) > 0.32           # 線：先が まるい 筆
+    lm = cv2.GaussianBlur(line.astype(np.float32), (0, 0), 1.5) > 0.30           # 線：先が まるい 筆
     # 外の ふち：小さな かけら（しぶきに ちかい）は そのまま・大きい かたまりは 少し ふとらせて まるく
     n, cc, st, _ = cv2.connectedComponentsWithStats(a0.astype(np.uint8), 8)
     small = np.isin(cc, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] < 60])
     big = (a0 & ~small).astype(np.uint8)
-    a1 = cv2.erode(cv2.dilate(big, _disk(2.5)), _disk(1.25))
+    a1 = cv2.erode(cv2.dilate(big, _disk(3.0)), _disk(1.5))
     a1 = (cv2.GaussianBlur(a1.astype(np.float32), (0, 0), 1.5) > 0.5) | (cv2.GaussianBlur(big.astype(np.float32), (0, 0), 1.5) > 0.5)
     out = sm.copy()
     out = _nearest(out, a1 & (out == 4), [0, 1, 2, 3])
