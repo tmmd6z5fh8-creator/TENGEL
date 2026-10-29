@@ -59,7 +59,7 @@
     ['thump', '大きな的中', 'デカ的中から上のとき、ボードが「ドン！」と1回跳ねる', 'big'],
     ['droop', 'ハズレ', 'ハズレのとき、少しだけ傾いて、しょんぼり', 'miss'],
     ['rise', '出世馬', '連続で当たると、ボードのまわりの飾りが豪華になっていく', 'hit'],
-    ['carry', 'ボードを持つ馬', '馬がうしろからボードを抱えて、下から出てくる', 'all']
+    ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
   ].map(function (r, i) { return { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i] }; });
 
   function iso(d) { return (d instanceof Date ? d : new Date(d || Date.now())).toISOString(); }

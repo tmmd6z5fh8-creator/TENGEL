@@ -480,7 +480,7 @@
       + jit('bcHbL', 2.3, 11, .55, .7, [[0, .3], [.2, .3], [.28, 1], [.66, 1], [.74, .25], [1, .3]])
       + '@keyframes bcHbT{0%,18%,37%,53%,66%,75%,88%,100%{transform:rotate(0)}6%{transform:rotate(9deg)}10%{transform:rotate(-5deg)}14%{transform:rotate(3deg)}'
       + '41%{transform:rotate(-11deg)}45%{transform:rotate(7deg)}49%{transform:rotate(-3deg)}69%{transform:rotate(5deg)}72%{transform:rotate(-2deg)}90.5%{transform:rotate(13deg)}93%{transform:rotate(-8deg)}96%{transform:rotate(4deg)}}'
-      + '@keyframes bcHbE{0%,91%{opacity:0}91.4%,93.6%{opacity:1}94%,100%{opacity:0}}';
+      + '@keyframes bcHbE{0%,6%{opacity:0}6.4%,8.6%{opacity:1}9%,100%{opacity:0}}';
   }
 
   // ---------- 走って きた 馬を 止める（いまの 足の 形から ふつうに 立つ 形へ なめらかに） ----------
