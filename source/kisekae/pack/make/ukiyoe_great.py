@@ -1,13 +1,20 @@
-"""浮世絵風の 壁紙（壁紙パック・第4.95版）の 大波を 絵（WebP）に する。
-   まさちゃんの 指定「波だけ七枚目の画像と形を全く同じにして！」：七枚目＝葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 画像から
+"""浮世絵風の 壁紙（壁紙パック・第4.95版 → 第4.96版）の 大波を 絵（WebP）に する。
+   第4.95版 まさちゃん「波だけ七枚目の画像と形を全く同じにして！」：七枚目＝葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 画像から
    左の 大波（白い 背中・爪の 泡・濃い 藍の 体と 白い すじ・内がわの 明るい 青・爪から 落ちる しぶきの 点）を 切りぬいて、
    浮世絵の 平らな 色（白・明るい 青・藍・濃い 藍）に まとめる（ポスタライズ）。空・題箋・落款・画面の アイコンは すける ように、
    波の 中の 舟と 人・富士山は 入れない（舟の 所は まわりの 波の 色で うめる）。
+   第4.96版 まさちゃん「浮世絵の赤丸の波はもっと動きを出してリアルにして！波飛沫とか波の高さが変わったりとか！
+     リアルな波の映像から波ができてから消えていく動きを勉強して、浮世絵に転用して！」：
+     いちばん 高い 時の 形は 神奈川沖浪裏の まま。波の 先（爪の ある 頭）を「巻きの 強さ c」で なめらかに ゆがめた コマ（crest）を 作る：
+       c＝−1：まだ 巻いて いない（頭が うしろへ 起きて 爪が 短い＝もり上がる とちゅう）→ c＝0：神奈川沖浪裏 そのまま →
+       c＝1：波の 先が 前へ 投げ出されて 爪が のびて 下へ 巻きこむ → c＝1.6：くずれて 落ちる。
+     ゆがめ方：さかいめ（SPLIT）から 波の 先へ いくほど 強く、根もと PIVOT の まわりに 回して（θ）・外へ のばして（ε）・下へ 落とす（drop）。
+       さかいめと 下の はしでは ゆがみが 0（なめらかに 0 から）＝体（body）と つなぎめが ずれない・すき間も 二重も 出ない。
+     体（body）は 動く 所（頭）を ぬいた 止まった 絵。頭の コマを 上に 重ねる（動きは pack/ukiyoe.py の CSS）。
    しくみ：空を 色の つながりで ぬりつぶして（黒い 線で 止まる）波を とりだす → 明るさで 4つの 色に 分ける（細い 黒い 線は 濃い 藍）→
-     部品に 分ける（動きは pack/ukiyoe.py の CSS）：body（波の 体）・lip1〜lip4（波の 先と 爪を さかいめから の 距離で 4まいに：根もと PIVOT を 中心に
-     先の まい ほど 大きく 回す＝波の 先が なめらかに しなって 巻きこむ・つなぎめは ぼかして 重ねる）・dots（爪から 落ちる しぶきの 点）。
-     部品は 同じ 大きさの 箱で 横に ならべた 1まいの シート（2倍の 画素）
-   python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave"""
+     絵 2まい：wave＝[body・dots（爪から 落ちる しぶきの 点）]（2倍の 画素の 横ならび）・crest＝頭の コマ（CS の c の じゅん・8れつの ます目）
+   python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave・ukiyoe.crest"""
+import math
 import os
 import sys
 from collections import deque
@@ -22,13 +29,28 @@ import cv2  # noqa: E402
 CROP = (0, 90, 780, 525)            # 左・上・はば・高さ（元の 画素）
 SC = 1 / 3                          # 元の 画素 → 画面の px
 Z = 2                               # シートは 画面の 2倍
-PIVOT = (480, 330)                  # 波の 先（lip）を 回す 中心（元の 画素）
-SPLIT = [(318, 118), (420, 232), (480, 330), (522, 425), (560, 520)]    # body と lip の さかいめ（左上 → 右下・右がわが lip）
-BAND = 13.0                         # さかいめの ぼかしの はば（片がわ・元の 画素）
-LIP_EDGES = (0.0, 45.0, 95.0, 150.0)    # 波の 先を 4まいに 分ける さかいめ（SPLIT からの 距離）：先の まい ほど 大きく 回す＝なめらかに しなる
-OVER = 26.0                         # となりの まいの 下へ のばす 重なり（回る 角度の ちがいで すき間が 出ない）
+PIVOT = (480, 330)                  # 波の 先（頭）を 回す 中心（元の 画素）
+SPLIT = [(318, 118), (420, 232), (480, 330), (522, 425), (560, 520)]    # 体と 頭の さかいめ（左上 → 右下・右がわが 頭）
+D_IN = 150.0                        # さかいめから この 距離（元の 画素）で ゆがみが いっぱいに なる
+Y_STOP = (390.0, 520.0)             # この 高さ（元の 画素）より 下は ゆがめない（波の 根もと）
+BAND = 18.0                         # 頭の コマの ふちの ぼかし（元の 画素：ゆがみ 0 の 所で 体と 重ねる）
 PAL = dict(white=(246, 241, 227), light=(178, 199, 222), mid=(84, 112, 160), dark=(27, 37, 92))    # 浮世絵の 平らな 色
 SKY_SEEDS = [(600, 40), (950, 100), (800, 180), (600, 450), (620, 540), (900, 450), (150, 120), (20, 150), (1100, 300), (700, 300), (700, 520)]
+COLS = 8                            # 頭の コマの ます目の れつ
+
+# 頭の コマの 巻きの 強さ c（pack/ukiyoe.py が 時に 当てる：c<0 もり上がる・0 神奈川沖浪裏・0<c≦1 投げ出す・c>1 くずれる）
+CS = ([round(-1 + i / 16, 4) for i in range(16)] + [0.0]
+      + [round(i / 11, 4) for i in range(1, 12)] + [round(1 + 0.6 * i / 10, 4) for i in range(1, 11)])
+
+
+def warp_params(c):
+    """c → (回す 角度 θ°・外へ のばす ε・下へ 落とす 元の 画素)"""
+    if c <= 0:
+        return 15.0 * c, 0.10 * c, 0.0
+    if c <= 1:
+        return 12.0 * c, 0.08 * c, 0.0
+    u = (c - 1) / 0.6
+    return 12.0 + 10.0 * u, 0.08 - 0.03 * u, 26.0 * u
 
 
 def sky_mask(den):
@@ -89,12 +111,11 @@ def boat_poly():
     return np.array([(14, 422), (36, 424), (88, 492), (142, 530), (246, 584), (296, 598), (298, 662), (136, 664), (92, 578), (58, 510)], np.int32)
 
 
-def signed_dist_split(h, w):
-    """さかいめ（SPLIT の 折れ線）からの 符号つき 距離（＋が lip の がわ＝線の 右）"""
+def signed_dist(xx, yy):
+    """さかいめ（SPLIT の 折れ線）からの 符号つき 距離（＋が 頭の がわ＝線の 右）。上の はしより 上で 右は 頭"""
     pts = np.array(SPLIT, np.float32)
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    best = np.full((h, w), 1e9, np.float32)
-    sign = np.zeros((h, w), np.float32)
+    best = np.full(xx.shape, 1e9, np.float32)
+    sign = np.zeros(xx.shape, np.float32)
     for (x1, y1), (x2, y2) in zip(pts[:-1], pts[1:]):
         dx, dy = x2 - x1, y2 - y1
         L2 = dx * dx + dy * dy
@@ -106,14 +127,42 @@ def signed_dist_split(h, w):
         upd = d < best
         best = np.where(upd, d, best)
         sign = np.where(upd, s, sign)
-    # 線の はしの 外がわ：上の はしより 上は lip（波の 頭）・下の はしより 下は body
     sd = best * sign
     top_ext = (yy < SPLIT[0][1]) & (xx > SPLIT[0][0])
-    sd = np.where(top_ext, np.abs(best), sd)
-    return sd
+    return np.where(top_ext, np.abs(best), sd)
 
 
-def build(src, out=None):
+def _ss(a, b, x):
+    t = np.clip((x - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def weight(xx, yy):
+    """ゆがみの 強さ（0〜1）：さかいめで 0・頭の 先ほど 1・根もとの 下では 0（どこも なめらか）"""
+    return _ss(0, D_IN, signed_dist(xx, yy)) * (1 - _ss(Y_STOP[0], Y_STOP[1], yy))
+
+
+def inverse_map(c, h, w, ox, oy, iters=7):
+    """出口の 画素 → もとの 画素（元の 画像の 座標）：前へ 写す 式を くり返しで 逆に 解く"""
+    th, ep, drop = warp_params(c)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    xx += ox
+    yy += oy
+    qx, qy = xx - PIVOT[0], yy - PIVOT[1]
+    px, py = xx.copy(), yy.copy()
+    for _ in range(iters):
+        s = weight(px, py)
+        ph = -math.radians(th) * s
+        k = 1.0 / (1 + ep * s)
+        cs, sn = np.cos(ph), np.sin(ph)
+        ry = qy - drop * s
+        px = PIVOT[0] + k * (cs * qx - sn * ry)
+        py = PIVOT[1] + k * (sn * qx + cs * ry)
+    return px - ox, py - oy
+
+
+def extract(src):
+    """元の 画像 → (色 RGB, 波の アルファ, しぶきの 点の アルファ)：元の 画素・CROP の 箱"""
     im = cv2.imread(src)[:, :, ::-1].astype(np.float32)
     H0, W0 = im.shape[:2]
     den = cv2.bilateralFilter(im, 5, 20, 3)
@@ -121,8 +170,7 @@ def build(src, out=None):
     wave = ~sky
     yy, xx = np.mgrid[0:H0, 0:W0]
     cx, cy, cw, ch = CROP
-    inbox = (xx >= cx) & (xx < cx + cw) & (yy >= cy) & (yy < cy + ch)
-    wave &= inbox
+    wave &= (xx >= cx) & (xx < cx + cw) & (yy >= cy) & (yy < cy + ch)
     wave &= ~((xx >= 690) & (yy >= 560))                              # 富士山・右の 舟
     wave &= ~((xx < 108) & (yy < 300) & (yy > 70) & (xx > 44))        # 題箋（字の 札）
     wave &= ~((xx < 50) & (yy < 312) & (yy > 150))                    # 落款（サイン）
@@ -152,69 +200,90 @@ def build(src, out=None):
     known = body_m & ~boat
     _, idx = cv2.distanceTransformWithLabels((~known).astype(np.uint8), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
     ky, kx = np.nonzero(known)
-    # ラベル番号 → いちばん 近い 既知の 画素の 色
     lut = np.zeros(idx.max() + 1, np.uint8)
-    lab_known = lab[ky, kx]
-    lut[idx[ky, kx]] = lab_known
+    lut[idx[ky, kx]] = lab[ky, kx]
     lab = np.where(boat, lut[idx], lab)
     lab = mode_filter(lab, body_m, 3, 2)
-    # しぶきの 点は 白
-    lab = np.where(dots_m, 0, lab)
-    # 色の 画像（RGBA・元の 画素）
+    lab = np.where(dots_m, 0, lab)                                     # しぶきの 点は 白
     pal = np.array([PAL['white'], PAL['light'], PAL['mid'], PAL['dark']], np.float32)
     rgb = pal[lab]
-    sd = signed_dist_split(H0, W0)
-    alphas = [(sd <= LIP_EDGES[0] + BAND + OVER).astype(np.float32) * body_m]     # body：はじめの さかいめの 少し 先まで（上は lip で かくれる）
-    for k, e in enumerate(LIP_EDGES):
-        t = np.clip((sd - e + BAND) / (2 * BAND), 0, 1)
-        a = t * t * (3 - 2 * t)                                       # さかいめで なめらかに 0 → 1
-        if k + 1 < len(LIP_EDGES):
-            a = a * (sd <= LIP_EDGES[k + 1] + BAND + OVER)            # つぎの まいの 下まで（その 先は つぎの まい）
-        alphas.append(a.astype(np.float32) * body_m)
-    alphas.append(dots_m.astype(np.float32))
-    parts = []
-    for a in alphas:
-        rgba = np.dstack([rgb, a[..., None] * 255.0])[cy:cy + ch, cx:cx + cw]
-        parts.append(rgba)
-    # 画面の 2倍へ（色は アルファで 重みを つけて 縮める＝ふちが なめらか）
-    W2, H2 = int(round(cw * SC * Z)), int(round(ch * SC * Z))
-    cells = []
-    for p in parts:
-        a = p[..., 3:4] / 255.0
-        pre = np.concatenate([p[..., :3] * a, a], -1)
-        sm = cv2.resize(pre, (W2, H2), interpolation=cv2.INTER_AREA)
-        al = np.clip(sm[..., 3:4], 1e-6, 1)
-        col = np.where(sm[..., 3:4] > 1e-4, sm[..., :3] / al, 0)
-        cells.append(np.clip(np.concatenate([col, sm[..., 3:4] * 255.0], -1), 0, 255).astype(np.uint8))
-    sheet = np.concatenate(cells, 1)
+    sl = (slice(cy, cy + ch), slice(cx, cx + cw))
+    return rgb[sl], body_m[sl].astype(np.float32), dots_m[sl].astype(np.float32)
+
+
+def down(pre, w2, h2):
+    """前もって アルファを かけた 色（元の 画素）→ 2倍の 画素の RGBA u8（ふちが なめらか）"""
+    sm = cv2.resize(pre, (w2, h2), interpolation=cv2.INTER_AREA)
+    al = np.clip(sm[..., 3:4], 1e-6, 1)
+    col = np.where(sm[..., 3:4] > 1e-4, sm[..., :3] / al, 0)
+    return np.clip(np.concatenate([col, sm[..., 3:4] * 255.0], -1), 0, 255).astype(np.uint8)
+
+
+def build(src, out=None):
+    rgb, bm, dm = extract(src)
+    h, w = bm.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    ox, oy = CROP[0], CROP[1]
+    X, Y = xx + ox, yy + oy                                            # 元の 画像の 座標
+    s0 = weight(X, Y)
+    moving = s0 > 0                                                    # 動く 所（頭）：体から ぬく
+    sd = signed_dist(X, Y)
+    af = _ss(-BAND, 0, sd) * (1 - _ss(Y_STOP[1], Y_STOP[1] + BAND, Y))   # 頭の コマの アルファ（ゆがみ 0 の ふちで 体と 重なる）
+    W2, H2 = int(round(w * SC * Z)), int(round(h * SC * Z))
+    body = down(np.dstack([rgb * (bm * ~moving)[..., None], bm * ~moving]), W2, H2)
+    dots = down(np.dstack([rgb * dm[..., None], dm]), W2, H2)
+    pre = np.dstack([rgb * (bm * af)[..., None], bm * af]).astype(np.float32)
+    frames = []
+    for c in CS:
+        mx, my = inverse_map(c, h, w, ox, oy)
+        frames.append(cv2.remap(pre, mx.astype(np.float32), my.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0))
+    # 頭の コマの 箱：どの コマでも 見える 所を ぜんぶ ふくむ（2倍の 画素の きりの よい 所へ）
+    al = np.max([f[..., 3] for f in frames], 0) > 1e-3
+    ys, xs = np.nonzero(al)
+    k = 3                                                              # 元の 画素 → 2倍の 画素 は 1.5 で わる：3の 倍数で 切る
+    x0, y0 = (xs.min() // k) * k, (ys.min() // k) * k
+    x1, y1 = min(w, -(-(xs.max() + 1) // k) * k), min(h, -(-(ys.max() + 1) // k) * k)
+    fw, fh = int(round((x1 - x0) * SC * Z)), int(round((y1 - y0) * SC * Z))
+    cells = [down(f[y0:y1, x0:x1], fw, fh) for f in frames]
+    rows = -(-len(cells) // COLS)
+    grid = np.zeros((rows * fh, COLS * fw, 4), np.uint8)
+    for i, c_ in enumerate(cells):
+        r, q = divmod(i, COLS)
+        grid[r * fh:(r + 1) * fh, q * fw:(q + 1) * fw] = c_
+    wave_sheet = np.concatenate([body, dots], 1)
     if out:
         os.makedirs(out, exist_ok=True)
-        bg = np.full((H2, W2 * len(cells), 3), (241, 230, 207), np.float32)
-        a = sheet[..., 3:4] / 255.0
-        cv2.imwrite(os.path.join(out, 'great_sheet.png'), (sheet[..., :3] * a + bg * (1 - a))[..., ::-1].astype(np.uint8))
-        comp = np.full((H2, W2, 3), (241, 230, 207), np.float32)
-        for c in cells:
-            a = c[..., 3:4] / 255.0
-            comp = c[..., :3] * a + comp * (1 - a)
-        cv2.imwrite(os.path.join(out, 'great_comp.png'), comp[..., ::-1].astype(np.uint8))
-        dbg = im.copy()
-        dbg[~(body_m | dots_m)] = dbg[~(body_m | dots_m)] * .3 + np.array([255, 0, 255]) * .7
-        cv2.polylines(dbg, [np.array(SPLIT, np.int32)], False, (0, 255, 0), 2)
-        cv2.circle(dbg, PIVOT, 5, (255, 0, 0), -1)
-        cv2.imwrite(os.path.join(out, 'great_dbg.png'), dbg[..., ::-1].astype(np.uint8))
-    return sheet, dict(cell=[W2, H2], size=[round(cw * SC, 2), round(ch * SC, 2)], frames=len(cells),
-                       parts=['body'] + [f'lip{k + 1}' for k in range(len(LIP_EDGES))] + ['dots'],
-                       pivot=[round((PIVOT[0] - cx) * SC, 2), round((PIVOT[1] - cy) * SC, 2)])
+        bg = (241, 230, 207)
+
+        def flat(u8):
+            a = u8[..., 3:4] / 255.0
+            return (u8[..., :3] * a + np.array(bg, np.float32) * (1 - a))[..., ::-1].astype(np.uint8)
+        cv2.imwrite(os.path.join(out, 'great_wave.png'), flat(wave_sheet))
+        cv2.imwrite(os.path.join(out, 'great_crest.png'), flat(grid))
+        for i in (0, 8, 16, 22, 27, 32, 37):                           # 体と 重ねた ためし
+            comp = np.full((H2, W2, 3), bg, np.float32)
+            for u8, (px_, py_) in ((body, (0, 0)), (cells[i], (int(round(x0 * SC * Z)), int(round(y0 * SC * Z))))):
+                a = u8[..., 3:4] / 255.0
+                sub = comp[py_:py_ + u8.shape[0], px_:px_ + u8.shape[1]]
+                sub[:] = u8[..., :3] * a + sub * (1 - a)
+            cv2.imwrite(os.path.join(out, f'great_c{i:02d}.png'), comp[..., ::-1].astype(np.uint8))
+    meta_w = dict(cell=[W2, H2], size=[round(w * SC, 2), round(h * SC, 2)], frames=2, parts=['body', 'dots'])
+    meta_c = dict(cell=[fw, fh], cols=COLS, rows=rows, cs=list(CS), at=[round(x0 * SC, 3), round(y0 * SC, 3)],
+                  size=[round((x1 - x0) * SC, 3), round((y1 - y0) * SC, 3)])
+    return wave_sheet, grid, meta_w, meta_c
 
 
 def main(src, out=None, save=False):
-    sheet, meta = build(src, out)
-    print('sheet', sheet.shape, meta, flush=True)
+    ws, grid, mw, mc = build(src, out)
+    print('wave', ws.shape, mw, flush=True)
+    print('crest', grid.shape, {k: v for k, v in mc.items() if k != 'cs'}, flush=True)
     if save:
         from sheets import save_webp, record
-        bid = save_webp(sheet, quality=90)
-        record('ukiyoe', 'wave', bid, meta)
-        print('wave', bid, meta, flush=True)
+        bid = save_webp(ws, quality=90)
+        record('ukiyoe', 'wave', bid, mw)
+        cid = save_webp(grid, quality=82)
+        record('ukiyoe', 'crest', cid, mc)
+        print('wave', bid, 'crest', cid, flush=True)
 
 
 if __name__ == '__main__':

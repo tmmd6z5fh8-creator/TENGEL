@@ -38,6 +38,92 @@ STAND = dict(
 NECK_BEND_W = ((0.0, 0.75, 0.95, 1.0), (0.0, 0.65, 0.9, 1.0))
 
 
+# 首を 横に まげる 時（pose の neck_yaw・度：＋で 手前（＋z・カメラの がわ）へ まげて 頭を うしろへ／head_yaw：うなじで さらに 回す 度）。
+# 首の 根もと（nb）を 通る たての 軸の まわりに、根もとから うなじへ だんだん 大きく 回す（重み t^NECK_YAW_P）。頭は うなじを 通る たての 軸で
+# head_yaw 回して から、首の 先と いっしょに 回す。neck_yaw が ない／0 なら いままでと 1バイトも ちがわない（第4.96版・七夕の 首だけ 振り返る コマ）
+NECK_YAW_P = 1.3
+
+
+def yaw_R(deg):
+    """たての 軸（y）の まわりに 回す（＋x を ＋z へ）"""
+    r = math.radians(deg)
+    c, s = math.cos(r), math.sin(r)
+    return np.array([[c, 0.0, -s], [0.0, 1.0, 0.0], [s, 0.0, c]])
+
+
+def neck_xf(Y, p, t):
+    """首の t（0＝根もと〜1＝うなじ）の 所の 点 p（3D）を まげた 所へ"""
+    w = float(np.clip(t, 0.0, 1.0)) ** Y['w']
+    return Y['piv'] + yaw_R(Y['n'] * w) @ (np.asarray(p, float) - Y['piv'])
+
+
+def head_xf(Y, p):
+    """頭の 点 p（3D）を まげた 所へ（うなじで head_yaw → 首の 先と いっしょに）"""
+    q = Y['hp'] + yaw_R(Y['h']) @ (np.asarray(p, float) - Y['hp'])
+    return neck_xf(Y, q, 1.0)
+
+
+def rot_between(a, b):
+    """向き a を 向き b へ 回す いちばん 小さい 回転"""
+    a, b = nrm(a), nrm(b)
+    k = np.cross(a, b)
+    sn, cs = np.linalg.norm(k), float(np.dot(a, b))
+    if sn < 1e-9:
+        return np.eye(3)
+    k = k / sn
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + K * sn + K @ K * (1 - cs)
+
+
+def neck_Q(S, Y, t, eps=0.01):
+    """首の t の 所の 形の 向きの 回転（まげた 首の 線の 向きに そろえる）"""
+    C = lambda tt: v3((bez(S['crest'], tt) + bez(S['throat'], tt)) / 2)
+    t0, t1 = max(0.0, t - eps), min(1.0, t + eps)
+    Tu = nrm(C(t1) - C(t0))
+    Tb = nrm(neck_xf(Y, C(t1), t1) - neck_xf(Y, C(t0), t0))
+    R = yaw_R(Y['n'] * float(np.clip(t, 0.0, 1.0)) ** Y['w'])
+    return rot_between(R @ Tu, Tb) @ R
+
+
+def neck_pts3(S, key, ts):
+    """首の 線（'crest'・'throat'）の 点（3D・まげた 所）"""
+    P = bez(S[key], np.asarray(ts, float))
+    Y = S.get('yaw')
+    if not Y:
+        return np.array([v3(p) for p in P])
+    return np.array([neck_xf(Y, v3(p), t) for p, t in zip(P, ts)])
+
+
+class _YawSc:
+    """首を 横に まげる 時の sc の かわり：形の 位置と 向きを まげた 所へ（mode：首の t・'head'＝頭）"""
+
+    def __init__(self, sc, S, Y):
+        self.sc, self.S, self.Y, self.mode = sc, S, Y, 0.0
+
+    def _p(self, p):
+        return head_xf(self.Y, p) if self.mode == 'head' else neck_xf(self.Y, p, self.mode)
+
+    def _Q(self):
+        return yaw_R(self.Y['n'] + self.Y['h']) if self.mode == 'head' else neck_Q(self.S, self.Y, self.mode)
+
+    def ell(self, c, radii, R=None, **kw):
+        R = np.eye(3) if R is None else np.asarray(R, float)
+        self.sc.ell(self._p(c), radii, R @ self._Q().T, **kw)
+
+    def rbox(self, c, half, rnd, R=None, **kw):
+        R = np.eye(3) if R is None else np.asarray(R, float)
+        self.sc.rbox(self._p(c), half, rnd, R @ self._Q().T, **kw)
+
+    def sph(self, c, r, **kw):
+        self.sc.sph(self._p(c), r, **kw)
+
+    def rcone(self, a, b, ra, rb, **kw):
+        self.sc.rcone(self._p(a), self._p(b), ra, rb, **kw)
+
+    def __getattr__(self, k):
+        return getattr(self.sc, k)
+
+
 def skeleton(pose):
     th = pose['theta']
     piv = np.array([-0.60, 1.25])
@@ -63,6 +149,10 @@ def skeleton(pose):
     S['throat'] = np.array(throat)
     S['poll'] = crest[3] + (adir(th + nr + bend + 40) * 0.03)
     S['head_ang'] = pose['head_ang']
+    yaw = pose.get('neck_yaw', 0.0)
+    if yaw:                                     # 首を 横に まげる（第4.96版・七夕の 振り返り。なければ いままでと 1バイトも ちがわない）
+        S['yaw'] = dict(n=float(yaw), h=float(pose.get('head_yaw', 0.0)), piv=np.array([nb[0], 0.0, 0.0]),
+                        hp=np.array([S['poll'][0], 0.0, 0.0]), w=float(pose.get('yaw_pow', NECK_YAW_P)))
     # 前足
     # cannon_ext：足ごとに 管（ひざ〜球節）を のばす m（{'FL': …}）。ない／0 なら いままでと 1バイトも ちがわない
     #   （第4.87版・まさちゃん「青丸の脚が地面から浮いてしまってるから直して！」：立つ馬の 前足の ひづめが うしろ足より 7〜9画素 上に 浮いていた。
@@ -110,6 +200,8 @@ def head_pt(S, s, w, z=0.0):
     u = adir(S['head_ang'])
     vv = np.array([-u[1], u[0]])
     p = S['poll'] + (u * s + vv * w) * HEAD_SCALE
+    if S.get('yaw'):                            # 首を 横に まげた 時は 頭も（head_xf）
+        return head_xf(S['yaw'], np.array([p[0], p[1], z * HEAD_SCALE]))
     return np.array([p[0], p[1], z * HEAD_SCALE])
 
 
@@ -260,6 +352,12 @@ GALLOP = dict(
 
 def _neck_head(sc, pose, S, M):
     B, N, HO, EY, HD = M['body'], M['neck'], M['hoof'], M['eye'], M['head']
+    Y = S.get('yaw')
+    S0 = S
+    if Y:                                       # 首を 横に まげる：まげる 前の 形を 作って、sc の かわり（_YawSc）が まげた 所へ 置く
+        S0 = dict(S)
+        S0['yaw'] = None
+        sc = _YawSc(sc, S, Y)
     # ---------- 首 ----------
     n = 30
     ts = np.linspace(0, 1, n)
@@ -273,6 +371,8 @@ def _neck_head(sc, pose, S, M):
         tang = np.array([upv[1], -upv[0]])
         tang = tang / np.linalg.norm(tang)
         L = 0.07 if i < n - 1 else 0.06
+        if Y:
+            sc.mode = float(ts[i])
         sc.ell(v3(c2), (L, hh, hw[i]), basis(v3(tang), v3(upv)), k=0.12 if i else 0.16, mat=N)
     # たてがみの下の盛り上がり（クレスト）
     for tt in (0.35, 0.6):
@@ -280,11 +380,24 @@ def _neck_head(sc, pose, S, M):
         q = bez(S['throat'], tt)
         d = nrm(bez(S['crest'], tt + 0.05) - bez(S['crest'], tt - 0.05))
         c2 = p + (q - p) * 0.2
+        if Y:
+            sc.mode = tt
         sc.ell(v3(c2), (0.16, 0.07, 0.085 if tt < .5 else 0.07), basis(v3(d), v3(p - q)), k=0.06, mat=N)
     # 首の横の筋（あごから肩へ）
     for z in (1, -1):
-        a = head_pt(S, 0.26, -0.12)[:2]
+        a = head_pt(S0, 0.26, -0.12)[:2]
         b = S['FL']['ps'] + np.array([0.0, 0.06])
+        if Y:                                   # まげた 首に そって 8つに 分ける（あご → 肩）
+            pa, pb = np.array([a[0], a[1], 0.075 * z]), np.array([b[0], b[1], 0.11 * z])
+            pts = []
+            for j in range(9):
+                s_ = j / 8
+                p = pa + (pb - pa) * s_
+                wgt = (1 - s_) ** 3
+                pts.append(neck_xf(Y, p, 1.0 - s_) * (1 - wgt) + head_xf(Y, p) * wgt)
+            for j in range(8):
+                sc.sc.rcone(pts[j], pts[j + 1], 0.04 + 0.02 * j / 8, 0.04 + 0.02 * (j + 1) / 8, k=0.09, mat=N)
+            continue
         sc.rcone(np.array([a[0], a[1], 0.075 * z]), np.array([b[0], b[1], 0.11 * z]), 0.04, 0.06, k=0.09, mat=N)
 
     # ---------- 頭 ----------
@@ -292,7 +405,9 @@ def _neck_head(sc, pose, S, M):
     U3 = v3(u)
     V3 = v3(np.array([-u[1], u[0]]))
     HR = basis(U3, V3)
-    hp = lambda s, w, z=0.0: head_pt(S, s, w, z)
+    hp = lambda s, w, z=0.0: head_pt(S0, s, w, z)
+    if Y:
+        sc.mode = 'head'
     HS = HEAD_SCALE
     def hdir(rot):
         a = math.radians(rot)
@@ -341,6 +456,11 @@ def _neck_head(sc, pose, S, M):
     S['eye'] = hp(0.152, 0.036, 0.091 + 0.02)
     S['eyes'] = [hp(0.152, 0.036, 0.091), hp(0.152, 0.036, -0.091)]
     S['head_u'] = U3; S['head_v'] = V3
+    if Y:                                       # 首を 横に まげた 時の 目・頭の 向き
+        Qh = yaw_R(Y['n'] + Y['h'])
+        S['eye'] = head_xf(Y, S['eye'])
+        S['eyes'] = [head_xf(Y, e) for e in S['eyes']]
+        S['head_u'], S['head_v'] = Qh @ U3, Qh @ V3
 
 
 def _bust(sc, pose, S, M, T, th):

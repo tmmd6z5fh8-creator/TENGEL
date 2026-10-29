@@ -66,6 +66,11 @@ def make_pose(name, facing):
         out['brow'] = P['brow']
     if P.get('cannon_ext'):                                        # 足の 管を のばす（{'F'+L/R…}：horse3d.skeleton の cannon_ext。draw_horse が spec の ext から 入れる）
         out['cannon_ext'] = dict(P['cannon_ext'])
+    if P.get('neck_yaw'):                                          # 首を 横に まげて 振り返る（第4.96版・七夕：horse3d の neck_yaw・head_yaw・yaw_pow。なければ いままでと 同じ）
+        out['neck_yaw'] = P['neck_yaw']
+        out['head_yaw'] = P.get('head_yaw', 0.0)
+        if P.get('yaw_pow'):
+            out['yaw_pow'] = P['yaw_pow']
     return out
 
 
@@ -201,6 +206,17 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     u2 = Hm.adir(S['head_ang'])
     v2 = np.array([-u2[1], u2[0]])
     U3, V3 = Hm.v3(u2), Hm.v3(v2)
+    Y = S.get('yaw')                                                     # 首を 横に まげた 時（第4.96版・七夕の 振り返り。ふだんは None）
+    sv = side                                                            # 顔の 見える がわ（ふだんは カメラの がわ）
+    if Y:
+        Qh = Hm.yaw_R(Y['n'] + Y['h'])
+        camn = cam / np.linalg.norm(cam)
+        if float(np.dot(Qh @ np.array([0.0, 0.0, side]), camn)) < 0:
+            sv = -side                                                   # 頭が うしろを 向いて、もとの 奥の がわが 見える
+        poll3 = Hm.head_xf(Y, Hm.v3(S['poll']))
+        dz_h = np.sum((Pn - hp(0.0, 0.02, 0.0)) * camn, -1)              # 頭の まん中より 手前（＋）・奥（−）
+        crest3 = Hm.neck_pts3(S, 'crest', np.linspace(0, 1, 41))
+        throat3 = Hm.neck_pts3(S, 'throat', np.linspace(0, 1, 41))
     # 奥の足・奥の耳だけを暗い色に（背中の上にのぞく奥がわの筋肉は体の色のまま）
     fk = 'R' if side > 0 else 'L'
     near_far_leg = np.zeros(inside.shape, bool)
@@ -210,17 +226,29 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
             near_far_leg |= segd2(J[chain[j]], J[chain[j + 1]]) < (0.10 if j else 0.08)
     d_ear_f = Hm.ear_vec(U3, V3, -side, pose.get('ear_rot', 0.0))
     b_ear_f = hp(0.0, 0.02, -0.058 * side)
+    if Y:
+        d_ear_f = Qh @ Hm.ear_vec(U3, V3, -sv, pose.get('ear_rot', 0.0))
+        b_ear_f = hp(0.0, 0.02, -0.058 * sv)
     ear_f = segd(b_ear_f, b_ear_f + d_ear_f * 0.19 * HEAD_SC)[0] < 0.05 * HEAD_SC
     far = inside & (zs < -0.045) & (near_far_leg | ear_f)
+    if Y:
+        far = inside & (((zs < -0.045) & near_far_leg) | ((dz_h < -0.03) & ear_f))
 
     rel = Pn[..., :2] - np.asarray(S['poll'])
     hs = (rel @ u2) / HEAD_SC
     head = inside & (segd(Hm.v3(S['poll']), hp(0.56, -0.03))[0] < 0.21 * HEAD_SC)
+    if Y:
+        hs = np.sum((Pn - poll3) * (Qh @ U3), -1) / HEAD_SC
+        head = inside & (segd(poll3, hp(0.56, -0.03))[0] < 0.21 * HEAD_SC)
     muzzle = head & (hs > 0.44) & ~far
     # 耳の中（手前の耳）
     d_ear = Hm.ear_vec(U3, V3, side, pose.get('ear_rot', 0.0))
     b_ear = hp(0.0, 0.02, 0.058 * side)
     ear_in = inside & (segd(b_ear + d_ear * 0.05 * HEAD_SC, b_ear + d_ear * 0.15 * HEAD_SC)[0] < 0.013 * HEAD_SC) & (zs > 0.02)
+    if Y:
+        d_ear = Qh @ Hm.ear_vec(U3, V3, sv, pose.get('ear_rot', 0.0))
+        b_ear = hp(0.0, 0.02, 0.058 * sv)
+        ear_in = inside & (segd(b_ear + d_ear * 0.05 * HEAD_SC, b_ear + d_ear * 0.15 * HEAD_SC)[0] < 0.013 * HEAD_SC) & (dz_h > 0.0)
 
     # 光の当たらない面（1段だけ）：法線をなめらかにしてから
     Lv = np.array([0.30, 0.85, 0.45 * side])
@@ -328,6 +356,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         """首の t のところの、上のふち・下のふち（1倍）と首にそった向き（頭がわ）"""
         i = int(round(np.clip(t_, 0, 1) * 40))
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
+        if Y:
+            c3, th3 = P3(crest3[i]), P3(throat3[i])
         top = first_out(inside, (c3 + th3) / 2, c3 - th3) / s
         if bent:   # 首を下げた時：下げた首の中に入る所で止める（out_before_neck）
             bot = out_before_neck((c3 + th3) / 2, th3 - c3, i) / s
@@ -336,15 +366,17 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         j = min(40, i + 2)
         k = max(0, i - 2)
         ax = unit((P1(Hm.v3(crest[j])) + P1(Hm.v3(throat[j]))) / 2 - (P1(Hm.v3(crest[k])) + P1(Hm.v3(throat[k]))) / 2)
+        if Y:
+            ax = unit((P1(crest3[j]) + P1(throat3[j])) / 2 - (P1(crest3[k]) + P1(throat3[k])) / 2)
         return top, bot, ax
 
     ear_tip = P1(b_ear + d_ear * 0.17 * HEAD_SC)
-    eye_c = P1(hp(0.152, 0.036, 0.091 * side))
+    eye_c = P1(hp(0.152, 0.036, 0.091 * sv))
     head_dir = unit(P1(hp(0.4, 0.0)) - P1(hp(0.0, 0.0)))
     marks = dict(P1=P1, hp=hp, side=side, fx=fx, p1u=p1u, back_dir=back_dir, collar=collar, facing=facing,
                  cloth=(x0, x1, ytop_mid, ybot, trim_y), cloth_d=cloth_d, inside=inside, body_mask=body_mask, s=s,
-                 poll=P1(Hm.v3(S['poll'])), muzzle=P1(hp(0.60, -0.03, 0.0)), ear_base=P1(b_ear), ear_tip=ear_tip,
-                 forelock=P1(hp(0.06, 0.08, 0.03 * side)), eye=eye_c, head_dir=head_dir,
+                 poll=P1(poll3) if Y else P1(Hm.v3(S['poll'])), muzzle=P1(hp(0.60, -0.03, 0.0)), ear_base=P1(b_ear), ear_tip=ear_tip,
+                 forelock=P1(hp(0.06, 0.08, 0.03 * sv)), eye=eye_c, head_dir=head_dir,
                  torso=(wx(0.0), wx(-1.2)), wx=wx, cloth_top=lambda x_: float(np.interp(x_, xs, tops)))
     hooves = [P1(Hm.v3(S[k]['hf'], 0.15 * S[k]['z'])) for k in ('FL', 'FR', 'HL', 'HR')]
     marks['hooves'] = hooves
@@ -373,6 +405,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     tops2 = []
     for i in range(41):
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
+        if Y:
+            c3, th3 = P3(crest3[i]), P3(throat3[i])
         tops2.append(first_out(inside, (c3 * 0.8 + th3 * 0.2), c3 - th3) / s)
     tops2 = np.array(tops2)
     tops2 = np.stack([sm1(tops2[:, j], 7) for j in (0, 1)], 1)
@@ -425,9 +459,10 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         b_p = Tm(q1) - Nm(q1) * L * 0.72 + back_dir * 0.03 * p1u
         mane_parts.append(stroke(smooth([a_p, (a_p + b_p) / 2 - Nm(q0) * 0.0 + back_dir * 0.004 * p1u, b_p], closed=False), pal['maneD'], 0.02 * p1u))
     # 前髪（耳のあいだから、ひたいへ）
-    fb_ = P1(hp(0.0, 0.075, 0.03 * side))
-    mane_parts.append(path(tuft(fb_, P1(hp(0.21, 0.075, 0.075 * side)), 0.08 * p1u, bend=0.12, side=-fx), pal['maneD']))
-    mane_parts.append(path(tuft(fb_, P1(hp(0.18, 0.10, 0.07 * side)), 0.07 * p1u, bend=0.10, side=fx), pal['mane']))
+    fxh = fx if not Y else (1.0 if head_dir[0] >= 0 else -1.0)            # 顔の 向き（画面の 左右）
+    fb_ = P1(hp(0.0, 0.075, 0.03 * sv))
+    mane_parts.append(path(tuft(fb_, P1(hp(0.21, 0.075, 0.075 * sv)), 0.08 * p1u, bend=0.12, side=-fxh), pal['maneD']))
+    mane_parts.append(path(tuft(fb_, P1(hp(0.18, 0.10, 0.07 * sv)), 0.07 * p1u, bend=0.10, side=fxh), pal['mane']))
     if not extra.get('no_mane'):                                           # 着ぐるみの 中に たてがみと 前髪を しまう（第4.90版・お正月の 羊）
         layer(mane_parts)
     layer(extra.get('neck', []))
@@ -435,15 +470,15 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     # 顔：目・鼻の穴・口・頭のベルト・はみ・手綱
     ang = math.degrees(math.atan2(head_dir[1], head_dir[0]))
     er = 0.034 * p1u
-    face = [ell(eye_c, er, er * 0.74, ang - 14 * fx, pal['eye']),
+    face = [ell(eye_c, er, er * 0.74, ang - 14 * fxh, pal['eye']),
             circ(eye_c + head_dir * er * 0.28 + V(0, -er * 0.30), er * 0.30, '#FFFFFF')]
     if pose.get('brow') == 'angry':                                # おこった まゆ：目の上に 顔の前（鼻の方）へ 下がる 太い線（画面の 向きで：バレンタイン・ホワイトデーの 動く壁紙で ブチギレ）
         face.append(stroke(smooth([eye_c + V(-1.9 * fx, -2.0) * er, eye_c + V(1.7 * fx, -0.75) * er], closed=False), pal['eye'], er * 0.9))
-    nos = P1(hp(0.535, 0.024, 0.06 * side))
-    face.append(ell(nos, 0.024 * p1u, 0.014 * p1u, ang - 30 * fx, pal['nostril']))
-    face.append(stroke(smooth([P1(hp(0.50, -0.098, 0.06 * side)), P1(hp(0.545, -0.088, 0.06 * side)), P1(hp(0.585, -0.070, 0.05 * side))], closed=False), pal['nostril'], 0.016 * p1u))
+    nos = P1(hp(0.535, 0.024, 0.06 * sv))
+    face.append(ell(nos, 0.024 * p1u, 0.014 * p1u, ang - 30 * fxh, pal['nostril']))
+    face.append(stroke(smooth([P1(hp(0.50, -0.098, 0.06 * sv)), P1(hp(0.545, -0.088, 0.06 * sv)), P1(hp(0.585, -0.070, 0.05 * sv))], closed=False), pal['nostril'], 0.016 * p1u))
     tw = 0.030 * p1u
-    zz = 0.094 * side
+    zz = 0.094 * sv
     ring = P1(hp(0.48, -0.092, zz))
     face.append(stroke(smooth([P1(hp(0.395, 0.055, zz)), P1(hp(0.40, -0.02, zz * 1.05)), P1(hp(0.42, -0.10, zz))], closed=False), pal['tack'], tw))       # 鼻
     face.append(stroke(smooth([P1(hp(0.02, 0.035, zz)), P1(hp(0.22, -0.035, zz * 1.05)), ring], closed=False), pal['tack'], tw))                        # ほお

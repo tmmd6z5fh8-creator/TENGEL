@@ -30,7 +30,7 @@ RAIL = '#F6F4EE'
 # ---------------------------------------------------------------- 絵
 def back_svg(people=None):
     """うしろ：空・木・お客さんの スタンド（小さな 色の つぶ）・おくの 外の さく・おくの 道。
-       第4.95版：動く お客さん（crowd_roles：立ち上がる・手を あげる 人は 描かない・頭が ゆれる 人は 体だけ）。people：お客さん [(だん, 番号, x, y, 服, 髪)] を 入れる list"""
+       第4.96版：動く お客さん（crowd_roles：首を 回す 人は 体だけ・ほかの 動く 人は 描かない）。動かない 人にも 顔。people：お客さん [(だん, 番号, x, y, 服, 髪)] を 入れる list"""
     roles = crowd_roles()
     defs = ("<linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#9ED2F0'/><stop offset='1' stop-color='#DDF0F8'/></linearGradient>"
             "<linearGradient id='p' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#D9C08A'/><stop offset='1' stop-color='#E8D3A0'/></linearGradient>")
@@ -56,10 +56,10 @@ def back_svg(people=None):
             if people is not None:
                 people.append((k, i, x, y, c, hc))
             role = roles.get((k, i))
-            if role is None or role[0] == 'w':                              # 動かない 人・頭が ゆれる 人の 体
+            if role is None or role[0] == 'look':                           # 動かない 人・首を 回す 人の 体
                 o += f"<rect x='{f(x - 1.7)}' y='{f(y + 2)}' width='3.4' height='4' rx='1.2' fill='{c}'/>"
-            if role is None:
-                o += f"<circle cx='{f(x)}' cy='{f(y + 1)}' r='1.5' fill='{hc}'/>"
+            if role is None:                                                # 動かない 人の 頭と 顔（顔の 色は べつの 乱数＝ほかの 絵は かわらない）
+                o += f"<circle cx='{f(x)}' cy='{f(y + 1)}' r='1.5' fill='{hc}'/>" + face_svg(x, y, rnd(800 + k * 100 + i).choice(CR_SKIN))
     o += "<rect x='0' y='60' width='390' height='3' fill='#9A9EA6'/>"
     # おくの 外の さく
     o += f"<rect x='0' y='60' width='390' height='44' fill='url(#p)'/>"
@@ -145,88 +145,196 @@ def pennants_svg(w=W, h=24):
     return doc(w, h, o)
 
 
-# ---------------------------------------------------------------- スタンドの お客さん（第4.95版：まさちゃんの 指定「赤四角のあたりにいる観客達に少しだけ動きをつけて！」）
-#   3だんの お客さんの うち：頭が ゆっくり 左右に ゆれる 人（3組・2.8〜4.1秒で 0.4px）と、ばらばらの 時に 立ち上がる・手を あげる 人（1だん 6人）。
-#   動きは 位置の 小さな 上下と 左右・手は ふわっと 出る（色が ちかちか かわる 所は ない）
+# ---------------------------------------------------------------- スタンドの お客さん（第4.96版：まさちゃんの 指定「赤四角の観客全然動いてないから多少の動きが分かるようにして！
+#   実際のパドックだと人々はそんなに大きくは動かないけど、多少は動いてる。」・第4.95版の「少しだけ動きをつけて！」の 0.4px の ゆれは 見えなかった）
+#   3だん 210人の うち 75人（1だん 25人）が 動く。人ごとに ちがう 長さの 1回りと ずれで、ばらばらに（波には しない）：
+#     首を 回して 馬を 目で 追う（look：頭が 1px 横へ・顔が 少し 回る）／となりと 話す（chat：2人で 顔を 寄せて うなずく）／座りなおす（shift）／
+#     立ち上がって まわりを 見て 座る（stand：2.6px）／手を あげて ふる・指さす（hand）／スマホで 写真を とる（phone）／競馬新聞を 広げて めくる（paper）。
+#   動きは 位置と 角度だけ（色は かわらない＝点めつ なし）。体と 頭は CSS の 小さな 箱（絵の データなし）。顔（はだの 色）は みんなに つけた
 CR_SKIN = ('#F2D2B6', '#E8BE98', '#D4A47C')
 CR_PANTS = ('#3A3A44', '#4A5A78', '#5A4A42')
+CR_TOP = 36                                                     # スタンドの 上の はし（だんの y：38・45・52）
+TIER_KINDS = ['look'] * 10 + ['shift'] * 2 + ['stand'] * 2 + ['hand'] * 2 + ['phone'] * 2 + ['paper']    # 1だん（＋話す 2人組 3組）
+CHAT_PAIRS = 3
+DUR = dict(look=(8.0, 13.0), chat=(10.0, 15.0), shift=(9.0, 14.0), stand=(13.0, 18.0), hand=(10.0, 16.0), phone=(11.0, 16.0), paper=(12.0, 17.0))
+
+
+def face_svg(x, y, skin):
+    """すわって いる 人の 顔（頭の 下の ほう・はだの 色）"""
+    return f"<ellipse cx='{f(x)}' cy='{f(y + 1.45)}' rx='1.1' ry='.95' fill='{skin}'/>"
 
 
 def crowd_roles():
-    """お客さんの 役：{(だん, 番号): ('w', 組) 頭が ゆれる ／ ('a', 番号) 立ち上がる・手を あげる}"""
-    R = rnd(77)
+    """お客さんの 役：{(だん, 番号): (種類, 動く 人の 番号, 組の 相手の 番号 か None)}。1だんを 22の 区切りに わけて 1人ずつ（ちらばる ように）。
+       話す 2人組は 右どなりと 組む。すみの 人（番号 0・1・68・69）は 動かさない"""
+    R = rnd(96)
     roles = {}
+    n = 0
     for k in range(3):
-        base = R.uniform(0, 11.6)
-        for j in range(6):                                                  # 1だん 6人（ちらばる ように）
-            i = int(base + j * 11.6 + R.uniform(-2, 2)) % 70
-            roles[(k, i)] = ('a', len([r for r in roles.values() if r[0] == 'a']))
-        free = [i for i in range(70) if (k, i) not in roles]
-        for n, i in enumerate(R.sample(free, 14)):
-            roles[(k, i)] = ('w', n % 3)
+        kinds = ['chat'] * CHAT_PAIRS + TIER_KINDS
+        R.shuffle(kinds)
+        seg = 64 / len(kinds)
+        used = set()
+        for j, kd in enumerate(kinds):
+            lo = 2 + j * seg
+            cand = [i for i in range(int(lo), int(lo + seg) + 1) if 2 <= i <= 66 and i not in used and i - 1 not in used]
+            if kd == 'chat':
+                cand = [i for i in cand if i + 1 <= 67]
+            if not cand:
+                continue
+            i = R.choice(cand)
+            if kd == 'chat':
+                roles[(k, i)] = ('chat', n, n + 1)
+                roles[(k, i + 1)] = ('chat', n + 1, n)
+                used |= {i, i + 1}
+                n += 2
+            else:
+                roles[(k, i)] = (kd, n, None)
+                used.add(i)
+                n += 1
     return roles
 
 
-SWAY = ((2.8, 0.0), (3.4, -1.1), (4.1, -2.3))           # 頭の ゆれ：(秒（行って もどる）, おくれ)
+def _kf_tr(name, pts, fn):
+    """(割合 0〜1, 値) → @keyframes（fn：値 → 宣言）"""
+    return kf(name, [(t * 100, fn(v)) for t, v in pts])
 
 
-def actor_keys(n, cyc):
-    """立ち上がる・手を あげる 人 n の 1回り（cyc 秒）の keyframes：(体の 上下, 手)"""
-    R = rnd(300 + n)
-    kind = R.choice(('stand', 'hands', 'both', 'stand', 'hands'))
-    t0 = R.uniform(0.5, cyc - 4.5)
-    dur = {'stand': 2.2, 'hands': 1.6, 'both': 2.6}[kind]
-    up, hand = [(0, 0.0)], [(0, 0.0)]
-    if kind in ('stand', 'both'):
-        up += [(t0, 0.0), (t0 + 0.4, -1.6), (t0 + dur - 0.4, -1.6), (t0 + dur, 0.0)]
-    if kind in ('hands', 'both'):
-        a = t0 + (0.35 if kind == 'both' else 0.0)
-        b = t0 + dur - (0.3 if kind == 'both' else 0.0)
-        hand += [(a, 0.0), (a + 0.25, 1.0), (b - 0.25, 1.0), (b, 0.0)]
-    if R.random() < 0.5:                                                    # もう 1回 手だけ（半分の 人）
-        t1 = (t0 + dur + R.uniform(3.0, cyc - dur - 4.0)) % cyc
-        if t1 + 1.4 < cyc and (t1 > t0 + dur + 1 or t1 + 1.4 < t0 - 1):
-            ev = sorted(hand[1:] + [(t1, 0.0), (t1 + 0.25, 1.0), (t1 + 1.15, 1.0), (t1 + 1.4, 0.0)])
-            hand = [(0, 0.0)] + ev
-    up.append((cyc, 0.0))
-    hand.append((cyc, 0.0))
-    return ([(t / cyc * 100, f'transform:translateY({f(v)}px)' if v else 'transform:none') for t, v in up],
-            [(t / cyc * 100, f'opacity:{f(v)}') for t, v in hand] if len(hand) > 2 else None)
+def _tr(v):
+    x, y = v if isinstance(v, tuple) else (v, 0.0)
+    return 'transform:none' if abs(x) < 1e-6 and abs(y) < 1e-6 else f'transform:translate({f(x)}px,{f(y)}px)'
+
+
+def _face(v):
+    """頭が 横へ x px の とき の 顔：少し 先に 動いて 細く（首を 回した 顔）"""
+    x, y = v if isinstance(v, tuple) else (v, 0.0)
+    if abs(x) < 1e-6:
+        return 'transform:none'
+    return f'transform:translateX({f(0.45 * x)}px) scaleX({f(1 - 0.24 * min(1.0, abs(x)))})'
+
+
+# 動きの ひな形（割合 0〜1 → 値）。頭：x・y px／体の 組：x・y px／腕：角度°（180＝下）／スマホ・新聞：上下 px
+LOOK = {
+    'a': [(0, 0), (.10, 0), (.16, -1.0), (.42, -1.0), (.49, 0), (.62, 0), (.68, 1.0), (.86, 1.0), (.92, 0), (1, 0)],          # 左を 見て → 右を 見る
+    'b': [(0, -.9), (.06, -.9), (.46, .9), (.56, .9), (.63, 0), (.84, 0), (.92, -.9), (1, -.9)],                               # 右へ 歩く 馬を ゆっくり 目で 追う
+    'c': [(0, .9), (.06, .9), (.46, -.9), (.56, -.9), (.63, 0), (.84, 0), (.92, .9), (1, .9)],                                 # 左へ 歩く 馬を 目で 追う
+    'd': [(0, 0), (.28, 0), (.33, (.9, 0)), (.47, (.9, 0)), (.52, 0), (.70, 0), (.73, (0, .45)), (.76, 0), (.79, (0, .45)), (.82, 0), (1, 0)],   # ちらっと 見て うなずく
+}
+CHAT_A = [(0, 0), (.14, 0), (.20, (.8, 0)), (.25, (.8, .45)), (.29, (.8, 0)), (.36, (.8, .45)), (.40, (.8, 0)), (.58, (.8, 0)), (.64, 0), (1, 0)]
+CHAT_B = [(0, 0), (.16, 0), (.22, (-.8, 0)), (.44, (-.8, 0)), (.48, (-.8, .45)), (.52, (-.8, 0)), (.56, (-.8, .45)), (.60, (-.8, 0)), (.66, 0), (1, 0)]
+CHAT_BODY = [(0, 0), (.16, 0), (.22, .35), (.58, .35), (.65, 0), (1, 0)]
+SHIFT = {
+    'a': [(0, 0), (.18, 0), (.23, (.5, .45)), (.28, (.9, 0)), (.64, (.9, 0)), (.69, (.45, .4)), (.74, 0), (1, 0)],
+    'b': [(0, 0), (.30, 0), (.35, (-.5, .45)), (.40, (-.9, 0)), (.70, (-.9, 0)), (.75, (-.45, .4)), (.80, 0), (1, 0)],
+}
+SHIFT_HEAD = [(0, 0), (.30, 0), (.36, .8), (.52, .8), (.58, 0), (1, 0)]
+STAND = [(0, 0), (.20, 0), (.27, (0, -2.6)), (.60, (0, -2.6)), (.67, 0), (1, 0)]
+STAND_HEAD = [(0, 0), (.30, 0), (.35, -.9), (.44, -.9), (.50, .9), (.56, .9), (.61, 0), (1, 0)]
+HAND = {
+    'wave': [(0, 180), (.34, 180), (.41, 28), (.45, 8), (.49, 30), (.53, 8), (.57, 26), (.64, 180), (1, 180)],
+    'point': [(0, 180), (.48, 180), (.55, 74), (.72, 70), (.79, 180), (1, 180)],
+}
+HAND_HEAD = {'wave': [(0, 0), (1, 0)], 'point': [(0, 0), (.48, 0), (.54, .9), (.74, .9), (.80, 0), (1, 0)]}
+PHONE = [(0, 7.0), (.30, 7.0), (.36, 0), (.45, (0, -.25)), (.54, 0), (.62, 0), (.68, 7.0), (1, 7.0)]
+PAPER = [(0, 6.5), (.24, 6.5), (.30, 0), (.70, 0), (.76, 6.5), (1, 6.5)]
+PAPER_FLIP = [(0, 1), (.48, 1), (.51, .12), (.54, 1), (1, 1)]
+PAPER_HEAD = [(0, 0), (.30, 0), (.34, (0, .35)), (.68, (0, .35)), (.72, 0), (1, 0)]
+
+
+def crowd_css():
+    """動く お客さんの 共通の CSS と @keyframes（みんなで 使う：長さと ずれは 人ごとに style の --d・--t）"""
+    css = ('.pkw .pkM{overflow:hidden;width:8px;height:11px}'
+           '.pkw .pkM i,.pkw .pkM b,.pkw .pkHd,.pkw .pkHd b{position:absolute;display:block}'
+           '.pkw .pkM *,.pkw .pkHd,.pkw .pkHd b{animation-duration:var(--d);animation-delay:var(--t);animation-iteration-count:infinite;animation-timing-function:ease-in-out}'
+           '.pkw .pkM>i{left:0;top:0;width:8px;height:13px}'
+           '.pkw .pkM .b{left:2.3px;top:7px;width:3.4px;height:4.2px;border-radius:1.2px}'
+           '.pkw .pkM .l{left:2.5px;top:10.2px;width:3px;height:2.8px;border-radius:.6px}'
+           '.pkw .pkM .h,.pkw .pkHd{left:2.5px;top:4.5px;width:3px;height:3px;border-radius:50%}'
+           '.pkw .pkHd{width:3px;height:3px}'
+           '.pkw .pkM .h>b,.pkw .pkHd>b{left:.4px;top:1px;width:2.2px;height:1.9px;border-radius:50%}'
+           '.pkw .pkM .ar{top:4.3px;width:1px;height:3.6px;border-radius:.5px;transform-origin:50% 100%;transform:rotate(180deg)}'
+           '.pkw .pkM .pp{left:2.55px;top:5.2px;width:2.9px;height:2.3px;transform:translateY(7px)}'
+           '.pkw .pkM .pp>b{left:.7px;top:0;width:1.5px;height:2.2px;border-radius:.3px;background:#2C3038;box-shadow:inset 0 0 0 .3px #5A606C}'
+           '.pkw .pkM .pp>i{left:0;top:1.3px;width:2.9px;height:.95px;border-radius:.45px}'
+           '.pkw .pkM .pa{left:1.9px;top:6.5px;width:4.2px;height:2.9px;transform:translateY(6.5px)}'
+           '.pkw .pkM .pa>b{left:0;top:0;width:4.2px;height:2.9px;border-radius:.25px;'
+           'background:linear-gradient(180deg,#F1EDE2 0 26%,#A9A59B 26% 34%,#F1EDE2 34% 52%,#A9A59B 52% 60%,#F1EDE2 60% 78%,#A9A59B 78% 84%,#F1EDE2 84%)}')
+    for v, pts in LOOK.items():
+        css += _kf_tr(f'pkLk{v}', pts, _tr) + _kf_tr(f'pkLf{v}', pts, _face)
+    for nm, pts in (('pkCa', CHAT_A), ('pkCb', CHAT_B)):
+        css += _kf_tr(nm, pts, _tr) + _kf_tr(nm + 'f', pts, _face)
+    css += _kf_tr('pkCbd', CHAT_BODY, _tr) + _kf_tr('pkCbe', [(t, -v) for t, v in CHAT_BODY], _tr)
+    for v, pts in SHIFT.items():
+        css += _kf_tr(f'pkSh{v}', pts, _tr)
+    css += _kf_tr('pkShh', SHIFT_HEAD, _tr) + _kf_tr('pkShf', SHIFT_HEAD, _face)
+    css += _kf_tr('pkSt', STAND, _tr) + _kf_tr('pkSth', STAND_HEAD, _tr) + _kf_tr('pkStf', STAND_HEAD, _face)
+    for v, pts in HAND.items():
+        css += _kf_tr(f'pkHr{v}', pts, lambda a: f'transform:rotate({f(a)}deg)') + _kf_tr(f'pkHl{v}', pts, lambda a: f'transform:rotate({f(-a)}deg)')
+        css += _kf_tr(f'pkHh{v}', HAND_HEAD[v], _tr) + _kf_tr(f'pkHf{v}', HAND_HEAD[v], _face)
+        css += _kf_tr(f'pkHm{v}', [(t, -x if isinstance(x, (int, float)) else x) for t, x in HAND_HEAD[v]], _tr) + _kf_tr(f'pkHn{v}', [(t, -x if isinstance(x, (int, float)) else x) for t, x in HAND_HEAD[v]], _face)
+    css += _kf_tr('pkPh', PHONE, lambda v: 'transform:translate(0,0)' if v == 0 else _tr(v if isinstance(v, tuple) else (0, v)))
+    css += _kf_tr('pkPa', PAPER, lambda v: 'transform:translate(0,0)' if v == 0 else _tr((0, v)))
+    css += _kf_tr('pkPf', PAPER_FLIP, lambda v: 'transform:none' if v == 1 else f'transform:scaleX({f(v)})')
+    css += _kf_tr('pkPd', PAPER_HEAD, _tr) + _kf_tr('pkPe', PAPER_HEAD, _face)
+    return css
 
 
 def crowd_parts(ppl):
-    """動く お客さんの html と css（頭が ゆれる 3組・立ち上がる／手を あげる 人）"""
+    """動く お客さんの html と css。ppl：back_svg が 入れた [(だん, 番号, x, y, 服, 髪)]（だんの 上から じゅんに＝手前の だんが 上に かさなる）"""
     roles = crowd_roles()
-    html, css = '', ''
-    top = 36
-    for g, (sec, dl) in enumerate(SWAY):                                    # 頭が ゆれる
-        heads = ''.join(f"<circle cx='{f(x)}' cy='{f(y + 1 - top)}' r='1.5' fill='{hc}'/>" for k, i, x, y, c, hc in ppl if roles.get((k, i)) == ('w', g))
-        html += img(f'pkCw w{g}', doc(W, 24, heads))
-        css += f'.pkw .pkCw.w{g}{{left:0;top:{top}px;width:{W}px;height:24px;animation:pkSw {f(sec)}s ease-in-out {f(dl)}s infinite alternate}}'
-    css += kf('pkSw', [(0, 'transform:translateX(-.4px)'), (100, 'transform:translateX(.4px)')])
-    css += '.pkw .pkCa{overflow:hidden}.pkw .pkCa>i{position:absolute;display:block;left:0;top:0;width:8px;height:13px}.pkw .pkCa img{position:absolute;display:block;left:0;top:0;width:8px;height:13px}'
-    for k, i, x, y, c, hc in ppl:                                           # 立ち上がる・手を あげる（いすの 線より 下は 見えない＝立つと 足が 出る）
+    html = ''
+    for k, i, x, y, c, hc in ppl:
         role = roles.get((k, i))
-        if not role or role[0] != 'a':
+        if not role:
             continue
-        n = role[1]
-        R = rnd(500 + n)
+        kd, n, mate = role
+        R = rnd(700 + n)
         skin, pants = R.choice(CR_SKIN), R.choice(CR_PANTS)
-        ox, oy = x - 4, y - 5
-        body = (f"<rect x='{f(x - 1.5 - ox)}' y='{f(y + 5.2 - oy)}' width='3' height='2.6' rx='.6' fill='{pants}'/>"
-                f"<rect x='{f(x - 1.7 - ox)}' y='{f(y + 2 - oy)}' width='3.4' height='4' rx='1.2' fill='{c}'/>"
-                f"<circle cx='{f(x - ox)}' cy='{f(y + 1 - oy)}' r='1.5' fill='{hc}'/>")
-        arms = ''.join(f"<path d='M{f(x + sg * 1.35 - ox)} {f(y + 2.9 - oy)} L{f(x + sg * 2.4 - ox)} {f(y - 1.0 - oy)}' stroke='{c}' stroke-width='1' stroke-linecap='round'/>"
-                       f"<circle cx='{f(x + sg * 2.5 - ox)}' cy='{f(y - 1.4 - oy)}' r='.7' fill='{skin}'/>" for sg in (-1, 1))
-        cyc = 24 + 2 * (n % 6) + R.uniform(0, 1.5)                           # 人ごとに ちがう 1回り（ばらばら）
-        ku, kh = actor_keys(n, cyc)
-        name = f'pa{n}'
-        html += f'<i class="pkCa {name}"><i>' + img('', doc(8, 13, body)) + (img('ar', doc(8, 13, arms)) if kh else '') + '</i></i>'
-        css += (f'.pkw .pkCa.{name}{{left:{f(ox)}px;top:{f(oy)}px;width:8px;height:11px}}'
-                f'.pkw .pkCa.{name}>i{{animation:{name}U {f(cyc, 2)}s ease-in-out infinite}}' + kf(f'{name}U', ku))
-        if kh:
-            css += f'.pkw .pkCa.{name} .ar{{opacity:0;animation:{name}H {f(cyc, 2)}s linear infinite}}' + kf(f'{name}H', kh)
-    return html, css
+        lo, hi = DUR[kd]
+        if kd == 'chat':                                                    # 2人組は 同じ 長さと ずれ（小さい 番号の 人の 乱数）
+            R2 = rnd(900 + min(n, mate))
+            d, t = R2.uniform(lo, hi), 0.0
+            t = -R2.uniform(0, d)
+        else:
+            d = R.uniform(lo, hi)
+            t = -R.uniform(0, d)
+        var = f'--d:{f(d, 2)}s;--t:{f(t, 2)}s'
+        face = f'<b style="background:{skin};animation-name:{{F}}"></b>'
+        if kd == 'look':                                                    # 頭だけ（体は うしろの 絵）
+            v = R.choice(tuple(LOOK))
+            html += (f'<i class="pkHd" style="left:{f(x - 1.5)}px;top:{f(y - 0.5)}px;background:{hc};{var};animation-name:pkLk{v}">'
+                     + face.replace('{F}', f'pkLf{v}') + '</i>')
+            continue
+        hn, fn, gn, extra, arm = 'none', 'none', 'none', '', ''
+        bn = 'none'
+        if kd == 'chat':
+            left = mate > n                                                 # 左の 人（相手は 右）
+            hn, fn = ('pkCa', 'pkCaf') if left else ('pkCb', 'pkCbf')
+            bn = 'pkCbd' if left else 'pkCbe'
+        elif kd == 'shift':
+            gn = 'pkSh' + R.choice(tuple(SHIFT))
+            hn, fn = 'pkShh', 'pkShf'
+        elif kd == 'stand':
+            gn, hn, fn = 'pkSt', 'pkSth', 'pkStf'
+        elif kd == 'hand':
+            v = R.choice(('wave', 'point', 'wave'))
+            side = R.choice((-1, 1))
+            ax = 4 + side * 1.35 - 0.5
+            arm = (f'<b class="ar" style="left:{f(ax)}px;background:linear-gradient(0deg,{c} 0 70%,{skin} 70%);'
+                   f'animation-name:{"pkHr" if side > 0 else "pkHl"}{v}"></b>')
+            hn, fn = (f'pkHh{v}', f'pkHf{v}') if side > 0 else (f'pkHm{v}', f'pkHn{v}')
+        elif kd == 'phone':
+            extra = f'<i class="pp" style="animation-name:pkPh"><i style="background:{skin}"></i><b></b></i>'
+        elif kd == 'paper':
+            extra = '<i class="pa" style="animation-name:pkPa"><b style="animation-name:pkPf"></b></i>'
+            hn, fn = 'pkPd', 'pkPe'
+        html += (f'<i class="pkM" style="left:{f(x - 4)}px;top:{f(y - 5)}px;{var}"><i style="animation-name:{gn}">'
+                 + arm
+                 + f'<b class="l" style="background:{pants}"></b>'
+                 + f'<b class="b" style="background:{c};animation-name:{bn}"></b>'
+                 + f'<b class="h" style="background:{hc};animation-name:{hn}">' + face.replace('{F}', fn) + '</b>'
+                 + extra + '</i></i>')
+    return html, crowd_css()
 
 
 # ---------------------------------------------------------------- 馬の 歩きと ときどきの 動き（第4.93版）
@@ -477,7 +585,7 @@ def banner(B):
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     ppl = []
     html += img('pkBk', back_svg(ppl))
-    ch, cc = crowd_parts(ppl)                                              # 動く お客さん（第4.95版）
+    ch, cc = crowd_parts(ppl)                                              # 動く お客さん（第4.96版）
     html += ch
     html += f'<i class="pkCl" style="background-image:url(&quot;{durl(clouds_svg())}&quot;)"></i>'
     css = ('.pkw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;background:#DDF0F8}'
@@ -508,7 +616,7 @@ def banner(B):
     css += (kf('pkCloud', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-W}px)')])
             + kf('pkSway', [(0, 'transform:rotate(-.6deg)'), (50, 'transform:rotate(.6deg)'), (100, 'transform:rotate(-.6deg)')]))
     css += cc
-    css += reduced('.pkw .pkBk,.pkw .pkCw,.pkw .pkCa,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn,.pkw .pkDg') if still else ''
+    css += reduced('.pkw .pkBk,.pkw .pkM,.pkw .pkHd,.pkw .pkCl,.pkw .pkIn,.pkw .pkLn,.pkw .pkH,.pkw .pkPn,.pkw .pkDg') if still else ''
     return html, css
 
 
