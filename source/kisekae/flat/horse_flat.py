@@ -114,8 +114,13 @@ def render_body(pose, eye, tgt, fov, W, Hh, name, tmp, throat=None):
         return rc0(a_, b_, *args, **kw)
 
     sc.rcone = rc
+    mats = dict(body=1, neck=1, hoof=6, eye=5, head=1)
+    if pose.get('neck_yaw'):                                       # 首を 横に まげる 時は 首（2）と 頭（3）を 別の 番号に（どこが 見えて いるか 分ける。色は 体と 同じ）
+        sc.mat(2, 1, (0.6, 0.6, 0.6), 0.6)
+        sc.mat(3, 1, (0.6, 0.6, 0.6), 0.6)
+        mats.update(neck=2, head=3)
     with slim_throat(sc, pose, **(throat or {})):                  # のど元をすっきり（spec の throat があるときだけ：throat_fix.py）
-        S = Hm.build(sc, pose, mats=dict(body=1, neck=1, hoof=6, eye=5, head=1))
+        S = Hm.build(sc, pose, mats=mats)
     sc.rcone = rc0
     R = sc.render(os.path.join(tmp, name))
     R['S'], R['scene'] = S, sc
@@ -241,6 +246,9 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         hs = np.sum((Pn - poll3) * (Qh @ U3), -1) / HEAD_SC
         head = inside & (segd(poll3, hp(0.56, -0.03))[0] < 0.21 * HEAD_SC)
     muzzle = head & (hs > 0.44) & ~far
+    if Y:                                                                # 首を 横に まげた 時：首の 画素（neckm・番号 2）と、首と 頭（nh・番号 2・3・目 5）
+        neckm = inside & (m == 2)
+        nh = inside & ((m == 2) | (m == 3) | (m == 5))
     # 耳の中（手前の耳）
     d_ear = Hm.ear_vec(U3, V3, side, pose.get('ear_rot', 0.0))
     b_ear = hp(0.0, 0.02, 0.058 * side)
@@ -268,6 +276,31 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     col[ear_in] = hexc(pal['earIn'])
     col[m == 6] = hexc(pal['hoof'])
     col[m == 5] = hexc(pal['eye'])
+    if Y:                                                                # 首を 横に まげた 時だけ 少し 立体的に（第4.96版・七夕の 振り返り）
+        dep = np.sum(Pn * camn, -1)                                      # 大きい ほど 手前
+        fac = 0.9 + 0.12 * np.clip(lit / 0.7, 0, 1)                      # 首と 頭に やわらかい 陰（光の 当たる 向きで なめらかに）
+        col[nh] *= np.minimum(fac[nh], 1.0)[:, None]
+        r3 = max(2, int(round(1.4 * s)))
+        edge = np.zeros(inside.shape, bool)
+        near_far = np.zeros(inside.shape, np.float32)
+        H3_, W3_ = inside.shape
+        for dy_ in range(-r3, r3 + 1):
+            for dx_ in range(-r3, r3 + 1):
+                if dx_ * dx_ + dy_ * dy_ > r3 * r3 or (dx_ == 0 and dy_ == 0):
+                    continue
+                ys0, ys1 = max(0, dy_), H3_ + min(0, dy_)
+                xs0, xs1 = max(0, dx_), W3_ + min(0, dx_)
+                cur = (slice(ys0, ys1), slice(xs0, xs1))
+                nb = (slice(ys0 - dy_, ys1 - dy_), slice(xs0 - dx_, xs1 - dx_))
+                jump = inside[nb] & (dep[nb] < dep[cur] - 0.12)          # となりが ずっと 奥（体や 首の むこう）
+                edge[cur] |= nh[cur] & jump
+        line = blur(edge.astype(np.float32), 0.6 * s)
+        line = np.clip(line * 2.2, 0, 1) * inside
+        sh_c = hexc(pal['shade'])
+        col = col * (1 - 0.55 * line[..., None]) + sh_c * (0.55 * line[..., None])
+        shadow = blur((nh & inside).astype(np.float32), 2.2 * s)          # 前に 出た 首と 頭が 体に 落とす うすい 影
+        body_only = inside & ~nh & (dep < np.where(nh, dep, -9).max() + 1)
+        col[body_only] *= (1 - 0.14 * np.clip(shadow[body_only] * 1.6, 0, 1))[:, None]
     A = a.astype(np.float32).copy()
 
     def comp(rgb, al):
@@ -295,7 +328,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     def backline(x1):
         """1倍の x での背中の上のふち（1倍の y）"""
         xi = int(round(x1 * s))
-        c_ = np.nonzero(body_mask[:, xi])[0]
+        c_ = np.nonzero((body_mask & ~nh)[:, xi] if Y else body_mask[:, xi])[0]     # 首を 横に まげた 時は 首と 頭を のぞいた 背中
         return c_.min() / s if len(c_) else None
 
     wx = lambda dx: P1(Hm.v3(wv + np.array([dx, 0.0]), 0.2 * side))[0]
@@ -358,11 +391,11 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
         if Y:
             c3, th3 = P3(crest3[i]), P3(throat3[i])
-        top = first_out(inside, (c3 + th3) / 2, c3 - th3) / s
+        top = first_out(neckm if Y else inside, (c3 + th3) / 2, c3 - th3) / s
         if bent:   # 首を下げた時：下げた首の中に入る所で止める（out_before_neck）
             bot = out_before_neck((c3 + th3) / 2, th3 - c3, i) / s
         else:
-            bot = first_out(inside, (c3 + th3) / 2, th3 - c3) / s
+            bot = first_out(neckm if (Y and t_ >= 0.2) else inside, (c3 + th3) / 2, th3 - c3) / s
         j = min(40, i + 2)
         k = max(0, i - 2)
         ax = unit((P1(Hm.v3(crest[j])) + P1(Hm.v3(throat[j]))) / 2 - (P1(Hm.v3(crest[k])) + P1(Hm.v3(throat[k]))) / 2)
@@ -384,6 +417,8 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     marks['bottom'] = float(np.nonzero(inside.any(1))[0].max() + 1) / s       # 馬の体のいちばん下（ひづめの下のふち）
     # 第4.90版：着ぐるみ（お正月の 羊）の ための 目印（3倍）：世界の 位置・骨・頭の 所・奥の 足と 耳・頭の 向き（使わない テーマは なにも かわらない）
     marks.update(Pn=Pn, S=S, far=far, u2=u2, head_sc=HEAD_SC, neck_mid=neck_mid, tsh=tsh, W=W, Hh=Hh)
+    if Y:                                                                  # 首を 横に まげた 時の 目印（3倍）
+        marks.update(nh=nh, neckm=neckm, headm=head, sv=sv)
     extra = acc(marks) if acc is not None else {}
 
     # ---------------- 重ね（3倍） ----------------
@@ -397,17 +432,22 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
         layer(extra.get('suit_over', []))
     cl_parts = [path(cloth_d, pal['cloth']), stroke(f'M{f2(x0 - 2)},{f2(trim_y)} H{f2(x1 + 2)}', pal['clothTrim'], 0.05 * p1u)]
     cl_parts += extra.get('cloth', [])
-    layer(cl_parts, mask=body_mask.astype(np.float32))
-    layer([path(girth_d, pal['saddle'])], mask=body_mask.astype(np.float32))
-    layer([path(smooth(flap), pal['saddleFlap']), path(seat_d, pal['saddle'])])
+    cmask = (body_mask & ~nh) if Y else body_mask                       # 首を 横に まげた 時は 前に 出た 首と 頭の 上に 布と 鞍を 描かない
+    layer(cl_parts, mask=cmask.astype(np.float32))
+    layer([path(girth_d, pal['saddle'])], mask=cmask.astype(np.float32))
+    layer([path(smooth(flap), pal['saddleFlap']), path(seat_d, pal['saddle'])], mask=(~nh).astype(np.float32) if Y else None)
 
     # たてがみ：首の上のふち → 首の横にたれて、うしろへ流れる房
     tops2 = []
+    seen = []                                                             # 首を 横に まげた 時：たてがみの 根もとが 見えて いるか（頭の かげは ×）
     for i in range(41):
         c3, th3 = P3(Hm.v3(crest[i])), P3(Hm.v3(throat[i]))
         if Y:
             c3, th3 = P3(crest3[i]), P3(throat3[i])
-        tops2.append(first_out(inside, (c3 * 0.8 + th3 * 0.2), c3 - th3) / s)
+            st_ = c3 * 0.8 + th3 * 0.2
+            xi_, yi_ = int(round(st_[0])), int(round(st_[1]))
+            seen.append(0 <= yi_ < neckm.shape[0] and 0 <= xi_ < neckm.shape[1] and bool(neckm[yi_, xi_]))
+        tops2.append(first_out(neckm if Y else inside, (c3 * 0.8 + th3 * 0.2), c3 - th3) / s)
     tops2 = np.array(tops2)
     tops2 = np.stack([sm1(tops2[:, j], 7) for j in (0, 1)], 1)
     tg = np.gradient(tops2, axis=0)
@@ -418,10 +458,26 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     Tm = lambda f: tops2[int(np.clip(round(f * 40), 0, 40))]
     Nm = lambda f: nr[int(np.clip(round(f * 40), 0, 40))]
     f0, f1 = 0.02, 0.94
+    no_mane_yaw = False
+    if Y:                                                                  # 見えて いる いちばん 長い ところ だけに たてがみ
+        best, cur_ = (0, -1), None
+        for i, ok in enumerate(seen + [False]):
+            if ok and cur_ is None:
+                cur_ = i
+            elif not ok and cur_ is not None:
+                if i - 1 - cur_ > best[1] - best[0]:
+                    best = (cur_, i - 1)
+                cur_ = None
+        if best[1] - best[0] < 10:
+            no_mane_yaw = True
+        else:
+            f0, f1 = max(0.02, best[0] / 40 + 0.02), min(0.94, best[1] / 40 - 0.04)
     up_edge = [Tm(f) + Nm(f) * (0.024 * p1u) * math.sin(math.pi * np.clip((f - f0) / (f1 - f0), 0, 1)) ** 0.5 for f in np.linspace(f0, f1, 18)]
     K = 6
     var = spec.get('mane_var', (1.0, 1.14, 0.9, 1.1, 0.96, 1.06))
     Lb = 0.21 * p1u * spec.get('mane_len', 1.0)
+    if Y:                                                                  # 首を 横に まげた 時は 短い 房（首の 上の ふちに そって）
+        Lb *= 0.6
     low, sharp = [], []
     n_up = len(up_edge)
     for k in range(K, 0, -1):                                              # うなじ → き甲
@@ -464,8 +520,13 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     mane_parts.append(path(tuft(fb_, P1(hp(0.21, 0.075, 0.075 * sv)), 0.08 * p1u, bend=0.12, side=-fxh), pal['maneD']))
     mane_parts.append(path(tuft(fb_, P1(hp(0.18, 0.10, 0.07 * sv)), 0.07 * p1u, bend=0.10, side=fxh), pal['mane']))
     if not extra.get('no_mane'):                                           # 着ぐるみの 中に たてがみと 前髪を しまう（第4.90版・お正月の 羊）
-        layer(mane_parts)
-    layer(extra.get('neck', []))
+        if Y:                                                              # 首を 横に まげた 時：たてがみは 頭の 上に 描かない（前髪は 頭の 上）
+            if not no_mane_yaw:
+                layer(mane_parts[:-2], mask=(~head).astype(np.float32))
+            layer(mane_parts[-2:])
+        else:
+            layer(mane_parts)
+    layer(extra.get('neck', []), mask=(~head).astype(np.float32) if Y else None)
 
     # 顔：目・鼻の穴・口・頭のベルト・はみ・手綱
     ang = math.degrees(math.atan2(head_dir[1], head_dir[0]))
@@ -499,7 +560,7 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     size = 0.27 * p1u
     layer([f'<text x="{f2(cx_)}" y="{f2(cy_ + size * 0.36)}" font-family="Noto Sans CJK JP" font-weight="900" font-size="{f2(size)}" '
            f'fill="{pal["num"]}" text-anchor="middle">{number}</text>'])
-    layer(extra.get('front', []))
+    layer(extra.get('front', []), mask=(~nh).astype(np.float32) if Y else None)
 
     # しっぽ（体のうしろ）：いちばん下にしく
     th = P3(Hm.v3(S['tailhead']))

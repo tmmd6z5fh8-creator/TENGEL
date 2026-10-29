@@ -1,14 +1,18 @@
 """壁紙パック ⑧浮世絵風（まさちゃんの 指定「大波と街道を走る馬（オリジナルの絵で）」→ 第4.93版「波しぶきと 波の 表現を もっと 海っぽく・9秒に 1回 お侍さん 1人か 2人
    （ランダム）に 出会う」→ 第4.94版「四枚目の 波の 浮世絵を 正確に 参考に・5個目の 動画（実際の 波）の 動きを 参考に」→
-   第4.95版「波だけ七枚目の画像と形を全く同じにして！」「波の動きが不自然だから滑らかにもっと自然にして！」）
-   大波は 葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 左の 大波と 同じ 形（まさちゃんの 指定）。
+   第4.95版「波だけ七枚目の画像と形を全く同じにして！」「波の動きが不自然だから滑らかにもっと自然にして！」→
+   第4.96版「浮世絵の赤丸の波はもっと動きを出してリアルにして！波飛沫とか波の高さが変わったりとか！リアルな波の映像から波ができてから消えていく動きを
+   勉強して、浮世絵に転用して！」）
+   大波は 葛飾北斎「神奈川沖浪裏」（1831年ごろ・パブリックドメイン）の 左の 大波と 同じ 形（まさちゃんの 指定・いちばん 高い 時）。
    上の絵：和紙の 地・空の 上に 藍の ぼかし・赤い 日・藍の ぼかしの 山なみ・かすみ（横の 雲の 帯）。
-     左に 神奈川沖浪裏の 大波（make/ukiyoe_great.py：画像から 切りぬいて 浮世絵の 平らな 4つの 色＝白・明るい 青・藍・濃い 藍 に まとめた 絵の シート。
-     白い 背中・爪の 泡・濃い 藍の 体と 白い すじ・内がわの 明るい 青・爪から 落ちる しぶきの 点。空・題箋・落款は すける・舟と 人・富士山は 入れない）。
+     左に 神奈川沖浪裏の 大波（make/ukiyoe_great.py：画像から 切りぬいて 浮世絵の 平らな 4つの 色＝白・明るい 青・藍・濃い 藍 に まとめた 絵。
+     白い 背中・爪の 泡・濃い 藍の 体と 白い すじ・内がわの 明るい 青・爪から 落ちる しぶきの 点。空・題箋・落款は すける・舟と 人・富士山は 入れない。
+     体と、波の 先（爪の ある 頭）を 巻きの 強さの じゅんに なめらかに ゆがめた 55コマ）。白い 泡と しぶき（make/ukiyoe_foam.py の シート）。
      沖に 帆かけ舟。手前に 海ぞいの 街道（松並木・土の 道・草の 土手）。白い 馬（朱の 布と 手綱・墨の 輪郭：pack/make/ukiyoe_art.py）が 街道を 右へ 走る。右上に 朱の 印（白い 蹄鉄）
-   動き（本物の 波の 動画を 参考に・7秒の 1回り・形は 1つの まま なめらかに つづけて 動く＝入れかえ・すけ なし）：
-     波 ぜんたいが ゆっくり もり上がって 前へ せり出す（根もとが 軸）→ 波の 先と 爪（4まい：先の まい ほど 大きく 回す）が 根もとを 中心に しなって 前へ 巻きこむ →
-     しぶきの 点が 前へ とんで 落ちる・根もとで 白い 泡が はじけて ひろがる・波の 上から もやが うしろ（左）へ 吹き飛ぶ → また ゆっくり もどる。
+   動き（本物の 波の 動画を 参考に 波の 一生・9秒の 1回り・形は 1つの まま なめらかに つづけて 動く＝入れかえ・すけ なし）：
+     前の 波の 白い 泡の 中から 波が もり上がる（高さ 約6割 → 10割・うしろへ 起きて いた 頭が 立って 爪が のびる）→ いちばん 高い 時は 神奈川沖浪裏 そのまま →
+     波の 先が 前へ 投げ出されて 爪が 下へ 巻きこむ・しぶきの 点が 前へ とんで 落ちる・頭から しぶきと もやが うしろ（左）へ 吹き飛ぶ →
+     落ちた 所で 白い 泡が はじけて、白い 水が 波の 根もとを 右から 左へ 走る → 波が くずれて 沈み、白い 泡の かたまりに つつまれて 消える → 泡が ひろがって うすく なる 中から 次の 波。
      舟が ゆれる・かすみが ゆっくり ただよう・街道と 松並木と 土手が 右から 左へ 流れる（馬が 前へ 進んで 見える）。
      9秒に 1回 お侍さん（一から 描いた：ちょんまげ・羽織と しまの 袴・刀 2本・白い 足袋）が 1人 か 2人（45秒の 1回りで 1・2・2・1・1人）、街道の 手前を むこうから 歩いて
      きて、馬と すれちがう ときに 会釈して 歩いて いく（歩く はやさは 街道の 流れる はやさ＋歩幅・会釈の 間は 足が 地面に ついた まま 流れる＝足が すべらない）。強く 光らせない"""
@@ -96,16 +100,16 @@ def boat_svg():
 #   体（body）と 頭の コマ（crest：c の じゅんの ます目）は 同じ 箱（.ukWg）の 中＝高さ・かたむきは 箱の transform で なめらかに。頭の コマは step-end で 入れかえ
 WB = (-22, 2)                          # 上の絵の 中の 波の 箱の 左上
 WAVE_T = 9.0                           # 波の 一生 1回りの 秒
-W_RISE, W_PEAK, W_PITCH = (0.0, 2.8), (2.8, 3.7), (3.7, 4.6)     # もり上がる・神奈川沖浪裏の 形・波の 先が 投げ出される（秒）
-W_FALL, W_SINK = (4.6, 7.6), (4.9, 7.8)                          # 頭が 落ちる（c 1 → 1.6）・波 ぜんたいが 沈む
-W_FADE = (0.0, 0.5, 7.6, 8.4)                                    # 波が あらわれる・消える（泡の かげで）
+W_RISE, W_PEAK, W_PITCH = (0.0, 2.6), (2.6, 3.5), (3.5, 4.4)     # もり上がる・神奈川沖浪裏の 形・波の 先が 投げ出される（秒）
+W_FALL, W_SINK = (4.4, 7.0), (5.0, 8.6)                          # 頭が 落ちる（c 1 → 1.6）・波 ぜんたいが 沈む（だんだん はやく）
+W_FADE = (0.0, 0.4, 8.1, 8.8)                                    # 波が あらわれる・消える（泡の かげで）
 # 波の 箱の 形（右へ px・下へ px・横の 大きさ・高さ・かたむき°）：根もとが 軸
 WG_LOW = (0.0, 44.0, 1.06, .74, 5.0)       # 泡の 中から 出る 前（低く・うしろへ ねる）
 WG_PEAK = (0.0, 0.0, 1.0, 1.0, 0.0)        # 神奈川沖浪裏
 WG_PEAK2 = (1.0, 0.0, 1.012, 1.012, 0.0)   # いちばん 高い まま 少し せり出す
 WG_PITCH = (3.0, 1.0, 1.01, 1.0, -3.0)     # 波の 先を 投げ出して 前へ かたむく
 WG_SUNK = (8.0, 44.0, 1.04, .74, -6.0)     # くずれて 沈んだ
-PEEL = [(4.45, 214, 1.1), (4.7, 184, 1.0), (4.95, 154, .95), (5.2, 124, .9), (5.45, 94, .85)]   # 白い 水が 走る（はじける 時・上の絵の x・大きさ）
+PEEL = [(4.25, 214, 1.5), (4.5, 184, 1.35), (4.75, 154, 1.2), (5.0, 124, 1.1), (5.25, 94, 1.0)]   # 白い 水が 走る（はじける 時・上の絵の x・大きさ）
 FOAM_W, FOAM_L, FOAM_M, FOAM_LINE = '#F6F1E3', '#B2C7DE', '#5470A0', '#1B255C'   # 浮世絵の 平らな 色（シートと 同じ）
 
 
@@ -553,16 +557,18 @@ def _lerp(a, b, u):
 
 def wave_state(t):
     """t 秒の 波の 箱の 形（右へ・下へ・横・高さ・かたむき）と こさ"""
-    if t < W_RISE[1]:
-        st = _lerp(WG_LOW, WG_PEAK, _ss((t - W_RISE[0]) / (W_RISE[1] - W_RISE[0])))
+    if t < W_RISE[1]:                     # はやく 泡の 上へ 出て、上で ゆっくり 立つ
+        u = (t - W_RISE[0]) / (W_RISE[1] - W_RISE[0])
+        st = _lerp(WG_LOW, WG_PEAK, 1 - (1 - u) ** 2)
     elif t < W_PEAK[1]:
         st = _lerp(WG_PEAK, WG_PEAK2, _ss((t - W_PEAK[0]) / (W_PEAK[1] - W_PEAK[0])))
     elif t < W_PITCH[1]:
         st = _lerp(WG_PEAK2, WG_PITCH, _ss((t - W_PITCH[0]) / (W_PITCH[1] - W_PITCH[0])))
     elif t < W_SINK[0]:
         st = WG_PITCH
-    else:
-        st = _lerp(WG_PITCH, WG_SUNK, _ss((t - W_SINK[0]) / (W_SINK[1] - W_SINK[0])))
+    else:                                 # くずれて 沈む：はじめは ゆっくり、だんだん はやく 泡の 中へ
+        u = min(1.0, (t - W_SINK[0]) / (W_SINK[1] - W_SINK[0]))
+        st = _lerp(WG_PITCH, WG_SUNK, u ** 1.6)
     a0, a1, b0, b1 = W_FADE
     op = _ss((t - a0) / (a1 - a0)) * (1 - _ss((t - b0) / (b1 - b0)))
     return st, op
@@ -633,19 +639,19 @@ def wave_life_css():
     o0, o1 = 'opacity:0', 'opacity:1'
     css = ''
     # 爪から 落ちる しぶきの 点（神奈川沖浪裏の 点）：もり上がる 終わりに 爪の 下に あらわれ、投げ出す ときに 前へ とんで 落ちる・もう 1まいは 投げ出す ときだけ
-    css += _win('ukDot1', [(0, f'{o0};transform:translate(-4px,-8px)'), (2.3, f'{o0};transform:translate(-4px,-8px)'), (2.9, f'{o1};transform:translate(0,0)'),
-                           (3.9, f'{o1};transform:translate(0,0)'), (4.6, 'opacity:.9;transform:translate(4px,8px)'), (5.4, f'{o0};transform:translate(9px,20px)'),
-                           (5.42, f'{o0};transform:translate(-4px,-8px)')])
-    css += _win('ukDot2', [(0, f'{o0};transform:translate(-4px,-9px)'), (3.9, f'{o0};transform:translate(-4px,-9px)'), (4.3, 'opacity:.95;transform:translate(-1px,-3px)'),
-                           (5.0, 'opacity:.7;transform:translate(5px,10px)'), (5.8, f'{o0};transform:translate(10px,22px)')])
-    # 頭から うしろ（左）へ 吹き飛ぶ しぶき（点の 帯）と もや
-    for nm, t0 in (('ukSp1', 4.0), ('ukSp2', 4.6)):
-        css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.4)'), (t0, f'{o0};transform:translate(0,0) scale(.4)'),
-                         (t0 + .5, 'opacity:.9;transform:translate(-6px,-2px) scale(.8)'), (t0 + 1.6, 'opacity:.6;transform:translate(-24px,-7px) scale(1.1)'),
-                         (t0 + 2.6, f'{o0};transform:translate(-42px,-11px) scale(1.3)')])
-    for nm, t0 in (('ukMs1', 4.1), ('ukMs2', 4.7)):
+    css += _win('ukDot1', [(0, f'{o0};transform:translate(-4px,-8px)'), (2.1, f'{o0};transform:translate(-4px,-8px)'), (2.6, f'{o1};transform:translate(0,0)'),
+                           (3.5, f'{o1};transform:translate(0,0)'), (4.2, 'opacity:.9;transform:translate(5px,9px)'), (5.0, f'{o0};transform:translate(11px,22px)'),
+                           (5.02, f'{o0};transform:translate(-4px,-8px)')])
+    css += _win('ukDot2', [(0, f'{o0};transform:translate(-4px,-9px)'), (3.6, f'{o0};transform:translate(-4px,-9px)'), (4.0, 'opacity:.95;transform:translate(-1px,-3px)'),
+                           (4.7, 'opacity:.7;transform:translate(6px,11px)'), (5.5, f'{o0};transform:translate(12px,24px)')])
+    # 頭から うしろ（左）へ 吹き飛ぶ しぶき（点の 帯）と もや：投げ出す ときから くずれる 間 ずっと
+    for nm, t0 in (('ukSp1', 3.7), ('ukSp2', 4.3)):
+        css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.5)'), (t0, f'{o0};transform:translate(0,0) scale(.5)'),
+                         (t0 + .45, f'{o1};transform:translate(-6px,-3px) scale(.95)'), (t0 + 1.5, 'opacity:.75;transform:translate(-26px,-9px) scale(1.3)'),
+                         (t0 + 2.6, f'{o0};transform:translate(-46px,-14px) scale(1.6)')])
+    for nm, t0 in (('ukMs1', 3.8), ('ukMs2', 4.5)):
         css += _win(nm, [(0, f'{o0};transform:translate(0,0) scale(.8)'), (t0, f'{o0};transform:translate(0,0) scale(.8)'),
-                         (t0 + .6, 'opacity:.8;transform:translate(-8px,-2px) scale(1)'), (t0 + 2.7, f'{o0};transform:translate(-50px,-9px) scale(1.3)')])
+                         (t0 + .6, 'opacity:.9;transform:translate(-8px,-3px) scale(1.05)'), (t0 + 2.8, f'{o0};transform:translate(-54px,-11px) scale(1.4)')])
     # 白い 水が 波の 根もとを 右から 左へ 走る（落ちた 所から じゅんに はじけて ひろがり、泡の かたまりに なる）
     for k, (t0, x, sc) in enumerate(PEEL):
         css += _win(f'ukPl{k}', [(0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'), (t0, f'{o0};transform:scale({f(.25 * sc, 3)},{f(.2 * sc, 3)})'),
@@ -653,9 +659,9 @@ def wave_life_css():
                                  (t0 + 1.8, f'{o0};transform:translateY(4px) scale({f(1.3 * sc, 3)},{f(.8 * sc, 3)})')])
     # 白い 泡の かたまり：くずれる ときに もり上がって 波を つつみ、次の 波が もり上がる 間に ひろがって うすく なる
     for nm, d in (('ukFbB', 0.0), ('ukFbF', 0.2)):
-        css += _win(nm, [(0, f'{o1};transform:translateY(0) scale(1,1)'), (0.4 - d, f'{o1};transform:translateY(0) scale(1,1)'),
-                         (2.4 - d, f'{o0};transform:translateY(6px) scale(1.1,.75)'), (4.7 + d, f'{o0};transform:translateY(12px) scale(.92,.45)'),
-                         (6.3 + d, f'{o1};transform:translateY(0) scale(1,1)')])
+        css += _win(nm, [(0, f'{o1};transform:translateY(0) scale(1,1)'), (0.3 - d / 2, f'{o1};transform:translateY(0) scale(1,1)'),
+                         (1.9 - d, f'{o0};transform:translateY(6px) scale(1.1,.75)'), (5.6 + d, f'{o0};transform:translateY(12px) scale(.92,.45)'),
+                         (7.2 + d, f'{o1};transform:translateY(0) scale(1,1)')])
     return css
 
 
@@ -664,8 +670,9 @@ def banner(B):
     run = B.get('run')
     still = B.get('still')
     alt = ('浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（白い背中、濃い藍に白いすじ、'
-           '爪のような白い泡の先、爪から落ちるしぶきの点）。波はゆっくりもり上がって前へせり出し、波の先と爪がしなって前へ巻きこむと、しぶきの点が前へとんで落ち、'
-           '根もとで白い泡がはじけてひろがり、波の上のもやがうしろへ吹き飛んで、またゆっくりもどる。'
+           '爪のような白い泡の先、爪から落ちるしぶきの点）。波は白い泡の中から高くもり上がり、いちばん高くなると波の先が前へ投げ出されて爪が下へ巻きこみ、'
+           'しぶきの点が前へとんで落ち、頭からしぶきともやがうしろへ吹き飛ぶ。落ちた所で白い泡がはじけて白い水が根もとを走り、波はくずれて白い泡の中へ沈んで消え、'
+           '泡がひろがってうすくなる中から次の波がもり上がる。'
            '沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走る。'
            'ときどき街道のむこうから、ちょんまげに羽織と袴、刀を二本さしたお侍さんが一人か二人歩いてきて、馬とすれちがうときに会釈する。右上に朱の印のイラスト')
     html = f'<div class="ukw" role="img" aria-label="{alt}">'
@@ -676,11 +683,15 @@ def banner(B):
     if wave:                                 # 神奈川沖浪裏の 大波（make/ukiyoe_great.py：体・頭の コマ・しぶきの 点）
         html += ('<i class="ukWg"><i class="ukW body"></i>' + ('<i class="ukCf"></i>' if crest else '')
                  + '<i class="ukW dots d1"></i><i class="ukW dots d2"></i></i>')
-    html += img('ukSp s1', spray_svg(41)) + img('ukSp s2', spray_svg(43)) + img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
-    html += img('ukFb b', foam_band_svg('b'))
-    for k in range(len(PEEL)):               # 白い 水が 走る（右から 左へ じゅんに はじける）
-        html += f'<i class="ukPl p{k}">' + (img('bs', burst_svg(11 + k)) if k < 2 else '') + img('fm', foam_svg(21 + k)) + '</i>'
-    html += img('ukFb f', foam_band_svg('f'))
+    foam = B.get('foam')                     # 白い 泡と しぶき（make/ukiyoe_foam.py の 絵の シート：SVG の まま だと 1MB ほど 重い）
+    if foam:
+        html += '<i class="ukSp s1 ukF sp1"></i><i class="ukSp s2 ukF sp2"></i>'
+    html += img('ukMs m1', mist_svg()) + img('ukMs m2', mist_svg())
+    if foam:
+        html += '<i class="ukFb b ukF band_b"></i>'
+        for k in range(len(PEEL)):           # 白い 水が 走る（右から 左へ じゅんに はじける）
+            html += f'<i class="ukPl p{k}">' + (f'<i class="bs ukF bs{k}"></i>' if k < 2 else '') + f'<i class="fm ukF fm{k}"></i></i>'
+        html += '<i class="ukFb f ukF band_f"></i>'
     html += f'<i class="ukPn" style="background-image:url(&quot;{durl(pines_svg())}&quot;)"></i>'
     html += f'<i class="ukRd" style="background-image:url(&quot;{durl(road_svg())}&quot;)"></i>'
     if run:
@@ -710,9 +721,9 @@ def banner(B):
            f'.ukw .ukFb{{left:-24px;top:80px;width:280px;height:40px;opacity:0;transform-origin:50% 100%}}'
            f'.ukw .ukFb.b{{animation:ukFbB {f(WAVE_T)}s linear infinite}}.ukw .ukFb.f{{top:84px;animation:ukFbF {f(WAVE_T)}s linear infinite}}'
            '.ukw .ukPl{width:90px;height:70px;opacity:0;transform-origin:45px 70px}'
-           '.ukw .ukPl>img{position:absolute;display:block}.ukw .ukPl .bs{left:0;top:0;width:90px;height:70px}.ukw .ukPl .fm{left:9px;top:34px;width:72px;height:36px}'
+           '.ukw .ukPl>i{position:absolute;display:block}.ukw .ukPl .bs{left:0;top:0;width:90px;height:70px}.ukw .ukPl .fm{left:9px;top:34px;width:72px;height:36px}'
            + ''.join(f'.ukw .ukPl.p{k}{{left:{f(x - 45)}px;top:40px;animation:ukPl{k} {f(WAVE_T)}s linear infinite}}' for k, (t0, x, sc) in enumerate(PEEL))
-           f'.ukw .ukPn{{left:0;top:56px;width:{2 * TILE}px;height:62px;background-size:{TILE}px 62px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
+           + f'.ukw .ukPn{{left:0;top:56px;width:{2 * TILE}px;height:62px;background-size:{TILE}px 62px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * 1.12, 3)}s linear infinite}}'
            f'.ukw .ukRd{{left:0;top:116px;width:{2 * TILE}px;height:26px;background-size:{TILE}px 26px;background-repeat:repeat-x;animation:ukFlow {ROAD_S}s linear infinite}}'
            f'.ukw .ukBk{{left:0;top:136px;width:{2 * TILE}px;height:28px;background-size:{TILE}px 28px;background-repeat:repeat-x;animation:ukFlow {f(ROAD_S * .82, 3)}s linear infinite}}'
            '.ukw .ukSl{left:364px;top:6px;width:18px;height:18px}'
@@ -746,6 +757,11 @@ def banner(B):
             css += (f'.ukw .ukCf{{position:absolute;left:{f(ax, 3)}px;top:{f(ay, 3)}px;width:{f(fw)}px;height:{f(fh)}px;'
                     f'background:url({crest["url"]}) 0 0/{f(cols * fw)}px {f(rows * fh)}px no-repeat;animation:ukCf {f(WAVE_T)}s step-end infinite}}'
                     + kf('ukCf', crest_stops(crest['cs'], cols, fw, fh)))
+    if foam:                                        # 泡と しぶきの 部品は 1まいの シートの 中の 場所で えらぶ
+        z_ = foam['z']
+        sw_, sh_ = foam['sheet']
+        css += f'.ukw .ukF{{background:url({foam["url"]}) 0 0/{f(sw_ / z_)}px {f(sh_ / z_)}px no-repeat}}'
+        css += ''.join(f'.ukw .ukF.{nm}{{background-position:{f(-x_ / z_)}px {f(-y_ / z_)}px}}' for nm, (x_, y_, w_, h_) in foam['parts'].items())
     css += samurai_css()
     if run:
         n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
@@ -796,7 +812,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='浮世絵風', desc='大波と街道', title='浮世絵風（藍×和紙×朱）', banner=ID,
-    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（爪のような白い泡の先と、爪から落ちるしぶきの点）、沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
+    alt='浮世絵ふうの絵：和紙の地に藍のぼかしの空と赤い日、藍の山なみとかすみ。左に「神奈川沖浪裏」の形の大波（爪のような白い泡の先と、爪から落ちるしぶきの点：もり上がって巻きこみ、くずれて白い泡になる）、沖に帆かけ舟。手前の海ぞいの街道（松並木・土の道・草の土手）を、朱の布と手綱の白い馬が右へ走り、ときどきお侍さんとすれちがう。右上に朱の印',
     fonts=['Shippori+Antique+B1', 'Zen+Old+Mincho:wght@600;700'],
     v=dict(bg='#F3EBDC', ink='#2A2420', sub='#6A5D4E', card='#FBF7EE', cardB='1px solid #DCCDB2', cardO='0 solid transparent', cardS='0 2px 0 #E5D8C0',
            radius='8px', rs='6px', font='"Zen Old Mincho"', dfont='"Shippori Antique B1"', dw='400', logo='#F4EFE4', logoS='0 2px 0 #10223F',
@@ -814,7 +830,8 @@ THEME = dict(
     guide=dict(colors=[(AI['d'], '藍'), ('#B8362A', '朱'), ('#F3EBDC', '和紙'), (AI['l'], '水あさぎ'), ('#2A2420', '墨')],
                fonts='見出し：Shippori Antique B1<br>本文：Zen Old Mincho', shape='角丸8px・帯は 藍の ぼかしで 下に 波頭・波と 千鳥の 背景・すみに 朱の 印・的中ボタンは 題箋の PUSH',
                pic='和紙の 地・藍の ぼかしの 空・赤い 日・山なみ・かすみ・「神奈川沖浪裏」の 形の 大波（白い 背中・濃い 藍に 白い すじ・爪の ような 白い 泡・しぶきの 点：'
-                   'ゆっくり もり上がって 前へ せり出し、波の 先が しなって 巻きこむ と しぶきが とび 根もとで 泡が はじける）・帆かけ舟・松並木の 街道・朱の 布の 白い 馬（墨の 輪郭）・ときどき すれちがう お侍さん・朱の 印'),
+                   '白い 泡の 中から 高く もり上がり、波の 先が 投げ出されて 巻きこむ と しぶきが とび、落ちた 所で 白い 泡が はじけて 走り、くずれて 泡の 中へ 消えると 次の 波）・'
+                   '帆かけ舟・松並木の 街道・朱の 布の 白い 馬（墨の 輪郭）・ときどき すれちがう お侍さん・朱の 印'),
 )
 
 

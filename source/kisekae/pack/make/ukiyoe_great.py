@@ -39,8 +39,8 @@ SKY_SEEDS = [(600, 40), (950, 100), (800, 180), (600, 450), (620, 540), (900, 45
 COLS = 8                            # 頭の コマの ます目の れつ
 
 # 頭の コマの 巻きの 強さ c（pack/ukiyoe.py が 時に 当てる：c<0 もり上がる・0 神奈川沖浪裏・0<c≦1 投げ出す・c>1 くずれる）
-CS = ([round(-1 + i / 16, 4) for i in range(16)] + [0.0]
-      + [round(i / 11, 4) for i in range(1, 12)] + [round(1 + 0.6 * i / 10, 4) for i in range(1, 11)])
+CS = ([round(-1 + i / 20, 4) for i in range(20)] + [0.0]
+      + [round(i / 18, 4) for i in range(1, 19)] + [round(1 + 0.6 * i / 16, 4) for i in range(1, 17)])
 
 
 def warp_params(c):
@@ -48,9 +48,9 @@ def warp_params(c):
     if c <= 0:
         return 15.0 * c, 0.10 * c, 0.0
     if c <= 1:
-        return 12.0 * c, 0.08 * c, 0.0
+        return 16.0 * c, 0.12 * c, 0.0
     u = (c - 1) / 0.6
-    return 12.0 + 10.0 * u, 0.08 - 0.03 * u, 26.0 * u
+    return 16.0 + 12.0 * u, 0.12 - 0.06 * u, 36.0 * u
 
 
 def sky_mask(den):
@@ -260,7 +260,7 @@ def build(src, out=None):
             return (u8[..., :3] * a + np.array(bg, np.float32) * (1 - a))[..., ::-1].astype(np.uint8)
         cv2.imwrite(os.path.join(out, 'great_wave.png'), flat(wave_sheet))
         cv2.imwrite(os.path.join(out, 'great_crest.png'), flat(grid))
-        for i in (0, 8, 16, 22, 27, 32, 37):                           # 体と 重ねた ためし
+        for i in (0, 10, 20, 29, 38, 46, 54):                          # 体と 重ねた ためし
             comp = np.full((H2, W2, 3), bg, np.float32)
             for u8, (px_, py_) in ((body, (0, 0)), (cells[i], (int(round(x0 * SC * Z)), int(round(y0 * SC * Z))))):
                 a = u8[..., 3:4] / 255.0

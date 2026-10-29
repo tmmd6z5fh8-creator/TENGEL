@@ -1,4 +1,4 @@
-"""七夕の 壁紙（壁紙パック・第4.93版〜第4.95版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
+"""七夕の 壁紙（壁紙パック・第4.93版〜第4.96版）の 織姫の 馬と 彦星の 馬：いままでの 壁紙と 同じ 馬（horse_flat）。どちらも 右を 向いて 描く（左へ 進む ときは
    ページで 左右に うらがえす）。同じ カメラで 描くので どの シートも 同じ 所に かさなる（anchor＝ひづめの まん中と 地面：780×320 の 絵の 中）。
    ・run：ギャロップ 10コマ（flat/sea_run.py と 同じ 足の 動き：4回に 1回 振り向いて 駆け寄る とき）
    ・walk：常歩 12コマ（左うしろ → 左前 → 右うしろ → 右前 の 4拍子。meta の step：地面に ついた ひづめが 1コマで うしろへ 動く 画素＝体が 前へ 進む 画素）
@@ -7,8 +7,9 @@
      2頭を 半回り ずらして 首を 上下・前後に ゆらす＝ほおと 首を すりあわせる）。彦星の 馬は うらがえして 右に 置き（ひづめの まん中の 間 PAIR_D）、
      手前ほど 大きい ぶん（k＝1−u×K_SLOPE）を 小さく する（PAIR_SH＝1−K_SLOPE×PAIR_D×HS）。重ねる 順は 彦星の 馬 → 織姫の 馬（手前）
    ・prance：振り向いた とき 前足を 上げる 1コマ・stand：立った 1コマ
-   ・look：首だけ 振り返る 3コマ（0＝首を 起こす・1＝とちゅう・2＝振り返る。体は 立った まま。首の 根もとより 先を 左右 うらがえして き甲を 中心に 起こし、
-     体の うしろに 重ねる＝首は き甲の むこうから 出て、頭は 背中の 上で うしろを 見る。うらがえす 首と 頭は 羽衣なしで 描いた 絵から 切りとる）
+   ・look：首だけ 振り返る 5コマ（第4.96版：3Dの 馬の 首を ほんとうに 横に まげる＝horse3d の neck_yaw・head_yaw。体と 足は 立った まま。
+     0＝首を 少し 上げる → 1・2＝首を 手前（カメラの がわ）へ まげて 顔が こちらを 向く → 3・4＝頭が うしろを 向いて 振り返る（首は 手前へ 弓なり・
+     顔は ななめ 前から 見える）。この コマだけ 首と 頭に やわらかい 陰と、体の 前に 出た 首と 頭の ふちに 細い 陰の 線（horse_flat の 首を 横に まげた 時））
    ・織姫の 馬（o）：白い 体・桃色が かった 白い たてがみ・桃色の 布（白い 花の もよう・金の ふち）・前髪の 上に 花の かざり・首の 根もとから うしろへ なびく 羽衣
    ・彦星の 馬（h）：明るい 栗毛・こげ茶の たてがみ・青い 布（金の 星）・首に 青い ひもと 金の 鈴（牛かいの 鈴）
    ・まわりに やわらかい 星の 光（ぼかした ふち）・走る コマは 地面に ついた ひづめの うしろに 小さな 星の 粉
@@ -258,73 +259,38 @@ def hug_pose(who, g, e=1.0):
                 hind_near=[-62, -118, -92, -62], hind_far=[-58, -116, -92, -62], **p)
 
 
-# ---------------------------------------------------------------- 首だけ 振り返る（体は そのまま）
-LOOK = dict(STAND, neck_rot=12.0, neck_bend=12.0, neck_len=1.12, head_ang=-34.0)     # 首を 上げて 頭を 起こす（振り返る 前と、振り返った 首と 頭の 元）
-LOOK_ROT = 14.0          # うらがえした 首と 頭を 起こす 角度（度・き甲を 中心に）
-LOOK_MID = -0.5          # 振り返る とちゅう（うらがえした 首と 頭を 横に ちぢめる：ななめ うしろを 向いた ところ）
-
-
-def _side(T, B, X, Y):
-    """直線 T→B の どちらがわか（＜0：首の がわ）"""
-    return (B[0] - T[0]) * (Y - T[1]) - (B[1] - T[1]) * (X - T[0])
+# ---------------------------------------------------------------- 首だけ 振り返る（体は そのまま・第4.96版：3Dの 首を 横に まげる）
+LOOKS = [dict(STAND, neck_rot=-9.0, head_ang=-46.0),                                                  # 0：首を 少し 上げる
+         dict(STAND, neck_yaw=28.0, head_yaw=8.0, neck_rot=-12.0, head_ang=-42.0, yaw_pow=1.0),      # 1：首を 手前へ まげ はじめる
+         dict(STAND, neck_yaw=55.0, head_yaw=22.0, neck_rot=-15.0, head_ang=-38.0, yaw_pow=1.0),     # 2：顔が こちらを 向く
+         dict(STAND, neck_yaw=78.0, head_yaw=42.0, neck_rot=-18.0, head_ang=-33.0, yaw_pow=1.0),     # 3：頭が うしろへ
+         dict(STAND, neck_yaw=90.0, head_yaw=60.0, neck_rot=-20.0, head_ang=-30.0, yaw_pow=1.0)]     # 4：振り返る（見つめあう）
 
 
 def look_frames(who):
-    """首だけ 振り返る 3コマ：0＝首を 上げて 頭を 起こす・1＝とちゅう（うらがえした 首と 頭を 横に ちぢめる）・2＝振り返る（首の 根もとから 先を 左右 うらがえして
-       き甲の うしろへ 起こし、体の うしろに 重ねる＝首は き甲の むこうから 出て、頭は 背中の 上で うしろを 見る）。返り値：[(rgb, a, hooves)]（地面 合わせ ずみ）"""
+    """首だけ 振り返る 5コマ（LOOKS）。返り値：[(rgb, a, hooves, 目)]（目：1倍の 画素）"""
     from sheets import camera, W2, H2
     from horse_flat import draw_horse
     pal = PALS[who]
     cam, _ = camera(pal, SPOT, '', f'pktn{who}ref')
-    got = {}
-
-    def draw(scarf, tag):
-        mk = {}
-        base = acc_factory(who, None, scarf)(0)
-
-        def acc(m):
-            mk['collar'] = [np.array(x, float) for x in m['collar'](0.0)[:2]]
-            return base(m)
-        rgb, a, m = draw_horse(dict(SPOT, pose=LOOK, cam=cam), pal, W2, H2, acc=acc, number='', name=f'pktn{who}{tag}')
-        return rgb.astype(np.float32), a.astype(np.float32), [tuple(map(float, h)) for h in m['hooves']], mk['collar']
-
-    rgb, a, hv, (T0, B0) = draw(True, 'lk')                  # 体（羽衣つき）と 0コマ目
-    prgb, pa, _, _ = draw(False, 'lkp')                      # 首と 頭（羽衣なし）
-    Y, X = np.mgrid[0:H2, 0:W2].astype(np.float32)
-    L = float(np.linalg.norm(B0 - T0))
-    sd = _side(T0, B0, X, Y)
-    upper = Y < B0[1] + 2
-    keep = np.where(upper, np.clip(sd / (L * 1.5) + 0.5, 0, 1), 1.0).astype(np.float32)        # 体：首の 根もとより 先を 消す
-    take = np.where(upper, np.clip(-sd / (L * 1.5) + 0.5, 0, 1), 0.0).astype(np.float32)       # 首と 頭
-    bA = a * keep
-    bP = rgb * bA[..., None]
-    pA = pa * take
-    pP = prgb * pA[..., None]
-
-    def place(sx, rot):
-        """首と 頭を き甲（T0）を 中心に 横へ sx 倍（−1＝うらがえし）して rot 度 起こす → 体の うしろに 重ねる"""
-        c, s_ = math.cos(math.radians(rot)), math.sin(math.radians(rot))
-        A2 = np.array([[c, -s_], [s_, c]], np.float32) @ np.array([[sx, 0], [0, 1]], np.float32)
-        t = T0 - A2 @ T0
-        Mx = np.hstack([A2, t[:, None]]).astype(np.float32)
-        wP = cv2.warpAffine(pP, Mx, (W2, H2), flags=cv2.INTER_LINEAR)
-        wA = cv2.warpAffine(pA, Mx, (W2, H2), flags=cv2.INTER_LINEAR)
-        A = bA + wA * (1 - bA)
-        P = bP + wP * (1 - bA[..., None])
-        return np.where(A[..., None] > 1e-4, P / np.maximum(A, 1e-4)[..., None], 0).astype(np.float32), A.astype(np.float32)
-
-    frames = [(rgb, a, hv), place(LOOK_MID, LOOK_ROT) + (hv,), place(-1.0, LOOK_ROT) + (hv,)]
-    return frames
+    out = []
+    for k, pose in enumerate(LOOKS):
+        rgb, a, m = draw_horse(dict(SPOT, pose=pose, cam=cam), pal, W2, H2, acc=acc_factory(who, None)(0), number='', name=f'pktn{who}lk{k}')
+        out.append((rgb.astype(np.float32), a.astype(np.float32), [tuple(map(float, h)) for h in m['hooves']], tuple(map(float, m['eye']))))
+    return out
 
 
 def build_look(who, out=None):
-    """首だけ 振り返る 3コマ：tanabata.<o|h>_look"""
+    """首だけ 振り返る 5コマ：tanabata.<o|h>_look（meta の eye：振り返った コマの 目の 所＝780×320 の 絵の 中）"""
     import json
     bl = json.load(open(os.path.join(os.path.dirname(HERE), 'blobs.json'), encoding='utf-8'))['tanabata']
-    frames = look_frames(who)
+    got = look_frames(who)
+    frames = [(r, a, hv) for r, a, hv, _ in got]
     dys = [GROUND - max(h[1] for h in fr[2]) for fr in frames]
     u8, meta = make_sheet(frames, dys, extra=glow_fn(GLOW[who]))
     meta['anchor'] = bl[f'{who}_run']['anchor']
+    ex, ey = got[-1][3]
+    meta['eye'] = [round(ex, 1), round(ey + dys[-1], 1)]
     if out:
         preview_png(u8, os.path.join(out, f'tn_{who}_look.png'), bg=(20, 28, 70))
     bid = save_webp(u8, quality=90)

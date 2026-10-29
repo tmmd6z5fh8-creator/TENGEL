@@ -7,8 +7,9 @@
    常歩（第4.94版）：1回り 1.25秒・24コマ（pack/make/paddock_gait.py：ひづめの 道を 先に 決めて 足の 角度を 逆に 解く）。
      地面に ついて いる ひづめは どの コマ・どの シートでも 同じ 地面の 線（道の 同じ 高さ）に つく。体は ほんの 少し 上下・影は 地面に 止まった まま。
    動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・雲が ゆっくり 流れる。
-     スタンドの お客さん（第4.95版・crowd_parts）：頭が ゆっくり 左右に ゆれる 人（3組）と、人ごとに ちがう 1回り（24〜35秒）の ばらばらの 時に
-     立ち上がる・手を あげる 人（1だん 6人）。
+     スタンドの お客さん（第4.96版・crowd_parts）：210人の うち 75人が、人ごとに ちがう 長さの 1回りと ずれで ばらばらに 動く
+     （首を 回して 馬を 目で 追う・となりと 話す・座りなおす・立ち上がる・手を あげる／指さす・スマホで 写真・新聞を 広げて めくる）。
+     第4.96版の 直し「赤四角の観客全然動いてないから多少の動きが分かるようにして！実際のパドックだと人々はそんなに大きくは動かないけど、多少は動いてる。」
    ときどきの 動き（第4.93版）：馬ごとに 長い 1回り（手前 67.5秒・おく 60／90秒）の 中の ばらばらの 時に（PLAN）、
      首を 激しく 振る（上へ ぶんっと 振り上げて おろす・1回りに 2回・たてがみが はねる）／首を 下げて 歩く（下げていく → 下げて 歩く → 上げていく）／
      早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で ゆっくり 歩いて 前後の ずれを もどす＝となりの 馬に 追いつかない）／
@@ -241,24 +242,44 @@ PAPER_FLIP = [(0, 1), (.48, 1), (.51, .12), (.54, 1), (1, 1)]
 PAPER_HEAD = [(0, 0), (.30, 0), (.34, (0, .35)), (.68, (0, .35)), (.72, 0), (1, 0)]
 
 
-def crowd_css():
-    """動く お客さんの 共通の CSS と @keyframes（みんなで 使う：長さと ずれは 人ごとに style の --d・--t）"""
-    css = ('.pkw .pkM{overflow:hidden;width:8px;height:11px}'
-           '.pkw .pkM i,.pkw .pkM b,.pkw .pkHd,.pkw .pkHd b{position:absolute;display:block}'
-           '.pkw .pkM *,.pkw .pkHd,.pkw .pkHd b{animation-duration:var(--d);animation-delay:var(--t);animation-iteration-count:infinite;animation-timing-function:ease-in-out}'
-           '.pkw .pkM>i{left:0;top:0;width:8px;height:13px}'
-           '.pkw .pkM .b{left:2.3px;top:7px;width:3.4px;height:4.2px;border-radius:1.2px}'
-           '.pkw .pkM .l{left:2.5px;top:10.2px;width:3px;height:2.8px;border-radius:.6px}'
-           '.pkw .pkM .h,.pkw .pkHd{left:2.5px;top:4.5px;width:3px;height:3px;border-radius:50%}'
-           '.pkw .pkHd{width:3px;height:3px}'
-           '.pkw .pkM .h>b,.pkw .pkHd>b{left:.4px;top:1px;width:2.2px;height:1.9px;border-radius:50%}'
-           '.pkw .pkM .ar{top:4.3px;width:1px;height:3.6px;border-radius:.5px;transform-origin:50% 100%;transform:rotate(180deg)}'
-           '.pkw .pkM .pp{left:2.55px;top:5.2px;width:2.9px;height:2.3px;transform:translateY(7px)}'
-           '.pkw .pkM .pp>b{left:.7px;top:0;width:1.5px;height:2.2px;border-radius:.3px;background:#2C3038;box-shadow:inset 0 0 0 .3px #5A606C}'
-           '.pkw .pkM .pp>i{left:0;top:1.3px;width:2.9px;height:.95px;border-radius:.45px}'
-           '.pkw .pkM .pa{left:1.9px;top:6.5px;width:4.2px;height:2.9px;transform:translateY(6.5px)}'
-           '.pkw .pkM .pa>b{left:0;top:0;width:4.2px;height:2.9px;border-radius:.25px;'
-           'background:linear-gradient(180deg,#F1EDE2 0 26%,#A9A59B 26% 34%,#F1EDE2 34% 52%,#A9A59B 52% 60%,#F1EDE2 60% 78%,#A9A59B 78% 84%,#F1EDE2 84%)}')
+SHIRTS = ('#E8574A', '#3E6FC2', '#F2C14E', '#FFFFFF', '#5A4A42', '#2E8A5A', '#E88AB0', '#3A3A44', '#F0E0C8')   # back_svg の 服の 色（同じ じゅん）
+HAIRS = ('#2A1E18', '#4A3A30', '#E8D2B8', '#1E1E22')                                                             # back_svg の 髪の 色
+SHOULDER = {1: 5.35, -1: 2.65}                                                                                   # 腕の 根もと（人の 箱 8×13 の 中の x・y は 7.9）
+
+
+def _part(body):
+    """人の 箱（8×13：頭の まん中 (4, 6)・いすの 線 y 11）の 部品の 絵 → CSS の url()"""
+    return curi(doc(8, 13, body))
+
+
+def crowd_css(arms):
+    """動く お客さんの 共通の CSS と @keyframes。部品は どれも 人の 箱と 同じ 8×13 の 絵（CSS の 背景・色ごとの クラス）を 重ねて、
+       transform だけで 動かす（小さな 箱の 大きさを 1px に まるめる ブラウザでも 形が くずれない）。長さと ずれは 人ごとに style の --d・--t。
+       arms：使う 腕の クラス {名前: (服, はだ, 左右)}"""
+    css = ('.pkw .pkM,.pkw .pkHd{left:0;top:0;width:8px;height:11px}'
+           '.pkw .pkM{overflow:hidden}'
+           '.pkw .pkM i,.pkw .pkM b,.pkw .pkHd b{position:absolute;display:block;left:0;top:0;width:8px;height:13px;background-size:8px 13px}'
+           '.pkw .pkM *,.pkw .pkHd *{animation-duration:var(--d);animation-delay:var(--t);animation-iteration-count:infinite;animation-timing-function:ease-in-out}'
+           '.pkw .fc{transform-origin:4px 6.45px}'
+           '.pkw .pp{transform:translateY(7px)}'
+           '.pkw .pa{transform:translateY(6.5px)}'
+           '.pkw .pa>b{transform-origin:4px 7.95px}')
+    for n, c in enumerate(SHIRTS):
+        css += f'.pkw .c{n}{{background-image:{_part(f"<rect x='2.3' y='7' width='3.4' height='4.2' rx='1.2' fill='{c}'/>")}}}'
+    for n, c in enumerate(HAIRS):
+        css += f'.pkw .k{n}{{background-image:{_part(f"<circle cx='4' cy='6' r='1.5' fill='{c}'/>")}}}'
+    for n, c in enumerate(CR_SKIN):
+        css += f'.pkw .s{n}{{background-image:{_part(f"<ellipse cx='4' cy='6.45' rx='1.1' ry='.95' fill='{c}'/>")}}}'
+        css += (f'.pkw .q{n}{{background-image:{_part(f"<rect x='2.55' y='6.5' width='2.9' height='.95' rx='.45' fill='{c}'/>"
+                                                         "<rect x='3.25' y='5.2' width='1.5' height='2.2' rx='.3' fill='#2C3038' stroke='#5A606C' stroke-width='.3'/>")}}}')
+    for n, c in enumerate(CR_PANTS):
+        css += f'.pkw .p{n}{{background-image:{_part(f"<rect x='2.5' y='10.2' width='3' height='2.8' rx='.6' fill='{c}'/>")}}}'
+    css += ('.pkw .pa>b{background-image:' + _part("<rect x='1.9' y='6.5' width='4.2' height='2.9' rx='.25' fill='#F1EDE2'/>"
+                                                     + ''.join(f"<rect x='2.3' y='{f(yy)}' width='3.4' height='.26' fill='#A9A59B'/>" for yy in (7.3, 7.95, 8.6))) + '}')
+    for nm, (c, skin, side) in sorted(arms.items()):
+        sx = SHOULDER[side]
+        css += (f'.pkw .{nm}{{transform-origin:{f(sx)}px 7.9px;transform:rotate(180deg);background-image:'
+                + _part(f"<path d='M{f(sx)} 7.9 L{f(sx)} 4.75' stroke='{c}' stroke-width='1' stroke-linecap='round'/><circle cx='{f(sx)}' cy='4.45' r='.62' fill='{skin}'/>") + '}')
     for v, pts in LOOK.items():
         css += _kf_tr(f'pkLk{v}', pts, _tr) + _kf_tr(f'pkLf{v}', pts, _face)
     for nm, pts in (('pkCa', CHAT_A), ('pkCb', CHAT_B)):
@@ -268,45 +289,47 @@ def crowd_css():
         css += _kf_tr(f'pkSh{v}', pts, _tr)
     css += _kf_tr('pkShh', SHIFT_HEAD, _tr) + _kf_tr('pkShf', SHIFT_HEAD, _face)
     css += _kf_tr('pkSt', STAND, _tr) + _kf_tr('pkSth', STAND_HEAD, _tr) + _kf_tr('pkStf', STAND_HEAD, _face)
+    neg = lambda pts: [(t, -x if isinstance(x, (int, float)) else x) for t, x in pts]
     for v, pts in HAND.items():
         css += _kf_tr(f'pkHr{v}', pts, lambda a: f'transform:rotate({f(a)}deg)') + _kf_tr(f'pkHl{v}', pts, lambda a: f'transform:rotate({f(-a)}deg)')
         css += _kf_tr(f'pkHh{v}', HAND_HEAD[v], _tr) + _kf_tr(f'pkHf{v}', HAND_HEAD[v], _face)
-        css += _kf_tr(f'pkHm{v}', [(t, -x if isinstance(x, (int, float)) else x) for t, x in HAND_HEAD[v]], _tr) + _kf_tr(f'pkHn{v}', [(t, -x if isinstance(x, (int, float)) else x) for t, x in HAND_HEAD[v]], _face)
-    css += _kf_tr('pkPh', PHONE, lambda v: 'transform:translate(0,0)' if v == 0 else _tr(v if isinstance(v, tuple) else (0, v)))
-    css += _kf_tr('pkPa', PAPER, lambda v: 'transform:translate(0,0)' if v == 0 else _tr((0, v)))
+        css += _kf_tr(f'pkHm{v}', neg(HAND_HEAD[v]), _tr) + _kf_tr(f'pkHn{v}', neg(HAND_HEAD[v]), _face)
+    css += _kf_tr('pkPh', PHONE, lambda v: _tr(v if isinstance(v, tuple) else (0, v)) if v else 'transform:translate(0,0)')
+    css += _kf_tr('pkPa', PAPER, lambda v: _tr((0, v)) if v else 'transform:translate(0,0)')
     css += _kf_tr('pkPf', PAPER_FLIP, lambda v: 'transform:none' if v == 1 else f'transform:scaleX({f(v)})')
     css += _kf_tr('pkPd', PAPER_HEAD, _tr) + _kf_tr('pkPe', PAPER_HEAD, _face)
     return css
 
 
 def crowd_parts(ppl):
-    """動く お客さんの html と css。ppl：back_svg が 入れた [(だん, 番号, x, y, 服, 髪)]（だんの 上から じゅんに＝手前の だんが 上に かさなる）"""
+    """動く お客さんの html と css。ppl：back_svg が 入れた [(だん, 番号, x, y, 服, 髪)]（だんの 上から じゅんに＝手前の だんが 上に かさなる）。
+       人の 箱は transform で 置く（left・top を 1px に まるめる ブラウザでも もとの 場所と ずれない）"""
     roles = crowd_roles()
     html = ''
+    arms = {}
     for k, i, x, y, c, hc in ppl:
         role = roles.get((k, i))
         if not role:
             continue
         kd, n, mate = role
         R = rnd(700 + n)
-        skin, pants = R.choice(CR_SKIN), R.choice(CR_PANTS)
+        si, pi = R.randrange(len(CR_SKIN)), R.randrange(len(CR_PANTS))
+        ci, hi_ = SHIRTS.index(c), HAIRS.index(hc)
         lo, hi = DUR[kd]
         if kd == 'chat':                                                    # 2人組は 同じ 長さと ずれ（小さい 番号の 人の 乱数）
             R2 = rnd(900 + min(n, mate))
-            d, t = R2.uniform(lo, hi), 0.0
+            d = R2.uniform(lo, hi)
             t = -R2.uniform(0, d)
         else:
             d = R.uniform(lo, hi)
             t = -R.uniform(0, d)
-        var = f'--d:{f(d, 2)}s;--t:{f(t, 2)}s'
-        face = f'<b style="background:{skin};animation-name:{{F}}"></b>'
+        st = f'transform:translate({f(x - 4)}px,{f(y - 5)}px);--d:{f(d, 2)}s;--t:{f(t, 2)}s'
+        head = lambda hn, fn: (f'<b class="k{hi_}" style="animation-name:{hn}"><b class="fc s{si}" style="animation-name:{fn}"></b></b>')
         if kd == 'look':                                                    # 頭だけ（体は うしろの 絵）
             v = R.choice(tuple(LOOK))
-            html += (f'<i class="pkHd" style="left:{f(x - 1.5)}px;top:{f(y - 0.5)}px;background:{hc};{var};animation-name:pkLk{v}">'
-                     + face.replace('{F}', f'pkLf{v}') + '</i>')
+            html += f'<i class="pkHd" style="{st}">' + head(f'pkLk{v}', f'pkLf{v}') + '</i>'
             continue
-        hn, fn, gn, extra, arm = 'none', 'none', 'none', '', ''
-        bn = 'none'
+        hn, fn, gn, bn, extra, arm = 'none', 'none', 'none', 'none', '', ''
         if kd == 'chat':
             left = mate > n                                                 # 左の 人（相手は 右）
             hn, fn = ('pkCa', 'pkCaf') if left else ('pkCb', 'pkCbf')
@@ -319,22 +342,19 @@ def crowd_parts(ppl):
         elif kd == 'hand':
             v = R.choice(('wave', 'point', 'wave'))
             side = R.choice((-1, 1))
-            ax = 4 + side * 1.35 - 0.5
-            arm = (f'<b class="ar" style="left:{f(ax)}px;background:linear-gradient(0deg,{c} 0 70%,{skin} 70%);'
-                   f'animation-name:{"pkHr" if side > 0 else "pkHl"}{v}"></b>')
+            an = f'a{"R" if side > 0 else "L"}{ci}{si}'
+            arms[an] = (c, CR_SKIN[si], side)
+            arm = f'<b class="{an}" style="animation-name:{"pkHr" if side > 0 else "pkHl"}{v}"></b>'
             hn, fn = (f'pkHh{v}', f'pkHf{v}') if side > 0 else (f'pkHm{v}', f'pkHn{v}')
         elif kd == 'phone':
-            extra = f'<i class="pp" style="animation-name:pkPh"><i style="background:{skin}"></i><b></b></i>'
+            extra = f'<b class="pp q{si}" style="animation-name:pkPh"></b>'
         elif kd == 'paper':
             extra = '<i class="pa" style="animation-name:pkPa"><b style="animation-name:pkPf"></b></i>'
             hn, fn = 'pkPd', 'pkPe'
-        html += (f'<i class="pkM" style="left:{f(x - 4)}px;top:{f(y - 5)}px;{var}"><i style="animation-name:{gn}">'
-                 + arm
-                 + f'<b class="l" style="background:{pants}"></b>'
-                 + f'<b class="b" style="background:{c};animation-name:{bn}"></b>'
-                 + f'<b class="h" style="background:{hc};animation-name:{hn}">' + face.replace('{F}', fn) + '</b>'
-                 + extra + '</i></i>')
-    return html, crowd_css()
+        html += (f'<i class="pkM" style="{st}"><i style="animation-name:{gn}">' + arm
+                 + f'<b class="p{pi}"></b><b class="c{ci}" style="animation-name:{bn}"></b>'
+                 + head(hn, fn) + extra + '</i></i>')
+    return html, crowd_css(arms)
 
 
 # ---------------------------------------------------------------- 馬の 歩きと ときどきの 動き（第4.93版）
@@ -580,7 +600,7 @@ def banner(B):
     still = B.get('still')
     alt = ('スタンドから見たパドックで、ゼッケンをつけた競走馬たちが歩いて回るイラスト。手前は右へ3頭（ゼッケン2・5・7）、おくは左へ3頭（ゼッケン1・4・8）。'
            'ひづめはいつも地面について、なめらかな足どりで歩く。ときどき首を激しく振ったり、首を下げて歩いたり、早歩きになったり、うんちをしたりする。'
-           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（頭をゆらしたり、ときどき立ち上がったり手をあげたりする）と木、上に小さな旗のひも')
+           'まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（首を回して馬を目で追ったり、となりと話したり、座りなおしたり、立ち上がったり、手をあげたり、スマホで写真をとったり、新聞を広げたりする人がいる）と木、上に小さな旗のひも')
     html = f'<div class="pkw" role="img" aria-label="{alt}">'
     html += f'<img class="bnr" src="{still["url"]}" alt="">' if still else ''
     ppl = []
@@ -652,7 +672,7 @@ def orn():
 
 THEME = dict(
     id=ID, cat=7, name='パドック', desc='歩く馬たち', title='パドック（芝の緑×白いさく×金）', banner=ID,
-    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちがひづめを地面につけてなめらかに歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（少し動く）と木',
+    alt='スタンドから見たパドックで、ゼッケンをつけた競走馬たちがひづめを地面につけてなめらかに歩いて回るイラスト。ときどき首を振ったり首を下げて歩いたり早歩きになったりする。まん中に芝生と花だん、白いさく、うしろにお客さんのスタンド（首を回したり話したり立ち上がったりと、少しずつ動く）と木',
     fonts=['Kaisei+HarunoUmi:wght@700', 'Zen+Maru+Gothic:wght@500;700'],
     v=dict(bg='#F3F1E6', ink='#22301E', sub='#56664E', card='#FFFFFF', cardB='1.5px solid #D6DCC8', cardO='0 solid transparent', cardS='0 3px 0 #E2E6D6',
            radius='14px', rs='10px', font='"Zen Maru Gothic"', dfont='"Kaisei HarunoUmi"', dw='700', logo='#F6E7B8', logoS='0 2px 0 #163A22',
@@ -671,7 +691,7 @@ THEME = dict(
     orn=orn(),
     guide=dict(colors=[('#2F6B3E', '芝の 緑'), ('#1F6B45', 'ボタン'), ('#B8862A', '金'), ('#F6F4EE', '白い さく'), ('#F3F1E6', '背景')],
                fonts='見出し：Kaisei HarunoUmi<br>本文：Zen Maru Gothic', shape='角丸14px・帯は 芝の 緑で 下に 白い さく・芝生の しまの 背景・すみに ロゼット・的中ボタンは ゼッケンの PUSH',
-               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ・1回り 24コマの なめらかな 足・ひづめは いつも 同じ 地面の 線に つく）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド（頭が ゆれる・ときどき 立ち上がる・手を あげる）・旗の ひも'),
+               pic='スタンドから 見た パドック・ゼッケンの 馬たちが 歩いて 回る（手前は 右へ・おくは 左へ・1回り 24コマの なめらかな 足・ひづめは いつも 同じ 地面の 線に つく）・ときどき 首を 激しく 振る・首を 下げて 歩く・早歩き・うんち・芝生と 花だん・白い さく・お客さんの スタンド（首を 回して 馬を 目で 追う・となりと 話す・座りなおす・立ち上がる・手を あげる・スマホで 写真・新聞を 広げる）・旗の ひも'),
 )
 
 
