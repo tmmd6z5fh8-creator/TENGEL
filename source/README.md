@@ -855,7 +855,7 @@
 - **解放**：16〜22 は 8レースごと（`BOARD.steps` の さいご [6, 8] → [7, 8]）。22 は 146レース目（ぜんぶで 146レース・1〜21 の 数は そのまま）。設定の カード（22種・解放 n/22）・説明書（着せ替えの 説明の 表）・審査の メモ（`store/listing7.py`：22 board decorations）も なおした。値段と 商品 ID（`jp.tengel.app.boardcustom`）は そのまま。
 - **絵**：`kisekae/r3d/fx/board_horse_parts.py`（新しく 足した。`board_horse.py` は そのまま）：3Dの 馬（`horse3d.py`）を 2回 描く（ぜんぶ＝後ろ足／前足の 前腕から 下を 消した 馬＝頭と首：頭だけ ふるえても すき間が 出ない）・前足は 2Dで 描く → 部品 5まい（`bcx_hb_head`＝頭と首・`bcx_hb_fore`＝前足・`bcx_hb_hind`＝後ろ足・`bcx_hb_tail`＝しっぽ・`bcx_hb_eye`＝目を とじた 所・WebP ぜんぶで 約26KB・CSS の 1px が 3画素）＝`__FX.assets` の `bcxhbh/f/l/t/e`。上の 部品は ボードの 上の ふち・下の 部品は 下の ふちに つく（ボードの 高さが かわっても いい）。部品の 四角と 目印（目の 中心・鼻先・頭の てっぺん＝あせる 所の 目・汗・息の 場所。絵と 1.5px より ずれたら 作る ときに 止まる）は `bcx.js` の `HBX` と 同じ（`test_iphone_only.py` で たしかめる）。`python3 kisekae/build_fx_assets.py`（または `python3 kisekae/r3d/fx/board_horse_parts.py ios/fx_assets`・1分ほど）で 作る（リポジトリには 入れない）。絵が ない とき（CI）は SVG の 馬（`.bchbv`）。
 - 点めつ（`test_bcx_flash.py carry`：「▶ 見る」の すぐ あと から 6秒・落としそうに なる 所を ふくむ・1/60秒ずつ）：1秒に 4回 以上 点めつする 点が 画面の 10% 以上に なる 窓 0個（いちばん 多い 窓：0.38秒から 面積 3.2%＝下から 出てくる 所。落としそうに なる 所は それより 少ない・いちばん 下がって 11.0px）。出世馬 8連続も 窓 0個（1.5%）。
-- テスト：`test_points.js`（60）・`test_native.py`（321）・`test_iphone_only.py`・`test_manual.py`・`test_appname.py`・`test_bcx_flash.py`。
+- テスト：`test_points.js`（60）・`test_native.py`（322：落としそうに なるのは 1回だけ・その 間も「とじる」は 動かない・控えめなら 起きない）・`test_iphone_only.py`（57：部品の 四角と 目印 13こが 絵を 作る 道具と 同じ）・`test_manual.py`・`test_appname.py`・`test_bcx_flash.py`（落としそうに なって 11px 下がる こと も たしかめる）。
 
 
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
