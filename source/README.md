@@ -852,7 +852,7 @@
 - **形**：まさちゃん（23:19・23:21）「前脚長すぎ、蹄が乗ってるくらいでいい！胴体の長さも2枚目の長さがベスト！」「蹄と少し足が見えるくらい！二枚目くらいの前脚の長さが理想！」 → 馬の 形・カメラ・ボードの ふちは はじめの 絵（`board_horse.py`）と 同じ（頭の てっぺんは ボードの 上の ふちから 137px・後ろ足は 下の ふちから 90px・前足は ふちの 上に 短い 足と ひづめ）。ボードの 前に 出すのは 球節から 下（つなぎと ひづめ）だけ（はじめの 絵で ひづめの 下に 出て いた 管の 切れはしは 出さない）。**しっぽ**は 1.4倍。
 - **解放**：16〜22 は 8レースごと（`BOARD.steps` の さいご [6, 8] → [7, 8]）。22 は 146レース目（ぜんぶで 146レース・1〜21 の 数は そのまま）。設定の カード（22種・解放 n/22）・説明書（着せ替えの 説明の 表）・審査の メモ（`store/listing7.py`：22 board decorations）も なおした。値段と 商品 ID（`jp.tengel.app.boardcustom`）は そのまま。
 - **絵**：`kisekae/r3d/fx/board_horse_parts.py`（新しく 足した。`board_horse.py` は そのまま）：3Dの 馬（`horse3d.py`）を 2回 描く（ぜんぶ／前足の 前腕から 下を 消した 馬：頭だけ ふるえても すき間が 出ない）→ 部品 5まい（`bcx_hb_head`＝頭と首・`bcx_hb_fore`＝前足・`bcx_hb_hind`＝後ろ足・`bcx_hb_tail`＝しっぽ・`bcx_hb_eye`＝目を とじた 所・WebP ぜんぶで 約23KB・CSS の 1px が 3画素）＝`__FX.assets` の `bcxhbh/f/l/t/e`。上の 部品は ボードの 上の ふち・下の 部品は 下の ふちに つく（ボードの 高さが かわっても いい）。部品の 四角は `bcx.js` の `HBX` と 同じ（`test_iphone_only.py` で たしかめる）。`python3 kisekae/build_fx_assets.py`（または `python3 kisekae/r3d/fx/board_horse_parts.py ios/fx_assets`・1分ほど）で 作る（リポジトリには 入れない）。絵が ない とき（CI）は SVG の 馬（`.bchbv`）。
-- 点めつ（`test_bcx_flash.py carry`：「▶ 見る」の すぐ あと から 6秒・1/60秒ずつ）：1秒に 4回 以上 点めつする 点が 画面の 10% 以上に なる 窓 0個（いちばん 多い 窓：0.35秒から 面積 3.2%＝下から 出てくる 所）。出世馬 8連続も 窓 0個（1.5%）。
+- 点めつ（`test_bcx_flash.py carry`：「▶ 見る」の すぐ あと から 6秒・1/60秒ずつ）：1秒に 4回 以上 点めつする 点が 画面の 10% 以上に なる 窓 0個（いちばん 多い 窓：0.40秒から 面積 3.0%＝下から 出てくる 所）。出世馬 8連続も 窓 0個（1.5%）。
 - テスト：`test_points.js`（60）・`test_native.py`（321）・`test_iphone_only.py`・`test_manual.py`・`test_appname.py`・`test_bcx_flash.py`。
 
 
