@@ -8,15 +8,17 @@
      ・馬の 形・カメラ・ボードの ふちは board_horse.py の はじめの 絵と 同じ（頭と首の 高さ・後ろ足の 長さ・前足の 見える 長さ）。大きさだけ CSS の 1px＝3画素に
      ・前足：ふちの 上に 短い 足と ひづめ（見える 長さは はじめの 絵と 同じ くらい）
    まさちゃん（第4.109版・01:18）「どう見てもおかしいよ… 2枚目の写真のようにして！ 赤は消すところ！ 茶色は、脚の形のイメージ！ 自然にして！」・
-   （01:21）「茶色の脚イメージは黄丸のところね！」で（23:56 の 2Dの 前足は やめた）
+   （01:21）「茶色の脚イメージは黄丸のところね！」・（02:22）の 直しで（23:56 の 2Dの 前足は やめた）
      ・前足は はじめの 絵の 3Dの 足に もどす（丸い 上の はしは 球節・ひづめは こい 色の 輪・場所と 向きと 大きさも 同じ）
      ・ボードの ふちより 上：足 ぜんぶ ＋ うしろ側の くさび（足の うしろの ふちから ななめに ボードの ふちへ：管が ボードの うしろから 上がって くる 形。
        右の 足は 胸の 前まで つづけて 胸と すき間なく つなぐ）。ボードの うしろへ 入る 所は 白い 輪（1.5px）の 上で 切る（線も 白い ふちも つけない）
-     ・ふちより 下：ひづめと その 上の つなぎ だけ（ひづめの うしろ・下に 出て いた 切れはし＝赤は 消す）。つなぎの うしろの 切り口に 線
+     ・ふちより 下：ひづめと その 上の つなぎ だけ（ひづめの うしろ・下に 出て いた 切れはし＝赤は 消す）。つなぎの うしろの ふちは
+       ひづめの うしろの 上の かどから ななめ（たてから 35°）に ボードの ふちへ（02:22「左脚は、90°に切れてておかしい」）。切り口に 線
+     ・くさびは 足の 下に しいて 足の うしろの 線（関節の 線）を のこす・色は 馬の かげの 色（02:22「右脚は、関節の線がないから分かりにくい」）
      ・白い ふちと 影（ほかの 部品の .bco と 同じ 見え方）は 絵に 入れる（胸の 前・切り口には つけない・影は ボードの 前に 出る 所だけ）
-     ・見出しの 字（どの テーマでも）と 3px 以上 あける ため、馬を ボードに 対して 2.6px 上げた（top_pad 6 → 11）
+     ・見出しの 字（どの テーマでも）と 3px 以上 あける ため、馬を ボードに 対して 3.1px 上げた（top_pad 6 → 12）
    描き方：3Dの 馬（horse3d.py）を 2回 描く。① ぜんぶ（前足の 前腕から 下だけ 素材 7）→ 前足（上の とおり）・後ろ足
-     ② 前足の 前腕から 下を 消した 馬 → 頭と首（前足の うしろに なる 胸や 首も ぜんぶ ある：頭だけ ふるえても すき間が 出ない）。ぜんぶで 約27KB・1〜2分
+     ② 前足の 前腕から 下を 消した 馬 → 頭と首（前足の うしろに なる 胸や 首も ぜんぶ ある：頭だけ ふるえても すき間が 出ない）。ぜんぶで 約28KB・1〜2分
    大きさ：CSS の 1px を 3画素（ボードの 横は 350px＝board_horse.py の 672画素）。絵の 場所は ボードの 左上（頭と首・前足）・左下（後ろ足・しっぽ）からの px で、bcx.js の HBX と 同じ
    （--measure：いまの 絵が ちょうど 入る 四角を 出す。ちがって いたら 止まる）。乱数の 種が 決まって いるので、何回 作っても 同じ"""
 import sys, os, math, json, inspect, tempfile, shutil, atexit
@@ -36,13 +38,13 @@ os.makedirs(OUT, exist_ok=True)
 D = 3                                    # CSS の 1px の 画素
 K = D * 350 / 672                        # board_horse.py の 1画素 → この 絵の 画素（1.5625）
 # 部品の 四角（CSS px。頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝ボードの 左下から）と 動きの 中心。bcx.js の HBX と 同じ
-HBX = dict(head=[196, -144, 128, 174], fore=[136, -34, 107, 63], hind=[242, -30, 100, 120], tail=[314, -46, 33, 90], eye=[248, -124, 26, 26],
-           headO=[272, 9], hindO=[292, -21], tailO=[327, -63], eyeC=[261, -111], muzzle=[211, -67], poll=[267, -116])
+HBX = dict(head=[196, -145, 128, 175], fore=[136, -34, 107, 63], hind=[242, -30, 100, 120], tail=[314, -46, 33, 90], eye=[248, -124, 26, 26],
+           headO=[272, 9], hindO=[292, -21], tailO=[327, -64], eyeC=[261, -111], muzzle=[211, -67], poll=[267, -116])
 # board_horse.py の はじめの 絵と 同じ 形（しっぽだけ 1.4倍）
 cfg = dict(theta=68, azim=42, elev=6, neck=-44, head=-30, fov=26, fl=[-48, 12, 88, -40], fr=[-40, 22, 92, -45], spread=2.2,
            hl=[-58, -112, -86, -60], hr=[-64, -118, -90, -62],
            body=['#C27237', '#9A5327'], mane=['#5A2E14', '#3E1E0C'], line='#4A2614', hoof='#3A2A22', light=[0.55, 0.75, -0.55],
-           bands=[0.02, 0.72], box=[290, 30, 700, 880], board=[24, 696], board_h=440, top_pad=11, ss=2, head_scale=1.22, eye_k=0.10, mane_len=1.0, tail_len=1.4, seed=7, cut_r=0.10)
+           bands=[0.02, 0.72], box=[290, 30, 700, 880], board=[24, 696], board_h=440, top_pad=12, ss=2, head_scale=1.22, eye_k=0.10, mane_len=1.0, tail_len=1.4, seed=7, cut_r=0.10)
 Hm.HEAD_SCALE = cfg['head_scale']
 W, Hh = round(720 * K), round(900 * K)  # board_horse.py の 720×900
 BX0 = cfg['board'][0] * K                # ボードの 左の はし（画素）
@@ -224,13 +226,17 @@ colB, aB, rgbB = paint(RB)
 yy = np.mgrid[0:Hh, 0:W][0]
 
 # ---- 前足（第4.109版・まさちゃん 01:18「どう見てもおかしいよ… 2枚目の写真のようにして！ 赤は消すところ！ 茶色は、脚の形のイメージ！ 自然にして！」・
-#      01:21「茶色の脚イメージは黄丸のところね！」）：はじめの 絵（board_horse.py）の 前足に もどす（3Dの 足：丸い 上の はしは 球節・ひづめは こい 色の 輪。
-#      場所・向き・大きさも はじめの 絵と 同じ）。
-#      ・ボードの 上の ふちより 上：足 ぜんぶ ＋ うしろ側の くさび（足の うしろの ふちから ななめに ボードの 上の ふちへ ＝ 管が ボードの うしろから
-#        上がって きて ふちの 上で 曲がる 形。左の 足は 小さな 三角・右の 足は 胸の 前から ふちまでの 大きな 三角で 胸と すき間なく つながる）
-#      ・ふちより 下：ひづめと その 上の つなぎ だけ（はじめの 絵で ひづめの うしろ・下に 出て いた 切れはしは 消す）
-#      線は 外の ふちだけ（くさびの ななめ・つなぎの うしろの 切り口）。ボードの ふちで 切れる 所（足が ボードの うしろへ 入る 所）には 線を 引かない
-WEDGE = dict(FL=dict(apex=-8.6, foot=5.0), FR=dict(apex=-20.1, foot=242.0))   # くさび：上の はしの 高さ（ボードの 上の ふちから CSS px）と 下の 右の はし（FL：足の うしろの ふちから ＋px／FR：x）
+#      01:21「茶色の脚イメージは黄丸のところね！」・02:22「左脚は、90°に切れてておかしい」「右脚は、関節の線がないから分かりにくい」）：
+#      はじめの 絵（board_horse.py）の 前足に もどす（3Dの 足：丸い 上の はしは 球節・ひづめは こい 色の 輪。場所・向き・大きさも はじめの 絵と 同じ）。
+#      ・ボードの 上の ふちより 上：足 ぜんぶ ＋ うしろ側の くさび（足の むこう側：馬の かげの 色。足の うしろの ふちから ななめに ボードの 上の ふちへ ＝
+#        管が ボードの うしろから 上がって きて ふちの 上で 曲がる 形。左の 足は 小さな 三角・右の 足は 足の うしろの 線と 胸の 前の あいだの 大きな 三角）。
+#        くさびは 足の 下に しく ので 足の うしろの 線（関節の 線）は のこる
+#      ・ふちより 下：ひづめと その すぐ 上の つなぎ だけ（はじめの 絵で ひづめの うしろ・下に 出て いた 切れはしは 消す）。つなぎの うしろの ふちは
+#        ひづめの うしろの 上の かどから ななめ（CUT_ANG）に ボードの ふちへ（たての 切り口・90° の かどを 作らない）
+#      線は 外の ふちだけ（くさびの ななめ・つなぎの うしろの ふち）。ボードの ふちで 切れる 所（足が ボードの うしろへ 入る 所）には 線を 引かない
+WEDGE = dict(FL=dict(apex=-9.1, foot=5.0), FR=dict(apex=-20.6, foot=242.0))   # くさび：上の はしの 高さ（ボードの 上の ふちから CSS px）と 下の 右の はし（FL：足の うしろの ふちから ＋px／FR：x）
+CUT_ANG = 35.0                                            # つなぎの うしろの 切り口の かたむき（たてから うしろへ・度）
+WEDGE_COL = '#9A5327'                                     # くさびの 色（馬の かげの 色：足の むこう側）
 RING = 1.5                                                # ボードの まわりの 白い 輪（的中 3px・ハズレ 1.5px）：足が ボードの うしろへ 入る 所は ふちの 1.5px 上で 切る
 LW = 3.0                                                  # 新しく 引く 線の 太さ（画素。3Dの 線と 同じ）
 P3 = world_pos(RF)
@@ -271,7 +277,7 @@ def build_fore():
     own = {k: legs & (dist[k] <= dist[o]) for k, o in (('FL', 'FR'), ('FR', 'FL'))}
     up = yy_ < BY0
     upf = np.clip(BY0 - RING * D - yy_, 0, 1).astype(np.float32)           # ふち（白い 輪の まん中）より 上（画素の 中の わりあい）
-    keepM, wedgeM, lineM, frontM = (np.zeros((Hh, W), np.float32) for _ in range(4))
+    keepM, wedgeM, wlineM, lineM, frontM = (np.zeros((Hh, W), np.float32) for _ in range(5))
     hooves = {}
     for k, mk in own.items():
         sg, pr = segs[k], PROJ[k]
@@ -279,30 +285,35 @@ def build_fore():
         hk = hoofm & mk
         u = pr['hf'] - pr['co']; u = u / np.linalg.norm(u)                    # ひづめの 向き（下へ）
         v = np.array([-u[1], u[0]]) if -u[1] > 0 else np.array([u[1], -u[0]])   # それに 直角で うしろ（右）へ
+        s_ = (xx_ - pr['co'][0]) * u[0] + (yy_ - pr['co'][1]) * u[1]
         t = (xx_ - pr['co'][0]) * v[0] + (yy_ - pr['co'][1]) * v[1]
-        tmax = float(np.percentile(t[hk], 99.7))                              # ひづめの うしろの ふち
-        ytop = np.full(W, -1e9)
-        for c in np.nonzero(hk.any(0))[0]:
-            ytop[c] = np.nonzero(hk[:, c])[0].min()                           # 列ごとの ひづめの 上の はし
-        low = (hk | (nearp & mk & (yy_ <= ytop[None, :] + 1))).astype(np.float32) * np.clip(tmax - t + 0.5, 0, 1)
+        # ひづめの うしろの 上の かど → そこから ななめ（たてから うしろへ CUT_ANG 度）に ボードの ふちへ：これより うしろの つなぎは ボードの うしろ
+        top = hk & (s_ <= np.percentile(s_[hk], 4))
+        ci = np.argmax(np.where(top, t, -1e9))
+        cy_, cx_ = np.unravel_index(ci, t.shape)
+        nrm = np.array([math.cos(math.radians(CUT_ANG)), math.sin(math.radians(CUT_ANG))])  # 切り口（たてから うしろへ CUT_ANG 度 かたむく 線）の うしろ むき
+        dcut = (xx_ - cx_) * nrm[0] + (yy_ - cy_) * nrm[1]
+        s_top = float(np.percentile(s_[hk], 1))                               # ひづめの 上の ふち（ひづめの 向きで）
+        low = (mk & (s_ <= s_top + 1.5)).astype(np.float32) * np.clip(0.5 - dcut, 0, 1)   # ひづめの 上の つなぎ（切り口より 前）
         low = np.maximum(low, hk.astype(np.float32))                          # ふちより 下に のこす 所（ひづめと その 上の つなぎ）
         keepM = np.maximum(keepM, mk.astype(np.float32) * upf + low * (1 - upf))
         frontM = np.maximum(frontM, low)                                      # ボードの 前に 出る 所（つなぎと ひづめ）
-        # くさび（足の うしろの ふちから 3px 内がわ まで ぬって、もとの うしろの 線を かくす）
+        # つなぎの うしろの 切り口の 線（ふちより 下・ひづめの かどから ななめ）
+        lineM = np.maximum(lineM, ((np.abs(dcut + LW / 2) < LW / 2 + 0.5) & (upf < 0.5) & (low > 0.5) & ~hk).astype(np.float32))
+        # くさび（足の うしろの ふち〜ボードの 上の ふち：足の 下に しく ので 足の うしろの 線＝関節の 線は のこる）
         ya = WEDGE[k]['apex']; xa = back_x(mk & up, ya); x0b = back_x(mk & up, -0.4)
         xb = x0b + WEDGE[k]['foot'] if k == 'FL' else WEDGE[k]['foot']
-        wedgeM = np.maximum(wedgeM, aa_poly([[(xa - 3.0, ya - 1.0), (xa, ya), (xb, 0.0), (x0b - 3.0, 0.0)]]) * upf)
+        wedgeM = np.maximum(wedgeM, aa_poly([[(xa - 4.0, ya + 1.0), (xa, ya), (xb, 0.0), (x0b - 4.0, 0.0)]]) * upf)
         nx, ny = -ya, -(xb - xa); nn = math.hypot(nx, ny); nx, ny = nx / nn, ny / nn   # ななめの 外むき
         o_ = LW / 2 / D
-        lineM = np.maximum(lineM, aa_poly([[(xa - o_ * nx, ya - o_ * ny), (xb - o_ * nx, -o_ * ny)]], close=False, width=LW) * upf)
-        # つなぎの うしろの 切り口（ふちより 下・ひづめの うしろの ふちの つづき）
-        lineM = np.maximum(lineM, ((np.abs(t - (tmax - LW / 2)) < LW / 2 + 0.5) & (upf < 0.5) & (low > 0.5) & ~hk).astype(np.float32))
+        wlineM = np.maximum(wlineM, aa_poly([[(xa - o_ * nx, ya - o_ * ny), (xb - o_ * nx, -o_ * ny)]], close=False, width=LW) * upf)
         hooves[k] = hk
-    a = np.clip(np.maximum(keepM * np.clip(aF, 0, 1), wedgeM), 0, 1)
-    body = (legs & up) & (cv2.erode(legs.astype(np.uint8), np.ones((7, 7), np.uint8)) > 0)
-    legcol = np.median(colF[body], axis=0)                                    # 足の 色（3Dの 足の まん中の 色）
-    c = colF * (1 - wedgeM[..., None]) + legcol * wedgeM[..., None]
-    c = c * (1 - lineM[..., None] * 0.92) + hexc(cfg['line']) * lineM[..., None] * 0.92
+    la = np.clip(keepM * np.clip(aF, 0, 1), 0, 1)                             # 足（3Dの 色と 線）
+    lc = colF * (1 - lineM[..., None] * 0.92) + hexc(cfg['line']) * lineM[..., None] * 0.92
+    wc = np.zeros((Hh, W, 3), np.float32) + hexc(WEDGE_COL)                   # くさび（足の かげの 色）と ななめの 線
+    wc = wc * (1 - wlineM[..., None] * 0.92) + hexc(cfg['line']) * wlineM[..., None] * 0.92
+    a = np.clip(la + wedgeM * (1 - la), 0, 1)
+    c = (lc * la[..., None] + wc * (wedgeM * (1 - la))[..., None]) / np.maximum(a, 1e-4)[..., None]
     # 白い ふち（ほかの 部品の .bco と 同じ 見え方を 絵に 入れる）：胸や 首の 前・ボードの うしろへ 入る 切り口には つけない。
     # 影（.bco と 同じ：3px 下・ぼかし 3px・0.34）は ボードの 前に 出る つなぎと ひづめ だけ
     ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))

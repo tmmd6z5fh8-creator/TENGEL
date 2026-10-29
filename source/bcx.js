@@ -437,7 +437,7 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -144, 128, 174], fore: [136, -34, 107, 63], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -63],
+  const HBX = { head: [196, -145, 128, 175], fore: [136, -34, 107, 63], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -64],
     eyeC: [261, -111], muzzle: [211, -67], poll: [267, -116] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
