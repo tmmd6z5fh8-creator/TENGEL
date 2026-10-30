@@ -26,6 +26,22 @@ for p in (os.path.join(K, 'r3d'), FLAT, K, PACK):
 BLOB_DIR = os.environ.get('KISEKAE_ASSETS') or os.path.join(SRC, 'ios', 'kisekae_blobs')
 W2, H2 = 780, 320
 HOOF_ORDER = ('FL', 'FR', 'HL', 'HR')          # draw_horse の marks['hooves'] の 順
+# 第4.112版（まさちゃん「壁紙パックの映像画質が悪いから綺麗にして！」）：絵の 画素を 画面の 3倍に。座標・目印・meta の 数（cell・at・dy・speed…）は
+#   いままで どおり 2倍の 画素（ページの CSS は かわらない）で、出す 絵だけ Z 倍の 画素（PK_Z=1.5 → 画面の 3倍。なし＝1＝いままでの 2倍）。
+#   meta の z：絵の 画素 ÷ ページの px（3）。切りぬきは 画面の 1px（Q 画素）に そろえる
+Z = float(os.environ.get('PK_Z') or 1)
+ZW, ZH = int(round(W2 * Z)), int(round(H2 * Z))
+Q = int(round(2 * Z))
+try:
+    import horse_flat as _HF                    # 馬の 絵（horse_flat）も Z 倍の 画素で 出す（別の プロセスでも ここで 決まる）
+    _HF.OUT_Z = Z
+except ImportError:
+    pass
+
+
+def zpx(v):
+    """2倍の 画素 → 出す 絵の 画素"""
+    return v * Z
 
 
 def _hexc(c):
@@ -115,20 +131,25 @@ def shadow_layer(W, H, cx, cy, rx, ry, blur=3.4, alpha=0.22):
 
 def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra=None):
     """コマ（rgb・a）を 上下（dys）・左右（dxs）に ずらし、影（shadow＝(色, cx, cy, rx, ry, 濃さ)）を 足して、動く 所の 四角で 切りぬいて 横に ならべる。
-       extra：(コマの 番号, pre, A) → (pre, A)（コマごとの 足し：しぶき・ほこり など。premultiplied）。返り値：(u8 RGBA, meta)"""
+       extra：(コマの 番号, pre, A) → (pre, A)（コマごとの 足し：しぶき・ほこり など。premultiplied・コマの 画素＝Z 倍）。返り値：(u8 RGBA, meta)
+       第4.112版：コマの 絵が Z 倍の 画素（horse_flat の OUT_Z）でも よい。ずらし・影・W・H・pad は 2倍の 画素の まま わたし、ここで Z 倍に する。
+       meta の cell・at は 2倍の 画素（ページの CSS は かわらない）・z は 絵の 画素 ÷ ページの px"""
     n = len(frames)
     dys = dys or [0.0] * n
     dxs = dxs or [0.0] * n
+    Hp, Wp = frames[0][1].shape[:2]
+    z = Wp / W                                       # 2倍の 画素 → この 絵の 画素（いままでの 絵は 1）
+    q = int(round(2 * z))                            # 画面の 1px の 画素（ここに そろえる）
     sm = None
     if shadow:
         col, cx, cy, rx, ry, al = shadow
-        sm = shadow_layer(W, H, cx, cy, rx, ry, alpha=al)
+        sm = shadow_layer(Wp, Hp, cx * z, cy * z, rx * z, ry * z, blur=3.4 * z, alpha=al)
         sc = _hexc(col)
     cells = []
     for i, ((rgb, a, _), dy, dx) in enumerate(zip(frames, dys, dxs)):
-        M = np.float32([[1, 0, dx], [0, 1, dy]])
-        pre = cv2.warpAffine(rgb * a[..., None], M, (W, H), flags=cv2.INTER_LINEAR)
-        A = cv2.warpAffine(a, M, (W, H), flags=cv2.INTER_LINEAR)
+        M = np.float32([[1, 0, dx * z], [0, 1, dy * z]])
+        pre = cv2.warpAffine(rgb * a[..., None], M, (Wp, Hp), flags=cv2.INTER_LINEAR)
+        A = cv2.warpAffine(a, M, (Wp, Hp), flags=cv2.INTER_LINEAR)
         if sm is not None:
             pre = pre + sc[None, None, :] * (sm * (1 - A))[..., None]
             A = A + sm * (1 - A)
@@ -137,24 +158,28 @@ def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra
         cells.append((pre, A))
     allA = np.max([A for _, A in cells], axis=0)
     ys, xs = np.nonzero(allA > 0.004)
-    x0, x1 = max(0, xs.min() - pad), min(W, xs.max() + pad + 1)
-    y0, y1 = max(0, ys.min() - pad), min(H, ys.max() + pad + 1)
-    x0, y0 = x0 - x0 % 2, y0 - y0 % 2                 # 画面の 画素（半分）に そろえる
-    x1, y1 = x1 + (x1 - x0) % 2, y1 + (y1 - y0) % 2
-    x1, y1 = min(x1, W + (x1 - x0) % 2), min(y1, H + (y1 - y0) % 2)
+    pp = int(round(pad * z))
+    x0, x1 = max(0, xs.min() - pp), min(Wp, xs.max() + pp + 1)
+    y0, y1 = max(0, ys.min() - pp), min(Hp, ys.max() + pp + 1)
+    x0, y0 = x0 - x0 % q, y0 - y0 % q                 # 画面の 1px に そろえる（いままでの 2倍の 絵は 2画素）
+    x1, y1 = x1 + (-(x1 - x0)) % q, y1 + (-(y1 - y0)) % q
+    x1, y1 = min(x1, Wp + (-(Wp - x0)) % q), min(y1, Hp + (-(Hp - y0)) % q)
     cw, ch = x1 - x0, y1 - y0
     sheet = np.zeros((ch, cw * n, 4), np.float32)
     for i, (pre, A) in enumerate(cells):
         cut_p = np.zeros((ch, cw, 3), np.float32)
         cut_a = np.zeros((ch, cw), np.float32)
-        hh, ww = min(ch, H - y0), min(cw, W - x0)
+        hh, ww = min(ch, Hp - y0), min(cw, Wp - x0)
         cut_p[:hh, :ww] = pre[y0:y0 + hh, x0:x0 + ww]
         cut_a[:hh, :ww] = A[y0:y0 + hh, x0:x0 + ww]
         rgb = np.where(cut_a[..., None] > 1e-4, cut_p / np.maximum(cut_a, 1e-4)[..., None], 0)
         sheet[:, i * cw:(i + 1) * cw, :3] = rgb
         sheet[:, i * cw:(i + 1) * cw, 3] = cut_a
     u8 = (np.clip(sheet, 0, 1) * 255 + .5).astype(np.uint8)
-    return u8, dict(frames=n, cell=[int(cw), int(ch)], at=[int(x0), int(y0)])
+    meta = dict(frames=n, cell=[int(round(cw / z)), int(round(ch / z))], at=[int(round(x0 / z)), int(round(y0 / z))])
+    if q != 2:
+        meta['z'] = q                                # 絵の 画素 ÷ ページの px（3倍の 絵）
+    return u8, meta
 
 
 def save_webp(u8, quality=90, lossless=False, out_dir=None):

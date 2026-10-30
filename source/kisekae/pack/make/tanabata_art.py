@@ -23,7 +23,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png, HOOF_ORDER  # noqa: E402
+from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png, HOOF_ORDER, Z, ZW, ZH  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 from cute_horse import smooth, path, stroke, circ, ell, unit, V, f2  # noqa: E402
@@ -181,8 +181,8 @@ def glow_fn(col):
     gc = hexc(col)
 
     def glow(i, pre, A):
-        """まわりの やわらかい 星の 光"""
-        g = np.clip(cv2.GaussianBlur(A, (0, 0), 6.0) * 0.42 + cv2.GaussianBlur(A, (0, 0), 16.0) * 0.22, 0, 1)
+        """まわりの やわらかい 星の 光（第4.112版：ぼかしは 画面の px で 同じ＝Z 倍の 絵では Z 倍）"""
+        g = np.clip(cv2.GaussianBlur(A, (0, 0), 6.0 * Z) * 0.42 + cv2.GaussianBlur(A, (0, 0), 16.0 * Z) * 0.22, 0, 1)
         pre = pre + gc[None, None, :] * (g * (1 - A))[..., None]
         return pre, A + g * (1 - A)
     return glow
@@ -316,12 +316,12 @@ def build_pair(out=None):
         for i, (rgb, a, hv) in enumerate(frames):
             dy = GROUND - max(h[1] for h in hv)
             if who == 'o':
-                M = np.float32([[1, 0, 0], [0, 1, dy]])
+                M = np.float32([[1, 0, 0], [0, 1, dy * Z]])
             else:                                     # うらがえして 右へ・少し 小さく（ひづめの まん中を 中心に）
                 s_ = PAIR_SH
-                M = np.float32([[-s_, 0, ax + PAIR_D + s_ * ax], [0, s_, ay - s_ * (ay - dy)]])
-            pre = cv2.warpAffine(rgb * a[..., None], M, (W2, H2), flags=cv2.INTER_LINEAR)
-            A = cv2.warpAffine(a, M, (W2, H2), flags=cv2.INTER_LINEAR)
+                M = np.float32([[-s_, 0, (ax + PAIR_D + s_ * ax) * Z], [0, s_, (ay - s_ * (ay - dy)) * Z]])
+            pre = cv2.warpAffine(rgb * a[..., None], M, (ZW, ZH), flags=cv2.INTER_LINEAR)       # 第4.112版：Z 倍の 画素
+            A = cv2.warpAffine(a, M, (ZW, ZH), flags=cv2.INTER_LINEAR)
             out_l.append(glow(i, pre, A))
         layers[who] = out_l
     comp = []

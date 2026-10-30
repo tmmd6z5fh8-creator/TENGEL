@@ -1,5 +1,5 @@
 """浮世絵風の 壁紙（壁紙パック・第4.94版）の お侍さんを 絵（WebP）に する：pack/ukiyoe.py の SVG（3人 × 歩く 12コマ・会釈 8コマ）を ブラウザ（Chromium）で
-   絵の 単位の Z倍（2.5倍）に 描いて、1まいの シートに たてに ならべる（上から a の 歩く・a の 会釈・b の 歩く・b の 会釈・c の 歩く・c の 会釈。行の 間は すき間 GAP）。
+   絵の 単位の Z倍（3.5倍＝画面の 約3倍：第4.112版。前は 2.5倍）に 描いて、1まいの シートに たてに ならべる（上から a の 歩く・a の 会釈・b の 歩く・b の 会釈・c の 歩く・c の 会釈。行の 間は すき間 GAP）。
    SVG の まま だと 上の絵の HTML が 300KB ほど 重く なるため。ページでは 歩く／会釈の 部品の 背景に して background-position で 行を えらぶ（動きは いままで どおり）
    python3 kisekae/pack/make/ukiyoe_samurai.py → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.samurai"""
 import os
@@ -13,7 +13,7 @@ from sheets import save_webp, record, preview_png  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 
-Z = 2.5                   # 絵の 単位 → シートの 画素（画面では SM_K 倍 → 1px に 約2.2画素）
+Z = 3.5                   # 絵の 単位 → シートの 画素（画面では SM_K 倍 → 1px に 約3画素＝画面の 3倍。第4.112版：2.5 → 3.5・SM_W と SM_H の Z倍が ちょうど 画素に なる 数）
 GAP = 4                   # 行の 間の すき間（となりの 行が にじまない ように）
 
 

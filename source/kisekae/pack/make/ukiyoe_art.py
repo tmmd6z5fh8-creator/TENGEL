@@ -7,7 +7,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png  # noqa: E402
+from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png, Z  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 from cute_horse import path, stroke, unit, V, f2  # noqa: E402
@@ -35,20 +35,22 @@ def acc(i):
 
 
 def ink_lines(i, pre, A):
-    """墨の 輪郭：外の ふち（アルファを ふくらませた 輪）と、色の さかいの 細い 線（体の 中）"""
+    """墨の 輪郭：外の ふち（アルファを ふくらませた 輪）と、色の さかいの 細い 線（体の 中）。
+       第4.112版：線の 太さ・ぼかしは 画面の px で 同じ（Z 倍の 絵では 画素も Z 倍）"""
     a = np.clip(A, 0, 1)
     rgb = np.where(a[..., None] > 1e-3, pre / np.maximum(a, 1e-3)[..., None], 0)
     hard = (a > 0.4).astype(np.uint8)
-    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    kr = int(round(2 * Z))                                            # 輪の 太さ（2倍の 絵で 2画素＝画面の 1px）
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * kr + 1, 2 * kr + 1))
     dil = cv2.dilate(hard, k).astype(np.float32)
-    ring = np.clip(cv2.GaussianBlur(dil, (0, 0), 0.7) - a, 0, 1)
+    ring = np.clip(cv2.GaussianBlur(dil, (0, 0), 0.7 * Z) - a, 0, 1)
     # 色の さかい（明るさの 差が 大きい 所）：体の 中だけ
     lum = rgb[..., 0] * .3 + rgb[..., 1] * .59 + rgb[..., 2] * .11
     gx = cv2.Sobel(lum, cv2.CV_32F, 1, 0, ksize=3)
     gy = cv2.Sobel(lum, cv2.CV_32F, 0, 1, ksize=3)
     g = np.sqrt(gx * gx + gy * gy)
     inner = np.clip((g - 0.55) * 1.6, 0, 1) * (cv2.erode(hard, k).astype(np.float32))
-    inner = cv2.GaussianBlur(inner, (0, 0), 0.5) * 0.75
+    inner = cv2.GaussianBlur(inner, (0, 0), 0.5 * Z) * 0.75
     # 中の 線は 色を 墨へ よせる・外の 輪は 墨を 足す
     rgb2 = rgb * (1 - inner[..., None]) + INK[None, None, :] * inner[..., None]
     A2 = a + ring * (1 - a)

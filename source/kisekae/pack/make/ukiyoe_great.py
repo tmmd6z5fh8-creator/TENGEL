@@ -37,7 +37,7 @@
      この 絵を 作り直したら make/ukiyoe_mini.py も 動かす（第4.107版の 作り直しでは 動かして いない：小波の 層 ukiyoe.ribbon は
      第4.106版の 大波の コマから 作った まま。いま 動かすと のびない コマから 作り直す ので 小波の 形が 少し かわる）。
    しくみ：空を 色の つながりで ぬりつぶして（黒い 線で 止まる）波を とりだす → 明るさで 4つの 色に 分ける（細い 黒い 線は 濃い 藍）→
-     絵 1まい：wave＝波の 一生の コマ（life：2倍の 画素・コマごとの 四角を つめた シート）
+     絵 1まい：wave＝波の 一生の コマ（life：Z倍（第4.112版から 3倍）の 画素・コマごとの 四角を つめた シート）
    python3 kisekae/pack/make/ukiyoe_great.py 画像.jpg [OUT] [--save] → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の ukiyoe.wave（ukiyoe.crest は 消す）"""
 import math
 import os
@@ -53,7 +53,7 @@ import cv2  # noqa: E402
 # 元の 画像（1169×887）の 中の 切りぬく 箱と 画面の 大きさ
 CROP = (0, 90, 780, 525)            # 左・上・はば・高さ（元の 画素）
 SC = 1 / 3                          # 元の 画素 → 画面の px
-Z = 2                               # シートは 画面の 2倍
+Z = 3                               # シートは 画面の 3倍（第4.112版：2 → 3。SC＝1/3 なので 元の 画像の 画素 そのまま＝これより 細かくは できない）
 PIVOT = (480, 330)                  # 波の 先（頭）を 回す 中心（元の 画素）
 SPLIT = [(318, 118), (420, 232), (480, 330), (522, 425), (560, 520)]    # 体と 頭の さかいめ（左上 → 右下・右がわが 頭）
 D_IN = 150.0                        # さかいめから この 距離（元の 画素）で ゆがみが いっぱいに なる
@@ -351,7 +351,7 @@ def tail(rgb, bm):
 
 
 def down(pre, w2, h2):
-    """前もって アルファを かけた 色（元の 画素）→ 2倍の 画素の RGBA u8（ふちが なめらか）"""
+    """前もって アルファを かけた 色（元の 画素）→ Z倍の 画素の RGBA u8（ふちが なめらか）"""
     sm = cv2.resize(pre, (w2, h2), interpolation=cv2.INTER_AREA)
     al = np.clip(sm[..., 3:4], 1e-6, 1)
     col = np.where(sm[..., 3:4] > 1e-4, sm[..., :3] / al, 0)
@@ -483,8 +483,8 @@ def build_life(src, out=None):
         ys, xs = np.nonzero(al)
         x0, y0 = max(0, xs.min() - 1), max(0, ys.min() - 1)
         x1, y1 = min(W2, xs.max() + 2), min(H2, ys.max() + 2)
-        x0 -= x0 % 2
-        y0 -= y0 % 2
+        x0 -= x0 % Z                                                  # 画面の 1px（Z 画素）に そろえる
+        y0 -= y0 % Z
         cells.append(fr[y0:y1, x0:x1])
         boxes.append([int(x0), int(y0), int(x1 - x0), int(y1 - y0)])
         if out and k % 4 == 0:
@@ -493,7 +493,7 @@ def build_life(src, out=None):
             cv2.imwrite(os.path.join(out, f'life_{k:02d}.png'), (fr[..., :3] * a + np.array((241, 230, 207)) * (1 - a))[..., ::-1].astype(np.uint8))
     sheet, pos = pack_cells(cells)
     meta = dict(z=Z, fps=FPS, t_end=T_END, canvas=[round(W_ * SC, 2), round(H_ * SC, 2)], sheet=[int(sheet.shape[1]), int(sheet.shape[0])],
-                cells=[[p[0], p[1], b[2], b[3], b[0], b[1]] for p, b in zip(pos, boxes)])   # シートの x・y・はば・高さ・コマの 中の x・y（2倍の 画素）
+                cells=[[p[0], p[1], b[2], b[3], b[0], b[1]] for p, b in zip(pos, boxes)])   # シートの x・y・はば・高さ・コマの 中の x・y（Z倍の 画素）
     return sheet, meta
 
 

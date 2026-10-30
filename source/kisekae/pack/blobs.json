@@ -59,8 +59,9 @@
    ],
    "frames": 10,
    "ground": 202,
-   "id": "ee9b65582de7ba075e393c3fee7d3d9f",
-   "spf": 16.001
+   "id": "9d6a40eae354f3ba4ee86a06a8c9df2c",
+   "spf": 16.001,
+   "z": 3
   },
   "far_s": {
    "at": [
@@ -111,8 +112,9 @@
    ],
    "frames": 10,
    "ground": 238,
-   "id": "cb279c505c8e55d24ee5384bcfa16d28",
-   "spf": 18.905
+   "id": "f82bdb602fea8b44d6cb6c7dda7a67d4",
+   "spf": 18.905,
+   "z": 3
   },
   "near_s": {
    "at": [
@@ -1703,14 +1705,15 @@
     -3.56
    ],
    "frames": 5,
-   "id": "e69554292ac12f06db93b76e0a14c4b3",
+   "id": "1942e77c49f83be4743d9e2dfef96008",
    "names": [
     "front",
     "up1",
     "up",
     "down1",
     "down"
-   ]
+   ],
+   "z": 3
   },
   "still": {
    "id": "8f72bfcefaeb8db788981ab4050c7516",
@@ -1744,18 +1747,19 @@
     0.06
    ],
    "frames": 12,
-   "id": "924f6adde95affeb92cb177968921d40",
-   "speed": 26.73
+   "id": "d9ef7e16851359251943bfc0b7cfd98e",
+   "speed": 26.73,
+   "z": 3
   }
  },
  "space": {
   "run": {
    "at": [
-    162,
+    160,
     48
    ],
    "cell": [
-    336,
+    338,
     228
    ],
    "dy": [
@@ -1776,7 +1780,8 @@
     99.68,
     224.03
    ],
-   "id": "cf28ee3aa0892353b408f50d1d90944d"
+   "id": "6a712d69cb13f18246f7ec2a486419b0",
+   "z": 3
   },
   "still": {
    "id": "5c5aeb2477e699d3555cd84e63697f20",
@@ -2138,7 +2143,7 @@
     108
    ],
    "cell": [
-    244,
+    246,
     168
    ],
    "dy": [
@@ -2154,7 +2159,8 @@
     -6.99
    ],
    "frames": 10,
-   "id": "b484a6468cece10304293ded8fd0b0da"
+   "id": "c846643da76de28b0b67633c66d7a2c8",
+   "z": 3
   },
   "samurai": {
    "id": "84694980b8cba4383beb79550e8fec39",

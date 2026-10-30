@@ -22,6 +22,7 @@ from cute_horse import svg_rgba, smooth, f2, path, stroke, circ, ell, unit, V, l
 from throat_fix import slim_throat
 
 S3 = 3
+OUT_Z = 1.0     # 第4.112版：出す 絵だけ OUT_Z 倍の 画素に（目印・座標は W×H の まま。中で 描く 画素は いつも W×H の S3 倍）。壁紙パックの 3倍の 絵＝1.5（kisekae/pack/make/sheets.py が 決める）
 HEAD_SC = 1.14
 NECK_STOP = 3                   # 首を下げた時の 首の かざりの 下のはし：首の まん中の線で この数（41点の）より 頭がわの所に入ったら止める（out_before_neck）
 
@@ -582,8 +583,9 @@ def draw_horse(spec, pal, W, Hh, acc=None, number='1', name='flat'):
     A = A + ta * (1 - A)
     col = col / np.maximum(A[..., None], 1e-4)
 
-    # ---------------- 1倍へ ----------------
-    pre = cv2.resize(col * A[..., None], (W, Hh), interpolation=cv2.INTER_AREA)
-    A1 = cv2.resize(A, (W, Hh), interpolation=cv2.INTER_AREA)
+    # ---------------- 1倍へ（第4.112版：OUT_Z 倍の 画素へ。目印は 1倍の まま） ----------------
+    Wo, Ho = int(round(W * OUT_Z)), int(round(Hh * OUT_Z))
+    pre = cv2.resize(col * A[..., None], (Wo, Ho), interpolation=cv2.INTER_AREA)
+    A1 = cv2.resize(A, (Wo, Ho), interpolation=cv2.INTER_AREA)
     rgb1 = np.clip(pre / np.maximum(A1[..., None], 1e-4), 0, 1)
     return rgb1, A1, marks

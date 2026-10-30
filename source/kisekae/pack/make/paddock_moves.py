@@ -24,7 +24,7 @@ import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import paddock_art as PA  # noqa: E402
-from sheets import camera, make_sheet, record, preview_png, HOOF_ORDER, W2, H2, BLOB_DIR, PACK  # noqa: E402
+from sheets import camera, make_sheet, record, preview_png, HOOF_ORDER, W2, H2, BLOB_DIR, PACK, Z, ZW, ZH  # noqa: E402
 import paddock_gait as G  # noqa: E402
 
 N = G.N                          # 1回りの コマ（24）
@@ -175,6 +175,7 @@ def _draw_mv(tasks):
     ox = J['ox']
     x0, y0, x1, y1 = J['roi']
     x0, x1 = x0 - ox, x1 - ox                     # 描く 画面の 中の ROI
+    x0, y0, x1, y1 = zroi((x0, y0, x1, y1))        # 第4.112版：絵は Z 倍の 画素（ROI も Z 倍）
     out = []
     for kind, i, pose, over in tasks:
         for nm, pal, number in J['horses']:
@@ -238,11 +239,18 @@ def render_kinds(names, kinds, base, cam, workers=2):
     return {k: [v[i] for i in range(len(v))] for k, v in out.items()}, roi
 
 
+def zroi(roi):
+    """2倍の 画素の 四角 → 絵の 画素（Z 倍。どの はしも ちょうど 画素に なる 所だけ）"""
+    out = [v * Z for v in roi]
+    assert all(abs(v - round(v)) < 1e-6 for v in out), roi
+    return tuple(int(round(v)) for v in out)
+
+
 def full(rgb, a, roi):
-    """ROI の 切りぬき → 画面の 大きさ（make_sheet 用）"""
-    x0, y0, x1, y1 = roi
-    R = np.zeros((H2, W2, 3), np.float32)
-    A = np.zeros((H2, W2), np.float32)
+    """ROI の 切りぬき → 画面の 大きさ（make_sheet 用・Z 倍の 画素）"""
+    x0, y0, x1, y1 = zroi(roi)
+    R = np.zeros((ZH, ZW, 3), np.float32)
+    A = np.zeros((ZH, ZW), np.float32)
     R[y0:y1, x0:x1] = rgb.astype(np.float32)
     A[y0:y1, x0:x1] = a.astype(np.float32)
     return R, A
@@ -323,7 +331,7 @@ def build_sheet(nm, kind, frs, dy24, box, facing, roi, sh, out=None, extra_meta=
             for d in drops:
                 q = drop_at(d, i)
                 if q:
-                    pre, A = dung_ball(pre, A, *q)
+                    pre, A = dung_ball(pre, A, *(v * Z for v in q))    # 第4.112版：絵は Z 倍の 画素
             return pre, A
     u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra)
     meta['dy'] = [round(float(d), 2) for d in dys[:N]]

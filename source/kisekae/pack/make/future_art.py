@@ -16,7 +16,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import gallop_sheet, save_webp, record, preview_png, render, gallop_poses, gallop_stance, ground_dy, W2, H2  # noqa: E402
+from sheets import gallop_sheet, save_webp, record, preview_png, render, gallop_poses, gallop_stance, ground_dy, W2, H2, Z, ZW, ZH, Q  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 from cute_horse import smooth, path, stroke, circ, unit, V, f2  # noqa: E402
@@ -55,18 +55,55 @@ def hexc(c):
     return np.array([int(c[i:i + 2], 16) / 255 for i in (0, 2, 4)], np.float32)
 
 
+# 第4.112版：絵は Z 倍の 画素（sheets.Z：1.5＝画面の 3倍）。座標・太さ・ぼかしは 2倍の 画素で 書いて、ここで Z 倍に する
+#   （細い 線は 2倍に 描いて ちぢめる＝太さが ちょうど Z 倍。Z＝1 は いままでと 同じ 描き方）
+SS = 2
+
+
+def zlines(polys, thick):
+    """折れ線（[[(x, y)…]…]：2倍の 画素）を 太さ thick（2倍の 画素）で → こさ（Z 倍の 画素）"""
+    if Z == 1:
+        m = np.zeros((H2, W2), np.float32)
+        for pts in polys:
+            q = np.round(np.array(pts) * 4).astype(np.int32).reshape(-1, 1, 2)
+            cv2.polylines(m, [q], False, 1.0, int(thick), cv2.LINE_AA, shift=2)
+        return m
+    k = Z * SS * 4
+    m = np.zeros((ZH * SS, ZW * SS), np.float32)
+    for pts in polys:
+        q = np.round(np.array(pts) * k).astype(np.int32).reshape(-1, 1, 2)
+        cv2.polylines(m, [q], False, 1.0, max(1, int(round(thick * Z * SS))), cv2.LINE_AA, shift=2)
+    return cv2.resize(m, (ZW, ZH), interpolation=cv2.INTER_AREA)
+
+
+def zsegs(segs, thick):
+    """線分（[(p, q, こさ)…]：2倍の 画素・あとの 線が 上）を 太さ thick で → こさ（Z 倍の 画素）"""
+    if Z == 1:
+        m = np.zeros((H2, W2), np.float32)
+        for p, q, v in segs:
+            cv2.line(m, (int(round(p[0] * 4)), int(round(p[1] * 4))), (int(round(q[0] * 4)), int(round(q[1] * 4))), v, int(thick), cv2.LINE_AA, shift=2)
+        return m
+    k = Z * SS * 4
+    m = np.zeros((ZH * SS, ZW * SS), np.float32)
+    for p, q, v in segs:
+        cv2.line(m, (int(round(p[0] * k)), int(round(p[1] * k))), (int(round(q[0] * k)), int(round(q[1] * k))), v,
+                 max(1, int(round(thick * Z * SS))), cv2.LINE_AA, shift=2)
+    return cv2.resize(m, (ZW, ZH), interpolation=cv2.INTER_AREA)
+
+
 def neon(i, pre, A):
     """まわりの 水色の 光（ぼかした ふち）と、上の ふちの 細い 光の 線"""
-    k5 = np.ones((5, 5), np.uint8)
+    r = int(round(2 * Z))                                     # 2倍の 絵で 2画素（画面の 1px）
+    k5 = np.ones((2 * r + 1, 2 * r + 1), np.uint8)
     er = cv2.erode(A, k5)
     edge = np.clip(A - er, 0, 1)
     dy = np.zeros_like(A)
-    dy[2:-2] = A[4:] - A[:-4]
+    dy[r:-r] = A[2 * r:] - A[:-2 * r]
     top = np.clip(dy * 1.6, 0, 1)
     rim = np.clip(edge * (0.25 + top), 0, 1) * 0.85
     rc = hexc('#9FF4FF')
     pre = pre * (1 - rim[..., None]) + rc[None, None, :] * (rim * A)[..., None]
-    g = np.clip(cv2.GaussianBlur(A, (0, 0), 5.0) * 0.55 + cv2.GaussianBlur(A, (0, 0), 14.0) * 0.25, 0, 1)
+    g = np.clip(cv2.GaussianBlur(A, (0, 0), 5.0 * Z) * 0.55 + cv2.GaussianBlur(A, (0, 0), 14.0 * Z) * 0.25, 0, 1)
     gc = hexc('#36D6FF')
     pre = pre + gc[None, None, :] * (g * (1 - A))[..., None]
     A2 = A + g * (1 - A)
@@ -96,8 +133,6 @@ def bolts_layer(hooves, seed, ground):
        返り値：(pre, A)＝premultiplied"""
     import random
     R = random.Random(seed)
-    core = np.zeros((H2, W2), np.float32)
-    mid = np.zeros((H2, W2), np.float32)
     lines = []
     for k, (hx, hy) in enumerate(hooves):
         on_ground = hy > ground - 7
@@ -119,12 +154,10 @@ def bolts_layer(hooves, seed, ground):
         if 6 < dist < 60 and R.random() < 0.8:
             ang = math.degrees(math.atan2(y2 - y1, x2 - x1))
             lines.append(jag(R, (x1, y1 - 3), ang, dist, n=max(3, int(dist / 9)), jit=0.25))
-    for pts in lines:                                              # 第4.94版：線を 細く（芯 2 → 1・まわり 5 → 2）・まわりの 光を うすく
-        q = np.round(np.array(pts) * 4).astype(np.int32).reshape(-1, 1, 2)
-        cv2.polylines(core, [q], False, 1.0, 1, cv2.LINE_AA, shift=2)
-        cv2.polylines(mid, [q], False, 1.0, 2, cv2.LINE_AA, shift=2)
-    mid = np.clip(cv2.GaussianBlur(mid, (0, 0), 0.9), 0, 1)
-    glow = np.clip(cv2.GaussianBlur(mid, (0, 0), 3.2) * 1.1, 0, 1)
+    core = zlines(lines, 1)                                         # 第4.94版：線を 細く（芯 2 → 1・まわり 5 → 2）・まわりの 光を うすく
+    mid = zlines(lines, 2)
+    mid = np.clip(cv2.GaussianBlur(mid, (0, 0), 0.9 * Z), 0, 1)
+    glow = np.clip(cv2.GaussianBlur(mid, (0, 0), 3.2 * Z) * 1.1, 0, 1)
     A = np.clip(core * 0.9 + mid * 0.45 + glow * 0.26, 0, 1)
     pre = (BOLT_CORE[None, None, :] * (core * 0.9)[..., None] + BOLT_MID[None, None, :] * (mid * 0.45 * (1 - core * 0.9))[..., None]
            + BOLT_GLOW[None, None, :] * (glow * 0.26 * (1 - np.clip(core * 0.9 + mid * 0.45, 0, 1)))[..., None])
@@ -160,8 +193,7 @@ def trail_layer(hvs, j, u2):
     n = len(hvs)
     t = j * CYCLE / NT
     t_last = math.floor(j * n / NT) * CYCLE / n
-    core = np.zeros((H2, W2), np.float32)
-    glow = np.zeros((H2, W2), np.float32)
+    sc, sg = [], []
     dt = 0.002
     for k in range(4):
         t0s = np.arange(t - FADE, t_last + 1e-9, dt)
@@ -170,11 +202,11 @@ def trail_layer(hvs, j, u2):
             a = 0.95 * max(0.0, 1 - age / FADE) ** 1.25
             if a <= 0.01:
                 continue
-            P = (int(round(p[0] * 4)), int(round(p[1] * 4)))
-            Q = (int(round(q[0] * 4)), int(round(q[1] * 4)))
-            cv2.line(core, P, Q, a, 2, cv2.LINE_AA, shift=2)
-            cv2.line(glow, P, Q, a, 5, cv2.LINE_AA, shift=2)
-    glow = np.clip(cv2.GaussianBlur(glow, (0, 0), 2.6) * 1.25, 0, 1)
+            sc.append((p, q, a))
+            sg.append((p, q, a))
+    core = zsegs(sc, 2)
+    glow = zsegs(sg, 5)
+    glow = np.clip(cv2.GaussianBlur(glow, (0, 0), 2.6 * Z) * 1.25, 0, 1)
     cc, gc = hexc('#C8F6FF'), hexc('#29C6FF')
     core = np.clip(core, 0, 1)
     A = np.clip(core * 0.9 + glow * 0.5, 0, 1)
@@ -184,11 +216,15 @@ def trail_layer(hvs, j, u2):
 
 def hoof_glow(hooves, ground):
     """ひづめの まわりの いつもの 光の もや（地面に ついた ひづめは 少し 強く）"""
-    m = np.zeros((H2, W2), np.float32)
+    m = np.zeros((ZH, ZW), np.float32)
     for hx, hy in hooves:
         r = 9.0 if hy > ground - 7 else 7.0
-        cv2.circle(m, (int(round(hx)), int(round(hy - 2))), int(r), 1.0 if hy > ground - 7 else 0.7, -1, cv2.LINE_AA)
-    return np.clip(cv2.GaussianBlur(m, (0, 0), 5.5) * 0.85, 0, 1)
+        v = 1.0 if hy > ground - 7 else 0.7
+        if Z == 1:
+            cv2.circle(m, (int(round(hx)), int(round(hy - 2))), int(r), v, -1, cv2.LINE_AA)
+        else:                                                      # 第4.112版：Z 倍の 画素（1/4画素で）
+            cv2.circle(m, (int(round(hx * Z * 4)), int(round(hy * Z * 4 - 2 * Z * 4))), int(round(r * Z * 4)), v, -1, cv2.LINE_AA, shift=2)
+    return np.clip(cv2.GaussianBlur(m, (0, 0), 5.5 * Z) * 0.85, 0, 1)
 
 
 def to_sheet(cells, box, pad=0):
@@ -200,7 +236,7 @@ def to_sheet(cells, box, pad=0):
     for i, (pre, A) in enumerate(cells):
         cut_p = np.zeros((ch, cw, 3), np.float32)
         cut_a = np.zeros((ch, cw), np.float32)
-        hh, ww = min(ch, H2 - y0), min(cw, W2 - x0)
+        hh, ww = min(ch, ZH - y0), min(cw, ZW - x0)
         cut_p[:hh, :ww] = pre[y0:y0 + hh, x0:x0 + ww]
         cut_a[:hh, :ww] = A[y0:y0 + hh, x0:x0 + ww]
         rgb = np.where(cut_a[..., None] > 1e-4, cut_p / np.maximum(cut_a, 1e-4)[..., None], 0)
@@ -216,9 +252,9 @@ def build(out=None):
     horse, bolts = [], [[], [], []]
     gc = hexc('#5FE6FF')
     for i, ((rgb, a, hooves), dy) in enumerate(zip(frames, dys)):
-        M = np.float32([[1, 0, 0], [0, 1, dy]])
-        pre = cv2.warpAffine(rgb * a[..., None], M, (W2, H2), flags=cv2.INTER_LINEAR)
-        A = cv2.warpAffine(a, M, (W2, H2), flags=cv2.INTER_LINEAR)
+        M = np.float32([[1, 0, 0], [0, 1, dy * Z]])
+        pre = cv2.warpAffine(rgb * a[..., None], M, (ZW, ZH), flags=cv2.INTER_LINEAR)
+        A = cv2.warpAffine(a, M, (ZW, ZH), flags=cv2.INTER_LINEAR)
         pre, A = neon(i, pre, A)
         hv = [(x, y + dy) for x, y in hooves]
         g = hoof_glow(hv, GROUND)                                      # ひづめの まわりの 光（馬の うしろ・まわり）
@@ -229,12 +265,16 @@ def build(out=None):
             bolts[v].append(bolts_layer(hv, 1000 * v + 17 * i + 3, GROUND))
     allA = np.max([A for _, A in horse] + [A for b in bolts for _, A in b], axis=0)
     ys, xs = np.nonzero(allA > 0.004)
-    x0, x1 = max(0, xs.min() - 4), min(W2, xs.max() + 5)
-    y0, y1 = max(0, ys.min() - 4), min(H2, ys.max() + 5)
-    x0, y0 = x0 - x0 % 2, y0 - y0 % 2
-    x1, y1 = x1 + (x1 - x0) % 2, y1 + (y1 - y0) % 2
+    m4 = int(round(4 * Z))                                           # 第4.112版：Z 倍の 画素・画面の 1px（Q）に そろえる・meta は 2倍の 画素
+    x0, x1 = max(0, xs.min() - m4), min(ZW, xs.max() + m4 + 1)
+    y0, y1 = max(0, ys.min() - m4), min(ZH, ys.max() + m4 + 1)
+    x0, y0 = x0 - x0 % Q, y0 - y0 % Q
+    x1, y1 = x1 + (-(x1 - x0)) % Q, y1 + (-(y1 - y0)) % Q
     box = (int(x0), int(y0), int(x1), int(y1))
-    meta = dict(frames=n, cell=[box[2] - box[0], box[3] - box[1]], at=[box[0], box[1]], dy=[round(float(d), 2) for d in dys])
+    meta = dict(frames=n, cell=[round((box[2] - box[0]) / Z), round((box[3] - box[1]) / Z)], at=[round(box[0] / Z), round(box[1] / Z)],
+                dy=[round(float(d), 2) for d in dys])
+    if Q != 2:
+        meta['z'] = Q
     hvs = [[(x, y + dy) for x, y in fr[2]] for fr, dy in zip(frames, dys)]
     v2 = stance_speed(hvs, gallop_stance(n))                         # 2倍の 画素／コマ
     meta['speed'] = round(v2 / 2 * n / CYCLE, 2)                     # ページの px／秒（レーンと 光の すじの 流れ）
@@ -249,23 +289,27 @@ def build(out=None):
     trail = [trail_layer(hvs, j, u2) for j in range(NT)]
     tA = np.max([A for _, A in trail], axis=0)
     ys, xs = np.nonzero(tA > 0.004)
-    tx0, tx1 = max(0, xs.min() - 2), min(W2, xs.max() + 3)
-    ty0, ty1 = max(0, ys.min() - 2), min(H2, ys.max() + 3)
-    tx0, ty0 = tx0 - tx0 % 2, ty0 - ty0 % 2
-    tx1, ty1 = tx1 + (tx1 - tx0) % 2, ty1 + (ty1 - ty0) % 2
+    m2 = int(round(2 * Z))
+    tx0, tx1 = max(0, xs.min() - m2), min(ZW, xs.max() + m2 + 1)
+    ty0, ty1 = max(0, ys.min() - m2), min(ZH, ys.max() + m2 + 1)
+    tx0, ty0 = tx0 - tx0 % Q, ty0 - ty0 % Q
+    tx1, ty1 = tx1 + (-(tx1 - tx0)) % Q, ty1 + (-(ty1 - ty0)) % Q
     tbox = (int(tx0), int(ty0), int(tx1), int(ty1))
     ut = to_sheet(trail, tbox)
     if out:
         preview_png(ut[:, :ut.shape[1] // NT * 4], os.path.join(out, 'future_trail.png'), bg=(18, 22, 44))
     tb = save_webp(ut, quality=90)
-    record('future', 'trail', tb, dict(frames=NT, cell=[tbox[2] - tbox[0], tbox[3] - tbox[1]], at=[tbox[0], tbox[1]]))
+    tmeta = dict(frames=NT, cell=[round((tbox[2] - tbox[0]) / Z), round((tbox[3] - tbox[1]) / Z)], at=[round(tbox[0] / Z), round(tbox[1] / Z)])
+    if Q != 2:
+        tmeta['z'] = Q
+    record('future', 'trail', tb, tmeta)
     print('trail', tb, tbox, 'speed', meta['speed'])
     for v in range(3):
         ub = to_sheet(bolts[v], box)
         if out:
             preview_png(ub, os.path.join(out, f'future_bolt{v}.png'), bg=(18, 22, 44))
         b = save_webp(ub, quality=92)
-        record('future', f'bolt{v}', b, dict(frames=n, cell=meta['cell'], at=meta['at']))
+        record('future', f'bolt{v}', b, dict(frames=n, cell=meta['cell'], at=meta['at'], **({'z': Q} if Q != 2 else {})))
         print(f'bolt{v}', b)
 
 
