@@ -437,7 +437,7 @@
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
   //   ボードの 高さが かわっても 上の 部品は 上の ふち・下の 部品は 下の ふちに つく）。頭と首・後ろ足・しっぽ＝ボードの うしろ（.bk）・前足＝ボードの 前
   //   絵が 読めない とき（絵なしの CI など）は SVG の 馬（.hb に .bchbv：hbVec）
-  const HBX = { head: [196, -145, 128, 175], fore: [135, -43, 103, 44], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -64],
+  const HBX = { head: [196, -145, 128, 175], fore: [136, -34, 107, 63], hind: [242, -30, 100, 120], tail: [314, -46, 33, 90], eye: [248, -124, 26, 26], headO: [272, 9], hindO: [292, -21], tailO: [327, -64],
     eyeC: [261, -111], muzzle: [211, -67], poll: [267, -116] };
   const HBA = { head: 'bcxhbh', fore: 'bcxhbf', hind: 'bcxhbl', tail: 'bcxhbt', eye: 'bcxhbe' };
   B.carry = o => {
@@ -448,9 +448,9 @@
     const ok = Object.keys(HBA).every(k => as[HBA[k]]);
     let html = '';
     if (ok) {
-      // 前足（第4.112版）：ひづめの 平らな 底は ボードの 白い 輪の いちばん 上に のる（的中・大的中 3px の 輪に 1px かさなる／ハズレ 1.5px の 輪：1px 下げて 0.5px かさなる）
+      // 前足（第4.112版・09:50「蹄で持つんじゃなくて、関節で挟んでるようにして」）：関節（球節）で ボードの 上の ふちを はさむ 形＝つなぎと ひづめは ボードの 前の 面に おしつく
+      //   （第4.110版と 同じ 場所：的中・ハズレ・大的中とも 同じ。白い 輪や 見出しの 上の 帯に かかる。見出しの 字とは 3px 以上 あく）
       const src = k => esc(as[HBA[k]]), h = at('head'), e = at('eye'), fo = at('fore');
-      if (o.miss) fo.y += 1;
       html += `<div class="bcx bk bco bc-hbr bc-hbt" style="${pos(at('tail', 1))};transform-origin:${org('tail', 'tailO', 1)}"><img class="bchbi" src="${src('tail')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbl" style="${pos(at('hind', 1))};transform-origin:${org('hind', 'hindO', 1)}"><img class="bchbi" src="${src('hind')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbh" style="${pos(h)};transform-origin:${org('head', 'headO')}"><img class="bchbi" src="${src('head')}" alt="">`
