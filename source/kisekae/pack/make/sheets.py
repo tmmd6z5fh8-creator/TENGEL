@@ -27,9 +27,9 @@ BLOB_DIR = os.environ.get('KISEKAE_ASSETS') or os.path.join(SRC, 'ios', 'kisekae
 W2, H2 = 780, 320
 HOOF_ORDER = ('FL', 'FR', 'HL', 'HR')          # draw_horse の marks['hooves'] の 順
 # 第4.112版（まさちゃん「壁紙パックの映像画質が悪いから綺麗にして！」）：絵の 画素を 画面の 3倍に。座標・目印・meta の 数（cell・at・dy・speed…）は
-#   いままで どおり 2倍の 画素（ページの CSS は かわらない）で、出す 絵だけ Z 倍の 画素（PK_Z=1.5 → 画面の 3倍。なし＝1＝いままでの 2倍）。
+#   いままで どおり 2倍の 画素（ページの CSS は かわらない）で、出す 絵だけ Z 倍の 画素（なし＝1.5＝画面の 3倍。PK_Z=1 で いままでの 2倍）。
 #   meta の z：絵の 画素 ÷ ページの px（3）。切りぬきは 画面の 1px（Q 画素）に そろえる
-Z = float(os.environ.get('PK_Z') or 1)
+Z = float(os.environ.get('PK_Z') or 1.5)
 ZW, ZH = int(round(W2 * Z)), int(round(H2 * Z))
 Q = int(round(2 * Z))
 try:

@@ -335,7 +335,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "33e6e14b15ecf193178ab258c1c6293a"
+   "id": "f7cd718dbcd12bc09d66a3a729eeb301",
+   "z": 3
   },
   "f1_dl": {
    "at": [
@@ -374,7 +375,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "b53353c58e9072c726a40d9482393333"
+   "id": "1ad826e01a8b48f8aee600412b7e4a9c",
+   "z": 3
   },
   "f1_dr": {
    "at": [
@@ -413,7 +415,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "50804ac3d84297d7f685c13b9c1f4449"
+   "id": "715720c4919179371453c307f514f41b",
+   "z": 3
   },
   "f1_s": {
    "at": [
@@ -541,7 +544,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "f44e57837abe25e821f2099cb43df7b0"
+   "id": "83cca293a63645fb2d520b830405c0e7",
+   "z": 3
   },
   "f4_dl": {
    "at": [
@@ -580,7 +584,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "19020a5e12fb516d3500d49b571df46d"
+   "id": "2cd7df594a74791472d8db039be8e003",
+   "z": 3
   },
   "f4_dr": {
    "at": [
@@ -619,7 +624,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "7dcf92bc974b1463f0af3264715a4e2d"
+   "id": "55e18541cace981f5e353726987db188",
+   "z": 3
   },
   "f4_s": {
    "at": [
@@ -747,7 +753,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "6150b39e40fa0525181e1bd2af73bfa9"
+   "id": "d6c8321bb0af6cdc510dfb8ffd507785",
+   "z": 3
   },
   "f8_dl": {
    "at": [
@@ -786,7 +793,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "2c1788a60479f0d1aa0bef016055e937"
+   "id": "0f2d7680acb6c4fe2701c948e9cc00a8",
+   "z": 3
   },
   "f8_dr": {
    "at": [
@@ -825,7 +833,8 @@
    ],
    "facing": "left",
    "frames": 24,
-   "id": "74324dbbc1413b06eed3b583b5b4b852"
+   "id": "9030bda161b95902a03d815cb781b4e5",
+   "z": 3
   },
   "f8_s": {
    "at": [
@@ -1714,10 +1723,10 @@
    "z": 3
   },
   "still": {
-   "id": "a0576576fff9e82fde690243fc42b861",
+   "id": "b0e1709f4106543f5780351cc5e87651",
    "size": [
-    780,
-    320
+    1170,
+    480
    ]
   }
  },
