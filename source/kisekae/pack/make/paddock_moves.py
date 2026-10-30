@@ -41,6 +41,7 @@ QUALITY = 74                     # WebP の 質（24コマで 絵の 容量が �
 ALPHA_Q = 82
 XV = -0.10                       # 地面の 線を 決める 点（体の 中の x：前足と うしろ足の まん中）
 CANVAS = dict(right=(0, W2), left=(180, 372))       # 描く 画面（左の はし, はば：2倍の 画素）。おくの 馬は 小さい＝まわりを 切って はやく 描く
+WEBP_MAX = 16383                 # WebP の 1辺の 上限（画素）
 
 
 def ease(t):
@@ -334,6 +335,18 @@ def build_sheet(nm, kind, frs, dy24, box, facing, roi, sh, out=None, extra_meta=
                     pre, A = dung_ball(pre, A, *(v * Z for v in q))    # 第4.112版：絵は Z 倍の 画素
             return pre, A
     u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra)
+    if u8.shape[1] > WEBP_MAX:                                   # 第4.112版：3倍の 絵で 横 1列が WebP の 上限を こえる（うんち 48コマ）→ rows 段に 折る
+        n, cwp, chp = meta['frames'], u8.shape[1] // meta['frames'], u8.shape[0]
+        rows = -(-u8.shape[1] // WEBP_MAX)
+        while -(-n // rows) * cwp > WEBP_MAX:
+            rows += 1
+        pr = -(-n // rows)
+        folded = np.zeros((chp * rows, pr * cwp, 4), np.uint8)
+        for k in range(n):
+            r, c = divmod(k, pr)
+            folded[r * chp:(r + 1) * chp, c * cwp:(c + 1) * cwp] = u8[:, k * cwp:(k + 1) * cwp]
+        u8 = folded
+        meta['rows'] = rows                                      # pack/paddock.py が 段を 切りかえる
     meta['dy'] = [round(float(d), 2) for d in dys[:N]]
     meta['facing'] = facing
     meta.update(extra_meta or {})

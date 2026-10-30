@@ -86,8 +86,9 @@
    ],
    "frames": 10,
    "ground": 214,
-   "id": "675dfa407a12d57329e0a1625eff4917",
-   "spf": 16.001
+   "id": "3ad02d8bbf4dcbeb1c9d36c0507164a2",
+   "spf": 16.001,
+   "z": 3
   },
   "near": {
    "at": [
@@ -139,8 +140,9 @@
    ],
    "frames": 10,
    "ground": 244,
-   "id": "254b274c5beba3281e886b9cbc1dfa50",
-   "spf": 18.905
+   "id": "eeb0f9f68a4a423251874b7e14648993",
+   "spf": 18.905,
+   "z": 3
   },
   "still": {
    "id": "225291bad4090cab7d4e2048d4fea4ed",
@@ -161,7 +163,8 @@
     260
    ],
    "frames": 10,
-   "id": "c02197076d4afe27c040e6c379c9ae98"
+   "id": "5b4ababf1d0f765cb55814c797591195",
+   "z": 3
   },
   "bolt1": {
    "at": [
@@ -173,7 +176,8 @@
     260
    ],
    "frames": 10,
-   "id": "1c2fd3625ab4febdcfa41463921d6837"
+   "id": "0ad57e294e8eebbee20389a9070a5df7",
+   "z": 3
   },
   "bolt2": {
    "at": [
@@ -185,7 +189,8 @@
     260
    ],
    "frames": 10,
-   "id": "bc70e36b59d2c79d48c489a645ddd4dd"
+   "id": "f8fbd7c36a9bf30e3c9c12e60cde06ae",
+   "z": 3
   },
   "run": {
    "at": [
@@ -209,8 +214,9 @@
     -3.54
    ],
    "frames": 10,
-   "id": "bca839267992137499956ac2a1730217",
-   "speed": 199.67
+   "id": "d6ec115b2cb20f1542f1d95622c13e43",
+   "speed": 199.67,
+   "z": 3
   },
   "still": {
    "id": "a6c9c1d2c5211a7fe2d21efdd81833e3",
@@ -229,7 +235,8 @@
     86
    ],
    "frames": 20,
-   "id": "ba932661a432cdab5214d30311c06625"
+   "id": "0a105a0f4eb88a7a855260daf463a0c7",
+   "z": 3
   }
  },
  "kirie": {
@@ -891,7 +898,7 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "6b6764db42fac63e9d1f7eb0a746d8b0",
+   "id": "13efc53d70b3cdb2d57c704687bf172f",
    "shadow": [
     "#3A2A10",
     318.51,
@@ -900,7 +907,8 @@
     5.0,
     0.22
    ],
-   "speed": 27.52
+   "speed": 27.52,
+   "z": 3
   },
   "n2_dd": {
    "at": [
@@ -1994,7 +2002,8 @@
     -6.2
    ],
    "frames": 10,
-   "id": "239dd3b9f805661056674df9fe730c11"
+   "id": "6bd215b21b50e49b49d8f1ac00d90956",
+   "z": 3
   },
   "o_stand": {
    "anchor": [
@@ -2007,10 +2016,11 @@
    ],
    "cell": [
     292,
-    246
+    248
    ],
    "frames": 1,
-   "id": "90be9f98510ead2572d10a860ef55dab"
+   "id": "c8bb841b67258817350ac80a72631863",
+   "z": 3
   },
   "o_walk": {
    "anchor": [

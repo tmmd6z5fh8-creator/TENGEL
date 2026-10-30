@@ -554,15 +554,26 @@ def horse_parts(nm, B, group, k_idx):
         l = lays[src]
         f0, nf = 0, l['frames']
         lw, lh = l['cell'][0] / 2, l['cell'][1] / 2
-        tot = l['frames'] * lw
         lx, ly = (l['at'][0] - ax) / 2, (l['at'][1] - ay) / 2
         vk = _vis_keys(busy, Lh, show_outside=True) if key == 'w' else _vis_keys(win[key], Lh)
         html += f'<i class="pkL {key}"><i></i></i>'
         css += (f'.pkw .pkH.{nm}>.pkL.{key}{{left:{f(lx)}px;top:{f(ly)}px;width:{f(lw)}px;height:{f(lh)}px;animation:{name}V{key} {f(Lh)}s step-end {f(dl, 3)}s infinite}}'
-                f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(lh)}px no-repeat;'
-                f'animation:{name}F{key} {f(per, 4)}s steps({nf}) {f(dl, 3)}s infinite}}'
-                + kf(f'{name}V{key}', vk)
-                + kf(f'{name}F{key}', [(0, f'transform:translateX({f(-f0 * lw)}px)'), (100, f'transform:translateX({f(-(f0 + nf) * lw)}px)')]))
+                + kf(f'{name}V{key}', vk))
+        rows = l.get('rows', 1)
+        if rows == 1:
+            tot = nf * lw
+            css += (f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(lh)}px no-repeat;'
+                    f'animation:{name}F{key} {f(per, 4)}s steps({nf}) {f(dl, 3)}s infinite}}'
+                    + kf(f'{name}F{key}', [(0, f'transform:translateX({f(-f0 * lw)}px)'), (100, f'transform:translateX({f(-(f0 + nf) * lw)}px)')]))
+        else:
+            # 第4.112版：3倍の 絵で 横 1列だと WebP の 大きさの 上限（16383画素）を こえる シート（うんち 48コマ）は rows 段に 折る。
+            #   横は 1段の コマ（pr）を per／rows 秒で めくり、段は background-position-y を step-end で 切りかえる（めくる 時刻は 1列の 時と 同じ）
+            pr = -(-nf // rows)
+            tot = pr * lw
+            css += (f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(rows * lh)}px no-repeat;'
+                    f'animation:{name}F{key} {f(per / rows, 4)}s steps({pr}) {f(dl, 3)}s infinite,{name}R{key} {f(per, 4)}s step-end {f(dl, 3)}s infinite}}'
+                    + kf(f'{name}F{key}', [(0, 'transform:translateX(0px)'), (100, f'transform:translateX({f(-pr * lw)}px)')])
+                    + kf(f'{name}R{key}', [(100 * r / rows, f'background-position-y:{f(-r * lh)}px') for r in range(rows)]))
     html += '</i>'
     # 地面の うんち（落ちた 所に 残って、しばらく して 消える）
     dung_html, dung_css = '', ''
