@@ -449,8 +449,10 @@
     let html = '';
     if (ok) {
       // 前足（第4.112版・09:50「蹄で持つんじゃなくて、関節で挟んでるようにして」）：関節（球節）で ボードの 上の ふちを はさむ 形＝つなぎと ひづめは ボードの 前の 面に おしつく
-      //   （第4.110版と 同じ 場所：的中・ハズレ・大的中とも 同じ。白い 輪や 見出しの 上の 帯に かかる。見出しの 字とは 3px 以上 あく）
+      //   （第4.110版と 同じ 場所。白い 輪や 見出しの 上の 帯に かかるのは つなぎと ひづめ だけ。見出しの 字とは 3px 以上 あく）
+      //   10:38「ボードに脚の線が被ってるか、被ってないかのちがい」：絵は 白い 輪の いちばん 上（的中・大的中 3px）で 切って ある。ハズレは 輪が 1.5px なので 1.5px 下げて 切り目を 輪の 上に 合わせる
       const src = k => esc(as[HBA[k]]), h = at('head'), e = at('eye'), fo = at('fore');
+      if (o.miss) fo.y += 1.5;
       html += `<div class="bcx bk bco bc-hbr bc-hbt" style="${pos(at('tail', 1))};transform-origin:${org('tail', 'tailO', 1)}"><img class="bchbi" src="${src('tail')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbl" style="${pos(at('hind', 1))};transform-origin:${org('hind', 'hindO', 1)}"><img class="bchbi" src="${src('hind')}" alt=""></div>`
         + `<div class="bcx bk bco bc-hbr bc-hbh" style="${pos(h)};transform-origin:${org('head', 'headO')}"><img class="bchbi" src="${src('head')}" alt="">`
