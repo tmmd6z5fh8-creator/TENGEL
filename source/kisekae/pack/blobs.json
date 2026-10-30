@@ -1096,7 +1096,9 @@
    "facing": "right",
    "fall": 8,
    "frames": 48,
-   "id": "fef5bae7216ef43e7b34baacc6a2316e"
+   "id": "8c26bb8c7e1b94e61c270b321b8e5109",
+   "rows": 2,
+   "z": 3
   },
   "n2_s": {
    "at": [
@@ -1135,7 +1137,8 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "884d45a2185331630b4e0b1dea33982f"
+   "id": "46c2b93d89ec93f789a90befe6346a68",
+   "z": 3
   },
   "n5": {
    "at": [
@@ -1174,7 +1177,7 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "ce26bcf8507756ff915b56b31c80ecfd",
+   "id": "2c3ed9e6a77463511e56caff5fa1e662",
    "shadow": [
     "#3A2A10",
     318.51,
@@ -1183,7 +1186,8 @@
     5.0,
     0.22
    ],
-   "speed": 27.52
+   "speed": 27.52,
+   "z": 3
   },
   "n5_dd": {
    "at": [
@@ -1371,7 +1375,9 @@
    "facing": "right",
    "fall": 8,
    "frames": 48,
-   "id": "9bed816c2ec00d26ffe44f1019857e2a"
+   "id": "3d350e01bb4f7ee36b3b42dcb25df48c",
+   "rows": 2,
+   "z": 3
   },
   "n5_s": {
    "at": [
@@ -1410,7 +1416,8 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "e2b543448bf54e262335dbb3ea400479"
+   "id": "f3726a244b3085dc894889da4d1b7269",
+   "z": 3
   },
   "n7": {
    "at": [
@@ -1449,7 +1456,7 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "929a428e405af27c125470d714e48436",
+   "id": "d4ecf9c9b7e855fd3253191f4f673f73",
    "shadow": [
     "#3A2A10",
     318.51,
@@ -1458,7 +1465,8 @@
     5.0,
     0.22
    ],
-   "speed": 27.52
+   "speed": 27.52,
+   "z": 3
   },
   "n7_dd": {
    "at": [
@@ -1646,7 +1654,9 @@
    "facing": "right",
    "fall": 8,
    "frames": 48,
-   "id": "639d3d404b7283d3eac7949cc2d03dc5"
+   "id": "d918028ee2e4e7a9c96e6e842fcef83d",
+   "rows": 2,
+   "z": 3
   },
   "n7_s": {
    "at": [
@@ -1685,7 +1695,8 @@
    ],
    "facing": "right",
    "frames": 24,
-   "id": "195b8a9e2dbce0677c24e9efdb870dc9"
+   "id": "fd962d0e160450ab126027766697a8c7",
+   "z": 3
   },
   "still": {
    "id": "a0576576fff9e82fde690243fc42b861",

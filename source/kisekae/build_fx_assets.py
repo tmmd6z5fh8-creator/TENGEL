@@ -11,7 +11,7 @@
        sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp・nd_film.mp4・nd_last.webp … 動画 4本と さいごの 1まい 3まいは build_fx_films.py で 作る（時間が かかる）。
        ここでは 作らない（ない ときは 知らせる）。第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）
      第4.108版：bcx_hb_head・bcx_hb_fore・bcx_hb_hind・bcx_hb_tail・bcx_hb_eye.webp … 結果ボードカスタム 22「ボードを持つ馬」の 部品 5まい
-       （r3d/fx/board_horse_parts.py：3Dの 馬を 2回 描いて 頭と首・前足（くさびを 足す）・後ろ足・しっぽ・目を とじた 所に 分ける・約25KB・1〜2分）
+       （r3d/fx/board_horse_parts.py：3Dの 馬を 2回 描いて 頭と首・前足（くさびを 足す）・後ろ足・しっぽ・目を とじた 所に 分ける・約27KB・1〜2分）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）
    ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）"""
 import os
