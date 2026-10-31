@@ -428,6 +428,95 @@ try:
         check(pg.locator('#fxOv').count() == 0 and '保存できたよ' in pg.locator('#toast').inner_text(), '結果を記録ずみの記録を保存し直す → 演出は出ない（お知らせの帯だけ）')
         check(pg.evaluate("TengelWallet.board.info().streak") == 1, f'第4.91版 結果ボードカスタムの 連続的中の 数（第4.113版：出世馬は 消した・数は 残す）：結果が はじめて 決まった 的中で 1・金額の 記録・保存し直しでは 数えない（{pg.evaluate("TengelWallet.board.info().streak")}）')
         pg.wait_for_timeout(500)
+        # ---- 思い出記録（第4.115版・まさちゃん「思い出記録機能を追加する。記録内容 レース名 日付 買い目 結果 金額:購入、回収」「思い出レース表示用の思い出ボードを作成する」）----
+        #      記録を 直す 画面の ボタン → 記録に mem → 思い出のレースの 欄・行の 印 → 思い出ボード（種類の ボード ＋ 記録の カード）→ とじる → 絞り込み → ど的中の わく ①② → 外す → バックアップ
+        f9 = pg.locator('#recList .rsvf')
+        mc = pg.locator('#rFilters [data-f=mem]')
+        d9 = b9c['date']; ymd9 = f'{int(d9[:4])}年{int(d9[5:7])}月{int(d9[8:10])}日'; md9 = f'{int(d9[5:7])}/{int(d9[8:10])}'   # テストの 9R の 日付（記録の まま）
+        check(f9.get_attribute('data-mode') == 'edit' and f9.locator('[data-act=memtog]').inner_text() == '思い出のレースに記録する' and f9.locator('[data-act=memopen]').count() == 0 and pg.locator('#recList .memtop').count() == 0
+              and mc.count() == 1 and mc.inner_text() == '思い出' and not pg.evaluate("document.querySelector('#rFilters [data-f=mem]').hidden"),
+              '第4.115版 思い出記録：記録を 直す 画面（mode=edit）に「思い出のレースに記録する」・まだ 思い出の 欄は ない・絞り込みに「思い出」')
+        f9.locator('[data-act=memtog]').click(); pg.wait_for_timeout(800)
+        b9m = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)")
+        mt = pg.locator('#recList .memtop')
+        check(isinstance(b9m.get('mem'), dict) and bool(b9m['mem'].get('at')) and 'v' not in b9m['mem'] and pg.locator('#recList .memchoose').count() == 0 and '思い出のレースに記録したよ' in pg.locator('#toast').inner_text(),
+              f'押すと 記録に mem（記録した 時だけ・的中は ど的中の わくを 聞かない）・お知らせの 帯（{b9m.get("mem")}）')
+        check(mt.count() == 1 and '思い出のレース' in mt.locator('h3').inner_text() and '1件' in mt.locator('h3').inner_text() and mt.locator('.lrow.memrow').count() == 1 and mt.locator('.memrow').get_attribute('data-mid') == b9c['id']
+              and mt.locator('.memrow .k').inner_text().startswith(md9) and '的中' in mt.locator('.memrow .s').inner_text() and '1着 6（1番人気）' in mt.locator('.memrow .s').inner_text() and '1,800→1,360' in mt.locator('.memrow .lmoney').inner_text()
+              and pg.locator(f'#recList .lrow:not(.memrow)[data-id="{b9c["id"]}"] .chip.memchip').inner_text() == '思い出',
+              f'記録タブの 上に「思い出のレース」の 欄（{md9} 9R・的中・1〜3着・購入→回収）・月の 一覧の 行に「思い出」の 印（{mt.locator(".memrow .s").inner_text()[:40]}）')
+        f9 = pg.locator('#recList .rsvf')
+        check(f9.count() == 1 and f9.get_attribute('data-mode') == 'edit' and f9.locator('[data-act=memopen]').inner_text() == '思い出ボードを見る' and f9.locator('[data-act=memtog]').inner_text() == '思い出から外す',
+              '記録した あとの 画面：「思い出ボードを見る」「思い出から外す」（行は 開いた まま）')
+        pg.evaluate("window.__fxEv = []")
+        mt.locator('.memrow .lmain').click(); pg.wait_for_timeout(1600)
+        ov = pg.locator('#fxOv')
+        mo = ov.locator('.fxs.mem .ov.hit.mem.f-hit')
+        mx = ov.locator('.rb .card.memx')
+        mxt = mx.inner_text() if mx.count() else ''
+        check(ov.count() == 1 and 'k-hit' in ov.get_attribute('class') and 'mem' in ov.get_attribute('class') and mo.count() == 1 and ov.locator('.push').count() == 0 and ov.locator('.rays').count() == 1
+              and ov.locator('.memhd .mlab').inner_text() == '思い出のレース' and ymd9 in ov.locator('.memhd .mname').inner_text() and '9R' in ov.locator('.memhd .mname').inner_text()
+              and ov.locator('.rb.hit .bh').inner_text() == '的中！' and ov.locator('.rb .brows li').count() == 2 and ov.locator('.close').inner_text() == 'とじる'
+              and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'mem', 'quiet': True, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1} and pg.evaluate('TengelFx.memInfo()') == {'v': 'a', 'frame': 'hit'}
+              and pg.evaluate('window.__fxEv') == ['memory:hit'] and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
+              f'思い出の 行を 押す → 思い出ボード：PUSH なし・的中の 形（光の筋・いつもの ボード「的中！」券種 2行）・上に「思い出のレース」と レース名・合図 memory・拡大は 止める（{pg.evaluate("TengelFx.current()")}）')
+        check(mx.count() == 1 and all(w in mxt for w in ('日付', ymd9, 'レース', '9R', '買い目', '18点', '単勝', '3点', '馬単', '15点', '結果', '1着 6（1番人気）', '2着 2（2番人気）', '3着 10（3番人気）', '的中', '金額', '購入 1,800円', '回収 1,360円', '−440円'))
+              and mx.locator('.bc').count() == 18 and mx.locator('.bc.mh').count() == 2 and mx.locator('.bc.mh').nth(0).locator('.n').all_inner_texts() == ['6'] and mx.locator('.bc.mh').nth(1).locator('.n').all_inner_texts() == ['6', '2'] and mx.locator('b.minus').inner_text() == '−440円',
+              f'ボードの 中の 記録の カード：日付・レース・買い目（単勝 3点・馬単 15点＝18点。当たった 単勝 6・馬単 6→2 に わく）・結果（1〜3着と 人気）・金額（購入 1,800円 → 回収 1,360円・−440円）（{mxt[:70]!r}）')
+        ov.locator('.close').click(force=True); pg.wait_for_timeout(400)
+        f9 = pg.locator('#recList .rsvf')
+        check(pg.locator('#fxOv').count() == 0 and pg.evaluate('TengelFx.current()') is None and pg.evaluate('TengelFx.memInfo()') is None and not pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__fxEv') == ['memory:hit', 'close:hit']
+              and pg.evaluate('window.__zoom').pop().get('lock') is False and f9.count() == 1 and f9.get_attribute('data-mode') == 'edit',
+              '「とじる」→ 記録タブに もどる（行は 開いた まま・拡大できる・合図 close）')
+        pg.click('#rFilters [data-f=mem]'); pg.wait_for_timeout(400)
+        fl = pg.locator('#recList .dgroup .lrow')
+        check(fl.count() == 1 and fl.get_attribute('data-id') == b9c['id'] and pg.locator('#recList .memtop').count() == 1 and pg.locator('#rFilters [data-f=mem]').get_attribute('aria-pressed') == 'true',
+              f'絞り込み「思い出」→ 月の 一覧は 思い出の レースだけ（{fl.count()}行）')
+        pg.click('#rFilters [data-f=all]'); pg.wait_for_timeout(400)
+        fr = pg.evaluate("['hit', 'big', 'nd', 'pc', 'fz', 'sd', 'sgd', 'gd', 'spg', 'miss', 'zzz'].map(k => TengelFx.memFrame(k, 'a') + '/' + TengelFx.memFrame(k, 'b'))")
+        check(fr == ['hit/hit', 'big/big', 'turf/cute', 'turf/cute', 'turf/cute', 'phantom/phantom', 'torii/torii', 'torii/torii', 'toriicute/toriicute', 'miss/miss', 'hit/hit'] and pg.evaluate("['fz', 'gd', 'nd', 'zzz'].map(k => TengelFx.memKind(k))") == ['nd', 'sgd', 'nd', 'hit'],
+              f'思い出ボードの わく：的中・デカ的中は そのまま／ど的中（ノーマル・プレミアム）は ①光の輪の芝コース（turf）か ②プレミアムかわいい馬（cute）／極ど的中は 幻の馬／超神様は 鳥居／超プレミアム神様は 鳥居＋かわいい馬／ハズレ（{fr}）')
+        # ど的中の レース（rsv.fx を nd に して ためす）：記録する ときに ①② を 選ぶ・やめる・② → 思い出ボードは かわいい馬の わく → 外す → ① → 光の輪の 芝コース
+        pg.evaluate("(async () => { const b = [...TengelLocal.mem.bets.values()].find(b => b.r === 9); const d = JSON.parse(JSON.stringify(b)); d.rsv.fx = 'nd'; delete d.mem; await TengelLocal.putBets([d]); })()"); pg.wait_for_timeout(400)
+        pg.click('#rFilters [data-f=all]'); pg.wait_for_timeout(400)
+        f9 = pg.locator('#recList .rsvf')
+        check(pg.locator('#recList .memtop').count() == 0 and f9.count() == 1 and f9.locator('[data-act=memtog]').inner_text() == '思い出のレースに記録する', '思い出を 消した 記録（ど的中に した）：欄は 消える・ボタンは「思い出のレースに記録する」に もどる')
+        f9.locator('[data-act=memtog]').click(); pg.wait_for_timeout(500)
+        ch = pg.locator('#recList .rsvf .memchoose')
+        check(ch.count() == 1 and ch.locator('[data-act=memsave][data-v=a]').inner_text() == '① 光の輪の芝コース' and ch.locator('[data-act=memsave][data-v=b]').inner_text() == '② プレミアムかわいい馬' and ch.locator('[data-act=memcancel]').inner_text() == 'やめる' and 'あとから変えられないよ' in ch.inner_text()
+              and 'mem' not in pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)") and pg.locator('#recList .memtop').count() == 0,
+              'ど的中の レース → 押すと まず わくを 選ぶ 窓（① 光の輪の芝コース／② プレミアムかわいい馬／やめる）。まだ 記録しない')
+        ch.locator('[data-act=memcancel]').click(); pg.wait_for_timeout(400)
+        check(pg.locator('#recList .rsvf .memchoose').count() == 0 and 'mem' not in pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)"), '「やめる」→ 窓が 閉じる・記録しない')
+        pg.locator('#recList .rsvf [data-act=memtog]').click(); pg.wait_for_timeout(400)
+        pg.locator('#recList .rsvf .memchoose [data-act=memsave][data-v=b]').click(); pg.wait_for_timeout(800)
+        b9n = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)")
+        mt = pg.locator('#recList .memtop')
+        check(b9n.get('mem', {}).get('v') == 'b' and pg.locator('#recList .rsvf .memchoose').count() == 0 and mt.count() == 1 and 'ど的中' in mt.locator('.memrow .s').inner_text(),
+              f'② を 選ぶ → 記録に mem.v＝b・思い出の 欄に ど的中の レース（{b9n.get("mem")}）')
+        pg.locator('#recList .rsvf [data-act=memopen]').click(); pg.wait_for_timeout(1200)
+        ov = pg.locator('#fxOv')
+        check(ov.count() == 1 and 'k-nd' in ov.get_attribute('class') and ov.locator('.fxs.mem .ov.miss.quiet.mem.f-cute').count() == 1 and ov.locator('.mring').count() == 0 and ov.locator('.rb.fz .bh').text_content() == 'ど的中！！！' and ov.locator('.rb .zrib').count() == 0
+              and pg.evaluate('TengelFx.memInfo()') == {'v': 'b', 'frame': 'cute'} and pg.evaluate('TengelFx.current()')['kind'] == 'nd' and pg.locator('#fxVh video').count() == 0,
+              '「思い出ボードを見る」→ ど的中の ボード「ど的中！！！」に ② プレミアムかわいい馬の わく（動画・PUSH なし・帯は 超大穴が ないので なし）')
+        ov.locator('.close').click(force=True); pg.wait_for_timeout(400)
+        pg.locator('#recList .rsvf [data-act=memtog]').click(); pg.wait_for_timeout(800)
+        check('mem' not in pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)") and pg.locator('#recList .memtop').count() == 0 and pg.locator('#recList .rsvf [data-act=memtog]').inner_text() == '思い出のレースに記録する' and '思い出から外したよ' in pg.locator('#toast').inner_text()
+              and pg.locator(f'#recList .lrow:not(.memrow)[data-id="{b9c["id"]}"] .chip.memchip').count() == 0,
+              '「思い出から外す」→ 記録から mem が 消える・欄と 印も 消える（レースの 記録は そのまま）')
+        pg.locator('#recList .rsvf [data-act=memtog]').click(); pg.wait_for_timeout(400)
+        pg.locator('#recList .rsvf .memchoose [data-act=memsave][data-v=a]').click(); pg.wait_for_timeout(800)
+        pg.evaluate("TengelFx.set({ calm: true })")
+        pg.locator('#recList .rsvf [data-act=memopen]').click(); pg.wait_for_timeout(1200)
+        ov = pg.locator('#fxOv')
+        check(pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9).mem.v") == 'a' and ov.locator('.fxs.mem.calm .ov.miss.quiet.mem.f-turf').count() == 1 and ov.locator('.mring').count() == 1 and pg.evaluate('TengelFx.memInfo()') == {'v': 'a', 'frame': 'turf'},
+              'もう一度 記録して ① を 選ぶ → 光の輪の 芝コースの わく（光の 輪）・控えめでも 同じ ボード（calm）')
+        ov.locator('.close').click(force=True); pg.wait_for_timeout(300)
+        pg.evaluate("TengelFx.set({ calm: null })")
+        pg.evaluate("(async () => { const b = [...TengelLocal.mem.bets.values()].find(b => b.r === 9); const d = JSON.parse(JSON.stringify(b)); d.rsv.fx = 'hit'; await TengelLocal.putBets([d]); })()"); pg.wait_for_timeout(2400)
+        bkm = json.loads(store['backup'] or '{}').get('bets', [])
+        check(any(isinstance(x.get('mem'), dict) and x['mem'].get('v') == 'a' for x in bkm if x.get('r') == 9), f'思い出（mem）は 自動バックアップにも 入る（{[x.get("mem") for x in bkm if x.get("r") == 9]}）')
+        pg.click('#rFilters [data-f=all]'); pg.wait_for_timeout(300)
         # どれが出るか（10章・18.2）：3連単の当たりの3頭に 10〜12番人気 → ど的中／9番人気・13番人気・人気がわからない → デカ／3連単なし → 的中／当たりなし → ハズレ
         RK = {str(i): i for i in range(1, 15)}   # 馬番＝人気順位（18.2 の例と同じ読み方）
         def spec(tri, others=(), ranks=RK):
@@ -1075,6 +1164,8 @@ try:
         check(p2.locator('#setFx').count() == 0 and p2.evaluate("typeof window.TengelFx === 'undefined' && typeof window.__FX === 'undefined' && !document.querySelector('#fxCss')"), 'Web版：的中ボタン（演出・設定）は入らない')
         check(p2.locator('#ptsPill').count() == 0 and p2.locator('#testTag').count() == 0 and p2.locator('#ptsCss').count() == 0 and p2.evaluate("getComputedStyle(document.querySelector('#dbpill')).marginLeft") != '0px', 'Web版：上の帯の 所有ポイント・説明書の 置き場は かわらない')
         check(p2.locator('#setKisekae').count() == 0 and p2.locator('#ksBnr').count() == 0 and p2.evaluate("typeof window.TengelKisekae === 'undefined' && typeof window.__KS === 'undefined' && !document.querySelector('#ksCss') && !document.documentElement.dataset.ks"), 'Web版：着せ替え（カード・上の絵・テーマの CSS）は入らない')
+        check(p2.locator('#rFilters [data-f=mem]').count() == 1 and p2.evaluate("document.querySelector('#rFilters [data-f=mem]').hidden") is True and p2.evaluate("typeof memTopHTML === 'function' ? memTopHTML() : ''") == '' and p2.locator('#recList .memtop').count() == 0,
+              'Web版：思い出記録は 入らない（絞り込みの「思い出」は かくす・思い出の 欄は 出ない）')
         # 第4.60版：Web版は WIN5 の まま・判定画面の「全STEPを表示」も 実測④の C層×非該当も 見直し基準の 数も 今までどおり
         p2.click('.tabbar button[data-tab=stats]'); p2.wait_for_timeout(900)
         w46 = p2.evaluate("(() => { const c4 = [...document.querySelectorAll('#statsBody .card')].find(c => (c.querySelector('h2') || {}).textContent.includes('④')); return { c0: c4 ? c4.innerText.includes('C層×非該当') : null, prog: [...document.querySelectorAll('.prog .pl b')].map(b => b.textContent), hint: !!document.querySelector('.prog') && document.querySelector('.prog').previousElementSibling.tagName !== 'P' }; })()")

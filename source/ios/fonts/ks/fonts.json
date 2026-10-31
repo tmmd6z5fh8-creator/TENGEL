@@ -1,6 +1,6 @@
 {
  "chars": {
-  "body": 917,
+  "body": 893,
   "disp": 369
  },
  "fonts": [
@@ -9,8 +9,8 @@
    "weight": 400,
    "file": "BIZUDPMincho-400.woff2",
    "role": "body",
-   "glyphs": 921,
-   "bytes": 136212,
+   "glyphs": 897,
+   "bytes": 131316,
    "src": "bizudpmincho/BIZUDPMincho-Regular.ttf"
   },
   {
@@ -18,8 +18,8 @@
    "weight": 700,
    "file": "BIZUDPMincho-700.woff2",
    "role": "body",
-   "glyphs": 921,
-   "bytes": 182260,
+   "glyphs": 897,
+   "bytes": 176116,
    "src": "bizudpmincho/BIZUDPMincho-Bold.ttf"
   },
   {
@@ -28,7 +28,7 @@
    "file": "CherryBombOne-400.woff2",
    "role": "disp",
    "glyphs": 310,
-   "bytes": 31464,
+   "bytes": 31492,
    "src": "cherrybombone/CherryBombOne-Regular.ttf"
   },
   {
@@ -36,8 +36,8 @@
    "weight": 400,
    "file": "DotGothic16-400.woff2",
    "role": "body",
-   "glyphs": 918,
-   "bytes": 46392,
+   "glyphs": 894,
+   "bytes": 44768,
    "src": "dotgothic16/DotGothic16-Regular.ttf"
   },
   {
@@ -46,7 +46,7 @@
    "file": "HachiMaruPop-400.woff2",
    "role": "disp",
    "glyphs": 358,
-   "bytes": 46628,
+   "bytes": 46732,
    "src": "hachimarupop/HachiMaruPop-Regular.ttf"
   },
   {
@@ -64,7 +64,7 @@
    "file": "KaiseiHarunoUmi-700.woff2",
    "role": "disp",
    "glyphs": 370,
-   "bytes": 60040,
+   "bytes": 60044,
    "src": "kaiseiharunoumi/KaiseiHarunoUmi-Bold.ttf"
   },
   {
@@ -73,7 +73,7 @@
    "file": "KaiseiOpti-700.woff2",
    "role": "disp",
    "glyphs": 370,
-   "bytes": 51252,
+   "bytes": 51200,
    "src": "kaiseiopti/KaiseiOpti-Bold.ttf"
   },
   {
@@ -82,7 +82,7 @@
    "file": "KaiseiTokumin-800.woff2",
    "role": "disp",
    "glyphs": 370,
-   "bytes": 61768,
+   "bytes": 61824,
    "src": "kaiseitokumin/KaiseiTokumin-ExtraBold.ttf"
   },
   {
@@ -91,7 +91,7 @@
    "file": "KiwiMaru-500.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 47452,
+   "bytes": 47508,
    "src": "kiwimaru/KiwiMaru-Medium.ttf"
   },
   {
@@ -99,8 +99,8 @@
    "weight": 600,
    "file": "KleeOne-600.woff2",
    "role": "body",
-   "glyphs": 922,
-   "bytes": 199044,
+   "glyphs": 898,
+   "bytes": 191916,
    "src": "kleeone/KleeOne-SemiBold.ttf"
   },
   {
@@ -108,8 +108,8 @@
    "weight": 500,
    "file": "MPLUS1-500.woff2",
    "role": "body",
-   "glyphs": 905,
-   "bytes": 86444,
+   "glyphs": 881,
+   "bytes": 83564,
    "src": "mplus1/MPLUS1[wght].ttf"
   },
   {
@@ -117,8 +117,8 @@
    "weight": 700,
    "file": "MPLUS1-700.woff2",
    "role": "body",
-   "glyphs": 905,
-   "bytes": 90116,
+   "glyphs": 881,
+   "bytes": 87104,
    "src": "mplus1/MPLUS1[wght].ttf"
   },
   {
@@ -127,7 +127,7 @@
    "file": "MPLUS1-900.woff2",
    "role": "disp",
    "glyphs": 363,
-   "bytes": 27408,
+   "bytes": 27388,
    "src": "mplus1/MPLUS1[wght].ttf"
   },
   {
@@ -135,8 +135,8 @@
    "weight": 500,
    "file": "MPLUS1p-500.woff2",
    "role": "body",
-   "glyphs": 923,
-   "bytes": 83708,
+   "glyphs": 899,
+   "bytes": 80812,
    "src": "mplus1p/MPLUS1p-Medium.ttf"
   },
   {
@@ -144,8 +144,8 @@
    "weight": 700,
    "file": "MPLUS1p-700.woff2",
    "role": "body",
-   "glyphs": 923,
-   "bytes": 86836,
+   "glyphs": 899,
+   "bytes": 83828,
    "src": "mplus1p/MPLUS1p-Bold.ttf"
   },
   {
@@ -153,8 +153,8 @@
    "weight": 500,
    "file": "MPLUSRounded1c-500.woff2",
    "role": "body",
-   "glyphs": 923,
-   "bytes": 128720,
+   "glyphs": 899,
+   "bytes": 123900,
    "src": "mplusrounded1c/MPLUSRounded1c-Medium.ttf"
   },
   {
@@ -162,8 +162,8 @@
    "weight": 700,
    "file": "MPLUSRounded1c-700.woff2",
    "role": "body",
-   "glyphs": 923,
-   "bytes": 136304,
+   "glyphs": 899,
+   "bytes": 131520,
    "src": "mplusrounded1c/MPLUSRounded1c-Bold.ttf"
   },
   {
@@ -172,7 +172,7 @@
    "file": "MPLUSRounded1c-800.woff2",
    "role": "disp",
    "glyphs": 375,
-   "bytes": 39848,
+   "bytes": 39832,
    "src": "mplusrounded1c/MPLUSRounded1c-ExtraBold.ttf"
   },
   {
@@ -189,8 +189,8 @@
    "weight": 500,
    "file": "Murecho-500.woff2",
    "role": "body",
-   "glyphs": 919,
-   "bytes": 88608,
+   "glyphs": 896,
+   "bytes": 85752,
    "src": "murecho/Murecho[wght].ttf"
   },
   {
@@ -198,8 +198,8 @@
    "weight": 700,
    "file": "Murecho-700.woff2",
    "role": "body",
-   "glyphs": 919,
-   "bytes": 89336,
+   "glyphs": 896,
+   "bytes": 86404,
    "src": "murecho/Murecho[wght].ttf"
   },
   {
@@ -217,7 +217,7 @@
    "file": "PottaOne-400.woff2",
    "role": "disp",
    "glyphs": 363,
-   "bytes": 53048,
+   "bytes": 53060,
    "src": "pottaone/PottaOne-Regular.ttf"
   },
   {
@@ -226,7 +226,7 @@
    "file": "RampartOne-400.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 61404,
+   "bytes": 61400,
    "src": "rampartone/RampartOne-Regular.ttf"
   },
   {
@@ -235,7 +235,7 @@
    "file": "ReggaeOne-400.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 24476,
+   "bytes": 24480,
    "src": "reggaeone/ReggaeOne-Regular.ttf"
   },
   {
@@ -244,7 +244,7 @@
    "file": "RocknRollOne-400.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 27996,
+   "bytes": 28004,
    "src": "rocknrollone/RocknRollOne-Regular.ttf"
   },
   {
@@ -253,7 +253,7 @@
    "file": "ShipporiAntiqueB1-400.woff2",
    "role": "disp",
    "glyphs": 368,
-   "bytes": 50036,
+   "bytes": 49984,
    "src": "shipporiantiqueb1/ShipporiAntiqueB1-Regular.ttf"
   },
   {
@@ -261,8 +261,8 @@
    "weight": 500,
    "file": "ShipporiMincho-500.woff2",
    "role": "body",
-   "glyphs": 918,
-   "bytes": 144920,
+   "glyphs": 894,
+   "bytes": 139900,
    "src": "shipporimincho/ShipporiMincho-Medium.ttf"
   },
   {
@@ -270,8 +270,8 @@
    "weight": 700,
    "file": "ShipporiMincho-700.woff2",
    "role": "body",
-   "glyphs": 918,
-   "bytes": 148628,
+   "glyphs": 894,
+   "bytes": 143444,
    "src": "shipporimincho/ShipporiMincho-Bold.ttf"
   },
   {
@@ -280,7 +280,7 @@
    "file": "ShipporiMinchoB1-800.woff2",
    "role": "disp",
    "glyphs": 374,
-   "bytes": 56476,
+   "bytes": 56488,
    "src": "shipporiminchob1/ShipporiMinchoB1-ExtraBold.ttf"
   },
   {
@@ -289,7 +289,7 @@
    "file": "Stick-400.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 24460,
+   "bytes": 24432,
    "src": "stick/Stick-Regular.ttf"
   },
   {
@@ -298,7 +298,7 @@
    "file": "TrainOne-400.woff2",
    "role": "disp",
    "glyphs": 372,
-   "bytes": 58888,
+   "bytes": 58840,
    "src": "trainone/TrainOne-Regular.ttf"
   },
   {
@@ -307,7 +307,7 @@
    "file": "TsukimiRounded-500.woff2",
    "role": "body",
    "glyphs": 315,
-   "bytes": 26768,
+   "bytes": 26772,
    "src": "tsukimirounded/TsukimiRounded-Medium.ttf"
   },
   {
@@ -316,7 +316,7 @@
    "file": "TsukimiRounded-700.woff2",
    "role": "body",
    "glyphs": 315,
-   "bytes": 27180,
+   "bytes": 27160,
    "src": "tsukimirounded/TsukimiRounded-Bold.ttf"
   },
   {
@@ -325,7 +325,7 @@
    "file": "Yomogi-400.woff2",
    "role": "disp",
    "glyphs": 375,
-   "bytes": 46376,
+   "bytes": 46464,
    "src": "yomogi/Yomogi-Regular.ttf"
   },
   {
@@ -334,7 +334,7 @@
    "file": "YujiBoku-400.woff2",
    "role": "disp",
    "glyphs": 371,
-   "bytes": 90728,
+   "bytes": 90772,
    "src": "yujiboku/YujiBoku-Regular.ttf"
   },
   {
@@ -343,7 +343,7 @@
    "file": "YujiMai-400.woff2",
    "role": "disp",
    "glyphs": 371,
-   "bytes": 88596,
+   "bytes": 88640,
    "src": "yujimai/YujiMai-Regular.ttf"
   },
   {
@@ -352,7 +352,7 @@
    "file": "YujiSyuku-400.woff2",
    "role": "disp",
    "glyphs": 371,
-   "bytes": 84036,
+   "bytes": 84000,
    "src": "yujisyuku/YujiSyuku-Regular.ttf"
   },
   {
@@ -361,7 +361,7 @@
    "file": "YuseiMagic-400.woff2",
    "role": "disp",
    "glyphs": 369,
-   "bytes": 29184,
+   "bytes": 29220,
    "src": "yuseimagic/YuseiMagic-Regular.ttf"
   },
   {
@@ -370,7 +370,7 @@
    "file": "ZenAntique-400.woff2",
    "role": "disp",
    "glyphs": 369,
-   "bytes": 54220,
+   "bytes": 54192,
    "src": "zenantique/ZenAntique-Regular.ttf"
   },
   {
@@ -379,7 +379,7 @@
    "file": "ZenAntiqueSoft-400.woff2",
    "role": "disp",
    "glyphs": 369,
-   "bytes": 60396,
+   "bytes": 60408,
    "src": "zenantiquesoft/ZenAntiqueSoft-Regular.ttf"
   },
   {
@@ -387,8 +387,8 @@
    "weight": 400,
    "file": "ZenKakuGothicNew-400.woff2",
    "role": "body",
-   "glyphs": 912,
-   "bytes": 100644,
+   "glyphs": 888,
+   "bytes": 97300,
    "src": "zenkakugothicnew/ZenKakuGothicNew-Regular.ttf"
   },
   {
@@ -396,8 +396,8 @@
    "weight": 500,
    "file": "ZenKakuGothicNew-500.woff2",
    "role": "body",
-   "glyphs": 912,
-   "bytes": 101432,
+   "glyphs": 888,
+   "bytes": 97940,
    "src": "zenkakugothicnew/ZenKakuGothicNew-Medium.ttf"
   },
   {
@@ -405,8 +405,8 @@
    "weight": 700,
    "file": "ZenKakuGothicNew-700.woff2",
    "role": "body",
-   "glyphs": 912,
-   "bytes": 101604,
+   "glyphs": 888,
+   "bytes": 98268,
    "src": "zenkakugothicnew/ZenKakuGothicNew-Bold.ttf"
   },
   {
@@ -415,7 +415,7 @@
    "file": "ZenKurenaido-400.woff2",
    "role": "disp",
    "glyphs": 368,
-   "bytes": 37404,
+   "bytes": 37444,
    "src": "zenkurenaido/ZenKurenaido-Regular.ttf"
   },
   {
@@ -423,8 +423,8 @@
    "weight": 500,
    "file": "ZenMaruGothic-500.woff2",
    "role": "body",
-   "glyphs": 912,
-   "bytes": 139960,
+   "glyphs": 888,
+   "bytes": 135108,
    "src": "zenmarugothic/ZenMaruGothic-Medium.ttf"
   },
   {
@@ -432,8 +432,8 @@
    "weight": 700,
    "file": "ZenMaruGothic-700.woff2",
    "role": "body",
-   "glyphs": 912,
-   "bytes": 142220,
+   "glyphs": 888,
+   "bytes": 137288,
    "src": "zenmarugothic/ZenMaruGothic-Bold.ttf"
   },
   {
@@ -442,7 +442,7 @@
    "file": "ZenMaruGothic-900.woff2",
    "role": "disp",
    "glyphs": 368,
-   "bytes": 38696,
+   "bytes": 38700,
    "src": "zenmarugothic/ZenMaruGothic-Black.ttf"
   },
   {
@@ -450,8 +450,8 @@
    "weight": 600,
    "file": "ZenOldMincho-600.woff2",
    "role": "body",
-   "glyphs": 913,
-   "bytes": 197768,
+   "glyphs": 889,
+   "bytes": 190808,
    "src": "zenoldmincho/ZenOldMincho-SemiBold.ttf"
   },
   {
@@ -459,8 +459,8 @@
    "weight": 700,
    "file": "ZenOldMincho-700.woff2",
    "role": "body",
-   "glyphs": 913,
-   "bytes": 199576,
+   "glyphs": 889,
+   "bytes": 192520,
    "src": "zenoldmincho/ZenOldMincho-Bold.ttf"
   },
   {
@@ -469,10 +469,10 @@
    "file": "ZenOldMincho-900.woff2",
    "role": "disp",
    "glyphs": 369,
-   "bytes": 56560,
+   "bytes": 56508,
    "src": "zenoldmincho/ZenOldMincho-Black.ttf"
   }
  ],
- "total": 4109336,
+ "total": 4018380,
  "source": "github.com/google/fonts (ofl)"
 }

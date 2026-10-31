@@ -655,12 +655,99 @@
     return true;
   }
 
+
+  // ---------- 思い出ボード（第4.115版・まさちゃん「思い出記録機能を追加する」「思い出レース表示用の思い出ボードを作成する」） ----------
+  //   記録タブの「思い出のレース」を 開くと、PUSH・演出・音なしで、そのレースの 結果の ボード（当たりの 大きさの 形：的中・デカ的中・ど的中・ハズレ）と
+  //   記録（日付・レース名・買い目・結果・金額：購入と 回収）を 出す。ボードの 下の カード（.memx）が 記録。「とじる」で 閉じる。
+  //   まわりの 絵（わく）は 当たりの 大きさごと：的中・デカ的中は いつもの まま／ど的中（ノーマル・プレミアム）は ①光の輪の芝コース か ②プレミアムかわいい馬
+  //   （思い出に 記録する ときに 選ぶ・あとから 変えない）／極ど的中は 幻の馬／超神様的中は テンゲルの鳥居／超プレミアム神様的中は 鳥居と プレミアムの馬／
+  //   神様極的中（まだ ない 種類）は 神様馬。※ わくの 絵は あとから 足す（いまは 色の 幕と 光の 輪だけ：MEM_CSS の .f-…）。点めつは なし・控えめ／視差効果を減らすでも 同じ
+  const MEM_FRAME = { hit: 'hit', big: 'big', nd: 'turf', pc: 'turf', fz: 'turf', sd: 'phantom', sgd: 'torii', gd: 'torii', spg: 'toriicute', god: 'god', miss: 'miss' };
+  const MEM_CSS = '#fxOv.mem{--fxbd:rgba(6,4,18,.9)}'
+    // ボードの 箱は 上 150px から「とじる」の 上まで。記録が 長い とき（買い目が 多い）は 箱の 中で 上下に 動かす（#fxOv の touch-action:none は 箱の 外。箱は 自分で 動く）
+    + '.fxs .ov.mem .hb{top:150px;bottom:118px;width:366px;margin-left:-183px;padding:0 8px 40px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}'
+    + '.fxs .ov.mem .memhd{position:absolute;z-index:6;left:20px;right:20px;top:86px;text-align:center;color:#FFF8E6;text-shadow:0 1px 3px rgba(0,0,0,.7);font-family:"BIZ UDPGothic",sans-serif;animation:fadeIn .4s ease-out .1s both}'
+    + '.fxs .ov.mem .memhd .mlab{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.18em;padding:3px 10px 3px 13px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.55)}'
+    + '.fxs .ov.mem .memhd .mname{display:block;margin-top:7px;font-size:15px;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.fxs .rb .card.memx{margin-top:8px;padding:9px 11px 9px;font-family:"BIZ UDPGothic",sans-serif;font-size:12.5px;line-height:1.45;color:var(--ink)}'
+    + '.fxs .rb .memx .mx{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-top:1px solid var(--tagLine)}'
+    + '.fxs .rb .memx .mx:first-child{border-top:0;padding-top:0}'
+    + '.fxs .rb .memx .mk{flex:none;width:54px;font-weight:800;color:var(--sub);padding-top:2px}'
+    + '.fxs .rb .memx .mk.mt{padding-left:6px;font-weight:700}'
+    + '.fxs .rb .memx .mv{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}'
+    + '.fxs .rb .memx .mv .bc{gap:2px;padding:1px;border-radius:7px}'
+    + '.fxs .rb .memx .mv .bc.mh{box-shadow:0 0 0 2px var(--acc)}'
+    + '.fxs .rb .memx .mv .n{min-width:22px;height:22px;font-size:12px}'
+    + '.fxs .rb .memx .by{font-size:11px;color:var(--sub)}'
+    + '.fxs .rb .memx b.plus{color:#1E8E3E}.fxs .rb .memx b.minus{color:#D33A2C}'
+    // わく（絵は あとから）：ど的中 ①光の輪の芝コース（緑の 芝に 光の 輪）・②プレミアムかわいい馬（ピンクの 光）・極ど的中 幻の馬（紫の やみ）・超神様 鳥居（朱と 金）・超プレミアム神様（金と ピンク）・神様極的中（白と 金）
+    + '.fxs .ov.mem.f-turf .dim{background:radial-gradient(circle at 50% 36%,rgba(255,252,214,.62) 0,rgba(255,250,200,.18) 120px,rgba(0,0,0,0) 190px),linear-gradient(180deg,#0E3A1E 0%,#1F6F38 48%,#2E8B46 70%,#163F24 100%)}'
+    + '.fxs .ov.mem.f-turf .mring{position:absolute;z-index:4;left:50%;top:36%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;border:12px solid rgba(255,255,255,.55);box-shadow:0 0 40px 16px rgba(255,248,200,.55),inset 0 0 40px 10px rgba(255,248,200,.4);pointer-events:none}'
+    + '.fxs .ov.mem.f-cute .dim{background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.7) 0,rgba(255,214,235,.3) 150px,rgba(0,0,0,0) 240px),linear-gradient(180deg,#FFD4E6 0%,#FF9FC6 55%,#F77FB3 100%)}'
+    + '.fxs .ov.mem.f-phantom .dim{background:radial-gradient(circle at 50% 34%,rgba(170,80,240,.55) 0,rgba(60,10,110,.5) 160px,rgba(6,2,16,.98) 420px)}'
+    + '.fxs .ov.mem.f-torii .dim{background:radial-gradient(circle at 50% 30%,rgba(255,226,130,.7) 0,rgba(220,90,40,.55) 170px,rgba(70,8,8,.97) 440px)}'
+    + '.fxs .ov.mem.f-toriicute .dim{background:radial-gradient(circle at 50% 30%,rgba(255,236,160,.75) 0,rgba(255,150,190,.55) 170px,rgba(120,20,60,.96) 440px)}'
+    + '.fxs .ov.mem.f-god .dim{background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.9) 0,rgba(255,230,140,.7) 160px,rgba(150,110,20,.95) 440px)}'
+    + '.fxs .ov.mem.f-miss .dim{background:radial-gradient(circle at 50% 46%,rgba(40,40,60,.6),rgba(6,4,18,.9) 70%)}'
+    + '.fxs .ov.mem .close{animation-delay:.6s}';
+  function memCss() { if ($('#fxMemCss')) return; const st = document.createElement('style'); st.id = 'fxMemCss'; st.textContent = MEM_CSS; document.head.appendChild(st); }
+  // 思い出ボードの 種類：出した 演出の 種類（rsv.fx）から。前の ど的中（fz・静かな ボード）は ど的中（nd）・神様の 条件（gd）は 超神様（sgd）。知らない 種類は 的中の 形
+  function memKind(k) { k = k === 'fz' ? 'nd' : k === 'gd' ? 'sgd' : k; return MEM_FRAME[k] ? k : 'hit'; }
+  function memFrame(k, v) { const f = MEM_FRAME[memKind(k)]; return f === 'turf' && v === 'b' ? 'cute' : f; }
+  function mcombo(c, t, n, hit) {
+    const ordered = !!(RS() && RS().ORDERED[t]) || t === '馬単' || t === '枠単' || t === '3連単', isWaku = t === '枠複' || t === '枠単';
+    return `<span class="bc${hit ? ' mh' : ''}">${c.map(no => num(no, n, false, isWaku)).join(`<span class="ar">${ordered ? '→' : '-'}</span>`)}</span>`;
+  }
+  // 記録の カード（ボードの 中・買い目の 行の 下）：日付・レース・買い目（券種ごとに 全部の 組。当たった 組に わく）・結果・金額
+  function memCard(info, spec) {
+    const n = spec && spec.n, bets = info.bets || {};
+    const types = ((info.types && info.types.length) ? info.types : Object.keys(bets)).filter(t => Array.isArray(bets[t]) && bets[t].length);
+    const hitKeys = new Set(); ((spec && spec.rows) || []).forEach(x => (x.hits || []).forEach(c => hitKeys.add(x.t + ':' + c.join('-'))));
+    const total = types.reduce((a, t) => a + bets[t].length, 0);
+    let h = `<div class="mx"><span class="mk">日付</span><span class="mv">${esc(info.date || '')}</span></div>`
+      + `<div class="mx"><span class="mk">レース</span><span class="mv">${esc(info.race || '')}</span></div>`
+      + `<div class="mx"><span class="mk">買い目</span><span class="mv">${total ? `${total}点` : 'なし'}</span></div>`;
+    types.forEach(t => {
+      const list = bets[t], cs = list.slice(0, 24).map(c => mcombo(c, t, n, hitKeys.has(t + ':' + c.join('-')))).join('');
+      h += `<div class="mx"><span class="mk mt">${esc(t)}</span><span class="mv">${cs}${list.length > 24 ? `<span class="by">ほか${list.length - 24}点</span>` : ''}<span class="by">${list.length}点</span></span></div>`;
+    });
+    h += `<div class="mx"><span class="mk">結果</span><span class="mv">${esc(info.result || '')}</span></div>`
+      + `<div class="mx"><span class="mk">金額</span><span class="mv">${info.money || ''}</span></div>`;
+    return `<div class="card memx">${h}</div>`;
+  }
+  // 思い出ボードを 出す。spec＝show と 同じ（r・n・rows・ranks）・info＝{ kind（出した 演出の 種類）, v（ど的中の わく a／b）, name, date, race, types, bets, result, money（HTML） }
+  function memory(spec, info) {
+    if (!spec) return null;
+    close(true); css(); memCss();
+    info = info || {};
+    const d = decide(spec), k = memKind(info.kind || d.kind), v = info.v === 'b' ? 'b' : 'a', frame = memFrame(k, v);
+    const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + k + ' mem rv';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '思い出のレース');
+    const stage = document.createElement('div'); stage.className = 'fxs mem' + (calm() ? ' calm' : '');
+    ov.appendChild(stage); document.body.appendChild(ov);
+    document.documentElement.classList.add('fxon');
+    cur = { kind: k, spec: spec, supers: d.supers, bigs: d.bigs, ov: ov, stage: stage, quiet: true, phase: 'mem', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null, mem: { v: v, frame: frame } };
+    fit(); window.addEventListener('resize', fit);
+    try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
+    const rows = rowsHTML(spec, k, d.supers, d.bigs);
+    let board = boardHTML(k, spec, d.supers, d.bigs, rows.html);
+    board = board.replace(/<\/div>\s*$/, memCard(info, spec) + '</div>');      // 記録の カードは ボードの 中（買い目の 行の 下）
+    const base = k === 'hit' ? 'ov hit' : k === 'big' ? 'ov big rv' : 'ov miss quiet';   // quiet＝ど的中の ボードの 見出し・帯の 動き（9秒 あとに 出る 形）を 止めて すぐ 見せる
+    const extra = k === 'hit' ? '<div class="rays"></div>' : k === 'big' ? '<div class="rbow"></div><div class="glow"></div>' : frame === 'turf' ? '<div class="mring"></div>' : '';
+    stage.innerHTML = `<div class="${base} mem f-${frame}" style="--n:${Math.max(1, rows.n)}"><div class="dim"></div>${extra}`
+      + `<div class="memhd"><span class="mlab">思い出のレース</span><b class="mname">${esc(info.name || '')}</b></div><div class="hb">${board}</div>`
+      + '<button class="close" type="button" data-fx="close">とじる</button></div>';
+    emit('memory', k);
+    return k;
+  }
+
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     audio: () => (S.sound ? actx() : null),
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),
-    video: video, _rand: null
+    video: video, _rand: null,
+    memory: memory, memKind: memKind, memFrame: memFrame, memInfo: () => (cur && cur.mem ? Object.assign({}, cur.mem) : null)
   };
   css();
   if (TL() && TL().ready) TL().ready.then(loadSettings).catch(loadSettings); else loadSettings();
