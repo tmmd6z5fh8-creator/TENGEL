@@ -179,12 +179,16 @@
   }
   // 壁紙パックの 買う／進み具合の 箱（組の 見出しの 下）・カギの タイルの 中の 買う 確認
   const packPrice = () => { try { const w = wallet(); if (w && w.pack) return w.pack.price(); } catch (e) { /* なし */ } return '1,500円'; };
+  // 第4.114版：お得パック（壁紙パックと 結果ボードカスタムの セット 2,200円）：単品を どちらも 持って いない ときだけ 出す
+  const bundleOffer = () => { try { const w = wallet(); return !!(w && w.bundle && w.bundle.offer()); } catch (e) { return false; } };
+  const bundlePrice = () => { try { const w = wallet(); if (w && w.bundle) return w.bundle.price(); } catch (e) { /* なし */ } return '2,200円'; };
   function packName(no) { const id = PK.order[no - 1]; return id && byId[id] ? byId[id].name : ''; }
   function packBox() {
     const i = packInfo(), all = PK.order.length;
     if (!i.owned) {
       return '<div class="kspk"><div class="kspkt"><b>新しい壁紙 ' + all + '枚の パック</b><small>買い切り（1回 買えば ずっと）・ポイントでは 解放できないよ</small></div>'
         + `<button class="btn primary" type="button" data-ksact="pkbuy">${esc(packPrice())}で買う</button>`
+        + (bundleOffer() ? `<div class="kspku"><span><b>お得パック</b><small>壁紙パックと 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></span><button class="btn primary" type="button" data-ksact="bundle">${esc(bundlePrice())}で買う</button></div>` : '')
         + `<p class="kspkn">買った あとに 読み込んだ レース ${PK.every}つごとに、上の 順に 1枚ずつ 使えるよ（${PK.every * all}レースで 全部）。帯の 壁紙の ミッションの 枚数にも 数えるよ。</p>`
         + '<div class="kspkr"><button class="btn ghost" type="button" data-ksact="pkrestore">購入を復元</button></div></div>';
     }
@@ -227,9 +231,9 @@
     const a = e.target.closest('[data-ksact]');
     if (a) {
       if (a.dataset.ksact === 'cancel') { conf = ''; paint(); return; }
-      if (a.dataset.ksact === 'pkbuy' || a.dataset.ksact === 'pkrestore') {
+      if (a.dataset.ksact === 'pkbuy' || a.dataset.ksact === 'pkrestore' || a.dataset.ksact === 'bundle') {
         const w = wallet(); if (!w || !w.pack) return;
-        if (a.dataset.ksact === 'pkbuy') await w.pack.buy(a); else await w.pack.restore(a);
+        if (a.dataset.ksact === 'bundle') { if (w.bundle) await w.bundle.buy(a); } else if (a.dataset.ksact === 'pkbuy') await w.pack.buy(a); else await w.pack.restore(a);
         conf = ''; paint(); return;
       }
       if (a.dataset.ksact === 'unlock') {

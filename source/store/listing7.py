@@ -111,7 +111,7 @@ Reservations and notifications:
 Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short animation (CSS/SVG; two rare variants play a bundled silent MP4 we rendered ourselves) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch and mix with other apps' audio. Flashing stays under 3 per second; effects can be turned off or reduced in Settings > 的中の演出 (also follows iOS Reduce Motion). No network is used for any effect.
 
 Themes (Settings > 着せ替え): 41 cosmetic themes (colors, bundled OFL fonts, animated header picture, PUSH and board style): 26 unlock with points, 3 reward owning 8/16/25 themes, 11 come with the 壁紙パック. Assets are bundled (CSS/SVG/WebP); animation stops with Reduce Motion.
-Non-consumables: 壁紙パック (1,500 yen, 11 themes) and 結果ボードカスタム (2,200 yen, 16 board decorations; one can be chosen for hits and one for misses) become usable step by step as races are read; both have 「購入を復元」.
+Non-consumables: 壁紙パック (1,500 yen, 11 themes), 結果ボードカスタム (1,500 yen, 16 board decorations; one can be chosen for hits and one for misses) and お得パック (2,200 yen, a bundle that grants both; offered only while the user owns neither) become usable step by step as races are read; all have 「購入を復元」. Missions also reward points for the number of unlocked themes (3〜45) and unlocked board decorations (3〜16).
 
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.
@@ -186,7 +186,11 @@ ANSWERS = {
         'データを収集していますか？：「いいえ」（記録・設定・画像は端末の中だけ。購入はAppleが処理して、開発者は受け取らない）',
         '紹介特典などでサーバーを使うときは「収集している」に変わる（ID・購入など）。そのときはプライバシーポリシーも直す',
     ],
-    'App内課金（App Store Connect の「App内課金」）': [f'{p[1]}：製品ID {p[0]}・消耗型・表示名「{p[2]}」・説明「{p[3]}」・価格 {yen(tax(p[5]))}（税抜{yen(p[5])}）' for p in PACKS],
+    'App内課金（App Store Connect の「App内課金」）': [f'{p[1]}：製品ID {p[0]}・消耗型・表示名「{p[2]}」・説明「{p[3]}」・価格 {yen(tax(p[5]))}（税抜{yen(p[5])}）' for p in PACKS] + [
+        '非消耗型：製品ID jp.tengel.app.wallpack1・参照名「壁紙パック」・表示名「壁紙パック」・価格 1,500円（第4.92版）',
+        '非消耗型：製品ID jp.tengel.app.boardcustom・参照名「結果ボードカスタム」・表示名「結果ボードカスタム」・価格 1,500円（第4.114版：2,200円 → 1,500円に 変える）',
+        '非消耗型：製品ID jp.tengel.app.bundle1・参照名「お得パック」・表示名「お得パック（壁紙パックと結果ボードカスタム）」・価格 2,200円（第4.114版：新しく 作る。アプリは 持って いれば 2つとも 持って いる 扱い）',
+    ],
     'サブスクリプション（グループ「テンゲル ポイントのサブスク」）': [f'{s[1]}：製品ID {s[0]}・1か月・表示名「{s[2]}」・説明「{s[3]}」・価格 月額{yen(tax(s[6]))}（税抜{yen(s[6])}）・レベル{3 - i}' for i, s in enumerate(SUBS)],
     '価格および配信状況': ['配信する国と地域：日本だけ（EUで配信すると住所・電話が製品ページに出る）', 'アプリ本体：無料（ポイントとサブスクで収益）。有料Appの契約・口座・税の登録が先に必要'],
     '先に決めること': [

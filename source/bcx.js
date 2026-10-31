@@ -1,5 +1,5 @@
 // ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28／第4.113版で 16こ・的中と ハズレの 2つ）=====
-//   買い切り 2,200円（App内課金の 非消耗型 jp.tengel.app.boardcustom）。買った あとに 読み込んだ レースの 数で 16こを 番号の 順に 解放（points.js の BOARD：6レースごとに 1つ）。
+//   買い切り 1,500円（第4.114版：2,200円 → 1,500円・まさちゃんの 指定。App内課金の 非消耗型 jp.tengel.app.boardcustom。壁紙パックと セットの お得パック jp.tengel.app.bundle1 2,200円 も ある）。買った あとに 読み込んだ レースの 数で 16こを 番号の 順に 解放（points.js の BOARD：6レースごとに 1つ）。
 //   第4.113版（まさちゃん 2026/11/01 01:13「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！
 //     15個は、デザインは仕組みはできているから準備ができたら教えて！送っていく！」）：前の 1〜21（ボードを一周〜出世馬・幻の 馬）は 消した。
 //     1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16「ボードを持つ馬」（いちばん はじめの 頃の 馬：絵は kisekae/r3d/fx/board_horse_parts.py の 部品 5まい。
@@ -264,6 +264,9 @@
   const UI_CSS = [
     '#setBoard .bcbuy{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1.5px solid var(--lamp,#E2A23B);border-radius:12px;padding:10px 12px;background:var(--surface-2)}',
     '#setBoard .bcbuy b{display:block;font-size:15px}#setBoard .bcbuy small{font-size:12px;color:var(--muted)}',
+    // 第4.114版：お得パック（壁紙パックと 結果ボードカスタムの セット）の 行：単品を どちらも 持って いない ときだけ
+    '#setBoard .bcbun{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:8px;border:1.5px dashed var(--lamp,#E2A23B);border-radius:12px;padding:9px 12px;background:var(--surface)}',
+    '#setBoard .bcbun b{display:block;font-size:14px}#setBoard .bcbun small{font-size:11.5px;color:var(--muted);line-height:1.35}',
     '#setBoard .bcprog{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}#setBoard .bcprog b{font-size:14px}',
     '#setBoard .bcprog .bar{height:8px;border-radius:4px;background:var(--surface);overflow:hidden;margin:6px 0 4px;border:1px solid var(--line)}#setBoard .bcprog .bar i{display:block;height:100%;background:linear-gradient(90deg,#FFC93C,#F28C1E)}',
     // 的中の とき・ハズレの とき（いま 使って いる もの・▶ 見る・なし）
@@ -335,13 +338,15 @@
   function paint() {
     const box = $('#setBoard .bcbody'), w = WL(); if (!box) return;
     const i = w && w.board ? w.board.info() : { owned: false, reads: 0, n: 0, next: null, nextReady: null, selHit: '', selMiss: '', streak: 0 };
-    const price = w && w.board ? w.board.price() : '2,200円';
+    const price = w && w.board ? w.board.price() : '1,500円';
+    const bundle = w && w.bundle && w.bundle.offer() ? { price: w.bundle.price() } : null;   // 第4.114版：お得パック（単品を どちらも 持って いない とき）
     const seen = seenSet(), last = PT.BOARD_NEED[PT.BOARD_NEED.length - 1], every = PT.BOARD.steps.length === 1 ? PT.BOARD.steps[0][1] : 0;
     const sel = { hit: i.selHit || '', miss: i.selMiss || '' };
     let h = '<p class="hint" style="margin:0 0 8px">結果のボード（的中・ハズレの 結果）に、馬の 飾りや 動きを つけられるよ。<b>的中のとき</b>と <b>ハズレのとき</b>で、べつべつに 1つずつ 選べるよ。<b>どの 壁紙の ボードにも 使える</b>よ。</p>';
     if (!i.owned) {
       h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
       h += `<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}ぜんぶで ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>`;
+      if (bundle) h += `<div class="bcbun"><div><b>お得パック</b><small>壁紙パック（新しい 壁紙 11枚）と 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></div><button class="btn primary" type="button" data-bcact="bundle">${esc(bundle.price)}で買う</button></div>`;
       h += '<div class="row" style="margin-top:6px"><button class="btn ghost" type="button" data-bcact="restore">購入を復元</button></div>';
     } else {
       const nx = i.next, nr = i.nextReady, done = !nx, pct = done ? 100 : Math.round((i.reads - nx.from) / (nx.need - nx.from) * 100);
@@ -432,6 +437,7 @@
       if (!w || !w.board) return;
       if (act === 'seeslot') { const i = w.board.info(), id = (k === 'miss' ? i.selMiss : i.selHit) || 'none', it = BY[id]; see(id, k === 'miss' ? 'miss' : it ? (kindOf(it) === 'big' ? 'big' : 'hit') : 'hit'); return; }
       if (act === 'buy') { await w.board.buy(a); paint(); return; }
+      if (act === 'bundle') { if (w.bundle) await w.bundle.buy(a); paint(); return; }
       if (act === 'restore') { await w.board.restore(a); paint(); return; }
       if (act === 'none') { if (await w.board.select('none', k)) { toast(`${KIND[k]}の ときは いつもの ボードに もどしたよ`); paint(); } return; }
       if (act === 'use') {

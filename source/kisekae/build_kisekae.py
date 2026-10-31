@@ -313,6 +313,8 @@ html[data-ks] .sep::after{background:var(--ks-pageSub);opacity:.35}
 #setKisekae .kspkt b{display:block;font-size:14px;font-weight:700;line-height:1.3}
 #setKisekae .kspkt small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted);line-height:1.35}
 #setKisekae .kspk .btn.primary{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
+#setKisekae .kspku{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border:1.5px dashed var(--primary);border-radius:10px;background:var(--surface-2)}
+#setKisekae .kspku b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}#setKisekae .kspku small{display:block;margin-top:2px;font-size:11px;color:var(--muted);line-height:1.35}
 #setKisekae .kspkn{grid-column:1 / -1;margin:0;font-size:11.5px;line-height:1.45;color:var(--muted)}
 #setKisekae .kspkr{grid-column:1 / -1;display:flex;justify-content:flex-end}
 #setKisekae .kspkr .btn{min-height:30px;padding:4px 10px;font-size:12px}

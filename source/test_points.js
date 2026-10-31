@@ -92,11 +92,11 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.wallCount(ev) === 8 && P.wallMissions(8, ev)[0].claimed && !P.wallMissions(8, ev)[0].claimable, '帯の壁紙は枚数に数えない・受け取りずみ');
   check(P.unlock(ev, 'theme:silver', 0, 'd1', T0).length === ev.length, '同じ解放は2回足さない');
 }
-// 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）・買った あとに 読み込んだ レースの 数で 番号の 順に 解放
+// 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）→ 第4.114版：1,500円・買った あとに 読み込んだ レースの 数で 番号の 順に 解放
 //   第4.113版（まさちゃんの 指定）：16こ（1〜15 は じゅんび中・16「ボードを持つ馬」）・6レースごと（全部で 96レース）・的中の とき／ハズレの とき の 2つを べつべつに 選ぶ
 {
   const T0 = D('2026-11-06');
-  check(P.PRODUCTS['jp.tengel.app.boardcustom'] && P.PRODUCTS['jp.tengel.app.boardcustom'].kind === 'unlock' && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 2200 && P.BOARD.product === 'jp.tengel.app.boardcustom', '商品：jp.tengel.app.boardcustom（買い切り・2,200円）');
+  check(P.PRODUCTS['jp.tengel.app.boardcustom'] && P.PRODUCTS['jp.tengel.app.boardcustom'].kind === 'unlock' && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 1500 && P.BOARD.product === 'jp.tengel.app.boardcustom', '商品：jp.tengel.app.boardcustom（買い切り・第4.114版：1,500円）');
   check(P.BOARD_NEED.join() === '6,12,18,24,30,36,42,48,54,60,66,72,78,84,90,96' && P.BOARD.steps.length === 1 && P.BOARD.steps[0].join() === '16,6', '解放の 数：6レースごとに 1つ（全部で 96レース・第4.113版）');
   const C = P.BOARD_ITEMS[15];
   check(P.BOARD_ITEMS.length === 16 && P.BOARD_ITEMS.length === P.BOARD_NEED.length && P.BOARD_ITEMS.slice(0, 15).every((it, i) => !it.ready && it.name === 'じゅんび中' && it.no === i + 1 && it.id === 'prep' + (i + 1) && it.need === (i + 1) * 6),
@@ -168,6 +168,59 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   const rf = P.refundEvent(ev, { id: '800', revokedAt: D('2026-11-11') });
   ev.push(rf);
   check(rf.id === 'refund-800' && !P.packOwned(ev) && P.balance(ev, D('2026-11-11')).total === 1500, '返金 → 持って いない（ポイントは そのまま）');
+}
+// 第4.114版（まさちゃん 2026/11/01）：お得パック（壁紙パックと 結果ボードカスタムの セット 2,200円）・ミッション（結果ボードカスタムの 解放の 数・壁紙の 枚数）
+{
+  console.log('お得パック（第4.114版：買い切り 2,200円・壁紙パックと 結果ボードカスタムの 両方）・ミッション（結果ボードカスタム 3〜16こ・壁紙 3〜45枚）');
+  const D = s => new Date(s + 'T12:00:00+09:00').toISOString();
+  const T0 = D('2026-11-12');
+  const tx = (id, product, date) => ({ id, originalId: 'o' + id, product, date: D(date) });
+  const Pd = P.PRODUCTS['jp.tengel.app.bundle1'];
+  check(Pd && Pd.kind === 'unlock' && Pd.what === 'bundle' && Pd.yen === 2200 && Pd.points === 0 && Pd.name === 'お得パック' && P.BUNDLE.product === 'jp.tengel.app.bundle1' && P.BUNDLE.parts.join() === 'wallpack,board',
+    '商品：jp.tengel.app.bundle1（買い切り・2,200円・what＝bundle・壁紙パックと 結果ボードカスタム）');
+  check(P.PRODUCTS['jp.tengel.app.wallpack1'].yen === 1500 && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 1500 && P.PACKS.indexOf('jp.tengel.app.bundle1') < 0 && P.SUBS.indexOf('jp.tengel.app.bundle1') < 0,
+    '単品は 1,500円ずつ（合わせて 3,000円 → お得パックは 2,200円）・ポイントの パック・サブスクの 一覧には 入らない');
+  let ev = [P.giftEvent(T0)];
+  check(!P.bundleOwned(ev) && !P.packOwned(ev) && !P.boardOwned(ev) && P.bundleOffer(ev), '買う 前：どれも 持って いない → お得パックを 出す');
+  const bt = P.txEvent(ev, tx('900', 'jp.tengel.app.bundle1', '2026-11-12'));
+  ev.push(bt);
+  check(bt.id === 'tx-900' && bt.kind === 'unlock' && bt.what === 'bundle' && bt.amount === 0 && P.bundleOwned(ev) && P.packOwned(ev) && P.boardOwned(ev) && P.owned(ev, 'wallpack') && P.owned(ev, 'board') && !P.bundleOffer(ev),
+    '買うと tx-900（unlock・bundle・0P）で 壁紙パックも 結果ボードカスタムも 持って いる（お得パックは もう 出さない）');
+  check(P.txEvent(ev, tx('900', 'jp.tengel.app.bundle1', '2026-11-12')) === null && P.balance(ev, T0).total === 1500, '同じ 取引は 2回 足さない・ポイントは 増えも 減りも しない');
+  const rf = P.refundEvent(ev, { id: '900', revokedAt: D('2026-11-13') });
+  ev.push(rf);
+  check(rf.id === 'refund-900' && rf.amount === 0 && !P.bundleOwned(ev) && !P.packOwned(ev) && !P.boardOwned(ev) && P.bundleOffer(ev), 'お得パックの 返金 → 2つとも 使えなくなる（お得パックを また 出す）');
+  // 単品を 1つ 持って いれば お得パックは 出さない（残りの 単品だけ）・単品の 分は お得パックの 返金でも 残る
+  const ev2 = [P.giftEvent(T0), P.txEvent([], tx('800', 'jp.tengel.app.wallpack1', '2026-11-12'))];
+  check(P.packOwned(ev2) && !P.boardOwned(ev2) && !P.bundleOffer(ev2), '壁紙パックだけ 持って いる → お得パックは 出さない（結果ボードカスタムの 単品だけ）');
+  const ev3 = ev2.concat([P.txEvent(ev2, tx('901', 'jp.tengel.app.bundle1', '2026-11-12'))]);
+  const ev4 = ev3.concat([P.refundEvent(ev3, { id: '901', revokedAt: D('2026-11-13') })]);
+  check(P.boardOwned(ev3) && P.packOwned(ev4) && !P.boardOwned(ev4) && !P.bundleOwned(ev4), 'お得パックを 返金しても、べつに 買った 壁紙パックは 残る');
+  // ミッション：結果ボードカスタムの 解放の 数
+  check(P.BOARD_MISSIONS.map(m => m.join(':')).join() === '3:500,6:800,9:1100,12:1400,16:1600', '結果ボードカスタムの ミッション：3こ 500P・6こ 800P・9こ 1,100P・12こ 1,400P・16こ 1,600P');
+  const bm = P.boardMissions(9, [P.giftEvent(T0)]);
+  check(bm.length === 5 && bm.map(m => m.id).join() === 'mission-board-3,mission-board-6,mission-board-9,mission-board-12,mission-board-16' && bm.map(m => m.claimable).join() === 'true,true,true,false,false'
+    && bm[0].label === '結果ボードカスタム 3こ解放' && bm[0].reward === 500 && bm[2].done && !bm[3].done, '9こ 解放：3・6・9 が 受け取れる（12・16 は まだ）');
+  let evm = [P.giftEvent(T0)];
+  const re = P.rowEvent(bm[0], T0); evm.push(re);
+  const bal = P.balance(evm, T0), bm2 = P.boardMissions(9, evm);
+  check(re.id === 'mission-board-3' && re.kind === 'mission' && re.bucket === 'free' && re.amount === 500 && re.what === '結果ボードカスタム 3こ解放' && bal.total === 2000 && bal.free === 2000 && bal.freeIn === 2000
+    && bm2[0].claimed && !bm2[0].claimable && bm2[1].claimable && P.has(evm, 'mission-board-3'), '受け取ると mission-board-3（mission・free・+500P＝もらったP）・受け取りずみ（1回だけ）・6こは まだ 受け取れる');
+  check(P.boardMissions(0, evm).every(m => !m.claimable) && P.boardMissions(16, evm).filter(m => m.claimable).length === 4 && P.missions(0, evm)[0].id === 'mission-rec-8' && P.wallMissions(0, evm)[0].id === 'mission-wall-8',
+    '0こ なら 受け取れない・16こ なら 残り 4つ・記録の ミッション（mission-rec-）と 帯の ミッション（mission-wall-）の id は そのまま');
+  // ミッション：壁紙の 枚数（帯も 数える）
+  check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,30:2500,35:3500,40:3500,45:3500' && P.WALL_TOTAL === 40,
+    '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・30枚 2,500P・35・40・45枚 3,500P（いま 解放できるのは 40枚）');
+  const evw = [P.giftEvent(T0)].concat(['sakura', 'sea', 'snow'].map(t => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -1000, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 1000 }, what: 'theme:' + t })))
+    .concat(P.wallMissionEvents(P.wallMissions(8, [])[0], 'x', T0));
+  check(P.wallCount(evw, 5) === 8 && P.wallCountAll(evw, 5) === 9 && P.wallCountAll(evw) === 4 && P.wallCountAll([], 0) === 0, '枚数：ポイントの 3枚 ＋ パックの 5枚 ＝ 8（帯の ミッション用）・帯の シルバーも 数えると 9（枚数の ミッション用）');
+  const wm = P.wallpMissions(9, evw);
+  check(wm.length === 11 && wm.map(m => m.id).slice(0, 3).join() === 'mission-wallp-3,mission-wallp-6,mission-wallp-9' && wm.filter(m => m.claimable).length === 3 && wm[0].label === '壁紙 3枚解放' && wm[2].reward === 1500
+    && wm.slice(0, 10).every(m => m.reach) && wm[10].n === 45 && wm[10].reach === false && !wm[10].claimable, '9枚：3・6・9 が 受け取れる・45枚の 行は reach＝false（いまは 40枚まで）');
+  const evw2 = evw.concat([P.rowEvent(wm[2], T0)]);
+  const bw = P.balance(evw2, T0);
+  check(P.has(evw2, 'mission-wallp-9') && bw.free === 1500 - 3000 + 1500 && P.wallpMissions(9, evw2)[2].claimed && !P.wallpMissions(9, evw2)[2].claimable && P.wallpMissions(9, evw2)[1].claimable
+    && P.wallpMissions(40, evw2).filter(m => m.claimable).length === 9 && P.wallpMissions(45, evw2)[10].reach === false, '受け取ると mission-wallp-9（+1,500P＝もらったP）・1回だけ・40枚なら 残り 9つ');
 }
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

@@ -62,7 +62,8 @@ window.__iap = { products: [
   { id: 'jp.tengel.app.points500', title: '500ポイント', price: '¥176', kind: 'pack' }, { id: 'jp.tengel.app.points1000', title: '1,000ポイント', price: '¥352', kind: 'pack' },
   { id: 'jp.tengel.app.points2000', title: '2,000ポイント', price: '¥704', kind: 'pack' }, { id: 'jp.tengel.app.points4000', title: '4,000ポイント', price: '¥1,408', kind: 'pack' },
   { id: 'jp.tengel.app.sub2000', title: '月2,000Pプラン', price: '¥638', kind: 'sub' }, { id: 'jp.tengel.app.sub4400', title: '月4,400Pプラン', price: '¥1,276', kind: 'sub' }, { id: 'jp.tengel.app.sub9200', title: '月9,200Pプラン', price: '¥1,914', kind: 'sub' },
-  { id: 'jp.tengel.app.boardcustom', title: '結果ボードカスタム', price: '¥2,200', kind: 'unlock' }, { id: 'jp.tengel.app.wallpack1', title: '壁紙パック', price: '¥1,500', kind: 'unlock' }],
+  { id: 'jp.tengel.app.boardcustom', title: '結果ボードカスタム', price: '¥1,500', kind: 'unlock' }, { id: 'jp.tengel.app.wallpack1', title: '壁紙パック', price: '¥1,500', kind: 'unlock' },
+  { id: 'jp.tengel.app.bundle1', title: 'お得パック', price: '¥2,200', kind: 'unlock' }],   // 第4.114版：結果ボードカスタム 2,200 → 1,500円・お得パック（2つの セット）2,200円
   buy: {}, unfinished: [], finished: [], current: [], active: [] };
 window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
   window.__bridge.push({ name: m.name, payload: m.payload && m.payload.data ? { data: '(' + m.payload.data.length + ')' } : m.payload });
@@ -968,10 +969,19 @@ try:
         wm = pg.locator('#setMission')
         check('壁紙のミッション' in wm.inner_text() and 'いま 8枚' in wm.inner_text() and '壁紙を8枚あつめる' in wm.inner_text() and wm.locator('[data-pt=claim][data-id="mission-wall-8"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wall-16"]').count() == 0 and 'あと 8枚（8/16）' in wm.inner_text(),
               'ミッションに「壁紙のミッション」：8枚で「受け取る」・16枚は あと8枚')
-        check(pg.evaluate("() => { const b = document.querySelector('#msBtn'); return b.classList.contains('hot') && b.querySelector('.mbd').innerText === '1'; }"), '上の「ミッション」にも 受け取れる 1 の赤い印（壁紙）')
+        check(pg.evaluate("() => { const b = document.querySelector('#msBtn'); return b.classList.contains('hot') && b.querySelector('.mbd').innerText === '3'; }") and wm.locator('[data-pt=claim][data-id="mission-wallp-3"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wallp-6"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wallp-9"]').count() == 0,
+              '上の「ミッション」にも 受け取れる 3 の印（シルバー帯・第4.114版の 壁紙 3枚と 6枚）')
         wm.locator('[data-pt=claim][data-id="mission-wall-8"]').click(); pg.wait_for_timeout(700)
-        check(pg.evaluate("TengelWallet.unlocked('theme:silver')") and pg.evaluate("TengelKisekae.usable('silver')") and pg.evaluate("TengelKisekae.count()") == 8 and pg.evaluate('TengelWallet.total()') == 6000 and wm.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and 'シルバー帯の壁紙を受け取ったよ' in pg.locator('#toast').inner_text(),
-              '受け取る → シルバー帯が使える（0P・枚数は8のまま・印が消える）')
+        check(pg.evaluate("TengelWallet.unlocked('theme:silver')") and pg.evaluate("TengelKisekae.usable('silver')") and pg.evaluate("TengelKisekae.count()") == 8 and pg.evaluate('TengelWallet.total()') == 6000 and wm.locator('[data-pt=claim]').count() == 3 and wm.locator('[data-pt=claim][data-id="mission-wall-16"]').count() == 0 and 'シルバー帯の壁紙を受け取ったよ' in pg.locator('#toast').inner_text(),
+              '受け取る → シルバー帯が使える（0P・枚数は8のまま・残りは 第4.114版の 枚数の ミッション 3つ（帯の 1枚で 9枚に））')
+        # 第4.114版：壁紙の 枚数の ミッション（帯も 数える：8 ＋ シルバー 1 ＝ 9枚 → 3・6・9 が 受け取れる）
+        check(wm.locator('[data-pt=claim][data-id="mission-wallp-9"]').count() == 1 and 'いま 9枚' in wm.inner_text(), '帯の 1枚も 枚数に 数える → 9枚で「壁紙 9枚解放」も 受け取れる')
+        for mid, add in (('mission-wallp-3', 800), ('mission-wallp-6', 1200), ('mission-wallp-9', 1500)):
+            t0 = pg.evaluate('TengelWallet.total()'); f0 = pg.evaluate('TengelWallet.balance().free')
+            wm.locator(f'[data-pt=claim][data-id="{mid}"]').click(); pg.wait_for_timeout(700)
+            check(pg.evaluate('TengelWallet.total()') == t0 + add and pg.evaluate('TengelWallet.balance().free') == f0 + add and f'{add:,}P' in pg.locator('#toast').inner_text() and wm.locator(f'.msrow[data-mid="{mid}"] .md').inner_text() == '受け取りずみ',
+                  f'第4.114版：「{mid}」を 受け取る → +{add:,}P（もらったP）・受け取りずみ')
+        check(wm.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and pg.evaluate('TengelWallet.total()') == 9500, '受け取れる ものが なくなると 印が 消える（合計 9,500P）')
         check(ks.locator('.kst[data-ks=silver] .kslock').count() == 0 and ks.locator('.kst[data-ks=golden] .kslock').inner_text() == '🔒 壁紙を16枚あつめると', '着せ替えのカード：シルバー帯のカギが外れる・ゴールド帯は16枚')
         ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(1200)
         check(pg.evaluate("TengelKisekae.current()") == 'silver' and pg.evaluate("document.documentElement.dataset.ks") == 'silver' and ks.locator('.kst.on').get_attribute('data-ks') == 'silver', 'シルバー帯に着せ替わる')
@@ -1040,7 +1050,7 @@ try:
         pg.wait_for_timeout(2200)
         check(store['backup'] == before, '聞いている間は自動バックアップを書かない（前の記録を守る）')
         box.locator('[data-nr=yes]').click(); pg.wait_for_timeout(1200)
-        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（6,000P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 6000, '「記録を戻す」→ 記録とポイントの台帳が戻る（着せ替えで 1,000P 使ったあと）')
+        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（9,500P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 9500, '「記録を戻す」→ 記録とポイントの台帳が戻る（着せ替えで 1,000P 使って、第4.114版の 枚数の ミッションで 3,500P もらった あと）')
         pg.wait_for_timeout(800)
         check(len(json.loads(store['backup'])['bets']) == 3 and json.loads(store['backup'])['wallet']['events'], '戻したあとも自動バックアップに記録と台帳')
         # ---- もう一度消えた → 「戻さない」 ----
@@ -1116,16 +1126,16 @@ try:
         p6.goto(APPURL); p6.wait_for_timeout(1500); gate(p6); p6.wait_for_timeout(700)
         p6.click('.tabbar button[data-tab=set]'); p6.wait_for_timeout(500)
         BCI = """() => { const c = document.querySelector('#setBoard'); if (!c) return null; return { after: c.previousElementSibling && c.previousElementSibling.id, tiles: c.querySelectorAll('.bct').length, locks: c.querySelectorAll('.bct .bclk').length,
-          prep: c.querySelectorAll('.bct.prep').length, buy: (c.querySelector('[data-bcact=buy]') || {}).innerText || '', restore: !!c.querySelector('[data-bcact=restore]'), see: c.querySelectorAll('[data-bcact=see]').length, fit: c.querySelectorAll('.bcmi.fit').length,
+          prep: c.querySelectorAll('.bct.prep').length, buy: (c.querySelector('[data-bcact=buy]') || {}).innerText || '', bun: (c.querySelector('[data-bcact=bundle]') || {}).innerText || '', restore: !!c.querySelector('[data-bcact=restore]'), see: c.querySelectorAll('[data-bcact=see]').length, fit: c.querySelectorAll('.bcmi.fit').length,
           on: [...c.querySelectorAll('.bct.on')].map(e => e.dataset.bc), prog: (c.querySelector('.bcprog') || {}).innerText || '', news: c.querySelectorAll('.bcnew').length,
           slots: [...c.querySelectorAll('.bcslot')].map(e => e.dataset.slot + ':' + e.querySelector('.bcsn').innerText), picks: [...c.querySelectorAll('[data-bcact=use]')].map(e => e.dataset.id + ':' + e.dataset.slot + ':' + e.getAttribute('aria-pressed')),
           names: [...c.querySelectorAll('.bct .bcn')].map(x => x.innerText.replace(/^\\d+/, '').replace('NEW', '').trim()) }; }"""
         BSEL = "(() => { const i = TengelWallet.board.info(); return [i.selHit, i.selMiss, i.n, TengelWallet.board.active('hit'), TengelWallet.board.active('miss')]; })()"
         SEE6 = "() => { const hb = document.querySelector('#fxOv .hb'), c = TengelFx.current(); return hb && c && { bcx: hb.dataset.bcx || '', kind: c.kind, phase: c.phase }; }"
         bi = p6.evaluate(BCI)
-        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 16 and bi['locks'] == 16 and bi['prep'] == 15 and bi['buy'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 1 and bi['fit'] == 16
+        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 16 and bi['locks'] == 16 and bi['prep'] == 15 and bi['buy'] == '¥1,500で買う' and bi['bun'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 1 and bi['fit'] == 16
               and bi['names'] == ['じゅんび中'] * 15 + ['ボードを持つ馬'] and not bi['slots'] and not bi['picks'],
-              f'第4.113版：設定の「結果ボードカスタム」は 着せ替えの 下・16こ（1〜15 は じゅんび中・16「ボードを持つ馬」・🔒）・¥2,200で買う・購入を復元・▶ 見る（飾りが ある ものだけ）・小さな 見本（{bi and {k: bi[k] for k in ("after", "tiles", "locks", "prep", "buy", "see", "fit")}}）')
+              f'第4.113版：設定の「結果ボードカスタム」は 着せ替えの 下・16こ（1〜15 は じゅんび中・16「ボードを持つ馬」・🔒）・¥1,500で買う（第4.114版）・お得パック ¥2,200で買う・購入を復元・▶ 見る（飾りが ある ものだけ）・小さな 見本（{bi and {k: bi[k] for k in ("after", "tiles", "locks", "prep", "buy", "bun", "see", "fit")}}）')
         p6.locator('#setBoard .bct[data-bc=prep3] .bcn').click(); p6.wait_for_timeout(300)
         t_prep = p6.locator('#toast').inner_text()
         p6.locator('#setBoard .bct[data-bc=carry] .bcn').click(); p6.wait_for_timeout(300)
@@ -1143,9 +1153,9 @@ try:
         p6.locator('#setBoard [data-bcact=buy]').click(); p6.wait_for_timeout(900)
         fin6 = [x for x in p6.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
         bi = p6.evaluate(BCI)
-        check(p6.evaluate("TengelWallet.board.info().owned") and p6.evaluate('TengelWallet.total()') == 1500 and len(fin6) == 1 and fin6[0]['payload']['id'] == '7001' and '買ったよ' in p6.locator('#toast').inner_text() and not bi['buy']
+        check(p6.evaluate("TengelWallet.board.info().owned") and p6.evaluate('TengelWallet.total()') == 1500 and len(fin6) == 1 and fin6[0]['payload']['id'] == '7001' and '買ったよ' in p6.locator('#toast').inner_text() and not bi['buy'] and not bi['bun'] and not p6.evaluate("TengelWallet.bundle.offer()") and p6.locator('#setKisekae .kspk [data-ksact=bundle]').count() == 0
               and '解放 0/16' in bi['prog'] and 'つぎの 解放まで あと 6レース' in bi['prog'] and '「ボードを持つ馬」まで あと 96レース' in bi['prog'] and bi['slots'] == ['hit:なし（いつもの ボード）', 'miss:なし（いつもの ボード）'] and not bi['picks'],
-              f'¥2,200で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/16・つぎの 解放まで あと 6レース）と 的中の とき／ハズレの とき（どちらも なし）（{bi["prog"]!r}・{bi["slots"]}）')
+              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/16・つぎの 解放まで あと 6レース）と 的中の とき／ハズレの とき（どちらも なし）・お得パックは 2つの 買う 所から 消える（{bi["prog"]!r}・{bi["slots"]}）')
         RD = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-20', venue: '大井', r: r }, ocr: {} })"
         for r in range(1, 6): p6.evaluate(RD, r)
         p6.wait_for_timeout(200)
@@ -1277,13 +1287,13 @@ try:
         p7.click('.tabbar button[data-tab=set]'); p7.wait_for_timeout(600)
         PKI = """() => { const c = document.querySelector('#setKisekae'); if (!c) return null; const g = c.querySelector('h3.ksg'); const box = c.querySelector('.kspk');
           const pk = TengelKisekae.pack(); const tiles = pk.ids.map(id => c.querySelector(`.kst[data-ks="${id}"]`)).filter(Boolean);
-          return { first: g ? g.firstChild.textContent : '', buy: (c.querySelector('.kspk [data-ksact=pkbuy]') || {}).innerText || '', restore: !!c.querySelector('.kspk [data-ksact=pkrestore]'),
+          return { first: g ? g.firstChild.textContent : '', buy: (c.querySelector('.kspk [data-ksact=pkbuy]') || {}).innerText || '', bun: (c.querySelector('.kspk [data-ksact=bundle]') || {}).innerText || '', restore: !!c.querySelector('.kspk [data-ksact=pkrestore]'),
             box: box ? box.innerText : '', ids: pk.ids, order: pk.order, tiles: tiles.length, locks: tiles.filter(t => t.querySelector('.kslock')).map(t => t.querySelector('.kslock').innerText),
             owned: pk.owned, n: pk.n, reads: pk.reads }; }"""
         k0 = p7.evaluate(PKI)
-        check(bool(k0) and k0['first'] == '壁紙パック' and k0['buy'] == '¥1,500で買う' and k0['restore'] and k0['tiles'] == len(k0['ids']) >= 1 and all('壁紙パック' in x for x in k0['locks']) and len(k0['locks']) == len(k0['ids'])
+        check(bool(k0) and k0['first'] == '壁紙パック' and k0['buy'] == '¥1,500で買う' and k0['bun'] == '¥2,200で買う' and k0['restore'] and k0['tiles'] == len(k0['ids']) >= 1 and all('壁紙パック' in x for x in k0['locks']) and len(k0['locks']) == len(k0['ids'])
               and k0['order'][:2] == ['pirate', 'course'] and len(k0['order']) == 11 and not k0['owned'],
-              f'第4.92版：着せ替えの いちばん上に「壁紙パック」の 組（¥1,500で買う・購入を復元・カギの 壁紙 {k0 and k0["tiles"]}枚・解放の 順は 海賊 → 競馬場 → … の 11枚）（{k0 and {k: k0[k] for k in ("first", "buy", "tiles", "ids")}}）')
+              f'第4.92版：着せ替えの いちばん上に「壁紙パック」の 組（¥1,500で買う・第4.114版：お得パック ¥2,200で買う・購入を復元・カギの 壁紙 {k0 and k0["tiles"]}枚・解放の 順は 海賊 → 競馬場 → … の 11枚）（{k0 and {k: k0[k] for k in ("first", "buy", "bun", "tiles", "ids")}}）')
         check(not p7.evaluate("TengelKisekae.usable('pirate')") and p7.evaluate("TengelKisekae.usable('default')"), '買う 前は 壁紙パックの 壁紙は 使えない（ポイントでも 解放 できない）')
         p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(400)
         check(p7.locator('#setKisekae .kst.cf[data-ks=pirate] [data-ksact=pkbuy]').count() == 1, 'カギの 壁紙を 押すと その 下に「¥1,500で買う」')
@@ -1292,8 +1302,8 @@ try:
         fin7 = [x for x in p7.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
         k1 = p7.evaluate(PKI)
         check(k1['owned'] and k1['n'] == 0 and p7.evaluate('TengelWallet.total()') == 1500 and len(fin7) == 1 and fin7[0]['payload']['id'] == '8001' and '買ったよ' in p7.locator('#toast').inner_text()
-              and '解放 0/11' in k1['box'] and 'あと 5レース' in k1['box'] and not k1['buy'] and k1['locks'][0] == '🔒 あと5レース',
-              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・箱は 進み具合（解放 0/11・つぎの「海賊」まで あと 5レース）（{k1["box"]!r}）')
+              and '解放 0/11' in k1['box'] and 'あと 5レース' in k1['box'] and not k1['buy'] and not k1['bun'] and k1['locks'][0] == '🔒 あと5レース' and not p7.evaluate("TengelWallet.bundle.offer()") and p7.locator('#setBoard [data-bcact=bundle]').count() == 0 and p7.locator('#setBoard [data-bcact=buy]').inner_text() == '¥1,500で買う',
+              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・箱は 進み具合（解放 0/11・つぎの「海賊」まで あと 5レース）・お得パックは 消えて 結果ボードカスタムの 単品だけ（{k1["box"]!r}）')
         p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(300)
         check('あと 5レース' in p7.locator('#toast').inner_text(), f'買った あと・解放 前に 押す → あと 何レースか（{p7.locator("#toast").inner_text()}）')
         RD7 = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-21', venue: '大井', r: r }, ocr: {} })"
@@ -1331,6 +1341,97 @@ try:
         check(p7.evaluate("TengelKisekae.pack().owned") and p7.evaluate("TengelKisekae.pack().n") == 7 and 'もどしたよ' in p7.locator('#toast').inner_text(), f'購入を復元 → もどる（解放 7枚 の まま）（{p7.locator("#toast").inner_text()}）')
         p7.screenshot(path=os.path.join(W, 't4', 'native_wall_pack.png'), full_page=False)
         ctx7.close()
+        # ---- 第4.114版（まさちゃん 2026/11/01）：お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット）：単品を どちらも 持って いない ときだけ 2つの 買う 所に 出る・
+        #      買うと 2つとも 持って いる・読み込みで 2つとも 進む・返金で 2つとも 使えなくなる・購入を復元で もどる。ミッション：結果ボードカスタムの 解放の 数（3〜16こ）・壁紙の 枚数（3〜45枚・帯も 数える）----
+        m8 = {}
+
+        def marker8(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': m8[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': m8.pop(key, None); return {'ok': True}
+            v = m8.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        ctx8 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx8.add_init_script(FAKE)
+        ctx8.expose_binding('__saveBackup', lambda s, t: None); ctx8.expose_binding('__marker', marker8)
+        p8 = ctx8.new_page(); p8.on('pageerror', lambda e: errs.append('BUNDLE ' + str(e)))
+
+        def reopen8():
+            for _ in range(3):
+                p8.goto(APPURL); p8.wait_for_timeout(800); gate(p8)
+                try:
+                    p8.wait_for_selector('.tabbar button[data-tab=set]', timeout=15000); p8.wait_for_timeout(1000); return
+                except Exception as e:
+                    print('   （開き直し もう一度：', str(e)[:80], '）')
+        p8.goto(APPURL); p8.wait_for_timeout(1500); gate(p8); p8.wait_for_timeout(700)
+        p8.click('.tabbar button[data-tab=set]'); p8.wait_for_timeout(600)
+        BUN = """() => { const q = s => document.querySelector(s), t = s => (q(s) || {}).innerText || ''; const W = TengelWallet;
+          return { offer: W.bundle.offer(), owned: W.bundle.owned(), bOwn: W.board.info().owned, pOwn: TengelKisekae.pack().owned, bN: W.board.info().n, bR: W.board.info().reads, pN: TengelKisekae.pack().n, pR: TengelKisekae.pack().reads,
+            bBuy: t('#setBoard [data-bcact=buy]'), bBun: t('#setBoard [data-bcact=bundle]'), bBunTxt: t('#setBoard .bcbun'), pBuy: t('#setKisekae .kspk [data-ksact=pkbuy]'), pBun: t('#setKisekae .kspk [data-ksact=bundle]'), pBunTxt: t('#setKisekae .kspku'),
+            bProg: t('#setBoard .bcprog'), pBox: t('#setKisekae .kspk'), total: W.total(), free: W.balance().free, badge: t('#msBtn .mbd'), hot: !!(q('#msBtn') && q('#msBtn').classList.contains('hot')) }; }"""
+        u0 = p8.evaluate(BUN)
+        check(u0['offer'] and not u0['owned'] and not u0['bOwn'] and not u0['pOwn'] and u0['bBuy'] == '¥1,500で買う' and u0['bBun'] == '¥2,200で買う' and u0['pBuy'] == '¥1,500で買う' and u0['pBun'] == '¥2,200で買う'
+              and 'お得パック' in u0['bBunTxt'] and 'セット' in u0['bBunTxt'] and 'お得パック' in u0['pBunTxt'] and 'セット' in u0['pBunTxt'],
+              f'第4.114版：どちらも 持って いない → 結果ボードカスタムの カード（¥1,500で買う）と 壁紙パックの 箱（¥1,500で買う）の 中に「お得パック」（2つの セット・¥2,200で買う）（{ {k: u0[k] for k in ("bBuy", "bBun", "pBuy", "pBun")} }）')
+        p8.evaluate("window.__iap.buy['jp.tengel.app.bundle1'] = () => ({ ok: true, state: 'ok', tx: { id: '9001', originalId: 'o9001', product: 'jp.tengel.app.bundle1', kind: 'unlock', date: new Date().toISOString(), revoked: false } }); window.__bridge = []; 0")
+        p8.locator('#setBoard [data-bcact=bundle]').click(); p8.wait_for_timeout(1000)
+        fin8 = [x for x in p8.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
+        u1 = p8.evaluate(BUN); t8 = p8.locator('#toast').inner_text()
+        check(u1['owned'] and u1['bOwn'] and u1['pOwn'] and not u1['offer'] and u1['total'] == 1500 and len(fin8) == 1 and fin8[0]['payload']['id'] == '9001' and 'お得パック' in t8 and '買ったよ' in t8
+              and not u1['bBuy'] and not u1['bBun'] and not u1['pBuy'] and not u1['pBun'] and '解放 0/16' in u1['bProg'] and '解放 0/11' in u1['pBox'],
+              f'「お得パック ¥2,200で買う」→ 壁紙パックも 結果ボードカスタムも 持って いる（ポイントは 1,500P の まま・取引を 終わらせる）・2つとも 進み具合の 表示に（買うの ボタンは 消える）（{t8}）')
+        p8.locator('#setPoints [data-pt=show][data-v=hist]').click(); p8.wait_for_timeout(300)
+        check('お得パック' in p8.locator('#setPoints .pthist').inner_text(), 'ポイントの 履歴に「解放：お得パック（壁紙パックと 結果ボードカスタム・買い切り）」')
+        RD8 = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-22', venue: '大井', r: r }, ocr: {} })"
+        for r in range(1, 7): p8.evaluate(RD8, r)
+        p8.wait_for_timeout(500)
+        u2 = p8.evaluate(BUN)
+        check(u2['bR'] == 6 and u2['bN'] == 1 and u2['pR'] == 6 and u2['pN'] == 1 and p8.evaluate("TengelKisekae.usable('pirate')") and u2['total'] == 300,
+              f'6レース 読み込む → 壁紙パック 1枚（5レース目）も 結果ボードカスタム 1こ（6レース目）も 進む（{ {k: u2[k] for k in ("bR", "bN", "pR", "pN")} }）')
+        # ミッション：結果ボードカスタム 15こ（90レース）・壁紙パック 11枚（55レース以上）→ 結果ボードカスタム 3・6・9・12（4つ）・壁紙の 枚数 3・6・9（3つ）・帯の シルバー（1つ）＝8つ
+        p8.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board.reads = 90; w.pack.reads = 100; await TengelLocal.putMeta(w); })()""")
+        reopen8()
+        p8.click('.tabbar button[data-tab=set]'); p8.wait_for_timeout(600)   # 設定タブを 開く（App Store の 表示価格を 読む）
+        u3 = p8.evaluate(BUN)
+        check(u3['bN'] == 15 and u3['pN'] == 11 and u3['badge'] == '8' and u3['hot'] and p8.locator('.tabbar [data-tab=set] .tbdg').count() == 1,
+              f'結果ボードカスタム 15こ・壁紙 11枚 → 上の「ミッション」に 受け取れる 8（結果ボードカスタム 4・壁紙の 枚数 3・シルバー帯 1）（{u3["badge"]}）')
+        p8.click('#msBtn'); p8.wait_for_timeout(600)
+        ov8 = p8.locator('#msOv')
+        MSI = """() => { const ov = document.querySelector('#msOv'); if (!ov) return null; const rows = s => [...ov.querySelectorAll(s + ' .msrow')].map(r => r.dataset.mid + (r.classList.contains('can') ? '*' : '')); const txt = s => (ov.querySelector(s) || {}).innerText || '';
+          return { n: txt('.msn'), board: rows('#msBoard'), wallp: rows('#msWallp'), wall: rows('#msWall'), h2: [...ov.querySelectorAll('h2')].map(h => h.innerText.trim()), last: txt('#msWallp .msrow[data-mid="mission-wallp-45"] .md'), b3: txt('#msBoard .msrow[data-mid="mission-board-3"] .mn'), w3: txt('#msWallp .msrow[data-mid="mission-wallp-3"] .mn'),
+            bhint: txt('#msBoard .hint'), whint: txt('#msWallp .hint'), claims: ov.querySelectorAll('[data-pt=claim]').length }; }"""
+        mi = p8.evaluate(MSI)
+        check(bool(mi) and mi['n'] == '受け取れるのが 8つ！' and mi['board'] == ['mission-board-3*', 'mission-board-6*', 'mission-board-9*', 'mission-board-12*', 'mission-board-16'] and len(mi['wallp']) == 11 and mi['wallp'][:4] == ['mission-wallp-3*', 'mission-wallp-6*', 'mission-wallp-9*', 'mission-wallp-12']
+              and mi['wall'] == ['mission-wall-8*', 'mission-wall-16', 'mission-wall-25'] and 'いまは 40枚まで' in mi['last'] and '結果ボードカスタム 3こ解放' in mi['b3'] and '500P' in mi['b3'] and '壁紙 3枚解放' in mi['w3'] and '800P' in mi['w3']
+              and 'いま 15こ' in mi['bhint'] and 'いま 11枚' in mi['whint'] and '40枚まで' in mi['whint'] and mi['claims'] == 8 and any('結果ボードカスタム' in h for h in mi['h2']),
+              f'ミッションの 窓：「結果ボードカスタムミッション」（3・6・9・12 受け取れる・16 は まだ）・壁紙ミッションの 下に 枚数の 11行（3・6・9 受け取れる・45 は「いまは 40枚まで」）・帯の 3行は そのまま（{mi and {k: mi[k] for k in ("n", "board", "last", "claims")}}）')
+        ov8.locator('#msBoard [data-pt=claim][data-id="mission-board-3"]').click(); p8.wait_for_timeout(800)
+        t8b = p8.locator('#toast').inner_text(); u4 = p8.evaluate(BUN)
+        ov8.locator('#msWallp [data-pt=claim][data-id="mission-wallp-9"]').click(); p8.wait_for_timeout(800)
+        t8w = p8.locator('#toast').inner_text(); u5 = p8.evaluate(BUN); mi2 = p8.evaluate(MSI)
+        check('結果ボードカスタム 3こ解放' in t8b and '500P' in t8b and u4['free'] == u3['free'] + 500 and u4['badge'] == '7' and '壁紙 9枚解放' in t8w and '1,500P' in t8w and u5['free'] == u3['free'] + 2000 and u5['total'] == u3['total'] + 2000 and u5['badge'] == '6'
+              and mi2['board'][0] == 'mission-board-3' and mi2['wallp'][2] == 'mission-wallp-9' and mi2['n'] == '受け取れるのが 6つ！' and p8.evaluate("TengelWallet.events().filter(e => /^mission-(board|wallp)-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()") == 'mission-board-3:500:free,mission-wallp-9:1500:free',
+              f'窓で 受け取る → 結果ボードカスタム 3こ 500P・壁紙 9枚 1,500P（もらったP）・行は 受け取りずみ・上の 数は 8 → 7 → 6（{t8b}／{t8w}）')
+        # 帯の シルバーを 受け取る → 帯も 枚数に 数える（11 → 12枚）→ 壁紙 12枚が 受け取れる（6 − 1 ＋ 1 ＝ 6）
+        ov8.locator('#msWall [data-pt=claim][data-id="mission-wall-8"]').click(); p8.wait_for_timeout(800)
+        mi3 = p8.evaluate(MSI); u6 = p8.evaluate(BUN)
+        check(mi3['wall'][0] == 'mission-wall-8' and mi3['wallp'][3] == 'mission-wallp-12*' and 'いま 12枚' in mi3['whint'] and u6['badge'] == '6' and p8.evaluate("TengelKisekae.usable('silver')"),
+              f'シルバー帯を 受け取る → 帯の 1枚も 枚数に 数えて 12枚 → 壁紙 12枚の ミッションが 受け取れる（上の 数は 6 の まま）（{mi3["whint"]}）')
+        ov8.locator('[data-ms=close]').click(); p8.wait_for_timeout(300)
+        ms8 = p8.locator('#setMission').inner_text()
+        check('結果ボードカスタムのミッション' in ms8 and '壁紙 12枚解放' in ms8 and '結果ボードカスタム 6こ解放' in ms8 and p8.locator('#setMission [data-pt=claim][data-id="mission-wallp-12"]').count() == 1 and p8.locator('#setMission .msrow[data-mid="mission-board-3"] .md').inner_text() == '受け取りずみ',
+              '設定タブの ミッションにも 壁紙の 枚数と 結果ボードカスタムの 行（受け取りずみ・受け取る）')
+        # 返金 → 2つとも 使えなくなる（お得パックが また 出る・受け取った ミッションは そのまま）・購入を復元 → 2つとも もどる（進み具合は そのまま）
+        p8.evaluate("window.__nativeEvent('iap', { id: '9001', originalId: 'o9001', product: 'jp.tengel.app.bundle1', kind: 'unlock', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); p8.wait_for_timeout(900)
+        u7 = p8.evaluate(BUN); t8r = p8.locator('#toast').inner_text()
+        check(not u7['owned'] and not u7['bOwn'] and not u7['pOwn'] and u7['offer'] and '返金' in t8r and 'お得パック' in t8r and u7['bBuy'] == '¥1,500で買う' and u7['bBun'] == '¥2,200で買う' and u7['pBuy'] == '¥1,500で買う' and u7['pBun'] == '¥2,200で買う'
+              and not p8.evaluate("TengelKisekae.usable('pirate')") and u7['free'] == u6['free'] and p8.evaluate("TengelPoints.boardMissions(0, TengelWallet.events())[0].claimed") and u7["badge"] == "",
+              f'お得パックの 返金 → 壁紙パックも 結果ボードカスタムも 使えなくなる（買う 所に お得パックが また 出る・受け取った ポイントと ミッションは そのまま）（{t8r}）')
+        p8.evaluate("window.__iap.current = [{ id: '9002', originalId: 'o9001', product: 'jp.tengel.app.bundle1', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
+        p8.locator('#setKisekae .kspk [data-ksact=pkrestore]').click(); p8.wait_for_timeout(1000)
+        u8 = p8.evaluate(BUN); t8s = p8.locator('#toast').inner_text()
+        check(u8['owned'] and u8['bOwn'] and u8['pOwn'] and not u8['offer'] and 'もどしたよ' in t8s and '結果ボードカスタム' in t8s and '壁紙パック' in t8s and u8['bN'] == 15 and u8['pN'] == 11 and u8['badge'] == '6',
+              f'購入を復元（壁紙パックの 箱から）→ お得パックで 2つとも もどる（進み具合は そのまま・ミッションも もどる）（{t8s}）')
+        p8.screenshot(path=os.path.join(W, 't4', 'native_bundle.png'), full_page=False)
+        ctx8.close()
         # ---- 第4.59版：テスト版（TENGEL_TEST=1）：はじめから 10,000P・テスト版の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタンを ためす）----
         store['markers'].clear()
         ctx5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx5.add_init_script(FAKE)
@@ -1343,6 +1444,10 @@ try:
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(300)
         p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(400)
         check(p5.evaluate('TengelWallet.total()') == 20000 and '購入 20,000P' in p5.locator('#ptsPill').inner_text().replace('\n', ' '), 'テスト版：「10,000P 足す」で 20,000P（上の帯も かわる）')
+        # 第4.114版：テスト版の 道具「お得パック：買ったことにする」→ 壁紙パックも 結果ボードカスタムも 持って いる（App Store の 買い物は しない）
+        p5.locator('#setTest [data-test=uown]').click(); p5.wait_for_timeout(600)
+        ub = p5.evaluate("({ own: TengelWallet.bundle.owned(), b: TengelWallet.board.info().owned, p: TengelKisekae.pack().owned, st: document.querySelector('#testBundle').innerText, toast: document.querySelector('#toast').innerText, buy: document.querySelectorAll('#setBoard [data-bcact=buy], #setBoard [data-bcact=bundle], #setKisekae .kspk [data-ksact=pkbuy], #setKisekae .kspk [data-ksact=bundle]').length })")
+        check(ub['own'] and ub['b'] and ub['p'] and ub['st'] == '買った' and 'お得パック' in ub['toast'] and ub['buy'] == 0 and p5.evaluate('TengelWallet.total()') == 20000, f'第4.114版：テスト版の「お得パック：買ったことにする」→ 2つとも 持って いる（買うの ボタンは 消える・ポイントは そのまま）（{ub}）')
         p5.locator('#setTest [data-test=fx][data-kind=sgd]').click(); p5.wait_for_timeout(500)
         check(p5.locator('#fxOv .ov.fz .pbox.rbw .push .rbf').count() == 1 and p5.evaluate("TengelFx.current().kind") == 'sgd', 'テスト版：「超神様的中」を 押すと 虹色の PUSH（超神様的中）が 出る（くじは ひかない）')
         p5.evaluate('TengelFx.close()'); p5.wait_for_timeout(200)

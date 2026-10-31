@@ -43,9 +43,9 @@ check('__nativeEvent' in wv and 'Store.shared.start()' in wv, 'App内課金の�
 mk = nocom(open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Markers.swift'), encoding='utf8').read())
 check('kSecAttrSynchronizable' in mk and 'kSecClassGenericPassword' in mk and 'ThisDeviceOnly' not in mk, 'キーチェーンのしるしは iCloudキーチェーンで同期する形')
 st = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Store.swift'), encoding='utf8').read()
-for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200', 'boardcustom', 'wallpack1'):
+for pid in ('points500', 'points1000', 'points2000', 'points4000', 'sub2000', 'sub4400', 'sub9200', 'boardcustom', 'wallpack1', 'bundle1'):   # 第4.114版：お得パック bundle1
     check(f'"jp.tengel.app.{pid}"' in st, f'App内課金の商品ID：jp.tengel.app.{pid}')
-check('static let unlockIDs = ["jp.tengel.app.boardcustom", "jp.tengel.app.wallpack1"]' in st and 'packIDs + subIDs + unlockIDs' in st and 'return "unlock"' in st and 'case "current": return ["ok": true, "list": await current()]' in st, '第4.91版：結果ボードカスタム・第4.92版：壁紙パック（非消耗型・買い切り）：商品の 一覧に 入る・取引の 種類は unlock・いま 有効な もの（current）を Webの 画面に 渡す')
+check('static let unlockIDs = ["jp.tengel.app.boardcustom", "jp.tengel.app.wallpack1", "jp.tengel.app.bundle1"]' in st and 'packIDs + subIDs + unlockIDs' in st and 'return "unlock"' in st and 'case "current": return ["ok": true, "list": await current()]' in st, '第4.91版：結果ボードカスタム・第4.92版：壁紙パック（非消耗型・買い切り）：商品の 一覧に 入る・取引の 種類は unlock・いま 有効な もの（current）を Webの 画面に 渡す')
 check('Transaction.updates' in st and 'Transaction.unfinished' in st and 'AppStore.sync()' in st and '.finish()' in st, 'StoreKit 2：取引の更新・終わっていない取引・購入を復元・終わらせる')
 # build_ios.py が作る Package.swift
 out = tempfile.mkdtemp()

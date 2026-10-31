@@ -15,10 +15,14 @@
     'jp.tengel.app.sub4400': { kind: 'sub', points: 4400, bonus: 400, name: '月4,400Pプラン', yen: 1276 },
     'jp.tengel.app.sub9200': { kind: 'sub', points: 9200, bonus: 1000, name: '月9,200Pプラン', yen: 1914 },
     // 第4.91版：結果ボードカスタム（買い切り・非消耗型）。1回 買えば ずっと（機種変更・入れ直しは「購入を復元」）
-    'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 2200 },
+    //   第4.114版（まさちゃん 2026/11/01「拡張パックの値段変える！ 壁紙1500円 結果ボードカスタム1500円 お得パック 壁紙&結果ボードカスタム 2200円」）：1,500円に
+    'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 1500 },
     // 第4.92版：壁紙パック（買い切り・非消耗型）。新しい 壁紙 11枚。買った あとに 読み込んだ レース 5つごとに 1枚ずつ 解放（ポイントでは 買えない）
-    'jp.tengel.app.wallpack1': { kind: 'unlock', what: 'wallpack', points: 0, bonus: 0, name: '壁紙パック', yen: 1500 }
+    'jp.tengel.app.wallpack1': { kind: 'unlock', what: 'wallpack', points: 0, bonus: 0, name: '壁紙パック', yen: 1500 },
+    // 第4.114版：お得パック（買い切り・非消耗型）。壁紙パックと 結果ボードカスタムの セット 2,200円（単品は 1,500円ずつ＝3,000円）。持って いれば 両方を 持って いる 扱い（owned）
+    'jp.tengel.app.bundle1': { kind: 'unlock', what: 'bundle', points: 0, bonus: 0, name: 'お得パック', yen: 2200 }
   };
+  var BUNDLE = { product: 'jp.tengel.app.bundle1', parts: ['wallpack', 'board'] };
   var PACKS = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points2000', 'jp.tengel.app.points4000'];
   var SUBS = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400', 'jp.tengel.app.sub9200'];
   var COST = { gift: 1500, read: 200, w5: 200, type: 500, slot: 15000 };
@@ -27,11 +31,17 @@
   var MISSIONS = [[8, 500], [15, 1000], [25, 1000], [40, 1200], [60, 1200], [85, 1400], [100, 1400], [130, 1600], [160, 1600], [200, 1800], [240, 1800], [300, 2000]];
   // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙（シルバー帯 8枚・ゴールド帯 16枚・マスター帯 25枚）。受け取ると 0P の mission と unlock-theme:<帯> を足す
   var WALL_MISSIONS = [[8, 'silver', 'シルバー帯の壁紙'], [16, 'golden', 'ゴールド帯の壁紙'], [25, 'tengel', 'マスター帯の壁紙']];
+  // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/16」・じゅんび中も 数える）→ もらえるP
+  var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [16, 1600]];
+  // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
+  //   いま 解放できる 壁紙は WALL_TOTAL＝40枚（ポイント 26＋壁紙パック 11＋帯 3）。45枚は 壁紙が ふえたら 届く（一覧には 出す）
+  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500], [35, 3500], [40, 3500], [45, 3500]];
+  var WALL_TOTAL = 40;
   var FREE_TYPES = ['単勝', '馬単', '3連単'];
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
   var BUCKETS = ['paid_sub', 'paid_pack', 'free'];
-  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、番号の 順に 1つずつ 解放する。読み直し（0P）・5連の 予想は 数えない
+  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円（第4.114版から 1,500円）。買った あとに 読み込んだ レースの 数で、番号の 順に 1つずつ 解放する。読み直し（0P）・5連の 予想は 数えない
   //   第4.113版（まさちゃん 2026/11/01「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！」）：
   //     16こ・6レースごとに 1つ（全部で 96レース）。前の 1〜21（ボードを一周〜出世馬）は 消した。1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16 は ボードを持つ馬
   //   第4.113版（まさちゃん 01:24「結果ボードのカスタムには2種類カスタムつけられるようにして！①的中演出 ②ハズレ演出」）：的中の とき・ハズレの とき で べつべつに 1つずつ 選ぶ
@@ -200,7 +210,7 @@
 
   // ---- 結果ボードカスタム（第4.91版）----
   // 買った（取引の できごと tx-… の unlock・what＝board／wallpack）か。返金（refund-<取引>）が あれば 買って いない
-  function owned(events, what) {
+  function ownedRaw(events, what) {
     var es = events || [], own = false;
     es.forEach(function (e) {
       if (!e || e.kind !== 'unlock' || e.what !== what) return;
@@ -209,6 +219,11 @@
     });
     return own;
   }
+  // 第4.114版：お得パック（what＝bundle）を 持って いれば、壁紙パックと 結果ボードカスタムも 持って いる 扱い（お得パックの 返金で 両方 使えなくなる・単品の 分は 残る）
+  function owned(events, what) { return ownedRaw(events, what) || (BUNDLE.parts.indexOf(what) >= 0 && ownedRaw(events, 'bundle')); }
+  function bundleOwned(events) { return ownedRaw(events, 'bundle'); }
+  // お得パックを 出すか：単品を どちらも 持って いない ときだけ（どちらか 1つ 持って いれば 残りの 単品だけ）
+  function bundleOffer(events) { return !owned(events, 'wallpack') && !owned(events, 'board'); }
   function boardOwned(events) { return owned(events, 'board'); }
   // 読み込んだ レースの 数 → 解放した 数（0〜16：じゅんび中の 番号も 数える）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
@@ -263,6 +278,17 @@
     return [mk('mission-wall-' + m.n, 'mission', 'free', 0, iso(now), { what: m.label, theme: m.theme }),
       mk('unlock-theme:' + m.theme, 'unlock', '', 0, iso(now), { use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:' + m.theme, device: device || 'x' })];
   }
+  // 第4.114版：ふつうの ミッションの 行（id・n・reward）→ 受け取れる／受け取った
+  function rowsOf(table, prefix, count, events, label) {
+    return table.map(function (m) { var id = prefix + m[0], claimed = has(events, id); return { id: id, n: m[0], reward: m[1], label: label(m[0]), done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
+  }
+  // 結果ボードカスタムの ミッション：count＝解放した 番号の 数（買って いなければ 0）
+  function boardMissions(count, events) { return rowsOf(BOARD_MISSIONS, 'mission-board-', count, events, function (n) { return '結果ボードカスタム ' + n + 'こ解放'; }); }
+  // 壁紙の ミッション（枚数で ポイント）：count＝wallCountAll。WALL_TOTAL より 多い 行は reach＝false（いまは 届かない）
+  function wallpMissions(count, events) { return rowsOf(WALLP_MISSIONS, 'mission-wallp-', count, events, function (n) { return '壁紙 ' + n + '枚解放'; }).map(function (r) { r.reach = r.n <= WALL_TOTAL; return r; }); }
+  function rowEvent(m, now) { return mk(m.id, 'mission', 'free', m.reward, iso(now), { what: m.label }); }
+  // 解放した 壁紙の 枚数（帯も 数える：ポイント＋壁紙パック＋帯）
+  function wallCountAll(events, packN) { return wallCount(events, packN) + (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:(silver|golden|tengel)$/.test(String(e.what || '')); }).length; }
   // 解放した壁紙の枚数（ポイントで 解放した 壁紙 ＋ 壁紙パックで 解放した 枚数 packN。帯の壁紙は数えない）
   function wallCount(events, packN) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)); }).length + Math.max(0, Math.floor(+packN || 0)); }
 
@@ -284,6 +310,8 @@
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
+    BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll,
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
