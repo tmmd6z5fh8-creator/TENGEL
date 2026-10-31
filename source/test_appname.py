@@ -72,12 +72,14 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         # 第4.112版（2026/11/01）：テストの レースは 10月の 日付（2026-10-20・10-21 など）。記録タブは「いまの 月」を 開く ので、
-        #   11月に なると 10月の レースが 見えず テストが 止まる → ページの 時計を 2026/10/30 12:00（日本）から すすめる（時間は ふつうに 流れる）
+        #   11月に なると 10月の レースが 見えず テストが 止まる → ページの Date だけ 2026/10/30 12:00（日本）から すすめる
+        #   （時間は ふつうに 流れる。performance・タイマー・アニメーションは そのまま＝Playwright の clock は performance の 記録を 消して しまう ので 使わない）
         _nc = b.new_context
         def _ctx_at_oct30(*a, **k):
             c = _nc(*a, **k)
-            c.clock.install(time=__import__('datetime').datetime(2026, 10, 30, 12, 0, tzinfo=__import__('datetime').timezone(__import__('datetime').timedelta(hours=9))))
-            c.clock.resume()
+            c.add_init_script("""(() => { const D = Date, OFF = Date.UTC(2026, 9, 30, 3, 0, 0) - D.now();
+              class FD extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() + OFF); } static now() { return D.now() + OFF; } }
+              FD.UTC = D.UTC; FD.parse = D.parse; window.Date = FD; })();""")
             return c
         b.new_context = _ctx_at_oct30
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, locale='ja-JP', timezone_id='Asia/Tokyo')
