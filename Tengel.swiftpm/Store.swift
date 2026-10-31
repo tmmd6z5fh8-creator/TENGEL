@@ -11,7 +11,7 @@ final class Store {
     static let packIDs = ["jp.tengel.app.points500", "jp.tengel.app.points1000", "jp.tengel.app.points2000", "jp.tengel.app.points4000"]
     static let subIDs = ["jp.tengel.app.sub2000", "jp.tengel.app.sub4400", "jp.tengel.app.sub9200"]
     /// 非消耗型（買い切り）：結果ボードカスタム。買った あとも いま 有効な もの（currentEntitlements）に 入るので、入れ直し・ほかの 端末でも もどせる
-    static let unlockIDs = ["jp.tengel.app.boardcustom", "jp.tengel.app.wallpack1"]   // 第4.92版：壁紙パック（買い切り）
+    static let unlockIDs = ["jp.tengel.app.boardcustom", "jp.tengel.app.wallpack1", "jp.tengel.app.bundle1"]   // 第4.92版：壁紙パック（買い切り）・第4.114版：お得パック（壁紙パックと 結果ボードカスタムの セット）
     static var allIDs: [String] { packIDs + subIDs + unlockIDs }
 
     /// 取引の 種類（Webの画面に 渡す 名前）
