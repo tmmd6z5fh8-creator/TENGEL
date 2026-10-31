@@ -127,6 +127,15 @@ def gate(pg):
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
+        # 第4.112版（2026/11/01）：テストの レースは 10月の 日付（2026-10-20・10-21 など）。記録タブは「いまの 月」を 開く ので、
+        #   11月に なると 10月の レースが 見えず テストが 止まる → ページの 時計を 2026/10/30 12:00（日本）から すすめる（時間は ふつうに 流れる）
+        _nc = b.new_context
+        def _ctx_at_oct30(*a, **k):
+            c = _nc(*a, **k)
+            c.clock.install(time=__import__('datetime').datetime(2026, 10, 30, 12, 0, tzinfo=__import__('datetime').timezone(__import__('datetime').timedelta(hours=9))))
+            c.clock.resume()
+            return c
+        b.new_context = _ctx_at_oct30
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP')
 
         def save_backup(source, text):
