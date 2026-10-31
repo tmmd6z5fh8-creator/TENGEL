@@ -460,6 +460,8 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .rsvf .pl input{text-align:center;font-family:var(--font-mono)}
 .rsvf .plab{font-size:12.5px;color:var(--muted);margin-top:4px}
 .rsvf .plab b{color:var(--ink)}
+.ocrnote{margin:6px 0 0;line-height:1.55}
+.rsvtop details.closed .lgiven .s{color:var(--muted)}
 .rsvnote{font-size:12.5px;color:var(--muted);margin:6px 0 0}
 </style>
 
@@ -491,6 +493,7 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
           <input type="file" id="ocrFile" accept="image/*" multiple hidden>
           <span class="small muted" id="ocrHint">単勝・複勝と3連単人気順のスクショを1〜3枚</span>
         </div>
+        <p class="small muted ocrnote" id="ocrNote" hidden>※ 締切済みのレース（発走時刻をすぎている・画面に「締切」などがある）は、買い目の予約と結果の記録はできないよ。読み込みの 200P は使うよ（「締切済みレース」として記録タブに残るよ）</p>
         <div id="ocrMsg"></div>
         <div class="fields" style="margin-top:12px">
           <div class="f s3"><label for="fVenue">開催場</label><input id="fVenue" list="venues" value="大井" autocomplete="off"></div>
@@ -1274,12 +1277,12 @@ function renderResult() {
   let h = prevNavHTML() + `<div class="vhead"><div class="lbadge L${c.L}"><span class="ll">${c.L}</span><span class="ln">${({ A: '堅', B: '警戒', C: '穴' })[c.L]}</span></div>
     <div class="vmeta"><div class="vkubun">${esc(J.venue)} ${x.r}R　${T.KUBUN_LABEL[k]}</div>
     <div class="vratio">比 <b>${c.hi.toFixed(1)}</b>（3連単1位 ${fmt(x.s1)} ÷ 単勝1位 ${fmt(x.tan1)}）・${x.n}頭・${x.dist}m ${esc(J.surface)}・${esc(x.baba)}</div>
-    <div class="chips">${refBadge}${T.isCustom(k) ? '<span class="chip cus">カスタム買い目</span>' : ''}<span class="chip ${ht.cls}">${ht.mark}</span>${J.chuui === '該当' ? '<span class="chip warn">超大穴帯注意</span>' : ''}${c.L === 'C' ? `<span class="chip">${c.c20}（記録用）</span>` : ''}${c.early ? `<span class="chip">序盤R：本来の帯 ${c.honrai}</span>` : ''}${shiba}</div></div></div>`;
+    <div class="chips">${refBadge}${T.isCustom(k) ? '<span class="chip cus">カスタム買い目</span>' : ''}<span class="chip ${ht.cls}">${ht.mark}</span>${formClosed() ? '<span class="chip warn">締切済み</span>' : ''}${J.chuui === '該当' ? '<span class="chip warn">超大穴帯注意</span>' : ''}${c.L === 'C' ? `<span class="chip">${c.c20}（記録用）</span>` : ''}${c.early ? `<span class="chip">序盤R：本来の帯 ${c.honrai}</span>` : ''}${shiba}</div></div></div>`;
   if (st.form.example) h += `<div class="banner info"><b>これは入力例（架空のレース）</b>だよ。「入力をクリア」してから本番のレースを入れるか、オッズ画像を読み取ってね。</div>`;
   if (J.warnN) h += `<div class="banner warn">${esc(J.warnN)}。判定は出走頭数で行っているよ。番号を確認してね。</div>`;
   if (!S.n) h += Slots.on ? `<div class="banner warn">マザーデータ「${esc(J.mother)}」に、集計できるレースがまだないよ。参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>` : `<div class="banner warn">基盤データに接続できていないため、参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>`;
   if (!J.isOi) { const alt = otherHome(J.venue); if (alt) h += `<div class="banner info">開催場が${esc(J.venue)}だよ。マザーデータを「${esc(alt.name)}」（${alt.usable}走）に切り替える？<div class="row" style="margin-top:8px"><button class="btn primary slotchip-go" type="button" data-slot="${alt.n}">「${esc(alt.name)}」に切り替える</button></div></div>`; }
-  if (J.horses.length && !st.w5edit) h += NATIVE_APP && Reserve()
+  if (J.horses.length && !st.w5edit && !formClosed()) h += NATIVE_APP && Reserve()
     ? `<div class="hprow"><p class="hpnote">番号を押すと、買う馬を選べるよ（うすい番号＝買わない馬）。買い目は選んだ馬から作るよ。</p><button class="btn omakase" type="button" id="omakaseBtn" aria-label="テンゲルにお任せ（ゾーンの中からランダムに選ぶ）">🎲 テンゲルにお任せ</button></div>`
     : `<p class="hpnote">番号を押すと、買う馬を選べるよ（うすい番号＝買わない馬）。馬単・3連単の当たり外れは、買ったゾーンの選んだ馬で判定するよ。</p>`;
   h += '<ol class="zones">';
@@ -1465,6 +1468,7 @@ async function setupOCR() {
   st.sample = sample; st.sampleImgs = lim.images;
   $('#ocrFile').accept = lim.images.mediaTypes.join(',');
   $('#ocrRow').hidden = false;
+  $('#ocrNote').hidden = !NATIVE_APP;   // 第4.116版：締切済みレースの 注意（App Store版だけ）
 }
 // iPhoneアプリ版：APIキーがまだ無いときは、写真を選ぶ前に案内する
 $('#ocrBtn').addEventListener('click', () => {
@@ -1510,16 +1514,54 @@ $('#ocrFile').addEventListener('change', async e => {
       paid = await W.readCharge({ form: st.form, ocr: d, w5: st.w5edit ? { date: st.w5.date } : null });
       if (!paid.ok) { msg.innerHTML = `<div class="banner bad">ポイントが足りないよ（読み込みに <b>${paid.need}P</b>・いま ${paid.have}P）。ポイントを買うと読み取れるよ。<div class="row" style="margin-top:8px"><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button></div></div>`; return; }
     }
-    applyOCR(d || {});
+    const okRead = applyOCR(d || {});
     if (paid && paid.ok) {
       if (!st.w5edit) { st.form.pid = paid.pid; storeSet('tengel.form', st.form); }
       const note = paid.charged ? `${W.COST.read}P 使ったよ（残り ${W.total().toLocaleString('ja-JP')}P）` : paid.free === 'w5' ? '同じ5連の予想の読み込みなので 0P だよ' : '同じレースの読み直しなので 0P だよ';
       const box = $('#ocrMsg .banner'); if (box) box.insertAdjacentHTML('beforeend', `<br><span class="small">${esc(note)}</span>`);
     }
+    // 第4.116版（まさちゃん「画像読み取りで締切済みレースは締切済みレースに記録される。買い目予約と結果&記録ができない。ポイントは200p消費する」）：
+    //   読み取った レースが 締切済み（発走時刻を すぎて いる／画面に「締切」などの 言葉）なら、入力に しるしを つける → 判定は 出す・予約と 記録は できない・記録タブの「締切済みレース」へ
+    if (NATIVE_APP && okRead && !st.w5edit) {
+      st.form.closed = closedOf(st.form, d || {}); storeSet('tengel.form', st.form);
+      if (st.form.closed) { const box = $('#ocrMsg .banner'); if (box) box.insertAdjacentHTML('beforeend', `<br><b>締切済みのレース</b>だよ（${esc(closedWhy(st.form.closed))}）。${CLOSED_NOTE}`); }
+      renderResult();
+    }
   } catch (err) {
     ocrFail(err);
   } finally { btn.disabled = false; }
 });
+// ---- 締切済みレース（第4.116版・App Store版）----
+//   締切済み＝ ①読み取った 日付＋発走時刻が、読み取った ときに もう すぎて いる（発走時刻が 読めなかった ときは 日付が きのう 以前）
+//            ②画面に 発売が 終わった 言葉（「締切済」「発売締切」「確定オッズ」「最終オッズ」「結果確定」「払戻金」など。ocr_local.js の closed）
+//   しるしは 入力（form.closed）に レースの id と いっしょに 持つ（別の レースに 入力を 変えたら 効かない）。記録は rsv.state = 'closed'（予約と 同じ 入れもの・買い目なし）
+const CLOSED_NOTE = '※ 締切済みのレースは、買い目の予約と結果の記録はできないよ（読み込みの 200P は使うよ）。';
+function closedOf(f, d) {
+  const id = formRaceId(f); if (!id) return null;
+  const now = new Date();
+  if (d && d.closed) return { by: 'kw', word: String(d.closed).slice(0, 12), id, at: now.toISOString() };
+  if (!d || !(d.date || d.start)) return null;   // 画像に 日付も 発走時刻も なければ、時刻では 決めない（入力に 残って いた 日付で 決めると まちがえる）
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) return null;
+  const t = /^\d{2}:\d{2}$/.test(f.start || '') ? f.start : null;
+  // レースの 時刻は 日本時間（端末の 時間帯に よらない。お知らせの fireAt と 同じ +09:00）。発走時刻が ないときは その日の 終わりまで 締切前と みなす
+  const when = t ? Date.parse(`${f.date}T${t}:00+09:00`) : Date.parse(`${f.date}T23:59:59+09:00`) + 1000;
+  if (!isFinite(when)) return null;
+  return now.getTime() >= when ? { by: 'time', id, at: now.toISOString(), start: t || '' } : null;
+}
+const closedWhy = c => !c ? '' : c.by === 'kw' ? `画面に「${c.word}」` : c.start ? `発走 ${c.start} をすぎている` : '前の日のレース';
+const formClosed = () => NATIVE_APP && st.form.closed && st.form.closed.id && st.form.closed.id === formRaceId(st.form) ? st.form.closed : null;
+// 締切済みの レースを 記録タブの「締切済みレース」に 入れる（判定が 出た ときに 1回だけ。予約・記録ずみの レースには 何も しない）
+let closedSaving = null;
+async function saveClosedRace(J) {
+  // c.deleted＝記録タブで「消す」を 押した レース（しるしに 残す → 開き直しても 入れ直さない。読み直すと しるしが 新しく なる）
+  const c = formClosed(); if (!c || c.deleted || !J.ok || !J.id || !st.db || st.form.example || st.bets.has(J.id) || closedSaving === J.id) return;
+  closedSaving = J.id;
+  const now = new Date().toISOString(), f = st.form;
+  const rsv = { state: 'closed', at: now, by: c.by, word: c.word || '', key: [f.date, (f.rname || '').trim(), f.dist, f.start].join('|'), start: f.start || '' };
+  const doc = { ...raceBase(J), judgeText: buildText(J), types: [], amt: {}, stake: null, payout: null, other: '', buyZ: [], p1: null, p2: null, p3: null, n1: null, n2: null, n3: null, rsv, note: '', createdAt: now, updatedAt: now };
+  try { await writeBet(J.id, doc, true); toast(`${J.venue}${J.x.r}R は締切済みのレースなので「締切済みレース」に入れたよ`, 3600); renderResult(); }
+  catch (e) { closedSaving = null; writeErr(e); }
+}
 // 読み取った中身を、いまの入力に重ねた形にする（まだ入力欄には入れない）。got＝読めた項目・miss＝読めなかった項目
 function ocrPick(d) {
   const f = Object.assign({}, st.form), got = [], miss = [];
@@ -1613,6 +1655,7 @@ function amtOf(b, t) {
 // 的中・不的中：券種ごとに出して、どれか1つでも当たればそのレースは的中。その他（未購入・払い戻し）は手で選ぶ
 function betStatus(b) {
   if (b.rsv && b.rsv.state === 'given') return { s: '諦めた', cls: 'skip', types: [], per: {}, given: true };
+  if (b.rsv && b.rsv.state === 'closed') return { s: '締切済み', cls: 'skip', types: [], per: {}, given: true, closed: true };   // 第4.116版：数えない（諦めたと 同じ）
   if (b.rsv && b.rsv.bets) return rsvStatus(b);
   const types = typesOf(b);
   if (b.other === '未購入') return { s: '未購入', cls: 'skip', zi: zoneHitOf(b), types, per: {} };
@@ -2130,7 +2173,8 @@ function renderRsvCard(J, force) {
   if ((J.id || '') !== (card.dataset.id || '')) { st.rsvEdit = false; st.rsvOpen = false; }
   if (!J.ok) { card.dataset.id = ''; card.dataset.sig = ''; card.innerHTML = `<h2>買い目</h2><p class="small muted" style="margin:0">判定が出たら、ここで買い目を予約できるよ（結果は記録タブで入れるよ）。</p>`; return; }
   const b = st.bets.get(J.id) || null, rs = b && b.rsv, d = rsvDraftOf(J);
-  const sig = [J.id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', rs ? rs.state : '', JSON.stringify(st.form.hp || null), d.types.join(), d.off.join(), BET_TYPES.filter(typeLocked).join(''), st.form.start || '', J.horses.length, st.rsvEdit ? 1 : 0, st.notifyOn === false ? 0 : 1, st.notifyAuth || ''].join('|');
+  if (rs && rs.state === 'reserved' && formClosed()) st.rsvEdit = false;   // 第4.116版：締切前に 予約した レースを 締切後に 読み直した → 予約は そのまま（選び直しは できない）
+  const sig = [J.id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', rs ? rs.state : '', JSON.stringify(st.form.hp || null), d.types.join(), d.off.join(), BET_TYPES.filter(typeLocked).join(''), st.form.start || '', J.horses.length, st.rsvEdit ? 1 : 0, st.notifyOn === false ? 0 : 1, st.notifyAuth || '', formClosed() ? 'C' : ''].join('|');
   if (!force && card.dataset.sig === sig) return;
   card.dataset.sig = sig; card.dataset.id = J.id || '';
   let h = '<h2>買い目</h2>';
@@ -2138,12 +2182,18 @@ function renderRsvCard(J, force) {
   if (!J.id) { card.innerHTML = h + '<p class="small muted" style="margin:0">日付とレース番号を入れると予約できるよ。</p>'; return; }
   const notifyLine = start => !start ? '発走時刻を入れるとお知らせできるよ（レース情報の「発走時刻」）' : st.notifyOn === false ? '結果確認のお知らせは設定でオフになっているよ' : st.notifyAuth === 'denied' ? 'お知らせが許可されていないよ（設定アプリで通知をオンにすると届くよ）' : `発走 ${esc(start)} → ${fmtTime(fireAt(st.form.date, start))} にお知らせ`;
   if (rs && (rs.state === 'reserved' || rs.state === 'done') && !st.rsvEdit) {
-    const done = rs.state === 'done', jd = done ? rsvJudge(b) : null;
+    const done = rs.state === 'done', jd = done ? rsvJudge(b) : null, cl = !done && !!formClosed();
     h += `<div class="rsvst"><span class="stc ${done ? (jd && jd.state === '的中' ? 'hit' : 'skip') : 'wait'}">${done ? '結果を記録ずみ' + (jd ? '（' + jd.state + '）' : '') : '予約ずみ（結果待ち）'}</span><span>${done ? '' : notifyLine(rs.start)}</span></div>`;
     h += `<details class="full"${st.rsvOpen ? ' open' : ''} data-k="betsee"><summary>買い目を確認（${esc((rs.types || []).join('・'))}）</summary>${betListHTML(rs.bets, rs.types, jd)}</details>`;
-    h += `<div class="row" style="margin-top:10px">${done ? '<button class="btn" type="button" data-rsv="result">記録を見る（記録タブ）</button>' : '<button class="btn primary" type="button" data-rsv="result">結果を入れる（記録タブ）</button><button class="btn" type="button" data-rsv="redo">選び直して予約し直す</button><button class="btn ghost" type="button" data-rsv="cancel">予約を消す</button>'}</div>`;
-    if (!done) h += `<p class="rsvnote">読み直して馬を選び直したら「予約し直す」で上書きするよ（同じレースは1つ・ポイントは使わないよ）。</p>`;
+    h += `<div class="row" style="margin-top:10px">${done ? '<button class="btn" type="button" data-rsv="result">記録を見る（記録タブ）</button>' : '<button class="btn primary" type="button" data-rsv="result">結果を入れる（記録タブ）</button>' + (cl ? '' : '<button class="btn" type="button" data-rsv="redo">選び直して予約し直す</button>') + '<button class="btn ghost" type="button" data-rsv="cancel">予約を消す</button>'}</div>`;
+    if (!done) h += cl ? `<p class="rsvnote">締切済みのレース（${esc(closedWhy(formClosed()))}）だから、予約し直しはできないよ。予約した買い目のまま、結果は記録タブで入れてね。</p>` : `<p class="rsvnote">読み直して馬を選び直したら「予約し直す」で上書きするよ（同じレースは1つ・ポイントは使わないよ）。</p>`;
     card.innerHTML = h; return;
+  }
+  if (formClosed() && !(rs && (rs.state === 'reserved' || rs.state === 'done'))) {   // 第4.116版：締切済み（予約ずみ・記録ずみの レースは そのまま）
+    const c = formClosed(), saved = rs && rs.state === 'closed';
+    card.innerHTML = h + `<div class="rsvst"><span class="stc skip">締切済み</span><span>${esc(closedWhy(c))}${saved ? '・「締切済みレース」に入っているよ' : ''}</span></div><p class="rsvnote">${CLOSED_NOTE}判定は見られるよ。</p>`;
+    if (!saved) saveClosedRace(J);
+    return;
   }
   if (rs && rs.state === 'given' && !st.rsvEdit) { card.innerHTML = h + `<div class="rsvst"><span class="stc skip">諦めたレース</span><span>このレースは「諦めたレース」に入っているよ</span></div><div class="row"><button class="btn primary" type="button" data-rsv="redo">やっぱり予約する</button></div>`; return; }
   if (!J.horses.length) { card.innerHTML = h + `<div class="banner warn">買い目を作るには馬番が必要だよ。単勝・複勝のオッズの一覧（馬番ごと）を入れてね。</div><div class="row" style="margin-top:10px"><button class="btn ghost" type="button" data-rsv="give">このレースを諦める</button></div>`; return; }
@@ -2212,8 +2262,9 @@ async function reserveRace(J, giveUp) {
 }
 async function cancelReserve(id, btn) {
   if (btn && !btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'ほんとに消す？'; return; }
-  const wasDone = !!(st.bets.get(id) && st.bets.get(id).rsv && st.bets.get(id).rsv.state === 'done');
-  try { await st.db.collection('bets').doc(id).delete(); st.rsvEdit = false; await syncNotify(); toast(wasDone ? '記録を消したよ' : '予約を消したよ（お知らせも消したよ）'); renderResult(); } catch (e) { writeErr(e); }
+  const bb = st.bets.get(id), wasDone = !!(bb && bb.rsv && bb.rsv.state === 'done'), wasClosed = !!(bb && bb.rsv && bb.rsv.state === 'closed');
+  if (wasClosed) { if (closedSaving === id) closedSaving = null; if (st.form.closed && st.form.closed.id === id) { st.form.closed.deleted = true; storeSet('tengel.form', st.form); } }
+  try { await st.db.collection('bets').doc(id).delete(); st.rsvEdit = false; await syncNotify(); toast(wasDone ? '記録を消したよ' : wasClosed ? '締切済みレースから消したよ' : '予約を消したよ（お知らせも消したよ）'); renderResult(); } catch (e) { writeErr(e); }
 }
 
 // --- 結果確認のお知らせ（13章）：発走の15分後（日本時間）。待たせるお知らせはまとめて入れ直す（近い順に64件はアプリ側） ---
@@ -2336,14 +2387,16 @@ function rsvTopHTML() {
   if (!(NATIVE_APP && Reserve())) return '';
   const all = betList(), res = all.filter(b => b.rsv && b.rsv.state === 'reserved').sort((a, b) => a.date.localeCompare(b.date) || (a.rsv.start || '').localeCompare(b.rsv.start || '') || a.r - b.r);
   const given = all.filter(b => b.rsv && b.rsv.state === 'given').sort((a, b) => b.date.localeCompare(a.date) || b.r - a.r).slice(0, 20);
-  if (!res.length && !given.length) return '';
+  const closed = all.filter(b => b.rsv && b.rsv.state === 'closed').sort((a, b) => b.date.localeCompare(a.date) || b.r - a.r).slice(0, 30);   // 第4.116版
+  if (!res.length && !given.length && !closed.length) return '';
   let h = '<div class="rsvtop">';
   h += `<h3>予約レース<span class="muted">結果待ち ${res.length}件${st.notifyOn === false ? '・お知らせはオフ' : st.notifyN ? `・お知らせ ${st.notifyN}件` : ''}</span></h3>`;
   h += res.length ? `<div class="lrows">${res.map(b => recRow(b)).join('')}</div>` : '<p class="small muted">予約中のレースはないよ。判定画面の「買い目を予約」で、ここに並ぶよ。</p>';
   if (given.length) h += `<details class="given"><summary>諦めたレース（${given.length}件）</summary><div class="lrows">${given.map(b => `<div class="lrow" data-id="${esc(b.id)}"><div class="lgiven"><span class="lr-r">${b.r}R</span><span class="lb L${(b.snap || {}).L || '?'}">${(b.snap || {}).L || '?'}</span><span class="lmid"><span class="k">${esc(dlabel(b.date))} ${esc((b.venue || '').trim())}${b.rname ? ' ' + esc(b.rname) : ''}</span><span class="s">諦めたレース（${esc(dlabel(b.rsv.at ? b.rsv.at.slice(0, 10) : b.date))}）</span></span><span class="lend"><button class="btn" type="button" data-act="load">やっぱり予約する</button><button class="btn ghost" type="button" data-act="rdel">消す</button></span></div></div>`).join('')}</div></details>`;
+  if (closed.length) h += `<details class="given closed" data-k="closed"><summary>締切済みレース（${closed.length}件）</summary><p class="small muted" style="margin:0 0 8px">${CLOSED_NOTE}判定だけ残しているよ。</p><div class="lrows">${closed.map(b => { const sn = b.snap || {}; return `<div class="lrow" data-id="${esc(b.id)}"><div class="lgiven"><span class="lr-r">${b.r}R</span><span class="lb L${sn.L || '?'}">${sn.L || '?'}</span><span class="lmid"><span class="k">${esc(dlabel(b.date))} ${esc((b.venue || '').trim())}${b.rname ? ' ' + esc(b.rname) : ''}</span><span class="s">締切済み（${esc(closedWhy(b.rsv))}）${sn.zones && sn.zones.length ? '・' + esc(sn.zones.map(z => z.label).join('・')) : ''}</span></span><span class="lend"><button class="btn" type="button" data-act="load">判定を見る</button><button class="btn ghost" type="button" data-act="rdel">消す</button></span></div></div>`; }).join('')}</div></details>`;
   return h + '</div>';
 }
-const isPendingRsv = b => !!(b.rsv && (b.rsv.state === 'reserved' || b.rsv.state === 'given'));
+const isPendingRsv = b => !!(b.rsv && (b.rsv.state === 'reserved' || b.rsv.state === 'given' || b.rsv.state === 'closed'));
 // 予約したレースの結果入力の欄（買い目は出さない。「買い目を確認」で見る）
 //   第4.65版（まさちゃん「結果と的中金額とかの入力分けて！…結果を入力 → 的中ボタンの演出（オフなら そのまま 次）→ 金額入力（後からでもできるよ）→ 記録」）：
 //   3つの 形（mode）。result＝結果だけ（結果待ちの 予約）／amount＝結果を 決めた 直後（演出の あと）の 金額の 欄だけ／edit＝記録を あとから 直す（全部）
@@ -2628,7 +2681,7 @@ function renderRec() {
 }
 // 記録の一覧に出す「買ったゾーン」（前の記録＝推奨ゾーン全部）
 function buyRowText(b) {
-  if (b.rsv && b.rsv.state === 'given') return '';
+  if (b.rsv && (b.rsv.state === 'given' || b.rsv.state === 'closed')) return '';
   if (b.rsv && b.rsv.bets) { const zs = b.snap?.zones || [], ks = new Set(b.rsv.zones || []); const xs = zs.filter(z => ks.has(zKey(z))).map(z => z.label + hpText({ hp: b.rsv.hp }, z)); return xs.length ? '予約：' + xs.join('・') : '予約'; }
   const zs = b.snap?.zones || []; if (!zs.length || !typesOf(b).some(t => ZONE_TYPES.includes(t))) return '';
   if (!Array.isArray(b.buyZ)) return zs.map(z => z.label).join('・');
@@ -2664,6 +2717,7 @@ const dlabel = d => { const [y, m, dd] = d.split('-'); const wd = '日月火水�
 function loadBetToForm(b) {
   st.form = Object.assign(blankForm(), { venue: b.venue || '大井', date: b.date, r: String(b.r), dist: String(b.dist ?? ''), surface: b.surface || 'ダ', baba: b.baba || '', n: String(b.n ?? ''), tan1: String(b.tan1 ?? ''), s1: String(b.s1 ?? ''), s5: b.s5 == null ? '' : String(b.s5), s10: b.s10 == null ? '' : String(b.s10), s1combo: b.s1combo || '', s5combo: b.s5combo || '', s10combo: b.s10combo || '',
     rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null, rname: b.rname || '', start: b.start || '', pid: b.pid || null });
+  if (b.rsv && b.rsv.state === 'closed') st.form.closed = { by: b.rsv.by || 'time', word: b.rsv.word || '', id: b.id, at: b.rsv.at || '', start: b.rsv.start || '' };   // 第4.116版：締切済みの しるしも 持って いく
   st.draft = null; formToUI(); storeSet('tengel.form', st.form); setTab('judge'); renderResult(); toast(`${dlabel(b.date)} ${b.venue || '大井'}${b.r}R を開いたよ`);
 }
 // 書き出し
@@ -2673,7 +2727,7 @@ function recExportRows() {
     return [b.date.replace(/-/g, '/'), b.venue || '大井', b.r, sn.L ? sn.L + '層' : '', (T.KUBUN_LABEL[sn.kubun] || ''), (sn.zones || []).map(z => z.label).join('・'), buyLabels(b).join('・'), typesOf(b).join('・'), typesOf(b).map(t => { const a = amtOf(b, t); return a ? `${t} ${a.stake ?? '—'}→${a.payout ?? '—'}${b.other ? '' : '（' + betStatus(b).per[t] + '）'}` : t; }).join('／'), b.p1 != null ? [b.p1, b.p2, b.p3].filter(v => v != null).join('-') : '', s.s, s.s === '未購入' || s.given ? '' : stakeOf(b), s.s === '未購入' || s.given ? '' : payoutOf(b), s.s === '未購入' || s.given ? '' : payoutOf(b) - stakeOf(b), b.note || ''].concat(NATIVE_APP ? [rsvColText(b)] : []).map(x => String(x ?? '')); });
 }
 const REC_HEAD = ['日付', '開催場', 'R', '層', '区分', '推奨ゾーン', '買ったゾーン', '券種', '券種ごとの金額（購入→回収）', '着順（人気）', '結果', '購入額', '回収額', '収支', 'メモ'].concat(NATIVE_APP ? ['予約'] : []);
-const rsvColText = b => !b.rsv ? '' : b.rsv.state === 'given' ? '諦めた' : `予約（${Object.keys(b.rsv.bets || {}).map(t => `${t} ${(b.rsv.bets[t] || []).map(c => Reserve() ? Reserve().label(t, c) : c.join('-')).join(' ')}`).join('／')}）`;
+const rsvColText = b => !b.rsv ? '' : b.rsv.state === 'given' ? '諦めた' : b.rsv.state === 'closed' ? '締切済み' : `予約（${Object.keys(b.rsv.bets || {}).map(t => `${t} ${(b.rsv.bets[t] || []).map(c => Reserve() ? Reserve().label(t, c) : c.join('-')).join(' ')}`).join('／')}）`;
 function buildRecExport() { const rows = recExportRows(); $('#recExportText').value = [REC_HEAD, ...rows].map(r => r.join('\t')).join('\n'); $('#recExportInfo').textContent = `${rows.length}件`; $('#recSave').hidden = !st.downloads; }
 $('#recCopy').addEventListener('click', async () => { const t = $('#recExportText').value; try { await navigator.clipboard.writeText(t); toast('コピーしたよ。Excelに貼り付けてね'); } catch { const a = $('#recExportText'); a.focus(); a.select(); toast('選択したよ。コピーしてね', 3000); } });
 $('#recSave').addEventListener('click', async () => {

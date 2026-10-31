@@ -121,6 +121,12 @@
       var bad = /^(ダート|ダ|芝|障害)?\d|^(発走|馬場|天候|単勝|複勝|馬連|馬単|ワイド|3連|オッズ|人気|出馬表|結果|締切|確定|頭|m)/.test(nm) || /(頭|m|倍|分|時|円)$/.test(nm) || BABA.indexOf(nm) >= 0 || STOP.indexOf(nm) >= 0;
       if (!bad && /[一-龥ぁ-んァ-ヶA-Za-z]/.test(nm)) H.rname = nm;
     }
+    // 締切済みの印（第4.116版・まさちゃん「画像読み取りで締切済みレースは締切済みレースに記録される」）：画面に 発売が 終わった 言葉が あるか。
+    //   読めた 言葉を そのまま 返す（判定は src.html：発走時刻を すぎて いる か・この 言葉が あるか）。
+    //   「締切前」「オッズは締切前のものです」「締切 18:05」「締切時刻」「締切予定」「締切まで」「締切間近」は 締切の 前・予定の 表示なので 入れない（締切の あとに 続く 字で 見分ける）
+    H.closed = null;
+    var cre = /締\s*切\s*済\s*み?|締\s*め?\s*切\s*り?\s*ました|発売\s*(?:は\s*)?終了|確定\s*オッズ|オッズ\s*確定|最終\s*オッズ|結果\s*確定|払戻金|(?:発売\s*)?締\s*め?\s*切(?!\s*り?\s*(?:前|直前|間近|が\s*近|時刻|時間|予定|まで|迄|[:：]?\s*\d))(?:\s*り)?/;
+    if ((m = cre.exec(text))) H.closed = m[0].replace(/\s+/g, '');
     return H;
   }
   function pad(x) { return String(+x).padStart(2, '0'); }
@@ -241,13 +247,13 @@
     var all = rs.map(function (r) { return r.text; });
     var H = header(rs, all);
     var hs = horses(rs), tri = trifecta(rs);
-    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, horses: hs, tri: tri, lines: (lines || []).length };
+    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, closed: H.closed, horses: hs, tri: tri, lines: (lines || []).length };
   }
   // 画像（1〜3枚）をまとめる：項目ごとに最初に読めたもの。単勝の表は馬の数がいちばん多い画像、3連単は人気順の行がいちばん多い画像
   function parse(images) {
     var docs = (images || []).map(parseOne);
-    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, horses: null, s1: null, s5: null, s10: null };
-    ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n', 'start', 'rname'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
+    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, closed: null, horses: null, s1: null, s5: null, s10: null };
+    ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n', 'start', 'rname', 'closed'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
     var best = null; docs.forEach(function (d) { if (d.horses && (!best || d.horses.length > best.length)) best = d.horses; });
     if (best) {
       D.horses = best.map(function (h) { return { no: h.no, tan: h.tan, fuku: h.fuku || null }; });

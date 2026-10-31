@@ -114,5 +114,15 @@ for (const [name, lines] of [['C 3連単 人気順（セルごと）', c], ['C 3
   const r2 = O.parseResult([B, L(['払戻金', '単勝 6 240円', '馬単 6-2 1,120円'])]);
   check(JSON.stringify(r2.p) === JSON.stringify([[6], [2, 10], []]) && r2.pay['馬単']['6-2'] === 1120 && r2.got.includes('払戻（単勝・馬単）'), '2枚をまとめる（着順＋払戻）：' + r2.got.join('・'));
 }
+// 第4.116版：締切済みの印（closed）：画面に 発売が 終わった 言葉が あれば その言葉・締切の 前や 予定の 表示（「オッズは締切前のものです」「締切 18:05」「締切時刻」「締切まで」）は null
+{
+  const withLine = t => a.concat([{ text: t, x: 0.62, y: 0.955, w: 0.3, h: 0.03 }]);
+  check(O.parse([a]).closed === null && O.parse([merged(a)]).closed === null, '締切済み：A（「オッズは締切前のものです」が ある ふつうの 画面）は null');
+  const yes = { '締切済': '締切済', '締切済み': '締切済み', '発売締切': '発売締切', '投票締切済み': '締切済み', '締め切りました': '締め切りました', '発売は終了しました': '発売は終了', '発売終了': '発売終了', '確定オッズ': '確定オッズ', 'オッズ確定': 'オッズ確定', '最終オッズ': '最終オッズ', '結果確定': '結果確定', '締切': '締切', '締切り': '締切り' };
+  for (const [t, w] of Object.entries(yes)) check(O.parse([withLine(t)]).closed === w, `締切済み：「${t}」→ ${JSON.stringify(O.parse([withLine(t)]).closed)}`);
+  for (const t of ['締切 18:03', '発売締切 18:05', '発売締切時刻 18:05', '締切予定 18:05', '締切まで あと5分', '締切間近', '締切前', '締切り前', 'オッズ']) check(O.parse([withLine(t)]).closed === null, `締切済み：「${t}」は null（締切の 前・予定）`);
+  const two = O.parse([a, withLine('締切済')]);
+  check(two.closed === '締切済' && two.r === 9, '締切済み：2枚の うち 1枚に あれば その言葉');
+}
 console.log('FAILS', fails.length, fails);
 process.exit(fails.length ? 1 : 0);

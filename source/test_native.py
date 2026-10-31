@@ -129,16 +129,17 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         # 第4.112版（2026/11/01）：テストの レースは 10月の 日付（2026-10-20・10-21 など）。記録タブは「いまの 月」を 開く ので、
-        #   11月に なると 10月の レースが 見えず テストが 止まる → ページの Date だけ 2026/10/30 12:00（日本）から すすめる
+        #   11月に なると 10月の レースが 見えず テストが 止まる → ページの Date だけ 2026/10/01 12:00（日本）から すすめる
+        #   （第4.116版：10/30 → 10/01。画像の 読み取りの テストの レース（10月14日 18:05）が「締切済み」に ならない ように、10月の レースが みな 先に なる 日に した）
         #   （時間は ふつうに 流れる。performance・タイマー・アニメーションは そのまま＝Playwright の clock は performance の 記録を 消して しまう ので 使わない）
         _nc = b.new_context
-        def _ctx_at_oct30(*a, **k):
+        def _ctx_at_oct01(*a, **k):
             c = _nc(*a, **k)
-            c.add_init_script("""(() => { const D = Date, OFF = Date.UTC(2026, 9, 30, 3, 0, 0) - D.now();
+            c.add_init_script("""(() => { const D = Date, OFF = Date.UTC(2026, 9, 1, 3, 0, 0) - D.now();
               class FD extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() + OFF); } static now() { return D.now() + OFF; } }
               FD.UTC = D.UTC; FD.parse = D.parse; window.Date = FD; })();""")
             return c
-        b.new_context = _ctx_at_oct30
+        b.new_context = _ctx_at_oct01
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP')
 
         def save_backup(source, text):
@@ -1160,6 +1161,7 @@ try:
         w = p2.evaluate("({ native: window.__NATIVE, bridge: window.TengelNative, dl: null })")
         p2.click('.tabbar button[data-tab=set]'); p2.wait_for_timeout(400)
         check(w['native'] is False and w['bridge'] is None and p2.locator('#suCheck').count() == 1 and p2.locator('#sbAuto').count() == 0 and p2.locator('#setUpdate h2').inner_text() == 'アプリの更新', 'Web版：アプリの印は出ない（更新の確認・バックアップは今までどおり）')
+        check(p2.evaluate("(() => { const n = document.querySelector('#ocrNote'); return !n || n.hidden; })()") and p2.evaluate("(() => { const t = document.body.innerText || ''; return !t.includes('締切済み') && !document.querySelector('#recList .rsvtop details[data-k=closed]'); })()"), 'Web版：締切済みレースの ※の 注意は 出ない・締切済みの 判定も しない（第4.116版）')
         check(p2.locator('#setNotify').count() == 0 and p2.evaluate("typeof window.TengelReserve === 'undefined' && typeof window.TengelCustomRate === 'undefined'"), 'Web版：お知らせの設定・予約の仕組みは入らない')
         check(p2.locator('#setFx').count() == 0 and p2.evaluate("typeof window.TengelFx === 'undefined' && typeof window.__FX === 'undefined' && !document.querySelector('#fxCss')"), 'Web版：的中ボタン（演出・設定）は入らない')
         check(p2.locator('#ptsPill').count() == 0 and p2.locator('#testTag').count() == 0 and p2.locator('#ptsCss').count() == 0 and p2.evaluate("getComputedStyle(document.querySelector('#dbpill')).marginLeft") != '0px', 'Web版：上の帯の 所有ポイント・説明書の 置き場は かわらない')
@@ -1523,6 +1525,109 @@ try:
               f'購入を復元（壁紙パックの 箱から）→ お得パックで 2つとも もどる（進み具合は そのまま・ミッションも もどる）（{t8s}）')
         p8.screenshot(path=os.path.join(W, 't4', 'native_bundle.png'), full_page=False)
         ctx8.close()
+        # ---- 第4.116版（まさちゃん 2026/11/01 07:50「画像読み取りで締切済みレースは締切済みレースに記録される。買い目予約と結果&記録ができない。ポイントは200p消費する。※で注意事項を表示」）：
+        #      ページの いまは 2026/10/01 12:00（上の Date）。①発走時刻を すぎた レース（10月1日 09:00）→ 200P は 使う・判定は 出る（「締切済み」の 印）・馬を 選ぶ 行と「買い目を予約」は 出ない・
+        #      記録タブの「締切済みレース」に 入る（ミッションに 数えない・月の 一覧と 収支に 入らない・自動バックアップには 入る）・「判定を見る」「消す」 ②画面に「発売締切」→ 同じ ③「締切 18:03」（締切の 時刻）は 締切済みに しない・ふつうに 予約できる ----
+        m9 = {}
+
+        def marker9(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': m9[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': m9.pop(key, None); return {'ok': True}
+            v = m9.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        bk9 = {'backup': None}
+        ctx9 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); ctx9.add_init_script(FAKE)
+        ctx9.expose_binding('__saveBackup', lambda s, t: bk9.__setitem__('backup', t)); ctx9.expose_binding('__marker', marker9)
+        p9 = ctx9.new_page(); p9.on('pageerror', lambda e: errs.append('CLOSED ' + str(e)))
+        p9.goto(APPURL); p9.wait_for_timeout(1500); gate(p9); p9.wait_for_timeout(700)
+        note9 = p9.locator('#ocrNote')
+        check(note9.count() == 1 and note9.is_visible() and note9.inner_text().startswith('※') and '締切済み' in note9.inner_text() and '買い目の予約と結果の記録はできない' in note9.inner_text() and '200P' in note9.inner_text()
+              and p9.evaluate("(() => { const n = document.querySelector('#ocrNote'), r = document.querySelector('#ocrRow'); return n.getBoundingClientRect().top >= r.getBoundingClientRect().bottom - 1; })()"),
+              f'読み取りの ボタンの 下に ※の 注意（締切済みは 予約と 記録が できない・200P は 使う）（{note9.inner_text()[:50]}…）')
+
+        def lines9(r, date=None, start=None, extra=None):
+            L = [dict(l, text=l['text'].replace('第9競走', f'第{r}競走').replace('9R', f'{r}R')) for l in OCR_LINES['a_tanfuku_waku']]
+            if date or start: L = [dict(l, text=l['text'].replace('10月14日(水)', date or '10月14日(水)').replace('発走 18:05', f'発走 {start}' if start else '発走 18:05')) for l in L]
+            if extra: L.append({'text': extra, 'x': 0.62, 'y': 0.955, 'w': 0.3, 'h': 0.03})
+            return L
+        CL9 = """() => { const q = s => document.querySelector(s), t = s => (q(s) || {}).innerText || ''; const f = JSON.parse(localStorage.getItem('tengel.form') || '{}');
+          const bets = [...TengelLocal.mem.bets.values()]; return { total: TengelWallet.total(), counted: TengelWallet.countedN(), msg: t('#ocrMsg'), chips: [...document.querySelectorAll('#result .chip')].map(c => c.innerText), hp: document.querySelectorAll('#result .hprow, #result .omakase, #result [data-hp]').length,
+            reserve: document.querySelectorAll('#recCard [data-rsv=reserve], #recCard [data-rsv=give], #recCard [data-rsv=redo]').length, card: t('#recCard'), closed: f.closed || null, r: q('#fR').value, date: f.date, start: f.start, toast: t('#toast'),
+            bets: bets.map(b => ({ id: b.id, r: b.r, state: b.rsv ? b.rsv.state : null, by: b.rsv ? b.rsv.by : null, word: b.rsv ? b.rsv.word : null, types: b.types, stake: b.stake, p1: b.p1 })) }; }"""
+        # ① 発走時刻を すぎた レース（10月1日 発走 09:00・いまは 12:00）
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(9, date='10月1日(木)', start='09:00')], ensure_ascii=False))
+        p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
+        c1 = p9.evaluate(CL9)
+        print('   締切済み①:', {k: c1[k] for k in ('total', 'counted', 'chips', 'hp', 'reserve', 'closed', 'date', 'start', 'bets')})
+        check(c1['total'] == 1300 and '200P 使ったよ' in c1['msg'] and c1['date'] == '2026-10-01' and c1['start'] == '09:00' and c1['r'] == '9', f'発走 09:00 の レース（10月1日）を 読む → 読み込みの 200P は 使う（残り {c1["total"]}P）・日付と 発走時刻が 入る')
+        check('締切済みのレース' in c1['msg'] and '発走 09:00 をすぎている' in c1['msg'] and '買い目の予約と結果の記録はできないよ' in c1['msg'] and '200P は使うよ' in c1['msg'], f'読み取りの お知らせに「締切済みのレースだよ（発走 09:00 をすぎている）」と ※の 注意（{c1["msg"][-90:]}）')
+        check(bool(c1['closed']) and c1['closed']['by'] == 'time' and c1['closed']['start'] == '09:00' and '締切済み' in c1['chips'] and c1['hp'] == 0 and c1['reserve'] == 0 and '締切済み' in c1['card'] and '発走 09:00 をすぎている' in c1['card'] and '判定は見られるよ' in c1['card'],
+              f'判定は 出る（「締切済み」の 印）・馬を 選ぶ 行と お任せ・「買い目を予約」「諦める」は 出ない・買い目の カードは「締切済み」と ※の 注意（{c1["chips"]}／hp {c1["hp"]}／ボタン {c1["reserve"]}）')
+        check(len(c1['bets']) == 1 and c1['bets'][0]['state'] == 'closed' and c1['bets'][0]['by'] == 'time' and c1['bets'][0]['r'] == 9 and c1['bets'][0]['types'] == [] and c1['bets'][0]['stake'] is None and c1['bets'][0]['p1'] is None and c1['counted'] == 0
+              and '締切済みレース' in c1['toast'] and '「締切済みレース」に入っているよ' in c1['card'],
+              f'「締切済みレース」として 記録に 入る（買い目・金額・結果は なし）・ミッションには 数えない（{c1["bets"]}／{c1["toast"]}）')
+        id9 = c1['bets'][0]['id']
+        bkj = json.loads(bk9['backup'] or '{}')
+        check(any(x.get('id') == id9 and (x.get('rsv') or {}).get('state') == 'closed' for x in bkj.get('bets', [])), '締切済みレースも 自動バックアップに 入る')
+        # 記録タブ：上の「締切済みレース」に 出る・月の 一覧と 収支には 入らない・「判定を見る」→ 判定画面・「消す」→ 消える
+        p9.click('.tabbar button[data-tab=rec]'); p9.wait_for_timeout(700)
+        top9 = p9.locator('#recList .rsvtop details[data-k=closed]')
+        tt9 = top9.inner_text() if top9.count() else ''
+        check(top9.count() == 1 and '締切済みレース（1件）' in tt9 and p9.locator('#recList .rsvtop .lrow').count() == 1 and p9.locator('#recList .dgroup').count() == 0 and '結果待ち 0件' in p9.locator('#recList .rsvtop').inner_text() and p9.locator('#recSummary').inner_text() == '',
+              f'記録タブの 上に「締切済みレース（1件）」（予約レースは 0件）・月の 一覧と 収支には 出ない（{tt9[:40]}…）')
+        top9.locator('summary').click(); p9.wait_for_timeout(300)
+        tt9 = top9.inner_text()
+        row9 = top9.locator(f'.lrow[data-id="{id9}"]')
+        rt9 = row9.inner_text() if row9.count() else ''
+        check(row9.count() == 1 and '9R' in rt9 and '締切済み（発走 09:00 をすぎている）' in rt9 and row9.locator('[data-act=load]').inner_text() == '判定を見る' and row9.locator('[data-act=rdel]').inner_text() == '消す' and row9.locator('.rsvf, .recf, input').count() == 0
+              and '買い目の予約と結果の記録はできないよ' in tt9 and '判定だけ残しているよ' in tt9,
+              f'行は 9R・締切済み（発走 09:00 をすぎている）・「判定を見る」「消す」だけ（結果の 欄は ない）・欄の 上に ※の 注意（{rt9[:60]}）')
+        row9.locator('[data-act=load]').click(); p9.wait_for_timeout(800)
+        c2 = p9.evaluate(CL9)
+        check(p9.evaluate("document.querySelector('.tabbar button[data-tab=judge]').getAttribute('aria-selected')") == 'true' and c2['r'] == '9' and '締切済み' in c2['chips'] and c2['reserve'] == 0 and '「締切済みレース」に入っているよ' in c2['card'] and c2['total'] == 1300,
+              '「判定を見る」→ 判定画面に 戻る（締切済みの 印・予約の ボタンは ない・ポイントは 使わない）')
+        p9.click('.tabbar button[data-tab=rec]'); p9.wait_for_timeout(600)
+        top9 = p9.locator('#recList .rsvtop details[data-k=closed]'); top9.locator('summary').click(); p9.wait_for_timeout(200)
+        row9 = top9.locator(f'.lrow[data-id="{id9}"]')
+        row9.locator('[data-act=rdel]').click(); p9.wait_for_timeout(200)
+        check(row9.locator('[data-act=rdel]').inner_text() == 'ほんとに消す？', '「消す」→「ほんとに消す？」')
+        row9.locator('[data-act=rdel]').click(); p9.wait_for_timeout(900)
+        c3 = p9.evaluate(CL9)
+        check(len(c3['bets']) == 0 and '締切済みレースから消したよ' in c3['toast'] and p9.locator('#recList .rsvtop details[data-k=closed]').count() == 0, f'もう一度 押す → 締切済みレースから 消える（{c3["toast"]}）')
+        p9.click('.tabbar button[data-tab=judge]'); p9.wait_for_timeout(800)
+        c4 = p9.evaluate(CL9)
+        check(len(c4['bets']) == 0 and '締切済み' in c4['chips'] and c4['reserve'] == 0 and '締切済み' in c4['card'] and '入っているよ' not in c4['card'], '消した あとに 判定画面に 戻っても、入れ直さない（印と ※は そのまま・予約も できない）')
+        # ② 画面に「発売締切」（日付は 先の 10月14日）→ 言葉で 締切済み
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, extra='発売締切')], ensure_ascii=False))
+        p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
+        c5 = p9.evaluate(CL9)
+        print('   締切済み②:', {k: c5[k] for k in ('total', 'counted', 'chips', 'reserve', 'closed', 'date', 'start', 'bets')})
+        check(c5['total'] == 1100 and c5['r'] == '10' and c5['date'] == '2026-10-14' and bool(c5['closed']) and c5['closed']['by'] == 'kw' and c5['closed']['word'] == '発売締切' and '画面に「発売締切」' in c5['msg'] and '締切済み' in c5['chips'] and c5['reserve'] == 0
+              and len(c5['bets']) == 1 and c5['bets'][0]['state'] == 'closed' and c5['bets'][0]['by'] == 'kw' and c5['bets'][0]['word'] == '発売締切' and c5['bets'][0]['r'] == 10 and c5['counted'] == 0,
+              f'画面に「発売締切」の ある 10R（10月14日・まだ 先）→ 200P は 使う（残り {c5["total"]}P）・「画面に「発売締切」」で 締切済み → 締切済みレースに 入る（{c5["closed"]}）')
+        # ③「締切 18:03」（締切の 時刻の 表示）は 締切済みに しない → ふつうに 予約できる・ミッションに 数える
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(11, extra='締切 18:03')], ensure_ascii=False))
+        p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
+        c6 = p9.evaluate(CL9)
+        check(c6['total'] == 900 and c6['r'] == '11' and c6['closed'] is None and '締切済み' not in c6['chips'] and '締切済み' not in c6['msg'] and c6['hp'] >= 1 and p9.locator('#recCard [data-rsv=reserve]').count() == 1 and len(c6['bets']) == 1,
+              f'「締切 18:03」（締切の 時刻）の 11R は 締切済みに しない（馬を 選ぶ 行と「買い目を予約」が 出る・残り {c6["total"]}P）')
+        p9.locator('#recCard [data-rsv=reserve]').click(); p9.wait_for_timeout(1000)
+        c7 = p9.evaluate(CL9)
+        b11 = [x for x in c7['bets'] if x['r'] == 11]
+        check(len(b11) == 1 and b11[0]['state'] == 'reserved' and c7['counted'] == 1 and len(c7['bets']) == 2, f'11R は ふつうに 予約できる・ミッションに 1レース 数える（締切済みの 10R は 数えない）（{c7["counted"]}）')
+        p9.click('.tabbar button[data-tab=rec]'); p9.wait_for_timeout(700)
+        rt = p9.locator('#recList .rsvtop').inner_text()
+        check('予約レース' in rt and '締切済みレース（1件）' in rt and p9.locator('#recList .rsvtop details[data-k=closed] .lrow').count() == 1 and p9.locator('#recList .dgroup').count() == 0, f'記録タブ：予約レース（11R）と 締切済みレース（10R）が 分かれて 出る（{rt[:60]}…）')
+        p9.locator('#recList .rsvtop details[data-k=closed] summary').click(); p9.wait_for_timeout(300)
+        p9.screenshot(path=os.path.join(W, 't4', 'native_closed_rec.png'), full_page=False)
+        p9.click('.tabbar button[data-tab=judge]'); p9.wait_for_timeout(500)
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, extra='発売締切')], ensure_ascii=False))
+        p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2200)
+        c8 = p9.evaluate(CL9)
+        check(c8['total'] == 900 and c8['r'] == '10' and '0P' in c8['msg'] and '締切済み' in c8['chips'] and len(c8['bets']) == 2, '締切済みの 10R を 読み直しても 0P（同じ レース）・締切済みの まま')
+        p9.screenshot(path=os.path.join(W, 't4', 'native_closed_judge.png'), full_page=False)
+        ctx9.close()
+        # Web版（ブラウザ）には ※の 注意を 出さない（締切済みの 仕組みは App Store版だけ）→ 下の ctx2 で 見る
         # ---- 第4.59版：テスト版（TENGEL_TEST=1）：はじめから 10,000P・テスト版の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタンを ためす）----
         store['markers'].clear()
         ctx5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx5.add_init_script(FAKE)
