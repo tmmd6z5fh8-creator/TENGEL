@@ -681,8 +681,8 @@
     + '.fxs .rb .memx .by{font-size:11px;color:var(--sub)}'
     + '.fxs .rb .memx b.plus{color:#1E8E3E}.fxs .rb .memx b.minus{color:#D33A2C}'
     // わく（絵は あとから）：ど的中 ①光の輪の芝コース（緑の 芝に 光の 輪）・②プレミアムかわいい馬（ピンクの 光）・極ど的中 幻の馬（紫の やみ）・超神様 鳥居（朱と 金）・超プレミアム神様（金と ピンク）・神様極的中（白と 金）
-    + '.fxs .ov.mem.f-turf .dim{background:radial-gradient(circle at 50% 36%,rgba(255,252,214,.62) 0,rgba(255,250,200,.18) 120px,rgba(0,0,0,0) 190px),linear-gradient(180deg,#0E3A1E 0%,#1F6F38 48%,#2E8B46 70%,#163F24 100%)}'
-    + '.fxs .ov.mem.f-turf .mring{position:absolute;z-index:4;left:50%;top:36%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;border:12px solid rgba(255,255,255,.55);box-shadow:0 0 40px 16px rgba(255,248,200,.55),inset 0 0 40px 10px rgba(255,248,200,.4);pointer-events:none}'
+    + '.fxs .ov.mem.f-turf .dim{background:radial-gradient(circle at 50% 14%,rgba(255,252,214,.62) 0,rgba(255,250,200,.18) 120px,rgba(0,0,0,0) 190px),linear-gradient(180deg,#0E3A1E 0%,#1F6F38 48%,#2E8B46 70%,#163F24 100%)}'
+    + '.fxs .ov.mem.f-turf .mring{position:absolute;z-index:4;left:50%;top:118px;width:360px;height:360px;margin:-180px 0 0 -180px;border-radius:50%;border:14px solid rgba(255,255,255,.6);box-shadow:0 0 44px 18px rgba(255,248,200,.6),inset 0 0 44px 12px rgba(255,248,200,.45);pointer-events:none}'   // ボードの 上に 光の 輪の 上半分が 見える（ボードの うしろ）
     + '.fxs .ov.mem.f-cute .dim{background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.7) 0,rgba(255,214,235,.3) 150px,rgba(0,0,0,0) 240px),linear-gradient(180deg,#FFD4E6 0%,#FF9FC6 55%,#F77FB3 100%)}'
     + '.fxs .ov.mem.f-phantom .dim{background:radial-gradient(circle at 50% 34%,rgba(170,80,240,.55) 0,rgba(60,10,110,.5) 160px,rgba(6,2,16,.98) 420px)}'
     + '.fxs .ov.mem.f-torii .dim{background:radial-gradient(circle at 50% 30%,rgba(255,226,130,.7) 0,rgba(220,90,40,.55) 170px,rgba(70,8,8,.97) 440px)}'
