@@ -369,7 +369,7 @@
       if (ok && open) use += ['hit', 'miss'].filter(k => fits(it, k)).map(k => { const p = sel[k] === it.id;
         return `<button class="btn ghost bcpick" type="button" data-bcact="use" data-id="${it.id}" data-slot="${k}" aria-pressed="${p}">${p ? '✓ ' : ''}${KIND[k]}</button>`; }).join('');
       if (ok) use += `<button class="btn ghost bcsee" type="button" data-bcact="see" data-id="${it.id}">${seeLabel(it)}</button>`;
-      h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" aria-label="${it.no}. ${esc(it.name)}${on ? '（使用中）' : open ? '' : '（まだ）'}">`
+      h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" role="group" aria-label="${it.no}. ${esc(it.name)}${on ? '（使用中）' : open ? '' : '（まだ）'}">`
         + `${open ? '' : '<span class="bclk" aria-hidden="true">🔒</span>'}${thumbHtml(it)}<span class="bcn"><span class="bcno">${it.no}</span>${esc(it.name)}${isNew ? '<span class="bcnew">NEW</span>' : ''}</span>`
         + `<span class="bcd">${esc(it.desc)}${esc(when && it.desc.indexOf('とき') < 0 ? when : '')}</span>`
         + `<span class="bcs">${st}</span>${use ? `<div class="bcuse">${use}</div>` : ''}</div>`;
