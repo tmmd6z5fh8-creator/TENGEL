@@ -895,9 +895,10 @@
   - 海賊（stand・walk）・宇宙（run）・パドック（f1／f4／f8・n2／n5／n7 と それぞれの _s・_dd・_dl・_dr・_p の 36まい）・恐竜時代（far・near と _s）・近未来都市（bolt0〜2・run・trail）・七夕（h_*／o_*・love）・浮世絵風（run・お侍さん 2.5倍 → 3.5倍・大波 2倍 → 3倍）。
   - もとから 3倍の 4まい（競馬場の crowd・horses、浮世絵風の foam・ribbon）は そのまま。
 - 作り方：`kisekae/pack/make/sheets.py`（シートの 倍率 `z` を 書いて CSS は それで 割る）・`kisekae/flat/horse_flat.py`（書き出しの 拡大）・`make/future_art.py`・`make/paddock_moves.py`・`make/tanabata_art.py`・`make/ukiyoe_art.py`・`make/ukiyoe_great.py`・`make/ukiyoe_samurai.py`・`pack/paddock.py`。絵は リポジトリに 入れない（`ios/kisekae_blobs`）。
-- 壁紙パックの 絵：74まい 約7.2MB → 74まい 約11.4MB（アプリは 約4MB 大きく なる）。
+- 壁紙パックの 絵：74まい 約7.2MB → 74まい 約11.4MB（アプリは 69.0MB → 73.3MB）。
 - 点めつ（`test_ks_flash.py`・11枚の 壁紙と 的中PUSH）：11枚とも 1秒に 4回 以上 点めつする 点が 画面の 10% 以上に なる 窓 0個（壁紙の いちばん 多い 窓 1.5%＝浮世絵風・的中PUSH 1.4%）。
 - 第4.112版には ボードを持つ馬の 前足の 直し（上の 22 の 節）も 入って いる。
+- テスト：`test_native.py`（322）・`test_iphone_only.py`（58）・`test_manual.py`・`test_appname.py`・`test_points.js`（60）・`test_bcx_flash.py`。テストの ページは Date だけ 2026/10/30 から すすめる（テストの レースが 10月の 日付の ため・11/01）。
 
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
