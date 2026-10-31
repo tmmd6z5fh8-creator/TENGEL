@@ -1,0 +1,3 @@
+2026-10-31 17:45:20.530 appintentsmetadataprocessor[11704:37845] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+warning: Could not get trait set for device iPhone18,3 with version 26.2
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/runner/work/TENGEL/TENGEL/Tengel.swiftpm/Assets.xcassets (in target 'テンゲル' from project 'テンゲル')

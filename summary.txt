@@ -1,0 +1,22 @@
+== runner: macOS 15.8.2 arm64 (macos-15)
+== xcode: Xcode 16.4 Build version 16F6 
+== iPhone: 8C9F4118-331E-4250-B1FC-194972BA6726|iPhone 17|iOS 26.2
+== iPad: CBC79C65-B345-49C4-8CD6-8D0352D75971|iPad Pro 11-inch (M5)|iOS 26.2
+== scheme: テンゲル
+== build Swift5 Debug simulator: exit 0 (19s)
+   errors: 0  warnings: 3
+== build Swift6 Debug simulator: exit 0
+   errors: 0  warnings: 2
+== build Swift5 Release device: exit 0
+   errors: 0  warnings: 2
+   release app:  20M  selftest in release: 0
+== app: テンゲル.app
+   bundle id: jp.tengel.app  version: 1.0 (1)
+   iphone-only: UIDeviceFamily=1, orientations(iphone)=1 orientations(ipad)=1 launchscreen=yes OK
+   web files: 34  index.html at: ./index.html 
+   language: CFBundleDevelopmentRegion=ja ja.lproj files=2 localizations= OK
+== iPhone: installed
+   iphone 1: mark fx-fz-result TIMEOUT
+   iphone 2: report-2
+   iphone 3: report-3
+   iphone 3: report-link
