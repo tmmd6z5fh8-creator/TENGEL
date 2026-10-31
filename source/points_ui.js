@@ -4,7 +4,9 @@
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
-//    22こを 順に 解放（points.js の BOARD・第4.108版で 22「ボードを持つ馬」を 足した）。使うのは 1つ（board.sel）。出世馬の 連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）
+//    16こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと。1〜15 は じゅんび中・16 は「ボードを持つ馬」）。
+//    第4.113版：的中の とき（board.selHit）・ハズレの とき（board.selMiss）で べつべつに 1つずつ 使う（前の 1つの board.sel は 両方へ うつす）。
+//    連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）は 数えて おく（第4.113版：出世馬は 消した ので いまは どの 飾りも 使わない）
 //  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
 //    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・ほかの画面から使う窓口：window.TengelWallet
@@ -26,15 +28,18 @@
 
   // ---------- 台帳（アプリの中） ----------
   // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態）,
-  //                   board{ reads（買った あとに 読み込んだ レース）, sel（使う もの・'none'＝なし）, streak（出世馬：連続的中）, res[]（連続に 数えた レース） },
+  //                   board{ reads（買った あとに 読み込んだ レース）, selHit（的中の ときに 使う もの）・selMiss（ハズレの ときに 使う もの）（'none'＝なし・''＝まだ 選んで いない）,
+  //                          streak（連続的中）, res[]（連続に 数えた レース） },
   //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） } }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
-  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, sel: '', streak: 0, res: [] }, pack: { reads: 0 } });
+  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, res: [] }, pack: { reads: 0 } });
   function normalize(w) {
     const o = Object.assign(blank(), w && typeof w === 'object' ? w : {});
     o.id = 'wallet'; o.events = Array.isArray(o.events) ? o.events.filter(Boolean) : []; o.paid = Array.isArray(o.paid) ? o.paid : []; o.counted = o.counted && typeof o.counted === 'object' ? o.counted : {};
-    o.board = Object.assign({ reads: 0, sel: '', streak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
+    o.board = Object.assign({ reads: 0, streak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
+    // 第4.113版：的中・ハズレで べつべつに 選ぶ（selHit・selMiss）。前の 版の 1つの 選択（sel）は 的中にも ハズレにも ついて いた ので 両方へ・消した 飾りは ''（points.js の boardSel）
+    const bs = P.boardSel(o.board); o.board.selHit = bs.hit; o.board.selMiss = bs.miss; delete o.board.sel;
     if (!Array.isArray(o.board.res)) o.board.res = [];
     o.board.reads = Math.max(0, Math.floor(+o.board.reads || 0)); o.board.streak = Math.max(0, Math.floor(+o.board.streak || 0));
     o.pack = Object.assign({ reads: 0 }, o.pack && typeof o.pack === 'object' ? o.pack : {});
@@ -211,36 +216,43 @@
     return { owned, reads, n: owned ? P.packUnlocked(reads) : 0, next: owned ? P.packNext(reads) : null, every: P.WALLPACK.every, total: P.WALLPACK.n };
   }
   const packN = () => packInfo().n;
-  // 買った あとの 読み込み（200P を 使った 1レース）を 数える。新しく 解放した ものを 返す（はじめて なら それを 使う ものに）
+  // 第4.113版：的中の とき（selHit）・ハズレの とき（selMiss）の 2つ。'none'＝なし・''＝まだ 選んで いない（つぎに 解放した 飾りを そのまま 使う）
+  const BSLOT = { hit: 'selHit', miss: 'selMiss' };
+  // n0 → n1 こ 解放した：その 間の 飾り（じゅんび中は のぞく）を、まだ 選んで いない 所に つける（points.js の boardOpen）。解放した 飾りを 返す
+  function boardOpened(n0, n1) {
+    const bd = W.board, sel = { hit: bd.selHit, miss: bd.selMiss }, got = P.boardOpen(sel, n0, n1);
+    bd.selHit = sel.hit; bd.selMiss = sel.miss;
+    return got;
+  }
+  // 買った あとの 読み込み（200P を 使った 1レース）を 数える。新しく 解放した 飾りを 返す（じゅんび中の 番号だけ なら null）
   function boardRead() {
     if (!W || !P.boardOwned(W.events)) return null;
     const bd = W.board, before = P.boardUnlocked(bd.reads);
     bd.reads = (+bd.reads || 0) + 1;
-    const after = P.boardUnlocked(bd.reads);
-    if (after <= before) return null;
-    const it = P.BOARD_ITEMS[after - 1];
-    if (!bd.sel) bd.sel = it.id;
-    return it;
+    const got = boardOpened(before, P.boardUnlocked(bd.reads));
+    return got.length ? got[got.length - 1] : null;
   }
   function boardInfo() {
-    const owned = !!W && P.boardOwned(W.events), bd = (W && W.board) || { reads: 0, sel: '', streak: 0 };
-    const n = owned ? P.boardUnlocked(bd.reads) : 0;
-    return { owned, reads: owned ? bd.reads : 0, n, next: owned ? P.boardNext(bd.reads) : null, sel: bd.sel || '', streak: bd.streak || 0, items: P.BOARD_ITEMS, need: P.BOARD_NEED };
+    const owned = !!W && P.boardOwned(W.events), bd = (W && W.board) || { reads: 0, selHit: '', selMiss: '', streak: 0 };
+    const n = owned ? P.boardUnlocked(bd.reads) : 0, pick = id => (P.boardKnown(id) ? id : '');
+    return { owned, reads: owned ? bd.reads : 0, n, next: owned ? P.boardNext(bd.reads) : null, nextReady: owned ? P.boardNextReady(bd.reads) : null,
+      selHit: pick(bd.selHit), selMiss: pick(bd.selMiss), streak: bd.streak || 0, items: P.BOARD_ITEMS, need: P.BOARD_NEED };
   }
-  // いま ボードに つける もの（買って いて・解放ずみで・選んで いる もの）。なし なら ''
-  function boardActive() {
-    const i = boardInfo(); if (!i.owned || !i.sel || i.sel === 'none') return '';
-    const it = P.BOARD_ITEMS.find(x => x.id === i.sel);
-    return it && it.no <= i.n ? it.id : '';
-  }
-  async function boardSelect(id) {
-    await walletReady;
+  // いま ボードに つける もの（kind＝結果の 種類：'miss'＝ハズレの 所・ほか＝的中の 所。買って いて・解放ずみで・選んで いて・その 結果に 使える もの）。なし なら ''
+  function boardActive(kind) {
     const i = boardInfo();
-    if (id !== 'none') { const it = P.BOARD_ITEMS.find(x => x.id === id); if (!it || !i.owned || it.no > i.n) return false; }
-    W.board.sel = id; await save(); boardEmit('select', { item: id });
+    return i.owned ? P.boardActive({ hit: i.selHit, miss: i.selMiss }, i.reads, kind) : '';
+  }
+  // 選ぶ（kind：'hit'＝的中の とき・'miss'＝ハズレの とき／id：'none'＝なし）
+  async function boardSelect(id, kind) {
+    await walletReady;
+    const i = boardInfo(), k = P.boardSlot(kind);
+    if (id !== 'none') { const it = P.BOARD_ITEMS.find(x => x.id === id); if (!it || !i.owned || it.no > i.n || !P.boardFits(it, k)) return false; }
+    W.board[BSLOT[k]] = id; await save(); boardEmit('select', { item: id, kind: k });
     return true;
   }
-  // 出世馬：結果を 決めた レース（同じ レースは 1回）。どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。返り値：いまの 連続の 数
+  // 連続的中：結果を 決めた レース（同じ レースは 1回）。どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。返り値：いまの 連続の 数
+  //   （第4.113版：出世馬は 消した。数は src.html・fx.js が 演出に 渡す まま。いまは どの 飾りも 使わない＝これからの 飾りの ために 残す）
   async function boardResult(id, hit) {
     await walletReady;
     const bd = W.board, key = String(id || '');
@@ -706,7 +718,7 @@
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
       + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
       + '<p class="hint" style="margin:10px 0 6px">結果ボードカスタム（App Store の 買い物は しない）：<span id="testBoard"></span></p>'
-      + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +5</button><button type="button" class="btn" data-test="ball">全部 解放</button><button type="button" class="btn" data-test="bst">連続的中 +1</button><button type="button" class="btn" data-test="bst0">連続 0</button></div>'
+      + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +' + P.BOARD.steps[0][1] + '</button><button type="button" class="btn" data-test="ball">全部 解放</button></div>'
       + '<p class="hint" style="margin:10px 0 6px">壁紙パック（App Store の 買い物は しない）：<span id="testPack"></span></p>'
       + '<div class="row"><button type="button" class="btn" data-test="pown">買ったことにする</button><button type="button" class="btn" data-test="pread">読み込み +5</button><button type="button" class="btn" data-test="pall">全部 解放</button></div>';
     set.insertBefore(c, set.firstChild);
@@ -718,12 +730,10 @@
       else if (b.dataset.test === 'bread' || b.dataset.test === 'ball') {
         if (!P.boardOwned(W.events)) { toast('先に「買ったことにする」を 押してね', 2600); return; }
         const n0 = P.boardUnlocked(W.board.reads);
-        W.board.reads = b.dataset.test === 'ball' ? P.BOARD_NEED[P.BOARD_NEED.length - 1] : W.board.reads + 5;
-        const n1 = P.boardUnlocked(W.board.reads);
-        if (n1 > n0 && !W.board.sel) W.board.sel = P.BOARD_ITEMS[n1 - 1].id;
-        await save(); if (n1 > n0) boardEmit('unlock', { item: P.BOARD_ITEMS[n1 - 1].id, no: n1, many: n1 - n0 });
+        W.board.reads = b.dataset.test === 'ball' ? P.BOARD_NEED[P.BOARD_NEED.length - 1] : W.board.reads + P.BOARD.steps[0][1];
+        const got = boardOpened(n0, P.boardUnlocked(W.board.reads));
+        await save(); if (got.length) boardEmit('unlock', { item: got[got.length - 1].id, no: got[got.length - 1].no, many: got.length });
       }
-      else if (b.dataset.test === 'bst' || b.dataset.test === 'bst0') { W.board.streak = b.dataset.test === 'bst' ? W.board.streak + 1 : 0; await save(); }
       else if (b.dataset.test === 'pown') { if (!P.packOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-pack-' + now, product: P.WALLPACK.product, date: new Date(now).toISOString() }, now)); await save(); packEmit('owned', { src: 'test' }); toast('🧪 壁紙パックを 買ったことにしたよ', 2600); } }
       else if (b.dataset.test === 'pread' || b.dataset.test === 'pall') {
         if (!P.packOwned(W.events)) { toast('先に「買ったことにする」（壁紙パック）を 押してね', 2600); return; }
@@ -737,7 +747,8 @@
     paintTestBoard();
   }
   function paintTestBoard() {
-    const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/${P.BOARD_ITEMS.length}・連続的中 ${i.streak}`;
+    const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); const nm = id => (id === 'none' ? 'なし' : ((P.BOARD_ITEMS.find(x => x.id === id) || {}).name || 'まだ'));
+    el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/${P.BOARD_ITEMS.length}・的中 ${nm(i.selHit)}・ハズレ ${nm(i.selMiss)}`;
     const ep = $('#testPack'); if (ep) { const k = packInfo(); ep.textContent = `${k.owned ? '買った' : 'まだ'}・読み込み ${k.reads}・解放 ${k.n}/${k.total}`; }
   }
 

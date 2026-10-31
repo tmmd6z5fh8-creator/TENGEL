@@ -711,13 +711,13 @@ def push_face(sfx=''):
     """ボタン（200×100）が 白い ゼッケン（四角い 布・緑と 金の ふち・下の すみが まるい）。上に 鞍の かげ・ひも"""
     o = ('<path d="M-4 -4 H204 V84 Q204 104 184 104 H16 Q-4 104 -4 84 Z" fill="#1F6B45"/>'
          '<path d="M2 2 H198 V82 Q198 98 182 98 H18 Q2 98 2 82 Z" fill="#B8862A"/>'
-         '<path d="M7 7 H193 V80 Q193 93 180 93 H20 Q7 93 7 80 Z" fill="#FFFFFF"/>'
-         '<path d="M7 7 H193 V18 H7 Z" fill="#F1F5EA"/>'
+         '<path class="rbwf" d="M7 7 H193 V80 Q193 93 180 93 H20 Q7 93 7 80 Z" fill="#FFFFFF"/>'      # rbwf：虹色の とき（fx.js）白い 布も 虹色に（第4.113版）
+         '<path class="rbwf" d="M7 7 H193 V18 H7 Z" fill="#F1F5EA"/>'
          '<path d="M60 -6 Q100 -22 140 -6 L136 6 Q100 -8 64 6 Z" fill="#3A2A20"/>'
          '<path d="M70 -4 Q100 -14 130 -4" fill="none" stroke="#6A5040" stroke-width="2" stroke-linecap="round"/>')
     o += '<path d="M12 12 H188 V79 Q188 88 179 88 H21 Q12 88 12 79 Z" fill="none" stroke="#1F6B45" stroke-width="1.4" stroke-dasharray="4 3" opacity=".55"/>'
     o += ('<path d="M164 22 C160 17 161 10 166 8.4 C167.6 7.8 170.4 7.8 172 8.4 C177 10 178 17 174 22 L172.4 21 C175 17.6 174.6 12.8 171.4 11.6 '
-          'C170.2 11.2 167.8 11.2 166.6 11.6 C163.4 12.8 163 17.6 165.6 21 Z" fill="#B8862A"/>')
+          'C170.2 11.2 167.8 11.2 166.6 11.6 C163.4 12.8 163 17.6 165.6 21 Z" fill="#B8862A" stroke="#7A5414" stroke-width=".8"/>')   # 蹄鉄の ふち（第4.113版：虹色でも 見える）
     for x in (20, 180):
         o += f'<circle cx="{x}" cy="86" r="3.4" fill="#B8862A"/><circle cx="{x}" cy="86" r="1.4" fill="#7A5414"/>'
     o += '<path d="M10 22 Q12 60 22 90" fill="none" stroke="#E6EAE0" stroke-width="5" stroke-linecap="round" opacity=".8"/>'

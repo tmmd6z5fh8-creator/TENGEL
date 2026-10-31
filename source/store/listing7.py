@@ -111,7 +111,7 @@ Reservations and notifications:
 Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short animation (CSS/SVG; two rare variants play a bundled silent MP4 we rendered ourselves) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch and mix with other apps' audio. Flashing stays under 3 per second; effects can be turned off or reduced in Settings > 的中の演出 (also follows iOS Reduce Motion). No network is used for any effect.
 
 Themes (Settings > 着せ替え): 41 cosmetic themes (colors, bundled OFL fonts, animated header picture, PUSH and board style): 26 unlock with points, 3 reward owning 8/16/25 themes, 11 come with the 壁紙パック. Assets are bundled (CSS/SVG/WebP); animation stops with Reduce Motion.
-Non-consumables: 壁紙パック (1,500 yen, 11 themes) and 結果ボードカスタム (2,200 yen, 22 board decorations) become usable step by step as races are read; both have 「購入を復元」.
+Non-consumables: 壁紙パック (1,500 yen, 11 themes) and 結果ボードカスタム (2,200 yen, 16 board decorations; one can be chosen for hits and one for misses) become usable step by step as races are read; both have 「購入を復元」.
 
 How to review (no account or sign-in needed):
 1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.

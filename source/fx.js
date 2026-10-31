@@ -498,6 +498,18 @@
     r.setAttribute('x', String(vx - vw * 2)); r.setAttribute('y', String(vy - vh)); r.setAttribute('width', String(vw * 4)); r.setAttribute('height', String(vh * 3)); r.setAttribute('fill', `url(#rbwP${n})`);
     if (!reduced()) r.innerHTML = `<animateTransform attributeName="transform" type="translate" from="0 0" to="${vw} 0" dur="${calm() ? 3.2 : 1.6}s" repeatCount="indefinite"/>`;
     og.appendChild(r); svg.appendChild(og);
+    // 第4.113版：白い 所（class="rbwf"：パドックの ゼッケン）は 色を かさねても 白の まま なので、その 形で 切りぬいた 虹を 絵の 下に しいて、白を すかす
+    //   （まさちゃん「白いpushと書いてあるところも含めて虹色にして！」。その 上の 点線・蹄鉄・びょうは そのまま 色の 虹で 虹色）
+    const fills = [...g.querySelectorAll('.rbwf')];
+    if (fills.length) {
+      const cp = document.createElementNS(NS, 'clipPath'); cp.id = 'rbwC' + n;
+      fills.forEach((el, i) => { if (!el.id) el.id = `rbwF${n}_${i}`; const u = document.createElementNS(NS, 'use'); u.setAttribute('href', '#' + el.id); cp.appendChild(u); });
+      defs.appendChild(cp);
+      const fg = document.createElementNS(NS, 'g'); fg.setAttribute('class', 'rbwf2'); fg.setAttribute('clip-path', `url(#rbwC${n})`);
+      const w = document.createElementNS(NS, 'rect'); ['x', 'y', 'width', 'height'].forEach(k => w.setAttribute(k, r.getAttribute(k))); w.setAttribute('fill', '#FFFFFF');
+      fg.appendChild(w); fg.appendChild(r.cloneNode(true)); svg.insertBefore(fg, g);
+      fills.forEach(el => el.setAttribute('fill-opacity', '0'));
+    }
   }
   // 結果ボードカスタム（第4.91版・bcx.js）：ボード（.hb）が ある 画面に なったら 飾りを つける（ボードが 出おわってから 動く）
   function boardCustom() {

@@ -572,7 +572,10 @@ def samurai_css():
         for i in range(0, len(pos), 4):
             (t0, x0), (t1, x1), (t2, x2), (t3, x3) = pos[i:i + 4]
             stops += [(t0 / SM_CYCLE * 100, f'transform:translateX({f(x0 - hp)}px)'), (t1 / SM_CYCLE * 100, f'transform:translateX({f(x1 - hp)}px)'),
-                      (t2 / SM_CYCLE * 100, f'transform:translateX({f(x2 - hp)}px)'), (t3 / SM_CYCLE * 100, f'transform:translateX({f(x3 - hp)}px)'),
+                      (t2 / SM_CYCLE * 100, f'transform:translateX({f(x2 - hp)}px)'),
+                      # 第4.113版：ここから 右の 外へ もどる 0.01% の 間は step-end（linear だと 4.5ms で 画面を 横切り、その 間に 1コマ 写ると
+                      #   お侍さんが 一瞬 映って 消えた：まさちゃん「所々お侍さんが一瞬映って消える」）
+                      (t3 / SM_CYCLE * 100, f'transform:translateX({f(x3 - hp)}px);animation-timing-function:step-end'),
                       (t3 / SM_CYCLE * 100 + 0.01, f'transform:translateX({f(off)}px)')]
         stops.append((100, f'transform:translateX({f(off)}px)'))
         css += f'.ukw .ukSm.{who}{{animation:ukSmX{who} {f(SM_CYCLE)}s linear infinite}}' + kf(f'ukSmX{who}', stops)
@@ -1064,7 +1067,7 @@ THEME = dict(
          ('.hd::after', 'content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;background:' + curi(edge_strip()) + ' 0 0/28px 10px repeat-x')],
     orn=orn(),
     guide=dict(colors=[(AI['d'], '藍'), ('#B8362A', '朱'), ('#F3EBDC', '和紙'), (AI['l'], '水あさぎ'), ('#2A2420', '墨')],
-               fonts='見出し：Shippori Antique B1<br>本文：Zen Old Mincho', shape='角丸8px・帯は 藍の ぼかしで 下に 波頭・波と 千鳥の 背景・すみに 朱の 印・的中ボタンは 題箋の PUSH',
+               fonts='見出し：Shippori Antique B1<br>本文：Zen Old Mincho', shape='角丸8px・帯は 藍の ぼかしで 下に 波頭・波と 千鳥の 背景・すみに 朱の 印・的中ボタンは 上から 見た 海の PUSH（うろこの ように かさなる 波の 頭・白い 泡の 爪）',
                pic='和紙の 地・藍の ぼかしの 空・赤い 日・山なみ・かすみ・神奈川沖浪裏の 形の 大波（白い 背中・濃い 藍に 白い すじ・まるい 爪の 泡・ぼかしの かげ：'
                    '7秒ごとに 毎回 ちがう 場所で 海の 中から 出て きて 立ち上がり、波の 先を 投げ出して しぶきが とび、前へ たおれて 低く なりながら 右へ 走り、'
                    '沈みはじめ から 水平に なって 消える まで 白い 水の 先で 高い 潮しぶきが つぎつぎに ふき上がる・'
@@ -1076,39 +1079,95 @@ THEME = dict(
 )
 
 
-# ================================================================== 的中ボタン：題箋の PUSH（uk）
-def push_face(sfx=''):
-    """ボタン（200×100）が 浮世絵の 題箋（たんざく形の 札）：うすい 黄の 和紙・藍と 朱の 二重の ふち。左上から 藍の 波頭が かぶさり、右下に 朱の 印"""
+# ================================================================== 的中ボタン：上から 見た 海の PUSH（uk・第4.113版）
+# 第4.92版〜第4.112版は 題箋（たんざく形の 札）の PUSH だった → まさちゃん「波を上から見た時の感じでpushボタン作って！今のデザインは丸々消して！」
+FOAM = '#F7F1E2'
+# 波の 列：上から 見た 海＝うろこの ように かさなる 波の 頭（手前ほど 大きい）。1列は 周期 P で くり返す（横に ゆっくり 流れて つながる）
+UKP_ROWS = [  # (y：列の 頭の 線, 波の 高さ, 周期, 横の ずれ, 周期 1つぶん 流れる 秒, 向き)
+    (-12, 28, 50, 0, 16.0, 1), (12, 30, 54, 26, 13.0, 1), (36, 32, 58, 8, 11.0, 1), (60, 34, 62, 36, 9.5, 1), (84, 34, 62, 12, 8.5, 1),
+]
+UKP_REP = 3   # 波の 頭の ばらつきは 3つで 1回り。流れの 1回りは 周期の 3つぶん（UKP_REP × 周期 を UKP_REP × 秒で）→ 1回りの つなぎめで 頭の 形が かわらない
+
+
+def _crest(cx, y, h, p, R):
+    """波の 頭 1つ（上から 見た 海の うろこ形）：藍の 体（下は 濃い 藍）・白い 泡の 頭（下の ふちは まるい 爪）・墨の 線・さざなみ。R：ばらつき"""
+    w = p / 2 + 3 + R.uniform(-1.5, 1.5)                               # 半分の はば（となりと 少し かさなる）
+    h = h * R.uniform(.9, 1.08)
+    top = y + R.uniform(-1.2, 1.2)
+    base = y + h + 14
+    xl, xr = cx - w, cx + w
     o = ''
-    o += (f'<rect x="0" y="0" width="200" height="100" rx="4" fill="#F7EDD3" stroke="{AI["d"]}" stroke-width="5"/>'
-          f'<rect x="7" y="7" width="186" height="86" rx="2" fill="none" stroke="{SHU}" stroke-width="2"/>')
-    for i in range(7):                                                      # 和紙の すじ
-        y = 14 + i * 12
-        o += f'<path d="M12 {y} h176" stroke="#E8D9B4" stroke-width="1" opacity=".7"/>'
-    # 左上の 波頭（藍・泡の まる）
-    o += (f'<path d="M-14 46 Q-16 10 14 -6 Q44 -20 70 -10 Q58 -6 50 2 Q40 10 30 8 Q22 8 18 18 Q12 30 -2 50 Z" fill="{AI["m"]}" stroke="{INK}" stroke-width="1.4"/>'
-          f'<path d="M-8 40 Q-8 14 16 2 Q36 -8 56 -6" fill="none" stroke="{AI["p"]}" stroke-width="2" opacity=".8"/>')
-    for x, y, r in ((70, -10, 5.4), (60, -2, 4.4), (50, 4, 3.8), (40, 9, 3.2), (30, 9, 2.8)):
-        o += f'<circle cx="{x}" cy="{y}" r="{r}" fill="#F7F1E2" stroke="{INK}" stroke-width="1"/>'
-    # 右下の 朱の 印（白い 蹄鉄）
+    # 濃い 藍：頭の 下の かげ（波の うら）
+    o += (f"<path d='M{xl + 1:.1f} {top + h * .62:.1f} Q{cx:.1f} {top + h * .36:.1f} {xr - 1:.1f} {top + h * .62:.1f} L{xr - 1:.1f} {base:.1f} L{xl + 1:.1f} {base:.1f} Z' fill='{AI['d']}' opacity='.55'/>")
+    # 白い 泡の 頭：頭の 線に そう 帯・下の ふちは まるい 爪（5〜6つ・まん中ほど 長い・先は まるい）
+    fw = w * R.uniform(.74, .86)
+    n = R.choice((5, 6))
+    ye = top + h * .22                                                  # 爪の つけね の 高さ
+    d = f"M{cx - fw:.1f} {ye:.1f} Q{cx - fw * .55:.1f} {top - .5:.1f} {cx:.1f} {top - 1.8:.1f} Q{cx + fw * .55:.1f} {top - .5:.1f} {cx + fw:.1f} {ye:.1f}"
+    xs = [cx + fw - 2 * fw * k / n for k in range(n + 1)]
+    for k in range(n):
+        x0, x1 = xs[k], xs[k + 1]
+        u = 1 - abs((k + .5) / n - .5) * 2                              # まん中 1 → はし 0
+        dp = h * (.16 + .26 * u) * R.uniform(.85, 1.15)                 # 爪の 長さ
+        yb = ye + dp * 1.35
+        d += f" C{x0:.1f} {yb:.1f} {x1:.1f} {yb:.1f} {x1:.1f} {ye:.1f}"
+    d += ' Z'
+    o += f"<path d='{d}' fill='{FOAM}' stroke='{INK}' stroke-width='.9' stroke-linejoin='round'/>"
+    # 泡の つぶ（頭の 上と 爪の 先に 小さな まる）
+    for k in range(R.choice((2, 3))):
+        dx = R.uniform(-fw * .7, fw * .7)
+        o += f"<circle cx='{cx + dx:.1f}' cy='{top - 1.5 + R.uniform(-1, 1):.1f}' r='{R.uniform(1.1, 1.9):.1f}' fill='{FOAM}' stroke='{INK}' stroke-width='.7'/>"
+    # 体の さざなみ（細い 明るい 線・1〜2本）
+    for k in range(R.choice((1, 2))):
+        yy = top + h * (.72 + .16 * k) + R.uniform(-1, 1)
+        ww = w * R.uniform(.35, .6)
+        x0 = cx + R.uniform(-w * .3, w * .3)
+        o += f"<path d='M{x0 - ww:.1f} {yy:.1f} q{ww * .5:.1f} -2.2 {ww:.1f} 0 q{ww * .5:.1f} 2.2 {ww:.1f} 0' fill='none' stroke='{AI['p']}' stroke-width='.9' opacity='.7'/>"
+    return o
+
+
+def push_face(sfx=''):
+    """ボタン（200×100）が 上から 見た 海：うろこの ように かさなる 波の 頭（藍の 体・白い 泡・まるい 爪）が 列ごとに ゆっくり 流れる。
+       藍の ふち・和紙の 線・右下に 小さな 朱の 印"""
+    rows = ''
+    for r, (y, h, p, sh, sec, d) in enumerate(UKP_ROWS):
+        o = ''
+        # 描く 波の 頭：流れの 1回り（0〜UKP_REP 周期 右へ）の どこでも ボタン（0〜200）が うまる だけ
+        k0 = math.floor((-(p / 2 + 8) - sh - UKP_REP * p) / p)
+        n = math.ceil((208 + p / 2 - sh) / p) + 1
+        vy = y + h * .5                                                 # 谷（となりの 波との 境）の 高さ
+        band = f"M{k0 * p + sh - p / 2:.1f} {y + h + 14:.1f} L{k0 * p + sh - p / 2:.1f} {vy:.1f}"
+        for k in range(k0, n):
+            cx = k * p + sh
+            band += f" Q{cx:.1f} {y - 2.5:.1f} {cx + p / 2:.1f} {vy:.1f}"
+        band += f" L{(n - 1) * p + sh + p / 2:.1f} {y + h + 14:.1f} Z"
+        o += f"<path d='{band}' fill='{AI['m']}' stroke='{INK}' stroke-width='1.1' stroke-linejoin='round'/>"
+        for k in range(k0, n):
+            R = rnd(11 + 10 * r + k % UKP_REP)                # ばらつきは k を UKP_REP で わった あまりで きめる（くり返す）
+            o += _crest(k * p + sh, y, h, p, R)
+        rows += f"<g class='ukrw r{r}'><g class='ukbb' style='animation-delay:{-0.9 * r:.1f}s'>{o}</g></g>"
+    o = (f"<defs><clipPath id='ukc{sfx}'><rect x='0' y='0' width='200' height='100' rx='12'/></clipPath></defs>"
+         f"<rect x='0' y='0' width='200' height='100' rx='12' fill='{AI['d']}'/>"
+         f"<g clip-path='url(#ukc{sfx})'>{rows}</g>"
+         f"<rect x='0' y='0' width='200' height='100' rx='12' fill='none' stroke='{AI['d']}' stroke-width='5'/>"
+         f"<rect x='4' y='4' width='192' height='92' rx='9' fill='none' stroke='{PAPER2}' stroke-width='1.6' opacity='.9'/>")
+    # 右下の 朱の 印（白い 蹄鉄・小さく）
     pts_o, pts_i = [], []
     for k in range(17):
         a = math.radians(-200 + 220 * k / 16)
-        pts_o.append((184 + math.cos(a) * 7, 86 - math.sin(a) * 7.6))
-        pts_i.append((184 + math.cos(a) * 4, 86 - math.sin(a) * 4.5))
-    o += (f'<rect x="170" y="72" width="28" height="28" rx="3" fill="{SHU}" transform="rotate(-4 184 86)"/>'
-          f'<path d="{P(pts_o + pts_i[::-1])}" fill="#F7E8D6" transform="rotate(-4 184 86)"/>')
+        pts_o.append((184 + math.cos(a) * 5.2, 86 - math.sin(a) * 5.6))
+        pts_i.append((184 + math.cos(a) * 3, 86 - math.sin(a) * 3.3))
+    pp = 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in pts_o + pts_i[::-1]) + ' Z'
+    o += (f"<rect x='173.5' y='75.5' width='21' height='21' rx='2.5' fill='{SHU}' transform='rotate(-4 184 86)'/>"
+          f"<path d='{pp}' fill='#F7E8D6' transform='rotate(-4 184 86)'/>")
     return f'<i class="ukf" aria-hidden="true"><svg viewBox="-20 -24 230 132" width="230" height="132">{o}</svg></i>'
 
 
 def push_decor(sfx=''):
-    """まわりを 千鳥が とぶ（ゆっくり 上下）・小さな 泡の しぶき"""
+    """まわり：白い しぶきの つぶが ゆっくり またたく（千鳥は 第4.113版で やめた）"""
     o = ''
-    for j, (x, y, s) in enumerate(((214, -18, 1.3), (232, 30, 1.1), (-30, 92, 1.2), (110, -58, 1.0))):
-        o += (f'<g transform="translate({x} {y}) scale({s})"><g class="ukbo" style="animation-delay:{-0.7 * j:.1f}s"><path d="M0 0 Q5 -6 12 -3 Q8 -2 6 1 Q10 0 14 2 Q8 5 2 3 Q1 4 -2 6 Q-1 3 0 0 Z" fill="{AI["m"]}" stroke="{INK}" stroke-width=".6"/>'
-              f'<circle cx="10" cy="-2" r=".8" fill="#F7F1E2"/></g></g>')
-    for j, (x, y, r) in enumerate(((-24, 10, 3.4), (-18, 30, 2.4), (226, 92, 3), (60, 116, 2.6))):
-        o += f'<circle class="uktw" cx="{x}" cy="{y}" r="{r}" fill="#F7F1E2" stroke="{INK}" stroke-width=".8" style="animation-delay:{-0.5 * j:.1f}s"/>'
+    for j, (x, y, r) in enumerate(((-26, 8, 3.2), (-16, 34, 2.2), (222, 84, 3), (232, 48, 2.2), (60, 118, 2.6), (150, -36, 2.4), (24, -32, 2.0))):
+        o += f'<circle class="uktw" cx="{x}" cy="{y}" r="{r}" fill="{FOAM}" stroke="{INK}" stroke-width=".8" style="animation-delay:{-0.5 * j:.1f}s"/>'
     return f'<i class="ukd" aria-hidden="true"><svg viewBox="-40 -70 280 210" width="280" height="210">{o}</svg></i>'
 
 
@@ -1127,27 +1186,33 @@ def push_burst():
 
 
 PUSH_CSS = r'''
-/* ---------- 浮世絵風の的中ボタン：題箋のPUSH（壁紙パック） ----------
-   ボタンが まるごと 浮世絵の 題箋（うすい 黄の 和紙・藍と 朱の 二重の ふち・和紙の すじ）に 墨の「PUSH」。左上から 藍の 波頭（白い 泡の まる）が かぶさり、
-   右下に 朱の 印（白い 蹄鉄）。まわりを 千鳥が とび、白い しぶきが ゆれる。上下の 動きは 的中と 同じ。押すと 札が ちぢんで ふくらみ（強く 光らせない）、
-   千鳥・しぶき・波頭・朱の 印・松葉が はじけて 落ち、藍の 輪が 広がる */
-.uk{--pushA:#F7EDD3;--pushB:#1E3F73;--pushC:#C8402C;--rim:#86A7C9;--rimD:#1E3F73}
-.push.uk{--pr:4px;background:none;border-radius:4px;box-shadow:none;filter:drop-shadow(0 8px 0 rgba(20,34,60,.45)) drop-shadow(0 16px 22px rgba(0,0,0,.35))}
-.push.uk span{font:400 42px/1 "Shippori Antique B1",serif;letter-spacing:.08em;color:#2A2420;text-shadow:0 2px 0 #FFFFFF,0 0 6px rgba(255,255,255,.6)}
-.push.uk::after{inset:-20px;border-radius:14px;border-color:rgba(134,167,201,.95)}
+/* ---------- 浮世絵風の的中ボタン：上から見た海のPUSH（壁紙パック・第4.113版） ----------
+   ボタンが まるごと 上から 見た 海：うろこの ように かさなる 波の 頭（藍の 体・白い 泡の 頭・まるい 爪・さざなみ）が 列ごとに ちがう はやさで
+   ゆっくり 右へ 流れ、ゆっくり うねる。藍の ふちと 和紙の 線・右下に 小さな 朱の 印。字は 和紙の 色に 墨の ふち。上下の 動きは 的中と 同じ。
+   押すと 海が ちぢんで ふくらみ（強く 光らせない）、千鳥・しぶき・波頭・朱の 印・松葉が はじけて 落ち、藍の 輪が 広がる */
+.uk{--pushA:#2F5E95;--pushB:#1E3F73;--pushC:#86A7C9;--rim:#F7EFDD;--rimD:#1E3F73}
+.push.uk{--pr:12px;background:none;border-radius:12px;box-shadow:none;filter:drop-shadow(0 8px 0 rgba(20,34,60,.5)) drop-shadow(0 16px 22px rgba(0,0,0,.35))}
+.push.uk span{font:400 42px/1 "Shippori Antique B1",serif;letter-spacing:.08em;color:#F7EFDD;
+  text-shadow:0 0 1.5px #1E3F73,1.5px 0 0 #1E3F73,-1.5px 0 0 #1E3F73,0 1.5px 0 #1E3F73,0 -1.5px 0 #1E3F73,1.2px 1.2px 0 #1E3F73,-1.2px 1.2px 0 #1E3F73,0 3px 0 #10223F,0 0 6px rgba(16,34,63,.95),0 0 14px rgba(16,34,63,.8)}
+.push.uk::after{inset:-20px;border-radius:30px;border-color:rgba(134,167,201,.95)}
 .uk .ukf{position:absolute;left:-20px;top:-24px;width:230px;height:132px;pointer-events:none;font-style:normal;z-index:-1}
 .uk .ukf svg{display:block;width:230px;height:132px;overflow:visible}
+.uk .ukbb{animation:ukBb 3.8s ease-in-out infinite alternate}
+@keyframes ukBb{from{transform:translateY(-1.2px)}to{transform:translateY(1.2px)}}
 .uk .ukd{position:absolute;left:-40px;top:-70px;width:280px;height:210px;pointer-events:none;z-index:3;font-style:normal}
 .uk .ukd svg{display:block;width:280px;height:210px;overflow:visible}
-.uk .ukbo{animation:ukBo 2.4s ease-in-out infinite alternate}
-@keyframes ukBo{from{transform:translateY(-4px) rotate(-6deg)}to{transform:translateY(4px) rotate(6deg)}}
 .uk .uktw{transform-box:fill-box;transform-origin:50% 50%;animation:ukTw 2.2s ease-in-out infinite}
 @keyframes ukTw{0%,100%{opacity:.25;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
 .pshadow.uk{width:220px}
 .tap.uk{font-family:"Shippori Antique B1",serif;font-weight:400;color:#F7EDD3;letter-spacing:.14em;text-shadow:0 2px 0 #1E3F73,0 0 10px rgba(134,167,201,.6)}
-.pressed.uk{border-radius:4px;background:#F7EDD3;box-shadow:0 0 0 5px #1E3F73,0 7px 0 5px #10223F;animation-name:ukPress,fxH}
+.pressed.uk{border-radius:12px;background:#2F5E95;box-shadow:0 0 0 4px #F7EFDD,0 0 0 8px #1E3F73,0 7px 0 8px #10223F;animation-name:ukPress,fxH}
 @keyframes ukPress{0%{transform:scale(1)}22%{transform:scale(.9)}45%{transform:scale(1.07)}100%{transform:scale(1.45);opacity:0}}   /* 強く光らせない */
-@media (prefers-reduced-motion:reduce){.uk .ukbo,.uk .uktw{animation:none}.clips.uk{display:none}}
+.uk .ukrw.r0{animation:ukRw0 48s linear infinite}@keyframes ukRw0{from{transform:translateX(0)}to{transform:translateX(150px)}}
+.uk .ukrw.r1{animation:ukRw1 39s linear infinite}@keyframes ukRw1{from{transform:translateX(0)}to{transform:translateX(162px)}}
+.uk .ukrw.r2{animation:ukRw2 33s linear infinite}@keyframes ukRw2{from{transform:translateX(0)}to{transform:translateX(174px)}}
+.uk .ukrw.r3{animation:ukRw3 28.5s linear infinite}@keyframes ukRw3{from{transform:translateX(0)}to{transform:translateX(186px)}}
+.uk .ukrw.r4{animation:ukRw4 25.5s linear infinite}@keyframes ukRw4{from{transform:translateX(0)}to{transform:translateX(186px)}}
+@media (prefers-reduced-motion:reduce){.uk .ukrw.r0,.uk .ukrw.r1,.uk .ukrw.r2,.uk .ukrw.r3,.uk .ukrw.r4,.uk .ukbb,.uk .uktw{animation:none}.clips.uk{display:none}}
 ''' + fly_css('uk', 'rgba(134,167,201,.9)', PIECES)
 
 PUSH = dict(code='uk', face=push_face, decor=push_decor, burst=push_burst, css=PUSH_CSS)

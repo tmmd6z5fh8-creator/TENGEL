@@ -335,6 +335,9 @@ def seg_hoof(far=False):
     return doc(w, h, o), ox, oy, w, h
 
 
+BOILER_CLIP = "<clipPath id='gwBo'><rect x='150' y='62' width='104' height='40' rx='19'/></clipPath>"   # 胴の 形（明るい 帯を 切りぬく：第4.113版）
+
+
 def body_svg():
     """胴（ボイラー）・えんとつ・首・のぞき窓の 中の 暗い 所・圧力計の 盤・しっぽの 根もと（絵は 舞台の 座標）"""
     o = ''
@@ -361,10 +364,12 @@ def body_svg():
     for x, y in pipe[1:4]:
         o += f"<rect x='{f(x - 3)}' y='{f(y - 1.2)}' width='6' height='2.4' rx='.8' fill='{BR['d']}' stroke='{BR['dd']}' stroke-width='.5' transform='rotate(-35 {f(x)} {f(y)})'/>"
     # 胴（ボイラー）
+    # 第4.113版：明るい 帯・すじ・下の かげは 胴の 形（丸い すみ）で 切りぬく（前は 帯の まるい はし（rx 4.5）が 胴の すみ（rx 19）の 外に
+    #   はみ出て いて、熱で 赤く なった とき 両はしに 黄色い 光が 飛び出して 見えた：まさちゃん「光が飛び出してしまっているからボディ内に納めて！」）
     o += (f"<rect x='150' y='62' width='104' height='40' rx='19' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.3'/>"
-          f"<rect x='153' y='65' width='98' height='9' rx='4.5' fill='{BR['l']}' opacity='.9'/>"
+          f"<g clip-path='url(#gwBo)'><rect x='153' y='65' width='98' height='9' rx='4.5' fill='{BR['l']}' opacity='.9'/>"
           f"<rect x='158' y='66' width='70' height='2.6' rx='1.3' fill='{BR['hl']}' opacity='.8'/>"
-          f"<rect x='152' y='90' width='100' height='10' rx='5' fill='{BR['d']}' opacity='.6'/>")
+          f"<rect x='152' y='90' width='100' height='10' rx='5' fill='{BR['d']}' opacity='.6'/></g>")
     for x in (172, 206, 236):                                           # 銅の 帯
         o += (f"<rect x='{x - 3.2}' y='62.4' width='6.4' height='39.2' rx='1.6' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.7'/>"
               f"<rect x='{x - 2.2}' y='63' width='1.6' height='38' fill='{CU['hl']}' opacity='.55'/>")
@@ -389,7 +394,7 @@ def body_svg():
     o += (f"<path d='M186 62.6 Q198 56 210 62.6 Z' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.9'/>")
     # しっぽの 根もと
     o += f"<circle cx='152' cy='72' r='3.4' fill='{CU['m']}' stroke='{CU['dd']}' stroke-width='.8'/>"
-    return doc(W, H, o)
+    return doc(W, H, o, defs=BOILER_CLIP)
 
 
 # 首と 頭の 形（第4.93版：本物の 馬に 近く）
@@ -510,6 +515,17 @@ def head_part(part):
             for x in (23.0, 28.0, 33.0, 38.0):
                 t = ((x - 1.6, mouth_y(x - 1.6)), (x, mouth_y(x) - 2.6), (x + 1.6, mouth_y(x + 1.6)))
                 o += f"<path d='{P([H_(*q) for q in t])}' fill='{BR['hl']}' stroke='{BR['d']}' stroke-width='.5' stroke-linejoin='round'/>"
+    elif part == 'mouth_l':                                              # 第4.113版：光線を うつ とき 口の 中を みたす 光（口の あな＝口の 線と 24° あいた あごの 口の 線の 間）
+        xs = [HINGE[0] + 3 + (LIP[0] - HINGE[0] - 3) * k / 8 for k in range(9)]
+        up = [(x, mouth_y(x)) for x in xs]
+        dn = [hrot((x, mouth_y(x)), JAW_MAX - 2) for x in xs]
+        poly = [H_(*q) for q in up] + [H_(*q) for q in dn[::-1]]
+        a, b = H_(HINGE[0] + 6, mouth_y(HINGE[0] + 6) + 2), H_(LIP[0] - 1, mouth_y(LIP[0] - 1) + 3)
+        defs += (f"<linearGradient id='ml' gradientUnits='userSpaceOnUse' x1='{f(a[0])}' y1='{f(a[1])}' x2='{f(b[0])}' y2='{f(b[1])}'>"
+                 "<stop offset='0' stop-color='#FF7A20' stop-opacity='.85'/><stop offset='.45' stop-color='#FFC24A'/><stop offset='1' stop-color='#FFFBE6'/></linearGradient>")
+        o += f"<path d='{P(poly)}' fill='url(#ml)'/>"
+        c = H_(LIP[0] - 6, mouth_y(LIP[0] - 6) + 4.5)
+        o += f"<circle cx='{f(c[0])}' cy='{f(c[1])}' r='5' fill='#FFFFFF' opacity='.8'/>"
     elif part in ('heat_u', 'heat_j'):                                   # 熱で 赤く（opacity で 上げ下げ）
         out = UPPER_OUT if part == 'heat_u' else JAW_OUT
         o += f"<path d='{smooth([H_(*q) for q in out], True, 0.22 if part == 'heat_j' else 0.28)}' fill='#E8301A' opacity='.56'/>"
@@ -592,10 +608,11 @@ def heat_svg():
     defs = "<linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FF5A22'/><stop offset='1' stop-color='#C8180A'/></linearGradient>"
     o = (f"<g fill='url(#h)' opacity='.6'><path d='{smooth(NECK, True, 0.3)}'/><rect x='150' y='62' width='104' height='40' rx='19'/>"
          "<path d='M214 64 L216 46 H226 L228 64 Z'/></g>")
+    o += "<g clip-path='url(#gwBo)'>"                                    # 第4.113版：光る 帯も 胴の 形の 中だけ
     for x in (172, 206, 236):                                            # 銅の 帯が 明るく
         o += f"<rect x='{x - 1.3}' y='63.4' width='2.6' height='37.2' rx='1.3' fill='#FFC266' opacity='.75'/>"
-    o += "<rect x='160' y='66.2' width='84' height='2.6' rx='1.3' fill='#FFE29A' opacity='.6'/>"
-    return doc(W, H, o, defs=defs)
+    o += "<rect x='160' y='66.2' width='84' height='2.6' rx='1.3' fill='#FFE29A' opacity='.6'/></g>"
+    return doc(W, H, o, defs=defs + BOILER_CLIP)
 
 
 def halo_svg():
@@ -634,22 +651,29 @@ def charge_svg():
     return doc(32, 32, "<circle cx='16' cy='16' r='16' fill='url(#c)'/>", defs=defs)
 
 
+BEAM_IN = dict(core=7.0, glow=22.0)   # 光線の 左の はし（口）を やわらかく 消す 長さ（第4.113版：前は もやの 半円が 絵の 外で 四角く 切れて いた）
+
+
 def beam_svg(core=False):
-    """破壊光線（左の はしが 口・右へ のびる）：core＝白い しん・ほか＝まわりの 光の もや"""
+    """破壊光線（左の はしが 口・右へ のびる）：core＝白い しん・ほか＝まわりの 光の もや。左の はしは mask で やわらかく（口の 光から つながる）"""
     L = BEAM_L
+    fade = BEAM_IN['core' if core else 'glow']
+    mk = (f"<linearGradient id='m' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#000'/><stop offset='{f(fade / L, 4)}' stop-color='#fff'/>"
+          f"<stop offset='1' stop-color='#fff'/></linearGradient>")
     if core:
         h = 12
         defs = ("<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FFE89A'/><stop offset='.3' stop-color='#FFFFFF'/>"
                 "<stop offset='.7' stop-color='#FFFFFF'/><stop offset='1' stop-color='#FFE89A'/></linearGradient>")
-        o = f"<path d='M6 1.5 H{f(L)} V10.5 H6 A4.5 4.5 0 0 1 6 1.5 Z' fill='url(#b)'/>"
+        o = f"<rect x='0' y='1.5' width='{f(L)}' height='9' fill='url(#b)'/>"
     else:
         h = 34
         defs = ("<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#FF7A2A' stop-opacity='0'/><stop offset='.3' stop-color='#FF9A3A' stop-opacity='.45'/>"
                 "<stop offset='.5' stop-color='#FFD25A' stop-opacity='.9'/><stop offset='.7' stop-color='#FF9A3A' stop-opacity='.45'/><stop offset='1' stop-color='#FF7A2A' stop-opacity='0'/></linearGradient>")
-        o = f"<path d='M14 0 H{f(L)} V34 H14 A17 17 0 0 1 14 0 Z' fill='url(#b)'/>"
+        o = f"<rect x='0' y='0' width='{f(L)}' height='34' fill='url(#b)'/>"
         for k, x in enumerate((30, 62, 94, 126)):                        # 光の もやの つぶ
             o += f"<ellipse cx='{x}' cy='{17 + (-6 if k % 2 else 6)}' rx='5' ry='2.2' fill='#FFF2B0' opacity='.5'/>"
-    return doc(L, h, o, defs=defs)
+    defs += mk + f"<mask id='k' maskUnits='userSpaceOnUse' x='0' y='0' width='{f(L)}' height='{h}'><rect x='0' y='0' width='{f(L)}' height='{h}' fill='url(#m)'/></mask>"
+    return doc(L, h, f"<g mask='url(#k)'>{o}</g>", defs=defs)
 
 
 def splash_svg():
@@ -981,6 +1005,7 @@ def banner(B):
     # 頭：上げる 入れもの（オーバーヒート）→ うなずく 入れもの → 下あご（ほおの 歯車で ひらく：口の 中・あご・熱）・上の 頭・熱・ためる 光・光線
     h += ('<i class="gwHw"><i class="gwHn">' + img('gwMo c', head_part('mouth_c')) + '<i class="gwJb">' + img('gwMo b', head_part('mouth_b')) + '</i>'
           + '<i class="gwJw">' + img('gwMo a', head_part('mouth_a')) + img('gwJa', head_part('jaw')) + img('gwJh', head_part('heat_j')) + '</i>'
+          + img('gwMl', head_part('mouth_l'))                                                 # 第4.113版：口の 中の 光（あごの 上・上の 頭の 下）
           + img('gwHd', head_part('upper')) + img('gwHh', head_part('heat_u')) + img('gwCg', charge_svg())
           + '<i class="gwBm">' + img('gwBg', beam_svg()) + img('gwBc', beam_svg(True)) + img('gwSp', splash_svg()) + '</i></i></i>')
     for nm in ('hl', 'fl'):
@@ -1050,12 +1075,14 @@ def banner(B):
             f'.gww .gwHn{{left:0;top:0;transform-origin:{HEAD_PIV[0]}px {HEAD_PIV[1]}px;animation:gwHead {f(T)}s ease-in-out infinite}}'
             f'.gww .gwJw,.gww .gwJb{{left:0;top:0;transform-origin:{f(hg[0])}px {f(hg[1])}px;animation:gwJaw {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwJb{{animation-name:gwJawH}}'
-            f'.gww .gwHd,.gww .gwHh,.gww .gwMo,.gww .gwJa,.gww .gwJh{{left:{bx}px;top:{by}px;width:{bw}px;height:{bh}px}}'
+            f'.gww .gwHd,.gww .gwHh,.gww .gwMo,.gww .gwJa,.gww .gwJh,.gww .gwMl{{left:{bx}px;top:{by}px;width:{bw}px;height:{bh}px}}'
+            f'.gww .gwMl{{opacity:0;animation:gwMouthL {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwHh,.gww .gwJh{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
             f'.gww .gwCg{{left:{f(mo[0] - 16)}px;top:{f(mo[1] - 16)}px;width:32px;height:32px;opacity:0;animation:gwCharge {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwBm{{left:{f(mo[0])}px;top:{f(mo[1])}px;transform:rotate({f(BEAM_DIR - OH_TILT)}deg);transform-origin:0 0}}'
-            f'.gww .gwBg{{left:-14px;top:-17px;width:{f(BEAM_L)}px;height:34px;transform-origin:14px 50%;opacity:0;animation:gwBeamG {f(OH_S)}s ease-in-out infinite}}'
-            f'.gww .gwBc{{left:-6px;top:-6px;width:{f(BEAM_L)}px;height:12px;transform-origin:6px 50%;opacity:0;animation:gwBeamC {f(OH_S)}s ease-in-out infinite}}'
+            # 第4.113版：もやは 口から 前だけ（left 0・左の はしは やわらかく）・しんは 口の 中 5px から
+            f'.gww .gwBg{{left:0;top:-17px;width:{f(BEAM_L)}px;height:34px;transform-origin:0 50%;opacity:0;animation:gwBeamG {f(OH_S)}s ease-in-out infinite}}'
+            f'.gww .gwBc{{left:-5px;top:-6px;width:{f(BEAM_L)}px;height:12px;transform-origin:5px 50%;opacity:0;animation:gwBeamC {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwSp{{left:{f(66 - 22)}px;top:-22px;width:44px;height:44px;opacity:0;animation:gwSplash {f(OH_S)}s ease-in-out infinite}}'
             # 熱（体）・もや・ふた・圧力計の 針
             f'.gww .gwHt{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
@@ -1126,6 +1153,7 @@ def banner(B):
     css += ev('gwCharge', [(0, 'opacity:0;transform:scale(.3)'), (3.0, 'opacity:0;transform:scale(.3)'), (3.32, 'opacity:1;transform:scale(1.1)'), (3.6, 'opacity:.95;transform:scale(.95)'),
                            (4.0, 'opacity:1;transform:scale(1.12)'), (4.4, 'opacity:.95;transform:scale(1)'), (4.8, 'opacity:1;transform:scale(1.12)'), (5.15, 'opacity:.95;transform:scale(1)'),
                            (5.5, 'opacity:0;transform:scale(.5)')])
+    css += ev('gwMouthL', [(0, 'opacity:0'), (3.1, 'opacity:0'), (3.4, 'opacity:1'), (5.2, 'opacity:1'), (5.4, 'opacity:0')])   # 口の 中の 光（第4.113版）
     css += ev('gwBeamG', [(0, 'opacity:0;transform:scale(0,1)'), (3.22, 'opacity:0;transform:scale(0,1)'), (3.52, 'opacity:.85;transform:scale(1,1)'), (3.9, 'opacity:.82;transform:scale(1,.93)'),
                           (4.3, 'opacity:.85;transform:scale(1,1.06)'), (4.7, 'opacity:.82;transform:scale(1,.93)'), (5.15, 'opacity:.85;transform:scale(1,1)'), (5.5, 'opacity:0;transform:scale(1,.3)')])
     css += ev('gwBeamC', [(0, 'opacity:0;transform:scale(0,1)'), (3.22, 'opacity:0;transform:scale(0,1)'), (3.52, 'opacity:1;transform:scale(1,1)'), (3.9, 'opacity:1;transform:scale(1,.9)'),

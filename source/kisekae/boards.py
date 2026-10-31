@@ -224,7 +224,11 @@ BOARD_CSS = r'''
 # ボードだけの 直し（判定画面の 上の帯には 入れない）。第4.89版：海の 上の帯（見出し）の 下の 波（.hd::after）が、帯の 丸い すみの 外に 四角く はみ出て
 #   右の はしで 波が 途中で 切れて いた（まさちゃん「海の結果ボード、赤丸のところ波の模様が、不自然だか自然にして！」）
 #   → 帯の 下の すみは 角（波が 帯の 下の ふちに なる）・波は 帯の 横はば（334px）に ちょうど 12こ 入る 大きさ（切れない）
-BOARD_EXTRA = dict(sea='{root} .hd{{border-radius:var(--radius) var(--radius) 0 0}}{root} .hd::after{{background-size:calc(100% / 12) 9px}}')
+BOARD_EXTRA = dict(sea='{root} .hd{{border-radius:var(--radius) var(--radius) 0 0}}{root} .hd::after{{background-size:calc(100% / 12) 9px}}',
+                   # 第4.113版（まさちゃん「浮世絵の左右のオレンジ丸のところ、模様が途切れてるから繋げて自然にして！」「切り絵の結果ボード左右の黄丸のところ模様が途切れてるから繋げて自然にして！」）：
+                   #   海と 同じ 直し。浮世絵風＝波頭 28px → 帯の はばに 12こ・切り絵＝紙の なみなみ 20px → 17こ
+                   ukiyoe='{root} .hd{{border-radius:var(--radius) var(--radius) 0 0}}{root} .hd::after{{background-size:calc(100% / 12) 10px}}',
+                   kirie='{root} .hd{{border-radius:var(--radius) var(--radius) 0 0}}{root} .hd::after{{background-size:calc(100% / 17) 14px}}')
 
 
 def board_theme_css(tid):

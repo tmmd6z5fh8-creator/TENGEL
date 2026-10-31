@@ -31,36 +31,66 @@
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
   var BUCKETS = ['paid_sub', 'paid_pack', 'free'];
-  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、22こを 番号の 順に 1つずつ 解放する
-  //   1〜5：5レースごと・6〜10：6レースごと・11〜15：7レースごと・16〜22：8レースごと（全部で 146レース）。読み直し（0P）・5連の 予想は 数えない
-  //   第4.108版：22「ボードを持つ馬」（いちばん はじめの 頃の ボード）を 出世馬の あとに 足した（8レース・146レース目）
-  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[5, 5], [5, 6], [5, 7], [7, 8]] };
+  // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円。買った あとに 読み込んだ レースの 数で、番号の 順に 1つずつ 解放する。読み直し（0P）・5連の 予想は 数えない
+  //   第4.113版（まさちゃん 2026/11/01「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！」）：
+  //     16こ・6レースごとに 1つ（全部で 96レース）。前の 1〜21（ボードを一周〜出世馬）は 消した。1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16 は ボードを持つ馬
+  //   第4.113版（まさちゃん 01:24「結果ボードのカスタムには2種類カスタムつけられるようにして！①的中演出 ②ハズレ演出」）：的中の とき・ハズレの とき で べつべつに 1つずつ 選ぶ
+  //     （points_ui.js の board.selHit・board.selMiss。解放の 数は 1つ＝買うのも 1回）
+  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[16, 6]] };
   var BOARD_NEED = (function () { var out = [], n = 0; BOARD.steps.forEach(function (st) { for (var i = 0; i < st[0]; i++) { n += st[1]; out.push(n); } }); return out; })();
-  // 22こ（番号の 順＝解放の 順）。when：all＝いつも・hit＝的中の とき・big＝デカ的中から 上・miss＝ハズレの とき
+  // 16こ（番号の 順＝解放の 順）。null＝じゅんび中（設定に「じゅんび中」の タイル・選べない）。
+  //   飾りを 入れる ときは、その 番号の null を [id, 名前, せつめい, when] に かえて、bcx.js に B.<id>（部品を 作る 所）を 足す（README「結果ボードカスタムに 飾りを 入れる」）
+  //   when：all＝的中にも ハズレにも 使える・hit＝的中の とき だけ・big＝的中の うち デカ的中から 上 だけ・miss＝ハズレの とき だけ
   var BOARD_ITEMS = [
-    ['orbit', 'ボードを一周', 'ボードのまわりを、馬がぐるぐる走る', 'all'],
-    ['goal', 'ゴール板', 'ボードの下の帯を走って、ゴールに駆け込む', 'all'],
-    ['peek', 'ひょっこり', 'ボードの下から馬が顔を出して、まばたき', 'all'],
-    ['nap', '上でお昼寝', 'ボードの上で馬が寝そべって、しっぽがゆらゆら', 'all'],
-    ['hang', 'ぶら下がり', 'ボードの角に子馬がぶら下がって、足をぱたぱた', 'all'],
-    ['cheer', 'ハズレの励まし', 'ハズレのとき、馬がボードにもたれて「次いこ！」', 'miss'],
-    ['crowd', '観客席', 'ボードの下で、観客の馬たちが歓声と拍手', 'all'],
-    ['selfie', '自撮り', '馬が自撮り棒で、ボードといっしょにパシャ', 'all'],
-    ['bite', 'くわえて持つ', '馬がボードのすみをくわえて持つ', 'all'],
-    ['stand', '馬がボード発表', '立った馬がボードを持つ（下は脚だけ見える）', 'all'],
-    ['banner', '横断幕', '馬がボードを持って走ってくる', 'all'],
-    ['stamp', '蹄のハンコ', '的中のとき、数字のない所に「的中」スタンプをドン', 'hit'],
-    ['flower', 'お花が咲く', 'ボードのまわりにお花が咲く（暗いテーマは色を合わせる）', 'all'],
-    ['pop', 'ぽよん', '下から出てきて、着地でぷるんと弾む', 'all'],
-    ['drop', 'ドスン', '上から落ちてきて、少しつぶれて戻る', 'all'],
-    ['flip', 'カードめくり', '裏向きで出てきて、くるっと表になる', 'all'],
-    ['slide', 'すべり込み', '横からシュッと入って、ピタッと止まる', 'all'],
-    ['float', 'ふわふわ', '出たあと、ゆっくり上下に浮く', 'all'],
-    ['thump', '大きな的中', 'デカ的中から上のとき、ボードが「ドン！」と1回跳ねる', 'big'],
-    ['droop', 'ハズレ', 'ハズレのとき、少しだけ傾いて、しょんぼり', 'miss'],
-    ['rise', '出世馬', '連続で当たると、ボードのまわりの飾りが豪華になっていく', 'hit'],
-    ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
-  ].map(function (r, i) { return { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i] }; });
+    /* 1 */ null,
+    /* 2 */ null,
+    /* 3 */ null,
+    /* 4 */ null,
+    /* 5 */ null,
+    /* 6 */ null,
+    /* 7 */ null,
+    /* 8 */ null,
+    /* 9 */ null,
+    /* 10 */ null,
+    /* 11 */ null,
+    /* 12 */ null,
+    /* 13 */ null,
+    /* 14 */ null,
+    /* 15 */ null,
+    /* 16 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
+  ].map(function (r, i) {
+    return r ? { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i], ready: true }
+      : { no: i + 1, id: 'prep' + (i + 1), name: 'じゅんび中', desc: 'あたらしい 飾りを じゅんび して いるよ', when: 'all', need: BOARD_NEED[i], ready: false };
+  });
+  // その 飾りを 的中の とき（kind＝'hit'）・ハズレの とき（'miss'）に 使えるか（じゅんび中は 使えない）
+  function boardFits(it, kind) { if (!it || !it.ready) return false; return kind === 'miss' ? (it.when === 'all' || it.when === 'miss') : it.when !== 'miss'; }
+  // 第4.113版：的中の とき・ハズレの とき の 2つの 選択 sel＝{ hit, miss }（'none'＝なし・''＝まだ 選んで いない＝つぎに 解放した 飾りを そのまま 使う）
+  function boardSlot(kind) { return kind === 'miss' ? 'miss' : 'hit'; }
+  // 選べる もの か（なし・いま ある 飾り）。前の 版の 飾り（第4.113版で 消した 1〜21）や じゅんび中は 選べない
+  function boardKnown(id) { return id === 'none' || BOARD_ITEMS.some(function (x) { return x.ready && x.id === id; }); }
+  // 台帳の board → sel。前の 版の 1つの 選択（board.sel）は 的中にも ハズレにも ついて いた ので 両方へ（知らない もの は ''）
+  function boardSel(bd) {
+    bd = bd || {};
+    var old = typeof bd.sel === 'string' ? bd.sel : '', h = typeof bd.selHit === 'string' ? bd.selHit : old, m = typeof bd.selMiss === 'string' ? bd.selMiss : old;
+    return { hit: boardKnown(h) ? h : '', miss: boardKnown(m) ? m : '' };
+  }
+  // いま ボードに つける もの（kind＝結果の 種類：'miss'＝ハズレの 所・ほか＝的中・デカ的中・ど的中…＝的中の 所）。解放ずみで その 結果に 使える ものだけ。なし なら ''
+  function boardActive(sel, reads, kind) {
+    var k = boardSlot(kind), id = sel ? sel[k] : '';
+    if (!id || id === 'none') return '';
+    var n = boardUnlocked(reads), it = BOARD_ITEMS.filter(function (x) { return x.id === id; })[0];
+    return it && it.no <= n && boardFits(it, k) ? it.id : '';
+  }
+  // n0 → n1 こ 解放した：その 間の 飾り（じゅんび中は のぞく）を、まだ 選んで いない 所（sel の hit・miss）に つける（sel を かえる）。解放した 飾りを 返す
+  function boardOpen(sel, n0, n1) {
+    var got = [];
+    for (var i = Math.max(0, n0); i < n1 && i < BOARD_ITEMS.length; i++) {
+      var it = BOARD_ITEMS[i]; if (!it.ready) continue;
+      got.push(it);
+      ['hit', 'miss'].forEach(function (k) { if (!boardKnown(sel[k]) && boardFits(it, k)) sel[k] = it.id; });
+    }
+    return got;
+  }
 
   function iso(d) { return (d instanceof Date ? d : new Date(d || Date.now())).toISOString(); }
   function tms(s) { var t = Date.parse(s); return isFinite(t) ? t : 0; }
@@ -180,13 +210,19 @@
     return own;
   }
   function boardOwned(events) { return owned(events, 'board'); }
-  // 読み込んだ レースの 数 → 解放した 数（0〜22）
+  // 読み込んだ レースの 数 → 解放した 数（0〜16：じゅんび中の 番号も 数える）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
-  // つぎに 解放する もの（全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
+  // つぎに 解放する 番号（じゅんび中も ふくむ・全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
   function boardNext(reads) {
     var n = boardUnlocked(reads); if (n >= BOARD_ITEMS.length) return null;
     var it = BOARD_ITEMS[n];
     return { item: it, need: it.need, left: it.need - (+reads || 0), from: n ? BOARD_NEED[n - 1] : 0 };
+  }
+  // つぎに 解放する 飾り（じゅんび中は とばす・なければ null）：{ item, need, left }
+  function boardNextReady(reads) {
+    var r = +reads || 0;
+    for (var i = 0; i < BOARD_ITEMS.length; i++) { var it = BOARD_ITEMS[i]; if (it.ready && it.need > r) return { item: it, need: it.need, left: it.need - r }; }
+    return null;
   }
   // 壁紙パック（第4.92版・まさちゃんの 指定）：買い切り 1,500円・11枚。買った あとに 読み込んだ レース（200P で 読んだ 1レース・読み直しと 5連の 予想は 数えない）
   //   5つごとに 1枚ずつ 解放（55レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（8・16・25枚）の 枚数に 数える
@@ -199,9 +235,6 @@
     var need = (n + 1) * WALLPACK.every;
     return { no: n + 1, need: need, left: need - (+reads || 0), from: n * WALLPACK.every };
   }
-  // 出世馬の 飾りの 段（第4.91版・まさちゃんの 指定）：1回目＝クラッカーと花束・2回目＝金メダルとスポットライト・3回目＝トロフィーと金粉・
-  //   4〜7回目＝黄金の どでかい冠と 金の 札束（大量）・8回目から＝幻の 馬（咆哮・ボードが 飛んで いく・暗い 雷 3秒 → ボードが もどる）→ 冠と 札束
-  function riseTier(streak) { var k = +streak || 0; return k <= 0 ? 0 : k >= 8 ? 8 : k >= 4 ? 4 : k; }
 
   // ---- ミッション（記録の数）----
   function missionAt(i) {
@@ -249,7 +282,8 @@
 
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
-    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, riseTier: riseTier, owned: owned,
+    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
+    boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;

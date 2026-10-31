@@ -344,7 +344,7 @@ def tile_paper():
 def edge_strip():
     """上の 帯の 下の ふち：2まい 重ねた 紙の なみなみ（赤の 下に クリーム）"""
     o = ("<path d='M0 0 H20 V4 Q15 12 10 7 Q5 12 0 4 Z' fill='#6E2A20' opacity='.25' transform='translate(0 1.6)'/>"
-         "<path d='M0 0 H20 V5 Q15 13 10 8 Q5 13 0 5 Z' fill='#FFF4E0'/>"
+         "<path d='M0 1 H20 V5 Q15 13 10 8 Q5 13 0 5 Z' fill='#FFF4E0'/>"   # 第4.113版：クリームは 1px 下から（ボードで 帯の はばに あわせて のばすと 上の はしに うすい 線が 出た）
          "<path d='M0 0 H20 V2.6 Q15 10 10 5 Q5 10 0 2.6 Z' fill='#C23B30'/>")
     return tile(20, 14, o)
 

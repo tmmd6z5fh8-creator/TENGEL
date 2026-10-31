@@ -781,7 +781,8 @@ def banner(B):
                 + ev('dnCalm', [(0, 'opacity:1'), (s0, 'opacity:1'), (s0 + 0.02, 'opacity:0'), (s1, 'opacity:0'), (s1 + 0.02, 'opacity:1')])
                 + ev('dnShock', [(0, 'opacity:0'), (s0, 'opacity:0'), (s0 + 0.02, 'opacity:1'), (s1, 'opacity:1'), (s1 + 0.02, 'opacity:0')]))
     d0, d1, d2, d3 = DODGE
-    for cls, (ddx, ddy), (ex, ey) in (('g1', (2, 10), (150, 22)), ('g2', (-2, -9), (224, 12))):
+    # 第4.113版：おくの 白い 馬（g2）は 上へ よけない（上へ 9px 動くと ひづめが 地面から うく：まさちゃん「白い馬の脚が宙に浮いてるから地面につけて」）→ うしろへ 6px だけ
+    for cls, (ddx, ddy), (ex, ey) in (('g1', (2, 10), (150, 22)), ('g2', (-6, 0), (224, 12))):
         css += (f'.dnw .dnDg.{cls}{{left:0;top:0;width:0;height:0;animation:dnDg{cls} {TREX_S}s ease-in-out infinite}}'
                 + ev(f'dnDg{cls}', [(0, 'transform:translate(0,0)'), (d0, 'transform:translate(0,0)'), (d1, f'transform:translate({ddx}px,{ddy}px)'),
                                     (d2, f'transform:translate({ddx}px,{ddy}px)'), (d3, 'transform:translate(0,0)')])
