@@ -2640,11 +2640,186 @@ def sfx_ndt():
     return mx.render(.45, target=-17, bass=True)
 
 
+def read_gk():
+    """kami_kiwami.py の 時刻（第4.117版：神様極的中）"""
+    sys.path.insert(0, HERE)
+    import kami_kiwami
+    return kami_kiwami
+
+
+def sfx_gk():
+    """神様極的中の 音（第4.117版。秒は kami_kiwami.py の FILM。0秒は 動画が 動きだした 瞬間＝押した 瞬間。押した 瞬間の 音は sfx_ndt を 重ねる）：
+       （真っ暗：ゴゴ…と 小さく ふくらむ）→ 顔が じわじわ（低い 合唱 ああ…）→ キィィン＋ドォン（両目が 光る）＋ ジジ…バチッ（目と たてがみの 雷・だんだん 多く）
+       → 合唱が ふくらむ・ヒュオォォ↑（目の 光が 強く）→ ドッガーーン!!（大爆発）＋バリバリッ（雷）＋ガラガラ・パラパラ（岩と 小石）→ シャーン（白）
+       → ヒュゥゥ（雲の 場・金の 嵐）＋合唱（ああ〜・明るい 和音）＋キラキラ → ドン・ドン・ドン・ドーン（神・様・的・中 の 寄り：だんだん 高く）
+       → ヒュー（引き・降りる）→ ドーン＋ジャーン（着地）＋キラーン（強調の つや）＋バチバチッ（字の 上の 雷）
+       → 間 → ヒュゴォォ↓（蹄が 落ちて くる）→ ドガァン!!＋カァン＋ピキピキ（踏みつけて ひび）＋バリバリッ（虹の 雷）→ ガッシャーン!!（画面と 字が 砕ける）
+       → ドーーン!!＋どら＋ジャーン＋合唱（神様極的中）＋ジャラジャラ → ゴロゴロ・バリバリッ（金と 虹の 雷・ずっと）＋キラキラ
+       → シャラララ↑ → ポンッ（ボード）→ 買い目 ピン・ピン・ピン → 合計 キラリーン＋メダル"""
+    KK = read_gk()
+    F, RES = KK.FILM, KK.RES
+    t0b = RES + .45
+    mx = Mix(t0b + 2.0, 117)
+    r = mx.rng
+    # ===== 真っ暗 → 顔が じわじわ =====
+    d0 = F['FACE'][1] + .2
+    mx.add(rumble(d0, r, 90, 4) * np.linspace(0, 1, n_(d0)) ** 2, 0.0, .22, rv=.25)                 # ゴゴ…
+    f0, f1 = F['FACE']
+    mx.add(choir((40, 47, 52), F['RAISE'][1] - f0 + .2, r, att=.9, rel=.6, n_v=2, bright=.6), f0, .07, rv=.5)   # 低い 合唱（ああ…）
+    mx.add(pad((40, 47, 52, 55), F['RAISE'][1] - f0, 1.0, .5, .55), f0, .1, rv=.45)
+    # ===== 両目が 光る（キィィン＋ドォン）→ 顔を 上げる：目と たてがみの 雷（だんだん 多く）・合唱が ふくらむ =====
+    te = F['IGNITE']
+    mx.add(kyuin(2200, 5600, .8, .04, .22), te, .12, rv=.5)                                             # キィィン
+    mx.add(bell(mtof(96), 1.4, idx=1.3, tau=.55), te + .01, .13, -.2, rv=.55)
+    mx.add(bell(mtof(96), 1.4, idx=1.3, tau=.55), te + .01, .13, .2, rv=.55)
+    mx.add(boom(70, 26, 1.6, .55, .06, 2.4, r), te, .6 * FZ_LOW, rv=.2)                                 # ドォン
+    r0, r1 = F['RAISE']
+    dr = F['BLAST'] - r0
+    nr = n_(dr)
+    grow = np.linspace(.15, 1, nr) ** 1.6
+    mx.add(crackle(dr, 160, r) * grow, r0 + .02, .28, -.35, rv=.25)                                      # ジジ…（左の 目と たてがみ）
+    mx.add(crackle(dr, 160, r) * grow, r0 + .05, .28, .35, rv=.25)                                       # ジジ…（右）
+    tz = r0 + .25
+    while tz < F['BLAST'] - .1:                                                                       # バチッ（雷：だんだん 多く）
+        u = (tz - r0) / dr
+        mx.add(arc_zap(.18 + .12 * u, r, 1200 + 600 * u), tz, .16 + .2 * u, r.uniform(-.8, .8), rv=.25)
+        tz += r.uniform(.42, .7) * (1 - .55 * u)
+    mx.add(choir((52, 56, 59, 64), r1 - r0 + .2, r, att=1.6, rel=.4, n_v=3, bright=.9), r0 + .3, .15, rv=.55)   # 合唱が ふくらむ（ホ長調）
+    mx.add(growl(38, 120, dr, dr, 2.2), r0 + .2, .17, rv=.3)
+    du = F['BLAST'] - 2.9                                                                             # ヒュオォォ↑（目の 光が 強く）
+    mx.add(cuin(500, 3600, du, .9, r), 2.9, .28, rv=.4)
+    mx.add(nsweep(du, 600, 9000, .5, r) * np.linspace(.1, 1, n_(du)) ** 2, 2.9, .3, rv=.4)
+    # ===== 大爆発（白・岩・小石・雷）=====
+    tb = F['BLAST']
+    mx.add(explosion(r, 1.7, .85), tb, .85, rv=.25)                                                   # ドッガーーン!!
+    mx.add(boom(85, 24, 2.2, .7, .06, 3.0, r), tb, 1.2 * FZ_LOW, rv=.2)
+    mx.add(kick(150, 40, .5, 3.0, .14, .7, r), tb, .55 * FZ_LOW, rv=.1)
+    mx.add(lcrash(r, 2.4, .7), tb + .01, .16 * FZ_MID, -.5, rv=.5)                                    # シャーン（白）
+    mx.add(lcrash(r, 2.4, .7), tb + .01, .16 * FZ_MID, .5, rv=.5)
+    for jj in range(3):                                                                               # バリバリッ（白・金・黒の 雷）
+        mx.add(thunder(r, 1.1), tb + .02 + .07 * jj, .34, (-.7, .7, 0)[jj], rv=.3)
+    for jj in range(26):                                                                              # ガラガラ・パラパラ（岩と 小石が 外へ とぶ）
+        tk = tb + .03 + .55 * (jj / 26) ** 1.4 + r.uniform(0, .04)
+        mx.add(whoosh(r.uniform(.12, .26), r, r.uniform(2500, 5000), r.uniform(300, 900)), tk, .07, r.uniform(-.95, .95), rv=.2)
+    for jj in range(40):
+        tk = tb + .05 + .7 * r.uniform(0, 1) ** 1.6
+        mx.add(hp(crackle(.03, 2400, r), 1800), tk, .07, r.uniform(-.9, .9), rv=.25)
+    sparkle(mx, tb + .15, .5, 14, (95, 98, 100, 103, 107), .06, r)
+    dw = F['CLOUDS'] - tb + .3                                                                        # 白の 中：キラキラした ひびき・ジジ（雷）
+    mx.add(pad((76, 80, 83, 88), dw, .1, .5, .25), tb + .05, .1, rv=.6)
+    mx.add(crackle(dw, 140, r) * np.linspace(1, .2, n_(dw)), tb + .05, .18, rv=.3)
+    # ===== 雲の 場：金の 嵐（ヒュゥゥ）・合唱（明るい 和音）・キラキラ → 神様的中が 降りる =====
+    tc = F['CLOUDS']
+    dd = F['LAND'] - tc
+    wind = nsweep(dd, 1800, 900, .9, r) * (.6 + .4 * np.sin(2 * np.pi * .8 * tl(n_(dd)))) * np.clip(tl(n_(dd)) / .6, 0, 1)
+    mx.add(wind, tc, .26, np.linspace(-.5, .5, 40), rv=.3)                                             # ヒュゥゥ（金の 嵐）
+    mx.add(rain(dd, r), tc + .2, .12, rv=.25)
+    mx.add(choir((52, 59, 64, 68, 71), F['LAND'] - tc + .3, r, att=.8, rel=.5, n_v=3, bright=1.0), tc, .2, rv=.6)   # ああ〜（明るい 和音）
+    mx.add(pad((64, 68, 71, 76), dd, .6, .4, .3), tc, .12, rv=.55)
+    kjingle(mx, tc + .2, dd - .3, 30, .07, r)                                                          # キラキラ（金粉・金紙）
+    ff = F['FALL']                                                                                    # 神様的中が 上から：ヒュー（ゆっくり）
+    mx.add(kyuin(2400, 900, F['CU'][0] - ff + .05, .03, .4), ff, .12, rv=.45)
+    for k, (tcu, m) in enumerate(zip(F['CU'], (71, 74, 78, 83))):                                     # ドン・ドン・ドン・ドーン（神・様・的・中 の 寄り）
+        g = 1.0 + .18 * k
+        mx.add(kick(120, 44, .4, 2.6, .12, .55, r), tcu, .6 * FZ_LOW * g, rv=.12)
+        mx.add(stab((m - 24, m - 12), .35, r, 2.0, .5), tcu + .005, .18 * FZ_MID * g, rv=.25)
+        mx.add(bell(mtof(m + 12), 1.1, ratio=2.76, idx=1.8, tau=.4), tcu + .01, .16 * g, (-.3, .3, -.15, .15)[k], rv=.5)
+        mx.add(hp(crackle(.18, 1600, r), 1200), tcu, .14, (-.3, .3, -.15, .15)[k], rv=.3)
+    tw = F['WIDE']                                                                                    # 引き → 降りる：ヒュー
+    dl = F['LAND'] - tw
+    mx.add(nsweep(dl, 5000, 500, .7, r) * np.linspace(.2, 1, n_(dl)) ** 1.5, tw, .32, rv=.3)
+    mx.add(kyuin(2600, 700, dl + .03, .02, .3), tw, .16, rv=.4)
+    mx.add(cuin(300, 1800, dl, .9, r), tw, .16, rv=.35)                                               # グォォ↑（着地の 前）
+    # ===== 着地（ドーン＋ジャーン）→ 強調（キラーン・バチバチッ）=====
+    tl_ = F['LAND']
+    mx.add(explosion(r, 1.1, .85), tl_, .55, rv=.2)                                                   # ドーン
+    mx.add(boom(85, 26, 1.6, .5, .06, 2.8, r), tl_, .9 * FZ_LOW, rv=.15)
+    mx.add(kick(90, 34, .45, 2.8, .1, .6, r), tl_, .5 * FZ_LOW, rv=.1)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64)):                                                  # ジャーン
+        mx.add(brass(m, .7, r), tl_ + .02, .24 * FZ_MID, (i / 5 - .5) * .8, rv=.3)
+    mx.add(gong(mtof(47), 1.8, .7, r), tl_ + .03, .22 * FZ_MID, rv=.45)
+    for jj, m in enumerate((96, 100, 103, 108)):                                                      # キラーン（金の つやが 走る）
+        mx.add(tine(mtof(m), .8, .35), tl_ + .12 + .06 * jj, .08, (jj / 3 - .5) * 1.2, rv=.5)
+    for jj in range(3):                                                                               # バチバチッ（字の 上の 雷）
+        mx.add(arc_zap(.2, r, 1500), tl_ + .05 + .08 * jj, .2, (-.4, .4, 0)[jj], rv=.25)
+    coins(mx, tl_ + .06, .5, 14, .12 * FZ_MID, r)
+    mx.duck(F['HOOF'] - .2, F['HOOF'] + .02, -9, ramp=.08)                                            # 間（少し 小さく）
+    # ===== 蹄が 落ちて くる → 踏みつけて ひび → 砕ける =====
+    th, hit, sh = F['HOOF'], F['HIT'], F['SHAT']
+    dh = hit - th
+    mx.add(nsweep(dh, 6500, 500, .6, r) * np.linspace(.2, 1, n_(dh)) ** 1.8, th, .42, rv=.3)          # ヒュゴォォ↓（蹄が 落ちて くる）
+    mx.add(growl(120, 40, dh, dh * .9, 2.6), th, .2, rv=.25)
+    mx.add(crackle(dh, 220, r) * np.linspace(.3, 1, n_(dh)), th, .16, rv=.2)                            # 蹄に まとう 雷
+    mx.add(kick(160, 38, .55, 3.2, .16, .8, r), hit, .8 * FZ_LOW, rv=.1)                                # ドガァン!!（踏みつけ）
+    mx.add(boom(95, 24, 1.8, .6, .05, 3.2, r), hit, 1.0 * FZ_LOW, rv=.15)
+    mx.add(explosion(r, 1.2, 1.0), hit, .55, rv=.2)
+    mx.add(bell(mtof(86), .9, ratio=2.76, idx=2.2, tau=.25), hit + .01, .16, rv=.4)                    # カァン（金の 蹄鉄）
+    for jj in range(14):                                                                               # ピキピキ（ひび）
+        tk = hit + .005 + (sh - hit + .02) * (jj / 14) ** .8
+        mx.add(bell(mtof(r.uniform(98, 110)), .12, ratio=4.6, idx=2.6, tau=.035), tk, .06, r.uniform(-.8, .8), rv=.4)
+    for jj in range(3):                                                                                # バリバリッ（虹の 雷）
+        mx.add(thunder(r, .9), hit + .01 + .03 * jj, .3, (-.6, .6, 0)[jj], rv=.3)
+    mx.add(hp(explosion(r, .9, 2.4), 2000), sh, .5, rv=.35)                                            # ガッシャーン!!（画面と 字が 砕ける）
+    mx.add(explosion(r, 1.4, .9), sh, .6, rv=.25)
+    for jj in range(22):
+        mx.add(glassring(r.uniform(2800, 8800), .8, r, r.uniform(7, 14)), sh + r.uniform(0, .18), .07, r.uniform(-.95, .95), rv=.55)
+    for jj in range(30):                                                                               # チリチリ・シャラシャラ（かけら）
+        tk = sh + .02 + .45 * r.uniform(0, 1) ** 1.3
+        mx.add(hp(crackle(.04, 2600, r), 2200), tk, .08, r.uniform(-.9, .9), rv=.3)
+    # ===== ドーン（神様極的中）=====
+    tdn = F['DOON']
+    mx.add(cuin(400, 2600, tdn - sh, .8, r), sh, .18, rv=.35)                                          # グォン↑（爆発の 中から 出て くる）
+    mx.add(explosion(r, 1.6, .75), tdn, .8, rv=.2)                                                    # ドーーン!!
+    mx.add(boom(80, 22, 2.6, .8, .06, 3.2, r), tdn, 1.3 * FZ_LOW, rv=.2)
+    mx.add(kick(100, 32, .6, 3.0, .14, .7, r), tdn, .6 * FZ_LOW, rv=.1)
+    mx.add(gong(mtof(40), 3.0, 1.2, r), tdn + .02, .34 * FZ_MID, rv=.5)                               # どら
+    mx.add(lcrash(r, 2.6, .8), tdn + .01, .16 * FZ_MID, -.5, rv=.5)
+    mx.add(lcrash(r, 2.6, .8), tdn + .01, .16 * FZ_MID, .5, rv=.5)
+    for i, m in enumerate((40, 47, 52, 56, 59, 64, 68)):                                              # ジャーン（金管・明るい 和音）
+        mx.add(brass(m, 1.4, r), tdn + .015, .26 * FZ_MID, (i / 6 - .5) * .9, rv=.35)
+    mx.add(stab((28, 40, 52), .8, r, 2.4, .7), tdn, .3 * FZ_MID, rv=.2)
+    mx.add(choir((52, 56, 59, 64, 68, 71), F['END'] - tdn + .3, r, att=.25, rel=.8, n_v=3, bright=1.1), tdn + .02, .16, rv=.6)   # ああ〜（神様極的中）
+    jingle(mx, tdn + .08, 1.2, 36, .1 * FZ_MID, r)                                                     # ジャラジャラ
+    # ===== 最後の 場面：金と 虹の 雷（ずっと）・キラキラ =====
+    df = RES - tdn
+    nf = n_(df + .4)
+    mx.add(crackle(df + .4, 200, r) * (.6 + .4 * np.sin(2 * np.pi * 1.7 * tl(nf))), tdn + .1, .22, -.3, rv=.25)   # ジリジリ（まとう 電気）
+    mx.add(crackle(df + .4, 200, r) * (.6 + .4 * np.sin(2 * np.pi * 1.3 * tl(nf) + 1.0)), tdn + .1, .22, .3, rv=.25)
+    tt = tdn + .45
+    k = 0
+    while tt < RES - .15:                                                                             # バリバリッ・ゴロゴロ（大きな 雷）
+        mx.add(thunder(r, .8 + .4 * r.uniform()), tt, .34, (-.75, .75, -.35, .35)[k % 4], rv=.3)
+        mx.add(arc_zap(.22, r, 1400), tt, .22, (-.75, .75, -.35, .35)[k % 4], rv=.25)
+        tt += r.uniform(.48, .72)
+        k += 1
+    mx.add(rumble(df, r, 110, 6), tdn + .3, .22, rv=.25)
+    sparkle(mx, tdn + .4, df - .5, 26, (95, 98, 100, 103, 107, 110), .07, r)
+    for a0 in (tdn + .3, tdn + 1.4, tdn + 2.5):                                                       # キラーン（字を 走る つや）
+        for jj, m in enumerate((96, 100, 103, 108)):
+            mx.add(tine(mtof(m), .8, .35), a0 + .06 * jj, .08, (jj / 3 - .5) * .9, rv=.5)
+    # ===== ボード =====
+    for jj, m in enumerate((88, 90, 92, 95, 97, 100, 102, 104)):                                      # シャラララ↑
+        mx.add(tine(mtof(m), .6, .25), RES - .2 + .03 * jj, .08, (jj % 2 * 2 - 1) * .4, rv=.4)
+    mx.add(pop(560, 260, .14, r, .2), RES + .2, .5, rv=.15)                                            # ポンッ
+    for i, m in enumerate((56, 59, 64)):
+        mx.add(bell(mtof(m), .7, idx=1.4, tau=.3), t0b + .08 * i, .22 * FZ_MID, rv=.3)
+    tt = t0b + .08 * 3
+    mx.add(bell(mtof(64), 1.4, idx=1.3, tau=.6), tt, .28 * FZ_MID, rv=.45)
+    for i, m in enumerate((88, 92, 95, 100)):
+        mx.add(bell(mtof(m), 1.6, idx=1.4, tau=.6), tt + .015 * i, .14, (-.3, -.1, .1, .3)[i], rv=.45)
+    mx.add(coin(1500, r, .5), tt, .2, -.2, rv=.25)
+    mx.add(coin(1900, r, .45), tt + .06, .15, .25, rv=.25)
+    mx.add(pad((40, 44, 47, 52), 1.0, .3, .7, .45), tt, .22, rv=.35)
+    medals(mx, RES + .1, 1.8, 26, .2 * FZ_MID, r)
+    return mx.render(1.8, target=-13, bass=True)
+
+
 SOUNDS = (('sfx_hit_push', sfx_hit_push), ('sfx_hit', sfx_hit), ('sfx_big_push', sfx_big_push), ('sfx_big', sfx_big),
           ('sfx_fz_push', sfx_fz_push), ('sfx_fz', sfx_fz), ('sfx_pc', sfx_pc), ('sfx_zp', sfx_zp), ('sfx_gd', sfx_gd), ('sfx_sgd', sfx_sgd),
           ('sfx_spg_up', sfx_sgd_up), ('sfx_spg', sfx_spg),     # 第4.52版：超プレミアム神様的中（昇格の 音・動画の 音）
           ('sfx_sd', sfx_sd), ('sfx_sdp', sfx_sdp),              # 第4.66版：ど的中・紫電・第4.71版：紫電の 押した 瞬間の プチュン
-          ('sfx_nd', sfx_nd), ('sfx_ndt', sfx_ndt))              # 第4.77版：ノーマルど的中・第4.79版：押した 瞬間
+          ('sfx_nd', sfx_nd), ('sfx_ndt', sfx_ndt),              # 第4.77版：ノーマルど的中・第4.79版：押した 瞬間
+          ('sfx_gk', sfx_gk))                                    # 第4.117版：神様極的中
 
 def spg_flow(zp, up, spg):
     """超プレミアム神様的中の 流れ（押した 瞬間が 0秒）：超プレミアム（き！の 6.0秒で ブツッ）→ 昇格（6.0秒〜）→ 超神様＋声（12.57秒〜）。

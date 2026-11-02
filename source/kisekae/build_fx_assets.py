@@ -7,8 +7,9 @@
        pm_….webp 38まい … プレミアムど的中の 絵（flat/premium_art.py・約2.1MB）
        gd_….webp 24まい … 神様的中の 絵（flat/kami_art.py・flat/kami_storm.py・約1.7MB）
        sfx_pc・sfx_zp・sfx_gd・sfx_sgd・sfx_spg_up・sfx_spg … 特別な 演出の 音 6こ（gen_sfx.py：超神様・超プレミアム神様の 音は 動画の 絵の 時刻を 読むので 少し かかる）
-       第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）。第4.77版：sfx_nd.m4a（ノーマルど的中の 音）。第4.79版：sfx_ndt.m4a（ノーマルど的中・極ど的中の 押した 瞬間の 音：ポチッ・トンッ・キラン）
-       sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp・nd_film.mp4・nd_last.webp … 動画 4本と さいごの 1まい 3まいは build_fx_films.py で 作る（時間が かかる）。
+       第4.66版：sfx_sd.m4a（ど的中・紫電の 音）。第4.71版：sfx_sdp.m4a（紫電の 押した 瞬間の プチュン＝ど的中の 音の はじめ）。第4.77版：sfx_nd.m4a（ノーマルど的中の 音）。第4.79版：sfx_ndt.m4a（ノーマルど的中・極ど的中の 押した 瞬間の 音：ポチッ・トンッ・キラン）。第4.117版：sfx_gk.m4a（神様極的中の 音：kami_kiwami.py の 時刻）
+       sgd_film.mp4・sgd_last.webp・spg_up.mp4・sd_film.mp4・sd_last.webp・nd_film.mp4・nd_last.webp・gk_film.mp4・gk_last.webp … 動画 5本と さいごの 1まい 4まいは build_fx_films.py で 作る（時間が かかる）。
+       第4.117版：神様極的中の 動画は まさちゃんの OK の 第13稿（kami_kiwami.MASTER・GK_MASTER=<mp4>）から 作る。
        ここでは 作らない（ない ときは 知らせる）。第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）
      第4.108版：bcx_hb_head・bcx_hb_fore・bcx_hb_hind・bcx_hb_tail・bcx_hb_eye.webp … 結果ボードカスタム「ボードを持つ馬」（第4.113版から 16番）の 部品 5まい
        （r3d/fx/board_horse_parts.py：3Dの 馬を 2回 描いて 頭と首・前足（くさびを 足す）・後ろ足・しっぽ・目を とじた 所に 分ける・約27KB・1〜2分）
@@ -54,7 +55,7 @@ if os.environ.get('ART', '1') != '0':
     except Exception as e:   # noqa: BLE001
         skipped.append(f'ボードを持つ馬の 部品（{e}）')
 
-# 3) 効果音（14こ）
+# 3) 効果音（15こ：第4.117版 神様極的中の 音 sfx_gk を 足した）
 ff = shutil.which('ffmpeg')
 if os.environ.get('SFX', '1') != '0':
     try:

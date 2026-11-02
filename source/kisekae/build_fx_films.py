@@ -13,6 +13,9 @@
      nd_film.mp4  … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
                      → 光に つつまれる → 低い 目線（芝・大きな 玉）に 3D の ど！的中（flat/shiden_logo.py）が 落ちて くる ＝ 315コマ・10.5秒（さいごの 場面を 2.3秒 のばした）・780×1688・CRF 20。2コアで 約1時間）。FILMS=nd で これだけ 作る
      nd_last.webp … ノーマルど的中の 動画の さいごの 1まい
+     gk_film.mp4  … 神様極的中の 動画（第4.117版：kami_kiwami.py。まさちゃんの 3D と 背景の 絵で 1コマずつ 描いた できた 動画（MASTER・第13稿・リポジトリの 外：
+                     GK_MASTER=<mp4> で ほかの 所も）を アプリ用に CRF 23 で 作り直す ＝ 361コマ・12.03秒・780×1688・約10.3MB）。FILMS=gk で これだけ 作る
+     gk_last.webp … 神様極的中の 動画の さいごの 1まい
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
 import os
@@ -141,8 +144,28 @@ def nd_film():
     print('nd_last.webp', f'{os.path.getsize(os.path.join(out, "nd_last.webp")) / 1e6:.2f}MB', flush=True)
 
 
+# ---------------------------------------------------------------- 神様極的中の 動画と さいごの 1まい（第4.117版）
+def gk_film():
+    import kami_kiwami as KK
+    src = os.environ.get('GK_MASTER') or KK.MASTER
+    assert os.path.exists(src), f'神様極的中の できた 動画が ない：{src}（GK_MASTER=<mp4> で 指定）'
+    dst = os.path.join(out, 'gk_film.mp4')
+    # できた 動画（CRF 20）を アプリ用に（CRF 23・veryfast・音なし・faststart）。見た目は 同じ（SSIM 0.976）・点めつは 0個（flash_px.py AREA=.1）
+    run([FF, '-y', '-loglevel', 'error', '-i', src, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', str(KK.CRF), '-profile:v', 'high', '-pix_fmt', 'yuv420p',
+         '-movflags', '+faststart', '-tag:v', 'avc1', '-an', dst])
+    print('gk_film.mp4', f'{os.path.getsize(dst) / 1e6:.2f}MB', flush=True)
+    last = os.path.join(work, 'gk_last.png')
+    run([FF, '-y', '-loglevel', 'error', '-sseof', '-0.05', '-i', src, '-frames:v', '1', '-update', '1', last])   # さいごの コマ
+    import cv2
+    im = cv2.imread(last)
+    assert im is not None and im.shape[:2] == (KK.FILM['H'], KK.FILM['W']), 'さいごの 1まいが 読めない'
+    cv2.imwrite(os.path.join(out, 'gk_last.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+    os.remove(last)
+    print('gk_last.webp', f'{os.path.getsize(os.path.join(out, "gk_last.webp")) / 1e6:.2f}MB', flush=True)
+
+
 if __name__ == '__main__':
-    which = os.environ.get('FILMS', 'sgd,spg,sd,nd').split(',')
+    which = os.environ.get('FILMS', 'sgd,spg,sd,nd,gk').split(',')
     if 'sgd' in which:
         sgd_film()
     if 'spg' in which:
@@ -151,4 +174,6 @@ if __name__ == '__main__':
         sd_film()
     if 'nd' in which:
         nd_film()
-    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp') if os.path.exists(os.path.join(out, f))])
+    if 'gk' in which:
+        gk_film()
+    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'gk_film.mp4', 'gk_last.webp') if os.path.exists(os.path.join(out, f))])

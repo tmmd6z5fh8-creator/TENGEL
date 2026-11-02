@@ -27,7 +27,7 @@
   const WL = () => (window.TengelWallet && window.TengelWallet.on ? window.TengelWallet : null);
   const FX = () => window.TengelFx || null;
   const FXA = () => (window.__FX && window.__FX.assets) || {};
-  const BIG = { big: 1, fz: 1, nd: 1, sd: 1, pc: 1, sgd: 1, spg: 1 };
+  const BIG = { big: 1, fz: 1, nd: 1, sd: 1, pc: 1, sgd: 1, spg: 1, gk: 1 };   // 第4.117版：神様極的中も
   const CLOSE_TOP = 734;          // 舞台（390×844）の「とじる」の 上の はし
   const HB_TOP = 196;             // ボード（.hb）の 上の はし
   const KIND = { hit: '的中', miss: 'ハズレ' };   // 選ぶ 所（的中の とき・ハズレの とき）

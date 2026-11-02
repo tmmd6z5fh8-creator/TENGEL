@@ -1,5 +1,5 @@
 # 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
-#   python3 test_fx_flash.py [hit,big,fz,miss,pc,sd,nd,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   python3 test_fx_flash.py [hit,big,fz,miss,pc,sd,nd,gk,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
 #   第4.86版：隠れど的中（hidden）・超プレミアムど的中（zp）・神様的中（gd）は アプリから 消した（押したあとの 形が ない）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
@@ -10,6 +10,7 @@
 #   第4.77版：極ど的中（紫電 sd）は ノーマルど的中の 動画から 入る → 5.34秒（白い 光に つつまれた 瞬間）で すぐ 極ど的中（プチュン → 動画）。
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
 #     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
+#   第4.117版：神様極的中 gk（虹色の PUSH → 押した 画面（.ndt）→ はじめから おわりまで 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）：nd と 同じ やり方で 数える
 #   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -17,7 +18,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, pc=12.5, sd=11.5, nd=11.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, pc=12.5, sd=11.5, nd=11.2, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 sys.path.insert(0, os.path.join(W, 'kisekae')); from normal_do import SD_UP as SDUP   # 第4.77版：極ど的中の 入り
@@ -45,7 +46,7 @@ try:
         for kind in KINDS:
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
             if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
-                for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film'):
+                for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):
                     mp4 = os.path.join(FX_DIR, f + '.mp4')
                     if not os.path.exists(mp4) or not shutil.which('ffmpeg'):
                         print(f'  ⚠️ {f}.mp4 が ない（ios/fx_assets/）か ffmpeg が ない'); continue
@@ -71,7 +72,7 @@ try:
                     print(f'  sd：入りの ノーマルど的中の コマ {n_at}（{SDUP["AT"]}秒）→ 真っ黒 {int(round(SDUP["BLACK"] * 60))}コマ → 極ど的中')
                 else:
                     print('  ⚠️ nd_film.mp4 が ない（極ど的中の 入りは 数えない）')
-            if kind in ('sd', 'nd'):   # 紫電・ノーマルど的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
+            if kind in ('sd', 'nd', 'gk'):   # 紫電・ノーマルど的中・神様極的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
                 mp4 = os.path.join(FX_DIR, kind + '_film.mp4')
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
                     fd = os.path.join(SRV, 'APP', '_sdf'); shutil.rmtree(fd, ignore_errors=True); os.makedirs(fd)
@@ -96,18 +97,18 @@ try:
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
                 if kind == 'sd':   # 第4.77版：ここでは 動画が 読めない → すぐ ブラックアウト → 0.5秒 → 極ど的中の 幕
                     pg.wait_for_function("() => !!document.querySelector('#fxOv .ov.sd')", timeout=10000)
-                if kind in ('sd', 'nd'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
+                if kind in ('sd', 'nd', 'gk'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
                     pg.evaluate("(c) => { const o = document.querySelector('#fxOv .ov.' + c); o.classList.remove('still'); o.classList.add('go'); }", kind); pg.wait_for_timeout(200)
             else:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
                 n = pg.evaluate(STEP, i / 60)
-                if kind in ('sd', 'nd') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
+                if kind in ('sd', 'nd', 'gk') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
                     pg.evaluate(SDBG, [f'_sdf/g{min(i, sdf - 1):04d}.png', kind])
                 pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
             pg.evaluate('TengelFx.close()')
-            if kind in ('sd', 'nd'):
+            if kind in ('sd', 'nd', 'gk'):
                 shutil.rmtree(os.path.join(SRV, 'APP', '_sdf'), ignore_errors=True)
             if pre:
                 shutil.rmtree(os.path.join(OUT, '_sd_pre'), ignore_errors=True)
