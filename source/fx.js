@@ -21,10 +21,16 @@
 //   第4.86版（まさちゃん「あと一枚目の的中ボタン各種の、赤い×が書いてある演出消して！」）：隠れど的中・超プレミアムど的中・神様的中は なし。
 //     デカ的中は いつも デカ的中・プレミアムど的中は 超プレミアムに ならない・神様の 条件（超大穴と ほかに 大穴以上）は 8回に1回 超神様的中
 //     （その 4回に1回 超プレミアム神様的中）・のこりは ど的中の くじ（プレミアム／極ど的中／ノーマルど的中）。超プレミアム神様的中の はじめの ふりは 超プレミアムの まま
-//   第4.117版：神様極的中（gk：kisekae/kami_kiwami.py）。神様の 条件の レースが 結果を 決めた さいごの 30レース（その レースまで・中止と 締切済みは 入れない）の 中で
-//     2回以上（その レースも 入れて：src.html の godCount → spec.godN）なら くじを ひかずに 神様極的中（超神様・超プレミアム神様より 先）。
+//   第4.117版：神様極的中（gk：kisekae/kami_kiwami.py）。神様の 条件の レースが 結果を 決めた さいごの レース（その レースまで・中止と 締切済みは 入れない）の 中で
+//     2回以上（その レースも 入れて：src.html の godCount → spec.godN）なら 神様極的中（超プレミアム神様・超神様より 先）。第4.118版から G かつ M・さいごの 50レース（前は 神様の 条件・30レース）。
 //     PUSH は 超神様と 同じ 虹色の 超デカ PUSH（1.6倍）と その 音。押すと ノーマルど的中と 同じ 押した 画面（.ndt・音 ndt）→ 動画（gk_film）→ 12秒で ボード
 //     （見出し「神様極的中！！！」・帯は 超大穴と 大穴の 馬番）。静かな ボード（的中エフェクト オフ）の 見出しも 神様極的中。思い出ボードの わくは 神様馬（god）
+//   第4.118版（まさちゃんの 指定・2026/11/03）：くじを やめて 決まった 条件に（くじは プレミアムど的中の 6分の1 だけ）。当たった 組（どの 券種でも）ごとに 見る：
+//     G（神様）＝超大穴（10〜12番人気）と ほかに 7〜12番人気が いる 組（超大穴 2頭も）・D（ど）＝超大穴が いる 組（G で ない）・
+//     B（デカ）＝大穴（7〜9番人気）が いる 組（超大穴の 組は ない）・H（的中）＝当たりは あるが 7〜12番人気の 馬が いない・M＝当たった 券種が 2つ以上。
+//     枠（枠複・枠単）の 組は 枠番なので 人気を 見ない（M には 数える）。人気が わからない 馬・13番人気より 下は 穴に 数えない。強い 順（重ならない）：
+//     神様極的中（G・M・さいごの 50レースに G・M が 2つ以上）＞ 超プレミアム神様的中（G・M）＞ 超神様的中（G）＞ 極ど的中（D・M）＞ プレミアムど的中（D の 6分の1）＞
+//     ノーマルど的中（D）＞ デカ的中（B）＞ 的中（H）＞ ハズレ。帯と ボードの いちばん 上の 行は その 段を 決めた 組の 券種（TYPE_ORDER の 先の もの）
 (function () {
   'use strict';
   if (!window.__NATIVE || !window.__FX) return;
@@ -35,7 +41,7 @@
   const KS = () => { try { const k = window.TengelKisekae; return k && k.on && k.fx ? k.fx() : null; } catch (e) { return null; } };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUPER = [10, 12];                 // 超大穴＝単勝人気 10〜12番人気（判定の J・K・L）。13番人気より下は入れない
-  const BIG = [7, 9];                     // 大穴＝7〜9番人気（神様的中：超大穴と いっしょに 3連単に）
+  const BIG = [7, 9];                     // 大穴＝7〜9番人気（デカ的中・神様の もう 1頭）
   const SETTING = 'fx';
   // PUSHが出たときの音・押したときの音（プレミアム・超神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
   const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'], gk: ['fz_push', 'gk'] };
@@ -46,7 +52,10 @@
   const FZ_PUSH = { pc: 1, sgd: 1, spg: 1, sd: 1, nd: 1, gk: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
   const BOARD_OF = { pc: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz', gk: 'fz' };   // ボードの 形（ど的中の 形）
   const TITLE_OF = { pc: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };              // ボードの 見出し（A.board.titles の キー）
-  const LOT = { pc: 1 / 6, sgd: 1 / 8, spg: 1 / 4, sd: 1 / 2 };              // くじ（※仮）：ど的中 → プレミアム／のこりの 2回に1回 紫電（第4.66版）／神様の 条件 → 超神様 → 超プレミアム神様
+  const LOT = { pc: 1 / 6 };              // くじ（※仮）：第4.118版から ノーマルど的中（D で M で ない）の 6分の1 で プレミアムど的中 だけ
+  // 第4.118版：帯と ボードの いちばん 上に 出す 券種の 順（段を 決めた 組が いくつかの 券種に ある とき 先の もの）。枠の 券種は 人気を 見ない ので 入らない
+  const TYPE_ORDER = ['3連単', '3連複', '馬単', '馬連', 'ワイド', '単勝', '複勝'];
+  const ribbonOn = k => BOARD_OF[k] === 'fz' || k === 'fz';               // 帯と 馬番の 虹色の 輪：ど的中の 形の ボード（ど的中〜神様極的中）だけ
   let S = { effects: true, calm: null, sound: true };
   let cur = null;
 
@@ -90,36 +99,42 @@
     return Object.assign({}, S);
   }
 
-  // ---------- どれが出るか（10章） ----------
+  // ---------- どれが出るか（10章・第4.118版：まさちゃんの 指定の 決まった 条件） ----------
   // spec = { r, n（頭数）, rows: [{ t（券種）, state（的中／不的中／返還）, hits: [[馬番…]…], n（点数） }…]（予約した順）, ranks: { 馬番: 人気順位 } }
-  // → { kind: miss／hit／big／fz／gd, supers: [{ no, rank }…]（超大穴）, bigs: [{ no, rank }…]（大穴：神様のとき） }
-  //   gd＝神様の 条件（第4.86版：神様的中は なし → くじで 超神様・超プレミアム神様・ど的中の どれか）
+  // → { kind（spg／sgd／sd／nd／big／hit／miss：神様極的中と プレミアムの くじは show）, tier（g 神様／d ど／b デカ／h 的中／miss）, multi（M：当たった 券種が 2つ以上）,
+  //     supers: [{ no, rank }…]（帯の 超大穴）, bigs: [{ no, rank }…]（帯の 大穴）, trig: { t（券種）, c（組） }（段を 決めた 組。的中・ハズレは null） }
+  //   当たった 組（どの 券種でも）ごとに 見る。枠の 組は 枠番なので 人気を 見ない。人気が わからない 馬・13番人気より 下は 穴に 数えない
+  const isWaku = t => /^枠/.test(String(t || ''));
+  const typeRank = t => { const i = TYPE_ORDER.indexOf(t); return i < 0 ? TYPE_ORDER.length : i; };
   function decide(spec) {
-    const rows = (spec && spec.rows) || [];
-    if (!rows.some(x => x.state === '的中')) return { kind: 'miss', supers: [], bigs: [] };
-    const tri = rows.find(x => x.t === '3連単' && x.state === '的中');
-    if (!tri) return { kind: 'hit', supers: [], bigs: [] };
-    const ranks = (spec && spec.ranks) || {}, supers = [], bigs = [];
-    let god = false;
-    const add = (arr, no, rank) => { if (!arr.some(s => s.no === +no)) arr.push({ no: +no, rank: rank }); };
-    (tri.hits || []).forEach(c => {
-      const rs = c.map(no => (ranks[no] == null ? null : +ranks[no]));
-      if (rs.some(v => v == null || !isFinite(v))) return;      // 人気がわからない馬がいる組は ど的中・神様にしない（デカ）※仮
-      const sp = [], bg = [];
-      c.forEach((no, i) => { if (rs[i] >= SUPER[0] && rs[i] <= SUPER[1]) sp.push([no, rs[i]]); else if (rs[i] >= BIG[0] && rs[i] <= BIG[1]) bg.push([no, rs[i]]); });
-      if (!sp.length) return;
-      sp.forEach(x => add(supers, x[0], x[1]));
-      if (sp.length >= 2 || bg.length) { god = true; bg.forEach(x => add(bigs, x[0], x[1])); }   // 神様：超大穴と、ほかに 大穴以上（超大穴が 2頭でも）※仮
+    const rows = (spec && spec.rows) || [], ranks = (spec && spec.ranks) || {};
+    const won = rows.filter(x => x.state === '的中');
+    if (!won.length) return { kind: 'miss', tier: 'miss', multi: false, supers: [], bigs: [], trig: null };
+    const multi = new Set(won.map(x => x.t)).size >= 2;                 // M：当たった 券種が 2つ以上（枠も 数える）
+    const rk = no => { const v = ranks[no]; return v == null || v === '' || !isFinite(+v) ? null : +v; };
+    const found = { g: [], d: [], b: [] };
+    won.forEach(x => {
+      if (isWaku(x.t)) return;                                          // 枠の 組は 枠番（人気を 見ない）
+      (x.hits || []).forEach(c => {
+        const sp = [], bg = [];
+        (c || []).forEach(no => { const r = rk(no); if (r == null) return; if (r >= SUPER[0] && r <= SUPER[1]) sp.push({ no: +no, rank: r }); else if (r >= BIG[0] && r <= BIG[1]) bg.push({ no: +no, rank: r }); });
+        const o = { t: x.t, c: c, sp: sp, bg: bg };
+        if (sp.length && sp.length + bg.length >= 2) found.g.push(o);   // G：超大穴と、ほかに 7〜12番人気（超大穴 2頭でも）
+        else if (sp.length) found.d.push(o);                            // D：超大穴
+        else if (bg.length) found.b.push(o);                            // B：大穴（7〜9番人気）
+      });
     });
-    return { kind: god ? 'gd' : supers.length ? 'fz' : 'big', supers: supers, bigs: god ? bigs : [] };
+    const tier = found.g.length ? 'g' : found.d.length ? 'd' : found.b.length ? 'b' : 'h';
+    const kind = tier === 'g' ? (multi ? 'spg' : 'sgd') : tier === 'd' ? (multi ? 'sd' : 'nd') : tier === 'b' ? 'big' : 'hit';
+    if (tier === 'h') return { kind: kind, tier: tier, multi: multi, supers: [], bigs: [], trig: null };
+    const list = found[tier], t = list.slice().sort((p, q) => typeRank(p.t) - typeRank(q.t))[0].t, mine = list.filter(o => o.t === t);
+    const supers = [], bigs = [];
+    const add = (arr, x) => { if (!arr.some(y => y.no === x.no)) arr.push({ no: x.no, rank: x.rank }); };
+    mine.forEach(o => { o.sp.forEach(x => add(supers, x)); o.bg.forEach(x => add(bigs, x)); });
+    return { kind: kind, tier: tier, multi: multi, supers: supers, bigs: bigs, trig: { t: t, c: (mine[0].c || []).slice() } };
   }
-  // 特別な 演出の くじ（※仮・数えかたは しない）：ど的中 → 6分の1 で プレミアム／のこりの 2回に1回 極ど的中（紫電）・ほかは ノーマルど的中。
-  // 神様の 条件 → 8分の1 で 超神様（その 4分の1 で 超プレミアム神様）・のこりは ど的中の くじ（第4.86版：神様的中・超プレミアムど的中は なし）
-  function lottery(kind) {
-    if (kind === 'fz') return rand() < LOT.pc ? 'pc' : (rand() < LOT.sd ? 'sd' : 'nd');   // 第4.77版：紫電で ない ど的中は ノーマルど的中（nd：動画）
-    if (kind === 'gd') return rand() < LOT.sgd ? (rand() < LOT.spg ? 'spg' : 'sgd') : lottery('fz');
-    return kind;
-  }
+  // くじ（※仮・第4.118版）：ノーマルど的中（D で M で ない）の 6分の1 で プレミアムど的中。ほかは くじを ひかない（決まった 条件）
+  function lottery(kind) { return kind === 'nd' && rand() < LOT.pc ? 'pc' : kind; }
 
   // ---------- ボード（いつもの・お金なし） ----------
   function num(no, n, zx, isWaku) {
@@ -130,17 +145,19 @@
     const ordered = !!(RS() && RS().ORDERED[t]) || t === '馬単' || t === '枠単' || t === '3連単', isWaku = t === '枠複' || t === '枠単';
     return `<span class="bc">${c.map(no => num(no, n, mark.indexOf(+no) >= 0, isWaku)).join(`<span class="ar">${ordered ? '→' : '-'}</span>`)}</span>`;
   }
-  // 行：予約した券種ごとに 1行（9つまで）。デカ・ど的中・隠れど的中・特別な 演出は 3連単の行をいちばん上。当たった組番は 3つまで＋「ほか○点」。当たりのない券種は組番なし・うすく
-  function rowsHTML(spec, kind, supers, bigs) {
+  // 行：予約した券種ごとに 1行（9つまで）。デカ・ど的中・特別な 演出は 段を 決めた 組の 券種の 行を いちばん上（第4.118版。前は いつも 3連単・trig が ない ときは 3連単）。
+  // 当たった組番は 3つまで＋「ほか○点」。当たりのない券種は組番なし・うすく。超大穴・大穴の 馬番の 虹色の 輪は ど的中の 形の ボードの いちばん上の 行だけ
+  function rowsHTML(spec, kind, supers, bigs, trig) {
     let rows = ((spec && spec.rows) || []).slice();
-    if (kind !== 'hit' && kind !== 'miss') rows.sort((a, b) => (b.t === '3連単' ? 1 : 0) - (a.t === '3連単' ? 1 : 0));
+    const tt = kind !== 'hit' && kind !== 'miss' ? ((trig && trig.t) || '3連単') : null;
+    if (tt) rows.sort((a, b) => (b.t === tt ? 1 : 0) - (a.t === tt ? 1 : 0));
     rows = rows.slice(0, 9);
-    const mark = (supers || []).map(s => s.no).concat((bigs || []).map(s => s.no)), n = spec && spec.n;
+    const mark = ribbonOn(kind) ? (supers || []).map(s => s.no).concat((bigs || []).map(s => s.no)) : [], n = spec && spec.n;
     const html = rows.map((x, i) => {
       const hit = x.state === '的中', ref = x.state === '返還', hits = x.hits || [];
-      const cls = [hit && x.t === '3連単' && kind !== 'hit' ? 'top' : '', hit ? '' : 'no'].filter(Boolean).join(' ');
+      const cls = [hit && tt && x.t === tt ? 'top' : '', hit ? '' : 'no'].filter(Boolean).join(' ');
       const rs = hit ? '<span class="rs hit">的中</span>' : ref ? '<span class="rs ref">返還</span>' : '<span class="rs miss">不的中</span>';
-      const cs = hit ? hits.slice(0, 3).map(c => combo(c, x.t, n, x.t === '3連単' ? mark : [])).join('') + (hits.length > 3 ? `<span class="more">ほか${hits.length - 3}点</span>` : '') : '';
+      const cs = hit ? hits.slice(0, 3).map(c => combo(c, x.t, n, tt && x.t === tt ? mark : [])).join('') + (hits.length > 3 ? `<span class="more">ほか${hits.length - 3}点</span>` : '') : '';
       return `<li${cls ? ` class="${cls}"` : ''} style="--i:${i}"><span class="bt">${esc(x.t)}</span>${rs}${cs}</li>`;
     }).join('');
     return { html: html, n: rows.length };
@@ -151,20 +168,22 @@
     const h = t.endsWith('！！！') ? esc(head.slice(0, -2)) + '<span class="bx3">！！</span>' : esc(head);
     return `${h}<span class="bz${last === '！' ? ' bzx' : ''}">${esc(last)}</span>`;
   }
-  // 帯：ど的中・プレミアム・極・ノーマル＝超大穴の 馬番と 人気／超神様・超プレミアム神様・神様極的中＝超大穴と 大穴の 馬番（※仮）
-  function ribbonHTML(kind, spec, supers, bigs) {
+  // 帯：ど的中・プレミアム・極・ノーマル＝超大穴の 馬番と 人気／超神様・超プレミアム神様・神様極的中＝超大穴と 大穴の 馬番（※仮）。
+  // 第4.118版：「…が（段を 決めた 組の 券種）に！」（前は いつも「が3連単に！」・券種が わからない ときは「が当たりに！」）
+  function ribbonHTML(kind, spec, supers, bigs, trig) {
     const n = spec && spec.n;
-    if (!supers || !supers.length) return '';
+    if (!ribbonOn(kind) || !supers || !supers.length) return '';
+    const where = trig && trig.t ? `が${esc(trig.t)}に！` : 'が当たりに！';
     if (kind === 'sgd' || kind === 'spg' || kind === 'gk') {
       const bg = bigs && bigs.length ? `<b class="zt">大穴</b>${bigs.map(s => num(s.no, n, true)).join('')}` : '';
-      return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}${bg}<span>が3連単に！</span></div>`;
+      return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}${bg}<span>${where}</span></div>`;
     }
-    return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}<span>${supers.map(s => esc(s.rank) + '番人気').join('・')}が3連単に！</span></div>`;
+    return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}<span>${supers.map(s => esc(s.rank) + '番人気').join('・')}${where}</span></div>`;
   }
-  function boardHTML(kind, spec, supers, bigs, rows) {
+  function boardHTML(kind, spec, supers, bigs, rows, trig) {
     const k = BOARD_OF[kind] || kind;
     const sub = `${esc(spec && spec.r != null ? spec.r : '')}R の券種ごとの結果`;
-    const rib = ribbonHTML(kind, spec, supers, bigs);
+    const rib = ribbonHTML(kind, spec, supers, bigs, trig);
     const ks = KS(), tid = ks ? ks.tid : 'default', orn = ks ? ks.orn : A.board.orn;   // ボードはそのテーマの形（16.4）。CSS は kisekae.js が入れる
     return `<div class="rb ${k} t-${tid}"><div class="hd"><div class="bh${kind === 'miss' ? '' : ' logo'}">${titleHTML(kind)}</div><div class="bsub">${sub}</div>${rib}</div><div class="card">${orn}<ul class="brows">${rows}</ul></div></div>`;
   }
@@ -451,14 +470,14 @@
     if (kind === 'nd') video('nd_film');
     if (kind === 'gk') video('gk_film');                                 // 第4.117版：神様極的中
   }
-  function open(kind, spec, supers, bigs, quiet, direct) {
+  function open(kind, spec, supers, bigs, quiet, direct, trig) {
     close(true); css();
     const ov = document.createElement('div'); ov.id = 'fxOv'; ov.className = 'k-' + kind + (quiet ? ' quiet' : '') + (direct ? ' pv' : '');   // pv＝ためし（押された PUSH と はじける 絵は 出さない：bcx.js）
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'レースの結果');
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null };
+    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], trig: trig || null, ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (!quiet) preload(kind);
@@ -548,11 +567,11 @@
   }
   function reveal() {
     if (!cur || cur.phase === 'reveal') return;
-    const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers, cur.bigs);
+    const k = cur.kind, rows = rowsHTML(cur.spec, k, cur.supers, cur.bigs, cur.trig);
     const th = !cur.quiet && (k === 'hit' || k === 'big') ? (cur.theme || null) : null;
     let tpl = th && k === 'hit' ? A.reveal.hit_t.split('{{PC}}').join(' ' + th.pc).replace('{{PRESSED}}', th.push.pressed).replace('{{BURST}}', th.push.burst) : A.reveal[cur.quiet ? 'miss' : k];
     if (!cur.quiet && k === 'big') tpl = tpl.split('{{PC}}').join(th ? ' ' + th.pc : '').replace('{{PRESSED}}', th ? th.push.pressed : '').replace('{{BURST}}', th ? th.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.2));   // 押された PUSH も そのテーマの 形・同じ 大きさ
-    let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html)).replace('{{N}}', String(Math.max(1, rows.n)));
+    let html = tpl.replace('{{BOARD}}', boardHTML(k, cur.spec, cur.supers, cur.bigs, rows.html, cur.trig)).replace('{{N}}', String(Math.max(1, rows.n)));
     if (cur.quiet) html = html.replace('class="ov miss"', 'class="ov miss quiet"');
     if (k === 'sd' && !cur.quiet && !calm() && A.reveal.nd && A.films && A.films.nd_film) {   // 第4.77版：極ど的中は ノーマルど的中の 幕と 動画から（白い 光に つつまれた 瞬間に プチュン）
       cur.sdHtml = html; cur.pre = 1;
@@ -594,24 +613,24 @@
   function preview(spec, kind, o) {
     if (!spec) return null;
     const d = decide(spec), k = shown(kind || d.kind, false);
-    open(k, spec, d.supers, d.bigs, false, o || {});
+    open(k, spec, d.supers, d.bigs, false, o || {}, d.trig);
     return k;
   }
   // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）と 神様的中（gd）の 押したあとは アプリに 入って いない（くじで 出ない）。
   // 決めて 出す とき（テスト・CI の force・ためし）は ノーマルど的中（nd）に する。静かな ボード（的中エフェクト オフ）は ど的中の ボードの まま
   function shown(kind, quiet) { return !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }
   // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。くじは ひかない）
-  // godN（第4.117版）＝神様の 条件の レースが 結果を 決めた さいごの 30レース（この レースまで・中止と 締切済みは 入れない）の 中に いくつ あるか（この レースも 入れて：src.html の godCount）。
-  //   この レースが 神様の 条件で godN が 2以上 → くじを ひかずに 神様極的中（超神様・超プレミアム神様より 先）。静かな ボードの 見出しも 神様極的中
+  // godN（第4.117版・第4.118版）＝G かつ M の レースが 結果を 決めた さいごの 50レース（この レースまで・中止と 締切済みは 入れない）の 中に いくつ あるか（この レースも 入れて：src.html の godCount）。
+  //   この レースが G かつ M で godN が 2以上 → 神様極的中（超プレミアム神様より 先）。ほかは decide の 決まった 種類・ノーマルど的中だけ 6分の1 で プレミアム（的中エフェクト オフでは ひかない）。
+  //   静かな ボード（的中エフェクト オフ）も 同じ 種類（見出しは その 種類の もの）
   function show(spec) {
     if (!spec) return null;
-    const d = decide(spec), quiet = !S.effects, kiwami = d.kind === 'gd' && +spec.godN >= 2;
+    const d = decide(spec), quiet = !S.effects;
     let kind = d.kind;
     if (spec.force) kind = shown(spec.force, quiet);
-    else if (kiwami) kind = 'gk';
-    else if (!quiet) kind = lottery(kind);   // 的中エフェクト オフのときは くじを ひかない ※仮
-    else if (kind === 'gd') kind = 'fz';      // 第4.86版：神様的中は なし → 静かな ボードの 見出しは ど的中
-    open(kind, spec, d.supers, d.bigs, quiet);
+    else if (d.tier === 'g' && d.multi && +spec.godN >= 2) kind = 'gk';
+    else if (!quiet) kind = lottery(kind);
+    open(kind, spec, d.supers, d.bigs, quiet, null, d.trig);
     return kind;
   }
   document.addEventListener('click', e => {
@@ -760,11 +779,11 @@
     const stage = document.createElement('div'); stage.className = 'fxs mem' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: k, spec: spec, supers: d.supers, bigs: d.bigs, ov: ov, stage: stage, quiet: true, phase: 'mem', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null, mem: { v: v, frame: frame } };
+    cur = { kind: k, spec: spec, supers: d.supers, bigs: d.bigs, trig: d.trig, ov: ov, stage: stage, quiet: true, phase: 'mem', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null, mem: { v: v, frame: frame } };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
-    const rows = rowsHTML(spec, k, d.supers, d.bigs);
-    let board = boardHTML(k, spec, d.supers, d.bigs, rows.html);
+    const rows = rowsHTML(spec, k, d.supers, d.bigs, d.trig);
+    let board = boardHTML(k, spec, d.supers, d.bigs, rows.html, d.trig);
     board = board.replace(/<\/div>\s*$/, memCard(info, spec) + '</div>');      // 記録の カードは ボードの 中（買い目の 行の 下）
     const base = k === 'hit' ? 'ov hit' : k === 'big' ? 'ov big rv' : 'ov miss quiet';   // quiet＝ど的中の ボードの 見出し・帯の 動き（9秒 あとに 出る 形）を 止めて すぐ 見せる
     const extra = k === 'hit' ? '<div class="rays"></div>' : k === 'big' ? '<div class="rbow"></div><div class="glow"></div>' : frame === 'turf' ? '<div class="mring"></div>' : '';

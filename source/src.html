@@ -2332,7 +2332,7 @@ document.addEventListener('tengel:wallet', notifyCard);
 document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { notifyCard(); paintNotifyCard(); } });
 document.addEventListener('tengel:notify', () => { syncNotify().then(() => { if (st.tab === 'judge') renderRsvCard(currentJudge(), true); }); });
 
-// --- 的中ボタン（第3弾・10章）：結果を保存したあとに 1つだけ出す（ど的中＞デカ的中＞的中／当たりなし＝ハズレのボード）。
+// --- 的中ボタン（第3弾・10章）：結果を保存したあとに 1つだけ出す（第4.118版：神様極的中＞超プレミアム神様＞超神様＞極ど的中＞プレミアム／ノーマルど的中＞デカ的中＞的中／当たりなし＝ハズレのボード。中身は fx.js の decide）。
 //     出さないとき：中止・全部返還（※仮）・あとで記録を直したとき（一度出した記録＝rsv.fx が入っている）・まだ結果待ちの券種があるとき。中身は fx.js
 function fxAfterSave(b, j, res, done, fields, streak) {
   const F = Fx(); if (!F || !done || res.abandoned || (b.rsv && b.rsv.fx) || j.state === '返還' || j.state === '結果待ち' || j.state === '—') return null;
@@ -2344,19 +2344,22 @@ function fxAfterSave(b, j, res, done, fields, streak) {
   if (kind) writeBet(b.id, { rsv: { ...fields.rsv, fx: kind } }, false).catch(() => {});   // 出した印（同じ記録を直しても、もう出さない）
   return kind;
 }
-// 神様極的中（第4.117版・まさちゃん「30レースの記録の中で2回以上で発生する」）：神様の 条件（3連単の 当たりの 3頭に 超大穴と、ほかに 大穴以上：fx.js の decide の gd）の
-//   レースが、結果を 決めた さいごの 30レース（日付と 発走時刻の 順・この レースまで・この レースも 入れる）の 中に いくつ あるか。予約中・結果待ち・諦めた・締切済み・中止は 入れない。
-//   ほかの レースの 条件は 記録から その つど 決め直す（rsv.fx は くじの 結果なので 使わない：的中エフェクト オフで 決めた レースも 数える）。2以上 → fx.js の show が 神様極的中
+// 神様極的中（第4.117版・まさちゃん「30レースの記録の中で2回以上で発生する」→ 第4.118版：G かつ M・50レース）：G（神様：当たった 組に 超大穴と ほかに 7〜12番人気）かつ
+//   M（当たった 券種が 2つ以上）の レース（fx.js の decide の tier が g で multi）が、結果を 決めた さいごの 50レース（日付と 発走時刻の 順・この レースまで・この レースも 入れる）の
+//   中に いくつ あるか。予約中・結果待ち・諦めた・締切済み・中止は 入れない。ほかの レースの 条件は 記録から その つど 決め直す（rsv.fx は 出した 演出なので 使わない：
+//   的中エフェクト オフで 決めた レースも 数える）。2以上 → fx.js の show が 神様極的中
+const GOD_N = 50;
 const godKey = (date, start, r) => `${date || ''}|${/^\d{1,2}:\d{2}$/.test(String(start || '')) ? String(start).padStart(5, '0') : '99:99'}|${String(+r || 0).padStart(2, '0')}`;
 function godCount(b, fields, spec) {
   const F = Fx(); if (!F || !b) return 0;
   const rs = (fields && fields.rsv) || b.rsv || {}, me = godKey(b.date, rs.start || (fields && fields.start) || b.start, b.r);
   const keyOf = x => godKey(x.date, x.rsv.start || x.start, x.r);
   const past = betList().filter(x => x && x.id !== b.id && x.rsv && x.rsv.state === 'done' && x.rsv.judged && !(x.rsv.result && x.rsv.result.abandoned) && keyOf(x) <= me)
-    .sort((x, y) => keyOf(y).localeCompare(keyOf(x)) || String(y.id).localeCompare(String(x.id))).slice(0, 29);
+    .sort((x, y) => keyOf(y).localeCompare(keyOf(x)) || String(y.id).localeCompare(String(x.id))).slice(0, GOD_N - 1);
+  const gm = sp => { const d = F.decide(sp); return d.tier === 'g' && !!d.multi; };
   let n = 0;
-  try { if (F.decide(spec).kind === 'gd') n++; } catch (e) { /* 数えない */ }
-  past.forEach(x => { try { if (F.decide(memSpec(x)).kind === 'gd') n++; } catch (e) { /* 数えない */ } });
+  try { if (gm(spec)) n++; } catch (e) { /* 数えない */ }
+  past.forEach(x => { try { if (gm(memSpec(x))) n++; } catch (e) { /* 数えない */ } });
   return n;
 }
 // 設定タブ：的中の演出（的中エフェクト／演出を控えめにする／効果音）

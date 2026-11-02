@@ -145,7 +145,7 @@
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
       function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
       function closeVis() { var c = document.querySelector('#fxOv .close'); return c ? getComputedStyle(c).visibility : null; }
-      var res = { decide: F.decide(spec), lottery: [F.lottery('fz'), F.lottery('gd')], films: Object.keys(window.__FX.films || {}), assets: {} };
+      var res = { decide: F.decide(spec), lottery: [F.lottery('nd'), F.lottery('sgd')], films: Object.keys(window.__FX.films || {}), assets: {} };   // 第4.118版：くじは ノーマルど的中 → プレミアム だけ
       for (var k of ['pm_face_F.webp', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_pc.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       res.gone = { reveal: ['hidden', 'zp', 'gd'].filter(function (k) { return !!(window.__FX.reveal || {})[k]; }), art: !!(window.__FX.art || {}).gd, sfx: !!(window.__FX.sfx || {}).gd };   // 第4.86版：消した 演出は 入って いない
       // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤（1つ 1.0秒）→ ハートの 地面に ど的中が 落ちて 刺さる → ボード：10.07秒・第4.86版）
@@ -201,6 +201,20 @@
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);
       res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
       await mark('fx-nd-board');
+      F.close(); await sleep(200);
+      // 第4.117版：神様極的中（gk：超神様と 同じ 虹色の PUSH（1.6倍）→ 押した 画面（ノーマルど的中と 同じ）→ 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）。
+      // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード「神様極的中！！！」（帯は 超大穴と 大穴）
+      res.gk = { kind: F.show(Object.assign({ force: 'gk' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf'), pz: (F.current() || {}).pz };
+      await sleep(400); F.prime(); F.tap(); res.gk.fps = await fps(1000);
+      res.gk.parts = ['.gks', '.gkk', '.ndt', '.hb'].map(function (c) { return document.querySelectorAll('#fxOv .ov.gk ' + c).length; });
+      res.gk.imgs = document.querySelectorAll('#fxOv .ov.gk img').length; res.gk.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.gk img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
+      await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
+      res.gk.cur = F.current(); res.gk.ov = (document.querySelector('#fxOv .ov.gk') || {}).className || null; res.gk.holder = !!document.querySelector('#fxVh video[data-film=gk_film]');
+      res.gk.ndtGone = getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).visibility === 'hidden' || getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).display === 'none';
+      await mark('fx-gk');                                         // 動画の さいごの 1まい（still）
+      await waitFor(function () { return closeVis() === 'visible'; }, 8000);
+      res.gk.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.gk.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.gk.closeVis = closeVis();
+      await mark('fx-gk-board');
       F.close(); await sleep(200);
       res.closed = !document.querySelector('#fxOv');
       return res;

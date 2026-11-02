@@ -115,7 +115,11 @@ def nd_css():
 @keyframes ndtR{{0%{{opacity:.95;transform:scale(.9)}}100%{{opacity:0;transform:scale(1.3)}}}}
 .ov.fz.nd .ndtb{{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,#21113A,#05030F 70%);animation:ndtB {sec(TAP['DARK'][1] - TAP['DARK'][0])} ease-in {sec(TAP['DARK'][0])} both}}
 @keyframes ndtB{{from{{opacity:1}}to{{opacity:0}}}}
-.fxs.calm .ov.fz.nd .ndt{{display:none}}
+/* 視差効果を減らす／控えめ：押した 画面は 出さない（第4.118版：前の .fxs.calm … は build_fx の scope で .fxs .fxs.calm … に なって 効いて いなかった。
+   @media の 中に 書くと scope が .fxs.calm にも 効かせる） */
+@media (prefers-reduced-motion:reduce){{
+  .ov.fz.nd .ndt{{display:none}}
+}}
 .ov.fz.nd{{--t0:{sec(T['RES'] + .45)};--tc:.3s;z-index:31;background:#000}}
 .ov.fz.nd.go{{background:transparent}}
 .ov.fz.nd:not(.go):not(.still) *:not(.ndt):not(.ndt *){{animation-play-state:paused!important}}

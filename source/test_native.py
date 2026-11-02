@@ -518,18 +518,56 @@ try:
         bkm = json.loads(store['backup'] or '{}').get('bets', [])
         check(any(isinstance(x.get('mem'), dict) and x['mem'].get('v') == 'a' for x in bkm if x.get('r') == 9), f'思い出（mem）は 自動バックアップにも 入る（{[x.get("mem") for x in bkm if x.get("r") == 9]}）')
         pg.click('#rFilters [data-f=all]'); pg.wait_for_timeout(300)
-        # どれが出るか（10章・18.2）：3連単の当たりの3頭に 10〜12番人気 → ど的中／9番人気・13番人気・人気がわからない → デカ／3連単なし → 的中／当たりなし → ハズレ
+        # どれが出るか（第4.118版・まさちゃんの 指定：決まった 条件）：当たった 組（どの 券種でも）ごとに 見る。G＝超大穴（10〜12）と ほかに 7〜12番人気・D＝超大穴（G で ない）・
+        #   B＝大穴（7〜9）・H＝当たりは あるが 7〜12番人気が いない・M＝当たった 券種が 2つ以上。枠の 組は 枠番（人気を 見ない・M には 数える）・人気が わからない 馬と 13番人気より 下は 数えない
         RK = {str(i): i for i in range(1, 15)}   # 馬番＝人気順位（18.2 の例と同じ読み方）
         def spec(tri, others=(), ranks=RK):
             rows = [{'t': '3連単', 'state': '的中' if tri else '不的中', 'hits': [tri] if tri else [], 'n': 18}] + [{'t': t, 'state': st_, 'hits': h, 'n': 9} for t, st_, h in others]
             return {'r': 9, 'n': 14, 'rows': rows, 'ranks': ranks}
-        D = lambda sp: pg.evaluate("(s) => { const d = TengelFx.decide(s); return d.kind + (d.supers.length ? ':' + d.supers.map(x => x.no + '/' + x.rank).join(',') : ''); }", sp)
-        got = [D(spec([11, 8, 2])), D(spec([11, 12, 2])), D(spec([11, 6, 2])), D(spec([8, 5, 2])), D(spec([13, 8, 2])), D(spec([1, 6, 2])), D(spec([11, 6, 99])), D(spec(None, [('馬単', '的中', [[6, 2]])])), D(spec(None, [('馬単', '不的中', [])])), D(spec(None, [('馬単', '返還', [])])), D(spec([8, 7, 2])), D(spec([11, 10, 7]))]
-        check(got == ['gd:11/11', 'gd:11/11,12/12', 'fz:11/11', 'big', 'big', 'big', 'big', 'hit', 'miss', 'miss', 'big', 'gd:11/11,10/10'],
-              f'どれが出るか（18.2）：11・8・2／11・12・2／11・10・7 → 神様的中（超大穴と ほかに 大穴以上）・11・6・2 → ど的中（超大穴の馬番と人気）・8・5・2／8・7・2／13・8・2／1・6・2／人気がわからない馬 → デカ・3連単なし → 的中・当たりなし → ハズレ（{got}）')
-        gdd = pg.evaluate("(s) => TengelFx.decide(s)", spec([11, 8, 2]))
-        check(gdd == {'kind': 'gd', 'supers': [{'no': 11, 'rank': 11}], 'bigs': [{'no': 8, 'rank': 8}]} and pg.evaluate("(s) => TengelFx.decide(s).bigs", spec([11, 12, 2])) == [] and pg.evaluate("(s) => TengelFx.decide(s).bigs", spec([11, 6, 2])) == [],
-              f'神様的中の 帯の もと：超大穴 11 と 大穴 8（超大穴 2頭なら 大穴なし・ど的中なら 大穴は 出さない）（{gdd}）')
+        def rsp(rows, ranks=RK):   # 3連単の 行なし（券種を 自由に）
+            return {'r': 9, 'n': 14, 'rows': [{'t': t, 'state': st_, 'hits': h, 'n': 9} for t, st_, h in rows], 'ranks': ranks}
+        D = lambda sp: pg.evaluate("(s) => { const d = TengelFx.decide(s); return [d.tier, d.kind, d.multi ? 'M' : '', d.trig ? d.trig.t : '', d.supers.map(x => x.no).join(','), d.bigs.map(x => x.no).join(',')].join('|'); }", sp)
+        DCASES = [
+            ('3連単 11・8・2', spec([11, 8, 2]), 'g|sgd||3連単|11|8'),
+            ('3連単 11・12・2（超大穴 2頭 → G）', spec([11, 12, 2]), 'g|sgd||3連単|11,12|'),
+            ('3連単 11・10・7', spec([11, 10, 7]), 'g|sgd||3連単|11,10|7'),
+            ('3連単 11・6・2', spec([11, 6, 2]), 'd|nd||3連単|11|'),
+            ('3連単 8・5・2', spec([8, 5, 2]), 'b|big||3連単||8'),
+            ('3連単 8・7・2', spec([8, 7, 2]), 'b|big||3連単||8,7'),
+            ('3連単 1・6・2', spec([1, 6, 2]), 'h|hit||||'),
+            ('3連単 13・8・2（13番人気は 数えない）', spec([13, 8, 2]), 'b|big||3連単||8'),
+            ('3連単 13・14・2', spec([13, 14, 2]), 'h|hit||||'),
+            ('3連単 11・13・2（13番人気は 大穴以上で ない → D）', spec([11, 13, 2]), 'd|nd||3連単|11|'),
+            ('3連単 11・6・99（人気が わからない 馬は 数えない）', spec([11, 6, 99]), 'd|nd||3連単|11|'),
+            ('3連単 99・8・2', spec([99, 8, 2]), 'b|big||3連単||8'),
+            ('馬単だけ 11→8', rsp([('馬単', '的中', [[11, 8]])]), 'g|sgd||馬単|11|8'),
+            ('馬単だけ 11→6', rsp([('馬単', '的中', [[11, 6]])]), 'd|nd||馬単|11|'),
+            ('馬単だけ 6→2', rsp([('馬単', '的中', [[6, 2]])]), 'h|hit||||'),
+            ('ワイド 6-2・11-8', rsp([('ワイド', '的中', [[6, 2], [11, 8]])]), 'g|sgd||ワイド|11|8'),
+            ('ワイド 8-2', rsp([('ワイド', '的中', [[8, 2]])]), 'b|big||ワイド||8'),
+            ('単勝 11', rsp([('単勝', '的中', [[11]])]), 'd|nd||単勝|11|'),
+            ('単勝 8', rsp([('単勝', '的中', [[8]])]), 'b|big||単勝||8'),
+            ('単勝 6', rsp([('単勝', '的中', [[6]])]), 'h|hit||||'),
+            ('複勝 11・6・2', rsp([('複勝', '的中', [[11], [6], [2]])]), 'd|nd||複勝|11|'),
+            ('単勝 11＋複勝 11（M）', rsp([('単勝', '的中', [[11]]), ('複勝', '的中', [[11]])]), 'd|sd|M|単勝|11|'),
+            ('枠単 8→7（枠番なので 人気を 見ない）', rsp([('枠単', '的中', [[8, 7]])]), 'h|hit||||'),
+            ('枠複 8-7＋馬単 1→2', rsp([('枠複', '的中', [[8, 7]]), ('馬単', '的中', [[1, 2]])]), 'h|hit|M|||'),
+            ('3連単 11・6・2＋枠複 8-7（枠も M に 数える）', spec([11, 6, 2], [('枠複', '的中', [[8, 7]])]), 'd|sd|M|3連単|11|'),
+            ('3連単 11・8・2＋馬単 11→8', spec([11, 8, 2], [('馬単', '的中', [[11, 8]])]), 'g|spg|M|3連単|11|8'),
+            ('3連単 不的中・馬単 11→8＋ワイド 11-8', spec(None, [('馬単', '的中', [[11, 8]]), ('ワイド', '的中', [[11, 8]])]), 'g|spg|M|馬単|11|8'),
+            ('3連単 1・2・3＋馬単 11→8', spec([1, 2, 3], [('馬単', '的中', [[11, 8]])]), 'g|spg|M|馬単|11|8'),
+            ('3連単 11・6・2（D）＋ワイド 11-8（G）', spec([11, 6, 2], [('ワイド', '的中', [[11, 8]])]), 'g|spg|M|ワイド|11|8'),
+            ('3連単 8・5・2（B）＋単勝 11（D）', spec([8, 5, 2], [('単勝', '的中', [[11]])]), 'd|sd|M|単勝|11|'),
+            ('3連単 1・2・3＋馬単 1→2', spec([1, 2, 3], [('馬単', '的中', [[1, 2]])]), 'h|hit|M|||'),
+            ('当たりなし', spec(None, [('馬単', '不的中', [])]), 'miss|miss||||'),
+            ('返還だけ', spec(None, [('馬単', '返還', [])]), 'miss|miss||||'),
+        ]
+        dgot = [D(sp_) for _, sp_, _ in DCASES]
+        dbad = [(nm, g_, e_) for (nm, _, e_), g_ in zip(DCASES, dgot) if g_ != e_]
+        check(not dbad, f'どれが出るか（第4.118版）：G／D／B／H・M・段を 決めた 券種・帯の 超大穴と 大穴（馬単だけ・ワイド・単勝・複勝・枠は 人気を 見ない・13番人気と 人気の わからない 馬は 数えない・超大穴 2頭は G・2券種で M）{len(DCASES)}こ（おかしい：{dbad}）')
+        gdd = pg.evaluate("(s) => TengelFx.decide(s)", spec([11, 8, 2], [('馬単', '的中', [[11, 8]])]))
+        check(gdd == {'kind': 'spg', 'tier': 'g', 'multi': True, 'supers': [{'no': 11, 'rank': 11}], 'bigs': [{'no': 8, 'rank': 8}], 'trig': {'t': '3連単', 'c': [11, 8, 2]}},
+              f'decide の 中身：種類・段（tier）・M（multi）・帯の 超大穴と 大穴・段を 決めた 組（trig：券種と 組）（{gdd}）')
         # 第4.86版（まさちゃん「…赤い×が書いてある演出消して！」）：隠れど的中は なし（デカ的中は いつも デカ的中・数も 数えない）・超プレミアムど的中も なし（乱数 0 でも プレミアム）
         pg.evaluate("localStorage.removeItem('tengel.fxhidden'); TengelFx._rand = () => 0")
         seq = []
@@ -537,7 +575,7 @@ try:
             seq.append(pg.evaluate("(s) => TengelFx.show(s)", spec(tri))); pg.wait_for_timeout(150)
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         check(seq == ['big', 'big', 'pc', 'big', 'big'] and pg.evaluate("localStorage.getItem('tengel.fxhidden')") is None and pg.evaluate("typeof TengelFx.hidden") == 'undefined',
-              f'第4.86版：隠れど的中は なし（デカ的中は いつも デカ的中・数も 数えない）・ど的中の くじは 乱数 0 でも プレミアム（超プレミアムど的中は なし）（{seq}）')
+              f'第4.86版：隠れど的中は なし（デカ的中は いつも デカ的中・数も 数えない）・第4.118版：ノーマルど的中の くじは 乱数 0 で プレミアム（超プレミアムど的中は なし）（{seq}）')
         pg.evaluate("TengelFx._rand = () => 0.99")   # ここからは くじを 外す（第4.77版：くじの ど的中は ノーマルど的中（nd）なので、CSS の ど的中は force で 出す）
         pg.wait_for_timeout(1900)
         # ど的中：第4.109版から 前の CSS の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れない（くじで 出ない）→ force:'fz' は ノーマルど的中（nd）。
@@ -565,26 +603,57 @@ try:
         check(pg.locator('#fxOv .fxs.calm .ov.fz .pbox.pz .push').count() == 1 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .aura')).animationName") == 'none', '演出を控えめにする：ど的中の まわりの 動きが止まる（視差効果を減らすと同じ形）')
         pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(200)
         cfz = pg.evaluate('TengelFx.current()')
-        check(cfz['kind'] == 'nd' and cfz['film'] == 2 and pg.locator('#fxOv .ov.nd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0, f'控えめ：ど的中（ノーマル）は 動画を 出さず さいごの 1まい（still）→ ボード（{cfz}）')
+        cfz['ndt'] = pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).display")
+        check(cfz['kind'] == 'nd' and cfz['film'] == 2 and pg.locator('#fxOv .ov.nd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0 and cfz['ndt'] == 'none',
+              f'控えめ：ど的中（ノーマル）は 押した 画面（第4.118版で 直した）も 動画も 出さず さいごの 1まい（still）→ ボード（{cfz}）')
         pg.evaluate('TengelFx.close()')
-        # ---- 第5弾（16.3）：特別な 演出。くじ（※仮）→ PUSH は ど的中と 同じ → 押したあと → そのテーマの ど的中の 形の ボード ----
-        pg.evaluate("window.__seq = arr => { let i = 0; TengelFx._rand = () => arr[Math.min(i++, arr.length - 1)]; }")   # 乱数を 順に 決める（1つめ：プレミアム／超神様の くじ・2つめ：超プレミアム／超プレミアム神様の くじ）
-        LOTS = [pg.evaluate("(a) => { const o = []; for (const k of ['fz', 'gd', 'big']) { window.__seq(a); o.push(TengelFx.lottery(k)); } return o; }", a) for a in ([0, 0], [0.1, 0.9], [0.12, 0.3], [0.13, 0.5], [0.2], [0.99], [0.13, 0.1], [0.5, 0.5, 0.2])]
-        check(LOTS == [['pc', 'spg', 'big'], ['pc', 'sgd', 'big'], ['pc', 'sgd', 'big'], ['pc', 'nd', 'big'], ['sd', 'sd', 'big'], ['nd', 'nd', 'big'], ['pc', 'pc', 'big'], ['nd', 'sd', 'big']],
-              f'くじ（第4.86版）：ど的中 → 6分の1 で プレミアム（超プレミアムは なし）・残りの 2分の1 で 紫電・それ以外は ノーマルど的中／神様の 条件 → 8分の1 で 超神様 → その 4分の1 で 超プレミアム神様・のこりは ど的中の くじ（神様的中は なし）／デカ → デカ（{LOTS}）')
-        LOTS2 = [pg.evaluate("(a) => { window.__seq(a); return TengelFx.lottery('fz'); }", a) for a in ([0.5, 0.49], [0.5, 0.5], [0.2, 0.99])]
-        check(LOTS2 == ['sd', 'nd', 'nd'], f'紫電の くじ：プレミアムに ならなかった ど的中の 2つめの 乱数が .5 未満なら 紫電・それ以外は ノーマルど的中（第4.77版：動画）（{LOTS2}）')
-        pg.evaluate("window.__seq([0.1, 0.9])")
-        kk = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 8, 2], [('馬単', '的中', [[11, 8]]), ('ワイド', '不的中', [])])); pg.wait_for_timeout(300)
+        # ---- 第5弾（16.3）・第4.118版：特別な 演出は 決まった 条件（くじは ノーマルど的中 → プレミアムど的中の 6分の1 だけ）→ PUSH は ど的中と 同じ → 押したあと → ど的中の 形の ボード ----
+        pg.evaluate("window.__seq = arr => { let i = 0; TengelFx._rand = () => arr[Math.min(i++, arr.length - 1)]; }")   # 乱数を 順に 決める
+        LOTS = [pg.evaluate("(a) => { const o = []; for (const k of ['nd', 'sd', 'sgd', 'spg', 'gk', 'big', 'hit', 'miss']) { window.__seq(a); o.push(TengelFx.lottery(k)); } return o; }", a) for a in ([0], [0.16], [0.17], [0.99])]
+        check(LOTS == [['pc', 'sd', 'sgd', 'spg', 'gk', 'big', 'hit', 'miss']] * 2 + [['nd', 'sd', 'sgd', 'spg', 'gk', 'big', 'hit', 'miss']] * 2,
+              f'くじ（第4.118版）：ノーマルど的中だけ 6分の1（乱数 0・0.16 → プレミアム／0.17・0.99 → ノーマル）・ほかの 種類は くじを ひかない（{LOTS}）')
+        SHOWC = "(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }"
+        PCS = []
+        for a, sp_ in (([0.16], spec([11, 6, 2])), ([0.17], spec([11, 6, 2])), ([0], rsp([('単勝', '的中', [[11]])])), ([0], spec([11, 6, 2], [('馬単', '的中', [[11, 6]])])), ([0], spec([11, 8, 2])), ([0], spec([8, 5, 2])), ([0], spec([1, 6, 2]))):   # 超プレミアム神様（G・M）は 下の 神様極的中の テストで（ここで 出すと 昇格の 動画を 先に 作る）
+            pg.evaluate("(a) => window.__seq(a)", a)
+            PCS.append(pg.evaluate(SHOWC, sp_)); pg.wait_for_timeout(60)
+        check(PCS == ['pc', 'nd', 'pc', 'sd', 'sgd', 'big', 'hit'],
+              f'出す 種類（第4.118版）：D で M で ない → 乱数 0.16 で プレミアムど的中・0.17 で ノーマルど的中（単勝だけでも）／D・M → 極ど的中・G → 超神様・B → デカ・H → 的中（乱数 0 でも くじなし）（{PCS}）')
+        pg.evaluate("TengelFx._rand = () => 0.99")
+        kk = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 8, 2], [('馬単', '不的中', []), ('ワイド', '不的中', [])])); pg.wait_for_timeout(300)
         so = pg.locator('#fxOv')
-        check(kk == 'sgd' and so.locator('.ov.fz .pbox.rbw .push .rbf').count() == 1 and so.locator('.pbox .rba').count() == 1 and 'k-sgd' in so.get_attribute('class') and pg.evaluate('TengelFx.current()')['kind'] == 'sgd' and pg.evaluate('TengelFx.current()')['pz'] == 1.6, f'11・8・2 で 乱数 0.1・0.9 → 超神様的中（PUSH は そのテーマの PUSH を 1.6倍・虹色）（{kk}）')
+        check(kk == 'sgd' and so.locator('.ov.fz .pbox.rbw .push .rbf').count() == 1 and so.locator('.pbox .rba').count() == 1 and 'k-sgd' in so.get_attribute('class') and pg.evaluate('TengelFx.current()')['kind'] == 'sgd' and pg.evaluate('TengelFx.current()')['pz'] == 1.6, f'3連単 11・8・2 だけ（G・M で ない）→ 超神様的中（PUSH は そのテーマの PUSH を 1.6倍・虹色）（{kk}）')
         pg.evaluate('TengelFx.close()')
-        pg.evaluate("TengelFx.set({ effects: false })")
-        kq = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 8, 2])); pg.wait_for_timeout(300)
-        zr = pg.locator('#fxOv .rb .zrib').inner_text()
-        check(kq == 'fz' and pg.locator('#fxOv .ov.miss.quiet').count() == 1 and pg.locator('#fxOv .rb.fz .bh').inner_text() == 'ど的中！！！' and '11番人気が3連単に！' in zr and '大穴' not in zr.replace('超大穴', ''),
-              f'的中エフェクト オフ：くじは ひかず 神様の 条件でも ど的中の ボード（見出し「ど的中！！！」・帯は 超大穴：第4.86版 神様的中は なし）だけ 静かに（{kq}・{zr}）')
-        pg.evaluate('TengelFx.close()'); pg.evaluate("TengelFx.set({ effects: true })")
+        # 第4.118版：帯と ボードの いちばん 上の 行は 段を 決めた 組の 券種（3連単で ない とき）・超大穴と 大穴の 輪も その 行
+        RB = "(() => { const o = document.querySelector('#fxOv'); const z = o.querySelector('.rb .zrib'); return { rib: z ? z.textContent.replace(/\\s+/g, '') : '', rows: [...o.querySelectorAll('.rb .brows li')].map(li => li.querySelector('.bt').textContent + (li.classList.contains('top') ? '*' : '') + (li.querySelectorAll('.n.zx').length ? ':' + [...li.querySelectorAll('.n.zx')].map(n => n.textContent).join(',') : '')) }; })()"
+        RBS = []
+        for kd, sp_ in (('spg', spec(None, [('ワイド', '的中', [[11, 8]]), ('馬単', '的中', [[11, 8]]), ('単勝', '不的中', [])])),
+                        ('nd', rsp([('単勝', '不的中', []), ('馬単', '的中', [[11, 6]]), ('ワイド', '不的中', [])])),
+                        ('sd', spec([8, 5, 2], [('単勝', '的中', [[11]])])),
+                        ('big', rsp([('単勝', '不的中', []), ('ワイド', '的中', [[8, 2]])])),
+                        ('hit', rsp([('馬単', '的中', [[6, 2]]), ('単勝', '的中', [[6]])]))):
+            pg.evaluate("TengelFx.set({ effects: false })")   # 静かな ボード（すぐ 出る）で 見る
+            k_ = pg.evaluate("(s) => TengelFx.show(s)", sp_); pg.wait_for_timeout(250)
+            RBS.append((k_, pg.evaluate(RB))); pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(60)
+        pg.evaluate("TengelFx.set({ effects: true })")
+        check(RBS == [('spg', {'rib': '超大穴11大穴8が馬単に！', 'rows': ['馬単*:11,8', '3連単', 'ワイド', '単勝']}),
+                      ('nd', {'rib': '超大穴1111番人気が馬単に！', 'rows': ['馬単*:11', '単勝', 'ワイド']}),
+                      ('sd', {'rib': '超大穴1111番人気が単勝に！', 'rows': ['単勝*:11', '3連単']}),
+                      ('big', {'rib': '', 'rows': ['ワイド*', '単勝']}),
+                      ('hit', {'rib': '', 'rows': ['馬単', '単勝']})],
+              f'帯「…が（段を 決めた 券種）に！」と その 券種の 行が いちばん上（虹色の 輪も その 行）・デカ的中は 帯なし・的中は 予約した 順（第4.118版）（{RBS}）')
+        # 的中エフェクト オフ（第4.118版）：同じ 決まった 種類（プレミアムの くじは ひかない → ノーマルど的中）・見出しは その 種類の もの・PUSH なしで すぐ ボード
+        pg.evaluate("TengelFx.set({ effects: false })"); pg.evaluate("TengelFx._rand = () => 0")   # くじを ひけば プレミアムに なる 乱数
+        QB = "(() => { const o = document.querySelector('#fxOv'); const z = o.querySelector('.rb .zrib'); return [document.querySelectorAll('#fxOv .push').length, document.querySelectorAll('#fxOv .fxs .ov.miss.quiet').length, o.querySelector('.rb .bh').textContent.replace(/\\s+/g, ''), z ? z.textContent.replace(/\\s+/g, '') : ''].join('|'); })()"
+        QKS = []
+        for sp_ in (spec([11, 8, 2]), spec([11, 8, 2], [('馬単', '的中', [[11, 8]])]), dict(spec([11, 8, 2], [('馬単', '的中', [[11, 8]])]), godN=2), spec([11, 6, 2], [('馬単', '的中', [[11, 6]])]),
+                    spec([11, 6, 2]), spec([8, 5, 2]), spec([1, 6, 2]), spec(None, [('馬単', '不的中', [])])):
+            k_ = pg.evaluate("(s) => TengelFx.show(s)", sp_); pg.wait_for_timeout(200)
+            QKS.append(k_ + '|' + pg.evaluate(QB)); pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(60)
+        pg.evaluate("TengelFx.set({ effects: true })"); pg.evaluate("TengelFx._rand = () => 0.99")
+        check(QKS == ['sgd|0|1|超神様的中！！！|超大穴11大穴8が3連単に！', 'spg|0|1|超神様的中！！！|超大穴11大穴8が3連単に！', 'gk|0|1|神様極的中！！！|超大穴11大穴8が3連単に！', 'sd|0|1|ど的中！！！|超大穴1111番人気が3連単に！',
+                      'nd|0|1|ど的中！！！|超大穴1111番人気が3連単に！', 'big|0|1|デカ的中!!|', 'hit|0|1|的中！|', 'miss|0|1|ハズレ|'],
+              f'的中エフェクト オフ（第4.118版）：同じ 種類・プレミアムの くじは ひかない（乱数 0 でも ノーマルど的中）・見出しは その 種類の もの（{QKS}）')
         # 控えめ（calm のまま）：プレミアム → ハートの 雨や ポニーは 出さず ボードを ふわっと／超神様 → 動画を 出さず さいごの 1まい（still）→ 1.3秒で ボード
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'pc' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
         check(pg.locator('#fxOv .fxs.calm .ov.pm').count() == 1 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.pm .pmp')).display") == 'none' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.pm .pms')).display") == 'none' and pg.locator('#fxOv .rb.fz .bh').inner_text() == 'ど的中！！！',
@@ -715,11 +784,11 @@ try:
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', spg_up: 'spg_up.webm', sd_film: 'sd_film.webm', nd_film: 'nd_film.webm' }")
         HAVE_ND = pg.evaluate("fetch('nd_film.webm', { method: 'HEAD' }).then(r => r.ok).catch(() => false)")
         pg.evaluate("window.__seq([0.5, 0.9])")
-        kn = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 6, 2], [('馬単', '的中', [[11, 6]])])); pg.wait_for_timeout(300)
+        kn = pg.evaluate("(s) => TengelFx.show(s)", spec([11, 6, 2], [('馬単', '不的中', [])])); pg.wait_for_timeout(300)
         po = pg.locator('#fxOv')
         check(kn == 'nd' and pg.locator('#fxVh video[data-film=nd_film]').count() == 1 and pg.evaluate("document.querySelector('#fxVh video[data-film=nd_film]').preload") == 'auto'
               and po.locator('.ov.fz .pbox.pz .push').count() == 1 and po.locator('.pbox.rbw').count() == 0 and 'k-nd' in po.get_attribute('class') and pg.evaluate('TengelFx.current()')['pz'] == 1.4,
-              f'ノーマルど的中（第4.77版）：くじの ど的中（乱数 0.5・0.9）→ nd・PUSH は ど的中と 同じ（1.4倍）・動画を 出る 前に 読んでおく（{kn}）')
+              f'ノーマルど的中（第4.77版・第4.118版）：D で M で ない（乱数 0.5 → プレミアムで ない）→ nd・PUSH は ど的中と 同じ（1.4倍）・動画を 出る 前に 読んでおく（{kn}）')
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
         nd0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; const g = t && t.querySelector('.ndtr'); return { pc: document.querySelectorAll('#fxOv .ov.nd .pc').length, bg: getComputedStyle(o).backgroundColor, cls: o.className, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', glow: !!(g && g.getAnimations().length), bx: t ? t.querySelectorAll('.bx').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '' }; })()")
         check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last.webp'] and 'fz' in nd0['cls'],   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
@@ -763,13 +832,13 @@ try:
         HAVE_GK = pg.evaluate("fetch('gk_film.webm', { method: 'HEAD' }).then(r => r.ok).catch(() => false)")
         GS = spec([11, 8, 2], [('馬単', '的中', [[11, 8]]), ('ワイド', '不的中', [])])
         gks = []
-        for gn, rnd in ((None, [0.99]), (0, [0.99]), (1, [0.99]), (1, [0, 0]), (1, [0.1, 0.9]), (2, [0, 0]), (2, [0.1, 0.9]), (2, [0.99]), (7, [0.99])):
+        for gn, rnd in ((None, [0]), (0, [0]), (1, [0.99]), (1, [0]), (2, [0]), (2, [0.99]), (7, [0.5])):
             pg.evaluate("(a) => window.__seq(a)", rnd)
             gks.append(pg.evaluate("(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }", GS if gn is None else dict(GS, godN=gn))); pg.wait_for_timeout(60)
         pg.evaluate("TengelFx._rand = () => 0.99")
-        gfz = [pg.evaluate("(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }", dict(spec(tri), godN=9)) for tri in ([11, 6, 2], [8, 5, 2])]
-        check(gks == ['nd', 'nd', 'nd', 'spg', 'sgd', 'gk', 'gk', 'gk', 'gk'] and gfz == ['nd', 'big'],
-              f'神様極的中の 出かた：神様の 条件で godN 2以上 → くじを ひかずに 神様極的中（乱数 0・0／0.1・0.9＝超プレミアム神様・超神様に なる 時も 神様極的中が 先）・godN 0・1・なし → いつもの くじ・神様で ない 当たりは godN が あっても いつもの 形（{gks}・{gfz}）')
+        gfz = [pg.evaluate("(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }", dict(sp_, godN=9)) for sp_ in (spec([11, 8, 2]), spec([11, 6, 2], [('馬単', '的中', [[11, 6]])]), spec([11, 6, 2]), spec([8, 5, 2], [('馬単', '的中', [[8, 5]])]))]
+        check(gks == ['spg', 'spg', 'spg', 'spg', 'gk', 'gk', 'gk'] and gfz == ['sgd', 'sd', 'nd', 'big'],
+              f'神様極的中の 出かた（第4.118版）：G・M で godN 2以上 → 神様極的中（超プレミアム神様より 先）・godN 0・1・なし → 超プレミアム神様（くじなし）・G で M で ない／D／B は godN が あっても その 種類（{gks}・{gfz}）')
         kg = pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=2)); pg.wait_for_timeout(300)
         PB = "(() => { const b = document.querySelector('#fxOv .pbox'), p = b && b.querySelector('.push'); return { box: b ? b.className : '', pz: b ? b.style.getPropertyValue('--pz') : '', push: p ? p.className : '', rbf: document.querySelectorAll('#fxOv .pbox .push .rbf').length, rba: document.querySelectorAll('#fxOv .pbox .rba').length, cur: TengelFx.current().pz, label: p ? p.getAttribute('aria-label') : '', fz: !!document.querySelector('#fxOv .ov.fz .pbox') }; })()"
         pbg = pg.evaluate(PB)
@@ -833,8 +902,8 @@ try:
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         kq.append(pg.evaluate("(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }", dict(GS, godN=1)))
         pg.evaluate("TengelFx.set({ effects: true })")
-        check(kq == ['gk', 'fz'] and qg == {'push': 0, 'quiet': 1, 't': '神様極的中！！！', 'rib': '超大穴11大穴8が3連単に！'},
-              f'的中エフェクト オフ（TengelFx.show を 直接 呼んだ 時）：godN 2以上なら 静かな ボードの 見出しが「神様極的中！！！」（帯は 超大穴と 大穴）・1つ だけなら いつもの ど的中の ボード（{kq}・{qg}）')
+        check(kq == ['gk', 'spg'] and qg == {'push': 0, 'quiet': 1, 't': '神様極的中！！！', 'rib': '超大穴11大穴8が3連単に！'},
+              f'的中エフェクト オフ（TengelFx.show を 直接 呼んだ 時）：godN 2以上なら 静かな ボードの 見出しが「神様極的中！！！」（帯は 超大穴と 大穴）・1つ だけなら 超プレミアム神様の ボード（第4.118版）（{kq}・{qg}）')
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', spg_up: 'spg_up.webm', sd_film: 'sd_film.webm', nd_film: 'nd_film.webm' }")
         # プレミアムど的中・紫電（CSS と SVG）：押したあとの 部品と ボード（第4.86版：超プレミアムど的中・神様的中は なし）
         check(sorted(pg.evaluate("Object.keys(window.__FX.reveal)")) == ['big', 'gk', 'hit', 'hit_t', 'miss', 'nd', 'pc', 'sd', 'sgd', 'spg'] and pg.evaluate("window.__FX.art.gd") is None and pg.evaluate("window.__FX.sfx.gd") is None
@@ -1807,8 +1876,8 @@ try:
         mf = p5.evaluate("({ unlk: !!document.querySelector('#setMission .msrow[data-mid=mission-wall-8].unlk'), text: (document.querySelector('.unlkt') || {}).innerText, done: document.querySelector('#setMission .msrow[data-mid=mission-wall-8] .md').innerText })")
         check(mf['unlk'] and mf['text'] == '受け取り！' and mf['done'] == '受け取りずみ', f'第4.60版：ミッションの「受け取る」でも、その 行の 上に 解放エフェクト（「受け取り！」）（{mf}）')
         ctx5.close()
-        # ---- 第4.117版：神様極的中の 数え方（src.html の godCount → TengelFx.show の godN）。記録の 画面で 結果を 決める（ふつうの 流れ）----
-        #   結果を 決めた さいごの 30レース（日付と 発走時刻の 順・この レースまで・この レースも 入れる）の 中の 神様の 条件の レース。2つ以上 → 神様極的中。
+        # ---- 第4.117版・第4.118版：神様極的中の 数え方（src.html の godCount → TengelFx.show の godN）。記録の 画面で 結果を 決める（ふつうの 流れ）----
+        #   結果を 決めた さいごの 50レース（日付と 発走時刻の 順・この レースまで・この レースも 入れる）の 中の G・M の レース（第4.118版：前は 30レース・神様の 条件）。2つ以上 → 神様極的中。
         #   予約中・結果待ち・諦めた・締切済み・中止は 入れない・あとの 日付（同じ 日の あとの 発走）の レースも 入れない・
         #   的中エフェクト オフで 決めた レース（rsv.fx なし）も 記録から 決め直して 数える
         import copy as _copy
@@ -1827,11 +1896,13 @@ try:
         pG.click('.tabbar button[data-tab=rec]'); pG.wait_for_timeout(600)
         H14 = [{'no': i, 'tan': round(i + 0.4, 1), 'fuku': None} for i in range(1, 15)]   # 馬番＝人気（11＝超大穴・8＝大穴）
 
-        def grec(date, r, start, state, tri=(11, 8, 2), abandoned=False, fx=None):
+        def grec(date, r, start, state, tri=(11, 8, 2), abandoned=False, fx=None, types=('3連単', '馬単')):
+            # 第4.118版：3連単（3頭）と 馬単（はじめの 2頭）を 買って、結果が その 3頭 → 2つとも 当たり（M）。11・8・2 なら G・M
             d = _copy.deepcopy(b9c)
             for k in ('mem', 'pid', 'mslot', 'mid', 'umatanPay', 'sanrenPay'):
                 d.pop(k, None)
-            d.update(id=date.replace('-', '') + '-oi-' + str(r).zfill(2), date=date, r=r, n=14, horses=H14, start=start, rname='神様テスト', types=['3連単'], amt={'3連単': {'stake': 100, 'payout': None}}, stake=100, payout=None, other='',
+            bets = {t: [list(tri) if t == '3連単' else list(tri[:2])] for t in types}
+            d.update(id=date.replace('-', '') + '-oi-' + str(r).zfill(2), date=date, r=r, n=14, horses=H14, start=start, rname='神様テスト', types=list(types), amt={t: {'stake': 100, 'payout': None} for t in types}, stake=100 * len(types), payout=None, other='',
                      p1=None, p2=None, p3=None, n1=None, n2=None, n3=None)
             rs = {'state': state, 'at': '2026-09-01T00:00:00.000Z', 'key': f'{date}|神様テスト|1400|{start}', 'start': start}
             if state == 'closed':
@@ -1839,21 +1910,22 @@ try:
             if state in ('given', 'closed'):
                 d.update(types=[], amt={}, stake=None)
             else:
-                rs.update(types=['3連単'], zones=_copy.deepcopy(b9c['rsv'].get('zones')), bets={'3連単': [list(tri)]}, points=1, hp=None)
+                rs.update(types=list(types), zones=_copy.deepcopy(b9c['rsv'].get('zones')), bets=bets, points=len(types), hp=None)
                 if state == 'done':
                     jst = '返還' if abandoned else '的中'
-                    rs.update(result={'p': [[], [], []] if abandoned else [[x] for x in tri], 'cancel': [], 'abandoned': abandoned, 'pay': {}}, judged={'state': jst, 'per': {'3連単': jst}})
+                    rs.update(result={'p': [[], [], []] if abandoned else [[x] for x in tri], 'cancel': [], 'abandoned': abandoned, 'pay': {}}, judged={'state': jst, 'per': {t: jst for t in types}})
                     if fx:
                         rs['fx'] = fx
             d['rsv'] = rs
             return d
         CUR = grec('2026-09-30', 11, '20:10', 'reserved')
-        G1 = grec('2026-09-10', 5, '15:00', 'done', fx='nd')                                     # 神様の 条件（11・8・2）
-        NS = [grec('2026-09-20', i + 1, '', 'done', tri=(1, 2, 3)) for i in range(29)]          # 神様で ない（デカ的中）29レース（09/20・発走時刻なし＝その日の さいご）
+        G1 = grec('2026-09-10', 5, '15:00', 'done', fx='spg')                                     # G・M（3連単 11・8・2 ＋ 馬単 11→8）
+        GX = grec('2026-09-15', 1, '12:00', 'done', fx='sgd', types=('3連単',))                   # G だけ（M で ない：3連単だけ）→ 数えない
+        NS = [grec('2026-09-20', i + 1, '', 'done', tri=(1, 2, 3)) for i in range(48)]            # G で ない（的中・M）48レース（09/20・発走時刻なし＝その日の さいご）
 
         def gcycle(put, cur=CUR, rnd=0.99):
             pG.evaluate("(a) => { TengelFx._rand = () => a; }", rnd)
-            pG.evaluate("(l) => TengelLocal.putBets(l)", put + [cur]); pG.wait_for_timeout(400)
+            pG.evaluate("(l) => TengelLocal.putBets(l)", put + [cur]); pG.wait_for_timeout(500)
             pG.click('#rFilters [data-f=all]'); pG.wait_for_timeout(400)
             if pG.locator(f'#recList .rsvf[data-id="{cur["id"]}"]').count() == 0:
                 pG.locator(f'#recList .rsvtop .lrow[data-id="{cur["id"]}"] .lmain').click(); pG.wait_for_timeout(500)
@@ -1863,25 +1935,29 @@ try:
             sv = pG.evaluate("(id) => TengelLocal.mem.bets.get(id)", cur['id'])
             pG.evaluate('TengelFx.close()'); pG.wait_for_timeout(300)
             return (sp or {}).get('godN'), (cu or {}).get('kind'), (sv or {}).get('rsv', {}).get('state'), (sv or {}).get('rsv', {}).get('fx')
-        r1 = gcycle(NS[:3])
-        check(r1 == (1, 'nd', 'done', 'nd'), f'神様極的中の 数え方：神様の 条件が この レースだけ（ほかは デカ的中 3レース）→ godN 1 → いつもの くじ（乱数 0.99 → ノーマルど的中）（{r1}）')
+        r1 = gcycle(NS[:3] + [GX], rnd=0)
+        check(r1 == (1, 'spg', 'done', 'spg'), f'神様極的中の 数え方（第4.118版）：G・M は この レースだけ（ほかは 的中 3レースと G だけ（3連単だけ）の 09/15）→ godN 1 → 超プレミアム神様的中（乱数 0 でも くじなし）（{r1}）')
         r2 = gcycle([G1], rnd=0)
-        check(r2 == (2, 'gk', 'done', 'gk'), f'09/10 の 神様の レース＋この レース → godN 2 → 神様極的中（乱数 0 でも 超プレミアム神様に ならない：くじより 先）・記録に 出した 印 gk（{r2}）')
-        r3 = gcycle(NS[3:], rnd=0)
-        check(r3 == (1, 'spg', 'done', 'spg'), f'あいだに 神様で ない 29レース → 09/10 の 神様の レースは 31レース目で 外れる → godN 1 → いつもの くじ（乱数 0 → 超プレミアム神様）（{r3}）')
+        check(r2 == (2, 'gk', 'done', 'gk'), f'09/10 の G・M の レース＋この レース → godN 2 → 神様極的中・記録に 出した 印 gk（{r2}）')
+        r3 = gcycle(NS[3:])
+        check(r3 == (1, 'spg', 'done', 'spg'), f'あいだに G・M で ない 49レース（的中 48・09/15 の G だけ）→ 09/10 の G・M の レースは 51レース目で 外れる → godN 1 → 超プレミアム神様的中（{r3}）')
         RS_, GV_ = grec('2026-09-25', 1, '18:00', 'reserved'), grec('2026-09-25', 2, '18:30', 'given')
-        r4 = gcycle([grec('2026-09-20', 1, '', 'done', tri=(1, 2, 3), abandoned=True), grec('2026-09-20', 2, '', 'done', tri=(1, 2, 3), abandoned=True), grec('2026-09-20', 3, '', 'closed'), RS_, GV_])
-        check(r4 == (2, 'gk', 'done', 'gk'), f'あいだの 29レースの うち 2つを 中止・1つを 締切済みに（ほかに 予約中・諦めた）→ 数えない ので 09/10 の 神様の レースが 30レースに 入る → godN 2 → 神様極的中（{r4}）')
+        r4 = gcycle([grec('2026-09-20', 1, '', 'closed'), RS_, GV_])
+        check(r4 == (2, 'gk', 'done', 'gk'), f'あいだの 1つを 締切済みに（ほかに 予約中・諦めた）→ 数えない ので 09/10 の G・M の レースが ちょうど 50レース目 → godN 2 → 神様極的中（{r4}）')
+        r4b = gcycle([NS[0], grec('2026-09-20', 2, '', 'done', tri=(1, 2, 3), abandoned=True)])
+        check(r4b == (2, 'gk', 'done', 'gk'), f'締切済みを もどして、ほかの 1つを 中止（全部 返還）に → 中止は 数えない → 50レース目 → godN 2 → 神様極的中（{r4b}）')
+        r4c = gcycle([NS[1]])
+        check(r4c == (1, 'spg', 'done', 'spg'), f'中止を もどす → また 51レース目で 外れる → godN 1（{r4c}）')
         GF, GSL = grec('2026-10-01', 1, '10:00', 'done'), grec('2026-09-30', 12, '20:45', 'done')
-        r5 = gcycle([grec('2026-09-10', 5, '15:00', 'given'), GF, GSL], rnd=0)
-        check(r5 == (1, 'spg', 'done', 'spg'), f'あとの レース（10/01・同じ 日の あとの 発走 20:45）の 神様は 数えない → godN 1 → いつもの くじ（{r5}）')
+        r5 = gcycle([grec('2026-09-10', 5, '15:00', 'given'), GF, GSL])
+        check(r5 == (1, 'spg', 'done', 'spg'), f'あとの レース（10/01・同じ 日の あとの 発走 20:45）の G・M は 数えない → godN 1（{r5}）')
         pG.evaluate("TengelFx.set({ effects: false })")
         r6 = gcycle([])
         check(r6 == (None, None, 'done', None) and pG.locator('#fxOv').count() == 0, f'的中エフェクト オフ：演出も ボードも 出さず（show は 呼ばない）・記録は 決まる（出した 印なし）（{r6}）')
         pG.evaluate("TengelFx.set({ effects: true })")
         CUR2 = grec('2026-09-30', 13, '21:20', 'reserved')
-        r7 = gcycle([grec('2026-09-30', 12, '20:45', 'given')], cur=CUR2, rnd=0.99)
-        check(r7 == (2, 'gk', 'done', 'gk'), f'的中エフェクト オフで 決めた 神様の レース（出した 印なし）も 記録から 決め直して 数える → godN 2 → 神様極的中（{r7}）')
+        r7 = gcycle([grec('2026-09-30', 12, '20:45', 'given')], cur=CUR2)
+        check(r7 == (2, 'gk', 'done', 'gk'), f'的中エフェクト オフで 決めた G・M の レース（出した 印なし）も 記録から 決め直して 数える → godN 2 → 神様極的中（{r7}）')
         pG.evaluate("(id) => { const d = JSON.parse(JSON.stringify(TengelLocal.mem.bets.get(id))); d.mem = { at: new Date().toISOString() }; return TengelLocal.putBets([d]); }", CUR2['id']); pG.wait_for_timeout(500)
         pG.click('#rFilters [data-f=all]'); pG.wait_for_timeout(500)
         mr = pG.locator(f'#recList .memtop .memrow[data-mid="{CUR2["id"]}"]')
