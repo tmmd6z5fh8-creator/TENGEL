@@ -898,7 +898,7 @@ try:
               f'控えめの 神様極的中：押した 画面も 動画も 出さず さいごの 1まい（still）→ 1.3秒 ボード（{cgc}）')
         pg.evaluate('TengelFx.close()'); pg.evaluate("TengelFx.set({ calm: null, effects: false })"); pg.wait_for_timeout(100)
         kq = [pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=2))]; pg.wait_for_timeout(300)
-        qg = pg.evaluate("(() => ({ push: document.querySelectorAll('#fxOv .push').length, quiet: document.querySelectorAll('#fxOv .fxs .ov.miss.quiet').length, t: document.querySelector('#fxOv .rb.fz .bh').innerText, rib: document.querySelector('#fxOv .rb .zrib').innerText.replace(/\\s+/g, '') }))()")
+        qg = pg.evaluate("(() => ({ push: document.querySelectorAll('#fxOv .push').length, quiet: document.querySelectorAll('#fxOv .fxs .ov.miss.quiet').length, t: document.querySelector('#fxOv .rb.fz .bh').textContent.replace(/\\s+/g, ''), rib: document.querySelector('#fxOv .rb .zrib').textContent.replace(/\\s+/g, '') }))()")   # 第4.118版：textContent（重い ときは 0.3秒で まだ 描かれて いない ことが ある）
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         kq.append(pg.evaluate("(s) => { const k = TengelFx.show(s); TengelFx.close(); return k; }", dict(GS, godN=1)))
         pg.evaluate("TengelFx.set({ effects: true })")
@@ -1923,14 +1923,20 @@ try:
         GX = grec('2026-09-15', 1, '12:00', 'done', fx='sgd', types=('3連単',))                   # G だけ（M で ない：3連単だけ）→ 数えない
         NS = [grec('2026-09-20', i + 1, '', 'done', tri=(1, 2, 3)) for i in range(48)]            # G で ない（的中・M）48レース（09/20・発走時刻なし＝その日の さいご）
 
-        def gcycle(put, cur=CUR, rnd=0.99):
+        def gcycle(put, cur=CUR, rnd=0.99, shown=True):
             pG.evaluate("(a) => { TengelFx._rand = () => a; }", rnd)
             pG.evaluate("(l) => TengelLocal.putBets(l)", put + [cur]); pG.wait_for_timeout(500)
             pG.click('#rFilters [data-f=all]'); pG.wait_for_timeout(400)
             if pG.locator(f'#recList .rsvf[data-id="{cur["id"]}"]').count() == 0:
                 pG.locator(f'#recList .rsvtop .lrow[data-id="{cur["id"]}"] .lmain').click(); pG.wait_for_timeout(500)
             pG.evaluate("(id) => { const f = document.querySelector('#recList .rsvf[data-id=\"' + id + '\"]'); [['p1', '11'], ['p2', '8'], ['p3', '2']].forEach(([k, v]) => { const i = f.querySelector('[data-k=' + k + ']'); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); }); window.__gkSpec = null; }", cur['id'])
-            pG.locator(f'#recList .rsvf[data-id="{cur["id"]}"] [data-act=rsave]').click(); pG.wait_for_timeout(1400)
+            pG.locator(f'#recList .rsvf[data-id="{cur["id"]}"] [data-act=rsave]').click()
+            # 保存は 記録 → お知らせ → 連続の 数 → 演出 の 順（重い ときは 1秒より かかる）：演出が 出るまで（オフなら 記録が 決まって 少し あと まで）待つ
+            if shown:
+                pG.wait_for_function("() => window.__gkSpec !== null && !!TengelFx.current()", timeout=20000)
+            else:
+                pG.wait_for_function("(id) => { const b = TengelLocal.mem.bets.get(id); return !!(b && b.rsv && b.rsv.state === 'done'); }", arg=cur['id'], timeout=20000); pG.wait_for_timeout(2000)
+            pG.wait_for_timeout(300)
             sp, cu = pG.evaluate('window.__gkSpec'), pG.evaluate('TengelFx.current()')
             sv = pG.evaluate("(id) => TengelLocal.mem.bets.get(id)", cur['id'])
             pG.evaluate('TengelFx.close()'); pG.wait_for_timeout(300)
@@ -1952,7 +1958,7 @@ try:
         r5 = gcycle([grec('2026-09-10', 5, '15:00', 'given'), GF, GSL])
         check(r5 == (1, 'spg', 'done', 'spg'), f'あとの レース（10/01・同じ 日の あとの 発走 20:45）の G・M は 数えない → godN 1（{r5}）')
         pG.evaluate("TengelFx.set({ effects: false })")
-        r6 = gcycle([])
+        r6 = gcycle([], shown=False)
         check(r6 == (None, None, 'done', None) and pG.locator('#fxOv').count() == 0, f'的中エフェクト オフ：演出も ボードも 出さず（show は 呼ばない）・記録は 決まる（出した 印なし）（{r6}）')
         pG.evaluate("TengelFx.set({ effects: true })")
         CUR2 = grec('2026-09-30', 13, '21:20', 'reserved')
