@@ -188,7 +188,18 @@
    }
   ],
   "inpaint_mode": "rows",
-  "keep_conf": true
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     182,
+     536,
+     870,
+     560
+    ],
+    "hmed": 9
+   }
+  ]
  },
  "layout": {
   "stars": false,

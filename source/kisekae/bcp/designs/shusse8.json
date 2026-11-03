@@ -99,15 +99,6 @@
    "dil": 10,
    "soft": 9
   },
-  "keep_red": {
-   "dil": 6,
-   "clip": [
-    235,
-    525,
-    405,
-    700
-   ]
-  },
   "inpaint": [
    {
     "rrect": [
@@ -117,28 +108,85 @@
      1414,
      60
     ]
+   },
+   {
+    "rect": [
+     222,
+     500,
+     414,
+     552
+    ],
+    "mode": "rows"
+   },
+   {
+    "ellipse": [
+     318,
+     598,
+     92,
+     88
+    ],
+    "clip": [
+     0,
+     548,
+     1048,
+     1501
+    ],
+    "mode": "diffuse"
    }
   ],
   "inpaint_mode": "rows",
-  "keep_conf": true
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     138,
+     708,
+     906,
+     734
+    ],
+    "hmed": 25
+   }
+  ],
+  "keep": [
+   {
+    "rect": [
+     295,
+     686,
+     330,
+     713
+    ]
+   }
+  ],
+  "diffuse": {
+   "vmax": 80,
+   "within": {
+    "rrect": [
+     128,
+     505,
+     922,
+     712,
+     40
+    ]
+   }
+  }
  },
  "layout": {
   "stars": false,
   "garland": false,
   "normal": {
    "text_x": [
-    122,
-    338
+    24,
+    326
    ],
-   "title_cx": 184,
+   "title_cx": 175,
    "title_top": 9,
    "title_px": 42,
-   "sub_cx": 182,
+   "sub_cx": 175,
    "sub_top": 55.4,
    "sub_px": 13,
    "sub_x": [
-    110,
-    340
+    24,
+    326
    ],
    "rows_x": [
     14,

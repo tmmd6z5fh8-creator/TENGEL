@@ -154,19 +154,23 @@
    "y0": 715,
    "ybot": 1000
   },
-  "keep_conf": true
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     142,
+     420,
+     910,
+     446
+    ],
+    "hmed": 9
+   }
+  ],
+  "keep_fg": 2
  },
  "layout": {
   "stars": false,
   "garland": false,
-  "star_img": {
-   "left": "starL.png",
-   "right": "starR.png",
-   "w": 59.4,
-   "h": 44.4,
-   "gap": 12,
-   "top": 9
-  },
   "normal": {
    "text_x": [
     10,
@@ -196,5 +200,31 @@
    "row_h": 22,
    "row_gap": 3
   }
+ },
+ "fg": {
+  "mode": "region",
+  "roi": [
+   0,
+   700,
+   1048,
+   1499
+  ],
+  "rects": [
+   [
+    690,
+    722,
+    1048,
+    1499
+   ]
+  ],
+  "navy": {
+   "br": 12,
+   "bg": -5,
+   "v": 256
+  },
+  "min_part": 40,
+  "close": 1,
+  "hole_max": 400,
+  "feather": 0.8
  }
 }

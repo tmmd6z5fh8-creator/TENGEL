@@ -197,7 +197,18 @@
    "soft": 7
   },
   "keep_fg": 1,
-  "keep_conf": false
+  "keep_conf": false,
+  "vfill": [
+   {
+    "rect": [
+     144,
+     549,
+     921,
+     573
+    ],
+    "hmed": 9
+   }
+  ]
  },
  "layout": {
   "stars": false,

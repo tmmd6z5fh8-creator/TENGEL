@@ -107,19 +107,22 @@
    "white_br": 60,
    "dil": 12
   },
-  "keep_conf": true
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     188,
+     742,
+     862,
+     766
+    ],
+    "hmed": 9
+   }
+  ]
  },
  "layout": {
   "stars": false,
   "garland": false,
-  "star_img": {
-   "left": "laurelL.png",
-   "right": "laurelR.png",
-   "w": 32.2,
-   "h": 48.3,
-   "gap": 16,
-   "top": -2.75
-  },
   "normal": {
    "text_x": [
     12,

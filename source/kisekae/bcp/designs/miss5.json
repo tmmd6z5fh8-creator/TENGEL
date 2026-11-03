@@ -1,6 +1,6 @@
 {
  "name": "miss5",
- "title": "ハズレ⑤ 作戦会議（1回目）",
+ "title": "ハズレ⑤ 書き換え参戦（1回目）",
  "src": "src.png",
  "quad": [
   [
@@ -218,7 +218,18 @@
    }
   ],
   "keep_fg": 3,
-  "keep_conf": false
+  "keep_conf": false,
+  "vfill": [
+   {
+    "rect": [
+     108,
+     544,
+     909,
+     569
+    ],
+    "hmed": 9
+   }
+  ]
  },
  "layout": {
   "stars": false,
