@@ -94,15 +94,16 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
 }
 // 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）→ 第4.114版：1,500円・買った あとに 読み込んだ レースの 数で 番号の 順に 解放
 //   第4.113版（まさちゃんの 指定）：16こ（1〜15 は じゅんび中・16「ボードを持つ馬」）・6レースごと（全部で 96レース）・的中の とき／ハズレの とき の 2つを べつべつに 選ぶ
+//   第4.120版（まさちゃんの 指定 2026/11/04）：15こ（1〜14 は じゅんび中・15「ボードを持つ馬」）・6レースごと（全部で 90レース）
 {
   const T0 = D('2026-11-06');
   check(P.PRODUCTS['jp.tengel.app.boardcustom'] && P.PRODUCTS['jp.tengel.app.boardcustom'].kind === 'unlock' && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 1500 && P.BOARD.product === 'jp.tengel.app.boardcustom', '商品：jp.tengel.app.boardcustom（買い切り・第4.114版：1,500円）');
-  check(P.BOARD_NEED.join() === '6,12,18,24,30,36,42,48,54,60,66,72,78,84,90,96' && P.BOARD.steps.length === 1 && P.BOARD.steps[0].join() === '16,6', '解放の 数：6レースごとに 1つ（全部で 96レース・第4.113版）');
-  const C = P.BOARD_ITEMS[15];
-  check(P.BOARD_ITEMS.length === 16 && P.BOARD_ITEMS.length === P.BOARD_NEED.length && P.BOARD_ITEMS.slice(0, 15).every((it, i) => !it.ready && it.name === 'じゅんび中' && it.no === i + 1 && it.id === 'prep' + (i + 1) && it.need === (i + 1) * 6),
-    '16こ：1〜15 は じゅんび中（デザインが とどくまで 選べない・番号の 順に 6レースごと）');
-  check(C.id === 'carry' && C.no === 16 && C.ready && C.when === 'all' && C.need === 96 && C.name === 'ボードを持つ馬' && P.BOARD_ITEMS.filter(i => i.ready).length === 1, '16「ボードを持つ馬」：的中にも ハズレにも 使える・96レース目（いま 飾りが あるのは これだけ）');
-  check(new Set(P.BOARD_ITEMS.map(i => i.id)).size === 16 && P.BOARD_ITEMS.every(it => ['all', 'hit', 'big', 'miss'].includes(it.when)) && P.riseTier === undefined, 'id は ぜんぶ ちがう・when は all／hit／big／miss・出世馬の 段（riseTier）は なくした');
+  check(P.BOARD_NEED.join() === '6,12,18,24,30,36,42,48,54,60,66,72,78,84,90' && P.BOARD.steps.length === 1 && P.BOARD.steps[0].join() === '15,6', '解放の 数：6レースごとに 1つ（全部で 90レース・第4.120版）');
+  const C = P.BOARD_ITEMS[14];
+  check(P.BOARD_ITEMS.length === 15 && P.BOARD_ITEMS.length === P.BOARD_NEED.length && P.BOARD_ITEMS.slice(0, 14).every((it, i) => !it.ready && it.name === 'じゅんび中' && it.no === i + 1 && it.id === 'prep' + (i + 1) && it.need === (i + 1) * 6),
+    '15こ：1〜14 は じゅんび中（デザインが とどくまで 選べない・番号の 順に 6レースごと）');
+  check(C.id === 'carry' && C.no === 15 && C.ready && C.when === 'all' && C.need === 90 && C.name === 'ボードを持つ馬' && P.BOARD_ITEMS.filter(i => i.ready).length === 1, '15「ボードを持つ馬」：的中にも ハズレにも 使える・90レース目（いま 飾りが あるのは これだけ）');
+  check(new Set(P.BOARD_ITEMS.map(i => i.id)).size === 15 && P.BOARD_ITEMS.every(it => ['all', 'hit', 'big', 'miss'].includes(it.when)) && P.riseTier === undefined, 'id は ぜんぶ ちがう・when は all／hit／big／miss・出世馬の 段（riseTier）は なくした');
   const BCX = require('fs').readFileSync(require('path').join(__dirname, 'bcx.js'), 'utf8');
   check(P.BOARD_ITEMS.filter(i => i.ready).every(i => BCX.includes(`B.${i.id} = `)) && !/B\.(orbit|goal|peek|nap|hang|cheer|crowd|selfie|bite|stand|banner|stamp|flower|pop|drop|flip|slide|float|thump|droop|rise) = /.test(BCX) && !BCX.includes('TengelBoardPhantom'),
     '飾りが ある 番号は bcx.js に 部品を 作る 所（B.<id>）が ある・消した 1〜21 の 部品と 幻の 馬は ない');
@@ -118,23 +119,23 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.txEvent(ev, tx('700', 'jp.tengel.app.boardcustom', '2026-11-06')) === null, '同じ 取引は 2回 足さない（購入を復元しても 1回）');
   const b0 = P.balance(ev, T0);
   check(b0.total === 1500 && b0.paidIn === 0, 'ポイントは 増えも 減りも しない（買い切りは ポイントでは ない）');
-  check(P.boardUnlocked(0) === 0 && P.boardUnlocked(5) === 0 && P.boardUnlocked(6) === 1 && P.boardUnlocked(11) === 1 && P.boardUnlocked(12) === 2 && P.boardUnlocked(90) === 15 && P.boardUnlocked(95) === 15 && P.boardUnlocked(96) === 16 && P.boardUnlocked(500) === 16,
-    '解放の 数（6→1・12→2・90→15・96→16）');
-  const nx = P.boardNext(29), n90 = P.boardNext(90);
-  check(nx.item.id === 'prep5' && nx.need === 30 && nx.left === 1 && nx.from === 24 && n90.item.id === 'carry' && n90.left === 6 && n90.from === 90 && P.boardNext(96) === null && P.boardNext(0).item.id === 'prep1' && P.boardNext(0).left === 6,
-    'つぎ：29レース → 5（じゅんび中）まで あと1・90レース → 16「ボードを持つ馬」まで あと6・全部 解放なら なし');
-  check(P.boardNextReady(0).item.id === 'carry' && P.boardNextReady(0).left === 96 && P.boardNextReady(95).left === 1 && P.boardNextReady(96) === null, 'つぎの 飾り（じゅんび中を とばす）：0レース → ボードを持つ馬まで あと96');
+  check(P.boardUnlocked(0) === 0 && P.boardUnlocked(5) === 0 && P.boardUnlocked(6) === 1 && P.boardUnlocked(11) === 1 && P.boardUnlocked(12) === 2 && P.boardUnlocked(84) === 14 && P.boardUnlocked(89) === 14 && P.boardUnlocked(90) === 15 && P.boardUnlocked(96) === 15 && P.boardUnlocked(500) === 15,
+    '解放の 数（6→1・12→2・84→14・90→15・その先も 15）');
+  const nx = P.boardNext(29), n84 = P.boardNext(84);
+  check(nx.item.id === 'prep5' && nx.need === 30 && nx.left === 1 && nx.from === 24 && n84.item.id === 'carry' && n84.left === 6 && n84.from === 84 && P.boardNext(90) === null && P.boardNext(0).item.id === 'prep1' && P.boardNext(0).left === 6,
+    'つぎ：29レース → 5（じゅんび中）まで あと1・84レース → 15「ボードを持つ馬」まで あと6・全部 解放なら なし');
+  check(P.boardNextReady(0).item.id === 'carry' && P.boardNextReady(0).left === 90 && P.boardNextReady(89).left === 1 && P.boardNextReady(90) === null, 'つぎの 飾り（じゅんび中を とばす）：0レース → ボードを持つ馬まで あと90');
   // 的中の とき・ハズレの とき（第4.113版）
   const sel = { hit: '', miss: '' };
-  check(P.boardOpen(sel, 0, 15).length === 0 && sel.hit === '' && sel.miss === '', 'じゅんび中（1〜15）を 解放しても 選ぶ ものは かわらない（お知らせも なし）');
-  const got = P.boardOpen(sel, 15, 16);
-  check(got.map(i => i.id).join() === 'carry' && sel.hit === 'carry' && sel.miss === 'carry', '16 を 解放 → まだ 選んで いない 的中・ハズレの 両方に そのまま つける');
+  check(P.boardOpen(sel, 0, 14).length === 0 && sel.hit === '' && sel.miss === '', 'じゅんび中（1〜14）を 解放しても 選ぶ ものは かわらない（お知らせも なし）');
+  const got = P.boardOpen(sel, 14, 15);
+  check(got.map(i => i.id).join() === 'carry' && sel.hit === 'carry' && sel.miss === 'carry', '15 を 解放 → まだ 選んで いない 的中・ハズレの 両方に そのまま つける');
   const s2 = { hit: 'none', miss: '' }, s3 = { hit: 'orbit', miss: 'none' };
-  P.boardOpen(s2, 0, 16); P.boardOpen(s3, 15, 16);
+  P.boardOpen(s2, 0, 15); P.boardOpen(s3, 14, 15);
   check(s2.hit === 'none' && s2.miss === 'carry' && s3.hit === 'carry' && s3.miss === 'none', '「なし」に した 所は そのまま・消した 飾り（前の 版）の 所は まだ 選んで いない と 同じ');
-  check(['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg'].every(k => P.boardActive({ hit: 'carry', miss: 'none' }, 96, k) === 'carry') && P.boardActive({ hit: 'carry', miss: 'none' }, 96, 'miss') === ''
-    && P.boardActive({ hit: 'none', miss: 'carry' }, 96, 'miss') === 'carry' && P.boardActive({ hit: 'none', miss: 'carry' }, 96, 'hit') === '' && P.boardActive({ hit: 'carry', miss: 'carry' }, 95, 'hit') === ''
-    && P.boardActive({ hit: 'prep3', miss: 'prep3' }, 96, 'hit') === '' && P.boardActive({ hit: 'orbit', miss: '' }, 500, 'hit') === '' && P.boardActive(null, 96, 'hit') === '',
+  check(['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg'].every(k => P.boardActive({ hit: 'carry', miss: 'none' }, 90, k) === 'carry') && P.boardActive({ hit: 'carry', miss: 'none' }, 90, 'miss') === ''
+    && P.boardActive({ hit: 'none', miss: 'carry' }, 90, 'miss') === 'carry' && P.boardActive({ hit: 'none', miss: 'carry' }, 90, 'hit') === '' && P.boardActive({ hit: 'carry', miss: 'carry' }, 89, 'hit') === ''
+    && P.boardActive({ hit: 'prep3', miss: 'prep3' }, 90, 'hit') === '' && P.boardActive({ hit: 'orbit', miss: '' }, 500, 'hit') === '' && P.boardActive(null, 90, 'hit') === '',
     'ボードに つける もの：的中の 所は 的中・デカ的中・ど的中 など・ハズレの 所は ハズレだけ（べつべつ）・解放 前・じゅんび中・消した 飾りは つけない');
   check(JSON.stringify(P.boardSel({ reads: 150, sel: 'carry' })) === '{"hit":"carry","miss":"carry"}' && JSON.stringify(P.boardSel({ sel: 'none' })) === '{"hit":"none","miss":"none"}' && JSON.stringify(P.boardSel({ sel: 'orbit' })) === '{"hit":"","miss":""}'
     && JSON.stringify(P.boardSel({ selHit: 'carry', selMiss: 'none', sel: 'orbit' })) === '{"hit":"carry","miss":"none"}' && JSON.stringify(P.boardSel(null)) === '{"hit":"","miss":""}' && P.boardKnown('none') && P.boardKnown('carry') && !P.boardKnown('prep1') && !P.boardKnown(''),
@@ -171,7 +172,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
 }
 // 第4.114版（まさちゃん 2026/11/01）：お得パック（壁紙パックと 結果ボードカスタムの セット 2,200円）・ミッション（結果ボードカスタムの 解放の 数・壁紙の 枚数）
 {
-  console.log('お得パック（第4.114版：買い切り 2,200円・壁紙パックと 結果ボードカスタムの 両方）・ミッション（結果ボードカスタム 3〜16こ・壁紙 3〜45枚）');
+  console.log('お得パック（第4.114版：買い切り 2,200円・壁紙パックと 結果ボードカスタムの 両方）・ミッション（結果ボードカスタム 3〜15こ・壁紙 3〜45枚）');
   const D = s => new Date(s + 'T12:00:00+09:00').toISOString();
   const T0 = D('2026-11-12');
   const tx = (id, product, date) => ({ id, originalId: 'o' + id, product, date: D(date) });
@@ -197,17 +198,21 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   const ev4 = ev3.concat([P.refundEvent(ev3, { id: '901', revokedAt: D('2026-11-13') })]);
   check(P.boardOwned(ev3) && P.packOwned(ev4) && !P.boardOwned(ev4) && !P.bundleOwned(ev4), 'お得パックを 返金しても、べつに 買った 壁紙パックは 残る');
   // ミッション：結果ボードカスタムの 解放の 数
-  check(P.BOARD_MISSIONS.map(m => m.join(':')).join() === '3:500,6:800,9:1100,12:1400,16:1600', '結果ボードカスタムの ミッション：3こ 500P・6こ 800P・9こ 1,100P・12こ 1,400P・16こ 1,600P');
+  check(P.BOARD_MISSIONS.map(m => m.join(':')).join() === '3:500,6:800,9:1100,12:1400,15:1600', '結果ボードカスタムの ミッション：3こ 500P・6こ 800P・9こ 1,100P・12こ 1,400P・15こ 1,600P（第4.120版：16こ → 15こ）');
   const bm = P.boardMissions(9, [P.giftEvent(T0)]);
-  check(bm.length === 5 && bm.map(m => m.id).join() === 'mission-board-3,mission-board-6,mission-board-9,mission-board-12,mission-board-16' && bm.map(m => m.claimable).join() === 'true,true,true,false,false'
-    && bm[0].label === '結果ボードカスタム 3こ解放' && bm[0].reward === 500 && bm[2].done && !bm[3].done, '9こ 解放：3・6・9 が 受け取れる（12・16 は まだ）');
+  check(bm.length === 5 && bm.map(m => m.id).join() === 'mission-board-3,mission-board-6,mission-board-9,mission-board-12,mission-board-15' && bm.map(m => m.claimable).join() === 'true,true,true,false,false'
+    && bm[0].label === '結果ボードカスタム 3こ解放' && bm[0].reward === 500 && bm[2].done && !bm[3].done && bm[4].label === '結果ボードカスタム 15こ解放', '9こ 解放：3・6・9 が 受け取れる（12・15 は まだ）');
   let evm = [P.giftEvent(T0)];
   const re = P.rowEvent(bm[0], T0); evm.push(re);
   const bal = P.balance(evm, T0), bm2 = P.boardMissions(9, evm);
   check(re.id === 'mission-board-3' && re.kind === 'mission' && re.bucket === 'free' && re.amount === 500 && re.what === '結果ボードカスタム 3こ解放' && bal.total === 2000 && bal.free === 2000 && bal.freeIn === 2000
     && bm2[0].claimed && !bm2[0].claimable && bm2[1].claimable && P.has(evm, 'mission-board-3'), '受け取ると mission-board-3（mission・free・+500P＝もらったP）・受け取りずみ（1回だけ）・6こは まだ 受け取れる');
-  check(P.boardMissions(0, evm).every(m => !m.claimable) && P.boardMissions(16, evm).filter(m => m.claimable).length === 4 && P.missions(0, evm)[0].id === 'mission-rec-8' && P.wallMissions(0, evm)[0].id === 'mission-wall-8',
-    '0こ なら 受け取れない・16こ なら 残り 4つ・記録の ミッション（mission-rec-）と 帯の ミッション（mission-wall-）の id は そのまま');
+  check(P.boardMissions(0, evm).every(m => !m.claimable) && P.boardMissions(15, evm).filter(m => m.claimable).length === 4 && P.missions(0, evm)[0].id === 'mission-rec-8' && P.wallMissions(0, evm)[0].id === 'mission-wall-8',
+    '0こ なら 受け取れない・15こ なら 残り 4つ・記録の ミッション（mission-rec-）と 帯の ミッション（mission-wall-）の id は そのまま');
+  // 第4.120版：前の 版で「16こ解放」を 受け取った 台帳 → 「15こ解放」は 受け取りずみ（2回 もらえない）
+  const ev16 = evm.concat([{ id: 'mission-board-16', kind: 'mission', bucket: 'free', amount: 1600, at: T0, what: '結果ボードカスタム 16こ解放' }]), bm16 = P.boardMissions(15, ev16);
+  check(bm16[4].n === 15 && bm16[4].claimed && !bm16[4].claimable && bm16.filter(m => m.claimable).length === 3 && P.boardMissions(15, evm)[4].claimable,
+    '前の 版の「16こ解放」を 受け取った 人は「15こ解放」も 受け取りずみ・受け取って いない 人は 15こで 受け取れる');
   // ミッション：壁紙の 枚数（帯も 数える）
   check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,30:2500,35:3500,40:3500,45:3500' && P.WALL_TOTAL === 40,
     '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・30枚 2,500P・35・40・45枚 3,500P（いま 解放できるのは 40枚）');

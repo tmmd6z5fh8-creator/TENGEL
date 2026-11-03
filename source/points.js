@@ -31,8 +31,10 @@
   var MISSIONS = [[8, 500], [15, 1000], [25, 1000], [40, 1200], [60, 1200], [85, 1400], [100, 1400], [130, 1600], [160, 1600], [200, 1800], [240, 1800], [300, 2000]];
   // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙（シルバー帯 8枚・ゴールド帯 16枚・マスター帯 25枚）。受け取ると 0P の mission と unlock-theme:<帯> を足す
   var WALL_MISSIONS = [[8, 'silver', 'シルバー帯の壁紙'], [16, 'golden', 'ゴールド帯の壁紙'], [25, 'tengel', 'マスター帯の壁紙']];
-  // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/16」・じゅんび中も 数える）→ もらえるP
-  var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [16, 1600]];
+  // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/15」・じゅんび中も 数える）→ もらえるP
+  //   第4.120版（まさちゃん 2026/11/04 02:02「結果ボードカスタムは、15個にする！ミッションも変更して！」）：さいごの 16こ → 15こ（ポイントは 同じ 1,600P）。
+  //   前の 版で「16こ解放」を 受け取った 人は「15こ解放」も 受け取った ことに する（boardMissions）
+  var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [15, 1600]];
   // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
   //   いま 解放できる 壁紙は WALL_TOTAL＝40枚（ポイント 26＋壁紙パック 11＋帯 3）。45枚は 壁紙が ふえたら 届く（一覧には 出す）
   var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500], [35, 3500], [40, 3500], [45, 3500]];
@@ -44,11 +46,13 @@
   // 結果ボードカスタム（第4.91版・まさちゃんの 指定）：買い切り 2,200円（第4.114版から 1,500円）。買った あとに 読み込んだ レースの 数で、番号の 順に 1つずつ 解放する。読み直し（0P）・5連の 予想は 数えない
   //   第4.113版（まさちゃん 2026/11/01「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！」）：
   //     16こ・6レースごとに 1つ（全部で 96レース）。前の 1〜21（ボードを一周〜出世馬）は 消した。1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16 は ボードを持つ馬
+  //   第4.120版（まさちゃん 2026/11/04 02:01「ハズレ⑥消して！」・02:02「結果ボードカスタムは、15個にする！ミッションも変更して！」）：
+  //     15こ（的中 9・ハズレ 5・ボードを持つ馬）・6レースごと（全部で 90レース）。1〜14 は じゅんび中・15 は ボードを持つ馬
   //   第4.113版（まさちゃん 01:24「結果ボードのカスタムには2種類カスタムつけられるようにして！①的中演出 ②ハズレ演出」）：的中の とき・ハズレの とき で べつべつに 1つずつ 選ぶ
   //     （points_ui.js の board.selHit・board.selMiss。解放の 数は 1つ＝買うのも 1回）
-  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[16, 6]] };
+  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[15, 6]] };
   var BOARD_NEED = (function () { var out = [], n = 0; BOARD.steps.forEach(function (st) { for (var i = 0; i < st[0]; i++) { n += st[1]; out.push(n); } }); return out; })();
-  // 16こ（番号の 順＝解放の 順）。null＝じゅんび中（設定に「じゅんび中」の タイル・選べない）。
+  // 15こ（番号の 順＝解放の 順）。null＝じゅんび中（設定に「じゅんび中」の タイル・選べない）。
   //   飾りを 入れる ときは、その 番号の null を [id, 名前, せつめい, when] に かえて、bcx.js に B.<id>（部品を 作る 所）を 足す（README「結果ボードカスタムに 飾りを 入れる」）
   //   when：all＝的中にも ハズレにも 使える・hit＝的中の とき だけ・big＝的中の うち デカ的中から 上 だけ・miss＝ハズレの とき だけ
   var BOARD_ITEMS = [
@@ -66,8 +70,7 @@
     /* 12 */ null,
     /* 13 */ null,
     /* 14 */ null,
-    /* 15 */ null,
-    /* 16 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
+    /* 15 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
   ].map(function (r, i) {
     return r ? { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i], ready: true }
       : { no: i + 1, id: 'prep' + (i + 1), name: 'じゅんび中', desc: 'あたらしい 飾りを じゅんび して いるよ', when: 'all', need: BOARD_NEED[i], ready: false };
@@ -225,7 +228,7 @@
   // お得パックを 出すか：単品を どちらも 持って いない ときだけ（どちらか 1つ 持って いれば 残りの 単品だけ）
   function bundleOffer(events) { return !owned(events, 'wallpack') && !owned(events, 'board'); }
   function boardOwned(events) { return owned(events, 'board'); }
-  // 読み込んだ レースの 数 → 解放した 数（0〜16：じゅんび中の 番号も 数える）
+  // 読み込んだ レースの 数 → 解放した 数（0〜15：じゅんび中の 番号も 数える）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
   // つぎに 解放する 番号（じゅんび中も ふくむ・全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
   function boardNext(reads) {
@@ -283,7 +286,12 @@
     return table.map(function (m) { var id = prefix + m[0], claimed = has(events, id); return { id: id, n: m[0], reward: m[1], label: label(m[0]), done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
   }
   // 結果ボードカスタムの ミッション：count＝解放した 番号の 数（買って いなければ 0）
-  function boardMissions(count, events) { return rowsOf(BOARD_MISSIONS, 'mission-board-', count, events, function (n) { return '結果ボードカスタム ' + n + 'こ解放'; }); }
+  function boardMissions(count, events) {
+    var rows = rowsOf(BOARD_MISSIONS, 'mission-board-', count, events, function (n) { return '結果ボードカスタム ' + n + 'こ解放'; });
+    // 第4.120版：前の 版の「16こ解放」（mission-board-16）を 受け取った 人は「15こ解放」を 受け取った ことに（2回 もらえない）
+    if (has(events, 'mission-board-16')) rows.forEach(function (r) { if (r.n === 15) { r.claimed = true; r.claimable = false; } });
+    return rows;
+  }
   // 壁紙の ミッション（枚数で ポイント）：count＝wallCountAll。WALL_TOTAL より 多い 行は reach＝false（いまは 届かない）
   function wallpMissions(count, events) { return rowsOf(WALLP_MISSIONS, 'mission-wallp-', count, events, function (n) { return '壁紙 ' + n + '枚解放'; }).map(function (r) { r.reach = r.n <= WALL_TOTAL; return r; }); }
   function rowEvent(m, now) { return mk(m.id, 'mission', 'free', m.reward, iso(now), { what: m.label }); }

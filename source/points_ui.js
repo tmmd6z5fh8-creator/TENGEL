@@ -4,13 +4,13 @@
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
-//    16こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと。1〜15 は じゅんび中・16 は「ボードを持つ馬」）。
+//    15こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ。1〜14 は じゅんび中・15 は「ボードを持つ馬」）。
 //    第4.113版：的中の とき（board.selHit）・ハズレの とき（board.selMiss）で べつべつに 1つずつ 使う（前の 1つの board.sel は 両方へ うつす）。
 //    連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）は 数えて おく（第4.113版：出世馬は 消した ので いまは どの 飾りも 使わない）
 //  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
 //    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・第4.114版（まさちゃん 2026/11/01）：結果ボードカスタム 1,500円・お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット。持って いれば 両方を 持って いる 扱い）。
-//    ミッションを 2つ 足した：結果ボードカスタムの 解放の 数（3・6・9・12・16こ）と 壁紙の 解放の 枚数（3〜45枚・帯も 数える）で ポイント（もらったP）
+//    ミッションを 2つ 足した：結果ボードカスタムの 解放の 数（3・6・9・12・16こ → 第4.120版で 15こ）と 壁紙の 解放の 枚数（3〜45枚・帯も 数える）で ポイント（もらったP）
 //  ・ほかの画面から使う窓口：window.TengelWallet
 (function () {
   'use strict';
@@ -494,7 +494,7 @@
     return `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${md}</div><div class="bar"><i style="width:${w}%"></i></div></div>`
       + `<div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`;
   }
-  // 結果ボードカスタムの ミッション（第4.114版）：解放した 番号の 数（3・6・9・12・16こ）→ ポイント
+  // 結果ボードカスタムの ミッション（第4.114版・第4.120版で さいごを 15こに）：解放した 番号の 数（3・6・9・12・15こ）→ ポイント
   function boardRowsHtml() {
     const n = boardMissionN(), owned = !!W && P.boardOwned(W.events), ms = P.boardMissions(n, W ? W.events : []);
     let h = `<p class="hint" style="margin:0 0 4px">設定の「結果ボードカスタム」で 解放した 数（買った あとに 読み込んだ レースの 数で 番号の 順に 解放）で ポイントが もらえるよ。いま <b>${n}こ</b>${owned ? '' : '（結果ボードカスタムを 買うと すすむよ）'}</p><div>`;

@@ -1,8 +1,8 @@
-// ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28／第4.113版で 16こ・的中と ハズレの 2つ）=====
+// ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28／第4.113版で 16こ・的中と ハズレの 2つ／第4.120版で 15こ）=====
 //   買い切り 1,500円（第4.114版：2,200円 → 1,500円・まさちゃんの 指定。App内課金の 非消耗型 jp.tengel.app.boardcustom。壁紙パックと セットの お得パック jp.tengel.app.bundle1 2,200円 も ある）。買った あとに 読み込んだ レースの 数で 16こを 番号の 順に 解放（points.js の BOARD：6レースごとに 1つ）。
 //   第4.113版（まさちゃん 2026/11/01 01:13「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！
 //     15個は、デザインは仕組みはできているから準備ができたら教えて！送っていく！」）：前の 1〜21（ボードを一周〜出世馬・幻の 馬）は 消した。
-//     1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16「ボードを持つ馬」（いちばん はじめの 頃の 馬：絵は kisekae/r3d/fx/board_horse_parts.py の 部品 5まい。
+//     1〜15 は じゅんび中（まさちゃんの デザインが とどいたら 入れる）・16「ボードを持つ馬」（第4.120版から 15：1〜14 は じゅんび中）（いちばん はじめの 頃の 馬：絵は kisekae/r3d/fx/board_horse_parts.py の 部品 5まい。
 //     ない とき（CI）は SVG の 馬）
 //   第4.113版（まさちゃん 01:24「結果ボードのカスタムには2種類カスタムつけられるようにして！①的中演出 ②ハズレ演出 これで、的中とハズレのどっちもカスタムできる。」）：
 //     設定の「結果ボードカスタム」で 的中の とき（的中・デカ的中・ど的中 など ぜんぶの 的中）・ハズレの とき に べつべつに 1つずつ 選ぶ（points_ui.js の board.selHit・selMiss）
@@ -42,14 +42,14 @@
     '.fxs .hb.bcst .bcx,.fxs .hb.bcst .bcx *,.fxs .hb.bcst .rb{animation:none!important;transition:none!important}',
     // まばたき（SVG の 馬の 目 .bcbl）
     '.fxs .hb.bcgo .bcbl{animation:bcBlink 4.6s infinite}@keyframes bcBlink{0%,91%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}',
-    // 16 ボードを持つ馬：下から ボードを かかえて 出てくる（1秒・着地で 少し はずむ）→ 頭と首・後ろ足が ぷるぷる（別々の 速さ）・しっぽを ときどき ふる・まばたき
+    // 15 ボードを持つ馬（第4.119版までは 16）：下から ボードを かかえて 出てくる（1秒・着地で 少し はずむ）→ 頭と首・後ろ足が ぷるぷる（別々の 速さ）・しっぽを ときどき ふる・まばたき
     '.fxs .hb .bcx img{display:block;width:100%;height:100%;-webkit-user-drag:none;user-select:none}',
     '.fxs .hb.bce-carry{animation-name:bcECarry!important;animation-duration:1s!important;animation-timing-function:linear!important;transform-origin:50% 100%}',
     '@keyframes bcECarry{0%{opacity:1;transform:translateY(660px);animation-timing-function:cubic-bezier(.18,.72,.36,1)}46%{transform:translateY(-16px);animation-timing-function:ease-in}'
       + '60%{transform:translateY(0) scale(1.03,.95);animation-timing-function:ease-out}74%{transform:translateY(-5px) scale(.99,1.02);animation-timing-function:ease-in}86%{transform:translateY(0) scale(1.01,.99)}100%{opacity:1;transform:none}}',
     '.fxs .hb.bcgo .bc-hbh{animation:bcHbH 3.1s linear infinite,bcHbJ 1.4s linear 1.5s 1 none}.fxs .hb.bcgo .bc-hbl{animation:bcHbL 2.3s linear infinite -.7s,bcHbS .85s linear 1.5s 1 none}',
     '.fxs .hb.bcgo .bc-hbt{animation:bcHbT 7.9s ease-in-out infinite .6s}.fxs .hb .bc-hbe{opacity:0}.fxs .hb.bcgo .bc-hbe{animation:bcHbE 5.3s linear infinite .5s}',
-    // 16：1回だけ ボードを 落としそうに なって あせる（出おわって 1.5秒後・1.4秒：ずり落ちる → 頭が びくっ・目を 見ひらく・汗・後ろ足が じたばた → 持ち直す → ふぅ）。
+    // 15：1回だけ ボードを 落としそうに なって あせる（出おわって 1.5秒後・1.4秒：ずり落ちる → 頭が びくっ・目を 見ひらく・汗・後ろ足が じたばた → 持ち直す → ふぅ）。
     //   まさちゃん「あと一回ボード落としそうになって焦るエフェクト追加して！」（大きく 動くのは 出てくる ときだけ の きまりの 例外：まさちゃんの 指定の 1回だけの 動き）。前足は ボードと いっしょに 動く
     '.fxs .hb.bcgo.bcx-carry .rb{transform-origin:273px 0;animation:bcHbSlip 1.4s linear 1.5s 1 none}.fxs .hb.bcgo .bc-hbf{animation:bcHbSlip 1.4s linear 1.5s 1 none}',
     '.fxs .hb .bc-hbw,.fxs .hb .bc-hbx,.fxs .hb .bc-hbp,.fxs .hb .bc-hbd i{opacity:0}.fxs .hb.bcgo .bc-hbw{animation:bcHbW 1.4s linear 1.5s 1 none}',
@@ -85,13 +85,13 @@
   }
   const neckVB = '-5 -8 110 125';                             // 前から 見た 頭と 首（bcx_art.js の front）
 
-  // ---------- 16こ：部品を 作る ----------
+  // ---------- 15こ（第4.120版）：部品を 作る ----------
   //   B.<id>(o)：o＝{ H（ボードの 高さ）, W（350）, sp（ボードの 下の すき間）, st（動かさない）, miss（ハズレ）, big（デカ的中から 上）, kind（結果の 種類）, dark（暗い ボード）,
   //     title（見出しの 字の 場所：ボードの 左上からの px）, redHd（見出しが 赤）, streak（連続的中の 数）, u（毎回 ちがう 番号：CSS の 名前に）}
   //   かえす もの：{ html（.hb に 入れる 部品）, css（その 時だけの CSS）, enter（登場の しかた：.hb に .bce-<名前>）, start（ボードが 出はじめた とき）, go（出おわった とき）,
   //     thumb（設定の 小さな 見本だけの { html, style }：動きの しるし など）}。1〜15（じゅんび中）は まだ ない
   const B = {};
-  // 16 ボードを持つ馬（第4.108版・まさちゃんの 指定）：いちばん はじめの 頃の 馬。うしろから ボードを かかえて 下から 出てくる（着地で 少し はずむ）
+  // 15 ボードを持つ馬（第4.120版から 15 番・第4.108版・まさちゃんの 指定）：いちばん はじめの 頃の 馬。うしろから ボードを かかえて 下から 出てくる（着地で 少し はずむ）
   //   → 頭と首・後ろ足が ぷるぷる（重い ボードを 持って ふんばる：別々の 速さ）・しっぽを ときどき ふる・まばたき。前足（ボードの 上の ふちに かかる 短い 足と ひづめ）は 動かさない
   //   形は はじめの 絵（board_horse.py）と 同じ（まさちゃん 23:19・23:21「胴体の長さも2枚目の長さがベスト！」「二枚目くらいの前脚の長さが理想！」）
   //   絵 5まい（kisekae/r3d/fx/board_horse_parts.py。四角は その HBX と 同じ：頭と首・前足・目＝ボードの 左上から／後ろ足・しっぽ＝左下から の px。
@@ -123,7 +123,7 @@
     return { html, enter: 'carry', start: () => setTimeout(() => snd('thump'), 470),
       go: hb => { if (o.st) return; setTimeout(() => { if (hb.isConnected) snd('slip'); }, 1500); setTimeout(() => { if (hb.isConnected) snd('phew'); }, 2560); } };
   };
-  // 16：あせる 所の 部品（頭と首の 入れもの の 中：頭と いっしょに 動く）。見ひらいた 目（白目＋小さな 黒目）・汗 3つ・「！」の 形・鼻の 息（ふぅ）
+  // 15：あせる 所の 部品（頭と首の 入れもの の 中：頭と いっしょに 動く）。見ひらいた 目（白目＋小さな 黒目）・汗 3つ・「！」の 形・鼻の 息（ふぅ）
   function hbPanic(h) {
     const q = HBX, ec = q.eyeC, mz = q.muzzle, pl = q.poll, rel = (x, y) => [f(x - h.x), f(y - h.y)];
     const [ex, ey] = rel(ec[0], ec[1]), [mx, my] = rel(mz[0] - 7, mz[1] - 1), [px, py] = rel(pl[0], pl[1]);
@@ -136,7 +136,7 @@
     s += `<div class="bc-hbp" style="position:absolute;left:${f(+mx - 9)}px;top:${f(+my - 7)}px;width:18px;height:14px"><svg viewBox="-9 -7 18 14" aria-hidden="true">${A.puff(5.5)}</svg></div>`;
     return s;
   }
-  // 16 の 絵が ない とき：SVG の 馬（頭と首は ボードの うしろ・ひづめは 上の ふちに かける・下は 後ろ足と しっぽ）。hidden＝ふだんは かくす（絵が 読めない ときに 出す）
+  // 15 の 絵が ない とき：SVG の 馬（頭と首は ボードの うしろ・ひづめは 上の ふちに かける・下は 後ろ足と しっぽ）。hidden＝ふだんは かくす（絵が 読めない ときに 出す）
   function hbVec(o, hidden) {
     const c = PAL.chestnut, w = 92, h = w * 125 / 110, top = -2 - (97 + 8) / 125 * h, lh = 70;
     let s = `<div class="bcx bk bco bc-hbh" style="left:${f(268 - w / 2)}px;top:${f(top)}px;width:${w}px;height:${f(h)}px;transform-origin:50% 100%"><svg viewBox="${neckVB}">${A.front(c, { expr: 'smile', neck: true, blink: true })}</svg></div>`;
