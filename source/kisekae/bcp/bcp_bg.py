@@ -40,6 +40,11 @@ def radial(y0, y1, edge, nlen, fm=None):
     raw = cv2.GaussianBlur(canvas[e0 - 1:e0 + 2].mean(0)[None], (0, 0), 1.2)[0]
     med = ndi.median_filter(canvas[e0 - 2:e0 + 3], size=(5, fillm.get('med', 41), 1)).mean(0)
     med = cv2.GaussianBlur(med[None], (0, 0), fillm.get('blur', 1.2))[0]
+    # はしの 行の 紙ふぶき・きらきら（なめらかな 行から 大きく はなれた 所）は なめらかな 行に（すじに ならない ように）
+    dif = np.abs(raw - med).max(-1)
+    out_ = ndi.binary_dilation(dif > fillm.get('raw_thr', 45), iterations=6)
+    wq = cv2.GaussianBlur(out_.astype(np.float32)[None], (0, 0), 3)[0][:, None]
+    raw = raw * (1 - wq) + med * wq
     xs = np.arange(Wc, dtype=np.float32)
     at = lambda st: np.stack([np.interp(qx.ravel(), xs, st[:, c]).reshape(qx.shape) for c in range(3)], -1).astype(np.float32)
     dist = np.abs(yy - edge)[..., None]
@@ -97,6 +102,37 @@ elif n > 0:
     nb = 90
     for i in range(nb):
         canvas[bot - nb + i] *= 1.0 - 0.42 * ((i + 1) / nb) ** 1.3
+# 切った 所（crop）に あった 紙ふぶき などを もどす：cfg['paste'] = [[x0,y0,x1,y1], …]（絵の px）。
+#   その 四角の ふちの 色を 地と して、いちばん 地から 遠い 色との まぜ具合を すき通しに して かさねる
+for pr in cfg.get('paste', []):
+    x0, y0, x1, y1 = pr
+    src0 = cv2.cvtColor(cv2.imread(os.path.join(D, cfg.get('src', 'src.png'))), cv2.COLOR_BGR2RGB).astype(np.float32) if 'src0' not in dir() else src0
+    p_ = src0[y0:y1, x0:x1]
+    edge = np.concatenate([p_[:2].reshape(-1, 3), p_[-2:].reshape(-1, 3), p_[:, :2].reshape(-1, 3), p_[:, -2:].reshape(-1, 3)])
+    bgc = np.median(edge, 0)
+    d_ = np.linalg.norm(p_ - bgc, axis=-1)
+    fc = np.median(p_[d_ >= np.percentile(d_, 97)], 0)
+    dv = fc - bgc
+    al = np.clip(((p_ - bgc) @ dv) / max(float(dv @ dv), 1.0), 0, 1)
+    al = np.clip((al - 0.12) / 0.88, 0, 1)
+    # 紙ふぶき の かたまり（地から 十分 はなれた 色）と その まわり 2px だけ（うしろの 光の すじの むらは もどさない）
+    import scipy.ndimage as ndi
+    core_ = d_ >= 0.5 * d_.max()
+    lab_, n_ = ndi.label(core_)
+    if n_:
+        sz_ = ndi.sum(core_, lab_, range(1, n_ + 1)); core_ = lab_ == (np.argmax(sz_) + 1)
+    keep_ = cv2.GaussianBlur(ndi.binary_dilation(core_, iterations=2).astype(np.float32), (0, 0), 0.8)
+    al = al * np.clip(keep_ * 1.5, 0, 1)
+    al = np.maximum(al, cv2.GaussianBlur(ndi.binary_erosion(core_, iterations=1).astype(np.float32), (0, 0), 0.6))   # 中は すき通さない
+    k_ = 3; mm = np.ones_like(al)
+    mm[:k_] *= np.linspace(0, 1, k_)[:, None]; mm[-k_:] *= np.linspace(1, 0, k_)[:, None]
+    mm[:, :k_] *= np.linspace(0, 1, k_)[None]; mm[:, -k_:] *= np.linspace(1, 0, k_)[None]
+    al = al * mm
+    col = np.clip((p_ - (1 - al[..., None]) * bgc) / np.maximum(al[..., None], 1e-3), 0, 255)
+    Mp = np.array([[S * K, 0, (OX + x0 * S) * K], [0, S * K, (OY + y0 * S) * K]], np.float32)
+    w4 = cv2.warpAffine(np.dstack([col * al[..., None], al]).astype(np.float32), Mp, (Wc, Hc), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    aa = np.clip(w4[..., 3:4], 0, 1)
+    canvas = canvas.astype(np.float32) * (1 - aa) + np.clip(w4[..., :3], 0, 255)
 canvas = np.clip(canvas, 0, 255).astype(np.uint8)
 name = cfg['name']
 fgp = os.path.join(D, 'fg.png')
