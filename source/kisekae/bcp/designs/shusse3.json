@@ -1,0 +1,245 @@
+{
+ "name": "shusse3",
+ "title": "的中⑨ 出世馬（3連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   158,
+   308
+  ],
+  [
+   892,
+   308
+  ],
+  [
+   892,
+   829
+  ],
+  [
+   158,
+   829
+  ]
+ ],
+ "frame_lr": [
+  100,
+  955
+ ],
+ "S": 0.456,
+ "cx": 527.5,
+ "top_pt": 148.9,
+ "crop": [
+  50,
+  1862
+ ],
+ "fill": {
+  "mode": "mirror",
+  "top": "glow",
+  "top_opts": {
+   "sigma": 50,
+   "k_edge": 0.75,
+   "k_top": 0.15,
+   "nb": 50
+  }
+ },
+ "clean": {
+  "deghost": {
+   "bands": [
+    [
+     0,
+     50,
+     1048,
+     300
+    ]
+   ],
+   "dark_max": 56,
+   "dark_sigma": 30,
+   "warm_v": 0
+  },
+  "patch": [
+   {
+    "dst": [
+     780,
+     476,
+     862,
+     527
+    ],
+    "dx": -103,
+    "feather": 8
+   }
+  ],
+  "regions": [
+   {
+    "rect": [
+     380,
+     330,
+     680,
+     497
+    ],
+    "only": "text",
+    "bg": {
+     "br": 20,
+     "s1": 14,
+     "s2": 40,
+     "rows": 24,
+     "vblur": 5
+    }
+   },
+   {
+    "rrect": [
+     176,
+     524,
+     874,
+     824,
+     20
+    ],
+    "bg": {
+     "vmax": 82,
+     "br": 20,
+     "nopill": true
+    }
+   },
+   {
+    "rect": [
+     812,
+     374,
+     852,
+     414
+    ],
+    "conf_rm": true,
+    "bg": {
+     "rows": 16,
+     "vblur": 3
+    }
+   },
+   {
+    "rect": [
+     268,
+     410,
+     308,
+     455
+    ],
+    "conf_rm": true,
+    "bg": {
+     "rows": 16,
+     "vblur": 3
+    }
+   }
+  ],
+  "pill": {
+   "g": 40,
+   "br": 38
+  },
+  "text": {
+   "rb": -32,
+   "v": 120,
+   "white_br": 60,
+   "dil": 10,
+   "soft": 9
+  },
+  "force": [
+   {
+    "rect": [
+     812,
+     374,
+     852,
+     414
+    ]
+   },
+   {
+    "rect": [
+     268,
+     410,
+     308,
+     455
+    ]
+   }
+  ],
+  "inpaint": [
+   {
+    "rrect": [
+     394,
+     1586,
+     662,
+     1698,
+     52
+    ]
+   }
+  ],
+  "inpaint_mode": "radial",
+  "inpaint_c": [
+   527,
+   1430
+  ],
+  "keep_conf": true,
+  "keep_soft": [
+   {
+    "box": [
+     360,
+     728,
+     720,
+     845
+    ],
+    "rb": [
+     -32,
+     30
+    ],
+    "sigma": 3,
+    "edge": 10,
+    "xramp": [
+     380,
+     430
+    ],
+    "exclude": [
+     [
+      326,
+      732,
+      466,
+      800
+     ]
+    ],
+    "no_white": false,
+    "vmed": [
+     9,
+     806
+    ],
+    "v": [
+     150,
+     210
+    ]
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    20,
+    330
+   ],
+   "title_cx": 174,
+   "title_top": 16,
+   "title_px": 40,
+   "sub_cx": 175,
+   "sub_top": 63,
+   "sub_px": 14.5,
+   "rows_x": [
+    15,
+    332
+   ],
+   "rows_top": 113,
+   "rows_bottom": 235,
+   "row_h": 29,
+   "row_gap": 5.5,
+   "rows_zoom": 1.25,
+   "rib_in": "rows",
+   "rib_top": 111,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ }
+}

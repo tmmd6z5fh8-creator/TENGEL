@@ -187,10 +187,16 @@ if any('bg' in r for r in C['regions']):
     for r in C['regions']:
         rm = shape_mask(r); rule = r.get('bg', {})
         sel = rm & ~keep & ~ndi.binary_dilation(tmask, iterations=2)
-        if 'vmax' in rule: sel &= V <= rule['vmax']
-        if 'br' in rule: sel &= (B - R) >= rule['br']
-        if rule.get('nopill'): sel &= ~pill
-        if r.get('only') != 'text': sel &= ~txt
+        if rule.get('all'):
+            # 地も 行も 光（トロフィーの 光 など）も ぜんぶ 使って なめらかに（行の ふちは ぼけて 消え、光の むらは のこる）。
+            #   字と チップの 所（exclude の 四角）だけ 使わない
+            for ex in rule.get('exclude', []):
+                ex0, ey0, ex1, ey1 = ex; sel[ey0:ey1, ex0:ex1] = False
+        else:
+            if 'vmax' in rule: sel &= V <= rule['vmax']
+            if 'br' in rule: sel &= (B - R) >= rule['br']
+            if rule.get('nopill'): sel &= ~pill
+            if r.get('only') != 'text': sel &= ~txt
         sel = ndi.binary_erosion(sel, iterations=1)
         if sel.sum() < 400:
             # 地の 点が すくない（小さな 所）：まわり 30px まで 広げて とる
@@ -227,6 +233,36 @@ if ts and tregion.any():
     tpart = (tmask & ~keep).astype(np.float32)
     soft = np.maximum(soft, cv2.GaussianBlur(tpart, (0, 0), ts) * np.clip(cv2.GaussianBlur(tregion.astype(np.float32), (0, 0), ts), 0, 1))
 soft = soft * (~keep)
+# 光（トロフィーの 光 など）が ボードに かかって いる 所は、あたたかい 色ほど もとの 絵を のこす（境目が 出ない ように なめらかに）
+#   keep_soft = [{ box:[x0,y0,x1,y1], rb:[lo,hi]（R−B が lo → hi で のこす 割合 0 → 1）, sigma:3, xramp:[x0,x1]（x0 より 左は のこさない → x1 で ぜんぶ）}]
+for ks in C.get('keep_soft', []):
+    bx0, by0, bx1, by1 = ks['box']
+    lo, hi = ks.get('rb', [-30, 40])
+    wv = np.clip(((R - B) - lo) / max(hi - lo, 1), 0, 1)
+    if 'v' in ks:
+        # とても 明るい 所（光の しん：白に 近い）も のこす
+        v0, v1 = ks['v']
+        wv = np.maximum(wv, np.clip((V - v0) / max(v1 - v0, 1), 0, 1))
+    bm = np.zeros((H, W), np.float32); bm[by0:by1, bx0:bx1] = 1
+    bm = cv2.GaussianBlur(bm, (0, 0), ks.get('edge', 6))
+    if 'xramp' in ks:
+        xa, xb = ks['xramp']
+        bm *= np.clip((np.arange(W, dtype=np.float32) - xa) / max(xb - xa, 1), 0, 1)[None, :]
+    wv = cv2.GaussianBlur(wv.astype(np.float32), (0, 0), ks.get('sigma', 3)) * bm
+    for ex in ks.get('exclude', []):
+        em = np.zeros((H, W), np.float32); ex0, ey0, ex1, ey1 = ex; em[ey0:ey1, ex0:ex1] = 1
+        wv = wv * (1 - cv2.GaussianBlur(em, (0, 0), ks.get('edge', 6)))
+    if 'vmed' in ks:
+        # のこす 所の 細い 横線（行の ふち など）は 縦の メディアンで 消す（光の むらは なめらかなので のこる）。y1 より 上だけ
+        k_, y1_ = ks['vmed']
+        sub = src[by0:min(by1, y1_), bx0:bx1]
+        src[by0:min(by1, y1_), bx0:bx1] = ndi.median_filter(sub, size=(k_, 1, 1))
+    if ks.get('no_white', True):
+        # 白っぽい 字（光と ちがって 色が うすい）は のこさない
+        wh = (V > 110) & ((src.max(-1) - src.min(-1)) < 70) & (B >= R - 5)     # 青みの ある 白（字）だけ：光（あたたかい 白）は ふくめない
+        wh = cv2.GaussianBlur(ndi.binary_dilation(wh, iterations=3).astype(np.float32), (0, 0), 2)
+        wv = wv * (1 - wh)
+    soft = soft * (1 - wv)
 out = np.clip(src * (1 - soft[..., None]) + fill * soft[..., None], 0, 255).astype(np.uint8)
 if C.get('inpaint'):
     im8 = np.ascontiguousarray(out)
