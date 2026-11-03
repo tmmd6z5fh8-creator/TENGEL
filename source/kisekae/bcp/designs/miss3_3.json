@@ -1,0 +1,241 @@
+{
+ "name": "miss3_3",
+ "title": "ハズレ③ 隠蔽作戦（3回目）",
+ "src": "src.png",
+ "quad": [
+  [
+   228.5,
+   512
+  ],
+  [
+   827.5,
+   512
+  ],
+  [
+   827.5,
+   942
+  ],
+  [
+   228.5,
+   942
+  ]
+ ],
+ "frame_lr": [
+  0,
+  1048
+ ],
+ "S": 0.4,
+ "cx": 524.5,
+ "top_pt": 355.2,
+ "crop": [
+  62,
+  1270
+ ],
+ "fill": {
+  "mode": "radial",
+  "c": [
+   528,
+   727
+  ],
+  "k": 0.9,
+  "len": 1.0,
+  "med": 151,
+  "desat": 0,
+  "raw": 60,
+  "raw_thr": 60
+ },
+ "fg": {
+  "mode": "board_minus",
+  "roi": [
+   188,
+   472,
+   867,
+   982
+  ],
+  "navy": {
+   "br": 12,
+   "bg": -5,
+   "v": 256
+  },
+  "min_nav": 2000,
+  "close_r": 3,
+  "close": 0,
+  "hole_max": 300,
+  "feather": 0.8,
+  "drop_yellow": [
+   [
+    345,
+    782,
+    575,
+    840
+   ]
+  ],
+  "drop_red": [
+   [
+    320,
+    540,
+    440,
+    662
+   ]
+  ],
+  "drop_white": [],
+  "drop_dark_v": 90
+ },
+ "clean": {
+  "deghost": {
+   "bands": [
+    [
+     0,
+     45,
+     1048,
+     538
+    ],
+    [
+     0,
+     538,
+     222,
+     985
+    ],
+    [
+     828,
+     538,
+     1048,
+     985
+    ],
+    [
+     0,
+     985,
+     1048,
+     1300
+    ]
+   ],
+   "dark_max": 72,
+   "dark_base": 32,
+   "dark_sigma": 30,
+   "warm_v": 25,
+   "warm_rb": 5
+  },
+  "regions": [
+   {
+    "rect": [
+     303,
+     517,
+     665,
+     659
+    ],
+    "only": "text",
+    "bg": {
+     "poly": 2,
+     "grow": 30,
+     "rb_ex": -20,
+     "v_ex": 90
+    }
+   },
+   {
+    "rrect": [
+     241,
+     679,
+     825,
+     939,
+     16
+    ],
+    "bg": {
+     "vmax": 75,
+     "gmax": 40
+    }
+   },
+   {
+    "rect": [
+     132,
+     90,
+     178,
+     112
+    ],
+    "ghost_rm": true,
+    "bg": {
+     "vmax": 36
+    }
+   }
+  ],
+  "text": {
+   "rb": -10,
+   "v": 110,
+   "white_br": 60,
+   "dil": 14,
+   "soft": 8
+  },
+  "keep_fg": 1,
+  "keep_conf": false,
+  "force": [
+   {
+    "rect": [
+     132,
+     90,
+     178,
+     112
+    ]
+   }
+  ],
+  "vfill": [
+   {
+    "rect": [
+     231,
+     659,
+     827,
+     681
+    ],
+    "hmed": 9
+   }
+  ],
+  "inpaint": [
+   {
+    "ellipse": [
+     371,
+     606,
+     66,
+     66
+    ],
+    "mode": "diffuse",
+    "not_fg": true
+   }
+  ],
+  "diffuse": {
+   "vmax": 80,
+   "gap": 8
+  }
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "title_style": "silver",
+  "normal": {
+   "text_x": [
+    20,
+    330
+   ],
+   "title_cx": 175,
+   "title_top": 19.9,
+   "title_px": 30,
+   "sub_cx": 175.2,
+   "sub_top": 58.6,
+   "sub_px": 14,
+   "rows_x": [
+    14.6,
+    346
+   ],
+   "rows_top": 111,
+   "rows_bottom": 240,
+   "row_h": 31.7,
+   "row_gap": 7.3,
+   "rows_zoom": 1.2,
+   "rib_in": "rows",
+   "rib_top": 109,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ }
+}

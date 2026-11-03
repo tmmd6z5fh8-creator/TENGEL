@@ -473,8 +473,8 @@ for vf in C.get('vfill', []):
 def _inpaint(out, m, mode_):
     im8 = np.ascontiguousarray(out)
     if mode_ == 'diffuse':
-        img = im8.astype(np.float32); w = ~ndi.binary_dilation(m, iterations=2)
         dcf = C.get('diffuse', {})
+        img = im8.astype(np.float32); w = ~ndi.binary_dilation(m, iterations=int(dcf.get('gap', 2)))   # gap：穴の まわりの にじみは 色の もとに しない
         if 'vmax' in dcf: w &= img.max(-1) <= dcf['vmax']                 # 光る ふち・光の むらは 色の もとに しない
         if 'within' in dcf: w &= shape_mask(dcf['within'])               # ボードの 中だけ
         w = w.astype(np.float32)
@@ -538,7 +538,11 @@ if C.get('inpaint'):
     for mode_, shapes in groups.items():
         m = np.zeros((H, W), bool)
         for s3 in shapes:
-            m |= shape_mask(s3)
+            ms = shape_mask(s3)
+            if s3.get('not_fg') and os.path.exists(os.path.join(D, 'fgmask.png')):
+                # 前の 絵（布・馬）の 所は うめない（ボードの 見えて いる 所だけ）
+                ms &= ~ndi.binary_dilation(np.asarray(Image.open(os.path.join(D, 'fgmask.png'))) > 60, iterations=2)
+            m |= ms
         out = _inpaint(out, m, mode_)
 Image.fromarray(out).save(os.path.join(D, 'clean.png'))
 dbg = src.copy(); dbg[remove] = dbg[remove] * 0.4 + np.array([255, 0, 0]) * 0.6; dbg[keep & region] = dbg[keep & region] * 0.4 + np.array([0, 255, 0]) * 0.6

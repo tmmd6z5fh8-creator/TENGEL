@@ -26,15 +26,73 @@ if F.get('quad_margin') is not None:
     if k: qm = cv2.dilate(qm, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1)))
     roi &= qm.astype(bool)
 cand = ~board & roi
-if F.get('mode') == 'region':
-    # 所で きめる：rects（足す 四角）− minus（ひく 四角）の 中の 紺で ない 所 ぜんぶ（馬・ふきだし・びっくりマーク など）。
-    #   小さな かけら（min_part px より 小さい もの）は すてる
+if F.get('mode') == 'board_minus':
+    # ボードの 見えて いる 所（紺と その 中の 字・チップ）を のぞいた ボードの 面 ぜんぶ を 前に（布や 馬が ボードの 大部分を かくす 絵）。
+    #   見えて いる 所 = ボードの 面の 中の 紺の かたまり（min_nav px 以上）を close_r で とじて（細い 字を ふくめる）穴を うめた 形
+    qm0 = np.zeros((H, W), np.uint8); cv2.fillPoly(qm0, [np.round(np.array(cfg['quad'])).astype(np.int32)], 1)
+    inner = cv2.erode(qm0, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))).astype(bool)
+    nav = board & inner
+    lab_, n_ = ndi.label(nav)
+    if n_:
+        sz_ = ndi.sum(nav, lab_, range(1, n_ + 1))
+        ok_ = [i + 1 for i in range(n_) if sz_[i] >= F.get('min_nav', 2000)]
+        if F.get('vis_seeds'):
+            # 見えて いる ボードの 紺の 中の 点を ふくむ かたまり だけ（布の 赤い ✕ の かげ など 紺っぽい 所を まちがえない）
+            ok_ = [k for k in ok_ if any(lab_[y, x] == k for x, y in F['vis_seeds'])]
+        nav = np.isin(lab_, ok_)
+    cr = int(F.get('close_r', 3))
+    if cr:
+        nav = cv2.morphologyEx(nav.astype(np.uint8), cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * cr + 1, 2 * cr + 1))).astype(bool)
+    vis = ndi.binary_fill_holes(nav)
+    horse = roi & ~vis
+    for r_ in F.get('minus', []):
+        x0_, y0_, x1_, y1_ = r_; horse[y0_:y1_, x0_:x1_] = False
+    # 布に 半分 かくれた チップ・ハンコ・字（布や 馬に つながって 穴に ならない）は 色で のぞく（穴うめの あとで：下の drop_mask）
+    drop_mask = np.zeros((H, W), bool)
+    for bx in F.get('drop_yellow', []):
+        x0_, y0_, x1_, y1_ = bx; sub = src[y0_:y1_, x0_:x1_]
+        yel = (sub[..., 0] > 150) & (sub[..., 1] > 110) & (sub[..., 2] < 120) & ((sub[..., 0] - sub[..., 2]) > 70) & ((sub[..., 1] - sub[..., 2]) > 50)
+        ora = (sub[..., 0] > 160) & (sub[..., 1] > 85) & (sub[..., 1] < 170) & (sub[..., 2] < 80)     # 赤い ✕（G が ひくい）は 入れない
+        drop_mask[y0_:y1_, x0_:x1_] |= ndi.binary_dilation(yel | ora, iterations=1)
+    for bx in F.get('drop_red', []):
+        x0_, y0_, x1_, y1_ = bx; sub = src[y0_:y1_, x0_:x1_]
+        r_, g_, b_ = sub[..., 0], sub[..., 1], sub[..., 2]
+        red = (r_ > 45) & (r_ > 2.5 * g_) & (r_ > 1.8 * b_) & (g_ < 70)        # 暗い 赤（ハンコの ふち）も
+        red |= sub.max(-1) < F.get('drop_dark_v', 0)                        # ハンコの ふちの 暗い にじみ（drop_dark_v より 暗い 所：布は 明るい）
+        drop_mask[y0_:y1_, x0_:x1_] |= ndi.binary_dilation(red, iterations=1)
+    for bx in F.get('drop_white', []):
+        # 白い 字（すこし 青い 白）：布の クリーム色（あたたかい 白）は のこす
+        x0_, y0_, x1_, y1_ = bx; sub = src[y0_:y1_, x0_:x1_]
+        wt = (sub.max(-1) > 150) & ((sub[..., 0] - sub[..., 2]) < 12) & ((sub[..., 1] - sub[..., 2]) < 12)
+        drop_mask[y0_:y1_, x0_:x1_] |= ndi.binary_dilation(wt, iterations=1)
+    ids = ['board_minus']
+elif F.get('mode') == 'region':
+    # 所で きめる：rects（足す 四角）・polys（足す 形）− minus（ひく 四角）・minus_polys の 中の 紺で ない 所 ぜんぶ（馬・ふきだし・びっくりマーク など）。
+    #   小さな かけら（min_part px より 小さい もの）は すてる。only_brown・drop_thin_red（下の 説明）
     reg = np.zeros((H, W), bool)
     for r_ in F['rects']:
         x0_, y0_, x1_, y1_ = r_; reg[y0_:y1_, x0_:x1_] = True
     for r_ in F.get('minus', []):
         x0_, y0_, x1_, y1_ = r_; reg[y0_:y1_, x0_:x1_] = False
+    for pg in F.get('polys', []):
+        pm = np.zeros((H, W), np.uint8); cv2.fillPoly(pm, [np.round(np.array(pg)).astype(np.int32)], 1); reg |= pm.astype(bool)
+    for pg in F.get('minus_polys', []):
+        pm = np.zeros((H, W), np.uint8); cv2.fillPoly(pm, [np.round(np.array(pg)).astype(np.int32)], 1); reg &= ~pm.astype(bool)
     horse = cand & reg
+    # only_brown：四角の 中は 茶色（馬の 毛・ふち）だけ（毛が かかる 黄色い チップ・黒い 字は 前に しない）
+    for bx in F.get('only_brown', []):
+        x0_, y0_, x1_, y1_ = bx
+        sub = src[y0_:y1_, x0_:x1_]; r_, g_, b_ = sub[..., 0], sub[..., 1], sub[..., 2]
+        brown = ((r_ - b_) > 28) & (g_ < 0.70 * np.maximum(r_, 1)) & (sub.max(-1) < 238)
+        horse[y0_:y1_, x0_:x1_] &= brown
+    # drop_thin_red：四角の 中の 細い 赤い 線（ペンで ボードに 書いた 線）は 前に しない（ペン先の 太い 赤は のこす）
+    for bx in F.get('drop_thin_red', []):
+        x0_, y0_, x1_, y1_, rr = bx
+        sub = src[y0_:y1_, x0_:x1_]; r_, g_, b_ = sub[..., 0], sub[..., 1], sub[..., 2]
+        red = (r_ > 110) & ((r_ - g_) > 55) & ((r_ - b_) > 35)
+        thick = cv2.morphologyEx(red.astype(np.uint8), cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * rr + 1, 2 * rr + 1))).astype(bool)
+        thick = ndi.binary_dilation(thick, iterations=2) & red
+        horse[y0_:y1_, x0_:x1_] &= ~(red & ~thick)
     lab, n = ndi.label(horse, structure=np.ones((3, 3)))
     if n:
         sz = ndi.sum(horse, lab, range(1, n + 1))
@@ -58,6 +116,8 @@ def fill_small_holes(m, hmax):
     return m | np.isin(lab_h, [i + 1 for i in range(nh) if sz[i] <= hmax])
 HMAX = F.get('hole_max')
 horse = fill_small_holes(horse, HMAX)
+if F.get('mode') == 'board_minus':
+    horse &= ~drop_mask
 if F.get('grabcut'):
     # GrabCut：色の かたまりで 出した 馬（ふちの 光も 入る）を、絵の ふち線で 切り直す（ボードの 字は 背景・馬の 中は 前）
     gcf = F['grabcut']
