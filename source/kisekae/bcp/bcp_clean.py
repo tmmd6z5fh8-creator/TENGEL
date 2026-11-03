@@ -108,6 +108,14 @@ if 'deghost' in C:
 # 先に 写す 所（となりの 絵を ずらして はる：旗の 下の 鎖など）
 for p in C.get('patch', []):
     x0, y0, x1, y1 = p['dst']; dx, dy = p.get('dx', 0), p.get('dy', 0)
+    if dx == 'auto':
+        lo, hi = p.get('dx_range', [-220, -40]); bw = 4; best = None
+        for d_ in range(lo, hi + 1):
+            if x0 + d_ - bw < 0 or x1 + d_ + bw > W: continue
+            e = ((src[y0:y1, x0 - bw:x0] - src[y0:y1, x0 + d_ - bw:x0 + d_]) ** 2).sum() + ((src[y0:y1, x1:x1 + bw] - src[y0:y1, x1 + d_:x1 + d_ + bw]) ** 2).sum()
+            if best is None or e < best[0]: best = (e, d_)
+        dx = best[1]
+        print('patch', p['dst'], 'auto dx', dx)
     cp = src[y0 + dy:y1 + dy, x0 + dx:x1 + dx].copy()
     fe = min(p.get('feather', 0), (x1 - x0) // 2)
     if fe:
@@ -194,6 +202,7 @@ if any('bg' in r for r in C['regions']):
                 ex0, ey0, ex1, ey1 = ex; sel[ey0:ey1, ex0:ex1] = False
         else:
             if 'vmax' in rule: sel &= V <= rule['vmax']
+            if 'gmax' in rule: sel &= G <= rule['gmax']
             if 'br' in rule: sel &= (B - R) >= rule['br']
             if rule.get('nopill'): sel &= ~pill
             if r.get('only') != 'text': sel &= ~txt
@@ -204,6 +213,30 @@ if any('bg' in r for r in C['regions']):
             if 'vmax' in rule: big &= V <= rule['vmax']
             if 'br' in rule: big &= (B - R) >= rule['br']
             sel = ndi.binary_erosion(big, iterations=1)
+        if rule.get('poly'):
+            # なめらかな 地（見出しの 所 など）：まわり（grow px まで）の 地の 点に 2次の 面を あてはめて うめる（光の むらも なめらかに つづく）
+            grow = rule.get('grow', 40)
+            area = ndi.binary_dilation(rm, iterations=grow)
+            smp = area & ~keep & ~ndi.binary_dilation(tmask, iterations=3) & ~((R - B) > rule.get('rb_ex', 18)) & ~(V > rule.get('v_ex', 90))
+            ys_, xs_ = np.nonzero(smp)
+            if len(xs_) > 20000:
+                pick = np.random.default_rng(5).choice(len(xs_), 20000, replace=False); ys_, xs_ = ys_[pick], xs_[pick]
+            nx = lambda x: (x - W / 2) / (W / 2); ny = lambda y: (y - H / 2) / (H / 2)
+            def feats(x, y):
+                x, y = nx(np.asarray(x, np.float64)), ny(np.asarray(y, np.float64))
+                cols = [np.ones_like(x), x, y, x * x, x * y, y * y]
+                if rule['poly'] >= 3: cols += [x ** 3, x * x * y, x * y * y, y ** 3]
+                return np.stack(cols, -1)
+            A = feats(xs_, ys_)
+            near_ = ndi.binary_dilation(rm, iterations=8)
+            yy_, xx_ = np.nonzero(near_)
+            F_ = feats(xx_, yy_)
+            f = src.copy()
+            for c in range(3):
+                coef, *_ = np.linalg.lstsq(A, src[ys_, xs_, c].astype(np.float64), rcond=None)
+                f[yy_, xx_, c] = (F_ @ coef).astype(np.float32)
+            fill[near_] = f[near_]
+            continue
         if rule.get('rows') and 'rect' in r:
             # 行ごとに 左と 右の となりの 地の 色を つなぐ（上下の 明るさの ちがいを その まま のこす）
             x0, y0, x1, y1 = r['rect']; bw = rule['rows']
