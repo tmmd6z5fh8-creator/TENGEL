@@ -240,7 +240,7 @@
       res.carryMiss = hb ? { bcx: hb.dataset.bcx || '', kind: (F.current() || {}).kind || null } : null;
       await mark('board-carry-miss');
       F.close(); await sleep(200);
-      // 第4.121版：1〜14 の 絵の ボード（まさちゃんの 絵）。CI には 絵が ない ので、読めない とき いつもの ボードに もどる（.bcpic なし・ボードは .hb の 中）ことを 見る
+      // 第4.121版：1〜14 の 絵の ボード（デザインの 絵）。CI には 絵が ない ので、読めない とき いつもの ボードに もどる（.bcpic なし・ボードは .hb の 中）ことを 見る
       F.preview(spec, 'hit', { item: 'ring', streak: 2 }); await sleep(2600);
       hb = document.querySelector('#fxOv .hb');
       res.pic = hb ? { bcx: hb.dataset.bcx || '', bcp: hb.dataset.bcp || '', pic: hb.classList.contains('bcpic'), rbInHb: !!(hb.querySelector('.rb') && hb.querySelector('.rb').parentNode === hb),
