@@ -96,6 +96,61 @@ if 'side_rays' in C:
     wv = side.astype(np.float32) * (1 - pm)
     src = src * (1 - wv[..., None]) + ext * wv[..., None]
     R, G, B = src[..., 0], src[..., 1], src[..., 2]; V = src.max(-1)
+# 光の すじを 作り直す 所（resynth）：四角の 中を、下の はしの 行から 光の まん中 c へ むかう 線に そって のばした すじで おきかえる
+#   （うすい アプリの 画面が 光の すじに かさなって いる 所。黒板 など のこす 物は 四角の 外に）。紙ふぶきは paste で もどす
+#   resynth = [{ rect:[x0,y0,x1,y1], c:[cx,cy], edge:y, med:151, raw:40, raw_thr:95, len:1.0, blend:[左, 右, 上]（なじませる はば）, paste:[[x0,y0,x1,y1],…] }]
+def _paste_piece(dst, srcimg, pr):
+    x0, y0, x1, y1 = pr
+    p_ = srcimg[y0:y1, x0:x1]
+    edge = np.concatenate([p_[:2].reshape(-1, 3), p_[-2:].reshape(-1, 3), p_[:, :2].reshape(-1, 3), p_[:, -2:].reshape(-1, 3)])
+    bgc = np.median(edge, 0)
+    d_ = np.linalg.norm(p_ - bgc, axis=-1)
+    fc = np.median(p_[d_ >= np.percentile(d_, 97)], 0); dv = fc - bgc
+    al = np.clip(((p_ - bgc) @ dv) / max(float(dv @ dv), 1.0), 0, 1)
+    al = np.clip((al - 0.12) / 0.88, 0, 1)
+    core_ = d_ >= 0.5 * d_.max()
+    lab_, n_ = ndi.label(core_)
+    if n_:
+        sz_ = ndi.sum(core_, lab_, range(1, n_ + 1)); core_ = lab_ == (np.argmax(sz_) + 1)
+    keep_ = cv2.GaussianBlur(ndi.binary_dilation(core_, iterations=2).astype(np.float32), (0, 0), 0.8)
+    al = al * np.clip(keep_ * 1.5, 0, 1)
+    al = np.maximum(al, cv2.GaussianBlur(ndi.binary_erosion(core_, iterations=1).astype(np.float32), (0, 0), 0.6))
+    col = np.clip((p_ - (1 - al[..., None]) * bgc) / np.maximum(al[..., None], 1e-3), 0, 255)
+    dst[y0:y1, x0:x1] = dst[y0:y1, x0:x1] * (1 - al[..., None]) + col * al[..., None]
+orig_src = src.copy()
+for rs in C.get('resynth', []):
+    x0, y0, x1, y1 = rs['rect']; cx_, cy_ = rs['c']; e0 = int(rs['edge'])
+    raw = cv2.GaussianBlur(src[e0 - 1:e0 + 2].mean(0)[None], (0, 0), 1.2)[0]
+    med = ndi.median_filter(src[e0 - 2:e0 + 3], size=(5, rs.get('med', 151), 1)).mean(0)
+    med = cv2.GaussianBlur(med[None], (0, 0), 1.2)[0]
+    dif = np.abs(raw - med).max(-1)
+    out_ = ndi.binary_dilation(dif > rs.get('raw_thr', 95), iterations=6)
+    wq = cv2.GaussianBlur(out_.astype(np.float32)[None], (0, 0), 3)[0][:, None]
+    raw = raw * (1 - wq) + med * wq
+    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    t = (e0 - cy_) / np.where(np.abs(yy - cy_) < 1e-3, 1e-3, yy - cy_)
+    qx = np.clip(cx_ + (xx - cx_) * t, 0, W - 1)
+    xs_ = np.arange(W, dtype=np.float32)
+    at = lambda st: np.stack([np.interp(qx.ravel(), xs_, st[:, c]).reshape(qx.shape) for c in range(3)], -1)
+    dist = np.clip(e0 - yy, 0, None)[..., None]
+    a_raw = np.clip(1 - dist / float(rs.get('raw', 40)), 0, 1)
+    E = at(raw) * a_raw + at(med) * (1 - a_raw)
+    sub = src[y0:y1, x0:x1]
+    floor = np.median(sub.reshape(-1, 3)[sub.reshape(-1, 3).max(1) <= np.percentile(sub.max(-1), 8)], 0)
+    k = np.clip(1 - dist / max(rs.get('len', 1.0) * (e0 - 0), 1), 0, 1) ** 1.3
+    E = E * k + floor * (1 - k)
+    bl, br, bt = rs.get('blend', [0, 24, 0])
+    wx = np.ones_like(xx)
+    if br: wx *= np.clip((x1 - xx) / br, 0, 1)
+    if bl: wx *= np.clip((xx - x0) / bl, 0, 1)
+    if bt: wx *= np.clip((yy - y0) / bt, 0, 1)
+    wy = np.clip((e0 - yy) / 3.0, 0, 1)          # はしの 行の すぐ 上から
+    w_ = (wx * wy)[..., None]
+    src[y0:y1, x0:x1] = sub * (1 - w_) + E * w_
+    for pr in rs.get('paste', []):
+        _paste_piece(src, orig_src, pr)
+    print('resynth', rs['rect'], 'floor', floor.astype(int).tolist())
+R, G, B = src[..., 0], src[..., 1], src[..., 2]; V = src.max(-1)
 # うすく 写りこんだ アプリの 画面（時刻・字・タブ など：絵を 作った ときの 下じき）を 消す：暗い 所の 細かい もようを なめらかに（紙ふぶき・光・馬は のこす）
 if 'deghost' in C:
     dg = C['deghost']

@@ -26,9 +26,24 @@ if F.get('quad_margin') is not None:
     if k: qm = cv2.dilate(qm, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1)))
     roi &= qm.astype(bool)
 cand = ~board & roi
-lab, n = ndi.label(cand, structure=np.ones((3, 3)))
-ids = sorted({int(lab[y, x]) for x, y in F['seeds']} - {0})
-horse = np.isin(lab, ids)
+if F.get('mode') == 'region':
+    # 所で きめる：rects（足す 四角）− minus（ひく 四角）の 中の 紺で ない 所 ぜんぶ（馬・ふきだし・びっくりマーク など）。
+    #   小さな かけら（min_part px より 小さい もの）は すてる
+    reg = np.zeros((H, W), bool)
+    for r_ in F['rects']:
+        x0_, y0_, x1_, y1_ = r_; reg[y0_:y1_, x0_:x1_] = True
+    for r_ in F.get('minus', []):
+        x0_, y0_, x1_, y1_ = r_; reg[y0_:y1_, x0_:x1_] = False
+    horse = cand & reg
+    lab, n = ndi.label(horse, structure=np.ones((3, 3)))
+    if n:
+        sz = ndi.sum(horse, lab, range(1, n + 1))
+        horse = np.isin(lab, [i + 1 for i in range(n) if sz[i] >= F.get('min_part', 30)])
+    ids = ['region']
+else:
+    lab, n = ndi.label(cand, structure=np.ones((3, 3)))
+    ids = sorted({int(lab[y, x]) for x, y in F['seeds']} - {0})
+    horse = np.isin(lab, ids)
 if F.get('close'):
     horse = ndi.binary_closing(horse, iterations=F['close']) & roi
 def fill_small_holes(m, hmax):
