@@ -1,0 +1,207 @@
+{
+ "name": "race2",
+ "title": "的中③ 馬レース結果ボード（2連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   127,
+   248
+  ],
+  [
+   916,
+   248
+  ],
+  [
+   916,
+   752
+  ],
+  [
+   127,
+   752
+  ]
+ ],
+ "frame_lr": [
+  95,
+  955
+ ],
+ "S": 0.43,
+ "cx": 525,
+ "top_pt": 186,
+ "fill": {
+  "mode": "mirror",
+  "top": "radial",
+  "c": [
+   525,
+   6000
+  ],
+  "k": 0.8,
+  "len": 0.9,
+  "med": 251,
+  "desat": 0.3,
+  "raw": 12
+ },
+ "clean": {
+  "patch": [
+   {
+    "dst": [
+     752,
+     420,
+     882,
+     444
+    ],
+    "dx": -122,
+    "feather": 8
+   },
+   {
+    "dst": [
+     792,
+     444,
+     880,
+     459
+    ],
+    "dx": -122
+   }
+  ],
+  "regions": [
+   {
+    "rect": [
+     240,
+     258,
+     870,
+     421
+    ],
+    "bg": {
+     "poly": 2,
+     "grow": 30,
+     "rb_ex": -20,
+     "v_ex": 70
+    }
+   },
+   {
+    "rrect": [
+     158,
+     452,
+     892,
+     747,
+     20
+    ],
+    "bg": {
+     "vmax": 72,
+     "br": 20,
+     "nopill": true
+    }
+   }
+  ],
+  "text": {
+   "rb": -30,
+   "v": 150,
+   "white_br": 60,
+   "dil": 8
+  },
+  "keep": [
+   {
+    "rect": [
+     722,
+     244,
+     762,
+     288
+    ]
+   }
+  ],
+  "force": [
+   {
+    "rect": [
+     792,
+     452,
+     880,
+     500
+    ]
+   },
+   {
+    "rect": [
+     430,
+     252,
+     500,
+     312
+    ]
+   }
+  ],
+  "crowd": {
+   "y0": 715,
+   "ybot": 1000
+  },
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     142,
+     420,
+     910,
+     446
+    ],
+    "hmed": 9
+   }
+  ],
+  "keep_fg": 2
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    10,
+    340
+   ],
+   "title_cx": 179.9,
+   "title_top": 3.3,
+   "title_px": 46.5,
+   "sub_cx": 175.4,
+   "sub_top": 56.5,
+   "sub_px": 13,
+   "rows_x": [
+    17,
+    334
+   ],
+   "rows_top": 101,
+   "rows_bottom": 218,
+   "row_h": 28,
+   "row_gap": 6,
+   "rows_zoom": 1.22,
+   "rib_in": "rows",
+   "rib_top": 99,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  },
+  "title_style": "silver"
+ },
+ "fg": {
+  "mode": "region",
+  "roi": [
+   0,
+   700,
+   1048,
+   1499
+  ],
+  "rects": [
+   [
+    690,
+    722,
+    1048,
+    1499
+   ]
+  ],
+  "navy": {
+   "br": 12,
+   "bg": -5,
+   "v": 256
+  },
+  "min_part": 40,
+  "close": 1,
+  "hole_max": 400,
+  "feather": 0.8
+ }
+}

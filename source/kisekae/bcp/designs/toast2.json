@@ -1,0 +1,146 @@
+{
+ "name": "toast2",
+ "title": "的中② 馬達の祝杯（2連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   150,
+   386
+  ],
+  [
+   940,
+   419
+  ],
+  [
+   922,
+   943
+  ],
+  [
+   83,
+   891
+  ]
+ ],
+ "frame_lr": [
+  0,
+  1048
+ ],
+ "S": 0.41,
+ "cx": 510.0,
+ "top_pt": 200.0,
+ "hp": 221.0,
+ "fill": {
+  "mode": "mirror"
+ },
+ "refl": 0.46,
+ "floor": [
+  16,
+  11,
+  20
+ ],
+ "fg": {
+  "mode": "region",
+  "roi": [
+   0,
+   860,
+   1048,
+   1200
+  ],
+  "rects": [
+   [
+    0,
+    872,
+    1048,
+    1200
+   ]
+  ],
+  "navy": {
+   "br": 12,
+   "bg": -5,
+   "v": 256
+  },
+  "min_part": 40,
+  "close": 1,
+  "hole_max": 400,
+  "feather": 0.8
+ },
+ "clean": {
+  "regions": [
+   {
+    "poly": [
+     [
+      150,
+      386
+     ],
+     [
+      940,
+      419
+     ],
+     [
+      922,
+      943
+     ],
+     [
+      83,
+      891
+     ]
+    ],
+    "shrink": 8,
+    "round": 34,
+    "bg": {
+     "nopill": true
+    }
+   }
+  ],
+  "crowd": {
+   "y0": 850,
+   "ybot": 935
+  },
+  "keep": [
+   {
+    "ellipse": [
+     538,
+     404,
+     62,
+     34
+    ]
+   }
+  ],
+  "keep_fg": 2
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    20,
+    330
+   ],
+   "title_cx": 178,
+   "title_top": 16,
+   "title_px": 38,
+   "sub_cx": 175,
+   "sub_top": 62,
+   "sub_px": 13.5,
+   "rows_x": [
+    14,
+    336
+   ],
+   "rows_top": 97,
+   "rows_bottom": 212,
+   "row_h": 34,
+   "row_gap": 6,
+   "rows_zoom": 1.2,
+   "rib_in": "rows",
+   "rib_top": 95,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "rows_top": 90,
+   "rows_bottom": 212,
+   "row_h": 18.5,
+   "row_gap": 2
+  },
+  "title_style": "silver"
+ }
+}

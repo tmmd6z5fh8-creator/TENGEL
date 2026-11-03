@@ -1,0 +1,157 @@
+{
+ "name": "trophy1",
+ "title": "的中⑥ トロフィー結果ボード（1連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   176,
+   584
+  ],
+  [
+   871,
+   584
+  ],
+  [
+   871,
+   1053
+  ],
+  [
+   176,
+   1053
+  ]
+ ],
+ "frame_lr": [
+  116,
+  940
+ ],
+ "S": 0.45,
+ "cx": 528,
+ "top_pt": 299.6,
+ "fill": {
+  "mode": "mirror",
+  "top": "glow",
+  "c": [
+   528,
+   6000
+  ],
+  "k": 0.8,
+  "len": 0.9,
+  "med": 151,
+  "desat": 0.4,
+  "raw": 12,
+  "top_opts": {
+   "sigma": 40,
+   "k_edge": 0.7,
+   "k_top": 0.1,
+   "nb": 60
+  }
+ },
+ "cutout": [
+  {
+   "name": "laurelL",
+   "rect": [
+    338,
+    598,
+    402,
+    694
+   ],
+   "chan": "R",
+   "ref": 240
+  },
+  {
+   "name": "laurelR",
+   "rect": [
+    655,
+    598,
+    719,
+    694
+   ],
+   "chan": "R",
+   "ref": 240
+  }
+ ],
+ "clean": {
+  "regions": [
+   {
+    "rect": [
+     318,
+     592,
+     742,
+     735
+    ],
+    "only": "text",
+    "bg": {
+     "br": 15,
+     "s1": 14,
+     "s2": 40
+    }
+   },
+   {
+    "rrect": [
+     200,
+     774,
+     856,
+     1043,
+     18
+    ],
+    "bg": {
+     "vmax": 76,
+     "br": 20,
+     "nopill": true
+    }
+   }
+  ],
+  "text": {
+   "rb": -14,
+   "v": 120,
+   "white_br": 60,
+   "dil": 12
+  },
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     188,
+     742,
+     862,
+     766
+    ],
+    "hmed": 9
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    12,
+    338
+   ],
+   "title_cx": 176.6,
+   "title_top": 9.8,
+   "title_px": 36.5,
+   "sub_cx": 175.8,
+   "sub_top": 55,
+   "sub_px": 13,
+   "rows_x": [
+    20,
+    332
+   ],
+   "rows_top": 101,
+   "rows_bottom": 229.5,
+   "row_h": 30,
+   "row_gap": 7,
+   "rows_zoom": 1.23,
+   "rib_in": "rows",
+   "rib_top": 99,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  },
+  "title_style": "copper"
+ }
+}

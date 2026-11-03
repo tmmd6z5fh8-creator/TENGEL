@@ -1,0 +1,175 @@
+{
+ "name": "carry2",
+ "title": "的中⑦ 馬が運ぶ結果ボード（2連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   137,
+   292
+  ],
+  [
+   911,
+   292
+  ],
+  [
+   911,
+   802
+  ],
+  [
+   137,
+   802
+  ]
+ ],
+ "frame_lr": [
+  0,
+  1048
+ ],
+ "S": 0.4,
+ "cx": 523.5,
+ "top_pt": 323.2,
+ "fill": {
+  "mode": "radial",
+  "c": [
+   524,
+   450
+  ],
+  "k": 0.85,
+  "len": 0.85,
+  "med": 151,
+  "desat": 0.6
+ },
+ "close_border": "#EBCB7A",
+ "clean": {
+  "regions": [
+   {
+    "rect": [
+     288,
+     304,
+     772,
+     475
+    ],
+    "only": "text",
+    "bg": {
+     "br": 25,
+     "s1": 14,
+     "s2": 40
+    }
+   },
+   {
+    "rrect": [
+     181,
+     513,
+     869,
+     779,
+     18
+    ],
+    "bg": {
+     "vmax": 72,
+     "br": 20,
+     "nopill": true
+    }
+   }
+  ],
+  "text": {
+   "rb": -30,
+   "v": 150,
+   "white_br": 60,
+   "dil": 10
+  },
+  "inpaint": [
+   {
+    "rrect": [
+     396,
+     1329,
+     652,
+     1426,
+     46
+    ]
+   },
+   {
+    "rrect": [
+     193,
+     416,
+     235,
+     462,
+     8
+    ]
+   },
+   {
+    "rrect": [
+     807,
+     416,
+     854,
+     462,
+     8
+    ]
+   },
+   {
+    "rrect": [
+     200,
+     384,
+     228,
+     410,
+     6
+    ]
+   },
+   {
+    "rrect": [
+     821,
+     386,
+     847,
+     410,
+     6
+    ]
+   }
+  ],
+  "inpaint_r": 14,
+  "keep_conf": false,
+  "inpaint_mode": "rows",
+  "vfill": [
+   {
+    "rect": [
+     164,
+     472,
+     882,
+     499
+    ],
+    "hmed": 9
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    49,
+    300
+   ],
+   "title_cx": 175,
+   "title_top": 6,
+   "title_px": 46,
+   "sub_top": 62,
+   "sub_px": 15,
+   "rows_x": [
+    25,
+    326
+   ],
+   "rows_top": 104,
+   "rows_bottom": 215,
+   "row_h": 26,
+   "row_gap": 5,
+   "rows_zoom": 1.2,
+   "rib_in": "rows",
+   "rib_top": 102,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  },
+  "title_style": "silver"
+ },
+ "close_bg": "rgba(18,13,8,.9)"
+}

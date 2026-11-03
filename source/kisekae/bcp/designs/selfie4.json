@@ -1,6 +1,6 @@
 {
- "name": "selfie",
- "title": "的中④ 自撮り結果ボード（3連勝）",
+ "name": "selfie4",
+ "title": "的中④ 自撮り結果ボード（4連勝）",
  "src": "src.png",
  "quad": [
   [
@@ -147,6 +147,19 @@
      "vmax": 76,
      "br": 25
     }
+   },
+   {
+    "bpoly": [
+     96,
+     2,
+     284,
+     68
+    ],
+    "bg": {
+     "vmax": 76,
+     "br": 25,
+     "nopill": true
+    }
    }
   ],
   "pill": {
@@ -246,6 +259,7 @@
    ],
    "row_h": 22,
    "row_gap": 3
-  }
+  },
+  "title_style": "rainbow"
  }
 }

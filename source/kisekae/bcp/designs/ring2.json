@@ -1,6 +1,6 @@
 {
  "name": "ring2",
- "title": "的中① 結果ボードを廻る（3連勝・元の画像）",
+ "title": "的中① 結果ボードを廻る（2連勝）",
  "src": "src.png",
  "quad": [
   [
@@ -163,6 +163,7 @@
    "rows_top": 118,
    "row_h": 24,
    "row_gap": 4
-  }
+  },
+  "title_style": "silver"
  }
 }

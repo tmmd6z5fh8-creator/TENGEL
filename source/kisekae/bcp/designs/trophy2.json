@@ -1,6 +1,6 @@
 {
- "name": "trophy",
- "title": "的中⑥ トロフィー結果ボード（3連勝）",
+ "name": "trophy2",
+ "title": "的中⑥ トロフィー結果ボード（2連勝）",
  "src": "src.png",
  "quad": [
   [
@@ -151,6 +151,7 @@
   "many": {
    "row_h": 22,
    "row_gap": 3
-  }
+  },
+  "title_style": "silver"
  }
 }
