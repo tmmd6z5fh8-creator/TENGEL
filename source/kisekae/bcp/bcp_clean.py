@@ -14,10 +14,30 @@ C = cfg['clean']
 def disk(r): return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
 def shape_mask(s):
     m = np.zeros((H, W), np.uint8)
-    if 'poly' in s:
+    if 'bpoly' in s:
+        # ボードの 面（350 × HP の 座標）の 四角 [x0,y0,x1,y1] を 絵の 板（cfg の quad）へ うつした 四すみ
+        Qd = np.array(cfg['quad'], np.float32)
+        wq_ = (np.linalg.norm(Qd[1] - Qd[0]) + np.linalg.norm(Qd[2] - Qd[3])) / 2; hq_ = (np.linalg.norm(Qd[3] - Qd[0]) + np.linalg.norm(Qd[2] - Qd[1])) / 2
+        hp_ = float(cfg.get('hp') or round(350 * hq_ / wq_, 1))
+        Mb = cv2.getPerspectiveTransform(np.array([(0, 0), (350, 0), (350, hp_), (0, hp_)], np.float32), Qd)
+        bx0, by0, bx1, by1 = s['bpoly']
+        pts = cv2.perspectiveTransform(np.array([[(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]], np.float32), Mb)[0]
+        cv2.fillPoly(m, [np.round(pts).astype(np.int32)], 1)
+    elif 'poly' in s:
         cv2.fillPoly(m, [np.round(np.array(s['poly'])).astype(np.int32)], 1)
     elif 'rect' in s:
         x0, y0, x1, y1 = s['rect']; m[y0:y1, x0:x1] = 1
+    elif 'brrect' in s:
+        Qd = np.array(cfg['quad'], np.float32)
+        wq_ = (np.linalg.norm(Qd[1] - Qd[0]) + np.linalg.norm(Qd[2] - Qd[3])) / 2; hq_ = (np.linalg.norm(Qd[3] - Qd[0]) + np.linalg.norm(Qd[2] - Qd[1])) / 2
+        hp_ = float(cfg.get('hp') or round(350 * hq_ / wq_, 1))
+        Kb = 4
+        bx0, by0, bx1, by1, br_ = s['brrect']
+        bm = np.zeros((int(hp_ * Kb) + 1, 350 * Kb + 1), np.uint8)
+        bm[int(by0 * Kb):int(by1 * Kb), int(bx0 * Kb):int(bx1 * Kb)] = 1
+        bm = cv2.morphologyEx(bm, cv2.MORPH_OPEN, disk(int(br_ * Kb)))
+        Mb = cv2.getPerspectiveTransform(np.array([(0, 0), (350 * Kb, 0), (350 * Kb, hp_ * Kb), (0, hp_ * Kb)], np.float32), Qd)
+        m = cv2.warpPerspective(bm, Mb, (W, H), flags=cv2.INTER_NEAREST)
     elif 'rrect' in s:
         x0, y0, x1, y1, r = s['rrect']; m[y0:y1, x0:x1] = 1
         r = int(min(r, (x1 - x0 - 1) // 2, (y1 - y0 - 1) // 2))          # 角の 丸みは 四角に おさまる 大きさまで
@@ -110,12 +130,15 @@ for p in C.get('patch', []):
     x0, y0, x1, y1 = p['dst']; dx, dy = p.get('dx', 0), p.get('dy', 0)
     if dx == 'auto':
         lo, hi = p.get('dx_range', [-220, -40]); bw = 4; best = None
-        for d_ in range(lo, hi + 1):
-            if x0 + d_ - bw < 0 or x1 + d_ + bw > W: continue
-            e = ((src[y0:y1, x0 - bw:x0] - src[y0:y1, x0 + d_ - bw:x0 + d_]) ** 2).sum() + ((src[y0:y1, x1:x1 + bw] - src[y0:y1, x1 + d_:x1 + d_ + bw]) ** 2).sum()
-            if best is None or e < best[0]: best = (e, d_)
-        dx = best[1]
-        print('patch', p['dst'], 'auto dx', dx)
+        dlo, dhi = p.get('dy_range', [dy, dy])
+        for e_ in range(dlo, dhi + 1):
+            if y0 + e_ < 0 or y1 + e_ > H: continue
+            for d_ in range(lo, hi + 1):
+                if x0 + d_ - bw < 0 or x1 + d_ + bw > W: continue
+                e = ((src[y0:y1, x0 - bw:x0] - src[y0 + e_:y1 + e_, x0 + d_ - bw:x0 + d_]) ** 2).sum() + ((src[y0:y1, x1:x1 + bw] - src[y0 + e_:y1 + e_, x1 + d_:x1 + d_ + bw]) ** 2).sum()
+                if best is None or e < best[0]: best = (e, d_, e_)
+        dx, dy = best[1], best[2]
+        print('patch', p['dst'], 'auto dx', dx, 'dy', dy)
     cp = src[y0 + dy:y1 + dy, x0 + dx:x1 + dx].copy()
     fe = min(p.get('feather', 0), (x1 - x0) // 2)
     if fe:
