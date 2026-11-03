@@ -90,6 +90,15 @@ if r.returncode == 0:
     hbx_py = _hbx(open(os.path.join(W, 'kisekae', 'r3d', 'fx', 'board_horse_parts.py'), encoding='utf8').read(), r'HBX = dict\((.*?)\)\n')
     check(bool(hbx_js) and hbx_js == hbx_py and len(hbx_js) == 11 and all(v in html for v in ('bcx_hb_head.webp', 'bcx_hb_fore.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_hb_eye.webp')) and 'bcECarry' in html,
           f'結果ボードカスタム 16「ボードを持つ馬」：部品の 四角が 絵を 作る 道具と 同じ（{hbx_js}）・絵の 名前と 登場の 動き（bcECarry）が 入って いる（第4.108版）')
+    # 第4.121版：まさちゃんの 絵の ボード 14こ（window.__BCP：kisekae/bcp/bcp_app.py）。絵（bcp_*.webp）は 手元の ios/bcp_assets/ から Resources/ へ（リポジトリには 入れない・CI は なし）
+    sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
+    BCPJ = _json.JSONDecoder().raw_decode(html.split('window.__BCP=')[1])[0] if 'window.__BCP=' in html else {}
+    bfiles = _bcp.files(); bhave = [f for f in bfiles if f in res]; bdir = os.path.join(W, 'ios', 'bcp_assets')
+    check(len(BCPJ.get('items', {})) == 14 and len(BCPJ.get('d', {})) == 59 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
+          and [i for i, _, _ in _bcp.ITEMS] == ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen']
+          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 108
+          and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
+          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（手元に あれば ぜんぶ・CI は なし）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

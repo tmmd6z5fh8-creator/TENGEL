@@ -4,9 +4,10 @@
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
 //  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
-//    15こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ。1〜14 は じゅんび中・15 は「ボードを持つ馬」）。
+//    15こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ。第4.121版：1〜14 は まさちゃんの 絵の ボード・15 は「ボードを持つ馬」）。
 //    第4.113版：的中の とき（board.selHit）・ハズレの とき（board.selMiss）で べつべつに 1つずつ 使う（前の 1つの board.sel は 両方へ うつす）。
 //    連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）は 数えて おく（第4.113版：出世馬は 消した ので いまは どの 飾りも 使わない）
+//    第4.121版：まさちゃんの 絵の ボード（1〜14）は 連続的中の 数（streak）と 続けて ハズレた 数（board.mstreak：ハズレで +1・的中で 0）で 絵が かわる
 //  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
 //    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・第4.114版（まさちゃん 2026/11/01）：結果ボードカスタム 1,500円・お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット。持って いれば 両方を 持って いる 扱い）。
@@ -31,19 +32,20 @@
   // ---------- 台帳（アプリの中） ----------
   // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態）,
   //                   board{ reads（買った あとに 読み込んだ レース）, selHit（的中の ときに 使う もの）・selMiss（ハズレの ときに 使う もの）（'none'＝なし・''＝まだ 選んで いない）,
-  //                          streak（連続的中）, res[]（連続に 数えた レース） },
+  //                          streak（連続的中）, mstreak（続けて ハズレた 数：第4.121版）, res[]（連続に 数えた レース） },
   //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） } }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
-  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, res: [] }, pack: { reads: 0 } });
+  const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, mstreak: 0, res: [] }, pack: { reads: 0 } });
   function normalize(w) {
     const o = Object.assign(blank(), w && typeof w === 'object' ? w : {});
     o.id = 'wallet'; o.events = Array.isArray(o.events) ? o.events.filter(Boolean) : []; o.paid = Array.isArray(o.paid) ? o.paid : []; o.counted = o.counted && typeof o.counted === 'object' ? o.counted : {};
-    o.board = Object.assign({ reads: 0, streak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
+    o.board = Object.assign({ reads: 0, streak: 0, mstreak: 0, res: [] }, o.board && typeof o.board === 'object' ? o.board : {});
     // 第4.113版：的中・ハズレで べつべつに 選ぶ（selHit・selMiss）。前の 版の 1つの 選択（sel）は 的中にも ハズレにも ついて いた ので 両方へ・消した 飾りは ''（points.js の boardSel）
     const bs = P.boardSel(o.board); o.board.selHit = bs.hit; o.board.selMiss = bs.miss; delete o.board.sel;
     if (!Array.isArray(o.board.res)) o.board.res = [];
     o.board.reads = Math.max(0, Math.floor(+o.board.reads || 0)); o.board.streak = Math.max(0, Math.floor(+o.board.streak || 0));
+    o.board.mstreak = Math.max(0, Math.floor(+o.board.mstreak || 0));
     o.pack = Object.assign({ reads: 0 }, o.pack && typeof o.pack === 'object' ? o.pack : {});
     o.pack.reads = Math.max(0, Math.floor(+o.pack.reads || 0));
     if (!o.device) o.device = newId();
@@ -237,10 +239,10 @@
     return got.length ? got[got.length - 1] : null;
   }
   function boardInfo() {
-    const owned = !!W && P.boardOwned(W.events), bd = (W && W.board) || { reads: 0, selHit: '', selMiss: '', streak: 0 };
+    const owned = !!W && P.boardOwned(W.events), bd = (W && W.board) || { reads: 0, selHit: '', selMiss: '', streak: 0, mstreak: 0 };
     const n = owned ? P.boardUnlocked(bd.reads) : 0, pick = id => (P.boardKnown(id) ? id : '');
     return { owned, reads: owned ? bd.reads : 0, n, next: owned ? P.boardNext(bd.reads) : null, nextReady: owned ? P.boardNextReady(bd.reads) : null,
-      selHit: pick(bd.selHit), selMiss: pick(bd.selMiss), streak: bd.streak || 0, items: P.BOARD_ITEMS, need: P.BOARD_NEED };
+      selHit: pick(bd.selHit), selMiss: pick(bd.selMiss), streak: bd.streak || 0, mstreak: bd.mstreak || 0, items: P.BOARD_ITEMS, need: P.BOARD_NEED };
   }
   // いま ボードに つける もの（kind＝結果の 種類：'miss'＝ハズレの 所・ほか＝的中の 所。買って いて・解放ずみで・選んで いて・その 結果に 使える もの）。なし なら ''
   function boardActive(kind) {
@@ -255,16 +257,18 @@
     W.board[BSLOT[k]] = id; await save(); boardEmit('select', { item: id, kind: k });
     return true;
   }
-  // 連続的中：結果を 決めた レース（同じ レースは 1回）。どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。返り値：いまの 連続の 数
-  //   （第4.113版：出世馬は 消した。数は src.html・fx.js が 演出に 渡す まま。いまは どの 飾りも 使わない＝これからの 飾りの ために 残す）
+  // 連続的中：結果を 決めた レース（同じ レースは 1回）。どれか 1つの 券種が 的中なら +1・全部 ハズレなら 0。
+  //   第4.121版：続けて ハズレた 数（mstreak）も 数える（ハズレで +1・的中で 0）。返り値：的中なら 連続的中の 数・ハズレなら 続けて ハズレた 数
+  //   （src.html が 演出の spec.streak に 渡す → bcx.js が 絵の ボードの 段を 決める：的中①〜⑨＝連続的中・ハズレ①〜⑤＝続けて ハズレた 数）
   async function boardResult(id, hit) {
     await walletReady;
     const bd = W.board, key = String(id || '');
-    if (key && bd.res.includes(key)) return bd.streak;
+    if (key && bd.res.includes(key)) return hit ? bd.streak : bd.mstreak;
     bd.streak = hit ? (+bd.streak || 0) + 1 : 0;
+    bd.mstreak = hit ? 0 : (+bd.mstreak || 0) + 1;
     if (key) { bd.res.push(key); if (bd.res.length > 400) bd.res = bd.res.slice(-300); }
     await save();
-    return bd.streak;
+    return hit ? bd.streak : bd.mstreak;
   }
 
   // ---------- ミッション：記録したレースを数える ----------
@@ -750,16 +754,24 @@
   function testSpec(kind) {
     const tri = { t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, um = { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }, wd = { t: 'ワイド', state: '不的中', hits: [], n: 6 };
     const rows = kind === 'miss' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), Object.assign({}, um, { state: '不的中', hits: [] }), wd] : kind === 'hit' ? [Object.assign({}, tri, { state: '不的中', hits: [] }), um, wd] : [tri, um, wd];
-    return { r: 9, n: 14, rows: rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 }, force: kind, streak: kind === 'miss' ? 0 : Math.max(1, (W && W.board && W.board.streak) || 1) };
+    return { r: 9, n: 14, rows: rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 }, force: kind, streak: testStreak(kind) };
   }
+  // 第4.121版：絵の ボード（1〜14）の 段を ためす 連続の 数。0＝いまの 数（的中＝連続的中・ハズレ＝続けて ハズレた 数。0 なら 1）
+  //   1・2・3・4・8・16・24 を 選ぶと 的中ボタンと ハズレの どれでも その 数（ハズレは 4から 上は 4回目・出世馬は 段の 数）
+  let testN = 0;
+  const TEST_NS = [0, 1, 2, 3, 4, 8, 16, 24];
+  function testStreak(kind) { if (testN) return testN; const b = (W && W.board) || {}; return Math.max(1, (kind === 'miss' ? b.mstreak : b.streak) || 1); }
   function testCard() {
     if (!window.__TEST) return;
     const set = $('#v-set'); if (!set || $('#setTest')) return;
     const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setTest';
-    c.innerHTML = '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。はじめから 10,000P 入って いるよ。</p>'
+    c.innerHTML = '<style>#setTest [data-test="sn"][aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}</style>'
+      + '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。はじめから 10,000P 入って いるよ。</p>'
       + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button></div>'
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
       + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
+      + '<p class="hint" style="margin:10px 0 6px">絵の ボードの 段（連続の 数：的中は 連勝・ハズレは 回目）：<span id="testN"></span></p>'
+      + '<div class="row">' + TEST_NS.map(n => `<button type="button" class="btn" data-test="sn" data-n="${n}" aria-pressed="${n === testN}">${n ? n : 'いまの 数'}</button>`).join('') + '</div>'
       + '<p class="hint" style="margin:10px 0 6px">結果ボードカスタム（App Store の 買い物は しない）：<span id="testBoard"></span></p>'
       + '<div class="row"><button type="button" class="btn" data-test="bown">買ったことにする</button><button type="button" class="btn" data-test="bread">読み込み +' + P.BOARD.steps[0][1] + '</button><button type="button" class="btn" data-test="ball">全部 解放</button></div>'
       + '<p class="hint" style="margin:10px 0 6px">壁紙パック（App Store の 買い物は しない）：<span id="testPack"></span></p>'
@@ -770,6 +782,7 @@
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
       if (b.dataset.test === 'pts') { W.events.push(P.giftEvent(Date.now(), TEST_GIFT, 'gift-test-' + Date.now(), 'テスト版のポイント')); await save(); paintAll(); toast(`テスト用に ${pts(TEST_GIFT)}を 足したよ（いま ${pts(total())}）`, 2600); }
+      else if (b.dataset.test === 'sn') { testN = +b.dataset.n || 0; $$('[data-test="sn"]', c).forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.n === testN))); }
       else if (b.dataset.test === 'fx' && window.TengelFx) { try { window.TengelFx.prime(); } catch (x) { /* なし */ } window.TengelFx.show(testSpec(b.dataset.kind)); }
       else if (b.dataset.test === 'bown') { if (!P.boardOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-' + now, product: P.BOARD.product, date: new Date(now).toISOString() }, now)); await save(); boardEmit('owned', { src: 'test' }); toast('🧪 結果ボードカスタムを 買ったことにしたよ', 2600); } }
       else if (b.dataset.test === 'bread' || b.dataset.test === 'ball') {
@@ -795,6 +808,7 @@
   function paintTestBoard() {
     const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); const nm = id => (id === 'none' ? 'なし' : ((P.BOARD_ITEMS.find(x => x.id === id) || {}).name || 'まだ'));
     el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/${P.BOARD_ITEMS.length}・的中 ${nm(i.selHit)}・ハズレ ${nm(i.selMiss)}`;
+    const en = $('#testN'); if (en) en.textContent = `いま 連続的中 ${i.streak}・続けて ハズレ ${i.mstreak}・ためす 数 ${testN ? testN : `いまの 数（的中 ${Math.max(1, i.streak)}・ハズレ ${Math.max(1, i.mstreak)}）`}`;
     const ep = $('#testPack'); if (ep) { const k = packInfo(); ep.textContent = `${k.owned ? '買った' : 'まだ'}・読み込み ${k.reads}・解放 ${k.n}/${k.total}`; }
     const eb = $('#testBundle'); if (eb) eb.textContent = P.bundleOwned(W.events) ? '買った' : 'まだ';
   }

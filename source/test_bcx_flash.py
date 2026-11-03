@@ -4,11 +4,13 @@
 #     1/60秒ずつ（その 時に ある アニメーションは 今の 時刻から 進める）写して kisekae/flash_px.py で 数える（1秒に 4回 以上 光る 点が 画面の 10% を こえる 1秒が ない こと）。
 #     絵（ios/fx_assets/bcx_hb_*.webp）が なければ SVG の 馬
 #   第4.113版：出世馬 8連続（幻の 馬・暗い 雷：rise8）は 出世馬と いっしょに 消した
+#   第4.121版：まさちゃんの 絵の ボード（pic）：的中（結果ボードを廻る 3連勝）・デカ的中（4連勝：ふわっと 明るく 出る）・ハズレ（二人でしょんぼり 2回目）。
+#     「▶ 見る」の すぐ あと から 3秒（ボードの 登場 → 絵ごと ふわっと → ほかの 絵を かくす → 行と 見出しの 動き）。絵（ios/bcp_assets）が なければ いつもの ボード
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_bcx'); PORT = 8794
-CASES = sys.argv[1].split(',') if len(sys.argv) > 1 else ['carry']
+CASES = sys.argv[1].split(',') if len(sys.argv) > 1 else ['carry', 'pic']
 FX_DIR = os.path.join(W, 'ios', 'fx_assets')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
@@ -20,6 +22,10 @@ if os.path.isdir(FX_DIR):
     for f in os.listdir(FX_DIR):
         if f.startswith('bcx_hb_') and f.endswith('.webp'): shutil.copy(os.path.join(FX_DIR, f), os.path.join(SRV, 'APP', f))
 art22 = os.path.isdir(FX_DIR) and all(os.path.exists(os.path.join(FX_DIR, f'bcx_hb_{k}.webp')) for k in ('head', 'fore', 'hind', 'tail', 'eye'))
+BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
+if os.path.isdir(BCP_DIR):
+    for f in os.listdir(BCP_DIR):
+        if f.startswith('bcp_') and f.endswith('.webp'): shutil.copy(os.path.join(BCP_DIR, f), os.path.join(SRV, 'APP', f))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 SPEC = {'r': 9, 'n': 14, 'ranks': {str(i): i for i in range(1, 15)},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 8, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 8]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 6}]}
@@ -71,6 +77,24 @@ try:
             ok = rr.returncode == 0 and '窓 0個' in bad
             print(('  ✅ ' if ok else '  ❌ ') + f'ボードを持つ馬（下から 出てくる → ぷるぷる・しっぽ・まばたき・落としそうに なって あせる）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
             if not ok: fails.append('carry flash: ' + (rr.stderr[-300:] if rr.returncode else bad))
+        if 'pic' in CASES:
+            MISS = dict(SPEC, rows=[dict(x, state='不的中', hits=[]) for x in SPEC['rows']])
+            for kind, iid, n_ in (('hit', 'ring', 3), ('big', 'ring', 4), ('miss', 'rain', 2)):
+                OUT = os.path.join(W, 't5', 'fx_frames', f'bcx_pic_{kind}')
+                pg.evaluate("([s, k, id, n]) => TengelFx.preview(s, k, { item: id, streak: n })", [MISS if kind == 'miss' else SPEC, kind, iid, n_])
+                pg.evaluate(SETUP22)
+                shutil.rmtree(OUT, ignore_errors=True); os.makedirs(OUT)
+                t0 = time.time(); n = int(3.0 * 60)
+                for i in range(n + 1):
+                    pg.evaluate('(t) => window.__vt.step(t)', i * 1000 / 60)
+                    pg.screenshot(path=os.path.join(OUT, f'f{i:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844})
+                st = pg.evaluate("() => { const hb = document.querySelector('#fxOv .hb'), ov = hb && hb.parentNode; return hb ? [hb.dataset.bcp || '', hb.classList.contains('bcpic'), !!(ov && ov.classList.contains('bcpdone'))] : null; }")
+                pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
+                rr = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), OUT, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
+                out = rr.stdout.strip().split('\n'); worst = out[-1] if out else ''; bad = out[0] if out else ''
+                ok = rr.returncode == 0 and '窓 0個' in bad and st and (st[1] and st[2] if os.path.isdir(BCP_DIR) else not st[1])
+                print(('  ✅ ' if ok else '  ❌ ') + f'絵の ボード（{kind}・{iid} {n_}・{st}）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}　{worst}')
+                if not ok: fails.append(f'pic {kind}: ' + (rr.stderr[-300:] if rr.returncode else bad))
         if errs: print('  ⚠️ ページのエラー:', errs[:5]); fails.append('pageerror')
         b.close()
 finally:

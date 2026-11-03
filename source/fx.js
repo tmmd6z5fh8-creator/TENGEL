@@ -213,6 +213,7 @@
     try { if (navigator.audioSession && 'type' in navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* 使えないiOS */ }
     want(PUSH_SFX); SX.fetched = true;
     try { Object.keys(A.assets).forEach(k => { const im = new Image(); im.src = A.assets[k]; }); } catch (e) { /* なし */ }
+    try { if (window.TengelBoard && window.TengelBoard.prime) window.TengelBoard.prime(); } catch (e) { /* なし */ }   // 第4.121版：つぎの 結果で 出す 絵の ボード（的中・ハズレ）の 絵を 先に 読む
     if (!S.sound) return false;
     const c = actx(); if (!c) return false;
     if (!SX.ok) { SX.ok = 1; try { const s0 = c.createBufferSource(); s0.buffer = c.createBuffer(1, 1, 22050); s0.connect(c.destination); s0.start(0); } catch (e) { /* なし */ } }
@@ -609,7 +610,7 @@
     try { if (WL() && WL().lockZoom) WL().lockZoom(false); } catch (e) { /* なし */ }
     if (!silent) emit('close', c.kind);
   }
-  // 結果ボードカスタムを ためす（設定 › 結果ボードカスタム：PUSH なしで すぐ 結果の 画面。o.item＝つける もの・o.streak＝出世馬の 連続の 数）
+  // 結果ボードカスタムを ためす（設定 › 結果ボードカスタム：PUSH なしで すぐ 結果の 画面。o.item＝つける もの・o.streak＝絵の ボードの 段を 決める 連続の 数：第4.121版）
   function preview(spec, kind, o) {
     if (!spec) return null;
     const d = decide(spec), k = shown(kind || d.kind, false);

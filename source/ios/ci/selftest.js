@@ -240,6 +240,16 @@
       res.carryMiss = hb ? { bcx: hb.dataset.bcx || '', kind: (F.current() || {}).kind || null } : null;
       await mark('board-carry-miss');
       F.close(); await sleep(200);
+      // 第4.121版：1〜14 の 絵の ボード（まさちゃんの 絵）。CI には 絵が ない ので、読めない とき いつもの ボードに もどる（.bcpic なし・ボードは .hb の 中）ことを 見る
+      F.preview(spec, 'hit', { item: 'ring', streak: 2 }); await sleep(2600);
+      hb = document.querySelector('#fxOv .hb');
+      res.pic = hb ? { bcx: hb.dataset.bcx || '', bcp: hb.dataset.bcp || '', pic: hb.classList.contains('bcpic'), rbInHb: !!(hb.querySelector('.rb') && hb.querySelector('.rb').parentNode === hb),
+        stage: T.stage ? T.stage('ring', 2) : null, n: Object.keys((window.__BCP && window.__BCP.items) || {}).length } : null;
+      F.close(); await sleep(200);
+      F.preview(miss, 'miss', { item: 'rain', streak: 9 }); await sleep(2000);
+      hb = document.querySelector('#fxOv .hb');
+      res.picMiss = hb ? { bcx: hb.dataset.bcx || '', pic: hb.classList.contains('bcpic'), stage: T.stage ? T.stage('rain', 9) : null } : null;
+      F.close(); await sleep(200);
       return res;
     });
     // 第4弾：着せ替え。テーマを 切り替えて（解放の 確認は test_native）判定タブの 上の絵・色・字・テーマの 的中PUSH と ボードを 確かめる。

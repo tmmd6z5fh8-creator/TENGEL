@@ -1,7 +1,7 @@
 # kisekae/bcp：結果ボードカスタム（絵の ボード）の 道具
 
 まさちゃんの デザインの 絵（結果ボードの まわりの 絵）を、アプリの 本物の 結果ボードと 合わせる ための 道具。
-いまは 見本（iPhone の 画面の 大きさの 写真）を 作る ところまで（第4.119版の あと・2026/11/03〜）。アプリには まだ 入れて いない。
+見本（iPhone の 画面の 大きさの 写真）を 作って（第4.119版の あと・2026/11/03〜）、**第4.121版（2026/11/04）で アプリに 入れた**（下の「アプリに 入れる」）。
 
 - まさちゃんの 絵は **リポジトリに 入れない**（公開の リポジトリ）。作業フォルダ（例：`/home/claude/work/bcpic/<デザイン>/`）に `src.png`（横 1048px に そろえた 絵）と `cfg.json` を 置く。
 - `designs/<name>.json` は デザインごとの 設定の 写し（作業フォルダの `cfg.json` と 同じ）。
@@ -20,6 +20,24 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 ```
 
 `bcp_shot.py` は テスト版（`build_pwa.py`・`TARGET=app TENGEL_TEST=1`）を `<SRV_ROOT>/TEST/` に 作って、`window.__NATIVE` を `true` に して おく。
+
+## アプリに 入れる（第4.121版）
+
+- **番号と 段**：`bcp_app.py` の `ITEMS`（`points.js` の `BOARD_ITEMS` の 1〜14 と 同じ id・when）。段＝[連続の 数, デザイン]：その 数から その 絵（いちばん 上の 段は その 上も）。
+  的中①〜⑧（ring・toast・race・snap・seal・cup・hoist・bloom）＝1・2・3・4連勝〜／的中⑨ 出世馬（climb）＝1・2・3・4・8・16・24連勝〜／
+  ハズレ①〜⑤（rain・next・cover・wait・pen）＝続けて ハズレた 数 1・2・3・4回目〜（`points_ui.js` の `board.mstreak`：ハズレで +1・的中で 0）。
+- **置き方の データ**：`build_pwa.py`（`TARGET=app`）が `bcp_app.bundle_js()`（`window.__BCP`：デザインごとの 板の 四すみ `q`（舞台の pt）・ボードの 高さ `hp`・前の 絵 `fg`・見出しの 色 `ts`・見出しなし `nt`・字と 行の 場所 `L`・「とじる」の 色 `cl`）を index.html に 入れる。
+  `designs/<name>.json` から 作る（`bcp_bg.py` と 同じ 計算。`python3 kisekae/bcp/bcp_app.py` で 作業フォルダの `geom.json` と 同じかを 確かめる）。
+- **絵**：`bcp_<デザイン>.webp`（背景 1170×2532）・`bcp_<デザイン>_fg.webp`（ボードの 前）・`bcp_t_<id>.webp`（設定の タイルの 見本 360×480）＝ぜんぶで 108こ（約 17MB）。
+  **リポジトリに 入れない**（まさちゃんの 絵）。手元の `ios/bcp_assets/`（`.gitignore`）か `BCP_ASSETS=<フォルダ>` から `build_ios.py` が Resources に 入れる。ない とき（CI）は いつもの ボードで 出る。
+  - 背景・前の 絵：`bcp_bg.py` が `<SRV>/bcp_<name>.webp` に 書いた もの を `ios/bcp_assets/` へ コピー（`python3 kisekae/bcp/bcp_app.py ios/bcp_assets` で そろって いるか 確かめる）。
+  - タイルの 見本：`python3 kisekae/bcp/bcp_thumbs.py <アプリの 画面の フォルダ> ios/bcp_assets [シート.png]`（いちばん はじめの 段の 結果の 画面を 2倍で 写して たて 3:4 を 切り出す。
+    アプリの 画面の フォルダは `TARGET=app python3 build_pwa.py <フォルダ>`・`window.__NATIVE = true;` に かえて 絵を 置いた もの）。
+- **動かす 所**：`bcx.js` の「絵の ボード」。`.hb`（ボードの 入れもの）の 中に 舞台 ぜんぶの 入れもの `.bcpw`（絵 → ボード `.rb` → 前の 絵）。`.rb` は 板の 四すみへ `matrix3d`（4点の 射影を その場で 解く）。
+  字と 行は 見本（`bcp_inj.py`）と 同じ 置き方・同じ 色（テーマの 色・ふち・飾り・字は 消す）。その 演出の ボードが 出る 時（`.hb` の 登場：時刻は そのまま・動きは 消す）に 絵ごと ふわっと（デカ的中から 上は 少し 明るく）→
+  出おわったら ほかの 絵（光・紙ふぶき・動画の コマ）を かくす。設定の「▶ 見る」は 押す たびに つぎの 段。絵が 読めない → いつもの ボード。
+- **テスト**：`test_points.js`（番号・id・when）・`test_native.py`（設定の タイル・「▶ 見る」の 段・解放の 順・連続の 数・段の 決め方・読めない とき：ハズレ⑤の 絵だけ わざと 置かない）・
+  `test_iphone_only.py`（データと 絵の 数）・`test_bcx_flash.py pic`（点めつ）・CI の `selftest.js`（絵なしで いつもの ボードに もどる）。
 
 ## cfg.json
 

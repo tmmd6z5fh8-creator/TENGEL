@@ -1,4 +1,4 @@
-// ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28／第4.113版で 16こ・的中と ハズレの 2つ／第4.120版で 15こ）=====
+// ===== 結果ボードカスタム（App Store版・第4.91版・まさちゃんの 指定 2026-10-28／第4.113版で 16こ・的中と ハズレの 2つ／第4.120版で 15こ／第4.121版で 1〜14 に まさちゃんの 絵の ボード）=====
 //   買い切り 1,500円（第4.114版：2,200円 → 1,500円・まさちゃんの 指定。App内課金の 非消耗型 jp.tengel.app.boardcustom。壁紙パックと セットの お得パック jp.tengel.app.bundle1 2,200円 も ある）。買った あとに 読み込んだ レースの 数で 16こを 番号の 順に 解放（points.js の BOARD：6レースごとに 1つ）。
 //   第4.113版（まさちゃん 2026/11/01 01:13「結果ボードカスタム、最後のボードを持つ馬以外一度全部消して！全部で16個(ボードを持つ馬を含む)にする！
 //     15個は、デザインは仕組みはできているから準備ができたら教えて！送っていく！」）：前の 1〜21（ボードを一周〜出世馬・幻の 馬）は 消した。
@@ -71,7 +71,7 @@
   const CSS_ALL = CSS.split('.fxs .hb').join(':is(.fxs,.bcmini) .hb');
   function css() {
     if ($('#bcxCss')) return;
-    const st = document.createElement('style'); st.id = 'bcxCss'; st.textContent = CSS_ALL + '\n' + UI_CSS; document.head.appendChild(st);
+    const st = document.createElement('style'); st.id = 'bcxCss'; st.textContent = CSS_ALL + '\n' + UI_CSS + '\n' + PIC_CSS; document.head.appendChild(st);
   }
   function dynCss(txt) {
     let st = $('#bcxDyn'); if (!st) { st = document.createElement('style'); st.id = 'bcxDyn'; document.head.appendChild(st); }
@@ -89,7 +89,7 @@
   //   B.<id>(o)：o＝{ H（ボードの 高さ）, W（350）, sp（ボードの 下の すき間）, st（動かさない）, miss（ハズレ）, big（デカ的中から 上）, kind（結果の 種類）, dark（暗い ボード）,
   //     title（見出しの 字の 場所：ボードの 左上からの px）, redHd（見出しが 赤）, streak（連続的中の 数）, u（毎回 ちがう 番号：CSS の 名前に）}
   //   かえす もの：{ html（.hb に 入れる 部品）, css（その 時だけの CSS）, enter（登場の しかた：.hb に .bce-<名前>）, start（ボードが 出はじめた とき）, go（出おわった とき）,
-  //     thumb（設定の 小さな 見本だけの { html, style }：動きの しるし など）}。1〜15（じゅんび中）は まだ ない
+  //     thumb（設定の 小さな 見本だけの { html, style }：動きの しるし など）}。1〜14 は 絵の ボード（第4.121版：下の「絵の ボード」。B には しるしだけ）
   const B = {};
   // 15 ボードを持つ馬（第4.120版から 15 番・第4.108版・まさちゃんの 指定）：いちばん はじめの 頃の 馬。うしろから ボードを かかえて 下から 出てくる（着地で 少し はずむ）
   //   → 頭と首・後ろ足が ぷるぷる（重い ボードを 持って ふんばる：別々の 速さ）・しっぽを ときどき ふる・まばたき。前足（ボードの 上の ふちに かかる 短い 足と ひづめ）は 動かさない
@@ -181,6 +181,189 @@
       + '@keyframes bcHbP{0%{opacity:0;transform:translate(0,0) scale(.4)}20%{opacity:.95}100%{opacity:0;transform:translate(-16px,5px) scale(1.35)}}';
   }
 
+  // ---------- 1〜14 絵の ボード（第4.121版・まさちゃんの デザイン 14こ：的中①〜⑨・ハズレ①〜⑤）----------
+  //   window.__BCP（kisekae/bcp/bcp_app.py）＝{ items: { id: { k（hit・miss）, st: [[連続の 数, デザイン], …] } }, d: { デザイン: { hp（ボードの 高さ）, q（板の 四すみ：舞台の pt）,
+  //     fg（ボードの 前の 絵が ある）, ts（見出しの 色：''＝金・silver・copper・rainbow）, nt（見出しを 出さない：絵に 字が ある）, L（字と 行の 場所：kisekae/bcp の layout）, cl（「とじる」の 色） } } }
+  //   段：的中は 連続的中の 数（spec.streak：1〜4連勝〜・出世馬は 1・2・3・4・8・16・24連勝〜）、ハズレは 続けて ハズレた 数（1〜4回目〜）。その 数から その 絵
+  //   絵：bcp_<デザイン>.webp（舞台 390×844 の 3倍・ボードの うしろ）と bcp_<デザイン>_fg.webp（ボードの 前の キャラクターなど・すき通し）。読めない とき（CI）は いつもの ボード
+  //   形：.hb（ボードの 入れもの）の 中に 舞台 ぜんぶの 入れもの .bcpw（絵 → ボード .rb → 前の 絵）。.rb は 板の 四すみに 合わせて matrix3d（ボードの 面 350×hp → 板）。
+  //   字と 行は 見本（kisekae/bcp/bcp_inj.py）と 同じ 置き方・同じ 色（紺と 金）。ボードの 中の 飾り（テーマの 飾りなど）は 出さない（まさちゃん 21:49）
+  //   出る 時：その 演出の ボードが 出る 時（.hb の 登場の アニメーション：時刻は そのまま・動きは 消す）に 絵ごと ふわっと（.bcpon）→ 出おわったら ほかの 絵（光・紙ふぶき・動画の コマ）を かくす（.bcpdone）
+  const PIC = window.__BCP && window.__BCP.items && window.__BCP.d ? window.__BCP : null;
+  if (PIC) Object.keys(PIC.items).forEach(id => { B[id] = () => ({ pic: 1 }); });
+  const isPic = id => !!(PIC && PIC.items[id]);
+  // 連続の 数 n → 段（[数, デザイン]）
+  function picStage(id, n) { const P = PIC && PIC.items[id]; if (!P) return null; let s = P.st[0]; P.st.forEach(x => { if (n >= x[0]) s = x; }); return s; }
+  // 段の 名前（「▶ 見る」：1連勝・2連勝…・いちばん 上は「4連勝〜」／ハズレは 1回目〜）
+  function picStageName(id, i) { const P = PIC.items[id], s = P.st[i], last = i === P.st.length - 1; return s[0] + (P.k === 'miss' ? '回目' : '連勝') + (last ? '〜' : ''); }
+  const PIC_CSS = [
+    '#fxOv .ov.bcpic > .hb.bcpic{z-index:50!important;transform:none!important;filter:none!important}',
+    '#fxOv .ov.bcpic > .close{z-index:52!important}',
+    '#fxOv .hb.bcpic .bcpw{position:absolute;width:390px;height:844px;pointer-events:none;opacity:0}',
+    '#fxOv .hb.bcpic.bcpon .bcpw{animation:bcpIn .55s cubic-bezier(.2,.8,.3,1) both}#fxOv .hb.bcpic.bcpon.bcpbig .bcpw{animation-name:bcpInB}',
+    '#fxOv .hb.bcpic.bcst .bcpw{opacity:1;animation:none!important}',
+    '@keyframes bcpIn{0%{opacity:0;transform:scale(1.045)}100%{opacity:1;transform:none}}',
+    '@keyframes bcpInB{0%{opacity:0;transform:scale(1.07);filter:brightness(1.9)}55%{opacity:1;filter:brightness(1.25)}100%{opacity:1;transform:none;filter:none}}',
+    '#fxOv .hb.bcpic .bcpw > img{position:absolute;left:0;top:0;width:390px;height:844px;-webkit-user-drag:none;user-select:none}',
+    // 出おわったら ほかの 絵を かくす（絵の うしろ：光・紙ふぶき・PUSH・動画の さいごの コマ など）
+    '#fxOv .ov.bcpdone > :not(.hb):not(.close):not(.sr),#fxOv .fxs.bcpdone > video,#fxOv .fxs.bcpdone > .ov:not(.bcpic){visibility:hidden!important}',
+    // ボード（見本 kisekae/bcp/bcp_inj.py と 同じ 形。テーマの ボードの 色・ふち・飾りは 消す）
+    '#fxOv .rb.bcp{position:absolute!important;left:0!important;top:0!important;width:350px!important;padding:0!important;margin:0!important;background:transparent!important;box-shadow:none!important;border:0!important;'
+      + 'border-radius:0!important;transform-origin:0 0!important;animation:none!important;outline:0!important;box-sizing:border-box;opacity:1!important}',
+    '#fxOv .rb.bcp::before,#fxOv .rb.bcp::after,#fxOv .rb.bcp .hd::before,#fxOv .rb.bcp .hd::after,#fxOv .rb.bcp .card::before,#fxOv .rb.bcp .card::after,#fxOv .rb.bcp .orn{display:none!important}',
+    '#fxOv .rb.bcp .hd{position:static!important;background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important;margin:0!important;height:0!important;min-height:0!important}',
+    '#fxOv .rb.bcp .bh{position:absolute!important;white-space:nowrap;line-height:1.08;letter-spacing:1px;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;'
+      + 'background:linear-gradient(180deg,#FFFCEB 0%,#FFE98A 26%,#FFCB3D 50%,#EE9F1E 74%,#C9780F 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;-webkit-text-fill-color:transparent!important;'
+      + '-webkit-text-stroke:.9px #7A3E00;text-shadow:none!important;filter:drop-shadow(0 1.6px 0 #5A2E00) drop-shadow(0 0 9px rgba(255,196,70,.62))}',
+    '#fxOv .rb.bcp .bh .bz,#fxOv .rb.bcp .bh .bx3{color:transparent!important;-webkit-text-fill-color:transparent!important}',
+    '#fxOv .rb.bcp.bcps-nt .bh{visibility:hidden!important}',
+    '#fxOv .rb.bcp.bcps-silver .bh{background:linear-gradient(180deg,#FFFFFF 0%,#EEF3FB 45%,#C9D6EC 75%,#9FB2D6 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-stroke:.7px #3E4C70;filter:drop-shadow(0 1.2px 0 #1E2A48) drop-shadow(0 0 7px rgba(150,190,255,.55))}',
+    '#fxOv .rb.bcp.bcps-copper .bh{background:linear-gradient(180deg,#FFF3E8 0%,#FFCFA8 26%,#F2914F 52%,#C55E2A 76%,#8C3C17 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-stroke:.9px #5A2008;filter:drop-shadow(0 1.6px 0 #3E1606) drop-shadow(0 0 9px rgba(255,140,70,.55))}',
+    '#fxOv .rb.bcp.bcps-rainbow .bh{background:linear-gradient(180deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,0) 46%),linear-gradient(90deg,#FF5A7A 0%,#FFB347 18%,#FFE45C 34%,#6EE07A 50%,#4CC3FF 66%,#8C7CFF 82%,#FF7AD9 100%)!important;'
+      + '-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-stroke:.8px #3A2A6A;filter:drop-shadow(0 1.4px 0 #221848) drop-shadow(0 0 8px rgba(255,255,255,.45))}',
+    '#fxOv .rb.bcp .bh.bcp1x{letter-spacing:0}#fxOv .rb.bcp .bh.bcp1x .bzx{margin-left:-.2em}',
+    '#fxOv .rb.bcp .bsub{position:absolute!important;margin:0!important;text-align:center;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.55);white-space:nowrap}',
+    '#fxOv .rb.bcp .zrib{position:absolute!important;display:flex!important;width:max-content!important;max-width:none!important;margin:0!important;animation:none!important}',
+    '#fxOv .rb.bcp .card{position:absolute!important;background:transparent!important;border:0!important;box-shadow:none!important;outline:0!important;border-radius:0!important;padding:0!important;margin:0!important;height:auto!important}',
+    // 字は いつもの ボードの 字（テーマの 字に しない：絵の 見出しと 同じ 太い 字・見本と 同じ 形）
+    '#fxOv .rb.bcp .bh,#fxOv .rb.bcp .bh *{font-family:"Dela Gothic One","BIZ UDPGothic",sans-serif!important;font-weight:400!important}',
+    '#fxOv .rb.bcp .bsub,#fxOv .rb.bcp .zrib,#fxOv .rb.bcp .zrib *,#fxOv .rb.bcp .card,#fxOv .rb.bcp .card *{font-family:"BIZ UDPGothic",sans-serif!important}',
+    '#fxOv .rb.bcp .brows li{min-height:0!important;padding:0 8px!important;background:rgba(40,54,100,.58)!important;border:1px solid rgba(150,172,230,.30)!important;border-radius:11px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;box-sizing:border-box}',
+    '#fxOv .rb.bcp .bt{background:rgba(12,20,48,.88)!important;border:1px solid rgba(172,192,240,.48)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;height:21px!important}',
+    '#fxOv .rb.bcp .rs.miss,#fxOv .rb.bcp .rs.void,#fxOv .rb.bcp .rs.ref{background:rgba(8,14,36,.92)!important;border:1px solid rgba(160,182,232,.36)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;height:21px!important}',
+    '#fxOv .rb.bcp .rs.hit{background:linear-gradient(180deg,#FFEDB0,#F7C24C)!important;border:0!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 1px rgba(128,72,0,.85),0 0 2px rgba(128,72,0,.5);height:21px!important}',
+    '#fxOv .rb.bcp .ar{color:#B8C8F0!important;-webkit-text-fill-color:#B8C8F0!important}#fxOv .rb.bcp .more{color:#DDE6FF!important;-webkit-text-fill-color:#DDE6FF!important}',
+    '#fxOv .rb.bcp .brows li.no{opacity:1!important}'
+  ].join('\n');
+  // 4点 → 4点 の 射影（ボードの 面 → 板）。h＝[a,b,c,d,e,f,g,h]（[[a,b,c],[d,e,f],[g,h,1]]）
+  function homog(src, dst) {
+    const A = [], R = [];
+    for (let i = 0; i < 4; i++) {
+      const x = src[i][0], y = src[i][1], u = dst[i][0], v = dst[i][1];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); R.push(u);
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); R.push(v);
+    }
+    for (let c = 0; c < 8; c++) {
+      let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      if (p !== c) { const t = A[c]; A[c] = A[p]; A[p] = t; const u = R[c]; R[c] = R[p]; R[p] = u; }
+      for (let r = 0; r < 8; r++) { if (r === c) continue; const k = A[r][c] / A[c][c]; if (!k) continue; for (let j = c; j < 8; j++) A[r][j] -= k * A[c][j]; R[r] -= k * R[c]; }
+    }
+    return R.map((v, i) => v / A[i][i]);
+  }
+  const m3d = h => 'matrix3d(' + [h[0], h[3], 0, h[6], h[1], h[4], 0, h[7], 0, 0, 1, 0, h[2], h[5], 0, 1].map(v => +v.toFixed(8)).join(',') + ')';
+  // 字と 行の 場所（kisekae/bcp/bcp_inj.py の 見本と 同じ 決め方。字の 幅を 測る ので 字が 読めて から もう一度 よぶ）
+  function picLayout(rb, D) {
+    const L = D.L || {}, bh = $('.bh', rb), sub = $('.bsub', rb), rib = $('.zrib', rb), card = $('.card', rb), br = $('.brows', rb);
+    if (!bh || !card || !br || !L.normal) return;
+    const lis = $$('.brows > li', rb), n = lis.length, px = v => (+v).toFixed(2) + 'px';
+    if (/[^！]！$/.test(bh.textContent)) bh.classList.add('bcp1x');      // 「…的中！」：「！」を 字に よせる（絵の 見出しと 同じ はば）
+    const M = Object.assign({}, L.normal, rib ? (L.rib || {}) : (n > 3 ? (L.many || {}) : {}));
+    // 見出し：場所の まん中に・はばに おさまらない ときは 字を 小さく
+    bh.style.fontSize = px(M.title_px); bh.style.top = px(M.title_top);
+    const tx0 = M.text_x[0], tx1 = M.text_x[1], room = tx1 - tx0;
+    let w = bh.offsetWidth;
+    if (w > room) { const fs = M.title_px * room / w; bh.style.fontSize = px(fs); bh.style.top = px(M.title_top + (M.title_px - fs) * 1.08 / 2); w = bh.offsetWidth; }
+    const cxp = M.title_cx != null ? M.title_cx : (tx0 + tx1) / 2, c2 = Math.min(Math.max(cxp, tx0 + w / 2), tx1 - w / 2);
+    bh.style.left = px(c2 - w / 2);
+    if (sub) {   // 小見出しの はば（見出しと ちがう とき：ハンコの 横 など）
+      const sx0 = M.sub_x ? M.sub_x[0] : tx0, sx1 = M.sub_x ? M.sub_x[1] : tx1, sc = M.sub_cx != null ? M.sub_cx : c2, sw = 2 * Math.min(sc - sx0, sx1 - sc);
+      sub.style.fontSize = px(M.sub_px); sub.style.top = px(M.sub_top); sub.style.left = px(sc - sw / 2); sub.style.width = px(sw);
+    }
+    let rowsTop = M.rows_top;
+    if (rib) {   // 帯（ど的中〜）：見本の zoom の かわりに 縮める（WebKit でも 同じ 大きさ）
+      const z = M.rib_zoom || .8;
+      rib.style.transformOrigin = '0 0'; rib.style.transform = 'scale(' + z + ')';
+      const rw = rib.offsetWidth * z, rh = rib.offsetHeight * z, rcx = M.rib_in === 'rows' ? (M.rows_x[0] + M.rows_x[1]) / 2 : c2;
+      rib.style.left = px(rcx - rw / 2); rib.style.top = px(M.rib_top);
+      if (M.rib_in === 'rows') rowsTop = M.rib_top + rh + 6;
+    }
+    card.style.left = px(M.rows_x[0]); card.style.width = px(M.rows_x[1] - M.rows_x[0]); card.style.top = px(rowsTop);
+    br.style.gap = px(M.row_gap); lis.forEach(li => { li.style.height = px(M.row_h); });
+    // 行：rows_zoom（字を 大きく）・板に おさまらない ときは 小さく（はばは そのまま）
+    const avail = M.rows_bottom - rowsTop, z = M.rows_zoom || 1;
+    br.style.width = (100 / z).toFixed(3) + '%';
+    let h = br.scrollHeight, k = Math.min(z, avail / h);
+    br.style.width = (100 / k).toFixed(3) + '%'; h = br.scrollHeight; k = Math.min(z, avail / h);
+    br.style.width = (100 / k).toFixed(3) + '%';
+    if (Math.abs(k - 1) > .002) { br.style.transformOrigin = '0 0'; br.style.transform = 'scale(' + k.toFixed(4) + ')'; } else br.style.transform = '';
+  }
+  const HELP = /^fx[a-z]*H$/;   // 待って いる 間 かくす だけの アニメーション（fxfxH・fxpmH・fxzpH）：ボードの 登場では ない
+  // ボード（.hb）が 出はじめた（onStart）・出おわった（onGo）。知らせが こない とき（もう おわって いる・アニメーションが ない）は 見えて いて 動いて いなければ
+  function whenBoard(hb, st, onStart, onGo) {
+    let started = false, gone = false;
+    const start = () => { if (started) return; started = true; onStart(); };
+    const go = () => { if (gone || !hb.isConnected) return; gone = true; start(); onGo(); };
+    if (st) { start(); go(); return; }
+    hb.addEventListener('animationstart', e => { if (e.target === hb && !HELP.test(e.animationName)) start(); });
+    hb.addEventListener('animationend', e => { if (e.target === hb && !HELP.test(e.animationName)) go(); });
+    const poll = () => {
+      if (gone || !hb.isConnected) return;
+      const an = hb.getAnimations ? hb.getAnimations().filter(a => !HELP.test(a.animationName || '')) : [];
+      const cs = getComputedStyle(hb), vis = cs.visibility !== 'hidden' && +cs.opacity > .9;
+      if (vis && an.every(a => a.playState === 'finished' || a.playState === 'idle')) { go(); return; }
+      setTimeout(poll, 300);
+    };
+    setTimeout(poll, 120);
+  }
+  function picDecorate(stage, hb, rb, it, info, kind) {
+    const raw = info.streak != null ? info.streak : (info.spec && info.spec.streak != null ? info.spec.streak : 0);
+    const sg = picStage(it.id, Math.max(1, Math.floor(+raw || 0))), name = sg && sg[1], D = name && PIC.d[name];
+    if (!D) return null;
+    css();
+    const ov = hb.parentNode, st = !!(info.quiet || info.calm), orig = rb.cloneNode(true);
+    const L0 = hb.offsetLeft, T0 = hb.offsetTop, q = D.q;
+    const wrap = document.createElement('div'); wrap.className = 'bcpw';
+    wrap.style.left = -L0 + 'px'; wrap.style.top = -T0 + 'px';
+    wrap.style.transformOrigin = `${f((q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4)}px ${f((q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4)}px`;   // 板の まん中から
+    const img = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = src; return im; };
+    const bg = img('bcpbg', `bcp_${name}.webp`), fg = D.fg ? img('bcpfg', `bcp_${name}_fg.webp`) : null;
+    hb.insertBefore(wrap, rb); wrap.appendChild(bg); wrap.appendChild(rb); if (fg) wrap.appendChild(fg);
+    hb.dataset.bcx = it.id; hb.dataset.bcp = name;
+    hb.classList.add('bcpic', 'bcx-' + it.id); if (st) hb.classList.add('bcst'); if (BIG[kind]) hb.classList.add('bcpbig');
+    if (ov && ov.classList) ov.classList.add('bcpic');
+    rb.classList.add('bcp'); if (D.ts) rb.classList.add('bcps-' + D.ts); if (D.nt) rb.classList.add('bcps-nt');
+    rb.style.setProperty('height', D.hp + 'px', 'important');
+    rb.style.setProperty('transform', m3d(homog([[0, 0], [350, 0], [350, D.hp], [0, D.hp]], q)), 'important');
+    const cl = D.cl;
+    dynCss(cl ? `#fxOv .ov.bcpic > .close{border-color:${cl[0]}!important;background:${cl[1]}!important;box-shadow:${cl[2]}!important;${cl[3] || ''}}` : '');
+    const lay = () => { try { if (rb.isConnected) picLayout(rb, D); } catch (e) { /* なし */ } };
+    lay();
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(lay); } catch (e) { /* なし */ }
+    try { if (bg.decode) bg.decode().catch(() => {}); } catch (e) { /* なし */ }
+    // 絵が 読めない（CI など）→ いつもの ボードに もどす
+    let undone = false;
+    bg.addEventListener('error', () => {
+      if (undone || !wrap.isConnected) return; undone = true;
+      wrap.replaceWith(orig);
+      hb.classList.remove('bcpic', 'bcst', 'bcpbig', 'bcpon'); if (ov && ov.classList) ov.classList.remove('bcpic', 'bcpdone'); stage.classList.remove('bcpdone');
+      dynCss(''); delete hb.dataset.bcp;
+    });
+    if (fg) fg.addEventListener('error', () => { if (fg.parentNode) fg.parentNode.removeChild(fg); });
+    // 出る 時：ボードの 登場が 始まったら 絵ごと 出す・出おわって（絵の ふわっと も おわって）から ほかの 絵を かくす
+    let wDone = st, hDone = false;
+    const done = () => { if (undone || !wDone || !hDone || !hb.isConnected) return; if (ov && ov.classList) ov.classList.add('bcpdone'); stage.classList.add('bcpdone'); };
+    const wEnd = () => { if (wDone) return; wDone = true; done(); };
+    wrap.addEventListener('animationend', e => { if (e.target === wrap) wEnd(); });
+    whenBoard(hb, false, () => { lay(); hb.classList.add('bcpon'); if (!st) setTimeout(wEnd, 1500); }, () => { hDone = true; done(); });   // 1.5秒：知らせが こない とき
+    return it.id;
+  }
+  // つぎの 結果で 出す 絵（的中＝連続的中＋1・ハズレ＝続けて ハズレた 数＋1）を 先に 読む（fx.js の prime：「結果を保存」を 押した とき）
+  let warm = [];
+  function prime() {
+    try {
+      const w = WL(); if (!PIC || !w || !w.board) return;
+      const i = w.board.info();
+      [['hit', i.streak], ['miss', i.mstreak]].forEach(([k, s]) => {
+        const id = w.board.active(k); if (!isPic(id)) return;
+        const sg = picStage(id, (+s || 0) + 1), D = sg && PIC.d[sg[1]]; if (!D) return;
+        [`bcp_${sg[1]}.webp`].concat(D.fg ? [`bcp_${sg[1]}_fg.webp`] : []).forEach(src => {
+          if (warm.some(x => x.s === src)) return;
+          const im = new Image(); im.src = src; warm.push({ s: src, im }); if (warm.length > 4) warm = warm.slice(-4);
+        });
+      });
+    } catch (e) { /* なし */ }
+  }
+
   // ---------- 音（その場で 作る） ----------
   function ctx() { try { const F = FX(); return F && F.audio ? F.audio() : null; } catch (e) { return null; } }
   function noiseBuf(c, sec) { const n = Math.floor(c.sampleRate * sec), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; l = (l + .02 * w) / 1.02; d[i] = w * .6 + l * 3.2; } return b; }
@@ -217,6 +400,7 @@
       const id = info.item || selected(kind);
       const it = BY[id]; if (!it || !it.ready || !B[it.id]) return null;
       if ((it.when === 'miss' && !miss) || (it.when === 'hit' && miss) || (it.when === 'big' && !BIG[kind])) return null;
+      if (isPic(it.id)) return picDecorate(stage, hb, rb, it, info, kind);   // 第4.121版：まさちゃんの 絵の ボード
       css();
       const st = !!(info.quiet || info.calm), H = rb.offsetHeight || 220;
       const sp = Math.max(40, CLOSE_TOP - HB_TOP - H - 10);
@@ -237,25 +421,8 @@
       if (r.html) hb.insertAdjacentHTML('beforeend', r.html);
       dynCss(r.css || '');
       if (r.enter && !st) hb.classList.add('bce-' + r.enter);
-      let started = false, gone = false;
-      const go = () => {
-        if (gone || !hb.isConnected) return; gone = true;
-        hb.classList.remove('bcin'); hb.classList.add('bcgo');
-        if (r.go) r.go(hb);
-      };
-      const start = () => { if (started) return; started = true; hb.classList.add('bcin'); if (r.start && !st) r.start(); };
-      if (st) { start(); go(); return it.id; }
-      hb.addEventListener('animationstart', e => { if (e.target === hb && e.animationName !== 'fxfxH') start(); });
-      hb.addEventListener('animationend', e => { if (e.target === hb && e.animationName !== 'fxfxH') { start(); go(); } });
-      // 知らせが こない とき（もう おわって いる・アニメーションが ない）：ボードが 見えて いて 動いて いなければ 始める
-      const poll = () => {
-        if (gone || !hb.isConnected) return;
-        const an = hb.getAnimations ? hb.getAnimations().filter(a => a.animationName !== 'fxfxH') : [];
-        const vis = getComputedStyle(hb).visibility !== 'hidden' && +getComputedStyle(hb).opacity > .9;
-        if (vis && an.every(a => a.playState === 'finished' || a.playState === 'idle')) { start(); go(); return; }
-        setTimeout(poll, 300);
-      };
-      setTimeout(poll, 120);
+      // 第4.121版：ボードが 出る 時の 知らせは whenBoard（待つ 間 かくす だけの fxpmH・fxzpH も ボードの 登場と まちがえない）
+      whenBoard(hb, st, () => { hb.classList.add('bcin'); if (r.start && !st) r.start(); }, () => { hb.classList.remove('bcin'); hb.classList.add('bcgo'); if (r.go) r.go(hb); });
       return it.id;
     } catch (e) { return null; }
   }
@@ -298,7 +465,11 @@
     '#setBoard .bcmini .bcfake.miss .fh{color:#FFFFFF}',
     // じゅんび中の 見本：うすい ボードの 上に「じゅんび中」
     '#setBoard .bcmini.prep .bcmi{opacity:.32}',
-    '#setBoard .bcmini .bcprep{position:absolute;left:50%;top:50%;z-index:6;transform:translate(-50%,-50%);padding:5px 12px 6px;border-radius:999px;white-space:nowrap;background:rgba(0,0,0,.5);color:#FFFFFF;font:400 15px/1.2 "Dela Gothic One","BIZ UDPGothic",sans-serif;letter-spacing:.04em}'
+    '#setBoard .bcmini .bcprep{position:absolute;left:50%;top:50%;z-index:6;transform:translate(-50%,-50%);padding:5px 12px 6px;border-radius:999px;white-space:nowrap;background:rgba(0,0,0,.5);color:#FFFFFF;font:400 15px/1.2 "Dela Gothic One","BIZ UDPGothic",sans-serif;letter-spacing:.04em}',
+    // 第4.121版：絵の ボードの 見本（bcp_t_<id>.webp：いちばん はじめの 段の 結果の 画面・たて 3:4）。読めない とき（CI）は 名前だけ
+    '#setBoard .bcmini.pic{aspect-ratio:3/4}#setBoard .bcmini.pic .bcpth{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}',
+    '#setBoard .bcmini.pic .bcpno{display:none;position:absolute;inset:0;align-items:center;justify-content:center;padding:10px;text-align:center;color:#FFE9A8;font:400 15px/1.35 "Dela Gothic One","BIZ UDPGothic",sans-serif}',
+    '#setBoard .bcmini.pic.bad .bcpth{display:none}#setBoard .bcmini.pic.bad .bcpno{display:flex}'
   ].join('\n');
   const SEEN_KEY = 'tengel.bcseen2';   // 第4.113版：もう 見た 飾りの id（,で つなぐ）。NEW の しるし（あとから 入った 飾りにも つく）
   let uiSeen = null;
@@ -308,10 +479,12 @@
   const fits = (it, k) => !!(it && it.ready && B[it.id] && PT.boardFits(it, k));
   const kindOf = it => (it.when === 'miss' ? 'miss' : it.when === 'big' ? 'big' : 'hit');
   const both = it => fits(it, 'hit') && fits(it, 'miss');
-  const seeLabel = it => (both(it) ? `▶ 見る（${seeK[it.id] === 'miss' ? KIND.miss : KIND.hit}）` : '▶ 見る');
+  const seeS = {};                      // 第4.121版：絵の ボードの「▶ 見る」は 押す たびに つぎの 段（1連勝 → 2連勝 → … → 1連勝）
+  const seeLabel = it => (isPic(it.id) ? `▶ 見る（${picStageName(it.id, seeS[it.id] || 0)}）` : both(it) ? `▶ 見る（${seeK[it.id] === 'miss' ? KIND.miss : KIND.hit}）` : '▶ 見る');
   // 小さな 見本（動かさない）：ボードの かわりの 四角＋その 飾り。じゅんび中は うすい ボードに「じゅんび中」
   function fakeBoard(miss, head, tf) { return `<div class="rb bcfake${miss ? ' miss' : ''}" style="${tf || ''}"><div class="fh">${head}</div><div class="fr"></div><div class="fr"></div></div>`; }
   function thumbHtml(it) {
+    if (it.ready && isPic(it.id)) return `<div class="bcmini pic" aria-hidden="true"><img class="bcpth" src="${esc(String(PIC.thumb || '').replace('{}', it.id))}" alt="" decoding="async" draggable="false"><div class="bcpno">${esc(it.name)}</div></div>`;
     if (!it.ready || !B[it.id]) return `<div class="bcmini prep" aria-hidden="true"><div class="bcmi"><div class="hb bcst">${fakeBoard(false, '')}</div></div><span class="bcprep">じゅんび中</span></div>`;
     const k = kindOf(it), miss = k === 'miss', H = 170;
     const o = { H, W: 350, sp: 120, st: true, miss, big: k === 'big', kind: k, dark: false, title: { l: 112, t: 14, w: 126, h: 40 }, redHd: false, streak: 0, u: 0 };
@@ -342,7 +515,7 @@
     const bundle = w && w.bundle && w.bundle.offer() ? { price: w.bundle.price() } : null;   // 第4.114版：お得パック（単品を どちらも 持って いない とき）
     const seen = seenSet(), last = PT.BOARD_NEED[PT.BOARD_NEED.length - 1], every = PT.BOARD.steps.length === 1 ? PT.BOARD.steps[0][1] : 0;
     const sel = { hit: i.selHit || '', miss: i.selMiss || '' };
-    let h = '<p class="hint" style="margin:0 0 8px">結果のボード（的中・ハズレの 結果）に、馬の 飾りや 動きを つけられるよ。<b>的中のとき</b>と <b>ハズレのとき</b>で、べつべつに 1つずつ 選べるよ。<b>どの 壁紙の ボードにも 使える</b>よ。</p>';
+    let h = '<p class="hint" style="margin:0 0 8px">結果のボード（的中・ハズレの 結果）を、絵の ボードや 馬の 飾りに かえられるよ。<b>的中のとき</b>と <b>ハズレのとき</b>で、べつべつに 1つずつ 選べるよ。<b>どの 壁紙でも 使える</b>よ。</p>';
     if (!i.owned) {
       h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
       h += `<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}ぜんぶで ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>`;
@@ -381,7 +554,8 @@
     });
     h += '</div>';
     h += '<p class="ptnote" style="margin-top:10px">「的中」「ハズレ」の ボタンで、その 結果の ときに 使う ものを 選ぶよ（もう一度 押すと なし）。「▶ 見る」で、ためしに 結果の ボードを 出すよ（まだ 解放して いない ものも 見られるよ）。<br>'
-      + 'じゅんび中の 番号には、アプリの 更新で 新しい 飾りが 入るよ（解放ずみの 番号なら、入ったら すぐ 使えるよ）。<br>'
+      + '絵の ボードは、的中は 続けて 当てた 数（連勝）・ハズレは 続けて ハズレた 数で 絵が かわるよ（「▶ 見る」は 押す たびに つぎの 絵）。<br>'
+      + (ITEMS.some(x => !x.ready) ? 'じゅんび中の 番号には、アプリの 更新で 新しい 飾りが 入るよ（解放ずみの 番号なら、入ったら すぐ 使えるよ）。<br>' : '')
       + '「視差効果を減らす」か 設定の「演出を控えめにする」が オンなら、飾りは 止まった 形で 出るよ。<br>アプリを 消すと、解放の 進み具合は 0に もどるよ（買った ことは「購入を復元」で もどせるよ）。</p>';
     box.innerHTML = h;
     fitThumbs(); requestAnimationFrame(fitThumbs);
@@ -415,8 +589,16 @@
     return { r: 9, n: 14, rows, ranks: { 11: 11, 8: 8, 2: 2, 6: 1, 10: 3 } };
   }
   // ためしに 出す（PUSH なしで すぐ 結果の 画面）。kind を 決めない とき：その 飾りの 結果（的中にも ハズレにも 使える ものは 押す たびに 的中 → ハズレ）
-  function see(id, kind) {
+  function see(id, kind, n) {
     const it = BY[id], F = FX(); if (!F || !F.preview) return null;
+    if (it && it.ready && isPic(id)) {   // 絵の ボード：kind なし＝押す たびに つぎの 段・kind あり（使う 所の「▶ 見る」）＝連続の 数 n（つぎの 結果と 同じ 段）
+      const P = PIC.items[id], k = P.k === 'miss' ? 'miss' : 'hit';
+      let m = n;
+      if (!kind) { const i = seeS[id] || 0; m = P.st[i][0]; seeS[id] = (i + 1) % P.st.length; }
+      try { F.prime(); } catch (e) { /* 音なし */ }
+      F.preview(sample(k), k, { item: id, streak: Math.max(1, +m || 1) });
+      return k;
+    }
     let k = kind;
     if (!k) {
       if (!it || !it.ready || !B[it.id]) return null;
@@ -435,7 +617,7 @@
       const act = a.dataset.bcact, k = a.dataset.slot === 'miss' ? 'miss' : 'hit';
       if (act === 'see') { see(a.dataset.id); const it = BY[a.dataset.id]; if (it) a.textContent = seeLabel(it); return; }
       if (!w || !w.board) return;
-      if (act === 'seeslot') { const i = w.board.info(), id = (k === 'miss' ? i.selMiss : i.selHit) || 'none', it = BY[id]; see(id, k === 'miss' ? 'miss' : it ? (kindOf(it) === 'big' ? 'big' : 'hit') : 'hit'); return; }
+      if (act === 'seeslot') { const i = w.board.info(), id = (k === 'miss' ? i.selMiss : i.selHit) || 'none', it = BY[id]; see(id, k === 'miss' ? 'miss' : it ? (kindOf(it) === 'big' ? 'big' : 'hit') : 'hit', (k === 'miss' ? i.mstreak : i.streak) + 1); return; }
       if (act === 'buy') { await w.board.buy(a); paint(); return; }
       if (act === 'bundle') { if (w.bundle) await w.bundle.buy(a); paint(); return; }
       if (act === 'restore') { await w.board.restore(a); paint(); return; }
@@ -476,6 +658,8 @@
   });
   // 16「ボードを持つ馬」の 絵が 読めない（絵なしの CI など）→ その ボードは SVG の 馬に（error は 上へ 伝わらないので つかまえる 側で 聞く）
   document.addEventListener('error', e => { const t = e.target; if (t && t.classList && t.classList.contains('bchbi')) { const hb = t.closest('.hb'); if (hb) hb.classList.add('bchbv'); } }, true);
+  // 第4.121版：絵の ボードの 見本が 読めない（絵なしの CI）→ 名前だけ
+  document.addEventListener('error', e => { const t = e.target; if (t && t.classList && t.classList.contains('bcpth')) { const m = t.closest('.bcmini'); if (m) m.classList.add('bad'); } }, true);
   document.addEventListener('tengel:wallet', () => { if ($('#setBoard')) paint(); });
   document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'close') stopAll(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
@@ -484,6 +668,6 @@
   window.addEventListener('resize', fitThumbs);
   setTimeout(card, 60);
 
-  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, _B: B, _HBX: HBX };
+  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, prime: prime, pic: id => (isPic(id) ? JSON.parse(JSON.stringify(PIC.items[id])) : null), stage: (id, n) => picStage(id, n), _B: B, _HBX: HBX };
   css();
 })();

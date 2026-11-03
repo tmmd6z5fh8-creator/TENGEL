@@ -95,22 +95,29 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
 // 結果ボードカスタム（第4.91版）：買い切り 2,200円（非消耗型）→ 第4.114版：1,500円・買った あとに 読み込んだ レースの 数で 番号の 順に 解放
 //   第4.113版（まさちゃんの 指定）：16こ（1〜15 は じゅんび中・16「ボードを持つ馬」）・6レースごと（全部で 96レース）・的中の とき／ハズレの とき の 2つを べつべつに 選ぶ
 //   第4.120版（まさちゃんの 指定 2026/11/04）：15こ（1〜14 は じゅんび中・15「ボードを持つ馬」）・6レースごと（全部で 90レース）
+//   第4.121版：1〜14 に まさちゃんの 絵の ボード（1〜9 的中①〜⑨・10〜14 ハズレ①〜⑤：kisekae/bcp/bcp_app.py の ITEMS）
 {
   const T0 = D('2026-11-06');
   check(P.PRODUCTS['jp.tengel.app.boardcustom'] && P.PRODUCTS['jp.tengel.app.boardcustom'].kind === 'unlock' && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 1500 && P.BOARD.product === 'jp.tengel.app.boardcustom', '商品：jp.tengel.app.boardcustom（買い切り・第4.114版：1,500円）');
   check(P.BOARD_NEED.join() === '6,12,18,24,30,36,42,48,54,60,66,72,78,84,90' && P.BOARD.steps.length === 1 && P.BOARD.steps[0].join() === '15,6', '解放の 数：6レースごとに 1つ（全部で 90レース・第4.120版）');
   const C = P.BOARD_ITEMS[14];
-  check(P.BOARD_ITEMS.length === 15 && P.BOARD_ITEMS.length === P.BOARD_NEED.length && P.BOARD_ITEMS.slice(0, 14).every((it, i) => !it.ready && it.name === 'じゅんび中' && it.no === i + 1 && it.id === 'prep' + (i + 1) && it.need === (i + 1) * 6),
-    '15こ：1〜14 は じゅんび中（デザインが とどくまで 選べない・番号の 順に 6レースごと）');
-  check(C.id === 'carry' && C.no === 15 && C.ready && C.when === 'all' && C.need === 90 && C.name === 'ボードを持つ馬' && P.BOARD_ITEMS.filter(i => i.ready).length === 1, '15「ボードを持つ馬」：的中にも ハズレにも 使える・90レース目（いま 飾りが あるのは これだけ）');
-  check(new Set(P.BOARD_ITEMS.map(i => i.id)).size === 15 && P.BOARD_ITEMS.every(it => ['all', 'hit', 'big', 'miss'].includes(it.when)) && P.riseTier === undefined, 'id は ぜんぶ ちがう・when は all／hit／big／miss・出世馬の 段（riseTier）は なくした');
-  const BCX = require('fs').readFileSync(require('path').join(__dirname, 'bcx.js'), 'utf8');
-  check(P.BOARD_ITEMS.filter(i => i.ready).every(i => BCX.includes(`B.${i.id} = `)) && !/B\.(orbit|goal|peek|nap|hang|cheer|crowd|selfie|bite|stand|banner|stamp|flower|pop|drop|flip|slide|float|thump|droop|rise) = /.test(BCX) && !BCX.includes('TengelBoardPhantom'),
-    '飾りが ある 番号は bcx.js に 部品を 作る 所（B.<id>）が ある・消した 1〜21 の 部品と 幻の 馬は ない');
-  check(P.boardFits(C, 'hit') && P.boardFits(C, 'miss') && !P.boardFits(P.BOARD_ITEMS[0], 'hit') && !P.boardFits(P.BOARD_ITEMS[0], 'miss')
+  const PIC_IDS = ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen'];
+  const PIC_NAMES = ['結果ボードを廻る', '馬達の祝杯', '馬レース結果ボード', '自撮り結果ボード', 'スタンプ結果ボード', 'トロフィー結果ボード', '馬が運ぶ結果ボード', '花束結果ボード', '出世馬結果ボード',
+    '二人でしょんぼり', '次…！', '隠蔽作戦', 'ボード結果待ち', '書き換え参戦'];
+  check(P.BOARD_ITEMS.length === 15 && P.BOARD_ITEMS.length === P.BOARD_NEED.length && P.BOARD_ITEMS.slice(0, 14).every((it, i) => it.ready && it.id === PIC_IDS[i] && it.name === PIC_NAMES[i] && it.no === i + 1 && it.need === (i + 1) * 6 && it.when === (i < 9 ? 'hit' : 'miss')),
+    '15こ：1〜9 的中①〜⑨・10〜14 ハズレ①〜⑤（まさちゃんの 絵の ボード・名前も まさちゃんの もの・番号の 順に 6レースごと）');
+  check(C.id === 'carry' && C.no === 15 && C.ready && C.when === 'all' && C.need === 90 && C.name === 'ボードを持つ馬' && P.BOARD_ITEMS.filter(i => i.ready).length === 15, '15「ボードを持つ馬」：的中にも ハズレにも 使える・90レース目（じゅんび中は もう ない）');
+  const OLD_IDS = ['orbit', 'goal', 'peek', 'nap', 'hang', 'cheer', 'crowd', 'selfie', 'bite', 'stand', 'banner', 'stamp', 'flower', 'pop', 'drop', 'flip', 'slide', 'float', 'thump', 'droop', 'rise'];
+  check(new Set(P.BOARD_ITEMS.map(i => i.id)).size === 15 && P.BOARD_ITEMS.every(it => ['all', 'hit', 'big', 'miss'].includes(it.when) && OLD_IDS.indexOf(it.id) < 0) && P.riseTier === undefined,
+    'id は ぜんぶ ちがう・前の 版の 飾り（第4.113版で 消した 1〜21）の id と かぶらない・when は all／hit／big／miss・出世馬の 段（riseTier）は なくした');
+  const BCX = require('fs').readFileSync(require('path').join(__dirname, 'bcx.js'), 'utf8'), BAPP = require('fs').readFileSync(require('path').join(__dirname, 'kisekae', 'bcp', 'bcp_app.py'), 'utf8');
+  check(BCX.includes('B.carry = ') && P.BOARD_ITEMS.slice(0, 14).every(i => BAPP.includes(`('${i.id}', '${i.when}', `)) && BCX.includes('window.__BCP') && !/B\.(orbit|goal|peek|nap|hang|cheer|crowd|selfie|bite|stand|banner|stamp|flower|pop|drop|flip|slide|float|thump|droop|rise) = /.test(BCX) && !BCX.includes('TengelBoardPhantom'),
+    '15 は bcx.js の 部品（B.carry）・1〜14 は 絵の ボード（bcp_app.py の ITEMS に 同じ id と when）・消した 1〜21 の 部品と 幻の 馬は ない');
+  check(P.boardFits(C, 'hit') && P.boardFits(C, 'miss') && P.boardFits(P.BOARD_ITEMS[0], 'hit') && !P.boardFits(P.BOARD_ITEMS[0], 'miss') && P.boardFits(P.BOARD_ITEMS[9], 'miss') && !P.boardFits(P.BOARD_ITEMS[9], 'hit')
+    && !P.boardFits({ ready: false, when: 'all' }, 'hit') && !P.boardFits({ ready: false, when: 'all' }, 'miss')
     && P.boardFits({ ready: true, when: 'miss' }, 'miss') && !P.boardFits({ ready: true, when: 'miss' }, 'hit') && P.boardFits({ ready: true, when: 'hit' }, 'hit') && !P.boardFits({ ready: true, when: 'hit' }, 'miss')
     && P.boardFits({ ready: true, when: 'big' }, 'hit') && !P.boardFits({ ready: true, when: 'big' }, 'miss') && P.boardSlot('miss') === 'miss' && ['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg', undefined].every(k => P.boardSlot(k) === 'hit'),
-    '的中の 所（ハズレ いがいの 結果 ぜんぶ）・ハズレの 所に 使えるか：all＝両方・hit／big＝的中だけ・miss＝ハズレだけ・じゅんび中は どちらも だめ');
+    '的中の 所（ハズレ いがいの 結果 ぜんぶ）・ハズレの 所に 使えるか：all＝両方・hit／big＝的中だけ（1〜9）・miss＝ハズレだけ（10〜14）・じゅんび中は どちらも だめ');
   let ev = [P.giftEvent(T0)];
   check(!P.boardOwned(ev), '買う 前は 持って いない');
   const bt = P.txEvent(ev, tx('700', 'jp.tengel.app.boardcustom', '2026-11-06'));
@@ -122,20 +129,29 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.boardUnlocked(0) === 0 && P.boardUnlocked(5) === 0 && P.boardUnlocked(6) === 1 && P.boardUnlocked(11) === 1 && P.boardUnlocked(12) === 2 && P.boardUnlocked(84) === 14 && P.boardUnlocked(89) === 14 && P.boardUnlocked(90) === 15 && P.boardUnlocked(96) === 15 && P.boardUnlocked(500) === 15,
     '解放の 数（6→1・12→2・84→14・90→15・その先も 15）');
   const nx = P.boardNext(29), n84 = P.boardNext(84);
-  check(nx.item.id === 'prep5' && nx.need === 30 && nx.left === 1 && nx.from === 24 && n84.item.id === 'carry' && n84.left === 6 && n84.from === 84 && P.boardNext(90) === null && P.boardNext(0).item.id === 'prep1' && P.boardNext(0).left === 6,
-    'つぎ：29レース → 5（じゅんび中）まで あと1・84レース → 15「ボードを持つ馬」まで あと6・全部 解放なら なし');
-  check(P.boardNextReady(0).item.id === 'carry' && P.boardNextReady(0).left === 90 && P.boardNextReady(89).left === 1 && P.boardNextReady(90) === null, 'つぎの 飾り（じゅんび中を とばす）：0レース → ボードを持つ馬まで あと90');
+  check(nx.item.id === 'seal' && nx.need === 30 && nx.left === 1 && nx.from === 24 && n84.item.id === 'carry' && n84.left === 6 && n84.from === 84 && P.boardNext(90) === null && P.boardNext(0).item.id === 'ring' && P.boardNext(0).left === 6,
+    'つぎ：29レース → 5「スタンプ結果ボード」まで あと1・84レース → 15「ボードを持つ馬」まで あと6・全部 解放なら なし');
+  check(P.boardNextReady(0).item.id === 'ring' && P.boardNextReady(0).left === 6 && P.boardNextReady(54).item.id === 'rain' && P.boardNextReady(89).item.id === 'carry' && P.boardNextReady(89).left === 1 && P.boardNextReady(90) === null,
+    'つぎの 飾り：0レース → 1「結果ボードを廻る」まで あと6・54レース → 10「二人でしょんぼり」・89レース → ボードを持つ馬まで あと1');
   // 的中の とき・ハズレの とき（第4.113版）
   const sel = { hit: '', miss: '' };
-  check(P.boardOpen(sel, 0, 14).length === 0 && sel.hit === '' && sel.miss === '', 'じゅんび中（1〜14）を 解放しても 選ぶ ものは かわらない（お知らせも なし）');
+  const g1 = P.boardOpen(sel, 0, 1);
+  check(g1.map(i => i.id).join() === 'ring' && sel.hit === 'ring' && sel.miss === '', '1「結果ボードを廻る」を 解放 → まだ 選んで いない 的中の 所に つける（ハズレの 所は 的中だけの 飾りは つかない）');
+  const g2 = P.boardOpen(sel, 1, 10);
+  check(g2.length === 9 && g2[8].id === 'rain' && sel.hit === 'ring' && sel.miss === 'rain', '2〜10 を 解放 → 的中は そのまま・ハズレの 所に 10「二人でしょんぼり」');
   const got = P.boardOpen(sel, 14, 15);
-  check(got.map(i => i.id).join() === 'carry' && sel.hit === 'carry' && sel.miss === 'carry', '15 を 解放 → まだ 選んで いない 的中・ハズレの 両方に そのまま つける');
+  check(got.map(i => i.id).join() === 'carry' && sel.hit === 'ring' && sel.miss === 'rain', '15 を 解放 → もう 選んで いる 所は かえない');
+  const s1 = { hit: '', miss: '' }; P.boardOpen(s1, 14, 15);
+  check(s1.hit === 'carry' && s1.miss === 'carry', 'まだ 選んで いない 所が ある まま 15 を 解放 → 的中・ハズレの 両方に そのまま つける');
   const s2 = { hit: 'none', miss: '' }, s3 = { hit: 'orbit', miss: 'none' };
   P.boardOpen(s2, 0, 15); P.boardOpen(s3, 14, 15);
-  check(s2.hit === 'none' && s2.miss === 'carry' && s3.hit === 'carry' && s3.miss === 'none', '「なし」に した 所は そのまま・消した 飾り（前の 版）の 所は まだ 選んで いない と 同じ');
+  check(s2.hit === 'none' && s2.miss === 'rain' && s3.hit === 'carry' && s3.miss === 'none', '「なし」に した 所は そのまま・消した 飾り（前の 版）の 所は まだ 選んで いない と 同じ');
   check(['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg'].every(k => P.boardActive({ hit: 'carry', miss: 'none' }, 90, k) === 'carry') && P.boardActive({ hit: 'carry', miss: 'none' }, 90, 'miss') === ''
     && P.boardActive({ hit: 'none', miss: 'carry' }, 90, 'miss') === 'carry' && P.boardActive({ hit: 'none', miss: 'carry' }, 90, 'hit') === '' && P.boardActive({ hit: 'carry', miss: 'carry' }, 89, 'hit') === ''
-    && P.boardActive({ hit: 'prep3', miss: 'prep3' }, 90, 'hit') === '' && P.boardActive({ hit: 'orbit', miss: '' }, 500, 'hit') === '' && P.boardActive(null, 90, 'hit') === '',
+    && P.boardActive({ hit: 'prep3', miss: 'prep3' }, 90, 'hit') === '' && P.boardActive({ hit: 'orbit', miss: '' }, 500, 'hit') === '' && P.boardActive(null, 90, 'hit') === ''
+    && ['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg', 'gk'].every(k => P.boardActive({ hit: 'ring', miss: 'rain' }, 90, k) === 'ring') && P.boardActive({ hit: 'ring', miss: 'rain' }, 90, 'miss') === 'rain'
+    && P.boardActive({ hit: 'rain', miss: 'ring' }, 90, 'hit') === '' && P.boardActive({ hit: 'rain', miss: 'ring' }, 90, 'miss') === '' && P.boardActive({ hit: 'climb', miss: 'pen' }, 53, 'hit') === '' && P.boardActive({ hit: 'climb', miss: 'pen' }, 54, 'hit') === 'climb'
+    && P.boardActive({ hit: 'climb', miss: 'pen' }, 83, 'miss') === '' && P.boardActive({ hit: 'climb', miss: 'pen' }, 84, 'miss') === 'pen',
     'ボードに つける もの：的中の 所は 的中・デカ的中・ど的中 など・ハズレの 所は ハズレだけ（べつべつ）・解放 前・じゅんび中・消した 飾りは つけない');
   check(JSON.stringify(P.boardSel({ reads: 150, sel: 'carry' })) === '{"hit":"carry","miss":"carry"}' && JSON.stringify(P.boardSel({ sel: 'none' })) === '{"hit":"none","miss":"none"}' && JSON.stringify(P.boardSel({ sel: 'orbit' })) === '{"hit":"","miss":""}'
     && JSON.stringify(P.boardSel({ selHit: 'carry', selMiss: 'none', sel: 'orbit' })) === '{"hit":"carry","miss":"none"}' && JSON.stringify(P.boardSel(null)) === '{"hit":"","miss":""}' && P.boardKnown('none') && P.boardKnown('carry') && !P.boardKnown('prep1') && !P.boardKnown(''),

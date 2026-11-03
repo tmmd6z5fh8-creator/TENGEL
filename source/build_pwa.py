@@ -98,6 +98,10 @@ if TARGET == 'app':
     import build_kisekae as _ks
     html += '<script>\n' + _ks.bundle_js() + '\n</script>\n<script>\n' + open('kisekae.js', encoding='utf8').read() + '\n</script>\n'
     # 結果ボードカスタム（第4.91版）：馬の 絵（bcx_art.js）・飾りと 選ぶ 画面（bcx.js）。第4.113版：幻の 馬の 形（bcx_phantom.js）は 出世馬と いっしょに 消した
+    # 第4.121版：まさちゃんの 絵の ボード 14こ の 置き方（window.__BCP：kisekae/bcp/bcp_app.py）。絵は build_ios.py が Resources/ に入れる（リポジトリには入れない）
+    sys.path.insert(0, os.path.join(HERE, 'kisekae', 'bcp'))
+    import bcp_app as _bcp
+    html += '<script>\n' + _bcp.bundle_js() + '\n</script>\n'
     for _f in ('bcx_art.js', 'bcx.js'):
         html += '<script>\n' + open(_f, encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'

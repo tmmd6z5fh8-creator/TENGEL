@@ -73,6 +73,18 @@ for f in fx_have:
     shutil.copy(os.path.join(fx_dir, f), os.path.join(res, f)); files[f] = f
 if len(fx_have) != len(ASSET_FILES):
     print('※ 的中ボタンの絵と音が', len(ASSET_FILES) - len(fx_have), 'こ ない（', fx_dir, '）。python3 kisekae/build_fx_assets.py で作れるよ（CIではなしのまま）')
+# 結果ボードカスタムの 絵の ボード（第4.121版：まさちゃんの 絵 14こ・kisekae/bcp/bcp_app.py の files()）：ios/bcp_assets/ か BCP_ASSETS=<フォルダ>。
+# リポジトリには入れない（まさちゃんの 絵）ので、ないときは入れずに作る（CIはこの形。アプリは その ボードを いつもの ボードで 出す）
+sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp'))
+import bcp_app as _bcp
+bcp_dir = os.environ.get('BCP_ASSETS') or os.path.join(W, 'ios', 'bcp_assets')
+bcp_all = _bcp.files()
+bcp_have = [f for f in bcp_all if os.path.exists(os.path.join(bcp_dir, f))]
+for f in bcp_have:
+    assert f.lower() not in names and f not in files, f
+    shutil.copy(os.path.join(bcp_dir, f), os.path.join(res, f)); files[f] = f
+if len(bcp_have) != len(bcp_all):
+    print('※ 結果ボードカスタムの 絵が', len(bcp_all) - len(bcp_have), 'こ ない（', bcp_dir, '）。kisekae/bcp の README の 作り方で 作れるよ（CIではなしのまま）')
 # 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
 import build_kisekae as _ks
