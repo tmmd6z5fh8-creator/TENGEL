@@ -67,7 +67,7 @@ css = f"""
 #fxOv .rb.bcp .ar{{color:#B8C8F0!important;-webkit-text-fill-color:#B8C8F0!important}}
 #fxOv .rb.bcp .more{{color:#DDE6FF!important;-webkit-text-fill-color:#DDE6FF!important}}
 #fxOv .rb.bcp .brows li.no{{opacity:1!important}}
-""" + star_css.replace("{{", "{").replace("}}", "}") + (("#fxOv .ov > .close{border-color:%s!important;background:%s!important;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 10px rgba(255,200,90,.35)!important}\n" % (cfg["close_border"], cfg.get("close_bg", "rgba(0,0,0,.35)"))) if cfg.get("close_border") else "")
+""" + star_css.replace("{{", "{").replace("}}", "}") + (("#fxOv .ov > .close{border-color:%s!important;background:%s!important;box-shadow:%s!important;%s}\n" % (cfg["close_border"], cfg.get("close_bg", "rgba(0,0,0,.35)"), cfg.get("close_shadow") or ("0 0 0 1px rgba(0,0,0,.35),0 0 %s %s" % (cfg.get("close_glow_r", "10px"), cfg.get("close_glow", "rgba(255,200,90,.35)"))), cfg.get("close_css", ""))) if cfg.get("close_border") else "")
 L = dict(L, fg=bool(cfg.get('fg')))
 js = """(() => {
   const L = %s, HP = %s;
@@ -92,7 +92,8 @@ js = """(() => {
   const w = bh.offsetWidth, half = w / 2 + side, cxp = M.title_cx != null ? M.title_cx : cx;
   const c2 = Math.min(Math.max(cxp, tx0 + half), tx1 - half);          // 絵の 見出しの まん中（title_cx）に。長い ときは 場所の 中に おさまる ように ずらす
   bh.style.left = px(c2 - w / 2);
-  const sc = M.sub_cx != null ? M.sub_cx : c2, sw = 2 * Math.min(sc - tx0, tx1 - sc);
+  const sx0 = M.sub_x ? M.sub_x[0] : tx0, sx1 = M.sub_x ? M.sub_x[1] : tx1;          // 小見出しの はば（見出しと ちがう とき：ハンコの 横 など）
+  const sc = M.sub_cx != null ? M.sub_cx : c2, sw = 2 * Math.min(sc - sx0, sx1 - sc);
   sub.style.fontSize = px(M.sub_px); sub.style.top = px(M.sub_top); sub.style.left = px(sc - sw / 2); sub.style.width = px(sw);
   let rowsTop = M.rows_top;
   if (rib) {
