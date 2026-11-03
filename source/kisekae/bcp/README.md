@@ -1,0 +1,47 @@
+# kisekae/bcp：結果ボードカスタム（絵の ボード）の 道具
+
+まさちゃんの デザインの 絵（結果ボードの まわりの 絵）を、アプリの 本物の 結果ボードと 合わせる ための 道具。
+いまは 見本（iPhone の 画面の 大きさの 写真）を 作る ところまで（第4.119版の あと・2026/11/03〜）。アプリには まだ 入れて いない。
+
+- まさちゃんの 絵は **リポジトリに 入れない**（公開の リポジトリ）。作業フォルダ（例：`/home/claude/work/bcpic/<デザイン>/`）に `src.png`（横 1048px に そろえた 絵）と `cfg.json` を 置く。
+- `designs/<name>.json` は デザインごとの 設定の 写し（作業フォルダの `cfg.json` と 同じ）。
+
+## 手順
+
+```
+D=/home/claude/work/bcpic/<デザイン>          # src.png と cfg.json が ある フォルダ
+python3 kisekae/bcp/bcp_cutout.py $D          # 見出しの 横の 飾り（星・月桂樹）を すき通しの png に（cfg の cutout が ある とき）
+python3 kisekae/bcp/bcp_clean.py  $D          # 絵の ボードの 字・行・飾りを 消す → clean.png（clean_dbg.png：赤＝消した 所・緑＝のこした 所）
+python3 kisekae/bcp/bcp_bg.py     $D          # 舞台（390×844pt）の 3倍 1170×2532 の 背景 → <SRV>/bcp_<name>.webp・geom.json（ボードの 面 → 絵の 板 の 射影）
+python3 kisekae/bcp/bcp_inj.py    $D          # 見本の 注入 JS → inj.js
+python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の ためし（preview）に 注入して 写す（種類・行の 数）
+```
+
+`bcp_shot.py` は テスト版（`build_pwa.py`・`TARGET=app TENGEL_TEST=1`）を `<SRV_ROOT>/TEST/` に 作って、`window.__NATIVE` を `true` に して おく。
+
+## cfg.json
+
+| キー | 中身 |
+|---|---|
+| `name` | 名前（背景の ファイル `bcp_<name>.webp`） |
+| `quad` | 絵の 板の 四すみ（左上・右上・右下・左下・px）。ボードの 面（350pt × 高さ）を ここへ 射影 |
+| `S`・`cx`・`top_pt` | 絵の 大きさ（pt/px）・舞台の まん中に 来る 絵の x・板の 上の はしの 高さ（pt） |
+| `crop` | 絵の 上と 下の 使わない 行（うすく 写りこんだ アプリの 画面 など） |
+| `fill` | 絵の 上と 下の すき間の うめ方：`mirror`（床に うつる）・`radial`（光の すじを のばす：`c` が 光の まん中）・`glow`（上だけ：光を ぼかして 暗く） |
+| `clean.regions` | 消す 所（`navy`：その 点の 紺の かたまり・`rect`・`rrect`・`poly`）。`only: "text"` は 字（金・白・光）だけ 消して 地の もようを のこす。`bg` は その 所の 地の 色の きまり |
+| `clean.keep`・`keep_red`・`crowd`・`keep_conf` | のこす もの（ハンコ・下の 馬たち・ボードの 外まで はみ出す 紙ふぶき） |
+| `clean.force`・`patch`・`inpaint`・`deghost` | かならず 消す 所・となりの 絵を ずらして はる（旗の 下の 鎖）・絵に 描いて ある ボタンを うめる・うすく 写りこんだ アプリの 画面を 消す |
+| `cutout` | 見出しの 横の 飾りを 切り出す 所 |
+| `layout` | ボードの 面（350pt 基準）の 中の 場所：見出し（`title_cx`・`title_top`・`title_px`）・小見出し・行（`rows_x`・`rows_top`・`rows_bottom`・`row_h`・`rows_zoom`）・帯（`rib_in`）・飾りの 画像（`star_img`）。`rib`・`many` は 帯が ある とき・行が 4つ 以上の とき の 上書き |
+| `close_border`・`close_bg` | 絵に「とじる」が 描いて ある とき、本物の「とじる」の ふちと 地の 色を 合わせる |
+
+## デザイン（見本を 作った もの）
+
+| デザイン | name | メモ |
+|---|---|---|
+| 的中① 結果ボードを廻る（3連勝） | `ring2` | 元の 画像。うすく 写りこんだ アプリの 画面を 消す（`deghost`）。上下は 光の すじ |
+| 的中② 馬達の祝杯（3連勝） | （はじめの 見本：まだ この 道具に 移して いない） | 上は 鏡・下は 床に うつる |
+| 的中③ 馬レース結果ボード（3連勝） | `race` | 星を 切り出す（見出しが 長いと 外へ）。旗を 消して 鎖を つなぐ。下は 観客を 鏡で |
+| 的中⑤ スタンプ結果ボード（3連勝） | `stamp` | 「的中」の ハンコと 赤い 飛び散りは のこす。見出しは ハンコの 右 |
+| 的中⑥ トロフィー結果ボード（3連勝） | `trophy` | 月桂樹を 切り出す。上は `glow` |
+| 的中⑦ 馬が運ぶ結果ボード（3連勝） | `carry` | 絵の「とじる」を 消して 本物を 同じ 所に（黒地に 金の ふち）。地の もようは のこす |
