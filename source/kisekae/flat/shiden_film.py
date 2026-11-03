@@ -58,6 +58,9 @@ W0, H0 = F['W'], F['H']                          # 動画の 大きさ（画面 
 SC = float(os.environ.get('SCALE', '1'))         # ためす とき 0.5
 W, H = int(W0 * SC), int(H0 * SC)
 S = W / 780.0                                    # 長さの 倍率（780 の 時 1）
+# 第4.118版の 候補（まさちゃん 03:18・08:27）：顔の 馬と カットインの 蹄を Meshy の 3D（flat/shiden_glb.py・r3d/glb）で 描く。
+# SD_HORSE=old で 前の 馬（r3d の 3D の 馬・shiden_hoof.py の 蹄）に もどせる（前の 動画を 作り直す とき）
+SD_HORSE = os.environ.get('SD_HORSE', 'new')
 
 
 
@@ -279,7 +282,7 @@ def vapor(img, M, t, hs, seed=7):
     return img * (1 - out[..., None] * .55) + col * out[..., None] * .55 * 0.9
 
 
-def face_frame(t, R, M, seed=7):
+def face_frame(t, R, M, seed=7, glb=False):
     """3D の 顔に 背景・たてがみ・息・光る 目・火の粉・星を 重ねる（2まい目の ような 青むらさきの 光）→ 0〜1 の sRGB"""
     st = face_state(t)
     g, L = st['g'], st['L']
@@ -318,11 +321,18 @@ def face_frame(t, R, M, seed=7):
     pv = ((xx - cxh) * nv[0] + (yy - cyh) * nv[1])
     pv = np.where(pv > 0, pv / (hl * .5), -pv / (hl * .26))
     headm = 1 - smoothstep(.7, 1.15, np.sqrt(pu ** 2 + pv ** 2))
-    rgb = rgb * (0.04 + 0.96 * headm ** 1.5)[..., None]
+    hm = np.maximum(headm, R['mane'] * .85) if glb else headm                  # 3D の 馬：たてがみは 頭の そとでも 光る（2D の たてがみの かわり）
+    rgb = rgb * (0.04 + 0.96 * hm ** 1.5)[..., None]
     img = bg * (1 - A[..., None]) + rgb
+    if glb and R.get('blit') is not None:                                       # 第2稿：体を はう 雷（毛なみを 照らす 光・雷の 光）は 首の 闇に しずめない
+        img = img + R['blit'] * R.get('blit_k', 0.35 + 0.65 * L)
+    if glb and R.get('bolt') is not None:
+        img = img + R['bolt']
     smoke = smoothstep(.25, .7, tx['smoke'][(oy * 2) % H:(oy * 2) % H + H, ox:ox + W]) * smoothstep(H * .5, H * .82, yy + 60 * S * np.sin(xx / W * 3 + t * .9))     # 下は けむりに しずむ
     img = img * (1 - smoke[..., None] * .85) + smoke[..., None] * .85 * np.array([0.012, 0.005, 0.020]) * (0.3 + 0.7 * L)
-    # 毛なみ
+    # 毛なみ（3D の 馬は モデルの 毛なみ・たてがみを そのまま 使う）
+    if glb:
+        return face_frame_rest(t, img, st, g, L, A, headm, hd, hs, ex, ey, M, seed, glb, ext=R)
     ang = math.atan2(hd[1], hd[0])
     big = tx['fur'].shape[0]
     Mr = cv2.getRotationMatrix2D((big / 2, big / 2), -math.degrees(ang), 1.0)
@@ -366,15 +376,28 @@ def face_frame(t, R, M, seed=7):
     outer = smoothstep(.2, .9, rimw) * behind
     hair_col = np.stack([0.003 + rimI * (0.30 * outer + 0.05), 0.0015 + rimI * (0.07 * outer + 0.02), 0.004 + rimI * (0.30 * outer + 0.06)], -1)
     img = img * (1 - cov[..., None]) + hair_col * cov[..., None]
-    # ---------- 鼻から 白い 息 ----------
-    img = vapor(img, M, t, hs, seed)
+    return face_frame_rest(t, img, st, g, L, A, headm, hd, hs, ex, ey, M, seed, glb)
+
+
+def face_frame_rest(t, img, st, g, L, A, headm, hd, hs, ex, ey, M, seed=7, glb=False, ext=None):
+    """顔の コマの のこり（息・光る 目・火の粉・仕上げ・むらさきの 光・おわりの 光）"""
+    yy, xx = grid()
+    tx = face_tex(seed)
+    # ---------- 鼻から 白い 息（第2稿：3D の 鼻の 穴から 出る つぶ） ----------
+    if glb and ext is not None and 'vap' in ext:
+        if ext['vap'] is not None:
+            al, vcol = ext['vap']
+            img = img * (1 - al[..., None] * .8) + vcol * al[..., None]
+    else:
+        img = vapor(img, M, t, hs, seed)
     # ---------- 光る 目（寄ると 大きく・1 を こえると 光が あふれる） ----------
     a_ = math.atan2(hd[1], hd[0]) * 0.5 - 0.2
     du = ((xx - ex) * math.cos(a_) + (yy - ey) * math.sin(a_)) / (34 * S * hs)
     dv = (-(xx - ex) * math.sin(a_) + (yy - ey) * math.cos(a_)) / (21 * S * hs)
     alm = np.clip(1 - (np.abs(du) ** 1.7 + np.abs(dv) ** 2.1), 0, 1)
     sock = smoothstep(0, .12, alm)
-    img = img * (1 - sock[..., None] * 0.85) + np.array([0.012, 0.001, 0.001]) * sock[..., None] * 0.85
+    sk = 0.85                                                                   # 目の くぼみ（3D の 馬も 前と 同じ：火の 芯の 色は 前と 同じ・モデルの むらさきの 目は ふちに 少し 見える）
+    img = img * (1 - sock[..., None] * sk) + np.array([0.012, 0.001, 0.001]) * sock[..., None] * sk
     wv = st.get('wv', 0.0)                                                      # 第4.72版：光の ゆらぎ（大きさと 位置も 少し ゆれる）
     exw, eyw = ex + 1.6 * S * hs * math.sin(t * 23.0) * abs(wv) * 4, ey - 1.2 * S * hs * math.cos(t * 17.0) * abs(wv) * 4
     rr = np.sqrt((xx - exw) ** 2 + (yy - eyw) ** 2) / (S * hs * (1 + .45 * wv))
@@ -419,6 +442,24 @@ def face_frame(t, R, M, seed=7):
         wcol = np.array([1.0, .72, .45]) * (1 - fl) + np.array([1.0, .95, .88]) * fl
         out = out * (1 - wash) + wcol * wash
     return np.clip(out, 0, 1)
+
+
+def render_face_glb(work, i0, i1):
+    """顔の コマ（Meshy の 馬：毎コマ 3D）：前の 顔の しるし（目・鼻先の 画面の 場所）に 合わせて 描く"""
+    import time
+    import shiden_glb as SG
+    a0, nface = int(round(BLACK * FPS)), int(round(FACE * FPS))
+    SG.HOOKS.update(state=face_state, marks=face_marks, t_of=lambda f: f / FPS - BLACK, f_of=lambda t: int(round((t + BLACK) * FPS)), W=W, H=H,
+                    f_on=int(round((BLACK + F['EYE_ON']) * FPS)) + 1, f_end=nface)        # 第2稿：雷は 目が ともった つぎの コマから
+    for i in range(max(i0, a0), min(i1, nface)):
+        if os.path.exists(frame_path(work, i)):
+            continue
+        t0 = time.time()
+        t = i / FPS - BLACK
+        st = face_state(t)
+        R, M = SG.face_glb(t, st, face_marks(st), W, H)
+        save_png(face_frame(t, R, M, glb=True), frame_path(work, i))
+        print('face', i, round(time.time() - t0, 1), 's', flush=True)
 
 
 # ================================================================ B 蹄の カットイン
@@ -810,12 +851,16 @@ def storm(tau, seed=211):
 
 def hoof_layer(tau, prefix, seed=5):
     """3D の 蹄（場面の 秒 τ の 向き）→（線形の 色・前もって かけた, すき通し, 蹄鉄の 光, しるし）
-       黒い 馬の 蹄：黒っぽい 角質（縦の すじ・つや）・焼けた 蹄鉄の 光で 下が だいだいに 照る・かんむりの 毛・うしろからの むらさきと 青の ふちの 光"""
+       黒い 馬の 蹄：黒っぽい 角質（縦の すじ・つや）・焼けた 蹄鉄の 光で 下が だいだいに 照る・かんむりの 毛・うしろからの むらさきと 青の ふちの 光
+       （SD_HORSE が old で ない とき：Meshy の 蹄（flat/shiden_glb.py）を 同じ 置き方・同じ カメラで）"""
     az = 34 - 18 * ss(T_IN, T_OUT, tau)
     el = 7 - 4 * ss(T_IN, T_OUT, tau)
     Wc, Hc = int(1300 * S), int(640 * S)
     tmp = Scene()
     K = SH.build(tmp)
+    if SD_HORSE != 'old':
+        import shiden_glb as SG
+        return SG.hoof_layer_glb(tau, az, el, Wc, Hc, K, Wc / 960.0, seed)
     tgt = K['sole'] + np.array([-0.20, -0.035, 0.0])
     a, e = math.radians(az), math.radians(el)
     d = np.array([math.sin(a) * math.cos(e), math.sin(e), math.cos(a) * math.cos(e)])
@@ -2604,6 +2649,8 @@ def render_black(work, i0, i1):
 
 def render_face(work, i0, i1):
     """顔の コマ（3D は はじめ 2コマに 1回・あいだの コマは となりの 2つを まぜる。動きが 速い 1.4秒 から は 毎コマ）"""
+    if SD_HORSE != 'old':
+        return render_face_glb(work, i0, i1)
     rd = os.path.join(work, '_r'); os.makedirs(rd, exist_ok=True)
     cache = {}
     a0 = int(round(BLACK * FPS))
@@ -2646,6 +2693,38 @@ if __name__ == '__main__':
         assert im is not None and im.shape[:2] == (H0, W0), 'さいごの コマが 読めない'
         cv2.imwrite(out, im, [cv2.IMWRITE_WEBP_QUALITY, 90])
         print(out, os.path.getsize(out))
+    elif sys.argv[1] in ('--facebuf', '--facecomp'):
+        # 第3稿：顔の 3D（G バッファ＋光を つけた 色）を buf/ に のこす（--facebuf <buf> [i0 i1]）・
+        #        buf から 雷・息・仕上げを かさねて コマに する（--facecomp <buf> <作業フォルダ> [i0 i1]：雷は 前の コマの buf も 読む）
+        import time
+        import shiden_glb as SG
+        buf = sys.argv[2]; os.makedirs(buf, exist_ok=True)
+        k = 3 if sys.argv[1] == '--facebuf' else 4
+        a0, nface = int(round(BLACK * FPS)), int(round(FACE * FPS))
+        i0 = max(a0, int(sys.argv[k]) if len(sys.argv) > k else a0)
+        i1 = min(nface, int(sys.argv[k + 1]) if len(sys.argv) > k + 1 else nface)
+        SG.HOOKS.update(state=face_state, marks=face_marks, t_of=lambda f: f / FPS - BLACK, f_of=lambda t: int(round((t + BLACK) * FPS)), W=W, H=H,
+                        f_on=int(round((BLACK + F['EYE_ON']) * FPS)) + 1, f_end=nface, buf=buf)
+        if sys.argv[1] == '--facebuf':
+            for i in range(i0, i1):
+                p = os.path.join(buf, 'b%03d.npz' % i)
+                if os.path.exists(p):
+                    continue
+                t0 = time.time()
+                t = i / FPS - BLACK
+                st = face_state(t)
+                SG.save_buf(p, SG.face_buffers(t, st, face_marks(st), W, H))
+                print('buf', i, round(time.time() - t0, 1), 's', os.path.getsize(p) // 1024, 'KB', flush=True)
+        else:
+            work = sys.argv[3]; os.makedirs(work, exist_ok=True)
+            for i in range(i0, i1):
+                t0 = time.time()
+                t = i / FPS - BLACK
+                st = face_state(t)
+                B = SG.buf_at(i)
+                R = SG.face_layers(i, t, st, B, W, H)
+                save_png(face_frame(t, R, B['M'], glb=True), frame_path(work, i))
+                print('comp', i, round(time.time() - t0, 1), 's', 'arcs', R.get('n_arcs'), flush=True)
     elif sys.argv[1] == '--encode':
         work, out = sys.argv[2], sys.argv[3]
         import subprocess
