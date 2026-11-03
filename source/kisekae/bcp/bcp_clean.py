@@ -119,13 +119,17 @@ txt = ndi.binary_dilation((V > 100) | (R - B > 20), iterations=5)
 pill = ndi.binary_dilation((G >= pr['g']) & (B - R >= pr['br']), iterations=4)
 bg = ndi.binary_erosion((region | tregion) & ~keep & ~txt & ~pill & ~tmask, iterations=1)
 def smooth_from(w, s1=18, s2=60):
+    # 地の 点（w）から なめらかな 色。近くに 地の 点が ない 所は 地の 点 ぜんぶの 平均の 色（黒く ならない ように）
     f = np.zeros_like(src)
+    tot = max(float(w.sum()), 1.0)
     for c in range(3):
         n1 = cv2.GaussianBlur(src[..., c] * w, (0, 0), s1); d1 = cv2.GaussianBlur(w, (0, 0), s1)
         n2 = cv2.GaussianBlur(src[..., c] * w, (0, 0), s2); d2 = cv2.GaussianBlur(w, (0, 0), s2)
         f1 = n1 / np.maximum(d1, 1e-6); f2 = n2 / np.maximum(d2, 1e-6)
         a = np.clip(d1 / 0.25, 0, 1)
-        f[..., c] = f1 * a + f2 * (1 - a)
+        b = np.clip(d2 / 0.05, 0, 1)
+        fb = float((src[..., c] * w).sum()) / tot
+        f[..., c] = (f1 * a + f2 * (1 - a)) * b + fb * (1 - b)
     return f
 if any('bg' in r for r in C['regions']):
     # 所ごとに：その 所の 地（きまり bg：vmax・br）だけから 色を 作る（明るい 地と 暗い 地を まぜない）
@@ -138,7 +142,21 @@ if any('bg' in r for r in C['regions']):
         if rule.get('nopill'): sel &= ~pill
         if r.get('only') != 'text': sel &= ~txt
         sel = ndi.binary_erosion(sel, iterations=1)
-        f = smooth_from(sel.astype(np.float32), rule.get('s1', 18), rule.get('s2', 60))
+        if rule.get('rows') and 'rect' in r:
+            # 行ごとに 左と 右の となりの 地の 色を つなぐ（上下の 明るさの ちがいを その まま のこす）
+            x0, y0, x1, y1 = r['rect']; bw = rule['rows']
+            okn = ~keep & ~ndi.binary_dilation(tmask, iterations=2) & ~txt
+            f = smooth_from(sel.astype(np.float32), rule.get('s1', 18), rule.get('s2', 60))
+            for y in range(max(0, y0 - 8), min(H, y1 + 8)):
+                Lm = okn[y, max(0, x0 - bw):x0]; Rm = okn[y, x1:min(W, x1 + bw)]
+                if Lm.sum() < 3 or Rm.sum() < 3:
+                    continue
+                lc = np.median(src[y, max(0, x0 - bw):x0][Lm], 0); rc = np.median(src[y, x1:min(W, x1 + bw)][Rm], 0)
+                t = np.linspace(0, 1, x1 - x0)[:, None]
+                f[y, x0:x1] = lc * (1 - t) + rc * t
+            f[max(0, y0 - 8):y1 + 8, x0:x1] = cv2.GaussianBlur(f[max(0, y0 - 8):y1 + 8, x0:x1], (0, 0), rule.get('vblur', 4))
+        else:
+            f = smooth_from(sel.astype(np.float32), rule.get('s1', 18), rule.get('s2', 60))
         near = ndi.binary_dilation(rm, iterations=8)
         fill[near] = f[near]
 else:
@@ -146,7 +164,13 @@ else:
 rng = np.random.default_rng(3)
 noise = cv2.GaussianBlur(rng.normal(0, 1.6, (H, W)).astype(np.float32), (0, 0), 0.7)
 fill += noise[..., None] * np.array([0.6, 0.8, 1.2], np.float32)
-soft = cv2.GaussianBlur(remove.astype(np.float32), (0, 0), 2.0) * (~keep)
+soft = cv2.GaussianBlur(remove.astype(np.float32), (0, 0), 2.0)
+ts = C.get('text', {}).get('soft')
+if ts and tregion.any():
+    # 字だけ 消す 所：さかいめを 大きく ぼかす（光の あとの 段が 見えない ように）
+    tpart = (tmask & ~keep).astype(np.float32)
+    soft = np.maximum(soft, cv2.GaussianBlur(tpart, (0, 0), ts) * np.clip(cv2.GaussianBlur(tregion.astype(np.float32), (0, 0), ts), 0, 1))
+soft = soft * (~keep)
 out = np.clip(src * (1 - soft[..., None]) + fill * soft[..., None], 0, 255).astype(np.uint8)
 if C.get('inpaint'):
     im8 = np.ascontiguousarray(out)
