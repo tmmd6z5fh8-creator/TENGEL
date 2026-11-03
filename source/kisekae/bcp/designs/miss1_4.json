@@ -1,0 +1,159 @@
+{
+ "name": "miss1_4",
+ "title": "ハズレ① 二人でしょんぼり（4回目）",
+ "src": "src.png",
+ "quad": [
+  [
+   171.9,
+   285.1
+  ],
+  [
+   932.4,
+   285.1
+  ],
+  [
+   932.4,
+   826.3
+  ],
+  [
+   171.9,
+   826.3
+  ]
+ ],
+ "frame_lr": [
+  0,
+  1048
+ ],
+ "S": 0.4602,
+ "cx": 552.2,
+ "top_pt": 225,
+ "fill": {
+  "mode": "mirror",
+  "top": "radial",
+  "c": [
+   552.2,
+   9000
+  ],
+  "k": 0.9,
+  "len": 1.0,
+  "med": 1,
+  "desat": 0,
+  "raw": 300
+ },
+ "fg": {
+  "mode": "region",
+  "roi": [
+   0,
+   0,
+   1048,
+   1511
+  ],
+  "rects": [
+   [
+    141,
+    719,
+    962,
+    866
+   ]
+  ],
+  "navy": {
+   "br": 12,
+   "bg": -5,
+   "v": 256
+  },
+  "min_part": 20,
+  "close": 1,
+  "hole_max": 400,
+  "feather": 0.8
+ },
+ "clean": {
+  "regions": [
+   {
+    "rect": [
+     395,
+     299,
+     720,
+     434
+    ],
+    "only": "text",
+    "bg": {
+     "poly": 2,
+     "grow": 40,
+     "rb_ex": 999,
+     "v_ex": 110
+    }
+   },
+   {
+    "rrect": [
+     227,
+     461,
+     916,
+     718,
+     14
+    ],
+    "bg": {
+     "vmax": 74,
+     "gmax": 36
+    }
+   }
+  ],
+  "text": {
+   "rb": 999,
+   "v": 130,
+   "white_br": 999,
+   "dil": 6,
+   "soft": 4
+  },
+  "keep_fg": 2,
+  "keep_conf": false,
+  "vfill": [
+   {
+    "rect": [
+     200,
+     438,
+     931,
+     464
+    ],
+    "hmed": 9
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "title_style": "silver",
+  "normal": {
+   "text_x": [
+    80,
+    300
+   ],
+   "title_cx": 175.5,
+   "title_top": 14,
+   "title_px": 26,
+   "sub_cx": 175,
+   "sub_top": 45.4,
+   "sub_px": 12.5,
+   "rows_x": [
+    30,
+    337
+   ],
+   "rows_top": 84.9,
+   "rows_bottom": 195.3,
+   "row_h": 26.2,
+   "row_gap": 6.0,
+   "rows_zoom": 1.2,
+   "rib_in": "rows",
+   "rib_top": 83,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ },
+ "crop": [
+  4,
+  1511
+ ]
+}
