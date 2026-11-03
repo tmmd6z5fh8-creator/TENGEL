@@ -74,7 +74,19 @@ else:
         k = 0.55 + 0.45 * (y / max(top, 1))
         canvas[y] = canvas[min(top + (top - y), Hc - 1)] * k
 n = Hc - bot
-if n > 0 and fillm['mode'] == 'radial':
+if n > 0 and fillm.get('bottom') == 'glow':
+    # 下の すき間：絵の 下の はしの 色を 横に 大きく ぼかして、下へ だんだん 暗く（絵の 下の 何行かも なじませる）
+    go = dict({'sigma': 50, 'k_edge': 0.6, 'k_bot': 0.08, 'nb': 90}, **fillm.get('bottom_opts', {}))
+    base = canvas[bot - 6:bot].mean(0)
+    base = cv2.GaussianBlur(base[None], (0, 0), go['sigma'])[0]
+    ys = np.arange(n, dtype=np.float32)
+    kk = go['k_edge'] + (go['k_bot'] - go['k_edge']) * (ys / max(n, 1)) ** 0.7
+    canvas[bot:] = base[None] * kk[:, None, None]
+    nb = int(go['nb'])
+    for i in range(nb):
+        w = (1 - i / nb) ** 2
+        canvas[bot - 1 - i] = canvas[bot - 1 - i] * (1 - w) + base * go['k_edge'] * w
+elif n > 0 and fillm['mode'] == 'radial' and fillm.get('bottom', 'radial') == 'radial':
     canvas[bot:] = radial(bot, Hc, bot - 6, n)
 elif n > 0:
     refl = cv2.GaussianBlur(canvas[bot - n:bot][::-1].copy(), (0, 0), 2.2)
@@ -87,6 +99,17 @@ elif n > 0:
         canvas[bot - nb + i] *= 1.0 - 0.42 * ((i + 1) / nb) ** 1.3
 canvas = np.clip(canvas, 0, 255).astype(np.uint8)
 name = cfg['name']
+fgp = os.path.join(D, 'fg.png')
+if cfg.get('fg') and os.path.exists(fgp):
+    # ボードの 前の 絵（bcp_fg）：背景と 同じ 置き方で 1170×2532 の すき通しの 絵に
+    fg = np.asarray(Image.open(fgp).convert('RGBA')).astype(np.float32)
+    pm = fg[..., :3] * (fg[..., 3:] / 255.0)
+    w4 = cv2.warpAffine(np.dstack([pm, fg[..., 3]]), M, (Wc, Hc), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    al = np.clip(w4[..., 3], 0, 255)
+    rgb = np.clip(w4[..., :3] / np.maximum(al[..., None] / 255.0, 1e-3), 0, 255)
+    rgb[al < 1] = 0
+    Image.fromarray(np.dstack([rgb, al]).astype(np.uint8), 'RGBA').save(os.path.join(SRV, f'bcp_{name}_fg.webp'), quality=90)
+    print('fg', name, int((al > 8).sum()), 'px')
 Image.fromarray(canvas).save(os.path.join(SRV, f'bcp_{name}.webp'), quality=88)
 Image.fromarray(canvas).resize((390, 844), Image.LANCZOS).save(os.path.join(D, 'bg_small.png'))
 json.dump({'S': S, 'OX': OX, 'OY': OY, 'HP': HP, 'm3d': m3d, 'Qs': Qs.tolist()}, open(os.path.join(D, 'geom.json'), 'w'))

@@ -38,9 +38,11 @@ if sti:
 else:
     star_css = ''
 css = f"""
-#fxOv .ov > :not(.hb):not(.close):not(.bcpbg):not(.sr),#fxOv .fxs > video{{display:none!important}}
+#fxOv .ov > :not(.hb):not(.close):not(.bcpbg):not(.bcpfg):not(.sr),#fxOv .fxs > video{{display:none!important}}
 #fxOv .bcpbg{{position:absolute;left:0;top:0;width:390px;height:844px;background:url(bcp_{name}.webp) 0 0/390px 844px no-repeat;z-index:0;pointer-events:none}}
 #fxOv .ov > .hb{{z-index:2}}
+#fxOv .bcpfg{{position:absolute;left:0;top:0;width:390px;height:844px;background:url(bcp_{name}_fg.webp) 0 0/390px 844px no-repeat;z-index:3;pointer-events:none}}
+#fxOv .ov > .close{{z-index:5!important}}
 #fxOv .rb.bcp{{position:relative!important;width:350px!important;height:{HP}px!important;padding:0!important;background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;
   transform-origin:0 0!important;transform:matrix3d({m3d})!important;animation:none!important;outline:0!important;box-sizing:border-box}}
 #fxOv .rb.bcp::before,#fxOv .rb.bcp::after{{display:none!important}}
@@ -66,11 +68,13 @@ css = f"""
 #fxOv .rb.bcp .more{{color:#DDE6FF!important;-webkit-text-fill-color:#DDE6FF!important}}
 #fxOv .rb.bcp .brows li.no{{opacity:1!important}}
 """ + star_css.replace("{{", "{").replace("}}", "}") + (("#fxOv .ov > .close{border-color:%s!important;background:%s!important;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 10px rgba(255,200,90,.35)!important}\n" % (cfg["close_border"], cfg.get("close_bg", "rgba(0,0,0,.35)"))) if cfg.get("close_border") else "")
+L = dict(L, fg=bool(cfg.get('fg')))
 js = """(() => {
   const L = %s, HP = %s;
   const ov = document.querySelector('#fxOv .ov'); if (!ov) return 'no ov';
   const st = document.createElement('style'); st.id = 'bcpCss'; st.textContent = %s; document.head.appendChild(st);
   const bg = document.createElement('div'); bg.className = 'bcpbg'; ov.insertBefore(bg, ov.firstChild);
+  if (L.fg) { const fg = document.createElement('div'); fg.className = 'bcpfg'; ov.querySelector('.hb').after(fg); }
   const rb = ov.querySelector('.rb'); rb.classList.add('bcp'); if (L.stars) rb.classList.add('stars'); if (L.star_img) rb.classList.add('istars');
   const bh = rb.querySelector('.bh'), sub = rb.querySelector('.bsub'), rib = rb.querySelector('.zrib'), card = rb.querySelector('.card'), br = rb.querySelector('.brows');
   const n = rb.querySelectorAll('.brows > li').length;

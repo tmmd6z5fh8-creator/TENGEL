@@ -10,9 +10,10 @@
 
 ```
 D=/home/claude/work/bcpic/<デザイン>          # src.png と cfg.json が ある フォルダ
+python3 kisekae/bcp/bcp_fg.py     $D          # ボードの 前に ある 馬・前の 紙ふぶきを すき通しの 絵に（cfg の fg が ある とき：fg.png・fgmask.png）
 python3 kisekae/bcp/bcp_cutout.py $D          # 見出しの 横の 飾り（星・月桂樹）を すき通しの png に（cfg の cutout が ある とき）
 python3 kisekae/bcp/bcp_clean.py  $D          # 絵の ボードの 字・行・飾りを 消す → clean.png（clean_dbg.png：赤＝消した 所・緑＝のこした 所）
-python3 kisekae/bcp/bcp_bg.py     $D          # 舞台（390×844pt）の 3倍 1170×2532 の 背景 → <SRV>/bcp_<name>.webp・geom.json（ボードの 面 → 絵の 板 の 射影）
+python3 kisekae/bcp/bcp_bg.py     $D          # 舞台（390×844pt）の 3倍 1170×2532 の 背景 → <SRV>/bcp_<name>.webp（前の 絵は bcp_<name>_fg.webp）・geom.json（ボードの 面 → 絵の 板 の 射影）
 python3 kisekae/bcp/bcp_inj.py    $D          # 見本の 注入 JS → inj.js
 python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の ためし（preview）に 注入して 写す（種類・行の 数）
 ```
@@ -27,10 +28,12 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 | `quad` | 絵の 板の 四すみ（左上・右上・右下・左下・px）。ボードの 面（350pt × 高さ）を ここへ 射影 |
 | `S`・`cx`・`top_pt` | 絵の 大きさ（pt/px）・舞台の まん中に 来る 絵の x・板の 上の はしの 高さ（pt） |
 | `crop` | 絵の 上と 下の 使わない 行（うすく 写りこんだ アプリの 画面 など） |
-| `fill` | 絵の 上と 下の すき間の うめ方：`mirror`（床に うつる）・`radial`（光の すじを のばす：`c` が 光の まん中）・`glow`（上だけ：光を ぼかして 暗く） |
+| `fill` | 絵の 上と 下の すき間の うめ方：`mirror`（床に うつる）・`radial`（光の すじを のばす：`c` が 光の まん中）・`glow`（光を ぼかして 暗く）。`top`・`bottom` で 上と 下を べつに |
 | `clean.regions` | 消す 所（`navy`：その 点の 紺の かたまり・`rect`・`rrect`・`poly`）。`only: "text"` は 字（金・白・光）だけ 消して 地の もようを のこす。`bg` は その 所の 地の 色の きまり |
 | `clean.keep`・`keep_red`・`crowd`・`keep_conf` | のこす もの（ハンコ・下の 馬たち・ボードの 外まで はみ出す 紙ふぶき） |
 | `clean.force`・`patch`・`inpaint`・`deghost` | かならず 消す 所・となりの 絵を ずらして はる（旗の 下の 鎖）・絵に 描いて ある ボタンを うめる・うすく 写りこんだ アプリの 画面を 消す |
+| `fg` | ボードの 前に ある もの：`seeds`（馬の 中の 点・ボードの 中）から 紺で ない 所を つないで、`grabcut` で 絵の ふち線で 切り直す（`quad_margin`：ボードの まわり だけ）。`conf` は 前の 紙ふぶき（色の まぜ具合で すき通し）。アプリの ボードは 背景と この 絵の あいだ |
+| `clean.keep_fg` | 前の 絵（fgmask）は 消さない |
 | `cutout` | 見出しの 横の 飾りを 切り出す 所 |
 | `layout` | ボードの 面（350pt 基準）の 中の 場所：見出し（`title_cx`・`title_top`・`title_px`）・小見出し・行（`rows_x`・`rows_top`・`rows_bottom`・`row_h`・`rows_zoom`）・帯（`rib_in`）・飾りの 画像（`star_img`）。`rib`・`many` は 帯が ある とき・行が 4つ 以上の とき の 上書き |
 | `close_border`・`close_bg` | 絵に「とじる」が 描いて ある とき、本物の「とじる」の ふちと 地の 色を 合わせる |
@@ -46,3 +49,4 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 | 的中⑥ トロフィー結果ボード（3連勝） | `trophy` | 月桂樹を 切り出す。上は `glow` |
 | 的中⑦ 馬が運ぶ結果ボード（3連勝） | `carry` | 絵の「とじる」を 消して 本物を 同じ 所に（黒地に 金の ふち）。地の もようは のこす |
 | 的中⑧ 花束結果ボード（3連勝） | `bouquet` | うすく 写りこんだ アプリの 画面と 絵の「とじる」を 消す。旗を 消して 鎖を つなぐ。見出しの 所は 行ごとに 左右の 地を つなぐ（`bg.rows`）。長い 見出しに かかる 紙ふぶき 2つは 消す |
+| 的中④ 自撮り結果ボード（3連勝） | `selfie` | ボードが かたむいて いる（四すみで 射影）。馬の 頭と 手は ボードの 前（`fg`・GrabCut）・前の 紙ふぶき 2つも 前。旗と 星を 消して 鎖を つなぐ（鎖の 輪だけ のこす：`keep` の `sat`）。上は 光の すじ・下は 鏡 |

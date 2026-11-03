@@ -30,6 +30,12 @@ def shape_mask(s):
         x, y = s['navy']; k = lab[y, x]
         assert k, ('紺で ない 点', s['navy'])
         m = ndi.binary_fill_holes(lab == k).astype(np.uint8)
+    if 'sat' in s:
+        # その 中の あざやかな 所だけ（鎖の 輪 など：まわりの 地は のこさない）
+        hsv_ = cv2.cvtColor(np.clip(src, 0, 255).astype(np.uint8), cv2.COLOR_RGB2HSV)
+        sm = ((hsv_[..., 1] > s['sat'][0]) & (hsv_[..., 2] > s['sat'][1])).astype(np.uint8)
+        sm = cv2.dilate(sm, disk(s.get('dil', 2)))
+        m = m & sm
     if s.get('shrink'):
         m = cv2.erode(m, disk(s['shrink']))
     if s.get('round'):
@@ -86,6 +92,9 @@ else:
 keep = np.zeros((H, W), bool)
 for s in C.get('keep', []):
     keep |= shape_mask(s)
+if C.get('keep_fg') and os.path.exists(os.path.join(D, 'fgmask.png')):
+    fgm = np.asarray(Image.open(os.path.join(D, 'fgmask.png'))) > 100
+    keep |= ndi.binary_dilation(fgm, iterations=C['keep_fg'] if isinstance(C['keep_fg'], int) else 2)
 if C.get('keep_red'):
     kr = C['keep_red'] if isinstance(C['keep_red'], dict) else {'dil': C['keep_red']}
     red = (R > 140) & (R - B > 70) & (G < 130)
@@ -142,6 +151,12 @@ if any('bg' in r for r in C['regions']):
         if rule.get('nopill'): sel &= ~pill
         if r.get('only') != 'text': sel &= ~txt
         sel = ndi.binary_erosion(sel, iterations=1)
+        if sel.sum() < 400:
+            # 地の 点が すくない（小さな 所）：まわり 30px まで 広げて とる
+            big = ndi.binary_dilation(rm, iterations=30) & ~keep & ~ndi.binary_dilation(tmask, iterations=2) & ~txt
+            if 'vmax' in rule: big &= V <= rule['vmax']
+            if 'br' in rule: big &= (B - R) >= rule['br']
+            sel = ndi.binary_erosion(big, iterations=1)
         if rule.get('rows') and 'rect' in r:
             # 行ごとに 左と 右の となりの 地の 色を つなぐ（上下の 明るさの ちがいを その まま のこす）
             x0, y0, x1, y1 = r['rect']; bw = rule['rows']
