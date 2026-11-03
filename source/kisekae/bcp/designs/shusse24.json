@@ -1,0 +1,246 @@
+{
+ "name": "shusse24",
+ "title": "的中⑨ 出世馬（24連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   118,
+   518
+  ],
+  [
+   918,
+   518
+  ],
+  [
+   918,
+   1062
+  ],
+  [
+   118,
+   1062
+  ]
+ ],
+ "frame_lr": [
+  0,
+  1048
+ ],
+ "S": 0.43,
+ "cx": 526,
+ "top_pt": 399.24,
+ "fill": {
+  "mode": "radial",
+  "c": [
+   525,
+   420
+  ],
+  "k": 0.92,
+  "len": 1.3,
+  "med": 101,
+  "desat": 0,
+  "raw": 90,
+  "bottom": "mirror"
+ },
+ "close_border": "#FFFFFF",
+ "close_bg": "linear-gradient(90deg,rgba(32,6,46,.94),rgba(54,26,6,.94))",
+ "close_shadow": "-5px 0 14px 2px rgba(190,70,255,.85),5px 0 14px 2px rgba(255,185,70,.85),inset 0 0 8px rgba(255,255,255,.22)",
+ "close_css": "border-width:3px!important",
+ "clean": {
+  "patch": [
+   {
+    "dst": [
+     783,
+     711,
+     846,
+     733
+    ],
+    "dx": "auto",
+    "dx_range": [
+     -230,
+     -60
+    ],
+    "feather": 6
+   },
+   {
+    "dst": [
+     790,
+     733,
+     878,
+     802
+    ],
+    "dx": -112,
+    "feather": 8
+   }
+  ],
+  "regions": [
+   {
+    "rect": [
+     398,
+     534,
+     772,
+     646
+    ],
+    "only": "text",
+    "bg": {
+     "poly": 3,
+     "grow": 60,
+     "rb_ex": 999,
+     "v_ex": 135
+    }
+   },
+   {
+    "rect": [
+     372,
+     646,
+     772,
+     702
+    ],
+    "only": "text",
+    "bg": {
+     "poly": 3,
+     "grow": 60,
+     "rb_ex": 999,
+     "v_ex": 135
+    }
+   },
+   {
+    "rect": [
+     800,
+     556,
+     852,
+     608
+    ],
+    "conf_rm": true,
+    "bg": {
+     "poly": 2,
+     "grow": 30,
+     "rb_ex": 999,
+     "v_ex": 135
+    }
+   },
+   {
+    "rect": [
+     804,
+     694,
+     822,
+     711
+    ],
+    "conf_rm": true,
+    "bg": {
+     "rows": 14,
+     "vblur": 2
+    }
+   },
+   {
+    "rrect": [
+     142,
+     744,
+     898,
+     1038,
+     22
+    ],
+    "bg": {
+     "vmax": 48,
+     "gmax": 23
+    }
+   }
+  ],
+  "text": {
+   "rb": 999,
+   "v": 140,
+   "white_br": 999,
+   "dil": 22,
+   "soft": 14
+  },
+  "force": [
+   {
+    "rect": [
+     800,
+     556,
+     852,
+     608
+    ]
+   },
+   {
+    "rect": [
+     804,
+     694,
+     822,
+     711
+    ]
+   }
+  ],
+  "keep_red": {
+   "dil": 6,
+   "clip": [
+    205,
+    515,
+    405,
+    705
+   ]
+  },
+  "inpaint": [
+   {
+    "rrect": [
+     374,
+     1291,
+     678,
+     1409,
+     56
+    ]
+   }
+  ],
+  "inpaint_mode": "radial",
+  "keep_conf": true,
+  "keep": [
+   {
+    "rect": [
+     490,
+     498,
+     560,
+     531
+    ]
+   }
+  ],
+  "inpaint_c": [
+   525,
+   1110
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    122,
+    312
+   ],
+   "title_cx": 198,
+   "title_top": 7,
+   "title_px": 46,
+   "sub_cx": 188.6,
+   "sub_top": 57.4,
+   "sub_px": 14,
+   "sub_x": [
+    112,
+    322
+   ],
+   "rows_x": [
+    18,
+    337
+   ],
+   "rows_top": 104.6,
+   "rows_bottom": 221,
+   "row_h": 28.4,
+   "row_gap": 5.8,
+   "rows_zoom": 1.2,
+   "rib_in": "rows",
+   "rib_top": 102,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ }
+}
