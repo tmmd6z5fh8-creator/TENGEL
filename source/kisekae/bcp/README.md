@@ -10,6 +10,7 @@
 
 ```
 D=/home/claude/work/bcpic/<デザイン>          # src.png と cfg.json が ある フォルダ
+python3 kisekae/bcp/bcp_retouch.py $D         # まさちゃんの 指定で 絵の 一部を 消して 描き足す（cfg の retouch が ある とき：orig.png → src.png）
 python3 kisekae/bcp/bcp_fg.py     $D          # ボードの 前に ある 馬・前の 紙ふぶきを すき通しの 絵に（cfg の fg が ある とき：fg.png・fgmask.png）
 python3 kisekae/bcp/bcp_cutout.py $D          # 見出しの 横の 飾り（星・月桂樹）を すき通しの png に（cfg の cutout が ある とき）
 python3 kisekae/bcp/bcp_clean.py  $D          # 絵の ボードの 字・行・飾りを 消す → clean.png（clean_dbg.png：赤＝消した 所・緑＝のこした 所）
@@ -44,6 +45,7 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 | `clean.vfill` | ボードの 中の 横に 長い 飾り（鎖）を 消す 帯：`rect`（まっすぐ）か `line`＋`half`（かたむいた ボード：鎖の まん中の 線と 帯の はばの 半分）。帯の すぐ 上と すぐ 下の 行の 色を 縦に つなぐ（`hmed`：はしの 色の むらを 横に ならす）。`keep` の 形・`keep_fg`・`keep_red` は のこす（紙ふぶきの のこし `keep_conf` は 見ない：鎖の 輪も 紙ふぶきに 見える）。`protect`：帯に かかる 紙ふぶき（`seed`＋`tol` の 色の つながり、または なぞった `poly`＋`color`） |
 | `clean.inpaint` の 形ごとの `mode` | なし＝Telea・`rows`（行ごとに 左右を つなぐ：同じ 行の はなれた 形は べつべつ）・`radial`・`diffuse`（まわりの 色を 大きい ぼかし → 小さい ぼかしで かさねる：見出しの 大きな ハンコ・月桂樹）。`clean.diffuse` = `{vmax, within}`（明るい ふち・光は 色の もとに しない・この 形の 中だけ） |
 | `clean.resynth` の `edge_line`・`dir` | ななめの はし（黒板の 上の ふち に そって）・`dir: "down"`（はしの 下の 光の すじを 作り直す：うすく 写った「とじる」や タブ） |
+| `retouch` | まさちゃんの 指定の 絵の 直し（`bcp_retouch.py`）：`src`（元の 絵 `orig.png`）→ `out`（`src.png`）に `ops` を 順に。`bg_angular`（光の すじの 背景：角度ごとの 色の 中央値＋まわりとの ちがいを なじませる）・`bg_radial`・`diffuse`（まわりの 色で なめらかに）・`clone`（となりの 絵を うつす：毛 など）・`shade`・`stroke`（ふち線を 描く）・`glow`。形は `poly`・`minus`・`clip` |
 | `cutout` | 見出しの 横の 飾りを 切り出す 所 |
 | `layout` | ボードの 面（350pt 基準）の 中の 場所：見出し（`title_cx`・`title_top`・`title_px`）・小見出し・行（`rows_x`・`rows_top`・`rows_bottom`・`row_h`・`rows_zoom`）・帯（`rib_in`）・飾りの 画像（`star_img`）。`rib`・`many` は 帯が ある とき・行が 4つ 以上の とき の 上書き |
 | `close_border`・`close_bg`・`close_shadow`・`close_css` | 絵に「とじる」が 描いて ある とき、本物の「とじる」の ふち・地の 色・光（box-shadow）・ほかの CSS（ふちの 太さ など）を 合わせる |
@@ -96,3 +98,6 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 | ハズレ⑤ 書き換え参戦（3回目） | `miss5_3` | 2回目と 同じ やり方。左の 馬の 頭も ボードの 前・毛が かかる「8」の チップは 茶色だけ 前（`only_brown`） |
 | ハズレ⑤ 書き換え参戦（4回目） | `miss5_4` | 3回目と 同じ やり方 |
 | ハズレ⑥ 作戦会議（1回目） | `miss6` | iPad の 画面の 写真から 作った 絵。上の 時刻・うすい アプリの 画面と 下の「とじる」・タブは 光の すじを 作り直して 消す（`resynth`：黒板の 上の ふちに そった `edge_line`・下は `dir: "down"`・紙ふぶきは `paste` で もどす）。鎖（`vfill`）・旗・ハンコ・字は 消す。左下の 馬の 顔と「？」・右下の 馬は ボードの 前（`fg` の `mode: region`） |
+| ハズレ⑥ 作戦会議（2回目） | `miss6_2` | 1回目と 同じ iPad の 写真の 形（ボードの 位置も 同じ）。下の 左右の さかさの 馬の ひづめ・右下の 巻き紙は ボードの 前（`fg` の `rects`・`navy.v` 150：青い 汗も 前）。下の 光の すじは 絵の 物の 下の はしに 合わせて 6つの 区切りで 作り直す（`resynth` の `dir: "down"`・紙ふぶきは もどす）。下の うすい 画面の あとを 消す 帯は 馬の 所を さける |
+| ハズレ⑥ 作戦会議（3回目） | `miss6_3` | 2回目と 同じ やり方。右上の さかさの 馬の 青い 汗は ボードの 前・ボードの 中の 青い 汗の すじは のこす（`keep` の `sat`） |
+| ハズレ⑥ 作戦会議（4回目） | `miss6_4` | 2回目と 同じ やり方。まさちゃんの 指定（11/04 00:55「赤丸のところ、絵の構成として不自然だから消して！追加する必要があるところは書き足して！」）で 左上の 馬の まん中の 耳と、上の さかさの 馬の 左の 足を 消して 描き足す（`retouch`：耳の あとは 暗い 背景と 左の 毛を うつす・足の あとは 光の すじの 背景と あたまの ふち線・ほお） |
