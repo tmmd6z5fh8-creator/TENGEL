@@ -20,6 +20,7 @@ def shape_mask(s):
         x0, y0, x1, y1 = s['rect']; m[y0:y1, x0:x1] = 1
     elif 'rrect' in s:
         x0, y0, x1, y1, r = s['rrect']; m[y0:y1, x0:x1] = 1
+        r = int(min(r, (x1 - x0 - 1) // 2, (y1 - y0 - 1) // 2))          # 角の 丸みは 四角に おさまる 大きさまで
         m = cv2.morphologyEx(m, cv2.MORPH_OPEN, disk(r))
     elif 'ellipse' in s:
         cx, cy, rx, ry = s['ellipse']; cv2.ellipse(m, (cx, cy), (rx, ry), 0, 0, 360, 1, -1)
