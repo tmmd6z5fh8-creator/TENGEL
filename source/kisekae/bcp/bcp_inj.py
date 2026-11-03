@@ -53,6 +53,8 @@ css = f"""
 #fxOv .rb.bcp .bh .bz,#fxOv .rb.bcp .bh .bx3{{color:transparent!important;-webkit-text-fill-color:transparent!important}}
 #fxOv .rb.bcp.notitle .bh{{visibility:hidden!important}}
 #fxOv .rb.bcp.silver .bh{{background:linear-gradient(180deg,#FFFFFF 0%,#EEF3FB 45%,#C9D6EC 75%,#9FB2D6 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.7px #3E4C70;filter:drop-shadow(0 1.2px 0 #1E2A48) drop-shadow(0 0 7px rgba(150,190,255,.55))}}
+#fxOv .rb.bcp.copper .bh{{background:linear-gradient(180deg,#FFF3E8 0%,#FFCFA8 26%,#F2914F 52%,#C55E2A 76%,#8C3C17 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.9px #5A2008;filter:drop-shadow(0 1.6px 0 #3E1606) drop-shadow(0 0 9px rgba(255,140,70,.55))}}
+#fxOv .rb.bcp.rainbow .bh{{background:linear-gradient(180deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,0) 46%),linear-gradient(90deg,#FF5A7A 0%,#FFB347 18%,#FFE45C 34%,#6EE07A 50%,#4CC3FF 66%,#8C7CFF 82%,#FF7AD9 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.8px #3A2A6A;filter:drop-shadow(0 1.4px 0 #221848) drop-shadow(0 0 8px rgba(255,255,255,.45))}}
 #fxOv .rb.bcp .bh.bcp1x{{letter-spacing:0}}#fxOv .rb.bcp .bh.bcp1x .bzx{{margin-left:-.2em}}
 #fxOv .rb.bcp.stars .bh::before,#fxOv .rb.bcp.stars .bh::after{{content:'';position:absolute;top:-3px;width:46px;height:36px;background-repeat:no-repeat;background-size:100% 100%}}
 #fxOv .rb.bcp.stars .bh::before{{right:100%;margin-right:14px;background-image:{uri(starL)}}}

@@ -1,0 +1,125 @@
+{
+ "name": "stamp2",
+ "title": "的中⑤ スタンプ結果ボード（2連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   97,
+   487
+  ],
+  [
+   955,
+   487
+  ],
+  [
+   977,
+   1157
+  ],
+  [
+   81,
+   1157
+  ]
+ ],
+ "frame_lr": [
+  52,
+  1003
+ ],
+ "top_pt": 226,
+ "clean": {
+  "patch": [
+   {
+    "dst": [
+     820,
+     726,
+     942,
+     782
+    ],
+    "dx": -122
+   }
+  ],
+  "regions": [
+   {
+    "navy": [
+     880,
+     640
+    ],
+    "shrink": 9,
+    "clip": [
+     462,
+     0,
+     1048,
+     1501
+    ]
+   },
+   {
+    "navy": [
+     700,
+     900
+    ],
+    "shrink": 12
+   }
+  ],
+  "keep_red": {
+   "dil": 6,
+   "clip": [
+    100,
+    470,
+    500,
+    770
+   ]
+  },
+  "keep_conf": true,
+  "force": [
+   {
+    "rect": [
+     815,
+     760,
+     945,
+     845
+    ]
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    154,
+    334
+   ],
+   "title_cx": 226,
+   "title_top": 24,
+   "title_px": 40,
+   "sub_top": 75,
+   "sub_px": 13,
+   "rows_x": [
+    16,
+    340
+   ],
+   "rows_top": 126,
+   "rows_bottom": 254,
+   "row_h": 36,
+   "row_gap": 9,
+   "rib_in": "rows",
+   "rib_top": 121,
+   "rib_zoom": 0.8
+  },
+  "rib": {},
+  "many": {
+   "rows_top": 121,
+   "row_h": 27,
+   "row_gap": 4
+  },
+  "title_style": "silver"
+ },
+ "fill": {
+  "mode": "radial",
+  "c": [
+   527,
+   820
+  ],
+  "k": 0.9,
+  "len": 0.8
+ }
+}
