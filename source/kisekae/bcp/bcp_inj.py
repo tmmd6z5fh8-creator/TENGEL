@@ -51,6 +51,7 @@ css = f"""
   background:linear-gradient(180deg,#FFFCEB 0%,#FFE98A 26%,#FFCB3D 50%,#EE9F1E 74%,#C9780F 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent!important;
   -webkit-text-stroke:.9px #7A3E00;filter:drop-shadow(0 1.6px 0 #5A2E00) drop-shadow(0 0 9px rgba(255,196,70,.62))}}
 #fxOv .rb.bcp .bh .bz,#fxOv .rb.bcp .bh .bx3{{color:transparent!important;-webkit-text-fill-color:transparent!important}}
+#fxOv .rb.bcp.silver .bh{{background:linear-gradient(180deg,#FFFFFF 0%,#EEF3FB 45%,#C9D6EC 75%,#9FB2D6 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.7px #3E4C70;filter:drop-shadow(0 1.2px 0 #1E2A48) drop-shadow(0 0 7px rgba(150,190,255,.55))}}
 #fxOv .rb.bcp .bh.bcp1x{{letter-spacing:0}}#fxOv .rb.bcp .bh.bcp1x .bzx{{margin-left:-.2em}}
 #fxOv .rb.bcp.stars .bh::before,#fxOv .rb.bcp.stars .bh::after{{content:'';position:absolute;top:-3px;width:46px;height:36px;background-repeat:no-repeat;background-size:100% 100%}}
 #fxOv .rb.bcp.stars .bh::before{{right:100%;margin-right:14px;background-image:{uri(starL)}}}
@@ -75,7 +76,7 @@ js = """(() => {
   const st = document.createElement('style'); st.id = 'bcpCss'; st.textContent = %s; document.head.appendChild(st);
   const bg = document.createElement('div'); bg.className = 'bcpbg'; ov.insertBefore(bg, ov.firstChild);
   if (L.fg) { const fg = document.createElement('div'); fg.className = 'bcpfg'; ov.querySelector('.hb').after(fg); }
-  const rb = ov.querySelector('.rb'); rb.classList.add('bcp'); if (L.stars) rb.classList.add('stars'); if (L.star_img) rb.classList.add('istars');
+  const rb = ov.querySelector('.rb'); rb.classList.add('bcp'); if (L.stars) rb.classList.add('stars'); if (L.star_img) rb.classList.add('istars'); if (L.title_style) rb.classList.add(L.title_style);
   const bh = rb.querySelector('.bh'), sub = rb.querySelector('.bsub'), rib = rb.querySelector('.zrib'), card = rb.querySelector('.card'), br = rb.querySelector('.brows');
   const n = rb.querySelectorAll('.brows > li').length;
   if (/[^！]！$/.test(bh.textContent)) bh.classList.add('bcp1x');      // 「…的中！」：「！」を 字に よせる（絵の 見出しと 同じ はば）
