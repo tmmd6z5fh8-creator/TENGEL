@@ -463,6 +463,40 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .ocrnote{margin:6px 0 0;line-height:1.55}
 .rsvtop details.closed .lgiven .s{color:var(--muted)}
 .rsvnote{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+/* 第4.122版：買い目の 自己入力（使うゾーンの 1つ）・判定の ゾーンごとの 枠（枠複・枠単を 解放した とき）・上の 帯の「結果待ち」と その 一覧・収支の 自己入力の 行 */
+.toggles.zbuy button.self{border-style:dashed}
+.selfpk{margin-top:10px;padding:10px 12px;border:1.5px dashed var(--line);border-radius:10px;background:var(--surface-2)}
+.selfpk .sph{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.5}
+.selfpk .sph b{color:var(--ink);font-size:13.5px}
+.selfpk .spr{display:grid;grid-template-columns:2.4em minmax(0,1fr);gap:8px;align-items:start;margin-top:8px}
+.selfpk .spl{font-size:12.5px;font-weight:700;padding-top:7px}
+.selfpk .spn{display:flex;flex-wrap:wrap;gap:6px}
+.selfpk .spn .num{min-width:2.15em;height:2.15em;font-size:14.5px}
+.selfpk .spf{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.selfpk .spf .btn{flex:none;padding:4px 10px;font-size:12px}
+.selfpk .spw{margin-top:8px;font-size:12px;font-weight:700;color:var(--warn);line-height:1.5}
+.zwaku{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:12.5px}
+.zwaku .zw1{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.zwaku .zwl{flex:none;font-weight:700;color:var(--muted);min-width:2.6em}
+.zwaku .num{min-width:1.6em;height:1.6em;font-size:12.5px}
+.zwaku .zwc{flex:1;min-width:0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;word-break:normal;overflow-wrap:anywhere;line-height:1.6}.zwaku .zwc>span{display:inline-block;white-space:nowrap}
+#rsvBtn{cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;line-height:1.5;margin-left:auto!important}
+#rsvBtn ~ #msBtn{margin-left:6px!important}
+#rsvBtn svg{width:15px;height:15px}
+#rsvBtn .rvn{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:3px;padding:0 5px;border-radius:9px;background:rgba(243,240,230,.18);font-family:var(--font-mono);font-size:12px;line-height:1}
+#rsvBtn.has .rvn{background:#FFE08A;color:#3A2A00}
+.rvcard .rvh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rvcard .rvh b{font-size:14.5px}
+.rvcard .rvh .muted{font-size:12.5px}
+.rvcard .rvm{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.lb.LS{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:12px}
+.rvlegs{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.rvleg{display:flex;flex-direction:column;gap:5px;padding:7px 10px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.rvleg .rvl{font-size:12.5px;font-weight:700;line-height:1.35}.rvleg .rvl.self{color:var(--warn)}
+.rvleg .rvz{display:flex;flex-direction:column;gap:4px}.rvleg .rvs{display:flex;align-items:center;flex-wrap:wrap;gap:4px}.rvleg .rvsl{flex:none;width:2.3em;font-size:11.5px;font-weight:700;color:var(--muted)}.rvleg .rvsl.w3{width:3.3em}
+.rvt{font-size:12.5px;margin-top:8px}.rvt b{font-size:13px}
+.rvcard details.rvd{margin-top:6px}.rvcard details.rvd summary{font-size:13px}
+.betrow .bc{word-break:normal;overflow-wrap:anywhere}.betrow .bc>span{display:inline-block;white-space:nowrap}
 </style>
 
 <header class="top">
@@ -1076,7 +1110,7 @@ async function switchSlot(n) {
 }
 document.addEventListener('tengel:slots', refreshSlots);
 // ポイント・解放が変わったら（App Store版）：マザーデータの🔒・券種の🔒を描き直す
-document.addEventListener('tengel:wallet', () => { paintSlotBars(); if (st.tab === 'judge') renderRecCard(currentJudge()); if (st.tab === 'rec' && !inputBusy('#recList')) renderRec(); });
+document.addEventListener('tengel:wallet', () => { paintSlotBars(); if (st.tab === 'judge') { if (NATIVE_APP && !st.w5edit) renderResult(); else renderRecCard(currentJudge()); } if (st.tab === 'rec' && !inputBusy('#recList')) renderRec(); });   // 第4.122版：解放で 判定の ゾーンの 枠も 出す（renderResult は 買い目の カードも）
 document.addEventListener('click', e => { const b = e.target.closest('.slotchip, .slotchip-go'); if (b && b.dataset.slot) switchSlot(+b.dataset.slot); });
 
 // ===== tabs =====
@@ -1086,7 +1120,7 @@ function setTab(t) {
   $$('[role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
   $('#v-judge').hidden = t !== 'judge'; $('#v-win5').hidden = t !== 'win5'; $('#v-rec').hidden = t !== 'rec'; $('#v-stats').hidden = t !== 'stats'; $('#v-set').hidden = t !== 'set';
   if (t === 'rec') renderRec(); if (t === 'stats') renderStats(); if (t === 'set') renderSet(); if (t === 'win5') renderWin5();
-  if (t === 'judge') renderRecCard(currentJudge());   // 設定（解放・マザーデータ）が変わっていたら描き直す（変わっていなければそのまま）
+  if (t === 'judge') { if (NATIVE_APP && !st.w5edit && st.wakuShown != null && st.wakuShown !== wakuSig()) renderResult(); else renderRecCard(currentJudge()); }   // 設定（解放・マザーデータ）が変わっていたら描き直す（変わっていなければそのまま）。枠複・枠単の 解放は 判定ごと（第4.122版）
   document.dispatchEvent(new CustomEvent('tengel:tab', { detail: t }));
   storeSet('tengel.tab', t); window.scrollTo(0, 0);
   if (typeof updateMini === 'function') updateMini();
@@ -1110,7 +1144,7 @@ function segSet(sel, v) { $$(sel + ' button').forEach(b => b.setAttribute('aria-
 for (const [id, k] of bindings) $('#' + id).addEventListener('input', e => {
   st.form[k] = e.target.value;
   if (k === 'n') buildGrid();
-  if (['date', 'venue', 'r'].includes(k)) { st.form.id = null; st.form.hp = null; }
+  if (['date', 'venue', 'r'].includes(k)) { st.form.id = null; st.form.hp = null; st.form.self = null; }
   changed();
 });
 $('#fSurf').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.form.surface = b.dataset.v; segSet('#fSurf', b.dataset.v); changed(); });
@@ -1193,6 +1227,21 @@ function reasonOf(k, z) {
   return i >= 0 ? REASON[k][i] : `カスタム買い目：1着${z.a}・2着${z.b.join('か')}（設定タブで追加）`;
 }
 function numChips(J, nos) { return nos.map(no => `<span class="num ${wakuCls(no, J.maxNo)}">${no}</span>`).join(''); }
+// 第4.122版（まさちゃん 2026/11/04「枠連、枠複を自動で割り出せるようにする！例えば、A層の判定なら枠連や枠福がどことどこになるのかを割り出す。」）：
+//   判定の ゾーンごとに、選んだ 馬（1着側 → 2着側）の 枠番と 枠複（＝枠連）・枠単の 組（reserve.js の build と 同じ 作り方・同じ 枠の 決め方＝予約の 組と 同じ）。
+//   出すのは その 券種を Pカスタムで 解放した 人だけ（まさちゃんの 指定）。App Store版だけ（Web版は 今までどおり）
+function wakuZoneHTML(J, z) {
+  const R = Reserve();
+  if (!(NATIVE_APP && R) || !J.horses.length || st.w5edit) return '';
+  const tys = ['枠複', '枠単'].filter(t => !typeLocked(t)); if (!tys.length) return '';
+  const key = setKey(z), A = hpSel(st.form.hp, key, 'a', hpAll(J, key, 'a')), Bs = hpSel(st.form.hp, key, 'b', hpAll(J, key, 'b'));
+  if (!A.length || !Bs.length) return '';
+  const n = +J.x.n || J.maxNo, wf = nos => [...new Set(nos.map(no => R.waku(no, n)))], chips = fs => fs.map(w => `<span class="num w${w}">${w}</span>`).join('');
+  const bets = R.build([{ a: A, b: Bs }], tys, n);
+  let h = `<div class="zwaku" data-k="zwaku"><div class="zw1"><span class="zwl">枠</span>${chips(wf(A))}<span class="arr">→</span>${chips(wf(Bs))}</div>`;
+  tys.forEach(t => { const list = bets[t] || []; h += `<div class="zw1" data-t="${t}"><span class="zwl">${t}</span><span class="zwc">${list.length ? list.map(c => `<span>${R.label(t, c)}</span>`).join('・') : '—'}</span></div>`; });   // 通り数（点数）は 判定の 画面に 出さない（買い目の カードだけ）
+  return h + '</div>';
+}
 // 買う馬の選択（通常の判定）：ゾーンの番号を押して選ぶ・外す。最初は全部選んだ状態（＝ゾーンで判定するのと同じ）
 // st.form.hp ＝ {ゾーン名（人気→中穴）: {a:[1着の馬番], b:[2着の馬番], t:[3着の馬番]}}。全部選んでいる側は持たない
 const setKey = z => z.a + '→' + z.b.join('／');
@@ -1261,9 +1310,12 @@ function updateMini() {
   bar.hidden = false;
 }
 $('#miniBtn').addEventListener('click', () => $('#result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+// 判定の ゾーンの 枠（第4.122版）：枠複・枠単の 解放が かわったら 判定を 描き直す（設定タブで 解放して 判定タブに もどった とき）
+const wakuSig = () => { if (!NATIVE_APP) return ''; try { return ['枠複', '枠単'].filter(t => !typeLocked(t)).join(); } catch { return '?'; } };   // 読みこみの 途中（typeLocked の 前）は '?'
 function renderResult() {
   const box = $('#result');
   const J = currentJudge();
+  st.wakuShown = wakuSig();
   miniJ = J; updateMini(); renderRecCard(J);
   if (!J.ok) {
     const f = st.form; const any = f.r || f.dist || f.n || f.s1 || hasGrid();
@@ -1300,7 +1352,7 @@ function renderResult() {
       }
     }
     h += `<li class="zone"><div class="zrank">第${i + 1}</div><div><div class="zflow"><span>${z.a}</span><span class="arr">→</span><span>${z.b.join('／')}</span>${prov}</div>
-      ${numsA ? `<div class="znums">${numsA}<span class="arr">→</span>${numsB}</div>` : ''}
+      ${numsA ? `<div class="znums">${numsA}<span class="arr">→</span>${numsB}</div>${wakuZoneHTML(J, z)}` : ''}
       <div class="zref">参考的中率 <b>${refZone(J, i)}</b></div>${customPctHTML(J, i)}<div class="zref">${reasonOf(k, z)}</div>${third}</div></li>`;
   });
   h += '</ol>';
@@ -1594,7 +1646,7 @@ function applyOCR(d) {
   // いったん別の入れ物に読み取って、1つでも読めたときだけ入力欄に入れる（何も読めなかったら、いまの入力はそのまま）
   const { f, got, miss } = ocrPick(d);
   if (!got.length) { $('#ocrMsg').innerHTML = OCR_NONE; return false; }
-  f.id = null; f.extra = 0; f.hp = null;
+  f.id = null; f.extra = 0; f.hp = null; f.self = null;
   if (NATIVE_APP) shelveRace(f);
   st.form = f;
   formToUI(); changed();
@@ -2145,9 +2197,10 @@ function rsvDraftOf(J) {
   if (!st.rsvDraft[id]) {
     // 予約ずみのレースは、その予約の券種・ゾーンから（選び直すとき）。はじめては 馬単（＋3着のある区分は 3連単）
     const rs = (st.bets.get(id) || {}).rsv, keys = J.set.map(setKey);
-    const d = rs && Array.isArray(rs.types) && rs.types.length ? { types: BET_TYPES.filter(t => rs.types.includes(t) && !typeLocked(t)), off: Array.isArray(rs.zones) ? keys.filter(k => !rs.zones.includes(k)) : [] } : { types: RSV_DEF_TYPES(J).filter(t => !typeLocked(t)), off: [] };
+    const d = rs && Array.isArray(rs.types) && rs.types.length ? { types: BET_TYPES.filter(t => rs.types.includes(t) && !typeLocked(t)), off: Array.isArray(rs.zones) ? keys.filter(k => !rs.zones.includes(k)) : [], self: Array.isArray(rs.zones) && rs.zones.includes(SELF) } : { types: RSV_DEF_TYPES(J).filter(t => !typeLocked(t)), off: [], self: false };
     if (!d.types.length) d.types = ['馬単'];
     if (st.betState !== 'on') return d;   // 記録を読み終わる前は おぼえない（予約ずみのレースの券種を読んでから）
+    if (d.self && rs && rs.self && !st.form.self) { st.form.self = clone(rs.self); storeSet('tengel.form', st.form); }   // 第4.122版：予約し直す とき 自己入力の 馬も もどす
     st.rsvDraft[id] = d;
   }
   if (!st.rsvDraft[id].types.length) st.rsvDraft[id].types = ['馬単'];
@@ -2156,7 +2209,34 @@ function rsvDraftOf(J) {
 function zoneSides(J) {   // 推奨ゾーンごとの選んだ馬（選んでいない側はゾーンの馬ぜんぶ）
   return J.set.map((z, i) => { const key = setKey(z), sel = side => hpSel(st.form.hp, key, side, hpAll(J, key, side)); return { key, label: z.label, a: sel('a'), b: sel('b'), t: J.third && J.third[i] && J.third[i].length ? sel('t') : null }; });
 }
-function rsvBuild(J, d) { const zs = zoneSides(J).filter(z => !d.off.includes(z.key)); return { zones: zs.map(z => z.key), bets: Reserve().build(zs, d.types, +J.x.n || J.maxNo) }; }
+// 第4.122版（まさちゃん 2026/11/04「買い目、自己入力機能を追加する。判定の層とズレていても、自己入力を押すと、どの番号でも選択できるようにする。買い目登録もいままで通りできる。
+//   結果、層の欄は自己入力の項目を増やす。」→ 使うゾーンと 収支の 層別の 両方）：買い目カードの「使うゾーン」に「自己入力」（判定の ゾーンと 関係なく 全部の 馬から 1着・2着・3着を 選ぶ）。
+//   ゾーンの 買い目と いっしょに 予約できる（自己入力だけでも）。選んだ 馬は st.form.self ＝ { a: [1着], b: [2着], t: [3着] }（その レースの 入力と いっしょに 残す）。
+//   予約には rsv.zones に '自己入力'・rsv.self に 選んだ 馬。収支の「層別の収支」は 自己入力を 含む レースを A・B・C に 入れずに「自己入力」の 行に 数える
+const SELF = '自己入力';
+const selfSel = () => { const v = st.form.self || {}, ok = x => (Array.isArray(x) ? x : []).filter(n => Number.isInteger(n) && n > 0); return { a: ok(v.a), b: ok(v.b), t: ok(v.t) }; };
+const isSelfBet = b => !!(b && b.rsv && Array.isArray(b.rsv.zones) && b.rsv.zones.includes(SELF));
+const selfText = v => [['1着', v && v.a], ['2着', v && v.b], ['3着', v && v.t]].filter(x => Array.isArray(x[1]) && x[1].length).map(x => x[0] + ' ' + x[1].join('・')).join('／');
+function rsvBuild(J, d) {
+  const zs = zoneSides(J).filter(z => !d.off.includes(z.key));
+  const v = d.self ? selfSel() : null, sz = v && v.a.length ? { key: SELF, label: SELF, a: v.a, b: v.b, t: v.t.length ? v.t : null } : null;
+  const all = sz ? zs.concat([sz]) : zs;
+  return { zones: all.map(z => z.key), bets: Reserve().build(all, d.types, +J.x.n || J.maxNo), self: sz ? { a: v.a.slice(), b: v.b.slice(), t: v.t.slice() } : null,
+    legs: all.map(z => ({ k: z.key, l: z.label, a: (z.a || []).slice(), b: (z.b || []).slice(), t: (z.t || []).slice() })) };   // 予約の 一覧（上の 帯の「結果待ち」）で ゾーンごとの 馬を 出す
+}
+// 自己入力の 馬を 選ぶ 所（使うゾーンの「自己入力」を 押した とき）：券種で いる 段だけ（単勝・複勝＝1着／2頭の 券種＝1着・2着／3連＝1着・2着・3着）
+function selfPickHTML(J, d) {
+  const R = Reserve(), v = selfSel(), nos = J.horses.map(hh => hh.no).sort((x, y) => x - y);
+  const size = Math.max(1, ...d.types.map(t => R.SIZE[t] || 1)), rows = [['a', '1着'], ['b', '2着'], ['t', '3着']].slice(0, size);
+  const unord = d.types.some(t => (R.SIZE[t] || 1) > 1 && !R.ORDERED[t]);
+  // 選び 足りない 着（2頭の 券種で 2着が ない・3連の 券種で 3着が ない）は 組に ならない ので 知らせる
+  const miss = !v.a.length ? '' : size >= 2 && !v.b.length ? '2着も 選んでね（2頭の 券種は 1着 × 2着 の 組に なるよ）' : size >= 3 && !v.t.length ? `${d.types.filter(t => (R.SIZE[t] || 1) >= 3).join('・')}は 3着も 選ぶと 入るよ（いまは 2頭の 券種だけ）` : '';
+  const chip = (side, lab, no) => { const on = v[side].includes(no); return `<button type="button" class="num ${wakuCls(no, J.maxNo)}${on ? '' : ' off'}" data-side="${side}" data-no="${no}" aria-pressed="${on}" aria-label="${lab}に${no}番を${on ? '入れない' : '入れる'}">${no}</button>`; };
+  return `<div class="selfpk" data-k="rpick"><div class="sph"><b>自己入力</b><span>判定の ゾーンと 関係なく、好きな 馬番を 選べるよ（${size === 1 ? '1着の 馬' : size === 2 ? '1着 × 2着 の 組' : '1着 × 2着 × 3着 の 組'}${unord ? '。馬連・ワイド・枠複・3連複は 着順なし' : ''}）</span></div>`
+    + rows.map(([side, lab]) => `<div class="spr" data-side="${side}"><span class="spl">${lab}</span><div class="spn">${nos.map(no => chip(side, lab, no)).join('')}</div></div>`).join('')
+    + (miss ? `<div class="spw">${esc(miss)}</div>` : '')
+    + `<div class="spf"><span>${esc(selfText(v) || 'まだ 選んで いないよ（1着から 選んでね）')}</span><button class="btn ghost" type="button" data-k="rpclear"${v.a.length || v.b.length || v.t.length ? '' : ' disabled'}>クリア</button></div></div>`;
+}
 // 券種ごとの組（点数を出すのはここだけ）。judged があれば当たった組・返還の組に印
 function betListHTML(bets, types, judged) {
   const R = Reserve(); let total = 0;
@@ -2174,7 +2254,7 @@ function renderRsvCard(J, force) {
   if (!J.ok) { card.dataset.id = ''; card.dataset.sig = ''; card.innerHTML = `<h2>買い目</h2><p class="small muted" style="margin:0">判定が出たら、ここで買い目を予約できるよ（結果は記録タブで入れるよ）。</p>`; return; }
   const b = st.bets.get(J.id) || null, rs = b && b.rsv, d = rsvDraftOf(J);
   if (rs && rs.state === 'reserved' && formClosed()) st.rsvEdit = false;   // 第4.116版：締切前に 予約した レースを 締切後に 読み直した → 予約は そのまま（選び直しは できない）
-  const sig = [J.id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', rs ? rs.state : '', JSON.stringify(st.form.hp || null), d.types.join(), d.off.join(), BET_TYPES.filter(typeLocked).join(''), st.form.start || '', J.horses.length, st.rsvEdit ? 1 : 0, st.notifyOn === false ? 0 : 1, st.notifyAuth || '', formClosed() ? 'C' : ''].join('|');
+  const sig = [J.id, !!st.form.example, b ? (b.updatedAt || 'has') : 'none', rs ? rs.state : '', JSON.stringify(st.form.hp || null), JSON.stringify(st.form.self || null), d.self ? 1 : 0, d.types.join(), d.off.join(), BET_TYPES.filter(typeLocked).join(''), st.form.start || '', J.horses.length, st.rsvEdit ? 1 : 0, st.notifyOn === false ? 0 : 1, st.notifyAuth || '', formClosed() ? 'C' : ''].join('|');
   if (!force && card.dataset.sig === sig) return;
   card.dataset.sig = sig; card.dataset.id = J.id || '';
   let h = '<h2>買い目</h2>';
@@ -2199,7 +2279,7 @@ function renderRsvCard(J, force) {
   if (!J.horses.length) { card.innerHTML = h + `<div class="banner warn">買い目を作るには馬番が必要だよ。単勝・複勝のオッズの一覧（馬番ごと）を入れてね。</div><div class="row" style="margin-top:10px"><button class="btn ghost" type="button" data-rsv="give">このレースを諦める</button></div>`; return; }
   const built = rsvBuild(J, d), total = Reserve().count(built.bets);
   h += `<div class="fields"><div class="f s6"><span class="lab">券種（🔒はPカスタムで解放）</span><div class="toggles bettypes" data-k="rtypes">${BET_TYPES.map(t => { const lk = typeLocked(t); return `<button type="button" data-v="${t}" class="${lk ? 'lock' : ''}" aria-pressed="${d.types.includes(t)}"${lk ? ' data-locked="1"' : ''}>${t}</button>`; }).join('')}</div></div>
-    <div class="f s6"><span class="lab">使うゾーン（外したゾーンの馬は買い目に入れないよ）</span><div class="toggles zbuy" data-k="rzones">${J.set.map((z, i) => `<button type="button" data-v="${esc(setKey(z))}" aria-pressed="${!d.off.includes(setKey(z))}">第${i + 1}　${esc(z.label)}</button>`).join('')}</div></div></div>`;
+    <div class="f s6"><span class="lab">使うゾーン（外したゾーンの馬は買い目に入れないよ）</span><div class="toggles zbuy" data-k="rzones">${J.set.map((z, i) => `<button type="button" data-v="${esc(setKey(z))}" aria-pressed="${!d.off.includes(setKey(z))}">第${i + 1}　${esc(z.label)}</button>`).join('')}<button type="button" class="self" data-k="rself" aria-pressed="${!!d.self}">✏️ 自己入力</button></div>${d.self ? selfPickHTML(J, d) : ''}</div></div>`;
   h += `<details class="full"${st.rsvOpen ? ' open' : ''} data-k="betsee"><summary>買い目を確認${total ? `（${esc(d.types.join('・'))}）` : ''}</summary>${total ? betListHTML(built.bets, d.types) : '<p class="small muted">券種とゾーンを選ぶと、ここに組が出るよ。</p>'}</details>`;
   h += `<div class="row" style="margin-top:12px"><button class="btn primary" type="button" data-rsv="reserve"${total ? '' : ' disabled'}>買い目を予約</button><button class="btn ghost" type="button" data-rsv="give">このレースを諦める</button>${st.rsvEdit ? '<button class="btn ghost" type="button" data-rsv="back">やめる</button>' : ''}</div><p class="rsvnote">${notifyLine(st.form.start)}。予約・諦めるにポイントは使わないよ。</p>`;
   card.innerHTML = h;
@@ -2216,8 +2296,17 @@ $('#recCard').addEventListener('click', e => {
     if (d.types.includes(t)) { if (d.types.length === 1) { toast('券種は1つ以上選んでね'); return; } d.types = d.types.filter(x => x !== t); } else d.types = BET_TYPES.filter(x => d.types.includes(x) || x === t);
     renderRsvCard(J, true); return;
   }
+  // 第4.122版：自己入力（使うゾーンの 1つ・好きな 馬番）
+  if (e.target.closest('[data-k=rself]')) { if (d.self && d.off.length >= J.set.length) { toast('ゾーンは1つ以上使ってね'); return; } d.self = !d.self; renderRsvCard(J, true); return; }
+  const pk = e.target.closest('[data-k=rpick] button[data-no]');
+  if (pk) {
+    const v = selfSel(), side = pk.dataset.side, no = +pk.dataset.no, cur = v[side], i = cur.indexOf(no);
+    if (i >= 0) cur.splice(i, 1); else { cur.push(no); cur.sort((x, y) => x - y); }
+    st.form.self = v.a.length || v.b.length || v.t.length ? v : null; storeSet('tengel.form', st.form); renderRsvCard(J, true); return;
+  }
+  if (e.target.closest('[data-k=rpclear]')) { st.form.self = null; storeSet('tengel.form', st.form); renderRsvCard(J, true); return; }
   const zb = e.target.closest('[data-k=rzones] button');
-  if (zb) { const k = zb.dataset.v; if (d.off.includes(k)) d.off = d.off.filter(x => x !== k); else { if (d.off.length + 1 >= J.set.length) { toast('ゾーンは1つ以上使ってね'); return; } d.off.push(k); } renderRsvCard(J, true); return; }
+  if (zb) { const k = zb.dataset.v; if (d.off.includes(k)) d.off = d.off.filter(x => x !== k); else { if (d.off.length + 1 >= J.set.length && !d.self) { toast('ゾーンは1つ以上使ってね（自己入力も 1つの ゾーンに なるよ）'); return; } d.off.push(k); } renderRsvCard(J, true); return; }
   const a = e.target.closest('[data-rsv]'); if (!a || a.disabled) return;
   const act = a.dataset.rsv;
   if (act === 'reserve') reserveRace(J, false);
@@ -2245,6 +2334,8 @@ async function reserveRace(J, giveUp) {
     const built = rsvBuild(J, d), total = R.count(built.bets);
     if (!total) return toast('買い目が1つもないよ。券種とゾーン・馬を選んでね', 3200);
     rsv = { state: 'reserved', at: now, key, start: f.start || '', types: d.types.slice(), zones: built.zones, bets: built.bets, points: total, hp: f.hp || null };
+    if (built.self) rsv.self = built.self;   // 第4.122版：自己入力で 選んだ 馬
+    rsv.legs = built.legs;                   // 第4.122版：使った ゾーン（と 自己入力）ごとの 1着・2着・3着の 馬（結果待ちの 一覧で 一目で 見る）
     const amt = {}; d.types.forEach(t => { amt[t] = { stake: (built.bets[t] || []).length * 100, payout: null }; });
     fields = { types: d.types.slice(), amt, stake: total * 100, payout: null, other: '', buyZ: built.zones, p1: null, p2: null, p3: null, n1: null, n2: null, n3: null };
   }
@@ -2293,8 +2384,82 @@ function openRaceResult(id) {
   setTab('rec');
   setTimeout(() => { const row = $(`#recList .lrow[data-id="${CSS.escape(id)}"]`); if (row) row.scrollIntoView({ block: 'start' }); }, 60);
 }
+// 第4.122版（まさちゃん 2026/11/04「右上のミッションなどの項目がある場所に新しく予約済み結果待ちレースの項目を作成する。予約したタップすれば買い目が一目で分かるように表示して！」）：
+//   上の 帯の ミッションの 左に「結果待ち」と 数（予約ずみで 結果を まだ 入れて いない レース）。押すと 一覧（レース・発走・予約した ゾーン・券種ごとの 買い目・結果を 入れる／判定画面で 開く）
+const RSV_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>';
+const rsvPendingList = () => betList().filter(b => b.rsv && b.rsv.state === 'reserved').sort((a, b) => a.date.localeCompare(b.date) || (a.rsv.start || a.start || '').localeCompare(b.rsv.start || b.start || '') || a.r - b.r);
+function rsvBtnPaint() {
+  if (!(NATIVE_APP && Reserve())) return;
+  const top = $('header.top .top-in'); if (!top) return;
+  let b = $('#rsvBtn');
+  if (!b) {
+    b = document.createElement('button'); b.type = 'button'; b.id = 'rsvBtn'; b.className = 'manbtn rsvbtn'; b.addEventListener('click', openRsvList);
+    const ms = $('#msBtn'); if (ms) ms.insertAdjacentElement('beforebegin', b); else top.appendChild(b);
+  }
+  const n = st.betState === 'on' ? rsvPendingList().length : 0;
+  b.innerHTML = `${RSV_ICON}結果待ち<span class="rvn">${n}</span>`;
+  b.classList.toggle('has', n > 0);
+  b.setAttribute('aria-label', `予約済み・結果待ちの レース ${n}件（押すと 買い目の 一覧）`);
+  if ($('#rsvOv')) paintRsvList();
+}
+let rsvPrev = null;
+function openRsvList() {
+  if ($('#rsvOv')) return;
+  const ov = document.createElement('div'); ov.id = 'rsvOv'; ov.className = 'tgov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '予約済み・結果待ちのレース');
+  ov.innerHTML = `<div class="msh"><h2>${RSV_ICON}予約済み・結果待ち</h2><span class="msn"></span><button class="btn" type="button" data-rv="close">とじる</button></div><div class="msb" id="rsvOvB"></div>`;
+  ov.addEventListener('click', e => {
+    const a = e.target.closest('[data-rv]'); if (!a) return;
+    if (a.dataset.rv === 'close') { closeRsvList(); return; }
+    const b = st.bets.get(a.dataset.id); if (!b) { toast('その記録が見つからないよ'); return; }
+    closeRsvList();
+    if (a.dataset.rv === 'result') openRaceResult(b.id); else if (a.dataset.rv === 'open') loadBetToForm(b);
+  });
+  rsvPrev = document.activeElement;
+  document.documentElement.classList.add('mson'); document.body.appendChild(ov);
+  paintRsvList();
+  try { $('[data-rv=close]', ov).focus({ preventScroll: true }); } catch {}
+}
+function closeRsvList() {
+  const ov = $('#rsvOv'); if (!ov) return;
+  ov.remove(); if (!$('.tgov')) document.documentElement.classList.remove('mson');
+  const b = $('#rsvBtn'); try { if (b) b.focus({ preventScroll: true }); else if (rsvPrev && rsvPrev.focus) rsvPrev.focus({ preventScroll: true }); } catch {}
+  rsvPrev = null;
+}
+function paintRsvList() {
+  const ov = $('#rsvOv'), body = $('#rsvOvB'); if (!ov || !body) return;
+  if (st.betState !== 'on') { $('.msn', ov).textContent = ''; body.innerHTML = '<div class="card"><p class="small muted" style="margin:0">記録を読み込み中…</p></div>'; return; }
+  const xs = rsvPendingList();
+  $('.msn', ov).textContent = `${xs.length}件`;
+  let h = '<p class="hint" style="margin:0 0 10px">予約した 買い目だよ。結果が 出たら「結果を入れる」で、記録タブの その レースへ。</p>';
+  if (!xs.length) h += '<div class="card"><p class="small muted" style="margin:0">予約済みで 結果待ちの レースは ないよ。判定画面の「買い目を予約」で、ここに 並ぶよ。</p></div>';
+  const R = Reserve();
+  xs.forEach(b => {
+    const rs = b.rsv, sn = b.snap || {}, L = sn.L || '?', start = rs.start || b.start || '', fa = fireAt(b.date, start), n = +b.n || 0;
+    const types = (rs.types && rs.types.length ? rs.types : Object.keys(rs.bets || {})).filter(t => rs.bets && rs.bets[t]), size = Math.max(1, ...types.map(t => R.SIZE[t] || 1));
+    const chips = nos => (nos || []).map(no => `<span class="num ${wakuCls(no, n)}">${no}</span>`).join('');
+    // 着順の ある 券種（馬単・枠単・3連単）が あれば「1着・2着・3着」、着順なし（馬連・ワイド・枠複・3連複）だけ なら「1頭目・2頭目・3頭目」
+    const ord = size < 2 || types.some(t => (R.SIZE[t] || 1) >= 2 && R.ORDERED[t]), sl = j => ord ? `${j + 1}着` : `${j + 1}頭目`;
+    // ゾーン（と 自己入力）ごとの 馬：1着 → 2着 →（3連の とき）3着。前の 版の 予約（legs なし）は 組の 一覧だけ
+    const legs = Array.isArray(rs.legs) && rs.legs.length ? rs.legs.map(lg => {
+      const zi = (sn.zones || []).findIndex(z => zKey(z) === lg.k), lab = lg.k === SELF ? SELF : (zi >= 0 ? `第${zi + 1}　` : '') + (lg.l || lg.k);
+      const sides = [lg.a].concat(size >= 2 && lg.b && lg.b.length ? [lg.b] : []).concat(size >= 3 && lg.t && lg.t.length ? [lg.t] : []);
+      return `<div class="rvleg"><span class="rvl${lg.k === SELF ? ' self' : ''}">${esc(lab)}</span><span class="rvz">${sides.map((x, j) => `<span class="rvs"><span class="rvsl${ord ? '' : ' w3'}">${sl(j)}</span>${chips(x)}</span>`).join('')}</span></div>`;
+    }).join('') : '';
+    const sumT = types.map(t => `${t} ${(rs.bets[t] || []).length}点`).join('・'), tot = R.count(rs.bets || {});
+    h += `<div class="card rvcard" data-id="${esc(b.id)}"><div class="rvh"><span class="lb L${L}">${L}</span><b>${esc(dlabel(b.date))} ${esc((b.venue || '').trim())} ${b.r}R</b>${b.rname ? `<span class="muted">${esc(b.rname)}</span>` : ''}</div>`
+      + `<div class="rvm">${start ? `発走 ${esc(start)}${fa ? `（お知らせ ${fmtTime(fa)}）` : ''}` : '発走時刻なし'}</div>`
+      + (legs ? `<div class="rvlegs">${legs}</div>` : `<div class="rvm">${esc(buyRowText(b))}</div>`)
+      + `<div class="rvt"><b>${esc(sumT)}</b>　合計 ${tot}点${tot ? `（1点100円なら ${yen(tot * 100)}円）` : ''}</div>`
+      + (legs ? `<details class="full rvd"><summary>組を見る</summary>${betListHTML(rs.bets || {}, types)}</details>` : betListHTML(rs.bets || {}, types))
+      + `<div class="row" style="margin-top:10px"><button class="btn primary" type="button" data-rv="result" data-id="${esc(b.id)}">結果を入れる（記録タブ）</button><button class="btn ghost" type="button" data-rv="open" data-id="${esc(b.id)}">判定画面で開く</button></div></div>`;
+  });
+  body.innerHTML = h;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#rsvOv')) closeRsvList(); });
+if (NATIVE_APP) setTimeout(rsvBtnPaint, 0);   // 記録を 読む 前から「結果待ち 0」を 出して おく（読めたら 数が 入る）
 async function rsvBoot() {
   if (!(NATIVE_APP && Reserve())) return;
+  rsvBtnPaint();
   await syncNotify();
   const N = Native(); try { const r = await N.notify('opened'); if (r && r.opened && r.opened.race) openRaceResult(r.opened.race); } catch {}
   if (st.tab === 'judge') renderRecCard(currentJudge(), true);
@@ -2700,7 +2865,7 @@ function renderRec() {
 // 記録の一覧に出す「買ったゾーン」（前の記録＝推奨ゾーン全部）
 function buyRowText(b) {
   if (b.rsv && (b.rsv.state === 'given' || b.rsv.state === 'closed')) return '';
-  if (b.rsv && b.rsv.bets) { const zs = b.snap?.zones || [], ks = new Set(b.rsv.zones || []); const xs = zs.filter(z => ks.has(zKey(z))).map(z => z.label + hpText({ hp: b.rsv.hp }, z)); return xs.length ? '予約：' + xs.join('・') : '予約'; }
+  if (b.rsv && b.rsv.bets) { const zs = b.snap?.zones || [], ks = new Set(b.rsv.zones || []); const xs = zs.filter(z => ks.has(zKey(z))).map(z => z.label + hpText({ hp: b.rsv.hp }, z)); if (ks.has(SELF)) xs.push(SELF + (b.rsv.self && selfText(b.rsv.self) ? `（${selfText(b.rsv.self)}）` : '')); return xs.length ? '予約：' + xs.join('・') : '予約'; }
   const zs = b.snap?.zones || []; if (!zs.length || !typesOf(b).some(t => ZONE_TYPES.includes(t))) return '';
   if (!Array.isArray(b.buyZ)) return zs.map(z => z.label).join('・');
   const xs = buyLabels(b); return xs.length ? '買った：' + xs.join('・') : '買ったゾーン未選択';
@@ -2734,7 +2899,7 @@ $('#rFilters').addEventListener('click', e => { const b = e.target.closest('.fch
 const dlabel = d => { const [y, m, dd] = d.split('-'); const wd = '日月火水木金土'[new Date(+y, +m - 1, +dd).getDay()]; return `${+m}/${+dd}（${wd}）`; };
 function loadBetToForm(b) {
   st.form = Object.assign(blankForm(), { venue: b.venue || '大井', date: b.date, r: String(b.r), dist: String(b.dist ?? ''), surface: b.surface || 'ダ', baba: b.baba || '', n: String(b.n ?? ''), tan1: String(b.tan1 ?? ''), s1: String(b.s1 ?? ''), s5: b.s5 == null ? '' : String(b.s5), s10: b.s10 == null ? '' : String(b.s10), s1combo: b.s1combo || '', s5combo: b.s5combo || '', s10combo: b.s10combo || '',
-    rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null, rname: b.rname || '', start: b.start || '', pid: b.pid || null });
+    rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null, rname: b.rname || '', start: b.start || '', pid: b.pid || null, self: (b.rsv && b.rsv.self) ? clone(b.rsv.self) : null });
   if (b.rsv && b.rsv.state === 'closed') st.form.closed = { by: b.rsv.by || 'time', word: b.rsv.word || '', id: b.id, at: b.rsv.at || '', start: b.rsv.start || '' };   // 第4.116版：締切済みの しるしも 持って いく
   st.draft = null; formToUI(); storeSet('tengel.form', st.form); setTab('judge'); renderResult(); toast(`${dlabel(b.date)} ${b.venue || '大井'}${b.r}R を開いたよ`);
 }
@@ -2776,10 +2941,11 @@ function renderMoney() {
   const row = (lab, xs) => { const a = betAgg(xs), d = a.hit + a.miss; return `<tr><td>${lab}</td><td>${a.n}</td><td>${a.hit}</td><td>${pct(a.hit, d)}</td><td>${yen(a.stake)}</td><td>${yen(a.pay)}</td><td class="${a.stake && a.pay >= a.stake ? 'g' : ''}">${pct(a.pay, a.stake)}</td><td class="${a.bal > 0 ? 'plus' : a.bal < 0 ? 'minus' : ''}">${signYen(a.bal)}</td></tr>`; };
   const head = `<thead><tr><th>区分</th><th>購入</th><th>的中</th><th>的中率</th><th>購入額</th><th>回収額</th><th>回収率</th><th>収支</th></tr></thead>`;
   h += `<div class="card"><h2>層別の収支（${per}）</h2><div class="scroll"><table class="t">${head}<tbody>`;
-  for (const L of ['A', 'B', 'C']) h += row(`<span class="lb L${L}">${L}</span> ${({ A: '堅', B: '警戒', C: '穴' })[L]}`, list.filter(b => b.snap?.L === L));
+  for (const L of ['A', 'B', 'C']) h += row(`<span class="lb L${L}">${L}</span> ${({ A: '堅', B: '警戒', C: '穴' })[L]}`, list.filter(b => b.snap?.L === L && !isSelfBet(b)));
+  if (NATIVE_APP) h += row('<span class="lb LS">自</span> 自己入力', list.filter(isSelfBet));   // 第4.122版：自己入力を 含む レースは A・B・C に 入れない
   const others = list.filter(b => b.venue && b.venue !== '大井');
   if (others.length) h += row('うち大井以外（参考）', others);
-  h += `</tbody></table></div></div>`;
+  h += `</tbody></table></div>${NATIVE_APP ? '<p class="hint">買い目に 自己入力（自分で 選んだ 馬）を 入れた レースは、A・B・C に 入れずに「自己入力」に 数えるよ。</p>' : ''}</div>`;
   h += `<div class="card"><h2>券種別の収支（${per}）</h2><div class="scroll"><table class="t">${head}<tbody>`;
   // 券種ごと：その券種の購入額・回収額で数える。前の記録で券種を2つ以上買って金額を分けていないものは、まとめて1行
   const rowA = (lab, a) => { const d = a.hit + a.miss; return `<tr><td>${lab}</td><td>${a.n}</td><td>${a.hit}</td><td>${pct(a.hit, d)}</td><td>${yen(a.stake)}</td><td>${yen(a.pay)}</td><td class="${a.stake && a.pay >= a.stake ? 'g' : ''}">${pct(a.pay, a.stake)}</td><td class="${a.pay - a.stake > 0 ? 'plus' : a.pay - a.stake < 0 ? 'minus' : ''}">${signYen(a.pay - a.stake)}</td></tr>`; };
@@ -3047,7 +3213,7 @@ let rT; function recompute() {
 }
 let bT; function recomputeBets() {
   clearTimeout(bT); bT = setTimeout(() => {
-    setPill(); renderResult();
+    setPill(); renderResult(); rsvBtnPaint();
     if (st.tab === 'rec' && !inputBusy('#recList')) renderRec();
     if (st.tab === 'stats') renderMoney();
     if (st.tab === 'win5') { if (inputBusy('#w5Body')) w5PaintList(); else renderWin5(); }

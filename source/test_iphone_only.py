@@ -54,6 +54,7 @@ check(r.returncode == 0, 'build_ios.py が通る' + ('' if r.returncode == 0 els
 if r.returncode == 0:
     bp = nocom(open(os.path.join(out, 'Tengel.swiftpm', 'Package.swift'), encoding='utf8').read())
     check(families(bp) == ['.phone'] and orientations(bp) == ['.portrait'], '作ったアプリの Package.swift も iPhone だけ・縦だけ')
+    check('bundleIdentifier: "jp.tengel.app",' in bp and 'jp.tengel.app.test' not in bp, '本番の アプリの ID は jp.tengel.app の まま（テスト版だけ jp.tengel.app.test：第4.122版）')
     res = sorted(os.listdir(os.path.join(out, 'Tengel.swiftpm', 'Resources')))
     html = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'index.html'), encoding='utf8').read()
     check('TengelPoints' in html and 'TengelWallet' in html and 'id="gate"' in html and 'touch-action:manipulation' in html, 'アプリの画面に ポイント・アプリを開いた時の画面・拡大の決まりが入っている')
@@ -181,7 +182,9 @@ check(r2.returncode == 0 and os.path.isdir(os.path.join(out2, 'TengelTest.swiftp
 if r2.returncode == 0:
     ps2 = open(os.path.join(out2, 'TengelTest.swiftpm', 'Package.swift'), encoding='utf8').read()
     h2 = open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'index.html'), encoding='utf8').read()
-    check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app"' in ps2 and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2, 'テスト版：アプリの 名前は「テンゲル テスト」・bundle id と iPhone用は ふつうと 同じ')
+    # 第4.122版：テスト版は 本番と 別の アプリ（jp.tengel.app.test）・ビルド番号は あげる たびに 大きく（APP_VER から・ない ときは 日時）＝ TestFlight で iPhone に 本番と 並べて 入れる
+    check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app.test",' in ps2 and 'bundleIdentifier: "jp.tengel.app",' not in ps2 and re.search(r'bundleVersion: "\d{8}\.\d+",', ps2) and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2,
+          'テスト版：アプリの 名前は「テンゲル テスト」・bundle id は jp.tengel.app.test（本番と 並べて 入れられる）・ビルド番号は 日付から・iPhone用は ふつうと 同じ')
     check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
 shutil.rmtree(out2, ignore_errors=True)
 print('結果：', 'OK' if not fails else f'{len(fails)}件おかしい')

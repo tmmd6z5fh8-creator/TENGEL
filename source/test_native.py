@@ -216,7 +216,7 @@ try:
         check(hb and '購入 1,500P' in hb['txt'] and 'サブスク 0P' in hb['txt'] and hb['afterBrand'] and hb['gopt'] == 'points' and not hb['tag'], f'上の帯：ロゴの 右に 所有ポイント「購入 1,500P・サブスク 0P」（押すと 設定の ポイントへ）・テスト版の 印は ない（{hb}）')
         # 第4.83版（まさちゃん「説明書をポイントの横に配置できない？ その下にミッション、その下にマザーデータ」）：説明書は 所有ポイントの すぐ 右（1段目）・ミッションは 2段目・マザーデータの 札は 3段目（右よせ）
         hb2 = pg.evaluate("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); const p = r('#ptsPill'), m = r('#manBtn'), d = r('#dbpill'), ms = r('#msBtn'); return { pm: Math.abs(p.top - m.top) < 8 && m.left > p.right && m.left - p.right < 20, msBelow: ms.top > m.bottom, dBelow: d.top > ms.bottom, right: d.right >= innerWidth - 24 && ms.right >= innerWidth - 24, ptsH: Math.round(p.height), order: [...document.querySelector('header.top .top-in').children].map(e => e.id || e.className).join(',') }; })()")
-        check(hb and hb['order'] == 1 and hb2['pm'] and hb2['msBelow'] and hb2['dBelow'] and hb2['right'] and hb2['ptsH'] <= 36 and hb2['order'].startswith('brand,ptsPill,manBtn,msBtn,tbrk,dbpill'), f'上の帯：説明書は 所有ポイント（2行）の すぐ 右 ／ 2段目に ミッション ／ 3段目に マザーデータの 札（右よせ）（{hb2}）')
+        check(hb and hb['order'] == 1 and hb2['pm'] and hb2['msBelow'] and hb2['dBelow'] and hb2['right'] and hb2['ptsH'] <= 36 and hb2['order'].startswith('brand,ptsPill,manBtn,rsvBtn,msBtn,tbrk,dbpill'), f'上の帯：説明書は 所有ポイント（2行）の すぐ 右 ／ 2段目に（第4.122版の「結果待ち」と）ミッション ／ 3段目に マザーデータの 札（右よせ）（{hb2}）')
         check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません' in pt and '200P' in pt and '買ったPから先に使う' in pt, 'ポイントのカード：消えることの注意・1レース200P・使う順')
         cu = pg.locator('#setCustom').inner_text()
         check('Pカスタムで、自分だけのテンゲルを育てよう！' in cu and 'はじめから：単勝・馬単・3連単' in cu and cu.count('500P') >= 6 and '15,000P' in cu and pg.locator('#setCustom [data-pt=unlock1]').count() == 8, 'Pカスタム：券種6つ（1つ500P）・マザーデータの枠2つ（15,000P）')
@@ -266,8 +266,9 @@ try:
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(400)
         card = pg.locator('#recCard')
         ct = card.inner_text()
-        check(card.locator('h2').inner_text() == '買い目' and pg.locator('#saveJudge').count() == 0 and card.locator('[data-rsv=reserve]').count() == 1 and card.locator('[data-rsv=give]').count() == 1 and '発走 15:40 → 15:55 にお知らせ' in ct and card.locator('[data-k=rtypes] button').count() == 9 and card.locator('[data-k=rzones] button').count() == 2,
-              '判定画面の下は「買い目」のカード：券種9つ・ゾーン2つ・「買い目を予約」「このレースを諦める」・お知らせの時刻（「判定と結果を保存」はない）')
+        check(card.locator('h2').inner_text() == '買い目' and pg.locator('#saveJudge').count() == 0 and card.locator('[data-rsv=reserve]').count() == 1 and card.locator('[data-rsv=give]').count() == 1 and '発走 15:40 → 15:55 にお知らせ' in ct and card.locator('[data-k=rtypes] button').count() == 9 and card.locator('[data-k=rzones] button:not(.self)').count() == 2 and card.locator('[data-k=rzones] [data-k=rself]').count() == 1,
+              '判定画面の下は「買い目」のカード：券種9つ・ゾーン2つ（＋第4.122版の「✏️ 自己入力」）・「買い目を予約」「このレースを諦める」・お知らせの時刻（「判定と結果を保存」はない）')
+        check(pg.locator('#result [data-k=zwaku]').count() == 0, '枠複・枠単が 🔒 の 間は、判定の ゾーンに 枠を 出さない（第4.122版：解放した 人だけ）')
         pct = [t for t in pg.locator('#result .zref').all_inner_texts() if '選んだ馬で' in t]
         check(len(pct) == 2 and '6.5%' in pct[0] and '3連単 5.4%' in pct[0] and 'ゾーンと同じ' in pct[0] and '7.6%' in pct[1], f'ゾーンごとに「選んだ馬で ○%」（全部選んだ時はゾーンの値：{pct[0][:40]}）')
         check(pg.locator('#omakaseBtn').count() == 1 and pg.locator('#result .rnav').count() == 0, '「テンゲルにお任せ」がある・1つ前のレースはまだない（矢印なし）')
@@ -1033,6 +1034,9 @@ try:
         card = pg.locator('#recCard')
         if card.locator('[data-rsv=redo]').count(): card.locator('[data-rsv=redo]').click(); pg.wait_for_timeout(300)
         check(card.locator('[data-k=rtypes] button.lock').count() == 4 and card.locator('[data-k=rtypes] button[data-v=複勝]:not(.lock)').count() == 1, '解放した複勝・枠複は🔒が取れる')
+        zw = pg.locator('#result [data-k=zwaku]')
+        check(zw.count() == pg.locator('#result .zone').count() and zw.count() >= 2 and zw.first.locator('[data-t=枠複]').count() == 1 and pg.locator('#result [data-k=zwaku] [data-t=枠単]').count() == 0 and '通り' not in zw.first.inner_text() and '点' not in pg.locator('#result').inner_text(),
+              f'第4.122版：枠複を 解放 → 判定の ゾーンごとに 枠と 枠複の 組（解放して いない 枠単は 出ない・通り数／点数は 判定の 画面に 出さない）（{zw.first.inner_text()[:60] if zw.count() else "なし"}）')
         card.locator('[data-rsv=back]').click(); pg.wait_for_timeout(200)
         pg.evaluate("window.__ocrLines = %s" % json.dumps([lines_r(OCR_LINES['a_tanfuku_waku'], 11)], ensure_ascii=False))
         pg.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); pg.wait_for_timeout(1800)
@@ -1089,6 +1093,8 @@ try:
         mb = pg.evaluate("() => { const b = document.querySelector('#msBtn'); if (!b) return null; const R = s => document.querySelector(s).getBoundingClientRect(); const r = R('#msBtn'), m = R('#manBtn'), pt = R('#ptsPill'), br = R('.brand'), db = R('#dbpill'); const bd = b.querySelector('.mbd'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot'), bd: (bd || {}).innerText, bdc: bd && getComputedStyle(bd).color, bdbg: bd && getComputedStyle(bd).backgroundColor, bdsvg: !!(bd && bd.querySelector('svg')), row1: Math.abs(m.y - pt.y) < 8 && Math.abs(pt.y - br.y) < 8 && pt.left > br.right && m.left > pt.right && m.right <= innerWidth - 8, row2: r.y > m.bottom && r.right > innerWidth / 2, row3: db.y > r.bottom, inTop: !!b.closest('header.top'), hdr: Math.round(R('header.top').height) }; }")
         check(bool(mb) and mb['t'] == 'ミッション 10/15 1' and mb['hot'] and mb['bd'] == '1' and mb['bdc'] == 'rgb(31, 58, 14)' and mb['bdbg'] == 'rgb(212, 245, 166)' and mb['bdsvg'] and mb['row1'] and mb['row2'] and mb['row3'] and mb['inTop'] and mb['hdr'] <= 150,
               f'上の帯：ロゴ・所有ポイント（2行）・説明書が 1段目 ／ 2段目の 右に「ミッション」（つぎまで 10/15・受け取れる 1 は うすい 黄緑の 四角に ふきだしの 絵と 数）／ 3段目の 右に マザーデータの札（{mb}）')
+        rb = pg.evaluate("() => { const b = document.querySelector('#rsvBtn'), m = document.querySelector('#msBtn'); if (!b || !m) return null; const r = b.getBoundingClientRect(), q = m.getBoundingClientRect(); return { t: b.innerText.replace(/\\s+/g, ''), n: [...TengelLocal.mem.bets.values()].filter(x => x.rsv && x.rsv.state === 'reserved').length, has: b.classList.contains('has'), row: Math.abs(r.top - q.top) < 6 && r.right <= q.left + 1 && r.left >= 8, next: (b.nextElementSibling || {}).id }; }")
+        check(bool(rb) and rb['n'] >= 1 and rb['t'] == f'結果待ち{rb["n"]}' and rb['has'] and rb['row'] and rb['next'] == 'msBtn', f'第4.122版：2段目の「ミッション」の 左に「結果待ち」と 予約済み・結果待ちの レースの 数（{rb}）')
         pg.click('#msBtn'); pg.wait_for_timeout(500)
         ov = pg.locator('#msOv')
         ovt = ov.inner_text() if ov.count() else ''
@@ -1326,7 +1332,7 @@ try:
         check(p2.evaluate("(() => { const n = document.querySelector('#ocrNote'); return !n || n.hidden; })()") and p2.evaluate("(() => { const t = document.body.innerText || ''; return !t.includes('締切済み') && !document.querySelector('#recList .rsvtop details[data-k=closed]'); })()"), 'Web版：締切済みレースの ※の 注意は 出ない・締切済みの 判定も しない（第4.116版）')
         check(p2.locator('#setNotify').count() == 0 and p2.evaluate("typeof window.TengelReserve === 'undefined' && typeof window.TengelCustomRate === 'undefined'"), 'Web版：お知らせの設定・予約の仕組みは入らない')
         check(p2.locator('#setFx').count() == 0 and p2.evaluate("typeof window.TengelFx === 'undefined' && typeof window.__FX === 'undefined' && !document.querySelector('#fxCss')"), 'Web版：的中ボタン（演出・設定）は入らない')
-        check(p2.locator('#ptsPill').count() == 0 and p2.locator('#testTag').count() == 0 and p2.locator('#ptsCss').count() == 0 and p2.evaluate("getComputedStyle(document.querySelector('#dbpill')).marginLeft") != '0px', 'Web版：上の帯の 所有ポイント・説明書の 置き場は かわらない')
+        check(p2.locator('#ptsPill').count() == 0 and p2.locator('#testTag').count() == 0 and p2.locator('#ptsCss').count() == 0 and p2.locator('#rsvBtn').count() == 0 and p2.locator('[data-k=rself], [data-k=zwaku]').count() == 0 and p2.evaluate("getComputedStyle(document.querySelector('#dbpill')).marginLeft") != '0px', 'Web版：上の帯の 所有ポイント・説明書の 置き場は かわらない（第4.122版の「結果待ち」・自己入力・枠も ない）')
         check(p2.locator('#setKisekae').count() == 0 and p2.locator('#ksBnr').count() == 0 and p2.evaluate("typeof window.TengelKisekae === 'undefined' && typeof window.__KS === 'undefined' && !document.querySelector('#ksCss') && !document.documentElement.dataset.ks"), 'Web版：着せ替え（カード・上の絵・テーマの CSS）は入らない')
         check(p2.locator('#rFilters [data-f=mem]').count() == 1 and p2.evaluate("document.querySelector('#rFilters [data-f=mem]').hidden") is True and p2.evaluate("typeof memTopHTML === 'function' ? memTopHTML() : ''") == '' and p2.locator('#recList .memtop').count() == 0,
               'Web版：思い出記録は 入らない（絞り込みの「思い出」は かくす・思い出の 欄は 出ない）')
@@ -1843,6 +1849,97 @@ try:
         p9.screenshot(path=os.path.join(W, 't4', 'native_closed_judge.png'), full_page=False)
         ctx9.close()
         # Web版（ブラウザ）には ※の 注意を 出さない（締切済みの 仕組みは App Store版だけ）→ 下の ctx2 で 見る
+        # ---- 第4.122版（まさちゃん 2026/11/04 07:36「予約済み結果待ちレースの項目を作成する。予約したタップすれば買い目が一目で分かるように表示して！」
+        #      「買い目、自己入力機能を追加する。判定の層とズレていても、自己入力を押すと、どの番号でも選択できるようにする」「結果、層の欄は自己入力の項目を増やす」
+        #      「枠連、枠複を自動で割り出せるようにする！」）：上の帯の「結果待ち」→ 窓（ゾーンごとの 1着・2着・3着の 馬・点数・組）・買い目の カードの「✏️ 自己入力」・
+        #      層別の収支の「自己入力」の 行・判定の ゾーンごとの 枠（枠複・枠単を 解放した 人だけ） ----
+        mR = {}
+
+        def markerR(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': mR[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': mR.pop(key, None); return {'ok': True}
+            v = mR.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        ctxR = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctxR.add_init_script(FAKE)
+        ctxR.expose_binding('__saveBackup', lambda s, t: None); ctxR.expose_binding('__marker', markerR)
+        ctxR.add_init_script("if (!sessionStorage.getItem('seeded')) { localStorage.setItem('tengel.form', %s); sessionStorage.setItem('seeded', '1'); }" % json.dumps(json.dumps(form, ensure_ascii=False)))
+        pR = ctxR.new_page(); pR.on('pageerror', lambda e: errs.append('RSV ' + str(e)))
+        pR.goto(APPURL); pR.wait_for_timeout(1500); gate(pR); pR.wait_for_timeout(900)
+        HB = """() => { const b = document.querySelector('#rsvBtn'), m = document.querySelector('#msBtn'); if (!b || !m) return null; const r = b.getBoundingClientRect(), q = m.getBoundingClientRect();
+          return { t: b.innerText.replace(/\\s+/g, ''), has: b.classList.contains('has'), svg: !!b.querySelector('svg'), top: !!b.closest('header.top'), next: (b.nextElementSibling || {}).id, row: Math.abs(r.top - q.top) < 6 && r.right <= q.left + 1, al: b.getAttribute('aria-label') }; }"""
+        h0 = pR.evaluate(HB)
+        check(bool(h0) and h0['t'] == '結果待ち0' and not h0['has'] and h0['svg'] and h0['top'] and h0['next'] == 'msBtn' and h0['row'] and '0件' in h0['al'], f'上の帯の「ミッション」の 左に「結果待ち 0」（{h0}）')
+        pR.click('#rsvBtn'); pR.wait_for_timeout(400)
+        o0 = pR.locator('#rsvOv')
+        check(o0.count() == 1 and o0.get_attribute('role') == 'dialog' and '0件' in o0.inner_text() and '結果待ちの レースは ないよ' in o0.inner_text() and pR.evaluate("document.documentElement.classList.contains('mson')"), '押すと 窓「予約済み・結果待ち」（まだ 0件）')
+        pR.keyboard.press('Escape'); pR.wait_for_timeout(250)
+        check(pR.locator('#rsvOv').count() == 0 and not pR.evaluate("document.documentElement.classList.contains('mson')") and pR.evaluate("document.activeElement && document.activeElement.id") == 'rsvBtn', 'Esc で 窓を 閉じる（「結果待ち」に もどる）')
+        # 自己入力：判定の ゾーンと 関係なく どの 番号でも（B層の 8R：ゾーンは 中穴→人気・人気→大穴）
+        cR = pR.locator('#recCard')
+        sb = cR.locator('[data-k=rzones] [data-k=rself]')
+        check(sb.count() == 1 and sb.get_attribute('aria-pressed') == 'false' and '自己入力' in sb.inner_text() and cR.locator('.selfpk').count() == 0, '買い目の カード：使うゾーンの ならびに「✏️ 自己入力」（はじめは オフ）')
+        sb.click(); pR.wait_for_timeout(300)
+        pk = cR.locator('.selfpk')
+        check(pk.count() == 1 and cR.locator('[data-k=rself]').get_attribute('aria-pressed') == 'true' and pk.locator('.spr').count() == 3 and [pk.locator('.spr').nth(i).get_attribute('data-side') for i in range(3)] == ['a', 'b', 't']
+              and pk.locator('.spr[data-side=a] button').count() == 14 and pk.locator('.spr button[aria-pressed=true]').count() == 0 and 'まだ 選んで いないよ' in pk.inner_text() and pk.locator('[data-k=rpclear]').is_disabled(),
+              '押すと 自己入力の 欄：1着・2着・3着（馬単・3連単）× 14頭 ぜんぶの 番号・はじめは 何も 選んで いない')
+        for side, nos in (('a', [3, 9]), ('b', [1, 6, 12])):
+            for no in nos:
+                cR.locator(f'.selfpk .spr[data-side={side}] button[data-no="{no}"]').click(); pR.wait_for_timeout(120)
+        pk = cR.locator('.selfpk')
+        check('1着 3・9／2着 1・6・12' in pk.inner_text() and '3連単は 3着も 選ぶと 入るよ' in pk.locator('.spw').inner_text() and pR.evaluate("JSON.stringify(JSON.parse(localStorage.getItem('tengel.form')).self)") == '{"a":[3,9],"b":[1,6,12],"t":[]}',
+              f'ゾーンに ない 馬（3＝10番人気・9・12＝13番人気）も 選べる・選んだ 馬の まとめ・3着が ない 間は「3連単は 3着も 選ぶと 入るよ」（{pk.inner_text()[-70:]}）')
+        cR.locator('.selfpk .spr[data-side=t] button[data-no="13"]').click(); pR.wait_for_timeout(150)
+        check(cR.locator('.selfpk .spw').count() == 0 and '3着 13' in cR.locator('.selfpk .spf').inner_text(), '3着も 選ぶと 注意が 消える')
+        pR.screenshot(path=os.path.join(W, 't4', 'native_self_pick.png'), full_page=True)
+        cR.locator('details[data-k=betsee] summary').click(); pR.wait_for_timeout(250)
+        blR = cR.locator('.betlist').inner_text()
+        check('3→1' in blR and '9→12' in blR and '3→6→13' in blR and '9→12→13' in blR, '買い目の 組に 自己入力の 組が 入る（馬単 3→1・9→12、3連単 3→6→13・9→12→13 など）')
+        cR.locator('[data-rsv=reserve]').click(); pR.wait_for_timeout(1200)
+        rR = pR.evaluate("() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.r === 8); if (!b) return null; const rs = b.rsv; return { id: b.id, state: rs.state, zones: rs.zones, self: rs.self, legs: rs.legs.map(l => l.k), um: rs.bets['馬単'].length, sr: rs.bets['3連単'].length, pts: rs.points, stake: b.stake, buyZ: b.buyZ }; }")
+        check(bool(rR) and rR['state'] == 'reserved' and rR['zones'] == ['中穴→人気', '人気→大穴', '自己入力'] and rR['self'] == {'a': [3, 9], 'b': [1, 6, 12], 't': [13]} and rR['legs'] == rR['zones'] and rR['um'] == 24 and rR['sr'] == 87 and rR['pts'] == 111 and rR['stake'] == 11100 and rR['buyZ'] == rR['zones'],
+              f'「買い目を予約」→ 記録に 自己入力の 馬（rsv.self）と ゾーンごとの 馬（rsv.legs）・馬単 24点（ゾーン 18＋自己入力 6）・3連単 87点（ゾーン 81＋自己入力 6）（{rR}）')
+        h1 = pR.evaluate(HB)
+        check(h1['t'] == '結果待ち1' and h1['has'] and '1件' in h1['al'], f'予約すると 上の帯が「結果待ち 1」（{h1["t"]}）')
+        pR.click('#rsvBtn'); pR.wait_for_timeout(500)
+        ovR = pR.locator('#rsvOv'); otR = ovR.inner_text(); lgR = ovR.locator('.rvleg')
+        check(ovR.locator('.rvcard').count() == 1 and ovR.locator('.msn').inner_text() == '1件' and '8R' in otR and 'はなまる特別' in otR and '発走 15:40' in otR and lgR.count() == 3
+              and lgR.nth(0).locator('.rvl').inner_text() == '第1\u3000中穴→人気' and lgR.nth(2).locator('.rvl.self').inner_text() == '自己入力'
+              and [lgR.nth(0).locator('.rvs').nth(i).locator('.num').count() for i in range(3)] == [3, 3, 6] and [x.inner_text() for x in lgR.nth(2).locator('.rvs').nth(0).locator('.num').all()] == ['3', '9'] and lgR.nth(2).locator('.rvs').count() == 3
+              and [x.inner_text() for x in lgR.nth(0).locator('.rvsl').all()] == ['1着', '2着', '3着'] and '馬単 24点・3連単 87点' in otR and '合計 111点' in otR and ovR.locator('details.rvd').count() == 1 and not ovR.locator('details.rvd').evaluate('d => d.open'),
+              f'「結果待ち」を 押すと 窓：レースごとに ゾーン（と 自己入力）の 1着・2着・3着の 馬（枠の 色）・点数の まとめ・「組を見る」（{otR[:150]}…）')
+        pR.screenshot(path=os.path.join(W, 't4', 'native_rsv_ov.png'), full_page=False)
+        ovR.locator('details.rvd summary').click(); pR.wait_for_timeout(200)
+        check('3→1' in ovR.locator('details.rvd .betlist').inner_text(), '「組を見る」で 券種ごとの 組（自己入力の 組も）')
+        ovR.locator('[data-rv=result]').click(); pR.wait_for_timeout(900)
+        check(pR.locator('#rsvOv').count() == 0 and pR.locator('#v-rec').is_visible() and pR.locator(f'#recList .lrow[data-id="{rR["id"]}"] .rsvf').count() == 1, '「結果を入れる（記録タブ）」→ 窓が 閉じて 記録タブで その レースの 結果入力が 開く')
+        check('自己入力（1着 3・9／2着 1・6・12／3着 13）' in pR.locator(f'#recList .lrow[data-id="{rR["id"]}"]').inner_text(), '記録の 行にも「自己入力（1着 …／2着 …／3着 …）」')
+        # 層別の収支：自己入力を 含む レースは A・B・C に 入れずに「自己入力」の 行
+        pR.click('.tabbar button[data-tab=stats]'); pR.wait_for_timeout(900)
+        mo = pR.evaluate("""() => { const c = [...document.querySelectorAll('#moneyBody .card')].find(x => x.querySelector('h2') && x.querySelector('h2').innerText.startsWith('層別')); if (!c) return null;
+          const rows = [...c.querySelectorAll('tbody tr')].map(r => [...r.children].map(td => td.innerText.trim().replace(/\\s+/g, ' '))); return { rows, hint: (c.querySelector('.hint') || {}).innerText || '' }; }""")
+        rowsR = {r[0]: r for r in (mo or {}).get('rows', [])}
+        check(bool(mo) and rowsR.get('自 自己入力', [None, None])[1] == '1' and rowsR.get('B 警戒', [None, None])[1] == '0' and rowsR['自 自己入力'][4] == '11,100' and '自己入力' in mo['hint'],
+              f'層別の収支に「自己入力」の 行（購入 1・購入額 11,100）・B層の 行には 入らない・下に 説明（{mo and mo["rows"]}）')
+        # 枠：枠複・枠単を Pカスタムで 解放した 人だけ、判定の ゾーンごとに 枠と 組
+        pR.click('.tabbar button[data-tab=judge]'); pR.wait_for_timeout(500)
+        check(pR.locator('#result [data-k=zwaku]').count() == 0, '解放する 前は 判定の ゾーンに 枠が 出ない')
+        pR.click('.tabbar button[data-tab=set]'); pR.wait_for_timeout(400)
+        for tp in ('枠複', '枠単'):
+            pR.locator(f'#setCustom [data-pt=unlock1][data-key="type:{tp}"]').click(); pR.wait_for_timeout(150)
+            pR.locator(f'#setCustom [data-pt=unlock2][data-key="type:{tp}"]').click(); pR.wait_for_timeout(500)
+        pR.click('.tabbar button[data-tab=judge]'); pR.wait_for_timeout(600)
+        zwR = pR.locator('#result [data-k=zwaku]')
+        zr = [{'w': [[x.inner_text() for x in z.locator('.zw1').first.locator('.num').all()]], 'fk': z.locator('[data-t=枠複] .zwc').inner_text(), 'ft': z.locator('[data-t=枠単] .zwc').inner_text()} for z in zwR.all()]
+        z0, z1 = (zr + [{}, {}])[:2]
+        check(zwR.count() == 2 and z0.get('w') == [['5', '3', '1', '4', '2', '6']] and z0.get('fk') == '1-2・1-4・1-6・2-3・2-5・3-4・3-6・4-5・5-6' and z0.get('ft') == '1→2・1→4・1→6・3→2・3→4・3→6・5→2・5→4・5→6',
+              f'設定タブで 解放して 判定タブに もどると ゾーンごとに 枠：第1 中穴→人気（7・4・1 → 6・2・10）＝ 枠 5・3・1 → 4・2・6・枠複 9つ・枠単 9つ（14頭の 枠）（{z0 or "なし"}）')
+        check(z1.get('fk') == '2-4・2-6・2-7・4-4・4-6・4-7・6-6・6-7' and z1.get('ft') == '2→4・2→6・2→7・4→4・4→6・4→7・6→4・6→6・6→7' and zwR.count() and '通り' not in zwR.first.inner_text() and '点' not in pR.locator('#result').inner_text(),
+              f'第2 人気→大穴：同じ 枠の 2頭（6と5＝4枠・10と9＝6枠）は 4-4・6-6 も 入る・通り数／点数は 判定の 画面に 出さない（{z1.get("fk")}）')
+        if zwR.count():
+            zwR.first.scroll_into_view_if_needed(); pR.wait_for_timeout(200)
+            pR.locator('#result .zone').first.screenshot(path=os.path.join(W, 't4', 'native_zwaku.png'))
+        ctxR.close()
         # ---- 第4.59版：テスト版（TENGEL_TEST=1）：はじめから 10,000P・テスト版の 印・設定の いちばん上に「テスト版の道具」（10,000P 足す・的中ボタンを ためす）----
         store['markers'].clear()
         ctx5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctx5.add_init_script(FAKE)

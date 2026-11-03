@@ -106,6 +106,16 @@
       var b = Array.from(TengelLocal.mem.bets.values())[0];
       return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
     });
+    // 第4.122版：上の帯の「結果待ち」（予約した レースの 数）→ 押すと 窓（ゾーンごとの 1着・2着・3着の 馬・点数）→ とじる
+    await step(R, 'rsvList', async function () {
+      var b = document.querySelector('#rsvBtn'); if (!b) return { btn: false };
+      await waitFor(function () { return /結果待ち\s*1/.test(b.innerText); }, 5000);
+      var t = b.innerText.replace(/\s+/g, ''); b.click(); await sleep(600);
+      var ov = document.querySelector('#rsvOv');
+      return { btn: t, ov: !!ov, cards: ov ? ov.querySelectorAll('.rvcard').length : 0, legs: ov ? ov.querySelectorAll('.rvleg').length : 0, text: ov ? ov.innerText.slice(0, 160) : '' };
+    });
+    await mark('rsv-ov');
+    var rvc = document.querySelector('#rsvOv [data-rv=close]'); if (rvc) { rvc.click(); await sleep(300); }
     // 第3弾：的中ボタン。CIの保存は予約まで（結果は入れない）なので、演出を直接出して確かめる：デカ的中の PUSH → タップ → いつものボード／ど的中の PUSH → 結果の画面。
     // 絵と音のファイル（sfx_*.m4a など）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）。
     // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れて いない → force:'fz' は ノーマルど的中（nd）に なる（PUSH と ボードは ど的中の 形）

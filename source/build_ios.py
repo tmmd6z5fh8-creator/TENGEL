@@ -23,7 +23,7 @@ web = os.path.join(tmp, 'web')
 subprocess.run(['node', 'build.js'], cwd=W, check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', web], cwd=W, check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, TARGET='app'))
 
-TEST = os.environ.get('TENGEL_TEST') == '1'   # テスト版（第4.59版）：TENGEL_TEST=1 python3 build_ios.py <出力>（はじめから 10,000P・設定に「テスト版の道具」・名前は「テンゲル テスト」・TengelTest.swiftpm）。App Store には 出さない
+TEST = os.environ.get('TENGEL_TEST') == '1'   # テスト版（第4.59版）：TENGEL_TEST=1 python3 build_ios.py <出力>（はじめから 10,000P・設定に「テスト版の道具」・名前は「テンゲル テスト」・TengelTest.swiftpm）。App Store には 出さない（第4.122版から ID は jp.tengel.app.test＝TestFlight で iPhone に 入れる）
 pkg = os.path.join(out, 'TengelTest.swiftpm' if TEST else 'Tengel.swiftpm')
 shutil.rmtree(pkg, ignore_errors=True)
 shutil.copytree(os.path.join(W, 'ios', 'Tengel.swiftpm'), pkg, ignore=shutil.ignore_patterns('.DS_Store', 'Resources', 'AppIcon.png', '.build', '.swiftpm'))
@@ -34,12 +34,24 @@ if IOS_VERSION:
     ps = ps.replace(f'displayVersion: "{cur_v}"', f'displayVersion: "{IOS_VERSION}"')
 if IOS_BUILD:
     ps = ps.replace(f'bundleVersion: "{cur_b}"', f'bundleVersion: "{IOS_BUILD}"')
+TEST_BUILD = ''
 if TEST:
     assert ps.count('name: "テンゲル",') == 2, 'Package.swift の 名前の 形が かわった'
     ps = ps.replace('        .iOSApplication(\n            name: "テンゲル",', '        .iOSApplication(\n            name: "テンゲル テスト",')
     assert 'テンゲル テスト' in ps
+    # 第4.122版（まさちゃん 2026/11/04「アプリのテスト版でiPhoneて動かせないの？」）：テスト版は 本番と 別の アプリ（ID jp.tengel.app.test）。
+    #   iPad の Swift Playgrounds から App Store Connect に あげて、TestFlight（内部テスト）で iPhone に 入れる。本番の「テンゲル」と 並べて 入れられる・
+    #   キーチェーンの しるし（初回の 1,500P）も 本番と 分かれる（しるしは アプリの ID ごと）。前の 版までは 本番と 同じ ID（入れると 入れかわった）
+    assert ps.count('bundleIdentifier: "jp.tengel.app",') == 1, 'Package.swift の ID の 形が かわった'
+    ps = ps.replace('bundleIdentifier: "jp.tengel.app",', 'bundleIdentifier: "jp.tengel.app.test",')
+    # ビルド番号：あげる たびに 前より 大きく（App Store Connect は 同じ 番号を 2回 受けつけない）。APP_VER 2026.11.04-3 → 20261104.3（IOS_BUILD が あれば それ）
+    if not IOS_BUILD:
+        m = re.fullmatch(r'(\d{4})\.(\d{2})\.(\d{2})(?:-(\d+))?', os.environ.get('APP_VER', ''))
+        TEST_BUILD = f'{m.group(1)}{m.group(2)}{m.group(3)}.{int(m.group(4) or 1)}' if m else __import__('time').strftime('%Y%m%d.%H%M')
+        ps = ps.replace(f'bundleVersion: "{IOS_BUILD or cur_b}"', f'bundleVersion: "{TEST_BUILD}"')
+        assert f'bundleVersion: "{TEST_BUILD}"' in ps
 open(pk, 'w', encoding='utf8').write(ps)
-VER = (IOS_VERSION or cur_v, IOS_BUILD or cur_b)
+VER = (IOS_VERSION or cur_v, IOS_BUILD or TEST_BUILD or cur_b)
 
 # 画面のファイル：Resources/ に名前だけで並べる（Swift Playgrounds は Resources の中のフォルダを平らにするので、名前がかぶらないようにする）
 files = {'index.html': 'index.html', 'manual.html': 'manual.html'}

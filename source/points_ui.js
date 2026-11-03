@@ -564,7 +564,7 @@
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('#ptOv')) closePoints(); else if ($('#msOv')) closeMissions(); });
   // 上の帯の ならび：ロゴ → 所有ポイント → 説明書 →（テスト版の 印）→ ミッション →（段の きりかえ）→ マザーデータの 札（説明書は pwa_ui.js が あとから 入れる ことが あるので、描く たびに そろえる）
   function orderTop(top) {
-    const seq = [$('.brand', top), $('#ptsPill'), $('#manBtn'), $('#testTag'), $('#msBtn'), $('.tbrk', top), $('#dbpill')].filter(Boolean);
+    const seq = [$('.brand', top), $('#ptsPill'), $('#manBtn'), $('#testTag'), $('#rsvBtn'), $('#msBtn'), $('.tbrk', top), $('#dbpill')].filter(Boolean);   // 第4.122版：結果待ち（src.html）は ミッションの 左
     let prev = null;
     for (const el of seq) { if (prev && prev.nextElementSibling !== el) prev.insertAdjacentElement('afterend', el); prev = el; }
   }

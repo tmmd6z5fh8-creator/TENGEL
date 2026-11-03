@@ -104,7 +104,7 @@ Points (in-app currency):
 - iPhone-only (UIDeviceFamily 1, portrait); on iPad it runs in iPhone compatibility mode.
 
 Reservations and notifications:
-- After a judgment the user picks horses inside the suggested zones and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip). This only stores the user's own planned picks on the device; nothing is purchased.
+- After a judgment the user picks horses inside the suggested zones (or any horse numbers with 「✏️ 自己入力」) and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip). This only stores the user's own planned picks on the device; nothing is purchased. The header button 「結果待ち」 lists the reserved races still waiting for a result, with the planned picks per zone.
 - If the race start time is known, the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！"). UNUserNotificationCenter only; no server, no remote push. Permission is asked at the first reservation; notifications can be turned off in Settings > 結果確認のお知らせ.
 - The user then enters the finishing order (or reads it from a result screenshot, on the device) and the app shows hit/miss per bet type for their own record.
 
