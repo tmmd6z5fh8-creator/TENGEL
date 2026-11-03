@@ -112,7 +112,7 @@ if 'deghost' in C:
     else:
         base = cv2.GaussianBlur(src, (0, 0), dg.get('sigma', 10))
     hsv0 = cv2.cvtColor(np.clip(src, 0, 255).astype(np.uint8), cv2.COLOR_RGB2HSV)
-    prot = ((hsv0[..., 1] > 100) & (hsv0[..., 2] > 150)) | (src.max(-1) > 200) | (((src[..., 0] - src[..., 2]) > 45) & (src.max(-1) > dg.get('warm_v', 0)))
+    prot = ((hsv0[..., 1] > 100) & (hsv0[..., 2] > 150)) | (src.max(-1) > 200) | (((src[..., 0] - src[..., 2]) > dg.get('warm_rb', 45)) & (src.max(-1) > dg.get('warm_v', 0)))
     prot = cv2.GaussianBlur(ndi.binary_dilation(prot, iterations=4).astype(np.float32), (0, 0), 2)
     v = dg.get('v', 110)
     if dg.get('dark_max'):

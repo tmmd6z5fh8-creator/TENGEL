@@ -31,7 +31,18 @@ ids = sorted({int(lab[y, x]) for x, y in F['seeds']} - {0})
 horse = np.isin(lab, ids)
 if F.get('close'):
     horse = ndi.binary_closing(horse, iterations=F['close']) & roi
-horse = ndi.binary_fill_holes(horse)
+def fill_small_holes(m, hmax):
+    # 穴を うめる（hmax より 大きな 穴は うめない：布や 馬が ボードを かこむ と、ボードの 中 ぜんぶが 穴に なる ため）
+    if hmax is None:
+        return ndi.binary_fill_holes(m)
+    holes = ndi.binary_fill_holes(m) & ~m
+    lab_h, nh = ndi.label(holes)
+    if nh == 0:
+        return m
+    sz = ndi.sum(holes, lab_h, range(1, nh + 1))
+    return m | np.isin(lab_h, [i + 1 for i in range(nh) if sz[i] <= hmax])
+HMAX = F.get('hole_max')
+horse = fill_small_holes(horse, HMAX)
 if F.get('grabcut'):
     # GrabCut：色の かたまりで 出した 馬（ふちの 光も 入る）を、絵の ふち線で 切り直す（ボードの 字は 背景・馬の 中は 前）
     gcf = F['grabcut']
@@ -49,7 +60,7 @@ if F.get('grabcut'):
     bgd = np.zeros((1, 65), np.float64); fgd = np.zeros((1, 65), np.float64)
     cv2.grabCut(sub, g, None, bgd, fgd, gcf.get('iters', 6), cv2.GC_INIT_WITH_MASK)
     res = np.zeros((H, W), bool); res[by0:by1, bx0:bx1] = (g == cv2.GC_FGD) | (g == cv2.GC_PR_FGD)
-    horse = ndi.binary_fill_holes(res) & m0
+    horse = fill_small_holes(res, HMAX) & m0
     # 小さな かけら（1000px より 小さい もの）は すてる
     lab3, n3 = ndi.label(horse)
     if n3:
