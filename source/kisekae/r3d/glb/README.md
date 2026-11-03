@@ -36,7 +36,7 @@ Loading the bust takes about 35 s and about 1.8 GB of RAM. One render at 780×16
 
 `kisekae/flat/shiden_film.py` reads `SD_HORSE`:
 - `new` (default): the face and the hoof come from the GLBs.
-- `SD_HORSE=old`: the previous r3d SDF horse and `shiden_hoof.py` hoof, which rebuilds the shipped film.
+- `SD_HORSE=old`: the previous r3d SDF horse and `shiden_hoof.py` hoof, which rebuilds the film shipped before 第4.119版 (delete frames 54–113 and 175–205 in `ios/fx_assets/_films/sd` first).
 
 In both modes, timing, camera keys, lights, the eye glow and flare, vapor, cracks, lightning, sparks and lettering are the same code.
 

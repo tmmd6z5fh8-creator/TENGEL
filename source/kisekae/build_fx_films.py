@@ -9,6 +9,9 @@
                      flat/kami_glitch.py バグ 59＋まっ暗 30 コマ → flat/kami_cutin.py 宇宙の カットイン 108コマ ＝ 197コマ・6.57秒（約5MB）
      sd_film.mp4  … ど的中・紫電の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
                      → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
+                     第4.119版：馬の 顔（54〜113）と 蹄（175〜205）は まさちゃんの Meshy の 馬と 蹄（flat/shiden_glb.py・shiden_face2.py・r3d/glb。
+                     GLB の 場所は SD_HORSE_GLB・SD_HOOF_GLB）。顔は G バッファ（shiden_film.py --facebuf <buf>）→ 雷・息・仕上げ（--facecomp <buf> <_films/sd> 54 114）。
+                     できた コマが _films/sd に あれば とばして 書き出す だけ。SD_HORSE=old で 前の 馬（その コマを 消してから）
      sd_last.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
      nd_film.mp4  … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
                      → 光に つつまれる → 低い 目線（芝・大きな 玉）に 3D の ど！的中（flat/shiden_logo.py）が 落ちて くる ＝ 315コマ・10.5秒（さいごの 場面を 2.3秒 のばした）・780×1688・CRF 20。2コアで 約1時間）。FILMS=nd で これだけ 作る
