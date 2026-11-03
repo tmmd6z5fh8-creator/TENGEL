@@ -107,7 +107,8 @@
       return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
     });
     // 第3弾：的中ボタン。CIの保存は予約まで（結果は入れない）なので、演出を直接出して確かめる：デカ的中の PUSH → タップ → いつものボード／ど的中の PUSH → 結果の画面。
-    // 絵と音のファイル（fz_nglow.webp・sfx_*.m4a）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）
+    // 絵と音のファイル（sfx_*.m4a など）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）。
+    // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れて いない → force:'fz' は ノーマルど的中（nd）に なる（PUSH と ボードは ど的中の 形）
     await step(R, 'fx', async function () {
       var F = window.TengelFx; if (!F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[6, 2, 10]], n: 18 }, { t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: 'ワイド', state: '不的中', hits: [], n: 9 }], ranks: { 6: 1, 2: 2, 10: 3 } };
@@ -118,7 +119,7 @@
       var res = { kind: kind, fpsPush: fpsPush, push: !!document.querySelector('#fxOv .ov.big .pbox.pz .push'), pz: (document.querySelector('#fxOv .pbox') || { style: { getPropertyValue: function () { return ''; } } }).style.getPropertyValue('--pz'), css: !!document.querySelector('#fxCss'), settings: F.get(), calm: F.calm(), reduced: F.reduced(), sfx: F.sfxState(), assets: {},
         stage: (function () { var st = document.querySelector('#fxOv .fxs'); return st ? { k: st.style.getPropertyValue('--fxk'), w: innerWidth, h: innerHeight } : null; })(),
         decide: [F.decide(Object.assign({}, spec, { ranks: { 6: 1, 2: 2, 10: 11 } })).kind, F.decide(spec).kind, F.decide({ rows: [{ t: '馬単', state: '的中', hits: [[6, 2]] }] }).kind, F.decide({ rows: [{ t: '馬単', state: '不的中', hits: [] }] }).kind] };
-      for (var k of ['fz_nglow.webp', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
+      for (var k of ['sfx_fz_push.m4a', 'sfx_big.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       await mark('fx-push');
       F.tap(); res.fpsReveal = await fps(1000);
       await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
@@ -144,7 +145,7 @@
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
       function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
       function closeVis() { var c = document.querySelector('#fxOv .close'); return c ? getComputedStyle(c).visibility : null; }
-      var res = { decide: F.decide(spec), lottery: [F.lottery('fz'), F.lottery('gd')], films: Object.keys(window.__FX.films || {}), assets: {} };
+      var res = { decide: F.decide(spec), lottery: [F.lottery('nd'), F.lottery('sgd')], films: Object.keys(window.__FX.films || {}), assets: {} };   // 第4.118版：くじは ノーマルど的中 → プレミアム だけ
       for (var k of ['pm_face_F.webp', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_pc.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
       res.gone = { reveal: ['hidden', 'zp', 'gd'].filter(function (k) { return !!(window.__FX.reveal || {})[k]; }), art: !!(window.__FX.art || {}).gd, sfx: !!(window.__FX.sfx || {}).gd };   // 第4.86版：消した 演出は 入って いない
       // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤（1つ 1.0秒）→ ハートの 地面に ど的中が 落ちて 刺さる → ボード：10.07秒・第4.86版）
@@ -201,29 +202,53 @@
       res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
       await mark('fx-nd-board');
       F.close(); await sleep(200);
+      // 第4.117版：神様極的中（gk：超神様と 同じ 虹色の PUSH（1.6倍）→ 押した 画面（ノーマルど的中と 同じ）→ 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）。
+      // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード「神様極的中！！！」（帯は 超大穴と 大穴）
+      res.gk = { kind: F.show(Object.assign({ force: 'gk' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf'), pz: (F.current() || {}).pz };
+      await sleep(400); F.prime(); F.tap(); res.gk.fps = await fps(1000);
+      res.gk.parts = ['.gks', '.gkk', '.ndt', '.hb'].map(function (c) { return document.querySelectorAll('#fxOv .ov.gk ' + c).length; });
+      res.gk.imgs = document.querySelectorAll('#fxOv .ov.gk img').length; res.gk.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.gk img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
+      await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
+      res.gk.cur = F.current(); res.gk.ov = (document.querySelector('#fxOv .ov.gk') || {}).className || null; res.gk.holder = !!document.querySelector('#fxVh video[data-film=gk_film]');
+      res.gk.ndtGone = getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).visibility === 'hidden' || getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).display === 'none';
+      await mark('fx-gk');                                         // 動画の さいごの 1まい（still）
+      await waitFor(function () { return closeVis() === 'visible'; }, 8000);
+      res.gk.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.gk.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.gk.closeVis = closeVis();
+      await mark('fx-gk-board');
+      F.close(); await sleep(200);
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
     // 第4.91版：結果ボードカスタム（買い切り）。シミュレーターでは App内課金の 商品が 読めない ことが 多いので、買わずに 設定の「▶ 見る」と 同じ ためしで 飾りを 出す。
-    // 横断幕（登場：1秒で 止まる）と 出世馬 8連続（幻の 馬＝極ど的中の 紫の 馬の 絵は リポジトリに 入れない → CIでは SVG の 馬・ボードが 飛んで もどる）
+    // 第4.113版：16「ボードを持つ馬」（的中・ハズレの ボードの 両方。登場 1秒 → 1.5秒後に 1回 落としそうに なる）。絵（bcx_hb_*.webp）が ない ときは SVG の 馬
     await step(R, 'board', async function () {
       var T = window.TengelBoard, F = window.TengelFx, Wl = window.TengelWallet; if (!T || !F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
       var res = { items: T.items().length, info: Wl && Wl.board ? Wl.board.info() : null, card: !!document.querySelector('#setBoard'), tiles: document.querySelectorAll('#setBoard .bct').length, buy: (document.querySelector('#setBoard [data-bcact=buy]') || {}).innerText || null };
+      res.ready = T.items().filter(function (i) { return i.ready; }).map(function (i) { return i.id; });
       if (res.info) { delete res.info.items; delete res.info.need; }
-      F.preview(spec, 'hit', { item: 'banner' }); await sleep(2600);
+      F.preview(spec, 'hit', { item: 'carry' }); await sleep(2600);
       var hb = document.querySelector('#fxOv .hb'), c = document.querySelector('#fxOv .close');
-      res.banner = hb ? { bcx: hb.dataset.bcx || '', cls: hb.className, parts: hb.querySelectorAll('.bcx').length, close: c ? Math.round(c.getBoundingClientRect().top) : null } : null;
-      await mark('board-banner');
+      res.carry = hb ? { bcx: hb.dataset.bcx || '', cls: hb.className, parts: hb.querySelectorAll('.bcx').length, vec: hb.classList.contains('bchbv'), close: c ? Math.round(c.getBoundingClientRect().top) : null } : null;
+      await mark('board-carry');
+      await sleep(1000);
+      await mark('board-carry-slip');
       F.close(); await sleep(300);
-      F.preview(spec, 'hit', { item: 'rise', streak: 8 }); await sleep(3300);
+      var miss = { r: 8, n: 14, rows: [{ t: '3連単', state: '不的中', hits: [], n: 18 }, { t: '馬単', state: '不的中', hits: [], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
+      F.preview(miss, 'miss', { item: 'carry' }); await sleep(2600);
       hb = document.querySelector('#fxOv .hb');
-      res.rise8 = { ph: !!document.querySelector('#fxOv .bcph'), svg: !!document.querySelector('#fxOv .bcph svg'), fly: !!(hb && hb.classList.contains('bcfly')) };
-      await mark('board-rise8');
-      await sleep(3300);
+      res.carryMiss = hb ? { bcx: hb.dataset.bcx || '', kind: (F.current() || {}).kind || null } : null;
+      await mark('board-carry-miss');
+      F.close(); await sleep(200);
+      // 第4.121版：1〜14 の 絵の ボード（デザインの 絵）。CI には 絵が ない ので、読めない とき いつもの ボードに もどる（.bcpic なし・ボードは .hb の 中）ことを 見る
+      F.preview(spec, 'hit', { item: 'ring', streak: 2 }); await sleep(2600);
       hb = document.querySelector('#fxOv .hb');
-      res.rise8b = { ph: !!document.querySelector('#fxOv .bcph'), items: hb ? hb.querySelectorAll('.bc-it').length : 0, rib: (document.querySelector('#fxOv .bc-rib') || {}).textContent || null };
-      await mark('board-rise8-back');
+      res.pic = hb ? { bcx: hb.dataset.bcx || '', bcp: hb.dataset.bcp || '', pic: hb.classList.contains('bcpic'), rbInHb: !!(hb.querySelector('.rb') && hb.querySelector('.rb').parentNode === hb),
+        stage: T.stage ? T.stage('ring', 2) : null, n: Object.keys((window.__BCP && window.__BCP.items) || {}).length } : null;
+      F.close(); await sleep(200);
+      F.preview(miss, 'miss', { item: 'rain', streak: 9 }); await sleep(2000);
+      hb = document.querySelector('#fxOv .hb');
+      res.picMiss = hb ? { bcx: hb.dataset.bcx || '', pic: hb.classList.contains('bcpic'), stage: T.stage ? T.stage('rain', 9) : null } : null;
       F.close(); await sleep(200);
       return res;
     });
