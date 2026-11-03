@@ -1,0 +1,164 @@
+{
+ "name": "shusse1",
+ "title": "的中⑨ 出世馬（1連勝）",
+ "src": "src.png",
+ "quad": [
+  [
+   205,
+   355
+  ],
+  [
+   845,
+   355
+  ],
+  [
+   845,
+   832
+  ],
+  [
+   205,
+   832
+  ]
+ ],
+ "frame_lr": [
+  96,
+  959
+ ],
+ "S": 0.452,
+ "cx": 527.5,
+ "top_pt": 215,
+ "crop": [
+  45,
+  1390
+ ],
+ "fill": {
+  "mode": "radial",
+  "c": [
+   525,
+   640
+  ],
+  "k": 0.85,
+  "len": 0.85,
+  "med": 151,
+  "desat": 0.3,
+  "raw": 24
+ },
+ "clean": {
+  "side_rays": {
+   "c": [
+    525,
+    640
+   ],
+   "x": [
+    177,
+    873
+   ],
+   "med": 25,
+   "fade": 0.25,
+   "v": 75,
+   "close": 4
+  },
+  "regions": [
+   {
+    "rect": [
+     378,
+     372,
+     680,
+     515
+    ],
+    "only": "text",
+    "bg": {
+     "br": 20,
+     "s1": 14,
+     "s2": 40,
+     "rows": 24,
+     "vblur": 5
+    }
+   },
+   {
+    "rrect": [
+     226,
+     546,
+     828,
+     806,
+     18
+    ],
+    "bg": {
+     "vmax": 76,
+     "br": 20,
+     "nopill": true
+    }
+   }
+  ],
+  "text": {
+   "rb": -32,
+   "v": 120,
+   "white_br": 60,
+   "dil": 10,
+   "soft": 9
+  },
+  "inpaint": [
+   {
+    "rrect": [
+     410,
+     1284,
+     642,
+     1392,
+     50
+    ]
+   }
+  ],
+  "inpaint_mode": "radial",
+  "keep_conf": true,
+  "deghost": {
+   "bands": [
+    [
+     96,
+     45,
+     960,
+     260
+    ]
+   ],
+   "dark_max": 50,
+   "dark_sigma": 30,
+   "warm_v": 0
+  },
+  "inpaint_c": [
+   525,
+   640
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    46,
+    304
+   ],
+   "title_cx": 175,
+   "title_top": 18,
+   "title_px": 44,
+   "sub_cx": 174,
+   "sub_top": 69,
+   "sub_px": 14,
+   "rows_x": [
+    24,
+    327
+   ],
+   "rows_top": 115,
+   "rows_bottom": 237,
+   "row_h": 28,
+   "row_gap": 6,
+   "rows_zoom": 1.25,
+   "rib_in": "rows",
+   "rib_top": 112,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ }
+}

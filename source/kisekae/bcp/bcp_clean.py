@@ -43,6 +43,38 @@ def shape_mask(s):
     if 'clip' in s:
         x0, y0, x1, y1 = s['clip']; c = np.zeros_like(m); c[y0:y1, x0:x1] = 1; m = m & c
     return m.astype(bool)
+# 絵の 左右の はしに アプリの 画面が 写って いる（絵の まん中の 縦長の 舞台の 外）：舞台の はしの 光の すじを 外へ のばして うめる。
+#   花の わく・きらきら・紙ふぶき（明るい 所・あたたかい 色の 暗い 所）は のこす。
+#   side_rays = { c:[x,y]（光の まん中）, x:[左の はし, 右の はし]（舞台の 中の いちばん 外の 列）, med:25, fade:0.25 }
+if 'side_rays' in C:
+    sr = C['side_rays']; scx, scy = sr['c']; xl, xr = sr['x']
+    Vs = src.max(-1)
+    prot = (Vs > sr.get('v', 75)) | (((src[..., 0] - src[..., 2]) > 15) & (Vs > 35))
+    prot = ndi.binary_closing(prot, iterations=sr.get('close', 4))
+    prot = ndi.binary_fill_holes(prot)
+    def edge_col(x0, x1):
+        col = src[:, x0:x1].mean(1)                                 # H×3
+        okc = ~prot[:, x0:x1].any(1)                                # 花で ない 行だけ
+        ys_ok = np.nonzero(okc)[0]
+        full = np.stack([np.interp(np.arange(H), ys_ok, col[ys_ok, c]) for c in range(3)], -1)
+        return ndi.median_filter(full, size=(sr.get('med', 25), 1))
+    colL = edge_col(xl, xl + 3); colR = edge_col(xr - 2, xr + 1)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    ext = src.copy()
+    for side, xe, colE in (('L', xl, colL), ('R', xr, colR)):
+        m = (xx < xl) if side == 'L' else (xx > xr)
+        t = (xe - scx) / np.where(np.abs(xx - scx) < 1e-3, 1e-3, xx - scx)
+        ye = np.clip(scy + (yy - scy) * t, 0, H - 1)
+        smp = np.stack([np.interp(ye[m], np.arange(H), colE[:, c]) for c in range(3)], -1)
+        dist = np.abs(xx[m] - xe)
+        k = 1 - sr.get('fade', 0.25) * np.clip(dist / 80.0, 0, 1)
+        ext[m] = smp * k[:, None]
+    side = (xx < xl) | (xx > xr)
+    pm = cv2.GaussianBlur((prot & side).astype(np.float32), (0, 0), 1.2)
+    pm = np.where(prot & side, np.maximum(pm, 0.7), pm)
+    wv = side.astype(np.float32) * (1 - pm)
+    src = src * (1 - wv[..., None]) + ext * wv[..., None]
+    R, G, B = src[..., 0], src[..., 1], src[..., 2]; V = src.max(-1)
 # うすく 写りこんだ アプリの 画面（時刻・字・タブ など：絵を 作った ときの 下じき）を 消す：暗い 所の 細かい もようを なめらかに（紙ふぶき・光・馬は のこす）
 if 'deghost' in C:
     dg = C['deghost']
@@ -62,7 +94,15 @@ if 'deghost' in C:
     prot = ((hsv0[..., 1] > 100) & (hsv0[..., 2] > 150)) | (src.max(-1) > 200) | (((src[..., 0] - src[..., 2]) > 45) & (src.max(-1) > dg.get('warm_v', 0)))
     prot = cv2.GaussianBlur(ndi.binary_dilation(prot, iterations=4).astype(np.float32), (0, 0), 2)
     v = dg.get('v', 110)
-    wgt = band * np.clip((v - Vl) / 40, 0, 1) * (1 - prot)
+    if dg.get('dark_max'):
+        dm = dg['dark_max']
+        Vp = src.max(-1)
+        dk2 = (Vp < dg.get('dark_base', dm)).astype(np.float32)       # 地の 色は もっと 暗い 所から（写りこみを 入れない）
+        sg2 = dg.get('dark_sigma', 25)
+        base = np.stack([cv2.GaussianBlur(src[..., c] * dk2, (0, 0), sg2) / np.maximum(cv2.GaussianBlur(dk2, (0, 0), sg2), 1e-4) for c in range(3)], -1)
+        wgt = band * np.clip((dm - Vp) / 10.0, 0, 1) * (1 - prot)
+    else:
+        wgt = band * np.clip((v - Vl) / 40, 0, 1) * (1 - prot)
     src = src * (1 - wgt[..., None]) + base * wgt[..., None]
 # 先に 写す 所（となりの 絵を ずらして はる：旗の 下の 鎖など）
 for p in C.get('patch', []):
@@ -192,7 +232,29 @@ if C.get('inpaint'):
     m = np.zeros((H, W), bool)
     for s3 in C['inpaint']:
         m |= shape_mask(s3)
-    if C.get('inpaint_mode') == 'rows':
+    if C.get('inpaint_mode') == 'radial':
+        filled = im8.astype(np.float32).copy()
+        icx, icy = C['inpaint_c']
+        ys, xs = np.nonzero(m)
+        dx, dy = xs - icx, ys - icy; L = np.maximum(np.hypot(dx, dy), 1e-3); ux, uy = dx / L, dy / L
+        def first_out(sign):
+            # まん中から 見て 内（-1）・外（+1）へ すすんで、絵の ボタンの 外に 出る 所
+            d = np.zeros(len(xs), np.float32); done = np.zeros(len(xs), bool)
+            for step in range(1, 400):
+                px_ = np.clip(np.round(xs + sign * ux * step).astype(int), 0, W - 1); py_ = np.clip(np.round(ys + sign * uy * step).astype(int), 0, H - 1)
+                out = ~m[py_, px_] & ~done
+                d[out] = step; done |= out
+                if done.all(): break
+            return d
+        di, do = first_out(-1), first_out(+1)
+        def at(sign, d):
+            px_ = np.clip(np.round(xs + sign * ux * (d + 2)).astype(int), 0, W - 1); py_ = np.clip(np.round(ys + sign * uy * (d + 2)).astype(int), 0, H - 1)
+            return im8[py_, px_].astype(np.float32)
+        ci, co = at(-1, di), at(+1, do)
+        t = (di / np.maximum(di + do, 1e-3))[:, None]
+        filled[ys, xs] = ci * (1 - t) + co * t
+        filled = cv2.GaussianBlur(filled, (0, 0), 1.5)
+    elif C.get('inpaint_mode') == 'rows':
         filled = im8.astype(np.float32).copy()
         ys, xs = np.nonzero(m)
         for y in range(ys.min(), ys.max() + 1):
@@ -207,7 +269,7 @@ if C.get('inpaint'):
         bgr = cv2.cvtColor(im8, cv2.COLOR_RGB2BGR)
         bgr = cv2.inpaint(bgr, m.astype(np.uint8) * 255, C.get('inpaint_r', 12), cv2.INPAINT_TELEA)
         filled = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB).astype(np.float32)
-    if C.get('inpaint_mode') != 'rows':
+    if C.get('inpaint_mode') not in ('rows', 'radial'):
         filled = cv2.GaussianBlur(filled, (0, 0), 3.0)
     wm = cv2.GaussianBlur(m.astype(np.float32), (0, 0), 3.0)[..., None]
     out = np.clip(out * (1 - wm) + filled * wm, 0, 255).astype(np.uint8)
