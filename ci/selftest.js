@@ -142,7 +142,9 @@
       await mark('fx-fz-push');
       F.tap(); res.fpsFz = await fps(1000); await sleep(6600);
       await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
-      res.fz = { rib: (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null, title: (document.querySelector('#fxOv .rb .bh') || {}).innerText || null, closeVis: getComputedStyle(document.querySelector('#fxOv .close')).visibility, finOpacity: getComputedStyle(document.querySelector('#fxOv .ov.fz .fin')).opacity };
+      // 第4.124版：force:'fz' は ノーマルど的中（.ov.nd）に なる → .ov.fz が なくても 止まらない ように（前は getComputedStyle(null) で ここで 止まり、印 fx-fz-result が 出なかった）
+      var q1 = function (s) { return document.querySelector(s); }, cs1 = function (s, k) { var e = q1(s); return e ? getComputedStyle(e)[k] : null; };
+      res.fz = { ov: (q1('#fxOv .ov') || {}).className || null, rib: (q1('#fxOv .rb .zrib') || {}).innerText || null, title: (q1('#fxOv .rb .bh') || {}).innerText || null, closeVis: cs1('#fxOv .close', 'visibility'), finOpacity: cs1('#fxOv .ov .fin', 'opacity') };
       await mark('fx-fz-result');
       F.close(); await sleep(200);
       res.closed = !document.querySelector('#fxOv');
@@ -206,7 +208,7 @@
       await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
       res.nd.cur = F.current(); res.nd.ov = (document.querySelector('#fxOv .ov.nd') || {}).className || null; res.nd.holder = !!document.querySelector('#fxVh video[data-film=nd_film]');
       res.nd.ndt = !!document.querySelector('#fxOv .ov.nd .ndt .pressed'); await sleep(1200);   // 第4.79版：押した 画面（PUSH の 画面とは 別）は 約1秒で 消える
-      res.nd.ndtGone = getComputedStyle(document.querySelector('#fxOv .ov.nd .ndt')).visibility === 'hidden';
+      res.nd.ndtGone = (function (e) { return e ? getComputedStyle(e).visibility === 'hidden' : null; })(document.querySelector('#fxOv .ov.nd .ndt'));   // 第4.124版：ない ときも 止まらない
       await mark('fx-nd');                                         // 動画の さいごの 1まい（still）
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);
       res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
@@ -220,7 +222,7 @@
       res.gk.imgs = document.querySelectorAll('#fxOv .ov.gk img').length; res.gk.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.gk img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
       await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
       res.gk.cur = F.current(); res.gk.ov = (document.querySelector('#fxOv .ov.gk') || {}).className || null; res.gk.holder = !!document.querySelector('#fxVh video[data-film=gk_film]');
-      res.gk.ndtGone = getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).visibility === 'hidden' || getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).display === 'none';
+      res.gk.ndtGone = (function (e) { if (!e) return null; var c = getComputedStyle(e); return c.visibility === 'hidden' || c.display === 'none'; })(document.querySelector('#fxOv .ov.gk .ndt'));   // 第4.124版：ない ときも 止まらない
       await mark('fx-gk');                                         // 動画の さいごの 1まい（still）
       await waitFor(function () { return closeVis() === 'visible'; }, 8000);
       res.gk.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.gk.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.gk.closeVis = closeVis();
