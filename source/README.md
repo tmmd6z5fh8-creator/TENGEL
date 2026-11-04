@@ -1151,6 +1151,7 @@
 - **データの更新の ファイル**（`data/mother_app.json`）は スクランブル（`datascramble.py`：鍵で 作った 乱数の 列（xoshiro128**）を 重ねる・16進・同じ 中身なら 同じ ファイル）。暗号の しくみでは ない（Apple の 輸出の 申告は かわらない）。
   鍵は リポジトリに 入れない：`source/xt/data_key.txt`（.gitignore）か 環境変数 `TENGEL_DATA_KEY`。**なく した ときは claude.ai の Project の「テンゲル_データ更新の鍵」から 戻す**（鍵が かわると 出した アプリが 新しい データを 読めない）。
   App Store版の index.html に `window.__DATA_KEY`（`build_pwa.py`）・`pwa_shim.js` の `unscramble` で 戻す（ふつうの JSON も 読める）。CI 用の ビルド（公開の ios ブランチ）は `TENGEL_DATA_KEY` に ダミーの 鍵。
+  CI（2026/11/04 まさちゃん「おすすめの方でやって！」）は 今までどおり 公開の ios ブランチで 毎回。ダミーの 鍵なので、CI の selftest の `data` は「データの形がちがうよ」に なるのが ふつう（本物の 鍵で 読めるかは `test_dataentry.py` で 確かめる）。第4.124版の CI（run 93）は macos-15・macos-26 とも 成功。
   公開して いる ファイルも スクランブルの 形に（`python3 datascramble.py scramble <ふつうの json> <出す ファイル>`）。前の 版の アプリ（第4.123版まで）は「データの形がちがうよ」に なる（テスト版だけ）。
 - 説明書：「レースのデータを入れる」に「たくさんのレースをまとめて入れる（まとめて入力）」と 写真（`md_bulk`・App Store版だけ）。
 
