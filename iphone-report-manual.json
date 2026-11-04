@@ -1,0 +1,18 @@
+{
+ "phase": 1,
+ "device": "iphone",
+ "page": "manual",
+ "top": {
+  "title": "テンゲルⅢ 説明書",
+  "imgs": 32,
+  "loaded": 3
+ },
+ "item": {
+  "hash": "#ocr",
+  "visible": 1,
+  "visibleLoaded": 1
+ },
+ "toApp": "tengel://localhost/",
+ "errors": [],
+ "at": "2026-11-04T12:48:05.049Z"
+}
