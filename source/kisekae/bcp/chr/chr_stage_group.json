@@ -1,2 +1,4 @@
-{"stamp1": {"bgx": "bcp_stamp1gx.webp", "layers": [
-  {"src": "bcp_stamp1g_fg.webp", "kind": "group", "o": [203.2, 227.2]}]}}
+{"stamp1": {"bgx": "bcp_stamp1gx.webp", "layers": [{"src": "bcp_stamp1g_fg.webp", "kind": "group", "o": [203.2, 227.2]}]},
+ "stamp2": {"bgx": "bcp_stamp2gx.webp", "layers": [{"src": "bcp_stamp2g_fg.webp", "kind": "group", "o": [203.2, 227.2]}]},
+ "stamp3": {"bgx": "bcp_stamp3gx.webp", "layers": [{"src": "bcp_stamp3g_fg.webp", "kind": "group", "o": [203.2, 227.2]}]},
+ "stamp4": {"bgx": "bcp_stamp4gx.webp", "layers": [{"src": "bcp_stamp4g_fg.webp", "kind": "group", "o": [203.2, 227.2]}]}}

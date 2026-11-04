@@ -79,10 +79,11 @@ res = {k: (v, None) for k, v in hards.items()}
 #    1回目：キャラの まわり GZ px まで 消して うめる → 元の 絵と うめた 色が ちがう 所（光の ふち・ふち線・きらきら）は キャラと いっしょに 動かす（halo）
 #    2回目：うしろは 元の 絵の まま、キャラ＋halo の 所 だけ 1回目の うめた 色に（止まって いる ときは 元の 絵と 同じ）
 F = C['fill']; cx, cy = F['c']; GZ = F.get('glow_px', 12); GT = F.get('glow_thr', 22)
-def make_fill(hole):
+def make_fill(hole, vmax=None):
     phi = np.degrees(np.arctan2(yy - cy, xx - cx))
     V = img.max(-1)
-    band = ~ndi.binary_dilation(hole, iterations=4) & (yy < F['plate_y']) & (V <= F.get('vmax', 250)) & ~shapes(F.get('band_ex', []))
+    VM = F.get('vmax', 250) if vmax is None else vmax
+    band = ~ndi.binary_dilation(hole, iterations=4) & (yy < F['plate_y']) & (V <= VM) & ~shapes(F.get('band_ex', []))
     step = F.get('step', 0.25); ph = phi[band]; cols = img[band]; lo, hi = ph.min(), ph.max(); nb = int(np.ceil((hi - lo) / step)) + 1
     idx = np.clip(((ph - lo) / step).astype(int), 0, nb - 1); prof = np.full((nb, 3), np.nan, np.float32)
     order = np.argsort(idx); idx_s = idx[order]; cols_s = cols[order]; starts = np.searchsorted(idx_s, np.arange(nb)); ends = np.searchsorted(idx_s, np.arange(nb), 'right')
@@ -93,7 +94,7 @@ def make_fill(hole):
     prof = ndi.gaussian_filter1d(prof, F.get('psmooth', 2.0), axis=0)
     pidx = np.clip((phi - lo) / step, 0, nb - 1)
     P = np.stack([np.interp(pidx.ravel(), xs_, prof[:, c]).reshape(H, W) for c in range(3)], -1)
-    ring = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1) & (V <= F.get('vmax', 250))
+    ring = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1) & (V <= VM)
     corr = diffuse(img - P, ring.astype(np.float32), hole)
     fill = P + corr
     fill += cv2.GaussianBlur(np.random.default_rng(5).normal(0, 1.2, (H, W)).astype(np.float32), (0, 0), 0.7)[..., None]
@@ -127,7 +128,14 @@ for i, p in enumerate(parts):
     g = (dif > GT) & allow
     l_, n_ = ndi.label(g | hard)
     touch = set(np.unique(l_[hard])) - {0}
-    z = np.isin(l_, list(touch)) | (ndi.binary_dilation(hard, iterations=2) & allow) | hard
+    # キャラに つながって いない 小さな かけら（毛先の ふち線・きらきら）も キャラと いっしょに（背景に のこると 動いた とき 線が のこる）
+    lg, ng = ndi.label(g)
+    if ng:
+        szg = ndi.sum(g, lg, range(1, ng + 1))
+        small = np.isin(lg, [i + 1 for i in range(ng) if szg[i] < F.get('frag_max', 400)])
+    else:
+        small = np.zeros((H, W), bool)
+    z = np.isin(l_, list(touch)) | small | (ndi.binary_dilation(hard, iterations=2) & allow) | hard
     z = ndi.binary_closing(z, iterations=1) & (allow | hard)
     zones[p['id']] = z
 res = {}
@@ -139,7 +147,15 @@ hole = np.zeros((H, W), bool)
 for k, (z, a) in res.items():
     hole |= z                       # キャラ＋halo の 所 だけ（その まわりは 元の 絵：止まって いる ときは 元の 絵と 同じ）
 hole &= hole1
-bgx = np.where(hole[..., None], fill1, img)
+# 2回目：うめる 所（キャラ＋halo）の すぐ 外の 元の 絵に 合わせて うめ直す（キャラが 動いた とき、うめた 所と 元の 絵の さかいが 線に 見えない）
+fill2 = make_fill(hole, F.get('vmax2', 256)) if F.get('refill', True) else fill1
+#    さかいの すぐ 内がわ（edge_px）は 元の 絵へ なめらかに（光の 強い 所でも 線に ならない）
+#    （元の 絵が うめた 色と 大きく ちがう 所＝キャラの ふち線 などは 元の 絵を つかわない：動いた とき 線が 背景に のこらない）
+din = ndi.distance_transform_edt(hole)
+t = np.clip((din - 0.5) / F.get('edge_px', 4.0), 0, 1)
+d2 = np.abs(img - fill2).max(-1)
+w_o = ((1 - t) * np.clip(1 - (d2 - 12) / 20.0, 0, 1))[..., None]
+bgx = np.where(hole[..., None], img * w_o + fill2 * (1 - w_o), img)
 Image.fromarray(np.clip(bgx, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'bgx.png'))
 # 6) キャラの 絵（RGBA）：色は 元の 絵・ext（ほかの キャラの うしろに かくれた 所）は まわりの 色で のばす
 for i, p in enumerate(parts):
