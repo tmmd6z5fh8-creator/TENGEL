@@ -56,6 +56,15 @@ if r.returncode == 0:
     check(families(bp) == ['.phone'] and orientations(bp) == ['.portrait'], '作ったアプリの Package.swift も iPhone だけ・縦だけ')
     check('bundleIdentifier: "jp.tengel.app",' in bp and 'jp.tengel.app.test' not in bp, '本番の アプリの ID は jp.tengel.app の まま（テスト版だけ jp.tengel.app.test：第4.122版）')
     res = sorted(os.listdir(os.path.join(out, 'Tengel.swiftpm', 'Resources')))
+    _tp = os.path.join(out, 'Tengel.swiftpm', 'Resources', 'mother_template.xlsx')
+    try:
+        import zipfile as _zf
+        import html as _h
+        _z = _zf.ZipFile(_tp); _wb = _z.read('xl/workbook.xml').decode('utf8'); _ss = _h.unescape(''.join(_z.read(n).decode('utf8') for n in _z.namelist() if n.startswith('xl/worksheets/')))
+        _tok = '検証データ' in _wb and all(h in _ss for h in ('日付', '単勝1位', '3連単1位', '1着人気', '2着人気', '集計対象')) and not any(w in _ss for w in ('大井', 'JRA', '船橋'))
+    except Exception as _e:
+        _tok = False
+    check('mother_template.xlsx' in res and _tok, '第4.123版：マザーデータの 入力用 Excel の ひな形（シート「検証データ」・A〜P列の 見出し・開催場の 名前なし）が 入っている')
     html = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'index.html'), encoding='utf8').read()
     check('TengelPoints' in html and 'TengelWallet' in html and 'id="gate"' in html and 'touch-action:manipulation' in html, 'アプリの画面に ポイント・アプリを開いた時の画面・拡大の決まりが入っている')
     check(all(os.path.exists(os.path.join(out, 'Tengel.swiftpm', f)) for f in ('Markers.swift', 'Store.swift', 'Notify.swift')), 'Markers.swift・Store.swift・Notify.swift が入っている')

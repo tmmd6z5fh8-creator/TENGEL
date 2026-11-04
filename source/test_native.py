@@ -7,7 +7,7 @@
 #  ・Web版（ブラウザ）は今までどおり（アプリの印は出ない）
 #  ・App Store版の中身（TARGET=app）：Google に通信しない（フォントはアプリの中）・「このアプリについて」（免責・20歳・相談先・非公式と商標・プライバシー・フォントのライセンス）
 #    ・お客さん向けの言い方（まさちゃん・姫に送って・iPhone を出さない）・説明書はApp Store版（「iPhoneに入れる」なし）
-import json, os, shutil, subprocess, time
+import json, os, re, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv'); PORT = 8791; BASE = f'http://localhost:{PORT}/TENGEL/'
@@ -341,7 +341,8 @@ try:
         card.locator('[data-k=rtypes] button[data-v=複勝]').click(); pg.wait_for_timeout(200)
         check(card.locator('[data-k=rtypes] button[data-v=複勝]').get_attribute('aria-pressed') == 'false' and 'Pカスタム' in pg.locator('#toast').inner_text(), '🔒の券種は選べない（Pカスタムの案内）')
         chips = pg.locator('#slotJudge .slotchip')
-        check(chips.count() == 3 and pg.locator('#slotJudge .slotchip.lock').count() == 2, '判定画面のマザーデータの切り替えも 2・3は🔒')
+        check(chips.count() == 4 and pg.locator('#slotJudge .slotchip.lock').count() == 2 and [c.inner_text().replace('\n', ' ') for c in chips.all()] == ['テンゲルデータ', 'マザーデータ① 空', 'マザーデータ② 🔒', 'マザーデータ③ 🔒'],
+              f'判定画面の データの 切り替え（第4.123版）：テンゲルデータ（数は 出さない）・マザーデータ①（はじめから・空）・②③は🔒（{[c.inner_text().replace(chr(10), " ") for c in chips.all()]}）')
         pg.locator('#slotJudge .slotchip.lock').first.click(); pg.wait_for_timeout(200)
         check('Pカスタム' in pg.locator('#toast').inner_text() and pg.evaluate('TengelLocal.slots.active()') == 1, '🔒の枠は使えない（Pカスタムの案内）')
         card.locator('[data-k=rtypes] button[data-v=単勝]').click(); pg.wait_for_timeout(200)
@@ -1098,8 +1099,8 @@ try:
         pg.click('#msBtn'); pg.wait_for_timeout(500)
         ov = pg.locator('#msOv')
         ovt = ov.inner_text() if ov.count() else ''
-        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() >= 6 and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
-              '「ミッション」を押すと ミッションの窓：ポイントミッション（受け取る 1つ）・壁紙ミッション（3つ）・見直し基準の進み具合（実測・回収タブと同じ 6つ以上）')
+        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() == 0 and 'マザーデータ①〜③のレースで進む' in ov.locator('#msRev').inner_text() and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
+              '「ミッション」を押すと ミッションの窓：ポイントミッション（受け取る 1つ）・壁紙ミッション（3つ）・見直し基準の進み具合（テンゲルデータの ときは 数を 出さずに「マザーデータ①〜③のレースで進む」：第4.123版）')
         ov.locator('#msPts [data-pt=claim]').click(); pg.wait_for_timeout(700)
         mb2 = pg.evaluate("() => { const b = document.querySelector('#msBtn'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot') }; }")
         check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取りずみ' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 10/15' and not mb2['hot'],
@@ -2011,7 +2012,12 @@ try:
         mc = p5.evaluate("({ ov: !!document.querySelector('#manOv'), url: location.href, tab: document.querySelector('.tabbar button[aria-selected=true]').dataset.tab, gate: !!document.querySelector('#gateGo'), over: document.documentElement.classList.contains('manon') })")
         check(not mc['ov'] and mc['url'] == TESTURL and mc['tab'] == 'win5' and not mc['gate'] and not mc['over'], f'第4.62版：「アプリに戻る」で 窓が 閉じて、そのまま アプリ（開いた 時の 画面は 出ない）（{mc}）')
         # ② 実測④（と ③）に C層×非該当の 行を 出さない ／ ③ 見直し基準の 進み具合は 0 から（使う人が 入れた レースだけ）
-        p5.click('.tabbar button[data-tab=stats]'); p5.wait_for_timeout(1000)
+        #   第4.123版：テンゲルデータの ときは 実測を 出さない → マザーデータ①（2つ目）に ファイルの データを 入れて 使う
+        p5.click('.tabbar button[data-tab=stats]'); p5.wait_for_timeout(800)
+        fx46 = p5.evaluate("(() => ({ body: document.querySelector('#statsBody').innerText, per: document.querySelector('#perChips').hidden, title: document.querySelector('#motherTitle').innerText, tables: document.querySelectorAll('#statsBody table').length }))()")
+        check(fx46['per'] and fx46['tables'] == 0 and 'テンゲルデータの実測' in fx46['title'] and '中身（レースの数・実測①〜⑦）は見られないよ' in fx46['body'] and not re.search(r'\d+走', fx46['body']), f'第4.123版：テンゲルデータの ときは 実測（①〜⑦）と 見直し基準を 出さない（期間の ボタンも かくす）（{fx46}）')
+        p5.evaluate("(async () => { const L = TengelLocal.slots; const rows = L.rows(1).map(r => Object.assign({}, r, { id: r.id.replace('-m1-', '-m2-'), src: undefined })); await L.replace(2, rows, { source: 'excel', file: 'テスト.xlsx' }); await L.setActive(2); })()"); p5.wait_for_timeout(1500)
+        p5.click('.tabbar button[data-tab=judge]'); p5.wait_for_timeout(300); p5.click('.tabbar button[data-tab=stats]'); p5.wait_for_timeout(1000)
         st46 = p5.evaluate("(() => { const cards = [...document.querySelectorAll('#statsBody .card')]; const f = m => cards.find(c => (c.querySelector('h2') || {}).textContent.includes(m)); const c4 = f('④'), c3 = f('③'), pr = f('見直し基準'); return { c4: c4 ? c4.innerText.includes('C層×非該当') : null, c4rows: c4 ? c4.querySelectorAll('tbody tr').length : 0, c3: c3 ? c3.innerText.includes('C層・非該当') : null, prog: [...pr.querySelectorAll('.prog .pl b')].map(b => b.textContent), hint: pr.querySelector('.hint').innerText }; })()")
         check(st46['c4'] is False and st46['c4rows'] == 4 and st46['c3'] is False, f'第4.60版：実測④（と ③）に C層×非該当の 行は 出さない（A層・B層・C層第1段階・C層第2段階の 4行）（{st46}）')
         check(st46['prog'] == ['0/30', '0/10', '0/20', '0/30', '0/10', '0/10'] and 'アプリに入っているデータは数えない' in st46['hint'], f'第4.60版：見直し基準の 進み具合は 0 から（アプリに 入っている データは 数えない・使う人が 入れた レースで 進む）（{st46}）')

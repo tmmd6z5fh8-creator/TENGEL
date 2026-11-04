@@ -372,7 +372,10 @@
       try { var d = await TengelLocal.data.check(); return { ok: true, ver: d.ver, n: d.n, newer: d.newer, cur: d.cur }; }
       catch (e) { return { ok: false, msg: String(e && e.message || e), url: TengelLocal.data.url() }; }
     });
-    await step(R, 'mother', function () { var r = TengelLocal.slots.rows(1).filter(function (x) { return x.src; }); return { n: TengelLocal.slots.rows(1).length, input: r.map(function (x) { return x.id + ' ' + x.p1 + '-' + x.p2 + '-' + x.p3; }) }; });
+    // 第4.123版：テンゲルデータ（1つ目）には 足せない・マザーデータ①〜③（2〜4つ目）と 名前
+    await step(R, 'mother', function () { var L = TengelLocal.slots, r = L.rows(1).filter(function (x) { return x.src; }); return { n: L.rows(1).length, N: L.N, names: L.names(), fixed1: L.fixed(1), input: r.map(function (x) { return x.id + ' ' + x.p1 + '-' + x.p2 + '-' + x.p3; }), slots: L.info().map(function (s) { return s.n + ':' + s.count + (s.fixed ? ':fixed' : ''); }) }; });
+    // 第4.123版：マザーデータの 入力用 Excel の ひな形が アプリの 中から 読める（Resources/mother_template.xlsx・zip の 頭は PK）
+    await step(R, 'template', async function () { var r = await fetch('mother_template.xlsx'); var u = new Uint8Array(await r.arrayBuffer()); return { ok: r.ok, bytes: u.length, zip: u[0] === 0x50 && u[1] === 0x4b, share: typeof TengelNative.shareData === 'function' }; });
     await step(R, 'fonts', async function () {
       await Promise.race([document.fonts.ready, sleep(8000)]);
       var fams = {}; document.fonts.forEach(function (f) { if (f.status === 'loaded') fams[f.family] = 1; });

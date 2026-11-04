@@ -324,7 +324,9 @@
   const unlocked = key => !!(W && P.unlocked(W.events, key));
   const typeLocked = t => P.ALL_TYPES.includes(t) && !P.FREE_TYPES.includes(t) && !unlocked('type:' + t);
   const slotHasRows = n => { try { return TL.slots.rows(n).length > 0; } catch (e) { return false; } };
-  const slotUnlocked = n => +n === 1 || unlocked('slot:' + n) || slotHasRows(+n);
+  // 第4.123版：テンゲルデータ（1つ目）と マザーデータ①（2つ目）は はじめから。マザーデータ②・③（3・4つ目）は Pカスタムで 解放（15,000P）
+  const slotUnlocked = n => +n <= 2 || unlocked('slot:' + n) || slotHasRows(+n);
+  const SLOT_LABEL = n => ['', 'テンゲルデータ', 'マザーデータ①', 'マザーデータ②', 'マザーデータ③'][+n] || `マザーデータ${n}`;
   async function unlock(key, cost) {
     await walletReady;
     const next = P.unlock(W.events, key, cost, device(), Date.now());
@@ -455,7 +457,7 @@
   const TYPE_NAMES = { '複勝': '複勝', '枠複': '枠複', '枠単': '枠単', '馬連': '馬連', 'ワイド': 'ワイド', '3連複': '3連複' };
   function unlockName(key) {
     const k = String(key || ''); if (k.startsWith('type:')) return k.slice(5);
-    if (k.startsWith('slot:')) { const n = +k.slice(5); try { return (TL.slots.names() || {})[n] || `マザーデータ${n}`; } catch (e) { return `マザーデータ${n}`; } }
+    if (k.startsWith('slot:')) { const n = +k.slice(5), lab = SLOT_LABEL(n); try { const nm = (TL.slots.names() || {})[n] || lab; return nm === lab ? lab : `${lab}「${nm}」`; } catch (e) { return lab; } }
     if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } return `壁紙 ${k.slice(6)}`; }
     if (k === 'board') return '結果ボードカスタム（買い切り）';
     if (k === 'wallpack') return '壁紙パック（買い切り）';
@@ -469,9 +471,8 @@
     let h = `<p class="hint" style="margin:0 0 6px"><b>Pカスタムで、自分だけのテンゲルを育てよう！</b></p><p class="hint" style="margin:0">ポイントで、使える券種とマザーデータの枠を増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。</p>`;
     h += `<h3 style="margin:12px 0 6px">券種（記録・買い目の予約で選べるもの）</h3><p class="ptnote" style="margin:0">はじめから：単勝・馬単・3連単</p><div class="ptlist">`;
     P.UNLOCK_TYPES.forEach(tp => { const key = 'type:' + tp, on = unlocked(key); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(TYPE_NAMES[tp] || tp)}</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.type)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.type)}</div></div>`; });
-    h += `</div><h3 style="margin:14px 0 6px">マザーデータの枠（自分のデータで参考的中率を出す）</h3><p class="ptnote" style="margin:0">1つ目はアプリに入っているデータ。2つ目・3つ目を解放すると、Excelや判定したレースで自分だけのマザーデータを作れるよ。</p><div class="ptlist">`;
-    let names = {}; try { names = TL.slots.names() || {}; } catch (e) { /* なし */ }
-    [2, 3].forEach(n => { const key = 'slot:' + n, on = slotUnlocked(n); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${n}つ目「${esc(names[n] || 'マザーデータ' + n)}」</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.slot)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.slot)}</div></div>`; });
+    h += `</div><h3 style="margin:14px 0 6px">マザーデータの枠（自分のデータで参考的中率を出す）</h3><p class="ptnote" style="margin:0">テンゲルデータ（アプリに入っているデータ）とマザーデータ①は、はじめから使えるよ。マザーデータ②・③を解放すると、Excelや判定したレースで自分だけのマザーデータをもっと作れるよ。</p><div class="ptlist">`;
+    [3, 4].forEach(n => { const key = 'slot:' + n, on = slotUnlocked(n); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(unlockName(key))}</div><div class="pd">${on ? '解放ずみ' : `1つ ${pts(P.COST.slot)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.slot)}</div></div>`; });
     h += '</div>';
     box.innerHTML = h;
   }

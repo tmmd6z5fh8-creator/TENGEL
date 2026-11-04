@@ -143,7 +143,13 @@ APP_SKIP = ('install', 'dataupdate', 'apikey')   # App Store版は画像の読�
 # Web版で出さない項目（App Storeのアップデート・データの更新はApp Store版だけ）
 WEB_SKIP = ('update', 'points', 'kisekae')   # ポイント・Pカスタム・ミッション・着せ替えも App Store版だけ
 # App Store版だけ名前を変える項目（アプリの更新は「アップデート」の項目にあるので）
-APP_ITEM = {'backup': {'t': 'バックアップ', 'd': '記録を守る・機種変更・自動バックアップ'}}
+APP_ITEM = {'backup': {'t': 'バックアップ', 'd': '記録を守る・機種変更・自動バックアップ'},
+            # 第4.123版：アプリに 入っている データは「テンゲルデータ」・自分の データは「マザーデータ①〜③」
+            'mother': {'t': 'テンゲルデータ・マザーデータ', 'd': '参考的中率のもとになるデータ（テンゲルデータとマザーデータ①〜③）', 'kw': 'テンゲルデータ マザーデータ 基盤データ Excel 開催場 解放'}}
+APP_SHOT = {'set_mother': ('テンゲルデータ・マザーデータ', '設定 → テンゲルデータ・マザーデータ'),
+            'md_tools': ('マザーデータの編集の中の、レースのデータのボタン', '設定 → マザーデータ①〜③ → 編集'),
+            'md_record': ('結果の記録の「マザーデータにも入れる」の欄', '「マザーデータにも入れる」（画面は例・架空のレース）')}
+APP_MARKS = {'result_a2': [('.numbers', .14), ('.vfoot', .045), ('.oldline',), ('.w5push',), ('#copyAll',), ('.rankbox', .06)]}   # App Store版：「全STEPを表示」の かわりに 人気順位の 表
 SHOT_CSS = ('\n.ring{position:absolute;border:2.5px solid var(--gold);border-radius:9px;box-shadow:0 0 0 2px rgba(10,27,34,.55),0 0 14px rgba(217,180,90,.55);pointer-events:none}'
             '\n.shot.has-mk .shot-in{padding-left:30px}\n.shot.has-mk .mk{left:2px;margin-left:0}'
             '\n.shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}\n')
@@ -157,7 +163,7 @@ def _app_target():
 
 def build(mode, out, app_ver='2026.10.12-4', mother=None):
     """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)
-    mother：アプリに入れるマザーデータ（App Store版の「はじめのデータ ○走」に使う）"""
+    mother：アプリに入れるマザーデータ（第4.123版から 説明書には 使わない：テンゲルデータの 数は 出さない）"""
     assert mode in ('artifact', 'pwa', 'app'), mode
     app = mode == 'app'
     items = [dict(it) for it in ITEMS if not (app and it['id'] in APP_SKIP) and not (not app and it['id'] in WEB_SKIP)]
@@ -181,6 +187,8 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
         if boot and name not in dims:   # 写真を撮るためにだけ作るとき：まだ撮っていない写真は入れない
             return ''
         spec = SHOTS[name]; alt, cap, marks = spec[:3]; start = spec[3] if len(spec) > 3 else 1; rings = spec[4] if len(spec) > 4 else []
+        if app and name in APP_SHOT: alt, cap = APP_SHOT[name]   # App Store版の 写真の 説明（第4.123版：テンゲルデータ・マザーデータ①〜③）
+        if app and name in APP_MARKS: marks = APP_MARKS[name]   # App Store版の 画面に ない 所（全STEPを表示 など）
         d = dims[name]; m = meta.get(name, {}); H = m.get('H', d['h']); top = m.get('cropTop', 0)
         mk = []
         for i, sp in enumerate(marks, start):
@@ -234,11 +242,8 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
             k = [x for x in sec if a in sec[x]]; assert k, a
             for x in k: sec[x] = sec[x].replace(a, b)
         sec = AT.app_manual_sections(sec)
-        rows = mother or []
-        last = max((r['date'] for r in rows), default='')
-        minfo = f'{len(rows)}走' + (f'（{int(last[5:7])}/{int(last[8:10])}まで）' if last else '')
-        for x in sec:
-            sec[x] = sec[x].replace('{{mother}}', minfo)
+        # 第4.123版：アプリに 入っている データ（テンゲルデータ）の 数・期間は 説明書にも 出さない（{{mother}}・表紙の「はじめのデータ ○走」は なし）
+        assert not [x for x in sec if '{{mother}}' in sec[x]], [x for x in sec if '{{mother}}' in sec[x]]
     gname = dict(GROUPS)
     sections = []
     for k, it in enumerate(items):
@@ -284,7 +289,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 <p class="eyebrow">アプリの使い方</p>
 <h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
 <p class="lead">知りたい項目を押すと、その説明が出るよ。画面の写真に番号をつけて、順番に読めるようにしてあるよ。</p>
-<ul class="meta"><li>アプリ {html.escape(app_ver)}</li>{f'<li>はじめのデータ {minfo}</li>' if app else '<li>第13改訂版</li><li>大井 290走（10/9まで）</li>'}</ul>
+<ul class="meta"><li>アプリ {html.escape(app_ver)}</li>{'<li>テンゲルデータ入り</li>' if app else '<li>第13改訂版</li><li>大井 290走（10/9まで）</li>'}</ul>
 </div>
 </header>
 

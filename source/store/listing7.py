@@ -90,36 +90,35 @@ KEYWORDS = '3連単,三連単,万馬券,回収率,オッズ分析,データ分�
 SUPPORT_URL = WEB + 'support.html'
 PRIVACY_URL = WEB + 'privacy.html'
 COPYRIGHT = '2026 （Apple Developerに登録した名前）'
-REVIEW_NOTES = '''This app helps users analyze horse-racing odds that they enter (or read from their own screenshots) and shows suggested "zones" (popularity ranges) for exacta and trifecta tickets, based on past race statistics stored on the device.
+REVIEW_NOTES = '''This app analyzes horse-racing odds that the user enters (or reads from their own screenshots on the device) and shows suggested "zones" (popularity ranges) for exacta and trifecta tickets, based on past race statistics stored on the device.
 
-The app does NOT offer real-money gambling: there is no betting, no purchase of betting tickets, and no link to any betting service. Users can only record their own results and spending for personal bookkeeping.
+It does NOT offer real-money gambling: no betting, no purchase of betting tickets, no link to any betting service. Users only record their own results and spending.
 
 Points (in-app currency):
-- New users receive 1,500 points on first launch (no purchase needed).
-- Judging a race (reading the user's screenshots on the device, showing the result) uses 200 points; a 5-race pick uses 200 points.
-- Points can unlock more bet types for the record (500 each), an extra data slot (15,000) and cosmetic themes (1,000-7,000).
-- Points are sold as consumable in-app purchases and granted monthly by auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days from delivery. No free trial.
-- Points, unlocks and records are stored only on the device (the app says before buying that deleting the app erases them); a small Keychain marker (gift received, credited subscription transactions) prevents granting the same points twice.
-- On first launch the app shows a notice screen (horse-race betting is for ages 20+, play responsibly, the app does not sell betting tickets and promises no profit) that the user confirms with 「はじめる」.
-- iPhone-only (UIDeviceFamily 1, portrait); on iPad it runs in iPhone compatibility mode.
+- 1,500 points on first launch (no purchase needed). Judging a race or a 5-race pick uses 200 points.
+- Points unlock bet types for the record (500 each), two more user data slots (15,000 each) and cosmetic themes (1,000-7,000). The built-in reference data (テンゲルデータ) only gives percentages; its races and counts are not shown. The user's own races go to マザーデータ①〜③ (① is free).
+- Points are sold as consumable IAPs and granted monthly by auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions also give points.
+- Points, unlocks and records stay on the device (the app warns before buying that deleting the app erases them); a small Keychain marker prevents granting the same points twice.
+- First launch shows a notice (betting is for ages 20+, play responsibly, no tickets are sold, no profit is promised) confirmed with 「はじめる」.
+- iPhone-only, portrait (iPad runs it in compatibility mode).
 
 Reservations and notifications:
-- After a judgment the user picks horses inside the suggested zones (or any horse numbers with 「✏️ 自己入力」) and taps 「買い目を予約」 (reserve picks) or 「このレースを諦める」 (skip). This only stores the user's own planned picks on the device; nothing is purchased. The header button 「結果待ち」 lists the reserved races still waiting for a result, with the planned picks per zone.
-- If the race start time is known, the app schedules a LOCAL notification 15 minutes after the start ("結果を確認しよう！"). UNUserNotificationCenter only; no server, no remote push. Permission is asked at the first reservation; notifications can be turned off in Settings > 結果確認のお知らせ.
-- The user then enters the finishing order (or reads it from a result screenshot, on the device) and the app shows hit/miss per bet type for their own record.
+- After a judgment the user picks horses (in the zones, or any number with 「✏️ 自己入力」) and taps 「買い目を予約」 or 「このレースを諦める」. This only stores planned picks on the device; nothing is purchased. 「結果待ち」 in the header lists the reserved races.
+- A LOCAL notification 15 minutes after the start time ("結果を確認しよう！"): UNUserNotificationCenter only, no server, no remote push. Permission is asked at the first reservation; it can be turned off in Settings > 結果確認のお知らせ.
+- The user enters the finishing order (or reads it from a result screenshot on the device) and sees hit/miss per bet type.
 
-Result effects (visual feedback only): saving a result shows a "PUSH" button; a tap plays a short animation (CSS/SVG; two rare variants play a bundled silent MP4 we rendered ourselves) and a board listing hit/miss per bet type, never money. Nothing is won or paid. Sounds are short synthesized clips bundled in the app; they respect the silent switch and mix with other apps' audio. Flashing stays under 3 per second; effects can be turned off or reduced in Settings > 的中の演出 (also follows iOS Reduce Motion). No network is used for any effect.
+Result effects (visual only): saving a result shows a "PUSH" button; a tap plays a short animation (CSS/SVG; two rare variants use a bundled silent MP4 we made) and a board with hit/miss per bet type, never money. Bundled sounds respect the silent switch. Flashing stays under 3 per second; effects can be reduced or turned off (Settings > 的中の演出, also iOS Reduce Motion). No network is used.
 
-Themes (Settings > 着せ替え): 41 cosmetic themes (colors, bundled OFL fonts, animated header picture, PUSH and board style): 26 unlock with points, 3 reward owning 8/16/25 themes, 11 come with the 壁紙パック. Assets are bundled (CSS/SVG/WebP); animation stops with Reduce Motion.
-Non-consumables: 壁紙パック (1,500 yen, 11 themes), 結果ボードカスタム (1,500 yen, 15 result board designs: 14 full-screen illustrated boards whose picture changes with consecutive hits or misses, plus 1 animated horse; one can be chosen for hits and one for misses) and お得パック (2,200 yen, a bundle that grants both; offered only while the user owns neither) become usable step by step as races are read; all have 「購入を復元」. Missions also reward points for the number of unlocked themes (3〜45) and unlocked board designs (3〜15).
+Themes (Settings > 着せ替え): 41 cosmetic themes (colors, bundled OFL fonts, header picture, PUSH and board style): 26 unlock with points, 3 reward owning 8/16/25 themes, 11 come with the 壁紙パック.
+Non-consumables: 壁紙パック (1,500 yen, 11 themes), 結果ボードカスタム (1,500 yen, 15 result board designs that unlock step by step as races are read) and お得パック (2,200 yen, both; offered only while the user owns neither). All have 「購入を復元」.
 
-How to review (no account or sign-in needed):
-1. Open the 判定 (Judge) tab and tap 「入力例を入れる」 (Load example). A full judgment for a fictional race appears.
-2. 「オッズ画像から読み取る」 (Read odds from images) recognizes text in the user's screenshots on the device (Vision). No image or text leaves the device.
-3. Records and settings stay on the device; the app works offline. Backup and CSV export use the iOS share sheet.
-4. Settings > データの更新 downloads an updated past-race data file (JSON data only, no executable code) from our GitHub Pages site. Settings > アプリの更新 checks the App Store for a newer version (app ID only). No user data is sent.
+How to review (no account needed):
+1. 判定 tab > 「入力例を入れる」 shows a full judgment for a fictional race.
+2. 「オッズ画像から読み取る」 reads text in the user's screenshots on the device (Vision). Nothing leaves the device.
+3. Records stay on the device; the app works offline. Backup, CSV export and a blank .xlsx input template without macros (Settings > マザーデータ > 入力用のExcel（ひな形）を保存) use the iOS share sheet.
+4. Settings > データの更新 downloads an updated past-race data file (JSON only, no code) from our GitHub Pages site. Settings > アプリの更新 checks the App Store version. No user data is sent.
 
-The app is for adults (18+). Betting on horse races is legal only for people aged 20 or older in Japan; the app shows this notice.'''
+The app is for adults (18+); betting on horse races is legal only for ages 20+ in Japan, and the app shows this notice.'''
 
 FIELDS = [  # (区分, 項目, 値, 上限, 単位, メモ)
     ('App情報', '名前', NAME, 30, 'chars', 'ホーム画面の名前は「テンゲル」のまま'),

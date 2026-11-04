@@ -370,6 +370,7 @@ ol.steps li+li{margin-top:2px}
 .mpays input{font-family:var(--font-mono)}
 .mstate{margin-top:6px}
 .mstate .go{border:0;background:none;padding:0;color:var(--A);text-decoration:underline;cursor:pointer;font:inherit}
+.mstate .m1ask{color:var(--ink);line-height:1.6}.mstate .m1ask b{color:var(--warn)}.mstate .m1ask .row{margin-top:6px;gap:6px}.mstate .m1ask .btn{padding:5px 12px;font-size:12.5px}
 .chip.mchip{background:var(--A-bg);color:var(--A);border-color:transparent}
 /* 思い出記録（第4.115版）：行の 印・思い出のレースの 欄の 星・ど的中の わくを 選ぶ 窓 */
 .chip.memchip{background:#FFF1C2;color:#8A5E00;border-color:transparent}
@@ -861,7 +862,7 @@ function w5Paint() {
     const chips = T.ZN.map(z => `<button type="button" data-w5z="${z}" data-i="${r.i}" aria-pressed="${r.sel.includes(z)}"${r.has(z) ? '' : ' disabled'}>${z}${r.cands.includes(z) ? '<small>推奨</small>' : ''}</button>`).join('');
     const nums = r.list.map(h => `<button type="button" class="num ${wakuCls(h.no, J.maxNo)}${pick.has(h.no) ? '' : ' off'}" data-w5h="${h.no}" data-i="${r.i}" aria-pressed="${pick.has(h.no)}" aria-label="${h.no}番（${h.zone}・単勝${fmt(h.tan)}）を${pick.has(h.no) ? '外す' : '選ぶ'}">${h.no}</button>`).join('');
     const dropped = r.list.filter(h => !pick.has(h.no)).map(h => h.no);
-    const M = r.M, rateTxt = M && M.n >= 5 ? `${esc(motherName())}の実測（${T.KUBUN_LABEL[c.kubun].replace('（固定）', '')}・n=${M.n}）：1着が ${T.ZN.map(z => `${z} ${pct(M.c[z], M.n)}`).join('・')}` : `${esc(motherName())}の実測が少ないので（n=${M ? M.n : 0}）、単勝オッズだけの目安だよ`;
+    const M = r.M, rateTxt = M && M.n >= 5 ? `${esc(motherName())}の実測（${T.KUBUN_LABEL[c.kubun].replace('（固定）', '')}${nPart(J, `・n=${M.n}`)}）：1着が ${T.ZN.map(z => `${z} ${pct(M.c[z], M.n)}`).join('・')}` : `${esc(motherName())}の実測が少ないので${nPart(J, `（n=${M ? M.n : 0}）`)}、単勝オッズだけの目安だよ`;
     return `<div class="card w5race" data-i="${r.i}">
       <div class="w5h"><span class="w5no">${mk}</span><span class="w5ttl">${esc(J.venue)} ${x.r}R</span><span class="lb L${c.L}">${c.L}</span><span class="small"><b>${T.KUBUN_LABEL[c.kubun]}</b>・比${c.hi.toFixed(1)}</span>${J.isOi ? '' : '<span class="chip ref">参考判定</span>'}
         <span class="w5meta">${x.dist}m ${esc(J.surface)}・${esc(x.baba)}・${x.n}頭　推奨の1着ゾーン：${r.cands.join('・')}（${J.set.map(z => z.label).join('／')}の1着側）</span></div>
@@ -1092,7 +1093,8 @@ const otherHome = venue => Slots.on ? Slots.list.find(s => !s.active && s.usable
 const slotLocked = n => { const W = Wallet(); return !!(W && !W.slotUnlocked(n)); };
 function slotChipsHTML() {
   if (!Slots.on) return '';
-  return `<div class="slotbar" role="group" aria-label="マザーデータ"><span class="sl-lab">マザーデータ</span>${Slots.list.map(s => { const lk = slotLocked(s.n); return `<button type="button" class="slotchip${s.active ? ' on' : ''}${s.count ? '' : ' empty'}${lk ? ' lock' : ''}" data-slot="${s.n}" aria-pressed="${s.active}"><b>${esc(s.name)}</b><span>${lk ? '🔒' : s.count ? s.usable + '走' : '空'}</span></button>`; }).join('')}</div>`;
+  // 第4.123版（App Store版）：テンゲルデータ（1つ目）は 数を 出さない（名前だけ）
+  return `<div class="slotbar" role="group" aria-label="${NATIVE_APP ? 'データ' : 'マザーデータ'}"><span class="sl-lab">${NATIVE_APP ? 'データ' : 'マザーデータ'}</span>${Slots.list.map(s => { const lk = slotLocked(s.n); return `<button type="button" class="slotchip${s.active ? ' on' : ''}${s.count ? '' : ' empty'}${lk ? ' lock' : ''}${s.fixed ? ' fixed' : ''}" data-slot="${s.n}" aria-pressed="${s.active}"><b>${esc(s.name)}</b>${s.fixed ? '' : `<span>${lk ? '🔒' : s.count ? s.usable + '走' : '空'}</span>`}</button>`; }).join('')}</div>`;
 }
 function paintSlotBars() { for (const el of $$('[data-slotbar]')) el.innerHTML = slotChipsHTML(); }
 function refreshSlots() {
@@ -1273,26 +1275,32 @@ document.addEventListener('click', e => {
   st.form.hp = Object.keys(hp).length ? hp : null;
   storeSet('tengel.form', st.form); renderResult();
 });
+// 第4.123版（App Store版）：テンゲルデータ（1つ目・アプリに 入っている データ）で 判定した ときは、レースの 数・n・的中数を 出さない（%だけ）
+//   まさちゃん（2026/11/04）「マザーデータ①だけは、%の表示は買い目選択、買い目カスタム時のみありだが、件数や個数が分かるものは表示しないで！」
+const HIDEN = J => NATIVE_APP && !!J && J.motherN === 1;
+const nPart = (J, s) => HIDEN(J) ? '' : s;   // 数の 所（「／n=151」など）を テンゲルデータの ときは 出さない
 function refZone(J, i) {
   const S = J.S, k = J.c.kubun, K = S.k[k], z = J.set[i], mp = J.motherN !== 1 ? J.mother + '・' : '';
-  if (k === 'A' || k === 'B') return `${pct(K.hit[i], K.n)}（${mp}${k}層での実測／n=${K.n}）`;
+  if (k === 'A' || k === 'B') return `${pct(K.hit[i], K.n)}（${mp}${k}層での実測${nPart(J, `／n=${K.n}`)}）`;
   if (k === 'C0') {
     const A = S.k.A, E = S.early;
-    const main = K.n >= 5 ? `${pct(K.hit[i], K.n)}（${mp}C層・非該当での実測／n=${K.n}）` : `データ不足（n=${K.n}・${mp}A層を準用：${pct(T.zoneCount(A.pairs, z), A.n)}）`;
-    return `${main}　序盤R該当分のみ（全層）：${J.set.map(s => s.label + pct(T.zoneCount(E.pairs, s), E.n)).join('／')}（n=${E.n}）`;
+    const main = K.n >= 5 ? `${pct(K.hit[i], K.n)}（${mp}C層・非該当での実測${nPart(J, `／n=${K.n}`)}）` : `データ不足（${nPart(J, `n=${K.n}・`)}${mp}A層を準用：${pct(T.zoneCount(A.pairs, z), A.n)}）`;
+    return `${main}　序盤R該当分のみ（全層）：${J.set.map(s => s.label + pct(T.zoneCount(E.pairs, s), E.n)).join('／')}${nPart(J, `（n=${E.n}）`)}`;
   }
   const band = k === 'C1' ? '第1段階' : '第2段階', B = S.band12[band];
   const subK = z.b.length > 1 ? '：' + z.b.map(b => b + (K.sub[i][b] || 0)).join('＋') : '';
   const subB = z.b.length > 1 ? '：' + z.b.map(b => b + (B.pairs[z.a + '|' + b] || 0)).join('＋') : '';
   const bc = T.zoneCount(B.pairs, z);
-  return `${mp}C層だけ：${pct(K.hit[i], K.n)}（${K.hit[i]}${subK}／n=${K.n}）　帯全体（参考・第12の帯＝全層）：${pct(bc, B.n)}（${bc}${subB}／n=${B.n}）`;
+  return `${mp}C層だけ：${pct(K.hit[i], K.n)}${nPart(J, `（${K.hit[i]}${subK}／n=${K.n}）`)}　帯全体（参考・第12の帯＝全層）：${pct(bc, B.n)}${nPart(J, `（${bc}${subB}／n=${B.n}）`)}`;
 }
 function ref3(J, i) {
   const k = J.c.kubun, K = J.S.k[k], tz = (J.third && J.third[i]) || [];
   if (!tz.length) return '3着は見送り';
   const sum = tz.reduce((s, z) => s + (K.t[z] || 0), 0);
-  return `${tz.length}本で${pct(sum, K.n3)}（${tz.map(z => z + pct(K.t[z], K.n3)).join('＋')}／${T.KUBUN_LABEL[k].replace('（固定）', '')}／n=${K.n3}）`;
+  return `${tz.length}本で${pct(sum, K.n3)}（${tz.map(z => z + pct(K.t[z], K.n3)).join('＋')}／${T.KUBUN_LABEL[k].replace('（固定）', '')}${nPart(J, `／n=${K.n3}`)}）`;
 }
+// 馬単的中時の3着：テンゲルデータの ときは 数（5/6）の かわりに %
+const tri3Txt = (J, K, i) => HIDEN(J) ? pct(K.tri3[i], K.hit3n[i]) : `${K.tri3[i]}/${K.hit3n[i]}`;
 const condText = (J) => { const c = J.c, x = J.x; return ({ 1: `①馬場が重（比によらずA層）`, 2: `②3連単1位 ${fmt(x.s1)} ≥ 62.4`, 3: `③単勝1位 ${fmt(x.tan1)} ≥ 2.5 かつ 比 ${c.hi.toFixed(1)} ≥ 16`, 4: `④比 ${c.hi.toFixed(1)} ≥ 12`, 5: `⑤上記以外（比 ${c.hi.toFixed(1)}）` })[c.cond]; };
 const zlist = k => T.SETS[k].map(z => z.label).join('・');
 const entryText = J => ({ A: `A層→固定（${zlist('A')}）`, B: `B層→固定（${zlist('B')}）`, C: 'C層→序盤R→大穴フィルターへ' })[J.c.L];
@@ -1324,7 +1332,7 @@ function renderResult() {
   }
   const c = J.c, x = J.x, S = J.S, k = c.kubun, K = S.k[k];
   const ht = T.hantei(K);
-  const refBadge = (!J.isOi ? `<span class="chip ref">【参考判定】${esc(J.venue)}</span>` : '') + (Slots.on ? `<span class="chip">マザー：${esc(J.mother)}</span>` : '');
+  const refBadge = (!J.isOi ? `<span class="chip ref">【参考判定】${esc(J.venue)}</span>` : '') + (Slots.on ? `<span class="chip">${NATIVE_APP ? 'データ' : 'マザー'}：${esc(J.mother)}</span>` : '');
   const shiba = J.surface === '芝' && J.motherN === 1 ? '<span class="chip">芝レース（大井はダートのみ）</span>' : '';
   let h = prevNavHTML() + `<div class="vhead"><div class="lbadge L${c.L}"><span class="ll">${c.L}</span><span class="ln">${({ A: '堅', B: '警戒', C: '穴' })[c.L]}</span></div>
     <div class="vmeta"><div class="vkubun">${esc(J.venue)} ${x.r}R　${T.KUBUN_LABEL[k]}</div>
@@ -1333,7 +1341,7 @@ function renderResult() {
   if (st.form.example) h += `<div class="banner info"><b>これは入力例（架空のレース）</b>だよ。「入力をクリア」してから本番のレースを入れるか、オッズ画像を読み取ってね。</div>`;
   if (J.warnN) h += `<div class="banner warn">${esc(J.warnN)}。判定は出走頭数で行っているよ。番号を確認してね。</div>`;
   if (!S.n) h += Slots.on ? `<div class="banner warn">マザーデータ「${esc(J.mother)}」に、集計できるレースがまだないよ。参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>` : `<div class="banner warn">基盤データに接続できていないため、参考的中率は出せないよ（判定そのものは正しく出ているよ）。</div>`;
-  if (!J.isOi) { const alt = otherHome(J.venue); if (alt) h += `<div class="banner info">開催場が${esc(J.venue)}だよ。マザーデータを「${esc(alt.name)}」（${alt.usable}走）に切り替える？<div class="row" style="margin-top:8px"><button class="btn primary slotchip-go" type="button" data-slot="${alt.n}">「${esc(alt.name)}」に切り替える</button></div></div>`; }
+  if (!J.isOi) { const alt = otherHome(J.venue); if (alt) h += `<div class="banner info">開催場が${esc(J.venue)}だよ。マザーデータを「${esc(alt.name)}」${alt.fixed ? '' : `（${alt.usable}走）`}に切り替える？<div class="row" style="margin-top:8px"><button class="btn primary slotchip-go" type="button" data-slot="${alt.n}">「${esc(alt.name)}」に切り替える</button></div></div>`; }
   if (J.horses.length && !st.w5edit && !formClosed()) h += NATIVE_APP && Reserve()
     ? `<div class="hprow"><p class="hpnote">番号を押すと、買う馬を選べるよ（うすい番号＝買わない馬）。買い目は選んだ馬から作るよ。</p><button class="btn omakase" type="button" id="omakaseBtn" aria-label="テンゲルにお任せ（ゾーンの中からランダムに選ぶ）">🎲 テンゲルにお任せ</button></div>`
     : `<p class="hpnote">番号を押すと、買う馬を選べるよ（うすい番号＝買わない馬）。馬単・3連単の当たり外れは、買ったゾーンの選んだ馬で判定するよ。</p>`;
@@ -1348,7 +1356,7 @@ function renderResult() {
       if (!tz.length) third = `<div class="zthird"><span class="t3">3着：見送り</span><span class="small muted">（この買い目は馬単だけ）</span></div>`;
       else {
         const tn = J.horses.length ? `<div class="znums">${tz.map(t => { const hn = J.nums[t]; return hn.length ? `<span class="grp" title="${t}">${pickChips(J, hn, setKey(z), 't')}</span>` : `<span class="hidenote">${t}：該当なし</span>`; }).join('<span class="arr">／</span>')}</div>` : '';
-        third = `<div class="zthird"><span class="t3">3着：${tz.join('・')}</span>${tprov}<div class="zref">${ref3(J, i)}　馬単的中時の3着 <b>${K.tri3[i]}/${K.hit3n[i]}</b>${tz.includes('人気') ? '　※人気は配当低めになりやすい' : ''}</div>${tn}</div>`;
+        third = `<div class="zthird"><span class="t3">3着：${tz.join('・')}</span>${tprov}<div class="zref">${ref3(J, i)}　馬単的中時の3着 <b>${tri3Txt(J, K, i)}</b>${tz.includes('人気') ? '　※人気は配当低めになりやすい' : ''}</div>${tn}</div>`;
       }
     }
     h += `<li class="zone"><div class="zrank">第${i + 1}</div><div><div class="zflow"><span>${z.a}</span><span class="arr">→</span><span>${z.b.join('／')}</span>${prov}</div>
@@ -1361,11 +1369,11 @@ function renderResult() {
     h += '<div class="numbers">' + T.ZN.map(z => { const hn = hideNote(J, z); return `<span class="zl">${z}</span><span>${hn ? `<span class="hidenote">${hn}</span>` : J.nums[z].length ? numChips(J, J.nums[z]) + (/(大穴|超大穴)/.test(z) && J.fukuUsed(z) ? ' <span class="hidenote">複勝順</span>' : '') : '<span class="hidenote">該当なし</span>'}</span>`; }).join('') + (J.outside.length ? `<span class="zl">対象外</span><span class="hidenote">${J.outside.join('・')}（13番人気以降）</span>` : '') + '</div>';
   }
   const kubunN = K.n;
-  h += `<div class="vfoot"><div class="small">レース判定：${c.L}層×${bandName(k)}　${kubunN >= 5 ? `人気→人気率 ${pct(K.nn, kubunN)}・穴絡み率 ${pct(K.ana, kubunN)}（n=${kubunN}）` : `データ不足（n=${kubunN}）`}<span class="muted">　※払戻データ未取得のため、人気→人気の出現率を代理指標にしているよ</span></div>`;
-  if (J.third) h += `<div class="small">3連単ゾーン的中 ${pct(K.triTot, K.n3)}（${K.triTot}/${K.n3}）・馬単的中時の3着的中率 ${pct(K.triTot, K.hitIn3)}（${K.triTot}/${K.hitIn3}）<span class="muted">　※回収率は払戻がたまってから</span></div>`;
-  if (c.L === 'C' && c.c20 === '比20以上' && (k === 'C1' || k === 'C2')) h += `<div class="small">観測メモ：1着超大穴を観測中（${S.c20['比20以上'].sup1}/${S.c20['比20以上'].n}）※判定・ゾーンには使わない</div>`;
+  h += `<div class="vfoot"><div class="small">レース判定：${c.L}層×${bandName(k)}　${kubunN >= 5 ? `人気→人気率 ${pct(K.nn, kubunN)}・穴絡み率 ${pct(K.ana, kubunN)}${nPart(J, `（n=${kubunN}）`)}` : `データ不足${nPart(J, `（n=${kubunN}）`)}`}<span class="muted">　※払戻データ未取得のため、人気→人気の出現率を代理指標にしているよ</span></div>`;
+  if (J.third) h += `<div class="small">3連単ゾーン的中 ${pct(K.triTot, K.n3)}${nPart(J, `（${K.triTot}/${K.n3}）`)}・馬単的中時の3着的中率 ${pct(K.triTot, K.hitIn3)}${nPart(J, `（${K.triTot}/${K.hitIn3}）`)}<span class="muted">　※回収率は払戻がたまってから</span></div>`;
+  if (c.L === 'C' && c.c20 === '比20以上' && (k === 'C1' || k === 'C2')) h += `<div class="small">観測メモ：1着超大穴を観測中${nPart(J, `（${S.c20['比20以上'].sup1}/${S.c20['比20以上'].n}）`)}※判定・ゾーンには使わない</div>`;
   h += `<div class="oldline">旧本線（記録用・買い目ではない）${esc(oldLineText(J))}</div>`;
-  if (J.excluded) h += `<div class="small muted">基盤データにあるこのレース自身は外して参考値を計算しているよ（自己参照の除外）。</div>`;
+  if (J.excluded && !HIDEN(J)) h += `<div class="small muted">基盤データにあるこのレース自身は外して参考値を計算しているよ（自己参照の除外）。</div>`;   // テンゲルデータに 入って いるかは 見せない（外して 計算は する）
   if (!st.w5edit && !st.form.example) h += `<div class="w5push"><span class="lab">WIN5に入れる</span>${st.w5.races.map((R, i) => `<button type="button" class="w5sbtn${R.form ? ' has' : ''}" data-w5push="${i + 1}" aria-label="WIN5の${i + 1}レース目に入れる">${W5MARK[i]}</button>`).join('')}<span class="small muted">（JRAのWIN5対象レースのとき）</span></div>`;
   h += `<div class="row" style="margin-top:4px"><button class="btn primary" type="button" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>全文コピー</button>
     ${st.w5edit || (NATIVE_APP && Reserve()) ? '' : `<button class="btn primary" type="button" id="saveJudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>${st.bets.has(J.id) ? '判定と結果を上書き保存' : '判定と結果を保存'}</button>`}</div>
@@ -1398,7 +1406,7 @@ window.__judgeText = () => { const J = currentJudge(); return J && J.ok ? buildT
 function buildText(J) {
   const S = J.S, c = J.c, x = J.x, k = c.kubun, K = S.k[k], sep = '━━━━━━━━━━━━', o = [];
   const n3All = Object.values(S.k).reduce((s, q) => s + q.n3, 0);
-  const refL = J.isOi ? null : `【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${S.n}走（3着${n3All}走）の実測`;
+  const refL = J.isOi ? null : `【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${nPart(J, `${S.n}走（3着${n3All}走）`)}の実測`;
   const arrow = s => String(s || '').replace(/[-－ー‐ｰ\s]+/g, '→');
   const so = (v, cb) => v == null ? '読取不可' : (cb ? arrow(cb) + ' / ' : '') + fmt(v) + '倍';
   // STEP0
@@ -1412,7 +1420,7 @@ function buildText(J) {
   o.push(`3連単1位：${J.s1combo ? arrow(J.s1combo) + ' / ' : ''}${fmt(x.s1)}倍`);
   o.push(`3連単5位：${so(J.s5, J.s5combo)}`); o.push(`3連単10位：${so(J.s10, J.s10combo)}`);
   if (J.warnN) o.push('※' + J.warnN);
-  if (J.excluded) o.push('※基盤データ収録済みのため、このレース自身を除外して参考値を再計算（自己参照の除外）');
+  if (J.excluded && !HIDEN(J)) o.push('※基盤データ収録済みのため、このレース自身を除外して参考値を再計算（自己参照の除外）');
   o.push(sep, '');
   // STEP1
   o.push(sep, '■STEP1　超大穴帯注意', `3連単5位：${J.s5 == null ? '読取不可' : fmt(J.s5) + '倍'}　3連単10位：${J.s10 == null ? '読取不可' : fmt(J.s10) + '倍'}`, `超大穴帯注意（J〜L出走 かつ 5位≥40.0）：${J.chuui}`, `旧見送り条件（記録用）：${J.oldSkip}`, sep, '');
@@ -1436,7 +1444,7 @@ function buildText(J) {
   o.push(sep, '');
   // STEP4
   o.push(sep, '■STEP4　テンゲルⅢ　馬単 最終判定');
-  if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${S.n}走の実測`);
+  if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${nPart(J, `${S.n}走`)}の実測`);
   o.push(`レース：${x.r}R（距離${x.dist}m／馬場${x.baba}／${x.n}頭）`);
   o.push(`超大穴帯注意：【${J.chuui}】　旧見送り条件（記録用）：【${J.oldSkip}】`);
   o.push(`層：${c.L}層（比${c.hi.toFixed(1)}）` + (c.L === 'C' ? `　比区分：${c.c20}　※記録用` : ''));
@@ -1450,9 +1458,9 @@ function buildText(J) {
   J.set.forEach((z, i) => { o.push(`　第${i + 1}　${z.label}${z.prov ? '　※暫定・同一ゾーン例外' : ''}`, `　　理由：${reasonOf(k, z)}`, `　　参考的中率：${refZone(J, i)}`); });
   o.push('　※参考的中率＝その区分でそのゾーンが実際に出た割合（掛け算はしていない）');
   const ht = T.hantei(K);
-  o.push('', '③レース判定', `　区分：${c.L}層 × ${bandName(k)}`, K.n >= 5 ? `　人気→人気率：${pct(K.nn, K.n)}（n=${K.n}）　穴絡み率：${pct(K.ana, K.n)}（n=${K.n}）` : `　人気→人気率・穴絡み率：データ不足（n=${K.n}）`, `　判定：${ht.mark}${K.n < 5 ? '※データ不足' : ''}`, '　※払戻データ未取得のため、人気→人気の出現率を代理指標としています');
+  o.push('', '③レース判定', `　区分：${c.L}層 × ${bandName(k)}`, K.n >= 5 ? `　人気→人気率：${pct(K.nn, K.n)}${nPart(J, `（n=${K.n}）`)}　穴絡み率：${pct(K.ana, K.n)}${nPart(J, `（n=${K.n}）`)}` : `　人気→人気率・穴絡み率：データ不足${nPart(J, `（n=${K.n}）`)}`, `　判定：${ht.mark}${K.n < 5 ? '※データ不足' : ''}`, '　※払戻データ未取得のため、人気→人気の出現率を代理指標としています');
   o.push('', '④旧本線（記録用・買い目ではない）', `　${oldLineText(J)}`);
-  if (c.L === 'C' && c.c20 === '比20以上' && (k === 'C1' || k === 'C2')) o.push('', `観測メモ：1着超大穴を観測中（${S.c20['比20以上'].sup1}/${S.c20['比20以上'].n}）※判定・ゾーンには使わない`);
+  if (c.L === 'C' && c.c20 === '比20以上' && (k === 'C1' || k === 'C2')) o.push('', `観測メモ：1着超大穴を観測中${nPart(J, `（${S.c20['比20以上'].sup1}/${S.c20['比20以上'].n}）`)}※判定・ゾーンには使わない`);
   o.push(sep, '');
   // T1
   o.push(sep, '■STEP T1　3着区分の確認', `区分：【${({ A: 'A層', B: 'B層', C0: 'C層・非該当（序盤R）', C1: 'C層・第1段階', C2: 'C層・第2段階' })[k]}】`, `判定：${J.third ? '【3着2本へ】' : '【3着：見送り】'}`, sep, '');
@@ -1462,7 +1470,7 @@ function buildText(J) {
   } else {
     const cus = T.isCustom(k);
     o.push(sep, '■STEP T3　テンゲルⅢ　3連単3着 最終判定');
-    if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${n3All}走の実測`);
+    if (refL) o.push(`【参考判定】${J.venue}${x.r}R／参考値はすべて${J.mother}${nPart(J, `${n3All}走`)}の実測`);
     o.push(`レース：${x.r}R（距離${x.dist}m／馬場${x.baba}／${x.n}頭）`, `区分：【${({ A: 'A層', B: 'B層', C0: 'C層・非該当', C1: 'C層・第1段階', C2: 'C層・第2段階' })[k]}】（比${c.hi.toFixed(1)}／${x.n}頭）`, '', '①3着ゾーンの番号');
     const tl = { 人気: '人気(A.B.C)', 中穴: '中穴(D.E.F)', 大穴: '大穴(G.H.I)', 超大穴: '超大穴(J.K.L)' };
     t3show(k).forEach(z => { const ns = J.horses.length ? (J.nums[z].join('・') || '該当なし') : '（オッズ一覧なし）'; o.push(`　${tl[z]}＝${ns}${z === '人気' ? '　※1・2着に使った人気馬は除いて読む' : ''}${(z === '大穴' || z === '超大穴') && J.horses.length ? (J.fukuUsed(z) ? '　※複勝オッズ昇順' : '　※単勝オッズ昇順') : ''}`); });
@@ -1471,11 +1479,11 @@ function buildText(J) {
       const tz = J.third[i] || [];
       if (!tz.length) { o.push(`　馬単 第${i + 1}（${z.label}）の3着：見送り（馬単だけ）`); return; }
       const p = T.THIRD_PROV[k] && T.THIRD_PROV[k][i];
-      o.push(`　馬単 第${i + 1}（${z.label}）の3着：${tz.join('・')}${p ? '　※暫定' : ''}`, `　　参考的中率：${ref3(J, i)}${tz.includes('人気') ? '※人気は配当低めになりやすい' : ''}`, `　　馬単的中時の3着：${K.tri3[i]}/${K.hit3n[i]}`);
+      o.push(`　馬単 第${i + 1}（${z.label}）の3着：${tz.join('・')}${p ? '　※暫定' : ''}`, `　　参考的中率：${ref3(J, i)}${tz.includes('人気') ? '※人気は配当低めになりやすい' : ''}`, `　　馬単的中時の3着：${tri3Txt(J, K, i)}`);
     });
     o.push('', '③3連単の形（ゾーンのみ・組番は作らない）');
     J.set.forEach((z, i) => { const tz = J.third[i] || []; o.push(`　第${i + 1}：${z.label}→${tz.length ? '（' + tz.join('・') + '）' : '（3着見送り）'}`); });
-    o.push(`　3連単ゾーン的中：${pct(K.triTot, K.n3)}（${T.KUBUN_LABEL[k].replace('（固定）', '')}／${K.triTot}/${K.n3}）　馬単的中時の3着的中率：${pct(K.triTot, K.hitIn3)}（${K.triTot}/${K.hitIn3}）`);
+    o.push(`　3連単ゾーン的中：${pct(K.triTot, K.n3)}（${T.KUBUN_LABEL[k].replace('（固定）', '')}${nPart(J, `／${K.triTot}/${K.n3}`)}）　馬単的中時の3着的中率：${pct(K.triTot, K.hitIn3)}${nPart(J, `（${K.triTot}/${K.hitIn3}）`)}`);
     o.push('', `④3着判定：3着【${cus ? t3show(k).join('・') : ({ A: '人気・中穴', B: '人気・大穴', C1: '大穴帯', C2: '超大穴帯' })[k]}】`, '　※払戻データ未取得のため、回収率は未計算です', sep);
   }
   return o.join('\n');
@@ -1855,18 +1863,29 @@ function draftFrom(b, canNo) {
 // ---- マザーデータにも入れる（判定したレース＋着順 → マザーデータに1行。アプリ版だけ） ----
 const motherOn = () => Slots.on && !!window.TengelMother && window.TengelMother.on();
 // はじめの入れ先：開催場が合うマザーデータ。もう入っているレース（Excelなどで入れたもの）は「入れない」（上書きしない）
-function mSlotDefault(race) {
+// 入れたい 先（判定に 使った マザーデータ）。App Store版の テンゲルデータ（1つ目）には 入れられない（第4.123版）
+function mSlotWant(race) {
   if (!motherOn() || !race || !race.date || !race.r) return 0;
-  let n = 0;
-  if (race.isOi !== false) { const s = race.mother ? Slots.list.find(x => x.name === race.mother) : null; n = s ? s.n : Slots.active; }
-  else { const alt = otherHome(race.venue || ''); n = alt ? alt.n : 0; }
-  if (n && (window.TengelMother.find(n, race.date, race.r) || slotLocked(n))) return 0;
+  if (race.isOi !== false) { const s = race.mother ? Slots.list.find(x => x.name === race.mother) : null; return s ? s.n : Slots.active; }
+  const alt = otherHome(race.venue || ''); return alt ? alt.n : 0;
+}
+const slotFixed = n => !!(slotObj(n) || {}).fixed;
+function mSlotDefault(race) {
+  const n = mSlotWant(race);
+  if (!n || slotFixed(n)) return 0;   // テンゲルデータで 判定した レースは はじめ「入れない」（記録する ときに マザーデータ①〜③を 選ぶ）
+  if (window.TengelMother.find(n, race.date, race.r) || slotLocked(n)) return 0;
   return n;
+}
+// 第4.123版：テンゲルデータで 判定した レースを 記録する とき。まさちゃん「マザーデータ①にはデータを追加することができません。マザーデータ②に記録しますか？解放されているなら③.④も同様に。」
+function m1PromptHTML() {
+  const fx = Slots.list.find(s => s.fixed), ok = Slots.list.filter(s => !s.fixed && !slotLocked(s.n));
+  if (!fx || !ok.length) return '';
+  return `<div class="m1ask" data-k="m1ask"><b>「${esc(fx.name)}」には データを 追加できないよ。</b>${ok.length === 1 ? `「${esc(ok[0].name)}」に 記録する？` : `${ok.map(s => `「${esc(s.name)}」`).join('か')}に 記録する？`}<div class="row">${ok.map(s => `<button type="button" class="btn" data-mpick="${s.n}">「${esc(s.name)}」に記録する</button>`).join('')}</div></div>`;
 }
 function motherFieldHTML(v, ctx) {
   if (!motherOn()) return '';
   const sel = v.mslot != null ? +v.mslot : (ctx.defSlot || 0);
-  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.filter(s => !slotLocked(s.n) || sel === s.n).map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
+  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.filter(s => !s.fixed && (!slotLocked(s.n) || sel === s.n)).map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
   return `<div class="f s6 mfld" data-k="mfld"><span class="lab">マザーデータにも入れる（参考的中率・実測に使うレースのデータになるよ）</span>
     <div class="mrow"><select data-k="mslot" aria-label="入れるマザーデータ">${opts}</select></div>
     <div class="mpays" data-k="mpays"${sel ? '' : ' hidden'}><label>馬単の払戻（100円）<input type="number" inputmode="numeric" data-k="upay" value="${esc(v.upay || '')}" placeholder="あれば"></label><label>3連単の払戻（100円）<input type="number" inputmode="numeric" data-k="spay" value="${esc(v.spay || '')}" placeholder="あれば"></label></div>
@@ -1876,10 +1895,12 @@ function paintMother(box, ctx, v, p) {
   const el = $('[data-k=mstate]', box); if (!el || !ctx) return;
   const n = v.mslot || 0, s = n ? slotObj(n) : null, M = window.TengelMother;
   const pays = $('[data-k=mpays]', box); if (pays) pays.hidden = !n;
-  const inN = ctx.date && ctx.r ? Slots.list.find(x => M.find(x.n, ctx.date, ctx.r)) : null;
+  const inN = ctx.date && ctx.r ? Slots.list.find(x => !x.fixed && M.find(x.n, ctx.date, ctx.r)) : null;   // テンゲルデータに 入って いるかは 見せない
+  const want = ctx.snap ? mSlotWant({ date: ctx.date, r: ctx.r, venue: ctx.venue, isOi: ctx.isOi, mother: ctx.snap.mother }) : 0;
   const go = x => `<button type="button" class="go" data-mopen="${x.n}">「${esc(x.name)}」のレースを見る</button>`;
   let h;
-  if (!n) h = inN ? `このレースは「${esc(inN.name)}」にもう入っているよ（${go(inN)}）` : 'マザーデータには入れないよ';
+  if (!n && want && slotFixed(want) && !inN) h = m1PromptHTML() || 'マザーデータには入れないよ';
+  else if (!n) h = inN ? `このレースは「${esc(inN.name)}」にもう入っているよ（${go(inN)}）` : 'マザーデータには入れないよ';
   else if (!s) h = '';
   else if (!(p && p.ranks && p.ranks[0] != null && p.ranks[1] != null)) h = `着順（1着・2着）を入れて保存すると「${esc(s.name)}」に入るよ`;
   else {
@@ -1890,6 +1911,12 @@ function paintMother(box, ctx, v, p) {
   el.innerHTML = h;
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-mopen]'); if (b && window.TengelMother) { const c = b.closest('.recf'), ctx = c ? recCtx(c) : null, M = window.TengelMother, n = +b.dataset.mopen; M.open(n, ctx ? (M.find(n, ctx.date, ctx.r) || {}).id : null); } });
+// 「マザーデータ①に記録する」：入れる 先の 選ぶ 所を その マザーデータに する（保存すると 入る）
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-mpick]'); if (!b) return;
+  const f = b.closest('[data-k=mfld]'), sel = f && $('[data-k=mslot]', f); if (!sel) return;
+  sel.value = b.dataset.mpick; sel.dispatchEvent(new Event('change', { bubbles: true })); sel.dispatchEvent(new Event('input', { bubbles: true }));
+});
 // 券種ごとの金額の行（購入額 → 回収額・その券種の当たり外れ）
 function amtRowsHTML(v, sfx) {
   return BET_TYPES.filter(t => v.types.includes(t)).map((t, i) => {
@@ -2066,7 +2093,7 @@ async function saveRecf(box, extBtn) {
       try {
         const r = await window.TengelMother.put(mslot, { date: race.date, r: race.r, baba: race.baba, dist: race.dist, surface: race.surface, n: race.n, tan1: race.tan1, s1: race.s1, s5: race.s5, s10: race.s10,
           p1: p.ranks[0], p2: p.ranks[1], p3: p.ranks[2] ?? null, umatanPay: fields.umatanPay, sanrenPay: fields.sanrenPay }, prevB && prevB.mslot ? { n: prevB.mslot, id: prevB.mid } : null);
-        mmsg = `。マザーデータ「${(slotObj(mslot) || {}).name || ''}」にも${r.updated ? '入れ直した' : '入れた'}よ（${r.count}走）`;
+        mmsg = `。${NATIVE_APP ? '' : 'マザーデータ'}「${(slotObj(mslot) || {}).name || ''}」にも${r.updated ? '入れ直した' : '入れた'}よ（${r.count}走）`;
       } catch (me) { mmsg = '。※マザーデータには入れられなかったよ：' + (me && me.message || me); }
     }
     const s = betStatus({ ...(base || st.bets.get(id)), ...fields });
@@ -2185,9 +2212,9 @@ function customPctHTML(J, i) {
   const C = CRate(); if (!C || !J.horses.length || st.w5edit) return '';
   const a = sideRanks(J, i, 'a'), b = sideRanks(J, i, 'b'), t = sideRanks(J, i, 't');
   const r = C.rate(st.derived, J.c.kubun, { a, b, t }, J.excludedId);
-  if (r.n < C.MIN_N) return `<div class="zref">選んだ馬で：データ不足（n=${r.n}）</div>`;
+  if (r.n < C.MIN_N) return `<div class="zref">選んだ馬で：データ不足${nPart(J, `（n=${r.n}）`)}</div>`;
   const key = setKey(J.set[i]), allSel = ['a', 'b', 't'].every(side => { const all = hpAll(J, key, side); return hpSel(st.form.hp, key, side, all).length === all.length; });
-  return `<div class="zref">選んだ馬で <span class="cpct">${C.pct(r.hit, r.n)}</span>${t ? `・3連単 <span class="cpct">${C.pct(r.hit3, r.n3)}</span>` : ''}<span class="muted">（n=${r.n}${t && r.n3 !== r.n ? `・3着まで n=${r.n3}` : ''}）${allSel ? '　※全部選んでいるのでゾーンと同じ' : ''}</span></div>`;
+  return `<div class="zref">選んだ馬で <span class="cpct">${C.pct(r.hit, r.n)}</span>${t ? `・3連単 <span class="cpct">${C.pct(r.hit3, r.n3)}</span>` : ''}<span class="muted">${nPart(J, `（n=${r.n}${t && r.n3 !== r.n ? `・3着まで n=${r.n3}` : ''}）`)}${allSel ? '　※全部選んでいるのでゾーンと同じ' : ''}</span></div>`;
 }
 
 // --- 買い目（予約）のカード（11.1・11.5・11.7） ---
@@ -2654,7 +2681,7 @@ function updateRsvPreview(box) {
   const hint = $('[data-k=hint]', box), hits = (b.rsv.types || []).filter(t => j.per[t] && j.per[t].state === '的中' && !toNum(v.amt[t].payout));
   hint.textContent = v.mode === 'result' ? (hits.length ? `${hits.join('・')}が的中だよ🎯「結果を決める」を押すと、演出のあとに払戻を入れられるよ` : '')
     : (hits.length ? `${hits.join('・')}が的中だよ！払戻を入れてね💰（結果の画像に払戻があれば自動で入るよ）` : '');
-  if (motherOn() && $('[data-k=mslot]', box)) paintMother(box, { date: b.date, r: +b.r, venue: b.venue || '', isOi: (b.snap || {}).isOi }, v, { ranks: rk.ranks });
+  if (motherOn() && $('[data-k=mslot]', box)) paintMother(box, { date: b.date, r: +b.r, venue: b.venue || '', isOi: (b.snap || {}).isOi, snap: b.snap || null }, v, { ranks: rk.ranks });
 }
 // 結果の画像（12.1）：着順・取消・中止・払戻を欄に入れる（読めたところだけ）
 async function readResultImage(box, files) {
@@ -2701,7 +2728,7 @@ async function saveRsvf(box, btn) {
     await writeBet(id, fields, false);
     let mmsg = '';
     if (mslot && mRes) {
-      try { const r = await window.TengelMother.put(mslot, { date: b.date, r: b.r, baba: b.baba, dist: b.dist, surface: b.surface, n: b.n, tan1: b.tan1, s1: b.s1, s5: b.s5, s10: b.s10, p1: rk.ranks[0], p2: rk.ranks[1], p3: rk.ranks[2] ?? null, umatanPay: fields.umatanPay, sanrenPay: fields.sanrenPay }, b.mslot ? { n: b.mslot, id: b.mid } : null); mmsg = `。マザーデータ「${(slotObj(mslot) || {}).name || ''}」にも${r.updated ? '入れ直した' : '入れた'}よ（${r.count}走）`; }
+      try { const r = await window.TengelMother.put(mslot, { date: b.date, r: b.r, baba: b.baba, dist: b.dist, surface: b.surface, n: b.n, tan1: b.tan1, s1: b.s1, s5: b.s5, s10: b.s10, p1: rk.ranks[0], p2: rk.ranks[1], p3: rk.ranks[2] ?? null, umatanPay: fields.umatanPay, sanrenPay: fields.sanrenPay }, b.mslot ? { n: b.mslot, id: b.mid } : null); mmsg = `。${NATIVE_APP ? '' : 'マザーデータ'}「${(slotObj(mslot) || {}).name || ''}」にも${r.updated ? '入れ直した' : '入れた'}よ（${r.count}走）`; }
       catch (me) { mmsg = '。※マザーデータには入れられなかったよ：' + (me && me.message || me); }
     }
     await syncNotify();
@@ -2969,8 +2996,13 @@ function renderMoney() {
 $('#perChips').addEventListener('click', e => { const b = e.target.closest('.fchip'); if (!b) return; st.per = b.dataset.v; $$('#perChips .fchip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderMother(); });
 // 実測の ③④に 出す 区分：App Store版は C層・非該当（序盤R・n が ほとんど ない）の 行を 出さない（2026/10/25 まさちゃん「C層×非該当のゾーン消して！」）。Web版は 今までどおり
 const STAT_KUBUN = NATIVE_APP ? ['A', 'B', 'C1', 'C2'] : ['A', 'B', 'C0', 'C1', 'C2'];
+// 第4.123版（App Store版）：テンゲルデータを 使って いる ときは 実測（①〜⑦）と 見直し基準を 出さない（数が わかる ものは 見せない）
+const statsFixed = () => NATIVE_APP && (!Slots.on || (slotObj(Slots.active) || {}).fixed !== false);
+const FIXED_NOTE = () => `<div class="card" style="margin-top:var(--gap)"><h2>${esc(motherName())}の実測</h2><p class="hint" style="margin:0">${esc(motherName())}（アプリに入っているデータ）の中身（レースの数・実測①〜⑦）は見られないよ。判定画面の参考的中率と、買い目編集の%だけに使うよ。<br>判定したレースを記録して<b>マザーデータ①〜③</b>に入れていくと、そのマザーデータを使っているときに、ここに実測と見直し基準の進み具合が出るよ。</p></div>`;
 function renderMother() {
   const body = $('#statsBody');
+  const pc = $('#perChips'); if (pc) pc.hidden = statsFixed();
+  if (statsFixed()) { motherNote(); body.innerHTML = FIXED_NOTE(); return; }
   if (st.dbState !== 'on') { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">${st.dbState === 'connecting' ? '基盤データを読み込み中…' : '基盤データに接続できません'}</div><p>①〜⑦は、テンゲル基盤データ（${esc(motherName())}）から計算するよ。</p></div>`; $('#motherNote').textContent = ''; return; }
   motherNote();
   if (!st.derived.some(r => r.inStats)) { body.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">「${esc(motherName())}」はまだ空だよ</div><p>設定タブの「マザーデータ」から、Excelファイルを選んで入れてね。</p></div>`; return; }
@@ -3053,6 +3085,7 @@ function recoveryCard(all) {
   return h;
 }
 function reviewCard(all) {
+  if (statsFixed()) return `<div class="card" style="margin-top:var(--gap)"><h2>見直し基準の進み具合</h2><p class="hint" style="margin:0">いまは${esc(motherName())}を使っているよ。見直し基準は、判定して着順を入れた<b>マザーデータ①〜③</b>のレースで進むよ（そのマザーデータを使っているときに出るよ）。</p></div>`;
   // App Store版：進み具合は、使う人が 判定して 着順を 入れた レース（マザーデータに 入れた src＝input の 行）だけで 数える。アプリに 入っている データは 数えない＝0 から 始まる
   // （2026/10/25 まさちゃん「データは0にして！ユーザーがクリアしていけばいいから！」）。期間も 問わない（使う人の レースは 全部 新しい）。Web版は 今までどおり
   const mine = NATIVE_APP;
@@ -3080,11 +3113,12 @@ function reviewCard(all) {
 window.TengelReview = () => (st.dbState === 'on' ? reviewCard(st.derived.filter(r => r.inStats)) : '');
 
 function motherNote() {
+  if (statsFixed()) { const t = $('#motherTitle'); if (t) t.textContent = `${motherName()}の実測`; $('#motherNote').textContent = ''; return; }
   const all = st.derived, n = all.filter(r => r.inStats).length;
   const ds = all.map(r => r.date).filter(Boolean).sort();
   const yr = ds.length && ds[0].slice(0, 4) !== ds[ds.length - 1].slice(0, 4);
   const md = d => d ? `${yr ? d.slice(0, 4) + '/' : ''}${+d.slice(5, 7)}/${+d.slice(8, 10)}` : '—';
-  const t = $('#motherTitle'); if (t) t.textContent = Slots.on ? `テンゲル基盤データ（${motherName()}）` : 'テンゲル基盤データ';
+  const t = $('#motherTitle'); if (t) t.textContent = NATIVE_APP ? `${motherName()}の実測` : Slots.on ? `テンゲル基盤データ（${motherName()}）` : 'テンゲル基盤データ';
   $('#motherNote').textContent = `まさちゃんのExcel（検証データ）から入れた${motherName()}のデータ：${md(ds[0])}〜${md(ds[ds.length - 1])}・${all.length}走（集計対象${n}走）。買ったレースの記録は入らないよ。Excelを更新したら姫に送ってね、入れ直すよ。`;
 }
 
@@ -3122,11 +3156,14 @@ function renderSet() {
   const d = zdraft(), k = st.zk, rows = d[k], meta = ZK.find(x => x[0] === k);
   const pv = previewRows(k, rows), pd = previewRows(k, T.DEFAULT_CFG[k]);
   const noData = st.dbState !== 'on';
+  // 第4.123版（App Store版）：テンゲルデータを 使って いる ときは 数（走・的中数）を 出さない（%だけ）
+  const fxd = statsFixed(), SHOKI = '第13改訂版の初期なら';
+  const cnt = (a, b) => fxd ? `<b>${pct(a, b)}</b>` : `<b>${a}/${b}</b>（${pct(a, b)}）`;
   let h = `<h2>買い目編集</h2>
   <p class="hint" style="margin:0 0 10px">区分ごとに、馬単の<b>1着→2着</b>と3連単の<b>3着</b>を決められるよ。保存すると、判定と実測（①〜⑦）がこの買い目で計算されるよ。保存済みの購入記録は、保存したときの買い目のままだよ。</p>
   <div class="zk-tabs">${ZK.map(([key, short]) => `<button type="button" class="fchip${T.isCustom(key) || zdirty(key) ? ' cus' : ''}" data-zk="${key}" aria-pressed="${key === k}">${short}</button>`).join('')}</div>
   <div class="zk-head"><b>${meta[2]}</b>${T.isDefaultRows(k, rows) ? '<span class="chip">第13改訂版の初期</span>' : '<span class="chip cus">カスタム</span>'}${zdirty(k) ? '<span class="chip dirty">未保存</span>' : ''}</div>
-  <p class="small muted" style="margin:4px 0 0">${meta[3]}。${noData ? '' : `基盤データ（大井）では${pv.n}走。`}</p>
+  <p class="small muted" style="margin:4px 0 0">${meta[3]}。${noData || fxd ? '' : `基盤データ（大井）では${pv.n}走。`}</p>
   <ol class="zedit">`;
   rows.forEach((r, i) => {
     const s = pv.rows[i], ov = [];
@@ -3135,13 +3172,13 @@ function renderSet() {
       <div class="zr-top"><span class="zr-no">第${i + 1}</span><span class="zr-label">${esc(rowLabel(r))}</span>
         <span class="zr-act"><button type="button" data-act="up" aria-label="第${i + 1}を上へ"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-act="down" aria-label="第${i + 1}を下へ"${i === rows.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-act="del" aria-label="第${i + 1}を消す">×</button></span></div>
       ${zpick('a', '1着', [r.a])}${zpick('b', '2着', r.b)}${zpick('t', '3着', r.t)}
-      <div class="zr-stat">${!r.b.length ? '' : noData ? '基盤データを読み込むと、ここに的中数が出るよ' : `馬単 <b>${s.hit}/${pv.n}</b>（${pct(s.hit, pv.n)}）　${r.t.length ? `3連単 <b>${s.tri}/${s.hit3n}</b>（馬単的中時の3着）` : '3着は見送り（馬単だけ）'}`}</div>
+      <div class="zr-stat">${!r.b.length ? '' : noData ? '基盤データを読み込むと、ここに的中数が出るよ' : `馬単 ${cnt(s.hit, pv.n)}　${r.t.length ? `3連単 <b>${fxd ? pct(s.tri, s.hit3n) : `${s.tri}/${s.hit3n}`}</b>（馬単的中時の3着）` : '3着は見送り（馬単だけ）'}`}</div>
       ${!r.b.length ? '<div class="zr-warn">2着を1つ以上えらんでね</div>' : ''}${ov.length ? `<div class="zr-warn">第${ov.join('・第')}と重なってるよ（上の買い目が先に当たりになるよ）</div>` : ''}
     </li>`;
   });
   h += `</ol>
   <div class="row" style="margin-top:10px"><button class="btn" type="button" data-zact="add"${rows.length >= T.MAXZ ? ' disabled' : ''}>＋買い目を足す</button><button class="btn ghost" type="button" data-zact="def">この区分を初期に戻す</button></div>
-  ${noData ? '' : `<div class="zsum">この区分の合計（基盤データ ${pv.n}走）：馬単 <b>${pv.hit}/${pv.n}</b>（${pct(pv.hit, pv.n)}）・3連単ゾーン <b>${pv.tri}/${pv.n3}</b>（${pct(pv.tri, pv.n3)}）<br><span class="muted">第13改訂版の初期なら：馬単 ${pd.hit}/${pd.n}（${pct(pd.hit, pd.n)}）・3連単 ${pd.tri}/${pd.n3}</span><br><span class="muted small">※的中数だけで決めないでね。人気寄りの買い目ほど当たりは増えて、配当は下がりやすいよ</span></div>`}
+  ${noData ? '' : `<div class="zsum">この区分の合計${fxd ? '' : `（基盤データ ${pv.n}走）`}：馬単 ${cnt(pv.hit, pv.n)}・3連単ゾーン ${cnt(pv.tri, pv.n3)}<br><span class="muted">${SHOKI}：馬単 ${fxd ? pct(pd.hit, pd.n) : `${pd.hit}/${pd.n}（${pct(pd.hit, pd.n)}）`}・3連単 ${fxd ? pct(pd.tri, pd.n3) : `${pd.tri}/${pd.n3}`}</span><br><span class="muted small">※的中数だけで決めないでね。人気寄りの買い目ほど当たりは増えて、配当は下がりやすいよ</span></div>`}
   <div class="zsave${zdirty() ? ' sticky' : ''}"><button class="btn primary" type="button" data-zact="save">保存する</button><button class="btn" type="button" data-zact="undo">変更を取り消す</button><span class="msg" id="zmsg">${zdirty() ? '未保存の変更があるよ' : '保存済みだよ'}</span></div>
   <details style="margin-top:12px"><summary class="small" style="cursor:pointer">全部の区分を第13改訂版の初期に戻す</summary><div class="row" style="margin-top:8px"><button class="btn danger" type="button" data-zact="allDef">全区分を初期に戻して保存</button></div></details>`;
   box.innerHTML = h;
@@ -3196,7 +3233,8 @@ $('#zoneCard').addEventListener('click', e => {
 function setPill() {
   const p = $('#dbpill');
   const mN = st.derived.filter(r => r.inStats).length;
-  if (st.dbState === 'on') { p.textContent = `${Slots.on ? motherName() : '基盤'} ${mN}走・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}`; p.classList.add('on'); }
+  const fx = NATIVE_APP && (!Slots.on || (slotObj(Slots.active) || {}).fixed !== false);   // テンゲルデータ：走数は 出さない
+  if (st.dbState === 'on') { p.textContent = fx ? `${Slots.on ? motherName() : 'テンゲルデータ'}・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}` : `${Slots.on ? motherName() : '基盤'} ${mN}走・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}`; p.classList.add('on'); }
   else if (st.dbState === 'off') { p.textContent = 'データなし（判定のみ）'; p.classList.remove('on'); }
   else { p.textContent = 'データに接続中…'; p.classList.remove('on'); }
 }

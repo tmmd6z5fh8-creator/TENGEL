@@ -33,7 +33,9 @@ CROP = {  # name: (top, bottom) in raw px。画面が変わっても切る場所
 CROP = {k: v for k, v in CROP.items() if k in meta}
 out = {}
 _rec = gap('record', '[data-k=amtsum]', '[data-k=buyzf]')   # 記録の欄は「合計」と「買ったゾーン」のあいだで分ける
-PARTS = {'result_a1': ('result_a', 0, 1104), 'result_a2': ('result_a', 1104, None), 'record_1': ('record', 0, _rec), 'record_2': ('record', _rec, None)}
+# App Store版（shots_app.py・第4.123版〜）：判定の 上半分と 下半分は 第2の ゾーンの 上で 分ける（Web版は 今までどおり 1104）
+_ra = (top('result_a', 'ol.zones > li:nth-child(2)', 8) or 1104) if D == '/man_app' else 1104
+PARTS = {'result_a1': ('result_a', 0, _ra), 'result_a2': ('result_a', _ra, None), 'record_1': ('record', 0, _rec), 'record_2': ('record', _rec, None)}
 
 
 def save(name, im):
@@ -68,6 +70,8 @@ for f in sorted(os.listdir(RAW)):
             m['cropTop'] = a / 2; m['H'] = im.height / 2
     save(name, im)
 for pn, (src, a, b) in PARTS.items():
+    if not os.path.exists(f'{RAW}/{src}.png'):   # App Store版は「記録」の 写真を 撮らない（予約から 記録まで は 別の 流れ）
+        continue
     im = Image.open(f'{RAW}/{src}.png').convert('RGB')
     im = im.crop((0, a, im.width, b or im.height))
     m = json.loads(json.dumps(meta[src])); m['cropTop'] = a / 2; m['H'] = im.height / 2; meta[pn] = m

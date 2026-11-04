@@ -285,13 +285,15 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
 
     /// ファイルを共有シートで渡す（「ファイル」に保存・AirDrop・LINEなど）。渡したら true、閉じただけなら false を返す
     private func share(_ p: [String: Any], id: Int) {
-        guard let webView, let text = p["text"] as? String else {
+        // 文字の ファイル（text）か、文字では ない ファイル（base64：第4.123版・Excel の ひな形）
+        let bytes: Data? = (p["base64"] as? String).flatMap { Data(base64Encoded: $0) } ?? (p["text"] as? String).map { Data($0.utf8) }
+        guard let webView, let data = bytes, !data.isEmpty else {
             reply(id, ok: false, value: "中身がないよ")
             return
         }
         let fileURL: URL
         do {
-            fileURL = try AppFiles.shareFile(named: p["name"] as? String ?? "テンゲル.txt", text: text)
+            fileURL = try AppFiles.shareFile(named: p["name"] as? String ?? "テンゲル.txt", data: data)
         } catch {
             reply(id, ok: false, value: "ファイルを作れなかったよ（\(error.localizedDescription)）")
             return

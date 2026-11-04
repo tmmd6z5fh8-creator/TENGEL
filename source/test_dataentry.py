@@ -66,22 +66,35 @@ def save_result(pg, res, upay='', spay='', other=None):
     card.locator('[data-act=save]').click(); pg.wait_for_timeout(900)
 
 
+def rec_month(pg, m=10):
+    """記録タブの 月を その レースの 月（10月）に（記録タブは はじめ 今月 → 11月に なると 10/14 の 行が 見えない）"""
+    b = pg.locator(f'#ymRec button[data-ym=m][data-v="{m}"]')
+    if b.count() and b.get_attribute('aria-pressed') != 'true': b.click(); pg.wait_for_timeout(300)
+
+
 def save_result_app(pg, res, upay='', spay=''):
     """App Store版（第2弾）：判定画面で「買い目を予約」→ 記録タブの予約レースで着順を入れて「結果を保存」（マザーデータにも入れるは、はじめの入れ先のまま）"""
     card = pg.locator('#recCard')
     if card.locator('[data-rsv=redo]').count(): card.locator('[data-rsv=redo]').click(); pg.wait_for_timeout(200)
     card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
     rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
-    pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+    pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_month(pg)
     row = pg.locator(f'#recList .lrow[data-id="{rid}"]')
     if not row.locator('.rsvf').count(): row.locator('.lmain').click(); pg.wait_for_timeout(400)
     f = row.locator('.rsvf'); nos = res.split('.')
     for k, v in zip(('p1', 'p2', 'p3'), nos): f.locator(f'[data-k={k}]').fill(v)
-    if upay: f.locator('[data-k=upay]').fill(upay)
-    if spay: f.locator('[data-k=spay]').fill(spay)
     f.locator('[data-k=p3]').dispatch_event('input'); pg.wait_for_timeout(250)
     f.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
     pg.evaluate("window.TengelFx && TengelFx.close()")   # 的中ボタン（第3弾）の画面をとじる
+    pg.wait_for_timeout(300)
+    # 第4.65版から 金額の 欄は 結果の あと。第4.123版：テンゲルデータで 判定した レースは「マザーデータ①に記録する？」→ 押して 記録する
+    f = pg.locator(f'#recList .lrow[data-id="{rid}"] .rsvf')
+    if f.count() and f.locator('[data-mpick]').count():
+        f.locator('[data-mpick="2"]').click(); pg.wait_for_timeout(250)
+        if upay and f.locator('[data-k=upay]').count(): f.locator('[data-k=upay]').fill(upay)
+        if spay and f.locator('[data-k=spay]').count(): f.locator('[data-k=spay]').fill(spay)
+        f.locator('[data-k=mslot]').dispatch_event('input'); pg.wait_for_timeout(200)
+        f.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
     pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
 
 
@@ -117,7 +130,7 @@ try:
         pill = pg.evaluate("document.getElementById('dbpill').textContent")
         check('269走' in pill, f'上の表示（集計できるレース）も268走→269走（{pill}）')
         # 記録タブ
-        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_month(pg)
         lr = pg.locator('#recList .lrow[data-id="20261014-oi-08"]')
         check(lr.count() == 1 and 'マザー入り' in lr.inner_text(), '記録タブの行に「マザー入り」')
         lr.locator('.lmain').click(); pg.wait_for_timeout(300)
@@ -228,6 +241,7 @@ window.__NATIVE_INFO = { version: '1.0', build: '3', device: 'phone' };
 window.__bridge = [];
 window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
   window.__bridge.push(m.name);
+  if (m.name === 'share') (window.__shares = window.__shares || []).push(m.payload);   // 第4.123版：ひな形の 中身を 確かめる
   var val = true;
   if (m.name === 'store') val = window.__storeAns || { found: true, version: '1.1', url: 'https://apps.apple.com/jp/app/id0000000000', notes: '新しい版', date: '2026-10-20T00:00:00Z', error: '' };
   setTimeout(function () { window.__nativeReply(m.id, true, val); }, 30);
@@ -243,11 +257,12 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         pg.goto(APPURL); pg.wait_for_timeout(4200)
         ba, bd = pg.locator('#nBar_app'), pg.locator('#nBar_data')
         check(ba.is_visible() and '1.1' in ba.inner_text() and ba.locator('a.btn').get_attribute('href').startswith('https://apps.apple.com/'), f'上に「App Storeに新しい版（1.1）」→ App Storeを開く（{ba.inner_text() if ba.count() else None}）')
-        check(bd.is_visible() and '290走' in bd.inner_text(), f'上に「新しいデータがあるよ（290走）」（{bd.inner_text() if bd.count() else None}）')
-        check(count(pg, 1) == 280 and pg.evaluate("TengelLocal.slots.info()[0].name") == 'マザーデータ1', 'はじめはアプリに入っている280走（マザーデータ1）')
-        # 判定したレースを入れる（開催場は空）。App Store版は 予約 → 記録タブで結果（第2弾）
+        check(bd.is_visible() and '新しいデータがあるよ' in bd.inner_text() and '走' not in bd.inner_text(), f'上に「テンゲルデータの新しいデータがあるよ」（第4.123版：数は 出さない）（{bd.inner_text() if bd.count() else None}）')
+        check(count(pg, 1) == 280 and pg.evaluate("TengelLocal.slots.info()[0].name") == 'テンゲルデータ' and pg.evaluate("TengelLocal.slots.info().length") == 4, 'はじめはアプリに入っている280走（テンゲルデータ）・枠は 4つ')
+        # 判定したレースを入れる（開催場は空）。App Store版は 予約 → 記録タブで結果（第2弾）→ 金額の 欄で「マザーデータ①に記録する」（第4.123版）
         save_result_app(pg, '6.2.10', '1230', '')
-        check(count(pg, 1) == 281 and row(pg, 1, '20261014-m1-08') and row(pg, 1, '20261014-m1-08')['venue'] == '', f'開催場が空でも、1つ目に入る（id 20261014-m1-08・開催場は空：{count(pg, 1)}走）')
+        check(count(pg, 1) == 280 and count(pg, 2) == 1 and row(pg, 2, '20261014-m2-08') and row(pg, 2, '20261014-m2-08')['venue'] == '' and row(pg, 2, '20261014-m2-08')['umatanPay'] == 1230,
+              f'テンゲルデータには 入らない・マザーデータ①（2つ目）に 入る（id 20261014-m2-08・開催場は空・馬単払戻 1230：{count(pg, 1)}走／{count(pg, 2)}走）')
         open_set(pg)
         up = pg.locator('#setUpdate')
         check(up.locator('h2').inner_text() == 'アプリの更新' and '1.0（3）' in up.inner_text(), '設定：「アプリの更新」にいまの版')
@@ -261,13 +276,13 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         check('まだ' in pg.locator('#nuStore').inner_text(), 'App Storeにまだ出ていないとき')
         # データの更新
         dc = pg.locator('#setData')
-        check(dc.is_visible() and '281走' in pg.locator('#sdCur').inner_text() and '自分で入れた 1走' in pg.locator('#sdCur').inner_text(), f'「データの更新」：いまのデータ（{pg.locator("#sdCur").inner_text()}）')
+        check(dc.is_visible() and 'テンゲルデータ' in pg.locator('#sdCur').inner_text() and '走' not in pg.locator('#sdCur').inner_text(), f'「データの更新」：いまのデータ（第4.123版：数・期間・版は 出さない）（{pg.locator("#sdCur").inner_text()}）')
         pg.click('#sdCheck'); pg.wait_for_timeout(700)
-        check('新しいデータ（290走・10/9まで）' in pg.locator('#sdMsg').inner_text() and pg.locator('#sdApply').is_visible(), f'確かめると「新しいデータ（290走）」（{pg.locator("#sdMsg").inner_text()}）')
+        check('新しいデータがあるよ' in pg.locator('#sdMsg').inner_text() and '走' not in pg.locator('#sdMsg').inner_text() and pg.locator('#sdApply').is_visible(), f'確かめると「新しいデータがあるよ」（数は 出さない）（{pg.locator("#sdMsg").inner_text()}）')
         pg.click('#sdApply'); pg.wait_for_timeout(900)
         meta = pg.evaluate("TengelLocal.slots.doc(1)")
-        check(count(pg, 1) == 291 and row(pg, 1, '20261014-m1-08') and meta['dataVer'] == '2026-10-20' and meta['source'] == 'app', f'入れた：290走＋自分で入れた1走（{count(pg, 1)}走・版 {meta.get("dataVer")}）')
-        check('自分で入れたレース（1走）はそのまま' in pg.locator('#sdMsg').inner_text() and pg.evaluate("!!TengelLocal.slots.prev(1)"), 'お知らせ・前のデータは「ひとつ前」に残る')
+        check(count(pg, 1) == 290 and count(pg, 2) == 1 and meta['dataVer'] == '2026-10-20' and meta['source'] == 'app', f'入れた：テンゲルデータは 290走・マザーデータ①の 1走は そのまま（{count(pg, 1)}走・版 {meta.get("dataVer")}）')
+        check('テンゲルデータを新しくしたよ' in pg.locator('#sdMsg').inner_text() and '走' not in pg.locator('#sdMsg').inner_text(), f'お知らせ（数は 出さない）（{pg.locator("#sdMsg").inner_text()}）')
         check(not pg.locator('#nBar_data').is_visible(), '上の「新しいデータ」のお知らせは消える')
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('最新' in pg.locator('#sdMsg').inner_text(), 'もう一度確かめると「最新」')
@@ -282,24 +297,46 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('新しいデータはないよ' in pg.locator('#sdMsg').inner_text() and not pg.locator('#sdApply').is_visible(), f'公開しているデータがない（404）ときは「新しいデータはないよ」（{pg.locator("#sdMsg").inner_text()}）')
         ctx.unroute(RN)
-        # 一覧に出さない言葉がない
-        pg.locator('#slotList .slotrow[data-n="1"] [data-sact=edit]').click(); pg.wait_for_timeout(300)
+        # 一覧に出さない言葉がない（第4.123版：テンゲルデータには 編集・一覧が ない → マザーデータ①の 一覧）
+        check(pg.locator('#slotList .slotrow[data-n="1"] [data-sact=edit]').count() == 0 and pg.locator('#slotList .slotrow[data-n="1"]').count() == 1 and '走' not in pg.locator('#slotList .slotrow[data-n="1"]').inner_text(), 'テンゲルデータの 行には 編集が ない・数も 出さない')
+        pg.locator('#slotList .slotrow[data-n="2"] [data-sact=edit]').click(); pg.wait_for_timeout(300)
         pg.locator('#mdOpenBtn').click(); pg.wait_for_timeout(400)
         pg.locator('#mdSheet .mdrow').first.locator('.mdmain').click(); pg.wait_for_timeout(300)
         txt = pg.evaluate('document.body.innerText') + pg.evaluate("[...document.querySelectorAll('input,textarea,select,option')].map(e => e.value + ' ' + (e.placeholder || '')).join(' ')")
         bad = [w for w in AT.FORBIDDEN if w in txt]
         check(not bad, f'App Store版の画面（一覧を開いたところ）に出さない言葉がない（{bad}）')
-        pg.locator('#mdSheet .mdx').click()
+        pg.locator('#mdSheet .mdx').click(); pg.wait_for_timeout(300)
+        # 第4.123版：入力用の Excel の ひな形（設定 → マザーデータ①の 編集）→ 共有シートで そのまま 渡す・空の ままだと 断る・入れれば 読める
+        import base64 as _b64, datetime as _dt, openpyxl as _ox
+        TPL = os.path.join(W, 'templates', 'mother_template.xlsx'); tpl = open(TPL, 'rb').read()
+        check(pg.locator('#smTpl').count() == 1 and '入力用のExcel（ひな形）' in pg.locator('#smTplNote').inner_text(), '編集の 中に「入力用のExcel（ひな形）を保存」と 説明')
+        pg.evaluate("window.__shares = []"); pg.locator('#smTpl').click(); pg.wait_for_timeout(900)
+        sh = pg.evaluate("window.__shares")
+        check(len(sh) == 1 and sh[0]['name'] == 'テンゲル_マザーデータ_入力用.xlsx' and 'text' not in sh[0] and _b64.b64decode(sh[0]['base64']) == tpl and 'spreadsheetml' in sh[0]['mime'] and 'ひな形を保存したよ' in toast(pg),
+              f'押すと ひな形（.xlsx）を そのまま 共有シートへ（{[(x.get("name"), len(x.get("base64") or "")) for x in sh]}）')
+        pg.set_input_files('#smFile', TPL); pg.wait_for_timeout(1200)
+        pv = pg.locator('#smPreview').inner_text()
+        check(pg.locator('#smApply').count() == 0 and 'レースの行' in pv and '5行目から' in pv and 'いまのデータはそのまま' in pv, f'空の ひな形を 選ぶと「黄色い行（5行目から）に入れてね」（記入例・説明の シートは 読まない）（{pv[:120]}）')
+        wb = _ox.load_workbook(TPL); ws = wb['検証データ']
+        for i, v in enumerate([[_dt.datetime(2026, 9, 20), 3, '稍重', 1200, 11, 2.4, 22.8, 2, 1, 5, '', '', 640, 3880, 'ひな形', 1],
+                               [_dt.datetime(2026, 9, 20), 4, '良', 1600, 12, 3.1, 61.0, 1, 7, 2, '', '', 2450, 9870, '', 1]]):
+            for j, x in enumerate(v): ws.cell(row=5 + i, column=j + 1, value=(x if x != '' else None))
+        fp = os.path.join(TMP, '入力済み.xlsx'); wb.save(fp)
+        pg.set_input_files('#smFile', fp); pg.wait_for_timeout(1200)
+        pv = pg.locator('#smPreview').inner_text()
+        check('2走' in pv and '検証データ' in pv and pg.locator('#smApply').count() == 1, f'ひな形に 2レース 入れると 読める（検証データの シート・2走）（{pv[:140].replace(chr(10), " | ")}）')
+        if pg.locator('#smCancel').count(): pg.locator('#smCancel').click(); pg.wait_for_timeout(300)
+        check(count(pg, 2) == 1, 'やめると マザーデータ①は そのまま（1走）')
         # アプリの更新（中のデータの版 2026-10-15）でも、データの更新で入れた新しいデータ（2026-10-20）を古いデータに戻さない
         build('app', os.path.join(SRV, 'APP'), MOTHER_VER='2026-10-15'); native(os.path.join(SRV, 'APP'))
         pg.reload(); pg.wait_for_timeout(1500)
         meta = pg.evaluate("TengelLocal.slots.doc(1)")
-        check(count(pg, 1) == 291 and meta['dataVer'] == '2026-10-20' and meta['embedded'] == '2026-10-15', f'アプリの更新で、データの更新で入れた新しいデータは古いデータに戻らない（{count(pg, 1)}走・{meta.get("dataVer")}）')
+        check(count(pg, 1) == 290 and meta['dataVer'] == '2026-10-20' and meta['embedded'] == '2026-10-15', f'アプリの更新で、データの更新で入れた新しいデータは古いデータに戻らない（{count(pg, 1)}走・{meta.get("dataVer")}）')
         # 中のデータのほうが新しいアプリ（2026-10-25）なら、それに入れ替わる（自分で入れたレースは残る）
         build('app', os.path.join(SRV, 'APP'), HIST='hist.json', MOTHER_VER='2026-10-25'); native(os.path.join(SRV, 'APP'))
         pg.reload(); pg.wait_for_timeout(1500)
         meta = pg.evaluate("TengelLocal.slots.doc(1)")
-        check(count(pg, 1) == 291 and meta['dataVer'] == '2026-10-25' and row(pg, 1, '20261014-m1-08'), f'中のデータのほうが新しいアプリなら入れ替わる・自分で入れたレースは残る（{count(pg, 1)}走・{meta.get("dataVer")}）')
+        check(count(pg, 1) == 290 and meta['dataVer'] == '2026-10-25' and count(pg, 2) == 1 and row(pg, 2, '20261014-m2-08'), f'中のデータのほうが新しいアプリなら入れ替わる・マザーデータ①の レースは そのまま（{count(pg, 1)}走・{meta.get("dataVer")}）')
         b.close()
 finally:
     srv.terminate()

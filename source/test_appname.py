@@ -104,7 +104,7 @@ try:
         check(pg.locator('.brand .ver').inner_text().strip() == '', f'上の版の表示はなし（「{pg.locator(".brand .ver").inner_text()}」）')
         check(pg.input_value('#fVenue') == '' and pg.get_attribute('#fVenue', 'placeholder') == '空でもOK', '開催場ははじめ空（空でもOK）')
         names = pg.evaluate('TengelLocal.slots.names()')
-        check(names == {'1': 'マザーデータ1', '2': 'マザーデータ2', '3': 'マザーデータ3'}, f'マザーデータの名前ははじめ「マザーデータ1〜3」（{names}）')
+        check(names == {'1': 'テンゲルデータ', '2': 'マザーデータ①', '3': 'マザーデータ②', '4': 'マザーデータ③'}, f'第4.123版：データの名前は「テンゲルデータ」と「マザーデータ①〜③」（{names}）')
         per = pg.evaluate("[...document.querySelectorAll('#perChips .fchip')].map(b => b.textContent)")
         check(per == ['全期間', '前半', '後半', '新規', '最新'], f'期間のボタン（{per}）')
         # カスタム買い目のときだけ、上に「カスタム買い目」
@@ -124,14 +124,20 @@ try:
             j = judge(v)
             check(j['isOi'] and j['ref'] == 0, f'アプリに入っているデータの開催場（「{v}」と入れた）→ ふつうの判定（名前はアプリの中にない・しるしで比べる）')
         j = judge('船橋')
-        check(not j['isOi'] and j['refTxt'] == '【参考判定】船橋' and '【参考判定】船橋8R／参考値はすべてマザーデータ1' in j['full'], f'ちがう開催場 → 【参考判定】（{j["refTxt"]}）')
+        check(not j['isOi'] and j['refTxt'] == '【参考判定】船橋' and '【参考判定】船橋8R／参考値はすべてテンゲルデータの実測' in j['full'] and not re.search(r'\d+走|n=\d', j['full']), f'ちがう開催場 → 【参考判定】・テンゲルデータの 数は 出さない（{j["refTxt"]}）')
         # ---- アプリに入っているレース：そのレース自身を外す（日付とRで探す） ----
         r0 = mom[0]
         f0 = {"venue": "", "date": r0['date'], "r": str(r0['r']), "dist": str(r0['dist']), "surface": "ダ", "baba": r0['baba'], "n": str(r0['n']), "tan1": str(r0['tan1']), "s1": str(r0['s1']),
               "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": "", "rows": []}
         pg.evaluate("(f) => { localStorage.setItem('tengel.form', f); }", json.dumps(f0, ensure_ascii=False)); pg.reload(); pg.wait_for_timeout(1500)
         ex = pg.evaluate(RES)
-        check('このレース自身を除外して参考値を再計算（自己参照の除外）' in ex['full'] and '開催場：—' in ex['full'], f'アプリに入っているレース（{r0["date"]} {r0["r"]}R・開催場は空）→ 日付とRで見つけて、そのレースを外して参考値')
+        ZR = "[...document.querySelectorAll('#result ol.zones .zref')].map(e => e.textContent).join('|')"
+        zr0 = pg.evaluate(ZR)
+        # 同じ オッズで、テンゲルデータに ない 日付 → そのレースも 入った ままの 参考値。%が ちがえば、さっきは そのレース自身を 外して いた
+        pg.evaluate("(f) => { localStorage.setItem('tengel.form', f); }", json.dumps(dict(f0, date='2027-01-05'), ensure_ascii=False)); pg.reload(); pg.wait_for_timeout(1500)
+        zr1 = pg.evaluate(ZR)
+        exj = {'ex': bool(zr0) and zr0 != zr1, 'zr0': zr0[:80], 'zr1': zr1[:80]}
+        check(exj['ex'] and '自己参照の除外' not in ex['full'] and '開催場：—' in ex['full'], f'アプリに入っているレース（{r0["date"]} {r0["r"]}R・開催場は空）→ 日付とRで見つけて、そのレースを外して参考値（第4.123版：テンゲルデータに 入って いる ことは 書かない）（{exj}）')
         # ---- 自分で入れたマザーデータ：名前に開催場が入っていればふつうの判定・切り替えの案内 ----
         pg.evaluate("""async () => { const L = TengelLocal.slots; const rows = L.rows(1).slice(0, 60).map(r => Object.assign({}, r, { id: r.id.replace('-m1-', '-m2-') }));
           await L.replace(2, rows, { source: 'excel', file: 'test.xlsx' }); await L.rename(2, '船橋競馬'); }""")
@@ -142,7 +148,7 @@ try:
         check(not j['isOi'] and j['alt'] == '2', f'1つ目で「船橋」→【参考判定】・「船橋競馬」（2つ目）に切り替える案内（{ {k: j[k] for k in ("isOi", "alt")} }）')
         pg.click('#result .slotchip-go'); pg.wait_for_timeout(900)
         j = pg.evaluate(RES)
-        check(j['isOi'] and 'マザー：船橋競馬' in j['chips'] and j['ref'] == 0, f'2つ目「船橋競馬」に切り替え → 船橋のレースはふつうの判定（{j["chips"]}）')
+        check(j['isOi'] and 'データ：船橋競馬' in j['chips'] and j['ref'] == 0, f'2つ目「船橋競馬」に切り替え → 船橋のレースはふつうの判定（{j["chips"]}）')
         j = judge('大井')
         check(not j['isOi'] and j['ref'] == 1, '2つ目（自分で入れたデータ）で「大井」→【参考判定】（名前に入っていない）')
         j = judge('')
@@ -193,7 +199,8 @@ try:
             allt.append(p3.evaluate(DOM_TEXT))
         mtxt = '\n'.join(allt)
         check(not bad_words(mtxt), f'説明書（全部の項目）に出さない言葉がない（{bad_words(mtxt)}）')
-        check('はじめのデータ 290走（10/9まで）' in mtxt and 'アプリに入っているデータ（290走（10/9まで））' in mtxt, '説明書：アプリに入っているデータの走数')
+        lk = re.findall(r'.{0,20}(?:はじめのデータ|\d+走（\d+/\d+まで）|290走|n=\d).{0,20}', mtxt)
+        check('テンゲルデータ入り' in mtxt and not lk, f'第4.123版：説明書に アプリに入っているデータ（テンゲルデータ）の 走数・期間を 出さない（{lk[:3]}）')
         b.close()
 finally:
     srv.terminate()

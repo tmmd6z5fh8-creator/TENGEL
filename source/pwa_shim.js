@@ -36,6 +36,8 @@ if (window.__NATIVE) (function () {
     info: window.__NATIVE_INFO || {},   // アプリの版（アプリが最初に入れる）
     // ファイルを共有シートで渡す（「ファイル」に保存・AirDrop・LINEなど）。渡したら true、閉じただけなら false
     share: function (name, text, mime) { return call('share', { name: name, text: String(text), mime: mime || 'application/octet-stream' }); },
+    // 第4.123版：文字では ない ファイル（マザーデータの 入力用 Excel の ひな形）を base64 で 渡す
+    shareData: function (name, base64, mime) { return call('share', { name: name, base64: String(base64), mime: mime || 'application/octet-stream' }); },
     copy: function (text) { return call('copy', String(text)); },
     // アプリの中の自動バックアップ（記録・買い目・マザーデータ。APIキーは入れない）
     saveBackup: function (text) { return call('backup', { text: String(text) }); },
@@ -65,11 +67,17 @@ if (window.__NATIVE) (function () {
   var notices = [], memOnly = '';
   var NOSAVE = window.__NATIVE ? 'いまはこの端末に保存できない状態だよ。アプリを閉じてから、開き直してね' : 'いまはiPhoneに保存できない状態だよ。アプリを上にスワイプして閉じてから、開き直してね';
   // マザーデータは3つ。1つ目＝大井（races ストア）、2・3つ目＝meta の 'slot:2' 'slot:3'
-  var DEFAULT_NAMES = { 1: '大井競馬', 2: 'JRA', 3: '船橋競馬' };
-  var slotsMeta = { id: 'slots', active: 1, names: { 1: DEFAULT_NAMES[1], 2: DEFAULT_NAMES[2], 3: DEFAULT_NAMES[3] } };
-  var slot1 = new Map(), mother1 = null, slotDocs = { 2: null, 3: null }, slotMaps = { 2: null, 3: null };
-  // ひとつ前のデータ（入れ替える前の中身）。meta の 'prev:1' 'prev:2' 'prev:3'
-  var prevDocs = { 1: null, 2: null, 3: null };
+  // 第4.123版：App Store版は 4つ（1つ目＝テンゲルデータ：アプリに 入っている データ・名前は かえない・レースは 足せない／2〜4つ目＝マザーデータ①〜③：meta の 'slot:2'〜'slot:4'）
+  var NSLOT = window.__NATIVE ? 4 : 3, FIX1 = !!window.__NATIVE;
+  var DEFAULT_NAMES = { 1: '大井競馬', 2: 'JRA', 3: '船橋競馬', 4: 'マザーデータ4' };
+  var NO_ADD1 = 'テンゲルデータにはデータを追加できないよ（マザーデータに入れてね）';
+  var slotsMeta = { id: 'slots', active: 1, names: { 1: DEFAULT_NAMES[1], 2: DEFAULT_NAMES[2], 3: DEFAULT_NAMES[3], 4: DEFAULT_NAMES[4] } };
+  var slot1 = new Map(), mother1 = null, slotDocs = { 2: null, 3: null, 4: null }, slotMaps = { 2: null, 3: null, 4: null };
+  // ひとつ前のデータ（入れ替える前の中身）。meta の 'prev:1' 'prev:2' 'prev:3'（App Store版は 'prev:4' も）
+  var prevDocs = { 1: null, 2: null, 3: null, 4: null };
+  function okN(n) { return n >= 1 && n <= NSLOT; }
+  function okSub(n) { return n >= 2 && n <= NSLOT; }
+  var NO_N = 'マザーデータは1〜' + NSLOT + 'だよ';
   // 画像の読み取りの設定（meta 'set:ocr' = { key, model }）
   var ocrSet = null;
   // 重複転記などで消したレース（アプリに入っている大井データから外したもの）。1つ目（大井）には、Excelや貼り付けで入れても入れない
@@ -146,8 +154,8 @@ if (window.__NATIVE) (function () {
   }
   // 2つ目・3つ目を入れ替える（1つ目は replaceRaces）
   function replaceSlot(n, rows, info) {
-    n = +n; if (n === 1) return replaceRaces(rows, info);
-    if (n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    n = +n; if (n === 1) { if (FIX1) return Promise.reject(new Error(NO_ADD1)); return replaceRaces(rows, info); }
+    if (!okSub(n)) return Promise.reject(new Error(NO_N));
     need();
     info = info || {};
     var doc = { id: 'slot:' + n, rows: rows, source: info.source || 'excel', file: info.file || '', at: new Date().toISOString(), n: rows.length, lastDate: lastDate(rows) };
@@ -186,13 +194,13 @@ if (window.__NATIVE) (function () {
   }
   function setActive(n) {
     n = +n;
-    if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    if (!okN(n)) return Promise.reject(new Error(NO_N));
     if (!hasRows(n)) return Promise.reject(new Error('そのマザーデータはまだ空だよ'));
     slotsMeta.active = n;
     return putMeta(slotsMeta).then(function () { mem.races = slotMap(n); notify('races'); emitSlots(); });
   }
   function clearSlot(n) {
-    n = +n; if (n !== 2 && n !== 3) return Promise.reject(new Error('1つ目（大井）は空にできないよ'));
+    n = +n; if (!okSub(n)) return Promise.reject(new Error('1つ目（大井）は空にできないよ'));
     need();
     var prev = prevOf(n), t = idb.transaction('meta', 'readwrite'), ms = t.objectStore('meta'); ms.delete('slot:' + n); if (prev) ms.put(prev);
     return done(t).then(function () {
@@ -202,14 +210,16 @@ if (window.__NATIVE) (function () {
     });
   }
   function renameSlot(n, name) {
-    n = +n; if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    n = +n; if (!okN(n)) return Promise.reject(new Error(NO_N));
+    if (n === 1 && FIX1) return Promise.resolve(DEFAULT_NAMES[1]);   // テンゲルデータの 名前は かえない
     name = String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, 16) || DEFAULT_NAMES[n];
     slotsMeta.names[n] = name;
     return putMeta(slotsMeta).then(function () { emitSlots(); return name; });
   }
   // レースを1つずつ足す・直す（同じ id は上書き）。アプリで入力したレースなど。「ひとつ前」は残さない（まるごと入れ替えたときだけ残す）
   function upsertRows(n, rows) {
-    n = +n; if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    n = +n; if (!okN(n)) return Promise.reject(new Error(NO_N));
+    if (n === 1 && FIX1) return Promise.reject(new Error(NO_ADD1));
     need();
     rows = (rows || []).filter(function (r) { return r && r.id && r.date && r.r; });
     if (n === 1) rows = undup(rows);
@@ -239,7 +249,8 @@ if (window.__NATIVE) (function () {
   }
   // レースを消す（id で）
   function removeRows(n, ids) {
-    n = +n; if (n !== 1 && n !== 2 && n !== 3) return Promise.reject(new Error('マザーデータは1〜3だよ'));
+    n = +n; if (!okN(n)) return Promise.reject(new Error(NO_N));
+    if (n === 1 && FIX1) return Promise.reject(new Error(NO_ADD1));
     need();
     var gone = {}; (ids || []).forEach(function (id) { gone[id] = 1; });
     var now = new Date().toISOString();
@@ -268,15 +279,16 @@ if (window.__NATIVE) (function () {
     });
   }
   function slotRows(n) { return Array.from(slotMap(+n).values()); }
+  function slotNs() { var a = []; for (var i = 1; i <= NSLOT; i++) a.push(i); return a; }
   function slotInfo() {
-    return [1, 2, 3].map(function (n) {
+    return slotNs().map(function (n) {
       var rows = slotRows(n), ds = rows.map(function (r) { return r.date; }).filter(Boolean).sort();
       var usable = rows.filter(function (r) { return Number(r.cnt == null ? 1 : r.cnt) === 1 && r.p1 && r.p2; }).length;
       var m = n === 1 ? mother1 : slotDocs[n];
       var src = n === 1 ? (m ? (m.source || (String(m.ver || '').indexOf('paste') === 0 ? 'paste' : 'app')) : 'app') : (m ? m.source : '');
       return { n: n, name: slotsMeta.names[n] || DEFAULT_NAMES[n], count: rows.length, usable: usable, formed: wellFormed(rows), first: ds[0] || '', last: ds[ds.length - 1] || '',
         source: src, file: m ? (m.file || '') : '', at: m ? (m.at || '') : '', active: slotsMeta.active === n,
-        inputN: rows.filter(function (r) { return r && r.src; }).length, edited: m ? (m.edited || '') : '' };
+        inputN: rows.filter(function (r) { return r && r.src; }).length, edited: m ? (m.edited || '') : '', fixed: FIX1 && n === 1 };
     });
   }
   function prevInfo(n) {
@@ -287,9 +299,12 @@ if (window.__NATIVE) (function () {
   }
   function boot(a) {
     a[1].forEach(function (b) { mem.bets.set(b.id, b); });
-    if (a[3]) { slotsMeta.active = +a[3].active || 1; [1, 2, 3].forEach(function (n) { if (a[3].names && a[3].names[n]) slotsMeta.names[n] = a[3].names[n]; }); }
-    slotDocs[2] = a[4] || null; slotDocs[3] = a[5] || null;
-    prevDocs[1] = a[6] || null; prevDocs[2] = a[7] || null; prevDocs[3] = a[8] || null;
+    if (a[3]) { slotsMeta.active = +a[3].active || 1; slotNs().forEach(function (n) { if (a[3].names && a[3].names[n]) slotsMeta.names[n] = a[3].names[n]; }); }
+    // App Store版：1つ目の 名前は いつも「テンゲルデータ」・前の 版の はじめの 名前（マザーデータ1〜3）は 新しい 名前（マザーデータ①〜③）に
+    if (FIX1) slotNs().forEach(function (n) { if (n === 1 || slotsMeta.names[n] === 'マザーデータ' + n) slotsMeta.names[n] = DEFAULT_NAMES[n]; });
+    if (!okN(slotsMeta.active)) slotsMeta.active = 1;
+    slotDocs[2] = a[4] || null; slotDocs[3] = a[5] || null; slotDocs[4] = NSLOT >= 4 ? (a[11] || null) : null;
+    prevDocs[1] = a[6] || null; prevDocs[2] = a[7] || null; prevDocs[3] = a[8] || null; prevDocs[4] = NSLOT >= 4 ? (a[12] || null) : null;
     ocrSet = a[9] && a[9].value && a[9].value.key ? a[9].value : null;
     dataRec = a[10] || null;
     var rows = a[0], meta = a[2], emb = window.__MOTHER || [], embVer = window.__MOTHER_VER || '';
@@ -303,28 +318,28 @@ if (window.__NATIVE) (function () {
     // 単勝・3連単・着順が1走も入っていない（形のちがうファイルを入れてしまった）ときは、アプリに入っている大井データに戻す
     if (!wellFormed(rows) && wellFormed(emb)) {
       return replaceRaces(emb, { source: 'app', keepPrev: false, keepUser: true }).then(function () {
-        notices.push('「' + slotsMeta.names[1] + '」のデータが判定に使えない形（単勝・3連単・着順が入っていない）になっていたから、アプリに入っている大井データ（' + emb.length + '走）に戻したよ');
+        notices.push(FIX1 ? '「' + slotsMeta.names[1] + '」を、アプリに入っているデータに戻したよ' : '「' + slotsMeta.names[1] + '」のデータが判定に使えない形（単勝・3連単・着順が入っていない）になっていたから、アプリに入っている大井データ（' + emb.length + '走）に戻したよ');
       });
     }
     if (!embVer || meta.embedded === embVer) return;
     var source = meta.source || (String(meta.ver || '').indexOf('paste') === 0 ? 'paste' : 'app');
     var nl = lastDate(emb), md = function (d) { return d ? (+d.slice(5, 7)) + '/' + (+d.slice(8, 10)) : ''; };
-    var newer = '「' + slotsMeta.names[1] + '」のデータが新しくなったよ（' + emb.length + '走・' + md(nl) + 'まで）';
+    var newer = FIX1 ? '「' + slotsMeta.names[1] + '」が新しくなったよ' : '「' + slotsMeta.names[1] + '」のデータが新しくなったよ（' + emb.length + '走・' + md(nl) + 'まで）';   // App Store版は テンゲルデータの 数を 出さない
     // 自分で入れたレース（アプリで入力など）は残す
     var mine = userRows(rows).filter(function (r) { var k = rowKey(r); return !emb.some(function (e) { return rowKey(e) === k; }); }).length;
-    var mineNote = mine ? '。自分で入れたレース（' + mine + '走）はそのまま残したよ' : '';
+    var mineNote = mine && !FIX1 ? '。自分で入れたレース（' + mine + '走）はそのまま残したよ' : '';
     if (source === 'app') {
       // 「データの更新」で入れたデータのほうが新しい（同じ）ときは、そのまま（アプリの更新で古いデータに戻さない）
       if (meta.dataVer && meta.dataVer >= embVer) { meta.embedded = embVer; mother1 = meta; return putMeta(meta); }
       // 中身が変わったとき（レースが増えた・直した）だけお知らせする
       var off = rows.filter(function (r) { return !r.src; });
       var same = off.length === emb.length && lastDate(off) === nl, k = dupCount(rows);
-      return replaceRaces(emb, { source: 'app', keepPrev: false, keepUser: true }).then(function () { if (!same) notices.push('アプリの更新で、' + newer + (k ? '。重複していたレース（' + k + '走）は消したよ' : '') + mineNote); });
+      return replaceRaces(emb, { source: 'app', keepPrev: false, keepUser: true }).then(function () { if (!same) notices.push('アプリの更新で、' + newer + (k && !FIX1 ? '。重複していたレース（' + k + '走）は消したよ' : '') + mineNote); });
     }
     // まさちゃんがExcelや貼り付けで入れた大井データのほうが新しければ、そのまま残す
     var cur = { last: meta.lastDate || lastDate(rows), n: rows.length };
     if (nl > cur.last || (nl === cur.last && emb.length > cur.n)) {
-      return replaceRaces(emb, { source: 'app', keepUser: true }).then(function () { notices.push('アプリの更新で、' + newer + mineNote + '。前に入れたデータは「ひとつ前のデータに戻す」で戻せるよ'); });
+      return replaceRaces(emb, { source: 'app', keepUser: true }).then(function () { notices.push('アプリの更新で、' + newer + mineNote + (FIX1 ? '' : '。前に入れたデータは「ひとつ前のデータに戻す」で戻せるよ')); });
     }
     meta.embedded = embVer; mother1 = meta; return putMeta(meta);
   }
@@ -363,7 +378,7 @@ if (window.__NATIVE) (function () {
     idb = d;
     idb.onversionchange = function () { try { idb.close(); } catch (e) {} };
     var g = function (id) { return req(store('meta', 'readonly').get(id)); };
-    return Promise.all([req(store('races', 'readonly').getAll()), req(store('bets', 'readonly').getAll()), g('mother'), g('slots'), g('slot:2'), g('slot:3'), g('prev:1'), g('prev:2'), g('prev:3'), g('set:ocr'), g('data')]);
+    return Promise.all([req(store('races', 'readonly').getAll()), req(store('bets', 'readonly').getAll()), g('mother'), g('slots'), g('slot:2'), g('slot:3'), g('prev:1'), g('prev:2'), g('prev:3'), g('set:ocr'), g('data')].concat(NSLOT >= 4 ? [g('slot:4'), g('prev:4')] : []));
   }).then(function (a) { return Promise.resolve(boot(a)).then(function () { return Promise.resolve().then(dropDups).catch(function () {}); }); }).catch(memoryMode).then(function () { emitSlots(); });
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
@@ -577,6 +592,8 @@ if (window.__NATIVE) (function () {
     // マザーデータ（3つ）
     slots: {
       DEFAULT_NAMES: DEFAULT_NAMES,
+      N: NSLOT,
+      fixed: function (n) { return FIX1 && +n === 1; },
       info: slotInfo,
       rows: slotRows,
       names: function () { return clone(slotsMeta.names); },

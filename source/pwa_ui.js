@@ -61,6 +61,8 @@
     return { recs, bad };
   }
   const parsePaste = (text, tag) => { const rows = text.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t').map(x => x.trim())); return Object.assign({ shape: shapeOf(rows) }, toRecs(rows, false, tag)); };
+  // 第4.123版：見出し（A〜P列）は あるのに レースの 行が ない とき（入力用の ひな形を そのまま 選んだ など）
+  const EMPTY_KEN = () => 'A〜P列の見出しはあるけど、レースの行（A列に日付が入っている行）が見つからなかったよ。' + (NATIVE ? '入力用のExcel（ひな形）なら、黄色い行（5行目から）に1行＝1レースで入れて保存してから選んでね。' : '');
   // ---------- CSVファイル（このアプリの「書き出す」で作ったもの・ExcelでCSVに保存したもの。A〜P列） ----------
   const isCsv = f => /\.(csv|txt)$/i.test(f.name || '') || /csv|text\/plain/i.test(f.type || '');
   function parseCSV(text) {
@@ -84,7 +86,7 @@
     // ExcelのCSV（Shift_JIS）のとき
     if (text.indexOf('\uFFFD') >= 0) { try { text = new TextDecoder('shift_jis').decode(buf); } catch (_) { /* そのまま */ } }
     const rows = parseCSV(text), res = toRecs(rows, false, tag), sp = shapeOf(rows);
-    if (!res.recs.length) { const e = new Error(shapeMsg(sp) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
+    if (!res.recs.length) { const e = new Error((sp === 'kensho' ? EMPTY_KEN() : '') || shapeMsg(sp) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
     return Object.assign({ sheet: '', shape: sp }, res);
   }
 
@@ -151,14 +153,15 @@
       });
     }
     const first = sheets.filter(s => /検証データ/.test(s.name)), rest = sheets.filter(s => !/検証データ/.test(s.name));
-    let best = null, shape = '';
+    let best = null, shape = '', ken = false;
     for (const sh of first.concat(rest)) {
       const rows = await sheetRows(sh.path), res = toRecs(rows, d1904, tag), sp = shapeOf(rows);
+      if (sp === 'kensho') ken = true;
       if (!shape && sp && sp !== 'kensho') shape = sp;
       if (res.recs.length && (!best || res.recs.length > best.recs.length)) best = Object.assign({ sheet: sh.name, shape: sp }, res);
       if (best && first.indexOf(sh) >= 0) break; // 検証データのシートで読めたら、それを使う
     }
-    if (!best) { const e = new Error(shapeMsg(shape) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
+    if (!best) { const e = new Error((ken && !shape ? EMPTY_KEN() : '') || shapeMsg(shape) || 'レースの行が見つからなかったよ。'); e.html = true; throw e; }
     return best;
   }
   // ---------- 形のちがうファイル（分析シート・分析表・フィルターの元データ）を見分ける ----------
@@ -278,8 +281,9 @@
     const box = $('#setExtra'); if (!box) return;
     box.innerHTML = `
 <div class="card setsec" id="setMother" style="margin-top:var(--gap)">
-  <h2>マザーデータ（3つ）</h2>
-  <p class="hint" style="margin:0">「使う」を押したマザーデータで、判定の参考的中率と実測（①〜⑦）を計算するよ。判定タブと実測タブの上でも切り替えられるよ。買ったレースの記録と買い目の設定は、3つとも共通だよ。</p>
+  ${NATIVE ? `<h2>テンゲルデータ・マザーデータ</h2>
+  <p class="hint" style="margin:0">「使う」を押したデータで、判定の参考的中率を計算するよ。判定タブと実測タブの上でも切り替えられるよ。<b>テンゲルデータ</b>（アプリに入っているデータ）は、中身を見たり、レースを足したりはできないよ。<b>マザーデータ①〜③</b>には、判定して着順を入れたレースや、自分のExcelを入れて使えるよ（②・③はPカスタムで解放）。買ったレースの記録と買い目の設定は、どれを使っても共通だよ。</p>` : `<h2>マザーデータ（3つ）</h2>
+  <p class="hint" style="margin:0">「使う」を押したマザーデータで、判定の参考的中率と実測（①〜⑦）を計算するよ。判定タブと実測タブの上でも切り替えられるよ。買ったレースの記録と買い目の設定は、3つとも共通だよ。</p>`}
   <div class="slotlist" id="slotList"></div>
   <div class="slotedit" id="slotEdit"></div>
 </div>
@@ -330,16 +334,26 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     + (s.inputN && s.source !== 'input' ? `・自分で足したレース ${s.inputN}走` : '');
   // マザーデータの枠（2つ目・3つ目）はApp Store版ではPカスタムで解放（15,000P）。解放していない枠は🔒で、編集も使うもできない
   const slotLocked = n => !!(NATIVE && window.TengelWallet && !window.TengelWallet.slotUnlocked(n));
+  // 第4.123版（App Store版）：1つ目は テンゲルデータ（中身は 見せない・編集なし）。2〜4つ目は マザーデータ①〜③
+  const isFixed = n => !!(L().fixed && L().fixed(n));
+  const SNO = n => NATIVE ? (['', 'T', '①', '②', '③'][n] || n) : n;
+  const LABEL = n => NATIVE ? (['', 'テンゲルデータ', 'マザーデータ①', 'マザーデータ②', 'マザーデータ③'][n] || 'マザーデータ') : `マザーデータ${n}`;
+  const EDIT1 = () => { const ns = []; for (let i = 1; i <= (L().N || 3); i++) if (!isFixed(i) && !slotLocked(i)) ns.push(i); return ns[0] || 1; };
   function slotRowHTML(s, en) {
+    if (s.fixed) return `<div class="slotrow fixed${s.active ? ' on' : ''}" data-n="${s.n}">
+      <div><div class="sr-name"><span class="sr-no">${SNO(s.n)}</span><b>${esc(s.name)}</b>${s.active ? '<span class="chip cus">使用中</span>' : ''}</div>
+        <div class="sr-sub">アプリに入っているデータだよ。中身は見られないよ（レースを足すこともできないよ）</div></div>
+      <div class="sr-act">${!s.active && s.count ? '<button class="btn primary" type="button" data-sact="use">使う</button>' : ''}</div>
+    </div>`;
     const how = s.count ? `${s.count}走（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ</span>'}` : 'まだ空だよ';
     const src = s.count ? srcText(s) : '';
     if (slotLocked(s.n)) return `<div class="slotrow lock" data-n="${s.n}">
-      <div><div class="sr-name"><span class="sr-no">${s.n}</span><b>${esc(s.name)}</b></div>
+      <div><div class="sr-name"><span class="sr-no">${SNO(s.n)}</span><b>${esc(s.name)}</b></div>
         <div class="sr-sub">Pカスタムで解放すると使えるよ（15,000P）。自分のExcelや判定したレースで、自分だけのマザーデータを作れるよ</div></div>
       <div class="sr-act"><button class="btn primary" type="button" data-gopt="custom">解放する</button></div>
     </div>`;
     return `<div class="slotrow${s.active ? ' on' : ''}${en === s.n ? ' edit' : ''}" data-n="${s.n}">
-      <div><div class="sr-name"><span class="sr-no">${s.n}</span><b>${esc(s.name)}</b>${s.active ? '<span class="chip cus">使用中</span>' : ''}</div>
+      <div><div class="sr-name"><span class="sr-no">${SNO(s.n)}</span><b>${esc(s.name)}</b>${s.active ? '<span class="chip cus">使用中</span>' : ''}</div>
         <div class="sr-sub">${how}${src ? '<br>' + src : ''}</div></div>
       <div class="sr-act">${!s.active && s.count ? '<button class="btn primary" type="button" data-sact="use">使う</button>' : ''}<button class="btn" type="button" data-sact="edit" aria-pressed="${en === s.n}">${en === s.n ? '編集中' : '編集'}</button></div>
     </div>`;
@@ -348,6 +362,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const box = $('#slotList'); if (!box) return;
     let en = curEdit(); const list = L().info();
     if (slotLocked(en)) { editN = null; en = curEdit(); if (slotLocked(en)) en = 1; }
+    if (isFixed(en)) { if (editN === en) editN = null; en = EDIT1(); }
     box.innerHTML = list.map(s => slotRowHTML(s, en)).join('');
     const ed = $('#slotEdit');
     const busy = ed.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
@@ -356,7 +371,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   }
   function paintEditMeta(n) {
     const s = L().info().find(x => x.n === n); if (!s) return;
-    const h = $('#seTitle'); if (h) h.textContent = `${n}つ目「${s.name}」の編集`;
+    const h = $('#seTitle'); if (h) h.textContent = NATIVE ? `${LABEL(n)}${s.name !== LABEL(n) ? `「${s.name}」` : ''}の編集` : `${n}つ目「${s.name}」の編集`;
     const m = $('#seMeta'); if (m) m.innerHTML = s.count ? `<dt>いまのデータ</dt><dd><b>${s.count}走</b>（${span2(s.first, s.last)}）・集計対象 ${s.usable}走${s.formed ? '' : '<br><span class="warnline">⚠️ 判定に使えない形のデータだよ（単勝・3連単・着順が入っていない）</span>'}</dd><dt>入れ方</dt><dd>${srcText(s) || '—'}</dd>` : '<dt>いまのデータ</dt><dd>まだ空だよ</dd>';
     const ud = $('#seUndo'), pv = L().prev(n);
     if (ud) { ud.hidden = !pv; if (pv) ud.textContent = `ひとつ前のデータに戻す（${pv.n}走・${span2(pv.first, pv.last)}）`; delete ud.dataset.ok; }
@@ -366,6 +381,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   }
   function renderEdit(n) {
     const ed = $('#slotEdit'), s = L().info().find(x => x.n === n); if (!ed || !s) return;
+    if (s.fixed) { ed.dataset.n = String(n); ed.innerHTML = ''; return; }   // テンゲルデータは 編集の 枠を 出さない
     pending = null; ed.dataset.n = String(n);
     ed.innerHTML = `<h3 id="seTitle"></h3>
       <label for="seName" class="small muted" style="font-weight:700">名前（16文字まで）</label>
@@ -374,11 +390,12 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       <div class="mdtools">
         <div class="mdt-h">レースのデータ（1レースずつ）</div>
         <div class="row"><button class="btn primary" type="button" id="mdOpenBtn">レースを見る・直す</button><button class="btn" type="button" id="mdAddBtn">＋レースを1つ入れる</button><button class="btn ghost" type="button" id="mdExpBtn">書き出す（CSV）</button></div>
-        <p class="hint">判定したレースは、判定画面の「結果・収支の記録」で着順を入れて保存すると、ここに入るよ（「マザーデータにも入れる」）。判定していないレースは「＋レースを1つ入れる」から入れてね。</p>
+        <p class="hint">${NATIVE ? '判定したレースは、記録タブで結果を入れたあとの金額の欄の「マザーデータにも入れる」で選んで「記録する」と、ここに入るよ。' : '判定したレースは、判定画面の「結果・収支の記録」で着順を入れて保存すると、ここに入るよ（「マザーデータにも入れる」）。'}判定していないレースは「＋レースを1つ入れる」から入れてね。</p>
         <div id="mdExport" hidden></div>
       </div>
       <p class="hint">${n === 1 ? (NATIVE ? '大井のデータ（Excel）を新しくしたら、ファイルを選ぶだけで入れ替えられるよ。' : '大井の姫フィルター（Excel）を更新したら、ファイルを選ぶだけで入れ替えられるよ。') + '<b>検証データ</b>シートのA〜P列（日付〜集計対象）を読むよ。' : 'このマザーデータに入れるデータを選んでね。大井の<b>検証データと同じA〜P列</b>（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）の形なら入るよ。入れ直すと、まるごと新しいデータに替わるよ。'}ファイルは${NATIVE ? 'この端末' : 'このiPhone'}の中で読むだけで、どこにも送らないよ。</p>
-      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smPick">Excel・CSVファイルを選ぶ</button><input type="file" id="smFile" accept=".xlsx,.xlsm,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="smPick">Excel・CSVファイルを選ぶ</button><input type="file" id="smFile" accept=".xlsx,.xlsm,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>${NATIVE ? '<button class="btn" type="button" id="smTpl">入力用のExcel（ひな形）を保存</button>' : ''}</div>
+      ${NATIVE ? '<p class="hint" id="smTplNote">「入力用のExcel（ひな形）」は、A〜P列の見出し・記入例・入れ方の説明が入ったExcelだよ。黄色い行に1行＝1レースで入れて保存したら、「Excel・CSVファイルを選ぶ」で選んでね。</p>' : ''}
       <div id="smPreview"></div>
       <details style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:700">ファイルが選べないとき：コピーして貼り付け</summary>
         <p class="hint">Excelの<b>A〜P列</b>を全部コピーして貼り付けてね。</p>
@@ -397,6 +414,16 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#mdAddBtn').onclick = () => mdOpen(n, { add: true });
     $('#mdExpBtn').onclick = () => { const p = $('#mdExport'); p.hidden = !p.hidden; if (!p.hidden) mdExportPanel(n, p); };
     $('#smPick').onclick = () => $('#smFile').click();
+    // 第4.123版：入力用の Excel の ひな形（templates/mother_template.xlsx → アプリの 中の mother_template.xlsx）を 共有シートで 渡す（「ファイル」に保存・メール など）
+    if ($('#smTpl')) $('#smTpl').onclick = async () => {
+      try {
+        const r = await fetch('mother_template.xlsx'); if (!r.ok) throw new Error('ひな形が 見つからなかったよ');
+        const u = new Uint8Array(await r.arrayBuffer()); let bin = '';
+        for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+        const ok = await window.TengelNative.shareData('テンゲル_マザーデータ_入力用.xlsx', btoa(bin), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (ok) toast('ひな形を保存したよ。黄色い行に入れてから「Excel・CSVファイルを選ぶ」で選んでね', 3600);
+      } catch (err) { toast('ひな形を保存できなかったよ（' + (err && err.message || err) + '）', 3600); }
+    };
     $('#smFile').onchange = e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
       const box = $('#smPreview'); box.innerHTML = '<p class="small" style="margin:8px 0 0"><span class="spin"></span> 「' + esc(f.name) + '」を読んでいるよ…</p>';
@@ -484,6 +511,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       const b = e.target.closest('[data-sact]'); if (!b) return;
       const n = +b.closest('.slotrow').dataset.n;
       if (slotLocked(n)) { toast('この枠は、設定タブの「Pカスタム」で解放すると使えるよ（15,000P）', 3600); return; }
+      if (isFixed(n) && b.dataset.sact !== 'use') return;
       if (b.dataset.sact === 'use') {
         const nm = L().info().find(x => x.n === n).name;
         L().setActive(n).then(() => toast(`マザーデータを「${nm}」にしたよ`)).catch(err => toast('切り替えられなかったよ：' + (err && err.message || err), 3600));
@@ -752,11 +780,12 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     on: () => !!(window.TengelLocal && TengelLocal.slots && !TengelLocal.memOnly()),
     tag: n => tagOf(n),
     idOf: (n, date, r) => idOf(n, date, r),
-    find: (n, date, r) => (L().rows(n) || []).find(x => x.id === idOf(n, date, r)) || null,
-    has: (n, id) => !!(n && id && (L().rows(n) || []).some(x => x.id === id)),
+    find: (n, date, r) => isFixed(+n) ? null : (L().rows(n) || []).find(x => x.id === idOf(n, date, r)) || null,   // テンゲルデータに 入って いるかは 見せない
+    has: (n, id) => !!(n && id && !isFixed(+n) && (L().rows(n) || []).some(x => x.id === id)),
     // race：{date, r, baba, dist, surface, n, tan1, s1, s5, s10, p1, p2, p3, umatanPay, sanrenPay}／prev：前に入れた先 {n, id}（入れ先を変えたとき、前のを消す）
     async put(n, race, prev) {
-      n = +n; const t = tagOf(n), id = idOf(n, race.date, race.r), old = L().rows(n).find(x => x.id === id) || null;
+      n = +n; if (isFixed(n)) throw new Error('テンゲルデータにはデータを追加できないよ');
+      const t = tagOf(n), id = idOf(n, race.date, race.r), old = L().rows(n).find(x => x.id === id) || null;
       const keep = (v, k) => v == null || v === '' ? (old && old[k] != null ? old[k] : null) : num(v);
       const row = Object.assign({}, old || {}, {
         id, date: race.date, venue: t.venue, r: +race.r, baba: race.baba, dist: num(race.dist), surface: race.surface === '芝' ? '芝' : 'ダ', n: num(race.n),
@@ -764,14 +793,15 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         p1: race.p1 == null ? null : +race.p1, p2: race.p2 == null ? null : +race.p2, p3: race.p3 == null ? null : +race.p3,
         umatanPay: keep(race.umatanPay, 'umatanPay'), sanrenPay: keep(race.sanrenPay, 'sanrenPay'),
         note: old ? (old.note || '') : '', cnt: old && old.cnt != null ? old.cnt : 1, src: 'input', at: new Date().toISOString() });
-      if (prev && prev.n && (+prev.n !== n || prev.id !== id)) {
+      if (prev && prev.n && (+prev.n !== n || prev.id !== id) && !isFixed(prev.n)) {
         const o = (L().rows(prev.n) || []).find(x => x.id === prev.id);
         if (o && o.src === 'input') await L().remove(prev.n, [prev.id]);
       }
       await L().upsert(n, [row]);
       return { id, n, count: L().rows(n).length, updated: !!old };
     },
-    open: (n, id) => mdOpen(+n, id ? { id } : {})
+    open: (n, id) => { if (isFixed(+n)) return; mdOpen(+n, id ? { id } : {}); },
+    fixed: n => isFixed(+n), label: n => LABEL(+n)
   };
 
   // ---- アプリの更新 ----
@@ -829,7 +859,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <dl class="kvs"><dt>いまの版</dt><dd>${esc(ni.version || '—')}${ni.build ? `（${esc(ni.build)}）` : ''}<br><span class="small muted">中身 ${esc(APP_VER || '—')}（第13改訂版）</span></dd><dt>App Store</dt><dd id="nuStore">まだ確かめていないよ</dd></dl>
   <div class="row"><button class="btn" type="button" id="nuCheck">新しい版があるか確認</button><a class="btn primary" id="nuOpen" hidden target="_blank" rel="noopener" href="#">App Storeで更新する</a></div>
   <p class="small" id="nuMsg" style="margin:8px 0 0"></p>
-  <p class="hint">アプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ（3つとも）は消えないよ</b>。</p>
+  <p class="hint">アプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、<b>買ったレースの記録・買い目の設定・マザーデータ①〜③は消えないよ</b>。</p>
   <div class="banner warn">⚠️ アプリを削除すると、中の記録・ポイント・解放したものも一緒に消えて、もどせないの。削除する前に、下の「バックアップを保存」で記録をファイルに保存してね（ポイントはファイルに入らないよ）。</div>
 </div>
 <div class="card setsec" id="setData">
@@ -837,7 +867,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
   <dl class="kvs"><dt>いまのデータ</dt><dd id="sdCur">—</dd><dt>最後に確認</dt><dd id="sdChecked">まだ</dd></dl>
   <div class="row"><button class="btn" type="button" id="sdCheck">新しいデータがあるか確認</button><button class="btn primary" type="button" id="sdApply" hidden>新しいデータを入れる</button></div>
   <p class="small" id="sdMsg" style="margin:8px 0 0"></p>
-  <p class="hint">1つ目のマザーデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しいレースが入った版にできるよ。読むのはレースのデータだけ。入れても、<b>自分で入れたレース・買ったレースの記録・買い目の設定はそのまま</b>。前のデータは「ひとつ前のデータに戻す」で戻せるよ。</p>
+  <p class="hint">テンゲルデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しい版にできるよ。読むのはデータだけ。入れても、<b>マザーデータ①〜③・買ったレースの記録・買い目の設定はそのまま</b>。</p>
 </div>`;
   }
   // 版の番号をくらべる（1.10 ＞ 1.9）
@@ -884,7 +914,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const c = $('#sdCur'); if (!c || !TengelLocal.data) return;
     const s = L().info().find(x => x.n === 1); if (!s) return;
     const own = s.source !== 'app';
-    c.innerHTML = `${s.count}走（${span2(s.first, s.last)}）${s.inputN ? `・うち自分で入れた ${s.inputN}走` : ''}${own ? '<br><span class="small muted">自分で入れたファイルのデータが入っているよ</span>' : `<br><span class="small muted">データの版 ${esc(TengelLocal.data.ver() || '—')}</span>`}`;
+    if (s.fixed) c.innerHTML = `${esc(s.name)}（アプリに入っているデータ）${own ? '<br><span class="small muted">自分で入れたファイルのデータが入っているよ</span>' : ''}`;   // 第4.123版：テンゲルデータの 数・日付・版は 出さない
+    else c.innerHTML = `${s.count}走（${span2(s.first, s.last)}）${s.inputN ? `・うち自分で入れた ${s.inputN}走` : ''}${own ? '<br><span class="small muted">自分で入れたファイルのデータが入っているよ</span>' : `<br><span class="small muted">データの版 ${esc(TengelLocal.data.ver() || '—')}</span>`}`;
     const ap = $('#sdApply'); if (ap) { ap.hidden = !dataNew; delete ap.dataset.ok; ap.textContent = dataNew && dataNew.own ? '新しいデータに入れ替える' : '新しいデータを入れる'; }
   }
   async function checkData(manual) {
@@ -894,7 +925,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       const r = await TengelLocal.data.check();
       const ck = $('#sdChecked'); if (ck) ck.textContent = when(new Date().toISOString());
       dataNew = r.newer ? r : null;
-      if (manual && msg) msg.textContent = r.none ? 'いまは新しいデータはないよ✨' : r.newer ? `新しいデータ（${r.n}走・${md(r.last)}まで）があるよ。${r.own ? 'いまは自分で入れたデータが入っているから、入れると入れ替わるよ（ひとつ前に戻せるよ）' : '「新しいデータを入れる」を押してね'}` : 'いまのデータが最新だよ✨';
+      const fx = isFixed(1);
+      if (manual && msg) msg.textContent = r.none ? 'いまは新しいデータはないよ✨' : r.newer ? `新しいデータ${fx ? '' : `（${r.n}走・${md(r.last)}まで）`}があるよ。${r.own ? 'いまは自分で入れたデータが入っているから、入れると入れ替わるよ' + (fx ? '' : '（ひとつ前に戻せるよ）') : '「新しいデータを入れる」を押してね'}` : 'いまのデータが最新だよ✨';
       paintDataCard();
       return dataNew;
     } catch (e) {
@@ -910,8 +942,9 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     try {
       const r = await TengelLocal.data.apply(dataNew.doc);
       dataNew = null;
-      const t = `新しいデータ（${r.n}走・${md(r.last)}まで）を入れたよ${r.kept ? `。自分で入れたレース（${r.kept}走）はそのままだよ` : ''}`;
-      if (msg) msg.textContent = '✅ ' + t + '。前のデータは「ひとつ前のデータに戻す」で戻せるよ';
+      const fx = isFixed(1);
+      const t = fx ? `${L().names()[1]}を新しくしたよ` : `新しいデータ（${r.n}走・${md(r.last)}まで）を入れたよ${r.kept ? `。自分で入れたレース（${r.kept}走）はそのままだよ` : ''}`;
+      if (msg) msg.textContent = '✅ ' + t + (fx ? '' : '。前のデータは「ひとつ前のデータに戻す」で戻せるよ');
       toast(t, 4200); hideNBar('data');
     } catch (e) {
       if (msg) msg.textContent = '❌ 入れられなかったよ：' + (e && e.message || e);
@@ -936,7 +969,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const s = await checkStore(false);
     if (s && s.url) showNBar('app', `✨ App Storeに新しい版（<b>${esc(s.version)}</b>）があるよ。記録はそのまま残るよ`, 'App Storeで更新', s.url);
     const d = await TengelLocal.ready.then(() => checkData(false)).catch(() => null);
-    if (d) showNBar('data', `✨ 新しいデータがあるよ（<b>${d.n}走・${md(d.last)}まで</b>）`, d.own ? '見る' : '入れる', () => { if (d.own) goSettings('data'); else applyData(null); });
+    if (d) showNBar('data', isFixed(1) ? `✨ ${esc(L().names()[1])}の新しいデータがあるよ` : `✨ 新しいデータがあるよ（<b>${d.n}走・${md(d.last)}まで</b>）`, d.own ? '見る' : '入れる', () => { if (d.own) goSettings('data'); else applyData(null); });
   }
   function wireNativeUpdate() {
     if (!NATIVE) return;
@@ -959,10 +992,11 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     const zones = await TengelLocal.getSetting('zones').catch(() => undefined);
     const meta = await TengelLocal.motherMeta().catch(() => null);
     const data = { app: 'tengel3', appVer: APP_VER, at: new Date().toISOString(), bets, settings: { zones: zones === undefined ? null : zones } };
-    if (meta && meta.source !== 'app') data.mother = { meta, rows: L().rows(1) };
+    if (isFixed(1)) { /* 第4.123版：テンゲルデータの 中身は バックアップにも 入れない */ }
+    else if (meta && meta.source !== 'app') data.mother = { meta, rows: L().rows(1) };
     else { const add = L().rows(1).filter(r => r && r.src); if (add.length) data.motherAdd = add; }   // アプリに入っているデータに、自分で足したレース
     data.slots = { names: L().names(), active: L().active(), data: {} };
-    [2, 3].forEach(n => { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; });
+    for (let n = 2; n <= (L().N || 3); n++) { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; }
     if (auto && window.TengelWallet) { const w = window.TengelWallet.snapshot(); if (w) data.wallet = w; }
     return { data, zones, nSlots: Object.keys(data.slots.data).length };
   }
@@ -985,20 +1019,22 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       if (w.isEmpty()) { const ok = await w.restore(d.wallet).catch(() => false); if (ok) msg.push(`ポイント（${w.total().toLocaleString('ja-JP')}P）も戻したよ`); }
     }
     if (d.slots) {
-      for (const n of [1, 2, 3]) if (d.slots.names && d.slots.names[n]) await L().rename(n, d.slots.names[n]);
-      for (const n of [2, 3]) {
+      const NN = []; for (let i = 1; i <= (L().N || 3); i++) NN.push(i);
+      for (const n of NN) if (d.slots.names && d.slots.names[n] && !isFixed(n)) await L().rename(n, d.slots.names[n]);
+      for (const n of NN.filter(i => i >= 2)) {
         const doc = d.slots.data && d.slots.data[n]; if (!doc || !Array.isArray(doc.rows) || !doc.rows.length) continue;
         if (slotLocked(n)) { msg.push(`「${L().names()[n]}」の枠は解放していないので、そのデータは入れなかったよ`); continue; }
         const cur = L().rows(n), bl = last(doc.rows), cl = last(cur);
         if (!cur.length || bl > cl || (bl === cl && doc.rows.length > cur.length)) { await L().replace(n, doc.rows, { source: doc.source || 'excel', file: doc.file || '' }); msg.push(`「${L().names()[n]}」のデータ${doc.rows.length}走も戻したよ`); }
       }
     }
-    if (Array.isArray(d.motherAdd) && d.motherAdd.length) {
+    if (isFixed(1)) { /* テンゲルデータには 戻さない（前の 版の バックアップの 1つ目の レース） */ }
+    else if (Array.isArray(d.motherAdd) && d.motherAdd.length) {
       const have = new Set(L().rows(1).map(r => r.id));
       const add = d.motherAdd.filter(r => r && r.id && r.date && r.r && !have.has(r.id));
       if (add.length) { await L().upsert(1, add); msg.push(`「${L().names()[1]}」に、自分で入れたレース${add.length}走も戻したよ`); }
     }
-    if (d.mother && Array.isArray(d.mother.rows) && d.mother.rows.length) {
+    if (d.mother && Array.isArray(d.mother.rows) && d.mother.rows.length && !isFixed(1)) {
       const curRows = L().rows(1);
       const bl = last(d.mother.rows), cl = last(curRows);
       if (bl > cl || (bl === cl && d.mother.rows.length > curRows.length)) {

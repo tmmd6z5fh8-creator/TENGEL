@@ -108,6 +108,8 @@ html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
 open(f'{out}/index.html', 'w', encoding='utf8').write(html)
+if TARGET == 'app':   # 第4.123版：マザーデータ①〜③の 入力用 Excel の ひな形（templates/make_template.py で 作る・設定 → マザーデータの 編集 →「入力用のExcel（ひな形）を保存」）
+    shutil.copy(os.path.join(HERE, 'templates', 'mother_template.xlsx'), f'{out}/mother_template.xlsx')
 json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#16203D", "theme_color": "#16203D", "lang": "ja",
   "icons": [{"src": "icon3-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon3-512.png", "sizes": "512x512", "type": "image/png"}, {"src": "icon3-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
   open(f'{out}/manifest.webmanifest', 'w', encoding='utf8'), ensure_ascii=False, indent=1)

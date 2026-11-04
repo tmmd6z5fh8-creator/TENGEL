@@ -59,6 +59,8 @@ for f in sorted(os.listdir(os.path.join(web, 'manual'))):
     files[f] = 'manual/' + f
 for f in sorted(os.listdir(os.path.join(web, 'fonts'))):
     files[f] = 'fonts/' + f   # フォント（SIL OFL 1.1・ファイルはそのまま。ライセンスは「このアプリについて」）
+if os.path.exists(os.path.join(web, 'mother_template.xlsx')):
+    files['mother_template.xlsx'] = 'mother_template.xlsx'   # 第4.123版：マザーデータの 入力用 Excel の ひな形（共有シートで 渡す）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
     files['poster.jpg'] = 'cm/poster.jpg'   # CMの表紙（動画は大きいので入れない。見るときに公開中のWeb版から読む）
 for f in sorted(os.listdir(web)):
