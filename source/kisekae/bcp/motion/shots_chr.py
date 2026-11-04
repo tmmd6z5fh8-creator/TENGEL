@@ -1,10 +1,10 @@
-# 結果ボードカスタムの 動き（実験）：CHRCFG=<chr_stage.json> で キャラだけ 動く 絵（kisekae/bcp/chr）も。アプリの ためし（preview）を 1/60秒ずつ 写す（アニメーションの 時刻を すすめる＝test_bcx_flash.py と 同じ やり方）
+# 結果ボードカスタムの 動き（実験）：アプリの ためし（preview）を 1/60秒ずつ 写す（アニメーションの 時刻を すすめる＝test_bcx_flash.py と 同じ やり方）
 #   python3 shots.py <出力の フォルダ> <clip の json>    clip = [{name, mode, item, kind, streak, dur, pokes:[秒…], label}, …]
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
-MO = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.dirname(os.path.dirname(os.path.dirname(MO)))
+SRC = '/home/claude/tengel/source'; MO = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1]; CLIPS = json.loads(open(sys.argv[2], encoding='utf8').read()); DPR = float(os.environ.get('DPR', '2'))
-SRV = os.environ.get('MOTION_SRV', '/home/claude/work/bcp_motion_srv'); PORT = 8802      # アプリの 画面を 置く 所（リポジトリの 外）
+SRV = os.path.join(MO, 'srv'); PORT = 8802
 if not os.path.exists(os.path.join(SRV, 'APP', 'index.html')) or os.environ.get('BUILD'):
     shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
     subprocess.run(['node', 'build.js'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)
@@ -17,7 +17,7 @@ if not os.path.exists(os.path.join(SRV, 'APP', 'index.html')) or os.environ.get(
 t = open(os.path.join(SRC, 'test_native.py'), encoding='utf8').read()
 FAKE = re.search(r'^FAKE = """(.*?)"""', t, re.S | re.M).group(1)
 SETUP = re.search(r'^SETUP22 = """(.*?)"""', open(os.path.join(SRC, 'test_bcx_flash.py'), encoding='utf8').read(), re.S | re.M).group(1)
-EXP = open(os.environ.get('EXP') or os.path.join(MO, 'bcp_motion_exp.js'), encoding='utf8').read()     # EXP=…/chr/bcp_chr_exp.js（キャラだけ）
+EXP = open(os.path.join(MO, os.environ.get('EXP', 'bcp_motion_exp.js')), encoding='utf8').read()
 CFG = os.environ.get('CHRCFG', '')
 SPEC_HIT = {'r': 9, 'n': 14, 'ranks': {'11': 11, '8': 8, '2': 2, '6': 1, '10': 3},
             'rows': [{'t': '3連単', 'state': '不的中', 'hits': [], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 8]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 6}]}

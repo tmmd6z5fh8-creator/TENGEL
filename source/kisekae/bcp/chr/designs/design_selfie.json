@@ -1,0 +1,193 @@
+{
+ "base": {
+  "bg_thr": 0.12,
+  "halo": 3,
+  "orphan_dist": 12,
+  "core_thr": 0.75,
+  "bg_add": [
+   {
+    "rect": [
+     700,
+     0,
+     1048,
+     1501
+    ]
+   },
+   {
+    "rect": [
+     180,
+     1405,
+     700,
+     1501
+    ]
+   }
+  ],
+  "parts": [
+   {
+    "id": "S",
+    "core": [
+     [
+      160,
+      700,
+      440,
+      1000
+     ],
+     [
+      260,
+      1020,
+      540,
+      1240
+     ],
+     [
+      540,
+      800,
+      640,
+      930
+     ],
+     [
+      220,
+      500,
+      310,
+      640
+     ],
+     [
+      80,
+      1060,
+      320,
+      1240
+     ],
+     [
+      0,
+      1280,
+      180,
+      1480
+     ]
+    ],
+    "outer": [
+     {
+      "rect": [
+       0,
+       430,
+       700,
+       1501
+      ]
+     }
+    ],
+    "min_part": 300,
+    "inner": [
+     {
+      "line": [
+       [
+        150,
+        1378
+       ],
+       [
+        200,
+        1372
+       ],
+       [
+        250,
+        1372
+       ],
+       [
+        300,
+        1372
+       ],
+       [
+        340,
+        1376
+       ]
+      ],
+      "r": 5
+     },
+     {
+      "line": [
+       [
+        446,
+        1262
+       ],
+       [
+        452,
+        1300
+       ],
+       [
+        452,
+        1340
+       ],
+       [
+        444,
+        1385
+       ]
+      ],
+      "r": 3
+     },
+     {
+      "line": [
+       [
+        425,
+        1292
+       ],
+       [
+        428,
+        1340
+       ],
+       [
+        422,
+        1385
+       ]
+      ],
+      "r": 5
+     }
+    ]
+   }
+  ],
+  "fill": {
+   "mode": "smooth",
+   "glow_px": 6,
+   "glow_thr": 36,
+   "grow": 2,
+   "grow_plate": 3,
+   "edge_px": 3.0,
+   "frag_max": 120,
+   "ring": 10
+  }
+ },
+ "seg": [
+  [
+   0,
+   420,
+   720,
+   1501,
+   "S"
+  ]
+ ],
+ "stages": [
+  {
+   "dir": "/home/claude/work/bcpic/d4_1",
+   "out": "/home/claude/work/bcpic/chr/selfie1"
+  },
+  {
+   "dir": "/home/claude/work/bcpic/d4_2",
+   "out": "/home/claude/work/bcpic/chr/selfie2"
+  },
+  {
+   "dir": "/home/claude/work/bcpic/d4",
+   "out": "/home/claude/work/bcpic/chr/selfie3"
+  },
+  {
+   "dir": "/home/claude/work/bcpic/d4_4",
+   "out": "/home/claude/work/bcpic/chr/selfie4"
+  }
+ ],
+ "motion": {
+  "S": {
+   "dp": 0.8,
+   "dt": 0.9,
+   "o": [
+    330,
+    1501
+   ]
+  }
+ },
+ "stage_json": "/home/claude/work/bcpic/chr/stage_all.json"
+}
