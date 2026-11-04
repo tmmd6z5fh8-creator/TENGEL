@@ -83,6 +83,19 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 - 見本の 動画：`python3 kisekae/bcp/motion/shots.py <コマの フォルダ> kisekae/bcp/motion/clips.json`（1/60秒ずつ 写す・`DPR=2`）→ `python3 kisekae/bcp/motion/make_video.py <コマの フォルダ> <出す mp4> A_purun,B_tilt,C_both,D_race4,E_cover`。
 - キャラだけ 動かす（馬が はねる・ハンコを ポンと おす など）は、絵ごとに キャラを 切りぬいて うしろを 描きたす 作業が いる（今の 絵は キャラと うしろが 1まい）。
 
+### キャラだけ 動かす（実験・`chr/`・まさちゃん 2026/11/04 22:15「やるならキャラクターだけ！」）
+
+- **ためした 絵**：的中⑤ スタンプ（1連勝・`stamp1`）。馬（ぷるん と 息を する 2.6秒・ゆっくり 3Dで 首を ふる 7秒）と ハンコ（3.2秒に 1回「ポン」と おして ぷるん と もどる・ゆっくり 3Dで かたむく 8秒）。ボード・光・紙ふぶきは 動かない。
+- **切りぬき**：`chr/seg.py`（アニメの 絵の 切りぬき isnet-anime を onnxruntime で：`python3 chr/seg.py <絵> <x0,y0,x1,y1> <mask.png>`・
+  モデル `isnet-anime.onnx`（176MB・リポジトリに 入れない）は `/home/claude/work/models/`。rembg の GitHub の リリースから 落とす）→ `chr/chr_split.py <設定>`（例 `chr/stamp1.json`）。
+  - キャラごとの 印（`inner`・`outer`・`from_mask`）から watershed（キャラ どうしの さかいは 絵の ふち線）。ボードの うしろに かくれる 所は `clip`（ボードの 上の ふち）で 切る（ボードの 前の ひづめは `keep`）。
+  - キャラの まわりの 光の ふち・ふち線は「キャラを 消して 光の すじで うめた 色」と 元の 絵が ちがう 所（`glow_px` 12・`glow_thr` 22）を キャラに 入れる → **止まって いる ときは 元の 絵と 同じ**（ちがい 0）。
+  - うしろ（`bgx.png`）は キャラの 所だけ 光の すじ（角度ごとの 色）で うめる・ボードの 中は inpaint。上に 重なる キャラの うしろは `ext_under`（22px）で のばす（動いた とき すき間が 見えない）。
+- **舞台の 絵**：`bgx.png` を `clean.png` に、キャラの RGBA を `fg.png` に して `bcp_bg.py`（同じ 置き方）→ `bcp_<名前>x.webp`（キャラなし）・`bcp_<名前>h_fg.webp`（馬）・`bcp_<名前>s_fg.webp`（ハンコ）。
+- **動き**：`chr/bcp_chr_exp.js`（アプリの ためしに 足す 注入・`window.__BCPCHR`＝`chr/chr_stage.json`：背景を キャラなしに かえて、キャラの 絵を ボードの 上に 重ねて CSS で 動かす。動きの まん中は キャラが ボードに のる 所）。
+  見本：`EXP=kisekae/bcp/chr/bcp_chr_exp.js CHRCFG=kisekae/bcp/chr/chr_stage.json python3 kisekae/bcp/motion/shots_chr.py <コマ> <clip.json>`（キャラの webp は `MOTION_SRV` の APP に 置く）。
+- 動きは ボードの 下の はしを 動かさない（たての のび ちぢみ・rotateY は 下の はしが その まま）→ ボードの うしろに かくれた 所が 見えない。点めつは 窓 0個。
+
 ## ボードの 中の きまり（まさちゃんの 指定 2026/11/03）
 
 - 21:49「的中のボードも、全て結果ボードは毎回結果に応じて変わるから、的中⑤スタンプ結果ボード以外は、ボードの中の装飾や文字は残さないでね！」→ ボードの 中の **鎖・旗・星・ハンコ・見出しの 横の 月桂樹・字** は 消す（的中⑤ スタンプだけ そのまま）。
