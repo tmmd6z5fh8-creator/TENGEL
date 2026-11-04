@@ -389,8 +389,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       <dl class="kvs" id="seMeta"></dl>
       <div class="mdtools">
         <div class="mdt-h">レースのデータ（1レースずつ）</div>
-        <div class="row"><button class="btn primary" type="button" id="mdOpenBtn">レースを見る・直す</button><button class="btn" type="button" id="mdAddBtn">＋レースを1つ入れる</button><button class="btn ghost" type="button" id="mdExpBtn">書き出す（CSV）</button></div>
-        <p class="hint">${NATIVE ? '判定したレースは、記録タブで結果を入れたあとの金額の欄の「マザーデータにも入れる」で選んで「記録する」と、ここに入るよ。' : '判定したレースは、判定画面の「結果・収支の記録」で着順を入れて保存すると、ここに入るよ（「マザーデータにも入れる」）。'}判定していないレースは「＋レースを1つ入れる」から入れてね。</p>
+        <div class="row"><button class="btn primary" type="button" id="mdOpenBtn">レースを見る・直す</button><button class="btn" type="button" id="mdAddBtn">＋レースを1つ入れる</button>${NATIVE ? `<button class="btn" type="button" id="mdBulkBtn">まとめて入力${bkLoad(n).length ? `（下書き ${bkLoad(n).length}走）` : ''}</button>` : ''}<button class="btn ghost" type="button" id="mdExpBtn">書き出す（CSV）</button></div>
+        <p class="hint">${NATIVE ? '判定したレースは、記録タブで結果を入れたあとの金額の欄の「マザーデータにも入れる」で選んで「記録する」と、ここに入るよ。' : '判定したレースは、判定画面の「結果・収支の記録」で着順を入れて保存すると、ここに入るよ（「マザーデータにも入れる」）。'}判定していないレースは「＋レースを1つ入れる」${NATIVE ? '（たくさんあるときは「まとめて入力」：1レースずつカードで入れて、最後にまとめて入れる）' : ''}から入れてね。</p>
         <div id="mdExport" hidden></div>
       </div>
       <p class="hint">${n === 1 ? (NATIVE ? '大井のデータ（Excel）を新しくしたら、ファイルを選ぶだけで入れ替えられるよ。' : '大井の姫フィルター（Excel）を更新したら、ファイルを選ぶだけで入れ替えられるよ。') + '<b>検証データ</b>シートのA〜P列（日付〜集計対象）を読むよ。' : 'このマザーデータに入れるデータを選んでね。大井の<b>検証データと同じA〜P列</b>（日付・R・馬場・距離・頭数・単勝1位・3連単1位・1着人気・2着人気・3着人気・3連単5位・3連単10位・馬単払戻・3連単払戻・備考・集計対象）の形なら入るよ。入れ直すと、まるごと新しいデータに替わるよ。'}ファイルは${NATIVE ? 'この端末' : 'このiPhone'}の中で読むだけで、どこにも送らないよ。</p>
@@ -412,6 +412,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#seName').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); e.target.blur(); } };
     $('#mdOpenBtn').onclick = () => mdOpen(n);
     $('#mdAddBtn').onclick = () => mdOpen(n, { add: true });
+    if ($('#mdBulkBtn')) $('#mdBulkBtn').onclick = () => bkOpen(n);
     $('#mdExpBtn').onclick = () => { const p = $('#mdExport'); p.hidden = !p.hidden; if (!p.hidden) mdExportPanel(n, p); };
     $('#smPick').onclick = () => $('#smFile').click();
     // 第4.123版：入力用の Excel の ひな形（templates/mother_template.xlsx → アプリの 中の mother_template.xlsx）を 共有シートで 渡す（「ファイル」に保存・メール など）
@@ -652,11 +653,17 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       <span class="lend">${hit ? `<span class="stc ${dv.hit ? 'hit' : 'miss'}">${hit}</span>` : ''}${r.src ? '<span class="chip mdsrc">自分で入力</span>' : ''}${Number(r.cnt == null ? 1 : r.cnt) !== 1 ? '<span class="chip">集計外</span>' : ''}</span></button>
       ${open ? `<div class="mdf">${mdFormHTML(r, false)}</div>` : ''}</div>`;
   }
-  function mdFormHTML(r, isNew) {
+  function mdFormHTML(r, isNew, btns, compact) {
     const v = k => r[k] == null ? '' : String(r[k]);
     const cnt = Number(r.cnt == null ? 1 : r.cnt) === 1;
     const res = r.p1 != null ? [r.p1, r.p2, r.p3].filter(x => x != null).join('-') : '';
-    const f = (s, lab, k, im, ph, extra) => `<div class="f ${s}"><label>${lab}</label><input type="number" inputmode="${im}" data-k="${k}" value="${esc(v(k))}"${ph ? ` placeholder="${ph}"` : ''}${extra || ''}></div>`;
+    // compact（まとめて入力の カード）：見本の 数は「例 …」・払戻と 記録用の 欄は「あれば」に たたむ（1画面で 入れて 次へ）
+    const f = (s, lab, k, im, ph, extra) => `<div class="f ${s}"><label>${lab}</label><input type="number" inputmode="${im}" data-k="${k}" value="${esc(v(k))}"${ph ? ` placeholder="${compact && /^[0-9.]+$/.test(ph) ? '例 ' + ph : ph}"` : ''}${extra || ''}></div>`;
+    const more = `${f('s3', '馬単の払戻（100円）', 'umatanPay', 'numeric', 'あれば')}${f('s3', '3連単の払戻（100円）', 'sanrenPay', 'numeric', 'あれば')}
+        ${f('s3', '3連単5位オッズ（記録用）', 's5', 'decimal', '', ' step="0.1"')}${f('s3', '3連単10位オッズ（記録用）', 's10', 'decimal', '', ' step="0.1"')}
+        <div class="f s6"><label>備考</label><input data-k="note" maxlength="200" value="${esc(v('note'))}"></div>
+        <div class="f s6"><span class="lab">集計（参考的中率・実測）</span><div class="seg" data-k="cnt"><button type="button" data-v="1" aria-pressed="${cnt}">集計に入れる</button><button type="button" data-v="0" aria-pressed="${!cnt}">入れない</button></div></div>`;
+    const moreOpen = !cnt || ['umatanPay', 'sanrenPay', 's5', 's10', 'note'].some(k => v(k) !== '');
     return `<div class="mdform" data-id="${esc(isNew ? '' : r.id)}">
       <div class="fields">
         <div class="f s3"><label>日付</label><input type="date" data-k="date" value="${esc(v('date'))}"></div>
@@ -665,13 +672,10 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
         ${f('s3', '距離(m)', 'dist', 'numeric', '1200')}${f('s3', '出走頭数', 'n', 'numeric', '12')}
         ${f('s3', '単勝1位オッズ', 'tan1', 'decimal', '2.1', ' step="0.1"')}${f('s3', '3連単1位オッズ', 's1', 'decimal', '28.6', ' step="0.1"')}
         <div class="f s6"><label>着順（人気）1着-2着-3着</label><input data-k="res" inputmode="decimal" data-dash autocomplete="off" value="${esc(res)}" placeholder="例 1.4.2（「.」で区切る・3着はなくてもOK）"></div>
-        ${f('s3', '馬単の払戻（100円）', 'umatanPay', 'numeric', 'あれば')}${f('s3', '3連単の払戻（100円）', 'sanrenPay', 'numeric', 'あれば')}
-        ${f('s3', '3連単5位オッズ（記録用）', 's5', 'decimal', '', ' step="0.1"')}${f('s3', '3連単10位オッズ（記録用）', 's10', 'decimal', '', ' step="0.1"')}
-        <div class="f s6"><label>備考</label><input data-k="note" maxlength="200" value="${esc(v('note'))}"></div>
-        <div class="f s6"><span class="lab">集計（参考的中率・実測）</span><div class="seg" data-k="cnt"><button type="button" data-v="1" aria-pressed="${cnt}">集計に入れる</button><button type="button" data-v="0" aria-pressed="${!cnt}">入れない</button></div></div>
+        ${compact ? `<details class="f s6 mdmore"${moreOpen ? ' open' : ''}><summary>払戻・3連単5位／10位・備考・集計（あれば）</summary><div class="fields">${more}</div></details>` : more}
       </div>
       <p class="small mdpv" data-k="pv"></p>
-      <div class="row"><button class="btn primary" type="button" data-md="save">${isNew ? 'このレースを入れる' : '保存'}</button><button class="btn ghost" type="button" data-md="cancel">やめる</button>${isNew ? '' : '<button class="btn danger" type="button" data-md="del">このレースを消す</button>'}</div>
+      ${btns != null ? btns : `<div class="row"><button class="btn primary" type="button" data-md="save">${isNew ? 'このレースを入れる' : '保存'}</button><button class="btn ghost" type="button" data-md="cancel">やめる</button>${isNew ? '' : '<button class="btn danger" type="button" data-md="del">このレースを消す</button>'}</div>`}
     </div>`;
   }
   // フォームを読む（足りない・おかしいところは errs、注意は warns）
@@ -747,6 +751,145 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       Object.assign(mdS, { open: null, add: false, ym: row.date.slice(0, 7), flash: id });
       mdRender();
     } catch (err) { b.disabled = false; toast('保存できなかったよ：' + (err && err.message || err), 4200); }
+  }
+  // ---- まとめて入力（カード・App Store版・第4.124版） ----
+  // まさちゃん（2026/11/04 10:25）「Excelじゃなくて、テンゲルの中で完結する、まとめてデータが更新できるようのシートのような物を作成し、組み込むことは可能？」
+  // →（10:26）「2.かな！ iPhoneでやりやすい方にして！」（カードの形）。1レースずつ カードで 入れて 下書きに ためる → 「まとめて入れる」で マザーデータ①〜③へ。
+  // 次の カードは 日付・馬場・集計と R（＋1）を 引きつぐ。下書きは この端末の 中（localStorage・マザーデータごと）。入れる ときに もう 入って いる レースは「上書き」の 確かめ
+  let bkS = null;   // { n, rows: [下書き], edit: 直して いる 行 or -1, ok: 上書きの 確かめの 文 }
+  function bkAll() { try { const o = JSON.parse(localStorage.getItem('tengel.bulk') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (_) { return {}; } }
+  function bkLoad(n) { const a = bkAll()[n]; return Array.isArray(a) ? a.filter(r => r && r.date && r.r) : []; }
+  function bkSave() {
+    if (!bkS) return;
+    try { const o = bkAll(); if (bkS.rows.length) o[bkS.n] = bkS.rows; else delete o[bkS.n]; localStorage.setItem('tengel.bulk', JSON.stringify(o)); } catch (_) { /* 下書きは 残せないだけ */ }
+  }
+  function bkCss() {
+    if (document.getElementById('bkCss')) return;
+    const st = document.createElement('style'); st.id = 'bkCss';
+    st.textContent = '#bkSheet{position:fixed;inset:0;z-index:45;background:rgba(8,12,26,.5);display:flex;justify-content:center;align-items:stretch;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}'
+      + '#bkSheet .mdbox{width:100%;max-width:780px;background:var(--bg);border-radius:16px 16px 0 0;display:flex;flex-direction:column;min-height:0;box-shadow:0 -8px 30px rgba(0,0,0,.3)}'
+      + '#bkSheet .mdhead{display:flex;align-items:center;gap:10px;padding:12px 14px 10px 16px;border-bottom:1px solid var(--line);background:var(--surface);border-radius:16px 16px 0 0}'
+      + '#bkSheet .mdhead h3{margin:0;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '#bkSheet .mdx{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);font-size:22px;line-height:1;cursor:pointer;color:var(--ink)}'
+      + '#bkSheet .mdbody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 16px 18px}'
+      + '#bkSheet .bkcard{border:2px solid var(--lamp);border-radius:var(--r);background:var(--surface);padding:12px}'
+      + '#bkSheet .bkcard h4{margin:0 0 10px;font-size:15px}'
+      + '#bkSheet .bkfoot{flex:none;display:flex;gap:8px;align-items:center;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid var(--line);background:var(--surface)}'
+      + '#bkSheet .bkfoot .btn.primary{flex:1}'
+      + '.bklist{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}'
+      + '.bklist h4{margin:0;padding:9px 12px;font-size:13px;background:var(--surface-2);border-bottom:1px solid var(--line)}'
+      + '.bkrow{display:grid;grid-template-columns:2.6em 1.9em minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px}'
+      + '.bkrow+.bkrow{border-top:1px solid var(--line)}.bkrow.on{background:rgba(226,162,59,.16)}'
+      + '.bkacts{display:flex;gap:6px}.bkacts .btn{min-height:36px;padding:0 10px}'
+      + '#bkSheet .mdmore{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;background:var(--surface-2)}#bkSheet .mdmore>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}'
+      + '#bkSheet .mdmore[open]>summary{margin-bottom:8px}';
+    document.head.appendChild(st);
+  }
+  function bkOpen(n) {
+    mdCss(); bkCss();
+    let sh = $('#bkSheet');
+    if (!sh) {
+      sh = document.createElement('div'); sh.id = 'bkSheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-labelledby', 'bkTitle');
+      sh.innerHTML = '<div class="mdbox"><div class="mdhead"><h3 id="bkTitle"></h3><button class="mdx" type="button" aria-label="閉じる">×</button></div>'
+        + '<div class="mdbody" id="bkBody"></div><div class="bkfoot" id="bkFoot"></div></div>';
+      document.body.appendChild(sh);
+      bkS = { back: document.activeElement, ov: document.documentElement.style.overflow };
+      document.documentElement.style.overflow = 'hidden';
+      sh.addEventListener('click', bkClick);
+      sh.addEventListener('input', e => { const fm = e.target.closest('.mdform'); if (fm) mdPreview(fm); });
+      sh.addEventListener('change', e => { const fm = e.target.closest('.mdform'); if (fm) mdPreview(fm); });
+      document.addEventListener('keydown', bkKey);
+    }
+    Object.assign(bkS, { n, rows: bkLoad(n), edit: -1, ok: '' });
+    bkRender(true);
+  }
+  function bkKey(e) { if (e.key === 'Escape' && $('#bkSheet')) bkClose(); }
+  function bkClose() {
+    const sh = $('#bkSheet'); if (!sh) return;
+    bkSave(); sh.remove(); document.removeEventListener('keydown', bkKey);
+    const n = bkS && bkS.n;
+    if (bkS) { document.documentElement.style.overflow = bkS.ov || ''; if (bkS.back && bkS.back.focus && document.contains(bkS.back)) bkS.back.focus({ preventScroll: true }); }
+    bkS = null;
+    const bb = $('#mdBulkBtn'); if (bb && n) { const k = bkLoad(n).length; bb.textContent = 'まとめて入力' + (k ? `（下書き ${k}走）` : ''); }
+  }
+  // 次の カード：前の 行の 日付・馬場・集計と R（＋1）。はじめは 今日・1R
+  function bkBase() {
+    const last = bkS.rows[bkS.rows.length - 1];
+    if (!last) return { date: today(), r: 1, baba: '', cnt: 1 };
+    return { date: last.date, r: Math.min(16, (+last.r || 0) + 1), baba: last.baba, cnt: last.cnt == null ? 1 : last.cnt };
+  }
+  function bkRowHTML(r, i) {
+    const dv = derive(r), Ly = dv ? dv.L : '?';
+    const hit = dv && dv.has12 ? (dv.hit ? `第${dv.hit}的中` : '外れ') : '着順まだ';
+    return `<div class="bkrow${bkS.edit === i ? ' on' : ''}" data-i="${i}"><span class="lr-r">${esc(r.r)}R</span><span class="lb L${Ly}">${Ly}</span>
+      <span class="lmid"><span class="k">${esc(dlab(r.date))}・${esc(r.baba || '—')}・${r.dist ? esc(r.dist) + 'm' : '—'}・${r.n ? esc(r.n) + '頭' : '—'}</span>
+      <span class="mdo">単勝1位 ${esc(fmtO(r.tan1))}・3連単1位 ${esc(fmtO(r.s1))}</span><span class="mdo">${esc(resOf(r))}${dv && dv.has12 ? '（' + esc(dv.pair) + '）' : ''}・${esc(hit)}</span></span>
+      <span class="bkacts"><button class="btn" type="button" data-bk="edit">直す</button><button class="btn ghost" type="button" data-bk="del" aria-label="この行を消す">×</button></span></div>`;
+  }
+  function bkRender(focus) {
+    const sh = $('#bkSheet'); if (!sh || !bkS) return;
+    const s = L().info().find(x => x.n === bkS.n); if (!s || s.fixed) { bkClose(); return; }
+    $('#bkTitle').textContent = `「${s.name}」にまとめて入力`;
+    const ed = bkS.edit >= 0 ? bkS.rows[bkS.edit] : null, N = bkS.rows.length;
+    const btns = ed ? '<div class="row"><button class="btn primary" type="button" data-bk="upd">この行を直す</button><button class="btn ghost" type="button" data-bk="back">やめる</button></div>'
+      : '<div class="row"><button class="btn primary" type="button" data-bk="add">この行を足して次へ</button><button class="btn ghost" type="button" data-bk="clear">クリア</button></div>';
+    let h = `<p class="small muted" style="margin:0 0 10px">1レースずつ入れて「この行を足して次へ」。次のカードは日付・馬場・R（＋1）を引きつぐよ。全部入れたら下の「まとめて入れる」で「${esc(s.name)}」に入るよ（途中でやめても下書きは残るよ）。</p>`;
+    h += `<div class="bkcard"><h4>${ed ? `${bkS.edit + 1}行目を直す` : `${N + 1}レース目`}</h4>${mdFormHTML(ed || bkBase(), true, btns, true)}</div>`;
+    if (N) h += `<div class="bklist"><h4>下書き（${N}走）</h4>${bkS.rows.map(bkRowHTML).join('')}</div>`;
+    $('#bkBody').innerHTML = h;
+    const fm = $('#bkBody .mdform'); mdPreview(fm);
+    $('#bkFoot').innerHTML = `<button class="btn primary" type="button" data-bk="apply"${N ? '' : ' disabled'}>${bkS.ok ? esc(bkS.ok) : `まとめて入れる（${N}走）`}</button>`
+      + (N ? '<button class="btn ghost" type="button" data-bk="reset">下書きを消す</button>' : '');
+    if (focus) {
+      $('#bkBody').scrollTop = 0;
+      const el = [...fm.querySelectorAll('input[data-k]')].find(x => ['dist', 'n', 'tan1', 's1', 'res'].includes(x.dataset.k) && !x.value);
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+  async function bkClick(e) {
+    if (e.target.closest('.mdx') || e.target.id === 'bkSheet') { bkClose(); return; }
+    const sb = e.target.closest('.mdform .seg button');
+    if (sb) { $$('button', sb.parentElement).forEach(x => x.setAttribute('aria-pressed', String(x === sb))); mdPreview(sb.closest('.mdform')); return; }
+    const b = e.target.closest('[data-bk]'); if (!b || b.disabled || !bkS) return;
+    const act = b.dataset.bk, fm = $('#bkBody .mdform');
+    if (act !== 'apply' && bkS.ok) { bkS.ok = ''; const fb = $('#bkFoot [data-bk=apply]'); if (fb) fb.textContent = `まとめて入れる（${bkS.rows.length}走）`; }
+    if (act === 'add' || act === 'upd') {
+      const { row, errs } = mdRead(fm);
+      if (errs.length) { mdPreview(fm); toast('入れてね：' + errs.join('・'), 3600); return; }
+      const dup = bkS.rows.findIndex((x, i) => x.date === row.date && +x.r === +row.r && i !== bkS.edit);
+      if (dup >= 0 && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = `下書きに ${dlab(row.date)} ${row.r}R がもうあるよ。入れ替える？（もう一度押してね）`; return; }
+      let i = bkS.edit;
+      if (dup >= 0) { bkS.rows.splice(dup, 1); if (i > dup) i--; }
+      if (act === 'upd' && i >= 0) { bkS.rows[i] = row; bkS.edit = -1; toast(`${dlab(row.date)} ${row.r}R を直したよ`); }
+      else { bkS.rows.push(row); toast(`${dlab(row.date)} ${row.r}R を下書きに足したよ（${bkS.rows.length}走）`); }
+      bkSave(); bkRender(true); return;
+    }
+    if (act === 'clear' || act === 'back') { bkS.edit = -1; bkRender(true); return; }
+    if (act === 'edit') { bkS.edit = +b.closest('.bkrow').dataset.i; bkRender(true); return; }
+    if (act === 'del') {
+      const i = +b.closest('.bkrow').dataset.i;
+      if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = '消す？'; return; }
+      bkS.rows.splice(i, 1); if (bkS.edit === i) bkS.edit = -1; else if (bkS.edit > i) bkS.edit--;
+      bkSave(); bkRender(); return;
+    }
+    if (act === 'reset') {
+      if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'ほんとに消す？（もう一度押してね）'; return; }
+      bkS.rows = []; bkS.edit = -1; bkSave(); bkRender(true); toast('下書きを消したよ'); return;
+    }
+    if (act === 'apply') {
+      const n = bkS.n, t = tagOf(n), have = L().rows(n), now = new Date().toISOString();
+      const recs = bkS.rows.map(r => { const id = idOf(n, r.date, r.r), ex = have.find(x => x.id === id); return Object.assign({}, ex || {}, r, { id, venue: t.venue, surface: (ex && ex.surface) || 'ダ', src: 'input', at: now }); });
+      if (!recs.length) return;
+      const over = recs.filter(r => have.some(x => x.id === r.id)).length;
+      if (over && !bkS.ok) { bkS.ok = `${over}走はもう入っているレース（上書き）。入れる？（もう一度押してね）`; b.textContent = bkS.ok; return; }
+      b.disabled = true;
+      try {
+        await L().upsert(n, recs);
+        const nm = (L().info().find(x => x.n === n) || {}).name || '';
+        bkS.rows = []; bkSave(); bkClose();
+        toast(`「${nm}」に ${recs.length}走 入れたよ${over ? `（上書き ${over}走）` : ''}`, 3600);
+      } catch (err) { b.disabled = false; toast('入れられなかったよ：' + (err && err.message || err), 4200); }
+    }
   }
   // 書き出す（A〜P列。CSV＝Excel・Numbersで開ける／コピー＝Excelに貼り付け）
   function saveFile(name, text, mime) {

@@ -12,6 +12,7 @@ def _load(name, path):
 
 
 _bm = _load('build_manual', os.path.join(HERE, 'manual', 'build_manual.py'))   # 説明書
+_ds_mod = _load('datascramble', os.path.join(HERE, 'datascramble.py'))   # 第4.124版：データの更新の ファイルの スクランブル
 _bl = _load('build_legal', os.path.join(HERE, 'legal', 'build_legal.py'))      # このアプリについて・公開するページ
 _at = _load('app_target', os.path.join(HERE, 'app_target.py'))                 # App Store版：競馬場・団体・版の名前を出さない
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
@@ -76,7 +77,7 @@ head = f'''<!DOCTYPE html>
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px),var(--top-inset2,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 {APP_HEAD}
-<script>window.__APP_VER={json.dumps(APP_VER)};{'window.__TEST=true;' if TEST else ''}window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';' if MOTHER_HOME is not None else ''}</script>
+<script>window.__APP_VER={json.dumps(APP_VER)};{'window.__TEST=true;' if TEST else ''}window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';window.__DATA_KEY=' + json.dumps(_ds_mod.load_key().hex()) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('ocr_local.js', encoding='utf8').read()}
 </script>{APP_LIBS}
@@ -144,7 +145,8 @@ if TARGET == 'web':
     _txt = json.dumps(_doc, ensure_ascii=False, separators=(',', ':'))
     _at.check_clean(_txt, 'データの更新のファイル')
     os.makedirs(f'{out}/data')
-    open(f'{out}/data/mother_app.json', 'w', encoding='utf8').write(_txt)
+    # 第4.124版：そのままでは 読めない ように スクランブル（datascramble.py・鍵は リポジトリに 入れない）
+    open(f'{out}/data/mother_app.json', 'w', encoding='utf8').write(_ds_mod.scramble_doc(_txt, _ds_mod.load_key()))
 open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
 // （記録・買い目・基盤データはiPhoneの中のデータベースにあって、ここでは触らない）
 const CACHE = 'tengel3-''' + APP_VER + '-' + MOTHER_VER + '''';

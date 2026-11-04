@@ -433,6 +433,29 @@ if (window.__NATIVE) (function () {
     if (dataRec && dataRec.ver && dataRec.ver > v) v = dataRec.ver;
     return v;
   }
+  // 第4.124版：データの更新の ファイルは スクランブル（datascramble.py と 同じ 計算・鍵は アプリの 中の window.__DATA_KEY）。ふつうの JSON（前の 形）も 読める
+  function hexBytes(h) { var n = h.length >> 1, a = new Uint8Array(n); for (var i = 0; i < n; i++) a[i] = parseInt(h.substr(i * 2, 2), 16); return a; }
+  function sm32(x) { var z = (x + 0x9E3779B9) >>> 0; z = Math.imul(z ^ (z >>> 16), 0x85EBCA6B) >>> 0; z = Math.imul(z ^ (z >>> 13), 0xC2B2AE35) >>> 0; return (z ^ (z >>> 16)) >>> 0; }
+  function rotl32(x, k) { return ((x << k) | (x >>> (32 - k))) >>> 0; }
+  function u32le(b, i) { return (b[i] | (b[i + 1] << 8) | (b[i + 2] << 16) | (b[i + 3] << 24)) >>> 0; }
+  function unscramble(doc) {
+    if (!doc || doc.sc !== 1) return doc;
+    var key = String(window.__DATA_KEY || '');
+    if (!/^[0-9a-f]{32}$/.test(key) || !/^[0-9a-f]{16}$/.test(String(doc.salt || '')) || !/^(?:[0-9a-f]{2})+$/.test(String(doc.data || ''))) throw new Error('データの形がちがうよ');
+    var k = hexBytes(key), t = hexBytes(doc.salt), d = hexBytes(doc.data);
+    var s0 = sm32((u32le(k, 0) ^ u32le(t, 0)) >>> 0), s1 = sm32((u32le(k, 4) ^ u32le(t, 4)) >>> 0), s2 = sm32((u32le(k, 8) ^ 0xA5A5A5A5) >>> 0), s3 = sm32((u32le(k, 12) ^ 0x5A5A5A5A) >>> 0);
+    if (!(s0 || s1 || s2 || s3)) s0 = 1;
+    for (var i = 0; i < d.length; i += 4) {
+      var r = Math.imul(rotl32(Math.imul(s1, 5) >>> 0, 7), 9) >>> 0, tt = (s1 << 9) >>> 0;
+      s2 = (s2 ^ s0) >>> 0; s3 = (s3 ^ s1) >>> 0; s1 = (s1 ^ s2) >>> 0; s0 = (s0 ^ s3) >>> 0; s2 = (s2 ^ tt) >>> 0; s3 = rotl32(s3, 11);
+      for (var j = 0; j < 4 && i + j < d.length; j++) d[i + j] ^= (r >>> (8 * j)) & 255;
+    }
+    var out;
+    try { out = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(d)); } catch (e) { throw new Error('データの形がちがうよ'); }
+    if (!out || out.app !== 'tengel') throw new Error('データの形がちがうよ');
+    return out;
+  }
+  if (window.__TENGEL_TEST_HOOKS) window.__unscramble = unscramble;   // テスト用（ふだんは 出さない）
   function checkRemote() {
     var url = window.__DATA_URL || '';
     if (!url) return Promise.reject(new Error('この版では、データの更新は使えないよ'));
@@ -445,6 +468,7 @@ if (window.__NATIVE) (function () {
       })
       .then(function (doc) {
         if (doc === null) return { none: true, newer: false, cur: curDataVer() };
+        doc = unscramble(doc);
         var bad = remoteBad(doc); if (bad) throw new Error(bad);
         var ds = doc.rows.map(function (r) { return r.date; }).sort(), cur = curDataVer();
         var m = mother1 || {};

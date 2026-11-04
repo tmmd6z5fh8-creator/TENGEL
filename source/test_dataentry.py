@@ -39,6 +39,9 @@ os.makedirs(os.path.join(SRV, 'remote'))
 shutil.copy(os.path.join(TMP, 'w290', 'data', 'mother_app.json'), os.path.join(SRV, 'remote', 'mother_app.json'))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
+# 第4.124版：データの更新の ファイルは スクランブル（そのままでは レースの 中身が 読めない・アプリが 鍵で 戻す）
+_rm = open(os.path.join(SRV, 'remote', 'mother_app.json'), encoding='utf8').read(); _rj = json.loads(_rm)
+_scr_ok = _rj.get('sc') == 1 and '"rows"' not in _rm and '2026-07-20' not in _rm and re.fullmatch(r'[0-9a-f]+', _rj.get('data', '')) is not None
 
 
 def check(c, label):
@@ -236,6 +239,7 @@ try:
 
         # ================= C. App Store版（にせもののアプリ） =================
         print('[C] App Store版：App Storeの新しい版・データの更新')
+        check(_scr_ok, f'第4.124版：データの更新の ファイルは スクランブル（中身の 文字が 見えない・16進・{len(_rm)}文字）')
         FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '3', device: 'phone' };
 window.__bridge = [];
@@ -337,6 +341,74 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         pg.reload(); pg.wait_for_timeout(1500)
         meta = pg.evaluate("TengelLocal.slots.doc(1)")
         check(count(pg, 1) == 290 and meta['dataVer'] == '2026-10-25' and count(pg, 2) == 1 and row(pg, 2, '20261014-m2-08'), f'中のデータのほうが新しいアプリなら入れ替わる・マザーデータ①の レースは そのまま（{count(pg, 1)}走・{meta.get("dataVer")}）')
+        # 第4.124版：まとめて入力（カード）：1レースずつ カードで 下書きに ためて「まとめて入れる」（まさちゃん「2.かな！ iPhoneでやりやすい方にして！」）
+        # App Store版の テンキー（numpad.js）が 開くと 下の ボタンを ふさぐ ことが ある → とじてから 押す
+        calm = lambda: pg.evaluate("() => { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.TengelNumpad && TengelNumpad.hide(); } catch (e) {} }")
+
+        def press(sel):
+            calm(); pg.wait_for_timeout(80); pg.locator(sel).click()
+        pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(600)
+        pg.locator('#slotList .slotrow[data-n="2"] [data-sact=edit]').click(); pg.wait_for_timeout(400)
+        check(pg.locator('#mdBulkBtn').count() == 1 and pg.locator('#mdBulkBtn').inner_text() == 'まとめて入力', '編集の 中に「まとめて入力」')
+        press('#mdBulkBtn'); pg.wait_for_timeout(500)
+        bk = pg.locator('#bkSheet')
+        check(bk.is_visible() and pg.locator('#bkTitle').inner_text() == '「マザーデータ①」にまとめて入力' and '1レース目' in bk.locator('.bkcard h4').inner_text()
+              and pg.locator('#bkFoot [data-bk=apply]').is_disabled(), 'まとめて入力の 窓（1レース目・下書きが ない 間は「まとめて入れる」は 押せない）')
+
+        def card(d=None, r=None, baba=None, dist='', n='', tan1='', s1='', res=''):
+            fm = pg.locator('#bkBody .mdform')
+            if d: fm.locator('[data-k=date]').fill(d)
+            if r: fm.locator('[data-k=r]').select_option(str(r))
+            if baba: fm.locator(f'[data-k=baba] button[data-v="{baba}"]').click()
+            for k, v in (('dist', dist), ('n', n), ('tan1', tan1), ('s1', s1)):
+                if v: fm.locator(f'[data-k={k}]').fill(v)
+            if res: fm.locator('[data-k=res]').fill(res)
+            fm.locator('[data-k=res]').dispatch_event('input'); pg.wait_for_timeout(150)
+        bkrows = lambda: pg.evaluate("[...document.querySelectorAll('#bkBody .bkrow')].length")
+        card('2026-09-21', 5, '良', '1400', '12', '2.2', '19.5', '1.3.2')
+        pv = pg.locator('#bkBody [data-k=pv]').inner_text()
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(400)
+        fm = pg.locator('#bkBody .mdform')
+        check(bkrows() == 1 and '下書きに足したよ（1走）' in toast(pg) and '2レース目' in pg.locator('#bkBody .bkcard h4').inner_text()
+              and fm.locator('[data-k=date]').input_value() == '2026-09-21' and fm.locator('[data-k=r]').input_value() == '6' and fm.locator('[data-k=baba] button[aria-pressed="true"]').inner_text() == '良'
+              and fm.locator('[data-k=dist]').input_value() == '' and '→' in pv, f'足して 次へ：下書き 1走・次の カードは 日付・馬場・R（＋1）を 引きつぐ・距離は 空（{pv}）')
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(300)
+        check(bkrows() == 1 and '入れてね' in toast(pg), '足りない ときは「入れてね：○○」で 下書きに 入らない')
+        card(dist='1800', n='14', tan1='3.4', s1='88.0', res='7.1.2')
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(400)
+        check(bkrows() == 2 and pg.locator('#bkFoot [data-bk=apply]').inner_text() == 'まとめて入れる（2走）', '2走目も 足す →「まとめて入れる（2走）」')
+        press('#bkBody .bkrow[data-i="0"] [data-bk=edit]'); pg.wait_for_timeout(300)
+        check('1行目を直す' in pg.locator('#bkBody .bkcard h4').inner_text() and pg.locator('#bkBody .mdform [data-k=dist]').input_value() == '1400', '「直す」で その行が カードに 出る')
+        pg.locator('#bkBody .mdform [data-k=dist]').fill('1600'); press('#bkBody [data-bk=upd]'); pg.wait_for_timeout(300)
+        drafts = pg.evaluate("JSON.parse(localStorage.getItem('tengel.bulk') || '{}')['2'] || []")
+        check(len(drafts) == 2 and drafts[0]['dist'] == 1600 and drafts[1]['r'] == 6 and drafts[1]['p1'] == 7, f'直すと 下書きの その行が かわる（{[(d["r"], d["dist"]) for d in drafts]}）')
+        # 同じ 日付・R → 入れ替える？（もう一度）
+        card(r=6, dist='1800', n='14', tan1='3.5', s1='90.0', res='7.1.2')
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(200)
+        t1 = pg.locator('#bkBody [data-bk=add]').inner_text()
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(300)
+        drafts = pg.evaluate("JSON.parse(localStorage.getItem('tengel.bulk') || '{}')['2'] || []")
+        check('もうあるよ' in t1 and len(drafts) == 2 and [d for d in drafts if d['r'] == 6][0]['tan1'] == 3.5, f'下書きに 同じ 日付・R が ある ときは 確かめて 入れ替え（{t1}）')
+        # とじても 下書きは 残る
+        press('#bkSheet .mdx'); pg.wait_for_timeout(300)
+        check(pg.locator('#bkSheet').count() == 0 and pg.locator('#mdBulkBtn').inner_text() == 'まとめて入力（下書き 2走）', 'とじても 下書きは 残る（ボタンに「下書き 2走」）')
+        press('#mdBulkBtn'); pg.wait_for_timeout(400)
+        check(bkrows() == 2 and '3レース目' in pg.locator('#bkBody .bkcard h4').inner_text(), 'もう一度 開くと 下書きの つづき（3レース目）')
+        press('#bkFoot [data-bk=apply]'); pg.wait_for_timeout(900)
+        t = toast(pg); r5 = row(pg, 2, '20260921-m2-05'); r6 = row(pg, 2, '20260921-m2-06')
+        check(count(pg, 2) == 3 and r5 and r5['src'] == 'input' and r5['dist'] == 1600 and [r5['p1'], r5['p2'], r5['p3']] == [1, 3, 2] and r6 and r6['tan1'] == 3.5 and pg.locator('#bkSheet').count() == 0
+              and '「マザーデータ①」に 2走 入れたよ' in t and not pg.evaluate("(JSON.parse(localStorage.getItem('tengel.bulk') || '{}'))['2']"),
+              f'「まとめて入れる」→ マザーデータ①に 2走（自分で入力）・下書きは 空に（{count(pg, 2)}走・{t}）')
+        # もう 入って いる レース → 上書きの 確かめ
+        press('#mdBulkBtn'); pg.wait_for_timeout(400)
+        card('2026-09-21', 5, '重', '1600', '12', '2.2', '19.5', '1.3.2')
+        press('#bkBody [data-bk=add]'); pg.wait_for_timeout(300)
+        press('#bkFoot [data-bk=apply]'); pg.wait_for_timeout(300)
+        t2 = pg.locator('#bkFoot [data-bk=apply]').inner_text()
+        press('#bkFoot [data-bk=apply]'); pg.wait_for_timeout(900)
+        check('上書き' in t2 and count(pg, 2) == 3 and row(pg, 2, '20260921-m2-05')['baba'] == '重', f'もう 入って いる レースは「上書き」を 確かめてから（{t2}）')
+        txt = pg.evaluate('document.body.innerText')
+        check(not [w for w in AT.FORBIDDEN if w in txt], 'まとめて入力の あとも 出さない言葉が ない')
         b.close()
 finally:
     srv.terminate()

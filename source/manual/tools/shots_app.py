@@ -286,6 +286,31 @@ try:
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
         nf.locator('[data-md=cancel]').click(); pg.wait_for_timeout(200)
         pg.locator('#mdSheet .mdx').click(); pg.wait_for_timeout(300)
+        # ---- まとめて入力（カード・第4.124版）：2レース 下書きに 足して、3レース目を 入れて いる ところ ----
+        pg.evaluate("() => { try { localStorage.removeItem('tengel.bulk'); } catch (e) {} }")
+        calm = lambda: pg.evaluate("() => { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.TengelNumpad && TengelNumpad.hide(); } catch (e) {} }")
+        pg.locator('#mdBulkBtn').click(); pg.wait_for_timeout(500)
+
+        def bkcard(r, dist, n, tan1, s1, res, first=False):
+            fm = pg.locator('#bkBody .mdform')
+            if first:
+                fm.locator('[data-k=date]').fill('2026-10-18'); fm.locator('[data-k=baba] button[data-v="良"]').click()
+            fm.locator('[data-k=r]').select_option(str(r))
+            for k, v in (('dist', dist), ('n', n), ('tan1', tan1), ('s1', s1), ('res', res)): fm.locator(f'[data-k={k}]').fill(v)
+            fm.locator('[data-k=res]').dispatch_event('input'); pg.wait_for_timeout(150); calm()
+        bkcard(1, '1200', '11', '1.9', '15.2', '1.3.2', True); pg.locator('#bkBody [data-bk=add]').click(); pg.wait_for_timeout(400)
+        bkcard(2, '1400', '12', '2.6', '33.8', '2.1.5'); pg.locator('#bkBody [data-bk=add]').click(); pg.wait_for_timeout(400)
+        bkcard(3, '1600', '14', '3.1', '61.0', '1.7.2'); calm(); pg.wait_for_timeout(300)
+        pg.set_viewport_size({'width': 390, 'height': 1600}); pg.wait_for_timeout(400); calm()
+        hh = pg.evaluate("() => { const q = s => document.querySelector(s), b = q('#bkBody'); const c = b.lastElementChild.getBoundingClientRect().bottom - b.getBoundingClientRect().top + 18; return Math.ceil(q('#bkSheet .mdhead').offsetHeight + c + q('#bkFoot').offsetHeight + 12); }")
+        pg.set_viewport_size({'width': 390, 'height': min(1600, hh)}); pg.wait_for_timeout(400); calm()
+        info = pg.evaluate(BOX_JS, ['#bkSheet .mdbox', ['.bkcard h4', '.bkcard [data-k=baba]', '.bkcard [data-k=res]', '[data-bk=add]', '.bklist', '#bkFoot [data-bk=apply]']])
+        bb = pg.locator('#bkSheet .mdbox').bounding_box()
+        pg.screenshot(path=f'{RAW}/md_bulk.png', clip={'x': bb['x'], 'y': bb['y'], 'width': bb['width'], 'height': bb['height']}, animations='disabled')
+        META['md_bulk'] = info; print('  📸 md_bulk', info['W'], 'x', info['H'])
+        pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
+        pg.locator('#bkSheet .mdx').click(); pg.wait_for_timeout(300)
+        pg.evaluate("() => { try { localStorage.removeItem('tengel.bulk'); } catch (e) {} }")
         ctx.close()
         # ---- アップデート：App Storeに 新しい版（1.1）・新しい データが ある とき ----
         ctx2 = new_ctx(b)

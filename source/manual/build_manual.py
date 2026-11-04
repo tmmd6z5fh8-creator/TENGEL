@@ -115,6 +115,8 @@ SHOTS = {
     'md_tools': ('マザーデータの編集の中の、レースのデータのボタン', '設定 → マザーデータ → 編集', [('#mdOpenBtn',), ('#mdAddBtn',), ('#mdExpBtn',)]),
     'md_list': ('マザーデータのレースの一覧', 'レースの一覧（画面は例）', [('#mdYM',), ('.mdrow', .3)]),
     'md_form': ('レースを1つ入れる欄', '手で1つ入れる（画面は例・架空のレース）', [('[data-k=date]',), ('[data-k=dist]',), ('[data-k=res]',), ('[data-k=umatanPay]',), ('[data-k=cnt]',), ('[data-k=pv]',)]),
+    # 第4.124版（App Store版だけ）：まとめて入力（カード）
+    'md_bulk': ('まとめて入力のカードと下書き', 'まとめて入力（画面は例・架空のレース）', [('.bkcard h4',), ('.bkcard [data-k=baba]',), ('.bkcard [data-k=res]',), ('[data-bk=add]',), ('.bklist', .2), ('#bkFoot [data-bk=apply]',)]),
     'md_export': ('書き出す欄', '書き出す（CSV・コピー）', []),
     'md_merge': ('ファイルを読んだあとの「足す」と「入れ替える」', 'Excel・CSVを選んだところ（画面は例）', []),
     # App Store版だけ：アップデート（2026.10.13-1〜）
@@ -123,7 +125,7 @@ SHOTS = {
     'upd_data': ('設定のデータの更新', '設定 → データの更新（画面は例）', [('#sdCur',), ('#sdCheck',), ('#sdApply',)]),
 }
 # App Store版だけの写真（Web版では使わない）
-APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data', 'ocr_done'}
+APP_ONLY_SHOTS = {'upd_bars', 'upd_app', 'upd_data', 'ocr_done', 'md_bulk'}
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">')
