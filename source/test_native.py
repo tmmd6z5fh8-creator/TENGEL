@@ -1393,20 +1393,23 @@ try:
           on: [...c.querySelectorAll('.bct.on')].map(e => e.dataset.bc), prog: (c.querySelector('.bcprog') || {}).innerText || '', news: c.querySelectorAll('.bcnew').length,
           slots: [...c.querySelectorAll('.bcslot')].map(e => e.dataset.slot + ':' + e.querySelector('.bcsn').innerText), picks: [...c.querySelectorAll('[data-bcact=use]')].map(e => e.dataset.id + ':' + e.dataset.slot + ':' + e.getAttribute('aria-pressed')),
           names: [...c.querySelectorAll('.bct .bcn')].map(x => x.innerText.replace(/^\\d+/, '').replace('NEW', '').trim()), pics: c.querySelectorAll('.bcmini.pic').length, bad: c.querySelectorAll('.bcmini.pic.bad').length,
-          thumbs: [...c.querySelectorAll('.bcmini.pic img')].filter(i => i.complete && i.naturalWidth > 0).length }; }"""
+          thumbs: [...c.querySelectorAll('.bcmini.pic img')].filter(i => i.complete && i.naturalWidth > 0).length,
+          secs: [...c.querySelectorAll('.bcsec')].map(x => x.dataset.sec + ':' + x.querySelectorAll('.bct').length + ':' + ((x.querySelector('.bck') || {}).innerText || '')) }; }"""
         BSEL = "(() => { const i = TengelWallet.board.info(); return [i.selHit, i.selMiss, i.n, TengelWallet.board.active('hit'), TengelWallet.board.active('miss')]; })()"
         SEE6 = "() => { const hb = document.querySelector('#fxOv .hb'), c = TengelFx.current(); return hb && c && { bcx: hb.dataset.bcx || '', kind: c.kind, phase: c.phase }; }"
         PIC_NAMES6 = ['結果ボードを廻る', '馬達の祝杯', '馬レース結果ボード', '自撮り結果ボード', 'スタンプ結果ボード', 'トロフィー結果ボード', '馬が運ぶ結果ボード', '花束結果ボード', '出世馬結果ボード',
                       '二人でしょんぼり', '次…！', '隠蔽作戦', 'ボード結果待ち', '書き換え参戦']
         p6.wait_for_timeout(800)
         bi = p6.evaluate(BCI)
-        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 15 and bi['locks'] == 15 and bi['prep'] == 0 and bi['buy'] == '¥1,500で買う' and bi['bun'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 15 and bi['fit'] == 1
-              and bi['names'] == PIC_NAMES6 + ['ボードを持つ馬'] and not bi['slots'] and not bi['picks'] and bi['pics'] == 14 and ((bi['thumbs'] == 13 and bi['bad'] == 1) if BCP_ON else bi['bad'] == 14),
+        # 第4.125版：一覧は「的中ボード（10種：1〜9・15）」と「ハズレボード（6種：10〜14・15）」に 分ける（15「ボードを持つ馬」は どちらにも）
+        check(bool(bi) and bi['after'] == 'setKisekae' and bi['tiles'] == 16 and bi['locks'] == 16 and bi['prep'] == 0 and bi['buy'] == '¥1,500で買う' and bi['bun'] == '¥2,200で買う' and bi['restore'] and bi['see'] == 16 and bi['fit'] == 2
+              and bi['secs'] == ['hit:10:的中ボード（10種）', 'miss:6:ハズレボード（6種）']
+              and bi['names'] == PIC_NAMES6[:9] + ['ボードを持つ馬'] + PIC_NAMES6[9:] + ['ボードを持つ馬'] and not bi['slots'] and not bi['picks'] and bi['pics'] == 14 and ((bi['thumbs'] == 13 and bi['bad'] == 1) if BCP_ON else bi['bad'] == 14),
               f'第4.121版：設定の「結果ボードカスタム」は 着せ替えの 下・15こ（1〜14 は まさちゃんの 絵の ボード・15「ボードを持つ馬」・🔒）・¥1,500で買う（第4.114版）・お得パック ¥2,200で買う・購入を復元・▶ 見る・'
               f'絵の ボードの 見本（たて 3:4 の 絵・読めない とき 名前だけ）（{bi and {k: bi[k] for k in ("after", "tiles", "locks", "prep", "buy", "see", "fit", "names", "pics", "bad", "thumbs")}}）')
         p6.locator('#setBoard .bct[data-bc=ring] .bcn').click(); p6.wait_for_timeout(300)
         t_prep = p6.locator('#toast').inner_text()
-        p6.locator('#setBoard .bct[data-bc=carry] .bcn').click(); p6.wait_for_timeout(300)
+        p6.locator('#setBoard .bct[data-bc=carry][data-sec=miss] .bcn').click(); p6.wait_for_timeout(300)
         t_carry = p6.locator('#toast').inner_text()
         check('買うと' in t_prep and '「結果ボードを廻る」は 6レース' in t_prep and '買うと' in t_carry and '90レース' in t_carry, f'買う 前に タイルを 押す → 案内（「結果ボードを廻る」は 6レース・「ボードを持つ馬」は 90レース）（{t_prep}・{t_carry}）')
         # 第4.121版：絵の ボードの「▶ 見る」：押す たびに つぎの 段（的中＝1〜4連勝・出世馬＝1・2・3・4・8・16・24連勝・ハズレ＝1〜4回目）。絵が 読める（.bcpic）・読めない（pen）→ いつもの ボード
@@ -1426,13 +1429,17 @@ try:
             exp_r, exp_c, exp_m = [[(x[:2] + ['', x[3], False]) if isinstance(x, list) else x for x in e] for e in (exp_r, exp_c, exp_m)]
         check(sr6 == exp_r and sc6 == exp_c and sm6 == exp_m and sp6 == [['▶ 見る（1回目）', 'pen', '', 'miss', False], '▶ 見る（2回目）'],
               f'第4.121版：絵の ボードの「▶ 見る」は 押す たびに つぎの 段（1〜4連勝〜・出世馬 1〜24連勝〜・ハズレ 1〜4回目〜）・絵が 読めない とき（pen）は いつもの ボード（{sr6}・{sc6[-2:]}・{sm6[-2:]}・{sp6}）')
-        p6.locator('#setBoard [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
+        # 第4.125版：15「ボードを持つ馬」は 的中ボード・ハズレボードの 両方に 出る → その 一覧の 結果で ためす（見本の 絵も その 結果）
+        p6.locator('#setBoard .bct[data-sec=hit] [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
         sv1 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
-        lab = p6.locator('#setBoard [data-bcact=see][data-id=carry]').inner_text()
-        p6.locator('#setBoard [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
+        lab = p6.locator('#setBoard .bct[data-sec=hit] [data-bcact=see][data-id=carry]').inner_text()
+        p6.locator('#setBoard .bct[data-sec=miss] [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
         sv2 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
-        check(sv1 == {'bcx': 'carry', 'kind': 'hit', 'phase': 'reveal'} and sv2 == {'bcx': 'carry', 'kind': 'miss', 'phase': 'reveal'} and lab == '▶ 見る（ハズレ）',
-              f'買う 前でも「▶ 見る」で ためせる（PUSH なしで すぐ 結果の ボード）・的中にも ハズレにも 使える ものは 押す たびに 的中 → ハズレ（{sv1}・{sv2}・{lab}）')
+        p6.locator('#setBoard .bct[data-sec=miss] [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
+        sv3 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
+        thh = p6.evaluate("[...document.querySelectorAll('#setBoard .bct[data-bc=carry] .bcfake .fh')].map(e => e.innerText)")
+        check(sv1 == {'bcx': 'carry', 'kind': 'hit', 'phase': 'reveal'} and sv2 == {'bcx': 'carry', 'kind': 'miss', 'phase': 'reveal'} and sv3 == sv2 and lab == '▶ 見る' and thh == ['的中！', 'ハズレ'],
+              f'買う 前でも「▶ 見る」で ためせる（PUSH なしで すぐ 結果の ボード）・15 は 的中ボードの 所では 的中・ハズレボードの 所では ハズレ（見本の 絵も）（{sv1}・{sv2}・{lab}・{thh}）')
         # 買う（App内課金の かわり）→ 台帳に tx-7001（0P）→ 終わらせる（finish）
         p6.evaluate("window.__iap.buy['jp.tengel.app.boardcustom'] = () => ({ ok: true, state: 'ok', tx: { id: '7001', originalId: 'o7001', product: 'jp.tengel.app.boardcustom', kind: 'unlock', date: new Date().toISOString(), revoked: false } }); window.__bridge = []; 0")
         p6.locator('#setBoard [data-bcact=buy]').click(); p6.wait_for_timeout(900)
@@ -1456,7 +1463,7 @@ try:
         check(h0 and h0['bcx'] == '' and h0['parts'] == 0 and not h0['inHb'], f'まだ 選んで いない → 結果の ボードは いつもの 形（{h0}）')
         rr = p6.evaluate(RD, 6); p6.wait_for_timeout(500)
         bi = p6.evaluate(BCI)
-        check(rr['charged'] and p6.evaluate(BSEL) == ['ring', '', 1, 'ring', ''] and p6.locator('#bcNote').count() == 1 and '結果ボードを廻る' in p6.locator('#bcNote').inner_text() and bi['locks'] == 14 and '解放 1/15' in bi['prog'] and bi['on'] == ['ring']
+        check(rr['charged'] and p6.evaluate(BSEL) == ['ring', '', 1, 'ring', ''] and p6.locator('#bcNote').count() == 1 and '結果ボードを廻る' in p6.locator('#bcNote').inner_text() and bi['locks'] == 15 and '解放 1/15' in bi['prog'] and bi['on'] == ['ring']
               and bi['slots'] == ['hit:結果ボードを廻る', 'miss:なし（いつもの ボード）'] and bi['picks'] == ['ring:hit:true'],
               f'第4.121版：6レース目 → 1「結果ボードを廻る」が 解放：お知らせ・まだ 選んで いない 的中の とき に そのまま 使う（ハズレの とき には つかない）（{bi["prog"]!r}・{bi["slots"]}・{bi["picks"]}）')
         rr = p6.evaluate(RD, 6)
@@ -1465,10 +1472,10 @@ try:
         p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board.reads = 84; w.events.push({ id: 'gift-test6', kind: 'gift', bucket: 'free', amount: 20000, at: new Date().toISOString(), what: 'テスト' }); await TengelLocal.putMeta(w); })()""")
         reopen6()
         p6.click('.tabbar button[data-tab=set]'); p6.wait_for_timeout(500)
-        p6.locator('#setBoard .bct[data-bc=carry] .bcn').click(); p6.wait_for_timeout(300)
+        p6.locator('#setBoard .bct[data-bc=carry][data-sec=hit] .bcn').click(); p6.wait_for_timeout(300)
         bi = p6.evaluate(BCI)
         pk14 = ['ring:hit:true'] + [f'{x}:hit:false' for x in ('toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb')] + [f'{x}:miss:false' for x in ('rain', 'next', 'cover', 'wait', 'pen')]
-        check(p6.evaluate(BSEL) == ['ring', '', 14, 'ring', ''] and 'あと 6レース' in p6.locator('#toast').inner_text() and bi['locks'] == 1 and 'つぎの「ボードを持つ馬」まで あと 6レース' in bi['prog'] and bi['picks'] == pk14,
+        check(p6.evaluate(BSEL) == ['ring', '', 14, 'ring', ''] and 'あと 6レース' in p6.locator('#toast').inner_text() and bi['locks'] == 2 and 'つぎの「ボードを持つ馬」まで あと 6レース' in bi['prog'] and bi['picks'] == pk14,
               f'84レース → 14こ 解放（1〜9 は 的中の ボタン・10〜14 は ハズレの ボタン）・15「ボードを持つ馬」は あと 6レース（{p6.locator("#toast").inner_text()}・{bi["prog"]!r}・{bi["picks"]}）')
         for r in range(7, 12): p6.evaluate(RD, r)
         p6.wait_for_timeout(200)
@@ -1476,7 +1483,7 @@ try:
         p6.evaluate(RD, 12); p6.wait_for_timeout(600)
         bi = p6.evaluate(BCI)
         check(p6.evaluate(BSEL) == ['ring', 'carry', 15, 'ring', 'carry'] and p6.locator('#bcNote').count() == 1 and 'ボードを持つ馬' in p6.locator('#bcNote').inner_text() and bi['on'] == ['ring', 'carry'] and bi['news'] >= 1
-              and bi['slots'] == ['hit:結果ボードを廻る', 'miss:ボードを持つ馬'] and bi['picks'] == pk14 + ['carry:hit:false', 'carry:miss:true'] and '解放 15/15' in bi['prog'] and 'ぜんぶ 解放したよ' in bi['prog'],
+              and bi['slots'] == ['hit:結果ボードを廻る', 'miss:ボードを持つ馬'] and bi['picks'] == pk14[:9] + ['carry:hit:false'] + pk14[9:] + ['carry:miss:true'] and '解放 15/15' in bi['prog'] and 'ぜんぶ 解放したよ' in bi['prog'],
               f'90レース目 → 15「ボードを持つ馬」が 解放（画面の 上に お知らせ・まだ 選んで いない ハズレの とき に そのまま 使う・的中の とき は「結果ボードを廻る」の まま）（{bi["slots"]}・{bi["picks"][-2:]}）')
         p6.evaluate("TengelWallet.board.select('carry', 'hit')"); p6.wait_for_timeout(300)
         check(p6.evaluate(BSEL) == ['carry', 'carry', 15, 'carry', 'carry'], '的中の とき にも「ボードを持つ馬」を 選ぶ（ここから 下は 前の 版と 同じ ためし）')

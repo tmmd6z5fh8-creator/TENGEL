@@ -438,6 +438,9 @@
     '#setBoard .bcprog .bar{height:8px;border-radius:4px;background:var(--surface);overflow:hidden;margin:6px 0 4px;border:1px solid var(--line)}#setBoard .bcprog .bar i{display:block;height:100%;background:linear-gradient(90deg,#FFC93C,#F28C1E)}',
     // 的中の とき・ハズレの とき（いま 使って いる もの・▶ 見る・なし）
     '#setBoard .bcslots{display:grid;gap:8px;margin-top:10px}',
+    // 第4.125版：的中ボード・ハズレボードの かたまり（見出し＝いま つけて いる もの・▶ 見る・つけない）
+    '#setBoard .bcsec{margin-top:14px;padding-top:12px;border-top:2px dashed var(--line)}#setBoard .bcsec .bcgrid{margin-top:8px}',
+    '#setBoard .bcsech{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#setBoard .bcsech .bcsc{font-size:12.5px;color:var(--muted)}#setBoard .bcsec .bck{font-size:13px;line-height:24px;padding:0 11px}',
     '#setBoard .bcslot{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--surface)}',
     '#setBoard .bcsl1{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}',
     '#setBoard .bck{display:inline-block;padding:0 9px;border-radius:999px;font:700 12px/22px "BIZ UDPGothic",sans-serif;color:#FFFFFF;white-space:nowrap;background:#E2323A}#setBoard .bck.miss{background:#4A63B8}',
@@ -480,13 +483,13 @@
   const kindOf = it => (it.when === 'miss' ? 'miss' : it.when === 'big' ? 'big' : 'hit');
   const both = it => fits(it, 'hit') && fits(it, 'miss');
   const seeS = {};                      // 第4.121版：絵の ボードの「▶ 見る」は 押す たびに つぎの 段（1連勝 → 2連勝 → … → 1連勝）
-  const seeLabel = it => (isPic(it.id) ? `▶ 見る（${picStageName(it.id, seeS[it.id] || 0)}）` : both(it) ? `▶ 見る（${seeK[it.id] === 'miss' ? KIND.miss : KIND.hit}）` : '▶ 見る');
+  const seeLabel = (it, k) => (isPic(it.id) ? `▶ 見る（${picStageName(it.id, seeS[it.id] || 0)}）` : both(it) && !k ? `▶ 見る（${seeK[it.id] === 'miss' ? KIND.miss : KIND.hit}）` : '▶ 見る');   // k＝的中ボード／ハズレボードの 一覧（第4.125版）
   // 小さな 見本（動かさない）：ボードの かわりの 四角＋その 飾り。じゅんび中は うすい ボードに「じゅんび中」
   function fakeBoard(miss, head, tf) { return `<div class="rb bcfake${miss ? ' miss' : ''}" style="${tf || ''}"><div class="fh">${head}</div><div class="fr"></div><div class="fr"></div></div>`; }
-  function thumbHtml(it) {
+  function thumbHtml(it, sk) {   // sk：的中ボード／ハズレボードの 一覧（第4.125版：どちらにも 出る 飾りは その 結果の 見本）
     if (it.ready && isPic(it.id)) return `<div class="bcmini pic" aria-hidden="true"><img class="bcpth" src="${esc(String(PIC.thumb || '').replace('{}', it.id))}" alt="" decoding="async" draggable="false"><div class="bcpno">${esc(it.name)}</div></div>`;
     if (!it.ready || !B[it.id]) return `<div class="bcmini prep" aria-hidden="true"><div class="bcmi"><div class="hb bcst">${fakeBoard(false, '')}</div></div><span class="bcprep">じゅんび中</span></div>`;
-    const k = kindOf(it), miss = k === 'miss', H = 170;
+    const k = sk && it.when === 'all' ? sk : kindOf(it), miss = k === 'miss', H = 170;
     const o = { H, W: 350, sp: 120, st: true, miss, big: k === 'big', kind: k, dark: false, title: { l: 112, t: 14, w: 126, h: 40 }, redHd: false, streak: 0, u: 0 };
     let r = {};
     try { r = B[it.id](o) || {}; } catch (e) { r = {}; }
@@ -515,7 +518,7 @@
     const bundle = w && w.bundle && w.bundle.offer() ? { price: w.bundle.price() } : null;   // 第4.114版：お得パック（単品を どちらも 持って いない とき）
     const seen = seenSet(), last = PT.BOARD_NEED[PT.BOARD_NEED.length - 1], every = PT.BOARD.steps.length === 1 ? PT.BOARD.steps[0][1] : 0;
     const sel = { hit: i.selHit || '', miss: i.selMiss || '' };
-    let h = '<p class="hint" style="margin:0 0 8px">結果のボード（的中・ハズレの 結果）を、絵の ボードや 馬の 飾りに かえられるよ。<b>的中のとき</b>と <b>ハズレのとき</b>で、べつべつに 1つずつ 選べるよ。<b>どの 壁紙でも 使える</b>よ。</p>';
+    let h = '<p class="hint" style="margin:0 0 8px">結果のボードを、絵の ボードや 馬の 飾りに かえられるよ。<b>的中ボード</b>と <b>ハズレボード</b>から、それぞれ <b>1つずつ</b> つけられるよ（<b>つけない</b>＝いつもの ボード）。<b>どの 壁紙でも 使える</b>よ。</p>';
     if (!i.owned) {
       h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
       h += `<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}ぜんぶで ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>`;
@@ -527,33 +530,35 @@
         : `つぎの 解放まで あと <b>${nx.left}</b>レース${nr ? `（「${esc(nr.item.name)}」まで あと ${nr.left}レース）` : ''}`;
       h += `<div class="bcprog"><b>解放 ${i.n}/${ITEMS.length}</b>　<span class="muted" style="font-size:12.5px">買ってから 読み込んだ レース：${i.reads}</span><div class="bar"><i style="width:${pct}%"></i></div>`
         + `<span style="font-size:12.5px">${nxt}</span></div>`;
-      // 的中の とき・ハズレの とき
-      h += '<div class="bcslots">' + ['hit', 'miss'].map(k => {
-        const it = BY[sel[k]], has = !!(it && it.ready);
-        return `<div class="bcslot" data-slot="${k}"><div class="bcsl1"><span class="bck ${k}">${KIND[k]}のとき</span><span class="bcsn${has ? '' : ' none'}">${has ? esc(it.name) : 'なし（いつもの ボード）'}</span></div>`
-          + `<button class="btn ghost" type="button" data-bcact="seeslot" data-slot="${k}">▶ 見る</button>`
-          + `<button class="btn ghost" type="button" data-bcact="none" data-slot="${k}"${has ? '' : ' disabled'}>なし</button></div>`;
-      }).join('') + '</div>';
     }
-    h += '<div class="bcgrid">';
-    ITEMS.forEach(it => {
-      const ok = it.ready && !!B[it.id], open = i.owned && it.no <= i.n, isNew = open && ok && !seen.has(it.id);
-      const left = i.owned ? Math.max(0, it.need - i.reads) : 0;
-      const useH = open && ok && sel.hit === it.id, useM = open && ok && sel.miss === it.id, on = useH || useM;
-      const st = !i.owned ? '🔒 買うと 解放' : !open ? `🔒 あと ${left}レース` : !ok ? '解放ずみ・じゅんび中'
-        : useH && useM ? '的中・ハズレで 使用中' : useH ? '的中で 使用中' : useM ? 'ハズレで 使用中' : '使う ときを 選んでね';
-      const when = it.when === 'miss' ? '（ハズレの とき）' : it.when === 'big' ? '（デカ的中から 上）' : it.when === 'hit' ? '（的中の とき）' : '';
-      let use = '';
-      if (ok && open) use += ['hit', 'miss'].filter(k => fits(it, k)).map(k => { const p = sel[k] === it.id;
-        return `<button class="btn ghost bcpick" type="button" data-bcact="use" data-id="${it.id}" data-slot="${k}" aria-pressed="${p}">${p ? '✓ ' : ''}${KIND[k]}</button>`; }).join('');
-      if (ok) use += `<button class="btn ghost bcsee" type="button" data-bcact="see" data-id="${it.id}">${seeLabel(it)}</button>`;
-      h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" role="group" aria-label="${it.no}. ${esc(it.name)}${on ? '（使用中）' : open ? '' : '（まだ）'}">`
-        + `${open ? '' : '<span class="bclk" aria-hidden="true">🔒</span>'}${thumbHtml(it)}<span class="bcn"><span class="bcno">${it.no}</span>${esc(it.name)}${isNew ? '<span class="bcnew">NEW</span>' : ''}</span>`
-        + `<span class="bcd">${esc(it.desc)}${esc(when && it.desc.indexOf('とき') < 0 ? when : '')}</span>`
-        + `<span class="bcs">${st}</span>${use ? `<div class="bcuse">${use}</div>` : ''}</div>`;
+    // 第4.125版：一覧を「的中ボード」「ハズレボード」の 2つに 分ける（まさちゃん 2026/11/04「結果ボードカスタムは2種類 的中とハズレ それぞれ一つずつ取り付けられる機能追加して！ どちらかをつけないことも可能にして！」）。
+    //   それぞれ 1つ「つける」か「つけない」（いつもの ボード）。15「ボードを持つ馬」は どちらにも 出る。解放は 今までどおり 番号の 順（1〜15）
+    const SEC = { hit: '的中ボード', miss: 'ハズレボード' };
+    const inSec = (it, k) => (k === 'miss' ? it.when === 'miss' || it.when === 'all' : it.when !== 'miss');
+    ['hit', 'miss'].forEach(k => {
+      const list = ITEMS.filter(it => inSec(it, k)), cur = BY[sel[k]], has = !!(i.owned && cur && cur.ready && inSec(cur, k));
+      h += `<section class="bcsec" data-sec="${k}" aria-label="${SEC[k]}">`;
+      h += i.owned
+        ? `<div class="bcslot" data-slot="${k}"><div class="bcsl1"><span class="bck ${k}">${SEC[k]}（${list.length}種）</span><span class="bcsn${has ? '' : ' none'}">${has ? esc(cur.name) : 'なし（いつもの ボード）'}</span></div>`
+          + `<button class="btn ghost" type="button" data-bcact="seeslot" data-slot="${k}">▶ 見る</button>`
+          + `<button class="btn ghost" type="button" data-bcact="none" data-slot="${k}"${has ? '' : ' disabled'}>つけない</button></div>`
+        : `<div class="bcsech"><span class="bck ${k}">${SEC[k]}（${list.length}種）</span><span class="bcsc">${KIND[k]}の ときの 結果の ボード</span></div>`;
+      h += '<div class="bcgrid">';
+      list.forEach(it => {
+        const ok = it.ready && !!B[it.id], open = i.owned && it.no <= i.n, isNew = open && ok && !seen.has(it.id);
+        const left = i.owned ? Math.max(0, it.need - i.reads) : 0, on = open && ok && sel[k] === it.id;
+        const st = !i.owned ? '🔒 買うと 解放' : !open ? `🔒 あと ${left}レース` : !ok ? '解放ずみ・じゅんび中' : on ? `${KIND[k]}で つけている` : 'つけられるよ';
+        let use = '';
+        if (ok && open) use += `<button class="btn ghost bcpick" type="button" data-bcact="use" data-id="${it.id}" data-slot="${k}" aria-pressed="${on}">${on ? '✓ つけている' : 'つける'}</button>`;
+        if (ok) use += `<button class="btn ghost bcsee" type="button" data-bcact="see" data-id="${it.id}"${both(it) && !isPic(it.id) ? ` data-kind="${k}"` : ''}>${seeLabel(it, k)}</button>`;
+        h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" data-sec="${k}" role="group" aria-label="${it.no}. ${esc(it.name)}${on ? '（つけている）' : open ? '' : '（まだ）'}">`
+          + `${open ? '' : '<span class="bclk" aria-hidden="true">🔒</span>'}${thumbHtml(it, k)}<span class="bcn"><span class="bcno">${it.no}</span>${esc(it.name)}${isNew ? '<span class="bcnew">NEW</span>' : ''}</span>`
+          + `<span class="bcd">${esc(it.desc)}</span>`
+          + `<span class="bcs">${st}</span>${use ? `<div class="bcuse">${use}</div>` : ''}</div>`;
+      });
+      h += '</div></section>';
     });
-    h += '</div>';
-    h += '<p class="ptnote" style="margin-top:10px">「的中」「ハズレ」の ボタンで、その 結果の ときに 使う ものを 選ぶよ（もう一度 押すと なし）。「▶ 見る」で、ためしに 結果の ボードを 出すよ（まだ 解放して いない ものも 見られるよ）。<br>'
+    h += '<p class="ptnote" style="margin-top:10px">「的中ボード」「ハズレボード」の 中で「つける」を 押すと、その 結果の ときに 使うよ（それぞれ 1つ。もう一度 押すか「つけない」で いつもの ボード）。「▶ 見る」で、ためしに 結果の ボードを 出すよ（まだ 解放して いない ものも 見られるよ）。<br>'
       + '絵の ボードは、的中は 続けて 当てた 数（連勝）・ハズレは 続けて ハズレた 数で 絵が かわるよ（「▶ 見る」は 押す たびに つぎの 絵）。<br>'
       + (ITEMS.some(x => !x.ready) ? 'じゅんび中の 番号には、アプリの 更新で 新しい 飾りが 入るよ（解放ずみの 番号なら、入ったら すぐ 使えるよ）。<br>' : '')
       + '「視差効果を減らす」か 設定の「演出を控えめにする」が オンなら、飾りは 止まった 形で 出るよ。<br>アプリを 消すと、解放の 進み具合は 0に もどるよ（買った ことは「購入を復元」で もどせるよ）。</p>';
@@ -615,7 +620,7 @@
     if (a) {
       e.stopPropagation();
       const act = a.dataset.bcact, k = a.dataset.slot === 'miss' ? 'miss' : 'hit';
-      if (act === 'see') { see(a.dataset.id); const it = BY[a.dataset.id]; if (it) a.textContent = seeLabel(it); return; }
+      if (act === 'see') { see(a.dataset.id, a.dataset.kind || undefined); const it = BY[a.dataset.id]; if (it) a.textContent = seeLabel(it, a.closest('.bct') ? a.closest('.bct').dataset.sec : ''); return; }
       if (!w || !w.board) return;
       if (act === 'seeslot') { const i = w.board.info(), id = (k === 'miss' ? i.selMiss : i.selHit) || 'none', it = BY[id]; see(id, k === 'miss' ? 'miss' : it ? (kindOf(it) === 'big' ? 'big' : 'hit') : 'hit', (k === 'miss' ? i.mstreak : i.streak) + 1); return; }
       if (act === 'buy') { await w.board.buy(a); paint(); return; }
@@ -637,7 +642,7 @@
     if (!it.ready || !B[it.id]) { toast(`${it.no}番は じゅんび中だよ（アプリの 更新で 新しい 飾りが 入るよ）`, 3600); return; }
     if (!i.owned) { toast(`買うと、読み込んだ レースの 数で 番号の 順に 解放されるよ（「${it.name}」は ${it.need}レース）`, 3600); return; }
     if (it.no > i.n) { toast(`「${it.name}」は あと ${Math.max(0, it.need - i.reads)}レースで 解放（番号の 順に 解放されるよ）`, 3600); return; }
-    toast('「的中」「ハズレ」の ボタンで、使う ときを 選んでね', 3000);
+    toast(`「つける」を 押すと、${t.dataset.sec === 'miss' ? 'ハズレ' : '的中'}の ときに 使うよ`, 3000);
   }
   // 解放の お知らせ（読み込みの あと：画面の 上に 4秒）・設定の タイルの 解放エフェクト
   function note(html) {
