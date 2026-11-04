@@ -87,6 +87,7 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 
 - **ためした 絵**：的中⑤ スタンプ（1連勝・`stamp1`）。馬（ぷるん と 息を する 2.6秒・ゆっくり 3Dで 首を ふる 7秒）と ハンコ（3.2秒に 1回「ポン」と おして ぷるん と もどる・ゆっくり 3Dで かたむく 8秒）。ボード・光・紙ふぶきは 動かない。
   22:53 まさちゃん「もう少し動き弱くしてみて！」→ 大きさを 半分くらいに（息 1.2%・首ふり 4度・ポン 6%・かたむき 3.5度。時間は そのまま）。
+  23:01 まさちゃん「腕とキャラクター一緒に動かしてみて！」→ ハンコを にぎる 馬の 腕が 馬と ハンコに 分かれて いて、ハンコの 左の ひづめは 背景の まま だった。馬・腕・ひづめ・ハンコを 1つの 絵に（`chr/stamp1_group.json`・`kind: group`・`chr/chr_stage_group.json`）して、いっしょに「ポン」と おして ぷるん（3.2秒に 1回・つぶれ 3.8%）・3Dで 向きを かえる（4度・7秒）。
 - **切りぬき**：`chr/seg.py`（アニメの 絵の 切りぬき isnet-anime を onnxruntime で：`python3 chr/seg.py <絵> <x0,y0,x1,y1> <mask.png>`・
   モデル `isnet-anime.onnx`（176MB・リポジトリに 入れない）は `/home/claude/work/models/`。rembg の GitHub の リリースから 落とす）→ `chr/chr_split.py <設定>`（例 `chr/stamp1.json`）。
   - キャラごとの 印（`inner`・`outer`・`from_mask`）から watershed（キャラ どうしの さかいは 絵の ふち線）。ボードの うしろに かくれる 所は `clip`（ボードの 上の ふち）で 切る（ボードの 前の ひづめは `keep`）。

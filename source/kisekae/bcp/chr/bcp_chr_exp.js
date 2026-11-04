@@ -2,7 +2,7 @@
 //   絵を「キャラなしの 背景」と「キャラごとの すき通しの 絵」に 分けて（kisekae/bcp/chr）、キャラの 絵だけ 動かす。ボード・光・紙ふぶきは 動かない
 //   止まって いる ときは 元の 絵と 同じ（キャラの まわりの 光の ふちも キャラと いっしょ）
 //   window.__BCPCHR = { <デザイン>: { bgx: 背景, layers: [{ src, kind, o: [x, y]（動きの まん中・舞台の pt） }] } }
-//   kind：horse（ぷるん と 息を する・ゆっくり 3Dで 首を ふる）・stamp（ときどき「ポン」と おす・ぷるん と もどる）
+//   kind：group（馬・腕・ひづめ・ハンコを 1つに：ポン と おして ぷるん・3Dで 向きを かえる）・horse（ぷるん と 息を する・ゆっくり 3Dで 首を ふる）・stamp（ときどき「ポン」と おす・ぷるん と もどる）
 //   22:53 まさちゃん「もう少し動き弱くしてみて！」→ 大きさを 半分くらいに（息 1.2%・首ふり 4度・ポン 6%・かたむき 3.5度）
 (() => {
   const CH = window.__BCPCHR || {};
@@ -17,11 +17,16 @@
     // ハンコ：ためて（のびる）→「ポン」（つぶれる）→ ぷるん と もどる（3.2秒に 1回）・ゆっくり 3Dで かたむく
     '@keyframes chrPon{0%{transform:scale(1,1)}8%{transform:scale(.985,1.025)}14%{transform:scale(1.035,.94)}22%{transform:scale(.991,1.02)}30%{transform:scale(1.011,.989)}38%{transform:scale(.997,1.005)}46%,100%{transform:scale(1,1)}}',
     '@keyframes chrTilt{0%,100%{transform:perspective(600px) rotateY(0deg)}25%{transform:perspective(600px) rotateY(-3.5deg)}75%{transform:perspective(600px) rotateY(3.5deg)}}',
+    // 馬・腕・ひづめ・ハンコを 1つに（group）：23:01 まさちゃん「腕とキャラクター一緒に動かしてみて！」→ ためて →「ポン」と おして ぷるん（3.2秒に 1回）・ゆっくり 3Dで 向きを かえる（7秒）
+    '@keyframes chrGPon{0%{transform:scale(1,1)}8%{transform:scale(.99,1.016)}14%{transform:scale(1.024,.962)}22%{transform:scale(.994,1.012)}30%{transform:scale(1.007,.993)}38%{transform:scale(.998,1.003)}46%,100%{transform:scale(1,1)}}',
+    '@keyframes chrGTurn{0%,100%{transform:perspective(600px) rotateY(0deg)}25%{transform:perspective(600px) rotateY(4deg)}75%{transform:perspective(600px) rotateY(-4deg)}}',
     '@media (prefers-reduced-motion:no-preference){',
     '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.horse{animation:chrTurn 7s ease-in-out .9s infinite}',
     '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.horse > .chri{animation:chrBreath 2.6s ease-in-out .6s infinite}',
     '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.stamp{animation:chrTilt 8s ease-in-out 1.4s infinite}',
     '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.stamp > .chri{animation:chrPon 3.2s ease-in-out 1.0s infinite}',
+    '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.group{animation:chrGTurn 7s ease-in-out .9s infinite}',
+    '#fxOv .hb.bcpic.bcpon:not(.bcst) .chrw.group > .chri{animation:chrGPon 3.2s ease-in-out .8s infinite}',
     '}'
   ].join('\n');
   const addCss = () => { if (!css.isConnected && (document.head || document.documentElement)) (document.head || document.documentElement).appendChild(css); };
