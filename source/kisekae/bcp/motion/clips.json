@@ -1,0 +1,5 @@
+[{"name": "A_purun", "mode": "purun", "item": "seal", "kind": "hit", "streak": 1, "dur": 4.8, "pokes": [2.4, 3.6], "label": "① ぷるん（出る とき・さわる と もう一度）"},
+ {"name": "B_tilt", "mode": "tilt", "item": "seal", "kind": "hit", "streak": 1, "dur": 7.6, "pokes": [], "label": "② 立体（ゆっくり かたむく・光が すべる）"},
+ {"name": "C_both", "mode": "both", "item": "seal", "kind": "hit", "streak": 1, "dur": 6.0, "pokes": [4.6], "label": "③ ぷるん＋立体"},
+ {"name": "D_race4", "mode": "both", "item": "race", "kind": "hit", "streak": 4, "dur": 4.6, "pokes": [], "label": "③ ぷるん＋立体（的中③ 4連勝）"},
+ {"name": "E_cover", "mode": "both", "item": "cover", "kind": "miss", "streak": 2, "dur": 4.6, "pokes": [], "label": "③ ぷるん＋立体（ハズレ③ 2回目）"}]
