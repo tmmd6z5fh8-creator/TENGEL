@@ -1,0 +1,13 @@
+Command line invocation:
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -list
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  テンゲル: /Users/runner/work/TENGEL/TENGEL/Tengel.swiftpm
+
+Information about workspace "Tengel":
+    Schemes:
+        テンゲル
+
