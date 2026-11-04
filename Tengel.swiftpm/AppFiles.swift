@@ -165,6 +165,11 @@ enum AppFiles {
     }
 
     static func shareFile(named rawName: String, text: String) throws -> URL {
+        try shareFile(named: rawName, data: Data(text.utf8))
+    }
+
+    /// 第4.123版：文字では ない ファイル（マザーデータの 入力用 Excel の ひな形 .xlsx など）も 渡せる ように
+    static func shareFile(named rawName: String, data: Data) throws -> URL {
         let dir = shareRoot.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         var name = rawName.components(separatedBy: CharacterSet(charactersIn: "/\\:")).joined(separator: "_")
@@ -173,7 +178,7 @@ enum AppFiles {
             name = "テンゲル.txt"
         }
         let url = dir.appendingPathComponent(name)
-        try Data(text.utf8).write(to: url, options: .atomic)
+        try data.write(to: url, options: .atomic)
         return url
     }
 }
