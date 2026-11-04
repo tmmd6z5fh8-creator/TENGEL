@@ -7,7 +7,7 @@
 #         len px の 色の 中央値（vmax より 明るい 所・exclude の 形の 中は のぞく）
 #     { op:'bg_angular', poly, c:[cx,cy], band:[形,…], src?:[形,…] または ring:8, hole?, step:0.25, vmax:235, exclude:[形,…], src_exclude:[形,…] }
 #         光の すじの 背景：band の 中の 色を まん中 c から 見た 角度ごとに 中央値（すじの もよう）→ 穴の まわりとの ちがいを なめらかに たす
-#     { op:'diffuse', poly, src?:形, ring:25, gap:1, rule:{vmax, vmin, rmin, gmin, gmax, bmax, rb_min}, exclude:[形,…], noise:1.0 }
+#     { op:'diffuse', poly, src?:形, ring:25, gap:1, rule:{vmax, vmin, rmin, gmin, gmax, bmax, rb_min, br_min}, exclude:[形,…], noise:1.0 }
 #         まわりの 色（src の 形の 中、または poly の まわり ring px の 中で rule に 合う 所）を 大きい ぼかし → 小さい ぼかしで かさねて うめる
 #     { op:'clone', poly, dx, dy, flipx?:軸の x, feather:1.5 }  … poly の 中に (x-dx, y-dy) の 色を はる（flipx：軸で 左右を 入れかえた 色）
 #     { op:'shade', poly, along:[点…], width:8, color:[r,g,b], alpha:0.35 }  … along の 線の 近く（poly の 中）を その 色へ
@@ -186,6 +186,7 @@ def op_diffuse(o):
     if 'gmax' in r: srcm &= G <= r['gmax']
     if 'bmax' in r: srcm &= B <= r['bmax']
     if 'rb_min' in r: srcm &= (R - B) >= r['rb_min']
+    if 'br_min' in r: srcm &= (B - R) >= r['br_min']        # 紺（青が 赤より 強い）だけ：馬の ふち線の 黒・布の かげは 入れない
     w = srcm.astype(np.float32)
     acc = None
     for sg in (48, 24, 12, 6, 3, 1.5):
