@@ -196,5 +196,6 @@ if r2.returncode == 0:
           'テスト版：アプリの 名前は「テンゲル テスト」・bundle id は jp.tengel.app.test（本番と 並べて 入れられる）・ビルド番号は 日付から・iPhone用は ふつうと 同じ')
     check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
 shutil.rmtree(out2, ignore_errors=True)
+shutil.rmtree(out, ignore_errors=True)   # 2026/11/04：作った アプリ（約190MB）を 残さない（前は /tmp に 1回ごとに 残って いた）
 print('結果：', 'OK' if not fails else f'{len(fails)}件おかしい')
 raise SystemExit(1 if fails else 0)
