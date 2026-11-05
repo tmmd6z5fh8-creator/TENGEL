@@ -293,6 +293,11 @@
      }
     ]
    }
+  ],
+  "keep": [
+   {
+    "mask": "keep_edge.png"
+   }
   ]
  },
  "layout": {

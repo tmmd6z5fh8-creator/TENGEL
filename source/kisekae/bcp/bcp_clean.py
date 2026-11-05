@@ -44,6 +44,11 @@ def shape_mask(s):
         m = cv2.morphologyEx(m, cv2.MORPH_OPEN, disk(r))
     elif 'ellipse' in s:
         cx, cy, rx, ry = s['ellipse']; cv2.ellipse(m, (cx, cy), (rx, ry), 0, 0, 360, 1, -1)
+    elif 'mask' in s:
+        # 絵の マスク（白い 所）：デザインの フォルダから の パス（edge_keep.py の keep_edge.png など）
+        mp_ = s['mask'] if os.path.isabs(s['mask']) else os.path.join(D, s['mask'])
+        mm_ = np.asarray(Image.open(mp_).convert('L')) > 127; h_, w_ = min(H, mm_.shape[0]), min(W, mm_.shape[1])
+        m[:h_, :w_] = mm_[:h_, :w_]
     elif 'navy' in s:
         # 紺の かたまり（その 点を ふくむ もの）の 穴を うめた 形
         navy = (B > R + 12) & (B > G - 5) & (V < 140)

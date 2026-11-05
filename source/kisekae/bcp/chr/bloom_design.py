@@ -24,6 +24,6 @@ for key in ('b1', 'b2', 'b3', 'b4'):
         mo[e['id']] = {"o": e.get('o', [cx, cy]), "sw": e.get('sw', 3.0 if tulip else 4.0), "st": round(3.4 + 1.0 * u, 2), "fy": e.get('fy', 10.0 if tulip else 12.0),
                        "sf": round(2.3 + 0.7 * v, 2), "dt": round(0.4 + 2.4 * u, 2), "dp": round(0.2 + 1.8 * v, 2)}
     stages.append({"dir": f"{B}/{d}", "out": f"{O}/{out}", "over": {"parts": parts}, "motion": mo})
-D = {"base": base, "seg": [], "stages": stages, "motion": {}, "layers_top": True, "stage_json": f"{O}/stage_all.json"}
+D = {"base": base, "seg": [], "stages": stages, "motion": {}, "layers_top": True, "src_fg": True, "stage_json": f"{O}/stage_all.json"}
 json.dump(D, open(OUT, 'w'), ensure_ascii=False, indent=1)
 print('stages', len(stages), [len(s['over']['parts']) for s in stages])

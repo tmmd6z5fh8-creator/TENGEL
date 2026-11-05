@@ -3423,5 +3423,6 @@
  ],
  "motion": {},
  "layers_top": true,
+ "src_fg": true,
  "stage_json": "/home/claude/work/bcpic/chr/stage_all.json"
 }

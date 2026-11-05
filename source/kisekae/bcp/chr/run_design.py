@@ -46,6 +46,13 @@ for st in D['stages']:
             if p_['id'] == pid: p_.setdefault('inner', []).extend(lst)
 
     c['clean'] = os.path.join(st['dir'], 'clean.png'); c['out'] = O; c['masks'] = masks
+    # src_fg：前の 絵（fg.png）を 重ねた 絵から 切りぬく（ボードの 中を 消した 時に 消えて、前の 絵で もどして いる 花の 所も キャラに 入る＝
+    #   動いても 前の 絵の 所だけ 止まって 花が 切れて 見えない。まさちゃん 11/05 21:18「ここが花が切れてる！」）
+    if D.get('src_fg') and os.path.exists(os.path.join(st['dir'], 'fg.png')):
+        cl_ = np.asarray(Image.open(c['clean']).convert('RGB')).astype(np.float32)
+        fg_ = np.asarray(Image.open(os.path.join(st['dir'], 'fg.png')).convert('RGBA')).astype(np.float32); fa_ = fg_[..., 3:4] / 255
+        Image.fromarray(np.clip(fg_[..., :3] * fa_ + cl_ * (1 - fa_) + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(O, 'src_fg.png'))
+        c['clean'] = os.path.join(O, 'src_fg.png')
     dcfg = json.load(open(os.path.join(st['dir'], 'cfg.json'), encoding='utf8'))
     if os.path.exists(os.path.join(st['dir'], 'fgmask.png')) and dcfg.get('fg') and not D.get('no_board'):
         c['board'] = {'quad': dcfg['quad'], 'fgmask': os.path.join(st['dir'], 'fgmask.png')}
