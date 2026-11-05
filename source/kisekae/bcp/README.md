@@ -81,6 +81,9 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
   - 立体：7秒で 1回り（たて 1.1度・よこ 2.2度・遠近 1000px）。はしの すき間が 出ない いちばん 小さい 大きさを その場で 計算（`cover`）。ボードの ガラスに 光の 帯が かたむきに 合わせて すべる（`.bcpgl`）・アプリの 字が 少し 浮く（1.6px まで）。
   - 「的中エフェクト」が 控えめ／オフ（`.bcst`）・「視差効果を減らす」（`prefers-reduced-motion`）では 動かさない。点めつ（`kisekae/flash_px.py`）は 5つの 見本で 窓 0個。
 - 見本の 動画：`python3 kisekae/bcp/motion/shots.py <コマの フォルダ> kisekae/bcp/motion/clips.json`（1/60秒ずつ 写す・`DPR=2`）→ `python3 kisekae/bcp/motion/make_video.py <コマの フォルダ> <出す mp4> A_purun,B_tilt,C_both,D_race4,E_cover`。
+- 的中の 演出を 音つきの mp4 に（11/05 22:15 まさちゃん「超神様的中の演出MP4で出して」）：`python3 kisekae/bcp/motion/shots_fx.py <コマの フォルダ> sgd 2.5 17.6`
+  （PUSH 2.5秒 → 押す → 動画 → ボード。30コマ／秒・CSS と SMIL は 自分の 時計・動画は 止めて その コマへ）→ `python3 kisekae/bcp/motion/make_fx_video.py <コマの フォルダ> <出す mp4> ios/fx_assets/sfx_fz_push.m4a ios/fx_assets/sfx_sgd.m4a`。
+  ためしの ブラウザは H.264 が 読めない ので、動画は webm に して（`ffmpeg … -c:v libvpx-vp9`）`srv/APP/` に 置き、blob の URL で 読む（http.server は Range に こたえない＝そのままでは 時刻を うごかせない）。`FILM=sgd_film=sgd_film.webm`。
 - キャラだけ 動かす（馬が はねる・ハンコを ポンと おす など）は、絵ごとに キャラを 切りぬいて うしろを 描きたす 作業が いる（今の 絵は キャラと うしろが 1まい）。
 
 ### キャラだけ 動かす（実験・`chr/`・まさちゃん 2026/11/04 22:15「やるならキャラクターだけ！」）
