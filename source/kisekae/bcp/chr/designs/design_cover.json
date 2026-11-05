@@ -195,6 +195,9 @@
    "edge_px": 3.0,
    "frag_max": 120,
    "ring": 10
+  },
+  "obj_integrity": {
+   "front": true
   }
  },
  "seg": [

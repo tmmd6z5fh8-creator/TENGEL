@@ -45,6 +45,9 @@ for arg in args[3:]:
             w = cv2.warpAffine(pm, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
             a = w[..., 3:4] / 255
             comp = w[..., :3] + comp * (1 - a)
+        if os.path.exists(os.path.join(O, 'occl.png')):        # 前に 重ねる 動かない 物（ボードの ふち・びっくりマーク など）
+            oc = np.asarray(Image.open(os.path.join(O, 'occl.png')).convert('L')).astype(np.float32)[..., None] / 255
+            comp = src * oc + comp * (1 - oc)
         frames.append(comp)
     tiles = [bg] + frames
     col = []

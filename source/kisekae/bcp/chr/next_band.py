@@ -5,13 +5,17 @@ from PIL import Image
 a = np.asarray(Image.open(sys.argv[1]).convert('RGB')).astype(int); H, W = a.shape[:2]
 V = a.max(-1); mn = a.min(-1); sat = (V - mn) / np.maximum(V, 1)
 def yq(x): return 833.6 - (x - 162.8) * (833.6 - 801.2) / (966.2 - 162.8)      # ボードの 四角の 下の 線
-skip = [(0, 266), (273, 323), (357, 413), (497, 562), (806, W)]
+skip = [(0, 266), (357, 413), (497, 562), (806, W)]            # しずく（273〜323）の 下の 帯も 動かさない（11/05：前は のこして いて 帯が 切れて いた）
 m = np.zeros((H, W), np.uint8); bs = {}
 for x in range(W):
     if any(lo <= x < hi for lo, hi in skip): continue
     top = int(yq(x)) - 6
-    if x < 357:                         # しずくと 玉の あいだ：帯の 下は 馬の 光（はっきりした さかいが ない）
-        bs[x] = 852; continue
+    if x < 357:                         # しずくと 玉の あいだ：帯の 下は 馬の 光（はっきりした さかいが ない）→ 帯の 下の 金の ふち（うすい 色）まで
+        b = 852
+        for y in range(848, 868):
+            if V[y, x] < 160: break                                    # こい ふち線（下の 物）で 止まる
+            if 0.22 < sat[y, x] < 0.62 and V[y, x] > 175: b = y + 2
+        bs[x] = b; continue
     band = False; b = None
     for y in range(int(yq(x)) - 2, int(yq(x)) + 45):
         if V[y, x] > 170 and sat[y, x] < 0.3: band = True

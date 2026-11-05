@@ -179,9 +179,10 @@ res = {k: (v, None) for k, v in hards.items()}
 #    1回目：キャラの まわり GZ px まで 消して うめる → 元の 絵と うめた 色が ちがう 所（光の ふち・ふち線・きらきら）は キャラと いっしょに 動かす（halo）
 #    2回目：うしろは 元の 絵の まま、キャラ＋halo の 所 だけ 1回目の うめた 色に（止まって いる ときは 元の 絵と 同じ）
 F = C['fill']; cx, cy = F.get('c', [W / 2, H / 2]); GZ = F.get('glow_px', 12); GT = F.get('glow_thr', 22)
+SRC_EX = np.zeros((H, W), bool)        # うめる 色の もとに しない 所（前に 重ねる 物と その 光：あとで きめる）
 def make_fill(hole, vmax=None):
     if F.get('mode') == 'smooth':
-        ring_ = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1)
+        ring_ = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1) & ~SRC_EX
         acc = diffuse(img, ring_.astype(np.float32), hole)
         acc += cv2.GaussianBlur(np.random.default_rng(5).normal(0, 1.2, (H, W)).astype(np.float32), (0, 0), 0.7)[..., None]
         return np.where(hole[..., None], acc, img)
@@ -196,7 +197,7 @@ def make_fill(hole, vmax=None):
     phi = np.degrees(np.arctan2(yy - cy, xx - cx))
     V = img.max(-1)
     VM = F.get('vmax', 250) if vmax is None else vmax
-    band = ~ndi.binary_dilation(hole, iterations=4) & (yy < PY) & (V <= VM) & ~shapes(F.get('band_ex', []))
+    band = ~ndi.binary_dilation(hole, iterations=4) & (yy < PY) & (V <= VM) & ~shapes(F.get('band_ex', [])) & ~SRC_EX
     step = F.get('step', 0.25); ph = phi[band]; cols = img[band]; lo, hi = ph.min(), ph.max(); nb = int(np.ceil((hi - lo) / step)) + 1
     idx = np.clip(((ph - lo) / step).astype(int), 0, nb - 1); prof = np.full((nb, 3), np.nan, np.float32)
     order = np.argsort(idx); idx_s = idx[order]; cols_s = cols[order]; starts = np.searchsorted(idx_s, np.arange(nb)); ends = np.searchsorted(idx_s, np.arange(nb), 'right')
@@ -207,7 +208,7 @@ def make_fill(hole, vmax=None):
     prof = ndi.gaussian_filter1d(prof, F.get('psmooth', 2.0), axis=0)
     pidx = np.clip((phi - lo) / step, 0, nb - 1)
     P = np.stack([np.interp(pidx.ravel(), xs_, prof[:, c]).reshape(H, W) for c in range(3)], -1)
-    ring = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1) & (V <= VM)
+    ring = ndi.binary_dilation(hole, iterations=F.get('ring', 10)) & ~ndi.binary_dilation(hole, iterations=1) & (V <= VM) & ~SRC_EX
     corr = diffuse(img - P, ring.astype(np.float32), hole)
     fill = P + corr
     fill += cv2.GaussianBlur(np.random.default_rng(5).normal(0, 1.2, (H, W)).astype(np.float32), (0, 0), 0.7)[..., None]
@@ -260,9 +261,21 @@ from skimage.segmentation import felzenszwalb
 OI = C.get('obj_integrity', {})
 SEG = felzenszwalb(img / 255, scale=(OI or {}).get('scale', 300), sigma=0.8, min_size=40)
 NSEG = int(SEG.max()) + 1; AREA = np.bincount(SEG.ravel(), minlength=NSEG)
+FOBJ = np.zeros((H, W), bool)          # キャラの すぐ そばの 小さな 色の 物（びっくりマーク・しずく・紙ふぶき・きらきら）：キャラの 上に 動かない 絵として 重ねる（occl.png）
 if OI is not False:
     seedz = ndi.binary_dilation((lab0 >= 1) & (lab0 <= len(parts)), iterations=OI.get('seed_gap', 6))
+    mx3, mn3 = img.max(-1), img.min(-1)
+    SAT = [np.bincount(SEG.ravel(), weights=((mx3 - mn3) / np.maximum(mx3, 1)).ravel(), minlength=NSEG) / np.maximum(AREA, 1)][0]
+    VAL = np.bincount(SEG.ravel(), weights=mx3.ravel(), minlength=NSEG) / np.maximum(AREA, 1)
     CM = [np.bincount(SEG.ravel(), weights=img[..., k].ravel(), minlength=NSEG) / np.maximum(AREA, 1) for k in range(3)]
+    ZALL = np.zeros((H, W), bool); HALL = np.zeros((H, W), bool)       # キャラ ぜんぶ（ほかの キャラの 体を 前の 物に しない）
+    for k_ in zones: ZALL |= zones[k_]
+    for k_ in hards: HALL |= hards[k_]
+    INALL = np.bincount(SEG[ZALL], minlength=NSEG); INHARD = np.bincount(SEG[HALL], minlength=NSEG)
+    doutA = ndi.distance_transform_edt(ZALL)
+    BOARDB = np.zeros((H, W), bool)                                   # ボードの ふちの まわり（ふちの 光・飾りは 前の 物に しない）
+    if C.get('board'):
+        qm2 = poly(C['board']['quad']); BOARDB = ndi.binary_dilation(qm2, iterations=40) & ~ndi.binary_erosion(qm2, iterations=40)
     for p in parts:
         z = zones[p['id']]
         inside = np.bincount(SEG[z], minlength=NSEG)
@@ -281,6 +294,71 @@ if OI is not False:
             rm = np.isin(SEG, drop) & z & ~seedz
             zones[p['id']] = z & ~rm
             print(p['id'], 'object integrity: drop', len(drop), 'regions', int(rm.sum()), 'px')
+        # キャラに ふれる（3px）小さな 色の 物 → 上に 重ねる 物（キャラが 動くと その うしろに まわる＝物が よごれない）
+        z2 = zones[p['id']]
+        near_ = np.unique(SEG[ndi.binary_dilation(z2, iterations=3) & ~z2]) if OI.get('front', False) else []   # 前の 物：デザインごとに えらぶ（front: true）
+        fo = [L for L in near_ if AREA[L] < OI.get('fobj_max', 2000) and (SAT[L] > OI.get('fobj_sat', 0.45) or (VAL[L] > 235 and AREA[L] < 400))
+              and INALL[L] / max(AREA[L], 1) < OI.get('frac', 0.35) and INHARD[L] / max(AREA[L], 1) < 0.5 and not (SEG == L)[BOARDB].any()]
+        Vv = img.max(-1)
+        for L in (np.unique(SEG[z2]) if OI.get('float', False) else []):     # 小さな 明るい 物（紙ふぶき）：髪の 光の すじを まちがえる ので ふだんは 使わない（float: true で 使う）
+            if AREA[L] >= OI.get('float_max', 700) or L in fo: continue
+            R = SEG == L
+            if (R & seedz).any() or doutA[R].min() > OI.get('float_edge', 8): continue      # キャラ ぜんぶの 外の すぐ そば だけ（目の 光 など 体の 中の 物は とおい）
+            ys_, xs_ = np.where(R); y0_, y1_, x0_, x1_ = max(0, ys_.min() - 5), min(H, ys_.max() + 6), max(0, xs_.min() - 5), min(W, xs_.max() + 6)
+            Rs = R[y0_:y1_, x0_:x1_]; ring3 = ndi.binary_dilation(Rs, iterations=3) & ~Rs
+            if ring3.sum() < 6: continue
+            dark = ~HALL[y0_:y1_, x0_:x1_] | (Vv[y0_:y1_, x0_:x1_] < OI.get('float_dark', 125))   # まわりが キャラの 体で ない（光の ふち・背景）か 暗い
+            if dark[ring3].mean() >= OI.get('float_bg', 0.6) and VAL[L] > 150: fo.append(L)
+        if fo:
+            # 色の ちがい（キャラの ふちの 色と ちがう 物 だけ）
+            fo2 = []
+            for L in fo:
+                R = SEG == L
+                ys_, xs_ = np.where(R); y0_, y1_, x0_, x1_ = max(0, ys_.min() - 6), min(H, ys_.max() + 7), max(0, xs_.min() - 6), min(W, xs_.max() + 7)
+                Rs = R[y0_:y1_, x0_:x1_]; band = ndi.binary_dilation(Rs, iterations=4) & ~Rs & z2[y0_:y1_, x0_:x1_]
+                if band.sum() < 4: fo2.append(L); continue            # キャラの 絵に ほとんど ふれて いない 物（びっくりマークの 体 など）：そのまま 前の 物
+                cz = img[y0_:y1_, x0_:x1_][band].mean(0); cr = np.array([CM[0][L], CM[1][L], CM[2][L]])
+                if np.abs(cz - cr).max() > OI.get('dcol', 60): fo2.append(L)
+            if fo2:
+                FOBJ |= np.isin(SEG, fo2)
+                print(p['id'], 'front objects', len(fo2))
+FA = np.zeros((H, W), np.float32)
+if FOBJ.any():
+    HARD_ALL = np.zeros((H, W), bool)
+    for k_, v_ in hards.items(): HARD_ALL |= v_
+    core2 = ndi.binary_dilation(HARD_ALL, iterations=2) | seedz
+    FB = FOBJ & ~seedz                                    # 前の 物（色が まわりの キャラと はっきり ちがう 物）は キャラの 区切りに 入って いても 前に
+    # となりの 区切りで 物に くっついて いる 物の 一部（びっくりマークの 下の はしの ふち・光 など）：キャラの 中に 入って いても
+    #   ・小さい（fm_area px 未満）・説明の 印（seedz）に ふれない・まわりの 25% 以上が 物・物の 色に にて いる（60）・まわりの キャラの 色とは ちがう（50）
+    FM = np.zeros((H, W), bool)
+    for _ in range(2):
+        cur = FB | FM
+        adj = np.unique(SEG[ndi.binary_dilation(cur, iterations=2) & ~cur])
+        add = []
+        for L2 in adj:
+            if AREA[L2] > OI.get('fm_area', 800): continue
+            R2 = SEG == L2
+            ys_, xs_ = np.where(R2); y0_, y1_, x0_, x1_ = max(0, ys_.min() - 5), min(H, ys_.max() + 6), max(0, xs_.min() - 5), min(W, xs_.max() + 6)
+            R2s = R2[y0_:y1_, x0_:x1_]; curs = cur[y0_:y1_, x0_:x1_]; hs = HARD_ALL[y0_:y1_, x0_:x1_]; im_ = img[y0_:y1_, x0_:x1_]
+            if (R2s & seedz[y0_:y1_, x0_:x1_]).any(): continue
+            bd2 = ndi.binary_dilation(R2s, iterations=2) & ~R2s
+            if bd2.sum() < 4 or (bd2 & curs).sum() / bd2.sum() < 0.25: continue
+            if np.abs(im_[R2s].mean(0) - im_[bd2 & curs].mean(0)).max() >= OI.get('fm_col', 60): continue
+            around = bd2 & hs & ~curs
+            if around.sum() >= 5 and np.abs(im_[R2s].mean(0) - im_[around].mean(0)).max() < OI.get('fm_char', 50): continue
+            add.append(L2)
+        if not add: break
+        FM |= np.isin(SEG, add) & ~seedz
+    FX = FB | FM
+    core2 = (ndi.binary_dilation(HARD_ALL & ~ndi.binary_dilation(FM, iterations=1), iterations=2) | seedz) & ~FX
+    RG = OI.get('fobj_ring', 3)
+    dF = ndi.distance_transform_edt(~FX)
+    dC = ndi.distance_transform_edt(~core2)
+    FA = (np.clip((RG + 1 - dF) / 3.0, 0, 1) * np.clip(dC / 2.0, 0, 1)).astype(np.float32)   # 物の まわりの 光：RG-2 px は 1・そこから 3px で 0（キャラの そばも なめらかに 0）
+    FA[FX] = 1.0                                                                               # 物 そのものは いつも 1（キャラの 絵が すけて 見えない）
+    for k_ in zones: zones[k_] = zones[k_] & ~(FA > 0.5)           # 物の 所は キャラの 絵に 入れない（まわりの 光は キャラと いっしょ）
+    SRC_EX = ndi.binary_dilation(FX, iterations=3)                 # うめる 色の もとに しない のは 物と その すぐ そば だけ（まわりの 暗い 所は もとに する）
+    print('front objects ext px', int(FX.sum()), 'ring px', int((FA > 0.02).sum()))
 res = {}
 for i, p in enumerate(parts):
     z = zones[p['id']]
@@ -314,8 +392,12 @@ if BEH and BM.any():
     for k, (z_, a_) in res.items():
         if k not in BEH: front = np.maximum(front, a_)
     OCCA = (ramp_ * near_b * (1 - np.clip(front / 0.02, 0, 1))).astype(np.float32)
-    Image.fromarray(np.clip(OCCA * 255 + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'occl.png'))
     Image.fromarray((BM * 255).astype(np.uint8)).save(os.path.join(OUT, 'board.png'))
+if FA.any():
+    OCCA = np.maximum(OCCA, FA)          # 前の 物と その 光の ふち（元の 絵）：キャラの 上に 動かない 絵として
+    print('front objects px', int((FA > 0.5).sum()))
+if OCCA.any():
+    Image.fromarray(np.clip(OCCA * 255 + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'occl.png'))
     print('occl px', int((OCCA > 0.5).sum()))
 # 動くと「切れて」見える ふち（絵の ふち線で ない なめらかな 所＝布・雲・光の 中を 通る さかい）：キャラの 絵を 外へ のばして なめらかに すき通す
 #   のばす 所の 色も 背景も 元の 絵（止まって いる ときは 元と 同じ）。動くと 少し ずれて とけこむ（かたい 切れ目に ならない）
