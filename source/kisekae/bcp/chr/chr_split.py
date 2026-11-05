@@ -74,12 +74,27 @@ for i, p in enumerate(parts):
         mk |= ndi.binary_erosion(cm_, iterations=cs_.get('erode', 4))
     mk &= ~shapes(C.get('bg_add', []))          # 印は モデルの マスクより つよい（モデルが キャラを 見のがす 絵：はしの 小さい キャラ など）
     lab0[mk & (lab0 == 0)] = i + 1
+HZ = np.zeros((H, W), bool)             # 毛の 所（hair_zone）
 if out_all.any() and all(p.get('outer') for p in parts):
     bgm |= ~ndi.binary_dilation(out_all, iterations=4)                    # キャラ ぜんぶに outer が ある とき：outer の 外は 背景
     notrust = np.zeros((H, W), bool)                                      # モデルが 弱い キャラ（trust_mask: false）の outer の 中は 線だけで 分ける
+    HZR = np.zeros((H, W), bool)
     for p in parts:
         if p.get('trust_mask') is False: notrust |= outer[p['id']]
+        # 毛の 所（hair_zone：長い たてがみ・しっぽ）：モデルが 毛を 見のがす（暗い 背景の 前）→ この 中は モデルを 見ないで、印と 絵の ふち線で 分ける。
+        #   まわり 3px は 背景の 印（体の 上は のぞく）。中の 青っぽい 所（さく・雨の 光：hair_bg）も 背景の 印
+        if p.get('hair_zone'):
+            hz = shapes(p['hair_zone']); notrust |= hz; HZ |= hz
+            HZR |= ndi.binary_dilation(hz, iterations=3) & ~hz & (M < C.get('hair_ring_m', 0.5))
+    HZR &= ~HZ
+    HZR &= ~ndi.binary_dilation(M > 0.6, iterations=C.get('hair_ring_gap', 14))   # 体の すぐ そば（体と 毛の あいだ）には 背景の 印を おかない（体と しっぽの あいだが 切れる）
     bgm |= (M < C.get('bg_thr_in', 0.04)) & ~notrust                      # outer の 中でも モデルが はっきり 背景と 見る 所は 背景
+    bgm |= HZR
+    if C.get('hair_bg') and HZ.any():
+        hb = C['hair_bg']; V_ = img.max(-1); br_ = img[..., 2] - img[..., 0]
+        hbm = HZ & (br_ >= hb.get('b_minus_r', 40)) & (V_ >= hb.get('vmin', 60)) & (V_ <= hb.get('vmax', 235))
+        hbm = ndi.binary_opening(hbm, iterations=hb.get('open', 1))
+        bgm |= hbm & ~shapes(C.get('hair_keep', []))
 # 色で えらぶ 背景（ボードの ふちの 光の 線 など）：within の 中の 明るくて 色の うすい 所（キャラの 印の 近くは のぞく）
 PICK = np.zeros((H, W), bool)
 for bp in C.get('bg_pick', []):
@@ -87,6 +102,14 @@ for bp in C.get('bg_pick', []):
     pk = shapes(bp['within']) & (mx_ >= bp.get('vmin', 215)) & (mx_ <= bp.get('vmax', 256)) & (sat_ <= bp.get('smax', 0.55)) & (sat_ >= bp.get('smin', 0))
     if 'b_minus_r' in bp: pk &= (img[..., 2] - img[..., 0]) >= bp['b_minus_r']     # 青い 物（あせの しずく など）
     if bp.get('erode'): pk = ndi.binary_erosion(pk, iterations=bp['erode'])
+    # 大きな かたまり だけ（紙：細い 毛の 光の すじは open で 消えて のこらない）・中の 字は 穴うめ・ふちを 少し のばす
+    if bp.get('open'): pk = ndi.binary_opening(pk, iterations=bp['open'])
+    if bp.get('blob_min'):
+        l_, n_ = ndi.label(pk)
+        if n_:
+            sz_ = ndi.sum(pk, l_, range(1, n_ + 1)); pk = np.isin(l_, [i + 1 for i in range(n_) if sz_[i] >= bp['blob_min']])
+    if bp.get('fill'): pk = ndi.binary_fill_holes(pk)
+    if bp.get('grow'): pk = ndi.binary_dilation(pk, iterations=bp['grow']) & shapes(bp['within'])
     bgm |= pk; PICK |= pk
 bgm &= ~(ndi.binary_dilation(lab0 > 0, iterations=C.get('mark_gap', 8)) & ~shapes(C.get('bg_add', [])))
 if 'bg_color' in C:                     # 色で きめる 背景（布・雲・紙 など 白っぽい 物）：キャラの core の 四角の 中は のぞく
@@ -292,6 +315,8 @@ if OI is not False:
             if np.abs(cz - cr).max() > OI.get('dcol', 60): drop.append(L)
         if drop:
             rm = np.isin(SEG, drop) & z & ~seedz
+            if OI.get('keep_hard'):             # 線で 分けた キャラの 体（hard）の 中は のぞかない（暗い ひづめ・毛が 暗い 背景と 同じ 区切りに なる 絵）
+                rm &= ~ndi.binary_erosion(hards[p['id']], iterations=OI.get('keep_hard_erode', 2))
             zones[p['id']] = z & ~rm
             print(p['id'], 'object integrity: drop', len(drop), 'regions', int(rm.sum()), 'px')
         # キャラに ふれる（3px）小さな 色の 物 → 上に 重ねる 物（キャラが 動くと その うしろに まわる＝物が よごれない）
@@ -359,6 +384,20 @@ if FOBJ.any():
     for k_ in zones: zones[k_] = zones[k_] & ~(FA > 0.5)           # 物の 所は キャラの 絵に 入れない（まわりの 光は キャラと いっしょ）
     SRC_EX = ndi.binary_dilation(FX, iterations=3)                 # うめる 色の もとに しない のは 物と その すぐ そば だけ（まわりの 暗い 所は もとに する）
     print('front objects ext px', int(FX.sum()), 'ring px', int((FA > 0.02).sum()))
+# 毛の 所の 中の 穴（毛の すじの あいだ・毛の 前の しずく）：かこまれて いて ほとんど 毛の 所に ある 穴は キャラに 入れる（動いた とき 毛の 中に 止まった 所が 見えない）
+if HZ.any():
+    for k_ in zones:
+        z_ = zones[k_]; hl_ = ndi.binary_fill_holes(z_) & ~z_
+        l_, n_ = ndi.label(hl_)
+        if n_:
+            inz = ndi.sum(HZ, l_, range(1, n_ + 1)); sz_ = ndi.sum(hl_, l_, range(1, n_ + 1))
+            fill_ = [i + 1 for i in range(n_) if inz[i] >= 0.9 * sz_[i] and sz_[i] <= C.get('hair_hole_max', 5000)]
+            if fill_:
+                oth_ = np.zeros((H, W), bool)
+                for k2_ in zones:
+                    if k2_ != k_: oth_ |= zones[k2_]
+                zones[k_] = z_ | (np.isin(l_, fill_) & ~oth_ & ~(FA > 0.5))
+                print(k_, 'hair holes filled', len(fill_), int(np.isin(l_, fill_).sum()), 'px')
 res = {}
 for i, p in enumerate(parts):
     z = zones[p['id']]
@@ -449,7 +488,7 @@ if STf is not False:
             dmap = disp_bound(z, MO.get(pid, {}))
         er = cv2.erode(z.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
         bd = z & ~er
-        nogo = others | STILL | (OCCA > 0.02) | border_ | (BM if pid in BEH else np.zeros((H, W), bool))
+        nogo = others | STILL | (OCCA > 0.02) | border_ | (BM if pid in BEH else np.zeros((H, W), bool)) | VIS   # 見えて いる ボード（アプリの ボードの 下で 見えない）には のばさない
         outside = cv2.dilate(z.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool) & ~z & ~nogo
         bd &= cv2.dilate(outside.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
         inner = cv2.erode(z.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & ~cv2.erode(z.astype(np.uint8), np.ones((11, 11), np.uint8)).astype(bool)

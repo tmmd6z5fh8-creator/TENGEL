@@ -22,10 +22,17 @@ for st in D['stages']:
     O = st['out']; os.makedirs(O, exist_ok=True)
     masks = []
     for sb in D['seg']:
-        x0, y0, x1, y1, nm = sb
+        x0, y0, x1, y1, nm = sb[:5]
         mp = os.path.join(O, f'm_{nm}.png'); masks.append(mp)
         if not os.path.exists(mp) or os.environ.get('RESEG'):
-            subprocess.run(['python3', os.path.join(H_, 'seg.py'), os.path.join(st['dir'], 'src.png'), f'{x0},{y0},{x1},{y1}', mp], check=True, stdout=subprocess.DEVNULL)
+            if len(sb) > 5 and sb[5] == 'flip':
+                # 左右を 入れかえた 絵で モデルを かける（モデルは 場所で 見え方が かわる：二人でしょんぼりの 左の 馬は 入れかえると よく 見える）
+                im_ = Image.open(os.path.join(st['dir'], 'src.png')).convert('RGB'); Wd = im_.width
+                fp = os.path.join(O, '_flip_src.png'); im_.transpose(Image.FLIP_LEFT_RIGHT).save(fp)
+                subprocess.run(['python3', os.path.join(H_, 'seg.py'), fp, f'{Wd - x1},{y0},{Wd - x0},{y1}', mp], check=True, stdout=subprocess.DEVNULL)
+                Image.open(mp).transpose(Image.FLIP_LEFT_RIGHT).save(mp); os.remove(fp)
+            else:
+                subprocess.run(['python3', os.path.join(H_, 'seg.py'), os.path.join(st['dir'], 'src.png'), f'{x0},{y0},{x1},{y1}', mp], check=True, stdout=subprocess.DEVNULL)
     c = merge(json.loads(json.dumps(D['base'])), st.get('over', {}))
     # 段ごとに キャラの 印を たす（add_inner: {id: [形]}）・キャラの 設定を かえる（part_over: {id: {…}}）
     for pid, kv in st.get('part_over', {}).items():
