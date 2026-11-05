@@ -35,7 +35,7 @@
     st.textContent = k + '\n@media (prefers-reduced-motion:no-preference){' + r + '}';
     add(st);
   }
-  Object.keys(CH).forEach(n => { const c = CH[n]; [c.bgx, c.fgx, c.oc && c.oc.src].concat(c.layers.map(l => l.src), c.layers.map(l => l.f)).forEach(s => { if (s) { const im = new Image(); im.src = s; } }); });
+  Object.keys(CH).forEach(n => { const c = CH[n]; [c.bgx, c.fgx, c.oc && c.oc.src, c.ot && c.ot.src].concat(c.layers.map(l => l.src), c.layers.map(l => l.f)).forEach(s => { if (s) { const im = new Image(); im.src = s; } }); });
   const done = new WeakSet();
   function setup(hb) {
     const name = hb.dataset.bcp, c = CH[name]; if (!c) return;
@@ -63,6 +63,11 @@
       if (rb) wrap.insertBefore(im, rb); else wrap.appendChild(im);
     }
     c.layers.forEach((l, i) => { if (l.f) wrap.appendChild(mk(l, i, l.f)); });                                                // ボードの 前に 出る 所：いちばん 上
+    if (c.ot) {   // 動かない 前の 絵の ボードの 前の 所（二人でしょんぼりの 残念の 青い 線）：キャラの 前の 絵（f）より 上（動かない）
+      const b = c.ot.box, im = document.createElement('img'); im.className = 'chrot'; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = c.ot.src;
+      im.style.cssText = `position:absolute;left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px;pointer-events:none`;
+      wrap.appendChild(im);
+    }
   }
   const scan = () => { add(base); document.querySelectorAll('#fxOv .hb.bcpic').forEach(setup); };
   new MutationObserver(scan).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-bcp'] });

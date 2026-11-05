@@ -32,6 +32,18 @@ def shapes(lst):
 M = np.zeros((H, W), np.float32)
 for f in C['masks']:
     M = np.maximum(M, np.asarray(Image.open(f).convert('L')).astype(np.float32) / 255)
+# 動かない 前の 絵（static_front：キャラの 前に 描いて あるが キャラと いっしょに 動かない 物＝二人でしょんぼりの 残念の 青い 線 など。まさちゃん 11/05 17:06）
+#   絵から その 物を 消して（まわりの 色で うめる）から 切りぬく → キャラは その 下も つづいて いる（動いても すき間が ない）・背景にも その 物は 入らない。
+#   その 物は 元の 絵の まま キャラの 上に 動かない 絵として 重ねる（occl.png：物＋ふちの にじみ static_front_pad px は 1・そこから static_front_ring px で 0）
+SFA = np.zeros((H, W), np.float32)
+if C.get('static_front'):
+    SFC = shapes(C['static_front'])
+    SFL = ndi.binary_dilation(SFC, iterations=C.get('static_front_pad', 2))
+    img = cv2.inpaint(np.clip(img, 0, 255).astype(np.uint8), SFL.astype(np.uint8), 5, cv2.INPAINT_TELEA).astype(np.float32)
+    M = cv2.inpaint(np.clip(M * 255, 0, 255).astype(np.uint8), SFL.astype(np.uint8), 5, cv2.INPAINT_TELEA).astype(np.float32) / 255
+    RGf = C.get('static_front_ring', 2)
+    SFA = np.clip(1 - ndi.distance_transform_edt(~SFL) / (RGf + 1), 0, 1).astype(np.float32); SFA[SFL] = 1
+    print('static front px', int(SFL.sum()))
 # 2) 印
 parts = C['parts']; lab0 = np.zeros((H, W), np.int32)
 outer = {}
@@ -435,6 +447,8 @@ if BEH and BM.any():
 if FA.any():
     OCCA = np.maximum(OCCA, FA)          # 前の 物と その 光の ふち（元の 絵）：キャラの 上に 動かない 絵として
     print('front objects px', int((FA > 0.5).sum()))
+if SFA.any():
+    OCCA = np.maximum(OCCA, SFA)         # 動かない 前の 絵（static_front）
 if OCCA.any():
     Image.fromarray(np.clip(OCCA * 255 + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'occl.png'))
     print('occl px', int((OCCA > 0.5).sum()))

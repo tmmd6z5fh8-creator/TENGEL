@@ -263,6 +263,11 @@
       "fill": true,
       "grow": 1
      }
+    ],
+    "static_front": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/rain1_lines.png"
+     }
     ]
    }
   },
@@ -484,6 +489,11 @@
       "fill": true,
       "grow": 1
      }
+    ],
+    "static_front": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/rain2_lines.png"
+     }
     ]
    }
   },
@@ -691,6 +701,11 @@
       "blob_min": 600,
       "fill": true,
       "grow": 1
+     }
+    ],
+    "static_front": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/rain3_lines.png"
      }
     ]
    }
@@ -924,6 +939,11 @@
       ],
       "r": 4
      }
+    ],
+    "static_front": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/rain4_lines.png"
+     }
     ]
    }
   }
@@ -940,5 +960,6 @@
    "o": "bottom_center"
   }
  },
- "stage_json": "/home/claude/work/bcpic/chr/stage_all.json"
+ "stage_json": "/home/claude/work/bcpic/chr/stage_all.json",
+ "occl_top": true
 }

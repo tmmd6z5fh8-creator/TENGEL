@@ -113,6 +113,21 @@ if os.path.exists(OCP) or P.get('occl'):
         Image.fromarray(np.dstack([rgb, al])[y0:y1, x0:x1].astype(np.uint8), 'RGBA').save(os.path.join(SRV, fn), quality=92)
         ent['oc'] = {'src': fn, 'box': [x0 / 3, y0 / 3, (x1 - x0) / 3, (y1 - y0) / 3]}
         print('occluder', fn, 'px', int((oa > 0.5).sum()))
+    # ボードの 前（前の 絵の マスク）に かかる 所：アプリの ボードと キャラの 前の 絵（f）の 上にも 重ねる（いちばん 上・動かない）＝occl_top
+    #   （二人でしょんぼりの 青い 線：ボードの 前で 耳に かかる 所も 動かない）
+    if P.get('occl_top') and fm is not None:
+        ot = oa * fm
+        pm = np.dstack([src_ * ot[..., None], ot * 255])
+        w4 = cv2.warpAffine(pm, Mx, (Wc, Hc), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+        al = np.clip(w4[..., 3], 0, 255); rgb = np.clip(w4[..., :3] / np.maximum(al[..., None] / 255.0, 1e-3), 0, 255); rgb[al < 1] = 0
+        ys, xs = np.where(al > 2)
+        if len(xs):
+            x0 = max(0, (xs.min() - 6) // 3 * 3); y0 = max(0, (ys.min() - 6) // 3 * 3)
+            x1 = min(Wc, -(-(xs.max() + 7) // 3) * 3); y1 = min(Hc, -(-(ys.max() + 7) // 3) * 3)
+            fn = f'bcp_{name}x_ot.webp'
+            Image.fromarray(np.dstack([rgb, al])[y0:y1, x0:x1].astype(np.uint8), 'RGBA').save(os.path.join(SRV, fn), quality=92)
+            ent['ot'] = {'src': fn, 'box': [x0 / 3, y0 / 3, (x1 - x0) / 3, (y1 - y0) / 3]}
+            print('top occluder', fn, 'px', int((ot > 0.5).sum()))
 allj = json.load(open(OUTJ, encoding='utf8')) if os.path.exists(OUTJ) else {}
 allj[name] = ent
 json.dump(allj, open(OUTJ, 'w'), ensure_ascii=False, indent=1)
