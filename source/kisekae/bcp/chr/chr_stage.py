@@ -56,7 +56,7 @@ for n, p in enumerate(parts, 1):
     Image.fromarray(crop, 'RGBA').save(os.path.join(SRV, fn), quality=90)
     # キャラの 前の 絵（ボードの 前に 出る 所 だけ＝前の 絵の マスク×キャラ）：アプリの ボードの 上に 同じ 動きで 重ねる
     ffn = None
-    if fm is not None:
+    if fm is not None and not P.get('top'):      # top：キャラを ぜんぶ アプリの ボードと 前の 絵の 上に 重ねる（前の 絵は いらない）
         fmw = cv2.warpAffine(fm, Mx, (Wc, Hc), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         alf = np.clip(al * fmw, 0, 255)
         if (alf > 8).sum() > 30:
@@ -83,7 +83,7 @@ for n, p in enumerate(parts, 1):
     amp = round(min(1.0, 205.0 / max(h_pt, 1)), 3); deg = round(4.0 * min(1.0, 300.0 / max(w_pt, 1)), 2)
     lay = {'src': fn, 'box': [x0 / 3, y0 / 3, (x1 - x0) / 3, (y1 - y0) / 3], 'o': o_pt, 'amp': p.get('amp', amp), 'deg': p.get('deg', deg)}
     if ffn: lay['f'] = ffn
-    for k in ('dp', 'dt', 'ax'):
+    for k in ('dp', 'dt', 'ax', 'sw', 'st', 'fy', 'sf'):
         if k in p: lay[k] = p[k]
     ent['layers'].append(lay)
     print(p['id'], fn, 'box pt', [round(v, 1) for v in lay['box']], 'o', o_pt, 'amp', lay['amp'], 'deg', lay['deg'], os.path.getsize(os.path.join(SRV, fn)))
@@ -128,6 +128,7 @@ if os.path.exists(OCP) or P.get('occl'):
             Image.fromarray(np.dstack([rgb, al])[y0:y1, x0:x1].astype(np.uint8), 'RGBA').save(os.path.join(SRV, fn), quality=92)
             ent['ot'] = {'src': fn, 'box': [x0 / 3, y0 / 3, (x1 - x0) / 3, (y1 - y0) / 3]}
             print('top occluder', fn, 'px', int((ot > 0.5).sum()))
+if P.get('top'): ent['top'] = 1
 allj = json.load(open(OUTJ, encoding='utf8')) if os.path.exists(OUTJ) else {}
 allj[name] = ent
 json.dump(allj, open(OUTJ, 'w'), ensure_ascii=False, indent=1)

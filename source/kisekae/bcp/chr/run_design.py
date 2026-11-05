@@ -96,7 +96,8 @@ for st in D['stages']:
     for p_ in mo['parts']:
         p_.update(st.get('motion', {}).get(p_['id'], {}))
     if c.get('occl'): mo['occl'] = c['occl']
-    if D.get('occl_top'): mo['occl_top'] = True          # 動かない 前の 絵の ボードの 前の 所を いちばん 上にも（chr_stage.py）
+    if D.get('occl_top'): mo['occl_top'] = True
+    if D.get('layers_top'): mo['top'] = True            # キャラを ぜんぶ アプリの ボードの 上に（花束：花は いつも ボードの 前）          # 動かない 前の 絵の ボードの 前の 所を いちばん 上にも（chr_stage.py）
     mp_ = os.path.join(O, 'motion.json'); json.dump(mo, open(mp_, 'w'), ensure_ascii=False)
     r = subprocess.run(['python3', os.path.join(H_, 'chr_stage.py'), st['dir'], O, SRV, mp_, D['stage_json']], capture_output=True, text=True)
     if r.returncode: print(r.stdout[-800:], r.stderr[-1500:]); sys.exit(1)

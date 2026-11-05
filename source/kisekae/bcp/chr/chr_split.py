@@ -468,6 +468,15 @@ def disp_bound(zm, spec):
     elif o == 'contact' and BM.any() and (zm & ndi.binary_dilation(BM, iterations=4)).any():
         cy_, cx_ = np.where(zm & ndi.binary_dilation(BM, iterations=4)); ox, oy = float(cx_.mean()), float(cy_.mean())
     else: yb = ys.max(); ox, oy = float(xs[ys >= yb - 6].mean()), float(yb)
+    if spec.get('sw') is not None:
+        # ヒラヒラ（花・リボン）：まん中 o の まわりの 回転 sw 度 ＋ たての じくの 回転 fy 度（bcp_chr_exp2.js の sway と 同じ）
+        X = (xx - ox) * SG; Y = (yy - oy) * SG
+        d_ = 2 * np.hypot(X, Y) * np.sin(np.radians(spec['sw']) / 2)
+        fy_ = np.radians(spec.get('fy', 0)); rot = np.zeros((H, W), np.float32)
+        for sg_ in (1, -1):
+            f_ = 600.0 / (600.0 - sg_ * X * np.sin(fy_))
+            rot = np.maximum(rot, np.hypot(X * np.cos(fy_) * f_ - X, Y * f_ - Y))
+        return ((d_ + rot) / SG).astype(np.float32)
     h_pt = (ys.max() - ys.min()) * SG; w_pt = (xs.max() - xs.min()) * SG
     amp = spec.get('amp', min(1.0, 205.0 / max(h_pt, 1))); deg = spec.get('deg', 4.0 * min(1.0, 300.0 / max(w_pt, 1))); axx = spec.get('ax', amp)
     X = (xx - ox) * SG; Y = (yy - oy) * SG

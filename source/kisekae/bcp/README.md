@@ -161,6 +161,13 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
       線は 元の 絵の まま 動かない 絵として 馬の 上に 重ねる（`occl.png` → `bcp_<名前>x_oc.webp`：ふちの にじみ `static_front_pad` px＋`static_front_ring` px で なめらかに）。
     - ボードの 前（前の 絵の マスク）に かかる 所は アプリの ボードと 馬の 前の 絵より 上にも（`occl_top` → `bcp_<名前>x_ot.webp`・`bcp_chr_exp2.js` の `ot`）。
     - 線の マスク：`extra_masks.py rain` の `rain<段>_lines.png`（馬の 印からは 線と その まわり 2px を のぞく）。
+- 11/05 20:26 まさちゃん「花がヒラヒラ動く演出できる？そんなに激しくなく！」（的中⑧ 花束の 4まい）→ 大きな 花だけ ゆっくり ゆらす（実験・まだ アプリには 入れて いない）：
+  - 花の 一覧（`chr/designs/bloom_flowers.json`：段ごとに 花の まん中・半径・チューリップは もと `o`）→ `python3 chr/bloom_design.py chr/designs/bloom_flowers.json chr/designs/design_bloom.json` → `run_design.py`。
+    花ごとに 印＝まん中の だ円・outer＝少し 大きい だ円・モデルは つかわない（花が たくさん ならぶ 絵は 絵の ふち線で 分ける）。
+  - 動き（`bcp_chr_exp2.js` の `sw`）：まん中の まわりで 左右に 回る（ふつうの 花 4度・チューリップは もとの まわりで 3度・3.4〜4.4秒）＋ 少し 向きを かえる（たての じく 10〜12度・2.3〜3.0秒）。
+    花ごとに 時間を ずらす（いっしょに 動かない）。まるい 花は まん中で 回る ので ふちが ほとんど 動かない（うしろの うめた 所が 見えにくい）。
+  - 花は いつも ボードの 前：アプリの ボードと 前の 絵の 上に 重ねる（`layers_top` → `top`）。リボン・葉・小さな 花・紙ふぶきは 動かない。
+  - 見なおし：`chr/sway_sheet.py`（大きめに 回した 絵）。
 
 ## ボードの 中の きまり（まさちゃんの 指定 2026/11/03）
 

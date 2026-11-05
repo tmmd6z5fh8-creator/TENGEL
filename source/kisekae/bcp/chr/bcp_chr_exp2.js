@@ -24,6 +24,17 @@
     const nm = 'chr_' + name.replace(/[^a-z0-9_]/gi, '');
     let k = '', r = '';
     c.layers.forEach((l, i) => {
+      if (l.sw != null) {
+        // ヒラヒラ（花・リボン：まさちゃん 11/05 20:26「花がヒラヒラ動く演出できる？そんなに激しくなく！」）：
+        //   まん中 o の まわりで ゆっくり 左右に 回る（sw 度・st 秒）＋ 少し 向きを かえる（たての じく fy 度・sf 秒）。0% は 元の 絵と 同じ
+        const sw = +l.sw, fy = l.fy == null ? 0 : +l.fy, st = l.st == null ? 3.6 : +l.st, sf = l.sf == null ? 2.6 : +l.sf;
+        k += `@keyframes ${nm}_${i}w{0%,100%{transform:rotate(0deg)}25%{transform:rotate(${sw.toFixed(2)}deg)}75%{transform:rotate(${(-sw).toFixed(2)}deg)}}`;
+        k += `@keyframes ${nm}_${i}y{0%,100%{transform:perspective(${PER}px) rotateY(0deg)}25%{transform:perspective(${PER}px) rotateY(${fy.toFixed(2)}deg)}75%{transform:perspective(${PER}px) rotateY(${(-fy).toFixed(2)}deg)}}`;
+        const sel = `#fxOv .hb.bcpic.bcpon:not(.bcst)[data-bcp="${name}"] .chrw.L${i}`;
+        r += `${sel}{animation:${nm}_${i}w ${st.toFixed(2)}s ease-in-out ${(l.dt == null ? 0.9 : l.dt).toFixed(2)}s infinite}`;
+        if (fy) r += `${sel} > .chri{animation:${nm}_${i}y ${sf.toFixed(2)}s ease-in-out ${(l.dp == null ? 0.8 : l.dp).toFixed(2)}s infinite}`;
+        return;
+      }
       const a = l.amp == null ? 1 : l.amp, d = l.deg == null ? 4 : l.deg, ax = l.ax == null ? a : l.ax;   // ax：よこの ふくらみ（ボードを 持つ キャラは 小さく＝手が ボードから ずれない）
       k += `@keyframes ${nm}_${i}p{` + PON.map(([t, x, y]) => `${t}%{transform:scale(${f(1 + x * ax)},${f(1 + y * a)})}`).join('') + '}';
       k += `@keyframes ${nm}_${i}t{0%,100%{transform:perspective(${PER}px) rotateY(0deg)}25%{transform:perspective(${PER}px) rotateY(${d.toFixed(2)}deg)}75%{transform:perspective(${PER}px) rotateY(${(-d).toFixed(2)}deg)}}`;
@@ -56,7 +67,8 @@
       const im = document.createElement('img'); im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = src;
       ii.appendChild(im); w.appendChild(ii); return w;
     };
-    c.layers.forEach((l, i) => { const w = mk(l, i, l.src); if (rb) wrap.insertBefore(w, rb); else wrap.appendChild(w); });   // キャラ：ボードの 下
+    // キャラ：ボードの 下（top：いつも ボードの 前に ある キャラ＝花束の 花 は アプリの ボードと 前の 絵の 上＝前の 絵との さかいで 切れない）
+    c.layers.forEach((l, i) => { const w = mk(l, i, l.src); if (rb && !c.top) wrap.insertBefore(w, rb); else wrap.appendChild(w); });
     if (c.oc) {   // キャラの 前に ある 動かない 物（ボードの ふち など）：キャラの 上・アプリの ボードの 下（動かない）
       const b = c.oc.box, im = document.createElement('img'); im.className = 'chroc'; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = c.oc.src;
       im.style.cssText = `position:absolute;left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px;pointer-events:none`;
