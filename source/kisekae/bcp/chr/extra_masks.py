@@ -2,7 +2,8 @@
 #   python3 extra_masks.py carry   → carry_ribbons_bg.png（背景の 印）・carry_ribbons_still.png（光の ふちにも 入れない）
 #   python3 extra_masks.py wait    → wait1〜3_books_bg.png（左の 本：たてがみの 毛は のぞく）
 #   python3 extra_masks.py next    → next1〜4_band.png（next_band.py：ボードの 下の 白い 帯）
-#   python3 extra_masks.py toast   → toast_<段>_{T,B,bg,still}.png（toast_seeds.py）
+#   python3 extra_masks.py toast   → toast_<段>_{T,B,bg,still,arch}.png（toast_seeds.py）
+#   python3 extra_masks.py ring    → ring1〜4_board.png（ボード：右上・左上の 馬は この うしろ）
 #   出す 所：/home/claude/work/bcpic/chr（デザインの 設定に 書いて ある パス）
 import sys, os, subprocess
 import numpy as np, cv2
@@ -53,3 +54,17 @@ if what in ('next', 'all'):
 if what in ('toast', 'all'):
     # toast は 上の 馬の モデルの マスク（toast1/m_T.png）を つかう：先に run_design.py design_toast.json toast1 で 1回 切る
     subprocess.run(['python3', os.path.join(H_, 'toast_seeds.py')], check=True)
+    # 上の 馬の あごの 前に ある 王冠（ボードの 上の ふち）：うしろの キャラ（behind）の ボード（toast_<段>_arch.png）
+    for d in ('d2_1', 'd2_2', 'd2', 'd2_4'):
+        sh = 2 if d in ('d2_2', 'd2') else 0
+        still = np.asarray(Image.open(f'{O_}/toast_{d}_still.png')) > 127
+        box = np.zeros_like(still); box[340 + sh:428 + sh, 498:594] = True
+        save(ndi.binary_closing(still & box, iterations=2) & box, f'{O_}/toast_{d}_arch.png')
+if what in ('ring', 'all'):
+    # 的中① 廻る：ボード（紺の 板＋ふち線：板を 22px ふくらませる）。右上・左上の 馬は この ボードの うしろ（behind）
+    for d, nm in (('d1b_1', 'ring1'), ('d1b_2', 'ring2'), ('d1b', 'ring3'), ('d1b_4', 'ring4')):
+        a = np.asarray(Image.open(f'{B_}/{d}/clean.png').convert('RGB')).astype(np.float32); H, W = a.shape[:2]
+        r, g, b = a[..., 0], a[..., 1], a[..., 2]; V = a.max(-1)
+        navy = (b - r > 15) & (V < 110); q = np.zeros((H, W), np.uint8); cv2.rectangle(q, (180, 415), (870, 955), 1, -1); navy &= q.astype(bool)
+        lab, n = ndi.label(navy); sz = np.bincount(lab.ravel()); sz[0] = 0; panel = ndi.binary_fill_holes(lab == sz.argmax())
+        save(cv2.dilate(panel.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (45, 45))).astype(bool), f'{O_}/{nm}_board.png')

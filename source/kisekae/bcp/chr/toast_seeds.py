@@ -30,7 +30,8 @@ head = ((xx - 520) / 230.0) ** 2 + ((yy - 235) / 200.0) ** 2 <= 1
 # 上の 馬：モデルの マスク（toast1/m_T.png・はっきり 切れて いる）で 毛・たてがみも 印に
 MT = np.asarray(Image.open(f'{O_}/toast1/m_T.png').convert('L')).astype(np.float32)[:H] / 255
 tarea = np.zeros((H, W), bool); tarea[0:440, 260:800] = True
-T = (lo & head & (yy < 410)) | (ndi.binary_erosion(MT > 0.5, iterations=4) & (yy < 372) & tarea) | (ndi.binary_erosion(MT > 0.22, iterations=1) & (yy < 320) & tarea)   # 毛の ふち線まで
+navyT = ndi.binary_dilation((b - r > 5) & (ref.max(-1) < 130), iterations=3)        # ボードの 紺（段で かわらない ので 馬の 印に まぎれる）は 上の 馬の 印に しない
+T = (lo & head & (yy < 410) & ~navyT) | (ndi.binary_erosion(MT > 0.5, iterations=4) & (yy < 372) & tarea) | (ndi.binary_erosion(MT > 0.22, iterations=1) & (yy < 320) & tarea)   # 毛の ふち線まで
 Bm = lo & (yy > 860) & (yy < 1205)
 for m_ in (T, Bm):
     lab, n = ndi.label(m_); sz = ndi.sum(m_, lab, range(1, n + 1)); m_[:] = np.isin(lab, [i + 1 for i in range(n) if sz[i] >= 120])

@@ -44,6 +44,14 @@ for st in D['stages']:
         c['board'] = {'quad': dcfg['quad'], 'fgmask': os.path.join(st['dir'], 'fgmask.png')}
     elif D.get('board_all'):            # 前の 絵が ない デザイン：板の 中 ぜんぶ（アプリの 字が 出る 所）を キャラに 入れない
         c['board'] = {'quad': dcfg['quad']}
+    # 動きの 設定（なめらかな ふちの はばの 計算に つかう）・まとめる キャラ
+    mo_ = {}
+    for k_, v_ in D.get('motion', {}).items(): mo_[k_] = dict(v_)
+    for k_, v_ in st.get('motion', {}).items(): mo_.setdefault(k_, {}).update(v_)
+    c['motion'] = mo_
+    grp_ = st.get('groups', D.get('groups'))
+    if grp_ == 'all': grp_ = {'G': [p_['id'] for p_ in c['parts']]}
+    c['groups'] = grp_ or {}
     json.dump(c, open(os.path.join(O, 'cfg.json'), 'w'), ensure_ascii=False, indent=1)
     r = subprocess.run(['python3', os.path.join(H_, 'chr_split.py'), os.path.join(O, 'cfg.json')], capture_output=True, text=True)
     if r.returncode: print(r.stdout[-800:], r.stderr[-1500:]); sys.exit(1)
@@ -71,9 +79,16 @@ for st in D['stages']:
     for p in c['parts']:
         L = np.asarray(Image.open(os.path.join(O, p['id'] + '.png')).convert('RGBA')).astype(np.float32); a = L[..., 3:4] / 255
         comp = L[..., :3] * a + comp * (1 - a)
+    if os.path.exists(os.path.join(O, 'occl.png')):        # ボードの 前に 重ねる 所（動かない 元の 絵）
+        oc_ = np.asarray(Image.open(os.path.join(O, 'occl.png')).convert('L')).astype(np.float32)[..., None] / 255
+        comp = src * oc_ + comp * (1 - oc_)
     dmax = float(np.abs(comp - src).max())
     # 舞台の 絵
     mo = {'parts': [dict({'id': p['id']}, **D.get('motion', {}).get(p['id'], {})) for p in c['parts']]}
+    # 段ごとの 動き（stage の motion）・キャラの 前に ある 動かない 物（occl：ボードの ふち など。キャラが うしろに まわりこむ）
+    for p_ in mo['parts']:
+        p_.update(st.get('motion', {}).get(p_['id'], {}))
+    if c.get('occl'): mo['occl'] = c['occl']
     mp_ = os.path.join(O, 'motion.json'); json.dump(mo, open(mp_, 'w'), ensure_ascii=False)
     r = subprocess.run(['python3', os.path.join(H_, 'chr_stage.py'), st['dir'], O, SRV, mp_, D['stage_json']], capture_output=True, text=True)
     if r.returncode: print(r.stdout[-800:], r.stderr[-1500:]); sys.exit(1)

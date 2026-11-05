@@ -227,7 +227,8 @@
       ]
      }
     ],
-    "min_part": 300
+    "min_part": 300,
+    "behind": true
    },
    {
     "id": "UR",
@@ -297,7 +298,8 @@
       ]
      }
     ],
-    "min_part": 300
+    "min_part": 300,
+    "behind": true
    },
    {
     "id": "T",
@@ -901,7 +903,8 @@
        ]
       }
      ],
-     "trust_mask": false
+     "trust_mask": false,
+     "behind": true
     }
    },
    "add_inner": {
@@ -918,6 +921,24 @@
        ]
       ],
       "r": 4
+     }
+    ]
+   },
+   "over": {
+    "board_mask": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/ring1_board.png"
+     }
+    ],
+    "bg_pick": [
+     {
+      "within": [
+       {
+        "mask": "/home/claude/work/bcpic/chr/ring1_board.png"
+       }
+      ],
+      "vmin": 215,
+      "smax": 0.55
      }
     ]
    }
@@ -1169,8 +1190,27 @@
        ]
       }
      ],
-     "trust_mask": false
+     "trust_mask": false,
+     "behind": true
     }
+   },
+   "over": {
+    "board_mask": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/ring2_board.png"
+     }
+    ],
+    "bg_pick": [
+     {
+      "within": [
+       {
+        "mask": "/home/claude/work/bcpic/chr/ring2_board.png"
+       }
+      ],
+      "vmin": 215,
+      "smax": 0.55
+     }
+    ]
    }
   },
   {
@@ -1420,7 +1460,8 @@
        ]
       }
      ],
-     "trust_mask": false
+     "trust_mask": false,
+     "behind": true
     }
    },
    "add_inner": {
@@ -1449,6 +1490,24 @@
        ]
       ],
       "r": 3
+     }
+    ]
+   },
+   "over": {
+    "board_mask": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/ring3_board.png"
+     }
+    ],
+    "bg_pick": [
+     {
+      "within": [
+       {
+        "mask": "/home/claude/work/bcpic/chr/ring3_board.png"
+       }
+      ],
+      "vmin": 215,
+      "smax": 0.55
      }
     ]
    }
@@ -1700,8 +1759,27 @@
        ]
       }
      ],
-     "trust_mask": false
+     "trust_mask": false,
+     "behind": true
     }
+   },
+   "over": {
+    "board_mask": [
+     {
+      "mask": "/home/claude/work/bcpic/chr/ring4_board.png"
+     }
+    ],
+    "bg_pick": [
+     {
+      "within": [
+       {
+        "mask": "/home/claude/work/bcpic/chr/ring4_board.png"
+       }
+      ],
+      "vmin": 215,
+      "smax": 0.55
+     }
+    ]
    }
   }
  ],
@@ -1712,7 +1790,8 @@
   },
   "UR": {
    "dp": 1.2,
-   "dt": 1.8
+   "dt": 1.8,
+   "o": "contact"
   },
   "Rt": {
    "dp": 1.6,
@@ -1732,7 +1811,8 @@
   },
   "UL": {
    "dp": 3.2,
-   "dt": 6.3
+   "dt": 6.3,
+   "o": "contact"
   }
  },
  "stage_json": "/home/claude/work/bcpic/chr/stage_all.json"

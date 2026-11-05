@@ -4,7 +4,7 @@ import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 SRC = '/home/claude/tengel/source'; MO = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1]; CLIPS = json.loads(open(sys.argv[2], encoding='utf8').read()); DPR = float(os.environ.get('DPR', '2'))
-SRV = os.path.join(MO, 'srv'); PORT = 8802
+SRV = os.path.join(MO, 'srv'); PORT = int(os.environ.get('PORT', '8802'))
 if not os.path.exists(os.path.join(SRV, 'APP', 'index.html')) or os.environ.get('BUILD'):
     shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
     subprocess.run(['node', 'build.js'], cwd=SRC, check=True, stdout=subprocess.DEVNULL)

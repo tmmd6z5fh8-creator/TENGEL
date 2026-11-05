@@ -23,10 +23,12 @@ for arg in a[1:]:
     for p in c['parts']:
         lay |= np.asarray(Image.open(os.path.join(O, p['id'] + '.png')).convert('RGBA'))[..., 3] > 40
     hole = (np.abs(src - bg).max(-1) > 2) | lay
+    if os.path.exists(os.path.join(O, 'occl.png')):          # ボードの うしろの キャラ：ボードの 前に 重ねる 所は のこって いて よい
+        hole |= np.asarray(Image.open(os.path.join(O, 'occl.png')).convert('L')) > 127
     hole = cv2.morphologyEx(hole.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)).astype(bool)
     d = ndi.distance_transform_edt(~hole)
     cand = (M > THR) & ~ndi.binary_dilation(hole, iterations=2) & (d <= DIST)
-    if c.get('board'):
+    if c.get('board') and os.environ.get('SKIP_BOARD'):     # 前は 板の 中を 見なかった（今は 板に かかる キャラも キャラに 入れる ので 見る）
         q = np.array(c['board']['quad'], np.float64); bm = np.zeros((H, W), np.uint8); cv2.fillPoly(bm, [np.round(q).astype(np.int32)], 1)
         fm = np.asarray(Image.open(c['board']['fgmask']).convert('L')) > 127 if c['board'].get('fgmask') else np.zeros((H, W), bool)
         cand &= ~(bm.astype(bool) & ~fm)

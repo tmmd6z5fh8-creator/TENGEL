@@ -16,7 +16,7 @@ def ell(c, rx, ry): return ((xx - c[0]) / rx) ** 2 + ((yy - c[1]) / ry) ** 2 <= 
 def shape(s):
     if 'poly' in s: return poly(s['poly'])
     if 'ell' in s: return ell(s['ell'][0], s['ell'][1], s['ell'][2])
-    if 'rect' in s: x0, y0, x1, y1 = s['rect']; m = np.zeros((H, W), bool); m[y0:y1, x0:x1] = True; return m
+    if 'rect' in s: x0, y0, x1, y1 = s['rect']; m = np.zeros((H, W), bool); m[max(0, y0):max(0, y1), max(0, x0):max(0, x1)] = True; return m   # 負の 数は 0 に（-5 は 空に なって いた）
     if 'mask' in s:          # 絵の マスク（白い 所）：{mask: png の パス}（大きさが ちがう ときは 左上を あわせて 切る・たす）
         mm = np.asarray(Image.open(s['mask']).convert('L')) > 127; out_ = np.zeros((H, W), bool)
         h_, w_ = min(H, mm.shape[0]), min(W, mm.shape[1]); out_[:h_, :w_] = mm[:h_, :w_]; return out_
@@ -164,7 +164,16 @@ if C.get('board'):
     fm_ = np.asarray(Image.open(bq['fgmask']).convert('L')) > 127 if bq.get('fgmask') and os.path.exists(bq['fgmask']) else np.zeros((H, W), bool)
     VIS = ndi.binary_erosion(qm_, iterations=C.get('vis_erode', 2)) & ~fm_
     VIS &= ~shapes(C.get('vis_keep', []))      # 板の ふちに かかる キャラの 光の ふち（旗の 玉 など）は キャラに 入れて よい（動いた とき 光の 線が のこらない）
-    for k in hards: hards[k] &= ~VIS
+    # キャラの 絵は アプリの ボードの 下（前の 絵の 所 だけ ボードの 上）に 重ねる（bcp_chr_exp2.js）→ 板に かかる キャラも ぜんぶ キャラに 入れる
+    #   （前は 板の 中を キャラから のぞいて いた：動くと 板の ところで キャラが 切れて 見えた・まさちゃん 11/05 08:31）
+    #   板の 中で のぞくのは 光の ふち（halo）だけ（キャラの すぐ そば 3px は のぞかない）。vis_hard: true で 前の やり方
+    if C.get('vis_hard'):
+        for k in hards: hards[k] &= ~VIS
+# ボードの うしろに いる キャラ（behind: true・ボードの ふちが キャラの 前に ある）：ボード（board_mask）の 所は キャラに 入れない。
+#   ボードは キャラの 上に 重ねる（occl.png）→ キャラが 動くと ボードの ふちの うしろに まわりこむ（切れて 見えない）
+BM = shapes(C.get('board_mask', [])) if C.get('board_mask') else np.zeros((H, W), bool)
+BEH = [p['id'] for p in parts if p.get('behind')]
+for k in BEH: hards[k] &= ~BM
 res = {k: (v, None) for k, v in hards.items()}
 # 5) うしろ（キャラなし）：光の すじ（まん中 c から 見た 角度ごとの 色）＋ まわりとの ちがいを なめらかに。ボードの 中（plate_y より 下）は inpaint
 #    1回目：キャラの まわり GZ px まで 消して うめる → 元の 絵と うめた 色が ちがう 所（光の ふち・ふち線・きらきら）は キャラと いっしょに 動かす（halo）
@@ -228,7 +237,9 @@ for i, p in enumerate(parts):
     others = np.zeros((H, W), bool)
     for q in parts:
         if q['id'] != p['id']: others |= hards[q['id']]
-    allow = ~others & (yy < PY) & ndi.binary_dilation(hard, iterations=GZ - 2) & ~NOH & ~VIS & ~STILL
+    vis_p = VIS & ~ndi.binary_dilation(hard, iterations=3)
+    if p['id'] in BEH: vis_p |= BM
+    allow = ~others & (yy < PY) & ndi.binary_dilation(hard, iterations=GZ - 2) & ~NOH & ~vis_p & ~STILL
     if 'clip' in p: allow &= (yy < p['clip']['y'])
     g = (dif > GT) & allow
     l_, n_ = ndi.label(g | hard)
@@ -241,8 +252,35 @@ for i, p in enumerate(parts):
     else:
         small = np.zeros((H, W), bool)
     z = np.isin(l_, list(touch)) | small | (ndi.binary_dilation(hard, iterations=2) & allow) | hard
-    z = ndi.binary_closing(z, iterations=1) & (allow | hard) & ~VIS
+    z = ndi.binary_closing(z, iterations=1) & (allow | hard) & ~vis_p
     zones[p['id']] = z
+# 物の まとまり（絵を 色の まとまりで 区切る：felzenszwalb）：キャラの 外の 物（びっくりマーク・紙ふぶき・しずく など）を 一部だけ キャラに 入れない
+#   区切りの 大部分（frac より 多く）が キャラの 外・あまり 大きく ない・まわりの キャラと 色が はっきり ちがう → その 区切りは キャラから のぞく（動くと ちぎれて 見える）
+from skimage.segmentation import felzenszwalb
+OI = C.get('obj_integrity', {})
+SEG = felzenszwalb(img / 255, scale=(OI or {}).get('scale', 300), sigma=0.8, min_size=40)
+NSEG = int(SEG.max()) + 1; AREA = np.bincount(SEG.ravel(), minlength=NSEG)
+if OI is not False:
+    seedz = ndi.binary_dilation((lab0 >= 1) & (lab0 <= len(parts)), iterations=OI.get('seed_gap', 6))
+    CM = [np.bincount(SEG.ravel(), weights=img[..., k].ravel(), minlength=NSEG) / np.maximum(AREA, 1) for k in range(3)]
+    for p in parts:
+        z = zones[p['id']]
+        inside = np.bincount(SEG[z], minlength=NSEG)
+        frac = inside / np.maximum(AREA, 1)
+        cands = np.where((inside > 0) & (frac < OI.get('frac', 0.35)) & (AREA < OI.get('max_area', 15000)))[0]
+        drop = []
+        for L in cands:
+            R = SEG == L
+            ys_, xs_ = np.where(R); y0_, y1_, x0_, x1_ = max(0, ys_.min() - 6), min(H, ys_.max() + 7), max(0, xs_.min() - 6), min(W, xs_.max() + 7)
+            Rs = R[y0_:y1_, x0_:x1_]; zs = z[y0_:y1_, x0_:x1_]
+            band = ndi.binary_dilation(Rs, iterations=4) & ~Rs & zs
+            if band.sum() < 6: continue
+            cz = img[y0_:y1_, x0_:x1_][band].mean(0); cr = np.array([CM[0][L], CM[1][L], CM[2][L]])
+            if np.abs(cz - cr).max() > OI.get('dcol', 60): drop.append(L)
+        if drop:
+            rm = np.isin(SEG, drop) & z & ~seedz
+            zones[p['id']] = z & ~rm
+            print(p['id'], 'object integrity: drop', len(drop), 'regions', int(rm.sum()), 'px')
 res = {}
 for i, p in enumerate(parts):
     z = zones[p['id']]
@@ -262,9 +300,106 @@ d2 = np.abs(img - fill2).max(-1)
 w_o = ((1 - t) * np.clip(1 - (d2 - 12) / 20.0, 0, 1))[..., None]
 bgx = np.where(hole[..., None], img * w_o + fill2 * (1 - w_o), img)
 Image.fromarray(np.clip(bgx, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'bgx.png'))
+# ボードの 前に 重ねる 所（occl.png・すき通し 0〜255）：うしろに いる キャラ（behind）の そばの ボード（ふち線まで＝1）と ふちの 光（behind_glow px で 1 → 0）
+#   キャラの 絵は ふちの 光の 下も ふくむ（光の ふちで かたく 切れない）・前に いる キャラの 所は 入れない
+for f_ in ('occl.png', 'board.png'):
+    if os.path.exists(os.path.join(OUT, f_)): os.remove(os.path.join(OUT, f_))
+OCCA = np.zeros((H, W), np.float32)
+if BEH and BM.any():
+    GW = C.get('behind_glow', 12)
+    ramp_ = np.clip(1 - ndi.distance_transform_edt(~BM) / max(GW, 1), 0, 1)
+    near_b = np.zeros((H, W), bool)
+    for k in BEH: near_b |= ndi.binary_dilation(res[k][0], iterations=C.get('occl_dist', 40))
+    front = np.zeros((H, W), np.float32)
+    for k, (z_, a_) in res.items():
+        if k not in BEH: front = np.maximum(front, a_)
+    OCCA = (ramp_ * near_b * (1 - np.clip(front / 0.02, 0, 1))).astype(np.float32)
+    Image.fromarray(np.clip(OCCA * 255 + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'occl.png'))
+    Image.fromarray((BM * 255).astype(np.uint8)).save(os.path.join(OUT, 'board.png'))
+    print('occl px', int((OCCA > 0.5).sum()))
+# 動くと「切れて」見える ふち（絵の ふち線で ない なめらかな 所＝布・雲・光の 中を 通る さかい）：キャラの 絵を 外へ のばして なめらかに すき通す
+#   のばす 所の 色も 背景も 元の 絵（止まって いる ときは 元と 同じ）。動くと 少し ずれて とけこむ（かたい 切れ目に ならない）
+#   のばす はば：その 所が 動く いちばん 大きい きょり（ぷるん＋3Dの 向き：bcp_chr_exp2.js と 同じ 計算）＋2px は すき通さない・そこから ramp px で 0 へ
+GJ = os.path.join(os.path.dirname(C['clean']), 'geom.json')
+SG = json.load(open(GJ))['S'] if os.path.exists(GJ) else 0.4
+MO = C.get('motion', {}); GRP = C.get('groups', {})
+def disp_bound(zm, spec):
+    ys, xs = np.where(zm)
+    if not len(xs): return np.zeros((H, W), np.float32)
+    o = spec.get('o')
+    if isinstance(o, list): ox, oy = o
+    elif o == 'top': yt = ys.min(); ox, oy = float(xs[ys <= yt + 6].mean()), float(yt)
+    elif o == 'bottom_center': ox, oy = float((xs.min() + xs.max()) / 2), float(ys.max())
+    elif o == 'contact' and BM.any() and (zm & ndi.binary_dilation(BM, iterations=4)).any():
+        cy_, cx_ = np.where(zm & ndi.binary_dilation(BM, iterations=4)); ox, oy = float(cx_.mean()), float(cy_.mean())
+    else: yb = ys.max(); ox, oy = float(xs[ys >= yb - 6].mean()), float(yb)
+    h_pt = (ys.max() - ys.min()) * SG; w_pt = (xs.max() - xs.min()) * SG
+    amp = spec.get('amp', min(1.0, 205.0 / max(h_pt, 1))); deg = spec.get('deg', 4.0 * min(1.0, 300.0 / max(w_pt, 1))); axx = spec.get('ax', amp)
+    X = (xx - ox) * SG; Y = (yy - oy) * SG
+    jel = np.hypot(0.024 * axx * X, 0.038 * amp * Y)
+    th = np.radians(deg); rot = np.zeros((H, W), np.float32)
+    for sg_ in (1, -1):
+        f_ = 600.0 / (600.0 - sg_ * X * np.sin(th))
+        rot = np.maximum(rot, np.hypot(X * np.cos(th) * f_ - X, Y * f_ - Y))
+    return ((jel + rot) / SG).astype(np.float32)
+STf = C.get('soft_tear', {})
+EXT = {}
+if STf is not False:
+    gimg = np.max(np.stack([sobel(cv2.GaussianBlur(img[..., k] / 255, (0, 0), 0.8)) for k in range(3)]), 0)
+    gmx = ndi.maximum_filter(gimg, size=5)
+    dif_ = np.abs(img - bgx).max(-1)
+    border_ = np.zeros((H, W), bool); border_[:3, :] = border_[-3:, :] = True; border_[:, :3] = border_[:, -3:] = True
+    claimed = np.zeros((H, W), bool)
+    allz = np.zeros((H, W), bool); alla = np.zeros((H, W), np.float32)
+    for k, (z_, a_) in res.items(): allz |= z_; alla = np.maximum(alla, a_)
+    for i, p in enumerate(parts):
+        pid = p['id']; z = res[pid][0]
+        others = np.zeros((H, W), bool)
+        for k, (z_, a_) in res.items():
+            if k != pid: others |= a_ > 0.02
+        gid = next((g_ for g_, mem in GRP.items() if pid in mem), None)
+        if gid:
+            zg = np.zeros((H, W), bool)
+            for m_ in GRP[gid]:
+                if m_ in res: zg |= res[m_][0]
+            dmap = disp_bound(zg, MO.get(gid, {}))
+        else:
+            dmap = disp_bound(z, MO.get(pid, {}))
+        er = cv2.erode(z.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        bd = z & ~er
+        nogo = others | STILL | (OCCA > 0.02) | border_ | (BM if pid in BEH else np.zeros((H, W), bool))
+        outside = cv2.dilate(z.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool) & ~z & ~nogo
+        bd &= cv2.dilate(outside.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        inner = cv2.erode(z.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & ~cv2.erode(z.astype(np.uint8), np.ones((11, 11), np.uint8)).astype(bool)
+        difn = ndi.maximum_filter(np.where(inner, dif_, 0), size=9)
+        weak = bd & (gmx < STf.get('g', 0.05)) & (difn > STf.get('dif', 14))
+        lab_, n_ = ndi.label(weak, structure=np.ones((3, 3)))
+        ext = np.zeros((H, W), np.float32)
+        nt = 0
+        for k in range(n_):
+            comp = lab_ == k + 1
+            if comp.sum() < STf.get('min', 8): continue
+            dm = float(dmap[comp].max())
+            m_ = int(np.clip(np.ceil(dm) + 2, 3, STf.get('margin_max', 18))); r_ = int(np.clip(np.ceil(1.5 * dm) + 4, 8, STf.get('ramp_max', 30)))
+            y0_, x0_ = np.maximum(np.min(np.where(comp), 1) - (m_ + r_ + 2), 0); y1_, x1_ = np.minimum(np.max(np.where(comp), 1) + (m_ + r_ + 3), [H, W])
+            sub = comp[y0_:y1_, x0_:x1_]
+            dC = ndi.distance_transform_edt(~sub)
+            al_ = np.clip((m_ + r_ - dC) / r_, 0, 1)
+            # のばすのは 切れて いる 区切り（その 物：雲・布 など）の 中 だけ（ほかの 物に かかると 二重に 見える）
+            outn = cv2.dilate(sub.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool) & ~z[y0_:y1_, x0_:x1_]
+            labs = np.unique(SEG[y0_:y1_, x0_:x1_][outn])
+            region = (dC <= m_ + r_) & ~z[y0_:y1_, x0_:x1_] & ~nogo[y0_:y1_, x0_:x1_] & ~claimed[y0_:y1_, x0_:x1_] & np.isin(SEG[y0_:y1_, x0_:x1_], labs)
+            ext[y0_:y1_, x0_:x1_] = np.maximum(ext[y0_:y1_, x0_:x1_], np.where(region, al_, 0))
+            nt += 1
+        if nt:
+            ext = cv2.GaussianBlur(ext, (0, 0), 1.0) * (ext > 0)
+            claimed |= ext > 0.02
+            EXT[pid] = ext
+            print(pid, 'soft tear', nt, 'places ext px', int((ext > 0.5).sum()))
 # 6) キャラの 絵（RGBA）：色は 元の 絵・ext（ほかの キャラの うしろに かくれた 所）は まわりの 色で のばす
 for i, p in enumerate(parts):
     hard, a = res[p['id']]; rgb = img.copy()
+    if p['id'] in EXT: a = np.maximum(a, EXT[p['id']])      # なめらかに のばした 所（色は 元の 絵）
     if p.get('ext_under'):
         # ほかの キャラ（上に 重なる もの）の うしろに かくれた 所を、まわりの 色で のばす（動いた とき すき間に うしろが 見えない ように）
         over = np.zeros((H, W), bool)
@@ -273,6 +408,18 @@ for i, p in enumerate(parts):
         src_w = (hard & ~ndi.binary_dilation(over, iterations=1)).astype(np.float32)
         ext_rgb = diffuse(img, src_w, ex)
         rgb = np.where(ex[..., None], ext_rgb, rgb); a = np.maximum(a, ex.astype(np.float32))
+    if p['id'] in BEH and BM.any():
+        # ボードの うしろに かくれた 所を まわりの 色で のばす（動いて ボードの ふちから 出ても すき間に ならない・止まって いる ときは ボードの 下）
+        others_ = np.zeros((H, W), bool)
+        for q in parts:
+            if q['id'] != p['id']: others_ |= res[q['id']][0]
+        anyc_ = np.zeros((H, W), bool)
+        for k_, (z_, a_) in res.items(): anyc_ |= a_ > 0.02
+        ex = BM & ndi.binary_dilation(hard, iterations=p.get('behind_px', 10)) & ~hard & ~others_ & ~anyc_ & (OCCA > 0.98)    # occl.png の こい 所 だけ（止まって いる ときは かくれる）
+        if ex.any():
+            src_w = (hard & ~ndi.binary_dilation(BM, iterations=1)).astype(np.float32)
+            ext_rgb = diffuse(img, src_w, ex)
+            rgb = np.where(ex[..., None], ext_rgb, rgb); a = np.maximum(a, ex.astype(np.float32))
     Image.fromarray(np.dstack([np.clip(rgb, 0, 255), a * 255]).astype(np.uint8), 'RGBA').save(os.path.join(OUT, p['id'] + '.png'))
     print(p['id'], 'px', int(hard.sum()), 'alpha>0.5', int((a > 0.5).sum()))
 # しらべる 絵
