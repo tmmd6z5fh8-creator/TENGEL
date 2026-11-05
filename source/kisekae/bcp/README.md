@@ -139,7 +139,7 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
   - **物の まとまり**（`obj_integrity`）：絵を 色の まとまりで 区切って（felzenszwalb）、キャラの 外の 物（びっくりマーク・紙ふぶき）が 一部だけ キャラに 入らない ように。
   - 設定の 直し：隠蔽作戦の 布の ひだ・絵の はしの たてがみ を outer に／廻るの ふち線の 背景の 印は ボードの 中 だけ（馬の 体の 光の すじを 背景に しない）／祝杯の 上の 馬の 印に ボードの 紺を 入れない／
     負の 数の 四角（`[-5,…]` が 空に なって いた）を 0 に。
-  - 見なおし：`chr/tear_check.py`（動くと 切れて 見える かたい ふち）・`chr/outer_check.py`（outer が 小さくて 切れて いる 所）・`motion/shots_sel.py`＋`chr/peak_sheet.py`（アプリで 動いた 時の コマ）。
+  - 見なおし：`chr/tear_check.py`（動くと 切れて 見える かたい ふち）・`chr/outer_check.py`（outer が 小さくて 切れて いる 所）・`motion/shots_sel.py`＋`chr/peak_sheet.py`（アプリで 動いた 時の コマ）・`chr/video_sheet.py`（できた 動画の 段ごとの コマ：`--box` で 拡大）。
   - 色の マスク：`python3 chr/extra_masks.py ring`（ボード）・`toast`（王冠 `toast_<段>_arch.png` も）。
   - **前に 重ねる 物**（`obj_integrity: {front: true}`・今は 隠蔽作戦 だけ）：キャラの すぐ そばの 小さな 色の 物（びっくりマーク・汗の しずく・紙ふぶき：2000px 未満・
     ほとんど キャラの 外・ボードの ふちの まわりは のぞく）と、それに くっついた 小さな かけら（びっくりマークの 下の はし）を、光の ふち 3px ごと 動かない 絵として キャラの 上に 重ねる（`occl.png`）。
