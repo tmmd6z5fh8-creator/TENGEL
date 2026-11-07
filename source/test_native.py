@@ -43,7 +43,7 @@ for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):   # 第4.70版
 import sys; sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
 BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
 BCP_ON = all(os.path.exists(os.path.join(BCP_DIR, f)) for f in _bcp.files())
-BCP_OFF = [f for iid, _k, st in _bcp.ITEMS if iid == 'pen' for _n, n in st for f in (f'bcp_{n}.webp', f'bcp_{n}_fg.webp')] + [_bcp.THUMB.format('pen')]
+BCP_OFF = [f for iid, _k, st in _bcp.ITEMS if iid == 'pen' for _n, n in st for f in [f'bcp_{n}.webp', f'bcp_{n}_fg.webp'] + _bcp.motion_files(n)] + [_bcp.THUMB.format('pen')]   # 第4.129版：動く 絵も
 if BCP_ON:
     for f in _bcp.files():
         if f not in BCP_OFF:
@@ -1554,7 +1554,10 @@ try:
         p6.evaluate("TengelWallet.board.select('climb', 'hit')"); p6.evaluate("TengelWallet.board.select('rain', 'miss')"); p6.wait_for_timeout(300)
         BCP6 = """() => { const hb = document.querySelector('#fxOv .hb'), ov = hb && hb.parentNode, rb = hb && hb.querySelector('.rb'), bg = hb && hb.querySelector('.bcpbg'), c = document.querySelector('#fxOv .close'), r = c && c.getBoundingClientRect();
           return hb ? [hb.dataset.bcx || '', hb.dataset.bcp || '', hb.classList.contains('bcpic'), !!(ov && ov.classList.contains('bcpdone')), !!(bg && bg.naturalWidth), rb ? rb.style.transform.slice(0, 9) : '', hb.classList.contains('bcst'),
-            r ? [Math.round(r.left + r.width / 2), Math.round(r.bottom)] : null, (document.getElementById('bcxDyn') || {}).textContent || ''] : null; }"""
+            r ? [Math.round(r.left + r.width / 2), Math.round(r.bottom)] : null, (document.getElementById('bcxDyn') || {}).textContent || '',
+            (() => { const w = hb.querySelector('.bcpw'), ch = w ? [...w.querySelectorAll('.chrw')] : [];      // 第4.129版：動く 絵の ボード
+              return { n: ch.length, go: !!(w && w.classList.contains('chrgo')), mo: (w && w.dataset.mo) || '', bg: bg ? (bg.getAttribute('src') || '').split('/').pop() : '',
+                an: ch.filter(e => e.getAnimations().length).length, oc: w ? w.querySelectorAll('.chroc').length : 0, ot: w ? w.querySelectorAll('.chrot').length : 0 }; })()] : null; }"""
         stg = []
         for kd, sp_, n_, setv in (('hit', SPEC6, 1, None), ('hit', SPEC6, 3, None), ('big', SPEC6, 5, None), ('hit', SPEC6, 16, None), ('hit', SPEC6, 40, None), ('miss', MISS6, 1, None), ('miss', MISS6, 2, None), ('miss', MISS6, 7, None),
                                   ('hit', SPEC6, 2, {'effects': False}), ('miss', MISS6, 3, {'calm': True})):
@@ -1573,6 +1576,18 @@ try:
         check(ok6 and stp and stp[0] == 'pen' and stp[1] == '' and not stp[2] and not stp[3] and stp[7] == h0['cb'],
               f'第4.121版：絵の ボードの 段は 連続の 数（出世馬 1→1・3→3・5→4・16→16・40→24連勝／ハズレ 1・2・7→1・2・4回目）・オフと 控えめは 止まった 形・「とじる」の 場所は 同じ（出世馬 16連勝は その 色）・'
               f'絵が 読めない → いつもの ボード（{[x and x[:8] for x in stg]}・{stp and stp[:4]}・{h0["cb"]}・{cl16 in stg[3][8]}）')
+        # 第4.129版：動く 絵の ボード（二人でしょんぼり：キャラ 2人＋ボードの 前に 出る 所・動かない 青い 線）。出世馬は まだ 動かない・控えめ／絵が 読めない ときは 動かない
+        mo6 = [x and x[9] for x in stg]
+        if BCP_ON:
+            def _mw(n):
+                L_ = _bcp.MOTION[n]['layers']; return len(L_) + sum(1 for l in L_ if l.get('f'))
+            okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' for i, m in enumerate(mo6) if i not in (5, 6, 7)) and all(
+                mo6[i]['go'] and mo6[i]['mo'] == want6[i] and mo6[i]['n'] == _mw(want6[i]) and mo6[i]['an'] == mo6[i]['n'] and mo6[i]['bg'] == _bcp.MOTION[want6[i]]['bgx']
+                and mo6[i]['oc'] == 1 and mo6[i]['ot'] == 1 for i in (5, 6, 7)) and stg[8][9]['bg'] == 'bcp_shusse2.webp' and stg[9][9]['bg'] == 'bcp_miss1_3.webp'
+        else:
+            okm = all(m['n'] == 0 and not m['go'] for m in mo6)
+        check(okm and stp[9]['n'] == 0 and not stp[9]['go'], f'第4.129版：動く 絵の ボード：二人でしょんぼりは キャラが 動く（キャラ・前に 出る 所が 動いて、背景は キャラなし・動かない 物は 上に）・'
+              f'出世馬は 動かない・控えめは 止まった 絵・絵が 読めない → 動かない（{mo6}・{stp[9]}）')
         # 前の 版の 台帳（1つの 選択 sel）：その とき 的中にも ハズレにも ついて いた ので 両方へ・消した 飾り（1〜21）は まだ 選んで いない と 同じ
         p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board = { reads: 146, sel: 'carry', streak: 3, res: [] }; await TengelLocal.putMeta(w); })()""")
         reopen6()

@@ -34,6 +34,26 @@ ITEMS = [
     ('pen', 'miss', _st(['miss5', 'miss5_2', 'miss5_3', 'miss5_4'])),      # ハズレ⑤ 書き換え参戦
 ]
 THUMB = 'bcp_t_{}.webp'          # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）
+# 第4.129版（まさちゃん 2026/11/08「完成した動くカスタムボードを、アプリ内に入れてほしい！」）：キャラが 動く 絵の ボード（kisekae/bcp/chr の 道具で 作った もの）。
+#   chr/motion.json＝{ デザイン: { bgx・fgx（キャラなしの 背景・前の 絵）・layers（キャラ）・oc・ot（動かない 物）・top・amb（まわりの 光と 雲） } }（bcx.js の picMotion）。
+#   出世馬（climb）は まだ 動かない（止まった 絵）
+MOTION = json.load(open(os.path.join(H, 'chr', 'motion.json'), encoding='utf8'))
+
+
+def motion_files(name):
+    """動く 絵の ボードの ファイル（今の 止まった 絵 bcp_<name>.webp・_fg.webp は のぞく）"""
+    m = MOTION.get(name)
+    if not m:
+        return []
+    fl = [m.get('bgx'), m.get('fgx')] + [l['src'] for l in m['layers']] + [l.get('f') for l in m['layers']]
+    fl += [m[k]['src'] for k in ('oc', 'ot') if m.get(k)]
+    if m.get('amb'):
+        fl += [m['amb'][k] for k in ('m1', 'm2', 'm3', 'f')]
+    out = []
+    for f in fl:
+        if f and f not in out and f not in (f'bcp_{name}.webp', f'bcp_{name}_fg.webp'):
+            out.append(f)
+    return out
 
 
 def cfg(name):
@@ -62,6 +82,8 @@ def design(name):
     assert not L.get('stars') and not L.get('garland') and not L.get('star_img'), name + '：ボードの 中の 飾りは 使わない（まさちゃん 21:49）'
     d = {'hp': HP, 'q': [[round(float(x), 2), round(float(y), 2)] for x, y in Qs], 'fg': 1 if c.get('fg') else 0,
          'ts': L.get('title_style', ''), 'nt': 1 if L.get('hide_title') else 0, 'L': lay}
+    if name in MOTION:
+        d['mo'] = MOTION[name]
     if c.get('close_border'):
         sh = c.get('close_shadow') or ('0 0 0 1px rgba(0,0,0,.35),0 0 %s %s' % (c.get('close_glow_r', '10px'), c.get('close_glow', 'rgba(255,200,90,.35)')))
         d['cl'] = [c['close_border'], c.get('close_bg', 'rgba(0,0,0,.35)'), sh, c.get('close_css', '')]
@@ -86,6 +108,7 @@ def files():
             out.append(f'bcp_{n}.webp')
             if cfg(n).get('fg'):
                 out.append(f'bcp_{n}_fg.webp')
+            out += motion_files(n)
     return out
 
 
@@ -96,7 +119,10 @@ def bundle_js():
 
 if __name__ == '__main__':
     d = data()
-    print('items', len(d['items']), 'designs', len(d['d']), 'files', len(files()), 'js', len(bundle_js()))
+    print('items', len(d['items']), 'designs', len(d['d']), 'files', len(files()), 'js', len(bundle_js()),
+          'motion', len(MOTION), 'motion files', sum(len(motion_files(n)) for n in MOTION))
+    for n in MOTION:
+        assert n in d['d'], n + '：アプリの デザインに ない'
     # 作業フォルダ（見本を 作った ところ）の geom.json と 同じか
     work = os.environ.get('BCP_WORK', '/home/claude/work/bcpic')
     seen = 0

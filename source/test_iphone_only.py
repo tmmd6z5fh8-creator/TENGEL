@@ -106,9 +106,16 @@ if r.returncode == 0:
     bfiles = _bcp.files(); bhave = [f for f in bfiles if f in res]; bdir = os.path.join(W, 'ios', 'bcp_assets')
     check(len(BCPJ.get('items', {})) == 14 and len(BCPJ.get('d', {})) == 59 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
           and [i for i, _, _ in _bcp.ITEMS] == ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen']
-          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 108
+          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 108 + 355
           and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
-          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（手元に あれば ぜんぶ・CI は なし）')
+          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（止まった 絵 108＋動く 絵 355・手元に あれば ぜんぶ・CI は なし）')
+    # 第4.129版：動く 絵の ボード（キャラが 動く）52段＝出世馬の 7段 いがい ぜんぶ。動きの データ（mo）は 段ごと・絵は 動く 絵の 名前 だけ（今の 止まった 絵は そのまま）
+    mo_d = [k for k, v in BCPJ.get('d', {}).items() if v.get('mo')]
+    mo_f = sorted({f for n in _bcp.MOTION for f in _bcp.motion_files(n)})
+    check(len(mo_d) == 52 and sorted(mo_d) == sorted(_bcp.MOTION) and not any(k.startswith('shusse') for k in mo_d) and len(mo_f) == 355 and set(mo_f) <= set(bfiles)
+          and all(BCPJ['d'][k]['mo'] == _bcp.MOTION[k] for k in mo_d) and all(len(BCPJ['d'][k]['mo']['layers']) > 0 or BCPJ['d'][k]['mo'].get('amb') for k in mo_d)
+          and 'function picMotion(' in html and 'function ambStart(' in html and '.chrgo' in html,
+          f'第4.129版：動く 絵の ボード {len(mo_d)}段（出世馬 いがい）・動く 絵 {len(mo_f)}こ・picMotion（キャラ）・ambStart（まわりの 光と 雲）が 入って いる')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

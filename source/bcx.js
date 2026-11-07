@@ -205,6 +205,11 @@
     '@keyframes bcpIn{0%{opacity:0;transform:scale(1.045)}100%{opacity:1;transform:none}}',
     '@keyframes bcpInB{0%{opacity:0;transform:scale(1.07);filter:brightness(1.9)}55%{opacity:1;filter:brightness(1.25)}100%{opacity:1;transform:none;filter:none}}',
     '#fxOv .hb.bcpic .bcpw > img{position:absolute;left:0;top:0;width:390px;height:844px;-webkit-user-drag:none;user-select:none}',
+    // 第4.129版：キャラが 動く（picMotion）：キャラの 入れもの（絵の 大きさ だけ）・まわりの 光と 雲（WebGL）・見えない 時計（光と 雲の 時刻）
+    '#fxOv .hb.bcpic .bcpw .chrw{position:absolute;pointer-events:none}#fxOv .hb.bcpic .bcpw .chrw > .chri{position:absolute;left:0;top:0;width:100%;height:100%}',
+    '#fxOv .hb.bcpic .bcpw .chrw img{position:absolute;left:0;top:0;width:100%;height:100%;-webkit-user-drag:none;user-select:none}',
+    '#fxOv .hb.bcpic .bcpw .chramb{position:absolute;left:0;top:0;width:390px;height:844px;pointer-events:none}',
+    '#fxOv .hb.bcpic .bcpw .chrclk{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}',
     // 出おわったら ほかの 絵を かくす（絵の うしろ：光・紙ふぶき・PUSH・動画の さいごの コマ など）
     '#fxOv .ov.bcpdone > :not(.hb):not(.close):not(.sr),#fxOv .fxs.bcpdone > video,#fxOv .fxs.bcpdone > .ov:not(.bcpic){visibility:hidden!important}',
     // ボード（見本 kisekae/bcp/bcp_inj.py と 同じ 形。テーマの ボードの 色・ふち・飾りは 消す）
@@ -305,6 +310,165 @@
     };
     setTimeout(poll, 120);
   }
+  // ---------- 絵の ボードの キャラが 動く（第4.129版・まさちゃん 2026/11/08「完成した動くカスタムボードを、アプリ内に入れてほしい！」）----------
+  //   D.mo（kisekae/bcp/chr/motion.json・kisekae/bcp の README「キャラだけ 動かす」）：bgx（キャラなしの 背景）・fgx（前の 絵から キャラを のぞいた もの）・
+  //     layers（キャラ：src・box（舞台の pt）・o（動きの まん中）・amp・deg・ax・dp・dt／ヒラヒラ：sw・st・fy・sf／ボードの 前に 出る 所：f）・
+  //     oc（キャラの 前の 動かない 物）・ot（いちばん 上の 動かない 物）・top（キャラを ボードと 前の 絵の 上に）・amb（まわりの 光と 雲：WebGL）
+  //   動き：ぷるん（3.2秒に 1回・つぶれ 3.8%）と 3Dで 向き（左右 4度・7秒）・ヒラヒラ（花：まん中の まわりで 回る＋向き）・光の すじが ゆれて 雲が うねる（トロフィー）
+  //   はじめは 止まった 絵。動きの 絵が ぜんぶ 読めたら キャラを かさねる（止まって いる 形は 止まった 絵と 同じ：chr_snap.py）→ 2コマ あとで 背景を キャラなしに → 動きはじめる（.chrgo）
+  //   的中エフェクト オフ・控えめ（視差効果を減らす も）・絵が 読めない → 止まった 絵の まま（CSS も @media prefers-reduced-motion）
+  const MO_PON = [[0, 0, 0], [8, -0.010, 0.016], [14, 0.024, -0.038], [22, -0.006, 0.012], [30, 0.007, -0.007], [38, -0.002, 0.003], [46, 0, 0], [100, 0, 0]];
+  const MO_PER = 600, MO_TP = 3.2, MO_TT = 7;
+  const moMade = {};
+  function moRules(name, M) {     // デザインごとの アニメーション（1回 だけ 作る）
+    if (moMade[name]) return; moMade[name] = 1;
+    const nm = 'bcm_' + name.replace(/[^a-z0-9_]/gi, ''), s0 = `#fxOv .hb.bcpic.bcpon:not(.bcst) .bcpw.chrgo[data-mo="${name}"]`;
+    const n4 = v => (+v).toFixed(4), n2 = v => (+v).toFixed(2), ry = d => `perspective(${MO_PER}px) rotateY(${n2(d)}deg)`;
+    let k = '', r = '';
+    (M.layers || []).forEach((l, i) => {
+      const sel = `${s0} .chrw.L${i}`, dt = n2(l.dt == null ? .9 : l.dt), dp = n2(l.dp == null ? .8 : l.dp);
+      if (l.sw != null) {        // ヒラヒラ（花）：まん中 o の まわりで ゆっくり 左右に 回る（sw 度・st 秒）＋ 少し 向きを かえる（fy 度・sf 秒）
+        const sw = +l.sw, fy = l.fy == null ? 0 : +l.fy;
+        k += `@keyframes ${nm}_${i}w{0%,100%{transform:rotate(0deg)}25%{transform:rotate(${n2(sw)}deg)}75%{transform:rotate(${n2(-sw)}deg)}}`;
+        r += `${sel}{animation:${nm}_${i}w ${n2(l.st == null ? 3.6 : l.st)}s ease-in-out ${dt}s infinite}`;
+        if (fy) {
+          k += `@keyframes ${nm}_${i}y{0%,100%{transform:${ry(0)}}25%{transform:${ry(fy)}}75%{transform:${ry(-fy)}}}`;
+          r += `${sel} > .chri{animation:${nm}_${i}y ${n2(l.sf == null ? 2.6 : l.sf)}s ease-in-out ${dp}s infinite}`;
+        }
+        return;
+      }
+      const a = l.amp == null ? 1 : +l.amp, d = l.deg == null ? 4 : +l.deg, ax = l.ax == null ? a : +l.ax;   // ax：よこの ふくらみ（ボードを 持つ キャラは 小さく）
+      k += `@keyframes ${nm}_${i}p{` + MO_PON.map(([t, x, y]) => `${t}%{transform:scale(${n4(1 + x * ax)},${n4(1 + y * a)})}`).join('') + '}';
+      k += `@keyframes ${nm}_${i}t{0%,100%{transform:${ry(0)}}25%{transform:${ry(d)}}75%{transform:${ry(-d)}}}`;
+      r += `${sel}{animation:${nm}_${i}t ${MO_TT}s ease-in-out ${dt}s infinite}${sel} > .chri{animation:${nm}_${i}p ${MO_TP}s ease-in-out ${dp}s infinite}`;
+    });
+    if (M.amb) {
+      k += `@keyframes ${nm}_clk{from{transform:translateX(0)}to{transform:translateX(1px)}}`;
+      r += `${s0} .chrclk{animation:${nm}_clk 3600s linear 0s 1 both}`;
+    }
+    const st = document.createElement('style'); st.className = 'bcmCss'; st.textContent = k + '\n@media (prefers-reduced-motion:no-preference){' + r + '}';
+    document.head.appendChild(st);
+  }
+  function picMotion(hb, wrap, rb, bg, fg, name, M) {
+    const L = M.layers || [];
+    const srcs = [M.bgx, fg && M.fgx, M.oc && M.oc.src, M.ot && M.ot.src].concat(L.map(l => l.src), L.map(l => l.f)).filter(Boolean);
+    const load = s => new Promise((ok, ng) => {
+      const im = new Image();
+      im.onload = () => { const p = im.decode ? im.decode() : null; if (p && p.then) p.then(() => ok(im), () => ok(im)); else ok(im); };
+      im.onerror = ng; im.src = s;
+    });
+    Promise.all(srcs.map(load)).then(() => {
+      if (!wrap.isConnected || !hb.classList.contains('bcpic') || hb.classList.contains('bcst')) return;
+      moRules(name, M);
+      wrap.dataset.mo = name;
+      const pic = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = src; return im; };
+      const still = (cls, o) => { const im = pic(cls, o.src), b = o.box; im.style.cssText = `position:absolute;left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px;pointer-events:none`; return im; };
+      const mk = (l, i, src) => {   // 入れものは 絵の 大きさ だけ（重ねる 層が 小さい＝iPhone でも 軽い）。動きの まん中は 入れものの 中の 位置
+        const w = document.createElement('div'), ii = document.createElement('div'), b = l.box;
+        w.className = 'chrw L' + i; ii.className = 'chri';
+        w.style.cssText = `left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px`;
+        const o = `${f(l.o[0] - b[0])}px ${f(l.o[1] - b[1])}px`; w.style.transformOrigin = o; ii.style.transformOrigin = o;
+        ii.appendChild(pic('', src)); w.appendChild(ii); return w;
+      };
+      // キャラ（ボードの 下・top は ボードと 前の 絵の 上）→ キャラの 前の 動かない 物（ボードの 下）→ ボードの 前に 出る 所 → いちばん 上の 動かない 物
+      L.forEach((l, i) => { const w = mk(l, i, l.src); if (M.top) wrap.appendChild(w); else wrap.insertBefore(w, rb); });
+      if (M.oc) wrap.insertBefore(still('chroc', M.oc), rb);
+      L.forEach((l, i) => { if (l.f) wrap.appendChild(mk(l, i, l.f)); });
+      if (M.ot) wrap.appendChild(still('chrot', M.ot));
+      if (M.amb) ambStart(wrap, rb, bg.getAttribute('src'), M.amb);
+      // キャラが かさなって から（同じ 形）背景と 前の 絵を キャラなしに → 動きはじめる
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!wrap.isConnected) return;
+        if (M.bgx) bg.src = M.bgx;
+        if (fg && M.fgx && fg.isConnected) fg.src = M.fgx;
+        wrap.classList.add('chrgo');
+      }));
+    }, () => { /* 動きの 絵が 読めない → 止まった 絵の まま */ });
+  }
+  // まわりの 光と 雲（トロフィー：kisekae/bcp/chr/amb_stage.py の m1・m2・m3・f）：舞台の 絵の 上（アプリの ボードの 下）に WebGL の 絵を かさねる。
+  //   光の すじは もとの まわりで ゆっくり ゆれて 明るさが 角度で 流れる・雲は 外へ むかう 波で うねる。トロフィー・紙ふぶきの 所は 動かない（かさねない）。
+  //   時刻は 見えない 時計（.chrclk の CSS アニメーション）の currentTime（動きを 止める 設定では 時計が 動かない＝かさねない＝止まった 絵）。出はじめは ramp 秒で 0 から
+  const AMB_VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const AMB_FS = ['precision highp float;', 'uniform sampler2D uO,uF,uM1,uM2,uM3;', 'uniform vec2 uC,uS;uniform float uT,uA;uniform vec4 uR,uK,uQ;',
+    'const vec2 SZ=vec2(1170.0,2532.0);const float TAU=6.2831853;',
+    'void main(){',
+    '  vec2 px=vec2(gl_FragCoord.x,uC.y-gl_FragCoord.y)*(SZ.x/uC.x);vec2 uv=px/SZ;',
+    '  vec3 m2=texture2D(uM2,uv).rgb;float w=m2.b;',
+    '  if(w<0.002){gl_FragColor=vec4(0.0);return;}',
+    '  vec3 m1=texture2D(uM1,uv).rgb;vec3 m3=texture2D(uM3,uv).rgb;',
+    '  float rw=m2.r*uA,cw=m1.b*uA;',
+    '  float th=uR.x*sin(TAU*uT/uR.y);vec2 r=px-uS;float cs=cos(th),sn=sin(th);',
+    '  vec2 d=(vec2(cs*r.x-sn*r.y,sn*r.x+cs*r.y)-r)*rw;',
+    '  vec2 dir=m1.rg*2.0-1.0;vec2 pp=vec2(-dir.y,dir.x);float rr=length(px-uQ.yz);',
+    '  d+=cw*(uK.x*dir*sin(TAU*(uT/uK.z-rr/uQ.x)+TAU*m2.g)+uK.y*pp*sin(TAU*uT/uK.w+TAU*m3.b));',
+    '  vec2 q=(px+d)/SZ;vec3 col=texture2D(uO,q).rgb;',
+    '  float fs=texture2D(uM3,q).r*(1.0-m3.r);col=mix(col,texture2D(uF,q).rgb,fs);',
+    '  float ang=atan(px.x-uS.x,px.y-uS.y);float fr=smoothstep(90.0,320.0,length(r));',
+    '  col*=1.0+rw*fr*uR.z*sin(TAU*uT/uR.w-uQ.w*ang);',
+    '  gl_FragColor=vec4(col*w,w);',
+    '}'].join('\n');
+  function ambStart(wrap, rb, bgSrc, A) {
+    const u = A.u || {};
+    const cv = document.createElement('canvas'); cv.className = 'chramb';
+    const dpr = Math.min(3, window.devicePixelRatio || 1); cv.width = Math.round(390 * dpr); cv.height = Math.round(844 * dpr);
+    wrap.insertBefore(cv, rb);
+    const clk = document.createElement('i'); clk.className = 'chrclk'; wrap.appendChild(clk);
+    let gl = null, U = {}, ready = false, dead = false, drawn = false, last = -1;
+    const kill = () => { dead = true; if (cv.parentNode) cv.parentNode.removeChild(cv); };
+    const init = () => {
+      try { gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false }); } catch (e) { gl = null; }
+      if (!gl) { kill(); return; }
+      cv.addEventListener('webglcontextlost', e => { e.preventDefault(); kill(); });
+      const sh = (ty, src) => { const o = gl.createShader(ty); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader'); return o; };
+      let pg;
+      try {
+        pg = gl.createProgram(); gl.attachShader(pg, sh(gl.VERTEX_SHADER, AMB_VS)); gl.attachShader(pg, sh(gl.FRAGMENT_SHADER, AMB_FS)); gl.linkProgram(pg);
+        if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) throw new Error('link');
+      } catch (e) { kill(); return; }
+      gl.useProgram(pg);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pg, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      ['uO', 'uF', 'uM1', 'uM2', 'uM3', 'uC', 'uS', 'uT', 'uA', 'uR', 'uK', 'uQ'].forEach(n => { U[n] = gl.getUniformLocation(pg, n); });
+      ['uO', 'uF', 'uM1', 'uM2', 'uM3'].forEach((n, i) => gl.uniform1i(U[n], i));
+      const srcs = [bgSrc, A.f, A.m1, A.m2, A.m3]; let left = srcs.length;
+      srcs.forEach((s, i) => {
+        const im = new Image();
+        im.onload = () => {
+          if (dead) return;
+          gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+          gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, i === 0 ? gl.BROWSER_DEFAULT_WEBGL : gl.NONE);   // 向きと 強さの 絵は 色の 変換を しない
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+          [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]].forEach(([k, v]) => gl.texParameteri(gl.TEXTURE_2D, k, v));
+          if (--left === 0) ready = true;
+        };
+        im.onerror = kill;
+        im.src = s;
+      });
+      gl.uniform2f(U.uC, cv.width, cv.height);
+      const S = u.src || [585, 40], C = u.c || [585, 1350];
+      gl.uniform2f(U.uS, S[0], S[1]);
+      gl.uniform4f(U.uR, (u.deg == null ? 1.1 : u.deg) * Math.PI / 180, u.pr || 8, u.sh == null ? .1 : u.sh, u.ps || 7);
+      gl.uniform4f(U.uK, u.a1 == null ? 10 : u.a1, u.a2 == null ? 5 : u.a2, u.p1 || 6, u.p2 || 8.5);
+      gl.uniform4f(U.uQ, u.wl || 420, C[0], C[1], u.bands || 6);
+    };
+    const clear = () => { if (gl && drawn) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); } drawn = false; last = -1; };
+    const tick = () => {
+      if (!wrap.isConnected) { if (gl) { const x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } return; }
+      requestAnimationFrame(tick);
+      if (dead) return;
+      const an = clk.getAnimations ? clk.getAnimations()[0] : null;
+      if (!an) { clear(); return; }       // 動かさない（オフ・控えめ・視差効果を減らす）
+      if (!gl) init();
+      if (dead || !ready) return;
+      const t = (an.currentTime || 0) / 1000;
+      if (t === last || (t > last && last >= 0 && t - last < 1 / 31)) return;   // 30コマ／秒 まで（ゆっくりした 動き なので 十分）
+      last = t;
+      const rp = u.ramp || 1.5, x = Math.min(1, Math.max(0, t / rp));
+      gl.uniform1f(U.uT, t); gl.uniform1f(U.uA, x * x * (3 - 2 * x));
+      gl.viewport(0, 0, cv.width, cv.height); gl.drawArrays(gl.TRIANGLES, 0, 3); drawn = true;
+    };
+    requestAnimationFrame(tick);
+  }
   function picDecorate(stage, hb, rb, it, info, kind) {
     const raw = info.streak != null ? info.streak : (info.spec && info.spec.streak != null ? info.spec.streak : 0);
     const sg = picStage(it.id, Math.max(1, Math.floor(+raw || 0))), name = sg && sg[1], D = name && PIC.d[name];
@@ -339,6 +503,11 @@
       dynCss(''); delete hb.dataset.bcp;
     });
     if (fg) fg.addEventListener('error', () => { if (fg.parentNode) fg.parentNode.removeChild(fg); });
+    // 第4.129版：キャラが 動く（D.mo）。止まった 絵が 読めてから（読めない とき＝CI は いつもの ボード）・オフと 控えめ では 動かさない
+    if (D.mo && !st) {
+      const go = () => { if (!undone && wrap.isConnected) picMotion(hb, wrap, rb, bg, fg, name, D.mo); };
+      if (bg.complete && bg.naturalWidth) go(); else bg.addEventListener('load', go, { once: true });
+    }
     // 出る 時：ボードの 登場が 始まったら 絵ごと 出す・出おわって（絵の ふわっと も おわって）から ほかの 絵を かくす
     let wDone = st, hDone = false;
     const done = () => { if (undone || !wDone || !hDone || !hb.isConnected) return; if (ov && ov.classList) ov.classList.add('bcpdone'); stage.classList.add('bcpdone'); };
