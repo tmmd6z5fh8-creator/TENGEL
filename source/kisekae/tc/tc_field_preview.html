@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Field sway</title>
+<style>
+@font-face{font-family:BIZ;src:url('BIZUDPGothic-Bold.ttf')}
+html,body{margin:0;background:#000}
+#sc{position:relative;width:390px;height:614px;overflow:hidden}
+#sc img,#sc canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+#lab{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);white-space:nowrap;padding:6px 14px 7px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 16px/1.2 BIZ,sans-serif;letter-spacing:.04em}
+</style></head><body>
+<div id="sc"><img id="bg" alt=""><canvas id="cv"></canvas><div id="lab"></div></div>
+<script>
+const Q = new URLSearchParams(location.search), TOD = Q.get('t') || 'morning';
+const LAB = { morning: '朝（7:00〜15:59）', evening: '夕方（16:00〜18:59）', night: '夜（19:00〜6:59）' };
+document.getElementById('lab').textContent = LAB[TOD];
+const CFG = { w: 1052, h: 1657, amp: [5.0, 4.2, 4.6], per: [4.6, 3.7, 5.3], ph: [0.0, 0.37, 0.71] };
+const VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+const FS = ['precision highp float;', 'uniform sampler2D uImg,uMap,uLit;uniform vec2 uSz,uRes;uniform vec4 uXf;uniform float uT,uA,uLitOn;uniform vec3 uAmp,uPer,uPh;uniform float uK[12];',
+  'const float TAU=6.2831853;',
+  'void main(){',
+  '  vec2 px=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);vec2 ip=px*uXf.xy+uXf.zw;',
+  '  vec3 w=texture2D(uMap,ip/uSz).rgb;vec2 d=vec2(0.0);',
+  '  if(w.r+w.g+w.b>0.002){',
+  '    vec3 a=TAU*(uT/uPer+uPh)-(ip.x*0.004+ip.y*0.0025);',
+  '    vec3 s=sin(a)*0.62+sin(a*1.73+1.1)*0.24+sin(a*0.41+2.3)*0.3;',
+  '    float g=0.78+0.22*sin(TAU*uT/12.7+0.6)+0.16*sin(TAU*uT/6.1+1.9);',
+  '    float dx=dot(w*uAmp,s)*g*uA;d=vec2(dx,-0.16*abs(dx));',
+  '  }',
+  '  vec3 col=texture2D(uImg,(ip-d)/uSz).rgb;',
+  '  if(uLitOn>0.5){vec3 L=texture2D(uLit,ip/uSz).rgb;',
+  '    if(L.r>0.004){float id=floor(L.g*255.0/16.0+0.5);float k=0.0;',
+  '      for(int i=0;i<12;i++){if(abs(id-float(i))<0.5)k=uK[i];}',
+  '      col*=1.0-L.r*L.b*k;}}',
+  '  gl_FragColor=vec4(col,1.0);',
+  '}'].join('\n');
+
+// ライトの ゆらぎ（11/08 まさちゃん：08:59「じんわりって感じでゆっくり、よく見れば分かるくらい」・09:06「もう少し速度だけ上げて」・09:11「もう少しだけ光りの緩急つけて」）
+//   ライトごとに ばらばらに：ゆっくり（2.8〜4秒）・すっと（1〜1.6秒：すっと 弱く なって ゆっくり 戻る）・2回（2〜2.8秒）の どれか。ちらちら しない（なめらか）。
+//   弱く なるのは ライトの 光の 20〜40%（ランプの まん中で 8〜17%）。次まで 0.8〜7秒
+function mkRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const FL = { rnd: mkRand(Number(Q.get('seed') || 20261108)), lamps: [] };
+function flNext(L, t) {
+  const r = FL.rnd, k = r();
+  L.at = t + 0.8 + r() * 6.2;
+  if (k < 0.4) { L.ty = 0; L.dur = 2.8 + r() * 1.2; L.sk = 0.45 + r() * 0.1; L.dep = 0.2 + r() * 0.1; }
+  else if (k < 0.8) { L.ty = 1; L.dur = 1.0 + r() * 0.6; L.sk = 0.25 + r() * 0.1; L.dep = 0.28 + r() * 0.12; }
+  else { L.ty = 2; L.dur = 2.0 + r() * 0.8; L.sk = 0.5; L.dep = 0.26 + r() * 0.1; }
+}
+const hump = (u, sk) => { const x = u < sk ? u / sk : 1 - (u - sk) / (1 - sk); return 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, x))); };
+for (let i = 0; i < 12; i++) { const L = {}; flNext(L, -FL.rnd() * 6); FL.lamps.push(L); }
+function flK(t) {
+  return FL.lamps.map((L, i) => {
+    while (t > L.at + L.dur) flNext(L, L.at + L.dur);
+    let k = 0.012 * (0.5 + 0.5 * Math.sin(t * 0.9 + i * 1.3));
+    if (t >= L.at) {
+      const u = (t - L.at) / L.dur;
+      const e = L.ty === 2 ? (u < 0.45 ? hump(u / 0.45, 0.4) : 0.75 * hump((u - 0.45) / 0.55, 0.4)) : hump(u, L.sk);
+      k += L.dep * e;
+    }
+    return k;
+  });
+}
+const load = s => new Promise((ok, ng) => { const im = new Image(); im.onload = () => ok(im); im.onerror = ng; im.src = s; });
+let gl, U, ready = false;
+(async () => {
+  const bgs = 'tc_field_' + TOD + '.webp';
+  document.getElementById('bg').src = bgs;
+  const lit = TOD !== 'morning';
+  const [img, map, lmap] = await Promise.all([load(bgs), load('tc_sway_' + TOD + '.png'), lit ? load('tc_light_' + TOD + '.png') : Promise.resolve(null)]);
+  const cv = document.getElementById('cv'); cv.width = CFG.w; cv.height = CFG.h;
+  gl = cv.getContext('webgl', { preserveDrawingBuffer: true, premultipliedAlpha: false, alpha: false });
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  const lp = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(lp); gl.vertexAttribPointer(lp, 2, gl.FLOAT, false, 0, 0);
+  const tex = (im, unit, raw) => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    if (raw) gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; };
+  tex(img, 0, false); tex(map, 1, true); if (lmap) tex(lmap, 2, true);
+  U = n => gl.getUniformLocation(pr, n);
+  gl.uniform1i(U('uImg'), 0); gl.uniform1i(U('uMap'), 1); gl.uniform1i(U('uLit'), lmap ? 2 : 1); gl.uniform1f(U('uLitOn'), lmap ? 1 : 0);
+  gl.uniform2f(U('uSz'), CFG.w, CFG.h); gl.uniform2f(U('uRes'), cv.width, cv.height);
+  gl.uniform4f(U('uXf'), CFG.w / cv.width, CFG.h / cv.height, 0, 0);
+  gl.uniform3fv(U('uAmp'), CFG.amp); gl.uniform3fv(U('uPer'), CFG.per); gl.uniform3fv(U('uPh'), CFG.ph);
+  gl.viewport(0, 0, cv.width, cv.height);
+  ready = true;
+  if (!Q.get('cap')) { const t0 = performance.now(); const f = () => { render((performance.now() - t0) / 1000); requestAnimationFrame(f); }; f(); }
+})();
+function render(t) { gl.uniform1fv(U('uK'), flK(t)); gl.uniform1f(U('uT'), t); gl.uniform1f(U('uA'), Math.min(1, t / 1.2) * Math.min(1, t / 1.2) * (3 - 2 * Math.min(1, t / 1.2))); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gl.finish(); return 1; }
+window.__ready = () => ready;
+window.__render = render;
+window.__probe = (t, pts) => { render(t); const px = new Uint8Array(4); return pts.map(([x, y]) => { gl.readPixels(x, CFG.h - 1 - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return Math.max(px[0], px[1], px[2]); }); };
+</script></body></html>
