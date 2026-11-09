@@ -41,17 +41,16 @@ tex = glb.Texture(np.dstack([A, np.ones_like(lum)]).astype(np.float32), glb.CLAM
 mrt = glb.Texture(np.dstack([MR, np.ones_like(lum)]).astype(np.float32), glb.CLAMP, glb.CLAMP, 'board_mr')
 mat = glb.Material({'pbrMetallicRoughness': {'metallicFactor': 1.0, 'roughnessFactor': 1.0}}, None, 'board')
 mat.base_tex = glb.TexRef(tex); mat.mr_tex = glb.TexRef(mrt); mat.double_sided = True
-# 角の まるい 板（中心から 扇の 三角）：高さ 2.15 の 座標 → 元の 座標
-r = min(bw, bh) * 0.07; pts = []
-for (cx, cy, a0) in ((bw / 2 - r, bh / 2 - r, 0), (-bw / 2 + r, bh / 2 - r, 90), (-bw / 2 + r, -bh / 2 + r, 180), (bw / 2 - r, -bh / 2 + r, 270)):
-    for k in range(9):
-        a = math.radians(a0 + k * 90 / 8); pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-pts = np.array(pts, np.float64); z = c[2] + 0.008      # 面の いちばん 前（board_find.py）より 少し 前（アプリの 板と 同じ）
-Vn = np.concatenate([[[c[0], c[1], z]], np.stack([c[0] + pts[:, 0], c[1] + pts[:, 1], np.full(len(pts), z)], 1)])
+# 板：長方形 2まい（扇の 細い 三角だと ソフトの 描き方で すじが 出る）・角の まるみは 絵の すける ところ（MASK）
+r = min(bw, bh) * 0.07; z = c[2] + 0.008      # 面の いちばん 前（board_find.py）より 少し 前（アプリの 板と 同じ）
+Vn = np.array([[c[0] - bw / 2, c[1] - bh / 2, z], [c[0] + bw / 2, c[1] - bh / 2, z], [c[0] + bw / 2, c[1] + bh / 2, z], [c[0] - bw / 2, c[1] + bh / 2, z]], np.float64)
 V = (Vn / s + off).astype(np.float32)
-uv = np.stack([(Vn[:, 0] - (c[0] - bw / 2)) / bw, ((c[1] + bh / 2) - Vn[:, 1]) / bh], 1).astype(np.float32)
-N = len(pts); idx = np.array([[0, 1 + i, 1 + (i + 1) % N] for i in range(N)], np.int32)
-nrm = np.tile(np.array([[0, 0, 1]], np.float32), (len(V), 1))
+uv = np.array([[0, 1], [1, 1], [1, 0], [0, 0]], np.float32); idx = np.array([[0, 1, 2], [0, 2, 3]], np.int32)
+nrm = np.tile(np.array([[0, 0, 1]], np.float32), (4, 1))
+yy2, xx2 = np.mgrid[0:TH, 0:TW].astype(np.float32); rx, ry = r / bw * TW, r / bh * TH
+cxk = np.clip(xx2, rx, TW - 1 - rx); cyk = np.clip(yy2, ry, TH - 1 - ry)
+alpha = ((((xx2 - cxk) / rx) ** 2 + ((yy2 - cyk) / ry) ** 2) <= 1).astype(np.float32)
+tex.img[..., 3] = alpha; mat.alpha_mode = 'MASK'; mat.alpha_cutoff = 0.5
 plate = glb.Prim(V, nrm, uv, idx, mat, 'board')
 cen = (lo + hi) / 2; ext = hi - lo; e = math.radians(EL); dist = max(ext[0], ext[1]) * 4.2
 eye = cen + dist * np.array([0, math.sin(e), math.cos(e)])

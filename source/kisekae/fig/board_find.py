@@ -18,12 +18,23 @@ for src in sys.argv[1:]:
     sc, z, x0, x1, y0, y1, A = best
     # 同じ 深さの 面の うち いちばん 大きく つながった かたまり（ボードの 板）の 四角：上の かざりの 面を まぜない
     from scipy import ndimage
-    m = sel.copy(); m[sel] = np.abs(np.round(cen[sel, 2] / 0.01) * 0.01 - z) < 1e-6
+    # 深さを まわりの 面で そろえ直す（0.01 の きざみの 境に 板が あると 2つに 分かれる）→ その 深さ ±0.005 の 面
+    nb = sel & (np.abs(cen[:, 2] - z) < 0.011)
+    if nb.any():
+        zz = cen[nb, 2]; ww = ar[nb]; o = np.argsort(zz); cw = np.cumsum(ww[o]); z = float(zz[o][np.searchsorted(cw, cw[-1] / 2)])
+    m = sel & (np.abs(cen[:, 2] - z) < 0.005)
     g = 0.01; gx0, gy0 = x0 - 0.05, y0 - 0.05; nx, ny = int((x1 - x0 + 0.1) / g) + 2, int((y1 - y0 + 0.1) / g) + 2; occ = np.zeros((ny, nx), bool)
-    ws = np.random.default_rng(0).dirichlet([1, 1, 1], 24)
+    # 三角を 0.01 の ます目に 塗る（へらした 形の 大きい 三角も ぬけなく：ます目の まん中が 三角の 中か）
     for t in np.nonzero(m)[0]:
-        P = ws @ np.stack([a[t], b[t], c[t]]); ix = ((P[:, 0] - gx0) / g).astype(int); iy = ((P[:, 1] - gy0) / g).astype(int)
-        ok = (ix >= 0) & (ix < nx) & (iy >= 0) & (iy < ny); occ[iy[ok], ix[ok]] = True
+        q = np.stack([a[t], b[t], c[t]])[:, :2]; i0 = max(0, int((q[:, 0].min() - gx0) / g)); i1 = min(nx - 1, int((q[:, 0].max() - gx0) / g) + 1)
+        j0 = max(0, int((q[:, 1].min() - gy0) / g)); j1 = min(ny - 1, int((q[:, 1].max() - gy0) / g) + 1)
+        if i1 < i0 or j1 < j0: continue
+        X, Y = np.meshgrid(gx0 + (np.arange(i0, i1 + 1) + 0.5) * g, gy0 + (np.arange(j0, j1 + 1) + 0.5) * g)
+        d = (q[1, 1] - q[2, 1]) * (q[0, 0] - q[2, 0]) + (q[2, 0] - q[1, 0]) * (q[0, 1] - q[2, 1])
+        if abs(d) < 1e-12: continue
+        w0 = ((q[1, 1] - q[2, 1]) * (X - q[2, 0]) + (q[2, 0] - q[1, 0]) * (Y - q[2, 1])) / d; w1 = ((q[2, 1] - q[0, 1]) * (X - q[2, 0]) + (q[0, 0] - q[2, 0]) * (Y - q[2, 1])) / d
+        ins = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
+        occ[j0:j1 + 1, i0:i1 + 1] |= ins
     occ = ndimage.binary_closing(occ, iterations=2); lab, nl = ndimage.label(occ)
     if nl:
         big = 1 + int(np.argmax(ndimage.sum(occ, lab, range(1, nl + 1)))); ys_, xs_ = np.nonzero(lab == big)

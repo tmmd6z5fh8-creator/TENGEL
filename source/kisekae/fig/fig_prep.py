@@ -1,7 +1,7 @@
 # 思い出フィギュアの 形を へらして、アプリ用の 絵（色・物の 向きの 法線・金属／あらさ）を 作る（11/09 21:10 に 作業場所が 消えた あとに 作り直した 版）
 #   python3 kisekae/fig/fig_prep.py <まさちゃんの GLB> <出す 名前（…/out/fig1）> [三角の 数 90000] [色 2048] [法線 1024] [金属 512]
 #   → <名前>.npz（V：高さ 2.15・y 0〜・x／z まん中・T・UVc＝三角の 角ごとの UV）・<名前>_c.webp・_n.webp・_m.webp（どれも 劣化なしの WebP）
-#   ・形：QEM で へらす。UV の 継ぎ目・ふちの 頂点は 動かさない → 元の UV と 絵を そのまま 使える（絵の 焼き直しが いらない）
+#   ・形：QEM で へらす。UV の 継ぎ目で 分かれた 頂点は いっしょに たたむ（同じ 絵の 島の 中で）→ 元の UV と 絵を そのまま 使える（絵の 焼き直しが いらない）
 #   ・法線：元の 細かい 形（と 法線マップ）を UV の 上に 塗って「物の 向き」の 法線の 絵に する → へらした 形でも 細かい でこぼこが 見える
 #   ・材質が いくつも ある ときは 絵を 1枚に ならべる（UV も ずらす）
 #   ・まさちゃんの GLB と それから 作った もの は リポジトリに 入れない（この スクリプトだけ）
@@ -22,6 +22,9 @@ def lib():
     L.qem_decimate.restype = ctypes.c_int
     L.qem_decimate.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.c_void_p]
     L.uv_raster.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p]
+    L.uv_raster_v.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p]
+    L.qem_decimate2.restype = ctypes.c_int
+    L.qem_decimate2.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.c_void_p]
     return L
 
 
@@ -36,6 +39,26 @@ def uv_raster(L, UV, F, A, W, H):
     UV = np.ascontiguousarray(UV, np.float64); F = np.ascontiguousarray(F, np.int32); A = np.ascontiguousarray(A, np.float64)
     K = A.shape[2]; out = np.zeros((H, W, K), np.float32); cov = np.zeros((H, W), np.uint8)
     L.uv_raster(len(F), UV.ctypes.data, F.ctypes.data, A.ctypes.data, K, W, H, out.ctypes.data, cov.ctypes.data)
+    return out, cov.astype(bool)
+
+
+def decimate2(L, V, F, target, maxcos=0.2):       # 継ぎ目ごと（同じ 場所の 頂点を いっしょに）へらす
+    P, pid = np.unique(V, axis=0, return_inverse=True); pid = pid.astype(np.int32).ravel()
+    a_ = np.concatenate([pid[F[:, 0]], pid[F[:, 1]], pid[F[:, 2]]]).astype(np.int64); b_ = np.concatenate([pid[F[:, 1]], pid[F[:, 2]], pid[F[:, 0]]]).astype(np.int64)
+    key = np.minimum(a_, b_) * len(P) + np.maximum(a_, b_); del a_, b_
+    ue, cnt = np.unique(key, return_counts=True); del key
+    be = ue[cnt == 1]; del ue, cnt
+    plock = np.zeros(len(P), np.uint8); plock[be // len(P)] = 1; plock[be % len(P)] = 1; del be
+    print('場所', len(P), '（分かれた 頂点', len(V), '）・ほんとうの ふち', int(plock.sum()), flush=True)
+    P = np.ascontiguousarray(P, np.float64); F = np.ascontiguousarray(F, np.int32); out = np.zeros_like(F)
+    n = L.qem_decimate2(len(V), pid.ctypes.data, len(P), P.ctypes.data, len(F), F.ctypes.data, plock.ctypes.data, int(target), float(maxcos), out.ctypes.data)
+    return out[:n]
+
+
+def uv_raster_v(L, UV, F, A, W, H):         # A：頂点ごと（nv×K）
+    UV = np.ascontiguousarray(UV, np.float64); F = np.ascontiguousarray(F, np.int32); A = np.ascontiguousarray(A, np.float32)
+    K = A.shape[1]; out = np.zeros((H, W, K), np.float32); cov = np.zeros((H, W), np.uint8)
+    L.uv_raster_v(len(F), UV.ctypes.data, F.ctypes.data, A.ctypes.data, K, W, H, out.ctypes.data, cov.ctypes.data)
     return out, cov.astype(bool)
 
 
@@ -69,16 +92,14 @@ def main():
         uv = np.clip(np.asarray(uv, np.float64), 0, 1); uv = np.stack([(cx + uv[:, 0]) / cols, (cy + uv[:, 1]) / rows], 1)
         V.append(p.pos.astype(np.float64)); N.append(p.nrm.astype(np.float64)); UV.append(uv)
         T.append(p.tangent.astype(np.float64) if p.tangent is not None else np.tile([1.0, 0, 0, 1], (len(p.pos), 1)))
-        F.append(np.asarray(p.idx, np.int64).reshape(-1, 3) + base); base += len(p.pos)
-    V = np.concatenate(V); N = np.concatenate(N); UV = np.concatenate(UV); T = np.concatenate(T); F = np.concatenate(F)
+        F.append((np.asarray(p.idx, np.int64).reshape(-1, 3) + base).astype(np.int32)); base += len(p.pos)
+    V = np.concatenate(V); N = np.concatenate(N).astype(np.float32); UV = np.concatenate(UV); T = np.concatenate(T).astype(np.float32); F = np.concatenate(F)
+    del prims
     # 高さ 2.15・地面 y=0・x／z まん中（向きは そのまま：fig_bake.py の PROP と 同じ）
     lo, hi = V.min(0), V.max(0); s = 2.15 / (hi[1] - lo[1]); off = np.array([(lo[0] + hi[0]) / 2, lo[1], (lo[2] + hi[2]) / 2])
     V = (V - off) * s
-    # ふち（三角 1つだけの 辺）の 頂点は 動かさない（UV の 継ぎ目も ここに 入る）
-    E = np.sort(np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), 1)
-    ue, cnt = np.unique(E, axis=0, return_counts=True); lock = np.zeros(len(V), np.uint8); lock[ue[cnt == 1].ravel()] = 1
-    print('うごかさない 頂点', int(lock.sum()), '/', len(V), flush=True)
-    F2 = decimate(L, V, F, lock, TARGET) if len(F) > TARGET else F.astype(np.int32)
+    # へらす：UV の 継ぎ目で 分かれた 頂点は いっしょに たたむ（継ぎ目に すき間が できない）・ほんとうの ふちだけ 動かさない
+    F2 = decimate2(L, V, F, TARGET) if len(F) > TARGET else F.astype(np.int32)
     used = np.unique(F2); remap = -np.ones(len(V), np.int64); remap[used] = np.arange(len(used))
     V2 = V[used].astype(np.float32); T2 = remap[F2].astype(np.int32); UVc = UV[used][T2].astype(np.float32)
     print('へらした 三角', len(F), '→', len(T2), '頂点', len(V2), flush=True)
@@ -95,9 +116,14 @@ def main():
                lambda mt: (1.0, mt.roughness, mt.metallic))
     nmap = atlas(lambda mt: mt.normal_tex.tex.img[..., :3] if mt.normal_tex is not None else None, NS, lambda mt: (0.5, 0.5, 1.0))
     has_nmap = any(mt.normal_tex is not None for mt in mats)
+    # 絵の 島の すき間（元の 三角が 塗って いない ところ）を 近くの 島の 色で うめる：へらした 三角が 島の 外に 少し はみ出ても・ミップマップでも 白い すじが 出ない
+    _, cc = uv_raster_v(L, UV, F, np.ones((len(V), 1), np.float32), CS, CS)
+    col = fill(col, cc)
+    cm = np.asarray(Image.fromarray(cc.astype(np.uint8) * 255).resize((MS, MS), Image.BOX)) > 127
+    mr = fill(mr, cm); del cc, cm
+    print('絵の すき間を うめた', flush=True)
     # 物の 向きの 法線：元の 細かい 三角を UV の 上に 塗る（法線・接線・向き）→ 法線マップを かける
-    A = np.concatenate([N[F], T[F]], 2)                     # 三角×角×（N 3・T 4）
-    R, cov = uv_raster(L, UV, F.astype(np.int32), A, NS, NS)
+    R, cov = uv_raster_v(L, UV, F, np.concatenate([N, T], 1), NS, NS)      # 頂点ごと（N 3・T 4）を 三角で まぜる
     n = R[..., :3]; t = R[..., 3:6]; w = np.where(R[..., 6:7] < 0, -1.0, 1.0)
     n /= np.maximum(np.linalg.norm(n, axis=2, keepdims=True), 1e-9)
     if has_nmap:

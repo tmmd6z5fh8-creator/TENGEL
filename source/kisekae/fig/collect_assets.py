@@ -49,6 +49,7 @@ def thumb(src, name, h=360):
 
 meta = {'v': 1, 'figs': {}, 'shelf': {}}
 for n in range(1, 9):
+    if not (os.path.exists(os.path.join(O, f'fig{n}.npz')) and os.path.exists(os.path.join(SRC, 'thumbs', f'fig{n}.png'))): print('※ まだ ない：fig', n); continue      # 作りかけでも ためせる ように
     m = pack(os.path.join(O, f'fig{n}.npz'), f'fg{n}')
     webp(os.path.join(O, f'fig{n}_c.webp'), f'fg{n}_c.webp', 2048, 90)
     webp(os.path.join(O, f'fig{n}_n.webp'), f'fg{n}_n.webp', 1024, 92)
@@ -60,10 +61,12 @@ for n in range(1, 9):
     bd = json.load(open(os.path.join(O, f'fig{n}_board.json')))
     m.update({'tex': f'fg{n}_c.webp', 'ntex': f'fg{n}_n.webp', 'mtex': f'fg{n}_m.webp', 'thumb': f'fg{n}_t.webp', 'tsz': tsz, 'board': {'c': [round(v, 4) for v in bd['c']], 'w': round(bd['w'], 4), 'h': round(bd['h'], 4)}, 'kind': KIND[n], 'pal': PAL.get(n, 'gold')})
     json.dump(m, open(os.path.join(OUT, f'fg{n}.json'), 'w')); meta['figs'][str(n)] = {'kind': KIND[n], 'pal': PAL.get(n, 'gold'), 'tsz': tsz}
-m = pack(os.path.join(O, 'shelf.npz'), 'fg_shelf')
-for c in range(1, 8): webp(os.path.join(O, f'shelf_c{c}.webp'), f'fg_shelf_c{c}.webp', 2048, 90)
-m.update({'tex': [f'fg_shelf_c{c}.webp' for c in range(1, 8)]})
-json.dump(m, open(os.path.join(OUT, 'fg_shelf.json'), 'w'))
+if os.path.exists(os.path.join(O, 'shelf_c7.webp')):
+    m = pack(os.path.join(O, 'shelf.npz'), 'fg_shelf')
+    for c in range(1, 8): webp(os.path.join(O, f'shelf_c{c}.webp'), f'fg_shelf_c{c}.webp', 2048, 90)
+    m.update({'tex': [f'fg_shelf_c{c}.webp' for c in range(1, 8)]})
+    json.dump(m, open(os.path.join(OUT, 'fg_shelf.json'), 'w'))
+else: print('※ まだ ない：棚')
 json.dump(meta, open(os.path.join(OUT, 'fg_meta.json'), 'w'))
 for f in os.listdir(OUT): got.setdefault(f, os.path.getsize(os.path.join(OUT, f)))
 print('集めた', len(got), 'こ', round(sum(got.values()) / 1e6, 1), 'MB →', OUT)
