@@ -44,9 +44,11 @@ STILL_FROM = round(RES - .1, 2)
 STILL_BOARD = round(STILL_WAIT + (RES + .2 - STILL_FROM), 2)      # 1.3秒
 STILL_T0 = round(STILL_WAIT + (RES + .45 - STILL_FROM), 2)        # 1.55秒（買い目の はじまり）
 BOARD = round(RES + .15, 2)                                       # ボードが 出る（動画の とき）
-# できた 動画（第13稿・CRF 20）。リポジトリの 外：GK_MASTER=<mp4> で ほかの 所も
-MASTER = '/home/claude/work/pack/deliver_gk/神様極的中_第13稿.mp4'
-CRF = 23                              # アプリの 動画（約10.3MB・第13稿と 見た目 同じ：SSIM 0.976）
+# できた 動画（リポジトリの 外：GK_MASTER=<mp4> で ほかの 所も）
+#   第14稿（第4.136版・11/10）：さいごの「神様極的中」の 字を まさちゃんの 3D（神速極光祭_Meshy の GLB）に 入れかえた（kisekae/gk_emblem.py・CRF 16）
+#   第13稿（CRF 20・/home/claude/work/pack/deliver_gk/）は 11/09 21:10 に 作業の 場所が リセットされて ない → 第14稿は アプリの 動画（CRF 23）の コマから 作った
+MASTER = '/home/claude/work/kamigoku/神様極的中_第14稿.mp4'
+CRF = 23                              # アプリの 動画（第14稿：約8.7MB）
 
 
 def sec(v):
