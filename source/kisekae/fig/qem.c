@@ -148,7 +148,9 @@ void uv_raster_v(int nf, const double *UV, const int *F, const float *A, int K, 
 // 継ぎ目ごと へらす 版：同じ 場所の 頂点（UV の 継ぎ目で 分かれた もの）を いっしょに たたむ → 継ぎ目に すき間が できず、絵も ずれない
 //   ns：分かれた 頂点の 数・pid：分かれた 頂点 → 場所の 番号（np こ）・P：場所（np×3）・plock：動かさない 場所（ほんとうの ふち）
 //   F0：三角（分かれた 頂点の 番号）→ outF：残った 三角。返り値＝残った 三角の 数
-int qem_decimate2(int ns, const int *pid, int np, const double *P, int nf, const int *F0, const unsigned char *plock, int target, double maxcos, int *outF) {
+//   UV：分かれた 頂点の UV（ns×2・NULL なら 見ない）→ UV の 上で 面が うら返る／つぶれる たたみ方・島の ふちの 線が uvtol より 動く たたみ方は しない
+//     （島の 外に はみ出た 三角や 重なった 三角は、絵の 別の 場所を 塗って「破片」に 見える：まさちゃん 11/09 23:01）
+int qem_decimate2(int ns, const int *pid, int np, const double *P, int nf, const int *F0, const unsigned char *plock, int target, double maxcos, const double *UV, double uvtol, int *outF) {
   int *F = (int *)malloc(sizeof(int) * 3 * (size_t)nf); memcpy(F, F0, sizeof(int) * 3 * (size_t)nf);
   unsigned char *fdead = (unsigned char *)calloc(nf, 1), *sdead = (unsigned char *)calloc(ns, 1), *pdead = (unsigned char *)calloc(np, 1);
   int *stamp = (int *)calloc(np, sizeof(int)), *mark = (int *)calloc(np, sizeof(int)); int mk = 0;
@@ -202,6 +204,35 @@ int qem_decimate2(int ns, const int *pid, int np, const double *P, int nf, const
       }
     }
     if (!ok) continue;
+    // UV：面が うら返らない・つぶれない／島の ふち（その 島で 1つの 面に しか ない 辺）の 線が uvtol より 動かない
+    if (UV) {
+      for (int i = 0; i < nc && ok; i++) {
+        int s = cid[cst[pu] + i], t = tgt[i]; if (t < 0) continue;
+        double su = UV[2 * s], sv = UV[2 * s + 1], tu = UV[2 * t], tv = UV[2 * t + 1];
+        int nb[64], cn[64], nn = 0;
+        for (int j = 0; j < vf[s].n && ok; j++) {
+          int f = vf[s].f[j]; if (fdead[f]) continue; int *tr = F + 3 * f;
+          int a = pid[tr[0]], b = pid[tr[1]], c = pid[tr[2]];
+          for (int k = 0; k < 3; k++) if (tr[k] == s) {
+            int oo[2] = {tr[(k + 1) % 3], tr[(k + 2) % 3]};
+            for (int q = 0; q < 2; q++) { int h; for (h = 0; h < nn; h++) if (nb[h] == oo[q]) break; if (h == nn) { if (nn == 64) { ok = 0; break; } nb[nn] = oo[q]; cn[nn] = 0; nn++; } cn[h]++; }
+          }
+          if (a == pv || b == pv || c == pv) continue;
+          double x[3], y[3], x2[3], y2[3];
+          for (int k = 0; k < 3; k++) { int w = tr[k]; x[k] = UV[2 * w]; y[k] = UV[2 * w + 1]; x2[k] = w == s ? tu : x[k]; y2[k] = w == s ? tv : y[k]; }
+          double a0 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]), a1 = (x2[1] - x2[0]) * (y2[2] - y2[0]) - (x2[2] - x2[0]) * (y2[1] - y2[0]);
+          if (fabs(a0) > 1e-16 && (a0 * a1 <= 0 || fabs(a1) < fabs(a0) * 1e-3)) ok = 0;
+        }
+        for (int h = 0; h < nn && ok && uvtol > 0; h++) {
+          if (cn[h] != 1 || nb[h] == t) continue;
+          double ax = UV[2 * nb[h]], ay = UV[2 * nb[h] + 1], dx = tu - ax, dy = tv - ay, L2 = dx * dx + dy * dy;
+          double tt = L2 > 0 ? ((su - ax) * dx + (sv - ay) * dy) / L2 : 0; if (tt < 0) tt = 0; if (tt > 1) tt = 1;
+          double ex = ax + tt * dx - su, ey = ay + tt * dy - sv;
+          if (ex * ex + ey * ey > uvtol * uvtol) ok = 0;
+        }
+      }
+      if (!ok) continue;
+    }
     for (int i = 0; i < nc; i++) {
       int s = cid[cst[pu] + i], t = tgt[i]; if (t < 0) continue;
       for (int j = 0; j < vf[s].n; j++) {
