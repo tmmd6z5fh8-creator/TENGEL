@@ -70,8 +70,9 @@ def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
 
-def wait_scene(pg, t=120000):          # ブースの 絵が 出るまで（よみこみ中が 消える）
+def wait_scene(pg, t=120000):          # ブースの 絵が 出るまで（よみこみ中が 消える）→ 1コマ 書いて 待つ（写真が まっ黒に ならない ように）
     pg.wait_for_function("() => FigApp._t.mode === 'booth' && document.querySelector('#fgOv .fgld').hidden", timeout=t); pg.wait_for_timeout(600)
+    pg.evaluate("() => FigApp._t.draw()"); pg.wait_for_timeout(400)
 
 
 def wait_room(pg, t=120000):

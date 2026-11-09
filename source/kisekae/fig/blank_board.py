@@ -7,7 +7,7 @@ import os, sys, math, json
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'r3d', 'glb'))
 import glb
-from raster import Camera, render, tonemap
+from raster import Camera, Light, render, tonemap
 from PIL import Image, ImageDraw
 GLB, BJ, pal, out = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]; R = int(sys.argv[5]) if len(sys.argv) > 5 else 1000; EL = float(sys.argv[6]) if len(sys.argv) > 6 else 6
 PAL = {
@@ -55,6 +55,8 @@ plate = glb.Prim(V, nrm, uv, idx, mat, 'board')
 cen = (lo + hi) / 2; ext = hi - lo; e = math.radians(EL); dist = max(ext[0], ext[1]) * 4.2
 eye = cen + dist * np.array([0, math.sin(e), math.cos(e)])
 cam = Camera.look_at(eye, cen, fov_y=15, W=R, H=R)
-fr = render(prims + [plate], cam, ss=2, want=('rgb', 'alpha'))
+# 光：前から（上からの 光だと わくの かげが 板に 大きく おちる）
+LI = [Light.key(direction=(0.3, 0.42, 0.86), softness=3.0), Light.fill(), Light.rim()]
+fr = render(prims + [plate], cam, lights=LI, ss=2, want=('rgb', 'alpha'))
 rgb = np.clip(tonemap(fr['rgb'], 1.0), 0, 1); a = np.clip(fr['alpha'], 0, 1)
 o = Image.fromarray((np.dstack([rgb, a]) * 255 + 0.5).astype(np.uint8), 'RGBA'); o = o.crop(o.getbbox()); o.save(out); print(out, o.size)
