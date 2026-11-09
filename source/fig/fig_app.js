@@ -168,6 +168,7 @@ const FigApp = (() => {
   // ---------- 描く ----------
   let mode = '', page = 0, scene = null, pageTok = 0, raf = 0;
   const view = { yaw: 0, pitch: 0 };
+  let hold = false;                                    // 見本の 動画を 写す とき：ブースの かたむきを もどさない（_t.hold）
   let room = null;                                     // { it（作った もの）か prev（作る 前）, F, boardT, yaw, pitch, zoom, vy, intro }
   let rects = [];
   function need() { if (!raf && ov && ov.classList.contains('on')) raf = requestAnimationFrame(frame); }
@@ -175,7 +176,7 @@ const FigApp = (() => {
     raf = 0; if (!R || R.lost || !cv.width) return;
     let more = false;
     if (mode === 'booth' && scene) {
-      if (!drag) { view.yaw *= 0.78; view.pitch *= 0.78; if (Math.abs(view.yaw) < 0.04 && Math.abs(view.pitch) < 0.04) { view.yaw = 0; view.pitch = 0; } else more = true; }
+      if (!drag && !hold) { view.yaw *= 0.78; view.pitch *= 0.78; if (Math.abs(view.yaw) < 0.04 && Math.abs(view.pitch) < 0.04) { view.yaw = 0; view.pitch = 0; } else more = true; }
       R.drawBooth(cv.width, cv.height, { shelf: scene.shelf, shelfT: scene.shelfT, figs: scene.figs, yaw: view.yaw, pitch: view.pitch });
       paintSlots();
     } else if ((mode === 'room' || (mode === 'make' && mk.step === 'prev')) && room && room.F) {
@@ -539,5 +540,6 @@ const FigApp = (() => {
     try { if (window.TengelWallet && window.TengelWallet.lockZoom) window.TengelWallet.lockZoom(false); } catch (e) { /* なし */ }
     try { document.dispatchEvent(new CustomEvent('tengel:fig')); } catch (e) { /* なし */ }
   }
-  return { booth, make, close, NAMES, KIND, PRICE, _t: { get mode() { return mode; }, get page() { return page; }, get slots() { return slots.slice(); }, get items() { return items.slice(); }, tapSlot, goPage, showOver, get mk() { return mk; }, get room() { return room; }, need } };      // _t：テスト 用
+  return { booth, make, close, NAMES, KIND, PRICE, _t: { get mode() { return mode; }, get page() { return page; }, get slots() { return slots.slice(); }, get items() { return items.slice(); }, tapSlot, goPage, showOver, get mk() { return mk; }, get room() { return room; }, need,
+    get view() { return view; }, hold: v => { hold = !!v; }, draw: () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } frame(performance.now()); } } };      // _t：テスト・見本の 動画 用
 })();
