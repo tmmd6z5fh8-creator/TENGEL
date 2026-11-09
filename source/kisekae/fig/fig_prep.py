@@ -15,9 +15,11 @@ import glb
 
 
 def lib():
-    so = os.path.join(tempfile.gettempdir(), 'tengel_libqem.so'); c = os.path.join(HERE, 'qem.c')
-    if not os.path.exists(so) or os.path.getmtime(so) < os.path.getmtime(c):
-        subprocess.run(['gcc', '-O2', '-shared', '-fPIC', '-o', so, c, '-lm'], check=True)
+    import hashlib
+    c = os.path.join(HERE, 'qem.c'); h = hashlib.sha1(open(c, 'rb').read()).hexdigest()[:10]
+    so = os.path.join(tempfile.gettempdir(), f'tengel_libqem_{h}.so')      # 中身ごとに 別の 名前（動いて いる 計算の .so を 上書き しない）
+    if not os.path.exists(so):
+        tmp = so + '.tmp'; subprocess.run(['gcc', '-O2', '-shared', '-fPIC', '-o', tmp, c, '-lm'], check=True); os.replace(tmp, so)
     L = ctypes.CDLL(so)
     L.qem_decimate.restype = ctypes.c_int
     L.qem_decimate.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.c_void_p]

@@ -12,7 +12,8 @@ from fig_prep import lib, uv_raster, fill
 L = lib()
 import ctypes
 L.zbuffer.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
-FLOOR = [1.585, 1.072, 0.572, 0.062]; CUB_H = 0.46; XC = 0.343; HALF = 0.322; FRONT = 0.244; EY, D = 1.075, 8.0
+FLOOR = [1.585, 1.072, 0.572, 0.062]; CUB_H = 0.46; XC = 0.343; HALF = 0.322; FRONT = 0.244; EY = 1.075
+D = float(os.environ.get('SHELF_D', '40'))     # 写真の カメラの 遠さ（写真は ほぼ 真正面・遠近 少し：大きいほど 平ら）
 base = sys.argv[1]; photos = sys.argv[2:]; TS = 2048
 d = np.load(base + '.npz'); V = d['V'].astype(np.float64); T = d['T'].astype(np.int32); UVc = d['UVc'].astype(np.float64)
 P = V[T]; fn = np.cross(P[:, 1] - P[:, 0], P[:, 2] - P[:, 0]); fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-12)
@@ -71,21 +72,25 @@ def colors(img, cam):
         return ok, c
     out = np.zeros((len(pos), 3), np.float32); done = np.zeros(len(pos), bool)
     ok, c = look(pos, nrm); ok &= cov; out[ok] = c[ok]; done |= ok
-    # 見えない 面：かわりの 場所を 見る
+    # 見えない 面（写真は ほぼ 真正面なので 箱の 床・天井・横の かべ・棚の 外がわは 写って いない）→ 同じ 材料の 正面の ふちの 色を 使う
+    #   床＝その 下の 板の 正面・天井＝上の 板の 正面・横の かべ＝その かべの 柱の 正面・外の 横／上／下＝外わくの 正面
     px, py, pz = pos[:, 0], pos[:, 1], pos[:, 2]; nx, ny, nz = nrm[:, 0], nrm[:, 1], nrm[:, 2]
     xc = np.where(px < 0, -XC, XC); inx = np.abs(px - xc) < HALF + 0.01
     row = np.full(len(pos), -1)
     for r, f0 in enumerate(FLOOR): row[(py >= f0 - 0.012) & (py <= f0 + CUB_H + 0.012) & inx & (pz < FRONT - 0.005)] = r
-    cub = row >= 0
-    def tryp(sel, p2, n2):
+    cub = row >= 0; fl0 = np.array(FLOOR)[np.maximum(row, 0)]; fz = np.full(len(pos), FRONT + 0.002); n_f = np.tile([0, 0, 1.0], (len(pos), 1))
+    def tryp(sel, p2):
         idx = np.nonzero(sel & ~done & cov)[0]
         if not len(idx): return
-        ok2, c2 = look(p2[idx], n2[idx]); out[idx[ok2]] = c2[ok2]; done[idx[ok2]] = True
-    mir = np.stack([2 * xc - px, py, pz], 1); tryp(cub & (np.abs(nx) > 0.7), mir, np.stack([-nx, ny, nz], 1))
-    fl = np.stack([px, FLOOR[3] + (py - np.array(FLOOR)[np.maximum(row, 0)]), pz], 1); tryp(cub & (ny > 0.7), fl, nrm)
-    ce = np.stack([px, FLOOR[0] + CUB_H + (py - (np.array(FLOOR)[np.maximum(row, 0)] + CUB_H)), pz], 1); tryp(cub & (ny < -0.7), ce, nrm)
-    fr = np.stack([np.clip(px, -0.79, 0.79), np.clip(py, 0.02, 2.13), np.full(len(pos), FRONT + 0.002)], 1); n_f = np.tile([0, 0, 1.0], (len(pos), 1))
-    tryp(~cub & (nz < 0.7), fr, n_f)
+        ok2, c2 = look(p2[idx], n_f[idx]); out[idx[ok2]] = c2[ok2]; done[idx[ok2]] = True
+    tryp(cub & (ny > 0.6), np.stack([px, fl0 - 0.026, fz], 1))                                   # 床
+    tryp(cub & (ny < -0.6), np.stack([px, fl0 + CUB_H + 0.026, fz], 1))                          # 天井
+    wx = np.where(np.abs(px) < 0.2, 0.0, np.sign(px) * 0.745)                                   # 横の かべ → まん中の 柱・外の 柱
+    tryp(cub & (np.abs(nx) > 0.6), np.stack([wx, py, fz], 1))
+    tryp(~cub & (np.abs(nx) > 0.6), np.stack([np.sign(px) * 0.745, np.clip(py, 0.02, 2.13), fz], 1))      # 外の 横
+    tryp(~cub & (ny > 0.6), np.stack([np.clip(px, -0.79, 0.79), np.full(len(pos), 2.10), fz], 1))          # 上
+    tryp(~cub & (ny < -0.6), np.stack([np.clip(px, -0.79, 0.79), np.full(len(pos), 0.03), fz], 1))         # 下
+    tryp(~cub & (nz < -0.6), np.stack([np.sign(px) * 0.745, np.clip(py, 0.02, 2.13), fz], 1))              # うしろ（見えない）＝外わくの 色
     img2 = out.reshape(TS, TS, 3); return fill(img2, done.reshape(TS, TS)), done.mean()
 
 
@@ -94,6 +99,6 @@ for i, ph in enumerate(photos, 1):
     im = Image.open(ph); cam, s, _ = align(im)
     tex, fr = colors(im, cam)
     Image.fromarray((np.clip(tex, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(os.path.dirname(base), f'shelf_c{i}.webp'), 'WEBP', lossless=True, method=4)
-    al[str(i)] = {'photo': os.path.basename(ph), 'cam': [round(x, 3) for x in cam], 'iou': round(float(s), 4), 'seen': round(float(fr), 3)}
+    al[str(i)] = {'photo': os.path.basename(ph), 'cam': [round(x, 3) for x in cam], 'D': D, 'iou': round(float(s), 4), 'seen': round(float(fr), 3)}
     print(i, al[str(i)], flush=True)
 json.dump(al, open(os.path.join(os.path.dirname(base), 'shelf_align.json'), 'w'), indent=1)

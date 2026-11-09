@@ -215,6 +215,8 @@ int qem_decimate2(int ns, const int *pid, int np, const double *P, int nf, const
     }
     pdead[pu] = 1; stamp[pu]++; stamp[pv]++;
     for (int j = 0; j < 10; j++) Q[10 * pv + j] += Q[10 * pu + j];
+    // 死んだ 三角を 一覧から のぞく（たたむ たびに 長く なって 遅く なる のを ふせぐ）
+    for (int i = 0; i < nv2; i++) { int s = cid[cst[pv] + i]; if (sdead[s]) continue; List *l = &vf[s]; int k2 = 0; for (int j = 0; j < l->n; j++) if (!fdead[l->f[j]]) l->f[k2++] = l->f[j]; l->n = k2; }
     for (int i = 0; i < nv2; i++) { int s = cid[cst[pv] + i]; if (sdead[s]) continue; for (int j = 0; j < vf[s].n; j++) { int f = vf[s].f[j]; if (fdead[f]) continue; for (int k = 0; k < 3; k++) { int w = pid[F[3 * f + k]]; if (w != pv) { PUSH2(pv, w); PUSH2(w, pv); } } } }
   }
   int n = 0; for (int f = 0; f < nf; f++) if (!fdead[f]) { memcpy(outF + 3 * n, F + 3 * f, sizeof(int) * 3); n++; }
