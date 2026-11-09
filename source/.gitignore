@@ -19,4 +19,6 @@ ios/kisekae_blobs/
 # 結果ボードカスタムの 絵の ボード（第4.121版：まさちゃんの 絵・kisekae/bcp/bcp_app.py の files()）。build_ios.py が Resources/ に入れる
 ios/bcp_assets/
 ios/tc_assets/
+ios/fig_assets/
 srv_tc/
+srv_fig/

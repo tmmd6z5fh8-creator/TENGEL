@@ -380,6 +380,9 @@ ol.steps li+li{margin-top:2px}
 .memtop .lrows{margin-bottom:4px}
 .memtop h3{font-size:14px;margin:12px 0 8px;display:flex;gap:10px;align-items:baseline}
 .memtop h3 .muted{font-weight:400;font-size:12.5px}
+/* 思い出フィギュア（第4.134版）：思い出のレースの 欄の 上の 2つの ボタン */
+.memfig{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.memfig .btn{flex:1 1 140px;font-weight:700}
+.memfig .btn.fgb{background:linear-gradient(180deg,#3a2614,#1d130a);color:#ffe6a8;border-color:#b9893a}
 /* v6: WIN5（JRAの指定5レースの1着を全部当てる） */
 .w5banner{display:flex;flex-direction:column;gap:8px;border:1px solid var(--lamp);background:var(--warn-bg);border-radius:var(--r);padding:12px 14px;margin-bottom:var(--gap)}
 .w5banner b{font-size:15px}
@@ -2781,7 +2784,7 @@ function memResultText(b) {
 function memRaceText(b) { return `${(b.venue || '').trim()}${b.venue ? ' ' : ''}${b.r}R${b.rname ? '　' + b.rname : ''}`.trim(); }
 function memBtnsHTML(b) {
   if (!NATIVE_APP) return '';
-  return b.mem ? '<button class="btn" type="button" data-act="memopen">思い出ボードを見る</button><button class="btn ghost" type="button" data-act="memtog">思い出から外す</button>'
+  return b.mem ? `<button class="btn" type="button" data-act="memopen">思い出ボードを見る</button>${window.TengelFig ? '<button class="btn" type="button" data-act="figmake1">🏆 フィギュアにする</button>' : ''}<button class="btn ghost" type="button" data-act="memtog">思い出から外す</button>`
     : '<button class="btn" type="button" data-act="memtog">思い出のレースに記録する</button>';
 }
 function memChooseHTML(b) {
@@ -2805,19 +2808,47 @@ async function memClear(b) {
   try { const d = Object.assign({}, b); delete d.mem; await st.db.collection('bets').doc(b.id).set(cleanDoc(d)); st.memChoose = null; toast('思い出から外したよ', 3200); renderRec(); }
   catch (e) { writeErr(e); }
 }
+const memRaces = () => betList().filter(b => b.mem && b.rsv && b.rsv.state === 'done').sort((a, b) => b.date.localeCompare(a.date) || b.r - a.r);
+const figCount = () => { try { return window.TengelWallet && window.TengelWallet.fig ? window.TengelWallet.fig.items().length : 0; } catch (e) { return 0; } };
 function memTopHTML() {
   if (!(NATIVE_APP && Reserve())) return '';
-  const ms = betList().filter(b => b.mem && b.rsv && b.rsv.state === 'done').sort((a, b) => b.date.localeCompare(a.date) || b.r - a.r);
-  if (!ms.length) return '';
+  const ms = memRaces(), nf = window.TengelFig ? figCount() : 0;
+  // 第4.134版：思い出フィギュア（fig/fig_launch.js → fig_bundle.js）：ブースと 作る ボタン（フィギュアだけ ある ときも ブースへ 行ける）
+  const fig = window.TengelFig && (ms.length || nf) ? `<div class="memfig"><button class="btn fgb" type="button" data-act="figbooth">🏆 フィギュアブース${nf ? `（${nf}）` : ''}</button>${ms.length ? '<button class="btn" type="button" data-act="figmake">＋ フィギュアを作る</button>' : ''}</div>` : '';
+  if (!ms.length) return fig ? `<div class="memtop">${fig}</div>` : '';
   const row = b => {
     const s = betStatus(b), hasAmt = toNum(b.stake) != null, bal = payoutOf(b) - stakeOf(b);
     return `<div class="lrow memrow" data-mid="${esc(b.id)}"><button class="lmain" type="button" data-act="memopen" aria-label="思い出ボードを見る"><span class="lr-r">${b.r}R</span><span class="lb memk" aria-hidden="true">★</span>`
       + `<span class="lmid"><span class="k">${esc(dlabel(b.date))} ${esc((b.venue || '').trim())}${b.rname ? ' ' + esc(b.rname) : ''}</span><span class="s">${esc(MEM_KIND_LABEL[memKindOf(b)] || '')}　${esc(memResultText(b))}</span></span>`
       + `<span class="lend"><span class="stc ${s.cls}">${s.s}</span>${hasAmt ? `<span class="lmoney ${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}">${yen(stakeOf(b))}→${yen(payoutOf(b))}</span>` : ''}</span></button></div>`;
   };
-  return `<div class="memtop"><h3>思い出のレース<span class="muted">${ms.length}件・押すと思い出ボード</span></h3><div class="lrows">${ms.map(row).join('')}</div></div>`;
+  return `<div class="memtop"><h3>思い出のレース<span class="muted">${ms.length}件・押すと思い出ボード</span></h3>${fig}<div class="lrows">${ms.map(row).join('')}</div></div>`;
 }
+// 第4.134版：思い出フィギュアに わたす 思い出のレース（ボードに 書く 文。作った フィギュアの ボードは 作った ときの まま：あとで 記録を 直しても かわらない）
+function memFigInfo(b) {
+  const R = Reserve(), spec = memSpec(b), bets = (b.rsv && b.rsv.bets) || {};
+  const types = ((b.rsv && b.rsv.types && b.rsv.types.length) ? b.rsv.types : typesOf(b)).filter(t => Array.isArray(bets[t]) && bets[t].length);
+  const hits = {}; spec.rows.forEach(x => { hits[x.t] = x.hits || []; });
+  const lab = (t, c) => (R && R.label ? R.label(t, c) : c.join('-')).replace(/→/g, ' → ');
+  const lines = types.map(t => { const h = hits[t] || [], all = bets[t]; return h.length ? `${t}　${lab(t, h[0])}${h.length > 1 ? `　ほか${h.length - 1}組` : ''}　的中` : `${t}　${lab(t, all[0])}${all.length > 1 ? `　ほか${all.length - 1}点` : ''}`; });
+  if (lines.length > 3) lines.splice(2, lines.length - 2, `ほか ${types.length - 2}券種`);
+  const stake = toNum(b.stake), pay = payoutOf(b);
+  return { kind: MEM_KIND_LABEL[memKindOf(b)] || '思い出のレース', race: memRaceText(b), date: memDateFull(b.date), lines, result: memResultText(b), money: stake == null ? '' : `購入 ${yen(stake)}円 → 回収 ${yen(pay)}円` };
+}
+if (NATIVE_APP) window.TengelMem = {
+  list: () => memRaces().map(b => ({ id: b.id, day: dlabel(b.date), race: memRaceText(b), kind: MEM_KIND_LABEL[memKindOf(b)] || '', result: memResultText(b), status: betStatus(b).s, info: memFigInfo(b) })),
+  get: id => { const b = st.bets.get(id); return b && b.mem && b.rsv ? { id: b.id, day: dlabel(b.date), race: memRaceText(b), kind: MEM_KIND_LABEL[memKindOf(b)] || '', result: memResultText(b), status: betStatus(b).s, info: memFigInfo(b) } : null; }
+};
+document.addEventListener('tengel:fig', () => { if (st.tab === 'rec') renderRec(); });   // フィギュアを 作った・閉じた → ブースの 数を かき直す
 $('#recList').addEventListener('click', e => {   // ほかの 行の 操作（開く・閉じる）より 先に 受ける
+  const f = e.target.closest('[data-act=figbooth],[data-act=figmake],[data-act=figmake1]');
+  if (f && window.TengelFig) {
+    e.stopImmediatePropagation(); e.preventDefault();
+    if (f.dataset.act === 'figbooth') window.TengelFig.booth();
+    else if (f.dataset.act === 'figmake') window.TengelFig.make();
+    else { const box = f.closest('[data-id]'); window.TengelFig.make({ race: box ? box.dataset.id : '' }); }
+    return;
+  }
   const t = e.target.closest('[data-act=memopen],[data-act=memtog],[data-act=memsave],[data-act=memcancel]'); if (!t || t.disabled) return;
   const box = t.closest('[data-id],[data-mid]'), b = box && st.bets.get(box.dataset.id || box.dataset.mid); if (!b) return;
   e.stopImmediatePropagation(); e.preventDefault();

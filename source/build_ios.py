@@ -63,6 +63,8 @@ if os.path.exists(os.path.join(web, 'mother_template.xlsx')):
     files['mother_template.xlsx'] = 'mother_template.xlsx'   # 第4.123版：マザーデータの 入力用 Excel の ひな形（共有シートで 渡す）
 if os.path.exists(os.path.join(web, 'tc_bundle.js')):
     files['tc_bundle.js'] = 'tc_bundle.js'   # トレーニングセンターの 本体（第4.130版：右下の 丸い ボタンを 押した ときに 読む）
+if os.path.exists(os.path.join(web, 'fig_bundle.js')):
+    files['fig_bundle.js'] = 'fig_bundle.js'   # 思い出フィギュアの 本体（第4.134版：記録タブの「フィギュアブース」「フィギュアを作る」を 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
     files['poster.jpg'] = 'cm/poster.jpg'   # CMの表紙（動画は大きいので入れない。見るときに公開中のWeb版から読む）
 for f in sorted(os.listdir(web)):
@@ -110,6 +112,15 @@ for f in tc_have:
     shutil.copy(os.path.join(tc_dir, f), os.path.join(res, f)); files[f] = f
 if not tc_have:
     print('※ トレーニングセンターの 絵と 音が ない（', tc_dir, '）。kisekae/tc/collect_assets.py で 集めるよ（CIではなしのまま）')
+# 思い出フィギュアの 形と 絵（第4.134版：まさちゃんの フィギュア 8体・3D の 棚 と それから 作った もの）：ios/fig_assets/ か FIG_ASSETS=<フォルダ>。
+# kisekae/fig/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。ブースを 開くと「読みこめなかった」に なる）
+fig_dir = os.environ.get('FIG_ASSETS') or os.path.join(W, 'ios', 'fig_assets')
+fig_have = sorted(f for f in (os.listdir(fig_dir) if os.path.isdir(fig_dir) else []) if f.startswith('fg') and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
+for f in fig_have:
+    assert f.lower() not in names and f not in files, f
+    shutil.copy(os.path.join(fig_dir, f), os.path.join(res, f)); files[f] = f
+if not fig_have:
+    print('※ 思い出フィギュアの 形と 絵が ない（', fig_dir, '）。kisekae/fig/collect_assets.py で 集めるよ（CIではなしのまま）')
 # 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
 import build_kisekae as _ks

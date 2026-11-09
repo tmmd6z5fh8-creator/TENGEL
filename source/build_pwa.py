@@ -108,6 +108,9 @@ if TARGET == 'app':
     # トレーニングセンター（第4.130版：まさちゃん 11/08〜11/09）：右下の 丸い ボタン・作戦会議の 通知・ミッションの 数（tc/tc_launch.js）は index.html に。
     # 本体（馬・フィールド・お世話・説明書・当たりの 演出・作戦会議）は 押した ときに 読む tc_bundle.js（下で 書く）。絵と 音は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
     html += '<script>\n' + open(os.path.join('tc', 'tc_launch.js'), encoding='utf8').read() + '\n</script>\n'
+    # 思い出フィギュア（第4.134版：まさちゃん 11/09）：記録タブの「思い出のレース」の ボタンから 開く 入口（fig/fig_launch.js）は index.html に。
+    # 本体（3D の 描画・ブース・一覧・部屋・作る 画面）は 押した ときに 読む fig_bundle.js（下で 書く）。形と 絵は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
+    html += '<script>\n' + open(os.path.join('fig', 'fig_launch.js'), encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
@@ -118,6 +121,12 @@ if TARGET == 'app':   # トレーニングセンターの 本体（コメント�
     tcb += ';window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;\n'   # const は window に のらない（tc_launch.js・tc_app.js が window. で さがす）
     _at.check_clean(tcb, 'tc_bundle.js')
     open(f'{out}/tc_bundle.js', 'w', encoding='utf8').write(tcb)
+if TARGET == 'app':   # 思い出フィギュアの 本体（コメントを 消して 1つに・出さない 言葉が ないことも 確かめる）
+    FIG_FILES = ('fig_render.js', 'fig_app.js')
+    fgb = '\n;\n'.join(_at.strip_js_comments(open(os.path.join('fig', f), encoding='utf8').read()) for f in FIG_FILES) + '\n'
+    fgb += ';window.FigGL = FigGL; window.FigApp = FigApp;\n'   # const は window に のらない（fig_launch.js が window. で さがす）
+    _at.check_clean(fgb, 'fig_bundle.js')
+    open(f'{out}/fig_bundle.js', 'w', encoding='utf8').write(fgb)
 if TARGET == 'app':   # 第4.123版：マザーデータ①〜③の 入力用 Excel の ひな形（templates/make_template.py で 作る・設定 → マザーデータの 編集 →「入力用のExcel（ひな形）を保存」）
     shutil.copy(os.path.join(HERE, 'templates', 'mother_template.xlsx'), f'{out}/mother_template.xlsx')
 json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#16203D", "theme_color": "#16203D", "lang": "ja",

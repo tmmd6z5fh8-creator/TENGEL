@@ -33,10 +33,20 @@
   // meta 'wallet' = { id, v, device, events[], paid[]（200Pを使ったレース）, counted{ 日付|開催場|R: 日時 }（ミッションに数えたレース）, gift（初回プレゼントのしるしの状態）,
   //                   board{ reads（買った あとに 読み込んだ レース）, selHit（的中の ときに 使う もの）・selMiss（ハズレの ときに 使う もの）（'none'＝なし・''＝まだ 選んで いない）,
   //                          streak（連続的中）, mstreak（続けて ハズレた 数：第4.121版）, res[]（連続に 数えた レース） },
-  //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） } }
+  //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） },
+  //                   figs{ items[]（思い出フィギュア：第4.134版）, slots[56]（ブースの 置き場所：id か null） } }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
   const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, mstreak: 0, res: [] }, pack: { reads: 0 } });
+  // 思い出フィギュア（第4.134版・fig/fig_app.js）：作った フィギュア（ボードの 文は 作った ときの まま）と ブースの 置き場所（7ブース × 8 ＝ 56）
+  const FIG_SLOTS = 56;
+  function figNorm(f) {
+    const o = f && typeof f === 'object' ? f : {};
+    const items = (Array.isArray(o.items) ? o.items : []).filter(x => x && typeof x.id === 'string' && x.id && +x.n >= 1 && +x.n <= 8);
+    const ids = new Set(items.map(x => x.id)), seen = new Set();
+    const slots = Array.from({ length: FIG_SLOTS }, (_, i) => { const v = Array.isArray(o.slots) ? o.slots[i] : null; if (typeof v === 'string' && ids.has(v) && !seen.has(v)) { seen.add(v); return v; } return null; });
+    return { items, slots };
+  }
   function normalize(w) {
     const o = Object.assign(blank(), w && typeof w === 'object' ? w : {});
     o.id = 'wallet'; o.events = Array.isArray(o.events) ? o.events.filter(Boolean) : []; o.paid = Array.isArray(o.paid) ? o.paid : []; o.counted = o.counted && typeof o.counted === 'object' ? o.counted : {};
@@ -48,6 +58,7 @@
     o.board.mstreak = Math.max(0, Math.floor(+o.board.mstreak || 0));
     o.pack = Object.assign({ reads: 0 }, o.pack && typeof o.pack === 'object' ? o.pack : {});
     o.pack.reads = Math.max(0, Math.floor(+o.pack.reads || 0));
+    o.figs = figNorm(o.figs);
     if (!o.device) o.device = newId();
     return o;
   }
@@ -412,7 +423,7 @@
       h += subsHtml();
     } else if (ui.show === 'hist') {
       const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
-      const lab = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? `ミッション：${e.what || ''}` : e.kind === 'unlock' ? `解放：${unlockName(e.what)}` : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
+      const lab = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? `ミッション：${e.what || ''}` : e.kind === 'unlock' ? (/^fig:/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
       h += `<ul class="pthist">${ev.map(e => `<li><span>${esc(dayOf(e.last || e.at))} ${esc(lab(e))}</span><span class="${+e.amount > 0 ? 'plus' : 'minus'}">${+e.amount > 0 ? '+' : ''}${yen(e.amount)}P</span></li>`).join('') || '<li><span class="muted">まだ何もないよ</span></li>'}</ul>`;
       h += `<p class="ptnote">買ったPの残り ${yen(b.paid_pack + b.paid_sub)}P・使ったP ${yen(b.used.paid_sub + b.used.paid_pack + b.used.free)}P（うち買ったPから ${yen(b.used.paid_sub + b.used.paid_pack)}P）</p>`;
       h += `<div class="row" style="margin-top:8px"><button class="btn" type="button" data-pt="restore">購入を復元</button></div><p class="ptnote">「購入を復元」は、サブスクの状態をAppleと合わせるよ。もう足したPはもう一度足さないよ。</p>`;
@@ -464,6 +475,7 @@
     if (k === 'board') return '結果ボードカスタム（買い切り）';
     if (k === 'wallpack') return '壁紙パック（買い切り）';
     if (k === 'bundle') return 'お得パック（壁紙パックと 結果ボードカスタム・買い切り）';
+    if (k.startsWith('fig:')) { const it = W && W.figs ? W.figs.items.find(x => x.id === k.slice(4)) : null; return `思い出フィギュアを作った${it && it.info && it.info.race ? `（${it.info.race}）` : ''}`; }
     return k;
   }
   function paintCustom() {
@@ -780,7 +792,7 @@
     const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setTest';
     c.innerHTML = '<style>#setTest [data-test="sn"][aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}</style>'
       + '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。はじめから 10,000P 入って いるよ。</p>'
-      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button></div>'
+      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button><button type="button" class="btn" data-test="pts100">100,000P 足す（思い出フィギュア用）</button></div>'
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを ためす（14頭・3連単 11→8→2 の 結果で 出す。くじは ひかない）</p>'
       + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
       + '<p class="hint" style="margin:10px 0 6px">絵の ボードの 段（連続の 数：的中は 連勝・ハズレは 回目）：<span id="testN"></span></p>'
@@ -794,7 +806,7 @@
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
-      if (b.dataset.test === 'pts') { W.events.push(P.giftEvent(Date.now(), TEST_GIFT, 'gift-test-' + Date.now(), 'テスト版のポイント')); await save(); paintAll(); toast(`テスト用に ${pts(TEST_GIFT)}を 足したよ（いま ${pts(total())}）`, 2600); }
+      if (b.dataset.test === 'pts' || b.dataset.test === 'pts100') { const n = b.dataset.test === 'pts100' ? TEST_GIFT * 10 : TEST_GIFT; W.events.push(P.giftEvent(Date.now(), n, 'gift-test-' + Date.now(), 'テスト版のポイント')); await save(); paintAll(); toast(`テスト用に ${pts(n)}を 足したよ（いま ${pts(total())}）`, 2600); }
       else if (b.dataset.test === 'sn') { testN = +b.dataset.n || 0; $$('[data-test="sn"]', c).forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.n === testN))); }
       else if (b.dataset.test === 'fx' && window.TengelFx) { try { window.TengelFx.prime(); } catch (x) { /* なし */ } window.TengelFx.show(testSpec(b.dataset.kind)); }
       else if (b.dataset.test === 'bown') { if (!P.boardOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-' + now, product: P.BOARD.product, date: new Date(now).toISOString() }, now)); await save(); boardEmit('owned', { src: 'test' }); toast('🧪 結果ボードカスタムを 買ったことにしたよ', 2600); } }
@@ -857,6 +869,23 @@
     pack: { info: packInfo, buy: btn => buy(P.WALLPACK.product, btn), restore: btn => restore(btn), price: () => price(P.WALLPACK.product), products: () => loadProducts(false) },
     // お得パック（第4.114版・bcx.js と kisekae.js が 使う）：offer＝出すか（単品を どちらも 持って いない とき）
     bundle: { owned: () => !!W && P.bundleOwned(W.events), offer: () => !!W && P.bundleOffer(W.events), buy: btn => buy(P.BUNDLE.product, btn), price: () => price(P.BUNDLE.product), products: () => loadProducts(false) },
+    // 思い出フィギュア（第4.134版・fig/fig_app.js）：buy＝ポイントを 使って 作る（unlock-fig:<id>・slot を 渡せば そこに 飾る）・place＝飾る 場所（56こ）を 書く
+    fig: {
+      items: () => (W ? JSON.parse(JSON.stringify(W.figs.items)) : []),
+      slots: () => (W ? W.figs.slots.slice() : Array(FIG_SLOTS).fill(null)),
+      buy: async (item, cost, slot) => {
+        await walletReady;
+        if (!item || typeof item.id !== 'string' || !item.id || !(+item.n >= 1 && +item.n <= 8) || !(cost > 0)) return { ok: false, why: 'bad' };
+        if (W.figs.items.some(x => x.id === item.id)) return { ok: false, why: 'dup' };
+        const next = P.unlock(W.events, 'fig:' + item.id, Math.round(cost), device(), Date.now());
+        if (!next) return { ok: false, why: 'short', need: Math.round(cost) - total() };
+        W.events = next;
+        const it = JSON.parse(JSON.stringify(item)); it.at = new Date().toISOString(); it.cost = Math.round(cost); W.figs.items.push(it);
+        if (slot != null && slot >= 0 && slot < FIG_SLOTS && !W.figs.slots[slot]) W.figs.slots[slot] = it.id;
+        await save(); return { ok: true, item: JSON.parse(JSON.stringify(it)) };
+      },
+      place: async slots => { await walletReady; W.figs = figNorm({ items: W.figs.items, slots }); await save(); return W.figs.slots.slice(); }
+    },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
     restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },
