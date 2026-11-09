@@ -181,7 +181,7 @@ const FigGL = (() => {
     function drawFig(F, M, boardT) {
       gl.uniform1f(U.uMode, 0); gl.uniformMatrix4fv(U.uM, false, M); attrQ(F.m); bindTex(F.tc, F.tn, F.tm); drawIdx(F.m);
       if (boardT && F.board) {
-        const b = F.board, z = b.c[2] + 0.006;
+        const b = F.board, z = b.c[2] + 0.008;      // 板の 面の いちばん 前（board_find.py）より 少し 前
         gl.uniform1f(U.uMode, -1); gl.uniform3f(U.uMRc, 1, 0.38, 0.85); bindTex(boardT);
         quad([b.c[0] - b.w / 2, b.c[1] - b.h / 2, z], [b.w, 0, 0], [0, b.h, 0]);
       }
