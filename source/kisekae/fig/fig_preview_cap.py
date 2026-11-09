@@ -13,6 +13,9 @@ pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').
 open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
 FGA = os.path.join(W, 'ios', 'fig_assets')
 for f in os.listdir(FGA): shutil.copy(os.path.join(FGA, f), os.path.join(SRV, 'APP', f))
+TCA = os.path.join(W, 'ios', 'tc_assets')         # 記録タブの 右下の トレーニングセンターの ボタンの 絵（ないと こわれた 絵の 印が 写る）
+if os.path.isdir(TCA):
+    for f in os.listdir(TCA): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 sys.path.insert(0, W)
 import importlib.util
