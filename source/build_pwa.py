@@ -105,10 +105,19 @@ if TARGET == 'app':
     html += '<script>\n' + _bcp.bundle_js() + '\n</script>\n'
     for _f in ('bcx_art.js', 'bcx.js'):
         html += '<script>\n' + open(_f, encoding='utf8').read() + '\n</script>\n'
+    # トレーニングセンター（第4.130版：まさちゃん 11/08〜11/09）：右下の 丸い ボタン・作戦会議の 通知・ミッションの 数（tc/tc_launch.js）は index.html に。
+    # 本体（馬・フィールド・お世話・説明書・当たりの 演出・作戦会議）は 押した ときに 読む tc_bundle.js（下で 書く）。絵と 音は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
+    html += '<script>\n' + open(os.path.join('tc', 'tc_launch.js'), encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める
 open(f'{out}/index.html', 'w', encoding='utf8').write(html)
+if TARGET == 'app':   # トレーニングセンターの 本体（コメントを 消して 1つに・出さない 言葉が ないことも 確かめる）
+    TC_FILES = ('tc_horse.js', 'tc_field.js', 'tc_care.js', 'tc_guide.js', 'tc_fx.js', 'tc_plan.js', 'tc_app.js')
+    tcb = '\n;\n'.join(_at.strip_js_comments(open(os.path.join('tc', f), encoding='utf8').read()) for f in TC_FILES) + '\n'
+    tcb += ';window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;\n'   # const は window に のらない（tc_launch.js・tc_app.js が window. で さがす）
+    _at.check_clean(tcb, 'tc_bundle.js')
+    open(f'{out}/tc_bundle.js', 'w', encoding='utf8').write(tcb)
 if TARGET == 'app':   # 第4.123版：マザーデータ①〜③の 入力用 Excel の ひな形（templates/make_template.py で 作る・設定 → マザーデータの 編集 →「入力用のExcel（ひな形）を保存」）
     shutil.copy(os.path.join(HERE, 'templates', 'mother_template.xlsx'), f'{out}/mother_template.xlsx')
 json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#16203D", "theme_color": "#16203D", "lang": "ja",

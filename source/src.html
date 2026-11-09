@@ -2401,9 +2401,12 @@ async function ensureNotifyPermission() {
 async function syncNotify() {
   const N = Native(); if (!N) return;
   const on = await notifyOn(); st.notifyOn = on;
-  const items = on ? betList().filter(b => b.rsv && b.rsv.state === 'reserved').map(b => ({ id: b.id, at: fireAt(b.date, b.rsv.start || b.start), title: '結果を確認しよう！', body: `${(b.venue || '').trim()} ${b.r}R${b.rname ? ' ' + b.rname : ''}`.trim(), race: b.id })).filter(x => x.at) : [];
+  const items0 = on ? betList().filter(b => b.rsv && b.rsv.state === 'reserved').map(b => ({ id: b.id, at: fireAt(b.date, b.rsv.start || b.start), title: '結果を確認しよう！', body: `${(b.venue || '').trim()} ${b.r}R${b.rname ? ' ' + b.rname : ''}`.trim(), race: b.id })).filter(x => x.at) : [];
+  // 第4.130版：トレーニングセンターの 作戦会議（発走の 20・15・10・8・5分前：tc_launch.js の TCPlanNotify）も いっしょに（結果確認の お知らせの オン／オフ とは 別）
+  let items = items0; try { if (typeof window.TCPlanNotify === 'function') items = items0.concat(window.TCPlanNotify()); } catch {}
   try { const r = await N.notify('sync', { items }); if (r && r.auth) st.notifyAuth = r.auth; st.notifyN = r ? r.scheduled : 0; } catch {}
 }
+window.syncNotify = syncNotify;   // 第4.130版：トレーニングセンターの 作戦会議（tc_plan.js）が 予約を かえた ときに よぶ
 function openRaceResult(id) {
   const b = st.bets.get(id); if (!b) { toast('その記録が見つからないよ'); return; }
   st.ym = { y: +b.date.slice(0, 4), m: +b.date.slice(5, 7) }; st.open = id; st.rf = 'all';
@@ -2488,7 +2491,7 @@ async function rsvBoot() {
   if (!(NATIVE_APP && Reserve())) return;
   rsvBtnPaint();
   await syncNotify();
-  const N = Native(); try { const r = await N.notify('opened'); if (r && r.opened && r.opened.race) openRaceResult(r.opened.race); } catch {}
+  const N = Native(); try { const r = await N.notify('opened'); if (r && r.opened && r.opened.race) openRaceResult(r.opened.race); else if (r && r.opened && /^plan-/.test(String(r.opened.id || '')) && window.TCOpen) window.TCOpen({ plan: true }); } catch {}
   if (st.tab === 'judge') renderRecCard(currentJudge(), true);
 }
 document.addEventListener('tengel:native', e => { const d = e.detail || {}; if (d.name === 'notify' && d.payload && d.payload.race) openRaceResult(d.payload.race); });

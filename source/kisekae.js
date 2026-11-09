@@ -169,12 +169,15 @@
   // 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中（カギの 下）に 出す。前は 一覧の 上に 1本の 帯で 出していた
   //   （2026/10/25 まさちゃん「赤のところは消して、解放されていない壁紙をタップしたら下に、解放、ボタンが出てくるようにして！」）。
   //   タイルは <div role="button">（中に 本物の ボタンを 置くため）。もう一度 タイルを タップすると 閉じる
+  // トレーニングセンターの 壁紙チケット（第4.130版：お世話の 当たり 1/2400）：1枚で 1つの テーマを 解放（ポイントは 使わない）
+  const tickets = () => { try { return window.TCInfo ? window.TCInfo.tickets() : 0; } catch (e) { return 0; } };
   function confBox(t, total) {
     if (t.pack) return packConf(t);
     const ok = total >= t.price;
     return `<span class="ksconf" role="group" aria-label="解放の確認"><span class="kscq">${esc(pts(t.price))}を使って解放する？<small>いま ${esc(pts(total))}</small></span>`
       + (ok ? `<button class="btn primary" type="button" data-ksact="unlock" data-id="${esc(t.id)}">解放する</button>`
         : `<span class="kscq muted">Pが足りないよ</span><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button>`)
+      + (tickets() > 0 ? `<button class="btn" type="button" data-ksact="ticket" data-id="${esc(t.id)}">🎫 チケットで解放（のこり ${tickets()}枚）</button>` : '')
       + '<button class="btn ghost" type="button" data-ksact="cancel">やめる</button></span>';
   }
   // 壁紙パックの 買う／進み具合の 箱（組の 見出しの 下）・カギの タイルの 中の 買う 確認
@@ -235,6 +238,17 @@
         const w = wallet(); if (!w || !w.pack) return;
         if (a.dataset.ksact === 'bundle') { if (w.bundle) await w.bundle.buy(a); } else if (a.dataset.ksact === 'pkbuy') await w.pack.buy(a); else await w.pack.restore(a);
         conf = ''; paint(); return;
+      }
+      if (a.dataset.ksact === 'ticket') {
+        const id = a.dataset.id, t = byId[id]; if (!t || !wallet() || !(tickets() > 0)) return;
+        a.disabled = true;
+        let ok = false;
+        try { ok = await wallet().unlock('theme:' + id, 0); } catch (x) { ok = false; }
+        if (ok) { try { window.TCInfo.useTicket(); } catch (x) { /* なし */ } }
+        conf = '';
+        if (ok) { toast(`🎫 チケットで「${t.name}」を解放したよ（のこり ${tickets()}枚）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
+        else { toast('チケットで 解放 できなかったよ', 3000); paint(); }
+        return;
       }
       if (a.dataset.ksact === 'unlock') {
         const id = a.dataset.id, t = byId[id]; if (!t || !wallet()) return;

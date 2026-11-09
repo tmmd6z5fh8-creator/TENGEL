@@ -288,9 +288,11 @@
   // 第4.114版：結果ボードカスタムの 解放の 数（買って いなければ 0）・壁紙の 枚数（帯も 数える）
   const boardMissionN = () => (W && P.boardOwned(W.events) ? P.boardUnlocked(W.board.reads) : 0);
   const wallAllN = () => (W ? P.wallCountAll(W.events, packN()) : 0);
-  const extraMissions = () => (W ? P.boardMissions(boardMissionN(), W.events).concat(P.wallpMissions(wallAllN(), W.events)) : []);
+  // 第4.130版：トレーニングセンターの お世話の 合計（tc_launch.js の TCInfo：この 端末の 中・馬が リセット されても 減らない）
+  const tcTotal = () => { try { return window.TCInfo ? (window.TCInfo.total() || 0) : 0; } catch (e) { return 0; } };
+  const extraMissions = () => (W ? P.boardMissions(boardMissionN(), W.events).concat(P.wallpMissions(wallAllN(), W.events)).concat(P.tcMissions ? P.tcMissions(tcTotal(), W.events) : []) : []);
   async function claim(id) {
-    if (/^mission-(board|wallp)-/.test(String(id))) {   // 第4.114版：結果ボードカスタムの 解放の 数・壁紙の 枚数 → ポイント
+    if (/^mission-(board|wallp|tc)-/.test(String(id))) {   // 第4.114版：結果ボードカスタムの 解放の 数・壁紙の 枚数 → ポイント（第4.130版：トレーニングセンターの お世話の 合計も）
       const m = extraMissions().find(x => x.id === id);
       if (!m || !m.claimable) return;
       W.events.push(P.rowEvent(m, Date.now()));
@@ -513,11 +515,19 @@
     ms.forEach(m => { h += rowHtml(m, n, '枚'); });
     return h + '</div>';
   }
+  // トレーニングセンターの ミッション（第4.130版）：お世話（ごはん・おそうじ）の 合計 50・100・150・200回 → ポイント
+  function tcRowsHtml() {
+    const n = tcTotal(), ms = W && P.tcMissions ? P.tcMissions(n, W.events) : [];
+    let h = `<p class="hint" style="margin:0 0 4px">トレーニングセンターで お世話（ごはん・おそうじ）した 合計の 回数で ポイントが もらえるよ。馬の 色が かわって リセット されても 合計は 減らないよ。いま <b>${n}回</b></p><div>`;
+    ms.forEach(m => { h += rowHtml(m, n, '回'); });
+    return h + '</div>';
+  }
   function paintMission() {
     const box = $('#setMission .ptbody'); if (!box || !W) return;
     box.innerHTML = `<p class="hint" style="margin:0 0 8px">ミッションは、画面の上の<b>「ミッション」</b>からも見られるよ（受け取りもできるよ）。</p>` + missionRowsHtml()
       + '<h3 style="margin:14px 0 4px">壁紙のミッション</h3>' + wallRowsHtml() + wallpRowsHtml()
-      + '<h3 style="margin:14px 0 4px">結果ボードカスタムのミッション</h3>' + boardRowsHtml();
+      + '<h3 style="margin:14px 0 4px">結果ボードカスタムのミッション</h3>' + boardRowsHtml()
+      + '<h3 style="margin:14px 0 4px">トレーニングセンターのミッション</h3>' + tcRowsHtml();
   }
   // ---------- ミッションの 窓（第4.82版・まさちゃん「ミッションの達成状況分かりにくいから、説明書とかポイント表示とかが入ってあたりに別項目として、ミッションて欄追加して！
   //   壁紙ミッション ポイントミッション 見直し基準進捗状況」「受け取りもそこでできるようにして！」）：上の帯の「ミッション」を 押すと 開く。
@@ -538,6 +548,7 @@
     $('#msWall', ov).innerHTML = wallRowsHtml();
     $('#msWallp', ov).innerHTML = wallpRowsHtml();   // 第4.114版：壁紙の 枚数（帯の 行 #msWall とは 別の 入れ物）
     $('#msBoard', ov).innerHTML = boardRowsHtml();
+    const tcb = $('#msTc', ov); if (tcb) tcb.innerHTML = tcRowsHtml();
     const rv = reviewHtml();
     $('#msRev', ov).innerHTML = rv || '<div class="card"><h2>見直し基準の進み具合</h2><p class="hint" style="margin:0">マザーデータに接続してから見られるよ（実測・回収タブと同じものだよ）。</p></div>';
   }
@@ -548,7 +559,8 @@
     ov.innerHTML = `<div class="msh"><h2>${TROPHY}ミッション</h2><span class="msn"></span><button class="btn" type="button" data-ms="close">とじる</button></div>`
       + '<div class="msb"><div class="card setsec"><h2>ポイントミッション</h2><div class="ptbody" id="msPts"></div></div>'
       + '<div class="card setsec"><h2>壁紙ミッション</h2><div class="ptbody" id="msWall"></div><div class="ptbody" id="msWallp"></div></div>'
-      + '<div class="card setsec"><h2>結果ボードカスタムミッション</h2><div class="ptbody" id="msBoard"></div></div><div id="msRev"></div>'
+      + '<div class="card setsec"><h2>結果ボードカスタムミッション</h2><div class="ptbody" id="msBoard"></div></div>'
+      + '<div class="card setsec"><h2>トレーニングセンターミッション</h2><div class="ptbody" id="msTc"></div></div><div id="msRev"></div>'
       + '<p class="hint" style="margin:0 0 6px">ポイントミッションは、200Pを使って判定して記録したレースの数（Excelなどでまとめて入れた記録は数えないよ）。見直し基準は、判定して着順を入れて、マザーデータにも入れたレースで進むよ。</p></div>';
     ov.addEventListener('click', e => { const c = e.target.closest('[data-ms]'); if (c && c.dataset.ms === 'close') { closeMissions(); return; } onClick(e); });
     msPrev = document.activeElement;
@@ -836,6 +848,8 @@
     on: true, ready: walletReady, COST: P.COST,
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,
     readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions, openPoints, closePoints,
+    // 第4.130版：トレーニングセンターの 当たり（お世話の ポイント・ルーレット）→ もらったP（無償）。id は 1回だけ
+    grant: async (id, n, what) => { await walletReady; if (!W || !id || !(n > 0) || P.has(W.events, id)) return false; W.events.push(P.rowEvent({ id: String(id), reward: Math.round(n), label: String(what || 'トレーニングセンター') }, Date.now())); await save(); paintAll(); return true; },
     // 結果ボードカスタム（第4.91版・bcx.js が 使う）
     board: { info: boardInfo, active: boardActive, select: boardSelect, result: boardResult, buy: btn => buy(P.BOARD.product, btn), restore: btn => restore(btn),
       price: () => price(P.BOARD.product), products: () => loadProducts(false) },
@@ -850,6 +864,7 @@
     isEmpty: () => !W || (!W.events.some(e => !/^gift-(first|test)/.test(e.id)) && !W.paid.length && !Object.keys(W.counted).length)
   };
   document.addEventListener('tengel:slots', () => { if (W) { paintCustom(); } });
+  document.addEventListener('tengel:tc', () => { if (W) paintAll(); });      // 第4.130版：トレーニングセンターを 閉じた（お世話の 合計 → ミッション）
   document.addEventListener('tengel:tab', e => { if (e.detail === 'set' && W) { paintAll(); aboutGate(); testCard(); } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   setTimeout(aboutGate, 50);

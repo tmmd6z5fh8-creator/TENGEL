@@ -61,6 +61,8 @@ for f in sorted(os.listdir(os.path.join(web, 'fonts'))):
     files[f] = 'fonts/' + f   # フォント（SIL OFL 1.1・ファイルはそのまま。ライセンスは「このアプリについて」）
 if os.path.exists(os.path.join(web, 'mother_template.xlsx')):
     files['mother_template.xlsx'] = 'mother_template.xlsx'   # 第4.123版：マザーデータの 入力用 Excel の ひな形（共有シートで 渡す）
+if os.path.exists(os.path.join(web, 'tc_bundle.js')):
+    files['tc_bundle.js'] = 'tc_bundle.js'   # トレーニングセンターの 本体（第4.130版：右下の 丸い ボタンを 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
     files['poster.jpg'] = 'cm/poster.jpg'   # CMの表紙（動画は大きいので入れない。見るときに公開中のWeb版から読む）
 for f in sorted(os.listdir(web)):
@@ -99,6 +101,15 @@ for f in bcp_have:
     shutil.copy(os.path.join(bcp_dir, f), os.path.join(res, f)); files[f] = f
 if len(bcp_have) != len(bcp_all):
     print('※ 結果ボードカスタムの 絵が', len(bcp_all) - len(bcp_have), 'こ ない（', bcp_dir, '）。kisekae/bcp の README の 作り方で 作れるよ（CIではなしのまま）')
+# トレーニングセンターの 絵・形・音（第4.130版：まさちゃんの フィールド・馬・バケツの 3D など と それから 作った もの）：ios/tc_assets/ か TC_ASSETS=<フォルダ>。
+# kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右下の ボタンを 押すと「読みこめなかった」に なる）
+tc_dir = os.environ.get('TC_ASSETS') or os.path.join(W, 'ios', 'tc_assets')
+tc_have = sorted(f for f in (os.listdir(tc_dir) if os.path.isdir(tc_dir) else []) if f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
+for f in tc_have:
+    assert f.lower() not in names and f not in files, f
+    shutil.copy(os.path.join(tc_dir, f), os.path.join(res, f)); files[f] = f
+if not tc_have:
+    print('※ トレーニングセンターの 絵と 音が ない（', tc_dir, '）。kisekae/tc/collect_assets.py で 集めるよ（CIではなしのまま）')
 # 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
 import build_kisekae as _ks

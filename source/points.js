@@ -297,6 +297,12 @@
   }
   // 壁紙の ミッション（枚数で ポイント）：count＝wallCountAll。WALL_TOTAL より 多い 行は reach＝false（いまは 届かない）
   function wallpMissions(count, events) { return rowsOf(WALLP_MISSIONS, 'mission-wallp-', count, events, function (n) { return '壁紙 ' + n + '枚解放'; }).map(function (r) { r.reach = r.n <= WALL_TOTAL; return r; }); }
+  // 第4.130版：トレーニングセンターの ミッション（まさちゃん 2026/11/09「馬をお世話して1段階目の成長させる お世話合計50回 獲得ポイント500p … ※1回で解放したら、馬がリセットされてもミッションはリセットされない」）
+  //   count＝お世話の 合計（ごはん・おそうじ。色が かわって 馬が リセット されても 減らない）。1回 受け取ったら もう 出ない
+  var TC_MISSIONS = [[50, 500, 1], [100, 1000, 2], [150, 1500, 3], [200, 2000, 4]];
+  function tcMissions(count, events) {
+    return TC_MISSIONS.map(function (m) { var id = 'mission-tc-' + m[0], claimed = has(events, id); return { id: id, n: m[0], reward: m[1], label: '馬をお世話して' + m[2] + '段階目の成長させる', done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
+  }
   function rowEvent(m, now) { return mk(m.id, 'mission', 'free', m.reward, iso(now), { what: m.label }); }
   // 解放した 壁紙の 枚数（帯も 数える：ポイント＋壁紙パック＋帯）
   function wallCountAll(events, packN) { return wallCount(events, packN) + (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:(silver|golden|tengel)$/.test(String(e.what || '')); }).length; }
@@ -322,7 +328,7 @@
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
-    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions,
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
