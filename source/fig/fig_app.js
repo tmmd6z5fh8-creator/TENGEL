@@ -297,7 +297,7 @@ const FigApp = (() => {
     ft.innerHTML = '';
     let h = '<div class="fgov">';
     for (let p = 0; p < PAGES; p++) h += `<button type="button" class="fgoc${p === page ? ' cur' : ''}" data-fg="ovp" data-p="${p}" aria-label="ブース ${p + 1}（${onPage(p).length}こ）"><canvas width="300" height="388"></canvas><b>ブース ${p + 1}</b><small>${onPage(p).length} / ${PER}</small></button>`;
-    h += `<div class="fgos"><span>飾っている フィギュア</span><b>${placed} / ${MAX}</b><small>しまってある ${stored().length}</small></div></div>`;
+    h += `<div class="fgos"><span>飾っている<br>フィギュア</span><b>${placed} / ${MAX}</b><small>しまってある ${stored().length}</small></div></div>`;
     pn.innerHTML = h; pn.hidden = false; pn.scrollTop = 0;
     for (let p = 0; p < PAGES; p++) {
       if (mode !== 'over') return;
