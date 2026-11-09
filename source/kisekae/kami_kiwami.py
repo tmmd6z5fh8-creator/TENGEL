@@ -46,9 +46,10 @@ STILL_T0 = round(STILL_WAIT + (RES + .45 - STILL_FROM), 2)        # 1.55秒（�
 BOARD = round(RES + .15, 2)                                       # ボードが 出る（動画の とき）
 # できた 動画（リポジトリの 外：GK_MASTER=<mp4> で ほかの 所も）
 #   第14稿（第4.136版・11/10）：さいごの「神様極的中」の 字を まさちゃんの 3D（神速極光祭_Meshy の GLB）に 入れかえた（kisekae/gk_emblem.py・CRF 16）
+#     第4.137版：極の まわりに 金・白・虹色の 雷（ふちで パチパチ）・いろいろな 方へ 飛ぶ 雷（9.0秒から だんだん：gk_emblem.py の 5つめの 引数＝極の 形）
 #   第13稿（CRF 20・/home/claude/work/pack/deliver_gk/）は 11/09 21:10 に 作業の 場所が リセットされて ない → 第14稿は アプリの 動画（CRF 23）の コマから 作った
 MASTER = '/home/claude/work/kamigoku/神様極的中_第14稿.mp4'
-CRF = 23                              # アプリの 動画（第14稿：約8.7MB）
+CRF = 23                              # アプリの 動画（第14稿：約9.3MB）
 
 
 def sec(v):

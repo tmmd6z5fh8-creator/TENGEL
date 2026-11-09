@@ -121,7 +121,7 @@ if r.returncode == 0:
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
         gk_sz = os.path.getsize(os.path.join(fxd, 'gk_film.mp4'))
-        check(37.9e6 < films_sz < 41.5e6 and 43.6e6 < sz < 47.3e6 and 8.0e6 < gk_sz < 11.2e6, f'絵と音と動画の 大きさ：動画 5本 約38.9MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえて 約8.7MB）・ぜんぶで 約44.7MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
+        check(37.9e6 < films_sz < 41.5e6 and 43.6e6 < sz < 47.3e6 and 8.0e6 < gk_sz < 11.2e6, f'絵と音と動画の 大きさ：動画 5本 約39.5MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえ・第4.137版 極の 雷で 約9.3MB）・ぜんぶで 約45.2MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af and 'options: .alwaysMapped' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME・ファイルは メモリに 写す だけ（第4.109版：Range の たびに まるごと 読まない）')
     # 第4.109版：基本の フォント（BIZ UDPGothic 2つ・Dela Gothic One）は 字は そのままで WOFF2（ios/fonts/make_woff2.py）・IBM Plex Mono（予約名「Plex」）は TTF の まま
