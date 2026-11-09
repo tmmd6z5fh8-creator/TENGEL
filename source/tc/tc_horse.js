@@ -246,7 +246,7 @@
     knee1: { p: -0.18, x: 0.06, contact: 'lowF', legs: { FL: ['abs', [0.12, -1.15, -1.65]], FR: ['abs', [0.18, -0.9, -1.55]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.38, head: -0.22, tail: 0 },
     kneel: { p: -0.24, x: 0.08, contact: 'kneeF', legs: { FL: ['abs', [0.16, -1.45, -1.75]], FR: ['abs', [0.2, -1.45, -1.75]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.35, head: -0.2, tail: 0 },
     down: { p: -0.02, x: 0.0, contact: 'low', legs: { FL: ['abs', FOLD_F], FR: ['abs', [1.3, -1.5, -2.0]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: -0.3, head: -0.15, tail: -0.3 },
-    rest: { p: 0.04, x: 0, r: 0.16, contact: 'low', legs: { FL: ['abs', FOLD_F], FR: ['abs', [1.3, -1.5, -2.0]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: -0.12, head: -0.08, tail: -0.35, tailY: 0.35 },
+    rest: { p: 0.04, x: 0, r: 0.05, contact: 'low', legs: { FL: ['abs', FOLD_F], FR: ['abs', [1.3, -1.5, -2.0]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: 0.04, head: -0.1, tail: -0.35, tailY: 0.35 },      // おなかを つけて すわる（横に 寝ころばない・頭は 上げる：11/09 14:58 まさちゃんの 動画「この動画座り方と同じにして！寝ころばなくていいから！」）
     liftK: { p: 0.18, x: 0.02, r: 0.07, contact: 'lowH', legs: { FL: ['abs', [1.6, -0.8, -1.2]], FR: ['abs', [1.5, -0.95, -1.35]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: 0.25, head: 0.06, tail: -0.3, tailY: 0.15 },      // 前足は 前へ 水平くらい まで（上へ 上げすぎると 前足の つけ根が おれて 見える：11/09 14:36 まさちゃん）
     liftF: { p: 0.3, x: 0.03, r: 0.05, contact: 'lowH', legs: { FL: ['abs', [1.55, 0.2, 0.45]], FR: ['abs', [1.45, 0.05, 0.35]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: 0.28, head: 0.08, tail: -0.3, tailY: 0.1 },
     frontOut: { p: 0.42, x: 0.0, contact: 'lowH', legs: { FL: ['rest', XE], FR: ['rest', XE], HL: ['abs', [-1.2, 1.55, 1.75]], HR: ['abs', [-1.15, 1.5, 1.7]] }, neck: 0.2, head: 0.02, tail: -0.35, tailY: 0.1 },
@@ -255,8 +255,8 @@
     standUp: { p: 0, x: XE, d: 0, legs: { FL: ['rest', XE], FR: ['rest', XE], HL: ['rest', XE], HR: ['rest', XE] }, neck: 0, head: 0, tail: 0 },
   };
   // 横に なる：前と 後ろを いっしょに なめらかに しゃがむ（前に かたむけすぎない：11/08 18:34 まさちゃん「もっと滑らかにしゃがんで」）
-  const LIE_SEQ = [[0, 'stand'], [0.13, 'gather'], [0.27, 'bend'], [0.38, 'fold1'], [0.5, 'knee1'], [0.63, 'kneel'], [0.85, 'down'], [1, 'rest']];
-  const LIE_DUR = 5.6, RISE_DUR = 1.7, POOP_DUR = 3.4;      // 横に なる 時間（ゆっくり）・起きる 時間（勢いよく）
+  const LIE_SEQ = [[0, 'stand'], [0.18, 'gather'], [0.33, 'bend'], [0.43, 'fold1'], [0.54, 'knee1'], [0.65, 'kneel'], [0.84, 'down'], [1, 'rest']];      // 動画の ように：頭を 下げて → 前ひざを 折って ひざを つく → うしろを 下ろして すわる
+  const LIE_DUR = 4.6, RISE_DUR = 1.7, POOP_DUR = 3.4;      // 横に なる 時間（ゆっくり）・起きる 時間（勢いよく）
   const RISE_SEQ = [[0, 'rest'], [0.12, 'liftK'], [0.24, 'liftF'], [0.4, 'frontOut'], [0.58, 'dogSit'], [0.8, 'hindPush'], [1, 'standUp']];      // 起きる：前を 起こして 前足を 前へ → 犬すわり → 後ろ足を 体の 下に 入れて 立つ
   const KCH = ['d', 'p', 'x', 'r', 'neck', 'head', 'tail', 'tailY'];
   function buildLieKeys(bones) {
@@ -707,10 +707,10 @@
       off[0] += lieK.x; off[1] += -lieK.d; off[3] += lieK.p; off[5] = (off[5] || 0) + lieK.r;
       for (const L of ['FL', 'FR', 'HL', 'HR']) { set(L + '_u', lieK[L][0]); set(L + '_k', lieK[L][1]); set(L + '_f', lieK[L][2]); }
       set('neck', lieK.neck); set('head', lieK.head); set('tail', lieK.tail, lieK.tailY);
-      const dz = smooth(st.doze || 0); set('neck', -0.42 * dz); set('head', -0.3 * dz);
+      const dz = smooth(st.doze || 0); set('neck', -0.26 * dz); set('head', -0.2 * dz);      // ねむると 頭が 少し 下がる（すわった まま）
       if (st.flop != null) {             // ごろん（なかよしハート 10この ハズレ：11/09 08:37）：横に なって 体を 少し かたむけ、首を のばして ゆったり
         const k = smooth(clamp((st.sl - 0.8) / 0.2, 0, 1)) * (1 - smooth(clamp(st.rise * 2.5, 0, 1))), tt = t - st.flop;
-        off[5] += (0.17 + 0.035 * Math.sin(TAU * 0.55 * tt)) * k; set('neck', -0.2 * k + 0.04 * k * Math.sin(TAU * 0.4 * tt)); set('head', -0.16 * k, 0.12 * k);
+        off[5] += 0.02 * Math.sin(TAU * 0.55 * tt) * k; set('neck', -0.08 * k + 0.04 * k * Math.sin(TAU * 0.4 * tt)); set('head', -0.08 * k, 0.12 * k);      // 横には 寝ころばない（11/09 14:58）
         set('tail', 0, 0.3 * k * Math.sin(TAU * 0.7 * tt));
       }
     }
