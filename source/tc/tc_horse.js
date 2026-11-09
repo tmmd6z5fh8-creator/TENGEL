@@ -243,8 +243,9 @@
     gather: { p: -0.04, x: 0, d: 0.04, legs: { FL: ['rest', 0], FR: ['rest', 0], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.45, head: -0.25, tail: 0 },
     bend: { p: -0.07, x: 0.01, d: 0.06, legs: { FL: ['rest', 0], FR: ['rest', 0], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.42, head: -0.25, tail: -0.05 },
     fold1: { p: -0.1, x: 0.03, legs: { FL: ['abs', [0.12, -0.75, -1.45]], FR: ['rest', 0], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.4, head: -0.24, tail: -0.03 },      // 左の 前足から 曲げる
-    knee1: { p: -0.18, x: 0.06, contact: 'lowF', legs: { FL: ['abs', [0.12, -1.15, -1.65]], FR: ['abs', [0.18, -0.9, -1.55]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.38, head: -0.22, tail: 0 },
-    kneel: { p: -0.24, x: 0.08, contact: 'kneeF', legs: { FL: ['abs', [0.16, -1.45, -1.75]], FR: ['abs', [0.2, -1.45, -1.75]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.35, head: -0.2, tail: 0 },
+    knee1: { p: -0.1, x: 0.0, contact: 'lowF', legs: { FL: ['abs', [0.02, -1.15, -1.65]], FR: ['abs', [0.08, -0.9, -1.55]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.38, head: -0.22, tail: 0 },
+    kneel: { p: -0.13, x: -0.04, contact: 'kneeF', legs: { FL: ['abs', [0.02, -1.5, -1.8]], FR: ['abs', [0.06, -1.5, -1.8]], HL: ['rest', 0], HR: ['rest', 0] }, neck: -0.35, head: -0.2, tail: 0 },      // 前足が 体に もぐらない ように：前へ かたむけすぎない・うでは まっすぐ 下（11/09 15:18 まさちゃん「寝そべる時に一度前足が身体の中に入ってる」）
+    settle: { p: -0.07, x: -0.06, contact: 'kneeF', legs: { FL: ['abs', [0.7, -1.52, -1.95]], FR: ['abs', [0.66, -1.5, -1.95]], HL: ['abs', [-0.75, 0.95, 1.1]], HR: ['abs', [-0.72, 0.92, 1.05]] }, neck: -0.3, head: -0.18, tail: -0.15 },      // ひざを 前へ すべらせ ながら うしろを 下ろす
     down: { p: -0.02, x: 0.0, contact: 'low', legs: { FL: ['abs', FOLD_F], FR: ['abs', [1.3, -1.5, -2.0]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: -0.3, head: -0.15, tail: -0.3 },
     rest: { p: 0.04, x: 0, r: 0.05, contact: 'low', legs: { FL: ['abs', FOLD_F], FR: ['abs', [1.3, -1.5, -2.0]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: 0.04, head: -0.1, tail: -0.35, tailY: 0.35 },      // おなかを つけて すわる（横に 寝ころばない・頭は 上げる：11/09 14:58 まさちゃんの 動画「この動画座り方と同じにして！寝ころばなくていいから！」）
     liftK: { p: 0.18, x: 0.02, r: 0.07, contact: 'lowH', legs: { FL: ['abs', [1.6, -0.8, -1.2]], FR: ['abs', [1.5, -0.95, -1.35]], HL: ['abs', FOLD_H], HR: ['abs', [-1.33, 1.52, 1.7]] }, neck: 0.25, head: 0.06, tail: -0.3, tailY: 0.15 },      // 前足は 前へ 水平くらい まで（上へ 上げすぎると 前足の つけ根が おれて 見える：11/09 14:36 まさちゃん）
@@ -255,7 +256,7 @@
     standUp: { p: 0, x: XE, d: 0, legs: { FL: ['rest', XE], FR: ['rest', XE], HL: ['rest', XE], HR: ['rest', XE] }, neck: 0, head: 0, tail: 0 },
   };
   // 横に なる：前と 後ろを いっしょに なめらかに しゃがむ（前に かたむけすぎない：11/08 18:34 まさちゃん「もっと滑らかにしゃがんで」）
-  const LIE_SEQ = [[0, 'stand'], [0.18, 'gather'], [0.33, 'bend'], [0.43, 'fold1'], [0.54, 'knee1'], [0.65, 'kneel'], [0.84, 'down'], [1, 'rest']];      // 動画の ように：頭を 下げて → 前ひざを 折って ひざを つく → うしろを 下ろして すわる
+  const LIE_SEQ = [[0, 'stand'], [0.18, 'gather'], [0.33, 'bend'], [0.43, 'fold1'], [0.54, 'knee1'], [0.64, 'kneel'], [0.75, 'settle'], [0.87, 'down'], [1, 'rest']];      // 動画の ように：頭を 下げて → 前ひざを 折って ひざを つく → うしろを 下ろして すわる
   const LIE_DUR = 4.6, RISE_DUR = 1.7, POOP_DUR = 3.4;      // 横に なる 時間（ゆっくり）・起きる 時間（勢いよく）
   const RISE_SEQ = [[0, 'rest'], [0.12, 'liftK'], [0.24, 'liftF'], [0.4, 'frontOut'], [0.58, 'dogSit'], [0.8, 'hindPush'], [1, 'standUp']];      // 起きる：前を 起こして 前足を 前へ → 犬すわり → 後ろ足を 体の 下に 入れて 立つ
   const KCH = ['d', 'p', 'x', 'r', 'neck', 'head', 'tail', 'tailY'];
