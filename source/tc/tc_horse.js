@@ -259,8 +259,8 @@
   const LIE_SEQ = [[0, 'stand'], [0.18, 'gather'], [0.33, 'bend'], [0.43, 'fold1'], [0.54, 'knee1'], [0.64, 'kneel'], [0.75, 'settle'], [0.87, 'down'], [1, 'rest']];      // 動画の ように：頭を 下げて → 前ひざを 折って ひざを つく → うしろを 下ろして すわる
   const LIE_DUR = 4.6, RISE_DUR = 1.7, POOP_DUR = 3.4;      // 横に なる 時間（ゆっくり）・起きる 時間（勢いよく）
   const RISE_SEQ = [[0, 'rest'], [0.12, 'liftK'], [0.24, 'liftF'], [0.4, 'frontOut'], [0.58, 'dogSit'], [0.8, 'hindPush'], [1, 'standUp']];      // 起きる：前を 起こして 前足を 前へ → 犬すわり → 後ろ足を 体の 下に 入れて 立つ
-  const KCH = ['d', 'p', 'x', 'r', 'neck', 'head', 'tail', 'tailY'];
-  function buildLieKeys(bones) {
+  const KCH = ['d', 'p', 'x', 'r', 'neck', 'head', 'tail', 'tailY', 'nf'];      // nf：前足の すねを まげて 地面から 上げない（ひざ・すねが 地面に ついて いる 間：めりこみは 体を 上げて 直す）
+  function buildLieKeys(bones, probe) {      // probe：骨ごとの 外がわの 点（足の 太さ：ひざを つく 高さに 使う）
     const B = {}; bones.forEach(b => { B[b.name] = b.head; });
     const bx = B.body[0], by = B.body[1];
     const dirv = a => [Math.sin(a), -Math.cos(a)], ang = v => Math.atan2(v[0], -v[1]), len = v => Math.hypot(v[0], v[1]);
@@ -281,6 +281,19 @@
     };
     const REST = {}; for (const L in SEG) REST[L] = SEG[L].segs.map(ang);
     const rel = (L, A, p) => { const r = REST[L], c = [A[0] - r[0], A[1] - r[1], A[2] - r[2]]; return [c[0] - p, c[1] - c[0], c[2] - c[1]]; };
+    // 足の 形（太さ）の いちばん 低い 所：骨の まん中では なく すねの 表面で 地面に 合わせる（11/09 15:38 まさちゃん「まだ足が一瞬身体の中に入ってる」：
+    //   ひざの 骨の まん中を 地面の 上 0.06 に したら すねの 太さで 地面に めりこみ、fixGround が すねを 胸・おなかの 中へ はね上げて いた）
+    const rot2 = (q, a, o) => { const cc = Math.cos(a), ss = Math.sin(a), u = q[0] - o[0], v = q[1] - o[1]; return [o[0] + cc * u - ss * v, o[1] + ss * u + cc * v]; };
+    const geoLow = (L, A, p, d, lvMin) => {
+      const r = rel(L, A, p), hu = B[L + '_u'], hk = B[L + '_k'], hf = B[L + '_f']; let m = 1e9;
+      for (const [lv, q0] of probe[L]) {
+        if (lv < lvMin) continue;
+        let q = q0; if (lv >= 2) q = rot2(q, r[2], hf); if (lv >= 1) q = rot2(q, r[1], hk); q = rot2(q, r[0], hu);
+        m = Math.min(m, tf(p, d, 0, q)[1]);
+      }
+      return m;
+    };
+    const GEO = !!(probe && probe.FL && probe.FL.length && probe.FR && probe.FR.length), TG = 0.004;
     const stand = { d: 0, p: 0, x: 0, r: 0, neck: 0, head: 0, tail: 0, tailY: 0, FL: [0, 0, 0], FR: [0, 0, 0], HL: [0, 0, 0], HR: [0, 0, 0], pl: {}, tx: {}, ty: {}, af: {} };
     for (const L of ['FL', 'FR', 'HL', 'HR']) { stand.pl[L] = 1; stand.tx[L] = SEG[L].toe[0]; stand.ty[L] = SEG[L].toe[1]; stand.af[L] = AF0; }
     const out = { stand };
@@ -297,9 +310,9 @@
         const lg = legsAt(d); let m = 1e9;
         for (const L in lg) {
           const pts = chain(L, p, d, x, lg[L]);
-          if (k.contact === 'kneeF') { if (L[0] === 'F') m = Math.min(m, pts[1][1] - T0); }
+          if (k.contact === 'kneeF') { if (L[0] === 'F') m = Math.min(m, GEO ? geoLow(L, lg[L], p, d, 1) - TG : pts[1][1] - T0); }      // ひざを つく：すね・ひづめの 表面を 地面に
           else if (k.contact === 'lowH') { if (L[0] === 'H') pts.slice(1).forEach(q => { m = Math.min(m, q[1] - T0); }); }
-          else if (k.contact === 'lowF') { if (L[0] === 'F') pts.slice(1).forEach(q => { m = Math.min(m, q[1] - T0); }); }
+          else if (k.contact === 'lowF') { if (L[0] === 'F') { if (GEO) m = Math.min(m, geoLow(L, lg[L], p, d, 0) - TG); else pts.slice(1).forEach(q => { m = Math.min(m, q[1] - T0); }); } }
           else pts.slice(1).forEach(q => { m = Math.min(m, q[1] - T0); });
         }
         if (k.contact === 'low') for (let i = 0; i < 6; i++) m = Math.min(m, tf(p, d, x, [-0.8 + 0.22 * i, belly])[1] - 0.02);     // おなか
@@ -308,7 +321,7 @@
       let lo = -0.2, hi = 1.4;
       for (let it = 0; it < 50 && k.d == null; it++) { const mid = (lo + hi) / 2; if (low(mid) > 0) lo = mid; else hi = mid; }
       // 足を 地面に つけて おく 形は 体の 高さを じかに 書く（d）
-      const d = k.d != null ? k.d : (lo + hi) / 2, lg = legsAt(d), key = { d, p, x, r: k.r || 0, neck: k.neck, head: k.head, tail: k.tail - p, tailY: k.tailY || 0, pl: {}, tx: {}, ty: {}, af: {} };
+      const d = k.d != null ? k.d : (lo + hi) / 2, lg = legsAt(d), key = { d, p, x, r: k.r || 0, neck: k.neck, head: k.head, tail: k.tail - p, tailY: k.tailY || 0, nf: k.contact === 'kneeF' || k.contact === 'low' ? 1 : 0, pl: {}, tx: {}, ty: {}, af: {} };
       for (const L in lg) {
         key[L] = rel(L, lg[L], p);
         const tt = toeOf(L);
@@ -332,24 +345,36 @@
   function fixGround(h, k) {
     const G = h.lie.geo, c = Math.cos(k.p), sn = Math.sin(k.p);
     const rot = (q, a, o) => { const cc = Math.cos(a), ss = Math.sin(a), u = q[0] - o[0], v = q[1] - o[1]; return [o[0] + cc * u - ss * v, o[1] + ss * u + cc * v]; };
-    const lowOf = (L, a, lvMin) => {        // その 足の lvMin より 下の 骨の いちばん 低い 所
-      const hu = h.bones[h.bi[L + '_u']].head, hk = h.bones[h.bi[L + '_k']].head, hf = h.bones[h.bi[L + '_f']].head; let m = 1e9;
+    const legPts = (L, a, lvMin) => {       // その 足の lvMin より 下の 骨の 外がわの 点（体の 中の 座標）
+      const hu = h.bones[h.bi[L + '_u']].head, hk = h.bones[h.bi[L + '_k']].head, hf = h.bones[h.bi[L + '_f']].head, o = [];
       for (const [lv, q0] of (h.probe && h.probe[L]) || []) {
         if (lv < lvMin) continue;
         let q = q0;
         if (lv >= 2) q = rot(q, a[2], hf);
         if (lv >= 1) q = rot(q, a[1], hk);
-        q = rot(q, a[0], hu);
-        const u = q[0] - G.bx, v = q[1] - G.by, y = G.by + sn * u + c * v - k.d;
-        if (y < m) m = y;
+        o.push(rot(q, a[0], hu));
       }
+      return o;
+    };
+    const lowOf = (L, a, lvMin) => {        // その 足の lvMin より 下の 骨の いちばん 低い 所（地面からの 高さ）
+      let m = 1e9;
+      for (const q of legPts(L, a, lvMin)) { const u = q[0] - G.bx, v = q[1] - G.by, y = G.by + sn * u + c * v - k.d; if (y < m) m = y; }
+      return m;
+    };
+    const U = h.under;
+    const into = (L, a) => {                // すね・ひづめが 胴の 下の 面に 入った ぶん（体の 中の 座標・入って いなければ 0 以下）
+      if (!U) return -1; let m = -1;
+      for (const q of legPts(L, a, 1)) { const j = Math.floor((q[0] - U.x0) / U.dx); if (j >= 0 && j < U.y.length) m = Math.max(m, q[1] - (U.y[j] - 0.015)); }
       return m;
     };
     let lowY = 1e9;
     for (const L of ['FL', 'FR', 'HL', 'HR']) {
-      const a = k[L].slice(), flex = L[0] === 'F' ? -1 : 1;
-      for (let i = 0; i < 30 && lowOf(L, a, 1) < -0.006; i++) a[1] += 0.05 * flex;      // ひざ（前）・かかと（後ろ）を まげて すねを 上げる（立つ ときの ひづめは 地面 0 ちょうど）
-      for (let i = 0; i < 40 && lowOf(L, a, 2) < -0.006; i++) a[2] -= 0.05;             // ひづめを 後ろへ 返す
+      const a = k[L].slice(), flex = L[0] === 'F' ? -1 : 1, in0 = Math.max(0, into(L, a)) + 0.002;
+      // 地面に めりこむ ぶんだけ ひざ（前）・かかと（後ろ）を まげて すねを 上げる。少しずつ（なめらかに）・胴の 中には 上げない（のこりは 体を 上げる）
+      //   前の ひざを ついて いる 間（nf）は まげない：すねは 地面に ねかせた まま 体を 上げる（すねが はね上がって 胸に 入って いた：11/09 15:38）
+      const nMax = Math.round(150 * (L[0] === 'F' ? 1 - clamp(k.nf || 0, 0, 1) : 1));
+      for (let i = 0; i < nMax && lowOf(L, a, 1) < -0.006; i++) { a[1] += 0.01 * flex; if (into(L, a) > in0) { a[1] -= 0.01 * flex; break; } }
+      for (let i = 0; i < 200 && lowOf(L, a, 2) < -0.006; i++) { a[2] -= 0.01; if (into(L, a) > in0) { a[2] += 0.01; break; } }      // ひづめを 後ろへ 返す
       k[L] = a; lowY = Math.min(lowY, lowOf(L, a, 0));
     }
     if (lowY < -0.006) k.d -= -0.006 - lowY;          // それでも 下 → 体を 上げる
@@ -516,6 +541,14 @@
         }
       });
     }
+    // 胴の 下の 面（体の 中の 座標・前後 0.05 ごとの いちばん 低い 所）：寝る・起きる ときに すね・ひづめを 胴の 中へ 上げない（fixGround）
+    let under = null;
+    if (bi.body != null) {
+      let x0 = 1e9, x1 = -1e9; for (let i = 0; i < nv; i++) if (bone[i] === bi.body) { x0 = Math.min(x0, pos[i * 3]); x1 = Math.max(x1, pos[i * 3]); }
+      const dx = 0.05, n = Math.max(1, Math.ceil((x1 - x0) / dx)), y = new Array(n).fill(1e9);
+      for (let i = 0; i < nv; i++) if (bone[i] === bi.body) { const j = Math.min(n - 1, Math.floor((pos[i * 3] - x0) / dx)); if (pos[i * 3 + 1] < y[j]) y[j] = pos[i * 3 + 1]; }
+      under = { x0, dx, y };
+    }
     let tailTip = null, tailProbe = null;
     if (bi.tail != null) {
       const isT = b => b === bi.tail || (bi.tail2 != null && b === bi.tail2);      // しっぽ（つけ根＋先）
@@ -560,7 +593,7 @@
     const samp = []; for (let i = 0; i < nv; i += 7) samp.push(i);          // 画面の 中の 大きさを はかる 点（7つに 1つ：extent）
     const sampP = new Float32Array(samp.length * 3), sampB = new Uint8Array(samp.length);
     samp.forEach((i, k) => { sampP[k * 3] = pos[i * 3]; sampP[k * 3 + 1] = pos[i * 3 + 1]; sampP[k * 3 + 2] = pos[i * 3 + 2]; sampB[k] = bone[i]; });
-    return { sampP, sampB, anchors, gl, P, S, G, B, loc, bones, bi, meta, H, legLen, opt, lie: buildLieKeys(bones), tailTip, tailProbe, probe, tex, ntex, fmt2, eyes, em, eyeR: meta.eye_r || 0.02, glow, legs, hoof, PS,
+    return { sampP, sampB, anchors, gl, P, S, G, B, loc, bones, bi, meta, H, legLen, opt, lie: buildLieKeys(bones, probe), tailTip, tailProbe, probe, under, tex, ntex, fmt2, eyes, em, eyeR: meta.eye_r || 0.02, glow, legs, hoof, PS,
       poopTex: (opt.poopImgs || []).map(im => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.activeTexture(gl.TEXTURE0); return { t, w: im.width, h: im.height }; }) };      // 5番の 場所（フィールドの 絵 0〜2番を 上書きしない）
   }
@@ -700,7 +733,7 @@
     set('neck', -0.62 * gz + 0.05 * lk[1], 0.35 * lk[0]); set('head', -0.38 * gz + 0.04 * lk[1], 0.25 * lk[0]);
     if (gz > 0.5) set('head', 0.04 * Math.sin(TAU * t * 1.7) * smooth((gz - 0.5) * 2) * 0.5);     // もぐもぐ
     // 寝る・起きる（キーを つないだ 形）＋ ねむる（頭を 下げる）
-    if (!h.lie) h.lie = buildLieKeys(h.bones);
+    if (!h.lie) h.lie = buildLieKeys(h.bones, h.probe);
     // 横に なる 時は はじめと おわりを ゆっくり（なめらかに しゃがむ）・起きる 時は 後半ほど 速く（勢いよく 立つ）
     const slE = lerp(st.sl, smooth(st.sl), 0.5), riE = Math.pow(st.rise, 1.3);
     const lieK = st.poseKey || (st.sl > 0.001 ? fixGround(h, plantLegs(h, st.rise > 0 ? keyAt(h.lie, RISE_SEQ, riE) : keyAt(h.lie, LIE_SEQ, slE))) : null);
