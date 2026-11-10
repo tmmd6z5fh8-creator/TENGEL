@@ -463,7 +463,7 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     const an = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
-    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));      
     gl.activeTexture(gl.TEXTURE0);
     return tx;
   }
@@ -3418,7 +3418,10 @@ const TCApp = (() => {
     const avail = (r.height || window.innerHeight) - padT - padB - head;
     const w = Math.max(200, Math.min(vw, avail * W / H)), h = w * H / W;
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
-    const dpr = Math.min(window.devicePixelRatio || 1, W / w);
+    
+    
+    
+    const dpr = Math.min(window.devicePixelRatio || 1, 3) * GOV.q;
     const pw = Math.round(w * dpr), ph = Math.round(pw * H / W);
     for (const c of [cvGL, cvOv, cvFx]) if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
     if (window.TCCare && TCCare.S) TCCare.S.cs = pw / W;
@@ -3576,11 +3579,33 @@ const TCApp = (() => {
   }
 
   
+  
+  
+  
+  
+  const GOV_Q = [1, 0.82, 0.68], GOV_N = 120, GOV_BAD = 0.4, GOV_SAME = 0.75, GOV_WAIT = 45;
+  const GOV = { q: 1, step: 0, off: false, n: 0, slow: 0, wait: GOV_WAIT, base: 0, last: 0 };
+  function govSet(step, off) { GOV.step = step; GOV.q = GOV_Q[step]; GOV.off = !!off; GOV.n = GOV.slow = 0; GOV.wait = GOV_WAIT; if (ov && stage && cvGL) layout(); }
+  function govern(now) {
+    const d = now - GOV.last; GOV.last = now;
+    if (GOV.off || !(d > 0) || d > 250) return;                    
+    if (GOV.wait > 0) { GOV.wait--; return; }
+    GOV.n++; if (d > 25) GOV.slow++;
+    if (GOV.n < GOV_N) return;
+    const r = GOV.slow / GOV.n; GOV.n = GOV.slow = 0;
+    if (GOV.step > 0 && GOV.base > 0 && r >= GOV.base * GOV_SAME) { govSet(GOV.step - 1, true); return; }      
+    GOV.base = 0;
+    if (r < GOV_BAD) return;                                        
+    if (GOV.step >= GOV_Q.length - 1) { GOV.off = true; return; }   
+    GOV.base = r; govSet(GOV.step + 1, false);
+  }
+
+  
   function frame(now) {
     raf = requestAnimationFrame(frame);
-    if (now - lastDraw < 1000 / 31) return;         
+    govern(now);
     lastDraw = now;
-    const t = clock(), dt = lastT == null ? 1 / 30 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+    const t = clock(), dt = lastT == null ? 1 / 60 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
     const ms = Date.now(), gms = tnow();
     
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
@@ -3613,7 +3638,7 @@ const TCApp = (() => {
   }
   function pause() { running = false; cancelAnimationFrame(raf); SND.stopAll(); if (dirty) save(); }
   function resume() {
-    if (running) return; running = true; lastT = null; lastDraw = 0; SND.unlock(); syncField(); raf = requestAnimationFrame(frame);
+    if (running) return; running = true; lastT = null; lastDraw = 0; GOV.last = 0; GOV.n = GOV.slow = 0; GOV.wait = GOV_WAIT; SND.unlock(); syncField(); raf = requestAnimationFrame(frame);
   }
 
   
@@ -3658,7 +3683,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
