@@ -2498,6 +2498,7 @@ const TCGuide = (() => {
 `;
   
   
+  
   const pc = (d, n) => {               
     const x = (n || 1) / d * 100, s = String(+x.toFixed(x >= 10 ? 1 : x >= 0.1 ? 2 : 3));
     return (Math.abs(+s - x) > 1e-9 ? '約' : '') + s + '%';
@@ -2506,13 +2507,13 @@ const TCGuide = (() => {
   const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
   
   const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
-  const CARE = [10, 20, 50, 85, 99, 121, 1000, 2000, 3600, 2400];      
+  const CARE = [10, 20, 50, 85, 99, 121, 125, 245, 399, 600];      
   const SEC = [
     ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのたびに抽選！当たりはお世話のあとに出るよ</p>
       <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
-      ${R(1000, RT(800, 1600))}${R(2000, RT(1600, 3200))}${R(3600, RT(3200, 6400))}
-      ${R(2400, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
+      ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
+      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
       <p class="note" data-n="sum">ぜんぶ 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
@@ -2525,9 +2526,9 @@ const TCGuide = (() => {
     ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p><p>・<b>幻の馬</b> ${pc(245)}（1/245）・<b>神様馬</b> ${pc(399)}（1/399）がやってくる</p>`],
     ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ（いるのは<b>10分</b>）</p>
       <p class="hh">🌙 幻の馬</p>
-      <table data-tab="maboroshi">${R(300, RT(800, 1600))}${R(500, RT(1600, 3200))}${R(1000, RT(3200, 6400))}</table>
+      <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}</table>
       <p class="hh">✨ 神様馬</p>
-      <table data-tab="kamisama">${R(85, RT(2000, 4000))}${R(99, RT(5000, 10000))}${R(121, RT(10000, 20000))}</table>
+      <table data-tab="kamisama">${R(8, RT(2000, 4000))}${R(16, RT(5000, 10000))}${R(32, RT(10000, 20000))}</table>
       <p class="note">いるあいだは この表だけ（いつものポイント・チケットは出ないよ）</p>`],
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
@@ -3186,16 +3187,21 @@ const TCApp = (() => {
   const HIGH_N = 5, HIGH_X = 4;                       
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    
-    [1 / 3600, { k: 'rt', tier: 'kamisama' }], [1 / 2400, { k: 'tk' }], [1 / 2000, { k: 'rt', tier: 'maboroshi' }], [1 / 1000, { k: 'rt', tier: 'normal' }],
+    
+    
+    
+    [1 / 600, { k: 'tk' }], [1 / 399, { k: 'rt', tier: 'kamisama' }], [1 / 245, { k: 'rt', tier: 'maboroshi' }], [1 / 125, { k: 'rt', tier: 'normal' }],
     [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 85, { k: 'pt', v: 100 }],
     
     
     [1 / 50, { k: 'pt', v: 50 }], [1 / 20, { k: 'pt', v: 20 }], [1 / 10, { k: 'pt', v: 10 }]];
   const RT = { normal: [800, 1600], maboroshi: [1600, 3200], kamisama: [3200, 6400] };
   
+  
+  
   const PRIZES_VISIT = {
-    maboroshi: [[1 / 1000, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 500, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 300, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
-    kamisama: [[1 / 121, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 99, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 85, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
+    maboroshi: [[1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
+    kamisama: [[1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
   const AP = p => String(p).split('/').pop();         
   window.TC_ASSET = AP;
 
