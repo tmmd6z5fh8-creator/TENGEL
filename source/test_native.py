@@ -31,8 +31,9 @@ open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.p
 TESTURL = f'http://localhost:{PORT}/TEST/'
 # 第5弾：超神様の 動画（H.264）は Chromium で 読めないので、手元の 動画（ios/fx_assets/*.mp4）から 同じ 絵の 小さな webm を 作って（t5/films/ に とっておく）同じ 名前の かわりに 読ませる
 FILMS_DIR = os.path.join(W, 't5', 'films')
+from assets_dir import adir
 for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):   # 第4.70版〜：紫電の 動画も・第4.77版：ノーマルど的中の 動画も・第4.117版：神様極的中の 動画も
-    mp4, webm = os.path.join(W, 'ios', 'fx_assets', f + '.mp4'), os.path.join(FILMS_DIR, f + '.webm')
+    mp4, webm = os.path.join(adir('fx_assets'), f + '.mp4'), os.path.join(FILMS_DIR, f + '.webm')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）
     if not os.path.exists(webm) and os.path.exists(mp4) and shutil.which('ffmpeg'):
         os.makedirs(FILMS_DIR, exist_ok=True)
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844', '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-crf', '40', '-b:v', '0', '-an', '-row-mt', '1', webm], check=False)
@@ -41,7 +42,7 @@ for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):   # 第4.70版
 # 第4.121版：結果ボードカスタムの 絵の ボード（ios/bcp_assets/：まさちゃんの 絵・リポジトリには 入れない）。手元に ある とき だけ 置く。
 #   ハズレ⑤「書き換え参戦」（pen）の 絵は わざと 置かない（読めない とき いつもの ボードに もどる 形・CI と 同じ）
 import sys; sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
-BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
+BCP_DIR = adir('bcp_assets')
 BCP_ON = all(os.path.exists(os.path.join(BCP_DIR, f)) for f in _bcp.files())
 BCP_OFF = [f for iid, _k, st in _bcp.ITEMS if iid == 'pen' for _n, n in st for f in _bcp.stage_files(n)] + [_bcp.THUMB.format('pen')]   # 第4.129版：動く 絵も・第4.145版：アプリが 読む 絵（stage_files：止まった 版は もう ない）
 if BCP_ON:

@@ -133,6 +133,57 @@ if r.returncode == 0:
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
         gk_sz = os.path.getsize(os.path.join(fxd, 'gk_film.mp4'))
         check(37.9e6 < films_sz < 41.5e6 and 43.6e6 < sz < 47.3e6 and 8.0e6 < gk_sz < 11.2e6, f'絵と音と動画の 大きさ：動画 5本 約39.5MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえ・第4.137版 極の 雷で 約9.3MB）・ぜんぶで 約45.2MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
+    # 第4.146版（まさちゃん 11/10 21:26「圧縮少しやわらか−45Mbの方でやって！」）：アプリに 入る のは 軽い 版（ios/lite/<名前>：kisekae/lite_assets.py・assets_dir.py）。
+    #   動画 5本は CRF 29（さいごの 1まいに つながる 4本は さいごの 30コマ だけ CRF 27 → 25 → 22）・結果ボードの 絵／馬の 色／フィギュアと 棚の 色 は WebP quality 75。もと（ios/<名前>）は そのまま 残す（上の 大きさの 確かめは もとの もの）。
+    #   でこぼこ（tc_n_*・fgN_n*）・つや（fgN_m*）・光と 雲の 地図（bcp_*a_m1〜3・_f）は もとと 1バイトも ちがわない。台帳（lite.info）は アプリに 入れない
+    import assets_dir as _ad
+    import hashlib as _hl
+    if all(_ad.is_lite(n) for n in _ad.NAMES):
+        RES = os.path.join(out, 'Tengel.swiftpm', 'Resources')
+        _man = {n: _ad.manifest(n) for n in _ad.NAMES}
+        _all = [(n, f, e) for n in _ad.NAMES for f, e in _man[n]['files'].items() if f in res]
+        _sz = lambda fl: sum(os.path.getsize(os.path.join(RES, f)) for f in fl)
+        _h = lambda pth: _hl.sha1(open(pth, 'rb').read()).hexdigest()
+        p_films = _sz(FILMS.values()); p_bcp = _sz([f for f in res if f.startswith('bcp_')]); p_tcc = _sz([f for f in res if f.startswith('tc_c_')])
+        p_fgc = _sz([f for f in res if re.fullmatch(r'fg(\d+_cs?|_shelf_c\d+)\.webp', f)]); p_all = _sz(res)
+        same_sz = all(os.path.getsize(os.path.join(RES, f)) == e['size'] for _n, f, e in _all)
+        keep_fl = [(n, f) for n, f, e in _all if re.fullmatch(r'tc_n_.+\.webp|fg\d+_(n|ns|m|ms)\.webp|bcp_.+a_(m[123]|f)\.webp', f)]
+        keep_ok = len(keep_fl) == 7 + 32 + 7 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
+        how = {}
+        for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
+        src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
+        check(17.5e6 < p_films < 19.5e6 and 13.2e6 < p_bcp < 14.7e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and 140e6 < p_all < 152e6 and same_sz and keep_ok and src_ok
+              and how.get('film') == 5 and how.get('webp', 0) >= 405 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
+              f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：前は 21.7MB・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
+              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB）・でこぼこ／つや／光と 雲の 地図（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+    else:
+        print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
+    # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）
+    import json as _j2
+    _tmp = tempfile.mkdtemp(); _W0 = _ad.W; _P0 = os.environ.pop('LITE', None)
+    try:
+        _ad.W = _tmp; _m = _ad.master('tc_assets'); _p = _ad.lite('tc_assets'); os.makedirs(_m)
+        for f, bts in (('a.webp', b'12345'), ('b.bin', b'xyz')): open(os.path.join(_m, f), 'wb').write(bts)
+        r0 = (_ad.stale('tc_assets') is None, _ad.adir('tc_assets') == _m, _ad.is_lite('tc_assets'))
+        os.makedirs(_p); _mn = {'v': 1, 'params': {}, 'files': {}}
+        for f in ('a.webp', 'b.bin'):
+            _st = os.stat(os.path.join(_m, f)); open(os.path.join(_p, f), 'wb').write(b'pk'); _mn['files'][f] = {'how': 'copy', 'src': [_st.st_size, _st.st_mtime_ns, ''], 'size': 2}
+        _j2.dump(_mn, open(os.path.join(_p, _ad.INFO), 'w'))
+        r1 = (_ad.stale('tc_assets') == '', _ad.adir('tc_assets') == _p, _ad.is_lite('tc_assets'))
+        os.environ['LITE'] = '0'; r2 = (_ad.adir('tc_assets') == _m, _ad.is_lite('tc_assets')); del os.environ['LITE']
+        open(os.path.join(_m, 'c.m4a'), 'wb').write(b'new'); r3 = _ad.stale('tc_assets'); os.remove(os.path.join(_m, 'c.m4a'))
+        os.remove(os.path.join(_p, 'b.bin')); r4 = _ad.stale('tc_assets'); open(os.path.join(_p, 'b.bin'), 'wb').write(b'pk')
+        r4b = _ad.stale('tc_assets') == ''
+        open(os.path.join(_m, 'a.webp'), 'wb').write(b'123456'); r5 = _ad.stale('tc_assets')
+        try:
+            _ad.adir('tc_assets'); r6 = False
+        except SystemExit as e:
+            r6 = '古い' in str(e) and 'lite_assets.py' in str(e) and 'LITE=0' in str(e)
+        check(r0 == (True, True, False) and r1 == (True, True, True) and r2 == (True, False) and 'ならびが かわった' in r3 and '軽い 版が ない' in r4 and r4b and 'もとが かわった' in r5 and r6,
+              f'第4.146版：assets_dir：軽い 版が ない → もと・新しい → 軽い 版・LITE=0 → もと・ファイルが ふえた／軽い 版が 欠けた／もとが かわった → 古い（ビルドと テストは 止まって 作り直しを 教える）（{r0}・{r1}・{r2}・{r3}・{r4}・{r5}・{r6}）')
+    finally:
+        _ad.W = _W0; shutil.rmtree(_tmp, ignore_errors=True)
+        if _P0 is not None: os.environ['LITE'] = _P0
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af and 'options: .alwaysMapped' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME・ファイルは メモリに 写す だけ（第4.109版：Range の たびに まるごと 読まない）')
     # 第4.109版：基本の フォント（BIZ UDPGothic 2つ・Dela Gothic One）は 字は そのままで WOFF2（ios/fonts/make_woff2.py）・IBM Plex Mono（予約名「Plex」）は TTF の まま

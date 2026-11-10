@@ -10,7 +10,8 @@ subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, TARGET='app'))
 pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').read()
 open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
-TCA = os.path.join(W, 'ios', 'tc_assets'); HAVE = os.path.isdir(TCA) and len(os.listdir(TCA)) > 100
+from assets_dir import adir
+TCA = adir('tc_assets'); HAVE = os.path.isdir(TCA) and len(os.listdir(TCA)) > 100
 if HAVE:
     for f in os.listdir(TCA): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
 else:

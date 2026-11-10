@@ -12,7 +12,8 @@ import os, random, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
-BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
+from assets_dir import adir
+BCP_DIR = adir('bcp_assets')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）
 if not all(os.path.exists(os.path.join(BCP_DIR, f)) for f in _bcp.files()):
     print('※ 結果ボードカスタムの 絵（ios/bcp_assets）が ない ので、この テストは しない'); print('結果： OK'); sys.exit(0)
 SRV = os.path.join(W, 'srv_bcpp'); PORT = 8796

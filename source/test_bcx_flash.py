@@ -12,7 +12,8 @@ from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_bcx'); PORT = 8794
 CASES = sys.argv[1].split(',') if len(sys.argv) > 1 else ['carry', 'pic']
-FX_DIR = os.path.join(W, 'ios', 'fx_assets')
+from assets_dir import adir
+FX_DIR = adir('fx_assets')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
@@ -23,7 +24,7 @@ if os.path.isdir(FX_DIR):
     for f in os.listdir(FX_DIR):
         if f.startswith('bcx_hb_') and f.endswith('.webp'): shutil.copy(os.path.join(FX_DIR, f), os.path.join(SRV, 'APP', f))
 art22 = os.path.isdir(FX_DIR) and all(os.path.exists(os.path.join(FX_DIR, f'bcx_hb_{k}.webp')) for k in ('head', 'fore', 'hind', 'tail', 'eye'))
-BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
+BCP_DIR = adir('bcp_assets')
 if os.path.isdir(BCP_DIR):
     sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
     for f in _bcp.files():      # 第4.145版：アプリに 入れる 絵 だけ（キャラが 動く 絵の 止まった 版は 入れない＝部品を 重ねて 出す）

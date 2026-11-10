@@ -21,6 +21,8 @@ ios/kisekae_blobs/
 ios/bcp_assets/
 ios/tc_assets/
 ios/fig_assets/
+# 軽い 版の 絵と 動画（第4.146版：kisekae/lite_assets.py が もとの 絵から 作る・assets_dir.py）
+ios/lite/
 srv_tc/
 srv_fig/
 srv_figcap/

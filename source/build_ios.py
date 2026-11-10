@@ -84,7 +84,10 @@ open(os.path.join(res, 'ja.lproj', 'Localizable.strings'), 'w', encoding='utf8')
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは音なし・ネオンの線画なしで動く）
 sys.path.insert(0, os.path.join(W, 'kisekae'))
 from build_fx import ASSET_FILES
-fx_dir = os.environ.get('FX_ASSETS') or os.path.join(W, 'ios', 'fx_assets')
+# 第4.146版：絵・動画の フォルダは assets_dir.adir()＝軽い 版（ios/lite/<名前>：kisekae/lite_assets.py が 作る。動画 CRF 29・絵 WebP quality 75）が あれば そちら・なければ もと（ios/<名前>）。
+#   軽い 版が 古い（もとを 作り直した）ときは ここで 止まる。LITE=0 で もとの まま 入れる。FX_ASSETS など を 決めた とき（CI）は その フォルダ
+import assets_dir as _ad
+fx_dir = os.environ.get('FX_ASSETS') or _ad.adir('fx_assets')
 fx_have = [f for f in ASSET_FILES if os.path.exists(os.path.join(fx_dir, f))]
 for f in fx_have:
     assert f.lower() not in names, f
@@ -96,7 +99,7 @@ if len(fx_have) != len(ASSET_FILES):
 # リポジトリには入れない（まさちゃんの 絵）ので、ないときは入れずに作る（CIはこの形。アプリは その ボードを いつもの ボードで 出す）
 sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp'))
 import bcp_app as _bcp
-bcp_dir = os.environ.get('BCP_ASSETS') or os.path.join(W, 'ios', 'bcp_assets')
+bcp_dir = os.environ.get('BCP_ASSETS') or _ad.adir('bcp_assets')
 bcp_all = _bcp.files()
 bcp_have = [f for f in bcp_all if os.path.exists(os.path.join(bcp_dir, f))]
 for f in bcp_have:
@@ -106,7 +109,7 @@ if len(bcp_have) != len(bcp_all):
     print('※ 結果ボードカスタムの 絵が', len(bcp_all) - len(bcp_have), 'こ ない（', bcp_dir, '）。kisekae/bcp の README の 作り方で 作れるよ（CIではなしのまま）')
 # トレーニングセンターの 絵・形・音（第4.130版：まさちゃんの フィールド・馬・バケツの 3D など と それから 作った もの）：ios/tc_assets/ か TC_ASSETS=<フォルダ>。
 # kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右上の ボタンを 押すと「読みこめなかった」に なる）
-tc_dir = os.environ.get('TC_ASSETS') or os.path.join(W, 'ios', 'tc_assets')
+tc_dir = os.environ.get('TC_ASSETS') or _ad.adir('tc_assets')
 tc_have = sorted(f for f in (os.listdir(tc_dir) if os.path.isdir(tc_dir) else []) if f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
 for f in tc_have:
     assert f.lower() not in names and f not in files, f
@@ -115,7 +118,7 @@ if not tc_have:
     print('※ トレーニングセンターの 絵と 音が ない（', tc_dir, '）。kisekae/tc/collect_assets.py で 集めるよ（CIではなしのまま）')
 # 思い出フィギュアの 形と 絵（第4.134版：まさちゃんの フィギュア 8体・3D の 棚 と それから 作った もの）：ios/fig_assets/ か FIG_ASSETS=<フォルダ>。
 # kisekae/fig/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。ブースを 開くと「読みこめなかった」に なる）
-fig_dir = os.environ.get('FIG_ASSETS') or os.path.join(W, 'ios', 'fig_assets')
+fig_dir = os.environ.get('FIG_ASSETS') or _ad.adir('fig_assets')
 # 第4.145版：fg_meta.json（集めた ときの メモ・アプリは 読まない）は 入れない
 fig_have = sorted(f for f in (os.listdir(fig_dir) if os.path.isdir(fig_dir) else []) if f.startswith('fg') and f != 'fg_meta.json' and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
 for f in fig_have:
@@ -159,4 +162,6 @@ with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
             z.write(p, os.path.relpath(p, out))
 shutil.rmtree(tmp, ignore_errors=True)
 size = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(pkg) for f in fs)
-print('built', pkg, f'{size / 1e6:.1f}MB', 'files', len(files), 'zip', f'{os.path.getsize(zpath) / 1e6:.1f}MB', 'version', VER[0], 'build', VER[1])
+assert _ad.INFO not in files and not os.path.exists(os.path.join(res, _ad.INFO)), '軽い 版の 台帳は アプリに 入れない'
+_pk = [n for n, d in (('fx_assets', fx_dir), ('bcp_assets', bcp_dir), ('tc_assets', tc_dir), ('fig_assets', fig_dir)) if os.path.abspath(d) == os.path.abspath(_ad.lite(n))]
+print('built', pkg, f'{size / 1e6:.1f}MB', 'files', len(files), 'zip', f'{os.path.getsize(zpath) / 1e6:.1f}MB', 'version', VER[0], 'build', VER[1], '軽い 版', '・'.join(_pk) if _pk else 'なし')
