@@ -2190,6 +2190,7 @@ const TCCare = (() => {
     drawBanner(t);
     drawCare(t);
     drawUI(t);
+    drawVInfo(t);
     drawChooser(t);
     
     if (S.hand) {
@@ -2259,6 +2260,33 @@ const TCCare = (() => {
       const col = B.kind === 'kamisama' ? '#fff2bf' : '#f6dcff';
       for (let i = 0; i < 7; i++) { const v = (ui - 0.25 - i * 0.16) / 1.0; if (v > 0 && v < 1) star(cx + (hash(i * 7.3 + 1) - 0.5) * w * 0.92, BAN_TOP + h * (0.1 + 0.8 * hash(i * 3.1 + 2)) + bob, 22 * Math.sin(Math.PI * v), v * 1.4, 0.95, col); }
     }
+  }
+  
+  
+  
+  
+  
+  
+  const mmss = v => { const n = Math.max(0, Math.ceil(v)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+  const VI = { x: 26, y: 172, w: 420, row: 37, pad: 7, lab: 26, val: 29, small: 22 };
+  function vinfoRows(V) {
+    return [['タイムリミット', mmss(V.left), V.left <= 60, VI.val],
+      ['お世話', `${V.n}/${V.need}回`, false, VI.val],
+      ['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]];
+  }
+  function vinfoRect() { return { x: VI.x, y: VI.y, w: VI.w, h: 3 * VI.row + 2 * VI.pad }; }
+  function drawVInfo(t) {
+    const B = S.ban, V = S.vinfo; if (!B || !V || B.showT == null) return;
+    const ui = t - B.showT; let a;
+    if (B.hideT != null) { const v = (t - B.hideT) / 0.3; if (v >= 1) return; a = 1 - sm(v); } else { if (ui < 0.5) return; a = sm((ui - 0.5) / 0.35); }
+    const { x, y, w, h } = vinfoRect();
+    g.save(); g.globalAlpha *= a; panel(x, y, w, h, 16);
+    vinfoRows(V).forEach(([lb, val, hot, size], i) => {
+      const cy = y + VI.pad + VI.row * (i + 0.5) + 2;
+      label(lb, x + 22, cy, VI.lab, '#7a4520', null, 0, 'left'); label(val, x + w - 22, cy, size, hot ? '#d0342c' : '#c2456f', null, 0, 'right');
+      if (i < 2) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
+    });
+    g.restore();
   }
   function drawCaption(t) {
     if (!S.demo || !S.demo.cap) return; const u = t - S.t0;
@@ -2462,7 +2490,7 @@ const TCCare = (() => {
     window.__events = () => S.ev;
     window.__careDone = () => !!S.demoDone;
   }
-  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE };
+  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
 ;
@@ -2507,6 +2535,7 @@ const TCGuide = (() => {
   const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
   
   const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
+  const RS = { cares: 5, min: 5, limit: 30 };      
   const CARE = [10, 20, 50, 85, 99, 121, 125, 245, 399, 600];      
   const SEC = [
     ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
@@ -2523,8 +2552,16 @@ const TCGuide = (() => {
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
     ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・ほうきで3回はくとピカピカ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
-    ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p><p>・<b>幻の馬</b> ${pc(245)}（1/245）・<b>神様馬</b> ${pc(399)}（1/399）がやってくる</p>`],
-    ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ（いるのは<b>10分</b>）</p>
+    ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p>`],
+    
+    ['替', '#2f8f83', '馬のリセット（次の馬の抽選）', `<p>・お世話（ごはん・おそうじ）を<b>${RS.cares}回</b>すると、リセットのタイマーがスタート</p>
+      <p>・タイマーが<b>${RS.min}分</b>たつとリセット → 次の馬を抽選</p>
+      <p>・<b>幻の馬</b> ${pc(245)}（1/245）・<b>神様馬</b> ${pc(399)}（1/399）がやってくる（それ以外は いつもの馬のまま）</p>
+      <p class="note">お世話をしないと 馬はかわらないよ（開いているだけでは 抽選しないよ）</p>
+      <p class="note">お世話のとちゅうは リセットしないよ（おわってから）</p>`],
+    ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ</p>
+      <p>・帰るのは、<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）か、<b>来てから${RS.limit}分</b>（タイムリミット）の どちらか早いほう</p>
+      <p>・左上の「なかよし」の下に「タイムリミット・お世話の回数・切り替わりタイマー」が出るよ</p>
       <p class="hh">🌙 幻の馬</p>
       <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}</table>
       <p class="hh">✨ 神様馬</p>
@@ -3221,7 +3258,15 @@ const TCApp = (() => {
   const BIG = 1.7;                                    
   const TOKEN_MIN = 10, TOKEN_MAX = 20;               
   const TICK = 120;                                   
-  const VISIT_MIN = 10;                               
+  
+  
+  
+  
+  
+  
+  
+  const RESET_CARES = 5, RESET_MIN = 5;               
+  const VISIT_MIN = 30;                               
   const HIGH_N = 5, HIGH_X = 4;                       
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    
@@ -3244,9 +3289,12 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, snd: true, gen: 1 });
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      
   let st = null, dirty = false, saveAt = 0;
-  function load() { try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); } }
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
+    const r = st.rs; st.rs = r && typeof r === 'object' ? { n: Math.max(0, Math.round(+r.n || 0)), at: Math.max(0, +r.at || 0), el: Math.max(0, +r.el || 0) } : { n: 0, at: 0, el: 0 };
+  }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
   const TKP = () => ((window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');      
@@ -3300,7 +3348,7 @@ const TCApp = (() => {
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
   const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null };
   function onCareEvent(e) {
-    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; touch(); later.push(() => growCheck()); }      
+    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; touch(); later.push(() => growCheck()); }      
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
     if (!nm) return;
     const lag = Math.max(0, e.t - clock());
@@ -3434,25 +3482,46 @@ const TCApp = (() => {
     const bg = ov && ov.querySelector('.tcbg'); if (!bg || bg.dataset.f === f) return;
     bg.dataset.f = f; bg.style.backgroundImage = `url("${AP(`tc_field_${f}.webp`)}")`;
   }
-  function chance(t) {
-    const r = Math.random(), now = Date.now();
-    if (!st.visit && !busy) {
-      if (r < P_KAMI) return startVisit('kamisama');
-      if (r < P_KAMI + P_MAB) return startVisit('maboroshi');
-    }
+  function chance(t) {                                  
+    const now = Date.now();
     if (Math.random() < P_HIGH) { const S = TCCare.S; S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); }
     if (Math.random() < P_POOP && BR && BR.mode !== 'sleep' && (BR.poops || []).length < 3) BR.poopReq = true;
     void now;
   }
   async function startVisit(kind) {
-    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; touch(); save();
+    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; st.rs = { n: 0, at: 0, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg(kind === 'kamisama' ? '✨ 神様馬が やってきた！' : '🌙 幻の馬が やってきた！', 3.0);
   }
   async function endVisit() {
-    st.visit = null; touch(); save();
+    st.visit = null; st.rs = { n: 0, at: 0, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg('また 来てね… と 帰って いったよ', 2.6);
+  }
+  
+  const careIdle = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()));
+  const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
+  const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
+  let resetting = false;
+  function resetStep(gms, dt, t) {
+    const rs = st.rs;
+    if (rs.at) rs.el = (+rs.el || 0) + dt;
+    if (!rs.at && rs.n >= RESET_CARES && careIdle() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      
+    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careIdle() && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
+  }
+  let forceNext;                               
+  function nextHorse() {                       
+    if (forceNext !== undefined) { const f = forceNext; forceNext = undefined; return f; }
+    const r = Math.random(); return r < P_KAMI ? 'kamisama' : r < P_KAMI + P_MAB ? 'maboroshi' : null;
+  }
+  async function doReset() {
+    const next = nextHorse();
+    st.rs = { n: 0, at: 0, el: 0 }; touch();
+    if (next) await startVisit(next);            
+    else if (st.visit) await endVisit();         
+    else save();                                 
+    return next;
   }
   function draw() {                                    
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
@@ -3519,7 +3588,10 @@ const TCApp = (() => {
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (BR && !st.visit) BR.tod = tod();
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       
-    if (st.visit && (gms > st.visit.until || st.visit.el >= VISIT_MIN * 60) && !busy) endVisit();
+    if (st.visit && visitLeft(gms) <= 0 && !busy && careIdle() && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      
+    else if (!resetting) resetStep(gms, dt, t);
+    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms) } : null;      
+    if (resetting) {   }
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
     if (!HO || !BR) return;
@@ -3560,7 +3632,7 @@ const TCApp = (() => {
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 352, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
+      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     nextTick = clock() + TICK;
     SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a']);
@@ -3586,7 +3658,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
