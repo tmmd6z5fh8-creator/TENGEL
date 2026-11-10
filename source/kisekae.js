@@ -23,9 +23,13 @@
   function emit(phase) { try { document.dispatchEvent(new CustomEvent('tengel:kisekae', { detail: { phase: phase, id: curId } })); } catch (e) { /* なし */ } }
 
   // ---------- CSS（全テーマの変数・共通の形・@font-face） ----------
+  // チケットの 箱（第4.141版：壁紙の 解放か 7,000P かを 選ぶ）
+  const TK_CSS = '#setKisekae .kstk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px;border:1px dashed var(--line);border-radius:12px;padding:9px 12px;background:var(--surface-2)}'
+    + '#setKisekae .kstk .kstx{flex:1 1 190px;min-width:0;font-size:13px;line-height:1.5}#setKisekae .kstk .kstx>b{display:block;font-size:14px}#setKisekae .kstk small{display:block;font-size:12px;color:var(--muted)}'
+    + '#setKisekae .kstk .kstb{display:flex;gap:8px;flex:none;flex-wrap:wrap}';
   function css() {
     if ($('#ksCss')) return;
-    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css;
+    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css + TK_CSS;
     document.head.appendChild(st);
   }
 
@@ -172,6 +176,32 @@
   // トレーニングセンターの 壁紙チケット（第4.130版：お世話の 当たり 1/2400）：1枚で 1つの テーマを 解放（ポイントは 使わない）
   const tickets = () => { try { return window.TCInfo ? window.TCInfo.tickets() : 0; } catch (e) { return 0; } };
   let actBusy = false;      // 解放の 途中（ポイント・チケット）：おわるまで 次の 解放を 受けない
+  // 第4.141版（まさちゃん 11/10 15:52「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」）：チケット 1枚は「壁紙の 解放」か「7,000P」かを 選べる。
+  //   チケットが ある あいだ、着せ替えの カードの 上に 箱を 出す：壁紙に 使う ＝ カギの 壁紙を 押す（今までどおり）／ポイントに かえる ＝ ここの ボタン（2回 押して 決める）
+  const TKP = () => (window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000;
+  let tkAsk = false;
+  function ticketBox() {
+    const n = tickets(); if (!(n > 0) || !wallet()) { tkAsk = false; return ''; }
+    return `<div class="kstk" role="group" aria-label="チケット"><span class="kstx"><b>🎫 チケット ${n}枚</b><small>1枚で、<b>カギの壁紙を1つ解放</b>（壁紙を押してね）か、<b>${esc(pts(TKP()))}にかえる</b>か、選べるよ</small></span>`
+      + (tkAsk ? `<span class="kstb"><button class="btn primary" type="button" data-ksact="tkpt2">1枚を ${esc(pts(TKP()))}に かえる</button><button class="btn ghost" type="button" data-ksact="tkpt0">やめる</button></span>`
+        : `<span class="kstb"><button class="btn" type="button" data-ksact="tkpt1">${esc(pts(TKP()))}に かえる</button></span>`) + '</div>';
+  }
+  // チケット 1枚 → 7,000P（獲得ポイント）。先に チケットを 1枚 使ってから 足す（足せなければ もどす）。上限を こえる ぶんは あずかりポイントへ（points_ui.js の grant）
+  async function ticketToPoints() {
+    const w = wallet(); if (actBusy || !w || typeof w.grant !== 'function' || !(tickets() > 0)) return false;
+    actBusy = true;
+    let ok = false, used = false;
+    const held0 = typeof w.hold === 'function' ? w.hold().total : 0;
+    try {
+      try { used = !!window.TCInfo.useTicket(); } catch (x) { used = false; }
+      if (used) { try { ok = await w.grant('tkp-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36), TKP(), 'チケットを ポイントに かえた'); } catch (x) { ok = false; } }
+      if (used && !ok) { try { window.TCInfo.backTicket(); } catch (x) { /* なし */ } }
+    } finally { actBusy = false; }
+    const held = (typeof w.hold === 'function' ? w.hold().total : 0) - held0;
+    if (ok && !(held > 0)) toast(`🎫 チケット 1枚を ${pts(TKP())}に かえたよ（合計 ${pts(w.total())}・チケット のこり ${tickets()}枚）`, 4200);      // あずかった ときは 財布の お知らせ（うち ○P は あずかったよ）が 出る
+    else if (!ok) toast('チケットを ポイントに かえられなかったよ', 3000);
+    return ok;
+  }
   function confBox(t, total) {
     if (t.pack) return packConf(t);
     const ok = total >= t.price;
@@ -214,6 +244,7 @@
     const cur = byId[curId] || byId.default, n = count(), total = have();
     let h = `<p class="hint" style="margin:0 0 4px">いまのテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
     h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。8・16・25枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
+    h += ticketBox();
     const groups = [];
     A.themes.forEach(t => { let g = groups.find(x => x.name === t.group); if (!g) { g = { name: t.group, items: [] }; groups.push(g); } g.items.push(t); });
     groups.forEach(g => {
@@ -237,6 +268,10 @@
     const a = e.target.closest('[data-ksact]');
     if (a) {
       if (a.dataset.ksact === 'cancel') { conf = ''; paint(); return; }
+      if (a.dataset.ksact === 'tkpt1') { tkAsk = true; conf = ''; paint(); return; }
+      if (a.dataset.ksact === 'tkpt0') { tkAsk = false; paint(); return; }
+      if (a.dataset.ksact === 'tkpt2') { a.disabled = true; await ticketToPoints(); tkAsk = false; paint(); return; }
+      tkAsk = false;
       if (a.dataset.ksact === 'pkbuy' || a.dataset.ksact === 'pkrestore' || a.dataset.ksact === 'bundle') {
         const w = wallet(); if (!w || !w.pack) return;
         if (a.dataset.ksact === 'bundle') { if (w.bundle) await w.bundle.buy(a); } else if (a.dataset.ksact === 'pkbuy') await w.pack.buy(a); else await w.pack.restore(a);
@@ -315,6 +350,7 @@
     paint();
   })();
   document.addEventListener('tengel:wallet', () => { paint(); if (!usable(curId)) apply('default', true); });
+  document.addEventListener('tengel:tc', () => { tkAsk = false; paint(); });      // トレーニングセンターを とじた（チケットの 数が かわった かも：第4.141版）
   // 壁紙パック（第4.92版）：解放の お知らせ（読み込んだ とき：画面の 上に 小さな 絵と「着せ替える」・6.5秒）・買った／もどした・返金
   function packNote(id, many) {
     const t = byId[id]; if (!t) return;

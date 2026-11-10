@@ -443,6 +443,7 @@ console.log('読み直しの 見分け：読んだ 単勝の 表を くらべる
   const fa = P.raceFp(A), fa2 = P.raceFp(A2), fb = P.raceFp(B);
   check(fa === '1:12.4,2:4.1,3:31.5,4:9.8,5:18.2,6:2.4,7:7.6,8:54,9:25.9,10:6.3,11:14.7,12:88.6' && P.raceFp(null) === '' && P.raceFp([]) === ''
     && P.raceFp([{ no: 3, tan: '5.5' }, { no: 'x', tan: 2 }, { no: 2, tan: 0 }, { no: 3, tan: 9 }, { no: 1, tan: '２.４' }, null]) === '3:5.5', '指紋＝馬番:単勝 を 馬番の 順に（読めない 行・同じ 馬番の 2つめは すてる）');
+  check(P.TICKET_POINTS === 7000, 'チケット 1枚を かえられる ポイント＝7,000P（第4.141版・いちばん 高い 壁紙と 同じ）');
   check(P.FP.min === 6 && P.FP.rho === 0.3 && P.FP.same === 0.5, 'しきい値：どちらにも ある 馬番 6頭 以上・順位の 相関 0.3 より 低い・同じ オッズ 半分 より 少ない');
   check(P.fpRho(fa, fa2) > 0.95 && P.fpShare(fa, fa2) === 0 && P.fpDiff(fa, fa2) === false, `同じ レース（オッズが 動いた だけ）：人気の 順は ほぼ 同じ → 同じ レース（相関 ${P.fpRho(fa, fa2).toFixed(2)}）`);
   check(P.fpRho(fa, fb) < 0 && P.fpShare(fa, fb) === 0 && P.fpDiff(fa, fb) === true && P.fpDiff(fb, fa) === true, `別の レース：人気の 順も オッズも ちがう → 別の レース（相関 ${P.fpRho(fa, fb).toFixed(2)}）`);

@@ -992,7 +992,9 @@
       + '<p class="hint" style="margin:10px 0 6px">壁紙パック（App Store の 買い物は しない）：<span id="testPack"></span></p>'
       + '<div class="row"><button type="button" class="btn" data-test="pown">買ったことにする</button><button type="button" class="btn" data-test="pread">読み込み +5</button><button type="button" class="btn" data-test="pall">全部 解放</button></div>'
       + '<p class="hint" style="margin:10px 0 6px">お得パック（壁紙パックと 結果ボードカスタムの セット・App Store の 買い物は しない）：<span id="testBundle"></span></p>'
-      + '<div class="row"><button type="button" class="btn" data-test="uown">買ったことにする</button></div>';
+      + '<div class="row"><button type="button" class="btn" data-test="uown">買ったことにする</button></div>'
+      + '<p class="hint" style="margin:10px 0 6px">トレーニングセンターの チケット（壁紙の 解放か ' + pts(P.TICKET_POINTS) + ' に かえるか 選べる）：<span id="testTk"></span></p>'
+      + '<div class="row"><button type="button" class="btn" data-test="tkadd">チケットを 1枚 もらう</button></div>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
@@ -1023,6 +1025,11 @@
         const got = boardOpened(n0, P.boardUnlocked(W.board.reads));
         await save(); if (got.length) boardEmit('unlock', { item: got[got.length - 1].id, no: got[got.length - 1].no, many: got.length });
       }
+      else if (b.dataset.test === 'tkadd') {      // 第4.141版：チケットを ためす（当たりは 1/2400 なので テスト版では ここから）
+        try { window.TCInfo.backTicket(); } catch (x) { /* なし */ }
+        try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (x) { /* なし */ }
+        paintTestBoard(); toast(`🧪 チケットを 1枚 足したよ（いま ${window.TCInfo ? window.TCInfo.tickets() : 0}枚）。設定の「着せ替え」で 使えるよ`, 4200);
+      }
       else if (b.dataset.test === 'uown') { if (!P.bundleOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-bundle-' + now, product: P.BUNDLE.product, date: new Date(now).toISOString() }, now)); await save(); unlockEmit('bundle', 'owned', { src: 'test' }); toast('🧪 お得パックを 買ったことにしたよ（壁紙パックと 結果ボードカスタム）', 2600); } }
       else if (b.dataset.test === 'pown') { if (!P.packOwned(W.events)) { const now = Date.now(); W.events.push(P.txEvent(W.events, { id: 'test-pack-' + now, product: P.WALLPACK.product, date: new Date(now).toISOString() }, now)); await save(); packEmit('owned', { src: 'test' }); toast('🧪 壁紙パックを 買ったことにしたよ', 2600); } }
       else if (b.dataset.test === 'pread' || b.dataset.test === 'pall') {
@@ -1039,6 +1046,7 @@
   function paintTestBoard() {
     const el = $('#testBoard'); if (!el || !W) return; const i = boardInfo(); const nm = id => (id === 'none' ? 'なし' : ((P.BOARD_ITEMS.find(x => x.id === id) || {}).name || 'まだ'));
     el.textContent = `${i.owned ? '買った' : 'まだ'}・読み込み ${i.reads}・解放 ${i.n}/${P.BOARD_ITEMS.length}・的中 ${nm(i.selHit)}・ハズレ ${nm(i.selMiss)}`;
+    const tkEl = $('#testTk'); if (tkEl) tkEl.textContent = `いま ${window.TCInfo ? window.TCInfo.tickets() : 0}枚`;
     const en = $('#testN'); if (en) en.textContent = `いま 連続的中 ${i.streak}・続けて ハズレ ${i.mstreak}・ためす 数 ${testN ? testN : `いまの 数（的中 ${Math.max(1, i.streak)}・ハズレ ${Math.max(1, i.mstreak)}）`}`;
     const ep = $('#testPack'); if (ep) { const k = packInfo(); ep.textContent = `${k.owned ? '買った' : 'まだ'}・読み込み ${k.reads}・解放 ${k.n}/${k.total}`; }
     const eb = $('#testBundle'); if (eb) eb.textContent = P.bundleOwned(W.events) ? '買った' : 'まだ';

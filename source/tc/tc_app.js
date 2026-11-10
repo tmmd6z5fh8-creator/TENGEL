@@ -35,6 +35,7 @@ const TCApp = (() => {
   function load() { try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); } }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
+  const TKP = () => ((window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');      // チケット 1枚を かえられる ポイント（points.js）
   const note = m => { try { const t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } };      // アプリの 画面の お知らせ（下の 黒い 札）
   function stageOf(c) { return c < 50 ? 1 : c < 100 ? 2 : c < 150 ? 3 : c < 200 ? 4 : 5; }
   function scaleOf(c) { return c < 50 ? 0.6 : c < 100 ? 0.7 : c < 150 ? 0.8 : c < 200 ? 0.88 : c < 250 ? 0.94 : 1.0; }      // ※仮：250回で いちばん 大きく
@@ -147,7 +148,7 @@ const TCApp = (() => {
   function paintHead() {
     const b = ov.querySelector('.tcsd'); b.textContent = st.snd ? '🔊' : '🔇'; b.setAttribute('aria-label', st.snd ? '音：オン（押すと けす）' : '音：オフ（押すと 出す）');
     const tk = ov.querySelector('.tctk'); tk.hidden = !(st.tickets > 0); tk.textContent = `🎫 ${st.tickets}`;
-    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで 壁紙の 解放に 使えるよ）`);
+    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで、壁紙の 解放か ${TKP()}P に かえるか 選べるよ）`);
   }
   function layout() {
     const vw = window.innerWidth, r = ov.getBoundingClientRect(), head = 58;
@@ -282,7 +283,7 @@ const TCApp = (() => {
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se }); } finally { give(z); paintHead(); }
-        msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で 壁紙の 解放に 使えるよ`, 3.6);
+        msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で\n壁紙か ${TKP()}P を\n選べるよ`, 4.4);      // 第4.141版（11/10 15:52 まさちゃん「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」）
       }
     } finally { busy = false; TCCare.roulette(false); }
   }

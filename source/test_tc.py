@@ -226,7 +226,7 @@ try:
         check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and gd['mab'][0]['pc'] == '約0.33%' and gd['kami'][0]['pc'] == '約1.18%',
               f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
         od = gd['odds']; D = lambda k: round(1 / od[k])
-        wantTx = ['ぜんぶ 合わせて 約20.2%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
+        wantTx = ['ぜんぶ 合わせて 約20.2%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
         check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399],
               f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
@@ -338,6 +338,25 @@ try:
         bk = pg.evaluate("() => { const a = TCInfo.tickets(); TCInfo.backTicket(); const b = TCInfo.tickets(); TCInfo.useTicket(); return [a, b, TCInfo.tickets(), TCInfo.useTicket()]; }")
         check(bk == [0, 1, 0, False], f'チケットを もどす・使う（0 → 1 → 0・ない ときは 使えない：{bk}）')
         pg.evaluate("() => TengelKisekae.apply('default')"); pg.wait_for_timeout(600)
+        print('■ チケットを 7,000P に かえる（第4.141版）')
+        #   11/10 15:52 まさちゃん「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」：チケット 1枚は、壁紙の 解放に 使うか、7,000P（獲得ポイント）に かえるかを 選べる
+        pg.evaluate("() => { TCInfo.backTicket(); TCInfo.backTicket(); document.dispatchEvent(new CustomEvent('tengel:tc')); }"); pg.wait_for_timeout(500)
+        k0 = pg.evaluate("() => { const b = document.querySelector('#setKisekae .kstk'); return { tp: TengelPoints.TICKET_POINTS, txt: b ? b.innerText.replace(/\\s+/g, ' ') : '', btn: b ? [...b.querySelectorAll('button')].map(x => x.textContent) : [], total: TengelWallet.total(), tk: TCInfo.tickets() }; }")
+        check(k0['tp'] == 7000 and '🎫 チケット 2枚' in k0['txt'] and 'カギの壁紙を1つ解放' in k0['txt'] and '7,000Pにかえる' in k0['txt'] and k0['btn'] == ['7,000Pに かえる'] and k0['tk'] == 2,
+              f'着せ替えの 上に チケットの 箱：「チケット 2枚・1枚で、カギの壁紙を1つ解放か、7,000Pにかえるか、選べるよ」と「7,000Pに かえる」（{k0}）')
+        pg.locator('#setKisekae [data-ksact=tkpt1]').click(); pg.wait_for_timeout(300)
+        k1 = pg.evaluate("() => [...document.querySelectorAll('#setKisekae .kstk button')].map(x => x.textContent)")
+        pg.locator('#setKisekae [data-ksact=tkpt0]').click(); pg.wait_for_timeout(300)
+        k2 = pg.evaluate("() => [[...document.querySelectorAll('#setKisekae .kstk button')].map(x => x.textContent), TCInfo.tickets(), TengelWallet.total()]")
+        check(k1 == ['1枚を 7,000Pに かえる', 'やめる'] and k2 == [['7,000Pに かえる'], 2, k0['total']], f'1回 押すと「1枚を 7,000Pに かえる」「やめる」・やめると もどる（チケットも ポイントも そのまま）（{k1}・{k2}）')
+        pg.locator('#setKisekae [data-ksact=tkpt1]').click(); pg.wait_for_timeout(300); pg.locator('#setKisekae [data-ksact=tkpt2]').click(); pg.wait_for_timeout(1300)
+        k3 = pg.evaluate("() => { const b = document.querySelector('#setKisekae .kstk'), ev = TengelWallet.events().filter(e => /^tkp-/.test(e.id)); return { total: TengelWallet.total(), tk: TCInfo.tickets(), toast: document.querySelector('#toast').textContent, box: b ? b.innerText.replace(/\\s+/g, ' ') : '', ev: ev.map(e => [e.kind, e.bucket, e.amount, e.what]), free: TengelWallet.balance().free }; }")
+        check(k3['total'] == k0['total'] + 7000 and k3['tk'] == 1 and 'チケット 1枚を 7,000Pに かえたよ' in k3['toast'] and 'チケット のこり 1枚' in k3['toast'] and '🎫 チケット 1枚' in k3['box']
+              and k3['ev'] == [['mission', 'free', 7000, 'チケットを ポイントに かえた']],
+              f'チケット 1枚 → +7,000P（獲得ポイント）・チケットは 1枚 へる・箱は「チケット 1枚」（{k3}）')
+        pg.locator('#setKisekae [data-ksact=tkpt1]').click(); pg.wait_for_timeout(300); pg.locator('#setKisekae [data-ksact=tkpt2]').click(); pg.wait_for_timeout(1300)
+        k4 = pg.evaluate("() => ({ total: TengelWallet.total(), tk: TCInfo.tickets(), box: document.querySelectorAll('#setKisekae .kstk').length, n: TengelWallet.events().filter(e => /^tkp-/.test(e.id)).length })")
+        check(k4 == {'total': k0['total'] + 14000, 'tk': 0, 'box': 0, 'n': 2}, f'もう 1枚 かえる → +7,000P・チケットが 0枚に なると 箱は 消える（{k4}）')
         print('■ アプリを 閉じても 当たりは 消えない（第4.140版）')
         #   お世話の 途中・ルーレットの 途中で アプリを 閉じた ことに する：保存に 当たり（ルーレット 1600P）が 残って いる → 開き直して トレーニングセンターを ひらくと もらえる（1回だけ）
         w0 = pg.evaluate("TengelWallet.total()")
@@ -356,6 +375,15 @@ try:
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); s.pend = { k: 'tk', n: 2, id: 'tc-pend-test-2' }; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
         r3 = reopen(); tk3 = pg.evaluate("TCInfo.tickets()")
         check(tk3 == 2 and r3['pend'] is None and 'チケット 2枚' in r3['msg'], f'チケットの 当たりも 同じ（{tk3}枚・{r3["msg"]}）')
+        print('■ 上限の 近くで チケットを ポイントに かえる（第4.141版）')
+        #   合計 96,000P で チケット 1枚（7,000P）を かえる → 財布は 上限の 99,999P まで・こえた 3,001P は あずかりポイントへ（消えない）・チケットは 1枚 へる
+        k5 = pg.evaluate("""async () => { const w = TengelWallet, wait = ms => new Promise(r => setTimeout(r, ms));
+          await w.grant('t-cap-fill', 96000 - w.total(), 'テスト'); document.dispatchEvent(new CustomEvent('tengel:tc')); await wait(400);
+          const t0 = w.total(), h0 = w.hold().total, tk0 = TCInfo.tickets();
+          document.querySelector('#setKisekae [data-ksact=tkpt1]').click(); await wait(300); document.querySelector('#setKisekae [data-ksact=tkpt2]').click(); await wait(1500);
+          return { t0, tk0, total: w.total(), held: w.hold().total - h0, tk: TCInfo.tickets(), toast: document.querySelector('#toast').textContent }; }""")
+        check(k5['t0'] == 96000 and k5['tk0'] == 2 and k5['total'] == 99999 and k5['held'] == 3001 and k5['tk'] == 1 and '7,000P の うち 3,001P は あずかったよ' in k5['toast'],
+              f'96,000P で かえる → 財布 99,999P・3,001P は あずかり・チケット 2 → 1枚（{k5}）')
         check(not errs, f'エラー なし {errs[:3]}')
         b.close()
 finally:

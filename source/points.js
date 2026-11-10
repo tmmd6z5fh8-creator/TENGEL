@@ -31,6 +31,8 @@
   //   こえる 買い物（パック・サブスクを はじめる）は 買う 前に 止める・ミッションは 入る ように なるまで 受け取りを 待つ（points_ui.js）。
   //   上限でも 届く もの（サブスクの 更新・あとから 届いた 取引・トレーニングセンターの 当たり）の こえた ぶんは 消さずに あずかる（下の「あずかりポイント」）
   var CAP = 99999;
+  // 第4.141版（まさちゃん 2026/11/10 15:52「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」＝いちばん 高い 壁紙と 同じ 7,000P）：トレーニングセンターの チケット 1枚は、壁紙の 解放に 使うか、この ポイント（獲得ポイント）に かえるかを 選べる
+  var TICKET_POINTS = 7000;
   function room(total) { return Math.max(0, CAP - Math.max(0, Math.round(+total || 0))); }
   var SUB_DAYS = 30;
   // 記録のミッション（8.2）：記録したレースの数 → もらえるP。300のあとは100レースごとに2,000P
@@ -482,7 +484,7 @@
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
-    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room, TICKET_POINTS: TICKET_POINTS,
     holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
     stamp: stamp, stampAll: stampAll, seqMax: seqMax, raceFp: raceFp, fpDiff: fpDiff, fpRho: fpRho, fpShare: fpShare, FP: { min: FP_MIN, rho: FP_RHO, same: FP_SAME },
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
