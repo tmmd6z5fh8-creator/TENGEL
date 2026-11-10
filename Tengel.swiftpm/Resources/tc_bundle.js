@@ -2504,16 +2504,19 @@ const TCGuide = (() => {
   };
   const R = (d, html) => `<tr data-d="${d}"><td>${pc(d)}<small>1/${d}</small></td><td>${html}</td></tr>`;
   const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
+  
+  const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
   const CARE = [10, 20, 50, 85, 99, 121, 1000, 2000, 3600, 2400];      
   const SEC = [
     ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのたびに抽選！当たりはお世話のあとに出るよ</p>
       <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(1000, RT(800, 1600))}${R(2000, RT(1600, 3200))}${R(3600, RT(3200, 6400))}
-      ${R(2400, '<span class="tk">チケット</span>（壁紙 or 結果ボード・1〜3枚）')}</table>
+      ${R(2400, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
       <p class="note" data-n="sum">ぜんぶ 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
-      <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>`],
+      <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
+      <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・撫でたあとは<b>7秒</b>おやすみ・ハートは<b>1分に5こ</b>まで</p>
       <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p>`],
@@ -3202,6 +3205,7 @@ const TCApp = (() => {
   function load() { try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); } }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
+  const TKP = () => ((window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');      
   const note = m => { try { const t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (e) {   } };      
   function stageOf(c) { return c < 50 ? 1 : c < 100 ? 2 : c < 150 ? 3 : c < 200 ? 4 : 5; }
   function scaleOf(c) { return c < 50 ? 0.6 : c < 100 ? 0.7 : c < 150 ? 0.8 : c < 200 ? 0.88 : c < 250 ? 0.94 : 1.0; }      
@@ -3314,7 +3318,7 @@ const TCApp = (() => {
   function paintHead() {
     const b = ov.querySelector('.tcsd'); b.textContent = st.snd ? '🔊' : '🔇'; b.setAttribute('aria-label', st.snd ? '音：オン（押すと けす）' : '音：オフ（押すと 出す）');
     const tk = ov.querySelector('.tctk'); tk.hidden = !(st.tickets > 0); tk.textContent = `🎫 ${st.tickets}`;
-    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで 壁紙の 解放に 使えるよ）`);
+    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで、壁紙の 解放か ${TKP()}P に かえるか 選べるよ）`);
   }
   function layout() {
     const vw = window.innerWidth, r = ov.getBoundingClientRect(), head = 58;
@@ -3449,7 +3453,7 @@ const TCApp = (() => {
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se }); } finally { give(z); paintHead(); }
-        msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で 壁紙の 解放に 使えるよ`, 3.6);
+        msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で\n壁紙か ${TKP()}P を\n選べるよ`, 4.4);      
       }
     } finally { busy = false; TCCare.roulette(false); }
   }
