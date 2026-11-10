@@ -3,6 +3,7 @@
 //   kind：purchase（パック）・sub（サブスク）・gift（初回）・mission・spend（読み込みなど）・unlock（解放）・refund（返金）
 //   bucket：paid_pack（買ったP）・paid_sub（サブスクのP・届いた日から30日）・free（もらったP）
 //   使う順（4.2）：サブスクのP（期限が近い順）→ パック → 無償。足りないときは使えない（マイナスにしない）
+//   n：書いた 順の 番号（第4.139版）。残高は この 順に たどる（時刻 at の 順では ない：下の「台帳の ならび」）
 (function (root) {
   'use strict';
   var DAY = 86400000;
@@ -26,6 +27,11 @@
   var PACKS = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points2000', 'jp.tengel.app.points4000'];
   var SUBS = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400', 'jp.tengel.app.sub9200'];
   var COST = { gift: 1500, read: 200, w5: 200, type: 500, slot: 15000 };
+  // 第4.139版（まさちゃん 2026/11/10 11:46「ポイントの上限は、99999までにして！」）：もてる ポイント（合計）の 上限。
+  //   こえる 買い物（パック・サブスクを はじめる）は 買う 前に 止める・ミッションは 入る ように なるまで 受け取りを 待つ（points_ui.js）。
+  //   上限でも 届く もの（サブスクの 更新・あとから 届いた 取引・トレーニングセンターの 当たり）の こえた ぶんは 消さずに あずかる（下の「あずかりポイント」）
+  var CAP = 99999;
+  function room(total) { return Math.max(0, CAP - Math.max(0, Math.round(+total || 0))); }
   var SUB_DAYS = 30;
   // 記録のミッション（8.2）：記録したレースの数 → もらえるP。300のあとは100レースごとに2,000P
   var MISSIONS = [[8, 500], [15, 1000], [25, 1000], [40, 1200], [60, 1200], [85, 1400], [100, 1400], [130, 1600], [160, 1600], [200, 1800], [240, 1800], [300, 2000]];
@@ -36,8 +42,9 @@
   //   前の 版で「16こ解放」を 受け取った 人は「15こ解放」も 受け取った ことに する（boardMissions）
   var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [15, 1600]];
   // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
-  //   いま 解放できる 壁紙は WALL_TOTAL＝40枚（ポイント 26＋壁紙パック 11＋帯 3）。45枚は 壁紙が ふえたら 届く（一覧には 出す）
-  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500], [35, 3500], [40, 3500], [45, 3500]];
+  //   いま 解放できる 壁紙は WALL_TOTAL＝40枚（ポイント 26＋壁紙パック 11＋帯 3）。
+  //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない「45枚 3,500P」を やめて 40枚まで（10こ）
+  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500], [35, 3500], [40, 3500]];
   var WALL_TOTAL = 40;
   var FREE_TYPES = ['単勝', '馬単', '3連単'];
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
@@ -111,7 +118,32 @@
   function iso(d) { return (d instanceof Date ? d : new Date(d || Date.now())).toISOString(); }
   function tms(s) { var t = Date.parse(s); return isFinite(t) ? t : 0; }
   function addDays(isoStr, n) { return new Date(tms(isoStr) + n * DAY).toISOString(); }
-  function sorted(events) { return (events || []).filter(Boolean).slice().sort(function (a, b) { return tms(a.at) - tms(b.at) || String(a.id).localeCompare(String(b.id)); }); }
+  // ---- 台帳の ならび（第4.139版：抜け穴を ふさぐ）----
+  //   balance は できごとを 1つずつ 順に たどる（使った ぶんは、その ときに ある ぶんから 引く。足りなければ 引けない）。
+  //   前は 時刻（at）の 順だった → 「使った」が「届いた」より 前に ならぶと、その ぶんが 引かれなかった：
+  //     ・その日 1回 使った あとに ポイントを 増やすと（パックを 買う・ミッションを 受け取る…）、その日の のこりは 使っても へらなかった
+  //       （1日ぶんの「使った」を 1件に まとめて いて、時刻は 1回めの まま だった ＝ あとから 届いた ぶんより 前に ならぶ）
+  //     ・端末の 時計を 進めて ミッションを 受け取り、時計を もどすと、その ポイントは 使っても へらなかった
+  //   → 書いた 順の 番号 n を つけて、その 順に たどる（端末の 時計に よらない）。「使った」を まとめる のも、いちばん あとに 書いた 1件が その「使った」の とき だけ（spend）。
+  //   番号の ない できごと（前の 版の 台帳）は 前と 同じ 時刻の 順（stampAll が その 順に 番号を ふる ＝ 前の 版までの 残高は かわらない）
+  function byTime(a, b) { return tms(a.at) - tms(b.at) || String(a.id).localeCompare(String(b.id)); }
+  function sorted(events) {
+    return (events || []).filter(Boolean).slice().sort(function (a, b) {
+      var x = +a.n || 0, y = +b.n || 0;
+      if (x && y) return x - y || byTime(a, b);
+      if (x || y) return x ? -1 : 1;                      // 番号つきが 先（番号なし＝足した ばかりで まだ 番号を ふって いない）
+      return byTime(a, b);
+    });
+  }
+  function seqMax(events) { var m = 0; (events || []).forEach(function (e) { if (e && +e.n > m) m = +e.n; }); return m; }
+  // 番号の ない できごとに、ならんで いる 順（＝足した 順）に 番号を ふる。返り値は 同じ 一覧
+  function stamp(events) { var m = seqMax(events); (events || []).forEach(function (e) { if (e && !(+e.n > 0)) e.n = ++m; }); return events; }
+  // 前の 版の 台帳：番号の ない できごとに、時刻の 順（前の 版が たどって いた 順）で 番号を ふる
+  function stampAll(events) {
+    var m = seqMax(events);
+    (events || []).filter(function (e) { return e && !(+e.n > 0); }).sort(byTime).forEach(function (e) { e.n = ++m; });
+    return events;
+  }
   function useOf(e) { var u = e && e.use || {}; return { paid_sub: +u.paid_sub || 0, paid_pack: +u.paid_pack || 0, free: +u.free || 0 }; }
 
   // ---- 残高 ----
@@ -128,7 +160,7 @@
       else if ((e.kind === 'gift' || e.kind === 'mission') && amt > 0) { free += amt; freeIn += amt; }
       else if (e.kind === 'refund') {
         var n = Math.abs(amt);
-        if (e.bucket === 'paid_sub') { var lot = null; lots.forEach(function (L) { if (!lot && e.tx && L.tx === e.tx) lot = L; }); if (lot) lot.remain = 0; }
+        if (e.bucket === 'paid_sub') { lots.forEach(function (L) { if (e.tx && L.tx === e.tx) L.remain = 0; }); }      // その 取引の lot ぜんぶ（第4.139版：あずかりから 補充した lot も 同じ tx）
         else if (e.bucket === 'free') free = Math.max(0, free - n);
         else pack = Math.max(0, pack - n);
       }
@@ -182,26 +214,85 @@
     var id = 'refund-' + tx.id, src = 'tx-' + tx.id;
     var es = events || [];
     if (es.some(function (e) { return e && e.id === id; })) return null;
-    var o = null; es.forEach(function (e) { if (e && e.id === src) o = e; });
+    // 第4.139版：引く のは、その 取引から 台帳に 入った ぶん ぜんぶ（はじめに 入った ぶん＋あずかりから 補充した ぶん：どれも tx が 同じ）
+    var o = null, sum = 0;
+    es.forEach(function (e) { if (!e) return; if (e.id === src) o = e; if (e.tx === String(tx.id) && (e.kind === 'sub' || e.kind === 'purchase') && +e.amount > 0) sum += +e.amount; });
     if (!o) return null;
-    return mk(id, 'refund', o.bucket, -Math.abs(+o.amount || 0), tx.revokedAt && tms(tx.revokedAt) ? new Date(tms(tx.revokedAt)).toISOString() : iso(now), { product: o.product, tx: String(tx.id) });
+    return mk(id, 'refund', o.bucket, -Math.abs(sum || +o.amount || 0), tx.revokedAt && tms(tx.revokedAt) ? new Date(tms(tx.revokedAt)).toISOString() : iso(now), { product: o.product, tx: String(tx.id) });
   }
+
+  // ---- あずかりポイント（第4.139版・まさちゃん 2026/11/10 12:27「99999pに到達しながらサブスクに入っている人は、ミッションのところで超えてしまっているポイントが溜まっていくようにして！
+  //      で、使って減った分は、溜まってるポイントから補充できるようによろしく！」）----
+  //   上限（CAP）を こえて 届いた ポイントは 台帳に 入れずに あずかる（財布の hold[]）。1件＝{ id（元の できごとの id）, kind（'sub'・'purchase'・'mission'）, product, tx, otx, what, points, at }
+  //   ・あずかって いる あいだは 使えない・期限も 進まない（サブスクの ぶんは 補充した 日から SUB_DAYS 日）
+  //   ・補充（holdRelease）：台帳に あきが ある ぶん だけ、古い 順に 台帳へ（できごとの id＝rel-<元の id>-<何回目>・from:'hold'）
+  //   ・返金（holdDrop）：その 取引の あずかりは 消す（台帳に 入った ぶんは refundEvent が 引く）
+  var HOLD_KINDS = { sub: 'paid_sub', purchase: 'paid_pack', mission: 'free' };
+  function holdNorm(hold) {
+    return (Array.isArray(hold) ? hold : []).filter(function (h) { return h && typeof h.id === 'string' && h.id && HOLD_KINDS[h.kind] && Math.round(+h.points || 0) > 0; })
+      .map(function (h) { return Object.assign({}, h, { points: Math.round(+h.points) }); });
+  }
+  function holdTotal(hold) { return holdNorm(hold).reduce(function (a, h) { return a + h.points; }, 0); }
+  // 種類ごとの 合計：{ total, paid_sub, paid_pack, free }
+  function holdSum(hold) {
+    var o = { total: 0, paid_sub: 0, paid_pack: 0, free: 0 };
+    holdNorm(hold).forEach(function (h) { o[HOLD_KINDS[h.kind]] += h.points; o.total += h.points; });
+    return o;
+  }
+  // 届いた できごと e を、台帳の あき（free＝room(合計)）で 2つに 分ける：{ event（台帳に 入れる。amount＝入る ぶん・held＝あずけた ぶん）, hold（あずかり。こえなければ null） }
+  function holdSplit(e, free) {
+    var amt = Math.round(+(e && e.amount) || 0), fr = Math.max(0, Math.round(+free || 0));
+    if (!e || !HOLD_KINDS[e.kind] || amt <= fr) return { event: e, hold: null };
+    var over = amt - fr, ev = Object.assign({}, e, { amount: fr, held: over });
+    var h = { id: String(e.id), kind: e.kind, points: over, at: e.at || iso() };
+    ['product', 'tx', 'otx', 'what'].forEach(function (k) { if (e[k]) h[k] = e[k]; });
+    return { event: ev, hold: h };
+  }
+  // 補充：{ events（新しい 一覧）, hold（のこり）, moved（入れた P）, parts: { paid_sub, paid_pack, free } }。あきが なければ moved 0（そのまま）
+  function holdRelease(events, hold, now) {
+    var list = stamp((events || []).slice()), rest = [], moved = 0, parts = { paid_sub: 0, paid_pack: 0, free: 0 };
+    var fr = room(balance(list, now).total), at = iso(now);
+    holdNorm(hold).forEach(function (h) {
+      var n = Math.min(h.points, fr);
+      if (n > 0) {
+        var pre = 'rel-' + h.id + '-', seq = list.filter(function (e) { return e && String(e.id).indexOf(pre) === 0; }).length + 1, bucket = HOLD_KINDS[h.kind];
+        var extra = { from: 'hold', n: seqMax(list) + 1 };
+        ['product', 'tx', 'otx', 'what'].forEach(function (k) { if (h[k]) extra[k] = h[k]; });
+        if (h.kind === 'sub') extra.expires = addDays(at, SUB_DAYS);
+        list.push(mk(pre + seq, h.kind, bucket, n, at, extra));
+        fr -= n; moved += n; parts[bucket] += n;
+      }
+      if (h.points - n > 0) rest.push(Object.assign({}, h, { points: h.points - n }));
+    });
+    return { events: list, hold: rest, moved: moved, parts: parts };
+  }
+  // 返金：その 取引（tx の 番号）の あずかりを 消した 一覧
+  function holdDrop(hold, txid) { return holdNorm(hold).filter(function (h) { return String(h.tx || '') !== String(txid); }); }
   function giftEvent(now, amount, id, what) { return mk(id || 'gift-first', 'gift', 'free', amount || COST.gift, iso(now), { what: what || '初回プレゼント' }); }   // amount・id・what は テスト版の P だけ
   function missionEvent(m, now) { return mk('mission-rec-' + m.n, 'mission', 'free', m.reward, iso(now), { what: m.label }); }
-  // 使う：1日ごと・端末ごとに1件にまとめる（spend-<端末>-<日付>）。返り値は新しい一覧（足りないときは null）
+  // 使う：1日ごと・端末ごとに まとめる（spend-<端末>-<日付>。その日の 2件め からは 後ろに -2・-3…）。返り値は新しい一覧（足りないときは null）
+  //   第4.139版：まとめる のは「いちばん あとに 書いた できごと」が 同じ 端末・同じ 日の「使った」の とき だけ。
+  //     その あとに 何か 書いて いたら（届いた・解放した…）新しい 1件に する（届いた ぶんより 前に ならべない：上の「台帳の ならび」）。
+  //     その 1件の 時刻（1回め）から 今までに 期限が 切れた サブスクの ぶんが ある ときも 新しい 1件（切れた ぶんからは 引かない）。
+  //     さいごに たしかめる：合計が ちょうど amount へって いなければ まとめずに 新しい 1件
   function spend(events, amount, what, device, now) {
     var P = plan(events, amount, now); if (!P.ok) return null;
-    var at = iso(now), day = at.slice(0, 10), id = 'spend-' + (device || 'x') + '-' + day;
-    var list = (events || []).slice(), cur = null;
-    list.forEach(function (e) { if (e && e.id === id) cur = e; });
+    var at = iso(now), day = at.slice(0, 10), dev = device || 'x', base = 'spend-' + dev + '-' + day;
+    var list = stamp((events || []).slice()), top = null;
+    list.forEach(function (e) { if (e && (!top || +e.n > +top.n)) top = e; });
+    var cur = top && top.kind === 'spend' && String(top.id).indexOf(base) === 0 ? top : null;
+    if (cur && P.balance.lots.some(function (L) { var x = tms(L.expires); return x > tms(cur.at) && x <= tms(at); })) cur = null;
     if (cur) {
       var u = useOf(cur); BUCKETS.forEach(function (b) { u[b] += P.use[b]; });
-      var w = Array.isArray(cur.what) ? cur.what.slice() : (cur.what ? [cur.what] : []);
-      if (w.length < 40) w.push(what); else cur.more = (cur.more || 0) + 1;
+      var w = Array.isArray(cur.what) ? cur.what.slice() : (cur.what ? [cur.what] : []), more = cur.more || 0;
+      if (w.length < 40) w.push(what); else more += 1;
       var next = Object.assign({}, cur, { amount: (+cur.amount || 0) - amount, use: u, what: w, last: at });
-      return list.map(function (e) { return e === cur ? next : e; });
+      if (more) next.more = more;
+      var merged = list.map(function (e) { return e === cur ? next : e; });
+      if (balance(merged, now).total === P.total - amount) return merged;
     }
-    list.push(mk(id, 'spend', '', -amount, at, { use: P.use, what: [what], device: device || 'x' }));
+    var k = list.filter(function (e) { return e && String(e.id).indexOf(base) === 0; }).length;
+    list.push(mk(k ? base + '-' + (k + 1) : base, 'spend', '', -amount, at, { use: P.use, what: [what], device: dev, n: seqMax(list) + 1 }));
     return list;
   }
   // 解放：unlock-<id>（使ったPもこの1件に入れる）
@@ -209,7 +300,9 @@
     var id = 'unlock-' + key;
     if ((events || []).some(function (e) { return e && e.id === id; })) return (events || []).slice();
     var P = plan(events, cost, now); if (!P.ok) return null;
-    return (events || []).concat([mk(id, 'unlock', '', -cost, iso(now), { use: P.use, what: key, device: device || 'x' })]);
+    var list = stamp((events || []).slice());      // 第4.139版：書いた 順の 番号（いちばん あと）
+    list.push(mk(id, 'unlock', '', -cost, iso(now), { use: P.use, what: key, device: device || 'x', n: seqMax(list) + 1 }));
+    return list;
   }
   function unlocked(events, key) { var id = 'unlock-' + key; return (events || []).some(function (e) { return e && e.id === id; }); }
   function has(events, id) { return (events || []).some(function (e) { return e && e.id === id; }); }
@@ -332,7 +425,9 @@
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
-    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room,
+    holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
+    stamp: stamp, stampAll: stampAll, seqMax: seqMax,
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;

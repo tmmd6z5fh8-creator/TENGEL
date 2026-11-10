@@ -230,18 +230,20 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(bm16[4].n === 15 && bm16[4].claimed && !bm16[4].claimable && bm16.filter(m => m.claimable).length === 3 && P.boardMissions(15, evm)[4].claimable,
     '前の 版の「16こ解放」を 受け取った 人は「15こ解放」も 受け取りずみ・受け取って いない 人は 15こで 受け取れる');
   // ミッション：壁紙の 枚数（帯も 数える）
-  check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,30:2500,35:3500,40:3500,45:3500' && P.WALL_TOTAL === 40,
-    '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・30枚 2,500P・35・40・45枚 3,500P（いま 解放できるのは 40枚）');
+  //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない 45枚の 行を やめて 40枚まで（10こ）
+  check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,30:2500,35:3500,40:3500' && P.WALL_TOTAL === 40
+    && P.WALLP_MISSIONS[P.WALLP_MISSIONS.length - 1][0] === P.WALL_TOTAL && P.WALLP_MISSIONS.reduce((a, m) => a + m[1], 0) === 21900,
+    '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・30枚 2,500P・35・40枚 3,500P（40枚まで＝いま 解放できる 枚数・ぜんぶで 21,900P）');
   const evw = [P.giftEvent(T0)].concat(['sakura', 'sea', 'snow'].map(t => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -1000, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 1000 }, what: 'theme:' + t })))
     .concat(P.wallMissionEvents(P.wallMissions(8, [])[0], 'x', T0));
   check(P.wallCount(evw, 5) === 8 && P.wallCountAll(evw, 5) === 9 && P.wallCountAll(evw) === 4 && P.wallCountAll([], 0) === 0, '枚数：ポイントの 3枚 ＋ パックの 5枚 ＝ 8（帯の ミッション用）・帯の シルバーも 数えると 9（枚数の ミッション用）');
   const wm = P.wallpMissions(9, evw);
-  check(wm.length === 11 && wm.map(m => m.id).slice(0, 3).join() === 'mission-wallp-3,mission-wallp-6,mission-wallp-9' && wm.filter(m => m.claimable).length === 3 && wm[0].label === '壁紙 3枚解放' && wm[2].reward === 1500
-    && wm.slice(0, 10).every(m => m.reach) && wm[10].n === 45 && wm[10].reach === false && !wm[10].claimable, '9枚：3・6・9 が 受け取れる・45枚の 行は reach＝false（いまは 40枚まで）');
+  check(wm.length === 10 && wm.map(m => m.id).slice(0, 3).join() === 'mission-wallp-3,mission-wallp-6,mission-wallp-9' && wm.filter(m => m.claimable).length === 3 && wm[0].label === '壁紙 3枚解放' && wm[2].reward === 1500
+    && wm.every(m => m.reach) && wm[9].n === 40 && !wm.some(m => m.n === 45), '9枚：3・6・9 が 受け取れる・行は 10こ（40枚まで・ぜんぶ 届く・45枚の 行は ない）');
   const evw2 = evw.concat([P.rowEvent(wm[2], T0)]);
   const bw = P.balance(evw2, T0);
   check(P.has(evw2, 'mission-wallp-9') && bw.free === 1500 - 3000 + 1500 && P.wallpMissions(9, evw2)[2].claimed && !P.wallpMissions(9, evw2)[2].claimable && P.wallpMissions(9, evw2)[1].claimable
-    && P.wallpMissions(40, evw2).filter(m => m.claimable).length === 9 && P.wallpMissions(45, evw2)[10].reach === false, '受け取ると mission-wallp-9（+1,500P＝もらったP）・1回だけ・40枚なら 残り 9つ');
+    && P.wallpMissions(40, evw2).filter(m => m.claimable).length === 9 && P.wallpMissions(40, evw2).every(m => m.done), '受け取ると mission-wallp-9（+1,500P＝獲得ポイント）・1回だけ・40枚なら ぜんぶ 達成（残り 9つ 受け取れる）');
 }
 // 第4.138版：思い出フィギュアの ミッション（作った 数 1・5・8 → 5,000・5,000・10,000P）
 {
@@ -259,6 +261,177 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   evf.push(P.rowEvent(g1[1], T0)); evf.push(P.rowEvent(g1[2], T0));
   check(P.balance(evf, T0).total === 21500 && P.figMissions(8, evf).every(m => m.claimed && !m.claimable) && P.tcMissions(0, evf)[0].id === 'mission-tc-50' && P.boardMissions(0, evf)[0].id === 'mission-board-3',
     '3つ 受け取ると 合計 +20,000P・ほかの ミッションの id は そのまま');
+}
+// 第4.139版：上限 99,999P・あずかりポイント（まさちゃん 2026/11/10 11:46「ポイントの上限は、99999までにして！」・12:27「99999pに到達しながらサブスクに入っている人は、
+//   ミッションのところで超えてしまっているポイントが溜まっていくようにして！で、使って減った分は、溜まってるポイントから補充できるようによろしく！」）
+{
+  console.log('上限 99,999P・あずかりポイント（第4.139版）');
+  const T0 = D('2026-11-10'), T1 = D('2026-11-20'), T2 = D('2026-12-25');
+  check(P.CAP === 99999 && P.room(0) === 99999 && P.room(1500) === 98499 && P.room(99999) === 0 && P.room(120000) === 0 && P.room(-5) === 99999, '上限は 99,999P・room＝あと 入る P（こえて いたら 0）');
+  // 95,000P 持って いる 人に サブスク 9,200P が 届く → 4,999P だけ 入って 4,201P は あずかり
+  let ev = [P.giftEvent(T0), { id: 'g2', kind: 'gift', bucket: 'free', amount: 93500, at: T0 }];
+  check(P.balance(ev, T0).total === 95000, 'はじめ 95,000P');
+  const se = P.txEvent(ev, tx('901', 'jp.tengel.app.sub9200', '2026-11-10'));
+  const sp = P.holdSplit(se, P.room(P.balance(ev, T0).total));
+  check(sp.event.amount === 4999 && sp.event.held === 4201 && sp.event.id === 'tx-901' && sp.event.expires === se.expires && sp.hold && sp.hold.id === 'tx-901' && sp.hold.kind === 'sub' && sp.hold.points === 4201
+    && sp.hold.tx === '901' && sp.hold.product === 'jp.tengel.app.sub9200' && se.amount === 9200, 'サブスク 9,200P が 届く：4,999P は 台帳へ（held＝4,201）・4,201P は あずかり（元の できごとは かえない）');
+  ev.push(sp.event); let hold = [sp.hold];
+  check(P.balance(ev, T0).total === 99999 && P.balance(ev, T0).paid_sub === 4999 && P.holdTotal(hold) === 4201 && JSON.stringify(P.holdSum(hold)) === JSON.stringify({ total: 4201, paid_sub: 4201, paid_pack: 0, free: 0 }),
+    '台帳は ちょうど 99,999P（サブスクポイント 4,999）・あずかり 4,201P（種類ごとの 合計）');
+  check(P.txEvent(ev, tx('901', 'jp.tengel.app.sub9200', '2026-11-10')) === null, '同じ 取引は 2回 足さない（ぜんぶ あずけた ときも 台帳に 0P の できごとが 残る）');
+  // いっぱいの ときは 補充できない
+  let r0 = P.holdRelease(ev, hold, T0);
+  check(r0.moved === 0 && r0.hold.length === 1 && r0.hold[0].points === 4201 && r0.events.length === ev.length, 'いっぱいの あいだは 補充できない（そのまま）');
+  // こえない ときは 分けない
+  const small = P.holdSplit(P.txEvent([], tx('902', 'jp.tengel.app.points500', '2026-11-10')), 500);
+  check(small.hold === null && small.event.amount === 500 && small.event.held === undefined, 'あきに 入る ときは 分けない');
+  // ぜんぶ あずける（あき 0）
+  const full = P.holdSplit(P.txEvent(ev, tx('903', 'jp.tengel.app.points4000', '2026-11-10')), 0);
+  check(full.event.amount === 0 && full.event.held === 4000 && full.hold.kind === 'purchase' && full.hold.points === 4000, 'あきが 0 なら ぜんぶ あずける（台帳の できごとは 0P）');
+  ev.push(full.event); hold.push(full.hold);
+  check(P.balance(ev, T0).total === 99999 && P.balance(ev, T0).paid_pack === 0 && P.holdSum(hold).paid_pack === 4000 && P.holdSum(hold).total === 8201, '0P の 購入の できごとは 残高に 入らない・あずかり 合計 8,201P');
+  // 使う（1,000P：サブスクポイントから）→ 補充（古い 順：サブスクの あずかりから 1,000P）
+  ev = P.spend(ev, 1000, '読み込み', 'dev1', T1);
+  check(P.balance(ev, T1).total === 98999 && P.balance(ev, T1).paid_sub === 3999, '1,000P 使う（サブスクポイントから）→ 98,999P');
+  let r1 = P.holdRelease(ev, hold, T1);
+  const rel = r1.events[r1.events.length - 1];
+  check(r1.moved === 1000 && r1.parts.paid_sub === 1000 && r1.parts.paid_pack === 0 && rel.id === 'rel-tx-901-1' && rel.kind === 'sub' && rel.bucket === 'paid_sub' && rel.amount === 1000 && rel.from === 'hold' && rel.tx === '901'
+    && rel.product === 'jp.tengel.app.sub9200' && rel.expires === P.addDays(T1, 30) && r1.hold.length === 2 && r1.hold[0].points === 3201 && r1.hold[1].points === 4000,
+    '補充：あきの 1,000P だけ・古い 順（サブスクの あずかりから）・できごと rel-tx-901-1（sub・from:hold）・期限は 補充した 日から 30日・のこり 3,201＋4,000');
+  ev = r1.events; hold = r1.hold;
+  check(P.balance(ev, T1).total === 99999 && P.balance(ev, T1).paid_sub === 4999 && P.holdTotal(hold) === 7201, '補充の あと：台帳 99,999P・あずかり 7,201P');
+  // はじめの サブスクポイント（11/10 に 届いた ぶん）は 12/10 で 期限。補充した ぶんは 12/20 まで
+  const b2 = P.balance(ev, D('2026-12-15'));
+  check(b2.paid_sub === 1000 && b2.lots.filter(L => !L.expired).length === 1 && b2.lots.filter(L => !L.expired)[0].id === 'rel-tx-901-1', '12/15：はじめに 入った サブスクポイントは 期限切れ・補充した 1,000P は 残る（12/20 まで）');
+  // あずかって いる あいだは 期限が 進まない：12/25（台帳の サブスクポイントは ぜんぶ 期限切れ＝95,000P）に 5,000P 使ってから 補充 → サブスクの のこり 3,201P（1/24 まで）＋ パック 4,000P
+  check(P.balance(ev, T2).total === 95000 && P.balance(ev, T2).paid_sub === 0 && P.holdTotal(hold) === 7201, '12/25：台帳の サブスクポイントは 期限切れ（95,000P）・あずかりの 7,201P は そのまま');
+  let ev3 = P.spend(ev, 5000, '解放', 'dev1', T2);
+  const r3 = P.holdRelease(ev3, hold, T2);
+  const b3 = P.balance(r3.events, T2);
+  check(r3.moved === 7201 && r3.parts.paid_sub === 3201 && r3.parts.paid_pack === 4000 && b3.total === 97201 && b3.paid_sub === 3201 && b3.paid_pack === 4000 && r3.hold.length === 0
+    && r3.events.some(e => e.id === 'rel-tx-901-2' && e.amount === 3201 && e.expires === P.addDays(T2, 30)) && r3.events.some(e => e.id === 'rel-tx-903-1' && e.kind === 'purchase' && e.bucket === 'paid_pack' && e.amount === 4000 && !e.expires),
+    '45日 あとでも あずかりは 消えない：サブスクの のこり 3,201P（rel-tx-901-2・その 日から 30日）→ パックの あずかり 4,000P（rel-tx-903-1・期限なし）の 順に 補充（合計 97,201P・あずかり 0）');
+  // あきが 足りない ときは 古い 順に 入る ぶん だけ
+  const r4 = P.holdRelease(P.spend(ev, 3500, '解放', 'dev1', T1), hold, T1);
+  check(r4.moved === 3500 && r4.parts.paid_sub === 3201 && r4.parts.paid_pack === 299 && r4.hold.length === 1 && r4.hold[0].id === 'tx-903' && r4.hold[0].points === 3701, 'あきが 3,500P：サブスクの あずかり 3,201P ぜんぶ ＋ パックの あずかりから 299P（のこり 3,701P）');
+  // 返金：その 取引の あずかりは 消す・台帳に 入った ぶん（はじめの ぶん＋補充した ぶん）を 引く
+  const rf = P.refundEvent(ev, { id: '901', revokedAt: T1 });
+  check(rf && rf.amount === -(4999 + 1000) && rf.bucket === 'paid_sub' && P.holdDrop(hold, '901').length === 1 && P.holdDrop(hold, '901')[0].id === 'tx-903' && P.holdDrop(hold, '999').length === 2,
+    '返金：引く のは その 取引から 入った ぶん ぜんぶ（4,999＋補充 1,000）・その 取引の あずかりは 消す（ほかの 取引の あずかりは 残る）');
+  const evr = ev.concat([rf]);
+  check(P.balance(evr, T1).paid_sub === 0 && P.balance(evr, T1).lots.every(L => L.remain === 0), '返金の あと：その 取引の サブスクポイントは ぜんぶ 0（補充した lot も）');
+  // 前の 版の 台帳（1つの 取引に できごと 1つ）は 今までどおり
+  let evo = [P.giftEvent(T0)]; evo.push(P.txEvent(evo, tx('950', 'jp.tengel.app.points1000', '2026-11-10'))); evo.push(P.txEvent(evo, tx('951', 'jp.tengel.app.sub2000', '2026-11-10')));
+  const rfo = P.refundEvent(evo, { id: '950' }), rfs = P.refundEvent(evo, { id: '951' });
+  check(rfo.amount === -1000 && rfo.bucket === 'paid_pack' && rfs.amount === -2000 && P.balance(evo.concat([rfo, rfs]), T0).total === 1500, '前からの 返金（パック −1,000・サブスク −2,000）は 同じ');
+  // トレーニングセンターの 当たり（獲得ポイント）も あずけられる・おかしな あずかりは 捨てる
+  const ge = P.holdSplit(P.rowEvent({ id: 'tc-1', reward: 300, label: 'トレーニングセンターの お世話' }, T0), 100);
+  check(ge.event.amount === 100 && ge.hold.kind === 'mission' && ge.hold.points === 200 && ge.hold.what === 'トレーニングセンターの お世話' && P.holdSum([ge.hold]).free === 200, '当たり 300P・あき 100P → 100P 入って 200P あずかり（獲得ポイント）');
+  const gr = P.holdRelease([P.giftEvent(T0)], [ge.hold], T0);
+  check(gr.moved === 200 && gr.events[1].kind === 'mission' && gr.events[1].bucket === 'free' && gr.events[1].id === 'rel-tc-1-1' && !gr.events[1].expires && P.balance(gr.events, T0).free === 1700, '補充すると 獲得ポイントに 入る（期限なし）');
+  check(P.holdNorm([null, { id: '', kind: 'sub', points: 5 }, { id: 'a', kind: 'x', points: 5 }, { id: 'b', kind: 'sub', points: 0 }, { id: 'c', kind: 'sub', points: 12.4 }]).map(h => h.id + ':' + h.points).join() === 'c:12'
+    && P.holdTotal(null) === 0 && P.holdNorm('x').length === 0, 'holdNorm：id・種類・P が そろった ものだけ（P は 整数に）');
+}
+// ---- 台帳の ならび（第4.139版：抜け穴を ふさぐ）：書いた 順に たどる・「使った」を まとめる のは いちばん あとの 1件だけ ----
+console.log('台帳の ならび（書いた 順）：使った ぶんが かならず へる（第4.139版）');
+{
+  const J = (h, m, day) => Date.parse(`${day || '2026-11-10'}T${String(h).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}:00+09:00`);
+  const tot = (e, t) => P.balance(e, t).total;
+  // ① その日 1回 使った あとに パックを 買う → そのあとの 読み込みも ちゃんと へる（前は その日の のこりが 0P で 読めた）
+  let e1 = [P.giftEvent(J(9), 300)];
+  e1 = P.spend(e1, 200, '読み込み A', 'd', J(10, 5));
+  e1.push(P.txEvent(e1, { id: '700', product: 'jp.tengel.app.points500', date: new Date(J(12)).toISOString() }, J(12)));
+  check(tot(e1, J(12)) === 600, '① 300P → 1回 読む（100P）→ パック 500P を 買う ＝ 600P');
+  let n1 = 0; for (let i = 0; i < 9; i++) { const x = P.spend(e1, 200, '読み込み ' + i, 'd', J(12, 10 + i)); if (!x) break; e1 = x; n1++; }
+  check(n1 === 3 && tot(e1, J(13)) === 0, `① そのあと 読めるのは 3回だけ（600P ぶん）・のこり 0P（${n1}回・${tot(e1, J(13))}P）`);
+  const sp1 = e1.filter(x => x.kind === 'spend');
+  check(sp1.length === 2 && sp1[0].id === 'spend-d-2026-11-10' && sp1[0].amount === -200 && sp1[1].id === 'spend-d-2026-11-10-2' && sp1[1].amount === -600 && sp1[1].what.length === 3 && sp1[1].use.paid_pack === 500 && sp1[1].use.free === 100,
+    '① 買う 前の「使った」（1件）には 足さない・買った あとは 新しい 1件（-2）に まとめる（3回ぶん）');
+  check(e1.map(x => x.n).join() === '1,2,3,4', '① できごとに 書いた 順の 番号（プレゼント 1・使った 2・パック 3・使った 4）');
+  // ② ミッションを 受け取った あと・サブスクが 届いた あとも 同じ
+  let e2 = [P.giftEvent(J(9), 200)];
+  e2 = P.spend(e2, 200, 'A', 'd', J(10));
+  e2.push(P.rowEvent({ id: 'm-x', reward: 500, label: 'ミッション' }, J(10, 30)));
+  let n2 = 0; for (let i = 0; i < 9; i++) { const x = P.spend(e2, 200, 'r' + i, 'd', J(11, i)); if (!x) break; e2 = x; n2++; }
+  check(n2 === 2 && tot(e2, J(12)) === 100, `② 0P に なった あと ミッション 500P → 読めるのは 2回・のこり 100P（${n2}回・${tot(e2, J(12))}P）`);
+  e2.push(P.txEvent(e2, { id: '701', product: 'jp.tengel.app.sub2000', date: new Date(J(13)).toISOString() }, J(13)));
+  let n2b = 0; for (let i = 0; i < 20; i++) { const x = P.spend(e2, 200, 's' + i, 'd', J(13, 5 + i)); if (!x) break; e2 = x; n2b++; }
+  check(n2b === 10 && tot(e2, J(14)) === 100 && P.balance(e2, J(14)).paid_sub === 0, `② サブスク 2,000P が 届いた あと → 読めるのは 10回・サブスクポイントは 0P（${n2b}回・${tot(e2, J(14))}P）`);
+  // ③ 時計を 進めて ミッションを 受け取り、時計を もどす → その ポイントも 使えば へる（前は いくら 使っても へらなかった）
+  let e3 = [P.giftEvent(J(9), 100)];
+  e3.push(P.rowEvent({ id: 'm-future', reward: 500, label: 'ミッション' }, J(9, 0, '2027-11-10')));      // 1年 先の 時刻
+  let n3 = 0; for (let i = 0; i < 9; i++) { const x = P.spend(e3, 200, 'f' + i, 'd', J(10, i)); if (!x) break; e3 = x; n3++; }
+  check(n3 === 3 && tot(e3, J(11)) === 0 && tot(e3, J(11, 0, '2027-12-01')) === 0, `③ 100P＋先の 時刻の 500P → 読めるのは 3回・のこり 0P（${n3}回・${tot(e3, J(11))}P）`);
+  // ④ 買った 時刻（Apple の 時計）が 端末の 時計より 少し 先・端末の 時計を もどして 使う
+  let e4 = [P.giftEvent(J(9), 100)];
+  e4.push(P.txEvent(e4, { id: '702', product: 'jp.tengel.app.points500', date: new Date(J(10, 2)).toISOString() }, J(10)));   // 端末は 10:00・取引は 10:02
+  e4 = P.spend(e4, 200, 'すぐ 読む', 'd', J(10, 1));
+  check(tot(e4, J(10, 1)) === 400 && P.balance(e4, J(10, 1)).paid_pack === 300, '④ 取引の 時刻が 端末より 先でも、買った あとの 読み込みは へる（600 → 400P：購入ポイントから 200P）');
+  e4 = P.spend(e4, 200, '時計を もどして 読む', 'd', J(8, 0, '2026-11-01'));
+  e4 = P.spend(e4, 200, 'もう 1回', 'd', J(8, 1, '2026-11-01'));
+  check(tot(e4, J(10, 5)) === 0 && P.spend(e4, 200, 'x', 'd', J(8, 2, '2026-11-01')) === null, '④ 端末の 時計を もどして 使っても へる（0P）・足りなければ 使えない');
+  // ⑤ 解放（unlock）も 書いた 順
+  let e5 = [P.giftEvent(J(9), 100)];
+  e5.push(P.rowEvent({ id: 'm-f2', reward: 500, label: 'ミッション' }, J(9, 0, '2027-11-10')));
+  e5 = P.unlock(e5, 'type:複勝', 500, 'd', J(10));
+  check(tot(e5, J(10)) === 100 && e5[e5.length - 1].n === 3 && P.unlock(e5, 'type:枠複', 500, 'd', J(10, 1)) === null, '⑤ 解放も 同じ（先の 時刻の 500P で 解放 → のこり 100P・番号は いちばん あと）');
+  // ⑥ 前の 版の 台帳（番号なし）：番号を ふっても 残高は 前と 同じ（時刻の 順の まま）
+  const old6 = [
+    { id: 'gift-first', kind: 'gift', bucket: 'free', amount: 1500, at: new Date(J(9)).toISOString() },
+    { id: 'tx-9', kind: 'purchase', bucket: 'paid_pack', amount: 500, at: new Date(J(12)).toISOString(), product: 'jp.tengel.app.points500', tx: '9' },
+    { id: 'spend-d-2026-11-10', kind: 'spend', bucket: '', amount: -3600, at: new Date(J(10, 5)).toISOString(), use: { paid_sub: 0, paid_pack: 2400, free: 1200 }, what: ['a'], device: 'd', last: new Date(J(12, 21)).toISOString() },
+    { id: 'mission-rec-8', kind: 'mission', bucket: 'free', amount: 500, at: new Date(J(11)).toISOString(), what: 'x' }
+  ];
+  const b6a = P.balance(old6, J(13)), cp6 = JSON.parse(JSON.stringify(old6)); P.stampAll(cp6); const b6b = P.balance(cp6, J(13));
+  check(b6a.total === 1300 && b6b.total === b6a.total && b6b.paid_pack === b6a.paid_pack && b6b.free === b6a.free && cp6.map(x => x.id + ':' + x.n).join() === 'gift-first:1,tx-9:4,spend-d-2026-11-10:2,mission-rec-8:3',
+    '⑥ 前の 版の 台帳は 時刻の 順に 番号（残高は 前と 同じ 1,300P）');
+  let e6 = P.spend(cp6, 200, '新しい 読み込み', 'd', J(13));
+  check(tot(e6, J(13)) === 1100 && e6.length === 5 && e6[4].id === 'spend-d-2026-11-10-2' && e6[4].n === 5 && e6[2].amount === -3600, '⑥ そのあとの 読み込みは 新しい 1件（前の「使った」には 足さない）・ちゃんと へる（1,100P）');
+  // ⑦ 足した ばかりで 番号の ない できごと：stamp は ならんで いる 順・番号つきの あと
+  const e7 = [{ id: 'a', kind: 'gift', bucket: 'free', amount: 100, at: new Date(J(9)).toISOString(), n: 5 }, { id: 'b', kind: 'mission', bucket: 'free', amount: 10, at: new Date(J(8)).toISOString() }, { id: 'c', kind: 'mission', bucket: 'free', amount: 10, at: new Date(J(7)).toISOString() }];
+  P.stamp(e7);
+  check(e7.map(x => x.n).join() === '5,6,7' && P.seqMax(e7) === 7 && P.seqMax([]) === 0 && P.stamp([]).length === 0, '⑦ stamp：番号の ない できごとに、ならんで いる 順に つづきの 番号（ある 番号は かえない）');
+  // ⑧ その日の「使った」の 1回め から 今までに 期限が 切れた サブスクの ぶんからは 引かない（新しい 1件）
+  let e8 = [P.giftEvent(J(9, 0, '2026-10-01'), 100)];
+  e8.push(P.txEvent(e8, { id: '801', product: 'jp.tengel.app.sub2000', date: new Date(J(15, 0, '2026-10-11')).toISOString() }, J(15, 0, '2026-10-11')));   // 11/10 15:00 に 切れる
+  e8.push(P.txEvent(e8, { id: '802', product: 'jp.tengel.app.sub2000', date: new Date(J(9, 0, '2026-11-09')).toISOString() }, J(9, 0, '2026-11-09')));
+  e8 = P.spend(e8, 200, '切れる 前', 'd', J(14));
+  check(P.balance(e8, J(14)).lots.map(L => L.remain).join() === '1800,2000', '⑧ 切れる 前（14:00）：期限が 近い ぶんから 引く（1,800・2,000）');
+  e8 = P.spend(e8, 200, '切れた あと', 'd', J(16));
+  const b8 = P.balance(e8, J(16));
+  check(b8.paid_sub === 1800 && b8.lost === 1800 && b8.total === 1900 && e8.filter(x => x.kind === 'spend').length === 2, `⑧ 切れた あと（16:00）：切れた 1,800P は 消える・のこりの ぶんから 引く（サブスクポイント 1,800P・合計 1,900P）（${b8.paid_sub}・${b8.lost}・${b8.total}）`);
+  // ⑨ いつもの まとめ方：間に 何も なければ 同じ 日は 1件・日が かわれば 別の 1件
+  let e9 = [P.giftEvent(J(9), 1500)];
+  for (let i = 0; i < 3; i++) e9 = P.spend(e9, 200, 'r' + i, 'd', J(10, i));
+  e9 = P.spend(e9, 200, 'つぎの日', 'd', J(10, 0, '2026-11-11'));
+  check(e9.filter(x => x.kind === 'spend').map(x => x.id + ':' + x.amount).join() === 'spend-d-2026-11-10:-600,spend-d-2026-11-11:-200' && tot(e9, J(11, 0, '2026-11-11')) === 700, '⑨ 間に 何も なければ 同じ 日は 1件（-600）・日が かわれば 別の 1件');
+}
+// ---- あばれテスト（第4.139版）：端末の 時計を 進めたり もどしたり しながら 足す・使う・返金・解放 → 使った ぶんは かならず ちょうど へる ----
+{
+  let seed = 20261110; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648, pick = a => a[Math.floor(rnd() * a.length)];
+  const BASE = Date.parse('2026-11-10T03:00:00Z'), DAYMS = 86400000;
+  let bad = [], spends = 0, merged = 0;
+  for (let run = 0; run < 80 && bad.length < 5; run++) {
+    let fe = [], real = BASE, txn = 0;
+    for (let step = 0; step < 60; step++) {
+      real += Math.floor(rnd() * 6 * 3600000);
+      const now = real + pick([0, 0, 0, 0, -3 * DAYMS, 400 * DAYMS, -40 * DAYMS, 120000, -120000, 20 * DAYMS]), op = rnd(), before = P.balance(fe, now).total;
+      if (op < 0.12) fe.push(P.rowEvent({ id: 'fz' + run + '-' + step, reward: pick([100, 300, 500, 2000]), label: 'x' }, now));
+      else if (op < 0.22) { const e = P.txEvent(fe, { id: String(++txn), product: pick(['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.sub2000', 'jp.tengel.app.sub4400']), date: new Date(real + pick([0, 90000, -3 * DAYMS])).toISOString() }, now); if (e) fe.push(e); }
+      else if (op < 0.26 && txn) { const rf = P.refundEvent(fe, { id: String(1 + Math.floor(rnd() * txn)) }, now); if (rf) fe.push(rf); }
+      else if (op < 0.34) { const cost = pick([0, 500, 800]), nx = P.unlock(fe, 'fk' + run + '-' + step, cost, 'd', now); if (nx) { if (P.balance(nx, now).total !== before - cost) bad.push(`解放 ${run}-${step}`); fe = nx; } }
+      else {
+        const amt = pick([200, 200, 200, 500]), ok = P.plan(fe, amt, now).ok, nx = P.spend(fe, amt, 'r', 'd', now);
+        if (!nx) { if (ok) bad.push(`使えるのに 使えない ${run}-${step}`); continue; }
+        spends++; if (nx.length === fe.length) merged++;
+        if (P.balance(nx, now).total !== before - amt) bad.push(`使った ${run}-${step}：${before} − ${amt} ≠ ${P.balance(nx, now).total}`);
+        fe = nx;
+      }
+      P.stamp(fe);
+      if (new Set(fe.map(e => e.n)).size !== fe.length || new Set(fe.map(e => e.id)).size !== fe.length) bad.push(`番号か id が 重なった ${run}-${step}`);
+    }
+  }
+  check(!bad.length && spends > 1500 && merged > 300, `あばれテスト：時計を 進める・もどす・ずらす 中で ${spends}回 使って、ぜんぶ ちょうど へった（まとめた のは ${merged}回・番号と id は 重ならない）${bad.length ? '：' + bad.join('／') : ''}`);
 }
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

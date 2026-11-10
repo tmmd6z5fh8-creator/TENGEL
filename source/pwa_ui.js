@@ -1143,8 +1143,23 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     if (auto && window.TengelWallet) { const w = window.TengelWallet.snapshot(); if (w) data.wallet = w; }
     return { data, zones, nSlots: Object.keys(data.slots.data).length };
   }
+  // 第4.139版（抜け穴を ふさぐ）：ファイルから 読んだ バックアップの 字（値と 見出しの 名前）は、HTML の しるしに なる 字（< > " ' `）を 全角に かえてから 使う。
+  //   書きかえた ファイルの 数の 欄（R など）に タグを 書いて 読ませると、記録の 一覧で その タグが そのまま 画面に 入って スクリプトを 動かせた（→ ポイントを 作れる）。
+  //   どの 欄でも・どの 画面でも タグに ならない ように、入口で 止める。ポイントの 台帳（wallet）と 自動バックアップの しるし（auto）は ファイルからは 読まない
+  const HTML_CH = { '<': '\uFF1C', '>': '\uFF1E', '"': '\u201D', "'": '\u2019', '`': '\uFF40' };      // 全角の ＜ ＞ ” ’ ｀（字の 番号で 書く：しぼった 字（着せ替えの フォント）に 入れなくて よい ように）
+  const cleanStr = v => String(v).replace(/[<>"'`]/g, c => HTML_CH[c]);
+  function cleanImport(v, depth) {
+    depth = depth || 0; if (depth > 40) return null;
+    if (typeof v === 'string') return cleanStr(v);
+    if (Array.isArray(v)) return v.map(x => cleanImport(x, depth + 1));
+    if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue; o[cleanStr(k)] = cleanImport(v[k], depth + 1); } return o; }
+    return typeof v === 'number' || typeof v === 'boolean' || v === null ? v : null;
+  }
   // バックアップから戻す（同じレースの記録は新しい方を残す・マザーデータは新しいときだけ）。返り値＝お知らせの文
-  async function restoreFromData(d) {
+  //   fromAuto＝アプリの中の自動バックアップから（offerRestore だけが true を 渡す）。ポイントの 台帳は この ときだけ 戻す。
+  //   第4.139版（抜け穴を ふさぐ）：前は ファイルの 中の「auto」の しるしを 見て いた ので、書き出した ファイルに「auto」と 台帳を 書き足して
+  //   「記録を戻す」で 読ませると ポイントを 作れた → よぶ 側が 決める（ファイルの 中の しるし・台帳は 見ない）
+  async function restoreFromData(d, fromAuto) {
     const list = Array.isArray(d) ? d : d && d.bets;
     if (!Array.isArray(list)) throw new Error('テンゲルのバックアップじゃないみたい');
     const cur = TengelLocal.mem.bets;
@@ -1157,7 +1172,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     }
     const last = rs => rs.reduce((m, r) => r.date > m ? r.date : m, '');
     // ポイントの台帳（アプリの中の自動バックアップにだけ入っている）。書き出したファイルには入っていない
-    if (d.wallet && d.auto && window.TengelWallet) {
+    if (d.wallet && fromAuto === true && window.TengelWallet) {
       const w = window.TengelWallet;
       if (w.isEmpty()) { const ok = await w.restore(d.wallet).catch(() => false); if (ok) msg.push(`ポイント（${w.total().toLocaleString('ja-JP')}P）も戻したよ`); }
     }
@@ -1209,7 +1224,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     $('#pwaRestore').onclick = () => $('#pwaRestoreFile').click();
     $('#pwaRestoreFile').onchange = e => {
       const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-      f.text().then(t => restoreFromData(JSON.parse(t))).then(msg => {
+      f.text().then(t => { const d = cleanImport(JSON.parse(t)); if (d && typeof d === 'object' && !Array.isArray(d)) { delete d.wallet; delete d.auto; } return restoreFromData(d, false); }).then(msg => {
         $('#pwaBkInfo').textContent = msg.join('。');
         paintBackup();
       }).catch(err => { $('#pwaBkInfo').textContent = '戻せなかったよ：' + (err && err.message || err); });
@@ -1252,7 +1267,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       const b = e.target.closest('[data-nr]'); if (!b) return;
       if (b.dataset.nr === 'no') { box.remove(); autoHold = false; scheduleAuto(); return; }
       $$('#nativeRestore button').forEach(x => { x.disabled = true; }); b.textContent = '戻しているよ…';
-      restoreFromData(saved).then(msg => {
+      restoreFromData(saved, true).then(msg => {
         box.remove(); toast(msg.join('。'), 5200); paintBackup();
         autoHold = false; scheduleAuto(300);
       }).catch(err => {
@@ -1369,12 +1384,13 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     if (set && !$('#setCM')) {
       const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setCM';
       c.innerHTML = '<h2>テンゲルのCM</h2><div class="cmrow">'
-        + '<button class="cmthumb" type="button" data-cm="play" aria-label="CMを再生する"><img src="' + CM.poster + '" alt="" decoding="async" onerror="this.style.visibility=\'hidden\'"><span class="cmplay"></span><span class="cmdur">' + CM.dur + '</span></button>'
+        + '<button class="cmthumb" type="button" data-cm="play" aria-label="CMを再生する"><img src="' + CM.poster + '" alt="" decoding="async"><span class="cmplay"></span><span class="cmdur">' + CM.dur + '</span></button>'
         + '<div class="cmtext"><p class="hint" style="margin:0 0 10px">テンゲルの紹介動画だよ（' + CM.dur + '・音が出るよ）。動画はネットから読むので、見るときは電波が必要だよ。</p>'
         + '<div class="row"><button class="btn primary" type="button" data-cm="play">▶ CMを見る</button></div></div></div>';
       const man = $('#setManual');
       set.insertBefore(c, man ? man.nextSibling : set.firstChild);
       c.addEventListener('click', e => { if (e.target.closest('[data-cm=play]')) openCM(); });
+      const pim = c.querySelector('.cmthumb img'); if (pim) pim.addEventListener('error', () => { pim.style.visibility = 'hidden'; });      // 第4.139版：タグの onerror は やめた（App Store版は タグに 書いた スクリプトを 動かさない）
     }
   }
   // アプリ版は動画をアプリに入れていないので、公開中のWeb版から読む

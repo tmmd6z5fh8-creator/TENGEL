@@ -1,4 +1,4 @@
-# トレーニングセンター（第4.130版）の テスト：App Store版（TARGET=app）を localhost で アプリ版として 開いて、右上の 丸い ボタン（第4.138版：上の 帯の すぐ 下・絵の 下に 名前の 札）→ お世話 → 作戦会議 → 当たりの 演出
+# トレーニングセンター（第4.130版）の テスト：App Store版（TARGET=app）を localhost で アプリ版として 開いて、右下の 丸い ボタン（第4.139版：下の タブの すぐ 上・絵の 下に 名前の 札）→ お世話 → 作戦会議 → 当たりの 演出
 #   python3 test_tc.py   （ios/tc_assets/ が ある とき だけ 全部。ない とき（CI）は ボタンと 読みこめない ときの 形だけ）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -74,29 +74,33 @@ try:
         pg = ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
-        print('■ 右上の 丸い ボタン（絵＋名前の 札）')
-        check(pg.locator('#tcFab').is_visible(), '右上に トレーニングセンターの ボタン')
+        print('■ 右下の 丸い ボタン（絵＋名前の 札）')
+        check(pg.locator('#tcFab').is_visible(), '右下に トレーニングセンターの ボタン')
         check(pg.evaluate("() => typeof window.TCInfo === 'object' && TCInfo.total() === 0 && TCInfo.tickets() === 0"), 'TCInfo（お世話の 合計・チケット）')
         check(pg.evaluate("() => typeof window.TCPlanNotify === 'function' && Array.isArray(TCPlanNotify())"), '作戦会議の 通知（TCPlanNotify）')
-        # 第4.138版（11/10 09:45・09:57）：場所＝上の 帯の すぐ 下・右はし（どの タブでも・スクロール しても）。絵の 下に 名前「トレーニングセンター」の 札
-        POS = """() => { const h = document.querySelector('header.top'), t = document.querySelector('.tabbar'), f = document.querySelector('#tcFab'), l = f && f.querySelector('.fabl'), i = f && f.querySelector('.fabi');
-          if (!h || !t || !f || !l || !i) return null; const R = e => e.getBoundingClientRect(), a = R(h), c = R(f), q = R(l), ii = R(i), cs = getComputedStyle(l);
-          return { hb: a.bottom, top: c.top, left: c.left, right: c.right, bottom: c.bottom, tab: R(t).top, name: l.textContent, lt: q.top, lb: q.bottom, lw: q.width, lh: q.height, ib: ii.bottom, iw: ii.width, ih: ii.height,
-            ff: cs.fontFamily, fw: cs.fontWeight, fs: cs.fontSize, bg: cs.backgroundImage + cs.backgroundColor, ink: cs.color, line: cs.borderTopColor, order: getComputedStyle(f).order }; }"""
+        # 第4.139版（まさちゃん 11/10 11:32「トレーニングセンターと思い出フィギュアのアイコンが壁紙と重なってるから、右下に移動して！」）：
+        #   場所＝下の タブの すぐ 上・右はし（どの タブでも・スクロール しても）。絵の 下に 名前「トレーニングセンター」の 札（第4.138版は 上の 帯の すぐ 下・右はし）
+        POS = """() => { const h = document.querySelector('header.top'), t = document.querySelector('.tabbar'), col = document.querySelector('#fabCol'), f = document.querySelector('#tcFab'), l = f && f.querySelector('.fabl'), i = f && f.querySelector('.fabi');
+          if (!h || !t || !col || !f || !l || !i) return null; const R = e => e.getBoundingClientRect(), a = R(h), c = R(f), q = R(l), ii = R(i), cs = getComputedStyle(l), cc = R(col), bn = document.getElementById('ksBnr');
+          return { hb: a.bottom, top: c.top, left: c.left, right: c.right, bottom: c.bottom, tab: R(t).top, ct: cc.top, cb: cc.bottom, cl: cc.left, cr: cc.right, name: l.textContent, lt: q.top, lb: q.bottom, lw: q.width, lh: q.height, ib: ii.bottom, iw: ii.width, ih: ii.height,
+            ff: cs.fontFamily, fw: cs.fontWeight, fs: cs.fontSize, bg: cs.backgroundImage + cs.backgroundColor, ink: cs.color, line: cs.borderTopColor, order: getComputedStyle(f).order, bnb: bn && !bn.hidden ? R(bn).bottom : 0 }; }"""
+        #   はじめの 判定タブは 入力例の 判定の 帯（#minibar）が 出て いて 列は その 上に いる（下の「かくれた ままに ならない」で 見る）→ いつもの 場所は 記録タブで 見る
+        pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(500)
         pos = pg.evaluate(POS)
-        check(pos is not None and 0 <= pos['top'] - pos['hb'] <= 12 and pos['right'] <= 390 and pos['left'] >= 390 - 84 and pos['bottom'] < pos['tab'] - 200, f'ボタンは 上の 帯の すぐ 下・右はし（{pos and [pos["hb"], pos["top"], pos["left"], pos["right"]]}）')
+        check(pos is not None and 4 <= pos['tab'] - pos['cb'] <= 14 and pos['cr'] <= 390 and pos['cl'] >= 390 - 84 and pos['ct'] > pos['hb'] + 200 and pos['top'] == pos['ct'],
+              f'ボタンの 列は 下の タブの すぐ 上・右はし（上の 帯からは はなれて いる）・トレーニングセンターが いちばん 上（{pos and [round(pos["ct"]), round(pos["cb"]), round(pos["tab"]), round(pos["cl"]), round(pos["cr"])]}）')
         check(pos is not None and pos['name'] == 'トレーニング\nセンター' and pos['ib'] - 9 <= pos['lt'] <= pos['ib'] + 4 and abs(pos['iw'] - 66) < 1 and abs(pos['ih'] - 66) < 1 and 60 <= pos['lw'] <= 76 and 24 <= pos['lh'] <= 32
               and abs(pos['lb'] - pos['bottom']) < 1 and pos['right'] - pos['left'] <= 76,
               f'絵（66px）の 下に 名前の 札「トレーニング／センター」（2行・はば {pos and round(pos["lw"])}px＝絵と ほぼ 同じ はば・高さ {pos and round(pos["lh"])}px）')
         seen = []
         for i in range(5):
-            pg.evaluate("(i) => document.querySelectorAll('.tabbar button')[i].click()", i); pg.wait_for_timeout(350)
-            q = pg.evaluate(POS); seen.append(q and [round(q['top'] - q['hb']), round(q['right'])])
-        check(len(set(map(str, seen))) == 1 and seen[0] is not None, f'どの タブでも 同じ 場所（{seen[0]}）')
-        pg.evaluate("() => { document.querySelectorAll('.tabbar button')[2].click(); window.scrollTo(0, 400); }"); pg.wait_for_timeout(400)
+            pg.evaluate("(i) => { document.querySelectorAll('.tabbar button')[i].click(); const m = document.getElementById('minibar'); if (m) m.hidden = true; }", i); pg.wait_for_timeout(500)
+            q = pg.evaluate(POS); seen.append(q and [round(q['tab'] - q['cb']), round(q['cr']), round(q['ct'])])
+        check(len(set(map(str, seen))) == 1 and seen[0] is not None, f'どの タブでも 同じ 場所（判定タブは 下の 帯が ない とき）（{seen[0]}）')
+        pg.evaluate("() => { document.querySelectorAll('.tabbar button')[2].click(); window.scrollTo(0, 400); }"); pg.wait_for_timeout(450)
         q = pg.evaluate(POS)
-        check(q is not None and 0 <= q['top'] - q['hb'] <= 12 and pg.locator('#tcFab').is_visible(), 'スクロール しても 上の 帯の すぐ 下に いる')
-        pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(350)
+        check(q is not None and 4 <= q['tab'] - q['cb'] <= 14 and pg.locator('#tcFab').is_visible(), 'スクロール しても 下の タブの すぐ 上に いる')
+        pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[2].click(); }"); pg.wait_for_timeout(450)
         hit = pg.evaluate("""() => { const f = document.querySelector('#tcFab'), R = e => e.getBoundingClientRect(), i = R(f.querySelector('.fabi')), l = R(f.querySelector('.fabl'));
           const at = (x, y) => { const e = document.elementFromPoint(x, y); return !!(e && f.contains(e)); };
           return { icon: at(i.left + i.width / 2, i.top + i.height / 2), plate: at(l.left + l.width / 2, l.top + l.height / 2), corner: at(i.left + 2, i.top + 2), leftOut: at(i.left - 6, i.top + i.height / 2) }; }""")
@@ -105,67 +109,46 @@ try:
         hd = "() => { const cs = getComputedStyle(document.querySelector('header.top')); return cs.backgroundImage + cs.backgroundColor; }"
         check(pos is not None and pos['ff'].split(',')[0].strip().strip('"') == 'BIZ UDPGothic' and pos['fw'] == '700' and pos['bg'] == pg.evaluate(hd), f'いつもの 壁紙：名前の 字は 本文の 字（BIZ UDPGothic）・太さ 700・札は 上の 帯と 同じ 色（{pos and pos["ff"][:24]}）')
         if pg.evaluate("() => !!(window.TengelKisekae && TengelKisekae.on)"):
-            pg.evaluate("() => TengelKisekae.apply('pirate')"); pg.wait_for_timeout(700)
+            pg.evaluate("() => TengelKisekae.apply('pirate')"); pg.wait_for_timeout(900)
             q = pg.evaluate(POS)
             check(q is not None and q['ff'].split(',')[0].strip().strip('"') == 'Zen Kaku Gothic New' and q['fw'] == '700' and q['bg'] == pg.evaluate(hd) and q['bg'] != pos['bg'] and q['ink'] != pos['ink'] and q['line'] != pos['line'] and q['name'] == 'トレーニング\nセンター',
                   f'壁紙を かえる（海賊）→ 名前の 字体・札の 色・線が その 壁紙の ものに（{q and q["ff"][:26]}・{q and q["ink"]}）')
-            pg.evaluate("() => TengelKisekae.apply('default')"); pg.wait_for_timeout(500)
-            check(pg.evaluate(POS)['bg'] == pos['bg'], 'いつもの 壁紙に もどすと 札も もどる')
-        # 第4.138版：ページを いちばん 上まで もどした とき、列の 下に 来る 中身（字・ボタン）は 列を よけて ならぶ（かくれた ままに ならない）
-        print('■ ページの 上の 中身は ボタンの 列を よける')
-        UNDER = """() => { const fc = document.querySelector('#fabCol'), col = fc.getBoundingClientRect(), hits = new Map();
-          const v = [...document.querySelectorAll('main > .view')].find(x => !x.hidden), sp = v && v.querySelector('.fabsp'), sr = sp ? sp.getBoundingClientRect() : null;
-          fc.style.visibility = 'hidden';
-          for (let y = col.top + 1; y < col.bottom; y += 4) for (let x = col.left + 1; x < col.right; x += 4) {
-            const e = document.elementFromPoint(x, y); if (!e) continue;
-            const t = e.closest('button, a, input, select, textarea, [role=button]'); let k = null;
-            if (t) k = 'ボタン ' + t.tagName + '«' + (t.textContent || t.value || '').trim().slice(0, 12) + '»';
-            else { const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null, n = r && r.startContainer;
-              if (n && n.nodeType === 3 && n.textContent.trim() && !(n.parentElement && n.parentElement.closest('#ksBnr'))) { const o = Math.min(r.startOffset, n.length - 1), rr = document.createRange();
-                if (o >= 0) { rr.setStart(n, o); rr.setEnd(n, o + 1); const b = rr.getBoundingClientRect(); if (b.width && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom) k = '字 «' + n.textContent.trim().slice(0, 14) + '»'; } } }
-            if (k && !hits.has(k)) hits.set(k, [Math.round(x), Math.round(y)]); }
-          fc.style.visibility = '';
-          const bn = document.getElementById('w5Banner');
-          return { col: [col.left, col.top, col.right, col.bottom], sp: sr ? [sr.left, sr.top, sr.width, sr.height] : null, under: [...hits.entries()].map(([k, q]) => k + ' @' + q), bbw: bn ? bn.style.getPropertyValue('--fabbw') : '' }; }"""
-
-        def top_of(i):
-            pg.evaluate("(i) => document.querySelectorAll('.tabbar button')[i].click()", i); pg.wait_for_timeout(450)
-            pg.evaluate("() => { const t = document.getElementById('toast'); if (t) t.hidden = true; window.scrollTo(0, 0); }"); pg.wait_for_timeout(200)
-            return pg.evaluate(UNDER)
-        res = [top_of(i) for i in range(5)]
-        check(all(o['sp'] and o['sp'][2] >= 40 and o['sp'][3] >= 120 and abs(o['sp'][0] + o['sp'][2] - 374) < 1 and o['sp'][0] <= o['col'][0] - 5 and o['sp'][1] + o['sp'][3] >= o['col'][3] + 5 for o in res),
-              f'5つの タブ：いちばん 上の カードの 前に すきま（列の 左から 6px・列の 下まで）{[o["sp"] and [round(x) for x in o["sp"]] for o in res][:2]}')
-        check(all(not o['under'] for o in res), f'5つの タブ：いちばん 上で 列の 下に 字・ボタンが ない {[o["under"] for o in res if o["under"]][:3]}')
-        top_of(2)
-        m6 = pg.evaluate("() => { const b = [...document.querySelectorAll('#ymRec .months button')].find(x => x.textContent.trim() === '6月'), c = document.querySelector('#fabCol').getBoundingClientRect(); const r = b.getBoundingClientRect(); return [r.right, c.left, r.width]; }")
-        check(m6[0] <= m6[1] and m6[2] >= 28, f'記録タブの「6月」は 列の 左に 出て いる（右 {round(m6[0])} ≦ 列の 左 {round(m6[1])}・はば {round(m6[2])}）')
-        pg.evaluate("() => window.scrollTo(0, 300)"); pg.wait_for_timeout(250)
-        check(pg.evaluate("() => { const s = document.querySelector('#v-rec .fabsp'); return s.style.width + '/' + s.style.height; }") == f'{round(res[2]["sp"][2])}px/{round(res[2]["sp"][3])}px', 'スクロール しても すきまの 大きさは 同じ')
-        o1 = top_of(1)
-        pg.evaluate("() => { const b = document.querySelector('#w5Body'); b.innerHTML = b.innerHTML; }"); pg.wait_for_timeout(150)
-        o2 = pg.evaluate(UNDER)
-        check(o2['sp'] == o1['sp'] and not o2['under'] and pg.locator('#v-win5 .fabsp').count() == 1, f'カードを 書き直しても すきまは 1つに もどる（単勝5連勝タブ・innerHTML の 読み書き）{o2["sp"]}')
-        c0 = pg.evaluate("() => { const c = document.querySelector('#w5Body .card'); c.__mark = 1; const b = [...document.querySelectorAll('#w5Body button')].find(x => x.textContent.trim() === 'ランダム'); if (b) b.click(); return !!b; }"); pg.wait_for_timeout(200)
-        o3 = pg.evaluate(UNDER); redrawn = pg.evaluate("() => !document.querySelector('#w5Body .card').__mark")
-        pg.evaluate("() => { const b = [...document.querySelectorAll('#w5Body button')].find(x => x.textContent.trim() === '自分で選ぶ'); if (b) b.click(); }"); pg.wait_for_timeout(200)
-        o4 = pg.evaluate(UNDER)
-        check(c0 and redrawn and o3['sp'] and o3['sp'][2:] == o1['sp'][2:] and not o3['under'] and o4['sp'] == o1['sp'] and not o4['under'] and pg.locator('#v-win5 .fabsp').count() == 1,
-              f'アプリが カードを 書き直しても（単勝5連勝の「ランダム」⇄「自分で選ぶ」：カードは 新しい もの {redrawn}）すきまは もどる')
-        bt = pg.evaluate("() => { const b = [...document.querySelectorAll('#w5Body button')].find(x => /判定画面で入れる/.test(x.textContent)); if (b) b.click(); return !!b; }"); pg.wait_for_timeout(600)
-        pg.evaluate("() => { const t = document.getElementById('toast'); if (t) t.hidden = true; window.scrollTo(0, 0); }"); pg.wait_for_timeout(200)
-        ob = pg.evaluate(UNDER)
-        bk = pg.evaluate("() => { const b = document.querySelector('#w5Banner [data-w5back]'), c = document.querySelector('#fabCol').getBoundingClientRect(); if (!b) return null; const r = b.getBoundingClientRect(); return [r.right, c.left, r.top, c.bottom]; }")
-        check(bt and bk is not None and bk[0] <= bk[1] and ob['bbw'] not in ('', '0px') and not ob['under'], f'判定タブの 帯（単勝5連勝の レースを 入力中）：右の 余白を 広げて「戻る」ボタンが 列の 左に（{ob["bbw"]}・{bk and [round(x) for x in bk[:2]]}）')
-        pg.evaluate("() => { const b = document.querySelector('#w5Banner [data-w5back]'); if (b) b.click(); }"); pg.wait_for_timeout(400)
-        check(top_of(0)['bbw'] == '0px' and pg.evaluate("() => document.getElementById('w5Banner').hidden"), '帯を 閉じると 余白は もどる')
-        if pg.evaluate("() => !!(window.TengelKisekae && TengelKisekae.on)"):
-            pg.evaluate("() => TengelKisekae.apply('pirate')"); pg.wait_for_timeout(900)
-            oj = top_of(0); bw = pg.evaluate("() => { const b = document.getElementById('ksBnr'); return b && !b.hidden ? b.getBoundingClientRect().width : 0; }")
-            orr = top_of(2)
-            check(oj['sp'] and oj['sp'][3] <= 60 and (bw == 0 or abs(bw - 390) < 1) and orr['sp'] and orr['sp'][3] >= 120 and not orr['under'] and not oj['under'],
-                  f'壁紙（海賊）：判定タブは 上の絵の 下に カードが ある ので すきまは 小さい（上の絵は そのまま はば {round(bw)}）・記録タブは よける {oj["sp"] and [round(x) for x in oj["sp"]]}')
+            # 11:32「アイコンが壁紙と重なってる」：判定タブの 上の絵（壁紙）に 列が 重ならない
+            pg.evaluate("() => { document.querySelectorAll('.tabbar button')[0].click(); window.scrollTo(0, 0); }"); pg.wait_for_timeout(600); q = pg.evaluate(POS)
+            check(q is not None and q['bnb'] > 100 and q['ct'] >= q['bnb'] + 100, f'壁紙（海賊）：判定タブの 上の絵（下の はし {q and round(q["bnb"])}）に ボタンの 列（上の はし {q and round(q["ct"])}）が 重ならない')
             pg.evaluate("() => TengelKisekae.apply('default')"); pg.wait_for_timeout(600)
-        top_of(0)
+            check(pg.evaluate(POS)['bg'] == pos['bg'], 'いつもの 壁紙に もどすと 札も もどる')
+        # 第4.139版：列の 下に かくれた ままに ならない（ページの いちばん 下・判定タブの 下の 帯・買い目編集の 保存の 帯）
+        print('■ 列の 下に かくれた ままに ならない')
+        END = """() => { const col = document.querySelector('#fabCol').getBoundingClientRect(), v = [...document.querySelectorAll('main > .view')].find(x => !x.hidden);
+          const kids = [...v.children].filter(e => e.getBoundingClientRect().height > 0), last = kids[kids.length - 1].getBoundingClientRect(), mn = document.querySelector('main');
+          return { last: last.bottom, ct: col.top, pb: parseFloat(getComputedStyle(mn).paddingBottom), ch: col.height, tab: document.querySelector('.tabbar').getBoundingClientRect().top, atEnd: Math.abs(scrollY + innerHeight - document.documentElement.scrollHeight) < 2 }; }"""
+        ends = []
+        for i in range(5):
+            pg.evaluate("(i) => document.querySelectorAll('.tabbar button')[i].click()", i); pg.wait_for_timeout(450)
+            pg.evaluate("() => window.scrollTo(0, 1e7)"); pg.wait_for_timeout(350); ends.append(pg.evaluate(END))
+        check(all(e['atEnd'] and e['last'] <= e['ct'] + 0.5 and e['pb'] >= e['ch'] + 60 for e in ends),
+              f'5つの タブ：いちばん 下まで スクロール すると さいごの 中身が 列の 上まで 上がる（main の 下の 余白 {round(ends[0]["pb"])}px ≧ 列の 高さ {round(ends[0]["ch"])}px＋下の タブ）{[[round(e["last"]), round(e["ct"])] for e in ends][:2]}')
+        pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(450)
+        # 判定タブの 下の 帯（#minibar：判定の 要点）が 出て いる あいだは 列を その 上へ・消えると もどる
+        MB = """() => { const m = document.getElementById('minibar'), b = m.getBoundingClientRect(), c = document.querySelector('#fabCol').getBoundingClientRect(); return { mt: m.hidden ? null : b.top, cb: c.bottom, tab: document.querySelector('.tabbar').getBoundingClientRect().top, pb: document.querySelector('main').style.paddingBottom }; }"""
+        pg.evaluate("() => { document.getElementById('minibar').hidden = true; }"); pg.wait_for_timeout(500)
+        m0 = pg.evaluate(MB)
+        pg.evaluate("() => { const m = document.getElementById('minibar'); if (!document.getElementById('miniBtn').innerHTML) document.getElementById('miniBtn').innerHTML = '<span class=\"lb LB\">B</span><span class=\"mz\">8R 第1 中穴→人気・第2 人気→大穴</span><span class=\"go\">判定へ↓</span>'; m.hidden = false; }"); pg.wait_for_timeout(500)
+        m1 = pg.evaluate(MB)
+        pg.evaluate("() => { document.getElementById('minibar').hidden = true; }"); pg.wait_for_timeout(500)
+        m2 = pg.evaluate(MB)
+        check(m0['mt'] is None and 4 <= m0['tab'] - m0['cb'] <= 14 and m1['mt'] is not None and 2 <= m1['mt'] - m1['cb'] <= 10 and m1['cb'] < m0['cb'] - 20 and abs(m2['cb'] - m0['cb']) < 1 and m1['pb'] == m0['pb'],
+              f'判定タブの 下の 帯（判定の 要点）が 出ると 列は その 上へ（帯の 上 {m1["mt"] and round(m1["mt"])}・列の 下 {round(m1["cb"])}）・帯が 消えると もどる（{round(m0["cb"])} → {round(m1["cb"])} → {round(m2["cb"])}）・ページの 下の 余白は かわらない')
+        # 買い目編集の 保存の 帯（変更が ある あいだ 下に はりつく）は 列の 手前で 終わる
+        pg.evaluate("() => document.querySelectorAll('.tabbar button')[4].click()"); pg.wait_for_timeout(500)
+        zok = pg.evaluate("() => { const b = document.querySelector('.zrow [data-act=down]:not([disabled])'); if (!b) return false; b.scrollIntoView({ block: 'center' }); b.click(); return true; }"); pg.wait_for_timeout(600)
+        pg.evaluate("() => { const e = document.querySelector('.zedit'); if (e) e.scrollIntoView({ block: 'start' }); }"); pg.wait_for_timeout(600)
+        zs = pg.evaluate("() => { const z = document.querySelector('.zsave.sticky'), c = document.querySelector('#fabCol').getBoundingClientRect(); if (!z) return null; const r = z.getBoundingClientRect(), bs = [...z.querySelectorAll('button')].map(b => b.getBoundingClientRect().right); return { right: r.right, cl: c.left, btn: Math.max(...bs), top: r.top, bottom: r.bottom, ct: c.top, cb: c.bottom }; }")
+        check(zok and zs is not None and zs['right'] <= zs['cl'] - 3 and zs['btn'] <= zs['right'] and zs['bottom'] > zs['ct'] and zs['top'] < zs['cb'],
+              f'買い目編集の 保存の 帯（下に はりついて 列と 同じ 高さ）は 列の 左で 終わる（帯の 右 {zs and round(zs["right"])} ＜ 列の 左 {zs and round(zs["cl"])}）')
+        pg.evaluate("() => { const b = document.querySelector('.zsave [data-zact=undo]'); if (b) b.click(); }"); pg.wait_for_timeout(400)
+        pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(450)
         if not HAVE:
             pg.locator('#tcFab').click(); pg.wait_for_timeout(2500)
             check(not errs, f'エラー なし {errs[:2]}')
@@ -201,6 +184,25 @@ try:
             if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.feed"): break
         tot = pg.evaluate("() => [TCCare.S.stock, TCApp.state.total, TCApp.state.cares]")
         check(tot[0] == stock0 - 1 and tot[1] >= 1, f'お世話トークンを 1つ 使って、お世話の 合計が ふえた {stock0} → {tot}')
+        # 第4.139版（抜け穴を ふさぐ）：端末の 時計を 先へ 進めて お世話トークンを ためる → 時計を もどす、を ふせぐ（tc_app.js の tnow：もどらない 時計）
+        print('■ 時計を 進めて もどす ズルを ふせぐ')
+        TS = "() => { const s = TCApp.state; return { stock: s.stock, at: s.stockAt, seen: s.seen, now: Date.now() }; }"
+        k0 = pg.evaluate(TS)
+        check(k0['seen'] is not None and abs(k0['seen'] - k0['now']) < 5000, f'開いて いる あいだ、いままでに 見た いちばん 先の 時刻（seen）を おぼえる（{k0["stock"]}こ）')
+        pg.evaluate("() => { window.__realNow = Date.now.bind(Date); const r = window.__realNow; Date.now = () => r() + 200 * 60000; }"); pg.wait_for_timeout(700)
+        k1 = pg.evaluate(TS)
+        check(k1['stock'] == 20 and k1['seen'] - k0['now'] >= 199 * 60000, f'時計を 200分 進める → トークンは 満タン（20こ）：ここまでは 止められない（{k0["stock"]} → {k1["stock"]}）')
+        pg.evaluate("() => { Date.now = window.__realNow; }"); pg.wait_for_timeout(700)
+        k2 = pg.evaluate(TS)
+        check(k2['stock'] == 20 and k2['at'] >= k1['seen'] - 3000 and 0 <= k2['seen'] - k1['seen'] < 5000 and k2['at'] - k2['now'] >= 190 * 60000,
+              f'時計を もどしても、数えはじめの 時刻は 先の 時刻の まま（前は 満タンの とき いまの 時刻に 書きかえて いた）（あと {round((k2["at"] - k2["now"]) / 60000)}分）')
+        pg.evaluate("() => { TCApp.state.stock = 5; TCCare.S.stock = TCCare.S.stockShow = 5; const r = window.__realNow; Date.now = () => r() + 30 * 60000; }"); pg.wait_for_timeout(800)
+        k3 = pg.evaluate(TS)
+        check(k3['stock'] == 5 and k3['seen'] == k2['seen'], f'トークンを 使って（5こ）30分 たっても ふえない（本当の 時刻が 先に 見た 時刻に 追いつくまで）（{k3["stock"]}こ）')
+        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 231 * 60000; }"); pg.wait_for_timeout(800)
+        k4 = pg.evaluate(TS)
+        check(k4['stock'] == 8 and k4['seen'] > k2['seen'], f'先に 見た 時刻を こえたら また ふえる（30分ぶん＝3こ：5 → {k4["stock"]}）')
+        pg.evaluate("() => { Date.now = window.__realNow; const s = TCApp.state, n = Date.now(); s.seen = n; s.stockAt = n; }"); pg.wait_for_timeout(300)
         print('■ 説明書')
         stage_click(pg, 678, 97); pg.wait_for_timeout(1200)
         g = pg.evaluate("() => { const e = document.querySelector('#tcg'); return e ? [e.style.display, e.textContent.includes('幻の馬・神様馬がいるあいだ'), e.textContent.includes('10000P か 20000P')] : null; }")

@@ -90,14 +90,17 @@ try:
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
         print('■ 入口')
         check(pg.evaluate("() => typeof window.TengelFig === 'object' && typeof TengelFig.booth === 'function' && typeof window.TengelMem === 'object' && !!TengelWallet.fig"), 'TengelFig（入口）・TengelMem（思い出のレース）・TengelWallet.fig（台帳）')
-        # 第4.138版（11/10 09:45・09:55・09:57）：右上の 丸い ボタン（トレーニングセンターの 下）＋ 名前の 札「思い出フィギュア」
-        FAB = """() => { const R = e => e ? e.getBoundingClientRect() : null, t = document.querySelector('#tcFab'), f = document.querySelector('#figFab'), h = document.querySelector('header.top');
-          if (!t || !f || !h) return null; const a = R(t), c = R(f), l = f.querySelector('.fabl'), i = f.querySelector('.fabi'), q = R(l), ii = R(i);
-          return { hb: R(h).bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width,
+        # 第4.138版（11/10 09:45・09:55・09:57）：丸い ボタン（トレーニングセンターの 下）＋ 名前の 札「思い出フィギュア」
+        #   第4.139版（11/10 11:32「アイコンが壁紙と重なってるから、右下に移動して！」）：列は 右下（下の タブの すぐ 上）。上から トレーニングセンター → 思い出フィギュア
+        FAB = """() => { const R = e => e ? e.getBoundingClientRect() : null, t = document.querySelector('#tcFab'), f = document.querySelector('#figFab'), h = document.querySelector('header.top'), tb = document.querySelector('.tabbar');
+          if (!t || !f || !h || !tb) return null; const a = R(t), c = R(f), l = f.querySelector('.fabl'), i = f.querySelector('.fabi'), q = R(l), ii = R(i);
+          return { hb: R(h).bottom, tab: R(tb).top, bottom: c.bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width,
             aria: f.getAttribute('aria-label'), img: (i.querySelector('img') || {}).src || '' }; }"""
+        #   はじめの 判定タブは 入力例の 判定の 帯（#minibar）が 出て いて 列は その 上に いる → いつもの 場所は 帯を かくして 見る（帯の 上へ よける 動きは test_tc.py）
+        pg.evaluate("() => { const m = document.getElementById('minibar'); if (m) m.hidden = true; }"); pg.wait_for_timeout(600)
         fb = pg.evaluate(FAB)
-        check(fb is not None and pg.locator('#figFab').is_visible() and 0 <= fb['top'] - fb['tcBottom'] <= 10 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 0 <= fb['tcTop'] - fb['hb'] <= 12,
-              f'右上の ボタン：トレーニングセンターの すぐ 下に 思い出フィギュア（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"])]}）')
+        check(fb is not None and pg.locator('#figFab').is_visible() and 0 <= fb['top'] - fb['tcBottom'] <= 10 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 4 <= fb['tab'] - fb['bottom'] <= 14 and fb['tcTop'] > fb['hb'] + 200,
+              f'右下の ボタン：トレーニングセンターの すぐ 下に 思い出フィギュア・その 下が 下の タブ（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"]), round(fb["bottom"]), round(fb["tab"])]}）')
         check(fb is not None and fb['name'] == '思い出\nフィギュア' and fb['ib'] - 9 <= fb['lt'] <= fb['ib'] + 4 and abs(fb['iw'] - 66) < 1 and 'フィギュアブース' in fb['aria'], '絵（66px）の 下に 名前の 札「思い出／フィギュア」（2行）')
         pg.evaluate(SEED); pg.wait_for_timeout(800)
         pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=rec]') || [...document.querySelectorAll('.tabbar button')].find(x => /記録/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(900)
@@ -112,7 +115,7 @@ try:
             check(pg.evaluate("() => !!window.FigApp && document.querySelector('#fgOv.on') !== null"), 'ブースは ひらく（絵が ない ときは「読みこめなかった」の 知らせ）')
             check(not errs, f'エラー なし {errs[:2]}')
             raise SystemExit
-        print('■ 右上の ボタン → フィギュアブース → フィギュアを作る → もどる')
+        print('■ 右下の ボタン → フィギュアブース → フィギュアを作る → もどる')
         check(pg.evaluate("() => { const im = document.querySelector('#figFab .fabi img'); return !!im && im.complete && im.naturalWidth === 240; }") and fb['img'].endswith('fg_icon.webp'), 'ボタンの 絵（fg_icon.webp・240×240）')
         pg.locator('#figFab').click(); pg.wait_for_function("() => !!window.FigApp", timeout=30000); wait_scene(pg)
         check(pg.evaluate("() => FigApp._t.mode") == 'booth' and pg.locator('#fgOv [data-fg=make]').is_visible() and 'フィギュアを作る' in pg.locator('#fgOv [data-fg=make]').inner_text(),
@@ -128,8 +131,13 @@ try:
         pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(500)
         check(pg.evaluate("() => !document.querySelector('#fgOv').classList.contains('on')") and pg.locator('#figFab').is_enabled(), 'ブースを 閉じる → もとの 画面（ボタンは また 押せる）')
         print('■ 作る：レース → デザイン → 3D で 見る')
-        pg.evaluate("() => TengelWallet.grant('test-fig-pts', 400000, 'テスト')"); pg.wait_for_timeout(300)
-        p0 = pg.evaluate("() => TengelWallet.total()")
+        # 第4.139版：ポイントの 上限は 99,999P。テストの 400,000P は 98,499P だけ 台帳に 入って、のこりは あずかりポイントに（足りなく なったら 作る ときに あずかりから 補充される）
+        #   → 持って いる ポイントは「台帳＋あずかり」で 数える（ALL）
+        ALL = "() => TengelWallet.total() + TengelWallet.hold().total"
+        pg.evaluate("() => TengelWallet.grant('test-fig-pts', 400000, 'テスト')"); pg.wait_for_timeout(400)
+        p0 = pg.evaluate(ALL)
+        w0 = pg.evaluate("() => [TengelWallet.total(), TengelWallet.hold().free, TengelWallet.avail()]")
+        check(p0 == 401500 and w0 == [99999, 301501, 99999], f'テストの ポイント：台帳は 上限の 99,999P・のこり 301,501P は あずかり（{w0}）')
         pg.locator('#recList [data-act=figmake]').click()
         pg.wait_for_function("() => window.FigApp && FigApp._t.mode === 'make'", timeout=30000); pg.wait_for_timeout(500)
         check(pg.locator('#fgOv .fgrace').count() == 2, '1. 思い出のレースを 選ぶ（2つ）')
@@ -148,7 +156,7 @@ try:
         pg.locator('#fgOv [data-fg=buy2]').click(); wait_scene(pg)
         it = pg.evaluate("() => TengelWallet.fig.items()")
         ev = pg.evaluate("() => TengelWallet.events().filter(e => /^unlock-fig:/.test(e.id)).map(e => [e.amount, e.what])")
-        check(len(it) == 1 and it[0]['n'] == 1 and it[0]['info']['race'] == '11R　テンゲル記念' and pg.evaluate("() => TengelWallet.total()") == p0 - 22000 and len(ev) == 1 and ev[0][0] == -22000,
+        check(len(it) == 1 and it[0]['n'] == 1 and it[0]['info']['race'] == '11R　テンゲル記念' and pg.evaluate(ALL) == p0 - 22000 and pg.evaluate("() => TengelWallet.total()") == 99999 - 22000 and len(ev) == 1 and ev[0][0] == -22000,
               f'作った：ポイント −22,000（unlock-fig）・ボードの 文は 作った ときの まま {ev}')
         check(pg.evaluate("() => document.querySelector('#fgOv').classList.contains('pick') && /飾る 場所を 選んでね/.test(document.querySelector('#fgOv .fgf').textContent)"), 'ブースへ：飾る 場所を 選んでね')
         shot(pg, 'fig_pick')
@@ -163,7 +171,9 @@ try:
             pg.evaluate(f"() => FigApp._t.tapSlot({n - 1})"); wait_scene(pg, 180000)
         sl = pg.evaluate("() => TengelWallet.fig.slots().slice(0, 8).map(Boolean)")
         cost = sum([22000] * 5 + [32000, 30000, 36000])
-        check(sl == [True] * 8 and pg.evaluate("() => TengelWallet.total()") == p0 - cost, f'8体 飾った・ポイントは 合計 −{cost:,}（{sl}）')
+        wl = pg.evaluate("() => [TengelWallet.total(), TengelWallet.hold().total, TengelWallet.events().filter(e => e.from === 'hold').length]")
+        check(sl == [True] * 8 and pg.evaluate(ALL) == p0 - cost and wl[0] == 63999 and wl[1] == 129501 and wl[2] == 2,
+              f'8体 飾った・ポイントは 合計 −{cost:,}（{sl}）。台帳が 足りなく なった 2回は あずかりから 先に 補充してから 作れた（台帳 {wl[0]:,}P・あずかり {wl[1]:,}P・補充 {wl[2]}回）')
         shot(pg, 'fig_booth1')
         print('■ 部屋（押すと 3D で 見る）')
         pg.evaluate("() => FigApp._t.tapSlot(6)"); wait_room(pg, 180000)
@@ -201,11 +211,11 @@ try:
         pg.locator('#fgOv .fgsh .fgsr').click(); wait_scene(pg)
         check(pg.evaluate("() => TengelWallet.fig.slots()[6]") == id7, 'もどして 飾った')
         print('■ ポイントが 足りない')
-        pg.evaluate("() => { window.__tot = TengelWallet.total; TengelWallet.total = () => 1000; FigApp.make({ race: 'figm1' }); }"); pg.wait_for_timeout(500)
+        pg.evaluate("() => { window.__tot = TengelWallet.total; window.__av = TengelWallet.avail; TengelWallet.total = () => 1000; TengelWallet.avail = () => 1000; FigApp.make({ race: 'figm1' }); }"); pg.wait_for_timeout(500)
         pg.locator('#fgOv .fgd[data-n="8"]').click(); pg.wait_for_timeout(600)
         fb = pg.locator('#fgOv .fgbuy').inner_text()
         check('あと 35,000P 足りないよ' in fb and not pg.locator('#fgOv [data-fg=buy1]').is_enabled(), f'足りない ときは 作れない（{fb!r}）')
-        pg.evaluate("() => { TengelWallet.total = window.__tot; }")
+        pg.evaluate("() => { TengelWallet.total = window.__tot; TengelWallet.avail = window.__av; }")
         pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(300); pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(500)
         check(pg.evaluate("() => !document.querySelector('#fgOv').classList.contains('on')"), 'レースを 決めて 開いた ときは もどるで 記録タブへ')
         pg.locator('#recList [data-act=figbooth]').click(); wait_scene(pg)
@@ -225,7 +235,9 @@ try:
         check(pg.locator('#msOv').count() == 1 and '思い出フィギュアミッション' in pg.locator('#msOv').inner_text() and 'いま 8こ' in pg.locator('#msFig .hint').inner_text()
               and rows == [['mission-fig-1', '思い出フィギュアを1つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-5', '思い出フィギュアを5つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-8', '思い出フィギュアを8つ完成させる 10,000P', '受け取れるよ！', True]],
               f'ミッションの 窓に「思い出フィギュアミッション」：1つ 5,000P・5つ 5,000P・8つ 10,000P（8こ 作った → 3つとも 受け取れる）{rows}')
-        check('3つ' in pg.locator('#msOv .msn').inner_text(), f'受け取れる 数（{pg.locator("#msOv .msn").inner_text()}）')
+        msn = pg.locator('#msOv .msn').inner_text()
+        check(msn.replace('\n', '・') == '達成 3/37・受け取れるのが 4つ！' and pg.locator('#msHoldCard').is_visible() and 'いま 補充できるのは 36,000P' in pg.locator('#msHold').inner_text(),
+              f'上は「達成 3/37」・受け取れる 数は 4つ（フィギュアの 3つ＋あずかりポイントの 補充）（{msn!r}）')
         pg.locator('#msFig [data-pt=claim][data-id="mission-fig-1"]').click(); pg.wait_for_timeout(800)
         e1 = pg.evaluate("() => TengelWallet.events().filter(e => /^mission-fig-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()")
         check(pg.evaluate("() => TengelWallet.total()") == t0 + 5000 and e1 == 'mission-fig-1:5000:free', f'「1つ完成させる」を 受け取る → +5,000P（もらったP・{e1}）')

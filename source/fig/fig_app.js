@@ -382,7 +382,7 @@ const FigApp = (() => {
     need();
   }
   function footBuy() {
-    const w = WL(), have = w ? w.total() : 0, cost = priceOf(mk.n), ok = have >= cost;
+    const w = WL(), have = w ? (typeof w.avail === 'function' ? w.avail() : w.total()) : 0, cost = priceOf(mk.n), ok = have >= cost;      // 第4.139版：あずかりポイントも 数える（足りなければ 作る ときに 補充される）
     ft.innerHTML = `<div class="fgbuy"><b>${nf(cost)}P</b>　いま ${nf(have)}P${ok ? '' : `<br><span class="ng">あと ${nf(cost - have)}P 足りないよ</span>`}</div>`
       + `<div class="fgrow">${mk.conf ? `<button type="button" class="dk" data-fg="buyx">やめる</button><button type="button" class="pri" data-fg="buy2">${nf(cost)}Pを使って作る</button>` : `<button type="button" class="pri" data-fg="buy1"${ok ? '' : ' disabled'}>このデザインで作る</button>`}</div>`
       + '<div class="fghint">指で まわせるよ・2本指で 大きく</div>';

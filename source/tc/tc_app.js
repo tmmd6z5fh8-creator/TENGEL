@@ -36,7 +36,16 @@ const TCApp = (() => {
   function scaleOf(c) { return c < 50 ? 0.6 : c < 100 ? 0.7 : c < 150 ? 0.8 : c < 200 ? 0.88 : c < 250 ? 0.94 : 1.0; }      // ※仮：250回で いちばん 大きく
   function tod(d) { const h = (d || new Date()).getHours(); return h >= 7 && h < 16 ? 'morning' : h >= 16 && h < 19 ? 'evening' : 'night'; }
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function accrue(now) {                              // お世話トークン（閉じて いる 間も 時間で たまる）
+  // 第4.139版（抜け穴を ふさぐ）：端末の 時計を 先へ 進めて お世話トークンを ためる → 時計を もどす、を ふせぐ「もどらない 時計」。
+  //   いままでに 見た いちばん 先の 時刻（st.seen）より 前には もどらない。時計を もどした あとは、本当の 時刻が そこへ 追いつくまで トークンは ふえない
+  //   （前は トークンが 満タンの ときに 数えはじめの 時刻を いまの 時刻に 書きかえて いた ので、満タンに して から 時計を もどせば すぐ また ためられた）。
+  //   ※ 時計を 先へ 進めた ままに する ズルは、端末の 中だけでは 見分けられない（電波で 正しい 時刻を もらう しくみが いる）
+  function tnow() {
+    const n = Date.now(), s0 = +st.seen || 0;
+    if (n > s0) { st.seen = n; if (n > (tnow.saved || 0) + 60000) { tnow.saved = n; touch(); } }
+    return Math.max(n, s0);
+  }
+  function accrue(now) {                              // お世話トークン（閉じて いる 間も 時間で たまる）。now＝tnow()（もどらない 時計）
     if (st.stock >= TOKEN_MAX) { st.stockAt = now; return 0; }
     const n = Math.floor((now - st.stockAt) / (TOKEN_MIN * 60000)); if (n <= 0) return 0;
     const add = Math.min(n, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;
@@ -217,7 +226,7 @@ const TCApp = (() => {
     void now;
   }
   async function startVisit(kind) {
-    st.visit = { kind, until: Date.now() + VISIT_MIN * 60000 }; touch(); save();
+    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg(kind === 'kamisama' ? '✨ 神様馬が やってきた！' : '🌙 幻の馬が やってきた！', 3.0);
   }
@@ -262,11 +271,12 @@ const TCApp = (() => {
     if (now - lastDraw < 1000 / 31) return;         // 30コマ／秒（ゆっくりの 場所・電池に やさしく）
     lastDraw = now;
     const t = clock(), dt = lastT == null ? 1 / 30 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
-    const ms = Date.now();
-    if (accrue(ms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
+    const ms = Date.now(), gms = tnow();
+    if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (BR && !st.visit) BR.tod = tod();
-    if (st.visit && ms > st.visit.until && !busy) endVisit();
+    if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       // 開いて いる あいだに たった 秒（時計を もどしても 10分で 帰る）
+    if (st.visit && (gms > st.visit.until || st.visit.el >= VISIT_MIN * 60) && !busy) endVisit();
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
     if (!HO || !BR) return;
@@ -299,8 +309,8 @@ const TCApp = (() => {
     field = TCField.create(cvGL); if (!field) throw new Error('webgl');
     gl = field.gl; tBase = performance.now();
     if (!st.fav || st.fav.day !== today()) { st.fav = { day: today(), kind: ['esa', 'apple', 'carrot'][Math.floor(Math.random() * 3)] }; touch(); }
-    if (st.visit && Date.now() > st.visit.until) st.visit = null;
-    accrue(Date.now());
+    if (st.visit && (tnow() > st.visit.until || (+st.visit.el || 0) >= VISIT_MIN * 60)) st.visit = null;
+    accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
       lottery, onPrize, onEvent: onCareEvent, banTop: 352, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
@@ -315,7 +325,7 @@ const TCApp = (() => {
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); alert('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
-    paintHead(); layout(); accrue(Date.now());
+    paintHead(); layout(); accrue(tnow());
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);

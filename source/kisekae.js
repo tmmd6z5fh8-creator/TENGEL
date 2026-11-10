@@ -206,9 +206,11 @@
       + `<button class="btn primary" type="button" data-ksact="pkbuy">${esc(packPrice())}で買う</button>`
       + '<button class="btn ghost" type="button" data-ksact="cancel">やめる</button></span>';
   }
+  // 使える ポイント（第4.139版：財布＋あずかりポイント＝上限まで。足りなければ 使う ときに あずかりから 補充される：points_ui.js の avail）
+  const have = () => { const w = wallet(); return w ? (typeof w.avail === 'function' ? w.avail() : w.total()) : 0; };
   function paint() {
     const box = $('#setKisekae .ksbody'); if (!box) return;
-    const cur = byId[curId] || byId.default, n = count(), total = wallet() ? wallet().total() : 0;
+    const cur = byId[curId] || byId.default, n = count(), total = have();
     let h = `<p class="hint" style="margin:0 0 4px">いまのテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
     h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。8・16・25枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
     const groups = [];
@@ -257,7 +259,7 @@
         try { ok = await wallet().unlock('theme:' + id, t.price); } catch (x) { ok = false; }
         conf = '';
         if (ok) { toast(`✅ 「${t.name}」を解放したよ（残り ${pts(wallet().total())}）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
-        else { toast(`Pが足りないよ（${pts(t.price)}いる・いま ${pts(wallet().total())}）`, 3600); paint(); }
+        else { toast(`Pが足りないよ（${pts(t.price)}いる・いま ${pts(have())}）`, 3600); paint(); }
         return;
       }
     }

@@ -210,14 +210,24 @@ try:
         order = pg.evaluate("[...document.querySelectorAll('#v-set > .card')].slice(0, 3).map(c => c.id)")
         check(order == ['setPoints', 'setCustom', 'setMission'], f'設定タブの上に ポイント・Pカスタム・ミッション（{order}）')
         pt = pg.locator('#setPoints').inner_text()
-        check(pg.evaluate('TengelWallet.total()') == 1500 and '1,500P' in pt and pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['0P', '0P', '1,500P'] and store['markers'].get('gift-first'), f'はじめてのプレゼント 1,500P（もらったP）・キーチェーンにしるし（{list(store["markers"])}）')
-        # 第4.59版：上の帯の 所有ポイント（購入P＝パック＋もらったP・サブスクP）と 説明書の 置き場（マザーデータの 札の すぐ 左）・テスト版の 印は ない
-        hb = pg.evaluate("(() => { const p = document.querySelector('#ptsPill'), m = document.querySelector('#manBtn'), d = document.querySelector('#dbpill'), b = document.querySelector('header.top .brand'); if (!p || !m || !d) return null; const r = x => x.getBoundingClientRect(); return { txt: p.innerText.replace(/\\s+/g, ' '), afterBrand: b.nextElementSibling === p, order: m.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : 0, mRight: r(m).right, dLeft: r(d).left, dRight: r(d).right, mTop: r(m).top, dTop: r(d).top, w: innerWidth, tag: !!document.querySelector('#testTag'), gopt: p.dataset.gopt }; })()")
-        check(hb and '購入 1,500P' in hb['txt'] and 'サブスク 0P' in hb['txt'] and hb['afterBrand'] and hb['gopt'] == 'points' and not hb['tag'], f'上の帯：ロゴの 右に 所有ポイント「購入 1,500P・サブスク 0P」（押すと 設定の ポイントへ）・テスト版の 印は ない（{hb}）')
+        check(pg.evaluate('TengelWallet.total()') == 1500 and '1,500P' in pt and pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['0P', '0P', '1,500P'] and store['markers'].get('gift-first'), f'はじめてのプレゼント 1,500P（獲得ポイント）・キーチェーンにしるし（{list(store["markers"])}）')
+        # 第4.59版：上の帯の 所有ポイントと 説明書の 置き場・テスト版の 印は ない
+        #   第4.139版（まさちゃん 11/10 11:46「上のところに表示されてる時は、合計のポイントだけ表示するようにして！」）：札は 合計だけ「ポイント 1,500P」（前は「購入 ○P・サブスク ○P」）。内わけは 札の title と、押すと 出る「ポイントの詳細」
+        hb = pg.evaluate("(() => { const p = document.querySelector('#ptsPill'), m = document.querySelector('#manBtn'), d = document.querySelector('#dbpill'), b = document.querySelector('header.top .brand'); if (!p || !m || !d) return null; const r = x => x.getBoundingClientRect(); return { txt: p.innerText.replace(/\\s+/g, ' '), afterBrand: b.nextElementSibling === p, order: m.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : 0, mRight: r(m).right, dLeft: r(d).left, dRight: r(d).right, mTop: r(m).top, dTop: r(d).top, w: innerWidth, tag: !!document.querySelector('#testTag'), gopt: p.dataset.gopt, title: p.title, al: p.getAttribute('aria-label'), segs: p.querySelectorAll('.pp').length }; })()")
+        check(hb and hb['txt'] == 'ポイント 1,500P' and hb['segs'] == 1 and '購入' not in hb['txt'] and 'サブスク' not in hb['txt'] and hb['afterBrand'] and hb['gopt'] == 'points' and not hb['tag']
+              and all(w in hb['title'] for w in ('合計 1,500P', '購入ポイント 0', 'サブスクポイント 0', '獲得ポイント 1,500', '上限 99,999P')) and 'ポイントの詳細' in hb['al'],
+              f'上の帯：ロゴの 右に 所有ポイント「ポイント 1,500P」（合計だけ・1つの 札。内わけは title と 押した 先）・テスト版の 印は ない（{hb}）')
         # 第4.83版（まさちゃん「説明書をポイントの横に配置できない？ その下にミッション、その下にマザーデータ」）：説明書は 所有ポイントの すぐ 右（1段目）・ミッションは 2段目・マザーデータの 札は 3段目（右よせ）
-        hb2 = pg.evaluate("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); const p = r('#ptsPill'), m = r('#manBtn'), d = r('#dbpill'), ms = r('#msBtn'); return { pm: Math.abs(p.top - m.top) < 8 && m.left > p.right && m.left - p.right < 20, msBelow: ms.top > m.bottom, dBelow: d.top > ms.bottom, right: d.right >= innerWidth - 24 && ms.right >= innerWidth - 24, ptsH: Math.round(p.height), order: [...document.querySelector('header.top .top-in').children].map(e => e.id || e.className).join(',') }; })()")
-        check(hb and hb['order'] == 1 and hb2['pm'] and hb2['msBelow'] and hb2['dBelow'] and hb2['right'] and hb2['ptsH'] <= 36 and hb2['order'].startswith('brand,ptsPill,manBtn,rsvBtn,msBtn,tbrk,dbpill'), f'上の帯：説明書は 所有ポイント（2行）の すぐ 右 ／ 2段目に（第4.122版の「結果待ち」と）ミッション ／ 3段目に マザーデータの 札（右よせ）（{hb2}）')
-        check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません' in pt and '200P' in pt and '買ったPから先に使う' in pt, 'ポイントのカード：消えることの注意・1レース200P・使う順')
+        pg.wait_for_timeout(300)
+        hb2 = pg.evaluate("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); const p = r('#ptsPill'), m = r('#manBtn'), d = r('#dbpill'), ms = r('#msBtn'), rv = r('#rsvBtn'), br = r('header.top .brand'); return { pm: Math.abs(p.top - m.top) < 8 && m.left > p.right && m.left - p.right < 20, msBelow: ms.top > m.bottom, dBelow: d.top > ms.bottom, right: d.right >= innerWidth - 24 && ms.right >= innerWidth - 24, ptsH: Math.round(p.height), order: [...document.querySelector('header.top .top-in').children].map(e => e.id || e.className).join(','),"
+                           " manR: +(innerWidth - m.right).toFixed(1), msR: +(innerWidth - ms.right).toFixed(1), pL: +p.left.toFixed(1), brR: +br.right.toFixed(1), rvL: +rv.left.toFixed(1), rvRow: Math.abs(rv.top - ms.top) < 8 && rv.right < ms.left && ms.left - rv.right < 12, pv: +document.querySelector('#ptsPill .pv').getBoundingClientRect().width.toFixed(1), pw: +p.width.toFixed(1) }; })()")
+        check(hb and hb['order'] == 1 and hb2['pm'] and hb2['msBelow'] and hb2['dBelow'] and hb2['right'] and hb2['ptsH'] <= 36 and hb2['order'].startswith('brand,ptsPill,manBtn,tbrk2,rsvBtn,msBtn,tbrk,dbpill'), f'上の帯：説明書は 所有ポイントの すぐ 右 ／ 2段目に（第4.122版の「結果待ち」と）ミッション ／ 3段目に マザーデータの 札（右よせ）（{hb2}）')
+        # 第4.139版（まさちゃん 11/10 11:32「ポイントと説明書→の方で、画面端に合わせて！」11:37「あと結果待ちと、ポイントの項目の端できるだけ合わせて！」11:38「この一枚目の赤線くらいに合わせて！」）：
+        #   説明書は 画面の 右はし（ミッション・マザーデータの 札と 同じ）・ポイントの 札は ロゴの すぐ 右から 説明書まで のびる・結果待ちの 左はしは ポイントの 札の 左はしと 同じ 線
+        check(abs(hb2['manR'] - 16) <= 1 and abs(hb2['msR'] - 16) <= 1 and 4 <= hb2['pL'] - hb2['brR'] <= 12 and abs(hb2['rvL'] - hb2['pL']) <= 1 and hb2['rvRow'] and hb2['pw'] >= 130,
+              f'第4.139版：説明書・ミッションは 画面の 右はし（右から {hb2["manR"]}・{hb2["msR"]}px）・ポイントの 札は ロゴの すぐ 右（{hb2["brR"]} → {hb2["pL"]}）から のびる（はば {hb2["pw"]}px）・結果待ちの 左はし {hb2["rvL"]} は 札の 左はしと 同じ 線')
+        check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません' in pt and '200P' in pt and '買ったポイントから先に使う' in pt and 'サブスクポイント → 購入ポイント → 獲得ポイント' in pt
+              and all(w in pt for w in ('購入ポイント', 'サブスクポイント', '獲得ポイント', 'ポイントは 合計 99,999P まで もてるよ', 'あと 98,499P 入るよ')), 'ポイントのカード：消えることの注意・1レース200P・使う順・内わけ 3つ（購入ポイント・サブスクポイント・獲得ポイント）・上限 99,999P（あと 98,499P）')
         cu = pg.locator('#setCustom').inner_text()
         check('Pカスタムで、自分だけのテンゲルを育てよう！' in cu and 'はじめから：単勝・馬単・3連単' in cu and cu.count('500P') >= 6 and '15,000P' in cu and pg.locator('#setCustom [data-pt=unlock1]').count() == 8, 'Pカスタム：券種6つ（1つ500P）・マザーデータの枠2つ（15,000P）')
         ms = pg.locator('#setMission').inner_text()
@@ -1047,14 +1057,14 @@ try:
         # 第4.84版（まさちゃん「このポイントの欄タップしたら、所持ポイントの確認と、ポイント&サブスクの購入選択画面が出てくるようにして！」）：「ポイントを買う」も 上の帯の 所有ポイントも ポイントの 窓
         po = pg.locator('#ptOv')
         pot = po.inner_text() if po.count() else ''
-        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and '合計 100P' in pot and '所持ポイント' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
-              f'「ポイントを買う」→ ポイントの窓（所持ポイント 100P・パック 4つ・サブスク 3つ）')
+        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and '合計 100P' in pot and 'ポイントの詳細' in pot and po.locator('#ptDetail h2').inner_text() == 'ポイントの詳細' and pg.evaluate("[...document.querySelectorAll('#ptOv #ptDetail .ptbk > div > span')].map(x => x.firstChild.textContent)") == ['購入ポイント', 'サブスクポイント', '獲得ポイント'] and 'ポイントは 合計 99,999P まで もてるよ' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
+              f'「ポイントを買う」→ ポイントの窓（第4.139版：いちばん 上に「ポイントの詳細」＝合計 100P と 購入ポイント・サブスクポイント・獲得ポイントの 3つ・上限の 行 ／ パック 4つ・サブスク 3つ）')
         # 買う（App内課金のかわり）：1,000P → 届く → finish（窓の 中で）
         pg.evaluate("window.__txn = 500; window.__iap.buy['jp.tengel.app.points1000'] = () => ({ ok: true, state: 'ok', tx: { id: String(++window.__txn), originalId: 'o1', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: false } }); 0")
         pg.evaluate("window.__bridge = []")
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         fin = [x for x in pg.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
-        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and '合計 1,100P' in po.inner_text() and '購入 1,100P' in pg.locator('#ptsPill').inner_text().replace('\n', ' '), '窓で 1,000Pのパックを買う → 1,100P（窓と 上の帯も かわる）・台帳に書いてから取引を終わらせる（finish）')
+        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and '合計 1,100P' in po.inner_text() and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 1,100P', '窓で 1,000Pのパックを買う → 1,100P（窓の 内わけ＝購入ポイント 1,000・獲得ポイント 100 と 上の帯の 合計も かわる）・台帳に書いてから取引を終わらせる（finish）')
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate('TengelWallet.total()') == 2100, 'もう一度買う（別の取引）→ 2,100P')
         pg.evaluate("window.__iap.buy['jp.tengel.app.points500'] = () => ({ ok: false, state: 'cancelled' }); 0")
@@ -1063,7 +1073,10 @@ try:
         po.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
         check(pg.locator('#ptOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')"), 'ポイントの窓を とじる')
         pg.click('#ptsPill'); pg.wait_for_timeout(500)
-        check(pg.locator('#ptOv').count() == 1 and '合計 2,100P' in pg.locator('#ptOv').inner_text(), '上の帯の 所有ポイントを 押すと ポイントの窓（いま 2,100P）')
+        pd = pg.evaluate("() => { const o = document.querySelector('#ptOv'), d = o && o.querySelector('#ptDetail'), b = o && o.querySelector('.msb'); if (!d) return null; const r = d.getBoundingClientRect(), h = o.querySelector('.msh').getBoundingClientRect(); return { top: Math.round(r.top - h.bottom), first: b.firstElementChild === d, st: b.scrollTop, big: d.querySelector('.ptbig').innerText.replace(/\\s+/g, ''), rows: [...d.querySelectorAll('.ptbk > div')].map(x => x.innerText.replace(/\\s+/g, ' ')) }; }")
+        check(pg.locator('#ptOv').count() == 1 and '合計 2,100P' in pg.locator('#ptOv').inner_text() and bool(pd) and pd['first'] and pd['st'] == 0 and 0 <= pd['top'] <= 40 and pd['big'] == '2,100P'
+              and pd['rows'] == ['購入ポイント パック・期限なし 2,000P', 'サブスクポイント 届いた日から30日 0P', '獲得ポイント はじめてのプレゼント・ミッション 100P'],
+              f'上の帯の 所有ポイントを 押すと ポイントの窓（いま 2,100P）。第4.139版（まさちゃん 11/10 11:46「ポイント欄を押すと、ポイントの詳細がわかる欄を作ってそこに飛ぶようにして！」）：開くと いちばん 上が「ポイントの詳細」（購入ポイント 2,000P・サブスクポイント 0P・獲得ポイント 100P）（{pd}）')
         pg.locator('#ptOv [data-ms=hist]').click(); pg.wait_for_timeout(600)
         check(pg.locator('#ptOv').count() == 0 and pg.locator('#v-set').is_visible() and pg.locator('#setPoints [data-pt=restore]').count() == 1, '窓の「ポイントの履歴・購入を復元」→ 設定タブのポイント（詳しく）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
@@ -1082,7 +1095,7 @@ try:
         check(pg.evaluate('TengelWallet.total()') == 6500, '同じ取引がまた届いても2回入れない')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         pt = pg.locator('#setPoints').inner_text()
-        check(pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['2,000P', '4,400P', '100P'] and 'サブスクのP：4,400P は' in pt and 'まで' in pt, f'ポイントのカード：内わけ（買ったP 2,000・サブスクのP 4,400・もらったP 100）と サブスクの期限（{pt[:120]}…）')
+        check(pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['2,000P', '4,400P', '100P'] and 'サブスクポイント：4,400P は' in pt and 'まで' in pt and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 6,500P', f'ポイントのカード：内わけ（購入ポイント 2,000・サブスクポイント 4,400・獲得ポイント 100）と サブスクの期限・上の帯は 合計「ポイント 6,500P」（{pt[:120]}…）')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(300)
         hist = pg.locator('#setPoints .pthist').inner_text()
         check('初回プレゼント' in hist and '+1,000P' in hist and '-400P' in hist and '解放' in hist and '月4,400Pプラン' in hist and pg.locator('#setPoints [data-pt=restore]').count() == 1, 'くわしく：履歴（プレゼント・買った・使った・解放・サブスク）と「購入を復元」')
@@ -1091,20 +1104,24 @@ try:
         pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(1200)
         check(pg.locator('.tabbar [data-tab=set] .tbdg').count() == 1, '受け取れるミッションがあると設定タブに印')
         # 第4.82版：上の帯の「ミッション」（説明書の 左・つぎまでの 数・受け取れる 数の 赤い 印）→ 押すと ミッションの 窓（ポイント・壁紙・見直し基準）→ そこで 受け取る
-        mb = pg.evaluate("() => { const b = document.querySelector('#msBtn'); if (!b) return null; const R = s => document.querySelector(s).getBoundingClientRect(); const r = R('#msBtn'), m = R('#manBtn'), pt = R('#ptsPill'), br = R('.brand'), db = R('#dbpill'); const bd = b.querySelector('.mbd'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot'), bd: (bd || {}).innerText, bdc: bd && getComputedStyle(bd).color, bdbg: bd && getComputedStyle(bd).backgroundColor, bdsvg: !!(bd && bd.querySelector('svg')), row1: Math.abs(m.y - pt.y) < 8 && Math.abs(pt.y - br.y) < 8 && pt.left > br.right && m.left > pt.right && m.right <= innerWidth - 8, row2: r.y > m.bottom && r.right > innerWidth / 2, row3: db.y > r.bottom, inTop: !!b.closest('header.top'), hdr: Math.round(R('header.top').height) }; }")
-        check(bool(mb) and mb['t'] == 'ミッション 10/15 1' and mb['hot'] and mb['bd'] == '1' and mb['bdc'] == 'rgb(31, 58, 14)' and mb['bdbg'] == 'rgb(212, 245, 166)' and mb['bdsvg'] and mb['row1'] and mb['row2'] and mb['row3'] and mb['inTop'] and mb['hdr'] <= 150,
-              f'上の帯：ロゴ・所有ポイント（2行）・説明書が 1段目 ／ 2段目の 右に「ミッション」（つぎまで 10/15・受け取れる 1 は うすい 黄緑の 四角に ふきだしの 絵と 数）／ 3段目の 右に マザーデータの札（{mb}）')
+        mb = pg.evaluate("() => { const b = document.querySelector('#msBtn'); if (!b) return null; const R = s => document.querySelector(s).getBoundingClientRect(); const r = R('#msBtn'), m = R('#manBtn'), pt = R('#ptsPill'), br = R('.brand'), db = R('#dbpill'); const bd = b.querySelector('.mbd'); return { t: b.innerText.replace(/\\s+/g, ' '), title: b.title, hot: b.classList.contains('hot'), bd: (bd || {}).innerText, bdc: bd && getComputedStyle(bd).color, bdbg: bd && getComputedStyle(bd).backgroundColor, bdsvg: !!(bd && bd.querySelector('svg')), row1: Math.abs(m.y - pt.y) < 8 && Math.abs(pt.y - br.y) < 8 && pt.left > br.right && m.left > pt.right && m.right <= innerWidth - 8, row2: r.y > m.bottom && r.right > innerWidth / 2, row3: db.y > r.bottom, inTop: !!b.closest('header.top'), hdr: Math.round(R('header.top').height) }; }")
+        # 第4.139版（まさちゃん 11/10 11:59「上のミッションの◯/◯のところは合計ミッション分にして、追加がある場合は、追加していけるようにして！」）：
+        #   ◯/◯＝達成した 数／ミッションの 合計（前は 記録の 数／つぎの 記録ミッションの 数「10/15」）。合計は 表から 数える（記録 12・帯 3・壁紙の 枚数 10・結果ボード 5・トレーニングセンター 4・思い出フィギュア 3＝37）
+        mall = pg.evaluate("() => { const P = TengelPoints; return P.MISSIONS.length + P.WALL_MISSIONS.length + P.WALLP_MISSIONS.length + P.BOARD_MISSIONS.length + P.TC_MISSIONS.length + P.FIG_MISSIONS.length; }")
+        check(mall == 37 and bool(mb) and mb['t'] == f'ミッション 1/{mall} 1' and mb['hot'] and mb['bd'] == '1' and mb['bdc'] == 'rgb(31, 58, 14)' and mb['bdbg'] == 'rgb(212, 245, 166)' and mb['bdsvg'] and mb['row1'] and mb['row2'] and mb['row3'] and mb['inTop'] and mb['hdr'] <= 150
+              and '達成 1／ぜんぶで 37' in mb['title'],
+              f'上の帯：ロゴ・所有ポイント・説明書が 1段目 ／ 2段目の 右に「ミッション」（達成 1／合計 {mall}・受け取れる 1 は うすい 黄緑の 四角に ふきだしの 絵と 数）／ 3段目の 右に マザーデータの札（{mb}）')
         rb = pg.evaluate("() => { const b = document.querySelector('#rsvBtn'), m = document.querySelector('#msBtn'); if (!b || !m) return null; const r = b.getBoundingClientRect(), q = m.getBoundingClientRect(); return { t: b.innerText.replace(/\\s+/g, ''), n: [...TengelLocal.mem.bets.values()].filter(x => x.rsv && x.rsv.state === 'reserved').length, has: b.classList.contains('has'), row: Math.abs(r.top - q.top) < 6 && r.right <= q.left + 1 && r.left >= 8, next: (b.nextElementSibling || {}).id }; }")
         check(bool(rb) and rb['n'] >= 1 and rb['t'] == f'結果待ち{rb["n"]}' and rb['has'] and rb['row'] and rb['next'] == 'msBtn', f'第4.122版：2段目の「ミッション」の 左に「結果待ち」と 予約済み・結果待ちの レースの 数（{rb}）')
         pg.click('#msBtn'); pg.wait_for_timeout(500)
         ov = pg.locator('#msOv')
         ovt = ov.inner_text() if ov.count() else ''
-        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() == 0 and 'マザーデータ①〜③のレースで進む' in ov.locator('#msRev').inner_text() and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
+        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and ov.locator('.msn').inner_text().replace('\n', '・') == '達成 1/37・受け取れるのが 1つ！' and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() == 0 and 'マザーデータ①〜③のレースで進む' in ov.locator('#msRev').inner_text() and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
               '「ミッション」を押すと ミッションの窓：ポイントミッション（受け取る 1つ）・壁紙ミッション（3つ）・見直し基準の進み具合（テンゲルデータの ときは 数を 出さずに「マザーデータ①〜③のレースで進む」：第4.123版）')
         ov.locator('#msPts [data-pt=claim]').click(); pg.wait_for_timeout(700)
         mb2 = pg.evaluate("() => { const b = document.querySelector('#msBtn'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot') }; }")
-        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取りずみ' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 10/15' and not mb2['hot'],
-              f'窓で「受け取る」→ 500P（無償の枠）・窓の行は受け取りずみ・上の「ミッション」の赤い印と設定タブの印が消える（{mb2}）')
+        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取りずみ' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 1/37' and not mb2['hot'] and ov.locator('.msn').inner_text().strip() == '達成 1/37',
+              f'窓で「受け取る」→ 500P（獲得ポイント）・窓の行は受け取りずみ・上の「ミッション」の 印と設定タブの印が消える（達成の 数 1/37 は そのまま）（{mb2}）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_mission_ov.png'), full_page=False)
         ov.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
         check(pg.locator('#msOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')") and pg.evaluate("document.activeElement && document.activeElement.id") == 'msBtn', '「とじる」で窓が閉じる（「ミッション」にもどる）')
@@ -1733,20 +1750,23 @@ try:
         p8.click('#msBtn'); p8.wait_for_timeout(600)
         ov8 = p8.locator('#msOv')
         MSI = """() => { const ov = document.querySelector('#msOv'); if (!ov) return null; const rows = s => [...ov.querySelectorAll(s + ' .msrow')].map(r => r.dataset.mid + (r.classList.contains('can') ? '*' : '')); const txt = s => (ov.querySelector(s) || {}).innerText || '';
-          return { n: txt('.msn'), board: rows('#msBoard'), wallp: rows('#msWallp'), wall: rows('#msWall'), h2: [...ov.querySelectorAll('h2')].map(h => h.innerText.trim()), last: txt('#msWallp .msrow[data-mid="mission-wallp-45"] .md'), b3: txt('#msBoard .msrow[data-mid="mission-board-3"] .mn'), w3: txt('#msWallp .msrow[data-mid="mission-wallp-3"] .mn'),
+          return { n: txt('.msn'), board: rows('#msBoard'), wallp: rows('#msWallp'), wall: rows('#msWall'), h2: [...ov.querySelectorAll('h2')].map(h => h.innerText.trim()), last: txt('#msWallp .msrow[data-mid="mission-wallp-40"] .md'), has45: !!ov.querySelector('.msrow[data-mid="mission-wallp-45"]'), mp: (document.querySelector('#msBtn .mp') || {}).innerText || '', b3: txt('#msBoard .msrow[data-mid="mission-board-3"] .mn'), w3: txt('#msWallp .msrow[data-mid="mission-wallp-3"] .mn'),
             bhint: txt('#msBoard .hint'), whint: txt('#msWallp .hint'), claims: ov.querySelectorAll('[data-pt=claim]').length }; }"""
         mi = p8.evaluate(MSI)
-        check(bool(mi) and mi['n'] == '受け取れるのが 8つ！' and mi['board'] == ['mission-board-3*', 'mission-board-6*', 'mission-board-9*', 'mission-board-12*', 'mission-board-15'] and len(mi['wallp']) == 11 and mi['wallp'][:4] == ['mission-wallp-3*', 'mission-wallp-6*', 'mission-wallp-9*', 'mission-wallp-12']
-              and mi['wall'] == ['mission-wall-8*', 'mission-wall-16', 'mission-wall-25'] and 'いまは 40枚まで' in mi['last'] and '結果ボードカスタム 3こ解放' in mi['b3'] and '500P' in mi['b3'] and '壁紙 3枚解放' in mi['w3'] and '800P' in mi['w3']
+        # 第4.139版：壁紙の 枚数の 行は 10こ（40枚まで・45枚の 行は ない）・窓の 上は「達成 n/37」と 受け取れる 数（上の「ミッション」の ◯/◯ と 同じ 数）
+        check(bool(mi) and re.fullmatch(r'達成 (\d+)/37\n受け取れるのが 8つ！', mi['n']) and mi['n'].split('\n')[0] == '達成 ' + mi['mp'] and int(mi['mp'].split('/')[0]) >= 8
+              and mi['board'] == ['mission-board-3*', 'mission-board-6*', 'mission-board-9*', 'mission-board-12*', 'mission-board-15'] and len(mi['wallp']) == 10 and mi['wallp'][:4] == ['mission-wallp-3*', 'mission-wallp-6*', 'mission-wallp-9*', 'mission-wallp-12']
+              and mi['wallp'][-1] == 'mission-wallp-40' and not mi['has45']
+              and mi['wall'] == ['mission-wall-8*', 'mission-wall-16', 'mission-wall-25'] and '（11/40）' in mi['last'] and '結果ボードカスタム 3こ解放' in mi['b3'] and '500P' in mi['b3'] and '壁紙 3枚解放' in mi['w3'] and '800P' in mi['w3']
               and 'いま 14こ' in mi['bhint'] and 'いま 11枚' in mi['whint'] and '40枚まで' in mi['whint'] and mi['claims'] == 8 and any('結果ボードカスタム' in h for h in mi['h2']),
-              f'ミッションの 窓：「結果ボードカスタムミッション」（3・6・9・12 受け取れる・15 は まだ）・壁紙ミッションの 下に 枚数の 11行（3・6・9 受け取れる・45 は「いまは 40枚まで」）・帯の 3行は そのまま（{mi and {k: mi[k] for k in ("n", "board", "last", "claims")}}）')
+              f'ミッションの 窓：「結果ボードカスタムミッション」（3・6・9・12 受け取れる・15 は まだ）・壁紙ミッションの 下に 枚数の 10行（3・6・9 受け取れる・さいごは 40枚・45枚の 行は ない）・帯の 3行は そのまま・上は「達成 n/37」（{mi and {k: mi[k] for k in ("n", "mp", "board", "last", "claims")}}）')
         ov8.locator('#msBoard [data-pt=claim][data-id="mission-board-3"]').click(); p8.wait_for_timeout(800)
         t8b = p8.locator('#toast').inner_text(); u4 = p8.evaluate(BUN)
         ov8.locator('#msWallp [data-pt=claim][data-id="mission-wallp-9"]').click(); p8.wait_for_timeout(800)
         t8w = p8.locator('#toast').inner_text(); u5 = p8.evaluate(BUN); mi2 = p8.evaluate(MSI)
         check('結果ボードカスタム 3こ解放' in t8b and '500P' in t8b and u4['free'] == u3['free'] + 500 and u4['badge'] == '7' and '壁紙 9枚解放' in t8w and '1,500P' in t8w and u5['free'] == u3['free'] + 2000 and u5['total'] == u3['total'] + 2000 and u5['badge'] == '6'
-              and mi2['board'][0] == 'mission-board-3' and mi2['wallp'][2] == 'mission-wallp-9' and mi2['n'] == '受け取れるのが 6つ！' and p8.evaluate("TengelWallet.events().filter(e => /^mission-(board|wallp)-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()") == 'mission-board-3:500:free,mission-wallp-9:1500:free',
-              f'窓で 受け取る → 結果ボードカスタム 3こ 500P・壁紙 9枚 1,500P（もらったP）・行は 受け取りずみ・上の 数は 8 → 7 → 6（{t8b}／{t8w}）')
+              and mi2['board'][0] == 'mission-board-3' and mi2['wallp'][2] == 'mission-wallp-9' and mi2['n'].endswith('受け取れるのが 6つ！') and mi2['mp'] == mi['mp'] and p8.evaluate("TengelWallet.events().filter(e => /^mission-(board|wallp)-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()") == 'mission-board-3:500:free,mission-wallp-9:1500:free',
+              f'窓で 受け取る → 結果ボードカスタム 3こ 500P・壁紙 9枚 1,500P（獲得ポイント）・行は 受け取りずみ・上の 数は 8 → 7 → 6（達成の 数は 受け取っても 同じ）（{t8b}／{t8w}）')
         # 帯の シルバーを 受け取る → 帯も 枚数に 数える（11 → 12枚）→ 壁紙 12枚が 受け取れる（6 − 1 ＋ 1 ＝ 6）
         ov8.locator('#msWall [data-pt=claim][data-id="mission-wall-8"]').click(); p8.wait_for_timeout(800)
         mi3 = p8.evaluate(MSI); u6 = p8.evaluate(BUN)
@@ -1970,11 +1990,11 @@ try:
         p5 = ctx5.new_page(); p5.on('pageerror', lambda e: errs.append('TEST ' + str(e)))
         p5.goto(TESTURL); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(700)
         tb = p5.evaluate("(() => ({ total: TengelWallet.total(), tag: (document.querySelector('#testTag') || {}).innerText, pill: document.querySelector('#ptsPill').innerText.replace(/\\s+/g, ' '), first: document.querySelector('#v-set > .card').id, btns: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.innerText), kinds: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.dataset.kind), ev: TengelWallet.events().map(e => e.id + ':' + e.amount) }))()")
-        check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and '購入 10,000P' in tb['pill'] and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', 'ノーマルど的中', '極ど的中', 'ハズレ', 'プレミアムど的中', '超神様的中', '超プレミアム神様的中', '神様極的中'] and tb['kinds'] == ['hit', 'big', 'nd', 'sd', 'miss', 'pc', 'sgd', 'spg', 'gk'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500'],
+        check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and tb['pill'] == 'ポイント 10,000P' and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', 'ノーマルど的中', '極ど的中', 'ハズレ', 'プレミアムど的中', '超神様的中', '超プレミアム神様的中', '神様極的中'] and tb['kinds'] == ['hit', 'big', 'nd', 'sd', 'miss', 'pc', 'sgd', 'spg', 'gk'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500'],
               f'テスト版：はじめから ちょうど 10,000P（初回の 1,500P＋テスト版の 8,500P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（的中ボタン 9こ：第4.86版 隠れど的中・超プレミアムど的中・神様的中は なし・第4.117版 神様極的中）（{tb}）')
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(300)
         p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(400)
-        check(p5.evaluate('TengelWallet.total()') == 20000 and '購入 20,000P' in p5.locator('#ptsPill').inner_text().replace('\n', ' '), 'テスト版：「10,000P 足す」で 20,000P（上の帯も かわる）')
+        check(p5.evaluate('TengelWallet.total()') == 20000 and p5.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 20,000P', 'テスト版：「10,000P 足す」で 20,000P（上の帯の 合計も かわる）')
         # 第4.114版：テスト版の 道具「お得パック：買ったことにする」→ 壁紙パックも 結果ボードカスタムも 持って いる（App Store の 買い物は しない）
         p5.locator('#setTest [data-test=uown]').click(); p5.wait_for_timeout(600)
         ub = p5.evaluate("({ own: TengelWallet.bundle.owned(), b: TengelWallet.board.info().owned, p: TengelKisekae.pack().owned, st: document.querySelector('#testBundle').innerText, toast: document.querySelector('#toast').innerText, buy: document.querySelectorAll('#setBoard [data-bcact=buy], #setBoard [data-bcact=bundle], #setKisekae .kspk [data-ksact=pkbuy], #setKisekae .kspk [data-ksact=bundle]').length })")
@@ -2165,6 +2185,207 @@ try:
               f'神様極的中の 思い出ボード：神様馬の わく（f-god）・見出し「神様極的中！！！」・帯は 超大穴と 大穴（PUSH・動画なし）（{mo}）')
         pG.evaluate('TengelFx.close()')
         ctxG.close()
+        # ---- 第4.139版：上限 99,999P・あずかりポイント（まさちゃん 11/10 11:46「ポイントの上限は、99999までにして！」「事前に、99999まで入るようにして作ってみて！」・
+        #      12:27「99999pに到達しながらサブスクに入っている人は、ミッションのところで超えてしまっているポイントが溜まっていくようにして！で、使って減った分は、溜まってるポイントから補充できるようによろしく！」）----
+        mC = {}
+        def markerC(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': mC[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': mC.pop(key, None); return {'ok': True}
+            v = mC.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        ctxC = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctxC.add_init_script(FAKE)
+        ctxC.expose_binding('__saveBackup', lambda s, t: None); ctxC.expose_binding('__marker', markerC)
+        pC = ctxC.new_page(); pC.on('pageerror', lambda e: errs.append('CAP ' + str(e)))
+        pC.goto(TESTURL); pC.wait_for_timeout(1500); gate(pC); pC.wait_for_timeout(700)
+        pC.click('.tabbar button[data-tab=set]'); pC.wait_for_timeout(300)
+        CI = """() => { const b = TengelWallet.balance(), t = document.querySelector('#toast'), m = document.querySelector('#msBtn'), bd = m.querySelector('.mbd');
+          return { total: b.total, pack: b.paid_pack, sub: b.paid_sub, free: b.free, hold: TengelWallet.hold(), avail: TengelWallet.avail(), pill: document.querySelector('#ptsPill').innerText.replace(/\\s+/g, ' '),
+            badge: bd ? bd.innerText : '', toast: t && !t.hidden ? t.textContent : '' }; }"""
+        pC.locator('#setTest [data-test=pts100]').click(); pC.wait_for_timeout(500)
+        c1 = pC.evaluate(CI)
+        hg = pC.evaluate("""() => { const R = s => document.querySelector(s).getBoundingClientRect(); const p = R('#ptsPill'), v = R('#ptsPill .pv'), l = R('#ptsPill .pl'), m = R('#manBtn'), br = R('header.top .brand'), rv = R('#rsvBtn');
+          return { row: Math.abs(p.top - m.top) < 8 && Math.abs(p.top - br.top) < 12, inside: l.left >= p.left + 3 && v.right <= p.right - 3 && l.right <= v.left, manR: +(innerWidth - m.right).toFixed(1), pL: +p.left.toFixed(1), rvL: +rv.left.toFixed(1), cls: document.querySelector('#ptsPill').className, sw: document.documentElement.scrollWidth }; }""")
+        check(c1['total'] == 99999 and c1['pill'] == 'ポイント 99,999P' and c1['hold']['total'] == 0 and '89,999P' in c1['toast'] and pC.evaluate('TengelPoints.CAP') == 99999,
+              f'テスト版：「上限（99,999P）まで 足す」→ ちょうど 99,999P（上の帯「ポイント 99,999P」）（{c1}）')
+        check(hg['row'] and hg['inside'] and abs(hg['manR'] - 16) <= 1 and abs(hg['rvL'] - hg['pL']) <= 1 and hg['cls'] == '' and hg['sw'] <= 390,
+              f'上の帯：99,999P でも 札の 中に 入る（「ポイント」と 数が 札の 中・つめない）・説明書は 同じ 段の 右はし・結果待ちの 左はしは 札と 同じ 線・横に はみ出さない（{hg}）')
+        pC.locator('#setTest [data-test=pts]').click(); pC.wait_for_timeout(400)
+        c2 = pC.evaluate(CI)
+        check(c2['total'] == 99999 and 'いっぱい' in c2['toast'], f'上限の ときは「10,000P 足す」を 押しても ふえない（「いっぱい」と 知らせる）（{c2["toast"]}）')
+        # 買う：上限を こえる パック・サブスクは 買う 前に 止める（App Store を よばない）
+        pC.evaluate("window.__bridge = []"); pC.click('#ptsPill'); pC.wait_for_timeout(600)
+        pb = pC.evaluate("""() => { const o = document.querySelector('#ptOv'); const dis = s => [...o.querySelectorAll(s + ' [data-pt=buy]')].map(b => b.disabled); o.querySelectorAll('[data-pt=buy]').forEach(b => b.click());
+          return { pack: dis('#ptBuy'), sub: dis('#ptSub'), tb: o.querySelector('#ptBuy').innerText, ts: o.querySelector('#ptSub').innerText, det: o.querySelector('#ptDetail').innerText }; }""")
+        pC.wait_for_timeout(300)
+        buys = [x for x in pC.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload'].get('op') == 'buy']
+        check(pb['pack'] == [True] * 4 and pb['sub'] == [True] * 3 and '足すと こえる パックは 買えないよ' in pb['tb'] and 'プランは はじめられないよ' in pb['ts'] and 'いま いっぱい' in pb['det'] and not buys,
+              f'上限の とき：ポイントの 窓の「買う」4つ・「はじめる」3つは 押せない（わけを 出す）・App Store は よばない（{len(buys)}回）')
+        pC.evaluate("TengelWallet.closePoints()"); pC.wait_for_timeout(200)
+        # ミッション：入らない あいだは 受け取りを 待つ（消えない）
+        pC.evaluate("() => { localStorage.setItem('tengel.tc', JSON.stringify({ v: 1, total: 60 })); document.dispatchEvent(new CustomEvent('tengel:tc')); }"); pC.wait_for_timeout(300)
+        pC.evaluate("TengelWallet.claim('mission-tc-50')"); pC.wait_for_timeout(500)
+        c3 = pC.evaluate(CI)
+        check(c3['total'] == 99999 and c3['badge'] == '1' and 'こえるよ' in c3['toast'] and 'ミッションは 消えないよ' in c3['toast'] and not pC.evaluate("TengelWallet.events().some(e => e.id === 'mission-tc-50')"),
+              f'上限の とき：ミッション（500P）は 受け取れない（あとで 受け取れる・上の 数は 1 の まま）（{c3["toast"]}）')
+        # サブスクの 更新が 届く（上限）→ こえた ぶんは あずかりポイント
+        pC.locator('#setTest [data-test=ptsub]').click(); pC.wait_for_timeout(600)
+        c4 = pC.evaluate(CI)
+        check(c4['total'] == 99999 and c4['hold'] == {'total': 9200, 'paid_sub': 9200, 'paid_pack': 0, 'free': 0} and c4['avail'] == 99999 and 'あずかったよ' in c4['toast'] and '9,200P' in c4['toast'] and c4['badge'] == '1' and c4['pill'] == 'ポイント 99,999P',
+              f'上限の ときに サブスク 9,200P が 届く → 台帳は 99,999P の まま・9,200P は あずかりポイント（知らせる・上の 数は まだ ふえない）（{c4["hold"]}）')
+        pC.click('#msBtn'); pC.wait_for_timeout(600)
+        HC = """() => { const c = document.querySelector('#msHoldCard'), b = c && c.querySelector('[data-pt=refill]'), r = c && c.querySelector('.msrow[data-mid=hold]');
+          return c ? { hidden: c.hidden, first: document.querySelector('#msOv .msb').firstElementChild === c, h2: c.querySelector('h2').innerText, t: c.innerText.replace(/\\s+/g, ' '), dis: b ? b.disabled : null, can: r ? r.classList.contains('can') : null, msn: document.querySelector('#msOv .msn').innerText } : null; }"""
+        h1 = pC.evaluate(HC)
+        check(bool(h1) and not h1['hidden'] and h1['first'] and h1['h2'] == 'あずかりポイント' and 'あずかり中 9,200P' in h1['t'] and 'サブスクポイント 9,200P' in h1['t'] and 'いまは いっぱい' in h1['t'] and h1['dis'] is True and h1['can'] is False
+              and '補充した 日から 30日' in h1['t'], f'ミッションの 窓の いちばん 上に「あずかりポイント」（あずかり中 9,200P・サブスクポイント）。いっぱいの あいだは「補充する」は 押せない（{h1 and h1["t"][-60:]}）')
+        pC.evaluate("TengelWallet.closeMissions()"); pC.wait_for_timeout(200)
+        # 使う（500P）→ あきが できる → 上の 数に 1つ ふえる → 補充する
+        okU = pC.evaluate("TengelWallet.unlock('type:複勝', 500)"); pC.wait_for_timeout(500)
+        c5 = pC.evaluate(CI)
+        check(okU and c5['total'] == 99499 and c5['hold']['total'] == 9200 and c5['avail'] == 99999 and c5['badge'] == '2' and c5['pill'] == 'ポイント 99,499P', f'500P 使う → 99,499P・上の「ミッション」の 数が 1 → 2（あずかりを 補充できる）（{c5}）')
+        pC.click('#msBtn'); pC.wait_for_timeout(600)
+        h2 = pC.evaluate(HC)
+        check(h2['dis'] is False and h2['can'] is True and 'いま 補充できるのは 500P' in h2['t'] and h2['msn'].endswith('受け取れるのが 2つ！'), f'あずかりポイント：「いま 補充できるのは 500P」・「補充する」が 押せる（{h2["msn"]}）')
+        pC.locator('#msHoldCard [data-pt=refill]').click(); pC.wait_for_timeout(900)
+        c6 = pC.evaluate(CI); h3 = pC.evaluate(HC)
+        rel = pC.evaluate("TengelWallet.events().filter(e => e.from === 'hold').map(e => ({ id: e.id, kind: e.kind, bucket: e.bucket, amount: e.amount, days: Math.round((Date.parse(e.expires) - Date.parse(e.at)) / 86400000), product: e.product }))")
+        check(c6['total'] == 99999 and c6['sub'] == 500 and c6['hold'] == {'total': 8700, 'paid_sub': 8700, 'paid_pack': 0, 'free': 0} and c6['badge'] == '1' and '補充したよ' in c6['toast'] and '500P' in c6['toast'] and 'のこり 8,700P' in c6['toast']
+              and len(rel) == 1 and rel[0]['id'].startswith('rel-tx-test-') and rel[0]['id'].endswith('-1') and rel[0]['kind'] == 'sub' and rel[0]['bucket'] == 'paid_sub' and rel[0]['amount'] == 500 and rel[0]['days'] == 30 and rel[0]['product'] == 'jp.tengel.app.sub9200'
+              and 'あずかり中 8,700P' in h3['t'] and h3['dis'] is True,
+              f'「補充する」→ 500P が サブスクポイントに 入って 99,999P・あずかり 8,700P（期限は 補充した 日から 30日・上の 数は 2 → 1）（{c6["toast"]}・{rel}）')
+        pC.evaluate("TengelWallet.closeMissions()"); pC.wait_for_timeout(200)
+        # ポイントの詳細・履歴に あずかりポイント
+        pC.click('#ptsPill'); pC.wait_for_timeout(500)
+        dt = pC.locator('#ptOv #ptDetail').inner_text().replace('\n', ' ')
+        check('あずかりポイント：8,700P' in dt and '「ミッション」で 補充できるよ' in dt and 'あずかり 8,700P' in pC.evaluate("document.querySelector('#ptsPill').title"), 'ポイントの詳細に「あずかりポイント：8,700P」（札の title にも）')
+        pC.evaluate("TengelWallet.closePoints()"); pC.wait_for_timeout(200)
+        pC.evaluate("() => { const b = document.querySelector('#setPoints [data-pt=show][data-v=hist]'); if (b.getAttribute('aria-pressed') !== 'true') b.click(); }"); pC.wait_for_timeout(400)
+        hs = pC.evaluate("[...document.querySelectorAll('#setPoints .pthist li')].map(x => x.innerText.replace(/\\s+/g, ' '))")
+        check(any('あずかりポイントから 補充（月9,200Pプラン' in x and x.endswith('+500P') for x in hs) and any('月9,200Pプラン（9,200P は あずかり）' in x for x in hs),
+              f'履歴：「あずかりポイントから 補充（月9,200Pプラン…）+500P」・届いた 行は「月9,200Pプラン（9,200P は あずかり）」（{hs[:3]}）')
+        # トレーニングセンターの 当たり（上限）→ あずかり（獲得ポイント）・同じ id は 2回 入らない
+        g1 = pC.evaluate("TengelWallet.grant('tc-cap-1', 300, 'トレーニングセンターの お世話')"); pC.wait_for_timeout(400)
+        c7 = pC.evaluate(CI); g2 = pC.evaluate("TengelWallet.grant('tc-cap-1', 300, 'トレーニングセンターの お世話')")
+        check(g1 is True and g2 is False and c7['total'] == 99999 and c7['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300} and 'あずかったよ' in c7['toast'],
+              f'上限の ときの トレーニングセンターの 当たり 300P → 消さずに あずかる（獲得ポイント）・同じ 当たりは 2回 入らない（{c7["hold"]}）')
+        # あとから 届いた パック（上限）→ あずかり・台帳には 0P の できごと・取引は 終わらせる。返金 → あずかりも 消える
+        pC.evaluate("window.__iap.finished = []; window.__nativeEvent('iap', { id: '7001', originalId: 'o7', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: false })"); pC.wait_for_timeout(700)
+        c8 = pC.evaluate(CI)
+        e8 = pC.evaluate("(e => e && { amount: e.amount, held: e.held, kind: e.kind })(TengelWallet.events().find(e => e.id === 'tx-7001'))")
+        check(c8['total'] == 99999 and c8['hold']['paid_pack'] == 1000 and c8['hold']['total'] == 10000 and e8 == {'amount': 0, 'held': 1000, 'kind': 'purchase'} and pC.evaluate("window.__iap.finished") == ['7001'] and 'あずかったよ' in c8['toast'],
+              f'上限の ときに 届いた パック 1,000P → あずかり（購入ポイント）・台帳には 0P の できごと（同じ 取引は 2回 入らない）・取引は 終わらせる（{e8}）')
+        pC.evaluate("window.__nativeEvent('iap', { id: '7001', originalId: 'o7', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); pC.wait_for_timeout(700)
+        c9 = pC.evaluate(CI)
+        check(c9['total'] == 99999 and c9['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300}, f'その パックが 返金 → あずかりの 1,000P も 消える（ほかの あずかりは そのまま）（{c9["hold"]}）')
+        # 足りなくて 使えない ときは、あずかりから 先に 補充してから 使う（「使えるか」は 財布＋あずかりで 見る）
+        pC.evaluate("TengelWallet.unlock('test:big', 99600)"); pC.wait_for_timeout(400)
+        c10 = pC.evaluate(CI)
+        okA = pC.evaluate("TengelWallet.unlock('type:枠複', 500)"); pC.wait_for_timeout(500)
+        c11 = pC.evaluate(CI)
+        check(c10['total'] == 399 and c10['avail'] == 9399 and okA and c11['total'] == 399 + 9000 - 500 and c11['hold']['total'] == 0 and c11['badge'] == '1',
+              f'財布 399P・あずかり 9,000P の ときに 500P の 解放 → あずかりから 先に 補充（9,000P）してから 使う → 8,899P・あずかり 0（{c10["total"]}／{c10["avail"]} → {c11["total"]}）')
+        # あきが できた ので ミッションを 受け取れる・開き直しても あずかりは 残る
+        pC.evaluate("TengelWallet.claim('mission-tc-50')"); pC.wait_for_timeout(500)
+        check(pC.evaluate("TengelWallet.events().some(e => e.id === 'mission-tc-50')") and pC.evaluate('TengelWallet.total()') == 8899 + 500, 'あきが できたら 待って いた ミッション（500P）を 受け取れる')
+        pC.locator('#setTest [data-test=pts100]').click(); pC.wait_for_timeout(400); pC.locator('#setTest [data-test=ptsub]').click(); pC.wait_for_timeout(600)
+        pC.reload(); pC.wait_for_timeout(1500); gate(pC); pC.wait_for_timeout(900)
+        c12 = pC.evaluate(CI)
+        check(c12['total'] == 99999 and c12['hold']['total'] == 9200 and c12['hold']['paid_sub'] == 9200 and pC.evaluate("TengelWallet.snapshot().hold.length") == 1, f'開き直しても あずかりポイントは 残る（台帳と いっしょに 保存・自動バックアップにも 入る）（{c12["hold"]}）')
+        ctxC.close()
+        # ---- 第4.139版：ポイントを 不正に ふやせる 抜け穴を ふさぐ（まさちゃん 11/10 12:27「販売版で、ポイントを不正に増やせる抜け穴みたいのって今のテンゲルに存在する？防ぐための仕組みが必要ならアイディアを出してから組み込んでみて！」）----
+        mS = {}
+        def markerS(source, q):
+            op, key = q.get('op'), q.get('key')
+            if op == 'set': mS[key] = q.get('value', '1'); return {'ok': True}
+            if op == 'del': mS.pop(key, None); return {'ok': True}
+            v = mS.get(key); return {'ok': True, 'has': v is not None, 'value': v}
+        ctxS = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP'); ctxS.add_init_script(FAKE)
+        ctxS.expose_binding('__saveBackup', lambda s, t: None); ctxS.expose_binding('__marker', markerS)
+        pS = ctxS.new_page(); pS.on('pageerror', lambda e: errs.append('SEC ' + str(e)))
+        pS.goto(APPURL); pS.wait_for_timeout(1500); gate(pS); pS.wait_for_timeout(700)
+        # ① 書きかえた バックアップの ファイル：ポイントの 台帳（auto の しるし つき）は 読まない・字は 無害に する（タグに ならない）
+        XS = '"><i data-xss="1">X</i><img src="x" data-xss="2">'
+        forged = {'app': 'tengel3', 'appVer': 'x', 'at': '2026-10-01T03:00:00.000Z', 'auto': True,
+                  'wallet': {'id': 'wallet', 'v': 1, 'device': 'evil', 'events': [{'id': 'gift-first', 'kind': 'gift', 'bucket': 'free', 'amount': 1500, 'at': '2026-10-01T03:00:00.000Z'}, {'id': 'gift-x', 'kind': 'gift', 'bucket': 'free', 'amount': 98499, 'at': '2026-10-01T03:00:00.000Z'}], 'paid': [], 'counted': {}},
+                  'bets': [{'id': 'xs' + str(i), 'date': '2026-10-0' + str(i + 1), 'venue': 'V' + XS, 'r': str(7 + i) + XS, 'rname': 'N' + XS, 'n': '14' + XS, 'types': ['馬単' + XS], 'n1': 5, 'n2': 2, 'n3': 1, 'p1': 3, 'p2': 1, 'p3': 2, 'stake': '600', 'payout': '0', 'horses': [],
+                            'snap': {'L': 'A' + XS, 'kubun': 'A'}, 'rsv': {'state': st_, 'types': ['馬単'], 'bets': {'馬単' + XS: [[5, 2]]}, 'at': '2026-10-01T03:00:00.000Z', 'start': '23:59'}, 'mem': {'at': '2026-10-01T03:00:00.000Z', 'v': 'a'}}
+                           for i, st_ in enumerate(['done', 'reserved', 'given'])],
+                  'settings': {'zones': None}, 'slots': {'names': {'2': 'S' + XS}, 'active': 1, 'data': {}}}
+        ffn = os.path.join(W, 't4', 'forged_backup.json'); open(ffn, 'w', encoding='utf8').write(json.dumps(forged, ensure_ascii=False))
+        pS.click('.tabbar button[data-tab=set]'); pS.wait_for_timeout(300)
+        t0 = pS.evaluate('TengelWallet.total()'); emp = pS.evaluate('TengelWallet.isEmpty()')
+        pS.set_input_files('#pwaRestoreFile', ffn); pS.wait_for_timeout(1500)
+        fi = pS.evaluate("""() => ({ total: TengelWallet.total(), ev: TengelWallet.events().map(e => e.id), bets: TengelLocal.mem.bets.size, info: document.querySelector('#pwaBkInfo').textContent,
+          bad: [...TengelLocal.mem.bets.values()].filter(b => [b.r, b.venue, b.rname, b.n, (b.types || []).join(), Object.keys(b.rsv.bets).join(), (b.snap || {}).L].some(v => /[<>"'`]/.test(String(v)))).length,
+          r: String([...TengelLocal.mem.bets.values()].map(b => b.r)[0]) })""")
+        check(emp and t0 == 1500 and fi['total'] == 1500 and fi['ev'] == ['gift-first'] and fi['bets'] == 3 and '記録3件を戻したよ' in fi['info'] and 'ポイント' not in fi['info'],
+              f'抜け穴①：書きかえた バックアップ（ポイントの 台帳 99,999P と auto の しるし）を「バックアップから戻す」で 読ませても ポイントは ふえない（記録だけ 戻る）（{fi["total"]}P・{fi["info"][:40]}）')
+        check(fi['bad'] == 0 and '＜' in fi['r'] and '”' in fi['r'], f'ファイルから 読んだ 字は < > " \' ` を 全角に かえてから 入れる（数の 欄・券種の 名前・見出しの 名前も）（{fi["r"][:24]}…）')
+        XN = "() => document.querySelectorAll('[data-xss]').length"
+        pS.click('.tabbar button[data-tab=rec]'); pS.wait_for_timeout(500)
+        pS.evaluate("() => { const b = document.querySelector('button[data-ym=m][data-v=\"0\"]'); if (b) b.click(); }"); pS.wait_for_timeout(500)
+        x1 = pS.evaluate(XN); seen1 = pS.evaluate("() => (document.body.innerText.match(/data-xss/g) || []).length")
+        pS.evaluate("() => { document.querySelectorAll('#recList details').forEach(d => { d.open = true; }); const r = document.querySelector('#recList .lrow .lmain'); if (r) r.click(); }"); pS.wait_for_timeout(500)
+        x2 = pS.evaluate(XN)
+        pS.evaluate("() => document.querySelector('#rsvBtn').click()"); pS.wait_for_timeout(600); x3 = pS.evaluate(XN)
+        pS.evaluate("() => { const b = document.querySelector('.tgov [data-ms=close], .tgov .btn'); if (b) b.click(); }"); pS.wait_for_timeout(300)
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=stats]').click()"); pS.wait_for_timeout(500); x4 = pS.evaluate(XN)
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=set]').click()"); pS.wait_for_timeout(500); x5 = pS.evaluate(XN)
+        check(seen1 >= 3 and [x1, x2, x3, x4, x5] == [0, 0, 0, 0, 0], f'読ませた 字は どの 画面でも タグに ならない（字と して 出る：記録の 一覧・開いた 行・結果待ちの 窓・実測・設定）（字 {seen1}こ・タグ {[x1, x2, x3, x4, x5]}）')
+        # 台帳に じかに 入った おかしな 字（前の 版の データなど）でも、記録の 一覧の R・層の 札は タグに ならない
+        pS.evaluate("""(C) => TengelLocal.putBets([{ id: 'xsraw', date: '2026-10-05', venue: 'V', r: '9' + C, rname: 'N', n: 14, types: ['馬単'], n1: 5, n2: 2, n3: 1, p1: 3, p2: 1, p3: 2, stake: '600', payout: '0', horses: [], snap: { L: 'B' + C, kubun: 'B' },
+          rsv: { state: 'done', types: ['馬単'], bets: { '馬単': [[5, 2]] }, result: { p: [[5], [2], [1]] }, fx: 'miss', at: new Date().toISOString() }, mem: { at: new Date().toISOString(), v: 'a' } }])""", XS); pS.wait_for_timeout(400)
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(600)
+        check(pS.evaluate(XN) == 0 and pS.evaluate("() => (document.querySelector('#recList').innerText.match(/data-xss/g) || []).length") >= 2, '台帳に じかに 入った 字でも、記録の 一覧の R・層の 札は 字と して 出る（タグに ならない）')
+        # ② タグに 書いた スクリプト（onerror など）は 動かない（Content-Security-Policy）・ページに タグの スクリプトは ない
+        csp = pS.evaluate("(document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]') || {}).content || ''")
+        pS.evaluate("() => { window.__xssRan = 0; const d = document.createElement('div'); d.id = 'cspProbe'; d.innerHTML = '<img src=\"missing-x.png\" onerror=\"window.__xssRan = 1\"><button id=\"cspBtn\" onclick=\"window.__xssRan = 2\">x</button>'; document.body.appendChild(d); document.querySelector('#cspBtn').click(); }")
+        pS.wait_for_timeout(700)
+        ran = pS.evaluate("window.__xssRan"); pS.evaluate("document.querySelector('#cspProbe').remove()")
+        html_app = open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read()
+        inl = re.findall('[\\s"\'<]on[a-z]{3,14}\\s*=\\s*["\'\\\\]', html_app)
+        check(csp == "script-src-attr 'none'; base-uri 'none'; object-src 'none'" and ran == 0 and not inl and html_app.index('Content-Security-Policy') < html_app.index('<script'),
+              f'抜け穴②の 守り：App Store版の ページは タグに 書いた スクリプト（onerror・onclick）を 動かさない（{csp}・動いた {ran}・ページの 中の タグの スクリプト {len(inl)}こ）')
+        check('Content-Security-Policy' not in open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read(), 'Web版の ページには この 守りを 入れて いない（App Store版だけ）')
+        # ③ ミッション（記録の 数）：200P の 読み込み 1回で 数える のは 1レースだけ（日付・R を 手で かえて 何レースも 数えさせない）
+        rc = pS.evaluate("""async () => {
+          const W = TengelWallet, n0 = W.countedN(), t0 = W.total();
+          const a = await W.readCharge({ form: { date: '2026-10-20', venue: 'あ', r: 8 }, ocr: { date: '2026-10-20', venue: 'あ', r: 8 } });
+          const c1 = await W.countRace({ date: '2026-10-20', venue: 'あ', r: 8, pid: a.pid });
+          const c2 = await W.countRace({ date: '2026-10-20', venue: 'あ', r: 9, pid: a.pid });        // R を かえた
+          const c3 = await W.countRace({ date: '2026-10-21', venue: 'あ', r: 8, pid: a.pid });        // 日付を かえた
+          const c4 = await W.countRace({ date: '2026-10-20', venue: 'い', r: 8, pid: a.pid });        // 開催場を かえた
+          const c5 = await W.countRace({ date: '2026-10-20', venue: 'あ', r: 8, pid: a.pid });        // 同じ レースを もう一度
+          const n1 = W.countedN();
+          const b = await W.readCharge({ form: { date: '2026-10-20', venue: 'あ', r: 9 }, ocr: { date: '2026-10-20', venue: 'あ', r: 9 } });
+          const c6 = await W.countRace({ date: '2026-10-20', venue: 'あ', r: 9, pid: b.pid });
+          return { a: [a.ok, a.charged], b: [b.ok, b.charged], c: [c1, c2, c3, c4, c5, c6], n: [n0, n1, W.countedN()], spent: t0 - W.total() }; }""")
+        check(rc['a'] == [True, True] and rc['b'] == [True, True] and rc['c'] == [True, False, False, False, False, True] and rc['n'] == [0, 1, 2] and rc['spent'] == 400,
+              f'抜け穴③：1回の 読み込み（200P）で 数える のは 1レースだけ。同じ 読み込みの しるしで R・日付・開催場を かえた 記録は 数えない（べつの 読み込みを した レースは 数える）（{rc}）')
+        # ④ 年：2026〜2036年を いつも 選べる（まさちゃん 11/10 12:47「年号2036年までできるようにして！」）
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(500)
+        ys = pS.evaluate("[...document.querySelectorAll('#v-rec select[data-ym=y] option')].map(o => o.textContent)")
+        pS.select_option('#v-rec select[data-ym=y]', '2036'); pS.wait_for_timeout(500)
+        y2 = pS.evaluate("({ ttl: document.querySelector('#v-rec .ym-top .ttl').innerText, sel: document.querySelector('#v-rec select[data-ym=y]').value, empty: (document.querySelector('#recList .empty .big') || {}).innerText || '' })")
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=stats]').click()"); pS.wait_for_timeout(500)
+        ys2 = pS.evaluate("[...document.querySelectorAll('#v-stats select[data-ym=y] option')].map(o => o.textContent)")
+        check(ys == [f'{y}年' for y in range(2026, 2037)] and y2['ttl'].startswith('2036年') and y2['sel'] == '2036' and 'まだないよ' in y2['empty'] and ys2 == ys,
+              f'年：2026年〜2036年（11こ・古い 順）を 選べる・2036年を 選ぶと その 年に なる（記録タブ・実測タブ）（{ys[0]}〜{ys[-1]}・{y2}）')
+        # ⑤ 台帳の ならび（第4.139版）：その日 1回 使った あとに ポイントが 届いても、そのあと 使った ぶんは へる（前は その日の のこりが 0P で 読めた）
+        so = pS.evaluate("""async () => {
+          const W = TengelWallet, rd = r => W.readCharge({ form: { date: '2026-10-22', venue: 'う', r }, ocr: { date: '2026-10-22', venue: 'う', r } });
+          let r = 1; while (W.total() >= 200 && r < 40) await rd(r++);                 // のこりが 200P より 少なく なるまで 読む
+          const low = W.total();
+          await W.grant('sec-order-1', 500, 'テスト');                                   // そのあとで 500P が 届く
+          const t1 = W.total(), got = [];
+          for (let i = 0; i < 5; i++) { const x = await rd(50 + i); got.push(x.ok && x.charged ? 1 : 0); }
+          const ev = W.events();
+          return { low, t1, got, total: W.total(), sp: ev.filter(e => e.kind === 'spend').map(e => e.amount), ns: ev.map(e => e.n) }; }""")
+        kS = so['t1'] // 200
+        check(so['low'] < 200 and so['t1'] == so['low'] + 500 and so['got'] == [1] * kS + [0] * (5 - kS) and so['total'] == so['t1'] - 200 * kS and len(so['sp']) >= 2 and so['sp'][-1] == -200 * kS
+              and sorted(so['ns']) == list(range(1, len(so['ns']) + 1)),
+              f'抜け穴⑤：使った あとに 届いた 500P も、使えば へる（{so["t1"]}P → 読めるのは {kS}回だけ → {so["total"]}P）・届いた あとの「使った」は 新しい 1件・できごとに 書いた 順の 番号（{so}）')
+        ctxS.close()
         # ---- App Store版の説明書 ----
         p3 = ctx.new_page(); p3.on('pageerror', lambda e: errs.append('MANUAL ' + str(e)))
         p3.goto(APPURL + 'manual.html'); p3.wait_for_timeout(1200)
