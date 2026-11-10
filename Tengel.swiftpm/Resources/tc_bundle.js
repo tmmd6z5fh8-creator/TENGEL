@@ -3182,6 +3182,15 @@ const TCApp = (() => {
   function scaleOf(c) { return c < 50 ? 0.6 : c < 100 ? 0.7 : c < 150 ? 0.8 : c < 200 ? 0.88 : c < 250 ? 0.94 : 1.0; }      
   function tod(d) { const h = (d || new Date()).getHours(); return h >= 7 && h < 16 ? 'morning' : h >= 16 && h < 19 ? 'evening' : 'night'; }
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  
+  
+  
+  
+  function tnow() {
+    const n = Date.now(), s0 = +st.seen || 0;
+    if (n > s0) { st.seen = n; if (n > (tnow.saved || 0) + 60000) { tnow.saved = n; touch(); } }
+    return Math.max(n, s0);
+  }
   function accrue(now) {                              
     if (st.stock >= TOKEN_MAX) { st.stockAt = now; return 0; }
     const n = Math.floor((now - st.stockAt) / (TOKEN_MIN * 60000)); if (n <= 0) return 0;
@@ -3363,7 +3372,7 @@ const TCApp = (() => {
     void now;
   }
   async function startVisit(kind) {
-    st.visit = { kind, until: Date.now() + VISIT_MIN * 60000 }; touch(); save();
+    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg(kind === 'kamisama' ? '✨ 神様馬が やってきた！' : '🌙 幻の馬が やってきた！', 3.0);
   }
@@ -3408,11 +3417,12 @@ const TCApp = (() => {
     if (now - lastDraw < 1000 / 31) return;         
     lastDraw = now;
     const t = clock(), dt = lastT == null ? 1 / 30 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
-    const ms = Date.now();
-    if (accrue(ms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
+    const ms = Date.now(), gms = tnow();
+    if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (BR && !st.visit) BR.tod = tod();
-    if (st.visit && ms > st.visit.until && !busy) endVisit();
+    if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       
+    if (st.visit && (gms > st.visit.until || st.visit.el >= VISIT_MIN * 60) && !busy) endVisit();
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
     if (!HO || !BR) return;
@@ -3445,8 +3455,8 @@ const TCApp = (() => {
     field = TCField.create(cvGL); if (!field) throw new Error('webgl');
     gl = field.gl; tBase = performance.now();
     if (!st.fav || st.fav.day !== today()) { st.fav = { day: today(), kind: ['esa', 'apple', 'carrot'][Math.floor(Math.random() * 3)] }; touch(); }
-    if (st.visit && Date.now() > st.visit.until) st.visit = null;
-    accrue(Date.now());
+    if (st.visit && (tnow() > st.visit.until || (+st.visit.el || 0) >= VISIT_MIN * 60)) st.visit = null;
+    accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
       lottery, onPrize, onEvent: onCareEvent, banTop: 352, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
@@ -3461,7 +3471,7 @@ const TCApp = (() => {
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); alert('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
-    paintHead(); layout(); accrue(Date.now());
+    paintHead(); layout(); accrue(tnow());
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
