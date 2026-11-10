@@ -259,6 +259,68 @@ try:
         pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')); P.races.push({ id: 'old', date: '2020-01-01', time: '10:00', name: 'むかし', notify: [5] }); localStorage.setItem('tengel.plan', JSON.stringify(P)); }")
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(500)
         check(pg.evaluate("() => JSON.parse(localStorage.getItem('tengel.plan')).races.every(r => r.id !== 'old')"), 'すぎた 日の レースは 消える')
+        # 第4.143版（11/10 17:49 まさちゃん「作戦会議のやりたいレースの項目に、メモが書き込めるようにして！」）：
+        #   レースの 札ごとに メモの 欄（そのまま 書ける・書いた そばから 保存・300字まで・行が ふえた ぶん だけ 広がる）。予約／直す の 画面にも メモの 欄
+        print('■ 作戦会議の メモ（第4.143版）')
+        rid = pg.evaluate("() => JSON.parse(localStorage.getItem('tengel.plan')).races[0].id")
+        MSEL = f'#tcPlan textarea.mm[data-id="{rid}"]'
+        mget = lambda: pg.evaluate("""(sel) => { const t = document.querySelector(sel); if (!t) return null; const cs = getComputedStyle(t), r = JSON.parse(localStorage.getItem('tengel.plan')).races[0];
+          return { ph: t.placeholder, v: t.value, max: t.maxLength, fs: parseFloat(cs.fontSize), h: Math.round(t.getBoundingClientRect().height), us: cs.webkitUserSelect || cs.userSelect, saved: r.memo == null ? null : r.memo,
+                   inj: document.querySelectorAll('#tcPlan .rc b, #tcPlan .rc script').length, focus: document.activeElement === t, clip: t.scrollHeight > t.clientHeight + 1 }; }""", MSEL)
+        m0 = mget()
+        check(m0 and m0['ph'] == '📝 メモを書く（作戦など）' and m0['v'] == '' and m0['max'] == 300 and m0['fs'] >= 16 and m0['h'] <= 46 and m0['us'] == 'text',
+              f'レースの 札に メモの 欄（空・「📝 メモを書く（作戦など）」・300字まで・字は 16px 以上＝押しても 画面が 拡大 しない・1行ぶんの 高さ）（{m0}）')
+        MEMO = '◎3番 ○7番 ▲12番\n雨なら見送り <b>"x"</b>&'
+        pg.locator(MSEL).click(); pg.locator(MSEL).type(MEMO); pg.wait_for_timeout(300)
+        m1 = mget()
+        check(m1['saved'] == MEMO and m1['v'] == MEMO and m1['h'] > m0['h'] + 15 and not m1['clip'] and m1['inj'] == 0 and m1['focus'],
+              f'書いた そばから 保存（保存ボタンは いらない）・行が ふえると 欄が 広がる（{m0["h"]} → {m1["h"]}px）・記号は そのまま 字として 出る（{m1}）')
+        pg.locator('#tcPlan [data-p=nt][data-m="10"]').click(); pg.wait_for_timeout(900)
+        m2 = mget(); bodies = pg.evaluate("() => window.__notify.items.filter(i => /^plan-/.test(i.id)).map(i => i.title + i.body)")
+        check(m2['v'] == MEMO and m2['saved'] == MEMO and m2['h'] == m1['h'] and m2['inj'] == 0 and len(bodies) == 3 and not any('見送り' in x or '◎' in x for x in bodies),
+              f'通知の ボタンを 押しても（画面の かき直し）メモは 残る・通知の 文には メモを 出さない（{m2["v"]!r}・{bodies}）')
+        pg.locator('#tcPlan [data-p=nt][data-m="10"]').click(); pg.wait_for_timeout(300)
+        pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(600)
+        m3 = mget()
+        check(m3['v'] == MEMO and m3['h'] == m1['h'], f'とじて ひらき直しても メモは 残る・欄の 高さも 同じ（{m3["h"]}px）')
+        #   「消す」を 1回 押した あとに メモの 欄を 押す →「消す」に もどる（画面は かき直さない＝書いて いる 欄が 消えない）
+        pg.locator(f'#tcPlan [data-p=del][data-id="{rid}"]').click(); pg.wait_for_timeout(250)
+        a1 = pg.evaluate("(id) => document.querySelector(`#tcPlan [data-p=del][data-id=\"${id}\"]`).textContent", rid)
+        pg.evaluate("(sel) => { window.__mmEl = document.querySelector(sel); }", MSEL)
+        pg.locator(MSEL).click(); pg.wait_for_timeout(250)
+        a2 = pg.evaluate("([id, sel]) => { const d = document.querySelector(`#tcPlan [data-p=del][data-id=\"${id}\"]`); return [d.textContent, d.classList.contains('ask'), window.__mmEl === document.querySelector(sel), document.activeElement === window.__mmEl, JSON.parse(localStorage.getItem('tengel.plan')).races.length]; }", [rid, MSEL])
+        check(a1 == 'ほんとに 消す？' and a2 == ['消す', False, True, True, 1], f'「ほんとに 消す？」の あとに メモの 欄を 押すと「消す」に もどる・欄は その まま（かき直さない）・レースは 消えない（{a1}・{a2}）')
+        #   300字まで（こえた ぶんは 保存しない）
+        pg.locator(MSEL).fill('あ' * 320); pg.wait_for_timeout(300)
+        m4 = mget()
+        check(len(m4['saved']) == 300, f'メモは 300字まで（320字 入れても 保存は {len(m4["saved"])}字）')
+        pg.locator(MSEL).fill(MEMO); pg.wait_for_timeout(300)
+        #   予約／直す の 画面：メモの 欄に いまの メモ → 直して 保存 → 札に 出る。レース名だけ 直しても メモは 残る
+        pg.locator(f'#tcPlan [data-p=edit][data-id="{rid}"]').click(); pg.wait_for_timeout(400)
+        f0 = pg.evaluate("() => { const t = document.querySelector('#tcPlan [data-f=memo]'); return t ? [t.tagName, t.value, t.maxLength, parseFloat(getComputedStyle(t).fontSize)] : null; }")
+        #   第4.143版（11/10 18:05 まさちゃん「作成会議の一枚目の赤丸画面から飛び出ちゃってる！調整して！」）：予約／直す の 画面の 欄（日付・発走時間も）は 右へ はみ出さない
+        ff = pg.evaluate("""() => { const fm = document.querySelector('#tcPlan .fm'), fr = fm.getBoundingClientRect(), cs = getComputedStyle(fm), pb = document.querySelector('#tcPlan .pb');
+          const inR = fr.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth), inL = fr.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth);
+          const els = [...fm.querySelectorAll('input,textarea,button')].map(e => { const r = e.getBoundingClientRect(); return [e.dataset.f || e.dataset.p, +(r.left - inL).toFixed(1), +(r.right - inR).toFixed(1)]; });
+          const g = k => fm.querySelector(`[data-f=${k}]`).getBoundingClientRect();
+          return { els, over: [pb.scrollWidth - pb.clientWidth, fm.scrollWidth - fm.clientWidth], half: [+(g('date').width - g('time').width).toFixed(1), +(g('time').left - g('date').right).toFixed(1)] }; }""")
+        check(all(e[1] >= -0.6 and e[2] <= 0.6 for e in ff['els']) and ff['over'] == [0, 0] and abs(ff['half'][0]) <= 1 and 8 <= ff['half'][1] <= 12 and {e[0] for e in ff['els']} >= {'name', 'date', 'time', 'n', 'dist', 'memo', 'save'},
+              f"予約／直す の 画面：どの 欄も 画面の 中に おさまる（日付と 発走時間は 同じ 幅で 2つ ならび・右へ はみ出さない）（{ff}）")
+        pg.fill('#tcPlan [data-f=memo]', '  パドックを見てから決める\n前のレースの馬場も見る  '); pg.locator('#tcPlan [data-p=save]').click(); pg.wait_for_timeout(500)
+        m5 = mget()
+        pg.locator(f'#tcPlan [data-p=edit][data-id="{rid}"]').click(); pg.wait_for_timeout(300)
+        pg.fill('#tcPlan [data-f=name]', 'はなまる特別'); pg.locator('#tcPlan [data-p=save]').click(); pg.wait_for_timeout(500)
+        m6 = mget(); r6 = pg.evaluate("() => { const r = JSON.parse(localStorage.getItem('tengel.plan')).races[0]; return [r.name, r.n, r.dist, r.notify]; }")
+        check(f0 == ['TEXTAREA', MEMO, 300, 16] and m5['saved'] == 'パドックを見てから決める\n前のレースの馬場も見る' and m5['v'] == m5['saved'] and m6['saved'] == m5['saved'] and r6 == ['はなまる特別', 14, 1600, [20, 5]],
+              f'「直す」の 画面にも メモの 欄（いまの メモが 入って いる）・直して 保存すると 札に 出る（前後の 空きは とる）・ほかを 直しても メモは 残る（{f0}・{m5["saved"]!r}・{r6}）')
+        #   新しく 予約する ときも メモを 書ける
+        pg.locator('#tcPlan [data-p=add]').click(); pg.wait_for_timeout(300)
+        pg.fill('#tcPlan [data-f=name]', 'メモつき特別'); pg.fill('#tcPlan [data-f=time]', (later + _dt.timedelta(minutes=30)).strftime('%H:%M')); pg.fill('#tcPlan [data-f=date]', later.strftime('%Y-%m-%d'))
+        pg.fill('#tcPlan [data-f=memo]', '本命は 5番'); pg.locator('#tcPlan [data-p=save]').click(); pg.wait_for_timeout(500)
+        n1 = pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')), r = P.races.find(x => x.name === 'メモつき特別'); const t = r && document.querySelector(`#tcPlan textarea.mm[data-id=\"${r.id}\"]`); return r ? [r.memo, t ? t.value : null, P.races.length] : null; }")
+        check(n1 == ['本命は 5番', '本命は 5番', 2], f'新しい 予約にも メモ（{n1}）')
+        pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')); P.races = P.races.filter(x => x.name !== 'メモつき特別'); localStorage.setItem('tengel.plan', JSON.stringify(P)); }")
+        pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(500)
         # 第4.140版（バグ直し）：「消す」は 窓（confirm）を 使わない（アプリの 中では 窓が 出なくて 消せなかった）→ もう一度 押すと 消す
         pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')); P.races.push({ id: 'del1', date: '2099-01-01', time: '10:00', name: 'けすレース', notify: [] }); localStorage.setItem('tengel.plan', JSON.stringify(P)); }")
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(500)
