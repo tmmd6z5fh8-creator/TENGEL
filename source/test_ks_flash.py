@@ -5,6 +5,7 @@
 #        「ときどき」の動き（花火の一斉・ナイターのゴール・夕焼けの日没 など）も拾えるように、0秒・8秒・19秒から 2秒ずつ（3つの窓）
 #   的中ボタン：PUSHの画面 1秒 → タップ → 押したあと 1.5秒（はじけるかけら・光の筋・ボード）。画面ぜんぶを写す
 #   絵（ios/kisekae_blobs/）が手元にあれば入れて数える（なければ絵なしで数える）
+#   第4.148版：PUSHボタンの 絵（ios/push_assets/pb_<id>.webp）が 手元に あれば 入れて 数える（絵の PUSH：うしろの 光は 2.2秒で 1回り・光の すじは 3.2秒に 1回 なので、PUSH の 画面を 4秒ぶん 写す。「いつもの」も 絵が ある ので 数える）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -23,6 +24,11 @@ BL = os.path.join(W, 'ios', 'kisekae_blobs')
 if os.path.isdir(BL):
     for f in os.listdir(BL):
         shutil.copy(os.path.join(BL, f), os.path.join(SRV, 'APP', 'ks_' + f))
+sys.path.insert(0, os.path.join(W, 'kisekae')); import push_art as _pa
+PB = _pa.files(); PIC = bool(PB)
+for _e in PB.values():
+    shutil.copy(os.path.join(_pa.ROOT, _e['f']), os.path.join(SRV, 'APP', _e['f']))
+PUSH_N = 240 if PIC else 60      # PUSH の 画面を 写す コマ（絵の PUSH は 4秒・コードの PUSH は 1秒）
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 SPEC = {'r': 9, 'n': 12, 'ranks': {'6': 1, '2': 2, '10': 3}, 'rows': [{'t': '馬単', 'state': '的中', 'hits': [[6, 2]], 'n': 9}, {'t': '単勝', 'state': '的中', 'hits': [[6]], 'n': 3}, {'t': '3連単', 'state': '不的中', 'hits': [], 'n': 18}]}
 STEP_B = """(t) => { const b = document.getElementById('ksBnr'); if (!b) return -1; const as = b.getAnimations({ subtree: true }); as.forEach(a => { try { a.pause(); a.currentTime = t * 1000; } catch (e) {} }); return as.length; }"""
@@ -30,8 +36,8 @@ STEP_F = """(t) => { const ov = document.getElementById('fxOv'); if (!ov) return
 fails = []
 
 
-def count(d, tap):
-    r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
+def count(d, tap, lo=None, hi=None):
+    r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, str(tap)] + ([str(lo), str(hi)] if lo is not None else []), capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
     out = r.stdout.strip().split('\n')
     return r.returncode == 0 and '窓 0個' in (out[0] if out else ''), (out[0] if out else ''), (out[-1] if out else ''), r.stderr[-300:]
 
@@ -44,7 +50,7 @@ try:
         pg.goto(f'http://localhost:{PORT}/APP/'); pg.wait_for_timeout(1500)
         if pg.locator('#gateGo').count(): pg.click('#gateGo'); pg.wait_for_timeout(600)
         pg.evaluate('TengelKisekae.ready')
-        ids = args[0].split(',') if args else [t for t in pg.evaluate('TengelKisekae.list().map(t => t.id)') if t != 'default']
+        ids = args[0].split(',') if args else [t for t in pg.evaluate('TengelKisekae.list().map(t => t.id)') if t != 'default' or (PIC and DO_PUSH and not DO_WALL)]
         for tid in ids:
             pg.evaluate("(id) => TengelKisekae.apply(id)", tid); pg.wait_for_timeout(700)
             if DO_WALL:
@@ -64,10 +70,12 @@ try:
                     if not ok: fails.append(tid + ' wall: ' + (err if err else bad))
             if DO_PUSH:
                 d = os.path.join(OUT, tid, 'push'); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
+                if PIC:
+                    pg.wait_for_function("() => !!TengelKisekae.pushArt()", timeout=8000)      # 絵が 読めて から
                 pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'hit' }, s))", SPEC); pg.wait_for_timeout(400)
                 pc = pg.evaluate("(() => { const b = document.querySelector('#fxOv .push'); return b ? b.className : ''; })()")
                 idx = 0; t0 = time.time()
-                for i in range(60):
+                for i in range(PUSH_N):
                     pg.evaluate(STEP_F, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 tap = idx
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
@@ -77,6 +85,10 @@ try:
                 ok, bad, worst, err = count(d, tap)
                 print(('  ✅ ' if ok else '  ❌ ') + f'{tid} 的中ボタン（{pc}）：{idx}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
                 if not ok: fails.append(tid + ' push: ' + (err if err else bad))
+                if PIC:      # 第4.148版：PUSH の 画面（押す 前の 4秒：絵の うしろの 光・光の すじ・テーマの ゆれ）も 数える
+                    ok0, bad0, worst0, err0 = count(d, 0, 0, tap - 1)
+                    print(('  ✅ ' if ok0 else '  ❌ ') + f'{tid} 絵の PUSH の 画面（押す 前 {tap}コマ）… {bad0}／{worst0}')
+                    if not ok0: fails.append(tid + ' push screen: ' + (err0 if err0 else bad0))
         if errs: print('  ⚠️ ページのエラー:', errs[:5]); fails.append('pageerror')
         b.close()
 finally:

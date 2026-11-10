@@ -93,7 +93,7 @@
   }
   async function apply(id, save) {
     if (!byId[id]) id = 'default';
-    curId = id; setAttr(id); conf = '';
+    curId = id; setAttr(id); conf = ''; preArt(id);
     if (save !== false) {
       try { localStorage.setItem(KEY, id); } catch (e) { /* 覚えられなくてもOK */ }
       try { if (TL() && TL().putSetting) TL().putSetting(SETTING, { id: id }).catch(() => {}); } catch (e) { /* なし */ }
@@ -105,6 +105,23 @@
     themeStyle(id === 'default' ? null : p); paintBnr(id === 'default' ? null : p);
     paint(); emit('apply');
   }
+  // ---------- PUSHボタンの 絵（第4.148版・まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」）----------
+  //   テーマ 1つに 1まい（いつもの も）：一覧の pa＝{ f, w, h }（ファイル名・画面で 出す 大きさ：kisekae/push_art.py・build_kisekae.py）。
+  //   テーマを 着せた ときに 先に 読んで おく（PUSH が 出る ときに もう 読めて いる）。読めた 絵 だけ fx.js に わたす ＝ 読めない ときは 今までの コードの PUSH
+  const art = {};                                        // id → { src, w, h }（読めた）／ null（読めなかった）／ undefined（まだ）
+  function preArt(id) {
+    const t = byId[id], pa = t && t.pa;
+    if (!pa || art[id] !== undefined || art['~' + id]) return;
+    art['~' + id] = 1;                                   // 読んで いる とちゅう
+    try {
+      const im = new Image();
+      im.onload = () => { const ok = im.naturalWidth > 0; const done = () => { art[id] = ok ? { src: pa.f, w: pa.w, h: pa.h } : null; delete art['~' + id]; }; if (ok && im.decode) im.decode().then(done, done); else done(); };
+      im.onerror = () => { art[id] = null; delete art['~' + id]; };
+      im.src = pa.f;
+    } catch (e) { art[id] = null; delete art['~' + id]; }
+  }
+  // fx.js から：いまの テーマの PUSHボタンの 絵（読めて いる とき だけ）
+  function pushArt(id) { const a = art[id || curId]; return a ? { src: a.src, w: a.w, h: a.h } : null; }
   // fx.js から：いまのテーマの 的中PUSH（面・押したあと・はじけるかけら）と ボードの飾り。いつもの・まだ読めていないときは null（＝いつもの形）
   function fx() {
     if (curId === 'default' || !payload) return null;
@@ -390,7 +407,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', card);
 
   window.TengelKisekae = {
-    on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx,
+    on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx, pushArt: pushArt,
     loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, live: liveId, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
   };
 })();

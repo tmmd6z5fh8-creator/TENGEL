@@ -39,6 +39,10 @@
   const TL = () => window.TengelLocal, WL = () => window.TengelWallet, RS = () => window.TengelReserve;
   // 着せ替え（第4弾・kisekae.js）：いまのテーマの 的中PUSH（面・押したあと・はじけるかけら）と ボードの飾り。いつもの・読めていないときは null（いつもの形）
   const KS = () => { try { const k = window.TengelKisekae; return k && k.on && k.fx ? k.fx() : null; } catch (e) { return null; } };
+  // 第4.148版（まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」）：
+  //   いまの テーマの PUSHボタンの 絵（まさちゃんの 絵・テーマ 1つに 1まい・いつもの も：kisekae.js の pushArt＝{ src, w, h }）。読めて いる とき だけ。
+  //   ない・読めない ときは null ＝ 今までの コードの PUSH（テーマの 色の 四角・いつもの は 赤い PUSH）
+  const PA = () => { try { const k = window.TengelKisekae; return k && k.on && k.pushArt ? k.pushArt() : null; } catch (e) { return null; } };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SUPER = [10, 12];                 // 超大穴＝単勝人気 10〜12番人気（判定の J・K・L）。13番人気より下は入れない
   const BIG = [7, 9];                     // 大穴＝7〜9番人気（デカ的中・神様の もう 1頭）
@@ -77,6 +81,23 @@
       + 'background:repeating-linear-gradient(100deg,#FF3B3B 0,#FF9F1A 42px,#FFE53B 84px,#3BE26A 126px,#2FD6FF 168px,#4C6BFF 210px,#B34CFF 252px,#FF3BB8 294px,#FF3B3B 336px) 0 0/341.2px 100%;animation:pzFlow 1.6s linear infinite}'
       + '.fxs .pbox.rbw .push svg .rbwo{mix-blend-mode:color;opacity:.95}'
       + '@keyframes pzFlow{to{background-position:341.2px 0}}@keyframes pzSpin{to{rotate:360deg}}'
+      // 第4.148版：PUSHボタンの 絵（.pim：artOn が つける）。大きさは --pw × --ph（絵ごと：kisekae/push_art.py）・テーマの 四角の 色／ふち／影／まわりの 輪は 出さない・字「PUSH」は 絵の 中。
+      //   光る＝うしろに ぼかした 同じ 絵（.pglow：ゆっくり 明るく／暗く）＋ 絵の 形で 切りぬいた 光の すじ（.pshn：3.2秒に 1回 横に 流れる）。へこむ・はじける は 今までの .pressed と かけら（テーマの 動き）。
+      //   虹色（.rbw）は .rbf を 絵の 形で 切りぬく（mask：--pm）。控えめ・視差効果を減らす：動かさない（光の すじは 出さない）
+      + '.fxs .pbox .push.pim{width:var(--pw);height:var(--ph);background:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible}'
+      + '.fxs .pbox .push.pim::after{display:none!important}'
+      + '.fxs .pbox .push.pim>span{position:absolute;left:0;top:0;width:1px!important;height:1px!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden;white-space:nowrap;opacity:0;pointer-events:none}'
+      + '.fxs .push.pim .pimg,.fxs .pressed.pim .pimg{position:relative;z-index:1;display:block;width:100%;height:100%;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}'
+      + '.fxs .push.pim .pglow{position:absolute;z-index:0;left:0;top:0;width:100%;height:100%;pointer-events:none;filter:blur(12px) brightness(1.35) saturate(1.25);transform:scale(1.07);opacity:.5;animation:fxpimGlow 2.2s ease-in-out infinite}'
+      + '.fxs .push.pim .pshn{position:absolute;z-index:2;inset:0;overflow:hidden;pointer-events:none;-webkit-mask:var(--pm) center/100% 100% no-repeat;mask:var(--pm) center/100% 100% no-repeat}'
+      + '.fxs .push.pim .pshn::before{content:"";position:absolute;top:-20%;left:-60%;width:46%;height:140%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.5) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:fxpimShine 3.2s ease-in-out infinite}'
+      + '@keyframes fxpimGlow{0%,100%{opacity:.34}50%{opacity:.72}}@keyframes fxpimShine{0%,52%{transform:translateX(0) skewX(-20deg)}82%,100%{transform:translateX(420%) skewX(-20deg)}}'
+      + '.fxs .pimb .pshadow{width:calc(var(--pw) * .8)!important}'
+      + '.fxs .pressed.pim{width:var(--pw)!important;height:var(--ph)!important;margin:calc(var(--ph) / -2) 0 0 calc(var(--pw) / -2)!important;background:none!important;box-shadow:none!important;border-radius:0!important}'
+      + '.fxs .ndt.pimb .ndtr{width:calc(var(--pw) + 26px)!important;height:calc(var(--ph) + 26px)!important;margin:calc(var(--ph) / -2 - 13px) 0 0 calc(var(--pw) / -2 - 13px)!important;border-radius:calc(var(--ph) / 2 + 13px)!important}'
+      + '.fxs .pbox.rbw .push.pim .rbf{border-radius:0;-webkit-mask:var(--pm) center/100% 100% no-repeat;mask:var(--pm) center/100% 100% no-repeat}'
+      + '.fxs.calm .push.pim .pglow{animation:none!important;opacity:.45}.fxs.calm .push.pim .pshn{display:none}'
+      + '@media (prefers-reduced-motion:reduce){.fxs .push.pim .pglow{animation:none!important;opacity:.45}.fxs .push.pim .pshn{display:none}}'
       + '@media (prefers-reduced-motion:reduce){.fxs .pbox.rbw .rba,.fxs .pbox.rbw .push .rbf{animation:none}}'
       + '.fxs .calm .pbox.rbw .push .rbf{animation-duration:3.2s}.fxs .calm .pbox.rbw .rba{animation-duration:4.4s}\n';
     document.head.appendChild(st);
@@ -496,21 +517,45 @@
     const pc = th ? ' ' + th.pc : '';
     return `<button class="push${pc}" type="button" data-fx="tap" aria-label="${esc(label)}">${th ? th.push.svg : ''}<span>PUSH</span></button><div class="pshadow${pc}"></div><p class="tap${pc}">タップ！</p>`;
   }
+  // 第4.148版：PUSH（el＝.push）か 押された PUSH（el＝.pressed・pressed＝true）を まさちゃんの 絵に する。
+  //   .pim と 大きさ（--pw・--ph）・絵の 形の mask（--pm）を つけて、中に 絵（.pimg）を 入れる。PUSH には うしろの 光（.pglow）と 光の すじ（.pshn）も。
+  //   まわりの 箱（.pbox／.pzw／.ov）にも 大きさを 渡す（影の 幅：.pimb）
+  function artOn(el, art, pressed) {
+    if (!el || !art) return false;
+    const src = esc(art.src), img = `<img class="pimg" src="${src}" alt="" draggable="false">`;
+    el.classList.add('pim');
+    [el, el.closest('.pbox') || el.parentNode].forEach((x, i) => {
+      if (!x || !x.style) return;
+      if (i) x.classList.add('pimb');
+      x.style.setProperty('--pw', art.w + 'px'); x.style.setProperty('--ph', art.h + 'px');
+    });
+    el.style.setProperty('--pm', `url("${art.src}")`);
+    if (pressed) el.innerHTML = img;
+    else {
+      [...el.children].forEach(c => { if (c.tagName !== 'SPAN') c.remove(); });      // コードの 面（<i>・<svg>）が あれば 外す（字の <span> は 読み上げ用に のこす）
+      el.insertAdjacentHTML('afterbegin', `<img class="pglow" src="${src}" alt="" aria-hidden="true" draggable="false">${img}<i class="pshn" aria-hidden="true"></i>`);
+    }
+    return true;
+  }
   function push() {
     if (!cur) return;
     const k = cur.kind, ks = KS();
-    cur.theme = ks && ks.push && ks.pc ? ks : null;      // PUSH は どの 種類でも そのテーマの 形（第4.60版。前は 的中だけ＝16.2.1）
-    if (k === 'hit') cur.stage.innerHTML = cur.theme ? A.push.hit_t.split('{{PC}}').join(' ' + cur.theme.pc).replace('{{SVG}}', cur.theme.push.svg) : A.push.hit;
+    cur.art = PA();                                      // 第4.148版：その テーマの PUSHボタンの 絵（読めて いれば）
+    // PUSH は どの 種類でも そのテーマの 形（第4.60版。前は 的中だけ＝16.2.1）。第4.148版：絵で 出す テーマ（ks.push.img：コードの 面は 入って いない）で 絵が 読めない ときは、いつもの 赤い PUSH
+    cur.theme = ks && ks.push && ks.pc && (cur.art || !ks.push.img) ? ks : null;
+    if (k === 'hit') { cur.stage.innerHTML = cur.theme ? A.push.hit_t.split('{{PC}}').join(' ' + cur.theme.pc).replace('{{SVG}}', cur.theme.push.svg) : A.push.hit; if (cur.art) artOn(cur.stage.querySelector('.push'), cur.art); }
     else {
       cur.stage.innerHTML = A.push[FZ_PUSH[k] ? 'fz_t' : 'big_t'].replace('{{PBOX}}', pboxHTML(cur.theme, PLABEL[k] || 'PUSH'));
       const box = cur.stage.querySelector('.pbox'), btn = box && box.querySelector('.push');
+      if (cur.art) artOn(btn, cur.art);                  // 大きさを 測る 前に（--pz は 絵の 大きさで 決める）
       const w = (btn && btn.offsetWidth) || 200, h = (btn && btn.offsetHeight) || 100;
       cur.pz = Math.max(1, Math.min(PZ[k] || 1, 372 / w, 480 / h));
       if (box) {
         box.style.setProperty('--pz', cur.pz.toFixed(3));
         if (RBW[k]) {   // 虹色：うしろに まわる 虹の 光（ぼかし）＋ PUSH の 面に 流れる 虹の 色（色だけ 重ねる＝形と 明るさは そのテーマの まま）
           box.classList.add('rbw'); box.insertAdjacentHTML('afterbegin', `<i class="rba" aria-hidden="true" style="--rw:${Math.round(w * 1.45)}px;--rh:${Math.round(h * 1.7)}px;--ry:${Math.round(h / 2)}px"></i>`);
-          if (btn) {
+          if (btn && cur.art) btn.insertAdjacentHTML('beforeend', '<i class="rbf" aria-hidden="true"></i>');   // 第4.148版：絵の PUSH は 絵の 形で 切りぬいた 虹（CSS の mask）
+          else if (btn) {
             const cs = getComputedStyle(btn), solid = cs.backgroundImage !== 'none' || !/^(rgba\(\d+, \d+, \d+, 0\)|transparent)$/.test(cs.backgroundColor);
             if (solid) btn.insertAdjacentHTML('beforeend', '<i class="rbf" aria-hidden="true"></i>');   // ボタンの 四角に 色が ある テーマ：四角に 虹（角の 丸みも 同じ）
             else {   // 四角が すき通った テーマ（第4.89版）：PUSH の 面の 絵（<i class="…f">：ツリー・かぼちゃ・芝・ドットの 台）だけ、絵の 形で 切りぬいた 虹。まわりの 飾り（…d）は そのまま
@@ -583,6 +628,11 @@
     const tapScr = !cur.quiet && (k === 'nd' || k === 'gk' || cur.pre);                     // 第4.117版：神様極的中も 同じ 押した 画面
     if (tapScr) { const t2 = cur.theme || null; html = html.split('{{PC}}').join(t2 ? ' ' + t2.pc : '').replace('{{PRESSED}}', t2 ? t2.push.pressed : '').replace('{{BURST}}', t2 ? t2.push.burst : '').replace('{{PZ}}', String(cur.pz || 1.4)); }
     cur.stage.innerHTML = html;
+    if (cur.art && !cur.quiet) {                                                           // 第4.148版：押された PUSH も 同じ 絵（へこむ 動きは 今までの まま）
+      artOn(cur.stage.querySelector('.pressed'), cur.art, true);
+      const nt = cur.stage.querySelector('.ndt');
+      if (nt) { nt.classList.add('pimb'); nt.style.setProperty('--pw', cur.art.w + 'px'); nt.style.setProperty('--ph', cur.art.h + 'px'); }
+    }
     if (tapScr && !calm()) sfx('ndt');                                                     // 押した 瞬間の 音（ポチッ・トンッ・キラン：動画を 待たない）
     cur.phase = 'reveal'; cur.ov.classList.add('rv');
     boardCustom();
@@ -798,7 +848,7 @@
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     audio: () => (S.sound ? actx() : null),
-    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz } : null),
+    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz, art: cur.art ? cur.art.src : '' } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),
     video: video, _rand: null,
     memory: memory, memKind: memKind, memFrame: memFrame, memInfo: () => (cur && cur.mem ? Object.assign({}, cur.mem) : null)

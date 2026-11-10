@@ -51,6 +51,16 @@ if BCP_ON:
             shutil.copy(os.path.join(BCP_DIR, f), os.path.join(SRV, 'APP', f))
 else:
     print('※ 結果ボードカスタムの 絵（ios/bcp_assets）が ない ので、絵の ボードの テストは 読めない 形だけ')
+# 第4.148版：PUSHボタンの 絵（ios/push_assets/：まさちゃんの 絵・リポジトリには 入れない）。手元に ある とき だけ 置く。
+#   ない とき（CI・PUSH_ASSETS=/nonexistent）は コードの PUSH（SVG の 面）の まま ＝ この テストは どちらの 形でも 動く（PIC で 分ける）
+sys.path.insert(0, os.path.join(W, 'kisekae')); import push_art as _pa
+PB = _pa.files(); PIC = bool(PB)
+for _e in PB.values():
+    for _d in ('APP', 'TEST'):
+        shutil.copy(os.path.join(_pa.ROOT, _e['f']), os.path.join(SRV, _d, _e['f']))
+if not PIC:
+    print('※ PUSHボタンの 絵（ios/push_assets）が ない ので、PUSH は コードの 形（SVG の 面）で テスト')
+FACE = '.pimg' if PIC else 'svg'      # PUSH の 面：絵（<img class="pimg">）／コードの 絵（<svg>）
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
 
@@ -414,8 +424,8 @@ try:
         # ---- 的中ボタン（第3弾・10章）：単勝・馬単の当たり（3連単なし）→ 的中の PUSH → タップ → いつものボード（券種ごとの結果・お金なし）→ とじる ----
         ov = pg.locator('#fxOv')
         sx = pg.evaluate('TengelFx.sfxState()')
-        check(ov.count() == 1 and ov.locator('.fxs .ov .push').count() == 1 and ov.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'push', 'quiet': False, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1} and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
-              f'保存 → 的中の PUSH が出る（3連単なしの当たり＝的中）・拡大は止める（{pg.evaluate("TengelFx.current()")}）')
+        check(ov.count() == 1 and ov.locator('.fxs .ov .push').count() == 1 and ov.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'push', 'quiet': False, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1, 'art': 'pb_default.webp' if PIC else ''} and ov.locator('.push.pim .pimg').count() == (1 if PIC else 0) and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
+              f'保存 → 的中の PUSH が出る（3連単なしの当たり＝的中・第4.148版：絵が あれば「いつもの」の 絵）・拡大は止める（{pg.evaluate("TengelFx.current()")}）')
         check(sx['ctx'] and sx['fetched'] and 'sfx_hit_push.m4a' in pg.evaluate("performance.getEntriesByType('resource').map(e => e.name).join()"), f'「結果を保存」を押したときに音の準備（AudioContext・音のファイルを読む）（{sx}）')
         # 第4.109版：保存の たびに 音 15こ・動画 4本・絵 ぜんぶを 読むのを やめた → PUSH の 音 3こ ＋ 出す 演出（的中）の 音だけ・動画は 作らない
         res9 = pg.evaluate("performance.getEntriesByType('resource').map(e => e.name.split('/').pop())")
@@ -483,7 +493,7 @@ try:
         check(ov.count() == 1 and 'k-hit' in ov.get_attribute('class') and 'mem' in ov.get_attribute('class') and mo.count() == 1 and ov.locator('.push').count() == 0 and ov.locator('.rays').count() == 1
               and ov.locator('.memhd .mlab').inner_text() == '思い出のレース' and ymd9 in ov.locator('.memhd .mname').inner_text() and '9R' in ov.locator('.memhd .mname').inner_text()
               and ov.locator('.rb.hit .bh').inner_text() == '的中！' and ov.locator('.rb .brows li').count() == 2 and ov.locator('.close').inner_text() == 'とじる'
-              and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'mem', 'quiet': True, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1} and pg.evaluate('TengelFx.memInfo()') == {'v': 'a', 'frame': 'hit'}
+              and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'mem', 'quiet': True, 'theme': None, 'film': 0, 'sp': 0, 'pre': 0, 'pz': 1, 'art': ''} and pg.evaluate('TengelFx.memInfo()') == {'v': 'a', 'frame': 'hit'}
               and pg.evaluate('window.__fxEv') == ['memory:hit'] and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
               f'思い出の 行を 押す → 思い出ボード：PUSH なし・的中の 形（光の筋・いつもの ボード「的中！」券種 2行）・上に「思い出のレース」と レース名・合図 memory・拡大は 止める（{pg.evaluate("TengelFx.current()")}）')
         check(mx.count() == 1 and all(w in mxt for w in ('日付', ymd9, 'レース', '9R', '買い目', '18点', '単勝', '3点', '馬単', '15点', '結果', '1着 6（1番人気）', '2着 2（2番人気）', '3着 10（3番人気）', '的中', '金額', '購入 1,800円', '回収 1,360円', '−440円'))
@@ -816,7 +826,7 @@ try:
               f'ノーマルど的中（第4.77版・第4.118版）：D で M で ない（乱数 0.5 → プレミアムで ない）→ nd・PUSH は ど的中と 同じ（1.4倍）・動画を 出る 前に 読んでおく（{kn}）')
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
         nd0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; const g = t && t.querySelector('.ndtr'); return { pc: document.querySelectorAll('#fxOv .ov.nd .pc').length, bg: getComputedStyle(o).backgroundColor, cls: o.className, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', glow: !!(g && g.getAnimations().length), bx: t ? t.querySelectorAll('.bx').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '' }; })()")
-        check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last.webp'] and 'fz' in nd0['cls'],   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
+        check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last.webp'] + (['pb_default.webp'] if PIC else []) and 'fz' in nd0['cls'],      # 第4.148版：押された PUSH の 絵（押した 画面 .ndt の 中）も <img>   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
               f'ノーマルど的中：押すと 暗く なる（プチュンは なし）・ボードは まだ・絵は 動画の さいごの 1まい だけ（{nd0}）')
         check(nd0['push'] == 0 and nd0['press'] and nd0['pz'] == '1.4' and nd0['glow'] and nd0['bx'] == 0 and nd0['z'] == '20' and nd0['vis'] == 'visible' and pg.evaluate("window.__FX.sfx.ndt") == 'sfx_ndt.m4a',
               f'ノーマルど的中（第4.79版）：押すと PUSH の 画面とは 別の 押した 画面（押された PUSH が 1.4倍の まま ポチッと へこむ・うすい 光の 輪・爆発は なし・音 sfx_ndt）（{nd0}）')
@@ -881,7 +891,7 @@ try:
         pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=3)); pg.wait_for_timeout(300)
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
         gk0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.gk'); const h = getComputedStyle(o.querySelector('.hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; return { cls: o.className, bg: getComputedStyle(o).backgroundColor, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', ring: t ? t.querySelectorAll('.ndtr').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '', push: document.querySelectorAll('#fxOv .pbox .push').length, sr: (o.querySelector('.sr') || {}).textContent || '', oz: getComputedStyle(o).zIndex }; })()")
-        check('fz' in gk0['cls'] and (gk0['bg'] == 'rgb(0, 0, 0)' or 'go' in gk0['cls']) and gk0['hb'] and gk0['img'] == ['gk_last.webp'] and gk0['press'] and gk0['pz'] == '1.6' and gk0['ring'] == 1 and gk0['z'] == '20' and gk0['vis'] == 'visible' and gk0['push'] == 0 and '神様極的中' in gk0['sr'] and gk0['oz'] == '31',
+        check('fz' in gk0['cls'] and (gk0['bg'] == 'rgb(0, 0, 0)' or 'go' in gk0['cls']) and gk0['hb'] and gk0['img'] == ['gk_last.webp'] + (['pb_default.webp'] if PIC else []) and gk0['press'] and gk0['pz'] == '1.6' and gk0['ring'] == 1 and gk0['z'] == '20' and gk0['vis'] == 'visible' and gk0['push'] == 0 and '神様極的中' in gk0['sr'] and gk0['oz'] == '31',
               f'神様極的中：押すと ノーマルど的中と 同じ 押した 画面（押された PUSH が 1.6倍の まま ポチッと へこむ・うすい 光の 輪）・黒い 幕・ボードは まだ・絵は 動画の さいごの 1まい だけ（{gk0}）')
         if HAVE_GK:
             pg.wait_for_function("() => (TengelFx.current() || {}).film === 1", timeout=6000)
@@ -988,11 +998,18 @@ try:
         pg.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.events.push({ id: 'unlock-theme:pixel', kind: 'unlock', bucket: '', amount: 0, at: new Date().toISOString(), use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:pixel', device: 'x' }); await TengelLocal.putMeta(w); })()""")
         pg.wait_for_timeout(400); pg.evaluate("TengelKisekae.apply('pixel')"); pg.wait_for_timeout(800)
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'pc' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(400)
-        rb = pg.evaluate("""() => ({ rbf: document.querySelectorAll('#fxOv .pbox.rbw .push .rbf').length, rbw: document.querySelectorAll('#fxOv .pbox.rbw').length, svg: document.querySelectorAll('#fxOv .pbox.rbw .push svg').length,
-          o: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo').length, mask: document.querySelectorAll('#fxOv .pbox.rbw .push svg mask use').length, anim: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo animateTransform').length,
-          blend: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push svg .rbwo')).mixBlendMode, bg: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push')).backgroundColor })""")
-        check(rb['rbw'] == 1 and rb['rbf'] == 0 and rb['svg'] == 2 and rb['o'] == 1 and rb['mask'] == 1 and rb['anim'] == 1 and rb['blend'] == 'color' and rb['bg'] in ('rgba(0, 0, 0, 0)', 'transparent'),
-              f'第4.89版：ドットの プレミアムの PUSH は 四角い 虹（.rbf）なし・面の 絵（ドットの 馬）だけに 絵の 形の 虹（まわりの 飾りは そのまま）（{rb}）')
+        if PIC:      # 第4.148版：絵の PUSH は、絵の 形で 切りぬいた 虹（.rbf に CSS の mask）。SVG の 面は ない
+            rb = pg.evaluate("""() => { const f = document.querySelector('#fxOv .pbox.rbw .push.pim .rbf'), cs = f ? getComputedStyle(f) : null; return { rbf: document.querySelectorAll('#fxOv .pbox.rbw .push .rbf').length, rbw: document.querySelectorAll('#fxOv .pbox.rbw').length,
+              svg: document.querySelectorAll('#fxOv .pbox.rbw .push svg').length, img: (document.querySelector('#fxOv .pbox.rbw .push.pim .pimg') || { getAttribute: () => '' }).getAttribute('src'), mask: cs ? (cs.webkitMaskImage || cs.maskImage || '') : '',
+              bg: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push')).backgroundColor }; }""")
+            check(rb['rbw'] == 1 and rb['rbf'] == 1 and rb['svg'] == 0 and rb['img'] == 'pb_pixel.webp' and 'pb_pixel.webp' in rb['mask'] and rb['bg'] in ('rgba(0, 0, 0, 0)', 'transparent'),
+                  f'第4.148版：ドットの プレミアムの PUSH は 絵（ドットの 馬）・虹は 絵の 形で 切りぬく（四角い 虹に ならない）（{rb}）')
+        else:
+            rb = pg.evaluate("""() => ({ rbf: document.querySelectorAll('#fxOv .pbox.rbw .push .rbf').length, rbw: document.querySelectorAll('#fxOv .pbox.rbw').length, svg: document.querySelectorAll('#fxOv .pbox.rbw .push svg').length,
+              o: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo').length, mask: document.querySelectorAll('#fxOv .pbox.rbw .push svg mask use').length, anim: document.querySelectorAll('#fxOv .pbox.rbw .push svg .rbwo animateTransform').length,
+              blend: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push svg .rbwo')).mixBlendMode, bg: getComputedStyle(document.querySelector('#fxOv .pbox.rbw .push')).backgroundColor })""")
+            check(rb['rbw'] == 1 and rb['rbf'] == 0 and rb['svg'] == 2 and rb['o'] == 1 and rb['mask'] == 1 and rb['anim'] == 1 and rb['blend'] == 'color' and rb['bg'] in ('rgba(0, 0, 0, 0)', 'transparent'),
+                  f'第4.89版：ドットの プレミアムの PUSH は 四角い 虹（.rbf）なし・面の 絵（ドットの 馬）だけに 絵の 形の 虹（まわりの 飾りは そのまま）（{rb}）')
         pg.evaluate('TengelFx.close()'); pg.evaluate("TengelKisekae.apply('default')"); pg.wait_for_timeout(400)
         pg.evaluate("TengelFx.set({ calm: null })")
         sv = pg.evaluate("TengelLocal.getSetting('fx')")
@@ -1227,15 +1244,15 @@ try:
         # 的中ボタン：夕焼けの PUSH（面の SVG・はじける 光）→ 夕焼けのボード。デカ的中の PUSH も 夕焼けの PUSH・ボードは夕焼け
         pg.evaluate("(s) => TengelFx.show(s)", spec(None, [('馬単', '的中', [[6, 2]]), ('単勝', '的中', [[6]])])); pg.wait_for_timeout(300)
         fk = pg.locator('#fxOv')
-        check(fk.locator('.push.ss svg').count() >= 1 and fk.locator('.pshadow.ss').count() == 1 and fk.locator('.tap.ss').inner_text() == 'タップ！' and pg.evaluate('TengelFx.current()')['theme'] == 'sunset', '的中 → 夕焼けの PUSH（夕日の面・タップ！）')
+        check(fk.locator(f'.push.ss {FACE}').count() >= 1 and fk.locator('.push.ss.pim').count() == (1 if PIC else 0) and fk.locator('.pshadow.ss').count() == 1 and fk.locator('.tap.ss').inner_text() == 'タップ！' and pg.evaluate('TengelFx.current()')['theme'] == 'sunset', '的中 → 夕焼けの PUSH（夕日の面・タップ！）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_push.png'), full_page=False)
         fk.locator('.push').click(force=True); pg.wait_for_timeout(2300)
-        check(fk.locator('.pressed.ss svg').count() >= 1 and fk.locator('.fxs .ov.hit .clips.ss').count() >= 1 and 't-sunset' in fk.locator('.rb').get_attribute('class') and fk.locator('.rb .bh').text_content() == '的中！' and fk.locator('.rb .orn').count() == 1 and fk.locator('.rb .brows li').count() == 3,
+        check(fk.locator(f'.pressed.ss {FACE}').count() >= 1 and fk.locator('.fxs .ov.hit .clips.ss').count() >= 1 and 't-sunset' in fk.locator('.rb').get_attribute('class') and fk.locator('.rb .bh').text_content() == '的中！' and fk.locator('.rb .orn').count() == 1 and fk.locator('.rb .brows li').count() == 3,
               '押すと 夕焼けの 光が はじけて → 夕焼けのボード（すみに 飾り・券種ごとの行）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_board.png'), full_page=False)
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
         pg.evaluate("(s) => TengelFx.show(s)", spec([8, 5, 2])); pg.wait_for_timeout(300)
-        check(fk.locator('.ov.big .pbox.pz .push.ss svg').count() >= 1 and fk.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()')['theme'] == 'sunset' and pg.evaluate('TengelFx.current()')['pz'] == 1.2 and fk.locator('.ov.big .spk').count() == 1, 'デカ的中の PUSH も 夕焼けの PUSH（1.2倍・まわりは デカ的中の きらめき・第4.60版）')
+        check(fk.locator(f'.ov.big .pbox.pz .push.ss {FACE}').count() >= 1 and fk.locator('.push.big').count() == 0 and pg.evaluate('TengelFx.current()')['theme'] == 'sunset' and pg.evaluate('TengelFx.current()')['pz'] == 1.2 and fk.locator('.ov.big .spk').count() == 1, 'デカ的中の PUSH も 夕焼けの PUSH（1.2倍・まわりは デカ的中の きらめき・第4.60版）')
         fk.locator('.push').click(force=True); pg.wait_for_timeout(800)
         check('t-sunset' in fk.locator('.rb').get_attribute('class') and fk.locator('.rb.big .bh').text_content() == 'デカ的中!!', 'デカ的中のボードは夕焼け')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)

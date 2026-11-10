@@ -64,6 +64,19 @@ KIDS_HD_SVG = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10' widt
                "<ellipse cx='3.1' cy='5' rx='2.5' ry='4.7' transform='rotate(-30 3.1 5)' fill='#F4DC82'/><ellipse cx='8.9' cy='5' rx='2.5' ry='4.7' transform='rotate(30 8.9 5)' fill='#F4DC82'/>"
                "<path d='M2 2.4 q1.2 1.6 1.6 4 M10 2.4 q-1.2 1.6 -1.6 4' stroke='#FFF7CF' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>")
 BLOB_DIR = os.environ.get('KISEKAE_ASSETS') or os.path.join(SRC, 'ios', 'kisekae_blobs')
+# 第4.148版（まさちゃん 2026/11/10 20:36・11/11 00:02〜00:16）：PUSHボタンの 絵（まさちゃんの 絵 31まい：テーマ 1つに 1まい・いつもの も）。
+#   ios/push_assets/（PUSH_ASSETS=<フォルダ>）の pb_<id>.webp と 台帳 pb.json（kisekae/push_art.py が 作る）。リポジトリには 入れない ＝ 手元に ない（CI）ときは {}。
+#   絵が ある テーマ：一覧（theme_list）に pa＝{f, w, h}（ファイル名・画面で 出す 大きさ）を のせて、ks_<id>.json の PUSH の 面（svg・pressed）は 入れない
+#   （アプリは 絵を 出す：fx.js の artOn。はじける かけら burst と CSS は そのまま）。絵が ない テーマ・CI：今までの コードの PUSH の まま
+_PUSH_ART = None
+
+
+def push_art():
+    global _PUSH_ART
+    if _PUSH_ART is None:
+        import push_art as _pa
+        _PUSH_ART = _pa.files()
+    return _PUSH_ART
 
 
 def asset_name(bid):
@@ -363,6 +376,9 @@ def theme_list():
                        alt=(t20['alt'] if t20 else ''), fonts=[t['v']['font'].strip('"'), t['v']['dfont'].strip('"')], pc=push_code(tid))
             if tid in PK.IDS:
                 row['pack'] = PK.ORDER.index(tid) + 1          # 壁紙パックの 解放の 順（1〜10：読み込み 5レースごと）
+            pa = push_art().get(tid)
+            if pa:
+                row['pa'] = dict(f=pa['f'], w=pa['w'], h=pa['h'])      # 第4.148版：PUSHボタンの 絵（ファイル名・画面で 出す 大きさ：CSS の px）
             out.append(row)
     return out
 
@@ -524,7 +540,11 @@ def payload(tid, G):
         css = _push_css(G, pc)
         css, html = scoped(css, '.fxs', 'fx', f_push() + '\x00' + f_pressed() + '\x00' + f_burst(), extra_names=base_kf_names(G))
         a, b, c = html.split('\x00')
+        if tid in push_art():
+            a = b = ''                                           # 第4.148版：PUSHボタンの 絵が ある テーマは コードの 面（PUSH・押された PUSH）を 入れない（絵を 出す）
         out['push'] = dict(pc=pc, svg=replace_blobs(a), pressed=replace_blobs(b), burst=replace_blobs(c), css=replace_blobs(css))
+        if tid in push_art():
+            out['push']['img'] = 1                               # しるし：面は 絵で 出す（絵が 読めない ときは いつもの 赤い PUSH：fx.js）
     return out
 
 

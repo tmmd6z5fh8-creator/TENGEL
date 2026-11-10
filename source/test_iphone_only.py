@@ -138,6 +138,7 @@ if r.returncode == 0:
     #   でこぼこ（tc_n_*・fgN_n*）・つや（fgN_m*）・光と 雲の 地図（bcp_*a_m1〜3・_f）は もとと 1バイトも ちがわない。台帳（lite.info）は アプリに 入れない
     import assets_dir as _ad
     import hashlib as _hl
+    _pb_on = any(f.startswith('pb_') and f.endswith('.webp') for f in res)      # 第4.148版：PUSHボタンの 絵（31まい・約3.2MB）が 入って いる とき
     if all(_ad.is_lite(n) for n in _ad.NAMES):
         RES = os.path.join(out, 'Tengel.swiftpm', 'Resources')
         _man = {n: _ad.manifest(n) for n in _ad.NAMES}
@@ -152,10 +153,10 @@ if r.returncode == 0:
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(17.5e6 < p_films < 19.5e6 and 13.2e6 < p_bcp < 14.7e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and 138e6 < p_all < 146e6 and same_sz and keep_ok and src_ok
+        check(17.5e6 < p_films < 19.5e6 and 13.2e6 < p_bcp < 14.7e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and ((141e6 < p_all < 149e6) if _pb_on else (138e6 < p_all < 146e6)) and same_sz and keep_ok and src_ok
               and how.get('film') == 5 and how.get('webp', 0) >= 405 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：前は 21.7MB・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB）・でこぼこ／つや／光と 雲の 地図（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）・でこぼこ／つや／光と 雲の 地図（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）
@@ -230,8 +231,24 @@ if r.returncode == 0:
     # 第4.147版：桜を 外した ので、同じ 確かめを 夕焼け（のこった「季節・行事」の 壁紙）で
     sk = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_sunset.json'), encoding='utf8'))
     check(sk['bnr'] and '<div class="ssw"' in sk['bnr']['html'] and 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' in sk['bnr']['html'] and '#ksBnr .ssw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
-          and sk['push']['pc'] == 'ss' and '<svg' in sk['push']['svg'] and 'class="clips ss"' in sk['push']['burst'] and '.fxs .push.ss' in sk['push']['css'] and '.fxs .rb.t-sunset{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
-          'ks_sunset.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・夕焼けの PUSH（面・はじける 光・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
+          and sk['push']['pc'] == 'ss' and ((sk['push']['svg'] == '' and sk['push']['pressed'] == '' and sk['push'].get('img') == 1) if 'pb_sunset.webp' in res else ('<svg' in sk['push']['svg'] and '<svg' in sk['push']['pressed'] and 'img' not in sk['push'])) and 'class="clips ss"' in sk['push']['burst'] and '.fxs .push.ss' in sk['push']['css'] and '.fxs .rb.t-sunset{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
+          'ks_sunset.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・夕焼けの PUSH（面：第4.148版から 絵が あれば コードの 面は 入れない・はじける 光・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
+    # 第4.148版（まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」→ 11/11 00:02・00:05・00:16 に 31まい＝テーマ 1つに 1まい・いつもの も）：
+    #   PUSHボタンの 絵（ios/push_assets/pb_<id>.webp：kisekae/push_art.py が もとの 絵 src/<id>.png から 作る）は、手元に あれば 31まい ぜんぶ Resources に 入る。もとの 絵・台帳（pb.json）・PNG は 入れない。
+    #   一覧（__KS の themes[].pa＝ファイルの 名前と 出す 大きさ）・テーマの ks_<id>.json（push.img＝1・コードの 面 svg／pressed は 入れない）。なければ 入れずに 作れる（今までの コードの PUSH：下の テスト版の 作り方で 確かめる）
+    import push_art as _pa
+    PB = _pa.files(); pb_res = sorted(f for f in res if f.startswith('pb_')); RES2 = os.path.join(out, 'Tengel.swiftpm', 'Resources')
+    pa_ok = all((t.get('pa') == {'f': PB[t['id']]['f'], 'w': PB[t['id']]['w'], 'h': PB[t['id']]['h']}) if t['id'] in PB else ('pa' not in t) for t in ksd['themes'])
+    kj = {t['id']: _json.load(open(os.path.join(RES2, f"ks_{t['id']}.json"), encoding='utf8')) for t in ksd['themes'] if t['id'] != 'default'}
+    img_ok = all(((j['push'].get('img') == 1 and j['push']['svg'] == '' and j['push']['pressed'] == '' and j['push']['css'] != '') if tid in PB else ('img' not in j['push'] and '<svg' in j['push']['svg'])) for tid, j in kj.items() if j.get('push'))
+    pb_sz = sum(os.path.getsize(os.path.join(RES2, f)) for f in pb_res)
+    same_pb = all(open(os.path.join(RES2, e['f']), 'rb').read() == open(os.path.join(_pa.ROOT, e['f']), 'rb').read() for e in PB.values()) if PB else True
+    check(len(PB) in (0, 31) and pb_res == sorted(e['f'] for e in PB.values()) and (not PB or sorted(PB) == sorted(t['id'] for t in ksd['themes'])) and pa_ok and img_ok and same_pb and pb_sz < 4_000_000
+          and 'pb.json' not in res and not any(f.lower().endswith('.png') for f in res) and 'pushArt' in html and '.push.pim' in html and 'fxpimGlow' in html
+          and 'ios/push_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/push_assets/pb_default.webp'], cwd=os.path.dirname(W)).returncode == 0
+          and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/push_assets/src/default.png'], cwd=os.path.dirname(W)).returncode == 0,
+          f'第4.148版：PUSHボタンの 絵 {len(pb_res)}まい（{pb_sz / 1e6:.2f}MB・テーマ 31こ ぜんぶ＝いつもの も）が Resources に 入る・一覧に 絵の 名前と 出す 大きさ（pa）・テーマの ファイルは 面を 絵に（img＝1・コードの 面なし）・'
+          f'もとの 絵／台帳／PNG は 入れない・絵の フォルダ（ios/push_assets/）は git に 入らない（手元に なければ 0まい＝今までの コードの PUSH）')
     # 第4.87版：ネオンの 光のつぶ（236こ ばらばら・keyframes に 変数なし・光のつぶの 絵なし）（雪の 白い 息の 確かめは 第4.147版で 雪を 外した ので なし）
     nn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_neon.json'), encoding='utf8'))
     nh, nc = nn['bnr']['html'], nn['bnr']['css']
@@ -254,7 +271,10 @@ if r.returncode == 0:
     check(not need_b, f'しぼった字に 画面の言葉が ぜんぶ入っている（足りない字 {len(need_b)}：{"".join(sorted(need_b))[:30]}）→ 足りなければ python3 kisekae/build_fonts.py')
     ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
     n_pk = len({v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()})   # 第4.92版：壁紙パックの 絵（馬の コマの シート・止まった 絵：pack/blobs.json）
-    check(len(ks_imgs) in (0, 69 + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 69 + n_pk), f'着せ替えの絵：手元にあれば69こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
+    n_face = 1 if PB else 0      # 第4.148版：PUSHボタンの 絵が ある ときは、コードの PUSH の 面 だけが 使って いた 絵（マスター帯の PUSH の 面：tengel_blobs.json の push・132KB）を 入れない
+    check(len(ks_imgs) in (0, 69 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 69 - n_face + n_pk)
+          and (('ks_38c796c9e27ea6f52001b6605ca607a0.webp' not in res) if PB else True),
+          f'着せ替えの絵：手元にあれば{69 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝69 → 68こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')
@@ -263,7 +283,7 @@ check('import AVFoundation' in ap2 and 'setCategory(.ambient' in ap2 and '.mixWi
 check('case "m4a": return "audio/mp4"' in af, 'アプリの中の音のファイル（m4a）を Web の画面に渡せる')
 # 第4.59版：テスト版（TENGEL_TEST=1）：TengelTest.swiftpm・名前「テンゲル テスト」・index.html に __TEST・絵と 音と 動画は ふつうと 同じ 入れ方（ここでは なしで 作る）
 out2 = tempfile.mkdtemp()
-r2 = subprocess.run([sys.executable, 'build_ios.py', out2], capture_output=True, text=True, env=dict(os.environ, TENGEL_TEST='1', FX_ASSETS='/nonexistent', KISEKAE_ASSETS='/nonexistent'))
+r2 = subprocess.run([sys.executable, 'build_ios.py', out2], capture_output=True, text=True, env=dict(os.environ, TENGEL_TEST='1', FX_ASSETS='/nonexistent', KISEKAE_ASSETS='/nonexistent', PUSH_ASSETS='/nonexistent'))
 check(r2.returncode == 0 and os.path.isdir(os.path.join(out2, 'TengelTest.swiftpm')) and os.path.exists(os.path.join(out2, 'TengelTest.swiftpm.zip')), 'テスト版：TENGEL_TEST=1 python3 build_ios.py → TengelTest.swiftpm（.zip）' + ('' if r2.returncode == 0 else '：' + (r2.stderr or r2.stdout)[-300:]))
 if r2.returncode == 0:
     ps2 = open(os.path.join(out2, 'TengelTest.swiftpm', 'Package.swift'), encoding='utf8').read()
@@ -272,6 +292,14 @@ if r2.returncode == 0:
     check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app.test",' in ps2 and 'bundleIdentifier: "jp.tengel.app",' not in ps2 and re.search(r'bundleVersion: "\d{8}\.\d+",', ps2) and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2,
           'テスト版：アプリの 名前は「テンゲル テスト」・bundle id は jp.tengel.app.test（本番と 並べて 入れられる）・ビルド番号は 日付から・iPhone用は ふつうと 同じ')
     check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
+    # 第4.148版：PUSHボタンの 絵が ない 作り方（PUSH_ASSETS=/nonexistent＝CI）：絵は 1まいも 入らない・一覧に pa なし・テーマの ファイルは 今までの コードの 面（svg）＝今までの PUSH の まま
+    import json as _j2
+    res2 = os.listdir(os.path.join(out2, 'TengelTest.swiftpm', 'Resources'))
+    ksd2 = _j2.JSONDecoder().raw_decode(h2, h2.index('window.__KS=') + len('window.__KS='))[0]
+    sk2 = _j2.load(open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'ks_sunset.json'), encoding='utf8')); px2 = _j2.load(open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'ks_pixel.json'), encoding='utf8'))
+    check(not any(f.startswith('pb_') for f in res2) and len(ksd2['themes']) == 31 and not any('pa' in t for t in ksd2['themes']) and 'img' not in sk2['push'] and '<svg' in sk2['push']['svg'] and '<svg' in sk2['push']['pressed']
+          and 'img' not in px2['push'] and '<svg' in px2['push']['svg'],
+          '第4.148版：PUSHボタンの 絵が ない 作り方（CI と 同じ）：絵は 入らない・一覧に pa なし・テーマの ファイルは 今までの コードの 面（svg）の まま ＝ 今までの PUSH で 作れる')
 shutil.rmtree(out2, ignore_errors=True)
 shutil.rmtree(out, ignore_errors=True)   # 2026/11/04：作った アプリ（約190MB）を 残さない（前は /tmp に 1回ごとに 残って いた）
 print('結果：', 'OK' if not fails else f'{len(fails)}件おかしい')

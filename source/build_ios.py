@@ -145,6 +145,15 @@ for bid in sorted(ks_ids):
         shutil.copy(src_f, os.path.join(res, name)); files[name] = name; ks_have += 1
 if ks_have != len(ks_ids):
     print('※ 着せ替えの絵が', len(ks_ids) - ks_have, 'こ ない（', ks_dir, '）。キャンバスから集める（アップデート指示書 16.1 の 絵の入れ方）。CIではなしのまま')
+# PUSHボタンの 絵（第4.148版：まさちゃんの 絵 31まい＝テーマ 1つに 1まい・いつもの も）：ios/push_assets/（PUSH_ASSETS=<フォルダ>）の pb_<id>.webp（kisekae/push_art.py が 作る）。
+# リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形：今までの コードの PUSH の まま）。もとの 絵（src/*.png）と 台帳（pb.json）は 入れない
+import push_art as _pa
+pb_art = _ks.push_art()
+for _tid, _e in sorted(pb_art.items()):
+    assert _e['f'].lower() not in names and _e['f'] not in files and _e['f'].endswith('.webp'), _e['f']
+    shutil.copy(os.path.join(_pa.ROOT, _e['f']), os.path.join(res, _e['f'])); files[_e['f']] = _e['f']
+if not pb_art:
+    print('※ PUSHボタンの 絵が ない（', _pa.ROOT, '）。python3 kisekae/push_art.py で 作るよ（CIではなしのまま＝今までの PUSH）')
 
 # アイコン（1024×1024・透明なし）
 icon = Image.open(os.path.join(W, 'icons', 'icon_master_en.png'))
