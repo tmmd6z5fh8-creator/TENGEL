@@ -26,6 +26,7 @@ ios/lite/
 # PUSHボタンの 絵（第4.148版：まさちゃんの 絵 31まい＝ios/push_assets/src/・アプリに 入れる 形＝pb_<名前>.webp と 台帳 pb.json：kisekae/push_art.py）
 ios/push_assets/
 srv_pb/
+srv_band/
 srv_tc/
 srv_fig/
 srv_figcap/

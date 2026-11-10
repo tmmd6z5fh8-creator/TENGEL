@@ -1,5 +1,11 @@
 """シルバー帯・ゴールド帯の壁紙の動き（まさちゃんの指定「常にシルバーの馬がキラキラ輝いている」「常にゴールドの馬の像がキラキラゴールドに輝いている」）：
    ページに入れる HTML と CSS（銀も金も 同じ作り・色だけ ちがう）
+   第4.149版：マスター帯も 同じ 作り（まさちゃん 2026/11/11 02:14「シルバー帯、ゴールド帯のようにこのファイルの3Dモデルが中央に合って光っているようにして！…
+   元々あったマスター帯の壁紙と雷の演出とかは消していいよ！」）：name＝'tengel'（クラスは mxt…）。像が 右向き（しっぽが 左）なので 光の 粒は 左へ 流れる・
+   きらめきと 光の 粒は 馬の 所 だけ（台と 台の 字の 上には 出さない：metal_run.json の tengel.shape.ped）。前の マスター帯の 壁紙（動く 数字・緑の 雷：tengel_wall.py の inline）は 使わない
+   第4.149版：**馬（主役）だけ 高画質**（まさちゃん 2026/11/11 02:36「壁紙は、馬(主役)だけ画質良くなるようにして！」）：像 だけの すき通った 絵（2倍：metal_blobs.json の <名前>_statue・
+   置く 場所は metal_run.json の <名前>.statue）を、きらめきを ぬいた 絵と 光の 輪の 上・きらめきと 光の 粒の 下に 重ねる（.mx?H）。背景の 絵（780×320）は そのまま。
+   視差効果を 減らす ときも 像は 高画質（いまの 絵の 上に 重ねる）＝いまの 絵の きらめき（像の 上の 4つ）が かくれる ので、同じ 所に 動かない きらめき（.mx?S）を 出す
    - 絵は flat/metal_run.py の いまの絵（きらめきつき：silver_banner・gold_banner）と、そこから きらめき（4本の光）だけ ぬいた絵（silver_base・gold_base）。
      キャンバスでは /_blob/<id>（metal_blobs.json）・像の形（ふちの線）と きらめきの場所は metal_run.json。1つの <svg>（780×320 を 390×160 に）に重ねる
    - いつも キラキラ：
@@ -20,9 +26,12 @@ ALT = dict(
     silver=('銀の地（ヘアライン）と光の輪の前を、全力で駆ける銀の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト'
             '（いつも キラキラ：あちこちが きらっと またたく・光の粒が うしろへ流れる・光の輪を 光が回る）'),
     gold=('金の地（ヘアライン）と光の輪の前を、全力で駆ける金の馬の像（うしろへ流れるたてがみとしっぽ・みがいた床にうつる）のイラスト'
-          '（いつも 金に キラキラ：あちこちが きらっと またたく・金の粉が うしろへ流れる・光の輪を 光が回る）'))
-PRE = dict(silver='mxs', gold='mxg')
-NAME = dict(silver='シルバー帯', gold='ゴールド帯')
+          '（いつも 金に キラキラ：あちこちが きらっと またたく・金の粉が うしろへ流れる・光の輪を 光が回る）'),
+    tengel=('深い緑の地と金の光の輪の前で、緑の台（TENGER・テンゲルの金の字）の上を駆ける金の馬の像（緑のたてがみとしっぽ・緑の鞍・みがいた床にうつる）のイラスト'
+            '（いつも 金に キラキラ：馬の あちこちが きらっと またたく・金の粉が うしろへ流れる・光の輪を 光が回る）'))
+PRE = dict(silver='mxs', gold='mxg', tengel='mxt')
+NAME = dict(silver='シルバー帯', gold='ゴールド帯', tengel='マスター帯')
+FLOW = dict(silver=1, gold=1, tengel=-1)        # 光の 粒が 流れる 向き（像の うしろ）：銀・金は 右へ（左向きの 馬）・マスター帯は 左へ（右向きの 馬）
 
 TWINKLE = 4.0                  # きらめきの1回り（秒）：どの きらめきも この間に 2回 きらっ
 TW_T0 = .08                    # 1回りの中で いちばん はじめの きらっ（秒）
@@ -38,7 +47,8 @@ RING_ARC = 75.0                # 光の輪の光の 尾の長さ（度）
 
 COL = dict(
     silver=dict(star='#FFFFFF', glow='#AECBFF', dust='#FFFFFF', dglow='#B7D0FF', ring='#FFFFFF'),
-    gold=dict(star='#FFFBEA', glow='#FFC83A', dust='#FFF0BA', dglow='#F5B829', ring='#FFF1C0'))
+    gold=dict(star='#FFFBEA', glow='#FFC83A', dust='#FFF0BA', dglow='#F5B829', ring='#FFF1C0'),
+    tengel=dict(star='#FFFBEA', glow='#FFC83A', dust='#FFF0BA', dglow='#F5B829', ring='#FFE9A6'))
 
 
 def pct(t, period):
@@ -121,12 +131,15 @@ def tw_slots(xs, seed=5):
             return [(a[i], n + b[i]) for i in range(n)]
 
 
-def trail_src(P, n=TRAIL, gap=13.0):
-    """光の粒が 出る所：像の ふちの 右を向いた所（右は外・左は中）で、TRAIL_X より右。たがいに gap はなす"""
+def trail_src(P, n=TRAIL, gap=13.0, flow=1, xlim=TRAIL_X, ymax=None):
+    """光の粒が 出る所：像の ふちの 右を向いた所（右は外・左は中）で、TRAIL_X より右。たがいに gap はなす。
+       flow＝-1（マスター帯）：左を 向いた 所で xlim より 左・ymax より 上（台からは 出さない）"""
     cand = []
     for p in P:
         for x, y in p:
-            if x > TRAIL_X and not inside(P, x + 6, y) and inside(P, x - 4, y):
+            if ymax is not None and y >= ymax:
+                continue
+            if (x - xlim) * flow > 0 and not inside(P, x + 6 * flow, y) and inside(P, x - 4 * flow, y):
                 cand.append((x, y))
     rnd = random.Random(23)
     rnd.shuffle(cand)
@@ -152,7 +165,8 @@ def inline(name, blobs, run, alt=None):
     p = PRE[name]
     C = COL[name]
     R = run[name]
-    shape = run['shape']
+    shape = R.get('shape') or run['shape']          # マスター帯は 像が ちがう ので 形も その 中に
+    flow = FLOW[name]
     d = shape['d']
     P = polys(d)
     floor = shape['floor']
@@ -180,12 +194,18 @@ def inline(name, blobs, run, alt=None):
             f'<g id="{p}Sp"><circle r="8" fill="url(#{p}Dg)"/><path d="{star_d(9, (1, .3, 1, .3), 1.1)}" fill="{C["dust"]}"/><circle r="1.6" fill="#FFFFFF"/></g>'
             f'<g id="{p}Dt"><circle r="6" fill="url(#{p}Gl)"/><path d="{star_d(6.5, (1, .25, 1, .25), .9)}" fill="{C["star"]}"/></g>')
     body = im(blobs['banner']) + f'<g class="{p}A">' + im(blobs['base'])
+    hero = ''                                       # 馬（主役）だけ 高画質の 絵（ある とき）
+    if blobs.get('statue') and R.get('statue'):
+        sx, sy, sw, sh_ = R['statue']
+        hero = f'<image class="{p}H" href="{blobs["statue"]}" x="{sx}" y="{sy}" width="{sw}" height="{sh_}" preserveAspectRatio="none"/>'
     # ---------- うしろの光の輪を 光が回る（像の うしろ・床より上だけ） ----------
     arc = f'M{num(tx, 1)} {num(ty, 1)}A{num(rr)} {num(rr)} 0 0 1 {num(hx, 1)} {num(hy, 1)}'
     body += (f'<g clip-path="url(#{p}O)"><g class="{p}R">'
              f'<path d="{arc}" fill="none" stroke="url(#{p}Rg)" stroke-width="11" stroke-linecap="round" opacity=".28"/>'
              f'<path d="{arc}" fill="none" stroke="url(#{p}Rg)" stroke-width="3.6" stroke-linecap="round"/>'
              f'<circle cx="{num(hx, 1)}" cy="{num(hy, 1)}" r="11" fill="url(#{p}Gl)"/></g></g>')
+    if hero:                                        # きらめきを ぬいた 絵と 光の 輪は ここまで → 像（高画質）→ 光の 粒と きらめき
+        body += '</g>' + hero + f'<g class="{p}A">'
     css.append(f'.{p}w .{p}R{{transform-box:view-box;transform-origin:{num(cx, 1)}px {num(cy, 1)}px;animation:{p}R {RING_S:g}s linear infinite}}'
                f'@keyframes {p}R{{to{{transform:rotate(360deg)}}}}')
     # ---------- こまかい光の粒（像の上・ばらばらに ちかっ） ----------
@@ -201,9 +221,11 @@ def inline(name, blobs, run, alt=None):
     # ---------- うしろへ流れる 光の粒（金は 金の粉） ----------
     rnd = random.Random(47)
     trail = ''
-    for i, (x, y) in enumerate(trail_src(P)):
+    box = shape['box']
+    src = trail_src(P) if flow > 0 else trail_src(P, flow=-1, xlim=(box[0] + box[2]) / 2 - 30, ymax=shape.get('ped', shape['floor']) - 8)
+    for i, (x, y) in enumerate(src):
         dur = rnd.uniform(1.8, 2.8)
-        dx, dy = rnd.uniform(80, 160), rnd.uniform(-22, 4)
+        dx, dy = flow * rnd.uniform(80, 160), rnd.uniform(-22, 4)
         s = rnd.uniform(.7, 1.15)
         c = f'{p}P{i}'
         trail += f'<g transform="translate({num(x, 1)} {num(y, 1)})"><g class="{p}P {c}"><use href="#{p}Sp"/></g></g>'
@@ -228,11 +250,16 @@ def inline(name, blobs, run, alt=None):
                    + kf(c, keys, TWINKLE, lambda v: f'opacity:{num(v[1])};transform:scale({num(v[0], 3)}) rotate({num(v[2], 1)}deg)'))
     css.append(f'.{p}w .{p}F{{opacity:0;transform-box:view-box;transform-origin:0 0}}')
     body += '</g>'
+    still = ''
+    if hero:                                        # 視差効果を 減らす とき だけ：いまの 絵と 同じ 所に 動かない きらめき（像の 上に 重ねた 高画質の 絵で かくれる ぶん）
+        body += f'<g class="{p}S">' + ''.join(f'<use href="#{p}Sm" transform="translate({x} {y}) scale({num(L / STAR_L * 1.15, 3)})"/>' for x, y, L in R['spark']) + '</g>'
+        css.append(f'.{p}w .{p}S{{display:none}}')
+        still = f'.{p}w .{p}S{{display:inline}}'
     html = (f'<div class="bnr {p}w" role="img" aria-label="{alt or ALT[name]}"><svg viewBox="0 0 780 320" width="390" height="160" '
             f'preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>{defs}</defs>{body}</svg></div>')
     css = (f'.{p}w{{position:relative;overflow:hidden}}.{p}w svg{{display:block;width:100%;height:100%}}'
            + ''.join(css)
-           + f'@media (prefers-reduced-motion:reduce){{.{p}w *{{animation:none!important}}.{p}w .{p}A{{visibility:hidden}}}}')
+           + f'@media (prefers-reduced-motion:reduce){{.{p}w *{{animation:none!important}}.{p}w .{p}A{{visibility:hidden}}{still}}}')
     return html, css
 
 
@@ -256,12 +283,15 @@ def load_blobs(fn, name):
     """metal_blobs.json（silver_banner・silver_base・gold_banner・gold_base → id）から その色の2まい"""
     b = json.load(open(fn))
     f = lambda v: v if v.startswith('/_blob/') else f'/_blob/{v}'
-    return dict(banner=f(b[f'{name}_banner']), base=f(b[f'{name}_base']))
+    out = dict(banner=f(b[f'{name}_banner']), base=f(b[f'{name}_base']))
+    if b.get(f'{name}_statue'):                     # 馬（主役）だけ 高画質の 絵（第4.149版）
+        out['statue'] = f(b[f'{name}_statue'])
+    return out
 
 
 def plan(run):
     """きらめきの 予定（1回目・2回目の秒）と、x（左右）との 相関（左から右へ 順に 光っていないか）"""
-    for name in ('silver', 'gold'):
+    for name in [n for n in ('silver', 'gold', 'tengel') if n in run]:
         tw = twinkles(run[name])
         print(NAME[name], len(tw), 'こ')
         for x, y, L, main, t1, t2 in sorted(tw, key=lambda v: v[4]):

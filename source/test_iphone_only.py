@@ -272,9 +272,19 @@ if r.returncode == 0:
     ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
     n_pk = len({v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()})   # 第4.92版：壁紙パックの 絵（馬の コマの シート・止まった 絵：pack/blobs.json）
     n_face = 1 if PB else 0      # 第4.148版：PUSHボタンの 絵が ある ときは、コードの PUSH の 面 だけが 使って いた 絵（マスター帯の PUSH の 面：tengel_blobs.json の push・132KB）を 入れない
-    check(len(ks_imgs) in (0, 69 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 69 - n_face + n_pk)
+    # 第4.149版（まさちゃん 2026/11/11 00:39・02:14）：帯の 壁紙 3つ（シルバー帯・ゴールド帯・マスター帯）は まさちゃんの 3D の 像の 絵（kisekae/flat/metal_run.py：metal_blobs.json の 6まい）。
+    #   前の 絵（銀 2・金 2・マスター帯の エンブレムの 絵 1）は アプリに 入れない（手元の ios/kisekae_blobs/ には のこす）＝5 → 9まい
+    #   （銀・金・マスター帯 × いまの 絵／きらめきを ぬいた 絵／馬（主役）だけの 高画質の 絵：02:36「壁紙は、馬(主役)だけ画質良くなるようにして！」）
+    _mb = _json.load(open(os.path.join(W, 'kisekae', 'metal_blobs.json')))
+    _old_band = ['9504cde9557dd15164d7ea4c2fe29e8e', '6aa961c2be4422888172ea9689ef7cf0', '03691f51ad78a7922baf6b6a1d19d5ab', '681b968a52b39a9ec4076a934471596b', '0f58da915ffceb4dc05ffccb4b103100']
+    _tg = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_tengel.json'), encoding='utf8'))
+    check(len(_mb) == 9 and (not ks_imgs or (all(f'ks_{v}.webp' in res for v in _mb.values()) and not any(f'ks_{v}.webp' in res for v in _old_band)))
+          and 'mxtw' in _tg['bnr']['html'] and 'tqw' not in _json.dumps(_tg['bnr']) and f"ks_{_mb['tengel_banner']}.webp" in _tg['bnr']['html'] and f'class="mxtH" href="ks_{_mb["tengel_statue"]}.webp"' in _tg['bnr']['html']
+          and [t['desc'] for t in ksd['themes'] if t['id'] == 'tengel'] == ['テンゲル・光る像'] and [t['thumb'] for t in ksd['themes'] if t['id'] in ('silver', 'golden', 'tengel')] == [f"ks_{_mb[k]}.webp" for k in ('silver_banner', 'gold_banner', 'tengel_banner')],
+          '第4.149版：帯の 壁紙 3つは 3D の 像の 絵（9まい：背景 6＋馬 だけの 高画質の 絵 3）・前の 絵 5まいは 入って いない・マスター帯の 上の 絵は 像＋きらめき（mxt：動く 数字と 緑の 雷は なし）・一覧の 説明と 小さい 絵も 新しい')
+    check(len(ks_imgs) in (0, 73 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 73 - n_face + n_pk)
           and (('ks_38c796c9e27ea6f52001b6605ca607a0.webp' not in res) if PB else True),
-          f'着せ替えの絵：手元にあれば{69 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝69 → 68こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
+          f'着せ替えの絵：手元にあれば{73 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.149版：帯の 壁紙の 絵 5 → 9まい＝69 → 73こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝73 → 72こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')

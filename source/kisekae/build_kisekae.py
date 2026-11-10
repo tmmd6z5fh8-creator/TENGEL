@@ -361,9 +361,7 @@ def theme_list():
             name = NEW_NAMES.get(tid, t['name'])
             if tid == 'default':
                 name = 'いつもの'
-            desc = t20['desc'] if t20 else OLD_DESC[tid]
-            if tid == 'tengel':
-                desc = 'マスター帯（説明書の絵）'
+            desc = t20['desc'] if t20 else OLD_DESC[tid]      # 第4.149版：マスター帯は「テンゲル・光る像」（前は「マスター帯（説明書の絵）」＝前の 壁紙が 説明書と 同じ エンブレムの 絵 だった）
             if tid in BANNER_SVG:
                 thumb = 'ks_' + BANNER_SVG[tid]
             elif tid == 'default':

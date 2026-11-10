@@ -57,12 +57,19 @@ def render3d(tmp, pal=SILVER):
     return R, S
 
 
+def statue_srgb(R):
+    """像の 色（sRGB・すき通りを かけて いない もの）。まさちゃんの 3D の 馬（flat/metal_glb.py：第4.149版）は もう sRGB（R['srgb']）・前の 像（sdfr）は 線形の 絵から"""
+    if 'srgb' in R:
+        return R['srgb']
+    return to_srgb(aces(R['rgb'] / np.maximum(R['a'], 1e-4)[..., None] * 1.0))
+
+
 def compose(R, rng_seed=5, pal=SILVER, sparkle=True, info=None):
     """絵にする。sparkle=False なら きらめきを描かない（壁紙の動く きらめきの下の絵）。info に dict を渡すと きらめきの場所と長さ・床の線を入れる"""
     rng = np.random.default_rng(rng_seed)
     yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
     A = np.clip(R['a'], 0, 1)
-    rgb = to_srgb(aces(R['rgb'] / np.maximum(R['a'], 1e-4)[..., None] * 1.0))
+    rgb = statue_srgb(R)
     # 床の線：ひづめのいちばん下
     rows = np.nonzero(A.sum(1) > 0.5)[0]
     gy = int(rows.max())

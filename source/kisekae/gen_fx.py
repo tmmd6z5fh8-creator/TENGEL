@@ -170,9 +170,9 @@ def theme_banner(name):
         import metal_wall
         mn = 'silver' if name == 'silver' else 'gold'
         return metal_wall.inline(mn, metal_wall.load_blobs(f'{K}/metal_blobs.json', mn), json.load(open(f'{K}/metal_run.json')))
-    if name == 'tengel':                  # マスター帯：上の絵は いまの絵の まま（キャンバスの id は tengel_blobs.json）・数字の 場所は tengel_run.json（flat/tengel_run.py）・数字と雷はページの SVG
-        import tengel_wall
-        return tengel_wall.inline(tengel_wall.load_blobs(f'{K}/tengel_blobs.json'), json.load(open(f'{K}/tengel_run.json')))
+    if name == 'tengel':                  # マスター帯（第4.149版）：シルバー帯・ゴールド帯と 同じ 作り（まさちゃんの 3D の 像が まん中で 光る：絵は flat/metal_run.py・flat/master_banner.py）。前の 壁紙（エンブレムの 絵・動く 数字・緑の 雷：tengel_wall.inline）は 使わない
+        import metal_wall
+        return metal_wall.inline('tengel', metal_wall.load_blobs(f'{K}/metal_blobs.json', 'tengel'), json.load(open(f'{K}/metal_run.json')))
     if name == 'sea':                     # 海：絵は flat/sea_run.py の4まい（キャンバスの id は sea_blobs.json・大きさは sea_run.json）
         import sea_wall
         return sea_wall.inline(json.load(open(f'{K}/sea_blobs.json')), json.load(open(f'{K}/sea_run.json')))

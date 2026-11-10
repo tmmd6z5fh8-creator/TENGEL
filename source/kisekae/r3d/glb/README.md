@@ -29,8 +29,22 @@ The Meshy GLBs are inputs from まさちゃん and are not part of the repositor
 |---|---|---|
 | `SD_HORSE_GLB` | `/home/claude/work/horse_in/new/Violet_Nightmare_Meshy_AI_2026-11-01_58c781.glb` | 7.75 M triangle textured bust: black horse, violet mane and eyes, white star |
 | `SD_HOOF_GLB` | `/home/claude/work/horse_in/new/Violet_Hoof_Flame_Meshy_AI_2026-11-01_862a69.glb` | 0.2 M triangle purple-black foreleg with hoof |
+| `METAL_HORSE_GLB` | `/home/claude/work/band3d/orig/silver_thunder.glb` | 0.69 M triangle silver statue of a galloping horse ("Silver Thunder"). Used by `kisekae/flat/metal_glb.py` for the Silver and Gold band wallpapers (第4.149版) |
+| `TENGEL_STATUE_GLB` | `/home/claude/work/band3d/orig/tenger.glb` | 0.83 M triangle gold horse on a green pedestal lettered TENGER / テンゲル ("Tenger"). Used by `kisekae/flat/metal_glb.py` for the Master band wallpaper (第4.149版) |
 
 Loading the bust takes about 35 s and about 1.8 GB of RAM. One render at 780×1688 with ss=2 takes about 25 s and about 2.6 GB at peak, so run one 3D process at a time.
+
+## How the band wallpapers use it (第4.149版)
+
+`kisekae/flat/metal_glb.py` turns the two statues into 780×320 pictures (alpha `a` and colour `srgb`) for `kisekae/flat/metal_run.py`:
+
+- The statue is rendered at 4× (3120×1280) as a G-buffer (`alpha`, `normal`, `pos`, `albedo`, `ao`), shaded in numpy, and then box-downsampled. Shading before downsampling keeps the silhouette free of bright speckles.
+- The camera is solved in a short loop so that the silhouette lands in a given span, with its lowest row on the floor line.
+- Metalness and roughness are not in the G-buffer. `_gbuf` reads them by rendering once more with `base_tex` swapped for `mr_tex` (and restores it afterwards).
+- Silver and Gold: a "polished metal" luminance (a small studio environment reflected about the normal, times the texture luminance and AO) is mapped through a silver or a gold colour ramp. Both use the same model, so the two pictures differ only in colour.
+- Master: the model keeps its own colours. Gold parts are metal (tinted reflection), green parts are glossy paint (diffuse plus a weak reflection).
+
+Loading a statue takes about 1.5 s and about 0.7 GB of RAM. One 4× render takes about 3 s.
 
 ## How the sd film uses it
 
