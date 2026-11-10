@@ -1776,7 +1776,8 @@ const TCCare = (() => {
     if (win) {
       at(t + 1.7, tt => { react('hop', 2.4, tt); for (let k = 0; k < 2; k++) ev(tt + 0.1 + 1.12 * k, 'frisk', { n: k }); fx({ k: 'burst', t0: tt + 0.35, w: (P('withers') || [BR.x, BR.y - 200]).slice() }); });      
       at(t + 4.1, tt => { fx({ k: 'unlock', t0: tt, dur: 2.6 }); ev(tt, 'unlock'); });
-      at(t + 4.6, tt => { S.stockBump = tt; S.stock = Math.min(RULE.stockMax, S.stock + RULE.unlock); fx({ k: 'plus', t0: tt, txt: '+' + RULE.unlock }); ev(tt, 'stock'); });
+      
+      at(t + 4.6, tt => { S.stockBump = tt; S.stock = S.stock + RULE.unlock; fx({ k: 'plus', t0: tt, txt: '+' + RULE.unlock }); ev(tt, 'stock'); });
       at(t + 2.6, tt => { S.drainT = tt; });
       at(t + 6.6, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.3; });
     } else {
@@ -2486,7 +2487,8 @@ const TCGuide = (() => {
 #tcg p b{color:#c2456f}
 #tcg table{width:100%;border-collapse:collapse;margin:4px 0 2px;font-size:12.5px;color:#5a3a1c}
 #tcg td{padding:4px 6px;border-bottom:1px dashed #ead7b2}
-#tcg td:first-child{width:64px;font-weight:700;color:#b06a12;text-align:center;background:#fff4dc;border-radius:6px}
+#tcg td:first-child{width:86px;font-weight:700;color:#b06a12;text-align:center;background:#fff4dc;border-radius:6px;line-height:1.25;white-space:nowrap}
+#tcg td:first-child small{display:block;font-size:10px;font-weight:400;color:#a8865a;letter-spacing:.02em}
 #tcg tr:last-child td{border-bottom:0}
 #tcg .pt{font-weight:700;color:#3f7f3a}
 #tcg .rt{font-weight:700;color:#c2456f}
@@ -2494,24 +2496,35 @@ const TCGuide = (() => {
 #tcg .note{font-size:11px;color:#8a6a48}
 #tcg .hh{margin:8px 0 2px;font-weight:700;color:#6b3f1d}
 `;
+  
+  
+  const pc = (d, n) => {               
+    const x = (n || 1) / d * 100, s = String(+x.toFixed(x >= 10 ? 1 : x >= 0.1 ? 2 : 3));
+    return (Math.abs(+s - x) > 1e-9 ? '約' : '') + s + '%';
+  };
+  const R = (d, html) => `<tr data-d="${d}"><td>${pc(d)}<small>1/${d}</small></td><td>${html}</td></tr>`;
+  const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
+  const CARE = [10, 20, 50, 85, 99, 121, 1000, 2000, 3600, 2400];      
   const SEC = [
     ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのたびに抽選！当たりはお世話のあとに出るよ</p>
-      <table><tr><td>1/85</td><td><span class="pt">100P</span> GET</td></tr><tr><td>1/99</td><td><span class="pt">200P</span> GET</td></tr><tr><td>1/121</td><td><span class="pt">300P</span> GET</td></tr>
-      <tr><td>1/1000</td><td><span class="rt">ルーレット</span>（800P か 1600P）</td></tr><tr><td>1/2000</td><td><span class="rt">ルーレット</span>（1600P か 3200P）</td></tr><tr><td>1/3600</td><td><span class="rt">ルーレット</span>（3200P か 6400P）</td></tr>
-      <tr><td>1/2400</td><td><span class="tk">チケット</span>（壁紙 or 結果ボード・1〜3枚）</td></tr></table>
-      <p class="note">チケットは 1/8で3枚・1/3で2枚・そのほかは1枚</p>`],
+      <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
+      ${R(1000, RT(800, 1600))}${R(2000, RT(1600, 3200))}${R(3600, RT(3200, 6400))}
+      ${R(2400, '<span class="tk">チケット</span>（壁紙 or 結果ボード・1〜3枚）')}</table>
+      <p class="note" data-n="sum">ぜんぶ 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
+      <p class="note">ルーレットは どちらも 50%</p>
+      <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・撫でたあとは<b>7秒</b>おやすみ・ハートは<b>1分に5こ</b>まで</p>
-      <p>・ハート<b>10こ</b>で抽選（<b>1/66</b>）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
-    ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（1/3ずつ）</p>`],
-    ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの1/30）→ なかよしハート<b>＋3</b></p>`],
-    ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>1/7</b>で出る</p><p>・ほうきで3回はくとピカピカ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
-    ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> 1/50（お世話5回のあいだ当たりやすい）</p><p>・<b>幻の馬</b> 1/245・<b>神様馬</b> 1/399 がやってくる</p>`],
+      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
+    ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p>`],
+    ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
+    ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・ほうきで3回はくとピカピカ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
+    ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p><p>・<b>幻の馬</b> ${pc(245)}（1/245）・<b>神様馬</b> ${pc(399)}（1/399）がやってくる</p>`],
     ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ（いるのは<b>10分</b>）</p>
       <p class="hh">🌙 幻の馬</p>
-      <table><tr><td>1/300</td><td><span class="rt">ルーレット</span>（800P か 1600P）</td></tr><tr><td>1/500</td><td><span class="rt">ルーレット</span>（1600P か 3200P）</td></tr><tr><td>1/1000</td><td><span class="rt">ルーレット</span>（3200P か 6400P）</td></tr></table>
+      <table data-tab="maboroshi">${R(300, RT(800, 1600))}${R(500, RT(1600, 3200))}${R(1000, RT(3200, 6400))}</table>
       <p class="hh">✨ 神様馬</p>
-      <table><tr><td>1/85</td><td><span class="rt">ルーレット</span>（2000P か 4000P）</td></tr><tr><td>1/99</td><td><span class="rt">ルーレット</span>（5000P か 10000P）</td></tr><tr><td>1/121</td><td><span class="rt">ルーレット</span>（10000P か 20000P）</td></tr></table>
+      <table data-tab="kamisama">${R(85, RT(2000, 4000))}${R(99, RT(5000, 10000))}${R(121, RT(10000, 20000))}</table>
       <p class="note">いるあいだは この表だけ（いつものポイント・チケットは出ないよ）</p>`],
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
@@ -2976,7 +2989,7 @@ const TCPlan = (() => {
   const jaDate = s => { const [y, m, d] = String(s).split('-').map(Number); return `${y}年${m}月${d}日`; };
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
   const wday = s => { const [y, m, d] = String(s).split('-').map(Number); return WD[new Date(y, m - 1, d).getDay()]; };
-  let P = null, root = null, edit = null, auth = '', host = null;
+  let P = null, root = null, edit = null, auth = '', host = null, delAsk = null;      
   function load() {
     try { P = JSON.parse(localStorage.getItem(PK) || 'null'); } catch (e) { P = null; }
     if (!P || !Array.isArray(P.races)) P = { v: 1, on: false, races: [] };
@@ -3027,6 +3040,7 @@ const TCPlan = (() => {
 #tcPlan .sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s}
 #tcPlan .sw[aria-checked="true"]{background:#3f9f5a}#tcPlan .sw[aria-checked="true"]::after{left:29px}
 #tcPlan .warn{font-size:12px;color:#b0445f;margin-top:4px}
+#tcPlan .sb.del.ask{background:#c2456f;color:#fff;border-color:#c2456f}
 #tcPlan .fm{background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:12px}
 #tcPlan .fm h3{margin:0 0 8px;font-size:16px;color:#5b3412}
 #tcPlan .fm label{display:block;font-size:12.5px;color:#8a6a48;margin:10px 0 4px}
@@ -3064,7 +3078,7 @@ const TCPlan = (() => {
       if (r.date !== cur) { cur = r.date; if (r.date !== td) h += `<div class="dh">${jaDate(r.date)}（${wday(r.date)}）</div>`; }
       const meta = [r.venue ? esc(r.venue) : '', r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
       h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${chipRow(r)}`
-        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del" data-p="del" data-id="${esc(r.id)}">消す</button></div></div>`;
+        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? 'ほんとに 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
     b.innerHTML = h;
@@ -3101,8 +3115,9 @@ const TCPlan = (() => {
     paint();
   }
   async function onClick(e) {
-    const a = e.target.closest('[data-p]'); if (!a) { if (e.target === root) close(); return; }
+    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk) { delAsk = null; paint(); } if (e.target === root) close(); return; }
     const k = a.dataset.p;
+    if (k !== 'del') delAsk = null;
     if (k === 'close') { close(); return; }
     if (k === 'on') {
       if (!P.on) {
@@ -3119,7 +3134,13 @@ const TCPlan = (() => {
     }
     if (k === 'add') { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
     if (k === 'edit') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; edit = Object.assign({}, r); paint(); root.querySelector('.pb').scrollTop = 0; return; }
-    if (k === 'del') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; if (!confirm(`「${r.name || 'レース'}」を 消す？`)) return; P.races = P.races.filter(x => x.id !== r.id); save(); paint(); return; }
+    if (k === 'del') {
+      const r = P.races.find(x => x.id === a.dataset.id); if (!r) return;
+      
+      
+      if (delAsk !== r.id) { delAsk = r.id; paint(); return; }
+      delAsk = null; P.races = P.races.filter(x => x.id !== r.id); save(); paint(); return;
+    }
     if (k === 'cancel') { edit = null; paint(); return; }
     if (k === 'ocr') { readForm(); root.querySelector('[data-p=file]').click(); return; }
     if (k === 'save') {
@@ -3137,7 +3158,7 @@ const TCPlan = (() => {
     edit = null; root.style.display = 'flex'; paint();
     auth = await authState(); paint();
   }
-  function close() { if (root) root.style.display = 'none'; edit = null; }
+  function close() { if (root) root.style.display = 'none'; edit = null; delAsk = null; }
   function isOpen() { return !!root && root.style.display !== 'none'; }
   return { open, close, isOpen };
 })();
@@ -3163,7 +3184,10 @@ const TCApp = (() => {
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    
     [1 / 3600, { k: 'rt', tier: 'kamisama' }], [1 / 2400, { k: 'tk' }], [1 / 2000, { k: 'rt', tier: 'maboroshi' }], [1 / 1000, { k: 'rt', tier: 'normal' }],
-    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 85, { k: 'pt', v: 100 }]];
+    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 85, { k: 'pt', v: 100 }],
+    
+    
+    [1 / 50, { k: 'pt', v: 50 }], [1 / 20, { k: 'pt', v: 20 }], [1 / 10, { k: 'pt', v: 10 }]];
   const RT = { normal: [800, 1600], maboroshi: [1600, 3200], kamisama: [3200, 6400] };
   
   const PRIZES_VISIT = {
@@ -3178,6 +3202,7 @@ const TCApp = (() => {
   function load() { try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); } }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
+  const note = m => { try { const t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (e) {   } };      
   function stageOf(c) { return c < 50 ? 1 : c < 100 ? 2 : c < 150 ? 3 : c < 200 ? 4 : 5; }
   function scaleOf(c) { return c < 50 ? 0.6 : c < 100 ? 0.7 : c < 150 ? 0.8 : c < 200 ? 0.88 : c < 250 ? 0.94 : 1.0; }      
   function tod(d) { const h = (d || new Date()).getHours(); return h >= 7 && h < 16 ? 'morning' : h >= 16 && h < 19 ? 'evening' : 'night'; }
@@ -3381,7 +3406,7 @@ const TCApp = (() => {
     await useHorse(); await syncField();
     msg('また 来てね… と 帰って いったよ', 2.6);
   }
-  function lottery() {                                 
+  function draw() {                                    
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
     if (hi) { S.high -= 1; S.highBump = clock(); st.high = S.high; touch(); }
     const r = Math.random(); let a = 0, tab = st.visit ? PRIZES_VISIT[st.visit.kind] || PRIZES : PRIZES;
@@ -3389,26 +3414,48 @@ const TCApp = (() => {
     return null;
   }
   function tkCount() { const r = Math.random(); return r < 1 / 8 ? 3 : r < 1 / 8 + 1 / 3 ? 2 : 1; }
+  
+  
+  
+  function lottery() {                                 
+    const z = draw(); if (!z) return null;
+    if (st.pend) give(st.pend);                                  
+    z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
+    if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      
+    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
+    st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
+    return z;
+  }
+  
+  function give(z) {
+    if (!z) return 0;
+    let v = 0;
+    if (z.k === 'pt') { v = +z.v || 0; grant(v, 'トレーニングセンターの お世話', z.id); }
+    else if (z.k === 'rt') { const ab = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal); v = ab[z.win ? 1 : 0]; grant(v, 'トレーニングセンターの ルーレット', z.id); }
+    else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
+    if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
+    touch(); save();
+    return v;
+  }
   async function onPrize(z) {                           
-    if (z.k === 'pt') { grant(z.v, 'トレーニングセンターの お世話'); return; }
-    if (busy || !window.TCFX) return;
+    if (z.k === 'pt') { give(z); return; }
+    if (busy || !window.TCFX) { give(z); if (ov) paintHead(); return; }      
     busy = true; TCCare.roulette(true);
     try {
       if (z.k === 'rt') {
-        const [a, b] = z.v || RT[z.tier] || RT.normal, win = Math.random() < 0.5 ? 0 : 1;
-        await TCFX.roulette(cvFx, { th: z.tier, a, b, win, bg: fieldName(), se: SND.se });
-        grant(win ? b : a, 'トレーニングセンターの ルーレット');
+        if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
+        const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
+        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
-        await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se });
-        st.tickets = (st.tickets || 0) + n; touch(); save(); paintHead();
+        try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se }); } finally { give(z); paintHead(); }
         msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で 壁紙の 解放に 使えるよ`, 3.6);
       }
     } finally { busy = false; TCCare.roulette(false); }
   }
-  function grant(v, what) {
+  function grant(v, what, id) {
     const w = window.TengelWallet;
-    if (w && typeof w.grant === 'function') w.grant('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36), v, what).catch(() => { });
+    if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
   }
 
   
@@ -3418,6 +3465,8 @@ const TCApp = (() => {
     lastDraw = now;
     const t = clock(), dt = lastT == null ? 1 / 30 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
     const ms = Date.now(), gms = tnow();
+    
+    if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
     if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (BR && !st.visit) BR.tod = tod();
@@ -3456,6 +3505,10 @@ const TCApp = (() => {
     gl = field.gl; tBase = performance.now();
     if (!st.fav || st.fav.day !== today()) { st.fav = { day: today(), kind: ['esa', 'apple', 'carrot'][Math.floor(Math.random() * 3)] }; touch(); }
     if (st.visit && (tnow() > st.visit.until || (+st.visit.el || 0) >= VISIT_MIN * 60)) st.visit = null;
+    if (st.pend) {      
+      const z = st.pend, v = give(z);
+      later.push(() => msg(z.k === 'tk' ? `🎫 前の 当たり（チケット ${z.n || 1}枚）を 受け取ったよ` : `🎁 前の 当たり（${v.toLocaleString('ja-JP')}P）を 受け取ったよ`, 3.6));
+    }
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
@@ -3469,7 +3522,7 @@ const TCApp = (() => {
     try {
       if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; }
       await ready;
-    } catch (e) { ready = null; if (ov) ov.classList.remove('on'); alert('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }
+    } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
     paintHead(); layout(); accrue(tnow());
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
@@ -3483,8 +3536,9 @@ const TCApp = (() => {
     try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (e) { }      
   }
   
-  const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; } };
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit } };      
+  const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
+    back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
