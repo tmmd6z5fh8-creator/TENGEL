@@ -9,7 +9,7 @@
 //    連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）は 数えて おく（第4.113版：出世馬は 消した ので いまは どの 飾りも 使わない）
 //    第4.121版：まさちゃんの 絵の ボード（1〜14）は 連続的中の 数（streak）と 続けて ハズレた 数（board.mstreak：ハズレで +1・的中で 0）で 絵が かわる
 //  ・第4.92版：壁紙パック（買い切り 1,500円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝wallpack）。買った あとに 読み込んだ レースの 数（pack.reads）で
-//    新しい 壁紙 11枚を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
+//    新しい 壁紙 10枚（第4.147版で 七夕を 外した：11 → 10枚）を 5レースごとに 1枚ずつ 解放（points.js の WALLPACK・並びは kisekae.js）。帯の 壁紙の ミッションの 枚数に 数える
 //  ・第4.114版（まさちゃん 2026/11/01）：結果ボードカスタム 1,500円・お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット。持って いれば 両方を 持って いる 扱い）。
 //    ミッションを 2つ 足した：結果ボードカスタムの 解放の 数（3・6・9・12・16こ → 第4.120版で 15こ）と 壁紙の 解放の 枚数（3〜45枚・帯も 数える）で ポイント（もらったP）
 //  ・ほかの画面から使う窓口：window.TengelWallet
@@ -522,9 +522,10 @@
     } else if (ui.show === 'hist') {
       const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
       // 第4.139版：あずかりポイントから 補充した ぶん（from:'hold'）・届いた ときに あずけた ぶん（held）も わかる ように
-      const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : `ミッション：${e.what || ''}`;
-      const nm0 = e => e.kind === 'mission' ? `ミッション：${e.what || ''}` : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
-      const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? `ミッション：${e.what || ''}` : e.kind === 'unlock' ? (/^fig:/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
+      const msLab = e => (/^(rel-)?back-theme:/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない
+      const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : msLab(e);
+      const nm0 = e => e.kind === 'mission' ? msLab(e) : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
+      const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^fig:/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
       h += `<ul class="pthist">${ev.map(e => `<li><span>${esc(dayOf(e.last || e.at))} ${esc(lab(e))}</span><span class="${+e.amount > 0 ? 'plus' : 'minus'}">${+e.amount > 0 ? '+' : ''}${yen(e.amount)}P</span></li>`).join('') || '<li><span class="muted">まだ何もないよ</span></li>'}</ul>`;
       h += `<p class="ptnote">買ったポイント（購入＋サブスク）の残り ${yen(b.paid_pack + b.paid_sub)}P・使ったP ${yen(b.used.paid_sub + b.used.paid_pack + b.used.free)}P（うち買ったポイントから ${yen(b.used.paid_sub + b.used.paid_pack)}P）</p>`;
       h += `<div class="row" style="margin-top:8px"><button class="btn" type="button" data-pt="restore">購入を復元</button></div><p class="ptnote">「購入を復元」は、サブスクの状態をAppleと合わせるよ。もう足したPはもう一度足さないよ。</p>`;
@@ -572,7 +573,7 @@
   function unlockName(key) {
     const k = String(key || ''); if (k.startsWith('type:')) return k.slice(5);
     if (k.startsWith('slot:')) { const n = +k.slice(5), lab = SLOT_LABEL(n); try { const nm = (TL.slots.names() || {})[n] || lab; return nm === lab ? lab : `${lab}「${nm}」`; } catch (e) { return lab; } }
-    if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } return `壁紙 ${k.slice(6)}`; }
+    if (k.startsWith('theme:')) { try { const t = (window.TengelKisekae.list() || []).find(x => x.id === k.slice(6)); if (t) return `壁紙「${t.name}」`; } catch (e) { /* なし */ } const gn = (P.GONE_NAMES || {})[k.slice(6)]; return gn ? `壁紙「${gn}」（なくなった壁紙）` : `壁紙 ${k.slice(6)}`; }
     if (k === 'board') return '結果ボードカスタム（買い切り）';
     if (k === 'wallpack') return '壁紙パック（買い切り）';
     if (k === 'bundle') return 'お得パック（壁紙パックと 結果ボードカスタム・買い切り）';
@@ -1052,6 +1053,55 @@
     const eb = $('#testBundle'); if (eb) eb.textContent = P.bundleOwned(W.events) ? '買った' : 'まだ';
   }
 
+  // ---------- 外した 壁紙を 解放して いた 人へ 返す（第4.147版・まさちゃん 2026/11/10 22:12「壁紙 …これら全部消して！」：points.js の GONE_THEMES）----------
+  //   使った ポイント → 獲得ポイントで 返す（上限を こえる ぶんは あずかる）。チケットで 解放して いた もの（0P）→ チケットを 1枚 返す（tc/tc_launch.js の TCInfo.backTicket）。
+  //   1つの 壁紙に 1回 だけ（台帳の back-theme:<名前>）。チケットを 返せなかった とき（TCInfo が まだ ない・トレーニングセンターの 記録が ない）は しるしを 書かない ＝ つぎに 開いた ときに もう一度。
+  //   チケットは 端末（localStorage）・台帳は DB と 置き場が ちがう ので、チケットを 返したら すぐ 端末にも 覚える（GONE_TK）：台帳を 保存する 前に アプリが 閉じても、つぎに 開いた ときに 2枚目は 返さない
+  //   使って いた 壁紙は kisekae.js が「いつもの」に もどす（一覧に ない 名前は 使えない）
+  const GONE_TK = 'tengel.gonetk';
+  const goneTkDone = () => { try { const a = JSON.parse(localStorage.getItem(GONE_TK) || '[]'); return Array.isArray(a) ? a.map(String) : []; } catch (e) { return []; } };
+  async function goneBack() {
+    if (!W || typeof P.goneUnlocks !== 'function') return null;
+    const list = P.goneUnlocks(W.events, W.hold.map(h => String(h.id)));
+    if (!list.length) return null;
+    let back = 0, held = 0, tk = 0, changed = false; const names = [];
+    list.forEach(g => {
+      if (g.cost > 0) {
+        const c = credit(P.rowEvent({ id: g.id, reward: g.cost, label: `なくなった壁紙「${g.name}」のポイントを返した` }, Date.now()));
+        back += c.added + c.held; held += c.held; names.push(g.name); changed = true;
+      } else {
+        const done = goneTkDone();
+        let ok = done.indexOf(g.theme) >= 0, fresh = false;      // ok（はじめから）＝もう チケットは 返して ある（前に 開いた とき、台帳を 保存する 前に 閉じた）→ しるし だけ 書く
+        if (!ok) {
+          try { ok = !!(window.TCInfo && typeof window.TCInfo.backTicket === 'function' && window.TCInfo.backTicket()); } catch (e) { ok = false; }
+          if (ok) { fresh = true; try { localStorage.setItem(GONE_TK, JSON.stringify(done.concat([g.theme]))); } catch (e) { /* 覚えられなくても 台帳の しるしが ある */ } }
+        }
+        if (!ok) return;
+        W.events.push(P.rowEvent({ id: g.id, reward: 0, label: `なくなった壁紙「${g.name}」のチケットを返した` }, Date.now()));
+        changed = true;
+        if (fresh) { tk += 1; names.push(g.name); }
+      }
+    });
+    if (!changed) return null;
+    await save(); paintAll();
+    if (names.length) {
+      const what = [back ? pts(back) : '', tk ? `チケット ${tk}枚` : ''].filter(Boolean).join(' と ');
+      toast(`なくなった壁紙（${names.join('・')}）の ${what} を返したよ` + heldNote(held), 7000);
+    }
+    return { names: names, back: back, held: held, tickets: tk };
+  }
+  // tc_launch.js（TCInfo）は この ファイルの あとに 読まれる ので、ページを 読みおわって から。
+  //   アプリを 開いた ときの 画面（#gate：html.gateon）が 出て いる あいだは 待つ（お知らせが その うしろで 消えない ように。2分 たっても 出て いたら 待たずに 返す）
+  function goneBackSoon() {
+    let tries = 0;
+    const go = () => {
+      if (document.documentElement.classList.contains('gateon') && tries++ < 400) { setTimeout(go, 300); return; }
+      goneBack().catch(() => { /* つぎに 開いた とき */ });
+    };
+    const run = () => setTimeout(go, 600);
+    if (document.readyState === 'complete') run(); else window.addEventListener('load', run, { once: true });
+  }
+
   // ---------- 起動 ----------
   let resolveReady; const walletReady = new Promise(r => { resolveReady = r; });
   async function boot() {
@@ -1067,6 +1117,7 @@
     paintAll();
     try { await giftCheck(); } catch (e) { /* つぎに開いたとき */ }
     try { await testGift(); } catch (e) { /* テスト版だけ */ }
+    goneBackSoon();                                  // 第4.147版：外した 壁紙の ポイント・チケットを 返す（1回 だけ）
     pullTransactions().then(pullEntitlements).catch(() => {});
     refreshSubStatus().catch(() => {});
   }
@@ -1084,6 +1135,7 @@
     },
     // 第4.139版：あずかりポイント（上限を こえて 届いた ぶん）。hold＝{ total, paid_sub, paid_pack, free }・avail＝財布＋あずかり（上限まで：使えるかを 見る ときは これ）・refill＝補充
     hold: () => holdSum(), avail, refill,
+    goneBack,      // 第4.147版：外した 壁紙の ポイント・チケットを 返す（起動の ときに 自分で よぶ・もう 返した ものは 何も しない）
     // 結果ボードカスタム（第4.91版・bcx.js が 使う）
     board: { info: boardInfo, active: boardActive, select: boardSelect, result: boardResult, buy: btn => buy(P.BOARD.product, btn), restore: btn => restore(btn),
       price: () => price(P.BOARD.product), products: () => loadProducts(false) },
@@ -1111,7 +1163,7 @@
     },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
-    restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); return W.events.length !== cur; },
+    restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); await goneBack().catch(() => {}); return W.events.length !== cur; },
     // まだ何も使っていない（初回プレゼントだけ・読み込みも記録もなし）なら「空」＝自動バックアップの台帳を戻してよい
     isEmpty: () => !W || (!W.events.some(e => !/^gift-(first|test)/.test(e.id)) && !W.paid.length && !Object.keys(W.counted).length && !W.hold.length)
   };

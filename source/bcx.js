@@ -723,7 +723,7 @@
     if (!i.owned) {
       h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
       h += `<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}ぜんぶで ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>`;
-      if (bundle) h += `<div class="bcbun"><div><b>お得パック</b><small>壁紙パック（新しい 壁紙 11枚）と 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></div><button class="btn primary" type="button" data-bcact="bundle">${esc(bundle.price)}で買う</button></div>`;
+      if (bundle) h += `<div class="bcbun"><div><b>お得パック</b><small>壁紙パック（新しい 壁紙 ${PT.WALLPACK.n}枚）と 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></div><button class="btn primary" type="button" data-bcact="bundle">${esc(bundle.price)}で買う</button></div>`;
       h += '<div class="row" style="margin-top:6px"><button class="btn ghost" type="button" data-bcact="restore">購入を復元</button></div>';
     } else {
       const nx = i.next, nr = i.nextReady, done = !nx, pct = done ? 100 : Math.round((i.reads - nx.from) / (nx.need - nx.from) * 100);

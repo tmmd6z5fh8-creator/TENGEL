@@ -24,24 +24,30 @@ import build_fx as BF  # noqa: E402
 from themes20 import THEMES as T20  # noqa: E402
 import pack as PK  # noqa: E402
 
-THEMES_ALL = boards.THEMES_ALL
-BY_ID = boards.BY_ID
+# 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！ミッションも減った分調整して！」・「七夕も消して！」）：
+#   アプリから 外した 壁紙 10枚（ポイントの 9枚＋壁紙パックの 七夕）。絵を 作る もと（themes20.py・pack/tanabata.py・flat/・見本の キャンバス）は 残す＝アプリに 入れない だけ。
+#   points.js の GONE_THEMES と 同じ 名前（test_points.js・test_native.py が 見る）。七夕は pack/__init__.py の ORDER からも 外した
+REMOVED = ('sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata')
+THEMES_ALL = [t for t in boards.THEMES_ALL if t['id'] not in REMOVED]
+BY_ID = {t['id']: t for t in THEMES_ALL}
+assert not (set(REMOVED) & set(PK.ORDER)) and len(THEMES_ALL) == 31, (len(THEMES_ALL), set(REMOVED) & set(PK.ORDER))
 
 # ---------------------------------------------------------------- 9.1：名前・値段・組・帯
-NEW_NAMES = dict(newyear='お正月', gold='ぷりけつのお馬', pixel='ドット', kids='毛糸のお馬とロボット', cute='かわいいお馬さん', marble='大理石の馬', lucky='招き馬')
+NEW_NAMES = dict(gold='ぷりけつのお馬', pixel='ドット', kids='毛糸のお馬とロボット', cute='かわいいお馬さん', marble='大理石の馬', lucky='招き馬')
 PRICE = {}
-for _p, _ids in ((1000, ('sakura', 'sea', 'autumn', 'snow', 'newyear')), (2000, ('gold', 'news', 'ink', 'carousel', 'stars', 'sunset')),
-                 (3000, ('ranch', 'silks', 'neon', 'pixel')), (4000, ('fireworks', 'kids', 'cute', 'night', 'xmas', 'halloween', 'valentine', 'whiteday')),
-                 (7000, ('marble', 'chalk', 'lucky'))):
+for _p, _ids in ((2000, ('gold', 'news', 'ink', 'carousel', 'stars', 'sunset')),
+                 (3000, ('ranch', 'silks', 'neon', 'pixel')), (4000, ('fireworks', 'kids', 'cute', 'night')),
+                 (7000, ('marble', 'chalk', 'lucky'))):          # 第4.147版：1,000P の 5枚（桜・海・紅葉・雪・お正月）と 4,000P の 4枚（クリスマス・ハロウィン・バレンタイン・ホワイトデー）を 外した
     for _i in _ids:
         PRICE[_i] = _p
-BAND = dict(silver=8, golden=16, tengel=25)             # 帯の壁紙：ポイントで解放した壁紙の枚数（8.3）
-PAID = sorted(PRICE)                                     # ポイントで解放する 26枚
-assert len(PAID) == 26 and sum(PRICE.values()) == 82000, (len(PAID), sum(PRICE.values()))
-# 第4.92版：壁紙パック（買い切り 1,500円・11枚・pack/）は いちばん上の 組（買う ボタンと 解放の 進み具合は kisekae.js が 組の 上に 出す）
+BAND = dict(silver=5, golden=10, tengel=16)             # 帯の壁紙：解放した壁紙の枚数（8.3）。第4.147版：8・16・25 → 5・10・16（ポイントの 壁紙が 26 → 17枚に へった ぶん：ポイントの 壁紙 だけで 届く）
+PAID = sorted(PRICE)                                     # ポイントで解放する 17枚（第4.147版：26 → 17）
+assert len(PAID) == 17 and sum(PRICE.values()) == 61000, (len(PAID), sum(PRICE.values()))
+assert max(BAND.values()) < len(PAID), BAND             # マスター帯は ポイントの 壁紙 だけで 届く
+# 第4.92版：壁紙パック（買い切り 1,500円・pack/：第4.147版から 10枚）は いちばん上の 組（買う ボタンと 解放の 進み具合は kisekae.js が 組の 上に 出す）
 GROUPS = [('壁紙パック', list(PK.IDS)),
           ('定番', ['default', 'ranch', 'cute', 'kids', 'gold']),
-          ('季節・行事', ['sakura', 'sea', 'sunset', 'autumn', 'snow', 'newyear', 'fireworks', 'xmas', 'halloween', 'valentine', 'whiteday']),
+          ('季節・行事', ['sunset', 'fireworks']),
           ('競馬', ['night', 'news', 'silks', 'lucky']),
           ('和・アート', ['ink', 'marble']),
           ('レトロ・ポップ', ['neon', 'pixel', 'chalk', 'carousel', 'stars']),
@@ -356,7 +362,7 @@ def theme_list():
             row = dict(id=tid, name=name, desc=desc, group=gname, price=PRICE.get(tid, 0), band=BAND.get(tid, 0), dark=is_dark(t), thumb=thumb,
                        alt=(t20['alt'] if t20 else ''), fonts=[t['v']['font'].strip('"'), t['v']['dfont'].strip('"')], pc=push_code(tid))
             if tid in PK.IDS:
-                row['pack'] = PK.ORDER.index(tid) + 1          # 壁紙パックの 解放の 順（1〜11：読み込み 5レースごと）
+                row['pack'] = PK.ORDER.index(tid) + 1          # 壁紙パックの 解放の 順（1〜10：読み込み 5レースごと）
             out.append(row)
     return out
 
@@ -369,9 +375,8 @@ def push_code(tid):
     # gen_fx を読まずに 知る（build_fonts など）：見本の THEMED と同じ表
     if tid in PK.IDS:
         return PK.push_code(tid)
-    return dict(gold='gp', ranch='gr', sakura='sk', sea='se', autumn='mo', snow='yk', newyear='ny', news='np', ink='nk', carousel='mg', stars='sz', neon='nn', pixel='dp',
-                fireworks='hn', kids='ke', cute='kw', sunset='ss', night='nb', marble='mb', lucky='kb', silks='sj', chalk='kk', silver='ag', golden='au', tengel='tg',
-                xmas='xm', halloween='hw', valentine='vl', whiteday='wd').get(tid, '')
+    return dict(gold='gp', ranch='gr', news='np', ink='nk', carousel='mg', stars='sz', neon='nn', pixel='dp',
+                fireworks='hn', kids='ke', cute='kw', sunset='ss', night='nb', marble='mb', lucky='kb', silks='sj', chalk='kk', silver='ag', golden='au', tengel='tg').get(tid, '')
 
 
 def push_fonts():
@@ -525,7 +530,7 @@ def payload(tid, G):
 
 def asset_ids(G=None):
     """アプリに入れる 見本の絵の id（上の絵・動きの絵・PUSHの絵・小さな絵）"""
-    ids = set(BLOBS20.values()) | {THUMB_DEFAULT}
+    ids = {v for k, v in BLOBS20.items() if k in BY_ID} | {THUMB_DEFAULT}      # 第4.147版：外した テーマの 小さい 絵は 入れない
     if G is None:
         G = BF.load_gen_fx()
     for tid in ORDER:
@@ -540,7 +545,7 @@ def write_payloads(out, G=None):
     """テーマごとの ks_<id>.json と 定番4の 止まった絵（SVG）を out に書く。返り値：使う 絵の id"""
     if G is None:
         G = BF.load_gen_fx()
-    ids = set(BLOBS20.values()) | {THUMB_DEFAULT}
+    ids = {v for k, v in BLOBS20.items() if k in BY_ID} | {THUMB_DEFAULT}      # 第4.147版：外した テーマの 小さい 絵は 入れない
     for tid in ORDER:
         p = payload(tid, G)
         s = json.dumps(p, ensure_ascii=False, separators=(',', ':'))

@@ -1,5 +1,5 @@
-"""壁紙パック（App Store版 第4.92版・まさちゃんの 指定）：買い切り 1,500円の 新しい 壁紙 11枚。
-   買った あとに 読み込んだ レース 5つごとに、下の 順で 1枚ずつ 解放（55レースで 全部）。ポイントでは 買えない。帯の 壁紙の ミッション（8・16・25枚）の 枚数に 数える。
+"""壁紙パック（App Store版 第4.92版・まさちゃんの 指定）：買い切り 1,500円の 新しい 壁紙 10枚（第4.147版：七夕を 外して 11 → 10枚。まさちゃん 2026/11/10 22:12「七夕も消して！」。tanabata.py は 残す）。
+   買った あとに 読み込んだ レース 5つごとに、下の 順で 1枚ずつ 解放（50レースで 全部）。ポイントでは 買えない。帯の 壁紙の ミッション（5・10・16枚）の 枚数に 数える。
    どの テーマも いまの 30テーマと 同じ 一式：上の絵（動く 壁紙）・色・字・形（themes20 と 同じ 形の dict）・背景の もよう・すみの 飾り・的中の PUSH と はじける かけら・結果の ボード。
    テーマごとの ファイル（pack/<id>.py）が 持つ もの：
      THEME      … themes20.THEMES と 同じ 形（id・cat＝7・name・desc・title・banner・alt・fonts・v・chk・css・orn・guide）
@@ -12,7 +12,7 @@ import os
 
 PACK = os.path.dirname(os.path.abspath(__file__))
 # 解放の 順（まさちゃんの 指定の 順）
-ORDER = ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future', 'tanabata']
+ORDER = ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future']          # 第4.147版：さいごの 七夕（tanabata）を 外した（ほかの 順は そのまま）
 CAT = 7
 CAT_NAME = '壁紙パック'
 PRODUCT = 'jp.tengel.app.wallpack1'

@@ -18,7 +18,7 @@
     // 第4.91版：結果ボードカスタム（買い切り・非消耗型）。1回 買えば ずっと（機種変更・入れ直しは「購入を復元」）
     //   第4.114版（まさちゃん 2026/11/01「拡張パックの値段変える！ 壁紙1500円 結果ボードカスタム1500円 お得パック 壁紙&結果ボードカスタム 2200円」）：1,500円に
     'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 1500 },
-    // 第4.92版：壁紙パック（買い切り・非消耗型）。新しい 壁紙 11枚。買った あとに 読み込んだ レース 5つごとに 1枚ずつ 解放（ポイントでは 買えない）
+    // 第4.92版：壁紙パック（買い切り・非消耗型）。新しい 壁紙 10枚（第4.147版で 七夕を 外した：11 → 10枚）。買った あとに 読み込んだ レース 5つごとに 1枚ずつ 解放（ポイントでは 買えない）
     'jp.tengel.app.wallpack1': { kind: 'unlock', what: 'wallpack', points: 0, bonus: 0, name: '壁紙パック', yen: 1500 },
     // 第4.114版：お得パック（買い切り・非消耗型）。壁紙パックと 結果ボードカスタムの セット 2,200円（単品は 1,500円ずつ＝3,000円）。持って いれば 両方を 持って いる 扱い（owned）
     'jp.tengel.app.bundle1': { kind: 'unlock', what: 'bundle', points: 0, bonus: 0, name: 'お得パック', yen: 2200 }
@@ -38,16 +38,24 @@
   // 記録のミッション（8.2）：記録したレースの数 → もらえるP。300のあとは100レースごとに2,000P
   var MISSIONS = [[8, 500], [15, 1000], [25, 1000], [40, 1200], [60, 1200], [85, 1400], [100, 1400], [130, 1600], [160, 1600], [200, 1800], [240, 1800], [300, 2000]];
   // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数 → 帯の壁紙（シルバー帯 8枚・ゴールド帯 16枚・マスター帯 25枚）。受け取ると 0P の mission と unlock-theme:<帯> を足す
-  var WALL_MISSIONS = [[8, 'silver', 'シルバー帯の壁紙'], [16, 'golden', 'ゴールド帯の壁紙'], [25, 'tengel', 'マスター帯の壁紙']];
+  //   第4.147版（まさちゃん 2026/11/10 22:12「壁紙 …これら全部消して！ミッションも減った分調整して！」）：ポイントで 解放する 壁紙が 26 → 17枚に へった ので 8・16・25 → 5・10・16枚
+  //     （今までと 同じく ポイントの 壁紙 だけで マスター帯に 届く）。id は 枚数 では なく 帯の 名前（mission-wall-silver…）に した：前の mission-wall-16（ゴールド帯）と 新しい 16枚（マスター帯）が
+  //     ぶつからない ように。受け取った か どうかは 帯の 壁紙を 持って いるか（unlock-theme:<帯>）で 見る ＝ 前の 版で 受け取った 人は そのまま 受け取りずみ
+  var WALL_MISSIONS = [[5, 'silver', 'シルバー帯の壁紙'], [10, 'golden', 'ゴールド帯の壁紙'], [16, 'tengel', 'マスター帯の壁紙']];
+  // 第4.147版：アプリから 外した 壁紙 10枚（kisekae/build_kisekae.py の REMOVED と 同じ）。解放した 数（wallCount）に 数えない。
+  //   もう 解放して いた 人には、使った ポイント（チケットで 解放して いたら チケット）を 返す（goneUnlocks → points_ui.js の goneBack：1回 だけ＝back-theme:<名前>）。七夕は 壁紙パックの 1枚（台帳に できごとは ない）
+  var GONE_THEMES = ['sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata'];
+  var GONE_NAMES = { sakura: '桜', sea: '海', autumn: '紅葉', snow: '雪', newyear: 'お正月', xmas: 'クリスマス', halloween: 'ハロウィン', valentine: 'バレンタイン', whiteday: 'ホワイトデー', tanabata: '七夕' };
   // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/15」・じゅんび中も 数える）→ もらえるP
   //   第4.120版（まさちゃん 2026/11/04 02:02「結果ボードカスタムは、15個にする！ミッションも変更して！」）：さいごの 16こ → 15こ（ポイントは 同じ 1,600P）。
   //   前の 版で「16こ解放」を 受け取った 人は「15こ解放」も 受け取った ことに する（boardMissions）
   var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [15, 1600]];
   // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
-  //   いま 解放できる 壁紙は WALL_TOTAL＝40枚（ポイント 26＋壁紙パック 11＋帯 3）。
+  //   いま 解放できる 壁紙は WALL_TOTAL＝30枚（ポイント 17＋壁紙パック 10＋帯 3）。
   //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない「45枚 3,500P」を やめて 40枚まで（10こ）
-  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500], [35, 3500], [40, 3500]];
-  var WALL_TOTAL = 40;
+  //   第4.147版（壁紙を 10枚 外した：40 → 30枚）：届かなく なった「35枚 3,500P」「40枚 3,500P」を やめて 30枚まで（8こ）。3〜30枚の 8こは そのまま。前に 受け取った ぶんは 台帳に 残る
+  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500]];
+  var WALL_TOTAL = 30;
   var FREE_TYPES = ['単勝', '馬単', '3連単'];
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
@@ -340,9 +348,9 @@
     for (var i = 0; i < BOARD_ITEMS.length; i++) { var it = BOARD_ITEMS[i]; if (it.ready && it.need > r) return { item: it, need: it.need, left: it.need - r }; }
     return null;
   }
-  // 壁紙パック（第4.92版・まさちゃんの 指定）：買い切り 1,500円・11枚。買った あとに 読み込んだ レース（200P で 読んだ 1レース・読み直しと 5連の 予想は 数えない）
-  //   5つごとに 1枚ずつ 解放（55レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（8・16・25枚）の 枚数に 数える
-  var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 11 };
+  // 壁紙パック（第4.92版・まさちゃんの 指定）：買い切り 1,500円・10枚（第4.147版：七夕を 外して 11 → 10枚）。買った あとに 読み込んだ レース（200P で 読んだ 1レース・読み直しと 5連の 予想は 数えない）
+  //   5つごとに 1枚ずつ 解放（50レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（5・10・16枚）の 枚数に 数える
+  var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };
   function packOwned(events) { return owned(events, 'wallpack'); }
   function packUnlocked(reads) { return Math.min(WALLPACK.n, Math.floor((+reads || 0) / WALLPACK.every)); }
   // つぎに 解放する 1枚（全部 解放ずみ なら null）：{ no（1〜11）, need（その 読み込みの 数）, left（あと いくつ）, from（ひとつ前の 数）}
@@ -373,10 +381,10 @@
 
   // ---- 壁紙のミッション（帯の壁紙）----
   function wallMissions(count, events) {
-    return WALL_MISSIONS.map(function (m) { var id = 'mission-wall-' + m[0], claimed = has(events, id); return { id: id, n: m[0], theme: m[1], label: m[2], done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
+    return WALL_MISSIONS.map(function (m) { var id = 'mission-wall-' + m[1], claimed = has(events, id) || unlocked(events, 'theme:' + m[1]); return { id: id, n: m[0], theme: m[1], label: m[2], done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
   }
   function wallMissionEvents(m, device, now) {
-    return [mk('mission-wall-' + m.n, 'mission', 'free', 0, iso(now), { what: m.label, theme: m.theme }),
+    return [mk(m.id || ('mission-wall-' + m.theme), 'mission', 'free', 0, iso(now), { what: m.label, theme: m.theme }),
       mk('unlock-theme:' + m.theme, 'unlock', '', 0, iso(now), { use: { paid_sub: 0, paid_pack: 0, free: 0 }, what: 'theme:' + m.theme, device: device || 'x' })];
   }
   // 第4.114版：ふつうの ミッションの 行（id・n・reward）→ 受け取れる／受け取った
@@ -406,7 +414,21 @@
   // 解放した 壁紙の 枚数（帯も 数える：ポイント＋壁紙パック＋帯）
   function wallCountAll(events, packN) { return wallCount(events, packN) + (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:(silver|golden|tengel)$/.test(String(e.what || '')); }).length; }
   // 解放した壁紙の枚数（ポイントで 解放した 壁紙 ＋ 壁紙パックで 解放した 枚数 packN。帯の壁紙は数えない）
-  function wallCount(events, packN) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)); }).length + Math.max(0, Math.floor(+packN || 0)); }
+  //   第4.147版：外した 壁紙（GONE_THEMES）は 数えない
+  function goneTheme(what) { var m = /^theme:(.+)$/.exec(String(what || '')); return !!m && GONE_THEMES.indexOf(m[1]) >= 0; }
+  function wallCount(events, packN) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)) && !goneTheme(e.what); }).length + Math.max(0, Math.floor(+packN || 0)); }
+  // 外した 壁紙を 解放して いた ぶん（まだ 返して いない もの）：[{ theme, name, cost（使った ポイント・0＝チケットで 解放した）, id（返した しるし back-theme:<名前>） }]。
+  //   heldIds：あずかりポイントに 入って いる id（上限で あずかった ぶんも「返した」に 数える）
+  function goneUnlocks(events, heldIds) {
+    var out = [];
+    (events || []).forEach(function (e) {
+      if (!e || e.kind !== 'unlock' || !goneTheme(e.what)) return;
+      var t = String(e.what).slice(6), id = 'back-theme:' + t;
+      if (has(events, id) || (heldIds || []).indexOf(id) >= 0 || out.some(function (o) { return o.theme === t; })) return;
+      out.push({ theme: t, name: GONE_NAMES[t] || t, cost: Math.max(0, Math.round(-(+e.amount || 0))), id: id });
+    });
+    return out;
+  }
 
   // ---- レースの見分け方（読み直し0P・ミッションの数え方）----
   function vnorm(v) { return String(v || '').normalize('NFKC').replace(/\s/g, '').replace(/(競馬場|競馬)$/, ''); }
@@ -488,7 +510,7 @@
     holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
     stamp: stamp, stampAll: stampAll, seqMax: seqMax, raceFp: raceFp, fpDiff: fpDiff, fpRho: fpRho, fpShare: fpShare, FP: { min: FP_MIN, rho: FP_RHO, same: FP_SAME },
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
-    missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
+    missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, GONE_THEMES: GONE_THEMES, GONE_NAMES: GONE_NAMES, goneUnlocks: goneUnlocks, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

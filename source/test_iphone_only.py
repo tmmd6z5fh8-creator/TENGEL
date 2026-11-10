@@ -152,10 +152,10 @@ if r.returncode == 0:
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(17.5e6 < p_films < 19.5e6 and 13.2e6 < p_bcp < 14.7e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and 140e6 < p_all < 152e6 and same_sz and keep_ok and src_ok
+        check(17.5e6 < p_films < 19.5e6 and 13.2e6 < p_bcp < 14.7e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and 138e6 < p_all < 146e6 and same_sz and keep_ok and src_ok
               and how.get('film') == 5 and how.get('webp', 0) >= 405 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：前は 21.7MB・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB）・でこぼこ／つや／光と 雲の 地図（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB）・でこぼこ／つや／光と 雲の 地図（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）
@@ -201,37 +201,45 @@ if r.returncode == 0:
     # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
     import json as _json, re as _re
     ks_json = [f for f in res if _re.fullmatch(r'ks_[a-z]+\.json', f)]
-    check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sakura\\"]' in html and "@font-face{font-family:'Kaisei Decol'" in html and 'fonts/KaiseiDecol-700.woff2' in html,
+    check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sunset\\"]' in html and "@font-face{font-family:'Kaisei Opti'" in html and 'fonts/KaiseiOpti-700.woff2' in html,
           'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); import pack as _pack
-    n_ks = 29 + len(_pack.IDS)                                           # 第4.92版：壁紙パックの 11枚・第4.109版：いつもの（default）の ks_default.json は 入れない（kisekae.js が 読まない）
-    check(len(ks_json) == n_ks and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')) and all(f'ks_{t}.json' in res for t in _pack.IDS),
-          f'テーマごとの ks_<id>.json が {n_ks}こ（いつもの 以外の 29＋壁紙パック {len(_pack.IDS)}・ks_default.json は なし）と 定番4の止まった絵（{len(ks_json)}）')
+    n_ks = 20 + len(_pack.IDS)                                           # 第4.92版：壁紙パック・第4.109版：いつもの（default）の ks_default.json は 入れない（kisekae.js が 読まない）・第4.147版：壁紙を 10枚 外した（ポイント 26 → 17・壁紙パック 11 → 10）
+    check(len(ks_json) == n_ks and len(_pack.IDS) == 10 and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')) and all(f'ks_{t}.json' in res for t in _pack.IDS),
+          f'テーマごとの ks_<id>.json が {n_ks}こ（いつもの 以外の 20＝ポイント 17＋帯 3 ＋壁紙パック {len(_pack.IDS)}・ks_default.json は なし）と 定番4の止まった絵（{len(ks_json)}）')
+    # 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！」「七夕も消して！」）：
+    #   外した 10枚は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）。もとの 絵（ios/kisekae_blobs/）と 作る 道具（kisekae/）は そのまま 残す
+    import build_kisekae as _bk
+    GONE = list(_bk.REMOVED)
+    _pjs = open(os.path.join(W, 'points.js'), encoding='utf8').read()
+    gone_js = _re.findall(r"'([a-z]+)'", _re.search(r'var GONE_THEMES = \[([^\]]*)\];', _pjs).group(1))      # points.js の 外した 壁紙（解放して いた 人に ポイントを 返す 表）と 同じ
+    ksd = _json.JSONDecoder().raw_decode(html, html.index('window.__KS=') + len('window.__KS='))[0]
+    gone_blobs = {v for t in GONE if t in _bk.BLOBS20 for v in [_bk.BLOBS20[t]]} | {v['id'] for v in _pack.blobs('tanabata').values()}
+    keep_blobs = {_bk.BLOBS20[t] for t in _bk.BLOBS20 if t in _bk.BY_ID} | {v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()}
+    check(len(GONE) == 10 and GONE == gone_js and not any(f'ks_{t}.json' in res for t in GONE) and not any(f'html[data-ks=\\"{t}\\"]' in html for t in GONE)
+          and len(ksd['themes']) == 31 and not any(t['id'] in GONE for t in ksd['themes']) and len(ksd['paid']) == 17 and not (set(ksd['paid']) & set(GONE))
+          and ksd['pack']['ids'] == ksd['pack']['order'] == ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future'] and ksd['pack']['every'] == 5
+          and "var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };" in _pjs and 'var WALL_TOTAL = 30;' in _pjs and ksd['band'] == {'silver': 5, 'golden': 10, 'tengel': 16}
+          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [2000] * 6 + [3000] * 4 + [4000] * 4 + [7000] * 3
+          and not any(('ks_' + b + '.webp') in res or ('ks_' + b + '.svg') in res for b in gone_blobs - keep_blobs)
+          and not any(f in res for f in ('KaiseiDecol-700.woff2', 'YujiSyuku-400.woff2', 'YuseiMagic-400.woff2', 'ReggaeOne-400.woff2', 'Murecho-800.woff2', 'ZenOldMincho-900.woff2')),
+          f'第4.147版：外した 壁紙 10枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 31テーマ（ポイント 17枚＝2,000P×6・3,000P×4・4,000P×4・7,000P×3／壁紙パック 10枚／帯 5・10・16枚）')
     rsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_ranch.svg'), encoding='utf8').read(); gsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_gold.svg'), encoding='utf8').read()
     check('*{animation:none!important}</style>' in rsvg and '*{animation:none!important}</style>' in gsvg and '.kslive{' in html and '.kslv{' in html and 'rescope' in html and 'rbwSvg' in html and 'mask-type:alpha' in html,
           '第4.89版：選ぶ画面の 牧場・ぷりけつの 小さな絵は 止めた SVG・選んだ タイルだけ 動く 壁紙（.kslive）・形の ある PUSH の 虹は SVG の 中（rbwSvg・mask）')
-    sk = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_sakura.json'), encoding='utf8'))
-    check(sk['bnr'] and '<div class="bnrw">' in sk['bnr']['html'] and 'ks_cbcbaeebec4470155b1587d5a5c8fe00.webp' in sk['bnr']['html'] and '#ksBnr .bnrw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
-          and sk['push']['pc'] == 'sk' and '<svg' in sk['push']['svg'] and 'class="clips sk"' in sk['push']['burst'] and '.fxs .push.sk' in sk['push']['css'] and '.fxs .rb.t-sakura{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
-          'ks_sakura.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・桜の PUSH（面・はじける花びら・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
-    # 第4.87版：雪の 白い 息（ページが いつも 動かす・鼻に ついて いく・視差効果を減らす ときは 止まった 3つ）・ネオンの 光のつぶ（236こ ばらばら・keyframes に 変数なし・光のつぶの 絵なし）
-    sn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_snow.json'), encoding='utf8'))
+    # 第4.147版：桜を 外した ので、同じ 確かめを 夕焼け（のこった「季節・行事」の 壁紙）で
+    sk = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_sunset.json'), encoding='utf8'))
+    check(sk['bnr'] and '<div class="ssw"' in sk['bnr']['html'] and 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' in sk['bnr']['html'] and '#ksBnr .ssw' in sk['bnr']['css'] and '@keyframes kb' in sk['bnr']['css'] and '/_blob/' not in _json.dumps(sk)
+          and sk['push']['pc'] == 'ss' and '<svg' in sk['push']['svg'] and 'class="clips ss"' in sk['push']['burst'] and '.fxs .push.ss' in sk['push']['css'] and '.fxs .rb.t-sunset{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
+          'ks_sunset.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・夕焼けの PUSH（面・はじける 光・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
+    # 第4.87版：ネオンの 光のつぶ（236こ ばらばら・keyframes に 変数なし・光のつぶの 絵なし）（雪の 白い 息の 確かめは 第4.147版で 雪を 外した ので なし）
     nn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_neon.json'), encoding='utf8'))
-    sh, sc, nh, nc = sn['bnr']['html'], sn['bnr']['css'], nn['bnr']['html'], nn['bnr']['css']
-    check('<div class="ykb" aria-hidden="true">' in sh and sh.count('animation-name:kbykbP0') == 5 and '<div class="ykbs" aria-hidden="true">' in sh and sh.count('<i style="left:') >= 3
-          and '#ksBnr .ykb{' in sc and '@keyframes kbykbA{' in sc and '@keyframes kbykbP04{' in sc and '.ykbs{display:block}' in sc,
-          'ks_snow.json：白い 息は ページで（鼻の 前で 玉 5こが じゅんに 生まれて 流れる・鼻に ついて いく keyframes・視差効果を減らす ときは 止まった 3つ）（第4.87版）')
+    nh, nc = nn['bnr']['html'], nn['bnr']['css']
     kfb = _re.findall(r'@keyframes ([\w-]+)\{((?:[^{}]*\{[^{}]*\})*)\}', nc)
     check(nh.count('<i class="') == 236 and nh.count('<b class="ln s') == 63 and 'nqd' not in nh + nc and '70fc21205005d11eddef8ebd6c78ee31' not in nh + nc
           and [len([k for k, _ in kfb if _re.fullmatch(pre + r'\d+', k)]) for pre in ('kbnqL', 'kbnqM', 'kbnqS')] == [16, 16, 8] and all('var(' not in body for _, body in kfb)
           and '.nqw .nqp i,#ksBnr .nqw .nqp .ln{animation:none!important}' in nc,
           f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし・視差効果を減らす ときは 止まる）・光のつぶの 絵（dust）は 使わない（第4.87版）・光の 横線（筋）は 長く ランダムに のびちぢみ（予定 8本・第4.88版）')
-    # 第4.90版：お正月の 馬に 羊の 着ぐるみ（上の 絵の 前の 1まいと 止まった 絵を 入れかえ・絵の 説明も）
-    nyj = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_newyear.json'), encoding='utf8'))
-    nys = _json.dumps(nyj, ensure_ascii=False)
-    check('ks_71103dfe1944fc7f65705100d4c4455b.webp' in nys and 'ks_8a0dd088ce2e9027f40cbf18a14bf4f1.webp' in nys and 'ac724e18f8d2213f131e7dd2c347cfd0' not in nys
-          and '羊の着ぐるみ' in nyj['bnr']['html'] and '金のたてがみ' not in nys,
-          'ks_newyear.json：お正月の 馬は 羊の 着ぐるみ（光より 前の 絵 71103dfe…・うしろの 絵は 同じ・絵の 説明に「羊の着ぐるみ」）（第4.90版）')
     for f in ks_json:
         txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
         for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):
@@ -246,7 +254,7 @@ if r.returncode == 0:
     check(not need_b, f'しぼった字に 画面の言葉が ぜんぶ入っている（足りない字 {len(need_b)}：{"".join(sorted(need_b))[:30]}）→ 足りなければ python3 kisekae/build_fonts.py')
     ks_imgs = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]
     n_pk = len({v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()})   # 第4.92版：壁紙パックの 絵（馬の コマの シート・止まった 絵：pack/blobs.json）
-    check(len(ks_imgs) in (0, 99 + n_pk) and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 99 + n_pk), f'着せ替えの絵：手元にあれば99こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
+    check(len(ks_imgs) in (0, 69 + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 69 + n_pk), f'着せ替えの絵：手元にあれば69こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')

@@ -1,10 +1,13 @@
 // 着せ替え（App Store版 第4弾：アップデート指示書 9章・16.1・16.1.1・16.2.1・16.4）
-//   41テーマ＝いつもの（無料）＋ポイントで解放する26枚（1,000〜7,000P）＋帯3枚（壁紙を 8・16・25枚 あつめた ミッションで）＋壁紙パック 11枚（第4.92版・買い切り）。
+//   31テーマ＝いつもの（無料）＋ポイントで解放する17枚（2,000〜7,000P）＋帯3枚（壁紙を 5・10・16枚 あつめた ミッションで）＋壁紙パック 10枚（第4.92版・買い切り）。
+//     第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！」「七夕も消して！」）：41 → 31テーマ
+//     （ポイントの 26 → 17枚・壁紙パックの 11 → 10枚・帯は 8・16・25 → 5・10・16枚）。外した 壁紙を 使って いた ときは「いつもの」に もどす（一覧に ない 名前は 使えない）。
+//     解放して いた ぶんの ポイント・チケットは points_ui.js の goneBack が 返す
 //   テーマは 色・字・形（CSS の変数：html[data-ks=<id>]）・判定タブの上の絵（見本と同じ 動く壁紙：#ksBnr）・的中の PUSH と 結果のボード（fx.js が TengelKisekae.fx() で読む）。
 //   見本（kisekae/themes20.py・boards.py・gen_fx.py・mock/）の CSS と HTML は kisekae/build_kisekae.py が束ねる：小さい分は window.__KS、テーマごとの大きい分は ks_<id>.json（選んだときに 1回だけ読む）。
 //   選んだテーマは端末に保存（localStorage＝起動の瞬間から・設定の DB にも）。解放したかどうかは ポイントの台帳（unlock-theme:<id>・TengelWallet）。
 //   「視差効果を減らす」か 設定の「演出を控えめにする」なら 壁紙は止まった絵（CSS の @media と .calm）。判定タブが見えていない間は 動きを止める（.pause ※仮）。
-//   第4.92版：壁紙パック（買い切り 1,500円・11枚：kisekae/pack/）。いちばん 上の 組に 買う ボタンと 解放の 進み具合。買った あとに 読み込んだ レース 5つごとに
+//   第4.92版：壁紙パック（買い切り 1,500円・10枚〔第4.147版で 11 → 10枚〕：kisekae/pack/）。いちばん 上の 組に 買う ボタンと 解放の 進み具合。買った あとに 読み込んだ レース 5つごとに
 //   1枚ずつ 使える ように なる（TengelWallet.pack）。ポイントでは 解放 できない。帯の 壁紙の ミッションの 枚数に 数える
 //   Web版（ホーム画面のアプリ）では何もしない。
 (function () {
@@ -243,7 +246,7 @@
     const box = $('#setKisekae .ksbody'); if (!box) return;
     const cur = byId[curId] || byId.default, n = count(), total = have();
     let h = `<p class="hint" style="margin:0 0 4px">いまのテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
-    h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。8・16・25枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
+    h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。${[A.band.silver, A.band.golden, A.band.tengel].join('・')}枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
     h += ticketBox();
     const groups = [];
     A.themes.forEach(t => { let g = groups.find(x => x.name === t.group); if (!g) { g = { name: t.group, items: [] }; groups.push(g); } g.items.push(t); });
@@ -335,18 +338,23 @@
 
   // ---------- 起動 ----------
   css();
-  let saved = 'default';
+  let saved = 'default', lost = false;
   try { saved = localStorage.getItem(KEY) || 'default'; } catch (e) { saved = 'default'; }
-  if (!byId[saved]) saved = 'default';
+  if (!byId[saved]) { saved = 'default'; lost = true; }      // 一覧に ない テーマ（第4.147版で 外した 壁紙 など）→ いつもの（下で 覚え直す）
   setAttr(saved); curId = saved;             // 色は起動の瞬間から（絵とPUSHは読めてから）
   const ready = (async () => {
     card();
     await apply(saved, false);
     try {
-      if (TL() && TL().ready) { await TL().ready; const s = TL().getSetting ? await TL().getSetting(SETTING) : null; if (s && s.id && byId[s.id] && s.id !== curId) await apply(s.id, false); }
+      if (TL() && TL().ready) {
+        await TL().ready; const s = TL().getSetting ? await TL().getSetting(SETTING) : null;
+        if (s && s.id && !byId[s.id]) lost = true;      // 設定の DB に 一覧に ない テーマ（外した 壁紙）が 残って いる → 下で 覚え直す
+        else if (s && s.id && s.id !== curId) await apply(s.id, false);
+      }
     } catch (e) { /* 設定が読めないときは localStorage のまま */ }
     try { if (wallet() && wallet().ready) await wallet().ready; } catch (e) { /* なし */ }
     if (!usable(curId)) await apply('default', true);   // 解放していないテーマが残っていたら いつものに
+    else if (lost) await apply(curId, true);            // 外した 壁紙を 使って いた → いまの テーマ（ふつうは「いつもの」）を 覚え直す（端末と 設定の DB）
     paint();
   })();
   document.addEventListener('tengel:wallet', () => { paint(); if (!usable(curId)) apply('default', true); });
