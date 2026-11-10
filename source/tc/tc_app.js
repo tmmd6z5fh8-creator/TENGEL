@@ -11,8 +11,16 @@ const TCApp = (() => {
   const COLOR_JA = { brown: 'ブラウン', madara: 'まだら', black: 'ブラック', white: 'ホワイト', hada: '肌色' };
   const BIG = 1.7;                                    // 幻の馬・神様馬：5段階の 馬の 1.7倍（11/09 11:38）
   const TOKEN_MIN = 10, TOKEN_MAX = 20;               // お世話トークン：10分ごとに 1つ・最大 20
-  const TICK = 120;                                   // 2分ごとの チャンス（秒・開いて いる 間）
-  const VISIT_MIN = 10;                               // 幻の馬・神様馬が いる 時間（分）※仮
+  const TICK = 120;                                   // 2分ごとの チャンス（秒・開いて いる 間）：高確ゾーン・うんち（第4.144版から 幻の馬・神様馬の 抽選は しない）
+  // 第4.144版（馬の リセットの きまり：11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…トレーニングセンターで最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
+  //   …トレーニングセンターを開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…トレーニングセンターを開いてから30分経過すると切り替わる仕組みにして！」
+  //   ・18:13「幻の馬と神様馬も最低5回お世話完了後はリセットタイマー作動で5分でリセットね！」）：
+  //   ・馬が かわる 抽選（幻の馬 1/245・神様馬 1/399・それ 以外は いつもの 馬）は「リセット」の とき だけ。前は 2分ごとに（ひらいて いる だけで）ひいて いた
+  //   ・リセット＝お世話（ごはん・おそうじ）を 5回 した あと（5回めが おわった とき）に タイマーが 動いて、5分 たったら。お世話の 途中・当たりの 演出の 途中・作戦会議や 説明書を ひらいて いる 間は 待つ
+  //   ・幻の馬・神様馬は、それに 加えて 来てから 30分（タイムリミット）でも 帰る（→ いつもの 馬）。どちらか 早い 方
+  //   ・時間は「もどらない 時計」（tnow）と、ひらいて いる 間に たった 秒（el）の どちらか 早い 方で 数える（時計を もどしても 止まらない）
+  const RESET_CARES = 5, RESET_MIN = 5;               // 馬の リセット：お世話 5回 → タイマー 5分
+  const VISIT_MIN = 30;                               // 幻の馬・神様馬の タイムリミット（来てから・分）
   const HIGH_N = 5, HIGH_X = 4;                       // 高確ゾーン：お世話 5回・当たりやすさ ×4 ※仮
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    // お世話（ごはん・おそうじ）の 抽選：まれな 方から
@@ -35,9 +43,12 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   // ---------- 保存 ----------
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, snd: true, gen: 1 });
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      // rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）
   let st = null, dirty = false, saveAt = 0;
-  function load() { try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); } }
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
+    const r = st.rs; st.rs = r && typeof r === 'object' ? { n: Math.max(0, Math.round(+r.n || 0)), at: Math.max(0, +r.at || 0), el: Math.max(0, +r.el || 0) } : { n: 0, at: 0, el: 0 };
+  }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
   const TKP = () => ((window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');      // チケット 1枚を かえられる ポイント（points.js）
@@ -91,7 +102,7 @@ const TCApp = (() => {
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
   const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null };
   function onCareEvent(e) {
-    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; touch(); later.push(() => growCheck()); }      // お世話の 回数（total＝ミッションの 合計：馬が リセット されても 減らない）
+    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; touch(); later.push(() => growCheck()); }      // お世話の 回数（total＝ミッションの 合計：馬が リセット されても 減らない）
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
     if (!nm) return;
     const lag = Math.max(0, e.t - clock());
@@ -225,25 +236,46 @@ const TCApp = (() => {
     const bg = ov && ov.querySelector('.tcbg'); if (!bg || bg.dataset.f === f) return;
     bg.dataset.f = f; bg.style.backgroundImage = `url("${AP(`tc_field_${f}.webp`)}")`;
   }
-  function chance(t) {
-    const r = Math.random(), now = Date.now();
-    if (!st.visit && !busy) {
-      if (r < P_KAMI) return startVisit('kamisama');
-      if (r < P_KAMI + P_MAB) return startVisit('maboroshi');
-    }
+  function chance(t) {                                  // 2分ごと：高確ゾーン・うんち（幻の馬・神様馬は 馬の リセットの とき だけ：第4.144版）
+    const now = Date.now();
     if (Math.random() < P_HIGH) { const S = TCCare.S; S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); }
     if (Math.random() < P_POOP && BR && BR.mode !== 'sleep' && (BR.poops || []).length < 3) BR.poopReq = true;
     void now;
   }
   async function startVisit(kind) {
-    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; touch(); save();
+    st.visit = { kind, until: tnow() + VISIT_MIN * 60000, el: 0 }; st.rs = { n: 0, at: 0, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg(kind === 'kamisama' ? '✨ 神様馬が やってきた！' : '🌙 幻の馬が やってきた！', 3.0);
   }
   async function endVisit() {
-    st.visit = null; touch(); save();
+    st.visit = null; st.rs = { n: 0, at: 0, el: 0 }; touch(); save();
     await useHorse(); await syncField();
     msg('また 来てね… と 帰って いったよ', 2.6);
+  }
+  // ---------- 馬の リセット（第4.144版）----------
+  const careIdle = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      // お世話（撫でる・呼ぶも）の 途中で ない
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()));
+  const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      // タイマーの のこり（秒）・まだ 動いて いなければ null
+  const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              // タイムリミットの のこり（秒）
+  let resetting = false;
+  function resetStep(gms, dt, t) {
+    const rs = st.rs;
+    if (rs.at) rs.el = (+rs.el || 0) + dt;
+    if (!rs.at && rs.n >= RESET_CARES && careIdle() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      // 5回めの お世話が おわった → タイマーが 動く
+    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careIdle() && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
+  }
+  let forceNext;                               // テスト 用：次の リセットの 抽選の 結果を 決めて おく（_t.force）
+  function nextHorse() {                       // 次の 馬の 抽選（null＝いつもの 馬）
+    if (forceNext !== undefined) { const f = forceNext; forceNext = undefined; return f; }
+    const r = Math.random(); return r < P_KAMI ? 'kamisama' : r < P_KAMI + P_MAB ? 'maboroshi' : null;
+  }
+  async function doReset() {
+    const next = nextHorse();
+    st.rs = { n: 0, at: 0, el: 0 }; touch();
+    if (next) await startVisit(next);            // 幻の馬・神様馬が やってくる（いま いる 馬と 同じ でも 新しく 来た ことに する：タイムリミットは はじめから）
+    else if (st.visit) await endVisit();         // 幻の馬・神様馬は 帰る → いつもの 馬
+    else save();                                 // いつもの 馬の まま
+    return next;
   }
   function draw() {                                    // お世話の 抽選を 1回 ひく（当たり か null）
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
@@ -309,8 +341,11 @@ const TCApp = (() => {
     if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (BR && !st.visit) BR.tod = tod();
-    if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       // 開いて いる あいだに たった 秒（時計を もどしても 10分で 帰る）
-    if (st.visit && (gms > st.visit.until || st.visit.el >= VISIT_MIN * 60) && !busy) endVisit();
+    if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       // 開いて いる あいだに たった 秒（時計を もどしても 30分で 帰る）
+    if (st.visit && visitLeft(gms) <= 0 && !busy && careIdle() && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      // タイムリミット → いつもの 馬
+    else if (!resetting) resetStep(gms, dt, t);
+    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms) } : null;      // バナーの 下の「切り替わる 条件」（tc_care.js が かく）
+    if (resetting) { /* 馬を かえて いる 途中 */ }
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
     if (!HO || !BR) return;
@@ -351,7 +386,7 @@ const TCApp = (() => {
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 352, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
+      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     nextTick = clock() + TICK;
     SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a']);
@@ -377,5 +412,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
 })();

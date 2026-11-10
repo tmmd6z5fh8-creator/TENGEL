@@ -898,6 +898,7 @@ const TCCare = (() => {
     drawBanner(t);
     drawCare(t);
     drawUI(t);
+    drawVInfo(t);
     drawChooser(t);
     // 手（画面の 上で いつも 同じ 大きさ）
     if (S.hand) {
@@ -967,6 +968,33 @@ const TCCare = (() => {
       const col = B.kind === 'kamisama' ? '#fff2bf' : '#f6dcff';
       for (let i = 0; i < 7; i++) { const v = (ui - 0.25 - i * 0.16) / 1.0; if (v > 0 && v < 1) star(cx + (hash(i * 7.3 + 1) - 0.5) * w * 0.92, BAN_TOP + h * (0.1 + 0.8 * hash(i * 3.1 + 2)) + bob, 22 * Math.sin(Math.PI * v), v * 1.4, 0.95, col); }
     }
+  }
+  // ---------- 切り替わる 条件の 札（第4.144版・11/10 18:04 まさちゃん「幻の馬と神様馬は、上のバナーの下に切り替わる条件を表示して！
+  //   ・タイムリミット ・お世話の回数 お世話5回完了後の切り替わりタイマー」）----------
+  //   S.vinfo＝{ left：タイムリミットの のこり（秒）, n：お世話の 回数, need：5, timer：切り替わりタイマーの のこり（秒）・まだ 動いて いなければ null }（アプリが 毎コマ 入れる）
+  //   場所：はじめは バナーの 下（640×180）→ 18:31「馬と被らないようにもっと上にして！あと、テロップもう少し大きさ小さくして…大きいと背景も分かりにくい！」で 小さく（字 26・29px）
+  //   → 18:44「リセット条件バナーの下から左上のハートのトークンの下に表示するようにして！」で、左上の なかよしの 板（26〜626・34〜160）の すぐ 下・左そろえ（420×125）。
+  //   バナーと いっしょに 出て いっしょに 消える（ルーレットの 間は 消える）。数字は 1秒ごとに かわる だけ（点めつ しない・ゆれない）。のこり 1分は 赤
+  const mmss = v => { const n = Math.max(0, Math.ceil(v)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+  const VI = { x: 26, y: 172, w: 420, row: 37, pad: 7, lab: 26, val: 29, small: 22 };
+  function vinfoRows(V) {
+    return [['タイムリミット', mmss(V.left), V.left <= 60, VI.val],
+      ['お世話', `${V.n}/${V.need}回`, false, VI.val],
+      ['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]];
+  }
+  function vinfoRect() { return { x: VI.x, y: VI.y, w: VI.w, h: 3 * VI.row + 2 * VI.pad }; }
+  function drawVInfo(t) {
+    const B = S.ban, V = S.vinfo; if (!B || !V || B.showT == null) return;
+    const ui = t - B.showT; let a;
+    if (B.hideT != null) { const v = (t - B.hideT) / 0.3; if (v >= 1) return; a = 1 - sm(v); } else { if (ui < 0.5) return; a = sm((ui - 0.5) / 0.35); }
+    const { x, y, w, h } = vinfoRect();
+    g.save(); g.globalAlpha *= a; panel(x, y, w, h, 16);
+    vinfoRows(V).forEach(([lb, val, hot, size], i) => {
+      const cy = y + VI.pad + VI.row * (i + 0.5) + 2;
+      label(lb, x + 22, cy, VI.lab, '#7a4520', null, 0, 'left'); label(val, x + w - 22, cy, size, hot ? '#d0342c' : '#c2456f', null, 0, 'right');
+      if (i < 2) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
+    });
+    g.restore();
   }
   function drawCaption(t) {
     if (!S.demo || !S.demo.cap) return; const u = t - S.t0;
@@ -1170,5 +1198,5 @@ const TCCare = (() => {
     window.__events = () => S.ev;
     window.__careDone = () => !!S.demoDone;
   }
-  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE };
+  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

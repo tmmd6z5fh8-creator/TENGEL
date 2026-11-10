@@ -184,6 +184,8 @@ try:
             if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.feed"): break
         tot = pg.evaluate("() => [TCCare.S.stock, TCApp.state.total, TCApp.state.cares]")
         check(tot[0] == stock0 - 1 and tot[1] >= 1, f'お世話トークンを 1つ 使って、お世話の 合計が ふえた {stock0} → {tot}')
+        rsn = pg.evaluate("() => Object.assign({}, TCApp.state.rs)")
+        check(rsn['n'] == 1 and rsn['at'] == 0, f'お世話 1回 → 馬の リセットの 数えが 1（タイマーは まだ：5回から）（{rsn}）（第4.144版）')
         # 第4.139版（抜け穴を ふさぐ）：端末の 時計を 先へ 進めて お世話トークンを ためる → 時計を もどす、を ふせぐ（tc_app.js の tnow：もどらない 時計）
         print('■ 時計を 進めて もどす ズルを ふせぐ')
         TS = "() => { const s = TCApp.state; return { stock: s.stock, at: s.stockAt, seen: s.seen, now: Date.now() }; }"
@@ -229,10 +231,16 @@ try:
         check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%')],      # 第4.142版
               f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
         od = gd['odds']; D = lambda k: round(1 / od[k])
-        wantTx = ['ぜんぶ 合わせて 約21.6%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
+        wantTx = ['ぜんぶ 合わせて 約21.6%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', 'お世話（ごはん・おそうじ）を5回すると、リセットのタイマーがスタート', 'タイマーが5分たつとリセット → 次の馬を抽選', 'それ以外は いつもの馬のまま', 'お世話をしないと 馬はかわらないよ（開いているだけでは 抽選しないよ）', 'お世話のとちゅうは リセットしないよ',
+                  '帰るのは、お世話5回のあと5分（リセット）か、来てから30分（タイムリミット）の どちらか早いほう', '左上の「なかよし」の下に「タイムリミット・お世話の回数・切り替わりタイマー」が出るよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
         check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399],
               f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
+        #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
+        g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいるあいだ'), heads: s.map(x => x[0]) }; }")
+        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 11
+              and g2['heads'].index('替馬のリセット（次の馬の抽選）') == g2['heads'].index('★2分ごとのチャンス') + 1,
+              f"説明書：「馬のリセット（次の馬の抽選）」の 項目が ある・幻の馬／神様馬の 抽選は そこに 書く（2分ごとの チャンスは 高確ゾーン だけ）・「いるのは10分」は ない（{g2['heads']}）")
         shot(pg, 'tc_guide')
         pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(500)
         print('■ 作戦会議')
@@ -382,6 +390,76 @@ try:
           S.stock = 4; st.stockAt = now - 10 * 60000 - 500; await new Promise(r => setTimeout(r, 400));
           return [st.stock, S.stock]; }""")
         check(tr == [5, 5], f'お世話で 使った トークンは、同じ 瞬間に 1つ たまっても 消えない（5こ → 使って 4 → たまって 5：{tr}）')
+        # 第4.144版（11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
+        #   …開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…開いてから30分経過すると切り替わる仕組みにして！
+        #   幻の馬と神様馬は、上のバナーの下に切り替わる条件を表示して！・タイムリミット・お世話の回数 お世話5回完了後の切り替わりタイマー」・18:13「幻の馬と神様馬も最低5回お世話完了後はリセットタイマー作動で5分でリセットね！」）
+        print('■ 馬の リセット（第4.144版）')
+        RS = "() => { const st = TCApp.state, v = TCCare.S.vinfo; return { rs: Object.assign({}, st.rs), visit: st.visit ? st.visit.kind : null, left: st.visit ? Math.round((st.visit.until - Date.now()) / 1000) : null, vinfo: v ? { n: v.n, need: v.need, left: Math.round(v.left), timer: v.timer == null ? null : Math.round(v.timer) } : null, rows: v ? TCCare.vinfoRows(v).map(r => [r[0], r[1], r[2]]) : null, box: TCCare.vinfoBox(), msg: document.querySelector('#tcOv .tcmsg').textContent, msgOn: document.querySelector('#tcOv .tcmsg').classList.contains('on') }; }"
+        od = pg.evaluate("() => { const o = TCApp._t.ODDS; return [o.resetCares, o.resetMin, o.visitMin, o.tick, Math.round(1 / o.mab), Math.round(1 / o.kami)]; }")
+        check(od == [5, 5, 30, 120, 245, 399], f'きまりの 数：お世話 5回 → タイマー 5分・幻の馬／神様馬の タイムリミット 30分・抽選は 幻の馬 1/245・神様馬 1/399（{od}）')
+        #   2分ごとの チャンスでは 幻の馬・神様馬は 来ない（前は ここで ひいて いた：Math.random が 0 なら 神様馬）。高確ゾーンは 今までどおり
+        c1 = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, rnd = Math.random; let i = 0; st.visit = null; S.high = 0; st.high = 0;
+          Math.random = () => (i++ === 0 ? 0 : 0.99); T.chance(S.lastT || 0); Math.random = rnd;
+          const r = { visit: st.visit, high: S.high, src: /startVisit|nextHorse|doReset/.test(String(T.chance)) };
+          S.high = 0; st.high = 0; S.fx = (S.fx || []).filter(f => f.k !== 'luck'); return r; }""")
+        check(c1 == {'visit': None, 'high': 5, 'src': False}, f'2分ごとの チャンス：幻の馬・神様馬の 抽選は しない（高確ゾーンは 今までどおり）（{c1}）')
+        #   お世話 4回までは タイマーは 動かない・5回で 動く（のこり 5:00）
+        pg.evaluate("() => { const st = TCApp.state; st.visit = null; st.rs = { n: 4, at: 0, el: 0 }; }"); pg.wait_for_timeout(700)
+        r4 = pg.evaluate(RS)
+        pg.evaluate("() => { TCApp.state.rs.n = 5; }"); pg.wait_for_timeout(700)
+        r5 = pg.evaluate("() => { const st = TCApp.state, sv = JSON.parse(localStorage.getItem('tengel.tc')); return { n: st.rs.n, on: st.rs.at > 0, left: Math.round(TCApp._t.rsLeft(Date.now())), saved: sv.rs && sv.rs.at > 0, visit: st.visit }; }")
+        check(r4['rs']['at'] == 0 and r4['visit'] is None and r5['n'] == 5 and r5['on'] and 296 <= r5['left'] <= 300 and r5['saved'] and r5['visit'] is None,
+              f'お世話 4回では タイマーは 動かない・5回めが おわると 動く（のこり {r5["left"]}秒・保存も する）（{r4["rs"]}・{r5}）')
+        #   お世話の 途中・説明書を ひらいて いる 間は、5分 たっても リセット しない（おわってから）
+        pg.evaluate("() => { TCApp._t.force(null); TCCare.S.busy = true; TCApp.state.rs.at = Date.now() - 6 * 60000; }"); pg.wait_for_timeout(900)      # 抽選の 結果は _t.force で 決める（Math.random は さしかえない：馬の 頭は 作る ときの Math.random を おぼえる）
+        b1 = pg.evaluate("() => [TCApp.state.rs.n, TCApp.state.rs.at > 0]")
+        pg.evaluate("() => { TCCare.S.busy = false; TCGuide.open(document.querySelector('#tcOv .tcst'), {}); }"); pg.wait_for_timeout(900)
+        b2 = pg.evaluate("() => [TCApp.state.rs.n, TCApp.state.rs.at > 0, TCGuide.isOpen()]")
+        pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(1200)
+        b3 = pg.evaluate(RS)
+        check(b1 == [5, True] and b2 == [5, True, True] and b3['rs'] == {'n': 0, 'at': 0, 'el': 0} and b3['visit'] is None and b3['vinfo'] is None,
+              f'お世話の 途中・説明書を ひらいて いる 間は リセット しない → おわると リセット（抽選 → いつもの 馬の まま・数えは 0 から）（{b1}・{b2}・{b3["rs"]}）')
+        #   リセットの 抽選で 神様馬（1/399）→ やってくる・タイムリミット 30分・バナーの 下に 切り替わる 条件
+        pg.evaluate("() => { TCApp._t.force('kamisama'); TCApp.state.rs = { n: 5, at: Date.now() - 6 * 60000, el: 0 }; }")
+        pg.wait_for_function("() => TCApp.state.visit && TCApp.state.visit.kind === 'kamisama'", timeout=30000)
+        pg.wait_for_function("() => TCCare.vinfoBox() && TCCare.S.vinfo", timeout=60000); pg.wait_for_timeout(1500)
+        v0 = pg.evaluate(RS); shot(pg, 'tc_reset_kami')
+        check(v0['visit'] == 'kamisama' and 1780 <= v0['left'] <= 1800 and v0['rs']['n'] == 0 and v0['rs']['at'] == 0 and '神様馬が やってきた' in v0['msg']
+              and v0['rows'][0][0] == 'タイムリミット' and v0['rows'][0][1].startswith('29:') and v0['rows'][1][:2] == ['お世話', '0/5回'] and v0['rows'][2][:2] == ['切り替わりタイマー', '5回で スタート'],
+              f'リセットの 抽選で 神様馬が やってくる・タイムリミット 30分・バナーの 下に「タイムリミット 29:xx／お世話 0/5回／切り替わりタイマー 5回で スタート」（{v0["rows"]}）')
+        #   場所と 大きさ：11/10 18:31 まさちゃん「馬と被らないようにもっと上にして！あと、テロップもう少し大きさ小さくして…大きいと背景も分かりにくい！」
+        #   → 18:44「リセット条件バナーの下から左上のハートのトークンの下に表示するようにして！」：左上の なかよしの 板の すぐ 下・左そろえ・小さく（420×125）。バナーは その 下
+        bx = v0['box']; gz = bx['gauge'] if bx else None
+        check(bx and gz == [26, 34, 600, 126] and bx['x'] == gz[0] and gz[1] + gz[3] < bx['y'] <= gz[1] + gz[3] + 20 and bx['x'] + bx['w'] <= gz[0] + gz[2] and bx['w'] <= 460 and bx['h'] <= 130
+              and bx['banTop'] == 290 and bx['y'] + bx['h'] <= bx['banTop'] + 17 and bx['y'] + bx['h'] <= 300,
+              f'条件の 札は 左上の なかよしの 板の すぐ 下（左そろえ・{bx["w"]}×{bx["h"]}・上 {bx["y"]}〜下 {bx["y"] + bx["h"]}）・バナー（上 {bx["banTop"]}）は その 下で 重ならない（はじめは バナーの 下 640×180・606〜786）')
+        pg.evaluate("() => { TCApp.state.rs.n = 3; }"); pg.wait_for_timeout(500); v1 = pg.evaluate(RS)
+        pg.evaluate("() => { TCApp.state.rs.n = 7; }"); pg.wait_for_timeout(800); v2 = pg.evaluate(RS)
+        check(v1['rows'][1][1] == '3/5回' and v1['rows'][2][1] == '5回で スタート' and v2['rows'][1][1] == '5/5回' and v2['rows'][2][1] in ('5:00', '4:59') and v2['vinfo']['timer'] >= 298,
+              f'お世話 3回 → 3/5回・5回 こえたら 5/5回で タイマーが 動く（{v1["rows"][1][1]}・{v2["rows"][1][1]}・{v2["rows"][2][1]}）')
+        pg.evaluate("() => { const st = TCApp.state; st.rs.at = Date.now() - (4 * 60 + 15) * 1000; st.visit.until = Date.now() + 50 * 1000; }"); pg.wait_for_timeout(600); v3 = pg.evaluate(RS)
+        check(v3['rows'][2][1] in ('0:45', '0:44') and v3['rows'][2][2] is True and v3['rows'][0][1] in ('0:50', '0:49') and v3['rows'][0][2] is True, f'のこり 1分は 赤（タイマー {v3["rows"][2][1]}・タイムリミット {v3["rows"][0][1]}）')
+        #   幻の馬・神様馬も お世話 5回の あと 5分で リセット（→ 抽選：いつもの 馬に もどる）
+        pg.evaluate("() => { TCApp._t.force(null); const st = TCApp.state; st.visit.until = Date.now() + 20 * 60000; st.rs.at = Date.now() - 6 * 60000; }")
+        pg.wait_for_function("() => !TCApp.state.visit", timeout=30000); pg.wait_for_timeout(2500)
+        v4 = pg.evaluate(RS)
+        check(v4['visit'] is None and v4['rs'] == {'n': 0, 'at': 0, 'el': 0} and '帰って いったよ' in v4['msg'] and v4['vinfo'] is None and v4['box'] is None,
+              f'神様馬も お世話 5回の あと 5分で リセット → いつもの 馬に もどる・条件の 札は 消える（{v4["msg"]!r}・{v4["rs"]}）')
+        #   タイムリミット（来てから 30分）：お世話を しなくても 帰る
+        pg.evaluate("() => TCApp._t.startVisit('maboroshi')"); pg.wait_for_function("() => TCCare.vinfoBox() && TCCare.S.vinfo", timeout=60000); pg.wait_for_timeout(800)
+        m0 = pg.evaluate(RS)
+        pg.evaluate("() => { const st = TCApp.state; st.rs.n = 2; st.visit.until = Date.now() - 1000; }")
+        pg.wait_for_function("() => !TCApp.state.visit", timeout=30000); pg.wait_for_timeout(2500)
+        m1 = pg.evaluate(RS)
+        check(m0['visit'] == 'maboroshi' and m0['rows'][0][1].startswith('29:') and m1['visit'] is None and m1['rs'] == {'n': 0, 'at': 0, 'el': 0} and '帰って いったよ' in m1['msg'],
+              f'幻の馬：タイムリミット（30分）で 帰る（お世話を して いなくても）・数えは 0 から（{m0["rows"][0]}・{m1["rs"]}）')
+        #   ひらいて いる だけ（お世話なし）では 何も おきない：タイマーは 動かない・馬は かわらない
+        pg.evaluate("() => { TCApp.state.rs = { n: 0, at: 0, el: 0 }; }"); pg.wait_for_timeout(1500)
+        i1 = pg.evaluate(RS)
+        check(i1['rs'] == {'n': 0, 'at': 0, 'el': 0} and i1['visit'] is None, f'お世話を しなければ タイマーは 動かず 馬も かわらない（{i1["rs"]}）')
+        #   抽選（nextHorse）：1/399 より 小さい → 神様馬・つぎの 1/245 → 幻の馬・それ 以外 → いつもの 馬（Math.random を その 場だけ さしかえて 見る：馬は 作らない）
+        nh = pg.evaluate("() => { const T = TCApp._t, rnd = Math.random, f = v => { Math.random = () => v; const r = T.nextHorse(); Math.random = rnd; return r; }; return [f(0), f(1 / 399 - 1e-6), f(1 / 399 + 1e-6), f(1 / 399 + 1 / 245 - 1e-6), f(1 / 399 + 1 / 245 + 1e-6), f(0.5), f(0.999)]; }")
+        check(nh == ['kamisama', 'kamisama', 'maboroshi', 'maboroshi', None, None, None], f'次の 馬の 抽選：神様馬 1/399・幻の馬 1/245・それ 以外は いつもの 馬（{nh}）')
         print('■ ルーレット（神様馬：10000P か 20000P）')
         pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'kamisama', a: 10000, b: 20000, win: 1, bg: 'divine', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
         pg.wait_for_timeout(2500); shot(pg, 'tc_rt_wait')
