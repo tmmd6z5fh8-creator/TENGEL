@@ -31,5 +31,6 @@ shelf/shelf_1.png … shelf_7.png  棚の 色ちがいの 正面の 写真（ブ
    ブース用の 半分の 絵（`fgN_cs`・`ns`・`ms`）も 島を またがずに 小さく する・金属／あらさ は 劣化なし
 
 - `qem.c`：形を へらす（QEM）・UV の 上に 塗る・画面の 深さ（`fig_prep.py` が gcc で 作って ctypes で 使う）
-- アプリの 中：`fig/fig_render.js`（WebGL）・`fig/fig_app.js`（ブース・一覧・部屋・作る 画面）・`fig/fig_launch.js`（入口）
+- アプリの 中：`fig/fig_render.js`（WebGL）・`fig/fig_app.js`（ブース・一覧・部屋・作る 画面）・`fig/fig_launch.js`（入口：記録タブの ボタン と 右上の 丸い ボタン（第4.138版：トレーニングセンターの 下・押すと フィギュアブース・絵は `icons/icon_memory_figure.png` → `kisekae/fab_icon.py` → `fg_icon.webp`））
 - 作業の 場所が 新しく なって 絵・音が 消えた ときは、前に 作った パッケージから `python3 ios/restore_assets.py <Tengel_xxx.swiftpm.zip>`
+- ミッション（第4.138版・11/10 10:50）：思い出フィギュアを 1つ・5つ・8つ 完成させる → 5,000P・5,000P・10,000P（`points.js` の `figMissions`：作った 数＝台帳の `figs.items`）

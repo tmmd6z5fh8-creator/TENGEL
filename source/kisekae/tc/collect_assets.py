@@ -51,9 +51,14 @@ for nm in ('tc_prop_bucket', 'tc_prop_feed'):
     m = json.load(open(os.path.join(IT, nm + '.json'))); put(os.path.join(IT, nm + '.json')); put(os.path.join(IT, m.get('bin') or nm + '.bin'))
     for k in ('tex', 'ntex'):
         if m.get(k): put(os.path.join(IT, m[k]))
-# アイコン（右下の 丸い ボタン・作戦会議の 帯）
+# アイコン（右上の 丸い ボタン・作戦会議の 帯）
+#   丸い ボタンの 絵＝まさちゃんの アイコン（11/10 09:57「トレーニングセンターのアイコンこれにして！」：折り紙の 仔馬・ブラシ・エサの バケツ・金の ふち）。
+#   思い出フィギュアの アイコン（fg_icon.webp）と 同じ 作り方で 大きさを そろえる（kisekae/fab_icon.py：丸を 切り出して 232px で 240×240 の まん中に）
 UI = os.path.join(SRC, 'user_icons')
-webp(os.path.join(UI, 'icon_training_center.png'), 'tc_icon_tc.webp', size=(240, 240), q=92)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+import fab_icon
+assert 'tc_icon_tc.webp' not in got
+fab_icon.make(os.path.join(UI, 'icon_training_center.png'), os.path.join(OUT, 'tc_icon_tc.webp')); got['tc_icon_tc.webp'] = os.path.getsize(os.path.join(OUT, 'tc_icon_tc.webp'))
 webp(os.path.join(UI, 'icon_sakusen_kaigi.png'), 'tc_icon_plan.webp', size=(720, 200), q=92)
 # ルーレット（3つの 絵の 部品と 置き場所）
 RP = os.path.join(H3, 'rt_parts')

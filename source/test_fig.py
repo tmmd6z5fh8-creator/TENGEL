@@ -1,4 +1,5 @@
 # 思い出フィギュア（第4.134版）の テスト：App Store版（TARGET=app）を localhost で アプリ版として 開いて、思い出のレース → フィギュアを 作る → ブースに 飾る → 部屋 → 一覧
+#   第4.138版：右上の 丸い ボタン（トレーニングセンターの 下・名前の 札「思い出フィギュア」）→ フィギュアブース → 下の「＋ フィギュアを作る」→ 作る 画面 → もどる・ミッション（1つ・5つ・8つ 完成させる）
 #   python3 test_fig.py   （ios/fig_assets/ が ある とき だけ 全部。ない とき（CI）は ボタンと 読みこめない ときの 形だけ）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -89,6 +90,15 @@ try:
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
         print('■ 入口')
         check(pg.evaluate("() => typeof window.TengelFig === 'object' && typeof TengelFig.booth === 'function' && typeof window.TengelMem === 'object' && !!TengelWallet.fig"), 'TengelFig（入口）・TengelMem（思い出のレース）・TengelWallet.fig（台帳）')
+        # 第4.138版（11/10 09:45・09:55・09:57）：右上の 丸い ボタン（トレーニングセンターの 下）＋ 名前の 札「思い出フィギュア」
+        FAB = """() => { const R = e => e ? e.getBoundingClientRect() : null, t = document.querySelector('#tcFab'), f = document.querySelector('#figFab'), h = document.querySelector('header.top');
+          if (!t || !f || !h) return null; const a = R(t), c = R(f), l = f.querySelector('.fabl'), i = f.querySelector('.fabi'), q = R(l), ii = R(i);
+          return { hb: R(h).bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width,
+            aria: f.getAttribute('aria-label'), img: (i.querySelector('img') || {}).src || '' }; }"""
+        fb = pg.evaluate(FAB)
+        check(fb is not None and pg.locator('#figFab').is_visible() and 0 <= fb['top'] - fb['tcBottom'] <= 10 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 0 <= fb['tcTop'] - fb['hb'] <= 12,
+              f'右上の ボタン：トレーニングセンターの すぐ 下に 思い出フィギュア（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"])]}）')
+        check(fb is not None and fb['name'] == '思い出\nフィギュア' and fb['ib'] - 9 <= fb['lt'] <= fb['ib'] + 4 and abs(fb['iw'] - 66) < 1 and 'フィギュアブース' in fb['aria'], '絵（66px）の 下に 名前の 札「思い出／フィギュア」（2行）')
         pg.evaluate(SEED); pg.wait_for_timeout(800)
         pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=rec]') || [...document.querySelectorAll('.tabbar button')].find(x => /記録/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(900)
         L = pg.evaluate("() => TengelMem.list()")
@@ -102,6 +112,21 @@ try:
             check(pg.evaluate("() => !!window.FigApp && document.querySelector('#fgOv.on') !== null"), 'ブースは ひらく（絵が ない ときは「読みこめなかった」の 知らせ）')
             check(not errs, f'エラー なし {errs[:2]}')
             raise SystemExit
+        print('■ 右上の ボタン → フィギュアブース → フィギュアを作る → もどる')
+        check(pg.evaluate("() => { const im = document.querySelector('#figFab .fabi img'); return !!im && im.complete && im.naturalWidth === 240; }") and fb['img'].endswith('fg_icon.webp'), 'ボタンの 絵（fg_icon.webp・240×240）')
+        pg.locator('#figFab').click(); pg.wait_for_function("() => !!window.FigApp", timeout=30000); wait_scene(pg)
+        check(pg.evaluate("() => FigApp._t.mode") == 'booth' and pg.locator('#fgOv [data-fg=make]').is_visible() and 'フィギュアを作る' in pg.locator('#fgOv [data-fg=make]').inner_text(),
+              '思い出フィギュアの ボタンを 押す → フィギュアブース（下に「＋ フィギュアを作る」）')
+        shot(pg, 'fig_fab_booth')
+        pg.locator('#fgOv [data-fg=make]').click(); pg.wait_for_timeout(500)
+        check(pg.evaluate("() => [FigApp._t.mode, FigApp._t.mk.step, FigApp._t.mk.back].join()") == 'make,race,booth' and pg.locator('#fgOv .fgrace').count() == 2 and 'ブースへ' in pg.locator('#fgOv [data-fg=back]').inner_text(),
+              'ブースの「＋ フィギュアを作る」→ 1. 思い出のレースを 選ぶ（2つ・「← ブースへ」）')
+        pg.locator('#fgOv .fgrace').first.click(); pg.wait_for_timeout(600)
+        check(pg.evaluate("() => FigApp._t.mk.step") == 'design' and pg.locator('#fgOv .fgd').count() == 8, '→ 2. デザインを 選ぶ（8種）')
+        pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(300); pg.locator('#fgOv [data-fg=back]').click(); wait_scene(pg)
+        check(pg.evaluate("() => FigApp._t.mode") == 'booth', 'もどる → もどる → ブース')
+        pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(500)
+        check(pg.evaluate("() => !document.querySelector('#fgOv').classList.contains('on')") and pg.locator('#figFab').is_enabled(), 'ブースを 閉じる → もとの 画面（ボタンは また 押せる）')
         print('■ 作る：レース → デザイン → 3D で 見る')
         pg.evaluate("() => TengelWallet.grant('test-fig-pts', 400000, 'テスト')"); pg.wait_for_timeout(300)
         p0 = pg.evaluate("() => TengelWallet.total()")
@@ -129,6 +154,7 @@ try:
         shot(pg, 'fig_pick')
         pg.evaluate("() => FigApp._t.tapSlot(0)"); wait_scene(pg)
         check(pg.evaluate("() => TengelWallet.fig.slots()[0]") == it[0]['id'], '上の 左に 飾った')
+        check(pg.evaluate("() => TengelPoints.figMissions(TengelWallet.fig.items().length, TengelWallet.events()).map(m => m.claimable ? 1 : 0).join('')") == '100', '1つ 作った → ミッション「思い出フィギュアを1つ完成させる」が 受け取れる（5つ・8つは まだ）')
         print('■ 8体 ぜんぶ 作って 飾る')
         for n in range(2, 9):
             pg.evaluate("() => FigApp.make({ race: 'figm" + ('2' if n % 2 else '1') + "' })"); pg.wait_for_timeout(500)
@@ -190,6 +216,28 @@ try:
         check(hist == 8, f'ポイントの 記録に 8件（{hist}）')
         pg.locator('#fgOv [data-fg=back]').click(); pg.wait_for_timeout(800)
         check(pg.evaluate("() => !document.querySelector('#fgOv').classList.contains('on')") and 'フィギュアブース（8）' in pg.locator('#recList .memfig').inner_text(), '閉じると 記録タブの ボタンに（8）')
+        # 第4.138版（11/10 10:50 まさちゃん「ミッション 思い出フィギュアを１つ完成させる 5000p／5つ完成させる 5000p／8つ完成させる 10000p」）
+        print('■ ミッション（思い出フィギュアを 1つ・5つ・8つ 完成させる）')
+        t0 = pg.evaluate("() => TengelWallet.total()")
+        pg.locator('#msBtn').click(); pg.wait_for_timeout(500)
+        ROWS = "() => [...document.querySelectorAll('#msFig .msrow')].map(r => [r.dataset.mid, r.querySelector('.mn').innerText.replace(/\\s+/g, ' ').trim(), r.querySelector('.md').innerText.trim(), !!r.querySelector('[data-pt=claim]')])"
+        rows = pg.evaluate(ROWS)
+        check(pg.locator('#msOv').count() == 1 and '思い出フィギュアミッション' in pg.locator('#msOv').inner_text() and 'いま 8こ' in pg.locator('#msFig .hint').inner_text()
+              and rows == [['mission-fig-1', '思い出フィギュアを1つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-5', '思い出フィギュアを5つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-8', '思い出フィギュアを8つ完成させる 10,000P', '受け取れるよ！', True]],
+              f'ミッションの 窓に「思い出フィギュアミッション」：1つ 5,000P・5つ 5,000P・8つ 10,000P（8こ 作った → 3つとも 受け取れる）{rows}')
+        check('3つ' in pg.locator('#msOv .msn').inner_text(), f'受け取れる 数（{pg.locator("#msOv .msn").inner_text()}）')
+        pg.locator('#msFig [data-pt=claim][data-id="mission-fig-1"]').click(); pg.wait_for_timeout(800)
+        e1 = pg.evaluate("() => TengelWallet.events().filter(e => /^mission-fig-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()")
+        check(pg.evaluate("() => TengelWallet.total()") == t0 + 5000 and e1 == 'mission-fig-1:5000:free', f'「1つ完成させる」を 受け取る → +5,000P（もらったP・{e1}）')
+        pg.locator('#msFig [data-pt=claim][data-id="mission-fig-5"]').click(); pg.wait_for_timeout(800)
+        pg.locator('#msFig [data-pt=claim][data-id="mission-fig-8"]').click(); pg.wait_for_timeout(800)
+        rows = pg.evaluate(ROWS)
+        check(pg.evaluate("() => TengelWallet.total()") == t0 + 20000 and [r[2] for r in rows] == ['受け取りずみ'] * 3 and not any(r[3] for r in rows) and pg.locator('#msFig [data-pt=claim]').count() == 0,
+              f'5つ・8つも 受け取る → 合計 +20,000P・3つとも 受け取りずみ（もう 受け取れない）')
+        pg.locator('#msOv [data-ms=close]').click(); pg.wait_for_timeout(400)
+        pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=set]') || [...document.querySelectorAll('.tabbar button')].find(x => /設定/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(700)
+        sm = pg.locator('#setMission').inner_text()
+        check('思い出フィギュアのミッション' in sm and '思い出フィギュアを8つ完成させる' in sm and pg.locator('#setMission .msrow[data-mid="mission-fig-8"] .md').inner_text().strip() == '受け取りずみ', '設定タブの ミッションにも「思い出フィギュアのミッション」')
         check(not errs, f'エラー なし {errs[:3]}')
 finally:
     srv.terminate()

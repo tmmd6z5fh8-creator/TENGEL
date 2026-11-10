@@ -243,5 +243,22 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.has(evw2, 'mission-wallp-9') && bw.free === 1500 - 3000 + 1500 && P.wallpMissions(9, evw2)[2].claimed && !P.wallpMissions(9, evw2)[2].claimable && P.wallpMissions(9, evw2)[1].claimable
     && P.wallpMissions(40, evw2).filter(m => m.claimable).length === 9 && P.wallpMissions(45, evw2)[10].reach === false, '受け取ると mission-wallp-9（+1,500P＝もらったP）・1回だけ・40枚なら 残り 9つ');
 }
+// 第4.138版：思い出フィギュアの ミッション（作った 数 1・5・8 → 5,000・5,000・10,000P）
+{
+  const T0 = D('2026-11-10');
+  check(P.FIG_MISSIONS.map(m => m.join(':')).join() === '1:5000,5:5000,8:10000', '思い出フィギュアの ミッション：1つ 5,000P・5つ 5,000P・8つ 10,000P');
+  let evf = [P.giftEvent(T0)];
+  const f0 = P.figMissions(0, evf), f1 = P.figMissions(1, evf), f5 = P.figMissions(5, evf), f8 = P.figMissions(9, evf);
+  check(f0.length === 3 && f0.every(m => !m.done && !m.claimable) && f0.map(m => m.id).join() === 'mission-fig-1,mission-fig-5,mission-fig-8'
+    && f0.map(m => m.label).join() === '思い出フィギュアを1つ完成させる,思い出フィギュアを5つ完成させる,思い出フィギュアを8つ完成させる', '0こ：3つとも まだ（id は mission-fig-1・5・8・名前は「思い出フィギュアを○つ完成させる」）');
+  check(f1.map(m => m.claimable).join() === 'true,false,false' && f5.map(m => m.claimable).join() === 'true,true,false' && f8.map(m => m.claimable).join() === 'true,true,true', '1こ → 1つめ・5こ → 2つめ まで・8こ 以上 → 3つとも 受け取れる');
+  const re1 = P.rowEvent(f1[0], T0); evf.push(re1);
+  const b1 = P.balance(evf, T0), g1 = P.figMissions(8, evf);
+  check(re1.id === 'mission-fig-1' && re1.kind === 'mission' && re1.bucket === 'free' && re1.amount === 5000 && re1.what === '思い出フィギュアを1つ完成させる' && b1.total === 6500 && b1.free === 6500
+    && g1[0].claimed && !g1[0].claimable && g1[1].claimable && g1[2].claimable, '受け取ると mission-fig-1（mission・free・+5,000P＝もらったP）・受け取りずみ（1回だけ）');
+  evf.push(P.rowEvent(g1[1], T0)); evf.push(P.rowEvent(g1[2], T0));
+  check(P.balance(evf, T0).total === 21500 && P.figMissions(8, evf).every(m => m.claimed && !m.claimable) && P.tcMissions(0, evf)[0].id === 'mission-tc-50' && P.boardMissions(0, evf)[0].id === 'mission-board-3',
+    '3つ 受け取ると 合計 +20,000P・ほかの ミッションの id は そのまま');
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

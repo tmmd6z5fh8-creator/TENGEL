@@ -1002,10 +1002,12 @@ const TCCare = (() => {
     label('お世話', sx + 24, sy + 36, 28, '#7a4520', null, 0, 'left');
     g.save(); g.translate(sx + sw - 118, sy + 70); g.scale(bs, bs); label(String(Math.round(S.stockShow)), 0, 0, 50, '#3f7f3a', '#fff8ec', 6); g.restore();
     label('/20', sx + sw - 54, sy + 76, 28, '#9a7a55');
-    if (S.stockDrop != null) { const v = (t - S.stockDrop) / 1.2; if (v < 1) label('−1', sx + sw - 60, sy + shh + 26 + 30 * easeOut(v), 40, '#b0445f', '#fff8ec', 7); }
+    // 「−1」と 高確ゾーンの 札は お世話の 板の すぐ 下。アプリでは そこに 作戦会議の ボタン（板の すぐ 下：11/10 10:48 まさちゃん）が 上に のる ので
+    //   「−1」は ボタンの 左（O.dropX）・高確ゾーンの 札は ボタンの 下（O.hiY）へ
+    if (S.stockDrop != null) { const v = (t - S.stockDrop) / 1.2; if (v < 1) label('−1', O.dropX || sx + sw - 60, sy + shh + 26 + 30 * easeOut(v), 40, '#b0445f', '#fff8ec', 7); }
     if (S.high > 0) {                  // 高確ゾーン（のこり お世話 ○回）
       const hb = S.highBump != null ? (t - S.highBump) / 0.5 : 2, hs = hb < 1 ? 1 + 0.15 * Math.sin(Math.PI * hb) : 1;
-      g.save(); g.translate(sx + sw / 2, sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
+      g.save(); g.translate(sx + sw / 2, O.hiY || sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
     }
     // 説明書の「？」（ゲージと お世話の あいだ）
     { const [hx, hy] = HELP, pq = S.press.help != null ? (t - S.press.help) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;

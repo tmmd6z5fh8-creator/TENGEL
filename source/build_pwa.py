@@ -105,10 +105,10 @@ if TARGET == 'app':
     html += '<script>\n' + _bcp.bundle_js() + '\n</script>\n'
     for _f in ('bcx_art.js', 'bcx.js'):
         html += '<script>\n' + open(_f, encoding='utf8').read() + '\n</script>\n'
-    # トレーニングセンター（第4.130版：まさちゃん 11/08〜11/09）：右下の 丸い ボタン・作戦会議の 通知・ミッションの 数（tc/tc_launch.js）は index.html に。
+    # トレーニングセンター（第4.130版：まさちゃん 11/08〜11/09）：丸い ボタン（第4.138版から 右上・思い出フィギュアの ボタンも ここの TengelFab で）・作戦会議の 通知・ミッションの 数（tc/tc_launch.js）は index.html に。
     # 本体（馬・フィールド・お世話・説明書・当たりの 演出・作戦会議）は 押した ときに 読む tc_bundle.js（下で 書く）。絵と 音は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
     html += '<script>\n' + open(os.path.join('tc', 'tc_launch.js'), encoding='utf8').read() + '\n</script>\n'
-    # 思い出フィギュア（第4.134版：まさちゃん 11/09）：記録タブの「思い出のレース」の ボタンから 開く 入口（fig/fig_launch.js）は index.html に。
+    # 思い出フィギュア（第4.134版：まさちゃん 11/09）：記録タブの「思い出のレース」の ボタンと 右上の 丸い ボタン（第4.138版：トレーニングセンターの 下・tc_launch.js の TengelFab を 使うので その 後に）から 開く 入口（fig/fig_launch.js）は index.html に。
     # 本体（3D の 描画・ブース・一覧・部屋・作る 画面）は 押した ときに 読む fig_bundle.js（下で 書く）。形と 絵は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
     html += '<script>\n' + open(os.path.join('fig', 'fig_launch.js'), encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'

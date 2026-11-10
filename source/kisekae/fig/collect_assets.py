@@ -1,6 +1,6 @@
 # 思い出フィギュアの 形・絵を アプリ用に 集める（ios/fig_assets/ に 名前だけで ならべる：build_ios.py が Resources/ に 入れる）
 #   python3 kisekae/fig/collect_assets.py <作業フォルダ（out/ に figN.npz・figN_c/n/m.webp・figN_board.json・shelf.npz・shelf_c1〜7.webp／thumbs/figN.png）> [出す フォルダ ios/fig_assets]
-#   ・まさちゃんの フィギュア 8体・棚の 3D と それから 作った もの は 公開の リポジトリに 入れない（.gitignore：ios/fig_assets/）。この スクリプトだけ 入れる
+#   ・まさちゃんの フィギュア 8体・棚の 3D・アイコン（icons/icon_memory_figure.png）と それから 作った もの は 公開の リポジトリに 入れない（.gitignore：ios/fig_assets/）。この スクリプトだけ 入れる
 #   ・作り方（作業フォルダの 道具）：fig_bake.py（形を へらして 色・法線・金属／あらさ を 焼く）→ board_find.py（ボードの 板）→
 #     shelf_align.py・shelf_proj.py（棚の 3D に 7色の 画像を 正面から 貼る）。くわしくは kisekae/fig/README.md
 #   ・形：位置は 16bit（箱の 中の 割合）・UV 16bit・三角の 番号。絵：色 2048・法線 1024・金属／あらさ 1024（WebP：1体を 大きく 見る 部屋）
@@ -82,6 +82,14 @@ if os.path.exists(os.path.join(O, 'shelf_c7.webp')):
     m.update({'tex': [f'fg_shelf_c{c}.webp' for c in range(1, 8)]})
     json.dump(m, open(os.path.join(OUT, 'fg_shelf.json'), 'w'))
 else: print('※ まだ ない：棚')
+# 右上の 丸い ボタンの 絵（まさちゃんの アイコン：<作業フォルダ>/icons/icon_memory_figure.png・11/10 09:49）→ fg_icon.webp（240×240）
+#   丸の 大きさは トレーニングセンターの アイコン（tc_icon_tc.webp）と 同じ 作り方で そろえる（kisekae/fab_icon.py：丸を 切り出して 232px で まん中に）
+ICON = os.path.join(SRC, 'icons', 'icon_memory_figure.png')
+if os.path.exists(ICON):
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    import fab_icon
+    fab_icon.make(ICON, os.path.join(OUT, 'fg_icon.webp')); got['fg_icon.webp'] = os.path.getsize(os.path.join(OUT, 'fg_icon.webp'))
+else: print('※ まだ ない：右上の ボタンの 絵（icons/icon_memory_figure.png）')
 json.dump(meta, open(os.path.join(OUT, 'fg_meta.json'), 'w'))
 for f in os.listdir(OUT): got.setdefault(f, os.path.getsize(os.path.join(OUT, f)))
 print('集めた', len(got), 'こ', round(sum(got.values()) / 1e6, 1), 'MB →', OUT)

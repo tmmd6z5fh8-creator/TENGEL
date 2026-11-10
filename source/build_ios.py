@@ -62,7 +62,7 @@ for f in sorted(os.listdir(os.path.join(web, 'fonts'))):
 if os.path.exists(os.path.join(web, 'mother_template.xlsx')):
     files['mother_template.xlsx'] = 'mother_template.xlsx'   # 第4.123版：マザーデータの 入力用 Excel の ひな形（共有シートで 渡す）
 if os.path.exists(os.path.join(web, 'tc_bundle.js')):
-    files['tc_bundle.js'] = 'tc_bundle.js'   # トレーニングセンターの 本体（第4.130版：右下の 丸い ボタンを 押した ときに 読む）
+    files['tc_bundle.js'] = 'tc_bundle.js'   # トレーニングセンターの 本体（第4.130版：丸い ボタン（第4.138版から 右上）を 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'fig_bundle.js')):
     files['fig_bundle.js'] = 'fig_bundle.js'   # 思い出フィギュアの 本体（第4.134版：記録タブの「フィギュアブース」「フィギュアを作る」を 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
@@ -104,7 +104,7 @@ for f in bcp_have:
 if len(bcp_have) != len(bcp_all):
     print('※ 結果ボードカスタムの 絵が', len(bcp_all) - len(bcp_have), 'こ ない（', bcp_dir, '）。kisekae/bcp の README の 作り方で 作れるよ（CIではなしのまま）')
 # トレーニングセンターの 絵・形・音（第4.130版：まさちゃんの フィールド・馬・バケツの 3D など と それから 作った もの）：ios/tc_assets/ か TC_ASSETS=<フォルダ>。
-# kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右下の ボタンを 押すと「読みこめなかった」に なる）
+# kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右上の ボタンを 押すと「読みこめなかった」に なる）
 tc_dir = os.environ.get('TC_ASSETS') or os.path.join(W, 'ios', 'tc_assets')
 tc_have = sorted(f for f in (os.listdir(tc_dir) if os.path.isdir(tc_dir) else []) if f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
 for f in tc_have:

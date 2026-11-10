@@ -303,6 +303,10 @@
   function tcMissions(count, events) {
     return TC_MISSIONS.map(function (m) { var id = 'mission-tc-' + m[0], claimed = has(events, id); return { id: id, n: m[0], reward: m[1], label: '馬をお世話して' + m[2] + '段階目の成長させる', done: count >= m[0], claimed: claimed, claimable: count >= m[0] && !claimed }; });
   }
+  // 第4.138版：思い出フィギュアの ミッション（まさちゃん 2026/11/10 10:50「ミッション 思い出フィギュアを１つ完成させる 5000p／5つ完成させる 5000p／8つ完成させる 10000p」）
+  //   count＝作った 思い出フィギュアの 数（しまって あっても 数える）。1回 受け取ったら もう 出ない
+  var FIG_MISSIONS = [[1, 5000], [5, 5000], [8, 10000]];
+  function figMissions(count, events) { return rowsOf(FIG_MISSIONS, 'mission-fig-', count, events, function (n) { return '思い出フィギュアを' + n + 'つ完成させる'; }); }
   function rowEvent(m, now) { return mk(m.id, 'mission', 'free', m.reward, iso(now), { what: m.label }); }
   // 解放した 壁紙の 枚数（帯も 数える：ポイント＋壁紙パック＋帯）
   function wallCountAll(events, packN) { return wallCount(events, packN) + (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:(silver|golden|tengel)$/.test(String(e.what || '')); }).length; }
@@ -328,7 +332,7 @@
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
-    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions,
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;

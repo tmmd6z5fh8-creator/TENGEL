@@ -1,5 +1,5 @@
 // トレーニングセンター（App Store版）：馬の お世話・作戦会議（まさちゃん 2026/11/08〜11/09）
-//   index.html の 中の tc_launch.js が 右下に 丸い ボタンを 出す → 押すと この ファイル（tc_bundle.js）を 読んで TCApp.open()
+//   index.html の 中の tc_launch.js が 右上（第4.138版：上の 帯の すぐ 下）に 丸い ボタンを 出す → 押すと この ファイル（tc_bundle.js）を 読んで TCApp.open()
 //   ・上の 帯：「← もどる」・作戦会議（横長の ボタン）・音
 //   ・フィールド（tc_field.js：時間帯・幻の馬／神様馬）＋ 馬（tc_horse.js）＋ お世話の 紙の 絵（tc_care.js）＋ 説明書（tc_guide.js）
 //   ・当たり：ポイント（台帳の もらったP）・ルーレット／チケット（tc_fx.js）
@@ -89,7 +89,7 @@ const TCApp = (() => {
 #tcOv .tch{width:100%;max-width:560px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:6px 10px;height:58px;flex:none}
 #tcOv .tcbk{flex:none;height:40px;padding:0 12px;border-radius:20px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;display:flex;align-items:center;gap:4px}
 #tcOv .tcsp{flex:1 1 auto}
-#tcOv .tcst .tcpl{position:absolute;right:2.47%;top:14%;width:26.2%;border:0;padding:0;margin:0;background:none;-webkit-tap-highlight-color:transparent;transition:transform .12s}
+#tcOv .tcst .tcpl{position:absolute;right:2.47%;top:9.1%;width:25%;border:0;padding:0;margin:0;background:none;-webkit-tap-highlight-color:transparent;transition:transform .12s}
 #tcOv .tcst .tcpl:active{transform:scale(.94)}
 #tcOv .tcpl img{display:block;width:100%;height:auto;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
 #tcOv .tcsd{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid #d9b77c;background:#fff8ec;font-size:18px;line-height:1;padding:0}
@@ -303,7 +303,7 @@ const TCApp = (() => {
     accrue(Date.now());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 352, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
+      lottery, onPrize, onEvent: onCareEvent, banTop: 352, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     nextTick = clock() + TICK;
     SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a']);
