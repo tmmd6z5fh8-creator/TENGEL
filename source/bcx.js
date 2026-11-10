@@ -186,6 +186,7 @@
   //     fg（ボードの 前の 絵が ある）, ts（見出しの 色：''＝金・silver・copper・rainbow）, nt（見出しを 出さない：絵に 字が ある）, L（字と 行の 場所：kisekae/bcp の layout）, cl（「とじる」の 色） } } }
   //   段：的中は 連続的中の 数（spec.streak：1〜4連勝〜・出世馬は 1・2・3・4・8・16・24連勝〜）、ハズレは 続けて ハズレた 数（1〜4回目〜）。その 数から その 絵
   //   絵：bcp_<デザイン>.webp（舞台 390×844 の 3倍・ボードの うしろ）と bcp_<デザイン>_fg.webp（ボードの 前の キャラクターなど・すき通し）。読めない とき（CI）は いつもの ボード
+  //     第4.145版：キャラが 動く 絵（D.mo.bgx が ある 48こ）は その 2まい（止まった 版）を アプリに 入れない。キャラなしの 背景（bgx）・キャラ・前の 絵（fgx）を 重ねて 同じ 絵に する（picParts）
   //   形：.hb（ボードの 入れもの）の 中に 舞台 ぜんぶの 入れもの .bcpw（絵 → ボード .rb → 前の 絵）。.rb は 板の 四すみに 合わせて matrix3d（ボードの 面 350×hp → 板）。
   //   字と 行は 見本（kisekae/bcp/bcp_inj.py）と 同じ 置き方・同じ 色（紺と 金）。ボードの 中の 飾り（テーマの 飾りなど）は 出さない（まさちゃん 21:49）
   //   出る 時：その 演出の ボードが 出る 時（.hb の 登場の アニメーション：時刻は そのまま・動きは 消す）に 絵ごと ふわっと（.bcpon）→ 出おわったら ほかの 絵（光・紙ふぶき・動画の コマ）を かくす（.bcpdone）
@@ -205,7 +206,9 @@
     '@keyframes bcpIn{0%{opacity:0;transform:scale(1.045)}100%{opacity:1;transform:none}}',
     '@keyframes bcpInB{0%{opacity:0;transform:scale(1.07);filter:brightness(1.9)}55%{opacity:1;filter:brightness(1.25)}100%{opacity:1;transform:none;filter:none}}',
     '#fxOv .hb.bcpic .bcpw > img{position:absolute;left:0;top:0;width:390px;height:844px;-webkit-user-drag:none;user-select:none}',
-    // 第4.129版：キャラが 動く（picMotion）：キャラの 入れもの（絵の 大きさ だけ）・まわりの 光と 雲（WebGL）・見えない 時計（光と 雲の 時刻）
+    // 第4.145版：部品を 重ねる 絵は ぜんぶ 読めて から 出す（背景だけ 先に 出ると キャラが いない 絵に なる）
+    '#fxOv .hb.bcpic .bcpw.bcpld > img{visibility:hidden}',
+    // 第4.129版：キャラが 動く（picParts）：キャラの 入れもの（絵の 大きさ だけ）・まわりの 光と 雲（WebGL）・見えない 時計（光と 雲の 時刻）
     '#fxOv .hb.bcpic .bcpw .chrw{position:absolute;pointer-events:none}#fxOv .hb.bcpic .bcpw .chrw > .chri{position:absolute;left:0;top:0;width:100%;height:100%}',
     '#fxOv .hb.bcpic .bcpw .chrw img{position:absolute;left:0;top:0;width:100%;height:100%;-webkit-user-drag:none;user-select:none}',
     '#fxOv .hb.bcpic .bcpw .chramb{position:absolute;left:0;top:0;width:390px;height:844px;pointer-events:none}',
@@ -315,8 +318,11 @@
   //     layers（キャラ：src・box（舞台の pt）・o（動きの まん中）・amp・deg・ax・dp・dt／ヒラヒラ：sw・st・fy・sf／ボードの 前に 出る 所：f）・
   //     oc（キャラの 前の 動かない 物）・ot（いちばん 上の 動かない 物）・top（キャラを ボードと 前の 絵の 上に）・amb（まわりの 光と 雲：WebGL）
   //   動き：ぷるん（3.2秒に 1回・つぶれ 3.8%）と 3Dで 向き（左右 4度・7秒）・ヒラヒラ（花：まん中の まわりで 回る＋向き）・光の すじが ゆれて 雲が うねる（トロフィー）
-  //   はじめは 止まった 絵。動きの 絵が ぜんぶ 読めたら キャラを かさねる（止まって いる 形は 止まった 絵と 同じ：chr_snap.py）→ 2コマ あとで 背景を キャラなしに → 動きはじめる（.chrgo）
-  //   的中エフェクト オフ・控えめ（視差効果を減らす も）・絵が 読めない → 止まった 絵の まま（CSS も @media prefers-reduced-motion）
+  //   第4.145版（まさちゃん 2026/11/10 20:04「やって！」＝止まった 版を やめて、動く 版の 部品を 重ねて 同じ 絵を 出す。アプリが 約14MB 軽く なる）：
+  //     キャラなしの 背景（bgx）が ある 絵（48こ）は 止まった 版（bcp_<デザイン>.webp・_fg.webp）を 持たない。背景（bgx）と 前の 絵（fgx）を はじめから 置いて、
+  //     部品が ぜんぶ 読めたら キャラを かさねて いっしょに 出す（.bcpld を 外す：止まって いる 形は 止まった 絵と 同じ＝chr_snap.py）→ 2コマ あとで 動きはじめる（.chrgo）
+  //     的中エフェクト オフ・控えめ（視差効果を減らす も）は 同じ 部品を 重ねた まま 動かさない（CSS も @media prefers-reduced-motion）。部品が 読めない（CI）・8秒 たっても そろわない → いつもの ボード
+  //     トロフィー（光と 雲だけ・bgx なし）と 出世馬（動かない）は 止まった 絵の まま（前と 同じ）
   const MO_PON = [[0, 0, 0], [8, -0.010, 0.016], [14, 0.024, -0.038], [22, -0.006, 0.012], [30, 0.007, -0.007], [38, -0.002, 0.003], [46, 0, 0], [100, 0, 0]];
   const MO_PER = 600, MO_TP = 3.2, MO_TT = 7;
   const moMade = {};
@@ -349,41 +355,56 @@
     const st = document.createElement('style'); st.className = 'bcmCss'; st.textContent = k + '\n@media (prefers-reduced-motion:no-preference){' + r + '}';
     document.head.appendChild(st);
   }
-  function picMotion(hb, wrap, rb, bg, fg, name, M) {
-    const L = M.layers || [];
-    const srcs = [M.bgx, fg && M.fgx, M.oc && M.oc.src, M.ot && M.ot.src].concat(L.map(l => l.src), L.map(l => l.f)).filter(Boolean);
-    const load = s => new Promise((ok, ng) => {
-      const im = new Image();
-      im.onload = () => { const p = im.decode ? im.decode() : null; if (p && p.then) p.then(() => ok(im), () => ok(im)); else ok(im); };
-      im.onerror = ng; im.src = s;
-    });
-    Promise.all(srcs.map(load)).then(() => {
-      if (!wrap.isConnected || !hb.classList.contains('bcpic') || hb.classList.contains('bcst')) return;
-      moRules(name, M);
-      wrap.dataset.mo = name;
-      const pic = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = src; return im; };
-      const still = (cls, o) => { const im = pic(cls, o.src), b = o.box; im.style.cssText = `position:absolute;left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px;pointer-events:none`; return im; };
-      const mk = (l, i, src) => {   // 入れものは 絵の 大きさ だけ（重ねる 層が 小さい＝iPhone でも 軽い）。動きの まん中は 入れものの 中の 位置
-        const w = document.createElement('div'), ii = document.createElement('div'), b = l.box;
-        w.className = 'chrw L' + i; ii.className = 'chri';
-        w.style.cssText = `left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px`;
-        const o = `${f(l.o[0] - b[0])}px ${f(l.o[1] - b[1])}px`; w.style.transformOrigin = o; ii.style.transformOrigin = o;
-        ii.appendChild(pic('', src)); w.appendChild(ii); return w;
+  // その デザインの 背景・前の 絵（第4.145版）：キャラなしの 背景（mo.bgx）が ある デザインは 止まった 絵を 使わない（アプリに 入って いない：kisekae/bcp/bcp_app.py の pics と 同じ きまり）
+  const picBg = (name, D) => (D.mo && D.mo.bgx) || `bcp_${name}.webp`;
+  const picFg = (name, D) => (D.fg ? ((D.mo && D.mo.bgx && D.mo.fgx) || `bcp_${name}_fg.webp`) : null);
+  // 絵を 出す のに いる もの ぜんぶ（背景・前の 絵・キャラ・動かない 物。まわりの 光と 雲 amb は のぞく：あとから かさねる）
+  function picSrcs(name, D) {
+    const M = D.mo || {}, L = M.layers || [];
+    return [picBg(name, D), picFg(name, D), M.oc && M.oc.src, M.ot && M.ot.src].concat(L.map(l => l.src), L.map(l => l.f)).filter((s, i, a) => s && a.indexOf(s) === i);
+  }
+  // 絵を 読む（読めたら 先に 開く：decode。開くのを 待つのは 1.5秒 まで＝それでも 出す ときに 開く）
+  function picLoad(s) {
+    return new Promise((ok, ng) => {
+      const im = new Image(); let fin = false;
+      const done = () => { if (!fin) { fin = true; ok(im); } };
+      im.onload = () => {
+        let p = null; try { p = im.decode ? im.decode() : null; } catch (e) { p = null; }
+        if (p && p.then) { p.then(done, done); setTimeout(done, 1500); } else done();
       };
-      // キャラ（ボードの 下・top は ボードと 前の 絵の 上）→ キャラの 前の 動かない 物（ボードの 下）→ ボードの 前に 出る 所 → いちばん 上の 動かない 物
-      L.forEach((l, i) => { const w = mk(l, i, l.src); if (M.top) wrap.appendChild(w); else wrap.insertBefore(w, rb); });
-      if (M.oc) wrap.insertBefore(still('chroc', M.oc), rb);
-      L.forEach((l, i) => { if (l.f) wrap.appendChild(mk(l, i, l.f)); });
-      if (M.ot) wrap.appendChild(still('chrot', M.ot));
+      im.onerror = () => ng(new Error(s));
+      im.src = s;
+    });
+  }
+  // 部品（キャラ・動かない 物）を 読んで かさねる。move＝動かす（オフ・控えめ では かさねた まま 止めて おく）。
+  //   かさねたら onShow（部品を 重ねる 絵は ここで はじめて 絵が 出る）。読めない・かさねられない → onFail
+  function picParts(hb, wrap, rb, bg, name, D, move, onShow, onFail) {
+    const M = D.mo, L = M.layers || [];
+    Promise.all(picSrcs(name, D).map(picLoad)).then(() => {
+      if (!wrap.isConnected || !hb.classList.contains('bcpic')) return;
+      try {
+        if (move) { moRules(name, M); wrap.dataset.mo = name; }
+        const pic = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.decoding = 'sync'; im.src = src; return im; };   // sync＝ほかの 部品と 同じ コマで 出す
+        const still = (cls, o) => { const im = pic(cls, o.src), b = o.box; im.style.cssText = `position:absolute;left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px;pointer-events:none`; return im; };
+        const mk = (l, i, src) => {   // 入れものは 絵の 大きさ だけ（重ねる 層が 小さい＝iPhone でも 軽い）。動きの まん中は 入れものの 中の 位置
+          const w = document.createElement('div'), ii = document.createElement('div'), b = l.box;
+          w.className = 'chrw L' + i; ii.className = 'chri';
+          w.style.cssText = `left:${b[0]}px;top:${b[1]}px;width:${b[2]}px;height:${b[3]}px`;
+          const o = `${f(l.o[0] - b[0])}px ${f(l.o[1] - b[1])}px`; w.style.transformOrigin = o; ii.style.transformOrigin = o;
+          ii.appendChild(pic('', src)); w.appendChild(ii); return w;
+        };
+        // キャラ（ボードの 下・top は ボードと 前の 絵の 上）→ キャラの 前の 動かない 物（ボードの 下）→ ボードの 前に 出る 所 → いちばん 上の 動かない 物
+        L.forEach((l, i) => { const w = mk(l, i, l.src); if (M.top) wrap.appendChild(w); else wrap.insertBefore(w, rb); });
+        if (M.oc) wrap.insertBefore(still('chroc', M.oc), rb);
+        L.forEach((l, i) => { if (l.f) wrap.appendChild(mk(l, i, l.f)); });
+        if (M.ot) wrap.appendChild(still('chrot', M.ot));
+      } catch (e) { onFail(e); return; }
+      onShow();
+      if (!move) return;
       if (M.amb) ambStart(wrap, rb, bg.getAttribute('src'), M.amb);
-      // キャラが かさなって から（同じ 形）背景と 前の 絵を キャラなしに → 動きはじめる
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (!wrap.isConnected) return;
-        if (M.bgx) bg.src = M.bgx;
-        if (fg && M.fgx && fg.isConnected) fg.src = M.fgx;
-        wrap.classList.add('chrgo');
-      }));
-    }, () => { /* 動きの 絵が 読めない → 止まった 絵の まま */ });
+      // かさなって から 2コマ あとに 動きはじめる
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (wrap.isConnected) wrap.classList.add('chrgo'); }));
+    }, onFail);
   }
   // まわりの 光と 雲（トロフィー：kisekae/bcp/chr/amb_stage.py の m1・m2・m3・f）：舞台の 絵の 上（アプリの ボードの 下）に WebGL の 絵を かさねる。
   //   光の すじは もとの まわりで ゆっくり ゆれて 明るさが 角度で 流れる・雲は 外へ むかう 波で うねる。トロフィー・紙ふぶきの 所は 動かない（かさねない）。
@@ -479,8 +500,11 @@
     const wrap = document.createElement('div'); wrap.className = 'bcpw';
     wrap.style.left = -L0 + 'px'; wrap.style.top = -T0 + 'px';
     wrap.style.transformOrigin = `${f((q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4)}px ${f((q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4)}px`;   // 板の まん中から
-    const img = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.src = src; return im; };
-    const bg = img('bcpbg', `bcp_${name}.webp`), fg = D.fg ? img('bcpfg', `bcp_${name}_fg.webp`) : null;
+    const img = (cls, src) => { const im = document.createElement('img'); im.className = cls; im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.draggable = false; im.decoding = 'sync'; im.src = src; return im; };   // sync＝背景・キャラ・前の 絵を 同じ コマで 出す
+    // 第4.145版：parts＝止まった 版を 持たない 絵（キャラなしの 背景 bgx と 前の 絵 fgx を 置いて、部品が そろって から いっしょに 出す：.bcpld の 間は 見せない）
+    const M = D.mo || null, parts = !!(M && M.bgx), fgSrc = picFg(name, D);
+    const bg = img('bcpbg', picBg(name, D)), fg = fgSrc ? img('bcpfg', fgSrc) : null;
+    if (parts) wrap.classList.add('bcpld');
     hb.insertBefore(wrap, rb); wrap.appendChild(bg); wrap.appendChild(rb); if (fg) wrap.appendChild(fg);
     hb.dataset.bcx = it.id; hb.dataset.bcp = name;
     hb.classList.add('bcpic', 'bcx-' + it.id); if (st) hb.classList.add('bcst'); if (BIG[kind]) hb.classList.add('bcpbig');
@@ -496,40 +520,48 @@
     try { if (bg.decode) bg.decode().catch(() => {}); } catch (e) { /* なし */ }
     // 絵が 読めない（CI など）→ いつもの ボードに もどす
     let undone = false;
-    bg.addEventListener('error', () => {
+    const undo = () => {
       if (undone || !wrap.isConnected) return; undone = true;
       wrap.replaceWith(orig);
       hb.classList.remove('bcpic', 'bcst', 'bcpbig', 'bcpon'); if (ov && ov.classList) ov.classList.remove('bcpic', 'bcpdone'); stage.classList.remove('bcpdone');
       dynCss(''); delete hb.dataset.bcp;
-    });
-    if (fg) fg.addEventListener('error', () => { if (fg.parentNode) fg.parentNode.removeChild(fg); });
-    // 第4.129版：キャラが 動く（D.mo）。止まった 絵が 読めてから（読めない とき＝CI は いつもの ボード）・オフと 控えめ では 動かさない
-    if (D.mo && !st) {
-      const go = () => { if (!undone && wrap.isConnected) picMotion(hb, wrap, rb, bg, fg, name, D.mo); };
-      if (bg.complete && bg.naturalWidth) go(); else bg.addEventListener('load', go, { once: true });
+    };
+    bg.addEventListener('error', undo);
+    if (fg) fg.addEventListener('error', () => { if (parts) undo(); else if (fg.parentNode) fg.parentNode.removeChild(fg); });   // 部品を 重ねる 絵は 1まい でも 欠けたら いつもの ボード
+    // 出る 時：ボードの 登場が 始まったら 絵ごと 出す・出おわって（絵の ふわっと も おわって・部品を 重ねる 絵は 絵が 出て）から ほかの 絵を かくす
+    let wDone = st, hDone = false, pDone = !parts;
+    const done = () => { if (undone || !wDone || !hDone || !pDone || !hb.isConnected) return; if (ov && ov.classList) ov.classList.add('bcpdone'); stage.classList.add('bcpdone'); };
+    // 第4.129版：キャラが 動く（D.mo）・オフと 控えめ では 動かさない。第4.145版：部品を 重ねる 絵は オフと 控えめ でも 部品で 出す（かさねた まま 止めて おく）。
+    //   トロフィー（光と 雲だけ）は 止まった 絵が 読めて から（読めない とき＝CI は いつもの ボード）
+    if (M && (parts || !st)) {
+      const show = () => { wrap.classList.remove('bcpld'); pDone = true; done(); };
+      const go = () => { if (!undone && wrap.isConnected) picParts(hb, wrap, rb, bg, name, D, !st, show, parts ? undo : () => { /* 光と 雲が 読めない → 止まった 絵の まま */ }); };
+      if (parts || (bg.complete && bg.naturalWidth)) go(); else bg.addEventListener('load', go, { once: true });
+      if (parts) setTimeout(() => { if (!pDone) undo(); }, 8000);   // 8秒 たっても 部品が そろわない → いつもの ボード（字だけ 出た まま に しない）
     }
-    // 出る 時：ボードの 登場が 始まったら 絵ごと 出す・出おわって（絵の ふわっと も おわって）から ほかの 絵を かくす
-    let wDone = st, hDone = false;
-    const done = () => { if (undone || !wDone || !hDone || !hb.isConnected) return; if (ov && ov.classList) ov.classList.add('bcpdone'); stage.classList.add('bcpdone'); };
     const wEnd = () => { if (wDone) return; wDone = true; done(); };
     wrap.addEventListener('animationend', e => { if (e.target === wrap) wEnd(); });
     whenBoard(hb, false, () => { lay(); hb.classList.add('bcpon'); if (!st) setTimeout(wEnd, 1500); }, () => { hDone = true; done(); });   // 1.5秒：知らせが こない とき
     return it.id;
   }
   // つぎの 結果で 出す 絵（的中＝連続的中＋1・ハズレ＝続けて ハズレた 数＋1）を 先に 読む（fx.js の prime：「結果を保存」を 押した とき）
+  //   第4.145版：部品を 重ねる 絵は 部品 ぜんぶ（picSrcs：背景・前の 絵・キャラ・動かない 物）。持つ のは つぎの 的中と ハズレの ぶん だけ（前の ぶんは はなす）
   let warm = [];
   function prime() {
     try {
       const w = WL(); if (!PIC || !w || !w.board) return;
-      const i = w.board.info();
+      const i = w.board.info(), keep = [];
       [['hit', i.streak], ['miss', i.mstreak]].forEach(([k, s]) => {
         const id = w.board.active(k); if (!isPic(id)) return;
         const sg = picStage(id, (+s || 0) + 1), D = sg && PIC.d[sg[1]]; if (!D) return;
-        [`bcp_${sg[1]}.webp`].concat(D.fg ? [`bcp_${sg[1]}_fg.webp`] : []).forEach(src => {
-          if (warm.some(x => x.s === src)) return;
-          const im = new Image(); im.src = src; warm.push({ s: src, im }); if (warm.length > 4) warm = warm.slice(-4);
+        picSrcs(sg[1], D).forEach(src => {
+          if (keep.some(x => x.s === src)) return;
+          const old = warm.find(x => x.s === src);
+          if (old) { keep.push(old); return; }
+          const im = new Image(); im.src = src; keep.push({ s: src, im });
         });
       });
+      warm = keep;
     } catch (e) { /* なし */ }
   }
 
@@ -842,6 +874,7 @@
   window.addEventListener('resize', fitThumbs);
   setTimeout(card, 60);
 
-  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, prime: prime, pic: id => (isPic(id) ? JSON.parse(JSON.stringify(PIC.items[id])) : null), stage: (id, n) => picStage(id, n), _B: B, _HBX: HBX };
+  window.TengelBoard = { on: true, items: () => ITEMS.slice(), decorate: decorate, snd: snd, see: see, paint: paint, prime: prime, pic: id => (isPic(id) ? JSON.parse(JSON.stringify(PIC.items[id])) : null), stage: (id, n) => picStage(id, n), _B: B, _HBX: HBX,
+    _picSrcs: name => (PIC && PIC.d[name] ? picSrcs(name, PIC.d[name]) : []), _warm: () => warm.map(x => x.s) };   // 第4.145版：テスト用（その デザインで 読む 絵・先に 読んだ 絵）
   css();
 })();

@@ -106,16 +106,27 @@ if r.returncode == 0:
     bfiles = _bcp.files(); bhave = [f for f in bfiles if f in res]; bdir = os.path.join(W, 'ios', 'bcp_assets')
     check(len(BCPJ.get('items', {})) == 14 and len(BCPJ.get('d', {})) == 59 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
           and [i for i, _, _ in _bcp.ITEMS] == ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen']
-          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 108 + 355
+          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 14 + 11 + 346 and len(bfiles) == len(set(bfiles))
           and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
-          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（止まった 絵 108＋動く 絵 355・手元に あれば ぜんぶ・CI は なし）')
-    # 第4.129版：動く 絵の ボード（キャラが 動く）52段＝出世馬の 7段 いがい ぜんぶ。動きの データ（mo）は 段ごと・絵は 動く 絵の 名前 だけ（今の 止まった 絵は そのまま）
+          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（見本 14＋止まった 絵 11＋動く 絵 346：第4.145版・手元に あれば ぜんぶ・CI は なし）')
+    # 第4.129版：動く 絵の ボード（キャラが 動く）52段＝出世馬の 7段 いがい ぜんぶ。動きの データ（mo）は 段ごと・絵は 動く 絵の 名前 だけ（第4.145版：トロフィーの 向きの 絵を 1組に して 355 → 346）
     mo_d = [k for k, v in BCPJ.get('d', {}).items() if v.get('mo')]
     mo_f = sorted({f for n in _bcp.MOTION for f in _bcp.motion_files(n)})
-    check(len(mo_d) == 52 and sorted(mo_d) == sorted(_bcp.MOTION) and not any(k.startswith('shusse') for k in mo_d) and len(mo_f) == 355 and set(mo_f) <= set(bfiles)
+    check(len(mo_d) == 52 and sorted(mo_d) == sorted(_bcp.MOTION) and not any(k.startswith('shusse') for k in mo_d) and len(mo_f) == 346 and set(mo_f) <= set(bfiles)
           and all(BCPJ['d'][k]['mo'] == _bcp.MOTION[k] for k in mo_d) and all(len(BCPJ['d'][k]['mo']['layers']) > 0 or BCPJ['d'][k]['mo'].get('amb') for k in mo_d)
-          and 'function picMotion(' in html and 'function ambStart(' in html and '.chrgo' in html,
-          f'第4.129版：動く 絵の ボード {len(mo_d)}段（出世馬 いがい）・動く 絵 {len(mo_f)}こ・picMotion（キャラ）・ambStart（まわりの 光と 雲）が 入って いる')
+          and 'function picParts(' in html and 'function ambStart(' in html and '.chrgo' in html,
+          f'第4.129版：動く 絵の ボード {len(mo_d)}段（出世馬 いがい）・動く 絵 {len(mo_f)}こ・picParts（キャラ）・ambStart（まわりの 光と 雲）が 入って いる')
+    # 第4.145版（まさちゃん 11/10「やって！」）：止まった 版を 入れない。キャラなしの 背景（bgx）が ある 48段は 止まった 絵（背景 48・前の 絵 35＝83まい・約13.5MB）を Resources に 入れず、
+    #   部品を 重ねて 同じ 絵を 出す（bcx.js の picBg・picFg・.bcpld）。トロフィー 4段（光と 雲だけ）と 出世馬 7段は 止まった 絵の まま。トロフィーの 光と 雲の 向きの 絵（m1〜m3）は 4段で 1組
+    so = _bcp.stills_out(); par = [k for k in mo_d if BCPJ['d'][k]['mo'].get('bgx')]
+    amb_m = {BCPJ['d'][k]['mo']['amb'][m] for k in mo_d if BCPJ['d'][k]['mo'].get('amb') for m in ('m1', 'm2', 'm3')}
+    bsz = sum(os.path.getsize(os.path.join(bdir, f)) for f in bhave) if bhave else 0
+    check(len(par) == 48 and len(so) == 83 and not any(f in res for f in so) and not (set(so) & set(bfiles)) and all((f'bcp_{k}.webp' in so) == (k in par) for k in BCPJ['d'])
+          and all(bool(BCPJ['d'][k].get('fg')) == bool(BCPJ['d'][k]['mo'].get('fgx')) for k in par) and all(f'bcp_{k}.webp' in bfiles for k in BCPJ['d'] if k not in par)
+          and amb_m == {'bcp_trophy1a_m1.webp', 'bcp_trophy1a_m2.webp', 'bcp_trophy1a_m3.webp'} and not any(f in res for f in ('bcp_trophy2a_m1.webp', 'bcp_trophy3a_m2.webp', 'bcp_trophy4a_m3.webp'))
+          and (not bhave or 21.0e6 < bsz < 22.5e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html,
+          f'第4.145版：止まった 版 {len(so)}まい（部品を 重ねる {len(par)}段の 背景と 前の 絵）は アプリに 入れない・のこりの 11段（トロフィー・出世馬）は 入れる・'
+          f'トロフィーの 光と 雲の 向きの 絵は 1組（{len(amb_m)}まい）・絵 ぜんぶで {bsz / 1e6:.1f}MB（前は 約36.0MB）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)

@@ -43,7 +43,7 @@ for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):   # 第4.70版
 import sys; sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
 BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
 BCP_ON = all(os.path.exists(os.path.join(BCP_DIR, f)) for f in _bcp.files())
-BCP_OFF = [f for iid, _k, st in _bcp.ITEMS if iid == 'pen' for _n, n in st for f in [f'bcp_{n}.webp', f'bcp_{n}_fg.webp'] + _bcp.motion_files(n)] + [_bcp.THUMB.format('pen')]   # 第4.129版：動く 絵も
+BCP_OFF = [f for iid, _k, st in _bcp.ITEMS if iid == 'pen' for _n, n in st for f in _bcp.stage_files(n)] + [_bcp.THUMB.format('pen')]   # 第4.129版：動く 絵も・第4.145版：アプリが 読む 絵（stage_files：止まった 版は もう ない）
 if BCP_ON:
     for f in _bcp.files():
         if f not in BCP_OFF:
@@ -1574,7 +1574,9 @@ try:
             r ? [Math.round(r.left + r.width / 2), Math.round(r.bottom)] : null, (document.getElementById('bcxDyn') || {}).textContent || '',
             (() => { const w = hb.querySelector('.bcpw'), ch = w ? [...w.querySelectorAll('.chrw')] : [];      // 第4.129版：動く 絵の ボード
               return { n: ch.length, go: !!(w && w.classList.contains('chrgo')), mo: (w && w.dataset.mo) || '', bg: bg ? (bg.getAttribute('src') || '').split('/').pop() : '',
-                an: ch.filter(e => e.getAnimations().length).length, oc: w ? w.querySelectorAll('.chroc').length : 0, ot: w ? w.querySelectorAll('.chrot').length : 0 }; })()] : null; }"""
+                an: ch.filter(e => e.getAnimations({ subtree: true }).length).length, oc: w ? w.querySelectorAll('.chroc').length : 0, ot: w ? w.querySelectorAll('.chrot').length : 0,
+                ld: !!(w && w.classList.contains('bcpld')), vis: bg ? getComputedStyle(bg).visibility : '',      // 第4.145版：部品が そろって 絵が 出て いる（.bcpld が 外れて いる）
+                srcs: w ? [...w.querySelectorAll('img')].map(i => (i.getAttribute('src') || '').split('/').pop()) : [], bad: w ? [...w.querySelectorAll('img')].filter(i => !(i.complete && i.naturalWidth > 0)).length : 0 }; })()] : null; }"""
         stg = []
         for kd, sp_, n_, setv in (('hit', SPEC6, 1, None), ('hit', SPEC6, 3, None), ('big', SPEC6, 5, None), ('hit', SPEC6, 16, None), ('hit', SPEC6, 40, None), ('miss', MISS6, 1, None), ('miss', MISS6, 2, None), ('miss', MISS6, 7, None),
                                   ('hit', SPEC6, 2, {'effects': False}), ('miss', MISS6, 3, {'calm': True})):
@@ -1595,16 +1597,46 @@ try:
               f'絵が 読めない → いつもの ボード（{[x and x[:8] for x in stg]}・{stp and stp[:4]}・{h0["cb"]}・{cl16 in stg[3][8]}）')
         # 第4.129版：動く 絵の ボード（二人でしょんぼり：キャラ 2人＋ボードの 前に 出る 所・動かない 青い 線）。出世馬は まだ 動かない・控えめ／絵が 読めない ときは 動かない
         mo6 = [x and x[9] for x in stg]
+        ALLD6 = [n for _i, _k, st_ in _bcp.ITEMS for _c, n in st_]
+
+        def _need6(n):   # 第4.145版：その デザインで 絵を 出す のに いる もの（まわりの 光と 雲は あとから かさねる ので のぞく）
+            m_ = _bcp.MOTION.get(n) or {}
+            amb_ = [m_['amb'][k] for k in ('m1', 'm2', 'm3', 'f')] if m_.get('amb') else []
+            return [f for f in _bcp.stage_files(n) if f not in amb_]
         if BCP_ON:
             def _mw(n):
                 L_ = _bcp.MOTION[n]['layers']; return len(L_) + sum(1 for l in L_ if l.get('f'))
-            okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' for i, m in enumerate(mo6) if i not in (5, 6, 7)) and all(
+            okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' for i, m in enumerate(mo6) if i not in (5, 6, 7, 9)) and all(
                 mo6[i]['go'] and mo6[i]['mo'] == want6[i] and mo6[i]['n'] == _mw(want6[i]) and mo6[i]['an'] == mo6[i]['n'] and mo6[i]['bg'] == _bcp.MOTION[want6[i]]['bgx']
-                and mo6[i]['oc'] == 1 and mo6[i]['ot'] == 1 for i in (5, 6, 7)) and stg[8][9]['bg'] == 'bcp_shusse2.webp' and stg[9][9]['bg'] == 'bcp_miss1_3.webp'
+                and mo6[i]['oc'] == 1 and mo6[i]['ot'] == 1 for i in (5, 6, 7)) and stg[8][9]['bg'] == 'bcp_shusse2.webp'
+            # 第4.145版：控えめ（二人でしょんぼり 3回目）は 止まった 版が ない → 同じ 部品を かさねた まま 動かさない（キャラなしの 背景＋キャラ＋動かない 物・アニメーション 0）
+            m9 = mo6[9]
+            okm = okm and m9['bg'] == _bcp.MOTION['miss1_3']['bgx'] and m9['n'] == _mw('miss1_3') and not m9['go'] and m9['mo'] == '' and m9['an'] == 0 and m9['oc'] == 1 and m9['ot'] == 1
+            # 絵は ぜんぶ 出て いる（.bcpld が 外れて 背景が 見える・読めない 絵 0）・読む 絵は アプリに 入れる もの だけ（止まった 版 bcp_<名前>.webp・_fg.webp は 動く 絵では 読まない）
+            okm = okm and all((not m['ld']) and m['vis'] == 'visible' and m['bad'] == 0 and set(m['srcs']) <= set(_bcp.stage_files(want6[i])) and not (set(m['srcs']) & set(_bcp.stills_out())) for i, m in enumerate(mo6))
+            okm = okm and all(sorted(mo6[i]['srcs']) == sorted(_need6(want6[i])) for i in (5, 6, 7, 9))
         else:
             okm = all(m['n'] == 0 and not m['go'] for m in mo6)
         check(okm and stp[9]['n'] == 0 and not stp[9]['go'], f'第4.129版：動く 絵の ボード：二人でしょんぼりは キャラが 動く（キャラ・前に 出る 所が 動いて、背景は キャラなし・動かない 物は 上に）・'
-              f'出世馬は 動かない・控えめは 止まった 絵・絵が 読めない → 動かない（{mo6}・{stp[9]}）')
+              f'出世馬は 動かない・絵が 読めない → 動かない／第4.145版：控えめは 同じ 部品を かさねて 止めた まま（止まった 版は 読まない）（{[dict(m, srcs=len(m["srcs"])) for m in mo6]}・{stp[9]}）')
+        # 第4.145版：止まった 版を アプリに 入れない。bcx.js が 読む 絵（_picSrcs）と bcp_app.py の stage_files（光と 雲を のぞく）が 59デザイン ぜんぶ 同じ・
+        #   入れない 止まった 絵は 83まい（背景 48・前の 絵 35）で、入れる 絵の 中に ない・トロフィー 4段と 出世馬 7段の 止まった 絵は 入れる
+        ps6 = p6.evaluate("(ns) => ns.map(n => TengelBoard._picSrcs(n))", ALLD6)
+        so6 = _bcp.stills_out(); fl6 = _bcp.files()
+        keep6 = [f'bcp_{n}.webp' for n in ALLD6 if n.startswith('trophy') or n.startswith('shusse')]
+        check(len(ALLD6) == 59 and all(len(a) == len(set(a)) and sorted(a) == sorted(_need6(n)) for n, a in zip(ALLD6, ps6)) and len(so6) == 83 and not (set(so6) & set(fl6))
+              and sum(1 for f in so6 if f.endswith('_fg.webp')) == 35 and len(keep6) == 11 and all(f in fl6 for f in keep6) and len(fl6) == len(set(fl6)) == 371,
+              f'第4.145版：アプリが 読む 絵は bcx.js と bcp_app.py で 同じ（59デザイン）・止まった 版 83まい（背景 48・前の 絵 35）は 入れない・トロフィーと 出世馬の 止まった 絵は 入れる（入れる 絵 {len(fl6)}・入れない {len(so6)}）')
+        # 先に 読む 絵（prime：「結果を保存」を 押した とき）：つぎの 的中（連続的中＋1）と ハズレ（続けて ハズレた 数＋1）の 部品 ぜんぶ。もう一度 よんでも ふえない・えらび直すと 前の ぶんは はなす
+        p6.evaluate("TengelWallet.board.select('bloom', 'hit')"); p6.evaluate("TengelWallet.board.select('rain', 'miss')"); p6.wait_for_timeout(300)
+        ski2 = p6.evaluate("(() => { const i = TengelWallet.board.info(); return [i.streak, i.mstreak]; })()")
+        nx6 = lambda iid, n: [nm for c, nm in [st_ for i_, _k, st_ in _bcp.ITEMS if i_ == iid][0] if n >= c][-1]
+        w1 = p6.evaluate("(() => { TengelBoard.prime(); return TengelBoard._warm(); })()"); w2 = p6.evaluate("(() => { TengelBoard.prime(); return TengelBoard._warm(); })()")
+        p6.evaluate("TengelWallet.board.select('ring', 'hit')"); p6.wait_for_timeout(300)
+        w3 = p6.evaluate("(() => { TengelBoard.prime(); return TengelBoard._warm(); })()")
+        e1 = _need6(nx6('bloom', ski2[0] + 1)) + _need6(nx6('rain', ski2[1] + 1)); e3 = _need6(nx6('ring', ski2[0] + 1)) + _need6(nx6('rain', ski2[1] + 1))
+        check(sorted(w1) == sorted(e1) and w2 == w1 and sorted(w3) == sorted(e3) and len(w1) == len(set(w1)) and len(w3) == len(set(w3)) and len(e1) > 10 and not (set(w1 + w3) & set(so6)),
+              f'第4.145版：先に 読む 絵は つぎの 的中と ハズレの 部品 ぜんぶ（花束 {len(_need6(nx6("bloom", ski2[0] + 1)))}まい＋二人でしょんぼり {len(_need6(nx6("rain", ski2[1] + 1)))}まい）・もう一度 よんでも 同じ・えらび直すと 入れかわる（{len(w1)}・{len(w2)}・{len(w3)}）')
         # 前の 版の 台帳（1つの 選択 sel）：その とき 的中にも ハズレにも ついて いた ので 両方へ・消した 飾り（1〜21）は まだ 選んで いない と 同じ
         p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board = { reads: 146, sel: 'carry', streak: 3, res: [] }; await TengelLocal.putMeta(w); })()""")
         reopen6()

@@ -2,6 +2,7 @@
 #   まさちゃんの デザイン 14こ（的中①〜⑨・ハズレ①〜⑤）。ボードを持つ馬（15）は bcx.js の 部品（ここには 入らない）
 #   build_pwa.py（TARGET=app）が bundle_js() を index.html に 入れる。build_ios.py が files() の 絵を Resources に 入れる
 #   （ios/bcp_assets/ か BCP_ASSETS=<フォルダ>。まさちゃんの 絵 なので リポジトリには 入れない。ない とき（CI）は いつもの ボードで 出る）
+#   第4.145版：動く 絵で キャラなしの 背景（bgx）が ある デザインは 止まった 絵を 入れない（pics・stage_files・stills_out）
 #   python3 kisekae/bcp/bcp_app.py            … 中身の 数と、見本を 作った ときの 置き方（作業フォルダの geom.json）と 同じかを 確かめる
 #   python3 kisekae/bcp/bcp_app.py <絵の フォルダ> … 絵が そろって いるかも 確かめる
 import glob, json, os, sys
@@ -35,7 +36,7 @@ ITEMS = [
 ]
 THUMB = 'bcp_t_{}.webp'          # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）
 # 第4.129版（まさちゃん 2026/11/08「完成した動くカスタムボードを、アプリ内に入れてほしい！」）：キャラが 動く 絵の ボード（kisekae/bcp/chr の 道具で 作った もの）。
-#   chr/motion.json＝{ デザイン: { bgx・fgx（キャラなしの 背景・前の 絵）・layers（キャラ）・oc・ot（動かない 物）・top・amb（まわりの 光と 雲） } }（bcx.js の picMotion）。
+#   chr/motion.json＝{ デザイン: { bgx・fgx（キャラなしの 背景・前の 絵）・layers（キャラ）・oc・ot（動かない 物）・top・amb（まわりの 光と 雲） } }（bcx.js の picParts）。
 #   出世馬（climb）は まだ 動かない（止まった 絵）
 MOTION = json.load(open(os.path.join(H, 'chr', 'motion.json'), encoding='utf8'))
 
@@ -53,6 +54,29 @@ def motion_files(name):
     for f in fl:
         if f and f not in out and f not in (f'bcp_{name}.webp', f'bcp_{name}_fg.webp'):
             out.append(f)
+    return out
+
+
+# 第4.145版（まさちゃん 2026/11/10 20:04「やって！」＝止まった 版を やめて、動く 版の 部品を 重ねて 同じ 絵を 出す）：
+#   キャラなしの 背景（bgx）が ある デザイン（48こ）は 止まった 絵（bcp_<name>.webp・_fg.webp）を アプリに 入れない（部品を 重ねた 形が 止まった 絵と 同じ：chr/chr_snap.py）。
+#   トロフィー（光と 雲だけ・bgx なし）と 出世馬（動かない）は 止まった 絵の まま。止まった 絵は 部品を 作り直す ときの もと なので 絵の フォルダ（ios/bcp_assets）には 残す
+def pics(name):
+    """アプリが 読む 背景と 前の 絵の 名前（bcx.js の picBg・picFg と 同じ きまり）"""
+    m = MOTION.get(name) or {}
+    bg = m.get('bgx') or f'bcp_{name}.webp'
+    fg = ((m.get('bgx') and m.get('fgx')) or f'bcp_{name}_fg.webp') if cfg(name).get('fg') else None
+    return bg, fg
+
+
+def stage_files(name):
+    """その デザインで アプリが 読む 絵 ぜんぶ（背景・前の 絵・動く 絵の 部品・まわりの 光と 雲）"""
+    bg, fg = pics(name)
+    out = [bg] + ([fg] if fg else [])
+    for f in motion_files(name):
+        if f not in out:
+            out.append(f)
+    m = MOTION.get(name) or {}
+    assert not (m.get('fgx') and not cfg(name).get('fg')), name + '：前の 絵が ない デザインに fgx が ある'
     return out
 
 
@@ -100,15 +124,24 @@ def data():
 
 
 def files():
-    """アプリの Resources に 入れる 絵（名前だけ・平らに 並べる）"""
+    """アプリの Resources に 入れる 絵（名前だけ・平らに 並べる・同じ 名前は 1回：トロフィーの 光と 雲の 向きの 絵は 4段で 1組）"""
     out = []
     for iid, _, st in ITEMS:
         out.append(THUMB.format(iid))
         for _, n in st:
-            out.append(f'bcp_{n}.webp')
-            if cfg(n).get('fg'):
-                out.append(f'bcp_{n}_fg.webp')
-            out += motion_files(n)
+            for f in stage_files(n):
+                if f not in out:
+                    out.append(f)
+    return out
+
+
+def stills_out():
+    """アプリに 入れない 止まった 絵（部品を 重ねて 出す デザインの bcp_<name>.webp・_fg.webp）"""
+    out = []
+    for _, _, st in ITEMS:
+        for _, n in st:
+            use = stage_files(n)
+            out += [f for f in [f'bcp_{n}.webp'] + ([f'bcp_{n}_fg.webp'] if cfg(n).get('fg') else []) if f not in use]
     return out
 
 
@@ -120,7 +153,7 @@ def bundle_js():
 if __name__ == '__main__':
     d = data()
     print('items', len(d['items']), 'designs', len(d['d']), 'files', len(files()), 'js', len(bundle_js()),
-          'motion', len(MOTION), 'motion files', sum(len(motion_files(n)) for n in MOTION))
+          'motion', len(MOTION), 'motion files', sum(len(motion_files(n)) for n in MOTION), '入れない 止まった 絵', len(stills_out()))
     for n in MOTION:
         assert n in d['d'], n + '：アプリの デザインに ない'
     # 作業フォルダ（見本を 作った ところ）の geom.json と 同じか

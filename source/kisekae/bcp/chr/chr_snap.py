@@ -10,6 +10,7 @@
 #   見つける もの：chr の 出力（CHR_WORK＝/home/claude/work/bcpic/chr の */cfg.json と motion.json・名前が 同じ もの）
 #                 そろえる 前の 動く 絵（CHR_STAGE＝CHR_WORK/stage：chr_stage.py の 出力。ない ときは 絵の フォルダの もの）
 #   SNAP_Q：画質（背景 88・ほか 90 が 基本＝止まった 絵と 同じ）・SNAP_DRY=1：書かずに ずれだけ 出す
+#   第4.145版：止まった 絵（bcp_<名前>.webp・_fg.webp）は アプリに 入れなく なった（部品を 重ねて 同じ 絵を 出す）が、この 道具の もと（目あて）なので 絵の フォルダには 残す
 import glob, json, os, sys
 import numpy as np, cv2
 from PIL import Image
@@ -111,7 +112,7 @@ def one(name):
     bx[..., :3] = over(bx[..., :3], Tb, u); bx[..., 3] = 1
     save(mo['bgx'], bx, QB)
     C = bx[..., :3].copy()
-    # 3) 下から じゅんに 重ねて そろえる（アプリと 同じ じゅん：bcx.js の picMotion）
+    # 3) 下から じゅんに 重ねて そろえる（アプリと 同じ じゅん：bcx.js の picParts）
     parts = json.load(open(os.path.join(O, 'motion.json'), encoding='utf8'))['parts']
     L = mo['layers']
     assert len(parts) == len(L), (name, len(parts), len(L))

@@ -92,6 +92,7 @@ for f in fx_have:
 if len(fx_have) != len(ASSET_FILES):
     print('※ 的中ボタンの絵と音が', len(ASSET_FILES) - len(fx_have), 'こ ない（', fx_dir, '）。python3 kisekae/build_fx_assets.py で作れるよ（CIではなしのまま）')
 # 結果ボードカスタムの 絵の ボード（第4.121版：まさちゃんの 絵 14こ・kisekae/bcp/bcp_app.py の files()）：ios/bcp_assets/ か BCP_ASSETS=<フォルダ>。
+# 第4.145版：キャラが 動く 絵（48段）の 止まった 版（bcp_<名前>.webp・_fg.webp）は files() に 入らない（アプリは 部品を 重ねて 同じ 絵を 出す）。絵の フォルダには 残す（部品を 作り直す ときの もと）
 # リポジトリには入れない（まさちゃんの 絵）ので、ないときは入れずに作る（CIはこの形。アプリは その ボードを いつもの ボードで 出す）
 sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp'))
 import bcp_app as _bcp
@@ -115,7 +116,8 @@ if not tc_have:
 # 思い出フィギュアの 形と 絵（第4.134版：まさちゃんの フィギュア 8体・3D の 棚 と それから 作った もの）：ios/fig_assets/ か FIG_ASSETS=<フォルダ>。
 # kisekae/fig/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。ブースを 開くと「読みこめなかった」に なる）
 fig_dir = os.environ.get('FIG_ASSETS') or os.path.join(W, 'ios', 'fig_assets')
-fig_have = sorted(f for f in (os.listdir(fig_dir) if os.path.isdir(fig_dir) else []) if f.startswith('fg') and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
+# 第4.145版：fg_meta.json（集めた ときの メモ・アプリは 読まない）は 入れない
+fig_have = sorted(f for f in (os.listdir(fig_dir) if os.path.isdir(fig_dir) else []) if f.startswith('fg') and f != 'fg_meta.json' and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
 for f in fig_have:
     assert f.lower() not in names and f not in files, f
     shutil.copy(os.path.join(fig_dir, f), os.path.join(res, f)); files[f] = f

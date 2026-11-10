@@ -6,6 +6,7 @@
 #   第4.113版：出世馬 8連続（幻の 馬・暗い 雷：rise8）は 出世馬と いっしょに 消した
 #   第4.121版：まさちゃんの 絵の ボード（pic）：的中（結果ボードを廻る 3連勝）・デカ的中（4連勝：ふわっと 明るく 出る）・ハズレ（二人でしょんぼり 2回目）。
 #     「▶ 見る」の すぐ あと から 3秒（ボードの 登場 → 絵ごと ふわっと → ほかの 絵を かくす → 行と 見出しの 動き）。絵（ios/bcp_assets）が なければ いつもの ボード
+#   第4.145版：置く 絵は アプリに 入れる もの だけ（bcp_app.files()）。部品を 重ねる 絵は 部品が そろって から 出る（出た あとの 点めつを 数える）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -24,8 +25,9 @@ if os.path.isdir(FX_DIR):
 art22 = os.path.isdir(FX_DIR) and all(os.path.exists(os.path.join(FX_DIR, f'bcx_hb_{k}.webp')) for k in ('head', 'fore', 'hind', 'tail', 'eye'))
 BCP_DIR = os.path.join(W, 'ios', 'bcp_assets')
 if os.path.isdir(BCP_DIR):
-    for f in os.listdir(BCP_DIR):
-        if f.startswith('bcp_') and f.endswith('.webp'): shutil.copy(os.path.join(BCP_DIR, f), os.path.join(SRV, 'APP', f))
+    sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
+    for f in _bcp.files():      # 第4.145版：アプリに 入れる 絵 だけ（キャラが 動く 絵の 止まった 版は 入れない＝部品を 重ねて 出す）
+        if os.path.exists(os.path.join(BCP_DIR, f)): shutil.copy(os.path.join(BCP_DIR, f), os.path.join(SRV, 'APP', f))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 SPEC = {'r': 9, 'n': 14, 'ranks': {str(i): i for i in range(1, 15)},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 8, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 8]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 6}]}
