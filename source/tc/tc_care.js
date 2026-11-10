@@ -484,7 +484,8 @@ const TCCare = (() => {
     if (win) {
       at(t + 1.7, tt => { react('hop', 2.4, tt); for (let k = 0; k < 2; k++) ev(tt + 0.1 + 1.12 * k, 'frisk', { n: k }); fx({ k: 'burst', t0: tt + 0.35, w: (P('withers') || [BR.x, BR.y - 200]).slice() }); });      // ぴょん → 足を バタバタ（11/09 14:36）
       at(t + 4.1, tt => { fx({ k: 'unlock', t0: tt, dur: 2.6 }); ev(tt, 'unlock'); });
-      at(t + 4.6, tt => { S.stockBump = tt; S.stock = Math.min(RULE.stockMax, S.stock + RULE.unlock); fx({ k: 'plus', t0: tt, txt: '+' + RULE.unlock }); ev(tt, 'stock'); });
+      // 第4.140版（バグ直し）：当たりの ＋5 は 20こを こえても 足す（前は 20こで 切って いた ので、16こ 以上 持って いると「＋5」と 出るのに 5つ ふえなかった・20こ なら 1つも ふえなかった）。10分ごとに たまる のは 20こ まで（tc_app.js の accrue）
+      at(t + 4.6, tt => { S.stockBump = tt; S.stock = S.stock + RULE.unlock; fx({ k: 'plus', t0: tt, txt: '+' + RULE.unlock }); ev(tt, 'stock'); });
       at(t + 2.6, tt => { S.drainT = tt; });
       at(t + 6.6, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.3; });
     } else {

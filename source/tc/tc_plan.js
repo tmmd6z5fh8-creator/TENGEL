@@ -11,7 +11,7 @@ const TCPlan = (() => {
   const jaDate = s => { const [y, m, d] = String(s).split('-').map(Number); return `${y}年${m}月${d}日`; };
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
   const wday = s => { const [y, m, d] = String(s).split('-').map(Number); return WD[new Date(y, m - 1, d).getDay()]; };
-  let P = null, root = null, edit = null, auth = '', host = null;
+  let P = null, root = null, edit = null, auth = '', host = null, delAsk = null;      // delAsk＝「消す」を 1回 押した レースの id（もう一度 押すと 消す）
   function load() {
     try { P = JSON.parse(localStorage.getItem(PK) || 'null'); } catch (e) { P = null; }
     if (!P || !Array.isArray(P.races)) P = { v: 1, on: false, races: [] };
@@ -62,6 +62,7 @@ const TCPlan = (() => {
 #tcPlan .sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s}
 #tcPlan .sw[aria-checked="true"]{background:#3f9f5a}#tcPlan .sw[aria-checked="true"]::after{left:29px}
 #tcPlan .warn{font-size:12px;color:#b0445f;margin-top:4px}
+#tcPlan .sb.del.ask{background:#c2456f;color:#fff;border-color:#c2456f}
 #tcPlan .fm{background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:12px}
 #tcPlan .fm h3{margin:0 0 8px;font-size:16px;color:#5b3412}
 #tcPlan .fm label{display:block;font-size:12.5px;color:#8a6a48;margin:10px 0 4px}
@@ -99,7 +100,7 @@ const TCPlan = (() => {
       if (r.date !== cur) { cur = r.date; if (r.date !== td) h += `<div class="dh">${jaDate(r.date)}（${wday(r.date)}）</div>`; }
       const meta = [r.venue ? esc(r.venue) : '', r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
       h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${chipRow(r)}`
-        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del" data-p="del" data-id="${esc(r.id)}">消す</button></div></div>`;
+        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? 'ほんとに 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
     b.innerHTML = h;
@@ -136,8 +137,9 @@ const TCPlan = (() => {
     paint();
   }
   async function onClick(e) {
-    const a = e.target.closest('[data-p]'); if (!a) { if (e.target === root) close(); return; }
+    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk) { delAsk = null; paint(); } if (e.target === root) close(); return; }
     const k = a.dataset.p;
+    if (k !== 'del') delAsk = null;
     if (k === 'close') { close(); return; }
     if (k === 'on') {
       if (!P.on) {
@@ -154,7 +156,13 @@ const TCPlan = (() => {
     }
     if (k === 'add') { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
     if (k === 'edit') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; edit = Object.assign({}, r); paint(); root.querySelector('.pb').scrollTop = 0; return; }
-    if (k === 'del') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; if (!confirm(`「${r.name || 'レース'}」を 消す？`)) return; P.races = P.races.filter(x => x.id !== r.id); save(); paint(); return; }
+    if (k === 'del') {
+      const r = P.races.find(x => x.id === a.dataset.id); if (!r) return;
+      // 第4.140版（バグ直し）：アプリの 中では confirm() の 窓が 出ない（いつも「いいえ」に なる）ので、「消す」を 押しても 消せなかった
+      //   → 窓は 使わない。同じ ボタンを もう一度 押すと 消す（1回めで「ほんとに 消す？」に かわる・ほかを 押すと もどる）
+      if (delAsk !== r.id) { delAsk = r.id; paint(); return; }
+      delAsk = null; P.races = P.races.filter(x => x.id !== r.id); save(); paint(); return;
+    }
     if (k === 'cancel') { edit = null; paint(); return; }
     if (k === 'ocr') { readForm(); root.querySelector('[data-p=file]').click(); return; }
     if (k === 'save') {
@@ -172,7 +180,7 @@ const TCPlan = (() => {
     edit = null; root.style.display = 'flex'; paint();
     auth = await authState(); paint();
   }
-  function close() { if (root) root.style.display = 'none'; edit = null; }
+  function close() { if (root) root.style.display = 'none'; edit = null; delAsk = null; }
   function isOpen() { return !!root && root.style.display !== 'none'; }
   return { open, close, isOpen };
 })();

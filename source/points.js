@@ -420,6 +420,63 @@
   }
   function findPaid(paid, race) { for (var i = (paid || []).length - 1; i >= 0; i--) if (sameRace(paid[i], race)) return paid[i]; return null; }
 
+  // ---- 読み直しの 見分け：読んだ 中身も 見る（第4.140版・まさちゃん 2026/11/10 14:22「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）これで！」）----
+  //   「同じレースの 読み直しは 0P」は、画像に 日付・R が 写って いないと 入力の 日付・R で 同じ レースと 見て いた → 切り取った 画像なら 別の レースも 0P で 読めた。
+  //   → 読んだ 単勝の 表（馬番と オッズ）を 読み込みの しるし（paid の fp）に おぼえて、次に 読んだ 表と くらべる（points_ui.js の readCharge）。
+  //   しきい値：どちらにも ある 馬番が 6頭 以上・順位の 相関が 0.3 より 低い・同じ オッズの 数が 半分 より 少ない。
+  //   ためした 数（2万回ずつ・作った オッズ）：同じ レースを まちがえて 200P に する のは、オッズが 大きく 動いても（±50%）8頭で 約0.1%・10頭 以上で ほぼ 0・6頭で 約0.9%。
+  //   別の レースが 0P で 通る のは 6頭 約28%・8頭 約24%・12頭 約16%・16頭 約13%（＝ほとんど 200P かかる ので、切り取った 画像で 読む 手は 得に ならない）
+  var FP_MIN = 6, FP_RHO = 0.3, FP_SAME = 0.5;
+  // 'no:tan,no:tan…' か [{no,tan}] か [[no,tan]] → [[馬番, 単勝]]（馬番の 順・同じ 馬番は 1つ・20頭まで）
+  function fpList(fp) {
+    var src = typeof fp === 'string' ? fp.split(',').map(function (x) { return x.split(':'); }) : Array.isArray(fp) ? fp : [], out = [], seen = {};
+    src.forEach(function (h) {
+      var no = Math.round(+(Array.isArray(h) ? h[0] : h && h.no)), tan = +(Array.isArray(h) ? h[1] : h && h.tan);
+      if (!(no >= 1 && no <= 40) || !(tan > 0) || !isFinite(tan) || seen[no]) return;
+      seen[no] = 1; out.push([no, Math.round(tan * 10) / 10]);
+    });
+    out.sort(function (a, b) { return a[0] - b[0]; });
+    return out.slice(0, 20);
+  }
+  // 読んだ 単勝の 表 → おぼえる 形（'1:2.4,2:15.3…'）。表が なければ ''
+  function raceFp(rows) { return fpList(rows).map(function (h) { return h[0] + ':' + h[1]; }).join(','); }
+  // 順位（小さい 順・同じ 数は 同じ 順位＝平均）
+  function ranksOf(v) {
+    var idx = v.map(function (x, i) { return i; }).sort(function (a, b) { return v[a] - v[b]; }), r = [];
+    for (var i = 0; i < idx.length;) { var j = i; while (j + 1 < idx.length && v[idx[j + 1]] === v[idx[i]]) j++; for (var k = i; k <= j; k++) r[idx[k]] = (i + j) / 2 + 1; i = j + 1; }
+    return r;
+  }
+  // 2つの 表の 人気の 順（単勝の 低い 順）の 近さ：どちらにも ある 馬番で 数える 順位の 相関（スピアマン）。数えられない ときは null
+  function fpRho(a, b) {
+    var A = fpList(a), B = fpList(b), mb = {}, xa = [], xb = [];
+    B.forEach(function (h) { mb[h[0]] = h[1]; });
+    A.forEach(function (h) { if (mb[h[0]] != null) { xa.push(h[1]); xb.push(mb[h[0]]); } });
+    if (xa.length < FP_MIN) return null;
+    var ra = ranksOf(xa), rb = ranksOf(xb), n = ra.length, ma = 0, mbb = 0, sab = 0, saa = 0, sbb = 0;
+    for (var i = 0; i < n; i++) { ma += ra[i]; mbb += rb[i]; }
+    ma /= n; mbb /= n;
+    for (var j = 0; j < n; j++) { sab += (ra[j] - ma) * (rb[j] - mbb); saa += (ra[j] - ma) * (ra[j] - ma); sbb += (rb[j] - mbb) * (rb[j] - mbb); }
+    if (!(saa > 0) || !(sbb > 0)) return null;
+    return sab / Math.sqrt(saa * sbb);
+  }
+  // b（新しく 読んだ 表）の オッズの うち、a（前の 表）にも ある 数の わりあい（0〜1）
+  function fpShare(a, b) {
+    var A = fpList(a), B = fpList(b), cnt = {}, hit = 0;
+    A.forEach(function (h) { cnt[h[1]] = (cnt[h[1]] || 0) + 1; });
+    B.forEach(function (h) { if (cnt[h[1]] > 0) { cnt[h[1]] -= 1; hit += 1; } });
+    return B.length ? hit / B.length : 0;
+  }
+  // 「ぜんぜん ちがう」（＝別の レース）か：
+  //   人気の 順が ぜんぜん ちがう（相関が FP_RHO より 低い）かつ オッズの 数も ほとんど ちがう（同じ 数が FP_SAME＝半分 より 少ない）とき だけ true。
+  //   ・同じ レースは オッズが 動いても 人気の 順は ほぼ 同じ（相関が 高い）
+  //   ・同じ 画像を 読み直して 馬番との 組み合わせが ずれた だけ なら、オッズの 数は ほぼ 同じ
+  //   ・くらべられない とき（どちらかに 表が ない・どちらにも ある 馬番が FP_MIN 頭 より 少ない）は false ＝ 同じ レースと 見る（前と 同じ）
+  function fpDiff(a, b) {
+    var rho = fpRho(a, b);
+    if (rho == null || rho >= FP_RHO) return false;
+    return fpShare(a, b) < FP_SAME;
+  }
+
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
@@ -427,7 +484,7 @@
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
     boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room,
     holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
-    stamp: stamp, stampAll: stampAll, seqMax: seqMax,
+    stamp: stamp, stampAll: stampAll, seqMax: seqMax, raceFp: raceFp, fpDiff: fpDiff, fpRho: fpRho, fpShare: fpShare, FP: { min: FP_MIN, rho: FP_RHO, same: FP_SAME },
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
     missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;

@@ -2385,6 +2385,69 @@ try:
         check(so['low'] < 200 and so['t1'] == so['low'] + 500 and so['got'] == [1] * kS + [0] * (5 - kS) and so['total'] == so['t1'] - 200 * kS and len(so['sp']) >= 2 and so['sp'][-1] == -200 * kS
               and sorted(so['ns']) == list(range(1, len(so['ns']) + 1)),
               f'抜け穴⑤：使った あとに 届いた 500P も、使えば へる（{so["t1"]}P → 読めるのは {kS}回だけ → {so["total"]}P）・届いた あとの「使った」は 新しい 1件・できごとに 書いた 順の 番号（{so}）')
+        # ⑥ 読み直しの 見分け（第4.140版・11/10 14:22 まさちゃん「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）これで！」）：
+        #    切り取った 画像（日付・R が 写って いない）で 別の レースを 読むと、前は 入力の 日付・R で 同じ レースと 見て 0P だった → 読んだ 単勝の 表が ぜんぜん ちがえば 200P
+        fpq = pS.evaluate("""async () => {
+          const W = TengelWallet; await W.grant('sec-fp-1', 3000, 'テスト'); const t0 = W.total(), out = [];
+          const rows = a => a.map((t, i) => ({ no: i + 1, tan: String(t) }));
+          const A = rows([12.4, 4.1, 31.5, 9.8, 18.2, 2.4, 7.6, 54.0, 25.9, 6.3, 14.7, 88.6]), A2 = rows([13.1, 3.8, 35.2, 10.4, 16.9, 2.6, 7.1, 61.3, 24.0, 6.8, 15.5, 97.4]);
+          const B = rows([3.3, 45.2, 5.8, 120.4, 2.2, 66.1, 15.5, 8.9, 4.7, 30.3, 99.9, 11.1]), C = rows([31, 77, 12.8, 5.4, 190, 15, 9.1, 6.7, 21.5, 44, 2.2, 3.9]);      // A・A2・B の どれとも 人気の 順が ぜんぜん ちがう（相関 −0.39〜−0.46）
+          const K = { date: '2026-10-25', venue: 'え', r: 3 }, K2 = { date: '2026-10-25', venue: 'え', r: 4 };
+          const rd = async (form, ocr, r) => { const x = await W.readCharge({ form, ocr, rows: r }); out.push([x.ok, !!x.charged, x.free || '', !!x.diff].join()); return x; };
+          const a = await rd(K, K, A);                                   // 1) 3R を 読む：200P
+          await rd({ ...K, pid: a.pid }, {}, A2);                        // 2) 同じ レース（オッズが 動いた・画像に 日付や R なし）：0P
+          const b = await rd({ ...K, pid: a.pid }, {}, B);               // 3) 切り取った 別の レース（入力は 3R の まま）：200P（別の レースと して）
+          await rd({ ...K, pid: b.pid }, {}, B);                         // 4) その 読み直し：0P
+          await rd({ ...K2, pid: b.pid }, {}, B);                        // 5) 入力の R を 4R に 直して 同じ 表：0P（その 読み込みが 4R の 読み込みに なる）
+          await rd(K, K, A2);                                            // 6) 3R を しるし なしで：0P
+          await rd(K2, K2, B);                                           // 7) 4R を しるし なしで：0P
+          const c = await rd(K, {}, C);                                  // 8) 入力は 3R・別の 表（しるし なし）：200P（別の レースと して）
+          await rd(K2, {}, C);                                           // 9) 入力は 4R・その 表（しるし なし）：8) の 読み込みは レースが わからない ので 出さない → 4R の 表と ちがう → 200P
+          await rd(K, {}, null);                                         // 10) 単勝の 表が ない 読み込み（3連単だけ）：くらべられない → 0P
+          const n0 = W.countedN(), c1 = await W.countRace({ date: '2026-10-25', venue: 'え', r: 7, pid: c.pid });   // 8) の 読み込みで 7R の 記録を 保存 → 7R の 読み込みに なる
+          await rd({ date: '2026-10-25', venue: 'え', r: 7 }, {}, C);    // 11) 7R を しるし なしで：0P
+          return { out, spent: t0 - W.total(), counted: [c1, W.countedN() - n0] }; }""")
+        check(fpq['out'] == ['true,true,,false', 'true,false,session,false', 'true,true,,true', 'true,false,session,false', 'true,false,session,false', 'true,false,same,false', 'true,false,same,false',
+                             'true,true,,true', 'true,true,,true', 'true,false,same,false', 'true,false,same,false'] and fpq['spent'] == 800 and fpq['counted'] == [True, 1],
+              f'抜け穴⑥：読み直しは 中身も 見る。同じ レース（オッズが 動いた だけ）は 0P・切り取った 別の レースは 200P・その 読み直しは 0P・入力の R を 直して 読み直しても 0P・記録を 保存すると その レースの 読み込みに なる（{fpq}）')
+        # 画面でも：9R を 読む（200P）→ 日付・R の 写って いない 別の レースの 表（200P・わけを 出す）→ もう一度（0P）→ 9R（0P）
+        def lines_other(src, head=True):      # 別の レース：単勝の 数を ぜんぶ かえる（head=False＝いちばん 上の 2行＝開催場・R・日付を 切り取る）
+            alt = iter(['3.3', '45.2', '5.8', '120.4', '2.2', '66.1', '15.5', '8.9', '4.7', '30.3', '99.9', '11.1'])
+            out = []
+            for l in src:
+                if not head and ('競走' in l['text'] or '発走' in l['text']): continue
+                out.append(dict(l, text=next(alt)) if 0.66 < l['x'] < 0.71 and re.fullmatch(r'\d+\.\d', l['text']) else l)
+            return out
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=judge]').click()"); pS.wait_for_timeout(400)
+        def readS(lines):
+            pS.evaluate("window.__ocrLines = %s" % json.dumps([lines], ensure_ascii=False))
+            pS.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); pS.wait_for_timeout(1900)
+            return pS.evaluate("({ total: TengelWallet.total(), msg: document.querySelector('#ocrMsg').innerText, r: document.querySelector('#fR').value, tan6: (JSON.parse(localStorage.getItem('tengel.form')).rows.find(x => x.no === 6) || {}).tan })")
+        u0 = pS.evaluate('TengelWallet.total()')
+        u1 = readS(OCR_LINES['a_tanfuku_waku']); u2 = readS(lines_other(OCR_LINES['a_tanfuku_waku'], head=False)); u3 = readS(lines_other(OCR_LINES['a_tanfuku_waku'], head=False)); u4 = readS(OCR_LINES['a_tanfuku_waku'])
+        check(u1['total'] == u0 - 200 and u1['tan6'] == '2.4' and '別のレース' not in u1['msg'], f'画面：9R を 読む → 200P（{u0} → {u1["total"]}）')
+        check(u2['total'] == u0 - 400 and u2['tan6'] == '66.1' and u2['r'] == '9' and '人気のならびがぜんぜんちがうので、別のレースとして 200P 使ったよ' in u2['msg'],
+              f'画面：日付・R の 写って いない 別の レースの 表 → 200P・わけを 出す（{u2["msg"][-70:]}）')
+        check(u3['total'] == u0 - 400 and '同じレースの読み直しなので 0P' in u3['msg'] and u4['total'] == u0 - 400 and u4['tan6'] == '2.4' and '0P' in u4['msg'], f'画面：その 表を もう一度 → 0P・9R の 表を もう一度 → 0P（{u3["total"]}・{u4["total"]}）')
+        # ⑦ マザーデータの 枠（第4.140版・11/10 14:28 まさちゃん「…マザーデータの解放…この上記の解放するための抜け穴があるか確認して！」）：
+        #    解放して いない 枠（②・③＝3つ目・4つ目）は「レースが 入って いれば 解放ずみ」と 見る ので、記録に その 枠の 番号（mslot）が 残って いると
+        #    記録を 保存した ときに その 枠へ レースが 入って、15,000P を 使わずに 解放できた → どの 入口からも 入れない（枠に 入れる 口で 止める）
+        sl = pS.evaluate("""async () => {
+          const W = TengelWallet, L = TengelLocal.slots, M = TengelMother, out = {};
+          const row = { id: 'x1', date: '2026-10-25', venue: 'え', r: 3, baba: '良', dist: 1400, surface: 'ダ', n: 12, tan1: 2.4, s1: 18.5, p1: 1, p2: 2, p3: 3 };
+          const race = { date: '2026-10-25', r: 3, baba: '良', dist: 1400, surface: 'ダ', n: 12, tan1: 2.4, s1: 18.5, p1: 1, p2: 2, p3: 3 };
+          const tryIt = async f => { try { await f(); return 'ok'; } catch (e) { return String(e && e.message || e); } };
+          out.locked = [W.slotUnlocked(1), W.slotUnlocked(2), W.slotUnlocked(3), W.slotUnlocked(4)];
+          out.put3 = await tryIt(() => M.put(3, race)); out.up3 = await tryIt(() => L.upsert(3, [row])); out.rep4 = await tryIt(() => L.replace(4, [row], { source: 'excel' }));
+          out.rows = [L.rows(3).length, L.rows(4).length]; out.after = [W.slotUnlocked(3), W.slotUnlocked(4)];
+          out.put2 = await tryIt(() => M.put(2, race)); out.rows2 = L.rows(2).length;
+          await L.remove(2, L.rows(2).map(x => x.id));
+          // 記録に 3つ目の 枠の 番号が 残って いる とき：入れ先の えらぶ 欄は「入れない」に なる・3つ目は 出さない
+          out.fld = typeof motherFieldHTML === 'function' ? (() => { const d = document.createElement('div'); d.innerHTML = motherFieldHTML({ mslot: 3, upay: '', spay: '' }, { defSlot: 0 }); const s = d.querySelector('select'); return s ? [s.value, [...s.options].map(o => o.value).join()] : null; })() : 'nofn';
+          return out; }""")
+        check(sl['locked'] == [True, True, False, False] and all('解放すると使えるよ' in sl[k] for k in ('put3', 'up3', 'rep4')) and sl['rows'] == [0, 0] and sl['after'] == [False, False] and sl['put2'] == 'ok' and sl['rows2'] == 1,
+              f'抜け穴⑦：解放して いない 枠（3つ目・4つ目）には、記録からも・足すのも・入れ替えも できない（枠は 空の まま＝解放されない）。解放ずみの 枠（2つ目）には 入る（{sl}）')
+        check(sl['fld'] == 'nofn' or (sl['fld'] is not None and sl['fld'][0] == '0' and '3' not in sl['fld'][1].split(',')), f'記録に 解放して いない 枠の 番号が 残って いても、入れ先は「入れない」（{sl["fld"]}）')
         ctxS.close()
         # ---- App Store版の説明書 ----
         p3 = ctx.new_page(); p3.on('pageerror', lambda e: errs.append('MANUAL ' + str(e)))

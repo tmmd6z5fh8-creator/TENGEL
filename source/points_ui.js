@@ -37,7 +37,8 @@
   //                   figs{ items[]（思い出フィギュア：第4.134版）, slots[56]（ブースの 置き場所：id か null） },
   //                   hold[]（あずかりポイント：上限を こえて 届いた ぶん。points.js の holdSplit・holdRelease：第4.139版）,
   //                   ord（1＝できごとに 書いた 順の 番号 n を ふって ある：points.js の「台帳の ならび」：第4.139版） }
-  //   paid の 1件＝{ pid, at, date, venue, r, rname, start, dist, last, ck（ミッションに 数えた レース：1回の 読み込みで 数える のは 1レースだけ：第4.139版） }
+  //   paid の 1件＝{ pid, at, date, venue, r, rname, start, dist, last, ck（ミッションに 数えた レース：1回の 読み込みで 数える のは 1レースだけ：第4.139版）,
+  //                  fp（読んだ 単勝の 表 '馬番:単勝,…'：読み直しが 同じ レースかを 中身で 見る）, nk（1＝別の レースと して 読んだ：レースが まだ わからない）：第4.140版 }
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
   const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, mstreak: 0, res: [] }, pack: { reads: 0 }, hold: [] });
@@ -250,19 +251,41 @@
       const e = { pid: newId(), w5: key, at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid(); await save();
       return { ok: true, charged: true, free: null, pid: e.pid };
     }
+    // 第4.140版（まさちゃん 11/10 14:22「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）これで！」）：
+    //   読み直し（0P）は、読んだ 単勝の 表（o.rows）が 前に 読んだ 表（paid の fp）と「ぜんぜん ちがう」（P.fpDiff）と 別の レース＝200P。
+    //   前は 画像に 日付・R が 写って いないと 入力の 日付・R で 同じ レースと 見て いた ので、切り取った 画像なら 別の レースも 0P で 読めた。
+    //   ・くらべられない とき（どちらかに 単勝の 表が ない・頭数が 少ない）は 前と 同じ（入力の 日付・R で 見る）
+    //   ・別の レースと して 読んだ 読み込みには nk（レースが まだ わからない）。日付・R で さがす ときは 出さない（その 入力の 読み込みの しるし pid で だけ 見つかる）。
+    //     入力の 日付・R を 直して 同じ 画像を 読み直す か、記録を 保存する（countRace）と、その レースの 読み込みに なる
+    const fp = P.raceFp(o.rows);
+    const judged = e => !!(e.fp && fp), bodyDiff = e => judged(e) && P.fpDiff(e.fp, fp);
+    const free = async (e, how) => { stamp(e); if (fp) e.fp = fp; await save(); return { ok: true, charged: false, free: how, pid: e.pid }; };
+    let diff = false;
     if (form.pid) {
       const cur = W.paid.find(e => e.pid === form.pid);
-      if (cur && !cur.w5 && (!race.r || P.sameRace(cur, race) || !cur.r)) { stamp(cur); await save(); return { ok: true, charged: false, free: 'session', pid: cur.pid }; }
+      if (cur && !cur.w5) {
+        const keyOK = !race.r || P.sameRace(cur, race) || !cur.r;
+        if (keyOK && !bodyDiff(cur)) return free(cur, 'session');
+        // 入力の 日付・R を 直して、同じ 表を 読み直した（画像に R は 写って いない・オッズの 数が ほぼ 同じ＝同じ 画像）→ 同じ 読み込み。その 読み込みの レースを 入力に 合わせる。
+        //   「ほぼ 同じ」は きびしく 見る（8割 以上 同じ 数）：人気の 順が にて いる だけ では 合わせない（次の レースを たまたま 0P に しない）
+        if (!keyOK && !(+d.r) && judged(cur) && P.fpShare(cur.fp, fp) >= 0.8 && race.date && race.r) {
+          Object.assign(cur, { date: race.date, venue: race.venue || cur.venue || '', r: race.r, rname: race.rname || '', start: race.start || '', dist: race.dist || cur.dist || 0 }); delete cur.nk;
+          return free(cur, 'session');
+        }
+        if (keyOK) diff = true;
+      }
     }
-    const same = P.findPaid(W.paid.filter(e => !e.w5), race);
-    if (same) { stamp(same); await save(); return { ok: true, charged: false, free: 'same', pid: same.pid }; }
+    const sameKey = W.paid.filter(e => e && !e.w5 && !e.nk && e.pid !== form.pid && P.sameRace(e, race)).reverse();      // 新しい 順
+    const hit = sameKey.find(e => !bodyDiff(e));
+    if (hit) return free(hit, 'same');
+    if (sameKey.length) diff = true;
     if (!charge(P.COST.read, READ_WHAT(race))) return { ok: false, need: P.COST.read, have: total() };
-    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid();
+    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); if (fp) e.fp = fp; if (diff) e.nk = 1; W.paid.push(e); keepPaid();
     const bu = boardRead(), pk = packRead();
     await save();
     if (bu) boardEmit('unlock', { item: bu.id, no: bu.no });
     if (pk) packEmit('unlock', { no: pk });
-    return { ok: true, charged: true, free: null, pid: e.pid };
+    return { ok: true, charged: true, free: null, pid: e.pid, diff };      // diff＝同じ 日付・R の 読み込みは あったが、中身が ぜんぜん ちがった（別の レースと して 200P）
   }
 
   // ---------- 結果ボードカスタム（第4.91版）----------
@@ -344,10 +367,11 @@
     // 第4.139版（抜け穴を ふさぐ）：200P の 読み込み 1回で 数える のは 1レースだけ。
     //   前は「読み込みの しるし（pid）が ついた 記録」なら 日付・R を 手で かえても 別の レースと して 数えた（1回の 読み込みで 何レースでも 数えて ミッションの ポイントを もらえた）。
     //   → その 読み込み（paid）に 数えた レース（ck）を 書く。もう 別の レースを 数えた 読み込みは 使えない
-    const cand = W.paid.filter(e => e && !e.w5 && ((b.pid && e.pid === b.pid) || P.sameRace(e, b)));
+    const cand = W.paid.filter(e => e && !e.w5 && ((b.pid && e.pid === b.pid) || (!e.nk && P.sameRace(e, b))));      // nk（別の レースと して 読んだ 読み込み）は しるし（pid）で だけ
     const pe = cand.find(e => e.ck === key) || cand.find(e => !e.ck);
     if (!pe) return false;
     pe.ck = key;
+    if (pe.nk) { Object.assign(pe, { date: b.date, venue: String(b.venue || ''), r: +b.r || pe.r }); delete pe.nk; }      // 第4.140版：その 読み込みの レースは 記録に 合わせる（あとの 読み直しで 見つかる ように）
     W.counted[key] = new Date().toISOString();
     await save();
     const n = countedN(), claim = P.missions(n, W.events).filter(m => m.claimable);

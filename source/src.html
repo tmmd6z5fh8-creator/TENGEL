@@ -1573,14 +1573,16 @@ $('#ocrFile').addEventListener('change', async e => {
     const W = Wallet();
     let paid = null;
     // 200Pを使うのは、オッズ（単勝の表か3連単1位）が読めたとき。レース情報しか読めなかったときは使わない
-    if (W && d && typeof d === 'object' && ocrPick(d).got.some(g => /^単勝|3連単1位/.test(g))) {
-      paid = await W.readCharge({ form: st.form, ocr: d, w5: st.w5edit ? { date: st.w5.date } : null });
+    const pk0 = d && typeof d === 'object' ? ocrPick(d) : null;
+    if (W && pk0 && pk0.got.some(g => /^単勝|3連単1位/.test(g))) {
+      // rows＝この 読み込みで 読めた 単勝の 表（第4.140版：読み直しが 同じ レースかを 中身でも 見る。points_ui.js の readCharge）
+      paid = await W.readCharge({ form: st.form, ocr: d, w5: st.w5edit ? { date: st.w5.date } : null, rows: pk0.got.some(g => /^単勝/.test(g)) ? pk0.f.rows : null });
       if (!paid.ok) { msg.innerHTML = `<div class="banner bad">ポイントが足りないよ（読み込みに <b>${paid.need}P</b>・いま ${paid.have}P）。ポイントを買うと読み取れるよ。<div class="row" style="margin-top:8px"><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button></div></div>`; return; }
     }
     const okRead = applyOCR(d || {});
     if (paid && paid.ok) {
       if (!st.w5edit) { st.form.pid = paid.pid; storeSet('tengel.form', st.form); }
-      const note = paid.charged ? `${W.COST.read}P 使ったよ（残り ${W.total().toLocaleString('ja-JP')}P）` : paid.free === 'w5' ? '同じ5連の予想の読み込みなので 0P だよ' : '同じレースの読み直しなので 0P だよ';
+      const note = paid.charged ? (paid.diff ? `前に読んだレースと人気のならびがぜんぜんちがうので、別のレースとして ${W.COST.read}P 使ったよ（残り ${W.total().toLocaleString('ja-JP')}P）` : `${W.COST.read}P 使ったよ（残り ${W.total().toLocaleString('ja-JP')}P）`) : paid.free === 'w5' ? '同じ5連の予想の読み込みなので 0P だよ' : '同じレースの読み直しなので 0P だよ';
       const box = $('#ocrMsg .banner'); if (box) box.insertAdjacentHTML('beforeend', `<br><span class="small">${esc(note)}</span>`);
     }
     // 第4.116版（まさちゃん「画像読み取りで締切済みレースは締切済みレースに記録される。買い目予約と結果&記録ができない。ポイントは200p消費する」）：
@@ -1887,8 +1889,9 @@ function m1PromptHTML() {
 }
 function motherFieldHTML(v, ctx) {
   if (!motherOn()) return '';
-  const sel = v.mslot != null ? +v.mslot : (ctx.defSlot || 0);
-  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.filter(s => !s.fixed && (!slotLocked(s.n) || sel === s.n)).map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
+  // 第4.140版（抜け穴を ふさぐ）：解放して いない 枠は えらべない（前は 記録に その 枠の 番号が 残って いると えらんだ ままに なり、保存すると その 枠に レースが 入って「解放ずみ」に なった）
+  const sel0 = v.mslot != null ? +v.mslot : (ctx.defSlot || 0), sel = sel0 && slotLocked(sel0) ? 0 : sel0;
+  const opts = `<option value="0"${!sel ? ' selected' : ''}>入れない</option>` + Slots.list.filter(s => !s.fixed && !slotLocked(s.n)).map(s => `<option value="${s.n}"${sel === s.n ? ' selected' : ''}>${esc(s.name)}（${s.count}走）</option>`).join('');
   return `<div class="f s6 mfld" data-k="mfld"><span class="lab">マザーデータにも入れる（参考的中率・実測に使うレースのデータになるよ）</span>
     <div class="mrow"><select data-k="mslot" aria-label="入れるマザーデータ">${opts}</select></div>
     <div class="mpays" data-k="mpays"${sel ? '' : ' hidden'}><label>馬単の払戻（100円）<input type="number" inputmode="numeric" data-k="upay" value="${esc(v.upay || '')}" placeholder="あれば"></label><label>3連単の払戻（100円）<input type="number" inputmode="numeric" data-k="spay" value="${esc(v.spay || '')}" placeholder="あれば"></label></div>
@@ -2083,7 +2086,7 @@ async function saveRecf(box, extBtn) {
   if (v.buyZ) fields.buyZ = v.buyZ;
   // マザーデータにも入れる（入れ先・100円あたりの払戻）。着順（1着・2着）があるときだけ入れる
   const prevB = st.bets.get(id) || null, race = base || prevB || {};
-  const mslot = v.mslot != null && motherOn() ? v.mslot : 0, mRes = !!(p.ranks && p.ranks[0] != null && p.ranks[1] != null);
+  const mslot = v.mslot != null && motherOn() && !slotLocked(v.mslot) ? v.mslot : 0, mRes = !!(p.ranks && p.ranks[0] != null && p.ranks[1] != null);      // 解放して いない 枠には 入れない（第4.140版）
   if (v.mslot != null) { fields.mslot = mslot; fields.umatanPay = toNum(v.upay); fields.sanrenPay = toNum(v.spay); if (mslot && mRes) fields.mid = window.TengelMother.idOf(mslot, race.date, race.r); }
   const btns = [$('[data-act=save]', box), extBtn].filter(Boolean); btns.forEach(x => x.disabled = true);
   try {
@@ -2727,7 +2730,7 @@ async function saveRsvf(box, btn) {
   const fields = { rsv: { ...b.rsv, state: done ? 'done' : 'reserved', start: v.start || b.rsv.start || '', result: res, judged: done ? { state: j.state, per: Object.fromEntries(Object.keys(j.per).map(t => [t, j.per[t].state])) } : null }, start: v.start || b.start || '',
     types: b.rsv.types || typesOf(b), amt, stake, payout, other: '', note: v.note, updatedAt: now,
     p1: rk.ranks[0] ?? null, p2: rk.ranks[1] ?? null, p3: rk.ranks[2] ?? null, n1: rk.nos[0] ?? null, n2: rk.nos[1] ?? null, n3: rk.nos[2] ?? null };
-  const mslot = v.mslot != null && motherOn() ? v.mslot : 0, mRes = rk.ranks[0] != null && rk.ranks[1] != null;
+  const mslot = v.mslot != null && motherOn() && !slotLocked(v.mslot) ? v.mslot : 0, mRes = rk.ranks[0] != null && rk.ranks[1] != null;      // 解放して いない 枠には 入れない（第4.140版）
   if (v.mslot != null) { fields.mslot = mslot; fields.umatanPay = toNum(v.upay); fields.sanrenPay = toNum(v.spay); if (mslot && mRes) fields.mid = window.TengelMother.idOf(mslot, b.date, b.r); }
   if (btn) btn.disabled = true;
   try {

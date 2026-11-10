@@ -532,7 +532,10 @@ const FigApp = (() => {
     if (opt && opt.race) { const r = MEM() && MEM().get(opt.race); if (r) { mk.race = r; mk.fixed = true; return showMake('design'); } }
     showMake('race');
   }
-  function openFail(e) { if (ov) ov.classList.remove('on'); alert('思い出フィギュアを ひらけなかったよ（' + (e && e.message || e) + '）'); }
+  function openFail(e) {      // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ
+    if (ov) ov.classList.remove('on');
+    try { const t = document.getElementById('toast'); if (t) { t.textContent = '思い出フィギュアを ひらけなかったよ（' + (e && e.message || e) + '）'; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (x) { /* なし */ }
+  }
   function reload() { if (mode === 'booth') showBooth(page); else if (mode === 'over') showOver(); else if (mode === 'room' && room && room.it) openRoom(room.it); else if (mode === 'make') showMake(mk.step); }
   function close() {
     closeSheet(); exitRoom(); pick = null; mode = '';

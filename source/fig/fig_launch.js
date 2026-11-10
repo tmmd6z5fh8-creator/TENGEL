@@ -9,6 +9,8 @@
   'use strict';
   if (!window.__NATIVE) return;
   var loading = null, fab = null;
+  // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ（下の 黒い 札）
+  function note(m) { try { var t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(function () { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } }
   function load() {
     if (window.FigApp) return Promise.resolve();
     if (!loading) loading = new Promise(function (ok, ng) { var s = document.createElement('script'); s.src = 'fig_bundle.js'; s.onload = function () { ok(); }; s.onerror = function () { loading = null; ng(new Error('load')); }; document.head.appendChild(s); });
@@ -16,7 +18,7 @@
   }
   function go(fn, opt) {
     if (fab) fab.disabled = true;
-    return load().then(function () { return window.FigApp[fn](opt || {}); }).catch(function () { alert('思い出フィギュアを 読みこめなかったよ'); }).then(function (r) { if (fab) fab.disabled = false; return r; });
+    return load().then(function () { return window.FigApp[fn](opt || {}); }).catch(function () { note('思い出フィギュアを 読みこめなかったよ。もう一度 押してね'); }).then(function (r) { if (fab) fab.disabled = false; return r; });
   }
   window.TengelFig = {
     booth: function (opt) { return go('booth', opt); },

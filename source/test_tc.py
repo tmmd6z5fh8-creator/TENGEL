@@ -207,6 +207,29 @@ try:
         stage_click(pg, 678, 97); pg.wait_for_timeout(1200)
         g = pg.evaluate("() => { const e = document.querySelector('#tcg'); return e ? [e.style.display, e.textContent.includes('幻の馬・神様馬がいるあいだ'), e.textContent.includes('10000P か 20000P')] : null; }")
         check(g and g[0] != 'none' and g[1] and g[2], f'説明書に 幻の馬・神様馬の 当たり {g}')
+        # 第4.140版（11/10 14:14 まさちゃん「あと項目ごとに%を説明書に載せるようにして！」）：項目ごとに ％（表の 左に ％・その 下に 小さく 分数）。分数は 抽選の 表（tc_app.js）と 同じ
+        gd = pg.evaluate("""() => { const T = TCApp._t, e = document.querySelector('#tcg');
+          const rows = t => [...e.querySelectorAll(`table[data-tab=${t}] tr`)].map(r => ({ d: +r.dataset.d, pc: r.cells[0].childNodes[0].textContent, fr: r.cells[0].querySelector('small').textContent, lab: r.cells[1].textContent }));
+          const key = z => z.k === 'pt' ? z.v + 'P GET' : z.k === 'tk' ? 'チケット' : (z.v || T.RT[z.tier]).join('P か ') + 'P';
+          const want = tab => tab.map(([p, z]) => ({ d: Math.round(1 / p), key: key(z) }));
+          return { care: rows('care'), mab: rows('maboroshi'), kami: rows('kamisama'), wCare: want(T.PRIZES), wMab: want(T.PRIZES_VISIT.maboroshi), wKami: want(T.PRIZES_VISIT.kamisama), odds: T.ODDS, text: e.textContent,
+            fit: [...e.querySelectorAll('td:first-child')].every(td => td.scrollWidth <= td.clientWidth + 1 && td.getBoundingClientRect().height < 46) }; }""")
+        def pc(d, n=1):                       # tc_guide.js の pc と 同じ きまり
+            x = n / d * 100; s_ = '%.*f' % (1 if x >= 10 else 2 if x >= 0.1 else 3, x)
+            if '.' in s_: s_ = s_.rstrip('0').rstrip('.')
+            return ('約' if abs(float(s_) - x) > 1e-9 else '') + s_ + '%'
+        def same(rows, want):
+            return (len(rows) == len(want) and all(any(r['d'] == w['d'] and w['key'] in r['lab'] for r in rows) for w in want)
+                    and all(r['pc'] == pc(r['d']) and r['fr'] == f"1/{r['d']}" for r in rows))
+        check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(10, '10%'), (20, '5%'), (50, '2%'), (85, '約1.18%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 10,
+              f"説明書：お世話の 当たりは 項目ごとに ％（10P 10%・20P 5%・50P 2%・100P 約1.18% …）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
+        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and gd['mab'][0]['pc'] == '約0.33%' and gd['kami'][0]['pc'] == '約1.18%',
+              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
+        od = gd['odds']; D = lambda k: round(1 / od[k])
+        wantTx = ['ぜんぶ 合わせて 約20.2%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
+                  f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
+        check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399],
+              f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
         shot(pg, 'tc_guide')
         pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(500)
         print('■ 作戦会議')
@@ -233,14 +256,58 @@ try:
         pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')); P.races.push({ id: 'old', date: '2020-01-01', time: '10:00', name: 'むかし', notify: [5] }); localStorage.setItem('tengel.plan', JSON.stringify(P)); }")
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(500)
         check(pg.evaluate("() => JSON.parse(localStorage.getItem('tengel.plan')).races.every(r => r.id !== 'old')"), 'すぎた 日の レースは 消える')
+        # 第4.140版（バグ直し）：「消す」は 窓（confirm）を 使わない（アプリの 中では 窓が 出なくて 消せなかった）→ もう一度 押すと 消す
+        pg.evaluate("() => { const P = JSON.parse(localStorage.getItem('tengel.plan')); P.races.push({ id: 'del1', date: '2099-01-01', time: '10:00', name: 'けすレース', notify: [] }); localStorage.setItem('tengel.plan', JSON.stringify(P)); }")
+        pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300); pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(500)
+        dl = pg.locator('#tcPlan [data-p=del][data-id=del1]')
+        dl.click(); pg.wait_for_timeout(300)
+        d1 = pg.evaluate("() => ({ n: JSON.parse(localStorage.getItem('tengel.plan')).races.filter(r => r.id === 'del1').length, txt: document.querySelector('#tcPlan [data-p=del][data-id=del1]').textContent, ask: document.querySelector('#tcPlan [data-p=del][data-id=del1]').classList.contains('ask') })")
+        pg.locator('#tcPlan [data-p=nt][data-id=del1][data-m="10"]').click(); pg.wait_for_timeout(300)      # ほかを 押すと「消す」に もどる
+        d2 = pg.evaluate("() => ({ n: JSON.parse(localStorage.getItem('tengel.plan')).races.filter(r => r.id === 'del1').length, txt: document.querySelector('#tcPlan [data-p=del][data-id=del1]').textContent })")
+        pg.locator('#tcPlan [data-p=del][data-id=del1]').click(); pg.wait_for_timeout(250); pg.locator('#tcPlan [data-p=del][data-id=del1]').click(); pg.wait_for_timeout(400)
+        d3 = pg.evaluate("() => ({ n: JSON.parse(localStorage.getItem('tengel.plan')).races.filter(r => r.id === 'del1').length, left: JSON.parse(localStorage.getItem('tengel.plan')).races.length })")
+        check(d1 == {'n': 1, 'txt': 'ほんとに 消す？', 'ask': True} and d2 == {'n': 1, 'txt': '消す'} and d3 == {'n': 0, 'left': 1},
+              f'作戦会議の「消す」：1回めで「ほんとに 消す？」・ほかを 押すと もどる・もう一度 押すと 消える（窓は 出さない）（{d1}・{d2}・{d3}）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(300)
         print('■ 当たりの 抽選（幻の馬・神様馬が いる 間は その 表だけ）')
-        lot = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, cnt = (kind) => { st.visit = kind ? { kind, until: Date.now() + 6e5 } : null; S.high = 0; const c = {}; for (let i = 0; i < n; i++) { const z = T.lottery(); const k = z ? z.k + ':' + (Array.isArray(z.v) ? z.v.join('/') : z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; } return c; };
+        lot = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, cnt = (kind) => { st.visit = kind ? { kind, until: Date.now() + 6e5 } : null; S.high = 0; const c = {}; for (let i = 0; i < n; i++) { const z = T.draw(); const k = z ? z.k + ':' + (Array.isArray(z.v) ? z.v.join('/') : z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; } return c; };
           const r = { normal: cnt(null), mab: cnt('maboroshi'), kami: cnt('kamisama') }; st.visit = null; return r; }""")
         ks = lambda c: set(k for k in c if k != '-')
         check(ks(lot['mab']) <= {'rt:800/1600', 'rt:1600/3200', 'rt:3200/6400'} and 'rt:800/1600' in lot['mab'], f"幻の馬：ルーレット だけ {lot['mab']}")
         check(ks(lot['kami']) <= {'rt:2000/4000', 'rt:5000/10000', 'rt:10000/20000'} and abs(lot['kami'].get('rt:2000/4000', 0) / 20000 - 1 / 85) < 0.004, f"神様馬：ルーレット だけ {lot['kami']}")
         check(any(k.startswith('pt:') or k == 'pt:' for k in lot['normal']) or any(k.startswith('pt') for k in lot['normal']), f"いつもは ポイント {lot['normal']}")
+        # 第4.140版（11/10 14:14 まさちゃん「足す：10P 1/10・20P 1/20・50P 1/50 これだけ足して！」）：小さい 当たり 3つを 足した（ほかは そのまま）
+        tabS = pg.evaluate("() => TCApp._t.PRIZES.map(([p, z]) => Math.round(1 / p) + ':' + z.k + ':' + (z.k === 'pt' ? z.v : z.tier || ''))")
+        check(tabS == ['3600:rt:kamisama', '2400:tk:', '2000:rt:maboroshi', '1000:rt:normal', '121:pt:300', '99:pt:200', '85:pt:100', '50:pt:50', '20:pt:20', '10:pt:10'], f'お世話の 抽選の 表：前の 7つは そのまま＋50P 1/50・20P 1/20・10P 1/10（{tabS}）')
+        nm = lot['normal']; rate = lambda c, k: c.get(k, 0) / 20000
+        check(abs(rate(nm, 'pt:10') - 0.10) < 0.008 and abs(rate(nm, 'pt:20') - 0.05) < 0.006 and abs(rate(nm, 'pt:50') - 0.02) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 85) < 0.0035 and abs(1 - rate(nm, '-') - 0.2023) < 0.012,
+              f"2万回 ひくと：10P {rate(nm, 'pt:10'):.1%}・20P {rate(nm, 'pt:20'):.1%}・50P {rate(nm, 'pt:50'):.1%}・100P {rate(nm, 'pt:100'):.2%}・何か 当たる {1 - rate(nm, '-'):.1%}（約20.2%）")
+        hz = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, c = {}; st.visit = null;
+          for (let i = 0; i < n; i++) { S.high = 3; const z = T.draw(); const k = z ? z.k + ':' + (z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; }
+          S.high = 0; st.high = 0; return c; }""")
+        check(abs(rate(hz, 'pt:10') - 0.40) < 0.015 and abs(rate(hz, 'pt:100') - 4 / 85) < 0.006 and abs(1 - rate(hz, '-') - 0.8093) < 0.012,
+              f"高確ゾーン（4倍）：10P {rate(hz, 'pt:10'):.1%}（40%）・100P {rate(hz, 'pt:100'):.1%}（約4.7%）・何か 当たる {1 - rate(hz, '-'):.1%}（約81%：1 を こえない ので まれな 当たりも 4倍の まま）")
+        print('■ 当たりを とりこぼさない・トークンの 数え方（第4.140版の バグ直し）')
+        #   当たりは お世話の はじめに 決まる → すぐ 保存（pend）→ 演出の あとで わたして 消す
+        pd = pg.evaluate("""async () => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, W = TengelWallet, rnd = Math.random; st.visit = null; S.high = 0; st.high = 0; st.pend = null;
+          const sv = () => (JSON.parse(localStorage.getItem('tengel.tc')) || {}).pend || null, t0 = W.total();
+          Math.random = () => 0.03; const z = T.lottery(); Math.random = rnd;                    // 100P の 当たりを ひく
+          const p1 = sv(), t1 = W.total();
+          await T.onPrize(z); await new Promise(r => setTimeout(r, 500));
+          const p2 = sv(), t2 = W.total();
+          T.give(z); await new Promise(r => setTimeout(r, 400)); const t3 = W.total();           // 同じ 当たりを もう一度 わたしても 足さない
+          Math.random = () => 0.0015; const r1 = T.lottery(); Math.random = rnd; const p3 = sv(); st.pend = null; localStorage.setItem('tengel.tc', JSON.stringify(st));   // ルーレット（ふつう）：止まる 所も 決めて ある
+          const tk0 = st.tickets || 0; T.give({ k: 'tk', n: 2, id: 'tc-test-tk' }); const tk1 = st.tickets || 0; st.tickets = tk0; localStorage.setItem('tengel.tc', JSON.stringify(st));
+          return { z: z && [z.k, z.v, typeof z.id], p1: p1 && [p1.k, p1.v, p1.id === z.id], d1: t1 - t0, p2, d2: t2 - t0, d3: t3 - t0, r1: r1 && [r1.k, r1.tier, r1.win, r1.a, r1.b], p3: p3 && [p3.k, p3.win, p3.a, p3.b, p3.id === r1.id], tk: tk1 - tk0 }; }""")
+        check(pd['z'] == ['pt', 100, 'string'] and pd['p1'] == ['pt', 100, True] and pd['d1'] == 0 and pd['p2'] is None and pd['d2'] == 100 and pd['d3'] == 100,
+              f'当たり（100P）は ひいた ときに 保存 → 演出の あとで 台帳へ（+100P）→ 保存を 消す・同じ 当たりは 2回 足さない（{pd}）')
+        check(pd['r1'] == ['rt', 'normal', 0, 800, 1600] and pd['p3'] == ['rt', 0, 800, 1600, True] and pd['tk'] == 2, 'ルーレットは 止まる 所（800P か 1600P）も ひいた ときに 決めて 保存・チケットは 数を 足す')
+        #   お世話で 1つ 使った ちょうど その とき 10分 たって 1つ たまる → 使った ぶんは 消えない（5 → 4 → 5。前は 6）
+        tr = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0);
+          st.stock = 5; S.stock = S.stockShow = 5; st.stockAt = now; await new Promise(r => setTimeout(r, 200));
+          S.stock = 4; st.stockAt = now - 10 * 60000 - 500; await new Promise(r => setTimeout(r, 400));
+          return [st.stock, S.stock]; }""")
+        check(tr == [5, 5], f'お世話で 使った トークンは、同じ 瞬間に 1つ たまっても 消えない（5こ → 使って 4 → たまって 5：{tr}）')
         print('■ ルーレット（神様馬：10000P か 20000P）')
         pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'kamisama', a: 10000, b: 20000, win: 1, bg: 'divine', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
         pg.wait_for_timeout(2500); shot(pg, 'tc_rt_wait')
@@ -258,6 +325,37 @@ try:
         pg.evaluate("() => { const s = TCApp.state; s.tickets = 1; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
         pg.locator('#tcOv [data-tc=back]').click(); pg.wait_for_timeout(600)
         check(pg.evaluate("() => !document.querySelector('#tcOv.on') && TCInfo.tickets() === 1 && TCInfo.total() >= 1"), 'もどる → チケット 1まい・お世話の 合計')
+        # 第4.140版：チケットは 先に 1枚 使ってから 解放（解放できなければ もどす）。カギの テーマを 1枚で 解放 → チケット 0・ポイントは へらない
+        pg.evaluate("() => document.querySelector('.tabbar button[data-tab=set]').click()"); pg.wait_for_timeout(500)
+        lk = pg.evaluate("() => { const t = TengelKisekae.list().find(x => x.price && !x.pack && !TengelKisekae.usable(x.id)); return t ? { id: t.id, price: t.price } : null; }")
+        tw0 = pg.evaluate("TengelWallet.total()")
+        pg.evaluate("(id) => document.querySelector(`#setKisekae .kst[data-ks=\"${id}\"]`).click()", lk['id']); pg.wait_for_timeout(500)
+        tb = pg.locator('#setKisekae [data-ksact=ticket]')
+        check(tb.count() == 1 and 'のこり 1枚' in tb.inner_text(), f'カギの テーマを 押すと「チケットで解放（のこり 1枚）」が 出る（{lk}）')
+        tb.click(); pg.wait_for_timeout(1500)
+        tk = pg.evaluate("(id) => ({ usable: TengelKisekae.usable(id), cur: TengelKisekae.current(), tickets: TCInfo.tickets(), total: TengelWallet.total(), ev: TengelWallet.events().filter(e => e.id === 'unlock-theme:' + id).map(e => e.amount) })", lk['id'])
+        check(tk['usable'] and tk['cur'] == lk['id'] and tk['tickets'] == 0 and tk['total'] == tw0 and len(tk['ev']) == 1 and tk['ev'][0] == 0, f'チケット 1枚で 解放して 着せ替えた・チケットは 0枚・ポイントは へらない（{tk}）')
+        bk = pg.evaluate("() => { const a = TCInfo.tickets(); TCInfo.backTicket(); const b = TCInfo.tickets(); TCInfo.useTicket(); return [a, b, TCInfo.tickets(), TCInfo.useTicket()]; }")
+        check(bk == [0, 1, 0, False], f'チケットを もどす・使う（0 → 1 → 0・ない ときは 使えない：{bk}）')
+        pg.evaluate("() => TengelKisekae.apply('default')"); pg.wait_for_timeout(600)
+        print('■ アプリを 閉じても 当たりは 消えない（第4.140版）')
+        #   お世話の 途中・ルーレットの 途中で アプリを 閉じた ことに する：保存に 当たり（ルーレット 1600P）が 残って いる → 開き直して トレーニングセンターを ひらくと もらえる（1回だけ）
+        w0 = pg.evaluate("TengelWallet.total()")
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); s.pend = { k: 'rt', tier: 'normal', a: 800, b: 1600, win: 1, id: 'tc-pend-test-1' }; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        def reopen():
+            pg.reload(); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+            pg.locator('#tcFab').click()
+            pg.wait_for_function("() => window.TCApp && document.querySelector('#tcOv.on') && !document.querySelector('#tcOv .tcld')", timeout=90000)
+            pg.wait_for_timeout(1200)
+            return pg.evaluate("({ total: TengelWallet.total(), pend: (JSON.parse(localStorage.getItem('tengel.tc')) || {}).pend || null, msg: document.querySelector('#tcOv .tcmsg').textContent, on: document.querySelector('#tcOv .tcmsg').classList.contains('on'), n: TengelWallet.events().filter(e => e.id === 'tc-pend-test-1').length })")
+        r1 = reopen()
+        check(r1['total'] == w0 + 1600 and r1['pend'] is None and '前の 当たり（1,600P）を 受け取ったよ' in r1['msg'] and r1['on'] and r1['n'] == 1, f'開き直して ひらくと 前の 当たり 1,600P を 受け取る（お知らせ つき・保存から 消える）（{r1}）')
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); s.pend = { k: 'rt', tier: 'normal', a: 800, b: 1600, win: 1, id: 'tc-pend-test-1' }; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        r2 = reopen()
+        check(r2['total'] == w0 + 1600 and r2['pend'] is None and r2['n'] == 1, f'同じ 当たりが 保存に 残って いても 2回は 足さない（{r2["total"]}）')
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); s.pend = { k: 'tk', n: 2, id: 'tc-pend-test-2' }; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        r3 = reopen(); tk3 = pg.evaluate("TCInfo.tickets()")
+        check(tk3 == 2 and r3['pend'] is None and 'チケット 2枚' in r3['msg'], f'チケットの 当たりも 同じ（{tk3}枚・{r3["msg"]}）')
         check(not errs, f'エラー なし {errs[:3]}')
         b.close()
 finally:

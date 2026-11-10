@@ -18,6 +18,11 @@
     useTicket: function () {
       if (window.TCApp && window.TCApp.tickets) return window.TCApp.tickets.use();
       var s = jget(TK); if (!s || !(s.tickets > 0)) return false; s.tickets -= 1; jset(TK, s); return true;
+    },
+    // 第4.140版：使った チケットを 1枚 もどす（着せ替えで 解放できなかった とき）
+    backTicket: function () {
+      if (window.TCApp && window.TCApp.tickets && window.TCApp.tickets.back) return window.TCApp.tickets.back();
+      var s = jget(TK); if (!s) return false; s.tickets = (s.tickets || 0) + 1; jset(TK, s); return true;
     }
   };
   // ---------- 作戦会議の 通知（発走の 20・15・10・8・5分前：選んだ もの だけ）----------
@@ -106,6 +111,8 @@
   }
   window.TengelFab = { add: fabAdd };
   var fab = null, loading = null;
+  // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ（下の 黒い 札）
+  function note(m) { try { var t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(function () { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } }
   function load() {
     if (window.TCApp) return Promise.resolve();
     if (!loading) loading = new Promise(function (ok, ng) { var s = document.createElement('script'); s.src = 'tc_bundle.js'; s.onload = function () { ok(); }; s.onerror = function () { loading = null; ng(new Error('load')); }; document.head.appendChild(s); });
@@ -113,7 +120,7 @@
   }
   function open(opt) {
     if (fab) fab.disabled = true;
-    return load().then(function () { return window.TCApp.open(opt); }).catch(function () { alert('トレーニングセンターを 読みこめなかったよ'); }).then(function () { if (fab) fab.disabled = false; });
+    return load().then(function () { return window.TCApp.open(opt); }).catch(function () { note('トレーニングセンターを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
   }
   window.TCOpen = open;
   function boot() {

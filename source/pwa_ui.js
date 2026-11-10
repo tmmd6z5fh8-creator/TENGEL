@@ -928,6 +928,7 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     // race：{date, r, baba, dist, surface, n, tan1, s1, s5, s10, p1, p2, p3, umatanPay, sanrenPay}／prev：前に入れた先 {n, id}（入れ先を変えたとき、前のを消す）
     async put(n, race, prev) {
       n = +n; if (isFixed(n)) throw new Error('テンゲルデータにはデータを追加できないよ');
+      if (slotLocked(n)) throw new Error('この枠は、設定タブの「Pカスタム」で解放すると使えるよ');      // 第4.140版：解放して いない 枠には 入れない
       const t = tagOf(n), id = idOf(n, race.date, race.r), old = L().rows(n).find(x => x.id === id) || null;
       const keep = (v, k) => v == null || v === '' ? (old && old[k] != null ? old[k] : null) : num(v);
       const row = Object.assign({}, old || {}, {

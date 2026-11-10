@@ -433,5 +433,29 @@ console.log('台帳の ならび（書いた 順）：使った ぶんが かな
   }
   check(!bad.length && spends > 1500 && merged > 300, `あばれテスト：時計を 進める・もどす・ずらす 中で ${spends}回 使って、ぜんぶ ちょうど へった（まとめた のは ${merged}回・番号と id は 重ならない）${bad.length ? '：' + bad.join('／') : ''}`);
 }
+// ---- 読み直しの 見分け：読んだ 中身（第4.140版・11/10 14:22「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）」）----
+console.log('読み直しの 見分け：読んだ 単勝の 表を くらべる（第4.140版）');
+{
+  const rows = a => a.map((t, i) => ({ no: i + 1, tan: String(t) }));
+  const A = rows([12.4, 4.1, 31.5, 9.8, 18.2, 2.4, 7.6, 54.0, 25.9, 6.3, 14.7, 88.6]);            // 9R
+  const A2 = rows([13.1, 3.8, 35.2, 10.4, 16.9, 2.6, 7.1, 61.3, 24.0, 6.8, 15.5, 97.4]);          // 同じ レース・オッズが 動いた
+  const B = rows([3.3, 45.2, 5.8, 120.4, 2.2, 66.1, 15.5, 8.9, 4.7, 30.3, 99.9, 11.1]);            // 別の レース
+  const fa = P.raceFp(A), fa2 = P.raceFp(A2), fb = P.raceFp(B);
+  check(fa === '1:12.4,2:4.1,3:31.5,4:9.8,5:18.2,6:2.4,7:7.6,8:54,9:25.9,10:6.3,11:14.7,12:88.6' && P.raceFp(null) === '' && P.raceFp([]) === ''
+    && P.raceFp([{ no: 3, tan: '5.5' }, { no: 'x', tan: 2 }, { no: 2, tan: 0 }, { no: 3, tan: 9 }, { no: 1, tan: '２.４' }, null]) === '3:5.5', '指紋＝馬番:単勝 を 馬番の 順に（読めない 行・同じ 馬番の 2つめは すてる）');
+  check(P.FP.min === 6 && P.FP.rho === 0.3 && P.FP.same === 0.5, 'しきい値：どちらにも ある 馬番 6頭 以上・順位の 相関 0.3 より 低い・同じ オッズ 半分 より 少ない');
+  check(P.fpRho(fa, fa2) > 0.95 && P.fpShare(fa, fa2) === 0 && P.fpDiff(fa, fa2) === false, `同じ レース（オッズが 動いた だけ）：人気の 順は ほぼ 同じ → 同じ レース（相関 ${P.fpRho(fa, fa2).toFixed(2)}）`);
+  check(P.fpRho(fa, fb) < 0 && P.fpShare(fa, fb) === 0 && P.fpDiff(fa, fb) === true && P.fpDiff(fb, fa) === true, `別の レース：人気の 順も オッズも ちがう → 別の レース（相関 ${P.fpRho(fa, fb).toFixed(2)}）`);
+  const sh = P.raceFp(A.map((h, i) => ({ no: h.no, tan: A[(i + 5) % 12].tan })));                  // 同じ 画像・馬番との 組み合わせが ずれた
+  check(P.fpRho(fa, sh) < 0.3 && P.fpShare(fa, sh) === 1 && P.fpDiff(fa, sh) === false, '同じ 画像を 読み直して 組み合わせが ずれた だけ（オッズの 数は 同じ）→ 同じ レース');
+  check(P.fpDiff(P.raceFp(A.slice(0, 7)), fa2) === false && P.fpDiff(P.raceFp(A.slice(0, 7)), fb) === true, 'はじめは 7頭だけ 読めた → あとで ぜんぶ：どちらにも ある 馬番で くらべる（同じ レースは 同じ・別の レースは 別）');
+  check(P.fpDiff(P.raceFp(A.slice(0, 5)), fb) === false && P.fpRho(P.raceFp(A.slice(0, 5)), fb) === null && P.fpDiff('', fb) === false && P.fpDiff(fa, '') === false && P.fpDiff(null, undefined) === false,
+    'くらべられない とき（どちらにも ある 馬番が 5頭 以下・どちらかに 表が ない）は 同じ レースと 見る（前と 同じ）');
+  const tie = P.raceFp(rows([5, 5, 5, 5, 5, 5, 5])), tie2 = P.raceFp(rows([2, 2, 9, 9, 4, 4, 30]));
+  check(P.fpRho(tie, fb) === null && P.fpDiff(tie, fb) === false && Math.abs(P.fpRho(tie2, tie2) - 1) < 1e-9, '同じ オッズ（同じ 順位）は 平均の 順位で 数える・ぜんぶ 同じなら くらべない');
+  // 相関の きょうかい：0.3 より 低く、同じ 数が 半分 より 少ない とき だけ 別
+  const half = P.raceFp(B.map((h, i) => ({ no: h.no, tan: i < 6 ? A[i].tan : h.tan })));           // 半分は 前と 同じ 数
+  check(P.fpShare(fa, half) === 0.5 && P.fpDiff(fa, half) === false, '同じ オッズが ちょうど 半分 → 同じ レースと 見る（半分 より 少ない とき だけ 別）');
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

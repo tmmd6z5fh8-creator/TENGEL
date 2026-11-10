@@ -153,6 +153,12 @@ if (window.__NATIVE) (function () {
     });
   }
   // 2つ目・3つ目を入れ替える（1つ目は replaceRaces）
+  // 第4.140版（抜け穴を ふさぐ・App Store版）：Pカスタムで 解放して いない 枠（マザーデータ②・③）には、どこからも レースを 入れさせない。
+  //   枠は「レースが 入って いれば 解放ずみ」と 見る（前の 版の データを 残す ため）ので、入れる 口を ここで 1つに しめる。Web版には ポイントの 台帳（TengelWallet）が ない ので 何も しない
+  function slotGuard(n) {
+    try { var w = window.TengelWallet; if (w && typeof w.slotUnlocked === 'function' && !w.slotUnlocked(+n)) return Promise.reject(new Error('この枠は、設定タブの「Pカスタム」で解放すると使えるよ')); } catch (e) { /* 台帳が なければ 前と 同じ */ }
+    return null;
+  }
   function replaceSlot(n, rows, info) {
     n = +n; if (n === 1) { if (FIX1) return Promise.reject(new Error(NO_ADD1)); return replaceRaces(rows, info); }
     if (!okSub(n)) return Promise.reject(new Error(NO_N));
@@ -624,14 +630,14 @@ if (window.__NATIVE) (function () {
       active: function () { return slotsMeta.active; },
       setActive: function (n) { return ready.then(function () { return setActive(n); }); },
       rename: function (n, name) { return ready.then(function () { return renameSlot(n, name); }); },
-      replace: function (n, rows, info) { return ready.then(function () { return replaceSlot(n, rows, info); }); },
+      replace: function (n, rows, info) { return slotGuard(n) || ready.then(function () { return replaceSlot(n, rows, info); }); },
       clear: function (n) { return ready.then(function () { return clearSlot(n); }); },
       prev: prevInfo,
       undo: function (n) { return ready.then(function () { return undoSlot(n); }); },
       formed: wellFormed,
       doc: function (n) { return n === 1 ? mother1 : slotDocs[n]; },
       // レースを1つずつ足す・直す・消す（アプリで入力したレースなど）
-      upsert: function (n, rows) { return ready.then(function () { return upsertRows(n, rows); }); },
+      upsert: function (n, rows) { return slotGuard(n) || ready.then(function () { return upsertRows(n, rows); }); },
       remove: function (n, ids) { return ready.then(function () { return removeRows(n, ids); }); },
       key: rowKey
     },

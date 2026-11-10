@@ -171,6 +171,7 @@
   //   タイルは <div role="button">（中に 本物の ボタンを 置くため）。もう一度 タイルを タップすると 閉じる
   // トレーニングセンターの 壁紙チケット（第4.130版：お世話の 当たり 1/2400）：1枚で 1つの テーマを 解放（ポイントは 使わない）
   const tickets = () => { try { return window.TCInfo ? window.TCInfo.tickets() : 0; } catch (e) { return 0; } };
+  let actBusy = false;      // 解放の 途中（ポイント・チケット）：おわるまで 次の 解放を 受けない
   function confBox(t, total) {
     if (t.pack) return packConf(t);
     const ok = total >= t.price;
@@ -243,20 +244,26 @@
       }
       if (a.dataset.ksact === 'ticket') {
         const id = a.dataset.id, t = byId[id]; if (!t || !wallet() || !(tickets() > 0)) return;
-        a.disabled = true;
-        let ok = false;
-        try { ok = await wallet().unlock('theme:' + id, 0); } catch (x) { ok = false; }
-        if (ok) { try { window.TCInfo.useTicket(); } catch (x) { /* なし */ } }
+        // 第4.140版（抜け穴を ふさぐ）：チケットは 先に 1枚 使ってから 解放する（前は 解放の あとに 使った ので、2つの テーマを すばやく 押すと 1枚で 2つ 解放できた）。
+        //   カギの ない テーマ・パックの テーマ・もう 解放した テーマには 使わない。解放できなかった ときは チケットを もどす
+        if (actBusy || t.pack || !t.price || usable(id)) return;
+        actBusy = true; a.disabled = true;
+        let ok = false, used = false;
+        try {
+          try { used = !!window.TCInfo.useTicket(); } catch (x) { used = false; }
+          if (used) { try { ok = await wallet().unlock('theme:' + id, 0); } catch (x) { ok = false; } }
+          if (used && !ok) { try { window.TCInfo.backTicket(); } catch (x) { /* なし */ } }
+        } finally { actBusy = false; }
         conf = '';
         if (ok) { toast(`🎫 チケットで「${t.name}」を解放したよ（のこり ${tickets()}枚）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
         else { toast('チケットで 解放 できなかったよ', 3000); paint(); }
         return;
       }
       if (a.dataset.ksact === 'unlock') {
-        const id = a.dataset.id, t = byId[id]; if (!t || !wallet()) return;
-        a.disabled = true;
+        const id = a.dataset.id, t = byId[id]; if (!t || !wallet() || actBusy) return;
+        actBusy = true; a.disabled = true;
         let ok = false;
-        try { ok = await wallet().unlock('theme:' + id, t.price); } catch (x) { ok = false; }
+        try { ok = await wallet().unlock('theme:' + id, t.price); } catch (x) { ok = false; } finally { actBusy = false; }
         conf = '';
         if (ok) { toast(`✅ 「${t.name}」を解放したよ（残り ${pts(wallet().total())}）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
         else { toast(`Pが足りないよ（${pts(t.price)}いる・いま ${pts(have())}）`, 3600); paint(); }
