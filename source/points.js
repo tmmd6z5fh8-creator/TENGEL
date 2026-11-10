@@ -90,7 +90,7 @@
     /* 12 */ ['cover', '隠蔽作戦', '続けて ハズレた 数（1〜4回目）で 絵が かわる', 'miss'],
     /* 13 */ ['wait', 'ボード結果待ち', '続けて ハズレた 数（1〜4回目）で 絵が かわる', 'miss'],
     /* 14 */ ['pen', '書き換え参戦', '続けて ハズレた 数（1〜4回目）で 絵が かわる', 'miss'],
-    /* 15 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持って、下から出てくる', 'all']
+    /* 15 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持っている', 'all']
   ].map(function (r, i) {
     return r ? { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i], ready: true }
       : { no: i + 1, id: 'prep' + (i + 1), name: 'じゅんび中', desc: 'あたらしい 飾りを じゅんび して いるよ', when: 'all', need: BOARD_NEED[i], ready: false };

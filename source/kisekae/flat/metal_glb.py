@@ -27,8 +27,13 @@ K = HI * SS                    # 描く 大きさ（倍：4680×1920）
 MODELS = dict(
     horse=dict(glb=os.environ.get('METAL_HORSE_GLB') or '/home/claude/work/band3d/orig/silver_thunder.glb',
                yaw=88.0, pitch=4.0, fov=17.0, span=(132, 648), floor=261, top=26),          # 左向きの ほぼ 真横（前の 像は 150〜631・床 261）
+    # マスター帯：右向き・台を 正面から まっすぐ（まさちゃん 11/11 02:40「テンゲルの台が正面に真っ直ぐ見えるようにして！今は台が曲がってる！」）。
+    #   第4.150版（まさちゃん 11/11 03:46「マスター帯が、シルバー帯、ゴールド帯より馬のサイズが小さいのが気になる！もっと大きくできる？」→ 見本 A・B・C を 見せて 04:03「Aにして！」）：
+    #   馬を シルバー帯・ゴールド帯と 同じ 大きさに（像を 1.29倍：馬の 幅 390 → 500px。シルバー帯・ゴールド帯の 馬は 507px）。台の いちばん 下（floor 359）は 絵の 外＝
+    #   台は「TENGER」の 字の すぐ 下で 切れる（カタカナの「テンゲル」の 札は 絵の 外）。前（第4.149版）は 台を ぜんぶ 入れて いた（floor 286・top 12）。
+    #   pad＝形を 測る ときの 上下の よゆう（はみ出した 所も 測る）・foot＝絵の いちばん 下の 行を 暗く（どこから・どこまで・強さ：札の 上の ふちが 細い 金の 線に なって のぞくのを かげに しずめる）
     tengel=dict(glb=os.environ.get('TENGEL_STATUE_GLB') or '/home/claude/work/band3d/orig/tenger.glb',
-                yaw=0.0, pitch=4.0, fov=17.0, span=(176, 604), floor=286, top=12))          # 右向き・台を 正面から まっすぐ（まさちゃん 11/11 02:40「テンゲルの台が正面に真っ直ぐ見えるようにして！今は台が曲がってる！」）・少し だけ 上から
+                yaw=0.0, pitch=4.0, fov=17.0, span=(60, 720), floor=359, top=5, pad=(0, 80), foot=(313.0, 318.5, 0.92)))
 OF = dict(silver='horse', gold='horse', tengel='tengel')
 
 # 色の 段（金属の 明るさ 0〜1 → sRGB）：シルバー帯・ゴールド帯
@@ -84,28 +89,40 @@ def _gbuf(model):
     up = np.cross(back, right)
     span, floor, top = M['span'], M['floor'], M['top']
 
-    def shot(dist, target, k, want=('alpha', 'normal', 'albedo', 'pos', 'ao')):
+    pad = tuple(M.get('pad') or (0, 0))                  # 形を 測る ときの よゆう（左右・上下 px）：像が 絵の 外に はみ出す 置き方（台の 下を 切る）の とき
+
+    def shot(dist, target, k, want=('alpha', 'normal', 'albedo', 'pos', 'ao'), pad=(0, 0)):
         eye = target + dist * back
-        cam = Camera.look_at(eye, target, fov_y=M['fov'], W=W * k, H=Hh * k)
+        if pad == (0, 0):
+            cam = Camera.look_at(eye, target, fov_y=M['fov'], W=W * k, H=Hh * k)
+        else:                                            # まわりに よゆうを つけた 大きな 絵（1px の 大きさと まん中は 同じ：はみ出した 所も 写る）
+            hp = Hh + 2 * pad[1]
+            fov = math.degrees(2 * math.atan(math.tan(math.radians(M['fov']) / 2) * hp / Hh))
+            cam = Camera.look_at(eye, target, fov_y=fov, W=(W + 2 * pad[0]) * k, H=hp * k)
         return render(prims, cam, ss=1, want=want), eye
 
     dist, target = 6.0, c.copy()
     for _ in range(4):                                   # ためしに 写して 形の 箱を 測る → 幅・床の 線・左右の まん中を 合わせる
-        fr, eye = shot(dist, target, 1)
+        fr, eye = shot(dist, target, 1, pad=pad)
         ys, xs = np.nonzero(fr['alpha'] > 0.5)
-        x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        x0, x1, y0, y1 = xs.min() - pad[0], xs.max() + 1 - pad[0], ys.min() - pad[1], ys.max() + 1 - pad[1]
+        assert x0 > -pad[0] and x1 < W + pad[0] and y0 > -pad[1] and y1 < Hh + pad[1], ('像が 測る 絵から はみ出した（pad を 大きく）', model, x0, x1, y0, y1)
         k = min((span[1] - span[0]) / (x1 - x0), (floor - top) / (y1 - y0))
         dist = dist / k
         px = 2 * dist * math.tan(math.radians(M['fov']) / 2) / Hh          # 画面の 1px が 世界の どれだけか（ねらう 点の 奥行きで）
         cx = W / 2 + ((x0 + x1) / 2 - W / 2) * k
         by = Hh / 2 + (y1 - Hh / 2) * k
         target = target + right * ((cx - (span[0] + span[1]) / 2) * px) - up * ((by - (floor + 1)) * px)
+    if pad != (0, 0):                                    # はみ出す 置き方：さいごの カメラで もう一度 測る（台の いちばん 下の ほんとうの 場所）
+        fr, eye = shot(dist, target, 1, want=('alpha',), pad=pad)
+        ys, xs = np.nonzero(fr['alpha'] > 0.5)
+        x0, x1, y0, y1 = xs.min() - pad[0], xs.max() + 1 - pad[0], ys.min() - pad[1], ys.max() + 1 - pad[1]
     fr, eye = shot(dist, target, K)
     N = fr['normal'].reshape(-1, 3)
     V = normalize(eye[None, :].astype(np.float32) - fr['pos'].reshape(-1, 3))
     NdV = np.clip(np.sum(N * V, -1), 0, 1)
     G = dict(a=np.clip(fr['alpha'], 0, 1).astype(np.float32), N=N, NdV=NdV, R=normalize(2 * NdV[:, None] * N - V), alb=fr['albedo'].reshape(-1, 3), ao=fr['ao'].reshape(-1),
-             basis=(right, up, back))
+             basis=(right, up, back), fit=(int(x0), int(y0), int(x1), int(y1)))                    # fit＝さいごに 測った 形の 箱（絵の 外に はみ出した 所も 入る）
     # 金属か（metal）・つや（rough）：テクスチャ（金属と つやの 地図）を 色の 地図の かわりに 写して 読む（色の 地図は すぐ もどす）
     mats = {id(pr.mat): pr.mat for pr in prims}.values()
     if all(mt.mr_tex is not None for mt in mats):
@@ -170,7 +187,14 @@ def _tengel():
     col = (spec * 1.55 + diff) * (0.35 + 0.65 * G['ao'])[:, None]
     lin = np.clip(1 - np.exp(-col * 1.3), 0, 1)                                                 # 明るい 所を なだらかに つぶす（金の 光は 白っぽく）
     a = G['a']
-    return _down(lin.reshape(Hh * K, W * K, 3) * a[..., None], a)
+    out = _down(lin.reshape(Hh * K, W * K, 3) * a[..., None], a)
+    out['fit'] = G['fit']                                                                       # 形の 箱（台の いちばん 下が 絵の 外に ある ときも ほんとうの 場所）
+    foot = MODELS['tengel'].get('foot')
+    if foot:                                                                                    # 絵の いちばん 下の 行を かげに しずめる（台が 絵の 下で 切れる 所）
+        for key, k in (('srgb', 1), ('hi_srgb', HI)):
+            y = (np.arange(out[key].shape[0], dtype=np.float32) + 0.5) / k
+            out[key] = out[key] * (1 - foot[2] * _sm(foot[0], foot[1], y))[:, None, None]
+    return out
 
 
 def render(name):

@@ -348,7 +348,7 @@ def body_svg():
     o += f"<path d='{smooth([(x + 2, y + 2.4) for x, y in hl], False, 0.35)}' fill='none' stroke='{BR['hl']}' stroke-width='1.4' stroke-linecap='round' opacity='.7'/>"
     for k in range(1, 6):                                                # 板の つなぎ目（首を よこぎる）と びょう
         t = k / 6
-        a = crest_at(t)
+        a = crest_at(t, CREST_OLD)
         b = throat_at(t)
         m = ((a[0] + b[0]) / 2 + 2.2, (a[1] + b[1]) / 2 + 1.2)
         o += f"<path d='M{f(a[0] + 0.6)} {f(a[1] + 1.2)} Q{f(m[0])} {f(m[1])} {f(b[0] - 0.6)} {f(b[1] - 0.6)}' fill='none' stroke='{BR['dd']}' stroke-width='.9' opacity='.8'/>"
@@ -398,8 +398,23 @@ def body_svg():
 
 
 # 首と 頭の 形（第4.93版：本物の 馬に 近く）
-NECK = [(222, 64), (232, 54), (246, 42), (262, 32), (276, 25), (285, 23), (290, 30), (289, 40), (285, 45), (278, 53), (269, 63), (261, 75), (256, 87), (253, 99),
+# 第4.150版（まさちゃん 2026/11/11 03:08「赤丸のところが、光線を出すと首の一部が出てしまってるから違和感ないように改善して！」）：
+#   光線を うつ とき 頭を 40° 上げる（頭は 軸 HEAD_PIV の まわりに 回る・首は 動かない）と、首の 先（うなじの こぶ：前の 形の (285, 23)〜(290, 30)）が
+#   頭の 上に はみ出して いた（たてがみの いちばん 頭がわの 房の 根もとも）。
+#   → 首の 先は、頭が どの 角度でも 頭の うしろに かくれる 形に：首の 上の 線は CREST の さいご (275, 25.6) で おわって 下へ まがり、軸の まわりの 小さい 丸（半径 6）に 入る
+#     （頭の ふちは 軸から 7px 以上 はなれて いる ので、どの 角度でも 頭の 中）。
+#   → いつもの 向きで こぶが あった 所は、頭に ついて 回る「うなじの 板」（NAPE：nape_part）が うめる。頭を 上げると 板は 首の 上を うしろへ すべる（重なる よろいの 板）。
+#     たてがみの いちばん 頭がわの 房は 板に ついて 回る（NAPE_LOCK）・首に ついた 房は 10こ（CREST の 上 だけ）
+NECK = [(222, 64), (232, 54), (246, 42), (262, 32), (275, 25.6), (278.5, 29.5), (284.5, 30), (290.4, 33.5), (289.5, 40), (285, 45), (278, 53), (269, 63), (261, 75), (256, 87), (253, 99),
         (238, 99), (224, 78)]
+CREST = NECK[:5]                                                                      # 首の 上の 線（き甲 → 首の 先）：たてがみの 房が つく 所
+CREST_OLD = [(222, 64), (232, 54), (246, 42), (262, 32), (276, 25), (285, 23)]        # 前の 上の 線（うなじまで）：板の つなぎ目と びょうの 場所は 前の まま
+THROAT = [(253, 99), (256, 87), (261, 75), (269, 63), (278, 53), (285, 45)]           # 首の 下の 線（胸 → のど）
+# うなじの 板（舞台の 座標・いつもの 向き）：頭の うしろの ふちの 下から → うなじ → 首の 上の 線に そって うしろへ → 下へ まわって 頭の 下に もどる
+NAPE = [(284.6, 25.6), (283.6, 23.75), (279.5, 24.1), (275.6, 25.3), (274.0, 26.4), (273.4, 28.9), (274.6, 32.2), (278.3, 36.3), (281.6, 33.2)]
+NAPE_LOCK = ((275.2, 25.5), (283.2, 23.9))                                            # 板に つく 房の 根もと（うしろ → 前）
+NAPE_BACK = 0.6                                                                       # 房は 頭が 上がった 角度の この わりあい だけ もどす（根もとの まん中を 軸に）＝ほかの 房と 同じ ように うしろへ なびく（もどさないと まっすぐ 下に たれる）
+NAPE_BOX = (250, 16, 38, 32)                                                          # 板と 房の 絵の 箱（舞台の 座標：左上・はば・高さ）
 POLL = (284, 24)                    # うなじ（頭の 軸の ちかく）
 HEAD_ANG = 41.0                     # 頭の 向き（鼻すじ・水平から 下へ）
 HEAD_SC = 1.0
@@ -407,16 +422,14 @@ HEAD_BOX = (270, 4, 58, 70)         # 頭の 絵の 箱（舞台の 座標：左
 HEAD_PIV = (285, 36)                # うなずく 軸
 
 
-def crest_at(t):
-    """首の 上の 線（き甲 t=0 → うなじ t=1）"""
-    pts = NECK[:6]
+def crest_at(t, pts=CREST):
+    """首の 上の 線（き甲 t=0 → 首の 先 t=1）。pts=CREST_OLD なら 前の 線（うなじまで）"""
     return _along(pts, t)
 
 
 def throat_at(t):
     """首の 下の 線（胸 t=0 → のど t=1）"""
-    pts = [NECK[13], NECK[12], NECK[11], NECK[10], NECK[9], NECK[8]]
-    return _along(pts, t)
+    return _along(THROAT, t)
 
 
 def _along(pts, t):
@@ -696,49 +709,79 @@ def mane_svg(layer=0):
     """たてがみ（第4.93版：流れる 毛の 房を 銅と 真ちゅうの うすい 板で）：首の 上の 線から うしろ（き甲の 方）へ なびいて 首の 横に たれる 房を、
        き甲 → うなじ の 順に 重ねる（頭に 近い 房が 上）。layer 0＝房の うらの 暗い かげ（首の 上の ふちの 外に のぞく 厚み）・1＝房"""
     o = ''
-    n = 11
-    locks = []
-    for k in range(n):
+    n = MANE_N
+    for k in range(n):                                                    # き甲 → 首の 先（頭に 近い 房が 上）
         t0 = 0.04 + 0.92 * k / n
         t1 = 0.04 + 0.92 * (k + 1.7) / n
         t1 = min(t1, 0.995)
-        a, b = crest_at(t0), crest_at(t1)
-        tx, ty = b[0] - a[0], b[1] - a[1]
-        tl = math.hypot(tx, ty) or 1
-        tx, ty = tx / tl, ty / tl
-        nx, ny = ty, -tx
-        if ny > 0:
-            nx, ny = -nx, -ny                                             # 首の 外がわ（上）
-        tm = (t0 + t1) / 2
-        prof = 0.6 + 0.4 * math.sin(math.pi * (0.1 + 0.8 * tm))
-        L = (15.5 + 6.5 * prof) * (1.08 if k % 3 == 1 else 0.92 if k % 3 == 2 else 1.0)
-        dx, dy = -tx * 0.86 - nx * 0.5, -ty * 0.86 - ny * 0.5              # うしろへ なびいて 首の 横へ
-        dl = math.hypot(dx, dy)
-        dx, dy = dx / dl, dy / dl
-        lift = 1.4 if layer == 0 else 0.0
-        A = (a[0] + nx * (1.0 + lift), a[1] + ny * (1.0 + lift))
-        Bp = (b[0] + nx * (1.4 + lift), b[1] + ny * (1.4 + lift))
-        tip = (A[0] + dx * L - nx * (2.0 - lift), A[1] + dy * L - ny * (2.0 - lift))
-        # 外がわの ふち（B → 先）は ふくらむ・内がわ（先 → A）は へこむ
-        c1 = (Bp[0] + dx * L * 0.45 + nx * 4.2, Bp[1] + dy * L * 0.45 + ny * 4.2)
-        c2 = (tip[0] + nx * 2.2 - dx * 3.0, tip[1] + ny * 2.2 - dy * 3.0)
-        c3 = (A[0] + dx * L * 0.55 - nx * 1.2, A[1] + dy * L * 0.55 - ny * 1.2)
-        locks.append((k, A, Bp, tip, c1, c2, c3, nx, ny, dx, dy, L))
-    for k, A, Bp, tip, c1, c2, c3, nx, ny, dx, dy, L in locks:           # き甲 → うなじ（頭に 近い 房が 上）
-        if layer == 0:
-            fill, edge = mix(CU['dd'], '#1E1410', 0.15), CU['dd']
-        else:
-            fill, edge = (CU['m'], CU['dd']) if k % 2 == 0 else (BR['m'], BR['dd'])
-        o += (f"<path d='M{f(Bp[0])} {f(Bp[1])} Q{f(c1[0])} {f(c1[1])} {f(tip[0])} {f(tip[1])} Q{f(c3[0])} {f(c3[1])} {f(A[0])} {f(A[1])} Z' "
-              f"fill='{fill}' stroke='{edge}' stroke-width='.8' stroke-linejoin='round'/>")
-        if layer:
-            hlc = CU['hl'] if k % 2 == 0 else BR['hl']
-            m0 = ((A[0] + Bp[0]) / 2 + nx * 0.6, (A[1] + Bp[1]) / 2 + ny * 0.6)
-            o += (f"<path d='M{f(m0[0])} {f(m0[1])} Q{f(m0[0] + dx * L * 0.5 + nx * 1.6)} {f(m0[1] + dy * L * 0.5 + ny * 1.6)} {f(tip[0] * 0.7 + m0[0] * 0.3)} {f(tip[1] * 0.7 + m0[1] * 0.3)}' "
-                  f"fill='none' stroke='{hlc}' stroke-width='.9' stroke-linecap='round' opacity='.75'/>")
-            o += (f"<path d='M{f(A[0] * 0.6 + Bp[0] * 0.4)} {f(A[1] * 0.6 + Bp[1] * 0.4)} Q{f(c3[0] + nx * 0.8)} {f(c3[1] + ny * 0.8)} {f(tip[0] * 0.85 + A[0] * 0.15)} {f(tip[1] * 0.85 + A[1] * 0.15)}' "
-                  f"fill='none' stroke='{edge}' stroke-width='.6' stroke-linecap='round' opacity='.6'/>")
+        o += lock_svg(crest_at(t0), crest_at(t1), k, layer, (t0 + t1) / 2)
     return doc(W, H, o)
+
+
+MANE_N = 10          # 首に ついた 房の 数（第4.150版：11 → 10。いちばん 頭がわの 1こ は うなじの 板に ついて 頭と いっしょに 回る：nape_part の lock）
+
+
+def lock_svg(a, b, k, layer, tm, off=(0.0, 0.0)):
+    """たてがみの 房 1こ：根もと a → b（首の 上の 線の 上・うしろ → 前）・k＝何番めか（色と 長さ）・tm＝首の 上の 線の どの あたりか（長さ）。off＝絵の 箱の 左上（舞台の 座標から 引く）"""
+    a, b = (a[0] - off[0], a[1] - off[1]), (b[0] - off[0], b[1] - off[1])
+    tx, ty = b[0] - a[0], b[1] - a[1]
+    tl = math.hypot(tx, ty) or 1
+    tx, ty = tx / tl, ty / tl
+    nx, ny = ty, -tx
+    if ny > 0:
+        nx, ny = -nx, -ny                                                 # 首の 外がわ（上）
+    prof = 0.6 + 0.4 * math.sin(math.pi * (0.1 + 0.8 * tm))
+    L = (15.5 + 6.5 * prof) * (1.08 if k % 3 == 1 else 0.92 if k % 3 == 2 else 1.0)
+    dx, dy = -tx * 0.86 - nx * 0.5, -ty * 0.86 - ny * 0.5                  # うしろへ なびいて 首の 横へ
+    dl = math.hypot(dx, dy)
+    dx, dy = dx / dl, dy / dl
+    lift = 1.4 if layer == 0 else 0.0
+    A = (a[0] + nx * (1.0 + lift), a[1] + ny * (1.0 + lift))
+    Bp = (b[0] + nx * (1.4 + lift), b[1] + ny * (1.4 + lift))
+    tip = (A[0] + dx * L - nx * (2.0 - lift), A[1] + dy * L - ny * (2.0 - lift))
+    # 外がわの ふち（B → 先）は ふくらむ・内がわ（先 → A）は へこむ
+    c1 = (Bp[0] + dx * L * 0.45 + nx * 4.2, Bp[1] + dy * L * 0.45 + ny * 4.2)
+    c3 = (A[0] + dx * L * 0.55 - nx * 1.2, A[1] + dy * L * 0.55 - ny * 1.2)
+    if layer == 0:
+        fill, edge = mix(CU['dd'], '#1E1410', 0.15), CU['dd']
+    else:
+        fill, edge = (CU['m'], CU['dd']) if k % 2 == 0 else (BR['m'], BR['dd'])
+    o = (f"<path d='M{f(Bp[0])} {f(Bp[1])} Q{f(c1[0])} {f(c1[1])} {f(tip[0])} {f(tip[1])} Q{f(c3[0])} {f(c3[1])} {f(A[0])} {f(A[1])} Z' "
+         f"fill='{fill}' stroke='{edge}' stroke-width='.8' stroke-linejoin='round'/>")
+    if layer:
+        hlc = CU['hl'] if k % 2 == 0 else BR['hl']
+        m0 = ((A[0] + Bp[0]) / 2 + nx * 0.6, (A[1] + Bp[1]) / 2 + ny * 0.6)
+        o += (f"<path d='M{f(m0[0])} {f(m0[1])} Q{f(m0[0] + dx * L * 0.5 + nx * 1.6)} {f(m0[1] + dy * L * 0.5 + ny * 1.6)} {f(tip[0] * 0.7 + m0[0] * 0.3)} {f(tip[1] * 0.7 + m0[1] * 0.3)}' "
+              f"fill='none' stroke='{hlc}' stroke-width='.9' stroke-linecap='round' opacity='.75'/>")
+        o += (f"<path d='M{f(A[0] * 0.6 + Bp[0] * 0.4)} {f(A[1] * 0.6 + Bp[1] * 0.4)} Q{f(c3[0] + nx * 0.8)} {f(c3[1] + ny * 0.8)} {f(tip[0] * 0.85 + A[0] * 0.15)} {f(tip[1] * 0.85 + A[1] * 0.15)}' "
+              f"fill='none' stroke='{edge}' stroke-width='.6' stroke-linecap='round' opacity='.6'/>")
+    return o
+
+
+def nape_part(part):
+    """うなじの 板（第4.150版：頭に ついて 回る。絵は NAPE_BOX の 箱・舞台の 座標で 重なる）：shade（房の うらの かげ）・plate（板）・heat（熱で 赤く：首と 同じ 色）・lock（たてがみの いちばん 頭がわの 房）"""
+    bx, by, bw, bh = NAPE_BOX
+    tr = lambda q: (q[0] - bx, q[1] - by)
+    d = smooth([tr(q) for q in NAPE], True, 0.25)
+    o, defs = '', ''
+    if part == 'shade':                                                                           # 房の うらの かげ（板の 下：板の 上の ふちの 外に のぞく）
+        o += lock_svg(NAPE_LOCK[0], NAPE_LOCK[1], MANE_N, 0, 1.0, (bx, by))
+    elif part == 'plate':
+        o += f"<path d='{d}' fill='{BR['m']}' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+        # 首の 明るい 帯（首の 上の 線に そう）の つづき：いつもの 向きでは 首の 帯と つながって 見える（板の 形で 切りぬく）
+        defs = f"<clipPath id='np'><path d='{d}'/></clipPath>"
+        band = [tr(q) for q in ((266, 37), (279, 31), (288, 27))]
+        thin = [tr(q) for q in ((265, 35.4), (278, 29.4), (287, 25.4))]
+        o += (f"<g clip-path='url(#np)'><path d='{smooth(band, False, 0.35)}' fill='none' stroke='{BR['l']}' stroke-width='5' stroke-linecap='round' opacity='.75'/>"
+              f"<path d='{smooth(thin, False, 0.35)}' fill='none' stroke='{BR['hl']}' stroke-width='1.4' stroke-linecap='round' opacity='.7'/></g>")
+        o += f"<path d='{d}' fill='none' stroke='{BR['dd']}' stroke-width='1.1' stroke-linejoin='round'/>"
+        x, y = tr((275.6, 30.2))                                                                  # びょう
+        o += f"<circle cx='{f(x)}' cy='{f(y)}' r='.75' fill='{BR['dd']}'/>"
+    elif part == 'heat':
+        o += f"<path d='{d}' fill='#FF5A22' opacity='.6'/>"
+    else:
+        o += lock_svg(NAPE_LOCK[0], NAPE_LOCK[1], MANE_N, 1, 1.0, (bx, by))
+    return doc(bw, bh, o, defs=defs)
 
 
 def tail_svg():
@@ -1003,7 +1046,10 @@ def banner(B):
     h += '<i class="gwWn">' + img('gwWg1', gear_svg(9, 10, BR, spokes=4, size=22)) + img('gwWg2', gear_svg(6, 8, CU, spokes=0, size=16)) + img('gwWg3', gear_svg(5, 7, BR, spokes=0, size=14)) + '</i>'
     h += img('gwWr', window_svg()) + '<i class="gwNw">' + img('gwNd', needle_svg()) + '</i>'
     # 頭：上げる 入れもの（オーバーヒート）→ うなずく 入れもの → 下あご（ほおの 歯車で ひらく：口の 中・あご・熱）・上の 頭・熱・ためる 光・光線
-    h += ('<i class="gwHw"><i class="gwHn">' + img('gwMo c', head_part('mouth_c')) + '<i class="gwJb">' + img('gwMo b', head_part('mouth_b')) + '</i>'
+    # 第4.150版：うなじの 板（頭の いちばん 下）：房の かげ → 板 → 熱 → 房。房と かげは 入れもの .gwNq（根もとの まん中を 軸に 少し もどす：NAPE_BACK）の 中
+    h += ('<i class="gwHw"><i class="gwHn"><i class="gwNq">' + img('gwNs', nape_part('shade')) + '</i>' + img('gwNp', nape_part('plate')) + img('gwNh', nape_part('heat'))
+          + '<i class="gwNq">' + img('gwNt', nape_part('lock')) + '</i>'
+          + img('gwMo c', head_part('mouth_c')) + '<i class="gwJb">' + img('gwMo b', head_part('mouth_b')) + '</i>'
           + '<i class="gwJw">' + img('gwMo a', head_part('mouth_a')) + img('gwJa', head_part('jaw')) + img('gwJh', head_part('heat_j')) + '</i>'
           + img('gwMl', head_part('mouth_l'))                                                 # 第4.113版：口の 中の 光（あごの 上・上の 頭の 下）
           + img('gwHd', head_part('upper')) + img('gwHh', head_part('heat_u')) + img('gwCg', charge_svg())
@@ -1077,7 +1123,9 @@ def banner(B):
             f'.gww .gwJb{{animation-name:gwJawH}}'
             f'.gww .gwHd,.gww .gwHh,.gww .gwMo,.gww .gwJa,.gww .gwJh,.gww .gwMl{{left:{bx}px;top:{by}px;width:{bw}px;height:{bh}px}}'
             f'.gww .gwMl{{opacity:0;animation:gwMouthL {f(OH_S)}s ease-in-out infinite}}'
-            f'.gww .gwHh,.gww .gwJh{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
+            f'.gww .gwHh,.gww .gwJh,.gww .gwNh{{opacity:0;animation:gwHeat {f(OH_S)}s linear infinite}}'
+            f'.gww .gwNp,.gww .gwNh,.gww .gwNt,.gww .gwNs{{left:{NAPE_BOX[0]}px;top:{NAPE_BOX[1]}px;width:{NAPE_BOX[2]}px;height:{NAPE_BOX[3]}px}}'
+            f'.gww .gwNq{{left:0;top:0;width:0;height:0;transform-origin:{f((NAPE_LOCK[0][0] + NAPE_LOCK[1][0]) / 2)}px {f((NAPE_LOCK[0][1] + NAPE_LOCK[1][1]) / 2)}px;animation:gwNapeL {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwCg{{left:{f(mo[0] - 16)}px;top:{f(mo[1] - 16)}px;width:32px;height:32px;opacity:0;animation:gwCharge {f(OH_S)}s ease-in-out infinite}}'
             f'.gww .gwBm{{left:{f(mo[0])}px;top:{f(mo[1])}px;transform:rotate({f(BEAM_DIR - OH_TILT)}deg);transform-origin:0 0}}'
             # 第4.113版：もやは 口から 前だけ（left 0・左の はしは やわらかく）・しんは 口の 中 5px から
@@ -1145,8 +1193,9 @@ def banner(B):
                    (t0 + 0.4, f'opacity:0;transform:rotate({ang}deg) scaleX({f(1.3 * big)})')]
         css += f'.gww .gwHs.s{k}{{left:{x}px;top:{y - 4}px;animation:gwHs{k} {f(OH_S)}s ease-out infinite}}' + ev(f'gwHs{k}', st)
     # 頭を 上げて（ふた が 飛んだ あと）→ 口を ぱっくり → ためる 光 → 光線（0.3秒 かけて 明るく）→ 消えて（0.35秒）→ 口を とじて 頭を もどす
-    css += ev('gwTilt', [(0, 'transform:rotate(0deg)'), (2.7, 'transform:rotate(0deg)'), (3.05, f'transform:rotate({f(OH_TILT)}deg)'), (3.8, f'transform:rotate({f(OH_TILT - 1)}deg)'),
-                         (4.4, f'transform:rotate({f(OH_TILT + 0.6)}deg)'), (5.0, f'transform:rotate({f(OH_TILT - 0.8)}deg)'), (5.4, f'transform:rotate({f(OH_TILT)}deg)'), (5.95, 'transform:rotate(0deg)')])
+    tilt = [(0, 0.0), (2.7, 0.0), (3.05, OH_TILT), (3.8, OH_TILT - 1), (4.4, OH_TILT + 0.6), (5.0, OH_TILT - 0.8), (5.4, OH_TILT), (5.95, 0.0)]
+    css += ev('gwTilt', [(e, f'transform:rotate({f(a)}deg)') for e, a in tilt])
+    css += ev('gwNapeL', [(e, f'transform:rotate({f(-a * NAPE_BACK)}deg)') for e, a in tilt])      # 第4.150版：うなじの 板の 房（同じ 時刻・同じ 動き方で 少し もどす）
     jaw = [(0, 0), (2.85, 0), (3.12, JAW_MAX), (3.6, JAW_MAX - 2), (4.1, JAW_MAX), (4.6, JAW_MAX - 2), (5.1, JAW_MAX), (5.32, JAW_MAX), (5.6, 0)]
     css += ev('gwJaw', [(e, f'transform:rotate({f(a)}deg)') for e, a in jaw])
     css += ev('gwJawH', [(e, f'transform:rotate({f(a / 2)}deg)') for e, a in jaw])        # 口の 中の まん中の 1まい（半分の 角度）

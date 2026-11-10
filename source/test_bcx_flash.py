@@ -7,6 +7,9 @@
 #   第4.121版：まさちゃんの 絵の ボード（pic）：的中（結果ボードを廻る 3連勝）・デカ的中（4連勝：ふわっと 明るく 出る）・ハズレ（二人でしょんぼり 2回目）。
 #     「▶ 見る」の すぐ あと から 3秒（ボードの 登場 → 絵ごと ふわっと → ほかの 絵を かくす → 行と 見出しの 動き）。絵（ios/bcp_assets）が なければ いつもの ボード
 #   第4.145版：置く 絵は アプリに 入れる もの だけ（bcp_app.files()）。部品を 重ねる 絵は 部品が そろって から 出る（出た あとの 点めつを 数える）
+#   第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！」）：結果ボードカスタムは 動かない。
+#     ボードを持つ馬：下から 出て こない（いつもの ボードと 同じ 出方）・ぷるぷる しない・落としそうに ならない（はじめから .bcgo・頭と首に 動きなし・ボードは ずれない）。
+#     絵の ボード：止まった 絵が ボードの 出はじめに ぱっと 出る（ふわっと 大きく・明るく ならない）。点めつは 同じ 数え方で 見る
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -72,13 +75,13 @@ try:
                 r = pg.evaluate('(t) => window.__vt.step(t)', i * 1000 / 60)
                 pg.screenshot(path=os.path.join(OUT, f'f{i:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844})
             pg.evaluate('TengelFx.close()')
-            ok_seq = 900 < r['go'] < 1800 and r['tr'] == 'bcHbH' and r['vec'] == (not art22) and r['slip'] > 5
-            print(('  ✅ ' if ok_seq else '  ❌ ') + f'ボードを持つ馬の 流れ：出おわって ぷるぷる {r["go"]:.0f}ms・頭と首の 動き {r["tr"]}・落としそうに なる（いちばん 下がって {r["slip"]:.1f}px）（絵：{"部品 5まい" if not r["vec"] else "SVG"}）（{st}）')
+            ok_seq = 0 <= r['go'] <= 50 and r['tr'] in ('none', '') and r['vec'] == (not art22) and r['slip'] < 0.5 and 'bcst' in st['hb'] and 'bce-carry' not in st['hb']
+            print(('  ✅ ' if ok_seq else '  ❌ ') + f'ボードを持つ馬（第4.150版：動かない）：はじめから 止まった 形（.bcst・{r["go"]:.0f}ms）・頭と首に 動きなし（{r["tr"]}）・ボードは ずれない（{r["slip"]:.1f}px）・下から 出て こない（絵：{"部品 5まい" if not r["vec"] else "SVG"}）（{st}）')
             if not ok_seq: fails.append('carry seq')
             rr = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), OUT, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
             out = rr.stdout.strip().split('\n'); worst = out[-1] if out else ''; bad = out[0] if out else ''
             ok = rr.returncode == 0 and '窓 0個' in bad
-            print(('  ✅ ' if ok else '  ❌ ') + f'ボードを持つ馬（下から 出てくる → ぷるぷる・しっぽ・まばたき・落としそうに なって あせる）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
+            print(('  ✅ ' if ok else '  ❌ ') + f'ボードを持つ馬（いつもの ボードの 出方・馬は 止まった まま）：{n + 1}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
             if not ok: fails.append('carry flash: ' + (rr.stderr[-300:] if rr.returncode else bad))
         if 'pic' in CASES:
             MISS = dict(SPEC, rows=[dict(x, state='不的中', hits=[]) for x in SPEC['rows']])

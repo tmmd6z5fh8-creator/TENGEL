@@ -22,6 +22,10 @@
        首を ふり上げて 左へポーン → 次の回の はじめに 馬は 右向きに戻り、ロボットは ピコーンと再起動して もとの場所へ 2歩もどる
    - A と B は、それぞれ 3〜8回に1回（ROUNDS の順で ばらばら・plan で確かめる）。ROUNDS の回ぶんで1回り（CYCLE 秒）。ページを開くと 1回目のはじめ（ポーン）から
    - 視差効果を減らす（prefers-reduced-motion）なら動かさない（部品が いつもの場所にあるので、いつもの絵と同じ）
+   - 第4.150版（まさちゃん 2026/11/11 03:08「ロボットが毛糸を取りに行く時のフェードアウトと画面に入ってくる時に薄くなるのやめて！」）：
+     出入りは **うすく しない**。ロボット・馬・毛糸玉（糸の 先まで）は はっきり 見えた まま 枠の 右の 外まで 出て、外から そのまま 入って くる
+     （枠の 内がわ だけ 見える：.kdc・.kdz・.kdq の clip-path）。前は 枠の 手前で 止まって うすく なって 消えて いた（ロボットは 右へ 112px・馬は 250px・毛糸玉は 48px）。
+     外に 出た ことは check が 確かめる（OUT_X＝枠の 内がわの 右はし・ROBOT_L／HORSE_L／THREAD_L＝いつもの 場所での 絵の 左はし）
    クラスの名前は kd…
    python3 kids_wall.py --judge <Judge_Kids.dc.html>   → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 kids_wall.py --plan                          → 1回りの予定（何回目に何が起きるか・何秒に どこにいるか）"""
@@ -57,20 +61,25 @@ WALK = (5.6 + D0, 6.5 + D0, 50.0)        # 拾いに行く：右へ 3歩（50px�
 KICK = (6.5 + D0, 6.62 + D0, 6.76 + D0)  # 右足を出す → 毛糸玉に当たる（うっかり蹴る）→ もどす
 SURP = (6.72 + D0, 6.8 + D0)             # びっくり（ぴょん）
 CB = 6.92 + D0                           # 追いかけはじめ（N）・故障（A・B）
-CHASE = (.68, 112.0)                     # あわてて追いかける：右へ 3歩（112pxまで）
+# 第4.150版：出入りは うすく しない（枠の 外まで 出る）。枠の 内がわ（clip-path:inset(6px)）の 右はし＝384。いつもの 場所での 絵の 左はし（かげ・腕・糸も 入れて）
+OUT_X = 384.0                            # 枠の 内がわの 右はし（これより 右は 見えない）
+ROBOT_L = 220.0                          # ロボットの 左はし（左の 腕。追いかける 間は 腕を ふる ので、とちゅうは 少し 左へ 出る）
+HORSE_L = 63.0                           # 馬の 左はし（しっぽ）。左向き（戻る とき）は くわえた 毛糸玉が いちばん 左（65）
+THREAD_L = 258.0                         # 地面の 毛糸玉の 糸の 左はし
+CHASE = (1.05, 178.0)                    # あわてて追いかける：右へ 5歩（178pxまで＝左はしが 398：枠の 外）
+CHASE_N = 5
 # 追いかけはじめからの秒（N。A は DA 秒おくれ）
-FADE_OUT = (.13, .68)                    # 毛糸玉といっしょに フェードアウト
-HELD_ON = 1.08                           # 見えない間に 手に毛糸玉を持つ
-BACK = (1.68, 3.08)                      # 1秒後に 右から戻る（4歩）→ もとの場所
-FADE_IN = (1.68, 1.98)
-SHOW = (3.53, 4.13)                      # 持ってきた毛糸玉を 馬に見せる（ふる・ぴょん）
-WIND = (4.58, 4.88)                      # 投げる前に ためる → RELEASE で はなす
-RELEASE = 5.08
+HELD_ON = CHASE[0] + .4                  # 見えない間（枠の 外）に 手に毛糸玉を持つ
+BACK = (CHASE[0] + 1.0, CHASE[0] + 3.1)  # 外へ 出て 1秒後に 右から戻る（6歩）→ もとの場所
+BACK_N = 6
+SHOW = (BACK[1] + .45, BACK[1] + 1.05)   # 持ってきた毛糸玉を 馬に見せる（ふる・ぴょん）
+WIND = (BACK[1] + 1.5, BACK[1] + 1.8)    # 投げる前に ためる → RELEASE で はなす
+RELEASE = BACK[1] + 2.0
 HELD = (302, 48)                         # 手に持った毛糸玉のまん中（いつもの 右手の上）
 THROW = ((196, 21), -24.0)               # ロボットが投げた毛糸玉：いちばん高い所・出た所の x（放物線・FLY 秒）
 THROW_SPIN = -560.0
-BALL_OUT = 48.0                          # 蹴られた毛糸玉が 右へ ころがる道のり（蹴ってから 追いかけおわるまで）
-BALL_FADE = (6.95 + D0, 7.5 + D0)
+BALL_OUT = 132.0                         # 蹴られた毛糸玉が 右へ ころがる道のり（糸の 先まで 枠の 外へ：左はし 258＋132＝390）
+BALL_GONE = KICK[1] + 1.1                # 糸の 先まで 外に 出る 秒（同じ 速さで ころがる：1秒に 120px。ロボットより 先に 出る）
 LOOK_HORSE = (150, 64)                   # ロボットが 馬を見る時に 見る所（馬の顔）
 OFF_R = (440, 120)                       # 右の外（出ていった所）
 OFF_L = (-20, 128)                       # 左の外（投げた毛糸玉が 落ちた所）
@@ -87,9 +96,10 @@ CA = FIX + .55                           # A：追いかけはじめ
 DA = CA - CB                             # A は N より これだけ長い
 # B：馬が 毛糸玉を取りにいく
 GO_H = FIX + .7                          # 右へ ぴょこぴょこ（6回）
-OUT_H = (1.4, 250.0)                     # かかる秒・右へ（px）
+OUT_H = (1.87, 330.0)                    # かかる秒・右へ（px：8回 はねて 枠の 外まで＝しっぽが 393）
+OUT_HN = 8
 OFF_H = 1.0                              # 見えない間（1秒後に戻る）
-BACK_H = 1.4                             # 戻る秒（6回）
+BACK_H = 1.87                            # 戻る秒（8回）
 TOSS_A = -20.0                           # 首を ふり上げて投げる（左向き）
 FLIP_O = (130, 145)                      # 向きを変える時の まん中
 HORSE_HELD = (180, 98)                   # くわえた毛糸玉のまん中（右向きで いつもの場所の時・絵の座標）：鼻先の下に 上の3分の1が入る（まさちゃん「もっとくちばしで毛糸持ってるように」）
@@ -285,7 +295,7 @@ def puff(tr, t0, rise=26.0, dur=1.2):
 
 def robot_tracks():
     """ロボットの動き（1回りぶん）"""
-    T = dict(dx=Tr(0.0), op=Tr(1.0), bob=Tr(N_BOB), foot=[Tr((0.0, 0.0, 0.0)), Tr((0.0, 0.0, 0.0))], arm=[Tr(0.0), Tr(0.0)],
+    T = dict(dx=Tr(0.0), bob=Tr(N_BOB), foot=[Tr((0.0, 0.0, 0.0)), Tr((0.0, 0.0, 0.0))], arm=[Tr(0.0), Tr(0.0)],
              held=Tr(0.0), sweat=Tr((0.0, .3, 0.0)), ant=Tr(0.0), broken=Tr(0.0), spark=Tr(0.0), smoke=[Tr((0.0, .5, 0.0)), Tr((0.0, .5, 0.0))],
              sparkle=Tr((.3, 0.0)))
     bob, arm, foot = T['bob'], T['arm'], T['foot']
@@ -317,20 +327,18 @@ def robot_tracks():
                 chase_and_back(T, S, S + CA)
             else:
                 fail_fix(T, S + FIX)
-    for tr in (T['dx'], T['op'], T['held'], T['sweat'], T['ant'], T['broken'], T['spark'], T['sparkle'], bob, *foot, *arm, *T['smoke']):
+    for tr in (T['dx'], T['held'], T['sweat'], T['ant'], T['broken'], T['spark'], T['sparkle'], bob, *foot, *arm, *T['smoke']):
         tr.end()
     return T
 
 
 def chase_and_back(T, S, c):
-    """あわてて追いかけて フェードアウト → 1秒後に 毛糸玉を持って戻る → 見せる → ためて はなす（c＝追いかけはじめ）"""
+    """あわてて追いかけて 枠の 右の 外へ（うすく しない：第4.150版）→ 1秒後に 毛糸玉を持って 右から戻る → 見せる → ためて はなす（c＝追いかけはじめ）"""
     bob, arm = T['bob'], T['arm']
-    walk(T, c, c + CHASE[0], WALK[2], CHASE[1], 3, lead=1, h=3.4, lean=7.0, sw=(22, 14), lift=3.6, fwd=4.0)
-    T['op'].hold(c + FADE_OUT[0]).go(c + FADE_OUT[1], 0.0, 'ease-in')
-    T['sweat'].set(c + FADE_OUT[1], (0.0, .3, 0.0))
+    walk(T, c, c + CHASE[0], WALK[2], CHASE[1], CHASE_N, lead=1, h=3.4, lean=7.0, sw=(22, 14), lift=3.6, fwd=4.0)
+    T['sweat'].set(c + CHASE[0], (0.0, .3, 0.0))
     T['held'].set(c + HELD_ON, 1.0)
-    T['op'].hold(c + FADE_IN[0]).go(c + FADE_IN[1], 1.0, 'ease-out')
-    walk(T, c + BACK[0], c + BACK[1], CHASE[1], 0.0, 4, lead=0, h=2.6, lean=3.0, sw=(12, 3))
+    walk(T, c + BACK[0], c + BACK[1], CHASE[1], 0.0, BACK_N, lead=0, h=2.6, lean=3.0, sw=(12, 3))
     b0 = c + BACK[1]
     bob.hold(b0).go(b0 + .1, (0.0, 1.05, .93, 0.0), 'quad-out').go(b0 + .28, N_BOB, 'ease-out')
     s0, s1 = c + SHOW[0], c + SHOW[1]
@@ -401,8 +409,8 @@ def reboot(T, S):
 
 
 def horse_tracks():
-    """馬の動き（1回りぶん）：dx（よこ）・op（こさ）・flip（向き）・hop（はねる）・lean（のぞきこむ）・rear（立ち上がる）・held（くわえた毛糸玉）"""
-    H = dict(dx=Tr(0.0), op=Tr(1.0), flip=Tr(1.0), hop=Tr((0.0, 1.0, 1.0, 0.0)), lean=Tr(0.0), rear=Tr(0.0), held=Tr(0.0),
+    """馬の動き（1回りぶん）：dx（よこ）・flip（向き）・hop（はねる）・lean（のぞきこむ）・rear（立ち上がる）・held（くわえた毛糸玉）"""
+    H = dict(dx=Tr(0.0), flip=Tr(1.0), hop=Tr((0.0, 1.0, 1.0, 0.0)), lean=Tr(0.0), rear=Tr(0.0), held=Tr(0.0),
              bubble=Tr((.3, 0.0)))
     for S, kind, prev in RUNS:
         if prev == 'B':                                  # 投げた あと：おりて → 右向きに もどる
@@ -437,17 +445,15 @@ def neigh(H, n0):
 
 
 def fetch(H, S):
-    """B：馬が 毛糸玉の方へ ぴょこぴょこ → フェードアウト → 1秒後に くわえて 左向きで戻る → 見せる → 首を ふり上げて はなす"""
+    """B：馬が 毛糸玉の方へ ぴょこぴょこ 枠の 右の 外へ（うすく しない：第4.150版）→ 1秒後に くわえて 左向きで 右から戻る → 見せる → 首を ふり上げて はなす"""
     g0 = S + GO_H
     g1 = g0 + OUT_H[0]
-    hop_walk(H, g0, g1, 0.0, OUT_H[1], 6)
-    H['op'].hold(g1 - .35).go(g1, 0.0, 'ease-in')
+    hop_walk(H, g0, g1, 0.0, OUT_H[1], OUT_HN)
     H['flip'].set(g1 + .3, -1.0)
     H['held'].set(g1 + .35, 1.0)
     b0 = g1 + OFF_H
     b1 = b0 + BACK_H
-    H['op'].hold(b0).go(b0 + .3, 1.0, 'ease-out')
-    hop_walk(H, b0, b1, OUT_H[1], 0.0, 6)
+    hop_walk(H, b0, b1, OUT_H[1], 0.0, OUT_HN)
     hp = H['hop']
     hp.hold(b1 + .3).go(b1 + .42, (6.0, .97, 1.04, -2.0), 'quad-out').go(b1 + .55, (0.0, 1.04, .95, 0.0), 'quad-in').go(b1 + .7, (0.0, 1.0, 1.0, 0.0), 'ease-out')
     H['lean'].hold(b1 + .9).go(b1 + 1.15, 5.0, 'ease-in-out').go(b1 + 1.3, 0.0, 'quad-out')
@@ -457,7 +463,8 @@ def fetch(H, S):
 
 
 def ground_tracks():
-    """地面の毛糸玉（糸つき）：左から転がる → 止まる → 蹴られて 右へ ころん・フェードアウト（どの回も同じ）"""
+    """地面の毛糸玉（糸つき）：左から転がる → 止まる → 蹴られて 右へ ころころ 枠の 外へ（うすく しない：第4.150版。どの回も同じ）。
+       gop（こさ）は 0 か 1 だけ：外に 出て から 0 に して（見えない 所で）左の 外へ もどし、次の 回の はじめに 1（もどる とちゅうの 1コマが 画面を 横ぎって 見えない ように）"""
     xe = kids.YARN_BALL[0]
     x1 = X0 + (1 - SLOW) * (xe - X0)
     gx, gop, gy = Tr(X0 - xe), Tr(1.0), Tr(0.0)
@@ -466,8 +473,8 @@ def ground_tracks():
             gx.set(S, X0 - xe)
             gop.set(S + .01, 1.0)
         t0, t1, t2 = (S + t for t in ROLL)
-        gx.hold(t0).go(t1, x1 - xe, 'linear').go(t2, 0.0, 'quad-out').hold(S + KICK[1]).go(S + CB + CHASE[0], BALL_OUT, 'quad-out')
-        gop.hold(S + BALL_FADE[0]).go(S + BALL_FADE[1], 0.0, 'ease-in')
+        gx.hold(t0).go(t1, x1 - xe, 'linear').go(t2, 0.0, 'quad-out').hold(S + KICK[1]).go(S + BALL_GONE, BALL_OUT, 'linear')
+        gop.set(S + BALL_GONE, 0.0)
         k = S + KICK[1]
         gy.hold(k).go(k + .1, -6.0, 'quad-out').go(k + .22, 0.0, 'quad-in').go(k + .29, -2.0, 'quad-out').go(k + .36, 0.0, 'quad-in')
     gx.set(CYCLE - .02, X0 - xe)
@@ -583,7 +590,7 @@ class Scene:
             return self.thrown(t)
         if u < ROLL[0]:
             return OFF_L
-        if u < BALL_FADE[1]:
+        if u < BALL_GONE:
             return self.ground(t)
         if kind == 'B':
             if u < GO_H + OUT_H[0] + OFF_H:
@@ -646,22 +653,29 @@ class Scene:
             # 投げた毛糸玉は 消える時に 枠の外（左の外・短い糸も）
             x, y = self.thrown((r + FLY - 1e-4) % CYCLE)
             assert x + 16 < 6, (x, y)
-            # 持つ毛糸玉は 見えない間に 出る
+            # 持つ毛糸玉は 見えない間（枠の 外に いる 間）に 出る。出て いく・入って くる ときに うすく しない ので、止まる 所は 枠の 外（第4.150版）
             if kind in 'NA':
                 c = S + CB + (DA if kind == 'A' else 0)
-                assert close(R['op'].at(c + HELD_ON), 0) and close(R['op'].at(c + BACK[0]), 0)
-                assert close(R['dx'].at(c + FADE_OUT[1]), CHASE[1]) and close(R['dx'].at(c + BACK[0]), CHASE[1])
+                assert close(R['dx'].at(c + CHASE[0]), CHASE[1]) and close(R['dx'].at(c + HELD_ON), CHASE[1]) and close(R['dx'].at(c + BACK[0]), CHASE[1])
+                assert ROBOT_L + CHASE[1] > OUT_X + 8, (ROBOT_L, CHASE)
             else:
                 g1 = S + GO_H + OUT_H[0]
-                assert close(H['op'].at(g1 + .35), 0) and close(H['flip'].at(g1 + .4), -1)
-            assert close(self.gop.at(S + ROLL[0]), 1) and close(self.gop.at(S + BALL_FADE[1] + .01), 0)
+                assert close(H['dx'].at(g1), OUT_H[1]) and close(H['dx'].at(g1 + .4), OUT_H[1]) and close(H['dx'].at(g1 + OFF_H), OUT_H[1]) and close(H['flip'].at(g1 + .4), -1)
+                assert HORSE_L + OUT_H[1] > OUT_X + 8, (HORSE_L, OUT_H)
+            # 地面の 毛糸玉：見える 間は こさ 1 の まま（うすく しない）・糸の 先まで 外に 出て から 消す・ロボットより 先に 出る
+            assert close(self.gop.at(S + ROLL[0]), 1) and close(self.gop.at(S + BALL_GONE - .01), 1) and close(self.gop.at(S + BALL_GONE + .01), 0)
+            assert THREAD_L + self.gx.at(S + BALL_GONE) > OUT_X + 4, self.gx.at(S + BALL_GONE)
+            for i in range(1, 40):                       # 蹴った あと 毛糸玉は いつも ロボットの 足より 先（追いかけはじめて からは 20px 以上 先）
+                tt = S + KICK[1] + (BALL_GONE - KICK[1]) * i / 40
+                lead = self.gx.at(tt) - (R['dx'].at(tt) - WALK[2])
+                assert lead > (20 if R['dx'].at(tt) > WALK[2] + 1 else 0), (kind, tt, self.gx.at(tt), R['dx'].at(tt))
             # けった時 足が 毛糸玉に とどく（右足の くつの右はし ≒ 毛糸玉の左はし）
             shoe_r = RP((56 + 9, 114))[0] + R['dx'].at(S + KICK[1]) + R['foot'][1].at(S + KICK[1])[0]
             assert abs(shoe_r - (kids.YARN_BALL[0] - 14)) < 4, shoe_r
             # 毛糸玉が転がってくる時、ロボットと馬は もとの場所・もとの形
             t = S + ROLL[0]
             assert all(close(a, b) for a, b in ((R['dx'].at(t), 0), (R['bob'].at(t), N_BOB), (R['broken'].at(t), 0), (R['ant'].at(t), 0),
-                                                (H['dx'].at(t), 0), (H['flip'].at(t), 1), (H['rear'].at(t), 0), (H['op'].at(t), 1))), (kind, prev)
+                                                (H['dx'].at(t), 0), (H['flip'].at(t), 1), (H['rear'].at(t), 0))), (kind, prev)
 
 
 def close(a, b, eps=1e-6):
@@ -890,7 +904,7 @@ def inline(alt=ALT):
            f'.kdw .kdTy{{left:0;top:0;width:44px;height:54px;{an("kdTy")}}}'
            f'.kdw .kdTr{{left:0;top:0;width:44px;height:54px;transform-origin:22px 22px;{an("kdTr")}}}'
            # 馬
-           f'.kdw .kdHw{{{FULL};{an("kdHx", "kdHo")}}}'
+           f'.kdw .kdHw{{{FULL};{an("kdHx")}}}'
            f'.kdw .kdhs{{{pos(SHADOW_B)};transform-origin:50px 7px;{an("kdHs")}}}'
            f'.kdw .kdHf{{{FULL};{org(FLIP_O)};{an("kdHf")}}}'
            f'.kdw .kdh{{{FULL};{org(HOP_O)};{an("kdHop")}}}'
@@ -900,7 +914,7 @@ def inline(alt=ALT):
            f'.kdw .kdHh{{{pos((*HH_AT, 44, 54))};opacity:0;{an("kdHh")}}}'
            f'.kdw .kdHn{{{FULL};opacity:0;{an("kdHh")}}}'                 # 鼻先の下半分（くわえた毛糸玉の前・毛糸玉と同じ時に見える）
            # ロボット
-           f'.kdw .kdR{{{FULL};{an("kdRx", "kdRo")}}}'
+           f'.kdw .kdR{{{FULL};{an("kdRx")}}}'
            f'.kdw .kdRs{{{pos(RSHADOW_B)}}}'
            f'.kdw .kdRb{{{FULL};{org(BOB_O)};{an("kdRb")}}}'
            f'.kdw .kdRn{{{FULL};{org(ANT_O)};{an("kdRn")}}}'
@@ -928,7 +942,6 @@ def inline(alt=ALT):
            + kf('kdTr', sc.tr, lambda v: f'transform:rotate({num(v, 1)}deg)')
            # 馬
            + kf('kdHx', Hs['dx'], lambda v: f'transform:translateX({num(v)}px)')
-           + kf('kdHo', Hs['op'], lambda v: f'opacity:{num(v, 3)}')
            + kf('kdHs', hsh, lambda v: f'transform:scale({num(v)})')
            + kf('kdHf', Hs['flip'], lambda v: f'transform:scaleX({num(v, 3)})')
            + kf('kdHop', Hs['hop'], hp)
@@ -939,7 +952,6 @@ def inline(alt=ALT):
            + kf_translate('kdEye', [(t, (x * kids.HORSE_AT[2], y * kids.HORSE_AT[2]), e) for t, (x, y), e in sample(sc.horse_eye)])
            # ロボット
            + kf('kdRx', R['dx'], lambda v: f'transform:translateX({u(v, "px")})')
-           + kf('kdRo', R['op'], lambda v: f'opacity:{num(v, 3)}')
            + kf('kdRb', R['bob'], hp)
            + kf('kdRn', R['ant'], lambda v: f'transform:rotate({num(v)}deg)')
            + ''.join(kf(f'kdRa{k + 1}', R['arm'][k], lambda v: f'transform:rotate({u(v, "deg")})') for k in range(2))

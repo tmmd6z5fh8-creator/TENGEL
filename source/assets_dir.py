@@ -3,7 +3,7 @@
 #   軽い 版＝ios/lite/<名前>（kisekae/lite_assets.py が 作る：動画 CRF 29・絵 WebP quality 75・ほかは そのままの 写し ＋ 台帳 lite.info）
 #   adir(名前)：軽い 版が あれば そちら（古く なって いたら 止める：もとを 作り直した あとは lite_assets.py を もう一度）・なければ もと。
 #     LITE=0 で いつも もと（軽く する 前の 絵で ためす とき）。どちらも リポジトリには 入れない（.gitignore）
-#   使う 所：build_ios.py（Resources に 入れる もの）・テスト（test_native.py・test_tc.py・test_fig.py・test_bcp_parts.py・test_bcx_flash.py：アプリに 入る 絵で ためす）
+#   使う 所：build_ios.py（Resources に 入れる もの）・テスト（test_native.py・test_tc.py・test_fig.py・test_bcp_still.py・test_bcx_flash.py：アプリに 入る 絵で ためす）
 import json, os, sys
 W = os.path.dirname(os.path.abspath(__file__))
 NAMES = ('fx_assets', 'bcp_assets', 'tc_assets', 'fig_assets')

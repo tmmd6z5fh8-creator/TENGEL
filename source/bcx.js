@@ -10,6 +10,10 @@
 //     ここに B.<id>（o を うけとって { html, css, enter, start, go, thumb } を かえす）・その CSS（CSS の 配列）・音（snd）を 足す → テスト
 //   作る ときの きまり：ボードの 数字と 見出しには 飾りを 重ねない／飾りの 馬は うすい ふち取りと 影（.bco）／リボンや 旗の 色は テーマの アクセント色（--bcA）／
 //   大きく 動くのは 出てくる ときだけ（1秒で ピタッと 止める）／「とじる」は 動かさない（ボードの 外の 部品）／視差効果を減らす・演出を控えめ・的中エフェクト オフは 動かさない（.bcst）
+//   第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：**結果ボードカスタムは いつも 動かさない**（.bcst）。
+//     絵の ボード（1〜14）＝止まった 絵 1まい（bcp_<デザイン>.webp：もとの 画質の まま）と 前の 絵。キャラの 動き・光と 雲の 部品は アプリに 入れない（kisekae/bcp/bcp_app.py）。
+//     ボードを持つ馬（15）＝ボードを 持った まま 止まって いる（下から 出て こない・ぷるぷる しない・落としそうに ならない・音も なし）。出方は いつもの ボードと 同じ。
+//     動かす しくみ（picParts・moRules・ambStart・bcECarry など）は のこして ある（もどす とき：decorate と picDecorate の st と、bcp_app.py の pics・design）
 //   fx.js が 結果の 画面（reveal）を 出した ときに TengelBoard.decorate(舞台, { kind, quiet, calm, spec }) を 呼ぶ。ボード（.rb）の 入れもの .hb の 中に 部品を 入れる
 //   （.bcx.bk＝ボードの うしろ・.bcx＝ボードの 前）。ボードが 出おわった（.hb の 登場の アニメーションが おわった）ら .bcgo を つけて 動きはじめる
 //   音：fx.js の Web Audio（TengelFx.audio()）で その場で 作る（ファイルは 使わない）。効果音 オフ なら 鳴らさない
@@ -495,7 +499,7 @@
     const sg = picStage(it.id, Math.max(1, Math.floor(+raw || 0))), name = sg && sg[1], D = name && PIC.d[name];
     if (!D) return null;
     css();
-    const ov = hb.parentNode, st = !!(info.quiet || info.calm), orig = rb.cloneNode(true);
+    const ov = hb.parentNode, st = true, orig = rb.cloneNode(true);      // 第4.150版：絵の ボードも いつも 動かさない（止まった 絵 1まい＋前の 絵。キャラの 動き・光と 雲は アプリに 入って いない）
     const L0 = hb.offsetLeft, T0 = hb.offsetTop, q = D.q;
     const wrap = document.createElement('div'); wrap.className = 'bcpw';
     wrap.style.left = -L0 + 'px'; wrap.style.top = -T0 + 'px';
@@ -538,6 +542,15 @@
       const go = () => { if (!undone && wrap.isConnected) picParts(hb, wrap, rb, bg, name, D, !st, show, parts ? undo : () => { /* 光と 雲が 読めない → 止まった 絵の まま */ }); };
       if (parts || (bg.complete && bg.naturalWidth)) go(); else bg.addEventListener('load', go, { once: true });
       if (parts) setTimeout(() => { if (!pDone) undo(); }, 8000);   // 8秒 たっても 部品が そろわない → いつもの ボード（字だけ 出た まま に しない）
+    } else if (!M) {
+      // 第4.150版：止まった 絵（背景と 前の 絵）が 読めて から いっしょに 出す（.bcpld の 間は 見せない・ほかの 絵も かくさない）。
+      //   前は 読める 前でも 出して いた ＝ 絵が まだ ない 画面に 字の ボード だけが 出たり、背景の あとから 前の 絵（キャラ）が ぱっと 出る ことが あった。
+      //   前の 絵が 読めない ときは 背景 だけで 出す（下の error で 前の 絵を 外す）・8秒 たっても 読めない → いつもの ボード
+      const ims = fg ? [bg, fg] : [bg]; let left = ims.length;
+      const one = () => { if (--left > 0 || pDone) return; wrap.classList.remove('bcpld'); pDone = true; done(); };
+      pDone = false; wrap.classList.add('bcpld');
+      ims.forEach(im => { if (im.complete && im.naturalWidth) one(); else { im.addEventListener('load', one, { once: true }); im.addEventListener('error', one, { once: true }); } });
+      setTimeout(() => { if (!pDone) undo(); }, 8000);
     }
     const wEnd = () => { if (wDone) return; wDone = true; done(); };
     wrap.addEventListener('animationend', e => { if (e.target === wrap) wEnd(); });
@@ -603,7 +616,9 @@
       if ((it.when === 'miss' && !miss) || (it.when === 'hit' && miss) || (it.when === 'big' && !BIG[kind])) return null;
       if (isPic(it.id)) return picDecorate(stage, hb, rb, it, info, kind);   // 第4.121版：まさちゃんの 絵の ボード
       css();
-      const st = !!(info.quiet || info.calm), H = rb.offsetHeight || 220;
+      // 第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：飾りは いつも 動かさない
+      //   （前は 的中エフェクト オフ・控えめ の とき だけ：.bcst）。ボードを持つ馬も 下から 出て こない・ぷるぷる しない・あせらない（音も なし）＝ボードを 持った まま 止まって いる
+      const st = true, H = rb.offsetHeight || 220;
       const sp = Math.max(40, CLOSE_TOP - HB_TOP - H - 10);
       const cs = getComputedStyle(rb), acc = (cs.getPropertyValue('--acc') || '').trim() || (cs.getPropertyValue('--logo') || '').trim() || '#E2A23B';
       const bg = cs.backgroundColor, hd = $('.hd', rb), hdBg = hd ? getComputedStyle(hd).backgroundColor : '';

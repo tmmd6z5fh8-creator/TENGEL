@@ -9,11 +9,13 @@
 #         「さいごの 1まい」（<名前>_last.webp）に つながる 動画（gk・sd・nd・sgd）は、さいごの 30コマ だけ 少しずつ きれいに する（CRF 27 → 25 → 22：x264 の zones）。
 #         動画が おわった 瞬間に きれいな 1まい絵に かわる ので、さいごまで やわらかい ままだと そこで 絵が パッと はっきり して 見える（ためした 数：さいごの コマが 36dB → 41dB・1本 ＋約0.25MB）
 #     ・絵（WebP quality 75・method 6。すき通し（アルファ）は もとと 1点も かえない）：
-#         結果ボードの 絵（bcp_assets：見本・背景・前の 絵・キャラ・動かない 物）／馬の 色（tc_assets の tc_c_*）／フィギュアと 棚の 色（fig_assets の fgN_c・fgN_cs・fg_shelf_c*）
+#         馬の 色（tc_assets の tc_c_*）／フィギュアと 棚の 色（fig_assets の fgN_c・fgN_cs・fg_shelf_c*）
+#         第4.150版：結果ボードの 絵（bcp_assets）は 軽く しない（そのままの 写し：まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」。
+#           動く 絵の 部品を やめて 止まった 絵 だけに なった ので、もとの 画質＝WebP quality 88・前の 絵 90 の まま 入れる）
 #   さわらない もの（そのままの 写し）：
 #     ・でこぼこ（法線：tc_n_*・fgN_n・fgN_ns）＝光り方に ひびく
 #     ・つや（金属／あらさ：fgN_m・fgN_ms）＝WebP の 圧縮は 色を 2×2 で まとめて ブロックの まだらに なる（kisekae/fig/collect_assets.py）ので 劣化なしの まま
-#     ・光と 雲の 地図と うめる 絵（bcp_*a_m1〜3・bcp_*a_f）＝数（向き・強さ）として 使う 絵
+#     ・結果ボードの 絵（bcp_assets：見本・背景・前の 絵）＝第4.150版から もとの 画質の まま
 #     ・フィールド・ルーレット・チケット・小物・的中の 絵（pm_*・*_last）・見本の 小さい 絵（fgN_t）・音・形（bin）・json
 #   作り直した ものが もとの 97% より 大きい ときは もとを そのまま 使う（how＝keep）
 #   台帳 lite.info（JSON）：{ v, params, files: { 名前: { how（webp・film・copy・keep）, p（作る ときの 決めごと：かわったら 作り直す）, src: [大きさ, 更新の 時刻, sha1], size } } }
@@ -24,8 +26,6 @@ sys.path.insert(0, W); import assets_dir as AD
 sys.path.insert(0, os.path.join(H, 'bcp')); import bcp_app as B
 PARAMS = {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97}      # tail＝[さいごから 何コマ, CRF]（さいごの 1まいに つながる 動画 だけ）
 V = 1
-_M = B.MOTION
-BCP_KEEP = {_M[n]['amb'][k] for n in _M if _M[n].get('amb') for k in ('m1', 'm2', 'm3', 'f')}      # 光と 雲の 地図・うめる 絵
 
 
 def rule(name, f):
@@ -33,7 +33,7 @@ def rule(name, f):
     if name == 'fx_assets':
         return 'film' if f.endswith('.mp4') else 'copy'
     if name == 'bcp_assets':
-        return 'webp' if f.endswith('.webp') and f not in BCP_KEEP else 'copy'
+        return 'copy'      # 第4.150版（まさちゃん 2026/11/11 02:36「…その代わり、画質あげて！」）：結果ボードの 絵（止まった 絵 だけに なった）は 軽く しない＝もとの 画質（WebP quality 88・前の 絵 90）の まま
     if name == 'tc_assets':
         return 'webp' if re.fullmatch(r'tc_c_.+\.webp', f) else 'copy'
     if name == 'fig_assets':

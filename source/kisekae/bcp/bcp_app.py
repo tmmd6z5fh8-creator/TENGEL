@@ -61,23 +61,18 @@ def motion_files(name):
 #   キャラなしの 背景（bgx）が ある デザイン（48こ）は 止まった 絵（bcp_<name>.webp・_fg.webp）を アプリに 入れない（部品を 重ねた 形が 止まった 絵と 同じ：chr/chr_snap.py）。
 #   トロフィー（光と 雲だけ・bgx なし）と 出世馬（動かない）は 止まった 絵の まま。止まった 絵は 部品を 作り直す ときの もと なので 絵の フォルダ（ios/bcp_assets）には 残す
 def pics(name):
-    """アプリが 読む 背景と 前の 絵の 名前（bcx.js の picBg・picFg と 同じ きまり）"""
-    m = MOTION.get(name) or {}
-    bg = m.get('bgx') or f'bcp_{name}.webp'
-    fg = ((m.get('bgx') and m.get('fgx')) or f'bcp_{name}_fg.webp') if cfg(name).get('fg') else None
+    """アプリが 読む 背景と 前の 絵の 名前（bcx.js の picBg・picFg と 同じ きまり）。
+       第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」）：どの デザインも 止まった 絵（bcp_<name>.webp・前の 絵 _fg.webp）。
+       キャラが 動く 部品（chr/motion.json の bgx・fgx・layers・光と 雲）は アプリに 入れない（道具と 部品は 手元に のこす：もどす ときは この 関数と design の mo）"""
+    bg = f'bcp_{name}.webp'
+    fg = f'bcp_{name}_fg.webp' if cfg(name).get('fg') else None
     return bg, fg
 
 
 def stage_files(name):
     """その デザインで アプリが 読む 絵 ぜんぶ（背景・前の 絵・動く 絵の 部品・まわりの 光と 雲）"""
     bg, fg = pics(name)
-    out = [bg] + ([fg] if fg else [])
-    for f in motion_files(name):
-        if f not in out:
-            out.append(f)
-    m = MOTION.get(name) or {}
-    assert not (m.get('fgx') and not cfg(name).get('fg')), name + '：前の 絵が ない デザインに fgx が ある'
-    return out
+    return [bg] + ([fg] if fg else [])      # 第4.150版：止まった 絵 だけ（動く 絵の 部品 motion_files は 入れない）
 
 
 def cfg(name):
@@ -106,8 +101,7 @@ def design(name):
     assert not L.get('stars') and not L.get('garland') and not L.get('star_img'), name + '：ボードの 中の 飾りは 使わない（まさちゃん 21:49）'
     d = {'hp': HP, 'q': [[round(float(x), 2), round(float(y), 2)] for x, y in Qs], 'fg': 1 if c.get('fg') else 0,
          'ts': L.get('title_style', ''), 'nt': 1 if L.get('hide_title') else 0, 'L': lay}
-    if name in MOTION:
-        d['mo'] = MOTION[name]
+    # 第4.150版：動きの データ（mo）は 入れない（bcx.js は mo が なければ 止まった 絵を 出す）
     if c.get('close_border'):
         sh = c.get('close_shadow') or ('0 0 0 1px rgba(0,0,0,.35),0 0 %s %s' % (c.get('close_glow_r', '10px'), c.get('close_glow', 'rgba(255,200,90,.35)')))
         d['cl'] = [c['close_border'], c.get('close_bg', 'rgba(0,0,0,.35)'), sh, c.get('close_css', '')]

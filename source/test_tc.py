@@ -167,6 +167,40 @@ try:
         vt, vb, vl, vr = pp[0] + (pp[1] - pp[0]) * 31 / 200, pp[0] + (pp[1] - pp[0]) * 170 / 200, pp[2] + (pp[3] - pp[2]) * 16 / 500, pp[2] + (pp[3] - pp[2]) * 483 / 500
         check(155 <= vt <= 175 and vb <= 244 and 760 <= vl and 1010 <= vr <= 1026, f'作戦会議の ボタン（見える 板）は お世話の 板の すぐ 下（上 {vt:.0f}・下 {vb:.0f}・左 {vl:.0f}・右 {vr:.0f}：板は 730〜1026 × 44〜150・屋根は 241 から）')
         shot(pg, 'tc_open')
+        print('■ なめらかさと 細かさ（第4.150版・まさちゃん 11/11 02:43「トレーニングセンターも今は、カクカクしてる！ヌルヌル動くことが絶対！…馬の画質は高く！」）')
+        pg.evaluate("() => TCApp._t.govSet(0, true)")      # テストの 機械は 描くのが おそい ことが ある：なめらかさを 守る しくみは 止めて おく（下で 時刻を 作って ためす）
+        fr = pg.evaluate("""() => new Promise(res => { const d = TCHorse.draw; let n = 0, k = 0; TCHorse.draw = function () { n++; return d.apply(this, arguments); };
+          const t0 = performance.now(); const tick = () => { k++; if (performance.now() - t0 < 1500) requestAnimationFrame(tick); else { TCHorse.draw = d; res([n, k]); } }; requestAnimationFrame(tick); })""")
+        check(fr[1] >= 8 and fr[0] >= fr[1] - 3, f'画面の 書きかえ ごとに 馬を 描く（1.5秒で 書きかえ {fr[1]}回・描いた {fr[0]}回：前は 30コマ／秒に おさえて いた＝2回に 1回）')
+        cvs = pg.evaluate("() => { const c = document.querySelector('#tcOv .tcgl'), s = document.querySelector('#tcOv .tcst').getBoundingClientRect(); return [c.width, c.height, s.width, devicePixelRatio, [...document.querySelectorAll('#tcOv .tcst canvas')].map(x => x.width)]; }")
+        check(abs(cvs[0] - round(cvs[2] * cvs[3])) <= 1 and len(set(cvs[4])) == 1 and abs(cvs[1] - cvs[0] * 1657 / 1052) <= 1, f'キャンバスは 画面の 細かさ いっぱい（幅 {cvs[0]}px＝置き場 {cvs[2]:.0f}pt × {cvs[3]}・3まい とも 同じ）')
+        # なめらかさを 守る しくみ（govern）：時刻を 作って 入れる（コマの 間 16.7ms＝なめらか・34ms＝2回に 1回 落ちる）
+        gv = pg.evaluate("""() => { const T = TCApp._t, G = T.gov, c = document.querySelector('#tcOv .tcgl'); let t = 1e7; const out = {};
+          const feed = (ms, n) => { for (let i = 0; i < n; i++) { t += ms; T.govern(t); } return [G.step, G.q, G.off, c.width]; };
+          const fresh = () => { T.govSet(0, false); G.base = 0; G.last = 0; t += 1e5; };
+          fresh(); out.w0 = c.width;
+          out.smooth = feed(16.7, 600);                       // なめらか：そのまま
+          out.slow1 = feed(34, 1 + 45 + 120);                 // おそい → 1段 下げる
+          out.better = feed(16.7, 45 + 120 + 200);            // 下げたら なめらかに なった → そのまま（見はりは つづける）
+          out.slow2 = feed(34, 45 + 120);                     // また おそい → もう 1段
+          out.same2 = feed(34, 45 + 120);                     // 下げても かわらない → 1段 もどして おわり
+          out.after = feed(34, 600);                          // もう 下げない
+          fresh(); out.lp1 = feed(33.4, 1 + 45 + 120);        // 省電力モード（いつも 30回／秒）：1段 下げる
+          out.lp2 = feed(33.4, 45 + 120);                     // かわらない → もとに もどして おわり
+          out.lp3 = feed(33.4, 600);
+          fresh(); out.hitch = feed(16.7, 100).concat(feed(400, 1), feed(16.7, 400));      // 1コマ だけ 長く 止まった（馬を 読みこんだ など）→ かわらない
+          fresh(); out.some = (() => { for (let i = 0; i < 900; i++) { t += (i % 4 === 0 ? 34 : 16.7); T.govern(t); } return [G.step, G.q, G.off, c.width]; })();      // 4回に 1回 落ちる（25%）→ かわらない
+          T.govSet(0, true); out.end = [G.step, G.q, G.off, c.width];
+          return out; }""")
+        w0 = gv['w0']
+        check(gv['smooth'] == [0, 1, False, w0] and gv['hitch'][-4:] == [0, 1, False, w0] and gv['some'] == [0, 1, False, w0],
+              f'なめらかな 間は 細かさを かえない（60コマ／秒・1コマ だけ 止まった・4回に 1回 落ちる：{gv["smooth"]}・{gv["hitch"][-4:]}・{gv["some"]}）')
+        check(gv['slow1'][:3] == [1, 0.82, False] and abs(gv['slow1'][3] - w0 * 0.82) <= 1 and gv['better'] == gv['slow1'],
+              f'コマが 落ちる（4割 以上）→ 細かさを 1段 下げる（幅 {w0} → {gv["slow1"][3]}px）・なめらかに なったら そのまま（{gv["better"]}）')
+        check(gv['slow2'][:3] == [2, 0.68, False] and abs(gv['slow2'][3] - w0 * 0.68) <= 1 and gv['same2'][:3] == [1, 0.82, True] and gv['after'] == gv['same2'],
+              f'また 落ちる → もう 1段（{gv["slow2"]}）・下げても かわらない → 1段 もどして おわり（{gv["same2"]}）・その あとは かえない')
+        check(gv['lp1'][:3] == [1, 0.82, False] and gv['lp2'] == [0, 1, True, w0] and gv['lp3'] == gv['lp2'] and gv['end'] == [0, 1, True, w0],
+              f'いつも 30回／秒（省電力モード など）：1段 下げても かわらない → もとの 細かさに もどして おわり（{gv["lp1"]} → {gv["lp2"]}）')
         print('■ ごはん（エサ・3D の バケツ）')
         stock0 = pg.evaluate("() => TCCare.S.stock")
         stage_click(pg, 407, 1494); pg.wait_for_timeout(1200)
@@ -538,6 +572,18 @@ try:
         check(k5['t0'] == 96000 and k5['tk0'] == 2 and k5['total'] == 99999 and k5['held'] == 3001 and k5['tk'] == 1 and '7,000P の うち 3,001P は あずかったよ' in k5['toast'],
               f'96,000P で かえる → 財布 99,999P・3,001P は あずかり・チケット 2 → 1枚（{k5}）')
         check(not errs, f'エラー なし {errs[:3]}')
+        print('■ 3倍の 画面（iPhone）・2倍の 広い 画面（iPad）での 細かさ（第4.150版）')
+        for nm3, vp3, dsf3 in (('iPhone（3倍）', {'width': 390, 'height': 844}, 3), ('iPad（2倍）', {'width': 820, 'height': 1180}, 2)):
+            c3 = b.new_context(viewport=vp3, device_scale_factor=dsf3, locale='ja-JP', timezone_id='Asia/Tokyo'); c3.add_init_script(FAKE)
+            p3 = c3.new_page(); e3 = []; p3.on('pageerror', lambda e, e3=e3: e3.append(str(e)))
+            p3.goto(APP); p3.wait_for_timeout(1500); gate(p3); p3.wait_for_timeout(600)
+            p3.locator('#tcFab').click()
+            p3.wait_for_function("() => window.TCApp && document.querySelector('#tcOv.on') && !document.querySelector('#tcOv .tcld')", timeout=120000)
+            p3.evaluate("() => TCApp._t.govSet(0, true)"); p3.wait_for_timeout(500)
+            q3 = p3.evaluate("() => { const c = document.querySelector('#tcOv .tcgl'), s = document.querySelector('#tcOv .tcst').getBoundingClientRect(); return [c.width, c.height, s.width, devicePixelRatio, TCCare.S.cs]; }")
+            check(abs(q3[0] - round(q3[2] * dsf3)) <= 1 and q3[0] > 1052 and abs(q3[4] - q3[0] / 1052) < 1e-6 and not e3,
+                  f'{nm3}：キャンバスの 幅 {q3[0]}px＝置き場 {q3[2]:.0f}pt × {dsf3}（前は 1052px まで）・お世話の 絵の 倍も 同じ（{q3[4]:.3f}）・エラー なし {e3[:2]}')
+            c3.close()
         b.close()
 finally:
     srv.terminate()

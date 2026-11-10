@@ -172,7 +172,10 @@ const TCApp = (() => {
     const avail = (r.height || window.innerHeight) - padT - padB - head;
     const w = Math.max(200, Math.min(vw, avail * W / H)), h = w * H / W;
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
-    const dpr = Math.min(window.devicePixelRatio || 1, W / w);
+    // 第4.150版（まさちゃん 2026/11/11 02:43「トレーニングセンターも馬の画質は高く！」）：画面の 細かさ いっぱい（3倍まで）で 描く。
+    //   前は 台紙の 幅（1052px）まで ＝ iPhone（3倍・幅 1170px）では 1割、iPad（2倍・幅 1270px ほど）では 2割 ひきのばして いた（馬の ふちと 毛の もようが ぼやける）。
+    //   背景の 絵は 同じ 絵を ひきのばす（前と 同じ 見え方）。GOV.q＝なめらかさを 守る ための 細かさの 倍（ふだんは 1：下の govern）
+    const dpr = Math.min(window.devicePixelRatio || 1, 3) * GOV.q;
     const pw = Math.round(w * dpr), ph = Math.round(pw * H / W);
     for (const c of [cvGL, cvOv, cvFx]) if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
     if (window.TCCare && TCCare.S) TCCare.S.cs = pw / W;
@@ -329,12 +332,34 @@ const TCApp = (() => {
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
   }
 
+  // ---------- なめらかさを 守る（第4.150版・まさちゃん 2026/11/11 02:43「トレーニングセンターも今は、カクカクしてる！ヌルヌル動くことが絶対！」）----------
+  //   画面の 書きかえ ごと（ふつう 60コマ／秒）に 描く（前は 30コマ／秒に おさえて いた＝歩く 馬・お世話の 動きが カクカクして 見えた）。
+  //   描くのが 間に合わない 端末では、絵の 細かさを 1段ずつ 下げて（GOV_Q）なめらかさを 守る。細かさは 画面を 開き直しても そのまま（アプリを 閉じる まで）。
+  //   下げても よく ならない とき（省電力モードで 画面の 書きかえが 30回／秒に おさえられて いる・ほかの 所が おそい）は 細かさの せいでは ない ので、もとに もどして もう 下げない。
+  //   数え方：コマと コマの 間が 25ms より 長い＝1コマ 落ちた。120コマ ごとに 落ちた わりあいを 見る（4割 以上で 下げる）。細かさを かえた あと 45コマと、止まって いた あとの 1コマは 数えない
+  const GOV_Q = [1, 0.82, 0.68], GOV_N = 120, GOV_BAD = 0.4, GOV_SAME = 0.75, GOV_WAIT = 45;
+  const GOV = { q: 1, step: 0, off: false, n: 0, slow: 0, wait: GOV_WAIT, base: 0, last: 0 };
+  function govSet(step, off) { GOV.step = step; GOV.q = GOV_Q[step]; GOV.off = !!off; GOV.n = GOV.slow = 0; GOV.wait = GOV_WAIT; if (ov && stage && cvGL) layout(); }
+  function govern(now) {
+    const d = now - GOV.last; GOV.last = now;
+    if (GOV.off || !(d > 0) || d > 250) return;                    // はじめの 1コマ・止まって いた あと
+    if (GOV.wait > 0) { GOV.wait--; return; }
+    GOV.n++; if (d > 25) GOV.slow++;
+    if (GOV.n < GOV_N) return;
+    const r = GOV.slow / GOV.n; GOV.n = GOV.slow = 0;
+    if (GOV.step > 0 && GOV.base > 0 && r >= GOV.base * GOV_SAME) { govSet(GOV.step - 1, true); return; }      // 下げても かわらない → 1段 もどして おわり
+    GOV.base = 0;
+    if (r < GOV_BAD) return;                                        // なめらか
+    if (GOV.step >= GOV_Q.length - 1) { GOV.off = true; return; }   // いちばん 下の 段でも おそい → これ以上は 下げない
+    GOV.base = r; govSet(GOV.step + 1, false);
+  }
+
   // ---------- 1コマ ----------
   function frame(now) {
     raf = requestAnimationFrame(frame);
-    if (now - lastDraw < 1000 / 31) return;         // 30コマ／秒（ゆっくりの 場所・電池に やさしく）
+    govern(now);
     lastDraw = now;
-    const t = clock(), dt = lastT == null ? 1 / 30 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+    const t = clock(), dt = lastT == null ? 1 / 60 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
     const ms = Date.now(), gms = tnow();
     // 第4.140版（バグ直し）：お世話で 使った トークンを 先に 写す（前は トークンが ちょうど 1つ たまる 瞬間と 重なると、使った ぶんが 消えて 1回 タダに なった）
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
@@ -367,7 +392,7 @@ const TCApp = (() => {
   }
   function pause() { running = false; cancelAnimationFrame(raf); SND.stopAll(); if (dirty) save(); }
   function resume() {
-    if (running) return; running = true; lastT = null; lastDraw = 0; SND.unlock(); syncField(); raf = requestAnimationFrame(frame);
+    if (running) return; running = true; lastT = null; lastDraw = 0; GOV.last = 0; GOV.n = GOV.slow = 0; GOV.wait = GOV_WAIT; SND.unlock(); syncField(); raf = requestAnimationFrame(frame);
   }
 
   // ---------- 開く・閉じる ----------
@@ -412,5 +437,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
 })();

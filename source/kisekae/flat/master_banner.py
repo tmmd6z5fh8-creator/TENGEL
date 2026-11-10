@@ -20,10 +20,17 @@ from paint import fbm, blur, smoothstep
 W, Hh = 780, 320
 RING_R = 124                   # うしろの 光の 輪の 半径
 HORIZON = 30                   # 床は 台の いちばん 下より これだけ 上（台の 奥）から はじまる ＝ 台が 床の 上に 立つ（まさちゃん 11/11 02:33「台が地面から浮いてるからちゃんと地面につけて！」）
+FLOOR_CUT = 262                # 台の 下が 絵の 外に 出る 置き方（第4.150版：像を 大きく）の ときの 床の はじまり（シルバー帯・ゴールド帯の 床の 線 261 と そろえる：台は 床の 手前に 立つ）
 PAL = dict(
     bg=[(0, '#124A3A'), (0.5, '#0C352B'), (1, '#07201B')],              # 深い 緑の 地（上は 明るく・下は 暗く）
     glow=(0.035, 0.150, 0.100), core=(0.060, 0.130, 0.060),              # 像の うしろの 光（エメラルドの 緑）
     ring=(1.0, 0.84, 0.42), floor=[(0, '#0F3B30'), (1, '#051813')], spark=(1.0, 0.97, 0.84))
+
+
+def size_of(A):
+    """像の 大きさ（第4.149版の 像＝幅 390px を 1 と して）：光の 輪・うしろの 光・床・影の 大きさを これに 合わせる"""
+    cols = np.nonzero((A > 0.5).sum(0) > 0)[0]
+    return float(cols.max() + 1 - cols.min()) / 390.0
 
 
 def pedestal_top(A):
@@ -31,7 +38,7 @@ def pedestal_top(A):
     wid = (A > 0.5).sum(1)
     rows = np.nonzero(wid > 0)[0]
     gy = int(rows.max())
-    lo = max(gy - 70, 0)
+    lo = max(gy - int(70 * size_of(A)), 0)
     y = lo + int(np.argmax(wid[lo:gy + 1]))                # 台の いちばん 広い 行
     base = float(wid[y])
     while y > 0 and wid[y] > base * 0.5:
@@ -39,32 +46,37 @@ def pedestal_top(A):
     return y + 1
 
 
-def compose(R, rng_seed=5, pal=PAL, sparkle=True, info=None):
-    """絵にする。sparkle=False なら きらめきを 描かない（壁紙の 動く きらめきの 下の 絵）。info に dict を 渡すと きらめきの 場所と 長さ・床の 線・台の 上の はし・光の 輪を 入れる"""
+def compose(R, rng_seed=5, pal=PAL, sparkle=True, info=None, floor_at=None):
+    """絵にする。sparkle=False なら きらめきを 描かない（壁紙の 動く きらめきの 下の 絵）。info に dict を 渡すと きらめきの 場所と 長さ・床の 線・台の 上の はし・光の 輪を 入れる。
+       第4.150版：像を 大きく 置いて 台の 下が 絵の 外（下）に 出る 置き方も できる（cut：台の いちばん 下は R['fit'] の ほんとうの 場所・床に うつる 像と 影は 絵の 外 なので 描かない）。
+       大きさで かわる もの（光の 輪・うしろの 光・床の はじまり・影）は 像の 大きさ k に 合わせる。floor_at＝床の はじまりの 行を 決めて おく とき"""
     rng = np.random.default_rng(rng_seed)
     yy, xx = np.mgrid[0:Hh, 0:W].astype(np.float32)
     A = np.clip(R['a'], 0, 1)
     rgb = R['srgb']
+    k = size_of(A)
     rows = np.nonzero(A.sum(1) > 0.5)[0]
-    gy = int(rows.max())                                   # 床の 線：台の いちばん 下
+    cut = int(rows.max()) >= Hh - 1                        # 台の 下が 絵の 外に 出て いる
+    gy = int(R['fit'][3]) - 1 if cut else int(rows.max())  # 床の 線：台の いちばん 下（絵の 外の ときも ほんとうの 場所）
     ped = pedestal_top(A)
     cols = np.nonzero(A.sum(0) > 0.5)[0]
     cx = float(cols.min() + cols.max() + 1) / 2
-    cy = float(rows.min() + ped) / 2 + 22                  # 馬の 体の まん中（少し 下：輪の 上が 絵に おさまる）
+    cy = float(rows.min() + ped) / 2 + 22 * k              # 馬の 体の まん中（少し 下：輪の 上が 絵に おさまる）
+    ring_r = RING_R * k
     # ---------- 背景：深い 緑の 地＋ヘアライン ----------
     bg = grad_v(Hh, W, pal['bg'])
     hair = fbm(Hh, W, 3, 2, seed=8)
     hair = cv2.GaussianBlur((hair - .5) * 2, (0, 0), sigmaX=22, sigmaY=0.4)      # 横に 長く のばす
     bg = bg * (1 + 0.07 * hair[..., None])
-    glow = np.exp(-(((xx - cx) / 300) ** 2 + ((yy - cy) / 150) ** 2))
-    core = np.exp(-(((xx - cx) / 150) ** 2 + ((yy - cy) / 82) ** 2))
+    glow = np.exp(-(((xx - cx) / (300 * k)) ** 2 + ((yy - cy) / (150 * k)) ** 2))
+    core = np.exp(-(((xx - cx) / (150 * k)) ** 2 + ((yy - cy) / (82 * k)) ** 2))
     bg = bg + glow[..., None] * np.array(pal['glow']) + core[..., None] * np.array(pal['core'])
     # 大きな うすい 輪（金の メダルの ように：像の うしろ）
     rr = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    ring = np.exp(-((rr - RING_R) / 3.0) ** 2) * 0.34 + np.exp(-((rr - RING_R) / 11.0) ** 2) * 0.07 + smoothstep(RING_R + 2, RING_R - 10, rr) * 0.03
+    ring = np.exp(-((rr - ring_r) / 3.0) ** 2) * 0.34 + np.exp(-((rr - ring_r) / 11.0) ** 2) * 0.07 + smoothstep(ring_r + 2, ring_r - 10, rr) * 0.03
     bg = bg + ring[..., None] * np.array(pal['ring'])
     # 床：台の 奥（HORIZON だけ 上）から 下は、みがいた 暗い 緑。台は 床の 上に 立つ（台の ふちの すぐ 下に 影・台が 床に うつる）
-    hy = gy - HORIZON
+    hy = int(floor_at) if floor_at is not None else (FLOOR_CUT if cut else int(round(gy - HORIZON * k)))
     floor = smoothstep(hy - 1, hy + 5, yy)
     tfl = np.clip((yy - hy) / max(Hh - hy, 1), 0, 1)[..., None]
     f0, f1 = grad_v(2, 1, pal['floor'])[0, 0], grad_v(2, 1, pal['floor'])[1, 0]
@@ -78,27 +90,32 @@ def compose(R, rng_seed=5, pal=PAL, sparkle=True, info=None):
     pm = Ap > 0.5
     has = pm.any(0)
     yb = np.where(has, Hh - 1 - np.argmax(pm[::-1], axis=0), -1)                     # 列ごとの 台の いちばん 下
-    # 台が 床に うつる（ふちを さかいに さかさま・下へ いくほど うすく）
-    refl_rgb = np.zeros_like(rgb); refl_a = np.zeros_like(A)
     xs_p = np.nonzero(has)[0]
-    for d in range(1, HORIZON + 44):
-        ys_d, ys_s = yb[xs_p] + d, yb[xs_p] - d
-        ok = (ys_d < Hh) & (ys_s >= 0)
-        refl_rgb[ys_d[ok], xs_p[ok]] = rgb[ys_s[ok], xs_p[ok]]
-        refl_a[ys_d[ok], xs_p[ok]] = A[ys_s[ok], xs_p[ok]] * (0.50 * np.exp(-d / 22.0))
-    refl_rgb = blur(refl_rgb, 1.2); refl_a = blur(refl_a, 1.2)
-    bg = bg * (1 - refl_a[..., None]) + refl_rgb * refl_a[..., None]
-    # 影：台の ふちの すぐ 下（こい・細い）と、台の まわりの やわらかい 影
-    edge = np.zeros((Hh, W), np.float32)
-    for d in range(0, 7):
-        ys_d = yb[xs_p] + d
-        ok = ys_d < Hh
-        edge[ys_d[ok], xs_p[ok]] = np.maximum(edge[ys_d[ok], xs_p[ok]], 1 - d / 7.0)
-    contact = np.clip(blur(edge, 1.6) * 1.25, 0, 1) * 0.78
     bw = float(xs_p.max() + 1 - xs_p.min())
     pcx = float(xs_p.min() + xs_p.max() + 1) / 2
-    soft = np.exp(-(((xx - pcx) / (bw * 0.66)) ** 2 + ((yy - (gy - HORIZON * 0.30)) / (HORIZON * 0.62)) ** 2)) * 0.50 * floor
-    bg = bg * (1 - np.clip(contact + soft, 0, 0.9)[..., None])
+    if not cut:
+        # 台が 床に うつる（ふちを さかいに さかさま・下へ いくほど うすく）
+        refl_rgb = np.zeros_like(rgb); refl_a = np.zeros_like(A)
+        for d in range(1, int(round((HORIZON + 44) * k))):
+            ys_d, ys_s = yb[xs_p] + d, yb[xs_p] - d
+            ok = (ys_d < Hh) & (ys_s >= 0)
+            refl_rgb[ys_d[ok], xs_p[ok]] = rgb[ys_s[ok], xs_p[ok]]
+            refl_a[ys_d[ok], xs_p[ok]] = A[ys_s[ok], xs_p[ok]] * (0.50 * np.exp(-d / (22.0 * k)))
+        refl_rgb = blur(refl_rgb, 1.2); refl_a = blur(refl_a, 1.2)
+        bg = bg * (1 - refl_a[..., None]) + refl_rgb * refl_a[..., None]
+        # 影：台の ふちの すぐ 下（こい・細い）と、台の まわりの やわらかい 影
+        edge = np.zeros((Hh, W), np.float32)
+        for d in range(0, 7):
+            ys_d = yb[xs_p] + d
+            ok = ys_d < Hh
+            edge[ys_d[ok], xs_p[ok]] = np.maximum(edge[ys_d[ok], xs_p[ok]], 1 - d / 7.0)
+        contact = np.clip(blur(edge, 1.6) * 1.25, 0, 1) * 0.78
+        soft = np.exp(-(((xx - pcx) / (bw * 0.66)) ** 2 + ((yy - (gy - HORIZON * k * 0.30)) / (HORIZON * k * 0.62)) ** 2)) * 0.50 * floor
+        bg = bg * (1 - np.clip(contact + soft, 0, 0.9)[..., None])
+    else:
+        # 台の 下は 絵の 外：床に うつる 像と ふちの 影は 見えない。台の うしろの 床に やわらかい 影 だけ（台が 床の 上に 立って いる）
+        soft = np.exp(-(((xx - pcx) / (bw * 0.60)) ** 2 + ((yy - (Hh + 6)) / (max(Hh - hy, 8) * 0.9)) ** 2)) * 0.42 * floor
+        bg = bg * (1 - np.clip(soft, 0, 0.9)[..., None])
     # ---------- 像を 重ねる ----------
     img = over(bg, rgb, A)
     # きらめき（馬の いちばん 明るい 所に 4本の 光：台と 台の 字の 上には 出さない）
@@ -111,7 +128,7 @@ def compose(R, rng_seed=5, pal=PAL, sparkle=True, info=None):
         y, x = divmod(int(idx), W)
         if lum_s[y, x] < 0.86:
             break
-        if all((x - tx) ** 2 + (y - ty) ** 2 > 70 ** 2 for tx, ty in taken):
+        if all((x - tx) ** 2 + (y - ty) ** 2 > (70 * k) ** 2 for tx, ty in taken):
             taken.append((x, y))
         if len(taken) >= 4:
             break
@@ -119,7 +136,8 @@ def compose(R, rng_seed=5, pal=PAL, sparkle=True, info=None):
         info['gy'] = gy
         info['hy'] = hy
         info['ped'] = ped
-        info['ring'] = [round(cx, 1), round(cy, 1), RING_R]
+        info['ring'] = [round(cx, 1), round(cy, 1), int(round(ring_r))]
+        info['cut'] = bool(cut)
         info['spark'] = []
     for (x, y) in taken:
         L = rng.uniform(12, 20)
