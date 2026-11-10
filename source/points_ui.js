@@ -1025,7 +1025,7 @@
         const got = boardOpened(n0, P.boardUnlocked(W.board.reads));
         await save(); if (got.length) boardEmit('unlock', { item: got[got.length - 1].id, no: got[got.length - 1].no, many: got.length });
       }
-      else if (b.dataset.test === 'tkadd') {      // 第4.141版：チケットを ためす（当たりは 1/2400 なので テスト版では ここから）
+      else if (b.dataset.test === 'tkadd') {      // 第4.141版：チケットを ためす（当たりは まれ（第4.142版から 1/600）なので テスト版では ここから）
         try { window.TCInfo.backTicket(); } catch (x) { /* なし */ }
         try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (x) { /* なし */ }
         paintTestBoard(); toast(`🧪 チケットを 1枚 足したよ（いま ${window.TCInfo ? window.TCInfo.tickets() : 0}枚）。設定の「着せ替え」で 使えるよ`, 4200);

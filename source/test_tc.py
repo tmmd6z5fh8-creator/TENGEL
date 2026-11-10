@@ -214,19 +214,22 @@ try:
           const want = tab => tab.map(([p, z]) => ({ d: Math.round(1 / p), key: key(z) }));
           return { care: rows('care'), mab: rows('maboroshi'), kami: rows('kamisama'), wCare: want(T.PRIZES), wMab: want(T.PRIZES_VISIT.maboroshi), wKami: want(T.PRIZES_VISIT.kamisama), odds: T.ODDS, text: e.textContent,
             fit: [...e.querySelectorAll('td:first-child')].every(td => td.scrollWidth <= td.clientWidth + 1 && td.getBoundingClientRect().height < 46) }; }""")
-        def pc(d, n=1):                       # tc_guide.js の pc と 同じ きまり
-            x = n / d * 100; s_ = '%.*f' % (1 if x >= 10 else 2 if x >= 0.1 else 3, x)
+        def pc(d, n=1):                       # tc_guide.js の pc と 同じ きまり（まるめは JS の toFixed と 同じ：ちょうど まん中は 大きい 方＝3.125 → 3.13）
+            from decimal import Decimal, ROUND_HALF_UP
+            x = n / d * 100; f = 1 if x >= 10 else 2 if x >= 0.1 else 3
+            s_ = str(Decimal(x).quantize(Decimal(1).scaleb(-f), rounding=ROUND_HALF_UP))
             if '.' in s_: s_ = s_.rstrip('0').rstrip('.')
             return ('約' if abs(float(s_) - x) > 1e-9 else '') + s_ + '%'
         def same(rows, want):
             return (len(rows) == len(want) and all(any(r['d'] == w['d'] and w['key'] in r['lab'] for r in rows) for w in want)
                     and all(r['pc'] == pc(r['d']) and r['fr'] == f"1/{r['d']}" for r in rows))
-        check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(10, '10%'), (20, '5%'), (50, '2%'), (85, '約1.18%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 10,
-              f"説明書：お世話の 当たりは 項目ごとに ％（10P 10%・20P 5%・50P 2%・100P 約1.18% …）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
-        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and gd['mab'][0]['pc'] == '約0.33%' and gd['kami'][0]['pc'] == '約1.18%',
-              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
+        check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(10, '10%'), (20, '5%'), (50, '2%'), (85, '約1.18%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 10
+              and [(r['d'], r['pc']) for r in gd['care']][6:] == [(125, '0.8%'), (245, '約0.41%'), (399, '約0.25%'), (600, '約0.17%')],      # 第4.142版：ルーレット 1/125・1/245・1/399・チケット 1/600
+              f"説明書：お世話の 当たりは 項目ごとに ％（10P 10%・20P 5%・50P 2%・100P 約1.18% … ルーレット 0.8%・約0.41%・約0.25%・チケット 約0.17%）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
+        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%')],      # 第4.142版
+              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
         od = gd['odds']; D = lambda k: round(1 / od[k])
-        wantTx = ['ぜんぶ 合わせて 約20.2%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
+        wantTx = ['ぜんぶ 合わせて 約21.6%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
         check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399],
               f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
@@ -273,30 +276,39 @@ try:
         lot = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, cnt = (kind) => { st.visit = kind ? { kind, until: Date.now() + 6e5 } : null; S.high = 0; const c = {}; for (let i = 0; i < n; i++) { const z = T.draw(); const k = z ? z.k + ':' + (Array.isArray(z.v) ? z.v.join('/') : z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; } return c; };
           const r = { normal: cnt(null), mab: cnt('maboroshi'), kami: cnt('kamisama') }; st.visit = null; return r; }""")
         ks = lambda c: set(k for k in c if k != '-')
-        check(ks(lot['mab']) <= {'rt:800/1600', 'rt:1600/3200', 'rt:3200/6400'} and 'rt:800/1600' in lot['mab'], f"幻の馬：ルーレット だけ {lot['mab']}")
-        check(ks(lot['kami']) <= {'rt:2000/4000', 'rt:5000/10000', 'rt:10000/20000'} and abs(lot['kami'].get('rt:2000/4000', 0) / 20000 - 1 / 85) < 0.004, f"神様馬：ルーレット だけ {lot['kami']}")
+        check(ks(lot['mab']) <= {'rt:800/1600', 'rt:1600/3200', 'rt:3200/6400'} and abs(lot['mab'].get('rt:800/1600', 0) / 20000 - 1 / 15) < 0.008 and abs(lot['mab'].get('rt:1600/3200', 0) / 20000 - 1 / 30) < 0.006 and abs(lot['mab'].get('rt:3200/6400', 0) / 20000 - 1 / 60) < 0.004,
+              f"幻の馬：ルーレット だけ・1/15・1/30・1/60（第4.142版）{lot['mab']}")
+        check(ks(lot['kami']) <= {'rt:2000/4000', 'rt:5000/10000', 'rt:10000/20000'} and abs(lot['kami'].get('rt:2000/4000', 0) / 20000 - 1 / 8) < 0.012 and abs(lot['kami'].get('rt:5000/10000', 0) / 20000 - 1 / 16) < 0.008 and abs(lot['kami'].get('rt:10000/20000', 0) / 20000 - 1 / 32) < 0.006,
+              f"神様馬：ルーレット だけ・1/8・1/16・1/32（第4.142版）{lot['kami']}")
         check(any(k.startswith('pt:') or k == 'pt:' for k in lot['normal']) or any(k.startswith('pt') for k in lot['normal']), f"いつもは ポイント {lot['normal']}")
         # 第4.140版（11/10 14:14 まさちゃん「足す：10P 1/10・20P 1/20・50P 1/50 これだけ足して！」）：小さい 当たり 3つを 足した（ほかは そのまま）
         tabS = pg.evaluate("() => TCApp._t.PRIZES.map(([p, z]) => Math.round(1 / p) + ':' + z.k + ':' + (z.k === 'pt' ? z.v : z.tier || ''))")
-        check(tabS == ['3600:rt:kamisama', '2400:tk:', '2000:rt:maboroshi', '1000:rt:normal', '121:pt:300', '99:pt:200', '85:pt:100', '50:pt:50', '20:pt:20', '10:pt:10'], f'お世話の 抽選の 表：前の 7つは そのまま＋50P 1/50・20P 1/20・10P 1/10（{tabS}）')
+        #   第4.142版（11/10 17:20 まさちゃん「ノーマルのルーレット抽選、幻の馬ルーレット当選と神様馬ルーレット抽選の確率だけ変えたい！」）：ルーレット 1/125・1/245・1/399・チケット 1/600（ポイントの 当たりは そのまま）
+        check(tabS == ['600:tk:', '399:rt:kamisama', '245:rt:maboroshi', '125:rt:normal', '121:pt:300', '99:pt:200', '85:pt:100', '50:pt:50', '20:pt:20', '10:pt:10'], f'お世話の 抽選の 表：ルーレット 1/125・1/245・1/399・チケット 1/600・ポイントの 当たり 6つは そのまま（{tabS}）')
+        tabV = pg.evaluate("() => { const T = TCApp._t, f = t => t.map(([p, z]) => Math.round(1 / p) + ':' + z.v.join('/')), sum = t => t.reduce((a, [p]) => a + p, 0); return { mab: f(T.PRIZES_VISIT.maboroshi), kami: f(T.PRIZES_VISIT.kamisama), rt: T.RT, x: T.ODDS.highX, sums: [sum(T.PRIZES), sum(T.PRIZES_VISIT.maboroshi), sum(T.PRIZES_VISIT.kamisama)] }; }")
+        check(tabV['mab'] == ['60:3200/6400', '30:1600/3200', '15:800/1600'] and tabV['kami'] == ['32:10000/20000', '16:5000/10000', '8:2000/4000'] and tabV['rt'] == {'normal': [800, 1600], 'maboroshi': [1600, 3200], 'kamisama': [3200, 6400]},
+              f"幻の馬・神様馬の 表：1/15・1/30・1/60／1/8・1/16・1/32（ポイントの 数は そのまま）（{tabV['mab']}・{tabV['kami']}）")
+        check(all(x * tabV['x'] < 1 for x in tabV['sums']) and abs(tabV['sums'][0] - 0.21638) < 0.0001 and abs(tabV['sums'][1] - 7 / 60) < 1e-9 and abs(tabV['sums'][2] - 7 / 32) < 1e-9,
+              f"高確ゾーン（×{tabV['x']}）でも 当たりの 合計は 1 を こえない（いつも {tabV['sums'][0] * tabV['x']:.1%}・幻の馬 {tabV['sums'][1] * tabV['x']:.1%}・神様馬 {tabV['sums'][2] * tabV['x']:.1%}）")
         nm = lot['normal']; rate = lambda c, k: c.get(k, 0) / 20000
-        check(abs(rate(nm, 'pt:10') - 0.10) < 0.008 and abs(rate(nm, 'pt:20') - 0.05) < 0.006 and abs(rate(nm, 'pt:50') - 0.02) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 85) < 0.0035 and abs(1 - rate(nm, '-') - 0.2023) < 0.012,
-              f"2万回 ひくと：10P {rate(nm, 'pt:10'):.1%}・20P {rate(nm, 'pt:20'):.1%}・50P {rate(nm, 'pt:50'):.1%}・100P {rate(nm, 'pt:100'):.2%}・何か 当たる {1 - rate(nm, '-'):.1%}（約20.2%）")
+        check(abs(rate(nm, 'pt:10') - 0.10) < 0.008 and abs(rate(nm, 'pt:20') - 0.05) < 0.006 and abs(rate(nm, 'pt:50') - 0.02) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 85) < 0.0035 and abs(1 - rate(nm, '-') - 0.2164) < 0.012
+              and abs(rate(nm, 'rt:normal') - 1 / 125) < 0.003 and abs(rate(nm, 'rt:maboroshi') - 1 / 245) < 0.0022 and abs(rate(nm, 'rt:kamisama') - 1 / 399) < 0.0018 and abs(rate(nm, 'tk:') - 1 / 600) < 0.0015,
+              f"2万回 ひくと：10P {rate(nm, 'pt:10'):.1%}・20P {rate(nm, 'pt:20'):.1%}・50P {rate(nm, 'pt:50'):.1%}・100P {rate(nm, 'pt:100'):.2%}・ルーレット {rate(nm, 'rt:normal'):.2%}（0.8%）・{rate(nm, 'rt:maboroshi'):.2%}（約0.41%）・{rate(nm, 'rt:kamisama'):.2%}（約0.25%）・チケット {rate(nm, 'tk:'):.2%}（約0.17%）・何か 当たる {1 - rate(nm, '-'):.1%}（約21.6%）")
         hz = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, c = {}; st.visit = null;
           for (let i = 0; i < n; i++) { S.high = 3; const z = T.draw(); const k = z ? z.k + ':' + (z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; }
           S.high = 0; st.high = 0; return c; }""")
-        check(abs(rate(hz, 'pt:10') - 0.40) < 0.015 and abs(rate(hz, 'pt:100') - 4 / 85) < 0.006 and abs(1 - rate(hz, '-') - 0.8093) < 0.012,
-              f"高確ゾーン（4倍）：10P {rate(hz, 'pt:10'):.1%}（40%）・100P {rate(hz, 'pt:100'):.1%}（約4.7%）・何か 当たる {1 - rate(hz, '-'):.1%}（約81%：1 を こえない ので まれな 当たりも 4倍の まま）")
+        check(abs(rate(hz, 'pt:10') - 0.40) < 0.015 and abs(rate(hz, 'pt:100') - 4 / 85) < 0.006 and abs(1 - rate(hz, '-') - 0.8655) < 0.012 and abs(rate(hz, 'rt:normal') - 4 / 125) < 0.006 and abs(rate(hz, 'tk:') - 4 / 600) < 0.003,
+              f"高確ゾーン（4倍）：10P {rate(hz, 'pt:10'):.1%}（40%）・100P {rate(hz, 'pt:100'):.1%}（約4.7%）・ルーレット {rate(hz, 'rt:normal'):.1%}（3.2%）・チケット {rate(hz, 'tk:'):.2%}（約0.67%）・何か 当たる {1 - rate(hz, '-'):.1%}（約87%：1 を こえない ので まれな 当たりも 4倍の まま）")
         print('■ 当たりを とりこぼさない・トークンの 数え方（第4.140版の バグ直し）')
         #   当たりは お世話の はじめに 決まる → すぐ 保存（pend）→ 演出の あとで わたして 消す
         pd = pg.evaluate("""async () => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, W = TengelWallet, rnd = Math.random; st.visit = null; S.high = 0; st.high = 0; st.pend = null;
           const sv = () => (JSON.parse(localStorage.getItem('tengel.tc')) || {}).pend || null, t0 = W.total();
-          Math.random = () => 0.03; const z = T.lottery(); Math.random = rnd;                    // 100P の 当たりを ひく
+          Math.random = () => 0.04; const z = T.lottery(); Math.random = rnd;                    // 100P の 当たりを ひく（第4.142版の 表：0.0346〜0.0464 が 100P）
           const p1 = sv(), t1 = W.total();
           await T.onPrize(z); await new Promise(r => setTimeout(r, 500));
           const p2 = sv(), t2 = W.total();
           T.give(z); await new Promise(r => setTimeout(r, 400)); const t3 = W.total();           // 同じ 当たりを もう一度 わたしても 足さない
-          Math.random = () => 0.0015; const r1 = T.lottery(); Math.random = rnd; const p3 = sv(); st.pend = null; localStorage.setItem('tengel.tc', JSON.stringify(st));   // ルーレット（ふつう）：止まる 所も 決めて ある
+          Math.random = () => 0.012; const r1 = T.lottery(); Math.random = rnd; const p3 = sv(); st.pend = null; localStorage.setItem('tengel.tc', JSON.stringify(st));   // ルーレット（ふつう）：止まる 所も 決めて ある
           const tk0 = st.tickets || 0; T.give({ k: 'tk', n: 2, id: 'tc-test-tk' }); const tk1 = st.tickets || 0; st.tickets = tk0; localStorage.setItem('tengel.tc', JSON.stringify(st));
           return { z: z && [z.k, z.v, typeof z.id], p1: p1 && [p1.k, p1.v, p1.id === z.id], d1: t1 - t0, p2, d2: t2 - t0, d3: t3 - t0, r1: r1 && [r1.k, r1.tier, r1.win, r1.a, r1.b], p3: p3 && [p3.k, p3.win, p3.a, p3.b, p3.id === r1.id], tk: tk1 - tk0 }; }""")
         check(pd['z'] == ['pt', 100, 'string'] and pd['p1'] == ['pt', 100, True] and pd['d1'] == 0 and pd['p2'] is None and pd['d2'] == 100 and pd['d3'] == 100,
