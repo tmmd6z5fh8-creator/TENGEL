@@ -84,7 +84,7 @@ open(os.path.join(res, 'ja.lproj', 'Localizable.strings'), 'w', encoding='utf8')
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは音なし・ネオンの線画なしで動く）
 sys.path.insert(0, os.path.join(W, 'kisekae'))
 from build_fx import ASSET_FILES
-# 第4.146版：絵・動画の フォルダは assets_dir.adir()＝軽い 版（ios/lite/<名前>：kisekae/lite_assets.py が 作る。動画 CRF 29・絵 WebP quality 75）が あれば そちら・なければ もと（ios/<名前>）。
+# 第4.146版：絵・動画の フォルダは assets_dir.adir()＝軽い 版（ios/lite/<名前>：kisekae/lite_assets.py が 作る。動画 CRF 24・絵 WebP quality 75）が あれば そちら・なければ もと（ios/<名前>）。
 #   軽い 版が 古い（もとを 作り直した）ときは ここで 止まる。LITE=0 で もとの まま 入れる。FX_ASSETS など を 決めた とき（CI）は その フォルダ
 import assets_dir as _ad
 fx_dir = os.environ.get('FX_ASSETS') or _ad.adir('fx_assets')
@@ -110,7 +110,8 @@ if len(bcp_have) != len(bcp_all):
 # トレーニングセンターの 絵・形・音（第4.130版：まさちゃんの フィールド・馬・バケツの 3D など と それから 作った もの）：ios/tc_assets/ か TC_ASSETS=<フォルダ>。
 # kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右上の ボタンを 押すと「読みこめなかった」に なる）
 tc_dir = os.environ.get('TC_ASSETS') or _ad.adir('tc_assets')
-tc_have = sorted(f for f in (os.listdir(tc_dir) if os.path.isdir(tc_dir) else []) if f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
+_tc_ls = os.listdir(tc_dir) if os.path.isdir(tc_dir) else []; _tc_old = _ad.superseded('tc_assets', _tc_ls)      # 第4.156版：使わなく なった 音（横に なる 動きの 3つ）は 入れない
+tc_have = sorted(f for f in _tc_ls if f not in _tc_old and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
 for f in tc_have:
     assert f.lower() not in names and f not in files, f
     shutil.copy(os.path.join(tc_dir, f), os.path.join(res, f)); files[f] = f

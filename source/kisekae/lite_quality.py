@@ -1,5 +1,5 @@
 # 軽い 版（ios/lite/…：kisekae/lite_assets.py）の 画質を もとと くらべる（第4.146版）
-#   python3 kisekae/lite_quality.py [出す フォルダ]     … 絵（WebP quality 75）と 動画（CRF 29）を 1つずつ もとと くらべて、種類ごとに まとめる。数は <出す フォルダ>/lite_quality.json にも 書く
+#   python3 kisekae/lite_quality.py [出す フォルダ]     … 絵（WebP quality 75）と 動画（CRF 24：第4.155版までは 29）を 1つずつ もとと くらべて、種類ごとに まとめる。数は <出す フォルダ>/lite_quality.json にも 書く
 #   絵：PSNR（色の 差・dB：大きい ほど 近い。すき通しの 絵は 見える 所 だけ＝こさで 重みを つける）と SSIM（形の 近さ・明るさで：1 が 同じ）
 #   動画：コマごとの PSNR・SSIM（ffmpeg）。平均・いちばん 悪い コマ・さいごの 15コマ（動画の あとに 出る「さいごの 1まい」との つなぎ目）
 #   2026/11/10 の 数（少し やわらか）：絵は PSNR の まん中 38〜42dB・SSIM 0.96〜0.99、動画は SSIM 0.971〜0.985・PSNR 平均 38.4〜42.7dB

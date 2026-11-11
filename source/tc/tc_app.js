@@ -105,7 +105,7 @@ const TCApp = (() => {
   })();
   // できごと → 効果音（sfx_care.py の parts で 作った tc_se_*.m4a。大きさ・ずれは 作る ときに 入れて ある）
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
-  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null };
+  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron' };      // callcool（呼ぶの 7秒の 休み）は 音なし（第4.156版：ない 音の ファイルを 読みに 行かない）・unlock（ハートの 抽選の 当たり）は piron と 同じ 音（中身が 1バイトも ちがわない ファイルが 2つ あった → 1つに）
   function onCareEvent(e) {
     if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; touch(); later.push(() => growCheck()); }      // お世話の 回数（total＝ミッションの 合計：馬が リセット されても 減らない）
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
@@ -279,7 +279,7 @@ const TCApp = (() => {
   function chance(t) {                                  // 2分ごと：高確ゾーン・うんち（幻の馬・神様馬は 馬の リセットの とき だけ：第4.144版）
     const now = Date.now();
     if (Math.random() < P_HIGH) { const S = TCCare.S; S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); }
-    if (Math.random() < P_POOP && BR && BR.mode !== 'sleep' && (BR.poops || []).length < 3) BR.poopReq = true;
+    if (Math.random() < P_POOP && BR && (BR.poops || []).length < 3) BR.poopReq = true;          // 第4.156版：馬は もう ねない（前は ねて いる 間は しなかった）
     void now;
   }
   async function startVisit(kind) {
@@ -411,7 +411,7 @@ const TCApp = (() => {
       if (!testOn()) return 'off';
       const S = TCCare.S; st.stock = TOKEN_MAX; st.stockAt = tnow(); S.stock = TOKEN_MAX; S.stockBump = clock(); touch(); save(); return 'ok';
     },
-    // 撫でる：ハートを 9こに して、次の 抽選（ハート 10こ）の 結果を 決める（win＝true：ぴょん！／false：ごろん）
+    // 撫でる：ハートを 9こに して、次の 抽選（ハート 10こ）の 結果を 決める（win＝true：ぴょん！／false：ふぅ〜〈第4.155版までは ごろん〉）
     heart(win) {
       if (!testOn()) return 'off';
       const S = TCCare.S; if (S.busy || S.lot) return 'busy';
@@ -433,7 +433,7 @@ const TCApp = (() => {
       if (!testFree()) return 'busy';
       spawnTrash(clock(), false); return 'ok';
     },
-    // うんちを させる（gold＝金のうんち）。幻の馬・神様馬は うんちを しない・3こ まで。ねて いる ときは 起きて から する（道具箱が wake を よぶ）
+    // うんちを させる（gold＝金のうんち）。幻の馬・神様馬は うんちを しない・3こ まで
     poop(gold) {
       if (!testOn()) return 'off';
       if (st.visit) return 'visit';
@@ -441,12 +441,7 @@ const TCApp = (() => {
       if (!testFree()) return 'busy';
       BR.poopReq = true; if (gold) testGold = true; return 'ok';
     },
-    // ねて いる 馬を 起こす（夜は 馬が ときどき ねる：ねて いる 間は 撫でる・ごはん・呼ぶが 始まらない ので、道具箱で 次の お世話を 決めた ときに よぶ）。
-    //   起きる 動き（1.7秒：tc_horse.js の RISE_DUR）は 本番と 同じ。ハートの 抽選の「ごろん」の 途中は さわらない。返り値＝ねて いた
-    wake() {
-      if (!testOn() || !BR || BR.mode !== 'sleep' || TCCare.S.busy) return false;
-      BR.until = Math.min(BR.until, clock() + 1.7); return true;
-    },
+    // 第4.156版：ねて いる 馬を 起こす（wake）は なくした（馬は もう ねない＝寝転ぶ 演出を ぜんぶ 消した）
     msg: (txt, sec) => msg(txt, sec),
   };
 

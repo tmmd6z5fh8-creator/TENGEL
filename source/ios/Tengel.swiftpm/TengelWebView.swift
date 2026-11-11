@@ -15,6 +15,18 @@ struct TengelWebView: UIViewRepresentable {
     func updateUIView(_ view: WebHostView, context: Context) {}
 }
 
+/// iPad など 広い 画面で 使う「iPhone の 大きさ」（第4.156版・まさちゃん 2026/11/12「アプリ自体、iPadでもiPhoneと同じ大きさで表示されるようにして！」）
+/// ・App Store版は iPhone用（iPad では iPadOS が iPhone の 大きさの 窓で 動かす＝互換モード）なので、お客さんの 画面は かわらない。
+///   かわる のは iPad の 画面いっぱいの 窓で 動かす とき（Swift Playgrounds の ▶）だけ：アプリを iPhone の 大きさ（390×844）で まん中に 置く（まわりは 黒）
+/// ・ねらい：iPad の 広い 幅（834pt など）に 合わせて 壁紙や 動画を 2倍あまりに 引きのばさない ＝ iPhone の お客さんが 見る のと 同じ 見え方を iPad で 確かめられる
+///   （390×844 は 壁紙の 舞台の 幅 390・的中の 動画 780×1688 と ぴったり 同じ ＝ iPad の 画面〈2倍〉の 点と 1対1 に なる）
+enum PhoneFrame {
+    static let size = CGSize(width: 390, height: 844)
+    /// これより 広い 幅の とき iPhone の 大きさで 置く（iPhone は いちばん 広くても 440pt。iPad の 細い 窓〈Slide Over 320〜375pt など〉は そのまま 窓いっぱい）
+    static let wideWidth: CGFloat = 480
+    static func isWide(_ width: CGFloat) -> Bool { width > wideWidth }
+}
+
 /// Web画面の入れ物。時計・電波（ステータスバー）やホームバーに重なる分を測って、Webの画面に --top-inset／--bottom-inset（px）として渡す。
 /// ふつうは画面の上は安全な範囲の中に置かれるので 0。Swift Playgrounds のプレビューなど、安全な範囲が正しく伝わらないところでも
 /// 上の帯やボタンが時計・電波の下に重ならないようにするためのもの（Webの画面は max(env(safe-area-inset-*), var(--*-inset)) で使う）。
@@ -32,24 +44,45 @@ final class WebHostView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
+    /// 広い 画面（iPad の 画面いっぱいの 窓）か：その ときは Webの 画面を iPhone の 大きさで まん中に 置く（PhoneFrame）
+    var framed: Bool { PhoneFrame.isWide(bounds.width) }
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        webView.frame = bounds
+        let wide = framed
+        let frame = wide ? phoneRect() : bounds
+        if webView.frame != frame { webView.frame = frame }
+        backgroundColor = wide ? .black : .tengelPage
         pushInsets()
     }
 
     override func safeAreaInsetsDidChange() {
         super.safeAreaInsetsDidChange()
+        setNeedsLayout()
         pushInsets()
     }
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
+        setNeedsLayout()
         pushInsets()
     }
 
-    /// 上と下の、重なる分（pt）。上＝時計・電波の帯のうち、この画面にかかっている高さ。下＝ホームバーのうち、この画面にかかっている高さ
+    /// iPhone の 大きさの 置き場：時計の 帯・ホームバーに 重ならない 範囲の まん中（高さが 足りない ときは その 範囲の 高さ まで）。点の ずれが 出ない ように 整数の 位置に 置く
+    private func phoneRect() -> CGRect {
+        let o = overlap
+        let top = CGFloat(o.top), areaH = max(0, bounds.height - top - CGFloat(o.bottom))
+        let w = min(PhoneFrame.size.width, bounds.width), h = min(PhoneFrame.size.height, areaH)
+        return CGRect(x: ((bounds.width - w) / 2).rounded(), y: (top + (areaH - h) / 2).rounded(), width: w, height: h)
+    }
+
+    /// Webの 画面に 渡す 重なり。iPhone の 大きさで 置いた とき（framed）は 時計の 帯・ホームバーを よけて 置く ので 0
     var insets: (top: Int, bottom: Int) {
+        framed ? (0, 0) : overlap
+    }
+
+    /// 上と下の、重なる分（pt）。上＝時計・電波の帯のうち、この入れ物にかかっている高さ。下＝ホームバーのうち、この入れ物にかかっている高さ
+    var overlap: (top: Int, bottom: Int) {
         guard let window, bounds.height > 0, bounds.width > 0 else { return (0, 0) }
         let me = convert(bounds, to: window)
         var top = window.safeAreaInsets.top - me.minY
@@ -84,7 +117,11 @@ final class WebHostView: UIView {
         let w = window
         return ["top": v.top, "bottom": v.bottom, "safeTop": w?.safeAreaInsets.top ?? -1, "safeBottom": w?.safeAreaInsets.bottom ?? -1,
                 "statusBar": w?.windowScene?.statusBarManager?.statusBarFrame.height ?? -1, "y": w.map { convert(bounds, to: $0).minY } ?? -1,
-                "height": bounds.height, "windowHeight": w?.bounds.height ?? -1]
+                "height": bounds.height, "windowHeight": w?.bounds.height ?? -1,
+                // 第4.156版：iPhone の 大きさで 置いたか（iPad の 広い 窓）・Webの 画面の 置き場
+                "framed": framed, "hostWidth": bounds.width, "windowWidth": w?.bounds.width ?? -1,
+                "webX": webView.frame.minX, "webY": webView.frame.minY, "webWidth": webView.frame.width, "webHeight": webView.frame.height,
+                "statusBarHidden": w?.windowScene?.statusBarManager?.isStatusBarHidden ?? false]
     }
 }
 

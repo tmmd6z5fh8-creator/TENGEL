@@ -129,7 +129,8 @@ if r.returncode == 0:
         gk_sz = os.path.getsize(os.path.join(fxd, 'gk_film.mp4'))
         check(37.9e6 < films_sz < 41.5e6 and 43.6e6 < sz < 47.3e6 and 8.0e6 < gk_sz < 11.2e6, f'絵と音と動画の 大きさ：動画 5本 約39.5MB（第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえ・第4.137版 極の 雷で 約9.3MB）・ぜんぶで 約45.2MB（第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
     # 第4.146版（まさちゃん 11/10 21:26「圧縮少しやわらか−45Mbの方でやって！」）：アプリに 入る のは 軽い 版（ios/lite/<名前>：kisekae/lite_assets.py・assets_dir.py）。
-    #   動画 5本は CRF 29（さいごの 1まいに つながる 4本は さいごの 30コマ だけ CRF 27 → 25 → 22）・馬の 色／フィギュアと 棚の 色 は WebP quality 75。もと（ios/<名前>）は そのまま 残す（上の 大きさの 確かめは もとの もの）。
+    #   動画 5本は CRF 24（第4.156版・まさちゃん 2026/11/12「的中の演出も大分画質落ちているから綺麗な状態にしてほしい！」「ほぼ見た目同じより、少し綺麗にしてみるのはどう？」：第4.155版までは CRF 29。
+    #   さいごの 1まいに つながる 4本は さいごの 30コマ だけ CRF 23 → 22 → 21）・馬の 色／フィギュアと 棚の 色 は WebP quality 75。もと（ios/<名前>）は そのまま 残す（上の 大きさの 確かめは もとの もの）。
     #   でこぼこ（tc_n_*・fgN_n*）・つや（fgN_m*）は もとと 1バイトも ちがわない。台帳（lite.info）は アプリに 入れない
     #   第4.150版：結果ボードの 絵（止まった 絵 だけに なった）は 軽く しない＝もとと 1バイトも ちがわない（まさちゃん「その代わり、画質あげて！」）
     import assets_dir as _ad
@@ -171,9 +172,10 @@ if r.returncode == 0:
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(17.5e6 < p_films < 19.5e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((139e6 < p_all < 147e6) if _pb_on else (136e6 < p_all < 144e6)) and same_sz and keep_ok and src_ok
-              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
-              f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
+        check(30.0e6 < p_films < 33.0e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((153e6 < p_all < 161e6) if _pb_on else (150e6 < p_all < 158e6)) and same_sz and keep_ok and src_ok
+              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 24, 'preset': 'slow', 'tail': [[30, 23], [20, 22], [10, 21]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES)
+              and all(_man['fx_assets']['files'][f]['p'].startswith('crf24-slow') for f in FILMS.values()),
+              f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：もとは 39.5MB〈第4.156版：CRF 29 → 24 に 上げた。第4.155版までは 18.5MB〉・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
               f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
         # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
         #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
@@ -242,6 +244,30 @@ if r.returncode == 0:
         check(all(f in res for f in _cl) and 0.4e6 < _sz(_cl) < 0.8e6 and _mb.get('fmt') == 2 and _mb.get('i') == 21000 and _mb.get('ntex') == 'tc_prop_broom_n.webp' and _mp.get('fmt') == 2 and _mp.get('i') == 6888 and not _mp.get('ntex')
               and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in _cl if f in res),
               f'第4.152版：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき 7000三角・ちりとり 2296三角）が Resources に 入る（11こ・{_sz([f for f in _cl if f in res]) / 1e3:.0f}KB・もとと 同じ 中身）')
+        # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」「いないデータの削除」）：
+        #   トレーニングセンターの 音は、コードが 鳴らす もの と Resources に 入って いる もの が ぴったり 同じ（足りない 音も、鳴らさない 音も ない）。
+        #   入れない 5つ：横に なる 動きの 音 3つ（flop・goron・lie）・鳴らして いなかった hop・piron と 中身が 同じ unlock。もとの フォルダには 残す
+        _care = open(os.path.join(W, 'tc', 'tc_care.js'), encoding='utf8').read(); _tapp = open(os.path.join(W, 'tc', 'tc_app.js'), encoding='utf8').read()
+        _tall = ''.join(open(os.path.join(W, 'tc', f), encoding='utf8').read() for f in sorted(os.listdir(os.path.join(W, 'tc'))) if f.endswith('.js'))
+        _evs = set(re.findall(r"\bev\([^;]{0,60}?,\s*'([a-z0-9_]+)'", _care))
+        _zr = re.search(r"const ZR = \{([^}]*)\}", _care); _evs |= set(re.findall(r"\['([a-z]+)',", _zr.group(1))) if _zr else set(); _evs.add('tilt')      # 撫でた 場所ごとの 反応（ev(tt, rk)）
+        _skip = dict((k, v) for k, v, _q in re.findall(r"(\w+): (null|'(\w+)')", re.search(r"const SE_SKIP = \{([^}]*)\}", _tapp).group(1)))
+        _want = set(re.findall(r"tc_se_([a-z0-9_]+)\.m4a", _tall))
+        for _e in _evs:
+            if _e == 'slot': _want |= {f'slot_{i}' for i in range(1, 11)}
+            elif _e == 'bite': _want |= {'bite_apple', 'bite_carrot'}
+            elif _e == 'banin': _want |= {'banin_maboroshi', 'banin_kamisama'}
+            elif _e in _skip:
+                if _skip[_e] != 'null': _want.add(_skip[_e].strip("'"))
+            else: _want.add(_e)
+        _got = {f[6:-4] for f in res if f.startswith('tc_se_') and f.endswith('.m4a')}
+        _gone = ['flop', 'goron', 'lie', 'hop', 'unlock']
+        check(_got == _want and len(_got) == 70 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
+              and _skip.get('unlock') == "'piron'" and _skip.get('callcool') == 'null' and sorted(_ad.TC_GONE) == sorted(f'tc_se_{g}.m4a' for g in _gone)
+              and open(os.path.join(_ad.master('tc_assets'), 'tc_se_unlock.m4a'), 'rb').read() == open(os.path.join(RES, 'tc_se_piron.m4a'), 'rb').read()
+              and not re.search(r"mode: 'sleep'|ev\(tt, '(flop|goron|lie)'\)|TEST\.wake|wake\(\)", _tall) and 'ごろん' not in open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read(),
+              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
+              f'横に なる 動きの 音（flop・goron・lie）と 使わない 音（hop・unlock＝piron と 同じ 中身）は 入れない（もとの フォルダには 残る）・馬を 横に する コードと「ごろん」の 字は ない')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）
@@ -281,6 +307,21 @@ if r.returncode == 0:
     # 第4.59版：iPad で 画面いっぱいに 動かす とき（時計の 帯の 高さが 0 と 伝わる）の あき（Swift と Web の 両方）・ふつうの 作り方には テスト版の 印が ない
     wv = open(os.path.join(out, 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read()
     check('userInterfaceIdiom == .pad' in wv and 'safeAreaInsets.bottom > 0 ? 24 : 20' in wv and '--top-inset2' in html and 'var(--top-inset2,0px)' in html, 'iPad で 画面いっぱいの とき 上の帯を 時計の 帯の ぶん あける（Swift の 24/20pt・Web の 24px）')
+    # 第4.156版（まさちゃん 2026/11/12 04:53「アプリ自体、iPadでもiPhoneと同じ大きさで表示されるようにして！」）：広い 画面（幅 480pt より 広い＝iPad の 画面いっぱいの 窓）では
+    #   Webの 画面を iPhone の 大きさ（390×844）で まん中に 置く（まわりは 黒・時計の 帯は かくす）。iPhone（幅 440pt まで）と iPad の 細い 窓では 今までどおり 窓いっぱい。
+    #   出す アプリは iPhone用の まま（Package.swift は .phone だけ：上で 確かめて いる）。本物の 動きは CI（iPad の シミュレーター・.pad を 足して 作った もの）で 見る
+    ap2 = open(os.path.join(out, 'Tengel.swiftpm', 'TengelApp.swift'), encoding='utf8').read(); wvc = nocom(wv); apc = nocom(ap2)
+    ci_run = open(os.path.join(W, 'ios', 'ci', 'run.sh'), encoding='utf8').read(); ci_st = open(os.path.join(W, 'ios', 'ci', 'selftest.js'), encoding='utf8').read()
+    check('enum PhoneFrame' in wvc and 'static let size = CGSize(width: 390, height: 844)' in wvc and 'static let wideWidth: CGFloat = 480' in wvc and 'width > wideWidth' in wvc
+          and 'var framed: Bool { PhoneFrame.isWide(bounds.width) }' in wvc and 'let frame = wide ? phoneRect() : bounds' in wvc and 'framed ? (0, 0) : overlap' in wvc
+          and 'backgroundColor = wide ? .black : .tengelPage' in wvc and '"framed": framed' in wvc and '"webWidth": webView.frame.width' in wvc
+          and 'WideBackdrop()' in apc and 'struct WideBackdrop: View' in apc and 'PhoneFrame.isWide(geo.size.width)' in apc and '.opacity(wide ? 1 : 0)' in apc and '.statusBarHidden(wide)' in apc
+          and apc.index('Color(uiColor: .tengelPage)') < apc.index('WideBackdrop()') < apc.index('TengelWebView()') and 'TengelWebView()\n                .ignoresSafeArea(edges: .bottom)' in ap2,
+          '第4.156版：広い 画面（iPad の 画面いっぱいの 窓）では アプリを iPhone の 大きさ（390×844）で まん中に（まわりは 黒・重なりの あきは 0）・iPhone（幅 480pt まで）は 今までどおり 窓いっぱい')
+    check("supportedDeviceFamilies: [.pad, .phone]" in ci_run and 'phase "$IPAD" ipadwide 4 1000 wide-main report-4' in ci_run and 'L.get("framed") is True' in ci_run and 'b.get("w") == 390' in ci_run
+          and 'async function phase4()' in ci_st and "PH === 4 ? phase4" in ci_st and "report('4', R)" in ci_st and "await mark('wide-main')" in ci_st
+          and '.pad' not in open(os.path.join(out, 'Tengel.swiftpm', 'Package.swift'), encoding='utf8').read().split('supportedDeviceFamilies')[1].split(']')[0],
+          '第4.156版：CI は .pad を 足して 作った もの（Swift Playgrounds の ▶ と 同じ 形）を iPad の シミュレーターで 動かして、Webの 画面が 390pt 幅に なるか 見る（出す アプリの Package.swift は .phone だけの まま）')
     check('window.__TEST=true;' not in html and 'テスト版の道具' in html and 'gift-test' in html, 'ふつうの 作り方：テスト版の 印（__TEST=true）は 入って いない（道具の コードは あるが 動かない）')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
     check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz_push.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')

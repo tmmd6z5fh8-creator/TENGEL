@@ -765,7 +765,7 @@
     return boneMats(h, rot, off, trs);
   }
 
-  // ---------- 考える（ランダムに 歩く・止まる・30回に 1回 走る／寝る）----------
+  // ---------- 考える（ランダムに 歩く・止まる・30回に 1回 走る〈夜は 顔を 上げて まわりを 見る：第4.156版で ねるのを やめた〉）----------
   //   場所は フィールドの 絵の px（1052×1657）：歩く 所＝だ円（中 526,1090・横 380・縦 330）・走る 道＝だ円（中 526,1070・横 430・縦 420）
   const AREA = { cx: 526, cy: 1090, rx: 280, ry: 300 }, TRACK = { cx: 526, cy: 1070, rx: 400, ry: 410, n: 3.2 };
   // 走る 道（角の 丸い 四角＝スーパー だ円）を 細かい 点に して、地面の 長さで 1周を 区切る（反時計まわり：手前を 右へ）
@@ -842,11 +842,13 @@
       st.want.graze = special === 'graze' ? 1 : 0; st.want.look = special === 'look' ? [0.7, -0.2] : [0, 0]; return;
     }
     if (special === 'special' || special === 'run' || special === 'sleep') {
-      if (st.tod === 'night' && special !== 'run') { st.mode = 'sleep'; st.until = t + Math.max(9, fsec || 60); st.sleepT = t; st.sl = 0; st.rise = 0; st.doze = 0; st.lieDoneT = 0; return; }
-      if (st.tod !== 'night' && special !== 'sleep' && (h.opt.stage || 1) > 1.4) {      // 大きな 馬（幻の馬・神様馬）は 道から はみ出すので 走らず、顔を 上げて まわりを 見る
+      // 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：夜も ねない（横に ならない）。
+      //   夜の「とくべつ」と 見本用の 'sleep' は、顔を 上げて まわりを 見る（前は 夜＝60秒 ねた）
+      if (special === 'sleep' || (st.tod === 'night' && special !== 'run')) { st.mode = 'idle'; st.until = t + (special === 'sleep' ? Math.max(3, fsec || 6) : 6); st.want.graze = 0; st.want.look = [0.6, 0.35]; return; }
+      if (st.tod !== 'night' && (h.opt.stage || 1) > 1.4) {      // 大きな 馬（幻の馬・神様馬）は 道から はみ出すので 走らず、顔を 上げて まわりを 見る
         st.mode = 'idle'; st.until = t + 6; st.want.graze = 0; st.want.look = [0.6, 0.35]; return;
       }
-      if (st.tod !== 'night' && special !== 'sleep') {
+      if (st.tod !== 'night') {
         st.mode = 'run'; st.lap = 0; st.runV = 0; st.runEnd = 0; st.runT = 0; st.tPrev = null; st.toTrack = true; return;
       }
     }
@@ -869,11 +871,9 @@
   // 1コマ 進める（dt 秒）。px：絵の px と 地面の 長さ（体の 高さ 1 ＝ 何 px）
   function step(h, st, t, dt, rnd) {
     rnd = rnd || Math.random;
-    // 第4.154版（バグ直し）：ねて いる 間（sleep）は ここで 次の 動きを 決めない。起きる 動き（下の「寝る」）が おわって から 決める。
-    //   前は、ねる 時間が おわる 瞬間（until）に 起きる 動きが まだ 少し のこって いると（コマの 間が のびた とき・コマの 区切りの ずれ）、先に 次の 動きへ 移って
-    //   「横に なった しるし」（st.sl）が 1 の まま のこった → 立って 歩いて いる のに ねて いる あつかい：撫でる・ごはん・呼ぶが 始まらない・うんちを しない・お世話の 反応が 出ない
-    //   （夜の フィールド だけ：次に ねる まで 続いた）
-    if (t >= st.until && st.mode !== 'run' && st.mode !== 'sleep' && !st.careHold) decide(h, st, t, rnd);      // お世話の 間（careHold）は 勝手に 動かない
+    // 第4.156版：ねる（mode 'sleep'）は なくした。第4.154版の バグ直し（ねて いる 間は 次の 動きを 決めない）も いらなく なった
+    if (st.mode === 'sleep') { st.mode = 'idle'; st.until = Math.min(st.until, t + 2); }      // 第4.156版：ねる 形は もう ない（外から 入って きても 立った まま 次へ）
+    if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      // お世話の 間（careHold）は 勝手に 動かない
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
     // 第4.151版（まさちゃん 11/11 09:07「ボタンを押してから行われるまでが遅すぎる」）：お世話で 呼ばれた ときは 急ぎ足（st.hurry 倍：tc_care.js の HURRY）。
@@ -939,20 +939,11 @@
     const gz = st.mode === 'idle' ? st.want.graze : 0; st.graze += clamp(gz - st.graze, -dt * 0.7, dt * 0.7);
     const lk = st.mode === 'idle' ? st.want.look : [0, 0]; st.look = st.look.map((v, i) => v + clamp(lk[i] - v, -dt * 0.9, dt * 0.9));
     st.lookS = st.lookS.map((v, i) => v + (st.look[i] - v) * Math.min(1, dt * 3));
-    // 寝る：横に なる（5.6秒・なめらかに）→ 休む → ねむる（頭を 下げる）→ 頭を 上げる → 起きる（1.7秒・勢いよく）
-    let dzT = 0;
-    if (st.mode === 'sleep') {
-      const tUp = st.until - RISE_DUR;
-      if (st.sl < 1) { st.sl = Math.min(1, st.sl + dt / (st.lieDur || LIE_DUR)); if (st.sl >= 1) st.lieDoneT = t; }      // ごろん（お世話）は 速く 横に なる
-      else if (t >= tUp) st.rise = Math.min(1, st.rise + dt / RISE_DUR);
-      dzT = st.sl >= 1 && t > (st.lieDoneT || 0) + 1.5 && t < tUp - 2.0 ? 1 : 0;
-      if (st.rise >= 1) {          // 起きた：前へ ずれた ぶんを 場所に うつす（見た目は そのまま）
-        const sc = scaleAt(h, st.y); st.x += Math.cos(st.dir) * XE * sc; st.y += Math.sin(st.dir) * XE * sc * 0.5;
-        st.mode = 'idle'; st.until = t + 4; st.sl = 0; st.rise = 0; st.doze = 0; st.upT = t; st.lieDur = null; st.flop = null;       // 立った 直後に 頭を ふり上げて 体が 少し はずむ
-      }
-    }
-    st.doze = (st.doze || 0) + clamp(dzT - (st.doze || 0), -dt / 2.0, dt / 2.5);
-    st.sleep = (st.sl || 0) * (1 - (st.rise || 0));          // かげ 用（寝て いる 強さ）
+    // 第4.156版：寝る・起きる（横に なる：夜に ねる・撫でた あとの ねむる・ハートの 抽選の ごろん）は ぜんぶ なくした。
+    //   横に なる 強さ（st.sl）・起きる 強さ（st.rise）・ねむる（st.doze）・かげ 用（st.sleep）は いつも 0（体の 形と かげの 計算は その 数を 読む だけ）。
+    //   形の 計算（buildLieKeys の 足の 長さ・つま先を 地面に つける 計算＝h.lie.geo）は、のび・ぴょん・はしゃぐ（お世話の 反応）が 使う ので のこして ある。
+    //   横に なる キー（LIE_DEF・LIE_SEQ・RISE_SEQ）は 道具（kisekae/tc/legcheck.py：st.poseKey・st.sl を じかに 入れて 形を 確かめる）用に のこる だけ＝アプリの 中では 使われない
+    st.sl = 0; st.rise = 0; st.doze = 0; st.sleep = 0; st.flop = null; st.lieDur = null;
     // 足の 時間：歩はばと 足の 速さは 歩く 強さで かわる（体の 進む 速さと そろえる）
     const g = GAITS.walk, gR = GAITS.run;
     st.wAmp = 0.5 + 0.5 * st.eff;

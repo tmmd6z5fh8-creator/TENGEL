@@ -85,8 +85,7 @@ def free(pg, sec=90):                 # お世話・当たりの 演出・馬の
     return False
 
 
-def awake(pg):                        # 夜は 馬が ときどき ねる（ねて いる 間は 撫でる・ごはん・呼ぶが 始まらない）→ 起こして 待つ
-    pg.evaluate("() => TCApp.test.wake()")
+def awake(pg):                        # 第4.156版：馬は もう ねない（前は 夜に ねて いる 馬を 道具箱の wake で 起こして 待った）。念のため 立って いる ことを 見る
     pg.wait_for_function("() => { const BR = TCCare._hb[1]; return BR.mode !== 'sleep' && !(BR.sl > 0.001); }", timeout=40000)
 
 
@@ -219,13 +218,12 @@ try:
             w0 = pg.evaluate(WAL); tool(pg, 'prize', {'h': 'normal', 'z': {'k': 'pt', 'v': 300}})
             pg.wait_for_function("() => !TCApp.state.visit && TCApp.test.info().free", timeout=90000); pg.wait_for_timeout(500); m = pg.evaluate(MSG); shot(pg, 'tct_msg_prize')
             sheet(pg); now = pg.evaluate("() => document.querySelector('#tct [data-now]').innerText"); sheet(pg, False)
-            # 夜は 馬が ねる：ねて いる 間は ごはんが 始まらない（前から）→ 道具箱で 当たりを えらぶと 起きる
-            pg.evaluate("() => { const BR = TCCare._hb[1], t = TCCare.S.lastT; Object.assign(BR, { mode: 'sleep', until: t + 600, sleepT: t, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); }")
-            pg.wait_for_function("() => TCCare._hb[1].sl >= 1", timeout=30000)
-            stage_click(pg, 407, 1494); pg.wait_for_timeout(600); z0 = pg.evaluate("() => [!!TCCare.S.chooser, TCCare._hb[1].mode]")
-            tool(pg, 'prize', {'h': 'normal', 'z': {'k': 'pt', 'v': 300}}); pg.wait_for_timeout(300); m2 = pg.evaluate(MSG); t0 = time.time()
-            pg.wait_for_function("() => { const BR = TCCare._hb[1]; return BR.mode !== 'sleep' && !(BR.sl > 0.001); }", timeout=20000)
-            check(z0 == [False, 'sleep'] and '300P が 当たる' in m2 and '起こすよ' in m2, f'ねて いる 馬（夜）：ごはんは 始まらない → 道具箱で 当たりを えらぶと 起きる（{time.time() - t0:.1f}秒・{m2!r}）')
+            # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：馬は もう ねない ＝ 道具箱の「ねて いる 馬を 起こす」も なくした。
+            #   外から ねる 形（mode 'sleep'）を 入れても 立った まま（横に なる しるしは 0）・道具箱の お知らせに「起こすよ」は 出ない
+            pg.evaluate("() => { const BR = TCCare._hb[1], t = TCCare.S.lastT; Object.assign(BR, { mode: 'sleep', until: t + 600 }); }")
+            pg.wait_for_timeout(500); z0 = pg.evaluate("() => { const BR = TCCare._hb[1]; return [BR.mode === 'sleep', BR.sl || 0, BR.rise || 0, typeof TCApp.test.wake]; }")
+            tool(pg, 'prize', {'h': 'normal', 'z': {'k': 'pt', 'v': 300}}); pg.wait_for_timeout(300); m2 = pg.evaluate(MSG)
+            check(z0 == [False, 0, 0, 'undefined'] and '300P が 当たる' in m2 and '起こすよ' not in m2, f'馬は ねない：ねる 形を 入れても 立った まま・道具箱の「起こす」は なくした（{z0}・{m2!r}）')
             feed(pg, 1); ok = free(pg, 120); pg.wait_for_timeout(800); w1 = pg.evaluate(WAL)
             ev = pg.evaluate("() => TengelWallet.events().filter(e => /^tc-/.test(e.id)).slice(-1).map(e => [e.amount, e.what])")
             check('いつもの 馬に' in m and '300P が 当たる' in m and '次の ごはん・おそうじ：300P' in now.replace('\n', ' ') and ok and w1 - w0 == 300 and ev and 'お世話' in ev[0][1],
@@ -283,14 +281,14 @@ try:
             check('ハートを 9こに' in m and 'ぴょん！' in m and q0 == [9, 9, 9, True, 0] and ok and q1 == [12, 0, '{}'], f'「当たり → ぴょん！」→ ハート 9こ・1回 なでると 抽選は 当たり（お世話トークン 7 → {q1[0]}）{q0}')
             tool(pg, 'heart', {'win': False}); tool(pg, 'flag', {'k': 'rare', 'v': True}); tool(pg, 'flag', {'k': 'nibble', 'v': True}); pg.wait_for_timeout(200)
             q = pg.evaluate("() => [TCCare.S.heart, JSON.stringify(TCCare.S.test)]")
-            check(q[0] == 9 and json.loads(q[1]) == {'win': False, 'rare': True, 'nibble': True}, f'「ハズレ → ごろん」「首を かしげる」「ほうきを かじる」も えらべる（動きの きまりは test_tc_care.js）{q[1]}')
+            check(q[0] == 9 and json.loads(q[1]) == {'win': False, 'rare': True, 'nibble': True}, f'「ハズレ → ふぅ〜」「首を かしげる」「ほうきを かじる」も えらべる（動きの きまりは test_tc_care.js）{q[1]}')
             pg.evaluate("() => { const S = TCCare.S; S.test = null; S.heart = S.heartShow = 0; }")
             # おそうじ：ゴミ・うんち・金のうんち
             free(pg); pg.evaluate("() => { const st = TCApp.state, BR = TCCare._hb[1]; st.trash = []; BR.trash = []; st.trashAt = Date.now() + 9e5; BR.poops = []; st.poops = []; }"); pg.wait_for_timeout(400)
             tool(pg, 'trash'); pg.wait_for_timeout(500); q = pg.evaluate("() => [TCApp.state.trash.length, TCCare._hb[1].trash.length, document.querySelector('#tcOv .tcmsg').textContent]")
             tool(pg, 'trash'); pg.wait_for_timeout(300); m2 = pg.evaluate(MSG)
             check(q[0] == 5 and q[1] == 5 and 'ゴミが 出たよ' in q[2] and 'ゴミは もう' in m2 and pg.evaluate("() => TCApp.state.trash.length") == 5, f'「ゴミを 出す」→ 5か所（本番と 同じ お知らせ）・もう 出て いる ときは そのまま（{m2!r}）')
-            tool(pg, 'poop', {'gold': True}); m = pg.evaluate(MSG)      # ねて いたら 起きて から する
+            tool(pg, 'poop', {'gold': True}); m = pg.evaluate(MSG)
             okp = True
             try: pg.wait_for_function("() => (TCCare._hb[1].poops || []).some(q => q.gold === true)", timeout=60000)
             except Exception: okp = False

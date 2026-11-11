@@ -4,7 +4,7 @@
 //   ・上の 帯の「🧪 テスト」→ 紙の 道具箱（下へ スクロール）。ボタンを 押すと とじて、フィールドに お知らせ → そのまま お世話を すると その 結果が 出る
 //   ・馬：本番と 同じ 流れで やってくる／帰る（tc_app.js の TEST.visit）
 //   ・ごはん・おそうじの 当たり：次の 1回 だけ 決める（TEST.prize）。その 当たりが 出る 馬（いつもの 馬・幻の馬・神様馬）が いない ときは 先に 入れかえる ＝ 本番で 起きる 組み合わせ だけ
-//   ・そのほか：ハート 10この 抽選（ぴょん／ごろん）・金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・呼ぶの 3つ・ゴミ・うんち・金のうんち・高確ゾーン・トークン
+//   ・そのほか：ハート 10この 抽選（ぴょん／ふぅ〜：第4.156版で ごろんを やめた）・金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・呼ぶの 3つ・ゴミ・うんち・金のうんち・高確ゾーン・トークン
 //   TCTest.open(el, api)・TCTest.close()・TCTest.isOpen()　api＝tc_app.js の TEST
 const TCTest = (() => {
   const CSS = `
@@ -54,7 +54,7 @@ const TCTest = (() => {
     + `<p>本番と 同じ 流れ（リセットの 抽選で 当たった とき）で やってくるよ。来てから 30分・お世話 5回 → 5分で 帰る のも 本番と 同じ。</p>`
     + `<div class="ttr">${btn('🌙 幻の馬を 出す', 'visit', { k: 'maboroshi' }, 'v')}${btn('✨ 神様馬を 出す', 'visit', { k: 'kamisama' }, 'k')}${btn('いつもの 馬に もどす', 'visit', { k: null }, 'n')}</div></div>`
     + `<div class="tts" data-sec="prize"><h3>② 次の ごはん・おそうじの 当たり</h3>`
-    + `<p>えらんだ 当たりが、次の 1回 だけ 出るよ（そのあとは いつもの くじ）。その 当たりが 出る 馬が いない ときは、先に 馬が かわるよ。お世話トークンが 0 の ときは 20こに、ねて いる 馬は 起こすよ。</p>`
+    + `<p>えらんだ 当たりが、次の 1回 だけ 出るよ（そのあとは いつもの くじ）。その 当たりが 出る 馬が いない ときは、先に 馬が かわるよ。お世話トークンが 0 の ときは 20こに するよ。</p>`
     + `<div class="ttr">${btn('くじに もどす', 'prize', { z: 'lot' }, 'n')}${btn('はずれ', 'prize', { z: null }, 'n')}</div>`
     + `<div class="ttg">いつもの 馬</div>`
     + `<div class="ttr"><span class="ttl">ポイント</span>${PTS.map(v => btn(P(v), 'prize', { h: 'normal', z: { k: 'pt', v } })).join('')}</div>`
@@ -65,7 +65,7 @@ const TCTest = (() => {
     + `<div class="tts" data-sec="other"><h3>③ そのほかの 当たり・めずらしい 動き</h3>`
     + `<p>どれも 次の 1回 だけ。</p>`
     + `<div class="ttg">撫でる（ハート 10この 抽選）</div>`
-    + `<div class="ttr">${btn('当たり → ぴょん！（トークン +5）', 'heart', { win: true })}${btn('ハズレ → ごろん', 'heart', { win: false })}</div>`
+    + `<div class="ttr">${btn('当たり → ぴょん！（トークン +5）', 'heart', { win: true })}${btn('ハズレ → ふぅ〜', 'heart', { win: false })}</div>`
     + `<p>ハートを 9こに するよ。1回 なでる（3回 なぞる）と 抽選が 始まるよ。</p>`
     + `<div class="ttr">${btn('首を かしげる「？」', 'flag', { k: 'rare', v: true })}</div>`
     + `<div class="ttg">ごはん</div>`
@@ -92,7 +92,6 @@ const TCTest = (() => {
     root.addEventListener('click', e => { const b = e.target.closest('.ttb'); if (b && !busy) act(b.dataset.a, b.dataset.o ? JSON.parse(b.dataset.o) : {}); });
   }
   const BUSY = 'お世話が おわったら\nもう一度 押してね';
-  const WOKE = '\n（ねて いる 馬を\n起こすよ）';          // 夜は 馬が ねる：ねて いる 間は お世話が 始まらない ので 起こす
   async function act(a, o) {
     busy = true;
     try {
@@ -106,12 +105,12 @@ const TCTest = (() => {
         if (o.z === 'lot') { await api.prize(undefined); m = '当たりは\nいつもの くじに\nもどしたよ'; }
         else {
           const before = api.info().visit, r = await api.prize(o.z, o.h), now = api.info().visit;
-          m = r === 'busy' ? BUSY : (before !== now ? `${HORSE[now || 'normal']}に\nかわったよ\n` : '') + `次の ごはん・\nおそうじは\n${zLines(o.z)}` + (api.wake() ? WOKE : '');
+          m = r === 'busy' ? BUSY : (before !== now ? `${HORSE[now || 'normal']}に\nかわったよ\n` : '') + `次の ごはん・\nおそうじは\n${zLines(o.z)}`;
         }
       } else if (a === 'heart') {
         close();
         const r = api.heart(o.win);
-        m = r === 'busy' ? BUSY : `ハートを 9こに\nしたよ\n1回 なでると 抽選\n→ ${o.win ? 'ぴょん！' : 'ごろん'}` + (api.wake() ? WOKE : '');
+        m = r === 'busy' ? BUSY : `ハートを 9こに\nしたよ\n1回 なでると 抽選\n→ ${o.win ? 'ぴょん！' : 'ふぅ〜'}`;
       } else if (a === 'flag') {
         close(); api.flag(o.k, o.v);
         m = o.k === 'gold' ? '次の ニンジンは\n金のニンジンだよ\n（ごはんで\nニンジンを えらぶ）'
@@ -119,14 +118,13 @@ const TCTest = (() => {
           : o.k === 'rare' ? '次に なでると\n首を かしげるよ'
           : o.k === 'nibble' ? '次の おそうじで\nほうきを かじるよ\n（馬の 顔の 近くで\n2つ目を 片付ける）'
           : `次の「呼ぶ」は\n「${CALL[o.v]}」だよ`;
-        if (api.wake()) m += WOKE;
       } else if (a === 'trash') {
         close(); const r = api.trash();
         m = r === 'busy' ? BUSY : r === 'have' ? 'ゴミは もう\n出て いるよ' : null;      // 出た お知らせは 本番の もの
       } else if (a === 'poop') {
         close(); const r = api.poop(o.gold);
         m = r === 'busy' ? BUSY : r === 'visit' ? '幻の馬・神様馬は\nうんちを しないよ\n（いつもの 馬に\nもどしてね）' : r === 'full' ? 'うんちは 3こまで\n（先に おそうじ）'
-          : (o.gold ? 'もうすぐ\n金のうんちを するよ\n（おそうじ すると\n高確ゾーン）' : 'もうすぐ\nうんちを するよ') + (api.wake() ? WOKE : '');
+          : (o.gold ? 'もうすぐ\n金のうんちを するよ\n（おそうじ すると\n高確ゾーン）' : 'もうすぐ\nうんちを するよ');
       } else if (a === 'high') { close(); api.high(); m = '高確ゾーン\n（お世話 5回）を\nつけたよ'; }
       else if (a === 'tokens') { close(); api.tokens(); m = 'お世話トークンを\n20こに したよ'; }
       if (m) api.msg('🧪 ' + m, 3.6);
@@ -135,7 +133,7 @@ const TCTest = (() => {
   }
   function paintNow() {
     const el = root && root.querySelector('[data-now]'); if (!el || !api) return;
-    const i = api.info(), fl = Object.keys(i.flags || {}).map(k => k === 'call' ? `呼ぶ＝${CALL[i.flags.call]}` : k === 'win' ? `ハートの 抽選＝${i.flags.win ? 'ぴょん！' : 'ごろん'}` : FLAG[k] || k);
+    const i = api.info(), fl = Object.keys(i.flags || {}).map(k => k === 'call' ? `呼ぶ＝${CALL[i.flags.call]}` : k === 'win' ? `ハートの 抽選＝${i.flags.win ? 'ぴょん！' : 'ふぅ〜'}` : FLAG[k] || k);
     if (i.gold) fl.push('金のうんち');
     el.innerHTML = `いまの 馬：<b>${i.visit ? `${i.visit === 'kamisama' ? '✨ ' : '🌙 '}${HORSE[i.visit]}</b>（のこり ${Math.ceil((i.left || 0) / 60)}分）` : `${HORSE.normal}</b>（${esc(i.color)}・お世話 ${i.cares}回）`}<br>`
       + `トークン ${i.stock}・ハート ${i.heart}・高確 ${i.high}・ゴミ ${i.trash}・うんち ${i.poops}・チケット ${i.tickets}<br>`

@@ -5,6 +5,8 @@
 #  3) 実機（iPhone・iPad）用に Release で作れるか（署名なし）
 #  4) iPhoneのシミュレーター：1回目（買い目を予約・的中ボタンの演出・自動バックアップ・画面のスクショ）→ 2回目（開き直しても記録が残る・保存場所を消す）→ 3回目（「戻す？」→ 戻す）
 #  5) iPadのシミュレーター：1回目だけ（iPhone用のアプリなので、互換モードで iPhone の大きさの画面になる。スクショで確かめる）
+#  6) iPadの 広い 窓（第4.156版）：Package.swift に .pad を 足して 作った もの（Swift Playgrounds の ▶ と 同じ＝iPad の 画面いっぱいの 窓）で、
+#     アプリが iPhone の 大きさ（390×844）で まん中に 出るか（Webの 画面の 幅 390・まわりは 黒・スクショ）。出す アプリ（1〜5）は .phone だけの まま
 # 結果は results/（summary.txt・ログ・report-*.json・スクショ）。ワークフローが ios-ci-<ランナー> ブランチに置く
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -159,6 +161,44 @@ if [ -n "$IPAD" ]; then
   phase "$IPAD" ipad 1 1000 $P1
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1
+fi
+# 6) iPad の 広い 窓（.pad を 足して 作る：リポジトリの Package.swift は かえない）
+if [ -n "$IPAD" ]; then
+  rm -rf /tmp/pw && mkdir -p /tmp/pw && cp -R "$PKG" /tmp/pw/Tengel.swiftpm
+  perl -0pi -e 's/supportedDeviceFamilies:\s*\[\s*\.phone\s*\]/supportedDeviceFamilies: [.pad, .phone]/' /tmp/pw/Tengel.swiftpm/Package.swift
+  if grep -q 'supportedDeviceFamilies: \[.pad, .phone\]' /tmp/pw/Tengel.swiftpm/Package.swift; then
+    T0=$(date +%s)
+    (cd /tmp/pw/Tengel.swiftpm && xcodebuild -scheme "$SCHEME" -destination "platform=iOS Simulator,id=$IPAD" -derivedDataPath "$ROOT/ddw" -configuration Debug CODE_SIGNING_ALLOWED=NO build > "$OUT/build-wide.log" 2>&1)
+    BW=$?
+    say "== build wide (.pad added) Debug simulator: exit $BW ($(( $(date +%s) - T0 ))s)"
+    [ $BW -ne 0 ] && tail -60 "$OUT/build-wide.log" > "$OUT/build-wide-tail.txt"
+    WAPP=$(find "$ROOT/ddw/Build/Products" -maxdepth 2 -name "*.app" -type d 2>/dev/null | head -1)
+    if [ $BW -eq 0 ] && [ -n "$WAPP" ]; then
+      say "   wide app: UIDeviceFamily=$(/usr/libexec/PlistBuddy -c "Print UIDeviceFamily" "$WAPP/Info.plist" 2>/dev/null | grep -E '^\s*[0-9]+' | tr -d ' ' | tr '\n' ',')"
+      xcrun simctl boot "$IPAD" > /dev/null 2>&1; xcrun simctl bootstatus "$IPAD" -b > /dev/null 2>&1
+      xcrun simctl ui "$IPAD" appearance light > /dev/null 2>&1
+      xcrun simctl install "$IPAD" "$WAPP" > "$OUT/ipadwide-install.txt" 2>&1 && say "== iPad wide: installed"
+      phase "$IPAD" ipadwide 4 1000 wide-main report-4
+      # ダークモードでも 1枚（まわりは 黒・アプリは まん中）
+      xcrun simctl ui "$IPAD" appearance dark > /dev/null 2>&1
+      xcrun simctl launch "$IPAD" "$BID" > /dev/null 2>&1; sleep 8; shot "$IPAD" "ipadwide-dark" 1000
+      xcrun simctl terminate "$IPAD" "$BID" > /dev/null 2>&1
+      if [ -f "$OUT/ipadwide-report-4.json" ]; then
+        say "   wide: $(python3 -c '
+import json, sys
+r = json.load(open(sys.argv[1])); b = r.get("basic") or {}; L = r.get("layout") or {}; k = r.get("banner") or {}
+ok = b.get("w") == 390 and 0 < (b.get("h") or 0) <= 844 and L.get("framed") is True and L.get("webWidth") == 390 and (L.get("hostWidth") or 0) > 480 and str(L.get("cssTop", "")).strip() in ("0px", "") and not r.get("errors")
+print("web %sx%s dpr %s framed %s host %s web@(%s,%s) %sx%s ksk %s errors %d -> %s" % (b.get("w"), b.get("h"), b.get("dpr"), L.get("framed"), L.get("hostWidth"), L.get("webX"), L.get("webY"), L.get("webWidth"), L.get("webHeight"), k.get("k"), len(r.get("errors") or []), "OK" if ok else "CHECK"))
+' "$OUT/ipadwide-report-4.json" 2>&1)"
+      else
+        say "   wide: report-4 not found CHECK"
+      fi
+      applog "$IPAD" ipadwide
+      xcrun simctl shutdown "$IPAD" > /dev/null 2>&1
+    fi
+  else
+    say "== build wide: Package.swift の 書きかえが できなかった CHECK"
+  fi
 fi
 find "$HOME/Library/Logs/DiagnosticReports" -name "*.ips" -newer "$S" 2> /dev/null | while read -r f; do grep -q "テンゲル\|AppModule" "$f" && cp "$f" "$OUT/crash-$(basename "$f")"; done
 say "== done"

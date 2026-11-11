@@ -3,7 +3,7 @@
 //   ・絵は ぜんぶ 計算で 描く 折り紙ふう（紙の 手・ハート・札・きらきら）。下の ボタンの 絵は かり（まさちゃんの アイコン 待ち）
 //   ・撫でる：指で なぞると 紙の 手が ついてくる。3回 なでると 撫でる 1回 → なかよしハート +1
 //       体の 場所で 反応が かわる：頭 → すりすり・首 → しっぽ ふりふり・背中 → ぐーっと のび・鼻 → ぷしゅっ
-//       時間帯：朝 → 手を 出すと 元気に うなずく・夕方 → ゆったり よりかかる・夜 → あくびを して ねむる
+//       時間帯：朝 → 手を 出すと 元気に うなずく・夕方 → ゆったり よりかかる・夜 → あくび（第4.156版：あくびの あと ねむる のは やめた）
 //       育ち：小さい ころ（1〜2段目）→ はしゃぐ（とばない）・大きく なると → 手の 方へ 顔を よせる
 //       たまに（1/20）：首を かしげる
 //   ・なかよしハート（11/09 08:37 まさちゃん）：ハートは 1分に 5こまで（6回目からは ハートなし ※仮）
@@ -18,7 +18,8 @@
 //         「連続で撫ですぎると、馬がバグる。撫でたあとのごろんをすると、馬が宙に少し浮き、地面と空中をいったりきたりする」→
 //           もと：10こ目の ハートの 反応（のび 4.6秒・小さい 馬の はしゃぐ）が ごろん（横に なる）と 重なって、横に なった まま 体が はずんで いた。
 //           抽選は 反応が おわって から・はしゃぐ／あくび などは 抽選の ときは 出さない・横に なる 間は お世話の 反応を 止める（tc_horse.js）
-//       10こで 1/66 の 抽選 → 当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ごろん（どちらも 少し しゃがんで ためてから）
+//       10こで 1/66 の 抽選 → 当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜（どちらも 少し しゃがんで ためてから）
+//       第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：ハズレの ごろん・夜の ねむる を なくした（横に なる 動きは どこにも 出ない）
 //       ※ぴょんは 当たりの 合図 なので、ほかの 場面では とばない（小さい 子の はしゃぎも とばない）
 //   ・お世話の ストック：10分で +1・最高 20（解放の +5 も 20 まで ※仮）
 //   ・ちかちか しない（光らせない・ふくらむ ものは ゆっくり）
@@ -533,7 +534,6 @@ const TCCare = (() => {
     if (S.busy || S.phase !== 'idle') return;
     if (t < S.coolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
-    if (BR.mode === 'sleep' || BR.sl > 0.001) { S.mode = null; BR.careHold = false; return; }      // 寝て いる 間は 来ない（かり）
     if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      // 幻の馬・神様馬：正面の まま その場で 撫でる（11/09 09:40 まさちゃん）
     comeNear(t);
   }
@@ -605,7 +605,7 @@ const TCCare = (() => {
     const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      // 次に 撫でたら、この 回の あとの 動きは とり消す
     cutReacts(t);
     S.got = S.got.filter(q => t - q < 60);
-    const getHeart = S.got.length < RULE.perMin, willLot = getHeart && S.heart + 1 >= RULE.max;      // この 回で ハートが 10こ → 抽選（ぴょん／ごろん）
+    const getHeart = S.got.length < RULE.perMin, willLot = getHeart && S.heart + 1 >= RULE.max;      // この 回で ハートが 10こ → 抽選（ぴょん／ふぅ〜）
     at(t + 0.25, live(tt => {
       react(rk, rd, tt, { side }); ev(tt, rk);
       const hp = rk === 'sneeze' ? P('nose') : rk === 'swish' ? P('rump') : rk === 'stretch' ? P('withers') : P('poll');
@@ -613,13 +613,12 @@ const TCCare = (() => {
       if (rk === 'sneeze' && hp) fx({ k: 'bits', t0: tt + 0.62, w: hp.slice() });
     }));
     let end = t + 0.25 + rd;
-    if (!willLot) {                      // 抽選の ときは あとの 動き（ゆったり・はしゃぐ・あくび → ねむる）を 出さない：ごろん／ぴょんと 重ならない
+    if (!willLot) {                      // 抽選の ときは あとの 動き（ゆったり・はしゃぐ・あくび）を 出さない：抽選の 動き（ぴょん／ふぅ〜）と 重ならない
       if (O.tod === 'evening') { at(end - 0.6, live(tt => { react('calm', 3.6, tt, { side }); ev(tt, 'calm'); tagW(P('poll'), 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 34, dur: 2.0, rot: 0.06 }); })); end += 3.0; }
       if (O.stageNo <= 2) { at(end - 0.3, live(tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); })); end += 1.9; }
       if (O.tod === 'night') {
         at(end - 0.4, live(tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); }));
-        at(end + 1.7, live(tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); }));
-        end += 3.6;
+        end += 1.8;                      // 第4.156版：あくび だけ（前は この あと 横に なって ねむった：寝転ぶ 演出は ぜんぶ なくした）
       }
     }
     // なかよしハート（1分に 5こまで）
@@ -629,7 +628,7 @@ const TCCare = (() => {
       fx({ k: 'fly', t0: t + 0.15, x: q[0], y: q[1], i, dur: 0.8 }); ev(t + 0.15, 'heart');
       S.heart = Math.min(RULE.max, S.heart + 1);
       at(t + 0.95, tt => { S.heartShow = Math.max(S.heartShow, i + 1); ev(tt, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: tt, x: SLOT(i)[0], y: SLOT(i)[1] }); });
-      if (S.heart >= RULE.max) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      // 抽選は 反応が おわって から（前は 1.45秒後＝のび などの 途中で ためる・横に なる が 重なった）
+      if (S.heart >= RULE.max) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      // 抽選は 反応が おわって から（前は 1.45秒後＝のび などの 途中で ためる 動きが 重なった）
     }
     // つづけて 5回まで → 7秒 できない（7秒 あけたら 数え直し）
     if (t - S.petLast > RULE.cool) S.petN = 0;
@@ -638,7 +637,7 @@ const TCCare = (() => {
     S.hand.hideT = t + 0.55; at(t + 0.55, tt => ev(tt, 'fold'));
     S.holdUntil = end + 0.5; S.ses.done = true;
   }
-  // なかよしハート 10こ：1/66 の 抽選（当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ごろん）
+  // なかよしハート 10こ：1/66 の 抽選（当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜〈第4.155版までは ごろん〉）
   function lottery(t) {
     const win = S.demo && S.demo.win != null ? S.demo.win : T1('win', () => rnd() < RULE.win);
     S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
@@ -651,10 +650,10 @@ const TCCare = (() => {
       at(t + 2.6, tt => { S.drainT = tt; });
       at(t + 6.6, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.3; });
     } else {
-      at(t + 1.7, tt => { Object.assign(BR, { mode: 'sleep', until: tt + 2.4 + 2.1 + 1.7, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: 2.4, flop: tt }); ev(tt, 'flop'); });
-      at(t + 3.9, tt => { tagW(P('withers') || [BR.x, BR.y], 'ごろん', tt, { off: [20, -110], size: 40, dur: 2.0, rot: -0.06 }); ev(tt, 'goron'); });
+      // 第4.156版（まさちゃん 2026/11/12「寝転ぶ演出は全部消して！」）：ハズレは ごろん（横に なる）を やめて、ためいき「ふぅ〜」（立った まま ゆったり：夕方に 撫でた ときと 同じ 動き）
+      at(t + 1.7, tt => { react('calm', 2.8, tt); ev(tt, 'calm'); tagW(P('poll') || [BR.x, BR.y], 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 36, dur: 2.0, rot: 0.06 }); });
       at(t + 3.3, tt => { S.drainT = tt; });
-      at(t + 8.1, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.2; });
+      at(t + 5.0, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.2; });
     }
   }
   // さわる（x,y：フィールドの px）
@@ -716,11 +715,11 @@ const TCCare = (() => {
     // ハートは 1分に 5こまで
     pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5こまで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
     // なかよしハート 10こ → 抽選
-    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+13.0', '抽選（1/66）→ ハズレは ごろん']], path: PET3('neckA', 'neckB'), end: 'R+13.2' },
+    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
     pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
     // ④ 時間帯・⑤ 育ち・たまに
     pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり よりかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
-    pet_j: { front: 1, heart: 3, got: [-30, -15], greeted: true, cap: [[0.2, 'R+13.0', '夜は あくびを して ねむる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+13.2' },
+    pet_j: { front: 1, heart: 3, got: [-30, -15], greeted: true, cap: [[0.2, 'R+8.2', '夜は あくび']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+8.4' },
     pet_k: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+7.2', '小さい ころは はしゃぐ']], path: PET3('neckA', 'neckB', 0.5, 0.3), end: 'R+7.4' },
     pet_l: { front: 1, heart: 2, got: [-30, -15], greeted: true, rare: true, cap: [[0.2, 'R+5.4', 'たまに（1/20）首を かしげる']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.6' },
     // 呼ぶ

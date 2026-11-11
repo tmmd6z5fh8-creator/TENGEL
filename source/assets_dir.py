@@ -1,12 +1,15 @@
 # アプリに 入れる 絵・動画・音の フォルダを きめる（第4.146版・まさちゃん 2026/11/10 21:26「圧縮少しやわらか−45Mbの方でやって！」）
 #   もと（マスター）＝ios/<名前>（fx_assets・bcp_assets・tc_assets・fig_assets）：道具が 作る もの。**さわらない・上書きしない**（作り直せない ものも ある）
-#   軽い 版＝ios/lite/<名前>（kisekae/lite_assets.py が 作る：動画 CRF 29・絵 WebP quality 75・ほかは そのままの 写し ＋ 台帳 lite.info）
+#   軽い 版＝ios/lite/<名前>（kisekae/lite_assets.py が 作る：動画 CRF 24〈第4.155版までは 29〉・絵 WebP quality 75・ほかは そのままの 写し ＋ 台帳 lite.info）
 #   adir(名前)：軽い 版が あれば そちら（古く なって いたら 止める：もとを 作り直した あとは lite_assets.py を もう一度）・なければ もと。
 #     LITE=0 で いつも もと（軽く する 前の 絵で ためす とき）。どちらも リポジトリには 入れない（.gitignore）
 #   使う 所：build_ios.py（Resources に 入れる もの）・テスト（test_native.py・test_tc.py・test_fig.py・test_bcp_still.py・test_bcx_flash.py：アプリに 入る 絵で ためす）
 import json, os, re, sys
 W = os.path.dirname(os.path.abspath(__file__))
 NAMES = ('fx_assets', 'bcp_assets', 'tc_assets', 'fig_assets')
+TC_GONE = frozenset(('tc_se_flop.m4a', 'tc_se_goron.m4a', 'tc_se_lie.m4a', 'tc_se_hop.m4a', 'tc_se_unlock.m4a'))
+#   第4.156版：使わなく なった 音（tc/tc_care.js が 出さなく なった できごと flop・goron・lie。hop は 11/09 に ぴょんの 音を はしゃぐ（frisk）に かえて から 鳴らして いなかった。
+#   unlock は tc_se_piron.m4a と 中身が 同じ ＝ アプリは piron を 鳴らす：tc/tc_app.js の SE_SKIP）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
 
@@ -23,6 +26,8 @@ def superseded(name, files):
     files = set(files)
     if name == 'fig_assets' and 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
         return {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}
+    if name == 'tc_assets':                                     # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」「いないデータの削除」）：
+        return files & TC_GONE                                  #   横に なる 動きの 音（どさっ・ごろん・ねる）は もう 鳴らない ので アプリに 入れない（もとの フォルダには 残す）
     return set()
 
 

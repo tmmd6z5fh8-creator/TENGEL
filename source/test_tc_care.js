@@ -2,7 +2,8 @@
 //   node test_tc_care.js
 //   ・撫でる：つづけて 5回まで → 5回目が おわったら 7秒 できない（さわっても・ボタンを 押しても「あと N秒」）→ 7秒で また できる・7秒 あけたら 数え直し
 //   ・つづけて 撫でた とき：前の 反応を 止める（cut）・前の 回の あとの 動き（はしゃぐ）は 出ない
-//   ・ハート 10こ → 抽選は 反応が おわって から・はしゃぐ は 出ない・ごろんの ときに のこった 反応は ぜんぶ 止めて ある
+//   ・ハート 10こ → 抽選は 反応が おわって から・はしゃぐ は 出ない・ハズレの ときに のこった 反応は ぜんぶ 止めて ある
+//   ・第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：ハズレは ふぅ〜（ためいき）・夜に 撫でても あくび だけ ＝ 馬は 横に ならない（mode 'sleep'・ごろんの 音は 出ない）
 //   ・呼ぶ：つづけて 5回まで → 5回目が おわったら 7秒 できない
 //   ・早く 始まる：撫でる・ごはんは 歩かないで その場で 横向きに（急ぎ足 hurry）・カメラは 押した ときから 寄る・仕上げの ズームは 待たない
 //     呼ぶ（近づく・甘える）は いちばん 手前まで 歩かない・着いたら 急ぎ足を もどす
@@ -28,11 +29,9 @@ function stepBrain(t, dt) {
     const dx = BR.tgt[0] - BR.x, dy = BR.tgt[1] - BR.y, d = Math.hypot(dx, dy), v = 190 * (BR.hurry > 1 ? BR.hurry : 1) * dt;
     if (d <= Math.max(v, 28)) { BR.mode = 'idle'; BR.until = t + 5; } else { BR.x += dx / d * v; BR.y += dy / d * v; BR.dir = Math.atan2(dy / 0.5, dx); }
   } else if (BR.mode === 'turn') { BR.dir = BR.turnTo; BR.mode = 'idle'; }
-  else if (BR.mode === 'sleep') {
-    if (BR.sl < 1) BR.sl = Math.min(1, BR.sl + dt / (BR.lieDur || 4.6));
-    else if (t >= BR.until - 1.7) { BR.rise = Math.min(1, (BR.rise || 0) + dt / 1.7); if (BR.rise >= 1) { BR.mode = 'idle'; BR.sl = 0; BR.rise = 0; BR.flop = null; } }
-  }
+  if (BR.mode === 'sleep' || BR.flop != null || BR.sl > 0) LAY++;      // 第4.156版：お世話が 馬を 横に する ことは もう ない（1コマでも あれば 数える）
 }
+let LAY = 0;
 const run = sec => { for (let n = Math.max(1, Math.round(sec * 60)); n > 0; n--) { T += 1 / 60; stepBrain(T, 1 / 60); TCCare.pre(T, 1 / 60); } };
 const until = (fn, max) => { const t0 = T; while (!fn() && T - t0 < (max || 40)) run(1 / 60); return fn(); };
 const S = TCCare.S, evs = (k, from) => EV.filter(e => e.k === k && e.t >= (from == null ? -1 : from) - 1e-6);
@@ -72,15 +71,18 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   check(S.petN === 4 && T >= S.coolUntil, `7秒 あけたら 数え直し（2回 → 休み → 4回 でも 止まらない）［petN ${S.petN}・phase ${S.phase}・あと ${(S.coolUntil - T).toFixed(1)}］`);
   pet(); check(T < S.coolUntil, 'そこから 5回目で 止まる');
   until(() => S.phase === 'idle', 20); until(() => T >= S.coolUntil + 0.2, 10);
-  console.log('ハート 10こ → 抽選（ごろん）');
+  console.log('ハート 10こ → 抽選（ハズレ：ふぅ〜）');
   S.got = []; S.heart = S.heartShow = 9; TCCare.pressPet(T); until(() => S.phase === 'pet', 6);
   pet('back'); const tc = T, f0 = evs('frisk').length;
   check(S.busy && S.heart === 10, '10こ目の ハート → 抽選を 予約');
   until(() => evs('max', tc).length > 0, 12); const tm = T;
   check(tm - tc >= 4.6 - 0.3, `抽選は 反応（のび 4.6秒）が おわって から（${(tm - tc).toFixed(2)}秒後。前は 1.45秒後）`);
-  until(() => BR.mode === 'sleep', 6);
-  check(BR.mode === 'sleep' && BR.flop != null && BR.reacts.every(r => r.cut != null || T >= r.t0 + r.dur || r.k === 'gather') && evs('frisk').length === f0, 'ごろんの とき：のこった 反応は 止めて ある・はしゃぐ は 出ない');
-  until(() => S.phase === 'idle' && !S.busy && BR.mode !== 'sleep', 30); check(S.phase === 'idle' && S.heart === 0, 'ごろんの あと もとに もどる（ハートは 0 から）');
+  until(() => evs('calm', tm).length > 0, 6); const tfu = T;
+  check(evs('calm', tm).length === 1 && Math.abs(tfu - tm - 1.7) < 0.2 && BR.reacts.some(r => r.k === 'calm' && r.cut == null), `ハズレ → ふぅ〜（ためいき：抽選の ${(tfu - tm).toFixed(2)}秒後・立った まま）`);
+  check(BR.reacts.every(r => r.cut != null || T >= r.t0 + r.dur || r.k === 'gather' || r.k === 'calm') && evs('frisk').length === f0, 'ハズレの とき：のこった 反応は 止めて ある・はしゃぐ は 出ない');
+  until(() => S.phase === 'idle' && !S.busy, 30);
+  check(S.phase === 'idle' && S.heart === 0 && T - tm < 6.5, `ふぅ〜の あと もとに もどる（ハートは 0 から・抽選から ${(T - tm).toFixed(1)}秒。前の ごろんは 約8秒）`);
+  check(LAY === 0 && BR.mode !== 'sleep' && !['flop', 'goron', 'lie'].some(k => evs(k).length), '馬は 横に ならない（ごろん・横に なる 音の できごとは 出ない）');
   console.log('呼ぶ');
   until(() => T >= S.coolUntil + 0.2, 10);
   let rel = 0;
@@ -219,8 +221,8 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   check(S.stock === st1 + 5 && evs('unlock', tt0).length === 1 && S.heart === 0, '当たり → ぴょん！・お世話トークン ＋5・ハートは 0 から');
   until(() => T >= S.coolUntil + 0.2, 10); S.got = []; S.heart = S.heartShow = 9; S.test = { win: false }; tt0 = T;
   TCCare.pressPet(T); until(() => S.phase === 'pet', 6); pet();
-  check(until(() => S.lot && S.lot.win === false, 12), 'win＝false：ハズレ（ごろん）も えらべる');
-  until(() => S.phase === 'idle' && !S.busy && BR.mode !== 'sleep', 30);
+  check(until(() => S.lot && S.lot.win === false, 12), 'win＝false：ハズレ（ふぅ〜）も えらべる');
+  until(() => S.phase === 'idle' && !S.busy, 30);
   // おそうじ：ほうきを かじる（馬の 顔の 近くで 2つ目を 片付けた とき）
   S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); BR.trashDone = false;
   const two = () => { BR.poops = []; BR.trash = [pile(300, 1250, 0), pile(850, 950, 1)]; TCCare.press(T, 'clean'); until(() => S.phase === 'clean', 3); const C = S.clean; sweepTo(C.tg[0]); sweepTo(C.tg[1]); run(0.4); };
@@ -239,5 +241,16 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   check(!banOn() && evs('banin').length === bi, '帰った あとの ルーレット・チケット：バナーは また 出ない（前は 出て、そのまま 残って いた）');
   await TCCare.special('maboroshi'); run(1.0); check(banOn() && S.ban.kind === 'maboroshi' && !S.ban.gone, 'つぎに 幻の馬が 来たら 新しい バナーが 出る');
   TCCare.special(null); run(0.6);
+  // 第4.156版：夜に 撫でても ねない（あくび だけ）
+  console.log('夜に 撫でる（あくび だけ・ねない）');
+  until(() => S.phase === 'idle' && !S.busy, 30); until(() => T >= S.coolUntil + 0.2, 10);
+  await TCCare.init({ canvas: { getContext: () => ctx }, horse: HO, brain: BR, rnd: () => RND, tod: 'night', stageNo: 5, props: false, onEvent: e => EV.push(e) });
+  Object.assign(BR, { x: 526, y: 900, dir: 0, mode: 'idle', reacts: [] }); S.stock = S.stockShow = 9; S.got = []; S.heart = S.heartShow = 0; S.petN = 0; run(0.5);
+  const tnt = T; TCCare.pressPet(T); check(until(() => S.phase === 'pet', 6), '夜でも 撫でられる');
+  pet(); until(() => evs('yawn', tnt).length > 0, 8);
+  check(evs('yawn', tnt).length === 1, '夜に 撫でた あと：あくび');
+  until(() => S.phase === 'idle' && !S.busy, 30); run(8);
+  check(LAY === 0 && BR.mode !== 'sleep' && !(BR.sl > 0) && !['flop', 'goron', 'lie'].some(k => evs(k).length), 'あくびの あとも ねない（横に ならない・前は 1.7秒後に 横に なって ねむった）');
+  check(T - tnt < 22 && S.phase === 'idle', `夜の 撫でるは あくびで おわる（${(T - tnt).toFixed(1)}秒で もとの 画面）`);
   console.log(`\n${ok} OK / ${ng} NG`); process.exit(ng ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -8,6 +8,7 @@
 //        時計・電波に重なる分の測り方・CMの動画・フォント・コピーを確かめて、設定・CM・記録・説明書を見せる
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
+// 4回目（第4.156版）：iPad の 広い 窓（run.sh が .pad を 足して 作った アプリ＝Swift Playgrounds の ▶ と 同じ 形）で、アプリが iPhone の 大きさ（390×844）で まん中に 出るか
 (function () {
   'use strict';
   if (window.top !== window) return;
@@ -533,6 +534,19 @@
     await sleep(700);
     report('link', { phase: 3, device: DEV, before: before, after: location.href });
   }
-  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : phase1;
+  // 第4.156版：iPad の 広い 窓（Swift Playgrounds の ▶ と 同じ）→ Webの 画面は 390×844（まわりは 黒）・時計の 帯の あきは 0・壁紙は 引きのばさない（--ksk 1）
+  async function phase4() {
+    await ready();
+    var R = { phase: 4, device: DEV };
+    R.basic = basic();
+    await step(R, 'layout', async function () { var L = await TengelNative.layout(); L.cssTop = getComputedStyle(document.documentElement).getPropertyValue('--top-inset'); L.cssBottom = getComputedStyle(document.documentElement).getPropertyValue('--bottom-inset'); return L; });
+    await step(R, 'screen', function () { return { w: screen.width, h: screen.height, iw: innerWidth, ih: innerHeight, dpr: devicePixelRatio, topInset2: document.documentElement.style.getPropertyValue('--top-inset2') }; });
+    tab('judge'); await sleep(900);
+    await step(R, 'banner', function () { var b = document.querySelector('#ksBnr'); if (!b) return null; var r = b.getBoundingClientRect(); return { hidden: b.hidden, w: r.width, h: r.height, k: b.style.getPropertyValue('--ksk'), ks: document.documentElement.dataset.ks || '' }; });
+    await step(R, 'header', function () { var h = document.querySelector('header.top'); if (!h) return null; var r = h.getBoundingClientRect(); return { top: r.top, w: r.width }; });
+    await mark('wide-main');
+    report('4', R);
+  }
+  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : PH === 4 ? phase4 : phase1;
   run().catch(function (e) { report('crash-' + (isManual ? 'manual' : PH), { phase: PH, device: DEV, exception: String(e && (e.stack || e.message || e)) }); });
 })();

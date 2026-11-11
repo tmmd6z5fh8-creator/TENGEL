@@ -202,15 +202,26 @@ try:
         check(gv['lp1'][:3] == [1, 0.82, False] and gv['lp2'] == [0, 1, True, w0] and gv['lp3'] == gv['lp2'] and gv['end'] == [0, 1, True, w0],
               f'いつも 30回／秒（省電力モード など）：1段 下げても かわらない → もとの 細かさに もどして おわり（{gv["lp1"]} → {gv["lp2"]}）')
         # 第4.151版（まさちゃん 11/11 09:07）：お世話の 直し。きまり（5回まで・7秒・抽選の 順・お花なし）は test_tc_care.js（画面なし）。ここは 本物の 馬で たしかめる
-        print('■ お世話：早く 始まる・ごろんで 浮かない（第4.151版）')
+        print('■ お世話：早く 始まる・止めた 反応は 消える（第4.151版）／馬は 横に ならない（第4.156版）')
         fl = pg.evaluate("""() => { const [HO, BR] = TCCare._hb, t = TCCare.S.lastT;
           const y = (st, tt) => { const q = TCHorse.wherePose(HO, TCHorse.pose(HO, st, tt), 'withers'); return q ? q[1] : NaN; };
-          const lie = Object.assign({}, BR, { mode: 'sleep', sl: 0.6, rise: 0, flop: t, lieDur: 2.4, reacts: [] }), lieF = Object.assign({}, lie, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2 }] });
           const st0 = Object.assign({}, BR, { sl: 0, rise: 0, reacts: [] }), stF = Object.assign({}, st0, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2 }] }), stC = Object.assign({}, st0, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2, cut: t - 0.3 }] });
           const d = (a, b) => Math.max(...[0, 0.06, 0.12, 0.18, 0.24, 0.3].map(k => Math.abs(y(a, t + k) - y(b, t + k))));
-          return { lie: d(lieF, lie), stand: d(stF, st0), cut: d(stC, st0), down: y(lie, t) - y(st0, t) }; }""")
-        check(fl['lie'] < 0.3 and fl['stand'] > 1.5 and fl['cut'] < 0.3 and fl['down'] > 10,
-              f'横に なった 馬は はしゃぐ 反応で 浮かない（体の 上下 {fl["lie"]:.2f}px。立って いる ときは {fl["stand"]:.1f}px はずむ）・とちゅうで 止めた 反応（cut）は 0.25秒で 消える（{fl["cut"]:.2f}px）')
+          return { stand: d(stF, st0), cut: d(stC, st0) }; }""")
+        check(fl['stand'] > 1.5 and fl['cut'] < 0.3,
+              f'立って いる 馬は はしゃぐ 反応で はずむ（{fl["stand"]:.1f}px）・とちゅうで 止めた 反応（cut）は 0.25秒で 消える（{fl["cut"]:.2f}px）')
+        # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：夜の「とくべつ」・見本用の 'sleep' でも 横に ならない（顔を 上げて まわりを 見る）。
+        #   本物の 馬の 形で 40秒ぶん 進めて、ねる 形（mode 'sleep'）に ならない・横に なる 強さが 0 の まま・背の 高さが 立って いる ときから 下がらない ことを 見る
+        nl = pg.evaluate("""() => { const HO = TCCare._hb[0], out = [];
+          const y = (st, tt) => { const q = TCHorse.wherePose(HO, TCHorse.pose(HO, st, tt), 'withers'); return q ? (q[1] - st.y) / TCHorse.scaleAt(HO, st.y) : NaN; };      // 背の 高さ（体の 高さ 1 に たいして：奥へ 歩いて 小さく 見える 分は 入れない）
+          for (const [nm, f, rnd] of [['special', ['special', 'special'], Math.random], ['sleep', ['sleep:8', 'sleep:8'], Math.random], ['rnd', [], () => 0.01]]) {
+            const st = TCHorse.brain({ tod: 'night', force: f.slice(), stand: false }); let t = 500, lay = 0, low = -1e9; const modes = new Set(); const y0 = y(Object.assign({}, st), t);
+            for (let i = 0; i < 60 * 40; i++) { t += 1 / 60; TCHorse.step(HO, st, t, 1 / 60, rnd); modes.add(st.mode); lay = Math.max(lay, st.sl || 0, st.rise || 0, st.doze || 0, st.sleep || 0);
+              if (i % 12 === 0) low = Math.max(low, y(st, t) - y0); }
+            out.push([nm, [...modes].sort().join('/'), lay, +low.toFixed(4), st.want.look[0]]); }
+          return out; }""")
+        check(all('sleep' not in o[1] and o[2] == 0 and o[3] < 0.03 for o in nl) and 'run' not in nl[0][1] and 'run' not in nl[2][1],
+              f'夜でも ねない：とくべつ・見本用の sleep・くじ（30回に 1回）どれも 横に ならない・夜は 走らない（動き {[o[1] for o in nl]}・横に なる 強さ {[o[2] for o in nl]}・背が 下がった 分〈体の 高さ 1 に たいして〉 {[o[3] for o in nl]}：前は 横に なると 0.3 より 多く 下がった）')
         lat = pg.evaluate("""async () => { const [HO, BR] = TCCare._hb, S = TCCare.S; Object.assign(BR, { x: 526, y: 820, dir: -1.2, mode: 'idle', until: S.lastT + 60 }); await new Promise(r => setTimeout(r, 400));
           const t0 = S.lastT; TCCare.press(t0, 'pet'); const h = BR.hurry, m0 = BR.mode, zb = S.zB ? S.zB.z : 0;
           for (let i = 0; i < 1200 && S.phase !== 'pet'; i++) await new Promise(r => requestAnimationFrame(r));
@@ -703,17 +714,19 @@ try:
             check(abs(q3[0] - round(q3[2] * dsf3)) <= 1 and q3[0] > 1052 and abs(q3[4] - q3[0] / 1052) < 1e-6 and not e3,
                   f'{nm3}：キャンバスの 幅 {q3[0]}px＝置き場 {q3[2]:.0f}pt × {dsf3}（前は 1052px まで）・お世話の 絵の 倍も 同じ（{q3[4]:.3f}）・エラー なし {e3[:2]}')
             if dsf3 == 3:
-                # 第4.154版（バグ直し）：夜に ねた 馬が 起きた あと「横に なった しるし」（sl）が のこらない ＝ 撫でる・ごはん・呼ぶが 始まる
-                #   前は ねる 時間が おわる 瞬間に 起きる 動きが 少し のこって いると、次の 動きへ 先に 移って sl＝1 の まま（この 画面の ように コマが おそい ほど 起きやすい）
-                wk = p3.evaluate("""async () => { const BR = TCCare._hb[1], S = TCCare.S, out = [];
-                  for (let i = 0; i < 4; i++) { const t = S.lastT; BR.force = ['idle:9'];
-                    Object.assign(BR, { mode: 'sleep', until: t + 1.9, sleepT: t, sl: 1, rise: 0, doze: 0, lieDoneT: t - 5, lieDur: null, flop: null });
-                    const w0 = performance.now(); while (BR.mode === 'sleep' && performance.now() - w0 < 60000) await new Promise(r => setTimeout(r, 100));      // 起きる まで（この 画面は コマが おそい ので 長めに 待つ）
-                    out.push([BR.mode, +BR.sl.toFixed(3), +BR.rise.toFixed(3)]); }
-                  S.coolUntil = -1e9; TCCare.press(S.lastT, 'pet'); await new Promise(r => setTimeout(r, 300));
-                  return { out, pet: S.mode }; }""")
-                check(all(o[0] != 'sleep' and o[1] == 0 and o[2] == 0 for o in wk['out']) and wk['pet'] == 'pet',
-                      f'ねた 馬が 起きる（4回）：起きる 動きが おわって から 次の 動きへ・横に なった しるしは のこらない → 撫でるが 始まる（前は のこって、撫でる・ごはん・呼ぶが 始まらなかった）{wk["out"][:3]}')
+                # 第4.156版：夜の フィールドでも 馬は ねない（前は 夜の「とくべつ」で 60秒 ねた・第4.154版は その 起きた あとの バグを 直して いた）。
+                #   アプリの 時計を 夜に して、とくべつ／見本用の sleep を させても 立った まま → 撫でるが すぐ 始まる。外から ねる 形（mode 'sleep'）を 入れても 立った まま 次へ
+                wk = p3.evaluate("""async () => { const BR = TCCare._hb[1], S = TCCare.S, out = [], gh = Date.prototype.getHours; Date.prototype.getHours = function () { return 23; };
+                  try { await new Promise(r => setTimeout(r, 400)); const tod = BR.tod;
+                    for (const f of ['special', 'sleep:3', 'x']) { const n0 = BR.n; BR.careHold = false;
+                      if (f === 'x') Object.assign(BR, { mode: 'sleep', until: S.lastT + 600, sl: 0 }); else { BR.force = [f]; BR.mode = 'idle'; BR.until = S.lastT - 1; }
+                      const w0 = performance.now(); let lay = 0; const m = new Set();
+                      while ((BR.n === n0 || performance.now() - w0 < 1500) && performance.now() - w0 < 30000) { await new Promise(r => setTimeout(r, 50)); if (performance.now() - w0 > 120) m.add(BR.mode); lay = Math.max(lay, BR.sl || 0, BR.rise || 0, BR.sleep || 0, BR.doze || 0); }
+                      out.push([f, [...m].sort().join('/'), lay, BR.n > n0]); }
+                    S.coolUntil = -1e9; TCCare.press(S.lastT, 'pet'); await new Promise(r => setTimeout(r, 300));
+                    return { tod, out, pet: S.mode }; } finally { Date.prototype.getHours = gh; } }""")
+                check(wk['tod'] == 'night' and all('sleep' not in o[1] and o[2] == 0 and o[3] for o in wk['out']) and wk['pet'] == 'pet',
+                      f'夜の フィールドでも ねない：とくべつ・見本用の sleep・外から 入れた ねる 形 → 立った まま 次の 動きへ・横に なる しるしは 0 → 撫でるが 始まる {wk["out"]}')
             c3.close()
         b.close()
 finally:
