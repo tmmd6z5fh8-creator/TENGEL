@@ -4,6 +4,7 @@
 
 
 
+
 const FigGL = (() => {
   'use strict';
   const AP = p => String(p).split('/').pop();                 
@@ -221,7 +222,9 @@ const FigGL = (() => {
       const eye = [tgt[0] + dist * Math.sin(a) * Math.cos(e), tgt[1] + dist * Math.sin(e), tgt[2] + dist * Math.cos(a) * Math.cos(e)];
       return { eye, VP: M4.mul(M4.persp(fov, asp, Math.max(0.5, dist - 3), dist + 3), M4.look(eye, tgt)) };
     }
-    async function shelfMesh() { return mesh('fg_shelf'); }
+    const SHELF = 'fg_shelf2';                       
+    async function shelfMesh() { return mesh(SHELF); }
+    const shelfTex = p => `${SHELF}_c${p + 1}.webp`;
     function drawBooth(W, H, B) {
       const cam = boothCam(W, H, B.yaw, B.pitch);
       begin(W, H, [0, 0, 0, 0]);
@@ -310,7 +313,7 @@ const FigGL = (() => {
     canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); lost = true; }, false);
     canvas.addEventListener('webglcontextrestored', () => { lost = false; cache.mesh = {}; cache.tex = {}; fb = null; try { init(); } catch (e) {   } if (api.onRestore) api.onRestore(); }, false);
     init();
-    const api = { gl, figure, boardTex, freeTex, tex, drop, shelfMesh, drawBooth, drawRoom, slotRects, snapshot, fitK, get lost() { return lost; }, onRestore: null };
+    const api = { gl, figure, boardTex, freeTex, tex, drop, shelfMesh, shelfTex, drawBooth, drawRoom, slotRects, snapshot, fitK, get lost() { return lost; }, onRestore: null };
     return api;
   }
   return { create, boardCanvas, SLOTS, PAL };
@@ -511,7 +514,7 @@ const FigApp = (() => {
     const tok = ++pageTok; loading(true);
     try {
       await fonts(); const shelf = await R.shelfMesh();
-      const name = `fg_shelf_c${p + 1}.webp`, shelfT = await R.tex(name);
+      const name = R.shelfTex(p), shelfT = await R.tex(name);
       const list = onPage(p); let Fs;
       try { Fs = await Promise.all(list.map(x => figB(x.it.n))); } catch (e) { R.drop(name); throw e; }
       if (tok !== pageTok) { R.drop(name); return false; }
@@ -630,7 +633,7 @@ const FigApp = (() => {
     }
   }
   async function snapPage(p) {
-    await fonts(); const shelf = await R.shelfMesh(), name = `fg_shelf_c${p + 1}.webp`, shelfT = await R.tex(name);
+    await fonts(); const shelf = await R.shelfMesh(), name = R.shelfTex(p), shelfT = await R.tex(name);
     try {
       const list = onPage(p), Fs = await Promise.all(list.map(x => figB(x.it.n)));
       const bts = list.map((x, k) => R.boardTex(Fs[k], x.it.info, 256));
