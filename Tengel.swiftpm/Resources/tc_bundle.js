@@ -842,11 +842,13 @@
       st.want.graze = special === 'graze' ? 1 : 0; st.want.look = special === 'look' ? [0.7, -0.2] : [0, 0]; return;
     }
     if (special === 'special' || special === 'run' || special === 'sleep') {
-      if (st.tod === 'night' && special !== 'run') { st.mode = 'sleep'; st.until = t + Math.max(9, fsec || 60); st.sleepT = t; st.sl = 0; st.rise = 0; st.doze = 0; st.lieDoneT = 0; return; }
-      if (st.tod !== 'night' && special !== 'sleep' && (h.opt.stage || 1) > 1.4) {      
+      
+      
+      if (special === 'sleep' || (st.tod === 'night' && special !== 'run')) { st.mode = 'idle'; st.until = t + (special === 'sleep' ? Math.max(3, fsec || 6) : 6); st.want.graze = 0; st.want.look = [0.6, 0.35]; return; }
+      if (st.tod !== 'night' && (h.opt.stage || 1) > 1.4) {      
         st.mode = 'idle'; st.until = t + 6; st.want.graze = 0; st.want.look = [0.6, 0.35]; return;
       }
-      if (st.tod !== 'night' && special !== 'sleep') {
+      if (st.tod !== 'night') {
         st.mode = 'run'; st.lap = 0; st.runV = 0; st.runEnd = 0; st.runT = 0; st.tPrev = null; st.toTrack = true; return;
       }
     }
@@ -870,10 +872,8 @@
   function step(h, st, t, dt, rnd) {
     rnd = rnd || Math.random;
     
-    
-    
-    
-    if (t >= st.until && st.mode !== 'run' && st.mode !== 'sleep' && !st.careHold) decide(h, st, t, rnd);      
+    if (st.mode === 'sleep') { st.mode = 'idle'; st.until = Math.min(st.until, t + 2); }      
+    if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
     
@@ -940,19 +940,10 @@
     const lk = st.mode === 'idle' ? st.want.look : [0, 0]; st.look = st.look.map((v, i) => v + clamp(lk[i] - v, -dt * 0.9, dt * 0.9));
     st.lookS = st.lookS.map((v, i) => v + (st.look[i] - v) * Math.min(1, dt * 3));
     
-    let dzT = 0;
-    if (st.mode === 'sleep') {
-      const tUp = st.until - RISE_DUR;
-      if (st.sl < 1) { st.sl = Math.min(1, st.sl + dt / (st.lieDur || LIE_DUR)); if (st.sl >= 1) st.lieDoneT = t; }      
-      else if (t >= tUp) st.rise = Math.min(1, st.rise + dt / RISE_DUR);
-      dzT = st.sl >= 1 && t > (st.lieDoneT || 0) + 1.5 && t < tUp - 2.0 ? 1 : 0;
-      if (st.rise >= 1) {          
-        const sc = scaleAt(h, st.y); st.x += Math.cos(st.dir) * XE * sc; st.y += Math.sin(st.dir) * XE * sc * 0.5;
-        st.mode = 'idle'; st.until = t + 4; st.sl = 0; st.rise = 0; st.doze = 0; st.upT = t; st.lieDur = null; st.flop = null;       
-      }
-    }
-    st.doze = (st.doze || 0) + clamp(dzT - (st.doze || 0), -dt / 2.0, dt / 2.5);
-    st.sleep = (st.sl || 0) * (1 - (st.rise || 0));          
+    
+    
+    
+    st.sl = 0; st.rise = 0; st.doze = 0; st.sleep = 0; st.flop = null; st.lieDur = null;
     
     const g = GAITS.walk, gR = GAITS.run;
     st.wAmp = 0.5 + 0.5 * st.eff;
@@ -1361,6 +1352,7 @@ function flK(t) {
 })();
 
 ;
+
 
 
 
@@ -1896,7 +1888,6 @@ const TCCare = (() => {
     if (S.busy || S.phase !== 'idle') return;
     if (t < S.coolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
-    if (BR.mode === 'sleep' || BR.sl > 0.001) { S.mode = null; BR.careHold = false; return; }      
     if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      
     comeNear(t);
   }
@@ -1981,8 +1972,7 @@ const TCCare = (() => {
       if (O.stageNo <= 2) { at(end - 0.3, live(tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); })); end += 1.9; }
       if (O.tod === 'night') {
         at(end - 0.4, live(tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); }));
-        at(end + 1.7, live(tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); }));
-        end += 3.6;
+        end += 1.8;                      
       }
     }
     
@@ -2014,10 +2004,10 @@ const TCCare = (() => {
       at(t + 2.6, tt => { S.drainT = tt; });
       at(t + 6.6, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.3; });
     } else {
-      at(t + 1.7, tt => { Object.assign(BR, { mode: 'sleep', until: tt + 2.4 + 2.1 + 1.7, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: 2.4, flop: tt }); ev(tt, 'flop'); });
-      at(t + 3.9, tt => { tagW(P('withers') || [BR.x, BR.y], 'ごろん', tt, { off: [20, -110], size: 40, dur: 2.0, rot: -0.06 }); ev(tt, 'goron'); });
+      
+      at(t + 1.7, tt => { react('calm', 2.8, tt); ev(tt, 'calm'); tagW(P('poll') || [BR.x, BR.y], 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 36, dur: 2.0, rot: 0.06 }); });
       at(t + 3.3, tt => { S.drainT = tt; });
-      at(t + 8.1, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.2; });
+      at(t + 5.0, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.2; });
     }
   }
   
@@ -2079,11 +2069,11 @@ const TCCare = (() => {
     
     pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5こまで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
     
-    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+13.0', '抽選（1/66）→ ハズレは ごろん']], path: PET3('neckA', 'neckB'), end: 'R+13.2' },
+    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
     pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
     
     pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり よりかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
-    pet_j: { front: 1, heart: 3, got: [-30, -15], greeted: true, cap: [[0.2, 'R+13.0', '夜は あくびを して ねむる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+13.2' },
+    pet_j: { front: 1, heart: 3, got: [-30, -15], greeted: true, cap: [[0.2, 'R+8.2', '夜は あくび']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+8.4' },
     pet_k: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+7.2', '小さい ころは はしゃぐ']], path: PET3('neckA', 'neckB', 0.5, 0.3), end: 'R+7.4' },
     pet_l: { front: 1, heart: 2, got: [-30, -15], greeted: true, rare: true, cap: [[0.2, 'R+5.4', 'たまに（1/20）首を かしげる']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.6' },
     
@@ -2796,7 +2786,7 @@ const TCGuide = (() => {
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
       <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
-      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
+      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
     ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
@@ -3599,7 +3589,7 @@ const TCApp = (() => {
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
-  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null };
+  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null };      
   function onCareEvent(e) {
     if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; touch(); later.push(() => growCheck()); }      
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
@@ -3773,7 +3763,7 @@ const TCApp = (() => {
   function chance(t) {                                  
     const now = Date.now();
     if (Math.random() < P_HIGH) { const S = TCCare.S; S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); }
-    if (Math.random() < P_POOP && BR && BR.mode !== 'sleep' && (BR.poops || []).length < 3) BR.poopReq = true;
+    if (Math.random() < P_POOP && BR && (BR.poops || []).length < 3) BR.poopReq = true;          
     void now;
   }
   async function startVisit(kind) {
@@ -3936,11 +3926,6 @@ const TCApp = (() => {
       BR.poopReq = true; if (gold) testGold = true; return 'ok';
     },
     
-    
-    wake() {
-      if (!testOn() || !BR || BR.mode !== 'sleep' || TCCare.S.busy) return false;
-      BR.until = Math.min(BR.until, clock() + 1.7); return true;
-    },
     msg: (txt, sec) => msg(txt, sec),
   };
 

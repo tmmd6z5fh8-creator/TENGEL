@@ -31,10 +31,27 @@ struct ContentView: View {
             // 上の時計・電池のところは、画面の地の色（ダークモードも）
             Color(uiColor: .tengelPage)
                 .ignoresSafeArea()
+            // iPad など 広い 画面：まわりを 黒に（アプリは まん中に iPhone の 大きさで 出る：WebHostView）。iPhone では 何も 描かない
+            WideBackdrop()
             // 下のタブは、Webの画面が自分でホームバーをよけるので、下は端まで広げる
             TengelWebView()
                 .ignoresSafeArea(edges: .bottom)
         }
+    }
+}
+
+/// iPad など 広い 画面（幅 480pt より 広い）の まわりの 色（黒）。時計・電池の 帯も かくす（黒の 上では 読めない ため）。
+/// iPhone・iPad の 細い 窓では すき通し＝何も かえない（第4.156版：PhoneFrame）
+struct WideBackdrop: View {
+    var body: some View {
+        GeometryReader { geo in
+            let wide = PhoneFrame.isWide(geo.size.width)
+            Color.black
+                .opacity(wide ? 1 : 0)
+                .ignoresSafeArea()
+                .statusBarHidden(wide)
+        }
+        .allowsHitTesting(false)
     }
 }
 
