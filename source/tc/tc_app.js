@@ -144,6 +144,7 @@ const TCApp = (() => {
     ov = document.createElement('div'); ov.id = 'tcOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'トレーニングセンター');
     ov.innerHTML = `<div class="tch"><button type="button" class="tcbk" data-tc="back" aria-label="もどる">← もどる</button>`
       + `<span class="tcsp"></span>`
+      + (testOn() ? TCTest.head() : '')          // テスト版だけ：道具箱の 入口（ボタンの 絵と 字は tc_test.js）
       + `<span class="tctk" hidden></span><button type="button" class="tcsd" data-tc="snd" aria-label="音"></button></div>`
       + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button><canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
     document.body.appendChild(ov);
@@ -153,6 +154,7 @@ const TCApp = (() => {
       if (b.dataset.tc === 'back') close();
       else if (b.dataset.tc === 'plan') { if (window.TCPlan) { SND.se('tc_se_button.m4a'); window.TCPlan.open(ov); } }
       else if (b.dataset.tc === 'snd') { st.snd = !st.snd; touch(); SND.setOn(st.snd); paintHead(); }
+      else if (b.dataset.tc === 'test' && testOn()) { SND.se('tc_se_button.m4a'); if (TCTest.isOpen()) TCTest.close(); else TCTest.open(stage, TEST); }
     });
     const pt = (e, kind) => {
       if (busy || !TCCare.on) return; const r = stage.getBoundingClientRect();
@@ -292,7 +294,7 @@ const TCApp = (() => {
   }
   // ---------- 馬の リセット（第4.144版）----------
   const careIdle = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      // お世話（撫でる・呼ぶも）の 途中で ない
-  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()));
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      // タイマーの のこり（秒）・まだ 動いて いなければ null
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              // タイムリミットの のこり（秒）
   let resetting = false;
@@ -318,6 +320,7 @@ const TCApp = (() => {
   function draw() {                                    // お世話の 抽選を 1回 ひく（当たり か null）
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
     if (hi) { S.high -= 1; S.highBump = clock(); st.high = S.high; touch(); }
+    if (testPrize !== undefined) { const z = testPrize; testPrize = undefined; return z ? JSON.parse(JSON.stringify(z)) : null; }      // テスト版の 道具で 決めた 結果（1回 だけ）
     const r = Math.random(); let a = 0, tab = st.visit ? PRIZES_VISIT[st.visit.kind] || PRIZES : PRIZES;
     for (const [p, z] of tab) { a += p * k; if (r < a) return Object.assign({}, z, z.k === 'tk' ? { n: tkCount() } : {}); }
     return null;
@@ -331,7 +334,7 @@ const TCApp = (() => {
     if (st.pend) give(st.pend);                                  // 前の 当たりが まだ なら 先に わたす
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      // 使った トークンも いっしょに 保存（当たり だけ 残って トークンが もどる ことが ない ように）
-    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      // ルーレットの 止まる 所も ここで 決める（50%ずつ）
+    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      // ルーレットの 止まる 所も ここで 決める（50%ずつ）
     st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
     return z;
   }
@@ -366,6 +369,86 @@ const TCApp = (() => {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
   }
+
+  // ---------- テスト版の 道具（第4.154版・まさちゃん 2026/11/11 20:00「テスト版で、トレーニングセンターの幻の馬と神様馬の出現テストできるようにして！
+  //   お世話の当選パターン全種類テストできるようにして！」）----------
+  //   テスト版（TENGEL_TEST=1 で 作った アプリ：window.__TEST）だけ、上の 帯に「🧪 テスト」→ 紙の 道具箱（tc_test.js：テスト版の tc_bundle.js に だけ 入る）。
+  //   ここは 道具箱が よぶ 入口（TEST）。App Store版では 道具箱が ない ので 何も しない（testOn が false）。
+  //   ・馬：本番と 同じ 流れ（リセットの 抽選で 当たった ときの doReset → startVisit／帰る ときの endVisit）を そのまま よぶ ＝ 見え方・音・タイムリミットは 本番と 同じ
+  //   ・当たり：次の お世話（ごはん・おそうじ）の 抽選の 結果を 1回 だけ 決める（testPrize → draw）。わたし方（ポイントは 台帳・ルーレット・チケットの 演出）は 本番と 同じ
+  //   ・そのほか（ハートの 抽選・金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・呼ぶの 3つ）：tc_care.js の S.test（次の 1回 だけ）
+  function testOn() { return !!(window.__TEST && window.TCTest); }
+  let testPrize;                 // undefined＝いつもの くじ・null＝はずれ・{ k, … }＝この 当たり
+  let testGold = false;          // 次に 出る うんちを 金のうんちに
+  const testFree = () => !!(HO && BR && !busy && !resetting && careIdle());      // お世話・当たりの 演出・馬の 入れかえの 途中で ない
+  const TEST = {
+    info() {
+      const S = TCCare.S;
+      return { visit: st.visit ? st.visit.kind : null, left: st.visit ? visitLeft(tnow()) : null, stock: S.stock, heart: S.heart, high: S.high || 0, tickets: st.tickets || 0, cares: st.cares, color: COLOR_JA[COLORS[st.color % COLORS.length]],
+        prize: testPrize, gold: testGold, flags: Object.assign({}, S.test || {}), trash: (BR && BR.trash ? BR.trash.length : 0), poops: (BR && BR.poops ? BR.poops.length : 0), free: testFree() };
+    },
+    // 馬を かえる：kind＝'maboroshi'・'kamisama'・null（いつもの 馬）。返り値：'ok'・'same'（もう その 馬）・'busy'（お世話の 途中）
+    async visit(kind) {
+      if (!testOn()) return 'off';
+      kind = kind === 'maboroshi' || kind === 'kamisama' ? kind : null;
+      if ((st.visit ? st.visit.kind : null) === kind) return 'same';
+      if (!testFree()) return 'busy';
+      resetting = true;
+      try { if (kind) { forceNext = kind; await doReset(); } else await endVisit(); } finally { resetting = false; forceNext = undefined; }
+      return 'ok';
+    },
+    // 次の お世話の 当たり：z＝undefined（くじに もどす）・null（はずれ）・{ k:'pt', v }・{ k:'rt', tier, v:[a,b]（なければ 表の 数）, win:0か1 }・{ k:'tk', n }
+    //   horse＝その 当たりが 出る 馬（'normal'・'maboroshi'・'kamisama'）：ちがう 馬が いる ときは 先に 入れかえる（本番で 起きる 組み合わせ だけ ためす）
+    async prize(z, horse) {
+      if (!testOn()) return 'off';
+      if (z === undefined) { testPrize = undefined; return 'ok'; }
+      if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
+      testPrize = z ? JSON.parse(JSON.stringify(z)) : null;
+      if (TCCare.S.stock < 1) TEST.tokens();          // トークンが ない と ためせない
+      return 'ok';
+    },
+    tokens() {
+      if (!testOn()) return 'off';
+      const S = TCCare.S; st.stock = TOKEN_MAX; st.stockAt = tnow(); S.stock = TOKEN_MAX; S.stockBump = clock(); touch(); save(); return 'ok';
+    },
+    // 撫でる：ハートを 9こに して、次の 抽選（ハート 10こ）の 結果を 決める（win＝true：ぴょん！／false：ごろん）
+    heart(win) {
+      if (!testOn()) return 'off';
+      const S = TCCare.S; if (S.busy || S.lot) return 'busy';
+      const n = TCCare.RULE.max - 1; S.heart = S.heartShow = n; st.heart = n; S.got = []; S.coolUntil = -1e9; S.petN = 0; S.drainT = null;
+      S.test = Object.assign(S.test || {}, { win: !!win }); touch(); return 'ok';
+    },
+    // 次の 1回 だけ：gold（金のニンジン）・beg（おかわりの目）・rare（首を かしげる）・nibble（ほうきを かじる）・call（'come'・'turn'・'amae'）
+    flag(k, v) {
+      if (!testOn() || ['gold', 'beg', 'rare', 'nibble', 'call'].indexOf(k) < 0) return 'off';
+      const S = TCCare.S; S.test = Object.assign(S.test || {}, { [k]: v }); return 'ok';
+    },
+    high() {
+      if (!testOn()) return 'off';
+      const S = TCCare.S, t = clock(); S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); return 'ok';
+    },
+    trash() {
+      if (!testOn()) return 'off';
+      if (st.trash.length || (BR && BR.trash && BR.trash.length)) return 'have';
+      if (!testFree()) return 'busy';
+      spawnTrash(clock(), false); return 'ok';
+    },
+    // うんちを させる（gold＝金のうんち）。幻の馬・神様馬は うんちを しない・3こ まで。ねて いる ときは 起きて から する（道具箱が wake を よぶ）
+    poop(gold) {
+      if (!testOn()) return 'off';
+      if (st.visit) return 'visit';
+      if (!BR || (BR.poops || []).filter(q => !q.sw).length >= 3) return 'full';
+      if (!testFree()) return 'busy';
+      BR.poopReq = true; if (gold) testGold = true; return 'ok';
+    },
+    // ねて いる 馬を 起こす（夜は 馬が ときどき ねる：ねて いる 間は 撫でる・ごはん・呼ぶが 始まらない ので、道具箱で 次の お世話を 決めた ときに よぶ）。
+    //   起きる 動き（1.7秒：tc_horse.js の RISE_DUR）は 本番と 同じ。ハートの 抽選の「ごろん」の 途中は さわらない。返り値＝ねて いた
+    wake() {
+      if (!testOn() || !BR || BR.mode !== 'sleep' || TCCare.S.busy) return false;
+      BR.until = Math.min(BR.until, clock() + 1.7); return true;
+    },
+    msg: (txt, sec) => msg(txt, sec),
+  };
 
   // ---------- なめらかさを 守る（第4.150版・まさちゃん 2026/11/11 02:43「トレーニングセンターも今は、カクカクしてる！ヌルヌル動くことが絶対！」）----------
   //   画面の 書きかえ ごと（ふつう 60コマ／秒）に 描く（前は 30コマ／秒に おさえて いた＝歩く 馬・お世話の 動きが カクカクして 見えた）。
@@ -422,7 +505,7 @@ const TCApp = (() => {
     if (S.stock !== st.stock) { st.stock = S.stock; touch(); }
     if (S.heart !== st.heart) { st.heart = S.heart; touch(); }
     if ((S.high || 0) !== (st.high || 0)) { st.high = S.high || 0; touch(); }
-    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
+    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) { q.gold = testGold || Math.random() < P_GOLD; testGold = false; } return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
     if (JSON.stringify(ps) !== JSON.stringify(st.poops)) { st.poops = ps; touch(); }
     if (dirty && ms - saveAt > 2000) { saveAt = ms; save(); }
   }
@@ -473,5 +556,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
 })();

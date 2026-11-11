@@ -869,7 +869,11 @@
   // 1コマ 進める（dt 秒）。px：絵の px と 地面の 長さ（体の 高さ 1 ＝ 何 px）
   function step(h, st, t, dt, rnd) {
     rnd = rnd || Math.random;
-    if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      // お世話の 間（careHold）は 勝手に 動かない
+    // 第4.154版（バグ直し）：ねて いる 間（sleep）は ここで 次の 動きを 決めない。起きる 動き（下の「寝る」）が おわって から 決める。
+    //   前は、ねる 時間が おわる 瞬間（until）に 起きる 動きが まだ 少し のこって いると（コマの 間が のびた とき・コマの 区切りの ずれ）、先に 次の 動きへ 移って
+    //   「横に なった しるし」（st.sl）が 1 の まま のこった → 立って 歩いて いる のに ねて いる あつかい：撫でる・ごはん・呼ぶが 始まらない・うんちを しない・お世話の 反応が 出ない
+    //   （夜の フィールド だけ：次に ねる まで 続いた）
+    if (t >= st.until && st.mode !== 'run' && st.mode !== 'sleep' && !st.careHold) decide(h, st, t, rnd);      // お世話の 間（careHold）は 勝手に 動かない
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
     // 第4.151版（まさちゃん 11/11 09:07「ボタンを押してから行われるまでが遅すぎる」）：お世話で 呼ばれた ときは 急ぎ足（st.hurry 倍：tc_care.js の HURRY）。

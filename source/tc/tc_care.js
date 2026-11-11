@@ -59,7 +59,7 @@ const TCCare = (() => {
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
-    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null };
+    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null, test: null };
   const POOP = [];          // うんちの 絵（おそうじで ほうきで 動かす とき）
 
   // ---------- 紙の 絵 ----------
@@ -223,6 +223,8 @@ const TCCare = (() => {
   const fx = o => S.fx.push(o);
   const SLOT = i => [26 + 134 + i * 44, 34 + 86];          // ゲージの ハートの 場所
   const mark = (k, t) => { if (S.marks[k] == null) S.marks[k] = t - S.t0; };
+  // テスト版の 道具（第4.154版・tc_test.js）：S.test に 名前が あれば、次の 1回 だけ その 結果に する（使ったら 消す）。ふだんは S.test＝null ＝ いつもの くじ（rnd を ひく 回数も 順も 前と 同じ）
+  const T1 = (k, f) => { const T = S.test; if (T && T[k] != null) { const v = T[k]; delete T[k]; return v; } return f(); };
   const tagW = (p, txt, t, o) => { if (p) fx(Object.assign({ k: 'tag', t0: t, w: p.slice(), txt, size: 36, dur: 1.5, rot: (hash(t) - 0.5) * 0.16 }, o || {})); };      // 体の 所に 札（ズームに ついて 動く）
 
   // ---------- 手前へ 来る（撫でる・呼ぶ）----------
@@ -319,7 +321,7 @@ const TCCare = (() => {
     at(t + 0.25, tt => {
       S.chooser = null;
       if (!useToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : rnd() < 1 / 30);
+      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt }; S.popVal = careLottery();
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          // 幻の馬・神様馬：正面の まま
       comeNear(tt);
@@ -373,7 +375,7 @@ const TCCare = (() => {
       at(t + 0.3, tt => tagW(P('poll'), 'なかよし +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
       end = Math.max(end, t + 2.2);
     }
-    const beg = S.demo && S.demo.beg != null ? S.demo.beg : rnd() < 1 / 4;
+    const beg = S.demo && S.demo.beg != null ? S.demo.beg : T1('beg', () => rnd() < 1 / 4);
     if (beg) {                          // おかわりの目：こちらを じっと 見る → なでると まんぞく
       at(end, tt => { S.phase = 'beg'; mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
         tagW(P('poll'), 'おかわり…？', tt + 0.2, { off: [30, -100], size: 34, dur: 2.4 }); S.begT = tt; });
@@ -479,7 +481,7 @@ const TCCare = (() => {
     if (T.poop) { BR.poops = (BR.poops || []).filter(q => q !== o); C.pg.push({ img: o.img || 0, w: o.w || 0.42, gold: !!o.gold, t0: t, from: [o.x, o.y], to: inn, y: o.y }); }
     else { o.out = t; o.from = [o.x, o.y, o.sp != null ? o.sp : 1]; o.to = inn; }
     const nose = P('nose'), br = S.finger;
-    if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : rnd() < 1 / 4)) {
+    if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : T1('nibble', () => rnd() < 1 / 4))) {
       C.nibbled = true; at(t + 0.1, tt => { react('nibble', 1.6, tt, { side: sideToward(br[0], br[1]) }); ev(tt, 'nibble'); tagW(P('nose'), 'もぐっ？', tt + 0.3, { off: [0, -100], size: 34, dur: 1.3 }); });
     }
     if (C.tg.every(q => q.done)) {       // ぜんぶ 片付いた
@@ -542,7 +544,7 @@ const TCCare = (() => {
     if (t < S.callCoolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.call[0] - 40, y: BTN.call[1] - 150, txt: `あと ${Math.ceil(S.callCoolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     if (t - S.callLast > RULE.cool) S.callN = 0;          // 7秒 あけたら 数え直し
     S.callN++;
-    kind = kind || ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3];
+    kind = kind || T1('call', () => ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3]);
     S.mode = 'call'; S.callKind = kind; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'call', { kind });
     fx({ k: 'notes', t0: t });
     if (BR.stand) { BR.reacts = []; callArrive(t + 0.1); return; }       // 幻の馬・神様馬：正面の まま（歩かない）
@@ -597,7 +599,7 @@ const TCCare = (() => {
     const z = S.ses.zone, side = sideToward(x, y), slow = O.tod === 'evening' ? 1.35 : 1;
     const ZR = { head: ['nuzzle', 2.6, 'すりすり'], neck: ['swish', 2.4, 'ふりふり'], back: ['stretch', 4.6, 'ぐーっ'], nose: ['sneeze', 1.5, 'ぷしゅっ'] };
     let [rk, rd, rt] = ZR[z] || ZR.neck;
-    const rare = S.demo && S.demo.rare != null ? S.demo.rare : rnd() < 1 / 20;
+    const rare = S.demo && S.demo.rare != null ? S.demo.rare : T1('rare', () => rnd() < 1 / 20);
     if (rare) { rk = 'tilt'; rd = 1.9; rt = '？'; }
     rd *= slow;
     const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      // 次に 撫でたら、この 回の あとの 動きは とり消す
@@ -638,7 +640,7 @@ const TCCare = (() => {
   }
   // なかよしハート 10こ：1/66 の 抽選（当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ごろん）
   function lottery(t) {
-    const win = S.demo && S.demo.win != null ? S.demo.win : rnd() < RULE.win;
+    const win = S.demo && S.demo.win != null ? S.demo.win : T1('win', () => rnd() < RULE.win);
     S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
     at(t + 0.9, tt => { react('gather', 1.0, tt); ev(tt, 'gather'); });
     if (win) {
@@ -1075,7 +1077,7 @@ const TCCare = (() => {
   //   フィールドの 間 ずっと 上に（ゲージ・お世話の 札の すぐ 下）。来た とき：上から ふわっと 落ちて ぽよん ＋ ゆっくり きらきら
   //   ルーレットに なったら 上へ すっと 消える（ルーレットの 絵にも 降臨の 帯が ある ので 2つ 出さない）→ ルーレットが おわったら また 出る
   async function special(kind) {        // kind：'kamisama'・'maboroshi'・null（ふつうの フィールドに もどる）
-    if (!kind) { if (S.ban) S.ban.hideT = S.lastT || 0; return; }
+    if (!kind) { if (S.ban) { if (S.ban.hideT == null) S.ban.hideT = S.lastT || 0; S.ban.gone = true; } return; }      // gone＝帰った（第4.154版：もう 出さない）
     BANNER = new Image(); BANNER.src = AP(`tc_items/tc_banner_${kind}.webp`); try { await BANNER.decode(); } catch (e) { }
     S.ban = { kind, showT: null, hideT: null, shown: false };
   }
@@ -1109,7 +1111,9 @@ const TCCare = (() => {
     if (B.showT == null && B.hideT == null) B.showT = t + 0.6;
     if (S.rtReq != null) {
       if (S.rtReq && !S.rtOn) { S.rtOn = true; if (B.hideT == null) { B.hideT = t; ev(t, 'banout'); } }
-      else if (!S.rtReq && S.rtOn) { S.rtOn = false; B.showT = t + 0.3; B.hideT = null; B.shown = false; }
+      else if (!S.rtReq && S.rtOn) { S.rtOn = false; if (!B.gone) { B.showT = t + 0.3; B.hideT = null; B.shown = false; } }
+      // 第4.154版（バグ直し）：幻の馬・神様馬が 帰った あと、いつもの 馬で ルーレット・チケットが 当たると、演出の おわりに 帰った 馬の「降臨！」の バナーが また 出て、そのまま 残って いた
+      //   （ルーレットの あとは いつも バナーを 出し直して いた）→ 帰った バナー（gone）は 出し直さない
       S.rtReq = null;
     }
     if (!B.shown && B.hideT == null && B.showT != null && t >= B.showT) { B.shown = true; ev(t, 'banin', { kind: B.kind }); }

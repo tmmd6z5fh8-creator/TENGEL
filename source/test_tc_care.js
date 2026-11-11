@@ -183,5 +183,61 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   run(6.0); check(S.phase === 'beg', '6秒 までは なでて もらうのを 待つ');
   check(until(() => S.phase === 'idle', 6) && T - tb < 10, `なでない まま 6.5秒 → そのまま おしまい（${(T - tb).toFixed(1)}秒で もとに もどる。前は なでる まで ずっと 待って いた）`);
   RND = 0.5;
+  // 第4.154版（まさちゃん 11/11 20:00「テスト版で…お世話の当選パターン全種類テストできるようにして！」）：テスト版の 道具が 使う S.test
+  //   名前が あれば 次の 1回 だけ その 結果（使ったら 消える）・なければ いつもの くじ（rnd）。App Store版では S.test は いつも null
+  console.log('テスト版の 道具（S.test：次の 1回 だけ 結果を 決める）');
+  until(() => S.phase === 'idle', 30); RND = 0.99;      // 0.99：金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・ハートの 当たりは どれも 出ない 数。呼ぶは「甘える」
+  check(S.test === null, 'ふだんは S.test＝null');
+  S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' });
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
+  check(S.feed && S.feed.gold === false, '決めて いない → ニンジンは ふつう（いつもの くじ）');
+  until(() => S.phase === 'idle', 30); check(!evs('beg', T - 12).length, '決めて いない → おかわりの目は 出ない');
+  S.test = { gold: true, beg: true };
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'feed', 10);
+  check(S.feed.gold === false && S.test.gold === true, 'gold：リンゴでは 使わない（次の ニンジン まで のこる）');
+  check(until(() => S.phase === 'beg', 20) && !('beg' in S.test), 'beg：ごはんの あと おかわりの目（使ったら 消える）');
+  until(() => S.phase === 'idle', 30);
+  let h1 = S.heart; S.got = [];
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
+  check(S.feed.gold === true && !('gold' in S.test), 'gold：次の ニンジンは 金のニンジン（使ったら 消える）');
+  until(() => S.phase === 'idle', 30); check(S.heart === Math.min(10, h1 + 3) && !evs('beg', T - 8).length, '金のニンジン → なかよし ＋3・おかわりの目は もう 出ない（1回 だけ）');
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
+  check(S.feed.gold === false, 'その 次の ニンジンは ふつう（いつもの くじに もどる）'); until(() => S.phase === 'idle', 30);
+  // 呼ぶ
+  run(7.5); TCCare.pressCall(T); check(S.callKind === 'amae', '決めて いない → 呼ぶは いつもの くじ（0.99 → 甘える）'); until(() => S.phase === 'idle', 20);
+  for (const k of ['come', 'turn']) { run(7.5); S.test = Object.assign(S.test || {}, { call: k }); TCCare.pressCall(T); check(S.callKind === k && !('call' in S.test), `call：次の 呼ぶは「${k}」（使ったら 消える）`); until(() => S.phase === 'idle', 20); }
+  // 撫でる：首を かしげる・ハートの 抽選（当たり）
+  until(() => T >= S.coolUntil + 0.2, 10); S.got = []; S.heart = S.heartShow = 0;
+  S.test = { rare: true }; let tt0 = T; TCCare.pressPet(T); until(() => S.phase === 'pet', 6); pet(); run(0.5);
+  check(evs('tilt', tt0).length === 1 && !('rare' in S.test), 'rare：次に なでると 首を かしげる（使ったら 消える）');
+  pet(); run(0.5); check(evs('tilt', tt0).length === 1, 'その 次は いつもの 反応');
+  until(() => S.phase === 'idle', 30); until(() => T >= S.coolUntil + 0.2, 10);
+  S.got = []; S.heart = S.heartShow = 9; S.test = { win: true }; const st1 = S.stock; tt0 = T;
+  TCCare.pressPet(T); until(() => S.phase === 'pet', 6); pet();
+  check(until(() => S.lot && S.lot.win === true, 12) && !('win' in S.test), 'win：ハート 10こ の 抽選は 当たり（使ったら 消える）');
+  until(() => S.phase === 'idle' && !S.busy, 30);
+  check(S.stock === st1 + 5 && evs('unlock', tt0).length === 1 && S.heart === 0, '当たり → ぴょん！・お世話トークン ＋5・ハートは 0 から');
+  until(() => T >= S.coolUntil + 0.2, 10); S.got = []; S.heart = S.heartShow = 9; S.test = { win: false }; tt0 = T;
+  TCCare.pressPet(T); until(() => S.phase === 'pet', 6); pet();
+  check(until(() => S.lot && S.lot.win === false, 12), 'win＝false：ハズレ（ごろん）も えらべる');
+  until(() => S.phase === 'idle' && !S.busy && BR.mode !== 'sleep', 30);
+  // おそうじ：ほうきを かじる（馬の 顔の 近くで 2つ目を 片付けた とき）
+  S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); BR.trashDone = false;
+  const two = () => { BR.poops = []; BR.trash = [pile(300, 1250, 0), pile(850, 950, 1)]; TCCare.press(T, 'clean'); until(() => S.phase === 'clean', 3); const C = S.clean; sweepTo(C.tg[0]); sweepTo(C.tg[1]); run(0.4); };
+  tt0 = T; two(); check(evs('nibble', tt0).length === 0, '決めて いない → ほうきは かじらない（0.99）'); until(() => S.phase === 'idle', 30); BR.trashDone = false;
+  S.test = { nibble: true }; tt0 = T; two(); check(evs('nibble', tt0).length === 1 && !('nibble' in S.test), 'nibble：次の おそうじで ほうきを かじる（使ったら 消える）'); until(() => S.phase === 'idle', 30); BR.trashDone = false;
+  S.test = null; RND = 0.5;
+  // 第4.154版（バグ直し）：幻の馬・神様馬が 帰った あとの ルーレット・チケットで、帰った 馬の 降臨の バナーが また 出ない
+  console.log('降臨の バナー（帰った あとは 出し直さない）');
+  until(() => S.phase === 'idle', 30);
+  const banOn = () => !!(S.ban && S.ban.hideT == null && S.ban.showT != null);
+  await TCCare.special('kamisama'); run(1.0); check(banOn() && S.ban.shown && evs('banin', T - 2).length === 1, '神様馬が 来た → 降臨の バナーが 出る');
+  TCCare.roulette(true); run(0.5); const r1 = banOn(); TCCare.roulette(false); run(1.0);
+  check(!r1 && banOn() && S.ban.shown, 'いる 間の ルーレット：演出の 間は 消えて、おわったら また 出る（前と 同じ）');
+  TCCare.special(null); run(0.6); check(!banOn(), '帰った → バナーは 消える');
+  const bi = evs('banin').length; TCCare.roulette(true); run(0.5); TCCare.roulette(false); run(1.5);
+  check(!banOn() && evs('banin').length === bi, '帰った あとの ルーレット・チケット：バナーは また 出ない（前は 出て、そのまま 残って いた）');
+  await TCCare.special('maboroshi'); run(1.0); check(banOn() && S.ban.kind === 'maboroshi' && !S.ban.gone, 'つぎに 幻の馬が 来たら 新しい バナーが 出る');
+  TCCare.special(null); run(0.6);
   console.log(`\n${ok} OK / ${ng} NG`); process.exit(ng ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

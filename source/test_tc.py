@@ -702,6 +702,18 @@ try:
             q3 = p3.evaluate("() => { const c = document.querySelector('#tcOv .tcgl'), s = document.querySelector('#tcOv .tcst').getBoundingClientRect(); return [c.width, c.height, s.width, devicePixelRatio, TCCare.S.cs]; }")
             check(abs(q3[0] - round(q3[2] * dsf3)) <= 1 and q3[0] > 1052 and abs(q3[4] - q3[0] / 1052) < 1e-6 and not e3,
                   f'{nm3}：キャンバスの 幅 {q3[0]}px＝置き場 {q3[2]:.0f}pt × {dsf3}（前は 1052px まで）・お世話の 絵の 倍も 同じ（{q3[4]:.3f}）・エラー なし {e3[:2]}')
+            if dsf3 == 3:
+                # 第4.154版（バグ直し）：夜に ねた 馬が 起きた あと「横に なった しるし」（sl）が のこらない ＝ 撫でる・ごはん・呼ぶが 始まる
+                #   前は ねる 時間が おわる 瞬間に 起きる 動きが 少し のこって いると、次の 動きへ 先に 移って sl＝1 の まま（この 画面の ように コマが おそい ほど 起きやすい）
+                wk = p3.evaluate("""async () => { const BR = TCCare._hb[1], S = TCCare.S, out = [];
+                  for (let i = 0; i < 4; i++) { const t = S.lastT; BR.force = ['idle:9'];
+                    Object.assign(BR, { mode: 'sleep', until: t + 1.9, sleepT: t, sl: 1, rise: 0, doze: 0, lieDoneT: t - 5, lieDur: null, flop: null });
+                    const w0 = performance.now(); while (BR.mode === 'sleep' && performance.now() - w0 < 60000) await new Promise(r => setTimeout(r, 100));      // 起きる まで（この 画面は コマが おそい ので 長めに 待つ）
+                    out.push([BR.mode, +BR.sl.toFixed(3), +BR.rise.toFixed(3)]); }
+                  S.coolUntil = -1e9; TCCare.press(S.lastT, 'pet'); await new Promise(r => setTimeout(r, 300));
+                  return { out, pet: S.mode }; }""")
+                check(all(o[0] != 'sleep' and o[1] == 0 and o[2] == 0 for o in wk['out']) and wk['pet'] == 'pet',
+                      f'ねた 馬が 起きる（4回）：起きる 動きが おわって から 次の 動きへ・横に なった しるしは のこらない → 撫でるが 始まる（前は のこって、撫でる・ごはん・呼ぶが 始まらなかった）{wk["out"][:3]}')
             c3.close()
         b.close()
 finally:

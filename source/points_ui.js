@@ -995,7 +995,10 @@
       + '<p class="hint" style="margin:10px 0 6px">お得パック（壁紙パックと 結果ボードカスタムの セット・App Store の 買い物は しない）：<span id="testBundle"></span></p>'
       + '<div class="row"><button type="button" class="btn" data-test="uown">買ったことにする</button></div>'
       + '<p class="hint" style="margin:10px 0 6px">トレーニングセンターの チケット（壁紙の 解放か ' + pts(P.TICKET_POINTS) + ' に かえるか 選べる）：<span id="testTk"></span></p>'
-      + '<div class="row"><button type="button" class="btn" data-test="tkadd">チケットを 1枚 もらう</button></div>';
+      + '<div class="row"><button type="button" class="btn" data-test="tkadd">チケットを 1枚 もらう</button></div>'
+      // 第4.154版：トレーニングセンターの テスト（幻の馬・神様馬を 出す／お世話の 当たりを えらぶ）は トレーニングセンターの 中の 道具箱（tc/tc_test.js）
+      //   「幻」の 字は テーマの しぼった 字に ない ので、ここは ひらがな（この 画面は テーマの 字で 出る。トレーニングセンターの 中は 別の 字）
+      + '<p class="hint" id="testTcHint" style="margin:10px 0 0">トレーニングセンターの テスト（まぼろしの馬・神様馬を 出す／お世話の 当たりを ぜんぶ えらべる）：トレーニングセンターを ひらいて、上の「🧪 テスト」を 押してね</p>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
