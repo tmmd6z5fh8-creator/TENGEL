@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [macos-15, macos-26]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 50
+    timeout-minutes: 70      # 第4.156版：iPad の 広い 窓の 確かめ（もう 1回 作る）の 分 のばした（前は 50）
     steps:
       - uses: actions/checkout@v4
       - name: Build and run in Simulator
