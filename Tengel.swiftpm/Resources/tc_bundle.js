@@ -869,7 +869,11 @@
   
   function step(h, st, t, dt, rnd) {
     rnd = rnd || Math.random;
-    if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      
+    
+    
+    
+    
+    if (t >= st.until && st.mode !== 'run' && st.mode !== 'sleep' && !st.careHold) decide(h, st, t, rnd);      
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
     
@@ -1418,7 +1422,7 @@ const TCCare = (() => {
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
-    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null };
+    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null, test: null };
   const POOP = [];          
 
   
@@ -1582,6 +1586,8 @@ const TCCare = (() => {
   const fx = o => S.fx.push(o);
   const SLOT = i => [26 + 134 + i * 44, 34 + 86];          
   const mark = (k, t) => { if (S.marks[k] == null) S.marks[k] = t - S.t0; };
+  
+  const T1 = (k, f) => { const T = S.test; if (T && T[k] != null) { const v = T[k]; delete T[k]; return v; } return f(); };
   const tagW = (p, txt, t, o) => { if (p) fx(Object.assign({ k: 'tag', t0: t, w: p.slice(), txt, size: 36, dur: 1.5, rot: (hash(t) - 0.5) * 0.16 }, o || {})); };      
 
   
@@ -1678,7 +1684,7 @@ const TCCare = (() => {
     at(t + 0.25, tt => {
       S.chooser = null;
       if (!useToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : rnd() < 1 / 30);
+      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt }; S.popVal = careLottery();
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          
       comeNear(tt);
@@ -1732,7 +1738,7 @@ const TCCare = (() => {
       at(t + 0.3, tt => tagW(P('poll'), 'なかよし +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
       end = Math.max(end, t + 2.2);
     }
-    const beg = S.demo && S.demo.beg != null ? S.demo.beg : rnd() < 1 / 4;
+    const beg = S.demo && S.demo.beg != null ? S.demo.beg : T1('beg', () => rnd() < 1 / 4);
     if (beg) {                          
       at(end, tt => { S.phase = 'beg'; mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
         tagW(P('poll'), 'おかわり…？', tt + 0.2, { off: [30, -100], size: 34, dur: 2.4 }); S.begT = tt; });
@@ -1838,7 +1844,7 @@ const TCCare = (() => {
     if (T.poop) { BR.poops = (BR.poops || []).filter(q => q !== o); C.pg.push({ img: o.img || 0, w: o.w || 0.42, gold: !!o.gold, t0: t, from: [o.x, o.y], to: inn, y: o.y }); }
     else { o.out = t; o.from = [o.x, o.y, o.sp != null ? o.sp : 1]; o.to = inn; }
     const nose = P('nose'), br = S.finger;
-    if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : rnd() < 1 / 4)) {
+    if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : T1('nibble', () => rnd() < 1 / 4))) {
       C.nibbled = true; at(t + 0.1, tt => { react('nibble', 1.6, tt, { side: sideToward(br[0], br[1]) }); ev(tt, 'nibble'); tagW(P('nose'), 'もぐっ？', tt + 0.3, { off: [0, -100], size: 34, dur: 1.3 }); });
     }
     if (C.tg.every(q => q.done)) {       
@@ -1901,7 +1907,7 @@ const TCCare = (() => {
     if (t < S.callCoolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.call[0] - 40, y: BTN.call[1] - 150, txt: `あと ${Math.ceil(S.callCoolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     if (t - S.callLast > RULE.cool) S.callN = 0;          
     S.callN++;
-    kind = kind || ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3];
+    kind = kind || T1('call', () => ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3]);
     S.mode = 'call'; S.callKind = kind; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'call', { kind });
     fx({ k: 'notes', t0: t });
     if (BR.stand) { BR.reacts = []; callArrive(t + 0.1); return; }       
@@ -1956,7 +1962,7 @@ const TCCare = (() => {
     const z = S.ses.zone, side = sideToward(x, y), slow = O.tod === 'evening' ? 1.35 : 1;
     const ZR = { head: ['nuzzle', 2.6, 'すりすり'], neck: ['swish', 2.4, 'ふりふり'], back: ['stretch', 4.6, 'ぐーっ'], nose: ['sneeze', 1.5, 'ぷしゅっ'] };
     let [rk, rd, rt] = ZR[z] || ZR.neck;
-    const rare = S.demo && S.demo.rare != null ? S.demo.rare : rnd() < 1 / 20;
+    const rare = S.demo && S.demo.rare != null ? S.demo.rare : T1('rare', () => rnd() < 1 / 20);
     if (rare) { rk = 'tilt'; rd = 1.9; rt = '？'; }
     rd *= slow;
     const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      
@@ -1997,7 +2003,7 @@ const TCCare = (() => {
   }
   
   function lottery(t) {
-    const win = S.demo && S.demo.win != null ? S.demo.win : rnd() < RULE.win;
+    const win = S.demo && S.demo.win != null ? S.demo.win : T1('win', () => rnd() < RULE.win);
     S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
     at(t + 0.9, tt => { react('gather', 1.0, tt); ev(tt, 'gather'); });
     if (win) {
@@ -2434,7 +2440,7 @@ const TCCare = (() => {
   
   
   async function special(kind) {        
-    if (!kind) { if (S.ban) S.ban.hideT = S.lastT || 0; return; }
+    if (!kind) { if (S.ban) { if (S.ban.hideT == null) S.ban.hideT = S.lastT || 0; S.ban.gone = true; } return; }      
     BANNER = new Image(); BANNER.src = AP(`tc_items/tc_banner_${kind}.webp`); try { await BANNER.decode(); } catch (e) { }
     S.ban = { kind, showT: null, hideT: null, shown: false };
   }
@@ -2468,7 +2474,9 @@ const TCCare = (() => {
     if (B.showT == null && B.hideT == null) B.showT = t + 0.6;
     if (S.rtReq != null) {
       if (S.rtReq && !S.rtOn) { S.rtOn = true; if (B.hideT == null) { B.hideT = t; ev(t, 'banout'); } }
-      else if (!S.rtReq && S.rtOn) { S.rtOn = false; B.showT = t + 0.3; B.hideT = null; B.shown = false; }
+      else if (!S.rtReq && S.rtOn) { S.rtOn = false; if (!B.gone) { B.showT = t + 0.3; B.hideT = null; B.shown = false; } }
+      
+      
       S.rtReq = null;
     }
     if (!B.shown && B.hideT == null && B.showT != null && t >= B.showT) { B.shown = true; ev(t, 'banin', { kind: B.kind }); }
@@ -3630,6 +3638,7 @@ const TCApp = (() => {
     ov = document.createElement('div'); ov.id = 'tcOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'トレーニングセンター');
     ov.innerHTML = `<div class="tch"><button type="button" class="tcbk" data-tc="back" aria-label="もどる">← もどる</button>`
       + `<span class="tcsp"></span>`
+      + (testOn() ? TCTest.head() : '')          
       + `<span class="tctk" hidden></span><button type="button" class="tcsd" data-tc="snd" aria-label="音"></button></div>`
       + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button><canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
     document.body.appendChild(ov);
@@ -3639,6 +3648,7 @@ const TCApp = (() => {
       if (b.dataset.tc === 'back') close();
       else if (b.dataset.tc === 'plan') { if (window.TCPlan) { SND.se('tc_se_button.m4a'); window.TCPlan.open(ov); } }
       else if (b.dataset.tc === 'snd') { st.snd = !st.snd; touch(); SND.setOn(st.snd); paintHead(); }
+      else if (b.dataset.tc === 'test' && testOn()) { SND.se('tc_se_button.m4a'); if (TCTest.isOpen()) TCTest.close(); else TCTest.open(stage, TEST); }
     });
     const pt = (e, kind) => {
       if (busy || !TCCare.on) return; const r = stage.getBoundingClientRect();
@@ -3778,7 +3788,7 @@ const TCApp = (() => {
   }
   
   const careIdle = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      
-  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()));
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
   let resetting = false;
@@ -3804,6 +3814,7 @@ const TCApp = (() => {
   function draw() {                                    
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
     if (hi) { S.high -= 1; S.highBump = clock(); st.high = S.high; touch(); }
+    if (testPrize !== undefined) { const z = testPrize; testPrize = undefined; return z ? JSON.parse(JSON.stringify(z)) : null; }      
     const r = Math.random(); let a = 0, tab = st.visit ? PRIZES_VISIT[st.visit.kind] || PRIZES : PRIZES;
     for (const [p, z] of tab) { a += p * k; if (r < a) return Object.assign({}, z, z.k === 'tk' ? { n: tkCount() } : {}); }
     return null;
@@ -3817,7 +3828,7 @@ const TCApp = (() => {
     if (st.pend) give(st.pend);                                  
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      
-    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
+    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
     st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
     return z;
   }
@@ -3852,6 +3863,86 @@ const TCApp = (() => {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
   }
+
+  
+  
+  
+  
+  
+  
+  
+  function testOn() { return !!(window.__TEST && window.TCTest); }
+  let testPrize;                 
+  let testGold = false;          
+  const testFree = () => !!(HO && BR && !busy && !resetting && careIdle());      
+  const TEST = {
+    info() {
+      const S = TCCare.S;
+      return { visit: st.visit ? st.visit.kind : null, left: st.visit ? visitLeft(tnow()) : null, stock: S.stock, heart: S.heart, high: S.high || 0, tickets: st.tickets || 0, cares: st.cares, color: COLOR_JA[COLORS[st.color % COLORS.length]],
+        prize: testPrize, gold: testGold, flags: Object.assign({}, S.test || {}), trash: (BR && BR.trash ? BR.trash.length : 0), poops: (BR && BR.poops ? BR.poops.length : 0), free: testFree() };
+    },
+    
+    async visit(kind) {
+      if (!testOn()) return 'off';
+      kind = kind === 'maboroshi' || kind === 'kamisama' ? kind : null;
+      if ((st.visit ? st.visit.kind : null) === kind) return 'same';
+      if (!testFree()) return 'busy';
+      resetting = true;
+      try { if (kind) { forceNext = kind; await doReset(); } else await endVisit(); } finally { resetting = false; forceNext = undefined; }
+      return 'ok';
+    },
+    
+    
+    async prize(z, horse) {
+      if (!testOn()) return 'off';
+      if (z === undefined) { testPrize = undefined; return 'ok'; }
+      if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
+      testPrize = z ? JSON.parse(JSON.stringify(z)) : null;
+      if (TCCare.S.stock < 1) TEST.tokens();          
+      return 'ok';
+    },
+    tokens() {
+      if (!testOn()) return 'off';
+      const S = TCCare.S; st.stock = TOKEN_MAX; st.stockAt = tnow(); S.stock = TOKEN_MAX; S.stockBump = clock(); touch(); save(); return 'ok';
+    },
+    
+    heart(win) {
+      if (!testOn()) return 'off';
+      const S = TCCare.S; if (S.busy || S.lot) return 'busy';
+      const n = TCCare.RULE.max - 1; S.heart = S.heartShow = n; st.heart = n; S.got = []; S.coolUntil = -1e9; S.petN = 0; S.drainT = null;
+      S.test = Object.assign(S.test || {}, { win: !!win }); touch(); return 'ok';
+    },
+    
+    flag(k, v) {
+      if (!testOn() || ['gold', 'beg', 'rare', 'nibble', 'call'].indexOf(k) < 0) return 'off';
+      const S = TCCare.S; S.test = Object.assign(S.test || {}, { [k]: v }); return 'ok';
+    },
+    high() {
+      if (!testOn()) return 'off';
+      const S = TCCare.S, t = clock(); S.high = HIGH_N; S.highBump = t; S.fx.push({ k: 'luck', t0: t, dur: 2.6 }); SND.se('tc_se_luck.m4a'); st.high = HIGH_N; touch(); return 'ok';
+    },
+    trash() {
+      if (!testOn()) return 'off';
+      if (st.trash.length || (BR && BR.trash && BR.trash.length)) return 'have';
+      if (!testFree()) return 'busy';
+      spawnTrash(clock(), false); return 'ok';
+    },
+    
+    poop(gold) {
+      if (!testOn()) return 'off';
+      if (st.visit) return 'visit';
+      if (!BR || (BR.poops || []).filter(q => !q.sw).length >= 3) return 'full';
+      if (!testFree()) return 'busy';
+      BR.poopReq = true; if (gold) testGold = true; return 'ok';
+    },
+    
+    
+    wake() {
+      if (!testOn() || !BR || BR.mode !== 'sleep' || TCCare.S.busy) return false;
+      BR.until = Math.min(BR.until, clock() + 1.7); return true;
+    },
+    msg: (txt, sec) => msg(txt, sec),
+  };
 
   
   
@@ -3908,7 +3999,7 @@ const TCApp = (() => {
     if (S.stock !== st.stock) { st.stock = S.stock; touch(); }
     if (S.heart !== st.heart) { st.heart = S.heart; touch(); }
     if ((S.high || 0) !== (st.high || 0)) { st.high = S.high || 0; touch(); }
-    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
+    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) { q.gold = testGold || Math.random() < P_GOLD; testGold = false; } return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
     if (JSON.stringify(ps) !== JSON.stringify(st.poops)) { st.poops = ps; touch(); }
     if (dirty && ms - saveAt > 2000) { saveAt = ms; save(); }
   }
@@ -3959,7 +4050,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
