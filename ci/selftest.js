@@ -375,6 +375,15 @@
       try { var d = await TengelLocal.data.check(); return { ok: true, ver: d.ver, n: d.n, newer: d.newer, cur: d.cur }; }
       catch (e) { return { ok: false, msg: String(e && e.message || e), url: TengelLocal.data.url() }; }
     });
+    // 第4.155版：データの更新の ファイルを 開く 所（iOS に 入って いる 暗号＝CryptoKit の AES-GCM：DataSeal.swift）。ダミーの 鍵（0 が 32こ）で 封じた 見本（source/dataseal.py vector）を
+    //   開けるか・1字 かえた 中身と ちがう 鍵は 開かないか（しるしが 合わない）。CI の ビルドは ダミーの 鍵なので、上の data（本物の 鍵で 封じた ファイル）は「形がちがう」に なるのが ふつう
+    await step(R, 'unseal', async function () {
+      var K = '00000000000000000000000000000000', IV = '77067561629ce0897e35a781', DATA = '0b4cdec4cf31574ac073ab3a1e6ae497d47d74702c772695bc216c04ac787a423066253967745906179406d8cf529616970718b144a33b162427f5c49ecbc6207351d8b8ff850201aa9e';
+      var want = "{\"app\":\"tengel\",\"kind\":\"selftest\",\"msg\":\"テンゲル ok\"}";
+      var open = function (k, iv, d) { return TengelNative.call('unseal', { key: k, iv: iv, data: d }).then(function (t) { return { ok: true, text: String(t) }; }, function (e) { return { ok: false, msg: String(e && e.message || e) }; }); };
+      var good = await open(K, IV, DATA), bad = await open(K, IV, DATA.slice(0, -1) + (DATA.slice(-1) === '0' ? '1' : '0')), key2 = await open('00000000000000000000000000000001', IV, DATA), junk = await open(K, IV, 'zz');
+      return { ok: good.ok && good.text === want && !bad.ok && !key2.ok && !junk.ok, good: good, bad: bad, key2: key2, junk: junk };
+    });
     // 第4.123版：テンゲルデータ（1つ目）には 足せない・マザーデータ①〜③（2〜4つ目）と 名前
     await step(R, 'mother', function () { var L = TengelLocal.slots, r = L.rows(1).filter(function (x) { return x.src; }); return { n: L.rows(1).length, N: L.N, names: L.names(), fixed1: L.fixed(1), input: r.map(function (x) { return x.id + ' ' + x.p1 + '-' + x.p2 + '-' + x.p3; }), slots: L.info().map(function (s) { return s.n + ':' + s.count + (s.fixed ? ':fixed' : ''); }) }; });
     // 第4.123版：マザーデータの 入力用 Excel の ひな形が アプリの 中から 読める（Resources/mother_template.xlsx・zip の 頭は PK）
