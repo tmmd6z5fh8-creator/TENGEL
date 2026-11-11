@@ -301,25 +301,30 @@ def smooth_dy(dys):
     return A @ np.linalg.lstsq(A, np.asarray(dys, float), rcond=None)[0]
 
 
-def shadow_mask(hv, gy, scl, wc=W):
-    """いまの絵と同じ影（横長の影と、地面に近いひづめの下の小さな影）：1倍の 0〜1（はば wc）"""
+def shadow_mask(hv, gy, scl, wc=W, k=1):
+    """いまの絵と同じ影（横長の影と、地面に近いひづめの下の小さな影）：1倍の 0〜1（はば wc）。k：出す 絵の 細かさ（1.5 なら 1.5倍の 画素・flat/hq_night.py）"""
     x0, x1 = hv[:, 0].min(), hv[:, 0].max()
     sh = np.zeros((Hh * 4, wc * 4), np.float32)
     cv2.ellipse(sh, (int((x0 + x1) / 2 * 64), int(gy * 64)), (int((x1 - x0) / 2 * 1.02 * 64), int((5.5 * scl + 1.2) * 64)), 0, 0, 360, 1.0, -1, cv2.LINE_AA, shift=4)
     for hx_, hy_ in hv:
         if gy - hy_ < 10 * scl + 2:
             cv2.ellipse(sh, (int(hx_ * 64), int(gy * 64)), (int(7 * scl * 64 + 64), int(2 * scl * 64 + 32)), 0, 0, 360, 1.0, -1, cv2.LINE_AA, shift=4)
-    return cv2.resize(sh, (wc, Hh), interpolation=cv2.INTER_AREA)
+    return cv2.resize(sh, (int(round(wc * k)), int(round(Hh * k))), interpolation=cv2.INTER_AREA)
 
 
-def dust_flow(hx, gy, scl, dim, seed, ph, wc=W):
+def dust_flow(hx, gy, scl, dim, seed, ph, wc=W, k=1):
     """けり上げた砂けむり（anime_night.py の dust_puffs と同じ塗り）。雲の丸は ph（ギャロップの位相 0〜1）で うしろへ流れながら大きくなり、
-       足もとで うまれて うしろで消える（ph の 0 と 1 で つながる）。とぶ砂の粒も うしろへ流れる。戻り値：1倍の絵ぜんたいの (rgb, alpha)"""
+       足もとで うまれて うしろで消える（ph の 0 と 1 で つながる）。とぶ砂の粒も うしろへ流れる。戻り値：1倍の絵ぜんたいの (rgb, alpha)
+       k：出す 絵の 細かさ（1.5 なら 1.5倍の 画素：3倍で 描いた 同じ 絵を 小さく する 所 だけ かわる・flat/hq_night.py）"""
     r_ = np.random.default_rng(seed)
     S2 = 3
     x0, x1 = int(max(0, hx - 160 * scl - 40)), int(min(wc, hx + 26))
     y0, y1 = int(max(0, gy - 100 * scl - 24)), int(min(Hh, gy + 10))
-    rgbF, aF = np.zeros((Hh, wc, 3), np.float32), np.zeros((Hh, wc), np.float32)
+    if k != 1:                                                        # 1.5倍の 画素に ぴったり のる ように、描く 四角を 偶数に（外へ 1画素 まで 広げる）
+        x0, y0 = x0 - x0 % 2, y0 - y0 % 2
+        x1, y1 = min(wc, x1 + x1 % 2), min(Hh, y1 + y1 % 2)
+    kx = lambda v: int(round(v * k))
+    rgbF, aF = np.zeros((kx(Hh), kx(wc), 3), np.float32), np.zeros((kx(Hh), kx(wc)), np.float32)
     if x1 <= x0 or y1 <= y0:
         return rgbF, aF
     cw, ch = (x1 - x0) * S2, (y1 - y0) * S2
@@ -368,10 +373,10 @@ def dust_flow(hx, gy, scl, dim, seed, ph, wc=W):
         hl = np.zeros((ch, cw), np.uint8)
         cv2.circle(hl, (int((px - rr * 0.3) * 16), int((py - rr * 0.35) * 16)), int(rr * 0.42 * 16), 255, -1, cv2.LINE_AA, shift=4)
         col = over(col, H('#D8BCA4'), hl.astype(np.float32) / 255 * cm)
-    colS = cv2.resize(col * al[..., None], (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
-    alS = cv2.resize(al, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
-    rgbF[y0:y1, x0:x1] = colS / np.maximum(alS[..., None], 1e-4) * dim
-    aF[y0:y1, x0:x1] = alS
+    colS = cv2.resize(col * al[..., None], (kx(x1) - kx(x0), kx(y1) - kx(y0)), interpolation=cv2.INTER_AREA)
+    alS = cv2.resize(al, (kx(x1) - kx(x0), kx(y1) - kx(y0)), interpolation=cv2.INTER_AREA)
+    rgbF[kx(y0):kx(y1), kx(x0):kx(x1)] = colS / np.maximum(alS[..., None], 1e-4) * dim
+    aF[kx(y0):kx(y1), kx(x0):kx(x1)] = alS
     return rgbF, aF
 
 
@@ -656,8 +661,8 @@ def award_back():
     return np.clip(img, 0, 1)
 
 
-def lei_layer(R, s, shape):
-    """優勝のレイ（首の つけ根から 胸の前へ たれる 花の輪の 手前がわ）：1倍の (rgb, alpha)"""
+def lei_layer(R, s, shape, debug=None):
+    """優勝のレイ（首の つけ根から 胸の前へ たれる 花の輪の 手前がわ）：1倍の (rgb, alpha)。debug に 小さく する 前の 絵（4倍：col・al）を 入れる（flat/hq_night.py）"""
     S, sc = R['S'], R['scene']
     side = R['side']
     zc = 0.17 * side
@@ -716,6 +721,8 @@ def lei_layer(R, s, shape):
     cv2.ellipse(m, (int(tip[0] * S4 * 16), int((tip[1] + r * 1.6) * S4 * 16)), (int(r * 0.45 * S4 * 16), int(r * 1.1 * S4 * 16)), 0, 0, 360, 255, -1, cv2.LINE_AA, shift=4)
     mf = m.astype(np.float32) / 255 * (1 - al)
     col = over(col, H('#F2B632'), mf); al = np.maximum(al, mf)
+    if debug is not None:
+        debug['col'] = col; debug['al'] = al
     pre = cv2.resize(col * al[..., None], (Ws, Hs), interpolation=cv2.INTER_AREA)
     A = cv2.resize(al, (Ws, Hs), interpolation=cv2.INTER_AREA)
     return np.where(A[..., None] > 1e-4, pre / np.maximum(A, 1e-4)[..., None], 0), A

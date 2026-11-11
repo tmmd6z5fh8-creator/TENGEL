@@ -20,6 +20,8 @@
    - 1つの花火・馬の 動くものは みな 同じ キーフレーム（hqP0〜hqP4）を使い、ちがう所は CSS の変数（--y5 など）で わたす
    - 視差効果を減らす（prefers-reduced-motion）なら 動かさない（花火と馬が ぜんぶ出た いつもの絵）
    - キャンバスでは /_blob/<id>（fireworks_blobs.json の base＝下の絵・scatter＝8組に分けた足す光）・置く場所は fireworks_layers.json
+   - 第4.157版（まさちゃん 2026/11/12「課金の壁紙は全部馬の画質が悪いから同じように画質を上げてほしい！」）：馬の 足す光 だけ 画面の 3倍の 細かさの 絵（fireworks_blobs.json の scatter_h・
+     8組を 横に ならべた 1段・flat/hq_fireworks.py）に。scatter は 花火 4つ だけ（前の 絵から 馬の 段を 切り落とした もの）。置く 場所・大きさ・動きは 前と 同じ
    クラスの名前は hq…
    python3 fireworks_wall.py --judge <Judge_Fireworks.dc.html> <fireworks_blobs.json> <fireworks_layers.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 fireworks_wall.py --scatter <fireworks_layers.webp> <fireworks_layers.json> <fireworks_scatter.webp>
@@ -141,8 +143,14 @@ def _hex(c):
 
 
 def inline(blobs, lay, alt=ALT):
-    """(html, css)。blobs：base（花火なしの絵）・scatter（8組に分けた足す光）→ '/_blob/<id>'。lay：fireworks_layers.json"""
+    """(html, css)。blobs：base（花火なしの絵）・scatter（8組に分けた足す光）→ '/_blob/<id>'。lay：fireworks_layers.json
+       blobs に scatter_h が あれば（第4.157版）：馬の 足す光 だけ 別の 絵（8組を 横に・画面の 3倍の 細かさ＝flat/hq_fireworks.py）。
+       その ときの scatter は 花火 4つ だけ（馬の 段を 切り落とした もの・画素は 前と 同じ）。置く 場所・大きさ・動きは 前と 同じ（絵の 大きさは pt で 書く）"""
     sw, sh = lay['sheet']
+    own = blobs.get('scatter_h')
+    if own:                                      # 花火の シートの 高さ ＝ 馬の 段の 手前まで（馬は いちばん 下の 段）
+        sh = min(e['sheet_y'] for e in lay['layers'] if e['kind'] == 'horse')
+        assert all(e['sheet_y'] + e['rect'][3] <= sh for e in lay['layers'] if e['kind'] != 'horse'), 'horse rows must be the last rows of the sheet'
     rounds, T = plan()
     H, css_l, kf, defs = '', [], [], ''
     for k, e in enumerate(lay['layers']):
@@ -155,8 +163,9 @@ def inline(blobs, lay, alt=ALT):
         parts = ''
         for g, (ee, ff, TT) in enumerate(par):
             dur = rng.uniform(.38, .75)
+            pos = f'-{g * w // 2}px 0' if own and e['kind'] == 'horse' else f'-{g * sw // 2}px -{e["sheet_y"] // 2}px'
             parts += (f'<div class="hqu hqc" style="{scatter_vars(ee, ff, fade_op(TT, rng))}">'
-                      f'<i style="background-position:-{g * sw // 2}px -{e["sheet_y"] // 2}px;animation-duration:{dur:.2f}s;animation-delay:-{rng.uniform(0, dur):.2f}s"></i></div>')
+                      f'<i style="background-position:{pos};animation-duration:{dur:.2f}s;animation-delay:-{rng.uniform(0, dur):.2f}s"></i></div>')
         # 火の粉（3組）
         sp = list(e['sparks'])
         rng.shuffle(sp)
@@ -194,6 +203,8 @@ def inline(blobs, lay, alt=ALT):
         H += f'<div class="hqk hq{k}">{parts}</div>'
         css_l.append(f'.hqw .hq{k}{{left:{x // 2}px;top:{y // 2}px;width:{w // 2}px;height:{h // 2}px}}'
                      f'.hqw .hq{k} .hqu{{transform-origin:{n(cl[0])}px {n(cl[1])}px;animation-name:hqP{k}}}')
+        if own and e['kind'] == 'horse':            # 馬 だけの 絵（8組を 横に ならべた 1段）：大きさは pt（絵の 画素は その 3倍）
+            css_l.append(f'.hqw .hq{k} .hqc i{{background-image:url({own});background-size:{NCLS * w / 2:g}px {h / 2:g}px}}')
         # キーフレーム：回ごとに 打ち上げ → 咲く → 散る
         stops = []
         for t0, kind, d in rounds:

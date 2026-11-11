@@ -303,4 +303,5 @@ def paint_ink(R, look):
         q = hv + np.array([rng.uniform(-34, 8), rng.uniform(-10, 10)]) * u1
         cv2.circle(ink, (int(q[0] * 16), int(q[1] * 16)), int(rng.uniform(0.5, 1.5) * u1 * 16), 1.0, -1, cv2.LINE_AA, shift=4)
     W1, H1 = W3 // s, H3 // s
+    R['ink_s'] = ink          # 小さく する 前の 絵（s倍）：走る コマを 画面の 3倍で 作る 道具（flat/hq_news.py：第4.156版）が 使う。ここの 絵（1倍）は 前と 1点も かわらない
     return np.clip(cv2.resize(ink, (W1, H1), interpolation=cv2.INTER_AREA), 0, 1)

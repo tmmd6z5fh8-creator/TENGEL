@@ -423,7 +423,7 @@ def paint_sumi(R, look, debug=None):
     A = np.clip(np.maximum(np.maximum(a, sil), np.maximum(hair_front, tack)), 0, 1)
     kk_ = np.where(A > 0, kk_, 0)
     if debug is not None:
-        debug.update(part=part, k=k, line=line, Sx=Sx, lts=lts, u1=u1, press=press)
+        debug.update(part=part, k=k, line=line, Sx=Sx, lts=lts, u1=u1, press=press, kk=kk_, A=A)      # kk・A：小さく する 前の 絵（s倍）＝走る コマを 画面の 3倍で 作る 道具（flat/hq_ink.py）が 使う
     W1, H1 = W3 // s, H3 // s
     kA = cv2.resize(kk_ * A, (W1, H1), interpolation=cv2.INTER_AREA)
     A1 = cv2.resize(A, (W1, H1), interpolation=cv2.INTER_AREA)

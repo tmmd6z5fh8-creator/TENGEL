@@ -212,16 +212,24 @@ try:
               f'立って いる 馬は はしゃぐ 反応で はずむ（{fl["stand"]:.1f}px）・とちゅうで 止めた 反応（cut）は 0.25秒で 消える（{fl["cut"]:.2f}px）')
         # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：夜の「とくべつ」・見本用の 'sleep' でも 横に ならない（顔を 上げて まわりを 見る）。
         #   本物の 馬の 形で 40秒ぶん 進めて、ねる 形（mode 'sleep'）に ならない・横に なる 強さが 0 の まま・背の 高さが 立って いる ときから 下がらない ことを 見る
+        #   第4.157版（テストの 直し）：背の 高さは 体の 座標（anchorPose：地面 0・画面の 場所や 奥行きに よらない）で はかる。前の はかり方（画面の 場所 wherePose を 馬の 場所で 引いて わる）は、
+        #   wherePose が「いま 画面に いる 馬」の 場所で 計算する ので、見本の 馬が 歩くと 歩いた 分が そのまま「下がった」に 見えた（乱数しだいで 落ちた・馬は 横に なって いない）。
+        #   乱数は たねを 決めて 6とおり（歩く ときの 背の ゆれは 0.03 まで・横に なる 形〈道具用：sl＝1〉は 0.64 下がる）
         nl = pg.evaluate("""() => { const HO = TCCare._hb[0], out = [];
-          const y = (st, tt) => { const q = TCHorse.wherePose(HO, TCHorse.pose(HO, st, tt), 'withers'); return q ? (q[1] - st.y) / TCHorse.scaleAt(HO, st.y) : NaN; };      // 背の 高さ（体の 高さ 1 に たいして：奥へ 歩いて 小さく 見える 分は 入れない）
-          for (const [nm, f, rnd] of [['special', ['special', 'special'], Math.random], ['sleep', ['sleep:8', 'sleep:8'], Math.random], ['rnd', [], () => 0.01]]) {
-            const st = TCHorse.brain({ tod: 'night', force: f.slice(), stand: false }); let t = 500, lay = 0, low = -1e9; const modes = new Set(); const y0 = y(Object.assign({}, st), t);
-            for (let i = 0; i < 60 * 40; i++) { t += 1 / 60; TCHorse.step(HO, st, t, 1 / 60, rnd); modes.add(st.mode); lay = Math.max(lay, st.sl || 0, st.rise || 0, st.doze || 0, st.sleep || 0);
-              if (i % 12 === 0) low = Math.max(low, y(st, t) - y0); }
-            out.push([nm, [...modes].sort().join('/'), lay, +low.toFixed(4), st.want.look[0]]); }
-          return out; }""")
-        check(all('sleep' not in o[1] and o[2] == 0 and o[3] < 0.03 for o in nl) and 'run' not in nl[0][1] and 'run' not in nl[2][1],
-              f'夜でも ねない：とくべつ・見本用の sleep・くじ（30回に 1回）どれも 横に ならない・夜は 走らない（動き {[o[1] for o in nl]}・横に なる 強さ {[o[2] for o in nl]}・背が 下がった 分〈体の 高さ 1 に たいして〉 {[o[3] for o in nl]}：前は 横に なると 0.3 より 多く 下がった）')
+          const rng = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+          const y = (st, tt) => { const q = TCHorse.anchorPose(HO, TCHorse.pose(HO, st, tt), 'withers'); return q ? -q[1] : NaN; };      // 背（き甲）の 高さ（体の 座標・下が ＋）
+          const st1 = TCHorse.brain({ tod: 'night', stand: false }), lie = y(Object.assign({}, st1, { sl: 1 }), 500) - y(Object.assign({}, st1), 500);
+          for (let seed = 1; seed <= 6; seed++)
+            for (const [nm, f, rnd] of [['special', ['special', 'special'], rng(seed * 7919)], ['sleep', ['sleep:8', 'sleep:8'], rng(seed * 104729)], ['rnd', [], () => 0.01]]) {
+              const st = TCHorse.brain({ tod: 'night', force: f.slice(), stand: false }); let t = 500, lay = 0, low = -1e9; const modes = new Set(); const y0 = y(Object.assign({}, st), t);
+              for (let i = 0; i < 60 * 40; i++) { t += 1 / 60; TCHorse.step(HO, st, t, 1 / 60, rnd); modes.add(st.mode); lay = Math.max(lay, st.sl || 0, st.rise || 0, st.doze || 0, st.sleep || 0);
+                if (i % 12 === 0) low = Math.max(low, y(st, t) - y0); }
+              out.push([nm, [...modes].sort().join('/'), lay, +low.toFixed(4), st.want.look[0]]); }
+          return { out, lie: +lie.toFixed(3) }; }""")
+        nlie = nl['lie']; nl = nl['out']
+        check(len(nl) == 18 and all('sleep' not in o[1] and o[2] == 0 and o[3] < 0.05 for o in nl) and not any('run' in o[1] for o in nl if o[0] != 'sleep') and nlie > 0.4 and any('walk' in o[1] for o in nl),
+              f'夜でも ねない：とくべつ・見本用の sleep・くじ（30回に 1回）を 乱数 6とおりで、どれも 横に ならない・夜は 走らない（動き {sorted(set(o[1] for o in nl))}・横に なる 強さ {max(o[2] for o in nl)}・'
+              f'背が 下がった 分〈体の 座標〉 いちばん 大きくて {max(o[3] for o in nl)}：歩く ゆれ だけ。横に なる 形なら {nlie} 下がる）')
         lat = pg.evaluate("""async () => { const [HO, BR] = TCCare._hb, S = TCCare.S; Object.assign(BR, { x: 526, y: 820, dir: -1.2, mode: 'idle', until: S.lastT + 60 }); await new Promise(r => setTimeout(r, 400));
           const t0 = S.lastT; TCCare.press(t0, 'pet'); const h = BR.hurry, m0 = BR.mode, zb = S.zB ? S.zB.z : 0;
           for (let i = 0; i < 1200 && S.phase !== 'pet'; i++) await new Promise(r => requestAnimationFrame(r));

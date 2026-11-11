@@ -243,6 +243,7 @@ def silhouette(W, Hh, seed=11, pose=POSE, box=BOX, cam=None, phase=None, name='s
         Q = bez3(P[j], P[j] + d * Lw * 0.35, P[j] + rot(d, bend * 0.5) * Lw * 0.7, P[j] + rot(d, bend) * Lw, 30)
         fill(hair, taper_poly(Q, 1.5 * (1 - np.linspace(0, 1, 30)) ** 0.8 + 0.12))
     A4 = np.maximum(a4, hair.astype(np.float32) / 255)
+    R['A4'] = A4          # 小さく する 前の 絵（4倍）：走る コマを 画面の 3倍で 作る 道具（flat/hq_sunset.py：第4.156版）が 使う。ここの 絵（1倍）は 前と 1点も かわらない
     A = cv2.resize(A4, (W, Hh), interpolation=cv2.INTER_AREA)
     # ---- ふちの光
     Ab = cv2.GaussianBlur(A, (0, 0), 1.1)
