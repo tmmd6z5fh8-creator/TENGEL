@@ -11,8 +11,9 @@ cp "$OUT"/index.html "$OUT"/manifest.webmanifest "$OUT"/sw.js "$OUT"/version.jso
 # 説明書（manual.html と写真の manual/）
 cp "$OUT"/manual.html ..
 rm -rf ../manual && cp -r "$OUT"/manual ..
-# App Store版の「データの更新」で読むデータ（data/mother_app.json：開催場の名前なし）
-rm -rf ../data && cp -r "$OUT"/data ..
+# App Store版の「データの更新」で読むデータ（data/mother_app2.json：開催場の名前なし・AES-GCM で 封じて ある）
+#   前の data/mother_app.json（第4.124〜4.154版の スクランブル）は 消さない（前の テスト版が 読む）
+mkdir -p ../data && cp "$OUT"/data/mother_app2.json ../data/
 # CM（紹介動画と表紙。cm_media/ から）
 rm -rf ../cm && if [ -d "$OUT"/cm ]; then cp -r "$OUT"/cm ..; fi
 # 公開するページ（プライバシーポリシー・特定商取引法に基づく表記・サポート）：legal/legal.json の販売する人の欄が入っているものだけできる

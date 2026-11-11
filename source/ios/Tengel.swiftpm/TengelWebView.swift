@@ -268,6 +268,13 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 let r = await Notify.shared.handle(p)
                 self?.reply(id, ok: true, value: r)
             }
+        case "unseal":
+            // 「データの更新」の ファイルを 開く（iOS に 入って いる 暗号＝Apple CryptoKit の AES-GCM。アプリは 自分の 暗号の 計算を 持たない：DataSeal.swift）
+            if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {
+                reply(id, ok: true, value: text)
+            } else {
+                reply(id, ok: false, value: "データの形がちがうよ")
+            }
         #if DEBUG
         case "selftest":
             SelfTest.save(payload)

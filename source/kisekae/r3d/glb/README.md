@@ -31,6 +31,7 @@ The Meshy GLBs are inputs from まさちゃん and are not part of the repositor
 | `SD_HOOF_GLB` | `/home/claude/work/horse_in/new/Violet_Hoof_Flame_Meshy_AI_2026-11-01_862a69.glb` | 0.2 M triangle purple-black foreleg with hoof |
 | `METAL_HORSE_GLB` | `/home/claude/work/band3d/orig/silver_thunder.glb` | 0.69 M triangle silver statue of a galloping horse ("Silver Thunder"). Used by `kisekae/flat/metal_glb.py` for the Silver and Gold band wallpapers (第4.149版) |
 | `TENGEL_STATUE_GLB` | `/home/claude/work/band3d/orig/tenger.glb` | 0.83 M triangle gold horse on a green pedestal lettered TENGER / テンゲル ("Tenger"). Used by `kisekae/flat/metal_glb.py` for the Master band wallpaper (第4.149版) |
+| `MARBLE_HORSE_GLB` | `/home/claude/work/band3d/orig/marble_majesty.glb` | 0.68 M triangle white marble statue of a rearing horse on a gold-banded marble pedestal ("Marble Majesty", no skeleton). Used by `kisekae/flat/marble_glb.py` for the Marble wallpaper (第4.155版) |
 
 Loading the bust takes about 35 s and about 1.8 GB of RAM. One render at 780×1688 with ss=2 takes about 25 s and about 2.6 GB at peak, so run one 3D process at a time.
 
@@ -45,6 +46,18 @@ Loading the bust takes about 35 s and about 1.8 GB of RAM. One render at 780×16
 - Master: the model keeps its own colours. Gold parts are metal (tinted reflection), green parts are glossy paint (diffuse plus a weak reflection).
 
 Loading a statue takes about 1.5 s and about 0.7 GB of RAM. One 4× render takes about 3 s.
+
+## How the marble wallpaper uses it (第4.155版)
+
+`kisekae/flat/marble_glb.py` poses the marble statue and renders one transparent frame per pose. `kisekae/flat/marble_glb_run.py` packs the 162 frames into the sheets that `kisekae/marble_wall.py` plays (the page logic and the schedule are unchanged).
+
+- The model has no skeleton. `Mesh.harmonic` solves a harmonic field on the welded mesh graph (fixed to 1 on one vertex set, 0 on another), and the smoothed field is the rotation weight. Because the field follows the surface, a mane lock (a dead-end branch) gets the value of its root and moves with it.
+- Poses: `look` turns the neck and head about a vertical axis through the neck; `psi` spins the horse (not the pedestal) about the pedestal centre; `neigh` raises the body, arches the neck, tosses the head and strikes with the forelegs. The horse and the pedestal are split just above the pedestal top, and shared vertices are duplicated.
+- `Stage.calibrate` solves the camera so that the pedestal's bottom centre lands on `FOOT` and the statue is 90% of the banner height.
+- Frames are rendered for the window `WIN` at 1.5× the 780×320 banner (3× the screen points), supersampled 3×. Only the horse is high resolution; the background is the 780×320 banner upscaled under the cells.
+- The weights are cached as `<out>/rig/*.npy` (float32, always reloaded so a first run and a later run draw the same pixels) and the frames as `<out>/cache/<pose>.png`. Neither is committed. Clear `<out>` when the model changes.
+
+Loading the statue takes about 2.5 s, the four fields about 2 s, and one frame about 3 s (162 frames: about 8 minutes).
 
 ## How the sd film uses it
 

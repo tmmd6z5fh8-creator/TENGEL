@@ -28,7 +28,9 @@ if APP:
                    env=dict(os.environ, TARGET='app', MANUAL_SHOTS_BOOTSTRAP='1', HIST='hist_280.json', DROP='', MOTHER_VER='2026-10-07', DATA_URL=f'http://localhost:{PORT}/remote/mother_app.json'))
     as_app(SRV + '/OLDAPP')
     subprocess.run(['python3', 'build_pwa.py', SRV + '/_w'], cwd=SRC, check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, TARGET='web', MANUAL_SHOTS_BOOTSTRAP='1', MOTHER_VER='2026-10-20'))
-    os.makedirs(SRV + '/remote'); shutil.copy(SRV + '/_w/data/mother_app.json', SRV + '/remote/mother_app.json')
+    # 第4.155版：公開の ファイル（data/mother_app2.json）は AES-GCM で 封じて ある。写真用の にせものの アプリは 開けない ので、開いた 中身（ふつうの JSON：アプリは これも 読める）を 置く
+    sys.path.insert(0, SRC); import dataseal as _ds
+    os.makedirs(SRV + '/remote'); open(SRV + '/remote/mother_app.json', 'w', encoding='utf8').write(_ds.open_doc(open(SRV + '/_w/data/mother_app2.json', encoding='utf8').read(), _ds.load_key()))
 # にせもののアプリ（共有・コピー・バックアップに、すぐ「できた」と返事をする）
 FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '1', device: 'phone' };

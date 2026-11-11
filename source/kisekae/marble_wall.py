@@ -18,13 +18,18 @@
      ずっ！ずっ！の あいだも ふり向きの1回りは 見えない所で すすむ（もどった時に ちょうど左向きの 休み）
    - ページを開くと 0秒（いまの絵と同じ）から。視差効果を減らす（prefers-reduced-motion）なら 重ねる絵を出さない（いまの絵だけ）
    - キャンバスでは /_blob/<id>（marble_blobs.json の base・look・turnB・turnD・neighL・neighR・spR・spL・plate）・切りぬく場所と コマのならびは marble_run.json
+   - 第4.155版（まさちゃん 2026/11/11・動きの 見本を 見て「大理石OK！」）：像は まさちゃんの 3D の 馬（flat/marble_glb.py・flat/marble_glb_run.py：金の 帯の 白い 大理石の 台の 上で 立ち上がる 馬）。
+     動き（この ファイルの 予定）は 前と 同じ。**馬（主役）だけ 高画質**：コマの シートと すべる 絵は 画面の 3倍（marble_run.json の crop・frame・sprites の box は
+     前と 同じ「壁紙の 絵 780×320 の 画素」＝ 2で わって pt。絵は その 1.5倍の 細かさ ＝ CSS の background-size（pt）が 絵を ちぢめて 置く ので、ここの 計算は かわらない）。
+     背景（止まった 絵・背景 だけの 絵）は 780×320 の まま。視差効果を 減らす とき：重ねる 絵は 出さないが、ふり向きの シートの さいしょの コマ（左向きの 像・画面の 3倍）だけ 動かさずに 出す
+     （前は 止まった 絵 だけ ＝ 像も 画面の 2倍 だった。シルバー帯・ゴールド帯・マスター帯と 同じ：止めた ときも 馬は 高画質）
    クラスの名前は mw…（的中ボタンの .mb とは別）
    python3 marble_wall.py --judge <Judge_Marble.dc.html> <marble_blobs.json> <marble_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 marble_wall.py --plan <marble_run.json>  → 出来事の予定とコマの予定"""
 import sys, re, json, math, random
 from wall_util import feather   # コマの 入れものの ふちを ぼかす（拡大した 時の 細い 線を 消す・2026/10/25）
 
-ALT = ('金の帯の台の上の岩で、後ろ足で立ち上がる白い大理石の馬の像（波打つたてがみ・台までとどくしっぽ）と月桂樹のイラスト'
+ALT = ('金の帯の台の上で、後ろ足で立ち上がる白い大理石の馬の像（波打つたてがみ・台までとどくしっぽ）と月桂樹のイラスト'
        '（8秒ごとに 像の馬が うしろを2度見して、くるっと 反対を向く。ときどき いななく・右を向いている時は 台ごと ずっずっと 外へ出て もどってくる）')
 SIDE_S = 8.0                     # 片がわ（左向き・右向き）の秒
 CYCLE = 2 * SIDE_S
@@ -317,7 +322,7 @@ def inline(blobs, run, alt=ALT):
                 f'animation:{cls}K {EV_LOOP:g}s linear infinite}}' + _kf(f'{cls}K', S[key], EV_LOOP, True))
         html += f'<i class="{cls}"></i>'
     html += '</i></div>'
-    css += '@media (prefers-reduced-motion:reduce){.mww i{display:none}}'
+    css += '@media (prefers-reduced-motion:reduce){.mww i{display:none}.mww .mwS{display:block;animation:none}}'      # 止めた ときも 像は 高画質（さいしょの コマ＝左向き）
     return html, css
 
 

@@ -39,7 +39,9 @@ build(SRV + '/APP', TARGET='app', DATA_URL=f'{BASE}/remote/none.json'); as_app(S
 # アップデートの 写真用：前の 版の データ（280走）の アプリと、新しい データ（「データの更新」で 読む）
 build(SRV + '/OLDAPP', TARGET='app', HIST='hist_280.json', DROP='', MOTHER_VER='2026-10-07', DATA_URL=f'{BASE}/remote/mother_app.json'); as_app(SRV + '/OLDAPP')
 build(SRV + '/_w', TARGET='web', MOTHER_VER='2026-10-20')
-os.makedirs(SRV + '/remote'); shutil.copy(SRV + '/_w/data/mother_app.json', SRV + '/remote/mother_app.json')
+# 第4.155版：公開の ファイル（data/mother_app2.json）は AES-GCM で 封じて ある。写真用の にせものの アプリは 開けない ので、開いた 中身（ふつうの JSON：アプリは これも 読める）を 置く
+sys.path.insert(0, SRC); import dataseal as _ds
+os.makedirs(SRV + '/remote'); open(SRV + '/remote/mother_app.json', 'w', encoding='utf8').write(_ds.open_doc(open(SRV + '/_w/data/mother_app2.json', encoding='utf8').read(), _ds.load_key()))
 
 # にせものの アプリ（test_native.py と 同じ。App Store の 版は 1.1 が 出ている ことに）
 t = open(os.path.join(SRC, 'test_native.py'), encoding='utf8').read()

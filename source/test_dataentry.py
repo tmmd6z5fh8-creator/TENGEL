@@ -10,7 +10,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 sys.path.insert(0, W)
 import app_target as AT
 SRV = os.path.join(W, 'srv'); PORT = 8795; BASE = f'http://localhost:{PORT}/TENGEL/'; APPURL = f'http://localhost:{PORT}/APP/'
-REMOTE = f'http://localhost:{PORT}/remote/mother_app.json'
+REMOTE = f'http://localhost:{PORT}/remote/mother_app2.json'
 TMP = os.path.join(SRV, '_tmp')
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(TMP)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
@@ -36,12 +36,29 @@ build('app', os.path.join(SRV, 'APP')); native(os.path.join(SRV, 'APP'))
 # 「データの更新」で読む新しいデータ（290走・版 2026-10-20）
 build('web', os.path.join(TMP, 'w290'), HIST='hist.json', MOTHER_VER='2026-10-20')
 os.makedirs(os.path.join(SRV, 'remote'))
-shutil.copy(os.path.join(TMP, 'w290', 'data', 'mother_app.json'), os.path.join(SRV, 'remote', 'mother_app.json'))
+shutil.copy(os.path.join(TMP, 'w290', 'data', 'mother_app2.json'), os.path.join(SRV, 'remote', 'mother_app2.json'))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
-# 第4.124版：データの更新の ファイルは スクランブル（そのままでは レースの 中身が 読めない・アプリが 鍵で 戻す）
-_rm = open(os.path.join(SRV, 'remote', 'mother_app.json'), encoding='utf8').read(); _rj = json.loads(_rm)
-_scr_ok = _rj.get('sc') == 1 and '"rows"' not in _rm and '2026-07-20' not in _rm and re.fullmatch(r'[0-9a-f]+', _rj.get('data', '')) is not None
+# 第4.155版：データの更新の ファイルは 標準の 暗号（AES-GCM）で 封じて ある（dataseal.py・そのままでは レースの 中身が 読めない・アプリが iOS の 暗号で 開く）。
+#   前（第4.124〜4.154版）の スクランブル（datascramble.py：独自の 計算）は アプリに 入れない・読まない
+import dataseal as DS, datascramble as DSC
+_rm = open(os.path.join(SRV, 'remote', 'mother_app2.json'), encoding='utf8').read(); _rj = json.loads(_rm)
+_key = DS.load_key()
+_plain = DS.open_doc(_rm, _key); _pj = json.loads(_plain)
+_scr_ok = (sorted(_rj) == ['app', 'data', 'iv', 'kind', 'sc'] and _rj['sc'] == 2 and '"rows"' not in _rm and '2026-07-20' not in _rm and re.fullmatch(r'[0-9a-f]{24}', _rj['iv']) is not None
+           and re.fullmatch(r'(?:[0-9a-f]{2})+', _rj['data']) is not None and len(_rj['data']) == 2 * (len(_plain.encode('utf8')) + 16)
+           and not os.path.exists(os.path.join(TMP, 'w290', 'data', 'mother_app.json')))
+_seal_ok = (_pj.get('app') == 'tengel' and len(_pj.get('rows', [])) == 290 and DS.seal_doc(_plain, _key) == _rm and DS.seal_doc(_plain, _key, pure=True) == _rm and DS.open_doc(_rm, _key, pure=True) == _plain)
+try:
+    DS.open_doc(_rm, bytes(16)); _seal_ok = False            # ちがう 鍵では 開かない
+except ValueError:
+    pass
+_app_html = open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read()
+_no_own = not any(w in _app_html for w in ('unscramble', 'sm32(', 'rotl32(', 'xoshiro', '0x9E3779B9', 'crypto.subtle')) and "call('unseal'" in _app_html and '/remote/mother_app2.json' in _app_html
+_swift = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'DataSeal.swift'), encoding='utf8').read() + open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read()
+_swift_ok = 'import CryptoKit' in _swift and 'AES.GCM.open(' in _swift and 'case "unseal":' in _swift and 'DataSeal.open(' in _swift
+# 前の 形（スクランブル）と ちがう 鍵で 封じた ファイル：どちらも アプリは 読まない
+_old_doc = DSC.scramble_doc(_plain, _key); _wrong_doc = DS.seal_doc(_plain, bytes(range(16)))
 
 
 def check(c, label):
@@ -239,7 +256,9 @@ try:
 
         # ================= C. App Store版（にせもののアプリ） =================
         print('[C] App Store版：App Storeの新しい版・データの更新')
-        check(_scr_ok, f'第4.124版：データの更新の ファイルは スクランブル（中身の 文字が 見えない・16進・{len(_rm)}文字）')
+        check(_scr_ok, f'第4.155版：データの更新の ファイル（data/mother_app2.json）は AES-GCM で 封じて ある（sc:2・nonce 12バイト・暗号文＋しるし 16バイト・16進・{len(_rm)}文字・中身の 文字が 見えない）・前の 形（mother_app.json）は 作らない')
+        check(_seal_ok, '封じる 道具（dataseal.py）：鍵で 開くと もとの 290走・同じ 中身は 同じ ファイル・予備の 計算（cryptography が ない とき）も 同じ 結果・ちがう 鍵では 開かない')
+        check(_no_own and _swift_ok, 'アプリは 自分の 暗号の 計算を 持たない（画面の コードに 前の スクランブルの 計算が ない・開く のは アプリの 中の Apple CryptoKit の AES-GCM に お願いする）')
         FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '3', device: 'phone' };
 window.__bridge = [];
@@ -247,6 +266,14 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
   window.__bridge.push(m.name);
   if (m.name === 'share') (window.__shares = window.__shares || []).push(m.payload);   // 第4.123版：ひな形の 中身を 確かめる
   var val = true;
+  if (m.name === 'unseal') {   // 第4.155版：にせものの アプリは ブラウザの AES-GCM で 開く（本物は Apple CryptoKit：DataSeal.swift）＝ dataseal.py とは 別の 道具で 開ける ことの 確かめにも なる
+    var hx = function (h) { var a = new Uint8Array(h.length / 2); for (var i = 0; i < a.length; i++) a[i] = parseInt(h.substr(i * 2, 2), 16); return a; };
+    (window.__unseals = window.__unseals || []).push([m.payload.key.length, m.payload.iv.length, m.payload.data.length]);
+    crypto.subtle.importKey('raw', hx(m.payload.key), 'AES-GCM', false, ['decrypt'])
+      .then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: hx(m.payload.iv) }, k, hx(m.payload.data)); })
+      .then(function (buf) { window.__nativeReply(m.id, true, new TextDecoder('utf-8', { fatal: true }).decode(buf)); }, function () { window.__nativeReply(m.id, false, 'データの形がちがうよ'); });
+    return;
+  }
   if (m.name === 'store') val = window.__storeAns || { found: true, version: '1.1', url: 'https://apps.apple.com/jp/app/id0000000000', notes: '新しい版', date: '2026-10-20T00:00:00Z', error: '' };
   setTimeout(function () { window.__nativeReply(m.id, true, val); }, 30);
 } } } };
@@ -283,6 +310,8 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         check(dc.is_visible() and 'テンゲルデータ' in pg.locator('#sdCur').inner_text() and '走' not in pg.locator('#sdCur').inner_text(), f'「データの更新」：いまのデータ（第4.123版：数・期間・版は 出さない）（{pg.locator("#sdCur").inner_text()}）')
         pg.click('#sdCheck'); pg.wait_for_timeout(700)
         check('新しいデータがあるよ' in pg.locator('#sdMsg').inner_text() and '走' not in pg.locator('#sdMsg').inner_text() and pg.locator('#sdApply').is_visible(), f'確かめると「新しいデータがあるよ」（数は 出さない）（{pg.locator("#sdMsg").inner_text()}）')
+        _us = pg.evaluate("window.__unseals || []")
+        check(len(_us) >= 1 and all(u == [32, 24, len(_rj['data'])] for u in _us) and 'unseal' in pg.evaluate("window.__bridge"), f'封じた ファイルは アプリに 開いて もらう（unseal：鍵 16バイト・nonce 12バイト・中身 {len(_rj["data"]) // 2}バイト・{len(_us)}回）')
         pg.click('#sdApply'); pg.wait_for_timeout(900)
         meta = pg.evaluate("TengelLocal.slots.doc(1)")
         check(count(pg, 1) == 290 and count(pg, 2) == 1 and meta['dataVer'] == '2026-10-20' and meta['source'] == 'app', f'入れた：テンゲルデータは 290走・マザーデータ①の 1走は そのまま（{count(pg, 1)}走・版 {meta.get("dataVer")}）')
@@ -291,12 +320,23 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('最新' in pg.locator('#sdMsg').inner_text(), 'もう一度確かめると「最新」')
         # 形のちがうデータは入れない
-        RM = re.compile(r'/remote/mother_app\.json')
+        RM = re.compile(r'/remote/mother_app2\.json')
         ctx.route(RM, lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps({'app': 'other', 'rows': []})))
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('形がちがう' in pg.locator('#sdMsg').inner_text(), f'形のちがうデータは入れない（{pg.locator("#sdMsg").inner_text()}）')
         ctx.unroute(RM)
-        RN = re.compile(r'/remote/mother_app\.json')
+        # 第4.155版：前の 形（スクランブル sc:1）・ちがう 鍵で 封じた もの・1字 かえた もの は 読まない／封じて いない ふつうの JSON は 読める
+        _tam = dict(_rj, data=_rj['data'][:-1] + ('1' if _rj['data'][-1] == '0' else '0'))
+        _msgs = []
+        for _body in (_old_doc, _wrong_doc, json.dumps(_tam)):
+            ctx.route(RM, (lambda _b: lambda route: route.fulfill(status=200, content_type='application/json', body=_b))(_body))
+            pg.click('#sdCheck'); pg.wait_for_timeout(700); _msgs.append(pg.locator('#sdMsg').inner_text()); ctx.unroute(RM)
+        check(all('形がちがう' in m for m in _msgs) and not pg.locator('#sdApply').is_visible(), f'前の 形（スクランブル）・ちがう 鍵で 封じた もの・1字 かえた もの は 読まない（{_msgs}）')
+        ctx.route(RM, lambda route: route.fulfill(status=200, content_type='application/json', body=_plain))
+        pg.click('#sdCheck'); pg.wait_for_timeout(700)
+        check('最新' in pg.locator('#sdMsg').inner_text(), f'封じて いない ふつうの JSON（同じ 版）は 読める（{pg.locator("#sdMsg").inner_text()}）')
+        ctx.unroute(RM)
+        RN = re.compile(r'/remote/mother_app2\.json')
         ctx.route(RN, lambda route: route.fulfill(status=404, body='not found'))
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
         check('新しいデータはないよ' in pg.locator('#sdMsg').inner_text() and not pg.locator('#sdApply').is_visible(), f'公開しているデータがない（404）ときは「新しいデータはないよ」（{pg.locator("#sdMsg").inner_text()}）')

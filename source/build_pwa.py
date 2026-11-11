@@ -12,7 +12,7 @@ def _load(name, path):
 
 
 _bm = _load('build_manual', os.path.join(HERE, 'manual', 'build_manual.py'))   # 説明書
-_ds_mod = _load('datascramble', os.path.join(HERE, 'datascramble.py'))   # 第4.124版：データの更新の ファイルの スクランブル
+_ds_mod = _load('dataseal', os.path.join(HERE, 'dataseal.py'))   # 第4.155版：データの更新の ファイルを 標準の 暗号（AES-GCM）で 封じる（前は datascramble.py の スクランブル）
 _bl = _load('build_legal', os.path.join(HERE, 'legal', 'build_legal.py'))      # このアプリについて・公開するページ
 _at = _load('app_target', os.path.join(HERE, 'app_target.py'))                 # App Store版：競馬場・団体・版の名前を出さない
 # 出力先はまるごと作り直すので、gitの作業フォルダ（.gitがある所）は指定させない
@@ -46,8 +46,9 @@ if TARGET == 'app':
         assert a in page, a[:40]; page = page.replace(a, b)
 mother = [{k: v for k, v in r.items()} for r in hist]
 MOTHER_HOME = None
-# データの更新（App Store版がアプリの更新なしで新しいデータを読む）：公開するデータの場所。Web版が data/mother_app.json に置く
-DATA_URL = os.environ.get('DATA_URL', 'https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app.json')
+# データの更新（App Store版がアプリの更新なしで新しいデータを読む）：公開するデータの場所。Web版が data/mother_app2.json に置く
+#   第4.155版：封じ方を 標準の 暗号に かえた ので、ファイルの 名前も かえた（前の data/mother_app.json＝スクランブルは、前の テスト版の ために 公開の 場所に のこす）
+DATA_URL = os.environ.get('DATA_URL', 'https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app2.json')
 if TARGET == 'app':
     # App Store版：アプリに入れるデータは開催場の名前を消して「しるし」だけ残す・消したレースの印（DROP）は使わない（入れるデータが別の開催場でも消さないように）
     mother, MOTHER_HOME = _at.mother(mother)
@@ -169,8 +170,8 @@ if TARGET == 'web':
     _txt = json.dumps(_doc, ensure_ascii=False, separators=(',', ':'))
     _at.check_clean(_txt, 'データの更新のファイル')
     os.makedirs(f'{out}/data')
-    # 第4.124版：そのままでは 読めない ように スクランブル（datascramble.py・鍵は リポジトリに 入れない）
-    open(f'{out}/data/mother_app.json', 'w', encoding='utf8').write(_ds_mod.scramble_doc(_txt, _ds_mod.load_key()))
+    # 第4.155版：鍵が ないと 読めない ように 封じる（dataseal.py：AES-GCM・鍵は リポジトリに 入れない）。前（第4.124〜4.154版）は スクランブル（data/mother_app.json）
+    open(f'{out}/data/mother_app2.json', 'w', encoding='utf8').write(_ds_mod.seal_doc(_txt, _ds_mod.load_key()))
 open(f'{out}/sw.js', 'w', encoding='utf8').write('''// テンゲルⅢ：電波がなくても開けるようにする。ネットにつながったら、いつも最新の版を読む
 // （記録・買い目・基盤データはiPhoneの中のデータベースにあって、ここでは触らない）
 const CACHE = 'tengel3-''' + APP_VER + '-' + MOTHER_VER + '''';
