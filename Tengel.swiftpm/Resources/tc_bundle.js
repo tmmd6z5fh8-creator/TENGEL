@@ -675,9 +675,14 @@
       const k = smooth(st.poopE); set('tail', -0.85 * k, 0); if (h.bi.tail2 != null) set('tail2', -0.35 * k); off[1] -= 0.015 * k;
     }
     
+    
+    
+    
+    const lieF = st.sl > 0.001 ? 1 - smooth(clamp(st.sl / 0.12, 0, 1)) : 1;
     for (const r of (st.reacts || [])) {
       const u = (t - r.t0) / r.dur; if (u < 0 || u > 1) continue;
-      const e = smooth(clamp(u / 0.18, 0, 1)) * (1 - smooth(clamp((u - 0.78) / 0.22, 0, 1))), tt = t - r.t0;
+      const gn = lieF * (r.cut != null ? 1 - smooth(clamp((t - r.cut) / 0.25, 0, 1)) : 1); if (gn <= 0.001) continue;
+      const e = smooth(clamp(u / 0.18, 0, 1)) * (1 - smooth(clamp((u - 0.78) / 0.22, 0, 1))) * gn, tt = t - r.t0;
       if (r.k === 'nuzzle') { set('neck', -0.16 * e); set('head', -0.12 * e + 0.07 * e * Math.sin(TAU * 1.5 * tt), 0.12 * e * (r.side || 1)); }            
       else if (r.k === 'swish') { set('tail', -0.25 * e, 0.75 * e * Math.sin(TAU * 1.3 * tt)); if (h.bi.tail2 != null) set('tail2', 0, 0.6 * e * Math.sin(TAU * 1.3 * tt - 0.9)); }      
       else if (r.k === 'stretch' && h.lie) {          
@@ -685,12 +690,13 @@
         const G = h.lie.geo, D = 0.3, st_ = (a, b) => smooth(clamp((u - a) / (b - a), 0, 1)), lf = (a, b) => { const q = clamp((u - a) / (b - a), 0, 1); return Math.sin(Math.PI * q); };
         const fw = { FL: st_(0.05, 0.19) - st_(0.8, 0.9), FR: st_(0.19, 0.33) - st_(0.88, 0.98), HL: 0, HR: 0 };
         const up = { FL: lf(0.05, 0.19) + lf(0.8, 0.9), FR: lf(0.19, 0.33) + lf(0.88, 0.98), HL: 0, HR: 0 };
-        const sk = st_(0.35, 0.52) * (1 - st_(0.68, 0.8)), p = -0.06 * sk, d = 0.06 * sk + 0.01 * (up.FL + up.FR), x = -0.07 * sk;
+        for (const L in fw) { fw[L] *= gn; up[L] *= gn; }
+        const sk = st_(0.35, 0.52) * (1 - st_(0.68, 0.8)) * gn, p = -0.06 * sk, d = 0.06 * sk + 0.01 * (up.FL + up.FR), x = -0.07 * sk;
         off[0] += x; off[1] -= d; off[3] += p;
         legIK(h, set, p, d, x, L => [D * fw[L], 0.12 * up[L], -1.0 * up[L]]);
         set('neck', -0.34 * sk - 0.06 * (up.FL + up.FR)); set('head', 0.24 * sk + 0.04 * Math.sin(TAU * 0.8 * tt) * sk); set('tail', -0.12 * sk);
       }
-      else if (r.k === 'sneeze') { const j = Math.exp(-Math.pow((u - 0.45) / 0.06, 2)); set('neck', -0.05 * e - 0.18 * j); set('head', -0.3 * j); off[1] -= 0.012 * j; }          
+      else if (r.k === 'sneeze') { const j = Math.exp(-Math.pow((u - 0.45) / 0.06, 2)) * gn; set('neck', -0.05 * e - 0.18 * j); set('head', -0.3 * j); off[1] -= 0.012 * j; }          
       else if ((r.k === 'hop' || r.k === 'frisk') && h.lie) {      
         const per = r.k === 'hop' ? 0.56 : 0.48, ph = tt / per, k = e, hi = r.k === 'hop' ? 1 : 0.85;
         const sw = L => { const q = ((ph + (L === 'FL' || L === 'HR' ? 0 : 0.5)) % 1 + 1) % 1; return q < 0.56 ? Math.pow(Math.sin(Math.PI * q / 0.56), 1.3) : 0; };
@@ -702,17 +708,17 @@
       }
       else if (r.k === 'tilt') { set('head', 0.1 * e, 0.38 * e * (r.side || 1)); set('neck', 0.05 * e, 0.1 * e * (r.side || 1)); }                  
       else if (r.k === 'nod') { set('neck', -0.17 * e * (0.5 + 0.5 * Math.sin(TAU * 1.6 * tt - 1.57))); set('head', -0.08 * e * Math.sin(TAU * 1.6 * tt)); }   
-      else if (r.k === 'yawn') { const k = Math.sin(Math.PI * clamp(u * 1.15, 0, 1)); set('neck', 0.22 * k); set('head', 0.34 * k); off[4] += 0.01 * k; }          
+      else if (r.k === 'yawn') { const k = Math.sin(Math.PI * clamp(u * 1.15, 0, 1)) * gn; set('neck', 0.22 * k); set('head', 0.34 * k); off[4] += 0.01 * k; }          
       else if (r.k === 'sniff') { set('neck', -0.5 * e); set('head', -0.28 * e + 0.04 * e * Math.sin(TAU * 4.5 * tt), 0.15 * e * (r.side || 0)); }       
       else if (r.k === 'eat') { set('neck', -0.08 * e); set('head', 0.06 * e + 0.035 * e * Math.sin(TAU * 2.4 * tt), 0.1 * e * (r.side || 0)); }          
       else if (r.k === 'beg') { set('neck', 0.04 * e); set('head', 0.06 * e, 0.3 * e * (r.side || 1)); }                                          
       else if (r.k === 'happy') { const j = Math.max(0, Math.sin(TAU * 1.1 * tt)) * e; set('neck', 0.1 * j); set('head', -0.06 * j); set('tail', -0.2 * e, 0.55 * e * Math.sin(TAU * 1.6 * tt)); }  
       else if (r.k === 'shake') {          
-        const j = Math.exp(-tt * 3.2) * smooth(clamp(tt / 0.08, 0, 1)), w = Math.sin(TAU * 4.6 * tt) * j;
+        const j = Math.exp(-tt * 3.2) * smooth(clamp(tt / 0.08, 0, 1)) * gn, w = Math.sin(TAU * 4.6 * tt) * j;
         set('neck', 0.06 * e, 0.2 * w * (r.side || 1)); set('head', -0.05 * j * Math.abs(Math.sin(TAU * 4.6 * tt)), 0.34 * w * (r.side || 1)); off[5] += 0.012 * w;
       }
       else if (r.k === 'paw') {            
-        const L = (r.side || 1) > 0 ? 'FR' : 'FL', ph = clamp((u - 0.12) / 0.76, 0, 1), lift = Math.sin(Math.PI * ph);
+        const L = (r.side || 1) > 0 ? 'FR' : 'FL', ph = clamp((u - 0.12) / 0.76, 0, 1), lift = Math.sin(Math.PI * ph) * gn;
         set(L + '_u', (0.32 * Math.sin(TAU * ph * 1.5)) * lift + 0.18 * lift); set(L + '_k', 0.85 * lift); set(L + '_f', 0.5 * lift);
         set('neck', -0.08 * e); set('head', -0.05 * e);
       }
@@ -858,12 +864,15 @@
     if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
+    
+    
+    const hk = (st.mode === 'walk' || st.mode === 'turn') && st.hurry > 1 ? st.hurry : 1;
     if (st.mode === 'walk' && st.tgt) {
       const dx = st.tgt[0] - st.x, dy = st.tgt[1] - st.y, dist = Math.hypot(dx, dy / 0.5);
       const want = Math.atan2(dy / 0.5, dx), turn = angDiff(st.dir, want);
-      steer(st, want, dt, 1.1, 1.8, 3.5); steered = true;
+      steer(st, want, dt, 1.1 * hk, 1.8 * hk, 3.5 * hk); steered = true;
       wantW = 1;
-      effT = lerp(1, 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   
+      effT = lerp(1, hk > 1 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   
       if (dist < Math.max(28, 0.06 * s * h.H)) {
         
         if (!(st.force && st.force.length) && !st.forcedWalk && !st.careHold && rnd() < 0.45 && pickWalkTarget(h, st, rnd)) { st.until = t + 30; }
@@ -871,9 +880,9 @@
       }
     } else if (st.mode === 'turn') {               
       const d = angDiff(st.dir, st.turnTo);
-      steer(st, st.turnTo, dt, 1.25, 2.4, 4.5); steered = true;
+      steer(st, st.turnTo, dt, 1.25 * hk, 2.4 * hk, 4.5 * hk); steered = true;
       wantW = Math.abs(d) > 0.07 ? 1 : 0; effT = 0.3;
-      if (Math.abs(d) < 0.05 && Math.abs(st.dirV) < 0.12) { st.mode = 'idle'; st.until = st.careHold ? t + 1e3 : t + 3; }
+      if (Math.abs(d) < 0.05 && Math.abs(st.dirV) < 0.12 * hk) { st.mode = 'idle'; st.until = st.careHold ? t + 1e3 : t + 3; }
     } else if (st.mode === 'gallop') {             
       const vWalk = walkSpeed(h, 1, 1);
       st.runV += clamp(RUN_V - st.runV, -3.6 * dt, 3.0 * dt);
@@ -910,8 +919,8 @@
     }
     if (!steered) { st.dirV *= Math.max(0, 1 - dt * 4); st.dir += st.dirV * dt; }      
     
-    st.eff += (effT - st.eff) * Math.min(1, dt * 2.5);
-    st.gw += clamp(wantW - st.gw, -dt * 1.8, dt * 1.8); st.gr += clamp(wantR - st.gr, -dt * 1.6, dt * 1.6);
+    st.eff += (effT - st.eff) * Math.min(1, dt * 2.5 * hk);
+    st.gw += clamp(wantW - st.gw, -dt * 1.8 * hk, dt * 1.8 * hk); st.gr += clamp(wantR - st.gr, -dt * 1.6, dt * 1.6);
     const gz = st.mode === 'idle' ? st.want.graze : 0; st.graze += clamp(gz - st.graze, -dt * 0.7, dt * 0.7);
     const lk = st.mode === 'idle' ? st.want.look : [0, 0]; st.look = st.look.map((v, i) => v + clamp(lk[i] - v, -dt * 0.9, dt * 0.9));
     st.lookS = st.lookS.map((v, i) => v + (st.look[i] - v) * Math.min(1, dt * 3));
@@ -932,12 +941,12 @@
     
     const g = GAITS.walk, gR = GAITS.run;
     st.wAmp = 0.5 + 0.5 * st.eff;
-    st.phase.walk = (st.phase.walk + dt / walkOf(h).T * (0.7 + 0.3 * st.eff) * (st.gw > 0.01 ? 1 : 0)) % 1;
+    st.phase.walk = (st.phase.walk + dt / walkOf(h).T * (0.7 + 0.3 * st.eff) * hk * (st.gw > 0.01 ? 1 : 0)) % 1;
     const vr = Math.max(st.runV || 0, 0.01), cr = 0.8 + 0.2 * clamp(vr / RUN_V, 0, 1);
     st.rAmp = clamp(Math.asin(clamp(vr * gR.st * gR.T / (2 * h.legLen * cr), 0, 0.99)) / gR.A, 0.35, 1.15);
     st.phase.run = (st.phase.run + dt / gR.T * cr * (st.gr > 0.01 ? 1 : 0)) % 1;
     if (st.mode !== 'run' && st.mode !== 'gallop') {
-      const v = walkSpeed(h, st.eff, smooth(st.gw)) * s * (st.mode === 'turn' ? 0.25 : 1);      
+      const v = walkSpeed(h, st.eff, smooth(st.gw)) * s * (st.mode === 'turn' ? 0.25 : 1) * hk;      
       st.x += Math.cos(st.dir) * v * dt; st.y += Math.sin(st.dir) * v * dt * 0.5;
     }
     
@@ -1146,8 +1155,25 @@
     return [((L.cx + qx + 1) / 2 * L.view.W - L.view.ox) / L.view.k, ((1 - (L.cy + qy)) / 2 * L.view.H - L.view.oy) / L.view.k];
   }
   
+  
+  
+  function unz(ab) {
+    const u = new Uint8Array(ab);
+    if (u.length < 24 || u[0] !== 0x54 || u[1] !== 0x47 || u[2] !== 0x49 || u[3] !== 0x5A) return ab;
+    const dv = new DataView(ab), L = dv.getUint32(4, true), io = dv.getUint32(8, true), ib = dv.getUint32(12, true), n = dv.getUint32(16, true), pl = dv.getUint32(20, true), tail = L - io - ib;
+    if (tail < 0 || 24 + io + tail + pl !== u.length || ib !== n * 4 || io % 4) throw new Error('bin');
+    const out = new ArrayBuffer(L), o8 = new Uint8Array(out); o8.set(u.subarray(24, 24 + io), 0); o8.set(u.subarray(24 + io, 24 + io + tail), io + ib);
+    const idx = new Uint32Array(out, io, n), end = u.length; let p = 24 + io + tail, prev = 0;
+    for (let i = 0; i < n; i++) {
+      let v = 0, s = 0, b;
+      do { if (p >= end) throw new Error('bin'); b = u[p++]; v += (b & 127) * Math.pow(2, s); s += 7; } while (b & 128);
+      prev += (v % 2) ? -(v + 1) / 2 : v / 2; idx[i] = prev;
+    }
+    if (p !== end) throw new Error('bin');
+    return out;
+  }
   function react(st, k, dur, t, o) { st.reacts = (st.reacts || []).filter(r => t - r.t0 < r.dur); st.reacts.push(Object.assign({ k, t0: t, dur }, o || {})); }
-  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
+  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
 })();
 
 ;
@@ -1315,6 +1341,17 @@ function flK(t) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 const TCCare = (() => {
   const TAU = Math.PI * 2, W = 1052, H = 1657;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
@@ -1325,7 +1362,10 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 20, stockEvery: 600 };
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 20, stockEvery: 600 };
+  const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
+  
+  
 
   let g = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
   const FRONT = { x: 526, y: 1372 };          
@@ -1335,6 +1375,7 @@ const TCCare = (() => {
   const BTN = { pet: [170, 1494], feed: [407, 1494], clean: [644, 1494], call: [881, 1494] }, BTN_R = 70, HELP = [678, 97];      
   const S = { on: false, heart: 0, heartShow: 0, stock: 3, stockShow: 3, got: [], coolUntil: -1e9, coolFrom: -1e9, ses: null, hand: null, fx: [], ev: [], sched: [],
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
+    petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
     chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null };
   const POOP = [];          
@@ -1465,9 +1506,10 @@ const TCCare = (() => {
   const toS = p => [(p[0] - S.zoom.cx) * S.zoom.z + W / 2, (p[1] - S.zoom.cy) * S.zoom.z + H / 2];       
   const toW = q => [(q[0] - W / 2) / S.zoom.z + S.zoom.cx, (q[1] - H / 2) / S.zoom.z + S.zoom.cy];
   function setZoom(t, to, dur) { S.zA = Object.assign({}, S.zoom); S.zB = to; S.zT0 = t; S.zDur = dur; }
+  const zCap = y => clamp(ZOOM_MIN * TCHorse.scaleAt(HO, FRONT.y) / TCHorse.scaleAt(HO, y), ZOOM_MIN, ZOOM_MAX);      
   function zoomFor() {                 
     const e = TCHorse.extent(HO); if (!e) return { z: 1, cx: W / 2, cy: H / 2 };
-    const z = clamp(Math.min(0.8 * W / (e[2] - e[0]), 0.56 * H / (e[3] - e[1])), 1, 2.2);
+    const z = clamp(Math.min(0.8 * W / (e[2] - e[0]), 0.56 * H / (e[3] - e[1])), 1, zCap(BR.y));
     const hw = W / (2 * z), hh = H / (2 * z);
     return { z, cx: clamp((e[0] + e[2]) / 2, hw, W - hw), cy: clamp((e[1] + e[3]) / 2 + 0.01 * H / z, hh, H - hh) };
   }
@@ -1502,37 +1544,59 @@ const TCCare = (() => {
   const tagW = (p, txt, t, o) => { if (p) fx(Object.assign({ k: 'tag', t0: t, w: p.slice(), txt, size: 36, dur: 1.5, rot: (hash(t) - 0.5) * 0.16 }, o || {})); };      
 
   
-  function approach(t) {               
-    const fr = front(), ex = fr.big ? fr.x : lerp(fr.x, clamp(BR.x, fr.x - 170, fr.x + 170), 0.45);
-    S.route = [[ex, fr.y]]; S.turnAfter = true; S.phase = 'approach'; nextLeg(t);
+  function zoomGuess(x, y) {            
+    const sc = TCHorse.scaleAt(HO, y), z = clamp(Math.min(0.8 * W / (2.75 * sc), 0.56 * H / (1.8 * sc)), 1, zCap(y)), hw = W / (2 * z), hh = H / (2 * z);
+    return { z, cx: clamp(x, hw, W - hw), cy: clamp(y - 0.83 * sc + 0.01 * H / z, hh, H - hh) };
   }
-  function nextLeg(t) { const p = S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true }); BR.want.graze = 0; BR.want.look = [0, 0]; }
+  function approach(t) {               
+    
+    const fr = front(), ex = fr.big ? fr.x : lerp(fr.x, clamp(BR.x, fr.x - 170, fr.x + 170), 0.45), ey = fr.big ? fr.y : clamp(BR.y + STEP_Y, NEAR_Y, fr.y);
+    S.route = [[ex, ey]]; S.turnAfter = true; S.phase = 'approach'; nextLeg(t);
+  }
+  function comeNear(t) {                
+    
+    const fr = front(), side = Math.abs(Math.sin(BR.dir)) < 0.4, half = 1.8 * TCHorse.scaleAt(HO, BR.y) + 12;
+    let tx = BR.x, ty = BR.y;
+    if (fr.big) { if (Math.abs(BR.x - fr.x) > 50) tx = fr.x; if (BR.y > fr.y + 36) ty = fr.y; }
+    else if (half < W / 2) tx = clamp(BR.x, half, W - half);
+    const here = Math.abs(tx - BR.x) < 20 && ty === BR.y;
+    if (here && side) { if (BR.mode === 'walk' || BR.mode === 'run') { BR.mode = 'idle'; BR.until = t + 30; } arrived(t); return; }
+    S.turnAfter = true; S.phase = 'approach'; BR.want.graze = 0; BR.want.look = [0, 0];
+    if (here) { S.route = []; BR.hurry = HURRY; BR.mode = 'idle'; BR.until = t + 30; }      
+    else { S.route = [[tx, ty]]; nextLeg(t); }
+    setZoom(t, zoomGuess(tx, ty), 0.8); ev(t, 'zoomin');
+  }
+  function nextLeg(t) { const p = S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY }); BR.want.graze = 0; BR.want.look = [0, 0]; }
   function arrived(t) {
-    mark('A', t);
+    mark('A', t); BR.hurry = 1;
     if (S.mode === 'pet' || S.mode === 'feed') {
       const zf = zoomFor();
       if (S.mode === 'feed') { const n = P('nose'); if (n) { const hw = W / (2 * zf.z); zf.cx = clamp(lerp(zf.cx, n[0], 0.3), hw, W - hw); } }      
-      S.phase = 'zoomin'; setZoom(t, zf, 0.95); ev(t, 'zoomin');
+      if (S.zoom.z > 1.05 || S.zB) {      
+        setZoom(t, zf, 0.25);
+        if (S.mode === 'feed') feedStart(t); else { S.phase = 'pet'; S.petIdle = t; mark('R', t); ev(t, 'ready2'); }
+      } else { S.phase = 'zoomin'; setZoom(t, zf, ZOOM_IN); ev(t, 'zoomin'); }
     }
     else callArrive(t);
   }
   function endCare(t) {                 
-    if (S.zoom.z > 1.001 || S.zB) { S.phase = 'zoomout'; setZoom(t, { z: 1, cx: W / 2, cy: H / 2 }, 0.95); ev(t, 'zoomout'); }
+    if (S.zoom.z > 1.001 || S.zB) { S.phase = 'zoomout'; setZoom(t, { z: 1, cx: W / 2, cy: H / 2 }, ZOOM_OUT); ev(t, 'zoomout'); }
     else release(t);
   }
   function release(t) {
-    const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; S.grazeOK = false;
+    const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; BR.hurry = 1; S.grazeOK = false;
+    if (m === 'call') { S.callLast = t; if (S.callN >= RULE.streak) { S.callN = 0; S.callCoolUntil = t + RULE.cool; S.callCoolFrom = t; ev(t, 'callcool'); } }      
     if ((m === 'feed' || m === 'clean') && S.popVal) {
       const pz = typeof S.popVal === 'object' ? S.popVal : { k: 'pt', v: S.popVal }; S.popVal = null;
       if (pz.k === 'pt') at(t + 0.15, tt => { fx({ k: 'pointpop', t0: tt, v: pz.v, dur: 2.0 }); ev(tt, 'piron'); if (O.onPrize) O.onPrize(pz); });
       else if (O.onPrize) at(t + 0.4, tt => O.onPrize(pz));          
     }      
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          
-      const c = S.clean; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.flowersAt = { x: c.x, y: c.y, t0: c.flowerT };
+      const c = S.clean; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
-      Object.assign(BR, { tgt: [c.x - Math.cos(d) * 1.05 * sc, c.y - Math.sin(d) * 0.5 * 1.05 * sc], mode: 'walk', until: t + 30, forcedWalk: true });
+      Object.assign(BR, { tgt: [c.x - Math.cos(d) * 1.05 * sc, c.y - Math.sin(d) * 0.5 * 1.05 * sc], mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY });
       S.afterSniff = true;
-    } else if (m === 'clean') { if (S.clean) S.flowersAt = { x: S.clean.x, y: S.clean.y, t0: S.clean.flowerT }; S.clean = null; mark('Z2', t); }
+    } else if (m === 'clean') { S.clean = null; mark('Z2', t); }
     if (m === 'feed') S.feed = null;
   }
 
@@ -1550,6 +1614,7 @@ const TCCare = (() => {
     return null;
   }
   function pressFeed(t) {
+    cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
     S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
@@ -1557,13 +1622,13 @@ const TCCare = (() => {
   function pick(t, kind) {
     if (!S.chooser || S.chooser.pick) return;
     S.chooser.pick = kind; S.chooser.pickT = t; ev(t, 'pick');
-    at(t + 0.5, tt => {
+    at(t + 0.25, tt => {
       S.chooser = null;
       if (!useToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
       const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : rnd() < 1 / 30);
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt }; S.popVal = careLottery();
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          
-      const fr = front(); if (Math.abs(BR.y - fr.y) < 36 && Math.abs(BR.x - fr.x) < (fr.big ? 50 : 280) && Math.abs(Math.sin(BR.dir)) < 0.4) arrived(tt); else approach(tt);
+      comeNear(tt);
     });
   }
   function feedStart(t) {
@@ -1578,28 +1643,28 @@ const TCCare = (() => {
       const eq = TCHorse.wherePose(HO, mats, 'eye'), bx = nq ? (pq ? nq[0] * 0.86 + pq[0] * 0.14 : nq[0]) : gq[0];
       const by = gq[1] + 4, rimW = nq && eq ? nq[1] - 0.3 * (nq[1] - eq[1]) : by - 0.78 * s;
       const lh = clamp((by - rimW) / s - 0.48, 0.04, 0.9);          
-      F.bucket = { x: bx, y: by, lh, level: 3, t0: t, hideT: null }; ev(t, 'unfold'); at(t + 0.35, tt => ev(tt, 'bucket'));
-      const ds = [t + 1.7, t + 2.7, t + 3.7];          
+      F.bucket = { x: bx, y: by, lh, level: 3, t0: t, hideT: null }; ev(t, 'unfold'); at(t + 0.25, tt => ev(tt, 'bucket'));
+      const ds = [t + 1.2, t + 2.2, t + 3.2];          
       if (PROPS && PROPS.bucket) {                      
         const tmp1 = Object.assign({}, tmp, { reacts: [{ k: 'deep', t0: t - 2, dur: 4.4, ds: [t - 10] }] }), mats1 = TCHorse.pose(HO, tmp1, t);
         F.b3 = place3(TCHorse.anchorPose(HO, mats, 'nose'), TCHorse.anchorPose(HO, mats, 'eye'), TCHorse.anchorPose(HO, mats, 'poll'), TCHorse.anchorPose(HO, mats1, 'nose'), ds);
       }
-      at(t + 0.8, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
-      for (let k = 0; k < 3; k++) at(t + 1.7 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
-      at(t + 4.9, tt => { BR.want.graze = 0; S.grazeOK = false; });
-      at(t + 5.4, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
-      at(t + 6.6, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
-      at(t + 7.2, tt => feedAfter(tt));
+      at(t + 0.3, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
+      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
+      at(t + 4.4, tt => { BR.want.graze = 0; S.grazeOK = false; });
+      at(t + 4.9, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
+      at(t + 6.1, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
+      at(t + 6.7, tt => feedAfter(tt));
     } else {                            
       F.handT = t; F.itemW = itemPos(); ev(t, 'unfold');
       if (F.gold) at(t + 0.3, tt => { fx({ k: 'glint', t0: tt, dur: 3.2 }); ev(tt, 'gold'); tagW(P('nose'), '金のニンジン！', tt + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' }); });
-      for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.5 : 1.0) + k * 1.0, tt => {
+      for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.2 : 0.7) + k * 1.0, tt => {
         F.bites = k + 1; react('eat', 0.95, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'bite', { n: k, kind: F.kind });
         const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : F.gold ? ['#ffd65c', '#fff1b0', '#e9b13a'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
         if (k === 0) tagW(P('nose'), 'シャクッ', tt + 0.05, { off: [-20, -100], size: 34, dur: 1.0 });
       });
-      at(t + (F.gold ? 4.2 : 3.7), tt => { F.handHide = tt; ev(tt, 'fold'); });
-      at(t + (F.gold ? 4.6 : 4.1), tt => feedAfter(tt));
+      at(t + (F.gold ? 3.9 : 3.4), tt => { F.handHide = tt; ev(tt, 'fold'); });
+      at(t + (F.gold ? 4.3 : 3.8), tt => feedAfter(tt));
     }
   }
   function feedAfter(t) {                
@@ -1634,6 +1699,7 @@ const TCCare = (() => {
   
   function season() { const m = (O.month || new Date().getMonth() + 1); return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter'; }
   function pressClean(t) {
+    cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
     if (!useToken(t, 'clean')) return;
@@ -1647,7 +1713,7 @@ const TCCare = (() => {
     S.clean = { t0: t, x: tg.x, y: tg.y, tg, swipes: 0, prog: 0, sniff: tg.type === 'poop' };
     S.clean.pan = { x: tg.x - 120, y: tg.y + 6 };
     const z = BR.stand ? 1 : 1.7, hw = W / (2 * z), hh = H / (2 * z);
-    if (z > 1) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp(tg.x - 20, hw, W - hw), cy: clamp(tg.y - 90, hh, H - hh) }, 0.9); ev(t, 'zoomin'); }
+    if (z > 1) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp(tg.x - 20, hw, W - hw), cy: clamp(tg.y - 90, hh, H - hh) }, ZOOM_IN); ev(t, 'zoomin'); }
     else cleanStart(t);
     if (!BR.stand) { const side = sideToward(tg.x, tg.y); BR.want.look = [side * 0.6, -0.1]; }
   }
@@ -1665,35 +1731,45 @@ const TCCare = (() => {
     if (C.swipes >= 3) {
       at(t + 0.35, tt => { C.inPan = true; ev(tt, 'inpan'); });
       at(t + 0.8, tt => { C.foldT = tt; ev(tt, 'fold'); });
-      at(t + 1.3, tt => { fx({ k: 'kira', t0: tt, w: [C.x, C.y] }); ev(tt, 'kira'); C.flowerT = tt + 0.2; tagW([C.x, C.y], 'きれい！', tt + 0.3, { off: [0, -130], size: 38, dur: 1.8 }); });
+      at(t + 1.1, tt => { ev(tt, 'kira'); tagW([C.x, C.y], 'きれい！', tt, { off: [0, -130], size: 38, dur: 1.6 }); });      
       if (C.tg.gold) at(t + 2.2, tt => { S.high = 5; S.highBump = tt; fx({ k: 'luck', t0: tt, dur: 2.6 }); ev(tt, 'luck'); });
-      S.holdUntil = t + (C.tg.gold ? 5.0 : 3.4); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
+      S.holdUntil = t + (C.tg.gold ? 5.0 : 2.7); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
     }
   }
 
   
+  function cancelAfter(t) {              
+    if (S.phase !== 'after') return;
+    S.afterSniff = false; S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.forcedWalk = false; BR.hurry = 1; S.holdUntil = -1; mark('Z2', t);
+    for (const r of (BR.reacts || [])) if ((r.k === 'sniff' || r.k === 'swish') && r.cut == null) r.cut = Math.max(t, r.t0);
+    if (BR.mode === 'walk') { BR.mode = 'idle'; BR.until = t + 2; }
+  }
   function pressPet(t) {
+    cancelAfter(t);
     S.press.pet = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
     if (t < S.coolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
     if (BR.mode === 'sleep' || BR.sl > 0.001) { S.mode = null; BR.careHold = false; return; }      
     if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      
-    const fr = front(); if (Math.abs(BR.y - fr.y) < 36 && Math.abs(BR.x - fr.x) < (fr.big ? 50 : 280) && Math.abs(Math.sin(BR.dir)) < 0.4) arrived(t);
-    else approach(t);
+    comeNear(t);
   }
   function pressCall(t, kind) {
+    cancelAfter(t);
     S.press.call = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
+    if (t < S.callCoolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.call[0] - 40, y: BTN.call[1] - 150, txt: `あと ${Math.ceil(S.callCoolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
+    if (t - S.callLast > RULE.cool) S.callN = 0;          
+    S.callN++;
     kind = kind || ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3];
     S.mode = 'call'; S.callKind = kind; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'call', { kind });
     fx({ k: 'notes', t0: t });
-    if (BR.stand) { BR.reacts = []; callArrive(t + 0.2); return; }       
+    if (BR.stand) { BR.reacts = []; callArrive(t + 0.1); return; }       
     if (kind === 'turn') {             
       if (BR.mode === 'walk') BR.mode = 'idle';
       const want = Math.cos(BR.dir) >= 0 ? 0.6 : Math.PI - 0.6;
-      if (Math.abs(angDiff(BR.dir, want)) > 0.25) { S.route = []; S.turnAfter = true; S.turnTarget = want; S.phase = 'approach'; }
-      else callArrive(t + 0.25);
+      if (Math.abs(angDiff(BR.dir, want)) > 0.25) { S.route = []; S.turnAfter = true; S.turnTarget = want; S.phase = 'approach'; BR.hurry = HURRY; }
+      else callArrive(t + 0.1);
     } else approach(t);
   }
   function callArrive(t) {
@@ -1708,14 +1784,14 @@ const TCCare = (() => {
       return;
     }
     if (S.callKind === 'come') {       
-      at(t + 0.15, tt => { react('nod', 1.6, tt); react('swish', 2.0, tt + 0.3); ev(tt, 'nod'); tagW(P('poll'), 'ぶるるっ', tt + 0.2, { off: [30, -90] }); BR.want.look = [side * 0.5, 0.15]; });
+      at(t + 0.05, tt => { react('nod', 1.6, tt); react('swish', 2.0, tt + 0.3); ev(tt, 'nod'); tagW(P('poll'), 'ぶるるっ', tt + 0.2, { off: [30, -90] }); BR.want.look = [side * 0.5, 0.15]; });
       S.holdUntil = t + 2.6;
     } else if (S.callKind === 'turn') {  
       at(t, tt => { BR.want.look = [side * 1.0, 0.32]; ev(tt, 'turn'); });
       at(t + 0.7, tt => { tagW(P('poll'), '！', tt, { off: [20, -96], size: 44 }); react('swish', 1.8, tt); });
       S.holdUntil = t + 3.4;
     } else {                           
-      at(t + 0.1, tt => { react('nuzzle', 3.4, tt, { side }); react('happy', 3.4, tt); BR.want.look = [side * 0.55, 0.05]; ev(tt, 'amae'); tagW(P('poll'), 'すりすり', tt + 0.4, { off: [30, -96], dur: 2.0 }); });
+      at(t + 0.05, tt => { react('nuzzle', 3.4, tt, { side }); react('happy', 3.4, tt); BR.want.look = [side * 0.55, 0.05]; ev(tt, 'amae'); tagW(P('poll'), 'すりすり', tt + 0.4, { off: [30, -96], dur: 2.0 }); });
       for (let k = 0; k < 4; k++) at(t + 0.5 + k * 0.62, tt => { const p = P('poll'); if (p) fx({ k: 'mini', t0: tt, w: [p[0] + (hash(tt * 3) - 0.5) * 60, p[1] - 20], r: 22, dx: (hash(tt * 7) - 0.5) * 60 }); ev(tt, 'heartpop'); });
       S.holdUntil = t + 4.0;
     }
@@ -1733,6 +1809,9 @@ const TCCare = (() => {
     fx({ k: 'mini', t0: t, w: [x + (hash(t * 7) - 0.5) * 24, y - 14], r: 19, dx: (hash(t * 3) - 0.5) * 40 });
     if (S.ses.n >= RULE.strokes) complete(t, x, y);
   }
+  function cutReacts(t) {               
+    for (const r of (BR.reacts || [])) if (r.cut == null && r.k !== 'look' && r.k !== 'deep' && t < r.t0 + r.dur) r.cut = Math.max(t, r.t0);
+  }
   function complete(t, x, y) {
     const z = S.ses.zone, side = sideToward(x, y), slow = O.tod === 'evening' ? 1.35 : 1;
     const ZR = { head: ['nuzzle', 2.6, 'すりすり'], neck: ['swish', 2.4, 'ふりふり'], back: ['stretch', 4.6, 'ぐーっ'], nose: ['sneeze', 1.5, 'ぷしゅっ'] };
@@ -1740,38 +1819,46 @@ const TCCare = (() => {
     const rare = S.demo && S.demo.rare != null ? S.demo.rare : rnd() < 1 / 20;
     if (rare) { rk = 'tilt'; rd = 1.9; rt = '？'; }
     rd *= slow;
-    at(t + 0.25, tt => {
+    const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      
+    cutReacts(t);
+    S.got = S.got.filter(q => t - q < 60);
+    const getHeart = S.got.length < RULE.perMin, willLot = getHeart && S.heart + 1 >= RULE.max;      
+    at(t + 0.25, live(tt => {
       react(rk, rd, tt, { side }); ev(tt, rk);
       const hp = rk === 'sneeze' ? P('nose') : rk === 'swish' ? P('rump') : rk === 'stretch' ? P('withers') : P('poll');
       tagW(hp || [x, y], rt, tt, { off: rk === 'swish' ? [-40, -60] : [26, -96], dur: 1.5 * slow });
       if (rk === 'sneeze' && hp) fx({ k: 'bits', t0: tt + 0.62, w: hp.slice() });
-    });
+    }));
     let end = t + 0.25 + rd;
-    if (O.tod === 'evening') { at(end - 0.6, tt => { react('calm', 3.6, tt, { side }); ev(tt, 'calm'); tagW(P('poll'), 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 34, dur: 2.0, rot: 0.06 }); }); end += 3.0; }
-    if (O.stageNo <= 2) { at(end - 0.3, tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); }); end += 1.9; }
-    if (O.tod === 'night') {
-      at(end - 0.4, tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); });
-      at(end + 1.7, tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); });
-      end += 3.6;
+    if (!willLot) {                      
+      if (O.tod === 'evening') { at(end - 0.6, live(tt => { react('calm', 3.6, tt, { side }); ev(tt, 'calm'); tagW(P('poll'), 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 34, dur: 2.0, rot: 0.06 }); })); end += 3.0; }
+      if (O.stageNo <= 2) { at(end - 0.3, live(tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); })); end += 1.9; }
+      if (O.tod === 'night') {
+        at(end - 0.4, live(tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); }));
+        at(end + 1.7, live(tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); }));
+        end += 3.6;
+      }
     }
     
-    S.got = S.got.filter(q => t - q < 60);
-    if (S.got.length >= RULE.perMin) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
+    if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
     else {
       S.got.push(t); const i = Math.min(S.heart, RULE.max - 1), q = toS([x, y - 24]);
       fx({ k: 'fly', t0: t + 0.15, x: q[0], y: q[1], i, dur: 0.8 }); ev(t + 0.15, 'heart');
       S.heart = Math.min(RULE.max, S.heart + 1);
       at(t + 0.95, tt => { S.heartShow = Math.max(S.heartShow, i + 1); ev(tt, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: tt, x: SLOT(i)[0], y: SLOT(i)[1] }); });
-      if (S.heart >= RULE.max) { S.busy = true; at(t + 1.45, lottery); }
+      if (S.heart >= RULE.max) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      
     }
-    S.coolUntil = t + RULE.cool; S.coolFrom = t; S.readyT = S.coolUntil;
+    
+    if (t - S.petLast > RULE.cool) S.petN = 0;
+    S.petN++; S.petLast = t;
+    if (S.petN >= RULE.streak) { S.petN = 0; S.coolUntil = t + RULE.cool; S.coolFrom = t; S.readyT = S.coolUntil; }
     S.hand.hideT = t + 0.55; at(t + 0.55, tt => ev(tt, 'fold'));
     S.holdUntil = end + 0.5; S.ses.done = true;
   }
   
   function lottery(t) {
     const win = S.demo && S.demo.win != null ? S.demo.win : rnd() < RULE.win;
-    S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity;
+    S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
     at(t + 0.9, tt => { react('gather', 1.0, tt); ev(tt, 'gather'); });
     if (win) {
       at(t + 1.7, tt => { react('hop', 2.4, tt); for (let k = 0; k < 2; k++) ev(tt + 0.1 + 1.12 * k, 'frisk', { n: k }); fx({ k: 'burst', t0: tt + 0.35, w: (P('withers') || [BR.x, BR.y - 200]).slice() }); });      
@@ -1800,6 +1887,10 @@ const TCCare = (() => {
     if (kind === 'down') {
       if (S.ses && !S.ses.done) { S.ses.down = true; S.ses.last = [x, y]; S.ses.dist = 0; S.ses.counted = false; S.ses.sdir = null; S.finger = [x, y]; return; }
       if (S.phase !== 'pet' || S.busy) return;
+      if (t < S.coolUntil) {              
+        if (zoneAt(x, y) && t - (S.coolTagT || -9) > 1.2) { S.coolTagT = t; fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); }
+        return;
+      }
       const z = zoneAt(x, y); if (!z) return;
       startSession(t, x, y, z); S.ses.down = true; S.finger = [x, y]; S.petIdle = t;
     } else if (kind === 'move') {
@@ -1833,7 +1924,7 @@ const TCCare = (() => {
   const PET3 = (A, B, ds, dr, u0) => { u0 = u0 || 0.25; const st = strokes(u0 + 0.7, A, B, 3, ds || 0.58, dr || 0.33), e = st[st.length - 1][1]; return [[u0, u0 + 0.7, 'awayR', A, false], ...st, [e + 0.1, e + 1.0, B, 'awayR', false]]; };
   const DEMOS = {
     
-    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと 手前に 来るよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', '撫でたあとは 7秒 なでられない']],
+    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと 手前に 来るよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', 'つづけて 5回まで → 5回 なでたら 7秒 おやすみ']],
       path: [[0.25, 0.95, 'awayR', 'neckA', false], [0.95, 2.3, 'neckA', 'neckA', true], ...strokes(2.3, 'neckA', 'neckB', 3, 0.6, 0.34), [4.3, 5.3, 'neckB', 'awayR', false]], greeted: false, end: 'Z+4.6' },
     
     pet_b: { front: 1, heart: 1, got: [-20], greeted: true, cap: [[0.2, 'R+5.6', '頭を なでると → すりすり']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.8' },
@@ -1863,7 +1954,7 @@ const TCCare = (() => {
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
     
     clean_a: { poop: [770, 1240, 0], nibble: true, pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
-      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', '3回 はくと ちりとりへ（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると 花が さく → くんくん']], end: 'Z2+0.4' },
+      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', '3回 はくと ちりとりへ（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
     clean_b: { pt: 200, month: 11, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+3.8', 'うんちが ない 時は 落ち葉（季節で かわる）'], ['C+3.8', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
     guide: { press: [[0.8, 'help']], guideEnd: 15.8, cap: [], end: 16.8 },
@@ -1917,7 +2008,7 @@ const TCCare = (() => {
     if (!HO || !HO.gl || typeof TCHorse === 'undefined' || !TCHorse.createProp) return null;
     const one = async nm => {
       const meta = await fetch(AP(`tc_items/${nm}.json`)).then(r => { if (!r.ok) throw new Error(nm); return r.json(); });
-      const bin = await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); });
+      const bin = TCHorse.unz(await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); }));
       const im = f => f ? new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = AP(`tc_items/${f}`); }) : Promise.resolve(null);
       const [texImg, nrmImg] = await Promise.all([im(meta.tex), im(meta.ntex)]);
       return TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg });
@@ -2047,9 +2138,6 @@ const TCCare = (() => {
     
     for (const q of (BR.poops || [])) if (q.gold) { const p = toS([q.x, q.y]); for (let i = 0; i < 3; i++) { const v = ((t * 0.6 + i / 3) % 1); star(p[0] + (hash(i * 3) - 0.5) * 60 * z, p[1] - 30 * z - 40 * z * v, 9 * z * Math.sin(Math.PI * v), v * 2, 0.9); } }
     
-    const FA = S.flowersAt || (S.clean && S.clean.flowerT ? { x: S.clean.x, y: S.clean.y, t0: S.clean.flowerT } : null);
-    if (FA && t >= FA.t0) for (let i = 0; i < 7; i++) { const an = i * TAU / 7 + 0.4, rr = 90 + 40 * hash(i * 1.7), p = toS([FA.x + Math.cos(an) * rr * 1.3, FA.y + Math.sin(an) * rr * 0.5]); const v = (t - FA.t0 - i * 0.12) / 0.5; if (v > 0) flowerArt(p[0], p[1], 15 * z * backOut(v), i, 1); }
-    
     const F = S.feed;
     if (F && F.bucket) { const b = F.bucket, p = toS([b.x, b.y]), k = TCHorse.scaleAt(HO, b.y) * z, op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45);
       paperSquare(p[0], p[1] - 0.3 * k, 30 * z * (b.hideT != null ? sm((t - b.hideT - 0.3) / 0.2) * (1 - sm((t - b.hideT - 0.5) / 0.2)) : (1 - sm((t - b.t0 - 0.25) / 0.2))), t, 1);
@@ -2176,7 +2264,7 @@ const TCCare = (() => {
     if (S.ses && !S.ses.done && !S.ses.down && S.ses.upT != null && t - S.ses.upT > 2.2) { S.hand.hideT = t; ev(t, 'fold'); S.ses.done = true; S.holdUntil = t + 0.8; }      
     
     if (!S.busy && t > S.holdUntil && (S.phase === 'pet' && !S.ses || S.phase === 'callact' || S.phase === 'feeddone' || S.phase === 'cleandone')) { S.holdUntil = Infinity; endCare(t); }
-    if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 3.2; }
+    if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; BR.hurry = 1; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 2.6; }
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
     if (S.readyT != null && t >= S.readyT) { ev(S.readyT, 'ready'); S.readyT = null; S.readyPop = t; }
@@ -2358,6 +2446,12 @@ const TCCare = (() => {
         g.strokeStyle = '#ff9cbc'; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.stroke(); g.restore();
         label(String(Math.ceil(S.coolUntil - t)), x, y + 2, 54, '#ffffff', 'rgba(60,35,15,0.9)', 8);
       }
+      if (k === 'call' && t < S.callCoolUntil) {
+        const rem = (S.callCoolUntil - t) / RULE.cool;
+        g.save(); g.fillStyle = 'rgba(60,40,25,0.45)'; g.beginPath(); g.moveTo(x, y); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.closePath(); g.fill();
+        g.strokeStyle = '#8fd0ff'; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.stroke(); g.restore();
+        label(String(Math.ceil(S.callCoolUntil - t)), x, y + 2, 54, '#ffffff', 'rgba(60,35,15,0.9)', 8);
+      }
       if (k === 'pet' && S.readyPop != null) { const q = (t - S.readyPop) / 0.6; if (q < 1) { g.save(); g.strokeStyle = `rgba(255,156,188,${0.7 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 8 + 26 * easeOut(q), 0, TAU); g.stroke(); g.restore(); } }
     });
   }
@@ -2490,7 +2584,7 @@ const TCCare = (() => {
     window.__events = () => S.ev;
     window.__careDone = () => !!S.demoDone;
   }
-  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
+  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
 ;
@@ -2547,11 +2641,11 @@ const TCGuide = (() => {
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
       <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
-    ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・撫でたあとは<b>7秒</b>おやすみ・ハートは<b>1分に5こ</b>まで</p>
+    ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
       <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
-    ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p>`],
+    ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
-    ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・ほうきで3回はくとピカピカ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
+    ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・ほうきで3回はくと きれいになるよ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
     ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p>`],
     
     ['替', '#2f8f83', '馬のリセット（次の馬の抽選）', `<p>・お世話（ごはん・おそうじ）を<b>${RS.cares}回</b>すると、リセットのタイマーがスタート</p>
@@ -3447,7 +3541,7 @@ const TCApp = (() => {
   async function loadHorse(sp) {
     if (hcache[sp.key]) return hcache[sp.key];
     const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
-    const bin = await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer());
+    const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
     const [texImg, nrmImg, ...poopImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp')]);
     const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
