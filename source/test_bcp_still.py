@@ -30,6 +30,7 @@ SPEC = {'r': 9, 'n': 14, 'ranks': {str(i): i for i in range(1, 15)},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 8, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 8]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 6}]}
 MISS = dict(SPEC, rows=[dict(x, state='不的中', hits=[]) for x in SPEC['rows']])
 STAGES = [(iid, kind, n, name) for iid, kind, st in _bcp.ITEMS for n, name in st]          # 59段
+BG = lambda nm: _bcp.pics(nm)[0]          # 背景の 絵の 名前（第4.153版：出世馬の ほかは ボードの 中を ぬり直した 絵 bcp_<名前>_bl.webp）
 BY = {name: (iid, kind, n) for iid, kind, n, name in STAGES}
 MOVING = {f for n in _bcp.MOTION for f in _bcp.motion_files(n)}                            # 動く 絵の 部品（もう アプリに 入れない）
 STATE = """() => { const hb = document.querySelector('#fxOv .hb'), ov = hb && hb.parentNode, w = hb && hb.querySelector('.bcpw');
@@ -65,13 +66,13 @@ import numpy as np
 fl = _bcp.files(); MD = master('bcp_assets')
 sha = lambda p_: hashlib.sha1(open(p_, 'rb').read()).hexdigest()
 same = all(os.path.exists(os.path.join(MD, f)) and sha(os.path.join(MD, f)) == sha(os.path.join(BCP_DIR, f)) for f in fl)
-sizes = {Image.open(os.path.join(BCP_DIR, f'bcp_{nm}.webp')).size for _i, _k, _n, nm in STAGES}
+sizes = {Image.open(os.path.join(BCP_DIR, BG(nm))).size for _i, _k, _n, nm in STAGES}
 fgs = [f for f in fl if f.endswith('_fg.webp')]
 fg_ok = all(Image.open(os.path.join(BCP_DIR, f)).mode == 'RGBA' and Image.open(os.path.join(BCP_DIR, f)).size == (1170, 2532) for f in fgs)
 tot = sum(os.path.getsize(os.path.join(BCP_DIR, f)) for f in fl)
-check(len(fl) == len(set(fl)) == 108 and sum(1 for f in fl if f.startswith('bcp_t_')) == 14 and all(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES) and len(fgs) == 35 and not (set(fl) & MOVING) and len(MOVING) > 300
+check(len(fl) == len(set(fl)) == 108 and sum(1 for f in fl if f.startswith('bcp_t_')) == 14 and all(BG(nm) in fl for _i, _k, _n, nm in STAGES) and sum(1 for f in fl if f.endswith('_bl.webp')) == 52 and not any(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES if _bcp.blank(nm)) and len(fgs) == 35 and not (set(fl) & MOVING) and len(MOVING) > 300
       and _bcp.stills_out() == [] and all('mo' not in d for d in _bcp.data()['d'].values()) and same and sizes == {(1170, 2532)} and fg_ok,
-      f'アプリに 入れる 絵は 108まい（見本 14・止まった 絵 59・前の 絵 35：{tot / 1e6:.2f}MB）・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
+      f'アプリに 入れる 絵は 108まい（見本 14・止まった 絵 59〈ボードの 中を ぬり直した 絵 52・出世馬の 3D の 絵 7〉・前の 絵 35：{tot / 1e6:.2f}MB）・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
       f'中身は もとの 絵（ios/bcp_assets）と 同じ＝軽く して いない・止まった 絵と 前の 絵は 1170×2532（{sizes}）')
 
 try:
@@ -113,7 +114,7 @@ try:
             for calm in (True, False):
                 pg.evaluate(PROBE); show(pg, name, calm); s = ready(pg); pr = pg.evaluate(PROBE_END)
                 ok = bool(s) and s.get('w') == 1 and s['name'] == name and s['pic'] and s['done'] and not s['ld'] and s['vis'] == 'visible' and s['ok'] and s['sync'] and s['rb'] and s['st'] is True
-                ok = ok and s['srcs'] == _bcp.stage_files(name) and s['srcs'][0] == f'bcp_{name}.webp' and s['nat'] == [1170, 2532] and s['op'] == '1'
+                ok = ok and s['srcs'] == _bcp.stage_files(name) and s['srcs'][0] == BG(name) and s['nat'] == [1170, 2532] and s['op'] == '1'
                 ok = ok and s['chr'] == 0 and s['cv'] == 0 and s['css'] == 0 and not s['go'] and s['mo'] == '' and s['an'] == 0
                 ok = ok and pr['early'] == 0 and pr['hide'] == 0 and pr['first'] >= 0
                 if not ok: ng.append((name, 'calm' if calm else 'go', s and {k: v for k, v in s.items() if k != 'srcs'}, pr))
@@ -141,11 +142,11 @@ try:
         # ---- 3) 画質：3倍の 画面で、絵は もとの 絵と 同じ 画素（ボード・「とじる」・前の 絵の 所を のぞく）----
         ctx, pg, errs3, bad, req = page(3)
         res3 = []
-        for name in ('ring2', 'selfie1', 'stamp3', 'miss2_2', 'shusse8'):
+        for name in ('ring2', 'selfie1', 'stamp3', 'miss2_2', 'shusse8_3d'):
             show(pg, name, False); ready(pg); pg.wait_for_timeout(2400); shot = snap(pg)
             box = pg.evaluate("() => { const r = e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; return { rb: r(document.querySelector('#fxOv .hb .rb')), close: r(document.querySelector('#fxOv .close')) }; }")
             close(pg)
-            src = np.asarray(Image.open(os.path.join(MD, f'bcp_{name}.webp')).convert('RGB')).astype(np.int16)
+            src = np.asarray(Image.open(os.path.join(MD, BG(name))).convert('RGB')).astype(np.int16)
             keep = np.ones(src.shape[:2], bool)
             for (x0, y0, x1, y1), m in ((box['rb'], 12), (box['close'], 132)):      # 「とじる」は まわりの 光（box-shadow：出世馬 など）も のぞく
                 keep[max(0, int(y0 * 3) - m):int(y1 * 3) + m, max(0, int(x0 * 3) - m):int(x1 * 3) + m] = False
@@ -159,7 +160,7 @@ try:
 
         # ---- 4) 絵が おそい（背景を 1.2秒 おくらせる）：読める まで 出さない → そろったら いっしょに 出る ----
         ctx, pg, errs, bad, req = page()
-        late = 'bcp_miss1.webp'; held = []
+        late = BG('miss1'); held = []
         pg.route('**/' + late, lambda route: held.append(route))
         pg.evaluate(PROBE); show(pg, 'miss1', False); pg.wait_for_timeout(1200)
         s1 = pg.evaluate(STATE)
@@ -172,16 +173,16 @@ try:
         close(pg); pg.unroute('**/' + late)
 
         # ---- 5) 読めない：背景 → いつもの ボード／前の 絵 だけ → 背景 だけで 出る／いつまでも こない → 8秒で いつもの ボード ----
-        pg.route('**/bcp_miss2.webp', lambda route: route.fulfill(status=404, body=''))
-        show(pg, 'miss2', False); pg.wait_for_timeout(1500); s_bg = pg.evaluate(STATE); close(pg); pg.unroute('**/bcp_miss2.webp')
+        pg.route('**/' + BG('miss2'), lambda route: route.fulfill(status=404, body=''))
+        show(pg, 'miss2', False); pg.wait_for_timeout(1500); s_bg = pg.evaluate(STATE); close(pg); pg.unroute('**/' + BG('miss2'))
         fgn = next(nm for _i, _k, _n, nm in STAGES if _bcp.cfg(nm).get('fg'))
         pg.route(f'**/bcp_{fgn}_fg.webp', lambda route: route.fulfill(status=404, body=''))
         show(pg, fgn, False); s_fg = ready(pg); close(pg); pg.unroute(f'**/bcp_{fgn}_fg.webp')
         check(s_bg and s_bg['w'] == 0 and not s_bg['pic'] and s_bg['name'] == '' and s_bg['rb'] and not s_bg['bcp']
-              and s_fg and s_fg['w'] == 1 and s_fg['pic'] and s_fg['done'] and not s_fg['ld'] and s_fg['srcs'] == [f'bcp_{fgn}.webp'] and not errs,
+              and s_fg and s_fg['w'] == 1 and s_fg['pic'] and s_fg['done'] and not s_fg['ld'] and s_fg['srcs'] == [BG(fgn)] and not errs,
               f'背景の 絵が 読めない → いつもの ボードに もどる／前の 絵 だけ 読めない（{fgn}）→ 背景 だけで 出る（{s_bg}・{s_fg and s_fg["srcs"]}）')
         held4 = []
-        pg.route('**/bcp_miss4.webp', lambda route: held4.append(route))
+        pg.route('**/' + BG('miss4'), lambda route: held4.append(route))
         show(pg, 'miss4', False); pg.wait_for_timeout(6500); s1 = pg.evaluate(STATE); pg.wait_for_timeout(2300); s2 = pg.evaluate(STATE)
         for r in held4:
             try: r.continue_()
@@ -190,17 +191,17 @@ try:
         check(len(held4) >= 1 and s1 and s1['w'] == 1 and s1['ld'] and s1['vis'] == 'hidden' and not s1['done'] and s2 and s2['w'] == 0 and not s2['pic'] and s2['rb'] and not s2['bcp']
               and s3 and s3['w'] == 0 and not s3['pic'] and not errs,
               f'絵が いつまでも こない：6.5秒は 待つ → 8秒で いつもの ボード → あとから 届いても そのまま（{s1 and {k: s1[k] for k in ("ld", "vis", "done")}} → {s2} → {s3}）')
-        close(pg); pg.unroute('**/bcp_miss4.webp')
+        close(pg); pg.unroute('**/' + BG('miss4'))
 
         # ---- 6) 読んで いる 間に とじる → エラーなし・つぎは ふつうに 出る ----
         held5 = []
-        pg.route('**/bcp_miss5.webp', lambda route: held5.append(route))
+        pg.route('**/' + BG('miss5'), lambda route: held5.append(route))
         show(pg, 'miss5', False); pg.wait_for_timeout(400); s1 = pg.evaluate(STATE); close(pg)
         gone = pg.evaluate("() => !document.getElementById('fxOv')")
         for r in held5:
             try: r.continue_()
             except Exception: pass      # とじた ときに 読むのを やめて いる ことも ある
-        pg.wait_for_timeout(600); pg.unroute('**/bcp_miss5.webp')
+        pg.wait_for_timeout(600); pg.unroute('**/' + BG('miss5'))
         show(pg, 'miss5', False); s2 = ready(pg); close(pg)
         pg.wait_for_timeout(8200)      # 前の 待つ 時計（8秒）が あとで 何か こわさない
         show(pg, 'miss5_2', True); s3 = ready(pg)

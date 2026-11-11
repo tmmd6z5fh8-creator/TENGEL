@@ -120,7 +120,9 @@ if not tc_have:
 # kisekae/fig/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。ブースを 開くと「読みこめなかった」に なる）
 fig_dir = os.environ.get('FIG_ASSETS') or _ad.adir('fig_assets')
 # 第4.145版：fg_meta.json（集めた ときの メモ・アプリは 読まない）は 入れない
-fig_have = sorted(f for f in (os.listdir(fig_dir) if os.path.isdir(fig_dir) else []) if f.startswith('fg') and f != 'fg_meta.json' and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
+# 第4.153版：棚を 貼り直した 形（fg_shelf2.*）が ある ときは、前の 棚（fg_shelf.*）を 入れない（もとの フォルダを そのまま 使う ときも）
+_fig_ls = os.listdir(fig_dir) if os.path.isdir(fig_dir) else []; _fig_old = _ad.superseded('fig_assets', _fig_ls)
+fig_have = sorted(f for f in _fig_ls if f.startswith('fg') and f != 'fg_meta.json' and f not in _fig_old and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'))
 for f in fig_have:
     assert f.lower() not in names and f not in files, f
     shutil.copy(os.path.join(fig_dir, f), os.path.join(res, f)); files[f] = f

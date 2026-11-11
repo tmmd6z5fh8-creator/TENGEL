@@ -1,5 +1,6 @@
-# 結果ボードカスタム（絵の ボード）：設定の タイルの 見本 bcp_t_<id>.webp を 作る（第4.121版）
+# 結果ボードカスタム（絵の ボード）：設定の タイルの 見本を 作る（第4.121版：bcp_t_<id>.webp・第4.153版から bcp_t_<id>_b.webp＝ボードの 中を ぬり直した 絵・出世馬の 3D の 絵。名前は bcp_app.thumb(id)）
 #   python3 kisekae/bcp/bcp_thumbs.py <アプリの 画面の フォルダ> <出力フォルダ（ios/bcp_assets）> [シートの png]
+#   ONLY=climb を つけると その 見本 だけ（もとの フォルダの ほかの 見本を 上書きしない。名前は bcp_app.thumb(id)）
 #   アプリの 画面の フォルダ：TARGET=app python3 build_pwa.py <フォルダ> で 作って、index.html の
 #     window.__NATIVE = location.protocol === 'tengel:'; を window.__NATIVE = true; に かえ、絵（bcp_<デザイン>.webp・_fg.webp）を 置いた もの
 #   いちばん はじめの 段（1連勝・1回目）の 結果の 画面を 2倍で 写して、たて 3:4（舞台の 390×520）を 切り出す（360×480・webp）
@@ -37,7 +38,9 @@ try:
             except Exception: pass
         pg.wait_for_timeout(600)
         tmp = tempfile.mkdtemp()
+        only = [x for x in os.environ.get('ONLY', '').split(',') if x]      # ONLY=climb：その 見本 だけ 作る（ほかの 見本を 上書きしない）
         for iid, kind, st in bcp_app.ITEMS:
+            if only and iid not in only: continue
             name = st[0][1]
             spec = {'r': 9, 'n': 14, 'rows': SPEC[kind], 'ranks': {'11': 11, '8': 8, '2': 2, '6': 1, '10': 3}}
             pg.evaluate("([s, k, id]) => window.TengelFx.preview(s, k, { item: id, streak: 1 })", [spec, kind, iid])
@@ -49,7 +52,7 @@ try:
             q = np.array(D['d'][name]['q']); cy = (q[:, 1].min() + q[:, 1].max()) / 2
             y0 = float(np.clip(TOP.get(iid, cy - HT * 0.47), 0, 844 - HT))
             c = im.crop((0, int(round(y0 * k)), int(round(W * k)), int(round((y0 + HT) * k)))).resize((OUTW, OUTH), Image.LANCZOS)
-            fo = os.path.join(out, bcp_app.THUMB.format(iid)); c.save(fo, quality=84, method=6)
+            fo = os.path.join(out, bcp_app.thumb(iid)); c.save(fo, quality=84, method=6)
             sheet.append(c); print(iid, name, 'y0', round(y0), os.path.getsize(fo))
         b.close()
 finally:

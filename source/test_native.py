@@ -1468,7 +1468,7 @@ try:
             return out + [p6.locator(f'#setBoard [data-bcact=see][data-id={iid}]').inner_text()]
         sr6, sc6, sm6, sp6 = see_all('ring', 4), see_all('climb', 7), see_all('rain', 4), see_all('pen', 1)
         exp_r = [[f'▶ 見る（{l}）', 'ring', d, 'hit', True] for l, d in (('1連勝', 'ring1'), ('2連勝', 'ring2'), ('3連勝', 'ring3'), ('4連勝〜', 'ring4'))] + ['▶ 見る（1連勝）']
-        exp_c = [[f'▶ 見る（{l}）', 'climb', d, 'hit', True] for l, d in (('1連勝', 'shusse1'), ('2連勝', 'shusse2'), ('3連勝', 'shusse3'), ('4連勝', 'shusse4'), ('8連勝', 'shusse8'), ('16連勝', 'shusse16'), ('24連勝〜', 'shusse24'))] + ['▶ 見る（1連勝）']
+        exp_c = [[f'▶ 見る（{l}）', 'climb', d, 'hit', True] for l, d in (('1連勝', 'shusse1_3d'), ('2連勝', 'shusse2_3d'), ('3連勝', 'shusse3_3d'), ('4連勝', 'shusse4_3d'), ('8連勝', 'shusse8_3d'), ('16連勝', 'shusse16_3d'), ('24連勝〜', 'shusse24_3d'))] + ['▶ 見る（1連勝）']
         exp_m = [[f'▶ 見る（{l}）', 'rain', d, 'miss', True] for l, d in (('1回目', 'miss1'), ('2回目', 'miss1_2'), ('3回目', 'miss1_3'), ('4回目〜', 'miss1_4'))] + ['▶ 見る（1回目）']
         if not BCP_ON:
             exp_r, exp_c, exp_m = [[(x[:2] + ['', x[3], False]) if isinstance(x, list) else x for x in e] for e in (exp_r, exp_c, exp_m)]
@@ -1610,8 +1610,8 @@ try:
             if setv: p6.evaluate("(o) => TengelFx.set(o)", {k: (not v) for k, v in setv.items()})
         p6.evaluate("TengelWallet.board.select('pen', 'miss')"); p6.wait_for_timeout(300)
         p6.evaluate(SHOW6, ['miss', dict(MISS6, streak=1)]); p6.wait_for_timeout(2600); stp = p6.evaluate(BCP6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
-        cl16 = _bcp.design('shusse16')['cl'][0]
-        want6 = ['shusse1', 'shusse3', 'shusse4', 'shusse16', 'shusse24', 'miss1', 'miss1_2', 'miss1_4', 'shusse2', 'miss1_3']
+        cl16 = _bcp.design('shusse16_3d')['cl'][0]
+        want6 = ['shusse1_3d', 'shusse3_3d', 'shusse4_3d', 'shusse16_3d', 'shusse24_3d', 'miss1', 'miss1_2', 'miss1_4', 'shusse2_3d', 'miss1_3']      # 第4.153版：出世馬は 3D の 絵（shusseN_3d）
         ok6 = all(x and x[0] == ('rain' if i in (5, 6, 7, 9) else 'climb') and x[7] == h0['cb'] for i, x in enumerate(stg))   # 「とじる」の まん中と 下の はし（ふちが 太い 絵も ある）
         if BCP_ON:
             ok6 = ok6 and [x[1] for x in stg] == want6 and all(x[2] and x[3] and x[4] and x[5] == 'matrix3d(' for x in stg) and [x[6] for x in stg] == [True] * 10 and cl16 in stg[3][8] and cl16 not in stg[0][8]      # 第4.150版：いつも 止まった 形（.bcst）
@@ -1630,10 +1630,10 @@ try:
             return _bcp.stage_files(n)
         ex6 = p6.evaluate("() => ({ cv: document.querySelectorAll('canvas.chramb').length, css: document.querySelectorAll('style.bcmCss').length })")
         if BCP_ON:
-            okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' and m['an'] == 0 and m['oc'] == 0 and m['ot'] == 0 and m['bg'] == f'bcp_{want6[i]}.webp' for i, m in enumerate(mo6))
+            okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' and m['an'] == 0 and m['oc'] == 0 and m['ot'] == 0 and m['bg'] == _bcp.pics(want6[i])[0] for i, m in enumerate(mo6))
             # 絵は 出て いる（背景が 見える・読めない 絵 0）・読む 絵は 止まった 絵と 前の 絵 だけ
             okm = okm and all((not m['ld']) and m['vis'] == 'visible' and m['bad'] == 0 and sorted(m['srcs']) == sorted(_need6(want6[i])) for i, m in enumerate(mo6))
-            okm = okm and all(_need6(n) == [f'bcp_{n}.webp'] + ([f'bcp_{n}_fg.webp'] if _bcp.cfg(n).get('fg') else []) for n in ALLD6)
+            okm = okm and all(_need6(n) == [f'bcp_{n}_bl.webp' if _bcp.blank(n) else f'bcp_{n}.webp'] + ([f'bcp_{n}_fg.webp'] if _bcp.cfg(n).get('fg') else []) for n in ALLD6)      # 第4.153版：出世馬の ほかは ボードの 中を ぬり直した 絵（_bl）
         else:
             okm = all(m['n'] == 0 and not m['go'] for m in mo6)
         check(okm and stp[9]['n'] == 0 and not stp[9]['go'] and ex6 == {'cv': 0, 'css': 0},
@@ -1645,7 +1645,7 @@ try:
         mo_n = p6.evaluate("() => Object.keys(window.__BCP.d).filter(n => window.__BCP.d[n].mo).length")
         mf6 = {f for n in _bcp.MOTION for f in _bcp.motion_files(n)}
         check(len(ALLD6) == 59 and all(len(a) == len(set(a)) and sorted(a) == sorted(_need6(n)) for n, a in zip(ALLD6, ps6)) and so6 == [] and len(fl6) == len(set(fl6)) == 108
-              and sum(1 for f in fl6 if f.endswith('_fg.webp')) == 35 and sum(1 for f in fl6 if f.startswith('bcp_t_')) == 14 and all(f'bcp_{n}.webp' in fl6 for n in ALLD6) and not (set(fl6) & mf6) and mo_n == 0,
+              and sum(1 for f in fl6 if f.endswith('_fg.webp')) == 35 and sum(1 for f in fl6 if f.startswith('bcp_t_')) == 14 and all(_bcp.pics(n)[0] in fl6 for n in ALLD6) and sum(1 for f in fl6 if f.endswith('_bl.webp')) == 52 and not (set(fl6) & mf6) and mo_n == 0,
               f'第4.150版：アプリが 読む 絵は bcx.js と bcp_app.py で 同じ（59デザイン）・入れる 絵 {len(fl6)}（見本 14・止まった 絵 59・前の 絵 35）・動く 絵の 部品（{len(mf6)}まい）は 入れない・動きの データ なし（{mo_n}）')
         # 先に 読む 絵（prime：「結果を保存」を 押した とき）：つぎの 的中（連続的中＋1）と ハズレ（続けて ハズレた 数＋1）の 部品 ぜんぶ。もう一度 よんでも ふえない・えらび直すと 前の ぶんは はなす
         p6.evaluate("TengelWallet.board.select('bloom', 'hit')"); p6.evaluate("TengelWallet.board.select('rain', 'miss')"); p6.wait_for_timeout(300)

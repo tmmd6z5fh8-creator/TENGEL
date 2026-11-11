@@ -1,0 +1,139 @@
+{
+ "name": "shusse4_3d",
+ "title": "的中⑨ 出世馬（4連勝）・3D",
+ "src": "src.png",
+ "quad": [
+  [
+   172,
+   444
+  ],
+  [
+   877,
+   444
+  ],
+  [
+   877,
+   922
+  ],
+  [
+   172,
+   922
+  ]
+ ],
+ "frame_lr": [
+  70,
+  975
+ ],
+ "S": 0.425,
+ "cx": 522.5,
+ "top_pt": 245,
+ "fill": {
+  "mode": "mirror",
+  "top": "glow",
+  "top_opts": {
+   "sigma": 50,
+   "k_edge": 0.75,
+   "k_top": 0.15,
+   "nb": 50
+  }
+ },
+ "clean": {
+  "patch": [
+   {
+    "dst": [
+     762,
+     586,
+     842,
+     676
+    ],
+    "dx": -96,
+    "feather": 8
+   }
+  ],
+  "regions": [
+   {
+    "rect": [
+     395,
+     466,
+     660,
+     594
+    ],
+    "only": "text",
+    "bg": {
+     "br": 20,
+     "s1": 14,
+     "s2": 40,
+     "rows": 24,
+     "vblur": 5
+    }
+   },
+   {
+    "rrect": [
+     196,
+     630,
+     854,
+     902,
+     16
+    ],
+    "bg": {
+     "vmax": 66,
+     "br": 20,
+     "nopill": true
+    }
+   }
+  ],
+  "text": {
+   "rb": -32,
+   "v": 120,
+   "white_br": 60,
+   "dil": 10,
+   "soft": 9
+  },
+  "keep_conf": true,
+  "vfill": [
+   {
+    "rect": [
+     184,
+     599,
+     868,
+     622
+    ],
+    "hmed": 9
+   }
+  ]
+ },
+ "layout": {
+  "stars": false,
+  "garland": false,
+  "normal": {
+   "text_x": [
+    20,
+    330
+   ],
+   "title_cx": 178,
+   "title_top": 12,
+   "title_px": 38,
+   "sub_cx": 175,
+   "sub_top": 53.5,
+   "sub_px": 14,
+   "rows_x": [
+    20,
+    330
+   ],
+   "rows_top": 101,
+   "rows_bottom": 226,
+   "row_h": 29.4,
+   "row_gap": 5.2,
+   "rows_zoom": 1.25,
+   "rib_in": "rows",
+   "rib_top": 99,
+   "rib_zoom": 1.0
+  },
+  "rib": {},
+  "many": {
+   "row_h": 22,
+   "row_gap": 3
+  }
+ },
+ "src3d": "kisekae/bcp/shusse3d.py：まさちゃんの 3D（GLB）を 写した 絵を 前の 絵（bcp_shusse4.webp）の 上に のせた もの。板の 四すみ・字の 置き方は shusse4 と 同じ（clean・fill は 前の 絵を 作った ときの 設定）"
+}

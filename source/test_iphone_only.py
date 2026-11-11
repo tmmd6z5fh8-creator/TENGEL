@@ -106,7 +106,7 @@ if r.returncode == 0:
     bfiles = _bcp.files(); bhave = [f for f in bfiles if f in res]; bdir = os.path.join(W, 'ios', 'bcp_assets')
     check(len(BCPJ.get('items', {})) == 14 and len(BCPJ.get('d', {})) == 59 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
           and [i for i, _, _ in _bcp.ITEMS] == ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen']
-          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24'] and len(bfiles) == 14 + 59 + 35 and len(bfiles) == len(set(bfiles))
+          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24_3d'] and 't' not in BCPJ['items']['climb'] and BCPJ.get('thumb') == 'bcp_t_{}_b.webp' and len(bfiles) == 14 + 59 + 35 and len(bfiles) == len(set(bfiles))
           and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
           f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（見本 14＋止まった 絵 59＋前の 絵 35：第4.150版・手元に あれば ぜんぶ・CI は なし）')
     # 第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：絵の ボードは 動かない。
@@ -118,7 +118,7 @@ if r.returncode == 0:
     so = _bcp.stills_out()
     bsz = sum(os.path.getsize(os.path.join(bdir, f)) for f in bhave) if bhave else 0
     check(mo_d == [] and len(mo_f) == 346 and not (set(mo_f) & set(bfiles)) and not any(f in res for f in mo_f) and so == []
-          and all(f'bcp_{k}.webp' in bfiles for k in BCPJ['d']) and all((f'bcp_{k}_fg.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 35
+          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_bl.webp') == 52 and 'D.p ||' in html and all((f'bcp_{k}_fg.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 35
           and (not bhave or 16.2e6 < bsz < 17.3e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html and 'const st = true' in html,
           f'第4.150版：絵の ボードは 動かない：動きの データ なし（{len(mo_d)}段）・動く 絵の 部品 {len(mo_f)}まいは アプリに 入れない・59段 ぜんぶ 止まった 絵と 前の 絵（35段）を 入れる・'
           f'絵 ぜんぶで {bsz / 1e6:.1f}MB（もとの 画質の まま。第4.149版は 軽く した 部品で 約14.0MB）')
@@ -142,29 +142,99 @@ if r.returncode == 0:
         _sz = lambda fl: sum(os.path.getsize(os.path.join(RES, f)) for f in fl)
         _h = lambda pth: _hl.sha1(open(pth, 'rb').read()).hexdigest()
         p_films = _sz(FILMS.values()); p_bcp = _sz([f for f in res if f.startswith('bcp_')]); p_tcc = _sz([f for f in res if f.startswith('tc_c_')])
-        p_fgc = _sz([f for f in res if re.fullmatch(r'fg\d+_cs?\.webp', f)]); p_shelf = _sz([f for f in res if re.fullmatch(r'fg_shelf_c\d+\.webp', f)]); p_all = _sz(res)
+        p_fgc = _sz([f for f in res if re.fullmatch(r'fg\d+_cs?\.webp', f)]); p_shelf = _sz([f for f in res if re.fullmatch(r'fg_shelf2_c\d+\.webp', f)]); p_all = _sz(res)
         # 第4.151版（まさちゃん 11/11 09:07「ア、をお願い！」「棚の7個とも画質がかなり悪くなってるから、改善して！」）：
-        #   番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）
+        #   番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）→ 棚は 第4.153版で 貼り直した（下）
         import importlib as _il; sys.path.insert(0, os.path.join(W, 'kisekae')) if os.path.join(W, 'kisekae') not in sys.path else None; _la = _il.import_module('lite_assets')
-        _iz = [(n, f, e) for n, f, e in _all if e['how'] == 'idxz']; _sh = [(n, f, e) for n, f, e in _all if e['how'] == 'shelf']
+        _iz = [(n, f, e) for n, f, e in _all if e['how'] == 'idxz']
         iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in range(1, 9)] + ['tc_horse_bk_kamisama.bin', 'tc_horse_bk_maboroshi.bin']) and all(
             open(os.path.join(RES, f), 'rb').read(4) == b'TGIZ' and _la.unpack_idx(open(os.path.join(RES, f), 'rb').read()) == open(os.path.join(_ad.master(n), f), 'rb').read() for n, f, _e in _iz)
         iz_save = sum(e['src'][0] - e['size'] for _n, _f, e in _iz)
-        def _ll(pth):
+        # 第4.153版（まさちゃん 11/11 12:10「やって！」＝棚の 貼り方を 作り直して 軽く）：棚は fg_shelf2.*（kisekae/fig/shelf_reuv.py）。前の fg_shelf.* は アプリに 入れない（もとの フォルダには 残す）
+        #   絵 7まいは 劣化ありの WebP（2048²・もとと 1バイトも ちがわない＝軽い 版でも 作り直さない）・形は 16bit の 番号・貼り方（UV）は 0〜1・写真の 島（front）は 絵の 中
+        def _sh2():
             from PIL import Image as _I
-            import numpy as _np
-            a = _np.asarray(_I.open(pth).convert('RGB')); return open(pth, 'rb').read(40).find(b'VP8L') >= 0 and a.shape == (2048, 2048, 3) and bool(((a & 3) == 2).all())
-        sh_ok = len(_sh) == 7 and all(_ll(os.path.join(RES, f)) for _n, f, _e in _sh)
+            import numpy as _np, json as _js
+            names = [f'fg_shelf2_c{i}.webp' for i in range(1, 8)]
+            if any(f not in res for f in names + ['fg_shelf2.json', 'fg_shelf2.bin']) or any(re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f) for f in res): return False, 0, 0
+            m = _js.load(open(os.path.join(RES, 'fg_shelf2.json'))); raw = open(os.path.join(RES, 'fg_shelf2.bin'), 'rb').read(); L = m['layout']
+            uv = _np.frombuffer(raw, _np.uint16, m['v'] * 2, L['uv'][0]); idx = _np.frombuffer(raw, _np.uint16, m['i'], L['idx'][0]); fr = m['front']
+            ok = m['tex'] == names and not m['idx32'] and m['v'] < 65536 and m['i'] == 72000 and L['idx'][0] + L['idx'][1] == len(raw) and int(idx.max()) == m['v'] - 1 and 0 <= fr[0] < fr[2] <= 2048 and 0 <= fr[1] < fr[3] <= 2048 and fr[2] - fr[0] > 900 and fr[3] - fr[1] > 1200
+            for f in names:
+                pth = os.path.join(RES, f); im = _I.open(pth); hd = open(pth, 'rb').read(40)
+                ok = ok and im.size == (2048, 2048) and hd.find(b'VP8 ') >= 0 and hd.find(b'VP8L') < 0 and _h(pth) == _h(os.path.join(_ad.master('fig_assets'), f))
+            return bool(ok), m['v'], os.path.getsize(os.path.join(RES, 'fg_shelf2.bin'))
+        sh_ok, sh_v, sh_bin = _sh2()
         same_sz = all(os.path.getsize(os.path.join(RES, f)) == e['size'] for _n, f, e in _all)
         keep_fl = [(n, f) for n, f, e in _all if re.fullmatch(r'tc_n_.+\.webp|fg\d+_(n|ns|m|ms)\.webp|bcp_.+\.webp', f)]
         keep_ok = len(keep_fl) == 7 + 32 + 108 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(17.5e6 < p_films < 19.5e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 8.4e6 < p_shelf < 9.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((145e6 < p_all < 153e6) if _pb_on else (142e6 < p_all < 150e6)) and same_sz and keep_ok and src_ok
-              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf') == 7 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
+        check(17.5e6 < p_films < 19.5e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((139e6 < p_all < 147e6) if _pb_on else (136e6 < p_all < 144e6)) and same_sz and keep_ok and src_ok
+              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.151版：劣化なし・6bit）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+        # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
+        #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
+        sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')) if os.path.join(W, 'kisekae', 'bcp') not in sys.path else None
+        import bcp_app as _B3
+        def _sh3():
+            from PIL import Image as _I
+            import numpy as _np
+            out = []
+            for n in (1, 2, 3, 4, 8, 16, 24):
+                f = f'bcp_shusse{n}_3d.webp'
+                if f not in res or f'bcp_shusse{n}.webp' in res or not os.path.isfile(os.path.join(_ad.master('bcp_assets'), f'bcp_shusse{n}.webp')): return None
+                d3, d0 = _B3.design(f'shusse{n}_3d'), _B3.design(f'shusse{n}')
+                im = _I.open(os.path.join(RES, f)); a = _np.asarray(im.convert('RGB'), _np.float32); q = _np.array(d3['q']) * 3
+                x0, y0, x1, y1 = q[:, 0].min(), q[:, 1].min(), q[:, 0].max(), q[:, 1].max()
+                c = a[int(y0 + (y1 - y0) * 0.14):int(y1 - (y1 - y0) * 0.14), int(x0 + (x1 - x0) * 0.18):int(x1 - (x1 - x0) * 0.18)].mean(2)
+                old = _np.asarray(_I.open(os.path.join(_ad.master('bcp_assets'), f'bcp_shusse{n}.webp')).convert('RGB'), _np.float32)
+                out.append((im.size == (1170, 2532), d3['q'] == d0['q'] and d3['hp'] == d0['hp'] and d3['L'] == d0['L'], float(c.std()), float(_np.percentile(c, 99.9)), float(_np.abs(a - old).mean())))
+            return out
+        s3 = _sh3()
+        check(s3 is not None and all(o[0] and o[1] and o[2] < 8 and o[3] < 75 and o[4] > 4 for o in s3) and 'bcp_t_climb_b.webp' in res and 'bcp_t_climb.webp' not in res and 'bcp_t_climb3d.webp' not in res,
+              f'第4.153版：出世馬の 7段は 3D の 絵（1170×2532・板の 四すみと 字の 置き方は 前と 同じ）・ボードの 中は 何も 書いて いない（まん中の 明るさの ばらつき {max(o[2] for o in s3) if s3 else -1:.1f}・いちばん 明るい 所 {max(o[3] for o in s3) if s3 else -1:.0f}/255）・前の 絵と 見本は 入れない・見本は bcp_t_climb_b.webp')
+        # 第4.153版（まさちゃん 11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！的中スタンプボードの…的中スタンプは消さなくていいよ！」）：
+        #   出世馬の ほかの 52段は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp：kisekae/bcp/bcp_blank.py）。前の 絵（bcp_<デザイン>.webp）は アプリに 入れない（もとの フォルダには 残す）。
+        #   板の 紺の 所の「なめらかな 面からの ずれ」の ばらつきが 前より 小さい（52まい ぜんぶ）・パネルの 段だけ だった 板（廻る・祝杯・馬レース・トロフィー・馬が運ぶ・花束・結果待ち）は ほぼ 1色。
+        #   スタンプ：鎖の 帯に 色の 点が ない・ハンコの 所は 前の 絵と 同じ。前の 絵（キャラ）の 所は 1点も かわらない
+        def _bl():
+            from PIL import Image as _I
+            import numpy as _np, cv2 as _cv
+            MD_ = _ad.master('bcp_assets'); rat = []; simple = []; fgd = 0; chain = []; stampd = []
+            def _q(n):
+                q = _np.array(_B3.design(n)['q'], _np.float64) * 3; m = _np.zeros((2532, 1170), _np.uint8); _cv.fillConvexPoly(m, _np.round(q).astype(_np.int32), 1); return q, m
+            def _std(P, core):
+                R_, G_, B_ = P[..., 0], P[..., 1], P[..., 2]; nv = core & (B_ > R_ + 10) & (B_ >= G_ + 2) & (P.max(2) < 150); ys, xs = _np.nonzero(nv)
+                u = (xs - xs.mean()) / _np.ptp(xs); v = (ys - ys.mean()) / _np.ptp(ys); Bm = _np.stack([_np.ones_like(u), u, v, u * u, v * v, u * v], 1); col = P[ys, xs].astype(_np.float64)
+                return float((col - Bm @ _np.linalg.lstsq(Bm, col, rcond=None)[0]).std())
+            for _i, _k, st in _B3.ITEMS:
+                for _c, n in st:
+                    if not _B3.blank(n): continue
+                    f = f'bcp_{n}_bl.webp'
+                    if f not in res or f'bcp_{n}.webp' in res or not os.path.isfile(os.path.join(MD_, f'bcp_{n}.webp')): return None
+                    im = _I.open(os.path.join(RES, f))
+                    if im.size != (1170, 2532): return None
+                    a = _np.asarray(im.convert('RGB'), _np.float32); o = _np.asarray(_I.open(os.path.join(MD_, f'bcp_{n}.webp')).convert('RGB'), _np.float32); q, m = _q(n)
+                    core = _cv.erode(m, _cv.getStructuringElement(_cv.MORPH_ELLIPSE, (121, 121))) > 0; sn, so_ = _std(a, core), _std(o, core); rat.append(sn / so_)
+                    if n.startswith(('ring', 'toast', 'race', 'trophy', 'carry', 'bouquet', 'miss4')): simple.append(sn)
+                    fgp = os.path.join(MD_, f'bcp_{n}_fg.webp')
+                    if _B3.cfg(n).get('fg') and os.path.isfile(fgp):       # 前の 絵（キャラ）の 所は ぬり直さない（色の 差は 圧縮し直した 分 だけ）
+                        fa = _np.asarray(_I.open(fgp).convert('RGBA'))[..., 3] > 200; fgd = max(fgd, float(_np.abs(a - o).max(2)[fa].mean()))
+                    if n.startswith('stamp'):
+                        f_ = lambda u, v: (q[0] * (1 - u) + q[1] * u) * (1 - v) + (q[3] * (1 - u) + q[2] * u) * v
+                        def _box(u0, v0, u1, v1):
+                            b = _np.zeros((2532, 1170), _np.uint8); _cv.fillConvexPoly(b, _np.round(_np.array([f_(u0, v0), f_(u1, v0), f_(u1, v1), f_(u0, v1)])).astype(_np.int32), 1); return b > 0
+                        cb = _box(0.5, 0.385, 0.95, 0.435); sat = lambda P: float(((P.max(2) - P.min(2))[cb] > 90).mean()); chain.append((round(sat(o), 3), round(sat(a), 3)))      # 鎖の 帯（右の 半分）：色の こい 点の 割合
+                        sb = _box(0.1, 0.05, 0.3, 0.3); stampd.append(float(_np.abs(a - o).max(2)[sb].mean()))                                                                      # ハンコの まん中
+            return rat, simple, fgd, chain, stampd
+        bl = _bl()
+        check(bl is not None and len(bl[0]) == 52 and max(bl[0]) < 1.0 and sum(1 for r_ in bl[0] if r_ < 0.75) >= 40 and len(bl[1]) == 28 and max(bl[1]) < 1.8 and bl[2] < 6.0
+              and len(bl[3]) == 4 and all(o_ > 0.05 and a_ < 0.004 for o_, a_ in bl[3]) and max(bl[4]) < 7.0,      # 色の 差 6・7 まで＝圧縮し直した 分（ぬり直したら 20 より 大きい）
+              f'第4.153版：ほかの 52段は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp・前の 絵は 入れない）・板の ずれの ばらつきは 前の {min(bl[0]) if bl else 0:.2f}〜{max(bl[0]) if bl else 0:.2f}倍（0.75倍より 小さい もの {sum(1 for r_ in bl[0] if r_ < 0.75) if bl else 0}/52）・'
+              f'パネルの 段だけ だった 板 28まいは ほぼ 1色（ばらつき {max(bl[1]) if bl else -1:.2f} まで）・前の 絵（キャラ）の 所は かわらない（色の 差 {bl[2] if bl else -1:.2f}）・スタンプ：鎖が ない（色の こい 点 前 → 今：{bl[3] if bl else None}）・ハンコは そのまま（色の 差 {max(bl[4]) if bl else -1:.2f}）')
         # 第4.152版（まさちゃん 11/11 09:43・10:13）：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき・3D の ちりとり：kisekae/tc/clean_assets.py）
         _cl = ['tc_trash1.webp', 'tc_trash2.webp', 'tc_trash3.webp', 'tc_trash4.webp', 'tc_prop_broom.json', 'tc_prop_broom.bin', 'tc_prop_broom_c.webp', 'tc_prop_broom_n.webp', 'tc_prop_pan.json', 'tc_prop_pan.bin', 'tc_prop_pan_c.webp']
         import json as _jc

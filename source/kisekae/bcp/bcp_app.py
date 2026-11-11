@@ -27,14 +27,23 @@ ITEMS = [
     ('cup', 'hit', _st(['trophy1', 'trophy2', 'trophy3', 'trophy4'])),     # 的中⑥ トロフィー結果ボード
     ('hoist', 'hit', _st(['carry1', 'carry2', 'carry3', 'carry4'])),       # 的中⑦ 馬が運ぶ結果ボード
     ('bloom', 'hit', _st(['bouquet1', 'bouquet2', 'bouquet3', 'bouquet4'])),   # 的中⑧ 花束結果ボード
-    ('climb', 'hit', _st(['shusse1', 'shusse2', 'shusse3', 'shusse4', 'shusse8', 'shusse16', 'shusse24'], (1, 2, 3, 4, 8, 16, 24))),   # 的中⑨ 出世馬
+    # 的中⑨ 出世馬：第4.153版（まさちゃん 2026/11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」）＝3D の 絵（shusseN_3d：kisekae/bcp/shusse3d.py）。
+    #   板の 四すみと 字の 置き方は 前の 絵（shusseN）と 同じ。前の 絵と 設定（bcp_shusseN.webp・designs/shusseN.json）は 残す（3D の 絵を 作る もと）
+    ('climb', 'hit', _st(['shusse1_3d', 'shusse2_3d', 'shusse3_3d', 'shusse4_3d', 'shusse8_3d', 'shusse16_3d', 'shusse24_3d'], (1, 2, 3, 4, 8, 16, 24))),
     ('rain', 'miss', _st(['miss1', 'miss1_2', 'miss1_3', 'miss1_4'])),     # ハズレ① 二人でしょんぼり
     ('next', 'miss', _st(['miss2', 'miss2_2', 'miss2_3', 'miss2_4'])),     # ハズレ② 次…！
     ('cover', 'miss', _st(['miss3', 'miss3_2', 'miss3_3', 'miss3_4'])),    # ハズレ③ 隠蔽作戦
     ('wait', 'miss', _st(['miss4', 'miss4_2', 'miss4_3', 'miss4_4'])),     # ハズレ④ ボード結果待ち
     ('pen', 'miss', _st(['miss5', 'miss5_2', 'miss5_3', 'miss5_4'])),      # ハズレ⑤ 書き換え参戦
 ]
-THUMB = 'bcp_t_{}.webp'          # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）
+THUMB = 'bcp_t_{}_b.webp'        # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）。第4.153版：ボードの 中を ぬり直した 絵・出世馬の 3D の 絵で 作り直した 見本（前の bcp_t_<id>.webp は 残す＝上書きしない）
+THUMB_OF = {}                    # 見本の 名前が きまりと ちがう もの（{ id: 名前 }）
+BLANK = '_bl'                    # 第4.153版（まさちゃん 2026/11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！」）：ボードの 中を きれいな 板に ぬり直した 絵（bcp_blank.py）の 名前の しっぽ
+
+
+def thumb(iid):
+    """設定の タイルの 見本の 名前"""
+    return THUMB_OF.get(iid) or THUMB.format(iid)
 # 第4.129版（まさちゃん 2026/11/08「完成した動くカスタムボードを、アプリ内に入れてほしい！」）：キャラが 動く 絵の ボード（kisekae/bcp/chr の 道具で 作った もの）。
 #   chr/motion.json＝{ デザイン: { bgx・fgx（キャラなしの 背景・前の 絵）・layers（キャラ）・oc・ot（動かない 物）・top・amb（まわりの 光と 雲） } }（bcx.js の picParts）。
 #   出世馬（climb）は まだ 動かない（止まった 絵）
@@ -60,12 +69,17 @@ def motion_files(name):
 # 第4.145版（まさちゃん 2026/11/10 20:04「やって！」＝止まった 版を やめて、動く 版の 部品を 重ねて 同じ 絵を 出す）：
 #   キャラなしの 背景（bgx）が ある デザイン（48こ）は 止まった 絵（bcp_<name>.webp・_fg.webp）を アプリに 入れない（部品を 重ねた 形が 止まった 絵と 同じ：chr/chr_snap.py）。
 #   トロフィー（光と 雲だけ・bgx なし）と 出世馬（動かない）は 止まった 絵の まま。止まった 絵は 部品を 作り直す ときの もと なので 絵の フォルダ（ios/bcp_assets）には 残す
+def blank(name):
+    """ボードの 中を ぬり直した 絵（bcp_<name>_bl.webp）を 使う デザインか（出世馬は 3D の 絵＝shusse3d.py が 板を ぬる）"""
+    return not name.startswith('shusse')
+
+
 def pics(name):
     """アプリが 読む 背景と 前の 絵の 名前（bcx.js の picBg・picFg と 同じ きまり）。
        第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」）：どの デザインも 止まった 絵（bcp_<name>.webp・前の 絵 _fg.webp）。
        キャラが 動く 部品（chr/motion.json の bgx・fgx・layers・光と 雲）は アプリに 入れない（道具と 部品は 手元に のこす：もどす ときは この 関数と design の mo）"""
-    bg = f'bcp_{name}.webp'
-    fg = f'bcp_{name}_fg.webp' if cfg(name).get('fg') else None
+    bg = f'bcp_{name}{BLANK}.webp' if blank(name) else f'bcp_{name}.webp'        # 第4.153版：出世馬（3D の 絵）の ほかは ボードの 中を ぬり直した 絵。前の 絵（bcp_<name>.webp）は 絵の フォルダに 残す（ぬり直す もと）
+    fg = f'bcp_{name}_fg.webp' if cfg(name).get('fg') else None                     # 前の 絵（キャラ）は そのまま
     return bg, fg
 
 
@@ -101,6 +115,7 @@ def design(name):
     assert not L.get('stars') and not L.get('garland') and not L.get('star_img'), name + '：ボードの 中の 飾りは 使わない（まさちゃん 21:49）'
     d = {'hp': HP, 'q': [[round(float(x), 2), round(float(y), 2)] for x, y in Qs], 'fg': 1 if c.get('fg') else 0,
          'ts': L.get('title_style', ''), 'nt': 1 if L.get('hide_title') else 0, 'L': lay}
+    if pics(name)[0] != f'bcp_{name}.webp': d['p'] = pics(name)[0]      # 背景の 絵の 名前が きまり（bcp_<name>.webp）と ちがう とき（bcx.js の picBg）
     # 第4.150版：動きの データ（mo）は 入れない（bcx.js は mo が なければ 止まった 絵を 出す）
     if c.get('close_border'):
         sh = c.get('close_shadow') or ('0 0 0 1px rgba(0,0,0,.35),0 0 %s %s' % (c.get('close_glow_r', '10px'), c.get('close_glow', 'rgba(255,200,90,.35)')))
@@ -112,6 +127,8 @@ def data():
     items, des = {}, {}
     for iid, kind, st in ITEMS:
         items[iid] = {'k': kind, 'st': st}
+        if iid in THUMB_OF:
+            items[iid]['t'] = THUMB_OF[iid]          # 見本の 名前（bcx.js の thumbHtml：ない ときは thumb の 形）
         for _, n in st:
             des[n] = design(n)
     return {'items': items, 'd': des, 'thumb': THUMB}
@@ -121,7 +138,7 @@ def files():
     """アプリの Resources に 入れる 絵（名前だけ・平らに 並べる・同じ 名前は 1回：トロフィーの 光と 雲の 向きの 絵は 4段で 1組）"""
     out = []
     for iid, _, st in ITEMS:
-        out.append(THUMB.format(iid))
+        out.append(thumb(iid))
         for _, n in st:
             for f in stage_files(n):
                 if f not in out:
@@ -130,12 +147,13 @@ def files():
 
 
 def stills_out():
-    """アプリに 入れない 止まった 絵（部品を 重ねて 出す デザインの bcp_<name>.webp・_fg.webp）"""
+    """アプリに 入れない 止まった 絵（部品を 重ねて 出す デザインの 背景・前の 絵：pics）。第4.150版から ない（どの デザインも 止まった 絵を 入れる）。
+       第4.153版：背景は pics() の 名前（ボードの 中を ぬり直した 絵 _bl）で 数える。ぬり直す 前の 絵（bcp_<name>.webp）は はじめから アプリに 入れない（ここには 数えない）"""
     out = []
     for _, _, st in ITEMS:
         for _, n in st:
-            use = stage_files(n)
-            out += [f for f in [f'bcp_{n}.webp'] + ([f'bcp_{n}_fg.webp'] if cfg(n).get('fg') else []) if f not in use]
+            use = stage_files(n); bg, fg = pics(n)
+            out += [f for f in [bg] + ([fg] if fg else []) if f not in use]
     return out
 
 

@@ -1,5 +1,6 @@
 // 思い出フィギュア：3D の 描画（App Store版・WebGL1）。fig_app.js が 使う（まさちゃん 2026/11/09：フィギュア 8体・3D の 棚 7色）
-//   ・棚：まさちゃんの 3D の 棚に 7色の 絵を 正面から はった もの（kisekae/fig/collect_assets.py → fg_shelf.json・.bin・fg_shelf_c1〜7.webp）。光は あてず 絵の まま
+//   ・棚：まさちゃんの 3D の 棚に 7色の 絵を 正面から はった もの。光は あてず 絵の まま
+//     第4.153版：絵の 貼り方を 作り直した 形（kisekae/fig/shelf_reuv.py → fg_shelf2.json・.bin・fg_shelf2_c1〜7.webp：写真 そのもの の 並びの 大きな 島）
 //   ・フィギュア：形（16bit の 位置・UV）と 色・法線（物の 向きの まま）・金属／あらさ の 絵（fgN.json・.bin・fgN_c／n／m.webp）。
 //     ブースでは 小さい 絵（fgN_cs／ns／ms.webp）・部屋（1体を 大きく 見る）では 大きい 絵
 //   ・ボード：思い出の レースの 文字を キャンバスに 書いて、フィギュアの ボードの 板（fgN.json の board）の 前に はる
@@ -94,7 +95,7 @@ const FigGL = (() => {
     if (!gl) return null;
     const ext32 = gl.getExtension('OES_element_index_uint');
     let prog = null, U = {}, A = {}, lost = false;
-    const cache = { mesh: {}, tex: {} };          // mesh：'fg3'・'fg_shelf'／tex：名前 → { t, n（使う 数）}
+    const cache = { mesh: {}, tex: {} };          // mesh：'fg3'・'fg_shelf2'／tex：名前 → { t, n（使う 数）}
     function sh(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o) || 'shader'); return o; }
     function init() {
       prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
@@ -221,7 +222,9 @@ const FigGL = (() => {
       const eye = [tgt[0] + dist * Math.sin(a) * Math.cos(e), tgt[1] + dist * Math.sin(e), tgt[2] + dist * Math.cos(a) * Math.cos(e)];
       return { eye, VP: M4.mul(M4.persp(fov, asp, Math.max(0.5, dist - 3), dist + 3), M4.look(eye, tgt)) };
     }
-    async function shelfMesh() { return mesh('fg_shelf'); }
+    const SHELF = 'fg_shelf2';                       // 棚の 形の 名前（第4.153版：貼り直した 形）。絵は <名前>_c1〜7.webp
+    async function shelfMesh() { return mesh(SHELF); }
+    const shelfTex = p => `${SHELF}_c${p + 1}.webp`;
     function drawBooth(W, H, B) {
       const cam = boothCam(W, H, B.yaw, B.pitch);
       begin(W, H, [0, 0, 0, 0]);
@@ -310,7 +313,7 @@ const FigGL = (() => {
     canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); lost = true; }, false);
     canvas.addEventListener('webglcontextrestored', () => { lost = false; cache.mesh = {}; cache.tex = {}; fb = null; try { init(); } catch (e) { /* つぎに 開いた とき */ } if (api.onRestore) api.onRestore(); }, false);
     init();
-    const api = { gl, figure, boardTex, freeTex, tex, drop, shelfMesh, drawBooth, drawRoom, slotRects, snapshot, fitK, get lost() { return lost; }, onRestore: null };
+    const api = { gl, figure, boardTex, freeTex, tex, drop, shelfMesh, shelfTex, drawBooth, drawRoom, slotRects, snapshot, fitK, get lost() { return lost; }, onRestore: null };
     return api;
   }
   return { create, boardCanvas, SLOTS, PAL };

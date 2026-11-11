@@ -24,10 +24,22 @@ shelf/shelf_1.png … shelf_7.png  棚の 色ちがいの 正面の 写真（ブ
 2. ボードの 板（金の わくの 中の くぼんだ 面）：`python3 kisekae/fig/board_find.py out/fig1.npz … out/fig8.npz` → `out/figN_board.json`
 3. 棚に 写真を はる：`SHELF_D=8 python3 kisekae/fig/shelf_proj.py out/shelf shelf/shelf_1.png … shelf/shelf_7.png` → `out/shelf_c1〜7.webp`
    （写真の 棚の 形に カメラを 合わせる：重なり 約0.98。写って いない 床・天井・横の かべ・外がわは 同じ 材料の 正面の ふちの 色）
+   **第4.153版：棚の 絵の 貼り方を 作り直す**（まさちゃん 11/11 12:10「やって！」＝きれいな まま 軽く）：`python3 kisekae/fig/shelf_reuv.py <作業フォルダ> <出す フォルダ> ios/fig_assets`
+   → `fg_shelf2.bin`・`fg_shelf2.json`・`fg_shelf2_c1〜7.webp`（**新しい 名前で 足す**。前の `fg_shelf.*` は もとの フォルダに 残す：`assets_dir.superseded` で アプリと 軽い 版には 入れない）
+   - 前（`shelf_proj.py` の 絵）：3D を 作った AI の 貼り方（細かい 島が ばらばら・絵の 細かさは 写真の 半分 くらい）の 上に 焼いて いた。島の ふちで となりの 色が にじむので 劣化の ある 圧縮が 使えず、7まい 8.89MB（劣化なし 6bit）
+   - 作り直し：「写真の カメラから ぜんぶ 見える 三角」を **1つの 大きな 島＝写真 そのもの の 並び**に（頂点を 写真の カメラで 写した 場所・1065×1391点・つなぎ目 なし・写真と 同じ 細かさ）。
+     見えない 面・一部だけ 見える 面は 向き ごとの かたまりを 平らに 写す（奥行きは 細かさを 1/4 に：色が 奥行きで かわらない）。島の まわりは 同じ 色で うめる（ふちで ほかの 色が にじまない → WebP quality 93 で よい）
+   - 色の 決め方は `shelf_proj.py` と 同じ（見える 点＝写真・見えない 点＝きまり・のこり＝前の 絵の 色）＋ 直した 所 3つ：
+     ① 写真の すき通った 所（棚の 外）の 色は でたらめ（赤・白・黒）→ 近くの 棚の 色で うめて から 読む（棚の 右と 左の ふちの 赤白の すじが 消える）
+     ② 見えない 点でも かくして いる 物の すぐ うしろ（大きな 面 4cm・小さい 部品 20cm）は 写真の その 場所の 色（ライトの 下の 黒い 点が 消える）
+     ③ 細すぎて 点が のらない 三角は、見える なら 写真の 島へ・それ 以外は 重心の 点を もらう（うしろの かべの 短い 茶色の 線が 消える）
+   - はかった もの：絵 7まい 8.89MB → 2.82MB・形 362KB → 318KB（頂点 21816 → 17447）。画面は 前より くっきり（柱の ふちの 波・棚の ふちの すじ が ない）
+   - `reuv.c`：見える 点を 数える・三角の 番号の 絵・島の 中の 重なり（`shelf_reuv.py` が gcc で 作って ctypes で 使う）。テスト：`test_fig.py`（正面の 棚＝絵の 大きな 島と 同じ 見え方）・`test_iphone_only.py`
 4. 何も 書いて いない ボードを はめた 写真（「デザインを 選ぶ」画面・まさちゃん 11/09 21:04）
    `python3 kisekae/fig/blank_board.py src/figN.glb out/figN_board.json <gold・amethyst（⑦）・duel（⑧）> thumbs/figN.png 640`
    板は 長方形 2まい（角の まるみは 絵の すける ところ）・光は 前から（わくの かげを 小さく）。元の まま の 写真は `python3 kisekae/fig/thumb.py src/figN.glb thumbs/figN.png 640`
 5. アプリに 入れる：`python3 kisekae/fig/collect_assets.py <作業フォルダ>` → `ios/fig_assets/`（`build_ios.py` が Resources/ に 入れる。CI は `FIG_ASSETS=/nonexistent`）
+   （棚の `fg_shelf.*` は 第4.153版から アプリに 入らない：上の `shelf_reuv.py` の `fg_shelf2.*` を 使う。`collect_assets.py` を やり直しても `fg_shelf2.*` は かわらない）
    ブース用の 半分の 絵（`fgN_cs`・`ns`・`ms`）も 島を またがずに 小さく する・金属／あらさ は 劣化なし
 
 - `qem.c`：形を へらす（QEM）・UV の 上に 塗る・画面の 深さ（`fig_prep.py` が gcc で 作って ctypes で 使う）

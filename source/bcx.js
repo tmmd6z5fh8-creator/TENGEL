@@ -360,7 +360,7 @@
     document.head.appendChild(st);
   }
   // その デザインの 背景・前の 絵（第4.145版）：キャラなしの 背景（mo.bgx）が ある デザインは 止まった 絵を 使わない（アプリに 入って いない：kisekae/bcp/bcp_app.py の pics と 同じ きまり）
-  const picBg = (name, D) => (D.mo && D.mo.bgx) || `bcp_${name}.webp`;
+  const picBg = (name, D) => (D.mo && D.mo.bgx) || D.p || `bcp_${name}.webp`;      // D.p：ボードの 中を ぬり直した 絵（第4.153版：bcp_<name>_bl.webp）
   const picFg = (name, D) => (D.fg ? ((D.mo && D.mo.bgx && D.mo.fgx) || `bcp_${name}_fg.webp`) : null);
   // 絵を 出す のに いる もの ぜんぶ（背景・前の 絵・キャラ・動かない 物。まわりの 光と 雲 amb は のぞく：あとから かさねる）
   function picSrcs(name, D) {
@@ -703,7 +703,7 @@
   // 小さな 見本（動かさない）：ボードの かわりの 四角＋その 飾り。じゅんび中は うすい ボードに「じゅんび中」
   function fakeBoard(miss, head, tf) { return `<div class="rb bcfake${miss ? ' miss' : ''}" style="${tf || ''}"><div class="fh">${head}</div><div class="fr"></div><div class="fr"></div></div>`; }
   function thumbHtml(it, sk) {   // sk：的中ボード／ハズレボードの 一覧（第4.125版：どちらにも 出る 飾りは その 結果の 見本）
-    if (it.ready && isPic(it.id)) return `<div class="bcmini pic" aria-hidden="true"><img class="bcpth" src="${esc(String(PIC.thumb || '').replace('{}', it.id))}" alt="" decoding="async" draggable="false"><div class="bcpno">${esc(it.name)}</div></div>`;
+    if (it.ready && isPic(it.id)) return `<div class="bcmini pic" aria-hidden="true"><img class="bcpth" src="${esc(String(PIC.items[it.id].t || String(PIC.thumb || '').replace('{}', it.id)))}" alt="" decoding="async" draggable="false"><div class="bcpno">${esc(it.name)}</div></div>`;
     if (!it.ready || !B[it.id]) return `<div class="bcmini prep" aria-hidden="true"><div class="bcmi"><div class="hb bcst">${fakeBoard(false, '')}</div></div><span class="bcprep">じゅんび中</span></div>`;
     const k = sk && it.when === 'all' ? sk : kindOf(it), miss = k === 'miss', H = 170;
     const o = { H, W: 350, sp: 120, st: true, miss, big: k === 'big', kind: k, dark: false, title: { l: 112, t: 14, w: 126, h: 40 }, redHd: false, streak: 0, u: 0 };

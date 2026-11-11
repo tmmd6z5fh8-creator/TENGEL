@@ -76,6 +76,7 @@ for n in range(1, 9):
     bd = json.load(open(os.path.join(O, f'fig{n}_board.json')))
     m.update({'tex': f'fg{n}_c.webp', 'ntex': f'fg{n}_n.webp', 'mtex': f'fg{n}_m.webp', 'thumb': f'fg{n}_t.webp', 'tsz': tsz, 'board': {'c': [round(v, 4) for v in bd['c']], 'w': round(bd['w'], 4), 'h': round(bd['h'], 4)}, 'kind': KIND[n], 'pal': PAL.get(n, 'gold')})
     json.dump(m, open(os.path.join(OUT, f'fg{n}.json'), 'w')); meta['figs'][str(n)] = {'kind': KIND[n], 'pal': PAL.get(n, 'gold'), 'tsz': tsz}
+# 第4.153版：アプリが 使う 棚は 貼り直した 形（fg_shelf2.*：kisekae/fig/shelf_reuv.py が 作る）。下の fg_shelf.* は shelf_reuv.py の もと として 残す（アプリには 入らない：assets_dir.superseded）
 if os.path.exists(os.path.join(O, 'shelf_c7.webp')):
     m = pack(os.path.join(O, 'shelf.npz'), 'fg_shelf')
     for c in range(1, 8): webp(os.path.join(O, f'shelf_c{c}.webp'), f'fg_shelf_c{c}.webp', 2048, 90)

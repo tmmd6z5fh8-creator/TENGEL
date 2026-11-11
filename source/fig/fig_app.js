@@ -192,7 +192,7 @@ const FigApp = (() => {
     const tok = ++pageTok; loading(true);
     try {
       await fonts(); const shelf = await R.shelfMesh();
-      const name = `fg_shelf_c${p + 1}.webp`, shelfT = await R.tex(name);
+      const name = R.shelfTex(p), shelfT = await R.tex(name);
       const list = onPage(p); let Fs;
       try { Fs = await Promise.all(list.map(x => figB(x.it.n))); } catch (e) { R.drop(name); throw e; }
       if (tok !== pageTok) { R.drop(name); return false; }
@@ -311,7 +311,7 @@ const FigApp = (() => {
     }
   }
   async function snapPage(p) {
-    await fonts(); const shelf = await R.shelfMesh(), name = `fg_shelf_c${p + 1}.webp`, shelfT = await R.tex(name);
+    await fonts(); const shelf = await R.shelfMesh(), name = R.shelfTex(p), shelfT = await R.tex(name);
     try {
       const list = onPage(p), Fs = await Promise.all(list.map(x => figB(x.it.n)));
       const bts = list.map((x, k) => R.boardTex(Fs[k], x.it.info, 256));

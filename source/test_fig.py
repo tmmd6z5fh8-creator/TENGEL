@@ -1,7 +1,7 @@
 # 思い出フィギュア（第4.134版）の テスト：App Store版（TARGET=app）を localhost で アプリ版として 開いて、思い出のレース → フィギュアを 作る → ブースに 飾る → 部屋 → 一覧
 #   第4.138版：右上の 丸い ボタン（トレーニングセンターの 下・名前の 札「思い出フィギュア」）→ フィギュアブース → 下の「＋ フィギュアを作る」→ 作る 画面 → もどる・ミッション（1つ・5つ・8つ 完成させる）
 #   python3 test_fig.py   （ios/fig_assets/ が ある とき だけ 全部。ない とき（CI）は ボタンと 読みこめない ときの 形だけ）
-import json, os, shutil, subprocess, sys, time
+import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fig'); PORT = 8796; APP = f'http://localhost:{PORT}/APP/'
@@ -88,6 +88,7 @@ try:
         ctx.add_init_script(FAKE)
         pg = ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
+        reqs = []; pg.on('request', lambda r: reqs.append(r.url.split('/')[-1].split('?')[0]))      # 読みに いった ファイルの 名前（第4.153版：棚の 形と 絵）
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
         print('■ 入口')
         check(pg.evaluate("() => typeof window.TengelFig === 'object' && typeof TengelFig.booth === 'function' && typeof window.TengelMem === 'object' && !!TengelWallet.fig"), 'TengelFig（入口）・TengelMem（思い出のレース）・TengelWallet.fig（台帳）')
@@ -121,6 +122,21 @@ try:
         pg.locator('#figFab').click(); pg.wait_for_function("() => !!window.FigApp", timeout=30000); wait_scene(pg)
         check(pg.evaluate("() => FigApp._t.mode") == 'booth' and pg.locator('#fgOv [data-fg=make]').is_visible() and 'フィギュアを作る' in pg.locator('#fgOv [data-fg=make]').inner_text(),
               '思い出フィギュアの ボタンを 押す → フィギュアブース（下に「＋ フィギュアを作る」）')
+        # 第4.153版（まさちゃん 11/11 12:10「やって！」＝棚の 3D の 貼り方を 作り直して 軽く）：棚は 貼り直した 形（fg_shelf2.*・kisekae/fig/shelf_reuv.py）。前の fg_shelf.* は 読まない。
+        #   絵の 左上の 大きな 島（fg_shelf2.json の front）＝正面から 見た 棚 そのもの → 画面の 棚（正面）と 同じ 見え方に なって いる はず（貼り方と 絵が 合って いる 確かめ）
+        import base64 as _b64, io as _io, json as _js
+        import numpy as _np
+        from PIL import Image as _I
+        mj = _js.load(open(os.path.join(FGA, 'fg_shelf2.json')))
+        durl = pg.evaluate("() => { FigApp._t.draw(); return document.querySelector('#fgOv .fgst canvas').toDataURL('image/png'); }")
+        cva = _np.asarray(_I.open(_io.BytesIO(_b64.b64decode(durl.split(',')[1]))).convert('RGBA'), _np.float32)
+        ys, xs = _np.nonzero(cva[..., 3] > 128); bx = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1) if len(xs) else (0, 0, 1, 1)
+        scr = _np.asarray(_I.fromarray(cva[..., :3].astype(_np.uint8)).crop(bx).resize((96, 128), _I.LANCZOS), _np.float32)
+        fr = mj['front']; tex = _np.asarray(_I.open(os.path.join(FGA, 'fg_shelf2_c1.webp')).convert('RGB').crop((int(fr[0]), int(fr[1]), int(round(fr[2])), int(round(fr[3])))).resize((96, 128), _I.LANCZOS), _np.float32)
+        cor = float(_np.corrcoef(scr.reshape(-1), tex.reshape(-1))[0, 1]); mad = float(_np.abs(scr - tex).mean()); asp = (bx[2] - bx[0]) / max(1, bx[3] - bx[1])
+        old = [f for f in reqs if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)]
+        check('fg_shelf2.json' in reqs and 'fg_shelf2.bin' in reqs and 'fg_shelf2_c1.webp' in reqs and not old and mj['v'] < 65536 and cor > 0.93 and mad < 14 and 0.70 < asp < 0.82,
+              f'第4.153版：棚は 貼り直した 形（fg_shelf2・頂点 {mj["v"]}）・前の 棚は 読まない {old}・正面の 棚は 絵の 大きな 島と 同じ 見え方（似かた {cor:.3f}・色の 差 平均 {mad:.1f}/255・たて横 {asp:.2f}）')
         shot(pg, 'fig_fab_booth')
         pg.locator('#fgOv [data-fg=make]').click(); pg.wait_for_timeout(500)
         check(pg.evaluate("() => [FigApp._t.mode, FigApp._t.mk.step, FigApp._t.mk.back].join()") == 'make,race,booth' and pg.locator('#fgOv .fgrace').count() == 2 and 'ブースへ' in pg.locator('#fgOv [data-fg=back]').inner_text(),
@@ -204,6 +220,7 @@ try:
         a = pg.evaluate("() => { const c = document.querySelector('#fgOv .fgoc canvas'), g = c.getContext('2d'); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n / (c.width * c.height); }")
         check(o == ['7 / 8'] + ['0 / 8'] * 6 and a > 0.5, f'7つの ブースの 写真・数（{o}・うまって いる 割合 {a:.2f}）')
         check('7 / 56' in pg.locator('#fgOv .fgos').inner_text(), '飾っている フィギュア 7 / 56')
+        check(all(f'fg_shelf2_c{i}.webp' in reqs for i in range(1, 8)), '第4.153版：7つの ブースの 棚の 絵（fg_shelf2_c1〜7.webp）を ぜんぶ 読んだ')
         shot(pg, 'fig_over')
         pg.locator('#fgOv .fgoc[data-p="0"]').click(); wait_scene(pg)
         print('■ しまってある → 空きに 飾る')
