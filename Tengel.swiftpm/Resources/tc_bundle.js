@@ -66,6 +66,9 @@
   
   
   const PFS = 'precision mediump float;varying vec2 v;uniform sampler2D uT;uniform vec3 uTint;void main(){vec4 c=texture2D(uT,vec2(v.x*0.5+0.5,0.5-v.y*0.5));gl_FragColor=vec4(c.rgb*uTint*c.a,c.a);}';
+  
+  const RVS = 'attribute vec2 p;uniform vec4 uE;uniform vec4 uM;varying vec2 v;void main(){v=p;gl_Position=vec4(uE.x+uM.x*p.x+uM.y*p.y,uE.y+uM.z*p.x+uM.w*p.y,0.0,1.0);}';
+  const TFS = 'precision mediump float;varying vec2 v;uniform sampler2D uT;uniform vec3 uTint;uniform float uA;void main(){vec4 c=texture2D(uT,vec2(v.x*0.5+0.5,0.5-v.y*0.5));gl_FragColor=vec4(c.rgb*uTint*c.a*uA,c.a*uA);}';
   const EYE_GLOW = { purple: [0.78, 0.36, 1.0], gold: [1.0, 0.78, 0.25] };
 
   function prog(gl, vs, fs) {
@@ -503,9 +506,14 @@
     }
     [h.loc.aPos, h.loc.aNrm, h.loc.aCol, h.loc.aBone, h.loc.aBone2, h.loc.aBw, h.loc.aUV, h.loc.aCv].forEach(l => { if (l >= 0) gl.disableVertexAttribArray(l); });
   }
+  function spriteTex(gl, im) {             
+    const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.activeTexture(gl.TEXTURE0);
+    return { t, w: im.width, h: im.height };
+  }
   function create(gl, meta, bin, opt) {
     opt = opt || {};
-    const P = prog(gl, VS, FS), S = prog(gl, SVS, SFS), G = prog(gl, SVS, GFS), PS = prog(gl, SVS, PFS);
+    const P = prog(gl, VS, FS), S = prog(gl, SVS, SFS), G = prog(gl, SVS, GFS), PS = prog(gl, SVS, PFS), TS = prog(gl, RVS, TFS);
     const lay = meta.layout, nv = meta.v;
     const buf = (key, Type, n) => new Type(bin, lay[key][0], n);
     const fmt2 = meta.fmt === 2;        
@@ -525,7 +533,8 @@
       sp: gl.getAttribLocation(S, 'p'), uE: gl.getUniformLocation(S, 'uE'), uO: gl.getUniformLocation(S, 'uO'),
       uFill: U('uFill'), uLift: U('uLift'), uSky: U('uSky'), uGnd: U('uGnd'), uAoOn: U('uAoOn'), uSm: U('uSm'), uGrain: U('uGrain'), uCv: U('uCv'), aCv: L('aCv'), uDbg: U('uDbg'), uEm: U('uEm'), uE0: U('uE0'), uE1: U('uE1'), uGc: U('uGc'), uGr: U('uGr'),
       gp: gl.getAttribLocation(G, 'p'), gE: gl.getUniformLocation(G, 'uE'), gGc: gl.getUniformLocation(G, 'uGc'), gGk: gl.getUniformLocation(G, 'uGk'),
-      pp: gl.getAttribLocation(PS, 'p'), pE: gl.getUniformLocation(PS, 'uE'), pT: gl.getUniformLocation(PS, 'uT'), pTint: gl.getUniformLocation(PS, 'uTint') };
+      pp: gl.getAttribLocation(PS, 'p'), pE: gl.getUniformLocation(PS, 'uE'), pT: gl.getUniformLocation(PS, 'uT'), pTint: gl.getUniformLocation(PS, 'uTint'),
+      tp: gl.getAttribLocation(TS, 'p'), tE: gl.getUniformLocation(TS, 'uE'), tM: gl.getUniformLocation(TS, 'uM'), tT: gl.getUniformLocation(TS, 'uT'), tTint: gl.getUniformLocation(TS, 'uTint'), tA: gl.getUniformLocation(TS, 'uA') };
     const bones = meta.bones, bi = {}; bones.forEach((b, i) => { bi[b.name] = i; });
     const H = meta.height || 2.15;
     const legLen = bi.FL_u != null ? bones[bi.FL_u].head[1] : 1.0;
@@ -594,8 +603,7 @@
     const sampP = new Float32Array(samp.length * 3), sampB = new Uint8Array(samp.length);
     samp.forEach((i, k) => { sampP[k * 3] = pos[i * 3]; sampP[k * 3 + 1] = pos[i * 3 + 1]; sampP[k * 3 + 2] = pos[i * 3 + 2]; sampB[k] = bone[i]; });
     return { sampP, sampB, anchors, gl, P, S, G, B, loc, bones, bi, meta, H, legLen, opt, lie: buildLieKeys(bones, probe), tailTip, tailProbe, probe, under, tex, ntex, fmt2, eyes, em, eyeR: meta.eye_r || 0.02, glow, legs, hoof, PS,
-      poopTex: (opt.poopImgs || []).map(im => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.activeTexture(gl.TEXTURE0); return { t, w: im.width, h: im.height }; }) };      
+      poopTex: (opt.poopImgs || []).map(im => spriteTex(gl, im)), TS, trashTex: (opt.trashImgs || []).map(im => im ? spriteTex(gl, im) : null) };      
   }
 
   
@@ -872,8 +880,11 @@
       const want = Math.atan2(dy / 0.5, dx), turn = angDiff(st.dir, want);
       steer(st, want, dt, 1.1 * hk, 1.8 * hk, 3.5 * hk); steered = true;
       wantW = 1;
-      effT = lerp(1, hk > 1 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   
-      if (dist < Math.max(28, 0.06 * s * h.H)) {
+      effT = lerp(1, hk > 1 && dist > 170 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   
+      
+      st.closeT = dist < 110 ? (st.closeT || 0) + dt : 0;
+      if (dist < Math.max(hk > 1 ? 40 : 28, 0.06 * s * h.H) || (hk > 1 && st.closeT > 1.4)) {
+        st.closeT = 0;
         
         if (!(st.force && st.force.length) && !st.forcedWalk && !st.careHold && rnd() < 0.45 && pickWalkTarget(h, st, rnd)) { st.until = t + 30; }
         else { st.mode = 'idle'; st.until = st.force && st.force.length ? t : t + 4 + rnd() * 7; st.want.graze = rnd() < 0.3 ? 1 : 0; st.want.look = [0, 0]; }
@@ -1002,6 +1013,7 @@
     const R3 = [V[0], V[1], V[2], V[4], V[5], V[6], V[8], V[9], V[10]];      
     V = M.mul(M.sc(s / view.W * 2, s / view.H * 2, 0.4), V);
     h.last = { mats, V, cx, cy, view, s, R3 };                
+    if (st.trash && st.trash.length && h.trashTex.length) drawTrash(h, st, t, view, lt);      
     
     gl.useProgram(h.S); gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindBuffer(gl.ARRAY_BUFFER, h.B.quad); gl.enableVertexAttribArray(h.loc.sp); gl.vertexAttribPointer(h.loc.sp, 2, gl.FLOAT, false, 0, 0);
@@ -1066,6 +1078,35 @@
     gl.disable(gl.DEPTH_TEST);
     if (gk > 0) drawEyeGlow(h, mats, V, R3, cx, cy, s, view, gk);
     if (st.poops && st.poops.length && h.poopTex.length) drawPoops(h, st, t, view, lt, s, true);
+  }
+  
+  
+  
+  
+  const TRASH_KY = 0.6;
+  function drawTrash(h, st, t, view, lt) {
+    const gl = h.gl, tint = [0, 1, 2].map(i => Math.min(1.05, lt.amb[i] + lt.sunC[i] * 0.55));
+    gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.bindBuffer(gl.ARRAY_BUFFER, h.B.quad);
+    for (let pass = 0; pass < 2; pass++) {               
+      if (pass === 0) { gl.useProgram(h.S); gl.enableVertexAttribArray(h.loc.sp); gl.vertexAttribPointer(h.loc.sp, 2, gl.FLOAT, false, 0, 0); }
+      else { gl.useProgram(h.TS); gl.enableVertexAttribArray(h.loc.tp); gl.vertexAttribPointer(h.loc.tp, 2, gl.FLOAT, false, 0, 0); gl.uniform3fv(h.loc.tTint, tint); gl.uniform1i(h.loc.tT, 5); }
+      for (const q of st.trash) {
+        if (!q.items) continue;
+        const ss = scaleAt(h, q.y) / (h.opt.stage || 1) * view.k, sp = q.sp != null ? q.sp : 1, qa = q.a != null ? q.a : 1; if (qa <= 0.004) continue;
+        for (const it of q.items) {
+          const tex = h.trashTex[it.k % h.trashTex.length]; if (!tex) continue;
+          const u = q.t0 != null ? clamp((t - q.t0 - (it.d || 0)) / 0.42, 0, 1) : 1; if (u <= 0) continue;
+          const fall = (1 - u) * (1 - u), a = qa * Math.min(1, u * 2.5), kk = (0.55 + 0.45 * sp) * (1 + 0.25 * fall);
+          const wpx = it.w * ss * kk, hpx = wpx * tex.h / tex.w, r = it.r + (q.tw || 0) * (it.k % 2 ? 1 : -1) + fall * 2.2 * (it.k % 2 ? 1 : -1), c = Math.cos(r), sn = Math.sin(r);
+          const gx = (q.x + it.dx * sp * ss / view.k) * view.k + view.ox, gy = (q.y + it.dy * sp * TRASH_KY * ss / view.k) * view.k + view.oy - fall * 0.55 * ss;
+          if (pass === 0) { gl.uniform4f(h.loc.uE, gx / view.W * 2 - 1, 1 - (gy + 0.03 * ss) / view.H * 2, wpx * 0.56 / view.W * 2, wpx * 0.56 * TRASH_KY / view.H * 2); gl.uniform1f(h.loc.uO, lt.shadow * 0.55 * a * (1 - fall)); }
+          else { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, tex.t); gl.activeTexture(gl.TEXTURE0);
+            gl.uniform4f(h.loc.tE, gx / view.W * 2 - 1, 1 - gy / view.H * 2, 0, 0); gl.uniform4f(h.loc.tM, c * wpx / view.W, -sn * hpx / view.W, sn * wpx * TRASH_KY / view.H, c * hpx * TRASH_KY / view.H); gl.uniform1f(h.loc.tA, a); }
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+      }
+      gl.disableVertexAttribArray(pass === 0 ? h.loc.sp : h.loc.tp);
+    }
   }
   
   function drawPoops(h, st, t, view, lt, s, front) {
@@ -1553,22 +1594,34 @@ const TCCare = (() => {
     const fr = front(), ex = fr.big ? fr.x : lerp(fr.x, clamp(BR.x, fr.x - 170, fr.x + 170), 0.45), ey = fr.big ? fr.y : clamp(BR.y + STEP_Y, NEAR_Y, fr.y);
     S.route = [[ex, ey]]; S.turnAfter = true; S.phase = 'approach'; nextLeg(t);
   }
+  
+  const sideDir = () => (BR.x > FRONT.x + 170 ? Math.PI - 0.12 : BR.x < FRONT.x - 170 ? 0.12 : Math.cos(BR.dir) >= 0 ? 0.12 : Math.PI - 0.12);
   function comeNear(t) {                
     
-    const fr = front(), side = Math.abs(Math.sin(BR.dir)) < 0.4, half = 1.8 * TCHorse.scaleAt(HO, BR.y) + 12;
+    
+    const fr = front(), sc = TCHorse.scaleAt(HO, BR.y), want = sideDir(), right = Math.cos(want) >= 0;
+    const headM = (S.mode === 'feed' ? 2.4 : 1.9) * sc + 12, tailM = 1.75 * sc + 12, x0 = right ? tailM : headM, x1 = W - (right ? headM : tailM);
     let tx = BR.x, ty = BR.y;
     if (fr.big) { if (Math.abs(BR.x - fr.x) > 50) tx = fr.x; if (BR.y > fr.y + 36) ty = fr.y; }
-    else if (half < W / 2) tx = clamp(BR.x, half, W - half);
-    const here = Math.abs(tx - BR.x) < 20 && ty === BR.y;
+    else if (x0 < x1 && (BR.x < x0 - 20 || BR.x > x1 + 20)) tx = clamp(BR.x, Math.min(x0 + 44, (x0 + x1) / 2), Math.max(x1 - 44, (x0 + x1) / 2));      
+    const here = Math.abs(tx - BR.x) < 20 && ty === BR.y, side = Math.abs(Math.sin(BR.dir)) < 0.4 && (Math.cos(BR.dir) >= 0) === right;
     if (here && side) { if (BR.mode === 'walk' || BR.mode === 'run') { BR.mode = 'idle'; BR.until = t + 30; } arrived(t); return; }
     S.turnAfter = true; S.phase = 'approach'; BR.want.graze = 0; BR.want.look = [0, 0];
     if (here) { S.route = []; BR.hurry = HURRY; BR.mode = 'idle'; BR.until = t + 30; }      
     else { S.route = [[tx, ty]]; nextLeg(t); }
     setZoom(t, zoomGuess(tx, ty), 0.8); ev(t, 'zoomin');
   }
-  function nextLeg(t) { const p = S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY }); BR.want.graze = 0; BR.want.look = [0, 0]; }
+  function nextLeg(t) {                 
+    
+    
+    const p = S.route[0], dx = p[0] - BR.x, dz = (p[1] - BR.y) / 0.5, d = Math.hypot(dx, dz), want = Math.atan2(dz, dx);
+    BR.want.graze = 0; BR.want.look = [0, 0]; if (S.apprT == null) S.apprT = t;
+    if (d < 36) { S.route.shift(); S.legTurn = false; Object.assign(BR, { mode: 'idle', until: t + 30, forcedWalk: true, hurry: HURRY }); return; }      
+    if (d < 190 && !S.legTurn && Math.abs(angDiff(BR.dir, want)) > 0.45) { S.legTurn = true; Object.assign(BR, { mode: 'turn', turnTo: want, until: t + 30, forcedWalk: true, hurry: HURRY }); return; }
+    S.legTurn = false; S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY });
+  }
   function arrived(t) {
-    mark('A', t); BR.hurry = 1;
+    mark('A', t); BR.hurry = 1; S.apprT = null; S.legTurn = false;
     if (S.mode === 'pet' || S.mode === 'feed') {
       const zf = zoomFor();
       if (S.mode === 'feed') { const n = P('nose'); if (n) { const hw = W / (2 * zf.z); zf.cx = clamp(lerp(zf.cx, n[0], 0.3), hw, W - hw); } }      
@@ -1592,7 +1645,7 @@ const TCCare = (() => {
       else if (O.onPrize) at(t + 0.4, tt => O.onPrize(pz));          
     }      
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          
-      const c = S.clean; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
+      const c = { x: S.clean.sniff[0], y: S.clean.sniff[1] }; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
       Object.assign(BR, { tgt: [c.x - Math.cos(d) * 1.05 * sc, c.y - Math.sin(d) * 0.5 * 1.05 * sc], mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY });
       S.afterSniff = true;
@@ -1697,44 +1750,131 @@ const TCCare = (() => {
   }
 
   
-  function season() { const m = (O.month || new Date().getMonth() + 1); return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter'; }
+  
+  
+  
+  
+  
+  
+  
+  
+  const CLEAN = { hit: 0.46, mouth: 0.45, panD: 1.0, broom: 1.35, pan: 0.75, idle: 25 };      
+  const PITCH = 0.49;                                      
+  const psAt = y => TCHorse.scaleAt(HO, y) / ((HO && HO.opt && HO.opt.stage) || 1);      
+  const gdist = (ax, ay, bx, by) => Math.hypot(ax - bx, (ay - by) * 2);      
+  const cleanTargets = () => [...(BR.trash || []).filter(q => q.items && q.out == null).map(o => ({ o })), ...(BR.poops || []).filter(q => !q.sw).map(o => ({ o, poop: true }))];
+  const canClean = () => cleanTargets().length > 0;
   function pressClean(t) {
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
+    const tg = cleanTargets();
+    if (!tg.length) {                    
+      const m = S.trashIn > 0 ? Math.ceil(S.trashIn / 60) : 0;
+      fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら おそうじ できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
+    }
     if (!useToken(t, 'clean')) return;
     S.mode = 'clean'; BR.careHold = true; S.holdUntil = Infinity; S.popVal = careLottery();
-    const ps = BR.poops || []; let tg = null;
-    if (ps.length) { const q = ps.reduce((a, b) => (b.y > a.y ? b : a)); BR.poops = ps.filter(x => x !== q); tg = { type: 'poop', x: q.x, y: q.y, img: q.img || 0, w: q.w || 0.42, gold: !!q.gold }; }
-    else {                              
-      const cx = BR.stand ? W / 2 : clamp(FRONT.x + (BR.x < FRONT.x ? 170 : -170), 260, 792), cy = BR.stand ? H * 0.82 : FRONT.y - 20, ss = season();
-      tg = { type: 'leaves', x: cx, y: cy, ss, leaves: Array.from({ length: 11 }, (_, i) => ({ dx: (hash(i * 3.1) - 0.5) * 230, dy: (hash(i * 5.7) - 0.5) * 90, r: hash(i * 7.3) * TAU, s: 0.8 + 0.4 * hash(i * 2.9), c: i % 3 })) };
-    }
-    S.clean = { t0: t, x: tg.x, y: tg.y, tg, swipes: 0, prog: 0, sniff: tg.type === 'poop' };
-    S.clean.pan = { x: tg.x - 120, y: tg.y + 6 };
-    const z = BR.stand ? 1 : 1.7, hw = W / (2 * z), hh = H / (2 * z);
-    if (z > 1) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp(tg.x - 20, hw, W - hw), cy: clamp(tg.y - 90, hh, H - hh) }, ZOOM_IN); ev(t, 'zoomin'); }
+    if (tg.some(T => !T.poop)) BR.trashDone = true;          
+    for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
+    const lp = tg.filter(T => T.poop).pop(), xs = tg.map(T => T.o.x), ys = tg.map(T => T.o.y);
+    S.clean = { t0: t, tg, got: 0, sw: 0, gold: tg.some(T => T.poop && T.o.gold), sniff: lp ? [lp.o.x, lp.o.y] : null, pan: null, bro: null, side: -1, pg: [], actT: t };
+    
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const z = BR.stand ? 1 : clamp(Math.min(W / (x1 - x0 + 520), H * 0.62 / (y1 - y0 + 430)), 1, 1.7), hw = W / (2 * z), hh = H / (2 * z);
+    if (z > 1.02) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp((x0 + x1) / 2 - 20, hw, W - hw), cy: clamp((y0 + y1) / 2 - 70, hh, H - hh) }, ZOOM_IN); ev(t, 'zoomin'); }
     else cleanStart(t);
-    if (!BR.stand) { const side = sideToward(tg.x, tg.y); BR.want.look = [side * 0.6, -0.1]; }
+    if (!BR.stand) { const side = sideToward((x0 + x1) / 2, (y0 + y1) / 2); BR.want.look = [side * 0.6, -0.1]; }
   }
   function cleanStart(t) {
-    const C = S.clean; S.phase = 'clean'; mark('C', t); C.toolT = t; ev(t, 'unfold'); at(t + 0.2, tt => ev(tt, 'unfold'));
-    if (C.tg.gold) at(t + 0.2, tt => { tagW([C.x, C.y], '金のうんち！', tt, { off: [0, -120], size: 36, dur: 1.8, col: '#b07a10' }); ev(tt, 'gold'); });
+    const C = S.clean; S.phase = 'clean'; mark('C', t); C.toolT = t; C.actT = t; ev(t, 'unfold'); at(t + 0.2, tt => ev(tt, 'unfold'));
+    const T0 = C.tg.reduce((a, b) => (b.o.y > a.o.y ? b : a)), ps = psAt(T0.o.y);      
+    C.bro = { x: clamp(T0.o.x + 0.8 * ps, 80, W - 80), y: T0.o.y + 8 };
+    aimPan(t, T0, [C.bro.x, C.bro.y], true);
+    const gp = C.tg.find(T => T.poop && T.o.gold);
+    if (gp) at(t + 0.2, tt => { tagW([gp.o.x, gp.o.y], '金のうんち！', tt, { off: [0, -120], size: 36, dur: 1.8, col: '#b07a10' }); ev(tt, 'gold'); });
   }
-  function sweep(t) {                    
-    const C = S.clean; C.swipes++; ev(t, 'sweep', { n: C.swipes });
-    fx({ k: 'dust', t0: t, w: [lerp(C.x, C.pan.x + 30, C.swipes / 3), C.y] });
+  function aimPan(t, T, from, snap) {    
+    const C = S.clean, o = T.o, ps = psAt(o.y); let ux = o.x - from[0], uz = (o.y - from[1]) * 2; const L = Math.hypot(ux, uz);
+    if (L < 24) { ux = -1; uz = 0; } else { ux /= L; uz /= L; }
+    let px = o.x + ux * CLEAN.panD * ps, py = o.y + uz * CLEAN.panD * ps * 0.5;
+    if (px < 90 || px > W - 90 || py < 790 || py > 1430) {          
+      px = clamp(px, 90, W - 90); py = clamp(py, 790, 1430); const dx = o.x - px, dz = (o.y - py) * 2, d = Math.hypot(dx, dz) || 1;
+      if (d < 0.5 * ps) { px = clamp(o.x + (o.x > W / 2 ? -1 : 1) * CLEAN.panD * ps, 90, W - 90); py = clamp(o.y, 790, 1430); }
+    }
+    const fx_ = o.x - px, fz = (o.y - py) * 2, yaw = Math.atan2(-fz, fx_);          
+    const cur = C.pan ? panNow(t) : null;
+    C.pan = snap || !cur ? { x: px, y: py, yaw, fx: px, fy: py, fyaw: yaw, t0: t - 1 } : { x: px, y: py, yaw, fx: cur.x, fy: cur.y, fyaw: cur.yaw, t0: t };
+    C.act = T;
+  }
+  function panNow(t) {                   
+    const q = S.clean.pan, k = easeOut((t - q.t0) / 0.22);
+    return { x: lerp(q.fx, q.x, k), y: lerp(q.fy, q.y, k), yaw: q.fyaw + angDiff(q.fyaw, q.yaw) * k };
+  }
+  function retarget(t, from, force) {    
+    const C = S.clean, left = C.tg.filter(T => !T.done); if (!left.length) return;
+    const T = left.reduce((a, b) => (gdist(b.o.x, b.o.y, from[0], from[1]) < gdist(a.o.x, a.o.y, from[0], from[1]) ? b : a));
+    if (force || T !== C.act) aimPan(t, T, from, false);
+  }
+  function sweepMove(t, x, y, dx, dy) {  
+    const C = S.clean, pn = panNow(t);
+    for (const T of C.tg) {
+      if (T.done) continue; const o = T.o, ps = psAt(o.y);
+      if (!T.held && gdist(o.x, o.y, x, y) < CLEAN.hit * ps) {
+        T.held = true; T.off = [o.x - x, o.y - y];
+        if (!T.touched) { T.touched = true; C.sw++; ev(t, 'sweep', { n: C.sw }); fx({ k: 'dust', t0: t, w: [o.x, o.y] }); }
+      }
+      if (!T.held) continue;
+      T.off[0] *= 0.9; T.off[1] *= 0.9; o.x = clamp(x + T.off[0], 60, W - 60); o.y = clamp(y + T.off[1], 780, 1440);
+      if (!T.poop) { o.sp = Math.max(0.6, (o.sp != null ? o.sp : 1) - 0.003 * Math.hypot(dx, dy)); o.tw = (o.tw || 0) + 0.006 * dx; }
+      if (gdist(o.x, o.y, pn.x, pn.y) < CLEAN.mouth * ps) collect(t, T);
+    }
+    if ((!C.act || C.act.done) && C.moved > 46) retarget(t, [x, y]);          
+  }
+  function collect(t, T) {               
+    const C = S.clean, o = T.o, pn = panNow(t), ps = psAt(pn.y), c = Math.cos(pn.yaw), sn = Math.sin(pn.yaw);
+    const inn = [pn.x - c * 0.42 * CLEAN.pan * ps, pn.y + sn * 0.42 * CLEAN.pan * ps * 0.5];          
+    T.done = true; T.held = false; C.got++; C.moved = 0; C.actT = t; ev(t, 'inpan'); fx({ k: 'dust', t0: t, w: [pn.x, pn.y] });
+    if (T.poop) { BR.poops = (BR.poops || []).filter(q => q !== o); C.pg.push({ img: o.img || 0, w: o.w || 0.42, gold: !!o.gold, t0: t, from: [o.x, o.y], to: inn, y: o.y }); }
+    else { o.out = t; o.from = [o.x, o.y, o.sp != null ? o.sp : 1]; o.to = inn; }
     const nose = P('nose'), br = S.finger;
-    if (!C.nibbled && !BR.stand && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : rnd() < 1 / 4) && C.swipes === 2) {
+    if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : rnd() < 1 / 4)) {
       C.nibbled = true; at(t + 0.1, tt => { react('nibble', 1.6, tt, { side: sideToward(br[0], br[1]) }); ev(tt, 'nibble'); tagW(P('nose'), 'もぐっ？', tt + 0.3, { off: [0, -100], size: 34, dur: 1.3 }); });
     }
-    if (C.swipes >= 3) {
-      at(t + 0.35, tt => { C.inPan = true; ev(tt, 'inpan'); });
-      at(t + 0.8, tt => { C.foldT = tt; ev(tt, 'fold'); });
-      at(t + 1.1, tt => { ev(tt, 'kira'); tagW([C.x, C.y], 'きれい！', tt, { off: [0, -130], size: 38, dur: 1.6 }); });      
-      if (C.tg.gold) at(t + 2.2, tt => { S.high = 5; S.highBump = tt; fx({ k: 'luck', t0: tt, dur: 2.6 }); ev(tt, 'luck'); });
-      S.holdUntil = t + (C.tg.gold ? 5.0 : 2.7); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
+    if (C.tg.every(q => q.done)) {       
+      at(t + 0.45, tt => { C.foldT = tt; ev(tt, 'fold'); });
+      at(t + 0.75, tt => { ev(tt, 'kira'); tagW([pn.x, pn.y], 'きれい！', tt, { off: [0, -130], size: 38, dur: 1.6 }); });      
+      if (C.gold) at(t + 1.9, tt => { S.high = 5; S.highBump = tt; fx({ k: 'luck', t0: tt, dur: 2.6 }); ev(tt, 'luck'); });
+      S.holdUntil = t + (C.gold ? 4.7 : 2.4); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
     }
+  }
+  function cleanStep(t) {                
+    const C = S.clean; if (!C) return;
+    if (BR.trash && BR.trash.length) {
+      for (const o of BR.trash) if (o.out != null) { const u = clamp((t - o.out) / 0.3, 0, 1), e = easeOut(u); o.x = lerp(o.from[0], o.to[0], e); o.y = lerp(o.from[1], o.to[1], e); o.sp = lerp(o.from[2], 0.2, e); o.a = 1 - sm((u - 0.45) / 0.55); }
+      if (BR.trash.some(o => o.out != null && t - o.out >= 0.3)) BR.trash = BR.trash.filter(o => !(o.out != null && t - o.out >= 0.3));
+    }
+    C.pg = C.pg.filter(q => t - q.t0 < 0.32);
+    if (S.phase === 'clean' && !C.down && t - C.actT > CLEAN.idle) { const left = C.tg.filter(T => !T.done); C.actT = t; if (left.length) { const T = left[0]; aimPan(t, T, [T.o.x + 100, T.o.y], true); collect(t, T); if (S.phase === 'clean') C.actT = t - CLEAN.idle + 0.25; } }
+  }
+  function worldProp(P3, wx, wy, R, kpx, sh) {      
+    const M = TCHorse.M, sH = TCHorse.scaleAt(HO, BR.y), x = (wx - BR.x) / sH, z = (wy - BR.y) / (sH * Math.sin(PITCH)), k = kpx / sH;
+    const c = Math.cos(BR.dir), sn = Math.sin(BR.dir);
+    return { P: P3, m: M.mul(M.ry(BR.dir), M.mul(M.tr(x, 0, z), M.mul(R, M.sc(k, k, k)))), sh: sh ? [c * x + sn * z, -sn * x + c * z, sh[0] * k, sh[1]] : null };
+  }
+  function broomPose(t) {                
+    const C = S.clean, f = C.down && S.finger ? S.finger : null;
+    if (f) { C.bro.x = f[0]; C.bro.y = f[1]; }
+    C.sideS = C.sideS == null ? C.side : C.sideS + (C.side - C.sideS) * 0.22;
+    return { x: C.bro.x, y: C.bro.y, yaw: Math.PI * (0.5 - 0.5 * C.sideS), wob: 0.1 * Math.sin((C.dist || 0) * 0.045) };
+  }
+  function tools3(t) {                   
+    const C = S.clean; if (!C || C.toolT == null || !C.pan || !PROPS || !PROPS.broom || !PROPS.pan) return null;
+    const ft = C.foldT != null ? sm((t - C.foldT) / 0.4) : 0, op = clamp(backOut((t - C.toolT) / 0.4), 0, 1.15) * (1 - ft); if (op <= 0.02) return null;
+    const M = TCHorse.M, pn = panNow(t), b = broomPose(t), out = [];
+    out.push(worldProp(PROPS.pan, pn.x, pn.y, M.ry(pn.yaw), CLEAN.pan * psAt(pn.y) * op, [0.95, 0.5 * Math.min(1, op)]));          
+    out.push(worldProp(PROPS.broom, b.x, b.y, M.mul(M.rx(0.22), M.mul(M.ry(b.yaw), M.rz(b.wob))), CLEAN.broom * psAt(b.y) * op, [0.3, 0.42 * Math.min(1, op)]));      
+    return out;
   }
 
   
@@ -1878,10 +2018,10 @@ const TCCare = (() => {
   function input(kind, x, y, t) {
     if (S.phase === 'beg' && kind === 'down' && zoneAt(x, y)) { begPet(t); S.finger = [x, y]; S.begHand = t; return; }
     if (S.mode === 'clean' && S.phase === 'clean') {         
-      const C = S.clean; S.finger = [x, y];
-      if (kind === 'down') { C.down = true; C.last = [x, y]; C.dist = 0; }
-      else if (kind === 'move' && C.down) { const dx = x - C.last[0], dy = y - C.last[1]; C.last = [x, y]; const toward = (C.pan.x - C.x) >= 0 ? dx : -dx; if (toward > 0) C.dist += toward * S.zoom.z; if (C.dist >= 70 && !C.counted) { C.counted = true; sweep(t); } }
-      else if (kind === 'up') { C.down = false; C.counted = false; C.dist = 0; }
+      const C = S.clean; S.finger = [x, y]; C.actT = t;
+      if (kind === 'down') { C.down = true; C.last = [x, y]; C.moved = 0; retarget(t, [x, y], true); }
+      else if (kind === 'move' && C.down) { const dx = x - C.last[0], dy = y - C.last[1]; C.last = [x, y]; const d = Math.hypot(dx, dy * 2); C.moved += d; C.dist = (C.dist || 0) + d; if (Math.abs(dx) > 1.5) C.side = dx > 0 ? 1 : -1; sweepMove(t, x, y, dx, dy); }
+      else if (kind === 'up') { C.down = false; for (const T of C.tg) T.held = false; }
       return;
     }
     if (kind === 'down') {
@@ -1912,8 +2052,8 @@ const TCCare = (() => {
     backA: () => mixP(P('withers'), P('rump'), 0.12), backB: () => mixP(P('withers'), P('rump'), 0.66),
     noseA: () => mixP(P('eye'), P('nose'), 0.3), noseB: () => mixP(P('eye'), P('nose'), 1.0),
     awayR: () => { const n = P('nose'), b = P('withers'); return toW(n && b && n[0] > b[0] ? [W * 0.2, H * 0.8] : [W * 0.8, H * 0.8]); },     
-    brA: () => { const C = S.clean; if (!C) return null; const p = cleanTgPos(), d = C.x >= C.pan.x ? 1 : -1; return [p[0] + 150 * d, p[1] + 4]; },      
-    brB: () => { const C = S.clean; if (!C) return null; const p = cleanTgPos(), d = C.x >= C.pan.x ? 1 : -1; return [p[0] + 14 * d, p[1] + 4]; },
+    brA: () => { const C = S.clean, T = C && (C.tg.find(q => !q.done && q.held) || C.tg.find(q => !q.done)); if (!T || !C.pan) return null; const o = T.o, q = C.pan, L = gdist(o.x, o.y, q.x, q.y) || 1; return [o.x + (o.x - q.x) / L * 120, o.y + (o.y - q.y) / L * 120]; },      
+    brB: () => { const C = S.clean; return C && C.pan ? [C.pan.x, C.pan.y] : null; },
   };
   
   function strokes(u0, A, B, n, ds, dr) {
@@ -1924,7 +2064,7 @@ const TCCare = (() => {
   const PET3 = (A, B, ds, dr, u0) => { u0 = u0 || 0.25; const st = strokes(u0 + 0.7, A, B, 3, ds || 0.58, dr || 0.33), e = st[st.length - 1][1]; return [[u0, u0 + 0.7, 'awayR', A, false], ...st, [e + 0.1, e + 1.0, B, 'awayR', false]]; };
   const DEMOS = {
     
-    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと 手前に 来るよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', 'つづけて 5回まで → 5回 なでたら 7秒 おやすみ']],
+    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと その場で 横向きに なるよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', 'つづけて 5回まで → 5回 なでたら 7秒 おやすみ']],
       path: [[0.25, 0.95, 'awayR', 'neckA', false], [0.95, 2.3, 'neckA', 'neckA', true], ...strokes(2.3, 'neckA', 'neckB', 3, 0.6, 0.34), [4.3, 5.3, 'neckB', 'awayR', false]], greeted: false, end: 'Z+4.6' },
     
     pet_b: { front: 1, heart: 1, got: [-20], greeted: true, cap: [[0.2, 'R+5.6', '頭を なでると → すりすり']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.8' },
@@ -1954,9 +2094,9 @@ const TCCare = (() => {
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
     
     clean_a: { poop: [770, 1240, 0], nibble: true, pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
-      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', '3回 はくと ちりとりへ（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
-    clean_b: { pt: 200, month: 11, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
-      cap: [[0.2, 'C+3.8', 'うんちが ない 時は 落ち葉（季節で かわる）'], ['C+3.8', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
+      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', 'ちりとりへ はき入れる（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
+    clean_b: { pt: 200, trash: [[300, 1010], [760, 980], [520, 1160], [250, 1290], [800, 1300]], press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 5, 0.5, 0.36)],
+      cap: [[0.2, 'C+4.6', '15分ごとに ゴミが 5か所に 散らばる → ちりとりへ はき入れる'], ['C+4.6', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
     guide: { press: [[0.8, 'help']], guideEnd: 15.8, cap: [], end: 16.8 },
     clean_c: { poop: [700, 1250, 2, true], pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+3.4', '金のうんち（うんちの 1/20）'], ['C+3.4', 'Z2+0.2', '運がついた！ 高確ゾーン（お世話 5回）']], end: 'Z2+0.4' },
@@ -2013,7 +2153,7 @@ const TCCare = (() => {
       const [texImg, nrmImg] = await Promise.all([im(meta.tex), im(meta.ntex)]);
       return TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg });
     };
-    try { const [b3, f3] = await Promise.all([one('tc_prop_bucket'), one('tc_prop_feed').catch(() => null)]); return { bucket: b3, feed: f3 }; } catch (e) { return null; }
+    try { const [b3, f3, br, pn] = await Promise.all([one('tc_prop_bucket'), one('tc_prop_feed').catch(() => null), one('tc_prop_broom').catch(() => null), one('tc_prop_pan').catch(() => null)]); return { bucket: b3, feed: f3, broom: br, pan: pn }; } catch (e) { return null; }
   }
   function bucketArt(x, y, k, level, op, legH) {      
     if (op <= 0.01) return;
@@ -2100,18 +2240,6 @@ const TCCare = (() => {
     pf([[-w * 0.5, -hw * 0.3], [-w * 0.95, -hw * 0.75], [-w * 0.95, -hw * 0.55], [-w * 0.5, -hw * 0.1]], '#3f86a6');     
     g.restore();
   }
-  function leafArt(x, y, sz, rot, ss, c, a) {
-    if (a <= 0.01) return;
-    g.save(); g.globalAlpha *= a; g.translate(x, y); g.rotate(rot); g.lineWidth = 0.6;
-    if (ss === 'autumn') {                             
-      const col = ['#e2552d', '#f08a2a', '#c9402a'][c], R = sz, P5 = [];
-      for (let i = 0; i < 10; i++) { const an = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? R * 0.42 : R; P5.push([Math.cos(an) * rr, Math.sin(an) * rr * 0.62]); }
-      pf(P5, col); pf([[0, 0], ...P5.slice(0, 6)], tone(col, 1.12)); line([0, 0], [0, R * 0.7], 'rgba(90,30,10,0.4)');
-    } else if (ss === 'spring') { const col = ['#ffc0d4', '#ffd7e2', '#f7a8c2'][c]; g.scale(1, 0.62); pf([[0, -sz], [sz * 0.7, -sz * 0.2], [sz * 0.3, sz * 0.7], [0, sz * 0.45], [-sz * 0.3, sz * 0.7], [-sz * 0.7, -sz * 0.2]], col); pf([[0, -sz], [sz * 0.7, -sz * 0.2], [0, sz * 0.45]], tone(col, 1.08)); }
-    else if (ss === 'summer') { const col = ['#e8c96a', '#d9b452', '#f2dc8c'][c]; pf([[-sz, -2], [sz, -4], [sz, 1], [-sz, 3]], col); }
-    else { g.fillStyle = ['#ffffff', '#f2f6fb', '#e8eef6'][c]; g.beginPath(); g.ellipse(0, 0, sz * 0.8, sz * 0.45, 0, 0, TAU); g.fill(); }
-    g.restore();
-  }
   function flowerArt(x, y, sz, c, a) {                 
     if (a <= 0.01 || sz <= 0.5) return;
     const col = ['#ff9cbc', '#ffd65c', '#ffffff', '#c9a8ff'][c % 4];
@@ -2132,7 +2260,6 @@ const TCCare = (() => {
     } else g.drawImage(im, x - w / 2, y - h * 0.9, w, h);
     g.restore();
   }
-  function cleanTgPos() { const C = S.clean; return [lerp(C.x, C.pan.x + 34, C.progS || 0), C.y]; }
   function drawCare(t) {
     const z = S.zoom.z;
     
@@ -2156,16 +2283,16 @@ const TCCare = (() => {
     }
     
     const C = S.clean;
-    if (C) {
-      const tgt = (C.swipes || 0) / 3; C.progS = (C.progS || 0) + (tgt - (C.progS || 0)) * 0.18;
-      const k = TCHorse.scaleAt(HO, C.y) * z, dirX = C.x >= C.pan.x ? 1 : -1, tp = toS(cleanTgPos()), pp = toS([C.pan.x, C.pan.y]);
-      const ft = C.foldT != null ? sm((t - C.foldT) / 0.5) : 0, op = C.toolT != null ? backOut((t - C.toolT) / 0.45) : 0;
-      if (C.toolT != null) { paperSquare(pp[0], pp[1] - 20 * z, 26 * z * (1 - sm((t - C.toolT - 0.2) / 0.2)), t, 1); panArt(pp[0], pp[1], k, dirX, Math.max(0, Math.min(1, op)), ft); }
-      if (C.tg.type === 'poop' && !(C.inPan && ft > 0.2)) { const w = C.tg.w * TCHorse.scaleAt(HO, C.y) * z * (C.inPan ? 0.7 : 1); poopArt(C.tg.img, tp[0], tp[1] - (C.inPan ? 8 * z : 0), w, C.tg.gold, 1 - ft);
-        if (C.tg.gold) for (let i = 0; i < 3; i++) { const v = ((t * 0.6 + i / 3) % 1); star(tp[0] + (hash(i * 3) - 0.5) * 60 * z, tp[1] - 30 * z - 40 * z * v, 9 * z * Math.sin(Math.PI * v), v * 2, 0.9); } }
-      if (C.tg.type === 'leaves') for (const L of C.tg.leaves) { const sp = toS([C.x + L.dx, C.y + L.dy]), e = C.progS || 0, x = lerp(sp[0], pp[0] + 30 * z + L.dx * 0.1 * z, e), y = lerp(sp[1], pp[1] - 6 * z + L.dy * 0.08 * z, e); leafArt(x, y, 22 * L.s * z, L.r + e * 2, C.tg.ss, L.c, 1 - ft); }
-      if (C.toolT != null && C.foldT == null) { const f = S.finger ? toS(S.finger) : toS([C.x + 150, C.y]); broomArt(f[0], f[1], k, dirX * 0.45 + 0.05 * Math.sin(t * 3), Math.max(0, Math.min(1, op))); }
-      else if (C.foldT != null) { const f = S.finger ? toS(S.finger) : toS([C.x + 150, C.y]); broomArt(f[0], f[1], k, dirX * 0.45, 1 - ft); }
+    if (C && C.toolT != null && C.pan) {
+      const pn = panNow(t), pp = toS([pn.x, pn.y]), k = psAt(pn.y) * z, ft = C.foldT != null ? sm((t - C.foldT) / 0.5) : 0, op = backOut((t - C.toolT) / 0.45);
+      paperSquare(pp[0], pp[1] - 20 * z, 26 * z * (1 - sm((t - C.toolT - 0.2) / 0.2)), t, 1);
+      const d3 = PROPS && PROPS.broom && PROPS.pan, dirX = Math.cos(pn.yaw) >= 0 ? 1 : -1;
+      if (!d3) panArt(pp[0], pp[1], k, dirX, Math.max(0, Math.min(1, op)), ft);
+      for (const q of C.pg) {             
+        const u = clamp((t - q.t0) / 0.3, 0, 1), e = easeOut(u), w = toS([lerp(q.from[0], q.to[0], e), lerp(q.from[1], q.to[1], e)]);
+        poopArt(q.img, w[0], w[1], q.w * psAt(q.y) * z * (1 - 0.35 * e), q.gold, 1 - sm((u - 0.5) / 0.5));
+      }
+      if (!d3) { const b = broomPose(t), f = toS([b.x, b.y]); broomArt(f[0], f[1], k, -C.sideS * 0.45 + 0.05 * Math.sin(t * 3), Math.max(0, Math.min(1, op)) * (1 - ft)); }
     }
   }
   
@@ -2248,10 +2375,15 @@ const TCCare = (() => {
     if (BR.careHold && !S.grazeOK) BR.want.graze = 0;          
     
     if (S.phase === 'approach' && BR.mode === 'walk' && S.route && S.route.length && BR.tgt && Math.hypot(BR.x - BR.tgt[0], (BR.y - BR.tgt[1]) / 0.5) < 80) nextLeg(t);      
+    if (S.phase !== 'approach') S.apprT = null;
+    else if (S.apprT == null) S.apprT = t;
+    else if (t - S.apprT > 5 && !S.apprCut) { S.apprCut = true; S.route = []; if (BR.mode === 'walk') { BR.mode = 'idle'; BR.until = t + 30; } }      
+    else if (t - S.apprT > 8) { S.route = []; S.turnAfter = false; BR.mode = 'idle'; BR.until = t + 30; }          
+    if (S.phase !== 'approach') S.apprCut = false;
     if (S.phase === 'approach' && BR.mode === 'idle') {
       if (S.route && S.route.length) nextLeg(t);
       else if (S.turnAfter) {           
-        S.turnAfter = false; const want = S.turnTarget != null ? S.turnTarget : Math.cos(BR.dir) >= 0 ? 0.12 : Math.PI - 0.12; S.turnTarget = null;
+        S.turnAfter = false; const want = S.turnTarget != null ? S.turnTarget : (S.mode === 'pet' || S.mode === 'feed') && !front().big ? sideDir() : Math.cos(BR.dir) >= 0 ? 0.12 : Math.PI - 0.12; S.turnTarget = null;
         Object.assign(BR, { mode: 'turn', turnTo: want, until: t + 30 });
       } else arrived(t);
     }
@@ -2264,13 +2396,15 @@ const TCCare = (() => {
     if (S.ses && !S.ses.done && !S.ses.down && S.ses.upT != null && t - S.ses.upT > 2.2) { S.hand.hideT = t; ev(t, 'fold'); S.ses.done = true; S.holdUntil = t + 0.8; }      
     
     if (!S.busy && t > S.holdUntil && (S.phase === 'pet' && !S.ses || S.phase === 'callact' || S.phase === 'feeddone' || S.phase === 'cleandone')) { S.holdUntil = Infinity; endCare(t); }
+    if (S.phase === 'beg' && S.begT != null && t - S.begT > 6.5) { S.begT = null; S.phase = 'feeddone'; BR.reacts = (BR.reacts || []).filter(r => r.k !== 'beg'); BR.want.look = [0, 0]; S.holdUntil = t + 0.2; }      
     if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; BR.hurry = 1; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 2.6; }
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
     if (S.readyT != null && t >= S.readyT) { ev(S.readyT, 'ready'); S.readyT = null; S.readyPop = t; }
     if (S.drainT != null && t > S.drainT + RULE.max * 0.07 + 0.2) { S.heart = 0; S.heartShow = 0; S.drainT = null; }
     S.stockShow += clamp(S.stock - S.stockShow, -dt * 6, dt * 6);
-    const pp = props3(t); if (pp) BR.props = pp; else if (BR.props) BR.props = null;      
+    cleanStep(t);
+    const pp = props3(t) || tools3(t); if (pp) BR.props = pp; else if (BR.props) BR.props = null;      
   }
   function post(t) {
     const cs = S.cs || O.cs || 1; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, g.canvas.width, g.canvas.height); g.setTransform(cs, 0, 0, cs, 0, 0);      
@@ -2305,7 +2439,12 @@ const TCCare = (() => {
     S.ban = { kind, showT: null, hideT: null, shown: false };
   }
   function roulette(on) { S.rtReq = !!on; }      
-  function setHorse(horse, brain) { HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
+  function setHorse(horse, brain) {
+    if (S.clean && brain) {              
+      const gone = new Set(S.clean.tg.map(T => T.o)); brain.trash = (brain.trash || []).filter(o => !gone.has(o) && o.out == null); brain.poops = (brain.poops || []).filter(q => !gone.has(q) && !q.sw);
+      if (S.clean.tg.some(T => !T.poop)) brain.trashDone = true;          
+    }
+    HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
   
   function uiHit(x, y) {
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
@@ -2446,6 +2585,12 @@ const TCCare = (() => {
         g.strokeStyle = '#ff9cbc'; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.stroke(); g.restore();
         label(String(Math.ceil(S.coolUntil - t)), x, y + 2, 54, '#ffffff', 'rgba(60,35,15,0.9)', 8);
       }
+      if (k === 'clean' && S.phase === 'idle' && !S.demo) {          
+        if (!canClean()) {
+          g.save(); g.fillStyle = 'rgba(60,40,25,0.45)'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.restore();
+          if (S.trashIn > 0) label(`あと${Math.ceil(S.trashIn / 60)}分`, x, y + 2, 34, '#ffffff', 'rgba(60,35,15,0.9)', 7);
+        } else { const bs = 1 + 0.07 * Math.sin(t * 2.2); g.save(); g.translate(x + 48, y - 48); g.scale(bs, bs); g.fillStyle = '#e5484d'; g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.fill(); g.strokeStyle = '#fff8ec'; g.lineWidth = 4; g.stroke(); g.restore(); label('！', x + 48, y - 47, 28, '#ffffff'); }
+      }
       if (k === 'call' && t < S.callCoolUntil) {
         const rem = (S.callCoolUntil - t) / RULE.cool;
         g.save(); g.fillStyle = 'rgba(60,40,25,0.45)'; g.beginPath(); g.moveTo(x, y); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.closePath(); g.fill();
@@ -2569,6 +2714,7 @@ const TCCare = (() => {
       S.heart = S.heartShow = D.heart || 0; S.got = (D.got || []).map(q => q + 1.5); S.greeted = !!D.greeted; S.stock = S.stockShow = D.stock != null ? D.stock : 3;
       if (D.month) O.month = D.month;
       if (D.poop) { const [px, py, im, gold] = D.poop; BR.poops = [{ x: px, y: py, img: im, t0: -10, h0: 1.05, w: [0.3, 0.5, 0.42][im] * (HO.opt.stage || 1), gold: !!gold }]; }
+      if (D.trash) BR.trash = D.trash.map(([x, y], i) => ({ x, y, sd: i, items: [0, 1, 2].map(j => ({ k: (i + j) % 4, dx: 0.2 * Math.cos(i + j * 2.1), dy: 0.2 * Math.sin(i + j * 2.1), r: i + j, w: 0.36, d: 0 })) }));
       if (D.front) {                   
         const cw = o.canvas.width, ch = o.canvas.height, k = cw / W; TCHorse.draw(HO, BR, 0, { W: cw, H: ch, k, ox: 0, oy: 0 });
         S.zoom = zoomFor(); S.mode = 'pet'; S.phase = 'pet'; BR.careHold = true; S.holdUntil = Infinity; S.marks.R = 0.35; S.marks.A = 0;
@@ -2645,7 +2791,7 @@ const TCGuide = (() => {
       <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ごろん</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
-    ['掃', '#6aa86a', 'おそうじ', `<p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・ほうきで3回はくと きれいになるよ（うんちがない時は落ち葉）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
+    ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
     ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p>`],
     
     ['替', '#2f8f83', '馬のリセット（次の馬の抽選）', `<p>・お世話（ごはん・おそうじ）を<b>${RS.cares}回</b>すると、リセットのタイマーがスタート</p>
@@ -3361,6 +3507,9 @@ const TCApp = (() => {
   
   const RESET_CARES = 5, RESET_MIN = 5;               
   const VISIT_MIN = 30;                               
+  
+  
+  const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      
   const HIGH_N = 5, HIGH_X = 4;                       
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    
@@ -3383,11 +3532,13 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     const r = st.rs; st.rs = r && typeof r === 'object' ? { n: Math.max(0, Math.round(+r.n || 0)), at: Math.max(0, +r.at || 0), el: Math.max(0, +r.el || 0) } : { n: 0, at: 0, el: 0 };
+    st.trash = (Array.isArray(st.trash) ? st.trash : []).filter(q => q && isFinite(q.x) && isFinite(q.y)).slice(0, 8).map(q => ({ x: Math.round(q.x), y: Math.round(q.y), sd: (+q.sd || 0) >>> 0 }));
+    st.trashAt = Math.max(0, +st.trashAt || 0);
   }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
@@ -3543,8 +3694,9 @@ const TCApp = (() => {
     const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
     const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
-    const [texImg, nrmImg, ...poopImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp')]);
-    const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
+    const [texImg, nrmImg, p1, p2, p3, ...trashImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp'), img('tc_trash1.webp'), img('tc_trash2.webp'), img('tc_trash3.webp'), img('tc_trash4.webp')]);
+    const poopImgs = [p1, p2, p3];
+    const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), trashImgs, stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
     hcache[sp.key] = h; return h;
   }
   async function useHorse(first) {
@@ -3554,6 +3706,7 @@ const TCApp = (() => {
     if (BR) { nb.x = BR.x; nb.y = BR.y; nb.dir = BR.dir; } else { nb.x = 470 + Math.random() * 120; nb.y = 1080 + Math.random() * 90; nb.dir = Math.random() * Math.PI * 2; }
     if (sp.light) nb.light = sp.light;
     nb.poops = (st.poops || []).map(q => Object.assign({ t0: -10, h0: 1.05 }, q));
+    nb.trash = BR && BR.trash && BR.trash.length ? BR.trash : (st.trash || []).map(q => trashLive(q));      
     HO = h; BR = nb; horseKey = sp.key;
     if (TCCare.on) TCCare.setHorse(HO, BR);
     if (!first && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
@@ -3566,6 +3719,34 @@ const TCApp = (() => {
       return;
     }
     if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); if (!st.visit) useHorse(); }
+  }
+
+  
+  function trashItems(sd) {                            
+    let a = sd >>> 0; const r = () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; };
+    const n = 2 + Math.floor(r() * 3), items = [];
+    for (let i = 0; i < n; i++) { const k = Math.floor(r() * 4) % 4, an = r() * Math.PI * 2, rad = i === 0 ? 0.06 : 0.16 + 0.2 * r(); items.push({ k, dx: Math.cos(an) * rad, dy: Math.sin(an) * rad, r: r() * Math.PI * 2, w: TRASH_W[k] * (0.86 + 0.28 * r()), d: i * 0.08 }); }
+    return items;
+  }
+  const trashLive = (q, t0) => Object.assign({ x: q.x, y: q.y, sd: q.sd, items: trashItems(q.sd) }, t0 != null ? { t0 } : {});      
+  function trashSpots(rnd, hx, hy) {                   
+    const out = [];
+    for (let k = 0; k < 400 && out.length < TRASH_N; k++) {
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()), x = Math.round(526 + Math.cos(a) * r * 350), y = Math.round(1110 + Math.sin(a) * r * 265);
+      const far = (px, py, d) => Math.hypot(x - px, (y - py) * 2) >= d;
+      if (out.every(q => far(q.x, q.y, k < 300 ? 230 : 150)) && (hx == null || far(hx, hy, 170))) out.push({ x, y, sd: Math.floor(rnd() * 4294967296) >>> 0 });
+    }
+    return out;
+  }
+  function spawnTrash(t, quiet) {                       
+    st.trash = trashSpots(Math.random, BR && BR.x, BR && BR.y); touch(); save();
+    if (BR) BR.trash = st.trash.map((q, i) => trashLive(q, quiet ? null : t + i * 0.16));
+    if (!quiet) { SND.se('tc_se_paper.m4a', 0.7); msg('🍂 ゴミが 出たよ！\nおそうじ しよう', 2.8); }
+  }
+  function trashStep(gms, t) {                          
+    if (BR && BR.trashDone) { BR.trashDone = false; st.trash = []; st.trashAt = gms + TRASH_MIN * 60000; touch(); save(); }
+    if (BR && !st.trash.length && gms >= st.trashAt && !busy && !resetting && careIdle() && !panelOpen() && !(BR.trash && BR.trash.length)) spawnTrash(t, t < 4);
+    if (TCCare.on) TCCare.S.trashIn = st.trash.length ? 0 : Math.max(0, st.trashAt - gms) / 1000;
   }
 
   
@@ -3705,6 +3886,7 @@ const TCApp = (() => {
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
     if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
+    if (!resetting) trashStep(gms, t);
     if (BR && !st.visit) BR.tod = tod();
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       
     if (st.visit && visitLeft(gms) <= 0 && !busy && careIdle() && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      
@@ -3726,7 +3908,7 @@ const TCApp = (() => {
     if (S.stock !== st.stock) { st.stock = S.stock; touch(); }
     if (S.heart !== st.heart) { st.heart = S.heart; touch(); }
     if ((S.high || 0) !== (st.high || 0)) { st.high = S.high || 0; touch(); }
-    const ps = (BR.poops || []).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
+    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
     if (JSON.stringify(ps) !== JSON.stringify(st.poops)) { st.poops = ps; touch(); }
     if (dirty && ms - saveAt > 2000) { saveAt = ms; save(); }
   }
@@ -3759,7 +3941,7 @@ const TCApp = (() => {
   async function open(opt) {
     SND.unlock();
     try {
-      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; }
+      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; if (BR && careIdle()) BR.trash = st.trash.map(q => trashLive(q)); }
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
@@ -3777,7 +3959,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
