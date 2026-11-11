@@ -142,17 +142,29 @@ if r.returncode == 0:
         _sz = lambda fl: sum(os.path.getsize(os.path.join(RES, f)) for f in fl)
         _h = lambda pth: _hl.sha1(open(pth, 'rb').read()).hexdigest()
         p_films = _sz(FILMS.values()); p_bcp = _sz([f for f in res if f.startswith('bcp_')]); p_tcc = _sz([f for f in res if f.startswith('tc_c_')])
-        p_fgc = _sz([f for f in res if re.fullmatch(r'fg(\d+_cs?|_shelf_c\d+)\.webp', f)]); p_all = _sz(res)
+        p_fgc = _sz([f for f in res if re.fullmatch(r'fg\d+_cs?\.webp', f)]); p_shelf = _sz([f for f in res if re.fullmatch(r'fg_shelf_c\d+\.webp', f)]); p_all = _sz(res)
+        # 第4.151版（まさちゃん 11/11 09:07「ア、をお願い！」「棚の7個とも画質がかなり悪くなってるから、改善して！」）：
+        #   番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）
+        import importlib as _il; sys.path.insert(0, os.path.join(W, 'kisekae')) if os.path.join(W, 'kisekae') not in sys.path else None; _la = _il.import_module('lite_assets')
+        _iz = [(n, f, e) for n, f, e in _all if e['how'] == 'idxz']; _sh = [(n, f, e) for n, f, e in _all if e['how'] == 'shelf']
+        iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in range(1, 9)] + ['tc_horse_bk_kamisama.bin', 'tc_horse_bk_maboroshi.bin']) and all(
+            open(os.path.join(RES, f), 'rb').read(4) == b'TGIZ' and _la.unpack_idx(open(os.path.join(RES, f), 'rb').read()) == open(os.path.join(_ad.master(n), f), 'rb').read() for n, f, _e in _iz)
+        iz_save = sum(e['src'][0] - e['size'] for _n, _f, e in _iz)
+        def _ll(pth):
+            from PIL import Image as _I
+            import numpy as _np
+            a = _np.asarray(_I.open(pth).convert('RGB')); return open(pth, 'rb').read(40).find(b'VP8L') >= 0 and a.shape == (2048, 2048, 3) and bool(((a & 3) == 2).all())
+        sh_ok = len(_sh) == 7 and all(_ll(os.path.join(RES, f)) for _n, f, _e in _sh)
         same_sz = all(os.path.getsize(os.path.join(RES, f)) == e['size'] for _n, f, e in _all)
         keep_fl = [(n, f) for n, f, e in _all if re.fullmatch(r'tc_n_.+\.webp|fg\d+_(n|ns|m|ms)\.webp|bcp_.+\.webp', f)]
         keep_ok = len(keep_fl) == 7 + 32 + 108 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(17.5e6 < p_films < 19.5e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 7.1e6 < p_fgc < 8.3e6 and ((144e6 < p_all < 152e6) if _pb_on else (141e6 < p_all < 149e6)) and same_sz and keep_ok and src_ok
-              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 50 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
+        check(17.5e6 < p_films < 19.5e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 8.4e6 < p_shelf < 9.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((145e6 < p_all < 153e6) if _pb_on else (142e6 < p_all < 150e6)) and same_sz and keep_ok and src_ok
+              and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf') == 7 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアと 棚の 色 {p_fgc / 1e6:.1f}MB：前は 15.1MB・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.151版：劣化なし・6bit）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）

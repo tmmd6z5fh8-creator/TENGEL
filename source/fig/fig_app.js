@@ -131,7 +131,7 @@ const FigApp = (() => {
   }
   function layout() {
     const r = stg.getBoundingClientRect(); if (!r.width || !r.height) return false;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);      // 第4.151版：画面の 細かさ いっぱい（3倍まで。前は 2倍まで ＝ iPhone では 1.5倍に ひきのばして いた：まさちゃん 11/11 09:07「棚…画質がかなり悪くなってるから、改善して！」）
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     return true;
   }

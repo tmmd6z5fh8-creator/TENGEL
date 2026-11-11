@@ -6,20 +6,31 @@
 //       時間帯：朝 → 手を 出すと 元気に うなずく・夕方 → ゆったり よりかかる・夜 → あくびを して ねむる
 //       育ち：小さい ころ（1〜2段目）→ はしゃぐ（とばない）・大きく なると → 手の 方へ 顔を よせる
 //       たまに（1/20）：首を かしげる
-//   ・なかよしハート（11/09 08:37 まさちゃん）：撫でた あと 7秒は 撫でられない・ハートは 1分に 5こまで（6回目からは ハートなし ※仮）
+//   ・なかよしハート（11/09 08:37 まさちゃん）：ハートは 1分に 5こまで（6回目からは ハートなし ※仮）
+//       第4.151版（11/11 09:07 まさちゃん「撫でるは、連続で5回までにして！7秒間は5回撫でたら撫でられないように！」「呼ぶ、も連続で5回まで！5回超えたら7秒間はできない」）：
+//         撫でる・呼ぶは つづけて 5回まで（RULE.streak）→ 5回目が おわったら 7秒（RULE.cool）できない（ボタンに 残りの 秒）。7秒 あけたら 数え直し。前は 撫でる たびに 7秒
+//         つづけて 撫でた ときは 前の 反応を すっと 止めて 新しい 反応に かえる（重ねない）・前の 回の あとの 動き（はしゃぐ・あくび・ねむる）は とり消す（petGen）
+//         「ボタンを押してから行われるまでが遅すぎる」→ 撫でる・ごはんは 歩いて 来ない：その場で 横向きに なる（急ぎ足 HURRY 倍）・カメラは 押した ときから 寄る・仕上げの ズームは 待たない
+//           （comeNear：押して から 撫でられる まで 約0.8秒。前は いちばん 手前まで 歩いて 来て 7〜15秒）。奥に いる ぶん 大きく 寄る（zCap）。
+//           呼ぶ（近づく・甘える）は いちばん 手前まで 歩かない（approach：いまの 所から STEP_Y だけ 手前）・ごはんと おそうじの 出だしの 待ちも 短く
+//         09:45「トレーニングセンターの掃除した後の花消して！掃除した後のエフェクトは特にいらない！」→ おそうじの あとの お花と 地面の キラッ は 出さない（「きれい！」の 札 だけ）。
+//           おそうじの あと 馬が くんくん しに 行く 間も、ボタンを 押せば すぐ 次の お世話が 始まる（cancelAfter）
+//         「連続で撫ですぎると、馬がバグる。撫でたあとのごろんをすると、馬が宙に少し浮き、地面と空中をいったりきたりする」→
+//           もと：10こ目の ハートの 反応（のび 4.6秒・小さい 馬の はしゃぐ）が ごろん（横に なる）と 重なって、横に なった まま 体が はずんで いた。
+//           抽選は 反応が おわって から・はしゃぐ／あくび などは 抽選の ときは 出さない・横に なる 間は お世話の 反応を 止める（tc_horse.js）
 //       10こで 1/66 の 抽選 → 当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ごろん（どちらも 少し しゃがんで ためてから）
 //       ※ぴょんは 当たりの 合図 なので、ほかの 場面では とばない（小さい 子の はしゃぎも とばない）
 //   ・お世話の ストック：10分で +1・最高 20（解放の +5 も 20 まで ※仮）
 //   ・ちかちか しない（光らせない・ふくらむ ものは ゆっくり）
 //   TCCare.init(o)・TCCare.pre(t, dt)（馬を 動かす 前）・TCCare.post(t)（馬を 描いた あと）・TCCare.input(kind, x, y, t)（フィールドの 絵の px）
 //   見本：preview3d.html?care=pet_a など（決まった 指の 動きを 時間で 流す・音の きっかけは window.__events()）
-//   ・撫でる の 流れ（11/09 09:23 まさちゃん）：ボタンを 押す → 馬が 画面の いちばん 手前まで 歩いて 来て 横向きで 止まる
+//   ・撫でる の 流れ（11/09 09:23 まさちゃん → 第4.151版で 早く）：ボタンを 押す → 馬が その場で 横向きに なる（前は 画面の いちばん 手前まで 歩いて 来た）
 //       → 画面が ふわっと ズーム（ゲージ・ボタンは ズーム しない）→ 撫でる → 反応が 終わったら ゆっくり もとに もどる
 //   ・呼ぶ（11/09 09:27 まさちゃん）：近づいて くる／振り向く／甘える を ランダム（1/3 ずつ：09:35 まさちゃん「それでいいよ！」）
 //   ・ごはん（お世話トークン 1つ）：エサ・リンゴ・ニンジンから えらぶ（今日の 好物は 日ごとに かわる）
-//       エサ → 手前に 来て バケツから もぐもぐ（3回で からっぽ）→ ぺろっ／リンゴ・ニンジン → 手から 3口（シャクッ）
+//       エサ → その場で バケツから もぐもぐ（3回で からっぽ）→ ぺろっ／リンゴ・ニンジン → 手から 3口（シャクッ）
 //       好物 → 大よろこび・金のニンジン（ニンジンの 1/30）→ なかよし +3・ときどき おかわりの目（なでると まんぞく）
-//   ・おそうじ（お世話トークン 1つ）：うんちを ほうきで 3回 はいて ちりとりへ → 地面が キラッ・花が 咲く（きれい）→ 馬が くんくん
+//   ・おそうじ（お世話トークン 1つ）：うんちを ほうきで 3回 はいて ちりとりへ →「きれい！」の 札（第4.151版：地面の キラッ と 花は なし）→ 馬が くんくん
 //       うんちが ない 時は 落ち葉など（季節：春 花びら・夏 わら・秋 もみじ・冬 雪）・金のうんち（うんちの 1/20）→「運がついた！」高確ゾーン（お世話 5回）
 //       ときどき 馬が ほうきを かじろうと する
 //   ・お世話（ごはん・おそうじ）の 演出が おわったら、当たって いれば「ピロン」と ポイント
@@ -33,7 +44,10 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      // 絵の 場所（アプリは 名前だけ）
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 20, stockEvery: 600 };
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 20, stockEvery: 600 };
+  const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
+  //   第4.151版：急ぎ足（歩く・向きを かえる 速さの 倍）・ズームの 秒（前は 0.95）・呼ぶで 来る 所（いちばん 手前まで 歩かない：いまの 所から STEP_Y だけ 手前・NEAR_Y より 奥なら NEAR_Y まで）
+  //   ズームの 上限：いちばん 手前まで 来た とき（2.2倍）と 同じ 大きさに 見える 倍率（奥に 立って いる ぶん 大きく 寄る・2.7倍まで）
 
   let g = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
   const FRONT = { x: 526, y: 1372 };          // 画面の いちばん 手前（撫でる・呼ぶで 来る 所）
@@ -43,6 +57,7 @@ const TCCare = (() => {
   const BTN = { pet: [170, 1494], feed: [407, 1494], clean: [644, 1494], call: [881, 1494] }, BTN_R = 70, HELP = [678, 97];      // HELP：説明書の「？」
   const S = { on: false, heart: 0, heartShow: 0, stock: 3, stockShow: 3, got: [], coolUntil: -1e9, coolFrom: -1e9, ses: null, hand: null, fx: [], ev: [], sched: [],
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
+    petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
     chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null };
   const POOP = [];          // うんちの 絵（おそうじで ほうきで 動かす とき）
@@ -173,9 +188,10 @@ const TCCare = (() => {
   const toS = p => [(p[0] - S.zoom.cx) * S.zoom.z + W / 2, (p[1] - S.zoom.cy) * S.zoom.z + H / 2];       // フィールドの px → 画面（ズーム後）
   const toW = q => [(q[0] - W / 2) / S.zoom.z + S.zoom.cx, (q[1] - H / 2) / S.zoom.z + S.zoom.cy];
   function setZoom(t, to, dur) { S.zA = Object.assign({}, S.zoom); S.zB = to; S.zT0 = t; S.zDur = dur; }
+  const zCap = y => clamp(ZOOM_MIN * TCHorse.scaleAt(HO, FRONT.y) / TCHorse.scaleAt(HO, y), ZOOM_MIN, ZOOM_MAX);      // その 所での ズームの 上限
   function zoomFor() {                 // 馬が 画面の 8割の 幅に なる ズーム（まん中は 体の まん中）
     const e = TCHorse.extent(HO); if (!e) return { z: 1, cx: W / 2, cy: H / 2 };
-    const z = clamp(Math.min(0.8 * W / (e[2] - e[0]), 0.56 * H / (e[3] - e[1])), 1, 2.2);
+    const z = clamp(Math.min(0.8 * W / (e[2] - e[0]), 0.56 * H / (e[3] - e[1])), 1, zCap(BR.y));
     const hw = W / (2 * z), hh = H / (2 * z);
     return { z, cx: clamp((e[0] + e[2]) / 2, hw, W - hw), cy: clamp((e[1] + e[3]) / 2 + 0.01 * H / z, hh, H - hh) };
   }
@@ -210,37 +226,59 @@ const TCCare = (() => {
   const tagW = (p, txt, t, o) => { if (p) fx(Object.assign({ k: 'tag', t0: t, w: p.slice(), txt, size: 36, dur: 1.5, rot: (hash(t) - 0.5) * 0.16 }, o || {})); };      // 体の 所に 札（ズームに ついて 動く）
 
   // ---------- 手前へ 来る（撫でる・呼ぶ）----------
-  function approach(t) {               // まっすぐ 手前へ 歩いて 来て、着いたら その場で 横向きに なる（顔と 体が よく 見える）
-    const fr = front(), ex = fr.big ? fr.x : lerp(fr.x, clamp(BR.x, fr.x - 170, fr.x + 170), 0.45);
-    S.route = [[ex, fr.y]]; S.turnAfter = true; S.phase = 'approach'; nextLeg(t);
+  function zoomGuess(x, y) {            // 横向きで (x, y) に 立った ときの ズーム（着く 前から カメラを 寄せる：体の 幅 2.75・高さ 1.8 × 体の 高さ）
+    const sc = TCHorse.scaleAt(HO, y), z = clamp(Math.min(0.8 * W / (2.75 * sc), 0.56 * H / (1.8 * sc)), 1, zCap(y)), hw = W / (2 * z), hh = H / (2 * z);
+    return { z, cx: clamp(x, hw, W - hw), cy: clamp(y - 0.83 * sc + 0.01 * H / z, hh, H - hh) };
   }
-  function nextLeg(t) { const p = S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true }); BR.want.graze = 0; BR.want.look = [0, 0]; }
+  function approach(t) {               // 呼ぶ（近づく・甘える）：近くへ 急ぎ足で 来て、着いたら その場で 横向きに なる（顔と 体が よく 見える）
+    //   第4.151版（まさちゃん「ボタンを押してから行われるまでが遅すぎる」）：いちばん 手前まで 歩かない（いまの 所から STEP_Y だけ 手前。NEAR_Y より 奥なら NEAR_Y まで）。大きな 馬（幻の馬・神様馬の 歩く 形）は 前と 同じ 所へ
+    const fr = front(), ex = fr.big ? fr.x : lerp(fr.x, clamp(BR.x, fr.x - 170, fr.x + 170), 0.45), ey = fr.big ? fr.y : clamp(BR.y + STEP_Y, NEAR_Y, fr.y);
+    S.route = [[ex, ey]]; S.turnAfter = true; S.phase = 'approach'; nextLeg(t);
+  }
+  function comeNear(t) {                // 撫でる・ごはん：歩かないで その場で 横向きに なる（カメラは 押した ときから 寄る）＝どこに いても すぐ 始まる（第4.151版）
+    //   少し 歩く のは、横向きに なると 体が 画面から はみ出す 所に いる とき・大きな 馬（幻の馬・神様馬の 歩く 形）が まん中に いない とき だけ
+    const fr = front(), side = Math.abs(Math.sin(BR.dir)) < 0.4, half = 1.8 * TCHorse.scaleAt(HO, BR.y) + 12;
+    let tx = BR.x, ty = BR.y;
+    if (fr.big) { if (Math.abs(BR.x - fr.x) > 50) tx = fr.x; if (BR.y > fr.y + 36) ty = fr.y; }
+    else if (half < W / 2) tx = clamp(BR.x, half, W - half);
+    const here = Math.abs(tx - BR.x) < 20 && ty === BR.y;
+    if (here && side) { if (BR.mode === 'walk' || BR.mode === 'run') { BR.mode = 'idle'; BR.until = t + 30; } arrived(t); return; }
+    S.turnAfter = true; S.phase = 'approach'; BR.want.graze = 0; BR.want.look = [0, 0];
+    if (here) { S.route = []; BR.hurry = HURRY; BR.mode = 'idle'; BR.until = t + 30; }      // その場で 横向きに（つぎの コマで 回りはじめる）
+    else { S.route = [[tx, ty]]; nextLeg(t); }
+    setZoom(t, zoomGuess(tx, ty), 0.8); ev(t, 'zoomin');
+  }
+  function nextLeg(t) { const p = S.route.shift(); Object.assign(BR, { tgt: p, mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY }); BR.want.graze = 0; BR.want.look = [0, 0]; }
   function arrived(t) {
-    mark('A', t);
+    mark('A', t); BR.hurry = 1;
     if (S.mode === 'pet' || S.mode === 'feed') {
       const zf = zoomFor();
       if (S.mode === 'feed') { const n = P('nose'); if (n) { const hw = W / (2 * zf.z); zf.cx = clamp(lerp(zf.cx, n[0], 0.3), hw, W - hw); } }      // ごはんは 顔（口もと）が よく 見える ように 少し 顔の 方へ
-      S.phase = 'zoomin'; setZoom(t, zf, 0.95); ev(t, 'zoomin');
+      if (S.zoom.z > 1.05 || S.zB) {      // 向きを かえる 間に もう 寄せて ある：仕上げ（0.25秒）は 待たないで すぐ 始める
+        setZoom(t, zf, 0.25);
+        if (S.mode === 'feed') feedStart(t); else { S.phase = 'pet'; S.petIdle = t; mark('R', t); ev(t, 'ready2'); }
+      } else { S.phase = 'zoomin'; setZoom(t, zf, ZOOM_IN); ev(t, 'zoomin'); }
     }
     else callArrive(t);
   }
   function endCare(t) {                 // 撫でる・呼ぶ おしまい：ズームを もどして 馬を 自由に
-    if (S.zoom.z > 1.001 || S.zB) { S.phase = 'zoomout'; setZoom(t, { z: 1, cx: W / 2, cy: H / 2 }, 0.95); ev(t, 'zoomout'); }
+    if (S.zoom.z > 1.001 || S.zB) { S.phase = 'zoomout'; setZoom(t, { z: 1, cx: W / 2, cy: H / 2 }, ZOOM_OUT); ev(t, 'zoomout'); }
     else release(t);
   }
   function release(t) {
-    const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; S.grazeOK = false;
+    const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; BR.hurry = 1; S.grazeOK = false;
+    if (m === 'call') { S.callLast = t; if (S.callN >= RULE.streak) { S.callN = 0; S.callCoolUntil = t + RULE.cool; S.callCoolFrom = t; ev(t, 'callcool'); } }      // 呼ぶ：5回目が おわったら 7秒 できない
     if ((m === 'feed' || m === 'clean') && S.popVal) {
       const pz = typeof S.popVal === 'object' ? S.popVal : { k: 'pt', v: S.popVal }; S.popVal = null;
       if (pz.k === 'pt') at(t + 0.15, tt => { fx({ k: 'pointpop', t0: tt, v: pz.v, dur: 2.0 }); ev(tt, 'piron'); if (O.onPrize) O.onPrize(pz); });
       else if (O.onPrize) at(t + 0.4, tt => O.onPrize(pz));          // ルーレット・チケット：アプリが 演出を 出す
     }      // 当たって いれば ピロン（お世話の 演出が おわってから）
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          // きれいに なった 所へ 行って くんくん
-      const c = S.clean; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.flowersAt = { x: c.x, y: c.y, t0: c.flowerT };
+      const c = S.clean; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
-      Object.assign(BR, { tgt: [c.x - Math.cos(d) * 1.05 * sc, c.y - Math.sin(d) * 0.5 * 1.05 * sc], mode: 'walk', until: t + 30, forcedWalk: true });
+      Object.assign(BR, { tgt: [c.x - Math.cos(d) * 1.05 * sc, c.y - Math.sin(d) * 0.5 * 1.05 * sc], mode: 'walk', until: t + 30, forcedWalk: true, hurry: HURRY });
       S.afterSniff = true;
-    } else if (m === 'clean') { if (S.clean) S.flowersAt = { x: S.clean.x, y: S.clean.y, t0: S.clean.flowerT }; S.clean = null; mark('Z2', t); }
+    } else if (m === 'clean') { S.clean = null; mark('Z2', t); }
     if (m === 'feed') S.feed = null;
   }
 
@@ -258,6 +296,7 @@ const TCCare = (() => {
     return null;
   }
   function pressFeed(t) {
+    cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
     S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
@@ -265,13 +304,13 @@ const TCCare = (() => {
   function pick(t, kind) {
     if (!S.chooser || S.chooser.pick) return;
     S.chooser.pick = kind; S.chooser.pickT = t; ev(t, 'pick');
-    at(t + 0.5, tt => {
+    at(t + 0.25, tt => {
       S.chooser = null;
       if (!useToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
       const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : rnd() < 1 / 30);
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt }; S.popVal = careLottery();
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          // 幻の馬・神様馬：正面の まま
-      const fr = front(); if (Math.abs(BR.y - fr.y) < 36 && Math.abs(BR.x - fr.x) < (fr.big ? 50 : 280) && Math.abs(Math.sin(BR.dir)) < 0.4) arrived(tt); else approach(tt);
+      comeNear(tt);
     });
   }
   function feedStart(t) {
@@ -286,28 +325,28 @@ const TCCare = (() => {
       const eq = TCHorse.wherePose(HO, mats, 'eye'), bx = nq ? (pq ? nq[0] * 0.86 + pq[0] * 0.14 : nq[0]) : gq[0];
       const by = gq[1] + 4, rimW = nq && eq ? nq[1] - 0.3 * (nq[1] - eq[1]) : by - 0.78 * s;
       const lh = clamp((by - rimW) / s - 0.48, 0.04, 0.9);          // 台の 足（体の 高さ 1 に 対して）：ふち ＝ 足 ＋ 台 0.06 ＋ バケツ 0.42
-      F.bucket = { x: bx, y: by, lh, level: 3, t0: t, hideT: null }; ev(t, 'unfold'); at(t + 0.35, tt => ev(tt, 'bucket'));
-      const ds = [t + 1.7, t + 2.7, t + 3.7];          // エサが 減る 時刻（もぐもぐ）
+      F.bucket = { x: bx, y: by, lh, level: 3, t0: t, hideT: null }; ev(t, 'unfold'); at(t + 0.25, tt => ev(tt, 'bucket'));
+      const ds = [t + 1.2, t + 2.2, t + 3.2];          // エサが 減る 時刻（もぐもぐ）
       if (PROPS && PROPS.bucket) {                      // まさちゃんの 3D の バケツ・エサ：エサが 減るたびに 顔が バケツの 中へ（11/09 14:02・14:13）
         const tmp1 = Object.assign({}, tmp, { reacts: [{ k: 'deep', t0: t - 2, dur: 4.4, ds: [t - 10] }] }), mats1 = TCHorse.pose(HO, tmp1, t);
         F.b3 = place3(TCHorse.anchorPose(HO, mats, 'nose'), TCHorse.anchorPose(HO, mats, 'eye'), TCHorse.anchorPose(HO, mats, 'poll'), TCHorse.anchorPose(HO, mats1, 'nose'), ds);
       }
-      at(t + 0.8, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
-      for (let k = 0; k < 3; k++) at(t + 1.7 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
-      at(t + 4.9, tt => { BR.want.graze = 0; S.grazeOK = false; });
-      at(t + 5.4, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
-      at(t + 6.6, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
-      at(t + 7.2, tt => feedAfter(tt));
+      at(t + 0.3, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
+      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
+      at(t + 4.4, tt => { BR.want.graze = 0; S.grazeOK = false; });
+      at(t + 4.9, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
+      at(t + 6.1, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
+      at(t + 6.7, tt => feedAfter(tt));
     } else {                            // リンゴ・ニンジン：手から 3口
       F.handT = t; F.itemW = itemPos(); ev(t, 'unfold');
       if (F.gold) at(t + 0.3, tt => { fx({ k: 'glint', t0: tt, dur: 3.2 }); ev(tt, 'gold'); tagW(P('nose'), '金のニンジン！', tt + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' }); });
-      for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.5 : 1.0) + k * 1.0, tt => {
+      for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.2 : 0.7) + k * 1.0, tt => {
         F.bites = k + 1; react('eat', 0.95, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'bite', { n: k, kind: F.kind });
         const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : F.gold ? ['#ffd65c', '#fff1b0', '#e9b13a'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
         if (k === 0) tagW(P('nose'), 'シャクッ', tt + 0.05, { off: [-20, -100], size: 34, dur: 1.0 });
       });
-      at(t + (F.gold ? 4.2 : 3.7), tt => { F.handHide = tt; ev(tt, 'fold'); });
-      at(t + (F.gold ? 4.6 : 4.1), tt => feedAfter(tt));
+      at(t + (F.gold ? 3.9 : 3.4), tt => { F.handHide = tt; ev(tt, 'fold'); });
+      at(t + (F.gold ? 4.3 : 3.8), tt => feedAfter(tt));
     }
   }
   function feedAfter(t) {                // 食べた あと：好物・金のニンジン・おかわりの目
@@ -342,6 +381,7 @@ const TCCare = (() => {
   // ---------- おそうじ ----------
   function season() { const m = (O.month || new Date().getMonth() + 1); return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter'; }
   function pressClean(t) {
+    cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
     if (!useToken(t, 'clean')) return;
@@ -355,7 +395,7 @@ const TCCare = (() => {
     S.clean = { t0: t, x: tg.x, y: tg.y, tg, swipes: 0, prog: 0, sniff: tg.type === 'poop' };
     S.clean.pan = { x: tg.x - 120, y: tg.y + 6 };
     const z = BR.stand ? 1 : 1.7, hw = W / (2 * z), hh = H / (2 * z);
-    if (z > 1) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp(tg.x - 20, hw, W - hw), cy: clamp(tg.y - 90, hh, H - hh) }, 0.9); ev(t, 'zoomin'); }
+    if (z > 1) { S.phase = 'zoomin'; setZoom(t, { z, cx: clamp(tg.x - 20, hw, W - hw), cy: clamp(tg.y - 90, hh, H - hh) }, ZOOM_IN); ev(t, 'zoomin'); }
     else cleanStart(t);
     if (!BR.stand) { const side = sideToward(tg.x, tg.y); BR.want.look = [side * 0.6, -0.1]; }
   }
@@ -373,35 +413,45 @@ const TCCare = (() => {
     if (C.swipes >= 3) {
       at(t + 0.35, tt => { C.inPan = true; ev(tt, 'inpan'); });
       at(t + 0.8, tt => { C.foldT = tt; ev(tt, 'fold'); });
-      at(t + 1.3, tt => { fx({ k: 'kira', t0: tt, w: [C.x, C.y] }); ev(tt, 'kira'); C.flowerT = tt + 0.2; tagW([C.x, C.y], 'きれい！', tt + 0.3, { off: [0, -130], size: 38, dur: 1.8 }); });
+      at(t + 1.1, tt => { ev(tt, 'kira'); tagW([C.x, C.y], 'きれい！', tt, { off: [0, -130], size: 38, dur: 1.6 }); });      // 第4.151版：地面の キラッ と お花は 出さない（札 だけ）
       if (C.tg.gold) at(t + 2.2, tt => { S.high = 5; S.highBump = tt; fx({ k: 'luck', t0: tt, dur: 2.6 }); ev(tt, 'luck'); });
-      S.holdUntil = t + (C.tg.gold ? 5.0 : 3.4); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
+      S.holdUntil = t + (C.tg.gold ? 5.0 : 2.7); S.phase = 'cleanwait'; at(S.holdUntil - 0.01, tt => { if (S.phase === 'cleanwait') S.phase = 'cleandone'; });
     }
   }
 
   // ---------- ボタン ----------
+  function cancelAfter(t) {              // おそうじの あとの くんくん（歩いて 行く・かぐ）の 間に ボタンを 押した：やめて すぐ 次の お世話へ（第4.151版）
+    if (S.phase !== 'after') return;
+    S.afterSniff = false; S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.forcedWalk = false; BR.hurry = 1; S.holdUntil = -1; mark('Z2', t);
+    for (const r of (BR.reacts || [])) if ((r.k === 'sniff' || r.k === 'swish') && r.cut == null) r.cut = Math.max(t, r.t0);
+    if (BR.mode === 'walk') { BR.mode = 'idle'; BR.until = t + 2; }
+  }
   function pressPet(t) {
+    cancelAfter(t);
     S.press.pet = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
     if (t < S.coolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
     S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
     if (BR.mode === 'sleep' || BR.sl > 0.001) { S.mode = null; BR.careHold = false; return; }      // 寝て いる 間は 来ない（かり）
     if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      // 幻の馬・神様馬：正面の まま その場で 撫でる（11/09 09:40 まさちゃん）
-    const fr = front(); if (Math.abs(BR.y - fr.y) < 36 && Math.abs(BR.x - fr.x) < (fr.big ? 50 : 280) && Math.abs(Math.sin(BR.dir)) < 0.4) arrived(t);
-    else approach(t);
+    comeNear(t);
   }
   function pressCall(t, kind) {
+    cancelAfter(t);
     S.press.call = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
+    if (t < S.callCoolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.call[0] - 40, y: BTN.call[1] - 150, txt: `あと ${Math.ceil(S.callCoolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
+    if (t - S.callLast > RULE.cool) S.callN = 0;          // 7秒 あけたら 数え直し
+    S.callN++;
     kind = kind || ['come', 'turn', 'amae'][Math.floor(rnd() * 3) % 3];
     S.mode = 'call'; S.callKind = kind; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'call', { kind });
     fx({ k: 'notes', t0: t });
-    if (BR.stand) { BR.reacts = []; callArrive(t + 0.2); return; }       // 幻の馬・神様馬：正面の まま（歩かない）
+    if (BR.stand) { BR.reacts = []; callArrive(t + 0.1); return; }       // 幻の馬・神様馬：正面の まま（歩かない）
     if (kind === 'turn') {             // 振り向く：その場で 体を こちらへ 向けて（ななめ 前）から 顔を こちらへ
       if (BR.mode === 'walk') BR.mode = 'idle';
       const want = Math.cos(BR.dir) >= 0 ? 0.6 : Math.PI - 0.6;
-      if (Math.abs(angDiff(BR.dir, want)) > 0.25) { S.route = []; S.turnAfter = true; S.turnTarget = want; S.phase = 'approach'; }
-      else callArrive(t + 0.25);
+      if (Math.abs(angDiff(BR.dir, want)) > 0.25) { S.route = []; S.turnAfter = true; S.turnTarget = want; S.phase = 'approach'; BR.hurry = HURRY; }
+      else callArrive(t + 0.1);
     } else approach(t);
   }
   function callArrive(t) {
@@ -416,14 +466,14 @@ const TCCare = (() => {
       return;
     }
     if (S.callKind === 'come') {       // 近づいて くる：着いたら ぶるるっと うなずく
-      at(t + 0.15, tt => { react('nod', 1.6, tt); react('swish', 2.0, tt + 0.3); ev(tt, 'nod'); tagW(P('poll'), 'ぶるるっ', tt + 0.2, { off: [30, -90] }); BR.want.look = [side * 0.5, 0.15]; });
+      at(t + 0.05, tt => { react('nod', 1.6, tt); react('swish', 2.0, tt + 0.3); ev(tt, 'nod'); tagW(P('poll'), 'ぶるるっ', tt + 0.2, { off: [30, -90] }); BR.want.look = [side * 0.5, 0.15]; });
       S.holdUntil = t + 2.6;
     } else if (S.callKind === 'turn') {  // 振り向く：首を こちらへ ぐっと 向けて 見つめる
       at(t, tt => { BR.want.look = [side * 1.0, 0.32]; ev(tt, 'turn'); });
       at(t + 0.7, tt => { tagW(P('poll'), '！', tt, { off: [20, -96], size: 44 }); react('swish', 1.8, tt); });
       S.holdUntil = t + 3.4;
     } else {                           // 甘える：近くで 頭を すりすり・ハートが ぽわっ
-      at(t + 0.1, tt => { react('nuzzle', 3.4, tt, { side }); react('happy', 3.4, tt); BR.want.look = [side * 0.55, 0.05]; ev(tt, 'amae'); tagW(P('poll'), 'すりすり', tt + 0.4, { off: [30, -96], dur: 2.0 }); });
+      at(t + 0.05, tt => { react('nuzzle', 3.4, tt, { side }); react('happy', 3.4, tt); BR.want.look = [side * 0.55, 0.05]; ev(tt, 'amae'); tagW(P('poll'), 'すりすり', tt + 0.4, { off: [30, -96], dur: 2.0 }); });
       for (let k = 0; k < 4; k++) at(t + 0.5 + k * 0.62, tt => { const p = P('poll'); if (p) fx({ k: 'mini', t0: tt, w: [p[0] + (hash(tt * 3) - 0.5) * 60, p[1] - 20], r: 22, dx: (hash(tt * 7) - 0.5) * 60 }); ev(tt, 'heartpop'); });
       S.holdUntil = t + 4.0;
     }
@@ -441,6 +491,9 @@ const TCCare = (() => {
     fx({ k: 'mini', t0: t, w: [x + (hash(t * 7) - 0.5) * 24, y - 14], r: 19, dx: (hash(t * 3) - 0.5) * 40 });
     if (S.ses.n >= RULE.strokes) complete(t, x, y);
   }
+  function cutReacts(t) {               // つづけて 撫でた：前の 反応を すっと 止める（tc_horse.js の pose が 0.25秒で 弱める）
+    for (const r of (BR.reacts || [])) if (r.cut == null && r.k !== 'look' && r.k !== 'deep' && t < r.t0 + r.dur) r.cut = Math.max(t, r.t0);
+  }
   function complete(t, x, y) {
     const z = S.ses.zone, side = sideToward(x, y), slow = O.tod === 'evening' ? 1.35 : 1;
     const ZR = { head: ['nuzzle', 2.6, 'すりすり'], neck: ['swish', 2.4, 'ふりふり'], back: ['stretch', 4.6, 'ぐーっ'], nose: ['sneeze', 1.5, 'ぷしゅっ'] };
@@ -448,38 +501,46 @@ const TCCare = (() => {
     const rare = S.demo && S.demo.rare != null ? S.demo.rare : rnd() < 1 / 20;
     if (rare) { rk = 'tilt'; rd = 1.9; rt = '？'; }
     rd *= slow;
-    at(t + 0.25, tt => {
+    const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      // 次に 撫でたら、この 回の あとの 動きは とり消す
+    cutReacts(t);
+    S.got = S.got.filter(q => t - q < 60);
+    const getHeart = S.got.length < RULE.perMin, willLot = getHeart && S.heart + 1 >= RULE.max;      // この 回で ハートが 10こ → 抽選（ぴょん／ごろん）
+    at(t + 0.25, live(tt => {
       react(rk, rd, tt, { side }); ev(tt, rk);
       const hp = rk === 'sneeze' ? P('nose') : rk === 'swish' ? P('rump') : rk === 'stretch' ? P('withers') : P('poll');
       tagW(hp || [x, y], rt, tt, { off: rk === 'swish' ? [-40, -60] : [26, -96], dur: 1.5 * slow });
       if (rk === 'sneeze' && hp) fx({ k: 'bits', t0: tt + 0.62, w: hp.slice() });
-    });
+    }));
     let end = t + 0.25 + rd;
-    if (O.tod === 'evening') { at(end - 0.6, tt => { react('calm', 3.6, tt, { side }); ev(tt, 'calm'); tagW(P('poll'), 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 34, dur: 2.0, rot: 0.06 }); }); end += 3.0; }
-    if (O.stageNo <= 2) { at(end - 0.3, tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); }); end += 1.9; }
-    if (O.tod === 'night') {
-      at(end - 0.4, tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); });
-      at(end + 1.7, tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); });
-      end += 3.6;
+    if (!willLot) {                      // 抽選の ときは あとの 動き（ゆったり・はしゃぐ・あくび → ねむる）を 出さない：ごろん／ぴょんと 重ならない
+      if (O.tod === 'evening') { at(end - 0.6, live(tt => { react('calm', 3.6, tt, { side }); ev(tt, 'calm'); tagW(P('poll'), 'ふぅ〜', tt + 0.4, { off: [36, -90], size: 34, dur: 2.0, rot: 0.06 }); })); end += 3.0; }
+      if (O.stageNo <= 2) { at(end - 0.3, live(tt => { react('frisk', 2.2, tt, { side }); ev(tt, 'frisk'); tagW(P('poll'), 'るんっ', tt + 0.2, { off: [30, -96], dur: 1.4, rot: -0.08 }); })); end += 1.9; }
+      if (O.tod === 'night') {
+        at(end - 0.4, live(tt => { react('yawn', 2.0, tt); ev(tt, 'yawn'); tagW(P('poll'), 'ふわぁ…', tt + 0.3, { off: [36, -96], size: 34, dur: 1.8, rot: 0.05 }); }));
+        at(end + 1.7, live(tt => { Object.assign(BR, { mode: 'sleep', until: tt + 600, sleepT: tt, sl: 0, rise: 0, doze: 0, lieDoneT: 0, lieDur: null, flop: null }); ev(tt, 'lie'); }));
+        end += 3.6;
+      }
     }
     // なかよしハート（1分に 5こまで）
-    S.got = S.got.filter(q => t - q < 60);
-    if (S.got.length >= RULE.perMin) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
+    if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
     else {
       S.got.push(t); const i = Math.min(S.heart, RULE.max - 1), q = toS([x, y - 24]);
       fx({ k: 'fly', t0: t + 0.15, x: q[0], y: q[1], i, dur: 0.8 }); ev(t + 0.15, 'heart');
       S.heart = Math.min(RULE.max, S.heart + 1);
       at(t + 0.95, tt => { S.heartShow = Math.max(S.heartShow, i + 1); ev(tt, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: tt, x: SLOT(i)[0], y: SLOT(i)[1] }); });
-      if (S.heart >= RULE.max) { S.busy = true; at(t + 1.45, lottery); }
+      if (S.heart >= RULE.max) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      // 抽選は 反応が おわって から（前は 1.45秒後＝のび などの 途中で ためる・横に なる が 重なった）
     }
-    S.coolUntil = t + RULE.cool; S.coolFrom = t; S.readyT = S.coolUntil;
+    // つづけて 5回まで → 7秒 できない（7秒 あけたら 数え直し）
+    if (t - S.petLast > RULE.cool) S.petN = 0;
+    S.petN++; S.petLast = t;
+    if (S.petN >= RULE.streak) { S.petN = 0; S.coolUntil = t + RULE.cool; S.coolFrom = t; S.readyT = S.coolUntil; }
     S.hand.hideT = t + 0.55; at(t + 0.55, tt => ev(tt, 'fold'));
     S.holdUntil = end + 0.5; S.ses.done = true;
   }
   // なかよしハート 10こ：1/66 の 抽選（当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ごろん）
   function lottery(t) {
     const win = S.demo && S.demo.win != null ? S.demo.win : rnd() < RULE.win;
-    S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity;
+    S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
     at(t + 0.9, tt => { react('gather', 1.0, tt); ev(tt, 'gather'); });
     if (win) {
       at(t + 1.7, tt => { react('hop', 2.4, tt); for (let k = 0; k < 2; k++) ev(tt + 0.1 + 1.12 * k, 'frisk', { n: k }); fx({ k: 'burst', t0: tt + 0.35, w: (P('withers') || [BR.x, BR.y - 200]).slice() }); });      // ぴょん → 足を バタバタ（11/09 14:36）
@@ -508,6 +569,10 @@ const TCCare = (() => {
     if (kind === 'down') {
       if (S.ses && !S.ses.done) { S.ses.down = true; S.ses.last = [x, y]; S.ses.dist = 0; S.ses.counted = false; S.ses.sdir = null; S.finger = [x, y]; return; }
       if (S.phase !== 'pet' || S.busy) return;
+      if (t < S.coolUntil) {              // 5回 撫でた あとの 7秒
+        if (zoneAt(x, y) && t - (S.coolTagT || -9) > 1.2) { S.coolTagT = t; fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); }
+        return;
+      }
       const z = zoneAt(x, y); if (!z) return;
       startSession(t, x, y, z); S.ses.down = true; S.finger = [x, y]; S.petIdle = t;
     } else if (kind === 'move') {
@@ -541,7 +606,7 @@ const TCCare = (() => {
   const PET3 = (A, B, ds, dr, u0) => { u0 = u0 || 0.25; const st = strokes(u0 + 0.7, A, B, 3, ds || 0.58, dr || 0.33), e = st[st.length - 1][1]; return [[u0, u0 + 0.7, 'awayR', A, false], ...st, [e + 0.1, e + 1.0, B, 'awayR', false]]; };
   const DEMOS = {
     // ① 撫でる の 流れ・④ 朝（ボタン → 手前へ → ズーム → 撫でる → もどる → 7秒）
-    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと 手前に 来るよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', '撫でたあとは 7秒 なでられない']],
+    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと 手前に 来るよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', 'つづけて 5回まで → 5回 なでたら 7秒 おやすみ']],
       path: [[0.25, 0.95, 'awayR', 'neckA', false], [0.95, 2.3, 'neckA', 'neckA', true], ...strokes(2.3, 'neckA', 'neckB', 3, 0.6, 0.34), [4.3, 5.3, 'neckB', 'awayR', false]], greeted: false, end: 'Z+4.6' },
     // ② 体の 場所（はじめから 手前・ズーム）
     pet_b: { front: 1, heart: 1, got: [-20], greeted: true, cap: [[0.2, 'R+5.6', '頭を なでると → すりすり']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.8' },
@@ -571,7 +636,7 @@ const TCCare = (() => {
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
     // おそうじ
     clean_a: { poop: [770, 1240, 0], nibble: true, pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
-      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', '3回 はくと ちりとりへ（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると 花が さく → くんくん']], end: 'Z2+0.4' },
+      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', '3回 はくと ちりとりへ（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
     clean_b: { pt: 200, month: 11, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+3.8', 'うんちが ない 時は 落ち葉（季節で かわる）'], ['C+3.8', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
     guide: { press: [[0.8, 'help']], guideEnd: 15.8, cap: [], end: 16.8 },
@@ -625,7 +690,7 @@ const TCCare = (() => {
     if (!HO || !HO.gl || typeof TCHorse === 'undefined' || !TCHorse.createProp) return null;
     const one = async nm => {
       const meta = await fetch(AP(`tc_items/${nm}.json`)).then(r => { if (!r.ok) throw new Error(nm); return r.json(); });
-      const bin = await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); });
+      const bin = TCHorse.unz(await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); }));
       const im = f => f ? new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = AP(`tc_items/${f}`); }) : Promise.resolve(null);
       const [texImg, nrmImg] = await Promise.all([im(meta.tex), im(meta.ntex)]);
       return TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg });
@@ -754,9 +819,6 @@ const TCCare = (() => {
     const z = S.zoom.z;
     // 金のうんち（地面に ある 間も きらきら）
     for (const q of (BR.poops || [])) if (q.gold) { const p = toS([q.x, q.y]); for (let i = 0; i < 3; i++) { const v = ((t * 0.6 + i / 3) % 1); star(p[0] + (hash(i * 3) - 0.5) * 60 * z, p[1] - 30 * z - 40 * z * v, 9 * z * Math.sin(Math.PI * v), v * 2, 0.9); } }
-    // 花（きれいに なった 所）
-    const FA = S.flowersAt || (S.clean && S.clean.flowerT ? { x: S.clean.x, y: S.clean.y, t0: S.clean.flowerT } : null);
-    if (FA && t >= FA.t0) for (let i = 0; i < 7; i++) { const an = i * TAU / 7 + 0.4, rr = 90 + 40 * hash(i * 1.7), p = toS([FA.x + Math.cos(an) * rr * 1.3, FA.y + Math.sin(an) * rr * 0.5]); const v = (t - FA.t0 - i * 0.12) / 0.5; if (v > 0) flowerArt(p[0], p[1], 15 * z * backOut(v), i, 1); }
     // ごはん
     const F = S.feed;
     if (F && F.bucket) { const b = F.bucket, p = toS([b.x, b.y]), k = TCHorse.scaleAt(HO, b.y) * z, op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45);
@@ -884,7 +946,7 @@ const TCCare = (() => {
     if (S.ses && !S.ses.done && !S.ses.down && S.ses.upT != null && t - S.ses.upT > 2.2) { S.hand.hideT = t; ev(t, 'fold'); S.ses.done = true; S.holdUntil = t + 0.8; }      // とちゅうで やめた
     // おしまい：撫でる（反応が 終わった・6秒 さわらない）・呼ぶ（動きが 終わった）
     if (!S.busy && t > S.holdUntil && (S.phase === 'pet' && !S.ses || S.phase === 'callact' || S.phase === 'feeddone' || S.phase === 'cleandone')) { S.holdUntil = Infinity; endCare(t); }
-    if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 3.2; }
+    if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; BR.hurry = 1; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 2.6; }
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
     if (S.readyT != null && t >= S.readyT) { ev(S.readyT, 'ready'); S.readyT = null; S.readyPop = t; }
@@ -1066,6 +1128,12 @@ const TCCare = (() => {
         g.strokeStyle = '#ff9cbc'; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.stroke(); g.restore();
         label(String(Math.ceil(S.coolUntil - t)), x, y + 2, 54, '#ffffff', 'rgba(60,35,15,0.9)', 8);
       }
+      if (k === 'call' && t < S.callCoolUntil) {
+        const rem = (S.callCoolUntil - t) / RULE.cool;
+        g.save(); g.fillStyle = 'rgba(60,40,25,0.45)'; g.beginPath(); g.moveTo(x, y); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.closePath(); g.fill();
+        g.strokeStyle = '#8fd0ff'; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * rem); g.stroke(); g.restore();
+        label(String(Math.ceil(S.callCoolUntil - t)), x, y + 2, 54, '#ffffff', 'rgba(60,35,15,0.9)', 8);
+      }
       if (k === 'pet' && S.readyPop != null) { const q = (t - S.readyPop) / 0.6; if (q < 1) { g.save(); g.strokeStyle = `rgba(255,156,188,${0.7 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 8 + 26 * easeOut(q), 0, TAU); g.stroke(); g.restore(); } }
     });
   }
@@ -1198,5 +1266,5 @@ const TCCare = (() => {
     window.__events = () => S.ev;
     window.__careDone = () => !!S.demoDone;
   }
-  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
+  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

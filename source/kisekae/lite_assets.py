@@ -9,7 +9,7 @@
 #         「さいごの 1まい」（<名前>_last.webp）に つながる 動画（gk・sd・nd・sgd）は、さいごの 30コマ だけ 少しずつ きれいに する（CRF 27 → 25 → 22：x264 の zones）。
 #         動画が おわった 瞬間に きれいな 1まい絵に かわる ので、さいごまで やわらかい ままだと そこで 絵が パッと はっきり して 見える（ためした 数：さいごの コマが 36dB → 41dB・1本 ＋約0.25MB）
 #     ・絵（WebP quality 75・method 6。すき通し（アルファ）は もとと 1点も かえない）：
-#         馬の 色（tc_assets の tc_c_*）／フィギュアと 棚の 色（fig_assets の fgN_c・fgN_cs・fg_shelf_c*）
+#         馬の 色（tc_assets の tc_c_*）／フィギュアの 色（fig_assets の fgN_c・fgN_cs）
 #         第4.150版：結果ボードの 絵（bcp_assets）は 軽く しない（そのままの 写し：まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」。
 #           動く 絵の 部品を やめて 止まった 絵 だけに なった ので、もとの 画質＝WebP quality 88・前の 絵 90 の まま 入れる）
 #   さわらない もの（そのままの 写し）：
@@ -18,7 +18,15 @@
 #     ・結果ボードの 絵（bcp_assets：見本・背景・前の 絵）＝第4.150版から もとの 画質の まま
 #     ・フィールド・ルーレット・チケット・小物・的中の 絵（pm_*・*_last）・見本の 小さい 絵（fgN_t）・音・形（bin）・json
 #   作り直した ものが もとの 97% より 大きい ときは もとを そのまま 使う（how＝keep）
-#   台帳 lite.info（JSON）：{ v, params, files: { 名前: { how（webp・film・copy・keep）, p（作る ときの 決めごと：かわったら 作り直す）, src: [大きさ, 更新の 時刻, sha1], size } } }
+#   第4.151版（まさちゃん 2026/11/11 09:07）：
+#     ・形（bin）の 三角の 番号を 詰め直す（how＝idxz・「ア、をお願い！」）：番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）だけ。
+#         番号を「前の 番号との 差」に して 小さい 数は 1バイトで 書く（劣化なし：作った あと もとに もどして 1バイトも ちがわない ことを 確かめる）。
+#         入れものの 形（24バイトの 頭＋番号より 前＋番号より 後ろ＋詰めた 番号）は pack_idx・読む 側は tc/tc_horse.js と fig/fig_render.js の unz（もとの 形に もどして から 使う）
+#     ・棚の 絵 7まい（how＝shelf・「思い出フィギュアの棚の7個とも画質がかなり悪くなってるから、改善して！」）：
+#         棚の 絵は 小さな 島が びっしり ならんだ 絵（UV）なので、ふつうの 圧縮（quality 75・もとの 90 でも）だと 島の さかいで となりの 島の 色が にじんで、
+#         暗い 板に 茶色の すじ・柱の ふちの ギザギザが 出る。→ 劣化なしの もと（ios/fig_src/shelf_cN.webp：kisekae/fig/shelf_proj.py が 作る・リポジトリに 入れない）から
+#         色を 6bit（64段）に そろえて **劣化なしの WebP** に する（色の 差は 2／255 まで・島の さかいは にじまない）。ios/fig_src が ない ときは もとの 絵（quality 90）の 写し
+#   台帳 lite.info（JSON）：{ v, params, files: { 名前: { how（webp・film・copy・keep・idxz・shelf）, p（作る ときの 決めごと：かわったら 作り直す）, src: [大きさ, 更新の 時刻, sha1], size } } }
 import hashlib, json, os, re, shutil, subprocess, sys, time
 from multiprocessing import Pool
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
@@ -35,10 +43,114 @@ def rule(name, f):
     if name == 'bcp_assets':
         return 'copy'      # 第4.150版（まさちゃん 2026/11/11 02:36「…その代わり、画質あげて！」）：結果ボードの 絵（止まった 絵 だけに なった）は 軽く しない＝もとの 画質（WebP quality 88・前の 絵 90）の まま
     if name == 'tc_assets':
-        return 'webp' if re.fullmatch(r'tc_c_.+\.webp', f) else 'copy'
+        return 'webp' if re.fullmatch(r'tc_c_.+\.webp', f) else 'idxz' if idx32(name, f) else 'copy'
     if name == 'fig_assets':
-        return 'webp' if re.fullmatch(r'fg(\d+_cs?|_shelf_c\d+)\.webp', f) else 'copy'
+        if re.fullmatch(r'fg_shelf_c\d+\.webp', f):
+            return 'shelf' if os.path.isfile(shelf_src(f)) else 'copy'
+        return 'webp' if re.fullmatch(r'fg\d+_cs?\.webp', f) else 'idxz' if idx32(name, f) else 'copy'
     raise ValueError(name)
+
+
+def idx32(name, f):
+    """三角の 番号が 32bit の 形（bin）か：となりの json（<名前>.json・"bin" で 名前を 指す ものも）を 見る"""
+    if not f.endswith('.bin'):
+        return False
+    m = AD.master(name)
+    for j in sorted(os.listdir(m)):
+        if j.endswith('.json'):
+            try:
+                d = json.load(open(os.path.join(m, j), encoding='utf8'))
+            except Exception:
+                continue
+            if isinstance(d, dict) and d.get('idx32') and (d.get('bin') or j[:-5] + '.bin') == f and isinstance(d.get('layout'), dict) and 'idx' in d['layout']:
+                return True
+    return False
+
+
+def idx_meta(name, f):
+    m = AD.master(name)
+    for j in sorted(os.listdir(m)):
+        if j.endswith('.json'):
+            try:
+                d = json.load(open(os.path.join(m, j), encoding='utf8'))
+            except Exception:
+                continue
+            if isinstance(d, dict) and d.get('idx32') and (d.get('bin') or j[:-5] + '.bin') == f:
+                return d
+    raise ValueError(f)
+
+
+SHELF_SRC = os.path.join(W, 'ios', 'fig_src')          # 棚の 絵の 劣化なしの もと（shelf_c1〜7.webp）。リポジトリに 入れない（.gitignore）
+SHELF_BITS = 6
+
+
+def shelf_src(f):
+    return os.path.join(SHELF_SRC, f[3:])               # fg_shelf_c3.webp → shelf_c3.webp
+
+
+MAGIC = b'TGIZ'
+
+
+def pack_idx(raw, off, nb, n):
+    """形（bin）の 番号（32bit・n こ・off から nb バイト）を 詰める → 頭（TGIZ・もとの 長さ・番号の 場所・番号の バイト数・番号の 数・詰めた 長さ：どれも 32bit）＋番号より 前＋番号より 後ろ＋詰めた 番号
+       詰め方：前の 番号との 差を ジグザグ（0, -1, 1, -2, …）に して、7bit ずつ（小さい 数は 1バイト）"""
+    import struct
+    import numpy as np
+    assert nb == n * 4 and off % 4 == 0 and off + nb <= len(raw), (off, nb, n, len(raw))
+    idx = np.frombuffer(raw, np.uint32, n, off).astype(np.int64)
+    d = np.diff(idx, prepend=0); z = ((d << 1) ^ (d >> 63)).astype(np.uint64)
+    parts = []; zz = z.copy()
+    while True:
+        b = (zz & 0x7F).astype(np.uint8); zz >>= np.uint64(7); more = zz > 0
+        parts.append((b | (more.astype(np.uint8) << 7), more))
+        if not more.any():
+            break
+    lens = np.ones(len(z), np.int64)
+    for _b, more in parts[:-1]:
+        lens += more
+    offs = np.concatenate([[0], np.cumsum(lens)[:-1]]); buf = np.zeros(int(lens.sum()), np.uint8); alive = np.ones(len(z), bool)
+    for k, (b, more) in enumerate(parts):
+        buf[offs[alive] + k] = b[alive]; alive &= more
+    return MAGIC + struct.pack('<5I', len(raw), off, nb, n, len(buf)) + raw[:off] + raw[off + nb:] + buf.tobytes()
+
+
+def unpack_idx(pk):
+    """pack_idx の 逆（読む 側の JS と 同じ 手順）"""
+    import struct
+    import numpy as np
+    if pk[:4] != MAGIC:
+        return pk
+    L, off, nb, n, pl = struct.unpack('<5I', pk[4:24]); tail = L - off - nb
+    assert 24 + off + tail + pl == len(pk) and nb == n * 4, (L, off, nb, n, pl, len(pk))
+    st = np.frombuffer(pk, np.uint8, pl, 24 + off + tail)
+    ends = np.nonzero(st < 128)[0]; assert len(ends) == n, (len(ends), n)
+    starts = np.concatenate([[0], ends[:-1] + 1]); v = np.zeros(n, np.uint64)
+    for k in range(int((ends - starts).max()) + 1):
+        m = starts + k <= ends
+        v[m] |= (st[starts[m] + k].astype(np.uint64) & np.uint64(0x7F)) << np.uint64(7 * k)
+    d = (v >> np.uint64(1)).astype(np.int64) ^ -(v & np.uint64(1)).astype(np.int64)
+    idx = np.cumsum(d).astype(np.uint32)
+    return pk[24:24 + off] + idx.tobytes() + pk[24 + off:24 + off + tail]
+
+
+def enc_idxz(name, f, src, dst):
+    meta = idx_meta(name, f); off, nb = meta['layout']['idx']
+    raw = open(src, 'rb').read(); pk = pack_idx(raw, off, nb, meta['i'])
+    assert unpack_idx(pk) == raw, f + '：もとに もどらない'
+    assert len(pk) < len(raw), (f, len(pk), len(raw))
+    tmp = dst + '.tmp'; open(tmp, 'wb').write(pk); os.replace(tmp, dst)
+
+
+def enc_shelf(f, dst):
+    import numpy as np
+    from PIL import Image
+    im = Image.open(shelf_src(f)); im.load(); assert im.mode == 'RGB' and im.size == (2048, 2048), (f, im.mode, im.size)
+    a = np.asarray(im); sh = 8 - SHELF_BITS
+    q = np.clip(((a >> sh) << sh) + (1 << sh >> 1), 0, 255).astype(np.uint8)
+    assert int(np.abs(q.astype(int) - a).max()) <= (1 << sh) // 2, f
+    tmp = dst + '.tmp.webp'; Image.fromarray(q, 'RGB').save(tmp, 'WEBP', lossless=True, quality=100, method=6)
+    out = Image.open(tmp); out.load(); assert out.size == im.size and np.array_equal(np.asarray(out.convert('RGB')), q), f + '：劣化なしで ない'
+    os.replace(tmp, dst)
 
 
 def sha1(p):
@@ -69,6 +181,10 @@ def sig(name, f, how):
         return f"crf{PARAMS['crf']}-{PARAMS['preset']}" + ('-tail' + '/'.join(f'{a}:{b}' for a, b in PARAMS['tail']) if has_tail(os.path.join(AD.master(name), f)) else '')
     if how == 'webp':
         return f"q{PARAMS['q']}-m{PARAMS['method']}"
+    if how == 'idxz':
+        return 'z1'
+    if how == 'shelf':
+        return f'b{SHELF_BITS}-' + sha1(shelf_src(f))[:12]
     return ''
 
 
@@ -109,6 +225,10 @@ def one(job):
         enc_film(src, dst)
     elif how == 'webp':
         enc_webp(src, dst)
+    elif how == 'idxz':
+        enc_idxz(name, f, src, dst)
+    elif how == 'shelf':
+        enc_shelf(f, dst)
     else:
         shutil.copy2(src, dst)
     if how in ('film', 'webp') and os.path.getsize(dst) > PARAMS['keep'] * os.path.getsize(src):
@@ -147,7 +267,7 @@ def build(only=None):
                 q = os.path.join(p, f); assert os.path.dirname(os.path.abspath(q)) == os.path.abspath(p) and os.sep + os.path.join('ios', 'lite') + os.sep in os.path.abspath(q), q
                 os.remove(q)
     films = [j for j in jobs if j[2] == 'film']; rest = [j for j in jobs if j[2] != 'film']
-    print('作る もの：動画', len(films), '・絵', sum(1 for j in rest if j[2] == 'webp'), '・写し', sum(1 for j in rest if j[2] == 'copy'), flush=True)
+    print('作る もの：動画', len(films), '・絵', sum(1 for j in rest if j[2] == 'webp'), '・形（番号を 詰める）', sum(1 for j in rest if j[2] == 'idxz'), '・棚の 絵', sum(1 for j in rest if j[2] == 'shelf'), '・写し', sum(1 for j in rest if j[2] == 'copy'), flush=True)
     done = 0; t0 = time.time()
     for j in films:
         name, f, how, size, sec = one(j); mans[name]['files'][f].update(how=how, size=size); done += 1

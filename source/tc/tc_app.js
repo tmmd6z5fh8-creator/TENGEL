@@ -201,7 +201,7 @@ const TCApp = (() => {
   async function loadHorse(sp) {
     if (hcache[sp.key]) return hcache[sp.key];
     const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
-    const bin = await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer());
+    const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      // 第4.151版：番号を 詰めた 形（神様馬・幻の馬）は もとの 形に もどす
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
     const [texImg, nrmImg, ...poopImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp')]);
     const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });

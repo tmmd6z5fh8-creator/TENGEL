@@ -123,12 +123,29 @@ const FigGL = (() => {
       e.n++; return e.p;
     }
     function drop(name) { const e = cache.tex[name]; if (!e) return; e.n--; if (e.n <= 0) { if (e.t) gl.deleteTexture(e.t); delete cache.tex[name]; } }
+    // 形（bin）の 番号を 詰めた 入れもの（kisekae/lite_assets.py の pack_idx：第4.151版）を もとの 形に もどす。詰めて いない bin は そのまま 返す
+    //   頭 24バイト＝'TGIZ'・もとの 長さ・番号の 場所・番号の バイト数・番号の 数・詰めた 長さ → 番号より 前・番号より 後ろ・詰めた 番号（前の 番号との 差を ジグザグに して 7bit ずつ）
+    function unz(ab) {
+      const u = new Uint8Array(ab);
+      if (u.length < 24 || u[0] !== 0x54 || u[1] !== 0x47 || u[2] !== 0x49 || u[3] !== 0x5A) return ab;
+      const dv = new DataView(ab), L = dv.getUint32(4, true), io = dv.getUint32(8, true), ib = dv.getUint32(12, true), n = dv.getUint32(16, true), pl = dv.getUint32(20, true), tail = L - io - ib;
+      if (tail < 0 || 24 + io + tail + pl !== u.length || ib !== n * 4 || io % 4) throw new Error('bin');
+      const out = new ArrayBuffer(L), o8 = new Uint8Array(out); o8.set(u.subarray(24, 24 + io), 0); o8.set(u.subarray(24 + io, 24 + io + tail), io + ib);
+      const idx = new Uint32Array(out, io, n), end = u.length; let p = 24 + io + tail, prev = 0;
+      for (let i = 0; i < n; i++) {
+        let v = 0, s = 0, b;
+        do { if (p >= end) throw new Error('bin'); b = u[p++]; v += (b & 127) * Math.pow(2, s); s += 7; } while (b & 128);
+        prev += (v % 2) ? -(v + 1) / 2 : v / 2; idx[i] = prev;
+      }
+      if (p !== end) throw new Error('bin');
+      return out;
+    }
     // 形（名前ごとに 1つ・すてない：棚 1つと フィギュア 8種）
     function mesh(name) {
       if (cache.mesh[name]) return cache.mesh[name];
       const p = (async () => {
         const meta = await fetch(AP(name + '.json')).then(r => { if (!r.ok) throw new Error('no ' + name); return r.json(); });
-        const bin = await fetch(AP(name + '.bin')).then(r => { if (!r.ok) throw new Error('no ' + name); return r.arrayBuffer(); });
+        const bin = unz(await fetch(AP(name + '.bin')).then(r => { if (!r.ok) throw new Error('no ' + name); return r.arrayBuffer(); }));      // 第4.151版：番号を 詰めた 形（フィギュア 8体）は もとの 形に もどす
         if (lost) throw new Error('lost');
         if (meta.idx32 && !ext32) throw new Error('idx32');
         const L = meta.layout;

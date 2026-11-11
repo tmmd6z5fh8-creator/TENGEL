@@ -201,6 +201,24 @@ try:
               f'また 落ちる → もう 1段（{gv["slow2"]}）・下げても かわらない → 1段 もどして おわり（{gv["same2"]}）・その あとは かえない')
         check(gv['lp1'][:3] == [1, 0.82, False] and gv['lp2'] == [0, 1, True, w0] and gv['lp3'] == gv['lp2'] and gv['end'] == [0, 1, True, w0],
               f'いつも 30回／秒（省電力モード など）：1段 下げても かわらない → もとの 細かさに もどして おわり（{gv["lp1"]} → {gv["lp2"]}）')
+        # 第4.151版（まさちゃん 11/11 09:07）：お世話の 直し。きまり（5回まで・7秒・抽選の 順・お花なし）は test_tc_care.js（画面なし）。ここは 本物の 馬で たしかめる
+        print('■ お世話：早く 始まる・ごろんで 浮かない（第4.151版）')
+        fl = pg.evaluate("""() => { const [HO, BR] = TCCare._hb, t = TCCare.S.lastT;
+          const y = (st, tt) => { const q = TCHorse.wherePose(HO, TCHorse.pose(HO, st, tt), 'withers'); return q ? q[1] : NaN; };
+          const lie = Object.assign({}, BR, { mode: 'sleep', sl: 0.6, rise: 0, flop: t, lieDur: 2.4, reacts: [] }), lieF = Object.assign({}, lie, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2 }] });
+          const st0 = Object.assign({}, BR, { sl: 0, rise: 0, reacts: [] }), stF = Object.assign({}, st0, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2 }] }), stC = Object.assign({}, st0, { reacts: [{ k: 'frisk', t0: t - 0.5, dur: 2.2, cut: t - 0.3 }] });
+          const d = (a, b) => Math.max(...[0, 0.06, 0.12, 0.18, 0.24, 0.3].map(k => Math.abs(y(a, t + k) - y(b, t + k))));
+          return { lie: d(lieF, lie), stand: d(stF, st0), cut: d(stC, st0), down: y(lie, t) - y(st0, t) }; }""")
+        check(fl['lie'] < 0.3 and fl['stand'] > 1.5 and fl['cut'] < 0.3 and fl['down'] > 10,
+              f'横に なった 馬は はしゃぐ 反応で 浮かない（体の 上下 {fl["lie"]:.2f}px。立って いる ときは {fl["stand"]:.1f}px はずむ）・とちゅうで 止めた 反応（cut）は 0.25秒で 消える（{fl["cut"]:.2f}px）')
+        lat = pg.evaluate("""async () => { const [HO, BR] = TCCare._hb, S = TCCare.S; Object.assign(BR, { x: 526, y: 820, dir: -1.2, mode: 'idle', until: S.lastT + 60 }); await new Promise(r => setTimeout(r, 400));
+          const t0 = S.lastT; TCCare.press(t0, 'pet'); const h = BR.hurry, m0 = BR.mode, zb = S.zB ? S.zB.z : 0;
+          for (let i = 0; i < 1200 && S.phase !== 'pet'; i++) await new Promise(r => requestAnimationFrame(r));
+          const t1 = S.lastT, ph = S.phase, y1 = BR.y, x1 = BR.x, side = Math.abs(Math.sin(BR.dir)); S.petIdle = -1e9;
+          for (let i = 0; i < 400 && S.phase !== 'idle'; i++) await new Promise(r => setTimeout(r, 50));
+          return { lat: t1 - t0, ph, h, m0, zb, y1, x1, side, end: S.phase, cool: S.coolUntil > S.lastT, z: S.zoom.z }; }""")
+        check(lat['ph'] == 'pet' and lat['h'] == 2.8 and lat['m0'] == 'idle' and lat['zb'] > 2.2 and lat['lat'] < 2.0 and abs(lat['y1'] - 820) < 25 and abs(lat['x1'] - 526) < 60 and lat['side'] < 0.4 and lat['end'] == 'idle' and not lat['cool'] and lat['z'] == 1,
+              f'「撫でる」を 押して から 撫でられる まで {lat["lat"]:.2f}秒（いちばん 奥で むこう向き：歩かないで その場で 横向きに・カメラは 押した ときから 寄る {lat["zb"]:.2f}倍。第4.150版は 14.8秒）・撫でずに もどっても 7秒の 待ちは ない')
         print('■ ごはん（エサ・3D の バケツ）')
         stock0 = pg.evaluate("() => TCCare.S.stock")
         stage_click(pg, 407, 1494); pg.wait_for_timeout(1200)

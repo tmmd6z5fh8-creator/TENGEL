@@ -675,9 +675,14 @@
       const k = smooth(st.poopE); set('tail', -0.85 * k, 0); if (h.bi.tail2 != null) set('tail2', -0.35 * k); off[1] -= 0.015 * k;
     }
     // お世話の 反応（11/09 08:29）：はじめ と おわりは ゆっくり。口は 開けない
+    // 第4.151版（まさちゃん 11/11 09:07「撫でたあとのごろんをすると、馬が宙に少し浮き、地面と空中をいったりきたりする」）：
+    //   横に なる 間（st.sl）は お世話の 反応を 弱めて 止める（前は はしゃぐ・のび などが 横に なった 体に 重なって、体が 浮いて はずんで いた）。
+    //   r.cut（つづけて 撫でた とき：tc_care.js の cutReacts）＝その 時刻から 0.25秒で 弱めて 止める
+    const lieF = st.sl > 0.001 ? 1 - smooth(clamp(st.sl / 0.12, 0, 1)) : 1;
     for (const r of (st.reacts || [])) {
       const u = (t - r.t0) / r.dur; if (u < 0 || u > 1) continue;
-      const e = smooth(clamp(u / 0.18, 0, 1)) * (1 - smooth(clamp((u - 0.78) / 0.22, 0, 1))), tt = t - r.t0;
+      const gn = lieF * (r.cut != null ? 1 - smooth(clamp((t - r.cut) / 0.25, 0, 1)) : 1); if (gn <= 0.001) continue;
+      const e = smooth(clamp(u / 0.18, 0, 1)) * (1 - smooth(clamp((u - 0.78) / 0.22, 0, 1))) * gn, tt = t - r.t0;
       if (r.k === 'nuzzle') { set('neck', -0.16 * e); set('head', -0.12 * e + 0.07 * e * Math.sin(TAU * 1.5 * tt), 0.12 * e * (r.side || 1)); }            // 手に 頭を すりすり
       else if (r.k === 'swish') { set('tail', -0.25 * e, 0.75 * e * Math.sin(TAU * 1.3 * tt)); if (h.bi.tail2 != null) set('tail2', 0, 0.6 * e * Math.sin(TAU * 1.3 * tt - 0.9)); }      // しっぽを 大きく ふりふり
       else if (r.k === 'stretch' && h.lie) {          // ぐーっと のび（11/09 14:36 まさちゃん「前足を前に、トン・トンと出してから背中伸ばして！」）
@@ -685,12 +690,13 @@
         const G = h.lie.geo, D = 0.3, st_ = (a, b) => smooth(clamp((u - a) / (b - a), 0, 1)), lf = (a, b) => { const q = clamp((u - a) / (b - a), 0, 1); return Math.sin(Math.PI * q); };
         const fw = { FL: st_(0.05, 0.19) - st_(0.8, 0.9), FR: st_(0.19, 0.33) - st_(0.88, 0.98), HL: 0, HR: 0 };
         const up = { FL: lf(0.05, 0.19) + lf(0.8, 0.9), FR: lf(0.19, 0.33) + lf(0.88, 0.98), HL: 0, HR: 0 };
-        const sk = st_(0.35, 0.52) * (1 - st_(0.68, 0.8)), p = -0.06 * sk, d = 0.06 * sk + 0.01 * (up.FL + up.FR), x = -0.07 * sk;
+        for (const L in fw) { fw[L] *= gn; up[L] *= gn; }
+        const sk = st_(0.35, 0.52) * (1 - st_(0.68, 0.8)) * gn, p = -0.06 * sk, d = 0.06 * sk + 0.01 * (up.FL + up.FR), x = -0.07 * sk;
         off[0] += x; off[1] -= d; off[3] += p;
         legIK(h, set, p, d, x, L => [D * fw[L], 0.12 * up[L], -1.0 * up[L]]);
         set('neck', -0.34 * sk - 0.06 * (up.FL + up.FR)); set('head', 0.24 * sk + 0.04 * Math.sin(TAU * 0.8 * tt) * sk); set('tail', -0.12 * sk);
       }
-      else if (r.k === 'sneeze') { const j = Math.exp(-Math.pow((u - 0.45) / 0.06, 2)); set('neck', -0.05 * e - 0.18 * j); set('head', -0.3 * j); off[1] -= 0.012 * j; }          // ぷしゅっ（くしゃみ）
+      else if (r.k === 'sneeze') { const j = Math.exp(-Math.pow((u - 0.45) / 0.06, 2)) * gn; set('neck', -0.05 * e - 0.18 * j); set('head', -0.3 * j); off[1] -= 0.012 * j; }          // ぷしゅっ（くしゃみ）
       else if ((r.k === 'hop' || r.k === 'frisk') && h.lie) {      // ぴょん（当たり）・はしゃぐ（小さい ころ）：本物の 馬の ように その場で 足を バタバタ 上げ下げ（ななめの 2本ずつ 交互：11/09 14:36 まさちゃん）
         const per = r.k === 'hop' ? 0.56 : 0.48, ph = tt / per, k = e, hi = r.k === 'hop' ? 1 : 0.85;
         const sw = L => { const q = ((ph + (L === 'FL' || L === 'HR' ? 0 : 0.5)) % 1 + 1) % 1; return q < 0.56 ? Math.pow(Math.sin(Math.PI * q / 0.56), 1.3) : 0; };
@@ -702,17 +708,17 @@
       }
       else if (r.k === 'tilt') { set('head', 0.1 * e, 0.38 * e * (r.side || 1)); set('neck', 0.05 * e, 0.1 * e * (r.side || 1)); }                  // 首を かしげる
       else if (r.k === 'nod') { set('neck', -0.17 * e * (0.5 + 0.5 * Math.sin(TAU * 1.6 * tt - 1.57))); set('head', -0.08 * e * Math.sin(TAU * 1.6 * tt)); }   // 元気に うなずく
-      else if (r.k === 'yawn') { const k = Math.sin(Math.PI * clamp(u * 1.15, 0, 1)); set('neck', 0.22 * k); set('head', 0.34 * k); off[4] += 0.01 * k; }          // あくび（首を のばす・口は 開けない）
+      else if (r.k === 'yawn') { const k = Math.sin(Math.PI * clamp(u * 1.15, 0, 1)) * gn; set('neck', 0.22 * k); set('head', 0.34 * k); off[4] += 0.01 * k; }          // あくび（首を のばす・口は 開けない）
       else if (r.k === 'sniff') { set('neck', -0.5 * e); set('head', -0.28 * e + 0.04 * e * Math.sin(TAU * 4.5 * tt), 0.15 * e * (r.side || 0)); }       // くんくん
       else if (r.k === 'eat') { set('neck', -0.08 * e); set('head', 0.06 * e + 0.035 * e * Math.sin(TAU * 2.4 * tt), 0.1 * e * (r.side || 0)); }          // 手から 食べる（もぐもぐは 頭で）
       else if (r.k === 'beg') { set('neck', 0.04 * e); set('head', 0.06 * e, 0.3 * e * (r.side || 1)); }                                          // おかわりの 目（こっちを 見つめる）
       else if (r.k === 'happy') { const j = Math.max(0, Math.sin(TAU * 1.1 * tt)) * e; set('neck', 0.1 * j); set('head', -0.06 * j); set('tail', -0.2 * e, 0.55 * e * Math.sin(TAU * 1.6 * tt)); }  // うれしい
       else if (r.k === 'shake') {          // 首を プルンッ（すばやく 左右に ふって 止まる）
-        const j = Math.exp(-tt * 3.2) * smooth(clamp(tt / 0.08, 0, 1)), w = Math.sin(TAU * 4.6 * tt) * j;
+        const j = Math.exp(-tt * 3.2) * smooth(clamp(tt / 0.08, 0, 1)) * gn, w = Math.sin(TAU * 4.6 * tt) * j;
         set('neck', 0.06 * e, 0.2 * w * (r.side || 1)); set('head', -0.05 * j * Math.abs(Math.sin(TAU * 4.6 * tt)), 0.34 * w * (r.side || 1)); off[5] += 0.012 * w;
       }
       else if (r.k === 'paw') {            // 前足で 地面を かく（上げて 前へ → 後ろへ ひっかく → 下ろす）
-        const L = (r.side || 1) > 0 ? 'FR' : 'FL', ph = clamp((u - 0.12) / 0.76, 0, 1), lift = Math.sin(Math.PI * ph);
+        const L = (r.side || 1) > 0 ? 'FR' : 'FL', ph = clamp((u - 0.12) / 0.76, 0, 1), lift = Math.sin(Math.PI * ph) * gn;
         set(L + '_u', (0.32 * Math.sin(TAU * ph * 1.5)) * lift + 0.18 * lift); set(L + '_k', 0.85 * lift); set(L + '_f', 0.5 * lift);
         set('neck', -0.08 * e); set('head', -0.05 * e);
       }
@@ -858,12 +864,15 @@
     if (t >= st.until && st.mode !== 'run' && !st.careHold) decide(h, st, t, rnd);      // お世話の 間（careHold）は 勝手に 動かない
     const s = scaleAt(h, st.y);
     let wantW = 0, wantR = 0, effT = st.eff, steered = false;
+    // 第4.151版（まさちゃん 11/11 09:07「ボタンを押してから行われるまでが遅すぎる」）：お世話で 呼ばれた ときは 急ぎ足（st.hurry 倍：tc_care.js の HURRY）。
+    //   歩はばは そのまま・足の 回る 速さと 体の 進む 速さを 同じ 倍に する（ひづめは すべらない）・向きを かえる 速さも 同じ 倍
+    const hk = (st.mode === 'walk' || st.mode === 'turn') && st.hurry > 1 ? st.hurry : 1;
     if (st.mode === 'walk' && st.tgt) {
       const dx = st.tgt[0] - st.x, dy = st.tgt[1] - st.y, dist = Math.hypot(dx, dy / 0.5);
       const want = Math.atan2(dy / 0.5, dx), turn = angDiff(st.dir, want);
-      steer(st, want, dt, 1.1, 1.8, 3.5); steered = true;
+      steer(st, want, dt, 1.1 * hk, 1.8 * hk, 3.5 * hk); steered = true;
       wantW = 1;
-      effT = lerp(1, 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   // 向きを 変える 間・近く では 小さな 歩はばで ゆっくり
+      effT = lerp(1, hk > 1 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   // 向きを 変える 間・近く では 小さな 歩はばで ゆっくり（急ぎ足の ときは 少し 大きめ）
       if (dist < Math.max(28, 0.06 * s * h.H)) {
         // 着いた：ときどき そのまま 次の 場所へ 歩きつづける（ぶらぶら 歩く）・ふだんは 止まる
         if (!(st.force && st.force.length) && !st.forcedWalk && !st.careHold && rnd() < 0.45 && pickWalkTarget(h, st, rnd)) { st.until = t + 30; }
@@ -871,9 +880,9 @@
       }
     } else if (st.mode === 'turn') {               // その場で 向きを かえる（小さな 歩はばで 回る：お世話で 手前に 来た あと 横向きに なる・11/09）
       const d = angDiff(st.dir, st.turnTo);
-      steer(st, st.turnTo, dt, 1.25, 2.4, 4.5); steered = true;
+      steer(st, st.turnTo, dt, 1.25 * hk, 2.4 * hk, 4.5 * hk); steered = true;
       wantW = Math.abs(d) > 0.07 ? 1 : 0; effT = 0.3;
-      if (Math.abs(d) < 0.05 && Math.abs(st.dirV) < 0.12) { st.mode = 'idle'; st.until = st.careHold ? t + 1e3 : t + 3; }
+      if (Math.abs(d) < 0.05 && Math.abs(st.dirV) < 0.12 * hk) { st.mode = 'idle'; st.until = st.careHold ? t + 1e3 : t + 3; }
     } else if (st.mode === 'gallop') {             // 見本 用：向きを かえずに まっすぐ ギャロップ
       const vWalk = walkSpeed(h, 1, 1);
       st.runV += clamp(RUN_V - st.runV, -3.6 * dt, 3.0 * dt);
@@ -910,8 +919,8 @@
     }
     if (!steered) { st.dirV *= Math.max(0, 1 - dt * 4); st.dir += st.dirV * dt; }      // 止まった 後も 回る 速さは ゆっくり 0 へ
     // なめらかに 切りかえ
-    st.eff += (effT - st.eff) * Math.min(1, dt * 2.5);
-    st.gw += clamp(wantW - st.gw, -dt * 1.8, dt * 1.8); st.gr += clamp(wantR - st.gr, -dt * 1.6, dt * 1.6);
+    st.eff += (effT - st.eff) * Math.min(1, dt * 2.5 * hk);
+    st.gw += clamp(wantW - st.gw, -dt * 1.8 * hk, dt * 1.8 * hk); st.gr += clamp(wantR - st.gr, -dt * 1.6, dt * 1.6);
     const gz = st.mode === 'idle' ? st.want.graze : 0; st.graze += clamp(gz - st.graze, -dt * 0.7, dt * 0.7);
     const lk = st.mode === 'idle' ? st.want.look : [0, 0]; st.look = st.look.map((v, i) => v + clamp(lk[i] - v, -dt * 0.9, dt * 0.9));
     st.lookS = st.lookS.map((v, i) => v + (st.look[i] - v) * Math.min(1, dt * 3));
@@ -932,12 +941,12 @@
     // 足の 時間：歩はばと 足の 速さは 歩く 強さで かわる（体の 進む 速さと そろえる）
     const g = GAITS.walk, gR = GAITS.run;
     st.wAmp = 0.5 + 0.5 * st.eff;
-    st.phase.walk = (st.phase.walk + dt / walkOf(h).T * (0.7 + 0.3 * st.eff) * (st.gw > 0.01 ? 1 : 0)) % 1;
+    st.phase.walk = (st.phase.walk + dt / walkOf(h).T * (0.7 + 0.3 * st.eff) * hk * (st.gw > 0.01 ? 1 : 0)) % 1;
     const vr = Math.max(st.runV || 0, 0.01), cr = 0.8 + 0.2 * clamp(vr / RUN_V, 0, 1);
     st.rAmp = clamp(Math.asin(clamp(vr * gR.st * gR.T / (2 * h.legLen * cr), 0, 0.99)) / gR.A, 0.35, 1.15);
     st.phase.run = (st.phase.run + dt / gR.T * cr * (st.gr > 0.01 ? 1 : 0)) % 1;
     if (st.mode !== 'run' && st.mode !== 'gallop') {
-      const v = walkSpeed(h, st.eff, smooth(st.gw)) * s * (st.mode === 'turn' ? 0.25 : 1);      // px／秒（足と 同じ 速さ・その場で 回る ときは 少しだけ 進む）
+      const v = walkSpeed(h, st.eff, smooth(st.gw)) * s * (st.mode === 'turn' ? 0.25 : 1) * hk;      // px／秒（足と 同じ 速さ・その場で 回る ときは 少しだけ 進む）
       st.x += Math.cos(st.dir) * v * dt; st.y += Math.sin(st.dir) * v * dt * 0.5;
     }
     // しっぽを ときどき ふる（ふり はじめも おわりも やわらかく）
@@ -1146,6 +1155,23 @@
     return [((L.cx + qx + 1) / 2 * L.view.W - L.view.ox) / L.view.k, ((1 - (L.cy + qy)) / 2 * L.view.H - L.view.oy) / L.view.k];
   }
   // お世話の 反応（体の 動き）：react(st, 'nuzzle', 2.0, t) など。いくつか 重ねられる
+  // 形（bin）の 番号を 詰めた 入れもの（kisekae/lite_assets.py の pack_idx：第4.151版）を もとの 形に もどす。詰めて いない bin は そのまま 返す
+  //   頭 24バイト＝'TGIZ'・もとの 長さ・番号の 場所・番号の バイト数・番号の 数・詰めた 長さ → 番号より 前・番号より 後ろ・詰めた 番号（前の 番号との 差を ジグザグに して 7bit ずつ）
+  function unz(ab) {
+    const u = new Uint8Array(ab);
+    if (u.length < 24 || u[0] !== 0x54 || u[1] !== 0x47 || u[2] !== 0x49 || u[3] !== 0x5A) return ab;
+    const dv = new DataView(ab), L = dv.getUint32(4, true), io = dv.getUint32(8, true), ib = dv.getUint32(12, true), n = dv.getUint32(16, true), pl = dv.getUint32(20, true), tail = L - io - ib;
+    if (tail < 0 || 24 + io + tail + pl !== u.length || ib !== n * 4 || io % 4) throw new Error('bin');
+    const out = new ArrayBuffer(L), o8 = new Uint8Array(out); o8.set(u.subarray(24, 24 + io), 0); o8.set(u.subarray(24 + io, 24 + io + tail), io + ib);
+    const idx = new Uint32Array(out, io, n), end = u.length; let p = 24 + io + tail, prev = 0;
+    for (let i = 0; i < n; i++) {
+      let v = 0, s = 0, b;
+      do { if (p >= end) throw new Error('bin'); b = u[p++]; v += (b & 127) * Math.pow(2, s); s += 7; } while (b & 128);
+      prev += (v % 2) ? -(v + 1) / 2 : v / 2; idx[i] = prev;
+    }
+    if (p !== end) throw new Error('bin');
+    return out;
+  }
   function react(st, k, dur, t, o) { st.reacts = (st.reacts || []).filter(r => t - r.t0 < r.dur); st.reacts.push(Object.assign({ k, t0: t, dur }, o || {})); }
-  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
+  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
 })();
