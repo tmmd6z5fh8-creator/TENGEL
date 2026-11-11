@@ -30,7 +30,10 @@
 - ミッション（13:54）：お世話の 合計 50・100・150・200回 → 500・1000・1500・2000P（馬が かわっても もどらない：points.js の `tcMissions`）。
 - 絵・形・音：`python3 kisekae/tc/collect_assets.py <作業フォルダ>` → `ios/tc_assets/`（**リポジトリに 入れない**：まさちゃんの 絵・3D と それから 作った もの）。
   音は `python3 kisekae/tc/snd/export_app.py <フォルダ>`（ぜんぶ 計算で 作る：環境音・BGM・お世話・ルーレット・チケット）。
-- テスト：`python3 test_tc.py`（ios/tc_assets が ある とき）。
+- おそうじ（第4.152版・11/11 10:13 まさちゃん「15分に一回、ゴミがフィールドに散乱する仕組みにして！」「ゴミは落ちる場所は5箇所」・09:43「ちりとりとほうきはこの3Dのやつ使ってリアルにして！」）：
+  ゴミの 絵 4まい・3D の ほうき・ちりとりは `python3 kisekae/tc/clean_assets.py <おそうじの 作業フォルダ（src/ に まさちゃんの PNG 4まい と GLB 2つ）> ios/tc_assets`（前から ある ファイルは さわらない・11こ 足す・約0.6MB）。
+  ゴミの きまり（15分・5か所・片付ける まで 次は 出ない）は `tc_app.js`（`TRASH_MIN`・`TRASH_N`・`trashStep`）・地面の 絵は `tc_horse.js` の `drawTrash`・はき方と 3D の 道具は `tc_care.js`（`CLEAN`・`tools3`・`worldProp`）。
+- テスト：`python3 test_tc.py`（ios/tc_assets が ある とき）・`node test_tc_care.js`（お世話の きまり：画面なし）。
 - 寝る・起きる の 足（第4.133版）：`python3 kisekae/tc/legcheck.py <作業フォルダ> <馬の 名前,...> both`。骨で 動かした 形を 1コマずつ 計算して、
   すね・ひづめ・うでの 下半分が 胴の 中に 入った コマ数と 深さを 出す（動きを かえたら 5つの 大きさ＋幻の馬・神様馬で しらべる）。
   ひざを つく 高さは すねの 表面で 合わせる（`buildLieKeys` の `geoLow`）・ひざを ついて いる 間は すねを まげて 地面から 上げない（`nf`：

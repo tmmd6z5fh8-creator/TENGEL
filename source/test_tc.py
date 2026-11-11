@@ -219,6 +219,21 @@ try:
           return { lat: t1 - t0, ph, h, m0, zb, y1, x1, side, end: S.phase, cool: S.coolUntil > S.lastT, z: S.zoom.z }; }""")
         check(lat['ph'] == 'pet' and lat['h'] == 2.8 and lat['m0'] == 'idle' and lat['zb'] > 2.2 and lat['lat'] < 2.0 and abs(lat['y1'] - 820) < 25 and abs(lat['x1'] - 526) < 60 and lat['side'] < 0.4 and lat['end'] == 'idle' and not lat['cool'] and lat['z'] == 1,
               f'「撫でる」を 押して から 撫でられる まで {lat["lat"]:.2f}秒（いちばん 奥で むこう向き：歩かないで その場で 横向きに・カメラは 押した ときから 寄る {lat["zb"]:.2f}倍。第4.150版は 14.8秒）・撫でずに もどっても 7秒の 待ちは ない')
+        # 第4.152版（バグ直し・まさちゃん 11/11 12:10「これおかしくならないようにしてね！」）：はしを 走って いる 馬を 撫でる → 画面に 入る 所まで 少し 歩く ときに 行き先の まわりを 回りつづけて 始まらなかった
+        rn = pg.evaluate("""async () => { const [HO, BR] = TCCare._hb, S = TCCare.S, out = [];
+          for (const [x0, y0, d0, mode] of [[526, 1090, 0, 'run'], [935, 1000, -1.6, 'idle'], [118, 1150, 1.6, 'idle']]) {
+            Object.assign(BR, { x: x0, y: y0, dir: d0, mode: 'idle', until: S.lastT + 90 }); S.coolUntil = -1e9; S.petN = 0;
+            if (mode === 'run') Object.assign(BR, { mode: 'run', lap: 0.3, runV: 3.2, runEnd: 0, runT: 9, tPrev: null, toTrack: true });
+            await new Promise(r => setTimeout(r, 700)); const p0 = [Math.round(BR.x), Math.round(BR.y)], t0 = S.lastT; TCCare.press(t0, 'pet');
+            const w0 = performance.now(); while (performance.now() - w0 < 12000 && S.phase !== 'pet') await new Promise(r => requestAnimationFrame(r));
+            const lat = S.lastT - t0, ph = S.phase; for (let i = 0; i < 20 && S.zB; i++) await new Promise(r => setTimeout(r, 50));
+            const e = TCHorse.extent(HO), z = S.zoom, sx = x => (x - z.cx) * z.z + 1052 / 2;
+            out.push({ p0, lat, ph, x: Math.round(BR.x), l: Math.round(sx(e[0])), r: Math.round(sx(e[2])), cos: Math.cos(BR.dir) }); S.petIdle = -1e9;
+            const w1 = performance.now(); while (performance.now() - w1 < 12000 && S.phase !== 'idle') await new Promise(r => requestAnimationFrame(r));
+          }
+          return out; }""")
+        check(all(q['ph'] == 'pet' and q['lat'] < 4.0 and q['l'] >= -6 and q['r'] <= 1058 for q in rn) and rn[1]['cos'] < -0.9 and rn[2]['cos'] > 0.9,
+              '走って いる 馬・右の はし・左の はしの 馬を 撫でる：' + '／'.join(f'{q["p0"]} → {q["lat"]:.2f}秒（x {q["x"]}・画面の {q["l"]}〜{q["r"]}）' for q in rn) + '・はしの 馬は 顔を まん中へ 向ける')
         print('■ ごはん（エサ・3D の バケツ）')
         stock0 = pg.evaluate("() => TCCare.S.stock")
         stage_click(pg, 407, 1494); pg.wait_for_timeout(1200)
@@ -239,6 +254,89 @@ try:
         check(tot[0] == stock0 - 1 and tot[1] >= 1, f'お世話トークンを 1つ 使って、お世話の 合計が ふえた {stock0} → {tot}')
         rsn = pg.evaluate("() => Object.assign({}, TCApp.state.rs)")
         check(rsn['n'] == 1 and rsn['at'] == 0, f'お世話 1回 → 馬の リセットの 数えが 1（タイマーは まだ：5回から）（{rsn}）（第4.144版）')
+        # 第4.152版（まさちゃん 11/11 10:13「お掃除は、15分に一回、ゴミがフィールドに散乱する仕組みにして！片付けられない限りは、新しいゴミが出ないようにして！」
+        #   「お掃除は、連続はできない。ゴミが出現した時のみ」「ゴミは落ちる場所は5箇所、ランダムに出現」・10:16「うんちが出たら掃除できるようにして！」・09:43 3D の ほうき・ちりとり）
+        #   きまり（ゴミか うんちが ある とき だけ・1回で ぜんぶ・さわらない まま 25秒）は test_tc_care.js。ここは 本物の 画面：散らばる・3D の 道具・片付けた あとの 15分・時計・ひらき直し
+        print('■ ゴミの おそうじ（第4.152版）')
+        keep = pg.evaluate("() => { const s = TCApp.state; return JSON.stringify({ cares: s.cares, total: s.total, rs: s.rs, stock: s.stock, high: s.high }); }")
+        TR = """() => { const [HO, BR] = TCCare._hb, s = TCApp.state, O = TCApp._t.ODDS, g = (a, b) => Math.hypot(a.x - b.x, (a.y - b.y) * 2); let dmin = 1e9;
+          for (let i = 0; i < s.trash.length; i++) for (let j = i + 1; j < s.trash.length; j++) dmin = Math.min(dmin, g(s.trash[i], s.trash[j]));
+          return { n: s.trash.length, xy: s.trash.map(q => [q.x, q.y]), live: (BR.trash || []).map(q => [q.x, q.y, q.items.length, q.items.every(it => it.k >= 0 && it.k < 4 && it.w > 0.25 && it.w < 0.7)]), dmin,
+            tex: HO.trashTex.filter(Boolean).map(x => [x.w, x.h]), min: O.trashMin, N: O.trashN, trashIn: TCCare.S.trashIn, left: (s.trashAt - Date.now()) / 60000, stock: TCCare.S.stock, phase: TCCare.S.phase }; }"""
+        tr = pg.evaluate(TR)
+        xs = [q[0] for q in tr['xy']]; ys = [q[1] for q in tr['xy']]
+        check(tr['n'] == 5 and tr['N'] == 5 and tr['min'] == 15 and len(tr['live']) == 5 and all(2 <= q[2] <= 4 and q[3] for q in tr['live']) and tr['dmin'] >= 150 and min(xs) >= 170 and max(xs) <= 882 and min(ys) >= 840 and max(ys) <= 1380
+              and len(tr['tex']) == 4 and tr['trashIn'] == 0,
+              f'はじめて ひらくと ゴミが 5か所に 散らばって いる（山 1つに 絵 2〜4こ・4つの 絵 {tr["tex"]}・たがいに {tr["dmin"]:.0f} 以上 はなれて いる・歩ける 所の 中）')
+        sp = pg.evaluate("""() => { const T = TCApp._t.trash; let ok = 0, near = 1e9, dm = 1e9, kinds = new Set(), cnt = {};
+          for (let k = 0; k < 300; k++) { const hx = 246 + Math.random() * 560, hy = 800 + Math.random() * 580, a = T.spots(Math.random, hx, hy); if (a.length === 5) ok++;
+            for (const q of a) { near = Math.min(near, Math.hypot(q.x - hx, (q.y - hy) * 2)); for (const it of T.items(q.sd)) kinds.add(it.k); const n = T.items(q.sd).length; cnt[n] = (cnt[n] || 0) + 1; if (JSON.stringify(T.items(q.sd)) !== JSON.stringify(T.items(q.sd))) ok = -1e9; }
+            for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) dm = Math.min(dm, Math.hypot(a[i].x - a[j].x, (a[i].y - a[j].y) * 2)); }
+          return { ok, near, dm, kinds: [...kinds].sort(), cnt }; }""")
+        check(sp['ok'] == 300 and sp['near'] >= 170 and sp['dm'] >= 150 and sp['kinds'] == [0, 1, 2, 3] and sorted(sp['cnt'].keys()) == ['2', '3', '4'],
+              f'散らばる 場所（300回）：いつも 5か所・馬の 足もとは さける（いちばん 近くて {sp["near"]:.0f}）・たがいに {sp["dm"]:.0f} 以上・4つの 絵が まざる・山の 中身は 種から いつも 同じ')
+        for _ in range(16):                  # ごはんの あとの 当たりの 札が 出て いる 間は 押せない：押せる ように なる まで
+            stage_click(pg, 644, 1494); pg.wait_for_timeout(600)
+            if pg.evaluate("() => TCCare.S.mode === 'clean'"): break
+        for _ in range(40):
+            pg.wait_for_timeout(250)
+            if pg.evaluate("() => TCCare.S.phase === 'clean' && !!TCCare._hb[1].props"): break
+        cs = pg.evaluate("""() => { const [HO, BR] = TCCare._hb, S = TCCare.S, C = S.clean, s = TCApp.state;
+          return { phase: S.phase, n: C ? C.tg.length : 0, props: (BR.props || []).map(q => q.P.meta.i), st: s.trash.length, left: (s.trashAt - Date.now()) / 60000, stock: S.stock, live: (BR.trash || []).length, z: S.zoom.z }; }""")
+        check(cs['phase'] == 'clean' and cs['n'] == 5 and cs['props'] == [6888, 21000] and cs['st'] == 0 and 14.5 < cs['left'] <= 15.01 and cs['stock'] == tr['stock'] - 1 and cs['live'] == 5,
+              f'「おそうじ」を 押す → 3D の ちりとりと ほうきが 出る（三角 {[v // 3 for v in cs["props"]]}こ）・トークン −1・その ときに「片付けた」（次の ゴミまで {cs["left"]:.1f}分）・ゴミは まだ 見えて いる')
+        shot(pg, 'tc_clean_tools')
+        sw = pg.evaluate("""async () => { const S = TCCare.S, C = S.clean, raf = () => new Promise(r => requestAnimationFrame(r)); let n = 0; const mid = [];
+          while (C.tg.some(q => !q.done) && n < 12) { const T = C.tg.find(q => !q.done), o = T.o, from = [o.x + 130, o.y + 8]; TCCare.input('down', from[0], from[1], S.lastT); const pn = { x: C.pan.x, y: C.pan.y }, g0 = C.got;
+            for (let i = 1; i <= 16 && C.got === g0; i++) { await raf(); TCCare.input('move', from[0] + (pn.x - from[0]) * i / 16, from[1] + (pn.y - from[1]) * i / 16, S.lastT); }
+            mid.push([Math.round(pn.x), Math.round(pn.y), C.got - g0]); TCCare.input('up', pn.x, pn.y, S.lastT); n++; await new Promise(r => setTimeout(r, 150)); }
+          return { n, got: C.got, phase: S.phase, mid }; }""")
+        check(sw['n'] <= 5 and sw['got'] == 5 and sw['phase'] == 'cleanwait' and all(90 <= m[0] <= 962 and 790 <= m[1] <= 1430 and m[2] >= 1 for m in sw['mid']),
+              f'ほうきで 山を 押して ちりとりへ：なぞる たびに 入る（{sw["n"]}回 なぞって {sw["got"]}こ）・ちりとりは いつも フィールドの 中')
+        for _ in range(60):
+            pg.wait_for_timeout(250)
+            if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.clean"): break
+        af = pg.evaluate(TR)
+        check(af['phase'] == 'idle' and af['n'] == 0 and len(af['live']) == 0 and 14.4 < af['left'] <= 15 and 860 < af['trashIn'] <= 900,
+              f'片付いた：ゴミは ない・次の ゴミまで {af["left"]:.1f}分（片付ける までは 次が 出ない）')
+        for _ in range(16):
+            stage_click(pg, 644, 1494); pg.wait_for_timeout(600)
+            if pg.evaluate("() => TCCare.S.fx.some(f => f.k === 'tagUI' && /ゴミ/.test(f.txt))"): break
+        ag = pg.evaluate("() => { const S = TCCare.S; return { phase: S.phase, mode: S.mode, stock: S.stock, tags: S.fx.filter(f => f.k === 'tagUI').map(f => f.txt) }; }")
+        check(ag['phase'] == 'idle' and ag['mode'] is None and ag['stock'] == af['stock'] and 'ゴミは あと 15分で 出るよ' in ag['tags'],
+              f'つづけては できない：「{ag["tags"][-1] if ag["tags"] else ""}」・トークンは 使わない（{ag["stock"]}こ の まま）')
+        pg.evaluate("() => { const [HO, BR] = TCCare._hb; BR.poops = [{ x: 470, y: 1230, img: 1, t0: -10, h0: 1.05, w: 0.5 * (HO.opt.stage || 1), gold: false }]; }"); pg.wait_for_timeout(600)
+        for _ in range(16):
+            stage_click(pg, 644, 1494); pg.wait_for_timeout(600)
+            if pg.evaluate("() => TCCare.S.mode === 'clean'"): break
+        for _ in range(40):
+            pg.wait_for_timeout(250)
+            if pg.evaluate("() => TCCare.S.phase === 'clean'"): break
+        pc_ = pg.evaluate("""async () => { const S = TCCare.S, C = S.clean, raf = () => new Promise(r => requestAnimationFrame(r)); if (!C) return null; const T = C.tg[0], o = T.o, from = [o.x + 130, o.y + 8], z = S.zoom.z, left = (TCApp.state.trashAt - Date.now()) / 60000;
+          TCCare.input('down', from[0], from[1], S.lastT); const pn = { x: C.pan.x, y: C.pan.y };
+          for (let i = 1; i <= 16 && !T.done; i++) { await raf(); TCCare.input('move', from[0] + (pn.x - from[0]) * i / 16, from[1] + (pn.y - from[1]) * i / 16, S.lastT); }
+          TCCare.input('up', pn.x, pn.y, S.lastT); return { n: C.tg.length, poop: !!T.poop, done: !!T.done, z, left, saved: TCApp.state.poops.length }; }""")
+        check(pc_ and pc_['n'] == 1 and pc_['poop'] and pc_['done'] and pc_['z'] > 1.3 and 14.2 < pc_['left'] <= 15 and pc_['saved'] == 0,
+              f'ゴミが なくても うんちが 出たら おそうじ できる（カメラが 寄る {pc_["z"]:.2f}倍・ゴミの 15分は そのまま {pc_["left"]:.1f}分）')
+        for _ in range(80):
+            pg.wait_for_timeout(250)
+            if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.clean && !TCCare.S.mode"): break
+        # 15分 たつ（時計を 進める）→ また 5か所に 散らばる・ひらき直しても 同じ 場所
+        pg.evaluate("() => { window.__realNow = Date.now.bind(Date); const r = window.__realNow; Date.now = () => r() + 12 * 60000; }"); pg.wait_for_timeout(900)
+        t14 = pg.evaluate(TR)
+        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 15.5 * 60000; }"); pg.wait_for_timeout(1500)
+        t15 = pg.evaluate(TR)
+        check(t14['n'] == 0 and t15['n'] == 5 and len(t15['live']) == 5 and t15['xy'] != tr['xy'] and t15['trashIn'] == 0,
+              f'12分 では 出ない（あと {t14["left"]:.1f}分）・15分 たつと また 5か所に 散らばる（前とは ちがう 場所）')
+        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 60 * 60000; }"); pg.wait_for_timeout(900)
+        t60 = pg.evaluate(TR)
+        check(t60['n'] == 5 and t60['xy'] == t15['xy'], '片付けない まま 時間が たっても 新しい ゴミは 出ない（同じ 5か所の まま）')
+        pg.evaluate("() => TCApp.close()"); pg.wait_for_timeout(400); pg.evaluate("() => TCApp.open()"); pg.wait_for_timeout(1500)
+        ro = pg.evaluate(TR)
+        check(ro['n'] == 5 and ro['xy'] == t15['xy'] and [q[:2] for q in ro['live']] == t15['xy'] and [q[2] for q in ro['live']] == [q[2] for q in t15['live']],
+              'とじて ひらき直しても ゴミは 同じ 場所・同じ 中身')
+        shot(pg, 'tc_trash')
+        pg.evaluate("(k) => { Date.now = window.__realNow; const s = TCApp.state, n = Date.now(), K = JSON.parse(k); s.seen = n; s.stockAt = n; Object.assign(s, K); const S = TCCare.S; S.stock = S.stockShow = K.stock; S.high = K.high || 0; }", keep); pg.wait_for_timeout(400)
         # 第4.139版（抜け穴を ふさぐ）：端末の 時計を 先へ 進めて お世話トークンを ためる → 時計を もどす、を ふせぐ（tc_app.js の tnow：もどらない 時計）
         print('■ 時計を 進めて もどす ズルを ふせぐ')
         TS = "() => { const s = TCApp.state; return { stock: s.stock, at: s.stockAt, seen: s.seen, now: Date.now() }; }"
@@ -289,6 +387,9 @@ try:
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
         check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399],
               f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
+        od = pg.evaluate("() => [TCApp._t.ODDS.trashMin, TCApp._t.ODDS.trashN]")
+        check(od == [15, 5] and all(x in gd['text'] for x in ['15分ごとにゴミが5か所に散らばる', '片付けるまで次のゴミは出ない', 'おそうじできるのはゴミかうんちがあるときだけ', 'ちりとりへ はき入れよう']) and 'うんちがない時は落ち葉' not in gd['text'],
+              f'説明書：おそうじは「15分ごとに ゴミが 5か所」「ゴミか うんちが ある とき だけ」「ちりとりへ はき入れる」（きまりの 数 {od} と 同じ・前の「3回はく・落ち葉」は ない）')
         #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
         g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいるあいだ'), heads: s.map(x => x[0]) }; }")
         check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 11

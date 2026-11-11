@@ -165,6 +165,13 @@ if r.returncode == 0:
               and how.get('film') == 5 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf') == 7 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 29, 'preset': 'slow', 'tail': [[30, 27], [20, 25], [10, 22]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：前は 39.5MB・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
               f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.151版：劣化なし・6bit）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+        # 第4.152版（まさちゃん 11/11 09:43・10:13）：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき・3D の ちりとり：kisekae/tc/clean_assets.py）
+        _cl = ['tc_trash1.webp', 'tc_trash2.webp', 'tc_trash3.webp', 'tc_trash4.webp', 'tc_prop_broom.json', 'tc_prop_broom.bin', 'tc_prop_broom_c.webp', 'tc_prop_broom_n.webp', 'tc_prop_pan.json', 'tc_prop_pan.bin', 'tc_prop_pan_c.webp']
+        import json as _jc
+        _mb = _jc.load(open(os.path.join(RES, 'tc_prop_broom.json'))) if 'tc_prop_broom.json' in res else {}; _mp = _jc.load(open(os.path.join(RES, 'tc_prop_pan.json'))) if 'tc_prop_pan.json' in res else {}
+        check(all(f in res for f in _cl) and 0.4e6 < _sz(_cl) < 0.8e6 and _mb.get('fmt') == 2 and _mb.get('i') == 21000 and _mb.get('ntex') == 'tc_prop_broom_n.webp' and _mp.get('fmt') == 2 and _mp.get('i') == 6888 and not _mp.get('ntex')
+              and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in _cl if f in res),
+              f'第4.152版：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき 7000三角・ちりとり 2296三角）が Resources に 入る（11こ・{_sz([f for f in _cl if f in res]) / 1e3:.0f}KB・もとと 同じ 中身）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）

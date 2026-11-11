@@ -66,6 +66,9 @@
   // 光る 目の 色（幻の馬：むらさき・神様馬：金色）
   // うんちの 絵（地面に 立てた 絵）
   const PFS = 'precision mediump float;varying vec2 v;uniform sampler2D uT;uniform vec3 uTint;void main(){vec4 c=texture2D(uT,vec2(v.x*0.5+0.5,0.5-v.y*0.5));gl_FragColor=vec4(c.rgb*uTint*c.a,c.a);}';
+  // 地面に ねて いる 絵（ゴミ：第4.152版）：絵を 回して 奥行きの ぶん つぶす（uM＝2×2 の 行列）・すき通り（uA）
+  const RVS = 'attribute vec2 p;uniform vec4 uE;uniform vec4 uM;varying vec2 v;void main(){v=p;gl_Position=vec4(uE.x+uM.x*p.x+uM.y*p.y,uE.y+uM.z*p.x+uM.w*p.y,0.0,1.0);}';
+  const TFS = 'precision mediump float;varying vec2 v;uniform sampler2D uT;uniform vec3 uTint;uniform float uA;void main(){vec4 c=texture2D(uT,vec2(v.x*0.5+0.5,0.5-v.y*0.5));gl_FragColor=vec4(c.rgb*uTint*c.a*uA,c.a*uA);}';
   const EYE_GLOW = { purple: [0.78, 0.36, 1.0], gold: [1.0, 0.78, 0.25] };
 
   function prog(gl, vs, fs) {
@@ -503,9 +506,14 @@
     }
     [h.loc.aPos, h.loc.aNrm, h.loc.aCol, h.loc.aBone, h.loc.aBone2, h.loc.aBw, h.loc.aUV, h.loc.aCv].forEach(l => { if (l >= 0) gl.disableVertexAttribArray(l); });
   }
+  function spriteTex(gl, im) {             // 地面の 絵（うんち・ゴミ）の テクスチャ
+    const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.activeTexture(gl.TEXTURE0);
+    return { t, w: im.width, h: im.height };
+  }
   function create(gl, meta, bin, opt) {
     opt = opt || {};
-    const P = prog(gl, VS, FS), S = prog(gl, SVS, SFS), G = prog(gl, SVS, GFS), PS = prog(gl, SVS, PFS);
+    const P = prog(gl, VS, FS), S = prog(gl, SVS, SFS), G = prog(gl, SVS, GFS), PS = prog(gl, SVS, PFS), TS = prog(gl, RVS, TFS);
     const lay = meta.layout, nv = meta.v;
     const buf = (key, Type, n) => new Type(bin, lay[key][0], n);
     const fmt2 = meta.fmt === 2;        // 2＝テクスチャ つき（法線 int8・UV uint16・三角 番号）
@@ -525,7 +533,8 @@
       sp: gl.getAttribLocation(S, 'p'), uE: gl.getUniformLocation(S, 'uE'), uO: gl.getUniformLocation(S, 'uO'),
       uFill: U('uFill'), uLift: U('uLift'), uSky: U('uSky'), uGnd: U('uGnd'), uAoOn: U('uAoOn'), uSm: U('uSm'), uGrain: U('uGrain'), uCv: U('uCv'), aCv: L('aCv'), uDbg: U('uDbg'), uEm: U('uEm'), uE0: U('uE0'), uE1: U('uE1'), uGc: U('uGc'), uGr: U('uGr'),
       gp: gl.getAttribLocation(G, 'p'), gE: gl.getUniformLocation(G, 'uE'), gGc: gl.getUniformLocation(G, 'uGc'), gGk: gl.getUniformLocation(G, 'uGk'),
-      pp: gl.getAttribLocation(PS, 'p'), pE: gl.getUniformLocation(PS, 'uE'), pT: gl.getUniformLocation(PS, 'uT'), pTint: gl.getUniformLocation(PS, 'uTint') };
+      pp: gl.getAttribLocation(PS, 'p'), pE: gl.getUniformLocation(PS, 'uE'), pT: gl.getUniformLocation(PS, 'uT'), pTint: gl.getUniformLocation(PS, 'uTint'),
+      tp: gl.getAttribLocation(TS, 'p'), tE: gl.getUniformLocation(TS, 'uE'), tM: gl.getUniformLocation(TS, 'uM'), tT: gl.getUniformLocation(TS, 'uT'), tTint: gl.getUniformLocation(TS, 'uTint'), tA: gl.getUniformLocation(TS, 'uA') };
     const bones = meta.bones, bi = {}; bones.forEach((b, i) => { bi[b.name] = i; });
     const H = meta.height || 2.15;
     const legLen = bi.FL_u != null ? bones[bi.FL_u].head[1] : 1.0;
@@ -594,8 +603,7 @@
     const sampP = new Float32Array(samp.length * 3), sampB = new Uint8Array(samp.length);
     samp.forEach((i, k) => { sampP[k * 3] = pos[i * 3]; sampP[k * 3 + 1] = pos[i * 3 + 1]; sampP[k * 3 + 2] = pos[i * 3 + 2]; sampB[k] = bone[i]; });
     return { sampP, sampB, anchors, gl, P, S, G, B, loc, bones, bi, meta, H, legLen, opt, lie: buildLieKeys(bones, probe), tailTip, tailProbe, probe, under, tex, ntex, fmt2, eyes, em, eyeR: meta.eye_r || 0.02, glow, legs, hoof, PS,
-      poopTex: (opt.poopImgs || []).map(im => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.activeTexture(gl.TEXTURE0); return { t, w: im.width, h: im.height }; }) };      // 5番の 場所（フィールドの 絵 0〜2番を 上書きしない）
+      poopTex: (opt.poopImgs || []).map(im => spriteTex(gl, im)), TS, trashTex: (opt.trashImgs || []).map(im => im ? spriteTex(gl, im) : null) };      // うんち・ゴミの 絵（5番の 場所：フィールドの 絵 0〜2番を 上書きしない）
   }
 
   // 骨の 角度（rot：骨の 名前 → [z 回り（前後）, y 回り（左右）]）・体の ずれ → 16この 行列
@@ -872,8 +880,11 @@
       const want = Math.atan2(dy / 0.5, dx), turn = angDiff(st.dir, want);
       steer(st, want, dt, 1.1 * hk, 1.8 * hk, 3.5 * hk); steered = true;
       wantW = 1;
-      effT = lerp(1, hk > 1 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   // 向きを 変える 間・近く では 小さな 歩はばで ゆっくり（急ぎ足の ときは 少し 大きめ）
-      if (dist < Math.max(28, 0.06 * s * h.H)) {
+      effT = lerp(1, hk > 1 && dist > 170 ? 0.5 : 0.25, smooth((Math.abs(turn) - 0.25) / 0.9)) * clamp(dist / 90, 0.5, 1);   // 向きを 変える 間・近く では 小さな 歩はばで ゆっくり（急ぎ足で 遠い ときは 少し 大きめ）
+      // 第4.152版（バグ直し）：急ぎ足で 行き先の 近くを 回りつづけない：着いた あつかいの 半径を 広く（40）・近く（110）に 1.4秒 いたら そこで 着いた ことに する
+      st.closeT = dist < 110 ? (st.closeT || 0) + dt : 0;
+      if (dist < Math.max(hk > 1 ? 40 : 28, 0.06 * s * h.H) || (hk > 1 && st.closeT > 1.4)) {
+        st.closeT = 0;
         // 着いた：ときどき そのまま 次の 場所へ 歩きつづける（ぶらぶら 歩く）・ふだんは 止まる
         if (!(st.force && st.force.length) && !st.forcedWalk && !st.careHold && rnd() < 0.45 && pickWalkTarget(h, st, rnd)) { st.until = t + 30; }
         else { st.mode = 'idle'; st.until = st.force && st.force.length ? t : t + 4 + rnd() * 7; st.want.graze = rnd() < 0.3 ? 1 : 0; st.want.look = [0, 0]; }
@@ -1002,6 +1013,7 @@
     const R3 = [V[0], V[1], V[2], V[4], V[5], V[6], V[8], V[9], V[10]];      // 回転だけ（法線 用）
     V = M.mul(M.sc(s / view.W * 2, s / view.H * 2, 0.4), V);
     h.last = { mats, V, cx, cy, view, s, R3 };                // お世話の 絵を 置く ため（where）
+    if (st.trash && st.trash.length && h.trashTex.length) drawTrash(h, st, t, view, lt);      // ゴミは 地面に ねて いる：馬と かげの 下
     // かげ（足もと・時間帯で こさ と のび）
     gl.useProgram(h.S); gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindBuffer(gl.ARRAY_BUFFER, h.B.quad); gl.enableVertexAttribArray(h.loc.sp); gl.vertexAttribPointer(h.loc.sp, 2, gl.FLOAT, false, 0, 0);
@@ -1066,6 +1078,35 @@
     gl.disable(gl.DEPTH_TEST);
     if (gk > 0) drawEyeGlow(h, mats, V, R3, cx, cy, s, view, gk);
     if (st.poops && st.poops.length && h.poopTex.length) drawPoops(h, st, t, view, lt, s, true);
+  }
+  // ゴミ（第4.152版：11/11 10:13 まさちゃん「15分に一回、ゴミがフィールドに散乱する仕組みにして！」「ゴミは落ちる場所は5箇所」「画像をゴミの絵として、使用して！散々に混ぜていいよ！」）
+  //   st.trash＝山の ならび [{ x, y（フィールドの px）, items: [{ k（絵の 番号）, dx, dy（山の まん中から・体の 高さ 1＝1・dy は 奥行き）, r（向き）, w（幅）, d（出て くる 順）}],
+  //     t0（出て きた 時刻：ひらひら 落ちて くる。なければ はじめから ある）, sp（ひろがり 1＝ふつう・はかれて 寄ると 小さく）, a（すき通り）, tw（はかれて 回った ぶん）}]
+  //   地面に ねて いる 絵：向きを 回して、奥行きを 6割に つぶす（地面の 上の 円が 横長の だ円に 見える のと 同じ。半分だと リンゴの 芯が ぺたんこに 見える）。馬と 馬の かげ より 先に 描く（足で ふめる）
+  const TRASH_KY = 0.6;
+  function drawTrash(h, st, t, view, lt) {
+    const gl = h.gl, tint = [0, 1, 2].map(i => Math.min(1.05, lt.amb[i] + lt.sunC[i] * 0.55));
+    gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.bindBuffer(gl.ARRAY_BUFFER, h.B.quad);
+    for (let pass = 0; pass < 2; pass++) {               // 0：かげ ぜんぶ → 1：絵 ぜんぶ（となりの 絵に かげが のらない）
+      if (pass === 0) { gl.useProgram(h.S); gl.enableVertexAttribArray(h.loc.sp); gl.vertexAttribPointer(h.loc.sp, 2, gl.FLOAT, false, 0, 0); }
+      else { gl.useProgram(h.TS); gl.enableVertexAttribArray(h.loc.tp); gl.vertexAttribPointer(h.loc.tp, 2, gl.FLOAT, false, 0, 0); gl.uniform3fv(h.loc.tTint, tint); gl.uniform1i(h.loc.tT, 5); }
+      for (const q of st.trash) {
+        if (!q.items) continue;
+        const ss = scaleAt(h, q.y) / (h.opt.stage || 1) * view.k, sp = q.sp != null ? q.sp : 1, qa = q.a != null ? q.a : 1; if (qa <= 0.004) continue;
+        for (const it of q.items) {
+          const tex = h.trashTex[it.k % h.trashTex.length]; if (!tex) continue;
+          const u = q.t0 != null ? clamp((t - q.t0 - (it.d || 0)) / 0.42, 0, 1) : 1; if (u <= 0) continue;
+          const fall = (1 - u) * (1 - u), a = qa * Math.min(1, u * 2.5), kk = (0.55 + 0.45 * sp) * (1 + 0.25 * fall);
+          const wpx = it.w * ss * kk, hpx = wpx * tex.h / tex.w, r = it.r + (q.tw || 0) * (it.k % 2 ? 1 : -1) + fall * 2.2 * (it.k % 2 ? 1 : -1), c = Math.cos(r), sn = Math.sin(r);
+          const gx = (q.x + it.dx * sp * ss / view.k) * view.k + view.ox, gy = (q.y + it.dy * sp * TRASH_KY * ss / view.k) * view.k + view.oy - fall * 0.55 * ss;
+          if (pass === 0) { gl.uniform4f(h.loc.uE, gx / view.W * 2 - 1, 1 - (gy + 0.03 * ss) / view.H * 2, wpx * 0.56 / view.W * 2, wpx * 0.56 * TRASH_KY / view.H * 2); gl.uniform1f(h.loc.uO, lt.shadow * 0.55 * a * (1 - fall)); }
+          else { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, tex.t); gl.activeTexture(gl.TEXTURE0);
+            gl.uniform4f(h.loc.tE, gx / view.W * 2 - 1, 1 - gy / view.H * 2, 0, 0); gl.uniform4f(h.loc.tM, c * wpx / view.W, -sn * hpx / view.W, sn * wpx * TRASH_KY / view.H, c * hpx * TRASH_KY / view.H); gl.uniform1f(h.loc.tA, a); }
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+      }
+      gl.disableVertexAttribArray(pass === 0 ? h.loc.sp : h.loc.tp);
+    }
   }
   // うんち：地面に 立てた 絵（落ちる ときは しっぽの 高さから）。front＝馬より 手前の ものだけ／奥の ものだけ
   function drawPoops(h, st, t, view, lt, s, front) {

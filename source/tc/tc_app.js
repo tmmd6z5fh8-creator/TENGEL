@@ -21,6 +21,9 @@ const TCApp = (() => {
   //   ・時間は「もどらない 時計」（tnow）と、ひらいて いる 間に たった 秒（el）の どちらか 早い 方で 数える（時計を もどしても 止まらない）
   const RESET_CARES = 5, RESET_MIN = 5;               // 馬の リセット：お世話 5回 → タイマー 5分
   const VISIT_MIN = 30;                               // 幻の馬・神様馬の タイムリミット（来てから・分）
+  // ゴミ（第4.152版：11/11 10:13 まさちゃん「お掃除は、15分に一回、ゴミがフィールドに散乱する仕組みにして！片付けられない限りは、新しいゴミが出ないようにして！」「ゴミは落ちる場所は5箇所、ランダムに出現するように！」）
+  //   片付けて から TRASH_MIN 分 たつと、フィールドの TRASH_N か所に 散らばる（閉じて いる 間も 時間は 進む：もどらない 時計 tnow）。片付ける まで 次は 出ない
+  const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      // TRASH_W：絵の 幅（リンゴの 芯・かじった ニンジン・枯れ葉・色の 葉っぱ。体の 高さ 1 の 馬＝1）
   const HIGH_N = 5, HIGH_X = 4;                       // 高確ゾーン：お世話 5回・当たりやすさ ×4 ※仮
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
   const PRIZES = [                                    // お世話（ごはん・おそうじ）の 抽選：まれな 方から
@@ -43,11 +46,13 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   // ---------- 保存 ----------
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      // rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      // rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     const r = st.rs; st.rs = r && typeof r === 'object' ? { n: Math.max(0, Math.round(+r.n || 0)), at: Math.max(0, +r.at || 0), el: Math.max(0, +r.el || 0) } : { n: 0, at: 0, el: 0 };
+    st.trash = (Array.isArray(st.trash) ? st.trash : []).filter(q => q && isFinite(q.x) && isFinite(q.y)).slice(0, 8).map(q => ({ x: Math.round(q.x), y: Math.round(q.y), sd: (+q.sd || 0) >>> 0 }));
+    st.trashAt = Math.max(0, +st.trashAt || 0);
   }
   function save() { dirty = false; try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { } }
   const touch = () => { dirty = true; };
@@ -203,8 +208,9 @@ const TCApp = (() => {
     const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
     const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      // 第4.151版：番号を 詰めた 形（神様馬・幻の馬）は もとの 形に もどす
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
-    const [texImg, nrmImg, ...poopImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp')]);
-    const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
+    const [texImg, nrmImg, p1, p2, p3, ...trashImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp'), img('tc_trash1.webp'), img('tc_trash2.webp'), img('tc_trash3.webp'), img('tc_trash4.webp')]);
+    const poopImgs = [p1, p2, p3];
+    const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), trashImgs, stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
     hcache[sp.key] = h; return h;
   }
   async function useHorse(first) {
@@ -214,6 +220,7 @@ const TCApp = (() => {
     if (BR) { nb.x = BR.x; nb.y = BR.y; nb.dir = BR.dir; } else { nb.x = 470 + Math.random() * 120; nb.y = 1080 + Math.random() * 90; nb.dir = Math.random() * Math.PI * 2; }
     if (sp.light) nb.light = sp.light;
     nb.poops = (st.poops || []).map(q => Object.assign({ t0: -10, h0: 1.05 }, q));
+    nb.trash = BR && BR.trash && BR.trash.length ? BR.trash : (st.trash || []).map(q => trashLive(q));      // ゴミは 馬が かわっても そのまま
     HO = h; BR = nb; horseKey = sp.key;
     if (TCCare.on) TCCare.setHorse(HO, BR);
     if (!first && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
@@ -226,6 +233,34 @@ const TCApp = (() => {
       return;
     }
     if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); if (!st.visit) useHorse(); }
+  }
+
+  // ---------- ゴミ ----------
+  function trashItems(sd) {                            // 山の 中身（種から いつも 同じ）：2〜4こ・4つの 絵を まぜる
+    let a = sd >>> 0; const r = () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; };
+    const n = 2 + Math.floor(r() * 3), items = [];
+    for (let i = 0; i < n; i++) { const k = Math.floor(r() * 4) % 4, an = r() * Math.PI * 2, rad = i === 0 ? 0.06 : 0.16 + 0.2 * r(); items.push({ k, dx: Math.cos(an) * rad, dy: Math.sin(an) * rad, r: r() * Math.PI * 2, w: TRASH_W[k] * (0.86 + 0.28 * r()), d: i * 0.08 }); }
+    return items;
+  }
+  const trashLive = (q, t0) => Object.assign({ x: q.x, y: q.y, sd: q.sd, items: trashItems(q.sd) }, t0 != null ? { t0 } : {});      // 描く 形（tc_horse.js の drawTrash）
+  function trashSpots(rnd, hx, hy) {                   // 5か所：歩ける 所の 中・たがいに はなれて いる・馬の 足もと では ない
+    const out = [];
+    for (let k = 0; k < 400 && out.length < TRASH_N; k++) {
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()), x = Math.round(526 + Math.cos(a) * r * 350), y = Math.round(1110 + Math.sin(a) * r * 265);
+      const far = (px, py, d) => Math.hypot(x - px, (y - py) * 2) >= d;
+      if (out.every(q => far(q.x, q.y, k < 300 ? 230 : 150)) && (hx == null || far(hx, hy, 170))) out.push({ x, y, sd: Math.floor(rnd() * 4294967296) >>> 0 });
+    }
+    return out;
+  }
+  function spawnTrash(t, quiet) {                       // 散らばる（開いて いる ときは ひらひら 落ちて くる）
+    st.trash = trashSpots(Math.random, BR && BR.x, BR && BR.y); touch(); save();
+    if (BR) BR.trash = st.trash.map((q, i) => trashLive(q, quiet ? null : t + i * 0.16));
+    if (!quiet) { SND.se('tc_se_paper.m4a', 0.7); msg('🍂 ゴミが 出たよ！\nおそうじ しよう', 2.8); }
+  }
+  function trashStep(gms, t) {                          // 1コマ：片付いた → 次の 時刻／時刻が 来た → 散らばる／お世話の 画面へ「あと 何秒」
+    if (BR && BR.trashDone) { BR.trashDone = false; st.trash = []; st.trashAt = gms + TRASH_MIN * 60000; touch(); save(); }
+    if (BR && !st.trash.length && gms >= st.trashAt && !busy && !resetting && careIdle() && !panelOpen() && !(BR.trash && BR.trash.length)) spawnTrash(t, t < 4);
+    if (TCCare.on) TCCare.S.trashIn = st.trash.length ? 0 : Math.max(0, st.trashAt - gms) / 1000;
   }
 
   // ---------- 2分ごとの チャンス・トークン・時間帯・幻の馬／神様馬 ----------
@@ -365,6 +400,7 @@ const TCApp = (() => {
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
     if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
+    if (!resetting) trashStep(gms, t);
     if (BR && !st.visit) BR.tod = tod();
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       // 開いて いる あいだに たった 秒（時計を もどしても 30分で 帰る）
     if (st.visit && visitLeft(gms) <= 0 && !busy && careIdle() && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      // タイムリミット → いつもの 馬
@@ -386,7 +422,7 @@ const TCApp = (() => {
     if (S.stock !== st.stock) { st.stock = S.stock; touch(); }
     if (S.heart !== st.heart) { st.heart = S.heart; touch(); }
     if ((S.high || 0) !== (st.high || 0)) { st.high = S.high || 0; touch(); }
-    const ps = (BR.poops || []).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
+    const ps = (BR.poops || []).filter(q => !q.sw).map(q => { if (q.gold == null) q.gold = Math.random() < P_GOLD; return { x: Math.round(q.x), y: Math.round(q.y), img: q.img || 0, w: q.w, gold: !!q.gold }; });
     if (JSON.stringify(ps) !== JSON.stringify(st.poops)) { st.poops = ps; touch(); }
     if (dirty && ms - saveAt > 2000) { saveAt = ms; save(); }
   }
@@ -419,7 +455,7 @@ const TCApp = (() => {
   async function open(opt) {
     SND.unlock();
     try {
-      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; }
+      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; if (BR && careIdle()) BR.trash = st.trash.map(q => trashLive(q)); }
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
@@ -437,5 +473,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, ODDS: { poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
 })();

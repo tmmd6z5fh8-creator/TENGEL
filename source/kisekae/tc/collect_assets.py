@@ -3,6 +3,8 @@
 #   ・まさちゃんの 絵（フィールド・馬の 3D・バケツと エサの 3D・うんち・アイテム・バナー・アイコン・ルーレット・扉と チケット）と それから 作った もの は
 #     公開の リポジトリに 入れない（.gitignore：ios/tc_assets/）。この スクリプトだけ 入れる
 #   ・PNG は 入れない（build_ios.py の きまり）：ゆれ・ライトの 地図は WebP（ロスレス＝値が かわらない）に する
+#   ・第4.152版：おそうじの 絵と 形（tc_trash1〜4.webp・tc_prop_broom.*・tc_prop_pan.*）は kisekae/tc/clean_assets.py が 作る（<作業フォルダ>/clean_app/ に あれば ここで いっしょに 入れる）。
+#     この スクリプトは 出す フォルダを 作り直す ので、clean_app/ が ない まま 走らせると おそうじの 絵と 形が なくなる → clean_assets.py <おそうじの 作業フォルダ> ios/tc_assets を もう一度
 import json, os, shutil, sys
 from PIL import Image
 SRC = os.path.abspath(sys.argv[1]); H3 = os.path.join(SRC, 'h3d')
@@ -74,3 +76,10 @@ for f in sorted(os.listdir(SD)):
     if f.endswith('.m4a'): put(os.path.join(SD, f))
 tot = sum(got.values())
 print('集めた', len(got), 'こ', round(tot / 1e6, 1), 'MB →', OUT)
+# おそうじ（第4.152版）：ゴミの 絵・3D の ほうき・ちりとり（clean_assets.py の 出した もの）
+CL = os.path.join(SRC, 'clean_app')
+if os.path.isdir(CL):
+    for f in sorted(os.listdir(CL)):
+        if f.startswith(('tc_trash', 'tc_prop_broom', 'tc_prop_pan')): put(os.path.join(CL, f))
+else:
+    print('※ おそうじの 絵と 形（clean_app/）が ない：kisekae/tc/clean_assets.py で 作って ios/tc_assets に 足す')
