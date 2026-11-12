@@ -41,21 +41,26 @@
   //   第4.147版（まさちゃん 2026/11/10 22:12「壁紙 …これら全部消して！ミッションも減った分調整して！」）：ポイントで 解放する 壁紙が 26 → 17枚に へった ので 8・16・25 → 5・10・16枚
   //     （今までと 同じく ポイントの 壁紙 だけで マスター帯に 届く）。id は 枚数 では なく 帯の 名前（mission-wall-silver…）に した：前の mission-wall-16（ゴールド帯）と 新しい 16枚（マスター帯）が
   //     ぶつからない ように。受け取った か どうかは 帯の 壁紙を 持って いるか（unlock-theme:<帯>）で 見る ＝ 前の 版で 受け取った 人は そのまま 受け取りずみ
-  var WALL_MISSIONS = [[5, 'silver', 'シルバー帯の壁紙'], [10, 'golden', 'ゴールド帯の壁紙'], [16, 'tengel', 'マスター帯の壁紙']];
+  //   第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」・14:32「ミッションも減った分調整して！」）：ポイントで 解放する 壁紙が 17 → 16枚に へった ので マスター帯 16 → 15枚
+  //     （シルバー帯 5枚・ゴールド帯 10枚は そのまま。今までと 同じく ポイントの 壁紙 だけで マスター帯に 届く）。id は 帯の 名前 なので 前に 受け取った 人は そのまま 受け取りずみ
+  var WALL_MISSIONS = [[5, 'silver', 'シルバー帯の壁紙'], [10, 'golden', 'ゴールド帯の壁紙'], [15, 'tengel', 'マスター帯の壁紙']];
   // 第4.147版：アプリから 外した 壁紙 10枚（kisekae/build_kisekae.py の REMOVED と 同じ）。解放した 数（wallCount）に 数えない。
   //   もう 解放して いた 人には、使った ポイント（チケットで 解放して いたら チケット）を 返す（goneUnlocks → points_ui.js の goneBack：1回 だけ＝back-theme:<名前>）。七夕は 壁紙パックの 1枚（台帳に できごとは ない）
-  var GONE_THEMES = ['sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata'];
-  var GONE_NAMES = { sakura: '桜', sea: '海', autumn: '紅葉', snow: '雪', newyear: 'お正月', xmas: 'クリスマス', halloween: 'ハロウィン', valentine: 'バレンタイン', whiteday: 'ホワイトデー', tanabata: '七夕' };
+  //   第4.160版：ネオン（neon・3,000P）も 外した ＝ 11枚
+  var GONE_THEMES = ['sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata', 'neon'];
+  var GONE_NAMES = { sakura: '桜', sea: '海', autumn: '紅葉', snow: '雪', newyear: 'お正月', xmas: 'クリスマス', halloween: 'ハロウィン', valentine: 'バレンタイン', whiteday: 'ホワイトデー', tanabata: '七夕', neon: 'ネオン' };
   // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/15」・じゅんび中も 数える）→ もらえるP
   //   第4.120版（まさちゃん 2026/11/04 02:02「結果ボードカスタムは、15個にする！ミッションも変更して！」）：さいごの 16こ → 15こ（ポイントは 同じ 1,600P）。
   //   前の 版で「16こ解放」を 受け取った 人は「15こ解放」も 受け取った ことに する（boardMissions）
   var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [15, 1600]];
   // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
-  //   いま 解放できる 壁紙は WALL_TOTAL＝30枚（ポイント 17＋壁紙パック 10＋帯 3）。
+  //   いま 解放できる 壁紙は WALL_TOTAL＝29枚（ポイント 16＋壁紙パック 10＋帯 3。第4.147版〜第4.159版は 30枚）。
   //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない「45枚 3,500P」を やめて 40枚まで（10こ）
   //   第4.147版（壁紙を 10枚 外した：40 → 30枚）：届かなく なった「35枚 3,500P」「40枚 3,500P」を やめて 30枚まで（8こ）。3〜30枚の 8こは そのまま。前に 受け取った ぶんは 台帳に 残る
-  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [30, 2500]];
-  var WALL_TOTAL = 30;
+  //   第4.160版（ネオンを 外した：30 → 29枚＝ポイント 16＋壁紙パック 10＋帯 3）：さいごの「30枚 2,500P」→「29枚 2,500P」（ぜんぶ 集めた ときの ミッション・ポイントは 同じ）。
+  //     前の 版で「30枚解放」を 受け取った 人は「29枚解放」も 受け取った ことに する（wallpMissions：2回 もらえない）
+  var WALLP_MISSIONS = [[3, 800], [6, 1200], [9, 1500], [12, 1800], [15, 2100], [20, 2500], [25, 2500], [29, 2500]];
+  var WALL_TOTAL = 29;
   var FREE_TYPES = ['単勝', '馬単', '3連単'];
   var UNLOCK_TYPES = ['複勝', '枠複', '枠単', '馬連', 'ワイド', '3連複'];
   var ALL_TYPES = ['単勝', '複勝', '枠複', '枠単', '馬連', '馬単', 'ワイド', '3連複', '3連単'];
@@ -349,7 +354,7 @@
     return null;
   }
   // 壁紙パック（第4.92版・まさちゃんの 指定）：買い切り 1,500円・10枚（第4.147版：七夕を 外して 11 → 10枚）。買った あとに 読み込んだ レース（200P で 読んだ 1レース・読み直しと 5連の 予想は 数えない）
-  //   5つごとに 1枚ずつ 解放（50レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（5・10・16枚）の 枚数に 数える
+  //   5つごとに 1枚ずつ 解放（50レースで 全部）。順番は 着せ替えの 一覧の 順（kisekae の pack.order）。帯の 壁紙の ミッション（5・10・15枚：第4.160版）の 枚数に 数える
   var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };
   function packOwned(events) { return owned(events, 'wallpack'); }
   function packUnlocked(reads) { return Math.min(WALLPACK.n, Math.floor((+reads || 0) / WALLPACK.every)); }
@@ -399,7 +404,12 @@
     return rows;
   }
   // 壁紙の ミッション（枚数で ポイント）：count＝wallCountAll。WALL_TOTAL より 多い 行は reach＝false（いまは 届かない）
-  function wallpMissions(count, events) { return rowsOf(WALLP_MISSIONS, 'mission-wallp-', count, events, function (n) { return '壁紙 ' + n + '枚解放'; }).map(function (r) { r.reach = r.n <= WALL_TOTAL; return r; }); }
+  function wallpMissions(count, events) {
+    var rows = rowsOf(WALLP_MISSIONS, 'mission-wallp-', count, events, function (n) { return '壁紙 ' + n + '枚解放'; }).map(function (r) { r.reach = r.n <= WALL_TOTAL; return r; });
+    // 第4.160版：前の 版の「30枚解放」（mission-wallp-30）を 受け取った 人は「29枚解放」を 受け取った ことに（2回 もらえない）
+    if (has(events, 'mission-wallp-30')) rows.forEach(function (r) { if (r.n === 29) { r.claimed = true; r.claimable = false; } });
+    return rows;
+  }
   // 第4.130版：トレーニングセンターの ミッション（まさちゃん 2026/11/09「馬をお世話して1段階目の成長させる お世話合計50回 獲得ポイント500p … ※1回で解放したら、馬がリセットされてもミッションはリセットされない」）
   //   count＝お世話の 合計（ごはん・おそうじ。色が かわって 馬が リセット されても 減らない）。1回 受け取ったら もう 出ない
   var TC_MISSIONS = [[50, 500, 1], [100, 1000, 2], [150, 1500, 3], [200, 2000, 4]];

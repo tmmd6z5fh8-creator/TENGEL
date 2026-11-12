@@ -76,13 +76,13 @@ check(P.sameRace(a, { date: '2026-10-10', venue: 'どこか', r: 8 }), '同じ�
 check(P.sameRace(a, { date: '2026-10-10', rname: 'テスト 特別', start: '15:40', dist: '1400' }), 'レース名・距離・発走時刻が同じ → 同じレース（Rがなくても）');
 check(!P.sameRace(a, { date: '2026-10-11', venue: '', r: 8 }) && !P.sameRace(a, { date: '2026-10-10', venue: '', r: 9 }) && !P.sameRace({ date: '2026-10-10', venue: 'あ', r: 8 }, { date: '2026-10-10', venue: 'い', r: 8 }), '別の日・別のR・別の開催場 → 別のレース');
 check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2026-10-10', venue: '', r: 8, pid: 'p2' }], { date: '2026-10-10', venue: '', r: 8 }).pid === 'p2' && P.findPaid([], a) === null, '払ったレースの一覧から見つける');
-// 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数（帯は数えない）→ 5・10・16枚で帯の壁紙（第4.147版：壁紙を 10枚 外した ので 8・16・25 → 5・10・16）。受け取ると 0P の mission と unlock-theme:<帯>
+// 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数（帯は数えない）→ 5・10・15枚で帯の壁紙（第4.147版：壁紙を 10枚 外した ので 8・16・25 → 5・10・16。第4.160版：ネオンを 外した ので マスター帯 16 → 15）。受け取ると 0P の mission と unlock-theme:<帯>
 {
   const T0 = D('2026-11-05');
   let ev = [P.giftEvent(T0)];
   for (const t of ['gold', 'news', 'ink', 'carousel']) ev = P.unlock(ev, 'theme:' + t, 0, 'd1', T0);
-  check(P.wallCount(ev) === 4 && P.wallMissions(4, ev).map(m => m.claimable + '/' + m.done).join() === 'false/false,false/false,false/false' && P.wallMissions(4, ev)[0].label === 'シルバー帯の壁紙' && P.WALL_MISSIONS.map(m => m[0]).join() === '5,10,16'
-    && P.WALL_MISSIONS.map(m => m[1]).join() === 'silver,golden,tengel', '4枚：まだ（5・10・16枚）');
+  check(P.wallCount(ev) === 4 && P.wallMissions(4, ev).map(m => m.claimable + '/' + m.done).join() === 'false/false,false/false,false/false' && P.wallMissions(4, ev)[0].label === 'シルバー帯の壁紙' && P.WALL_MISSIONS.map(m => m[0]).join() === '5,10,15'
+    && P.WALL_MISSIONS.map(m => m[1]).join() === 'silver,golden,tengel', '4枚：まだ（5・10・15枚：第4.160版で マスター帯 16 → 15）');
   ev = P.unlock(ev, 'theme:stars', 0, 'd1', T0);
   const wm = P.wallMissions(P.wallCount(ev), ev);
   check(P.wallCount(ev) === 5 && wm[0].claimable && !wm[1].claimable && wm[0].id === 'mission-wall-silver' && wm[0].theme === 'silver' && wm.map(m => m.id).join() === 'mission-wall-silver,mission-wall-golden,mission-wall-tengel', '5枚：シルバー帯が受け取れる（id は 帯の 名前）');
@@ -95,19 +95,34 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   // 前の 版（8・16・25枚：id は mission-wall-8／16／25）で 受け取った 人：帯を 持って いれば 受け取りずみ・前の mission-wall-16（ゴールド帯）は 新しい 16枚（マスター帯）と まざらない
   const mk0 = (id, what, amt) => ({ id, kind: id.indexOf('unlock-') === 0 ? 'unlock' : 'mission', bucket: id.indexOf('unlock-') === 0 ? '' : 'free', amount: amt || 0, at: new Date(T0).toISOString(), what });
   const old = [P.giftEvent(T0), mk0('mission-wall-8', 'シルバー帯の壁紙'), mk0('unlock-theme:silver', 'theme:silver'), mk0('mission-wall-16', 'ゴールド帯の壁紙'), mk0('unlock-theme:golden', 'theme:golden')];
-  const om = P.wallMissions(16, old);
-  check(om[0].claimed && !om[0].claimable && om[1].claimed && !om[1].claimable && !om[2].claimed && om[2].claimable && om[2].theme === 'tengel' && om[2].n === 16,
-    '前の 版で シルバー帯・ゴールド帯を 受け取った 人：どちらも 受け取りずみ の まま・16枚で マスター帯が 受け取れる（前の mission-wall-16 と まざらない）');
+  const om = P.wallMissions(15, old), om14 = P.wallMissions(14, old);
+  check(om[0].claimed && !om[0].claimable && om[1].claimed && !om[1].claimable && !om[2].claimed && om[2].claimable && om[2].theme === 'tengel' && om[2].n === 15 && !om14[2].claimable && !om14[2].done,
+    '前の 版で シルバー帯・ゴールド帯を 受け取った 人：どちらも 受け取りずみ の まま・15枚で マスター帯が 受け取れる（14枚では まだ・前の mission-wall-16 と まざらない）');
   const oe = old.concat(P.wallMissionEvents(om[2], 'd1', T0));
   check(P.unlocked(oe, 'theme:tengel') && new Set(oe.map(e => e.id)).size === oe.length && P.wallMissions(16, oe).every(m => m.claimed && !m.claimable) && P.balance(oe, T0).total === 1500, 'マスター帯を 受け取っても id は かぶらない・3つとも 受け取りずみ・ポイントは 変わらない');
+  // 第4.160版：前の 版（16枚）で マスター帯を 受け取った 人は 受け取りずみ の まま（帯を 持って いる）・ネオンを ふくめて 15枚 だった 人は ネオンが へって 14枚 → まだ
+  const had = [P.giftEvent(T0), mk0('mission-wall-tengel', 'マスター帯の壁紙'), mk0('unlock-theme:tengel', 'theme:tengel')];
+  const neo = [P.giftEvent(T0)].concat(['gold', 'news', 'ink', 'carousel', 'stars', 'sunset', 'ranch', 'silks', 'pixel', 'fireworks', 'kids', 'cute', 'night', 'marble', 'neon'].map(t => mk0('unlock-theme:' + t, 'theme:' + t)));
+  check(P.wallMissions(3, had)[2].claimed && !P.wallMissions(3, had)[2].claimable && P.wallCount(neo) === 14 && !P.wallMissions(P.wallCount(neo), neo)[2].claimable
+    && P.wallMissions(P.wallCount(neo.concat([mk0('unlock-theme:chalk', 'theme:chalk')])), neo)[2].claimable,
+    '第4.160版：前に マスター帯を 受け取った 人は 受け取りずみ の まま・ネオンは 数えない（ネオンを 入れて 15枚 → 14枚：まだ）・もう 1枚で 15枚 → マスター帯');
 }
 // 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！ミッションも減った分調整して！」「七夕も消して！」）：
 //   外した 壁紙（GONE_THEMES）は 枚数に 数えない・解放して いた ぶんは 1回 だけ 返す（goneUnlocks：使った ポイント／チケット＝0P）
 {
   const T0 = D('2026-11-10');
   const un = (t, amt) => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -amt, at: new Date(T0).toISOString(), use: { paid_sub: 0, paid_pack: 0, free: amt }, what: 'theme:' + t });
-  check(P.GONE_THEMES.join() === 'sakura,sea,autumn,snow,newyear,xmas,halloween,valentine,whiteday,tanabata' && P.GONE_THEMES.every(t => P.GONE_NAMES[t]) && Object.keys(P.GONE_NAMES).length === 10
-    && P.GONE_NAMES.sakura === '桜' && P.GONE_NAMES.whiteday === 'ホワイトデー' && P.GONE_NAMES.tanabata === '七夕', '外した 壁紙は 10枚（桜・海・紅葉・雪・お正月・クリスマス・ハロウィン・バレンタイン・ホワイトデー・七夕）・名前つき');
+  check(P.GONE_THEMES.join() === 'sakura,sea,autumn,snow,newyear,xmas,halloween,valentine,whiteday,tanabata,neon' && P.GONE_THEMES.every(t => P.GONE_NAMES[t]) && Object.keys(P.GONE_NAMES).length === 11
+    && P.GONE_NAMES.sakura === '桜' && P.GONE_NAMES.whiteday === 'ホワイトデー' && P.GONE_NAMES.tanabata === '七夕' && P.GONE_NAMES.neon === 'ネオン',
+    '外した 壁紙は 11枚（桜・海・紅葉・雪・お正月・クリスマス・ハロウィン・バレンタイン・ホワイトデー・七夕＋第4.160版の ネオン）・名前つき');
+  // 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオン（3,000P）を 解放して いた 人には 3,000P を 返す（チケットで 解放して いたら チケット＝0P）・枚数に 数えない
+  {
+    const evn = [P.giftEvent(T0), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('neon', 3000), un('pixel', 3000)];
+    const gn = P.goneUnlocks(evn, []);
+    check(P.wallCount(evn) === 1 && gn.length === 1 && gn[0].theme === 'neon' && gn[0].cost === 3000 && gn[0].id === 'back-theme:neon' && gn[0].name === 'ネオン'
+      && P.goneUnlocks(evn.concat([P.rowEvent({ id: 'back-theme:neon', reward: 3000, label: 'x' }, T0)]), []).length === 0 && P.goneUnlocks([P.giftEvent(T0), un('neon', 0)], [])[0].cost === 0,
+      'ネオン：枚数に 数えない・使った 3,000P を 1回 だけ 返す（チケットで 解放して いたら 0P＝チケットを 返す）・ドットは そのまま');
+  }
   const ev = [P.giftEvent(T0), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('sakura', 1000), un('xmas', 4000), un('gold', 2000), un('halloween', 0), un('news', 2000)];
   check(P.wallCount(ev) === 2 && P.wallCount(ev, 3) === 5 && P.wallCountAll(ev, 3) === 5 && P.unlocked(ev, 'theme:sakura'), '外した 壁紙（桜・クリスマス・ハロウィン）は 枚数に 数えない（のこりの 2枚 ＋ パック 3枚 ＝ 5）・台帳の できごとは 消さない');
   const g = P.goneUnlocks(ev, []);
@@ -217,14 +232,14 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.wallCount(ev) === 0 && P.wallCount(ev, 3) === 3 && P.wallCount(ev, 0) === 0, '帯の ミッションの 枚数：パックで 解放した 枚数を 足す');
   const ev2 = ev.concat([{ id: 'unlock-theme:gold', kind: 'unlock', bucket: '', amount: -2000, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 2000 }, what: 'theme:gold' }]);
   check(P.wallCount(ev2, 3) === 4 && !P.wallMissions(P.wallCount(ev2, 3), ev2)[0].claimable && P.wallCount(ev2, 4) === 5 && P.wallMissions(P.wallCount(ev2, 4), ev2)[0].claimable && !P.wallMissions(P.wallCount(ev2, 4), ev2)[1].claimable
-    && P.wallMissions(P.wallCount(ev2, 9), ev2)[1].claimable && !P.wallMissions(P.wallCount(ev2, 10), ev2)[2].claimable, 'ポイントの 1枚 ＋ パックの 4枚 ＝ 5枚 → シルバー帯が 受け取れる（3枚では まだ）・＋9枚 ＝ 10枚で ゴールド帯・パックの 10枚 ぜんぶ でも マスター帯（16枚）は まだ');
+    && P.wallMissions(P.wallCount(ev2, 9), ev2)[1].claimable && !P.wallMissions(P.wallCount(ev2, 10), ev2)[2].claimable, 'ポイントの 1枚 ＋ パックの 4枚 ＝ 5枚 → シルバー帯が 受け取れる（3枚では まだ）・＋9枚 ＝ 10枚で ゴールド帯・パックの 10枚 ぜんぶ でも マスター帯（15枚）は まだ');
   const rf = P.refundEvent(ev, { id: '800', revokedAt: D('2026-11-11') });
   ev.push(rf);
   check(rf.id === 'refund-800' && !P.packOwned(ev) && P.balance(ev, D('2026-11-11')).total === 1500, '返金 → 持って いない（ポイントは そのまま）');
 }
 // 第4.114版（まさちゃん 2026/11/01）：お得パック（壁紙パックと 結果ボードカスタムの セット 2,200円）・ミッション（結果ボードカスタムの 解放の 数・壁紙の 枚数）
 {
-  console.log('お得パック（第4.114版：買い切り 2,200円・壁紙パックと 結果ボードカスタムの 両方）・ミッション（結果ボードカスタム 3〜15こ・壁紙 3〜30枚）');
+  console.log('お得パック（第4.114版：買い切り 2,200円・壁紙パックと 結果ボードカスタムの 両方）・ミッション（結果ボードカスタム 3〜15こ・壁紙 3〜29枚）');
   const D = s => new Date(s + 'T12:00:00+09:00').toISOString();
   const T0 = D('2026-11-12');
   const tx = (id, product, date) => ({ id, originalId: 'o' + id, product, date: D(date) });
@@ -268,22 +283,28 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   // ミッション：壁紙の 枚数（帯も 数える）
   //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない 45枚の 行を やめて 40枚まで（10こ）
   //   第4.147版（まさちゃん 2026/11/10 22:12「ミッションも減った分調整して！」）：壁紙を 10枚 外した（40 → 30枚）ので、届かない 35枚・40枚の 行を やめて 30枚まで（8こ）
-  check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,30:2500' && P.WALL_TOTAL === 30
+  //   第4.160版（まさちゃん 2026/11/12 14:32「ミッションも減った分調整して！」）：ネオンを 外した（30 → 29枚）ので、さいごの 30枚 → 29枚（ポイントは 同じ 2,500P・行は 8こ の まま）
+  check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,29:2500' && P.WALL_TOTAL === 29
     && P.WALLP_MISSIONS[P.WALLP_MISSIONS.length - 1][0] === P.WALL_TOTAL && P.WALLP_MISSIONS.reduce((a, m) => a + m[1], 0) === 14900,
-    '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・30枚 2,500P（30枚まで＝いま 解放できる 枚数・ぜんぶで 14,900P）');
+    '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・29枚 2,500P（29枚まで＝いま 解放できる 枚数・ぜんぶで 14,900P）');
   const evw = [P.giftEvent(T0)].concat(['gold', 'news', 'ink'].map(t => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -500, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 500 }, what: 'theme:' + t })))
     .concat(P.wallMissionEvents(P.wallMissions(5, [])[0], 'x', T0));
   check(P.wallCount(evw, 5) === 8 && P.wallCountAll(evw, 5) === 9 && P.wallCountAll(evw) === 4 && P.wallCountAll([], 0) === 0, '枚数：ポイントの 3枚 ＋ パックの 5枚 ＝ 8（帯の ミッション用）・帯の シルバーも 数えると 9（枚数の ミッション用）');
   const wm = P.wallpMissions(9, evw);
   check(wm.length === 8 && wm.map(m => m.id).slice(0, 3).join() === 'mission-wallp-3,mission-wallp-6,mission-wallp-9' && wm.filter(m => m.claimable).length === 3 && wm[0].label === '壁紙 3枚解放' && wm[2].reward === 1500
-    && wm.every(m => m.reach) && wm[7].n === 30 && !wm.some(m => m.n > 30), '9枚：3・6・9 が 受け取れる・行は 8こ（30枚まで・ぜんぶ 届く・35枚・40枚の 行は ない）');
+    && wm.every(m => m.reach) && wm[7].n === 29 && wm[7].id === 'mission-wallp-29' && !wm.some(m => m.n > 29), '9枚：3・6・9 が 受け取れる・行は 8こ（29枚まで・ぜんぶ 届く・30枚・35枚・40枚の 行は ない）');
   const evw2 = evw.concat([P.rowEvent(wm[2], T0)]);
   const bw = P.balance(evw2, T0);
   check(P.has(evw2, 'mission-wallp-9') && bw.free === 1500 - 1500 + 1500 && P.wallpMissions(9, evw2)[2].claimed && !P.wallpMissions(9, evw2)[2].claimable && P.wallpMissions(9, evw2)[1].claimable
-    && P.wallpMissions(30, evw2).filter(m => m.claimable).length === 7 && P.wallpMissions(30, evw2).every(m => m.done), '受け取ると mission-wallp-9（+1,500P＝獲得ポイント）・1回だけ・30枚なら ぜんぶ 達成（残り 7つ 受け取れる）');
+    && P.wallpMissions(29, evw2).filter(m => m.claimable).length === 7 && P.wallpMissions(29, evw2).every(m => m.done) && !P.wallpMissions(28, evw2)[7].done, '受け取ると mission-wallp-9（+1,500P＝獲得ポイント）・1回だけ・29枚なら ぜんぶ 達成（残り 7つ 受け取れる・28枚では さいごは まだ）');
   // 前の 版で「35枚」「40枚」を 受け取った 人：台帳の できごと（+3,500P ずつ）は そのまま 残る（ポイントは へらない）・行には もう 出ない
   const evo = evw2.concat([{ id: 'mission-wallp-35', kind: 'mission', bucket: 'free', amount: 3500, at: T0, what: '壁紙 35枚解放' }, { id: 'mission-wallp-40', kind: 'mission', bucket: 'free', amount: 3500, at: T0, what: '壁紙 40枚解放' }]);
-  check(P.balance(evo, T0).free === bw.free + 7000 && P.wallpMissions(30, evo).length === 8 && P.wallpMissions(30, evo).filter(m => m.claimable).length === 7, '前の 版で 35枚・40枚を 受け取った ぶんの ポイントは そのまま（行は 8こ の まま）');
+  check(P.balance(evo, T0).free === bw.free + 7000 && P.wallpMissions(29, evo).length === 8 && P.wallpMissions(29, evo).filter(m => m.claimable).length === 7, '前の 版で 35枚・40枚を 受け取った ぶんの ポイントは そのまま（行は 8こ の まま）');
+  // 第4.160版：前の 版で「30枚解放」を 受け取った 人は「29枚解放」も 受け取りずみ（2回 もらえない）・受け取って いない 人は 29枚で 受け取れる
+  const ev30 = evw2.concat([{ id: 'mission-wallp-30', kind: 'mission', bucket: 'free', amount: 2500, at: T0, what: '壁紙 30枚解放' }]);
+  const w30 = P.wallpMissions(29, ev30);
+  check(w30[7].n === 29 && w30[7].claimed && !w30[7].claimable && w30.filter(m => m.claimable).length === 6 && P.wallpMissions(29, evw2)[7].claimable && !P.wallpMissions(29, evw2)[7].claimed && P.balance(ev30, T0).free === bw.free + 2500,
+    '前の 版の「30枚解放」を 受け取った 人は「29枚解放」も 受け取りずみ（ポイントは そのまま）・受け取って いない 人は 29枚で 受け取れる');
 }
 // 第4.138版：思い出フィギュアの ミッション（作った 数 1・5・8 → 5,000・5,000・10,000P）
 {

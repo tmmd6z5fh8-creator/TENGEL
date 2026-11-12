@@ -10,6 +10,9 @@
    - 視差効果を減らす（prefers-reduced-motion）なら止まって、キラキラも消える（いまの絵と同じ）
    - キャンバスでは下の絵は /_blob/<id>（stars_blobs.json の base）・星の位置は stars_pts.json（flat/pegasus_banner.py --base が書く）
    クラスの名前は sz…（的中ボタンの .sz・.szp などとは別の名前）
+   - 第4.160版（まさちゃん 2026/11/12 14:31「星座の馬、一枚目の写真の馬を使用して！」）：ペガサスを まさちゃんの 絵（星を むすんだ ペガサス）に した（flat/pegasus_art.py）。
+     下の絵（base）は 夜空・天の川・三日月 だけ（画面の 3倍）・その 上に 流れる 星・その 上に ペガサスの 絵（peg：すき通し・画面の 3倍・置く 箱は stars_pts.json の peg）・いちばん 上に キラキラ。
+     明るい 星（con）・小さい 星（dots）は 絵の 中の 星の 場所（絵から 見つけた）。鼻の頭 → しっぽの先の 道すじは stars_pts.json の spine（前の 絵の 台帳には ない → 前の 決まった 星の 番号で たどる）
    python3 stars_wall.py --judge <Judge_Stars.dc.html> <stars_blobs.json> <stars_pts.json>  → 判定画面の上の絵を「流れる星とキラキラ」に書きかえる（何回やっても同じ）"""
 import sys, re, json
 
@@ -49,7 +52,9 @@ def sparkle(L, w=.07):
 
 
 def spine(pts):
-    """鼻の頭から しっぽの先への 道すじ（折れ線・絵の座標）"""
+    """鼻の頭から しっぽの先への 道すじ（折れ線・絵の座標）。第4.160版：台帳に spine が あれば それ（まさちゃんの ペガサス）・なければ 前の 絵の 星の 番号"""
+    if pts.get('spine'):
+        return [(float(x), float(y)) for x, y in pts['spine']]
     P = [pts['dots'][NOSE_DOT][:2]] + [pts['con'][i][:2] for i in SPINE_CON] + [pts['dots'][i][:2] for i in SPINE_DOTS]
     return [(float(x), float(y)) for x, y in P]
 
@@ -164,9 +169,17 @@ def svg(pts, p='sz'):
 def inline(blobs, pts, alt=ALT):
     """(html, css)。blobs：base（下の絵）→ '/_blob/<id>'。pts：stars_pts.json"""
     W = pts['size'][0]
-    html = f'<div class="szw" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["base"]}" alt="">{svg(pts)}</div>'
+    sv = svg(pts)
+    peg = ''
+    if blobs.get('peg') and pts.get('peg'):          # 第4.160版：ペガサスの 絵（流れる 星の 上・キラキラの 下）
+        cut = sv.index('<svg class="szx"')
+        sv = sv[:cut] + f'<img class="szpg" src="{blobs["peg"]}" alt="">' + sv[cut:]
+        l, t, w, h = pts['peg']
+        peg = f'.szw .szpg{{position:absolute;left:{_f(l)}px;top:{_f(t)}px;width:{_f(w)}px;height:{_f(h)}px;pointer-events:none}}'
+    html = f'<div class="szw" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["base"]}" alt="">{sv}</div>'
     css = ('.szw{position:relative;flex:none;width:390px;height:160px;overflow:hidden;isolation:isolate}'
            '.szw .bnr{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%}'
+           + peg +
            '.szw .szs,.szw .szx{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none}'
            '.szw .szs{mix-blend-mode:plus-lighter}'
            '.szw .szr,.szw .szn,.szw .szk,.szw .szg,.szw .szv,.szw .szc{transform-box:view-box;transform-origin:0 0}'

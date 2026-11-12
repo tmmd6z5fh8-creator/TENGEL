@@ -27,22 +27,24 @@ import pack as PK  # noqa: E402
 # 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！ミッションも減った分調整して！」・「七夕も消して！」）：
 #   アプリから 外した 壁紙 10枚（ポイントの 9枚＋壁紙パックの 七夕）。絵を 作る もと（themes20.py・pack/tanabata.py・flat/・見本の キャンバス）は 残す＝アプリに 入れない だけ。
 #   points.js の GONE_THEMES と 同じ 名前（test_points.js・test_native.py が 見る）。七夕は pack/__init__.py の ORDER からも 外した
-REMOVED = ('sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata')
+# 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」・14:32「ミッションも減った分調整して！」）：ネオン（neon）も 外した ＝ 31 → 30テーマ（ポイントの 壁紙 17 → 16枚）。
+#   絵を 作る もと（themes20.py の neon・neon_wall.py・flat/neon_*.py・flat/hq_neon.py・絵の ファイル ios/kisekae_blobs/・PUSH の 絵 ios/push_assets/src/neon.png）は 残す＝アプリに 入れない だけ
+REMOVED = ('sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata', 'neon')
 THEMES_ALL = [t for t in boards.THEMES_ALL if t['id'] not in REMOVED]
 BY_ID = {t['id']: t for t in THEMES_ALL}
-assert not (set(REMOVED) & set(PK.ORDER)) and len(THEMES_ALL) == 31, (len(THEMES_ALL), set(REMOVED) & set(PK.ORDER))
+assert not (set(REMOVED) & set(PK.ORDER)) and len(THEMES_ALL) == 30, (len(THEMES_ALL), set(REMOVED) & set(PK.ORDER))
 
 # ---------------------------------------------------------------- 9.1：名前・値段・組・帯
 NEW_NAMES = dict(gold='ぷりけつのお馬', pixel='ドット', kids='毛糸のお馬とロボット', cute='かわいいお馬さん', marble='大理石の馬', lucky='招き馬')
 PRICE = {}
 for _p, _ids in ((2000, ('gold', 'news', 'ink', 'carousel', 'stars', 'sunset')),
-                 (3000, ('ranch', 'silks', 'neon', 'pixel')), (4000, ('fireworks', 'kids', 'cute', 'night')),
-                 (7000, ('marble', 'chalk', 'lucky'))):          # 第4.147版：1,000P の 5枚（桜・海・紅葉・雪・お正月）と 4,000P の 4枚（クリスマス・ハロウィン・バレンタイン・ホワイトデー）を 外した
+                 (3000, ('ranch', 'silks', 'pixel')), (4000, ('fireworks', 'kids', 'cute', 'night')),
+                 (7000, ('marble', 'chalk', 'lucky'))):          # 第4.147版：1,000P の 5枚（桜・海・紅葉・雪・お正月）と 4,000P の 4枚（クリスマス・ハロウィン・バレンタイン・ホワイトデー）を 外した。第4.160版：3,000P の ネオンを 外した
     for _i in _ids:
         PRICE[_i] = _p
-BAND = dict(silver=5, golden=10, tengel=16)             # 帯の壁紙：解放した壁紙の枚数（8.3）。第4.147版：8・16・25 → 5・10・16（ポイントの 壁紙が 26 → 17枚に へった ぶん：ポイントの 壁紙 だけで 届く）
-PAID = sorted(PRICE)                                     # ポイントで解放する 17枚（第4.147版：26 → 17）
-assert len(PAID) == 17 and sum(PRICE.values()) == 61000, (len(PAID), sum(PRICE.values()))
+BAND = dict(silver=5, golden=10, tengel=15)             # 帯の壁紙：解放した壁紙の枚数（8.3）。第4.147版：8・16・25 → 5・10・16（ポイントの 壁紙が 26 → 17枚に へった ぶん：ポイントの 壁紙 だけで 届く）。第4.160版：ネオンを 外して 17 → 16枚 → マスター帯 16 → 15枚
+PAID = sorted(PRICE)                                     # ポイントで解放する 16枚（第4.147版：26 → 17・第4.160版：17 → 16）
+assert len(PAID) == 16 and sum(PRICE.values()) == 58000, (len(PAID), sum(PRICE.values()))
 assert max(BAND.values()) < len(PAID), BAND             # マスター帯は ポイントの 壁紙 だけで 届く
 # 第4.92版：壁紙パック（買い切り 1,500円・pack/：第4.147版から 10枚）は いちばん上の 組（買う ボタンと 解放の 進み具合は kisekae.js が 組の 上に 出す）
 GROUPS = [('壁紙パック', list(PK.IDS)),
@@ -50,7 +52,7 @@ GROUPS = [('壁紙パック', list(PK.IDS)),
           ('季節・行事', ['sunset', 'fireworks']),
           ('競馬', ['night', 'news', 'silks', 'lucky']),
           ('和・アート', ['ink', 'marble']),
-          ('レトロ・ポップ', ['neon', 'pixel', 'chalk', 'carousel', 'stars']),
+          ('レトロ・ポップ', ['pixel', 'chalk', 'carousel', 'stars']),
           ('帯', ['silver', 'golden', 'tengel'])]
 ORDER = [i for _, ids in GROUPS for i in ids]
 assert sorted(ORDER) == sorted(BY_ID), set(ORDER) ^ set(BY_ID)

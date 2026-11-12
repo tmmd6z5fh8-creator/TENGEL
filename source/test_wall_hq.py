@@ -29,6 +29,9 @@ SET = {'news': dict(jp='競馬新聞', key='run', pre='', sub=None, old='90c9d3f
        'sunset': dict(jp='夕焼け', key='horse', pre='/_blob/', sub='horse', old='3f932ad749f07e3a3d47e32e8004914e', cell=[204, 26, 430, 228], mode='RGBA', el='.ssw .sxr', win='.ssw .sxh', anim='sxRun', kb=(130, 250), dmin=1.3, smin=1.12),
        'ink': dict(jp='水墨画', key='run', pre='', sub=None, old='2a2aa8796320a888283cdacb060f4be1', cell=[112, 32, 596, 266], mode='RGB', el='.ikw .ikr', win='.ikw .ikh', anim='ikRun', kb=(220, 400), dmin=1.3, smin=1.12),
        'neon': dict(jp='ネオン', key='run', pre='', sub=None, old='0417b8e6f0ca61b59a999f45f38744bd', cell=[170, 0, 284, 320], mode='RGBA', el='.nqw .nqr', win='.nqw .nqh', anim='nqRun', kb=(220, 400), dmin=1.04, smin=1.02)}
+# 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオンは アプリから 外した。絵と 作る 道具・台帳は 手元／リポジトリに のこす ので、台帳・ページ・絵の 確かめは そのまま。
+#   アプリの 中身と 画面の 確かめ（IN_APP）からは 外して、「アプリに 入って いない」ことを 見る
+IN_APP = [nm for nm in SET if nm != 'neon']
 N = 10; SC = 1.5
 sys.path.insert(0, K)
 import news_wall, silks_wall, sunset_wall, ink_wall, neon_wall, fireworks_wall, night_wall
@@ -205,7 +208,9 @@ assert "window.__NATIVE = location.protocol === 'tengel:';" in page
 open(pth, 'w', encoding='utf8').write(page.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
 for f in os.listdir(BL):
     shutil.copy(os.path.join(BL, f), os.path.join(SRV, 'APP', 'ks_' + f))
-for nm, jp, new, old in ([(nm, s['jp'], [ID[nm]], [s['old']]) for nm, s in SET.items()] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NT_OLD], list(NT_OLD.values()))]):
+check(not os.path.exists(os.path.join(SRV, 'APP', 'ks_neon.json')) and all(os.path.exists(os.path.join(SRV, 'APP', f'ks_{nm}.json')) for nm in IN_APP) and os.path.exists(os.path.join(BL, ID['neon'] + '.webp')),
+      '第4.160版：ネオンの ファイル（ks_neon.json）は アプリに 入って いない（ほかの 4つは ある）・ネオンの 絵は 手元に のこって いる')
+for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm in IN_APP] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NT_OLD], list(NT_OLD.values()))]):
     kj = json.load(open(os.path.join(SRV, 'APP', f'ks_{nm}.json'), encoding='utf8')); txt = kj['bnr']['html'] + kj['bnr']['css']
     check(all(f'ks_{i}.webp' in txt for i in new) and not any(o in json.dumps(kj) for o in old), f'{jp}の ファイル（ks_{nm}.json）：新しい 絵（{len(new)}まい）・前の 絵は 入って いない')
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
@@ -265,7 +270,8 @@ try:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, locale='ja-JP', timezone_id='Asia/Tokyo')
         pg, errs, bad = open_app(ctx, 'news')
-        for nm, s in SET.items():
+        for nm in IN_APP:
+            s = SET[nm]
             if nm != 'news':
                 use(pg, nm)
             x0, y0, cw, ch = (v // 2 for v in s['cell'])

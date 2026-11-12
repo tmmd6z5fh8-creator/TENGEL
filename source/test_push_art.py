@@ -1,9 +1,9 @@
 # PUSHボタンの 絵（第4.148版・まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」→ 11/11 に 31まい）
 #   python3 test_push_art.py   （ios/push_assets/ が ある とき だけ。ない とき（CI）は「絵が ない」と 出して おわる）
-#   ・台帳（pb.json）：テーマ 31こ ぜんぶに 絵・出す 大きさ（面積が そろう・幅 264／高さ 186 まで）・絵の 大きさ（いちばん 大きく 出す ときにも 足りる）・ぜんぶで 4MB より 小さい・もとの 絵は そのまま
-#   ・31テーマ × 的中：PUSH は その テーマの 絵（読めて いる・大きさ・まん中・四角の 色／影／輪は 出ない・字の <span> は 読み上げ用に のこる・うしろの 光と 光の すじ・影の 幅）
+#   ・台帳（pb.json）：テーマ 30こ（第4.160版：ネオンを 外した。ネオンの 絵は 手元に のこす・アプリに 入れない）ぜんぶに 絵・出す 大きさ（面積が そろう・幅 264／高さ 186 まで）・絵の 大きさ（いちばん 大きく 出す ときにも 足りる）・ぜんぶで 4MB より 小さい・もとの 絵は そのまま
+#   ・30テーマ × 的中：PUSH は その テーマの 絵（読めて いる・大きさ・まん中・四角の 色／影／輪は 出ない・字の <span> は 読み上げ用に のこる・うしろの 光と 光の すじ・影の 幅）
 #     → 押す：押された PUSH も 同じ 絵（テーマの へこむ 動き）・はじける かけら（テーマの もの）→ その テーマの ボード
-#   ・大きさの 段：デカ的中 1.2倍・ど的中 1.4倍・虹色 1.6倍（幅 372px で 頭打ち）＝31テーマ とも 画面（390px）に おさまる。虹色は 絵の 形で 切りぬいた 虹（mask）
+#   ・大きさの 段：デカ的中 1.2倍・ど的中 1.4倍・虹色 1.6倍（幅 372px で 頭打ち）＝30テーマ とも 画面（390px）に おさまる。虹色は 絵の 形で 切りぬいた 虹（mask）
 #   ・ど的中の 押した 画面（.ndt）：押された PUSH は 絵・光の 輪は 絵の 大きさ
 #   ・控えめ：絵は 出る・うしろの 光は 動かない・光の すじは 出ない
 #   ・テーマを かえた すぐ あと：新しい テーマの 絵（前の テーマの 絵は 出ない）
@@ -85,10 +85,15 @@ try:
             pz = max(1, min(1.6, 372 / e['w'], 480 / e['h'])) if ok else 0
             ok = ok and abs(pz - e['pz']) < 0.002 and e['iw'] >= e['w'] * pz * 2.5 and e['iw'] <= 1100
             okm.append((t['id'], ok))
-        check(len(TH) == 31 and len(PB) == 31 and all(o for _i, o in okm) and _pa.stale() == '' and sz < 4_000_000 and sorted(f for f in os.listdir(_pa.ROOT) if f.endswith('.webp')) == sorted(e['f'] for e in PB.values())
+        GONE_PB = sorted(_pa.gone())      # 第4.160版：外した テーマ（ネオン）の 絵は 手元に のこす・アプリに 入れない
+        check(len(TH) == 30 and len(PB) == 30 and all(o for _i, o in okm) and _pa.stale() == '' and sz < 4_000_000
+              and sorted(f for f in os.listdir(_pa.ROOT) if f.endswith('.webp') and f[len('pb_'):-len('.webp')] not in GONE_PB) == sorted(e['f'] for e in PB.values())
               and not any(f.endswith('.png') for f in os.listdir(os.path.join(SRV, 'APP')) if f.startswith('pb_')),
-              f'台帳：テーマ 31こ ぜんぶに 絵（pb_<id>.webp）・出す 大きさは 面積が そろう（幅 264／高さ 186 まで）・絵は いちばん 大きく 出す ときの 2.5倍 以上・ぜんぶで {sz / 1e6:.2f}MB・もとの 絵（src）は そのまま（{[i for i, o in okm if not o]}）')
-        # ---- 31テーマ × 的中：PUSH → 押す → ボード ----
+              f'台帳：テーマ 30こ ぜんぶに 絵（pb_<id>.webp）・出す 大きさは 面積が そろう（幅 264／高さ 186 まで）・絵は いちばん 大きく 出す ときの 2.5倍 以上・ぜんぶで {sz / 1e6:.2f}MB・もとの 絵（src）は そのまま（{[i for i, o in okm if not o]}）')
+        check('neon' in GONE_PB and 'neon' not in PB and not any(t['id'] == 'neon' for t in TH) and not os.path.exists(os.path.join(SRV, 'APP', 'pb_neon.webp'))
+              and os.path.exists(os.path.join(_pa.IN, 'neon.png')) and os.path.exists(os.path.join(_pa.ROOT, 'pb_neon.webp')) and 'neon' in man,
+              '第4.160版：ネオンの PUSH の 絵は アプリに 入れない（一覧にも ない）・もとの 絵（src/neon.png）と できた 絵（pb_neon.webp）・台帳の 行は 手元に のこって いる')
+        # ---- 30テーマ × 的中：PUSH → 押す → ボード ----
         r1, r2, r3 = [], [], []
         for t in TH:
             tid, e = t['id'], man[t['id']]
@@ -110,9 +115,9 @@ try:
             bd = pg.evaluate("() => { const rb = [...document.querySelectorAll('#fxOv .rb')].find(e => e.querySelector('.bh')); return rb ? [rb.className, rb.querySelector('.bh').textContent, getComputedStyle(document.querySelector('#fxOv .close') || rb).visibility] : null; }")
             okb = bool(bd) and bd[1] == '的中！' and ('t-' + tid in bd[0]) and bd[2] == 'visible'
             r3.append((tid, okb, None if okb else bd)); close(pg)
-        check(all(o for _i, o, _s in r1) and not errs, f'31テーマ × 的中：PUSH は その テーマの 絵（読めて いる・台帳の 大きさ・まん中・四角の 色／影／まわりの 輪は なし・字は 読み上げ用に のこる・うしろの 光と 光の すじ・影の 幅 8割）（{[(i, s) for i, o, s in r1 if not o][:2]}）')
-        check(all(o for _i, o, _s in r2), f'31テーマ：押すと 押された PUSH も 同じ 絵（テーマの へこむ 動き）・はじける かけらは テーマの もの（いつもの は なし）（{[(i, s) for i, o, s in r2 if not o][:2]}）')
-        check(all(o for _i, o, _s in r3) and not errs and not bad, f'31テーマ：そのあと その テーマの ボード（的中！・とじる）まで 出る・絵の 読みこみの 失敗なし（{[(i, s) for i, o, s in r3 if not o][:2]}・{bad[:3]}）')
+        check(all(o for _i, o, _s in r1) and not errs, f'30テーマ × 的中：PUSH は その テーマの 絵（読めて いる・台帳の 大きさ・まん中・四角の 色／影／まわりの 輪は なし・字は 読み上げ用に のこる・うしろの 光と 光の すじ・影の 幅 8割）（{[(i, s) for i, o, s in r1 if not o][:2]}）')
+        check(all(o for _i, o, _s in r2), f'30テーマ：押すと 押された PUSH も 同じ 絵（テーマの へこむ 動き）・はじける かけらは テーマの もの（いつもの は なし）（{[(i, s) for i, o, s in r2 if not o][:2]}）')
+        check(all(o for _i, o, _s in r3) and not errs and not bad, f'30テーマ：そのあと その テーマの ボード（的中！・とじる）まで 出る・絵の 読みこみの 失敗なし（{[(i, s) for i, o, s in r3 if not o][:2]}・{bad[:3]}）')
         # ---- 大きさの 段（デカ 1.2・ど 1.4・虹色 1.6：幅 372／高さ 480 で 頭打ち）と 虹色 ----
         r4 = []
         for t in TH:
@@ -124,7 +129,7 @@ try:
                       and s['l'] >= 0 and s['r'] <= 390 and s['t'] >= 0 and s['b'] <= 844
                       and s['img'] == [e['f'], e['iw'], e['ih']] and s['rbw'] == rb and s['rba'] == (1 if rb else 0) and s['rbf'] == (e['f'] if rb else None) and s['rbwo'] == 0 and s['sw'] <= 390)
                 r4.append((tid, kind, ok, None if ok else s))
-        check(all(o for _i, _k, o, _s in r4) and not errs, f'31テーマ × デカ的中（1.2倍）・ど的中（1.4倍）・虹色（1.6倍）：絵の 大きさで 決まる（幅 372px で 頭打ち）・画面に おさまる・虹色は 絵の 形で 切りぬいた 虹（mask）と うしろの 虹の 光（{[(i, k, s) for i, k, o, s in r4 if not o][:2]}）')
+        check(all(o for _i, _k, o, _s in r4) and not errs, f'30テーマ × デカ的中（1.2倍）・ど的中（1.4倍）・虹色（1.6倍）：絵の 大きさで 決まる（幅 372px で 頭打ち）・画面に おさまる・虹色は 絵の 形で 切りぬいた 虹（mask）と うしろの 虹の 光（{[(i, k, s) for i, k, o, s in r4 if not o][:2]}）')
         # ---- デカ的中・ど的中の 押した あと ----
         apply(pg, 'silks'); e = man['silks']
         show(pg, TRI, 'big', 300); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(60); qb = pg.evaluate(PRS)

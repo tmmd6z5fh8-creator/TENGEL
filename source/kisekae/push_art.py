@@ -40,6 +40,21 @@ def ids():
     return list(BK.ORDER)
 
 
+def gone():
+    """アプリから 外した テーマ（build_kisekae.py の REMOVED）。第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：
+       もとの 絵（src/neon.png）と できた 絵（pb_neon.webp）・台帳の 行は **消さずに 残す**＝数えない・アプリに 入れない だけ"""
+    if K not in sys.path:
+        sys.path.insert(0, K)
+    import build_kisekae as BK
+    return set(BK.REMOVED)
+
+
+def have_ids():
+    """もとの 絵が ある テーマ（外した テーマは 数えない）"""
+    g = gone()
+    return sorted(f[:-4] for f in os.listdir(IN) if f.endswith('.png') and f[:-4] not in g)
+
+
 def disp(w, h):
     """絵の 大きさ（px）→ 画面で 出す 大きさ（CSS の px・偶数）"""
     a = w / h
@@ -107,7 +122,7 @@ def stale():
     """古い わけ（新しければ ''）。もとの 絵が ない ときは None"""
     if not os.path.isdir(IN):
         return None
-    have = sorted(f[:-4] for f in os.listdir(IN) if f.endswith('.png'))
+    have = have_ids()
     if not have:
         return None
     man = manifest()
@@ -115,9 +130,10 @@ def stale():
         return '台帳（pb.json）が ない'
     if man.get('params') != PARAMS:
         return '作り方（PARAMS）が かわった'
-    if sorted(man['files']) != have:
-        return '絵の ならびが かわった：' + '・'.join(sorted(set(have) ^ set(man['files']))[:5])
-    for tid, e in man['files'].items():
+    g = gone(); mf = {tid: e for tid, e in man['files'].items() if tid not in g}      # 外した テーマの 行は 見ない（台帳に 残って いても よい）
+    if sorted(mf) != have:
+        return '絵の ならびが かわった：' + '・'.join(sorted(set(have) ^ set(mf))[:5])
+    for tid, e in mf.items():
         if sig(os.path.join(IN, tid + '.png')) != e['src']:
             return 'もとが かわった：' + tid
         pth = os.path.join(ROOT, e['f'])
@@ -133,16 +149,18 @@ def files():
         return {}
     if why:
         raise SystemExit(f'※ PUSHボタンの 絵（{ROOT}）が 古い：{why}\n   python3 kisekae/push_art.py で 作り直してね')
-    return {tid: {k: e[k] for k in ('f', 'w', 'h', 'iw', 'ih')} for tid, e in manifest()['files'].items()}
+    g = gone()
+    return {tid: {k: e[k] for k in ('f', 'w', 'h', 'iw', 'ih')} for tid, e in manifest()['files'].items() if tid not in g}
 
 
 def build(force=False):
-    have = sorted(f[:-4] for f in os.listdir(IN) if f.endswith('.png'))
+    have = have_ids(); g = gone()
     known = set(ids())
     extra = [t for t in have if t not in known]
     assert not extra, 'テーマに ない 名前の 絵：' + '・'.join(extra)
     man = manifest() or {}
     old = man.get('files', {}) if man.get('params') == PARAMS else {}
+    kept = {tid: e for tid, e in man.get('files', {}).items() if tid in g}      # 外した テーマの 行（台帳に 残す・できた 絵も 消さない）
     out, made = {}, 0
     for tid in have:
         e = old.get(tid)
@@ -153,10 +171,10 @@ def build(force=False):
         else:
             out[tid] = make(tid); made += 1
             print(f"{tid:10s} {out[tid]['w']}x{out[tid]['h']}（いちばん 大きい とき ×{out[tid]['pz']}）→ {out[tid]['iw']}x{out[tid]['ih']}px {out[tid]['size'] / 1e3:.0f}KB")
-    for f in os.listdir(ROOT):                    # もう ない テーマの 絵は 消す（できた 絵 だけ・もとは さわらない）
-        if f.startswith(PREFIX) and f.endswith('.webp') and f[len(PREFIX):-5] not in out:
+    for f in os.listdir(ROOT):                    # もう ない テーマの 絵は 消す（できた 絵 だけ・もとは さわらない）。外した テーマ（gone）の 絵は 残す
+        if f.startswith(PREFIX) and f.endswith('.webp') and f[len(PREFIX):-5] not in out and f[len(PREFIX):-5] not in g:
             os.remove(os.path.join(ROOT, f))
-    json.dump(dict(params=PARAMS, files=out), open(os.path.join(ROOT, INFO), 'w', encoding='utf8'), ensure_ascii=False, indent=1)
+    json.dump(dict(params=PARAMS, files=dict(sorted({**out, **kept}.items()))), open(os.path.join(ROOT, INFO), 'w', encoding='utf8'), ensure_ascii=False, indent=1)
     miss = [t for t in ids() if t not in out]
     print(f'{len(out)}まい（作り直した {made}）・ぜんぶで {sum(e["size"] for e in out.values()) / 1e6:.2f}MB' + (f'・絵が ない テーマ：{"・".join(miss)}' if miss else '・テーマ ぜんぶに 絵が ある'))
     return out

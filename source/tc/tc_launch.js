@@ -4,6 +4,7 @@
 //       ・11/10 09:57「トレーニングセンターのアイコンこれにして！」「アイコンの下に、トレーニングセンター、思い出フィギュア、って壁紙に合う文字で」）
 //     その 下に 思い出フィギュアの ボタン（fig/fig_launch.js が ここの TengelFab.add で 入れる：同じ 列 #fabCol・上から トレーニングセンター → 思い出フィギュア）
 //   ・作戦会議の 通知（tengel.plan）：src.html の syncNotify が TCPlanNotify() を いっしょに 入れる（アプリの 中から 出す お知らせ）
+//   ・作戦会議の 入口（第4.160版）：判定タブの「レース情報」の カードの 右上に 作戦会議の 札 → 押すと 判定タブの 上に 作戦会議を 開く（トレーニングセンターは 開かない）
 //   ・お世話の 合計（ミッション）・チケット（着せ替え）：バンドルを 読む 前でも TCInfo で 読める
 (function () {
   'use strict';
@@ -123,9 +124,79 @@
     return load().then(function () { return window.TCApp.open(opt); }).catch(function () { note('トレーニングセンターを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
   }
   window.TCOpen = open;
+  // ---------- 作戦会議の 入口：判定タブの「レース情報」の カードの 右上（第4.160版・まさちゃん 11/12 14:58「作戦会議は、1番左の項目判定のページでも開けるようにして！アイコンは右上に設置して！」）----------
+  //   ・絵は トレーニングセンターの 作戦会議の 札と 同じ（tc_icon_plan.webp：500×200 の 中に 札が 468×141）。絵の 大きさ 118×47 ＝ 見える 札 110×33・押せる 所は 絵 ぜんぶ（高さ 47）
+  //   ・場所＝判定タブの いちばん 上の カード「レース情報」の 右上（見出しの まん中の 高さに 札の まん中・札の 右はしは カードの 中身の 右はし）。
+  //     画面の 上の 帯の 右上は「説明書」「ミッション」で いっぱい。帯の すぐ 下に うかべると 壁紙の 上の絵に 重なる（11/10 11:32「アイコンが壁紙と重なってるから」）→ 重ならない カードの 中に 置く
+  //     見出しの 字の 大きさは 壁紙で かわる ので、場所は 測って 決める（planPlace：壁紙を かえた とき・字が 読めた とき・画面の 大きさが かわった とき）
+  //   ・押すと tc_bundle.js を 読んで TCPlan.open(#planHost)。#planHost＝画面 いっぱいの 入れ物（うしろは 判定タブの まま・「とじる」で そのまま 判定タブに もどる）
+  //     入れ物は いつも 置いた まま（作戦会議が 閉じて いる 間は 何も 出ない・指も とどかない：pointer-events:none）。作戦会議の 幕は 自分で 指を 受ける
+  //   ・開いて いる 間、うしろの 判定タブは 動かさない（幕や 見出しを なぞっても スクロール しない・中身が 短くて スクロール しない ときも）
+  var PLAN_W = 118, PLAN_H = 47, PLAN_INK = [16 / 500, 30 / 200, 483 / 500, 170 / 200];      // 絵の 中の 札の 場所（左・上・右・下：割合）
+  var planHost = null, planB = null;
+  function planCss() {
+    if (document.getElementById('planCss')) return;
+    var st = document.createElement('style'); st.id = 'planCss';
+    st.textContent = '#v-judge .card.planc{position:relative}'
+      + '#planBtn{position:absolute;z-index:2;top:2px;right:12px;width:' + PLAN_W + 'px;height:' + PLAN_H + 'px;margin:0;padding:0;border:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
+      + '#planBtn:active{transform:scale(.95)}#planBtn:disabled{opacity:.7}'
+      + '@media (prefers-reduced-motion:reduce){#planBtn{transition:none}}'
+      + '#planBtn img{display:block;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}'
+      + '#planBtn .plt{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:110px;height:33px;margin:7px 4px;border-radius:5px;border:3px solid #c0241c;background:#f6ead0;color:#b8201a;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;letter-spacing:.06em;pointer-events:none}'
+      + '#planHost{position:fixed;left:0;top:0;right:0;bottom:0;z-index:90;pointer-events:none}'
+      + '#planHost>#tcPlan{pointer-events:auto;touch-action:none}'
+      + '#planHost .pb{overscroll-behavior:contain}';
+    document.head.appendChild(st);
+  }
+  // 札の 場所：見出しの まん中の 高さ・カードの 中身の 右はし。下の 行（データの 切りかえ）に かからない ように 上へ よせる（カードの 上の ふちからは 出さない）
+  function planPlace() {
+    var b = planB; if (!b || !b.parentNode) return;
+    var card = b.parentNode, h = card.querySelector('h2'); if (!h) return;
+    var cr = card.getBoundingClientRect(), hr = h.getBoundingClientRect(); if (!cr.width || !hr.height) return;      // 判定タブが 出て いない
+    var cs = getComputedStyle(card), bt = parseFloat(cs.borderTopWidth) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0;
+    var inkT = PLAN_INK[1] * PLAN_H, inkB = PLAN_INK[3] * PLAN_H, inkR = (1 - PLAN_INK[2]) * PLAN_W;
+    var top = hr.top + hr.height / 2 - (cr.top + bt) - PLAN_H / 2;
+    var nx = h.nextElementSibling;
+    while (nx && !(nx.getBoundingClientRect().height > 0)) nx = nx.nextElementSibling;                       // 見出しの 次の 見えて いる 行
+    if (nx) top = Math.min(top, nx.getBoundingClientRect().top - (cr.top + bt) - 3 - inkB);                   // 札の 下が 次の 行の 3px 上まで
+    top = Math.max(top, Math.min(pt, 6) - inkT);                                                             // 札の 上が カードの 上の ふちから 6px（余白が せまい ときは 余白の ぶん）より 下
+    var t = Math.round(top) + 'px', r = Math.round(Math.max(0, pr - inkR)) + 'px';
+    if (b.style.top !== t) b.style.top = t;
+    if (b.style.right !== r) b.style.right = r;
+  }
+  function planOpen() {
+    if (planB) planB.disabled = true;
+    return load().then(function () {
+      planCss();
+      if (!planHost) {
+        planHost = document.createElement('div'); planHost.id = 'planHost'; document.body.appendChild(planHost);
+        planHost.addEventListener('touchmove', function (e) {      // うしろの ページを 動かさない：スクロール できる 中身（.pb）の 中 だけ 指で 動かせる
+          var t = e.target, pb = t && t.closest ? t.closest('.pb') : null;
+          if (!pb || pb.scrollHeight <= pb.clientHeight + 1) { if (e.cancelable) e.preventDefault(); }
+        }, { passive: false });
+      }
+      return window.TCPlan.open(planHost);
+    }).catch(function () { note('作戦会議を 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (planB) planB.disabled = false; });
+  }
+  window.TCPlanOpen = planOpen;
+  function planBoot() {
+    if (document.getElementById('planBtn')) return;
+    var card = document.querySelector('#v-judge .card'), h = card && card.querySelector('h2'); if (!card || !h) return;
+    planCss(); card.classList.add('planc');
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'planBtn'; b.setAttribute('aria-label', '作戦会議（押すと ひらくよ）');
+    var im = new Image(); im.alt = '';
+    im.onerror = function () { var t = document.createElement('span'); t.className = 'plt'; t.textContent = '作戦会議'; im.replaceWith(t); };      // 絵が ない（CI など）：字の 札
+    im.src = 'tc_icon_plan.webp'; b.appendChild(im);
+    b.addEventListener('click', function () { if (!b.disabled) planOpen(); });
+    card.appendChild(b); planB = b;
+    planPlace(); window.addEventListener('resize', planPlace); setTimeout(planPlace, 400); setTimeout(planPlace, 1500);
+    try { if (window.ResizeObserver) { var ro = new ResizeObserver(planPlace); ro.observe(card); ro.observe(h); } } catch (e) { /* なし */ }
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(planPlace); } catch (e) { /* なし */ }
+  }
   function boot() {
     if (document.getElementById('tcFab')) return;
     fab = fabAdd({ id: 'tcFab', order: 1, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと ひらくよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
+    planBoot();
   }
   // 通知を 押した（作戦会議）→ トレーニングセンターの 作戦会議を 開く
   document.addEventListener('tengel:native', function (e) {

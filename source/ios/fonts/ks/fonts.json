@@ -203,15 +203,6 @@
    "src": "pottaone/PottaOne-Regular.ttf"
   },
   {
-   "family": "Rampart One",
-   "weight": 400,
-   "file": "RampartOne-400.woff2",
-   "role": "disp",
-   "glyphs": 372,
-   "bytes": 61404,
-   "src": "rampartone/RampartOne-Regular.ttf"
-  },
-  {
    "family": "RocknRoll One",
    "weight": 400,
    "file": "RocknRollOne-400.woff2",
@@ -419,6 +410,6 @@
    "src": "zenoldmincho/ZenOldMincho-Bold.ttf"
   }
  ],
- "total": 3773372,
+ "total": 3711968,
  "source": "github.com/google/fonts (ofl)"
 }

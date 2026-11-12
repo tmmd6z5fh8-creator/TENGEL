@@ -135,7 +135,7 @@ if r.returncode == 0:
     #   第4.150版：結果ボードの 絵（止まった 絵 だけに なった）は 軽く しない＝もとと 1バイトも ちがわない（まさちゃん「その代わり、画質あげて！」）
     import assets_dir as _ad
     import hashlib as _hl
-    _pb_on = any(f.startswith('pb_') and f.endswith('.webp') for f in res)      # 第4.148版：PUSHボタンの 絵（31まい・約3.2MB）が 入って いる とき
+    _pb_on = any(f.startswith('pb_') and f.endswith('.webp') for f in res)      # 第4.148版：PUSHボタンの 絵（31まい・約3.2MB。第4.160版：ネオンを 外して 30まい・約3.1MB）が 入って いる とき
     if all(_ad.is_lite(n) for n in _ad.NAMES):
         RES = os.path.join(out, 'Tengel.swiftpm', 'Resources')
         _man = {n: _ad.manifest(n) for n in _ad.NAMES}
@@ -367,9 +367,9 @@ if r.returncode == 0:
     check('window.__KS=' in html and 'window.TengelKisekae' in html and "'tengel.kisekae'" in html and 'setKisekae' in html and 'html[data-ks=\\"sunset\\"]' in html and "@font-face{font-family:'Kaisei Opti'" in html and 'fonts/KaiseiOpti-700.woff2' in html,
           'アプリの画面に 着せ替え（__KS・kisekae.js・設定の「着せ替え」・テーマの変数・テーマの字の @font-face）が入っている（第4弾）')
     sys.path.insert(0, os.path.join(W, 'kisekae')); import pack as _pack
-    n_ks = 20 + len(_pack.IDS)                                           # 第4.92版：壁紙パック・第4.109版：いつもの（default）の ks_default.json は 入れない（kisekae.js が 読まない）・第4.147版：壁紙を 10枚 外した（ポイント 26 → 17・壁紙パック 11 → 10）
+    n_ks = 19 + len(_pack.IDS)                                           # 第4.92版：壁紙パック・第4.109版：いつもの（default）の ks_default.json は 入れない（kisekae.js が 読まない）・第4.147版：壁紙を 10枚 外した（ポイント 26 → 17・壁紙パック 11 → 10）・第4.160版：ネオンを 外した（ポイント 17 → 16）
     check(len(ks_json) == n_ks and len(_pack.IDS) == 10 and all(f in res for f in ('ks_banner_ranch.svg', 'ks_banner_cute.svg', 'ks_banner_kids.svg', 'ks_banner_gold.svg')) and all(f'ks_{t}.json' in res for t in _pack.IDS),
-          f'テーマごとの ks_<id>.json が {n_ks}こ（いつもの 以外の 20＝ポイント 17＋帯 3 ＋壁紙パック {len(_pack.IDS)}・ks_default.json は なし）と 定番4の止まった絵（{len(ks_json)}）')
+          f'テーマごとの ks_<id>.json が {n_ks}こ（いつもの 以外の 19＝ポイント 16＋帯 3 ＋壁紙パック {len(_pack.IDS)}・ks_default.json は なし）と 定番4の止まった絵（{len(ks_json)}）')
     # 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！」「七夕も消して！」）：
     #   外した 10枚は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）。もとの 絵（ios/kisekae_blobs/）と 作る 道具（kisekae/）は そのまま 残す
     import build_kisekae as _bk
@@ -379,14 +379,14 @@ if r.returncode == 0:
     ksd = _json.JSONDecoder().raw_decode(html, html.index('window.__KS=') + len('window.__KS='))[0]
     gone_blobs = {v for t in GONE if t in _bk.BLOBS20 for v in [_bk.BLOBS20[t]]} | {v['id'] for v in _pack.blobs('tanabata').values()}
     keep_blobs = {_bk.BLOBS20[t] for t in _bk.BLOBS20 if t in _bk.BY_ID} | {v['id'] for t in _pack.IDS for v in _pack.blobs(t).values()}
-    check(len(GONE) == 10 and GONE == gone_js and not any(f'ks_{t}.json' in res for t in GONE) and not any(f'html[data-ks=\\"{t}\\"]' in html for t in GONE)
-          and len(ksd['themes']) == 31 and not any(t['id'] in GONE for t in ksd['themes']) and len(ksd['paid']) == 17 and not (set(ksd['paid']) & set(GONE))
+    check(len(GONE) == 11 and GONE[-1] == 'neon' and GONE == gone_js and not any(f'ks_{t}.json' in res for t in GONE) and not any(f'html[data-ks=\\"{t}\\"]' in html for t in GONE)
+          and len(ksd['themes']) == 30 and not any(t['id'] in GONE for t in ksd['themes']) and len(ksd['paid']) == 16 and not (set(ksd['paid']) & set(GONE))
           and ksd['pack']['ids'] == ksd['pack']['order'] == ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future'] and ksd['pack']['every'] == 5
-          and "var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };" in _pjs and 'var WALL_TOTAL = 30;' in _pjs and ksd['band'] == {'silver': 5, 'golden': 10, 'tengel': 16}
-          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [2000] * 6 + [3000] * 4 + [4000] * 4 + [7000] * 3
+          and "var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };" in _pjs and 'var WALL_TOTAL = 29;' in _pjs and ksd['band'] == {'silver': 5, 'golden': 10, 'tengel': 15}
+          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [2000] * 6 + [3000] * 3 + [4000] * 4 + [7000] * 3
           and not any(('ks_' + b + '.webp') in res or ('ks_' + b + '.svg') in res for b in gone_blobs - keep_blobs)
           and not any(f in res for f in ('KaiseiDecol-700.woff2', 'YujiSyuku-400.woff2', 'YuseiMagic-400.woff2', 'ReggaeOne-400.woff2', 'Murecho-800.woff2', 'ZenOldMincho-900.woff2')),
-          f'第4.147版：外した 壁紙 10枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 31テーマ（ポイント 17枚＝2,000P×6・3,000P×4・4,000P×4・7,000P×3／壁紙パック 10枚／帯 5・10・16枚）')
+          f'第4.147版・第4.160版：外した 壁紙 11枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 30テーマ（ポイント 16枚＝2,000P×6・3,000P×3・4,000P×4・7,000P×3／壁紙パック 10枚／帯 5・10・15枚）')
     rsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_ranch.svg'), encoding='utf8').read(); gsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_gold.svg'), encoding='utf8').read()
     check('*{animation:none!important}</style>' in rsvg and '*{animation:none!important}</style>' in gsvg and '.kslive{' in html and '.kslv{' in html and 'rescope' in html and 'rbwSvg' in html and 'mask-type:alpha' in html,
           '第4.89版：選ぶ画面の 牧場・ぷりけつの 小さな絵は 止めた SVG・選んだ タイルだけ 動く 壁紙（.kslive）・形の ある PUSH の 虹は SVG の 中（rbwSvg・mask）')
@@ -396,7 +396,7 @@ if r.returncode == 0:
           and sk['push']['pc'] == 'ss' and ((sk['push']['svg'] == '' and sk['push']['pressed'] == '' and sk['push'].get('img') == 1) if 'pb_sunset.webp' in res else ('<svg' in sk['push']['svg'] and '<svg' in sk['push']['pressed'] and 'img' not in sk['push'])) and 'class="clips ss"' in sk['push']['burst'] and '.fxs .push.ss' in sk['push']['css'] and '.fxs .rb.t-sunset{' in sk['board']['css'] and '<svg class="orn"' in sk['board']['orn'],
           'ks_sunset.json：上の絵（#ksBnr の中だけ・@keyframes に kb）・夕焼けの PUSH（面：第4.148版から 絵が あれば コードの 面は 入れない・はじける 光・.fxs の中だけ）・ボードの変数と飾り・見本の絵の場所（/_blob/）が残っていない')
     # 第4.148版（まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」→ 11/11 00:02・00:05・00:16 に 31まい＝テーマ 1つに 1まい・いつもの も）：
-    #   PUSHボタンの 絵（ios/push_assets/pb_<id>.webp：kisekae/push_art.py が もとの 絵 src/<id>.png から 作る）は、手元に あれば 31まい ぜんぶ Resources に 入る。もとの 絵・台帳（pb.json）・PNG は 入れない。
+    #   PUSHボタンの 絵（ios/push_assets/pb_<id>.webp：kisekae/push_art.py が もとの 絵 src/<id>.png から 作る）は、手元に あれば 31まい（第4.160版：ネオンを 外して 30まい）ぜんぶ Resources に 入る。もとの 絵・台帳（pb.json）・PNG は 入れない。
     #   一覧（__KS の themes[].pa＝ファイルの 名前と 出す 大きさ）・テーマの ks_<id>.json（push.img＝1・コードの 面 svg／pressed は 入れない）。なければ 入れずに 作れる（今までの コードの PUSH：下の テスト版の 作り方で 確かめる）
     import push_art as _pa
     PB = _pa.files(); pb_res = sorted(f for f in res if f.startswith('pb_')); RES2 = os.path.join(out, 'Tengel.swiftpm', 'Resources')
@@ -405,20 +405,42 @@ if r.returncode == 0:
     img_ok = all(((j['push'].get('img') == 1 and j['push']['svg'] == '' and j['push']['pressed'] == '' and j['push']['css'] != '') if tid in PB else ('img' not in j['push'] and '<svg' in j['push']['svg'])) for tid, j in kj.items() if j.get('push'))
     pb_sz = sum(os.path.getsize(os.path.join(RES2, f)) for f in pb_res)
     same_pb = all(open(os.path.join(RES2, e['f']), 'rb').read() == open(os.path.join(_pa.ROOT, e['f']), 'rb').read() for e in PB.values()) if PB else True
-    check(len(PB) in (0, 31) and pb_res == sorted(e['f'] for e in PB.values()) and (not PB or sorted(PB) == sorted(t['id'] for t in ksd['themes'])) and pa_ok and img_ok and same_pb and pb_sz < 4_000_000
+    check(len(PB) in (0, 30) and 'pb_neon.webp' not in res and pb_res == sorted(e['f'] for e in PB.values()) and (not PB or sorted(PB) == sorted(t['id'] for t in ksd['themes'])) and pa_ok and img_ok and same_pb and pb_sz < 4_000_000
           and 'pb.json' not in res and not any(f.lower().endswith('.png') for f in res) and 'pushArt' in html and '.push.pim' in html and 'fxpimGlow' in html
           and 'ios/push_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/push_assets/pb_default.webp'], cwd=os.path.dirname(W)).returncode == 0
           and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/push_assets/src/default.png'], cwd=os.path.dirname(W)).returncode == 0,
-          f'第4.148版：PUSHボタンの 絵 {len(pb_res)}まい（{pb_sz / 1e6:.2f}MB・テーマ 31こ ぜんぶ＝いつもの も）が Resources に 入る・一覧に 絵の 名前と 出す 大きさ（pa）・テーマの ファイルは 面を 絵に（img＝1・コードの 面なし）・'
+          f'第4.148版：PUSHボタンの 絵 {len(pb_res)}まい（{pb_sz / 1e6:.2f}MB・テーマ 30こ ぜんぶ＝いつもの も。第4.160版：ネオンの 絵は 入れない）が Resources に 入る・一覧に 絵の 名前と 出す 大きさ（pa）・テーマの ファイルは 面を 絵に（img＝1・コードの 面なし）・'
           f'もとの 絵／台帳／PNG は 入れない・絵の フォルダ（ios/push_assets/）は git に 入らない（手元に なければ 0まい＝今までの コードの PUSH）')
-    # 第4.87版：ネオンの 光のつぶ（236こ ばらばら・keyframes に 変数なし・光のつぶの 絵なし）（雪の 白い 息の 確かめは 第4.147版で 雪を 外した ので なし）
-    nn = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_neon.json'), encoding='utf8'))
-    nh, nc = nn['bnr']['html'], nn['bnr']['css']
-    kfb = _re.findall(r'@keyframes ([\w-]+)\{((?:[^{}]*\{[^{}]*\})*)\}', nc)
-    check(nh.count('<i class="') == 236 and nh.count('<b class="ln s') == 63 and 'nqd' not in nh + nc and '70fc21205005d11eddef8ebd6c78ee31' not in nh + nc
-          and [len([k for k, _ in kfb if _re.fullmatch(pre + r'\d+', k)]) for pre in ('kbnqL', 'kbnqM', 'kbnqS')] == [16, 16, 8] and all('var(' not in body for _, body in kfb)
-          and '.nqw .nqp i,#ksBnr .nqw .nqp .ln{animation:none!important}' in nc,
-          f'ks_neon.json：光のつぶ 236こ（点 173・筋 63）が ばらばらに 動く（予定 16本・keyframes の 中に CSS の 変数なし・視差効果を減らす ときは 止まる）・光のつぶの 絵（dust）は 使わない（第4.87版）・光の 横線（筋）は 長く ランダムに のびちぢみ（予定 8本・第4.88版）')
+    # 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオンは アプリに 入れない（テーマの ファイル・絵 3まい・PUSH の 絵・一覧）。もとの 絵は 手元に のこす（消さない）
+    #   （第4.87版の ネオンの 光のつぶの 確かめ・第4.147版より 前の 雪の 白い 息の 確かめは、壁紙を 外した ので なし）
+    _nb = list(_json.load(open(os.path.join(W, 'kisekae', 'neon_blobs.json'))).values()) + [_json.load(open(os.path.join(W, 'kisekae', 'blobs20.json')))['neon']]
+    _bl = os.path.join(W, 'ios', 'kisekae_blobs')
+    check('ks_neon.json' not in res and not any(f'ks_{b}.webp' in res for b in _nb) and len(_nb) == 3 and 'pb_neon.webp' not in res and not any(t['id'] == 'neon' for t in ksd['themes']) and len(ksd['themes']) == 30
+          and 'neon' in _bk.REMOVED and ksd['band'] == dict(silver=5, golden=10, tengel=15) and len(ksd['paid']) == 16 and 'neon' not in ksd['paid']
+          and (not os.path.isdir(_bl) or all(os.path.exists(os.path.join(_bl, b + '.webp')) for b in _nb))
+          and (not os.path.isdir(_pa.IN) or (os.path.exists(os.path.join(_pa.IN, 'neon.png')) and os.path.exists(os.path.join(_pa.ROOT, 'pb_neon.webp')))),
+          '第4.160版：ネオンは アプリに 入って いない（ks_neon.json・絵 3まい・PUSH の 絵・一覧＝30テーマ・ポイントの 壁紙 16枚・帯は 5・10・15枚）・もとの 絵は 手元に のこって いる')
+    # 第4.160版（まさちゃん 2026/11/12 14:31「星座の馬、一枚目の写真の馬を使用して！」）：星座の 壁紙の 馬は まさちゃんの ペガサスの 絵（kisekae/flat/pegasus_art.py）
+    #   下の 絵＝夜空・天の川・三日月 だけ（1170×480）・その 上に 流れる 星・ペガサスの 絵（すき通し・画面の 3倍）・キラキラ。一覧の 小さい 絵も 新しい ペガサス。前の 絵 2まいは 入れない（手元には のこす）
+    _sb = _json.load(open(os.path.join(W, 'kisekae', 'stars_blobs.json'))); _sp = _json.load(open(os.path.join(W, 'kisekae', 'stars_pts.json')))
+    _sj = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_stars.json'), encoding='utf8')); _sh, _sc = _sj['bnr']['html'], _sj['bnr']['css']
+    _st = _json.load(open(os.path.join(W, 'kisekae', 'blobs20.json')))['stars']; _sold = ['0bbb4fcd668d2b6b036a2e8fd08aa876', 'b0dbe73ee41b9865222b901ace7eb073']
+    _pl, _pt, _pw, _ph = _sp['peg']
+    from PIL import Image as _SI
+    _ksi = [f for f in res if _re.fullmatch(r'ks_[0-9a-f]{32}\.(webp|svg)', f)]      # 着せ替えの 絵が 入って いる（手元に 絵が ある）とき だけ 絵を 見る
+    check(sorted(_sb) == ['base', 'peg'] and f'<img class="bnr" src="ks_{_sb["base"]}.webp"' in _sh and f'<img class="szpg" src="ks_{_sb["peg"]}.webp" alt="">' in _sh
+          and _sh.index('class="szs"') < _sh.index('class="szpg"') < _sh.index('class="szx"') and f'.szw .szpg{{position:absolute;left:{_pl:g}px;top:{_pt:g}px;width:{_pw:g}px;height:{_ph:g}px' in _sc
+          and 0 < _pl and _pl + _pw < 330 and 0 < _pt and _pt + _ph < 160 and abs(_pw / _ph - 665 / 444) < 0.01
+          and len(_sp['con']) == 21 and sum(c[2] for c in _sp['con']) == 8 and len(_sp['dots']) == 64 and len(_sp['spine']) == 16 and len(_sp['bg']) == 700 and 'links' not in _sp
+          and _sp['spine'][0][0] > _sp['spine'][-1][0] + 400 and all(a[0] > b[0] - 30 for a, b in zip(_sp['spine'], _sp['spine'][1:]))
+          and _sh.count('class="szk"') == 21 and _sh.count('class="szg"') == 64 and _sh.count('class="szv"') == 21 + 64 + 30 and _sh.count('class="szc"') == 5
+          and [t['thumb'] for t in ksd['themes'] if t['id'] == 'stars'] == [f'ks_{_st}.webp'] and _st not in _sold and not any(o in _sh + _sc for o in _sold)
+          and (not _ksi or (all(f'ks_{b}.webp' in res for b in (_sb['base'], _sb['peg'], _st)) and not any(f'ks_{o}.webp' in res for o in _sold)
+                            and _SI.open(os.path.join(RES2, f'ks_{_sb["base"]}.webp')).size == (1170, 480) and _SI.open(os.path.join(RES2, f'ks_{_sb["peg"]}.webp')).size == (665, 444)
+                            and _SI.open(os.path.join(RES2, f'ks_{_sb["peg"]}.webp')).mode == 'RGBA' and _SI.open(os.path.join(RES2, f'ks_{_st}.webp')).size == (780, 320)))
+          and (not os.path.isdir(_bl) or all(os.path.exists(os.path.join(_bl, o + '.webp')) for o in _sold)),
+          f'第4.160版：星座の 壁紙の 馬は まさちゃんの ペガサス（夜空 1170×480・ペガサスの 絵 665×444〈すき通し・画面の 3倍〉を 流れる 星の 上・キラキラの 下に 置く：左 {_pl:g}・上 {_pt:g}・幅 {_pw:g}・高さ {_ph:g}pt）・'
+          f'明るい 星 21（大 8）・小さい 星 64・鼻の頭 → しっぽの先の 道すじ 16点（右 → 左）・一覧の 小さい 絵も 新しい・前の 絵 2まいは 入って いない（手元には のこる）')
     for f in ks_json:
         txt = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', f), encoding='utf8').read()
         for w in ('大井', 'JRA', 'まさちゃん', '第13', '改訂'):
@@ -446,9 +468,9 @@ if r.returncode == 0:
           and [t['desc'] for t in ksd['themes'] if t['id'] == 'tengel'] == ['テンゲル・光る像'] and [t['thumb'] for t in ksd['themes'] if t['id'] in ('silver', 'golden', 'tengel')] == [f"ks_{_mb[k]}.webp" for k in ('silver_banner', 'gold_banner', 'tengel_banner')],
           '第4.149版：帯の 壁紙 3つは 3D の 像の 絵（9まい：背景 6＋馬 だけの 高画質の 絵 3）・前の 絵 8まい（第4.158版：前の マスター帯の 像の 3まいも）は 入って いない・マスター帯の 上の 絵は 像＋きらめき（mxt：動く 数字と 緑の 雷は なし）・一覧の 説明と 小さい 絵も 新しい')
     # 第4.157版（まさちゃん 2026/11/12「課金の壁紙は全部馬の画質が悪いから同じように画質を上げてほしい！」）：花火の 馬の 足す光 だけ 別の 絵（3倍・fireworks_blobs.json の scatter_h）が 1まい 足された＝73 → 74こ
-    check(len(ks_imgs) in (0, 74 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 74 - n_face + n_pk)
+    check(len(ks_imgs) in (0, 72 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 72 - n_face + n_pk)
           and (('ks_38c796c9e27ea6f52001b6605ca607a0.webp' not in res) if PB else True),
-          f'着せ替えの絵：手元にあれば{74 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.157版：花火の 馬 だけの 絵（3倍）が 1まい 足された＝73 → 74こ。第4.149版：帯の 壁紙の 絵 5 → 9まい＝69 → 73こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝73 → 72こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
+          f'着せ替えの絵：手元にあれば{72 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.160版：ネオンの 3まいを 外して、星座は 2 → 3まい（夜空・ペガサス・止まった 絵）＝74 → 72こ。第4.157版：花火の 馬 だけの 絵（3倍）が 1まい 足された＝73 → 74こ。第4.149版：帯の 壁紙の 絵 5 → 9まい＝69 → 73こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝73 → 72こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')
@@ -471,7 +493,7 @@ if r2.returncode == 0:
     res2 = os.listdir(os.path.join(out2, 'TengelTest.swiftpm', 'Resources'))
     ksd2 = _j2.JSONDecoder().raw_decode(h2, h2.index('window.__KS=') + len('window.__KS='))[0]
     sk2 = _j2.load(open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'ks_sunset.json'), encoding='utf8')); px2 = _j2.load(open(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'ks_pixel.json'), encoding='utf8'))
-    check(not any(f.startswith('pb_') for f in res2) and len(ksd2['themes']) == 31 and not any('pa' in t for t in ksd2['themes']) and 'img' not in sk2['push'] and '<svg' in sk2['push']['svg'] and '<svg' in sk2['push']['pressed']
+    check(not any(f.startswith('pb_') for f in res2) and len(ksd2['themes']) == 30 and not any('pa' in t for t in ksd2['themes']) and 'img' not in sk2['push'] and '<svg' in sk2['push']['svg'] and '<svg' in sk2['push']['pressed']
           and 'img' not in px2['push'] and '<svg' in px2['push']['svg'],
           '第4.148版：PUSHボタンの 絵が ない 作り方（CI と 同じ）：絵は 入らない・一覧に pa なし・テーマの ファイルは 今までの コードの 面（svg）の まま ＝ 今までの PUSH で 作れる')
 shutil.rmtree(out2, ignore_errors=True)
