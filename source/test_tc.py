@@ -63,6 +63,43 @@ def stage_click(pg, x, y):            # フィールドの 座標（1052×1657�
     pg.mouse.click(r[0] + x / 1052 * r[2], r[1] + y / 1657 * r[3])
 
 
+# 第4.159版：お世話の あとの PUSH（tc/tc_care.js）。押すのは 本物の 指の 出来事（pointerdown：指を 置いた 瞬間に 押される）で、その 間 だけ くじ（Math.random）を 決めた 数に する
+#   （馬の 頭は 作る ときの Math.random を おぼえて いる ので、さしかえるのは 出来事を 送る 1回の 間 だけ）。返り値＝減った トークンの 数
+PUSH_LIVE = "() => { const S = TCCare.S; return !!(S.push && S.push.hideT == null); }"
+PRESS = """([seq]) => { const S = TCCare.S, G = TCCare.PUSHG, st = document.querySelector('#tcOv .tcst'), cv = document.querySelector('#tcOv .tco'), r = st.getBoundingClientRect();
+  const o = { bubbles: true, clientX: r.left + G.x / 1052 * r.width, clientY: r.top + G.y / 1657 * r.height, pointerId: 7, pointerType: 'touch', isPrimary: true }, R = Math.random, q = (seq || []).slice(), s0 = S.stock;
+  S.high = 0; TCApp.state.high = 0;      // 高確ゾーンは なしで（2分ごとの チャンスで ついて いると 当たりの 幅が かわる）
+  Math.random = () => (q.length ? q.shift() : 0.5);
+  try { cv.dispatchEvent(new PointerEvent('pointerdown', o)); } finally { Math.random = R; }
+  cv.dispatchEvent(new PointerEvent('pointerup', o)); return s0 - S.stock; }"""
+# その 当たりが 出る くじの 数（いまの 馬の 表の 中で、その 当たりの 幅の まん中。高確ゾーンは なしで）
+RND_FOR = """(want) => { const T = TCApp._t, tab = TCApp.state.visit ? T.PRIZES_VISIT[TCApp.state.visit.kind] : T.PRIZES; let a = 0;
+  for (const [p, z] of tab) { if (z.k === want.k && (want.k !== 'pt' || z.v === want.v) && (want.k !== 'rt' || !want.tier || z.tier === want.tier)) return a + p / 2; a += p; } return null; }"""
+# お世話の 絵（上の キャンバス）の 点の 色（フィールドの 座標）
+OVPX = "(pts) => { const cv = document.querySelector('#tcOv .tco'), g = cv.getContext('2d'), k = cv.width / 1052; return pts.map(([x, y]) => Array.from(g.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data)); }"
+PU = """() => { const S = TCCare.S, s = TCApp.state, sv = JSON.parse(localStorage.getItem('tengel.tc')) || {}; return { live: !!(S.push && S.push.hideT == null), stock: S.stock, saved: sv.stock, total: s.total || 0, cares: s.cares, rs: s.rs.n, push: !!s.push, spush: !!sv.push,
+  bulk: S.bulk, sbulk: !!sv.bulk, mode: S.mode, phase: S.phase, pop: S.fx.filter(f => f.k === 'pointpop').map(f => f.v), tags: S.fx.filter(f => f.k === 'tagUI').map(f => f.txt), wal: TengelWallet.total() + TengelWallet.hold().total, pend: s.pend ? s.pend.k : null }; }"""
+SES = "() => { const a = (window.__seL || []).slice(); if (window.__seL) window.__seL.length = 0; return a; }"      # 鳴らした 音の 名前（tc_se_ と .m4a は とる・音量が 1 で ない ときは ×音量）
+SE_WRAP = "() => { const S = TCApp._snd; if (S.__w) return; S.__w = 1; const o = S.se.bind(S); window.__seL = []; S.se = (n, g, l) => { window.__seL.push(n.replace('tc_se_', '').replace('.m4a', '') + (g != null && g !== 1 ? '×' + g : '')); return o(n, g, l); }; }"
+
+
+# 第4.159版：プチュンの 幕（.tcpc）が 舞台に 入った・外れた 時と、演出の キャンバス（.tcfx）が 出た・消えた 時を 記録する（window.__pcLog）
+PC_WATCH = """() => { if (window.__pcObs) { window.__pcLog.length = 0; return; } window.__pcLog = [];
+  const st = document.querySelector('#tcOv .tcst'), cv = document.querySelector('#tcOv .tcfx');
+  window.__pcObs = new MutationObserver(ms => { for (const m of ms) {
+    if (m.type === 'attributes') { window.__pcLog.push({ k: cv.classList.contains('on') ? 'fxon' : 'fxoff', t: performance.now() }); continue; }
+    for (const n of m.addedNodes) if (n.classList && n.classList.contains('tcpc')) { const f = n.querySelector('.fxs'), q = n.querySelector('.fxs > .ov.fz > .pc');
+      window.__pcLog.push({ k: 'in', t: performance.now(), above: n.previousElementSibling === cv, under: n.nextElementSibling === cv, pc: n.querySelectorAll('.pc').length, parts: q ? q.querySelectorAll('*').length : 0, an: q ? getComputedStyle(q).animationName : '', w: f ? getComputedStyle(f).width : '',
+        fxk: f ? +f.style.getPropertyValue('--fxk') : 0, sw: st.clientWidth, bg: getComputedStyle(n).backgroundColor, pe: getComputedStyle(n).pointerEvents, fxon: cv.classList.contains('on') }); }
+    for (const n of m.removedNodes) if (n.classList && n.classList.contains('tcpc')) window.__pcLog.push({ k: 'out', t: performance.now(), fxon: cv.classList.contains('on') });
+  } });
+  window.__pcObs.observe(st, { childList: true }); window.__pcObs.observe(cv, { attributes: true, attributeFilter: ['class'] }); }"""
+
+
+def press(pg, seq=(0.9999,)):          # PUSH を 押す（seq＝くじの 数：0.9999 は ハズレ）
+    return pg.evaluate(PRESS, [list(seq)])
+
+
 def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
@@ -72,6 +109,7 @@ try:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo')
         ctx.add_init_script(FAKE)
+        ctx.add_init_script("try { performance.setResourceTimingBufferSize(4000); } catch (e) { }")      # 読んだ ファイルの 記録（はじめは 250こ まで：こえると ルーレットの 絵が 記録に のこらない）
         pg = ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
@@ -160,6 +198,9 @@ try:
         pg.wait_for_timeout(2500)
         st = pg.evaluate("() => ({ on: TCCare.on, horse: !!TCCare.S, field: TCApp.state && TCApp.state.stock, plan: !!document.querySelector('#tcOv .tcpl img'), snd: !!document.querySelector('#tcOv .tcsd') })")
         check(st['on'] and st['plan'] and st['snd'], f'トレーニングセンターが ひらいた（{st}）')
+        # 第4.159版：お世話トークンは 10分ごとに 5つ たまる（前は 10分に 1つ）→ テストの 間に たまると 数が ずれる ので、時計の テスト（下）まで たまらない ように 数えはじめを 先に しておく
+        HOLD = "() => { TCApp.state.stockAt = Date.now() + 7200000; }"
+        pg.evaluate(HOLD)
         px = pg.evaluate("() => { const c = document.querySelector('#tcOv .tcgl'); const g = c.getContext('webgl'); const p = new Uint8Array(4); g.readPixels(c.width >> 1, c.height >> 1, 1, 1, g.RGBA, g.UNSIGNED_BYTE, p); return [c.width, c.height, Array.from(p)]; }")
         check(px[0] > 100 and px[1] > 100, f'フィールドの キャンバス {px}')
         # 第4.138版（11/10 10:48 まさちゃん「作戦会議のアイコン、一枚目の赤四角のところにして！」）：お世話の 板（44〜150）の すぐ 下・屋根（241〜）の 上
@@ -238,6 +279,32 @@ try:
           return { lat: t1 - t0, ph, h, m0, zb, y1, x1, side, end: S.phase, cool: S.coolUntil > S.lastT, z: S.zoom.z }; }""")
         check(lat['ph'] == 'pet' and lat['h'] == 2.8 and lat['m0'] == 'idle' and lat['zb'] > 2.2 and lat['lat'] < 2.0 and abs(lat['y1'] - 820) < 25 and abs(lat['x1'] - 526) < 60 and lat['side'] < 0.4 and lat['end'] == 'idle' and not lat['cool'] and lat['z'] == 1,
               f'「撫でる」を 押して から 撫でられる まで {lat["lat"]:.2f}秒（いちばん 奥で むこう向き：歩かないで その場で 横向きに・カメラは 押した ときから 寄る {lat["zb"]:.2f}倍。第4.150版は 14.8秒）・撫でずに もどっても 7秒の 待ちは ない')
+        # 第4.159版（まさちゃん 11/12 12:48「25MAXの時に撫でてても、お世話トークンが最大だよ！って表示されるようにして！」）：トークンが 25（最大）の ときに「撫でる」を 押す → 札が 出る・24こ までは 出ない
+        mt = pg.evaluate("""async () => { const S = TCCare.S, s0 = S.stock, out = {};
+          const go = async (n) => { S.stock = S.stockShow = n; S.coolUntil = -1e9; S.petN = 0; S.maxTagT = -9; S.fx = S.fx.filter(f => f.k !== 'tagUI'); TCCare.press(S.lastT, 'pet');
+            const tags = S.fx.filter(f => f.k === 'tagUI').map(f => [f.txt, f.x, f.y]); const w0 = performance.now(); while (performance.now() - w0 < 12000 && S.phase !== 'pet') await new Promise(r => requestAnimationFrame(r));
+            const ph = S.phase; S.petIdle = -1e9; const w1 = performance.now(); while (performance.now() - w1 < 12000 && S.phase !== 'idle') await new Promise(r => requestAnimationFrame(r)); return { tags, ph }; };
+          out.full = await go(25); out.less = await go(24); S.stock = S.stockShow = s0; S.coolUntil = -1e9; S.petN = 0; return out; }""")
+        pg.wait_for_timeout(200); pg.evaluate(HOLD)      # （最大の 間は 数えはじめが いまの 時刻に なる → もう一度 先へ）
+        check(len(mt['full']['tags']) == 1 and mt['full']['tags'][0][0] == 'お世話トークンが 最大だよ！' and mt['full']['ph'] == 'pet' and mt['less']['tags'] == [] and mt['less']['ph'] == 'pet',
+              f'トークンが 25（最大）の ときに「撫でる」を 押す → 札「お世話トークンが 最大だよ！」（撫でるは そのまま できる）・24こ までは 出ない（{mt["full"]["tags"]}）')
+        # 第4.159版（まさちゃん 11/12 13:27「お世話トークンが25MAXの場合、なかよしハートが10個溜まっても抽選せずに、お世話トークンが20個を切ってから、お世話トークンゲットできるか抽選するようにしてほしい！」）：
+        #   ハートが 10こ・トークン 25こ／20こ → 抽選は 待つ。19こ（20こを 切った）でも 説明書が 開いて いる 間は 始まらない（アプリが 止める）→ 閉じたら ひとりでに 抽選（ここでは ハズレ：ふぅ〜）→ ハートは 0に
+        lh = pg.evaluate("""async () => { const S = TCCare.S, s0 = S.stock, wait = ms => new Promise(r => setTimeout(r, ms)), out = {}, stage = document.querySelector('#tcOv .tcst');
+          const idle = async ms => { const w = performance.now(); while (performance.now() - w < ms && !(S.phase === 'idle' && !S.busy && !S.mode)) await wait(50); };
+          await idle(20000); S.coolUntil = -1e9; S.petN = 0; S.got = []; S.test = Object.assign(S.test || {}, { win: false }); S.fx = S.fx.filter(f => f.k !== 'note');
+          S.heart = S.heartShow = 10; S.stock = S.stockShow = 25; await wait(2600); out.hold = [!!S.lot, S.mode, S.heart, S.stock];
+          S.stock = S.stockShow = 20; await wait(2600); out.hold20 = [!!S.lot, S.mode, S.heart, S.stock];
+          TCGuide.open(stage, {}); S.stock = S.stockShow = 19; await wait(2600); out.guide = [!!S.lot, S.mode, S.heart, TCGuide.isOpen()];
+          TCGuide.close(); const w0 = performance.now(); while (performance.now() - w0 < 15000 && S.mode !== 'pet') await wait(30);
+          out.start = [S.mode, +((performance.now() - w0) / 1000).toFixed(2), S.fx.filter(f => f.k === 'note').map(f => f.txt)];
+          const w1 = performance.now(); while (performance.now() - w1 < 20000 && !S.lot) await wait(30); out.lot = S.lot ? S.lot.win : null;
+          await wait(300); await idle(40000); out.end = [S.heart, S.stock, S.phase, TCApp.state.heart];
+          S.stock = S.stockShow = s0; S.coolUntil = -1e9; S.petN = 0; return out; }""")
+        pg.wait_for_timeout(200); pg.evaluate(HOLD)
+        check(lh['hold'] == [False, None, 10, 25] and lh['hold20'] == [False, None, 10, 20] and lh['guide'] == [False, None, 10, True] and lh['start'][0] == 'pet' and 0.8 <= lh['start'][1] <= 4.0
+              and lh['start'][2] == ['なかよしハートの 抽選！'] and lh['lot'] is False and lh['end'][:3] == [0, 19, 'idle'],
+              f'ハートの 抽選は トークンが 20こ未満の とき だけ：ハート 10こ・トークン 25こ／20こ＝抽選しない（待つ）→ 19こでも 説明書が 開いて いる 間は 始まらない → 閉じて {lh["start"][1]}秒で ひとりでに 抽選（{lh["start"][2]}）→ ハートは 0に（{lh["end"]}）')
         # 第4.152版（バグ直し・まさちゃん 11/11 12:10「これおかしくならないようにしてね！」）：はしを 走って いる 馬を 撫でる → 画面に 入る 所まで 少し 歩く ときに 行き先の まわりを 回りつづけて 始まらなかった
         rn = pg.evaluate("""async () => { const [HO, BR] = TCCare._hb, S = TCCare.S, out = [];
           for (const [x0, y0, d0, mode] of [[526, 1090, 0, 'run'], [935, 1000, -1.6, 'idle'], [118, 1150, 1.6, 'idle']]) {
@@ -269,6 +336,31 @@ try:
         for _ in range(120):
             pg.wait_for_timeout(500)
             if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.feed"): break
+        # 第4.159版（まさちゃん 2026/11/12 10:37「①お世話の最大トークン25回にして！②お世話が終わったあとに、pushボタンが出てくるようにして…当選なら押したタイミングで、当選した内容がでてくるようにして！
+        #   ハズレは音だけで知らせて！…③…お世話トークンを1個使う、か、お世話トークンをまとめて使う、が選べるようにして欲しい！」）：きまりは test_tc_care.js・ここは 本物の 画面
+        print('■ お世話の あとの PUSH（第4.159版）')
+        pg.evaluate(SE_WRAP); pg.evaluate("() => { TCCare.S.high = 0; TCApp.state.high = 0; }")
+        okp = True
+        try: pg.wait_for_function(PUSH_LIVE, timeout=30000)
+        except Exception: okp = False
+        pg.wait_for_timeout(1000); shot(pg, 'tc_push')
+        p0 = pg.evaluate(PU); G = pg.evaluate("() => TCCare.PUSHG"); mx = pg.evaluate("() => [TCCare.RULE.stockMax, TCApp._t.ODDS.tokenMax]")
+        px = pg.evaluate(OVPX, [[G['x'], G['y'] - 40], [170, 1494], [G['m1'][0] - 100, G['m1'][1] - 20], [G['mn'][0] - 100, G['mn'][1] - 20]])
+        check(okp and p0['live'] and p0['stock'] == stock0 and p0['total'] == 0 and p0['cares'] == 0 and p0['rs'] == 0 and p0['push'] and p0['spush'] and not p0['bulk'] and p0['pop'] == [] and mx == [25, 25],
+              f'ごはんが おわると PUSH が 出る：トークンは まだ 使って いない（{stock0}こ の まま）・お世話の 数も まだ・「PUSH が 出て いる」を 保存・トークンの 上限は 25（{mx}）')
+        check(px[0][0] > 170 and px[0][1] < 100 and px[0][3] > 240 and px[1][3] == 0 and px[2][0] > 215 and 150 < px[2][1] < 215 and px[2][2] < 130 and min(px[3][:3]) > 215 and 420 < G['y'] * 614 / 1657 and G['y'] + G['w'] * G['ar'] / 2 < 1657,
+              f'画面の 下に 赤い PUSH（色 {px[0]}）・お世話の 4つの ボタンは かくれる（撫でるの 所は すきとおる {px[1]}）・スイッチは「1個 使う」が 金色（{px[2][:3]}）・「まとめて 使う」は 白（{px[3][:3]}）')
+        pg.evaluate("() => TCCare.press(TCCare.S.lastT, 'pet')"); stage_click(pg, 170, 1494); pg.wait_for_timeout(300); pb = pg.evaluate(PU)
+        check(pb['mode'] is None and pb['phase'] == 'idle' and '先に PUSH を 押してね' in pb['tags'] and pb['live'] and pb['stock'] == stock0, f'PUSH が 出て いる 間は ほかの お世話は 始まらない（{pb["tags"][-1:]}）')
+        stage_click(pg, *G['mn']); pg.wait_for_timeout(400); s1 = pg.evaluate(PU); px1 = pg.evaluate(OVPX, [[G['mn'][0] - 100, G['mn'][1] - 20]])
+        stage_click(pg, *G['m1']); pg.wait_for_timeout(400); s2 = pg.evaluate(PU)
+        check(s1['bulk'] and s1['sbulk'] and s1['live'] and s1['stock'] == stock0 and px1[0][0] > 215 and px1[0][2] < 130 and not s2['bulk'] and not s2['sbulk'],
+              f'スイッチ：「まとめて 使う」を 押すと 金色に（{px1[0][:3]}）・保存する → 「1個 使う」に もどす（押しても トークンは 減らない）')
+        pg.evaluate(SES); d = press(pg); pg.wait_for_timeout(150); p1 = pg.evaluate(PU); se1 = pg.evaluate(SES)
+        check(d == 1 and p1['stock'] == stock0 - 1 and p1['saved'] == stock0 - 1 and p1['total'] == 1 and p1['cares'] == 1 and p1['pop'] == [] and p1['wal'] == p0['wal'] and 'token' in se1 and 'pfo' in se1 and not any(x in se1 for x in ('piron', 'dedeen', 'kyuin')),
+              f'PUSH に 指を 置いた 瞬間：トークン −1（{stock0} → {p1["stock"]}・すぐ 保存）・お世話 1回に 数える・ハズレは 音 だけ（プフォ：{se1}）・札は 出ない')
+        pg.wait_for_timeout(1000); p2 = pg.evaluate(PU); px2 = pg.evaluate(OVPX, [[170, 1494]])
+        check(not p2['live'] and not p2['push'] and not p2['spush'] and px2[0][3] > 240, f'「1個 使う」：1回 押したら PUSH は 消える（保存も）・お世話の ボタンが もどる（{px2[0]}）')
         tot = pg.evaluate("() => [TCCare.S.stock, TCApp.state.total, TCApp.state.cares]")
         check(tot[0] == stock0 - 1 and tot[1] >= 1, f'お世話トークンを 1つ 使って、お世話の 合計が ふえた {stock0} → {tot}')
         rsn = pg.evaluate("() => Object.assign({}, TCApp.state.rs)")
@@ -302,8 +394,8 @@ try:
             if pg.evaluate("() => TCCare.S.phase === 'clean' && !!TCCare._hb[1].props"): break
         cs = pg.evaluate("""() => { const [HO, BR] = TCCare._hb, S = TCCare.S, C = S.clean, s = TCApp.state;
           return { phase: S.phase, n: C ? C.tg.length : 0, props: (BR.props || []).map(q => q.P.meta.i), st: s.trash.length, left: (s.trashAt - Date.now()) / 60000, stock: S.stock, live: (BR.trash || []).length, z: S.zoom.z }; }""")
-        check(cs['phase'] == 'clean' and cs['n'] == 5 and cs['props'] == [6888, 21000] and cs['st'] == 0 and 14.5 < cs['left'] <= 15.01 and cs['stock'] == tr['stock'] - 1 and cs['live'] == 5,
-              f'「おそうじ」を 押す → 3D の ちりとりと ほうきが 出る（三角 {[v // 3 for v in cs["props"]]}こ）・トークン −1・その ときに「片付けた」（次の ゴミまで {cs["left"]:.1f}分）・ゴミは まだ 見えて いる')
+        check(cs['phase'] == 'clean' and cs['n'] == 5 and cs['props'] == [6888, 21000] and cs['st'] == 0 and 14.5 < cs['left'] <= 15.01 and cs['stock'] == tr['stock'] and cs['live'] == 5,
+              f'「おそうじ」を 押す → 3D の ちりとりと ほうきが 出る（三角 {[v // 3 for v in cs["props"]]}こ）・トークンは まだ 使わない（おわった あとの PUSH で：第4.159版）・その ときに「片付けた」（次の ゴミまで {cs["left"]:.1f}分）・ゴミは まだ 見えて いる')
         shot(pg, 'tc_clean_tools')
         sw = pg.evaluate("""async () => { const S = TCCare.S, C = S.clean, raf = () => new Promise(r => requestAnimationFrame(r)); let n = 0; const mid = [];
           while (C.tg.some(q => !q.done) && n < 12) { const T = C.tg.find(q => !q.done), o = T.o, from = [o.x + 130, o.y + 8]; TCCare.input('down', from[0], from[1], S.lastT); const pn = { x: C.pan.x, y: C.pan.y }, g0 = C.got;
@@ -318,6 +410,26 @@ try:
         af = pg.evaluate(TR)
         check(af['phase'] == 'idle' and af['n'] == 0 and len(af['live']) == 0 and 14.4 < af['left'] <= 15 and 860 < af['trashIn'] <= 900,
               f'片付いた：ゴミは ない・次の ゴミまで {af["left"]:.1f}分（片付ける までは 次が 出ない）')
+        # 第4.159版：おそうじの あとも PUSH。「まとめて 使う」＝トークンが ある 間 つづけて 押せる（押した 回数ぶん 減る）・当たりは 押した 瞬間に（100P＝ピロン・200P＝デデーン）・「おわる」で 消える
+        okb = True
+        try: pg.wait_for_function(PUSH_LIVE, timeout=30000)
+        except Exception: okb = False
+        pg.wait_for_timeout(700); pg.evaluate("() => { TCCare.S.high = 0; TCApp.state.high = 0; }")
+        stage_click(pg, *G['mn']); pg.wait_for_timeout(350); b0 = pg.evaluate(PU); pg.evaluate(SES)
+        r100 = pg.evaluate(RND_FOR, {'k': 'pt', 'v': 100}); r200 = pg.evaluate(RND_FOR, {'k': 'pt', 'v': 200})
+        d1 = press(pg); e1 = pg.evaluate(SES); q1 = pg.evaluate(PU)
+        d2 = press(pg, [r100]); e2 = pg.evaluate(SES); q2 = pg.evaluate(PU)
+        d3 = press(pg, [r200]); e3 = pg.evaluate(SES); q3 = pg.evaluate(PU)
+        pg.wait_for_timeout(350); shot(pg, 'tc_push_bulk'); pxe = pg.evaluate(OVPX, [[G['end'][0] - 80, G['end'][1] - 14]])
+        check(okb and b0['bulk'] and b0['stock'] == af['stock'] and [d1, d2, d3] == [1, 1, 1] and q3['stock'] == b0['stock'] - 3 and q3['saved'] == b0['stock'] - 3 and q3['total'] == b0['total'] + 3 and q3['live'] and q3['push'],
+              f'「まとめて 使う」：つづけて 3回 押す → 押した 回数ぶん トークンが 減る（{b0["stock"]} → {q3["stock"]}）・お世話も 3回に 数える・PUSH は のこる')
+        check(q1['pop'] == [] and 'pfo' in e1 and q2['pop'] == [100] and 'piron' in e2 and 'pfo' not in e2 and q2['wal'] == b0['wal'] + 100 and q3['pop'] == [200] and 'dedeen' in e3 and 'piron' not in e3 and q3['wal'] == b0['wal'] + 300 and q3['pend'] is None
+              and all('token' in e for e in (e1, e2, e3)),
+              f'当たりは 押した 瞬間に：ハズレ＝音 だけ（{e1}）／100P＝札と ピロン（{e2}）／200P＝札と デデーン（{e3}）・ポイントは すぐ 台帳へ（+{q3["wal"] - b0["wal"]}P）・前の 札は 消して 次の 札')
+        stage_click(pg, *G['end']); pg.wait_for_timeout(900); q4 = pg.evaluate(PU); e4 = pg.evaluate(SES)
+        check(pxe[0][3] > 240 and not q4['live'] and not q4['push'] and q4['stock'] == q3['stock'] and 'fold' in e4 and q4['bulk'], f'「おわる」（1回 押した あとに 出る）→ PUSH は 消える・のこりの トークンは そのまま（{q4["stock"]}こ）・スイッチは「まとめて」の まま おぼえる')
+        pg.evaluate("() => { const s = TCApp.state; s.rs = { n: 1, at: 0, el: 0 }; TCCare.S.bulk = false; s.bulk = false; }")      # このあとの テストの ため：馬の リセットの 数えを もどす（まとめて 押した 分で 5回に 近づく）・スイッチは「1個 使う」に
+        af = pg.evaluate(TR)
         for _ in range(16):
             stage_click(pg, 644, 1494); pg.wait_for_timeout(600)
             if pg.evaluate("() => TCCare.S.fx.some(f => f.k === 'tagUI' && /ゴミ/.test(f.txt))"): break
@@ -337,6 +449,11 @@ try:
           TCCare.input('up', pn.x, pn.y, S.lastT); return { n: C.tg.length, poop: !!T.poop, done: !!T.done, z, left, saved: TCApp.state.poops.length }; }""")
         check(pc_ and pc_['n'] == 1 and pc_['poop'] and pc_['done'] and pc_['z'] > 1.3 and 14.2 < pc_['left'] <= 15 and pc_['saved'] == 0,
               f'ゴミが なくても うんちが 出たら おそうじ できる（カメラが 寄る {pc_["z"]:.2f}倍・ゴミの 15分は そのまま {pc_["left"]:.1f}分）')
+        okc = True
+        try: pg.wait_for_function(PUSH_LIVE, timeout=40000)
+        except Exception: okc = False
+        pg.wait_for_timeout(500); c0 = pg.evaluate(PU); dc = press(pg); pg.wait_for_timeout(900); c1 = pg.evaluate(PU)
+        check(okc and dc == 1 and c1['stock'] == c0['stock'] - 1 and not c1['live'] and c1['total'] == c0['total'] + 1, f'うんちの おそうじの あとも PUSH（馬が くんくん して いる 間でも 押せる：{c0["phase"]}）→ 押すと トークン −1（{c0["stock"]} → {c1["stock"]}）')
         for _ in range(80):
             pg.wait_for_timeout(250)
             if pg.evaluate("() => TCCare.S.phase === 'idle' && !TCCare.S.clean && !TCCare.S.mode"): break
@@ -361,19 +478,19 @@ try:
         TS = "() => { const s = TCApp.state; return { stock: s.stock, at: s.stockAt, seen: s.seen, now: Date.now() }; }"
         k0 = pg.evaluate(TS)
         check(k0['seen'] is not None and abs(k0['seen'] - k0['now']) < 5000, f'開いて いる あいだ、いままでに 見た いちばん 先の 時刻（seen）を おぼえる（{k0["stock"]}こ）')
-        pg.evaluate("() => { window.__realNow = Date.now.bind(Date); const r = window.__realNow; Date.now = () => r() + 200 * 60000; }"); pg.wait_for_timeout(700)
+        pg.evaluate("() => { window.__realNow = Date.now.bind(Date); const r = window.__realNow; Date.now = () => r() + 260 * 60000; }"); pg.wait_for_timeout(700)
         k1 = pg.evaluate(TS)
-        check(k1['stock'] == 20 and k1['seen'] - k0['now'] >= 199 * 60000, f'時計を 200分 進める → トークンは 満タン（20こ）：ここまでは 止められない（{k0["stock"]} → {k1["stock"]}）')
+        check(k1['stock'] == 25 and k1['seen'] - k0['now'] >= 259 * 60000, f'時計を 260分 進める → トークンは 満タン（25こ：第4.159版）：ここまでは 止められない（{k0["stock"]} → {k1["stock"]}）')
         pg.evaluate("() => { Date.now = window.__realNow; }"); pg.wait_for_timeout(700)
         k2 = pg.evaluate(TS)
-        check(k2['stock'] == 20 and k2['at'] >= k1['seen'] - 3000 and 0 <= k2['seen'] - k1['seen'] < 5000 and k2['at'] - k2['now'] >= 190 * 60000,
+        check(k2['stock'] == 25 and k2['at'] >= k1['seen'] - 3000 and 0 <= k2['seen'] - k1['seen'] < 5000 and k2['at'] - k2['now'] >= 250 * 60000,
               f'時計を もどしても、数えはじめの 時刻は 先の 時刻の まま（前は 満タンの とき いまの 時刻に 書きかえて いた）（あと {round((k2["at"] - k2["now"]) / 60000)}分）')
         pg.evaluate("() => { TCApp.state.stock = 5; TCCare.S.stock = TCCare.S.stockShow = 5; const r = window.__realNow; Date.now = () => r() + 30 * 60000; }"); pg.wait_for_timeout(800)
         k3 = pg.evaluate(TS)
         check(k3['stock'] == 5 and k3['seen'] == k2['seen'], f'トークンを 使って（5こ）30分 たっても ふえない（本当の 時刻が 先に 見た 時刻に 追いつくまで）（{k3["stock"]}こ）')
-        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 231 * 60000; }"); pg.wait_for_timeout(800)
+        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 271 * 60000; }"); pg.wait_for_timeout(800)
         k4 = pg.evaluate(TS)
-        check(k4['stock'] == 8 and k4['seen'] > k2['seen'], f'先に 見た 時刻を こえたら また ふえる（30分ぶん＝3こ：5 → {k4["stock"]}）')
+        check(k4['stock'] == 10 and k4['seen'] > k2['seen'], f'先に 見た 時刻を こえたら また ふえる（こえた 11分ぶん＝10分が 1回＝5こ：5 → {k4["stock"]}）')
         pg.evaluate("() => { Date.now = window.__realNow; const s = TCApp.state, n = Date.now(); s.seen = n; s.stockAt = n; }"); pg.wait_for_timeout(300)
         print('■ 説明書')
         stage_click(pg, 678, 97); pg.wait_for_timeout(1200)
@@ -411,11 +528,33 @@ try:
               f'説明書：おそうじは「15分ごとに ゴミが 5か所」「ゴミか うんちが ある とき だけ」「ちりとりへ はき入れる」（きまりの 数 {od} と 同じ・前の「3回はく・落ち葉」は ない）')
         #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
         g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいるあいだ'), heads: s.map(x => x[0]) }; }")
-        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 11
+        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 12
               and g2['heads'].index('替馬のリセット（次の馬の抽選）') == g2['heads'].index('★2分ごとのチャンス') + 1,
               f"説明書：「馬のリセット（次の馬の抽選）」の 項目が ある・幻の馬／神様馬の 抽選は そこに 書く（2分ごとの チャンスは 高確ゾーン だけ）・「いるのは10分」は ない（{g2['heads']}）")
+        #   第4.159版：トークンの 上限 25・お世話の あとの PUSH（1個 使う／まとめて 使う・ハズレは 音 だけ）
+        g3 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tok: f('お世話トークン'), push: f('お世話のあとのPUSH'), pt: f('お世話でポイントGETチャンス'), pet: f('撫でる'), heads: s.map(x => x[0]) }; }")
+        check('最大25こ' in g3['tok'] and '20こ' not in g3['tok'] and '10分ごとに5つたまる' in g3['tok'] and '5分ごと' not in g3['tok'] and 'お世話トークンが最大だよ！' in g3['pet'] and 'PUSHを1回押すと1つ使う' in g3['tok'] and g3['heads'].index('押お世話のあとのPUSH') == g3['heads'].index('トお世話トークン') + 1
+              and all(x in g3['push'] for x in ['PUSHが出るよ', 'トークンを1つ使って抽選', 'ハズレは「プフォ」の音だけ', '「1個 使う」「まとめて 使う」', '1回押したらおしまい', '押した回数ぶんトークンがへる', 'やめるときは「おわる」', 'トークン1つがお世話1回'])
+              and 'PUSHを押すたびに抽選' in g3['pt']
+              and all(x in g3['pet'] for x in ['抽選はお世話トークンが20こ未満のときだけ', '20こ以上（最大の25こも）のときは', '抽選まち', '20こを切ったら抽選がはじまるよ']) and 'ふえない' not in g3['pet'],
+              f"説明書（第4.159版）：お世話トークンは 10分ごとに 5つ・最大25こ（最大の ときに 撫でると「お世話トークンが最大だよ！」）・「お世話のあとのPUSH」の 項目（押すと 抽選・ハズレは 音 だけ・1個／まとめての スイッチ・おわる・トークン 1つが お世話 1回）・"
+              f"ハートの 抽選は トークンが 20こ未満の とき だけ（20こ以上は 抽選まち → 20こを 切ったら 抽選）")
         shot(pg, 'tc_guide')
         pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(500)
+        # 第4.159版（バグ直し・まさちゃん 11/12 14:54「トレーニングセンターの説明書開いたらすぐ閉じるようになってて表示されないよ！」）：指（タッチ）で「？」を 押すと、指を はなした すぐ あとに
+        #   同じ 場所へ クリックが とどく（その とき いちばん 上に ある 部品＝もう 開いて いる 説明書の うしろの 幕へ）→ 前は それで すぐ 閉じた。開いて 0.45秒は 幕と ✕ で 閉じない。
+        #   ここでは 指の 出来事（pointerdown → pointerup）の すぐ あとに、その 場所の いちばん 上の 部品を クリックして 同じ ことを 起こす
+        gk = pg.evaluate("""async () => { const stg = document.querySelector('#tcOv .tcst'), cv = document.querySelector('#tcOv .tco'), r = stg.getBoundingClientRect(), x = r.left + 678 / 1052 * r.width, y = r.top + 97 / 1657 * r.height, w = ms => new Promise(q => setTimeout(q, ms));
+          const pe = t => cv.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 7, pointerType: 'touch', isPrimary: true, buttons: t === 'pointerup' ? 0 : 1 }));
+          const raf2 = () => new Promise(q => requestAnimationFrame(() => requestAnimationFrame(q)));      // 説明書は 次の コマから 見える（開いた 瞬間は まだ かくれて いる）→ 2コマ 待って から「クリック」
+          pe('pointerdown'); pe('pointerup'); await raf2(); const o0 = TCGuide.isOpen(), hit = document.elementFromPoint(x, y), hitName = hit.className + ''; hit.click(); await w(700); const o1 = TCGuide.isOpen();
+          const bk = getComputedStyle(document.querySelector('#tcg .bk')).opacity, sh = document.querySelector('#tcg .sh').getBoundingClientRect(), vis = sh.top < r.bottom - 100 && sh.height > 200;
+          document.querySelector('#tcg .bk').click(); await w(600); const o2 = TCGuide.isOpen();                                     // 開いて 0.45秒より あと：幕を 押すと 閉じる（前と 同じ）
+          pe('pointerdown'); pe('pointerup'); await w(700); document.querySelector('#tcg .x').click(); await w(600); const o3 = TCGuide.isOpen();      // ✕ でも 閉じる
+          return { o0, hitName, o1, bk: +bk, vis, o2, o3, guard: TCGuide.GUARD }; }""")
+        check(gk['o0'] and gk['hitName'] == 'bk' and gk['o1'] and gk['bk'] > 0.95 and gk['vis'] and gk['o2'] is False and gk['o3'] is False and 0.3 <= gk['guard'] <= 0.6,
+              f'説明書（バグ直し）：指で「？」を 押した すぐ あとの クリック（うしろの 幕「{gk["hitName"]}」に 当たる）では 閉じない ＝ 開いた まま 表示される（前は ここで すぐ 閉じた）・'
+              f'{gk["guard"]}秒より あとは 幕を 押すと 閉じる・✕ でも 閉じる {gk}')
         print('■ 作戦会議')
         pg.locator('#tcOv .tcpl').click(); pg.wait_for_timeout(700)
         d = pg.evaluate("() => { const e = document.querySelector('#tcPlan'); return e ? [getComputedStyle(e).display, e.querySelector('.bdt').textContent, e.querySelector('.bsub').textContent] : null; }")
@@ -557,12 +696,21 @@ try:
         check(pd['z'] == ['pt', 100, 'string'] and pd['p1'] == ['pt', 100, True] and pd['d1'] == 0 and pd['p2'] is None and pd['d2'] == 100 and pd['d3'] == 100,
               f'当たり（100P）は ひいた ときに 保存 → 演出の あとで 台帳へ（+100P）→ 保存を 消す・同じ 当たりは 2回 足さない（{pd}）')
         check(pd['r1'] == ['rt', 'normal', 0, 800, 1600] and pd['p3'] == ['rt', 0, 800, 1600, True] and pd['tk'] == 2, 'ルーレットは 止まる 所（800P か 1600P）も ひいた ときに 決めて 保存・チケットは 数を 足す')
-        #   お世話で 1つ 使った ちょうど その とき 10分 たって 1つ たまる → 使った ぶんは 消えない（5 → 4 → 5。前は 6）
+        #   お世話で 1つ 使った ちょうど その とき 10分 たって 5つ たまる（第4.159版：10分ごとに 5つ）→ 使った ぶんは 消えない（5 → 4 → 9。使った ぶんが 消えると 10）
         tr = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0);
           st.stock = 5; S.stock = S.stockShow = 5; st.stockAt = now; await new Promise(r => setTimeout(r, 200));
           S.stock = 4; st.stockAt = now - 10 * 60000 - 500; await new Promise(r => setTimeout(r, 400));
           return [st.stock, S.stock]; }""")
-        check(tr == [5, 5], f'お世話で 使った トークンは、同じ 瞬間に 1つ たまっても 消えない（5こ → 使って 4 → たまって 5：{tr}）')
+        check(tr == [9, 9], f'お世話で 使った トークンは、同じ 瞬間に 5つ たまっても 消えない（5こ → 使って 4 → たまって 9：{tr}）')
+        # 第4.159版（まさちゃん 11/12 12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」→ 14:50「10分で５つトークンが追加にして！」）：10分 たつ ごとに 5つ・25 まで。開いて いる 間に たまると 右上に「＋N」
+        ac = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0), w = ms => new Promise(r => setTimeout(r, ms)), o = TCApp._t.ODDS, pl = () => { const a = S.fx.filter(f => f.k === 'plus').map(f => f.txt); S.fx = S.fx.filter(f => f.k !== 'plus'); return a; };
+          st.stock = 3; S.stock = S.stockShow = 3; st.stockAt = now - 9 * 60000 - 50000; pl(); await w(400); const a0 = [st.stock, pl()];      // 9分50秒：まだ（前の 5分ごと なら ここで ふえて いた）
+          st.stockAt = now - 10 * 60000 - 500; await w(400); const a1 = [st.stock, S.stock, pl()];                                    // 10分 → ＋5
+          st.stockAt = now - 20 * 60000 - 900; await w(400); const a2 = [st.stock, pl()];                                             // 20分 → ＋10
+          st.stockAt = now - 60 * 60000; await w(400); const a3 = [st.stock, pl()]; await w(300); const a4 = [st.stock, pl()];        // 60分 → 25 まで（18 → 25）・そのあとは ふえない
+          return { a0, a1, a2, a3, a4, odds: [o.tokenMin, o.tokenStep, o.tokenMax] }; }""")
+        check(ac['odds'] == [10, 5, 25] and ac['a0'] == [3, []] and ac['a1'] == [8, 8, ['+5']] and ac['a2'] == [18, ['+10']] and ac['a3'] == [25, ['+7']] and ac['a4'] == [25, []],
+              f'お世話トークンは 10分ごとに 5つ・25 まで：9分50秒＝まだ（{ac["a0"][0]}）→ 10分＝＋5（{ac["a1"][0]}）→ 20分＝＋10（{ac["a2"][0]}）→ 60分＝25 で 止まる（{ac["a3"]}）・右上に「＋N」')
         # 第4.144版（11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
         #   …開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…開いてから30分経過すると切り替わる仕組みにして！
         #   幻の馬と神様馬は、上のバナーの下に切り替わる条件を表示して！・タイムリミット・お世話の回数 お世話5回完了後の切り替わりタイマー」・18:13「幻の馬と神様馬も最低5回お世話完了後はリセットタイマー作動で5分でリセットね！」）
@@ -626,6 +774,19 @@ try:
         m1 = pg.evaluate(RS)
         check(m0['visit'] == 'maboroshi' and m0['rows'][0][1].startswith('29:') and m1['visit'] is None and m1['rs'] == {'n': 0, 'at': 0, 'el': 0} and '帰って いったよ' in m1['msg'],
               f'幻の馬：タイムリミット（30分）で 帰る（お世話を して いなくても）・数えは 0 から（{m0["rows"][0]}・{m1["rs"]}）')
+        #   第4.159版：お世話の あとの PUSH を 押さずに 置いて おいても、タイムリミットは 止まらない（神様馬を 帰さずに トークンを ためて から まとめて 押す、という 抜け穴を 作らない）。
+        #   ただし 当たりを わたして いる 途中（保存に 当たりが ある：ルーレット当選の キュインキュイーンの 間・演出の 間）は 馬を 入れかえない
+        pg.evaluate("() => TCApp._t.startVisit('kamisama')"); pg.wait_for_function("() => TCCare.vinfoBox() && TCCare.S.vinfo", timeout=60000); pg.wait_for_timeout(800)
+        pg.evaluate("() => { const S = TCCare.S, s = TCApp.state; S.stock = S.stockShow = 3; s.stock = 3; TCCare.pushShow(S.lastT); s.pend = { k: 'rt', tier: 'kamisama', a: 10000, b: 20000, win: 0, id: 'tc-hold-test' }; s.visit.until = Date.now() - 1000; }"); pg.wait_for_timeout(1500)
+        h0 = pg.evaluate("() => [!!(TCCare.S.push && TCCare.S.push.hideT == null), TCApp.state.visit && TCApp.state.visit.kind]")
+        pg.evaluate("() => { TCApp.state.pend = null; }")
+        okh = True
+        try: pg.wait_for_function("() => !TCApp.state.visit", timeout=30000)
+        except Exception: okh = False
+        pg.wait_for_timeout(2500); h1 = pg.evaluate(PU); h1v = pg.evaluate("() => [TCApp.state.visit, TCApp._t.fieldName()]")
+        dh = press(pg); pg.wait_for_timeout(900); h2 = pg.evaluate(PU)
+        check(h0 == [True, 'kamisama'] and okh and h1['live'] and h1v[0] is None and h1v[1] in ('morning', 'evening', 'night') and dh == 1 and h2['stock'] == 2 and not h2['live'],
+              f'PUSH を 出した まま 置いても タイムリミットで 帰る（当たりを わたして いる 途中 だけ 待つ：{h0}）・PUSH は のこって いて、押すと いつもの 馬の くじ（トークン 3 → {h2["stock"]}）')
         #   ひらいて いる だけ（お世話なし）では 何も おきない：タイマーは 動かない・馬は かわらない
         pg.evaluate("() => { TCApp.state.rs = { n: 0, at: 0, el: 0 }; }"); pg.wait_for_timeout(1500)
         i1 = pg.evaluate(RS)
@@ -659,10 +820,101 @@ try:
         kf, kc = ek['far'], ek['core']
         check(min(kc['lo']) >= 235 and kf['lo'][0] >= 220 and kf['lo'][0] - kf['hi'][2] >= 50 and kf['lo'][1] - kf['hi'][2] >= 15 and kf['rng'] >= 25 and kf['step'] <= 40 and ek['out']['rng'] <= 8,
               f'神様馬の 目：明るい 光の 玉（{kc["lo"]}）・まわりの 光は **金色**（{kf["lo"]}〜{kf["hi"]}）・ゆっくり 息を する（明るさの 幅 {kf["rng"]}・0.1秒の 変わり方 {kf["step"]}/255 まで＝ちかちか しない）・光は 目の まわり だけ（はなれた 所は 動かない：{ek["out"]["rng"]}）')
-        pg.mouse.click(300, 600); pg.wait_for_timeout(5600); shot(pg, 'tc_rt_get')
-        pg.mouse.click(200, 400)
-        pg.wait_for_function("() => window.__rtDone", timeout=20000)
+        # 第4.159版（まさちゃん 11/12 10:37「高い方なら超プレミアム神様的中のプチュンいれてポイント表示して！」・11:56「プチュンは、極ど的中と超プレミアム神様的中で使用してたプチュンの演出入れてね！」）：
+        #   高い 方（20000P）で 止まる → 0.25秒 あとに プチュン（的中の 演出と 同じ 部品 .pc を 盤の 上に 重ねる・音 sfx_sdp）→ 真っ暗に なったら すぐ 幕が 明けて ポイント
+        # 第4.159版（まさちゃん 11/12 13:27「ルーレット高い方が当たった時に、プチュンしてまたルーレットの画面に戻ると変だから、光輝きながら獲得ポイントを表示するようにして！一枚目がテロップの画像！」
+        #   ・13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：プチュンの あとは ルーレットに もどらない ＝ 暗い 舞台（キャンバスは すき通らない）に 金の 光と テロップ「大量ポイント」・音は ドーン！！
+        pg.evaluate(SE_WRAP); pg.evaluate(PC_WATCH); pg.evaluate(SES)
+        FXPIX = """() => { const cv = document.querySelector('#tcOv .tcfx'), g = cv.getContext('2d'), PX = cv.width / 390, at = (x, y) => [...g.getImageData(Math.round(x * PX), Math.round(y * PX), 1, 1).data];
+          const T = TCFX.TELOP, w = T.w, h = w * T.ar, pc = [T.cx - w / 2 + (T.panel[0] + T.panel[2]) / 2 * w, T.cy - h / 2 + (T.panel[1] + T.panel[3]) / 2 * h];
+          const box = g.getImageData(Math.round((pc[0] - 110) * PX), Math.round((pc[1] - 30) * PX), Math.round(220 * PX), Math.round(60 * PX)).data; let dark = 0, cream = 0, gold = 0, n = 0;
+          for (let i = 0; i < box.length; i += 4) { const r = box[i], gg = box[i + 1], b = box[i + 2]; n++; if (r < 110 && gg < 60 && b < 40) dark++; else if (r > 235 && gg > 205 && b > 150 && r - b < 90) cream++; else if (r > 225 && gg > 130 && b < 150) gold++; }
+          return { corner: [at(4, 4), at(385, 4), at(4, 609), at(385, 609)], top: at(195, 40), dark: dark / n, cream: cream / n, gold: gold / n }; }"""
+        pg.mouse.click(300, 600); pg.wait_for_timeout(2200); px0 = pg.evaluate(FXPIX)
+        pg.wait_for_function("() => (window.__seL || []).includes('doon')", timeout=30000); pg.wait_for_timeout(900); px1 = pg.evaluate(FXPIX); shot(pg, 'tc_rt_get')      # ドーン！！から 約1秒（ポイントが 出た あと・なでる 光が 通る 前）
+        tl = pg.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('/').pop().split('?')[0]).filter(n => n.startsWith('tc_telop')).length")
+        pg.wait_for_timeout(1300); t_tap = time.time(); pg.mouse.click(200, 400)
+        pg.wait_for_function("() => window.__rtDone", timeout=20000); t_close = time.time() - t_tap
         check(True, 'タップで 回って GET → タップで とじた')
+        check(max(c[3] for c in px0['corner']) < 200 and all(c[3] == 255 for c in px1['corner']) and px1['top'][3] == 255 and px1['top'][0] > px1['top'][2] + 60 and tl >= 1
+              and px1['dark'] > 0.08 and px1['cream'] > 0.1 and px1['gold'] > 0.08,
+              f'高い 方：プチュンの あとは ルーレットに もどらない ＝ 暗い 舞台（回って いる 間は うしろの フィールドが すけて 見える {max(c[3] for c in px0["corner"])}/255 → テロップの 場面は すけない 255）に 金と 赤の 光・'
+              f'まさちゃんの テロップ（tc_telop_big.webp）の 板の 中に ポイント（板の 色 {px1["cream"]:.0%}・字の ふち {px1["dark"]:.0%}・金の 字 {px1["gold"]:.0%}）')
+        lg = pg.evaluate("() => window.__pcLog.slice()"); sx = pg.evaluate(SES); ins = [x for x in lg if x['k'] == 'in']; outs = [x for x in lg if x['k'] == 'out']
+        dur = (outs[0]['t'] - ins[0]['t']) / 1000 if ins and outs else -1
+        check(len(ins) == 1 and len(outs) == 1 and ins[0]['above'] and ins[0]['fxon'] and ins[0]['pc'] == 1 and ins[0]['parts'] > 300 and 'fxvis' in ins[0]['an'] and ins[0]['w'] == '390px' and abs(ins[0]['fxk'] - ins[0]['sw'] / 390) < 0.002
+              and ins[0]['bg'] == 'rgb(0, 0, 0)' and ins[0]['pe'] == 'none' and 0.9 <= dur <= 2.4 and pg.evaluate("() => document.querySelectorAll('#tcOv .tcpc').length") == 0,
+              f'高い 方：プチュンは 的中の 演出と 同じ 部品（.pc・中の 部品 {ins[0]["parts"] if ins else 0}こ・幅 390 を 舞台の 幅に 合わせる {ins[0]["fxk"] if ins else 0}倍）を 盤の 上に 重ねる → {dur:.2f}秒で 外す（真っ暗に なったら すぐ ポイント）')
+        ix = lambda n: sx.index(n) if n in sx else -1
+        check(0 <= ix('rt_stop') < ix('sfx_sdp×0.85') < ix('doon') and sx.count('doon') == 1 and 'rt_confirm' not in sx and not any(x.startswith('sfx_big') for x in sx),
+              f'高い 方の 音：止まる → プチュン（的中の 演出の 音・小さめ）→ ドーン！！（テロップと いっしょ・前の 確定の 音は 鳴らさない）（{[x for x in sx if not x.startswith("rt_tick")]}）')
+        # 大量ポイントの 場面を 1/30秒ごとに 3.5秒 描いて（TCFX.bigFrame：時計を 使わない）明るさ（相対輝度）を 測る：画面 ぜんぶ・大きい ます（3×4）・中の ます（6×10）・小さい ます（30pt：13×21）。
+        #   向きがえ＝前の 山・谷 から 0.1 以上 動いて 向きが かわった 回数（2回で 点めつ 1回）。画面 ぜんぶの 明るさは 上がる だけ（1回）・大きい ますは 1秒に 2回 まで・小さい ますでも 6回（＝点めつ 3回）まで
+        LUMJS = """async ([calm, noImg, val]) => {
+          const cv = document.createElement('canvas'); cv.width = 390; cv.height = 614; const g = cv.getContext('2d', { willReadFrequently: true });
+          const LUT = new Float32Array(256); for (let i = 0; i < 256; i++) { const c = i / 255; LUT[i] = c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+          const small = [], mid = [], big = [], glob = []; let img = true, amin = 255, snap = null;
+          for (let k = 0; k <= 105; k++) {
+            img = await TCFX.bigFrame(cv, k / 30, val, calm, noImg) && img;
+            const d = g.getImageData(0, 0, 390, 614).data, s = new Float32Array(273), sn = new Uint32Array(273), m = new Float32Array(60), mn = new Uint32Array(60), b = new Float32Array(12), bn = new Uint32Array(12); let tot = 0;
+            for (let y = 0; y < 614; y++) for (let x = 0; x < 390; x++) { const i = (y * 390 + x) * 4, L = 0.2126 * LUT[d[i]] + 0.7152 * LUT[d[i + 1]] + 0.0722 * LUT[d[i + 2]]; if (d[i + 3] < amin) amin = d[i + 3];
+              const si = Math.min(20, (y / 30) | 0) * 13 + Math.min(12, (x / 30) | 0), mi = Math.min(9, (y / 61.4) | 0) * 6 + Math.min(5, (x / 65) | 0), bi = Math.min(3, (y / 153.5) | 0) * 3 + Math.min(2, (x / 130) | 0);
+              s[si] += L; sn[si]++; m[mi] += L; mn[mi]++; b[bi] += L; bn[bi]++; tot += L; }
+            small.push([...s].map((v, i) => +(v / sn[i]).toFixed(4))); mid.push([...m].map((v, i) => +(v / mn[i]).toFixed(4))); big.push([...b].map((v, i) => +(v / bn[i]).toFixed(4))); glob.push(+(tot / 239460).toFixed(4));
+            if (k === 45) snap = cv.toDataURL('image/png');
+          }
+          return { small, mid, big, glob, img, amin, snap }; }"""
+
+        def lum_tr(x, th=0.1):
+            lo = hi = x[0]; d = 0; out = []
+            for k, v in enumerate(x):
+                if d == 0:
+                    lo = min(lo, v); hi = max(hi, v)
+                    if v - lo >= th: out.append(k); d = 1; hi = v
+                    elif hi - v >= th: out.append(k); d = -1; lo = v
+                elif d == 1:
+                    hi = max(hi, v)
+                    if hi - v >= th: out.append(k); d = -1; lo = v
+                else:
+                    lo = min(lo, v)
+                    if v - lo >= th: out.append(k); d = 1; hi = v
+            return out
+
+        def lum_stat(r):
+            G = r['glob']; mx = 0; dip = 0
+            for v in G: mx = max(mx, v); dip = max(dip, mx - v)
+            o = dict(g=len(lum_tr(G)), dip=dip, late=max(G[21:]) - min(G[21:]), end=G[-1], img=r['img'], amin=r['amin'])
+            for key in ('big', 'mid', 'small'):
+                S = r[key]; per = []
+                for i in range(len(S[0])):
+                    ks = lum_tr([f[i] for f in S]); per.append(max([sum(1 for q in ks if k0 <= q < k0 + 30) for k0 in ks] or [0]))
+                o[key] = per
+            o['still'] = max(max(abs(r['small'][k][i] - r['small'][-1][i]) for i in range(273)) for k in range(36, 106))      # 1.2秒より あと：さいごの コマとの 差（小さい ます）
+            return o
+        import base64 as _b64
+        LN = pg.evaluate(LUMJS, [False, False, 20000]); ln = lum_stat(LN)
+        if SHOT: open(os.path.join(SHOT, 'tc_big_v150.png'), 'wb').write(_b64.b64decode(LN['snap'].split(',')[1]))
+        check(ln['img'] and ln['amin'] == 255 and ln['g'] == 1 and ln['dip'] <= 0.05 and ln['late'] <= 0.04 and 0.2 <= ln['end'] <= 0.45,
+              f'大量ポイントの 場面：画面 ぜんぶの 明るさは 上がる だけ（向きがえ {ln["g"]}回・とちゅうで 下がるのは {ln["dip"]:.3f} まで）・0.7秒より あとは 一定（幅 {ln["late"]:.3f}）・すき通らない（{ln["amin"]}/255）・明るさ {ln["end"]:.2f}')
+        n5 = sum(1 for v in ln['small'] if v >= 5); n3 = sum(1 for v in ln['mid'] if v >= 3)
+        check(max(ln['big']) <= 2 and max(ln['mid']) <= 3 and n3 <= 6 and max(ln['small']) <= 6 and n5 <= 22,
+              f'ちかちか しない：1秒の 向きがえ（2回で 点めつ 1回）＝大きい ます（画面の 8%）{max(ln["big"])}回 まで・中の ます（1.7%）{max(ln["mid"])}回 まで（3回は {n3}/60）・小さい ます（30pt）でも {max(ln["small"])}回 まで（5回 以上は {n5}/273）')
+        LC = pg.evaluate(LUMJS, [True, False, 20000]); lc = lum_stat(LC)
+        check(lc['img'] and lc['g'] == 1 and lc['dip'] <= 0.01 and max(lc['small']) <= 2 and max(lc['big']) <= 1 and lc['still'] <= 0.004 and abs(lc['end'] - ln['end']) < 0.06,
+              f'「演出を控えめにする」の 場面：ふわっと 明るく なる だけ（向きがえ {lc["g"]}回・小さい ますでも {max(lc["small"])}回 まで）・1.2秒より あとは 動かない（差 {lc["still"]:.4f}）')
+        LF = pg.evaluate(LUMJS, [False, True, 6400]); lf = lum_stat(LF)
+        check(lf['img'] is False and lf['amin'] == 255 and lf['g'] == 1 and lf['dip'] <= 0.05 and max(lf['big']) <= 3 and 0.2 <= lf['end'] <= 0.5, f'絵が ない とき（手元に 素材が ない ビルド）：コードで 描いた 札で 出る（明るさ {lf["end"]:.2f}・画面 ぜんぶの 向きがえ {lf["g"]}回）')
+        # ポイントは 板の 中 だけ（1,600P と 20,000P で 絵が ちがうのは 板の 中 だけ）・テロップの 決めごと（板の 場所・絵の たて÷よこ）は 絵と 合って いる
+        dv = pg.evaluate("""async () => { const mk = async val => { const cv = document.createElement('canvas'); cv.width = 390; cv.height = 614; await TCFX.bigFrame(cv, 1.5, val, false, false); return cv.getContext('2d').getImageData(0, 0, 390, 614).data; };
+          const a = await mk(1600), b = await mk(20000), T = TCFX.TELOP, w = T.w, h = w * T.ar, x0 = T.cx - w / 2 + T.panel[0] * w, x1 = T.cx - w / 2 + T.panel[2] * w, y0 = T.cy - h / 2 + T.panel[1] * h, y1 = T.cy - h / 2 + T.panel[3] * h; let inn = 0, out = 0;
+          for (let y = 0; y < 614; y++) for (let x = 0; x < 390; x++) { const i = (y * 390 + x) * 4; if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 24) { if (x >= x0 - 3 && x <= x1 + 3 && y >= y0 - 3 && y <= y1 + 3) inn++; else out++; } }
+          return { inn, out, T: { panel: T.panel, ar: T.ar, w: T.w, src: T.src, spin: T.spin, sweep: T.sweep, hold: T.hold } }; }""")
+        sys.path.insert(0, os.path.join(W, 'kisekae', 'tc')); import telop_asset as TA; from PIL import Image as _Im
+        tim = _Im.open(os.path.join(TCA, 'tc_telop_big.webp')).convert('RGBA'); pb_, pin_ = TA.panel(tim); TT = dv['T']
+        check(dv['inn'] > 1500 and dv['out'] == 0 and TT['src'] == 'tc_telop_big.webp' and tim.size == (1110, 742) and abs(TT['ar'] - tim.size[1] / tim.size[0]) < 0.002 and max(abs(a - b) for a, b in zip(TT['panel'], pin_)) < 0.012
+              and TT['w'] <= 390 and 18 * TT['spin'] / 6.2832 < 1 and TT['sweep'][0] >= 1.2 and TT['sweep'][1] >= 2 and TT['hold'] >= 1,
+              f'ポイントは 板の 中 だけ（1,600P と 20,000P の ちがい：板の 中 {dv["inn"]}画素・外 {dv["out"]}）・板の 場所は 絵と 合って いる（コード {TT["panel"]}・絵 {pin_}）・'
+              f'光の すじは 同じ 所を 1秒に {18 * TT["spin"] / 6.2832:.2f}回 通る・なでる 光は {TT["sweep"][1]}秒に 1回')
         print('■ ルーレット（幻の馬：目は 紫に 光る）')
         pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'maboroshi', a: 1600, b: 3200, win: 0, bg: 'abyss', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
         pg.wait_for_timeout(2500); shot(pg, 'tc_rt_mabo')
@@ -670,15 +922,38 @@ try:
         mf, mc = em['far'], em['core']
         check(fm == [f'rt_maboroshi_{p}2.webp' for p in ('knob', 'plate', 'ptr', 'stick')] and min(mc['lo']) >= 235 and mf['lo'][2] >= 150 and mf['lo'][2] - mf['hi'][1] >= 30 and mf['lo'][0] - mf['hi'][1] >= 5 and mf['rng'] >= 25 and mf['step'] <= 45 and em['out']['rng'] <= 8,
               f'幻の馬の 目：明るい 光の 玉（{mc["lo"]}）・まわりの 光は **紫**（{mf["lo"]}〜{mf["hi"]}）・ゆっくり 息を する（明るさの 幅 {mf["rng"]}・0.1秒の 変わり方 {mf["step"]}/255 まで）・新しい 絵 4まい（{fm}）')
+        pg.evaluate(PC_WATCH); pg.evaluate(SES)
         pg.mouse.click(300, 600); pg.wait_for_timeout(5600)
         pg.mouse.click(200, 400)
         pg.wait_for_function("() => window.__rtDone", timeout=20000)
         check(True, '幻の馬の ルーレットも タップで 回って とじた')
+        lg = pg.evaluate("() => window.__pcLog.slice()"); sx = pg.evaluate(SES); ix = lambda n: sx.index(n) if n in sx else -1
+        check(not [x for x in lg if x['k'] in ('in', 'out')] and 0 <= ix('rt_stop') < ix('sfx_big×0.5') and 'sfx_sdp×0.85' not in sx and 'rt_confirm' not in sx,
+              f'安い 方（1600P）：プチュンは なし・ポイントが 出る ときに デカ的中と 同じ 音（小さめ）（{[x for x in sx if not x.startswith("rt_tick")]}）')
         print('■ チケット（2まい）')
         pg.evaluate("() => { window.__tkDone = false; TCFX.ticket(document.querySelector('#tcOv .tcfx'), { n: 2, bg: 'morning', se: TCApp._snd.se }).then(() => { window.__tkDone = true; }); }")
         pg.wait_for_timeout(2200); pg.mouse.click(200, 700); pg.wait_for_timeout(4600); shot(pg, 'tc_tk_get'); pg.mouse.click(200, 400)
         pg.wait_for_function("() => window.__tkDone", timeout=20000)
         check(True, '扉 → タップ → チケット GET → とじた')
+        # 第4.159版（まさちゃん 11/12「プチュンしてから今の演出」・11:56「プチュンしたらすぐに扉が落ちてくる演出にして！」）：PUSH から 出る チケット（puchun）＝ よんだ 瞬間に プチュン（幕は キャンバスの 下）
+        #   → 真っ暗に なったら（0.82秒）すぐ 扉が 落ちて くる（キャンバスが 出る）→ 扉が 着いたら 幕を 外す
+        print('■ チケット（PUSH から：プチュン → すぐ 扉）')
+        pg.evaluate(PC_WATCH); pg.evaluate(SES)
+        pg.evaluate("() => { window.__tkDone = false; window.__tk0 = performance.now(); TCFX.ticket(document.querySelector('#tcOv .tcfx'), { n: 1, bg: 'morning', se: TCApp._snd.se, puchun: true }).then(() => { window.__tkDone = true; }); }")
+        pg.wait_for_timeout(600); shot(pg, 'tc_tk_puchun'); pg.wait_for_timeout(2600); shot(pg, 'tc_tk_door')
+        lg = pg.evaluate("() => window.__pcLog.map(x => Object.assign({}, x, { t: (x.t - window.__tk0) / 1000 }))"); sx = pg.evaluate(SES); ix = lambda n: sx.index(n) if n in sx else -1
+        ev_ = {x['k']: x for x in lg}; order = [x['k'] for x in lg]
+        check(order[:3] == ['in', 'fxon', 'out'] and ev_['in']['t'] < 0.2 and ev_['in']['under'] and not ev_['in']['fxon'] and ev_['in']['pc'] == 1 and 'fxvis' in ev_['in']['an']
+              and 0.78 <= ev_['fxon']['t'] <= 1.7 and 0.4 <= ev_['out']['t'] - ev_['fxon']['t'] <= 1.6 and ev_['out']['fxon'],
+              f'チケット：よんだ 瞬間に プチュン（幕は キャンバスの 下・{ev_.get("in", {}).get("t", -1):.2f}秒）→ 真っ暗に なったら すぐ 扉（{ev_.get("fxon", {}).get("t", -1):.2f}秒）→ 扉が 着いたら 幕を 外す（{ev_.get("out", {}).get("t", -1):.2f}秒）{order}')
+        check(0 <= ix('sfx_sdp×0.85') < ix('tk_fall') < ix('tk_land'), f'チケットの 音：プチュン → 扉が 落ちる → 着く（{sx}）')
+        pg.mouse.click(200, 700); pg.wait_for_timeout(4600); pg.mouse.click(200, 400)
+        pg.wait_for_function("() => window.__tkDone", timeout=20000)
+        check(pg.evaluate("() => document.querySelectorAll('#tcOv .tcpc').length") == 0 and not pg.evaluate("() => document.querySelector('#tcOv .tcfx').classList.contains('on')"), '扉 → タップ → チケット GET → とじた（幕は のこらない）')
+        #   「演出を控えめにする」：光る 部品は 出さない（黒い 幕 だけ・0.4秒）・プチュンの 音も なし（的中の 演出と 同じ）
+        cm = pg.evaluate("""async () => { TengelFx.set({ calm: true }); const cv = document.querySelector('#tcOv .tcfx'), n0 = window.__seL.length, t0 = performance.now(); const pc = await TCFX.puchun(cv, { se: TCApp._snd.se }); const dt = (performance.now() - t0) / 1000;
+          const r = { dt, calm: pc.calm, fxs: pc.el.querySelectorAll('.fxs').length, se: window.__seL.slice(n0), bg: getComputedStyle(pc.el).backgroundColor }; await new Promise(q => setTimeout(q, 600)); r.left = document.querySelectorAll('#tcOv .tcpc').length; TengelFx.set({ calm: null }); r.back = TengelFx.calm(); return r; }""")
+        check(cm['calm'] and cm['fxs'] == 0 and cm['se'] == [] and cm['bg'] == 'rgb(0, 0, 0)' and 0.35 <= cm['dt'] <= 1.3 and cm['left'] == 0 and cm['back'] is False, f'「演出を控えめにする」の とき：プチュンは 黒い 幕 だけ（{cm["dt"]:.2f}秒）・光る 部品も 音も 出さない {cm}')
         print('■ 着せ替えで チケットを 使う')
         pg.evaluate("() => { const s = TCApp.state; s.tickets = 1; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
         pg.locator('#tcOv [data-tc=back]').click(); pg.wait_for_timeout(600)
@@ -733,6 +1008,16 @@ try:
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); s.pend = { k: 'tk', n: 2, id: 'tc-pend-test-2' }; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
         r3 = reopen(); tk3 = pg.evaluate("TCInfo.tickets()")
         check(tk3 == 2 and r3['pend'] is None and 'チケット 2枚' in r3['msg'], f'チケットの 当たりも 同じ（{tk3}枚・{r3["msg"]}）')
+        #   第4.159版：お世話の あと PUSH を 押す 前に アプリを 閉じた → 開き直すと また PUSH が 出る（スイッチ「まとめて 使う」も おぼえて いる）。トークンが 0 なら 出さない
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')), n = Math.max(Date.now(), +s.seen || 0); s.push = true; s.bulk = true; s.stock = 3; s.stockAt = n; s.high = 0; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        reopen(); pg.wait_for_timeout(1500); o0 = pg.evaluate(PU); pg.evaluate(SE_WRAP)
+        do = press(pg); pg.wait_for_timeout(500); o1 = pg.evaluate(PU)
+        G = pg.evaluate("() => TCCare.PUSHG"); stage_click(pg, *G['end']); pg.wait_for_timeout(900); o2 = pg.evaluate(PU)
+        check(o0['live'] and o0['bulk'] and o0['stock'] == 3 and o0['push'] and do == 1 and o1['stock'] == 2 and o1['saved'] == 2 and o1['live'] and not o2['live'] and not o2['spush'] and o2['stock'] == 2,
+              f'PUSH を 押す 前に 閉じた → 開き直すと PUSH が また 出る（まとめて 使うも おぼえて いる）→ 押すと トークン 3 → {o1["stock"]}（PUSH は のこる）→「おわる」で 消える（保存も）')
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')), n = Math.max(Date.now(), +s.seen || 0); s.push = true; s.bulk = false; s.stock = 0; s.stockAt = n; localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        reopen(); pg.wait_for_timeout(1500); o3 = pg.evaluate(PU)
+        check(not o3['live'] and not o3['push'] and o3['stock'] == 0, f'トークンが 0 の ときは PUSH を 出さない（{o3["stock"]}こ）')
         print('■ 上限の 近くで チケットを ポイントに かえる（第4.141版）')
         #   合計 96,000P で チケット 1枚（7,000P）を かえる → 財布は 上限の 99,999P まで・こえた 3,001P は あずかりポイントへ（消えない）・チケットは 1枚 へる
         k5 = pg.evaluate("""async () => { const w = TengelWallet, wait = ms => new Promise(r => setTimeout(r, ms));

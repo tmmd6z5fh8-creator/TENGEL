@@ -3,7 +3,13 @@
 //   ・うしろは いまの フィールド（下の キャンバスが そのまま 見える：少し 暗く）
 //   ・「タップ」で レバーを たたく（ルーレット）・扉が 開く（チケット）：押すまで 待つ（30秒 たったら 自動）
 //   ・GET の あとは タップか 3秒で とじる → Promise が とける
-//   ・ちかちか しない（光は ゆっくり 1回・回る 速さは 2回／秒 未満）
+//   ・ちかちか しない（光は ゆっくり 1回・回る 速さは 2回／秒 未満）。プチュン（下）は 的中の 演出と 同じ 部品：明るく なって 暗く なるのは 1回 だけ
+//   ・第4.159版（まさちゃん 2026/11/12 10:37・11:56「プチュンは、極ど的中と超プレミアム神様的中で使用してたプチュンの演出入れてね！プチュンしたらすぐに扉が落ちてくる演出にして！」）：
+//     プチュン＝極ど的中の 押した 瞬間と 同じ 部品（白く 光る → 青い 画面 → 青白い 横一本の 線 → 点に ちぢんで 真っ暗。的中の 演出の 束 window.__FX の 中の <div class="pc">）を 舞台に 重ねる（pcOpen）。
+//     チケット：PUSH を 押した 瞬間に プチュン → 真っ暗に なったら すぐ 扉が 落ちて くる（ticket の o.puchun）／
+//     ルーレット：止まった あと「安い 方＝デカ的中と 同じ 音」「高い 方＝プチュン → 真っ暗に なったら すぐ ポイント」。音は 的中の 演出の もの（sfx_big.m4a・sfx_sdp.m4a：アプリの 同じ フォルダ）を 小さめに
+//   ・第4.159版（まさちゃん 11/12 13:27「ルーレット高い方が当たった時に、プチュンしてまたルーレットの画面に戻ると変だから、光輝きながら獲得ポイントを表示するようにして！一枚目がテロップの画像！」
+//     ・13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：高い 方は プチュンの あと ルーレットに もどらない ＝ 暗い 舞台に 金の 光と テロップ「大量ポイント」（下の drawBig）・音は ドーン！！（tc_se_doon.m4a）
 const TCFX = (() => {
   const W = 390, H = 614, TAU = Math.PI * 2;
   const AP = p => (typeof window.TC_ASSET === 'function' ? window.TC_ASSET(p) : p);
@@ -51,6 +57,44 @@ const TCFX = (() => {
   }
   const se = (o, name, gain, lag) => { try { if (o.se) o.se(name, gain, lag); } catch (e) { /* なし */ } };
   const DIMR = { morning: 0.42, evening: 0.38, night: 0.26, abyss: 0.26, divine: 0.36 };      // うしろの フィールドを 少し 暗く
+
+  // ================= プチュン（第4.159版）=================
+  //   極ど的中（紫電）の 押した 瞬間の プチュンと 同じ 部品を そのまま 使う（まさちゃん 11/12 11:56）：kisekae/gen_fx.py の FZ_HTML ＝ <div class="pc">…（白く 光る 0〜0.2秒 → 水色の 帯 → 0.3秒 青い 画面と 白い 光・細い 電気
+  //   → 0.45秒 青白い 横一本の 線 → 0.62秒 線が 点に ちぢむ → 0.8秒 真っ暗・光の 粒は 1.02秒 まで）。HTML は 的中の 演出の 束（window.__FX.reveal.sd）から とり出す・CSS は fx.js が 入れた もの（.fxs の 中 だけに 効く）。
+  //   ・舞台（.tcst）の 上に 黒い 幕（.tcpc）を 重ねて、その 中に .fxs（390×844 を 舞台の 幅に 合わせて 拡大・まん中 合わせ ＝ 横一本の 線は 舞台の まん中）＞ .ov.fz ＞ .pc。上下の はみ出した 分は 切れる
+  //   ・under＝true：演出の キャンバス（.tcfx）の 下に 置く（チケット：真っ暗の 上に 扉が 落ちて くる）／false：上に 置く（ルーレット：盤を かくす）
+  //   ・「演出を控えめにする」・iPhone の「視差効果を減らす」（TengelFx.calm）：光る 部品は 出さない（黒い 幕 だけ・音も なし：的中の 演出と 同じ）。束が ない（見本の ページ）ときも 黒い 幕 だけ
+  //   ・的中の 演出の 作りの まま：明るい 色の 帯どうしは 明るさを そろえて ある ＝ 明るく なって 暗く なるのは 1回 だけ（1秒に 3回の 点めつに ならない）
+  const PCH = { dark: 0.82, len: 1.02, calm: 0.4 };      // 真っ暗に なる 時（線が 点に ちぢみ おわる 0.80秒の すぐ あと）・部品が 動く 長さ・控えめの ときの 黒い 幕の 長さ（秒）
+  let PCN;                             // 部品の HTML（1回 だけ とり出す。ない ときは null）
+  function pcHtml() {
+    if (PCN !== undefined) return PCN;
+    PCN = null;
+    try { const A = window.__FX, h = A && A.reveal && A.reveal.sd, e = h && new DOMParser().parseFromString(h, 'text/html').querySelector('.pc'); if (e) PCN = e.outerHTML; } catch (er) { /* なし */ }
+    return PCN;
+  }
+  const pcCalm = () => { try { return !!(window.TengelFx && window.TengelFx.calm && window.TengelFx.calm()); } catch (er) { return false; } };
+  function pcOpen(cv, under) {         // 幕を 出す → { el, t0, calm, dark（真っ暗に なる までの 秒） }
+    const st = cv.parentNode, calm = pcCalm(), h = calm ? null : pcHtml(), el = document.createElement('div');
+    el.className = 'tcpc'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#000;pointer-events:none';
+    if (h) el.innerHTML = `<div class="fxs" style="--fxk:${((st.clientWidth || W) / W).toFixed(4)}"><div class="ov fz">${h}</div></div>`;
+    st.insertBefore(el, under ? cv : cv.nextSibling);
+    return { el, t0: performance.now(), calm: !h, dark: h ? PCH.dark : PCH.calm };
+  }
+  function pcClose(pc, fade) {         // 幕を 消す（fade 秒で うすく して から 外す・0 なら すぐ）
+    if (!pc || !pc.el || pc.gone) return; pc.gone = true; const el = pc.el;
+    if (!(fade > 0)) { el.remove(); return; }
+    el.style.transition = `opacity ${fade}s linear`; el.style.opacity = '0'; setTimeout(() => el.remove(), fade * 1000 + 80);
+  }
+  const until = ms => new Promise(ok => { const f = () => (performance.now() >= ms ? ok() : requestAnimationFrame(f)); f(); });
+  // プチュン だけ（ためす 用・ほかから 使う 用）：真っ暗に なったら とける。幕は keep 秒 のこして から 消える
+  async function puchun(cv, o) {
+    o = o || {}; const pc = pcOpen(cv, !!o.under); if (!pc.calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);
+    await until(pc.t0 + pc.dark * 1000); setTimeout(() => pcClose(pc, 0.2), Math.max(0, (o.keep || 0) * 1000));
+    return pc;
+  }
+  const PCH_GAIN = 0.85, BIG_GAIN = 0.5;      // 的中の 演出の 音は トレーニングセンターの 音より ずっと 大きい（プチュン −7dB・デカ的中 −2dB）→ ルーレットの 確定の 音（−7dB）に 合わせて 小さく
 
   // ================= ルーレット =================
   const RT_STYLE = {
@@ -227,14 +271,131 @@ const TCFX = (() => {
       g.restore();
     }
   }
+  // ================= 大量ポイント（ルーレットの 高い 方・第4.159版）=================
+  //   プチュンで 真っ暗に なったら、ルーレットには もどらないで、暗い 舞台に 金の 光（ゆっくり 回る 光の すじ・うしろの 光・紙ふぶき・きらめき）と いっしょに
+  //   まさちゃんの テロップ「大量ポイント」（tc_telop_big.webp：kisekae/tc/telop_asset.py）が ドーン！！と 手前から 飛びこんで くる → 板の 中に ポイント → 下に「GET!!」
+  //   ・光は ゆっくり：光の すじ 18本が 1秒に 0.14ラジアン（1周 45秒・同じ 所を すじが 通るのは 2.5秒に 1回）・うしろの 光は 2.6秒で 1回 息を する・
+  //     テロップを なでる 光は 3.2秒に 1回（0.9秒 かけて 通る）・きらめきは 1.6〜2.5秒で 1回 ＝ちかちか しない。
+  //     プチュン（明るく なって 暗く なる 1回）の あと 明るく なるのは この 1回 だけ（0.4秒 かけて）
+  //   ・「演出を控えめにする」・iPhone の「視差効果を減らす」（calm）：飛びこまない（ふわっと 出る）・光は 回らない／息を しない・紙ふぶきと なでる 光と 光の 輪は なし
+  //   ・絵が ない（手元に 素材が ない ビルド・見本）とき：コードで 描いた かんたんな 札（bigCard）
+  //   TELOP：w＝画面での 幅（390 の 座標）・ar＝絵の たて÷よこ・panel＝板の 中で 字を 書いて よい 所（左・上・右・下：絵の 幅・高さに 対する 割合。telop_asset.py が 測る）・
+  //     slam＝着く 時・z0＝はじめの 大きさ（倍）・fade＝テロップが はっきり する までの 長さ・rise＝うしろの 光が 明るく なる 長さ・num＝ポイントが 出る 時・get＝「GET!!」が 出る 時・hold＝とじられる ように なる まで（秒：ドーン！！から）・
+  //     spin＝光の すじが 回る 速さ（ラジアン／秒）・sweep＝なでる 光［はじめ・くり返し・通る 長さ（秒）］
+  //     fade と rise：テロップは 大きい うちは うすく（画面 いっぱいの 明るい 板が 一度 出て から 小さく なると、画面 ぜんぶの 明るさが 上がって 下がる ＝ 点めつに 近い）。
+  //       着く ころに はっきり して、うしろの 光も いっしょに 上がる ＝ 画面 ぜんぶの 明るさは 上がる だけ（test_tc.py が 1/30秒ごとに 測る：下がるのは 0.02 まで）
+  const TELOP = { src: 'tc_telop_big.webp', w: 372, ar: 742 / 1110, cx: W / 2, cy: 278, panel: [0.1532, 0.4555, 0.8405, 0.7925], slam: 0.24, z0: 1.9, fade: 0.24, rise: 0.4, num: 0.3, get: 0.55, hold: 1.2, spin: 0.14, sweep: [1.6, 3.2, 0.9] };
+  const BIGCONF = ['#ffd65c', '#f6b73c', '#fff4cf', '#e8452e', '#ffe9a8'];
+  const comma = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  let TSH = null;                       // テロップを なでる 光の 下書き（絵の 形の 中 だけ 光らせる）
+  function bigCard(w, h) {
+    const [x0, y0, x1, y1] = TELOP.panel, l = -w / 2 + x0 * w - 8, r = -w / 2 + x1 * w + 8, t = -h / 2 + y0 * h - 7, b = -h / 2 + y1 * h + 7;
+    poly([[l - 8, t - 8], [r + 8, t - 8], [r + 8, b + 8], [l - 8, b + 8]], '#c8262b'); poly([[l - 3, t - 3], [r + 3, t - 3], [r + 3, b + 3], [l - 3, b + 3]], '#f3c33d'); poly([[l, t], [r, t], [r, b], [l, b]], '#fbe5c1');
+    label('大量ポイント', 0, -h / 2 + h * 0.25, 52, '#ffd65c', '#a81818', 12);
+  }
+  function drawBig(im, v, val, calm) {
+    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
+    // 暗い 舞台（ルーレットは 見せない）と うしろの 赤い 光
+    g.save(); g.fillStyle = '#060302'; g.fillRect(0, 0, W, H);
+    const bg = g.createRadialGradient(cx, cy, 20, cx, cy, 470);
+    bg.addColorStop(0, `rgba(255,190,60,${0.95 * L})`); bg.addColorStop(0.3, `rgba(224,82,20,${0.85 * L})`); bg.addColorStop(0.62, `rgba(126,16,10,${0.7 * L})`); bg.addColorStop(1, `rgba(36,4,4,${0.5 * L})`);
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    // 金の 光の すじ（ゆっくり 回る：太い 18本と、反対へ 回る 細い 9本）
+    g.globalCompositeOperation = 'lighter';
+    for (const [n, half, dir, al, len] of [[18, 0.085, 1, 0.42, 560], [9, 0.035, -0.7, 0.34, 620]]) {
+      const gr = g.createRadialGradient(cx, cy, 30, cx, cy, len);
+      gr.addColorStop(0, `rgba(255,232,140,${al * L})`); gr.addColorStop(0.5, `rgba(255,200,90,${al * 0.55 * L})`); gr.addColorStop(1, 'rgba(255,170,60,0)');
+      g.fillStyle = gr; g.beginPath();
+      for (let i = 0; i < n; i++) { const a = i / n * TAU + rot * dir; g.moveTo(cx, cy); g.arc(cx, cy, len, a - half, a + half); g.closePath(); }
+      g.fill();
+    }
+    // うしろの 光（ゆっくり 息を する）
+    const br = calm ? 1 : 0.92 + 0.08 * Math.sin(TAU * v / 2.6), gl = g.createRadialGradient(cx, cy, 10, cx, cy, 250);
+    gl.addColorStop(0, `rgba(255,248,214,${0.7 * L * br})`); gl.addColorStop(0.5, `rgba(255,214,120,${0.34 * L * br})`); gl.addColorStop(1, 'rgba(255,180,70,0)');
+    g.save(); g.translate(cx, cy); g.scale(1.3, 0.82); g.translate(-cx, -cy); g.fillStyle = gl; g.fillRect(-W, -H, 3 * W, 3 * H); g.restore();      // 横に 長い 光（テロップの 形に 合わせる）
+    g.restore();
+    if (!calm) confetti(BIGCONF, Math.max(0, v - 0.2), sm((v - 0.2) / 0.5), W, H);      // 紙ふぶき（金・赤・白）
+    // テロップ：手前から 飛びこんで（1.9倍 → 1倍）着いたら 少し はずむ
+    const sl = T.slam; let s;
+    if (calm) s = 1.04 - 0.04 * sm(v / 0.5);
+    else if (v < sl) { const q = v / sl; s = T.z0 - (T.z0 - 1) * q * q; }
+    else { const q = clamp((v - sl) / 0.32, 0, 1); s = 1 - 0.06 * Math.sin(Math.PI * q) * (1 - q); }
+    if (!calm) { const q = (v - sl) / 0.55; if (q > 0 && q < 1) {      // 着いた ときの 光の 輪（1回）
+      g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = `rgba(255,236,170,${0.45 * (1 - q)})`; g.lineWidth = 7 - 5 * q;
+      g.beginPath(); g.ellipse(cx, cy, 150 + 230 * easeOut(q), 100 + 150 * easeOut(q), 0, 0, TAU); g.stroke(); g.restore(); } }
+    g.save(); g.globalAlpha *= calm ? sm(v / 0.5) : sm(v / T.fade); g.translate(cx, cy); g.scale(s, s);
+    if (im) {
+      const sw = calm || v < T.sweep[0] ? -1 : mod(v - T.sweep[0], T.sweep[1]) / T.sweep[2];      // なでる 光（0〜1 の 間 だけ：ななめの 白い 帯が 左から 右へ。はじめは 1.6秒 から ＝ 出て くる 動きと 重ねない）
+      if (sw >= 0 && sw < 1) {
+        const pw = Math.max(1, Math.round(w * PX)), ph = Math.max(1, Math.round(h * PX));
+        if (!TSH) TSH = document.createElement('canvas');
+        if (TSH.width !== pw || TSH.height !== ph) { TSH.width = pw; TSH.height = ph; }
+        const q = TSH.getContext('2d'); q.globalCompositeOperation = 'source-over'; q.clearRect(0, 0, pw, ph); q.drawImage(im, 0, 0, pw, ph);
+        q.globalCompositeOperation = 'source-atop';
+        const x = (-0.3 + 1.6 * sw) * pw, bw = 0.15 * pw, gs = q.createLinearGradient(x - bw, 0, x + bw, 0);
+        gs.addColorStop(0, 'rgba(255,255,255,0)'); gs.addColorStop(0.5, 'rgba(255,255,236,0.5)'); gs.addColorStop(1, 'rgba(255,255,255,0)');
+        q.save(); q.transform(1, 0, -0.35, 1, 0.35 * ph / 2, 0); q.fillStyle = gs; q.fillRect(x - bw, -ph, 2 * bw, 3 * ph); q.restore();
+        g.drawImage(TSH, -w / 2, -h / 2, w, h);
+      } else g.drawImage(im, -w / 2, -h / 2, w, h);
+    } else bigCard(w, h);
+    // ポイント（板の 中）
+    const nv = v - T.num;
+    if (nv > 0) {
+      const [px0, py0, px1, py1] = T.panel, bx = -w / 2 + (px0 + px1) / 2 * w, by = -h / 2 + (py0 + py1) / 2 * h, bw = (px1 - px0) * w, bh = (py1 - py0) * h;
+      // 字の ある 所（数字の 上から「,」の しっぽの 下 まで）の まん中を 板の まん中に（字の 形から 測る ＝ フォントが かわっても ずれない）。しっぽと ふちが 板から 出ない 大きさに する
+      const txt = comma(val), S1 = 64, S2 = 46, gap = 4, EW = 13;
+      g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+      g.font = `900 ${S1}px ${SERIF}`; const m1 = g.measureText(txt), w1 = m1.width, asc = m1.actualBoundingBoxAscent > 0 ? m1.actualBoundingBoxAscent : S1 * 0.74, dsc = Math.max(0, m1.actualBoundingBoxDescent || 0);
+      g.font = `900 ${S2}px ${SERIF}`; const w2 = g.measureText('P').width;
+      const tot = w1 + gap + w2, sc = Math.min(bw * 0.92 / (tot + EW), bh * 0.94 / (asc + dsc + EW)) * (calm ? 1 : 0.6 + 0.4 * backOut(nv / 0.28)), yb = (asc - dsc) / 2;
+      g.save(); g.globalAlpha *= sm(nv / 0.12); g.translate(bx, by); g.scale(sc, sc); g.lineJoin = 'round'; g.strokeStyle = '#4a1a06';
+      const gf = g.createLinearGradient(0, yb - asc, 0, yb); gf.addColorStop(0, '#fff3a6'); gf.addColorStop(0.5, '#ffd034'); gf.addColorStop(1, '#f08c12');
+      for (const [t, x, size, ew] of [[txt, -tot / 2, S1, EW], ['P', -tot / 2 + w1 + gap, S2, 11]]) { g.font = `900 ${size}px ${SERIF}`; g.lineWidth = ew; g.strokeText(t, x, yb); g.fillStyle = gf; g.fillText(t, x, yb); }
+      g.restore();
+    }
+    g.restore();
+    // きらめき（テロップの まわり：ゆっくり 光る）
+    for (let i = 0; i < 12; i++) {
+      const ang = i / 12 * TAU + 0.4 * hash(i + 2), x = cx + Math.cos(ang) * w * (0.5 + 0.1 * hash(i + 5)), y = cy + Math.sin(ang) * h * (0.6 + 0.16 * hash(i + 8));
+      const q = calm ? 0.5 : 0.5 + 0.5 * Math.sin(TAU * (v / (1.6 + 0.9 * hash(i + 11)) + hash(i + 3)));
+      sparkle(x, y, (7 + 9 * hash(i + 13)) * (0.35 + 0.65 * q), 0.9 * L * (0.3 + 0.7 * q));
+    }
+    // 「GET!!」（テロップの 下）
+    const gv = v - T.get;
+    if (gv > 0) {
+      g.save(); g.globalAlpha *= sm(gv / 0.12); g.translate(cx, cy + h / 2 + 44); const k = calm ? 1 : backOut(gv / 0.3); g.scale(k, k);
+      const gf = g.createLinearGradient(0, -24, 0, 24); gf.addColorStop(0, '#fffbe6'); gf.addColorStop(0.55, '#ffe27a'); gf.addColorStop(1, '#f5a623');
+      label('GET!!', 0, 0, 58, gf, '#3a1206', 13); g.restore();
+    }
+  }
+
+  // ためす 用：大量ポイントの 場面の 1コマ（ドーン！！から v 秒め）を 描く。時計を 使わない ＝ 決めた 秒の 絵が いつも 同じ（光の 点めつを 1/30秒ごとに 測る：test_tc.py）。noImg＝絵が ない ときの 札で 描く
+  async function bigFrame(cv, v, val, calm, noImg) {
+    const im = noImg ? null : await img(TELOP.src);
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    drawBig(im, v, val, !!calm); g.setTransform(1, 0, 0, 1, 0, 0);
+    return !!im;
+  }
+
   async function roulette(cv, o) {
     const th = RT_STYLE[o.th] ? o.th : 'normal', I = await rtLoad(th);
     if (!GEO || !GEO[th]) return;
     const Gm = GEO[th], r = { th, a: o.a, b: o.b, win: o.win ? 1 : 0, HIT: null, S0: null, S1: null }, dim = DIMR[o.bg] != null ? DIMR[o.bg] : 0.4;
+    // 第4.159版：止まった あと ポイントを 出す 時（RV）。安い 方＝すぐ（止まって 0.4秒）・デカ的中と 同じ 音／高い 方＝止まって 0.25秒 あとに プチュン（盤の 上に 幕）→ 真っ暗に なったら すぐ ポイント
+    //   高い 方（まさちゃん 11/12 13:27・13:30）：真っ暗に なったら ルーレットには もどらない → 大量ポイントの 場面（drawBig）・音は ドーン！！
+    //   RV は プチュンの 幕を 出した コマから PD 秒（コマが おくれても、幕の 中の 動きと ずれない：線が 点に ちぢんだ あとに 出る）
+    const val = r.win ? r.b : r.a, high = val >= Math.max(r.a, r.b), calm = pcCalm(), P0 = 0.25, PD = calm || !pcHtml() ? PCH.calm : PCH.dark;
+    const telop = high ? await img(TELOP.src) : null;
+    let pc = null, RV = null;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
-      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; }
+      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!high) RV = r.S1 + 0.4; }
+      if (high && RV != null && u >= RV) {                    // 高い 方：プチュンの あとは 大量ポイントの 場面 だけ（ルーレットは 描かない）。幕は 0.2秒で 明ける（下も 真っ暗から 始まる）
+        if (pc) { pcClose(pc, 0.2); pc = null; }
+        drawBig(telop, u - RV, val, calm);
+        return { end: RV + TELOP.hold };
+      }
       const app = sm(u / 0.45);
       g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(16,10,6,${dim})`; g.fillRect(0, 0, W, H); g.restore();
       g.save(); g.globalAlpha *= app;
@@ -246,12 +407,13 @@ const TCFX = (() => {
       drawFace(r, Gm, ang, r.S1 != null ? sm((u - r.S1 - 0.1) / 0.4) : 0);
       const P = Gm.parts.ptr; if (I.ptr) g.drawImage(I.ptr, P.x, P.y, P.w, P.h);
       drawLever(r, I, Gm, u); drawChev(r, Gm, u); drawTap(r, Gm, u);
-      if (r.S1 != null && u > r.S1 + 0.4) {
-        const v = u - r.S1 - 0.4; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
-        drawGet(r, Gm, r.win ? r.b : r.a, v / 0.45);
+      if (RV != null && u > RV) {                             // 安い 方：盤の 上に 紙ふぶきと「○P GET！！！」
+        const v = u - RV; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
+        drawGet(r, Gm, val, v / 0.45);
       }
       g.restore();
-      return { end: r.S1 != null ? r.S1 + 1.2 : null };
+      if (high && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; }      // 高い 方：プチュン（盤の 上に 幕）→ PD 秒で 真っ暗 → 上の 大量ポイントの 場面へ
+      return { end: RV != null ? RV + (high ? TELOP.hold : 0.8) : null };
     }, (u, st, last) => {
       if (r.HIT != null && last < r.HIT && u >= r.HIT) se(o, 'tc_se_rt_lever.m4a', 1, 0);
       if (r.S0 != null && u >= r.S0 && u <= r.S1 + 0.05) {          // カチッ：盤の ひだの さかいが 針を 通る たびに（コマの 間の 分も 時間を ずらして）
@@ -263,13 +425,15 @@ const TCFX = (() => {
         }
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
-      if (r.S1 != null && last < r.S1 + 0.4 && u >= r.S1 + 0.4) se(o, 'tc_se_rt_confirm.m4a', 1, 0);
+      if (high && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    // 高い 方：プチュン（控えめの ときは 音も なし：的中の 演出と 同じ）
+      if (RV != null && last < RV && u >= RV) se(o, high ? 'tc_se_doon.m4a' : 'sfx_big.m4a', high ? 1 : BIG_GAIN, 0);      // ポイントが 出る：高い 方＝ドーン！！（テロップと いっしょ）・安い 方＝デカ的中と 同じ 音
     });
+    pcClose(pc, 0);
   }
 
   // ================= 壁紙チケット =================
   const IW = 1086, IH = 1448, TKK = Math.max(W / IW, H / IH), TOX = (W - IW * TKK) / 2, TOY = (H - IH * TKK) / 2;
-  const FALL0 = 0.35, FALL = 0.26, LAND = FALL0 + FALL, TAPSHOW = LAND + 0.7, OPEN = 1.25, HOLD = 0.35, REVEAL = 0.95;
+  const FALL0 = 0.35, FALL = 0.26, OPEN = 1.25, HOLD = 0.35, REVEAL = 0.95;      // 扉が 落ちはじめる（プチュンの あとは 0.03）・落ちる 長さ・開く・白い 光・チケットが 出る（秒）。着く＝落ちはじめ＋FALL・「タップ」＝着いて 0.7秒
   const TKPOS = { 1: [[0, 0, 0, 1.0]], 2: [[-168, -0.1, 14, 0.78], [168, 0.1, 14, 0.78]], 3: [[-248, -0.2, 50, 0.66], [0, 0, 0, 0.7], [248, 0.2, 50, 0.66]] };
   function goldLight(u, k, beamW, open) {
     if (k <= 0) return;
@@ -358,29 +522,38 @@ const TCFX = (() => {
     g.restore();
   }
   async function ticket(cv, o) {
+    // 第4.159版（まさちゃん 11/12 11:56「プチュンしたらすぐに扉が落ちてくる演出にして！」）：o.puchun＝よんだ 瞬間（PUSH を 押した 瞬間）に プチュン（幕は この キャンバスの 下・絵を 読むのを 待たない）
+    //   → 真っ暗に なったら すぐ 扉が 落ちて くる（いつもの はじめの 間 0.35秒は なし・うしろは 真っ暗の まま）。
+    //   幕は、扉が 着いて はずみ おわったら 外す（扉の 絵が 舞台 ぜんぶを かくして いる ので 見た目は かわらない）
+    let pc = null;
+    if (o.puchun) { pc = pcOpen(cv, true); if (!pc.calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0); }
     const [closed, open_, tk] = await Promise.all([img('tk_door_closed.webp'), img('tk_door_open.webp'), img('tk_ticket.webp')]);
     const n = Math.max(1, Math.min(3, o.n | 0)), pos = TKPOS[n], dim = (DIMR[o.bg] != null ? DIMR[o.bg] : 0.4) + 0.08;
     const T = { tap: null, get0: null };
-    await play(cv, Object.assign({ tapMin: TAPSHOW }, o), (u, st) => {
-      if (st.tap != null && T.tap == null) T.tap = Math.max(st.tap, TAPSHOW);
+    if (pc) await until(pc.t0 + pc.dark * 1000);
+    const F0 = pc ? 0.03 : FALL0, LD = F0 + FALL, TS = LD + 0.7;      // 扉が 落ちはじめる・着く・「タップ」が 出る（秒）
+    try {
+    await play(cv, Object.assign({ tapMin: TS }, o), (u, st) => {
+      if (pc && u > LD + 0.34) { pcClose(pc, 0); pc = null; }
+      if (st.tap != null && T.tap == null) T.tap = Math.max(st.tap, TS);
       const uo = T.tap != null ? u - T.tap : -1, get0 = T.tap != null ? T.tap + OPEN + HOLD + 0.55 : null;
       g.fillStyle = `rgba(18,10,4,${dim * sm(u / 0.45)})`; g.fillRect(0, 0, W, H);
-      const p = clamp((u - FALL0) / FALL, 0, 1), q = (u - LAND) / 0.3;
-      const yOff = u < LAND ? -H * (1 - p * p) : -10 * Math.sin(Math.PI * clamp(q, 0, 1)) * (1 - clamp(q, 0, 1));
+      const p = clamp((u - F0) / FALL, 0, 1), q = (u - LD) / 0.3;
+      const yOff = u < LD ? -H * (1 - p * p) : -10 * Math.sin(Math.PI * clamp(q, 0, 1)) * (1 - clamp(q, 0, 1));
       const zoom = uo > 0 ? (uo < OPEN + HOLD ? 1 + 0.08 * smoother(uo / (OPEN + HOLD)) : 1 + 0.08 * (1 - smoother((uo - OPEN - HOLD) / REVEAL))) : 1;
       const opened = uo >= OPEN + HOLD * 0.5;
-      if (u >= FALL0) {
+      if (u >= F0) {
         g.save(); g.translate(W / 2, H / 2 + yOff); g.scale(zoom, zoom); g.translate(-W / 2, -H / 2);
         const im = opened ? open_ : closed; if (im) g.drawImage(im, TOX, TOY, IW * TKK, IH * TKK);
         g.save(); g.translate(TOX, TOY); g.scale(TKK, TKK);
-        const lk = opened ? 0.75 + 0.25 * sm((uo - OPEN - HOLD - REVEAL * 0.3) / 0.8) : sm((u - LAND - 0.1) / 0.6);
+        const lk = opened ? 0.75 + 0.25 * sm((uo - OPEN - HOLD - REVEAL * 0.3) / 0.8) : sm((u - LD - 0.1) / 0.6);
         const ow = uo > 0 && !opened ? smoother(uo / OPEN) : 0;
         goldLight(u, lk, 34 + 520 * Math.pow(ow, 2.2), ow);
-        if (u >= LAND) dust(u - LAND);
+        if (u >= LD) dust(u - LD);
         g.restore(); g.restore();
       }
       g.save(); g.translate(TOX, TOY); g.scale(TKK, TKK);
-      tkTap(u - TAPSHOW, sm((u - TAPSHOW) / 0.3) * (uo >= 0 ? 1 - sm(uo / 0.18) : 1));
+      tkTap(u - TS, sm((u - TS) / 0.3) * (uo >= 0 ? 1 - sm(uo / 0.18) : 1));
       if (uo >= 0 && uo < 0.6) { g.save(); g.strokeStyle = `rgba(255,246,210,${0.8 * (1 - uo / 0.6)})`; g.lineWidth = 10; g.beginPath(); g.arc(IW / 2, 1268, 60 + 260 * easeOut(uo / 0.6), 0, TAU); g.stroke(); g.restore(); }
       g.restore();
       const wh = uo < 0 ? 0 : uo < OPEN ? Math.pow(smoother(uo / OPEN), 1.6) : uo < OPEN + HOLD ? 1 : 1 - smoother((uo - OPEN - HOLD) / REVEAL);
@@ -403,9 +576,9 @@ const TCFX = (() => {
       return { end: get0 != null ? get0 + 0.75 + 0.28 * (pos.length - 1) + 0.6 : null };
     }, (u, st, last) => {
       const cross = x => last < x && u >= x;
-      if (cross(FALL0)) se(o, 'tc_se_tk_fall.m4a', 1, 0);
-      if (cross(LAND)) se(o, 'tc_se_tk_land.m4a', 1, 0);
-      if (cross(TAPSHOW)) se(o, 'tc_se_tk_tapshow.m4a', 1, 0);
+      if (cross(F0)) se(o, 'tc_se_tk_fall.m4a', 1, 0);
+      if (cross(LD)) se(o, 'tc_se_tk_land.m4a', 1, 0);
+      if (cross(TS)) se(o, 'tc_se_tk_tapshow.m4a', 1, 0);
       if (T.tap != null) {
         const tt = T.tap, get0 = tt + OPEN + HOLD + 0.55;
         if (cross(tt)) { se(o, 'tc_se_tk_tap.m4a', 1, 0); se(o, 'tc_se_tk_open.m4a', 1, 0); }
@@ -415,6 +588,7 @@ const TCFX = (() => {
         if (cross(get0 + 0.75 + 0.28 * (pos.length - 1))) se(o, 'tc_se_tk_get.m4a', 1, 0);
       }
     });
+    } finally { pcClose(pc, 0); }
   }
   function confettiTk(t, k) {
     if (k <= 0) return; const cols = ['#ffd65c', '#fff2bf', '#f4a39b', '#f2c24f', '#ffe9a8'];
@@ -425,7 +599,7 @@ const TCFX = (() => {
       g.restore();
     }
   }
-  function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp'].forEach(img); }
-  return { roulette, ticket, preload };
+  function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
+  return { roulette, ticket, puchun, preload, PCH, TELOP, bigFrame };
 })();
 window.TCFX = TCFX;

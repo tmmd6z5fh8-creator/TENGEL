@@ -262,11 +262,11 @@ if r.returncode == 0:
             else: _want.add(_e)
         _got = {f[6:-4] for f in res if f.startswith('tc_se_') and f.endswith('.m4a')}
         _gone = ['flop', 'goron', 'lie', 'hop', 'unlock']
-        check(_got == _want and len(_got) == 70 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
+        check(_got == _want and len(_got) == 73 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
               and _skip.get('unlock') == "'piron'" and _skip.get('callcool') == 'null' and sorted(_ad.TC_GONE) == sorted(f'tc_se_{g}.m4a' for g in _gone)
               and open(os.path.join(_ad.master('tc_assets'), 'tc_se_unlock.m4a'), 'rb').read() == open(os.path.join(RES, 'tc_se_piron.m4a'), 'rb').read()
               and not re.search(r"mode: 'sleep'|ev\(tt, '(flop|goron|lie)'\)|TEST\.wake|wake\(\)", _tall) and 'ごろん' not in open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read(),
-              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
+              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ〈第4.159版：＋4＝プフォ・デデーン・キュインキュイーン・ドーン／−1＝ルーレットの 前の 確定の 音〉・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
               f'横に なる 動きの 音（flop・goron・lie）と 使わない 音（hop・unlock＝piron と 同じ 中身）は 入れない（もとの フォルダには 残る）・馬を 横に する コードと「ごろん」の 字は ない')
         # 第4.158版（まさちゃん 2026/11/12 08:59「このルーレットの神様馬、目が怖いから金色に光らせて！あと、画像がなんかまだらに色がついてるから綺麗にできる？」・09:00「幻の馬のルーレットは、目を紫に光らせて！」）：
         #   ルーレットの 絵は きれいに した 新しい 絵 12まい（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py）。前の 12まい（rt_<絵>_<部品>.webp）は 入れない（もとの フォルダには 残す）
@@ -276,6 +276,34 @@ if r.returncode == 0:
               and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in _rtn if f in res) and bool(re.search(r'img\(`rt_\$\{\w+\}_\$\{\w+\}2\.webp`\)\s*\|\|\s*await img\(`rt_\$\{\w+\}_\$\{\w+\}\.webp`\)', _tb))
               and 0.5e6 < _sz([f for f in _rtn if f in res]) < 0.8e6,
               f'第4.158版：ルーレットの 絵は きれいに した 新しい 12まい（rt_<絵>_<部品>2.webp・{_sz([f for f in _rtn if f in res]) / 1e3:.0f}KB・もとと 同じ 中身）・前の 12まいは 入って いない（もとの フォルダには 残る）・コードは 新しい 名前を 先に 読む（ない とき だけ 前の 名前）')
+        # 第4.159版（まさちゃん 2026/11/12 10:37「お世話が終わったあとに、pushボタンが出てくるようにして(pushボタンは俺が準備する)」・11:56「プチュンは、極ど的中と超プレミアム神様的中で使用してたプチュンの演出入れてね！」）：
+        #   PUSH の 絵は 赤い ボタン（cap）と 黒い 台（base）の 2まい（kisekae/tc/push_asset.py）。はじめに 作った 1まい（tc_push.webp）は 入れない（もとの フォルダには 残す）。
+        #   音：プフォ・デデーン・キュインキュイーン（トレーニングセンターの 音）＋ 的中の 演出の 音 2つ（プチュン sfx_sdp・デカ的中 sfx_big：もう 入って いる もの を 使う）。
+        #   プチュンは 的中の 演出の 束（window.__FX の reveal.sd）の 中の 部品（.pc）を とり出して 使う ＝ 束の 中に 1つ ある こと
+        _pu = ['tc_push_cap.webp', 'tc_push_base.webp']; _ps = ['tc_se_pfo.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a']
+        from PIL import Image as _PI
+        _pz = [_PI.open(os.path.join(RES, f)).size for f in _pu if f in res]
+        _ix = open(os.path.join(RES, 'index.html'), encoding='utf8').read()
+        check(all(f in res for f in _pu + _ps) and 'tc_push.webp' not in res and os.path.exists(os.path.join(_ad.master('tc_assets'), 'tc_push.webp'))
+              and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in _pu + _ps if f in res) and len(set(_pz)) == 1 and _pz and _pz[0][0] == 660
+              and 40e3 < _sz([f for f in _pu if f in res]) < 120e3 and 30e3 < _sz([f for f in _ps if f in res]) < 90e3
+              and 'sfx_sdp.m4a' in res and 'sfx_big.m4a' in res and "'tc_push_cap.webp'" in _tb and "'tc_push_base.webp'" in _tb and 'tc_push.webp' not in _tb
+              and 'pcOpen' in _tb and "querySelector('.pc')" in _tb and 'puchun: true' in _tb and _ix.count('<div class=\\"pc\\"') + _ix.count('<div class="pc"') == 1,
+              f'第4.159版：お世話の あとの PUSH の 絵 2まい（赤い ボタン・黒い 台：{_pz[0] if _pz else None}・{_sz([f for f in _pu if f in res]) / 1e3:.0f}KB）と 音 3つ（{_sz([f for f in _ps if f in res]) / 1e3:.0f}KB）が 入る（もとと 同じ 中身）・'
+              f'はじめの 1まい（tc_push.webp）は 入らない・プチュンと デカ的中の 音は 的中の 演出の もの（sfx_sdp・sfx_big）・プチュンの 部品（.pc）は 的中の 演出の 束に 1つ（それを 使う）')
+        # 第4.159版（まさちゃん 11/12 13:27「ルーレット高い方が当たった時に…光輝きながら獲得ポイントを表示するようにして！一枚目がテロップの画像！」・13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：
+        #   テロップ「大量ポイント」の 絵（tc_telop_big.webp：kisekae/tc/telop_asset.py・まわりの うすい もやは 消して ある）と ドーン！！の 音（tc_se_doon.m4a）が 入る。
+        #   前の 確定の 音（tc_se_rt_confirm.m4a）は もう 鳴らさない ので 入れない（もとの フォルダには 残す）
+        import numpy as _np2, cv2 as _cv2
+        _szs = lambda fl: _sz([f for f in fl if f in res])
+        _tp = 'tc_telop_big.webp'; _ti = _PI.open(os.path.join(RES, _tp)).convert('RGBA') if _tp in res else None
+        _ta = _np2.array(_ti)[..., 3] if _ti else _np2.zeros((1, 1), _np2.uint8)
+        _far = int(((_ta > 0) & ~(_cv2.dilate((_ta >= 200).astype(_np2.uint8), _np2.ones((17, 17), _np2.uint8)) > 0)).sum())      # はっきり した 所から 8px より 遠い のに すき通って いない 画素（うすい もや）
+        check(_tp in res and 'tc_se_doon.m4a' in res and 'tc_se_rt_confirm.m4a' not in res and os.path.exists(os.path.join(_ad.master('tc_assets'), 'tc_se_rt_confirm.m4a'))
+              and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in (_tp, 'tc_se_doon.m4a') if f in res) and _ti is not None and _ti.size == (1110, 742) and _far == 0 and int((_ta >= 200).sum()) > 500000
+              and 100e3 < _szs([_tp]) < 260e3 and 15e3 < _szs(['tc_se_doon.m4a']) < 60e3 and "'tc_telop_big.webp'" in _tb and "'tc_se_doon.m4a'" in _tb and 'rt_confirm' not in _tb and 'drawBig' in _tb and 'lotStock: 20' in _tb,
+              f'第4.159版：テロップ「大量ポイント」の 絵（{_ti.size if _ti else None}・{_szs([_tp]) / 1e3:.0f}KB・まわりの うすい もや {_far}画素）と ドーン！！の 音（{_szs(["tc_se_doon.m4a"]) / 1e3:.0f}KB）が 入る（もとと 同じ 中身）・'
+              f'前の 確定の 音（tc_se_rt_confirm.m4a）は 入らない（もとの フォルダには 残る・コードも 鳴らさない）・ハートの 抽選は トークン 20こ未満の とき だけ（lotStock）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）

@@ -3,6 +3,7 @@
 #   ・環境音（朝・夕方・夜）：60秒の ループ（はじめと おわりを 重ねる）→ tc_amb_<tod>.m4a
 #   ・BGM（幻の馬・神様馬）：bgm.py の 60秒 ループ → tc_bgm_<abyss|divine>.m4a
 #   ・お世話の 音：sfx_care.py の render を できごと 1つずつ → tc_se_<k>.m4a（slot_1〜10・bite_apple／carrot・banin_kamisama／maboroshi）
+#     第4.159版：PUSH の 音 だけ 足す とき → python3 export_app.py <出す フォルダ> tc_se_pfo,tc_se_dedeen,tc_se_kyuin,tc_se_doon（できた 4つを ios/tc_assets へ 写す：前から ある 音は 作り直さない）
 #   ・ルーレット：sfx_roulette.py の 部品 → tc_se_rt_<lever|tick|stop|confirm>.m4a
 #   ・チケット：sfx_ticket.py の render を できごと 1つずつ → tc_se_tk_<k>.m4a
 import os, sys, subprocess, tempfile, math
@@ -54,7 +55,8 @@ for nm, fn in (('tc_bgm_abyss', bgm.abyss), ('tc_bgm_divine', bgm.divine)):
 # ---- お世話の 音 ----
 KINDS = ['button', 'unfold', 'fold', 'rub', 'heart', 'nod', 'swish', 'nuzzle', 'stretch', 'sneeze', 'tilt', 'calm', 'frisk', 'yawn', 'lie', 'nope', 'wait', 'ready', 'zoomin',
          'max', 'gather', 'hop', 'flop', 'goron', 'unlock', 'stock', 'call', 'turn', 'amae', 'heartpop', 'paper', 'chooser', 'pick', 'token', 'bucket', 'munch', 'lick',
-         'yummy', 'beg', 'gold', 'sweep', 'inpan', 'kira', 'luck', 'piron', 'sniff', 'nibble', 'banout']
+         'yummy', 'beg', 'gold', 'sweep', 'inpan', 'kira', 'luck', 'piron', 'sniff', 'nibble', 'banout',
+         'pfo', 'dedeen', 'kyuin', 'doon']      # 第4.159版：お世話の あとの PUSH の 音（sfx_push.py：プフォ・デデーン・キュインキュイーン）・ルーレットの 高い 方の テロップ（ドーン！！）
 VAR = [('slot_%d' % n, {'k': 'slot', 'n': n}) for n in range(1, 11)] + [('bite_apple', {'k': 'bite', 'kind': 'apple'}), ('bite_carrot', {'k': 'bite', 'kind': 'carrot'}),
        ('banin_kamisama', {'k': 'banin', 'kind': 'kamisama'}), ('banin_maboroshi', {'k': 'banin', 'kind': 'maboroshi'})]
 for nm, e in [(k, {'k': k}) for k in KINDS] + VAR:

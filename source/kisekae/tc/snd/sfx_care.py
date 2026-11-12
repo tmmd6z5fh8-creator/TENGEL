@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import amb
 from sfx_roulette import modes, burst, mix, put
 from sfx_pop import piron_snd, bell
+from sfx_push import pfo_snd, dedeen_snd, kyuin_snd, doon_snd, G_PFO, G_DEDEEN, G_KYUIN, G_DOON      # 第4.159版：お世話の あとの PUSH の 音
 SR = amb.SR
 
 
@@ -295,6 +296,10 @@ def render(T, evs, t0, seed=11):
         elif k == 'kira': add(kira_snd(rng), 0.09, t)
         elif k == 'luck': add(luck_snd(rng), 0.12, t)
         elif k == 'piron': add(piron_snd(), 0.3, t)
+        elif k == 'pfo': add(pfo_snd(rng), G_PFO, t)                      # 第4.159版：PUSH を 押した（ハズレ：プフォ）
+        elif k == 'dedeen': add(dedeen_snd(rng), G_DEDEEN, t)             #   200〜300P：デデーン！
+        elif k == 'kyuin': add(kyuin_snd(rng), G_KYUIN, t)                #   ルーレット当選：キュインキュイーン！
+        elif k == 'doon': add(doon_snd(rng), G_DOON, t)                   #   ルーレットの 高い 方：「大量ポイント」の テロップと いっしょに ドーン！！
         elif k == 'sniff': add(sniff_snd(rng, 2), 0.09, t + 0.1); add(sniff_snd(rng, 2), 0.08, t + 0.9)
         elif k == 'nibble': add(nibble_snd(rng), 0.16, t)
         elif k == 'banin': add(banin_snd(rng, e.get('kind', 'kamisama')), 0.09, t - 0.05)

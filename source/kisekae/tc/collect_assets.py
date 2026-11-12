@@ -65,6 +65,8 @@ webp(os.path.join(UI, 'icon_sakusen_kaigi.png'), 'tc_icon_plan.webp', size=(720,
 # ルーレット（3つの 絵の 部品と 置き場所）
 #   第4.158版：アプリが 読むのは きれいに した 絵（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py が ここで 置く rt_<絵>_<部品>.webp と まさちゃんの もとの 絵から 作る）。
 #   この スクリプトは 出す フォルダを 作り直す ので、走らせた あとは python3 kisekae/tc/rt_clean.py <もとの 絵の フォルダ> ios/tc_assets を もう一度（しないと ルーレットの 絵が 出ない）
+#   第4.159版：お世話の あとの PUSH の 絵 2まい（tc_push_cap.webp・tc_push_base.webp）と 音 3つ（tc_se_pfo・tc_se_dedeen・tc_se_kyuin.m4a）は kisekae/tc/push_asset.py が 置く。
+#   同じく、走らせた あとは python3 kisekae/tc/push_asset.py <まさちゃんの PUSH の 絵（PNG）> <音の フォルダ> ios/tc_assets を もう一度（しないと PUSH は 紙の 絵の ボタンに なり、音が 3つ 鳴らない）
 RP = os.path.join(H3, 'rt_parts')
 for th in ('normal', 'maboroshi', 'kamisama'):
     for p in ('plate', 'knob', 'stick', 'ptr'): put(os.path.join(RP, f'rt_{th}_{p}.webp'))

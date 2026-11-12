@@ -42,8 +42,16 @@ const TCGuide = (() => {
   const RS = { cares: 5, min: 5, limit: 30 };      // 馬の リセット：お世話 5回 → 5分・幻の馬／神様馬の タイムリミット 30分（tc_app.js の RESET_CARES・RESET_MIN・VISIT_MIN と 同じ 数：test_tc.py が 見くらべる）
   const CARE = [10, 20, 50, 85, 99, 121, 125, 245, 399, 600];      // お世話の 当たり ぜんぶ（合わせた ％を 出す）
   const SEC = [
-    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
-    ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのたびに抽選！当たりはお世話のあとに出るよ</p>
+    // 第4.159版（まさちゃん 11/12 10:37）：トークンの 上限 25・お世話の あとの PUSH（押した ときに 抽選）・1個／まとめての スイッチ／12:48・14:50：10分ごとに 5つ（12:48 は 5分ごと → 14:50 に 10分ごとへ）・最大の ときに 撫でると「お世話トークンが最大だよ！」／
+    //   13:27：ハートの 抽選は トークンが 20こ未満の とき だけ（20こ以上は 抽選まち → 20こを 切ったら 抽選）
+    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに5つ</b>たまる（最大<b>25こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
+    ['押', '#d8352c', 'お世話のあとのPUSH', `<p>・ごはん・おそうじがおわると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
+      <p>・当たりは押したときに出るよ（ハズレは「プフォ」の音だけ）</p>
+      <p>・PUSHの横のスイッチで<b>「1個 使う」「まとめて 使う」</b>を選べる（前に選んだ方をおぼえているよ）</p>
+      <p>　<b>1個 使う</b> → 1回押したらおしまい</p>
+      <p>　<b>まとめて 使う</b> → トークンがあるあいだ、つづけて何回でも押せる（押した回数ぶんトークンがへる）。やめるときは「おわる」</p>
+      <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数ぶん数えるよ）</p>`],
+    ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
       ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
@@ -52,7 +60,9 @@ const TCGuide = (() => {
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
       <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
-      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>`],
+      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
+      <p>・抽選は<b>お世話トークンが20こ未満</b>のときだけ。<b>20こ以上</b>（最大の25こも）のときは、ハートが10こたまっても<b>抽選まち</b> → PUSHを押してトークンが<b>20こを切ったら</b>抽選がはじまるよ</p>
+      <p class="note">トークンは最大25こまで。25このときに撫でると「お世話トークンが最大だよ！」と出るよ</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
     ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
@@ -81,18 +91,24 @@ const TCGuide = (() => {
     root.innerHTML = `<div class="bk"></div><div class="sh"><div class="hd"><b>トレーニングセンターの説明書</b><div class="x">✕</div></div><div class="bd"><div class="in">` +
       SEC.map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
     el.appendChild(root); inner = root.querySelector('.in'); body = root.querySelector('.bd');
-    root.querySelector('.x').addEventListener('click', () => close(true));
-    root.querySelector('.bk').addEventListener('click', () => close(true));
+    // 第4.159版（バグ直し・まさちゃん 2026/11/12 14:54「トレーニングセンターの説明書開いたらすぐ閉じるようになってて表示されないよ！」）：
+    //   「？」は フィールドの キャンバスの 上の 絵 ＝ 指を はなした とき（pointerup）に 説明書を 開く。指（タッチ）では その すぐ あとに 同じ 場所へ「クリック」が とどく →
+    //   もう 開いて いる 説明書の うしろの 幕（.bk：押すと 閉じる）に 当たって、開いた 瞬間に 閉じて いた（マウスでは クリックは 押した 所＝キャンバスへ とどく ので 起きない ＝ テストで 見つからなかった）。
+    //   → 開いて から GUARD 秒（下から 出て くる 間）は、幕と ✕ の クリックで 閉じない
+    const shut = () => { if (performance.now() - openedAt >= GUARD * 1000) close(true); };
+    root.querySelector('.x').addEventListener('click', shut);
+    root.querySelector('.bk').addEventListener('click', shut);
     body.style.overflowY = 'auto';
   }
-  let anim = null, onClose = null;
+  let anim = null, onClose = null, openedAt = -1e9;
+  const GUARD = 0.45;                  // 開いて から この 秒 だけ、うしろの 幕と ✕ の クリックで 閉じない（開いた 指の クリックが とどく ため）
   function tween(a, b, dur, done) {           // アプリ：下から すっと 出る・下へ すっと しまう
     if (anim) cancelAnimationFrame(anim); const t0 = performance.now();
     const f = () => { const u = Math.min(1, (performance.now() - t0) / (dur * 1000)); set(a + (b - a) * u); if (u < 1) anim = requestAnimationFrame(f); else { anim = null; if (done) done(); } };
     anim = requestAnimationFrame(f);
   }
   function open(el, opt) {
-    if (!root) build(el); root.style.display = 'flex';
+    if (!root) build(el); root.style.display = 'flex'; openedAt = performance.now();
     if (opt && opt.anim) { onClose = opt.onClose || null; body.scrollTop = 0; set(0.001); tween(0, 1, 0.35); } else set(1);
   }
   function set(k) {                    // 0〜1：ひらき ぐあい（下から すっと）
@@ -103,5 +119,5 @@ const TCGuide = (() => {
   function scroll(f) { if (body) body.scrollTop = Math.max(0, Math.min(1, f)) * (body.scrollHeight - body.clientHeight); }
   function close(a) { if (a && root && root.style.display !== 'none') tween(1, 0, 0.3, () => { if (onClose) { const f = onClose; onClose = null; f(); } }); else set(0); }
   function isOpen() { return !!root && root.style.display !== 'none'; }
-  return { open, set, scroll, close, isOpen, get el() { return root; } };
+  return { open, set, scroll, close, isOpen, GUARD, get el() { return root; } };
 })();

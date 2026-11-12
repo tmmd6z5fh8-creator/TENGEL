@@ -32,6 +32,14 @@ def superseded(name, files):
         # 第4.158版（まさちゃん 2026/11/12 08:59「画像がなんかまだらに色がついてるから綺麗にできる？」）：ルーレットの 絵は きれいに した 新しい 絵（rt_<絵>_<部品>2.webp：
         #   kisekae/tc/rt_clean.py）を 使う。新しい 絵が ある 部品の 前の 絵（rt_<絵>_<部品>.webp）は 入れない（もとの フォルダには 残す）
         old |= {f for f in files if RT_OLD.fullmatch(f) and f[:-5] + '2.webp' in files}
+        # 第4.159版：お世話の あとの PUSH の 絵は 赤い ボタンと 黒い 台の 2まい（tc_push_cap.webp・tc_push_base.webp：kisekae/tc/push_asset.py）。
+        #   はじめに 作った 1まいの 絵（tc_push.webp）は 使わない ので 入れない（もとの フォルダには 残す）
+        if 'tc_push_cap.webp' in files and 'tc_push_base.webp' in files:
+            old |= files & {'tc_push.webp'}
+        # 第4.159版（まさちゃん 11/12 13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：ルーレットの 高い 方は ドーン！！（tc_se_doon.m4a：kisekae/tc/telop_asset.py）・
+        #   安い 方は デカ的中と 同じ 音 ＝ 前の 確定の 音（tc_se_rt_confirm.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
+        if 'tc_se_doon.m4a' in files:
+            old |= files & {'tc_se_rt_confirm.m4a'}
         return old
     return set()
 
