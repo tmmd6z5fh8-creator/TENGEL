@@ -1399,7 +1399,7 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 20, stockEvery: 600 };
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 600, stockStep: 5, lotStock: 20 };      
   const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
   
   
@@ -1414,7 +1414,7 @@ const TCCare = (() => {
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
-    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, popVal: null, stockDrop: null, test: null };
+    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, stockDrop: null, test: null, push: null, bulk: false };      
   const POOP = [];          
 
   
@@ -1637,11 +1637,7 @@ const TCCare = (() => {
   function release(t) {
     const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; BR.hurry = 1; S.grazeOK = false;
     if (m === 'call') { S.callLast = t; if (S.callN >= RULE.streak) { S.callN = 0; S.callCoolUntil = t + RULE.cool; S.callCoolFrom = t; ev(t, 'callcool'); } }      
-    if ((m === 'feed' || m === 'clean') && S.popVal) {
-      const pz = typeof S.popVal === 'object' ? S.popVal : { k: 'pt', v: S.popVal }; S.popVal = null;
-      if (pz.k === 'pt') at(t + 0.15, tt => { fx({ k: 'pointpop', t0: tt, v: pz.v, dur: 2.0 }); ev(tt, 'piron'); if (O.onPrize) O.onPrize(pz); });
-      else if (O.onPrize) at(t + 0.4, tt => O.onPrize(pz));          
-    }      
+    if (m === 'feed' || m === 'clean') pushOpen(t + 0.15);      
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          
       const c = { x: S.clean.sniff[0], y: S.clean.sniff[1] }; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
@@ -1653,9 +1649,30 @@ const TCCare = (() => {
 
   
   const FOOD = { esa: 'エサ', apple: 'リンゴ', carrot: 'ニンジン' };
-  function useToken(t, k) {
+  
+  
+  
+  const stockFull = () => S.stock >= (O.stockMax || RULE.stockMax);
+  const LOT_WAIT = 1.0;                  
+  function maxTag(t) { if (t - (S.maxTagT || -9) < 3) return; S.maxTagT = t; fx({ k: 'tagUI', t0: t, x: 256, y: BTN.pet[1] - 150, txt: 'お世話トークンが 最大だよ！', size: 32, dur: 2.4 }); }
+  
+  
+  
+  
+  const lotOK = () => S.stock < RULE.lotStock;
+  const lotWaiting = () => S.heart >= RULE.max && !S.lot && !S.busy && S.drainT == null;      
+  function lotNote(t) { if (t - (S.lotNoteT || -9) < 3) return; S.lotNoteT = t; fx({ k: 'note', t0: t, txt: `トークンが ${RULE.lotStock}こを 切ったら 抽選だよ`, dur: 3.0 }); ev(t, 'wait'); }
+  function petStart(t) {                 
+    S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
+    if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      
+    comeNear(t);
+  }
+  function lotAuto(t) {                  
+    S.lotGo = true; fx({ k: 'note', t0: t, txt: 'なかよしハートの 抽選！', dur: 2.6 }); ev(t, 'ready'); petStart(t);
+  }
+  function haveToken(t, k) {
     if (S.stock < 1) { fx({ k: 'tagUI', t0: t, x: BTN[k][0], y: BTN[k][1] - 150, txt: 'お世話トークンが たまるまで まってね', size: 30, dur: 1.8 }); ev(t, 'wait'); return false; }
-    S.stock -= 1; S.stockDrop = t; ev(t, 'token'); return true;
+    return true;
   }
   function careLottery() {               
     if (O.lottery) return O.lottery();
@@ -1665,6 +1682,7 @@ const TCCare = (() => {
     return null;
   }
   function pressFeed(t) {
+    if (pushLive()) { pushWait(t); return; }
     cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
@@ -1675,9 +1693,9 @@ const TCCare = (() => {
     S.chooser.pick = kind; S.chooser.pickT = t; ev(t, 'pick');
     at(t + 0.25, tt => {
       S.chooser = null;
-      if (!useToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
+      if (!haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
       const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));
-      S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt }; S.popVal = careLottery();
+      S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt };
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          
       comeNear(tt);
     });
@@ -1763,6 +1781,7 @@ const TCCare = (() => {
   const cleanTargets = () => [...(BR.trash || []).filter(q => q.items && q.out == null).map(o => ({ o })), ...(BR.poops || []).filter(q => !q.sw).map(o => ({ o, poop: true }))];
   const canClean = () => cleanTargets().length > 0;
   function pressClean(t) {
+    if (pushLive()) { pushWait(t); return; }
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
@@ -1771,8 +1790,8 @@ const TCCare = (() => {
       const m = S.trashIn > 0 ? Math.ceil(S.trashIn / 60) : 0;
       fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら おそうじ できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
     }
-    if (!useToken(t, 'clean')) return;
-    S.mode = 'clean'; BR.careHold = true; S.holdUntil = Infinity; S.popVal = careLottery();
+    if (!haveToken(t, 'clean')) return;
+    S.mode = 'clean'; BR.careHold = true; S.holdUntil = Infinity;
     if (tg.some(T => !T.poop)) BR.trashDone = true;          
     for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
     const lp = tg.filter(T => T.poop).pop(), xs = tg.map(T => T.o.x), ys = tg.map(T => T.o.y);
@@ -1876,6 +1895,107 @@ const TCCare = (() => {
   }
 
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [158, 1530], ew: 220, eh: 84, tap: [526, 1232] };
+  let pushCap = null, pushBase = null;
+  const pushLive = () => !!(S.push && S.push.hideT == null);
+  function pushK(t) { const Pn = S.push; if (!Pn) return 0; const u = t - Pn.t0; return u < 0 ? 0 : sm(u / 0.2) * (Pn.hideT != null ? 1 - sm((t - Pn.hideT) / 0.22) : 1); }      
+  function pushOpen(t) {
+    if (pushLive()) return;
+    if (S.demo && !(S.demo.press || []).some(q => q[1] === 'push')) return;      
+    if (S.stock < 1) return;
+    S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 };
+    ev(t, 'pushin'); if (O.onPush) O.onPush(true);
+  }
+  function pushClose(t) { const Pn = S.push; if (!Pn || Pn.hideT != null) return; Pn.hideT = t; if (O.onPush) O.onPush(false); }
+  function pushPress(t) {                
+    const Pn = S.push; if (!Pn || Pn.hideT != null || t < Pn.lock || S.fxHold) return false;
+    if (S.stock < 1) { pushClose(t); return false; }
+    S.stock -= 1; S.stockDrop = t; Pn.n++; Pn.hitT = t; ev(t, 'token');
+    const z = careLottery(), pz = z == null ? null : typeof z === 'object' ? z : { k: 'pt', v: z };
+    Pn.res = pz ? (pz.k === 'pt' ? pz.v : pz.k) : 0;
+    S.fx = S.fx.filter(f => f.k !== 'pointpop' && f.k !== 'rtcue');      
+    if (!pz) ev(t, 'pfo');                                               
+    else if (pz.k === 'pt') { fx({ k: 'pointpop', t0: t, v: pz.v, dur: 2.0 }); if (pz.v >= 200) ev(t, 'dedeen'); else ev(t, 'piron'); if (O.onPrize) O.onPrize(pz); }      
+    else if (pz.k === 'rt') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1 }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      
+    else { Pn.lock = t + 0.5; if (O.onPrize) O.onPrize(pz); }            
+    if (!S.bulk || S.stock < 1) pushClose(t + 0.3);                      
+    return true;
+  }
+  function pushMode(t, bulk) { const Pn = S.push; if (!pushLive() || S.bulk === !!bulk) return; S.bulk = !!bulk; Pn.modeT = t; ev(t, 'button'); if (O.onBulk) O.onBulk(S.bulk); }
+  function pushEnd(t) { const Pn = S.push; if (!pushLive() || !S.bulk || Pn.n < 1) return; ev(t, 'fold'); pushClose(t); }      
+  function pushWait(t) { const Pn = S.push; if (t - Pn.waitT < 1.2) return; Pn.waitT = t; fx({ k: 'tagUI', t0: t, x: PUSHG.x, y: PUSHG.y - 300, txt: '先に PUSH を 押してね', size: 34, dur: 1.6 }); ev(t, 'wait'); }
+  function chip(c, w, h, txt, on, size, pop, btn) {      
+    g.save(); g.translate(c[0], c[1]); g.scale(pop, pop); g.lineWidth = 0.8; const k = 18;
+    pf([[-w / 2 + 5, -h / 2 + 7], [w / 2 + 5, -h / 2 + 7], [w / 2 + 5, h / 2 + 7], [-w / 2 + 5, h / 2 + 7]], 'rgba(40,20,5,0.22)');
+    pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], on ? '#f6c24a' : '#fff8ec');
+    pf([[-w / 2, h * 0.08], [w / 2, h * 0.08], [w / 2, h / 2], [-w / 2, h / 2]], on ? '#eaae32' : '#f8ecd4');
+    pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], on ? '#c98a1c' : '#e6cf9f');
+    if (on) { g.strokeStyle = '#8a5a12'; g.lineWidth = 4; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6); }
+    if (btn) { g.strokeStyle = '#d9b77c'; g.lineWidth = 3; g.strokeRect(-w / 2 + 2.5, -h / 2 + 2.5, w - 5, h - 5); }
+    label(txt, 0, 2, size, on ? '#5b3412' : btn ? '#7a4520' : '#9a7a55', on ? '#fff3cf' : null, on ? 6 : 0);
+    g.restore();
+  }
+  function drawPush(t) {
+    const Pn = S.push; if (!Pn) return;
+    const u = t - Pn.t0; if (u < 0) return;
+    const G = PUSHG, out = Pn.hideT != null ? sm((t - Pn.hideT) / 0.22) : 0;
+    Pn.cov = (Pn.cov || 0) + ((S.fxHold ? 1 : 0) - (Pn.cov || 0)) * 0.3;                      
+    const a = sm(u / 0.16) * (1 - out) * (1 - Pn.cov); if (a <= 0.01) return;
+    const hv = t - Pn.hitT, pd = hv < 0 || hv > 0.34 ? 0 : hv < 0.05 ? hv / 0.05 : hv < 0.12 ? 1 : Math.max(-0.12, 1 - backOut((hv - 0.12) / 0.22));      
+    const s = backOut(u / 0.32) * (1 - 0.2 * out) * (1 + 0.018 * Math.sin(TAU * 0.7 * u)) * (1 - 0.025 * Math.max(0, pd)), w = G.w, h = w * G.ar;
+    g.save(); g.globalAlpha *= a;
+    
+    g.save(); g.translate(G.x, G.y + h * 0.36 * s); g.scale(1, 0.26); g.fillStyle = 'rgba(30,16,4,0.28)'; g.beginPath(); g.arc(0, 0, w * 0.47 * s, 0, TAU); g.fill(); g.restore();
+    
+    if (hv >= 0 && hv < 0.45) { const q = hv / 0.45; g.save(); g.strokeStyle = `rgba(255,255,255,${0.85 * (1 - q)})`; g.lineWidth = 10 * (1 - 0.6 * q); g.beginPath(); g.ellipse(G.x, G.y + 6, w * (0.5 + 0.2 * easeOut(q)), h * (0.49 + 0.19 * easeOut(q)), 0, 0, TAU); g.stroke(); g.restore(); }
+    g.save(); g.translate(G.x, G.y); g.scale(s, s);
+    if (pushCap && pushCap.naturalWidth && pushBase && pushBase.naturalWidth) {
+      g.drawImage(pushCap, -w / 2, -h / 2 + Math.max(-1.6, pd * G.depth), w, h);            
+      g.drawImage(pushBase, -w / 2, -h / 2, w, h);
+    } else {                             
+      const r = w * 0.44, dy = Math.max(0, pd) * G.depth; g.lineWidth = 1;
+      g.fillStyle = '#3a3a3c'; g.beginPath(); g.ellipse(0, h * 0.2, r * 1.08, r * 0.62, 0, 0, TAU); g.fill();
+      g.fillStyle = '#b3201b'; g.beginPath(); g.ellipse(0, h * 0.1 + dy * 0.4, r, r * 0.6, 0, 0, TAU); g.fill();
+      g.fillStyle = '#e8302a'; g.beginPath(); g.ellipse(0, -h * 0.06 + dy, r, r * 0.6, 0, 0, TAU); g.fill();
+    }
+    g.restore();
+    
+    if (Pn.n === 0) { const k = sm((u - 0.3) / 0.25); if (k > 0) { g.save(); g.globalAlpha *= k; tag(G.tap[0], G.tap[1] + 5 * Math.sin(TAU * 0.9 * u), 'タップ！', 40, 1, 1, 0, '#c2362b'); g.restore(); } }
+    
+    const pop = backOut(clamp((u - 0.08) / 0.3, 0, 1));
+    if (pop > 0.01) {
+      g.save(); g.translate(G.tok[0], G.tok[1]); g.scale(pop, pop); panel(-G.tw / 2, -G.th / 2, G.tw, G.th, 20);
+      label('お世話トークン', 0, -30, 27, '#7a4520');
+      const bq = hv >= 0 && hv < 0.4 ? 1 + 0.16 * Math.sin(Math.PI * hv / 0.4) : 1;
+      label('のこり', -62, 22, 28, '#9a7a55'); g.save(); g.translate(34, 20); g.scale(bq, bq); label(String(S.stock), 0, 0, 52, '#3f7f3a', '#fff8ec', 6); g.restore(); label('こ', 96, 24, 26, '#9a7a55');
+      g.restore();
+      
+      const mq = t - Pn.modeT, mp = mq >= 0 && mq < 0.3 ? 1 + 0.08 * Math.sin(Math.PI * mq / 0.3) : 1;
+      chip(G.m1, G.mw, G.mh, '1個 使う', !S.bulk, 36, pop * (!S.bulk ? mp : 1));
+      chip(G.mn, G.mw, G.mh, 'まとめて 使う', S.bulk, 36, pop * (S.bulk ? mp : 1));
+      
+      if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, 'おわる', false, 36, pop, true);
+    }
+    g.restore();
+  }
+
+  
   function cancelAfter(t) {              
     if (S.phase !== 'after') return;
     S.afterSniff = false; S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.forcedWalk = false; BR.hurry = 1; S.holdUntil = -1; mark('Z2', t);
@@ -1883,15 +2003,18 @@ const TCCare = (() => {
     if (BR.mode === 'walk') { BR.mode = 'idle'; BR.until = t + 2; }
   }
   function pressPet(t) {
+    if (pushLive()) { pushWait(t); return; }
     cancelAfter(t);
     S.press.pet = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
     if (t < S.coolUntil) { fx({ k: 'tagUI', t0: t, x: BTN.pet[0] + 40, y: BTN.pet[1] - 150, txt: `あと ${Math.ceil(S.coolUntil - t)}秒`, size: 36, dur: 1.4 }); ev(t, 'wait'); return; }
-    S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
-    if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      
-    comeNear(t);
+    if (stockFull()) maxTag(t);          
+    else if (lotWaiting() && !lotOK()) lotNote(t);      
+    if (lotWaiting() && lotOK()) S.lotGo = true;        
+    petStart(t);
   }
   function pressCall(t, kind) {
+    if (pushLive()) { pushWait(t); return; }
     cancelAfter(t);
     S.press.call = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
@@ -1959,7 +2082,8 @@ const TCCare = (() => {
     const gen = ++S.petGen, live = fn => tt => { if (S.petGen === gen) fn(tt); };      
     cutReacts(t);
     S.got = S.got.filter(q => t - q < 60);
-    const getHeart = S.got.length < RULE.perMin, willLot = getHeart && S.heart + 1 >= RULE.max;      
+    
+    const full = S.heart >= RULE.max, getHeart = !full && S.got.length < RULE.perMin, willLot = (full || getHeart && S.heart + 1 >= RULE.max) && lotOK();
     at(t + 0.25, live(tt => {
       react(rk, rd, tt, { side }); ev(tt, rk);
       const hp = rk === 'sneeze' ? P('nose') : rk === 'swish' ? P('rump') : rk === 'stretch' ? P('withers') : P('poll');
@@ -1976,13 +2100,18 @@ const TCCare = (() => {
       }
     }
     
-    if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
+    if (full) {                          
+      if (willLot) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); } else at(t + 0.5, lotNote);
+    } else if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
     else {
       S.got.push(t); const i = Math.min(S.heart, RULE.max - 1), q = toS([x, y - 24]);
       fx({ k: 'fly', t0: t + 0.15, x: q[0], y: q[1], i, dur: 0.8 }); ev(t + 0.15, 'heart');
       S.heart = Math.min(RULE.max, S.heart + 1);
       at(t + 0.95, tt => { S.heartShow = Math.max(S.heartShow, i + 1); ev(tt, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: tt, x: SLOT(i)[0], y: SLOT(i)[1] }); });
-      if (S.heart >= RULE.max) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      
+      if (S.heart >= RULE.max) {         
+        if (willLot) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); }      
+        else at(t + 1.3, lotNote);       
+      }
     }
     
     if (t - S.petLast > RULE.cool) S.petN = 0;
@@ -1998,9 +2127,11 @@ const TCCare = (() => {
     at(t + 0.9, tt => { react('gather', 1.0, tt); ev(tt, 'gather'); });
     if (win) {
       at(t + 1.7, tt => { react('hop', 2.4, tt); for (let k = 0; k < 2; k++) ev(tt + 0.1 + 1.12 * k, 'frisk', { n: k }); fx({ k: 'burst', t0: tt + 0.35, w: (P('withers') || [BR.x, BR.y - 200]).slice() }); });      
-      at(t + 4.1, tt => { fx({ k: 'unlock', t0: tt, dur: 2.6 }); ev(tt, 'unlock'); });
       
-      at(t + 4.6, tt => { S.stockBump = tt; S.stock = S.stock + RULE.unlock; fx({ k: 'plus', t0: tt, txt: '+' + RULE.unlock }); ev(tt, 'stock'); });
+      
+      const room = () => Math.max(0, Math.min(RULE.unlock, (O.stockMax || RULE.stockMax) - S.stock));
+      at(t + 4.1, tt => { const n = room(); fx({ k: 'unlock', t0: tt, dur: 2.6, n }); if (n > 0) ev(tt, 'unlock'); else ev(tt, 'wait'); });
+      at(t + 4.6, tt => { const n = room(); S.stockBump = tt; if (n > 0) { S.stock += n; fx({ k: 'plus', t0: tt, txt: '+' + n }); ev(tt, 'stock'); } });
       at(t + 2.6, tt => { S.drainT = tt; });
       at(t + 6.6, tt => { S.busy = false; S.lot = null; S.holdUntil = tt + 0.3; });
     } else {
@@ -2082,7 +2213,7 @@ const TCCare = (() => {
     call_c: { press: [[0.9, 'call', 'amae']], cap: [[0.2, 'Z+0.4', '呼ぶ：甘える']], end: 'Z+0.6' },
     
     feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ごはん：エサ・リンゴ・ニンジンから えらぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で からっぽ）']], end: 'Z+0.6' },
-    feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大よろこび'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
+    feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大よろこび'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      
     feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true, pathBase: 'B', path: [[0.7, 1.3, 'awayR', 'headA', false], [1.3, 1.45, 'headA', 'headA', true], [1.45, 2.2, 'headA', 'awayR', false]],
       cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.2', 'おかわりの目 → なでると まんぞく']], end: 'Z+0.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
@@ -2091,8 +2222,8 @@ const TCCare = (() => {
     
     clean_a: { poop: [770, 1240, 0], nibble: true, pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', 'ちりとりへ はき入れる（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
-    clean_b: { pt: 200, trash: [[300, 1010], [760, 980], [520, 1160], [250, 1290], [800, 1300]], press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 5, 0.5, 0.36)],
-      cap: [[0.2, 'C+4.6', '15分ごとに ゴミが 5か所に 散らばる → ちりとりへ はき入れる'], ['C+4.6', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+2.4', '当たり → ピロン']], end: 'Z+2.5' },
+    clean_b: { pt: 200, trash: [[300, 1010], [760, 980], [520, 1160], [250, 1290], [800, 1300]], press: [[0.8, 'clean'], ['Z+1.3', 'push']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 5, 0.5, 0.36)],
+      cap: [[0.2, 'C+4.6', '15分ごとに ゴミが 5か所に 散らばる → ちりとりへ はき入れる'], ['C+4.6', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → デデーン']], end: 'Z+3.6' },
     guide: { press: [[0.8, 'help']], guideEnd: 15.8, cap: [], end: 16.8 },
     clean_c: { poop: [700, 1250, 2, true], pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+3.4', '金のうんち（うんちの 1/20）'], ['C+3.4', 'Z2+0.2', '運がついた！ 高確ゾーン（お世話 5回）']], end: 'Z2+0.4' },
@@ -2340,7 +2471,7 @@ const TCCare = (() => {
   function pre(t, dt) {
     if (S.t0 == null) S.t0 = t;
     const u = t - S.t0;
-    if (S.demo && S.demo.rt) { const R = S.demo.rt; if (u >= R[0] && !R.a) { R.a = 1; S.rtReq = true; } if (u >= R[1] && !R.b) { R.b = 1; S.rtReq = false; } }
+    if (S.demo && S.demo.rt) { const R = S.demo.rt; if (u >= R[0] && !R.a) { R.a = 1; S.rtReq = true; S.fxHold = true; } if (u >= R[1] && !R.b) { R.b = 1; S.rtReq = false; S.fxHold = false; } }
     bannerStep(t);
     
     if (S.zB) {
@@ -2351,7 +2482,7 @@ const TCCare = (() => {
     }
     
     if (S.demo) {
-      for (const pr of (S.demo.press || [])) if (!pr.done && u >= tu(pr[0])) { pr.done = true; if (pr[1] === 'help') { S.press.help = t; S.guide = { t0: t }; ev(t, 'button'); ev(t + 0.1, 'paper'); } else if (pr[1] === 'pet') pressPet(t); else if (pr[1] === 'feed') pressFeed(t); else if (pr[1] === 'pick') pick(t, pr[2]); else if (pr[1] === 'clean') pressClean(t); else pressCall(t, pr[2]); }
+      for (const pr of (S.demo.press || [])) if (!pr.done && u >= tu(pr[0])) { pr.done = true; if (pr[1] === 'help') { S.press.help = t; S.guide = { t0: t }; ev(t, 'button'); ev(t + 0.1, 'paper'); } else if (pr[1] === 'pet') pressPet(t); else if (pr[1] === 'feed') pressFeed(t); else if (pr[1] === 'pick') pick(t, pr[2]); else if (pr[1] === 'clean') pressClean(t); else if (pr[1] === 'push') pushPress(t); else pressCall(t, pr[2]); }
       const f = demoFinger(u), was = S.fdown || false;
       if (f) {
         if (f.down && !was) input('down', f.p[0], f.p[1], t); else if (f.down) input('move', f.p[0], f.p[1], t); else if (was) input('up', f.p[0], f.p[1], t);
@@ -2397,8 +2528,18 @@ const TCCare = (() => {
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
     if (S.readyT != null && t >= S.readyT) { ev(S.readyT, 'ready'); S.readyT = null; S.readyPop = t; }
+    
+    
+    if (u > 2.5 && t - (S.wakeT == null ? -9 : S.wakeT) > 2.5 && lotWaiting() && lotOK() && S.phase === 'idle' && !S.mode && !S.chooser && !S.push && !S.fxHold && !S.demo && !S.guide && !(BR.sl > 0.001) && (!O.lotFree || O.lotFree())
+      && !S.fx.some(f => (f.k === 'pointpop' || f.k === 'rtcue' || f.k === 'luck') && t - f.t0 < (f.dur || 2))) {
+      if (S.lotIdleT == null) S.lotIdleT = t; else if (t - S.lotIdleT >= LOT_WAIT) { S.lotIdleT = null; lotAuto(t); }
+    } else S.lotIdleT = null;
+    if (S.lotGo && S.phase === 'pet' && !S.busy && !S.lot) { S.lotGo = false; if (lotWaiting() && lotOK()) { S.busy = true; at(t + 0.35, lottery); } }      
+    if (S.lotGo && S.phase === 'idle' && !S.mode) S.lotGo = false;
     if (S.drainT != null && t > S.drainT + RULE.max * 0.07 + 0.2) { S.heart = 0; S.heartShow = 0; S.drainT = null; }
     S.stockShow += clamp(S.stock - S.stockShow, -dt * 6, dt * 6);
+    if (S.push && S.push.hideT != null && t > S.push.hideT + 0.3) S.push = null;                              
+    if (pushLive() && S.stock < 1 && !S.fxHold && t > S.push.hitT + 0.35) pushClose(t);                        
     cleanStep(t);
     const pp = props3(t) || tools3(t); if (pp) BR.props = pp; else if (BR.props) BR.props = null;      
   }
@@ -2408,6 +2549,7 @@ const TCCare = (() => {
     drawBanner(t);
     drawCare(t);
     drawUI(t);
+    drawPush(t);
     drawVInfo(t);
     drawChooser(t);
     
@@ -2434,7 +2576,8 @@ const TCCare = (() => {
     BANNER = new Image(); BANNER.src = AP(`tc_items/tc_banner_${kind}.webp`); try { await BANNER.decode(); } catch (e) { }
     S.ban = { kind, showT: null, hideT: null, shown: false };
   }
-  function roulette(on) { S.rtReq = !!on; }      
+  
+  function roulette(on) { S.rtReq = !!on; S.fxHold = !!on; }
   function setHorse(horse, brain) {
     if (S.clean && brain) {              
       const gone = new Set(S.clean.tg.map(T => T.o)); brain.trash = (brain.trash || []).filter(o => !gone.has(o) && o.out == null); brain.poops = (brain.poops || []).filter(q => !gone.has(q) && !q.sw);
@@ -2443,6 +2586,16 @@ const TCCare = (() => {
     HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
   
   function uiHit(x, y) {
+    if (pushLive() && !S.fxHold) {       
+      const G = PUSHG, inR = (c, w, h) => Math.abs(x - c[0]) < w / 2 && Math.abs(y - c[1]) < h / 2;
+      if (((x - G.x) / (G.w * 0.5)) ** 2 + ((y - G.y) / (G.w * G.ar * 0.5)) ** 2 < 1) return 'push';
+      if (inR(G.m1, G.mw, G.mh + 12)) return 'pm:1';
+      if (inR(G.mn, G.mw, G.mh + 12)) return 'pm:n';
+      if (S.bulk && S.push.n >= 1 && inR(G.end, G.ew, G.eh + 12)) return 'pend';
+      if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
+      return null;                       
+    }
+    if (S.push && !S.fxHold) return 'pgone';      
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
     for (const k of ['pet', 'feed', 'clean', 'call']) if (Math.hypot(x - BTN[k][0], y - BTN[k][1]) < BTN_R + 10) return k;
@@ -2452,10 +2605,13 @@ const TCCare = (() => {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
     else if (what === 'help') { S.press.help = t; ev(t, 'button'); ev(t + 0.05, 'paper'); if (O.onHelp) O.onHelp(); }
     else if (what && what.startsWith('pick:')) pick(t, what.slice(5));
+    else if (what === 'push') pushPress(t);
+    else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
+    else if (what === 'pend') pushEnd(t);
   }
   function pointer(kind, x, y, t) {        
-    if (kind === 'down') { const h = uiHit(x, y); S.uiDown = h; if (h) return; }
-    if (kind === 'up' && S.uiDown) { const h = uiHit(x, y); if (h === S.uiDown) press(t, h); S.uiDown = null; return; }
+    if (kind === 'down') { const h = uiHit(x, y); if (h === 'push') { pushPress(t); S.uiDown = '-'; return; } S.uiDown = h; if (h) return; }      
+    if (kind === 'up' && S.uiDown) { const h = uiHit(x, y); if (S.uiDown !== '-' && h === S.uiDown) press(t, h); S.uiDown = null; return; }
     if (S.uiDown) return;
     const w = toW([x, y]); input(kind, w[0], w[1], t);
   }
@@ -2531,7 +2687,7 @@ const TCCare = (() => {
     const pulse = S.lot ? 1 + 0.06 * Math.sin(TAU * 0.9 * (t - S.lot.t0)) * (1 - sm((t - S.lot.t0 - 2.2) / 0.6)) : 1;
     heart(gx + 62, gy + gh / 2 + 4, 36 * pulse, -0.06, 1);
     label('なかよし', gx + 128, gy + 36, 32, '#7a4520', null, 0, 'left');
-    label(`${S.heartShow}/10`, gx + gw - 30, gy + 36, 32, '#c2456f', null, 0, 'right');
+    label(lotWaiting() && S.heartShow >= RULE.max ? `抽選まち ${S.heartShow}/10` : `${S.heartShow}/10`, gx + gw - 30, gy + 36, 32, '#c2456f', null, 0, 'right');      
     const dr = S.drainT != null ? t - S.drainT : -1;
     for (let i = 0; i < RULE.max; i++) {
       const [x, y] = SLOT(i); heartSlot(x, y, 17);
@@ -2547,7 +2703,7 @@ const TCCare = (() => {
     const bu = S.stockBump != null ? (t - S.stockBump) / 0.5 : 2, bs = bu < 1 ? 1 + 0.12 * Math.sin(Math.PI * bu) : 1;
     label('お世話', sx + 24, sy + 36, 28, '#7a4520', null, 0, 'left');
     g.save(); g.translate(sx + sw - 118, sy + 70); g.scale(bs, bs); label(String(Math.round(S.stockShow)), 0, 0, 50, '#3f7f3a', '#fff8ec', 6); g.restore();
-    label('/20', sx + sw - 54, sy + 76, 28, '#9a7a55');
+    label('/' + (O.stockMax || RULE.stockMax), sx + sw - 54, sy + 76, 28, '#9a7a55');
     
     
     if (S.stockDrop != null) { const v = (t - S.stockDrop) / 1.2; if (v < 1) label('−1', O.dropX || sx + sw - 60, sy + shh + 26 + 30 * easeOut(v), 40, '#b0445f', '#fff8ec', 7); }
@@ -2561,6 +2717,8 @@ const TCCare = (() => {
       g.fillStyle = '#fff8ec'; g.beginPath(); g.arc(0, 0, 40, 0, TAU); g.fill(); g.strokeStyle = '#e5cfa8'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 38.5, 0, TAU); g.stroke();
       label('？', 0, 2, 44, '#8a5a2a'); g.restore(); }
     
+    const pk = pushK(t); if (pk > 0.99) return;
+    g.save(); g.globalAlpha *= 1 - pk;
     const items = [['pet', '撫でる'], ['feed', 'ごはん'], ['clean', 'おそうじ'], ['call', '呼ぶ']];
     items.forEach(([k, txt]) => {
       const [x, y] = BTN[k], r = BTN_R, pq = S.press[k] != null ? (t - S.press[k]) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
@@ -2597,6 +2755,7 @@ const TCCare = (() => {
       }
       if (k === 'pet' && S.readyPop != null) { const q = (t - S.readyPop) / 0.6; if (q < 1) { g.save(); g.strokeStyle = `rgba(255,156,188,${0.7 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 8 + 26 * easeOut(q), 0, TAU); g.stroke(); g.restore(); } }
     });
+    g.restore();
   }
   function drawFx(t) {
     S.fx = S.fx.filter(f => t - f.t0 < (f.dur || 3) + 1.5);
@@ -2648,7 +2807,7 @@ const TCCare = (() => {
           g.save(); g.globalAlpha *= 1 - sm((v - 0.6) / 0.4); label(i === 1 ? '♫' : '♪', x, y, 54 - i * 6, '#ffffff', 'rgba(60,110,160,0.85)', 7); g.restore();
         }
       } else if (f.k === 'unlock') {   
-        const d = f.dur; if (u > d) continue; unlockTag(u, d);
+        const d = f.dur; if (u > d) continue; unlockTag(u, d, f.n);
       } else if (f.k === 'crumbs') {   
         const d = 0.8; if (u > d) continue; const q = toS(f.w), s2 = Math.sqrt(z);
         for (let i = 0; i < 8; i++) { const an = -Math.PI / 2 + (hash(i * 2.3 + f.t0) - 0.5) * 2.6, sp = (60 + 70 * hash(i * 4.1)) * s2, x = q[0] + Math.cos(an) * sp * easeOut(u / d), y = q[1] + Math.sin(an) * sp * easeOut(u / d) + 90 * s2 * (u / d) * (u / d);
@@ -2671,13 +2830,17 @@ const TCCare = (() => {
         for (let i = 0; i < 6; i++) { const v = (u - i * 0.15) / 0.8; if (v > 0 && v < 1) star(W / 2 + (hash(i * 9.1) - 0.5) * 640, 640 + (hash(i * 4.4) - 0.5) * 260, 22 * Math.sin(Math.PI * v), v, a); }
       } else if (f.k === 'pointpop') {
         pointPop(f.v, u);
+      } else if (f.k === 'rtcue') {    
+        const d = f.dur; if (u > d) continue; const a = 1 - sm((u - d + 0.25) / 0.25);
+        for (let i = 0; i < 8; i++) { const an = i * TAU / 8 + 0.2, rr = 150 + 190 * easeOut(u / 0.7); star(W / 2 + Math.cos(an) * rr * 1.15, 720 + Math.sin(an) * rr * 0.7, 20 * Math.sin(Math.PI * clamp(u / 0.8, 0, 1)), u * 2 + i, a, i % 2 ? '#fff2bf' : '#f5d06a'); }
+        tag(W / 2, 720 - 20 * easeOut(u / d), 'ルーレット！', 64, a, backOut(u / 0.28), -0.04, '#c2456f');
       } else if (f.k === 'plus') {
         const d = 1.6; if (u > d) continue;
         label(f.txt, W - 26 - 296 + 150, 44 + 140 + 30 - 40 * easeOut(u / d), 44, '#3f7f3a', '#fff8ec', 7);
       }
     }
   }
-  function unlockTag(u, d) {
+  function unlockTag(u, d, n) {        
     const PX = W / 2, PY = 640, a = 1 - sm((u - d + 0.35) / 0.35), rise = 40 * (1 - Math.pow(1 - clamp(u / 1.6, 0, 1), 2));
     const s = backOut(u / 0.3), rot = -0.07 * Math.exp(-u * 6) * Math.cos(u * 18);
     for (const [sx, sy, d0] of [[-250, -80, 0.12], [262, 70, 0.24], [-180, 96, 0.36]]) { const v = (u - d0) / 0.6; if (v > 0 && v < 1) star(PX + sx, PY - rise + sy, 24 * Math.sin(Math.PI * v), v * 1.2, a); }
@@ -2689,8 +2852,8 @@ const TCCare = (() => {
     pf([[w / 2 - c, -h / 2], [w / 2, -h / 2 + c], [w / 2 - c, -h / 2 + c]], '#e2c78e');
     g.lineWidth = 2.5; line([-w / 2, 0], [w / 2, 0], 'rgba(160,110,50,0.3)');
     heart(-w / 2 + 96, 4, 58, -0.08, 1);
-    label('お世話 5回', 54, -30, 72, '#3f8f3a', '#5b3412', 14);
-    label('解放！', 54, 48, 56, '#fffaf0', '#5b3412', 12);
+    if (n === 0) { label('お世話トークンが', 54, -30, 42, '#c2456f', '#5b3412', 10); label('最大だよ！', 54, 48, 56, '#fffaf0', '#5b3412', 12); }
+    else { label('お世話 ' + (n == null ? RULE.unlock : n) + '回', 54, -30, 72, '#3f8f3a', '#5b3412', 14); label('解放！', 54, 48, 56, '#fffaf0', '#5b3412', 12); }
     g.restore();
   }
 
@@ -2703,6 +2866,9 @@ const TCCare = (() => {
     if (o.props !== false) PROPS = await loadProps();      
     carrot = new Image(); carrot.src = AP('tc_items/tc_item_carrot.webp'); carrotG = new Image(); carrotG.src = AP('tc_items/tc_item_carrot_gold.webp');      
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
+    pushCap = new Image(); pushCap.src = AP('tc_push_cap.webp'); pushBase = new Image(); pushBase.src = AP('tc_push_base.webp');      
+    try { await Promise.all([pushCap.decode(), pushBase.decode()]); } catch (e) { }
+    S.bulk = !!o.bulk;
     const bk = O.bg === 'divine' ? 'kamisama' : O.bg === 'abyss' ? 'maboroshi' : null;      
     if (bk) await special(bk);
     for (const f of ['tc_poop1.webp', 'tc_poop2.webp', 'tc_poop3.webp']) { const im = new Image(); im.src = AP(f); try { await im.decode(); POOP.push(im); } catch (e) { } }
@@ -2728,7 +2894,9 @@ const TCCare = (() => {
     window.__events = () => S.ev;
     window.__careDone = () => !!S.demoDone;
   }
-  return { init, pre: (t, dt) => { S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse, view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
+  return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
+    PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
+    view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
 ;
@@ -2776,8 +2944,16 @@ const TCGuide = (() => {
   const RS = { cares: 5, min: 5, limit: 30 };      
   const CARE = [10, 20, 50, 85, 99, 121, 125, 245, 399, 600];      
   const SEC = [
-    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに1つ</b>たまる（最大<b>20こ</b>）</p><p>・「ごはん」「おそうじ」で1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
-    ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのたびに抽選！当たりはお世話のあとに出るよ</p>
+    
+    
+    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに5つ</b>たまる（最大<b>25こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
+    ['押', '#d8352c', 'お世話のあとのPUSH', `<p>・ごはん・おそうじがおわると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
+      <p>・当たりは押したときに出るよ（ハズレは「プフォ」の音だけ）</p>
+      <p>・PUSHの横のスイッチで<b>「1個 使う」「まとめて 使う」</b>を選べる（前に選んだ方をおぼえているよ）</p>
+      <p>　<b>1個 使う</b> → 1回押したらおしまい</p>
+      <p>　<b>まとめて 使う</b> → トークンがあるあいだ、つづけて何回でも押せる（押した回数ぶんトークンがへる）。やめるときは「おわる」</p>
+      <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数ぶん数えるよ）</p>`],
+    ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
       ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
@@ -2786,7 +2962,9 @@ const TCGuide = (() => {
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
       <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
-      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>`],
+      <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
+      <p>・抽選は<b>お世話トークンが20こ未満</b>のときだけ。<b>20こ以上</b>（最大の25こも）のときは、ハートが10こたまっても<b>抽選まち</b> → PUSHを押してトークンが<b>20こを切ったら</b>抽選がはじまるよ</p>
+      <p class="note">トークンは最大25こまで。25このときに撫でると「お世話トークンが最大だよ！」と出るよ</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
     ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
@@ -2815,18 +2993,24 @@ const TCGuide = (() => {
     root.innerHTML = `<div class="bk"></div><div class="sh"><div class="hd"><b>トレーニングセンターの説明書</b><div class="x">✕</div></div><div class="bd"><div class="in">` +
       SEC.map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
     el.appendChild(root); inner = root.querySelector('.in'); body = root.querySelector('.bd');
-    root.querySelector('.x').addEventListener('click', () => close(true));
-    root.querySelector('.bk').addEventListener('click', () => close(true));
+    
+    
+    
+    
+    const shut = () => { if (performance.now() - openedAt >= GUARD * 1000) close(true); };
+    root.querySelector('.x').addEventListener('click', shut);
+    root.querySelector('.bk').addEventListener('click', shut);
     body.style.overflowY = 'auto';
   }
-  let anim = null, onClose = null;
+  let anim = null, onClose = null, openedAt = -1e9;
+  const GUARD = 0.45;                  
   function tween(a, b, dur, done) {           
     if (anim) cancelAnimationFrame(anim); const t0 = performance.now();
     const f = () => { const u = Math.min(1, (performance.now() - t0) / (dur * 1000)); set(a + (b - a) * u); if (u < 1) anim = requestAnimationFrame(f); else { anim = null; if (done) done(); } };
     anim = requestAnimationFrame(f);
   }
   function open(el, opt) {
-    if (!root) build(el); root.style.display = 'flex';
+    if (!root) build(el); root.style.display = 'flex'; openedAt = performance.now();
     if (opt && opt.anim) { onClose = opt.onClose || null; body.scrollTop = 0; set(0.001); tween(0, 1, 0.35); } else set(1);
   }
   function set(k) {                    
@@ -2837,10 +3021,16 @@ const TCGuide = (() => {
   function scroll(f) { if (body) body.scrollTop = Math.max(0, Math.min(1, f)) * (body.scrollHeight - body.clientHeight); }
   function close(a) { if (a && root && root.style.display !== 'none') tween(1, 0, 0.3, () => { if (onClose) { const f = onClose; onClose = null; f(); } }); else set(0); }
   function isOpen() { return !!root && root.style.display !== 'none'; }
-  return { open, set, scroll, close, isOpen, get el() { return root; } };
+  return { open, set, scroll, close, isOpen, GUARD, get el() { return root; } };
 })();
 
 ;
+
+
+
+
+
+
 
 
 
@@ -2894,6 +3084,44 @@ const TCFX = (() => {
   }
   const se = (o, name, gain, lag) => { try { if (o.se) o.se(name, gain, lag); } catch (e) {   } };
   const DIMR = { morning: 0.42, evening: 0.38, night: 0.26, abyss: 0.26, divine: 0.36 };      
+
+  
+  
+  
+  
+  
+  
+  
+  const PCH = { dark: 0.82, len: 1.02, calm: 0.4 };      
+  let PCN;                             
+  function pcHtml() {
+    if (PCN !== undefined) return PCN;
+    PCN = null;
+    try { const A = window.__FX, h = A && A.reveal && A.reveal.sd, e = h && new DOMParser().parseFromString(h, 'text/html').querySelector('.pc'); if (e) PCN = e.outerHTML; } catch (er) {   }
+    return PCN;
+  }
+  const pcCalm = () => { try { return !!(window.TengelFx && window.TengelFx.calm && window.TengelFx.calm()); } catch (er) { return false; } };
+  function pcOpen(cv, under) {         
+    const st = cv.parentNode, calm = pcCalm(), h = calm ? null : pcHtml(), el = document.createElement('div');
+    el.className = 'tcpc'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#000;pointer-events:none';
+    if (h) el.innerHTML = `<div class="fxs" style="--fxk:${((st.clientWidth || W) / W).toFixed(4)}"><div class="ov fz">${h}</div></div>`;
+    st.insertBefore(el, under ? cv : cv.nextSibling);
+    return { el, t0: performance.now(), calm: !h, dark: h ? PCH.dark : PCH.calm };
+  }
+  function pcClose(pc, fade) {         
+    if (!pc || !pc.el || pc.gone) return; pc.gone = true; const el = pc.el;
+    if (!(fade > 0)) { el.remove(); return; }
+    el.style.transition = `opacity ${fade}s linear`; el.style.opacity = '0'; setTimeout(() => el.remove(), fade * 1000 + 80);
+  }
+  const until = ms => new Promise(ok => { const f = () => (performance.now() >= ms ? ok() : requestAnimationFrame(f)); f(); });
+  
+  async function puchun(cv, o) {
+    o = o || {}; const pc = pcOpen(cv, !!o.under); if (!pc.calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);
+    await until(pc.t0 + pc.dark * 1000); setTimeout(() => pcClose(pc, 0.2), Math.max(0, (o.keep || 0) * 1000));
+    return pc;
+  }
+  const PCH_GAIN = 0.85, BIG_GAIN = 0.5;      
 
   
   const RT_STYLE = {
@@ -3070,14 +3298,131 @@ const TCFX = (() => {
       g.restore();
     }
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const TELOP = { src: 'tc_telop_big.webp', w: 372, ar: 742 / 1110, cx: W / 2, cy: 278, panel: [0.1532, 0.4555, 0.8405, 0.7925], slam: 0.24, z0: 1.9, fade: 0.24, rise: 0.4, num: 0.3, get: 0.55, hold: 1.2, spin: 0.14, sweep: [1.6, 3.2, 0.9] };
+  const BIGCONF = ['#ffd65c', '#f6b73c', '#fff4cf', '#e8452e', '#ffe9a8'];
+  const comma = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  let TSH = null;                       
+  function bigCard(w, h) {
+    const [x0, y0, x1, y1] = TELOP.panel, l = -w / 2 + x0 * w - 8, r = -w / 2 + x1 * w + 8, t = -h / 2 + y0 * h - 7, b = -h / 2 + y1 * h + 7;
+    poly([[l - 8, t - 8], [r + 8, t - 8], [r + 8, b + 8], [l - 8, b + 8]], '#c8262b'); poly([[l - 3, t - 3], [r + 3, t - 3], [r + 3, b + 3], [l - 3, b + 3]], '#f3c33d'); poly([[l, t], [r, t], [r, b], [l, b]], '#fbe5c1');
+    label('大量ポイント', 0, -h / 2 + h * 0.25, 52, '#ffd65c', '#a81818', 12);
+  }
+  function drawBig(im, v, val, calm) {
+    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
+    
+    g.save(); g.fillStyle = '#060302'; g.fillRect(0, 0, W, H);
+    const bg = g.createRadialGradient(cx, cy, 20, cx, cy, 470);
+    bg.addColorStop(0, `rgba(255,190,60,${0.95 * L})`); bg.addColorStop(0.3, `rgba(224,82,20,${0.85 * L})`); bg.addColorStop(0.62, `rgba(126,16,10,${0.7 * L})`); bg.addColorStop(1, `rgba(36,4,4,${0.5 * L})`);
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    
+    g.globalCompositeOperation = 'lighter';
+    for (const [n, half, dir, al, len] of [[18, 0.085, 1, 0.42, 560], [9, 0.035, -0.7, 0.34, 620]]) {
+      const gr = g.createRadialGradient(cx, cy, 30, cx, cy, len);
+      gr.addColorStop(0, `rgba(255,232,140,${al * L})`); gr.addColorStop(0.5, `rgba(255,200,90,${al * 0.55 * L})`); gr.addColorStop(1, 'rgba(255,170,60,0)');
+      g.fillStyle = gr; g.beginPath();
+      for (let i = 0; i < n; i++) { const a = i / n * TAU + rot * dir; g.moveTo(cx, cy); g.arc(cx, cy, len, a - half, a + half); g.closePath(); }
+      g.fill();
+    }
+    
+    const br = calm ? 1 : 0.92 + 0.08 * Math.sin(TAU * v / 2.6), gl = g.createRadialGradient(cx, cy, 10, cx, cy, 250);
+    gl.addColorStop(0, `rgba(255,248,214,${0.7 * L * br})`); gl.addColorStop(0.5, `rgba(255,214,120,${0.34 * L * br})`); gl.addColorStop(1, 'rgba(255,180,70,0)');
+    g.save(); g.translate(cx, cy); g.scale(1.3, 0.82); g.translate(-cx, -cy); g.fillStyle = gl; g.fillRect(-W, -H, 3 * W, 3 * H); g.restore();      
+    g.restore();
+    if (!calm) confetti(BIGCONF, Math.max(0, v - 0.2), sm((v - 0.2) / 0.5), W, H);      
+    
+    const sl = T.slam; let s;
+    if (calm) s = 1.04 - 0.04 * sm(v / 0.5);
+    else if (v < sl) { const q = v / sl; s = T.z0 - (T.z0 - 1) * q * q; }
+    else { const q = clamp((v - sl) / 0.32, 0, 1); s = 1 - 0.06 * Math.sin(Math.PI * q) * (1 - q); }
+    if (!calm) { const q = (v - sl) / 0.55; if (q > 0 && q < 1) {      
+      g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = `rgba(255,236,170,${0.45 * (1 - q)})`; g.lineWidth = 7 - 5 * q;
+      g.beginPath(); g.ellipse(cx, cy, 150 + 230 * easeOut(q), 100 + 150 * easeOut(q), 0, 0, TAU); g.stroke(); g.restore(); } }
+    g.save(); g.globalAlpha *= calm ? sm(v / 0.5) : sm(v / T.fade); g.translate(cx, cy); g.scale(s, s);
+    if (im) {
+      const sw = calm || v < T.sweep[0] ? -1 : mod(v - T.sweep[0], T.sweep[1]) / T.sweep[2];      
+      if (sw >= 0 && sw < 1) {
+        const pw = Math.max(1, Math.round(w * PX)), ph = Math.max(1, Math.round(h * PX));
+        if (!TSH) TSH = document.createElement('canvas');
+        if (TSH.width !== pw || TSH.height !== ph) { TSH.width = pw; TSH.height = ph; }
+        const q = TSH.getContext('2d'); q.globalCompositeOperation = 'source-over'; q.clearRect(0, 0, pw, ph); q.drawImage(im, 0, 0, pw, ph);
+        q.globalCompositeOperation = 'source-atop';
+        const x = (-0.3 + 1.6 * sw) * pw, bw = 0.15 * pw, gs = q.createLinearGradient(x - bw, 0, x + bw, 0);
+        gs.addColorStop(0, 'rgba(255,255,255,0)'); gs.addColorStop(0.5, 'rgba(255,255,236,0.5)'); gs.addColorStop(1, 'rgba(255,255,255,0)');
+        q.save(); q.transform(1, 0, -0.35, 1, 0.35 * ph / 2, 0); q.fillStyle = gs; q.fillRect(x - bw, -ph, 2 * bw, 3 * ph); q.restore();
+        g.drawImage(TSH, -w / 2, -h / 2, w, h);
+      } else g.drawImage(im, -w / 2, -h / 2, w, h);
+    } else bigCard(w, h);
+    
+    const nv = v - T.num;
+    if (nv > 0) {
+      const [px0, py0, px1, py1] = T.panel, bx = -w / 2 + (px0 + px1) / 2 * w, by = -h / 2 + (py0 + py1) / 2 * h, bw = (px1 - px0) * w, bh = (py1 - py0) * h;
+      
+      const txt = comma(val), S1 = 64, S2 = 46, gap = 4, EW = 13;
+      g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+      g.font = `900 ${S1}px ${SERIF}`; const m1 = g.measureText(txt), w1 = m1.width, asc = m1.actualBoundingBoxAscent > 0 ? m1.actualBoundingBoxAscent : S1 * 0.74, dsc = Math.max(0, m1.actualBoundingBoxDescent || 0);
+      g.font = `900 ${S2}px ${SERIF}`; const w2 = g.measureText('P').width;
+      const tot = w1 + gap + w2, sc = Math.min(bw * 0.92 / (tot + EW), bh * 0.94 / (asc + dsc + EW)) * (calm ? 1 : 0.6 + 0.4 * backOut(nv / 0.28)), yb = (asc - dsc) / 2;
+      g.save(); g.globalAlpha *= sm(nv / 0.12); g.translate(bx, by); g.scale(sc, sc); g.lineJoin = 'round'; g.strokeStyle = '#4a1a06';
+      const gf = g.createLinearGradient(0, yb - asc, 0, yb); gf.addColorStop(0, '#fff3a6'); gf.addColorStop(0.5, '#ffd034'); gf.addColorStop(1, '#f08c12');
+      for (const [t, x, size, ew] of [[txt, -tot / 2, S1, EW], ['P', -tot / 2 + w1 + gap, S2, 11]]) { g.font = `900 ${size}px ${SERIF}`; g.lineWidth = ew; g.strokeText(t, x, yb); g.fillStyle = gf; g.fillText(t, x, yb); }
+      g.restore();
+    }
+    g.restore();
+    
+    for (let i = 0; i < 12; i++) {
+      const ang = i / 12 * TAU + 0.4 * hash(i + 2), x = cx + Math.cos(ang) * w * (0.5 + 0.1 * hash(i + 5)), y = cy + Math.sin(ang) * h * (0.6 + 0.16 * hash(i + 8));
+      const q = calm ? 0.5 : 0.5 + 0.5 * Math.sin(TAU * (v / (1.6 + 0.9 * hash(i + 11)) + hash(i + 3)));
+      sparkle(x, y, (7 + 9 * hash(i + 13)) * (0.35 + 0.65 * q), 0.9 * L * (0.3 + 0.7 * q));
+    }
+    
+    const gv = v - T.get;
+    if (gv > 0) {
+      g.save(); g.globalAlpha *= sm(gv / 0.12); g.translate(cx, cy + h / 2 + 44); const k = calm ? 1 : backOut(gv / 0.3); g.scale(k, k);
+      const gf = g.createLinearGradient(0, -24, 0, 24); gf.addColorStop(0, '#fffbe6'); gf.addColorStop(0.55, '#ffe27a'); gf.addColorStop(1, '#f5a623');
+      label('GET!!', 0, 0, 58, gf, '#3a1206', 13); g.restore();
+    }
+  }
+
+  
+  async function bigFrame(cv, v, val, calm, noImg) {
+    const im = noImg ? null : await img(TELOP.src);
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    drawBig(im, v, val, !!calm); g.setTransform(1, 0, 0, 1, 0, 0);
+    return !!im;
+  }
+
   async function roulette(cv, o) {
     const th = RT_STYLE[o.th] ? o.th : 'normal', I = await rtLoad(th);
     if (!GEO || !GEO[th]) return;
     const Gm = GEO[th], r = { th, a: o.a, b: o.b, win: o.win ? 1 : 0, HIT: null, S0: null, S1: null }, dim = DIMR[o.bg] != null ? DIMR[o.bg] : 0.4;
+    
+    
+    
+    const val = r.win ? r.b : r.a, high = val >= Math.max(r.a, r.b), calm = pcCalm(), P0 = 0.25, PD = calm || !pcHtml() ? PCH.calm : PCH.dark;
+    const telop = high ? await img(TELOP.src) : null;
+    let pc = null, RV = null;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
-      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; }
+      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!high) RV = r.S1 + 0.4; }
+      if (high && RV != null && u >= RV) {                    
+        if (pc) { pcClose(pc, 0.2); pc = null; }
+        drawBig(telop, u - RV, val, calm);
+        return { end: RV + TELOP.hold };
+      }
       const app = sm(u / 0.45);
       g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(16,10,6,${dim})`; g.fillRect(0, 0, W, H); g.restore();
       g.save(); g.globalAlpha *= app;
@@ -3089,12 +3434,13 @@ const TCFX = (() => {
       drawFace(r, Gm, ang, r.S1 != null ? sm((u - r.S1 - 0.1) / 0.4) : 0);
       const P = Gm.parts.ptr; if (I.ptr) g.drawImage(I.ptr, P.x, P.y, P.w, P.h);
       drawLever(r, I, Gm, u); drawChev(r, Gm, u); drawTap(r, Gm, u);
-      if (r.S1 != null && u > r.S1 + 0.4) {
-        const v = u - r.S1 - 0.4; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
-        drawGet(r, Gm, r.win ? r.b : r.a, v / 0.45);
+      if (RV != null && u > RV) {                             
+        const v = u - RV; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
+        drawGet(r, Gm, val, v / 0.45);
       }
       g.restore();
-      return { end: r.S1 != null ? r.S1 + 1.2 : null };
+      if (high && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; }      
+      return { end: RV != null ? RV + (high ? TELOP.hold : 0.8) : null };
     }, (u, st, last) => {
       if (r.HIT != null && last < r.HIT && u >= r.HIT) se(o, 'tc_se_rt_lever.m4a', 1, 0);
       if (r.S0 != null && u >= r.S0 && u <= r.S1 + 0.05) {          
@@ -3106,13 +3452,15 @@ const TCFX = (() => {
         }
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
-      if (r.S1 != null && last < r.S1 + 0.4 && u >= r.S1 + 0.4) se(o, 'tc_se_rt_confirm.m4a', 1, 0);
+      if (high && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    
+      if (RV != null && last < RV && u >= RV) se(o, high ? 'tc_se_doon.m4a' : 'sfx_big.m4a', high ? 1 : BIG_GAIN, 0);      
     });
+    pcClose(pc, 0);
   }
 
   
   const IW = 1086, IH = 1448, TKK = Math.max(W / IW, H / IH), TOX = (W - IW * TKK) / 2, TOY = (H - IH * TKK) / 2;
-  const FALL0 = 0.35, FALL = 0.26, LAND = FALL0 + FALL, TAPSHOW = LAND + 0.7, OPEN = 1.25, HOLD = 0.35, REVEAL = 0.95;
+  const FALL0 = 0.35, FALL = 0.26, OPEN = 1.25, HOLD = 0.35, REVEAL = 0.95;      
   const TKPOS = { 1: [[0, 0, 0, 1.0]], 2: [[-168, -0.1, 14, 0.78], [168, 0.1, 14, 0.78]], 3: [[-248, -0.2, 50, 0.66], [0, 0, 0, 0.7], [248, 0.2, 50, 0.66]] };
   function goldLight(u, k, beamW, open) {
     if (k <= 0) return;
@@ -3201,29 +3549,38 @@ const TCFX = (() => {
     g.restore();
   }
   async function ticket(cv, o) {
+    
+    
+    
+    let pc = null;
+    if (o.puchun) { pc = pcOpen(cv, true); if (!pc.calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0); }
     const [closed, open_, tk] = await Promise.all([img('tk_door_closed.webp'), img('tk_door_open.webp'), img('tk_ticket.webp')]);
     const n = Math.max(1, Math.min(3, o.n | 0)), pos = TKPOS[n], dim = (DIMR[o.bg] != null ? DIMR[o.bg] : 0.4) + 0.08;
     const T = { tap: null, get0: null };
-    await play(cv, Object.assign({ tapMin: TAPSHOW }, o), (u, st) => {
-      if (st.tap != null && T.tap == null) T.tap = Math.max(st.tap, TAPSHOW);
+    if (pc) await until(pc.t0 + pc.dark * 1000);
+    const F0 = pc ? 0.03 : FALL0, LD = F0 + FALL, TS = LD + 0.7;      
+    try {
+    await play(cv, Object.assign({ tapMin: TS }, o), (u, st) => {
+      if (pc && u > LD + 0.34) { pcClose(pc, 0); pc = null; }
+      if (st.tap != null && T.tap == null) T.tap = Math.max(st.tap, TS);
       const uo = T.tap != null ? u - T.tap : -1, get0 = T.tap != null ? T.tap + OPEN + HOLD + 0.55 : null;
       g.fillStyle = `rgba(18,10,4,${dim * sm(u / 0.45)})`; g.fillRect(0, 0, W, H);
-      const p = clamp((u - FALL0) / FALL, 0, 1), q = (u - LAND) / 0.3;
-      const yOff = u < LAND ? -H * (1 - p * p) : -10 * Math.sin(Math.PI * clamp(q, 0, 1)) * (1 - clamp(q, 0, 1));
+      const p = clamp((u - F0) / FALL, 0, 1), q = (u - LD) / 0.3;
+      const yOff = u < LD ? -H * (1 - p * p) : -10 * Math.sin(Math.PI * clamp(q, 0, 1)) * (1 - clamp(q, 0, 1));
       const zoom = uo > 0 ? (uo < OPEN + HOLD ? 1 + 0.08 * smoother(uo / (OPEN + HOLD)) : 1 + 0.08 * (1 - smoother((uo - OPEN - HOLD) / REVEAL))) : 1;
       const opened = uo >= OPEN + HOLD * 0.5;
-      if (u >= FALL0) {
+      if (u >= F0) {
         g.save(); g.translate(W / 2, H / 2 + yOff); g.scale(zoom, zoom); g.translate(-W / 2, -H / 2);
         const im = opened ? open_ : closed; if (im) g.drawImage(im, TOX, TOY, IW * TKK, IH * TKK);
         g.save(); g.translate(TOX, TOY); g.scale(TKK, TKK);
-        const lk = opened ? 0.75 + 0.25 * sm((uo - OPEN - HOLD - REVEAL * 0.3) / 0.8) : sm((u - LAND - 0.1) / 0.6);
+        const lk = opened ? 0.75 + 0.25 * sm((uo - OPEN - HOLD - REVEAL * 0.3) / 0.8) : sm((u - LD - 0.1) / 0.6);
         const ow = uo > 0 && !opened ? smoother(uo / OPEN) : 0;
         goldLight(u, lk, 34 + 520 * Math.pow(ow, 2.2), ow);
-        if (u >= LAND) dust(u - LAND);
+        if (u >= LD) dust(u - LD);
         g.restore(); g.restore();
       }
       g.save(); g.translate(TOX, TOY); g.scale(TKK, TKK);
-      tkTap(u - TAPSHOW, sm((u - TAPSHOW) / 0.3) * (uo >= 0 ? 1 - sm(uo / 0.18) : 1));
+      tkTap(u - TS, sm((u - TS) / 0.3) * (uo >= 0 ? 1 - sm(uo / 0.18) : 1));
       if (uo >= 0 && uo < 0.6) { g.save(); g.strokeStyle = `rgba(255,246,210,${0.8 * (1 - uo / 0.6)})`; g.lineWidth = 10; g.beginPath(); g.arc(IW / 2, 1268, 60 + 260 * easeOut(uo / 0.6), 0, TAU); g.stroke(); g.restore(); }
       g.restore();
       const wh = uo < 0 ? 0 : uo < OPEN ? Math.pow(smoother(uo / OPEN), 1.6) : uo < OPEN + HOLD ? 1 : 1 - smoother((uo - OPEN - HOLD) / REVEAL);
@@ -3246,9 +3603,9 @@ const TCFX = (() => {
       return { end: get0 != null ? get0 + 0.75 + 0.28 * (pos.length - 1) + 0.6 : null };
     }, (u, st, last) => {
       const cross = x => last < x && u >= x;
-      if (cross(FALL0)) se(o, 'tc_se_tk_fall.m4a', 1, 0);
-      if (cross(LAND)) se(o, 'tc_se_tk_land.m4a', 1, 0);
-      if (cross(TAPSHOW)) se(o, 'tc_se_tk_tapshow.m4a', 1, 0);
+      if (cross(F0)) se(o, 'tc_se_tk_fall.m4a', 1, 0);
+      if (cross(LD)) se(o, 'tc_se_tk_land.m4a', 1, 0);
+      if (cross(TS)) se(o, 'tc_se_tk_tapshow.m4a', 1, 0);
       if (T.tap != null) {
         const tt = T.tap, get0 = tt + OPEN + HOLD + 0.55;
         if (cross(tt)) { se(o, 'tc_se_tk_tap.m4a', 1, 0); se(o, 'tc_se_tk_open.m4a', 1, 0); }
@@ -3258,6 +3615,7 @@ const TCFX = (() => {
         if (cross(get0 + 0.75 + 0.28 * (pos.length - 1))) se(o, 'tc_se_tk_get.m4a', 1, 0);
       }
     });
+    } finally { pcClose(pc, 0); }
   }
   function confettiTk(t, k) {
     if (k <= 0) return; const cols = ['#ffd65c', '#fff2bf', '#f4a39b', '#f2c24f', '#ffe9a8'];
@@ -3268,8 +3626,8 @@ const TCFX = (() => {
       g.restore();
     }
   }
-  function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp'].forEach(img); }
-  return { roulette, ticket, preload };
+  function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
+  return { roulette, ticket, puchun, preload, PCH, TELOP, bigFrame };
 })();
 window.TCFX = TCFX;
 
@@ -3513,7 +3871,9 @@ const TCApp = (() => {
   const COLORS = ['brown', 'madara', 'black', 'white', 'hada'];
   const COLOR_JA = { brown: 'ブラウン', madara: 'まだら', black: 'ブラック', white: 'ホワイト', hada: '肌色' };
   const BIG = 1.7;                                    
-  const TOKEN_MIN = 10, TOKEN_MAX = 20;               
+  
+  
+  const TOKEN_MIN = 10, TOKEN_STEP = 5, TOKEN_MAX = 25;
   const TICK = 120;                                   
   
   
@@ -3549,7 +3909,7 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1 });      
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false });      
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -3577,7 +3937,7 @@ const TCApp = (() => {
   function accrue(now) {                              
     if (st.stock >= TOKEN_MAX) { st.stockAt = now; return 0; }
     const n = Math.floor((now - st.stockAt) / (TOKEN_MIN * 60000)); if (n <= 0) return 0;
-    const add = Math.min(n, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;
+    const add = Math.min(n * TOKEN_STEP, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;      
   }
 
   
@@ -3608,9 +3968,11 @@ const TCApp = (() => {
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
-  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron' };      
+  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron', pushin: 'stock' };      
   function onCareEvent(e) {
-    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; touch(); later.push(() => growCheck()); }      
+    
+    
+    if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; if (TCCare.on) st.stock = TCCare.S.stock; touch(); save(); later.push(() => growCheck()); }      
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
     if (!nm) return;
     const lag = Math.max(0, e.t - clock());
@@ -3764,7 +4126,7 @@ const TCApp = (() => {
   }
   function trashStep(gms, t) {                          
     if (BR && BR.trashDone) { BR.trashDone = false; st.trash = []; st.trashAt = gms + TRASH_MIN * 60000; touch(); save(); }
-    if (BR && !st.trash.length && gms >= st.trashAt && !busy && !resetting && careIdle() && !panelOpen() && !(BR.trash && BR.trash.length)) spawnTrash(t, t < 4);
+    if (BR && !st.trash.length && gms >= st.trashAt && !busy && !resetting && careFree() && !panelOpen() && !(BR.trash && BR.trash.length)) spawnTrash(t, t < 4);
     if (TCCare.on) TCCare.S.trashIn = st.trash.length ? 0 : Math.max(0, st.trashAt - gms) / 1000;
   }
 
@@ -3796,7 +4158,13 @@ const TCApp = (() => {
     msg('また 来てね… と 帰って いったよ', 2.6);
   }
   
-  const careIdle = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      
+  const careFree = () => !TCCare.on || (TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !TCCare.S.chooser);      
+  
+  
+  
+  
+  
+  const careIdle = () => careFree() && !(TCCare.on && TCCare.S.push);
   const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
@@ -3804,8 +4172,8 @@ const TCApp = (() => {
   function resetStep(gms, dt, t) {
     const rs = st.rs;
     if (rs.at) rs.el = (+rs.el || 0) + dt;
-    if (!rs.at && rs.n >= RESET_CARES && careIdle() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      
-    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careIdle() && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
+    if (!rs.at && rs.n >= RESET_CARES && careFree() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      
+    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careFree() && !st.pend && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
   }
   let forceNext;                               
   function nextHorse() {                       
@@ -3860,10 +4228,13 @@ const TCApp = (() => {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
-        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }
+        SND.preload(['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      
+        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }      
       } else if (z.k === 'tk') {
         const n = z.n || 1;
-        try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se }); } finally { give(z); paintHead(); }
+        
+        
+        try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se, puchun: true }); } finally { give(z); paintHead(); }
         msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で\n壁紙か ${TKP()}P を\n選べるよ`, 4.4);      
       }
     } finally { busy = false; TCCare.roulette(false); }
@@ -3888,7 +4259,7 @@ const TCApp = (() => {
     info() {
       const S = TCCare.S;
       return { visit: st.visit ? st.visit.kind : null, left: st.visit ? visitLeft(tnow()) : null, stock: S.stock, heart: S.heart, high: S.high || 0, tickets: st.tickets || 0, cares: st.cares, color: COLOR_JA[COLORS[st.color % COLORS.length]],
-        prize: testPrize, gold: testGold, flags: Object.assign({}, S.test || {}), trash: (BR && BR.trash ? BR.trash.length : 0), poops: (BR && BR.poops ? BR.poops.length : 0), free: testFree() };
+        prize: testPrize, gold: testGold, flags: Object.assign({}, S.test || {}), trash: (BR && BR.trash ? BR.trash.length : 0), poops: (BR && BR.poops ? BR.poops.length : 0), free: testFree(), push: !!S.push };      
     },
     
     async visit(kind) {
@@ -3910,9 +4281,9 @@ const TCApp = (() => {
       if (TCCare.S.stock < 1) TEST.tokens();          
       return 'ok';
     },
-    tokens() {
+    tokens(n) {                           
       if (!testOn()) return 'off';
-      const S = TCCare.S; st.stock = TOKEN_MAX; st.stockAt = tnow(); S.stock = TOKEN_MAX; S.stockBump = clock(); touch(); save(); return 'ok';
+      const S = TCCare.S; st.stock = n == null ? Math.max(st.stock, TOKEN_MAX) : Math.max(0, Math.min(TOKEN_MAX, Math.round(n))); st.stockAt = tnow(); S.stock = st.stock; S.stockBump = clock(); touch(); save(); return 'ok';
     },
     
     heart(win) {
@@ -3979,12 +4350,13 @@ const TCApp = (() => {
     const ms = Date.now(), gms = tnow();
     
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
-    if (accrue(gms) > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; }
+    const got = accrue(gms);
+    if (got > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; S.fx.push({ k: 'plus', t0: t, txt: '+' + got }); }      
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (!resetting) trashStep(gms, t);
     if (BR && !st.visit) BR.tod = tod();
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       
-    if (st.visit && visitLeft(gms) <= 0 && !busy && careIdle() && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      
+    if (st.visit && visitLeft(gms) <= 0 && !busy && careFree() && !st.pend && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      
     else if (!resetting) resetStep(gms, dt, t);
     if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms) } : null;      
     if (resetting) {   }
@@ -4028,15 +4400,18 @@ const TCApp = (() => {
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); } });
+      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+      stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
+      lotFree: () => !busy && !resetting && !panelOpen() && !st.pend });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
+    if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
     nextTick = clock() + TICK;
-    SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a']);
+    SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      
   }
   async function open(opt) {
     SND.unlock();
     try {
-      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; if (BR && careIdle()) BR.trash = st.trash.map(q => trashLive(q)); }
+      if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; S.wakeT = clock(); if (BR && careFree()) BR.trash = st.trash.map(q => trashLive(q)); }
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
@@ -4054,7 +4429,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
