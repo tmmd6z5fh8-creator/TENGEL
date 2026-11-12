@@ -19,19 +19,32 @@ from raster import Camera, Light, render                                       #
 
 NOLIGHT = [Light((0.0, 1.0, 0.0), (0.0, 0.0, 0.0), 0.0, shadow=False)]           # G バッファだけ（光・影・AO は ここで 計算）
 
-DEF_HORSE = '/home/claude/work/horse_in/new/Violet_Nightmare_Meshy_AI_2026-11-01_58c781.glb'
-DEF_HOOF = '/home/claude/work/horse_in/new/Violet_Hoof_Flame_Meshy_AI_2026-11-01_862a69.glb'
+# 第4.163版（まさちゃん 2026/11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」）：顔の 馬は Violet_Nightmane（むらさき黒の 胸像・
+#   うしろへ 大きく なびく むらさきの たてがみ・白むらさきに 光る 目・首は はじめから ななめ）。SD_HORSE_MODEL=nightmare で 前の 馬（Violet_Nightmare：第4.118版〜第4.162版）
+GLB_DIR = os.environ.get('SD_GLB_DIR', '/home/claude/work/sd163/orig')
+HORSE_KIND = os.environ.get('SD_HORSE_MODEL', 'nightmane')
+assert HORSE_KIND in ('nightmane', 'nightmare'), HORSE_KIND
+DEF_HORSE = os.path.join(GLB_DIR, 'nightmane.glb' if HORSE_KIND == 'nightmane' else 'nightmare_old.glb')
+DEF_HOOF = os.path.join(GLB_DIR, 'hoof.glb')
 HORSE_GLB = os.environ.get('SD_HORSE_GLB', DEF_HORSE)
 HOOF_GLB = os.environ.get('SD_HOOF_GLB', DEF_HOOF)
 SS_FACE = int(os.environ.get('SD_GLB_SS', '2'))                                # 顔の 3D の なめらかさ（2 で 4倍の 点）
 
-# この 馬（Violet_Nightmare）の だいじな 点（モデルの 座標・+z が 前・+y が 上）。前から 描いて 目の 光る 所・いちばん 前の 点などを はかった
-LM = dict(eye=np.array([-0.1657, 0.4243, 0.5059]),                           # 左の 目（カメラは この 馬の 左がわ −x に いて 右向きの 横顔）
-          eye_r=np.array([0.1651, 0.4241, 0.5060]),
-          muzzle=np.array([0.0012, 0.0344, 0.7325]),                          # 鼻先（いちばん 前）
-          nose=np.array([-0.055, 0.075, 0.690]),                              # 鼻の 穴（白い 息が 出る 所）
-          chin=np.array([-0.0054, -0.1200, 0.5959]),
-          poll=np.array([-0.02, 0.80, 0.22]))                                 # 耳の あいだ（頭の てっぺん）
+# 馬の だいじな 点（モデルの 座標・+z が 前・+y が 上）。横と 前から 描いて 目の 光る 所・いちばん 前の 点などを はかった
+LM_ALL = dict(
+    nightmare=dict(eye=np.array([-0.1657, 0.4243, 0.5059]),                   # 左の 目（カメラは この 馬の 左がわ −x に いて 右向きの 横顔）
+                   eye_r=np.array([0.1651, 0.4241, 0.5060]),
+                   muzzle=np.array([0.0012, 0.0344, 0.7325]),                  # 鼻先（いちばん 前）
+                   nose=np.array([-0.055, 0.075, 0.690]),                      # 鼻の 穴（白い 息が 出る 所）
+                   chin=np.array([-0.0054, -0.1200, 0.5959]),
+                   poll=np.array([-0.02, 0.80, 0.22])),                        # 耳の あいだ（頭の てっぺん）
+    nightmane=dict(eye=np.array([-0.0959, 0.2898, 0.6539]),                   # 左の 目（白むらさきに 光る 所の まん中）。頭の まん中の 面は x≈+0.055（胸像の 中で 少し 右）
+                   eye_r=np.array([0.2076, 0.2714, 0.6706]),
+                   muzzle=np.array([0.045, -0.015, 0.948]),                    # 鼻先（いちばん 前・頭の まん中の 面）
+                   nose=np.array([-0.060, 0.000, 0.905]),                      # 左の 鼻の 穴（輪の まん中）
+                   chin=np.array([0.048, -0.190, 0.780]),
+                   poll=np.array([0.05, 0.45, 0.47])))                         # 耳の 付け根の あいだ
+LM = LM_ALL[HORSE_KIND]
 
 
 def nrm(v):
@@ -217,7 +230,8 @@ def shade_face(fr, cam, E, st):
 # ---------------------------------------------------------------- 第2稿（まさちゃん 09:54・10:13：まつ毛なし・ひたいの こぶを 平らに・首を 動かさず 頭だけ 上げる・
 #                                                                 鼻の 穴から 3D の 息・体を はう むらさきと 白の 雷）。SD_FACE=v1 で 第1稿に もどせる
 FACE_V = os.environ.get('SD_FACE', 'v2')
-TH0 = math.radians(-5.37)                     # 第1稿の はじめの コマの 胸像の 上げ下げ（目の まわり）。第2稿は ずっと これ（首は 動かさない）
+TH0_DEG = dict(nightmare=-5.37, nightmane=float(os.environ.get('SD_TH0', '8.28')))[HORSE_KIND]
+TH0 = math.radians(TH0_DEG)                   # 第1稿の はじめの コマの 胸像の 上げ下げ（目の まわり）。第2稿は ずっと これ（首は 動かさない）
 FV2 = {}
 HOOKS = {}                                    # shiden_film が わたす：state（秒 → 顔の 数）・marks（顔の 数 → 前の 顔の しるし）・t_of（コマ → 秒）・W・H
 
@@ -230,9 +244,13 @@ def horse_v2():
         t0 = time.time()
         p0 = model('horse')[0]
         eyes = (LM['eye'], LM['eye_r'])
-        p1, lg1 = F2.lashless(p0, eyes)
-        p2, lg2 = F2.brow_flat(p1, eyes)
-        del p0, p1
+        if HORSE_KIND == 'nightmare':
+            p1, lg1 = F2.lashless(p0, eyes)
+            p2, lg2 = F2.brow_flat(p1, eyes)
+            del p1
+        else:                                                                    # Violet_Nightmane：まつ毛も ひたいの こぶも ない → そのまま
+            p2, lg1, lg2 = p0, [], []
+        del p0
         _MD.pop('horse', None)
         hair = F2.hair_of(F2.vert_albedo(p2, np.arange(len(p2.pos))))
         FV2.update(p=p2, w=F2.head_w(p2.pos), wb=F2.body_w(p2.pos), hair=hair, F2=F2)

@@ -102,7 +102,7 @@ if KG.have():
 
 print('■ アプリ（なくした 演出・新しい 動画の 名前）')
 import build_fx as BF
-check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film.mp4', 'nd_film': 'nd_film.mp4', 'gk_film': 'gk_film.mp4'} and BF.STILL['sgd_last'] == 'sgd_last2.webp' and BF.SFX['sgd'] == 'sfx_sgd2.m4a'
+check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film2.mp4', 'nd_film': 'nd_film2.mp4', 'gk_film': 'gk_film.mp4'} and BF.STILL['sgd_last'] == 'sgd_last2.webp' and BF.SFX['sgd'] == 'sfx_sgd2.m4a'
       and sorted(BF.SFX) == ['big', 'big_push', 'fz_push', 'gk', 'hit', 'hit_push', 'nd', 'ndt', 'sd', 'sdp', 'sgd'] and sorted(BF.ART) == ['gk', 'nd', 'sd', 'sgd'] and len(BF.ASSET_FILES) == 24
       and all(f in BF.ASSET_FILES for f in NEW) and not [f for f in BF.ASSET_FILES if f in OLD or f.startswith('pm_')],
       f'アプリに 入れる ファイル（{len(BF.ASSET_FILES)}こ）：超神様は 新しい 動画・さいごの 1まい・音（{"・".join(NEW)}）・前の 3つと なくした 演出の 絵（pm_…）／音 4こ／昇格の 動画は 入れない')
@@ -197,7 +197,7 @@ print('■ リポジトリ')
 root = os.path.dirname(W)
 tracked = subprocess.run(['git', 'ls-files'], cwd=root, capture_output=True, text=True).stdout.split('\n')
 ign = lambda p: subprocess.run(['git', 'check-ignore', '-q', p], cwd=root).returncode == 0
-check(not [f for f in tracked if f.lower().endswith('.glb')] and not [f for f in tracked if re.search(r'sgd_film|sgd_last|sfx_sgd|/fx_assets/|sgd162', f)]
+check(not [f for f in tracked if f.lower().endswith('.glb')] and not [f for f in tracked if re.search(r'(sgd_film|sgd_last|sfx_sgd)\d*\.(mp4|webp|m4a|webm)$|/fx_assets/|sgd162', f)]
       and ign('source/ios/fx_assets/sgd_film2.mp4') and ign('source/ios/lite/fx_assets/sgd_film2.mp4') and not ign('source/kisekae/flat/kami_glb.py') and os.path.isfile(os.path.join(FLAT, 'kami_glb.py')),
       'まさちゃんの 3D（GLB）・動画・さいごの 1まい・音・コマは リポジトリに 入って いない（道具 kisekae/flat/kami_glb.py だけ 入る）')
 

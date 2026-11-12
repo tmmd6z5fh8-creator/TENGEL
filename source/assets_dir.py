@@ -13,9 +13,13 @@ TC_GONE = frozenset(('tc_se_flop.m4a', 'tc_se_goron.m4a', 'tc_se_lie.m4a', 'tc_s
 FX_GONE = re.compile(r'pm_.+\.webp|sfx_(pc|zp|spg|spg_up)\.m4a|spg_up\.mp4')
 #   第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：なくした 演出の 絵（pm_…：43まい）・音（プレミアム・超プレミアム・
 #   超プレミアム神様・昇格）・昇格の 動画。アプリは もう 使わない（kisekae/build_fx.py の ASSET_FILES に ない）ので 軽い 版にも 入れない（もとの フォルダには 残す）
-FX_NEW = {'sgd_film2.mp4': 'sgd_film.mp4', 'sgd_last2.webp': 'sgd_last.webp', 'sfx_sgd2.m4a': 'sfx_sgd.m4a'}
+FX_NEW = ({'sgd_film2.mp4': 'sgd_film.mp4', 'sgd_last2.webp': 'sgd_last.webp', 'sfx_sgd2.m4a': 'sfx_sgd.m4a'},
+          {'sd_film2.mp4': 'sd_film.mp4', 'sd_last2.webp': 'sd_last.webp'},
+          {'nd_film2.mp4': 'nd_film.mp4', 'nd_last2.webp': 'nd_last.webp'})
 #   第4.162版（22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：超神様の 動画・さいごの 1まい・音は 新しい もの（…2）を 使う。
 #   新しい ものが 3つ そろって いる ときは 前の もの（球体の 場面 あり）は 入れない（もとの フォルダには 残す）
+#   第4.163版（11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」・02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：極ど的中（紫電）と
+#   ノーマルど的中の 動画・さいごの 1まいも 新しい もの（…2）。組ごとに、新しい ものが そろって いる ときだけ 前の ものを 入れない（音は 前と 同じ）
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
@@ -33,8 +37,9 @@ def superseded(name, files):
     files = set(files)
     if name == 'fx_assets':
         old = {f for f in files if FX_GONE.fullmatch(f)}
-        if set(FX_NEW) <= files:
-            old |= files & set(FX_NEW.values())
+        for grp in FX_NEW:
+            if set(grp) <= files:
+                old |= files & set(grp.values())
         return old
     if name == 'fig_assets' and 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
         return {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}

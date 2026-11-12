@@ -600,6 +600,13 @@ BOLTS = ((F['H_BOLTS'][0], (.18, .22), (.44, .05)), (F['H_BOLTS'][1], (.84, .12)
 
 # ---------------- 縦書きの 3D の 的中（flat/shiden_logo.py の 字の しくみ）
 import shiden_logo as SL
+import shiden_gtext as GT
+# 第4.163版（まさちゃん 2026/11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」）：縦書きの「的中」と さいごの「ど！！！／極／的中」は
+# まさちゃんの Meshy の 3D（flat/shiden_gtext.py：カメラ・単位・光の まわりは 前の 字と 同じ）。SD_TEXT=old か 3D が ない とき＝前の 字（shiden_logo.py）
+GTX = os.environ.get('SD_TEXT', 'glb') != 'old' and GT.have()
+# 点めつ（16.6）：3D の 字は 金の ふちが 太く、切られて ゆれる・吹きとぶ 間の 明暗の 変化が 前の 字より 多い（同じ 絵の ままだと 1秒に 4回以上 光る 点が 画面の 約9.7%：
+# 前の 動画は 7.7%・きまりは 10%）→ 大爆発の 火の粉を 5本に 1本 へらして（260 → 208本）前の 動画と 同じくらいに する（見た目は ほぼ 同じ）。前の 字（SD_TEXT=old）は 前の まま
+BOOM_SKIP = 5 if GTX else 0
 
 _CDIR = nrm(np.array(SL.CAM_DIR, float))
 TITLE = {}
@@ -610,9 +617,12 @@ ROT0T = (10.0, -34.0, 7.0)                                     # とびはじめ
 def title_setup():
     """縦書きの 的中の 置き場所・虹の 上下・とびはじめの 場所（奥の 光の まん中に 見える 所）"""
     if 'lay' not in TITLE:
-        TITLE['lay'] = lay = SL.title_layout(TITLE['cache'])
-        ys = [b[1] for _, b in lay] + [b[3] for _, b in lay]
-        TITLE['hy'] = ((SL.ORIGIN[1] - min(ys)) / 100, (SL.ORIGIN[1] - max(ys)) / 100)
+        if GTX:                                                                              # 3D の 字：置き場所は flat/shiden_gtext.py（あいだの まん中は 同じ SL.TITLE_Y）
+            TITLE['lay'], TITLE['hy'] = None, None
+        else:
+            TITLE['lay'] = lay = SL.title_layout(TITLE['cache'])
+            ys = [b[1] for _, b in lay] + [b[3] for _, b in lay]
+            TITLE['hy'] = ((SL.ORIGIN[1] - min(ys)) / 100, (SL.ORIGIN[1] - max(ys)) / 100)
         cl = np.array([0.0, (SL.ORIGIN[1] - SL.TITLE_Y) / 100, 0.0])                        # 的と 中の あいだ（ロゴの 中）
         D0 = SL.CAM_DIST * (1 / S0T - 1)
         cam = SL.camera()
@@ -670,6 +680,22 @@ def title_light(tau):
     return fl, sw
 
 
+def title_rest(work):
+    """止まった 的中の 形（1回だけ 描く）"""
+    T = title_setup()
+    if GTX:
+        return GT.render('title', W, H, (0.0, 0.0, 0.0), np.zeros(3))
+    rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
+    return SL.render(os.path.join(rd_, 'title_rest'), W, H, (0.0, 0.0, 0.0), np.zeros(3), T['cache'], layout=T['lay'])
+
+
+def title_shade(g, rot, pos, sw, fl, heat):
+    """的中の 形 g に 光を つける →（色・すき通し・箱）"""
+    if GTX:
+        return GT.layer(g, W, H, rot, pos, sweep=sw, flash=fl, heat=heat)
+    return SL.layer(None, W, H, rot, pos, sweep=sw, flash=fl, heat=heat, hit_y=title_setup()['hy'], gbuf=g)
+
+
 def title_layer(tau, work):
     """縦書きの 的中の 1まい（色・すき通し・箱）。止まって からは 形を 1回だけ 描いて 光だけ 計算し直す"""
     TITLE.setdefault('cache', os.path.join(work, '_logo'))
@@ -687,14 +713,16 @@ def title_layer(tau, work):
     fl, sw = title_light(tau)
     if a >= .45:                                                                             # 止まって 動かない 間は 形を 1回だけ 描く
         if 'rest' not in T:
-            T['rest'] = SL.render(os.path.join(rd_, 'title_rest'), W, H, (0.0, 0.0, 0.0), np.zeros(3), T['cache'], layout=T['lay'])
+            T['rest'] = title_rest(work)
         g = T['rest']
         rot, pos = (0.0, 0.0, 0.0), np.zeros(3)
+    elif GTX:
+        g = GT.render('title', W, H, rot, pos)
     else:
         g = SL.render(os.path.join(rd_, f'title_{int(round(tau * FPS)):03d}'), W, H, rot, pos, T['cache'], layout=T['lay'])
     if g[0] is None:
         return None
-    lay = SL.layer(None, W, H, rot, pos, sweep=sw, flash=fl, heat=heat, hit_y=T['hy'], gbuf=g)
+    lay = title_shade(g, rot, pos, sw, fl, heat)
     k = ss(T_FLY0, T_FLY0 + .3, tau)                                                         # 第4.73版：奥の 光の 中から ふわっと 出る（はじめから 大きいので）
     if lay is not None and k < 1:
         col, A, box = lay
@@ -1294,10 +1322,9 @@ def title_damage(work):
         return TD
     T = title_setup()
     if 'rest' not in T:
-        rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
-        T['rest'] = SL.render(os.path.join(rd_, 'title_rest'), W, H, (0.0, 0.0, 0.0), np.zeros(3), T['cache'], layout=T['lay'])
+        T['rest'] = title_rest(work)
     fl, _ = title_light(T_IN)
-    col, A, (x0, y0, x1, y1) = SL.layer(None, W, H, (0.0, 0.0, 0.0), np.zeros(3), flash=fl, heat=0.0, hit_y=T['hy'], gbuf=T['rest'])
+    col, A, (x0, y0, x1, y1) = title_shade(T['rest'], (0.0, 0.0, 0.0), np.zeros(3), None, fl, 0.0)
     Af = np.zeros((H, W), np.float32); Af[y0:y1, x0:x1] = A
     Cf = np.zeros((H, W, 3), np.float32); Cf[y0:y1, x0:x1] = col / np.maximum(A, 1e-3)[..., None]
     rng = np.random.default_rng(1207)
@@ -1511,9 +1538,9 @@ def boom_sparks(te):
     if te < 0:
         return np.zeros((H, W, 3), np.float32)
     cx, cy = W * .5, Y0 * H
-    for P in boom_tex()['sp']:
+    for i_, P in enumerate(boom_tex()['sp']):
         a = te - P['d']
-        if not 0 < a < P['life']:
+        if not 0 < a < P['life'] or (BOOM_SKIP and i_ % BOOM_SKIP == BOOM_SKIP - 1):
             continue
 
         def at(t):
@@ -2433,6 +2460,9 @@ def spark_lines(out, sparks, a, cx, cy, spd, grav, trail=.045):
 
 LSP = {}
 LOGO_BOX = ((.12, .3, .72, .6), (.56, .21, .88, .56), (.03, .57, .99, .75))     # ロゴの おおよその 箱（ど・！・的中：画面の 割合）
+if GTX:                                                                          # 3D の ロゴ（上から ど！！！・極・的中 の 3段）
+    LOGO_BOX = ((.13, .2, .96, .375), (.05, .375, .97, .63), (.06, .63, .96, .786))
+LOGO_FOOT = .8 if GTX else .757                                                  # ロゴの 下（火花の 滝が ふる 高さ：画面の 割合）
 
 
 def land_sparks(a, seed=2417):
@@ -2487,7 +2517,7 @@ def fountain(lam, seed=2591):
         nf = int((t1 - t0) * 35)
         LSP['fo'] = [dict(t=t0 + rng.uniform(0, t1 - t0), x=rng.uniform(.08, .95), vx=rng.uniform(-60, 60), vy=rng.uniform(40, 260),
                           life=rng.uniform(.45, .85), b=rng.uniform(.5, 1.0), w=max(1, int(round(rng.uniform(1.0, 2.2) * S)))) for i in range(nf)]
-    yb = .757 * H
+    yb = LOGO_FOOT * H
     for P in LSP['fo']:
         u = lam - P['t']
         if not 0 < u < P['life']:
@@ -2524,7 +2554,7 @@ def logo_frame(lam, work, fi, seed=811):
         rot, pos, s = pose
         rd_ = os.path.join(work, '_r'); os.makedirs(rd_, exist_ok=True)
         cache = os.path.join(work, '_logo'); os.makedirs(cache, exist_ok=True)
-        g = SL.render(os.path.join(rd_, f'logo_{fi:03d}'), W, H, rot, pos, cache)              # 形（光は あとで：雷の 光の 前に ふちを 知る）
+        g = GT.render('logo', W, H, rot, pos) if GTX else SL.render(os.path.join(rd_, f'logo_{fi:03d}'), W, H, rot, pos, cache)   # 形（光は あとで：雷の 光の 前に ふちを 知る）
     if g[0] is not None:
         K = SL.K_SS
         x0, y0, x1, y1 = g[1]
@@ -2549,7 +2579,10 @@ def logo_frame(lam, work, fi, seed=811):
             flash.append((nrm(np.array(d)), np.array(c_) * .6 * k * (.55 + .45 * math.sin(2 * math.pi * f_ * lam + ph))))
         for d2, it in blights + [(d_, it_ * .4) for d_, it_ in slights]:                       # 第4.75版：ロゴへ 落ちる 雷は 字に うすく 映る（字の ふちを 何回も 光らせない）
             flash.append((nrm(np.array([d2[0], -d2[1], .45])), np.array([1.6, 1.2, 2.6]) * it))
-        lay = SL.layer(None, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam), gbuf=g)
+        if GTX:
+            lay = GT.layer(g, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam))
+        else:
+            lay = SL.layer(None, W, H, rot, pos, sweep=sweep_of(lam), flash=flash, heat=heat_of(lam), gbuf=g)
     # ---------- 背景・うしろの かけら ----------
     img = d_bg(lam, bglow + sglow * .5 + kglow * .2)
     te = lam - BOOM_D                                                            # 第4.74版：大爆発の つづき（火の玉・けむり・衝撃の 輪・火の粉）

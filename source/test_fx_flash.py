@@ -12,7 +12,8 @@
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
 #     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
 #   第4.117版：神様極的中 gk（虹色の PUSH → 押した 画面（.ndt）→ はじめから おわりまで 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）：nd と 同じ やり方で 数える
-#   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film.mp4・ノーマルど的中 nd_film.mp4・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
+#   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film2.mp4・ノーマルど的中 nd_film2.mp4〈第4.163版：馬と 字は まさちゃんの 3D〉・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
+#   第4.163版：sd・nd・gk の 幕の うしろに しく 動画も build_fx.py の FILMS の 名前（前は sd_film.mp4 などと 決め打ち）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -65,7 +66,7 @@ try:
             sdf = 0
             pre = []   # 極ど的中の 入り（ノーマルど的中の 動画の コマ）
             if kind == 'sd':
-                mp4 = os.path.join(FX_DIR, 'nd_film.mp4')
+                mp4 = os.path.join(FX_DIR, FX_FILMS['nd_film'])
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
                     pd = os.path.join(OUT, '_sd_pre'); shutil.rmtree(pd, ignore_errors=True); os.makedirs(pd)
                     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(pd, 'p%04d.png')], check=True)
@@ -74,16 +75,16 @@ try:
                     assert all(os.path.exists(x) for x in pre)
                     print(f'  sd：入りの ノーマルど的中の コマ {n_at}（{SDUP["AT"]}秒）→ 真っ黒 {int(round(SDUP["BLACK"] * 60))}コマ → 極ど的中')
                 else:
-                    print('  ⚠️ nd_film.mp4 が ない（極ど的中の 入りは 数えない）')
+                    print(f'  ⚠️ {FX_FILMS["nd_film"]} が ない（極ど的中の 入りは 数えない）')
             if kind in ('sd', 'nd', 'gk'):   # 紫電・ノーマルど的中・神様極的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
-                mp4 = os.path.join(FX_DIR, kind + '_film.mp4')
+                mp4 = os.path.join(FX_DIR, FX_FILMS[kind + '_film'])
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
                     fd = os.path.join(SRV, 'APP', '_sdf'); shutil.rmtree(fd, ignore_errors=True); os.makedirs(fd)
                     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'g%04d.png')], check=True)
                     sdf = len(os.listdir(fd))
                     print(f'  {kind}：動画の コマ {sdf}（60コマ/秒）を 幕の 背景に して 写す')
                 else:
-                    print(f'  ⚠️ {kind}_film.mp4 が ない（CSS と ボードだけ 数える）')
+                    print(f'  ⚠️ {FX_FILMS[kind + "_film"]} が ない（CSS と ボードだけ 数える）')
             pg.evaluate("(s) => TengelFx.show(Object.assign({ force: %r }, s))" % kind, SPEC); pg.wait_for_timeout(400)
             idx = 0; t0 = time.time()
             if kind != 'miss':

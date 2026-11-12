@@ -22,6 +22,7 @@ from hair2d import HairBuf
 from paint import fbm, blur, smoothstep
 import shiden_film as SF                          # 仕上げの 道具（bloom・finish・zoom_blur・save_png）
 import shiden_logo as SL
+import shiden_gtext as GT
 import normal_do as ND
 import nd_horse as NH
 
@@ -1177,6 +1178,9 @@ def particles2(t):
 
 
 # ---------------------------------------------------------------- ど！的中（3D：shiden_logo の 形・！は 1つ）が 上から 落ちて 芝に ドーン
+# 第4.163版（まさちゃん 2026/11/13 02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：「ど！／的中」は まさちゃんの Meshy の 3D
+#   （Golden_Rainbow_Pop_Typography：flat/shiden_gtext.py の nd。足もとの 高さ・カメラ・光は 前の 字と 同じ）。SD_TEXT=old か 3D が ない とき＝前の 字（shiden_logo.py）
+GTN = os.environ.get('SD_TEXT', 'glb') != 'old' and GT.have(('nd',))
 ND_LAYOUT = [('do', (30, 226, 260, 452)), ('e1', (276, 224, 372, 452)), ('hit', (12, 466, 378, 624))]
 ND_HIT_Y = ((SL.ORIGIN[1] - 466) / 100, (SL.ORIGIN[1] - 624) / 100)
 _CDIR = nrm(np.array(SL.CAM_DIR))
@@ -1221,10 +1225,14 @@ def logo_layer(t, work, fi):
         if a0 <= t <= a1:
             sweep = -48 + 78 * ss(0, 1, (t - a0) / (a1 - a0))
     flash = [(nrm(np.array([0.0, .2, 1.0])), np.array([.7, 1.0, .6]) * .5)]
-    g = SL.render(os.path.join(rd_, f'ndlogo_{fi:03d}'), W, H, rot, pos, cache, layout=ND_LAYOUT)
-    if g[0] is None:
-        return None
-    lay = SL.layer(None, W, H, rot, pos, sweep=sweep, flash=flash, heat=heat, layout=ND_LAYOUT, hit_y=ND_HIT_Y, gbuf=g)
+    if GTN:
+        g = GT.render('nd', W, H, rot, pos)
+        lay = GT.layer(g, W, H, rot, pos, sweep=sweep, flash=flash, heat=heat)
+    else:
+        g = SL.render(os.path.join(rd_, f'ndlogo_{fi:03d}'), W, H, rot, pos, cache, layout=ND_LAYOUT)
+        if g[0] is None:
+            return None
+        lay = SL.layer(None, W, H, rot, pos, sweep=sweep, flash=flash, heat=heat, layout=ND_LAYOUT, hit_y=ND_HIT_Y, gbuf=g)
     if lay is None:
         return None
     col, A, (x0, y0, x1, y1) = lay
