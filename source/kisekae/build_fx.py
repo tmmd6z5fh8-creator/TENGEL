@@ -18,7 +18,12 @@
    第4.66版：ど的中・紫電（sd・shiden.py）。絵（shiden_blobs.json）と 音 1こ（sfx_sd）を 足す。
    第4.70版：紫電の ② は 動画（sd_film.mp4・flat/shiden_film.py）＋ ③ の 絵 4まい。動画は 超神様と 同じく fx.js が <video class="sgv"> で 舞台に 置く
    第4.71版：紫電は はじめから おわりまで 動画（ど！！！的中も 3D）＋ さいごの 1まい（sd_last.webp）。押した 瞬間に ど的中と 同じ プチュン（FZ_HTML）と その 音（sfx_sdp）
-   第4.117版：神様極的中（gk・kami_kiwami.py）：動画 gk_film.mp4・さいごの 1まい gk_last.webp・音 sfx_gk.m4a。押した 画面は ノーマルど的中と 同じ（.ndt・音 sfx_ndt）"""
+   第4.117版：神様極的中（gk・kami_kiwami.py）：動画 gk_film.mp4・さいごの 1まい gk_last.webp・音 sfx_gk.m4a。押した 画面は ノーマルど的中と 同じ（.ndt・音 sfx_ndt）
+   第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」・22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：
+     ・プレミアムど的中（pc）と 超プレミアム神様的中（spg）は アプリに 入れない：押したあと（reveal_pc・reveal_spg）・CSS（pc_css・zp_css・spg_css）・絵（pm_….webp 43まい）・
+       音（sfx_pc・sfx_zp・sfx_spg・sfx_spg_up）・昇格の 動画（spg_up.mp4）。作る 道具（premium_cute.py・super_premium.py・kami_super.py の spg_…）と もとの ファイルは のこす
+     ・超神様の 動画は 新しい もの（球体の 場面なし・字と 鳥居は まさちゃんの 3D：385コマ・12.83秒）＝ sgd_film2.mp4・さいごの 1まい sgd_last2.webp・音 sfx_sgd2.m4a。
+       前の もの（sgd_film.mp4・sgd_last.webp・sfx_sgd.m4a）は もとの フォルダに のこして アプリには 入れない（assets_dir.py の superseded）"""
 import json
 import os
 import re
@@ -31,16 +36,16 @@ ASSETS = dict(bcxhbh='bcx_hb_head.webp', bcxhbf='bcx_hb_fore.webp', bcxhbl='bcx_
 #   第4.113版：「出世馬」の 幻の 馬の 絵（bcx_ph0・bcx_ph1.webp：極ど的中の 動画の コマ）は 出世馬と いっしょに 消した
 # 第4.109版：前の ど的中の 音（sfx_fz.m4a）は 入れない（ど的中の PUSH の 音 fz_push は プレミアム・紫電・ノーマル・超神様が 使う）
 SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_push.m4a', big='sfx_big.m4a', fz_push='sfx_fz_push.m4a',
-           pc='sfx_pc.m4a', zp='sfx_zp.m4a', sgd='sfx_sgd.m4a', spg_up='sfx_spg_up.m4a', spg='sfx_spg.m4a',    # 第5弾：特別な 演出の 音（16.5）。第4.86版：神様的中（gd）は なし・
-                                                                                                                       #  超プレミアムの 音（zp）は 超プレミアム神様の はじめに 使うので のこす
+           sgd='sfx_sgd2.m4a',                                                                                               # 第5弾：超神様的中の 音（16.5）。第4.162版：新しい 動画の 音（前の sfx_sgd.m4a は 入れない）・
+                                                                                                                             #  プレミアム（pc）・超プレミアム（zp）・超プレミアム神様（spg・spg_up）の 音は なし
            sd='sfx_sd.m4a', sdp='sfx_sdp.m4a',                                                                               # 第4.66版：ど的中・紫電の 音・第4.71版：押した 瞬間の プチュンの 音
            nd='sfx_nd.m4a', ndt='sfx_ndt.m4a',                                                                               # 第4.77版：ノーマルど的中の 音・第4.79版：押した 瞬間の 音
            gk='sfx_gk.m4a')                                                                                                  # 第4.117版：神様極的中の 音
-FILMS = dict(sgd_film='sgd_film.mp4', spg_up='spg_up.mp4',     # 第5弾：超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）・昇格の 動画（15章）
+FILMS = dict(sgd_film='sgd_film2.mp4',                          # 第5弾：超神様の 動画。第4.162版：新しい 動画（球体の 場面なし・まさちゃんの 3D の 字と 鳥居）・昇格の 動画（spg_up）は なし
              sd_film='sd_film.mp4',                             # 第4.70版：ど的中・紫電の 動画（flat/shiden_film.py：第4.71版 ど！！！的中まで）
              nd_film='nd_film.mp4',                             # 第4.77版：ノーマルど的中の 動画（flat/normal_film.py）
              gk_film='gk_film.mp4')                             # 第4.117版：神様極的中の 動画（kami_kiwami.py・できた 動画から build_fx_films.py の gk_film）
-STILL = dict(sgd_last='sgd_last.webp', sd_last='sd_last.webp', nd_last='nd_last.webp',   # 超神様・紫電・ノーマルど的中の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+STILL = dict(sgd_last='sgd_last2.webp', sd_last='sd_last.webp', nd_last='nd_last.webp',  # 超神様（第4.162版：新しい 動画の）・紫電・ノーマルど的中の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
              gk_last='gk_last.webp')                                                    # 第4.117版：神様極的中
 
 
@@ -54,13 +59,13 @@ def blob_names():
 
 # 第4.86版（まさちゃん「あと一枚目の的中ボタン各種の、赤い×が書いてある演出消して！」）：隠れど的中・超プレミアムど的中・神様的中は アプリから 消した
 #  （くじで 出ない・テスト版の ボタンも なし）。神様的中の 絵 24まい（約1.7MB）・音・CSS・押したあと（reveal_gd）と 超プレミアムど的中の 押したあと（reveal_zp）は
-#  アプリに 入れない（作る 道具 kami.py・kami_art.py・super_premium.py は のこす：超プレミアム神様的中が 超プレミアムの ①〜③と CSS を 使う）
-ART = dict(pm=sorted(n + '.webp' for n in json.load(open(os.path.join(K, 'premium_blobs.json'), encoding='utf-8'))),     # プレミアムど的中の 絵 38まい（約2.1MB）
-           sd=[STILL['sd_last']],                                                                                  # ど的中・紫電の 動画の さいごの 1まい（第4.71版）
+#  アプリに 入れない（作る 道具 kami.py・kami_art.py・super_premium.py は のこす）
+# 第4.162版：プレミアムど的中の 絵（pm_….webp：premium_blobs.json の 43まい・約2.3MB）も 入れない
+ART = dict(sd=[STILL['sd_last']],                                                                                  # ど的中・紫電の 動画の さいごの 1まい（第4.71版）
            nd=[STILL['nd_last']],                                                                                  # ノーマルど的中の 動画の さいごの 1まい（第4.77版）
            sgd=[STILL['sgd_last']],
            gk=[STILL['gk_last']])                                                                                  # 神様極的中の 動画の さいごの 1まい（第4.117版）
-ART_FILES = sorted(set(ART['pm'] + ART['sd'] + ART['nd'] + ART['sgd'] + ART['gk']))
+ART_FILES = sorted(set(ART['sd'] + ART['nd'] + ART['sgd'] + ART['gk']))
 ASSET_FILES = sorted(ASSETS.values()) + sorted(SFX.values()) + ART_FILES + sorted(FILMS.values())
 
 
@@ -315,7 +320,7 @@ def push_fz(G):
 
 
 def push_fz_t(G):
-    """ど的中・特別な 演出（プレミアム〜超プレミアム神様）の PUSH の 画面：壁紙の テーマの PUSH（{{PBOX}}）。まわり（暗さ・虹の 光・光の すじ・ふち・わく・きらめき）は ど的中の まま。
+    """ど的中・特別な 演出（極ど的中・超神様・神様極的中）の PUSH の 画面：壁紙の テーマの PUSH（{{PBOX}}）。まわり（暗さ・虹の 光・光の すじ・ふち・わく・きらめき）は ど的中の まま。
        ど的中は 的中より 一回り 大きく（--pz）、それより 上は もう一回り 大きく 虹色（.rbw：fx.js が つける）"""
     h = G.fz_push().replace('onClick="{{toReveal}}"', 'data-fx="tap"')
     h2 = re.sub(r'<div class="pbox">[\s\S]*?<p class="tap fz">タップ!!</p>\s*</div>', '<div class="pbox pz">{{PBOX}}</div>', h)
@@ -395,7 +400,7 @@ def reveal_fz(G):
 
 
 # ---------------------------------------------------------------- 第5弾：特別な 演出の 押したあと（16.3）。ボードは {{BOARD}}（fx.js が そのテーマの ど的中の ボードを 入れる）
-def reveal_pc(G):
+def reveal_pc(G):   # 第4.162版から アプリに 入れない（プレミアムど的中は なし）
     """プレミアムど的中（かわいいど的中）：premium_cute.py の pc_layers（絵は pm_….webp）"""
     return f'''<div class="ov fz pm" style="--n:{{{{N}}}}">
     {G.PC.pc_layers('{{BOARD}}')}
@@ -456,7 +461,7 @@ def reveal_gk(G):
   </div>'''
 
 
-def reveal_spg(G):
+def reveal_spg(G):   # 第4.162版から アプリに 入れない（超プレミアム神様的中は なし）
     """超プレミアム神様的中：超プレミアムど的中の ①〜③（spz：き！で stop → 昇格の 動画が 動きだしたら gone）＋ 超神様（spg）。動画 2つ（spu・sgv）は fx.js が 舞台に 置く"""
     return f'''<div class="ov fz zp spz">
     {G.SP.zp_layers('', upto=3, sr=G.SG.SPG_SR)}
@@ -500,9 +505,10 @@ def css_all(G):
     assert m, 'COMMON_CSS の --pushA の行が見つからないよ'
     vars_rule = m.group(0).replace('.ph{', '.fxs{', 1)
     css = vars_rule + '\n' + tail + G.HIT_CSS + G.MISS_CSS + G.BIG_CSS + G.BURST_CSS + G.fz_css() + boards.board_css(['default'])
-    # 第5弾：特別な 演出（16.3）。動画の 入れもの .ph .sgv／.ph .spu は 舞台（.fxs）の 中の .sgv／.spu に
+    # 第5弾：特別な 演出（16.3）。動画の 入れもの .ph .sgv は 舞台（.fxs）の 中の .sgv に
+    # 第4.162版：プレミアムど的中（pc_css）・超プレミアム（zp_css：超プレミアム神様の はじめの ふり）・超プレミアム神様（spg_css）の CSS は 入れない
     import kami_kiwami as KK
-    css += G.PC.pc_css() + G.SP.zp_css() + G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SG.spg_css().replace('.ph .spu', '.spu') + G.SD.sd_css() + G.ND.nd_css() + KK.gk_css()   # 第4.117版：神様極的中
+    css += G.SG.sgd_css().replace('.ph .sgv', '.sgv') + G.SD.sd_css() + G.ND.nd_css() + KK.gk_css()   # 第4.117版：神様極的中
     assert '.ph ' not in css, '見本の ページの 入れもの（.ph）が 残っているよ'
     # 第4.109版：前の ど的中（fz）の ネオンの カット（.nic・絵 fz_nglow／fz_ncore）の 行は 入れない（その 押したあと reveal.fz を 消した）
     css = drop_rules(css, lambda sel: re.search(r'\.nic\b', sel))
@@ -519,21 +525,21 @@ def css_all(G):
 def bundle():
     G = load_gen_fx()
     css, names = css_all(G)
-    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('pc', reveal_pc), ('sgd', reveal_sgd), ('spg', reveal_spg), ('sd', reveal_sd), ('nd', reveal_nd), ('gk', reveal_gk))}   # 第4.86版：zp・gd は なし・第4.117版：神様極的中
+    fx5 = {k: deblob(rename_inline(fn(G), names), G, k) for k, fn in (('sgd', reveal_sgd), ('sd', reveal_sd), ('nd', reveal_nd), ('gk', reveal_gk))}   # 第4.86版：zp・gd は なし・第4.117版：神様極的中・第4.162版：pc・spg は なし
     for k, h in fx5.items():
         assert '{{BOARD}}' in h and '{{N}}' in h and 'data-fx="close"' in h, k
     SG = G.SG
     import kami_kiwami as KK
     # 第4.109版：テーマの ない PUSH（big・fz）と 前の ど的中の 押したあと（fz：フリーズ・ネオンの カット）は 入れない
-    #   （PUSH は いつも big_t・fz_t の 中に テーマの PUSH か いつもの 赤い PUSH（fx.js の pboxHTML）・ど的中は くじで pc／sd／nd に なる）
+    #   （PUSH は いつも big_t・fz_t の 中に テーマの PUSH か いつもの 赤い PUSH（fx.js の pboxHTML）・ど的中は 決まった 条件で sd／nd に なる）
     return dict(css=css, push=dict(hit=PUSH_HIT, hit_t=PUSH_HIT_T, big_t=push_big_t(G), fz_t=push_fz_t(G)),
                 reveal=dict(hit=reveal_hit(G), hit_t=reveal_hit_t(G), big=reveal_big(G), miss=REVEAL_MISS, **fx5),
                 board=board_parts(), sfx=dict(SFX), assets=dict(ASSETS), art=dict(ART), films=dict(FILMS),
-                t=dict(R=G.FZ_T['R'], PC=G.PC.PC_RES, SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
+                t=dict(R=G.FZ_T['R'], SD=G.SD.SD_T['RES'], SDS=dict(FROM=G.SD.STILL_FROM, WAIT=G.SD.STILL_WAIT),
                        ND=G.ND.ND_T['RES'], NDS=dict(FROM=G.ND.STILL_FROM, WAIT=G.ND.STILL_WAIT), SDUP=dict(G.ND.SD_UP),
                        GK=KK.RES, GKS=dict(FROM=KK.STILL_FROM, WAIT=KK.STILL_WAIT), GKB=KK.BOARD,   # 第4.117版：神様極的中（ボードの 音・さいごの 1まいの 時・ボードが 出る 時）
                        SG=dict(FILM=round(SG.FILM, 4), RES=round(SG.RES, 4), STILL_FROM=round(SG.STILL_FROM, 4), STILL_WAIT=SG.STILL_WAIT, STILL_BOARD=round(SG.STILL_BOARD, 4),
-                               UP_AT=SG.UP_AT, UP=round(SG.UP, 4), SPG_FILM=round(SG.SPG_FILM, 4), WAIT_MAX=SG.WAIT_MAX)))
+                               WAIT_MAX=SG.WAIT_MAX)))
 
 
 def bundle_js():

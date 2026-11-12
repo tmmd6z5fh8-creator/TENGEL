@@ -1,11 +1,16 @@
 """特別な 演出の 動画と さいごの 1まい（App Store版 第5弾：アップデート指示書 15章・16.3）を 手元で 作る。できた ファイルは リポジトリに 入れない（1章の11）：
      python3 build_fx_films.py [<出力フォルダ>] [<作業フォルダ>]     （何も指定しないと source/ios/fx_assets/。作業フォルダは その中の _films/）
    作るもの（1コマずつ 計算で 描く 絵なので 時間が かかる：数十分）
-     sgd_film.mp4 … 超神様の 動画（超神様的中・超プレミアム神様的中で 同じ）：flat/kami_film.py ① 金の 嵐 48コマ → flat/kami_white.py 金粉の 白い 光 40コマ
-                     （② の はじめの 8コマにも 金粉を かさねる）→ flat/kami_film2.py ② 金の 立体の 字 141コマ → flat/kami_film3.py ③ 神様的中 198コマ ＝ 427コマ・14.23秒
-                     H.264・音なし・1170×2532・30コマ/秒・CRF 24（約11MB）
-     sgd_last.webp … 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
-     spg_up.mp4   … 超プレミアム神様的中の 昇格の 動画：超プレミアムど的中の 6.0秒（き！）の 1まい（flat/capture_page.py・Playwright の Chromium）→
+     sgd_film2.mp4 … 超神様の 動画（第4.162版：まさちゃん 2026/11/12 22:32「一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！あと、鳥居とか文字関係は
+                     このファイルのデータを使って！」）：flat/kami_film.py ① 金の 爆発 6コマ（前の 48コマの さいごの 6コマ）→ flat/kami_white.py 金粉の 白い 光 40コマ
+                     （② の はじめの 8コマにも 金粉を かさねる）→ flat/kami_film2.py ② 金の 立体の 字 141コマ → flat/kami_film3.py ③ 神様的中 198コマ ＝ 385コマ・12.83秒
+                     ②③ の 字と 鳥居は まさちゃんの Meshy の 3D（flat/kami_glb.py：場所は SGD_GLB_DIR。ない ときは 前の 字と 鳥居で 描く）
+                     H.264・音なし・1170×2532・30コマ/秒・CRF 20（もと。アプリには kisekae/lite_assets.py が CRF 24 に した 軽い 版を 入れる）
+                     ※ 前の 動画（球体の 場面 あり・427コマ・14.23秒）＝ sgd_film.mp4・sgd_last.webp は もとの フォルダに のこす（上書きしない・アプリには 入れない）
+     sgd_last2.webp … 超神様の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+     sfx_sgd2.m4a … 超神様の 動画の 音（第4.162版：gen_sfx.py の sfx_sgd＝動画の 絵の スクリプトの 時刻で 作る → AAC 160kbps。金の 爆発から 鳴る。FILMS=sgd で 動画と いっしょに 作る。
+                     ③ の 雷の 場所は 字の 形から 出すので、まさちゃんの 3D が ある 所で 作る）
+     spg_up.mp4   … （第4.162版から アプリに 入れない）超プレミアム神様的中の 昇格の 動画：超プレミアムど的中の 6.0秒（き！）の 1まい（flat/capture_page.py・Playwright の Chromium）→
                      flat/kami_glitch.py バグ 59＋まっ暗 30 コマ → flat/kami_cutin.py 宇宙の カットイン 108コマ ＝ 197コマ・6.57秒（約5MB）
      sd_film.mp4  … ど的中・紫電の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
                      → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
@@ -20,6 +25,7 @@
                      GK_MASTER=<mp4> で ほかの 所も）を アプリ用に CRF 23 で 作り直す ＝ 361コマ・12.03秒・780×1688・約10.3MB）。FILMS=gk で これだけ 作る
      gk_last.webp … 神様極的中の 動画の さいごの 1まい
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
+   第4.162版：もう ある 動画は 作り直さない（もと＝マスターを 上書きしない）。作り直す ときは FORCE=1（その 動画の 名前を FILMS で 決めて）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
 import os
 import shutil
@@ -35,10 +41,13 @@ os.makedirs(out, exist_ok=True)
 os.makedirs(work, exist_ok=True)
 sys.path.insert(0, K)
 import kami_super as SG   # noqa: E402
+import build_fx as BF     # noqa: E402  （ファイルの 名前：FILMS・STILL）
 
 FF = shutil.which('ffmpeg')
 assert FF, 'ffmpeg がない'
 ENC = ['-c:v', 'libx264', '-preset', 'slow', '-crf', '24', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-tag:v', 'avc1', '-an']
+SGD_CRF = '20'      # 第4.162版：超神様の 新しい 動画の もとは CRF 20（紫電・ノーマルと 同じ）。アプリに 入る 軽い 版（CRF 24）を 1回の 圧縮に 近づける（前は もとも CRF 24＝2回 圧縮）
+FORCE = os.environ.get('FORCE') == '1'
 
 
 def run(args, **kw):
@@ -60,10 +69,13 @@ def link(src, dst):
         shutil.copy(src, dst)
 
 
-def encode(comb, n, name):
+def encode(comb, n, name, crf=None):
     """comb/f%03d.png（n こ）→ out/name"""
     assert frames(comb, 'f%03d.png', n), f'{name} の コマが そろって いない'
-    run([FF, '-y', '-loglevel', 'error', '-framerate', '30', '-i', os.path.join(comb, 'f%03d.png')] + ENC + [os.path.join(out, name)])
+    enc = list(ENC)
+    if crf:
+        enc[enc.index('-crf') + 1] = crf
+    run([FF, '-y', '-loglevel', 'error', '-framerate', '30', '-i', os.path.join(comb, 'f%03d.png')] + enc + [os.path.join(out, name)])
     print(name, f'{os.path.getsize(os.path.join(out, name)) / 1e6:.2f}MB', f'{n}コマ', flush=True)
 
 
@@ -83,15 +95,33 @@ def sgd_film():
     seq = ([os.path.join(a, f'f{i + 1:02d}.png') for i in range(N1)] + [os.path.join(w, f'w{i + 1:03d}.png') for i in range(NW)]
            + [os.path.join(w, f'x{i + 1:03d}.png') for i in range(8)] + [os.path.join(b, f'f{i + 1:03d}.png') for i in range(8, N2)]
            + [os.path.join(c, f'f{i + 1:03d}.png') for i in range(N3)])
-    assert len(seq) == N1 + NW + N2 + N3 == 427, len(seq)
+    assert len(seq) == N1 + NW + N2 + N3 == 385 == round(SG.FILM * SG.FPS), len(seq)      # 第4.162版：① は 金の 爆発 だけ（6コマ）。前は 427
     for i, s in enumerate(seq):
         link(s, os.path.join(comb, f'f{i + 1:03d}.png'))
-    encode(comb, len(seq), 'sgd_film.mp4')
+    film, last = BF.FILMS['sgd_film'], BF.STILL['sgd_last']
+    encode(comb, len(seq), film, SGD_CRF)
     import cv2
     im = cv2.imread(seq[-1])
     assert im is not None and im.shape[:2] == (2532, 1170), 'さいごの 1まいが 読めない'
-    cv2.imwrite(os.path.join(out, 'sgd_last.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
-    print('sgd_last.webp', f'{os.path.getsize(os.path.join(out, "sgd_last.webp")) / 1e6:.2f}MB', flush=True)
+    cv2.imwrite(os.path.join(out, last), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+    print(last, f'{os.path.getsize(os.path.join(out, last)) / 1e6:.2f}MB', flush=True)
+
+
+def sgd_sound():
+    """超神様の 動画の 音（gen_sfx.py の sfx_sgd）→ out/<build_fx.py の SFX の sgd>（AAC 160kbps：build_fx_assets.py の 音と 同じ 形）"""
+    name = BF.SFX['sgd']
+    argv = sys.argv
+    sys.argv = ['gen_sfx.py']
+    try:
+        import gen_sfx as S
+    finally:
+        sys.argv = argv
+    x = S.sfx_sgd()
+    wav = os.path.join(work, name[:-4] + '.wav')
+    S.write_wav(wav, x)
+    run([FF, '-y', '-loglevel', 'error', '-i', wav, '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', os.path.join(out, name)])
+    os.remove(wav)
+    print(name, f'{len(x) / S.SR:.2f}秒  {S.lufs(x):.1f} LUFS  {os.path.getsize(os.path.join(out, name)) / 1e6:.2f}MB', flush=True)
 
 
 # ---------------------------------------------------------------- 昇格の 動画（き！の 1まい → バグ → まっ暗 → 宇宙の カットイン）
@@ -169,14 +199,13 @@ def gk_film():
 
 if __name__ == '__main__':
     which = os.environ.get('FILMS', 'sgd,spg,sd,nd,gk').split(',')
-    if 'sgd' in which:
-        sgd_film()
-    if 'spg' in which:
-        spg_up()
-    if 'sd' in which:
-        sd_film()
-    if 'nd' in which:
-        nd_film()
-    if 'gk' in which:
-        gk_film()
-    print('作った:', out, [f for f in ('sgd_film.mp4', 'sgd_last.webp', 'spg_up.mp4', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'gk_film.mp4', 'gk_last.webp') if os.path.exists(os.path.join(out, f))])
+    jobs = (('sgd', sgd_film, BF.FILMS['sgd_film']), ('sgd', sgd_sound, BF.SFX['sgd']), ('spg', spg_up, 'spg_up.mp4'), ('sd', sd_film, BF.FILMS['sd_film']), ('nd', nd_film, BF.FILMS['nd_film']), ('gk', gk_film, BF.FILMS['gk_film']))
+    for key, fn, name in jobs:
+        if key not in which:
+            continue
+        if os.path.exists(os.path.join(out, name)) and not FORCE:      # もと（マスター）を 上書きしない
+            print(f'{name} は もう ある → 作り直さない（作り直す ときは FORCE=1）', flush=True)
+            continue
+        fn()
+    names = sorted(set([n for _, _, n in jobs] + list(BF.STILL.values())))
+    print('作った:', out, [f for f in names if os.path.exists(os.path.join(out, f))])

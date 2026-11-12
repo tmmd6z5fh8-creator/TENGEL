@@ -1,6 +1,7 @@
 # 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
-#   python3 test_fx_flash.py [hit,big,fz,miss,pc,sd,nd,gk,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   python3 test_fx_flash.py [hit,big,fz,miss,sd,nd,gk,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
 #   第4.86版：隠れど的中（hidden）・超プレミアムど的中（zp）・神様的中（gd）は アプリから 消した（押したあとの 形が ない）
+#   第4.162版：プレミアムど的中（pc）・超プレミアム神様的中（昇格の 動画 spg_up）も アプリから 消した。film の 動画は kisekae/build_fx.py の FILMS（超神様は 新しい 動画 sgd_film2.mp4）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
 #   PUSHの画面を1秒 → タップ → 押したあと（的中 2.5秒・デカ 2.5秒・ハズレ 1.5秒・ど的中／隠れど的中 9.5秒）
 #   第5弾（16.3）：プレミアムど的中 pc 13.1秒・超プレミアムど的中 zp 12.6秒・神様的中 gd 10.4秒（CSS と SVG：同じ やり方）。第4.66版：ど的中・紫電 sd
@@ -11,18 +12,19 @@
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
 #     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
 #   第4.117版：神様極的中 gk（虹色の PUSH → 押した 画面（.ndt）→ はじめから おわりまで 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）：nd と 同じ やり方で 数える
-#   film＝超神様の 動画（sgd_film.mp4・超神様的中と 超プレミアム神様的中）と 昇格の 動画（spg_up.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
+#   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film.mp4・ノーマルど的中 nd_film.mp4・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, pc=12.5, sd=11.5, nd=11.2, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, sd=11.5, nd=11.2, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 from assets_dir import adir
 FX_DIR = adir('fx_assets')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）
 sys.path.insert(0, os.path.join(W, 'kisekae')); from normal_do import SD_UP as SDUP   # 第4.77版：極ど的中の 入り
+from build_fx import FILMS as FX_FILMS                                                # 動画の ファイル名（第4.162版：超神様は sgd_film2.mp4）
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
@@ -47,17 +49,17 @@ try:
         for kind in KINDS:
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
             if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
-                for f in ('sgd_film', 'spg_up', 'sd_film', 'nd_film', 'gk_film'):
-                    mp4 = os.path.join(FX_DIR, f + '.mp4')
+                for f in ('sgd_film', 'sd_film', 'nd_film', 'gk_film'):
+                    mp4 = os.path.join(FX_DIR, FX_FILMS[f])
                     if not os.path.exists(mp4) or not shutil.which('ffmpeg'):
-                        print(f'  ⚠️ {f}.mp4 が ない（ios/fx_assets/）か ffmpeg が ない'); continue
+                        print(f'  ⚠️ {FX_FILMS[f]} が ない（ios/fx_assets/）か ffmpeg が ない'); continue
                     fd = os.path.join(d, f); os.makedirs(fd); t0 = time.time()
                     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=390:844,fps=60', '-start_number', '0', os.path.join(fd, 'f%04d.png')], check=True)
                     nfr = len(os.listdir(fd))
                     r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), fd, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
                     out = r.stdout.strip().split('\n'); worst = out[-1] if out else ''; bad = out[0] if out else ''
                     ok = r.returncode == 0 and '窓 0個' in bad
-                    print(('  ✅ ' if ok else '  ❌ ') + f'{f}.mp4：{nfr}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
+                    print(('  ✅ ' if ok else '  ❌ ') + f'{FX_FILMS[f]}：{nfr}コマ（{time.time() - t0:.0f}秒）… {bad}／{worst}')
                     if not ok: fails.append(f + ': ' + (r.stderr[-300:] if r.returncode else bad))
                 continue
             sdf = 0

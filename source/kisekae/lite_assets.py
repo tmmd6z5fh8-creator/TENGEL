@@ -175,9 +175,9 @@ def probe(p):
 
 
 def has_tail(src):
-    """さいごの 1まい（<名前>_last.webp）に つながる 動画か（gk_film.mp4 → gk_last.webp）"""
-    m = re.fullmatch(r'(.+)_film\.mp4', os.path.basename(src))
-    return bool(m) and os.path.isfile(os.path.join(os.path.dirname(src), m.group(1) + '_last.webp'))
+    """さいごの 1まい（<名前>_last.webp）に つながる 動画か（gk_film.mp4 → gk_last.webp。作り直した 版は 数字つき：sgd_film2.mp4 → sgd_last2.webp〈第4.162版〉）"""
+    m = re.fullmatch(r'(.+)_film(\d*)\.mp4', os.path.basename(src))
+    return bool(m) and os.path.isfile(os.path.join(os.path.dirname(src), m.group(1) + '_last' + m.group(2) + '.webp'))
 
 
 def sig(name, f, how):

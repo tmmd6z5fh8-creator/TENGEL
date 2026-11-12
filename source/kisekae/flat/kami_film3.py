@@ -17,6 +17,10 @@
    第4.50版：まさちゃん「三枚目の写真の！を消して、四枚目の写真は後2秒長くして！」「小石のようなエフェクトは全てリアルな小判に変えて！」
      → 字は「御座います」（！なし）・さいごの 字の 場面を 2秒 のばす（全体 6.2秒：光が もう 1回 すべる・雷は さいごまで）・
        金の 粒は ぜんぶ 本物の ような 慶長小判（kami_koban.py：茣蓙目・扇の わくの 桐の 紋・壹两・光次と 花押／裏は 花押）が 回りながら とぶ
+   第4.162版（まさちゃん 2026/11/12 22:32「鳥居とか文字関係はこのファイルのデータを使って！」）：字と 鳥居は まさちゃんの Meshy の 3D（flat/kami_glb.py）。
+     寄りの 神・様・的・中＝「神様／的中」の 3D の 行（神様・的中）を その 字が まん中に 来る ように 置く／さいご＝「神様／的中」＋「おめでとう／御座います」＋鳥居（額「天眼」つき）。
+     カメラ・動き・雷・小判・キラキラ・光が すべる 所は そのまま。鳥居は 3D の 形の まま（前の 鳥居より 足が 短い）→ 笠木の 両はしが 画面に 入る 大きさで、金の 台まで 見える：
+     さいごの 字は 画面の はばの 8割（前は 9割）に して 鳥居の 中に おさめる。3D が 手元に ない とき・SGD_TEXT=old の ときは 前の 字と 鳥居
    python3 flat/kami_film3.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -29,6 +33,7 @@ import kami_art as KA
 import kami_film as KF
 import kami_torii3 as T3
 import kami_koban as KB
+import kami_glb as KG
 
 S = 3.0
 W, H = KF.W, KF.H
@@ -41,6 +46,19 @@ SSA = 2                               # 側面は 2倍で 描いて もどす
 FOCAL = 1500.0                        # カメラ（絵の 画素）
 ENV_R = 2600.0                        # 映りこみの 空までの きょり（1000 単位）
 CXS, CYS = W / 2, H / 2
+GLB = os.environ.get('SGD_TEXT', 'glb') != 'old' and KG.have()      # 字と 鳥居は まさちゃんの 3D（第4.162版）。SGD_TEXT=old か 3D が ない とき＝前の 字と 鳥居
+GLB_LOGO_W = 1953.0                   # 3D の「神様／的中」の はば（1000 単位）＝前の 字の「神様」の はば
+GLB_OMEDE_W = 1739.0                  # 「おめでとう／御座います」の はば＝前の 字の「御座います」の はば
+GLB_GAP = 100.0                       # 「的中」の 下と「おめでとう」の 上の すきま
+GLB_SPLIT = (.023, .019)              # 3D の 中の「神｜様」「的｜中」の さかい目（GLB の x）
+GLB_ROW_Y = -.065                     # 3D の 中の「神様」と「的中」の さかい目（GLB の y：かたまりの まん中が これより 上＝神様）
+GLB_FIT = .8                          # さいごの 字の はば（画面の はばの 何倍）：前は .9。鳥居の 中に おさめる
+GLB_CEN_Y = 441.0                     # さいごの 字の まん中（画面の px・たて）：前は 470
+GLB_BACK = 700.0                      # 鳥居は 字の うしろ（1000 単位）
+GLB_GATE_FIT = (24.0, 1146.0, 300.0)  # さいごの 形で：鳥居の 左の はし・右の はし（x）・いちばん 上（y）（画面の 画素）
+GLB_OMEDE_GAIN = 1.25                 # 「おめでとう／御座います」の 3D は 色が こい だいだい → 「神様／的中」の 金に 近づける
+GLB_LOOK = dict(tint=.5, coat=.3, key=1.2)                 # 字の 光らせ方（kami_glb.shade）
+GLB_GATE_LOOK = dict(tint=.6, coat=.22, key=1.0, diff=1.15)      # 鳥居（朱ぬりは 色を しっかり）
 
 # ---------------------------------------------------------------- 時刻（③ の はじめが 0）
 TT = dict(WIN=(0.0, .05, .3),                                          # 白（まっ白 → 消える）
@@ -439,6 +457,8 @@ def face(obj, R, Tv, env_rot=0.0, gain=1.0, shine=None, tilt=0.0):
 
 def draw(img, obj, R, Tv, env_rot=0.0, gain=1.0, side_gain=1.0, shine=None, tilt=0.0, mv=None):
     """側面 → 前の 面 を img に 重ねる（mv：動きの ぶれ（画面の 画素））→ 字 → 画面 の 行列"""
+    if obj.get('glb'):
+        return None, draw_glb(img, obj, R, Tv, env_rot, shine, mv)
     sc, scov = sides(obj, R, Tv, side_gain * gain, env_rot)
     fr, fa, Hs = face(obj, R, Tv, env_rot, gain, shine, tilt)
     rgb = fr + sc * (1 - fa[..., None])
@@ -461,11 +481,54 @@ LOGO_LINES = (('神様', 1.0, 0.0, .064, 460.0), ('的中', 1.0, 860.0, .064, 46
               ('おめでとう', .36, 1272.0, .08, 290.0), ('御座います', .36, 1620.0, .08, 290.0))
 
 
+def glb_rows():
+    """「神様／的中」の 3D を 行に 分ける → (神様の 行, 的中の 行, 3D の 箱の 下, 上)。行は べつの かたまり（頂点を 溶接して つながりで 分ける）"""
+    def f():
+        p = KG.prim('logo')
+        lab, nc = KG.comp_labels(p)
+        ym = np.array([p.pos[p.idx[lab == c]][..., 1].mean() for c in range(nc)])
+        top = (ym > GLB_ROW_Y)[lab]
+        return KG.subset(p, top), KG.subset(p, ~top), p.pos.min(0), p.pos.max(0)
+    return KF.cache('glbrows', f)
+
+
+def glb_cu(j):
+    """寄りの 字（神・様・的・中）：その 字の 行を、字の まん中が 0 に なる ように 置く（となりの 字は 画面の 外）"""
+    top, bot, lo, hi = glb_rows()
+    row = top if j < 2 else bot
+    s = GLB_LOGO_W / float(hi[0] - lo[0])
+    rl, rh = row.pos.min(0), row.pos.max(0)
+    sp = GLB_SPLIT[j // 2]
+    x0, x1 = (rl[0], sp) if j % 2 == 0 else (sp, rh[0])
+    return KG.make([KG.bake(row, s, (x0 + x1) / 2, (rl[1] + rh[1]) / 2, rh[2])], CU_K, seed=11 + j)
+
+
+def glb_logo():
+    """さいごの 字：「神様／的中」の 下に「おめでとう／御座います」。まん中が 0・前の 面が 0"""
+    top, bot, lo, hi = glb_rows()
+    sa = GLB_LOGO_W / float(hi[0] - lo[0])
+    q = KG.prim('omede')
+    ql, qh = q.pos.min(0), q.pos.max(0)
+    sb = GLB_OMEDE_W / float(qh[0] - ql[0])
+    ha, hb = float(hi[1] - lo[1]) * sa, float(qh[1] - ql[1]) * sb
+    tot = ha + GLB_GAP + hb
+    cxa, cya = (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2
+    ya = -tot / 2 + ha / 2                               # 「神様／的中」の まん中（字の 座標・y 下）
+    yb = tot / 2 - hb / 2
+    prims = [KG.bake(top, sa, cxa, cya, hi[2], 0.0, ya), KG.bake(bot, sa, cxa, cya, hi[2], 0.0, ya),
+             KG.tone(KG.bake(q, sb, (ql[0] + qh[0]) / 2, (ql[1] + qh[1]) / 2, qh[2], 0.0, yb), GLB_OMEDE_GAIN)]
+    return KG.make(prims, LOGO_K, glint_n=14, seed=21)
+
+
 def cu_obj(j):
+    if GLB:
+        return KF.cache(f'gcu{j}', lambda: glb_cu(j))
     return KF.cache(f'cu{j}', lambda: text_obj([(CU_CHARS[j], 1.0, 0.0, .052, 470.0)], CU_K, seed=11 + j))
 
 
 def logo_obj():
+    if GLB:
+        return KF.cache('glogo', glb_logo)
     return KF.cache('logo5', lambda: text_obj(list(LOGO_LINES), LOGO_K, seed=21))
 
 
@@ -513,6 +576,61 @@ def torii_place(R, Tv):
     return R, Tv + R @ off, dsc
 
 
+def glb_gate():
+    """鳥居の 3D を 字の 座標に 置く（さいごの 形で 左右の はしと 上が GLB_GATE_FIT に 来る 大きさと 場所・字の うしろ GLB_BACK）→ 立体"""
+    def f():
+        from scipy.optimize import fsolve
+        p = KG.prim('gate')
+        lo, hi = p.pos.min(0), p.pos.max(0)
+        cx, cy, cz = (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2
+        hw, hh = (hi[0] - lo[0]) / 2, (hi[1] - lo[1]) / 2
+        yaw, pitch, roll, x, y, z = logo_pose(TT['TURN'][1])
+        R = rot(yaw, pitch, roll)
+        Tv = np.array([x, y, z])
+
+        def res(q):
+            ox, oy, dsc = q
+            pts = [np.array([ox - hw * dsc, oy - hh * dsc, GLB_BACK]), np.array([ox + hw * dsc, oy - hh * dsc, GLB_BACK]), np.array([ox, oy - hh * dsc, GLB_BACK])]
+            pl, pr, pt = (project(R @ v + Tv) for v in pts)
+            return [pl[0] - GLB_GATE_FIT[0], pr[0] - GLB_GATE_FIT[1], pt[1] - GLB_GATE_FIT[2]]
+        z0 = z + GLB_BACK
+        ox, oy, dsc = fsolve(res, [0.0, 0.0, (GLB_GATE_FIT[1] - GLB_GATE_FIT[0]) * z0 / FOCAL / (2 * hw)])
+        # 第4.162版（まさちゃん 2026/11/13 01:10「神様的中の文字だけもう少し左が中央じゃない？」）：左右の 場所は さいごの コマ（字が ま正面）で 鳥居の まん中（額・2本の 柱の まん中）が
+        #   画面の 左右の まん中に 来る ように 決め直す。前は 回りおわりの 形で 笠木の 両はしを 合わせて いたので、その あと 字が 向きを かえる 間に うしろの 鳥居 だけ 左へ ずれて
+        #   （さいごは 字の まん中から 左へ 約35px）、字が 鳥居の まん中より 右に 見えた。大きさと 高さ（dsc・oy）は 今までどおり 回りおわりの 形で 決める
+        yawf, pitchf, rollf, xf_, yf_, zf_ = logo_pose((N - 1) / FPS)
+        Rf, Tf = rot(yawf, pitchf, rollf), np.array([xf_, yf_, zf_])
+
+        def resx(q):
+            pl, pr = (project(Rf @ np.array([q[0] + sg * hw * dsc, oy - hh * dsc, GLB_BACK]) + Tf) for sg in (-1, 1))
+            return [(pl[0] + pr[0]) / 2 - CXS]
+        ox = float(fsolve(resx, [float(ox)])[0])
+        g = KG.bake(p, float(dsc), cx, cy, cz, float(ox), float(oy))
+        g.pos[:, 2] += GLB_BACK                               # 鳥居の まん中の 面が 字の 前の 面から GLB_BACK おく
+        return dict(glb=True, prims=[g], fit=(float(ox), float(oy), float(dsc)))
+    return KF.cache('ggate', f)
+
+
+def draw_glb(img, obj, R, Tv, env_rot=0.0, shine=None, mv=None, look=None, shadow=None, dof=0.0):
+    """3D（字・鳥居）を img に 重ねる（shadow：かげの 絵 0〜1・dof：ぼけ・mv：動きの ぶれ）→ おおい"""
+    sh = None if shine is None else (shine[0], shine[1], .5)
+    lay = KG.draw(obj, R, Tv, W, H, FOCAL, env_lookup, env_rot, ENV_R, look or GLB_LOOK, sh)
+    if lay is None:
+        return np.zeros((H, W), np.float32)
+    if shadow is not None:
+        lay[..., :3] *= (1 - .58 * shadow)[..., None]
+    if dof > 0:
+        lay = cv2.GaussianBlur(lay, (0, 0), dof)
+    if mv is not None and math.hypot(*mv) > 1.5:
+        b = KF.motion_blur(lay, mv[0], mv[1])
+        p_ = (b.shape[0] - H) // 2
+        lay = b[p_:p_ + H, p_:p_ + W]
+    al = np.clip(lay[..., 3], 0, 1)
+    img *= (1 - al[..., None])
+    img += lay[..., :3]
+    return al
+
+
 def text_shadow(o, R, Tv):
     """字の かげ（鳥居に おちる：左上 手前からの 光 → 右下へ ずれて ぼける）→ 0〜1"""
     L = o['lv'][min(len(o['lv']) - 1, pick_level(o, Tv) + 1)]
@@ -525,6 +643,9 @@ def text_shadow(o, R, Tv):
 
 
 def draw_torii(img, R, Tv, t, mv, o):
+    if GLB:
+        draw_glb(img, glb_gate(), R, Tv, env_rot=8 - 6 * (t - TT['LOGO']), mv=mv, look=GLB_GATE_LOOK, shadow=text_shadow(o, R, Tv), dof=TORII_DOF)
+        return
     Rt, Tt, dsc = torii_place(R, Tv)
     rgb, a = T3.render(torii_geo(), plq_tex(), Rt, Tt, dsc, W, H, FOCAL, CXS, CYS, lambda rv, rt, lv: env_lookup(rv, rt, lv),
                        env_rot=8 - 6 * (t - TT['LOGO']), ss=2)
@@ -1239,26 +1360,67 @@ def cu_pose(j, t):
 
 
 LOGO_END = (5.0, -7.0)               # さいごの 角度（yaw・pitch：右と 下の 側面が 少し 見える）
+GLB_END_YAW = 1.5                    # 3D の 字：回りおわりの yaw。ここから ゆっくり ま正面へ もどり、さいごの コマで ちょうど 0（下の logo_pose）
 
 
 def logo_final():
     lo = logo_obj()
+    if GLB:
+        zf = FOCAL * lo['size'][0] / (GLB_FIT * W)
+        return zf, (GLB_CEN_Y * S - CYS) * zf / FOCAL
     zf = FOCAL * lo['size'][0] / (.9 * W)
     return zf, (470 * S - CYS) * zf / FOCAL
 
 
+def logo_hull():
+    """さいごの 字の「神様／的中」（3D）の 頂点の うち いちばん 外がわの もの（凸包の 頂点）：どの 向きから 見ても 見える 形の はしは この 中に ある。
+       「おめでとう／御座います」は 入れない（まん中に 合わせる のは「神様／的中」）"""
+    def f():
+        from scipy.spatial import ConvexHull
+        P = np.concatenate([q.pos for q in logo_obj()['prims'][:2]]).astype(np.float64)
+        return P[ConvexHull(P).vertices]
+    return KF.cache('glogohull', f)
+
+
+_LCX = {}
+
+
+def logo_cx(yaw, pitch, roll, y, z):
+    """さいごの 字の「神様／的中」（3D）の 見える 形（前の 面＋見えて いる 横の 面）の 左右の はしの まん中が 画面の 左右の まん中に 来る x（字の 座標の ずらし）。
+       第4.162版（まさちゃん 2026/11/13 00:16「超神様的中の最後のシーン、青四角の位置が少し右よりだから中央に合わせて！」）：
+       字は 少し 右を 向いて いた（右の 横の 面が 見える）。前の 面の まん中を 画面の まん中に 置いて いたので、横の 面の ぶん 字の かたまりが 右に 寄って 見えた"""
+    key = (round(yaw, 6), round(pitch, 6), round(roll, 6), round(y, 4), round(z, 4))
+    if key not in _LCX:
+        Q = logo_hull() @ rot(yaw, pitch, roll).T
+        x = 0.0
+        for _ in range(4):
+            px = FOCAL * (Q[:, 0] + x) / (Q[:, 2] + z) + CXS
+            x -= ((px.min() + px.max()) / 2 - CXS) * z / FOCAL
+        _LCX[key] = x
+    return _LCX[key]
+
+
 def logo_pose(t):
-    """ななめ（大きい）→ 正面へ 回りながら ひく → ゆっくり"""
+    """ななめ（大きい）→ 正面へ 回りながら ひく → ゆっくり。3D の 字は「神様／的中」の 見える かたまりが いつも 画面の 左右の まん中（logo_cx）。
+       第4.162版（まさちゃん 2026/11/13 01:10「神様的中の文字だけもう少し左が中央じゃない？まだ少し右に曲がってるように見える」）：
+       前は 回りおわり（右へ 5°）の あとも ゆっくり 右を 向いて さいごは 右へ 8.2°＝右が 手前に 来て 大きく・右の 横の 面が 見えて、字が 右へ 曲がって 見えた。
+       3D の 字は 回りおわりを 右へ GLB_END_YAW（1.5°）に して、そこから ゆっくり ま正面へ（さいごの コマで ちょうど 0°＝左右が 同じ 形・同じ 大きさ）"""
     zf, yf = logo_final()
     t0, t1 = TT['TURN']
     p = min(1.0, max(0.0, (t - t0) / (t1 - t0)))
     u = 1 - (1 - p) ** 2.6
     a = (-13.0, 10.0, -2.5, 170.0, yf + 140.0, zf * .82)
-    b = (LOGO_END[0], LOGO_END[1], 0.0, 0.0, yf, zf)
+    ye = GLB_END_YAW if GLB else LOGO_END[0]
+    xb = logo_cx(ye, LOGO_END[1], 0.0, yf, zf) if GLB else 0.0
+    b = (ye, LOGO_END[1], 0.0, xb, yf, zf)
     pose = [x + (y - x) * u for x, y in zip(a, b)]
     s = max(0.0, t - t1)
-    pose[0] += .9 * s
     pose[5] *= 1 + .012 * s
+    if not GLB:
+        pose[0] += .9 * s                                    # 前の 字：回りきった あとも ゆっくり 右を 向く
+    elif s > 0:                                              # 3D の 字：ゆっくり ま正面へ・まん中を 合わせ直す
+        pose[0] = GLB_END_YAW * max(0.0, 1 - s / ((N - 1) / FPS - t1))
+        pose[3] = logo_cx(pose[0], pose[1], pose[2], pose[4], pose[5])
     return pose
 
 

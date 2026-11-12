@@ -122,7 +122,7 @@ try:
         r4 = []
         for t in TH:
             tid, e = t['id'], man[t['id']]; apply(pg, tid)
-            for kind, PZ, rb in (('big', 1.2, False), ('nd', 1.4, False), ('pc', 1.6, True)):
+            for kind, PZ, rb in (('big', 1.2, False), ('nd', 1.4, False), ('sgd', 1.6, True)):      # 第4.162版：虹色（1.6倍）は 超神様的中で ためす（前は プレミアムど的中：なくした）
                 show(pg, TRI, kind, 700); s = pg.evaluate(ST); close(pg)      # 出て くる 動き（ポンと 大きく なる）が おわって から 測る
                 pz = max(1, min(PZ, 372 / e['w'], 480 / e['h']))
                 ok = (bool(s) and 'pim' in s['cls'].split() and abs(float(s['pz']) - pz) < 0.002 and abs(s['cur']['pz'] - pz) < 0.002 and [s['ow'], s['oh']] == [e['w'], e['h']] and abs(s['w'] - e['w'] * pz) <= e['w'] * pz * .08 + 1.5 and abs(s['h'] - e['h'] * pz) <= e['h'] * pz * .08 + 1.5      # テーマの ゆれる 動き（ぷりけつ など）の ぶん 8% まで

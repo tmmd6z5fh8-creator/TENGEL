@@ -1705,6 +1705,7 @@ def omedetou_voice(fz, vr):
 
 def sfx_sgd():
     """超神様的中の タップの 音（第4.51版）。0秒＝動画の はじめ（見本では 動画が 動きだした 時に その 時刻から 鳴らす）：
+       第4.162版：① は 金の 爆発 だけ（0〜0.2秒：ドガーン!!＋ジャラジャラ → シュワーッ↑ → パァーン）→ 白い 光 → ②（1.53〜6.23秒）→ ③（6.23〜12.83秒）。下の ① の 説明と 秒は 前の 動画（球体の 場面 あり）の もの
        ① 金の 嵐（0〜1.6秒）：キュイッ↑（光の 粒）→ ドガーン!!（光の 爆発）＋パァーン（まっ白）→ ザァッ↓（光の 滝）→ ドーン（床に 当たる）＋ゴゴゴ・ゴォォォ（嵐）
           → ブォォン↑・シュワーッ↑（ドームが 床から 上がる）＋ギュイーン（電気の 光）＋ドガーン・パチパチ（下の 火花の 爆発）
           ＋バリバリッ・ドーン（上から 下への 雷 6本・形が かわる たびに バチッ）＋ジジジ・ビリビリ（ドームの 電気）＋バリッ（玉から 画面の はしへの 雷）＋ヒュンッ（岩）
@@ -1743,65 +1744,70 @@ def sgd_mix(mx, r, SG, ev, o=0.0, voice=False):
     A_ = (45, 52, 57, 61)         # ラ（A2・E3・A3・C#4）
     T1, T2, T3 = ev['T1'], ev['T2'], ev['T3']
     # ======== ① 金の 嵐 ========
-    ig0, igw, igf, igr, ige = (o1 + v for v in T1['IGN'])        # 点火：はじまり・白が 出はじめ・まっ白・白が ひきはじめ・白が 消える
-    mx.add(cuin(700, 3600, igw - ig0 + .06, igw - ig0, r), ig0, .14, rv=.3)          # キュイッ↑（光の 粒が ふくらむ）
-    mx.add(arc_zap(igw - ig0, r, 500), ig0, .3, rv=.2)
-    mx.add(explosion(r, 1.1, .9), igw - .01, .8, rv=.3)                              # ドガーン!!（光の 爆発）
-    mx.add(boom(110, 28, 1.6, .5, .05, 2.6, r), igw - .01, 1.0 * FZ_LOW, rv=.1)
-    mx.add(crash(r, 2.0, .7), igf, .3, -.2, rv=.45)                                 # パァーン（まっ白）
-    for i, m in enumerate((76, 83, 88, 95)):
-        mx.add(bell(mtof(m), 1.4, idx=1.3, tau=.5), igf + .01 * i, .1, (i / 3 - .5) * .8, rv=.5)
-    c0, c1 = (o1 + v for v in T1['COL'])
-    dcol = c1 - c0 + .03
-    mx.add(nsweep(dcol, 7000, 900, .6, r) * np.linspace(.3, 1, n_(dcol)), c0, .3, rv=.3)          # ザァッ↓（光の 滝が おりる）
-    im = o1 + T1['IMPACT']
-    mx.add(boom(90, 28, 1.3, .45, .05, 2.4, r), im, .85 * FZ_LOW, rv=.15)                       # ドーン（床に 当たる）
-    mx.add(explosion(r, .6, 1.1), im, .45, rv=.3)
+    # 第4.162版（まさちゃん 2026/11/12 22:32「一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！」）：① の はじめを 切った 動画（cut＝切った 秒）は
+    #   金の 爆発（ドガーン!!）から 鳴らす。点火・光の 滝・ドーム・雷・岩・玉が 小さく なる 音（切った 所の 音）は 鳴らさない。① の 秒は 切る 前の もの なので cut を ひく
+    cut = ev.get('CUT', 0.0)
+    o1 -= cut
     gl, gx, gw, gk = (o1 + v for v in T1['GOLD'])                                 # 金：光が 集まる・爆発・白が 出はじめ・まっ白
-    dw = gw - c0
-    tw = tl(n_(dw))
-    mx.add(nlow(dw, 3400, 1900, 1.0, r) * np.minimum(tw / .1, 1) * np.clip((dw - tw) / .25, 0, 1), c0, .24, rv=.35)   # ゴォォォ（光の 滝）
-    mx.add(rumble(gw - im + .2, r, 150, 9), im, .5, rv=.3)                                      # ゴゴゴ（嵐）
-    mx.add(growl(30.9, 41.2, gw - im, gw - im, 2.0), im, .14, rv=.2)
-    d0, d1 = (o1 + v for v in T1['DOME'][:2])                                     # ドームが 床から 上がる
-    mx.add(growl(41.2, 98.0, d1 - d0 + .3, d1 - d0, 2.2), d0, .2, rv=.25)                       # ブォォン↑
-    dd = d1 - d0 + .06
-    mx.add(nsweep(dd, 300, 6500, .5, r) * np.linspace(0, 1, n_(dd)) ** 1.5, d0, .26, rv=.35)     # シュワーッ↑
-    for j, m in enumerate((76, 83, 88, 95)):                                                     # キラッ（ガラスの 玉）
-        mx.add(bell(mtof(m), .9, idx=1.2, tau=.35), d1 - .03 + .025 * j, .07, (j / 3 - .5) * .9, rv=.5)
-    g0, _, _, g3 = (o1 + v for v in T1['SURGE'])
-    mx.add(buzz(g3 - g0 + .12, r, 74), g0, .28, rv=.2)                                          # ギュイーン（電気の 光）
-    mx.add(crackle(g3 - g0, 380, r), g0, .35, -.5, rv=.25)
-    mx.add(crackle(g3 - g0, 300, r), g0, .3, .5, rv=.25)
-    l0 = o1 + ev['LIFT_T'][0]                                                                    # 下の 火花の 爆発
-    mx.add(explosion(r, .8, 1.0), l0, .5, rv=.3)
-    mx.add(boom(100, 30, 1.0, .35, .05, 2.4, r), l0 + .01, .55 * FZ_LOW, rv=.15)
-    for dt, cnt in ev['LIFT_BURSTS']:                                                            # パチパチパチ（火花が とぶ）
-        mx.add(crackle(.45, cnt * 2.2, r), l0 + dt, .3, r.uniform(-.3, .3), rv=.3)
-        mx.add(arc_zap(.1, r, 900), l0 + dt, .2, r.uniform(-.3, .3), rv=.2)
-    for t0, t1, pan, chg in ev['RIBS']:                                                          # 上から 下への 雷
-        t0, t1 = o1 + t0, o1 + t1
-        mx.add(arc_zap(.14, r, 1400), t0, .45, pan, rv=.25)                                      # バリバリッ
-        mx.add(explosion(r, .35, 1.5), t0 + .005, .3, pan, rv=.35)                               # ドーン
-        mx.add(boom(85, 30, .9, .3, .03, 2.4, r), t0 + .01, .38 * FZ_LOW, rv=.2)
-        mx.add(buzz(t1 - t0, r, 96 + 10 * pan), t0 + .03, .05, pan, rv=.15)                      # ジジジ（のこって いる 間）
-        for tc in chg:                                                                           # バチッ（形が かわる）
-            mx.add(arc_zap(.06, r, 1100), o1 + tc, .2, pan, rv=.2)
-    k0, k1 = (o1 + v for v in ev['CRACK'])                                                       # ドームの 電気
-    mx.add(buzz(k1 - k0 + .1, r), k0, .12, rv=.15)                                               # ビリビリ
-    mx.add(crackle(k1 - k0, 160, r), k0, .22, rv=.25)                                            # ジジジ
-    for t, pan in ev['ARCS']:                                                                    # バチッ（玉の 表面を はしる 電気）
-        mx.add(arc_zap(.08, r, 900), o1 + t, .2, pan, rv=.2)
-    for t, pan, life in ev['SB']:                                                                # バリッ（玉から 画面の はしへの 雷）
-        mx.add(arc_zap(life, r, 1300), o1 + t, .3, pan, rv=.25)
-        mx.add(explosion(r, .15, 1.9), o1 + t + .004, .12, pan, rv=.3)
-    for t, side, _ in ev['ROCKS']:                                                               # ヒュンッ（岩）
-        mx.add(whoosh(.5, r), o1 + t, .28, np.linspace(0, side, 12), rv=.2)
-    s0, s1 = (o1 + v for v in ev['SHRINK'])                                                      # キュゥゥン↑（玉が 小さく なる）
-    mx.add(cuin(330, 1320, s1 - s0 + .1, s1 - s0, r), s0, .07, rv=.35)
-    mx.add(growl(55.0, 110.0, s1 - s0 + .1, s1 - s0, 2.0), s0, .1, rv=.2)
-    for j, m in enumerate((88, 95, 100)):                                                        # キィン（金の 光が 集まる）
-        mx.add(bell(mtof(m), .5, idx=1.2, tau=.25), gl + .02 * j, .08, rv=.4)
+    if not cut:
+        ig0, igw, igf, igr, ige = (o1 + v for v in T1['IGN'])        # 点火：はじまり・白が 出はじめ・まっ白・白が ひきはじめ・白が 消える
+        mx.add(cuin(700, 3600, igw - ig0 + .06, igw - ig0, r), ig0, .14, rv=.3)          # キュイッ↑（光の 粒が ふくらむ）
+        mx.add(arc_zap(igw - ig0, r, 500), ig0, .3, rv=.2)
+        mx.add(explosion(r, 1.1, .9), igw - .01, .8, rv=.3)                              # ドガーン!!（光の 爆発）
+        mx.add(boom(110, 28, 1.6, .5, .05, 2.6, r), igw - .01, 1.0 * FZ_LOW, rv=.1)
+        mx.add(crash(r, 2.0, .7), igf, .3, -.2, rv=.45)                                 # パァーン（まっ白）
+        for i, m in enumerate((76, 83, 88, 95)):
+            mx.add(bell(mtof(m), 1.4, idx=1.3, tau=.5), igf + .01 * i, .1, (i / 3 - .5) * .8, rv=.5)
+        c0, c1 = (o1 + v for v in T1['COL'])
+        dcol = c1 - c0 + .03
+        mx.add(nsweep(dcol, 7000, 900, .6, r) * np.linspace(.3, 1, n_(dcol)), c0, .3, rv=.3)          # ザァッ↓（光の 滝が おりる）
+        im = o1 + T1['IMPACT']
+        mx.add(boom(90, 28, 1.3, .45, .05, 2.4, r), im, .85 * FZ_LOW, rv=.15)                       # ドーン（床に 当たる）
+        mx.add(explosion(r, .6, 1.1), im, .45, rv=.3)
+        dw = gw - c0
+        tw = tl(n_(dw))
+        mx.add(nlow(dw, 3400, 1900, 1.0, r) * np.minimum(tw / .1, 1) * np.clip((dw - tw) / .25, 0, 1), c0, .24, rv=.35)   # ゴォォォ（光の 滝）
+        mx.add(rumble(gw - im + .2, r, 150, 9), im, .5, rv=.3)                                      # ゴゴゴ（嵐）
+        mx.add(growl(30.9, 41.2, gw - im, gw - im, 2.0), im, .14, rv=.2)
+        d0, d1 = (o1 + v for v in T1['DOME'][:2])                                     # ドームが 床から 上がる
+        mx.add(growl(41.2, 98.0, d1 - d0 + .3, d1 - d0, 2.2), d0, .2, rv=.25)                       # ブォォン↑
+        dd = d1 - d0 + .06
+        mx.add(nsweep(dd, 300, 6500, .5, r) * np.linspace(0, 1, n_(dd)) ** 1.5, d0, .26, rv=.35)     # シュワーッ↑
+        for j, m in enumerate((76, 83, 88, 95)):                                                     # キラッ（ガラスの 玉）
+            mx.add(bell(mtof(m), .9, idx=1.2, tau=.35), d1 - .03 + .025 * j, .07, (j / 3 - .5) * .9, rv=.5)
+        g0, _, _, g3 = (o1 + v for v in T1['SURGE'])
+        mx.add(buzz(g3 - g0 + .12, r, 74), g0, .28, rv=.2)                                          # ギュイーン（電気の 光）
+        mx.add(crackle(g3 - g0, 380, r), g0, .35, -.5, rv=.25)
+        mx.add(crackle(g3 - g0, 300, r), g0, .3, .5, rv=.25)
+        l0 = o1 + ev['LIFT_T'][0]                                                                    # 下の 火花の 爆発
+        mx.add(explosion(r, .8, 1.0), l0, .5, rv=.3)
+        mx.add(boom(100, 30, 1.0, .35, .05, 2.4, r), l0 + .01, .55 * FZ_LOW, rv=.15)
+        for dt, cnt in ev['LIFT_BURSTS']:                                                            # パチパチパチ（火花が とぶ）
+            mx.add(crackle(.45, cnt * 2.2, r), l0 + dt, .3, r.uniform(-.3, .3), rv=.3)
+            mx.add(arc_zap(.1, r, 900), l0 + dt, .2, r.uniform(-.3, .3), rv=.2)
+        for t0, t1, pan, chg in ev['RIBS']:                                                          # 上から 下への 雷
+            t0, t1 = o1 + t0, o1 + t1
+            mx.add(arc_zap(.14, r, 1400), t0, .45, pan, rv=.25)                                      # バリバリッ
+            mx.add(explosion(r, .35, 1.5), t0 + .005, .3, pan, rv=.35)                               # ドーン
+            mx.add(boom(85, 30, .9, .3, .03, 2.4, r), t0 + .01, .38 * FZ_LOW, rv=.2)
+            mx.add(buzz(t1 - t0, r, 96 + 10 * pan), t0 + .03, .05, pan, rv=.15)                      # ジジジ（のこって いる 間）
+            for tc in chg:                                                                           # バチッ（形が かわる）
+                mx.add(arc_zap(.06, r, 1100), o1 + tc, .2, pan, rv=.2)
+        k0, k1 = (o1 + v for v in ev['CRACK'])                                                       # ドームの 電気
+        mx.add(buzz(k1 - k0 + .1, r), k0, .12, rv=.15)                                               # ビリビリ
+        mx.add(crackle(k1 - k0, 160, r), k0, .22, rv=.25)                                            # ジジジ
+        for t, pan in ev['ARCS']:                                                                    # バチッ（玉の 表面を はしる 電気）
+            mx.add(arc_zap(.08, r, 900), o1 + t, .2, pan, rv=.2)
+        for t, pan, life in ev['SB']:                                                                # バリッ（玉から 画面の はしへの 雷）
+            mx.add(arc_zap(life, r, 1300), o1 + t, .3, pan, rv=.25)
+            mx.add(explosion(r, .15, 1.9), o1 + t + .004, .12, pan, rv=.3)
+        for t, side, _ in ev['ROCKS']:                                                               # ヒュンッ（岩）
+            mx.add(whoosh(.5, r), o1 + t, .28, np.linspace(0, side, 12), rv=.2)
+        s0, s1 = (o1 + v for v in ev['SHRINK'])                                                      # キュゥゥン↑（玉が 小さく なる）
+        mx.add(cuin(330, 1320, s1 - s0 + .1, s1 - s0, r), s0, .07, rv=.35)
+        mx.add(growl(55.0, 110.0, s1 - s0 + .1, s1 - s0, 2.0), s0, .1, rv=.2)
+        for j, m in enumerate((88, 95, 100)):                                                        # キィン（金の 光が 集まる）
+            mx.add(bell(mtof(m), .5, idx=1.2, tau=.25), gl + .02 * j, .08, rv=.4)
     mx.add(explosion(r, 1.0, 1.0), gx, .7, rv=.3)                                               # ドガーン!!（金の 爆発）
     mx.add(boom(115, 32, 1.2, .4, .05, 2.5, r), gx, .85 * FZ_LOW, rv=.15)
     jingle(mx, gx + .03, .5, 18, .15, r)                                                         # ジャラジャラ（金の かけら）

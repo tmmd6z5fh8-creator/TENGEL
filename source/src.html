@@ -2534,6 +2534,7 @@ document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { notifyC
 document.addEventListener('tengel:notify', () => { syncNotify().then(() => { if (st.tab === 'judge') renderRsvCard(currentJudge(), true); }); });
 
 // --- 的中ボタン（第3弾・10章）：結果を保存したあとに 1つだけ出す（第4.118版：神様極的中＞超プレミアム神様＞超神様＞極ど的中＞プレミアム／ノーマルど的中＞デカ的中＞的中／当たりなし＝ハズレのボード。中身は fx.js の decide）。
+//     第4.162版：超プレミアム神様的中と プレミアムど的中は なし（神様極的中＞超神様＞極ど的中＞ノーマルど的中＞デカ的中＞的中）。前に 出した 記録（rsv.fx が pc・spg）と その 思い出ボードは そのまま
 //     出さないとき：中止・全部返還（※仮）・あとで記録を直したとき（一度出した記録＝rsv.fx が入っている）・まだ結果待ちの券種があるとき。中身は fx.js
 function fxAfterSave(b, j, res, done, fields, streak) {
   const F = Fx(); if (!F || !done || res.abandoned || (b.rsv && b.rsv.fx) || j.state === '返還' || j.state === '結果待ち' || j.state === '—') return null;
@@ -2766,6 +2767,7 @@ document.addEventListener('tengel:fx', e => {
 //   レース名・日付・買い目・結果・金額は 記録に ある ものを そのまま 使う（直せば 思い出ボードも かわる）。バックアップにも そのまま 入る。
 //   ど的中（ノーマル・プレミアム）の レースは 記録する ときに ①②を 選ぶ（あとから 変えない。外して もう一度 記録する ときは また 選ぶ）。極ど的中は 幻の馬・ほかは 決まった わく（fx.js の memory）。
 //   記録タブの 上（予約レースの 下）に「思い出のレース」の 欄：押すと 思い出ボード（TengelFx.memory）。絞り込み「思い出」。App Store版だけ（Web版は 絞り込みの 札も 出さない）
+//   pc（ど的中（プレミアム））・spg（超プレミアム神様的中）は 第4.162版で なくした 演出：前に 記録した レースの 札と 思い出ボードの ために のこす（新しい 記録には つかない）
 const MEM_KIND_LABEL = { hit: '的中', big: 'デカ的中', nd: 'ど的中', pc: 'ど的中（プレミアム）', sd: '極ど的中', sgd: '超神様的中', spg: '超プレミアム神様的中', gk: '神様極的中', miss: 'ハズレ' };
 function memSpec(b) {
   const j = rsvJudge(b) || { per: {} }, ranks = {}; rankOrder(b.horses || []).forEach((no, i) => { ranks[no] = i + 1; });

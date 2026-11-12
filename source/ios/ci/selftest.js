@@ -151,31 +151,21 @@
       res.closed = !document.querySelector('#fxOv');
       return res;
     });
-    // 第5弾：特別な 演出（16.3）。プレミアムど的中（部品 約1800・落ちない・絵は 手元の ios/fx_assets/ から → CIでは 404 でも 流れは 動く）・
-    // 超神様的中（動画は リポジトリに 入れない → CIでは 読めない → さいごの 1まい → 1.3秒で ボード）。第4.86版：神様的中・超プレミアムど的中・隠れど的中は なし
+    // 第5弾：特別な 演出（16.3）。超神様的中（動画は リポジトリに 入れない → CIでは 読めない → さいごの 1まい → 1.3秒で ボード）。第4.86版：神様的中・超プレミアムど的中・隠れど的中は なし
+    // 第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：プレミアムど的中・超プレミアム神様的中も なし
+    //   （押したあと・絵・音・昇格の 動画は 束に ない・くじも ない。決めて 出す とき（force）は プレミアムど的中 → ノーマルど的中・超プレミアム神様的中 → 超神様的中）
     await step(R, 'fx5', async function () {
       var F = window.TengelFx; if (!F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }], ranks: { 11: 11, 8: 8, 2: 2 } };
       function fps(ms) { return new Promise(function (r) { var n = 0, t0 = performance.now(); (function tick() { n++; if (performance.now() - t0 < ms) requestAnimationFrame(tick); else r(Math.round(n * 1000 / ms)); })(); }); }
       function closeVis() { var c = document.querySelector('#fxOv .close'); return c ? getComputedStyle(c).visibility : null; }
-      var res = { decide: F.decide(spec), lottery: [F.lottery('nd'), F.lottery('sgd')], films: Object.keys(window.__FX.films || {}), assets: {} };   // 第4.118版：くじは ノーマルど的中 → プレミアム だけ
-      for (var k of ['pm_face_F.webp', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_pc.m4a']) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
-      res.gone = { reveal: ['hidden', 'zp', 'gd'].filter(function (k) { return !!(window.__FX.reveal || {})[k]; }), art: !!(window.__FX.art || {}).gd, sfx: !!(window.__FX.sfx || {}).gd };   // 第4.86版：消した 演出は 入って いない
-      // プレミアムど的中（ハートの 雨 → ポニー ①〜⑤（1つ 1.0秒）→ ハートの 地面に ど的中が 落ちて 刺さる → ボード：10.07秒・第4.86版）
-      res.pc = { kind: F.show(Object.assign({ force: 'pc' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
-      await sleep(400); F.tap(); var pcT = Date.now(); res.pc.fps = await fps(1000);
-      res.pc.parts = ['.pmbg', '.pmp', '.pms', '.pmf', '.pmw', '.pmfj', '.pmhz', '.pmhp', '.pmsp'].map(function (c) { return document.querySelectorAll('#fxOv .ov.pm ' + c).length; });
-      await sleep(3200); res.pc.fps4 = await fps(1000);   // ポニーの ① の ころ
-      await mark('fx-pc');
-      // 第4.80版：ハートの 地面が できて、ゼリーの ハートが 上から 落ちて 先が 地面に 着いて 1/3 うまる → ぷるんぷるん → 上へ（第4.86版：8.55秒に 着いて 9.95秒に 上へ）→ 9.5秒ごろを 写す
-      await sleep(Math.max(0, 9500 - (Date.now() - pcT)));
-      var pmf = document.querySelector('#fxOv .ov.pm .pmf');
-      res.pc.land = { t: Date.now() - pcT, tf: pmf ? getComputedStyle(pmf).transform : null, heap: document.querySelectorAll('#fxOv .ov.pm .pmhp > i').length };
-      await mark('fx-pc-land');
-      await waitFor(function () { return closeVis() === 'visible'; }, 16000);
-      res.pc.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.pc.closeVis = closeVis();
-      await mark('fx-pc-board');
-      F.close(); await sleep(300);
+      var A = window.__FX || {};
+      var res = { decide: F.decide(spec), lottery: typeof F.lottery, films: Object.keys(A.films || {}), assets: {} };   // 第4.162版：くじは ない（F.lottery も ない）
+      for (var k of [(A.films || {}).sgd_film, ((A.art || {}).sgd || [])[0], (A.sfx || {}).sgd]) { try { var r = await fetch(k, { cache: 'no-store' }); res.assets[k] = r.status; } catch (e) { res.assets[k] = String(e); } }
+      // 第4.86版・第4.162版：消した 演出は 入って いない（押したあと・絵・音・昇格の 動画）。決めて 出すと ノーマルど的中・超神様的中に なる
+      res.gone = { reveal: ['hidden', 'zp', 'gd', 'pc', 'spg'].filter(function (k) { return !!(A.reveal || {})[k]; }), art: ['gd', 'pm'].filter(function (k) { return !!(A.art || {})[k]; }),
+        sfx: ['gd', 'pc', 'zp', 'spg', 'spg_up'].filter(function (k) { return !!(A.sfx || {})[k]; }), films: !!(A.films || {}).spg_up, force: [] };
+      for (var fk of ['pc', 'spg']) { res.gone.force.push(F.show(Object.assign({ force: fk }, spec)) + '/' + ((F.current() || {}).kind || '')); await sleep(200); F.close(); await sleep(200); }
       // 超神様的中（動画が ない → still）
       res.sgd = { kind: F.show(Object.assign({ force: 'sgd' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf') };
       await sleep(400); F.prime(); F.tap(); await sleep(400);

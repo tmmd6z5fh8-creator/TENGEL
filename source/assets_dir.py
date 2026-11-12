@@ -10,6 +10,12 @@ NAMES = ('fx_assets', 'bcp_assets', 'tc_assets', 'fig_assets')
 TC_GONE = frozenset(('tc_se_flop.m4a', 'tc_se_goron.m4a', 'tc_se_lie.m4a', 'tc_se_hop.m4a', 'tc_se_unlock.m4a'))
 #   第4.156版：使わなく なった 音（tc/tc_care.js が 出さなく なった できごと flop・goron・lie。hop は 11/09 に ぴょんの 音を はしゃぐ（frisk）に かえて から 鳴らして いなかった。
 #   unlock は tc_se_piron.m4a と 中身が 同じ ＝ アプリは piron を 鳴らす：tc/tc_app.js の SE_SKIP）
+FX_GONE = re.compile(r'pm_.+\.webp|sfx_(pc|zp|spg|spg_up)\.m4a|spg_up\.mp4')
+#   第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：なくした 演出の 絵（pm_…：43まい）・音（プレミアム・超プレミアム・
+#   超プレミアム神様・昇格）・昇格の 動画。アプリは もう 使わない（kisekae/build_fx.py の ASSET_FILES に ない）ので 軽い 版にも 入れない（もとの フォルダには 残す）
+FX_NEW = {'sgd_film2.mp4': 'sgd_film.mp4', 'sgd_last2.webp': 'sgd_last.webp', 'sfx_sgd2.m4a': 'sfx_sgd.m4a'}
+#   第4.162版（22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：超神様の 動画・さいごの 1まい・音は 新しい もの（…2）を 使う。
+#   新しい ものが 3つ そろって いる ときは 前の もの（球体の 場面 あり）は 入れない（もとの フォルダには 残す）
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
@@ -25,6 +31,11 @@ def lite(name):
 def superseded(name, files):
     """新しい 形に 置きかえた ので アプリにも 軽い 版にも 入れない ファイル（もとの フォルダには 残す＝マスターは 消さない・上書きしない）"""
     files = set(files)
+    if name == 'fx_assets':
+        old = {f for f in files if FX_GONE.fullmatch(f)}
+        if set(FX_NEW) <= files:
+            old |= files & set(FX_NEW.values())
+        return old
     if name == 'fig_assets' and 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
         return {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}
     if name == 'tc_assets':                                     # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」「いないデータの削除」）：

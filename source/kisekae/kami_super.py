@@ -12,15 +12,22 @@
    超プレミアム神様的中（第4.52版・まさちゃん「これ超プレミアム神様的中ボタンとして追加して！」）：超神様的中の 4回に1回（ランダム）。PUSHは ど的中と 同じ
      押すと 超プレミアムど的中（super_premium.py）の ふりで はじまり → ③「き！」（押してから 6.0秒：UP_AT）で 画面が 止まって
      昇格の 動画（バグ 2秒 → まっ暗 1秒 → 宇宙の カットイン 3.6秒＝flat/kami_glitch.py・kami_cutin.py：6.57秒・音なし）→ 超神様の 動画（声つきの 音）→ 超神様的中の ボード
-     動画は 2つ（昇格・超神様）とも 押す 前から 読んでおき、押した 瞬間（タップの 中）に 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）"""
+     動画は 2つ（昇格・超神様）とも 押す 前から 読んでおき、押した 瞬間（タップの 中）に 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）
+   第4.162版（まさちゃん 2026/11/12 22:32「超神様的中と超プレミアム神様的中の一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！あと、鳥居とか文字関係はこのファイルのデータを使って！」・
+     22:34「画質は綺麗にデータが重くなりすぎないようによろしく！」・22:50「これ送れてなかった！万馬券」・22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：
+     ・動画：① は 金の 爆発 だけ（6コマ・0.2秒：flat/kami_film.py の CUT）→ 白い 光 40コマ → ② 141コマ → ③ 198コマ ＝ 385コマ・12.83秒（前は 427コマ・14.23秒）。
+       ②③ の 字（万馬券・天眼・4行の 文・神様的中・おめでとう御座います）と 鳥居は まさちゃんの Meshy の 3D（flat/kami_glb.py）。動きと カメラは そのまま
+     ・音（gen_sfx.py の sfx_sgd）：① は 金の 爆発から（film_events() の CUT＝切った 秒。点火・光の 滝・ドーム・雷・岩の 音は ない）
+     ・超プレミアム神様的中（spg_…・UP_…：下の 方）は アプリから なくした（build_fx.py が 入れない）。見本の ページを 作る 道具と して のこす"""
 import os
 
 FPS = 30
-N1, N2, N3 = 48, 141, 198                  # ①②③ の コマ数（flat/kami_film.py・kami_film2.py・kami_film3.py の N）。③ は さいごの 場面を 0.4秒 のばした（声が ボードの 前に 言いおわる ように）
+N1, N2, N3 = 6, 141, 198                   # ①②③ の コマ数（flat/kami_film.py・kami_film2.py・kami_film3.py の N）。③ は さいごの 場面を 0.4秒 のばした（声が ボードの 前に 言いおわる ように）
+                                           # 第4.162版（まさちゃん 11/12 22:32「一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！」）：① は 48 → 6コマ（金の 爆破 だけ）
 NW = 40                                    # ① と ② の 間に 足す 白い 光の コマ（flat/kami_white.py）：まさちゃん「四枚目のシーンのあと、白い光に包まれるシーンは、1.5秒に伸ばして！」
                                            # → ① の さいごの まっ白 1コマ＋この 40コマ＋② の はじめの 白 4コマ ＝ 1.5秒
 OFS = (0.0, (N1 + NW) / FPS, (N1 + NW + N2) / FPS)     # ①②③ の はじまり（押した 瞬間が 0秒）
-FILM = (N1 + NW + N2 + N3) / FPS           # 動画の 長さ 14.23秒（白い 光を 足す 前は 12.5秒）
+FILM = (N1 + NW + N2 + N3) / FPS           # 動画の 長さ 12.83秒（第4.162版：球体の 場面を なくした。前は 14.23秒・白い 光を 足す 前は 12.5秒）
 RES = FILM + .1                            # ボード（動画の さいごの 1まいの 上に）
 T0B = RES + .45                            # ボードの 買い目の はじまり（--t0）
 # 視差効果を減らす（・動画が 動かない）時：さいごの 1まい → 押して 1秒後に 音の STILL_FROM 秒から → ボードの ポンッ（音の RES＋0.2秒）で ボードが ふわっと・買い目も 音に そろえる
@@ -40,7 +47,7 @@ def sgd_video(film_url):
             f'aria-hidden="true" ref="{{{{vref}}}}" onPlaying="{{{{onPlay}}}}"></video>')
 
 
-SGD_SR = ('超神様的中！金色の 嵐の 中で 光の 玉が はじけ、金粉が 舞う 白い 光の あと、金色の 立体の 字で「万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり」。'
+SGD_SR = ('超神様的中！金色の 爆発から、金粉が 舞う 白い 光の あと、金色の 立体の 字で「万馬券（きせき）は偶然にあらず 天眼（テンゲル）が導く必然なり」。'
           '雷を まとった 神・様・的・中 と 小判が とびかい、朱ぬりの 鳥居の 中に 神様的中 おめでとう御座います')
 
 
@@ -168,16 +175,20 @@ def film_events():
     import kami_film2 as F2
     import kami_film3 as F3
     assert (F1.N, F2.N, F3.N) == (N1, N2, N3), ((F1.N, F2.N, F3.N), (N1, N2, N3))
-    # ① 上から 下への 雷：(出る 秒, 消える 秒, 左右, 形が かわる 秒)
-    ribs = []
-    for j, t0, t1 in F1.RIBS:
-        p = F1.KM.RIBBONS[j][0]
-        f0, f1 = int(math.ceil(t0 * FPS)), int(t1 * FPS)
-        ribs.append((t0, t1, (p[-1][0] / 195 - 1) * .8, [f / FPS for f in F1.vbolt_changes(j, f0, f1)[1:]]))
-    # ① 玉から 画面の はしへの 雷：(出る 秒, 左右, 長さ 秒)
-    sb = [(f / FPS, math.cos(math.radians(a)) * .8, life / FPS) for f, a, _, _, life in F1.sphere_bolt_events()]
-    el1 = F1.elec_events()
-    arcs = [(f / FPS, side * .45) for f, side, *_ in el1['arcs']]
+    # 第4.162版：① の はじめを 切った 動画（F1.CUT＞0：金の 爆発から）では、切った 所（球体の 場面）の 雷・電気の 時刻は 出さない（音も 鳴らさない：gen_sfx.py の sgd_mix）。
+    #   絵の スクリプトの 中の 表（ドームの ブルブルなど）は 今の コマ数（6）ぶん しか ない ので、切った 所の 時刻は 計算できない
+    ribs, sb, arcs, crack = [], [], [], (0.0, 0.0)
+    if not F1.CUT:
+        # ① 上から 下への 雷：(出る 秒, 消える 秒, 左右, 形が かわる 秒)
+        for j, t0, t1 in F1.RIBS:
+            p = F1.KM.RIBBONS[j][0]
+            f0, f1 = int(math.ceil(t0 * FPS)), int(t1 * FPS)
+            ribs.append((t0, t1, (p[-1][0] / 195 - 1) * .8, [f / FPS for f in F1.vbolt_changes(j, f0, f1)[1:]]))
+        # ① 玉から 画面の はしへの 雷：(出る 秒, 左右, 長さ 秒)
+        sb = [(f / FPS, math.cos(math.radians(a)) * .8, life / FPS) for f, a, _, _, life in F1.sphere_bolt_events()]
+        el1 = F1.elec_events()
+        arcs = [(f / FPS, side * .45) for f, side, *_ in el1['arcs']]
+        crack = (el1['f0'] / FPS, el1['f1'] / FPS)
     # ③ 字の 雷：(出る 秒, 種（run＝ふちを はしる・out＝外へ・jump＝字から 字へ）, 長さ 秒, 左右)
     el3 = []
     for e in F3.elec_events():
@@ -190,8 +201,9 @@ def film_events():
             p, n = c['P'][e['i']], c['N'][e['i']]
         a, _ = F3.ol_screen(np.asarray(p, float)[None], np.asarray(n, float)[None], R, Tv)
         el3.append((e['f0'] / FPS, e['kind'], e['life'] / FPS, float(np.clip(a[0][0] / (F3.W / 2) - 1, -1, 1))))
-    return dict(T1=F1.T, RIBS=ribs, ROCKS=F1.ROCKS, LIFT_T=F1.LIFT_T, LIFT_BURSTS=F1.LIFT_BURSTS, SHRINK=F1.SHRINK, SB=sb, ARCS=arcs,
-                CRACK=(el1['f0'] / FPS, el1['f1'] / FPS),
+    return dict(CUT=F1.CUT / FPS,          # 第4.162版：① の はじめを 切った 秒（1.4秒＝球体の 場面。T1 などの ① の 秒は 切る 前の もの：今の 動画の 秒＝そこから CUT を ひく）
+                T1=F1.T, RIBS=ribs, ROCKS=F1.ROCKS, LIFT_T=F1.LIFT_T, LIFT_BURSTS=F1.LIFT_BURSTS, SHRINK=F1.SHRINK, SB=sb, ARCS=arcs,
+                CRACK=crack,
                 T2=F2.TT, HEAVY=(F2.HEAVY1['t'], F2.HEAVY2['t']), T3=F3.TT, EL3=el3, LOGO0=F3.ELEC_LOGO0)
 
 

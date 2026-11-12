@@ -9,6 +9,9 @@
      1.2〜2.5秒「天眼（テンゲル）」右から 左へ ズーン（1.7秒で 止まる）→ ほんの 少しずつ 左へ → 2.32〜2.78秒 白
      2.48秒〜 4行の 文「万馬券（きせき）は／偶然にあらず／天眼（テンゲル）が導く／必然なり」が 手前で ふわっと おちつく（字の うしろから 金粉が ばらばらに ぶわっと）→ 光が 2回 すべる → 4.5〜4.7秒 白（③ へ）
      まさちゃん「この二つのシーンはもっとゆっくりで！イメージズーン！て重たい金が登場するイメージ！」
+   第4.162版（まさちゃん 2026/11/12 22:32「鳥居とか文字関係はこのファイルのデータを使って！」・22:50「これ送れてなかった！万馬券」）：
+     字 3つは まさちゃんの Meshy の 3D（flat/kami_glb.py：きせき／万馬券・テンゲル／天眼・4行の 文）。カメラ・動き・着地の 光・金粉・白は そのまま。
+     大きさは 前の 字の はばに 合わせる（同じ カメラで 同じ ように 画面に 入る）。3D が 手元に ない とき・SGD_TEXT=old の ときは 前の 字（Dela Gothic One の 立体）
    python3 flat/kami_film2.py <出力フォルダ> [コマ番号（1〜）…]  → f001.png …（何回 作っても 同じ）"""
 import os, sys, math, random
 import numpy as np
@@ -19,11 +22,16 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, K)
 import kami_art as KA
 import kami_film as KF
+import kami_glb as KG
 
 S = 3.0
 W, H = KF.W, KF.H
 FPS = 30
 N = 141                               # 4.7秒（③ の はじめの まっ白まで）
+GLB = os.environ.get('SGD_TEXT', 'glb') != 'old' and KG.have()      # 字は まさちゃんの 3D（第4.162版）。SGD_TEXT=old か 3D が ない とき＝前の 字
+GLB_W = (2920.0, 1953.0, 4981.6)      # 3D の 字の はば（1000 単位）＝前の 字の 箱の はば（万馬券・天眼・4行の 文）
+GLB_K = (.62, .72, .42)               # 正面の 地図の 細かさ（キラッの 場所 用：前の 字と 同じ）
+GLB_LOOK = dict(tint=.5, coat=.3, key=1.2)      # 3D の 金の 光らせ方（kami_glb.shade）：金の 色を 少し 白く・白い つや・光を 少し 強く
 SSA = 2                               # 立体の 字は 2倍で 描いて もどす（ふちを なめらかに）
 FOCAL = 1500.0                        # カメラ（絵の 画素：広い 角度で 遠近を 強く）
 ENV_R = 2600.0                        # 映りこみの 空までの きょり（1000 単位：字の 場所で 映りこみが かわる）
@@ -82,6 +90,40 @@ def env_map():
 def env_lookup(rv, rot=0.0):
     """映りこみの 向き rv（…×3：カメラ：x 右・y 下・z 前）→ 色"""
     env = env_map()
+    x, y, z = rv[..., 0], rv[..., 1], rv[..., 2]
+    el = np.degrees(np.arcsin(np.clip(-y, -1, 1)))
+    az = np.degrees(np.arctan2(x, z)) + rot
+    u = ((az + 180) % 360) / 360 * ENV_W
+    v = np.clip((90 - el) / 180 * (ENV_H - 1), 0, ENV_H - 1.001)
+    u0 = np.floor(u).astype(np.int32)
+    v0 = np.floor(v).astype(np.int32)
+    fu = (u - u0).astype(np.float32)[..., None]
+    fv = (v - v0).astype(np.float32)[..., None]
+    u0 %= ENV_W
+    u1 = (u0 + 1) % ENV_W
+    v1 = np.minimum(v0 + 1, ENV_H - 1)
+    a = env[v0, u0] * (1 - fu) + env[v0, u1] * fu
+    b = env[v1, u0] * (1 - fu) + env[v1, u1] * fu
+    return a * (1 - fv) + b * fv
+
+
+def env_lvl(level):
+    """映りこみの 地図（3D の 字 用）：0＝はっきり（金）・1＝少し ぼけ・2＝大きく ぼけ（面を てらす 光）"""
+    def f():
+        e = env_map()
+        sig = (0.0, 2.5, 34.0)[level]
+        if sig <= 0:
+            return e
+        p = int(sig * 3)
+        b = cv2.copyMakeBorder(e, p, p, 0, 0, cv2.BORDER_REPLICATE)
+        b = cv2.copyMakeBorder(b, 0, 0, p, p, cv2.BORDER_WRAP)
+        return cv2.GaussianBlur(b, (0, 0), sig)[p:-p, p:-p].copy()
+    return KF.cache(f'env2_{level}', f)
+
+
+def env_lookup3(rv, rot=0.0, level=0):
+    """映りこみの 向き rv（カメラ：x 右・y 下・z 前）→ 色（ぼかしの 段つき：3D の 字 用）"""
+    env = env_lvl(level)
     x, y, z = rv[..., 0], rv[..., 1], rv[..., 2]
     el = np.degrees(np.arcsin(np.clip(-y, -1, 1)))
     az = np.degrees(np.arctan2(x, z)) + rot
@@ -272,6 +314,36 @@ def draw_obj(obj, R, Tv, env_rot=0.0, side_gain=1.0, face_gain=1.0, shine=None):
     return np.dstack([rgb, alpha]), Hs
 
 
+def glb_obj(name, width, k, seed):
+    """まさちゃんの 3D → 立体の 字（まん中が 0・前の 面が 0・はば width（1000 単位））"""
+    p = KG.prim(name)
+    lo, hi = p.pos.min(0), p.pos.max(0)
+    o = KG.make([KG.bake(p, width / float(hi[0] - lo[0]), (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, hi[2])], k, seed=seed)
+    o['glints'] = o['glints_px']                       # キラッは 地図の 画素で（下の glints が 行列で 画面へ）
+    return o
+
+
+def draw_glb(obj, R, Tv, env_rot=0.0, shine=None):
+    """3D の 字を 1コマ 描く → (premultiplied RGBA（画面の 画素）, 地図 → 画面×SSA の 行列（キラッ 用）) か (None, None)"""
+    sh = None if shine is None else (shine[0], shine[1], .9)
+    lay = KG.draw(obj, R, Tv, W, H, FOCAL, env_lookup3, env_rot, ENV_R, GLB_LOOK, sh)
+    if lay is None:
+        return None, None
+    alpha = lay[..., 3]
+    ring = np.clip(KA.grow(alpha, 2.2 * S / 2) - alpha, 0, 1)             # 外の こい 茶色の ふち（金の 空から 字を うかせる：前の 字と 同じ）
+    lay[..., :3] += np.float32([.12, .055, .008]) * ring[..., None]
+    lay[..., 3] = np.clip(alpha + ring, 0, 1)
+    k = obj['k']
+    cx, cy = obj['c']
+    Hm = np.array([[1 / k, 0, -cx / k], [0, 1 / k, -cy / k], [0, 0, 1]])
+    Kc = np.array([[FOCAL * SSA, 0, CXS * SSA], [0, FOCAL * SSA, CYS * SSA], [0, 0, 1]])
+    return lay, Kc @ np.column_stack([R[:, 0], R[:, 1], Tv]) @ Hm
+
+
+def draw_any(obj, R, Tv, env_rot=0.0, shine=None):
+    return draw_glb(obj, R, Tv, env_rot, shine) if obj.get('glb') else draw_obj(obj, R, Tv, env_rot=env_rot, shine=shine)
+
+
 def glints(img, obj, Hs, t, seed):
     """キラッ（面取りの 上の 小さな 光の 星：1つずつ ふわっと 出て 消える）"""
     g = obj['glints']
@@ -306,6 +378,8 @@ def downsample(img):
 def objects():
     """立体の 字（1回だけ 作る）：万馬券（きせき）・天眼（テンゲル）・4行の 文"""
     def f():
+        if GLB:
+            return tuple(glb_obj(nm, GLB_W[i], GLB_K[i], 31 + i) for i, nm in enumerate(('manba', 'tengan', 'phrase')))
         it, ri, box = KA.line_layout('万馬券', 0.0, ('きせき', 0, 3))
         o1 = build_obj([(it, ri)], box, .62, 300.0)
         it, ri, box = KA.line_layout('天眼', 0.0, ('テンゲル', 0, 2))
@@ -514,7 +588,7 @@ def frame(fi):
         if not (P['t'][0] <= t < (TT['CU2'][0] if P is HEAVY1 else TT['TXT'] + .02)):
             continue
         yaw, pitch, roll, x, y, z = heavy_pose(P, t)
-        lay, Hs = draw_obj(o, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=er(t))
+        lay, Hs = draw_any(o, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=er(t))
         gl = (o, Hs, sd)
         cen = project(np.array([x, y, z]))
         prev = heavy_pose(P, t - .5 / FPS)                     # 動きの ぶれ（半コマぶん：速く すべる 間）
@@ -529,11 +603,12 @@ def frame(fi):
             if s0 - .05 <= t <= s0 + .7:
                 q = (t - s0) / .65
                 sh = (-3.6 + 7.2 * ease_out(q) * 1.0, .45)
-        lay, Hs = draw_obj(o3, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-8 + 6 * (t - TT['TXT']), shine=sh)
+        lay, Hs = draw_any(o3, rot(yaw, pitch, roll), np.array([x, y, z]), env_rot=-8 + 6 * (t - TT['TXT']), shine=sh)
         gl = (o3, Hs, 13)
     gold_spray(img, t)                                       # 字の うしろから（字より 先に 描く）
     if lay is not None:
-        lay = downsample(lay)
+        if lay.shape[0] != H:
+            lay = downsample(lay)
         if blur > 3:
             lay = cv2.blur(lay, (int(blur) | 1, 1))
         img = lay[..., :3] + img * (1 - lay[..., 3:4])

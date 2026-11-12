@@ -31,6 +31,12 @@
 //     枠（枠複・枠単）の 組は 枠番なので 人気を 見ない（M には 数える）。人気が わからない 馬・13番人気より 下は 穴に 数えない。強い 順（重ならない）：
 //     神様極的中（G・M・さいごの 50レースに G・M が 2つ以上）＞ 超プレミアム神様的中（G・M）＞ 超神様的中（G）＞ 極ど的中（D・M）＞ プレミアムど的中（D の 6分の1）＞
 //     ノーマルど的中（D）＞ デカ的中（B）＞ 的中（H）＞ ハズレ。帯と ボードの いちばん 上の 行は その 段を 決めた 組の 券種（TYPE_ORDER の 先の もの）
+//   第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：プレミアムど的中（pc）と 超プレミアム神様的中（spg）は なし。
+//     くじは ひかない（ぜんぶ 決まった 条件）：G（神様）は M でも M で なくても 超神様的中（神様極的中の 条件は そのまま 先）・D で M で ない ものは いつも ノーマルど的中。
+//     強い 順：神様極的中 ＞ 超神様的中（G）＞ 極ど的中（D・M）＞ ノーマルど的中（D）＞ デカ的中（B）＞ 的中（H）＞ ハズレ。
+//     押したあと・絵（pm_…）・音（pc・zp・spg・spg_up）・昇格の 動画（spg_up）は アプリに 入れない（kisekae/build_fx.py）。決めて 出す とき（force・ためし）の pc は nd・spg は sgd に する（shown）。
+//     前に 記録した 思い出（種類 pc・spg）は そのまま 開ける（思い出ボードの わく・見出し・帯：MEM_FRAME・TITLE_OF・BOARD_OF に のこす）
+//     超神様的中の 動画：はじめの 球体の 場面を 消して 金の 爆発から（22:32「一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！」）・字と 鳥居は まさちゃんの 3D（12.83秒）
 (function () {
   'use strict';
   if (!window.__NATIVE || !window.__FX) return;
@@ -47,16 +53,16 @@
   const SUPER = [10, 12];                 // 超大穴＝単勝人気 10〜12番人気（判定の J・K・L）。13番人気より下は入れない
   const BIG = [7, 9];                     // 大穴＝7〜9番人気（デカ的中・神様の もう 1頭）
   const SETTING = 'fx';
-  // PUSHが出たときの音・押したときの音（プレミアム・超神様 など：PUSHは ど的中の音・押すと その音。超プレミアム神様は 超プレミアムの音 → 昇格 → 超神様＋声）
-  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'], gk: ['fz_push', 'gk'] };
+  // PUSHが出たときの音・押したときの音（超神様 など：PUSHは ど的中の音・押すと その音）
+  const SND = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], sgd: ['fz_push', 'sgd'], sd: ['fz_push', 'sd'], nd: ['fz_push', 'nd'], gk: ['fz_push', 'gk'] };
   // 第4.109版：演出ごとに 使う 音（出す 演出が 決まったら これだけ 読んで ほどく）・PUSH の 音（「結果を保存」を 押した ときに 読む）
-  const NEED = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], pc: ['fz_push', 'pc'], sgd: ['fz_push', 'sgd'], spg: ['fz_push', 'zp', 'spg_up', 'spg'],
+  const NEED = { hit: ['hit_push', 'hit'], big: ['big_push', 'big'], sgd: ['fz_push', 'sgd'],
     sd: ['fz_push', 'ndt', 'nd', 'sdp', 'sd'], nd: ['fz_push', 'ndt', 'nd'], gk: ['fz_push', 'ndt', 'gk'] };
   const PUSH_SFX = ['hit_push', 'big_push', 'fz_push'];
-  const FZ_PUSH = { pc: 1, sgd: 1, spg: 1, sd: 1, nd: 1, gk: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
-  const BOARD_OF = { pc: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz', gk: 'fz' };   // ボードの 形（ど的中の 形）
-  const TITLE_OF = { pc: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };              // ボードの 見出し（A.board.titles の キー）
-  const LOT = { pc: 1 / 6 };              // くじ（※仮）：第4.118版から ノーマルど的中（D で M で ない）の 6分の1 で プレミアムど的中 だけ
+  const FZ_PUSH = { sgd: 1, sd: 1, nd: 1, gk: 1 };     // PUSH が ど的中の 虹色の 超デカ PUSH の もの
+  // ボードの 形（ど的中の 形）・見出し（A.board.titles の キー）。pc・spg は 第4.162版で なくした 演出：前に 記録した 思い出ボード（memory）の ために のこす
+  const BOARD_OF = { pc: 'fz', sgd: 'fz', spg: 'fz', sd: 'fz', nd: 'fz', gk: 'fz' };
+  const TITLE_OF = { pc: 'fz', spg: 'sgd', sd: 'fz', nd: 'fz' };
   // 第4.118版：帯と ボードの いちばん 上に 出す 券種の 順（段を 決めた 組が いくつかの 券種に ある とき 先の もの）。枠の 券種は 人気を 見ない ので 入らない
   const TYPE_ORDER = ['3連単', '3連複', '馬単', '馬連', 'ワイド', '単勝', '複勝'];
   const ribbonOn = k => BOARD_OF[k] === 'fz' || k === 'fz';               // 帯と 馬番の 虹色の 輪：ど的中の 形の ボード（ど的中〜神様極的中）だけ
@@ -122,7 +128,7 @@
 
   // ---------- どれが出るか（10章・第4.118版：まさちゃんの 指定の 決まった 条件） ----------
   // spec = { r, n（頭数）, rows: [{ t（券種）, state（的中／不的中／返還）, hits: [[馬番…]…], n（点数） }…]（予約した順）, ranks: { 馬番: 人気順位 } }
-  // → { kind（spg／sgd／sd／nd／big／hit／miss：神様極的中と プレミアムの くじは show）, tier（g 神様／d ど／b デカ／h 的中／miss）, multi（M：当たった 券種が 2つ以上）,
+  // → { kind（sgd／sd／nd／big／hit／miss：神様極的中は show）, tier（g 神様／d ど／b デカ／h 的中／miss）, multi（M：当たった 券種が 2つ以上）,
   //     supers: [{ no, rank }…]（帯の 超大穴）, bigs: [{ no, rank }…]（帯の 大穴）, trig: { t（券種）, c（組） }（段を 決めた 組。的中・ハズレは null） }
   //   当たった 組（どの 券種でも）ごとに 見る。枠の 組は 枠番なので 人気を 見ない。人気が わからない 馬・13番人気より 下は 穴に 数えない
   const isWaku = t => /^枠/.test(String(t || ''));
@@ -146,7 +152,7 @@
       });
     });
     const tier = found.g.length ? 'g' : found.d.length ? 'd' : found.b.length ? 'b' : 'h';
-    const kind = tier === 'g' ? (multi ? 'spg' : 'sgd') : tier === 'd' ? (multi ? 'sd' : 'nd') : tier === 'b' ? 'big' : 'hit';
+    const kind = tier === 'g' ? 'sgd' : tier === 'd' ? (multi ? 'sd' : 'nd') : tier === 'b' ? 'big' : 'hit';   // 第4.162版：G は M でも 超神様的中（超プレミアム神様的中は なし）
     if (tier === 'h') return { kind: kind, tier: tier, multi: multi, supers: [], bigs: [], trig: null };
     const list = found[tier], t = list.slice().sort((p, q) => typeRank(p.t) - typeRank(q.t))[0].t, mine = list.filter(o => o.t === t);
     const supers = [], bigs = [];
@@ -154,8 +160,7 @@
     mine.forEach(o => { o.sp.forEach(x => add(supers, x)); o.bg.forEach(x => add(bigs, x)); });
     return { kind: kind, tier: tier, multi: multi, supers: supers, bigs: bigs, trig: { t: t, c: (mine[0].c || []).slice() } };
   }
-  // くじ（※仮・第4.118版）：ノーマルど的中（D で M で ない）の 6分の1 で プレミアムど的中。ほかは くじを ひかない（決まった 条件）
-  function lottery(kind) { return kind === 'nd' && rand() < LOT.pc ? 'pc' : kind; }
+  // くじは ない（第4.162版：プレミアムど的中を なくした ので、ノーマルど的中の 6分の1 の くじも なくした）
 
   // ---------- ボード（いつもの・お金なし） ----------
   function num(no, n, zx, isWaku) {
@@ -189,7 +194,7 @@
     const h = t.endsWith('！！！') ? esc(head.slice(0, -2)) + '<span class="bx3">！！</span>' : esc(head);
     return `${h}<span class="bz${last === '！' ? ' bzx' : ''}">${esc(last)}</span>`;
   }
-  // 帯：ど的中・プレミアム・極・ノーマル＝超大穴の 馬番と 人気／超神様・超プレミアム神様・神様極的中＝超大穴と 大穴の 馬番（※仮）。
+  // 帯：ど的中・極・ノーマル＝超大穴の 馬番と 人気／超神様・神様極的中＝超大穴と 大穴の 馬番（※仮）。前の 思い出の プレミアム（pc）は ど的中・超プレミアム神様（spg）は 超神様と 同じ 形。
   // 第4.118版：「…が（段を 決めた 組の 券種）に！」（前は いつも「が3連単に！」・券種が わからない ときは「が当たりに！」）
   function ribbonHTML(kind, spec, supers, bigs, trig) {
     const n = spec && spec.n;
@@ -241,7 +246,7 @@
     PUSH_SFX.forEach(k => bufOf(c, k));
     return true;
   }
-  // 音 k を、いまを0秒として from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）。layer＝前の音を止めずに重ねる（超プレミアム神様の 超神様の音）
+  // 音 k を、いまを0秒として from 秒の所から wait 秒後に鳴らす（読むのが0.1秒より遅れたら、遅れたぶん先から鳴らして動きとそろえる）。layer＝前の音を止めずに重ねる（押した 瞬間の 音に 動画の 音を 重ねる）
   function sfx(k, from, wait, layer) {
     if (!layer) hush();
     if (!S.sound) return;
@@ -265,7 +270,7 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hush(); vidHidden(); } else vidBack(); });
   window.addEventListener('pagehide', hush);
 
-  // ---------- 動画（超神様的中・超プレミアム神様的中：アプリの中の mp4・押す前から読んでおく） ----------
+  // ---------- 動画（超神様的中・極ど的中・ノーマルど的中・神様極的中：アプリの中の mp4・押す前から読んでおく） ----------
   const VID = {};
   function holder() { let h = $('#fxVh'); if (!h) { h = document.createElement('div'); h.id = 'fxVh'; h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); } return h; }
   function video(name) {
@@ -276,7 +281,6 @@
       v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.loop = false;
       v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true'); v.setAttribute('data-film', name);
       v.addEventListener('playing', () => onPlaying(name, v));
-      v.addEventListener('ended', () => onEnded(name));
       v.addEventListener('error', () => onError(name));
       holder().appendChild(v);
     }
@@ -288,7 +292,7 @@
   function wake(v) { try { v.currentTime = 0; } catch (e) { /* なし */ } try { const p = v.play(); if (p && p.catch) p.catch(() => {}); v.pause(); } catch (e) { /* なし */ } }   // タップの 中で 一度 動かして 止めて おく（iPhone で あとから 再生できる ように）
   function later(fn, ms) { const t = setTimeout(() => { if (cur && cur.timers) cur.timers = cur.timers.filter(x => x !== t); fn(); }, ms); if (cur) cur.timers.push(t); return t; }
   function clearTimers() { if (!cur) return; cur.timers.forEach(clearTimeout); cur.timers = []; }
-  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), spzOv = () => (cur ? $('.ov.spz', cur.stage) : null), sdOv = () => (cur ? $('.ov.sd', cur.stage) : null), ndOv = () => (cur ? $('.ov.nd', cur.stage) : null), gkOv = () => (cur ? $('.ov.gk', cur.stage) : null);
+  const sgdOv = () => (cur ? $('.ov.sgd', cur.stage) : null), sdOv = () => (cur ? $('.ov.sd', cur.stage) : null), ndOv = () => (cur ? $('.ov.nd', cur.stage) : null), gkOv = () => (cur ? $('.ov.gk', cur.stage) : null);
   // ど的中・紫電（第4.71版）：押した 瞬間に プチュン（CSS と 音 sdp）・動画（sd_film）を 再生 → 動きだした 時（playing）を 0秒に して 音（sd：プチュンの 音に 重ねる）と ボード（go）。
   // 4秒 たっても 動かない・読めない・控えめ → 動画の さいごの 1まい（still：プチュンは 出さない）→ 1.3秒 ボード
   function sdGo() {
@@ -392,35 +396,10 @@
   function sgdStill() {
     if (!cur || cur.on === 2) return;
     clearTimers(); cur.on = 2;
-    [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } x.classList.remove('on'); } });
-    const z = spzOv(); if (z) z.classList.add('stop', 'gone');      // 超プレミアム神様：ふりの 画面も 消す
+    if (cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } cur.v.classList.remove('on'); }
     const ov = sgdOv(); if (ov) ov.classList.add('still');
-    sfx(cur.kind === 'spg' ? 'spg' : 'sgd', A.t.SG.STILL_FROM, A.t.SG.STILL_WAIT);
+    sfx('sgd', A.t.SG.STILL_FROM, A.t.SG.STILL_WAIT);
     emit('still');
-  }
-  // 超プレミアム神様的中：超プレミアムの ①〜③（音は 超プレミアム）→ 6.0秒（き！）で 止めて 昇格の 動画（sp：1＝き！で 止まった・2＝昇格の 動画・3＝超神様の 動画へ）→ 超神様の 動画（声つきの 音を 昇格の 音に 重ねる）
-  function spgGo() {
-    const u = video('spg_up'), v = video('sgd_film'); cur.u = u; cur.v = v; cur.on = 0; cur.sp = 0;
-    if (!u || !v || u.error || v.error || calm()) { sgdStill(); return; }     // どちらかの 動画が ない・読めなかった・控えめ → ふりも 出さず さいごの 1まい ※仮
-    cur.stage.appendChild(u); u.className = 'spu'; cur.stage.appendChild(v); v.className = 'sgv';
-    wake(u); wake(v);
-    sfx('zp');
-    later(spgUp, A.t.SG.UP_AT * 1000);
-  }
-  function spgUp() {
-    if (!cur || cur.kind !== 'spg' || cur.sp || cur.on) return;
-    cur.sp = 1; hush();
-    const z = spzOv(); if (z) z.classList.add('stop');
-    const u = cur.u; try { u.currentTime = 0; } catch (e) { /* なし */ }
-    tryPlay(u, sgdStill);
-    later(() => { if (cur && cur.sp === 1) sgdStill(); }, A.t.SG.WAIT_MAX * 1000);
-  }
-  function spgFilm() {
-    if (!cur || cur.kind !== 'spg' || cur.sp !== 2 || cur.on) return;
-    cur.sp = 3; clearTimers();
-    const v = cur.v; try { v.currentTime = 0; } catch (e) { /* なし */ }
-    tryPlay(v, sgdStill);
-    later(() => { if (cur && !cur.on) sgdStill(); }, A.t.SG.WAIT_MAX * 1000);
   }
   function onPlaying(name, v) {
     if (!cur || cur.phase !== 'reveal' || cur.on) return;
@@ -451,43 +430,28 @@
       sfx('gk', v.currentTime || 0, 0, true);                    // 押した 瞬間の 音（ndt）を 止めずに 重ねる
       v.classList.add('on'); const ov = gkOv(); if (ov) ov.classList.add('go');
       emit('film');
-    } else if (cur.kind === 'spg' && name === 'spg_up' && cur.sp === 1) {
-      cur.sp = 2; clearTimers();
-      sfx('spg_up', v.currentTime || 0);
-      const z = spzOv(); if (z) z.classList.add('gone');
-      v.classList.add('on');
-      const rest = Math.max(0, (isFinite(v.duration) && v.duration ? v.duration : A.t.SG.UP) - (v.currentTime || 0));
-      later(spgFilm, (rest + .5) * 1000);   // おわりの 知らせが こない 時の ため
-      emit('up');
-    } else if (cur.kind === 'spg' && name === 'sgd_film' && cur.sp === 3) {
-      cur.on = 1; clearTimers();
-      sfx('spg', v.currentTime || 0, 0, true);
-      if (cur.u) cur.u.classList.remove('on');
-      v.classList.add('on'); const ov = sgdOv(); if (ov) ov.classList.add('go');
-      emit('film');
     }
   }
-  function onEnded(name) { if (cur && cur.kind === 'spg' && name === 'spg_up' && cur.sp === 2) spgFilm(); }
-  function onError(name) {   // 読めなかったら（どちらの 動画でも）さいごの 1まい ※仮
+  function onError(name) {   // 読めなかったら さいごの 1まい ※仮
     if (!cur || cur.phase !== 'reveal' || cur.on) return;
-    if (cur.kind === 'sgd' || cur.kind === 'spg') sgdStill();
+    if (cur.kind === 'sgd') sgdStill();
     else if (cur.kind === 'sd' && name === 'nd_film' && cur.pre && cur.pre < 3) sdBlack();       // 極ど的中の 入りの ノーマルの 動画が 読めない → すぐ ブラックアウト → 極ど的中
     else if (cur.kind === 'sd' && name === 'sd_film' && !(cur.pre && cur.pre < 4)) sdStill();   // 極ど的中の 動画（入りの とちゅうは 極ど的中に なってから sdGo で）
     else if (cur.kind === 'nd' && name === 'nd_film') ndStill();
     else if (cur.kind === 'gk' && name === 'gk_film') gkStill();
   }
-  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'spg' || cur.kind === 'sd' || cur.kind === 'nd' || cur.kind === 'gk')) return; if (cur.on === 1 || cur.pre === 2) { [cur.u, cur.v].forEach(x => { if (x) { try { x.pause(); } catch (e) { /* なし */ } } }); } }
+  function vidHidden() { if (!cur || !(cur.kind === 'sgd' || cur.kind === 'sd' || cur.kind === 'nd' || cur.kind === 'gk')) return; if ((cur.on === 1 || cur.pre === 2) && cur.v) { try { cur.v.pause(); } catch (e) { /* なし */ } } }
   function vidBack() { if (!cur || !(cur.on === 1 || cur.pre === 2) || !cur.v) return; try { const p = cur.v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* なし */ } }
 
   // ---------- 出す ----------
   // 舞台（390×844）を 画面に 入る 大きさに（縦横の 比は 変えない・1倍に 近ければ 1倍＝字が ぼけない）※仮
   function fit() { if (!cur) return; let k = Math.min(window.innerWidth / 390, window.innerHeight / 844); if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .03) k = 1; cur.stage.style.setProperty('--fxk', k.toFixed(4)); }
-  // 出る 前に 絵を 読んで おく（プレミアム 38まい・紫電と ノーマルど的中と 超神様と 神様極的中の さいごの 1まい・動画）
+  // 出る 前に 絵を 読んで おく（紫電と ノーマルど的中と 超神様と 神様極的中の さいごの 1まい・動画）
   function preload(kind) {
     ready(NEED[kind]);                                                   // 第4.109版：その 演出の 音だけ 読んで ほどく
-    const names = kind === 'pc' ? A.art.pm : kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : kind === 'gk' ? (A.art.gk || []) : (kind === 'sgd' || kind === 'spg') ? A.art.sgd : [];
+    const names = kind === 'sd' ? A.art.sd : kind === 'nd' ? A.art.nd : kind === 'gk' ? (A.art.gk || []) : kind === 'sgd' ? A.art.sgd : [];
     try { names.forEach(f => { const im = new Image(); im.src = f; }); } catch (e) { /* なし */ }
-    if (kind === 'sgd' || kind === 'spg') { video('sgd_film'); if (kind === 'spg') video('spg_up'); }
+    if (kind === 'sgd') video('sgd_film');
     if (kind === 'sd') { video('sd_film'); video('nd_film'); }          // 第4.77版：極ど的中は ノーマルど的中の 動画から 入る
     if (kind === 'nd') video('nd_film');
     if (kind === 'gk') video('gk_film');                                 // 第4.117版：神様極的中
@@ -499,7 +463,7 @@
     const stage = document.createElement('div'); stage.className = 'fxs' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], trig: trig || null, ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null };
+    cur = { kind: kind, spec: spec || {}, supers: supers || [], bigs: bigs || [], trig: trig || null, ov: ov, stage: stage, quiet: !!quiet, phase: '', theme: null, pz: 1, timers: [], on: 0, pre: 0, sdHtml: '', v: null };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     if (!quiet) preload(kind);
@@ -507,11 +471,11 @@
     if (kind === 'miss' || quiet || direct) reveal(); else push();
   }
   // PUSH の 大きさの 段（第4.60版・まさちゃん「的中ボタンは今まで通り／ど的中ボタンは、的中ボタンより一回り大きく／ど的中ボタン以降は、ど的中ボタンもう一回り大きく、虹色にして！」※仮）
-  // 的中 1.0・デカ的中 1.2・ど的中 1.4・プレミアム〜超プレミアム神様 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
+  // 的中 1.0・デカ的中 1.2・ど的中 1.4・超神様と 神様極的中 1.6＋虹色。画面（390px）に おさまる ように 幅と 高さで 頭打ち（マスター帯の 300px の PUSH は 1.24 まで）
   // 第4.117版：神様極的中は 超神様と 同じ 虹色の 1.6倍（まさちゃん「金のpushボタンはいらない！今まで通りでいいよ！」）
-  const PZ = { hit: 1, big: 1.2, sd: 1.4, nd: 1.4, pc: 1.6, sgd: 1.6, spg: 1.6, gk: 1.6 };
-  const RBW = { pc: 1, sgd: 1, spg: 1, gk: 1 };
-  const PLABEL = { big: 'デカ的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', pc: 'プレミアムど的中ボタン', sgd: '超神様的中ボタン', spg: '超プレミアム神様的中ボタン', gk: '神様極的中ボタン' };
+  const PZ = { hit: 1, big: 1.2, sd: 1.4, nd: 1.4, sgd: 1.6, gk: 1.6 };
+  const RBW = { sgd: 1, gk: 1 };
+  const PLABEL = { big: 'デカ的中ボタン', sd: 'ど的中ボタン', nd: 'ど的中ボタン', sgd: '超神様的中ボタン', gk: '神様極的中ボタン' };
   // 壁紙の テーマの PUSH（なければ いつもの 赤い PUSH）＋ 影 ＋「タップ！」
   function pboxHTML(th, label) {
     const pc = th ? ' ' + th.pc : '';
@@ -638,12 +602,10 @@
     boardCustom();
     if (!cur.quiet && k !== 'miss') {
       if (k === 'sgd') sgdGo();
-      else if (k === 'spg') spgGo();
       else if (k === 'sd' && cur.pre) sdPre();                                              // 第4.77版：ノーマルど的中の 動画 → ブラックアウト → 極ど的中
       else if (k === 'sd') { if (!calm()) sfx('sdp'); sdGo(); }                           // 第4.71版：押した 瞬間に プチュンの 音 → 動画（音は 動画が 動きだした 時から 重ねる）
       else if (k === 'nd') ndGo();                                                          // 第4.77版：ノーマルど的中（押すと 1秒 真っ暗 → 動画・音は 動画が 動きだした 時から）
       else if (k === 'gk') gkGo();                                                          // 第4.117版：神様極的中（押した 画面 → 動画 → 12秒で ボード）
-      else if (k === 'pc' && calm()) sfx(SND[k][1], A.t.PC, 1);                             // 控えめ：1秒後に ボードの 所から ※仮
       else sfx(SND[k][1]);
     }
     emit('reveal');
@@ -653,7 +615,7 @@
     if (!cur) return;
     const c = cur; cur = null;
     c.timers.forEach(clearTimeout);
-    park(c.u); park(c.v);
+    park(c.v);
     window.removeEventListener('resize', fit);
     if (c.ov.parentNode) c.ov.parentNode.removeChild(c.ov);
     document.documentElement.classList.remove('fxon');
@@ -669,10 +631,11 @@
   }
   // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）と 神様的中（gd）の 押したあとは アプリに 入って いない（くじで 出ない）。
   // 決めて 出す とき（テスト・CI の force・ためし）は ノーマルど的中（nd）に する。静かな ボード（的中エフェクト オフ）は ど的中の ボードの まま
-  function shown(kind, quiet) { return !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }
-  // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用。くじは ひかない）
+  // 第4.162版：なくした 演出（プレミアムど的中 pc → ノーマルど的中 nd・超プレミアム神様的中 spg → 超神様的中 sgd）。静かな ボードでも 同じ（見出しは もとから 同じ）
+  function shown(kind, quiet) { return kind === 'pc' ? 'nd' : kind === 'spg' ? 'sgd' : !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }
+  // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用）
   // godN（第4.117版・第4.118版）＝G かつ M の レースが 結果を 決めた さいごの 50レース（この レースまで・中止と 締切済みは 入れない）の 中に いくつ あるか（この レースも 入れて：src.html の godCount）。
-  //   この レースが G かつ M で godN が 2以上 → 神様極的中（超プレミアム神様より 先）。ほかは decide の 決まった 種類・ノーマルど的中だけ 6分の1 で プレミアム（的中エフェクト オフでは ひかない）。
+  //   この レースが G かつ M で godN が 2以上 → 神様極的中（超神様より 先）。ほかは decide の 決まった 種類（第4.162版：くじは ない）。
   //   静かな ボード（的中エフェクト オフ）も 同じ 種類（見出しは その 種類の もの）
   function show(spec) {
     if (!spec) return null;
@@ -680,7 +643,6 @@
     let kind = d.kind;
     if (spec.force) kind = shown(spec.force, quiet);
     else if (d.tier === 'g' && d.multi && +spec.godN >= 2) kind = 'gk';
-    else if (!quiet) kind = lottery(kind);
     open(kind, spec, d.supers, d.bigs, quiet, null, d.trig);
     return kind;
   }
@@ -764,7 +726,7 @@
   //   記録タブの「思い出のレース」を 開くと、PUSH・演出・音なしで、そのレースの 結果の ボード（当たりの 大きさの 形：的中・デカ的中・ど的中・ハズレ）と
   //   記録（日付・レース名・買い目・結果・金額：購入と 回収）を 出す。ボードの 下の カード（.memx）が 記録。「とじる」で 閉じる。
   //   まわりの 絵（わく）は 当たりの 大きさごと：的中・デカ的中は いつもの まま／ど的中（ノーマル・プレミアム）は ①光の輪の芝コース か ②プレミアムかわいい馬
-  //   （思い出に 記録する ときに 選ぶ・あとから 変えない）／極ど的中は 幻の馬／超神様的中は テンゲルの鳥居／超プレミアム神様的中は 鳥居と プレミアムの馬／
+  //   （思い出に 記録する ときに 選ぶ・あとから 変えない）／極ど的中は 幻の馬／超神様的中は テンゲルの鳥居／超プレミアム神様的中（第4.162版で なくした：前の 記録 だけ）は 鳥居と プレミアムの馬／
   //   神様極的中（第4.117版：gk）は 神様馬。※ わくの 絵は あとから 足す（いまは 色の 幕と 光の 輪だけ：MEM_CSS の .f-…）。点めつは なし・控えめ／視差効果を減らすでも 同じ
   const MEM_FRAME = { hit: 'hit', big: 'big', nd: 'turf', pc: 'turf', fz: 'turf', sd: 'phantom', sgd: 'torii', gd: 'torii', spg: 'toriicute', gk: 'god', god: 'god', miss: 'miss' };
   const MEM_CSS = '#fxOv.mem{--fxbd:rgba(6,4,18,.9)}'
@@ -830,7 +792,7 @@
     const stage = document.createElement('div'); stage.className = 'fxs mem' + (calm() ? ' calm' : '');
     ov.appendChild(stage); document.body.appendChild(ov);
     document.documentElement.classList.add('fxon');
-    cur = { kind: k, spec: spec, supers: d.supers, bigs: d.bigs, trig: d.trig, ov: ov, stage: stage, quiet: true, phase: 'mem', theme: null, pz: 1, timers: [], on: 0, sp: 0, pre: 0, sdHtml: '', u: null, v: null, mem: { v: v, frame: frame } };
+    cur = { kind: k, spec: spec, supers: d.supers, bigs: d.bigs, trig: d.trig, ov: ov, stage: stage, quiet: true, phase: 'mem', theme: null, pz: 1, timers: [], on: 0, pre: 0, sdHtml: '', v: null, mem: { v: v, frame: frame } };
     fit(); window.addEventListener('resize', fit);
     try { if (WL() && WL().lockZoom) WL().lockZoom(true); } catch (e) { /* なし */ }
     const rows = rowsHTML(spec, k, d.supers, d.bigs, d.trig);
@@ -848,8 +810,8 @@
   window.TengelFx = {
     on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     audio: () => (S.sound ? actx() : null),
-    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, sp: cur.sp, pre: cur.pre, pz: cur.pz, art: cur.art ? cur.art.src : '' } : null),
-    tap: () => { if (cur && cur.phase === 'push') reveal(); }, lottery: lottery, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),
+    current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, pre: cur.pre, pz: cur.pz, art: cur.art ? cur.art.src : '' } : null),
+    tap: () => { if (cur && cur.phase === 'push') reveal(); }, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),
     video: video, _rand: null,
     memory: memory, memKind: memKind, memFrame: memFrame, memInfo: () => (cur && cur.mem ? Object.assign({}, cur.mem) : null)
   };

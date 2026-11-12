@@ -14,7 +14,10 @@
      第4.108版：bcx_hb_head・bcx_hb_fore・bcx_hb_hind・bcx_hb_tail・bcx_hb_eye.webp … 結果ボードカスタム「ボードを持つ馬」（第4.113版から 16番）の 部品 5まい
        （r3d/fx/board_horse_parts.py：3Dの 馬を 2回 描いて 頭と首・前足（くさびを 足す）・後ろ足・しっぽ・目を とじた 所に 分ける・約27KB・1〜2分）
    乱数の種が決まっているので、何回作っても同じ。numpy・scipy・opencv・librsvg・fontTools・ffmpeg がいる（なければ、その分は作らずに知らせる）
-   ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）"""
+   ART=0 で 絵を 作らない・SFX=0 で 音を 作らない（ためす とき）
+   第4.162版：もとの フォルダ（マスター）を 上書きしない ように した。
+     ・絵（ネオンの マスク・プレミアムど的中・神様的中・ボードを持つ馬の 部品）は ART=1 の とき だけ 作る（はじめは 作らない：プレミアムど的中は 第4.162版で・神様的中は 第4.86版で アプリから なくした）
+     ・音は まだ ない もの だけ 作る（もう ある 音は 作り直さない。作り直す ときは FORCE=1）。超神様の 新しい 音（sfx_sgd2.m4a）は build_fx_films.py（FILMS=sgd）でも 作れる"""
 import os
 import shutil
 import subprocess
@@ -28,8 +31,12 @@ sys.path.insert(0, K)
 from build_fx import ASSET_FILES, SFX, ART, FILMS, STILL   # noqa: E402
 
 made, skipped = [], []
+ART_ON = os.environ.get('ART', '0') == '1'      # 第4.162版：はじめは 絵を 作らない（もとを 上書きしない）
+FORCE = os.environ.get('FORCE') == '1'
 # 1) ネオンのマスク
 try:
+    if not ART_ON:
+        raise RuntimeError('ART=1 で 作る')
     import cv2  # noqa: F401
     subprocess.run([sys.executable, os.path.join(K, 'neon_icon.py'), os.path.join(SRC, 'icons', 'icon_master_en.png'), out], check=True, stdout=subprocess.DEVNULL)
     pv = os.path.join(out, 'neon_preview.png')
@@ -40,7 +47,7 @@ except Exception as e:   # noqa: BLE001
     skipped.append(f'ネオンのマスク（{e}）')
 
 # 2) 第5弾の 絵（プレミアムど的中 38まい・神様的中 24まい）
-if os.environ.get('ART', '1') != '0':
+if ART_ON:
     for name, script in (('プレミアムど的中の 絵', 'premium_art.py'), ('神様的中の 絵', 'kami_art.py')):
         try:
             subprocess.run([sys.executable, os.path.join(K, 'flat', script), out], check=True, stdout=subprocess.DEVNULL)
@@ -69,7 +76,9 @@ if os.environ.get('SFX', '1') != '0':
         fns = dict(S.SOUNDS)
         for key, name in SFX.items():
             stem = name[:-4]
-            x = fns[stem]()
+            if os.path.exists(os.path.join(out, name)) and not FORCE:      # もう ある 音は 作り直さない（もとを 上書きしない）
+                continue
+            x = (fns.get(stem) or fns[stem.rstrip('0123456789')])()        # sfx_sgd2 → sfx_sgd（名前の おわりの 数字は 作り直した 版の しるし）
             wav = os.path.join(out, stem + '.wav')
             S.write_wav(wav, x)
             subprocess.run([ff, '-y', '-loglevel', 'error', '-i', wav, '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', os.path.join(out, name)], check=True)
