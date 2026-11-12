@@ -2898,15 +2898,34 @@ const TCFX = (() => {
   
   const RT_STYLE = {
     normal: { glow: [255, 196, 92], hglow: null, chev: ['#e0434a', '#bf2f36', '#fff1d6'], n: 1, star: ['#f6d36e', '#d9a43c'], gem: '#d8333a', tap: ['#d23b30', '#b52f27', '#f0c25a'], card: ['#22603a', '#1a4f2f', '#f0c25a', '#c8922f'], conf: ['#f3c55a', '#d8333a', '#2f7a46', '#fff1c9'], line: 'rgba(255,248,230,0.55)' },
-    maboroshi: { glow: [176, 98, 245], hglow: [440, 380], chev: ['#f3ecfa', '#cdb8e2', '#9a4fc8'], n: 2, star: ['#f2f0f6', '#a9a3b8'], gem: null, tap: ['#9a33bf', '#7f2a9f', '#e6e1ee'], card: ['#8e2db2', '#74229a', '#ebe7f2', '#a9a3b8'], conf: ['#d9b3f0', '#a63cc9', '#f0edf6', '#7f2a9f'], line: 'rgba(255,250,255,0.6)' },
-    kamisama: { glow: [255, 212, 118], hglow: [440, 380], chev: ['#ffd85e', '#e3a83a', '#fff4cf'], n: 2, star: ['#f8d672', '#d4a03a'], gem: null, tap: ['#cd3030', '#ad2626', '#f3c95e'], card: ['#c93030', '#a82626', '#f3c95e', '#c8922f'], conf: ['#f6d06a', '#cd3030', '#fff3cf', '#e6a93a'], line: 'rgba(255,248,230,0.55)' },
+    maboroshi: { glow: [176, 98, 245], hglow: [440, 380], eye: [651.4, 286, 190, 120, 255], chev: ['#f3ecfa', '#cdb8e2', '#9a4fc8'], n: 2, star: ['#f2f0f6', '#a9a3b8'], gem: null, tap: ['#9a33bf', '#7f2a9f', '#e6e1ee'], card: ['#8e2db2', '#74229a', '#ebe7f2', '#a9a3b8'], conf: ['#d9b3f0', '#a63cc9', '#f0edf6', '#7f2a9f'], line: 'rgba(255,250,255,0.6)' },
+    kamisama: { glow: [255, 212, 118], hglow: [440, 380], eye: [641, 271.9, 255, 206, 96], chev: ['#ffd85e', '#e3a83a', '#fff4cf'], n: 2, star: ['#f8d672', '#d4a03a'], gem: null, tap: ['#cd3030', '#ad2626', '#f3c95e'], card: ['#c93030', '#a82626', '#f3c95e', '#c8922f'], conf: ['#f6d06a', '#cd3030', '#fff3cf', '#e6a93a'], line: 'rgba(255,248,230,0.55)' },
   };
   const K = H / 1536, OX = (W - 1024 * K) / 2;            
   let GEO = null;
   async function rtLoad(th) {
     if (!GEO) { try { GEO = await fetch(AP('tc_rt_geom.json')).then(r => r.json()); } catch (e) { GEO = null; } }
-    const I = {}; await Promise.all(['plate', 'knob', 'stick', 'ptr'].map(async p => { I[p] = await img(`rt_${th}_${p}.webp`); }));
+    
+    
+    const I = {}; await Promise.all(['plate', 'knob', 'stick', 'ptr'].map(async p => { I[p] = await img(`rt_${th}_${p}2.webp`) || await img(`rt_${th}_${p}.webp`); }));
     return I;
+  }
+  
+  
+  function drawEye(r, u) {
+    const e = RT_STYLE[r.th].eye; if (!e) return;
+    const [ex, ey, cr, cg, cb] = e, k = 0.5 + 0.5 * Math.sin(TAU * u / 2.4 - 1.2), R = 38 + 10 * k;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const rg = g.createRadialGradient(ex, ey, 0, ex, ey, R);
+    rg.addColorStop(0, `rgba(${cr},${cg},${cb},${0.3 + 0.3 * k})`); rg.addColorStop(0.4, `rgba(${cr},${cg},${cb},${0.12 + 0.14 * k})`); rg.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+    g.fillStyle = rg; g.fillRect(ex - R, ey - R, R * 2, R * 2);
+    g.globalAlpha *= 0.35 + 0.45 * k; g.lineCap = 'round';
+    for (const [dx, dy] of [[36 + 18 * k, 0], [0, 22 + 12 * k]]) {      
+      const lg = g.createLinearGradient(ex - dx, ey - dy, ex + dx, ey + dy);
+      lg.addColorStop(0, 'rgba(255,252,240,0)'); lg.addColorStop(0.5, 'rgba(255,252,240,0.9)'); lg.addColorStop(1, 'rgba(255,252,240,0)');
+      g.strokeStyle = lg; g.lineWidth = 1.7; g.beginPath(); g.moveTo(ex - dx, ey - dy); g.lineTo(ex + dx, ey + dy); g.stroke();
+    }
+    g.restore();
   }
   function rtAngle(r, u) {
     const off = (hash(r.a + r.b + r.win) - 0.5) * 0.9, fin = r.win * Math.PI + off;
@@ -3065,7 +3084,7 @@ const TCFX = (() => {
       const z = 1 + 0.03 * (1 - sm(u / 0.6)); g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2);
       g.translate(OX, 0); g.scale(K, K);
       drawGlow(r, Gm, u);
-      if (I.plate) g.drawImage(I.plate, 0, 0, 1024, 1536);
+      if (I.plate) { g.drawImage(I.plate, 0, 0, 1024, 1536); drawEye(r, u); }
       const ang = rtAngle(r, u);
       drawFace(r, Gm, ang, r.S1 != null ? sm((u - r.S1 - 0.1) / 0.4) : 0);
       const P = Gm.parts.ptr; if (I.ptr) g.drawImage(I.ptr, P.x, P.y, P.w, P.h);
