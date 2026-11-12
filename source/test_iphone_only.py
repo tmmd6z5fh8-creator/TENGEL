@@ -268,6 +268,14 @@ if r.returncode == 0:
               and not re.search(r"mode: 'sleep'|ev\(tt, '(flop|goron|lie)'\)|TEST\.wake|wake\(\)", _tall) and 'ごろん' not in open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read(),
               f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
               f'横に なる 動きの 音（flop・goron・lie）と 使わない 音（hop・unlock＝piron と 同じ 中身）は 入れない（もとの フォルダには 残る）・馬を 横に する コードと「ごろん」の 字は ない')
+        # 第4.158版（まさちゃん 2026/11/12 08:59「このルーレットの神様馬、目が怖いから金色に光らせて！あと、画像がなんかまだらに色がついてるから綺麗にできる？」・09:00「幻の馬のルーレットは、目を紫に光らせて！」）：
+        #   ルーレットの 絵は きれいに した 新しい 絵 12まい（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py）。前の 12まい（rt_<絵>_<部品>.webp）は 入れない（もとの フォルダには 残す）
+        _rtn = [f'rt_{t}_{q}2.webp' for t in ('normal', 'maboroshi', 'kamisama') for q in ('plate', 'knob', 'stick', 'ptr')]; _rto = [f[:-6] + '.webp' for f in _rtn]
+        _tb = open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read()
+        check(all(f in res for f in _rtn) and not any(f in res for f in _rto) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f)) for f in _rto)
+              and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master('tc_assets'), f)) for f in _rtn if f in res) and bool(re.search(r'img\(`rt_\$\{\w+\}_\$\{\w+\}2\.webp`\)\s*\|\|\s*await img\(`rt_\$\{\w+\}_\$\{\w+\}\.webp`\)', _tb))
+              and 0.5e6 < _sz([f for f in _rtn if f in res]) < 0.8e6,
+              f'第4.158版：ルーレットの 絵は きれいに した 新しい 12まい（rt_<絵>_<部品>2.webp・{_sz([f for f in _rtn if f in res]) / 1e3:.0f}KB・もとと 同じ 中身）・前の 12まいは 入って いない（もとの フォルダには 残る）・コードは 新しい 名前を 先に 読む（ない とき だけ 前の 名前）')
     else:
         print('  ※ 軽い 版（ios/lite）が ない ので、その 確かめは しない（CI・LITE=0）')
     # assets_dir の きまり（にせの フォルダで）：軽い 版が ない → もと／新しい → 軽い 版／LITE=0 → もと／もとに ファイルが ふえた・もとが かわった・軽い 版が 欠けた → 古い（adir は 止まって lite_assets.py を 教える）
@@ -402,12 +410,13 @@ if r.returncode == 0:
     #   前の 絵（銀 2・金 2・マスター帯の エンブレムの 絵 1）は アプリに 入れない（手元の ios/kisekae_blobs/ には のこす）＝5 → 9まい
     #   （銀・金・マスター帯 × いまの 絵／きらめきを ぬいた 絵／馬（主役）だけの 高画質の 絵：02:36「壁紙は、馬(主役)だけ画質良くなるようにして！」）
     _mb = _json.load(open(os.path.join(W, 'kisekae', 'metal_blobs.json')))
-    _old_band = ['9504cde9557dd15164d7ea4c2fe29e8e', '6aa961c2be4422888172ea9689ef7cf0', '03691f51ad78a7922baf6b6a1d19d5ab', '681b968a52b39a9ec4076a934471596b', '0f58da915ffceb4dc05ffccb4b103100']
+    _old_band = ['9504cde9557dd15164d7ea4c2fe29e8e', '6aa961c2be4422888172ea9689ef7cf0', '03691f51ad78a7922baf6b6a1d19d5ab', '681b968a52b39a9ec4076a934471596b', '0f58da915ffceb4dc05ffccb4b103100',
+                 'fe75d71d3f3e61735f3ecd4f1cd7a9a6', '05f4939aa13b86c08f22f66271ac5bdd', '76742f3c9b5e6ee06e0c943008c6bd4a']      # 第4.158版：前の マスター帯の 像（Tenger：第4.149〜4.157版）の 3まい
     _tg = _json.load(open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_tengel.json'), encoding='utf8'))
     check(len(_mb) == 9 and (not ks_imgs or (all(f'ks_{v}.webp' in res for v in _mb.values()) and not any(f'ks_{v}.webp' in res for v in _old_band)))
           and 'mxtw' in _tg['bnr']['html'] and 'tqw' not in _json.dumps(_tg['bnr']) and f"ks_{_mb['tengel_banner']}.webp" in _tg['bnr']['html'] and f'class="mxtH" href="ks_{_mb["tengel_statue"]}.webp"' in _tg['bnr']['html']
           and [t['desc'] for t in ksd['themes'] if t['id'] == 'tengel'] == ['テンゲル・光る像'] and [t['thumb'] for t in ksd['themes'] if t['id'] in ('silver', 'golden', 'tengel')] == [f"ks_{_mb[k]}.webp" for k in ('silver_banner', 'gold_banner', 'tengel_banner')],
-          '第4.149版：帯の 壁紙 3つは 3D の 像の 絵（9まい：背景 6＋馬 だけの 高画質の 絵 3）・前の 絵 5まいは 入って いない・マスター帯の 上の 絵は 像＋きらめき（mxt：動く 数字と 緑の 雷は なし）・一覧の 説明と 小さい 絵も 新しい')
+          '第4.149版：帯の 壁紙 3つは 3D の 像の 絵（9まい：背景 6＋馬 だけの 高画質の 絵 3）・前の 絵 8まい（第4.158版：前の マスター帯の 像の 3まいも）は 入って いない・マスター帯の 上の 絵は 像＋きらめき（mxt：動く 数字と 緑の 雷は なし）・一覧の 説明と 小さい 絵も 新しい')
     # 第4.157版（まさちゃん 2026/11/12「課金の壁紙は全部馬の画質が悪いから同じように画質を上げてほしい！」）：花火の 馬の 足す光 だけ 別の 絵（3倍・fireworks_blobs.json の scatter_h）が 1まい 足された＝73 → 74こ
     check(len(ks_imgs) in (0, 74 - n_face + n_pk) and n_pk == 62 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 74 - n_face + n_pk)
           and (('ks_38c796c9e27ea6f52001b6605ca607a0.webp' not in res) if PB else True),

@@ -1,7 +1,8 @@
 """シルバー帯・ゴールド帯・マスター帯の壁紙（metal_wall.py：銀・金の馬の像／テンゲルの 像が いつも キラキラ）の絵と形。flat/silver_banner.py・gold_banner.py と同じ像・同じ作り
    第4.149版：像は まさちゃんの 3D（flat/metal_glb.py：シルバー帯・ゴールド帯＝「Silver Thunder」・マスター帯＝「Tenger」）。3D が 手元に ない とき／METAL_HORSE=old は 前の 像（sdfr・シルバー帯と ゴールド帯 だけ）
-   - tengel_banner.webp・tengel_base.webp：マスター帯（flat/master_banner.py：深い 緑の 地・金の 光の 輪・台の 上の 金の 馬）。形と きらめきは metal_run.json の tengel（shape も 中に：像が ちがう ので）
+   - tengel_banner.webp・tengel_base.webp：マスター帯（flat/master_banner.py：暗い 舞台・うしろからの 金の 光・金の 光の 輪・台の 上の 金の 馬と 騎手）。形と きらめきは metal_run.json の tengel（shape も 中に：像が ちがう ので）
    python3 flat/metal_run.py <出力フォルダ> --install   → できた 絵を ios/kisekae_blobs/<中身の md5>.webp に 置いて（前の 絵は 消さない）、metal_blobs.json・blobs20.json（選ぶ 画面の 小さい 絵）・metal_run.json を 書きかえる
+   python3 flat/metal_run.py <出力フォルダ> --only tengel [--install]   → マスター帯 だけ 作る（第4.158版：像を 入れかえた とき）。シルバー帯・ゴールド帯の 絵・id・形（metal_run.json の shape・silver・gold）は 1字も かえない
    - silver_banner.webp・gold_banner.webp：いまの絵（きらめきつき）。顔のすじを平らにした像（silver_horse.flat_face）で 描きなおした絵
    - silver_base.webp・gold_base.webp：同じ絵から きらめき（4本の光）だけ ぬいた絵（壁紙では きらめきを ページの SVG で またたかせる）
    - metal_run.json：像の形（ふちの線：光が走るのを 像の中だけにする）・きらめきの場所と長さ（いまの絵の4つ＋またたく所）・
@@ -54,10 +55,13 @@ def outline(A, eps=0.6):
 
 
 def glints(R, spark, n=EXTRA, gap=EXTRA_GAP, ymax=None):
-    """いまの絵の きらめき（spark）の ほかに、像の明るい所から n か所（たがいに gap 以上 はなす）。ymax＝これより 上 だけ（マスター帯：台と 台の 字の 上には 出さない）"""
+    """いまの絵の きらめき（spark）の ほかに、像の明るい所から n か所（たがいに gap 以上 はなす）。ymax＝これより 上 だけ（マスター帯：台と 台の 字の 上には 出さない）。
+       R['metal']（金の 所：マスター帯）が あれば 金の 上 だけ（騎手の 白い ズボン・緑の 服には 出さない）"""
     A = np.clip(R['a'], 0, 1)
     rgb = SB.statue_srgb(R)
     lum = rgb.max(2) * A
+    if 'metal' in R:
+        lum = lum * (R['metal'] > 0.5)
     if ymax is not None:
         lum[ymax:] = 0
     lum_s = cv2.GaussianBlur(lum, (0, 0), 1.0)
@@ -81,6 +85,8 @@ def dots(R, n=DOTS, seed=17, ymax=None):
     A = np.clip(R['a'], 0, 1)
     rgb = SB.statue_srgb(R)
     lum = rgb.max(2) * A
+    if 'metal' in R:                                       # 金の 上 だけ（マスター帯）
+        lum = lum * (R['metal'] > 0.5)
     if ymax is not None:
         lum[ymax:] = 0
     inner = cv2.erode((A > 0.5).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
@@ -120,12 +126,22 @@ def save_statue(R, path):
     return [x0 // k, y0 // k, (x1 - x0) // k, (y1 - y0) // k]
 
 
-def build(outdir):
+def build(outdir, only=None):
+    """only＝作る 像の 名前（'silver'・'gold'・'tengel'）。None なら 3つ とも。only の とき、作らない 像の 形と きらめきは いま 入って いる kisekae/metal_run.json の まま"""
     os.makedirs(outdir, exist_ok=True)
     run = dict(size=[W, Hh])
+    if only:
+        run = json.load(open(os.path.join(os.path.dirname(HERE), 'metal_run.json')))
+        assert run['size'] == [W, Hh] and not (set(only) - {'silver', 'gold', 'tengel'}), only
+        assert not ({'silver', 'gold'} & set(only)) or {'silver', 'gold'} <= set(only), 'シルバー帯と ゴールド帯は 同じ 形（shape）なので いっしょに 作る'
+        if 'silver' in only:
+            run.pop('shape', None)
     glb = use_glb()
-    print('像：' + ('まさちゃんの 3D の 馬（' + MG.MODELS['horse']['glb'] + '）' if glb else '前の 像（sdfr）'))
+    if not only or 'silver' in only:
+        print('像：' + ('まさちゃんの 3D の 馬（' + MG.MODELS['horse']['glb'] + '）' if glb else '前の 像（sdfr）'))
     for name, pal in (('silver', SB.SILVER), ('gold', GB.GOLD)):
+        if only and name not in only:
+            continue
         if glb:
             R = MG.render(name)                    # まさちゃんの 3D の 馬（銀：そのまま・金：同じ 形を 金色に）
         else:
@@ -151,11 +167,13 @@ def build(outdir):
             run[name]['statue'] = sb
         print(name, 'きらめき', run[name]['spark'], 'またたく', len(run[name]['glint']), '粒', len(run[name]['dots']), '馬 だけの 高画質の 絵', sb)
     # マスター帯（第4.149版）：まさちゃんの 3D の 像（台の 上の 金の 馬）。像が ちがう ので 形（shape）も tengel の 中に。ped＝台の 上の はし（きらめき・光の 粒は 馬の 所 だけ）
-    if MG.available('tengel'):
+    if only and 'tengel' not in only:
+        pass
+    elif MG.available('tengel'):
         R = MG.render('tengel')
         info = {}
-        save_webp(MB.compose(R, info=info), os.path.join(outdir, 'tengel_banner.webp'))
-        save_webp(MB.compose(R, sparkle=False), os.path.join(outdir, 'tengel_base.webp'))
+        save_webp(MB.compose(R, info=info), os.path.join(outdir, 'tengel_banner.webp'), q=MB.QUALITY)
+        save_webp(MB.compose(R, sparkle=False), os.path.join(outdir, 'tengel_base.webp'), q=MB.QUALITY)
         A = np.clip(R['a'], 0, 1)
         ys, xs = np.nonzero(A > 0.5)
         ped = info['ped'] - 6
@@ -173,15 +191,18 @@ def build(outdir):
     return run
 
 
-def install(outdir):
+def install(outdir, only=None):
     """できた 絵（<名前>_banner.webp・<名前>_base.webp）を 手元の 絵の フォルダ（ios/kisekae_blobs/<中身の md5>.webp）に 置いて、id を metal_blobs.json・blobs20.json
-       （選ぶ 画面の 小さい 絵＝いまの 絵）に 書く。形と きらめき（metal_run.json）も kisekae/ に。前の 絵（もと）は 消さない・上書きしない（同じ 名前＝同じ 中身）"""
+       （選ぶ 画面の 小さい 絵＝いまの 絵）に 書く。形と きらめき（metal_run.json）も kisekae/ に。前の 絵（もと）は 消さない・上書きしない（同じ 名前＝同じ 中身）。
+       only＝入れる 像の 名前（ほかの 像の id は さわらない）"""
     import hashlib
     K = os.path.dirname(HERE)
     blob_dir = os.environ.get('KISEKAE_ASSETS') or os.path.join(os.path.dirname(K), 'ios', 'kisekae_blobs')
     mb_path, b20_path = os.path.join(K, 'metal_blobs.json'), os.path.join(K, 'blobs20.json')
     mb, b20 = json.load(open(mb_path)), json.load(open(b20_path))
     for key in ('silver_banner', 'silver_base', 'silver_statue', 'gold_banner', 'gold_base', 'gold_statue', 'tengel_banner', 'tengel_base', 'tengel_statue'):
+        if only and key.split('_')[0] not in only:
+            continue
         src = os.path.join(outdir, key + '.webp')
         if not os.path.exists(src):
             mb.pop(key, None)
@@ -204,6 +225,7 @@ def install(outdir):
 
 
 if __name__ == '__main__':
-    build(sys.argv[1])
+    only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None
+    build(sys.argv[1], only)
     if '--install' in sys.argv:
-        install(sys.argv[1])
+        install(sys.argv[1], only)

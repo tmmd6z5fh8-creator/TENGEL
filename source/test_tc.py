@@ -637,10 +637,43 @@ try:
         pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'kamisama', a: 10000, b: 20000, win: 1, bg: 'divine', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
         pg.wait_for_timeout(2500); shot(pg, 'tc_rt_wait')
         check(pg.evaluate("() => document.querySelector('#tcOv .tcfx').classList.contains('on') && !window.__rtDone"), 'タップを 待つ')
+        # 第4.158版（まさちゃん 11/12 08:59「このルーレットの神様馬、目が怖いから金色に光らせて！あと、画像がなんかまだらに色がついてるから綺麗にできる？」・09:00「幻の馬のルーレットは、目を紫に光らせて！」）：
+        #   絵は きれいに した 新しい 絵（rt_<絵>_<部品>2.webp）・目は 光の 玉（絵の 中）＋ゆっくり 息を する 光（drawEye）。目の まん中・光の にじみ（右下へ 24, 6）・はなれた 所（70, 40）の 色を 0.1秒ごとに 2.6秒
+        RTEYE = """([ex, ey]) => { const cv = document.querySelector('#tcOv .tcfx'), W = 390, H = 614, K = H / 1536, OX = (W - 1024 * K) / 2, PX = cv.width / W, g = cv.getContext('2d');
+          const at = (dx, dy) => [...g.getImageData(Math.round((OX + (ex + dx) * K) * PX), Math.round((ey + dy) * K * PX), 1, 1).data].slice(0, 3);
+          return { core: at(0, 0), far: at(24, 6), out: at(70, 40) }; }"""
+
+        def rt_eye(eye):
+            ser = []
+            for _ in range(26):
+                ser.append(pg.evaluate(RTEYE, eye)); pg.wait_for_timeout(100)
+            st_ = {}
+            for k in ('core', 'far', 'out'):
+                v = [x[k] for x in ser]
+                st_[k] = dict(lo=[min(c[i] for c in v) for i in range(3)], hi=[max(c[i] for c in v) for i in range(3)], rng=max(sum(c) for c in v) - min(sum(c) for c in v),
+                              step=max(abs(v[j + 1][i] - v[j][i]) for j in range(len(v) - 1) for i in range(3)))
+            return st_
+        rt_files = lambda: sorted(set(pg.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('/').pop().split('?')[0]).filter(n => n.startsWith('rt_'))")))
+        ek = rt_eye([641, 271.9]); fk = rt_files()
+        check(fk == [f'rt_kamisama_{p}2.webp' for p in ('knob', 'plate', 'ptr', 'stick')], f'ルーレットの 絵は きれいに した 新しい 絵 4まい（前の 絵は 読まない：{fk}）')
+        kf, kc = ek['far'], ek['core']
+        check(min(kc['lo']) >= 235 and kf['lo'][0] >= 220 and kf['lo'][0] - kf['hi'][2] >= 50 and kf['lo'][1] - kf['hi'][2] >= 15 and kf['rng'] >= 25 and kf['step'] <= 40 and ek['out']['rng'] <= 8,
+              f'神様馬の 目：明るい 光の 玉（{kc["lo"]}）・まわりの 光は **金色**（{kf["lo"]}〜{kf["hi"]}）・ゆっくり 息を する（明るさの 幅 {kf["rng"]}・0.1秒の 変わり方 {kf["step"]}/255 まで＝ちかちか しない）・光は 目の まわり だけ（はなれた 所は 動かない：{ek["out"]["rng"]}）')
         pg.mouse.click(300, 600); pg.wait_for_timeout(5600); shot(pg, 'tc_rt_get')
         pg.mouse.click(200, 400)
         pg.wait_for_function("() => window.__rtDone", timeout=20000)
         check(True, 'タップで 回って GET → タップで とじた')
+        print('■ ルーレット（幻の馬：目は 紫に 光る）')
+        pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'maboroshi', a: 1600, b: 3200, win: 0, bg: 'abyss', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
+        pg.wait_for_timeout(2500); shot(pg, 'tc_rt_mabo')
+        em = rt_eye([651.4, 286]); fm = [f for f in rt_files() if 'maboroshi' in f]
+        mf, mc = em['far'], em['core']
+        check(fm == [f'rt_maboroshi_{p}2.webp' for p in ('knob', 'plate', 'ptr', 'stick')] and min(mc['lo']) >= 235 and mf['lo'][2] >= 150 and mf['lo'][2] - mf['hi'][1] >= 30 and mf['lo'][0] - mf['hi'][1] >= 5 and mf['rng'] >= 25 and mf['step'] <= 45 and em['out']['rng'] <= 8,
+              f'幻の馬の 目：明るい 光の 玉（{mc["lo"]}）・まわりの 光は **紫**（{mf["lo"]}〜{mf["hi"]}）・ゆっくり 息を する（明るさの 幅 {mf["rng"]}・0.1秒の 変わり方 {mf["step"]}/255 まで）・新しい 絵 4まい（{fm}）')
+        pg.mouse.click(300, 600); pg.wait_for_timeout(5600)
+        pg.mouse.click(200, 400)
+        pg.wait_for_function("() => window.__rtDone", timeout=20000)
+        check(True, '幻の馬の ルーレットも タップで 回って とじた')
         print('■ チケット（2まい）')
         pg.evaluate("() => { window.__tkDone = false; TCFX.ticket(document.querySelector('#tcOv .tcfx'), { n: 2, bg: 'morning', se: TCApp._snd.se }).then(() => { window.__tkDone = true; }); }")
         pg.wait_for_timeout(2200); pg.mouse.click(200, 700); pg.wait_for_timeout(4600); shot(pg, 'tc_tk_get'); pg.mouse.click(200, 400)

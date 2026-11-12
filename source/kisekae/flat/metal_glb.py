@@ -3,12 +3,14 @@
      → シルバー帯・ゴールド帯：「Silver Thunder」（全力で 駆ける 銀の 馬の 像）。銀は そのまま・金は 同じ 形を 金色に
    - まさちゃん 2026/11/11 02:14「マスター帯の壁紙変える！シルバー帯、ゴールド帯のようにこのファイルの3Dモデルが中央に合って光っているようにして！」
      → マスター帯：「Tenger」（緑の 台の 上を 駆ける 金の 馬の 像・緑の たてがみと 鞍・台に TENGER／テンゲル の 金の 字）。色は 3D の まま
+   - まさちゃん 2026/11/12 09:18「マスター帯の絵、この3Dモデルと入れ替えて！色合いとかは深みつけて、背景の光とかもリアルにカッコよくして！」（第4.158版）
+     → マスター帯の 像を「Golden Tenger」（金の 馬に 騎手・緑の 台に TENGER／テンゲル の 金の 字）に 入れかえ・暗い スタジオの 照明で 色を つける（STUDIO）
    - 3D は アプリに 入れない（1つ 約26〜33MB）。ここで 絵（780×320 の 像：すき通り a・色 srgb）に して、壁紙の 絵（flat/silver_banner.py の compose・
      flat/master_banner.py の compose：地・光の 輪・みがいた 床に うつる 像・きらめき）に のせる。壁紙の 動き（metal_wall.py）は 3つ とも 同じ 作り
    - 像は 6倍の 大きさ（4680×1920）で 描いて 色を つけて から 小さく する（ふちが なめらか）。光は カメラに 合わせて 置く：
      まわりの うつりこみ（上は 明るい 空・地平に 明るい 帯・下は 暗い 床）＋大きな 照明 4つ
        シルバー帯・ゴールド帯：形と テクスチャの 明るさ から「みがいた 金属の 明るさ」を 出して、銀の 色の 段／金の 色の 段に ぬりわける
-       マスター帯：3D の 色（金＝金属・緑＝つやの ある ぬり）の まま、うつりこみと 光を つける
+       マスター帯：3D の 色（金＝金属・緑と 白＝つやの ある ぬり）の まま、暗い スタジオの 照明（色の ついた 光・床からの 金の てり返し）で 色を つける
    - **馬（主役）だけ 高画質**（まさちゃん 2026/11/11 02:36「壁紙は、馬(主役)だけ画質良くなるようにして！」）：像 だけの すき通った 絵を 2倍（1560×640 ぶん：hi_a・hi_srgb）でも 返す。
      壁紙の 絵（背景：780×320）の 上に、この 絵を 同じ 場所に 重ねる（metal_run.py が 像の 所 だけ 切りぬいて <名前>_statue.webp に・metal_wall.py が 重ねる）
    - もとの 3D（METAL_HORSE_GLB・TENGEL_STATUE_GLB：リポジトリに 入れない）は 読む だけ
@@ -32,8 +34,17 @@ MODELS = dict(
     #   馬を シルバー帯・ゴールド帯と 同じ 大きさに（像を 1.29倍：馬の 幅 390 → 500px。シルバー帯・ゴールド帯の 馬は 507px）。台の いちばん 下（floor 359）は 絵の 外＝
     #   台は「TENGER」の 字の すぐ 下で 切れる（カタカナの「テンゲル」の 札は 絵の 外）。前（第4.149版）は 台を ぜんぶ 入れて いた（floor 286・top 12）。
     #   pad＝形を 測る ときの 上下の よゆう（はみ出した 所も 測る）・foot＝絵の いちばん 下の 行を 暗く（どこから・どこまで・強さ：札の 上の ふちが 細い 金の 線に なって のぞくのを かげに しずめる）
-    tengel=dict(glb=os.environ.get('TENGEL_STATUE_GLB') or '/home/claude/work/band3d/orig/tenger.glb',
-                yaw=0.0, pitch=4.0, fov=17.0, span=(60, 720), floor=359, top=5, pad=(0, 80), foot=(313.0, 318.5, 0.92)))
+    #   第4.158版（まさちゃん 2026/11/12 09:18「マスター帯の絵、この3Dモデルと入れ替えて！色合いとかは深みつけて、背景の光とかもリアルにカッコよくして！」）：
+    #   像を「Golden Tenger」（緑の 台の 上を 駆ける 金の 馬に 騎手〈緑の 服・白い ズボン・金の ヘルメット〉・台に TENGER／テンゲル の 金の 字・122万 三角・43MB）に 入れかえた。
+    #   台を 正面から 見ると 馬は **左向き**（前の「Tenger」は 右向き）で、台の 上を ななめ 手前へ 駆けて いる（台の 長い 辺と 馬の 向きが 15〜20度 ちがう）。
+    #   yaw＝-6度：3D の 中で 台が 6.0度 回って いる（真上から 見た 台の 四角を 測った）。0度の ままだと 台の 上の ふちが 右さがりに 見えた（「台が曲がってる」）。
+    #   騎手の 分 だけ 背が 高い ので、馬と 騎手が 絵に おさまる 大きさに（馬の 幅 約435px＝シルバー帯・ゴールド帯の 馬の 86%）・
+    #   台は「TENGER」の 字の すぐ 下で 切れる（前と 同じ 見せ方：字の 下 311・カタカナの 札の 上 313.6 は foot で かげに）。色の つけ方も かえた（下の STUDIO）。
+    #   ped_x＝台の 前の 面の まん中を 絵の まん中（390）に：こんどの 像は 馬が 台の まん中に いない（しっぽが 右へ 長い）。馬の 箱を まん中に 置くと 台が 左へ 12px ずれて、
+    #   台が ななめから 見えた（右の 面 だけ 見える・字が 左へ よる）→ 台と 字を 絵の まん中に（11/11 02:40「テンゲルの台が正面に真っ直ぐ見えるようにして！」を 守る）
+    #   前の 像（Tenger：span=(60, 720)・floor=359・top=5）と 前の 色の つけ方は 第4.157版（コミット 8d6b80c）の この ファイル
+    tengel=dict(glb=os.environ.get('TENGEL_STATUE_GLB') or '/home/claude/work/band3d/orig/golden_tenger.glb',
+                yaw=-6.0, pitch=4.0, fov=17.0, span=(60, 720), floor=360, top=6, pad=(0, 80), foot=(313.0, 318.5, 0.92), ped_x=390.0))
 OF = dict(silver='horse', gold='horse', tengel='tengel')
 
 # 色の 段（金属の 明るさ 0〜1 → sRGB）：シルバー帯・ゴールド帯
@@ -113,7 +124,13 @@ def _gbuf(model):
         cx = W / 2 + ((x0 + x1) / 2 - W / 2) * k
         by = Hh / 2 + (y1 - Hh / 2) * k
         target = target + right * ((cx - (span[0] + span[1]) / 2) * px) - up * ((by - (floor + 1)) * px)
-    if pad != (0, 0):                                    # はみ出す 置き方：さいごの カメラで もう一度 測る（台の いちばん 下の ほんとうの 場所）
+    if M.get('ped_x') is not None:                       # 台の 前の 面（絵の 下の 40行）の まん中を ped_x に（＝カメラの まん中の 線が 台の まん中を 通る：台を 正面から まっすぐ 見る）
+        for _ in range(3):
+            fr, eye = shot(dist, target, 1, want=('alpha',), pad=pad)
+            m = fr['alpha'][pad[1] + Hh - 40:pad[1] + Hh - 2] > 0.5
+            cen = [(np.nonzero(r)[0].min() + np.nonzero(r)[0].max() + 1) / 2 - pad[0] for r in m if r.any()]
+            target = target + right * ((float(np.mean(cen)) - M['ped_x']) * px)
+    if pad != (0, 0) or M.get('ped_x') is not None:      # はみ出す 置き方・台を まん中に 合わせた あと：さいごの カメラで もう一度 測る（台の いちばん 下の ほんとうの 場所）
         fr, eye = shot(dist, target, 1, want=('alpha',), pad=pad)
         ys, xs = np.nonzero(fr['alpha'] > 0.5)
         x0, x1, y0, y1 = xs.min() - pad[0], xs.max() + 1 - pad[0], ys.min() - pad[1], ys.max() + 1 - pad[1]
@@ -172,23 +189,57 @@ def _horse(name):
     return _down(srgb_to_linear(ramp(t, RAMP[name])) * G['a'][..., None], G['a'])
 
 
-def _tengel():
-    """マスター帯：3D の 色の まま（金＝金属：色の ついた うつりこみ・緑＝つやの ある ぬり：色＋うすい うつりこみ）"""
-    G = _gbuf('tengel')
-    alb, m, r = G['alb'], G['metal'][:, None], G['rough']
-    F0 = 0.022 * (1 - m) + alb * m                                                              # ぬりの うつりこみは うすく（緑が 灰色に ならない）
-    F = F0 + (1 - F0) * ((1 - G['NdV']) ** 5 * 0.5)[:, None]
-    spec = F * _env(G['R'], G['basis'], wide=1.18)[:, None]                                      # みがいた 金（照明は 少し だけ 広く）
-    N = G['N']
+# マスター帯の 像の 光（第4.158版・まさちゃん 2026/11/12 09:18「色合いとかは深みつけて、背景の光とかもリアルにカッコよくして！」）：暗い スタジオで 照明を 当てた 金の 像。
+#   前（第4.149版）は 明るい 空の うつりこみ ＝ 金が 白っぽく 平らに 見えた。こんどは まわりを 暗く して、色の ついた 照明と 床からの 金の てり返しで 金の 影に 色（こはく色）を のこす
+#   - sky0・sky1／flo0・flo1：まわりの うつりこみ（上・下）の 明るさ（amb_c の 色）・bounce：床からの 金の てり返し・hor：地平の 細い 明るい 帯・rough_w：つやの にぶい 面ほど 照明を 広く
+#   - lamps：照明（向き〈右・上・手前〉・うつりこみの 強さ・広さ・色・ぬりの 面に 当たる 強さ）：左上 手前の 主な 光・真上・右 手前の うすい 青・うしろ 左右の ふちの 光（金色）・左下の 弱い 光
+#   - gold・gold_mix：金の 色を 3D の 色と まぜる（深い 金）・fres：ふちの うつりこみ・spec：うつりこみの 強さ・d_*：ぬりの 面（緑・白）・ao0・ao_g：すきまの 影・exp：明るさ・sat：あざやかさ
+STUDIO = dict(sky0=0.035, sky1=0.20, flo0=0.015, flo1=0.05, amb_c=(1.0, 0.82, 0.60), bounce=0.22, bounce_c=(1.0, 0.72, 0.30), hor=0.55, hor_c=(1.0, 0.95, 0.85), rough_w=2.2,
+              lamps=(((-0.35, 0.72, 0.60), 4.6, 0.045, (1.0, 0.97, 0.90), 2.0), ((0.05, 0.98, 0.15), 2.2, 0.035, (1.0, 1.0, 1.0), 0.7), ((0.75, 0.15, 0.65), 0.9, 0.09, (0.80, 0.95, 1.0), 0.35),
+                     ((-0.72, 0.35, -0.60), 3.2, 0.035, (1.0, 0.88, 0.62), 0.9), ((0.72, 0.42, -0.56), 3.0, 0.035, (1.0, 0.90, 0.68), 0.9), ((-0.80, -0.20, 0.55), 0.5, 0.10, (1.0, 0.9, 0.8), 0.1)),
+              gold=(1.0, 0.74, 0.30), gold_mix=0.55, fres=0.6, spec=1.5, d_amb=0.22, d_gamma=1.12, d_tint=(0.90, 1.08, 0.88), ao0=0.22, ao_g=1.25, exp=1.18, sat=1.10)
+
+
+def _aces(x):
+    """明るい 所を なだらかに つぶす（映画の フィルムの ような 曲線：暗い 所は しまって、明るい 所は 白く とばない）"""
+    return np.clip(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14), 0, 1)
+
+
+def _studio(G, P=STUDIO):
+    """マスター帯の 像に 色を つける（線形の 色）：金＝金属（色の ついた うつりこみ）・緑と 白＝つやの ある ぬり（照明の 当たり方＋うすい うつりこみ）"""
+    C = lambda v: np.asarray(v, np.float32)
+    N, R, NdV, alb, ao = G['N'], G['R'], G['NdV'], G['alb'], G['ao']
+    m, r = G['metal'][:, None], G['rough']
     right, up, back = G['basis']
-    key = (-0.30 * right + 0.78 * up + 0.55 * back); key = (key / np.linalg.norm(key)).astype(np.float32)
-    irr = 0.70 + 0.40 * np.clip(N[:, 1], -1, 1) + 1.3 * np.clip(N @ key, 0, 1)                    # ぬりの 面に 当たる 光（空・床・大きな 光）
-    diff = alb * (1 - m) * irr[:, None]
-    col = (spec * 1.55 + diff) * (0.35 + 0.65 * G['ao'])[:, None]
-    lin = np.clip(1 - np.exp(-col * 1.3), 0, 1)                                                 # 明るい 所を なだらかに つぶす（金の 光は 白っぽく）
+    wide = 1 + P['rough_w'] * np.clip(r - 0.2, 0, 1)
+    ry = R[:, 1]
+    e = np.where(ry > 0, P['sky0'] + P['sky1'] * _sm(-0.05, 0.95, ry), P['flo0'] + P['flo1'] * _sm(-1, 0, ry))[:, None] * C(P['amb_c'])
+    e = e + C(P['bounce_c']) * (P['bounce'] * np.exp(-((ry + 0.38) / 0.30) ** 2))[:, None]
+    e = e + C(P['hor_c']) * (P['hor'] * np.exp(-((ry - 0.04) / (0.065 * wide)) ** 2))[:, None]
+    irr = np.zeros_like(alb) + C(P['amb_c']) * (P['d_amb'] * (0.6 + 0.4 * N[:, 1]))[:, None]
+    for (lx, ly, lz), s, w, col, dk in P['lamps']:
+        d = lx * right + ly * up + lz * back
+        d = (d / np.linalg.norm(d)).astype(np.float32)
+        e = e + C(col) * ((s / wide) * np.exp(-((1 - R @ d) / (w * wide))))[:, None]
+        irr = irr + C(col) * (dk * np.clip((N @ d + 0.15) / 1.15, 0, 1))[:, None]
+    F0 = 0.04 * (1 - m) + (alb * (1 - P['gold_mix']) + C(P['gold']) * P['gold_mix']) * m
+    F = F0 + (1 - F0) * ((1 - NdV) ** 5 * P['fres'])[:, None]
+    diff = np.clip(alb, 0, 1) ** P['d_gamma'] * C(P['d_tint']) * (1 - m) * irr
+    occ = (P['ao0'] + (1 - P['ao0']) * ao) ** P['ao_g']
+    lin = _aces((F * e * P['spec'] + diff) * occ[:, None] * P['exp'])
+    lum = lin @ C((0.2126, 0.7152, 0.0722))
+    return np.clip(lum[:, None] + (lin - lum[:, None]) * P['sat'], 0, 1)
+
+
+def _tengel():
+    """マスター帯：3D の 色の まま、スタジオの 照明で（_studio）"""
+    G = _gbuf('tengel')
+    lin = _studio(G)
     a = G['a']
     out = _down(lin.reshape(Hh * K, W * K, 3) * a[..., None], a)
     out['fit'] = G['fit']                                                                       # 形の 箱（台の いちばん 下が 絵の 外に ある ときも ほんとうの 場所）
+    mt = (G['metal'].reshape(Hh * K, W * K) * a).reshape(Hh, K, W, K).mean((1, 3))
+    out['metal'] = (mt / np.maximum(out['a'], 1e-4)).astype(np.float32)                        # 金（金属）の 所は 1・ぬりの 所（緑・白）は 0：きらめきは 金の 上 だけ（騎手の 白い ズボンには 出さない）
     foot = MODELS['tengel'].get('foot')
     if foot:                                                                                    # 絵の いちばん 下の 行を かげに しずめる（台が 絵の 下で 切れる 所）
         for key, k in (('srgb', 1), ('hi_srgb', HI)):

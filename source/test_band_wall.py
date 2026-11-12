@@ -15,6 +15,11 @@
 #     マスター帯：前の 壁紙（動く 数字・緑の 雷＝tq…）は ない・光の 粒は 左へ 流れる（像が 右向き）・シルバー帯と ゴールド帯は 右へ
 #   ・選ぶ 画面の 小さい 絵（3つ）が 新しい 絵で 読める
 #   ・視差効果を 減らす：動かさない（いまの 絵 だけ）
+#   ・**第4.158版**（まさちゃん 2026/11/12 09:18「マスター帯の絵、この3Dモデルと入れ替えて！色合いとかは深みつけて、背景の光とかもリアルにカッコよくして！」）：
+#     マスター帯の 像を「Golden Tenger」（金の 馬に 騎手・緑の 台に TENGER の 金の 字）に。こんどの 像は **左向き**＝光の 粒は シルバー帯・ゴールド帯と 同じ 右へ 流れる（しっぽ・おしりから 出る・台からは 出ない）。
+#     騎手の 分 背が 高い ので 馬は シルバー帯・ゴールド帯の 86%（台の TENGER の 字を 切らない いちばん 大きい 大きさ）。台と TENGER の 字は 絵の まん中・正面から まっすぐ（台は 3D の 中で 6度 回って いる）。
+#     色に 深み：金は 影まで 金色（こはく色）で、明るい 所と 暗い 所の 差が 大きい。背景：まわりは 暗い 舞台・像の うしろに 金の 光（にじみ・光の すじ）・床に 光が うつる。
+#     きらめきと 光の 粒は 金の 上 だけ（騎手の 白い ズボン・緑の 服の 上には 出さない）。前の 絵 3まい（第4.149〜4.157版）は 手元に のこす・アプリには 入れない
 import hashlib, json, os, re, shutil, subprocess, sys, time
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 K = os.path.join(W, 'kisekae')
@@ -31,8 +36,9 @@ def check(c, label):
 MB = json.load(open(os.path.join(K, 'metal_blobs.json'))); B20 = json.load(open(os.path.join(K, 'blobs20.json'))); RUN = json.load(open(os.path.join(K, 'metal_run.json')))
 KEYS = ['silver_banner', 'silver_base', 'gold_banner', 'gold_base', 'tengel_banner', 'tengel_base']
 HERO = ['silver_statue', 'gold_statue', 'tengel_statue']      # 馬（主役）だけの 高画質の 絵
-NAMES = (('silver', 'silver', 'mxs', 1), ('golden', 'gold', 'mxg', 1), ('tengel', 'tengel', 'mxt', -1))      # テーマの id・絵の 名前・クラス・光の 粒が 流れる 向き
-OLD = ['9504cde9557dd15164d7ea4c2fe29e8e', '6aa961c2be4422888172ea9689ef7cf0', '03691f51ad78a7922baf6b6a1d19d5ab', '681b968a52b39a9ec4076a934471596b', '0f58da915ffceb4dc05ffccb4b103100']   # 前の 絵（銀 2・金 2・マスター帯）
+NAMES = (('silver', 'silver', 'mxs', 1), ('golden', 'gold', 'mxg', 1), ('tengel', 'tengel', 'mxt', 1))       # テーマの id・絵の 名前・クラス・光の 粒が 流れる 向き（3つ とも 右へ：左向きの 馬。マスター帯は 第4.157版まで 右向き＝左へ）
+OLD = ['9504cde9557dd15164d7ea4c2fe29e8e', '6aa961c2be4422888172ea9689ef7cf0', '03691f51ad78a7922baf6b6a1d19d5ab', '681b968a52b39a9ec4076a934471596b', '0f58da915ffceb4dc05ffccb4b103100',   # 前の 絵（銀 2・金 2・マスター帯）
+       'fe75d71d3f3e61735f3ecd4f1cd7a9a6', '05f4939aa13b86c08f22f66271ac5bdd', '76742f3c9b5e6ee06e0c943008c6bd4a']      # 第4.149〜4.157版の マスター帯（前の 像「Tenger」：いまの 絵・きらめきを ぬいた 絵・馬 だけの 高画質の 絵）
 check(sorted(MB) == sorted(KEYS + HERO) and len(set(MB.values())) == 9 and all(re.fullmatch(r'[0-9a-f]{32}', v) for v in MB.values()) and not (set(MB.values()) & set(OLD))
       and B20['silver'] == MB['silver_banner'] and B20['golden'] == MB['gold_banner'] and B20['tengel'] == MB['tengel_banner'],
       '台帳：metal_blobs.json に 9まい（銀・金・マスター帯 × いまの 絵／きらめきを ぬいた 絵／馬 だけの 高画質の 絵）・前の 絵とは ちがう・選ぶ 画面の 小さい 絵（blobs20.json）は いまの 絵')
@@ -45,11 +51,13 @@ check(RUN['size'] == [780, 320] and all(len(RUN[n]['spark']) == 4 and len(RUN[n]
       and 'shape' not in RUN['silver'] and len(sh['d']) > 1500,
       f'metal_run.json：シルバー帯・ゴールド帯は 同じ 形（3D の 馬：箱 {sh["box"]}・床 261・光の 輪は 前と 同じ）・きらめき 4＋またたく 10＋光の 粒 26 は 像の 中')
 HW = (ts['box'][2] - ts['box'][0]) / (sh['box'][2] - sh['box'][0])      # マスター帯の 馬の 幅 ÷ シルバー帯・ゴールド帯の 馬の 幅
-check(ts['base'] > 320 and ts['box'][3] == 320 and ts['floor'] == 262 and ts['ped'] < ts['floor'] - 15 and 130 <= ts['box'][0] <= 150 and 630 <= ts['box'][2] <= 650 and ts['box'][1] >= 4
-      and abs((ts['box'][0] + ts['box'][2]) / 2 - 390) <= 3 and abs(ts['ring'][0] - 390) <= 3 and 0.96 <= HW <= 1.02 and 150 <= ts['ring'][2] <= 165
+# 第4.158版：騎手の 乗った 像（背が 高い）＝馬は シルバー帯・ゴールド帯の 86%（第4.150〜4.157版の 像は 同じ 大きさ）。馬は 台の まん中に いない（しっぽが 右へ 長い）ので、箱の まん中は 絵の まん中より 少し 右・
+#   光の 輪は 台の まん中（＝絵の まん中）・輪の 上は 絵の 中
+check(ts['base'] > 320 and ts['box'][3] == 320 and ts['floor'] == 262 and ts['ped'] < ts['floor'] - 10 and 170 <= ts['box'][0] <= 200 and 605 <= ts['box'][2] <= 635 and ts['box'][1] >= 4
+      and 5 <= (ts['box'][0] + ts['box'][2]) / 2 - 390 <= 20 and abs(ts['ring'][0] - 390) <= 3 and 0.82 <= HW <= 0.92 and 115 <= ts['ring'][2] <= 130 and ts['ring'][1] - ts['ring'][2] >= 6
       and all(y < ts['ped'] - 5 for _x, y in pts(T)) and in_box(T, ts['box']) and len(ts['d']) > 1500,
-      f'metal_run.json：マスター帯は 自分の 形（台の 上の 金の 馬：箱 {ts["box"]}・台の 上の はし {ts["ped"]}・まん中）・**馬は シルバー帯・ゴールド帯と 同じ 大きさ**（幅 {ts["box"][2] - ts["box"][0]}px ÷ {sh["box"][2] - sh["box"][0]}px＝{HW * 100:.0f}%：前は 77%）・'
-      f'台の いちばん 下（{ts["base"]}）は 絵の 外＝台は「TENGER」の 字の 下で 切れる・床は {ts["floor"]} から（シルバー帯・ゴールド帯の 床 {sh["floor"]} と そろえる）・光の 輪 {ts["ring"][2]}・きらめきと 光の 粒は 馬の 所 だけ（台と 台の 字の 上には 出ない）')
+      f'metal_run.json：マスター帯は 自分の 形（台の 上の 金の 馬と 騎手：箱 {ts["box"]}・台の 上の はし {ts["ped"]}）・馬は シルバー帯・ゴールド帯の {HW * 100:.0f}%（幅 {ts["box"][2] - ts["box"][0]}px ÷ {sh["box"][2] - sh["box"][0]}px：騎手の 分 背が 高い）・'
+      f'台の いちばん 下（{ts["base"]}）は 絵の 外＝台は「TENGER」の 字の 下で 切れる・床は {ts["floor"]} から（シルバー帯・ゴールド帯の 床 {sh["floor"]} と そろえる）・光の 輪 {ts["ring"]} は 絵の まん中・きらめきと 光の 粒は 馬と 騎手の 所 だけ（台と 台の 字の 上には 出ない）')
 have = os.path.isdir(BL) and all(os.path.exists(os.path.join(BL, MB[k] + '.webp')) for k in KEYS + HERO)
 gi = subprocess.run(['git', 'ls-files'], capture_output=True, text=True, cwd=W).stdout.split('\n')
 src = open(os.path.join(K, 'flat', 'metal_glb.py'), encoding='utf8').read()
@@ -64,7 +72,7 @@ for k in KEYS:
     pth = os.path.join(BL, MB[k] + '.webp'); im = Image.open(pth)
     ok_img.append(im.size == (780, 320) and im.format == 'WEBP' and hashlib.md5(open(pth, 'rb').read()).hexdigest() == MB[k] and 8_000 < os.path.getsize(pth) < 60_000)
 check(all(ok_img) and all(os.path.exists(os.path.join(BL, o + '.webp')) for o in OLD),
-      f'絵 6まい：780×320 の WebP・名前は 中身の md5・1まい 8〜60KB（ぜんぶで {sum(os.path.getsize(os.path.join(BL, MB[k] + ".webp")) for k in KEYS) / 1e3:.0f}KB）・前の 絵 5まいも 手元に のこって いる（消して いない）')
+      f'絵 6まい：780×320 の WebP・名前は 中身の md5・1まい 8〜60KB（ぜんぶで {sum(os.path.getsize(os.path.join(BL, MB[k] + ".webp")) for k in KEYS) / 1e3:.0f}KB）・前の 絵 {len(OLD)}まいも 手元に のこって いる（消して いない）')
 import numpy as np
 hero_ok, hero_note = [], []
 for nm in ('silver', 'gold', 'tengel'):
@@ -76,17 +84,67 @@ for nm in ('silver', 'gold', 'tengel'):
     hero_note.append(f'{nm} {im.size[0]}×{im.size[1]}・{os.path.getsize(pth) / 1e3:.0f}KB')
 check(all(hero_ok) and RUN['silver']['statue'] == RUN['gold']['statue'],
       f'馬（主役）だけの 高画質の 絵 3まい：すき通った WebP・背景の 絵の 2倍の 細かさ（置く 場所 × 2）・像の 箱を ぜんぶ おおう・銀と 金は 同じ 場所（{"／".join(hero_note)}）')
-# マスター帯の 台：正面から まっすぐ（台の 上の ふちが 水平・左右 対称）。台の 下は 絵の 外 なので、台の 上の 左はし・右はしの 高さと、前の 面の まん中で 見る
-ta = np.array(Image.open(os.path.join(BL, MB['tengel_statue'] + '.webp')).convert('RGBA'))[..., 3] > 128
+# マスター帯の 台：正面から まっすぐ（台の 上の ふちが 水平・左右 対称）。台の 下は 絵の 外 なので、台の 上の ふち（うしろ）と 金の ふちの 線（前）の 左と 右の 高さ・前の 面の まん中で 見る
+#   第4.158版：こんどの 像は 馬の 足が 台の はしの 近くに ある（前の 見方＝はしから 14px の 1列は ひづめに 当たる）→ 上が あいて いる 列 だけの 中央の 値で 見る。台の 字（TENGER）も まん中
+tim = np.array(Image.open(os.path.join(BL, MB['tengel_statue'] + '.webp')).convert('RGBA')).astype(np.int32)
+ta = tim[..., 3] > 128
 sx_, sy_, sw_, sh_ = T['statue']
 P0 = int(round((ts['ped'] - sy_) * 2))                                                # 台の 上の はし（高画質の 絵の 行）
 cen, wid = [], []
-for r in range(P0 + 40, ta.shape[0] - 4, 20):                                        # 台の 前の 面の 行ごと：左はしと 右はしの まん中・幅
+for r in range(P0 + 64, ta.shape[0] - 4, 12):                                        # 台の 前の 面の 行ごと：左はしと 右はしの まん中・幅
     c = np.nonzero(ta[r])[0]; cen.append(sx_ + (c.min() + c.max() + 1) / 4); wid.append((c.max() + 1 - c.min()) / 2)
-c6 = np.nonzero(ta[P0 + 8])[0]                                                       # 台の 上の 板の 行
-tops = [int(np.nonzero(ta[P0 - 24:P0 + 24, c])[0].min()) + P0 - 24 for c in (c6.min() + 14, c6.max() - 14)]      # 上の 板の 左はし・右はしの いちばん 上
-check(len(cen) >= 5 and max(cen) - min(cen) <= 2 and max(abs(c - 390) for c in cen) <= 6 and abs(tops[0] - tops[1]) <= 2 and min(wid) > 300 and ta[-1].sum() / 2 > 300,      # まん中が どの 行でも 同じ＝左右 対称（正面）
-      f'マスター帯の 台：正面から まっすぐ（台の 上の ふちは 左と 右で 同じ 高さ：{tops}・前の 面の まん中 x={min(cen):.1f}〜{max(cen):.1f}・幅 {min(wid):.0f}〜{max(wid):.0f}px・絵の いちばん 下まで 台＝{ta[-1].sum() / 2:.0f}px）')
+c6 = np.nonzero(ta[P0 + 8])[0]; x0_, span_ = int(c6.min()), int(c6.max() - c6.min())      # 台の 上の 板の 行
+edge = {}
+for c in range(x0_, x0_ + span_ + 1):                                                # 台の 上の ふち（うしろ）：その 列で はじめて 形が 出る 行（上に 馬の 足が ある 列は のぞく）
+    col = np.nonzero(ta[P0 - 24:P0 + 24, c])[0]
+    if len(col) and col.min() > 10:
+        edge[c] = int(col.min()) + P0 - 24
+med = lambda d, a, b: float(np.median([v for c, v in d.items() if x0_ + a * span_ <= c <= x0_ + b * span_] or [-99]))
+tops = [med(edge, 0.10, 0.30), med(edge, 0.70, 0.90)]                                # 左の ほう・右の ほうの 高さ
+gold_ = (tim[..., 0] - tim[..., 2] > 70) & (tim[..., 0] > 150) & ta
+trim = {}
+for c in range(x0_, x0_ + span_ + 1):                                                # 金の ふちの 線（台の 上の 面の 前の ふち）：台の 上の はしより 下で はじめて 金色に なる 行
+    col = np.nonzero(gold_[P0 + 10:P0 + 70, c])[0]
+    if len(col):
+        trim[c] = int(col.min()) + P0 + 10
+trims = [med(trim, 0.12, 0.28), med(trim, 0.72, 0.88)]
+f0_, f1_ = P0 + 70, ta.shape[0] - 14                                                 # 前の 面（金の ふちの 線より 下・いちばん 下の かげより 上）
+face = np.nonzero(ta[f0_])[0]
+tcols = [c for c in np.nonzero(gold_[f0_:f1_].sum(0) > 4)[0] if face.min() + 60 <= c <= face.max() - 60]      # 台の 字（TENGER）の 金の 列
+tcen = sx_ + (min(tcols) + max(tcols) + 1) / 4 if tcols else -99
+check(len(cen) >= 5 and max(cen) - min(cen) <= 2 and max(abs(c - 390) for c in cen) <= 3 and min(tops) > 0 and abs(tops[0] - tops[1]) <= 2 and min(trims) > 0 and abs(trims[0] - trims[1]) <= 2
+      and min(wid) > 300 and ta[-1].sum() / 2 > 300 and abs(tcen - 390) <= 6 and len(tcols) > 300,      # まん中が どの 行でも 同じ＝左右 対称（正面）
+      f'マスター帯の 台：正面から まっすぐ（台の 上の ふちは 左と 右で 同じ 高さ：{tops}・金の ふちの 線も：{trims}・前の 面の まん中 x={min(cen):.1f}〜{max(cen):.1f}＝絵の まん中・幅 {min(wid):.0f}〜{max(wid):.0f}px・'
+      f'絵の いちばん 下まで 台＝{ta[-1].sum() / 2:.0f}px）・台の 字 TENGER も まん中（x={tcen:.1f}）')
+# 第4.158版：色の 深みと 背景の 光（まさちゃん 11/12 09:18「色合いとかは深みつけて、背景の光とかもリアルにカッコよくして！」）
+#   金（像の 上の 金色の 所）：明るい 所は 白に 近い 金・暗い 所も 金色（こはく色：赤 > 緑 > 青）で、明るさの 差が 大きい。背景：まわりは 暗い・像の うしろは 金の 光・床に 光が うつる
+bn = np.array(Image.open(os.path.join(BL, MB['tengel_banner'] + '.webp')).convert('RGB')).astype(np.float32)
+bs = np.array(Image.open(os.path.join(BL, MB['tengel_base'] + '.webp')).convert('RGB')).astype(np.float32)
+rgbh = tim[..., :3].astype(np.float32); up = np.zeros(ta.shape, bool); up[:P0 - 12] = True                    # 馬と 騎手（台より 上）
+gm = ta & up & (rgbh[..., 0] > rgbh[..., 2] + 25) & (rgbh[..., 0] >= rgbh[..., 1] - 6)                       # 金の 所（緑の 服・白い ズボン・黒い くつは のぞく）
+lumg = rgbh[gm] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+lo_, hi_ = np.percentile(lumg, 8), np.percentile(lumg, 97)
+dark = rgbh[gm][lumg <= lo_].mean(0)                                                                        # 金の 暗い 所の 色
+A1 = np.zeros((320, 780), np.float32); st_a = np.array(Image.fromarray((tim[..., 3]).astype(np.uint8)).resize((sw_, sh_), Image.BILINEAR)).astype(np.float32) / 255
+A1[sy_:sy_ + sh_, sx_:sx_ + sw_] = st_a
+yy_, xx_ = np.mgrid[0:320, 0:780]; rc_ = np.hypot(xx_ - ts['ring'][0], yy_ - ts['ring'][1])
+back = (A1 < 0.02) & (rc_ < 90) & (yy_ < ts['floor'] - 8)                                                   # 像の うしろ（光の 輪の 中の 背景）
+far_ = (A1 < 0.02) & ((xx_ < 110) | (xx_ > 670)) & (yy_ < 200)                                              # 絵の 左右の はし
+flo_ = (A1 < 0.02) & (yy_ > ts['floor'] + 6) & (yy_ < ts['floor'] + 30) & (np.abs(xx_ - 390) > 190) & (np.abs(xx_ - 390) < 300)      # 台の 横の 床
+lum1 = lambda m_: float((bs[m_] @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean())
+cb = bs[back].mean(0)
+check(gm.mean() > 0.10 and hi_ >= 235 and lo_ <= 110 and hi_ - lo_ >= 130 and dark[0] > dark[1] + 15 and dark[1] > dark[2] + 20
+      and lum1(back) >= 75 and cb[0] > cb[2] + 50 and cb[1] > cb[2] + 30 and lum1(far_) <= 22 and lum1(back) >= 5 * lum1(far_) and 6 <= lum1(flo_) <= 60 and back.sum() > 3000 and far_.sum() > 20000,
+      f'マスター帯の 色と 光：金は 明るい 所（{hi_:.0f}/255）と 暗い 所（{lo_:.0f}）の 差が 大きく、暗い 所も 金色（こはく色 {dark.round(0).tolist()}）＝**深み**・'
+      f'背景は 暗い 舞台（左右の はし {lum1(far_):.0f}/255）に 像の うしろ だけ 金の 光（{lum1(back):.0f}・色 {cb.round(0).tolist()}）・床に 光が うつる（{lum1(flo_):.0f}）')
+# きらめきと 光の 粒は 金の 上 だけ（騎手の 白い ズボン・緑の 服の 上には 出さない）
+def is_gold(x, y):                                     # その 点の まわり（高画質の 絵で 17×17）の 色：金（赤 > 青）。いちばん 明るい 所は 白に 近い ので 1点では 見ない
+    r_, c_ = int(round((y - sy_) * 2)), int(round((x - sx_) * 2))
+    w_ = tim[max(r_ - 8, 0):r_ + 9, max(c_ - 8, 0):c_ + 9].reshape(-1, 4).astype(np.float32); w_ = w_[w_[:, 3] > 128]
+    return tim[r_, c_, 3] > 128 and len(w_) > 60 and w_[:, 0].mean() > w_[:, 2].mean() + 30 and w_[:, 0].mean() >= w_[:, 1].mean() - 6
+offg = [(x, y) for x, y in pts(T) if not is_gold(x, y)]
+check(not offg, f'マスター帯の きらめき・またたく 所・光の 粒（40こ）は ぜんぶ 金の 上（騎手の 白い ズボン・緑の 服の 上には 出さない）{offg[:4] if offg else ""}')
+check(np.abs(bn - bs).max() > 60 and (np.abs(bn - bs).max(-1) > 24).mean() < 0.02, 'マスター帯の きらめきを ぬいた 絵は、いまの 絵から きらめき（4つの 小さな 光）だけ ぬいた もの（ちがう 所は 2% より 少ない）')
 
 from playwright.sync_api import sync_playwright
 SRV = os.path.join(W, 'srv_band'); PORT = 8799; APP = f'http://localhost:{PORT}/APP/'
@@ -115,6 +173,7 @@ ST = """async (p) => { const bn = document.querySelector('#ksBnr'), w = bn && bn
     still: w.querySelectorAll('.' + p + 'S use').length, stillShown: w.querySelector('.' + p + 'S') ? getComputedStyle(w.querySelector('.' + p + 'S')).display : '', tw: w.querySelectorAll('.' + p + 'F').length, dots: w.querySelectorAll('.' + p + 'D').length,
     trail: w.querySelectorAll('.' + p + 'P').length, ring: w.querySelectorAll('.' + p + 'R').length, clip: !!w.querySelector('#' + p + 'O path'), anims: an.length, run: an.filter(a => a.playState === 'running').length,
     kf: m ? m[0].slice(0, 400) : '', tq: bn.querySelectorAll('[class^="tq"], [class*=" tq"]').length, aria: w.getAttribute('aria-label') || '', aHid: getComputedStyle(w.querySelector('.' + p + 'A')).visibility,
+    src: [...w.querySelectorAll('.' + p + 'P')].map(e => (e.parentNode.getAttribute('transform').match(/-?[\\d.]+/g) || []).map(Number)),
     sw: document.documentElement.scrollWidth }; }"""
 try:
     with sync_playwright() as p:
@@ -137,7 +196,8 @@ try:
                   and s['hero'] == [hx, hy_, hw, hh] and s['heroPx'] == [hx / 2, hy_ / 2, hw / 2, hh / 2] and s['ok'][2][0] / s['heroPx'][2] >= 3.99      # 馬の 絵：画面の 1px に 絵の 4px（iPhone の 3倍の 画面でも 足りる）
                   and s['kids'] == f'defs image g.{pre}A image.{pre}H g.{pre}A g.{pre}S' and s['still'] == 4 and s['stillShown'] == 'none'
                   and s['tw'] == 14 and s['dots'] == 26 and s['trail'] >= 8 and s['ring'] == 1 and s['clip'] and s['anims'] >= 50 and s['run'] >= 50 and s['tq'] == 0 and s['aHid'] == 'visible' and s['sw'] <= 390
-                  and len(dx) >= 3 and all(v * flow > 0 for v in dx) and ('TENGER' in s['aria']) == (tid == 'tengel'))
+                  and len(dx) >= 3 and all(v * flow > 0 for v in dx) and ('TENGER' in s['aria']) == (tid == 'tengel')
+                  and (tid != 'tengel' or (('騎手' in s['aria']) and all(x > 390 + 25 and y < ts['ped'] - 8 for x, y in s['src']))))      # マスター帯（第4.158版）：粒は 像の まん中より うしろ（右）・台の 上の はしより 上から 出る
             check(ok and not errs, f'{tid}：上の 絵は 像＋きらめき（{pre}w）：背景の 絵 2まい（780×320）＋**馬 だけの 高画質の 絵**（{s and s["ok"][2]}px を {s and s["heroPx"][2:]}pt に＝4倍・きらめきを ぬいた 絵と 光の 輪の 上／きらめきと 光の 粒の 下）・きらめき 14・光の 粒 26・うしろへ 流れる 粒 {s and s["trail"]}（{"右" if flow > 0 else "左"}へ）・光の 輪・動き {s and s["anims"]}こ・'
                   f'前の マスター帯の 数字と 雷は ない・横に はみ出さない' + ('' if ok else f'（{s}・{dx[:4]}）'))
         # 選ぶ 画面の 小さい 絵

@@ -28,6 +28,7 @@ ios/lite/
 ios/push_assets/
 srv_pb/
 srv_band/
+srv_rt/
 srv_tc/
 srv_fig/
 srv_figcap/

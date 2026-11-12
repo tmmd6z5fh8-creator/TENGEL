@@ -63,6 +63,8 @@ assert 'tc_icon_tc.webp' not in got
 fab_icon.make(os.path.join(UI, 'icon_training_center.png'), os.path.join(OUT, 'tc_icon_tc.webp')); got['tc_icon_tc.webp'] = os.path.getsize(os.path.join(OUT, 'tc_icon_tc.webp'))
 webp(os.path.join(UI, 'icon_sakusen_kaigi.png'), 'tc_icon_plan.webp', size=(720, 200), q=92)
 # ルーレット（3つの 絵の 部品と 置き場所）
+#   第4.158版：アプリが 読むのは きれいに した 絵（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py が ここで 置く rt_<絵>_<部品>.webp と まさちゃんの もとの 絵から 作る）。
+#   この スクリプトは 出す フォルダを 作り直す ので、走らせた あとは python3 kisekae/tc/rt_clean.py <もとの 絵の フォルダ> ios/tc_assets を もう一度（しないと ルーレットの 絵が 出ない）
 RP = os.path.join(H3, 'rt_parts')
 for th in ('normal', 'maboroshi', 'kamisama'):
     for p in ('plate', 'knob', 'stick', 'ptr'): put(os.path.join(RP, f'rt_{th}_{p}.webp'))
