@@ -37,6 +37,9 @@ need = set()
 for c in ('brown', 'madara', 'black', 'white', 'hada'):
     for s in range(1, 6): need.add(f'tc_horse_bk_{c}_s{s}')
 need |= {'tc_horse_bk_kamisama', 'tc_horse_bk_maboroshi'}
+#   第4.161版：アプリが 読むのは 直した 形（tc_horse_bk_kamisama2・tc_horse_bk_maboroshi2 の json と bin）。ここで 置く 2つの 形から kisekae/tc/horse_fix.py が 作る
+#   （神様馬＝マントの 先の 骨の 付け直し・幻の馬＝たてがみの 裏返しの 面・にじむ 膜・肩幅）。この スクリプトは 出す フォルダを 作り直す ので、
+#   走らせた あとは python3 kisekae/tc/horse_fix.py kamisama と python3 kisekae/tc/horse_fix.py maboroshi を もう一度（しないと 神様馬・幻の馬が 出ない）→ python3 kisekae/lite_assets.py tc_assets
 bins, texs = set(), set()
 for nm in sorted(need):
     m = json.load(open(os.path.join(H3, nm + '.json'))); put(os.path.join(H3, nm + '.json'))

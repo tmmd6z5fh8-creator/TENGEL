@@ -202,8 +202,8 @@ const TCApp = (() => {
   function horseSpec() {
     if (st.visit) {
       return st.visit.kind === 'kamisama'
-        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
-        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi', stage: BIG, eyeGlow: 'purple', light: 'abyss' };
+        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama2', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
+        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi2', stage: BIG, eyeGlow: 'purple', light: 'abyss' };      // 名前の 2：第4.161版で 直した 形（kisekae/tc/horse_fix.py：神様馬＝マントの 先の 骨・幻の馬＝たてがみの 黒・にじみ）
     }
     const c = COLORS[st.color % COLORS.length], s = stageOf(st.cares);
     return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}`, stage: scaleOf(st.cares) };

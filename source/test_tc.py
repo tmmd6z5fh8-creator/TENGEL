@@ -43,6 +43,38 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
 } } } };
 """
 
+# 第4.161版：馬の 形の 直し（kisekae/tc/horse_fix.py）を アプリの 描いた 絵で 見る ための しかけ。
+#   TCHorse が 作られた とき、brain（動き）・create（形）・draw（描く）を つつんで、描いた すぐ あとの 画素を 読めるように する。
+#   __tcMetric(度)：馬を 決まった 場所・向きに 立たせて、直し あり／なし（meta.fix を 外す）で 2まい 描いて くらべる。
+#     toPur＝直し なしで 黒（どの 色も 45 より 下）だった 画素が 直すと 紫に なった 数（たてがみの 黒い 穴・点）・toDark＝その 逆（紫 → 黒：直しで こわした 所）
+#     くらべる 間は 描く 時刻と 馬の 動き（step）を 止める（目の 光は 2.8秒の 波で 強さが かわる・息で 体が 動く・ときどき しっぽを ふる ＝ 止めないと 直しと かかわりの ない 画素が 数に まざる）
+HOOK161 = """
+(() => { let th; Object.defineProperty(window, 'TCHorse', { configurable: true, get() { return th; }, set(v) { th = v;
+  const b = v.brain; v.brain = function (o) { const st = b(o); window.__BR = st; return st; };
+  const c = v.create; v.create = function () { const h = c.apply(this, arguments); window.__HO = h; return h; };
+  const s0 = v.step; v.step = function (h) { if (window.__ft != null && h === window.__HO) return; return s0.apply(this, arguments); };
+  const d = v.draw; v.draw = function (h) { const a = Array.prototype.slice.call(arguments);
+    if (h === window.__HO) { if (window.__ft != null) a[2] = window.__ft; else window.__lt = a[2]; }
+    const r = d.apply(this, a);
+    if (window.__grab && h === window.__HO) { const gl = h.gl, w = gl.drawingBufferWidth, hh = gl.drawingBufferHeight, px = new Uint8Array(w * hh * 4); gl.readPixels(0, 0, w, hh, gl.RGBA, gl.UNSIGNED_BYTE, px); const g = window.__grab; window.__grab = null; g(px, w, hh); }
+    return r; }; } });
+  const grab = () => new Promise(res => { window.__grab = (px, w, h) => res({ px, w, h }); });
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const pur = (px, i) => px[i + 2] > 150 && px[i + 1] < 60 && px[i] > 70, dark = (px, i) => Math.max(px[i], px[i + 1], px[i + 2]) < 45;
+  const diff = (a, b) => { let toPur = 0, toDark = 0, np = 0; const n = a.w * a.h;
+    for (let i = 0; i < n * 4; i += 4) { if (pur(b.px, i)) np++; if (dark(a.px, i) && pur(b.px, i)) toPur++; if (pur(a.px, i) && dark(b.px, i)) toDark++; }
+    return { toPur, toDark, pur: np }; };
+  window.__tcMetric = async (deg) => { const b = window.__BR, h = window.__HO;
+    const set = () => { b.x = 526; b.y = 1010; b.dir = deg * Math.PI / 180; b.dirV = 0; b.turnTo = null; b.tgt = null; b.mode = 'idle'; b.reacts = []; b.want.look = [0, 0]; b.force = ['idle:30']; b.until = 0; };
+    set(); await wait(700); set(); await wait(150);
+    const fix = h.meta.fix; window.__ft = window.__lt;
+    try { const on = await grab(), on2 = await grab();
+      h.meta.fix = null; const off = await grab();
+      return { same: diff(on, on2), fix: diff(off, on), err: h.gl.getError(), w: on.w, h: on.h }; }
+    finally { h.meta.fix = fix; window.__ft = null; } };
+})()
+"""
+
 
 def gate(pg):
     g = pg.locator('#gate')
@@ -1054,6 +1086,44 @@ try:
                 check(wk['tod'] == 'night' and all('sleep' not in o[1] and o[2] == 0 and o[3] for o in wk['out']) and wk['pet'] == 'pet',
                       f'夜の フィールドでも ねない：とくべつ・見本用の sleep・外から 入れた ねる 形 → 立った まま 次の 動きへ・横に なる しるしは 0 → 撫でるが 始まる {wk["out"]}')
             c3.close()
+        print('■ 神様馬・幻の馬の 形の 直し（第4.161版）')
+        #   まさちゃん 11/12 18:00「トレーニングセンターの神様馬、赤丸の位置から動く変なパーツが飛び出てる／幻の馬は、赤丸の立髪の毛の色がブラックなっている。
+        #   身体の表面の赤丸の箇所がボヤけているように見える。全て改善して！」・19:47「幻の馬、肩幅狭くして！」・20:01「赤丸の大きさにして！」
+        #   形の 中身（骨の 付け先・はば・にじむ 膜）は test_horse_fix.py が 数で 見る。ここは アプリが 新しい 形を 読んで、本当に 描いた 絵が 直って いるかを 見る
+        c4 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); c4.add_init_script(FAKE); c4.add_init_script(HOOK161)
+        p4 = c4.new_page(); e4 = []; p4.on('pageerror', lambda e: e4.append(str(e)))
+        got4 = []; p4.on('response', lambda r: got4.append(r.url.split('/')[-1].split('?')[0]) if 'tc_horse_bk_kamisama' in r.url or 'tc_horse_bk_maboroshi' in r.url else None)
+        p4.goto(APP); p4.wait_for_timeout(1500); gate(p4); p4.wait_for_timeout(600)
+        p4.locator('#tcFab').click()
+        p4.wait_for_function("() => window.TCApp && document.querySelector('#tcOv.on') && !document.querySelector('#tcOv .tcld')", timeout=120000)
+        p4.evaluate("() => TCApp._t.govSet(0, true)"); p4.wait_for_timeout(1200)
+        HI = "() => { const h = window.__HO, m = h.meta; return { v: m.v, fix: m.fix || null, slim: m.slim || null, skin: m.skinfix2 || null, fx: !!h.B.fx, err: h.gl.getError() }; }"
+        n4 = p4.evaluate(HI)
+        check(n4['v'] < 40000 and n4['fix'] is None and n4['slim'] is None and n4['skin'] is None and not n4['fx'] and n4['err'] == 0,
+              f'いつもの 馬：直しの 印は ない（前と 同じ 描き方）・描く ときの エラー なし（頂点 {n4["v"]}）')
+        r4 = {}
+        for kind4 in ('maboroshi', 'kamisama'):
+            p4.evaluate("(k) => TCApp._t.startVisit(k)", kind4)
+            p4.wait_for_function("(k) => TCApp.state.visit && TCApp.state.visit.kind === k && window.__HO && window.__HO.meta.v > 80000", arg=kind4, timeout=120000); p4.wait_for_timeout(2500)
+            r4[kind4] = p4.evaluate(HI)
+            r4[kind4]['m'] = [p4.evaluate("(deg) => window.__tcMetric(deg)", deg4) for deg4 in (180, 0)]
+        mb, km = r4['maboroshi'], r4['kamisama']
+        check(sorted(set(got4)) == ['tc_horse_bk_kamisama2.bin', 'tc_horse_bk_kamisama2.json', 'tc_horse_bk_maboroshi2.bin', 'tc_horse_bk_maboroshi2.json'],
+              f'アプリが 読むのは 直した 形 だけ（{sorted(set(got4))}）')
+        check(mb['fix'] is not None and mb['fix'].get('two') == 1 and mb['fix'].get('nfix') == 1 and mb['fx'] and mb['slim'] is not None and mb['slim']['w'] == [0.779, 0.62] and mb['err'] == 0,
+              f'幻の馬：直しの 印（裏返しの 面・こわれた 法線・にじむ 膜の 色）と はば（{mb["slim"] and mb["slim"]["w"]}）・エラー なし')
+        a4, z4 = mb['m']
+        #   390×614 の 絵で：直しを 切ると たてがみの 中の 黒い 所が 400画素 ほど（8回 はかって 398〜436）・時刻と 動きを 止めて いるので 同じ 絵 どうしの 差は 0。
+        #   反対の 向き：三角の 向きだけ 逆で 法線は 合って いる 面まで 向きを かえると 74画素が 黒く なった（はじめの 作り）→ 法線が むこう向きの 面 だけ 直す 形に して 0
+        check(a4['fix']['toPur'] >= 200 and a4['fix']['toDark'] <= 10 and a4['same']['toPur'] <= 10 and a4['same']['toDark'] <= 10 and a4['err'] == 0,
+              f'幻の馬（たてがみの 見える 向き）：黒かった たてがみの 中が 紫に（{a4["fix"]["toPur"]}画素：200 以上）・紫が 黒く なった 所は ない（{a4["fix"]["toDark"]}）・同じ 絵 どうしの 差は {a4["same"]["toPur"]}・{a4["same"]["toDark"]}')
+        check(z4['fix']['toPur'] <= 10 and z4['fix']['toDark'] <= 10 and z4['same']['toPur'] <= 10 and z4['same']['toDark'] <= 10 and z4['err'] == 0,
+              f'幻の馬（反対の 向き）：直しで 黒く なる 所は ない（紫 → 黒 {z4["fix"]["toDark"]}画素・黒 → 紫 {z4["fix"]["toPur"]}：裏から 見えて 法線が むこう向きの 面 だけ 直す）')
+        check(km['fix'] is None and not km['fx'] and km['skin'] is not None and km['skin'].get('islands') == 9 and km['skin'].get('verts') == 983 and km['err'] == 0
+              and all(m4['fix']['toPur'] == 0 and m4['fix']['toDark'] == 0 and m4['err'] == 0 for m4 in km['m']),
+              f'神様馬：骨の 付け直し（{km["skin"] and [km["skin"].get("islands"), km["skin"].get("verts")]}＝はなれた かたまり 9・頂点 983）だけ・見た目の 直しは 使わない（前と 同じ 描き方）・エラー なし')
+        check(not e4, f'エラー なし {e4[:2]}')
+        c4.close()
         b.close()
 finally:
     srv.terminate()

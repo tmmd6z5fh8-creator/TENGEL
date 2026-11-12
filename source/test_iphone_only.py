@@ -148,7 +148,7 @@ if r.returncode == 0:
         #   番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）→ 棚は 第4.153版で 貼り直した（下）
         import importlib as _il; sys.path.insert(0, os.path.join(W, 'kisekae')) if os.path.join(W, 'kisekae') not in sys.path else None; _la = _il.import_module('lite_assets')
         _iz = [(n, f, e) for n, f, e in _all if e['how'] == 'idxz']
-        iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in range(1, 9)] + ['tc_horse_bk_kamisama.bin', 'tc_horse_bk_maboroshi.bin']) and all(
+        iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in range(1, 9)] + ['tc_horse_bk_kamisama2.bin', 'tc_horse_bk_maboroshi2.bin']) and all(
             open(os.path.join(RES, f), 'rb').read(4) == b'TGIZ' and _la.unpack_idx(open(os.path.join(RES, f), 'rb').read()) == open(os.path.join(_ad.master(n), f), 'rb').read() for n, f, _e in _iz)
         iz_save = sum(e['src'][0] - e['size'] for _n, _f, e in _iz)
         # 第4.153版（まさちゃん 11/11 12:10「やって！」＝棚の 貼り方を 作り直して 軽く）：棚は fg_shelf2.*（kisekae/fig/shelf_reuv.py）。前の fg_shelf.* は アプリに 入れない（もとの フォルダには 残す）
@@ -177,6 +177,19 @@ if r.returncode == 0:
               and all(_man['fx_assets']['files'][f]['p'].startswith('crf24-slow') for f in FILMS.values()),
               f'第4.146版：アプリに 入る のは 軽い 版（動画 5本 {p_films / 1e6:.1f}MB：もとは 39.5MB〈第4.156版：CRF 29 → 24 に 上げた。第4.155版までは 18.5MB〉・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
               f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+        # 第4.161版（まさちゃん 11/12 18:00「神様馬、赤丸の位置から動く変なパーツが飛び出てる／幻の馬は…立髪の毛の色がブラック…身体の表面…ボヤけて…全て改善して！」・19:47「幻の馬、肩幅狭くして！」）：
+        #   神様馬・幻の馬の 形は 直した 新しい 形（tc_horse_bk_<名前>2.json＋.bin：kisekae/tc/horse_fix.py）。前の 形は アプリに 入れない（もとの フォルダには 残す）
+        import json as _j161
+        _hn = [f'tc_horse_bk_{h}2.{e}' for h in ('kamisama', 'maboroshi') for e in ('json', 'bin')]; _ho = [f'tc_horse_bk_{h}.{e}' for h in ('kamisama', 'maboroshi') for e in ('json', 'bin')]
+        _mm = _j161.load(open(os.path.join(RES, 'tc_horse_bk_maboroshi2.json'), encoding='utf8')) if 'tc_horse_bk_maboroshi2.json' in res else {}
+        _km = _j161.load(open(os.path.join(RES, 'tc_horse_bk_kamisama2.json'), encoding='utf8')) if 'tc_horse_bk_kamisama2.json' in res else {}
+        _tb = open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read() if 'tc_bundle.js' in res else ''
+        check(all(f in res for f in _hn) and not any(f in res for f in _ho) and all(os.path.isfile(os.path.join(_ad.master('tc_assets'), f)) for f in _ho)
+              and (_mm.get('fix') or {}).get('two') == 1 and (_mm.get('fix') or {}).get('nfix') == 1 and 'fx' in _mm.get('layout', {}) and abs(((_mm.get('slim') or {}).get('w') or [0, 0])[1] - 0.62) < 0.003
+              and (_km.get('skinfix2') or {}).get('verts') == 983 and 'fx' not in _km.get('layout', {}) and 'fix' not in _km
+              and "tc_horse_bk_kamisama2'" in _tb and "tc_horse_bk_maboroshi2'" in _tb and "tc_horse_bk_kamisama'" not in _tb and "tc_horse_bk_maboroshi'" not in _tb and 'uniform vec3 uFix;' in _tb,
+              f'第4.161版：神様馬・幻の馬は 直した 形（…2.json＋.bin）が 入って いる・前の 形 4つは 入って いない（もとの フォルダには ある）・幻の馬＝たてがみの 面と 法線の 直し・にじむ 膜の 色・肩幅 {((_mm.get("slim") or {}).get("w") or [0, 0])[0]} → {((_mm.get("slim") or {}).get("w") or [0, 0])[1]}／'
+              f'神様馬＝マントの 先の 骨（{(_km.get("skinfix2") or {}).get("verts")}頂点）・アプリの コードは 新しい 名前を 読む')
         # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
         #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
         sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')) if os.path.join(W, 'kisekae', 'bcp') not in sys.path else None

@@ -40,6 +40,11 @@ def superseded(name, files):
         #   安い 方は デカ的中と 同じ 音 ＝ 前の 確定の 音（tc_se_rt_confirm.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
         if 'tc_se_doon.m4a' in files:
             old |= files & {'tc_se_rt_confirm.m4a'}
+        # 第4.161版（まさちゃん 2026/11/12 18:00「神様馬、赤丸の位置から動く変なパーツが飛び出てる／幻の馬は…立髪の毛の色がブラック…身体の表面…ボヤけて…全て改善して！」）：
+        #   神様馬・幻の馬の 形は 直した 新しい 形（tc_horse_bk_<名前>2.json＋.bin：kisekae/tc/horse_fix.py）を 使う。前の 形は 入れない（もとの フォルダには 残す）
+        for h in ('kamisama', 'maboroshi'):
+            if {f'tc_horse_bk_{h}2.json', f'tc_horse_bk_{h}2.bin'} <= files:
+                old |= files & {f'tc_horse_bk_{h}.json', f'tc_horse_bk_{h}.bin'}
         return old
     return set()
 
