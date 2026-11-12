@@ -22,35 +22,39 @@
   };
 
   const VS = [
-    'attribute vec3 aPos,aCol;attribute vec4 aNrm;attribute float aBone,aBone2,aBw,aCv;attribute vec2 aUV;uniform float uBlend;',       
+    'attribute vec3 aPos;attribute vec4 aCol,aNrm;attribute float aBone,aBone2,aBw,aCv;attribute vec2 aUV;uniform float uBlend;',       
     'uniform mat4 uB[18];uniform mat4 uV;uniform mat3 uR;uniform vec4 uP;uniform vec4 uEm;',     
-    'varying vec3 vN,vC;varying vec3 vW;varying vec2 vUV;varying vec3 vR0,vR1,vR2;varying vec4 vP;varying float vAo,vCv,vB;',
+    'varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vUV;varying vec3 vR0,vR1,vR2;varying vec4 vP;varying float vAo,vCv,vB;',
     'void main(){float bw=aBw*uBlend;mat4 B=uB[int(aBone+0.5)]*(1.0-bw)+uB[int(aBone2+0.5)]*bw;vec4 w=B*vec4(aPos,1.0);vec4 q=uV*w;mat3 RB=uR*mat3(B);',
     '  gl_Position=vec4(uP.x+q.x,uP.y+q.y,0.5-q.z*uP.z,1.0);vN=RB*aNrm.xyz;vAo=aNrm.w;vCv=aCv*2.0-1.0;vB=aBone;vC=aCol;vW=w.xyz;vUV=aUV;vR0=RB[0];vR1=RB[1];vR2=RB[2];vP=vec4(aPos-uEm.xyz,abs(aBone-uEm.w)<0.5?1.0:0.0);}'].join('\n');
   const FS = [
-    'precision highp float;varying vec3 vN,vC;varying vec3 vW;varying vec2 vUV;varying vec3 vR0,vR1,vR2;varying vec4 vP;varying float vAo,vCv,vB;',
+    'precision highp float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vUV;varying vec3 vR0,vR1,vR2;varying vec4 vP;varying float vAo,vCv,vB;',
     'uniform vec3 uSun,uSunC,uAmb,uFill;uniform float uA,uTexOn,uNrmOn,uLift;uniform sampler2D uTex,uNrm;',
     'uniform vec3 uSky,uGnd;uniform float uAoOn,uSm,uGrain,uCv,uDbg;',      
     'uniform vec3 uE0,uE1,uGc;uniform vec2 uGr;',       
+    'uniform vec3 uFix;',      
     'float h(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}',
     'float vn3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);',       
     '  return mix(mix(mix(h(i),h(i+vec3(1.0,0.0,0.0)),f.x),mix(h(i+vec3(0.0,1.0,0.0)),h(i+vec3(1.0,1.0,0.0)),f.x),f.y),',
     '    mix(mix(h(i+vec3(0.0,0.0,1.0)),h(i+vec3(1.0,0.0,1.0)),f.x),mix(h(i+vec3(0.0,1.0,1.0)),h(i+vec3(1.0,1.0,1.0)),f.x),f.y),f.z);}',
-    'void main(){vec3 n=normalize(vN);',
+    'void main(){vec3 n=normalize(vN);bool bk=!gl_FrontFacing;float fx=uFix.z*vC.a;',      
     '  if(uNrmOn>0.5){vec3 nm=normalize(mat3(vR0,vR1,vR2)*(texture2D(uNrm,vUV).xyz*2.0-1.0));',     
-    '    float sl=length(vN);vec3 ns=vN/max(sl,0.0001);n=normalize(mix(nm,ns,uSm*step(0.5,sl)*smoothstep(0.0,0.35,dot(nm,ns))));}',      
-    '  else if(!gl_FrontFacing)n=-n;',
+    '    float sl=length(vN);vec3 ns=vN/max(sl,0.0001);float dn=dot(nm,ns),ok=step(0.5,sl);float k=uSm*ok*smoothstep(0.0,0.35,dn);',      
+    '    k=max(k,ok*max(fx,uFix.y*(1.0-smoothstep(-0.5,-0.2,dn))));n=normalize(mix(nm,ns,k));}',      
+    '  else if(bk)n=-n;',
+    '  float av=vAo,cv=vCv;if(uFix.x>0.5&&bk&&n.z<0.0){n=-n;av=max(av,0.72);cv=-cv;}',      
+                                                                                           
     '  float ds=dot(n,uSun);float d=mix(max(ds,0.0),max((ds+0.3)/1.3,0.0),0.55);',       
-    '  float ao=uAoOn>0.5?mix(1.0,clamp(vAo,0.0,1.0),0.55):1.0;float gc=mix(0.8,1.0,smoothstep(0.0,0.42,vW.y));',      
+    '  float ao=uAoOn>0.5?mix(1.0,clamp(av,0.0,1.0),0.55):1.0;float gc=mix(0.8,1.0,smoothstep(0.0,0.42,vW.y));',      
     '  vec3 hemi=mix(uGnd,uSky,0.5+0.5*n.y);',      
     '  float rim=uTexOn>0.5?pow(1.0-abs(n.z),3.0)*0.16:pow(1.0-abs(n.z),2.0)*0.12;',
     '  vec3 hv=normalize(uSun+vec3(0.0,0.0,1.0));float sp=uTexOn>0.5?pow(max(dot(n,hv),0.0),24.0)*0.14:0.0;',      
-    '  vec3 base=uTexOn>0.5?texture2D(uTex,vUV).rgb:vC;',     
+    '  vec3 base=uTexOn>0.5?mix(texture2D(uTex,vUV).rgb,vC.rgb,fx):vC.rgb;',     
     '  float g=uTexOn>0.5?1.0+uGrain*((vn3(vP.xyz*38.0)-0.5)+0.7*(vn3(vP.xyz*8.0+7.0)-0.5)):0.97+0.06*h(floor(vW*90.0));',   
     '  vec3 fd=normalize(vec3(-uSun.x,0.25,0.65));float fl=uTexOn>0.5?max(dot(n,fd),0.0)*0.22:0.0;',      
     '  float kk=uTexOn>0.5?1.12:1.0;',
     '  vec3 tn=uTexOn>0.5?mix(vec3(1.0),base/max(max(base.r,base.g),max(base.b,0.04)),0.65):vec3(1.0);',      
-    '  float cr=max(vCv,0.0),cc=max(-vCv,0.0);float fold=1.0+uCv*(0.55*cr*(0.45+0.55*d)-0.25*cc);',      
+    '  float cr=max(cv,0.0),cc=max(-cv,0.0);float fold=1.0+uCv*(0.55*cr*(0.45+0.55*d)-0.25*cc);',      
     '  vec3 hv2=normalize(uSun+vec3(0.0,0.0,1.0));float sh=uTexOn>0.5?pow(max(dot(n,hv2),0.0),6.0)*0.07*uSm:0.0;',      
     '  vec3 c=base*(hemi*ao*gc+uSunC*d*kk*mix(1.0,ao,0.3)*gc+fl*uFill*ao+uLift)*g*fold+(rim*0.5+sp+sh)*uSunC*tn*ao;',      
     '  if(uTexOn>0.5){float mx=max(c.r,max(c.g,c.b));if(mx>0.8)c*=(0.8+0.2*(1.0-exp((0.8-mx)*5.0)))/mx;}',      
@@ -494,7 +498,8 @@
       const P = pr.P; if (!P || !pr.m) continue;
       at(P.B.pos, h.loc.aPos, 3); at(P.B.bone, h.loc.aBone, 1); at(P.B.bone, h.loc.aBone2, 1); at(P.B.bw, h.loc.aBw, 1, gl.UNSIGNED_BYTE, true);
       at(P.B.nrm, h.loc.aNrm, 4, gl.BYTE, true, 4); at(P.B.uv, h.loc.aUV, 2, gl.UNSIGNED_SHORT, true);
-      if (h.loc.aCol >= 0) { gl.disableVertexAttribArray(h.loc.aCol); gl.vertexAttrib3f(h.loc.aCol, 1, 1, 1); }
+      if (h.loc.aCol >= 0) { gl.disableVertexAttribArray(h.loc.aCol); gl.vertexAttrib4f(h.loc.aCol, 1, 1, 1, 0); }
+      gl.uniform3f(h.loc.uFix, 0, 0, 0);      
       if (h.loc.aCv >= 0) { if (P.B.cv) at(P.B.cv, h.loc.aCv, 1, gl.UNSIGNED_BYTE, true); else { gl.disableVertexAttribArray(h.loc.aCv); gl.vertexAttrib1f(h.loc.aCv, 0.5); } }
       gl.uniform1f(h.loc.uBlend, 0); gl.uniformMatrix4fv(h.loc.uB, false, new Float32Array(pr.m));      
       gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, P.tex); gl.uniform1i(h.loc.uTex, 6); gl.uniform1f(h.loc.uTexOn, P.tex ? 1 : 0);
@@ -526,12 +531,13 @@
     const mk = (data, target) => { const b = gl.createBuffer(); gl.bindBuffer(target || gl.ARRAY_BUFFER, b); gl.bufferData(target || gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); return b; };
     const bone2 = lay.bone2 ? new Uint8Array(bin, lay.bone2[0], nv) : bone, bwt = lay.bw ? new Uint8Array(bin, lay.bw[0], nv) : new Uint8Array(nv);
     const cvb = lay.cv ? new Uint8Array(bin, lay.cv[0], nv) : null;      
-    const B = { cv: cvb ? mk(cvb) : null, pos: mk(pos), nrm: mk(nrm), col: col ? mk(col) : null, uv: uv ? mk(uv) : null, bone: mk(new Float32Array(bone)), bone2: mk(new Float32Array(bone2)), bw: mk(bwt), idx: mk(idx, gl.ELEMENT_ARRAY_BUFFER), quad: mk(new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])) };
+    const fxb = fmt2 && lay.fx ? new Uint8Array(bin, lay.fx[0], nv * 4) : null;      
+    const B = { cv: cvb ? mk(cvb) : null, fx: fxb ? mk(fxb) : null, pos: mk(pos), nrm: mk(nrm), col: col ? mk(col) : null, uv: uv ? mk(uv) : null, bone: mk(new Float32Array(bone)), bone2: mk(new Float32Array(bone2)), bw: mk(bwt), idx: mk(idx, gl.ELEMENT_ARRAY_BUFFER), quad: mk(new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])) };
     const tex = fmt2 && opt.texImg ? mkTex(gl, opt.texImg) : null, ntex = fmt2 && opt.nrmImg ? mkTex(gl, opt.nrmImg) : null;
     const L = n => gl.getAttribLocation(P, n), U = n => gl.getUniformLocation(P, n);
     const loc = { aPos: L('aPos'), aNrm: L('aNrm'), aCol: L('aCol'), aBone: L('aBone'), aBone2: L('aBone2'), aBw: L('aBw'), uBlend: U('uBlend'), aUV: L('aUV'), uB: U('uB'), uV: U('uV'), uR: U('uR'), uP: U('uP'), uSun: U('uSun'), uSunC: U('uSunC'), uAmb: U('uAmb'), uA: U('uA'), uTexOn: U('uTexOn'), uTex: U('uTex'), uNrmOn: U('uNrmOn'), uNrm: U('uNrm'),
       sp: gl.getAttribLocation(S, 'p'), uE: gl.getUniformLocation(S, 'uE'), uO: gl.getUniformLocation(S, 'uO'),
-      uFill: U('uFill'), uLift: U('uLift'), uSky: U('uSky'), uGnd: U('uGnd'), uAoOn: U('uAoOn'), uSm: U('uSm'), uGrain: U('uGrain'), uCv: U('uCv'), aCv: L('aCv'), uDbg: U('uDbg'), uEm: U('uEm'), uE0: U('uE0'), uE1: U('uE1'), uGc: U('uGc'), uGr: U('uGr'),
+      uFill: U('uFill'), uLift: U('uLift'), uSky: U('uSky'), uGnd: U('uGnd'), uAoOn: U('uAoOn'), uSm: U('uSm'), uGrain: U('uGrain'), uCv: U('uCv'), aCv: L('aCv'), uDbg: U('uDbg'), uFix: U('uFix'), uEm: U('uEm'), uE0: U('uE0'), uE1: U('uE1'), uGc: U('uGc'), uGr: U('uGr'),
       gp: gl.getAttribLocation(G, 'p'), gE: gl.getUniformLocation(G, 'uE'), gGc: gl.getUniformLocation(G, 'uGc'), gGk: gl.getUniformLocation(G, 'uGk'),
       pp: gl.getAttribLocation(PS, 'p'), pE: gl.getUniformLocation(PS, 'uE'), pT: gl.getUniformLocation(PS, 'uT'), pTint: gl.getUniformLocation(PS, 'uTint'),
       tp: gl.getAttribLocation(TS, 'p'), tE: gl.getUniformLocation(TS, 'uE'), tM: gl.getUniformLocation(TS, 'uM'), tT: gl.getUniformLocation(TS, 'uT'), tTint: gl.getUniformLocation(TS, 'uTint'), tA: gl.getUniformLocation(TS, 'uA') };
@@ -1041,14 +1047,15 @@
     if (h.loc.aCv >= 0) { if (h.B.cv) at(h.B.cv, h.loc.aCv, 1, gl.UNSIGNED_BYTE, true); else { gl.disableVertexAttribArray(h.loc.aCv); gl.vertexAttrib1f(h.loc.aCv, 0.5); } }
     if (h.fmt2) {
       at(h.B.nrm, h.loc.aNrm, 4, gl.BYTE, true, 4); at(h.B.uv, h.loc.aUV, 2, gl.UNSIGNED_SHORT, true);
-      if (h.loc.aCol >= 0) { gl.disableVertexAttribArray(h.loc.aCol); gl.vertexAttrib3f(h.loc.aCol, 1, 1, 1); }
+      if (h.loc.aCol >= 0) { if (h.B.fx) at(h.B.fx, h.loc.aCol, 4, gl.UNSIGNED_BYTE, true); else { gl.disableVertexAttribArray(h.loc.aCol); gl.vertexAttrib4f(h.loc.aCol, 1, 1, 1, 0); } }
+      const fix = h.meta.fix || {}; gl.uniform3f(h.loc.uFix, fix.two ? 1 : 0, fix.nfix ? 1 : 0, h.B.fx ? 1 : 0);      
       
       gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, h.tex); gl.uniform1i(h.loc.uTex, 6); gl.uniform1f(h.loc.uTexOn, h.tex ? 1 : 0);
       gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, h.ntex); gl.uniform1i(h.loc.uNrm, 7); gl.uniform1f(h.loc.uNrmOn, h.ntex && (view.quality || {}).nm !== 0 ? 1 : 0); gl.activeTexture(gl.TEXTURE0);
     } else {
       at(h.B.nrm, h.loc.aNrm, 3); at(h.B.col, h.loc.aCol, 3, gl.UNSIGNED_BYTE, true);
       if (h.loc.aUV >= 0) { gl.disableVertexAttribArray(h.loc.aUV); gl.vertexAttrib2f(h.loc.aUV, 0, 0); }
-      gl.uniform1f(h.loc.uTexOn, 0); gl.uniform1f(h.loc.uNrmOn, 0);
+      gl.uniform1f(h.loc.uTexOn, 0); gl.uniform1f(h.loc.uNrmOn, 0); gl.uniform3f(h.loc.uFix, 0, 0, 0);
     }
     const all = [].concat(...mats); while (all.length < 18 * 16) all.push(...M.id()); gl.uniformMatrix4fv(h.loc.uB, false, new Float32Array(all.slice(0, 18 * 16)));
     gl.uniformMatrix4fv(h.loc.uV, false, new Float32Array(V)); gl.uniformMatrix3fv(h.loc.uR, false, new Float32Array(R3));
@@ -4063,8 +4070,8 @@ const TCApp = (() => {
   function horseSpec() {
     if (st.visit) {
       return st.visit.kind === 'kamisama'
-        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
-        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi', stage: BIG, eyeGlow: 'purple', light: 'abyss' };
+        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama2', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
+        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi2', stage: BIG, eyeGlow: 'purple', light: 'abyss' };      
     }
     const c = COLORS[st.color % COLORS.length], s = stageOf(st.cares);
     return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}`, stage: scaleOf(st.cares) };
