@@ -120,6 +120,7 @@
     // 第3弾：的中ボタン。CIの保存は予約まで（結果は入れない）なので、演出を直接出して確かめる：デカ的中の PUSH → タップ → いつものボード／ど的中の PUSH → 結果の画面。
     // 絵と音のファイル（sfx_*.m4a など）はリポジトリに入れないので、CIでは 404（なしでも動くことを確かめる）。
     // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）は アプリに 入れて いない → force:'fz' は ノーマルど的中（nd）に なる（PUSH と ボードは ど的中の 形）
+    // 第4.165版：ノーマルど的中は なくした → force:'fz' は 極ど的中（sd）に なる（PUSH は 同じ 1.4倍・動画が ない CI では さいごの 1まい → ボード）
     await step(R, 'fx', async function () {
       var F = window.TengelFx; if (!F) return { on: false };
       var spec = { r: 8, n: 14, rows: [{ t: '3連単', state: '的中', hits: [[6, 2, 10]], n: 18 }, { t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: 'ワイド', state: '不的中', hits: [], n: 9 }], ranks: { 6: 1, 2: 2, 10: 3 } };
@@ -143,7 +144,7 @@
       await mark('fx-fz-push');
       F.tap(); res.fpsFz = await fps(1000); await sleep(6600);
       await waitFor(function () { var c = document.querySelector('#fxOv .close'); return c && getComputedStyle(c).visibility === 'visible'; }, 6000);
-      // 第4.124版：force:'fz' は ノーマルど的中（.ov.nd）に なる → .ov.fz が なくても 止まらない ように（前は getComputedStyle(null) で ここで 止まり、印 fx-fz-result が 出なかった）
+      // 第4.124版：force:'fz' は ノーマルど的中（.ov.nd・第4.165版から 極ど的中 .ov.sd）に なる → .ov.fz が なくても 止まらない ように（前は getComputedStyle(null) で ここで 止まり、印 fx-fz-result が 出なかった）
       var q1 = function (s) { return document.querySelector(s); }, cs1 = function (s, k) { var e = q1(s); return e ? getComputedStyle(e)[k] : null; };
       res.fz = { ov: (q1('#fxOv .ov') || {}).className || null, rib: (q1('#fxOv .rb .zrib') || {}).innerText || null, title: (q1('#fxOv .rb .bh') || {}).innerText || null, closeVis: cs1('#fxOv .close', 'visibility'), finOpacity: cs1('#fxOv .ov .fin', 'opacity') };
       await mark('fx-fz-result');
@@ -190,21 +191,11 @@
       res.sd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.sd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.sd.closeVis = closeVis();
       await mark('fx-sd-board');
       F.close(); await sleep(200);
-      // 第4.77版：ノーマルど的中（nd：押すと 1秒 真っ暗（プチュンは なし）→ 動画 nd_film.mp4（光の 玉 → シルバーの 競走馬と 騎手 → 芝に 落ちる 3D の ど！的中）→ ボード 10.05秒）。
-      // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード。PUSH は ど的中と 同じ（虹色なし・1.4倍）
-      res.nd = { kind: F.show(Object.assign({ force: 'nd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), rbw: !!document.querySelector('#fxOv .ov.fz .pbox.rbw'), pz: (F.current() || {}).pz };
-      await sleep(400); F.prime(); F.tap(); res.nd.fps = await fps(1000);
-      res.nd.parts = ['.nds', '.ndk', '.pc', '.hb'].map(function (c) { return document.querySelectorAll('#fxOv .ov.nd ' + c).length; });
-      res.nd.imgs = document.querySelectorAll('#fxOv .ov.nd img').length; res.nd.broken = Array.prototype.filter.call(document.querySelectorAll('#fxOv .ov.nd img'), function (i) { return i.complete && i.naturalWidth === 0; }).length;
-      await waitFor(function () { return (F.current() || {}).film === 2; }, 6000);
-      res.nd.cur = F.current(); res.nd.ov = (document.querySelector('#fxOv .ov.nd') || {}).className || null; res.nd.holder = !!document.querySelector('#fxVh video[data-film=nd_film]');
-      res.nd.ndt = !!document.querySelector('#fxOv .ov.nd .ndt .pressed'); await sleep(1200);   // 第4.79版：押した 画面（PUSH の 画面とは 別）は 約1秒で 消える
-      res.nd.ndtGone = (function (e) { return e ? getComputedStyle(e).visibility === 'hidden' : null; })(document.querySelector('#fxOv .ov.nd .ndt'));   // 第4.124版：ない ときも 止まらない
-      await mark('fx-nd');                                         // 動画の さいごの 1まい（still）
-      await waitFor(function () { return closeVis() === 'visible'; }, 8000);
-      res.nd.title = (document.querySelector('#fxOv .rb .bh') || {}).innerText || null; res.nd.rib = (document.querySelector('#fxOv .rb .zrib') || {}).innerText || null; res.nd.closeVis = closeVis();
-      await mark('fx-nd-board');
-      F.close(); await sleep(200);
+      // 第4.165版（まさちゃん 2026/11/13 11:52「あと、ノーマル的中の演出消して！」）：ノーマルど的中は なし。決めて 出す とき（force:'nd'）も、D で M で ない 当たり（decide）も 極ど的中（sd）に なる。
+      // 極ど的中の 入り（ノーマルど的中の 幕と 動画の はじめ）は そのまま（上の res.sd）。前は ここで ノーマルど的中の 流れ（押した 画面 → さいごの 1まい → ボード）を 見て いた
+      res.nd = { kind: F.show(Object.assign({ force: 'nd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), cur: (F.current() || {}).kind, push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), pz: (F.current() || {}).pz,
+        decide: F.decide(Object.assign({}, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })).kind };
+      await sleep(300); F.close(); await sleep(200);
       // 第4.117版：神様極的中（gk：超神様と 同じ 虹色の PUSH（1.6倍）→ 押した 画面（ノーマルど的中と 同じ）→ 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）。
       // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード「神様極的中！！！」（帯は 超大穴と 大穴）
       res.gk = { kind: F.show(Object.assign({ force: 'gk' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf'), pz: (F.current() || {}).pz };

@@ -1406,7 +1406,7 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 600, stockStep: 5, lotStock: 20 };      
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 300, stockStep: 5, lotStock: 20 };      
   const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
   
   
@@ -1417,6 +1417,12 @@ const TCCare = (() => {
     let y = FRONT.y; while (y > 960 && TCHorse.scaleAt(HO, y) * 1.8 > 0.47 * W) y -= 8; return { x: FRONT.x, y, big: y < FRONT.y };      
   }
   const BTN = { pet: [170, 1494], feed: [407, 1494], clean: [644, 1494], call: [881, 1494] }, BTN_R = 70, HELP = [678, 97];      
+  
+  
+  
+  
+  const BTN_X5 = { pet: 128, feed: 327, clean: 526, call: 725 }, BUYG = { x: 924, y: 1494, d: 142, name: 'トークン購入' };      
+  let buyIm = null;
   const S = { on: false, heart: 0, heartShow: 0, stock: 3, stockShow: 3, got: [], coolUntil: -1e9, coolFrom: -1e9, ses: null, hand: null, fx: [], ev: [], sched: [],
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
@@ -1781,6 +1787,15 @@ const TCCare = (() => {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
   const CLEAN = { hit: 0.46, mouth: 0.45, panD: 1.0, broom: 1.35, pan: 0.75, idle: 25 };      
   const PITCH = 0.49;                                      
   const psAt = y => TCHorse.scaleAt(HO, y) / ((HO && HO.opt && HO.opt.stage) || 1);      
@@ -1802,7 +1817,7 @@ const TCCare = (() => {
     if (tg.some(T => !T.poop)) BR.trashDone = true;          
     for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
     const lp = tg.filter(T => T.poop).pop(), xs = tg.map(T => T.o.x), ys = tg.map(T => T.o.y);
-    S.clean = { t0: t, tg, got: 0, sw: 0, gold: tg.some(T => T.poop && T.o.gold), sniff: lp ? [lp.o.x, lp.o.y] : null, pan: null, bro: null, side: -1, pg: [], actT: t };
+    S.clean = { t0: t, tg, got: 0, sw: 0, gold: tg.some(T => T.poop && T.o.gold), sniff: lp ? [lp.o.x, lp.o.y] : null, pan: null, bro: null, side: -1, pg: [], actT: t, grab: null, goff: [0, 0] };      
     
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const z = BR.stand ? 1 : clamp(Math.min(W / (x1 - x0 + 520), H * 0.62 / (y1 - y0 + 430)), 1, 1.7), hw = W / (2 * z), hh = H / (2 * z);
@@ -1815,6 +1830,7 @@ const TCCare = (() => {
     const T0 = C.tg.reduce((a, b) => (b.o.y > a.o.y ? b : a)), ps = psAt(T0.o.y);      
     C.bro = { x: clamp(T0.o.x + 0.8 * ps, 80, W - 80), y: T0.o.y + 8 };
     aimPan(t, T0, [C.bro.x, C.bro.y], true);
+    if (!S.demo) at(t + 0.55, tt => { if (S.clean === C && !C.down && !C.got) tagW([(C.bro.x + C.pan.x) / 2, Math.min(C.bro.y, C.pan.y)], 'ほうきと ちりとりは 指で 運べるよ', tt, { off: [0, -170], size: 30, dur: 2.4, rot: 0 }); });      
     const gp = C.tg.find(T => T.poop && T.o.gold);
     if (gp) at(t + 0.2, tt => { tagW([gp.o.x, gp.o.y], '金のうんち！', tt, { off: [0, -120], size: 36, dur: 1.8, col: '#b07a10' }); ev(tt, 'gold'); });
   }
@@ -1830,6 +1846,24 @@ const TCCare = (() => {
     const cur = C.pan ? panNow(t) : null;
     C.pan = snap || !cur ? { x: px, y: py, yaw, fx: px, fy: py, fyaw: yaw, t0: t - 1 } : { x: px, y: py, yaw, fx: cur.x, fy: cur.y, fyaw: cur.yaw, t0: t };
     C.act = T;
+  }
+  const GRAB = { pan: 0.62, tip: 0.5, rod: 0.24, pad: 34, bx: [40, W - 40], by: [770, 1460], px: [90, W - 90], py: [790, 1430] };      
+  const segDist = (px, py, ax, ay, bx, by) => { const vx = bx - ax, vy = by - ay, k = clamp(((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1), 0, 1); return Math.hypot(px - ax - vx * k, py - ay - vy * k); };
+  function broomRod() {                  
+    const C = S.clean, L = CLEAN.broom * psAt(C.bro.y) * 0.86, sd = C.sideS == null ? C.side : C.sideS; return [C.bro.x, C.bro.y, C.bro.x - sd * 0.22 * L, C.bro.y - L];
+  }
+  function grabAt(t, x, y) {             
+    const C = S.clean, pn = panNow(t), bs = psAt(C.bro.y), rod = broomRod();
+    const dp = gdist(x, y, pn.x, pn.y) / (GRAB.pan * CLEAN.pan * psAt(pn.y) + GRAB.pad);
+    const db = Math.min(gdist(x, y, C.bro.x, C.bro.y) / (GRAB.tip * bs + GRAB.pad), segDist(x, y, rod[0], rod[1], rod[2], rod[3]) / (GRAB.rod * bs + GRAB.pad));
+    return dp >= 1 && db >= 1 ? null : db <= dp ? 'broom' : 'pan';
+  }
+  function panAim(t) {                   
+    const C = S.clean, q = C.pan, left = C.tg.filter(T => !T.done); if (!q || !left.length) return;
+    const pn = panNow(t), T = left.find(z => z.held) || left.reduce((a, b) => (gdist(b.o.x, b.o.y, pn.x, pn.y) < gdist(a.o.x, a.o.y, pn.x, pn.y) ? b : a));
+    C.act = T; const fx_ = T.o.x - pn.x, fz = (T.o.y - pn.y) * 2; if (Math.hypot(fx_, fz) < 14) return;      
+    const yaw = Math.atan2(-fz, fx_); if (Math.abs(angDiff(q.yaw, yaw)) < 0.03) return;
+    q.fx = q.x = pn.x; q.fy = q.y = pn.y; q.fyaw = pn.yaw; q.yaw = yaw; q.t0 = t;
   }
   function panNow(t) {                   
     const q = S.clean.pan, k = easeOut((t - q.t0) / 0.22);
@@ -1853,7 +1887,8 @@ const TCCare = (() => {
       if (!T.poop) { o.sp = Math.max(0.6, (o.sp != null ? o.sp : 1) - 0.003 * Math.hypot(dx, dy)); o.tw = (o.tw || 0) + 0.006 * dx; }
       if (gdist(o.x, o.y, pn.x, pn.y) < CLEAN.mouth * ps) collect(t, T);
     }
-    if ((!C.act || C.act.done) && C.moved > 46) retarget(t, [x, y]);          
+    if (!S.demo) panAim(t);                                                  
+    else if ((!C.act || C.act.done) && C.moved > 46) retarget(t, [x, y]);    
   }
   function collect(t, T) {               
     const C = S.clean, o = T.o, pn = panNow(t), ps = psAt(pn.y), c = Math.cos(pn.yaw), sn = Math.sin(pn.yaw);
@@ -1861,7 +1896,8 @@ const TCCare = (() => {
     T.done = true; T.held = false; C.got++; C.moved = 0; C.actT = t; ev(t, 'inpan'); fx({ k: 'dust', t0: t, w: [pn.x, pn.y] });
     if (T.poop) { BR.poops = (BR.poops || []).filter(q => q !== o); C.pg.push({ img: o.img || 0, w: o.w || 0.42, gold: !!o.gold, t0: t, from: [o.x, o.y], to: inn, y: o.y }); }
     else { o.out = t; o.from = [o.x, o.y, o.sp != null ? o.sp : 1]; o.to = inn; }
-    const nose = P('nose'), br = S.finger;
+    if (!S.demo) panAim(t);                                                  
+    const nose = P('nose'), br = S.demo ? S.finger : [C.bro.x, C.bro.y];     
     if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : T1('nibble', () => rnd() < 1 / 4))) {
       C.nibbled = true; at(t + 0.1, tt => { react('nibble', 1.6, tt, { side: sideToward(br[0], br[1]) }); ev(tt, 'nibble'); tagW(P('nose'), 'もぐっ？', tt + 0.3, { off: [0, -100], size: 34, dur: 1.3 }); });
     }
@@ -1887,7 +1923,7 @@ const TCCare = (() => {
     return { P: P3, m: M.mul(M.ry(BR.dir), M.mul(M.tr(x, 0, z), M.mul(R, M.sc(k, k, k)))), sh: sh ? [c * x + sn * z, -sn * x + c * z, sh[0] * k, sh[1]] : null };
   }
   function broomPose(t) {                
-    const C = S.clean, f = C.down && S.finger ? S.finger : null;
+    const C = S.clean, f = S.demo && C.down && S.finger ? S.finger : null;      
     if (f) { C.bro.x = f[0]; C.bro.y = f[1]; }
     C.sideS = C.sideS == null ? C.side : C.sideS + (C.side - C.sideS) * 0.22;
     return { x: C.bro.x, y: C.bro.y, yaw: Math.PI * (0.5 - 0.5 * C.sideS), wob: 0.1 * Math.sin((C.dist || 0) * 0.045) };
@@ -1939,7 +1975,7 @@ const TCCare = (() => {
     S.fx = S.fx.filter(f => f.k !== 'pointpop' && f.k !== 'rtcue');      
     if (!pz) ev(t, 'pfo');                                               
     else if (pz.k === 'pt') { fx({ k: 'pointpop', t0: t, v: pz.v, dur: 2.0 }); if (pz.v >= 200) ev(t, 'dedeen'); else ev(t, 'piron'); if (O.onPrize) O.onPrize(pz); }      
-    else if (pz.k === 'rt') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1 }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      
+    else if (pz.k === 'rt' || pz.k === 'zn') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1, txt: pz.k === 'zn' ? '特化ゾーン！' : null }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      
     else { Pn.lock = t + 0.5; if (O.onPrize) O.onPrize(pz); }            
     if (!S.bulk || S.stock < 1) pushClose(t + 0.3);                      
     return true;
@@ -2151,6 +2187,22 @@ const TCCare = (() => {
   
   function input(kind, x, y, t) {
     if (S.phase === 'beg' && kind === 'down' && zoneAt(x, y)) { begPet(t); S.finger = [x, y]; S.begHand = t; return; }
+    if (S.mode === 'clean' && S.phase === 'clean' && !S.demo) {      
+      const C = S.clean; S.finger = [x, y]; C.actT = t;
+      if (kind === 'down') {
+        C.grab = grabAt(t, x, y); C.down = !!C.grab; C.last = [x, y]; C.moved = 0;
+        if (C.grab === 'broom') { C.goff = [C.bro.x - x, C.bro.y - y]; ev(t, 'pick'); }
+        else if (C.grab === 'pan') { const q = C.pan, pn = panNow(t); q.fx = q.x = pn.x; q.fy = q.y = pn.y; q.fyaw = q.yaw = pn.yaw; q.t0 = t - 1; C.goff = [pn.x - x, pn.y - y]; ev(t, 'pick'); }
+        else if (t - (C.hintT == null ? -9 : C.hintT) > 2.5) { C.hintT = t; tagW([x, y], 'ほうきか ちりとりを つかんでね', t, { off: [0, -90], size: 30, dur: 1.7, rot: 0 }); ev(t, 'wait'); }
+      } else if (kind === 'move' && C.grab === 'broom') {
+        const nx = clamp(x + C.goff[0], GRAB.bx[0], GRAB.bx[1]), ny = clamp(y + C.goff[1], GRAB.by[0], GRAB.by[1]), dx = nx - C.bro.x, dy = ny - C.bro.y, d = Math.hypot(dx, dy * 2);
+        C.bro.x = nx; C.bro.y = ny; C.last = [x, y]; C.moved += d; C.dist = (C.dist || 0) + d; if (Math.abs(dx) > 1.5) C.side = dx > 0 ? 1 : -1;
+        sweepMove(t, nx, ny, dx, dy);
+      } else if (kind === 'move' && C.grab === 'pan') {
+        const q = C.pan; q.fx = q.x = clamp(x + C.goff[0], GRAB.px[0], GRAB.px[1]); q.fy = q.y = clamp(y + C.goff[1], GRAB.py[0], GRAB.py[1]); C.last = [x, y]; panAim(t);
+      } else if (kind === 'up') { if (C.grab) panAim(t); C.grab = null; C.down = false; for (const T of C.tg) T.held = false; }
+      return;
+    }
     if (S.mode === 'clean' && S.phase === 'clean') {         
       const C = S.clean; S.finger = [x, y]; C.actT = t;
       if (kind === 'down') { C.down = true; C.last = [x, y]; C.moved = 0; retarget(t, [x, y], true); }
@@ -2606,7 +2658,13 @@ const TCCare = (() => {
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
     for (const k of ['pet', 'feed', 'clean', 'call']) if (Math.hypot(x - BTN[k][0], y - BTN[k][1]) < BTN_R + 10) return k;
+    if (O.onBuy && Math.hypot(x - BUYG.x, y - BUYG.y) < BTN_R + 10) return 'buy';      
     return null;
+  }
+  
+  function pressBuy(t) {
+    S.press.buy = t; ev(t, 'button');
+    if (O.onBuy && O.onBuy() === false) { fx({ k: 'tagUI', t0: t, x: 800, y: BUYG.y - 150, txt: 'お世話が おわってから 買えるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); }
   }
   function press(t, what) {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
@@ -2615,6 +2673,7 @@ const TCCare = (() => {
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
+    else if (what === 'buy') pressBuy(t);
   }
   function pointer(kind, x, y, t) {        
     if (kind === 'down') { const h = uiHit(x, y); if (h === 'push') { pushPress(t); S.uiDown = '-'; return; } S.uiDown = h; if (h) return; }      
@@ -2762,6 +2821,20 @@ const TCCare = (() => {
       }
       if (k === 'pet' && S.readyPop != null) { const q = (t - S.readyPop) / 0.6; if (q < 1) { g.save(); g.strokeStyle = `rgba(255,156,188,${0.7 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 8 + 26 * easeOut(q), 0, TAU); g.stroke(); g.restore(); } }
     });
+    
+    if (O.onBuy) {
+      const B = BUYG, r = BTN_R, pq = S.press.buy != null ? (t - S.press.buy) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
+      g.save(); g.translate(B.x, B.y); g.scale(ps, ps);
+      g.fillStyle = 'rgba(40,20,5,0.22)'; g.beginPath(); g.arc(4, 7, r, 0, TAU); g.fill();      
+      if (buyIm && buyIm.naturalWidth) { const h_ = B.d * buyIm.naturalHeight / buyIm.naturalWidth; g.imageSmoothingQuality = 'high'; g.drawImage(buyIm, -B.d / 2, -h_ / 2, B.d, h_); }
+      else {                             
+        g.fillStyle = '#e9f6e4'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill(); g.strokeStyle = '#e2b33c'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, r - 3, 0, TAU); g.stroke();
+        label('＋', 0, 2, 76, '#3f9f5a');
+      }
+      if (pq < 1.6) { const q = clamp(pq / 1.6, 0, 1); g.strokeStyle = `rgba(255,248,236,${0.75 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, r + 6 + 30 * easeOut(q), 0, TAU); g.stroke(); }
+      g.restore();
+      label(B.name, B.x, B.y + r + 34, 30, '#fff8ea', 'rgba(60,35,15,0.85)', 7);
+    }
     g.restore();
   }
   function drawFx(t) {
@@ -2840,7 +2913,7 @@ const TCCare = (() => {
       } else if (f.k === 'rtcue') {    
         const d = f.dur; if (u > d) continue; const a = 1 - sm((u - d + 0.25) / 0.25);
         for (let i = 0; i < 8; i++) { const an = i * TAU / 8 + 0.2, rr = 150 + 190 * easeOut(u / 0.7); star(W / 2 + Math.cos(an) * rr * 1.15, 720 + Math.sin(an) * rr * 0.7, 20 * Math.sin(Math.PI * clamp(u / 0.8, 0, 1)), u * 2 + i, a, i % 2 ? '#fff2bf' : '#f5d06a'); }
-        tag(W / 2, 720 - 20 * easeOut(u / d), 'ルーレット！', 64, a, backOut(u / 0.28), -0.04, '#c2456f');
+        tag(W / 2, 720 - 20 * easeOut(u / d), f.txt || 'ルーレット！', f.txt ? 60 : 64, a, backOut(u / 0.28), -0.04, '#c2456f');
       } else if (f.k === 'plus') {
         const d = 1.6; if (u > d) continue;
         label(f.txt, W - 26 - 296 + 150, 44 + 140 + 30 - 40 * easeOut(u / d), 44, '#3f7f3a', '#fff8ec', 7);
@@ -2875,6 +2948,10 @@ const TCCare = (() => {
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
     pushCap = new Image(); pushCap.src = AP('tc_push_cap.webp'); pushBase = new Image(); pushBase.src = AP('tc_push_base.webp');      
     try { await Promise.all([pushCap.decode(), pushBase.decode()]); } catch (e) { }
+    if (O.onBuy) {                       
+      for (const k in BTN_X5) BTN[k][0] = BTN_X5[k];
+      buyIm = new Image(); buyIm.src = AP('tc_icon_buy2.webp'); try { await buyIm.decode(); } catch (e) { }      
+    }
     S.bulk = !!o.bulk;
     const bk = O.bg === 'divine' ? 'kamisama' : O.bg === 'abyss' ? 'maboroshi' : null;      
     if (bk) await special(bk);
@@ -2902,7 +2979,7 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
+    BTN, BTN_R, BUYG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
@@ -2934,6 +3011,7 @@ const TCGuide = (() => {
 #tcg .pt{font-weight:700;color:#3f7f3a}
 #tcg .rt{font-weight:700;color:#c2456f}
 #tcg .tk{font-weight:700;color:#b07a10}
+#tcg .zn{font-weight:700;color:#6a4fd0}
 #tcg .note{font-size:11px;color:#8a6a48}
 #tcg .hh{margin:8px 0 2px;font-weight:700;color:#6b3f1d}
 `;
@@ -2949,11 +3027,28 @@ const TCGuide = (() => {
   
   const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
   const RS = { cares: 5, min: 5, limit: 30 };      
-  const CARE = [10, 20, 50, 85, 99, 121, 125, 245, 399, 600];      
+  
+  
+  
+  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  const ZV = n => ZONE.start + ZONE.add * n, ZP = n => (n < ZONE.max ? Math.pow(ZONE.rate, n) * (1 - ZONE.rate) : Math.pow(ZONE.rate, ZONE.max));      
+  const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
+  const cm = v => Math.round(v).toLocaleString('ja-JP');
+  const ZROW = R(ZONE.d, `<span class="zn">ポイント特化ゾーン</span>（最大${cm(ZV(ZONE.max))}P）`);      
+  const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d];      
+  
+  const TOK = { every: 5, step: 5, max: 25 };
+  const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice());
   const SEC = [
     
     
-    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>10分ごとに5つ</b>たまる（最大<b>25こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p>`],
+    
+    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>${TOK.every}分ごとに${TOK.step}つ</b>たまる（最大<b>${TOK.max}こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p><p>・ポイントで買うこともできる（下の「お世話トークンの購入」）</p>`],
+    ['買', '#3f9f5a', 'お世話トークンの購入', `<p>・下の列の1番右の<b>「お世話トークン購入」</b>を押すと、ポイントで買えるよ</p>
+      <table data-tab="packs">${PACKS.map(([n, c]) => `<tr data-n="${n}"><td>${n}こ</td><td><span class="pt">${c.toLocaleString('ja-JP')}P</span></td></tr>`).join('')}</table>
+      <p>・持てるのは<b>最大${TOK.max}こ</b>まで（いまの数とあわせて${TOK.max}こをこえる数は、そのときは買えないよ）</p>
+      <p>・「買う」→「○○Pで 買う」と2回押すと決まり</p>
+      <p class="note">買ったトークンはポイントにもどせないよ。当たりの確率は下の「お世話でポイントGETチャンス」「ポイント特化ゾーン」「幻の馬・神様馬がいるあいだ」の表のとおり</p>`],
     ['押', '#d8352c', 'お世話のあとのPUSH', `<p>・ごはん・おそうじがおわると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
       <p>・当たりは押したときに出るよ（ハズレは「プフォ」の音だけ）</p>
       <p>・PUSHの横のスイッチで<b>「1個 使う」「まとめて 使う」</b>を選べる（前に選んだ方をおぼえているよ）</p>
@@ -2961,20 +3056,30 @@ const TCGuide = (() => {
       <p>　<b>まとめて 使う</b> → トークンがあるあいだ、つづけて何回でも押せる（押した回数ぶんトークンがへる）。やめるときは「おわる」</p>
       <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数ぶん数えるよ）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
-      <table data-tab="care">${R(10, PT(10))}${R(20, PT(20))}${R(50, PT(50))}${R(85, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
+      <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
-      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}</table>
+      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}</table>
       <p class="note" data-n="sum">ぜんぶ 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
-      <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>`],
+      <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>
+      <p class="note">ポイント特化ゾーンは下の項目を見てね</p>`],
+    ['虹', '#7a5ad8', 'ポイント特化ゾーン', `<p>・PUSHを押したとき <b>${pc(ZONE.d)}</b>（1/${ZONE.d}）で突入！（いつもの馬・幻の馬・神様馬の どのときも）</p>
+      <p>・スタートは<b>${cm(ZV(0))}P</b></p>
+      <p>・<b>「レバーを押し込め！」</b>→ レバーをタップするたびに<b>${Math.round(ZONE.rate * 100)}%</b>で<b>＋${cm(ZONE.add)}P 上乗せ</b>（虹色の光）</p>
+      <p>・上乗せに失敗（${Math.round((1 - ZONE.rate) * 100)}%）したら そこでおしまい → それまでの合計をGET</p>
+      <p>・<b>${ZONE.max}回つづけて</b>上乗せすると<b>MAX ${cm(ZV(ZONE.max))}P</b></p>
+      <p data-n="zavg" data-v="${Math.round(ZAVG)}">・ゾーン1回の平均は<b>約${cm(Math.round(ZAVG / 100) * 100)}P</b></p>
+      <table data-tab="zone">${Array.from({ length: ZONE.max + 1 }, (_, n) => `<tr data-n="${n}"><td>${pc(1 / ZP(n))}</td><td>上乗せ <b>${n}回</b> → <span class="pt">${cm(ZV(n))}P</span>${n === ZONE.max ? '（MAX）' : ''}</td></tr>`).join('')}</table>
+      <p class="note">上乗せできる回数は、ゾーンに入ったときに決まっているよ（とちゅうでアプリを閉じても、次に開いたときに合計を受け取れるよ）</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
       <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
       <p>・抽選は<b>お世話トークンが20こ未満</b>のときだけ。<b>20こ以上</b>（最大の25こも）のときは、ハートが10こたまっても<b>抽選まち</b> → PUSHを押してトークンが<b>20こを切ったら</b>抽選がはじまるよ</p>
       <p class="note">トークンは最大25こまで。25このときに撫でると「お世話トークンが最大だよ！」と出るよ</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・つづけて<b>5回</b>まで → 5回呼んだら<b>7秒</b>おやすみ</p>`],
     ['食', '#e07a3a', 'ごはん', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大よろこび</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ なかよしハート<b>＋3</b></p>`],
-    ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
+    
+    ['掃', '#6aa86a', 'おそうじ', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・おそうじできるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・<b>ほうき</b>と<b>ちりとり</b>は、指でつかんで好きな所へ運べるよ</p><p>・ほうきでゴミを押して、ちりとりへ はき入れよう（1回でぜんぶ片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
     ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回のあいだ当たりやすい）</p>`],
     
     ['替', '#2f8f83', '馬のリセット（次の馬の抽選）', `<p>・お世話（ごはん・おそうじ）を<b>${RS.cares}回</b>すると、リセットのタイマーがスタート</p>
@@ -2986,9 +3091,9 @@ const TCGuide = (() => {
       <p>・帰るのは、<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）か、<b>来てから${RS.limit}分</b>（タイムリミット）の どちらか早いほう</p>
       <p>・左上の「なかよし」の下に「タイムリミット・お世話の回数・切り替わりタイマー」が出るよ</p>
       <p class="hh">🌙 幻の馬</p>
-      <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}</table>
+      <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}${ZROW}</table>
       <p class="hh">✨ 神様馬</p>
-      <table data-tab="kamisama">${R(8, RT(2000, 4000))}${R(16, RT(5000, 10000))}${R(32, RT(10000, 20000))}</table>
+      <table data-tab="kamisama">${R(8, RT(2000, 4000))}${R(16, RT(5000, 10000))}${R(32, RT(10000, 20000))}${ZROW}</table>
       <p class="note">いるあいだは この表だけ（いつものポイント・チケットは出ないよ）</p>`],
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
@@ -3633,12 +3738,228 @@ const TCFX = (() => {
       g.restore();
     }
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const ZN = { ready: 1.3, cyc: 1.5, buf: 0.3, r0: 0.16, cnt: [0.5, 0.55], fail: 1.9, maxEnd: 1.75, auto: 20, hold: 1.0, close: 3.2, artW: 338, artY: 300, totalY: 136, lampY: 205, msgY: 262, spin: 0.22 };
+  const ZFB = { w: 1066, h: 726, push: 51, parts: { back: { x: 4, y: 154, w: 1058, h: 568 }, ball: { x: 393, y: 145, w: 280, h: 247 }, arrow: { x: 423, y: 4, w: 221, h: 116 } }, ball: [532.6, 269.2, 137.5] };      
+  const ZHUE = i => (i * 30 + 350) % 360;      
+  const ZCONF = ['#ff5a5a', '#ffb23c', '#ffe34d', '#58d86a', '#4db8ff', '#b06cff', '#fff4cf'];
+  let ZIM = null, ZOFF = null;         
+  async function znLoad(noImg) {
+    if (noImg) return { G: ZFB, I: {} };
+    if (!ZIM) {
+      let G = null; try { G = await fetch(AP('tc_zn_geom.json')).then(r => (r.ok ? r.json() : null)); } catch (e) { G = null; }
+      const I = {}; await Promise.all(['back', 'ball', 'arrow'].map(async k => { I[k] = await img(`tc_zn_${k}.webp`); }));
+      ZIM = G && G.parts && I.back && I.ball && I.arrow ? { G, I } : { G: ZFB, I: {} };
+    }
+    return ZIM;
+  }
+  const znNeed = Z => (Z.n < Z.max ? Z.n + 1 : Z.n);      
+  const znEnd = (Z, taps) => { const m = znNeed(Z); return m > 0 && taps.length >= m ? taps[m - 1] + (Z.n < Z.max ? ZN.fail : ZN.maxEnd) : null; };      
+  
+  function znArt(G, I, pk, bob, drop) {
+    const P = G.parts, dy = pk * G.push, [bx, by, br] = G.ball;
+    if (I.back) g.drawImage(I.back, P.back.x, P.back.y, P.back.w, P.back.h);
+    else {                               
+      poly([[150, 330], [916, 330], [960, 560], [106, 560]], '#b8862a'); poly([[176, 350], [890, 350], [926, 540], [140, 540]], '#5a3a1c');
+      g.fillStyle = '#e9bd45'; g.beginPath(); g.ellipse(bx, 468, 150, 58, 0, 0, TAU); g.fill(); g.fillStyle = '#3a2410'; g.beginPath(); g.ellipse(bx, 462, 104, 36, 0, 0, TAU); g.fill();
+      poly([[bx - 34, 300], [bx + 34, 300], [bx + 34, 470], [bx - 34, 470]], '#d9a93a');
+      poly([[20, 560], [1046, 560], [1010, 640], [1046, 716], [20, 716], [56, 640]], '#c8262b'); poly([[70, 548], [996, 548], [996, 700], [70, 700]], '#fbe9c4');
+      label('レバーを押し込め！', G.w / 2, 628, 96, '#d8262b', '#f3c33d', 16);
+    }
+    if (I.ball) g.drawImage(I.ball, P.ball.x, P.ball.y + dy, P.ball.w, P.ball.h);
+    else { const rg = g.createRadialGradient(bx - 40, by + dy - 50, 10, bx, by + dy, br); rg.addColorStop(0, '#ff8a7a'); rg.addColorStop(0.6, '#e8302a'); rg.addColorStop(1, '#a8181a'); g.fillStyle = rg; g.beginPath(); g.arc(bx, by + dy, br * 0.92, 0, TAU); g.fill(); }
+    const aa = 1 - drop; if (aa <= 0.01) return;
+    g.save(); g.globalAlpha *= aa; const ay = -14 * bob + dy * 0.75 + 30 * drop;
+    if (I.arrow) g.drawImage(I.arrow, P.arrow.x, P.arrow.y + ay, P.arrow.w, P.arrow.h);
+    else { const cx = P.arrow.x + P.arrow.w / 2, y0 = P.arrow.y + ay; poly([[cx - 100, y0 + 10], [cx, y0 + 110], [cx + 100, y0 + 10], [cx + 56, y0 + 6], [cx, y0 + 56], [cx - 56, y0 + 6]], '#f0c040'); }
+    g.restore();
+  }
+  
+  function znRainbow(cx, cy, k, v, calm) {
+    if (k <= 0.003) return;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const R0 = 150 + 60 * k, rg = g.createRadialGradient(cx, cy, 0, cx, cy, R0);
+    rg.addColorStop(0, `rgba(255,250,235,${0.5 * k})`); rg.addColorStop(0.45, `rgba(255,222,165,${0.2 * k})`); rg.addColorStop(1, 'rgba(255,200,120,0)');
+    g.fillStyle = rg; g.fillRect(cx - R0, cy - R0, R0 * 2, R0 * 2);
+    if (!calm) {
+      const rot = 0.3 + ZN.spin * v, R = 130 + 520 * easeOut(v / 0.5), hw = 0.088;
+      for (let i = 0; i < 12; i++) {
+        const a = rot + i * TAU / 12, x1 = cx + Math.cos(a) * R, y1 = cy + Math.sin(a) * R, h = ZHUE(i);
+        const lg = g.createLinearGradient(cx, cy, x1, y1);
+        lg.addColorStop(0, `hsla(${h},100%,70%,0)`); lg.addColorStop(0.14, `hsla(${h},100%,66%,${0.46 * k})`); lg.addColorStop(1, `hsla(${h},100%,60%,0)`);
+        g.fillStyle = lg; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a - hw) * R, cy + Math.sin(a - hw) * R); g.lineTo(cx + Math.cos(a + hw) * R, cy + Math.sin(a + hw) * R); g.closePath(); g.fill();
+      }
+      const q = v / 0.9;
+      if (q < 1) {                       
+        const rr = 46 + 250 * easeOut(q), ka = 0.65 * (1 - q) * Math.min(1, k * 3); g.lineWidth = 9 * (1 - 0.5 * q);
+        for (let i = 0; i < 12; i++) { g.strokeStyle = `hsla(${ZHUE(i)},100%,66%,${ka})`; g.beginPath(); g.arc(cx, cy, rr, i * TAU / 12, (i + 1) * TAU / 12 + 0.012); g.stroke(); }
+      }
+      g.restore(); g.save();
+      for (let i = 0; i < 14; i++) {     
+        const a = hash(i + 3) * TAU, d = 62 + 200 * hash(i + 11) * easeOut(v / 0.8), tw = Math.sin(Math.PI * clamp((v - 0.1 - 0.5 * hash(i + 5)) / 0.6, 0, 1));
+        sparkle(cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.8 - 18 * v, 8 + 8 * hash(i + 7), tw * Math.min(1, k * 2));
+      }
+    }
+    g.restore();
+  }
+  
+  function znCard(Z, w, calm, total) {
+    const k = sm(w / 0.3), mx = Z.n >= Z.max, cx = W / 2, cy = 226, pw = 336, ph = mx ? 206 : 190, sc = calm ? 1 : backOut(clamp(w / 0.34, 0, 1));
+    if (mx) { g.save(); g.globalCompositeOperation = 'lighter'; const L = sm(w / 0.5), rg = g.createRadialGradient(cx, cy, 10, cx, cy, 300); rg.addColorStop(0, `rgba(255,236,170,${0.34 * L})`); rg.addColorStop(1, 'rgba(255,200,90,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore(); }
+    if (!calm) { g.save(); g.globalAlpha *= k; confetti(ZCONF, w, sm(w / 0.4), W, H); g.restore(); }
+    g.save(); g.globalAlpha *= k; g.translate(cx, cy); g.scale(sc, sc);
+    poly([[-pw / 2 + 7, -ph / 2 + 10], [pw / 2 + 7, -ph / 2 + 10], [pw / 2 + 7, ph / 2 + 10], [-pw / 2 + 7, ph / 2 + 10]], 'rgba(0,0,0,0.35)');
+    poly([[-pw / 2, -ph / 2], [pw / 2, -ph / 2], [pw / 2, ph / 2], [-pw / 2, ph / 2]], '#f3c95e');
+    poly([[-pw / 2 + 6, -ph / 2 + 6], [pw / 2 - 6, -ph / 2 + 6], [pw / 2 - 6, 0], [-pw / 2 + 6, 0]], '#3b2a6e'); poly([[-pw / 2 + 6, 0], [pw / 2 - 6, 0], [pw / 2 - 6, ph / 2 - 6], [-pw / 2 + 6, ph / 2 - 6]], '#2c1f57');
+    for (let i = 0; i < 12; i++) { const x = -pw / 2 + 6 + (pw - 12) * i / 12; g.fillStyle = `hsl(${ZHUE(i)},95%,62%)`; g.fillRect(x, -ph / 2 + 6, (pw - 12) / 12 + 0.5, 6); }      
+    label(mx ? 'MAX 達成！！' : 'ポイント特化ゾーン', 0, -ph / 2 + 38, mx ? 30 : 22, mx ? '#ffe34d' : '#f6e7ff', '#1a0f3a', 7);
+    g.font = `900 64px ${SERIF}`; const tx = comma(total) + 'P', tw = g.measureText(tx).width, fs = Math.min(64, 64 * (pw - 44) / tw);
+    label(tx, 0, mx ? 6 : 0, fs, '#ffd65c', '#3a1a08', 12, SERIF);
+    label('GET！！！', 0, ph / 2 - 32, 28, '#fff6e2', '#3a1a08', 9);
+    g.restore();
+    if (w > ZN.hold) { g.save(); g.globalAlpha *= sm((w - ZN.hold) / 0.3) * (0.7 + 0.3 * Math.sin(TAU * 0.5 * (w - ZN.hold))); label('タップで とじる', W / 2, H - 34, 15, '#fff6e2', 'rgba(20,10,40,0.8)', 5); g.restore(); }
+  }
+  
+  function znDraw(A, Z, taps, u, calm, dim) {
+    taps = taps.filter(p => p <= u);                                     
+    const G = A.G, I = A.I, need = znNeed(Z), E = znEnd(Z, taps), np = Math.min(taps.length, need);
+    const li = np - 1, lv = li >= 0 ? u - taps[li] : -1, lok = li >= 0 && li < Z.n, failed = li >= 0 && !lok;      
+    const app = sm(u / 0.45), rd = np === 0 ? ZN.ready : taps[np - 1] + ZN.cyc, waiting = np < need && u >= rd;
+    const rv = lv >= 0 ? lv - ZN.r0 : -1;                                
+    const drop = failed && rv >= 0 ? sm(rv / 0.8) : 0;                   
+    const cw = E != null ? u - E : -1, card = cw >= 0 ? sm(cw / 0.3) : 0, top = app * (1 - card);
+    g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(12,7,24,${Math.min(0.93, Math.max(dim, 0.8) + 0.07 * drop + 0.06 * card)})`; g.fillRect(0, 0, W, H); g.restore();      
+    const s = ZN.artW / G.w, ax = (W - ZN.artW) / 2, ay = ZN.artY, bx = ax + G.ball[0] * s, by = ay + G.ball[1] * s;
+    const rk = lok && rv >= 0 ? sm(rv / 0.3) * (1 - sm((rv - 0.8) / 0.6)) : 0;
+    g.save(); g.globalAlpha *= app; znRainbow(bx, by, rk, rv, calm); g.restore();
+    
+    const ia = sm((u - 0.2) / 0.3), iz = calm ? 1 : backOut(clamp((u - 0.2) / 0.5, 0, 1));
+    const pk = lv < 0 ? 0 : lv < 0.09 ? sm(lv / 0.09) : lok ? 1 - sm((lv - 0.55) / 0.3) : 1;
+    if (ia > 0.003) {
+      if (waiting || (np === 0 && u > 0.8)) {                            
+        const hb = 0.5 + 0.5 * Math.sin(TAU * (u - rd) / 1.4 - 1.2), R = G.ball[2] * s * (1.5 + 0.2 * hb), hg = g.createRadialGradient(bx, by, G.ball[2] * s * 0.6, bx, by, R);
+        hg.addColorStop(0, `rgba(255,214,120,${(0.26 + 0.16 * hb) * app * (waiting ? sm((u - rd) / 0.3) : sm((u - 0.8) / 0.4))})`); hg.addColorStop(1, 'rgba(255,200,90,0)');
+        g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = hg; g.fillRect(bx - R, by - R, R * 2, R * 2); g.restore();
+      }
+      
+      const pt = 26, ow = Math.ceil(ZN.artW * PX), oh = Math.ceil((G.h + pt) * s * PX), g0 = g;
+      if (!ZOFF) ZOFF = document.createElement('canvas'); if (ZOFF.width !== ow || ZOFF.height !== oh) { ZOFF.width = ow; ZOFF.height = oh; }
+      const og = ZOFF.getContext('2d'); og.setTransform(1, 0, 0, 1, 0, 0); og.globalAlpha = 1; og.globalCompositeOperation = 'source-over'; og.clearRect(0, 0, ow, oh); og.setTransform(s * PX, 0, 0, s * PX, 0, pt * s * PX);
+      g = og; try { znArt(G, I, pk, waiting ? Math.sin(TAU * 1.1 * (u - rd)) : 0, drop); } finally { g = g0; }
+      if (drop > 0) { og.setTransform(1, 0, 0, 1, 0, 0); og.globalCompositeOperation = 'source-atop'; og.fillStyle = `rgba(14,10,38,${0.55 * drop})`; og.fillRect(0, 0, ow, oh); }
+      g.save(); g.globalAlpha *= app * ia * (1 - 0.3 * card);
+      const fy = ay + G.h * s; g.translate(W / 2, fy); g.scale(iz, iz); g.translate(-W / 2, -fy);
+      g.drawImage(ZOFF, ax, ay - pt * s, ZN.artW, (G.h + pt) * s);
+      g.restore();
+      if (lv >= 0 && lv < 0.32) { const q = lv / 0.32; g.save(); g.globalAlpha *= app * (1 - q); g.strokeStyle = 'rgba(255,246,220,0.9)'; g.lineWidth = 3; g.beginPath(); g.arc(bx, by + pk * G.push * s, G.ball[2] * s * (0.9 + 0.5 * easeOut(q)), 0, TAU); g.stroke(); g.restore(); }      
+      if (failed && rv >= 0 && !calm) for (let i = 0; i < 9; i++) {      
+        const q = clamp((rv - 0.06 * i) / 0.9, 0, 1); if (q <= 0 || q >= 1) continue;
+        g.save(); g.globalAlpha *= app * 0.7 * (1 - q); g.fillStyle = '#9fb4e8'; g.beginPath(); g.arc(bx + (hash(i + 21) - 0.5) * 120, by - 20 + 150 * q * q + 30 * hash(i + 31), 3.2 * (1 - 0.5 * q), 0, TAU); g.fill(); g.restore();
+      }
+    }
+    
+    if (top > 0.003) {
+      g.save(); g.globalAlpha *= top;
+      const tk = sm((u - 0.1) / 0.35), ts = calm ? 1 : backOut(clamp((u - 0.1) / 0.4, 0, 1));
+      g.save(); g.globalAlpha *= tk; g.translate(W / 2, 46); g.scale(ts, ts);
+      label('ポイント特化ゾーン', 0, 0, 29, '#ffe9a8', '#3a1408', 9);
+      g.restore();
+      g.save(); g.globalAlpha *= sm((u - 0.35) / 0.3);
+      label(`上乗せ ＋${comma(Z.add)}P（${Math.round(Z.rate * 100)}%）・MAX ${comma(Z.start + Z.add * Z.max)}P`, W / 2, 78, 12.5, '#f6e7ff', 'rgba(20,10,40,0.85)', 4);
+      let tot = Z.start, bump = 1;
+      
+      for (let i = 0; i < np && i < Z.n; i++) { const v = u - taps[i] - ZN.r0 - ZN.cnt[0], c = i < np - 1 ? 1 : calm ? (v >= 0 ? 1 : 0) : sm(v / ZN.cnt[1]); tot += Z.add * c; if (!calm && i === np - 1 && v > 0 && v < 0.7) bump = 1 + 0.14 * Math.sin(Math.PI * v / 0.7); }
+      g.save(); g.translate(W / 2, ZN.totalY); g.scale(bump, bump);
+      g.font = `900 62px ${SERIF}`; const tx = comma(tot) + 'P', fs = Math.min(62, 62 * 330 / g.measureText(tx).width);
+      label(tx, 0, 0, fs, drop > 0 ? `rgb(${Math.round(255 - 60 * drop)},${Math.round(214 - 40 * drop)},${Math.round(92 + 60 * drop)})` : '#ffd65c', '#3a1a08', 12, SERIF);
+      g.restore();
+      for (let i = 0; i < Z.max; i++) {                                  
+        const x = W / 2 + (i - (Z.max - 1) / 2) * 27, v = i < np && i < Z.n ? u - taps[i] - ZN.r0 - ZN.cnt[0] : -1, on = v >= 0, pp = on && v < 0.4 ? 1 + 0.5 * Math.sin(Math.PI * v / 0.4) : 1;
+        g.fillStyle = 'rgba(20,10,40,0.7)'; g.beginPath(); g.arc(x, ZN.lampY, 10.5, 0, TAU); g.fill();
+        g.fillStyle = on ? `hsl(${ZHUE(i)},95%,${62 - 14 * drop}%)` : '#4a3f66'; g.beginPath(); g.arc(x, ZN.lampY, 8 * pp, 0, TAU); g.fill();
+        if (on) { g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.arc(x - 2.4, ZN.lampY - 2.6, 2.4, 0, TAU); g.fill(); }
+      }
+      const cnt = Math.min(np, Z.n) - (lok && rv < ZN.cnt[0] ? 1 : 0);
+      label(`上乗せ ${Math.max(0, cnt)}／${Z.max}回`, W / 2, ZN.lampY + 24, 12.5, '#f6e7ff', 'rgba(20,10,40,0.85)', 4);
+      g.restore();
+      
+      if (lok && rv >= 0.36 && rv < 1.3) { const q = rv - 0.36, a = sm(q / 0.12) * (1 - sm((q - 0.7) / 0.24)), z = calm ? 1 : backOut(clamp(q / 0.26, 0, 1)); g.save(); g.globalAlpha *= a; g.translate(W / 2, ZN.msgY - 6 * easeOut(q / 0.9)); g.scale(z, z); label(`＋${comma(Z.add)}P 上乗せ！`, 0, 0, 31, '#fff2b8', '#b0281e', 9); g.restore(); }
+      else if (failed && rv >= 0.3) { g.save(); g.globalAlpha *= sm((rv - 0.3) / 0.3); label('上乗せ ならず…', W / 2, ZN.msgY, 25, '#c9d2ee', 'rgba(20,10,40,0.9)', 7); g.restore(); }
+      else if (waiting) { g.save(); g.globalAlpha *= sm((u - rd) / 0.25); label(np === 0 ? 'レバーを 押して 上乗せ！' : np >= Z.max - 1 ? 'あと 1回で MAX！' : 'つづけて 押しこめ！', W / 2, ZN.msgY, 21, '#fff6e2', 'rgba(20,10,40,0.9)', 7); g.restore(); }
+      
+      if (waiting) {
+        const k = sm((u - rd) / 0.25), y = H - 44 + 3 * Math.sin(TAU * 0.9 * (u - rd)), tw = 118, th = 44;
+        g.save(); g.globalAlpha *= k; g.translate(W / 2, y);
+        poly([[-tw / 2 + 4, -th / 2 + 6], [tw / 2 + 4, -th / 2 + 6], [tw / 2 + 4, th / 2 + 6], [-tw / 2 + 4, th / 2 + 6]], 'rgba(0,0,0,0.3)');
+        poly([[-tw / 2, -th / 2], [tw / 2, -th / 2], [tw / 2, th / 2], [-tw / 2, th / 2]], '#f0c25a');
+        poly([[-tw / 2 + 4, -th / 2 + 4], [tw / 2 - 4, -th / 2 + 4], [tw / 2 - 4, 0], [-tw / 2 + 4, 0]], '#d23b30'); poly([[-tw / 2 + 4, 0], [tw / 2 - 4, 0], [tw / 2 - 4, th / 2 - 4], [-tw / 2 + 4, th / 2 - 4]], '#b52f27');
+        label('タップ', 0, 1.5, 27, '#fff6e2', '#3a160c', 7);
+        g.restore();
+      }
+      g.restore();
+    }
+    if (card > 0) znCard(Z, cw, calm, Z.start + Z.add * Z.n);
+  }
+  const znZ = o => { const max = Math.max(1, Math.round(+o.max || 12)); return { n: clamp(Math.round(+o.n || 0), 0, max), start: +o.start || 1000, add: +o.add || 2000, max, rate: +o.rate || 0.6 }; };
+  
+  async function zoneFrame(cv, o, taps, u, calm, noImg) {
+    const A = await znLoad(noImg), Z = znZ(o);
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    znDraw(A, Z, taps, u, !!calm, o.dim != null ? o.dim : 0.4); g.setTransform(1, 0, 0, 1, 0, 0);
+    return !!A.I.back;
+  }
+  async function zone(cv, o) {
+    const A = await znLoad(false), Z = znZ(o), calm = pcCalm(), dim = DIMR[o.bg] != null ? DIMR[o.bg] : 0.4, need = znNeed(Z), taps = [];
+    se(o, 'tc_se_luck.m4a', 1, 0);
+    await new Promise(done => {
+      const q = cv.getContext('2d'), t0 = performance.now(); let tapAt = null, closeAt = null, last = 0;
+      const onTap = e => { if (e) { e.preventDefault(); e.stopPropagation(); } tapAt = (performance.now() - t0) / 1000; };
+      cv.classList.add('on'); cv.addEventListener('pointerdown', onTap);
+      const fr = () => {
+        const u = (performance.now() - t0) / 1000, nx = taps.length, rd = nx === 0 ? ZN.ready : taps[nx - 1] + ZN.cyc, E = znEnd(Z, taps);
+        if (nx < need) { if (u >= rd && ((tapAt != null && tapAt >= rd - ZN.buf) || u >= rd + ZN.auto)) { taps.push(u); tapAt = null; } }      
+        else if (E != null && closeAt == null && ((tapAt != null && tapAt > E + ZN.hold) || u > E + ZN.hold + ZN.close)) closeAt = u;
+        if (tapAt != null && u - tapAt > ZN.buf) tapAt = null;
+        PX = cv.width / W; g = q; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+        g.globalAlpha = closeAt != null ? 1 - sm((u - closeAt) / 0.5) : 1; znDraw(A, Z, taps, u, calm, dim); g.globalAlpha = 1;
+        taps.forEach((p, i) => {                                         
+          if (last < p && u >= p) se(o, 'tc_se_rt_lever.m4a', 0.9, 0);
+          if (last < p + ZN.r0 && u >= p + ZN.r0) se(o, i < Z.n ? 'tc_se_zn_up.m4a' : 'tc_se_zn_down.m4a', 1, 0);
+        });
+        if (E != null && last < E && u >= E) se(o, Z.n >= Z.max ? 'tc_se_doon.m4a' : 'sfx_big.m4a', Z.n >= Z.max ? 1 : BIG_GAIN, 0);      
+        last = u;
+        if (closeAt != null && u > closeAt + 0.52) { cv.removeEventListener('pointerdown', onTap); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); cv.classList.remove('on'); done(); return; }
+        requestAnimationFrame(fr);
+      };
+      requestAnimationFrame(fr);
+    });
+    return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
+  }
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, puchun, preload, PCH, TELOP, bigFrame };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;
 
 ;
+
+
+
+
+
 
 
 
@@ -3658,6 +3979,12 @@ const TCPlan = (() => {
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
   const wday = s => { const [y, m, d] = String(s).split('-').map(Number); return WD[new Date(y, m - 1, d).getDay()]; };
   let P = null, root = null, edit = null, auth = '', host = null, delAsk = null;      
+  
+  const OS = () => (typeof window !== 'undefined' && window.TCOshi) || null;
+  const PED_LB = ['父', '母', '父の父', '父の母', '母の父', '母の母', '父の父の父', '父の父の母', '父の母の父', '父の母の母', '母の父の父', '母の父の母', '母の母の父', '母の母の母'];      
+  let OL = [], editO = null, delAskO = null, openO = {};
+  const oLoad = () => { const o = OS(); OL = o ? o.load() : []; };
+  const oSave = () => { const o = OS(); if (o) OL = o.save(OL); };
   function load() {
     try { P = JSON.parse(localStorage.getItem(PK) || 'null'); } catch (e) { P = null; }
     if (!P || !Array.isArray(P.races)) P = { v: 1, on: false, races: [] };
@@ -3729,6 +4056,25 @@ const TCPlan = (() => {
 #tcPlan .mm:focus{outline:0;border-style:solid;border-color:#e0a020;background:#fffdf2}
 #tcPlan .fm textarea{display:block;width:100%;box-sizing:border-box;min-height:66px;border-radius:10px;border:1.5px solid #d9b77c;background:#fff;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
 #tcPlan .fa{display:flex;gap:10px;margin-top:14px}
+#tcPlan .jump{display:flex;gap:8px;margin:0 0 10px}
+#tcPlan .jump button{flex:1 1 0;min-width:0;height:34px;border-radius:17px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 13px/1 var(--tcpf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tcPlan .oboard{margin-top:14px}
+#tcPlan .oc{position:relative;background:#fffdf7;border-radius:6px;padding:9px 10px 9px 12px;margin:0 0 10px;box-shadow:0 3px 0 rgba(90,55,20,.25);border-left:6px solid #5aa7c4}
+#tcPlan .oc::before{content:"";position:absolute;top:-6px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#9fd8f0,#3f8fb0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+#tcPlan .oh{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:0;margin:0;text-align:left;color:inherit;font:inherit;-webkit-tap-highlight-color:transparent}
+#tcPlan .onm{flex:1 1 auto;min-width:0;font-size:17px;font-weight:700;color:#5a3a1c;word-break:break-all}
+#tcPlan .otg{flex:none;font-size:12px;font-weight:700;color:#8a5a2a;border:2px solid #d9b77c;border-radius:14px;padding:5px 9px;background:#fff8ec;white-space:nowrap}
+#tcPlan .osum{font-size:12.5px;color:#8a6a48;margin-top:3px;word-break:break-all}
+#tcPlan .pedh{display:grid;grid-template-columns:30fr 33fr 37fr;gap:3px;margin:8px 0 3px;font-size:10.5px;font-weight:700;color:#8a6a48;text-align:center}
+#tcPlan .ped{display:grid;grid-template-columns:30fr 33fr 37fr;grid-auto-rows:minmax(31px,auto);gap:3px}
+#tcPlan .pc{display:flex;flex-direction:column;justify-content:center;min-width:0;border-radius:6px;padding:3px 4px;border:1px solid #cfe0ee;background:#eef5fb}
+#tcPlan .pc.f{border-color:#f0cfd8;background:#fdeff3}
+#tcPlan .pc small{font-size:9.5px;line-height:1.2;color:#8a7a68}
+#tcPlan .pc b{font-size:11.5px;line-height:1.25;letter-spacing:-.02em;color:#5a3a1c;word-break:break-all}
+#tcPlan .pc.e b{color:#c9b89c;font-weight:400}
+#tcPlan .add.oadd{background:#3f8fb0;box-shadow:0 3px 0 #2c6a85}
+#tcPlan .add:disabled{background:#cdbb9a;box-shadow:none}
+#tcPlan .fm h4{margin:16px 0 0;font-size:13.5px;color:#5b3412;border-bottom:2px dashed rgba(91,52,18,.3);padding-bottom:2px}
 #tcPlan .fa button{flex:1;height:44px;border-radius:22px;font:700 15px/1 var(--tcpf)}
 #tcPlan .fa .ok{border:0;background:#c2456f;color:#fff;box-shadow:0 3px 0 #8f2f4f}
 #tcPlan .fa .ng{border:2px solid #d9b77c;background:#fff8ec;color:#7a4520}
@@ -3754,6 +4100,11 @@ const TCPlan = (() => {
   function onInput(e) {
     const t = e.target; if (!t || t.tagName !== 'TEXTAREA') return;
     fit(t);
+    if (t.dataset.p === 'omemo') {      
+      const o = OL.find(x => x.id === t.dataset.id), os = OS(); if (!o || !os) return;
+      const v = os.str(t.value, os.MEMO_MAX, true); if ((o.memo || '') === v) return;
+      o.memo = v; oSave(); return;
+    }
     if (t.dataset.p !== 'memo' || !P) return;
     const r = P.races.find(x => x.id === t.dataset.id); if (!r) return;
     const v = memoClean(t.value); if ((r.memo || '') === v) return;
@@ -3762,9 +4113,11 @@ const TCPlan = (() => {
   function paint() {
     if (!root) return; const b = root.querySelector('.pb');
     if (edit) { b.innerHTML = formHtml(); fitAll(); return; }
+    if (editO) { b.innerHTML = oFormHtml(); fitAll(); return; }
     const td = today(), list = P.races.slice().sort((a, c) => (a.date + a.time).localeCompare(c.date + c.time));
     const off = auth === 'denied';
-    let h = `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに えらんだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
+    let h = OS() ? `<div class="jump"><button type="button" data-p="jr">📋 お気に入りレース</button><button type="button" data-p="jo">🐴 推し馬 ${OL.length}/${OS().MAX}</button></div>` : '';
+    h += `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに えらんだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
       + `<button type="button" class="sw" role="switch" aria-checked="${!!P.on}" aria-label="通知" data-p="on"></button></div>`;
     h += `<div class="board"><div class="cork"><div class="bdt">${jaDate(td)}（${wday(td)}）</div><div class="bsub">お気に入りレース一覧</div>`;
     if (!list.length) h += '<div class="empty">まだ 予約した レースは ないよ<br>下の「＋ レースを予約」から 入れてね</div>';
@@ -3776,8 +4129,67 @@ const TCPlan = (() => {
         + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? 'ほんとに 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
-    b.innerHTML = h; fitAll();
+    h += oBoardHtml();
+    const y0 = b.scrollTop;
+    b.innerHTML = h; fitAll(); oPad();
+    if (oshiMode && b.scrollTop !== y0) b.scrollTop = y0;      
   }
+  
+  const oMemoBox = o => `<textarea class="mm" data-p="omemo" data-id="${esc(o.id)}" rows="1" maxlength="${OS().MEMO_MAX}" placeholder="📝 備考を書く（特徴・ねらい目など）" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`;
+  
+  function pedTable(o) {
+    const cell = (i, r0, span, col) => `<div class="pc ${i % 2 ? 'f' : 'm'}${o.ped[i] ? '' : ' e'}" data-i="${i}" style="grid-column:${col};grid-row:${r0} / span ${span}"><small>${PED_LB[i]}</small><b>${o.ped[i] ? esc(o.ped[i]) : '—'}</b></div>`;
+    let h = '<div class="pedh"><span>親</span><span>おじいちゃん</span><span>ひいおじいちゃん</span></div><div class="ped">' + cell(0, 1, 4, 1) + cell(1, 5, 4, 1);
+    for (let k = 0; k < 4; k++) h += cell(2 + k, 1 + k * 2, 2, 2);
+    for (let k = 0; k < 8; k++) h += cell(6 + k, 1 + k, 1, 3);
+    return h + '</div>';
+  }
+  function oBoardHtml() {
+    const os = OS(); if (!os) return '';
+    let h = `<div class="board oboard"><div class="cork"><div class="bdt">推し馬</div><div class="bsub">${OL.length}頭（${os.MAX}頭まで 登録できるよ）</div>`;
+    if (!OL.length) h += '<div class="empty">まだ 推し馬は いないよ<br>下の「＋ 推し馬を登録」から 入れてね</div>';
+    OL.forEach(o => {
+      const open = !!openO[o.id], sum = [o.ped[0] ? '父：' + esc(o.ped[0]) : '', o.ped[1] ? '母：' + esc(o.ped[1]) : ''].filter(Boolean).join('　');
+      h += `<div class="oc" data-oid="${esc(o.id)}"><button type="button" class="oh" data-p="otog" data-id="${esc(o.id)}" aria-expanded="${open}"><span class="onm">🐴 ${esc(o.name)}</span><span class="otg">${open ? 'とじる ▲' : '血統を見る ▼'}</span></button>`
+        + (open ? pedTable(o) : (sum ? `<div class="osum">${sum}</div>` : '')) + oMemoBox(o)
+        + `<div class="ra"><button type="button" class="sb" data-p="oedit" data-id="${esc(o.id)}">直す</button><button type="button" class="sb del${delAskO === o.id ? ' ask' : ''}" data-p="odel" data-id="${esc(o.id)}">${delAskO === o.id ? 'ほんとに 消す？' : 'この推し馬を消す'}</button></div></div>`;
+    });
+    const full = OL.length >= os.MAX;
+    return h + `<button type="button" class="add oadd" data-p="oadd"${full ? ' disabled' : ''}>${full ? `推し馬は ${os.MAX}頭まで（いっぱいだよ）` : '＋ 推し馬を登録'}</button></div></div>`;
+  }
+  function oFormHtml() {
+    const o = editO, os = OS();
+    const inp = i => `<div><label>${PED_LB[i]}</label><input data-o="p${i}" type="text" maxlength="${os.NAME_MAX}" value="${esc(o.ped[i] || '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;
+    return `<div class="fm ofm"><h3>${o._new ? '推し馬を登録' : '推し馬を直す'}</h3><div class="om" aria-live="polite">${esc(o._msg || '')}</div>`
+      + `<label>名前</label><input data-o="name" type="text" maxlength="${os.NAME_MAX}" value="${esc(o.name || '')}" placeholder="推し馬の 名前" autocomplete="off" autocapitalize="off" spellcheck="false">`
+      + `<h4>親（2頭）</h4><div class="row2">${inp(0)}${inp(1)}</div>`
+      + `<h4>おじいちゃん（4頭）</h4><div class="row2">${inp(2)}${inp(3)}</div><div class="row2">${inp(4)}${inp(5)}</div>`
+      + `<h4>ひいおじいちゃん（8頭）</h4>` + [6, 8, 10, 12].map(i => `<div class="row2">${inp(i)}${inp(i + 1)}</div>`).join('')
+      + `<label>備考</label><textarea data-o="memo" rows="2" maxlength="${os.MEMO_MAX}" placeholder="例）得意な 距離・気に なる ところ" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`
+      + `<div class="fa"><button type="button" class="ng" data-p="ocancel">やめる</button><button type="button" class="ok" data-p="osave">保存</button></div></div>`;
+  }
+  function oReadForm() {
+    if (!root || !editO) return; const os = OS(), q = k => root.querySelector(`[data-o="${k}"]`);
+    editO.name = os.str(q('name') ? q('name').value : '', os.NAME_MAX);
+    for (let i = 0; i < os.PED; i++) { const el = q('p' + i); editO.ped[i] = os.str(el ? el.value : '', os.NAME_MAX); }
+    const m = q('memo'); if (m) editO.memo = os.str(m.value, os.MEMO_MAX, true);
+  }
+  
+  
+  
+  let oshiMode = false;
+  function oPad() {
+    if (!root) return; const pb = root.querySelector('.pb'), ob = root.querySelector('.oboard'); let sp = pb.querySelector('.osp');
+    if (!oshiMode || !ob) { if (sp) sp.remove(); return; }
+    if (!sp) { sp = document.createElement('div'); sp.className = 'osp'; sp.setAttribute('aria-hidden', 'true'); pb.appendChild(sp); }
+    sp.style.height = '0px';
+    const end = yIn(pb, sp) + (parseFloat(getComputedStyle(pb).paddingBottom) || 0);      
+    const need = pb.clientHeight - 8 - (end - yIn(pb, ob));
+    sp.style.height = Math.max(0, Math.ceil(need)) + 'px';
+  }
+  
+  const yIn = (pb, el) => el.getBoundingClientRect().top - pb.getBoundingClientRect().top + pb.scrollTop;
+  const oJump = id => { const pb = root.querySelector('.pb'), el = id ? root.querySelector(`.oc[data-oid="${id}"]`) : root.querySelector('.oboard'); if (pb && el) pb.scrollTop = Math.max(0, yIn(pb, el) - 8); };
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
@@ -3812,10 +4224,33 @@ const TCPlan = (() => {
     paint();
   }
   async function onClick(e) {
-    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk) { delAsk = null; paint(); } if (e.target === root) close(); return; }
+    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk || delAskO) { delAsk = null; delAskO = null; paint(); } if (e.target === root) close(); return; }
     const k = a.dataset.p;
-    if (k === 'memo') { if (delAsk) { delAsk = null; const d = root.querySelector('.sb.del.ask'); if (d) { d.classList.remove('ask'); d.textContent = '消す'; } } return; }
+    
+    if (k === 'memo' || k === 'omemo') { if (delAsk || delAskO) { delAsk = null; delAskO = null; const d = root.querySelector('.sb.del.ask'); if (d) { d.classList.remove('ask'); d.textContent = d.dataset.p === 'odel' ? 'この推し馬を消す' : '消す'; } } return; }
     if (k !== 'del') delAsk = null;
+    if (k !== 'odel') delAskO = null;
+    
+    if (k === 'jr') { oshiMode = false; oPad(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'jo') { oshiMode = true; oPad(); oJump(null); return; }
+    if (k === 'otog') { const id = a.dataset.id; if (openO[id]) delete openO[id]; else openO[id] = 1; paint(); return; }
+    if (k === 'oadd') { const os = OS(); if (!os || OL.length >= os.MAX) return; editO = { _new: true, id: 'o' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: '', ped: Array(os.PED).fill(''), memo: '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'oedit') { const o = OL.find(x => x.id === a.dataset.id); if (!o) return; editO = { id: o.id, name: o.name, ped: o.ped.slice(), memo: o.memo || '', at: o.at || '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'odel') {      
+      const o = OL.find(x => x.id === a.dataset.id); if (!o) return;
+      if (delAskO !== o.id) { delAskO = o.id; paint(); return; }
+      delAskO = null; OL = OL.filter(x => x.id !== o.id); delete openO[o.id]; oSave(); paint(); return;
+    }
+    if (k === 'ocancel') { editO = null; paint(); oJump(null); return; }
+    if (k === 'osave') {
+      oReadForm(); const o = editO, os = OS(); if (!os) return;
+      if (!o.name) { o._msg = '名前を 入れてね'; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+      const i = OL.findIndex(x => x.id === o.id);
+      if (i < 0 && OL.length >= os.MAX) { o._msg = `推し馬は ${os.MAX}頭まで だよ`; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+      const out = { id: o.id, name: o.name, ped: o.ped.slice(0, os.PED), memo: o.memo || '', at: o.at || new Date().toISOString() };
+      if (i >= 0) OL[i] = out; else OL.push(out);
+      oSave(); editO = null; paint(); oJump(out.id); return;
+    }
     if (k === 'close') { close(); return; }
     if (k === 'on') {
       if (!P.on) {
@@ -3850,20 +4285,134 @@ const TCPlan = (() => {
       edit = null; save(); paint(); return;
     }
   }
-  async function open(el) {
-    host = el; load();
+  
+  async function open(el, opt) {
+    host = el; load(); oLoad();
     if (!root) build(el); else if (root.parentNode !== el) el.appendChild(root);
-    edit = null; root.style.display = 'flex'; paint();
+    edit = null; editO = null; delAskO = null; root.style.display = 'flex'; paint();
+    const pb = root.querySelector('.pb'), oshi = !!(opt && opt.oshi && OS());
+    oshiMode = oshi; oPad();
+    if (oshi) oJump(null); else pb.scrollTop = 0;      
+    const y0 = pb.scrollTop;
     auth = await authState(); paint();
+    if (oshi && Math.abs(pb.scrollTop - y0) < 2) oJump(null);      
   }
   function close() {
     try { const f = document.activeElement; if (root && f && root.contains(f) && f.blur) f.blur(); } catch (e) {   }      
-    if (root) root.style.display = 'none'; edit = null; delAsk = null;
+    if (root) root.style.display = 'none'; edit = null; delAsk = null; editO = null; delAskO = null; oshiMode = false;
   }
   function isOpen() { return !!root && root.style.display !== 'none'; }
   return { open, close, isOpen };
 })();
 window.TCPlan = TCPlan;
+
+;
+
+
+
+
+
+
+
+
+
+const TCBuy = (() => {
+  const CSS = `
+#tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:auto;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
+#tcb .bbk{position:absolute;inset:0;background:rgba(30,18,6,.5)}
+#tcb .bsh{position:relative;width:calc(100% - 24px);max-width:420px;max-height:calc(100% - 16px);background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+#tcb .bhd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
+#tcb .bhd b{font-size:16px;color:#6b3f1d;letter-spacing:.03em}
+#tcb .bx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
+#tcb .bbd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:9px 12px 11px}
+#tcb .bnow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0 0 6px}
+#tcb .bnow div{background:#fffdf7;border:1.5px solid #ead7b2;border-radius:10px;padding:5px 6px 6px;text-align:center}
+#tcb .bnow small{display:block;font-size:11px;line-height:1.4;color:#8a6a48}
+#tcb .bnow b{font-size:20px;line-height:1.25;white-space:nowrap}
+#tcb .bnow b i{font-style:normal;font-size:12.5px;font-weight:400;color:#9a7a55}
+#tcb .bnow .tk{color:#3f7f3a}
+#tcb .bnow .pt{color:#b06a12}
+#tcb .bmsg{min-height:18px;margin:0 0 4px;font-size:13px;line-height:18px;font-weight:700;color:#3f7f3a;text-align:center}
+#tcb .bmsg.ng{color:#b0445f}
+#tcb .brow{display:flex;align-items:center;gap:8px;min-height:42px;background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:4px 7px 4px 12px;margin:0 0 5px}
+#tcb .brow.cf{border-color:#3f9f5a;background:#f1faee}
+#tcb .brow.off .bn,#tcb .brow.off .bc{opacity:.5}
+#tcb .bn{flex:none;min-width:56px;font-size:21px;font-weight:700;color:#3f7f3a;white-space:nowrap}
+#tcb .bn i{font-style:normal;font-size:13px}
+#tcb .bc{flex:1 1 auto;min-width:0;font-size:15.5px;font-weight:700;color:#b06a12;white-space:nowrap}
+#tcb .bb{flex:none;min-width:80px;height:40px;padding:0 12px;border-radius:20px;border:0;background:#c2456f;color:#fff;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;box-shadow:0 3px 0 #8f2f4f;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+#tcb .bb:active{transform:translateY(2px);box-shadow:0 1px 0 #8f2f4f}
+#tcb .bb:disabled{opacity:.6}
+#tcb .bb.go{background:#3f9f5a;box-shadow:0 3px 0 #2c7240}
+#tcb .bb.go:active{box-shadow:0 1px 0 #2c7240}
+#tcb .bb.no{min-width:62px;background:#fff8ec;color:#7a4520;border:2px solid #d9b77c;box-shadow:none}
+#tcb .bwhy{flex:none;font-size:12px;font-weight:700;color:#b0445f;white-space:nowrap;padding-right:5px}
+#tcb .bnote{margin:3px 0 0;font-size:11.5px;line-height:1.5;color:#7a5a3a}
+#tcb .bnote b{color:#c2456f}
+#tcb .bg{display:block;width:100%;height:36px;margin:7px 0 0;border-radius:18px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 13px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;-webkit-tap-highlight-color:transparent}
+`;
+  const P = v => Number(v).toLocaleString('ja-JP') + 'P';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const GUARD = 0.35;                  
+  let root = null, api = null, conf = 0, busy = false, note = null, openedAt = -1e9, timer = 0, last = '';
+  function style() { if (!document.getElementById('tcb-css')) { const st = document.createElement('style'); st.id = 'tcb-css'; st.textContent = CSS; document.head.appendChild(st); } }
+  function build(el) {
+    style();
+    root = document.createElement('div'); root.id = 'tcb'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'お世話トークン購入');
+    root.innerHTML = `<div class="bbk"></div><div class="bsh"><div class="bhd"><b>お世話トークン購入</b><button type="button" class="bx" aria-label="とじる">✕</button></div><div class="bbd"></div></div>`;
+    el.appendChild(root);
+    const shut = () => { if (!busy && performance.now() - openedAt >= GUARD * 1000) close(); };
+    root.querySelector('.bx').addEventListener('click', shut);
+    root.querySelector('.bbk').addEventListener('click', shut);
+    for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) root.addEventListener(ev, e => e.stopPropagation());      
+    
+    
+    root.addEventListener('click', e => { if (performance.now() - openedAt < GUARD * 1000) return; const b = e.target.closest('[data-b]'); if (b && !b.disabled) act(b.dataset.b, +b.dataset.n || 0); });
+  }
+  const WHY = (r, i) => r.why === 'full' ? `いまは あと ${r.room != null ? r.room : i.room}こ まで 買えるよ（持てるのは ${i.max}こ まで）`
+    : r.why === 'short' ? `ポイントが 足りないよ${r.need > 0 ? `（あと ${P(r.need)}）` : ''}`
+    : r.why === 'busy' ? 'ちょっと まってね' : 'うまく 買えなかったよ。もう一度 ためしてね';
+  function paint() {
+    if (!root || !api) return;
+    const i = api.info(); last = JSON.stringify(i);
+    let h = `<div class="bnow"><div><small>いまの お世話トークン</small><b class="tk" data-v="stock">${i.stock}<i> / ${i.max}こ</i></b></div><div><small>使える ポイント</small><b class="pt" data-v="points">${P(i.points)}</b></div></div>`
+      + `<p class="bmsg${note && note.ng ? ' ng' : ''}" aria-live="polite">${note ? esc(note.t) : ''}</p>`;
+    i.packs.forEach(pk => {
+      const ok = pk.state === 'ok', head = `<span class="bn">${pk.n}<i>こ</i></span><span class="bc">${P(pk.cost)}</span>`;
+      if (ok && conf === pk.n) h += `<div class="brow cf" data-n="${pk.n}" data-s="confirm">${head}<button type="button" class="bb no" data-b="no"${busy ? ' disabled' : ''}>やめる</button><button type="button" class="bb go" data-b="go" data-n="${pk.n}"${busy ? ' disabled' : ''}>${busy ? '…' : P(pk.cost) + 'で 買う'}</button></div>`;
+      else if (ok) h += `<div class="brow" data-n="${pk.n}" data-s="ok">${head}<button type="button" class="bb" data-b="ask" data-n="${pk.n}"${busy ? ' disabled' : ''}>買う</button></div>`;
+      else h += `<div class="brow off" data-n="${pk.n}" data-s="${pk.state}">${head}<span class="bwhy">${pk.state === 'full' ? `${i.max}こを こえる` : 'ポイントが 足りない'}</span></div>`;
+    });
+    h += `<p class="bnote">・持てるのは <b>${i.max}こ</b>まで。いまは あと <b>${i.room}こ</b> 買えるよ</p>`
+      + `<p class="bnote">・時間でも たまるよ（<b>${i.every}分ごとに ${i.step}つ</b>）</p>`
+      + `<p class="bnote">・ごはん・おそうじの あとの <b>PUSH</b> で 使うよ</p>`
+      + `<p class="bnote">・買った トークンは ポイントに もどせないよ</p>`
+      + `<button type="button" class="bg" data-b="guide">説明書を 見る（当たりの 確率）</button>`;
+    root.querySelector('.bbd').innerHTML = h;
+  }
+  async function act(a, n) {
+    if (busy) return;
+    if (a === 'ask') { conf = n; note = null; try { api.se('button'); } catch (e) {   } paint(); return; }
+    if (a === 'no') { conf = 0; paint(); return; }
+    if (a === 'guide') { close(); try { api.guide(); } catch (e) {   } return; }
+    if (a !== 'go' || conf !== n) return;
+    busy = true; paint();
+    let r;
+    try { r = await api.buy(n); } catch (e) { r = { ok: false, why: 'err' }; }
+    busy = false; conf = 0;
+    note = r && r.ok ? { t: `✅ お世話トークン ${r.n}こ 買ったよ！（${P(r.cost)}）` } : { ng: true, t: WHY(r || {}, api.info()) };
+    paint();
+  }
+  function open(el, a) {
+    api = a; if (!root) build(el); else if (root.parentNode !== el) el.appendChild(root);
+    conf = 0; busy = false; note = null; openedAt = performance.now(); paint();
+    root.querySelector('.bbd').scrollTop = 0; root.style.display = 'flex';
+    clearInterval(timer); timer = setInterval(() => { if (!isOpen()) { clearInterval(timer); return; } if (!busy && api && JSON.stringify(api.info()) !== last) paint(); }, 500);      
+  }
+  function close() { clearInterval(timer); if (root) root.style.display = 'none'; conf = 0; }
+  function isOpen() { return !!root && root.style.display !== 'none'; }
+  return { open, close, isOpen, GUARD, get el() { return root; } };
+})();
 
 ;
 
@@ -3880,7 +4429,8 @@ const TCApp = (() => {
   const BIG = 1.7;                                    
   
   
-  const TOKEN_MIN = 10, TOKEN_STEP = 5, TOKEN_MAX = 25;
+  
+  const TOKEN_MIN = 5, TOKEN_STEP = 5, TOKEN_MAX = 25;
   const TICK = 120;                                   
   
   
@@ -3896,27 +4446,40 @@ const TCApp = (() => {
   const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      
   const HIGH_N = 5, HIGH_X = 4;                       
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
+  
+  
+  
+  
+  
+  
+  
+  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      
+  const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
   const PRIZES = [                                    
+    [1 / ZONE.d, { k: 'zn' }],
     
     
     
     [1 / 600, { k: 'tk' }], [1 / 399, { k: 'rt', tier: 'kamisama' }], [1 / 245, { k: 'rt', tier: 'maboroshi' }], [1 / 125, { k: 'rt', tier: 'normal' }],
-    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 85, { k: 'pt', v: 100 }],
     
     
-    [1 / 50, { k: 'pt', v: 50 }], [1 / 20, { k: 'pt', v: 20 }], [1 / 10, { k: 'pt', v: 10 }]];
+    
+    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 95, { k: 'pt', v: 100 }],
+    
+    [1 / 55, { k: 'pt', v: 50 }], [1 / 25, { k: 'pt', v: 20 }], [1 / 15, { k: 'pt', v: 10 }]];
   const RT = { normal: [800, 1600], maboroshi: [1600, 3200], kamisama: [3200, 6400] };
   
   
   
   const PRIZES_VISIT = {
-    maboroshi: [[1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
-    kamisama: [[1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
+    maboroshi: [[1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
+    kamisama: [[1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
   const AP = p => String(p).split('/').pop();         
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false });      
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null });      
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -3989,6 +4552,7 @@ const TCApp = (() => {
   
   let ov = null, stage = null, cvGL = null, cvOv = null, cvFx = null, field = null, gl = null, built = false;
   let HO = null, BR = null, horseKey = '', raf = 0, running = false, tBase = 0, lastT = null, lastDraw = 0, nextTick = 0, later = [], busy = false;
+  let buying = false;                                 
   const clock = () => (performance.now() - tBase) / 1000 + 1.5;
   const css = `
 #tcOv{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;background:#2a1d12;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none;touch-action:none;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
@@ -4018,7 +4582,8 @@ const TCApp = (() => {
       + `<span class="tcsp"></span>`
       + (testOn() ? TCTest.head() : '')          
       + `<span class="tctk" hidden></span><button type="button" class="tcsd" data-tc="snd" aria-label="音"></button></div>`
-      + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button><canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
+      + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button>`
+      + `<canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
     document.body.appendChild(ov);
     stage = ov.querySelector('.tcst'); cvGL = ov.querySelector('.tcgl'); cvOv = ov.querySelector('.tco'); cvFx = ov.querySelector('.tcfx');
     ov.addEventListener('click', e => {
@@ -4172,7 +4737,7 @@ const TCApp = (() => {
   
   
   const careIdle = () => careFree() && !(TCCare.on && TCCare.S.push);
-  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()));
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
   let resetting = false;
@@ -4213,6 +4778,7 @@ const TCApp = (() => {
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      
     if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
+    if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      
     st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
     return z;
   }
@@ -4222,6 +4788,7 @@ const TCApp = (() => {
     let v = 0;
     if (z.k === 'pt') { v = +z.v || 0; grant(v, 'トレーニングセンターの お世話', z.id); }
     else if (z.k === 'rt') { const ab = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal); v = ab[z.win ? 1 : 0]; grant(v, 'トレーニングセンターの ルーレット', z.id); }
+    else if (z.k === 'zn') { v = +z.v > 0 ? +z.v : zoneV(z.n); grant(v, 'トレーニングセンターの ポイント特化ゾーン', z.id); }
     else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
     if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
     touch(); save();
@@ -4237,6 +4804,10 @@ const TCApp = (() => {
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
         SND.preload(['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      
         try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }      
+      } else if (z.k === 'zn') {
+        
+        SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
+        try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { give(z); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         
@@ -4249,6 +4820,67 @@ const TCApp = (() => {
   function grant(v, what, id) {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice()); };
+  const stockNow = () => { if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); } return st.stock; };      
+  function stockSet(n, plus) {                         
+    st.stock = n; touch();
+    if (TCCare.on) { const S = TCCare.S, t = clock(); S.stock = n; S.stockShow = n; S.stockBump = t; if (plus) S.fx.push({ k: 'plus', t0: t, txt: '+' + plus }); }
+  }
+  const buyShow = () => !!(built && TCCare.on && HO && BR && !busy && !resetting && careIdle() && !TCCare.S.fxHold && !panelOpen());      
+  const BUY = {
+    
+    info() {
+      const w = window.TengelWallet, stock = st ? stockNow() : 0, pts = w && w.avail ? w.avail() : 0;
+      return { stock, max: TOKEN_MAX, room: Math.max(0, TOKEN_MAX - stock), points: pts, ready: !!(w && w.tc), busy: buying, every: TOKEN_MIN, step: TOKEN_STEP,
+        packs: PACKS().map(([n, c]) => ({ n, cost: c, state: stock + n > TOKEN_MAX ? 'full' : pts < c ? 'short' : 'ok' })) };
+    },
+    
+    async buy(n) {
+      const w = window.TengelWallet, pk = PACKS().find(x => x[0] === +n);
+      if (!st || !w || !w.tc || !pk) return { ok: false, why: 'off' };
+      if (buying) return { ok: false, why: 'busy' };
+      buying = true;
+      try {
+        stockNow();                                    
+        const got = accrue(tnow());                    
+        if (got > 0) stockSet(st.stock, got);
+        const s0 = st.stock;
+        if (s0 + pk[0] > TOKEN_MAX) return { ok: false, why: 'full', room: Math.max(0, TOKEN_MAX - s0) };
+        const id = 'b' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e9).toString(36);
+        st.buy = { id, n: pk[0] }; touch(); save();
+        let r; try { r = await w.tc.buy(id, pk[0]); } catch (e) { r = { ok: false, why: 'err' }; }
+        if (!r || !r.ok) { st.buy = null; touch(); save(); return r || { ok: false, why: 'err' }; }
+        const s1 = stockNow() + pk[0];
+        st.buy = null; stockSet(s1, pk[0]); save();    
+        SND.se('tc_se_stock.m4a');
+        return { ok: true, n: pk[0], cost: pk[1], stock: s1 };
+      } finally { buying = false; }
+    },
+    guide() { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+    se: name => SND.se('tc_se_' + name + '.m4a'),
+  };
+  async function recoverBuy() {                        
+    const b = st.buy; if (!b) return;
+    const w = window.TengelWallet, n = Math.max(0, Math.round(+b.n || 0));
+    if (!b.id || !n) { st.buy = null; touch(); save(); return; }
+    if (!w || !w.tc) return;                           
+    try { await w.ready; } catch (e) { return; }
+    if (buying || !st.buy || st.buy.id !== b.id) return;
+    if (w.tc.paid(b.id)) { st.buy = null; stockSet(stockNow() + n, n); save(); later.push(() => msg(`🎟 前に 買った\nお世話トークン ${n}こを\n受け取ったよ`, 3.6)); }
+    else { st.buy = null; touch(); save(); }
   }
 
   
@@ -4291,6 +4923,19 @@ const TCApp = (() => {
     tokens(n) {                           
       if (!testOn()) return 'off';
       const S = TCCare.S; st.stock = n == null ? Math.max(st.stock, TOKEN_MAX) : Math.max(0, Math.min(TOKEN_MAX, Math.round(n))); st.stockAt = tnow(); S.stock = st.stock; S.stockBump = clock(); touch(); save(); return 'ok';
+    },
+    
+    ahead(min) {
+      if (!testOn()) return 'off';
+      stockNow(); if (st.stock >= TOKEN_MAX) return 'max';
+      st.stockAt = Math.min(st.stockAt, tnow()) - Math.max(1, Math.round(+min || TOKEN_MIN)) * 60000; touch(); return 'ok';      
+    },
+    
+    push() {
+      if (!testOn()) return 'off';
+      if (!testFree()) return 'busy';
+      if (TCCare.S.stock < 1) TEST.tokens();
+      TCCare.pushShow(clock() + 0.25); return 'ok';
     },
     
     heart(win) {
@@ -4357,7 +5002,7 @@ const TCApp = (() => {
     const ms = Date.now(), gms = tnow();
     
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
-    const got = accrue(gms);
+    const got = buying ? 0 : accrue(gms);              
     if (got > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; S.fx.push({ k: 'plus', t0: t, txt: '+' + got }); }      
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (!resetting) trashStep(gms, t);
@@ -4408,11 +5053,13 @@ const TCApp = (() => {
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+      onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
     nextTick = clock() + TICK;
+    recoverBuy().catch(() => { });                     
     SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      
   }
   async function open(opt) {
@@ -4426,17 +5073,19 @@ const TCApp = (() => {
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
+    if (opt && opt.test && testOn() && !TCTest.isOpen()) TCTest.open(stage, TEST);      
   }
   function close() {
     if (window.TCPlan && window.TCPlan.isOpen && window.TCPlan.isOpen()) window.TCPlan.close();
     if (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) TCGuide.close();
+    if (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()) TCBuy.close();
     pause(); save(); if (ov) ov.classList.remove('on');
     try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (e) { }      
   }
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
-;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCApp = TCApp;
+;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCApp = TCApp;
