@@ -2557,7 +2557,8 @@
       - 7：休んだ 日の あつかい（つづきから）は 仮・窓の 見た目は 姫が 決めた もの
       - 1：BGM の 曲は 計算で 作った もの（まさちゃんが 聞いて 合わなければ 作り直す）
       - 本物の iPhone では まだ 見て いない（手元は Chromium だけ）：画面に 止めた ボタンが iPhone の WebKit で 画面を 送って いる 間に ゆれないか・BGM の 入れかわりの 聞こえ方・ログインボーナスの 窓
-    - GitHub の Mac：（この あと 確かめて ここに 書く）
+    - GitHub の Mac（run 134・43502170965・ios ブランチ d5a8b4f・11/14 6:13 ごろ 確かめた）：**macOS 26（Xcode 26.6・iPhone 17／iPad Pro 11 M5・iOS 26.5）・macOS 15（Xcode 16.4・iOS 26.2）とも OK**＝3つの ビルド とも エラー 0・
+      iPhone だけ／日本語の 確かめ OK・iPhone と iPad（互換モード）の 報告が そろって いる・iPad の 広い 窓：Web の 画面 390×844（2倍）・置き場 (222,183)・エラー 0 → OK。この 版は Swift を かえて いない（Web の 中身 だけ）。1回目で 通った
   - テスト：`test_login.py`（30：新しい）・`test_mane_fix.py`（12：新しい）・`test_tc.py`（168）・`test_tc_buy.py`（40）・`test_tc_test.py`（55）・`test_tc_zone.py`（32）・`test_tc_care.js`（173）・`test_plan_entry.py`（49）・`test_oshi.py`（41）・`test_rt_art.py`（15）・`test_horse_fix.py`（20）・
     `test_iphone_only.py`（79）・`test_native.py`（478）・`test_manual.py`（21）・`test_appname.py`（38）・`test_smooth.py`（39）・`test_wall_hq.py`（59）・`test_band_wall.py`（18）・`test_marble_wall.py`（17）・`test_fig.py`（43）・`test_push_art.py`（11）・`test_bcp_still.py`（9）・
     `test_sd_film.py`（30）・`test_sgd_film.py`（25）・`test_fx_flash.py`（5）・`test_ks_flash.py`（光の輪の ある 17テーマ `--push` 51／`silks --wall` 1）・`test_bcx_flash.py`（5）・`test_cm.py`（20）・`test_dataentry.py`（80）・`test_merge.py`（7）・`test_set.py`（2）・`test_win5.py`（41）・`test_kubun.py`・
