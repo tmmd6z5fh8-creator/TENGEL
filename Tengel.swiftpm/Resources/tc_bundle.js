@@ -1396,6 +1396,9 @@ function flK(t) {
 
 
 
+
+
+
 const TCCare = (() => {
   const TAU = Math.PI * 2, W = 1052, H = 1657;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
@@ -1694,12 +1697,26 @@ const TCCare = (() => {
     for (const [p, v] of [[1 / 85, 100], [1 / 99, 200], [1 / 121, 300]]) { a += p; if (r < a) return v; }
     return null;
   }
+  
+  
+  const drawOut = () => !!(O.drawLeft && O.drawLeft() < 1);
+  function drawOutTag(t) { if (t - (S.drawOutT == null ? -9 : S.drawOutT) < 1.2) return; S.drawOutT = t; fx({ k: 'tagUI', t0: t, x: W / 2, y: PUSHG.y - 300, txt: 'この 馬の 抽選は おわったよ', size: 34, dur: 1.6 }); ev(t, 'wait'); }
   function pressFeed(t) {
     if (pushLive()) { pushWait(t); return; }
+    if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
+    if (S.phase === 'choose' && S.chooser && !S.chooser.pick) { chooserBack(t); return; }      
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
     S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
+  }
+  
+  
+  const CHBACK = { x: 262, y: 1109, w: 200, h: 58 };
+  function chooserBack(t) {
+    const C = S.chooser; if (!C || C.pick) return;
+    C.pick = '-'; C.pickT = t; ev(t, 'fold');                                 
+    at(t + 0.25, tt => { if (S.chooser === C) { S.chooser = null; S.phase = 'idle'; S.mode = null; BR.careHold = false; S.holdUntil = -1; } });
   }
   function pick(t, kind) {
     if (!S.chooser || S.chooser.pick) return;
@@ -1763,15 +1780,10 @@ const TCCare = (() => {
     }
     const beg = S.demo && S.demo.beg != null ? S.demo.beg : T1('beg', () => rnd() < 1 / 4);
     if (beg) {                          
-      at(end, tt => { S.phase = 'beg'; mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
+      at(end, tt => { mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 2.6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
         tagW(P('poll'), 'おかわり…？', tt + 0.2, { off: [30, -100], size: 34, dur: 2.4 }); S.begT = tt; });
-      S.holdUntil = Infinity; S.phase = 'feedwait';
-    } else { S.phase = 'feedwait'; S.holdUntil = end; at(end, tt => { S.phase = 'feeddone'; }); }
-  }
-  function begPet(t) {                   
-    S.phase = 'feeddone'; BR.reacts = (BR.reacts || []).filter(r => r.k !== 'beg'); BR.want.look = [0, 0];
-    react('nod', 1.4, t + 0.1); ev(t, 'rub'); fx({ k: 'mini', t0: t + 0.1, w: (P('poll') || [BR.x, BR.y]).slice(), r: 22, dx: 20 });
-    tagW(P('poll'), 'まんぞく', t + 0.3, { off: [30, -100], size: 34, dur: 1.6 }); S.holdUntil = t + 1.9;
+    }
+    S.phase = 'feedwait'; S.holdUntil = end; at(end, tt => { S.phase = 'feeddone'; });
   }
   function itemPos() {                   
     const n = P('nose') || [BR.x, BR.y - 200], s = TCHorse.scaleAt(HO, BR.y);
@@ -1804,6 +1816,7 @@ const TCCare = (() => {
   const canClean = () => cleanTargets().length > 0;
   function pressClean(t) {
     if (pushLive()) { pushWait(t); return; }
+    if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
@@ -1960,6 +1973,7 @@ const TCCare = (() => {
   function pushK(t) { const Pn = S.push; if (!Pn) return 0; const u = t - Pn.t0; return u < 0 ? 0 : sm(u / 0.2) * (Pn.hideT != null ? 1 - sm((t - Pn.hideT) / 0.22) : 1); }      
   function pushOpen(t) {
     if (pushLive()) return;
+    if (O.drawLeft && O.drawLeft() < 1) return;      
     if (S.demo && !(S.demo.press || []).some(q => q[1] === 'push')) return;      
     if (S.stock < 1) return;
     S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 };
@@ -1969,6 +1983,7 @@ const TCCare = (() => {
   function pushPress(t) {                
     const Pn = S.push; if (!Pn || Pn.hideT != null || t < Pn.lock || S.fxHold) return false;
     if (S.stock < 1) { pushClose(t); return false; }
+    if (O.drawLeft && O.drawLeft() < 1) { pushClose(t); return false; }      
     S.stock -= 1; S.stockDrop = t; Pn.n++; Pn.hitT = t; ev(t, 'token');
     const z = careLottery(), pz = z == null ? null : typeof z === 'object' ? z : { k: 'pt', v: z };
     Pn.res = pz ? (pz.k === 'pt' ? pz.v : pz.k) : 0;
@@ -1977,7 +1992,7 @@ const TCCare = (() => {
     else if (pz.k === 'pt') { fx({ k: 'pointpop', t0: t, v: pz.v, dur: 2.0 }); if (pz.v >= 200) ev(t, 'dedeen'); else ev(t, 'piron'); if (O.onPrize) O.onPrize(pz); }      
     else if (pz.k === 'rt' || pz.k === 'zn') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1, txt: pz.k === 'zn' ? '特化ゾーン！' : null }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      
     else { Pn.lock = t + 0.5; if (O.onPrize) O.onPrize(pz); }            
-    if (!S.bulk || S.stock < 1) pushClose(t + 0.3);                      
+    if (!S.bulk || S.stock < 1 || (O.drawLeft && O.drawLeft() < 1)) pushClose(t + 0.3);      
     return true;
   }
   function pushMode(t, bulk) { const Pn = S.push; if (!pushLive() || S.bulk === !!bulk) return; S.bulk = !!bulk; Pn.modeT = t; ev(t, 'button'); if (O.onBulk) O.onBulk(S.bulk); }
@@ -2186,7 +2201,6 @@ const TCCare = (() => {
   }
   
   function input(kind, x, y, t) {
-    if (S.phase === 'beg' && kind === 'down' && zoneAt(x, y)) { begPet(t); S.finger = [x, y]; S.begHand = t; return; }
     if (S.mode === 'clean' && S.phase === 'clean' && !S.demo) {      
       const C = S.clean; S.finger = [x, y]; C.actT = t;
       if (kind === 'down') {
@@ -2273,8 +2287,8 @@ const TCCare = (() => {
     
     feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ごはん：エサ・リンゴ・ニンジンから えらぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で からっぽ）']], end: 'Z+0.6' },
     feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大よろこび'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      
-    feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true, pathBase: 'B', path: [[0.7, 1.3, 'awayR', 'headA', false], [1.3, 1.45, 'headA', 'headA', true], [1.45, 2.2, 'headA', 'awayR', false]],
-      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.2', 'おかわりの目 → なでると まんぞく']], end: 'Z+0.6' },
+    feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true,      
+      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.6', 'ときどき おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
     ban_k: { rt: [6.4, 6.7], cap: [], end: 10.6 },          
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
@@ -2523,7 +2537,15 @@ const TCCare = (() => {
       if (kd === S.fav) { heart(80, -96, 22, 0.1, 1); label('好物', 60, -60, 24, '#c2456f', '#fff8ec', 6); }
       g.restore();
     });
-    const v = (t - C.t0) / 0.3; if (v > 0 && !C.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const w = g.measureText('どれを あげる？').width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 - w / 2, 1080, w, 58, 29); g.fill(); label('どれを あげる？', W / 2, 1110, 34, '#fff8ea'); g.restore(); }
+    const v = (t - C.t0) / 0.3; if (v > 0 && !C.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const w = g.measureText('どれを あげる？').width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 - w / 2, 1080, w, 58, 29); g.fill(); label('どれを あげる？', W / 2, 1110, 34, '#fff8ea');
+      
+      const B = CHBACK, dn = S.uiDown === 'chback' ? 0.95 : 1;
+      g.translate(B.x, B.y); g.scale(dn, dn);
+      g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
+      g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
+      g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
+      label('← もどる', 0, 1, 32, '#7a4520');
+      g.restore(); }
   }
 
   
@@ -2582,7 +2604,6 @@ const TCCare = (() => {
     if (S.ses && !S.ses.done && !S.ses.down && S.ses.upT != null && t - S.ses.upT > 2.2) { S.hand.hideT = t; ev(t, 'fold'); S.ses.done = true; S.holdUntil = t + 0.8; }      
     
     if (!S.busy && t > S.holdUntil && (S.phase === 'pet' && !S.ses || S.phase === 'callact' || S.phase === 'feeddone' || S.phase === 'cleandone')) { S.holdUntil = Infinity; endCare(t); }
-    if (S.phase === 'beg' && S.begT != null && t - S.begT > 6.5) { S.begT = null; S.phase = 'feeddone'; BR.reacts = (BR.reacts || []).filter(r => r.k !== 'beg'); BR.want.look = [0, 0]; S.holdUntil = t + 0.2; }      
     if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; BR.hurry = 1; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 2.6; }
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
@@ -2623,7 +2644,6 @@ const TCCare = (() => {
       paperSquare(f[0] + 20 * Math.sign(-rot), f[1] + 32, 34 * sq, 0.8 * (1 - sq) + t * 0.5, Math.min(1, sq * 2));
       hand(f[0], f[1], 62 * (O.handK || 1), rot, hs.press, 1, Math.max(0, open));
     }
-    if (S.begHand != null && t - S.begHand < 1.1) { const f = toS(S.finger || [W / 2, H / 2]), u2 = (t - S.begHand) / 1.1; hand(f[0], f[1], 62, -0.4, u2 < 0.5 ? 1 : 0, 1 - sm((u2 - 0.75) / 0.25), backOut(u2 / 0.25)); }
     drawFx(t);
     drawCaption(t);
   }
@@ -2655,7 +2675,8 @@ const TCCare = (() => {
       return null;                       
     }
     if (S.push && !S.fxHold) return 'pgone';      
-    if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
+    if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; }
+      if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'chback'; }      
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
     for (const k of ['pet', 'feed', 'clean', 'call']) if (Math.hypot(x - BTN[k][0], y - BTN[k][1]) < BTN_R + 10) return k;
     if (O.onBuy && Math.hypot(x - BUYG.x, y - BUYG.y) < BTN_R + 10) return 'buy';      
@@ -2670,6 +2691,7 @@ const TCCare = (() => {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
     else if (what === 'help') { S.press.help = t; ev(t, 'button'); ev(t + 0.05, 'paper'); if (O.onHelp) O.onHelp(); }
     else if (what && what.startsWith('pick:')) pick(t, what.slice(5));
+    else if (what === 'chback') chooserBack(t);
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
@@ -2693,6 +2715,7 @@ const TCCare = (() => {
     }
     if (!B.shown && B.hideT == null && B.showT != null && t >= B.showT) { B.shown = true; ev(t, 'banin', { kind: B.kind }); }
   }
+  const PTG = { x: 771, y: 250, w: 246, h: 56 };      
   const BAN_W = 860; let BAN_TOP = 172;      
   function bannerVisible() { const B = S.ban; return !!(B && B.hideT == null && B.showT != null); }
   function drawBanner(t) {
@@ -2716,22 +2739,26 @@ const TCCare = (() => {
   
   const mmss = v => { const n = Math.max(0, Math.ceil(v)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
   const VI = { x: 26, y: 172, w: 420, row: 37, pad: 7, lab: 26, val: 29, small: 22 };
+  
+  
   function vinfoRows(V) {
-    return [['タイムリミット', mmss(V.left), V.left <= 60, VI.val],
-      ['お世話', `${V.n}/${V.need}回`, false, VI.val],
-      ['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]];
+    const rows = [['タイムリミット', mmss(V.left), V.left <= 60, VI.val]];
+    if (V.max) rows.push(['抽選', `${V.draws}/${V.max}回`, V.draws >= V.max, VI.val]); else rows.push(['お世話', `${V.n}/${V.need}回`, false, VI.val]);
+    if (!V.max || V.max > V.need) rows.push(['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]);
+    return rows;
   }
-  function vinfoRect() { return { x: VI.x, y: VI.y, w: VI.w, h: 3 * VI.row + 2 * VI.pad }; }
+  function vinfoRect() { const n = S.vinfo ? vinfoRows(S.vinfo).length : 3; return { x: VI.x, y: VI.y, w: VI.w, h: n * VI.row + 2 * VI.pad }; }
   function drawVInfo(t) {
     const B = S.ban, V = S.vinfo; if (!B || !V || B.showT == null) return;
     const ui = t - B.showT; let a;
     if (B.hideT != null) { const v = (t - B.hideT) / 0.3; if (v >= 1) return; a = 1 - sm(v); } else { if (ui < 0.5) return; a = sm((ui - 0.5) / 0.35); }
     const { x, y, w, h } = vinfoRect();
     g.save(); g.globalAlpha *= a; panel(x, y, w, h, 16);
-    vinfoRows(V).forEach(([lb, val, hot, size], i) => {
+    const rows = vinfoRows(V);
+    rows.forEach(([lb, val, hot, size], i) => {
       const cy = y + VI.pad + VI.row * (i + 0.5) + 2;
       label(lb, x + 22, cy, VI.lab, '#7a4520', null, 0, 'left'); label(val, x + w - 22, cy, size, hot ? '#d0342c' : '#c2456f', null, 0, 'right');
-      if (i < 2) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
+      if (i < rows.length - 1) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
     });
     g.restore();
   }
@@ -2775,7 +2802,23 @@ const TCCare = (() => {
     if (S.stockDrop != null) { const v = (t - S.stockDrop) / 1.2; if (v < 1) label('−1', O.dropX || sx + sw - 60, sy + shh + 26 + 30 * easeOut(v), 40, '#b0445f', '#fff8ec', 7); }
     if (S.high > 0) {                  
       const hb = S.highBump != null ? (t - S.highBump) / 0.5 : 2, hs = hb < 1 ? 1 + 0.15 * Math.sin(Math.PI * hb) : 1;
-      g.save(); g.translate(sx + sw / 2, O.hiY || sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
+      g.save(); g.translate(O.hiX || sx + sw / 2, O.hiY || sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
+    }
+    
+    
+    
+    if (O.points) {
+      const v = O.points();
+      if (v != null && isFinite(v)) {
+        const P = PTG; if (S.ptShow !== v) { if (S.ptShow != null) S.ptBump = t; S.ptShow = v; }
+        const pb = S.ptBump != null ? (t - S.ptBump) / 0.5 : 2, ps = pb < 1 ? 1 + 0.1 * Math.sin(Math.PI * pb) : 1;
+        g.save(); g.translate(P.x + P.w / 2, P.y + P.h / 2); g.scale(ps, ps);
+        panel(-P.w / 2, -P.h / 2, P.w, P.h, 14);
+        label('ポイント', -P.w / 2 + 14, 2, 21, '#7a4520', null, 0, 'left');
+        const txt = Math.round(v).toLocaleString('ja-JP'); let fs = 33; g.font = `900 ${fs}px ${FONT}`; const room = P.w - 14 - 88 - 30 - 12, tw = g.measureText(txt).width; if (tw > room) fs *= room / tw;
+        label(txt, P.w / 2 - 36, 2, fs, '#b06a12', '#fff8ec', 5, 'right'); label('P', P.w / 2 - 12, 5, 22, '#b06a12', null, 0, 'right');
+        g.restore();
+      }
     }
     
     { const [hx, hy] = HELP, pq = S.press.help != null ? (t - S.press.help) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
@@ -2979,7 +3022,7 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    BTN, BTN_R, BUYG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
+    BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
@@ -3026,7 +3069,7 @@ const TCGuide = (() => {
   const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
   
   const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
-  const RS = { cares: 5, min: 5, limit: 30 };      
+  const RS = { cares: 5, min: 5, limit: 30, draws: { maboroshi: 10, kamisama: 5 } };      
   
   
   
@@ -3038,7 +3081,7 @@ const TCGuide = (() => {
   const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d];      
   
   const TOK = { every: 5, step: 5, max: 25 };
-  const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice());
+  const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
   const SEC = [
     
     
@@ -3088,8 +3131,9 @@ const TCGuide = (() => {
       <p class="note">お世話をしないと 馬はかわらないよ（開いているだけでは 抽選しないよ）</p>
       <p class="note">お世話のとちゅうは リセットしないよ（おわってから）</p>`],
     ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ</p>
-      <p>・帰るのは、<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）か、<b>来てから${RS.limit}分</b>（タイムリミット）の どちらか早いほう</p>
-      <p>・左上の「なかよし」の下に「タイムリミット・お世話の回数・切り替わりタイマー」が出るよ</p>
+      <p data-n="draws">・抽選（お世話のあとのPUSH）は、<b>幻の馬 最大${RS.draws.maboroshi}回</b>・<b>神様馬 最大${RS.draws.kamisama}回</b>まで。つかい切ると帰るよ</p>
+      <p>・帰るのは、<b>抽選をつかい切ったとき</b>・<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）・<b>来てから${RS.limit}分</b>（タイムリミット）の いちばん早いとき</p>
+      <p>・左上の「なかよし」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ</p>
       <p class="hh">🌙 幻の馬</p>
       <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}${ZROW}</table>
       <p class="hh">✨ 神様馬</p>
@@ -3242,6 +3286,10 @@ const TCFX = (() => {
     kamisama: { glow: [255, 212, 118], hglow: [440, 380], eye: [641, 271.9, 255, 206, 96], chev: ['#ffd85e', '#e3a83a', '#fff4cf'], n: 2, star: ['#f8d672', '#d4a03a'], gem: null, tap: ['#cd3030', '#ad2626', '#f3c95e'], card: ['#c93030', '#a82626', '#f3c95e', '#c8922f'], conf: ['#f6d06a', '#cd3030', '#fff3cf', '#e6a93a'], line: 'rgba(255,248,230,0.55)' },
   };
   const K = H / 1536, OX = (W - 1024 * K) / 2;            
+  
+  
+  
+  const PTR_K = { normal: 1.2 };
   let GEO = null;
   async function rtLoad(th) {
     if (!GEO) { try { GEO = await fetch(AP('tc_rt_geom.json')).then(r => r.json()); } catch (e) { GEO = null; } }
@@ -3524,13 +3572,17 @@ const TCFX = (() => {
     
     
     const val = r.win ? r.b : r.a, high = val >= Math.max(r.a, r.b), calm = pcCalm(), P0 = 0.25, PD = calm || !pcHtml() ? PCH.calm : PCH.dark;
-    const telop = high ? await img(TELOP.src) : null;
+    
+    
+    
+    const big = high && th !== 'normal';
+    const telop = big ? await img(TELOP.src) : null;
     let pc = null, RV = null;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
-      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!high) RV = r.S1 + 0.4; }
-      if (high && RV != null && u >= RV) {                    
+      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!big) RV = r.S1 + 0.4; }
+      if (big && RV != null && u >= RV) {                    
         if (pc) { pcClose(pc, 0.2); pc = null; }
         drawBig(telop, u - RV, val, calm);
         return { end: RV + TELOP.hold };
@@ -3544,15 +3596,15 @@ const TCFX = (() => {
       if (I.plate) { g.drawImage(I.plate, 0, 0, 1024, 1536); drawEye(r, u); }
       const ang = rtAngle(r, u);
       drawFace(r, Gm, ang, r.S1 != null ? sm((u - r.S1 - 0.1) / 0.4) : 0);
-      const P = Gm.parts.ptr; if (I.ptr) g.drawImage(I.ptr, P.x, P.y, P.w, P.h);
+      const P = Gm.parts.ptr, pk = PTR_K[th] || 1; if (I.ptr) g.drawImage(I.ptr, P.x + P.w / 2 - P.w * pk / 2, P.y, P.w * pk, P.h * pk);      
       drawLever(r, I, Gm, u); drawChev(r, Gm, u); drawTap(r, Gm, u);
       if (RV != null && u > RV) {                             
         const v = u - RV; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
         drawGet(r, Gm, val, v / 0.45);
       }
       g.restore();
-      if (high && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; }      
-      return { end: RV != null ? RV + (high ? TELOP.hold : 0.8) : null };
+      if (big && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; try { if (o.onCut) o.onCut(); } catch (e) {   } }      
+      return { end: RV != null ? RV + (big ? TELOP.hold : 0.8) : null };
     }, (u, st, last) => {
       if (r.HIT != null && last < r.HIT && u >= r.HIT) se(o, 'tc_se_rt_lever.m4a', 1, 0);
       if (r.S0 != null && u >= r.S0 && u <= r.S1 + 0.05) {          
@@ -3564,8 +3616,8 @@ const TCFX = (() => {
         }
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
-      if (high && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    
-      if (RV != null && last < RV && u >= RV) se(o, high ? 'tc_se_doon.m4a' : 'sfx_big.m4a', high ? 1 : BIG_GAIN, 0);      
+      if (big && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    
+      if (RV != null && last < RV && u >= RV) se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);      
     });
     pcClose(pc, 0);
   }
@@ -4316,6 +4368,9 @@ window.TCPlan = TCPlan;
 
 
 
+
+
+
 const TCBuy = (() => {
   const CSS = `
 #tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:auto;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
@@ -4324,7 +4379,7 @@ const TCBuy = (() => {
 #tcb .bhd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
 #tcb .bhd b{font-size:16px;color:#6b3f1d;letter-spacing:.03em}
 #tcb .bx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
-#tcb .bbd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:9px 12px 11px}
+#tcb .bbd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 9px}
 #tcb .bnow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0 0 6px}
 #tcb .bnow div{background:#fffdf7;border:1.5px solid #ead7b2;border-radius:10px;padding:5px 6px 6px;text-align:center}
 #tcb .bnow small{display:block;font-size:11px;line-height:1.4;color:#8a6a48}
@@ -4332,10 +4387,12 @@ const TCBuy = (() => {
 #tcb .bnow b i{font-style:normal;font-size:12.5px;font-weight:400;color:#9a7a55}
 #tcb .bnow .tk{color:#3f7f3a}
 #tcb .bnow .pt{color:#b06a12}
-#tcb .bmsg{min-height:18px;margin:0 0 4px;font-size:13px;line-height:18px;font-weight:700;color:#3f7f3a;text-align:center}
+#tcb .bmsg{min-height:18px;margin:0 0 2px;font-size:13px;line-height:18px;font-weight:700;color:#3f7f3a;text-align:center}
 #tcb .bmsg.ng{color:#b0445f}
-#tcb .brow{display:flex;align-items:center;gap:8px;min-height:42px;background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:4px 7px 4px 12px;margin:0 0 5px}
+#tcb .brow{display:flex;align-items:center;gap:8px;min-height:42px;background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:4px 7px 4px 12px;margin:0 0 3px}
 #tcb .brow.cf{border-color:#3f9f5a;background:#f1faee}
+#tcb .brow.cf .bc{display:none}
+#tcb .brow.cf .bb.no{margin-left:auto}
 #tcb .brow.off .bn,#tcb .brow.off .bc{opacity:.5}
 #tcb .bn{flex:none;min-width:56px;font-size:21px;font-weight:700;color:#3f7f3a;white-space:nowrap}
 #tcb .bn i{font-style:normal;font-size:13px}
@@ -4426,7 +4483,6 @@ const TCApp = (() => {
   const SK = 'tengel.tc';
   const COLORS = ['brown', 'madara', 'black', 'white', 'hada'];
   const COLOR_JA = { brown: 'ブラウン', madara: 'まだら', black: 'ブラック', white: 'ホワイト', hada: '肌色' };
-  const BIG = 1.7;                                    
   
   
   
@@ -4441,6 +4497,12 @@ const TCApp = (() => {
   
   const RESET_CARES = 5, RESET_MIN = 5;               
   const VISIT_MIN = 30;                               
+  
+  
+  
+  
+  const VISIT_DRAWS = { maboroshi: 10, kamisama: 5 };
+  const CAP_WAIT = 2.6;                               
   
   
   const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      
@@ -4514,27 +4576,42 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    
+    
+    
+    
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 } };
+    let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
-    async function field(name) {
-      want = name; if (!ac) return; if (bed && bed.name === name) return;
+    
+    async function swap(name, fout, fin) {
+      aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
       const old = bed; bed = null;
-      if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + 2); old.s.stop(n + 2.1); } catch (e) { } }
-      const f = AMB[name]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
-      if (want !== name || (bed && bed.name === name)) return;
+      if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + fout); old.s.stop(n + fout + 0.1); } catch (e) { } }
+      const f = AMB[aim]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
+      if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + 2);
-      s.connect(g); g.connect(master); s.start(); bed = { s, g, name };
+      const L = LOOPS[aim]; let off = 0;
+      if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      
+      const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
+      s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };
+    }
+    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, 2); }      
+    
+    async function bgm(name) {
+      hold = name == null ? null : String(name);
+      if (hold == null) await swap(want, 0.5, 1.5); else if (hold === '') await swap('', 0.08, 0); else await swap(hold, 0.3, 0.12);
     }
     async function se(name, gain, at) {
       if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
-    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
+    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
     function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, se, stopAll, setOn, preload, get ac() { return ac; } };
+    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, LOOPS };
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -4631,20 +4708,31 @@ const TCApp = (() => {
   }
 
   
-  const STANCE_KAMI = { bodyW: 0.64, topOut: 0.04, hoofZ: { FL: -0.3, FR: 0.3, HL: -0.26, HR: 0.26 } };      
+  
+  
+  
+  
+  
+  
   function horseSpec() {
     if (st.visit) {
+      const k = scaleOf(st.cares);
       return st.visit.kind === 'kamisama'
-        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama2', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
-        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi2', stage: BIG, eyeGlow: 'purple', light: 'abyss' };      
+        ? { key: 'kamisama:' + k, name: 'tc_horse_bk_kamisama2', stage: k, eyeGlow: 'gold', lift: 0.14, glowK: 0.45, glowR: 0.7, light: 'divine' }
+        : { key: 'maboroshi:' + k, name: 'tc_horse_bk_maboroshi2', stage: k, eyeGlow: 'purple', light: 'abyss' };      
     }
     const c = COLORS[st.color % COLORS.length], s = stageOf(st.cares);
-    return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}`, stage: scaleOf(st.cares) };
+    return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}${HFIX[s] || ''}`, old: HFIX[s] ? `tc_horse_bk_${c}_s${s}` : null, stage: scaleOf(st.cares) };
   }
+  
+  
+  
+  const HFIX = { 2: 'v2' };
   const hcache = {};
   async function loadHorse(sp) {
     if (hcache[sp.key]) return hcache[sp.key];
-    const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
+    const getMeta = n => fetch(AP(n + '.json')).then(r => { if (!r.ok) throw new Error('horse ' + r.status); return r.json(); });
+    const meta = await getMeta(sp.name).catch(e => { if (!sp.old) throw e; return getMeta(sp.old); });
     const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
     const [texImg, nrmImg, p1, p2, p3, ...trashImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp'), img('tc_trash1.webp'), img('tc_trash2.webp'), img('tc_trash3.webp'), img('tc_trash4.webp')]);
@@ -4652,7 +4740,7 @@ const TCApp = (() => {
     const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), trashImgs, stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
     hcache[sp.key] = h; return h;
   }
-  async function useHorse(first) {
+  async function useHorse(first, grow) {               
     const sp = horseSpec(); if (sp.key === horseKey && HO) return;
     const h = await loadHorse(sp);
     const nb = TCHorse.brain({ tod: tod(), force: [], stand: false }); nb.rnd = Math.random;
@@ -4662,16 +4750,16 @@ const TCApp = (() => {
     nb.trash = BR && BR.trash && BR.trash.length ? BR.trash : (st.trash || []).map(q => trashLive(q));      
     HO = h; BR = nb; horseKey = sp.key;
     if (TCCare.on) TCCare.setHorse(HO, BR);
-    if (!first && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
+    if (!first && !grow && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
   }
   function growCheck() {                               
     const s0 = stageOf(st.cares - 1), s1 = stageOf(st.cares), k0 = scaleOf(st.cares - 1), k1 = scaleOf(st.cares);
     if (st.cares >= 300) {
       st.color = (st.color + 1) % COLORS.length; st.cares = 0; st.gen = (st.gen || 1) + 1; touch();
-      msg(`🎉 お世話 300回！\n${COLOR_JA[COLORS[st.color]]}の 子が やってきたよ`, 3.6); if (!st.visit) useHorse();
+      msg(`🎉 お世話 300回！\n${COLOR_JA[COLORS[st.color]]}の 子が やってきたよ`, 3.6); useHorse(false, true);      
       return;
     }
-    if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); if (!st.visit) useHorse(); }
+    if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); useHorse(false, true); }      
   }
 
   
@@ -4740,12 +4828,18 @@ const TCApp = (() => {
   const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
-  let resetting = false;
+  const drawMax = () => (st.visit ? VISIT_DRAWS[st.visit.kind] || 0 : 0);                                       
+  const drawLeft = () => { const m = drawMax(); return m ? Math.max(0, m - (st.rs.n || 0)) : Infinity; };      
+  let resetting = false, capT = null;
   function resetStep(gms, dt, t) {
     const rs = st.rs;
     if (rs.at) rs.el = (+rs.el || 0) + dt;
     if (!rs.at && rs.n >= RESET_CARES && careFree() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      
-    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careFree() && !st.pend && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
+    
+    const capped = drawLeft() < 1;
+    if (!capped) capT = null; else if (capT == null) capT = t;
+    const capGo = capped && t - capT >= CAP_WAIT && !(TCCare.on && TCCare.S.push);
+    if ((capGo || (rs.at && rsLeft(gms) <= 0)) && t > 3 && careFree() && !st.pend && !busy && !panelOpen() && !resetting) { resetting = true; capT = null; doReset().catch(() => { }).finally(() => { resetting = false; }); }
   }
   let forceNext;                               
   function nextHorse() {                       
@@ -4802,8 +4896,10 @@ const TCApp = (() => {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
-        SND.preload(['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      
-        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }      
+        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      
+        
+        SND.bgm('roulette');
+        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); give(z); }      
       } else if (z.k === 'zn') {
         
         SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
@@ -4817,6 +4913,12 @@ const TCApp = (() => {
       }
     } finally { busy = false; TCCare.roulette(false); }
   }
+  
+  
+  let ptTotal = null;
+  function ptSync() { try { const w = window.TengelWallet; ptTotal = w && typeof w.total === 'function' ? Math.max(0, Math.round(+w.total() || 0)) : null; } catch (e) { ptTotal = null; } return ptTotal; }
+  const walletTotal = () => ptTotal;
+  document.addEventListener('tengel:wallet', ptSync);
   function grant(v, what, id) {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
@@ -4833,7 +4935,7 @@ const TCApp = (() => {
   
   
   
-  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice()); };
+  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice()); };      
   const stockNow = () => { if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); } return st.stock; };      
   function stockSet(n, plus) {                         
     st.stock = n; touch();
@@ -4962,7 +5064,6 @@ const TCApp = (() => {
     
     poop(gold) {
       if (!testOn()) return 'off';
-      if (st.visit) return 'visit';
       if (!BR || (BR.poops || []).filter(q => !q.sw).length >= 3) return 'full';
       if (!testFree()) return 'busy';
       BR.poopReq = true; if (gold) testGold = true; return 'ok';
@@ -5010,7 +5111,7 @@ const TCApp = (() => {
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       
     if (st.visit && visitLeft(gms) <= 0 && !busy && careFree() && !st.pend && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      
     else if (!resetting) resetStep(gms, dt, t);
-    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms) } : null;      
+    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms), draws: Math.min(st.rs.n || 0, drawMax() || 0), max: drawMax() } : null;      
     if (resetting) {   }
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
@@ -5052,15 +5153,15 @@ const TCApp = (() => {
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      lotFree: () => !busy && !resetting && !panelOpen() && !st.pend });      
+      lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
     nextTick = clock() + TICK;
     recoverBuy().catch(() => { });                     
-    SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      
+    SND.preload(['tc_bgm_roulette.m4a', 'tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      
   }
   async function open(opt) {
     SND.unlock();
@@ -5069,8 +5170,8 @@ const TCApp = (() => {
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
-    paintHead(); layout(); accrue(tnow());
-    if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
+    paintHead(); layout(); accrue(tnow()); ptSync();      
+    if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; S.ptShow = null; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
     if (opt && opt.test && testOn() && !TCTest.isOpen()) TCTest.open(stage, TEST);      
@@ -5085,7 +5186,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCApp = TCApp;
