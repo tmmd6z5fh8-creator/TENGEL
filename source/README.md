@@ -2490,6 +2490,8 @@
     - まだ 見られない もの：**本物の iPhone での なめらかさ**（手元は Chromium だけ：コマの 数・1コマの 長さ・となりの コマとの ちがい・コマの さかい目の 合わせは 数で 見た）・
       ナイターと 大理石の「動いて いる 間は 2倍・止まると 3倍」の 入れかわりが iPhone の 画面で 気に ならないか（気に なる ときは 3倍の シートに もどせる：絵は 手元に ある）・
       パドックは 絵の 量が 1.5倍に なった（上の データ）：iPhone で 重く ないか（行動が 切りかわる ときに 馬が 一瞬 消えないか・アプリが 落ちないか）
+    - GitHub の Mac（run 133・43440976553・ios ブランチ 8f7eabf・11/14 0:58 ごろ 確かめた）：**macOS 26（Xcode 26.6・iPhone 17／iPad Pro 11 M5・iOS 26.5）・macOS 15（Xcode 16.4・iOS 26.2）とも OK**＝3つの ビルド とも エラー 0・
+      iPhone だけ／日本語の 確かめ OK・iPhone と iPad（互換モード）の 報告が そろって いる・iPad の 広い 窓：Web の 画面 390×844（2倍）・置き場 (222,183)・エラー 0 → OK。この 版は Swift を かえて いない（Web の 中身 だけ）。1回目で 通った
   - テスト：`test_smooth.py`（39）・`test_ks_flash.py paddock,night,marble,pixel,ukiyoe --wall`（5）・`test_wall_hq.py`（57）・`test_iphone_only.py`（78）・`test_native.py`（475）・`test_plan_entry.py`（47）・`test_band_wall.py`（18）・`test_marble_wall.py`（17）・`test_appname.py`（38）・`test_rt_art.py`（15）・`test_manual.py`（21）・`test_points.js`（155）・`test_tc_care.js`（162）・`test_reserve.js`（23）・`test_custom_rate.js`（8）・`test_ocr_local.js`（67）・`test_engine.js`：ぜんぶ OK
     - とちゅうで 起きた こと：**パドックの ゆっくり 歩き**（テストを 通した あとで 見つけた：`test_smooth.py` は「見えない 所」と 書いて のぞいて いた が、数で 見ると 手前の 馬は 右の はしで 体の うしろが 見えて いた → 上の とおり 見えない 所で 待つ 形に かえて、のぞく アニメを なくした・待つ 間に 舞台へ 入る 幅 0px を テストに 足した）／`test_iphone_only.py` が 2つ 落ちた（Resources の 大きさの 上限 153MB を こえた → 150〜160MB に・壁紙の 絵の 数：`f1_f` は 使わない ので 入らない → 142こ）／`test_manual.py` が 2〜3つ 落ちた（アプリの 中身とは 関係 なし：手元の 機械は 外へ つなげず、Web版の ページは Google Fonts の 読みこみが 失敗する のを 待つ。その 時間が 夜は 2.3秒に のびて「1.5秒 待つ」だけの 確かめが 足りなかった → 「アプリの ページが 開き終わる まで 待つ（15秒 まで）」に。確かめる 中身は 同じ）／パドックの 絵を 描いて いる とちゅうで 手元の 機械が 入れ直しに なり、のこりを べつの フォルダ（鏡）で 描き直した／大理石の 絵を 3つの 描く 仕事と いっしょに 始めて メモリが 足りなく なりかけた → 1つずつ に
 
