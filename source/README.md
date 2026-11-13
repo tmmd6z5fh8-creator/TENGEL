@@ -2451,6 +2451,8 @@
     - 禁止の ことばの 走査：合計 0（App Store版・テスト版・CI の 3つ）・データ更新の 鍵：App Store版と テスト版は 本物・CI は ダミー
     - まだ 見られない もの：**本物の iPhone での なめらかさ**（手元は Chromium だけ：コマの 数・1コマの 長さ・となりの コマとの ちがい・コマの さかい目の 合わせは 数で 見た。iPhone の 画面で どう 見えるかは まさちゃんに 見て もらう）・
       コマの さかい目の 合わせ（`startTime` を ずらす）が iPhone の WebKit でも 同じ ように はたらくか（できない ときは なにも しない 作り）
+    - GitHub の Mac（run 132・43422885300・ios ブランチ 094d2b9・11/13 22:10 ごろ 確かめた）：**macOS 26（Xcode 26.6・iPhone 17／iPad Pro 11 M5・iOS 26.5）・macOS 15（Xcode 16.4・iOS 26.2）とも OK**＝3つの ビルド とも エラー 0・
+      iPhone だけ／日本語の 確かめ OK・iPhone と iPad（互換モード）の 報告が そろって いる・iPad の 広い 窓：Web の 画面 390×844（2倍）・置き場 (222,183)・エラー 0 → OK。この 版は Swift を かえて いない（Web の 中身 だけ）。1回目で 通った
   - テスト：`test_smooth.py`（25：新しい）・`test_ks_flash.py pirate,course,space,dino,ukiyoe,future,news,silks,sunset,ink,stars --wall`（11）・`test_wall_hq.py`（55：競馬新聞・勝負服・夕焼け・水墨画の 15コマ）・`test_iphone_only.py`（78）・`test_native.py`（475）・`test_plan_entry.py`（47）・`test_band_wall.py`（18）・`test_marble_wall.py`（16）・`test_appname.py`（38）・`test_rt_art.py`（15）・`test_manual.py`（21）・`test_points.js`（155）・`test_tc_care.js`（162）・`test_reserve.js`（23）・`test_custom_rate.js`・`test_ocr_local.js`・`test_engine.js`：ぜんぶ OK
     - とちゅうで 落ちた ものと 直し：`test_smooth.py`（はじめて 走らせた：上の `phase` の まちがいを 見つけた／船長が 見上げた まま 止まる 0.23秒は「1/30秒の 倍数」と して 見る／同じ 部品でも おくれの あまりが ちがう 動きは べつべつに 合わせる 形に 合わせた）・`test_appname.py`・`test_rt_art.py`（うしろで パドックと ナイターの 絵を 描いて いて 手元の 機械が おそく、待つ 時間が 足りなかった → 描くのを 止めて 走らせ直して OK。アプリの 中身は かえて いない）
     - とちゅうで 起きた こと：作業場が 1回 止まった（再起動）ので パドックの 描き直しが 切れた → パドックは つぎの 版へ（上の「まだ」）。1まいの 壁紙の 走る コマを 作る 道具が 3D の 下絵（`kisekae/r3d/tmp` の `.f32`：1コマ 90MB ほど）を 消さない ので ディスクが いっぱいに なって 2つ 止まった → 下絵を 消して やり直した（絵は こわれて いない：今日 書いた 絵 ぜんぶ 名前＝中身の md5）。
