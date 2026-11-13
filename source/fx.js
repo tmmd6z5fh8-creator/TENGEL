@@ -37,6 +37,11 @@
 //     押したあと・絵（pm_…）・音（pc・zp・spg・spg_up）・昇格の 動画（spg_up）は アプリに 入れない（kisekae/build_fx.py）。決めて 出す とき（force・ためし）の pc は nd・spg は sgd に する（shown）。
 //     前に 記録した 思い出（種類 pc・spg）は そのまま 開ける（思い出ボードの わく・見出し・帯：MEM_FRAME・TITLE_OF・BOARD_OF に のこす）
 //     超神様的中の 動画：はじめの 球体の 場面を 消して 金の 爆発から（22:32「一枚目の球体のシーン消して！いきなり2枚目の爆破のシーンに入るようにして！」）・字と 鳥居は まさちゃんの 3D（12.83秒）
+//   第4.165版（まさちゃん 2026/11/13 11:52「あと、ノーマル的中の演出消して！」→ 聞いて 決めた：消すのは ノーマルど的中（nd）・その 条件の レースは 極ど的中・極ど的中の 入りは 残す）：
+//     D（超大穴が いる 当たり）は M でも M で なくても 極ど的中（sd）。ノーマルど的中は もう 出ない（決めて 出す とき＝テスト・CI の force・ためし の nd・pc・fz・gd も 極ど的中に する：shown）。
+//     強い 順：神様極的中 ＞ 超神様的中（G）＞ 極ど的中（D）＞ デカ的中（B）＞ 的中（H）＞ ハズレ。
+//     極ど的中の 入り（ノーマルど的中の 幕と 動画の はじめの 5.34秒 → ブラックアウト → 極ど的中：第4.77版）は そのまま ＝ ノーマルど的中の 幕（A.reveal.nd）・動画（nd_film）・音（nd・ndt）は アプリに 残す。
+//     前に 記録した ノーマルど的中（rsv.fx が nd）の 札と 思い出ボード（わく ①光の輪の芝コース／②プレミアムかわいい馬）は そのまま（MEM_FRAME・TITLE_OF・BOARD_OF に のこす）
 (function () {
   'use strict';
   if (!window.__NATIVE || !window.__FX) return;
@@ -152,7 +157,7 @@
       });
     });
     const tier = found.g.length ? 'g' : found.d.length ? 'd' : found.b.length ? 'b' : 'h';
-    const kind = tier === 'g' ? 'sgd' : tier === 'd' ? (multi ? 'sd' : 'nd') : tier === 'b' ? 'big' : 'hit';   // 第4.162版：G は M でも 超神様的中（超プレミアム神様的中は なし）
+    const kind = tier === 'g' ? 'sgd' : tier === 'd' ? 'sd' : tier === 'b' ? 'big' : 'hit';   // 第4.162版：G は M でも 超神様的中（超プレミアム神様的中は なし）・第4.165版：D は M で なくても 極ど的中（ノーマルど的中は なし）
     if (tier === 'h') return { kind: kind, tier: tier, multi: multi, supers: [], bigs: [], trig: null };
     const list = found[tier], t = list.slice().sort((p, q) => typeRank(p.t) - typeRank(q.t))[0].t, mine = list.filter(o => o.t === t);
     const supers = [], bigs = [];
@@ -160,7 +165,7 @@
     mine.forEach(o => { o.sp.forEach(x => add(supers, x)); o.bg.forEach(x => add(bigs, x)); });
     return { kind: kind, tier: tier, multi: multi, supers: supers, bigs: bigs, trig: { t: t, c: (mine[0].c || []).slice() } };
   }
-  // くじは ない（第4.162版：プレミアムど的中を なくした ので、ノーマルど的中の 6分の1 の くじも なくした）
+  // くじは ない（第4.162版：プレミアムど的中を なくした ので、ノーマルど的中の 6分の1 の くじも なくした）。第4.165版：ノーマルど的中も なくした（D は いつも 極ど的中）
 
   // ---------- ボード（いつもの・お金なし） ----------
   function num(no, n, zx, isWaku) {
@@ -632,7 +637,8 @@
   // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）と 神様的中（gd）の 押したあとは アプリに 入って いない（くじで 出ない）。
   // 決めて 出す とき（テスト・CI の force・ためし）は ノーマルど的中（nd）に する。静かな ボード（的中エフェクト オフ）は ど的中の ボードの まま
   // 第4.162版：なくした 演出（プレミアムど的中 pc → ノーマルど的中 nd・超プレミアム神様的中 spg → 超神様的中 sgd）。静かな ボードでも 同じ（見出しは もとから 同じ）
-  function shown(kind, quiet) { return kind === 'pc' ? 'nd' : kind === 'spg' ? 'sgd' : !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }
+  // 第4.165版：ノーマルど的中（nd）も なくした → 決めて 出す ときの nd・pc は 極ど的中（sd）・fz・gd も（静かな ボードの fz・gd は ど的中の ボードの まま）
+  function shown(kind, quiet) { return kind === 'pc' || kind === 'nd' ? 'sd' : kind === 'spg' ? 'sgd' : !quiet && (kind === 'fz' || kind === 'gd') ? 'sd' : kind; }
   // 結果を保存したあとに呼ぶ。出した種類を返す（出さないときは null）。force＝種類を決めて出す（テスト・CI用）
   // godN（第4.117版・第4.118版）＝G かつ M の レースが 結果を 決めた さいごの 50レース（この レースまで・中止と 締切済みは 入れない）の 中に いくつ あるか（この レースも 入れて：src.html の godCount）。
   //   この レースが G かつ M で godN が 2以上 → 神様極的中（超神様より 先）。ほかは decide の 決まった 種類（第4.162版：くじは ない）。

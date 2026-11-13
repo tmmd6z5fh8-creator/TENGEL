@@ -4,6 +4,9 @@
 #   ・App Store版：道具箱は 中身に 入らない・入口も ない・よんでも 何も おきない
 #   python3 test_tc_test.py   （ios/tc_assets/ が ある とき だけ 画面の テスト。ない とき（CI）は 中身の 見くらべ だけ）
 #   きまり（S.test：次の 1回 だけ）は test_tc_care.js・いつもの トレーニングセンターは test_tc.py
+#   第4.165版（まさちゃん 2026/11/13 11:46「トレーニングセンターのルーレット抽選や幻の馬、神様馬のテストができるようにする」）：「えらんだら すぐ PUSH を 出す」の スイッチ（はじめは オン）・
+#     「PUSH を すぐ 出す」・お世話トークンを 0こに・トークンの 時計を 5分 進める・設定の「テスト版の道具」から 道具箱を 開く。
+#     この テストの 前の 方（第4.154版〜の 流れ：えらんで から 本物の ごはんで 出す）は スイッチを オフに して ためす（SKIP_OFF）・おわりの 方で オンに して ためす
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -101,7 +104,7 @@ def awake(pg):                        # 第4.156版：馬は もう ねない（
 
 
 def feed(pg, item=1):                 # ごはん：0＝エサ・1＝リンゴ・2＝ニンジン
-    awake(pg); stage_click(pg, 407, 1494)
+    awake(pg); stage_click(pg, 327, 1494)
     pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700)
     stage_click(pg, 270 + 256 * item, 1262)
 
@@ -134,6 +137,7 @@ try:
             b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
             ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo')
             ctx.add_init_script(FAKE)
+            ctx.add_init_script("try { if (localStorage.getItem('tengel.tctest.skip') == null) localStorage.setItem('tengel.tctest.skip', '0'); } catch (e) { }")      # SKIP_OFF：前の 方は「えらんだら すぐ PUSH」を オフに（第4.165版）
             pg = ctx.new_page(); errs = []
             pg.on('pageerror', lambda e: errs.append(str(e)))
             open_tc(pg, APP)
@@ -146,18 +150,27 @@ try:
               const bs = [...r.querySelectorAll('.ttb')], by = a => bs.filter(x => x.dataset.a === a).length;
               const rows = [...r.querySelectorAll('.ttr')].filter(q => q.querySelector('.ttl.w')).map(q => { const t = [...q.children].map(e => Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2)); return Math.max(...t) - Math.min(...t); });
               return { open: TCTest.isOpen(), secs: [...r.querySelectorAll('.tts')].map(e => e.dataset.sec), n: bs.length, prize: by('prize'), visit: by('visit'), heart: by('heart'), flag: by('flag'), poop: by('poop'),
+                zone: bs.filter(x => x.classList.contains('z')).map(x => [x.textContent, JSON.parse(x.dataset.o).z]), zhead: [...r.querySelectorAll('.ttg')].map(e => e.textContent).filter(t => t.includes('特化ゾーン')),
+                extra: [by('skip'), by('push'), by('tokens'), by('ahead')], skip: [TCTest.skip, r.querySelector('[data-a=skip]').getAttribute('aria-pressed'), r.querySelector('[data-a=skip]').textContent.slice(0, 1)],
                 wide: y.scrollWidth - y.clientWidth, sc: y.scrollHeight > y.clientHeight, inside: s.left >= st.left && s.right <= st.right + 0.5 && s.bottom <= st.bottom + 0.5, rows, minH: Math.min(...bs.map(e => e.getBoundingClientRect().height)),
                 font: getComputedStyle(r.querySelector('.ttl')).fontFamily.split(',')[0], now: r.querySelector('[data-now]').innerText }; }""")
-            check(sh['open'] and sh['secs'] == ['horse', 'prize', 'other'] and sh['visit'] == 3 and sh['prize'] == 29 and sh['heart'] == 2 and sh['flag'] == 7 and sh['poop'] == 2 and sh['n'] == 47,
-                  f'道具箱：① 馬 3・② 当たり 29（くじ・はずれ・ポイント 6・ルーレット 6＋6＋6・チケット 3）・③ そのほか（{sh["n"]}こ の ボタン）')
+            check(sh['open'] and sh['secs'] == ['horse', 'prize', 'other'] and sh['visit'] == 3 and sh['prize'] == 36 and sh['heart'] == 2 and sh['flag'] == 7 and sh['poop'] == 2 and sh['n'] == 58
+                  and sh['extra'] == [1, 1, 3, 1] and sh['skip'] == [False, 'false', '☐'],
+                  f'道具箱：① 馬 3・② 当たり 36（くじ・はずれ・ポイント 6・ルーレット 6＋6＋6・チケット 3・ポイント特化ゾーン 7）・③ そのほか（{sh["n"]}こ の ボタン）・'
+                  f'第4.165版：すぐ PUSH の スイッチ（ここでは オフに して ある {sh["skip"]}）・「PUSH を すぐ 出す」・トークン 25／19／0こ・時計を 5分 進める {sh["extra"]}')
+            #   第4.165版（まさちゃん 11/13 12:51「ポイントの特化ゾーンを作る」）：上乗せ できる 回数を えらぶ ボタン 6つ ＋ くじどおり
+            zw = [[f'{n}回{"（MAX）" if n == 12 else ""} → {1000 + 2000 * n:,}P', {'k': 'zn', 'n': n}] for n in (0, 1, 3, 6, 11, 12)] + [['くじどおり（1回ごとに 60%）', {'k': 'zn'}]]
+            check(sh['zone'] == zw and len(sh['zhead']) == 1 and 'いまの 馬の まま' in sh['zhead'][0], f'道具箱の ポイント特化ゾーン：上乗せ 0・1・3・6・11・12回（MAX 25,000P）と「くじどおり」（{[z[0] for z in sh["zone"]]}）')
             check(sh['wide'] <= 0 and sh['sc'] and sh['inside'] and max(sh['rows']) <= 2 and len(sh['rows']) == 9 and sh['minH'] >= 36 and 'BIZ' in sh['font'],
                   f'フィールドの 中に おさまる・横に はみ出さない・下へ スクロール・ルーレットの 9行は 1行ずつ（ずれ {max(sh["rows"])}px）・ボタンの 高さ {sh["minH"]:.0f}px 以上・字は 本文の 字')
             check('いつもの 馬' in sh['now'] and 'くじ（本番と 同じ 確率）' in sh['now'] and 'トークン' in sh['now'], f'いちばん 上に いまの ようす（{sh["now"]!r}）')
             tab = pg.evaluate("""() => { const t = TCApp._t, pts = t.PRIZES.filter(q => q[1].k === 'pt').map(q => q[1].v).sort((a, b) => a - b), rt = t.PRIZES.filter(q => q[1].k === 'rt').map(q => [q[1].tier].concat(t.RT[q[1].tier]));
-              const vis = k => t.PRIZES_VISIT[k].map(q => [q[1].tier].concat(q[1].v)).sort((a, b) => a[1] - b[1]), srt = a => a.slice().sort((x, y) => x[1] - y[1]);
+              const vis = k => t.PRIZES_VISIT[k].filter(q => q[1].k === 'rt').map(q => [q[1].tier].concat(q[1].v)).sort((a, b) => a[1] - b[1]), srt = a => a.slice().sort((x, y) => x[1] - y[1]);
               return { pts: JSON.stringify(pts) === JSON.stringify(TCTest.PTS), rt: JSON.stringify(srt(rt)) === JSON.stringify(srt(TCTest.RTS.normal)), mab: JSON.stringify(vis('maboroshi')) === JSON.stringify(TCTest.RTS.maboroshi), kami: JSON.stringify(vis('kamisama')) === JSON.stringify(TCTest.RTS.kamisama),
-                tk: t.PRIZES.filter(q => q[1].k === 'tk').length, all: t.PRIZES.length }; }""")
-            check(tab['pts'] and tab['rt'] and tab['mab'] and tab['kami'] and tab['tk'] == 1 and tab['all'] == 10, f'道具箱の 当たりの 表は 本番の 表（ポイント 6・ルーレット 3・チケット／幻の馬 3・神様馬 3）と 同じ 数 {tab}')
+                tk: t.PRIZES.filter(q => q[1].k === 'tk').length, all: t.PRIZES.length, zn: [t.PRIZES, t.PRIZES_VISIT.maboroshi, t.PRIZES_VISIT.kamisama].map(a => a.filter(q => q[1].k === 'zn').length),
+                zv: TCTest.ZNS.every(n => TCTest.ZV(n) === t.zoneV(n)) && JSON.stringify(TCTest.ZNS) === '[0,1,3,6,11,12]' && t.ZONE.max === 12 }; }""")
+            check(tab['pts'] and tab['rt'] and tab['mab'] and tab['kami'] and tab['tk'] == 1 and tab['all'] == 11 and tab['zn'] == [1, 1, 1] and tab['zv'],
+                  f'道具箱の 当たりの 表は 本番の 表（ポイント 6・ルーレット 3・チケット・ポイント特化ゾーン／幻の馬 3・神様馬 3〈どちらも ポイント特化ゾーンも〉）と 同じ 数・特化ゾーンの 合計も 本番と 同じ {tab}')
             for y in (430, 860, 1300):
                 pg.evaluate("(y) => { document.querySelector('#tct .tty').scrollTop = y; }", y); pg.wait_for_timeout(150); shot(pg, f'tct_sheet_{y}')
             pg.locator('#tct .ttx').click(); pg.wait_for_timeout(200); c1 = pg.evaluate("() => TCTest.isOpen()")
@@ -187,7 +200,7 @@ try:
             check(v['field'] == 'divine' and '神様馬が やってきた' in v['msg'] and 1770 <= v['left'] <= 1800, f'幻の馬が いる ときに「✨ 神様馬を 出す」→ 神様馬に かわる（タイムリミットは はじめから）（{v}）')
             # お世話の 途中（えらぶ 札が 出て いる）は かえない
             pg.evaluate("() => TCApp.test.prize(null)")      # この ごはんは はずれ（くじで ルーレットが 出ない ように）
-            awake(pg); stage_click(pg, 407, 1494); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000)
+            awake(pg); stage_click(pg, 327, 1494); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000)
             r = pg.evaluate("async () => [await TCApp.test.visit(null), TCApp.state.visit.kind, await TCApp.test.prize({ k: 'pt', v: 10 }, 'normal'), TCApp.test.info().prize === null]")
             sheet(pg); pg.locator('#tct .ttb[data-a="visit"]').nth(2).click(); pg.wait_for_timeout(400); m = pg.evaluate(MSG)
             check(r[0] == 'busy' and r[1] == 'kamisama' and r[2] == 'busy' and r[3] is True and 'お世話が おわったら' in m and pg.evaluate("() => TCApp.state.visit.kind") == 'kamisama', f'お世話の 途中は 馬を かえない・当たりも かえない（{m!r}）{r}')
@@ -205,17 +218,26 @@ try:
             cases = [({'k': 'pt', 'v': v}, 'normal', v, 0) for v in (10, 20, 50, 100, 200, 300)]
             cases += [({'k': 'rt', 'tier': tr, 'v': [a, c], 'win': w}, 'normal', (c if w else a), 0) for tr, a, c in (('normal', 800, 1600), ('maboroshi', 1600, 3200), ('kamisama', 3200, 6400)) for w in (0, 1)]
             cases += [({'k': 'tk', 'n': n}, 'normal', 0, n) for n in (1, 2, 3)]
+            cases += [({'k': 'zn', 'n': n}, 'normal', 1000 + 2000 * n, 0) for n in (0, 1, 3, 6, 11, 12)]      # 第4.165版：ポイント特化ゾーン（上乗せ n回 → 1,000P ＋ 2,000P × n）
             cases += [({'k': 'rt', 'tier': 'maboroshi', 'v': [a, c], 'win': w}, 'maboroshi', (c if w else a), 0) for a, c in ((800, 1600), (1600, 3200), (3200, 6400)) for w in (0, 1)]
             cases += [({'k': 'rt', 'tier': 'kamisama', 'v': [a, c], 'win': w}, 'kamisama', (c if w else a), 0) for a, c in ((2000, 4000), (5000, 10000), (10000, 20000)) for w in (0, 1)]
             seen = set()
             for z, h, pts, tk in cases:
                 q = pg.evaluate(ONE, [z, h]); g = q['got'] or {}
                 ok = (q['r'] == 'ok' and q['set'] and q['after'] and q['pend'] and q['left'] is None and g.get('k') == z['k'] and q['v'] == pts and q['dw'] == pts and q['dk'] == tk
-                      and q['visit'] == (None if h == 'normal' else h) and (z['k'] != 'rt' or (g.get('win') == z['win'] and [g.get('a'), g.get('b')] == z['v'] and g.get('tier') == z['tier'])) and (z['k'] != 'tk' or g.get('n') == z['n']))
+                      and q['visit'] == (None if h == 'normal' else h) and (z['k'] != 'rt' or (g.get('win') == z['win'] and [g.get('a'), g.get('b')] == z['v'] and g.get('tier') == z['tier'])) and (z['k'] != 'tk' or g.get('n') == z['n'])
+                      and (z['k'] != 'zn' or (g.get('n') == z['n'] and g.get('v') == pts)))
                 seen.add(h)
                 if not ok: bad.append((z, h, q))
-            check(not bad and len(cases) == 27 and seen == {'normal', 'maboroshi', 'kamisama'},
-                  f'当たり 27とおり（ポイント 6・ルーレット 3×2・チケット 1〜3枚／幻の馬の ルーレット 3×2／神様馬の ルーレット 3×2）：えらんだ 当たりが 次の 抽選で 出て、本番と 同じ わたし方（ポイント・チケットの 数）・1回 だけ・その 当たりが 出る 馬に かわる {bad[:2]}')
+            check(not bad and len(cases) == 33 and seen == {'normal', 'maboroshi', 'kamisama'},
+                  f'当たり 33とおり（ポイント 6・ルーレット 3×2・チケット 1〜3枚・ポイント特化ゾーン 6／幻の馬の ルーレット 3×2／神様馬の ルーレット 3×2）：えらんだ 当たりが 次の 抽選で 出て、本番と 同じ わたし方（ポイント・チケットの 数）・1回 だけ・その 当たりが 出る 馬に かわる {bad[:2]}')
+            #   ポイント特化ゾーンは 馬を かえない（いまは 神様馬）・「くじどおり」は 上乗せの 回数を 本番の くじ（1回ごとに 60%・12回まで）で 決める
+            zq = pg.evaluate("""async () => { const T = TCApp.test, t = TCApp._t, st = TCApp.state, out = [];
+              const k0 = st.visit ? st.visit.kind : null, r = await T.prize({ k: 'zn', n: 3 }), g = t.lottery(), k1 = st.visit ? st.visit.kind : null; st.pend = null;
+              for (let i = 0; i < 300; i++) { await T.prize({ k: 'zn' }); const z = t.lottery(); st.pend = null; out.push([z.k, z.n, z.v]); } localStorage.setItem('tengel.tc', JSON.stringify(st));      // 当たりは わたさない（数える だけ）
+              return { k0, k1, r, g: g && [g.k, g.n, g.v], bad: out.filter(z => z[0] !== 'zn' || !(z[1] >= 0 && z[1] <= 12) || z[2] !== 1000 + 2000 * z[1]).length, n0: out.filter(z => z[1] === 0).length, big: out.filter(z => z[1] >= 3).length, after: T.info().prize === undefined }; }""")
+            check(zq['k0'] == zq['k1'] == 'kamisama' and zq['r'] == 'ok' and zq['g'] == ['zn', 3, 7000] and zq['bad'] == 0 and 80 <= zq['n0'] <= 160 and 35 <= zq['big'] <= 100 and zq['after'],
+                  f'ポイント特化ゾーンは 馬を かえない（神様馬の まま → 上乗せ 3回 7,000P）・「くじどおり」300回：ぜんぶ 特化ゾーン・合計は 1,000P ＋ 2,000P × 回数・0回 {zq["n0"]}（40%：120 ぐらい）・3回以上 {zq["big"]}（21.6%：65 ぐらい）')
             q = pg.evaluate("""async () => { const T = TCApp.test, t = TCApp._t, S = TCCare.S; const k0 = TCApp.state.visit.kind; const r = await T.prize(null); const set = T.info().prize === null, got = t.lottery(), after = T.info().prize === undefined;
               S.high = 3; await T.prize({ k: 'pt', v: 10 }, 'kamisama'); const g2 = t.lottery(), hi = S.high;      // 高確ゾーンの のこりは 本番と 同じ ように 1つ へる
               await T.prize({ k: 'pt', v: 50 }, 'kamisama'); const r3 = await T.prize(undefined), back = T.info().prize === undefined; S.high = 0; TCApp.state.high = 0; if (g2) t.give(g2);
@@ -255,6 +277,13 @@ try:
             ev = pg.evaluate("() => [...TengelWallet.events().filter(e => /^tc-/.test(e.id)).slice(-1).map(e => [e.amount, e.what]), ['', '']]")
             check('神様馬に' in m and 'ルーレット' in m and '→ 20,000P' in m and done and w1 - w0 == 20000 and ev and 'ルーレット' in ev[0][1],
                   f'道具箱で 神様馬の「10,000P か 20,000P → 20,000P」→ 神様馬が 来て、ごはん 1回 → PUSH で ルーレット → 20,000P（{w0} → {w1}・台帳「{ev and ev[0][1]}」）')
+            #   第4.165版：道具箱で「1回 → 3,000P」→（神様馬の まま）ごはん 1回 → PUSH で ポイント特化ゾーン → レバーを 2回 タップ（1回め 上乗せ・2回め 失敗）→ 3,000P
+            w0 = pg.evaluate(WAL); tool(pg, 'prize', {'z': {'k': 'zn', 'n': 1}}); pg.wait_for_timeout(400); m = pg.evaluate(MSG); zk = pg.evaluate("() => TCApp.state.visit && TCApp.state.visit.kind")
+            pg.wait_for_function("() => TCApp.test.info().free", timeout=90000)
+            feed(pg, 1); done = fx_done(pg, 150); free(pg, 60); pg.wait_for_timeout(800); w1 = pg.evaluate(WAL)
+            ev = pg.evaluate("() => [...TengelWallet.events().filter(e => /^tc-/.test(e.id)).slice(-1).map(e => [e.amount, e.what]), ['', '']]")
+            check('ポイント特化ゾーン' in m and '上乗せ 1回' in m and '→ 3,000P' in m and 'かわったよ' not in m and zk == 'kamisama' and done and w1 - w0 == 3000 and 'ポイント特化ゾーン' in ev[0][1],      # 台帳の 1件の 数は 見ない（上限を こえた ぶんは あずかりポイントに 入る：合計で 見る）
+                  f'道具箱で 特化ゾーン「1回 → 3,000P」→ 馬は そのまま（{zk}）・ごはん 1回 → PUSH で ポイント特化ゾーン → レバーを タップ → 3,000P（{w0} → {w1}・台帳「{ev[0][1]}」）')
             k0 = pg.evaluate("TCInfo.tickets()"); tool(pg, 'prize', {'h': 'normal', 'z': {'k': 'tk', 'n': 2}})
             pg.wait_for_function("() => !TCApp.state.visit && TCApp.test.info().free", timeout=90000); pg.wait_for_timeout(400)
             feed(pg, 1); done = fx_done(pg, 150); free(pg, 60); pg.wait_for_timeout(600); k1 = pg.evaluate("TCInfo.tickets()")
@@ -277,7 +306,7 @@ try:
             # 呼ぶ
             for k, nm in (('turn', '振り向く'), ('come', '近づいてくる'), ('amae', '甘える')):
                 free(pg); pg.evaluate("() => { const S = TCCare.S; S.callN = 0; S.callCoolUntil = -1e9; }"); tool(pg, 'flag', {'k': 'call', 'v': k}); pg.wait_for_timeout(200); m = pg.evaluate(MSG)
-                awake(pg); stage_click(pg, 881, 1494); pg.wait_for_timeout(400); q = pg.evaluate("() => [TCCare.S.callKind, TCCare.S.mode, JSON.stringify(TCCare.S.test || {})]")
+                awake(pg); stage_click(pg, 725, 1494); pg.wait_for_timeout(400); q = pg.evaluate("() => [TCCare.S.callKind, TCCare.S.mode, JSON.stringify(TCCare.S.test || {})]")
                 check(nm in m and q[0] == k and q[1] == 'call' and 'call' not in q[2], f'呼ぶ：「{nm}」を えらぶ → 次の 呼ぶは {k}（1回 だけ）')
             free(pg)
             # ごはん：金のニンジン・おかわりの目
@@ -292,7 +321,7 @@ try:
             # 撫でる：ハートの 抽選（当たり → ぴょん！・トークン ＋5）
             pg.evaluate("() => { TCCare.S.stock = 7; TCApp.state.stock = 7; TCApp.state.stockAt = Date.now() + 7200000; }"); tool(pg, 'heart', {'win': True}); pg.wait_for_timeout(250); m = pg.evaluate(MSG)      # （10分ごとに 5つ たまる：この 確かめの 間に たまらない ように 数えはじめを 先に）
             q0 = pg.evaluate("() => [TCCare.S.heart, TCCare.S.heartShow, TCApp.state.heart, TCCare.S.test && TCCare.S.test.win, TCCare.S.got.length]")
-            awake(pg); stage_click(pg, 170, 1494); pg.wait_for_function("() => TCCare.S.phase === 'pet'", timeout=30000); pg.wait_for_timeout(700)
+            awake(pg); stage_click(pg, 128, 1494); pg.wait_for_function("() => TCCare.S.phase === 'pet'", timeout=30000); pg.wait_for_timeout(700)
             PTS = """() => { const [HO] = TCCare._hb, z = TCCare.view(), r = document.querySelector('#tcOv .tcst').getBoundingClientRect();
               return ['poll', 'withers'].map(n => { const p = TCHorse.where(HO, n); return [r.left + ((p[0] - z.cx) * z.z + 526) / 1052 * r.width, r.top + ((p[1] - z.cy) * z.z + 828.5) / 1657 * r.height]; }); }"""
             for i in range(3):
@@ -333,6 +362,59 @@ try:
             pg.locator('#tcFab .fabi').click(); pg.wait_for_function("() => document.querySelector('#tcOv.on')", timeout=60000); pg.wait_for_timeout(1500)
             q = pg.evaluate("() => [TCApp.test.info().prize, TCApp.state.visit && TCApp.state.visit.kind, TCTest.isOpen()]")
             check(q[0] == {'k': 'pt', 'v': 100} and q[1] == 'maboroshi' and q[2] is False, f'「← もどる」→ ひらき直し：決めた 当たりと 馬は そのまま {q}')
+
+            print('■ 第4.165版：すぐ PUSH を 出す・トークンの 道具・設定から 開く')
+            check("localStorage.getItem(SKIP_KEY) !== '0'" in tb and 'tengel.tctest.skip' in tb, '「えらんだら すぐ PUSH を 出す」は はじめは オン（端末に「0」と おぼえて いる とき だけ オフ）')
+            pg.evaluate("async () => { await TCApp.test.prize(undefined); await TCApp.test.visit(null); }"); free(pg); pg.wait_for_timeout(600)
+            pg.evaluate("() => { const st = TCApp.state, S = TCCare.S; st.stock = 6; S.stock = S.stockShow = 6; st.stockAt = Date.now() + 7200000; S.high = 0; st.high = 0; }")
+            # スイッチを オンに（道具箱は 閉じない・端末に おぼえる）
+            sheet(pg); sw = pg.locator('#tct [data-a=skip]'); sw.scroll_into_view_if_needed(); sw.click(); pg.wait_for_timeout(200)
+            q = pg.evaluate("() => [TCTest.isOpen(), TCTest.skip, document.querySelector('#tct [data-a=skip]').getAttribute('aria-pressed'), document.querySelector('#tct [data-a=skip]').textContent.slice(0, 1), localStorage.getItem('tengel.tctest.skip')]")
+            check(q == [True, True, 'true', '☑', '1'], f'スイッチを 押す → オン（道具箱は 開いた まま・端末に おぼえる）{q}')
+            # はずれ：えらぶと PUSH が すぐ 出る（ごはん・おそうじは しない）→ 押すと はずれ（トークン −1・お世話 1回）
+            c0 = pg.evaluate("() => [TCApp.state.cares, TCApp.state.stock]"); tool(pg, 'prize', {'z': None}); pg.wait_for_timeout(900); m = pg.evaluate(MSG)
+            p0 = pg.evaluate("() => { const S = TCCare.S; return [!!(S.push && S.push.hideT == null), S.phase, !!S.feed, TCApp.test.info().prize === null, TCTest.isOpen()]; }")
+            pg.evaluate("() => { const S = TCApp._snd; window.__seT = []; if (!S.__wt) { S.__wt = 1; const o = S.se.bind(S); S.se = (n, g, l) => { window.__seT.push(String(n).replace('tc_se_', '').replace('.m4a', '')); return o(n, g, l); }; } }")
+            okp = push(pg); pg.wait_for_timeout(700)
+            p1 = pg.evaluate("() => [TCApp.state.cares, TCApp.state.stock, TCApp.test.info().prize === undefined, (window.__seT || []).slice()]")
+            check('PUSH を 押すと' in m and 'はずれ' in m and p0 == [True, 'idle', False, True, False] and okp and p1[0] == c0[0] + 1 and p1[1] == c0[1] - 1 and p1[2] and 'pfo' in p1[3],
+                  f'オン：「はずれ」を えらぶ → お世話を しなくても PUSH が すぐ 出る → 押すと はずれ（プフォ・トークン {c0[1]} → {p1[1]}・お世話 ＋1）（{m!r}・{p0}・{okp}・{p1[2:]}）')
+            free(pg)
+            # ルーレット：えらぶ → PUSH → 押す → キュインキュイーン → ルーレット → ポイント
+            w0 = pg.evaluate(WAL); tool(pg, 'prize', {'h': 'normal', 'z': {'k': 'rt', 'tier': 'normal', 'v': [800, 1600], 'win': 1}}); pg.wait_for_timeout(900); m = pg.evaluate(MSG)
+            p0 = pg.evaluate("() => { const S = TCCare.S; return [!!(S.push && S.push.hideT == null), !!S.feed]; }")
+            done = fx_done(pg, 150); free(pg, 60); pg.wait_for_timeout(800); w1 = pg.evaluate(WAL)
+            check('PUSH を 押すと' in m and 'ルーレット' in m and '→ 1,600P' in m and p0 == [True, False] and done and w1 - w0 == 1600,
+                  f'オン：ルーレット「800P か 1,600P → 1,600P」を えらぶ → PUSH が すぐ 出る → 押すと ルーレット → 1,600P（{w0} → {w1}）')
+            # 馬が かわる 当たり（幻の馬の ルーレット）：馬が 来て から PUSH
+            w0 = pg.evaluate(WAL); tool(pg, 'prize', {'h': 'maboroshi', 'z': {'k': 'rt', 'tier': 'maboroshi', 'v': [800, 1600], 'win': 0}})
+            pg.wait_for_function("() => TCApp.state.visit && TCApp.state.visit.kind === 'maboroshi' && !!(TCCare.S.push && TCCare.S.push.hideT == null)", timeout=90000); pg.wait_for_timeout(600); m = pg.evaluate(MSG)
+            done = fx_done(pg, 150); free(pg, 60); pg.wait_for_timeout(800); w1 = pg.evaluate(WAL)
+            check('幻の馬に' in m and 'PUSH を 押すと' in m and done and w1 - w0 == 800, f'オン：幻の馬の ルーレットを えらぶ → 幻の馬が 来て PUSH が 出る → 押すと ルーレット → 800P（{w0} → {w1}）')
+            pg.evaluate("async () => { await TCApp.test.visit(null); }"); free(pg); pg.wait_for_timeout(500)
+            # 「PUSH を すぐ 出す」：出る・もう 出て いる ときは そのまま
+            pg.evaluate("() => TCApp.test.prize(null)"); tool(pg, 'push'); pg.wait_for_timeout(700); m1 = pg.evaluate(MSG); a1 = pg.evaluate("() => !!(TCCare.S.push && TCCare.S.push.hideT == null)")
+            tool(pg, 'push'); pg.wait_for_timeout(300); m2 = pg.evaluate(MSG); push(pg); free(pg)
+            check('PUSH を 出したよ' in m1 and a1 and 'もう' in m2, f'「PUSH を すぐ 出す」→ PUSH が 出る・もう 出て いる ときは そのまま（{m1!r}・{m2!r}）')
+            # トークン：0こに・時計を 5分 進める（＋5）・最大の ときは そのまま
+            tool(pg, 'tokens', {'n': 0}); pg.wait_for_timeout(300); t0_ = pg.evaluate("() => [TCCare.S.stock, TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
+            pg.evaluate("() => { TCApp.state.stockAt = Date.now(); }"); tool(pg, 'ahead'); pg.wait_for_timeout(700); t1_ = pg.evaluate("() => [TCCare.S.stock, TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
+            tool(pg, 'ahead'); pg.wait_for_timeout(700); t2_ = pg.evaluate("() => TCApp.state.stock")
+            tool(pg, 'tokens'); pg.wait_for_timeout(300); tool(pg, 'ahead'); pg.wait_for_timeout(500); t3_ = pg.evaluate("() => [TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
+            check(t0_[:2] == [0, 0] and '0こに' in t0_[2] and t1_[:2] == [5, 5] and '5分 進めたよ' in t1_[2] and t2_ == 10 and t3_[0] == 25 and 'もう 最大' in t3_[1],
+                  f'「お世話トークンを 0こに」→ 0・「トークンの 時計を 5分 進める」→ ＋5 ずつ（0 → {t1_[0]} → {t2_}）・最大の ときは「もう 最大だよ」（{t3_[1]!r}）')
+            # 設定の「テスト版の道具」から：トレーニングセンターを 開いて 道具箱を 出す
+            pg.locator('#tcOv [data-tc="back"]').click(); pg.wait_for_timeout(500)
+            pg.evaluate("() => { document.querySelector('.tabbar [data-tab=set]').click(); }"); pg.wait_for_timeout(600)
+            tb_ = pg.locator('#setTest [data-test=tcopen]'); n_tb = tb_.count()
+            if n_tb: tb_.scroll_into_view_if_needed(); tb_.click()
+            try: pg.wait_for_function("() => document.querySelector('#tcOv.on') && window.TCTest && TCTest.isOpen()", timeout=60000); o1 = True
+            except Exception: o1 = False
+            hint = pg.evaluate("() => (document.querySelector('#testTcHint') || {}).textContent || ''")
+            check(n_tb == 1 and o1 and 'ルーレット' in hint and 'ノーマルど的中' not in pg.evaluate("() => document.querySelector('#setTest').textContent"),
+                  f'設定の「テスト版の道具」に「トレーニングセンターの テスト道具を ひらく」→ トレーニングセンターが 開いて 道具箱が 出る（{o1}）・的中ボタンの 道具に「ノーマルど的中」は ない')
+            sheet(pg, False)
+            check(not errs, f'エラー なし（第4.165版の 道具）{errs[:3]}')
             ctx.close()
 
             print('■ App Store版：入口が ない・よんでも 何も おきない')
@@ -340,13 +422,13 @@ try:
             p2 = c2.new_page(); e2 = []; p2.on('pageerror', lambda e: e2.append(str(e)))
             open_tc(p2, STORE)
             q = p2.evaluate("""async () => { const T = TCApp.test, st = TCApp.state, S = TCCare.S, s0 = S.stock, h0 = S.heart;
-              const r = [await T.visit('kamisama'), await T.prize({ k: 'pt', v: 300 }, 'normal'), T.tokens(), T.heart(true), T.flag('gold', true), T.high(), T.trash(), T.poop(true)];
+              const r = [await T.visit('kamisama'), await T.prize({ k: 'pt', v: 300 }, 'normal'), T.tokens(), T.heart(true), T.flag('gold', true), T.high(), T.trash(), T.poop(true), T.ahead(5), T.push()];
               const z = []; for (let i = 0; i < 40; i++) z.push(TCApp._t.draw());
               return { btn: document.querySelectorAll('#tcOv [data-tc="test"]').length, test: typeof window.TCTest, flag: window.__TEST === undefined, r, visit: st.visit, prize: T.info().prize === undefined, gold: T.info().gold, st: S.test, same: S.stock === s0 && S.heart === h0, high: S.high,
                 tag: !!document.querySelector('#testTag'), card: !!document.querySelector('#setTest'), n300: z.filter(q => q && q.k === 'pt' && q.v === 300).length }; }""")
             check(q['btn'] == 0 and q['test'] == 'undefined' and q['flag'] and not q['tag'] and not q['card'], f'App Store版：上の 帯に「🧪 テスト」が ない・道具箱（TCTest）も テスト版の しるしも ない')
-            check(q['r'] == ['off'] * 8 and q['visit'] is None and q['prize'] and q['gold'] is False and q['st'] is None and q['same'] and q['high'] == 0 and q['n300'] <= 3,
-                  f'App Store版：入口を よんでも 何も おきない（馬・当たり・トークン・ハート・高確ゾーン・ゴミ・うんち：どれも「off」）{q["r"]}')
+            check(q['r'] == ['off'] * 10 and q['visit'] is None and q['prize'] and q['gold'] is False and q['st'] is None and q['same'] and q['high'] == 0 and q['n300'] <= 3,
+                  f'App Store版：入口を よんでも 何も おきない（馬・当たり・トークン・ハート・高確ゾーン・ゴミ・うんち・時計を 進める・PUSH を 出す：どれも「off」）{q["r"]}')
             check(not e2, f'エラー なし {e2[:3]}')
             b.close()
 finally:

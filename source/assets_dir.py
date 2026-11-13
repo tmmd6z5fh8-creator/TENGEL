@@ -65,6 +65,14 @@ def superseded(name, files):
         for h in ('kamisama', 'maboroshi'):
             if {f'tc_horse_bk_{h}2.json', f'tc_horse_bk_{h}2.bin'} <= files:
                 old |= files & {f'tc_horse_bk_{h}.json', f'tc_horse_bk_{h}.bin'}
+        # 第4.165版（まさちゃん 2026/11/13 12:36「お世話トークン購入のアイコンやっぱりこっちで！」）：「お世話トークン購入」の 絵は 丸い 絵（tc_icon_buy2.webp：
+        #   kisekae/tc/buy_asset.py）。はじめの 横長の 絵（tc_icon_buy.webp）は 使わない ので 入れない（もとの フォルダには 残す）
+        if 'tc_icon_buy2.webp' in files:
+            old |= files & {'tc_icon_buy.webp'}
+        # 第4.165版（まさちゃん 2026/11/13 14:16「何か変だから、2枚目のアイコンにして、作戦会議のすぐ下に設置してみて！」）：「壁紙&ボード着せ替え」の 絵は 横長の カプセル
+        #   （tc_icon_kise2.webp：kisekae/tc/kise_asset.py）。はじめの 丸い 絵（tc_icon_kise.webp）は 使わない ので 入れない（もとの フォルダには 残す）
+        if 'tc_icon_kise2.webp' in files:
+            old |= files & {'tc_icon_kise.webp'}
         return old
     return set()
 

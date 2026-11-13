@@ -525,7 +525,7 @@
       const msLab = e => (/^(rel-)?back-theme:/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない
       const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : msLab(e);
       const nm0 = e => e.kind === 'mission' ? msLab(e) : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
-      const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^fig:/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
+      const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^(fig|tctok):/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
       h += `<ul class="pthist">${ev.map(e => `<li><span>${esc(dayOf(e.last || e.at))} ${esc(lab(e))}</span><span class="${+e.amount > 0 ? 'plus' : 'minus'}">${+e.amount > 0 ? '+' : ''}${yen(e.amount)}P</span></li>`).join('') || '<li><span class="muted">まだ何もないよ</span></li>'}</ul>`;
       h += `<p class="ptnote">買ったポイント（購入＋サブスク）の残り ${yen(b.paid_pack + b.paid_sub)}P・使ったP ${yen(b.used.paid_sub + b.used.paid_pack + b.used.free)}P（うち買ったポイントから ${yen(b.used.paid_sub + b.used.paid_pack)}P）</p>`;
       h += `<div class="row" style="margin-top:8px"><button class="btn" type="button" data-pt="restore">購入を復元</button></div><p class="ptnote">「購入を復元」は、サブスクの状態をAppleと合わせるよ。もう足したPはもう一度足さないよ。</p>`;
@@ -578,6 +578,7 @@
     if (k === 'wallpack') return '壁紙パック（買い切り）';
     if (k === 'bundle') return 'お得パック（壁紙パックと 結果ボードカスタム・買い切り）';
     if (k.startsWith('fig:')) { const it = W && W.figs ? W.figs.items.find(x => x.id === k.slice(4)) : null; return `思い出フィギュアを作った${it && it.info && it.info.race ? `（${it.info.race}）` : ''}`; }
+    if (k.startsWith('tctok:')) return `トレーニングセンターの お世話トークン ${Math.max(1, Math.round(+k.split(':')[1] || 1))}こを購入`;      // 第4.165版：お世話トークンを ポイントで 買った
     return k;
   }
   function paintCustom() {
@@ -966,7 +967,8 @@
   // 極ど的中（sd：紫電）の 2つ（くじで どちらか）。前の「ど的中」（fz：本番では もう 出ない 前の 形）は ノーマルど的中に いれかえた
   // 第4.86版（まさちゃん「あと一枚目の的中ボタン各種の、赤い×が書いてある演出消して！」）：隠れど的中・超プレミアムど的中・神様的中は アプリから 消した（ボタンも なし）
   // 第4.162版（まさちゃん 2026/11/12 22:56「プレミアムど的中／超プレミアム神様的中／この二つ消して！」）：プレミアムど的中・超プレミアム神様的中は アプリから 消した（ボタンも なし）
-  const TEST_FX = [['hit', '的中'], ['big', 'デカ的中'], ['nd', 'ノーマルど的中'], ['sd', '極ど的中'], ['miss', 'ハズレ'], ['sgd', '超神様的中'], ['gk', '神様極的中']];   // 第4.117版：神様極的中
+  // 第4.165版（まさちゃん 2026/11/13 11:52「あと、ノーマル的中の演出消して！」）：ノーマルど的中は アプリから 消した（ボタンも なし）。ど的中は 極ど的中 だけ
+  const TEST_FX = [['hit', '的中'], ['big', 'デカ的中'], ['sd', '極ど的中'], ['miss', 'ハズレ'], ['sgd', '超神様的中'], ['gk', '神様極的中']];   // 第4.117版：神様極的中
   // ためす 結果：14頭・3連単 11→8→2（11＝11番人気の 超大穴・8＝8番人気の 大穴・2＝2番人気）・馬単 11→8 的中・ワイド 不的中（的中は 馬単だけ・ハズレは 当たりなし）
   function testSpec(kind) {
     const tri = { t: '3連単', state: '的中', hits: [[11, 8, 2]], n: 18 }, um = { t: '馬単', state: '的中', hits: [[11, 8]], n: 9 }, wd = { t: 'ワイド', state: '不的中', hits: [], n: 6 };
@@ -999,7 +1001,9 @@
       + '<div class="row"><button type="button" class="btn" data-test="tkadd">チケットを 1枚 もらう</button></div>'
       // 第4.154版：トレーニングセンターの テスト（幻の馬・神様馬を 出す／お世話の 当たりを えらぶ）は トレーニングセンターの 中の 道具箱（tc/tc_test.js）
       //   「幻」の 字は テーマの しぼった 字に ない ので、ここは ひらがな（この 画面は テーマの 字で 出る。トレーニングセンターの 中は 別の 字）
-      + '<p class="hint" id="testTcHint" style="margin:10px 0 0">トレーニングセンターの テスト（まぼろしの馬・神様馬を 出す／お世話の 当たりを ぜんぶ えらべる）：トレーニングセンターを ひらいて、上の「🧪 テスト」を 押してね</p>';
+      + '<p class="hint" id="testTcHint" style="margin:10px 0 6px">トレーニングセンターの テスト（まぼろしの馬・神様馬を 出す／ルーレットなど お世話の 当たりを ぜんぶ えらべる）：下の ボタンか、トレーニングセンターを ひらいて 上の「🧪 テスト」を 押してね</p>'
+      // 第4.165版（まさちゃん 2026/11/13 11:46「トレーニングセンターのルーレット抽選や幻の馬、神様馬のテストができるようにする」）：ここからも 道具箱を 開ける（トレーニングセンターを 開いて 道具箱を 出す）
+      + '<div class="row"><button type="button" class="btn" data-test="tcopen">トレーニングセンターの テスト道具を ひらく</button></div>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
@@ -1030,6 +1034,7 @@
         const got = boardOpened(n0, P.boardUnlocked(W.board.reads));
         await save(); if (got.length) boardEmit('unlock', { item: got[got.length - 1].id, no: got[got.length - 1].no, many: got.length });
       }
+      else if (b.dataset.test === 'tcopen') { if (typeof window.TCOpen === 'function') window.TCOpen({ test: true }); return; }
       else if (b.dataset.test === 'tkadd') {      // 第4.141版：チケットを ためす（当たりは まれ（第4.142版から 1/600）なので テスト版では ここから）
         try { window.TCInfo.backTicket(); } catch (x) { /* なし */ }
         try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (x) { /* なし */ }
@@ -1164,6 +1169,27 @@
         await save(); return { ok: true, item: JSON.parse(JSON.stringify(it)) };
       },
       place: async slots => { await walletReady; W.figs = figNorm({ items: W.figs.items, slots }); await save(); return W.figs.slots.slice(); }
+    },
+    // 第4.165版（まさちゃん 2026/11/13 11:46「お世話トークンは、購入できるようにする」）：トレーニングセンターの お世話トークンを ポイントで 買う（tc/tc_app.js の buyTokens が よぶ）
+    //   buy(id, n)：id＝買い物の 番号（トレーニングセンターが 決める）・n＝こ数（points.js の TOKEN_PACKS に ある 数 だけ・値段も そこから）。
+    //     台帳に unlock-tctok:<n>:<id> を 1件（使った P も その 1件に 入る・買った ポイントから 先に 使う）。同じ id は 1回 だけ（もう あれば 何も へらさずに ok）。
+    //     足りない ときは あずかりポイントから 先に 補充（ensure）。それでも 足りなければ { ok:false, why:'short', need }
+    //   paid(id)：その 買い物が 台帳に 入って いるか（買って すぐ アプリが 閉じた とき、次に 開いた ときに トークンを わたす ため）
+    tc: {
+      packs: () => P.TOKEN_PACKS.map(x => x.slice()),
+      paid: id => !!W && !!id && W.events.some(e => e && e.kind === 'unlock' && /^tctok:\d+:/.test(String(e.what || '')) && String(e.what).split(':').slice(2).join(':') === String(id)),
+      buy: async (id, n) => {
+        await walletReady;
+        const pk = P.tokenPack(n);
+        if (!W || !pk || typeof id !== 'string' || !/^[0-9a-z-]{4,40}$/.test(id)) return { ok: false, why: 'bad' };
+        const key = 'tctok:' + pk[0] + ':' + id;
+        if (P.unlocked(W.events, key)) return { ok: true, dup: true, n: pk[0], cost: pk[1] };
+        ensure(pk[1]);
+        const next = P.unlock(W.events, key, pk[1], device(), Date.now());
+        if (!next) return { ok: false, why: 'short', need: pk[1] - total() };
+        W.events = next; await save();
+        return { ok: true, n: pk[0], cost: pk[1] };
+      }
     },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),

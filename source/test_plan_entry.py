@@ -2,11 +2,19 @@
 #   まさちゃん 2026/11/12 14:58「作戦会議は、1番左の項目判定のページでも開けるようにして！アイコンは右上に設置して！」
 #   ・App Store版（TARGET=app）：判定タブの いちばん 上の カード「レース情報」の 右上に 作戦会議の 札（tc_icon_plan.webp）→ 指で 押すと 判定タブの 上に 作戦会議が 開く
 #     （トレーニングセンターは 開かない・開いた まま 表示される・うしろの 判定タブは 動かない・「とじる」で 判定タブに もどる）
-#   ・どの 壁紙でも 札は カードの 中・見出しの 字と 下の 行に 重ならない
+#   第4.165版（まさちゃん 2026/11/13 13:55「赤枠の作戦会議のアイコンを青四角のあたりに設置して！黄丸のところに、タップすると壁紙や結果ボードカスタムのところに飛べるアイコン設置して！アイコン二枚目！」）：
+#     ・札は カードの 右上の かど（見える 札の 上は カードの 上の ふちより 5px 上・右は カードの 右はしより 11px 外＝画面の 右はしから 5px）
+#     → 14:16「何か変だから、2枚目のアイコンにして、作戦会議のすぐ下に設置してみて！あと下にテロップ入れて！壁紙&ボード着せ替え、って！」：
+#     ・作戦会議の 札の すぐ 下に 横長の カプセルの ボタン（#kiseBtn・tc_icon_kise2.webp：100×36）＋ その 下に 名前の 札「壁紙&ボード着せ替え」
+#       → 押すと 設定タブの「着せ替え」が 上の 帯の すぐ 下に 出る
+#       「着せ替え」の カードの 右上の「結果ボードカスタムへ↓」（#kiseJump）→ 押すと「結果ボードカスタム」が 上の 帯の すぐ 下に 出る
+#     ・データの チップは ボタンに かからない（1行めは ボタンの 手前で 折り返す：すきまの 部品 .kisesp。2行めも かかる ときは 行 ぜんぶの 右を あける）・
+#       データの 行を 作り直しても（アプリが 中身を 入れかえる）すぐ もとどおり
+#   ・どの 壁紙でも 札と ボタンは 見出しの 字・データの チップ・壁紙の 上の絵に 重ならない・画面から 出ない
 #   ・トレーニングセンターの 中の 作戦会議とは 同じ もの（予約した レースは どちらからも 見える・行ったり 来たり しても こわれない）
 #   ・Web版：札は 出ない（tc_launch.js は アプリ だけ）
 #   python3 test_plan_entry.py   （ios/tc_assets/ が ない とき（CI）は 絵なしの 札〈字〉で 同じ ことを 確かめる。壁紙の 絵 ios/kisekae_blobs/ が ない ときは 標準の 見た目 だけ）
-import datetime as _dt, json, os, shutil, subprocess, sys, time
+import datetime as _dt, json, math, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8802; APP = f'http://localhost:{PORT}/APP/'; WEB = f'http://localhost:{PORT}/TENGEL/'
@@ -38,6 +46,9 @@ def check(c, label):
 
 FAKE = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read().split('FAKE = """')[1].split('"""')[0]      # アプリの 窓口の にせもの（test_tc.py と 同じ）
 PW, PH, INK = 118, 47, (16 / 500, 30 / 200, 483 / 500, 170 / 200)      # 絵の 大きさ・絵の 中の 札の 場所（tc/tc_launch.js と 同じ）
+UP, OVER, EDGE, CLEAR = 5, 11, 5, 6                                    # 札：上へ はみ出す 長さ・右へ はみ出す 長さ・画面の 右はしから あける 長さ・すぐ 上の ものから あける 長さ（tc/tc_launch.js と 同じ）
+KBOX, KW, KH, KUNDER, KLAP, KGAP = 110, 100, 36, 3, 3, 4               # 「壁紙&ボード着せ替え」の ボタン：幅（作戦会議の 見える 札と 同じ）・カプセルの 幅と 高さ・札の 下から あける 長さ・名前の 札が 重なる 長さ・チップから あける 長さ
+KNAME = '壁紙&ボード着せ替え'; KLABEL = KNAME + '（押すと 設定の 着せ替え・結果ボードカスタムを ひらくよ）'
 
 
 def gate(pg):
@@ -58,17 +69,28 @@ def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
 
-# 札・カード・見出しの 字・下の 行の 場所（画面の 上の ほうへ 寄せてから 測る：上の 帯の 下に 札が 出る）
-GEO = """() => { const b = document.getElementById('planBtn'); if (!b) return null; const card = b.parentNode, h = card.querySelector('h2');
-  window.scrollTo(0, 0); const c0 = card.getBoundingClientRect(), hd = document.querySelector('header').getBoundingClientRect(); window.scrollTo(0, Math.max(0, c0.top - hd.bottom - 30));
-  let nx = h.nextElementSibling; while (nx && !(nx.getBoundingClientRect().height > 0)) nx = nx.nextElementSibling;
+# 札・「壁紙&ボード着せ替え」の ボタン・カード・見出しの 字・データの チップの 場所（画面の 上の ほうへ 寄せてから 測る：上の 帯の 下に 札が 出る）
+GEO = """() => { const b = document.getElementById('planBtn'); if (!b) return null; const card = b.parentNode, h = card.querySelector('h2'), k = document.getElementById('kiseBtn'), sj = document.getElementById('slotJudge');
+  window.scrollTo(0, 0); const c0 = card.getBoundingClientRect(), hd = document.querySelector('header').getBoundingClientRect();
+  let above = null;                                   // カードの すぐ 上の もの（単勝5連勝の お知らせ・壁紙の 上の絵）の 下の はし。なければ 上の 帯
+  for (const e of [document.getElementById('w5Banner'), document.getElementById('ksBnr')]) { if (e && above == null) { const r = e.getBoundingClientRect(); if (r.height > 0 && r.width > 0) above = r.bottom; } }
+  const gap0 = c0.top - (above == null ? hd.bottom : above);
+  window.scrollTo(0, Math.max(0, c0.top - hd.bottom - 30));
   const R = e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; };
   const g = document.createRange(); g.selectNodeContents(h); const t = g.getBoundingClientRect();
   const im = b.querySelector('img'), tx = b.querySelector('.plt'), r = b.getBoundingClientRect(), cs = getComputedStyle(card);
   const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-  return { btn: R(b), card: R(card), h2: [t.left, t.top, t.right, t.bottom], next: nx ? R(nx) : null, img: im ? [im.naturalWidth, im.naturalHeight] : null, txt: tx ? [tx.textContent].concat(R(tx)) : null,
-    padR: parseFloat(cs.paddingRight) + parseFloat(cs.borderRightWidth), hdr: hd.bottom, hit: hit === b || (hit && b.contains(hit)), first: card === document.querySelector('#v-judge .card'),
-    label: b.getAttribute('aria-label'), dis: b.disabled, pos: getComputedStyle(card).position }; }"""
+  const kim = k ? k.querySelector('img') : null, kft = k ? k.querySelector('.kft') : null, kl = k ? k.querySelector('.kisel') : null, kc = kim || kft;
+  const at = e => { if (!e) return false; const q = e.getBoundingClientRect(), t = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!t && (t === k || k.contains(t)); };
+  const bar = sj ? sj.querySelector('.slotbar') : null, sp = sj ? sj.querySelector('.kisesp') : null, sl = sj ? sj.querySelector('.sl-lab') : null;
+  return { btn: R(b), card: R(card), h2: [t.left, t.top, t.right, t.bottom], img: im ? [im.naturalWidth, im.naturalHeight] : null, txt: tx ? [tx.textContent].concat(R(tx)) : null,
+    hdr: hd.bottom, hit: hit === b || (hit && b.contains(hit)), first: card === document.querySelector('#v-judge .card'),
+    label: b.getAttribute('aria-label'), dis: b.disabled, pos: getComputedStyle(card).position, vw: document.documentElement.clientWidth, gap0: gap0,
+    chips: sj ? Array.from(sj.querySelectorAll('.slotchip')).map(R).filter(x => x[3] > x[1]) : [], pad: sj ? sj.style.paddingRight : '', sl: sl ? R(sl) : null,
+    sp: sp ? R(sp) : null, spn: sj ? sj.querySelectorAll('.kisesp').length : 0, spNext: sp && sp.nextElementSibling ? sp.nextElementSibling.textContent : null, inner: [cs.paddingLeft, cs.paddingRight, cs.borderLeftWidth, cs.borderRightWidth].map(parseFloat),
+    kise: k ? R(k) : null, kcap: kc ? R(kc) : null, klab: kl ? R(kl) : null, kname: kl ? kl.textContent : null, khit: at(kc) && at(kl), kimg: kim ? [kim.naturalWidth, kim.naturalHeight] : null, kft: !!kft,
+    klabel: k ? k.getAttribute('aria-label') : null, kpar: !!k && k.parentNode === card, kfont: kl ? [getComputedStyle(kl).fontFamily.split(',')[0].trim().replace(/"/g, ''), getComputedStyle(kl).fontWeight, getComputedStyle(kl).backgroundColor, getComputedStyle(kl).color] : null,
+    night: (() => { const h = getComputedStyle(document.querySelector('header.top')); return [h.backgroundColor, h.color]; })() }; }"""
 
 
 def plate(q):          # 見える 札（左・上・右・下）
@@ -76,13 +98,29 @@ def plate(q):          # 見える 札（左・上・右・下）
     return [l + PW * INK[0], t + PH * INK[1], l + PW * INK[2], t + PH * INK[3]]
 
 
-def geo_ok(q):         # 札は カードの 中・見出しの 字と 下の 行に 重ならない・右はしは カードの 中身の 右はし・押せる
+def geo_ok(q):         # 札は カードの 右上の かど（上へ 5・右へ 11 はみ出す）・見出しの 字と データの チップに 重ならない・すぐ 上の ものから はなれて いる・画面の 中・押せる
     if not q: return False, 'ボタンが ない'
     p = plate(q); c = q['card']; w = [round(q['btn'][2] - q['btn'][0], 1), round(q['btn'][3] - q['btn'][1], 1)]
-    d = dict(size=w, top=round(p[1] - c[1], 1), right=round((c[2] - q['padR']) - p[2], 1), h2=round(p[0] - q['h2'][2], 1), nxt=round(q['next'][1] - p[3], 1) if q['next'] else None,
-             dy=round((p[1] + p[3]) / 2 - (q['h2'][1] + q['h2'][3]) / 2, 1), under=round(p[1] - q['hdr'], 1))
-    ok = (w == [PW, PH] and d['top'] >= 4 and abs(d['right']) <= 1.5 and d['h2'] >= 40 and (d['nxt'] is None or d['nxt'] >= 2) and abs(d['dy']) <= 6 and d['under'] > 0
+    up = max(0, min(UP, q['gap0'] - CLEAR)); over = max(0, min(OVER, q['vw'] - c[2] - EDGE))
+    row = min((r[1] for r in q['chips']), default=None)
+    d = dict(size=w, up=round(c[1] - p[1], 1), over=round(p[2] - c[2], 1), h2=round(p[0] - q['h2'][2], 1), row=round(row - p[3], 1) if row is not None else None,
+             edge=round(q['vw'] - p[2], 1), above=round(q['gap0'] - (c[1] - p[1]), 1), under=round(p[1] - q['hdr'], 1))
+    ok = (w == [PW, PH] and abs(d['up'] - up) <= 1 and abs(d['over'] - over) <= 1 and d['h2'] >= 40 and (d['row'] is None or d['row'] >= 6) and d['edge'] >= EDGE - 0.6 and d['above'] >= CLEAR - 0.6 and d['under'] > 0
           and q['hit'] and q['first'] and q['pos'] == 'relative' and not q['dis'])
+    return ok, d
+
+
+def kise_ok(q):        # 「壁紙&ボード着せ替え」の ボタン：作戦会議の 札の すぐ 下（まん中を そろえる）・カプセル 100×36・その 下に 名前の 札・データの チップと 見出しの 字に かからない・画面の 中・押せる
+    if not q or not q.get('kise') or not q.get('kcap') or not q.get('klab'): return False, 'ボタンが ない'
+    p = plate(q); c = q['kcap']; l = q['klab']; k = q['kise']
+    box = [min(k[0], c[0], l[0]), min(k[1], c[1]), max(k[2], c[2], l[2]), max(k[3], c[3], l[3])]            # ボタン ぜんぶ（カプセル ＋ 名前の 札）
+    hits = [r for r in q['chips'] + ([q['sl']] if q['sl'] else []) if r[2] > box[0] - (KGAP - 0.6) and r[0] < box[2] and r[3] > box[1] - 1 and r[1] < box[3] + 1]
+    near = min((box[0] - r[2] for r in q['chips'] if r[3] > box[1] - 1 and r[1] < box[3] + 1), default=None)   # ボタンと 同じ 高さの チップの 右はしから ボタンまで
+    d = dict(cap=[round(c[2] - c[0], 1), round(c[3] - c[1], 1)], under=round(c[1] - p[3], 1), mid=round((c[0] + c[2]) / 2 - (p[0] + p[2]) / 2, 1), lap=round(c[3] - l[1], 1),
+             lmid=round((l[0] + l[2]) / 2 - (c[0] + c[2]) / 2, 1), lw=round(l[2] - l[0], 1), lh=round(l[3] - l[1], 1), right=round(box[2] - p[2], 1), edge=round(q['vw'] - box[2], 1),
+             h2=round(box[0] - q['h2'][2], 1), chip=round(near, 1) if near is not None else None, hits=len(hits), pad=q['pad'], sp=q['spn'], rows=len({round(r[1]) for r in q['chips']}), bottom=round(box[3] - q['card'][1], 1))
+    ok = (abs(d['cap'][0] - KW) <= 0.6 and abs(d['cap'][1] - KH) <= 0.6 and abs(d['under'] - KUNDER) <= 1 and abs(d['mid']) <= 1 and abs(d['lap'] - KLAP) <= 1 and abs(d['lmid']) <= 1 and 60 <= d['lw'] <= KBOX + 0.5 and 14 <= d['lh'] <= 20
+          and abs(d['right']) <= 1 and d['edge'] >= EDGE - 0.6 and d['h2'] >= 8 and not hits and q['kname'] == KNAME and q['khit'] and q['kpar'] and q['klabel'] == KLABEL and abs((k[2] - k[0]) - KBOX) <= 0.6)
     return ok, d
 
 
@@ -92,9 +130,19 @@ def swipe(cdp, pg, x, y0, y1):          # 指で なぞる（下から 上へ＝
     cdp.send('Input.dispatchTouchEvent', dict(type='touchEnd', touchPoints=[])); pg.wait_for_timeout(450)
 
 
-def tap_btn(pg):
-    r = pg.evaluate("() => { const r = document.getElementById('planBtn').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+def tap_btn(pg, sel='#planBtn'):
+    r = pg.evaluate("(s) => { const r = document.querySelector(s).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }", sel)
     pg.touchscreen.tap(*r)
+
+
+# 設定タブの 欄が 上の 帯の すぐ 下に 出て いるか（欄の 上の はし − 上の 帯の 下の はし）
+SEC = """(id) => { const s = document.getElementById(id), hd = document.querySelector('header').getBoundingClientRect(), j = document.getElementById('kiseJump'), c = document.getElementById('setKisekae');
+  const R = e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }; let h2 = null;
+  if (c) { const g = document.createRange(); g.selectNodeContents(c.querySelector('h2')); const t = g.getBoundingClientRect(); h2 = [t.left, t.top, t.right, t.bottom]; }
+  const jr = j ? j.getBoundingClientRect() : null, jh = jr ? document.elementFromPoint(jr.left + jr.width / 2, jr.top + jr.height / 2) : null;
+  return { tab: document.querySelector('.tabbar button[aria-selected="true"]').dataset.tab, gap: s ? s.getBoundingClientRect().top - hd.bottom : null, sy: window.scrollY,
+    jump: j ? R(j) : null, jtxt: j ? j.textContent : null, jhit: !!j && jh === j, jpar: !!j && j.parentNode === c, card: c ? R(c) : null, h2: h2, next: c && c.nextElementSibling ? c.nextElementSibling.id : null,
+    head: s ? s.querySelector('h2').textContent : null }; }"""
 
 
 try:
@@ -102,7 +150,15 @@ try:
     app = open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read(); web = open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read()
     tb = open(os.path.join(SRV, 'APP', 'tc_bundle.js'), encoding='utf8').read()
     check("'planBtn'" in app and 'TCPlanOpen' in app and "'planHost'" in app and 'tc_icon_plan.webp' in app, 'App Store版：判定タブの 作戦会議の 札と 入れ物（planBtn・planHost・TCPlanOpen）が 入って いる')
-    check('planBtn' not in web and 'TCPlanOpen' not in web and 'planHost' not in web and 'tc_bundle' not in web, 'Web版：札は 入って いない（かわらない）')
+    check("'kiseBtn'" in app and "'kiseJump'" in app and 'tc_icon_kise2.webp' in app and "'tc_icon_kise.webp'" not in app and 'KiseGo' in app and KNAME in app,
+          'App Store版：「壁紙&ボード着せ替え」の ボタンと「結果ボードカスタムへ↓」の 札（kiseBtn・kiseJump・tc_icon_kise2.webp）が 入って いる')
+    check('planBtn' not in web and 'TCPlanOpen' not in web and 'planHost' not in web and 'tc_bundle' not in web and 'kiseBtn' not in web and 'kiseJump' not in web and 'KiseGo' not in web and 'kisesp' not in web and KNAME not in web,
+          'Web版：札も「壁紙&ボード着せ替え」の ボタンも 入って いない（かわらない）')
+    if HAVE:
+        from PIL import Image as _Im
+        _k = _Im.open(os.path.join(TCA, 'tc_icon_kise2.webp')); _a = _k.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()
+        check(_k.size[0] == 440 and abs((_a[2] - _a[0]) / (_a[3] - _a[1]) - 2047 / 736) < 0.03 and abs(KW / KH - 2047 / 736) < 0.03 and not os.path.exists(os.path.join(TCA, 'tc_icon_kise.webp')),
+              f'ボタンの 絵（tc_icon_kise2.webp：{_k.size}）の カプセルは よこ÷たて {(_a[2] - _a[0]) / (_a[3] - _a[1]):.3f}（画面では {KW}×{KH}）・はじめの 丸い 絵（tc_icon_kise.webp）は アプリに 入れない')
     check('window.TCPlan = TCPlan' in tb and 'planBtn' not in tb, '作戦会議の 本体は 押した ときに 読む 束（tc_bundle.js）の 中')
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
@@ -115,10 +171,18 @@ try:
         cdp = ctx.new_cdp_session(pg)
         print('■ 判定タブの 右上の 札')
         q = pg.evaluate(GEO); ok, d = geo_ok(q)
-        check(ok and q['label'] == '作戦会議（押すと ひらくよ）', f'「レース情報」の カードの 右上に 作戦会議の 札（絵 {PW}×{PH}＝見える 札 110×33・押せる 高さ {PH}）：カードの 上から {d["top"]}・右はしは 中身の 右はし（ずれ {d["right"]}）・'
-              f'見出しの 字から {d["h2"]}・下の 行まで {d["nxt"]}・見出しの まん中との ずれ {d["dy"]}・上の 帯に かくれない')
-        if HAVE: check(q['img'] == [500, 200] and q['txt'] is None, f'札の 絵は トレーニングセンターの 作戦会議と 同じ（tc_icon_plan.webp：{q["img"]}）')
-        else: check(q['img'] is None and q['txt'] and q['txt'][0] == '作戦会議' and abs((q['txt'][3] - q['txt'][1]) - 110) <= 1 and abs((q['txt'][4] - q['txt'][2]) - 33) <= 1, f'絵が ない とき：字の 札「作戦会議」（110×33）{q["txt"]}')
+        check(ok and q['label'] == '作戦会議（押すと ひらくよ）' and abs(d['up'] - UP) <= 1 and abs(d['over'] - OVER) <= 1,
+              f'「レース情報」の カードの 右上の かどに 作戦会議の 札（絵 {PW}×{PH}＝見える 札 110×33・押せる 高さ {PH}）：カードの 上の ふちより {d["up"]} 上・右はしより {d["over"]} 外（画面の 右はしから {d["edge"]}）・'
+              f'見出しの 字から {d["h2"]}・データの 行まで {d["row"]}・すぐ 上の もの（上の 帯）から {d["above"]}・上の 帯に かくれない')
+        kok, kd = kise_ok(q)
+        check(kok, f'作戦会議の 札の すぐ 下に「壁紙&ボード着せ替え」の ボタン：カプセル {kd["cap"]}・札の 下から {kd["under"]}・まん中の ずれ {kd["mid"]}・右はしは 札と 同じ（ずれ {kd["right"]}）・画面の 右はしから {kd["edge"]}・'
+                   f'見出しの 字から {kd["h2"]}・カードの 上から 下の はしまで {kd["bottom"]}・押せる（カプセルも 名前の 札も）')
+        check(kok and q['kname'] == KNAME and q['kfont'][0] == 'BIZ UDPGothic' and q['kfont'][1] == '700' and [q['kfont'][2], q['kfont'][3]] == q['night'],
+              f'カプセルの 下に 名前の 札「{q["kname"]}」（幅 {kd["lw"]}・高さ {kd["lh"]}・カプセルに {kd["lap"]} 重ねる・まん中の ずれ {kd["lmid"]}）：字は 本文の 字（{q["kfont"][0]}）・太さ {q["kfont"][1]}・色は 上の 帯と 同じ')
+        check(kok and kd['hits'] == 0 and kd['pad'] == '' and kd['sp'] == 1 and kd['rows'] == 3 and q['spNext'] and q['spNext'].startswith('マザーデータ') and kd['chip'] is not None and kd['chip'] >= KGAP - 0.6,
+              f'データの チップは ボタンに かからない：1行めは ボタンの 手前で 折り返す（すきまの 部品 {kd["sp"]}こ・その 次は「{q["spNext"]}」・1行めの 右はしから ボタンまで {kd["chip"]}）・2行め からは カードの 幅 いっぱい（{kd["rows"]}行）')
+        if HAVE: check(q['kimg'] == [440, 163] and not q['kft'], f'ボタンの 絵は まさちゃんの カプセルの アイコン（tc_icon_kise2.webp：{q["kimg"]}）')
+        else: check(q['kimg'] is None and q['kft'] and q['kname'] == KNAME, f'絵が ない とき：色の カプセル ＋ 名前の 札「{q["kname"]}」')
         check(pg.evaluate("() => typeof window.TCApp === 'undefined' && typeof window.TCPlan === 'undefined' && !document.getElementById('tcOv') && !document.getElementById('planHost')")
               and 'tc_bundle.js' not in reqs, '押す 前：トレーニングセンターの 束は まだ 読んで いない（判定タブを 開く だけでは 重く ならない）')
         shot(pg, 'plan_btn')
@@ -126,21 +190,71 @@ try:
         vis = {}
         for tab in ('win5', 'rec', 'stats', 'set', 'judge'):
             pg.locator(f'.tabbar button[data-tab="{tab}"]').click(); pg.wait_for_timeout(350)
-            vis[tab] = pg.evaluate("() => { const r = document.getElementById('planBtn').getBoundingClientRect(); return r.width > 0 && r.height > 0; }")
-        check(vis == dict(win5=False, rec=False, stats=False, set=False, judge=True), f'札は 判定タブ だけ（ほかの タブでは 出ない）{vis}')
+            vis[tab] = pg.evaluate("() => ['planBtn', 'kiseBtn'].map(i => { const r = document.getElementById(i).getBoundingClientRect(); return r.width > 0 && r.height > 0; })")
+        check(vis == dict(win5=[False, False], rec=[False, False], stats=[False, False], set=[False, False], judge=[True, True]), f'札と「壁紙&ボード着せ替え」の ボタンは 判定タブ だけ（ほかの タブでは 出ない）{vis}')
         if WALL:
             print('■ どの 壁紙でも')
-            ids = pg.evaluate("() => TengelKisekae.list().map(t => t.id || t)"); bad = []; worst = dict(top=99, nxt=99, h2=999)
+            ids = pg.evaluate("() => TengelKisekae.list().map(t => t.id || t)"); bad = []; worst = dict(above=99, h2=999, kh2=999, chip=99, lw=0, bottom=0); fonts = set(); modes = {}
             for tid in ids:
                 pg.evaluate("(id) => TengelKisekae.apply(id, false)", tid)
                 try: pg.wait_for_function("(id) => TengelKisekae.current() === id && TengelKisekae.loaded()", arg=tid, timeout=8000)
                 except Exception: bad.append((tid, '読めない')); continue
-                pg.wait_for_timeout(700)
-                ok, d = geo_ok(pg.evaluate(GEO))
+                pg.wait_for_timeout(1400)          # 壁紙を かえた あとの 置き直し（すぐ・0.3秒・1.2秒）が おわる まで
+                qq = pg.evaluate(GEO); ok, d = geo_ok(qq); kok, kd = kise_ok(qq)
                 if not ok: bad.append((tid, d))
-                else: worst = dict(top=min(worst['top'], d['top']), nxt=min(worst['nxt'], d['nxt']), h2=min(worst['h2'], d['h2']))
-            check(not bad and len(ids) >= 25, f'{len(ids)}この 壁紙 ぜんぶで 札は カードの 中・見出しの 字と 下の 行に 重ならない（いちばん せまい 所：上 {worst["top"]}・下の 行まで {worst["nxt"]}・見出しの 字から {worst["h2"]}）{bad[:4]}')
-            pg.evaluate("(id) => TengelKisekae.apply(id, false)", 'default'); pg.wait_for_timeout(900)
+                elif not kok or kd['hits'] or [qq['kfont'][2], qq['kfont'][3]] != qq['night']: bad.append((tid, kd))
+                else:
+                    worst = dict(above=min(worst['above'], d['above']), h2=min(worst['h2'], d['h2']), kh2=min(worst['kh2'], kd['h2']), chip=min(worst['chip'], kd['chip'] if kd['chip'] is not None else 99), lw=max(worst['lw'], kd['lw']), bottom=max(worst['bottom'], kd['bottom']))
+                    fonts.add(qq['kfont'][0]); m = '行 ぜんぶの 右を あける' if kd['pad'] else 'すきまの 部品' if kd['sp'] else 'そのまま'; modes[m] = modes.get(m, 0) + 1
+            check(not bad and len(ids) >= 25, f'{len(ids)}この 壁紙 ぜんぶで 札は 右上の かど・見出しの 字と 壁紙の 上の絵に 重ならない（いちばん せまい 所：上の絵から {worst["above"]}・見出しの 字から {worst["h2"]}）{bad[:4]}')
+            check(not bad and worst['lw'] <= KBOX + 0.5 and len(fonts) >= 8, f'{len(ids)}この 壁紙 ぜんぶで「壁紙&ボード着せ替え」の ボタンは 札の すぐ 下・データの チップに かからない（いちばん 近い 所 {worst["chip"]}・見出しの 字から {worst["kh2"]}）・'
+                  f'名前の 札は ボタンの 幅に おさまる（いちばん 広い {worst["lw"]}）・字は その 壁紙の 本文の 字（{len(fonts)}種）・色は 上の 帯と 同じ・データの 行の 折り返し {modes}')
+            pg.evaluate("(id) => TengelKisekae.apply(id, false)", 'default'); pg.wait_for_timeout(1500)
+        q0 = pg.evaluate(GEO)
+        check(geo_ok(q0)[0] and kise_ok(q0)[0] and q0['kfont'][0] == 'BIZ UDPGothic', 'いつもの 壁紙に もどすと 札も ボタンも もとどおり')
+        print('■ データの 行を 作り直した とき・長く なった とき')
+        pg.evaluate("() => { const sj = document.getElementById('slotJudge'), t = document.createElement('div'); t.innerHTML = sj.innerHTML; t.querySelectorAll('.kisesp').forEach(e => e.remove()); sj.innerHTML = t.innerHTML; }")      # アプリが 中身を 入れかえる のと 同じ（すきまの 部品は なくなる）
+        gone = pg.evaluate("() => document.querySelectorAll('#slotJudge .kisesp').length"); pg.wait_for_timeout(300)
+        qr = pg.evaluate(GEO); kok, kd = kise_ok(qr)
+        check(kok and kd['sp'] == 1 and kd['rows'] == 3 and qr['chips'] == q0['chips'] and qr['kise'] == q0['kise'], f'データの 行を 作り直す → すぐ はさみ直して もとの 並び（部品 {kd["sp"]}こ・{kd["rows"]}行・チップの 場所は 同じ）')
+        ticks = pg.evaluate("() => new Promise(done => { let n = 0; const mo = new MutationObserver(() => { n++; }); mo.observe(document.getElementById('slotJudge'), { childList: true, subtree: true, attributes: true }); setTimeout(() => { mo.disconnect(); done(n); }, 700); })")
+        check(ticks == 0, f'置いた あとは データの 行を さわり続けない（0.7秒の 間の 書きかえ {ticks}回）')
+        pg.evaluate("() => { const s = document.querySelectorAll('#slotJudge .slotchip span')[0]; s.dataset.was = s.textContent; s.textContent = '1234走'; }"); pg.wait_for_timeout(400)
+        qw = pg.evaluate(GEO); wok, wd = geo_ok(qw); kok, kd = kise_ok(qw)
+        check(wok and kok and kd['hits'] == 0 and kd['sp'] == 1 and qw['btn'] == q0['btn'] and qw['kise'] == q0['kise'], f'チップが 長く なっても（走数が 入った）ボタンに かからない（{kd["rows"]}行・札と ボタンは 動かない）')
+        pg.evaluate("() => { const s = document.querySelectorAll('#slotJudge .slotchip span')[0]; s.textContent = s.dataset.was; }"); pg.wait_for_timeout(400)
+        # 2行めも ボタンの 高さに かかる とき（見出しが ない）：行 ぜんぶの 右を あける
+        pg.evaluate("() => { document.querySelector('#v-judge .card h2').style.display = 'none'; }"); pg.wait_for_timeout(500)
+        qh = pg.evaluate("""() => { const k = document.getElementById('kiseBtn').getBoundingClientRect(), sj = document.getElementById('slotJudge');
+          const cs = Array.from(sj.querySelectorAll('.slotchip')).map(e => e.getBoundingClientRect()); const hit = cs.filter(r => r.right > k.left - 3.4 && r.left < k.right && r.bottom > k.top - 1 && r.top < k.bottom + 1).length;
+          return { pad: sj.style.paddingRight, sp: sj.querySelectorAll('.kisesp').length, hit: hit, rows: new Set(cs.map(r => Math.round(r.top))).size, over: cs.filter(r => r.bottom > k.top && r.top < k.bottom).length }; }""")
+        check(qh['pad'] not in ('', '0px') and qh['sp'] == 0 and qh['hit'] == 0 and qh['over'] >= 2, f'見出しが ない とき（2行めも ボタンの 高さ）：行 ぜんぶの 右を あける（{qh["pad"]}）→ ボタンと 同じ 高さの チップ {qh["over"]}こ とも かからない（{qh["rows"]}行）')
+        shot(pg, 'kise_pad')
+        pg.evaluate("() => { document.querySelector('#v-judge .card h2').style.display = ''; }"); pg.wait_for_timeout(500)
+        qb = pg.evaluate(GEO); kok, kd = kise_ok(qb)
+        check(kok and kd['pad'] == '' and kd['sp'] == 1 and kd['rows'] == 3 and qb['kise'] == q0['kise'] and qb['chips'] == q0['chips'], f'もとに もどすと ボタンも データの 行も もとどおり（すきまの 部品 {kd["sp"]}こ・{kd["rows"]}行）')
+        print('■「壁紙&ボード着せ替え」の ボタンを 指で 押す → 設定タブの「着せ替え」→「結果ボードカスタムへ↓」')
+        pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(300)
+        tap_btn(pg, '#kiseBtn'); pg.wait_for_timeout(900)
+        g1 = pg.evaluate(SEC, 'setKisekae')
+        check(g1['tab'] == 'set' and g1['gap'] is not None and abs(g1['gap'] - 8) <= 2 and g1['head'] == '着せ替え' and g1['next'] == 'setBoard',
+              f'設定タブへ 移って「{g1["head"]}」が 上の 帯の すぐ 下（すきま {g1["gap"] and round(g1["gap"], 1)}）・すぐ 下の 欄は 結果ボードカスタム（#{g1["next"]}）')
+        jok = bool(g1['jump']) and g1['jtxt'] == '結果ボードカスタムへ↓' and g1['jhit'] and g1['jpar'] and g1['jump'][0] - g1['h2'][2] >= 8 and g1['jump'][2] <= g1['card'][2] - 6 and g1['jump'][1] >= g1['card'][1] + 4 and g1['jump'][3] - g1['jump'][1] >= 28
+        check(jok, f'「着せ替え」の カードの 右上に「{g1["jtxt"]}」の 札（見出しの 字から {g1["jump"] and round(g1["jump"][0] - g1["h2"][2], 1)}・高さ {g1["jump"] and round(g1["jump"][3] - g1["jump"][1], 1)}・押せる）')
+        shot(pg, 'kise_go')
+        tap_btn(pg, '#kiseJump'); pg.wait_for_timeout(500)
+        g2 = pg.evaluate(SEC, 'setBoard')
+        check(g2['tab'] == 'set' and g2['gap'] is not None and abs(g2['gap'] - 8) <= 2 and g2['head'] == '結果ボードカスタム' and g2['sy'] > g1['sy'] + 300, f'札を 押すと「{g2["head"]}」が 上の 帯の すぐ 下（すきま {g2["gap"] and round(g2["gap"], 1)}・{round(g1["sy"])} → {round(g2["sy"])}）')
+        shot(pg, 'kise_board')
+        check(pg.evaluate("() => document.querySelectorAll('#kiseJump').length === 1 && document.querySelectorAll('#kiseBtn').length === 1"), '札も ボタンも 1つずつ（何度 開いても ふえない）')
+        pg.locator('.tabbar button[data-tab="judge"]').click(); pg.wait_for_timeout(500)
+        qq = pg.evaluate(GEO); kok, kd = kise_ok(qq)
+        check(geo_ok(qq)[0] and kok and qq['kise'] == q0['kise'] and qq['chips'] == q0['chips'], '判定タブに もどると 札と ボタンと データの 行は もとの 場所')
+        # 名前の 札を 押しても 同じ（ボタンの 一部）
+        r = pg.evaluate("() => { window.scrollTo(0, 0); const r = document.querySelector('#kiseBtn .kisel').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); pg.wait_for_timeout(200); pg.touchscreen.tap(*r); pg.wait_for_timeout(900)
+        g1b = pg.evaluate(SEC, 'setKisekae')
+        check(g1b['tab'] == 'set' and g1b['gap'] is not None and abs(g1b['gap'] - 8) <= 2, f'名前の 札を 押しても 設定の「着せ替え」へ（すきま {g1b["gap"] and round(g1b["gap"], 1)}）')
+        pg.locator('.tabbar button[data-tab="judge"]').click(); pg.wait_for_timeout(500)
         print('■ 指で 押す → 判定タブの 上に 作戦会議')
         pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(300)
         pg.evaluate("() => window.scrollTo(0, 10)"); pg.wait_for_timeout(200); sy0 = pg.evaluate('() => window.scrollY')      # ページを 少し 送って おく（札は 上の 帯の 下に 見えた まま）：開いても 位置が かわらない ことを 見る
@@ -214,17 +328,33 @@ try:
         if HAVE:
             print('■ 絵が 読めない とき')
             pg2 = ctx.new_page(); e2 = []; pg2.on('pageerror', lambda e: e2.append(str(e)))
-            pg2.route('**/tc_icon_plan.webp', lambda r: r.abort())
+            pg2.route('**/tc_icon_plan.webp', lambda r: r.abort()); pg2.route('**/tc_icon_kise2.webp', lambda r: r.abort())
             pg2.goto(APP); pg2.wait_for_timeout(1500); gate(pg2); pg2.wait_for_timeout(800)
-            q2 = pg2.evaluate(GEO); ok2, d2 = geo_ok(q2)
+            q2 = pg2.evaluate(GEO); ok2, d2 = geo_ok(q2); k2ok, k2d = kise_ok(q2)
+            check(k2ok and q2['kimg'] is None and q2['kft'] and q2['kname'] == KNAME, f'絵が 読めない → 色の カプセル ＋ 名前の 札「{q2["kname"]}」（同じ 場所・同じ 大きさ {k2d["cap"] if isinstance(k2d, dict) else k2d}）')
             check(ok2 and q2['img'] is None and q2['txt'] and q2['txt'][0] == '作戦会議' and abs((q2['txt'][3] - q2['txt'][1]) - 110) <= 1 and abs((q2['txt'][4] - q2['txt'][2]) - 33) <= 1, f'絵が 読めない → 字の 札「作戦会議」（110×33・同じ 場所）{d2}')
             tap_btn(pg2); pg2.wait_for_function("() => window.TCPlan && TCPlan.isOpen()", timeout=30000)
             check(pg2.evaluate("() => document.getElementById('tcPlan').parentNode.id === 'planHost'") and not e2, f'字の 札でも 開く・エラー なし {e2[:3]}')
+            pg2.locator('#tcPlan [data-p=close]').click(); pg2.wait_for_timeout(300)
+            tap_btn(pg2, '#kiseBtn'); pg2.wait_for_timeout(900); g3 = pg2.evaluate(SEC, 'setKisekae')
+            check(g3['tab'] == 'set' and g3['gap'] is not None and abs(g3['gap'] - 8) <= 2 and not e2, f'色の カプセルでも 設定の「着せ替え」へ 移る（すきま {g3["gap"] and round(g3["gap"], 1)}）・エラー なし {e2[:3]}')
             pg2.close()
+        print('■ 幅の せまい 画面（375）')
+        c3 = b.new_context(viewport={'width': 375, 'height': 667}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo', has_touch=True, is_mobile=True); c3.add_init_script(FAKE)
+        p3 = c3.new_page(); e4 = []; p3.on('pageerror', lambda e: e4.append(str(e)))
+        p3.goto(APP); p3.wait_for_timeout(1500); gate(p3); p3.wait_for_timeout(800)
+        p3.evaluate("() => { const t = document.getElementById('toast'); if (t) t.hidden = true; }")
+        q4 = p3.evaluate(GEO); ok4, d4 = geo_ok(q4); k4ok, k4d = kise_ok(q4)
+        check(ok4 and k4ok and not e4, f'幅 375：札は 右上の かど（上へ {d4["up"]}・右へ {d4["over"]}・画面の 右はしから {d4["edge"]}）・ボタンは その すぐ 下（カプセル {k4d["cap"] if isinstance(k4d, dict) else k4d}・チップから {k4d["chip"] if isinstance(k4d, dict) else "-"}・データの 行 {k4d["rows"] if isinstance(k4d, dict) else "-"}行）・エラー なし {e4[:3]}')
+        if SHOT: os.makedirs(SHOT, exist_ok=True); p3.screenshot(path=os.path.join(SHOT, 'kise_375.png'))
+        c3.close()
         print('■ Web版')
         pw = ctx.new_page(); e3 = []; pw.on('pageerror', lambda e: e3.append(str(e)))
         pw.goto(WEB); pw.wait_for_timeout(1500); gate(pw); pw.wait_for_timeout(500)
         check(pw.evaluate("() => !document.getElementById('planBtn') && !document.getElementById('planCss') && typeof window.TCPlanOpen === 'undefined' && !!document.querySelector('#v-judge .card h2')") and not e3, f'Web版：判定タブに 札は ない（かわらない）・エラー なし {e3[:3]}')
+        pw.locator('.tabbar button[data-tab="set"]').click(); pw.wait_for_timeout(400)
+        check(pw.evaluate("() => !document.getElementById('kiseBtn') && !document.getElementById('kiseJump') && typeof window.KiseGo === 'undefined' && document.getElementById('slotJudge').style.paddingRight === '' && !document.querySelector('.kisesp')") and not e3,
+              f'Web版：「壁紙&ボード着せ替え」の ボタンも「結果ボードカスタムへ↓」の 札も すきまの 部品も ない（かわらない）・エラー なし {e3[:3]}')
         b.close()
 finally:
     srv.terminate()

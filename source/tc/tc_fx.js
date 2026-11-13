@@ -1,4 +1,4 @@
-// トレーニングセンターの 当たりの 演出（App Store版）：ルーレット（ノーマル・幻の馬・神様馬の 3つの 絵）・壁紙チケット
+// トレーニングセンターの 当たりの 演出（App Store版）：ルーレット（ノーマル・幻の馬・神様馬の 3つの 絵）・壁紙チケット・ポイント特化ゾーン（第4.165版：下の zone）
 //   h3d/roulette2.html・ticket.html と 同じ 絵と 動き（390×614 の 座標で 描いて キャンバスの 大きさに 合わせる）
 //   ・うしろは いまの フィールド（下の キャンバスが そのまま 見える：少し 暗く）
 //   ・「タップ」で レバーを たたく（ルーレット）・扉が 開く（チケット）：押すまで 待つ（30秒 たったら 自動）
@@ -599,7 +599,218 @@ const TCFX = (() => {
       g.restore();
     }
   }
+  // ================= ポイント特化ゾーン（第4.165版）=================
+  //   まさちゃん 2026/11/13 12:51「トレーニングセンターの抽選に ・ポイントの特化ゾーンを作る (レバーを押し込め！で、60%で上乗せ) 1回の抽選の1/699で入る スタート1000P MAX25000P
+  //     レバーの画像は、一個目のファイル　上乗せの場合は、虹色の光とドゥルルルン！ギュウィーンンン！の効果音 は上乗せ失敗の場合は、ピューン…とエネルギーが落ちた時のような効果音つけて！
+  //     ・ゾーン1回の平均獲得、約4000P ・MAXまでに必要な成功回数、12回連続上乗せ」
+  //   ・何回 上乗せ できるか（Z.n：0〜12）は 抽選の ときに 決まって いる（tc_app.js の lottery：1回ごとに 60%）。ここは それを 1回ずつ 見せる：
+  //     タップ（レバーを 押しこむ）→ 成功＝虹色の 光 ＋「＋2,000P 上乗せ！」＋ 合計が 上がる（音 tc_se_zn_up）／失敗＝光が 落ちる ＋「上乗せ ならず…」（音 tc_se_zn_down）→ 合計の 札「○P GET！！！」。
+  //     12回 つづけて 成功 → MAX 25,000P（13回めは 押さない）
+  //   ・絵：まさちゃんの 3D から 作った 3まい（tc_zn_back・ball・arrow.webp ＋ tc_zn_geom.json：kisekae/tc/zone_asset.py）。玉 だけ 下へ 動かす ＝ 押しこんだ 見え方。絵が ない とき（CI）は かんたんな 絵（znArt）
+  //   ・押すのを 待つ（ZN.auto 秒 たったら 自動）。次の 1回は 前の 1回から ZN.cyc 秒 あと（その ZN.buf 秒 前からの タップは おぼえて おく）
+  //   ・ちかちか しない：虹色の 光は 1回 押す ごとに 明るく なって 暗く なるのが 1回（0.3秒で 上がって、0.8秒から 0.6秒 かけて 下がる）・押せるのは 1.5秒に 1回 ＝ 1秒に 1回 未満。
+  //     光の すじは ゆっくり 回る（1秒に 0.22ラジアン＝同じ 所を すじが 通るのは 2.4秒に 1回）・失敗の ときは 0.8秒 かけて 暗く なる だけ
+  //   ・「演出を控えめにする」・iPhone の「視差効果を減らす」（calm）：光の すじ・輪・きらめき・紙ふぶきは なし（やわらかい 光と 字 だけ）・合計の 数字は 回さない（1回で かわる）
+  //   ・絵は 押した 時刻の ならび（taps）と いまの 時刻 だけで 決まる ＝ zoneFrame（時計を 使わない：テストが 1/30秒ごとに 描いて 明るさを 測る）と 同じ 関数（znDraw）で 描く
+  //   ZN：ready＝はじめに 押せる 時・cyc＝次に 押せる までの 間・buf＝早めの タップを おぼえて おく 長さ・r0＝押して から 結果が 出る まで・cnt＝合計が 上がる［はじめ・長さ］（結果から）・
+  //     fail／maxEnd＝さいごの 1回から 合計の 札が 出る まで（失敗／MAX）・auto＝押さない ときに 自動で 押す まで・hold＝札が 出て から とじられる まで・close＝そのまま とじる まで（秒）
+  const ZN = { ready: 1.3, cyc: 1.5, buf: 0.3, r0: 0.16, cnt: [0.5, 0.55], fail: 1.9, maxEnd: 1.75, auto: 20, hold: 1.0, close: 3.2, artW: 338, artY: 300, totalY: 136, lampY: 205, msgY: 262, spin: 0.22 };
+  const ZFB = { w: 1066, h: 726, push: 51, parts: { back: { x: 4, y: 154, w: 1058, h: 568 }, ball: { x: 393, y: 145, w: 280, h: 247 }, arrow: { x: 423, y: 4, w: 221, h: 116 } }, ball: [532.6, 269.2, 137.5] };      // 絵が ない ときの 置き場所（絵が ある ときは tc_zn_geom.json）
+  const ZHUE = i => (i * 30 + 350) % 360;      // 虹の 色（12こ：赤 → 橙 → 黄 → 緑 → 青 → 紫）
+  const ZCONF = ['#ff5a5a', '#ffb23c', '#ffe34d', '#58d86a', '#4db8ff', '#b06cff', '#fff4cf'];
+  let ZIM = null, ZOFF = null;         // ZOFF：レバーの 絵を 重ねる 下書きの キャンバス
+  async function znLoad(noImg) {
+    if (noImg) return { G: ZFB, I: {} };
+    if (!ZIM) {
+      let G = null; try { G = await fetch(AP('tc_zn_geom.json')).then(r => (r.ok ? r.json() : null)); } catch (e) { G = null; }
+      const I = {}; await Promise.all(['back', 'ball', 'arrow'].map(async k => { I[k] = await img(`tc_zn_${k}.webp`); }));
+      ZIM = G && G.parts && I.back && I.ball && I.arrow ? { G, I } : { G: ZFB, I: {} };
+    }
+    return ZIM;
+  }
+  const znNeed = Z => (Z.n < Z.max ? Z.n + 1 : Z.n);      // 押す 回数（さいごの 1回は 失敗。MAX＝12回とも 成功）
+  const znEnd = (Z, taps) => { const m = znNeed(Z); return m > 0 && taps.length >= m ? taps[m - 1] + (Z.n < Z.max ? ZN.fail : ZN.maxEnd) : null; };      // 合計の 札が 出る 時
+  // レバーの 絵（絵の 座標：G.w × G.h）。pk＝押しこみ 0〜1・bob＝矢印の ゆれ −1〜1・drop＝失敗で 光が 落ちた 度合い 0〜1
+  function znArt(G, I, pk, bob, drop) {
+    const P = G.parts, dy = pk * G.push, [bx, by, br] = G.ball;
+    if (I.back) g.drawImage(I.back, P.back.x, P.back.y, P.back.w, P.back.h);
+    else {                               // かんたんな 絵：金の 台・輪・軸・リボン
+      poly([[150, 330], [916, 330], [960, 560], [106, 560]], '#b8862a'); poly([[176, 350], [890, 350], [926, 540], [140, 540]], '#5a3a1c');
+      g.fillStyle = '#e9bd45'; g.beginPath(); g.ellipse(bx, 468, 150, 58, 0, 0, TAU); g.fill(); g.fillStyle = '#3a2410'; g.beginPath(); g.ellipse(bx, 462, 104, 36, 0, 0, TAU); g.fill();
+      poly([[bx - 34, 300], [bx + 34, 300], [bx + 34, 470], [bx - 34, 470]], '#d9a93a');
+      poly([[20, 560], [1046, 560], [1010, 640], [1046, 716], [20, 716], [56, 640]], '#c8262b'); poly([[70, 548], [996, 548], [996, 700], [70, 700]], '#fbe9c4');
+      label('レバーを押し込め！', G.w / 2, 628, 96, '#d8262b', '#f3c33d', 16);
+    }
+    if (I.ball) g.drawImage(I.ball, P.ball.x, P.ball.y + dy, P.ball.w, P.ball.h);
+    else { const rg = g.createRadialGradient(bx - 40, by + dy - 50, 10, bx, by + dy, br); rg.addColorStop(0, '#ff8a7a'); rg.addColorStop(0.6, '#e8302a'); rg.addColorStop(1, '#a8181a'); g.fillStyle = rg; g.beginPath(); g.arc(bx, by + dy, br * 0.92, 0, TAU); g.fill(); }
+    const aa = 1 - drop; if (aa <= 0.01) return;
+    g.save(); g.globalAlpha *= aa; const ay = -14 * bob + dy * 0.75 + 30 * drop;
+    if (I.arrow) g.drawImage(I.arrow, P.arrow.x, P.arrow.y + ay, P.arrow.w, P.arrow.h);
+    else { const cx = P.arrow.x + P.arrow.w / 2, y0 = P.arrow.y + ay; poly([[cx - 100, y0 + 10], [cx, y0 + 110], [cx + 100, y0 + 10], [cx + 56, y0 + 6], [cx, y0 + 56], [cx - 56, y0 + 6]], '#f0c040'); }
+    g.restore();
+  }
+  // 虹色の 光（上乗せ）：まん中の やわらかい 光 ＋ 12色の 光の すじ（ゆっくり 回る）＋ ひろがる 輪 1回 ＋ きらめき。k＝明るさ 0〜1・v＝結果が 出て からの 秒
+  function znRainbow(cx, cy, k, v, calm) {
+    if (k <= 0.003) return;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const R0 = 150 + 60 * k, rg = g.createRadialGradient(cx, cy, 0, cx, cy, R0);
+    rg.addColorStop(0, `rgba(255,250,235,${0.5 * k})`); rg.addColorStop(0.45, `rgba(255,222,165,${0.2 * k})`); rg.addColorStop(1, 'rgba(255,200,120,0)');
+    g.fillStyle = rg; g.fillRect(cx - R0, cy - R0, R0 * 2, R0 * 2);
+    if (!calm) {
+      const rot = 0.3 + ZN.spin * v, R = 130 + 520 * easeOut(v / 0.5), hw = 0.088;
+      for (let i = 0; i < 12; i++) {
+        const a = rot + i * TAU / 12, x1 = cx + Math.cos(a) * R, y1 = cy + Math.sin(a) * R, h = ZHUE(i);
+        const lg = g.createLinearGradient(cx, cy, x1, y1);
+        lg.addColorStop(0, `hsla(${h},100%,70%,0)`); lg.addColorStop(0.14, `hsla(${h},100%,66%,${0.46 * k})`); lg.addColorStop(1, `hsla(${h},100%,60%,0)`);
+        g.fillStyle = lg; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a - hw) * R, cy + Math.sin(a - hw) * R); g.lineTo(cx + Math.cos(a + hw) * R, cy + Math.sin(a + hw) * R); g.closePath(); g.fill();
+      }
+      const q = v / 0.9;
+      if (q < 1) {                       // ひろがる 輪（1回）
+        const rr = 46 + 250 * easeOut(q), ka = 0.65 * (1 - q) * Math.min(1, k * 3); g.lineWidth = 9 * (1 - 0.5 * q);
+        for (let i = 0; i < 12; i++) { g.strokeStyle = `hsla(${ZHUE(i)},100%,66%,${ka})`; g.beginPath(); g.arc(cx, cy, rr, i * TAU / 12, (i + 1) * TAU / 12 + 0.012); g.stroke(); }
+      }
+      g.restore(); g.save();
+      for (let i = 0; i < 14; i++) {     // きらめき（1つずつ 1回 光る）
+        const a = hash(i + 3) * TAU, d = 62 + 200 * hash(i + 11) * easeOut(v / 0.8), tw = Math.sin(Math.PI * clamp((v - 0.1 - 0.5 * hash(i + 5)) / 0.6, 0, 1));
+        sparkle(cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.8 - 18 * v, 8 + 8 * hash(i + 7), tw * Math.min(1, k * 2));
+      }
+    }
+    g.restore();
+  }
+  // 合計の 札（さいご）：w＝札が 出て からの 秒
+  function znCard(Z, w, calm, total) {
+    const k = sm(w / 0.3), mx = Z.n >= Z.max, cx = W / 2, cy = 226, pw = 336, ph = mx ? 206 : 190, sc = calm ? 1 : backOut(clamp(w / 0.34, 0, 1));
+    if (mx) { g.save(); g.globalCompositeOperation = 'lighter'; const L = sm(w / 0.5), rg = g.createRadialGradient(cx, cy, 10, cx, cy, 300); rg.addColorStop(0, `rgba(255,236,170,${0.34 * L})`); rg.addColorStop(1, 'rgba(255,200,90,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore(); }
+    if (!calm) { g.save(); g.globalAlpha *= k; confetti(ZCONF, w, sm(w / 0.4), W, H); g.restore(); }
+    g.save(); g.globalAlpha *= k; g.translate(cx, cy); g.scale(sc, sc);
+    poly([[-pw / 2 + 7, -ph / 2 + 10], [pw / 2 + 7, -ph / 2 + 10], [pw / 2 + 7, ph / 2 + 10], [-pw / 2 + 7, ph / 2 + 10]], 'rgba(0,0,0,0.35)');
+    poly([[-pw / 2, -ph / 2], [pw / 2, -ph / 2], [pw / 2, ph / 2], [-pw / 2, ph / 2]], '#f3c95e');
+    poly([[-pw / 2 + 6, -ph / 2 + 6], [pw / 2 - 6, -ph / 2 + 6], [pw / 2 - 6, 0], [-pw / 2 + 6, 0]], '#3b2a6e'); poly([[-pw / 2 + 6, 0], [pw / 2 - 6, 0], [pw / 2 - 6, ph / 2 - 6], [-pw / 2 + 6, ph / 2 - 6]], '#2c1f57');
+    for (let i = 0; i < 12; i++) { const x = -pw / 2 + 6 + (pw - 12) * i / 12; g.fillStyle = `hsl(${ZHUE(i)},95%,62%)`; g.fillRect(x, -ph / 2 + 6, (pw - 12) / 12 + 0.5, 6); }      // 上の 虹色の 帯
+    label(mx ? 'MAX 達成！！' : 'ポイント特化ゾーン', 0, -ph / 2 + 38, mx ? 30 : 22, mx ? '#ffe34d' : '#f6e7ff', '#1a0f3a', 7);
+    g.font = `900 64px ${SERIF}`; const tx = comma(total) + 'P', tw = g.measureText(tx).width, fs = Math.min(64, 64 * (pw - 44) / tw);
+    label(tx, 0, mx ? 6 : 0, fs, '#ffd65c', '#3a1a08', 12, SERIF);
+    label('GET！！！', 0, ph / 2 - 32, 28, '#fff6e2', '#3a1a08', 9);
+    g.restore();
+    if (w > ZN.hold) { g.save(); g.globalAlpha *= sm((w - ZN.hold) / 0.3) * (0.7 + 0.3 * Math.sin(TAU * 0.5 * (w - ZN.hold))); label('タップで とじる', W / 2, H - 34, 15, '#fff6e2', 'rgba(20,10,40,0.8)', 5); g.restore(); }
+  }
+  // 1コマ（taps＝レバーを 押した 時刻の ならび・u＝いまの 時刻）
+  function znDraw(A, Z, taps, u, calm, dim) {
+    taps = taps.filter(p => p <= u);                                     // まだ 来て いない 時刻は 数えない（zoneFrame は 先の 分まで わたす）
+    const G = A.G, I = A.I, need = znNeed(Z), E = znEnd(Z, taps), np = Math.min(taps.length, need);
+    const li = np - 1, lv = li >= 0 ? u - taps[li] : -1, lok = li >= 0 && li < Z.n, failed = li >= 0 && !lok;      // いちばん 新しい 1回：たった 秒・成功か・失敗か
+    const app = sm(u / 0.45), rd = np === 0 ? ZN.ready : taps[np - 1] + ZN.cyc, waiting = np < need && u >= rd;
+    const rv = lv >= 0 ? lv - ZN.r0 : -1;                                // 結果が 出て からの 秒
+    const drop = failed && rv >= 0 ? sm(rv / 0.8) : 0;                   // 失敗：光が 落ちる 0〜1
+    const cw = E != null ? u - E : -1, card = cw >= 0 ? sm(cw / 0.3) : 0, top = app * (1 - card);
+    g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(12,7,24,${Math.min(0.93, Math.max(dim, 0.8) + 0.07 * drop + 0.06 * card)})`; g.fillRect(0, 0, W, H); g.restore();      // うしろの フィールドは ほとんど 見えない（上の ゲージや ボタンが 字の うしろで じゃまに ならない）
+    const s = ZN.artW / G.w, ax = (W - ZN.artW) / 2, ay = ZN.artY, bx = ax + G.ball[0] * s, by = ay + G.ball[1] * s;
+    const rk = lok && rv >= 0 ? sm(rv / 0.3) * (1 - sm((rv - 0.8) / 0.6)) : 0;
+    g.save(); g.globalAlpha *= app; znRainbow(bx, by, rk, rv, calm); g.restore();
+    // レバーの 絵（はじめは 下を 軸に ぽんと 出る）
+    const ia = sm((u - 0.2) / 0.3), iz = calm ? 1 : backOut(clamp((u - 0.2) / 0.5, 0, 1));
+    const pk = lv < 0 ? 0 : lv < 0.09 ? sm(lv / 0.09) : lok ? 1 - sm((lv - 0.55) / 0.3) : 1;
+    if (ia > 0.003) {
+      if (waiting || (np === 0 && u > 0.8)) {                            // 押せる 間：玉の まわりが ゆっくり 息を する（1.4秒で 1回）
+        const hb = 0.5 + 0.5 * Math.sin(TAU * (u - rd) / 1.4 - 1.2), R = G.ball[2] * s * (1.5 + 0.2 * hb), hg = g.createRadialGradient(bx, by, G.ball[2] * s * 0.6, bx, by, R);
+        hg.addColorStop(0, `rgba(255,214,120,${(0.26 + 0.16 * hb) * app * (waiting ? sm((u - rd) / 0.3) : sm((u - 0.8) / 0.4))})`); hg.addColorStop(1, 'rgba(255,200,90,0)');
+        g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = hg; g.fillRect(bx - R, by - R, R * 2, R * 2); g.restore();
+      }
+      // 絵は いちど 別の キャンバス（ZOFF）に 重ねて から 置く：うすく する とき（出はじめ・失敗）に 玉の うしろの 軸が すけて 見えない。失敗は 絵の 形の 中 だけ 暗く（光が 落ちる）
+      const pt = 26, ow = Math.ceil(ZN.artW * PX), oh = Math.ceil((G.h + pt) * s * PX), g0 = g;
+      if (!ZOFF) ZOFF = document.createElement('canvas'); if (ZOFF.width !== ow || ZOFF.height !== oh) { ZOFF.width = ow; ZOFF.height = oh; }
+      const og = ZOFF.getContext('2d'); og.setTransform(1, 0, 0, 1, 0, 0); og.globalAlpha = 1; og.globalCompositeOperation = 'source-over'; og.clearRect(0, 0, ow, oh); og.setTransform(s * PX, 0, 0, s * PX, 0, pt * s * PX);
+      g = og; try { znArt(G, I, pk, waiting ? Math.sin(TAU * 1.1 * (u - rd)) : 0, drop); } finally { g = g0; }
+      if (drop > 0) { og.setTransform(1, 0, 0, 1, 0, 0); og.globalCompositeOperation = 'source-atop'; og.fillStyle = `rgba(14,10,38,${0.55 * drop})`; og.fillRect(0, 0, ow, oh); }
+      g.save(); g.globalAlpha *= app * ia * (1 - 0.3 * card);
+      const fy = ay + G.h * s; g.translate(W / 2, fy); g.scale(iz, iz); g.translate(-W / 2, -fy);
+      g.drawImage(ZOFF, ax, ay - pt * s, ZN.artW, (G.h + pt) * s);
+      g.restore();
+      if (lv >= 0 && lv < 0.32) { const q = lv / 0.32; g.save(); g.globalAlpha *= app * (1 - q); g.strokeStyle = 'rgba(255,246,220,0.9)'; g.lineWidth = 3; g.beginPath(); g.arc(bx, by + pk * G.push * s, G.ball[2] * s * (0.9 + 0.5 * easeOut(q)), 0, TAU); g.stroke(); g.restore(); }      // 押した 手ごたえの 輪（小さい）
+      if (failed && rv >= 0 && !calm) for (let i = 0; i < 9; i++) {      // 失敗：光の 粒が 下へ 落ちて 消える
+        const q = clamp((rv - 0.06 * i) / 0.9, 0, 1); if (q <= 0 || q >= 1) continue;
+        g.save(); g.globalAlpha *= app * 0.7 * (1 - q); g.fillStyle = '#9fb4e8'; g.beginPath(); g.arc(bx + (hash(i + 21) - 0.5) * 120, by - 20 + 150 * q * q + 30 * hash(i + 31), 3.2 * (1 - 0.5 * q), 0, TAU); g.fill(); g.restore();
+      }
+    }
+    // 上：名前・合計・ランプ・ひとこと（合計の 札が 出たら 消える）
+    if (top > 0.003) {
+      g.save(); g.globalAlpha *= top;
+      const tk = sm((u - 0.1) / 0.35), ts = calm ? 1 : backOut(clamp((u - 0.1) / 0.4, 0, 1));
+      g.save(); g.globalAlpha *= tk; g.translate(W / 2, 46); g.scale(ts, ts);
+      label('ポイント特化ゾーン', 0, 0, 29, '#ffe9a8', '#3a1408', 9);
+      g.restore();
+      g.save(); g.globalAlpha *= sm((u - 0.35) / 0.3);
+      label(`上乗せ ＋${comma(Z.add)}P（${Math.round(Z.rate * 100)}%）・MAX ${comma(Z.start + Z.add * Z.max)}P`, W / 2, 78, 12.5, '#f6e7ff', 'rgba(20,10,40,0.85)', 4);
+      let tot = Z.start, bump = 1;
+      //   合計は 上乗せの たびに 数字が 回って 上がる（0.55秒）。控えめ（calm）の ときは 回さないで 1回で かわる（数字が 回る 間、その 所の 明るさが こまかく ゆれる ので）
+      for (let i = 0; i < np && i < Z.n; i++) { const v = u - taps[i] - ZN.r0 - ZN.cnt[0], c = i < np - 1 ? 1 : calm ? (v >= 0 ? 1 : 0) : sm(v / ZN.cnt[1]); tot += Z.add * c; if (!calm && i === np - 1 && v > 0 && v < 0.7) bump = 1 + 0.14 * Math.sin(Math.PI * v / 0.7); }
+      g.save(); g.translate(W / 2, ZN.totalY); g.scale(bump, bump);
+      g.font = `900 62px ${SERIF}`; const tx = comma(tot) + 'P', fs = Math.min(62, 62 * 330 / g.measureText(tx).width);
+      label(tx, 0, 0, fs, drop > 0 ? `rgb(${Math.round(255 - 60 * drop)},${Math.round(214 - 40 * drop)},${Math.round(92 + 60 * drop)})` : '#ffd65c', '#3a1a08', 12, SERIF);
+      g.restore();
+      for (let i = 0; i < Z.max; i++) {                                  // ランプ 12こ（上乗せ した 数）
+        const x = W / 2 + (i - (Z.max - 1) / 2) * 27, v = i < np && i < Z.n ? u - taps[i] - ZN.r0 - ZN.cnt[0] : -1, on = v >= 0, pp = on && v < 0.4 ? 1 + 0.5 * Math.sin(Math.PI * v / 0.4) : 1;
+        g.fillStyle = 'rgba(20,10,40,0.7)'; g.beginPath(); g.arc(x, ZN.lampY, 10.5, 0, TAU); g.fill();
+        g.fillStyle = on ? `hsl(${ZHUE(i)},95%,${62 - 14 * drop}%)` : '#4a3f66'; g.beginPath(); g.arc(x, ZN.lampY, 8 * pp, 0, TAU); g.fill();
+        if (on) { g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.arc(x - 2.4, ZN.lampY - 2.6, 2.4, 0, TAU); g.fill(); }
+      }
+      const cnt = Math.min(np, Z.n) - (lok && rv < ZN.cnt[0] ? 1 : 0);
+      label(`上乗せ ${Math.max(0, cnt)}／${Z.max}回`, W / 2, ZN.lampY + 24, 12.5, '#f6e7ff', 'rgba(20,10,40,0.85)', 4);
+      g.restore();
+      // ひとこと
+      if (lok && rv >= 0.36 && rv < 1.3) { const q = rv - 0.36, a = sm(q / 0.12) * (1 - sm((q - 0.7) / 0.24)), z = calm ? 1 : backOut(clamp(q / 0.26, 0, 1)); g.save(); g.globalAlpha *= a; g.translate(W / 2, ZN.msgY - 6 * easeOut(q / 0.9)); g.scale(z, z); label(`＋${comma(Z.add)}P 上乗せ！`, 0, 0, 31, '#fff2b8', '#b0281e', 9); g.restore(); }
+      else if (failed && rv >= 0.3) { g.save(); g.globalAlpha *= sm((rv - 0.3) / 0.3); label('上乗せ ならず…', W / 2, ZN.msgY, 25, '#c9d2ee', 'rgba(20,10,40,0.9)', 7); g.restore(); }
+      else if (waiting) { g.save(); g.globalAlpha *= sm((u - rd) / 0.25); label(np === 0 ? 'レバーを 押して 上乗せ！' : np >= Z.max - 1 ? 'あと 1回で MAX！' : 'つづけて 押しこめ！', W / 2, ZN.msgY, 21, '#fff6e2', 'rgba(20,10,40,0.9)', 7); g.restore(); }
+      // 「タップ」の 札
+      if (waiting) {
+        const k = sm((u - rd) / 0.25), y = H - 44 + 3 * Math.sin(TAU * 0.9 * (u - rd)), tw = 118, th = 44;
+        g.save(); g.globalAlpha *= k; g.translate(W / 2, y);
+        poly([[-tw / 2 + 4, -th / 2 + 6], [tw / 2 + 4, -th / 2 + 6], [tw / 2 + 4, th / 2 + 6], [-tw / 2 + 4, th / 2 + 6]], 'rgba(0,0,0,0.3)');
+        poly([[-tw / 2, -th / 2], [tw / 2, -th / 2], [tw / 2, th / 2], [-tw / 2, th / 2]], '#f0c25a');
+        poly([[-tw / 2 + 4, -th / 2 + 4], [tw / 2 - 4, -th / 2 + 4], [tw / 2 - 4, 0], [-tw / 2 + 4, 0]], '#d23b30'); poly([[-tw / 2 + 4, 0], [tw / 2 - 4, 0], [tw / 2 - 4, th / 2 - 4], [-tw / 2 + 4, th / 2 - 4]], '#b52f27');
+        label('タップ', 0, 1.5, 27, '#fff6e2', '#3a160c', 7);
+        g.restore();
+      }
+      g.restore();
+    }
+    if (card > 0) znCard(Z, cw, calm, Z.start + Z.add * Z.n);
+  }
+  const znZ = o => { const max = Math.max(1, Math.round(+o.max || 12)); return { n: clamp(Math.round(+o.n || 0), 0, max), start: +o.start || 1000, add: +o.add || 2000, max, rate: +o.rate || 0.6 }; };
+  // テスト用：時計を 使わないで 1コマ 描く（taps＝押した 時刻の ならび）→ 絵を 使ったか
+  async function zoneFrame(cv, o, taps, u, calm, noImg) {
+    const A = await znLoad(noImg), Z = znZ(o);
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    znDraw(A, Z, taps, u, !!calm, o.dim != null ? o.dim : 0.4); g.setTransform(1, 0, 0, 1, 0, 0);
+    return !!A.I.back;
+  }
+  async function zone(cv, o) {
+    const A = await znLoad(false), Z = znZ(o), calm = pcCalm(), dim = DIMR[o.bg] != null ? DIMR[o.bg] : 0.4, need = znNeed(Z), taps = [];
+    se(o, 'tc_se_luck.m4a', 1, 0);
+    await new Promise(done => {
+      const q = cv.getContext('2d'), t0 = performance.now(); let tapAt = null, closeAt = null, last = 0;
+      const onTap = e => { if (e) { e.preventDefault(); e.stopPropagation(); } tapAt = (performance.now() - t0) / 1000; };
+      cv.classList.add('on'); cv.addEventListener('pointerdown', onTap);
+      const fr = () => {
+        const u = (performance.now() - t0) / 1000, nx = taps.length, rd = nx === 0 ? ZN.ready : taps[nx - 1] + ZN.cyc, E = znEnd(Z, taps);
+        if (nx < need) { if (u >= rd && ((tapAt != null && tapAt >= rd - ZN.buf) || u >= rd + ZN.auto)) { taps.push(u); tapAt = null; } }      // レバーを 押しこむ（早めの タップは おぼえて おく・押さない ときは 自動）
+        else if (E != null && closeAt == null && ((tapAt != null && tapAt > E + ZN.hold) || u > E + ZN.hold + ZN.close)) closeAt = u;
+        if (tapAt != null && u - tapAt > ZN.buf) tapAt = null;
+        PX = cv.width / W; g = q; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+        g.globalAlpha = closeAt != null ? 1 - sm((u - closeAt) / 0.5) : 1; znDraw(A, Z, taps, u, calm, dim); g.globalAlpha = 1;
+        taps.forEach((p, i) => {                                         // 音：押した（カコン）→ r0 秒 あとに 結果（上乗せ／失敗）
+          if (last < p && u >= p) se(o, 'tc_se_rt_lever.m4a', 0.9, 0);
+          if (last < p + ZN.r0 && u >= p + ZN.r0) se(o, i < Z.n ? 'tc_se_zn_up.m4a' : 'tc_se_zn_down.m4a', 1, 0);
+        });
+        if (E != null && last < E && u >= E) se(o, Z.n >= Z.max ? 'tc_se_doon.m4a' : 'sfx_big.m4a', Z.n >= Z.max ? 1 : BIG_GAIN, 0);      // 合計の 札：デカ的中と 同じ 音・MAX は ドーン！！
+        last = u;
+        if (closeAt != null && u > closeAt + 0.52) { cv.removeEventListener('pointerdown', onTap); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); cv.classList.remove('on'); done(); return; }
+        requestAnimationFrame(fr);
+      };
+      requestAnimationFrame(fr);
+    });
+    return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
+  }
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, puchun, preload, PCH, TELOP, bigFrame };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;

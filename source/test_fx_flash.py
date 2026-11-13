@@ -1,5 +1,7 @@
 # 的中ボタン（App Store版 第3弾）の光の点めつ（16.6）：画面を 60コマ/秒の絵にして kisekae/flash_px.py で数える（1秒に4回以上光る点が画面の10%をこえる1秒がないこと）
-#   python3 test_fx_flash.py [hit,big,fz,miss,sd,nd,gk,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   python3 test_fx_flash.py [hit,big,fz,miss,sd,gk,film]   （時間がかかるので、ふだんのテストとは別に動かす。コマは t5/fx_frames/<種類>/ に残す）
+#   第4.165版（まさちゃん 2026/11/13 11:52「あと、ノーマル的中の演出消して！」）：ノーマルど的中 nd の 演出は なくした（その 条件は 極ど的中 sd）。nd を 書いても 数えない（お知らせ だけ）。
+#     ノーマルど的中の 動画（nd_film）は 極ど的中の 入り（はじめの 5.34秒）に 使う ので アプリに 残る → film では 今までどおり 数える
 #   第4.86版：隠れど的中（hidden）・超プレミアムど的中（zp）・神様的中（gd）は アプリから 消した（押したあとの 形が ない）
 #   第4.162版：プレミアムど的中（pc）・超プレミアム神様的中（昇格の 動画 spg_up）も アプリから 消した。film の 動画は kisekae/build_fx.py の FILMS（超神様は 新しい 動画 sgd_film2.mp4）
 #   動きは CSS のアニメーションだけなので、Web Animations API で全部止めて 1/60秒ずつ進めながら写す（見本と同じ秒で数えられる）。
@@ -20,7 +22,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, sd=11.5, nd=11.2, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, sd=11.5, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 from assets_dir import adir
 FX_DIR = adir('fx_assets')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）
@@ -48,6 +50,8 @@ try:
         pg.goto(f'http://localhost:{PORT}/APP/'); pg.wait_for_timeout(1500)
         if pg.locator('#gateGo').count(): pg.click('#gateGo'); pg.wait_for_timeout(600)
         for kind in KINDS:
+            if kind == 'nd':   # 第4.165版：ノーマルど的中の 演出は なくした（極ど的中 sd に なる）
+                print('  ※ nd（ノーマルど的中）の 演出は 第4.165版で なくした → 数えない（極ど的中は sd・動画は film で 数える）'); continue
             d = os.path.join(OUT, kind); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
             if kind == 'film':   # 動画：1コマずつ 描いた 絵（30コマ/秒）→ 60コマ/秒の 絵に して 数える（タップは 0コマ目）
                 for f in ('sgd_film', 'sd_film', 'nd_film', 'gk_film'):
@@ -76,7 +80,7 @@ try:
                     print(f'  sd：入りの ノーマルど的中の コマ {n_at}（{SDUP["AT"]}秒）→ 真っ黒 {int(round(SDUP["BLACK"] * 60))}コマ → 極ど的中')
                 else:
                     print(f'  ⚠️ {FX_FILMS["nd_film"]} が ない（極ど的中の 入りは 数えない）')
-            if kind in ('sd', 'nd', 'gk'):   # 紫電・ノーマルど的中・神様極的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
+            if kind in ('sd', 'gk'):   # 紫電・神様極的中の 動画の コマ（60コマ/秒・390×844）を 置いて、写す ときに 幕の 背景に する
                 mp4 = os.path.join(FX_DIR, FX_FILMS[kind + '_film'])
                 if os.path.exists(mp4) and shutil.which('ffmpeg'):
                     fd = os.path.join(SRV, 'APP', '_sdf'); shutil.rmtree(fd, ignore_errors=True); os.makedirs(fd)
@@ -101,18 +105,18 @@ try:
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
                 if kind == 'sd':   # 第4.77版：ここでは 動画が 読めない → すぐ ブラックアウト → 0.5秒 → 極ど的中の 幕
                     pg.wait_for_function("() => !!document.querySelector('#fxOv .ov.sd')", timeout=10000)
-                if kind in ('sd', 'nd', 'gk'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
+                if kind in ('sd', 'gk'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）
                     pg.evaluate("(c) => { const o = document.querySelector('#fxOv .ov.' + c); o.classList.remove('still'); o.classList.add('go'); }", kind); pg.wait_for_timeout(200)
             else:
                 tap = 0
             frames = int(AFTER[kind] * 60)
             for i in range(frames):
                 n = pg.evaluate(STEP, i / 60)
-                if kind in ('sd', 'nd', 'gk') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
+                if kind in ('sd', 'gk') and sdf:   # 幕の 背景に その 時刻の 動画の コマ（おわった あとは さいごの コマ）
                     pg.evaluate(SDBG, [f'_sdf/g{min(i, sdf - 1):04d}.png', kind])
                 pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
             pg.evaluate('TengelFx.close()')
-            if kind in ('sd', 'nd', 'gk'):
+            if kind in ('sd', 'gk'):
                 shutil.rmtree(os.path.join(SRV, 'APP', '_sdf'), ignore_errors=True)
             if pre:
                 shutil.rmtree(os.path.join(OUT, '_sd_pre'), ignore_errors=True)

@@ -10,9 +10,10 @@ const TCApp = (() => {
   const COLORS = ['brown', 'madara', 'black', 'white', 'hada'];
   const COLOR_JA = { brown: 'ブラウン', madara: 'まだら', black: 'ブラック', white: 'ホワイト', hada: '肌色' };
   const BIG = 1.7;                                    // 幻の馬・神様馬：5段階の 馬の 1.7倍（11/09 11:38）
-  // お世話トークン：10分ごとに 5つ・最大 25（第4.159版・まさちゃん 11/12 10:37「お世話の最大トークン25回にして！」・12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」
-  //   → 14:50「お世話トークンに関して、10分で５つトークンが追加にして！」＝5分 → 10分。前は 10分ごとに 1つ・最大 20）
-  const TOKEN_MIN = 10, TOKEN_STEP = 5, TOKEN_MAX = 25;
+  // お世話トークン：5分ごとに 5つ・最大 25（第4.165版・まさちゃん 11/13 11:46「お世話トークンに5分で5個追加に変更」＝10分 → 5分。
+  //   第4.159版：11/12 10:37「お世話の最大トークン25回にして！」・12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」
+  //   → 14:50「お世話トークンに関して、10分で５つトークンが追加にして！」＝5分 → 10分。その 前は 10分ごとに 1つ・最大 20）
+  const TOKEN_MIN = 5, TOKEN_STEP = 5, TOKEN_MAX = 25;
   const TICK = 120;                                   // 2分ごとの チャンス（秒・開いて いる 間）：高確ゾーン・うんち（第4.144版から 幻の馬・神様馬の 抽選は しない）
   // 第4.144版（馬の リセットの きまり：11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…トレーニングセンターで最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
   //   …トレーニングセンターを開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…トレーニングセンターを開いてから30分経過すると切り替わる仕組みにして！」
@@ -28,27 +29,40 @@ const TCApp = (() => {
   const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      // TRASH_W：絵の 幅（リンゴの 芯・かじった ニンジン・枯れ葉・色の 葉っぱ。体の 高さ 1 の 馬＝1）
   const HIGH_N = 5, HIGH_X = 4;                       // 高確ゾーン：お世話 5回・当たりやすさ ×4 ※仮
   const P_POOP = 1 / 7, P_GOLD = 1 / 20, P_HIGH = 1 / 50, P_MAB = 1 / 245, P_KAMI = 1 / 399;
+  // 第4.165版（まさちゃん 2026/11/13 12:51「トレーニングセンターの抽選に ・ポイントの特化ゾーンを作る (レバーを押し込め！で、60%で上乗せ) 1回の抽選の1/699で入る
+  //   スタート1000P MAX25000P … ・ゾーン1回の平均獲得、約4000P ・MAXまでに必要な成功回数、12回連続上乗せ」）：ポイント特化ゾーン
+  //   ・入るのは 抽選 1回ごとに 1/699（いつもの 馬・幻の馬・神様馬の どの 表でも。高確ゾーンの 間は ほかの 当たりと 同じ ×4）
+  //   ・スタート 1,000P → レバーを 押しこむ たびに 60% で ＋2,000P 上乗せ・失敗（40%）で おわり → それまでの 合計を GET。12回 つづけて 上乗せ ＝ 1,000 ＋ 2,000×12 ＝ 25,000P（MAX）で おわり
+  //   ・平均＝1,000 ＋ 2,000 ×（0.6 ＋ 0.6² ＋ … ＋ 0.6¹²）＝ 約3,993P（≒4,000P）。MAX まで 行くのは 0.6¹² ＝ 約0.22%
+  //   ・何回 上乗せ できるかは 抽選の ときに 決めて 保存（lottery）：演出の 途中で アプリを 閉じても、次に 開いた ときに 合計を わたす（st.pend）
+  //   ・この 分、抽選 1回の 平均は 約57.8P → 約63.5P（＋約5.7P）・何か 当たる のは 約17.0% → 約17.1%
+  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      // n回 上乗せ した ときの 合計
+  const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
   const PRIZES = [                                    // お世話（ごはん・おそうじ）の 抽選：まれな 方から
+    [1 / ZONE.d, { k: 'zn' }],
     // 第4.142版（11/10 17:20 まさちゃん「仕組みは今のままでいい！ただノーマルのルーレット抽選、幻の馬ルーレット当選と神様馬ルーレット抽選の確率だけ変えたい！」）：
     //   ルーレット 800P か 1600P 1/1000 → 1/125・1600P か 3200P 1/2000 → 1/245・3200P か 6400P 1/3600 → 1/399・チケット 1/2400 → 1/600（ポイントの 当たり 6つは そのまま）。
     //   何か 当たる のは 1回 約20.2% → 約21.6%・平均は 1回 約17.0P → 約58.6P。高確ゾーン（×4）でも 合わせて 約87%（1 を こえない：こえると まれな 当たりが 4倍に ならない）
     [1 / 600, { k: 'tk' }], [1 / 399, { k: 'rt', tier: 'kamisama' }], [1 / 245, { k: 'rt', tier: 'maboroshi' }], [1 / 125, { k: 'rt', tier: 'normal' }],
-    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 85, { k: 'pt', v: 100 }],
-    // 第4.140版（11/10 14:14 まさちゃん「足す：10P 1/10・20P 1/20・50P 1/50 これだけ足して！」）：小さい 当たり（ほかは そのまま）。
-    //   何か 当たる のは 1回 約3.2% → 約20.2%（5回で 約68%・20回で 約99%）。高確ゾーン（×4）でも 合わせて 約81%（1 を こえない）
-    [1 / 50, { k: 'pt', v: 50 }], [1 / 20, { k: 'pt', v: 20 }], [1 / 10, { k: 'pt', v: 10 }]];
+    // 第4.165版（11/13 11:46 まさちゃん「お世話でポイントGET 確率少し変える(ここだけ) 1/15で10P 1/25で20P 1/55で50P 1/95で100P」）：
+    //   10P 1/10 → 1/15・20P 1/20 → 1/25・50P 1/50 → 1/55・100P 1/85 → 1/95（200P・300P・ルーレット・チケットは そのまま）。
+    //   何か 当たる のは 1回 約21.6% → 約17.0%・平均は 1回 約58.6P → 約57.8P。高確ゾーン（×4）でも 合わせて 約68%（1 を こえない）
+    [1 / 121, { k: 'pt', v: 300 }], [1 / 99, { k: 'pt', v: 200 }], [1 / 95, { k: 'pt', v: 100 }],
+    // 第4.140版（11/10 14:14 まさちゃん「足す：10P 1/10・20P 1/20・50P 1/50 これだけ足して！」）：小さい 当たり（ほかは そのまま）。第4.165版で 1/15・1/25・1/55 に
+    [1 / 55, { k: 'pt', v: 50 }], [1 / 25, { k: 'pt', v: 20 }], [1 / 15, { k: 'pt', v: 10 }]];
   const RT = { normal: [800, 1600], maboroshi: [1600, 3200], kamisama: [3200, 6400] };
   // 幻の馬・神様馬が いる 間の お世話の 抽選（11/09 14:22・14:26 まさちゃん：この表だけ・ルーレットの 絵は その馬の もの）
   //   第4.142版（同じ 17:20 の 指定）：幻の馬 1/300・1/500・1/1000 → 1/15・1/30・1/60／神様馬 1/85・1/99・1/121 → 1/8・1/16・1/32。
   //   何か 当たる のは 幻の馬 約11.7%（平均 1回 240P）・神様馬 約21.9%（平均 1回 約1,313P）。高確ゾーン（×4）でも 約46.7%・87.5%（1 を こえない）
   const PRIZES_VISIT = {
-    maboroshi: [[1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
-    kamisama: [[1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
+    maboroshi: [[1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
+    kamisama: [[1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
   const AP = p => String(p).split('/').pop();         // アプリ：Resources に 名前だけ
   window.TC_ASSET = AP;
 
   // ---------- 保存 ----------
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false });      // bulk＝トークンを まとめて 使う（PUSH の 横の スイッチ）・push＝お世話の あとの PUSH が まだ 出て いる（第4.159版）・rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null });      // bulk＝トークンを まとめて 使う（PUSH の 横の スイッチ）・push＝お世話の あとの PUSH が まだ 出て いる（第4.159版）・rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）・buy＝お世話トークンの 買い物の しるし { id, n }（第4.165版：台帳に 入れる 前に 書いて、トークンを わたしたら 消す）
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -76,7 +90,7 @@ const TCApp = (() => {
   function accrue(now) {                              // お世話トークン（閉じて いる 間も 時間で たまる）。now＝tnow()（もどらない 時計）
     if (st.stock >= TOKEN_MAX) { st.stockAt = now; return 0; }
     const n = Math.floor((now - st.stockAt) / (TOKEN_MIN * 60000)); if (n <= 0) return 0;
-    const add = Math.min(n * TOKEN_STEP, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;      // 10分が n回 たった → 5つ × n（上限 まで）
+    const add = Math.min(n * TOKEN_STEP, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;      // 5分（TOKEN_MIN）が n回 たった → 5つ × n（上限 まで）
   }
 
   // ---------- 音（WebAudio：環境音・BGM は くり返し、効果音は できごとで）----------
@@ -121,6 +135,7 @@ const TCApp = (() => {
   // ---------- 画面 ----------
   let ov = null, stage = null, cvGL = null, cvOv = null, cvFx = null, field = null, gl = null, built = false;
   let HO = null, BR = null, horseKey = '', raf = 0, running = false, tBase = 0, lastT = null, lastDraw = 0, nextTick = 0, later = [], busy = false;
+  let buying = false;                                 // 第4.165版：お世話トークンを 買って いる 途中（ボタンは 下の 列の 1番 右：tc_care.js が 描く）
   const clock = () => (performance.now() - tBase) / 1000 + 1.5;
   const css = `
 #tcOv{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;background:#2a1d12;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none;touch-action:none;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
@@ -150,7 +165,8 @@ const TCApp = (() => {
       + `<span class="tcsp"></span>`
       + (testOn() ? TCTest.head() : '')          // テスト版だけ：道具箱の 入口（ボタンの 絵と 字は tc_test.js）
       + `<span class="tctk" hidden></span><button type="button" class="tcsd" data-tc="snd" aria-label="音"></button></div>`
-      + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button><canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
+      + `<div class="tcwr"><div class="tcbg"></div><div class="tcst"><canvas class="tcgl"></canvas><canvas class="tco"></canvas><button type="button" class="tcpl" data-tc="plan" aria-label="作戦会議"><img src="${AP('tc_icon_plan.webp')}" alt="作戦会議"></button>`
+      + `<canvas class="tcfx"></canvas><div class="tcmsg" aria-live="polite"></div><div class="tcld">トレーニングセンター…</div></div></div>`;
     document.body.appendChild(ov);
     stage = ov.querySelector('.tcst'); cvGL = ov.querySelector('.tcgl'); cvOv = ov.querySelector('.tco'); cvFx = ov.querySelector('.tcfx');
     ov.addEventListener('click', e => {
@@ -304,7 +320,7 @@ const TCApp = (() => {
   //     PUSH を 押さずに 置いて おくと タイムリミットが 止まる、という 抜け穴を 作らない（神様馬を 帰さずに トークンを ためて から まとめて 押す、が できて しまう）。
   //     馬を 入れかえるのは 当たりを わたし おわって から（st.pend が ない：ルーレット当選の キュインキュイーンの 間・演出の 間は 入れかえない）
   const careIdle = () => careFree() && !(TCCare.on && TCCare.S.push);
-  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()));
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      // タイマーの のこり（秒）・まだ 動いて いなければ null
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              // タイムリミットの のこり（秒）
   let resetting = false;
@@ -345,6 +361,7 @@ const TCApp = (() => {
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      // 使った トークンも いっしょに 保存（当たり だけ 残って トークンが もどる ことが ない ように）
     if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      // ルーレットの 止まる 所も ここで 決める（50%ずつ）
+    if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      // 特化ゾーン：何回 上乗せ できるか（1回ごとに 60%）と 合計も ここで 決める
     st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
     return z;
   }
@@ -354,6 +371,7 @@ const TCApp = (() => {
     let v = 0;
     if (z.k === 'pt') { v = +z.v || 0; grant(v, 'トレーニングセンターの お世話', z.id); }
     else if (z.k === 'rt') { const ab = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal); v = ab[z.win ? 1 : 0]; grant(v, 'トレーニングセンターの ルーレット', z.id); }
+    else if (z.k === 'zn') { v = +z.v > 0 ? +z.v : zoneV(z.n); grant(v, 'トレーニングセンターの ポイント特化ゾーン', z.id); }
     else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
     if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
     touch(); save();
@@ -369,6 +387,10 @@ const TCApp = (() => {
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
         SND.preload(['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      // 止まった あとの 音（的中の 演出の 音・高い 方の ドーン！！）を 回って いる 間に 読んで おく
         try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }      // 第4.159版：止まった あと 安い 方＝デカ的中と 同じ 音・高い 方＝プチュン → ドーン！！と テロップ「大量ポイント」（tc_fx.js）
+      } else if (z.k === 'zn') {
+        // 第4.165版：ポイント特化ゾーン（tc_fx.js の zone）。何回 上乗せ できるか（z.n）は もう 決まって いる → レバーを 1回ずつ 押して 見せる。おわったら（途中で 閉じても）合計を わたす
+        SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
+        try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { give(z); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         // 第4.159版（まさちゃん 11/12「プチュンしてから今の演出」・11:56「プチュンは、極ど的中と超プレミアム神様的中で使用してたプチュンの演出入れてね！プチュンしたらすぐに扉が落ちてくる演出にして！」）：
@@ -381,6 +403,67 @@ const TCApp = (() => {
   function grant(v, what, id) {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
+  }
+
+  // ---------- お世話トークンの 購入（第4.165版・まさちゃん 2026/11/13 11:46「お世話トークンは、購入できるようにする。①1個を80Pで購入 ②5個を400Pで購入 ③10個を800Pで購入
+  //   ④15個を1200Pで購入 ②25個を2000Pで購入　お世話トークン購入、のアイコンを左下のお世話などの項目の上に設置　アイコンは一枚目」
+  //   → 12:33「お世話トークン呼ぶのすぐ上にして！」→ 12:36「お世話トークン購入のアイコンやっぱりこっちで！（丸い 絵）お世話とかのところに上手く入れられない？」→ 12:38「1番右側に入れて！」）----------
+  //   ・下の 列（撫でる・ごはん・おそうじ・呼ぶ）の 1番 右に まさちゃんの 丸い 絵の ボタン（tc_icon_buy2.webp：kisekae/tc/buy_asset.py・リポジトリに 入れない）。
+  //     描くのと 押した ことを 受けるのは tc_care.js（BUYG・O.onBuy）：ほかの ボタンと 同じ（お世話の あとの PUSH が 出て いる 間は 列ごと かくれる）→ 押すと 購入の 窓（tc_buy.js の TCBuy）。
+  //     開くのは お世話の 動き・当たりの 演出・馬の 入れかえの 途中で ない とき（buyShow）。途中の ときは 札「お世話が おわってから 買えるよ」（tc_care.js の pressBuy）
+  //   ・組と 値段は points.js の TOKEN_PACKS（1こ 80P）。ポイントは 台帳（TengelWallet.tc.buy：買った ポイントから 先に 使う・あずかりポイントは 先に 補充）
+  //   ・持てる 数は TOKEN_MAX（25こ）まで（聞いて 決めた 11:5x「25こまで」）：いまの 数 ＋ 買う 数が 25こを こえる 組は その ときは 買えない
+  //   ・途中で 閉じても ずれない：台帳に 入れる 前に 買い物の しるし（st.buy＝{ id, n }）を 保存 → 台帳に 入ったら トークンを 足して しるしを 消す（1回の 保存で）。
+  //     台帳に 入った あと・トークンを 足す 前に アプリが 閉じた ときは、次に 開いた ときに 台帳を 見て わたす（recoverBuy）。台帳に なければ しるし だけ 消す（ポイントは へって いない）
+  //   ・買って いる 間（台帳の 保存を 待つ 間）は 時間で たまる ぶんを 待たせる（frame）：待って いる 間に ＋5 が 入って 25こを こえる ことが ない
+  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice()); };
+  const stockNow = () => { if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); } return st.stock; };      // お世話で 使った ぶんを 先に 写す
+  function stockSet(n, plus) {                         // トークンの 数を 決める（右上の 数も いっしょに・plus＝「＋N」を 出す）
+    st.stock = n; touch();
+    if (TCCare.on) { const S = TCCare.S, t = clock(); S.stock = n; S.stockShow = n; S.stockBump = t; if (plus) S.fx.push({ k: 'plus', t0: t, txt: '+' + plus }); }
+  }
+  const buyShow = () => !!(built && TCCare.on && HO && BR && !busy && !resetting && careIdle() && !TCCare.S.fxHold && !panelOpen());      // 購入の 窓を 開いて よい とき（お世話・PUSH・当たりの 演出・馬の 入れかえの 途中で ない）
+  const BUY = {
+    // いまの ようす：トークン・持てる 数・ポイント（使える 数＝財布＋あずかり）・組ごとに 買えるか（ok／full＝25こを こえる／short＝ポイントが 足りない）
+    info() {
+      const w = window.TengelWallet, stock = st ? stockNow() : 0, pts = w && w.avail ? w.avail() : 0;
+      return { stock, max: TOKEN_MAX, room: Math.max(0, TOKEN_MAX - stock), points: pts, ready: !!(w && w.tc), busy: buying, every: TOKEN_MIN, step: TOKEN_STEP,
+        packs: PACKS().map(([n, c]) => ({ n, cost: c, state: stock + n > TOKEN_MAX ? 'full' : pts < c ? 'short' : 'ok' })) };
+    },
+    // 買う：n＝こ数（TOKEN_PACKS に ある 数）。返り値 { ok, why（off・busy・full・short・err）, n, cost, stock }
+    async buy(n) {
+      const w = window.TengelWallet, pk = PACKS().find(x => x[0] === +n);
+      if (!st || !w || !w.tc || !pk) return { ok: false, why: 'off' };
+      if (buying) return { ok: false, why: 'busy' };
+      buying = true;
+      try {
+        stockNow();                                    // お世話で 使った ぶんを 先に 写して から
+        const got = accrue(tnow());                    // たまって いる ぶんを 入れる（この あと 買い終わる まで たまるのは 待たせる：frame）
+        if (got > 0) stockSet(st.stock, got);
+        const s0 = st.stock;
+        if (s0 + pk[0] > TOKEN_MAX) return { ok: false, why: 'full', room: Math.max(0, TOKEN_MAX - s0) };
+        const id = 'b' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e9).toString(36);
+        st.buy = { id, n: pk[0] }; touch(); save();
+        let r; try { r = await w.tc.buy(id, pk[0]); } catch (e) { r = { ok: false, why: 'err' }; }
+        if (!r || !r.ok) { st.buy = null; touch(); save(); return r || { ok: false, why: 'err' }; }
+        const s1 = stockNow() + pk[0];
+        st.buy = null; stockSet(s1, pk[0]); save();    // トークンを 足すのと しるしを 消すのは 1回の 保存で
+        SND.se('tc_se_stock.m4a');
+        return { ok: true, n: pk[0], cost: pk[1], stock: s1 };
+      } finally { buying = false; }
+    },
+    guide() { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+    se: name => SND.se('tc_se_' + name + '.m4a'),
+  };
+  async function recoverBuy() {                        // 前に 買って すぐ 閉じた：台帳に 入って いれば トークンを わたす・入って いなければ しるし だけ 消す
+    const b = st.buy; if (!b) return;
+    const w = window.TengelWallet, n = Math.max(0, Math.round(+b.n || 0));
+    if (!b.id || !n) { st.buy = null; touch(); save(); return; }
+    if (!w || !w.tc) return;                           // 台帳が まだ 読めない → 次に 開いた とき
+    try { await w.ready; } catch (e) { return; }
+    if (buying || !st.buy || st.buy.id !== b.id) return;
+    if (w.tc.paid(b.id)) { st.buy = null; stockSet(stockNow() + n, n); save(); later.push(() => msg(`🎟 前に 買った\nお世話トークン ${n}こを\n受け取ったよ`, 3.6)); }
+    else { st.buy = null; touch(); save(); }
   }
 
   // ---------- テスト版の 道具（第4.154版・まさちゃん 2026/11/11 20:00「テスト版で、トレーニングセンターの幻の馬と神様馬の出現テストできるようにして！
@@ -423,6 +506,19 @@ const TCApp = (() => {
     tokens(n) {                           // n なし＝25こ（上限）に。n あり＝ちょうど nこに（第4.159版：ハートの 抽選は 20こ未満の とき だけ → 19こに して ためす）
       if (!testOn()) return 'off';
       const S = TCCare.S; st.stock = n == null ? Math.max(st.stock, TOKEN_MAX) : Math.max(0, Math.min(TOKEN_MAX, Math.round(n))); st.stockAt = tnow(); S.stock = st.stock; S.stockBump = clock(); touch(); save(); return 'ok';
+    },
+    // 第4.165版：お世話トークンの 時計を min 分 進める（たまる のを ためす：5分で ＋5）。返り値：'ok'・'max'（もう 25こ）
+    ahead(min) {
+      if (!testOn()) return 'off';
+      stockNow(); if (st.stock >= TOKEN_MAX) return 'max';
+      st.stockAt = Math.min(st.stockAt, tnow()) - Math.max(1, Math.round(+min || TOKEN_MIN)) * 60000; touch(); return 'ok';      // 次の コマで たまる（frame の accrue：右上に「＋5」）
+    },
+    // 第4.165版：お世話（ごはん・おそうじ）を とばして、お世話の あとの PUSH を すぐ 出す（当たりを つづけて ためす）。押すと 本番と 同じ ように トークン −1・抽選
+    push() {
+      if (!testOn()) return 'off';
+      if (!testFree()) return 'busy';
+      if (TCCare.S.stock < 1) TEST.tokens();
+      TCCare.pushShow(clock() + 0.25); return 'ok';
     },
     // 撫でる：ハートを 9こに して、次の 抽選（ハート 10こ）の 結果を 決める（win＝true：ぴょん！／false：ふぅ〜〈第4.155版までは ごろん〉）
     heart(win) {
@@ -489,7 +585,7 @@ const TCApp = (() => {
     const ms = Date.now(), gms = tnow();
     // 第4.140版（バグ直し）：お世話で 使った トークンを 先に 写す（前は トークンが ちょうど 1つ たまる 瞬間と 重なると、使った ぶんが 消えて 1回 タダに なった）
     if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); }
-    const got = accrue(gms);
+    const got = buying ? 0 : accrue(gms);              // 第4.165版：買って いる 間は 待たせる（買い終わった 次の コマで 入る）
     if (got > 0 && TCCare.on) { const S = TCCare.S; S.stock = st.stock; S.stockShow = st.stock; S.stockBump = t; S.fx.push({ k: 'plus', t0: t, txt: '+' + got }); }      // 開いて いる 間に たまった：右上の 数が ぽんと ふえて「＋5」
     if (t >= nextTick) { nextTick = t + TICK; if (t > 3) chance(t); }
     if (!resetting) trashStep(gms, t);
@@ -540,11 +636,13 @@ const TCApp = (() => {
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+      onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      // 第4.165版：下の 列の「お世話トークン購入」（tc_care.js が 描く）→ 購入の 窓
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend });      // 第4.159版：PUSH の スイッチ（1個／まとめて）と「PUSH が まだ 出て いる」を おぼえる・待って いた ハートの 抽選を 始めて よいか（当たりの 演出・馬の 入れかえ・説明書などの 途中で ない）
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      // 前に お世話を した あと PUSH を 押す 前に 閉じた → また 出す（お世話 1回には トークンを 1つは 使う）
     nextTick = clock() + TICK;
+    recoverBuy().catch(() => { });                     // 第4.165版：前に 買って すぐ 閉じた ぶん（台帳に 入って いれば トークンを わたす）
     SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      // PUSH の 音は 先に 読む（押した 瞬間に 鳴る：チケット当選の プチュン〈的中の 演出の 音〉も）
   }
   async function open(opt) {
@@ -558,15 +656,17 @@ const TCApp = (() => {
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
+    if (opt && opt.test && testOn() && !TCTest.isOpen()) TCTest.open(stage, TEST);      // 第4.165版：設定の「テスト版の道具」から 道具箱を 開いた まま 入る（テスト版 だけ）
   }
   function close() {
     if (window.TCPlan && window.TCPlan.isOpen && window.TCPlan.isOpen()) window.TCPlan.close();
     if (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) TCGuide.close();
+    if (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()) TCBuy.close();
     pause(); save(); if (ov) ov.classList.remove('on');
     try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (e) { }      // ミッション（お世話の 合計）を かき直す
   }
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, test: TEST, _snd: SND, _t: { gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();

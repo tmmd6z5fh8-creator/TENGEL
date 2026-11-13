@@ -115,20 +115,20 @@ check(sorted(B['reveal']) == ['big', 'gk', 'hit', 'hit_t', 'miss', 'nd', 'sd', '
       f'演出の 束（window.__FX）：押したあとは 的中・デカ的中・ノーマルど的中・極ど的中・超神様的中・神様極的中・ハズレ だけ・プレミアム／超プレミアム／昇格の 動画の CSS は ない（CSS {len(css) / 1000:.0f}KB）・超神様の 時刻は 12.83秒・ボード 12.93秒')
 fx = rd('fx.js'); code = '\n'.join(l for l in fx.split('\n') if not l.lstrip().startswith('//'))
 tbl = lambda name: re.search(r'const %s = (\{.*?\});' % name, code, re.S).group(1)
-check("const kind = tier === 'g' ? 'sgd' : tier === 'd' ? (multi ? 'sd' : 'nd') : tier === 'b' ? 'big' : 'hit';" in code and 'lottery' not in code and 'LOT' not in re.findall(r'\b[A-Z]{3}\b', code)
-      and "function shown(kind, quiet) { return kind === 'pc' ? 'nd' : kind === 'spg' ? 'sgd' : !quiet && (kind === 'fz' || kind === 'gd') ? 'nd' : kind; }" in code
+check("const kind = tier === 'g' ? 'sgd' : tier === 'd' ? 'sd' : tier === 'b' ? 'big' : 'hit';" in code and 'lottery' not in code and 'LOT' not in re.findall(r'\b[A-Z]{3}\b', code)
+      and "function shown(kind, quiet) { return kind === 'pc' || kind === 'nd' ? 'sd' : kind === 'spg' ? 'sgd' : !quiet && (kind === 'fz' || kind === 'gd') ? 'sd' : kind; }" in code
       and "else if (d.tier === 'g' && d.multi && +spec.godN >= 2) kind = 'gk';\n    open(kind, spec, d.supers, d.bigs, quiet, null, d.trig);" in code,
-      'どれが 出るか（fx.js）：G（神様）は M でも 超神様的中・D で M で ない ものは いつも ノーマルど的中（くじは ない）・神様極的中の 条件は そのまま・決めて 出す とき（force・ためし）の pc は nd・spg は sgd')
+      'どれが 出るか（fx.js）：G（神様）は M でも 超神様的中・D は M で なくても いつも 極ど的中（第4.165版：ノーマルど的中は なし・くじも ない）・神様極的中の 条件は そのまま・決めて 出す とき（force・ためし）の pc・nd は sd・spg は sgd')
 check(all(not re.search(r'\b(pc|spg)\b', tbl(n)) for n in ('SND', 'NEED', 'FZ_PUSH', 'PZ', 'RBW', 'PLABEL')) and not any(x in code for x in ('spgGo', 'spgUp', 'spgFilm', 'spzOv', 'spg_up', 'A.art.pm', 'A.t.PC', 'UP_AT')) and not re.search(r'\b(cur|c)\.(u|sp)\b', code)
       and "pc: 'fz'" in tbl('BOARD_OF') and "spg: 'fz'" in tbl('BOARD_OF') and "pc: 'fz'" in tbl('TITLE_OF') and "spg: 'sgd'" in tbl('TITLE_OF') and "pc: 'turf'" in tbl('MEM_FRAME') and "spg: 'toriicute'" in tbl('MEM_FRAME')
       and "if (kind === 'sgd' || kind === 'spg' || kind === 'gk') {" in code,
       'fx.js：プレミアムど的中・超プレミアム神様的中の 音／PUSH／動画の 流れは ない・前に 記録した 思い出ボード（種類 pc・spg）の ボードの 形・見出し・帯・わくは のこす（そのまま 開ける）')
 pu = rd('points_ui.js'); src = rd('src.html'); man = rd('manual', 'content_app.html')
 tfx = re.search(r'const TEST_FX = (\[\[.*?\]\]);', pu).group(1)
-check(re.findall(r"\['(\w+)', '([^']+)'\]", tfx) == [('hit', '的中'), ('big', 'デカ的中'), ('nd', 'ノーマルど的中'), ('sd', '極ど的中'), ('miss', 'ハズレ'), ('sgd', '超神様的中'), ('gk', '神様極的中')]
+check(re.findall(r"\['(\w+)', '([^']+)'\]", tfx) == [('hit', '的中'), ('big', 'デカ的中'), ('sd', '極ど的中'), ('miss', 'ハズレ'), ('sgd', '超神様的中'), ('gk', '神様極的中')]
       and "pc: 'ど的中（プレミアム）'" in src and "spg: '超プレミアム神様的中'" in src and "const memNeedsChoice = b => memKindOf(b) === 'nd' || memKindOf(b) === 'pc';" in src
       and '長いものは15秒くらい' in man and '30秒くらい' not in man,
-      'テスト版の 道具の ボタンは 7こ（プレミアムど的中・超プレミアム神様的中は なし）・前の 記録の 札（ど的中（プレミアム）・超プレミアム神様的中）は そのまま 読める・説明書の「長いものは」は 15秒くらい')
+      'テスト版の 道具の ボタンは 6こ（ノーマルど的中・プレミアムど的中・超プレミアム神様的中は なし）・前の 記録の 札（ど的中・ど的中（プレミアム）・超プレミアム神様的中）は そのまま 読める・説明書の「長いものは」は 15秒くらい')
 S = assets_dir.superseded
 allf = set(OLD) | set(NEW) | {'pm_bg.webp', 'pm_fin_sh.webp', 'sd_film.mp4', 'sfx_sd.m4a', 'gk_last.webp', 'bcx_hb_eye.webp'}
 check(S('fx_assets', allf) == set(OLD) | {'pm_bg.webp', 'pm_fin_sh.webp'} and S('fx_assets', allf - {'sfx_sgd2.m4a'}) == (set(OLD) - {'sgd_film.mp4', 'sgd_last.webp', 'sfx_sgd.m4a'}) | {'pm_bg.webp', 'pm_fin_sh.webp'}

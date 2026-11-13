@@ -21,7 +21,7 @@
 //       10こで 1/66 の 抽選 → 当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜（どちらも 少し しゃがんで ためてから）
 //       第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：ハズレの ごろん・夜の ねむる を なくした（横に なる 動きは どこにも 出ない）
 //       ※ぴょんは 当たりの 合図 なので、ほかの 場面では とばない（小さい 子の はしゃぎも とばない）
-//   ・お世話の ストック：10分で +1・最高 20（解放の +5 も 20 まで ※仮）
+//   ・お世話の ストック（お世話トークン）：5分ごとに +5・最高 25（第4.165版：10分 → 5分。数えるのは tc_app.js。下の 列の 1番 右の「お世話トークン購入」から ポイントで 買える：tc_buy.js）
 //   ・ちかちか しない（光らせない・ふくらむ ものは ゆっくり）
 //   TCCare.init(o)・TCCare.pre(t, dt)（馬を 動かす 前）・TCCare.post(t)（馬を 描いた あと）・TCCare.input(kind, x, y, t)（フィールドの 絵の px）
 //   見本：preview3d.html?care=pet_a など（決まった 指の 動きを 時間で 流す・音の きっかけは window.__events()）
@@ -45,7 +45,7 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      // 絵の 場所（アプリは 名前だけ）
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 600, stockStep: 5, lotStock: 20 };      // 第4.159版（まさちゃん 11/12 10:37「お世話の最大トークン25回にして！」）：stockMax 20 → 25
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 300, stockStep: 5, lotStock: 20 };      // 第4.165版：stockEvery 600 → 300秒（5分ごとに 5つ：tc_app.js の TOKEN_MIN と 同じ）／第4.159版（まさちゃん 11/12 10:37「お世話の最大トークン25回にして！」）：stockMax 20 → 25
   const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
   //   第4.151版：急ぎ足（歩く・向きを かえる 速さの 倍）・ズームの 秒（前は 0.95）・呼ぶで 来る 所（いちばん 手前まで 歩かない：いまの 所から STEP_Y だけ 手前・NEAR_Y より 奥なら NEAR_Y まで）
   //   ズームの 上限：いちばん 手前まで 来た とき（2.2倍）と 同じ 大きさに 見える 倍率（奥に 立って いる ぶん 大きく 寄る・2.7倍まで）
@@ -56,6 +56,12 @@ const TCCare = (() => {
     let y = FRONT.y; while (y > 960 && TCHorse.scaleAt(HO, y) * 1.8 > 0.47 * W) y -= 8; return { x: FRONT.x, y, big: y < FRONT.y };      // 大きな 馬は まん中（頭も しっぽも 画面に 入る）
   }
   const BTN = { pet: [170, 1494], feed: [407, 1494], clean: [644, 1494], call: [881, 1494] }, BTN_R = 70, HELP = [678, 97];      // HELP：説明書の「？」
+  // 第4.165版（まさちゃん 2026/11/13 12:36「お世話トークン購入のアイコンやっぱりこっちで！お世話とかのところに上手く入れられない？」・12:38「1番右側に入れて！」）：
+  //   下の 列の 1番 右に「お世話トークン購入」（まさちゃんの 丸い 絵：tc_icon_buy2.webp）を 入れる。入れる とき（O.onBuy が ある ＝ アプリ）は お世話の 4つを 左へ つめる（BTN_X5）。
+  //   12:46「周りの大きさと合わせて！バランス調整して！」：絵の 金の 輪を ほかの 丸と 同じ 大きさ（直径 140）・同じ 高さに。5つを 同じ 間かく（まん中から まん中 199・
+  //   はしと すきまは 58〜59）で ならべ、下に ほかと 同じ 字で 名前「トークン購入」（はじめは 直径 216 で 名前なし＝ほかより 大きく、列が かたよって 見えた）
+  const BTN_X5 = { pet: 128, feed: 327, clean: 526, call: 725 }, BUYG = { x: 924, y: 1494, d: 142, name: 'トークン購入' };      // d：絵の 幅（まわりに 少し 余白が ある ので 輪は 140）
+  let buyIm = null;
   const S = { on: false, heart: 0, heartShow: 0, stock: 3, stockShow: 3, got: [], coolUntil: -1e9, coolFrom: -1e9, ses: null, hand: null, fx: [], ev: [], sched: [],
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
@@ -420,6 +426,15 @@ const TCCare = (() => {
   //       ちりとりは ねらう 山（指に いちばん 近い 山）の むこうがわへ すっと 回りこんで 口を 山に 向ける → 指を 山に 通して そのまま 進めば 入る
   //   ・ぜんぶ 入ったら 道具を たたんで「きれい！」（うんちを 片付けた ときは 馬が くんくん しに 来る・金のうんちは「運がついた！」）
   //   ・ほうき・ちりとりは まさちゃんの 3D（PROPS.broom・PROPS.pan：馬と 同じ 光・同じ 深さで 描く）。3D が ない ときは 紙の 絵（broomArt・panArt）
+  // 第4.165版（まさちゃん 2026/11/13 12:59「トレーニングセンターの掃除は、ほうきと、ちりとりも自由に動かして、ゴミのところまで持っていってほうきで片付けられるようにして！
+  //   今は、触れると瞬間移動しちゃう！」）：道具は「つかんで 運ぶ」
+  //   ・前は 指を 置いた 所へ ほうきが 一瞬で 飛んで（瞬間移動）、ちりとりも ねらう 山の むこうへ ひとりでに 回りこんで いた
+  //   ・いまは 指を 置いた 所の 近くに ある 道具を つかむ（grabAt：ほうき＝毛の 先から 柄まで・ちりとり＝まわり）→ 指に ついて 動く。つかんだ ときの ずれ（道具 − 指：C.goff）を 保つ
+  //     ＝ つかんだ 瞬間に 道具は 動かない。道具の ない 所を さわっても 何も 動かない（札「ほうきか ちりとりを つかんでね」）
+  //   ・ちりとりは 置いた 所に いる（ひとりでに 山へ 回りこまない）。口は ほうきで 押して いる 山（なければ いちばん 近い のこりの 山）の 方へ その場で 向く（panAim：場所は かえない）
+  //   ・片付くのは 前と 同じ：ほうきの 先で 押した 山が ちりとりの 口に 入った とき（ちりとりを 山に かぶせる だけでは 片付かない ＝ ほうきで はく）
+  //   ・はじめの 置き方は 前と 同じ（いちばん 手前の 山の 右に ほうき・左に ちりとり）。さわらない まま 25秒で のこりを 片付けるのも 前と 同じ
+  //   ・見本（S.demo）は 前の まま（指＝ほうきの 先・ちりとりは 回りこむ）
   const CLEAN = { hit: 0.46, mouth: 0.45, panD: 1.0, broom: 1.35, pan: 0.75, idle: 25 };      // 馬の 体の 高さ 1 を 1 と して：ほうきが 山に とどく 半径・ちりとりの 口に 入る 半径・山から ちりとり まで・ほうきの 長さ・ちりとりの 幅／idle：さわらない 秒（のこりを 片付けて おしまい）
   const PITCH = 0.49;                                      // 見下ろし（tc_horse.js の draw と 同じ）
   const psAt = y => TCHorse.scaleAt(HO, y) / ((HO && HO.opt && HO.opt.stage) || 1);      // その 所の 大きさ（px／体の 高さ 1：馬の 大きさ 抜き）
@@ -441,7 +456,7 @@ const TCCare = (() => {
     if (tg.some(T => !T.poop)) BR.trashDone = true;          // ここで 片付けた あつかい（tc_app.js：次の 15分が 始まる・とちゅうで 閉じても のこらない）
     for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
     const lp = tg.filter(T => T.poop).pop(), xs = tg.map(T => T.o.x), ys = tg.map(T => T.o.y);
-    S.clean = { t0: t, tg, got: 0, sw: 0, gold: tg.some(T => T.poop && T.o.gold), sniff: lp ? [lp.o.x, lp.o.y] : null, pan: null, bro: null, side: -1, pg: [], actT: t };
+    S.clean = { t0: t, tg, got: 0, sw: 0, gold: tg.some(T => T.poop && T.o.gold), sniff: lp ? [lp.o.x, lp.o.y] : null, pan: null, bro: null, side: -1, pg: [], actT: t, grab: null, goff: [0, 0] };      // grab＝つかんで いる 道具（'broom'・'pan'）・goff＝つかんだ ときの ずれ（道具 − 指）
     // カメラ：ぜんぶの 山と 道具が 入る ように（1つ だけ なら 寄る）
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const z = BR.stand ? 1 : clamp(Math.min(W / (x1 - x0 + 520), H * 0.62 / (y1 - y0 + 430)), 1, 1.7), hw = W / (2 * z), hh = H / (2 * z);
@@ -454,6 +469,7 @@ const TCCare = (() => {
     const T0 = C.tg.reduce((a, b) => (b.o.y > a.o.y ? b : a)), ps = psAt(T0.o.y);      // はじめは いちばん 手前の 山：ほうきは 右・ちりとりは 左
     C.bro = { x: clamp(T0.o.x + 0.8 * ps, 80, W - 80), y: T0.o.y + 8 };
     aimPan(t, T0, [C.bro.x, C.bro.y], true);
+    if (!S.demo) at(t + 0.55, tt => { if (S.clean === C && !C.down && !C.got) tagW([(C.bro.x + C.pan.x) / 2, Math.min(C.bro.y, C.pan.y)], 'ほうきと ちりとりは 指で 運べるよ', tt, { off: [0, -170], size: 30, dur: 2.4, rot: 0 }); });      // 第4.165版：つかんで 運ぶ ことを 知らせる
     const gp = C.tg.find(T => T.poop && T.o.gold);
     if (gp) at(t + 0.2, tt => { tagW([gp.o.x, gp.o.y], '金のうんち！', tt, { off: [0, -120], size: 36, dur: 1.8, col: '#b07a10' }); ev(tt, 'gold'); });
   }
@@ -469,6 +485,24 @@ const TCCare = (() => {
     const cur = C.pan ? panNow(t) : null;
     C.pan = snap || !cur ? { x: px, y: py, yaw, fx: px, fy: py, fyaw: yaw, t0: t - 1 } : { x: px, y: py, yaw, fx: cur.x, fy: cur.y, fyaw: cur.yaw, t0: t };
     C.act = T;
+  }
+  const GRAB = { pan: 0.62, tip: 0.5, rod: 0.24, pad: 34, bx: [40, W - 40], by: [770, 1460], px: [90, W - 90], py: [790, 1430] };      // つかめる 近さ（体の 高さ 1 を 1 と して：ちりとりの 幅の 何倍・ほうきの 毛の 先・柄）＋ 指の ぶん（px）／ほうきの 先・ちりとりを 置ける 所
+  const segDist = (px, py, ax, ay, bx, by) => { const vx = bx - ax, vy = by - ay, k = clamp(((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1), 0, 1); return Math.hypot(px - ax - vx * k, py - ay - vy * k); };
+  function broomRod() {                  // ほうきの 柄（画面の 上へ のびる・はく 向きの うしろへ 少し かたむく）：［毛の 先 x, y, 柄の 先 x, y］
+    const C = S.clean, L = CLEAN.broom * psAt(C.bro.y) * 0.86, sd = C.sideS == null ? C.side : C.sideS; return [C.bro.x, C.bro.y, C.bro.x - sd * 0.22 * L, C.bro.y - L];
+  }
+  function grabAt(t, x, y) {             // 指の 所に ある 道具：'broom'・'pan'・null（どちらにも とどく ときは 近い 方）
+    const C = S.clean, pn = panNow(t), bs = psAt(C.bro.y), rod = broomRod();
+    const dp = gdist(x, y, pn.x, pn.y) / (GRAB.pan * CLEAN.pan * psAt(pn.y) + GRAB.pad);
+    const db = Math.min(gdist(x, y, C.bro.x, C.bro.y) / (GRAB.tip * bs + GRAB.pad), segDist(x, y, rod[0], rod[1], rod[2], rod[3]) / (GRAB.rod * bs + GRAB.pad));
+    return dp >= 1 && db >= 1 ? null : db <= dp ? 'broom' : 'pan';
+  }
+  function panAim(t) {                   // ちりとりの 口を 向ける：ほうきで 押して いる 山 → なければ いちばん 近い のこりの 山（場所は かえない・向きは すっと 0.22秒）
+    const C = S.clean, q = C.pan, left = C.tg.filter(T => !T.done); if (!q || !left.length) return;
+    const pn = panNow(t), T = left.find(z => z.held) || left.reduce((a, b) => (gdist(b.o.x, b.o.y, pn.x, pn.y) < gdist(a.o.x, a.o.y, pn.x, pn.y) ? b : a));
+    C.act = T; const fx_ = T.o.x - pn.x, fz = (T.o.y - pn.y) * 2; if (Math.hypot(fx_, fz) < 14) return;      // 山が 真上：向きは そのまま
+    const yaw = Math.atan2(-fz, fx_); if (Math.abs(angDiff(q.yaw, yaw)) < 0.03) return;
+    q.fx = q.x = pn.x; q.fy = q.y = pn.y; q.fyaw = pn.yaw; q.yaw = yaw; q.t0 = t;
   }
   function panNow(t) {                   // ちりとりの いまの 場所と 向き（すっと 動く：0.22秒）
     const q = S.clean.pan, k = easeOut((t - q.t0) / 0.22);
@@ -492,7 +526,8 @@ const TCCare = (() => {
       if (!T.poop) { o.sp = Math.max(0.6, (o.sp != null ? o.sp : 1) - 0.003 * Math.hypot(dx, dy)); o.tw = (o.tw || 0) + 0.006 * dx; }
       if (gdist(o.x, o.y, pn.x, pn.y) < CLEAN.mouth * ps) collect(t, T);
     }
-    if ((!C.act || C.act.done) && C.moved > 46) retarget(t, [x, y]);          // 入った：少し 動かしたら つぎの 山へ ちりとりが 回りこむ
+    if (!S.demo) panAim(t);                                                  // 第4.165版：ちりとりは 動かない（口 だけ 押して いる 山の 方へ）
+    else if ((!C.act || C.act.done) && C.moved > 46) retarget(t, [x, y]);    // 見本：入った → 少し 動かしたら つぎの 山へ ちりとりが 回りこむ
   }
   function collect(t, T) {               // 1つ 片付いた（ちりとりに 入った）
     const C = S.clean, o = T.o, pn = panNow(t), ps = psAt(pn.y), c = Math.cos(pn.yaw), sn = Math.sin(pn.yaw);
@@ -500,7 +535,8 @@ const TCCare = (() => {
     T.done = true; T.held = false; C.got++; C.moved = 0; C.actT = t; ev(t, 'inpan'); fx({ k: 'dust', t0: t, w: [pn.x, pn.y] });
     if (T.poop) { BR.poops = (BR.poops || []).filter(q => q !== o); C.pg.push({ img: o.img || 0, w: o.w || 0.42, gold: !!o.gold, t0: t, from: [o.x, o.y], to: inn, y: o.y }); }
     else { o.out = t; o.from = [o.x, o.y, o.sp != null ? o.sp : 1]; o.to = inn; }
-    const nose = P('nose'), br = S.finger;
+    if (!S.demo) panAim(t);                                                  // つぎの 山へ 口を 向ける（場所は そのまま）
+    const nose = P('nose'), br = S.demo ? S.finger : [C.bro.x, C.bro.y];     // ほうきの 先（見本は 指）
     if (!C.nibbled && !BR.stand && C.got === 2 && nose && br && Math.hypot(nose[0] - br[0], nose[1] - br[1]) < 300 && (S.demo && S.demo.nibble != null ? S.demo.nibble : T1('nibble', () => rnd() < 1 / 4))) {
       C.nibbled = true; at(t + 0.1, tt => { react('nibble', 1.6, tt, { side: sideToward(br[0], br[1]) }); ev(tt, 'nibble'); tagW(P('nose'), 'もぐっ？', tt + 0.3, { off: [0, -100], size: 34, dur: 1.3 }); });
     }
@@ -526,7 +562,7 @@ const TCCare = (() => {
     return { P: P3, m: M.mul(M.ry(BR.dir), M.mul(M.tr(x, 0, z), M.mul(R, M.sc(k, k, k)))), sh: sh ? [c * x + sn * z, -sn * x + c * z, sh[0] * k, sh[1]] : null };
   }
   function broomPose(t) {                // ほうきの 先の 場所（指）・向き（side：右へ はく ＋1／左へ はく −1 → 柄は うしろへ かたむく）
-    const C = S.clean, f = C.down && S.finger ? S.finger : null;
+    const C = S.clean, f = S.demo && C.down && S.finger ? S.finger : null;      // 見本：指＝ほうきの 先。アプリ：つかんで 運ぶ（input が C.bro を 動かす）
     if (f) { C.bro.x = f[0]; C.bro.y = f[1]; }
     C.sideS = C.sideS == null ? C.side : C.sideS + (C.side - C.sideS) * 0.22;
     return { x: C.bro.x, y: C.bro.y, yaw: Math.PI * (0.5 - 0.5 * C.sideS), wob: 0.1 * Math.sin((C.dist || 0) * 0.045) };
@@ -549,7 +585,7 @@ const TCCare = (() => {
   //   → 聞いて 決めた こと：選び方＝PUSH の 横の スイッチ（前に 選んだ 方を おぼえる）・まとめて 使った 分も お世話 1回ずつに 数える・ボタンの 絵に 字は 入れない・チケットは プチュン → いまの 演出
   //   ・ごはん／おそうじが おわる（release）→ PUSH が ぽんっと 出る（S.push）。出て いる 間は ほかの お世話は できない（「PUSH を 押してね」）
   //   ・押した 瞬間（指を 置いた とき）に：トークン −1（ev 'token'＝アプリが お世話 1回に 数える）→ 抽選（careLottery）→ 結果
-  //       ハズレ＝音 だけ（ev 'pfo'）／ポイント＝札（pointpop）＋ 10〜100P は ev 'piron'・200〜300P は ev 'dedeen'／ルーレット＝ev 'kyuin' → 1.0秒 あとに アプリの 演出（O.onPrize）／チケット＝すぐ アプリの 演出（プチュン → 扉）
+  //       ハズレ＝音 だけ（ev 'pfo'）／ポイント＝札（pointpop）＋ 10〜100P は ev 'piron'・200〜300P は ev 'dedeen'／ルーレット・ポイント特化ゾーン（第4.165版）＝ev 'kyuin' → 1.0秒 あとに アプリの 演出（O.onPrize）／チケット＝すぐ アプリの 演出（プチュン → 扉）
   //   ・1個（S.bulk＝false）：1回 押したら PUSH は 消える。まとめて（S.bulk＝true）：トークンが ある 間 のこる（押すたびに −1・前の 結果の 札は 消して すぐ 次を 出す）。
   //     「おわる」は まとめてで 1回 以上 押した あと だけ（お世話 1回には トークンを 1つは 使う：前と 同じ）。トークンが 0 に なったら 消える
   //   ・ルーレット・チケットの 演出の 間（S.fxHold）は かくす・押せない。おわったら（まとめてで トークンが あれば）また 出る
@@ -578,7 +614,7 @@ const TCCare = (() => {
     S.fx = S.fx.filter(f => f.k !== 'pointpop' && f.k !== 'rtcue');      // 前の 結果の 札は 消す（つづけて 押した とき：すぐ 次の 結果）
     if (!pz) ev(t, 'pfo');                                               // ハズレ：音 だけ（プフォ）
     else if (pz.k === 'pt') { fx({ k: 'pointpop', t0: t, v: pz.v, dur: 2.0 }); if (pz.v >= 200) ev(t, 'dedeen'); else ev(t, 'piron'); if (O.onPrize) O.onPrize(pz); }      // 10〜100P：ピロン・200〜300P：デデーン
-    else if (pz.k === 'rt') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1 }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      // キュインキュイーン → ルーレット
+    else if (pz.k === 'rt' || pz.k === 'zn') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1, txt: pz.k === 'zn' ? '特化ゾーン！' : null }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      // キュインキュイーン → ルーレット／ポイント特化ゾーン（第4.165版）
     else { Pn.lock = t + 0.5; if (O.onPrize) O.onPrize(pz); }            // チケット：アプリが プチュン → 扉の 演出
     if (!S.bulk || S.stock < 1) pushClose(t + 0.3);                      // 1個 使う・トークンが なくなった → 押した 動きの あと 消える
     return true;
@@ -790,7 +826,23 @@ const TCCare = (() => {
   // さわる（x,y：フィールドの px）
   function input(kind, x, y, t) {
     if (S.phase === 'beg' && kind === 'down' && zoneAt(x, y)) { begPet(t); S.finger = [x, y]; S.begHand = t; return; }
-    if (S.mode === 'clean' && S.phase === 'clean') {         // ほうきで はく（指＝ほうきの 先。山を 押して ちりとりの 口へ）
+    if (S.mode === 'clean' && S.phase === 'clean' && !S.demo) {      // 第4.165版：ほうき・ちりとりを つかんで 運ぶ（つかんだ ときの ずれを 保つ ＝ 道具は 飛ばない）
+      const C = S.clean; S.finger = [x, y]; C.actT = t;
+      if (kind === 'down') {
+        C.grab = grabAt(t, x, y); C.down = !!C.grab; C.last = [x, y]; C.moved = 0;
+        if (C.grab === 'broom') { C.goff = [C.bro.x - x, C.bro.y - y]; ev(t, 'pick'); }
+        else if (C.grab === 'pan') { const q = C.pan, pn = panNow(t); q.fx = q.x = pn.x; q.fy = q.y = pn.y; q.fyaw = q.yaw = pn.yaw; q.t0 = t - 1; C.goff = [pn.x - x, pn.y - y]; ev(t, 'pick'); }
+        else if (t - (C.hintT == null ? -9 : C.hintT) > 2.5) { C.hintT = t; tagW([x, y], 'ほうきか ちりとりを つかんでね', t, { off: [0, -90], size: 30, dur: 1.7, rot: 0 }); ev(t, 'wait'); }
+      } else if (kind === 'move' && C.grab === 'broom') {
+        const nx = clamp(x + C.goff[0], GRAB.bx[0], GRAB.bx[1]), ny = clamp(y + C.goff[1], GRAB.by[0], GRAB.by[1]), dx = nx - C.bro.x, dy = ny - C.bro.y, d = Math.hypot(dx, dy * 2);
+        C.bro.x = nx; C.bro.y = ny; C.last = [x, y]; C.moved += d; C.dist = (C.dist || 0) + d; if (Math.abs(dx) > 1.5) C.side = dx > 0 ? 1 : -1;
+        sweepMove(t, nx, ny, dx, dy);
+      } else if (kind === 'move' && C.grab === 'pan') {
+        const q = C.pan; q.fx = q.x = clamp(x + C.goff[0], GRAB.px[0], GRAB.px[1]); q.fy = q.y = clamp(y + C.goff[1], GRAB.py[0], GRAB.py[1]); C.last = [x, y]; panAim(t);
+      } else if (kind === 'up') { if (C.grab) panAim(t); C.grab = null; C.down = false; for (const T of C.tg) T.held = false; }
+      return;
+    }
+    if (S.mode === 'clean' && S.phase === 'clean') {         // 見本：ほうきで はく（指＝ほうきの 先。山を 押して ちりとりの 口へ・ちりとりは 回りこむ）
       const C = S.clean; S.finger = [x, y]; C.actT = t;
       if (kind === 'down') { C.down = true; C.last = [x, y]; C.moved = 0; retarget(t, [x, y], true); }
       else if (kind === 'move' && C.down) { const dx = x - C.last[0], dy = y - C.last[1]; C.last = [x, y]; const d = Math.hypot(dx, dy * 2); C.moved += d; C.dist = (C.dist || 0) + d; if (Math.abs(dx) > 1.5) C.side = dx > 0 ? 1 : -1; sweepMove(t, x, y, dx, dy); }
@@ -1245,7 +1297,13 @@ const TCCare = (() => {
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
     for (const k of ['pet', 'feed', 'clean', 'call']) if (Math.hypot(x - BTN[k][0], y - BTN[k][1]) < BTN_R + 10) return k;
+    if (O.onBuy && Math.hypot(x - BUYG.x, y - BUYG.y) < BTN_R + 10) return 'buy';      // 第4.165版：お世話トークン購入（下の 列の 1番 右）
     return null;
+  }
+  // 第4.165版：「お世話トークン購入」を 押した → アプリが 購入の 窓を 開く（O.onBuy）。開けない とき（お世話の 途中 など：false が 返る）は 札で 知らせる
+  function pressBuy(t) {
+    S.press.buy = t; ev(t, 'button');
+    if (O.onBuy && O.onBuy() === false) { fx({ k: 'tagUI', t0: t, x: 800, y: BUYG.y - 150, txt: 'お世話が おわってから 買えるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); }
   }
   function press(t, what) {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
@@ -1254,6 +1312,7 @@ const TCCare = (() => {
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
+    else if (what === 'buy') pressBuy(t);
   }
   function pointer(kind, x, y, t) {        // アプリの 指（画面の 座標）
     if (kind === 'down') { const h = uiHit(x, y); if (h === 'push') { pushPress(t); S.uiDown = '-'; return; } S.uiDown = h; if (h) return; }      // PUSH は 指を 置いた 瞬間に（「すぐに押せる」）
@@ -1401,6 +1460,20 @@ const TCCare = (() => {
       }
       if (k === 'pet' && S.readyPop != null) { const q = (t - S.readyPop) / 0.6; if (q < 1) { g.save(); g.strokeStyle = `rgba(255,156,188,${0.7 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 8 + 26 * easeOut(q), 0, TAU); g.stroke(); g.restore(); } }
     });
+    // 第4.165版：5つめ「お世話トークン購入」（まさちゃんの 丸い 絵：下の 列の 1番 右）。ほかの ボタンと 同じ 大きさ・同じ 高さ・下に 名前。押すと 少し へこむ・PUSH の 間は いっしょに かくれる
+    if (O.onBuy) {
+      const B = BUYG, r = BTN_R, pq = S.press.buy != null ? (t - S.press.buy) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
+      g.save(); g.translate(B.x, B.y); g.scale(ps, ps);
+      g.fillStyle = 'rgba(40,20,5,0.22)'; g.beginPath(); g.arc(4, 7, r, 0, TAU); g.fill();      // 影（ほかの ボタンと 同じ）
+      if (buyIm && buyIm.naturalWidth) { const h_ = B.d * buyIm.naturalHeight / buyIm.naturalWidth; g.imageSmoothingQuality = 'high'; g.drawImage(buyIm, -B.d / 2, -h_ / 2, B.d, h_); }
+      else {                             // 絵が 読めない：緑の 紙の 丸に ＋
+        g.fillStyle = '#e9f6e4'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill(); g.strokeStyle = '#e2b33c'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, r - 3, 0, TAU); g.stroke();
+        label('＋', 0, 2, 76, '#3f9f5a');
+      }
+      if (pq < 1.6) { const q = clamp(pq / 1.6, 0, 1); g.strokeStyle = `rgba(255,248,236,${0.75 * (1 - q)})`; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, r + 6 + 30 * easeOut(q), 0, TAU); g.stroke(); }
+      g.restore();
+      label(B.name, B.x, B.y + r + 34, 30, '#fff8ea', 'rgba(60,35,15,0.85)', 7);
+    }
     g.restore();
   }
   function drawFx(t) {
@@ -1479,7 +1552,7 @@ const TCCare = (() => {
       } else if (f.k === 'rtcue') {    // ルーレット当選（キュインキュイーン）：画面の まん中に「ルーレット！」の 札と 星が 1回 ひろがる（このあと アプリが ルーレットを 出す）
         const d = f.dur; if (u > d) continue; const a = 1 - sm((u - d + 0.25) / 0.25);
         for (let i = 0; i < 8; i++) { const an = i * TAU / 8 + 0.2, rr = 150 + 190 * easeOut(u / 0.7); star(W / 2 + Math.cos(an) * rr * 1.15, 720 + Math.sin(an) * rr * 0.7, 20 * Math.sin(Math.PI * clamp(u / 0.8, 0, 1)), u * 2 + i, a, i % 2 ? '#fff2bf' : '#f5d06a'); }
-        tag(W / 2, 720 - 20 * easeOut(u / d), 'ルーレット！', 64, a, backOut(u / 0.28), -0.04, '#c2456f');
+        tag(W / 2, 720 - 20 * easeOut(u / d), f.txt || 'ルーレット！', f.txt ? 60 : 64, a, backOut(u / 0.28), -0.04, '#c2456f');
       } else if (f.k === 'plus') {
         const d = 1.6; if (u > d) continue;
         label(f.txt, W - 26 - 296 + 150, 44 + 140 + 30 - 40 * easeOut(u / d), 44, '#3f7f3a', '#fff8ec', 7);
@@ -1514,6 +1587,10 @@ const TCCare = (() => {
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
     pushCap = new Image(); pushCap.src = AP('tc_push_cap.webp'); pushBase = new Image(); pushBase.src = AP('tc_push_base.webp');      // お世話の あとの PUSH（第4.159版：まさちゃんの 赤い ボタン）
     try { await Promise.all([pushCap.decode(), pushBase.decode()]); } catch (e) { }
+    if (O.onBuy) {                       // 第4.165版：下の 列に「お世話トークン購入」が 入る（お世話の 4つは 左へ）
+      for (const k in BTN_X5) BTN[k][0] = BTN_X5[k];
+      buyIm = new Image(); buyIm.src = AP('tc_icon_buy2.webp'); try { await buyIm.decode(); } catch (e) { }      // まさちゃんの 丸い 絵（kisekae/tc/buy_asset.py）。読めない とき（CI など）は 紙の 丸と 字
+    }
     S.bulk = !!o.bulk;
     const bk = O.bg === 'divine' ? 'kamisama' : O.bg === 'abyss' ? 'maboroshi' : null;      // 神様馬・幻の馬の フィールド → 上に 降臨の バナー
     if (bk) await special(bk);
@@ -1541,6 +1618,6 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
+    BTN, BTN_R, BUYG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

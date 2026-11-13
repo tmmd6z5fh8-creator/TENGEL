@@ -6,6 +6,11 @@
 //     レースの 札ごとに メモの 欄（そのまま 書ける・書いた そばから 保存・300字まで・行は ふえる ぶん だけ 広がる）。予約／直す の 画面にも メモの 欄。
 //     その 日が すぎると レースと いっしょに 消える。通知には 出さない（ロック画面に 出る ため）
 //   保存：localStorage 'tengel.plan'（{ v, on, races:[{ id, date, time, name, n, dist, venue, r, memo, notify:[分] }] }）→ 通知は tc_launch.js の TCPlanNotify と src.html の syncNotify
+//   ・推し馬（第4.165版・まさちゃん 2026/11/13 11:46「作戦会議の中に、推し馬、の欄を作成して、推し馬を25頭まで登録できるようにして！できること ・名前
+//     ・親(2頭)、おじいちゃん(4頭)、ひいおじいちゃん(8頭) ・備考欄」・11:59「推し馬は、一頭ごとの欄に、この推し馬を消す、をつけて！」）：
+//     レースの ボードの 下に「推し馬」の ボード（25頭まで）。1頭ごとの 札＝名前・父と 母（「血統を見る」で 親・おじいちゃん・ひいおじいちゃんの 表）・備考（そのまま 書ける）・「直す」「この推し馬を消す」。
+//     「＋ 推し馬を登録」／「直す」→ 名前・親 2・おじいちゃん 4・ひいおじいちゃん 8・備考の 入力。消す ときは 2回 押す（アプリの 中では confirm() の 窓が 出ない）。
+//     日が かわっても 消えない。置き場は tc_launch.js の TCOshi（localStorage 'tengel.oshi'・バックアップにも 入る）
 const TCPlan = (() => {
   const PK = 'tengel.plan', MINS = [20, 15, 10, 8, 5], MEMO_MAX = 300;
   // メモ：改行は のこす・見えない 制御の 字は 消す・300字まで（絵文字の 途中では 切らない）
@@ -17,6 +22,12 @@ const TCPlan = (() => {
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
   const wday = s => { const [y, m, d] = String(s).split('-').map(Number); return WD[new Date(y, m - 1, d).getDay()]; };
   let P = null, root = null, edit = null, auth = '', host = null, delAsk = null;      // delAsk＝「消す」を 1回 押した レースの id（もう一度 押すと 消す）
+  // 推し馬（第4.165版）：OL＝一覧（TCOshi.load()）・editO＝登録／直す の 入力の 中身・delAskO＝「この推し馬を消す」を 1回 押した 馬の id・openO＝血統の 表を 開いて いる 馬
+  const OS = () => (typeof window !== 'undefined' && window.TCOshi) || null;
+  const PED_LB = ['父', '母', '父の父', '父の母', '母の父', '母の母', '父の父の父', '父の父の母', '父の母の父', '父の母の母', '母の父の父', '母の父の母', '母の母の父', '母の母の母'];      // TCOshi の ped の ならび（偶数＝父・奇数＝母）
+  let OL = [], editO = null, delAskO = null, openO = {};
+  const oLoad = () => { const o = OS(); OL = o ? o.load() : []; };
+  const oSave = () => { const o = OS(); if (o) OL = o.save(OL); };
   function load() {
     try { P = JSON.parse(localStorage.getItem(PK) || 'null'); } catch (e) { P = null; }
     if (!P || !Array.isArray(P.races)) P = { v: 1, on: false, races: [] };
@@ -88,6 +99,25 @@ const TCPlan = (() => {
 #tcPlan .mm:focus{outline:0;border-style:solid;border-color:#e0a020;background:#fffdf2}
 #tcPlan .fm textarea{display:block;width:100%;box-sizing:border-box;min-height:66px;border-radius:10px;border:1.5px solid #d9b77c;background:#fff;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
 #tcPlan .fa{display:flex;gap:10px;margin-top:14px}
+#tcPlan .jump{display:flex;gap:8px;margin:0 0 10px}
+#tcPlan .jump button{flex:1 1 0;min-width:0;height:34px;border-radius:17px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 13px/1 var(--tcpf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tcPlan .oboard{margin-top:14px}
+#tcPlan .oc{position:relative;background:#fffdf7;border-radius:6px;padding:9px 10px 9px 12px;margin:0 0 10px;box-shadow:0 3px 0 rgba(90,55,20,.25);border-left:6px solid #5aa7c4}
+#tcPlan .oc::before{content:"";position:absolute;top:-6px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#9fd8f0,#3f8fb0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+#tcPlan .oh{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:0;margin:0;text-align:left;color:inherit;font:inherit;-webkit-tap-highlight-color:transparent}
+#tcPlan .onm{flex:1 1 auto;min-width:0;font-size:17px;font-weight:700;color:#5a3a1c;word-break:break-all}
+#tcPlan .otg{flex:none;font-size:12px;font-weight:700;color:#8a5a2a;border:2px solid #d9b77c;border-radius:14px;padding:5px 9px;background:#fff8ec;white-space:nowrap}
+#tcPlan .osum{font-size:12.5px;color:#8a6a48;margin-top:3px;word-break:break-all}
+#tcPlan .pedh{display:grid;grid-template-columns:30fr 33fr 37fr;gap:3px;margin:8px 0 3px;font-size:10.5px;font-weight:700;color:#8a6a48;text-align:center}
+#tcPlan .ped{display:grid;grid-template-columns:30fr 33fr 37fr;grid-auto-rows:minmax(31px,auto);gap:3px}
+#tcPlan .pc{display:flex;flex-direction:column;justify-content:center;min-width:0;border-radius:6px;padding:3px 4px;border:1px solid #cfe0ee;background:#eef5fb}
+#tcPlan .pc.f{border-color:#f0cfd8;background:#fdeff3}
+#tcPlan .pc small{font-size:9.5px;line-height:1.2;color:#8a7a68}
+#tcPlan .pc b{font-size:11.5px;line-height:1.25;letter-spacing:-.02em;color:#5a3a1c;word-break:break-all}
+#tcPlan .pc.e b{color:#c9b89c;font-weight:400}
+#tcPlan .add.oadd{background:#3f8fb0;box-shadow:0 3px 0 #2c6a85}
+#tcPlan .add:disabled{background:#cdbb9a;box-shadow:none}
+#tcPlan .fm h4{margin:16px 0 0;font-size:13.5px;color:#5b3412;border-bottom:2px dashed rgba(91,52,18,.3);padding-bottom:2px}
 #tcPlan .fa button{flex:1;height:44px;border-radius:22px;font:700 15px/1 var(--tcpf)}
 #tcPlan .fa .ok{border:0;background:#c2456f;color:#fff;box-shadow:0 3px 0 #8f2f4f}
 #tcPlan .fa .ng{border:2px solid #d9b77c;background:#fff8ec;color:#7a4520}
@@ -113,6 +143,11 @@ const TCPlan = (() => {
   function onInput(e) {
     const t = e.target; if (!t || t.tagName !== 'TEXTAREA') return;
     fit(t);
+    if (t.dataset.p === 'omemo') {      // 推し馬の 備考（札の 中で そのまま 書く）
+      const o = OL.find(x => x.id === t.dataset.id), os = OS(); if (!o || !os) return;
+      const v = os.str(t.value, os.MEMO_MAX, true); if ((o.memo || '') === v) return;
+      o.memo = v; oSave(); return;
+    }
     if (t.dataset.p !== 'memo' || !P) return;
     const r = P.races.find(x => x.id === t.dataset.id); if (!r) return;
     const v = memoClean(t.value); if ((r.memo || '') === v) return;
@@ -121,9 +156,11 @@ const TCPlan = (() => {
   function paint() {
     if (!root) return; const b = root.querySelector('.pb');
     if (edit) { b.innerHTML = formHtml(); fitAll(); return; }
+    if (editO) { b.innerHTML = oFormHtml(); fitAll(); return; }
     const td = today(), list = P.races.slice().sort((a, c) => (a.date + a.time).localeCompare(c.date + c.time));
     const off = auth === 'denied';
-    let h = `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに えらんだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
+    let h = OS() ? `<div class="jump"><button type="button" data-p="jr">📋 お気に入りレース</button><button type="button" data-p="jo">🐴 推し馬 ${OL.length}/${OS().MAX}</button></div>` : '';
+    h += `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに えらんだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
       + `<button type="button" class="sw" role="switch" aria-checked="${!!P.on}" aria-label="通知" data-p="on"></button></div>`;
     h += `<div class="board"><div class="cork"><div class="bdt">${jaDate(td)}（${wday(td)}）</div><div class="bsub">お気に入りレース一覧</div>`;
     if (!list.length) h += '<div class="empty">まだ 予約した レースは ないよ<br>下の「＋ レースを予約」から 入れてね</div>';
@@ -135,8 +172,67 @@ const TCPlan = (() => {
         + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? 'ほんとに 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
-    b.innerHTML = h; fitAll();
+    h += oBoardHtml();
+    const y0 = b.scrollTop;
+    b.innerHTML = h; fitAll(); oPad();
+    if (oshiMode && b.scrollTop !== y0) b.scrollTop = y0;      // 描き直しで 中身が いちど 短く なって 上へ もどされた とき → もとの 所へ
   }
+  // ---------- 推し馬の ボード（第4.165版）----------
+  const oMemoBox = o => `<textarea class="mm" data-p="omemo" data-id="${esc(o.id)}" rows="1" maxlength="${OS().MEMO_MAX}" placeholder="📝 備考を書く（特徴・ねらい目など）" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`;
+  // 血統の 表：左から 親（2頭）・おじいちゃん（4頭）・ひいおじいちゃん（8頭）。父は 青・母は 桃の 地。入れて いない ますは「—」
+  function pedTable(o) {
+    const cell = (i, r0, span, col) => `<div class="pc ${i % 2 ? 'f' : 'm'}${o.ped[i] ? '' : ' e'}" data-i="${i}" style="grid-column:${col};grid-row:${r0} / span ${span}"><small>${PED_LB[i]}</small><b>${o.ped[i] ? esc(o.ped[i]) : '—'}</b></div>`;
+    let h = '<div class="pedh"><span>親</span><span>おじいちゃん</span><span>ひいおじいちゃん</span></div><div class="ped">' + cell(0, 1, 4, 1) + cell(1, 5, 4, 1);
+    for (let k = 0; k < 4; k++) h += cell(2 + k, 1 + k * 2, 2, 2);
+    for (let k = 0; k < 8; k++) h += cell(6 + k, 1 + k, 1, 3);
+    return h + '</div>';
+  }
+  function oBoardHtml() {
+    const os = OS(); if (!os) return '';
+    let h = `<div class="board oboard"><div class="cork"><div class="bdt">推し馬</div><div class="bsub">${OL.length}頭（${os.MAX}頭まで 登録できるよ）</div>`;
+    if (!OL.length) h += '<div class="empty">まだ 推し馬は いないよ<br>下の「＋ 推し馬を登録」から 入れてね</div>';
+    OL.forEach(o => {
+      const open = !!openO[o.id], sum = [o.ped[0] ? '父：' + esc(o.ped[0]) : '', o.ped[1] ? '母：' + esc(o.ped[1]) : ''].filter(Boolean).join('　');
+      h += `<div class="oc" data-oid="${esc(o.id)}"><button type="button" class="oh" data-p="otog" data-id="${esc(o.id)}" aria-expanded="${open}"><span class="onm">🐴 ${esc(o.name)}</span><span class="otg">${open ? 'とじる ▲' : '血統を見る ▼'}</span></button>`
+        + (open ? pedTable(o) : (sum ? `<div class="osum">${sum}</div>` : '')) + oMemoBox(o)
+        + `<div class="ra"><button type="button" class="sb" data-p="oedit" data-id="${esc(o.id)}">直す</button><button type="button" class="sb del${delAskO === o.id ? ' ask' : ''}" data-p="odel" data-id="${esc(o.id)}">${delAskO === o.id ? 'ほんとに 消す？' : 'この推し馬を消す'}</button></div></div>`;
+    });
+    const full = OL.length >= os.MAX;
+    return h + `<button type="button" class="add oadd" data-p="oadd"${full ? ' disabled' : ''}>${full ? `推し馬は ${os.MAX}頭まで（いっぱいだよ）` : '＋ 推し馬を登録'}</button></div></div>`;
+  }
+  function oFormHtml() {
+    const o = editO, os = OS();
+    const inp = i => `<div><label>${PED_LB[i]}</label><input data-o="p${i}" type="text" maxlength="${os.NAME_MAX}" value="${esc(o.ped[i] || '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;
+    return `<div class="fm ofm"><h3>${o._new ? '推し馬を登録' : '推し馬を直す'}</h3><div class="om" aria-live="polite">${esc(o._msg || '')}</div>`
+      + `<label>名前</label><input data-o="name" type="text" maxlength="${os.NAME_MAX}" value="${esc(o.name || '')}" placeholder="推し馬の 名前" autocomplete="off" autocapitalize="off" spellcheck="false">`
+      + `<h4>親（2頭）</h4><div class="row2">${inp(0)}${inp(1)}</div>`
+      + `<h4>おじいちゃん（4頭）</h4><div class="row2">${inp(2)}${inp(3)}</div><div class="row2">${inp(4)}${inp(5)}</div>`
+      + `<h4>ひいおじいちゃん（8頭）</h4>` + [6, 8, 10, 12].map(i => `<div class="row2">${inp(i)}${inp(i + 1)}</div>`).join('')
+      + `<label>備考</label><textarea data-o="memo" rows="2" maxlength="${os.MEMO_MAX}" placeholder="例）得意な 距離・気に なる ところ" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`
+      + `<div class="fa"><button type="button" class="ng" data-p="ocancel">やめる</button><button type="button" class="ok" data-p="osave">保存</button></div></div>`;
+  }
+  function oReadForm() {
+    if (!root || !editO) return; const os = OS(), q = k => root.querySelector(`[data-o="${k}"]`);
+    editO.name = os.str(q('name') ? q('name').value : '', os.NAME_MAX);
+    for (let i = 0; i < os.PED; i++) { const el = q('p' + i); editO.ped[i] = os.str(el ? el.value : '', os.NAME_MAX); }
+    const m = q('memo'); if (m) editO.memo = os.str(m.value, os.MEMO_MAX, true);
+  }
+  // 推し馬の 欄へ 進んだ あと（右下の 推し馬の ボタン・上の「🐴 推し馬」）は、欄が 画面の 上まで 上がる ように 下に 余白を 足す（oshiMode）。
+  //   レースと 推し馬が 少ない ときは 中身が 1画面に おさまって スクロール できない ＝「推し馬の 欄に 飛ぶ」が 見えない から。
+  //   余白は 描く たびに はかり直す（欄から 下の 中身が 1画面ぶん ある ときは 0）。「📋 お気に入りレース」・とじる・ふつうに 開いた ときは 余白なし
+  let oshiMode = false;
+  function oPad() {
+    if (!root) return; const pb = root.querySelector('.pb'), ob = root.querySelector('.oboard'); let sp = pb.querySelector('.osp');
+    if (!oshiMode || !ob) { if (sp) sp.remove(); return; }
+    if (!sp) { sp = document.createElement('div'); sp.className = 'osp'; sp.setAttribute('aria-hidden', 'true'); pb.appendChild(sp); }
+    sp.style.height = '0px';
+    const end = yIn(pb, sp) + (parseFloat(getComputedStyle(pb).paddingBottom) || 0);      // 中身の おわり（余白の 札は いちばん 下・高さ 0）。scrollHeight は 中身が 短い とき 箱の 高さに なる ので 使わない
+    const need = pb.clientHeight - 8 - (end - yIn(pb, ob));
+    sp.style.height = Math.max(0, Math.ceil(need)) + 'px';
+  }
+  // 中身の 中での 高さ（スクロールの 箱 .pb の 上の はしから・スクロール 0 の とき）。offsetTop は 何を 基準に するかが 親の 作りで かわる ので、画面の 上の 場所から 出す
+  const yIn = (pb, el) => el.getBoundingClientRect().top - pb.getBoundingClientRect().top + pb.scrollTop;
+  const oJump = id => { const pb = root.querySelector('.pb'), el = id ? root.querySelector(`.oc[data-oid="${id}"]`) : root.querySelector('.oboard'); if (pb && el) pb.scrollTop = Math.max(0, yIn(pb, el) - 8); };
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
@@ -171,10 +267,33 @@ const TCPlan = (() => {
     paint();
   }
   async function onClick(e) {
-    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk) { delAsk = null; paint(); } if (e.target === root) close(); return; }
+    const a = e.target.closest('[data-p]'); if (!a) { if (delAsk || delAskO) { delAsk = null; delAskO = null; paint(); } if (e.target === root) close(); return; }
     const k = a.dataset.p;
-    if (k === 'memo') { if (delAsk) { delAsk = null; const d = root.querySelector('.sb.del.ask'); if (d) { d.classList.remove('ask'); d.textContent = '消す'; } } return; }
+    // メモ・備考の 欄を 押した ときは 画面を かき直さない（書いて いる 欄が 消える ため）。「ほんとに 消す？」だけ もとに もどす
+    if (k === 'memo' || k === 'omemo') { if (delAsk || delAskO) { delAsk = null; delAskO = null; const d = root.querySelector('.sb.del.ask'); if (d) { d.classList.remove('ask'); d.textContent = d.dataset.p === 'odel' ? 'この推し馬を消す' : '消す'; } } return; }
     if (k !== 'del') delAsk = null;
+    if (k !== 'odel') delAskO = null;
+    // ---- 推し馬（第4.165版）----
+    if (k === 'jr') { oshiMode = false; oPad(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'jo') { oshiMode = true; oPad(); oJump(null); return; }
+    if (k === 'otog') { const id = a.dataset.id; if (openO[id]) delete openO[id]; else openO[id] = 1; paint(); return; }
+    if (k === 'oadd') { const os = OS(); if (!os || OL.length >= os.MAX) return; editO = { _new: true, id: 'o' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: '', ped: Array(os.PED).fill(''), memo: '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'oedit') { const o = OL.find(x => x.id === a.dataset.id); if (!o) return; editO = { id: o.id, name: o.name, ped: o.ped.slice(), memo: o.memo || '', at: o.at || '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'odel') {      // 2回 押して 消す（1回めで「ほんとに 消す？」に かわる・ほかを 押すと もどる）
+      const o = OL.find(x => x.id === a.dataset.id); if (!o) return;
+      if (delAskO !== o.id) { delAskO = o.id; paint(); return; }
+      delAskO = null; OL = OL.filter(x => x.id !== o.id); delete openO[o.id]; oSave(); paint(); return;
+    }
+    if (k === 'ocancel') { editO = null; paint(); oJump(null); return; }
+    if (k === 'osave') {
+      oReadForm(); const o = editO, os = OS(); if (!os) return;
+      if (!o.name) { o._msg = '名前を 入れてね'; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+      const i = OL.findIndex(x => x.id === o.id);
+      if (i < 0 && OL.length >= os.MAX) { o._msg = `推し馬は ${os.MAX}頭まで だよ`; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+      const out = { id: o.id, name: o.name, ped: o.ped.slice(0, os.PED), memo: o.memo || '', at: o.at || new Date().toISOString() };
+      if (i >= 0) OL[i] = out; else OL.push(out);
+      oSave(); editO = null; paint(); oJump(out.id); return;
+    }
     if (k === 'close') { close(); return; }
     if (k === 'on') {
       if (!P.on) {
@@ -209,15 +328,21 @@ const TCPlan = (() => {
       edit = null; save(); paint(); return;
     }
   }
-  async function open(el) {
-    host = el; load();
+  // opt.oshi：開いたら「推し馬」の 欄まで 進める（右下の 推し馬の ボタンから：第4.165版・まさちゃん 2026/11/13 12:47「推し馬のアイコンをタップしたら、推し馬の欄に飛ぶように設定して！」）
+  async function open(el, opt) {
+    host = el; load(); oLoad();
     if (!root) build(el); else if (root.parentNode !== el) el.appendChild(root);
-    edit = null; root.style.display = 'flex'; paint();
+    edit = null; editO = null; delAskO = null; root.style.display = 'flex'; paint();
+    const pb = root.querySelector('.pb'), oshi = !!(opt && opt.oshi && OS());
+    oshiMode = oshi; oPad();
+    if (oshi) oJump(null); else pb.scrollTop = 0;      // ふつうに 開いた ときは いつも 上から（前に 推し馬の 欄まで 進めた 所が のこらない）
+    const y0 = pb.scrollTop;
     auth = await authState(); paint();
+    if (oshi && Math.abs(pb.scrollTop - y0) < 2) oJump(null);      // 通知の ゆるしを しらべる 間に 自分で 動かして いなければ、もう一度 そろえる（描き直しで 高さが かわる ことが ある）
   }
   function close() {
     try { const f = document.activeElement; if (root && f && root.contains(f) && f.blur) f.blur(); } catch (e) { /* なし */ }      // 書いて いる 欄から ぬける（キーボードを しまう）
-    if (root) root.style.display = 'none'; edit = null; delAsk = null;
+    if (root) root.style.display = 'none'; edit = null; delAsk = null; editO = null; delAskO = null; oshiMode = false;
   }
   function isOpen() { return !!root && root.style.display !== 'none'; }
   return { open, close, isOpen };

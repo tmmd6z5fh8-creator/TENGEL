@@ -505,6 +505,15 @@ console.log('読み直しの 見分け：読んだ 単勝の 表を くらべる
   check(fa === '1:12.4,2:4.1,3:31.5,4:9.8,5:18.2,6:2.4,7:7.6,8:54,9:25.9,10:6.3,11:14.7,12:88.6' && P.raceFp(null) === '' && P.raceFp([]) === ''
     && P.raceFp([{ no: 3, tan: '5.5' }, { no: 'x', tan: 2 }, { no: 2, tan: 0 }, { no: 3, tan: 9 }, { no: 1, tan: '２.４' }, null]) === '3:5.5', '指紋＝馬番:単勝 を 馬番の 順に（読めない 行・同じ 馬番の 2つめは すてる）');
   check(P.TICKET_POINTS === 7000, 'チケット 1枚を かえられる ポイント＝7,000P（第4.141版・いちばん 高い 壁紙と 同じ）');
+  // 第4.165版（まさちゃん 2026/11/13 11:46「お世話トークンは、購入できるようにする。①1個を80Pで購入 ②5個を400Pで購入 ③10個を800Pで購入 ④15個を1200Pで購入 ②25個を2000Pで購入」）
+  check(JSON.stringify(P.TOKEN_PACKS) === '[[1,80],[5,400],[10,800],[15,1200],[25,2000]]' && P.TOKEN_PACKS.every(([n, c]) => c === n * 80) && JSON.stringify(P.tokenPack(10)) === '[10,800]' && JSON.stringify(P.tokenPack('5')) === '[5,400]'
+    && P.tokenPack(2) === null && P.tokenPack(0) === null && P.tokenPack(26) === null && P.tokenPack('x') === null && (P.tokenPack(5)[1] = 1, P.TOKEN_PACKS[1][1] === 400),
+    'お世話トークンの 購入の 組（1こ 80P・5こ 400P・10こ 800P・15こ 1,200P・25こ 2,000P＝どれも 1こ 80P）・表に ない 数は ない・返した 組を 書きかえても 表は かわらない');
+  { const N0 = Date.UTC(2026, 10, 13, 3, 0, 0), tot = (e, t) => P.balance(e, t).total, ev0 = [P.giftEvent(N0, 1500, 'gift-t', 'テスト')];
+    const a = P.unlock(ev0, 'tctok:5:b1abc-x9', 400, 'dev', N0 + 1000), b = a && P.unlock(a, 'tctok:5:b1abc-x9', 400, 'dev', N0 + 2000), c = a && P.unlock(a, 'tctok:10:b2', 800, 'dev', N0 + 3000), d = c && P.unlock(c, 'tctok:5:b3', 400, 'dev', N0 + 4000);
+    check(tot(ev0, N0) === 1500 && !!a && tot(a, N0 + 1000) === 1100 && a[a.length - 1].id === 'unlock-tctok:5:b1abc-x9' && a[a.length - 1].amount === -400 && a[a.length - 1].what === 'tctok:5:b1abc-x9' && P.unlocked(a, 'tctok:5:b1abc-x9') && !P.unlocked(a, 'tctok:5:b2')
+      && !!b && b.length === a.length && tot(b, N0 + 2000) === 1100 && !!c && tot(c, N0 + 3000) === 300 && d === null,
+      '台帳：お世話トークンの 購入は「unlock-tctok:<こ数>:<買い物の 番号>」で 1件ずつ（−400P）・同じ 番号は 2回 へらない・足りない ときは 買えない（のこり 300P で 400P は 買えない）'); }
   check(P.FP.min === 6 && P.FP.rho === 0.3 && P.FP.same === 0.5, 'しきい値：どちらにも ある 馬番 6頭 以上・順位の 相関 0.3 より 低い・同じ オッズ 半分 より 少ない');
   check(P.fpRho(fa, fa2) > 0.95 && P.fpShare(fa, fa2) === 0 && P.fpDiff(fa, fa2) === false, `同じ レース（オッズが 動いた だけ）：人気の 順は ほぼ 同じ → 同じ レース（相関 ${P.fpRho(fa, fa2).toFixed(2)}）`);
   check(P.fpRho(fa, fb) < 0 && P.fpShare(fa, fb) === 0 && P.fpDiff(fa, fb) === true && P.fpDiff(fb, fa) === true, `別の レース：人気の 順も オッズも ちがう → 別の レース（相関 ${P.fpRho(fa, fb).toFixed(2)}）`);

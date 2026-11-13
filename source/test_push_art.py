@@ -4,7 +4,9 @@
 #   ・30テーマ × 的中：PUSH は その テーマの 絵（読めて いる・大きさ・まん中・四角の 色／影／輪は 出ない・字の <span> は 読み上げ用に のこる・うしろの 光と 光の すじ・影の 幅）
 #     → 押す：押された PUSH も 同じ 絵（テーマの へこむ 動き）・はじける かけら（テーマの もの）→ その テーマの ボード
 #   ・大きさの 段：デカ的中 1.2倍・ど的中 1.4倍・虹色 1.6倍（幅 372px で 頭打ち）＝30テーマ とも 画面（390px）に おさまる。虹色は 絵の 形で 切りぬいた 虹（mask）
-#   ・ど的中の 押した 画面（.ndt）：押された PUSH は 絵・光の 輪は 絵の 大きさ
+#   ・押した 画面（.ndt：極ど的中の 入り・神様極的中）：押された PUSH は 絵・光の 輪は 絵の 大きさ
+#     第4.165版：ノーマルど的中は なくした（まさちゃん 2026/11/13 11:52）。極ど的中の 入りの 押した 画面は ノーマルど的中の 動画が 読めた とき だけ 出る（この テストの 置き場には 動画が ない ＝ すぐ 極ど的中の 幕へ 進む）
+#     ので、同じ 押した 画面を 使う 神様極的中で 見る。大きさの 段の 1.4倍は 極ど的中で 見る
 #   ・控えめ：絵は 出る・うしろの 光は 動かない・光の すじは 出ない
 #   ・テーマを かえた すぐ あと：新しい テーマの 絵（前の テーマの 絵は 出ない）
 #   ・絵が 読めない（ファイルが ない）：いつもの 赤い PUSH（コードの PUSH）で 押せる・ボードまで 出る・エラーなし
@@ -122,7 +124,7 @@ try:
         r4 = []
         for t in TH:
             tid, e = t['id'], man[t['id']]; apply(pg, tid)
-            for kind, PZ, rb in (('big', 1.2, False), ('nd', 1.4, False), ('sgd', 1.6, True)):      # 第4.162版：虹色（1.6倍）は 超神様的中で ためす（前は プレミアムど的中：なくした）
+            for kind, PZ, rb in (('big', 1.2, False), ('sd', 1.4, False), ('sgd', 1.6, True)):      # 第4.162版：虹色（1.6倍）は 超神様的中で ためす（前は プレミアムど的中：なくした）
                 show(pg, TRI, kind, 700); s = pg.evaluate(ST); close(pg)      # 出て くる 動き（ポンと 大きく なる）が おわって から 測る
                 pz = max(1, min(PZ, 372 / e['w'], 480 / e['h']))
                 ok = (bool(s) and 'pim' in s['cls'].split() and abs(float(s['pz']) - pz) < 0.002 and abs(s['cur']['pz'] - pz) < 0.002 and [s['ow'], s['oh']] == [e['w'], e['h']] and abs(s['w'] - e['w'] * pz) <= e['w'] * pz * .08 + 1.5 and abs(s['h'] - e['h'] * pz) <= e['h'] * pz * .08 + 1.5      # テーマの ゆれる 動き（ぷりけつ など）の ぶん 8% まで
@@ -134,10 +136,13 @@ try:
         apply(pg, 'silks'); e = man['silks']
         show(pg, TRI, 'big', 300); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(60); qb = pg.evaluate(PRS)
         zb = pg.evaluate("() => { const z = document.querySelector('#fxOv .pzw'); return z ? [z.style.getPropertyValue('--pz'), !!z.querySelector('.pressed.pim .pimg'), z.querySelectorAll('.clips i').length] : null; }"); close(pg)
-        show(pg, TRI, 'nd', 300); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(60); qn = pg.evaluate(PRS); close(pg)
+        show(pg, TRI, 'gk', 300); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(60); qn = pg.evaluate(PRS); close(pg)      # 第4.165版：押した 画面（.ndt）は 神様極的中で 見る（上の 説明）
+        show(pg, TRI, 'nd', 300); kn = pg.evaluate('TengelFx.current()'); close(pg)                                                   # 前の 種類（nd）で よんでも 極ど的中
         check(bool(qb) and qb['img'] == [e['f'], e['iw']] and qb['pw'] == f"{e['w']}px" and zb and abs(float(zb[0]) - 1.2) < 0.002 and zb[1] and zb[2] >= 8
-              and bool(qn) and qn['img'] == [e['f'], e['iw']] and qn['ndt'] == [True, f"{e['w'] + 26}px", f"{e['h'] + 26}px"] and 'fxndtP' in qn['an'] and not errs,
-              f'デカ的中・ど的中を 押した あと：押された PUSH は 同じ 絵（同じ 倍率の 箱の 中）・ど的中の 押した 画面の 光の 輪は 絵の 大きさ（{qb and qb["cls"]}・{qn and qn["ndt"]}）')
+              and bool(qn) and qn['img'] == [e['f'], e['iw']] and qn['ndt'] == [True, f"{e['w'] + 26}px", f"{e['h'] + 26}px"] and 'fxndtP' in qn['an'] and not errs
+              and bool(kn) and kn['kind'] == 'sd' and abs(kn['pz'] - 1.4) < 0.002,
+              f'デカ的中・神様極的中を 押した あと：押された PUSH は 同じ 絵（同じ 倍率の 箱の 中）・押した 画面（極ど的中の 入りと 同じ .ndt）の 光の 輪は 絵の 大きさ（{qb and qb["cls"]}・{qn and qn["ndt"]}）・'
+              f'前の 種類 nd で よんでも 極ど的中（{kn and kn["kind"]}・{kn and kn["pz"]}倍）')
         # ---- 控えめ ----
         pg.evaluate("TengelFx.set({ calm: true })"); pg.wait_for_timeout(100)
         show(pg, HIT, 'hit', 300); sc = pg.evaluate(ST)

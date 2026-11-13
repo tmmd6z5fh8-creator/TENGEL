@@ -285,11 +285,11 @@ if r.returncode == 0:
             else: _want.add(_e)
         _got = {f[6:-4] for f in res if f.startswith('tc_se_') and f.endswith('.m4a')}
         _gone = ['flop', 'goron', 'lie', 'hop', 'unlock']
-        check(_got == _want and len(_got) == 73 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
+        check(_got == _want and len(_got) == 75 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
               and _skip.get('unlock') == "'piron'" and _skip.get('callcool') == 'null' and sorted(_ad.TC_GONE) == sorted(f'tc_se_{g}.m4a' for g in _gone)
               and open(os.path.join(_ad.master('tc_assets'), 'tc_se_unlock.m4a'), 'rb').read() == open(os.path.join(RES, 'tc_se_piron.m4a'), 'rb').read()
               and not re.search(r"mode: 'sleep'|ev\(tt, '(flop|goron|lie)'\)|TEST\.wake|wake\(\)", _tall) and 'ごろん' not in open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read(),
-              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ〈第4.159版：＋4＝プフォ・デデーン・キュインキュイーン・ドーン／−1＝ルーレットの 前の 確定の 音〉・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
+              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ〈第4.159版：＋4＝プフォ・デデーン・キュインキュイーン・ドーン／−1＝ルーレットの 前の 確定の 音・第4.165版：＋2＝ポイント特化ゾーンの 上乗せ・失敗〉・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
               f'横に なる 動きの 音（flop・goron・lie）と 使わない 音（hop・unlock＝piron と 同じ 中身）は 入れない（もとの フォルダには 残る）・馬を 横に する コードと「ごろん」の 字は ない')
         # 第4.158版（まさちゃん 2026/11/12 08:59「このルーレットの神様馬、目が怖いから金色に光らせて！あと、画像がなんかまだらに色がついてるから綺麗にできる？」・09:00「幻の馬のルーレットは、目を紫に光らせて！」）：
         #   ルーレットの 絵は きれいに した 新しい 絵 12まい（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py）。前の 12まい（rt_<絵>_<部品>.webp）は 入れない（もとの フォルダには 残す）

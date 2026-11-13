@@ -1142,6 +1142,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
     data.slots = { names: L().names(), active: L().active(), data: {} };
     for (let n = 2; n <= (L().N || 3); n++) { const doc = L().doc(n); if (doc && doc.rows && doc.rows.length) data.slots.data[n] = doc; }
     if (auto && window.TengelWallet) { const w = window.TengelWallet.snapshot(); if (w) data.wallet = w; }
+    // 第4.165版：作戦会議の 推し馬（tc_launch.js の TCOshi：アプリ版 だけ）。1頭でも いれば 入れる（アプリの 中の 自動バックアップにも・書き出す バックアップにも）
+    if (NATIVE && window.TCOshi) { try { const o = window.TCOshi.load(); if (o.length) data.oshi = o; } catch (e) { /* なし */ } }
     return { data, zones, nSlots: Object.keys(data.slots.data).length };
   }
   // 第4.139版（抜け穴を ふさぐ）：ファイルから 読んだ バックアップの 字（値と 見出しの 名前）は、HTML の しるしに なる 字（< > " ' `）を 全角に かえてから 使う。
@@ -1172,6 +1174,8 @@ ${NATIVE ? nativeUpdateCard() : `<div class="card setsec" id="setUpdate">
       msg.push(d.settings.zones ? '買い目の設定も戻したよ' : '買い目は初期の設定にしたよ');
     }
     const last = rs => rs.reduce((m, r) => r.date > m ? r.date : m, '');
+    // 第4.165版：推し馬（もう いる 馬は そのまま・いない 馬を 25頭まで 足す。字は TCOshi が そろえる：長さ・制御の 字）
+    if (NATIVE && window.TCOshi && d && Array.isArray(d.oshi) && d.oshi.length) { try { const n = window.TCOshi.merge(d.oshi); if (n) msg.push(`推し馬${n}頭も戻したよ`); } catch (e) { /* なし */ } }
     // ポイントの台帳（アプリの中の自動バックアップにだけ入っている）。書き出したファイルには入っていない
     if (d.wallet && fromAuto === true && window.TengelWallet) {
       const w = window.TengelWallet;

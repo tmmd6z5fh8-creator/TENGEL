@@ -33,6 +33,11 @@
   var CAP = 99999;
   // 第4.141版（まさちゃん 2026/11/10 15:52「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」＝いちばん 高い 壁紙と 同じ 7,000P）：トレーニングセンターの チケット 1枚は、壁紙の 解放に 使うか、この ポイント（獲得ポイント）に かえるかを 選べる
   var TICKET_POINTS = 7000;
+  // 第4.165版（まさちゃん 2026/11/13 11:46「お世話トークンは、購入できるようにする。①1個を80Pで購入 ②5個を400Pで購入 ③10個を800Pで購入 ④15個を1200Pで購入 ②25個を2000Pで購入」）：
+  //   トレーニングセンターの お世話トークンを ポイントで 買う ときの 組（[こ数, ポイント]）。1こ 80P。値段は ここから 読む（画面に 書いて ある 数字は 使わない）。
+  //   持てる 数は 25こ まで（聞いて 決めた：25こを こえる 組は その ときは 買えない：tc/tc_app.js）。台帳には unlock-tctok:<こ数>:<買い物の 番号> の 1件（同じ 番号は 1回 だけ）
+  var TOKEN_PACKS = [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]];
+  function tokenPack(n) { for (var i = 0; i < TOKEN_PACKS.length; i++) if (TOKEN_PACKS[i][0] === +n) return TOKEN_PACKS[i].slice(); return null; }
   function room(total) { return Math.max(0, CAP - Math.max(0, Math.round(+total || 0))); }
   var SUB_DAYS = 30;
   // 記録のミッション（8.2）：記録したレースの数 → もらえるP。300のあとは100レースごとに2,000P
@@ -516,7 +521,7 @@
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
-    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room, TICKET_POINTS: TICKET_POINTS,
+    boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room, TICKET_POINTS: TICKET_POINTS, TOKEN_PACKS: TOKEN_PACKS, tokenPack: tokenPack,
     holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
     stamp: stamp, stampAll: stampAll, seqMax: seqMax, raceFp: raceFp, fpDiff: fpDiff, fpRho: fpRho, fpShare: fpShare, FP: { min: FP_MIN, rho: FP_RHO, same: FP_SAME },
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
