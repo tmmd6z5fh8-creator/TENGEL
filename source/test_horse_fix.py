@@ -31,8 +31,14 @@ app = open(os.path.join(W, 'tc', 'tc_app.js'), encoding='utf8').read(); hs = ope
 tool = open(os.path.join(W, 'kisekae', 'tc', 'horse_fix.py'), encoding='utf8').read()
 spec = re.search(r"function horseSpec\(\) \{.*?\n  \}", app, re.S).group(0)
 check("name: 'tc_horse_bk_kamisama2'" in spec and "name: 'tc_horse_bk_maboroshi2'" in spec and "tc_horse_bk_kamisama'" not in app and "tc_horse_bk_maboroshi'" not in app
-      and spec.count('stance: STANCE_KAMI') == 1 and spec.count('stance:') == 1,
-      'アプリは 直した 形（tc_horse_bk_kamisama2・tc_horse_bk_maboroshi2）を 読む（前の 名前は 読まない）・幻の馬の 肩幅は 形の 中で 直して ある（アプリで 動かすのは 神様馬の 立ち方 だけ）')
+      and 'stance' not in spec and 'STANCE_KAMI' not in app.split('function horseSpec')[1] and 'BIG' not in spec and spec.count('stage: k,') == 2 and 'const k = scaleOf(st.cares);' in spec
+      and "key: 'kamisama:' + k" in spec and "key: 'maboroshi:' + k" in spec,
+      'アプリは 直した 形（tc_horse_bk_kamisama2・tc_horse_bk_maboroshi2）を 読む（前の 名前は 読まない）・幻の馬の 肩幅は 形の 中で 直して ある。'
+      '第4.168版：大きさは いつもの 馬と 同じ（scaleOf）・神様馬の 立ち方（肩幅と 足の 場所）を 広げるのは やめた（形の まま）')
+# 第4.168版：2段目の 大きさ（s2）は たてがみを 直した 絵を 指す 名前（…_s2v2）を 読む・ない ときは 前の 名前
+check("const HFIX = { 2: 'v2' };" in app and "name: `tc_horse_bk_${c}_s${s}${HFIX[s] || ''}`" in spec and "old: HFIX[s] ? `tc_horse_bk_${c}_s${s}` : null" in spec
+      and "getMeta(sp.name).catch(e => { if (!sp.old) throw e; return getMeta(sp.old); })" in app,
+      '第4.168版：s2 の 馬は tc_horse_bk_<色>_s2v2.json（たてがみの さいごの ふさを 直した 絵）を 読む・ない ときは 前の 名前（old）')
 fs_ = hs.split("const FS = [")[1].split("].join('\\n');")[0]; vs_ = hs.split("const VS = [")[1].split("].join('\\n');")[0]
 check("'uniform vec3 uFix;'" in fs_ and 'bool bk=!gl_FrontFacing;float fx=uFix.z*vC.a;' in fs_ and 'uFix.y*(1.0-smoothstep(-0.5,-0.2,dn))' in fs_
       and 'if(uFix.x>0.5&&bk&&n.z<0.0){n=-n;av=max(av,0.72);cv=-cv;}' in fs_ and 'mix(texture2D(uTex,vUV).rgb,vC.rgb,fx)' in fs_ and 'attribute vec4 aCol,aNrm;' in vs_ and 'varying vec4 vC;' in vs_ and 'varying vec4 vC;' in fs_

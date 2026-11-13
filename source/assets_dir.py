@@ -73,6 +73,13 @@ def superseded(name, files):
         #   （tc_icon_kise2.webp：kisekae/tc/kise_asset.py）。はじめの 丸い 絵（tc_icon_kise.webp）は 使わない ので 入れない（もとの フォルダには 残す）
         if 'tc_icon_kise2.webp' in files:
             old |= files & {'tc_icon_kise.webp'}
+        # 第4.168版（まさちゃん 2026/11/14 01:26「二枚目の赤丸の立髪の一部が色がおかしい！直して！」）：2段目の 大きさ（s2）の 馬は、たてがみの さいごの ふさを
+        #   たてがみの 色に ぬり直した 絵と それを 指す 形の 名前（tc_c_<色>_s<数>v2.webp＋tc_horse_bk_<色>_s<数>v2.json：kisekae/tc/mane_fix.py）を 使う。
+        #   2つ そろって いる 色は、前の 絵と 前の 形の 名前（.json）を 入れない（もとの フォルダには 残す。形 .bin と 法線の 絵は 今までの ものを 使う）
+        for f in files:
+            mm = re.fullmatch(r'tc_horse_bk_(.+_s\d)v2\.json', f)
+            if mm and f'tc_c_{mm.group(1)}v2.webp' in files:
+                old |= files & {f'tc_horse_bk_{mm.group(1)}.json', f'tc_c_{mm.group(1)}.webp'}
         return old
     return set()
 

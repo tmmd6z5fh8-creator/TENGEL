@@ -79,6 +79,11 @@ try:
                     pg.evaluate(STEP_F, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 tap = idx
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
+                # 第4.168版（まさちゃん 2026/11/14 01:26「プッシュ押した後に出るこのエフェクト消して！」）：かけら（.clips）の 中の「光の輪」（.ring）は 出さない
+                #   （デカ的中の 虹の 輪の きまり（.ring）が もれて、左上に ずれた 虹色の 太い 弧に なって いた）。火花・いなずま・光の すじは そのまま
+                rg = pg.evaluate("() => { const r = [...document.querySelectorAll('#fxOv .clips .ring')]; return [r.length, r.filter(e => getComputedStyle(e).display !== 'none').length, document.querySelectorAll('#fxOv .clips *').length]; }")
+                print(('  ✅ ' if rg[1] == 0 and rg[2] > rg[0] else '  ❌ ') + f'{tid} かけらの「光の輪」{rg[0]}こは 出ない（見える もの {rg[1]}こ）・ほかの かけら {rg[2] - rg[0]}こは そのまま')
+                if rg[1] or rg[2] <= rg[0]: fails.append(tid + ' ring')
                 for i in range(90):
                     pg.evaluate(STEP_F, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 pg.evaluate('TengelFx.close()')

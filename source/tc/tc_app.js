@@ -9,7 +9,6 @@ const TCApp = (() => {
   const SK = 'tengel.tc';
   const COLORS = ['brown', 'madara', 'black', 'white', 'hada'];
   const COLOR_JA = { brown: 'ブラウン', madara: 'まだら', black: 'ブラック', white: 'ホワイト', hada: '肌色' };
-  const BIG = 1.7;                                    // 幻の馬・神様馬：5段階の 馬の 1.7倍（11/09 11:38）
   // お世話トークン：5分ごとに 5つ・最大 25（第4.165版・まさちゃん 11/13 11:46「お世話トークンに5分で5個追加に変更」＝10分 → 5分。
   //   第4.159版：11/12 10:37「お世話の最大トークン25回にして！」・12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」
   //   → 14:50「お世話トークンに関して、10分で５つトークンが追加にして！」＝5分 → 10分。その 前は 10分ごとに 1つ・最大 20）
@@ -24,6 +23,12 @@ const TCApp = (() => {
   //   ・時間は「もどらない 時計」（tnow）と、ひらいて いる 間に たった 秒（el）の どちらか 早い 方で 数える（時計を もどしても 止まらない）
   const RESET_CARES = 5, RESET_MIN = 5;               // 馬の リセット：お世話 5回 → タイマー 5分
   const VISIT_MIN = 30;                               // 幻の馬・神様馬の タイムリミット（来てから・分）
+  // 第4.168版（まさちゃん 2026/11/14 01:26「神様馬と幻の馬の抽選について 幻の馬は、抽選最大10回まで 神様馬は、抽選最大5回まで」）：
+  //   幻の馬・神様馬が いる 間の 抽選（お世話の あとの PUSH：1回 押す＝1回）は この 回数 まで。つかい切ると、その 当たりを わたし おわって から 帰る（＝馬の リセット：次の 馬の 抽選）。
+  //   ・回数は 来てからの PUSH の 回数（st.rs.n：startVisit で 0 に もどる）。「まとめて 使う」でも 上限で PUSH は 消える（tc_care.js の O.drawLeft）
+  //   ・お世話 5回の あと 5分（リセット）・来てから 30分（タイムリミット）は そのまま ＝ どれか 早い もので 帰る。神様馬は 上限が 5回 なので、5回めの 抽選で 帰る
+  const VISIT_DRAWS = { maboroshi: 10, kamisama: 5 };
+  const CAP_WAIT = 2.6;                               // 上限の 抽選の 結果（ポイントの 札は 2秒）を 見せて から 帰る（秒）
   // ゴミ（第4.152版：11/11 10:13 まさちゃん「お掃除は、15分に一回、ゴミがフィールドに散乱する仕組みにして！片付けられない限りは、新しいゴミが出ないようにして！」「ゴミは落ちる場所は5箇所、ランダムに出現するように！」）
   //   片付けて から TRASH_MIN 分 たつと、フィールドの TRASH_N か所に 散らばる（閉じて いる 間も 時間は 進む：もどらない 時計 tnow）。片付ける まで 次は 出ない
   const TRASH_MIN = 15, TRASH_N = 5, TRASH_W = [0.33, 0.38, 0.54, 0.52];      // TRASH_W：絵の 幅（リンゴの 芯・かじった ニンジン・枯れ葉・色の 葉っぱ。体の 高さ 1 の 馬＝1）
@@ -97,27 +102,42 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    // 第4.168版（まさちゃん 2026/11/14 01:26「ルーレットに入った時にBGMを変える。フィールドBGMは重ねない。」）：ルーレットの 間は ルーレットの BGM だけ（bgm）。
+    //   ・hold＝いま フィールドの 音の かわりに 鳴らす もの：null＝なし（フィールドの 音）・''＝音なし（プチュンの あと）・名前＝その BGM。hold が ある 間は field() は おぼえる だけ（重ねない）
+    //   ・ルーレットの BGM の ファイルは、くり返す 1回り（8小節）の 前と うしろに 0.5秒ずつ 同じ 音の つづきが 入って いる（kisekae/tc/snd/export_app.py）→ まん中の 1回り だけを くり返す（LOOPS）。
+    //     m4a は 読む 道具に よって 頭に 短い 無音が つく ことが ある：前と うしろに つづきが ある ので、その ぶん ずれても つなぎ目は 同じ 音どうし（リズムが とばない）
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 } };
+    let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
-    async function field(name) {
-      want = name; if (!ac) return; if (bed && bed.name === name) return;
+    // いま 鳴って いる 音を fout 秒で 消して、name の 音を fin 秒で 入れる（name が 空・ない ときは 何も 鳴らさない）。同じ 音が もう 鳴って いれば 何も しない
+    async function swap(name, fout, fin) {
+      aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
       const old = bed; bed = null;
-      if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + 2); old.s.stop(n + 2.1); } catch (e) { } }
-      const f = AMB[name]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
-      if (want !== name || (bed && bed.name === name)) return;
+      if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + fout); old.s.stop(n + fout + 0.1); } catch (e) { } }
+      const f = AMB[aim]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
+      if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + 2);
-      s.connect(g); g.connect(master); s.start(); bed = { s, g, name };
+      const L = LOOPS[aim]; let off = 0;
+      if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      // まん中の 1回り だけを くり返す・はじめは 1拍めから
+      const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
+      s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };
+    }
+    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, 2); }      // フィールドの 音（2秒で 入れかえ）。ルーレットの 間（hold）は おぼえる だけ
+    // ルーレットの 間の BGM：name＝BGM の 名前（すぐ 入れかえ：フィールドの 音は 0.3秒で 消す）・''＝音なし（プチュン：すぐ 消す）・null＝フィールドの 音に もどす（1.5秒で もどる）
+    async function bgm(name) {
+      hold = name == null ? null : String(name);
+      if (hold == null) await swap(want, 0.5, 1.5); else if (hold === '') await swap('', 0.08, 0); else await swap(hold, 0.3, 0.12);
     }
     async function se(name, gain, at) {
       if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
-    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
+    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
     function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, se, stopAll, setOn, preload, get ac() { return ac; } };
+    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, LOOPS };
   })();
   // できごと → 効果音（sfx_care.py の parts で 作った tc_se_*.m4a。大きさ・ずれは 作る ときに 入れて ある）
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -214,20 +234,31 @@ const TCApp = (() => {
   }
 
   // ---------- 馬 ----------
-  const STANCE_KAMI = { bodyW: 0.64, topOut: 0.04, hoofZ: { FL: -0.3, FR: 0.3, HL: -0.26, HR: 0.26 } };      // 神様馬：肩幅と 足の 場所（11/09 10:01〜11:24）
+  // 第4.168版（まさちゃん 2026/11/14 01:26「幻の馬と神様馬の大きさを、いつもの馬と同じ大きさに合わせる。※足の形、動き方も全て一緒にして！あくまで、外見が違うだけにして！
+  //   動き方や行動についても！」）：幻の馬・神様馬が いつもの 馬と ちがうのは 見た目（形の 絵・目の 光・紙の 明るさ・フィールドの 光）だけ。
+  //   ・大きさ＝いつもの 馬の いまの 大きさ（scaleOf：お世話の 回数で 育つ 6段。前は いつも 1.7倍 ＝ BIG）。育つ ときは いっしょに 大きく なる（growCheck）
+  //   ・足の 形（立ち方）＝形の まま。前は 神様馬 だけ 肩幅と 足の 場所を 広げて いた（STANCE_KAMI：ひづめを 左右 0.3 へ ＝ がに股）→ やめた（ひづめは 形の まま ±0.11〜0.15：いつもの 馬と 同じ ぐらい）
+  //   ・動き方・行動＝いつもの 馬と 同じ 所を 通る（tc_horse.js は 大きさが 1.3倍より 大きい 馬 だけ「どっしり 歩く」・1.4倍より 大きい 馬は「走らない」＝ もう 当たらない）。
+  //     うんちも いつもの 馬と 同じ（テスト版の 道具も 幻の馬・神様馬で 使える）
   function horseSpec() {
     if (st.visit) {
+      const k = scaleOf(st.cares);
       return st.visit.kind === 'kamisama'
-        ? { key: 'kamisama', name: 'tc_horse_bk_kamisama2', stage: BIG, eyeGlow: 'gold', lift: 0.14, stance: STANCE_KAMI, glowK: 0.45, glowR: 0.7, light: 'divine' }
-        : { key: 'maboroshi', name: 'tc_horse_bk_maboroshi2', stage: BIG, eyeGlow: 'purple', light: 'abyss' };      // 名前の 2：第4.161版で 直した 形（kisekae/tc/horse_fix.py：神様馬＝マントの 先の 骨・幻の馬＝たてがみの 黒・にじみ）
+        ? { key: 'kamisama:' + k, name: 'tc_horse_bk_kamisama2', stage: k, eyeGlow: 'gold', lift: 0.14, glowK: 0.45, glowR: 0.7, light: 'divine' }
+        : { key: 'maboroshi:' + k, name: 'tc_horse_bk_maboroshi2', stage: k, eyeGlow: 'purple', light: 'abyss' };      // 名前の 2：第4.161版で 直した 形（kisekae/tc/horse_fix.py：神様馬＝マントの 先の 骨・幻の馬＝たてがみの 黒・にじみ）
     }
     const c = COLORS[st.color % COLORS.length], s = stageOf(st.cares);
-    return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}`, stage: scaleOf(st.cares) };
+    return { key: c + s + ':' + scaleOf(st.cares), name: `tc_horse_bk_${c}_s${s}${HFIX[s] || ''}`, old: HFIX[s] ? `tc_horse_bk_${c}_s${s}` : null, stage: scaleOf(st.cares) };
   }
+  // 第4.168版（まさちゃん 2026/11/14 01:26「二枚目の赤丸の立髪の一部が色がおかしい！直して！」）：2段目の 大きさ（s2）は、たてがみの いちばん うしろの ふさの うしろ半分が
+  //   体の 色で ぬられて いた（ぶちの 馬は そこ だけ 白く 見えた）。ふさを たてがみの 色に ぬり直した 絵（tc_c_<色>_s2v2.webp）を 指す 新しい 形の 名前（…_s2v2.json：kisekae/tc/mane_fix.py）を 読む。
+  //   形（.bin）と 法線の 絵は 今までと 同じ。新しい 名前が ない とき（前の 素材 だけの 手元の ビルド）は 前の 名前（old）を 読む
+  const HFIX = { 2: 'v2' };
   const hcache = {};
   async function loadHorse(sp) {
     if (hcache[sp.key]) return hcache[sp.key];
-    const meta = await fetch(AP(sp.name + '.json')).then(r => r.json());
+    const getMeta = n => fetch(AP(n + '.json')).then(r => { if (!r.ok) throw new Error('horse ' + r.status); return r.json(); });
+    const meta = await getMeta(sp.name).catch(e => { if (!sp.old) throw e; return getMeta(sp.old); });
     const bin = TCHorse.unz(await fetch(AP(meta.bin || (sp.name + '.bin'))).then(r => r.arrayBuffer()));      // 第4.151版：番号を 詰めた 形（神様馬・幻の馬）は もとの 形に もどす
     const img = s => s ? new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = AP(s); }) : Promise.resolve(null);
     const [texImg, nrmImg, p1, p2, p3, ...trashImgs] = await Promise.all([img(meta.tex), img(meta.ntex), img('tc_poop1.webp'), img('tc_poop2.webp'), img('tc_poop3.webp'), img('tc_trash1.webp'), img('tc_trash2.webp'), img('tc_trash3.webp'), img('tc_trash4.webp')]);
@@ -235,7 +266,7 @@ const TCApp = (() => {
     const h = TCHorse.create(gl, meta, bin, { base: 175, stage: sp.stage, texImg, nrmImg, eyeGlow: sp.eyeGlow || null, lift: sp.lift || 0, poopImgs: poopImgs.filter(Boolean), trashImgs, stance: sp.stance || null, glowK: sp.glowK || null, glowR: sp.glowR || null });
     hcache[sp.key] = h; return h;
   }
-  async function useHorse(first) {
+  async function useHorse(first, grow) {               // grow＝育って 大きさ・色が かわった だけ（来て いる 馬は 同じ：降臨の バナーは 出し直さない）
     const sp = horseSpec(); if (sp.key === horseKey && HO) return;
     const h = await loadHorse(sp);
     const nb = TCHorse.brain({ tod: tod(), force: [], stand: false }); nb.rnd = Math.random;
@@ -245,16 +276,16 @@ const TCApp = (() => {
     nb.trash = BR && BR.trash && BR.trash.length ? BR.trash : (st.trash || []).map(q => trashLive(q));      // ゴミは 馬が かわっても そのまま
     HO = h; BR = nb; horseKey = sp.key;
     if (TCCare.on) TCCare.setHorse(HO, BR);
-    if (!first && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
+    if (!first && !grow && TCCare.on) TCCare.special(st.visit ? st.visit.kind : null);
   }
   function growCheck() {                               // 大きく 育つ・色が かわる
     const s0 = stageOf(st.cares - 1), s1 = stageOf(st.cares), k0 = scaleOf(st.cares - 1), k1 = scaleOf(st.cares);
     if (st.cares >= 300) {
       st.color = (st.color + 1) % COLORS.length; st.cares = 0; st.gen = (st.gen || 1) + 1; touch();
-      msg(`🎉 お世話 300回！\n${COLOR_JA[COLORS[st.color]]}の 子が やってきたよ`, 3.6); if (!st.visit) useHorse();
+      msg(`🎉 お世話 300回！\n${COLOR_JA[COLORS[st.color]]}の 子が やってきたよ`, 3.6); useHorse(false, true);      // 第4.168版：幻の馬・神様馬が 来て いる 間は、その 馬の 大きさが 新しい 子の 大きさに なる
       return;
     }
-    if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); if (!st.visit) useHorse(); }
+    if (s1 !== s0 || k1 !== k0) { msg(`🎉 お世話 ${st.cares}回！ 大きく 育ったよ`, 3.2); useHorse(false, true); }      // 第4.168版：幻の馬・神様馬が 来て いる 間も（大きさは いつもの 馬と 同じ）
   }
 
   // ---------- ゴミ ----------
@@ -323,12 +354,18 @@ const TCApp = (() => {
   const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      // タイマーの のこり（秒）・まだ 動いて いなければ null
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              // タイムリミットの のこり（秒）
-  let resetting = false;
+  const drawMax = () => (st.visit ? VISIT_DRAWS[st.visit.kind] || 0 : 0);                                       // いまの 馬の 抽選の 上限（いつもの 馬は 0＝上限 なし）
+  const drawLeft = () => { const m = drawMax(); return m ? Math.max(0, m - (st.rs.n || 0)) : Infinity; };      // あと 何回 抽選 できるか
+  let resetting = false, capT = null;
   function resetStep(gms, dt, t) {
     const rs = st.rs;
     if (rs.at) rs.el = (+rs.el || 0) + dt;
     if (!rs.at && rs.n >= RESET_CARES && careFree() && !busy) { rs.at = gms; rs.el = 0; touch(); save(); }      // 5回めの お世話が おわった → タイマーが 動く
-    if (rs.at && rsLeft(gms) <= 0 && t > 3 && careFree() && !st.pend && !busy && !panelOpen() && !resetting) { resetting = true; doReset().catch(() => { }).finally(() => { resetting = false; }); }
+    // 第4.168版：抽選の 上限（幻の馬 10回・神様馬 5回）を つかい切った → 結果を 見せて（CAP_WAIT 秒）・当たりを わたし おわって・PUSH が 消えて から 帰る
+    const capped = drawLeft() < 1;
+    if (!capped) capT = null; else if (capT == null) capT = t;
+    const capGo = capped && t - capT >= CAP_WAIT && !(TCCare.on && TCCare.S.push);
+    if ((capGo || (rs.at && rsLeft(gms) <= 0)) && t > 3 && careFree() && !st.pend && !busy && !panelOpen() && !resetting) { resetting = true; capT = null; doReset().catch(() => { }).finally(() => { resetting = false; }); }
   }
   let forceNext;                               // テスト 用：次の リセットの 抽選の 結果を 決めて おく（_t.force）
   function nextHorse() {                       // 次の 馬の 抽選（null＝いつもの 馬）
@@ -385,8 +422,10 @@ const TCApp = (() => {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
-        SND.preload(['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      // 止まった あとの 音（的中の 演出の 音・高い 方の ドーン！！）を 回って いる 間に 読んで おく
-        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se }); } finally { give(z); }      // 第4.159版：止まった あと 安い 方＝デカ的中と 同じ 音・高い 方＝プチュン → ドーン！！と テロップ「大量ポイント」（tc_fx.js）
+        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      // 止まった あとの 音を 回って いる 間に 読んで おく（第4.168版：ノーマルは プチュン・ドーン！！を 使わない＝高い 方は デデーン）
+        // 第4.168版：ルーレットの 間は ルーレットの BGM（フィールドの 音は 消す：重ねない）。幻の馬・神様馬の 高い 方は プチュンで 音を 止める（onCut）。おわったら フィールドの 音に もどす
+        SND.bgm('roulette');
+        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); give(z); }      // 第4.159版：止まった あと 安い 方＝デカ的中と 同じ 音・高い 方＝プチュン → ドーン！！と テロップ「大量ポイント」（tc_fx.js）
       } else if (z.k === 'zn') {
         // 第4.165版：ポイント特化ゾーン（tc_fx.js の zone）。何回 上乗せ できるか（z.n）は もう 決まって いる → レバーを 1回ずつ 押して 見せる。おわったら（途中で 閉じても）合計を わたす
         SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
@@ -400,6 +439,12 @@ const TCApp = (() => {
       }
     } finally { busy = false; TCCare.roulette(false); }
   }
+  // 第4.168版：合計ポイント（上の 帯の「ポイント」と 同じ 数：TengelWallet.total）。トレーニングセンターの 右上（作戦会議の ボタンの 下）に 出す（tc_care.js の O.points）。
+  //   台帳が かわる たび（当たり・トークンの 購入・ほかの 画面での 買い物）に 読み直す（document の 'tengel:wallet'）。まだ 読めて いない ときは null（札は 出さない）
+  let ptTotal = null;
+  function ptSync() { try { const w = window.TengelWallet; ptTotal = w && typeof w.total === 'function' ? Math.max(0, Math.round(+w.total() || 0)) : null; } catch (e) { ptTotal = null; } return ptTotal; }
+  const walletTotal = () => ptTotal;
+  document.addEventListener('tengel:wallet', ptSync);
   function grant(v, what, id) {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
@@ -411,12 +456,12 @@ const TCApp = (() => {
   //   ・下の 列（撫でる・ごはん・おそうじ・呼ぶ）の 1番 右に まさちゃんの 丸い 絵の ボタン（tc_icon_buy2.webp：kisekae/tc/buy_asset.py・リポジトリに 入れない）。
   //     描くのと 押した ことを 受けるのは tc_care.js（BUYG・O.onBuy）：ほかの ボタンと 同じ（お世話の あとの PUSH が 出て いる 間は 列ごと かくれる）→ 押すと 購入の 窓（tc_buy.js の TCBuy）。
   //     開くのは お世話の 動き・当たりの 演出・馬の 入れかえの 途中で ない とき（buyShow）。途中の ときは 札「お世話が おわってから 買えるよ」（tc_care.js の pressBuy）
-  //   ・組と 値段は points.js の TOKEN_PACKS（1こ 80P）。ポイントは 台帳（TengelWallet.tc.buy：買った ポイントから 先に 使う・あずかりポイントは 先に 補充）
+  //   ・組と 値段は points.js の TOKEN_PACKS（1こ 100P：第4.168版。第4.167版までは 1こ 80P・5つの 組）。ポイントは 台帳（TengelWallet.tc.buy：買った ポイントから 先に 使う・あずかりポイントは 先に 補充）
   //   ・持てる 数は TOKEN_MAX（25こ）まで（聞いて 決めた 11:5x「25こまで」）：いまの 数 ＋ 買う 数が 25こを こえる 組は その ときは 買えない
   //   ・途中で 閉じても ずれない：台帳に 入れる 前に 買い物の しるし（st.buy＝{ id, n }）を 保存 → 台帳に 入ったら トークンを 足して しるしを 消す（1回の 保存で）。
   //     台帳に 入った あと・トークンを 足す 前に アプリが 閉じた ときは、次に 開いた ときに 台帳を 見て わたす（recoverBuy）。台帳に なければ しるし だけ 消す（ポイントは へって いない）
   //   ・買って いる 間（台帳の 保存を 待つ 間）は 時間で たまる ぶんを 待たせる（frame）：待って いる 間に ＋5 が 入って 25こを こえる ことが ない
-  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice()); };
+  const PACKS = () => { const P = window.TengelPoints; return (P && P.TOKEN_PACKS ? P.TOKEN_PACKS : [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice()); };      // 第4.168版：1こ 100P・20この 組も（points.js）
   const stockNow = () => { if (TCCare.on && TCCare.S.stock !== st.stock) { st.stock = TCCare.S.stock; touch(); } return st.stock; };      // お世話で 使った ぶんを 先に 写す
   function stockSet(n, plus) {                         // トークンの 数を 決める（右上の 数も いっしょに・plus＝「＋N」を 出す）
     st.stock = n; touch();
@@ -542,10 +587,9 @@ const TCApp = (() => {
       if (!testFree()) return 'busy';
       spawnTrash(clock(), false); return 'ok';
     },
-    // うんちを させる（gold＝金のうんち）。幻の馬・神様馬は うんちを しない・3こ まで
+    // うんちを させる（gold＝金のうんち）。3こ まで（第4.168版：幻の馬・神様馬も いつもの 馬と 同じ）
     poop(gold) {
       if (!testOn()) return 'off';
-      if (st.visit) return 'visit';
       if (!BR || (BR.poops || []).filter(q => !q.sw).length >= 3) return 'full';
       if (!testFree()) return 'busy';
       BR.poopReq = true; if (gold) testGold = true; return 'ok';
@@ -593,7 +637,7 @@ const TCApp = (() => {
     if (st.visit) st.visit.el = (+st.visit.el || 0) + dt;                                       // 開いて いる あいだに たった 秒（時計を もどしても 30分で 帰る）
     if (st.visit && visitLeft(gms) <= 0 && !busy && careFree() && !st.pend && !panelOpen() && !resetting) { resetting = true; endVisit().catch(() => { }).finally(() => { resetting = false; }); }      // タイムリミット → いつもの 馬
     else if (!resetting) resetStep(gms, dt, t);
-    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms) } : null;      // バナーの 下の「切り替わる 条件」（tc_care.js が かく）
+    if (TCCare.on) TCCare.S.vinfo = st.visit ? { kind: st.visit.kind, left: visitLeft(gms), n: Math.min(st.rs.n || 0, RESET_CARES), need: RESET_CARES, timer: rsLeft(gms), draws: Math.min(st.rs.n || 0, drawMax() || 0), max: drawMax() } : null;      // バナーの 下の「切り替わる 条件」（tc_care.js が かく）
     if (resetting) { /* 馬を かえて いる 途中 */ }
     else if (!busy && field.field && field.field !== fieldName() && !frame._sw) { frame._sw = true; syncField().finally(() => { frame._sw = false; }); }
     while (later.length) { try { later.shift()(); } catch (e) { } }
@@ -635,15 +679,15 @@ const TCApp = (() => {
     accrue(tnow());
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
-      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiY: 284, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
+      lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      // 第4.165版：下の 列の「お世話トークン購入」（tc_care.js が 描く）→ 購入の 窓
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      lotFree: () => !busy && !resetting && !panelOpen() && !st.pend });      // 第4.159版：PUSH の スイッチ（1個／まとめて）と「PUSH が まだ 出て いる」を おぼえる・待って いた ハートの 抽選を 始めて よいか（当たりの 演出・馬の 入れかえ・説明書などの 途中で ない）
+      lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      // drawLeft（第4.168版）：幻の馬・神様馬の 抽選の のこり（上限で PUSH を 消す）      // 第4.159版：PUSH の スイッチ（1個／まとめて）と「PUSH が まだ 出て いる」を おぼえる・待って いた ハートの 抽選を 始めて よいか（当たりの 演出・馬の 入れかえ・説明書などの 途中で ない）
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      // 前に お世話を した あと PUSH を 押す 前に 閉じた → また 出す（お世話 1回には トークンを 1つは 使う）
     nextTick = clock() + TICK;
     recoverBuy().catch(() => { });                     // 第4.165版：前に 買って すぐ 閉じた ぶん（台帳に 入って いれば トークンを わたす）
-    SND.preload(['tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      // PUSH の 音は 先に 読む（押した 瞬間に 鳴る：チケット当選の プチュン〈的中の 演出の 音〉も）
+    SND.preload(['tc_bgm_roulette.m4a', 'tc_se_button.m4a', 'tc_se_unfold.m4a', 'tc_se_rub.m4a', 'tc_se_heart.m4a', 'tc_se_pick.m4a', 'tc_se_chooser.m4a', 'tc_se_token.m4a', 'tc_se_pfo.m4a', 'tc_se_piron.m4a', 'tc_se_dedeen.m4a', 'tc_se_kyuin.m4a', 'sfx_sdp.m4a']);      // PUSH の 音は 先に 読む（押した 瞬間に 鳴る：チケット当選の プチュン〈的中の 演出の 音〉も）
   }
   async function open(opt) {
     SND.unlock();
@@ -652,8 +696,8 @@ const TCApp = (() => {
       await ready;
     } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
-    paintHead(); layout(); accrue(tnow());
-    if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; }
+    paintHead(); layout(); accrue(tnow()); ptSync();      // ptSync（第4.168版）：開く たびに 合計ポイントを 読み直す
+    if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; S.ptShow = null; }
     resume();
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
     if (opt && opt.test && testOn() && !TCTest.isOpen()) TCTest.open(stage, TEST);      // 第4.165版：設定の「テスト版の道具」から 道具箱を 開いた まま 入る（テスト版 だけ）
@@ -668,5 +712,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();

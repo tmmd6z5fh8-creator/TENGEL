@@ -439,6 +439,8 @@
     n.innerHTML = (t.thumb ? `<img src="${esc(t.thumb)}" alt="">` : '') + `<span><b>🎉 新しい壁紙「${esc(t.name)}」</b>${many > 1 ? `壁紙パックの ${many}枚が 使えるように なったよ` : '壁紙パックの 壁紙が 使えるように なったよ'}</span>`
       + `<button type="button" class="btn primary" data-ksnote="${esc(id)}">着せ替える</button>`;
     document.body.appendChild(n);
+    // 第4.168版：結果ボードの 解放の お知らせ（#bcNote：同じ 所に 出る）が 出て いる ときは その 下に（同じ レースで 両方 解放された とき、字が 重なって いた）
+    try { const o = document.getElementById('bcNote'); if (o && o.offsetHeight) n.style.top = (o.offsetTop + o.offsetHeight + 8) + 'px'; } catch (e) { /* なし */ }
     n.addEventListener('click', async ev => { if (!ev.target.closest('[data-ksnote]')) return; n.remove(); await apply(id, true); toast(`「${t.name}」に着せ替えたよ`); });
     setTimeout(() => { if (n.parentNode) n.remove(); }, 6500);
   }

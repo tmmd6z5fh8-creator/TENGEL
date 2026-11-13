@@ -103,6 +103,10 @@ try:
                     for _ in range(int(round(SDUP['BLACK'] * 60))):
                         blk.save(os.path.join(d, f'f{idx:04d}.png')); idx += 1
                 pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
+                if kind == 'big':   # 第4.168版：かけらの「光の輪」を 消す きまり（.fxs .clips .ring）は デカ的中の 虹の 輪 3つ（.ring.r1〜r3：かけらの 外）には 効かない
+                    rb = pg.evaluate("() => { const r = [...document.querySelectorAll('#fxOv .ring.r1, #fxOv .ring.r2, #fxOv .ring.r3')]; return [r.length, r.filter(e => getComputedStyle(e).display !== 'none' && !e.closest('.clips')).length]; }")
+                    print(('  ✅ ' if rb == [3, 3] else '  ❌ ') + f'big：デカ的中の 虹の 輪 3つは そのまま（{rb}）')
+                    if rb != [3, 3]: fails.append('big rings')
                 if kind == 'sd':   # 第4.77版：ここでは 動画が 読めない → すぐ ブラックアウト → 0.5秒 → 極ど的中の 幕
                     pg.wait_for_function("() => !!document.querySelector('#fxOv .ov.sd')", timeout=10000)
                 if kind in ('sd', 'gk'):   # 動画が 動いた 形（go）の ③ を 写す（動画は あとで コマを おきかえる）

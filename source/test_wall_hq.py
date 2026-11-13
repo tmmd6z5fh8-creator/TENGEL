@@ -301,6 +301,28 @@ check(not os.path.exists(os.path.join(SRV, 'APP', 'ks_neon.json')) and all(os.pa
 for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm in IN_APP] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NTB if k not in NT_KEEP], list(NT_OLD.values()) + list(NT_165.values()))]):
     kj = json.load(open(os.path.join(SRV, 'APP', f'ks_{nm}.json'), encoding='utf8')); txt = kj['bnr']['html'] + kj['bnr']['css']
     check(all(f'ks_{i}.webp' in txt for i in new) and not any(o in json.dumps(kj) for o in old), f'{jp}の ファイル（ks_{nm}.json）：新しい 絵（{len(new)}まい）・前の 絵は 入って いない')
+# 第4.168版（まさちゃん 2026/11/14 01:26「勝負服の馬の動く黒い線おかしいから消して！」）：勝負服の 壁紙の 走る 絵は 馬の 腹帯（鞍を とめる 黒い 帯：コマごとに 少し 動いて 見えた）を 描かない。
+#   道具：flat/comic_rider.py は look の girth が False なら 腹帯を 描かない・勝負服（flat/silks_banner.py・flat/hq_silks.py）だけ girth=False を わたす（ほかの 壁紙は 今までどおり）
+#   絵：前の 絵（第4.166〜4.167版：a1fc4438…）と くらべて、形（すき通し）は 1点も ちがわない・大きく かわった 点は どの コマも おなかの 細い たての 帯の 中 だけ（前は 暗い → いまは 馬の 体の 色）
+_cr = open(os.path.join(K, 'flat', 'comic_rider.py'), encoding='utf8').read(); _sbn = open(os.path.join(K, 'flat', 'silks_banner.py'), encoding='utf8').read(); _hqs = open(os.path.join(K, 'flat', 'hq_silks.py'), encoding='utf8').read()
+G167 = 'a1fc44386dd7e4989af9150869ab10a6'
+check("if look.get('girth', True):" in _cr and 'girth=False' in _sbn and 'girth=False' in _hqs and ID['silks'] != G167 and G167 not in json.dumps(json.load(open(os.path.join(K, 'silks_blobs.json'), encoding='utf8'))),
+      '第4.168版：勝負服の 走る 絵は 腹帯を 描かない（comic_rider.py の girth・勝負服 だけ girth=False）・台帳は 新しい 絵を さす（前の 絵 a1fc4438… は さして いない）')
+if os.path.exists(P(G167)):
+    _ga = np.asarray(Image.open(P(G167)).convert('RGBA')).astype(int); _gb = np.asarray(Image.open(P(ID['silks'])).convert('RGBA')).astype(int)
+    _ok = _ga.shape == _gb.shape == (441, 13860, 4) and bool((_ga[..., 3] == _gb[..., 3]).all())
+    if _ok:
+        _d = np.abs(_ga[..., :3] - _gb[..., :3]).max(2); _big = (_d > 40) & (_ga[..., 3] > 0); _fw = _ga.shape[1] // 15; _per = []; _in = 0
+        for _i in range(15):
+            _ys, _xs = np.where(_big[:, _i * _fw:(_i + 1) * _fw]); _per.append(len(_xs)); _in += int(((_xs >= 470) & (_xs <= 520) & (_ys >= 190) & (_ys <= 320)).sum())
+        _vo = float(_ga[..., :3].max(2)[_big].mean()); _vn = float(_gb[..., :3].max(2)[_big].mean())
+        check(all(700 <= v <= 1400 for v in _per) and _in >= 0.97 * sum(_per) and _vo < 90 and _vn > 160,
+              f'勝負服の 走る 絵（15コマ）：形（すき通し）は 前と 1点も ちがわない・大きく かわった 点は どの コマも おなかの 細い 帯の 中 だけ（1コマ {min(_per)}〜{max(_per)}点・その {_in / max(1, sum(_per)) * 100:.1f}% が 帯の 中）・'
+              f'そこは 前は 暗い（明るさ {_vo:.0f}）→ いまは 馬の 体の 色（{_vn:.0f}）＝黒い 線は ない')
+    else:
+        check(False, f'勝負服の 走る 絵：前の 絵と 大きさ・形（すき通し）が ちがう（{_ga.shape}・{_gb.shape}）')
+else:
+    print('  （前の 絵 a1fc4438… が 手元に ない ので、前の 絵との くらべは しない）')
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 ST = """async ([el, win]) => { const bn = document.querySelector('#ksBnr'), e = bn && bn.querySelector(el), w = bn && bn.querySelector(win); if (!e || !w) return null;
   const b = bn.getBoundingClientRect(), r = w.getBoundingClientRect(), c = getComputedStyle(e), u = (c.backgroundImage.match(/url\\("?([^")]+)"?\\)/) || [])[1];

@@ -967,7 +967,7 @@
     // うんち：2分 ごとの リセットで 1/7（11/08 23:38 まさちゃん）。止まって しっぽを 上げ、しっぽの 下から 地面へ 落ちて その まま のこる
     if (st.nextReset == null) st.nextReset = t + 120;
     if (t >= st.nextReset) { st.nextReset += 120; if (rnd() < 1 / 7) st.poopReq = true; }
-    if (st.stand) st.poopReq = false;          // 幻の馬・神様馬は うんち しない
+    if (st.stand) st.poopReq = false;          // 立った ままの 馬（stand：いまは 使って いない）は うんち しない
     if (st.poopReq && st.poopT == null && !(st.sl > 0.001) && st.mode !== 'run' && st.mode !== 'gallop') {
       st.poopT = t; st.poopReq = false; st.mode = 'idle'; st.until = Math.max(st.until, t + POOP_DUR + 0.3); st.want.graze = 0; st.want.look = [0, 0];
       st.poopImg = Math.floor(rnd() * 3) % 3; st.poopDone = false;

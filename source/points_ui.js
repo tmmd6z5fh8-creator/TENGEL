@@ -522,7 +522,7 @@
     } else if (ui.show === 'hist') {
       const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
       // 第4.139版：あずかりポイントから 補充した ぶん（from:'hold'）・届いた ときに あずけた ぶん（held）も わかる ように
-      const msLab = e => (/^(rel-)?back-theme:/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない
+      const msLab = e => (/^(rel-)?back-theme:|^login-/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない（第4.168版：ログインボーナス login-<日付> も）
       const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : msLab(e);
       const nm0 = e => e.kind === 'mission' ? msLab(e) : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
       const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^(fig|tctok):/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');

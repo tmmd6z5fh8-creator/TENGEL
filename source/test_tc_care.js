@@ -214,26 +214,33 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   Object.assign(BR, { x: 526, y: 1000, dir: 0, mode: 'idle' }); run(7.5); TCCare.pressCall(T, 'amae');
   check(BR.mode === 'walk' && BR.tgt[1] === 1230, `呼ぶ（甘える）：いまの 所から 230 だけ 手前（行き先 y ${BR.tgt[1]}）`);
   idle(20);
-  console.log('おかわりの目（なでない まま）');
-  idle(30); S.stock = S.stockShow = 5; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); RND = 0.2;      // 0.2：おかわりの目（1/4）が 出る・ほかの 当たりは 出ない
-  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'beg', 20); const tb = T;
-  check(S.phase === 'beg', 'ごはんの あと おかわりの目（1/4）');
-  run(6.0); check(S.phase === 'beg', '6秒 までは なでて もらうのを 待つ');
-  check(idle(6) && T - tb < 10, `なでない まま 6.5秒 → そのまま おしまい（${(T - tb).toFixed(1)}秒で もとに もどる。前は なでる まで ずっと 待って いた）`);
+  // 第4.168版（まさちゃん 2026/11/14 01:26「ごはんをあげたあと、おかわり？の時だけ抽選ボタンが出るのが遅すぎる。通常の時と同じ速度で表示して！」）：
+  //   おかわりの目は 見つめる だけ（なでて もらうのを 待つ 場面 S.phase==='beg' は もう ない）＝ おしまいと PUSH は おかわりの目が 出ない ときと 同じ 時
+  console.log('おかわりの目（見つめる だけ・PUSH は いつもと 同じ 速さ）');
+  idle(30); S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); RND = 0.99;      // 0.99：おかわりの目は 出ない
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:apple'); const tn8 = T; until(pushLive, 30); const dn = T - tn8, bn = evs('beg', tn8).length;
+  check(pushLive() && bn === 0, `ふつうの ごはん：えらんで から PUSH まで ${dn.toFixed(2)}秒（おかわりの目は 出ない）`);
+  idle(30); Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); RND = 0.2;      // 0.2：おかわりの目（1/4）が 出る・ほかの 当たりは 出ない
+  TCCare.press(T, 'feed'); TCCare.press(T, 'pick:apple'); const tb8 = T; let sawBeg = false; until(() => { if (S.phase === 'beg') sawBeg = true; return pushLive(); }, 30); const db = T - tb8;
+  check(evs('beg', tb8).length === 1 && !sawBeg && BR.reacts.some(r => r.k === 'beg'), 'ごはんの あと おかわりの目（1/4）：こちらを 見つめる（なでて もらうのを 待つ 場面は ない）');
+  check(pushLive() && Math.abs(db - dn) < 0.05, `おかわりの目の ときも PUSH は いつもと 同じ 時に 出る（ふつう ${dn.toFixed(2)}秒・おかわり ${db.toFixed(2)}秒。前は なでる まで 6.5秒 待って いた）`);
+  { const p0 = TCHorse.where(HO, 'poll'); TCCare.input('down', p0[0], p0[1], T); TCCare.input('up', p0[0], p0[1], T); run(0.2); }
+  check(pushLive() && S.phase !== 'pet', 'おかわりの目の 間に 馬を さわっても 何も 始まらない（PUSH を 押す まで）');
+  check(idle(10), 'PUSH を 押すと おしまい');
   RND = 0.5;
   // 第4.154版（まさちゃん 11/11 20:00「テスト版で…お世話の当選パターン全種類テストできるようにして！」）：テスト版の 道具が 使う S.test
   //   名前が あれば 次の 1回 だけ その 結果（使ったら 消える）・なければ いつもの くじ（rnd）。App Store版では S.test は いつも null
   console.log('テスト版の 道具（S.test：次の 1回 だけ 結果を 決める）');
   idle(30); RND = 0.99;      // 0.99：金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・ハートの 当たりは どれも 出ない 数。呼ぶは「甘える」
   check(S.test === null, 'ふだんは S.test＝null');
-  S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' });
+  S.stock = S.stockShow = 9; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); const tq0 = T;
   TCCare.press(T, 'feed'); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
   check(S.feed && S.feed.gold === false, '決めて いない → ニンジンは ふつう（いつもの くじ）');
-  idle(30); check(!evs('beg', T - 12).length, '決めて いない → おかわりの目は 出ない');
+  idle(30); check(!evs('beg', tq0).length, '決めて いない → おかわりの目は 出ない');
   S.test = { gold: true, beg: true };
   TCCare.press(T, 'feed'); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'feed', 10);
   check(S.feed.gold === false && S.test.gold === true, 'gold：リンゴでは 使わない（次の ニンジン まで のこる）');
-  check(until(() => S.phase === 'beg', 20) && !('beg' in S.test), 'beg：ごはんの あと おかわりの目（使ったら 消える）');
+  { const tq = T; check(until(() => evs('beg', tq).length > 0, 20) && !('beg' in S.test), 'beg：ごはんの あと おかわりの目（使ったら 消える）'); }
   idle(30);
   let h1 = S.heart; S.got = [];
   TCCare.press(T, 'feed'); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
@@ -477,5 +484,41 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
     S.uiDown = null; TCCare.pushShow(T); run(0.4);
     TCCare.pointer('down', Q.x, Q.y + 60, T); TCCare.pointer('up', Q.x, Q.y + 60, T);
     check(pushLive() && BUYS === 2, 'PUSH が 出て いる 間は 列ごと かくれて、購入の ボタンも 押せない'); }
+  // 第4.168版（まさちゃん 2026/11/14 01:26「ごはんを押しちゃうと戻れないから、戻るボタンを追加して！」）：えらぶ 札の「← もどる」・もう一度「ごはん」で とじる（トークンは へらない・PUSH も 出ない）
+  console.log('ごはんの えらぶ 札：もどる（第4.168版）');
+  { clearPush(); until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.6); S.stock = S.stockShow = 7; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' });
+    const B = TCCare.BTN; let e0 = EV.length; const evk = (k, from) => EV.slice(from).filter(e => e.k === k).length;
+    TCCare.press(T, 'feed'); run(0.3);
+    check(!!S.chooser && S.stock === 7, 'ごはんを 押す → えらぶ 札（トークンは まだ 使わない）');
+    TCCare.pointer('down', 262, 1109, T); TCCare.pointer('up', 262, 1109, T); run(0.5);
+    check(S.chooser === null && S.phase === 'idle' && !S.mode && S.stock === 7 && !pushLive() && evk('token', e0) === 0 && evk('fold', e0) === 1, '「← もどる」を 押す → 札が とじて もとに もどる（トークンは へらない・PUSH は 出ない・紙の 音）');
+    TCCare.pointer('down', 262, 1109, T); TCCare.pointer('up', 262, 1109, T); run(0.2);
+    check(S.chooser === null && S.phase === 'idle', '札が 出て いない ときに 同じ 所を さわっても 何も おきない');
+    TCCare.press(T, 'feed'); run(0.3); const c1 = !!S.chooser; TCCare.pointer('down', B.feed[0], B.feed[1], T); TCCare.pointer('up', B.feed[0], B.feed[1], T); run(0.5);
+    check(c1 && S.chooser === null && S.phase === 'idle' && S.stock === 7, 'もう一度「ごはん」を 押しても とじる');
+    TCCare.press(T, 'feed'); run(0.3); TCCare.press(T, 'pick:apple');
+    check(until(() => S.phase === 'feed', 10), 'そのあと ごはんを えらぶと いつもどおり 食べる'); idle(30); }
+  // 第4.168版（まさちゃん 2026/11/14 01:26「幻の馬は、抽選最大10回まで 神様馬は、抽選最大5回まで」）：アプリが わたす drawLeft（のこりの 抽選の 回数）が 0 に なったら PUSH は 出ない・押せない
+  console.log('抽選の 上限（drawLeft：第4.168版）');
+  { clearPush(); until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.6);
+    let LEFT = 2; const PR2 = [];
+    await TCCare.init({ canvas: { getContext: () => ctx }, horse: HO, brain: BR, rnd: () => RND, tod: 'morning', stageNo: 1, props: false, onEvent: e => EV.push(e),
+      lottery: () => null, onPrize: z => PR2.push(z), stockMax: 25, lotFree: () => true, drawLeft: () => LEFT });
+    S.stock = S.stockShow = 9; S.bulk = true; Object.assign(BR, { x: 526, y: 1100, dir: 0, mode: 'idle' }); run(0.3);
+    TCCare.press(T, 'feed'); run(0.3); TCCare.press(T, 'pick:apple'); until(pushLive, 30); run(0.3);
+    const p1 = TCCare.pushPress(T); LEFT = 1; run(0.6); const live1 = pushLive();
+    const p2 = TCCare.pushPress(T); LEFT = 0; run(0.2); const p3 = TCCare.pushPress(T); run(0.8);
+    check(p1 === true && live1 && p2 === true && p3 === false && !pushLive() && S.stock === 7, `まとめて 使う：のこり 2回 → 2回 押せて、0回に なったら PUSH が 消える（3回めは 押せない・トークンは 2こ だけ へる：のこり ${S.stock}）`);
+    until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.8); S.fx = S.fx.filter(f => f.k !== 'tagUI'); const e1 = EV.length;
+    TCCare.press(T, 'feed'); run(0.3);
+    check(!S.chooser && S.phase === 'idle' && S.fx.some(f => f.k === 'tagUI' && f.txt === 'この 馬の 抽選は おわったよ') && EV.slice(e1).some(e => e.k === 'wait'), 'のこり 0回：ごはんは 始まらない → 札「この 馬の 抽選は おわったよ」');
+    LEFT = Infinity; run(1.4); S.fx = S.fx.filter(f => f.k !== 'tagUI'); TCCare.press(T, 'feed'); run(0.3);
+    check(!!S.chooser, 'いつもの 馬（上限 なし）は 今までどおり'); TCCare.press(T, 'chback'); run(0.5); }
+  // 条件の 札（幻の馬・神様馬）：2行めは「抽選 ○/○回」・神様馬（上限 5回＝リセットの 回数 以下）は 切り替わりタイマーの 行 なし
+  { const R = TCCare.vinfoRows, k = R({ kind: 'kamisama', left: 1576, n: 5, need: 5, timer: 119, draws: 3, max: 5 }), m = R({ kind: 'maboroshi', left: 59, n: 5, need: 5, timer: null, draws: 10, max: 10 }), o = R({ kind: 'x', left: 100, n: 2, need: 5, timer: 30 });
+    check(JSON.stringify(k.map(r => r.slice(0, 3))) === '[["タイムリミット","26:16",false],["抽選","3/5回",false]]'
+      && JSON.stringify(m.map(r => r.slice(0, 3))) === '[["タイムリミット","0:59",true],["抽選","10/10回",true],["切り替わりタイマー","5回で スタート",false]]'
+      && JSON.stringify(o.map(r => r.slice(0, 2))) === '[["タイムリミット","1:40"],["お世話","2/5回"],["切り替わりタイマー","0:30"]]',
+      `条件の 札：神様馬＝2行（タイムリミット・抽選 3/5回）／幻の馬＝3行（抽選 10/10回は 赤）／上限の ない とき＝前と 同じ 3行（${JSON.stringify(k.map(r => r[1]))} ${JSON.stringify(m.map(r => r[1]))}）`); }
   console.log(`\n${ok} OK / ${ng} NG`); process.exit(ng ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

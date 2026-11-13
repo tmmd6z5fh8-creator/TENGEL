@@ -314,10 +314,14 @@ try:
             pg.evaluate("() => TCApp.test.prize(null)")      # この ごはんは はずれ
             tool(pg, 'flag', {'k': 'gold', 'v': True}); m = pg.evaluate(MSG); tool(pg, 'flag', {'k': 'beg', 'v': True}); pg.wait_for_timeout(200)
             sheet(pg); now = pg.evaluate("() => document.querySelector('#tct [data-now]').innerText"); sheet(pg, False)
+            b0 = pg.evaluate("() => TCCare.S.begT == null ? -1 : TCCare.S.begT")
             feed(pg, 2); pg.wait_for_function("() => TCCare.S.feed && TCCare.S.phase === 'feed'", timeout=30000); g = pg.evaluate("() => TCCare.S.feed.gold"); pg.wait_for_timeout(1500); shot(pg, 'tct_gold_carrot')
-            pg.wait_for_function("() => TCCare.S.phase === 'beg' || (TCCare.S.phase === 'idle' && !TCCare.S.feed)", timeout=60000); bg = pg.evaluate("() => TCCare.S.phase"); free(pg, 60); pg.wait_for_timeout(1200)
+            # 第4.168版：おかわりの目は 見た目 だけ（お世話の 段階は「beg」に ならない＝なでるのを 待たない・PUSH は いつもと 同じ 時に 出る）
+            pg.wait_for_function("(b0) => (TCCare.S.begT != null && TCCare.S.begT !== b0) || (TCCare.S.phase === 'idle' && !TCCare.S.feed)", arg=b0, timeout=60000)
+            bg = pg.evaluate("(b0) => [TCCare.S.begT != null && TCCare.S.begT !== b0, TCCare.S.phase]", b0); free(pg, 60); pg.wait_for_timeout(1200)
             q = pg.evaluate("() => [TCCare.S.heart, JSON.stringify(TCCare.S.test || {})]")
-            check('金のニンジン' in m and '金のニンジン' in now and 'おかわりの目' in now and g is True and bg == 'beg' and q[0] == 5 and q[1] == '{}', f'「金のニンジン」「おかわりの目」→ 次の ニンジンは 金（なかよし ＋3：2 → {q[0]}）・食べた あと おかわりの目（どちらも 1回 だけ）')
+            check('金のニンジン' in m and '金のニンジン' in now and 'おかわりの目' in now and g is True and bg[0] is True and bg[1] != 'beg' and q[0] == 5 and q[1] == '{}',
+                  f'「金のニンジン」「おかわりの目」→ 次の ニンジンは 金（なかよし ＋3：2 → {q[0]}）・食べた あと おかわりの目（見た目 だけ・段階は「{bg[1]}」＝なでるのを 待たない）（どちらも 1回 だけ）')
             # 撫でる：ハートの 抽選（当たり → ぴょん！・トークン ＋5）
             pg.evaluate("() => { TCCare.S.stock = 7; TCApp.state.stock = 7; TCApp.state.stockAt = Date.now() + 7200000; }"); tool(pg, 'heart', {'win': True}); pg.wait_for_timeout(250); m = pg.evaluate(MSG)      # （10分ごとに 5つ たまる：この 確かめの 間に たまらない ように 数えはじめを 先に）
             q0 = pg.evaluate("() => [TCCare.S.heart, TCCare.S.heartShow, TCApp.state.heart, TCCare.S.test && TCCare.S.test.win, TCCare.S.got.length]")
@@ -354,8 +358,14 @@ try:
             except Exception: pass
             q = pg.evaluate("() => TCApp.state.poops.map(p => p.gold)")
             check(len(q) > n0 and q[0] is True, f'「うんちを させる」→ もう 1つ（金か どうかは いつもの くじ）{q}')
-            r = pg.evaluate("async () => { await TCApp.test.visit('maboroshi'); return [TCApp.test.poop(true), TCApp.test.info().gold]; }")
-            check(r == ['visit', False], f'幻の馬・神様馬は うんちを しない（「いつもの 馬に もどしてね」）{r}')
+            # 第4.168版（まさちゃん 2026/11/14 01:26「あくまで、外見が違うだけにして！動き方や行動についても！」）：幻の馬・神様馬も いつもの 馬と 同じ ように うんちを する
+            pg.evaluate("async () => { await TCApp.test.visit('maboroshi'); }"); pg.wait_for_function("() => TCApp.state.visit && TCApp.state.visit.kind === 'maboroshi' && TCApp.test.info().free", timeout=90000); pg.wait_for_timeout(600)
+            pg.evaluate("() => { const st = TCApp.state, BR = TCCare._hb[1]; BR.poops = []; st.poops = []; }"); pg.wait_for_timeout(300)
+            r = pg.evaluate("() => [TCApp.test.poop(true), TCApp.state.visit && TCApp.state.visit.kind]"); okv = True
+            try: pg.wait_for_function("() => (TCCare._hb[1].poops || []).some(q => q.gold === true) && TCApp.state.poops.length >= 1", timeout=60000)
+            except Exception: okv = False
+            q = pg.evaluate("() => [(TCCare._hb[1].poops || []).length, TCApp.test.info().gold, TCApp.state.visit && TCApp.state.visit.kind, !!TCCare._hb[1].stand]")
+            check(r == ['ok', 'maboroshi'] and okv and q[0] >= 1 and q[1] is False and q[2] == 'maboroshi' and q[3] is False, f'幻の馬・神様馬も いつもの 馬と 同じ ように うんちを する（前は「いつもの 馬に もどしてね」で しなかった）{r} {q}')
             check(not errs, f'エラー なし {errs[:3]}')
             # 閉じて ひらき直しても、決めた 当たりは のこる（アプリを 閉じる まで）・馬も そのまま
             pg.evaluate("async () => { await TCApp.test.prize({ k: 'pt', v: 100 }, 'maboroshi'); }"); pg.locator('#tcOv [data-tc="back"]').click(); pg.wait_for_timeout(500)

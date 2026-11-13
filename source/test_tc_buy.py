@@ -4,8 +4,9 @@
 #   → 12:33「お世話トークン呼ぶのすぐ上にして！」→ 12:36「お世話トークン購入のアイコンやっぱりこっちで！（丸い 絵）お世話とかのところに上手く入れられない？」
 #   → 12:38「1番右側に入れて！」→ 12:46「周りの大きさと合わせて！バランス調整して！」
 #   ・下の 列（撫でる・ごはん・おそうじ・呼ぶ）の 1番 右に まさちゃんの 丸い 絵の ボタン（ほかと 同じ 大きさ・同じ 間かく・下に 名前「トークン購入」：tc_care.js が 描く）
-#     → 購入の 窓（組 5つ・2回 押して 決める）→ ポイントが へって トークンが ふえる（台帳に 1件）
+#     → 購入の 窓（組 6つ・2回 押して 決める）→ ポイントが へって トークンが ふえる（台帳に 1件）
 #   ・25こを こえる 組・ポイントが 足りない 組は 買えない・途中で 閉じても ずれない（買い物の しるし）・App Store版にも 入る
+#   第4.168版（まさちゃん 2026/11/14 01:26「6.お世話トークン購入金額 ・1個100P ・5個500P ・10個1000P ・15個1500P ・20個2000P ・25個2500P」）：組は 6つ（20こが ふえた）・1こ あたり 100P
 #   python3 test_tc_buy.py   （ios/tc_assets/ が ある とき だけ 画面の テスト。ない とき（CI）は 中身の 見くらべ と 絵が ない ときの 形）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -34,7 +35,7 @@ def check(c, label):
 
 
 FAKE = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read().split('FAKE = """')[1].split('"""')[0]      # アプリの 窓口の にせもの（test_tc.py と 同じ）
-PACKS = [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]
+PACKS = [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]
 
 
 def gate(pg):
@@ -96,8 +97,8 @@ try:
     si = open(os.path.join(SRV, 'STORE', 'index.html'), encoding='utf8').read()
     check(all('const TCBuy' in x and 'window.TCBuy = TCBuy' in x and "'tc_icon_buy2.webp'" in x and 'tc_icon_buy.webp' not in x and 'お世話トークン購入' in x and 'onBuy' in x and 'BUYG' in x and 'data-tc="buy"' not in x and 'tcby' not in x for x in (tb, sb)),
           'tc_bundle.js（App Store版・テスト版）に 購入の 窓（TCBuy）と 下の 列の ボタン（丸い 絵 tc_icon_buy2.webp・はじめの 横長の 絵と うかぶ ボタンは もう ない）')
-    check('TOKEN_PACKS' in si and '[[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]' in si.replace('[[1,80],[5,400],[10,800],[15,1200],[25,2000]]', '[[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]') and 'tctok:' in si,
-          'index.html：組と 値段の 表（points.js の TOKEN_PACKS＝1こ 80P・5こ 400P・10こ 800P・15こ 1,200P・25こ 2,000P）・台帳の 窓口（tctok）')
+    check('TOKEN_PACKS' in si and json.dumps(PACKS) in si.replace(json.dumps(PACKS, separators=(',', ':')), json.dumps(PACKS)) and '[1, 80]' not in si and '[1,80]' not in si and 'tctok:' in si,
+          'index.html：組と 値段の 表（points.js の TOKEN_PACKS＝1こ 100P・5こ 500P・10こ 1,000P・15こ 1,500P・20こ 2,000P・25こ 2,500P：前の 80P の 表は ない）・台帳の 窓口（tctok）')
     check('confirm(' not in open(os.path.join(W, 'tc', 'tc_buy.js'), encoding='utf8').read().split('const TCBuy')[1] and 'alert(' not in open(os.path.join(W, 'tc', 'tc_buy.js'), encoding='utf8').read().split('const TCBuy')[1],
           '購入の 窓は confirm()・alert() の 窓を 使わない（アプリの 中では 出ない：2回 押して 決める）')
     lst = subprocess.run(['git', 'ls-files'], cwd=os.path.dirname(W), capture_output=True, text=True).stdout.split('\n')
@@ -166,9 +167,10 @@ try:
             rows = pg.evaluate(ROWS); now = pg.evaluate(NOW)
             check(sh['open'] and sh['title'] == 'お世話トークン購入' and sh['role'] == 'dialog' and sh['inside'] and sh['scroll'] <= 0 and sh['wide'] <= 0 and sh['minH'] >= 40 and 'BIZ' in sh['font'],
                   f'窓：「お世話トークン購入」・フィールドの 中に おさまる（スクロール なし・横に はみ出さない）・ボタンの 高さ {sh["minH"]:.0f}px 以上')
-            check([r[0] for r in rows] == [x[0] for x in PACKS] and [r[2] for r in rows] == ['80P', '400P', '800P', '1,200P', '2,000P'] and [r[1] for r in rows] == ['ok', 'ok', 'ok', 'ok', 'full'] and rows[4][3] == '25こを こえる' and all(r[3] == '買う' for r in rows[:4])
+            check([r[0] for r in rows] == [x[0] for x in PACKS] and [r[2] for r in rows] == ['100P', '500P', '1,000P', '1,500P', '2,000P', '2,500P'] and [r[1] for r in rows] == ['ok', 'ok', 'ok', 'ok', 'ok', 'full']
+                  and rows[5][3] == '25こを こえる' and all(r[3] == '買う' for r in rows[:5]) and w0 >= 2500
                   and pg.evaluate("() => JSON.stringify(TengelPoints.TOKEN_PACKS)") == json.dumps(PACKS, separators=(',', ':')),
-                  f'組は 5つ（1こ 80P・5こ 400P・10こ 800P・15こ 1,200P・25こ 2,000P：points.js の 表と 同じ）・いま 5こ → 25こは「25こを こえる」で 買えない {rows}')
+                  f'組は 6つ（1こ 100P・5こ 500P・10こ 1,000P・15こ 1,500P・20こ 2,000P・25こ 2,500P：points.js の 表と 同じ）・いま 5こ・{w0:,}P → 20こ までは 買える・25こは「25こを こえる」で 買えない {rows}')
             check(now['stock'] == '5 / 25こ' and now['pts'] == f'{w0:,}P' and now['msg'] == '' and any('持てるのは 25こまで' in t and 'あと 20こ' in t for t in sh['notes']) and any('5分ごとに 5つ' in t for t in sh['notes']) and any('もどせない' in t for t in sh['notes']) and sh['guide'],
                   f'いまの トークン（{now["stock"]}）・使える ポイント（{now["pts"]}）・きまりの 説明（25こまで／5分ごとに 5つ／もどせない）・「説明書を 見る（当たりの 確率）」')
             # 2回 押して 決める
@@ -177,45 +179,53 @@ try:
             shot(pg, 'buy_confirm')
             pg.locator('#tcb [data-b=no]').click(); pg.wait_for_timeout(200)
             cf2 = pg.evaluate("() => [document.querySelectorAll('#tcb .brow.cf').length, TCApp.state.stock, TengelWallet.total()]")
-            check(cf == [5, ['やめる', '400Pで 買う'], 5, w0] and cf2 == [0, 5, w0], f'「買う」→ その 行が「やめる／400Pで 買う」に（まだ 買わない）→「やめる」で もどる（トークンも ポイントも そのまま）{cf}')
+            check(cf == [5, ['やめる', '500Pで 買う'], 5, w0] and cf2 == [0, 5, w0], f'「買う」→ その 行が「やめる／500Pで 買う」に（まだ 買わない）→「やめる」で もどる（トークンも ポイントも そのまま）{cf}')
             pg.locator('#tcb [data-b=ask][data-n="5"]').click(); pg.wait_for_timeout(150); pg.locator('#tcb [data-b=go]').click(); pg.wait_for_timeout(800)
             a1 = pg.evaluate("() => ({ st: TCApp.state.stock, S: TCCare.S.stock, show: Math.round(TCCare.S.stockShow), tot: TengelWallet.total(), buy: TCApp.state.buy, saved: JSON.parse(localStorage.getItem('tengel.tc')), plus: TCCare.S.fx.filter(f => f.k === 'plus').map(f => f.txt), open: TCBuy.isOpen() })")
             now = pg.evaluate(NOW); led = pg.evaluate(LED); shot(pg, 'buy_done')
-            check(a1['st'] == 10 and a1['S'] == 10 and a1['tot'] == w0 - 400 and a1['buy'] is None and a1['saved']['stock'] == 10 and a1['saved'].get('buy') is None and '+5' in a1['plus'] and a1['open'],
-                  f'「400Pで 買う」→ トークン 5 → {a1["st"]}・ポイント {w0:,} → {a1["tot"]:,}（−400）・すぐ 保存・右上に「＋5」・窓は 開いた まま')
-            check(now['stock'] == '10 / 25こ' and now['pts'] == f'{w0 - 400:,}P' and '5こ 買ったよ' in now['msg'] and '400P' in now['msg'] and not now['ng'] and led == [['unlock', -400, 'tctok:5', 3]],
-                  f'窓の 数も かわる（{now["stock"]}・{now["pts"]}）・「{now["msg"]}」・台帳に 1件（unlock-tctok:5:<番号>・−400P）{led}')
+            check(a1['st'] == 10 and a1['S'] == 10 and a1['tot'] == w0 - 500 and a1['buy'] is None and a1['saved']['stock'] == 10 and a1['saved'].get('buy') is None and '+5' in a1['plus'] and a1['open'],
+                  f'「500Pで 買う」→ トークン 5 → {a1["st"]}・ポイント {w0:,} → {a1["tot"]:,}（−500）・すぐ 保存・右上に「＋5」・窓は 開いた まま')
+            check(now['stock'] == '10 / 25こ' and now['pts'] == f'{w0 - 500:,}P' and '5こ 買ったよ' in now['msg'] and '500P' in now['msg'] and not now['ng'] and led == [['unlock', -500, 'tctok:5', 3]],
+                  f'窓の 数も かわる（{now["stock"]}・{now["pts"]}）・「{now["msg"]}」・台帳に 1件（unlock-tctok:5:<番号>・−500P）{led}')
             # 台帳の 履歴（設定 › ポイント › 詳しく）の 名前
             hist = pg.evaluate("""() => { const e = TengelWallet.events().find(x => /^unlock-tctok:/.test(x.id)); return { use: e.use, dev: !!e.device, n: e.n > 0 }; }""")
-            check(sum(hist['use'].values()) == 400 and hist['dev'] and hist['n'], f'台帳の 1件に 使った ポイントの 内わけ（買った ポイントから 先に）・端末・書いた 順の 番号 {hist["use"]}')
+            check(sum(hist['use'].values()) == 500 and hist['dev'] and hist['n'], f'台帳の 1件に 使った ポイントの 内わけ（買った ポイントから 先に）・端末・書いた 順の 番号 {hist["use"]}')
 
+            # 第4.168版：4けたの 値段の 組（1,000P より 上）を「買う」→「やめる／1,500Pで 買う」の 行は、左の 値段の 字を かくす（前は「やめる」の 下に もぐって 切れて 見えた）
+            pg.locator('#tcb [data-b=ask][data-n="15"]').click(); pg.wait_for_timeout(250)
+            cfg = pg.evaluate("""() => { const r = document.querySelector('#tcb .brow.cf'), R = e => e.getBoundingClientRect(), q = R(r), bn = R(r.querySelector('.bn')), bs = [...r.querySelectorAll('.bb')].map(R);
+              return { n: +r.dataset.n, bc: getComputedStyle(r.querySelector('.bc')).display, txt: [...r.querySelectorAll('.bb')].map(b => b.textContent), inside: bs.every(b => b.left >= q.left && b.right <= q.right + 0.5), gap: Math.round(bs[0].left - bn.right), order: bs[0].right <= bs[1].left, right: Math.round(q.right - bs[1].right) }; }""")
+            shot(pg, 'buy_confirm_1500'); pg.locator('#tcb [data-b=no]').click(); pg.wait_for_timeout(200)
+            check(cfg == {'n': 15, 'bc': 'none', 'txt': ['やめる', '1,500Pで 買う'], 'inside': True, 'gap': cfg['gap'], 'order': True, 'right': cfg['right']} and cfg['gap'] >= 8 and 0 <= cfg['right'] <= 12
+                  and pg.evaluate("() => getComputedStyle(document.querySelector('#tcb .brow:not(.cf) .bc')).display") != 'none',
+                  f'第4.168版：「買う」を 押した 行は「15こ ［やめる］［1,500Pで 買う］」（左の 値段の 字は かくす＝ボタンと 重ならない：こ数から ボタンまで {cfg["gap"]}px）・ほかの 行の 値段は そのまま')
             print('■ 25こ まで')
             set_stock(pg, 21); pg.wait_for_timeout(700)
             rows = pg.evaluate(ROWS); now = pg.evaluate(NOW)
-            check([r[1] for r in rows] == ['ok', 'full', 'full', 'full', 'full'] and now['stock'] == '21 / 25こ' and 'あと 4こ' in ''.join(pg.evaluate("() => [...document.querySelectorAll('#tcb .bnote')].map(e => e.textContent)")),
+            check([r[1] for r in rows] == ['ok', 'full', 'full', 'full', 'full', 'full'] and now['stock'] == '21 / 25こ' and 'あと 4こ' in ''.join(pg.evaluate("() => [...document.querySelectorAll('#tcb .bnote')].map(e => e.textContent)")),
                   f'いま 21こ → 買えるのは 1こ だけ（5こ より 上は「25こを こえる」）・窓は 開いた まま 数が かわる（{now["stock"]}）')
             for _ in range(4):
                 pg.locator('#tcb [data-b=ask][data-n="1"]').click(); pg.wait_for_timeout(120); pg.locator('#tcb [data-b=go]').click(); pg.wait_for_timeout(500)
             rows = pg.evaluate(ROWS); a2 = pg.evaluate("() => [TCApp.state.stock, TCCare.S.stock, TengelWallet.total()]")
             r_full = pg.evaluate("async () => { const t0 = TengelWallet.total(); const r = await TCApp.buy.buy(1); return [r.ok, r.why, r.room, TCApp.state.stock, TengelWallet.total() - t0, TCApp.state.buy]; }")
-            check(a2 == [25, 25, w0 - 400 - 320] and [r[1] for r in rows] == ['full'] * 5 and r_full == [False, 'full', 0, 25, 0, None],
-                  f'1こ ずつ 4回 買う → 25こ（−320P）・25この ときは どの 組も 買えない・窓口を よんでも 買えない（ポイントも へらない）{r_full}')
+            check(a2 == [25, 25, w0 - 500 - 400] and [r[1] for r in rows] == ['full'] * 6 and r_full == [False, 'full', 0, 25, 0, None],
+                  f'1こ ずつ 4回 買う → 25こ（−400P）・25この ときは どの 組も 買えない・窓口を よんでも 買えない（ポイントも へらない）{r_full}')
             shot(pg, 'buy_full')
-            r_bad = pg.evaluate("async () => { const t0 = TengelWallet.total(), a = []; for (const n of [0, 2, 3, 7, 26, -5, 'x', 1.5]) { const r = await TCApp.buy.buy(n); a.push(r.ok + ':' + r.why); } const w = await TengelWallet.tc.buy('zz-bad-1', 7); return [a, w, TengelWallet.total() - t0]; }")
-            check(set(r_bad[0]) == {'false:off'} and r_bad[1] == {'ok': False, 'why': 'bad'} and r_bad[2] == 0, f'表に ない 数（0・2・3・7・26…）は 買えない（トレーニングセンターの 窓口も 台帳の 窓口も）{r_bad[0][:3]}')
+            r_bad = pg.evaluate("async () => { const t0 = TengelWallet.total(), a = []; for (const n of [0, 2, 3, 7, 21, 26, -5, 'x', 1.5]) { const r = await TCApp.buy.buy(n); a.push(r.ok + ':' + r.why); } const w = await TengelWallet.tc.buy('zz-bad-1', 7); return [a, w, TengelWallet.total() - t0]; }")
+            check(set(r_bad[0]) == {'false:off'} and r_bad[1] == {'ok': False, 'why': 'bad'} and r_bad[2] == 0, f'表に ない 数（0・2・3・7・21・26…）は 買えない（トレーニングセンターの 窓口も 台帳の 窓口も）{r_bad[0][:3]}')
 
             print('■ ポイントが 足りない')
             set_stock(pg, 0)
-            left = pg.evaluate("""async () => { const P = TengelPoints, W = TengelWallet; const t = W.total(); if (t > 450) { const id = 'unlock-test-drain-' + Date.now(); await W.unlock('test-drain-' + Date.now(), t - 450); } return W.total(); }""")
+            left = pg.evaluate("""async () => { const P = TengelPoints, W = TengelWallet; const t = W.total(); if (t > 550) { const id = 'unlock-test-drain-' + Date.now(); await W.unlock('test-drain-' + Date.now(), t - 550); } return W.total(); }""")
             pg.wait_for_timeout(900); rows = pg.evaluate(ROWS); now = pg.evaluate(NOW)
-            check(left == 450 and [r[1] for r in rows] == ['ok', 'ok', 'short', 'short', 'short'] and rows[2][3] == 'ポイントが 足りない' and now['pts'] == '450P',
-                  f'ポイント 450P・トークン 0こ → 1こ・5こは 買える・10こ より 上は「ポイントが 足りない」{[r[1] for r in rows]}')
+            check(left == 550 and [r[1] for r in rows] == ['ok', 'ok', 'short', 'short', 'short', 'short'] and rows[2][3] == 'ポイントが 足りない' and now['pts'] == '550P',
+                  f'ポイント 550P・トークン 0こ → 1こ・5こは 買える・10こ より 上は「ポイントが 足りない」{[r[1] for r in rows]}')
             r_short = pg.evaluate("async () => { const r = await TCApp.buy.buy(10); return [r.ok, r.why, r.need, TCApp.state.stock, TengelWallet.total(), TCApp.state.buy]; }")
-            check(r_short == [False, 'short', 350, 0, 450, None], f'窓口を よんでも 買えない（あと 350P・トークンも ポイントも そのまま・買い物の しるしも のこらない）{r_short}')
+            check(r_short == [False, 'short', 450, 0, 550, None], f'窓口を よんでも 買えない（あと 450P・トークンも ポイントも そのまま・買い物の しるしも のこらない）{r_short}')
             shot(pg, 'buy_short')
             pg.locator('#tcb [data-b=ask][data-n="5"]').click(); pg.wait_for_timeout(120); pg.locator('#tcb [data-b=go]').click(); pg.wait_for_timeout(600)
             rows = pg.evaluate(ROWS); a3 = pg.evaluate("() => [TCApp.state.stock, TengelWallet.total()]")
-            check(a3 == [5, 50] and [r[1] for r in rows] == ['short'] * 4 + ['full'], f'5こ 買う → 5こ・のこり 50P → もう どれも 買えない（1〜15こは ポイントが 足りない・25こは 25こを こえる）{a3}')
+            check(a3 == [5, 50] and [r[1] for r in rows] == ['short'] * 5 + ['full'], f'5こ 買う → 5こ・のこり 50P → もう どれも 買えない（1〜20こは ポイントが 足りない・25こは 25こを こえる）{a3}')
             # あずかりポイント（上限を こえて 届いた ぶん）は 先に 補充して 使う：台帳の 窓口が ensure を よぶ（ここでは 名前 だけ 見る）
             check('ensure(pk[1])' in open(os.path.join(W, 'points_ui.js'), encoding='utf8').read(), '台帳の 窓口：足りない ときは あずかりポイントから 先に 補充して から 買う（ensure）')
 
@@ -223,14 +233,14 @@ try:
             pg.evaluate("""async () => { const W = TengelWallet; const e = TengelPoints.giftEvent(Date.now(), 5000, 'gift-test-buy-' + Date.now(), 'テスト'); const s = W.snapshot(); s.events.push(e); await W.restore(s).catch(() => {}); }""")
             pg.wait_for_timeout(600)
             tot = pg.evaluate("() => TengelWallet.total()")
-            if tot < 2000:      # restore は 台帳が 空の とき だけ 入る → 入らなければ テスト版の ポイントを 足す ボタンと 同じ 形で
+            if tot < 2600:      # restore は 台帳が 空の とき だけ 入る → 入らなければ テスト版の ポイントを 足す ボタンと 同じ 形で
                 pg.evaluate("() => { document.querySelector('.tabbar button[data-tab=set]').click(); }"); pg.wait_for_timeout(500)
                 pg.evaluate("() => { const b = document.querySelector('#setTest [data-test=pts]'); if (b) b.click(); }"); pg.wait_for_timeout(900)
                 tot = pg.evaluate("() => TengelWallet.total()")
-            check(tot >= 2000, f'（じゅんび）テスト用に ポイントを 足した（{tot:,}P）')
+            check(tot >= 2600, f'（じゅんび）テスト用に ポイントを 足した（{tot:,}P）')
             # 同じ 番号の 買い物は 1回 だけ
             r_dup = pg.evaluate("async () => { const W = TengelWallet, t0 = W.total(); const a = await W.tc.buy('b-dup-test-1', 5), t1 = W.total(), b = await W.tc.buy('b-dup-test-1', 5), t2 = W.total(); return [a.ok, !!a.dup, t0 - t1, b.ok, !!b.dup, t1 - t2, W.tc.paid('b-dup-test-1'), W.tc.paid('b-dup-test-2'), W.tc.paid('')]; }")
-            check(r_dup == [True, False, 400, True, True, 0, True, False, False], f'台帳：同じ 番号の 買い物は 1回 だけ（2回目は 何も へらない）・その 買い物が 入って いるかを 見られる {r_dup}')
+            check(r_dup == [True, False, 500, True, True, 0, True, False, False], f'台帳：同じ 番号の 買い物は 1回 だけ（2回目は 何も へらない）・その 買い物が 入って いるかを 見られる {r_dup}')
             # 台帳に 入った あと・トークンを わたす 前に 閉じた → 次に 開いた とき わたす
             set_stock(pg, 3)
             r_rec = pg.evaluate("""async () => { const st = TCApp.state, t0 = TengelWallet.total(); st.buy = { id: 'b-dup-test-1', n: 5 }; localStorage.setItem('tengel.tc', JSON.stringify(st));
@@ -251,7 +261,7 @@ try:
             # 2つ いっしょに 買おうと しても 1つずつ
             set_stock(pg, 0)
             r_two = pg.evaluate("async () => { const t0 = TengelWallet.total(); const [a, b] = await Promise.all([TCApp.buy.buy(5), TCApp.buy.buy(5)]); return [a.ok, b.ok, b.why, TCApp.state.stock, t0 - TengelWallet.total()]; }")
-            check(r_two == [True, False, 'busy', 5, 400], f'買って いる 途中に もう 1回 → 待たせる（2重に 買わない）{r_two}')
+            check(r_two == [True, False, 'busy', 5, 500], f'買って いる 途中に もう 1回 → 待たせる（2重に 買わない）{r_two}')
 
             print('■ 窓を 開いて いる 間・説明書')
             sheet(pg, False); pg.wait_for_function("() => TCApp.test.info().free", timeout=60000)
@@ -265,15 +275,15 @@ try:
             r = stage_xy(pg, *BUYXY); under = pg.evaluate("([x, y]) => { TCBuy.open(document.querySelector('#tcOv .tcst'), TCApp.buy); const e = document.elementFromPoint(x, y); const r = e ? [e.tagName, e.className, e.dataset.b || ''] : null; TCBuy.close(); return r; }", list(r))
             pg.touchscreen.tap(r[0], r[1]); pg.wait_for_timeout(120); o1 = pg.evaluate("() => [TCBuy.isOpen(), TCGuide.isOpen(), document.querySelectorAll('#tcb .brow.cf').length]"); pg.wait_for_timeout(700); o2 = pg.evaluate("() => [TCBuy.isOpen(), TCGuide.isOpen(), document.querySelectorAll('#tcb .brow.cf').length]")
             g0 = pg.evaluate("() => { TCBuy.open(document.querySelector('#tcOv .tcst'), TCApp.buy); document.querySelector('#tcb [data-b=guide]').click(); document.querySelector('#tcb [data-b=ask]').click(); return [TCBuy.isOpen(), TCGuide.isOpen(), document.querySelectorAll('#tcb .brow.cf').length]; }")      # 開いた 瞬間の クリック（説明書・買う）→ 受けつけない
-            pg.touchscreen.tap(*stage_xy(pg, 526, 40)); pg.wait_for_timeout(300); pg.wait_for_timeout(200); pg.touchscreen.tap(*stage_xy(pg, 526, 40)); pg.wait_for_timeout(300); o3 = pg.evaluate("() => TCBuy.isOpen()")
+            pg.touchscreen.tap(*stage_xy(pg, 14, 800)); pg.wait_for_timeout(300); pg.wait_for_timeout(200); pg.touchscreen.tap(*stage_xy(pg, 14, 800)); pg.wait_for_timeout(300); o3 = pg.evaluate("() => TCBuy.isOpen()")      # 第4.168版：組が 6つに なって 窓が 高く なった（上下の 暗い 所は 10px ほど）→ 左の 暗い 所を 押す
             check(o1 == [True, False, 0] and o2 == [True, False, 0] and g0 == [True, False, 0] and not o3 and under is not None,
                   f'指で 押して 開く → 開いた まま（すぐ 閉じない・下に 出た「{under and under[2] or under and under[1]}」も 押されない）→ 外がわ（暗い 所）を 押すと とじる（{o1} {o2} {g0} {o3}）')
             sheet(pg); pg.locator('#tcb [data-b=guide]').click(); pg.wait_for_timeout(900)
             gd = pg.evaluate("""() => { const e = document.querySelector('#tcg'), secs = [...e.querySelectorAll('.sec')].map(x => [x.querySelector('h3').textContent, x.textContent]), f = k => (secs.find(x => x[0].includes(k)) || [0, ''])[1];
               return { buy: TCBuy.isOpen(), guide: TCGuide.isOpen(), sec: f('お世話トークンの購入'), rows: [...e.querySelectorAll('table[data-tab=packs] tr')].map(r => [+r.dataset.n, r.cells[0].textContent, r.cells[1].textContent]), tok: f('お世話トークン') }; }""")
-            check(not gd['buy'] and gd['guide'] and gd['rows'] == [[1, '1こ', '80P'], [5, '5こ', '400P'], [10, '10こ', '800P'], [15, '15こ', '1,200P'], [25, '25こ', '2,000P']]
+            check(not gd['buy'] and gd['guide'] and gd['rows'] == [[1, '1こ', '100P'], [5, '5こ', '500P'], [10, '10こ', '1,000P'], [15, '15こ', '1,500P'], [20, '20こ', '2,000P'], [25, '25こ', '2,500P']]
                   and all(x in gd['sec'] for x in ['下の列の1番右の「お世話トークン購入」', '最大25こ', '2回押すと決まり', 'ポイントにもどせない', 'ポイント特化ゾーン']) and '5分ごとに5つ' in gd['tok'],
-                  f'「説明書を 見る（当たりの 確率）」→ 窓が とじて 説明書が ひらく・説明書に「お世話トークンの購入」の 項目（組の 表 5行・25こまで・2回 押す・もどせない）{gd["rows"]}')
+                  f'「説明書を 見る（当たりの 確率）」→ 窓が とじて 説明書が ひらく・説明書に「お世話トークンの購入」の 項目（組の 表 6行・25こまで・2回 押す・もどせない）{gd["rows"]}')
             pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(400)
             # トレーニングセンターを 閉じると 窓も とじる
             sheet(pg); pg.locator('#tcOv [data-tc="back"]').click(); pg.wait_for_timeout(500)
@@ -282,7 +292,7 @@ try:
             pg.evaluate("() => { document.querySelector('.tabbar button[data-tab=set]').click(); }"); pg.wait_for_timeout(600)
             pg.evaluate("() => { const b = document.querySelector('#setPoints [data-pt=show][data-v=hist]'); if (b) b.click(); }"); pg.wait_for_timeout(500)
             hs = pg.evaluate("() => [...document.querySelectorAll('#setPoints .pthist li')].map(li => li.textContent).filter(t => t.includes('お世話トークン')).slice(0, 3)")
-            check(len(hs) >= 1 and all('トレーニングセンターの お世話トークン' in t and 'こを購入' in t and '解放：' not in t for t in hs) and any('-400P' in t or '−400P' in t for t in hs),
+            check(len(hs) >= 1 and all('トレーニングセンターの お世話トークン' in t and 'こを購入' in t and '解放：' not in t for t in hs) and any('-500P' in t or '−500P' in t for t in hs),
                   f'設定の ポイントの 履歴に「トレーニングセンターの お世話トークン ○こを購入　−○P」（「解放：」は つかない）{hs[:2]}')
             check(not errs and not dialogs, f'エラー なし・confirm()／alert() の 窓は 出て いない {errs[:3]} {dialogs[:3]}')
             ctx.close()
@@ -295,7 +305,7 @@ try:
             stage_click(p2, *BUYXY); p2.wait_for_timeout(450)
             p2.locator('#tcb [data-b=ask][data-n="10"]').click(); p2.wait_for_timeout(150); p2.locator('#tcb [data-b=go]').click(); p2.wait_for_timeout(800)
             q = p2.evaluate("() => [TCApp.state.stock, TengelWallet.total(), typeof window.TCTest, document.querySelectorAll('#tcOv [data-tc=test]').length]")
-            check(q == [13, t0 - 800, 'undefined', 0] and t0 == 1500, f'App Store版（はじめの 1,500P）：下の 列の ボタン → 10こ 買う → 3 → {q[0]}こ・{t0:,} → {q[1]:,}P（道具箱は ない）')
+            check(q == [13, t0 - 1000, 'undefined', 0] and t0 == 1500, f'App Store版（はじめの 1,500P）：下の 列の ボタン → 10こ 買う → 3 → {q[0]}こ・{t0:,} → {q[1]:,}P（道具箱は ない）')
             check(not e2, f'エラー なし {e2[:3]}')
             c2.close()
         # ---------- 絵が ない とき（CI）：緑の 紙の 丸に ＋ ----------

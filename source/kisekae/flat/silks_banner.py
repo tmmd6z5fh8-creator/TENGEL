@@ -46,7 +46,7 @@ def background():
 def rider(pose=POSE, cam=None, name='silks_toon'):
     """馬と騎手（R・rgb・alpha）。cam を決めると、いまの絵と同じカメラで別の形を描ける"""
     R = render_toon(pose, BOX, W, Hh, s=3, azim=18, elev=5, name=name, head_scale=1.32, js=1.35, head_r=0.15, cam=cam)
-    rgb, a = paint_comic(R, dict(num=1, seed=5, eye=False, mouth=False))
+    rgb, a = paint_comic(R, dict(num=1, seed=5, eye=False, mouth=False, girth=False))      # girth=False：腹帯は ぬらない（第4.168版）
     return R, rgb, a
 
 

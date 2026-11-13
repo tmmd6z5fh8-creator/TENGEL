@@ -44,7 +44,7 @@ for f in range(N):
     g = f / N
     R = SB.render_toon(SR.pose_at(g), SB.BOX, W, Hh, s=3, azim=18, elev=5, name=f'silks_run{f}', head_scale=1.32, js=1.35, head_r=0.15, cam=cam)
     dbg = {}
-    rgb1, a1 = SB.paint_comic(R, dict(num=1, seed=5, eye=False, mouth=False), debug=dbg)
+    rgb1, a1 = SB.paint_comic(R, dict(num=1, seed=5, eye=False, mouth=False, girth=False), debug=dbg)      # girth=False：腹帯は ぬらない（第4.168版）
     col3, A3 = dbg['col3'], dbg['A3']
     a2 = cv2.resize(A3, (W2, H2), interpolation=cv2.INTER_AREA); rgb2 = np.clip(cv2.resize(col3 * A3[..., None], (W2, H2), interpolation=cv2.INTER_AREA) / np.maximum(a2[..., None], 1e-4), 0, 1); a2 = np.clip(a2, 0, 1)
     hv = np.asarray(R['hooves'], float) / R['s']; fwd = math.cos(2 * math.pi * g) > 0.3

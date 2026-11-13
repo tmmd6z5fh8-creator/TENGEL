@@ -152,7 +152,7 @@ const TCTest = (() => {
         m = r === 'busy' ? busyMsg() : r === 'have' ? 'ゴミは もう\n出て いるよ' : null;      // 出た お知らせは 本番の もの
       } else if (a === 'poop') {
         close(); const r = api.poop(o.gold);
-        m = r === 'busy' ? busyMsg() : r === 'visit' ? '幻の馬・神様馬は\nうんちを しないよ\n（いつもの 馬に\nもどしてね）' : r === 'full' ? 'うんちは 3こまで\n（先に おそうじ）'
+        m = r === 'busy' ? busyMsg() : r === 'full' ? 'うんちは 3こまで\n（先に おそうじ）'
           : (o.gold ? 'もうすぐ\n金のうんちを するよ\n（おそうじ すると\n高確ゾーン）' : 'もうすぐ\nうんちを するよ');
       } else if (a === 'high') { close(); api.high(); m = '高確ゾーン\n（お世話 5回）を\nつけたよ'; }
       else if (a === 'tokens') { close(); api.tokens(o.n); m = `お世話トークンを\n${o.n == null ? 25 : o.n}こに したよ`; }

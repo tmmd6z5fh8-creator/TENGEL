@@ -2,6 +2,7 @@
 #   python3 export_app.py <出す フォルダ>
 #   ・環境音（朝・夕方・夜）：60秒の ループ（はじめと おわりを 重ねる）→ tc_amb_<tod>.m4a
 #   ・BGM（幻の馬・神様馬）：bgm.py の 60秒 ループ → tc_bgm_<abyss|divine>.m4a
+#   ・ルーレットの BGM（第4.168版）：bgm_roulette.py の 8小節 ループ（約14.5秒）→ tc_bgm_roulette.m4a（これ だけ 作る とき → python3 export_app.py <出す フォルダ> tc_bgm_roulette）
 #   ・お世話の 音：sfx_care.py の render を できごと 1つずつ → tc_se_<k>.m4a（slot_1〜10・bite_apple／carrot・banin_kamisama／maboroshi）
 #     第4.159版：PUSH の 音 だけ 足す とき → python3 export_app.py <出す フォルダ> tc_se_pfo,tc_se_dedeen,tc_se_kyuin,tc_se_doon（できた 4つを ios/tc_assets へ 写す：前から ある 音は 作り直さない）
 #   ・ルーレット：sfx_roulette.py の 部品 → tc_se_rt_<lever|tick|stop|confirm>.m4a
@@ -10,7 +11,7 @@ import os, sys, subprocess, tempfile, math
 import numpy as np
 from scipy.io import wavfile
 H_ = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, H_)
-import amb, bgm, sfx_care, sfx_roulette, sfx_ticket
+import amb, bgm, bgm_roulette, sfx_care, sfx_roulette, sfx_ticket
 SR = amb.SR
 OUT = sys.argv[1]; os.makedirs(OUT, exist_ok=True)
 TMP = tempfile.mkdtemp()
@@ -51,6 +52,11 @@ for tod in ('morning', 'evening', 'night'):
     write(nm, loop, '96k')
 for nm, fn in (('tc_bgm_abyss', bgm.abyss), ('tc_bgm_divine', bgm.divine)):
     if want(nm): write(nm, fn(), '112k')
+if want('tc_bgm_roulette'):      # 第4.168版：ルーレットの 間の BGM（フィールドの 音の かわりに 鳴らす）
+    # くり返す 1回り（8小節）の 前に おしりの 0.5秒・うしろに 頭の 0.5秒を つける（同じ 音の つづき）。アプリは まん中の 1回り だけを くり返す（tc/tc_app.js の LOOPS：pre 0.5秒・len 8小節）
+    #   ＝ m4a を 読む 道具が 頭に 短い 無音を つけても（その ぶん ずれても）、つなぎ目は 同じ 音どうしで リズムが とばない
+    _lp = bgm_roulette.roulette(); _p = int(round(0.5 * SR))
+    write('tc_bgm_roulette', np.concatenate([_lp[:, -_p:], _lp, _lp[:, :_p]], 1), '112k')
 
 # ---- お世話の 音 ----
 KINDS = ['button', 'unfold', 'fold', 'rub', 'heart', 'nod', 'swish', 'nuzzle', 'stretch', 'sneeze', 'tilt', 'calm', 'frisk', 'yawn', 'lie', 'nope', 'wait', 'ready', 'zoomin',

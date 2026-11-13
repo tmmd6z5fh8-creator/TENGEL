@@ -100,13 +100,15 @@
   //   ・名前は 2行（「トレーニング／センター」「思い出／フィギュア」）：1行だと 札が 絵より 左へ 30px ほど 出る（列の はばを 絵と 同じに して 画面の 中身に かぶる 所を へらす）
   //   ・列の 下に かくれた ままに ならない ように：
   //     ページの いちばん 下の 中身＝main の 下の 余白を 列の 高さの ぶん 広げる（clear：さいごまで スクロール すると 中身が 列の 上まで 上がる）・
-  //     判定タブの 下の 帯（#minibar：判定の 要点・押すと 結果へ）が 出て いる あいだは 列を その 上へ 上げる（place：帯の 字を かくさない・帯が 消えると もどる）・
+  //     判定タブの 下の 帯（#minibar：判定の 要点・押すと 結果へ）の ぶん、列は いつも 上に あけて おく（place：帯の 字を かくさない）。
+  //       第4.168版（まさちゃん 2026/11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：
+  //       前は 帯が 出て いる あいだ だけ 上へ 上げて いた ＝ 画面を 上下に 動かして 帯が 出たり 消えたり する たびに 列が 上下に 動いて いた → どの タブでも いつも 同じ 所・
   //     買い目編集の「保存する」の 帯（.zsave.sticky：変更が ある あいだ 下に はりつく）は 右を ちぢめて 列の 手前で 終わる（--fabz）
+  var MINI_B = 58, MINI_H = 40;            // 下の 帯（#minibar）：画面の 下からの 場所（src.html：bottom:calc(58px + var(--sab,0px))）・高さ（どの 壁紙でも 39.2px → 40。test_tc.py が 測る）
   function fabCol() {
     var c = document.getElementById('fabCol'); if (c) return c;
     var st = document.createElement('style'); st.id = 'fabColCss';
-    st.textContent = '#fabCol{position:fixed;right:4px;bottom:84px;z-index:29;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;transition:bottom .18s ease}'
-      + '@media (prefers-reduced-motion:reduce){#fabCol{transition:none}}'
+    st.textContent = '#fabCol{position:fixed;right:4px;bottom:calc(104px + var(--sab,0px));z-index:29;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}'
       + '#fabCol>button{pointer-events:none;display:flex;flex-direction:column;align-items:center;border:0;padding:0;margin:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;transition:transform .15s}'
       + '#fabCol>button:active{transform:scale(.94)}#fabCol>button:disabled{opacity:.7}'
       + '#fabCol .fabi{pointer-events:auto;cursor:pointer;display:block;width:66px;height:66px;border-radius:50%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}'
@@ -117,14 +119,15 @@
       + '.zsave.sticky{margin-right:var(--fabz,0px)}';
     document.head.appendChild(st);
     c = document.createElement('div'); c.id = 'fabCol'; document.body.appendChild(c);
-    // 場所：下の タブの すぐ 上（タブが ない 画面は 画面の 下から）。判定タブの 下の 帯（#minibar）が 出て いる あいだは その 上
+    // 場所（第4.168版）：判定タブの 下の 帯（#minibar）が 出る 所の すぐ 上（6px）に いつも いる ＝ 帯が 出ても 消えても・どの タブでも 動かない。
+    //   帯は 画面の 下から MINI_B（＋下の 安全な 余白 --sab）の 所に 高さ MINI_H で 出る（src.html の .minibar：下の タブの 高さは 壁紙で 61〜69px と かわるが、帯の 場所は かわらない）。
+    //   帯が それより 上まで 来た とき（字を 大きく して いる など）だけ、その ぶん 上へ（_min：もどさない ＝ 行ったり 来たり しない）。下の タブが ない 画面（横に 広い 画面）は 画面の 下から 10px
     var place = function () {
       var tb = document.querySelector('.tabbar'), r = tb ? tb.getBoundingClientRect() : null;
       var h = r && r.height && getComputedStyle(tb).display !== 'none' ? r.height : 0;
       var mb = document.getElementById('minibar'), q = mb && !mb.hidden ? mb.getBoundingClientRect() : null;
-      var up = q && q.height ? Math.max(0, window.innerHeight - q.top - h) : 0;
-      c._base = h ? h + 10 : null;                                                        // 帯が ない ときの 下からの 高さ（clear が 使う）
-      c.style.bottom = 'calc(' + (h + up + (up ? 6 : 10)) + 'px + ' + (h ? '0px' : 'env(safe-area-inset-bottom)') + ')';
+      if (q && q.height) c._min = Math.max(c._min || 0, window.innerHeight - q.top + 6);
+      c.style.bottom = h ? 'max(calc(' + (MINI_B + MINI_H + 6) + 'px + var(--sab,0px)),' + (c._min || 0).toFixed(2) + 'px)' : 'calc(10px + env(safe-area-inset-bottom))';
       clear();
     };
     place(); window.addEventListener('resize', place); setTimeout(place, 400); setTimeout(place, 1500);
@@ -133,7 +136,7 @@
     return c;
   }
   // 列の 下に かくれた ままに ならない ように：main の 下の 余白（列の 高さの ぶん）・保存の 帯の 右の あき
-  //   余白は 列が いつもの 場所（下の タブの すぐ 上）に ある ときの 高さで 数える（下の 帯で 上がって いる あいだも 同じ＝ページの 長さが 行ったり 来たり しない）
+  //   余白は 列の いまの 場所（下の 帯の すぐ 上：いつも 同じ）で 数える
   var GAP = 6;
   function clear() {
     var c = document.getElementById('fabCol'); if (!c) return;
@@ -141,7 +144,7 @@
     var on = r.height > 0;
     var fz = on ? Math.max(0, Math.ceil(vw - 16 - 17 - r.left + GAP)) : 0;                      // 保存の 帯（カードの 中：右はし＝画面の 右から 16＋17）を ちぢめる はば
     if (root.style.getPropertyValue('--fabz') !== fz + 'px') root.style.setProperty('--fabz', fz + 'px');
-    if (mn) { var pb = on ? Math.ceil((c._base != null ? c._base + r.height : vh - r.top) + GAP + 2) + 'px' : ''; if (mn.style.paddingBottom !== pb) mn.style.paddingBottom = pb; }
+    if (mn) { var pb = on ? Math.ceil(vh - r.top + GAP + 2) + 'px' : ''; if (mn.style.paddingBottom !== pb) mn.style.paddingBottom = pb; }      // 第4.168版：列は 動かない ので、いまの 場所を そのまま 測る
   }
   // ボタンを 1つ 足す：o＝{ id, order（上からの 順）, name（下に 出す 名前：行ごと）, aria, img（絵）, fb（絵が ない ときの 丸：[字, 地, ふち, 字の 色]）, tap }
   function fabAdd(o) {
@@ -183,6 +186,11 @@
   //   ・押すと tc_bundle.js を 読んで TCPlan.open(#planHost)。#planHost＝画面 いっぱいの 入れ物（うしろは 判定タブの まま・「とじる」で そのまま 判定タブに もどる）
   //     入れ物は いつも 置いた まま（作戦会議が 閉じて いる 間は 何も 出ない・指も とどかない：pointer-events:none）。作戦会議の 幕は 自分で 指を 受ける
   //   ・開いて いる 間、うしろの 判定タブは 動かさない（幕や 見出しを なぞっても スクロール しない・中身が 短くて スクロール しない ときも）
+  //   ・第4.168版（まさちゃん 2026/11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：
+  //     札と「壁紙&ボード着せ替え」の ボタンは 画面に 止める（position:fixed）。前は カードの 中（position:absolute）＝ 画面を 上へ 動かすと カードと いっしょに 流れて 行った。
+  //       場所＝ページを いちばん 上に した ときの 場所（カードの 右上の かど：今までと 同じ 見え方）。画面を 動かしても そこに いる（下の 中身は ボタンの 下を 通る）
+  //       ボタンは body の 下に 置く（カードや その 親に transform・filter・backdrop-filter が つくと fixed が そこを 基準に して しまう ので、どの 壁紙でも 画面が 基準に なる 所へ）
+  //       判定タブ いがいでは 出さない（#v-judge の hidden を 見張る：dockSync）。重なり（z-index 28）＝上の 帯（20）・下の 帯（25）より 上／丸い ボタンの 列（29）・下の タブ（30）・幕（45〜）より 下
   // ---------- 「壁紙&ボード着せ替え」の ボタン（第4.165版・11/13 13:55「黄丸のところに、タップすると壁紙や結果ボードカスタムのところに飛べるアイコン設置して！」
   //            → 14:16「何か変だから、2枚目のアイコンにして、作戦会議のすぐ下に設置してみて！あと下にテロップ入れて！壁紙&ボード着せ替え、って！」）----------
   //   ・絵＝横長の カプセル（tc_icon_kise2.webp：よこ÷たて 2.78）幅 100px・高さ 36px。その 下に 名前の 札「壁紙&ボード着せ替え」（右下の 丸い ボタンの 名前の 札と 同じ 見た目：
@@ -200,16 +208,18 @@
   var KISE_UNDER = 3, KISE_LAP = 3, KISE_GAP = 4, KISE_NAME = '壁紙&ボード着せ替え';      // 作戦会議の 札の 下から あける 長さ・名前の 札が カプセルに 重なる 長さ・チップから あける 長さ
   var slotMo = null;                                                  // データの 行の 見張り（MutationObserver）
   var planHost = null, planB = null, oshiB = null, kiseB = null;      // oshiB：右下の 列の 推し馬の ボタン（第4.165版）・kiseB：「壁紙&ボード着せ替え」の ボタン（第4.165版）
+  var planCard = null;                                                // 判定タブの「レース情報」の カード（札と ボタンの 場所の 基準：第4.168版）
   function planCss() {
     if (document.getElementById('planCss')) return;
     var st = document.createElement('style'); st.id = 'planCss';
     st.textContent = '#v-judge .card.planc{position:relative}'
-      + '#planBtn{position:absolute;z-index:2;top:-13px;right:-16px;width:' + PLAN_W + 'px;height:' + PLAN_H + 'px;margin:0;padding:0;border:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
+      + '#planBtn[hidden],#kiseBtn[hidden]{display:none!important}'
+      + '#planBtn{position:fixed;z-index:28;top:-200px;right:5px;width:' + PLAN_W + 'px;height:' + PLAN_H + 'px;margin:0;padding:0;border:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
       + '#planBtn:active{transform:scale(.95)}#planBtn:disabled{opacity:.7}'
       + '@media (prefers-reduced-motion:reduce){#planBtn,#kiseBtn{transition:none}}'
       + '#planBtn img{display:block;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}'
       + '#planBtn .plt{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:110px;height:33px;margin:7px 4px;border-radius:5px;border:3px solid #c0241c;background:#f6ead0;color:#b8201a;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;letter-spacing:.06em;pointer-events:none}'
-      + '#kiseBtn{position:absolute;z-index:2;top:30px;right:-12px;width:' + KISE_BOX + 'px;display:flex;flex-direction:column;align-items:center;margin:0;padding:0;border:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
+      + '#kiseBtn{position:fixed;z-index:28;top:-200px;right:5px;width:' + KISE_BOX + 'px;display:flex;flex-direction:column;align-items:center;margin:0;padding:0;border:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
       + '#kiseBtn:active{transform:scale(.95)}'
       + '#kiseBtn img,#kiseBtn .kft{display:block;flex:none;width:' + KISE_W + 'px;height:' + KISE_H + 'px;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}'
       + '#kiseBtn .kft{box-sizing:border-box;border-radius:' + (KISE_H / 2) + 'px;border:3px solid #E2B33C;background:#BFE6C4}'
@@ -232,28 +242,37 @@
     var mn = document.querySelector('main'); return (mn && parseFloat(getComputedStyle(mn).paddingTop)) || 0;
   }
   function px(el, k, v) { v = Math.round(v) + 'px'; if (el.style[k] !== v) el.style[k] = v; }
-  // 札と「壁紙&ボード着せ替え」の ボタンの 場所（どちらも カードの 中に 置いた position:absolute。基準は カードの ふちの 線の 内がわ）
+  // 札と「壁紙&ボード着せ替え」の ボタンの 場所（第4.168版：画面に 止める position:fixed。ページを いちばん 上に した ときの カードの 右上の かど）
+  //   カードの いまの 場所（cr）＋ ページを 動かした 長さ（sy）＝ ページを いちばん 上に した ときの 場所 ＝ 画面を 動かしても かわらない
   function planPlace() {
-    var b = planB; if (!b || !b.parentNode) return;
-    var card = b.parentNode, cr = card.getBoundingClientRect(); if (!cr.width || !cr.height) return;      // 判定タブが 出て いない
-    var cs = getComputedStyle(card), bt = parseFloat(cs.borderTopWidth) || 0, br = parseFloat(cs.borderRightWidth) || 0;
-    var vw = document.documentElement.clientWidth || window.innerWidth;
+    var b = planB, card = planCard; if (!b || !card) return;
+    var cr = card.getBoundingClientRect(); if (!cr.width || !cr.height) return;                              // 判定タブが 出て いない
+    var cs = getComputedStyle(card), br = parseFloat(cs.borderRightWidth) || 0;
+    var vw = document.documentElement.clientWidth || window.innerWidth, sy = window.pageYOffset || document.documentElement.scrollTop || 0;
     var over = Math.max(0, Math.min(PLAN_OVER, vw - cr.right - PLAN_EDGE));                                  // 右へ はみ出す（画面の 右はしから 5px は あける）
     var up = Math.max(0, Math.min(PLAN_UP, roomAbove(card, cr) - PLAN_CLEAR));                               // 上へ はみ出す（すぐ 上の ものから 6px は あける）
     var inkT = PLAN_INK[1] * PLAN_H, inkB = PLAN_INK[3] * PLAN_H, inkR = (1 - PLAN_INK[2]) * PLAN_W;
-    px(b, 'top', -up - bt - inkT); px(b, 'right', -over - br - inkR);
-    var k = kiseB; if (!k || k.parentNode !== card) return;
+    var top = cr.top + sy - up, rgt = vw - cr.right - over;                                                  // 見える 札の 上（ページの 上から）・右（画面の 右はしから）
+    px(b, 'top', top - inkT); px(b, 'right', rgt - inkR);
+    var k = kiseB; if (!k) return;
     // ---- 「壁紙&ボード着せ替え」の ボタン：作戦会議の 札の すぐ 下（右はしは 札と 同じ）----
-    px(k, 'top', -up + (inkB - inkT) + KISE_UNDER - bt); px(k, 'right', -over - br);
-    slotFit(card, k, cr.right - br - (parseFloat(cs.paddingRight) || 0));
+    px(k, 'top', top + (inkB - inkT) + KISE_UNDER); px(k, 'right', rgt);
+    slotFit(card, k, cr.right - br - (parseFloat(cs.paddingRight) || 0), sy);
   }
-  // データの 行を ボタンの 手前で 折り返させる（right＝カードの 中身の 右はし）
-  function slotFit(card, k, right) {
+  // 判定タブが 出て いる あいだ だけ 出す（ボタンは body の 下に ある ので、タブを かえたら 自分で かくす）
+  function dockSync() {
+    var v = document.getElementById('v-judge'), on = !!v && !v.hidden;
+    [planB, kiseB].forEach(function (e) { if (e && e.hidden !== !on) e.hidden = !on; });
+    if (on) planPlace();
+  }
+  // データの 行を ボタンの 手前で 折り返させる（right＝カードの 中身の 右はし・sy＝ページを 動かした 長さ：ボタンは 画面に 止まって いる ので、行と 同じ 物さしに 直して くらべる）
+  function slotFit(card, k, right, sy) {
     var sj = card.querySelector('#slotJudge'); if (!sj) return;
     var bar = sj.querySelector('.slotbar'), sp = bar ? bar.querySelector('.kisesp') : null;
     var items = bar ? [].slice.call(bar.children).filter(function (e) { return e !== sp && e.getBoundingClientRect().height > 0; }) : [];
-    var kr = k.getBoundingClientRect(), lab = k.querySelector('.kisel'), lr = lab ? lab.getBoundingClientRect() : kr;
-    var limit = Math.min(kr.left, lr.left) - KISE_GAP, bottom = Math.max(kr.bottom, lr.bottom);              // チップの 右はしの 限り・ボタン（名前の 札まで）の 下
+    var kq = k.getBoundingClientRect(), lab = k.querySelector('.kisel'), lr = lab ? lab.getBoundingClientRect() : kq;
+    var kr = { left: kq.left, top: kq.top - (sy || 0), bottom: kq.bottom - (sy || 0) };                       // ページと いっしょに 動いた と した ときの ボタンの 場所
+    var limit = Math.min(kr.left, lr.left) - KISE_GAP, bottom = Math.max(kr.bottom, lr.bottom - (sy || 0));  // チップの 右はしの 限り・ボタン（名前の 札まで）の 下
     var want = -1, fill = 0, pad = '';
     if (items.length) {
       var bs = getComputedStyle(bar), gap = parseFloat(bs.columnGap) || 0, rgap = parseFloat(bs.rowGap) || 0, r0 = items[0].getBoundingClientRect();
@@ -338,7 +357,7 @@
     im.onerror = function () { var t = document.createElement('span'); t.className = 'plt'; t.textContent = '作戦会議'; im.replaceWith(t); };      // 絵が ない（CI など）：字の 札
     im.src = 'tc_icon_plan.webp'; b.appendChild(im);
     b.addEventListener('click', function () { if (!b.disabled) planOpen(null); });
-    card.appendChild(b); planB = b;
+    planCard = card; document.body.appendChild(b); planB = b;                                                // 第4.168版：body の 下（画面に 止める）
     // 第4.165版：「壁紙&ボード着せ替え」の ボタン（作戦会議の 札の すぐ 下：カプセルの 絵 ＋ 名前の 札）→ 設定タブの「着せ替え」へ
     var k = document.createElement('button'); k.type = 'button'; k.id = 'kiseBtn'; k.setAttribute('aria-label', KISE_NAME + '（押すと 設定の 着せ替え・結果ボードカスタムを ひらくよ）');
     var km = new Image(); km.alt = '';
@@ -346,9 +365,24 @@
     km.src = 'tc_icon_kise2.webp'; k.appendChild(km);
     var kl = document.createElement('span'); kl.className = 'kisel'; kl.textContent = KISE_NAME; k.appendChild(kl);
     k.addEventListener('click', kiseGo);
-    card.appendChild(k); kiseB = k;
-    planPlace(); window.addEventListener('resize', planPlace); setTimeout(planPlace, 400); setTimeout(planPlace, 1500);
-    try { if (window.ResizeObserver) { var ro = new ResizeObserver(planPlace); ro.observe(card); ro.observe(h); } } catch (e) { /* なし */ }
+    document.body.appendChild(k); kiseB = k;
+    dockSync(); window.addEventListener('resize', planPlace); setTimeout(planPlace, 400); setTimeout(planPlace, 1500);
+    var vj = document.getElementById('v-judge'), ro = null;
+    try { if (vj && window.MutationObserver) new MutationObserver(dockSync).observe(vj, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* なし */ }      // タブを かえた
+    try {
+      if (window.ResizeObserver) {
+        ro = new ResizeObserver(planPlace); ro.observe(card); ro.observe(h);
+        // カードより 上の もの（上の 帯・壁紙の 上の絵・お知らせ）の 高さが かわると カードの 場所が かわる（第4.168版：ボタンは 画面に 止まって いる ので 測り直す）
+        var hd = document.querySelector('header.top'); if (hd) ro.observe(hd);
+        for (var el = card; el && el !== document.body; el = el.parentNode) for (var p = el.previousElementSibling; p; p = p.previousElementSibling) if (p !== hd && !/^(SCRIPT|STYLE|LINK)$/.test(p.tagName)) ro.observe(p);
+      }
+    } catch (e) { /* なし */ }
+    try {                                                                                                    // 判定タブの 上に あとから 入る もの（壁紙の 上の絵 #ksBnr）も 見張る
+      if (vj && window.MutationObserver) new MutationObserver(function (ms) {
+        ms.forEach(function (m) { [].forEach.call(m.addedNodes || [], function (n) { if (ro && n.nodeType === 1) ro.observe(n); }); });
+        planPlace();
+      }).observe(vj, { childList: true });
+    } catch (e) { /* なし */ }
     try { var sj = card.querySelector('#slotJudge'); if (sj && window.MutationObserver) { slotMo = new MutationObserver(planPlace); slotMo.observe(sj, { childList: true, subtree: true, characterData: true }); } } catch (e) { /* なし */ }      // データの 行を 作り直した・名前や 数が かわった
     setTimeout(kiseJump, 0); setTimeout(kiseJump, 1500);
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(planPlace); } catch (e) { /* なし */ }

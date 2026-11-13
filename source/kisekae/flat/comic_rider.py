@@ -186,8 +186,11 @@ def paint_comic(R, look, debug=None):
     part[cloth] = 5
     saddle = (part == 5) & (Pn[..., 0] > w[0] - 0.47) & (Pn[..., 0] < w[0] - 0.15) & (Pn[..., 1] > w[1] - 0.115)
     part[saddle] = 7
-    girth = np.isin(part, (0, 5)) & (Pn[..., 0] > w[0] - 0.21) & (Pn[..., 0] < w[0] - 0.15) & (Pn[..., 1] < w[1] - 0.20) & (Pn[..., 1] > w[1] - 0.80)
-    part[girth] = 6
+    # 腹帯（ゼッケンから おなかへ 下りる こい 色の 帯）。look['girth']＝False で ぬらない（第4.168版・まさちゃん 2026/11/14 01:26「勝負服の馬の動く黒い線おかしいから消して！」：
+    #   帯は「き甲からの 場所」で 決めて いる ので、走る コマごとに 体の 上で 位置と 太さが かわり、黒い 線が 体の 上を 動いて 見えた）
+    if look.get('girth', True):
+        girth = np.isin(part, (0, 5)) & (Pn[..., 0] > w[0] - 0.21) & (Pn[..., 0] < w[0] - 0.15) & (Pn[..., 1] < w[1] - 0.20) & (Pn[..., 1] > w[1] - 0.80)
+        part[girth] = 6
     hc = J['head']
     q = Pn - hc
     if 'head_r' in J:                                                  # 大きめの頭（toon_rider）：顔を広く

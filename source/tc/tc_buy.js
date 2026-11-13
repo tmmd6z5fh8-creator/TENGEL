@@ -6,6 +6,9 @@
 //   ・買えない 組は うすく して わけを 出す：持てる 数（25こ）を こえる・ポイントが 足りない
 //   ・当たりの 確率は 説明書に のって いる → 窓の 下に「説明書を 見る」（買う 前に 確かめられる ように）
 //   ・ちかちか しない（光らせない）
+//   第4.168版（まさちゃん 2026/11/14 01:26「お世話トークン購入金額 ・1個100P ・5個500P ・10個1000P ・15個1500P ・20個2000P ・25個2500P」）：組は 6つ（1こ 100P）。
+//     行が 1つ ふえた ぶん、行の 間と 上下の 余白を 少し つめた（窓は フィールドの 中に おさまる：スクロール なし）。「買う」を 押した 行（やめる／○○Pで 買う）は、
+//     左の 値段の 字を かくす（4けたの 値段だと「やめる」の 下に もぐって 切れて 見えた：値段は 緑の ボタンに 書いて ある）
 //   TCBuy.open(el, api)・TCBuy.close()・TCBuy.isOpen()　api＝tc_app.js の BUY（info・buy・guide・se）
 const TCBuy = (() => {
   const CSS = `
@@ -15,7 +18,7 @@ const TCBuy = (() => {
 #tcb .bhd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
 #tcb .bhd b{font-size:16px;color:#6b3f1d;letter-spacing:.03em}
 #tcb .bx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
-#tcb .bbd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:9px 12px 11px}
+#tcb .bbd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 9px}
 #tcb .bnow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0 0 6px}
 #tcb .bnow div{background:#fffdf7;border:1.5px solid #ead7b2;border-radius:10px;padding:5px 6px 6px;text-align:center}
 #tcb .bnow small{display:block;font-size:11px;line-height:1.4;color:#8a6a48}
@@ -23,10 +26,12 @@ const TCBuy = (() => {
 #tcb .bnow b i{font-style:normal;font-size:12.5px;font-weight:400;color:#9a7a55}
 #tcb .bnow .tk{color:#3f7f3a}
 #tcb .bnow .pt{color:#b06a12}
-#tcb .bmsg{min-height:18px;margin:0 0 4px;font-size:13px;line-height:18px;font-weight:700;color:#3f7f3a;text-align:center}
+#tcb .bmsg{min-height:18px;margin:0 0 2px;font-size:13px;line-height:18px;font-weight:700;color:#3f7f3a;text-align:center}
 #tcb .bmsg.ng{color:#b0445f}
-#tcb .brow{display:flex;align-items:center;gap:8px;min-height:42px;background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:4px 7px 4px 12px;margin:0 0 5px}
+#tcb .brow{display:flex;align-items:center;gap:8px;min-height:42px;background:#fffdf7;border:1.5px solid #ead7b2;border-radius:12px;padding:4px 7px 4px 12px;margin:0 0 3px}
 #tcb .brow.cf{border-color:#3f9f5a;background:#f1faee}
+#tcb .brow.cf .bc{display:none}
+#tcb .brow.cf .bb.no{margin-left:auto}
 #tcb .brow.off .bn,#tcb .brow.off .bc{opacity:.5}
 #tcb .bn{flex:none;min-width:56px;font-size:21px;font-weight:700;color:#3f7f3a;white-space:nowrap}
 #tcb .bn i{font-style:normal;font-size:13px}

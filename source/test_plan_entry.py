@@ -69,13 +69,14 @@ def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
 
-# 札・「壁紙&ボード着せ替え」の ボタン・カード・見出しの 字・データの チップの 場所（画面の 上の ほうへ 寄せてから 測る：上の 帯の 下に 札が 出る）
-GEO = """() => { const b = document.getElementById('planBtn'); if (!b) return null; const card = b.parentNode, h = card.querySelector('h2'), k = document.getElementById('kiseBtn'), sj = document.getElementById('slotJudge');
+# 札・「壁紙&ボード着せ替え」の ボタン・カード・見出しの 字・データの チップの 場所
+#   第4.168版（まさちゃん 2026/11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：札と ボタンは 画面に 止める（position:fixed・body の 下）。
+#   場所は「ページを いちばん 上に した ときの カードの 右上の かど」＝ いちばん 上で 測る（前は カードの 中に あった ので 上の ほうへ 寄せてから 測った）
+GEO = """() => { const b = document.getElementById('planBtn'); if (!b) return null; const card = document.querySelector('#v-judge .card.planc') || document.querySelector('#v-judge .card'), h = card.querySelector('h2'), k = document.getElementById('kiseBtn'), sj = document.getElementById('slotJudge');
   window.scrollTo(0, 0); const c0 = card.getBoundingClientRect(), hd = document.querySelector('header').getBoundingClientRect();
   let above = null;                                   // カードの すぐ 上の もの（単勝5連勝の お知らせ・壁紙の 上の絵）の 下の はし。なければ 上の 帯
   for (const e of [document.getElementById('w5Banner'), document.getElementById('ksBnr')]) { if (e && above == null) { const r = e.getBoundingClientRect(); if (r.height > 0 && r.width > 0) above = r.bottom; } }
   const gap0 = c0.top - (above == null ? hd.bottom : above);
-  window.scrollTo(0, Math.max(0, c0.top - hd.bottom - 30));
   const R = e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; };
   const g = document.createRange(); g.selectNodeContents(h); const t = g.getBoundingClientRect();
   const im = b.querySelector('img'), tx = b.querySelector('.plt'), r = b.getBoundingClientRect(), cs = getComputedStyle(card);
@@ -84,12 +85,12 @@ GEO = """() => { const b = document.getElementById('planBtn'); if (!b) return nu
   const at = e => { if (!e) return false; const q = e.getBoundingClientRect(), t = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!t && (t === k || k.contains(t)); };
   const bar = sj ? sj.querySelector('.slotbar') : null, sp = sj ? sj.querySelector('.kisesp') : null, sl = sj ? sj.querySelector('.sl-lab') : null;
   return { btn: R(b), card: R(card), h2: [t.left, t.top, t.right, t.bottom], img: im ? [im.naturalWidth, im.naturalHeight] : null, txt: tx ? [tx.textContent].concat(R(tx)) : null,
-    hdr: hd.bottom, hit: hit === b || (hit && b.contains(hit)), first: card === document.querySelector('#v-judge .card'),
+    hdr: hd.bottom, hit: hit === b || (hit && b.contains(hit)), first: card === document.querySelector('#v-judge .card') && b.parentNode === document.body && getComputedStyle(b).position === 'fixed',
     label: b.getAttribute('aria-label'), dis: b.disabled, pos: getComputedStyle(card).position, vw: document.documentElement.clientWidth, gap0: gap0,
     chips: sj ? Array.from(sj.querySelectorAll('.slotchip')).map(R).filter(x => x[3] > x[1]) : [], pad: sj ? sj.style.paddingRight : '', sl: sl ? R(sl) : null,
     sp: sp ? R(sp) : null, spn: sj ? sj.querySelectorAll('.kisesp').length : 0, spNext: sp && sp.nextElementSibling ? sp.nextElementSibling.textContent : null, inner: [cs.paddingLeft, cs.paddingRight, cs.borderLeftWidth, cs.borderRightWidth].map(parseFloat),
     kise: k ? R(k) : null, kcap: kc ? R(kc) : null, klab: kl ? R(kl) : null, kname: kl ? kl.textContent : null, khit: at(kc) && at(kl), kimg: kim ? [kim.naturalWidth, kim.naturalHeight] : null, kft: !!kft,
-    klabel: k ? k.getAttribute('aria-label') : null, kpar: !!k && k.parentNode === card, kfont: kl ? [getComputedStyle(kl).fontFamily.split(',')[0].trim().replace(/"/g, ''), getComputedStyle(kl).fontWeight, getComputedStyle(kl).backgroundColor, getComputedStyle(kl).color] : null,
+    klabel: k ? k.getAttribute('aria-label') : null, kpar: !!k && k.parentNode === document.body && getComputedStyle(k).position === 'fixed', kfont: kl ? [getComputedStyle(kl).fontFamily.split(',')[0].trim().replace(/"/g, ''), getComputedStyle(kl).fontWeight, getComputedStyle(kl).backgroundColor, getComputedStyle(kl).color] : null,
     night: (() => { const h = getComputedStyle(document.querySelector('header.top')); return [h.backgroundColor, h.color]; })() }; }"""
 
 
@@ -192,6 +193,25 @@ try:
             pg.locator(f'.tabbar button[data-tab="{tab}"]').click(); pg.wait_for_timeout(350)
             vis[tab] = pg.evaluate("() => ['planBtn', 'kiseBtn'].map(i => { const r = document.getElementById(i).getBoundingClientRect(); return r.width > 0 && r.height > 0; })")
         check(vis == dict(win5=[False, False], rec=[False, False], stats=[False, False], set=[False, False], judge=[True, True]), f'札と「壁紙&ボード着せ替え」の ボタンは 判定タブ だけ（ほかの タブでは 出ない）{vis}')
+        print('■ 第4.168版：画面を 上下に 動かしても 右の ボタン（作戦会議・壁紙&ボード着せ替え・推し馬・トレーニングセンター・思い出フィギュア）は 同じ 所')
+        POS5 = "() => ['planBtn', 'kiseBtn', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(v => Math.round(v * 10) / 10); })"
+        HIT5 = "() => ['planBtn', 'kiseBtn', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const q = e.querySelector('img, .plt, .kft, .fabi') || e, r = q.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })"
+        pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(400); p0 = pg.evaluate(POS5); h0 = pg.evaluate(HIT5)
+        maxY = pg.evaluate("() => document.documentElement.scrollHeight - window.innerHeight"); seen = []
+        for y in (40, 180, maxY // 2, maxY):
+            pg.evaluate("(y) => window.scrollTo(0, y)", y); pg.wait_for_timeout(350); seen.append((pg.evaluate("() => Math.round(window.scrollY)"), pg.evaluate(POS5), pg.evaluate(HIT5)))
+        shot(pg, 'dock_scrolled')
+        pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(350); swipe(cdp, pg, 120, 620, 260); pf = (pg.evaluate("() => Math.round(window.scrollY)"), pg.evaluate(POS5))      # 指で なぞって 送る
+        lay = pg.evaluate("""() => { const z = e => e ? +getComputedStyle(e).zIndex : null, f = e => e ? getComputedStyle(e).position : null, I = i => document.getElementById(i), hd = document.querySelector('header.top').getBoundingClientRect(), tb = document.querySelector('.tabbar').getBoundingClientRect();
+          return { pos: [f(I('planBtn')), f(I('kiseBtn')), f(I('fabCol'))], z: [z(I('planBtn')), z(I('kiseBtn')), z(I('fabCol')), z(document.querySelector('header.top')), z(document.querySelector('.tabbar'))], body: [I('planBtn').parentNode === document.body, I('kiseBtn').parentNode === document.body],
+            hd: hd.bottom, tb: tb.top }; }""")
+        pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(350); p1 = pg.evaluate(POS5)
+        need = [p0[0], p0[1], p0[3]]
+        check(maxY > 200 and all(q is not None for q in need) and all(sc[1] == p0 for sc in seen) and seen[-1][0] >= maxY - 2 and seen[1][0] == 180 and pf[0] > 100 and pf[1] == p0 and p1 == p0,
+              f'ページを 40・180・{maxY // 2}・{maxY}（いちばん 下）まで 送っても、指で なぞって 送っても（{pf[0]}）、5つとも 画面の 同じ 所（1つも 動かない）{[q and q[:2] for q in p0]}')
+        check(all(v for v in h0 if v is not None) and all(all(v for v in sc[2] if v is not None) for sc in seen) and lay['pos'] == ['fixed', 'fixed', 'fixed'] and lay['body'] == [True, True]
+              and lay['z'][0] == 28 and lay['z'][1] == 28 and lay['z'][2] == 29 and lay['z'][3] < 28 and lay['z'][4] > 29 and p0[0][1] > lay['hd'] - 0.5 and all(q is None or q[1] + q[3] <= lay['tb'] + 0.5 for q in p0),
+              f'どこまで 送っても 5つとも 押せる（上に 何も かぶらない）・画面に 止める（position:fixed）・重なりは 上の 帯（{lay["z"][3]}）より 上／下の タブ（{lay["z"][4]}）より 下・上の 帯と 下の タブの 間に おさまる')
         if WALL:
             print('■ どの 壁紙でも')
             ids = pg.evaluate("() => TengelKisekae.list().map(t => t.id || t)"); bad = []; worst = dict(above=99, h2=999, kh2=999, chip=99, lw=0, bottom=0); fonts = set(); modes = {}

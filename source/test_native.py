@@ -1477,7 +1477,12 @@ try:
         h0 = p6.evaluate(HB6)
         p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         check(h0 and h0['bcx'] == '' and h0['parts'] == 0 and not h0['inHb'], f'まだ 選んで いない → 結果の ボードは いつもの 形（{h0}）')
+        # 第4.168版（まさちゃん 2026/11/14 01:26「マザーボード解放の時に、文字がおかしくなる時がある」）：同じ 所に 出る お知らせ 2つ（結果ボードの 解放 #bcNote・壁紙パックの 解放 #ksNote）は 上下に ならべる
+        #   （前は 同じ レースで 両方 解放されると 字が 重なった）。ここは 壁紙パックの お知らせが 先に 出て いる 形（にせもの）で、結果ボードの お知らせが その 下に 出るかを 見る
+        p6.evaluate("() => { const d = document.createElement('div'); d.id = 'ksNote'; d.style.cssText = 'position:fixed;left:50%;top:14px;width:240px;height:52px;transform:translateX(-50%)'; document.body.appendChild(d); }")
         rr = p6.evaluate(RD, 6); p6.wait_for_timeout(500)
+        st6 = p6.evaluate("() => { const k = document.getElementById('ksNote'), b = document.getElementById('bcNote'); if (!k || !b) return null; const a = k.getBoundingClientRect(), c = b.getBoundingClientRect(); k.remove(); return [a.bottom, c.top, b.style.top]; }")
+        check(st6 is not None and st6[1] >= st6[0] + 6 and st6[2] == '74px', f'第4.168版：壁紙パックの お知らせが 出て いる ときは、結果ボードの お知らせは その 下（{st6}）＝字が 重ならない')
         bi = p6.evaluate(BCI)
         check(rr['charged'] and p6.evaluate(BSEL) == ['ring', '', 1, 'ring', ''] and p6.locator('#bcNote').count() == 1 and '結果ボードを廻る' in p6.locator('#bcNote').inner_text() and bi['locks'] == 15 and '解放 1/15' in bi['prog'] and bi['on'] == ['ring']
               and bi['slots'] == ['hit:結果ボードを廻る', 'miss:なし（いつもの ボード）'] and bi['picks'] == ['ring:hit:true'],
@@ -1687,7 +1692,10 @@ try:
         for r in range(1, 5): p7.evaluate(RD7, r)
         p7.wait_for_timeout(200)
         check(p7.evaluate("TengelKisekae.pack().reads") == 4 and p7.evaluate("TengelKisekae.pack().n") == 0 and not p7.evaluate("TengelKisekae.usable('pirate')"), '4レース 読み込む → まだ 解放 なし')
+        p7.evaluate("() => { const d = document.createElement('div'); d.id = 'bcNote'; d.style.cssText = 'position:fixed;left:50%;top:14px;width:240px;height:52px;transform:translateX(-50%)'; document.body.appendChild(d); }")      # 第4.168版：結果ボードの お知らせが 先に 出て いる 形（にせもの）
         p7.evaluate(RD7, 5); p7.wait_for_timeout(500)
+        st7 = p7.evaluate("() => { const k = document.getElementById('ksNote'), b = document.getElementById('bcNote'); if (!k || !b) return null; const a = b.getBoundingClientRect(), c = k.getBoundingClientRect(); b.remove(); return [a.bottom, c.top, k.style.top]; }")
+        check(st7 is not None and st7[1] >= st7[0] + 6 and st7[2] == '74px', f'第4.168版：結果ボードの お知らせが 出て いる ときは、壁紙パックの お知らせは その 下（{st7}）＝字が 重ならない')
         t7 = p7.locator('#ksNote').inner_text() if p7.locator('#ksNote').count() else ''
         check(p7.evaluate("TengelKisekae.pack().n") == 1 and p7.evaluate("TengelKisekae.usable('pirate')") and '「海賊」' in t7 and p7.locator('#ksNote [data-ksnote=pirate]').count() == 1 and p7.evaluate("TengelPoints.wallCount(TengelWallet.events(), TengelWallet.pack.info().n)") == 1,
               f'5レース目 → 1枚目「海賊」が 解放（画面の 上に 小さな 絵と「着せ替える」の お知らせ・帯の ミッションの 枚数 1）（{t7!r}）')
@@ -2235,14 +2243,18 @@ try:
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(500)
         check(p5.locator('#setPoints button[data-v=hist]').inner_text().strip() == '詳しく' and p5.evaluate("typeof TengelFx.unlock === 'function'"), '第4.60版：ポイントの「くわしく」→「詳しく」・TengelFx.unlock が ある')
         p5.locator('#setCustom .ptitem[data-key="type:複勝"] [data-pt=unlock1]').click(); p5.wait_for_timeout(200)
-        p5.locator('#setCustom .ptitem[data-key="type:複勝"] [data-pt=unlock2]').click(); p5.wait_for_timeout(450)
+        p5.locator('#setCustom .ptitem[data-key="type:複勝"] [data-pt=unlock2]').click()
+        p5.wait_for_function("() => !!document.querySelector('.unlkt')", timeout=5000); p5.wait_for_timeout(120)      # 第4.168版：項目が 止まって から 出る（0.26秒〜）
         uf = p5.evaluate("({ unlk: !!document.querySelector('#setCustom .ptitem[data-key=\"type:複勝\"].unlk'), on: !!document.querySelector('#setCustom .ptitem[data-key=\"type:複勝\"].on'), burst: document.querySelectorAll('.unlkb i').length, text: (document.querySelector('.unlkt') || {}).innerText, css: !!document.querySelector('#fxUnlkCss') })")
         check(uf['unlk'] and uf['on'] and uf['burst'] >= 10 and uf['text'] == '解放！' and uf['css'], f'第4.60版：券種を 解放すると、その 項目の 上に 解放エフェクト（金の 輪と つや・粒・「解放！」）（{uf}）')
         p5.wait_for_timeout(2000)
         check(p5.evaluate("!document.querySelector('.unlk') && !document.querySelector('.unlkb') && !document.querySelector('.unlkt')"), '第4.60版：解放エフェクトは 2秒で 消える')
         ksid = p5.evaluate("(() => { const t = [...document.querySelectorAll('#setKisekae .kst.lock')].find(e => (TengelKisekae.list().find(x => x.id === e.dataset.ks) || {}).price); return t ? t.dataset.ks : null; })()")   # ポイントで 解放する 壁紙（壁紙パックの カギは 買う）
         p5.locator(f'#setKisekae .kst[data-ks="{ksid}"]').click(); p5.wait_for_timeout(300)
-        p5.locator('#setKisekae [data-ksact=unlock]').click(); p5.wait_for_timeout(1100)
+        p5.locator('#setKisekae [data-ksact=unlock]').click()
+        try: p5.wait_for_function("() => !!document.querySelector('.unlkt')", timeout=6000)
+        except Exception: pass
+        p5.wait_for_timeout(300)
         kf = p5.evaluate(f"({{ unlk: !!document.querySelector('#setKisekae .kst[data-ks=\"{ksid}\"].unlk'), on: !!document.querySelector('#setKisekae .kst[data-ks=\"{ksid}\"].on'), text: (document.querySelector('.unlkt') || {{}}).innerText, cur: TengelKisekae.current() }})")
         check(kf['unlk'] and kf['on'] and kf['text'] == '解放！' and kf['cur'] == ksid, f'第4.60版：壁紙を 解放すると、その タイルの 上に 解放エフェクト（着せ替えも される）（{kf}）')
         p5.wait_for_timeout(2000)
@@ -2250,9 +2262,32 @@ try:
         for _ in range(4): p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(250)
         p5.evaluate("(async () => { const ts = TengelKisekae.list().filter(t => t.price && !TengelWallet.unlocked('theme:' + t.id)).sort((a, b) => a.price - b.price); let n = TengelKisekae.count(); for (const t of ts) { if (n >= 5) break; if (await TengelWallet.unlock('theme:' + t.id, t.price)) n++; } return n; })()")
         p5.wait_for_timeout(600)
-        p5.locator('#setMission [data-pt=claim][data-id=mission-wall-silver]').click(); p5.wait_for_timeout(700)
+        p5.locator('#setMission [data-pt=claim][data-id=mission-wall-silver]').click()
+        try: p5.wait_for_function("() => !!document.querySelector('.unlkt')", timeout=6000)
+        except Exception: pass
+        p5.wait_for_timeout(200)
         mf = p5.evaluate("({ unlk: !!document.querySelector('#setMission .msrow[data-mid=mission-wall-silver].unlk'), text: (document.querySelector('.unlkt') || {}).innerText, done: document.querySelector('#setMission .msrow[data-mid=mission-wall-silver] .md').innerText })")
         check(mf['unlk'] and mf['text'] == '受け取り！' and mf['done'] == '受け取りずみ', f'第4.60版：ミッションの「受け取る」でも、その 行の 上に 解放エフェクト（「受け取り！」）（{mf}）')
+        # 第4.168版（まさちゃん 2026/11/14 01:26「マザーボード解放の時に、文字がおかしくなる時がある」）：解放エフェクトの 字は、項目が 止まって から 出す（画面が 動いて いる 途中の 場所に 出さない）・
+        #   出た あとも 項目に ついて いく（画面を 動かしても ずれない）・もう 画面に ない 項目（かき直されて 外れた）には 出さない（画面の すみに 字が 出ない）
+        p5.wait_for_timeout(2200); p5.evaluate("() => window.scrollTo(0, 0)"); p5.wait_for_timeout(400)
+        uq = p5.evaluate("""async () => { const el = document.querySelector('#setCustom .ptitem[data-key="type:複勝"]'); const raf = () => new Promise(r => requestAnimationFrame(r)), wait = ms => new Promise(r => setTimeout(r, ms));
+          const ctr = e => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, pos = e => [parseFloat(e.style.left), parseFloat(e.style.top)];
+          el.scrollIntoView({ block: 'center' }); await wait(300);
+          const t0 = performance.now(), ret = TengelFx.unlock(el, { text: '解放！' }), early = !!document.querySelector('.unlkt'); await wait(120); const at120 = !!document.querySelector('.unlkt');
+          for (let i = 0; i < 300 && !document.querySelector('.unlkt'); i++) await raf();
+          const t1 = performance.now() - t0, tx = document.querySelector('.unlkt'), bs = document.querySelector('.unlkb'); if (!tx) return { none: true, t1 };
+          const a = [ctr(el), pos(tx)]; window.scrollBy(0, 60); await raf(); await raf(); await raf(); await raf();
+          const b = [ctr(el), pos(tx), bs ? pos(bs) : null], fixed = getComputedStyle(tx).position;
+          await wait(2000); const gone = !document.querySelector('.unlkt') && !document.querySelector('.unlkb') && !el.classList.contains('unlk');
+          const ghost = document.createElement('div'); ghost.style.cssText = 'width:100px;height:40px'; document.body.appendChild(ghost); ghost.remove();      // もう 画面に ない 項目
+          const r2 = TengelFx.unlock(ghost, {}); await wait(1800); const none2 = !document.querySelector('.unlkt') && !document.querySelector('.unlkb');
+          window.scrollTo(0, 0); return { ret, early, at120, t1, a, b, fixed, gone, r2, none2 }; }""")
+        dd = lambda q: max(abs(q[0][0] - q[1][0]), abs(q[0][1] - q[1][1])) if q and q[1] else 99
+        check(not uq.get('none') and uq['ret'] is True and not uq['early'] and not uq['at120'] and 250 <= uq['t1'] <= 1700 and dd(uq['a']) < 1 and dd(uq['b']) < 1 and abs(uq['b'][0][1] - uq['a'][0][1]) > 30
+              and (uq['b'][2] is None or max(abs(uq['b'][2][0] - uq['b'][0][0]), abs(uq['b'][2][1] - uq['b'][0][1])) < 1) and uq['gone'] and uq['none2'],
+              f'第4.168版：解放エフェクトは 項目が 止まって から 出る（{uq.get("t1", 0):.0f}ミリ秒 あと・すぐには 出ない）・字は 項目の まん中（ずれ {dd(uq.get("a")):.2f}px）・画面を 60px 動かしても ついて いく（ずれ {dd(uq.get("b")):.2f}px）・'
+              f'2秒で 消える・もう 画面に ない 項目には 出さない')
         ctx5.close()
         # ---- 第4.117版・第4.118版：神様極的中の 数え方（src.html の godCount → TengelFx.show の godN）。記録の 画面で 結果を 決める（ふつうの 流れ）----
         #   結果を 決めた さいごの 50レース（日付と 発走時刻の 順・この レースまで・この レースも 入れる）の 中の G・M の レース（第4.118版：前は 30レース・神様の 条件）。2つ以上 → 神様極的中。

@@ -30,7 +30,10 @@
 //   ・呼ぶ（11/09 09:27 まさちゃん）：近づいて くる／振り向く／甘える を ランダム（1/3 ずつ：09:35 まさちゃん「それでいいよ！」）
 //   ・ごはん（お世話トークン 1つ）：エサ・リンゴ・ニンジンから えらぶ（今日の 好物は 日ごとに かわる）
 //       エサ → その場で バケツから もぐもぐ（3回で からっぽ）→ ぺろっ／リンゴ・ニンジン → 手から 3口（シャクッ）
-//       好物 → 大よろこび・金のニンジン（ニンジンの 1/30）→ なかよし +3・ときどき おかわりの目（なでると まんぞく）
+//       好物 → 大よろこび・金のニンジン（ニンジンの 1/30）→ なかよし +3・ときどき おかわりの目（こちらを じっと 見る：見た目 だけ）
+//       第4.168版（まさちゃん 2026/11/14 01:26「ごはんをあげたあと、おかわり？の時だけ抽選ボタンが出るのが遅すぎる。通常の時と同じ速度で表示して！」）：
+//         前は おかわりの目が 出ると、なでて もらう（→ まんぞく）のを 6.5秒 まで 待って から おしまい ＝ お世話の あとの PUSH が その ぶん おそく 出て いた。
+//         → 待たない：「おかわり…？」の 札と 目は 出す が、おしまいは いつもと 同じ 時（PUSH も 同じ はやさ）。なでて まんぞく、は なくした（PUSH が 出て いる 間は なでられない ため）
 //   ・おそうじ（お世話トークン 1つ・第4.152版で 作り直し）：ゴミ（15分ごとに 5か所）か うんちが ある とき だけ。3D の ほうきで 山を 押して 3D の ちりとりへ はき入れる
 //       →「きれい！」の 札（地面の キラッ と 花は なし）→ うんちを 片付けた ときは 馬が くんくん・金のうんち（うんちの 1/20）→「運がついた！」高確ゾーン（お世話 5回）
 //       ときどき 馬が ほうきを かじろうと する。前（〜第4.151版）：うんちを 3回 はく・うんちが ない 時は 季節の 落ち葉（いつでも できた）
@@ -333,12 +336,26 @@ const TCCare = (() => {
     for (const [p, v] of [[1 / 85, 100], [1 / 99, 200], [1 / 121, 300]]) { a += p; if (r < a) return v; }
     return null;
   }
+  // 第4.168版：幻の馬・神様馬の 抽選の 上限を つかい切った（O.drawLeft() が 0）→ 馬は すぐ 帰る（tc_app.js）。その 間は ごはん・おそうじを 始めない
+  //   （「まとめて 使う」で つづけて 押した 指が、PUSH が 消えた あと 下の「おそうじ」に 当たって、帰る 前に おそうじが 始まる ことが ない ように）
+  const drawOut = () => !!(O.drawLeft && O.drawLeft() < 1);
+  function drawOutTag(t) { if (t - (S.drawOutT == null ? -9 : S.drawOutT) < 1.2) return; S.drawOutT = t; fx({ k: 'tagUI', t0: t, x: W / 2, y: PUSHG.y - 300, txt: 'この 馬の 抽選は おわったよ', size: 34, dur: 1.6 }); ev(t, 'wait'); }
   function pressFeed(t) {
     if (pushLive()) { pushWait(t); return; }
+    if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
+    if (S.phase === 'choose' && S.chooser && !S.chooser.pick) { chooserBack(t); return; }      // 第4.168版：えらぶ 札が 出て いる ときに もう一度「ごはん」＝ とじる
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
     S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
+  }
+  // 第4.168版（まさちゃん 2026/11/14 01:26「ごはんを押しちゃうと戻れないから、戻るボタンを追加して！」）：えらぶ 札の 左上の「← もどる」（CHBACK）か、もう一度「ごはん」で とじる。
+  //   まだ 何も えらんで いない とき だけ（えらんだ あとは ごはんが 始まる）。トークンは 使わない（使うのは おわった あとの PUSH）・PUSH も 出ない
+  const CHBACK = { x: 262, y: 1109, w: 200, h: 58 };
+  function chooserBack(t) {
+    const C = S.chooser; if (!C || C.pick) return;
+    C.pick = '-'; C.pickT = t; ev(t, 'fold');                                 // 3まいの 札は そろって 消える（えらんだ 札は ない）
+    at(t + 0.25, tt => { if (S.chooser === C) { S.chooser = null; S.phase = 'idle'; S.mode = null; BR.careHold = false; S.holdUntil = -1; } });
   }
   function pick(t, kind) {
     if (!S.chooser || S.chooser.pick) return;
@@ -401,16 +418,11 @@ const TCCare = (() => {
       end = Math.max(end, t + 2.2);
     }
     const beg = S.demo && S.demo.beg != null ? S.demo.beg : T1('beg', () => rnd() < 1 / 4);
-    if (beg) {                          // おかわりの目：こちらを じっと 見る → なでると まんぞく
-      at(end, tt => { S.phase = 'beg'; mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
+    if (beg) {                          // おかわりの目：こちらを じっと 見る（第4.168版：見た目 だけ・なでるのを 待たない ＝ おしまいと PUSH は いつもと 同じ 時）
+      at(end, tt => { mark('B', tt); const side = sideToward(BR.x, BR.y + 200); react('beg', 2.6, tt, { side }); BR.want.look = [side * 0.6, 0.2]; ev(tt, 'beg');
         tagW(P('poll'), 'おかわり…？', tt + 0.2, { off: [30, -100], size: 34, dur: 2.4 }); S.begT = tt; });
-      S.holdUntil = Infinity; S.phase = 'feedwait';
-    } else { S.phase = 'feedwait'; S.holdUntil = end; at(end, tt => { S.phase = 'feeddone'; }); }
-  }
-  function begPet(t) {                   // おかわりの目の あとで なでた
-    S.phase = 'feeddone'; BR.reacts = (BR.reacts || []).filter(r => r.k !== 'beg'); BR.want.look = [0, 0];
-    react('nod', 1.4, t + 0.1); ev(t, 'rub'); fx({ k: 'mini', t0: t + 0.1, w: (P('poll') || [BR.x, BR.y]).slice(), r: 22, dx: 20 });
-    tagW(P('poll'), 'まんぞく', t + 0.3, { off: [30, -100], size: 34, dur: 1.6 }); S.holdUntil = t + 1.9;
+    }
+    S.phase = 'feedwait'; S.holdUntil = end; at(end, tt => { S.phase = 'feeddone'; });
   }
   function itemPos() {                   // 手で 持つ リンゴ・ニンジンの 場所（口もと）
     const n = P('nose') || [BR.x, BR.y - 200], s = TCHorse.scaleAt(HO, BR.y);
@@ -443,6 +455,7 @@ const TCCare = (() => {
   const canClean = () => cleanTargets().length > 0;
   function pressClean(t) {
     if (pushLive()) { pushWait(t); return; }
+    if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
     if (S.busy || S.phase !== 'idle') return;
@@ -599,6 +612,7 @@ const TCCare = (() => {
   function pushK(t) { const Pn = S.push; if (!Pn) return 0; const u = t - Pn.t0; return u < 0 ? 0 : sm(u / 0.2) * (Pn.hideT != null ? 1 - sm((t - Pn.hideT) / 0.22) : 1); }      // PUSH が 出て いる 度合い 0〜1（お世話の ボタンを かくす）
   function pushOpen(t) {
     if (pushLive()) return;
+    if (O.drawLeft && O.drawLeft() < 1) return;      // 第4.168版：幻の馬・神様馬の 抽選の 上限を つかい切った → PUSH は 出さない（馬は すぐ 帰る：tc_app.js）
     if (S.demo && !(S.demo.press || []).some(q => q[1] === 'push')) return;      // 見本：PUSH を 押す 見本 だけ 出す
     if (S.stock < 1) return;
     S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 };
@@ -608,6 +622,7 @@ const TCCare = (() => {
   function pushPress(t) {                // PUSH を 押した：トークン −1 → 抽選 → 結果。押せた ときは true
     const Pn = S.push; if (!Pn || Pn.hideT != null || t < Pn.lock || S.fxHold) return false;
     if (S.stock < 1) { pushClose(t); return false; }
+    if (O.drawLeft && O.drawLeft() < 1) { pushClose(t); return false; }      // 第4.168版：抽選の 上限（幻の馬 10回・神様馬 5回）を こえては 押せない
     S.stock -= 1; S.stockDrop = t; Pn.n++; Pn.hitT = t; ev(t, 'token');
     const z = careLottery(), pz = z == null ? null : typeof z === 'object' ? z : { k: 'pt', v: z };
     Pn.res = pz ? (pz.k === 'pt' ? pz.v : pz.k) : 0;
@@ -616,7 +631,7 @@ const TCCare = (() => {
     else if (pz.k === 'pt') { fx({ k: 'pointpop', t0: t, v: pz.v, dur: 2.0 }); if (pz.v >= 200) ev(t, 'dedeen'); else ev(t, 'piron'); if (O.onPrize) O.onPrize(pz); }      // 10〜100P：ピロン・200〜300P：デデーン
     else if (pz.k === 'rt' || pz.k === 'zn') { ev(t, 'kyuin'); fx({ k: 'rtcue', t0: t, dur: 1.1, txt: pz.k === 'zn' ? '特化ゾーン！' : null }); Pn.lock = t + 1.3; at(t + 1.0, tt => { if (O.onPrize) O.onPrize(pz); }); }      // キュインキュイーン → ルーレット／ポイント特化ゾーン（第4.165版）
     else { Pn.lock = t + 0.5; if (O.onPrize) O.onPrize(pz); }            // チケット：アプリが プチュン → 扉の 演出
-    if (!S.bulk || S.stock < 1) pushClose(t + 0.3);                      // 1個 使う・トークンが なくなった → 押した 動きの あと 消える
+    if (!S.bulk || S.stock < 1 || (O.drawLeft && O.drawLeft() < 1)) pushClose(t + 0.3);      // 1個 使う・トークンが なくなった・抽選の 上限に なった（第4.168版：ev('token') で アプリが もう 数えて いる）→ 押した 動きの あと 消える
     return true;
   }
   function pushMode(t, bulk) { const Pn = S.push; if (!pushLive() || S.bulk === !!bulk) return; S.bulk = !!bulk; Pn.modeT = t; ev(t, 'button'); if (O.onBulk) O.onBulk(S.bulk); }
@@ -825,7 +840,6 @@ const TCCare = (() => {
   }
   // さわる（x,y：フィールドの px）
   function input(kind, x, y, t) {
-    if (S.phase === 'beg' && kind === 'down' && zoneAt(x, y)) { begPet(t); S.finger = [x, y]; S.begHand = t; return; }
     if (S.mode === 'clean' && S.phase === 'clean' && !S.demo) {      // 第4.165版：ほうき・ちりとりを つかんで 運ぶ（つかんだ ときの ずれを 保つ ＝ 道具は 飛ばない）
       const C = S.clean; S.finger = [x, y]; C.actT = t;
       if (kind === 'down') {
@@ -912,8 +926,8 @@ const TCCare = (() => {
     // ごはん（エサ・リンゴ・ニンジン）
     feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ごはん：エサ・リンゴ・ニンジンから えらぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で からっぽ）']], end: 'Z+0.6' },
     feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大よろこび'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      // 第4.159版：当たりは PUSH を 押した とき
-    feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true, pathBase: 'B', path: [[0.7, 1.3, 'awayR', 'headA', false], [1.3, 1.45, 'headA', 'headA', true], [1.45, 2.2, 'headA', 'awayR', false]],
-      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.2', 'おかわりの目 → なでると まんぞく']], end: 'Z+0.6' },
+    feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true,      // 第4.168版：おかわりの目は 見た目 だけ（なでる 手の 見本は なくした）
+      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.6', 'ときどき おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
     ban_k: { rt: [6.4, 6.7], cap: [], end: 10.6 },          // 神様馬の フィールド：降臨の バナー → 当選で ルーレット → 消える → もどる
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
@@ -1162,7 +1176,15 @@ const TCCare = (() => {
       if (kd === S.fav) { heart(80, -96, 22, 0.1, 1); label('好物', 60, -60, 24, '#c2456f', '#fff8ec', 6); }
       g.restore();
     });
-    const v = (t - C.t0) / 0.3; if (v > 0 && !C.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const w = g.measureText('どれを あげる？').width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 - w / 2, 1080, w, 58, 29); g.fill(); label('どれを あげる？', W / 2, 1110, 34, '#fff8ea'); g.restore(); }
+    const v = (t - C.t0) / 0.3; if (v > 0 && !C.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const w = g.measureText('どれを あげる？').width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 - w / 2, 1080, w, 58, 29); g.fill(); label('どれを あげる？', W / 2, 1110, 34, '#fff8ea');
+      // 第4.168版：「← もどる」（上の 帯の もどる と 同じ 色：クリーム色の 札・こげ茶の 字）。札の 左はしは 1まいめの 札（エサ）の 左はしと そろえる
+      const B = CHBACK, dn = S.uiDown === 'chback' ? 0.95 : 1;
+      g.translate(B.x, B.y); g.scale(dn, dn);
+      g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
+      g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
+      g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
+      label('← もどる', 0, 1, 32, '#7a4520');
+      g.restore(); }
   }
 
   // ---------- 1コマ ----------
@@ -1221,7 +1243,6 @@ const TCCare = (() => {
     if (S.ses && !S.ses.done && !S.ses.down && S.ses.upT != null && t - S.ses.upT > 2.2) { S.hand.hideT = t; ev(t, 'fold'); S.ses.done = true; S.holdUntil = t + 0.8; }      // とちゅうで やめた
     // おしまい：撫でる（反応が 終わった・6秒 さわらない）・呼ぶ（動きが 終わった）
     if (!S.busy && t > S.holdUntil && (S.phase === 'pet' && !S.ses || S.phase === 'callact' || S.phase === 'feeddone' || S.phase === 'cleandone')) { S.holdUntil = Infinity; endCare(t); }
-    if (S.phase === 'beg' && S.begT != null && t - S.begT > 6.5) { S.begT = null; S.phase = 'feeddone'; BR.reacts = (BR.reacts || []).filter(r => r.k !== 'beg'); BR.want.look = [0, 0]; S.holdUntil = t + 0.2; }      // 第4.152版：おかわりの目を 6.5秒 なでない → そのまま おしまい（前は なでる まで ずっと 待って いて、ほかの ボタンが 押せなかった）
     if (S.afterSniff && BR.mode === 'idle') { S.afterSniff = false; BR.hurry = 1; react('sniff', 2.2, t, { side: 0 }); react('swish', 2.2, t + 1.2); ev(t, 'sniff'); tagW(P('nose'), 'くんくん', t + 0.3, { off: [0, -100], size: 32, dur: 1.4 }); S.holdUntil = t + 2.6; }
     if (S.mode === 'after' && !S.afterSniff && t > S.holdUntil) { S.mode = null; S.phase = 'idle'; BR.careHold = false; BR.until = t + 2; mark('Z2', t); }
     if (S.phase === 'pet' && !S.ses && !S.busy && S.holdUntil === Infinity && t - S.petIdle > 6) endCare(t);
@@ -1262,7 +1283,6 @@ const TCCare = (() => {
       paperSquare(f[0] + 20 * Math.sign(-rot), f[1] + 32, 34 * sq, 0.8 * (1 - sq) + t * 0.5, Math.min(1, sq * 2));
       hand(f[0], f[1], 62 * (O.handK || 1), rot, hs.press, 1, Math.max(0, open));
     }
-    if (S.begHand != null && t - S.begHand < 1.1) { const f = toS(S.finger || [W / 2, H / 2]), u2 = (t - S.begHand) / 1.1; hand(f[0], f[1], 62, -0.4, u2 < 0.5 ? 1 : 0, 1 - sm((u2 - 0.75) / 0.25), backOut(u2 / 0.25)); }
     drawFx(t);
     drawCaption(t);
   }
@@ -1294,7 +1314,8 @@ const TCCare = (() => {
       return null;                       // お世話の ボタンは かくれて いる（さわっても 何も おきない）
     }
     if (S.push && !S.fxHold) return 'pgone';      // PUSH が 消えて いく 間（押して から 約0.6秒）：さわっても 何も おきない（「1個 使う」で つづけて 押した 指が、まだ 見えない ごはん・おそうじの ボタンを 押さない ように）
-    if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; } }
+    if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; }
+      if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'chback'; }      // 第4.168版：「← もどる」（下は 札の 上はし 1140 まで）
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
     for (const k of ['pet', 'feed', 'clean', 'call']) if (Math.hypot(x - BTN[k][0], y - BTN[k][1]) < BTN_R + 10) return k;
     if (O.onBuy && Math.hypot(x - BUYG.x, y - BUYG.y) < BTN_R + 10) return 'buy';      // 第4.165版：お世話トークン購入（下の 列の 1番 右）
@@ -1309,6 +1330,7 @@ const TCCare = (() => {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
     else if (what === 'help') { S.press.help = t; ev(t, 'button'); ev(t + 0.05, 'paper'); if (O.onHelp) O.onHelp(); }
     else if (what && what.startsWith('pick:')) pick(t, what.slice(5));
+    else if (what === 'chback') chooserBack(t);
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
@@ -1332,6 +1354,7 @@ const TCCare = (() => {
     }
     if (!B.shown && B.hideT == null && B.showT != null && t >= B.showT) { B.shown = true; ev(t, 'banin', { kind: B.kind }); }
   }
+  const PTG = { x: 771, y: 250, w: 246, h: 56 };      // 第4.168版：合計ポイントの 札（作戦会議の ボタンの 見える 板 771〜1017 の すぐ 下）
   const BAN_W = 860; let BAN_TOP = 172;      // アプリ：作戦会議の ボタン（右上の お世話の 下：11/09 14:41 まさちゃん）の 下に（O.banTop）
   function bannerVisible() { const B = S.ban; return !!(B && B.hideT == null && B.showT != null); }
   function drawBanner(t) {
@@ -1355,22 +1378,26 @@ const TCCare = (() => {
   //   バナーと いっしょに 出て いっしょに 消える（ルーレットの 間は 消える）。数字は 1秒ごとに かわる だけ（点めつ しない・ゆれない）。のこり 1分は 赤
   const mmss = v => { const n = Math.max(0, Math.ceil(v)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
   const VI = { x: 26, y: 172, w: 420, row: 37, pad: 7, lab: 26, val: 29, small: 22 };
+  // 第4.168版：抽選の 上限（V.max：幻の馬 10回・神様馬 5回）が ある ときは 2行めを「抽選 ○/○回」に（前は「お世話 ○/5回」）。
+  //   上限が リセットの 回数（5回）以下の 馬（神様馬）は タイマーが 動く 前に 帰る ので、切り替わりタイマーの 行は 出さない（2行）
   function vinfoRows(V) {
-    return [['タイムリミット', mmss(V.left), V.left <= 60, VI.val],
-      ['お世話', `${V.n}/${V.need}回`, false, VI.val],
-      ['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]];
+    const rows = [['タイムリミット', mmss(V.left), V.left <= 60, VI.val]];
+    if (V.max) rows.push(['抽選', `${V.draws}/${V.max}回`, V.draws >= V.max, VI.val]); else rows.push(['お世話', `${V.n}/${V.need}回`, false, VI.val]);
+    if (!V.max || V.max > V.need) rows.push(['切り替わりタイマー', V.timer == null ? `${V.need}回で スタート` : mmss(V.timer), V.timer != null && V.timer <= 60, V.timer == null ? VI.small : VI.val]);
+    return rows;
   }
-  function vinfoRect() { return { x: VI.x, y: VI.y, w: VI.w, h: 3 * VI.row + 2 * VI.pad }; }
+  function vinfoRect() { const n = S.vinfo ? vinfoRows(S.vinfo).length : 3; return { x: VI.x, y: VI.y, w: VI.w, h: n * VI.row + 2 * VI.pad }; }
   function drawVInfo(t) {
     const B = S.ban, V = S.vinfo; if (!B || !V || B.showT == null) return;
     const ui = t - B.showT; let a;
     if (B.hideT != null) { const v = (t - B.hideT) / 0.3; if (v >= 1) return; a = 1 - sm(v); } else { if (ui < 0.5) return; a = sm((ui - 0.5) / 0.35); }
     const { x, y, w, h } = vinfoRect();
     g.save(); g.globalAlpha *= a; panel(x, y, w, h, 16);
-    vinfoRows(V).forEach(([lb, val, hot, size], i) => {
+    const rows = vinfoRows(V);
+    rows.forEach(([lb, val, hot, size], i) => {
       const cy = y + VI.pad + VI.row * (i + 0.5) + 2;
       label(lb, x + 22, cy, VI.lab, '#7a4520', null, 0, 'left'); label(val, x + w - 22, cy, size, hot ? '#d0342c' : '#c2456f', null, 0, 'right');
-      if (i < 2) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
+      if (i < rows.length - 1) { g.save(); g.strokeStyle = 'rgba(122,69,32,0.28)'; g.lineWidth = 2; g.setLineDash([7, 7]); g.beginPath(); g.moveTo(x + 18, y + VI.pad + VI.row * (i + 1)); g.lineTo(x + w - 18, y + VI.pad + VI.row * (i + 1)); g.stroke(); g.restore(); }
     });
     g.restore();
   }
@@ -1414,7 +1441,23 @@ const TCCare = (() => {
     if (S.stockDrop != null) { const v = (t - S.stockDrop) / 1.2; if (v < 1) label('−1', O.dropX || sx + sw - 60, sy + shh + 26 + 30 * easeOut(v), 40, '#b0445f', '#fff8ec', 7); }
     if (S.high > 0) {                  // 高確ゾーン（のこり お世話 ○回）
       const hb = S.highBump != null ? (t - S.highBump) / 0.5 : 2, hs = hb < 1 ? 1 + 0.15 * Math.sin(Math.PI * hb) : 1;
-      g.save(); g.translate(sx + sw / 2, O.hiY || sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
+      g.save(); g.translate(O.hiX || sx + sw / 2, O.hiY || sy + shh + 44); g.scale(hs, hs); panel(-130, -30, 260, 60, 14); label(`高確ゾーン あと${S.high}回`, 0, 2, 28, '#c2456f'); g.restore();
+    }
+    // 第4.168版（まさちゃん 2026/11/14 01:26「トレーニングセンターでも、合計ポイントが見えるようにする。一枚目の青四角のところに、合計ポイント設置して！」）：
+    //   作戦会議の ボタン（見える 板 771〜1017 × 167〜240）の すぐ 下に 合計ポイントの 札（アプリが O.points で 数を わたす：上の 帯の「ポイント」と 同じ 合計）。
+    //   数が かわると ぽんと 1回 ふくらむ（点めつ しない）。O.points が ない とき（見本）は 出さない。高確ゾーンの 札は この 所から ボタンの 左へ（O.hiX・O.hiY）
+    if (O.points) {
+      const v = O.points();
+      if (v != null && isFinite(v)) {
+        const P = PTG; if (S.ptShow !== v) { if (S.ptShow != null) S.ptBump = t; S.ptShow = v; }
+        const pb = S.ptBump != null ? (t - S.ptBump) / 0.5 : 2, ps = pb < 1 ? 1 + 0.1 * Math.sin(Math.PI * pb) : 1;
+        g.save(); g.translate(P.x + P.w / 2, P.y + P.h / 2); g.scale(ps, ps);
+        panel(-P.w / 2, -P.h / 2, P.w, P.h, 14);
+        label('ポイント', -P.w / 2 + 14, 2, 21, '#7a4520', null, 0, 'left');
+        const txt = Math.round(v).toLocaleString('ja-JP'); let fs = 33; g.font = `900 ${fs}px ${FONT}`; const room = P.w - 14 - 88 - 30 - 12, tw = g.measureText(txt).width; if (tw > room) fs *= room / tw;
+        label(txt, P.w / 2 - 36, 2, fs, '#b06a12', '#fff8ec', 5, 'right'); label('P', P.w / 2 - 12, 5, 22, '#b06a12', null, 0, 'right');
+        g.restore();
+      }
     }
     // 説明書の「？」（ゲージと お世話の あいだ）
     { const [hx, hy] = HELP, pq = S.press.help != null ? (t - S.press.help) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
@@ -1618,6 +1661,6 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    BTN, BTN_R, BUYG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
+    BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

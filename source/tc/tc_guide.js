@@ -40,7 +40,7 @@ const TCGuide = (() => {
   const PT = v => `<span class="pt">${v}P</span> GET`, RT = (a, b) => `<span class="rt">ルーレット</span>（${a}P か ${b}P）`;
   // 第4.141版（11/10 15:52 まさちゃん「壁紙チケット or 8000pにして！」→ 16:08「じゃあ7000pにして！」）：チケット 1枚は 壁紙の 解放か この ポイントに かえるかを 選べる（数は points.js の TICKET_POINTS）
   const TKP = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000).toLocaleString('ja-JP');
-  const RS = { cares: 5, min: 5, limit: 30 };      // 馬の リセット：お世話 5回 → 5分・幻の馬／神様馬の タイムリミット 30分（tc_app.js の RESET_CARES・RESET_MIN・VISIT_MIN と 同じ 数：test_tc.py が 見くらべる）
+  const RS = { cares: 5, min: 5, limit: 30, draws: { maboroshi: 10, kamisama: 5 } };      // draws（第4.168版）：幻の馬・神様馬の 抽選の 上限（tc_app.js の VISIT_DRAWS と 同じ 数）      // 馬の リセット：お世話 5回 → 5分・幻の馬／神様馬の タイムリミット 30分（tc_app.js の RESET_CARES・RESET_MIN・VISIT_MIN と 同じ 数：test_tc.py が 見くらべる）
   // 第4.165版（まさちゃん 11/13 11:46「お世話でポイントGET 確率少し変える(ここだけ) 1/15で10P 1/25で20P 1/55で50P 1/95で100P」）：10P 1/10 → 1/15・20P 1/20 → 1/25・50P 1/50 → 1/55・100P 1/85 → 1/95（ほかは そのまま）
   // 第4.165版（11/13 12:51「ポイントの特化ゾーンを作る … 特化ゾーンも、トレーニングセンターの説明書に追加」）：ポイント特化ゾーン（tc_app.js の ZONE と 同じ 数：test_tc.py が 見くらべる）
   //   1/699 で 入る（どの 表にも 1行）・スタート 1,000P・レバー 1回ごとに 60% で ＋2,000P・12回 つづけて 上乗せで MAX 25,000P・平均 約3,993P（≒4,000P）
@@ -52,7 +52,7 @@ const TCGuide = (() => {
   const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d];      // お世話の 当たり ぜんぶ（合わせた ％を 出す）
   // 第4.165版：お世話トークンの 購入（組は points.js の TOKEN_PACKS：なければ 同じ 数）・たまる 間（tc_app.js の TOKEN_MIN と 同じ 数：test_tc.py が 見くらべる）
   const TOK = { every: 5, step: 5, max: 25 };
-  const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 80], [5, 400], [10, 800], [15, 1200], [25, 2000]]).map(x => x.slice());
+  const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
   const SEC = [
     // 第4.159版（まさちゃん 11/12 10:37）：トークンの 上限 25・お世話の あとの PUSH（押した ときに 抽選）・1個／まとめての スイッチ／12:48・14:50：10分ごとに 5つ（12:48 は 5分ごと → 14:50 に 10分ごとへ）・最大の ときに 撫でると「お世話トークンが最大だよ！」／
     //   13:27：ハートの 抽選は トークンが 20こ未満の とき だけ（20こ以上は 抽選まち → 20こを 切ったら 抽選）
@@ -102,8 +102,9 @@ const TCGuide = (() => {
       <p class="note">お世話をしないと 馬はかわらないよ（開いているだけでは 抽選しないよ）</p>
       <p class="note">お世話のとちゅうは リセットしないよ（おわってから）</p>`],
     ['降', '#7a4ab0', '幻の馬・神様馬がいるあいだ', `<p>やってくると フィールドがかわって、お世話の当たりが かわるよ</p>
-      <p>・帰るのは、<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）か、<b>来てから${RS.limit}分</b>（タイムリミット）の どちらか早いほう</p>
-      <p>・左上の「なかよし」の下に「タイムリミット・お世話の回数・切り替わりタイマー」が出るよ</p>
+      <p data-n="draws">・抽選（お世話のあとのPUSH）は、<b>幻の馬 最大${RS.draws.maboroshi}回</b>・<b>神様馬 最大${RS.draws.kamisama}回</b>まで。つかい切ると帰るよ</p>
+      <p>・帰るのは、<b>抽選をつかい切ったとき</b>・<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）・<b>来てから${RS.limit}分</b>（タイムリミット）の いちばん早いとき</p>
+      <p>・左上の「なかよし」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ</p>
       <p class="hh">🌙 幻の馬</p>
       <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}${ZROW}</table>
       <p class="hh">✨ 神様馬</p>

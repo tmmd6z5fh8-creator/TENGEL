@@ -865,6 +865,8 @@
     css();
     const old = $('#bcNote'); if (old) old.remove();
     const n = document.createElement('div'); n.id = 'bcNote'; n.setAttribute('role', 'status'); n.innerHTML = html; document.body.appendChild(n);
+    // 第4.168版（まさちゃん 2026/11/14 01:26「…解放の時に、文字がおかしくなる時がある」）：壁紙パックの お知らせ（#ksNote：同じ 所に 出る）が 出て いる ときは その 下に（字が 重ならない）
+    try { const o = document.getElementById('ksNote'); if (o && o.offsetHeight) n.style.top = (o.offsetTop + o.offsetHeight + 8) + 'px'; } catch (e) { /* なし */ }
     setTimeout(() => { if (n.parentNode) n.remove(); }, 4300);
   }
   document.addEventListener('tengel:board', e => {

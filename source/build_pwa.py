@@ -117,6 +117,8 @@ if TARGET == 'app':
     # 思い出フィギュア（第4.134版：まさちゃん 11/09）：記録タブの「思い出のレース」の ボタンと 右上の 丸い ボタン（第4.138版：トレーニングセンターの 下・tc_launch.js の TengelFab を 使うので その 後に）から 開く 入口（fig/fig_launch.js）は index.html に。
     # 本体（3D の 描画・ブース・一覧・部屋・作る 画面）は 押した ときに 読む fig_bundle.js（下で 書く）。形と 絵は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
     html += '<script>\n' + open(os.path.join('fig', 'fig_launch.js'), encoding='utf8').read() + '\n</script>\n'
+    # ログインボーナス（第4.168版：まさちゃん 11/14）：その 日に はじめて 開いた とき 1回（7日で ひとまわり：200・300・400・500・600・1000・1300P）。points_ui.js の 財布（TengelWallet.grant）を 使う
+    html += '<script>\n' + open('login_bonus.js', encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める

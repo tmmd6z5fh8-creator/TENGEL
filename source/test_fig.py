@@ -98,11 +98,11 @@ try:
           if (!t || !f || !h || !tb) return null; const a = R(t), c = R(f), l = f.querySelector('.fabl'), i = f.querySelector('.fabi'), q = R(l), ii = R(i);
           return { hb: R(h).bottom, tab: R(tb).top, bottom: c.bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width,
             aria: f.getAttribute('aria-label'), img: (i.querySelector('img') || {}).src || '' }; }"""
-        #   はじめの 判定タブは 入力例の 判定の 帯（#minibar）が 出て いて 列は その 上に いる → いつもの 場所は 帯を かくして 見る（帯の 上へ よける 動きは test_tc.py）
+        #   第4.168版：列は 判定の 帯（#minibar）が 出ても 消えても 同じ 所（帯の 上の 高さ：test_tc.py）。ここは 帯を かくして 見る
         pg.evaluate("() => { const m = document.getElementById('minibar'); if (m) m.hidden = true; }"); pg.wait_for_timeout(600)
         fb = pg.evaluate(FAB)
-        check(fb is not None and pg.locator('#figFab').is_visible() and 0 <= fb['top'] - fb['tcBottom'] <= 10 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 4 <= fb['tab'] - fb['bottom'] <= 14 and fb['tcTop'] > fb['hb'] + 200,
-              f'右下の ボタン：トレーニングセンターの すぐ 下に 思い出フィギュア・その 下が 下の タブ（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"]), round(fb["bottom"]), round(fb["tab"])]}）')
+        check(fb is not None and pg.locator('#figFab').is_visible() and 0 <= fb['top'] - fb['tcBottom'] <= 10 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 40 <= fb['tab'] - fb['bottom'] <= 50 and fb['tcTop'] > fb['hb'] + 200,      # 第4.168版：列は いつも 判定の 帯が 出る 高さの 上（下の タブから 約43px 上）＝帯が 出ても 消えても 動かない
+              f'右下の ボタン：トレーニングセンターの すぐ 下に 思い出フィギュア・その 下に 判定の 帯の 高さを あけて 下の タブ（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"]), round(fb["bottom"]), round(fb["tab"])]}）')
         check(fb is not None and fb['name'] == '思い出\nフィギュア' and fb['ib'] - 9 <= fb['lt'] <= fb['ib'] + 4 and abs(fb['iw'] - 66) < 1 and 'フィギュアブース' in fb['aria'], '絵（66px）の 下に 名前の 札「思い出／フィギュア」（2行）')
         pg.evaluate(SEED); pg.wait_for_timeout(800)
         pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=rec]') || [...document.querySelectorAll('.tabbar button')].find(x => /記録/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(900)

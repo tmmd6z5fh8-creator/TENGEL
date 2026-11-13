@@ -86,6 +86,12 @@
       //   （前は どの テーマも 四角い .rbf を 重ねて いたので、ツリーや かぼちゃの まわりに 四角い 虹が 出て いた）
       + '.fxs .pbox.pz{transform:scale(var(--pz,1));transform-origin:50% 50%}'
       + '.fxs .pzw{position:absolute;inset:0;z-index:3;pointer-events:none;transform:scale(var(--pz,1));transform-origin:50% calc(50% - 40px)}'
+      // 第4.168版（まさちゃん 2026/11/14 01:26「七枚目のプッシュ押した後に出るこのエフェクト消して！」＝マスター帯の PUSH を 押した あと、左上に 出る 虹色の 太い 弧）：
+      //   テーマの かけら（.clips）の 中の「光の輪」（<i class="ring">・<i class="ring b">：17テーマ）に、デカ的中の 虹の 輪の きまり（.ring：左上へ 150px ずらす margin・
+      //   輪の 形の mask・虹色）が いっしょに 効いて、PUSH の まわりに 広がる はずの 輪が 左上に ずれた 弧（上下が まっすぐ 切れた 形）に なって いた。
+      //   マスター帯は 色を 上書き して いない ので 虹色の 太い 弧・ほかの 16テーマは 細い 弧。→ かけらの 光の輪は 出さない（火花・かけら・いなずま・横に のびる 光は 今までどおり）。
+      //   デカ的中の 虹の 輪 3つ（.ring.r1〜r3：かけらの 外）は そのまま
+      + '.fxs .clips .ring{display:none!important}'
       + '.fxs .pbox.rbw .rba{position:absolute;z-index:0;left:50%;top:var(--ry);width:var(--rw);height:var(--rh);margin:calc(var(--rh) / -2) 0 0 calc(var(--rw) / -2);border-radius:50%;pointer-events:none;'
       + 'background:conic-gradient(#FF3B3B,#FF9F1A,#FFE53B,#3BE26A,#2FD6FF,#4C6BFF,#B34CFF,#FF3BB8,#FF3B3B);filter:blur(16px);opacity:.9;animation:pzSpin 2.2s linear infinite}'
       + '.fxs .pbox.rbw .push .rbf{position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;mix-blend-mode:color;opacity:.95;'
@@ -699,13 +705,24 @@
     } catch (e) { return false; }
   }
   // el：解放した 項目（カード・タイル）。opts.text：まん中に 出す 字（はじめは「解放！」）・opts.scroll：見える 所へ 動かす（はじめは する）
+  // 第4.168版（まさちゃん 2026/11/14 01:26「マザーボード解放の時に、文字がおかしくなる時がある」）：
+  //   前は 項目を 見える 所へ 動かし はじめて から 0.26秒 たった ときの 場所に 字と 粒を 置いて いた（画面に 止めた 部品）。画面が まだ 動いて いる 途中（0.26秒より 長く かかる）だと、
+  //   項目は その あとも 動いて 行く のに 字は そこに のこる ＝「解放！」が ほかの 行の 字の 上に 重なって 出て いた（項目が 画面の 上下の はしに ある とき だけ ＝ ときどき）。
+  //   ・項目が 止まる まで 待つ（0.26秒 たって、場所が 3コマ つづけて 同じ に なったら。長くても 1.2秒）
+  //   ・出て いる あいだ（1.7秒）、字と 粒は 項目に ついて いく（その あと 指で 画面を 動かしても 項目の 上）
+  //   ・項目が もう ない（その 間に 一覧を 描き直した）ときは 出さない（前は 画面の 左上の すみに 字の 半分が 出た）
+  //   ・字（Dela Gothic One）を 先に 読んで おく（読めて いない うちに 出ると、かわりの 字で 出て から 入れかわる）
   function unlock(el, opts) {
     opts = opts || {};
     if (!el || !el.getBoundingClientRect) return false;
     unlockCss();
+    try { if (document.fonts && document.fonts.load) { const p = document.fonts.load('400 28px "Dela Gothic One"', opts.text || '解放！'); if (p && p.catch) p.catch(() => {}); } } catch (e) { /* なし */ }
     if (opts.scroll !== false) { try { const r0 = el.getBoundingClientRect(); if (r0.top < 60 || r0.bottom > innerHeight - 60) el.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' }); } catch (e) { /* なし */ } }
+    const rectOf = () => { try { if (el.isConnected === false) return null; const q = el.getBoundingClientRect(); return q.width || q.height ? q : null; } catch (e) { return null; } };
     const go = () => {
-      const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const r = rectOf(); if (!r) return;
+      let cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const parts = [];
       if (S.effects) {
         el.classList.remove('unlk'); void el.offsetWidth; el.classList.add('unlk');
         setTimeout(() => el.classList.remove('unlk'), 1800);
@@ -716,14 +733,31 @@
           const a = (i / n) * Math.PI * 2 + rand() * .5, d = Math.min(220, Math.max(r.width, r.height) * (.45 + rand() * .55)) + 30 * rand(), sp = i % 4 === 0;
           hh += `<i class="${sp ? 'sp' : ''}" style="--x:${(Math.cos(a) * d).toFixed(0)}px;--y:${(Math.sin(a) * d * .7 - 10).toFixed(0)}px;--s:${(sp ? 14 + rand() * 10 : 5 + rand() * 7).toFixed(0)}px;--c:${cols[i % cols.length]};--d:${(0.7 + rand() * .5).toFixed(2)}s;--w:${(rand() * .12).toFixed(2)}s"></i>`;
         }
-        b.innerHTML = hh; document.body.appendChild(b); setTimeout(() => b.remove(), 1600);
+        b.innerHTML = hh; document.body.appendChild(b); setTimeout(() => b.remove(), 1600); parts.push(b);
       }
       const t = document.createElement('div'); t.className = 'unlkt'; t.textContent = opts.text || '解放！'; t.style.left = cx + 'px'; t.style.top = cy + 'px';
-      document.body.appendChild(t); setTimeout(() => t.remove(), 1700);
+      document.body.appendChild(t); setTimeout(() => t.remove(), 1700); parts.push(t);
+      const f0 = performance.now(), follow = () => {                     // 項目に ついて いく
+        if (performance.now() - f0 > 1700) return;
+        const q = rectOf();
+        if (q) { const x = q.left + q.width / 2, y = q.top + q.height / 2; if (Math.abs(x - cx) > .25 || Math.abs(y - cy) > .25) { cx = x; cy = y; parts.forEach(p => { p.style.left = cx + 'px'; p.style.top = cy + 'px'; }); } }
+        requestAnimationFrame(follow);
+      };
+      requestAnimationFrame(follow);
       unlockChime();
       emit('unlock');
     };
-    if (opts.scroll !== false && !reduced()) setTimeout(go, 260); else go();
+    if (opts.scroll === false || reduced()) { go(); return true; }
+    let last = null, still = 0, done = false; const w0 = performance.now();
+    const fire = () => { if (!done) { done = true; go(); } };
+    const wait = () => {                                                 // 項目が 止まる まで 待つ
+      if (done) return;
+      const q = rectOf(), dt = performance.now() - w0;
+      still = q && last && Math.abs(q.top - last.top) < .5 && Math.abs(q.left - last.left) < .5 ? still + 1 : 0; last = q;
+      if ((dt >= 260 && still >= 3) || dt > 1200) fire(); else requestAnimationFrame(wait);
+    };
+    requestAnimationFrame(wait);
+    setTimeout(fire, 1500);                                              // 画面が 止まって いて コマが 進まない とき（裏に いる など）の ため
     return true;
   }
 

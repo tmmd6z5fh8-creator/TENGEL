@@ -200,6 +200,21 @@ if r.returncode == 0:
               and "tc_horse_bk_kamisama2'" in _tb and "tc_horse_bk_maboroshi2'" in _tb and "tc_horse_bk_kamisama'" not in _tb and "tc_horse_bk_maboroshi'" not in _tb and 'uniform vec3 uFix;' in _tb,
               f'第4.161版：神様馬・幻の馬は 直した 形（…2.json＋.bin）が 入って いる・前の 形 4つは 入って いない（もとの フォルダには ある）・幻の馬＝たてがみの 面と 法線の 直し・にじむ 膜の 色・肩幅 {((_mm.get("slim") or {}).get("w") or [0, 0])[0]} → {((_mm.get("slim") or {}).get("w") or [0, 0])[1]}／'
               f'神様馬＝マントの 先の 骨（{(_km.get("skinfix2") or {}).get("verts")}頂点）・アプリの コードは 新しい 名前を 読む')
+        # 第4.168版（まさちゃん 2026/11/14 01:26「改善点」）：たてがみの さいごの ふさを 直した 絵と それを 指す 名前（2段目の 大きさ：tc_c_<色>_s2v2.webp・tc_horse_bk_<色>_s2v2.json：kisekae/tc/mane_fix.py）と
+        #   ルーレットの BGM（tc_bgm_roulette.m4a：kisekae/tc/snd/bgm_roulette.py）が 入る。前の 絵と 名前（…_s2.webp・…_s2.json）は 入れない（もとの フォルダには 残す・形と 法線の 絵は 今までの もの）。
+        #   ログインボーナス・トークンの 値段・かけらの 光の輪を 消す きまりは index.html の 中、抽選の 上限・ノーマルの ピン・「← もどる」は トレーニングセンターの 束の 中
+        _c168 = ('brown', 'black', 'white', 'hada', 'madara'); _n168 = [f'tc_c_{c}_s2v2.webp' for c in _c168] + [f'tc_horse_bk_{c}_s2v2.json' for c in _c168]; _o168 = [f'tc_c_{c}_s2.webp' for c in _c168] + [f'tc_horse_bk_{c}_s2.json' for c in _c168]
+        _ix = open(os.path.join(RES, 'index.html'), encoding='utf8').read()
+        _j168 = [_j161.load(open(os.path.join(RES, f'tc_horse_bk_{c}_s2v2.json'), encoding='utf8')) if f'tc_horse_bk_{c}_s2v2.json' in res else {} for c in _c168]
+        check(all(f in res for f in _n168) and not any(f in res for f in _o168) and all(os.path.isfile(os.path.join(_ad.master('tc_assets'), f)) for f in _o168) and 'tc_horse_bk_brown_s2.bin' in res and 'tc_n_brown_s2.webp' in res
+              and all(m.get('bin') == 'tc_horse_bk_brown_s2.bin' and m.get('tex') == f'tc_c_{c}_s2v2.webp' and m.get('ntex') == 'tc_n_brown_s2.webp' for m, c in zip(_j168, _c168))
+              and 'tc_bgm_roulette.m4a' in res and _h(os.path.join(RES, 'tc_bgm_roulette.m4a')) == _h(os.path.join(_ad.master('tc_assets'), 'tc_bgm_roulette.m4a')) and 150e3 < _sz(['tc_bgm_roulette.m4a']) < 400e3
+              and "HFIX = { 2: 'v2' }" in _tb and "'tc_bgm_roulette.m4a'" in _tb and 'VISIT_DRAWS = { maboroshi: 10, kamisama: 5 }' in _tb and 'PTR_K = { normal: 1.2 }' in _tb and 'CHBACK = { x: 262, y: 1109, w: 200, h: 58 }' in _tb
+              and 'STANCE_KAMI' not in _tb and 'window.TengelLogin = {' in _ix and 'BONUS = [200, 300, 400, 500, 600, 1000, 1300]' in _ix and 'TOKEN_PACKS = [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]' in _ix
+              and '.fxs .clips .ring{display:none!important}' in _ix and '#planBtn{position:fixed' in _ix,
+              f'第4.168版：2段目の 大きさの 馬は たてがみを 直した 絵 5まい（{_sz([f for f in _n168 if f.endswith(".webp") and f in res]) / 1e6:.2f}MB）と その 名前 5つが 入って いる・前の 絵と 名前 10こは 入って いない（もとの フォルダには ある）・'
+              f'ルーレットの BGM（{_sz(["tc_bgm_roulette.m4a"]) / 1e3 if "tc_bgm_roulette.m4a" in res else 0:.0f}KB・もとと 同じ 中身）・ログインボーナス（200〜1,300P）・トークン 1こ 100P（6つの 組）・抽選の 上限（10回・5回）・ノーマルの ピン 1.2倍・「← もどる」・'
+              f'かけらの 光の輪を 消す きまり・右の ボタンを 画面に 止める きまりが 入って いる')
         # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
         #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
         sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')) if os.path.join(W, 'kisekae', 'bcp') not in sys.path else None

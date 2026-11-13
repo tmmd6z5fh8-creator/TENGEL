@@ -103,6 +103,10 @@ const TCFX = (() => {
     kamisama: { glow: [255, 212, 118], hglow: [440, 380], eye: [641, 271.9, 255, 206, 96], chev: ['#ffd85e', '#e3a83a', '#fff4cf'], n: 2, star: ['#f8d672', '#d4a03a'], gem: null, tap: ['#cd3030', '#ad2626', '#f3c95e'], card: ['#c93030', '#a82626', '#f3c95e', '#c8922f'], conf: ['#f6d06a', '#cd3030', '#fff3cf', '#e6a93a'], line: 'rgba(255,248,230,0.55)' },
   };
   const K = H / 1536, OX = (W - 1024 * K) / 2;            // 台紙（1024×1536）を 画面に：高さに 合わせる
+  // 第4.168版（まさちゃん 2026/11/14 01:26「ノーマルルーレットの赤丸の所のピンの先端が隠れてる、直して！」）：ノーマルの 絵は ピンの 先が 盤の ふちに 16px しか 入って いない
+  //   （幻の馬・神様馬は 61px）ので、先が 盤の うしろに かくれて いる ように 見えた → ピンの 絵を 1.2倍（上の ふちの まん中を 止めて 下と 左右へ：先が 43px 入る）。
+  //   台紙に 描いて ある もとの ピンは 大きく した ピンの 下に ぜんぶ かくれる（同じ 形を 上の ふちから 広げる ため）
+  const PTR_K = { normal: 1.2 };
   let GEO = null;
   async function rtLoad(th) {
     if (!GEO) { try { GEO = await fetch(AP('tc_rt_geom.json')).then(r => r.json()); } catch (e) { GEO = null; } }
@@ -385,13 +389,17 @@ const TCFX = (() => {
     //   高い 方（まさちゃん 11/12 13:27・13:30）：真っ暗に なったら ルーレットには もどらない → 大量ポイントの 場面（drawBig）・音は ドーン！！
     //   RV は プチュンの 幕を 出した コマから PD 秒（コマが おくれても、幕の 中の 動きと ずれない：線が 点に ちぢんだ あとに 出る）
     const val = r.win ? r.b : r.a, high = val >= Math.max(r.a, r.b), calm = pcCalm(), P0 = 0.25, PD = calm || !pcHtml() ? PCH.calm : PCH.dark;
-    const telop = high ? await img(TELOP.src) : null;
+    // 第4.168版（まさちゃん 2026/11/14 01:26「ノーマルルーレットは、高い方を当選してもプチュン演出いらないから消して！高い方が当選した場合、300Pの的中した時の音使って！」）：
+    //   big＝プチュン → 大量ポイントの 場面（幻の馬・神様馬の ルーレットの 高い 方 だけ）。ノーマルの 高い 方は 安い 方と 同じ 見え方（盤の 上に 紙ふぶきと「○P GET！！！」）で、
+    //   音は お世話で 300P が 当たった ときの 音（デデーン：tc_se_dedeen.m4a）
+    const big = high && th !== 'normal';
+    const telop = big ? await img(TELOP.src) : null;
     let pc = null, RV = null;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
-      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!high) RV = r.S1 + 0.4; }
-      if (high && RV != null && u >= RV) {                    // 高い 方：プチュンの あとは 大量ポイントの 場面 だけ（ルーレットは 描かない）。幕は 0.2秒で 明ける（下も 真っ暗から 始まる）
+      if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!big) RV = r.S1 + 0.4; }
+      if (big && RV != null && u >= RV) {                    // 高い 方：プチュンの あとは 大量ポイントの 場面 だけ（ルーレットは 描かない）。幕は 0.2秒で 明ける（下も 真っ暗から 始まる）
         if (pc) { pcClose(pc, 0.2); pc = null; }
         drawBig(telop, u - RV, val, calm);
         return { end: RV + TELOP.hold };
@@ -405,15 +413,15 @@ const TCFX = (() => {
       if (I.plate) { g.drawImage(I.plate, 0, 0, 1024, 1536); drawEye(r, u); }
       const ang = rtAngle(r, u);
       drawFace(r, Gm, ang, r.S1 != null ? sm((u - r.S1 - 0.1) / 0.4) : 0);
-      const P = Gm.parts.ptr; if (I.ptr) g.drawImage(I.ptr, P.x, P.y, P.w, P.h);
+      const P = Gm.parts.ptr, pk = PTR_K[th] || 1; if (I.ptr) g.drawImage(I.ptr, P.x + P.w / 2 - P.w * pk / 2, P.y, P.w * pk, P.h * pk);      // PTR_K（第4.168版）：ノーマルは ピンを 大きく（上の ふちの まん中を 止めて 下へ）
       drawLever(r, I, Gm, u); drawChev(r, Gm, u); drawTap(r, Gm, u);
       if (RV != null && u > RV) {                             // 安い 方：盤の 上に 紙ふぶきと「○P GET！！！」
         const v = u - RV; g.save(); g.setTransform(PX, 0, 0, PX, 0, 0); g.globalAlpha = app * (st.closeAt != null ? 1 - sm((u - st.closeAt) / 0.5) : 1); confetti(RT_STYLE[th].conf, v, sm(v / 0.4), W, H); g.restore();
         drawGet(r, Gm, val, v / 0.45);
       }
       g.restore();
-      if (high && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; }      // 高い 方：プチュン（盤の 上に 幕）→ PD 秒で 真っ暗 → 上の 大量ポイントの 場面へ
-      return { end: RV != null ? RV + (high ? TELOP.hold : 0.8) : null };
+      if (big && r.S1 != null && RV == null && u >= r.S1 + P0) { pc = pcOpen(cv, false); RV = u + PD; try { if (o.onCut) o.onCut(); } catch (e) { /* なし */ } }      // onCut（第4.168版）：プチュンで ルーレットの BGM を 止める      // 高い 方（幻の馬・神様馬）：プチュン（盤の 上に 幕）→ PD 秒で 真っ暗 → 上の 大量ポイントの 場面へ
+      return { end: RV != null ? RV + (big ? TELOP.hold : 0.8) : null };
     }, (u, st, last) => {
       if (r.HIT != null && last < r.HIT && u >= r.HIT) se(o, 'tc_se_rt_lever.m4a', 1, 0);
       if (r.S0 != null && u >= r.S0 && u <= r.S1 + 0.05) {          // カチッ：盤の ひだの さかいが 針を 通る たびに（コマの 間の 分も 時間を ずらして）
@@ -425,8 +433,8 @@ const TCFX = (() => {
         }
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
-      if (high && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    // 高い 方：プチュン（控えめの ときは 音も なし：的中の 演出と 同じ）
-      if (RV != null && last < RV && u >= RV) se(o, high ? 'tc_se_doon.m4a' : 'sfx_big.m4a', high ? 1 : BIG_GAIN, 0);      // ポイントが 出る：高い 方＝ドーン！！（テロップと いっしょ）・安い 方＝デカ的中と 同じ 音
+      if (big && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    // 高い 方（幻の馬・神様馬）：プチュン（控えめの ときは 音も なし：的中の 演出と 同じ）
+      if (RV != null && last < RV && u >= RV) se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);      // ポイントが 出る：高い 方＝ドーン！！（テロップと いっしょ）・ノーマルの 高い 方＝デデーン（300P の 当たりと 同じ 音：第4.168版）・安い 方＝デカ的中と 同じ 音
     });
     pcClose(pc, 0);
   }
