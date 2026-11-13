@@ -12,20 +12,22 @@
                      ③ の 雷の 場所は 字の 形から 出すので、まさちゃんの 3D が ある 所で 作る）
      spg_up.mp4   … （第4.162版から アプリに 入れない）超プレミアム神様的中の 昇格の 動画：超プレミアムど的中の 6.0秒（き！）の 1まい（flat/capture_page.py・Playwright の Chromium）→
                      flat/kami_glitch.py バグ 59＋まっ暗 30 コマ → flat/kami_cutin.py 宇宙の カットイン 108コマ ＝ 197コマ・6.57秒（約5MB）
-     sd_film2.mp4 … ど的中・紫電（極ど的中）の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
+     sd_film3.mp4 … ど的中・紫電（極ど的中）の 動画（第4.71版：flat/shiden_film.py：黒 54 → 暗闇に 光る 目と 馬の 顔 60 → 縦書きの 的中と 蹄の カットイン 108
                      → 3D の ど！！！的中（flat/shiden_logo.py）93 ＝ 315コマ・10.5秒・780×1688・CRF 20。2コアで 約1時間）。FILMS=sd で これだけ 作る
                      第4.119版：馬の 顔（54〜113）と 蹄（175〜205）は まさちゃんの Meshy の 馬と 蹄（flat/shiden_glb.py・shiden_face2.py・r3d/glb。
                      GLB の 場所は SD_HORSE_GLB・SD_HOOF_GLB）。顔は G バッファ（shiden_film.py --facebuf <buf>）→ 雷・息・仕上げ（--facecomp <buf> <_films/sd> 54 114）。
                      できた コマが _films/sd に あれば とばして 書き出す だけ。SD_HORSE=old で 前の 馬（その コマを 消してから）
                      第4.163版（まさちゃん 2026/11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」）：顔の 馬は Violet_Nightmane（SD_HORSE_MODEL=nightmane・
                      場所は SD_GLB_DIR）・縦書きの 的中と ど！！！／極／的中は まさちゃんの 3D（flat/shiden_gtext.py：場所は SD_TEXT_DIR。ない とき・SD_TEXT=old は 前の 字）。
-                     ※ 前の 動画＝ sd_film.mp4・sd_last.webp は もとの フォルダに のこす（上書きしない・アプリには 入れない）
-     sd_last2.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
-     nd_film2.mp4 … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
+                     第4.164版（11/13 08:28「全体的に文字が読みづらい！色合い明るくして！」）：字の 色合いを 明るく（flat/shiden_gtext.py の LOOK）＝ 名前は …3。
+                     ※ 前の 動画＝ sd_film.mp4・sd_film2.mp4 と さいごの 1まいは もとの フォルダに のこす（上書きしない・アプリには 入れない）
+     sd_last3.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+     nd_film3.mp4 … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
                      → 光に つつまれる → 低い 目線（芝・大きな 玉）に 3D の ど！的中（flat/shiden_logo.py）が 落ちて くる ＝ 315コマ・10.5秒（さいごの 場面を 2.3秒 のばした）・780×1688・CRF 20。2コアで 約1時間）。FILMS=nd で これだけ 作る
                      第4.163版（02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：ど！／的中は まさちゃんの 3D（flat/shiden_gtext.py の nd）。字が 出る 前（170コマ目まで）は
                      前の 動画（nd_film.mp4）の 絵を 圧縮し直さずに そのまま 使い、170コマ目から だけ 新しく 描いて つなぐ（nd_film()）。※ 前の 動画と さいごの 1まいは のこす
-     nd_last2.webp … ノーマルど的中の 動画の さいごの 1まい
+                     第4.164版（同じ 08:28「あと一枚目は、ど！的中の文字少しだけ浮かせて！」）：字を 明るく・着地の あと 芝から 少し 浮く（flat/normal_film.py の HOVER）＝ 名前は …3
+     nd_last3.webp … ノーマルど的中の 動画の さいごの 1まい
      gk_film.mp4  … 神様極的中の 動画（第4.117版：kami_kiwami.py。まさちゃんの 3D と 背景の 絵で 1コマずつ 描いた できた 動画（MASTER・第13稿・リポジトリの 外：
                      GK_MASTER=<mp4> で ほかの 所も）を アプリ用に CRF 23 で 作り直す ＝ 361コマ・12.03秒・780×1688・約10.3MB）。FILMS=gk で これだけ 作る
      gk_last.webp … 神様極的中の 動画の さいごの 1まい

@@ -172,9 +172,16 @@ def render(name, W, H, rot=(0, 0, 0), pos=(0, 0, 0), K=K_SS):
 ENV_W, ENV_H = 720, 360
 # 見た目の 強さ（gain＝ぜんたい・spec＝映りこみ・paint＝色の 下じき・diff＝まわりの 光・edge＝ふちの 白い つや・sat＝色の こさ）。
 #   蹄の 場面は さいごに 1.6倍で 仕上げる（うしろに 白い 後光）ので 的中は ひかえめに・こい 色に。さいごの ロゴは 金の 映りこみを 強く（にぶい 金に しない）
-LOOK = dict(title=dict(gain=.8, spec=.8, paint=.5, diff=.15, edge=.35, sat=1.25),
-            logo=dict(gain=.85, spec=1.3, paint=.35, diff=.2, edge=.35, sat=1.1),
-            nd=dict(gain=1.0, spec=1.3, paint=.42, diff=.2, edge=.35, sat=1.1))
+# 第4.164版（まさちゃん 2026/11/13 08:28「全体的に文字が読みづらい！色合い明るくして！」）：字の 前の 面を 明るく（front＝こちらを 向いた 面は いっぱいに てらして、面取りと 横の 面は 暗く ＝ 字の 形が はっきり）・
+#   虹の 色の 下じき（paint）を 2〜3倍に・金（金属の 所：paint_m）は 映りこみで 光る ので ひかえめに 明るく。前の 色合いは LOOK_OLD（SD_LOOK=old）
+LOOK_OLD = dict(title=dict(gain=.8, spec=.8, paint=.5, diff=.15, edge=.35, sat=1.25),
+                logo=dict(gain=.85, spec=1.3, paint=.35, diff=.2, edge=.35, sat=1.1),
+                nd=dict(gain=1.0, spec=1.3, paint=.42, diff=.2, edge=.35, sat=1.1))
+LOOK = dict(title=dict(gain=.8, spec=.8, paint=1.0, paint_m=.5, diff=.15, edge=.35, sat=1.25, front=(.3, 2.0)),
+            logo=dict(gain=.85, spec=1.1, paint=1.0, paint_m=.45, diff=.2, edge=.35, sat=1.1, front=(.25, 2.5)),
+            nd=dict(gain=1.0, spec=1.0, paint=1.0, paint_m=.5, diff=.2, edge=.35, sat=1.1, front=(.25, 2.5)))
+if os.environ.get('SD_LOOK') == 'old':
+    LOOK = {k: dict(v) for k, v in LOOK_OLD.items()}
 KEY_L = SL.nrm(np.array([-.45, .7, .55]))                                       # 面を てらす 光（左上 手前）
 
 
@@ -226,8 +233,12 @@ def shade(Rb, rect, W2, H2, rot=(0, 0, 0), pos=(0, 0, 0), sweep=None, flash=None
     fres = (1 - ndv) ** 5
     fr = f0 + (1 - f0) * fres
     lit = .55 + .45 * np.clip(N @ KEY_L.astype(np.float32), 0, 1)[:, None]
+    if lk.get('front'):                                                         # 第4.164版：こちらを 向いた 面（字の 前の 面）を 明るく・横の 面と 面取りを 暗く ＝ 字の 形が はっきり
+        flo, fpw = lk['front']
+        lit = flo + (1 - flo) * ndv ** fpw
+    albp = alb * (1 - lk.get('tint', 0.0)) + lk.get('tint', 0.0)                # 色を 少し 白へ（明るい 色合い）
     col = Es * fr * (1 - .4 * r) * lk['spec']                                   # 映りこみ（金は 金の 色・虹は 虹の 色）
-    col += alb * lit * lk['paint']                                              # 色の 下じき（虹と 金が 暗い 向きでも しずまない）
+    col += albp * lit * (lk['paint'] * (1 - m) + lk.get('paint_m', lk['paint']) * m)   # 色の 下じき（虹と 金が 暗い 向きでも しずまない。paint_m＝金属〈金〉の 所：映りこみで 光る ので ひかえめ）
     col += alb * Ed * ((1 - m) + .25 * m) * lk['diff']                          # 面を てらす まわりの 光
     col += (band * .07 + np.minimum(E0, 1.4) * (.02 + lk['edge'] * fres))       # ふちの 白い つや・光の 帯
     if lk['sat'] != 1.0:

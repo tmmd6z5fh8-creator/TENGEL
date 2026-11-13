@@ -816,7 +816,7 @@ try:
               f'ノーマルど的中（第4.77版・第4.118版）：D で M で ない（乱数 0.5 → プレミアムで ない）→ nd・PUSH は ど的中と 同じ（1.4倍）・動画を 出る 前に 読んでおく（{kn}）')
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
         nd0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; const g = t && t.querySelector('.ndtr'); return { pc: document.querySelectorAll('#fxOv .ov.nd .pc').length, bg: getComputedStyle(o).backgroundColor, cls: o.className, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', glow: !!(g && g.getAnimations().length), bx: t ? t.querySelectorAll('.bx').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '' }; })()")
-        check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last2.webp'] + (['pb_default.webp'] if PIC else []) and 'fz' in nd0['cls'],      # 第4.148版：押された PUSH の 絵（押した 画面 .ndt の 中）も <img>   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
+        check(nd0['pc'] == 0 and (nd0['bg'] == 'rgb(0, 0, 0)' or 'go' in nd0['cls']) and nd0['hb'] and nd0['img'] == ['nd_last3.webp'] + (['pb_default.webp'] if PIC else []) and 'fz' in nd0['cls'],      # 第4.148版：押された PUSH の 絵（押した 画面 .ndt の 中）も <img>   # 動画が もう 動いて いれば go（はじめの 1秒は 動画の 黒）
               f'ノーマルど的中：押すと 暗く なる（プチュンは なし）・ボードは まだ・絵は 動画の さいごの 1まい だけ（{nd0}）')
         check(nd0['push'] == 0 and nd0['press'] and nd0['pz'] == '1.4' and nd0['glow'] and nd0['bx'] == 0 and nd0['z'] == '20' and nd0['vis'] == 'visible' and pg.evaluate("window.__FX.sfx.ndt") == 'sfx_ndt.m4a',
               f'ノーマルど的中（第4.79版）：押すと PUSH の 画面とは 別の 押した 画面（押された PUSH が 1.4倍の まま ポチッと へこむ・うすい 光の 輪・爆発は なし・音 sfx_ndt）（{nd0}）')
@@ -844,7 +844,7 @@ try:
               f'ノーマルど的中で 動画が 読めない → 動画の さいごの 1まい（still）（{cst4}）')
         pg.wait_for_timeout(1400)
         bh4 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.nd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, t: e.innerText, hb: getComputedStyle(document.querySelector('#fxOv .ov.nd .hb')).opacity }; })()")
-        check(bh4['op'] == '1' and bh4['hb'] == '1' and bh4['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.art.nd") == ['nd_last2.webp'] and pg.evaluate("window.__FX.t.ND") == 9.9
+        check(bh4['op'] == '1' and bh4['hb'] == '1' and bh4['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.art.nd") == ['nd_last3.webp'] and pg.evaluate("window.__FX.t.ND") == 9.9
               and pg.evaluate("window.__FX.t.NDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.nd") == 'sfx_nd.m4a' and pg.evaluate("window.__FX.films.nd_film") is not None
               and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.05s both')"),
               f'ノーマルど的中の still：1.3秒で ボード・音は sfx_nd（still は 9.8秒から）・ボードは 動画の 10.05秒（{bh4}）')
@@ -947,10 +947,10 @@ try:
                   f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
             if kind == 'sd':   # 第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）。さいごの 1まいと プチュン（ど的中と 同じ 部品）・ボードは 10.05秒
                 srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
-                check(srcs == ['sd_last2.webp'] and po.locator('.ov.sd .pc .pcl').count() == 1 and po.locator('.ov.sd .pc .pca path').count() > 20
+                check(srcs == ['sd_last3.webp'] and po.locator('.ov.sd .pc .pcl').count() == 1 and po.locator('.ov.sd .pc .pca path').count() > 20
                       and po.locator('.ov.sd .sdC, .ov.sd .sdlogo, .ov.sd .sdbt, .ov.sd .sdar').count() == 0
                       and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.05s both')") and pg.evaluate("window.__FX.t.SD") == 9.9
-                      and pg.evaluate("window.__FX.art.sd") == ['sd_last2.webp'] and pg.evaluate("window.__FX.t.SDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.sdp") == 'sfx_sdp.m4a',
+                      and pg.evaluate("window.__FX.art.sd") == ['sd_last3.webp'] and pg.evaluate("window.__FX.t.SDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.sdp") == 'sfx_sdp.m4a',
                       f'紫電（第4.71版）：絵は さいごの 1まい だけ（{srcs}）・押した 瞬間の プチュンは ど的中と 同じ 部品・音は sfx_sdp・ボードは 10.05秒')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx._rand = null")

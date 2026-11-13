@@ -1201,13 +1201,19 @@ def logo_pose(t):
     return rot, np.zeros(3), 1.0
 
 
+HOVER = float(os.environ.get('ND_HOVER', '0.055')) * H if GTN else 0.0     # 第4.164版：3D の 字は 着地の あと 芝から 少し 浮く（字の 下が 芝に かくれて 読みづらかった）
+
+
 def logo_drop(t):
-    """画面の 上下の ずれ（px：落ちる → ドーン → 小さく はねる）と たての つぶれ"""
+    """画面の 上下の ずれ（px：落ちる → ドーン → 小さく はねる）と たての つぶれ。第4.164版：3D の 字は はねた まま 少し 浮いて 止まる（HOVER）"""
     if t < LG1:
         u = (t - LG0) / (LG1 - LG0)
         return -(LOGO_BASE + 40 * S) * (1 - u * u), 1.0, 2 * (LOGO_BASE + 40 * S) * u / (LG1 - LG0)
     a = t - LG1
-    dy = -.022 * H * math.sin(math.pi * min(a / .16, 1.0)) * math.exp(-a / .12) if a < .4 else 0.0
+    if HOVER > 0:
+        dy = -HOVER * (1 - math.exp(-a / .18) * math.cos(2 * math.pi * a / .6))   # ドーンと 着いて → ふわっと 上がって（少し 行きすぎて）→ 浮いて 止まる
+    else:
+        dy = -.022 * H * math.sin(math.pi * min(a / .16, 1.0)) * math.exp(-a / .12) if a < .4 else 0.0
     sq = 1 - .06 * math.exp(-a / .05) * math.cos(2 * math.pi * a / .2)
     return dy, sq, 0.0
 
@@ -1315,6 +1321,7 @@ def glints(t, work):
             continue
         r = np.random.default_rng(900 + i)
         x, y = pts[r.integers(len(pts))]
+        y = y + logo_drop(t)[0] - logo_drop(GLINT_REF)[0]                         # 字が 上下に 動いて いる 間は いっしょに（候補は GLINT_REF の 時の 場所）
         sz = r.uniform(45, 95) * S
         rot = r.uniform(-.3, .3) + a * .8
         e = math.sin(math.pi * a / dur) ** 1.5

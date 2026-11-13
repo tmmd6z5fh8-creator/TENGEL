@@ -12,7 +12,7 @@
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
 #     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
 #   第4.117版：神様極的中 gk（虹色の PUSH → 押した 画面（.ndt）→ はじめから おわりまで 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）：nd と 同じ やり方で 数える
-#   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film2.mp4・ノーマルど的中 nd_film2.mp4〈第4.163版：馬と 字は まさちゃんの 3D〉・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
+#   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film3.mp4・ノーマルど的中 nd_film3.mp4〈第4.163版：馬と 字は まさちゃんの 3D・第4.164版：字を 明るく〉・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 #   第4.163版：sd・nd・gk の 幕の うしろに しく 動画も build_fx.py の FILMS の 名前（前は sd_film.mp4 などと 決め打ち）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright

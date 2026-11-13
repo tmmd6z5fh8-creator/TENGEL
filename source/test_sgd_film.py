@@ -102,7 +102,7 @@ if KG.have():
 
 print('■ アプリ（なくした 演出・新しい 動画の 名前）')
 import build_fx as BF
-check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film2.mp4', 'nd_film': 'nd_film2.mp4', 'gk_film': 'gk_film.mp4'} and BF.STILL['sgd_last'] == 'sgd_last2.webp' and BF.SFX['sgd'] == 'sfx_sgd2.m4a'
+check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film3.mp4', 'nd_film': 'nd_film3.mp4', 'gk_film': 'gk_film.mp4'} and BF.STILL['sgd_last'] == 'sgd_last2.webp' and BF.SFX['sgd'] == 'sfx_sgd2.m4a'
       and sorted(BF.SFX) == ['big', 'big_push', 'fz_push', 'gk', 'hit', 'hit_push', 'nd', 'ndt', 'sd', 'sdp', 'sgd'] and sorted(BF.ART) == ['gk', 'nd', 'sd', 'sgd'] and len(BF.ASSET_FILES) == 24
       and all(f in BF.ASSET_FILES for f in NEW) and not [f for f in BF.ASSET_FILES if f in OLD or f.startswith('pm_')],
       f'アプリに 入れる ファイル（{len(BF.ASSET_FILES)}こ）：超神様は 新しい 動画・さいごの 1まい・音（{"・".join(NEW)}）・前の 3つと なくした 演出の 絵（pm_…）／音 4こ／昇格の 動画は 入れない')
