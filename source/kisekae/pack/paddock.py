@@ -4,6 +4,14 @@
    第4.95版の 直し「赤四角のあたりにいる観客達に少しだけ動きをつけて！」）
    上の絵：スタンドから 見た パドック。手前の 道を 右へ 3頭（ゼッケン 2・5・7）、おくの 道を 左へ 3頭（1・4・8・小さく）が 歩く
      （いままでと 同じ 馬）。まん中に 芝生と 花だん、白い さく、うしろに お客さんの スタンドと 木、上に 小さな 旗の ひも。
+   第4.166版の 直し（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     常歩を 1回り 1.25秒・24コマ（1秒に 19.2コマ）から **1.2秒・36コマ（1コマ 1/30秒 ちょうど＝画面の 描きかえ 2回ぶん）** に。首振り・首下げも 36コマ・うんちは 72コマ。
+     早歩きは 前の 24コマの シート（台帳の <名前>_f）を 0.8秒で 1回り（1コマ 1/30秒 ちょうど・はやさは 常歩の 1.5倍の まま）。
+     下の 説明の 秒（67.5秒・60／90秒・22.5／30秒）は どれも 0.96倍（1回りの 数は 同じ：64.8秒＝54回り など）。
+     第4.167版：早歩きで 先に 進んだ ぶん（1.2秒）は、前は「ゆっくり 歩き」（36コマを 1.8秒＝1コマ 1/20秒・手前の 馬は 右の はしで 体の うしろが 見えて いた）で もどして いた
+     → 舞台を 出て 見えなく なって から 1.2秒 待つ（入れものを 止める だけ：schedule の 'z'）。コマ送りは どれも 1コマ 1/30秒・ゆっくり 歩きの シート（.pkL.sl）は 作らない。
+     横に 長い シート（手前の 馬 36コマ・うんち 72コマ）は 段に 折って ある（meta の rows）：段は 外の 入れもの（translateY の steps）・コマは 中の 帯（translateX の steps）で めくる
+     （前は 段を background-position で 切りかえて いた＝そのたびに 描き直し。いまは 動かす だけ）。行動の 切りかえ・馬の 場所の ％は 小数 5けた（1/30秒の さかい目から ずれない）
    常歩（第4.94版）：1回り 1.25秒・24コマ（pack/make/paddock_gait.py：ひづめの 道を 先に 決めて 足の 角度を 逆に 解く）。
      地面に ついて いる ひづめは どの コマ・どの シートでも 同じ 地面の 線（道の 同じ 高さ）に つく。体は ほんの 少し 上下・影は 地面に 止まった まま。
    動き：馬は いつも 歩いて 回る（コマを めくりながら 横へ：地面に ついた ひづめが すべらない はやさ）・手前と おくは 反対へ・旗の ひもが ゆれる・雲が ゆっくり 流れる。
@@ -12,7 +20,8 @@
      第4.96版の 直し「赤四角の観客全然動いてないから多少の動きが分かるようにして！実際のパドックだと人々はそんなに大きくは動かないけど、多少は動いてる。」
    ときどきの 動き（第4.93版）：馬ごとに 長い 1回り（手前 67.5秒・おく 60／90秒）の 中の ばらばらの 時に（PLAN）、
      首を 激しく 振る（上へ ぶんっと 振り上げて おろす・1回りに 2回・たてがみが はねる）／首を 下げて 歩く（下げていく → 下げて 歩く → 上げていく）／
-     早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で ゆっくり 歩いて 前後の ずれを もどす＝となりの 馬に 追いつかない）／
+     早歩き（常歩の コマを 1.5倍の はやさで めくって 横も 1.5倍＝ひづめが すべらない。あとで 見えない 所で 前後の ずれを もどす＝となりの 馬に 追いつかない。
+       第4.166版までは ゆっくり 歩いて／第4.167版からは 舞台の 外で 待って）／
      うんち（手前の 3頭：しっぽを 上げて 丸い うんちが 4つ ぽとぽと 落ちる。地面に ついた うんちは その 場所に 9秒 残って 消える）。
      行動ごとの コマの シート（pack/make/paddock_moves.py：常歩・首振り 24コマ・首下げ 24コマ×3まい・うんち 48コマ）は 足の 動きが 常歩と 同じで コマ0が 同じ 形
      → 見える シートを 回りの つぎめで 切りかえる（visibility の step-end）"""
@@ -20,7 +29,7 @@ import math
 from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
 
 ID = 'paddock'
-CYCLE = 1.25       # 歩く 1回りの 秒（paddock_art.CYCLE と 同じ。コマの 数は シートの meta：常歩 24）
+CYCLE = 1.2        # 歩く 1回りの 秒（paddock_art.CYCLE と 同じ。コマの 数は シートの meta：常歩 36）。第4.166版：1.25 → 1.2（36コマを 1コマ 1/30秒 ちょうどで）
 NEAR = ('n2', 'n5', 'n7')
 FAR = ('f1', 'f4', 'f8')
 FAR_K = 1.0        # おくの 馬の シートは はじめから 小さく 描いて いる（そのまま）
@@ -359,16 +368,17 @@ def crowd_parts(ppl):
 
 # ---------------------------------------------------------------- 馬の 歩きと ときどきの 動き（第4.93版）
 FAST, SLOW = CYCLE / 1.5, CYCLE * 1.5           # 早歩き・ゆっくり 歩きの 1回り（常歩の シートを はやく／おそく めくる＝横の はやさも 1.5倍／2/3倍）
-PASS = dict(near=22.5, far=30.0)                 # 舞台を 1回 横切る 秒（3頭が 1/3 ずつ ずれて 歩く）
+WAIT = (1.5 - 1) * 2 * CYCLE                     # 早歩き（2回り・1.5倍）で 先に 進んだ ぶんの 秒（1.2秒）：舞台を 出て 見えなく なって から この 秒 だけ 待つ（第4.167版）
+PASS = dict(near=21.6, far=28.8)                 # 舞台を 1回 横切る 秒（3頭が 1/3 ずつ ずれて 歩く）。第4.166版：22.5・30 → 0.96倍（18回り・24回りの まま）
 # 馬ごとの 1回りの 秒と、通る 回ごとの 行動（s1・s2：首振り 1・2回り／d2・d3：首を 下げて 2・3回り（下げていく・上げていく 1回りずつ を 足す）／p：うんち／f：早歩き）
-#   早歩きの あとには 見えない 所で ゆっくり 歩く（3.75秒）＝ 1回りで 前後の ずれが もどる（となりの 馬に 追いつかない）
+#   早歩きの あとには 見えない 所で 待つ（1.2秒・第4.167版。前は ゆっくり 歩く 3.6秒）＝ 1回りで 前後の ずれが もどる（となりの 馬に 追いつかない）
 PLAN = {
-    'n2': (67.5, [['s2'], ['f', 'd2'], ['p']]),          # 第4.93版：2番も 首を 下げて 歩く（n2_d の シートを 使う）
-    'n5': (67.5, [['d3'], ['p'], ['s1', 'f']]),
-    'n7': (67.5, [['p'], ['d2'], ['f', 's2']]),
-    'f1': (60.0, [['s2'], ['d3']]),
-    'f4': (90.0, [['f'], ['s1'], ['d2']]),
-    'f8': (60.0, [['d2'], ['f', 's2']]),
+    'n2': (64.8, [['s2'], ['f', 'd2'], ['p']]),          # 第4.93版：2番も 首を 下げて 歩く（n2_d の シートを 使う）
+    'n5': (64.8, [['d3'], ['p'], ['s1', 'f']]),
+    'n7': (64.8, [['p'], ['d2'], ['f', 's2']]),
+    'f1': (57.6, [['s2'], ['d3']]),
+    'f4': (86.4, [['f'], ['s1'], ['d2']]),
+    'f8': (57.6, [['d2'], ['f', 's2']]),                  # 第4.166版：1回りの 秒は どれも 0.96倍（67.5 → 64.8・60 → 57.6・90 → 86.4：歩く 回りの 数は 同じ）
 }
 DUNG_STAY = 9.0                                  # 地面の うんちが 残る 秒（そのあと 1.2秒で 消える）
 
@@ -385,13 +395,18 @@ def _ev_len(code):
     raise KeyError(code)
 
 
+def _span_len(code):
+    """行動の 長さ（秒）。w：ゆっくり 歩き（前の やり方・待つ 所が ない とき だけ）／z：見えない 所で 待つ（第4.167版）"""
+    return 2 * SLOW if code == 'w' else WAIT if code == 'z' else _ev_len(code)
+
+
 def _grid(code):
     return 2 * CYCLE if code in ('p', 'f') else CYCLE
 
 
 def _segments(evs, Lh):
     """歩く はやさの 区間 [(t0, t1, 倍率)]"""
-    marks = sorted([(t, t + _ev_len(c) if c != 'w' else t + 2 * SLOW, 1.5 if c == 'f' else 2 / 3) for t, c in evs if c in ('f', 'w')])
+    marks = sorted([(t, t + _span_len(c), {'f': 1.5, 'w': 2 / 3, 'z': 0.0}[c]) for t, c in evs if c in ('f', 'w', 'z')])
     segs, t = [], 0.0
     for a, b, k in marks:
         if a > t:
@@ -434,7 +449,21 @@ def schedule(nm, meta, group, k_idx):
         return x_lo + q if dirn > 0 else x_hi - q
 
     def free(a, b):
-        return all(b <= t or a >= t + (_ev_len(c) if c != 'w' else 2 * SLOW) for t, c in evs)
+        return all(b <= t or a >= t + _span_len(c) for t, c in evs)
+
+    def outside(x):
+        """入れものが x の とき、馬の 絵（どの シートも）が 舞台の 外（2px の よゆう）"""
+        return x + lo >= W + 2 or x + hi <= -2
+
+    def wait_at(t0):
+        """t0 より あとで 馬が 舞台を 出て 見えなく なる いちばん 早い 時刻（1/30秒の きざみ）。そこから WAIT 秒 ほかの 行動と 重ならない こと（だめなら None）"""
+        segs = _segments(evs, Lh)
+        k = int(math.ceil(t0 * 30 - 1e-9))
+        while k / 30 + WAIT <= Lh - 1e-9:
+            if outside(pos(_dist(segs, v, k / 30))):
+                return k / 30 if free(k / 30, k / 30 + WAIT) else None
+            k += 1
+        return None
 
     def seen(segs, t0, t1):
         return all(vis[0] <= pos(_dist(segs, v, tt)) <= vis[1] for tt in (t0, (t0 + t1) / 2, t1))
@@ -459,8 +488,13 @@ def schedule(nm, meta, group, k_idx):
                 continue
             t = cand[int(R.uniform(0.2, 0.8) * len(cand))]
             evs.append((t, code))
-            if code == 'f':                                              # 早歩きの あとに ゆっくり 歩く（なるべく 見えない 所で）
+            if code == 'f':                                              # 早歩きで 先に 進んだ ぶんを もどす
                 ln = _ev_len(code)
+                tz = wait_at(t + ln)                                     # 第4.167版：舞台を 出て 見えなく なって から 待つ（入れものを 止める だけ・絵は 見えない）
+                if tz is not None:
+                    evs.append((tz, 'z'))
+                    continue
+                # 待つ 所が ない とき だけ、前の やり方：早歩きの あとに ゆっくり 歩く（なるべく 見えない 所で）
                 t2s = [k * 2 * SLOW for k in range(int(Lh // (2 * SLOW)) + 1) if k * 2 * SLOW >= t + ln + 1.0 and k * 2 * SLOW + 2 * SLOW <= Lh]
                 t2s = [t2 for t2 in t2s if free(t2, t2 + 2 * SLOW)]
                 hid = [t2 for t2 in t2s if hidden(_segments(evs + [(t2, 'w')], Lh), t2, t2 + 2 * SLOW)]
@@ -494,7 +528,7 @@ def horse_parts(nm, B, group, k_idx):
     m = B[nm]
     ax, ay = m['at']
     lays = {'w': m}
-    for kind in ('s', 'dl', 'dd', 'dr', 'p'):
+    for kind in ('s', 'dl', 'dd', 'dr', 'p', 'f'):                         # f：早歩き用の 24コマの 常歩（第4.166版）
         if f'{nm}_{kind}' in B:
             lays[kind] = B[f'{nm}_{kind}']
     has_d = all(k in lays for k in ('dl', 'dd', 'dr'))
@@ -504,7 +538,8 @@ def horse_parts(nm, B, group, k_idx):
     evs, segs, pos, D, v, dirn, s0 = schedule(nm, meta, group, k_idx)
     evs = [(t, c) for t, c in evs if (c[0] != 's' or 's' in lays) and (c[0] != 'd' or has_d) and (c != 'p' or 'p' in lays)]
     Lh = PLAN[nm][0]
-    dl = -(k_idx * PASS[group] / 3 + 0.41 * k_idx + (3.3 if group == 'far' else 0.0))   # 馬ごとの ずれ：1/3 ずつ はなれて 歩く・足が そろわない ように
+    dl = -round(k_idx * PASS[group] / 3 + 0.41 * k_idx + (3.3 if group == 'far' else 0.0), 1)   # 馬ごとの ずれ：1/3 ずつ はなれて 歩く・足が そろわない ように。
+    #   第4.166版：0.1秒の きざみに まるめる（＝1/30秒の 3つぶん）：どの 馬の コマも 同じ 1/30秒の きざみで かわる（kisekae.js が コマの さかい目を 画面の 描きかえの まん中に 合わせる とき、ぜんぶ いっしょに 合う）
     name = f'pk{nm}'
     s_tot = _dist(segs, v, Lh)
 
@@ -529,7 +564,7 @@ def horse_parts(nm, B, group, k_idx):
         else:
             rows.append((t / Lh * 100, f'transform:translateX({f(pos(s), 1)}px)'))
     html = f'<i class="pkH {nm}">'
-    css = f'.pkw .pkH.{nm}{{top:{f(ay / 2)}px;animation:{name}X {f(Lh)}s linear {f(dl, 3)}s infinite}}' + kf(f'{name}X', rows)
+    css = f'.pkw .pkH.{nm}{{top:{f(ay / 2)}px;animation:{name}X {f(Lh)}s linear {f(dl, 3)}s infinite}}' + kf(f'{name}X', rows, 5)
     # 見える 区間
     win = {k: [] for k in ('w', 'f', 'sl', 's', 'dl', 'dd', 'dr', 'p')}
     for t, c in evs:
@@ -547,7 +582,7 @@ def horse_parts(nm, B, group, k_idx):
         elif c == 'p':
             win['p'].append((t, t + 2 * CYCLE))
     busy = [w for k, ws in win.items() if k != 'w' for w in ws]
-    LAY = [('w', 'w', CYCLE), ('f', 'w', FAST), ('sl', 'w', SLOW), ('s', 's', CYCLE), ('dl', 'dl', CYCLE), ('dd', 'dd', CYCLE), ('dr', 'dr', CYCLE), ('p', 'p', 2 * CYCLE)]
+    LAY = [('w', 'w', CYCLE), ('f', 'f' if 'f' in lays else 'w', FAST), ('sl', 'w', SLOW), ('s', 's', CYCLE), ('dl', 'dl', CYCLE), ('dd', 'dd', CYCLE), ('dr', 'dr', CYCLE), ('p', 'p', 2 * CYCLE)]
     for key, src, per in LAY:                                            # 常歩・首振り・首下げ（3まい）は 1回りで 24コマ・うんちは 2回りで 48コマ（シートの meta）
         if src not in lays or (key != 'w' and not win[key]):
             continue
@@ -556,9 +591,9 @@ def horse_parts(nm, B, group, k_idx):
         lw, lh = l['cell'][0] / 2, l['cell'][1] / 2
         lx, ly = (l['at'][0] - ax) / 2, (l['at'][1] - ay) / 2
         vk = _vis_keys(busy, Lh, show_outside=True) if key == 'w' else _vis_keys(win[key], Lh)
-        html += f'<i class="pkL {key}"><i></i></i>'
+        html += f'<i class="pkL {key}"><i>{"<i></i>" if l.get("rows", 1) > 1 else ""}</i></i>'
         css += (f'.pkw .pkH.{nm}>.pkL.{key}{{left:{f(lx)}px;top:{f(ly)}px;width:{f(lw)}px;height:{f(lh)}px;animation:{name}V{key} {f(Lh)}s step-end {f(dl, 3)}s infinite}}'
-                + kf(f'{name}V{key}', vk))
+                + kf(f'{name}V{key}', vk, 5))
         rows = l.get('rows', 1)
         if rows == 1:
             tot = nf * lw
@@ -566,14 +601,16 @@ def horse_parts(nm, B, group, k_idx):
                     f'animation:{name}F{key} {f(per, 4)}s steps({nf}) {f(dl, 3)}s infinite}}'
                     + kf(f'{name}F{key}', [(0, f'transform:translateX({f(-f0 * lw)}px)'), (100, f'transform:translateX({f(-(f0 + nf) * lw)}px)')]))
         else:
-            # 第4.112版：3倍の 絵で 横 1列だと WebP の 大きさの 上限（16383画素）を こえる シート（うんち 48コマ）は rows 段に 折る。
-            #   横は 1段の コマ（pr）を per／rows 秒で めくり、段は background-position を step-end で 切りかえる（めくる 時刻は 1列の 時と 同じ）
-            pr = -(-nf // rows)
+            # 第4.112版：横 1列だと 長すぎる シートは rows 段に 折って ある。第4.166版：段は 外の 入れもの（>i：translateY を steps(rows) で）、
+            #   コマは 中の 帯（>i>i：translateX を 1段ぶん per／rows 秒・steps(pr) で）めくる。どちらも 動かす だけ（描き直さない）・めくる 時刻は 1列の 時と 同じ
+            pr = nf // rows
+            assert pr * rows == nf and abs(round(per / rows, 5) * rows - per) < 1e-9, (nm, key, nf, rows, per)
             tot = pr * lw
-            css += (f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(rows * lh)}px no-repeat;'
-                    f'animation:{name}F{key} {f(per / rows, 4)}s steps({pr}) {f(dl, 3)}s infinite,{name}R{key} {f(per, 4)}s step-end {f(dl, 3)}s infinite}}'
+            css += (f'.pkw .pkH.{nm}>.pkL.{key}>i{{width:{f(tot)}px;height:{f(rows * lh)}px;animation:{name}R{key} {f(per, 4)}s steps({rows}) {f(dl, 3)}s infinite}}'
+                    f'.pkw .pkH.{nm}>.pkL.{key}>i>i{{width:{f(tot)}px;height:{f(rows * lh)}px;background:url({l["url"]}) 0 0/{f(tot)}px {f(rows * lh)}px no-repeat;'
+                    f'animation:{name}F{key} {f(per / rows, 5)}s steps({pr}) {f(dl, 3)}s infinite}}'
                     + kf(f'{name}F{key}', [(0, 'transform:translateX(0px)'), (100, f'transform:translateX({f(-pr * lw)}px)')])
-                    + kf(f'{name}R{key}', [(100 * r / rows, f'background-position:0px {f(-r * lh)}px') for r in range(rows)]))
+                    + kf(f'{name}R{key}', [(0, 'transform:translateY(0px)'), (100, f'transform:translateY({f(-rows * lh)}px)')]))
     html += '</i>'
     # 地面の うんち（落ちた 所に 残って、しばらく して 消える）
     dung_html, dung_css = '', ''
@@ -627,7 +664,7 @@ def banner(B):
            '.pkw .pkPn{left:0;top:-2px;width:390px;height:24px;transform-origin:50% 0;animation:pkSway 4.2s ease-in-out infinite}'
            '.pkw .pkH{left:0;top:0;width:0;height:0;will-change:transform}'
            '.pkw .pkL{position:absolute;display:block;overflow:hidden}'
-           '.pkw .pkL>i{display:block}'
+           '.pkw .pkL>i,.pkw .pkL>i>i{display:block}'
            '.pkw .pkDg{display:block}')
     far_h, near_h, dung_h = '', '', ''
     for group, names in (('far', FAR), ('near', NEAR)):

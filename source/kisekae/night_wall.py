@@ -13,8 +13,13 @@
    6レース（1着 7→3→5→3→7→5）で 204秒の1回り。ページを開くと ブロック0の 10.5秒（いままでどおり 10秒で1回目のゴール）
    - 景色（3まいの帯）は 遠いほど ゆっくり：空とスタンドと照明 FLOW['far'] 秒・奥の柵とダート FLOW['track'] 秒・手前の柵 FLOW['rail'] 秒で
      1まいぶん（390px）。止まる時・走りだす時は 馬の足の運びと同じ速さの かわり方で（ブロックの はじめは いつも同じ位置）
-   - 馬は 3つの重ね：走る（ギャロップ GALLOP_S 秒・steps）／止まる・走りだすの とちゅうで使う ギャロップのコマ（同じシート）／
-     止まる・立つ・走りだす コマ（night_t*.webp）。どれを見せるかと コマは 1回りの キーフレームで めくる
+   - 馬は 3つの重ね：走る（ギャロップ GALLOP_S 秒・steps）／止まる・走りだす コマ（night_t*.webp）／立つ 絵（night_s*.webp）。
+     どれを見せるかと コマは 1レースの キーフレームで めくる
+     第4.167版（まさちゃん 2026/11/13「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     コマは どれも 1/30秒の きざみ。走る 10 → 15コマ（0.5秒）。止まる・走りだすは 前は「足の 運びの 回数」で コマを 決めて いた（1秒に 5〜19コマ）→
+     時刻で 決めた コマ（flat/night_run.py の trans_list：動きが 大きい 間は 1/30秒ごと・小さく なったら 2/30・3/30秒）を k ÷ 30秒に めくる。
+     とちゅうで ギャロップの シートの コマを 借りる 重ね（.ntu・.ntv）は なくした（止まる・走りだすの コマは ぜんぶ night_t*.webp に ある）。
+     night_t*.webp は コマが 多い ので、窓と 同じ 大きさの .ntq の background-position を めくる（シート ぜんぶの 大きさの 層を 作らない）
    - いちばん下は いまの止まった絵（<img class="bnr">）。視差効果を減らす（prefers-reduced-motion）なら 動く絵を消して いまの絵だけ
    クラスの名前は nt…（ページの ほかの名前と ぶつからないように）
    python3 night_wall.py --judge <Judge_Night.dc.html> <night_blobs.json> <night_run.json>  → 判定画面の上の絵を「動くナイター」に書きかえる（何回やっても同じ）
@@ -28,6 +33,8 @@ ALT = ('照明に照らされた夜のコースを走る3頭の馬と騎手の�
        'ゴールすると止まって暗くなり、勝った馬の表彰のあと 照明がついて また走りだす）')
 FLOW = dict(far=24.0, track=3.2, rail=2.2)                # 1まいぶん（390px）流れる秒（手前の柵の支柱が 1秒に3本より少なく通る）
 GALLOP_S = .5                                            # ギャロップ1回の秒
+FPS = 30                                                 # コマは 1/30秒の きざみ
+ACC_RUN = 1.0                                            # 走りだして この秒で ページの ギャロップに かわる（flat/night_run.py の ACC_RUN）
 RACE_S, DARK_S, AWARD_S, FADE_S = 20.0, 5.0, 7.0, 1.0    # 照明がついてから ゴールまで・ゴールから真っ暗まで・表彰・表彰のあと暗くなる
 T_LIGHT = 0.5                                            # 照明がつく（ブロックの中の時刻）
 T_START = 1.0                                            # 走りだす（GALLOP_S の倍数：ギャロップの コマと そろう）
@@ -181,7 +188,8 @@ class Timing:
 
 # ---------------- キーフレーム ----------------
 def kf_pct(t, period):
-    return f'{100 * t / period:.{5 if period > BLOCK else 4}f}'.rstrip('0').rstrip('.') + '%'
+    """％（小数 5けた：第4.167版から 1レースの キーも 5けた＝コマを めくる 時刻が 1/30秒の きざみから 2マイクロ秒 より ずれない。前は 4けた＝17マイクロ秒 まで）"""
+    return f'{100 * t / period:.5f}'.rstrip('0').rstrip('.') + '%'
 
 
 def keyframes(name, kfs, fmt, period=BLOCK, step=False):
@@ -311,36 +319,19 @@ def show_block(on):
     return [(u, v, 'step-end') for u, v in on]
 
 
-def gallop_frames_block(tm, cw):
-    """止まる・走りだすの とちゅうで使う ギャロップのコマ（ギャロップのシートの 何番目か）"""
-    kfs = [(0.0, 0.0, 'step-end')]
-    m = 10
-    while True:                                                               # 走りだし：足の運びが1回をこえてから ページのギャロップに かわるまで
-        t = tm.acc_t(m / 10)
-        if t >= 1.0 - 1e-6:
-            break
-        kfs.append((T_START + t, -((round(10 * tm.ag0) + m) % 10) * cw, 'step-end'))
-        m += 1
-    for k in range(0, 11):                                                     # 止まる：ギャロップ1回ぶん（足の運びが だんだん ゆっくり）
-        kfs.append((T_GOAL + tm.dec_t(k / 10), -(k % 10) * cw, 'step-end'))
-    return kfs
-
-
-def trans_frames_block(tm, tr):
-    """止まる・立つ・走りだす コマ（night_t*.webp の 何番目か）"""
+def trans_frames_block(tr):
+    """止まる・走りだす コマ（night_t*.webp の 何番目か）：コマの 番号 k ÷ FPS 秒（走りだしから／ゴールから）に めくる。
+       見えて いない 間に 次に 使う コマへ かえて おく（ブロックの はじめ＝走りだしの 1コマめ・走りだしの あと＝止まる 1コマめ）"""
     cw, ch, cols = tr['cell'][0] / 2, tr['cell'][1] / 2, tr['cols']
     cell = lambda i: (-(i % cols) * cw, -(i // cols) * ch)
-    idx = {(f['kind'], f['phi']): i for i, f in enumerate(tr['frames'])}
-    stand = [i for i, f in enumerate(tr['frames']) if f['kind'] == 'stand'][0]
-    kfs = [(0.0, cell(stand), 'step-end')]
-    for f in tr['frames']:
-        if f['kind'] == 'acc':
-            kfs.append((T_START + tm.acc_t(f['phi']), cell(idx[('acc', f['phi'])]), 'step-end'))
-    for f in tr['frames']:
-        if f['kind'] == 'dec':
-            kfs.append((T_GOAL + tm.dec_t(f['phi']), cell(idx[('dec', f['phi'])]), 'step-end'))
-    kfs.append((T_GOAL + tm.dec_t(tm.dstand), cell(stand), 'step-end'))
-    return sorted(kfs, key=lambda k: k[0])
+    acc = [(i, f) for i, f in enumerate(tr['frames']) if f['kind'] == 'acc']
+    dec = [(i, f) for i, f in enumerate(tr['frames']) if f['kind'] == 'dec']
+    assert len(acc) + len(dec) == len(tr['frames']) and dec[0][1]['k'] == 0 and acc[-1][1]['k'] < ACC_RUN * FPS
+    kfs = [(0.0, cell(acc[0][0]), 'step-end')]
+    kfs += [(T_START + f['k'] / FPS, cell(i), 'step-end') for i, f in acc[1:]]
+    kfs.append((T_START + ACC_RUN, cell(dec[0][0]), 'step-end'))
+    kfs += [(T_GOAL + f['k'] / FPS, cell(i), 'step-end') for i, f in dec[1:]]
+    return kfs
 
 
 # ---------------- 絵（SVG） ----------------
@@ -403,7 +394,7 @@ def flashes_html(seed=43):
 
 # ---------------- ページに入れる HTML と CSS ----------------
 def inline(blobs, run, alt=ALT, static=STATIC):
-    """(html, css)。blobs：far・track・rail・h5・h3・h7（走る）・t5・t3・t7（止まる・立つ・走りだす）・a5・a3・a7（表彰）→ '/_blob/<id>'。run：night_run.json
+    """(html, css)。blobs：far・track・rail・h5・h3・h7（走る）・t5・t3・t7（止まる・走りだす）・s5・s3・s7（立つ）・a5・a3・a7（表彰）→ '/_blob/<id>'。run：night_run.json
        どのレースでも同じ動き（景色・コマ・幕・照明・紙ふぶき）は 1レース（BLOCK 秒）の キーフレーム、レースごとに ちがう所（並び・ゴール板の場所・表彰の馬）は 1回り（LOOP 秒）"""
     races = plan()
     tm = Timing(run['timing'])
@@ -416,7 +407,7 @@ def inline(blobs, run, alt=ALT, static=STATIC):
     for num in DRAW:
         html += (f'<div class="nth nth{num}"><div class="ntj ntj{num}">'
                  f'<div class="ntc{num}"><div class="nts nts{num}"></div></div>'
-                 f'<div class="ntu{num}"><div class="ntv{num}"></div></div>'
+                 f'<div class="nto{num}"></div>'
                  f'<div class="ntk{num}"><div class="ntq{num}"></div></div></div></div>')
     html += '<div class="ntb ntr"></div><div class="ntd"></div>'
     html += ''.join(f'<i class="ntl ntl{i}"></i>' for i in range(len(LAMPS)))
@@ -449,28 +440,32 @@ def inline(blobs, run, alt=ALT, static=STATIC):
         n = r['frames']
         tw, th = t['cell'][0] / 2, t['cell'][1] / 2
         tx, ty = t['at'][0] / 2, t['at'][1] / 2
-        d1 = T_GOAL + tm.dec_t(min(f['phi'] for f in t['frames'] if f['kind'] == 'dec'))      # 止まる コマ（night_t）に かわる
-        a1 = T_START + tm.acc_t(1.0)                                                            # 走りだしの コマから ギャロップの コマに かわる
-        gal = [(0.0, 0), (T_START + 1.0, 1), (T_GOAL, 0)]                                      # 走る（ページの ギャロップ）
-        mid = [(0.0, 0), (a1, 1), (T_START + 1.0, 0), (T_GOAL, 1), (d1, 0)]                    # 止まる・走りだすの とちゅうの ギャロップのコマ
-        trn = [(0.0, 1), (a1, 0), (d1, 1)]                                                     # 止まる・立つ・走りだす
+        assert n == round(GALLOP_S * FPS), (num, n)
+        a0 = T_START + min(f['k'] for f in t['frames'] if f['kind'] == 'acc') / FPS             # 走りだしの 1コマめ（それまでは 立つ 絵）
+        a1 = T_START + ACC_RUN                                                                  # 走りだしの コマから ページの ギャロップに かわる
+        d1 = T_GOAL + t['stand']['k'] / FPS                                                     # 止まる コマから 立つ 絵に かわる
+        gal = [(0.0, 0), (a1, 1), (T_GOAL, 0)]                                                 # 走る（ページの ギャロップ）
+        trn = [(0.0, 0), (a0, 1), (a1, 0), (T_GOAL, 1), (d1, 0)]                               # 止まる・走りだす コマ
+        std = [(0.0, 1), (a0, 0), (d1, 1)]                                                     # 立つ 絵
         css += (f'.nth{num}{{position:absolute;left:0;top:0;width:390px;height:160px;pointer-events:none;will-change:transform;{anim(f"ntR{num}", LOOP)}}}'
+                # 止まる・走りだすの シートを はじめに 1回 読ませて おく（はじめて 使う ゴールの 時に 読む 間が 出ない ように：1px・ほぼ すき通し）
+                f'.nth{num}::before{{content:"";position:absolute;left:0;top:0;width:1px;height:1px;opacity:.02;background:url({blobs["t" + str(num)]}) 0 0/1px 1px no-repeat}}'
                 f'.ntj{num}{{position:absolute;left:0;top:0;width:390px;height:160px;{anim(f"ntJ{num}")}}}'
-                f'.ntc{num},.ntu{num}{{position:absolute;left:{ax:g}px;top:{ay:g}px;width:{cw:g}px;height:{ch:g}px;overflow:hidden}}'
-                f'.ntk{num}{{position:absolute;left:{tx:g}px;top:{ty:g}px;width:{tw:g}px;height:{th:g}px;overflow:hidden;{anim(f"ntK{num}", tf="step-end")}}}'
-                f'.ntc{num}{{{anim(f"ntC{num}", tf="step-end")}}}.ntu{num}{{{anim(f"ntU{num}", tf="step-end")}}}'
-                f'.nts{num},.ntv{num}{{width:{n * cw:g}px;height:{ch:g}px;background:url({blobs["h" + str(num)]}) 0 0/{n * cw:g}px {ch:g}px no-repeat;will-change:transform}}'
-                f'.nts{num}{{animation:ntS{num} {GALLOP_S:g}s steps({n}) infinite}}.ntv{num}{{{anim(f"ntV{num}", tf="step-end")}}}'
-                f'.ntq{num}{{width:{t["cols"] * tw:g}px;height:{t["rows"] * th:g}px;background:url({blobs["t" + str(num)]}) 0 0/{t["cols"] * tw:g}px {t["rows"] * th:g}px no-repeat;'
-                f'will-change:transform;{anim(f"ntQ{num}", tf="step-end")}}}'
+                f'.ntc{num}{{position:absolute;left:{ax:g}px;top:{ay:g}px;width:{cw:g}px;height:{ch:g}px;overflow:hidden;{anim(f"ntC{num}", tf="step-end")}}}'
+                f'.ntk{num},.nto{num}{{position:absolute;left:{tx:g}px;top:{ty:g}px;width:{tw:g}px;height:{th:g}px}}'
+                f'.ntk{num}{{overflow:hidden;{anim(f"ntK{num}", tf="step-end")}}}'
+                f'.nto{num}{{background:url({blobs["s" + str(num)]}) 0 0/{tw:g}px {th:g}px no-repeat;{anim(f"ntO{num}", tf="step-end")}}}'
+                f'.nts{num}{{width:{n * cw:g}px;height:{ch:g}px;background:url({blobs["h" + str(num)]}) 0 0/{n * cw:g}px {ch:g}px no-repeat;will-change:transform;'
+                f'animation:ntS{num} {GALLOP_S:g}s steps({n}) infinite}}'
+                f'.ntq{num}{{width:{tw:g}px;height:{th:g}px;background:url({blobs["t" + str(num)]}) 0 0/{t["cols"] * tw:g}px {t["rows"] * th:g}px no-repeat;'
+                f'{anim(f"ntQ{num}", tf="step-end")}}}'
                 f'@keyframes ntS{num}{{to{{transform:translateX(-{n * cw:g}px)}}}}'
                 + keyframes(f'ntR{num}', races_kfs([horse_block(run, num, rc, nxt(k)) for k, rc in enumerate(races)]), lambda x: f'transform:translateX({x:.1f}px)', LOOP)
                 + keyframes(f'ntJ{num}', sway_block(num), lambda x: f'transform:translateX({x:g}px)')
                 + keyframes(f'ntC{num}', show_block(gal), vis_, step=True)
-                + keyframes(f'ntU{num}', show_block(mid), vis_, step=True)
                 + keyframes(f'ntK{num}', show_block(trn), vis_, step=True)
-                + keyframes(f'ntV{num}', gallop_frames_block(tm, cw), lambda x: f'transform:translateX({x:g}px)', step=True)
-                + keyframes(f'ntQ{num}', trans_frames_block(tm, t), lambda p: f'transform:translate({p[0]:g}px,{p[1]:g}px)', step=True))
+                + keyframes(f'ntO{num}', show_block(std), vis_, step=True)
+                + keyframes(f'ntQ{num}', trans_frames_block(t), lambda p: f'background-position:{p[0]:g}px {p[1]:g}px', step=True))
     # 暗くなる幕・照明・「スタート！」
     DK = [(0.0, 1, None), (T_LIGHT + 0.3, 1, 'ease-out'), (T_LIGHT + 0.9, 0, None), (T_GOAL, 0, 'cubic-bezier(.42,0,.58,1)'), (T_GOAL + DARK_S, 1, None)]
     css += (f'.ntd{{position:absolute;inset:0;background:{DARK};pointer-events:none;{anim("ntD", twin="ntDV")}}}'

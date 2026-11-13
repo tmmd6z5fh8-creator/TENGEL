@@ -8,7 +8,10 @@
    - 遠くの景色（雲と丘）は 右から左へ流れて くり返す。遠いので ゆっくり：丘は 1回り（87秒）で TILES['hills'] まいぶん（全速で 1秒に約6.6ドット・
      画面のはばを 約24秒）、雲は その半分の速さ。馬に合わせて カメラが動いているので、馬が止まる時は 景色も止まる：
      すべって止まる・ジャンプから おりて止まる・その場で一回転 は DECEL の間に止まり、こっちを見ている間・立って待つ間は 止まったまま、
-     けり出してから全速まで（FULL 秒）で だんだん もとの速さに。ドットは ぼかさないので、1ドット（2.5px）ずつ カクッと動く（step-end）
+     けり出してから全速まで（FULL 秒）で だんだん もとの速さに。
+     第4.167版（まさちゃん 2026/11/13「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     前は 1ドット（2.5px）ずつ カクッと 動かして いた（全速でも 1秒に 6.6回）→ なめらかに 流す（transform を 時刻の キーで：
+     同じ 速さの 間は linear・止まる／走りだす 間は 2次の 曲線に ぴったりの cubic-bezier）。1回りの 間は 折り返さない（帯を その分 長く）
    - 馬は走っていて、次の2つが ばらばらに起きる：
      ・**ジャンプ か 一回転**（どちらかは ばらばら）：走りだしてから 4〜13秒（毎回ちがう）で
        ジャンプ：けり出して 足をたたんで高く跳ぶ（地面に かげ）→ 前足をつっぱって おりる（土けむり）→ ななめ → こっちを向く
@@ -18,8 +21,11 @@
      走りだしは どれも同じ：けり出す（土けむり）→ 1歩め ゆっくり → 2歩め 少し速く → 全速
    - 「ばらばら」は、決めておいた順番（EVENTS：種類と 走る秒）を 87秒で1回りさせる（CSS だけで動く・牧場の壁紙と同じやり方）。
      ジャンプ・一回転の前に走る秒が 4〜13秒、立ち止まる間が 20〜23秒 になっているかは plan() で確かめる
-   - 全速の重ね（.pqr・ギャロップ1回 RUN_S 秒の steps）と、それ以外のコマを1つずつ決めた重ね（.pqx・1回りの step-end）を入れかえる。
-     どれも同じ時に始まるので ずれない。全速の始まりと終わりは どれも RUN_S の倍数なので、つなぎ目も同じコマ
+   - 全速の重ね（.pqr・ギャロップ1回 RUN_S 秒の steps）と、それ以外のコマの重ね（.pqx）を入れかえる。
+     どれも同じ時に始まるので ずれない。全速の始まりと終わりは どれも RUN_S の倍数なので、つなぎ目も同じコマ。
+     第4.167版：コマは どれも 1/30秒（全速 8 → 15コマ・ジャンプの 宙 8 → 19コマ・一回転 11 → 23コマ・走りだしの 1歩め 8 → 30コマ／2歩め 8 → 21コマ・
+     形の 入れかわりも 1/30秒ずつ つなぐ）。コマの シートは 1段に 1つの つづき（全速／立ち止まる＋走りだし／ジャンプ＋走りだし／一回転＋走りだし）で、
+     .pqx は 馬の 窓と 同じ 大きさの まま background-position を steps で めくる（1つの できごとに キーは 2つ。大きな 層を 作らない）
    - ページを開いた時は「かまえる」から始まる（どの動きも同じだけ先へ進めて始める：animation-delay -START_AT 秒）
    - 下の絵（5倍）もコマ（ドットのまま1倍）も ロスなしの WebP で、ドットは ぼかさずに大きくする（image-rendering:pixelated）。
      画面の細かさが ちがっても 重ねた所の さかい目が出ない（ドットも くっきり）
@@ -38,7 +44,8 @@ EVENTS = [('stop', 6.5), ('jump', 9.5),                    # 立ち止まる間 
           ('stop', 4.5), ('spin', 4.0), ('jump', 7.0),     # 22.5秒
           ('stop', 11.0), ('spin', 6.0),                   # 21.5秒
           ('stop', 13.0), ('jump', 5.0)]                   # 22.5秒 → 1回り 87秒
-EV = dict(                         # (始めてからの秒, コマ)
+FPS = 30                           # コマは どれも 1/30秒
+EV_165 = dict(                     # 第4.166版までの コマの 予定（(始めてからの秒, コマ)：いまは 使わない。新しい つづきは flat/pixel_run.py の stop_strip・jump_strip・spin_strip）
     stop=[(0.0, 'brake0'), (0.15, 'brake1'), (0.30, 'stand0'), (0.75, 'stand1'), (1.20, 'stand0'), (1.65, 'ready')],   # すべって止まる → 立って待つ → かまえる
     jump=[(0.0, 'push')] + [(0.12 + 0.08 * i, f'jair{i}') for i in range(8)]                      # けり出して跳ぶ（宙 0.64秒）
          + [(0.76, 'brake1'), (0.90, 'turn'), (1.02, 'look'), (1.42, 'blink'), (1.54, 'look'),    # おりる → ななめ → こっちを1秒見る（まばたき）
@@ -47,18 +54,21 @@ EV = dict(                         # (始めてからの秒, コマ)
          + [(0.77, 'sland'), (0.92, 'look'), (1.34, 'blink'), (1.46, 'look'),                   # こっちを向いて おりる → 1秒見る（まばたき）
             (1.92, 'turn'), (2.04, 'ready')])                                                    # → ななめ → かまえる
 GO = dict(stop=2.0, jump=2.5, spin=2.5)    # 始めてから けり出すまで（立ち止まるのは2秒）
-START = ([(0.0, 'push')] + [(0.30 + 0.125 * i, 'dash' if i == 0 else f'run{i}') for i in range(8)]     # けり出す → 1歩め（1コマ0.125秒）
+START_165 = ([(0.0, 'push')] + [(0.30 + 0.125 * i, 'dash' if i == 0 else f'run{i}') for i in range(8)]     # けり出す → 1歩め（1コマ0.125秒）
          + [(1.30 + 0.0875 * i, f'run{i}') for i in range(8)])                                   # → 2歩め（0.0875秒）→ 全速（0.0625秒）
 FULL = 2.0                         # けり出してから全速まで
-START_AT = EV[EVENTS[0][0]][-1][0]  # ページを開いた時は 1回めの「かまえる」から（よーい → どん）
-DECEL = dict(stop=(0.0, 0.30), jump=(0.76, 0.96), spin=(0.0, 0.28))   # 背景が止まっていく間（始めてからの秒）：すべって止まる・おりて止まる・その場で回る
+READY_AT = dict(stop=53, jump=65, spin=62)    # 「かまえる」が 始まる コマ（flat/pixel_run.py の READY_AT と 同じ：inline で 確かめる）
+START_AT = READY_AT[EVENTS[0][0]] / FPS       # ページを開いた時は 1回めの「かまえる」から（よーい → どん）
+LAND = 23                                     # ジャンプから おりる コマ（pixel_run.json の land）
+DECEL = dict(stop=(0.0, 0.30), jump=(LAND / FPS, LAND / FPS + 0.2), spin=(0.0, 0.28))   # 背景が止まっていく間（始めてからの秒）：すべって止まる・おりて止まる・その場で回る
+EASE_IN, EASE_OUT = 'cubic-bezier(.33333,0,.66667,.33333)', 'cubic-bezier(.33333,.66667,.66667,1)'   # 2次の 曲線（y＝x²・y＝2x−x²）に ぴったり：速さが まっすぐ 上がる／下がる
 TILES = dict(clouds=1, hills=2)    # 1回りで 遠くの景色が何まいぶん（FAR_P ドット）流れるか（雲は丘の半分の速さ）
 
 
 def plan():
-    """1回りの予定：(.pqx の (秒, コマ or None＝全速), 全速の (始まり, 終わり), 1回りの秒)。
-       ジャンプ・一回転の前に走る秒（4〜13秒）・立ち止まる間（20〜23秒）・全速の つなぎ目（RUN_S の倍数）を確かめる"""
-    seq, full, t = [], [], 0.0
+    """1回りの予定：(できごとの つづき [(始まり, 種類, 全速に なる 秒)], 全速の (始まり, 終わり), 1回りの秒)。
+       ジャンプ・一回転の前に走る秒（4〜13秒）・立ち止まる間（20〜23秒）・全速の つなぎ目（RUN_S の倍数）・どの 時刻も 1/30秒の きざみ を確かめる"""
+    ev, full, t = [], [], 0.0
     starts = []
     for i, (kind, run) in enumerate(EVENTS):
         assert run >= FULL + 1
@@ -67,7 +77,7 @@ def plan():
             assert 4 <= run <= 13, (i, run)
         starts.append((t, kind))
         go = GO[kind]
-        seq += [(t + a, k) for a, k in EV[kind]] + [(t + go + a, k) for a, k in START] + [(t + go + FULL, None)]
+        ev.append((t, kind, t + go + FULL))
         full.append((t + go + FULL, t + go + run))
         t += go + run
     stops = [a for a, k in starts if k == 'stop']
@@ -75,7 +85,10 @@ def plan():
         assert 20 <= b - a <= 23, (a, b)
     for a, b in full:
         assert abs(a / RUN_S - round(a / RUN_S)) < 1e-9 and abs(b / RUN_S - round(b / RUN_S)) < 1e-9
-    return seq, full, t
+    for a, _, b in ev:
+        assert abs(a * FPS - round(a * FPS)) < 1e-9 and abs(b * FPS - round(b * FPS)) < 1e-9
+    assert abs(t * FPS - round(t * FPS)) < 1e-9 and abs(START_AT * FPS - round(START_AT * FPS)) < 1e-9
+    return ev, full, t
 
 
 def speed_points():
@@ -103,48 +116,42 @@ def _dist(pts, t):
 
 
 def scroll_keys(tiles, period):
-    """景色を tiles まいぶん流す 1回りの キー：[(秒, ずらすドット)]（1ドットずつ・ページを開いた時は 0）"""
+    """景色を tiles まいぶん なめらかに 流す 1回りの キー：[(秒, 左へ ずらすドット, 次までの 動き)]・1回りの 秒。
+       ページを 開いた 時（START_AT）の ずれは period の 倍数（＝いまの 絵と 同じ）。1回りの 間は 折り返さない（0 以上・(tiles＋1)×period より 小さい）"""
     pts, cyc = speed_points()
     v = tiles * period / _dist(pts, cyc)              # 全速の 1秒に何ドット
-    base = _dist(pts, START_AT)
-    off0 = -v * base
-    keys = [(0.0, math.floor(off0) % period)]
-    k = math.floor(off0) + 1
-    xa = 0.0
+    p0 = (-v * _dist(pts, START_AT)) % period
+    keys = []
     for (ta, sa), (tb, sb) in zip(pts, pts[1:]):
-        dt = tb - ta
-        if dt <= 0:
+        if tb <= ta:
             continue
-        xb = xa + (sa + sb) * dt / 2
-        while v * (xb - base) >= k - 1e-9 and k <= math.floor(off0) + tiles * period:
-            r = (k / v + base) - xa                    # この区間で 進む「全速の秒」
-            kk = (sb - sa) / dt
-            u = r / sa if abs(kk) < 1e-12 else 2 * r / (sa + math.sqrt(max(0.0, sa * sa + 2 * kk * r)))
-            keys.append((ta + u, k % period))
-            k += 1
-        xa = xb
+        assert (sa, sb) in ((1.0, 1.0), (0.0, 0.0), (1.0, 0.0), (0.0, 1.0)), (sa, sb)
+        keys.append((ta, p0 + v * _dist(pts, ta), 'linear' if sa == sb else EASE_IN if sa < sb else EASE_OUT))
+    keys.append((cyc, p0 + v * _dist(pts, cyc), None))
+    assert abs(keys[-1][1] - keys[0][1] - tiles * period) < 1e-6 and keys[0][1] >= 0 and keys[-1][1] < (tiles + 1) * period
     return keys, cyc
 
 
 def inline(blobs, run, alt=ALT):
     """(html, css)。blobs：static（いまの止まった絵）・run（コマ）→ '/_blob/<id>'。run：pixel_run.json"""
     x0, y0, cw, ch = (v // 2 for v in run['cell'])
-    order = run['order']
-    n, nr = len(order), run['run']
-    seq, full, cyc = plan()
+    rows = {k: (i, n) for i, (k, n) in enumerate(run['rows'])}        # 段：全速／立ち止まる＋走りだし／ジャンプ＋走りだし／一回転＋走りだし
+    cols, nrow, nr = run['cols'], len(run['rows']), run['run']
+    ev, full, cyc = plan()
+    assert rows['run'] == (0, nr) and nr == round(RUN_S * FPS) and run['land'] == LAND, (rows, nr)
+    for kind, go in GO.items():
+        assert rows[kind][1] == round((go + FULL) * FPS) <= cols and run['ev'][kind] == round(go * FPS) and run['ready'][kind] == READY_AT[kind], kind
     # %は 小数5けたで切り捨て（少しだけ早めに切りかえる：全速の終わりで ギャロップが次の1回に入る前に 入れかわる）
     pct = lambda t: '100%' if abs(t - cyc) < 1e-9 else f'{math.floor(t / cyc * 1e7 + 1e-6) / 1e5:.5f}'.rstrip('0').rstrip('.') + '%'
-    kx, hidden = [], True
-    for t, k in seq:
-        if k is None:
-            kx.append(f'{pct(t)}{{opacity:0}}')
-            hidden = True
-        else:
-            kx.append(f'{pct(t)}{{{"opacity:1;" if hidden else ""}transform:translateX({-order.index(k) * cw}px)}}')
-            hidden = False
-    kx.append('100%{opacity:0}')
+    # .pqx：できごとの つづき（n コマ）を steps(n) で めくる。おわりの キーは つづきの 次の ます（何も ない＝すき通し）で、つぎの できごとまで そのまま
+    kx = []
+    for t, kind, t1 in ev:
+        r, n = rows[kind]
+        kx.append(f'{pct(t)}{{background-position:0 {-r * ch}px;animation-timing-function:steps({n})}}')
+        kx.append(f'{pct(t1)}{{background-position:{-n * cw}px {-r * ch}px}}')
+    assert ev[0][0] == 0.0 and ev[-1][2] < cyc
     ka = ['0%{opacity:0}'] + [f'{pct(a)}{{opacity:1}}{pct(b)}{{opacity:0}}' for a, b in full]
-    d = f'-{START_AT:g}s'
+    d = f'-{START_AT:.5f}'.rstrip('0').rstrip('.') + 's'
     pix = 'image-rendering:-webkit-optimize-contrast;image-rendering:pixelated'
     far = run['far']
     P = far['period']
@@ -155,11 +162,13 @@ def inline(blobs, run, alt=ALT):
         sky.append(f'{col} {y * D:g}px {y1 * D:g}px')
         y = y1
     kf = ''
+    num = lambda v, nd: f'{v:.{nd}f}'.rstrip('0').rstrip('.')
     for name, tl in (('pqC', TILES['clouds']), ('pqG', TILES['hills'])):
         keys, _ = scroll_keys(tl, P)
-        tx = lambda p: f'transform:translateX({-p * D:g}px)'
-        kf += (f'@keyframes {name}{{0%{{{tx(keys[0][1])}}}' + ''.join(f'{t / cyc * 100:.4f}'.rstrip('0').rstrip('.') + f'%{{{tx(p)}}}' for t, p in keys[1:])
-               + f'100%{{{tx(keys[0][1])}}}}}')
+        tx = lambda p: f'transform:translateX({num(-p * D, 2)}px)'
+        kf += (f'@keyframes {name}{{' + ''.join(f'{num(t / cyc * 100, 5)}%{{{tx(p)}' + (f';animation-timing-function:{e}' if e != 'linear' else '') + '}' for t, p, e in keys[:-1])
+               + f'100%{{{tx(keys[-1][1])}}}}}')
+    wide = lambda tl: 390 + (tl + 1) * P * D          # 1回りの 間 折り返さない 分の はば
     html = (f'<div class="pqw" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["static"]}" alt="">'
             '<div class="pqk"></div><div class="pqc"></div><div class="pqg"></div><div class="pqn"></div>'
             '<div class="pqh"><i class="pqr"></i><i class="pqx"></i></div></div>')
@@ -167,15 +176,15 @@ def inline(blobs, run, alt=ALT):
            f'.pqw .bnr{{position:absolute;left:0;top:0;width:390px;height:160px;object-position:50% 50%;{pix}}}'
            '.pqw .pqk,.pqw .pqc,.pqw .pqg,.pqw .pqn{position:absolute;left:0}'
            f'.pqw .pqk{{top:0;width:390px;height:{y * D:g}px;background:linear-gradient({",".join(sky)})}}'
-           f'.pqw .pqc,.pqw .pqg{{width:{390 + P * D:g}px;background:url({blobs["far"]}) 0 0/{P * D:g}px {(c1 - c0 + h1 - h0) * D:g}px repeat-x;{pix};'
-           f'animation:pqC {cyc:g}s step-end {d} infinite}}'
-           f'.pqw .pqc{{top:{c0 * D:g}px;height:{(c1 - c0) * D:g}px}}'
-           f'.pqw .pqg{{top:{h0 * D:g}px;height:{(h1 - h0) * D:g}px;background-position:0 {-(c1 - c0) * D:g}px;animation-name:pqG}}'
+           f'.pqw .pqc,.pqw .pqg{{background:url({blobs["far"]}) 0 0/{P * D:g}px {(c1 - c0 + h1 - h0) * D:g}px repeat-x;{pix};'
+           f'animation:pqC {cyc:g}s linear {d} infinite}}'
+           f'.pqw .pqc{{top:{c0 * D:g}px;width:{wide(TILES["clouds"]):g}px;height:{(c1 - c0) * D:g}px}}'
+           f'.pqw .pqg{{top:{h0 * D:g}px;width:{wide(TILES["hills"]):g}px;height:{(h1 - h0) * D:g}px;background-position:0 {-(c1 - c0) * D:g}px;animation-name:pqG}}'
            f'.pqw .pqn{{top:0;width:390px;height:160px;background:url({blobs["near"]}) 0 0/390px 160px no-repeat;{pix}}}'
            f'.pqw .pqh{{position:absolute;left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden}}'
-           f'.pqw .pqh i{{position:absolute;left:0;top:0;height:{ch}px;background:url({blobs["run"]}) 0 0/{n * cw}px {ch}px no-repeat;{pix}}}'
+           f'.pqw .pqh i{{position:absolute;left:0;top:0;height:{ch}px;background:url({blobs["run"]}) 0 0/{cols * cw}px {nrow * ch}px no-repeat;{pix}}}'
            f'.pqw .pqh .pqr{{width:{nr * cw}px;opacity:0;animation:pqRun {RUN_S}s steps({nr}) {d} infinite,pqA {cyc:g}s step-end {d} infinite}}'
-           f'.pqw .pqh .pqx{{width:{n * cw}px;animation:pqX {cyc:g}s step-end {d} infinite}}'
+           f'.pqw .pqh .pqx{{width:{cw}px;background-position:{-cols * cw}px 0;animation:pqX {cyc:g}s step-end {d} infinite}}'
            f'@keyframes pqRun{{to{{transform:translateX(-{nr * cw}px)}}}}'
            f'@keyframes pqA{{{"".join(ka)}}}'
            f'@keyframes pqX{{{"".join(kx)}}}' + kf
@@ -203,7 +212,7 @@ def load_blobs(fn):
 
 if __name__ == '__main__':
     if '--plan' in sys.argv:
-        seq, full, cyc = plan()
+        ev, full, cyc = plan()
         t = 0.0
         name = dict(stop='立ち止まる', jump='ジャンプ', spin='一回転')
         for (kind, run), (a, b) in zip(EVENTS, full):

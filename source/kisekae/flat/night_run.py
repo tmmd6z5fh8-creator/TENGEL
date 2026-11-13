@@ -31,7 +31,14 @@ TOWERS = [(130, 40), (390, 20), (650, 34)]      # 照明（くり返しの は�
 POOLS = (130, 390, 650)                          # ダートの光だまり（照明と同じ間かく）
 FENCE_N = 32                         # 奥の柵の支柱の数（はば W に）
 RAIL_N = 6                           # 手前の柵の支柱の数（はば W に）
-N_FRAMES = 10                        # ギャロップ1回のコマ数
+N_FRAMES = 15                        # ギャロップ1回のコマ数（第4.167版：10 → 15＝1コマ 1/30秒。まさちゃん 2026/11/13
+                                     #   「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）
+FPS = 30                             # コマは 1/30秒の きざみ
+# 第4.166版までの 10コマの 上下の ずれ（night_run.json の horses.<番号>.dy）：走る 上下の 動きは 前の まま（なめらかな 波に して 15コマで 読む）。
+#   コマを ふやして「地面に ついて いる いちばん 低い ひづめ」から 決め直すと、足が 地面を はなれる 瞬間の コマが 入って 体が しずむ（第4.166版）
+DY_165 = {5: [-1.25, -0.09, -0.4, -0.66, -0.53, -1.34, -3.77, -6.26, -6.46, -4.06],
+          3: [0.7, 0.51, 1.28, 2.31, 1.98, 0.07, -1.69, -1.65, -0.23, 0.8],
+          7: [-10.09, -8.67, -6.29, -5.01, -4.91, -4.65, -3.86, -3.93, -6.01, -8.89]}
 LIFT = 6.0                           # 宙に浮くコマの いちばん高い所（画素）
 PHASE = {5: 0.0, 3: 0.37, 7: 0.71}   # 3頭の足の運びのずれ
 DUST_RUN = 118.0                     # 砂けむりが ギャロップ1回で うしろへ流れる はば（画素・ダートの流れに合わせる）
@@ -293,6 +300,17 @@ def stance_legs(g):
     return [k for k in HOOF_KEYS if ((g - LEG_OFF[k]) % 1.0) < STANCE]
 
 
+def gallop_dy(num, x):
+    """走る 上下の ずれ（x：ギャロップ1回の 中の 位置 0〜1＝コマの 番号 ÷ コマ数）。第4.166版までの 10コマを くり返しの 2つの 波に 合わせて 読む"""
+    old = DY_165[num]
+    m = len(old)
+    ph = 2 * math.pi * np.arange(m) / m
+    A = np.stack([np.ones(m), np.cos(ph), np.sin(ph), np.cos(2 * ph), np.sin(2 * ph)], 1)
+    c = np.linalg.lstsq(A, np.asarray(old, float), rcond=None)[0]
+    p = 2 * math.pi * x
+    return float(c @ np.array([1.0, math.cos(p), math.sin(p), math.cos(2 * p), math.sin(2 * p)]))
+
+
 def smooth_dy(dys):
     """上下のずれを なめらかに（くり返しの2つの波に合わせる）"""
     n = len(dys)
@@ -412,21 +430,9 @@ def horse_frames(h, cache=None):
         low = max(hv[HOOF_KEYS.index(q), 1] for q in legs) if legs else None
         frames.append(dict(rgb=rgb, a=a, low=low, legs=legs))
         print('horse', num, 'frame', f, 'stance', legs, flush=True)
-    g0 = hv0[:, 1].max()
-    for fr in frames:
-        fr['dy'] = None if fr['low'] is None else g0 - fr['low']
-    for i, fr in enumerate(frames):
-        if fr['dy'] is None:
-            jp = next(j for j in range(1, n) if frames[(i - j) % n]['low'] is not None)
-            jn = next(j for j in range(1, n) if frames[(i + j) % n]['low'] is not None)
-            t = jp / (jp + jn)
-            prev, nxt = frames[(i - jp) % n]['dy'], frames[(i + jn) % n]['dy']
-            fr['dy_air'] = prev + (nxt - prev) * t - LIFT * 4 * t * (1 - t)
-    for fr in frames:
-        if fr['dy'] is None:
-            fr['dy'] = fr.pop('dy_air')
+    dys = [gallop_dy(num, f / n) for f in range(n)]                    # 上下：第4.166版までの 動きの まま（波で 読む）
     out = []
-    for f, (fr, dy) in enumerate(zip(frames, smooth_dy([fr['dy'] for fr in frames]))):
+    for f, (fr, dy) in enumerate(zip(frames, dys)):
         M = np.float32([[1, 0, 0], [0, 1, float(dy)]])
         a = cv2.warpAffine(fr['a'], M, (wc, Hh), flags=cv2.INTER_LINEAR)
         rp = cv2.warpAffine(fr['rgb'] * fr['a'][..., None], M, (wc, Hh), flags=cv2.INTER_LINEAR)
@@ -439,7 +445,7 @@ def horse_frames(h, cache=None):
         pre, A = pre * (1 - da[..., None]) + dr * da[..., None], A + da * (1 - A)
         pre, A = pre * (1 - a[..., None]) + rgb * a[..., None], A + a * (1 - A)
         out.append((pre, A))
-    return out, dict(nose=round(nose, 2), ground=round(float(gy), 2), padx=px, dy=[round(float(v), 2) for v in smooth_dy([fr['dy'] for fr in frames])])
+    return out, dict(nose=round(nose, 2), ground=round(float(gy), 2), padx=px, dy=[round(float(v), 2) for v in dys])
 
 
 def horse_sheet(h, out_dir):
@@ -473,19 +479,56 @@ STAND = dict(theta=0.0, neck_rot=-12.0, head_ang=-50.0, tail=[-128, -110],      
 STAND_TAIL = 112.0                   # 止まった馬の しっぽの向き（画面の上・度：下へ たれる）
 F0 = 2.0                             # ギャロップの 足の運び（回/秒）＝ページの ギャロップ 0.5秒
 DEC_T, DEC_P = 3.0, 1.0              # 止まる：足の運びの速さ f = F0·(1 - t/DEC_T)^DEC_P（ゴールから）
-DEC_PHI = (1.10, 1.20, 1.30, 1.41, 1.52, 1.64, 1.77, 1.91, 2.08, 2.29, 2.55)   # 止まる コマ（ゴールからの 足の運びの回数。1回目は いまのコマ）
+DEC_PHI_165 = (1.10, 1.20, 1.30, 1.41, 1.52, 1.64, 1.77, 1.91, 2.08, 2.29, 2.55)   # 第4.166版までの 止まる コマ（足の運びの回数で 11コマ：1秒に 5〜19コマ だった）
 DEC_END = 3.0                        # 足の大きさが 0 になる所（DEC_STAND で 立つ形に かえる）
 DEC_STAND = 2.80
 ACC_T, ACC_Q = 0.9, 0.5              # 走りだす：f = F0·(t/ACC_T)^ACC_Q（ACC_T 秒で ギャロップの速さ）
-ACC_PHI = (0.12, 0.25, 0.40, 0.55, 0.70, 0.85)   # 走りだす コマ（1回目の とちゅうまで。そのあとは いまのコマ）
+ACC_PHI_165 = (0.12, 0.25, 0.40, 0.55, 0.70, 0.85)   # 第4.166版までの 走りだす コマ（6コマ）
+ACC_RUN = 1.0                        # 走りだして この秒で ページの ギャロップ（N_FRAMES コマの くり返し）に かわる
+# 第4.167版：止まる・走りだすの コマは 時刻で 決める（1/30秒の きざみ）。動きが 大きい 間は 1/30秒ごとに 1コマ、
+#   小さく なったら（1コマで 動く 大きさ ＝ 足の 大きさ × 足の 運びの 速さ：全速の 1コマを 1 と して）MOVE[0] より 下で 2/30秒・MOVE[1] より 下で 3/30秒 見せる
+MOVE = (0.30, 0.12)
 ACC_G0 = round(F0 * ACC_T * ACC_Q / (1 + ACC_Q), 6) % 1.0     # 走りだしの位相のずれ（0.6：ACC_T のあと ページの ギャロップと コマが そろう）
-TRANS_COLS = 6
+TRANS_COLS = 12
 
 
 def dec_phi(t):
     """ゴールから t 秒の 足の運びの回数"""
     t = min(max(t, 0.0), DEC_T)
     return F0 * DEC_T / (DEC_P + 1) * (1 - (1 - t / DEC_T) ** (DEC_P + 1))
+
+
+def dec_time(phi):
+    """足の運びが phi 回に なる 秒（dec_phi の 逆）"""
+    x = 1 - phi * (DEC_P + 1) / (F0 * DEC_T)
+    return DEC_T * (1 - max(x, 0.0) ** (1 / (DEC_P + 1)))
+
+
+def dec_f(t):
+    """ゴールから t 秒の 足の運びの 速さ（回/秒）"""
+    return F0 * (1 - min(max(t, 0.0), DEC_T) / DEC_T) ** DEC_P
+
+
+def acc_f(t):
+    """走りだしてから t 秒の 足の運びの 速さ（回/秒）"""
+    return F0 * min(1.0, (max(t, 0.0) / ACC_T) ** ACC_Q)
+
+
+def trans_times():
+    """止まる・走りだすの コマの 番号（時刻＝番号 ÷ FPS 秒）→ (止まる コマの 番号, 立つ形に かわる 番号, 走りだす コマの 番号)。
+       走りだしの 0番は 立つ形（同じ コマ）・ACC_RUN 秒の 番号からは ページの ギャロップ"""
+    step = lambda m: 1 if m >= MOVE[0] else 2 if m >= MOVE[1] else 3
+    k_stand = math.ceil(dec_time(DEC_STAND) * FPS - 1e-9)
+    kd, k = [], 0
+    while k < k_stand:
+        kd.append(k)
+        k += step(dec_amp(dec_phi(k / FPS)) * dec_f(k / FPS) / F0)
+    ka, k = [], 0
+    while k < round(ACC_RUN * FPS):
+        if k:
+            ka.append(k)
+        k += step(acc_amp(acc_phi(k / FPS)) * acc_f(k / FPS) / F0)
+    return kd, k_stand, ka
 
 
 def dec_amp(phi):
@@ -519,12 +562,18 @@ def blend_pose(g, a, P0):
 
 
 def trans_list(num):
-    """止まる・立つ・走りだす コマ：(種類, 足の運びの回数, 位相 g, 足の大きさ a)"""
+    """止まる・立つ・走りだす コマ：(種類, コマの 番号 k〈時刻＝k ÷ FPS 秒：ゴールから／走りだしから〉, 足の運びの回数, 位相 g, 足の大きさ a)"""
     ph = PHASE[num]
-    L = [('dec', phi, ph + phi, dec_amp(phi)) for phi in DEC_PHI]
-    L.append(('stand', DEC_STAND, ph + DEC_STAND, 0.0))
-    L += [('acc', phi, ph + ACC_G0 + phi, acc_amp(phi)) for phi in ACC_PHI]
+    kd, ks, ka = trans_times()
+    L = [('dec', k, dec_phi(k / FPS), ph + dec_phi(k / FPS), dec_amp(dec_phi(k / FPS))) for k in kd]
+    L.append(('stand', ks, DEC_STAND, ph + DEC_STAND, 0.0))
+    L += [('acc', k, acc_phi(k / FPS), ph + ACC_G0 + acc_phi(k / FPS), acc_amp(acc_phi(k / FPS))) for k in ka]
     return L
+
+
+def trans_dy(num, g, a, raw):
+    """止まる・走りだす コマの 上下：ギャロップに 近い ほど 走る 上下（gallop_dy の 波）に 寄せる・立つ形に 近い ほど いちばん 低い ひづめを 地面に（raw）"""
+    return a * a * gallop_dy(num, (g - PHASE[num]) % 1.0) + (1 - a * a) * raw
 
 
 def drop_tmp(name):
@@ -553,7 +602,7 @@ def trans_frames(h, cache, dyg):
     g0 = hv0[:, 1].max()
     ph = PHASE[num]
     out, meta = [], []
-    for i, (kind, phi, g, a) in enumerate(trans_list(num)):
+    for i, (kind, k, phi, g, a) in enumerate(trans_list(num)):
         cf = os.path.join(cache, f'h{num}_t{i:02d}.npz')
         if os.path.exists(cf):
             z = np.load(cf)
@@ -572,10 +621,7 @@ def trans_frames(h, cache, dyg):
         if not stance_legs(g % 1.0):
             u = ((g % 1.0) - 0.67) / 0.33
             raw -= LIFT * a * 4 * u * (1 - u)
-        x = ((g - ph) % 1.0) * len(dyg)
-        i0 = int(math.floor(x)) % len(dyg)
-        dg = dyg[i0] * (1 - (x - math.floor(x))) + dyg[(i0 + 1) % len(dyg)] * (x - math.floor(x))
-        dy = a * a * dg + (1 - a * a) * raw
+        dy = trans_dy(num, g, a, raw)
         M = np.float32([[1, 0, 0], [0, 1, float(dy)]])
         aw = cv2.warpAffine(al, M, (wc, Hh), flags=cv2.INTER_LINEAR)
         rp = cv2.warpAffine(rgb * al[..., None], M, (wc, Hh), flags=cv2.INTER_LINEAR)
@@ -590,7 +636,7 @@ def trans_frames(h, cache, dyg):
             pre, A = pre * (1 - da[..., None]) + dr * da[..., None], A + da * (1 - A)
         pre, A = pre * (1 - aw[..., None]) + rgbw * aw[..., None], A + aw * (1 - A)
         out.append((pre, A))
-        meta.append(dict(kind=kind, phi=round(phi, 4), amp=round(a, 4), dy=round(float(dy), 2)))
+        meta.append(dict(kind=kind, k=k, phi=round(phi, 4), amp=round(a, 4), dy=round(float(dy), 2)))
         print('horse', num, 'trans', i, kind, round(phi, 2), round(a, 3), flush=True)
     return out, meta
 

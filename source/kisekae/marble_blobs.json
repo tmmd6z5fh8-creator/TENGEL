@@ -1,10 +1,11 @@
 {
  "base": "1b277777e211e01bf80060a42dbfbffa",
- "look": "eae469c672feafb1efa8a9c7e9301e50",
- "turnB": "dca48b70db6a0a7081672b449f174bd2",
- "turnD": "842ffc1f33bb389fb2ac5410125f7570",
- "neighL": "c67b494e63db2349c628579dbb3d4bfa",
- "neighR": "c14dbb38ce0b29e12faf047550f4aa4b",
+ "rest": "e75c005db323e211ca3b9d3aabcd874b",
+ "look": "93cf8db110512671329bf36cfe620de8",
+ "turnB": "6cad395aa04dda1643597239e4934d8d",
+ "turnD": "b3dcaea4b0c91b1285de3c57edc33c1a",
+ "neighL": "441cc96843d32be126c9f7fcbd26f750",
+ "neighR": "6d551a2ec8b8aca1942f2042be2c23a1",
  "spR": "b34b32176d2d640af34674d012c562d0",
  "spL": "95d97ad1bf6e6ba4bad8860807e12ef1",
  "plate": "e8cad4ba00e83fdd844650be5cd18fb5"

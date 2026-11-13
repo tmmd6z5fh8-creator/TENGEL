@@ -38,11 +38,17 @@ import horse3d as Hm
 from h3d import Scene, nrm
 from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at
 
-N_RUN = 8                          # ギャロップ1回のコマ数
+N_RUN = 15                         # 全速の ギャロップ1回の コマ数（第4.167版：8 → 15＝1コマ 1/30秒。まさちゃん 2026/11/13
+                                   #   「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）
+N_FIT = 8                          # 上下の 波を 決める コマ数（第4.166版までの 8コマ：走る 上下の 動きは 前の まま）
+N1, N2 = 30, 21                    # 走りだしの 1歩め（1.0秒）・2歩め（0.7秒）の コマ数（どれも 1コマ 1/30秒）
+LEN = dict(stop=60, jump=75, spin=75, start=60)   # 1コマ 1/30秒：立ち止まる 2.0秒・ジャンプ／一回転 2.5秒・走りだし（けり出して 全速まで）2.0秒
+READY_AT = dict(stop=53, jump=65, spin=62)        # 「かまえる」が 始まる コマ
+LAND_AT = 23                       # ジャンプ・一回転から おりる コマ（宙は 19コマ・一回転は 23コマ）
 LIFT = 1.2                         # 走っていて4本とも宙のときに浮く高さ（ドット）
 JUMP_H = 5.0                       # ジャンプの いちばん高い所（体が 走っている時より何ドット上か・耳が絵の上から はみ出さない）
 SPIN_H = 2.0                       # 一回転の小さな跳ね
-N_JUMP, N_SPIN = 8, 11             # ジャンプの宙のコマ・一回転のコマ（45°ずつ 0〜450°）
+N_JUMP, N_SPIN = 19, 23            # ジャンプの宙のコマ・一回転のコマ（第4.167版：8 → 19・11 → 23。一回転は 1コマ 18.75°ずつ 450°まで）
 HOOF_KEYS = ('FL', 'FR', 'HL', 'HR')
 FOV = 26.0
 LIGHT = np.array([0.3, 0.8, 0.5])  # pixel.horse の明るい側（横向きのとき）
@@ -150,9 +156,10 @@ def orbit(cam, pose, yaw):
     return C + rot_y(e - C, yaw), C + rot_y(t - C, yaw)
 
 
-def run_dy(cam):
-    """走るコマごとの上下（地面についている ひづめを そろえる・宙は山なり・2つの波で なめらかに）"""
-    n = N_RUN
+def run_wave(cam):
+    """走る 上下の 波（位相 g → 上下の ずれ）と 地面の 高さ。決め方は 第4.166版までと 同じ（8コマ：地面に ついて いる ひづめを そろえる・宙は 山なり・
+       2つの 波で なめらかに）＝走る 上下の 動きは 前の まま。コマを ふやして 決め直すと、足が 地面を はなれる 瞬間の コマが 入って 体が しずむ（第4.166版）"""
+    n = N_FIT
     lows = []
     for f in range(n):
         g = f / n
@@ -171,7 +178,84 @@ def run_dy(cam):
     ph = 2 * math.pi * np.arange(n) / n
     A = np.stack([np.ones(n), np.cos(ph), np.sin(ph), np.cos(2 * ph), np.sin(2 * ph)], 1)
     coef = np.linalg.lstsq(A, np.array(dy), rcond=None)[0]
-    return [float(v) for v in A @ coef], ground
+
+    def wave(g):
+        p = 2 * math.pi * g
+        return float(coef @ np.array([1.0, math.cos(p), math.sin(p), math.cos(2 * p), math.sin(2 * p)]))
+    return wave, ground
+
+
+HAIR0 = dict(wind_ang=PX.HAIR['wind_ang'], mane_len=1.0, tail_len=1.0)       # たてがみ・しっぽの きまった 形（hair が ない 形）
+
+
+def mix(a, b, w):
+    """形 a → b の あいだ（w：0＝a・1＝b）。角度・しっぽ・足・たてがみを 1つずつ まぜる（形の 入れかわりを 1/30秒ずつ つなぐ）"""
+    w = min(1.0, max(0.0, w))
+    L = lambda x, y: x + (y - x) * w
+    out = {k: round(L(a[k], b[k]), 3) for k in ('theta', 'neck_rot', 'head_ang')}
+    out['tail'] = [round(L(x, y), 3) for x, y in zip(a['tail'], b['tail'])]
+    for part in ('fore', 'hind'):
+        out[part] = {sd: [round(L(x, y), 3) for x, y in zip(a[part][sd], b[part][sd])] for sd in 'LR'}
+    ha, hb = dict(HAIR0, **a.get('hair', {})), dict(HAIR0, **b.get('hair', {}))
+    out['hair'] = {k: round(L(ha[k], hb[k]), 4) for k in HAIR0}
+    return out
+
+
+def dmix(d0, d1, w):
+    """土けむり d0 → d1 の あいだ（丸の 数が ちがう 時は、足りない 丸を 半径 0 から ふくらます／0 へ しぼます）"""
+    out = []
+    for i in range(max(len(d0), len(d1))):
+        p = d0[i] if i < len(d0) else (d1[i][0], d1[i][1], 0.0)
+        q = d1[i] if i < len(d1) else (d0[i][0], d0[i][1], 0.0)
+        out.append(tuple(u + (v - u) * w for u, v in zip(p, q)))
+    return out
+
+
+def dmove(d, dx=0.0, dy=0.0, k=1.0):
+    """土けむりを ずらす・小さく する（半径 k 倍）"""
+    return [(x + dx, y + dy, r * k) for x, y, r in d]
+
+
+def brake_dust(j):
+    """ブレーキ・着地の 土けむり（j：出て からの コマ）→ (うしろ足の うしろ, 前足の うしろ)。出たて → ふくらむ（前の 2コマの あいだを うめる）→ 上へ → うすれる"""
+    H0, H1 = DUST_HIND
+    F0, F1 = DUST_FORE
+    if j < 0 or j > 11:
+        return [], []
+    if j == 0:
+        return dmove(H0, k=.6), dmove(F0, k=.6)
+    if j <= 4:
+        return dmix(H0, H1, (j - 1) / 3), dmix(F0, F1, (j - 1) / 3)
+    if j <= 7:
+        return dmove(H1, -.2 * (j - 4), -.3 * (j - 4)), dmove(F1, -.2 * (j - 4), -.3 * (j - 4))
+    k = 1 - .22 * (j - 7)
+    return dmove(H1, -.6 - .2 * (j - 7), -.9 - .3 * (j - 7), k), dmove(F1, -.6 - .2 * (j - 7), -.9 - .3 * (j - 7), k)
+
+
+def push_dust(f):
+    """けり出す 土けむり（f：走りだしの コマ）：ふくらむ → 少し 上へ → うしろへ 流れて 小さく（前の「けり出す」と「1歩め」の あいだを うめる）"""
+    if f < 1 or f > 15:
+        return []
+    if f <= 3:
+        return dmove(DUST_PUSH, k=(.5, .75, 1.0)[f - 1])
+    up = lambda j: dmove(DUST_PUSH, -.15 * j, -.12 * j)
+    if f <= 8:
+        return up(f - 3)
+    if f <= 11:
+        return dmix(up(5), DUST_DASH, (f - 8) / 3)
+    j = f - 11
+    return dmove(DUST_DASH, -1.0 * j, -.3 * j, 1 - .22 * j)
+
+
+def spin_dust(j):
+    """一回転から おりる 土けむり（j：おりて からの コマ）"""
+    if j < 0 or j > 7:
+        return []
+    if j <= 1:
+        return dmove(DUST_SPIN, k=(.6, .8)[j])
+    if j <= 4:
+        return dmove(DUST_SPIN, 0, -.15 * (j - 2))
+    return dmove(DUST_SPIN, 0, -.3 - .25 * (j - 4), (.7, .45, .25)[j - 5])
 
 
 def dust(img, discs):
@@ -223,8 +307,9 @@ def frame(pose, cam, ground, name, dy=None, yaw=0.0, lift=0.0, eyes='near', shad
 
 
 def spin_eyes(yaw):
+    """回って いる 時の 目：正面の 近く（90°±20°）は 両目・うしろ向き（202.5°〜337.5°）は 描かない（前の 45°きざみの コマと 同じ 分け方）"""
     a = yaw % 360
-    return 'both' if a == 90 else 'none' if 180 < a < 360 else 'near'
+    return 'both' if abs(a - 90) < 20 else 'none' if 202.5 < a < 337.5 else 'near'
 
 
 def hill_top(x):
@@ -296,58 +381,138 @@ def run(out, sample=None):
     orig = PX.background()
     orig, _ = PX.horse(orig)
     PX.go_text(orig)
-    dys, ground = run_dy(cam)
-    frames, info, eyes_px = [], [], []
+    wave, ground = run_wave(cam)
+    bare = lambda p: {k: v for k, v in p.items() if k != 'hair'}
+    RUN0 = run_pose(0.0)
+    by0 = float(np.mean([body_y(run_pose(f / N_FIT), shifted(cam, wave(f / N_FIT))) for f in range(N_FIT)]))   # 走っている時の体の高さ（前と 同じ 8コマで）
+    cache = {}
 
-    def add(name, img, dy):
-        frames.append(PX.go_text(img))
-        info.append((name, round(dy, 2)))
-        eyes_px.append(EYE_PX[-1] if EYE_PX else [])                          # そのコマの 目の 画素（白い 雲と 同じ 色でも すき通しに しない）
+    def shot(pose, discs=(), **kw):
+        """1コマ（絵・目の 画素・上下の ずれ）。同じ 形・同じ 土けむりは 1回 だけ 描く"""
+        discs = [(round(x, 3), round(y, 3), round(r, 3)) for x, y, r in discs if r >= .6]
+        key = json.dumps([pose, sorted((k, round(float(v), 4) if not isinstance(v, (str, bool)) else v) for k, v in kw.items()), discs], sort_keys=True)
+        if key not in cache:
+            img, R, dy, c = frame(pose, cam, ground, 'pxw', **kw)
+            if discs:
+                dust(img, discs)
+            cache[key] = (PX.go_text(img), list(R.get('eye_px', [])), round(float(dy), 2))
+            print(f'  {len(cache)}', end='\r', flush=True)
+        return cache[key]
 
-    for f in range(N_RUN):                                                  # 走る
-        img, R, dy, c = frame(run_pose(f / N_RUN), cam, ground, f'pxrun{f}', dy=dys[f])
-        add(f'run{f}', img, dy)
-    img, R, dy, c = frame(READY, cam, ground, 'pxready')                    # かまえる
-    add('ready', img, dy)
-    img, R, dy, c = frame(PUSH, cam, ground, 'pxpush')                      # けり出す（土けむり）
-    hv = hooves({k: v for k, v in PUSH.items() if k != 'hair'}, c)
-    hx = min(hv['HL'][0], hv['HR'][0])
-    dust(img, [(hx + x, ground + y, r) for x, y, r in DUST_PUSH])
-    add('push', img, dy)
-    img, R, dy, c = frame(run_pose(0), cam, ground, 'pxdash', dy=dys[0])    # 1歩め（うしろへ流れた土けむり）
-    dust(img, [(hx + x, ground + y, r) for x, y, r in DUST_DASH])
-    add('dash', img, dy)
-    by0 = float(np.mean([body_y(run_pose(f / N_RUN), shifted(cam, dys[f])) for f in range(N_RUN)]))   # 走っている時の体の高さ
-    for i in range(N_JUMP):                                                 # ジャンプ（体が山なり・最後の2コマは おりる用意）
-        u = (i + 1) / (N_JUMP + 1)
-        img, R, dy, c = frame(TUCK if i < N_JUMP - 2 else REACH, cam, ground, f'pxjump{i}', by=by0 - JUMP_H * 4 * u * (1 - u), shade=True)
-        add(f'jair{i}', img, dy)
-    for i in range(2):                                                      # 立ち止まる（ブレーキ2コマ・土けむり。brake1 は ジャンプから おりる時にも）
-        img, R, dy, c = frame(BRAKE, cam, ground, f'pxbrake{i}')
-        hv = hooves({k: v for k, v in BRAKE.items() if k != 'hair'}, c)
-        hx, fx = min(hv['HL'][0], hv['HR'][0]), min(hv['FL'][0], hv['FR'][0])
-        dust(img, [(hx + x, ground + y, r) for x, y, r in DUST_HIND[i]])
-        dust(img, [(fx + x, ground + y, r) for x, y, r in DUST_FORE[i]])
-        add(f'brake{i}', img, dy)
-    for i, p in enumerate(IDLE):                                            # 立って待つ（2コマ）
-        img, R, dy, c = frame(p, cam, ground, f'pxstand{i}')
-        add(f'stand{i}', img, dy)
-    for i in range(N_SPIN):                                                 # 一回転（小さく跳ねながら 45°ずつ・こっちを向いて おりる）
-        u = (i + .5) / N_SPIN
-        yaw = 45 * i
-        img, R, dy, c = frame(HOP, cam, ground, f'pxspin{i}', yaw=yaw, lift=SPIN_H * 4 * u * (1 - u), eyes=spin_eyes(yaw), shade=True)
-        add(f'spin{i}', img, dy)
-    img, R, dy, c = frame(STAND, cam, ground, 'pxsland', yaw=90, eyes='both')    # 一回転から おりる（足もとの左右に土けむり）
-    hv = hooves({k: v for k, v in STAND.items() if k != 'hair'}, c)
-    mx = sum(v[0] for v in hv.values()) / 4
-    dust(img, [(mx + x, ground + y, r) for x, y, r in DUST_SPIN])
-    add('sland', img, dy)
-    img, R, dy, c = frame(STAND, cam, ground, 'pxturn', yaw=45)             # ななめ（正面 ↔ 横）
-    add('turn', img, dy)
-    img, R, dy, c = frame(STAND, cam, ground, 'pxlook', yaw=90, eyes='both')     # こっちを見る
-    add('look', img, dy)
-    img, R, dy, c = frame(STAND, cam, ground, 'pxblink', yaw=90, eyes='none')    # まばたき
-    add('blink', img, dy)
+    def on_ground(pose, yaw=0.0):
+        """地面に 立つ 形の カメラ（土けむりの 場所を 決める：描かない）"""
+        p = bare(pose)
+        c = orbit(cam, p, yaw) if yaw else cam
+        return p, shifted(c, ground - max(hooves(p, c)[k][1] for k in HOOF_KEYS))
+
+    at = lambda discs, x0: [(x0 + x, ground + y, r) for x, y, r in discs]
+    p_, c_ = on_ground(PUSH)
+    hv = hooves(p_, c_)
+    hx_push = min(hv['HL'][0], hv['HR'][0])                                 # けり出す うしろ足
+    p_, c_ = on_ground(BRAKE)
+    hv = hooves(p_, c_)
+    hx_brake, fx_brake = min(hv['HL'][0], hv['HR'][0]), min(hv['FL'][0], hv['FR'][0])
+    p_, c_ = on_ground(STAND, 90)
+    mx_stand = sum(v[0] for v in hooves(p_, c_).values()) / 4               # こっちを 向いて おりた 足もとの まん中
+
+    def braked(j):
+        h, f = brake_dust(j)
+        return at(h, hx_brake) + at(f, fx_brake)
+
+    def start_strip():
+        """走りだし（60コマ）：かまえる → けり出す（土けむり）→ 1歩め（30コマ）→ 2歩め（21コマ）→ つぎの コマから 全速（15コマ）"""
+        out = []
+        for f in range(LEN['start']):
+            d = at(push_dust(f), hx_push)
+            if f < 9:
+                pose = mix(READY, PUSH, (f + 1) / 3) if f < 2 else PUSH if f < 8 else mix(PUSH, RUN0, .5)
+                out.append(shot(pose, d))
+            elif f < 9 + N1:
+                g = (f - 9) / N1
+                out.append(shot(run_pose(g), d, dy=wave(g)))
+            else:
+                g = (f - 9 - N1) / N2
+                out.append(shot(run_pose(g), d, dy=wave(g)))
+        assert 9 + N1 + N2 == LEN['start']
+        return out
+
+    def stop_strip():
+        """立ち止まる（60コマ）：すべって止まる（土けむり）→ 立って待つ（首と頭が ゆっくり 上下）→ かまえる"""
+        idle = lambda f: mix(IDLE[0], IDLE[1], (1 - math.cos(2 * math.pi * (f - 13) / 27)) / 2)
+        out = []
+        for f in range(LEN['stop']):
+            if f < 2:
+                pose = mix(RUN0, BRAKE, (f + 1) / 3)
+            elif f < 9:
+                pose = BRAKE
+            elif f < 13:
+                pose = mix(BRAKE, IDLE[0], (f - 8) / 5)
+            elif f < 50:
+                pose = idle(f)
+            elif f < READY_AT['stop']:
+                pose = mix(idle(49), READY, (f - 49) / 4)
+            else:
+                pose = READY
+            out.append(shot(pose, braked(f - 1)))
+        return out
+
+    def jump_strip():
+        """ジャンプ（75コマ）：けり出す → 宙（19コマ・山なり）→ おりる（土けむり）→ こっちを 向く → 1秒 見る（まばたき）→ ななめ → かまえる"""
+        out = []
+        for f in range(LEN['jump']):
+            kw, d = {}, []
+            if f < 4:
+                pose = mix(RUN0, PUSH, (f + 1) / 3) if f < 2 else PUSH
+                d = at(dmove(DUST_PUSH, k=(0, .6, .85, 1.0)[f]), hx_push)
+            elif f < LAND_AT:
+                i = f - 4
+                u = (i + 1) / (N_JUMP + 1)
+                pose = mix(PUSH, TUCK, (i + 1) / 3) if i < 2 else TUCK if i < 12 else mix(TUCK, REACH, (i - 11) / 4) if i < 15 else REACH
+                kw = dict(by=by0 - JUMP_H * 4 * u * (1 - u), shade=True)
+                d = at(dmove(DUST_PUSH, -.3 * (i + 1), -.35 * (i + 1), 1 - .2 * (i + 1)), hx_push) if i < 4 else []
+            elif f < 27:
+                pose = mix(REACH, BRAKE, .5) if f == LAND_AT else BRAKE
+            elif f < 31:
+                k = f - 26
+                pose, kw = mix(BRAKE, STAND, k / 4), dict(yaw=18.0 * k)
+            elif f < 61:
+                pose, kw = STAND, dict(yaw=90.0, eyes='none' if 43 <= f < 47 else 'both')
+            elif f < READY_AT['jump']:
+                k = f - 60
+                pose, kw = mix(STAND, READY, k / 5), dict(yaw=90.0 - 18.0 * k)
+            else:
+                pose = READY
+            out.append(shot(pose, d + braked(f - LAND_AT), **kw))
+        assert 4 + N_JUMP == LAND_AT
+        return out
+
+    def spin_strip():
+        """一回転（75コマ）：小さく 跳ねながら くるっと 1回転と 4分の1（23コマ）→ こっちを 向いて おりる（土けむり）→ 1秒 見る（まばたき）→ ななめ → かまえる"""
+        out = []
+        for f in range(LEN['spin']):
+            kw = {}
+            if f < LAND_AT:
+                u = (f + 1) / (N_SPIN + 1)
+                yaw = 450.0 * u
+                pose = mix(RUN0, HOP, (f + 1) * .4) if f < 2 else HOP if f < 20 else mix(HOP, STAND, (f - 19) / 4)
+                kw = dict(yaw=yaw, lift=SPIN_H * 4 * u * (1 - u), eyes=spin_eyes(yaw), shade=True)
+            elif f < 58:
+                pose, kw = STAND, dict(yaw=90.0, eyes='none' if 40 <= f < 44 else 'both')
+            elif f < READY_AT['spin']:
+                k = f - 57
+                pose, kw = mix(STAND, READY, k / 5), dict(yaw=90.0 - 18.0 * k)
+            else:
+                pose = READY
+            out.append(shot(pose, at(spin_dust(f - LAND_AT), mx_stand), **kw))
+        assert N_SPIN == LAND_AT
+        return out
+
+    start = start_strip()
+    strips = [('run', [shot(run_pose(f / N_RUN), dy=wave(f / N_RUN)) for f in range(N_RUN)]),      # 全速（15コマ・0.5秒）
+              ('stop', stop_strip() + start), ('jump', jump_strip() + start), ('spin', spin_strip() + start)]   # できごと ＋ 走りだし（つづけて めくる）
+    print(f'描いた コマ {len(cache)}・ならべる コマ {sum(len(v) for _, v in strips)}')
+    frames = [fr for _, v in strips for fr, _, _ in v]
+    eyes_px = [e for _, v in strips for _, e, _ in v]
     # 切りぬく所：いまの絵と ちがう所がぜんぶ入る四角（ドットを偶数にそろえる＝ページの画素が整数になる）
     diff = np.maximum.reduce([np.abs(fr - orig).max(-1) for fr in frames])
     ys, xs = np.nonzero(diff > 1e-6)
@@ -367,27 +532,34 @@ def run(out, sample=None):
         for ex, ey in epx:
             a[ey, ex] = True
         rgba.append(np.dstack([fr, a.astype(np.float32)]))
-    sheet = np.concatenate([fr[y0:y1, x0:x1] for fr in rgba], 1)
+    cols = max(len(v) for _, v in strips)                                   # 1段に 1つの つづき（全速・立ち止まる・ジャンプ・一回転）
+    sheet = np.zeros((len(strips) * ch, cols * cw, 4), np.float32)
+    it = iter(rgba)
+    for r_, (_, v) in enumerate(strips):
+        for c_ in range(len(v)):
+            sheet[r_ * ch:(r_ + 1) * ch, c_ * cw:(c_ + 1) * cw] = next(it)[y0:y1, x0:x1]
     save_lossless_rgba(sheet, f'{out}/pixel_run.webp')                      # ドットのまま（1倍）
     save_lossless_rgba(far_sheet(), f'{out}/pixel_far.webp')
     save_lossless_rgba(near_layer(), f'{out}/pixel_near.webp')
     save_lossless(PX.upscale(orig), f'{out}/pixel_static.webp')            # 下に置く いまの絵（同じ絵・5倍・ロスなし）
     S_ = PX.SCALE
     js = dict(size=[PX.W * S_, PX.Hh * S_], cell=[int(x0 * S_), int(y0 * S_), int(cw * S_), int(ch * S_)], sheet_scale=1,
-              order=[k for k, _ in info], run=N_RUN, dy=[d for _, d in info],
+              cols=cols, rows=[[k, len(v)] for k, v in strips], run=N_RUN, ev=LEN, ready=READY_AT, land=LAND_AT,
+              dy=[d for _, _, d in strips[0][1]],
               sky=[['#%02X%02X%02X' % tuple(int(round(v * 255)) for v in col), y1] for col, y1 in sky_rows()],
               far=dict(period=FAR_P, clouds=list(CLOUD_ROWS), hills=list(HILL_ROWS)))
     json.dump(js, open(f'{out}/pixel_run.json', 'w'), ensure_ascii=False)
     print(json.dumps(js, ensure_ascii=False))
-    if sample:                                           # 見本：いまの絵とコマ（3倍）
-        tiles = [orig] + frames
-        cols = 6
-        rows = -(-len(tiles) // cols)
-        sh = np.ones((rows * 66, cols * 158, 3), np.float32)
+    if sample:                                           # 見本：コマの シートを 15コマずつ 折って 2倍に（すき通しは 灰色）
+        per = 15
+        tiles = [fr[y0:y1, x0:x1] for fr in rgba]
+        rows = -(-len(tiles) // per)
+        sh = np.full((rows * (ch + 2), per * (cw + 2), 3), .55, np.float32)
         for i, t in enumerate(tiles):
-            r_, c_ = divmod(i, cols)
-            sh[r_ * 66:r_ * 66 + 64, c_ * 158:c_ * 158 + 156] = t
-        sh = cv2.resize(sh, (sh.shape[1] * 3, sh.shape[0] * 3), interpolation=cv2.INTER_NEAREST)
+            r_, c_ = divmod(i, per)
+            cell = sh[r_ * (ch + 2):r_ * (ch + 2) + ch, c_ * (cw + 2):c_ * (cw + 2) + cw]
+            cell[:] = np.where(t[..., 3:] > 0, t[..., :3], cell)
+        sh = cv2.resize(sh, (sh.shape[1] * 2, sh.shape[0] * 2), interpolation=cv2.INTER_NEAREST)
         cv2.imwrite(sample, cv2.cvtColor((np.clip(sh, 0, 1) * 255 + .5).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
 

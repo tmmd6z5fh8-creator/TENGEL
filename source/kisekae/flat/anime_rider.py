@@ -114,15 +114,16 @@ def jockey_win(sc, S, js=1.12, side_z=0.30, side=1.0):
     return J
 
 def render_anime(pose, box, W, Hh, s=3, azim=12, elev=4, name='anime', head_scale=1.06, fov=26, js=1.12,
-                 key=(0.30, 0.80, 0.55), cam=None, jockey=None):
+                 key=(0.30, 0.80, 0.55), cam=None, jockey=None, rect=None):
     """3倍の大きさで形を描く（光は1つ・影つき・白い素材）。rgb は「光の当たり具合（影をふくむ）」になる。
+       rect：描く 四角（3倍の 画素の (x0, y0, x1, y1)）。その 外は 描かない（0 の まま）＝馬の いる 所 だけ 描いて 速く する（中の 絵は 同じ）
        cam：決めたカメラ (目, 見る所)（走るコマで、どのコマも同じカメラにするとき）。なければ box に入るように決める（R['cam'] に入れて返す）
        jockey：'win' なら 表彰の騎手（体を起こして 手前の手を上げる・jockey_win）"""
     Hm.HEAD_SCALE = head_scale
     W3, H3 = W * s, Hh * s
     e, t = cam if cam is not None else frame_horse(pose, tuple(v * s for v in box), W3, H3, facing='right', azim=azim, elev=elev, fov=fov)
     sc = Scene()
-    sc.image(W3, H3, 1)
+    sc.image(W3, H3, 1, rect)
     sc.camera(e, t, fov)
     sc.bounce(0)
     cam = nrm(np.asarray(e, float) - np.asarray(t, float))

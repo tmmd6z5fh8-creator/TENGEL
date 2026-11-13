@@ -12,6 +12,13 @@
 #     → night_h<番号>_hq.webp・night_t<番号>_hq.webp（すき通しつき・ロスなし）・night_award<番号>_hq.webp、
 #        night_h<番号>_1x.webp・night_t<番号>_1x.webp・night_award<番号>_1x.webp（いまと 同じ 作り方：入って いる 絵と 見くらべる 用）
 #     描いた コマは <出す フォルダ>/cache15 に のこして 2回目は 描かない
+#   第4.167版（まさちゃん 2026/11/13「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：コマを 1/30秒に
+#   ・走る コマ：10 → 15コマ（night_h<番号>_hq.webp・1.5倍・ロスなし：いままでどおり）。上下の ずれは 第4.166版までの 動きの まま（night_run.gallop_dy）
+#   ・止まる／走りだす コマ：時刻で 決める（night_run.trans_list：動きが 大きい 間は 1/30秒ごと）＝1頭 18 → 72コマ。コマが 4倍に なる ので、
+#     この シート（night_t<番号>_m.webp）は 1倍・ロスあり（Q_TRANS）に する（動いて いる 間 だけ 見える 絵）。止まって 立つ 絵 だけ 1.5倍・ロスなしで
+#     べつの 1まい（night_s<番号>_hq.webp）＝止まって いる 間は いままでどおり くっきり
+#   ・台帳（night_run.json の horses・trans）は ここで 書く（<出す フォルダ>/night_run.json）。切りぬく 場所は 新しい コマの 絵から 決め直す
+#   ・馬の いる 所 だけ 描く（anime_rider.render_anime の rect：中の 絵は ぜんぶ 描いた ときと 同じ。四角の ふちに 絵が かかったら 止まる）
 import os, sys, json, math
 import numpy as np, cv2
 from PIL import Image
@@ -22,6 +29,9 @@ kx = lambda v: int(round(v * OUT))
 out = sys.argv[1]; os.makedirs(out, exist_ok=True); cache = os.path.join(out, 'cache15'); os.makedirs(cache, exist_ok=True)
 what = set(sys.argv[2:]) or {f'{c}{h["num"]}' for c in 'hta' for h in NR.HORSES}
 info = json.load(open(K + '/night_run.json'))
+Q_TRANS = int(os.environ.get('Q_TRANS', '90'))                # 止まる／走りだす コマの シートの 画質（ロスあり）
+PAD = 14                                                      # 描く 四角：前の 版の 切りぬく 場所（走る コマ・止まる コマ）より この 画素（1倍）だけ 広く
+NEW = {}                                                      # 新しい 台帳（horses・trans）
 
 
 def paint2(R, look, dbg=None):
@@ -70,8 +80,21 @@ def base(h):
     cam, s = (z['eye'], z['tgt']), int(z['s'])
     hv0 = z['hooves'] / s + np.array([px, 0.0])
     gy = hv0[:, 1].max() + 1.5; scl = (gy - NR.Y0) / (Hh - NR.Y0)
-    return dict(num=num, px=px, wc=wc, cam=cam, s=s, hv0=hv0, gy=gy, scl=scl, hx_d=hv0[2:, 0].min(), g0=hv0[:, 1].max(),
+    e, t = info['horses'][str(num)], info['trans'][str(num)]
+    bx = (min(e['at'][0], t['at'][0]) + px - PAD, min(e['at'][1], t['at'][1]) - PAD,
+          max(e['at'][0] + e['cell'][0], t['at'][0] + t['cell'][0]) + px + PAD, max(e['at'][1] + e['cell'][1], t['at'][1] + t['cell'][1]) + PAD)
+    rect = (max(0, bx[0] * s), max(0, bx[1] * s), min(wc * s, bx[2] * s), min(Hh * s, bx[3] * s))
+    return dict(num=num, px=px, wc=wc, cam=cam, s=s, hv0=hv0, gy=gy, scl=scl, hx_d=hv0[2:, 0].min(), g0=hv0[:, 1].max(), rect=rect,
                 sh1=NR.shadow_mask(hv0, gy, scl, wc), sh2=NR.shadow_mask(hv0, gy, scl, wc, k=OUT), dim=1.0 - h['haze'] * 0.8, seed=200 + NR.HORSES.index(h))
+
+
+def inside(a1, b):
+    """描いた 絵が 四角（rect）の ふちに かかって いない（かかって いたら 馬の 一部が 切れて いる）"""
+    x0, y0, x1, y1 = (v // b['s'] for v in b['rect'])
+    m = 2
+    edge = max(float(a1[y0:y0 + m, x0:x1].max()) if y0 > 0 else 0.0, float(a1[y1 - m:y1, x0:x1].max()) if y1 < a1.shape[0] else 0.0,
+               float(a1[y0:y1, x0:x0 + m].max()) if x0 > 0 else 0.0, float(a1[y0:y1, x1 - m:x1].max()) if x1 < a1.shape[1] else 0.0)
+    assert edge < 0.01, ('描く 四角の ふちに 絵が かかった', b['num'], b['rect'], edge)
 
 
 def painted(cf, make):
@@ -100,73 +123,84 @@ def sheet(frames, x0, y0, cw, ch, cols, k, path):
 
 
 def run_frames(h, b):
-    """走る コマ（night_run.horse_frames と 同じ）"""
+    """走る コマ（night_run.horse_frames と 同じ）：15コマ。上下は 第4.166版までの 動きの まま（NR.gallop_dy）"""
     num, wc, n = b['num'], b['wc'], NR.N_FRAMES
     P = []
     for f in range(n):
         g = (f / n + NR.PHASE[num]) % 1.0
 
         def make(f=f, g=g):
-            R = NR.render_anime(NR.horse_pose(g, h['pose']), h['box'], wc, Hh, name=f'nrun{num}_{f}', cam=b['cam'])
+            R = NR.render_anime(NR.horse_pose(g, h['pose']), h['box'], wc, Hh, name=f'nrun{num}_{f}', cam=b['cam'], rect=b['rect'])
             r = paint2(R, dict(h, hair_phase=2 * math.pi * f / n)); NR.drop_tmp(f'nrun{num}_{f}')
+            inside(r[1], b)
             return r + (np.asarray(R['hooves'], float) / b['s'],)
-        rgb1, a1, rgb2, a2, hv = painted(os.path.join(cache, f'h{num}_f{f:02d}.npz'), make)
-        legs = NR.stance_legs(g)
-        P.append(dict(rgb1=rgb1, a1=a1, rgb2=rgb2, a2=a2, low=max(hv[NR.HOOF_KEYS.index(q), 1] for q in legs) if legs else None))
-        print('horse', num, 'frame', f, 'stance', legs, flush=True)
-    for fr in P:
-        fr['dy'] = None if fr['low'] is None else b['g0'] - fr['low']
-    for i, fr in enumerate(P):
-        if fr['dy'] is None:
-            jp = next(j for j in range(1, n) if P[(i - j) % n]['low'] is not None)
-            jn = next(j for j in range(1, n) if P[(i + j) % n]['low'] is not None)
-            t = jp / (jp + jn)
-            prev, nxt = P[(i - jp) % n]['dy'], P[(i + jn) % n]['dy']
-            fr['dy_air'] = prev + (nxt - prev) * t - NR.LIFT * 4 * t * (1 - t)
-    for fr in P:
-        if fr['dy'] is None:
-            fr['dy'] = fr.pop('dy_air')
-    dys = NR.smooth_dy([fr['dy'] for fr in P])
-    led = info['horses'][str(num)]['dy']
-    assert max(abs(float(a) - c) for a, c in zip(dys, led)) < 0.011, ('dy differs from night_run.json', [round(float(v), 2) for v in dys], led)
+        rgb1, a1, rgb2, a2, hv = painted(os.path.join(cache, f'h{num}_g{f:02d}.npz'), make)
+        P.append(dict(rgb1=rgb1, a1=a1, rgb2=rgb2, a2=a2))
+        print('horse', num, 'frame', f, flush=True)
+    dys = [NR.gallop_dy(num, f / n) for f in range(n)]
     F1, F2 = [], []
     for f, (fr, dy) in enumerate(zip(P, dys)):
         F1.append(stack(b['sh1'], NR.dust_flow(b['hx_d'], b['gy'], b['scl'], b['dim'], b['seed'], f / n, wc), *moved(fr['rgb1'], fr['a1'], dy, wc, Hh), h['haze']))
         F2.append(stack(b['sh2'], NR.dust_flow(b['hx_d'], b['gy'], b['scl'], b['dim'], b['seed'], f / n, wc, k=OUT), *moved(fr['rgb2'], fr['a2'], dy * OUT, kx(wc), kx(Hh)), h['haze']))
-    return F1, F2
+    return F1, F2, [round(float(v), 2) for v in dys]
 
 
 def trans_frames(h, b):
-    """止まる・立つ・走りだす コマ（night_run.trans_frames と 同じ）"""
+    """止まる・立つ・走りだす コマ（night_run.trans_frames と 同じ）：1倍の コマ ぜんぶ と、立つ コマの 1.5倍"""
     num, wc, ph = b['num'], b['wc'], NR.PHASE[b['num']]
-    dyg = info['horses'][str(num)]['dy']; meta = info['trans'][str(num)]['frames']
-    F1, F2 = [], []
-    for i, (kind, phi, g, a) in enumerate(NR.trans_list(num)):
-        def make(i=i, g=g, a=a):
+    F1, meta, stand2 = [], [], None
+    for i, (kind, k, phi, g, a) in enumerate(NR.trans_list(num)):
+        def make(i=i, g=g, a=a, kind=kind, k=k):
             look = dict(h, hair_phase=2 * math.pi * (g - ph), hair_wind=0.4 + 0.6 * a, hair_drop=0.85 * (1 - a))
             if 'tail_ang' in h:
                 look['tail_ang'] = NR.STAND_TAIL + (h['tail_ang'] - NR.STAND_TAIL) * a
-            R = NR.render_anime(NR.blend_pose(g, a, h['pose']), h['box'], wc, Hh, name=f'ntr{num}_{i}', cam=b['cam'])
-            r = paint2(R, look); NR.drop_tmp(f'ntr{num}_{i}')
+            R = NR.render_anime(NR.blend_pose(g, a, h['pose']), h['box'], wc, Hh, name=f'ntr{num}_{kind}{k}', cam=b['cam'], rect=b['rect'])
+            r = paint2(R, look); NR.drop_tmp(f'ntr{num}_{kind}{k}')
+            inside(r[1], b)
             return r + (np.asarray(R['hooves'], float) / b['s'],)
-        rgb1, a1, rgb2, a2, hv = painted(os.path.join(cache, f'h{num}_t{i:02d}.npz'), make)
+        rgb1, a1, rgb2, a2, hv = painted(os.path.join(cache, f'h{num}_{kind}{k:02d}.npz'), make)
         raw = b['g0'] - hv[:, 1].max()
         if not NR.stance_legs(g % 1.0):
             u = ((g % 1.0) - 0.67) / 0.33
             raw -= NR.LIFT * a * 4 * u * (1 - u)
-        x = ((g - ph) % 1.0) * len(dyg)
-        i0 = int(math.floor(x)) % len(dyg)
-        dg = dyg[i0] * (1 - (x - math.floor(x))) + dyg[(i0 + 1) % len(dyg)] * (x - math.floor(x))
-        dy = a * a * dg + (1 - a * a) * raw
-        assert meta[i]['kind'] == kind and abs(meta[i]['dy'] - dy) < 0.011 and abs(meta[i]['amp'] - a) < 1e-3, ('differs from night_run.json', i, meta[i], dy, a)
+        dy = NR.trans_dy(num, g, a, raw)
         d1 = d2 = None
         if a > 0.02:
             dr, da = NR.dust_flow(b['hx_d'], b['gy'], b['scl'], b['dim'], b['seed'], (g - ph) % 1.0, wc); d1 = (dr, da * a * a)
-            dr, da = NR.dust_flow(b['hx_d'], b['gy'], b['scl'], b['dim'], b['seed'], (g - ph) % 1.0, wc, k=OUT); d2 = (dr, da * a * a)
         F1.append(stack(b['sh1'], d1, *moved(rgb1, a1, dy, wc, Hh), h['haze']))
-        F2.append(stack(b['sh2'], d2, *moved(rgb2, a2, dy * OUT, kx(wc), kx(Hh)), h['haze']))
-        print('horse', num, 'trans', i, kind, round(phi, 2), round(a, 3), flush=True)
-    return F1, F2
+        if kind == 'stand':
+            stand2 = stack(b['sh2'], None, *moved(rgb2, a2, dy * OUT, kx(wc), kx(Hh)), h['haze'])
+        meta.append(dict(kind=kind, k=k, phi=round(phi, 4), amp=round(a, 4), dy=round(float(dy), 2)))
+        print('horse', num, 'trans', i, kind, k, round(phi, 2), round(a, 3), flush=True)
+    return F1, meta, stand2
+
+
+def box_of(frames, px, keep=None):
+    """切りぬく 場所（night_run.horse_sheet と 同じ 決め方：見える 所 ぜんぶ ＋ 4画素・偶数に そろえる）。keep：これも 入る ように（前の 版の 場所）"""
+    A_all = np.max(np.stack([A for _, A in frames]), 0)
+    wc = A_all.shape[1]
+    ys, xs = np.nonzero(A_all > 0.002)
+    x0, y0 = max(0, int(xs.min()) - 4), max(0, int(ys.min()) - 4)
+    x1, y1 = min(wc, int(xs.max()) + 5), min(Hh, int(ys.max()) + 5)
+    if keep:
+        x0, y0, x1, y1 = min(x0, keep[0] + px), min(y0, keep[1]), max(x1, keep[0] + px + keep[2]), max(y1, keep[1] + keep[3])
+    x0, y0 = x0 - x0 % 2, y0 - y0 % 2
+    x1, y1 = x1 + (x1 - x0) % 2, y1 + (y1 - y0) % 2
+    return x0, y0, x1 - x0, y1 - y0
+
+
+def sheet_q(frames, x0, y0, cw, ch, cols, path, q):
+    """1倍の コマを 切りぬいて ならべた 1まい（すき通しつき・ロスあり：動いて いる 間 だけ 見える コマ）"""
+    rows = -(-len(frames) // cols)
+    S = np.zeros((ch * rows, cw * cols, 4), np.float32)
+    for i, (pre, A) in enumerate(frames):
+        r, c = divmod(i, cols)
+        rgb = np.where(A[..., None] > 1e-4, pre / np.maximum(A, 1e-4)[..., None], 0)
+        S[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, :3] = rgb[y0:y0 + ch, x0:x0 + cw]; S[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, 3] = A[y0:y0 + ch, x0:x0 + cw]
+    u8 = (np.clip(S, 0, 1) * 255 + .5).astype(np.uint8)
+    Image.fromarray(u8, 'RGBA').save(path, 'WEBP', quality=q, method=6, alpha_quality=100)
+    Image.fromarray(u8, 'RGBA').save(path[:-5] + '_lossless.webp', 'WEBP', lossless=True, quality=100, method=6)      # 見くらべる 用（アプリには 入れない）
+    return os.path.getsize(path), rows
 
 
 _back = []
@@ -224,14 +258,25 @@ for h in NR.HORSES:
     if 'base' in what:
         base(h); print('base', num, flush=True)
     if f'h{num}' in what:
-        b = b or base(h); F1, F2 = run_frames(h, b)
-        e = info['horses'][str(num)]; x0, y0, (cw, ch) = e['at'][0] + b['px'], e['at'][1], e['cell']
-        print('run', num, 'sizes (bytes, light outside the cell)', sheet(F1, x0, y0, cw, ch, len(F1), 1, f'{out}/night_h{num}_1x.webp'), sheet(F2, x0, y0, cw, ch, len(F2), OUT, f'{out}/night_h{num}_hq.webp'), flush=True)
+        b = b or base(h); F1, F2, dys = run_frames(h, b)
+        e = info['horses'][str(num)]
+        x0, y0, cw, ch = box_of(F1, b['px'], keep=(e['at'][0], e['at'][1], e['cell'][0], e['cell'][1]))
+        print('run', num, 'cell', (x0 - b['px'], y0, cw, ch), '前', e['at'], e['cell'], 'sizes (bytes, light outside the cell)',
+              sheet(F1, x0, y0, cw, ch, len(F1), 1, f'{out}/night_h{num}_1x.webp'), sheet(F2, x0, y0, cw, ch, len(F2), OUT, f'{out}/night_h{num}_hq.webp'), flush=True)
+        NEW.setdefault('horses', {})[str(num)] = dict(frames=len(F1), cell=[cw, ch], at=[x0 - b['px'], y0], phase=NR.PHASE[num], nose=e['nose'], ground=e['ground'], dy=dys)
     if f't{num}' in what:
-        b = b or base(h); F1, F2 = trans_frames(h, b)
-        e = info['trans'][str(num)]; x0, y0, (cw, ch) = e['at'][0] + b['px'], e['at'][1], e['cell']
-        print('trans', num, 'sizes (bytes, light outside the cell)', sheet(F1, x0, y0, cw, ch, e['cols'], 1, f'{out}/night_t{num}_1x.webp'), sheet(F2, x0, y0, cw, ch, e['cols'], OUT, f'{out}/night_t{num}_hq.webp'), flush=True)
+        b = b or base(h); F1, meta, stand2 = trans_frames(h, b)
+        x0, y0, cw, ch = box_of(F1, b['px'])
+        mv = [(fr, m) for fr, m in zip(F1, meta) if m['kind'] != 'stand']                  # シートは 動く コマ だけ（立つ コマは 1.5倍の 1まい）
+        cols = NR.TRANS_COLS
+        size, rows = sheet_q([fr for fr, _ in mv], x0, y0, cw, ch, cols, f'{out}/night_t{num}_m.webp', Q_TRANS)
+        st = [m for m in meta if m['kind'] == 'stand'][0]
+        print('trans', num, 'cell', (x0 - b['px'], y0, cw, ch), len(mv), 'コマ', size, 'bytes（ロスなしなら', os.path.getsize(f'{out}/night_t{num}_m_lossless.webp'), '）・立つ 絵',
+              sheet([stand2], x0, y0, cw, ch, 1, OUT, f'{out}/night_s{num}_hq.webp'), flush=True)
+        NEW.setdefault('trans', {})[str(num)] = dict(cell=[cw, ch], at=[x0 - b['px'], y0], cols=cols, rows=rows, frames=[m for _, m in mv], stand=st)
     if f'a{num}' in what:
         award(h)
+    if NEW:                                                                                # 台帳：できた 分を 書く（馬ごとに べつの ファイル：同時に 走らせても ぶつからない）
+        json.dump({k: {str(num): v[str(num)]} for k, v in NEW.items() if str(num) in v}, open(f'{out}/night_new{num}.json', 'w'), ensure_ascii=False)
 print('done', sorted(what), flush=True)
 # 入れ方：python3 flat/hq_install.py night <出す フォルダ>（手元の 絵の フォルダ ios/kisekae_blobs と 台帳へ。前の 絵は 消さない）

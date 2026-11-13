@@ -5,10 +5,12 @@
 #   ・台帳：コマの 数（海賊 歩く 36・立つ 25／草競馬コース 12／宇宙 19／恐竜 15・13／未来 15・光の 尾 30／浮世絵 15／パドック 36・早歩き 24・うんち 72／競馬新聞・勝負服・夕焼け・水墨画 15）
 #   ・上下の 動き：前の 動き（第4.165版の 10コマ）を なめらかな 波に して 読んだ もの（はね方は 前と 同じ・体が とばない）
 #   ・アプリの 画面：なおした 壁紙の コマ送りは どれも 1コマ 1/30秒（未来の 光の 尾は 1/60秒）。まだの もの（ナイター・大理石・ドット絵・浮世絵の 大波）と、
-#     わざと そう して いる もの（招き猫の 手・星空の 流れ・パドックの ゆっくり 歩き〈見えない 所〉）は 名前を 決めて のぞく（ふえたら 落ちる）
+#     わざと そう して いる もの（招き猫の 手・星空の 流れ）は 名前を 決めて のぞく（ふえたら 落ちる）
 #   ・コマ：1コマずつ 進めて 写すと となりの コマと ちがう 絵（同じ コマが 2回 出ない）・1回り あとは 同じ 絵（つなぎ目で とばない）
 #   ・ほかの 壁紙（17こ）の ファイルは 第4.165版と 1バイトも かわらない
-#   ・パドックは つぎの 版で 36コマに（第4.166版は 前の 24コマの まま＝ファイルは 第4.165版と 同じ：PK36 が 立つと パドックの 確かめが はたらく）
+#   第4.167版：のこりの 5つも（パドック 36コマ・ナイター 走る 15コマ＋止まる／走りだすは 時刻で 決めた コマ・大理石 1/30秒ごとの 形・ドット絵 全速 15コマ＋できごとの つづき・
+#     浮世絵の 大波 30コマ／秒）。コマ送りで 1コマが 1/30秒で ない のは、わざとの もの（招き猫の 手・星空の 流れ）だけ。
+#     パドックの 早歩きの あとの「ゆっくり 歩き」（1コマ 1/20秒・手前の 馬は 右の はしで 体の うしろが 見えて いた）は やめて、舞台を 出て 見えなく なって から 待つ
 #   ・コマの さかい目（kisekae.js の phase）：コマが かわる 時刻が 画面の 描きかえの 時刻と 重なると「1回 だけ 出る コマ」と「3回 出る コマ」が まざって がたつく
 #     → 上の絵の 動きの はじまりを 少し ずらして、コマが かわる 時刻を 描きかえと 描きかえの まん中に（合わせる 前は 重なって いる・合わせた あとは まん中・
 #       同じ 部品の 動きは 同じ だけ ずれる・止めて いる ときは さわらない・止める／動かすは 今までどおり）
@@ -41,7 +43,8 @@ PB = json.load(open(os.path.join(K, 'pack', 'blobs.json'), encoding='utf8'))
 FR = lambda t, k: PB[t][k].get('frames')
 pk = PB['paddock']
 NEAR, FAR = ('n2', 'n5', 'n7'), ('f1', 'f4', 'f8')
-PK36 = pk['n2']['frames'] == 36        # パドックの 36コマ（つぎの 版から。第4.166版は 前の 24コマの まま＝ファイルは 第4.165版と 同じ）
+PK36 = pk['n2']['frames'] == 36        # パドックの 36コマ（第4.167版から）
+check(PK36, '台帳（パドック）：36コマに なって いる（第4.167版）')
 check(FR('pirate', 'walk') == 36 and PB['pirate']['walk'].get('cols') == 12 and PB['pirate']['walk'].get('cycle') == 1.2 and FR('pirate', 'stand') == 25 and PB['pirate']['stand'].get('cols') == 13
       and [PB['pirate']['stand'].get(k) for k in ('ku', 'kd', 'kt')] == [8, 8, 8],
       '台帳（海賊）：歩く 36コマ（12×3段・1回り 1.2秒）・立つ 25コマ（正面 1＋見上げる 8＋見下ろす 8＋歩きとの つなぎ 8）')
@@ -55,6 +58,30 @@ if PK36:
     okp = okp and all(pk[n + '_p']['frames'] == 72 and pk[n + '_p'].get('rows') == 3 and pk[n].get('rows') == 2 for n in NEAR) and all(pk[n].get('rows', 1) == 1 for n in FAR)
     okp = okp and all(pk[n]['id'] != pk[n + '_f']['id'] for n in NEAR + FAR) and len({pk[n]['speed'] for n in NEAR}) == 1 and len({pk[n]['speed'] for n in FAR}) == 1
     check(okp, f'台帳（パドック）：常歩・首振り・首下げ 36コマ・早歩き用（_f）24コマ・うんち 72コマ（手前の 馬は 段に 折る：常歩 2段・うんち 3段）・歩く はやさ 手前 {pk["n2"].get("speed")}／おく {pk["f1"].get("speed")}px/秒')
+    # 第4.167版：早歩きで 先に 進んだ ぶんは、舞台を 出て 見えなく なって から 待って もどす（ゆっくり 歩きは しない）。待つ 間、馬の 絵は 1画素も 舞台に 入らない
+    sys.path.insert(0, K)
+    import pack as _PKG
+    from pack import paddock as _PD
+    _B = _PKG.blobs('paddock'); wait_rows = []; other_k = set()
+    for _grp, _names in (('far', _PD.FAR), ('near', _PD.NEAR)):
+        for _k, _nm in enumerate(_names):
+            _m = _B[_nm]; _ax = _m['at'][0]
+            _lays = [_m] + [_B[f'{_nm}_{q}'] for q in ('s', 'dl', 'dd', 'dr', 'p', 'f') if f'{_nm}_{q}' in _B]
+            _lo = min((l['at'][0] - _ax) / 2 for l in _lays); _hi = max((l['at'][0] - _ax) / 2 + l['cell'][0] / 2 for l in _lays)
+            _evs, _segs, _pos, _D, _v, _dirn, _s0 = _PD.schedule(_nm, dict(_m, _span=(_lo, _hi)), _grp, _k)
+            other_k |= {c for t, c in _evs if c in ('w',)}
+            _nf = sum(1 for t, c in _evs if c == 'f')
+            for t, c in _evs:
+                if c != 'z': continue
+                _in = max(max(0.0, min(_pos(_PD._dist(_segs, _v, t + _PD.WAIT * i / 120)) + _hi, 390.0) - max(_pos(_PD._dist(_segs, _v, t + _PD.WAIT * i / 120)) + _lo, 0.0)) for i in range(121))
+                _x0, _x1 = _pos(_PD._dist(_segs, _v, t)), _pos(_PD._dist(_segs, _v, t + _PD.WAIT))
+                wait_rows.append((_nm, round(t, 3), _in, abs(_x1 - _x0), abs(t * 30 - round(t * 30))))
+            wait_rows.append((_nm, 'n', _nf - sum(1 for t, c in _evs if c == 'z'), 0.0, 0.0))
+            wait_rows.append((_nm, 'tot', abs(_PD._dist(_segs, _v, _PD.PLAN[_nm][0]) - _v * _PD.PLAN[_nm][0]), 0.0, 0.0))
+    _z = [r for r in wait_rows if r[1] not in ('n', 'tot')]
+    check(len(_z) == 5 and not other_k and all(r[2] == 0.0 and r[3] < 1e-6 and r[4] < 1e-6 for r in _z) and all(r[2] == 0 for r in wait_rows if r[1] == 'n')
+          and all(r[2] < 1e-6 for r in wait_rows if r[1] == 'tot') and abs(_PD.WAIT - 1.2) < 1e-9,
+          f'パドック：早歩きの あと（{len(_z)}回）は 舞台を 出て 見えなく なって から 1.2秒 待つ（入れものは 止まった まま・待つ 間に 舞台へ 入る 幅 0px・1/30秒の きざみ）＝ゆっくり 歩き（1コマ 1/20秒）は ない・1回りの 道のりは 前と 同じ')
     wmax = max(pk[k]['cell'][0] * pk[k]['z'] / 2 * pk[k]['frames'] / pk[k].get('rows', 1) for k in pk if k != 'still')
     check(wmax <= 10200, f'パドックの シートの 横は いちばん 長くて {wmax:.0f}画素（いままで 出して きた 絵の 長さ 10152画素 まで：36コマで それより 長く なる 手前の 馬は 段に 折って ある）')
 D165 = dict(dino_near=[0.49, -5.52, -4.63, -1.86, 5.22, 1.37, 0.98, -3.64, -5.27, -3.89], dino_far=[-0.94, -4.66, -4.0, -1.84, 4.89, 1.56, 1.13, -3.89, -5.91, -4.92],
@@ -76,6 +103,29 @@ check(all(len(v) == 15 for v in NEWDY.values()) and RJ['news']['frames'] == RJ['
       and RJ['sunset']['ground'] == {'y0': 200, 'base': 244.72, 'px_per_cycle': 226.14},
       f'台帳（競馬新聞・勝負服・夕焼け・水墨画）：15コマ・同じ 位相の コマ（0・3・6・9・12）の 上下は 前の 10コマ（0・2・4・6・8）と 同じ（ちがい {worst:.3f}画素 まで）・夕焼けの 地面の 高さと 流れる はやさも 前と 同じ')
 
+# ---- 第4.167版：ナイター・大理石・ドット絵・浮世絵の 大波
+NR_ = json.load(open(os.path.join(K, 'night_run.json'), encoding='utf8'))
+N165 = {'5': [-1.25, -0.09, -0.4, -0.66, -0.53, -1.34, -3.77, -6.26, -6.46, -4.06], '3': [0.7, 0.51, 1.28, 2.31, 1.98, 0.07, -1.69, -1.65, -0.23, 0.8],
+        '7': [-10.09, -8.67, -6.29, -5.01, -4.91, -4.65, -3.86, -3.93, -6.01, -8.89]}
+okn, worst = True, 0.0
+for n_, old in N165.items():
+    h_, t_ = NR_['horses'][n_], NR_['trans'][n_]
+    worst = max(worst, max(abs(a - b) for a, b in zip(h_['dy'], wave(old, 15))))
+    fr = t_['frames']; dec = [f['k'] for f in fr if f['kind'] == 'dec']; acc = [f['k'] for f in fr if f['kind'] == 'acc']
+    okn = (okn and h_['frames'] == 15 and len(h_['dy']) == 15 and len(fr) == t_['cols'] * t_['rows'] == len(dec) + len(acc) and dec[0] == 0 and dec == sorted(set(dec)) and acc == sorted(set(acc))
+           and all(isinstance(k, int) for k in dec + acc) and max(b - a for a, b in zip(dec, dec[1:])) <= 3 and max(b - a for a, b in zip(acc, acc[1:])) <= 3
+           and t_['stand']['kind'] == 'stand' and dec[-1] < t_['stand']['k'] <= dec[-1] + 3 and acc[-1] == 29 and dec[37] == 37)
+check(okn and worst < 0.011, f'台帳（ナイター）：走る 15コマ（上下は 第4.166版の 10コマの 波：ちがい {worst:.3f}画素 まで）・止まる／走りだすは 時刻（1/30秒の きざみ）で 決めた コマ'
+      f'（止まる {len(dec)}コマ：はじめの 38コマは 1/30秒ごと・動きが 小さく なったら 2〜3きざみ／走りだす {len(acc)}コマ／立つ 絵は べつの 1まい）')
+MR_ = json.load(open(os.path.join(K, 'marble_run.json'), encoding='utf8'))
+check(MR_.get('FPS') == 30 and {k: (len(v['frames']), v.get('k')) for k, v in MR_['sheets'].items()} == dict(rest=(2, 1.5), look=(76, 1.0), turnB=(59, 1.0), turnD=(59, 1.0), neighL=(77, 1.0), neighR=(77, 1.0)),
+      '台帳（大理石）：1/30秒ごとの 形の コマ（ふり向き 76・体が 回る 59＋59・ヒヒィーン 77＋77：画面の 2倍）・止まった 像 2コマは 画面の 3倍')
+PR_ = json.load(open(os.path.join(K, 'pixel_run.json'), encoding='utf8'))
+check(PR_.get('rows') == [['run', 15], ['stop', 120], ['jump', 135], ['spin', 135]] and PR_.get('cols') == 135 and PR_.get('ev') == dict(stop=60, jump=75, spin=75, start=60),
+      '台帳（ドット絵）：全速 15コマ・立ち止まる／ジャンプ／一回転 ＋ 走りだし の つづき（120・135・135コマ：どれも 1コマ 1/30秒）')
+WV_ = PB['ukiyoe']['wave']
+check(WV_.get('fps') == 30 and len(WV_['cells']) == 61 and WV_['t_end'] == 2.05, '台帳（浮世絵の 大波）：30コマ／秒・61コマ（出て きて から 水平に なる まで 2.05秒は 前と 同じ）')
+
 # ---------------------------------------------------------------- アプリの 画面
 from playwright.sync_api import sync_playwright
 SRV = os.path.join(W, 'srv_smooth'); PORT = 8803; APP = f'http://localhost:{PORT}/APP/'
@@ -95,8 +145,8 @@ check(bool(re.search(r'@media \(-webkit-min-device-pixel-ratio:3\),\(min-resolut
 # ほかの 壁紙の ファイル（第4.165版の ks_<id>.json の md5）：絵が 手元に ある とき（絵の 名前が 入る）だけ くらべる
 SAME = dict(deepsea='b94d10960aff14f2eb8b188288455892', kirie='d874ec69837117d3dae9dd69809498ad', steam='c48013fe78ee67aaeefc4fa9feb5be9d',
             ranch='2fdfc69de72ad3fa177236943881ae62', cute='c8053f83635bdf6593e41ec8a3a9dc69', kids='e737b853237cd0672e4199594218295b',
-            gold='da4ade57bb5733fac3de0212678fc1e6', fireworks='5e12b63bc9534b5a32d3b1b60b99d1aa', night='6cf57059e30a4325811a2de23af7bdce',
-            lucky='bcdc74a5f1fcad1507bd903c132d496e', marble='b18c919e6da8c228259d09acfeb5026f', pixel='7952a18b18e6cc629d22a6103b2ebb6a',
+            gold='da4ade57bb5733fac3de0212678fc1e6', fireworks='5e12b63bc9534b5a32d3b1b60b99d1aa',
+            lucky='bcdc74a5f1fcad1507bd903c132d496e',
             chalk='9116ecabb050e3b0f0dac72fb08e0ec1', carousel='08168d5be91da3bb13b8652fcc9b5479', silver='f0cf1c64ce06bedd16120b570ae30018',
             golden='08dbec335ac8caec096b5bf942856c45', tengel='125e2b01dfbfb5786ed291ab957a101a')
 if not PK36:
@@ -133,11 +183,11 @@ SCAN = r'''() => {
   return out;
 }'''
 # なおした 壁紙。のぞく アニメ（名前の 正規表現）：理由つき
-FIXED = dict(pirate=None, course=None, space=None, dino=None, future=None, news=None, silks=None, sunset=None, ink=None,
-             ukiyoe=r'^ukWv$')                  # 浮世絵の 大波（1秒に 24コマ）：まだ（つぎの 版）
+FIXED = dict(pirate=None, course=None, space=None, dino=None, future=None, news=None, silks=None, sunset=None, ink=None, ukiyoe=None,
+             night=None, marble=None, pixel=None)       # 第4.167版：ナイター・大理石・ドット絵・浮世絵の 大波も
 if PK36:
-    FIXED['paddock'] = r'^pk[nf]\dFsl$'         # パドックの ゆっくり 歩き（早歩きの あと 見えない 所で 前後の ずれを もどす：36コマを 1.8秒＝1コマ 1/20秒）
-LATER = dict(night=r'^nt[SVQ]\d$', marble=r'^mw(S|B|D|NL|NR)K$', pixel=r'^pq(G|Run|X|C|F)$')          # まだの 壁紙（つぎの 版）：1秒に 30コマ より 少ない コマ送りが ある
+    FIXED['paddock'] = None                     # 第4.167版：ゆっくり 歩き（36コマを 1.8秒＝1コマ 1/20秒）は やめた（見えない 所で 待つ）＝のぞく アニメは ない
+LATER = dict()                                  # まだの 壁紙：なし（第4.167版）
 if not PK36:
     LATER['paddock'] = r'^pk'                   # パドック（24コマを 1.25秒＝1秒に 19.2コマ）：つぎの 版で 36コマに
 BYSPEC = dict(lucky=r'^lwS[AB]K$', stars=r'^szFlow$')        # わざと：招き猫の 手（まさちゃんの 指定の ゆれ）・星空の 流れ（画面の 1画素ずつ）
@@ -184,7 +234,9 @@ STEP = """([sel, t0, t]) => { const bn = document.querySelector('#ksBnr'), w = b
 #        壁紙     窓                    コマ  さがす 時刻（秒）の きざみ
 FRAMES = [('pirate', '.prHw', 36, 0.6)] + ([('paddock', '.pkH.n2>.pkL.w', 36, 1.2), ('paddock', '.pkH.f1>.pkL.w', 36, 1.2)] if PK36 else []) + [('dino', '.dnH.h1', 15, 0.5), ('dino', '.dnH.h2', 13, 0.5),
           ('future', '.ftH', 15, 0.5), ('space', '.ucH', 19, 0.5), ('ukiyoe', '.ukH', 15, 0.5), ('course', '.csH.h0', 12, 0.4),
-          ('news', '.nsh', 15, 0.5), ('silks', '.sbh', 15, 0.5), ('sunset', '.sxh', 15, 0.5), ('ink', '.ikh', 15, 0.5)]
+          ('news', '.nsh', 15, 0.5), ('silks', '.sbh', 15, 0.5), ('sunset', '.sxh', 15, 0.5), ('ink', '.ikh', 15, 0.5),
+          ('night', '.ntc7', 15, 0.5), ('night', '.ntc5', 15, 0.5), ('pixel', '.pqh', 15, 0.5, 3.0), ('marble', '.mww', 50, 0.5, 3.1, True)]
+#        （5つめ：さがし はじめる 秒〈なければ 1.0〉・6つめ：True＝くり返さない つづき〈1回り あとの 絵は 見ない〉）
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 try:
     with sync_playwright() as p:
@@ -206,12 +258,14 @@ try:
                 if ONE(g): n_ok += 1
                 else: slow.setdefault(tid, []).append((a['name'], round(1000 / sorted(g)[len(g) // 2], 1), round(max(g), 2)))
         if slow: print('    ', json.dumps(slow, ensure_ascii=False)[:1500])
-        check(not slow and n_ok >= (60 if PK36 else 30) and all(tid in res for tid in FIXED),
-              f'アプリ：なおした 壁紙 {len(FIXED)}こ（海賊・草競馬コース・宇宙・恐竜・未来・浮世絵・{"パドック・" if PK36 else ""}競馬新聞・勝負服・夕焼け・水墨画）の コマ送り {n_ok}こ は どれも 1コマ 1/30秒（か 1/60秒）ちょうど')
-        sl = [a for a in res.get('paddock', []) if re.search(FIXED['paddock'], a['name'])] if PK36 else []
-        wv = [a for a in res.get('ukiyoe', []) if re.search(FIXED['ukiyoe'], a['name'])]
-        check((len(sl) >= 3 or not PK36) and all(abs(v - 50) < 0.05 for a in sl for v in gaps(a)) and len(wv) >= 1 and all(abs(v - 1000 / 24) < 0.5 or abs(v - 500 / 24) < 0.5 for a in wv for v in gaps(a)),
-              f'のぞいた もの：{f"パドックの ゆっくり 歩き（見えない 所・{len(sl)}こ・1コマ 1/20秒）・" if PK36 else ""}浮世絵の 大波（{len(wv)}こ・1秒に 24コマ：まだ）')
+        check(not slow and n_ok >= 70 and all(tid in res for tid in FIXED),
+              f'アプリ：なおした 壁紙 {len(FIXED)}こ（海賊・草競馬コース・宇宙・恐竜・未来・浮世絵・パドック・競馬新聞・勝負服・夕焼け・水墨画・ナイター・大理石・ドット絵）の コマ送り {n_ok}こ は どれも 1コマ 1/30秒（か 1/60秒）ちょうど')
+        sl = [a for a in res.get('paddock', []) if re.search(r'^pk[nf]\dFsl$', a['name'])]
+        pkf = [a for a in res.get('paddock', []) if re.search(r'^pk[nf]\dF', a['name'])]
+        wv = [a for a in res.get('ukiyoe', []) if a['name'] == 'ukWv']
+        use(pg, 'paddock'); n_sl = pg.evaluate("() => document.querySelectorAll('#ksBnr .pkL.sl').length"); n_lay = pg.evaluate("() => document.querySelectorAll('#ksBnr .pkL').length")
+        check(not sl and n_sl == 0 and n_lay == 38 and len(pkf) == 38 and all(ONE(gaps(a)) for a in pkf) and len(wv) >= 1 and all(len(gaps(a)) >= 60 and ONE(gaps(a)) for a in wv),
+              f'のぞく もの なし：パドックの ゆっくり 歩きの シート（.pkL.sl）は ない（馬の シート {n_lay}まい・コマ送り {len(pkf)}こ は どれも 1コマ 1/30秒）／浮世絵の 大波（{len(wv)}こ）は 1コマ 1/30秒に なった')
         other = {}
         for tid, lst in res.items():
             if tid in FIXED: continue
@@ -221,15 +275,16 @@ try:
                 if len(g) < 3 or ONE(g): continue
                 if not (pat and re.search(pat, a['name'])): other.setdefault(tid, []).append((a['name'], round(1000 / sorted(g)[len(g) // 2], 1)))
         if other: print('    ', json.dumps(other, ensure_ascii=False)[:1500])
-        check(not other, f'アプリ：ほかの 壁紙で 1秒に 30コマ より 少ない コマ送りは、まだの もの（ナイター・大理石・ドット絵{"" if PK36 else "・パドック"}）と わざとの もの（招き猫の 手・星空の 流れ）だけ' + (f'（ほかに：{other}）' if other else ''))
+        check(not other, f'アプリ：ほかの 壁紙で 1コマが 1/30秒で ない コマ送りは、わざとの もの（招き猫の 手・星空の 流れ）だけ' + (f'（ほかに：{other}）' if other else ''))
         if have:
             import numpy as np
             from PIL import Image
             cur = None
-            for tid, sel, n, dt in FRAMES:
+            for tid, sel, n, dt, *opt in FRAMES:
+                start, once = (opt[0] if opt else 1.0), (len(opt) > 1 and opt[1])
                 if tid != cur: use(pg, tid); cur = tid
                 dur = max((a['dur'] for a in res[tid]), default=60000) / 1000
-                f = pg.evaluate(FIND, [sel, [round(1.0 + dt * i, 3) for i in range(int(min(dur, 130) / dt))]])
+                f = pg.evaluate(FIND, [sel, [round(start + dt * i, 3) for i in range(int(min(dur, 130) / dt))]])
                 if not f:
                     check(False, f'コマ（{tid} {sel}）：窓が 見える 時刻が ない'); continue
                 t0, x, y, w, h = f
@@ -238,11 +293,11 @@ try:
                     pg.evaluate(STEP, [sel, t0, t0 + (k + 0.5) / 30])
                     shots.append(np.asarray(Image.open(io.BytesIO(pg.screenshot(clip=dict(x=x, y=y, width=w, height=h)))).convert('RGB')).astype(np.float32))
                 d = [float(np.abs(shots[k + 1] - shots[k]).mean()) for k in range(n)]
-                loop = max(float(np.abs(shots[n] - shots[0]).mean()), float(np.abs(shots[n + 1] - shots[1]).mean()))
+                loop = 0.0 if once else max(float(np.abs(shots[n] - shots[0]).mean()), float(np.abs(shots[n + 1] - shots[1]).mean()))
                 med = sorted(d)[n // 2]
                 ok = min(d) > 0.25 * med and med > 0.15 and loop < 0.05 * med + 0.02 and float(shots[0].std()) > 2
                 if not ok: print('    ', tid, sel, 't0', t0, [round(v, 2) for v in d], 'loop', round(loop, 3))
-                check(ok, f'コマ（{tid} {sel}・{n}コマ）：となりの コマと ちがう 絵（ちがい {min(d):.2f}〜{max(d):.2f}・まん中 {med:.2f}）・1回り あとは 同じ 絵（ちがい {loop:.3f}）')
+                check(ok, f'コマ（{tid} {sel}・{n}コマ）：となりの コマと ちがう 絵（ちがい {min(d):.2f}〜{max(d):.2f}・まん中 {med:.2f}）' + ('' if once else f'・1回り あとは 同じ 絵（ちがい {loop:.3f}）'))
         # ---- コマの さかい目を 描きかえの まん中に（kisekae.js の phase）
         PH = """() => new Promise(res => { const out = []; let k = 0; const P = 1000 / 60, b = document.querySelector('#ksBnr');
           const f = () => { const t = document.timeline.currentTime;
@@ -256,7 +311,8 @@ try:
         if pg2.locator('#gateGo').count(): pg2.click('#gateGo'); pg2.wait_for_timeout(700)
         pg2.wait_for_function("() => window.TengelKisekae && TengelKisekae.list().length > 0", timeout=10000)
         rows = []
-        for tid, groups in (('pirate', ['.prw']), ('paddock', ['.pkH.n2', '.pkH.n5', '.pkH.n7', '.pkH.f1', '.pkH.f4', '.pkH.f8']), ('dino', ['.dnH.h1', '.dnH.h2']), ('news', ['.nsw']), ('silks', ['.sbh'])):
+        for tid, groups in (('pirate', ['.prw']), ('paddock', ['.pkH.n2', '.pkH.n5', '.pkH.n7', '.pkH.f1', '.pkH.f4', '.pkH.f8']), ('dino', ['.dnH.h1', '.dnH.h2']), ('news', ['.nsw']), ('silks', ['.sbh']),
+                            ('night', ['.nth7', '.nth5', '.nth3']), ('pixel', ['.pqh']), ('marble', ['.mww'])):
             pg2.evaluate("(id) => TengelKisekae.apply(id, false)", tid)
             pg2.wait_for_function("(id) => TengelKisekae.current() === id && TengelKisekae.loaded()", arg=tid, timeout=8000); pg2.wait_for_timeout(250)
             r1 = pg2.evaluate("() => TengelKisekae.phase()"); m1 = pg2.evaluate(PH); r2 = pg2.evaluate("() => TengelKisekae.phase()"); g = pg2.evaluate(GRP, groups)

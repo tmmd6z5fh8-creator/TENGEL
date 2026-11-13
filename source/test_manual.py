@@ -10,6 +10,12 @@ subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'TENGEL')], check=True, stdout=subprocess.DEVNULL)
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
+def wait_app(page, sel):
+    """アプリの ページが 開き終わる まで 待つ（15秒 まで）。手元の 機械は 外へ つなげない ので、Web版の ページは 外の 字（Google Fonts）の 読みこみが 失敗する のを 待って から 開き終わる
+       （その 時間は 0.3〜2.3秒と まちまち）＝決まった 1.5秒 だけ 待つと 足りない 時が ある（2026/11/13）。確かめる 中身は かえない"""
+    try: page.wait_for_function("(s) => /\\/TENGEL\\/?$/.test(location.pathname) && document.readyState === 'complete' && !!document.querySelector(s)", arg=sel, timeout=15000)
+    except Exception: pass
+    page.wait_for_timeout(400)
 def check(c, label):
     print(('  ✅ ' if c else '  ❌ ') + label)
     if not c: fails.append(label)
@@ -44,19 +50,19 @@ try:
         pg.locator('#back').click(); pg.wait_for_timeout(300)
         check(pg.locator('#home').is_visible(), '「もくじ」でもくじ')
         pg.locator('#m-input').click(); pg.wait_for_timeout(300)
-        pg.locator('#closeApp').click(); pg.wait_for_timeout(1500)
+        pg.locator('#closeApp').click(); wait_app(pg, '#v-set')
         check(pg.url.rstrip('/').endswith('/TENGEL') and pg.locator('#v-set').is_visible(), '×でアプリに戻る（設定タブのまま）')
         # ---- 上の「説明書」から開いて戻る ----
         pg.click('.tabbar button[data-tab=win5]'); pg.wait_for_timeout(500)
         pg.locator('#manBtn').click(); pg.wait_for_load_state(); pg.wait_for_timeout(600)
         check(pg.url.endswith('/manual.html'), '上の「説明書」で開く')
-        pg.locator('#toApp').click(); pg.wait_for_timeout(1500)
+        pg.locator('#toApp').click(); wait_app(pg, '#v-win5')
         check(pg.locator('#v-win5').is_visible(), '「アプリに戻る」でWIN5タブに戻る')
         # ---- 直接開いたときの「アプリに戻る」 ----
         pg2 = ctx.new_page(); pg2.on('pageerror', lambda e: errs.append(str(e)))
         pg2.goto(BASE + 'manual.html#glossary'); pg2.wait_for_timeout(700)
         check(pg2.locator('#s-glossary').is_visible(), '#項目つきで開くと、その項目')
-        pg2.locator('#closeApp').click(); pg2.wait_for_timeout(1500)
+        pg2.locator('#closeApp').click(); wait_app(pg2, '#v-judge')
         check(pg2.url.rstrip('/').endswith('/TENGEL') and pg2.locator('#v-judge').count() == 1, '直接開いても「アプリに戻る」でアプリへ')
         pg2.close()
         # ---- 電波がないとき ----

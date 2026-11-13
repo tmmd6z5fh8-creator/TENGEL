@@ -11,14 +11,21 @@
    python3 flat/marble_glb_run.py <出力フォルダ>            → コマを 描いて（<出力フォルダ>/cache・もう ある コマは 描かない：1コマ 約3秒）、シート・すべる 絵・背景 だけの 絵・止まった 絵・marble_run.json
    python3 flat/marble_glb_run.py <出力フォルダ> --install  → できた 絵を ios/kisekae_blobs/<中身の md5>.webp に 置いて（前の 絵は 消さない・上書きしない）、
                                                               kisekae/marble_blobs.json・blobs20.json（選ぶ 画面の 小さい 絵）・marble_run.json を 書きかえる
-   3D を 入れかえた ときは <出力フォルダ>（cache・rig）を 空に して から（コマの 名前は 形 だけで 決まる）"""
+   3D を 入れかえた ときは <出力フォルダ>（cache・rig）を 空に して から（コマの 名前は 形 だけで 決まる）
+   第4.167版（まさちゃん 2026/11/13「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：コマは 1/30秒の きざみ。
+   - コマ（frame_list）：kisekae/marble_wall.py の 予定（look_frames・turn_frames：1/30秒ごとの 時刻の 形）を そのまま 描く。
+     rest＝止まった 像（左向き A・右向き C）／look＝ふり向き（片がわ 37コマ＋動きの とちゅうの 止まった 形 1）／turnB・turnD＝体が 回る 59コマ／neighL・neighR＝ヒヒィーン 77コマ
+   - 細かさ：止まった 像（rest）は 画面の 3倍（K＝1.5）の まま。動いて いる 間の コマ（look・turn・neigh）は 画面の 2倍（K_MOVE＝1.0：3倍で 描いた コマを 小さく する）
+     ＝コマが 2倍より 多く なっても 1まいの シートの 画素は 前と 同じ くらい（アプリが 絵を 読む 重さを ふやさない）。3倍の コマは cache に のこる"""
 import sys, os, json, math, shutil
 import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))
 import marble_glb as MG
+import marble_wall as MWL                        # コマの 予定（1/30秒の きざみ）は ページと 同じ ものを 使う
 
 W, Hh, K = MG.W, MG.Hh, MG.K
 COLS = 10                                        # シートの よこの コマ数
@@ -28,19 +35,24 @@ BASE_Q = 90                                      # 止まった 絵の 質
 SP_Q = 92                                        # すべる 絵（すき通しつき）の 質
 SP_HALF = 280                                    # すべる 絵の はば（台の まん中から 左右へ：台の 影が とどく 所まで）
 W3, H3 = int(W * K), int(Hh * K)
+FPS = MWL.FPS                                    # コマは 1/30秒の きざみ
+K_MOVE = 1.0                                     # 動いて いる 間の コマの 細かさ（壁紙の 絵の 何倍か）：1.0 ＝ 画面の 2倍
+SCALE = dict(rest=K)                             # シートごとの 細かさ（書いて いない シートは K_MOVE）
 
 
 def frame_list():
-    """{シート: [(名前, psi, look, ヒヒィーンの 時刻 or None)]}：シートごとの コマ（名前と ならびは 前の flat/marble_run.py と 同じ）"""
-    L, LO, PR, NL, NT = MG.LOOK, MG.LOOK_OVER, MG.PSI_R, MG.N_LOOK, MG.N_TURN
-    nk = int(round(MG.NEIGH_S * MG.NEIGH_FPS))
-    look = [(f'A{k:02d}', 0.0, L * k / NL, None) for k in range(NL + 1)] + [(f'A{NL + 1:02d}', 0.0, LO, None)]
-    look += [(f'C{k:02d}', PR, -L * k / NL, None) for k in range(NL + 1)] + [(f'C{NL + 1:02d}', PR, -LO, None)]
-    return dict(look=look,
-                turnB=[(f'B{k:02d}', PR * k / NT, L * (1 - k / NT), None) for k in range(1, NT)],
-                turnD=[(f'D{k:02d}', PR * (1 - k / NT), -L * (1 - k / NT), None) for k in range(1, NT)],
-                neighL=[(f'NL{k:02d}', 0.0, 0.0, k / MG.NEIGH_FPS) for k in range(1, nk)],
-                neighR=[(f'NR{k:02d}', PR, 0.0, k / MG.NEIGH_FPS) for k in range(1, nk)])
+    """{シート: [(名前, psi, look, ヒヒィーンの 時刻 or None)]}：シートごとの コマ。名前は kisekae/marble_wall.py の base_at・tracks と 同じ
+       （A・C＝止まった 像／A<しっぽ>・C<しっぽ>＝ふり向き／B<きざみ>・D<きざみ>＝体が 回る／NL<番号>・NR<番号>＝ヒヒィーン）"""
+    L, LO, PR = MG.LOOK, MG.LOOK_OVER, MG.PSI_R
+    lf = MWL.look_frames(dict(LOOK=L, LOOK_OVER=LO))
+    tf = MWL.turn_frames()
+    nk = int(round(MG.NEIGH_S * FPS))
+    return dict(rest=[('A', 0.0, 0.0, None), ('C', PR, 0.0, None)],
+                look=[('A' + tail, 0.0, v, None) for tail, v in lf] + [('C' + tail, PR, -v, None) for tail, v in lf],
+                turnB=[('B' + tail, PR * e, L * (1 - e), None) for tail, e in tf],
+                turnD=[('D' + tail, PR * (1 - e), -L * (1 - e), None) for tail, e in tf],
+                neighL=[(f'NL{k:02d}', 0.0, 0.0, k / FPS) for k in range(1, nk)],
+                neighR=[(f'NR{k:02d}', PR, 0.0, k / FPS) for k in range(1, nk)])
 
 
 def render_frames(out):
@@ -134,15 +146,22 @@ def build(out):
     cell_under = under3[wy3 + cy0:wy3 + cy0 + ch, wx3 + cx0:wx3 + cx0 + cw]
     sheets = {}
     for sname, fl in fls.items():
-        rows = (len(fl) + COLS - 1) // COLS
-        sheet = np.zeros((rows * ch, COLS * cw, 3), np.uint8)
+        k = SCALE.get(sname, K_MOVE)                                    # この シートの 細かさ
+        kw, kh = int(fw * k), int(fh * k)
+        assert kw == fw * k and kh == fh * k
+        cols = min(COLS, len(fl))
+        rows = (len(fl) + cols - 1) // cols
+        sheet = np.zeros((rows * kh, cols * kw, 3), np.uint8)
         for i, (n, psi, look, tn) in enumerate(fl):
             rgb, a = load_frame(out, psi, look, tn)
             rgb, a = rgb[cy0:cy0 + ch, cx0:cx0 + cw], a[cy0:cy0 + ch, cx0:cx0 + cw, None]
-            r, c = divmod(i, COLS)
-            sheet[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw] = (np.clip(cell_under * (1 - a) + rgb * a, 0, 1) * 255 + .5).astype(np.uint8)
+            cell = (np.clip(cell_under * (1 - a) + rgb * a, 0, 1) * 255 + .5).astype(np.uint8)
+            if k != K:                                                  # 3倍で 描いた コマを 小さく する
+                cell = np.asarray(Image.fromarray(cell, 'RGB').resize((kw, kh), Image.LANCZOS))
+            r, c = divmod(i, cols)
+            sheet[r * kh:(r + 1) * kh, c * kw:(c + 1) * kw] = cell
         _save_rgb(sheet, os.path.join(out, f'marble_{sname}.webp'), Q)
-        sheets[sname] = dict(cols=COLS, rows=rows, frames=[n for n, _, _, _ in fl])
+        sheets[sname] = dict(cols=cols, rows=rows, frames=[n for n, _, _, _ in fl], k=k)
     # 止まった 絵（780×320）：背景＋影＋左向きの 像（A00 を 1.5 で わって 小さく：色は α を かけて から）
     rgb, a = load_frame(out, 0.0, 0.0, None)
     size2 = (MG.WIN[2] - MG.WIN[0], MG.WIN[3] - MG.WIN[1])
@@ -180,13 +199,13 @@ def build(out):
     rgba = np.dstack([plate, (mask * 255).astype(np.uint8)])[by0:by1, bx0:bx1]
     Image.fromarray(rgba, 'RGBA').save(os.path.join(out, 'marble_plate.webp'), 'WEBP', lossless=True, method=6)
     meta = dict(size=[W, Hh], crop=[x0, y0, x1, y1], frame=[fw, fh], sheets=sheets, sprites=sprites, plate=[bx0, by0, bx1, by1],
-                LOOK=MG.LOOK, LOOK_OVER=MG.LOOK_OVER, PSI_R=MG.PSI_R, N_LOOK=MG.N_LOOK, N_TURN=MG.N_TURN, NEIGH_S=MG.NEIGH_S, NEIGH_FPS=MG.NEIGH_FPS,
-                scale=K, src='glb')                                    # scale＝コマと すべる 絵の 細かさ（壁紙の 絵の 何倍か）・src＝像は 3D
+                LOOK=MG.LOOK, LOOK_OVER=MG.LOOK_OVER, PSI_R=MG.PSI_R, NEIGH_S=MG.NEIGH_S, FPS=FPS,
+                scale=K, scale_move=K_MOVE, src='glb')                 # scale＝止まった 像と すべる 絵の 細かさ（壁紙の 絵の 何倍か）・scale_move＝動いて いる 間の コマ・src＝像は 3D
     json.dump(meta, open(os.path.join(out, 'marble_run.json'), 'w'), ensure_ascii=False, indent=1)
     return meta
 
 
-KEYS = ('base', 'look', 'turnB', 'turnD', 'neighL', 'neighR', 'spR', 'spL', 'plate')
+KEYS = ('base', 'rest', 'look', 'turnB', 'turnD', 'neighL', 'neighR', 'spR', 'spL', 'plate')
 
 
 def install(out):

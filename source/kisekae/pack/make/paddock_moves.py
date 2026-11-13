@@ -10,6 +10,13 @@
         地面に ついた うんちは ページの 部品（その 場所に 残って、しばらく して 消える）＝ meta の drops（はじまりの コマ・x・地面・半径：2倍の 画素）
    どの シートも コマ0は 常歩の コマ0と 同じ 形（ページが 見える シートを 回りの つぎめで 切りかえても 足が とばない）。
    3Dの 形（horse_flat.render_body）は 形ごとに 1回だけ 描いて、色ちがいの 馬・しっぽだけ ちがう コマ（常歩と うんち）に 使う
+   第4.166版（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     1回り 24コマ・1.25秒（1秒に 19.2コマ）→ **36コマ・1.2秒（1コマ 1/30秒 ちょうど＝画面の 描きかえ 2回ぶん）**。うんちは 72コマ（2回り）。
+     上の 24・48 と コマの 番号（うんちの 落ちはじめ・しっぽの 上げ下げ）は 1.5倍に なる（K）。足の 解き方・首振り・首下げの 形は 同じ（位相で 決めて いる）。
+     早歩き（ページ：1.5倍の はやさ）は 36コマを 1.5倍で めくると 1コマが 1/45秒に なって 画面の 描きかえと 合わない ので、**前の 24コマの 常歩の シートを そのまま 使う**
+     （0.8秒で 1回り＝1コマ 1/30秒 ちょうど。台帳の <名前>_f。コマ0は 36コマの コマ0と 同じ 形）：
+       python3 kisekae/pack/make/paddock_moves.py --keep-fast             いまの 台帳の 24コマの 常歩（paddock.<名前>）を paddock.<名前>_f に 写す（描かない・絵も そのまま）
+       python3 kisekae/pack/make/paddock_moves.py --only=w --frames=24 --suffix=f   はじめから 描き直す とき（24コマの 常歩 → <名前>_f）
    python3 kisekae/pack/make/paddock_moves.py [n2 n5 n7 f1 f4 f8] [--only w,s,d,p] [--out DIR] [--workers 2]
      → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の paddock.<名前>（常歩・speed）／<名前>_s／<名前>_dl・_dd・_dr／<名前>_p
    python3 kisekae/pack/make/paddock_moves.py --recompress   できて いる シートを いまの WebP の 質で 保存し直す"""
@@ -27,14 +34,16 @@ import paddock_art as PA  # noqa: E402
 from sheets import camera, make_sheet, record, preview_png, HOOF_ORDER, W2, H2, BLOB_DIR, PACK, Z, ZW, ZH  # noqa: E402
 import paddock_gait as G  # noqa: E402
 
-N = G.N                          # 1回りの コマ（24）
-CYCLE = PA.CYCLE                 # 1回りの 秒（1.25）
+N = 36                           # 1回りの コマ（第4.166版：24 → 36。paddock_gait は 位相で 解く ので コマの 数は 自由）
+K = N / 24.0                     # 第4.165版までの コマ（24）で 決めた 番号を いまの コマに（うんちの 落ちはじめ・しっぽの 上げ下げ）
+SUFFIX = None                    # --suffix=f：常歩の シートを <名前>_f に 書く（--frames=24 と いっしょに：早歩き用の 24コマ）
+CYCLE = PA.CYCLE                 # 1回りの 秒（1.2）
 NEAR = ('n2', 'n5', 'n7')
 FAR = ('f1', 'f4', 'f8')
 POOP = NEAR                      # うんちは 手前の 3頭（おくの 馬は 小さくて 生け垣に かくれる）
 NF = dict(w=N, s=N, dl=N, dd=N, dr=N, p=2 * N)
-DROPS = [(12, 0.0), (14, 0.9), (16, -0.6), (20, 0.5)]   # うんち：(落ちはじめる コマ, 横の ずれ×半径)
-FALL = 8                         # 落ちる コマ数（約0.42秒）
+DROPS = [(18, 0.0), (21, 0.9), (24, -0.6), (30, 0.5)]   # うんち：(落ちはじめる コマ, 横の ずれ×半径)。第4.166版：36コマの 番号（前は 12・14・16・20 ＝ 同じ 時刻）
+FALL = 12                        # 落ちる コマ数（0.4秒。第4.166版：8 → 12）
 DUNG = ('#5A4220', '#3E2C14', '#8A6A3A')             # うんちの 色（まん中・ふち・つや）
 DUNG_R = 0.064                   # うんちの 半径（m：ほんとうより 大きく＝画面で 見える ように）
 QUALITY = 74                     # WebP の 質（24コマで 絵の 容量が ふえすぎない ように：PIL の method 6・すき通しの 質 ALPHA_Q。ぺたっとした 色なので 見た目は 90 と かわらない）
@@ -42,6 +51,8 @@ ALPHA_Q = 82
 XV = -0.10                       # 地面の 線を 決める 点（体の 中の x：前足と うしろ足の まん中）
 CANVAS = dict(right=(0, W2), left=(180, 372))       # 描く 画面（左の はし, はば：2倍の 画素）。おくの 馬は 小さい＝まわりを 切って はやく 描く
 WEBP_MAX = 16383                 # WebP の 1辺の 上限（画素）
+FOLD_W = 10200                   # 第4.166版：シートの 横が これより 長ければ 段に 折る（画素）。36コマに すると 手前の 馬の 1列は 15228画素に なる：
+                                 #   いままで iPhone で 出して きた 絵の 横は いちばん 長くて 10152画素（手前の 馬の 首下げ 24コマ）なので、それより 長く しない
 
 
 def ease(t):
@@ -107,6 +118,7 @@ RAISE = [((0.18, -0.16), (0.40, -0.14), (0.52, 0.34), 0.22), ((0.10, -0.12), (0.
 
 def raise_amt(i):
     """48コマの しっぽの 上げぐあい"""
+    i = i / K                                 # 第4.166版：24コマの ときの 番号に もどして 同じ 形（72コマでも 同じ 時刻に 上げ下げ）
     if i <= 8:
         return ease(i / 8.0)
     if i <= 30:
@@ -335,11 +347,12 @@ def build_sheet(nm, kind, frs, dy24, box, facing, roi, sh, out=None, extra_meta=
                     pre, A = dung_ball(pre, A, *(v * Z for v in q))    # 第4.112版：絵は Z 倍の 画素
             return pre, A
     u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra)
-    if u8.shape[1] > WEBP_MAX:                                   # 第4.112版：3倍の 絵で 横 1列が WebP の 上限を こえる（うんち 48コマ）→ rows 段に 折る
+    if u8.shape[1] > FOLD_W:                                     # 第4.112版：3倍の 絵で 横 1列が 長すぎる → rows 段に 折る（第4.166版：FOLD_W より 長ければ。どの 段も 同じ コマ数）
         n, cwp, chp = meta['frames'], u8.shape[1] // meta['frames'], u8.shape[0]
-        rows = -(-u8.shape[1] // WEBP_MAX)
-        while -(-n // rows) * cwp > WEBP_MAX:
+        rows = -(-u8.shape[1] // FOLD_W)
+        while -(-n // rows) * cwp > FOLD_W or n % rows:
             rows += 1
+        assert n % rows == 0 and chp * rows <= WEBP_MAX, (n, rows, chp)
         pr = -(-n // rows)
         folded = np.zeros((chp * rows, pr * cwp, 4), np.uint8)
         for k in range(n):
@@ -357,7 +370,7 @@ def build_sheet(nm, kind, frs, dy24, box, facing, roi, sh, out=None, extra_meta=
     if out:
         preview_png(u8, os.path.join(out, f'paddock_{nm}_{kind}.png'), bg=(196, 170, 120))
     bid = save_small(u8)
-    name = nm if kind == 'w' else f'{nm}_{kind}'
+    name = (f'{nm}_{SUFFIX}' if SUFFIX else nm) if kind == 'w' else f'{nm}_{kind}'
     record('paddock', name, bid, meta)
     print(name, bid, {k: v for k, v in meta.items() if k not in ('dy', 'drops')}, u8.shape, flush=True)
     return bid, meta
@@ -375,6 +388,21 @@ def save_small(u8):
     os.makedirs(BLOB_DIR, exist_ok=True)
     open(os.path.join(BLOB_DIR, bid + '.webp'), 'wb').write(data)
     return bid
+
+
+def keep_fast(names):
+    """第4.166版：いまの 台帳の 24コマの 常歩（paddock.<名前>）を paddock.<名前>_f に 写す（早歩き用。絵は そのまま・描かない）。
+       36コマの 常歩を 作る 前に 1回 走らせる（もう <名前>_f が あれば なにも しない）"""
+    B = json.load(open(os.path.join(PACK, 'blobs.json'), encoding='utf-8'))['paddock']
+    for nm in names:
+        if f'{nm}_f' in B:
+            print(nm, '_f は もう ある', B[f'{nm}_f']['id'][:8], B[f'{nm}_f']['frames'], flush=True)
+            continue
+        meta = B[nm]
+        assert meta['frames'] == 24, (nm, meta['frames'], '24コマの 常歩が 台帳に ない（--only=w --frames=24 --suffix=f で 描く）')
+        assert os.path.exists(os.path.join(BLOB_DIR, meta['id'] + '.webp')), meta['id']
+        record('paddock', f'{nm}_f', meta['id'], {k: v for k, v in meta.items() if k != 'id'})
+        print(nm, '→', f'{nm}_f', meta['id'][:8], meta['frames'], meta['cell'], meta['at'], flush=True)
 
 
 def recompress(names):
@@ -435,6 +463,7 @@ STAGES = (('w', 'p'), ('s',), ('dl', 'dd', 'dr'))      # いっしょに 描く 
 
 
 def main():
+    global N, NF, K, SUFFIX
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     opts = {a.split('=')[0]: (a.split('=')[1] if '=' in a else '1') for a in sys.argv[1:] if a.startswith('--')}
     only = opts.get('--only', 'w,s,d,p').split(',')
@@ -443,6 +472,15 @@ def main():
     if out:
         os.makedirs(out, exist_ok=True)
     names = args or list(NEAR + FAR)
+    if '--keep-fast' in opts:
+        keep_fast(names)
+        return
+    if '--frames' in opts:                                         # 第4.166版：早歩き用の 24コマの 常歩（<名前>_f）を はじめから 描く とき
+        N = int(opts['--frames'])
+        K = N / 24.0
+        NF = dict(w=N, s=N, dl=N, dd=N, dr=N, p=2 * N)
+        SUFFIX = opts.get('--suffix')
+        assert SUFFIX and only == ['w'], '--frames は --only=w --suffix=f と いっしょに（ほかの シートは 36コマ）'
     if '--recompress' in opts:
         recompress(names)
         return
@@ -469,7 +507,8 @@ def main():
                     frs = res[('w', nm)]
                     fr3 = [(None, None, h) for _, _, h, _, _, _ in frs]
                     v = speed_of(fr3, facing)
-                    speed = round(abs(v) / 2 * N / CYCLE, 2)        # CSS の px／秒
+                    speed = round(abs(v) / 2 * 30.0, 2)             # CSS の px／秒（1コマ 1/30秒：36コマは 1.2秒・24コマ〈早歩き〉は 0.8秒で 1回り）
+                    assert SUFFIX or abs(N / 30.0 - CYCLE) < 1e-9, (N, CYCLE)
                     sh = walk_shadow(fr3, box)
                     build_sheet(nm, 'w', frs, dy24, box, facing, roi, sh, out, dict(speed=speed, shadow=[sh[0]] + [round(float(x), 2) for x in sh[1:]]))
                 for kind in kinds:

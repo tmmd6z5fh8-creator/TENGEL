@@ -633,6 +633,7 @@ def _win(name, keys):
 
 def life_css(wave):
     """大波の コマ（make/ukiyoe_great.py の life）：コマ k（t＝k/fps の 形）を k/fps の まわりに 出す（step-end）。
+       第4.167版：コマは 30コマ／秒（前は 24）＝1コマ 1/30秒。コマの さかい目は (k−0.5)/30秒＝1/60秒の きざみの 上
        水平に なった あとは 出さない（こさを 下げて 消す のでは なく、もう 海の 線の 下）"""
     z, fps = wave['z'], wave['fps']
     st = [(0.0, 'opacity:0')]
@@ -642,7 +643,7 @@ def life_css(wave):
                            f'background-position:{f(-x / z, 2)}px {f(-y / z, 2)}px'))
     st.append((_pc((len(wave['cells']) + .5) / fps), 'opacity:0'))
     st.append((100, 'opacity:0'))
-    return kf('ukWv', st)
+    return kf('ukWv', st, 5)                    # 第4.167版：％は 小数 5けた（コマを めくる 時刻が 1/60秒の きざみから 1マイクロ秒 より ずれない。3けたでは 70マイクロ秒 まで ずれる）
 
 
 def sea_amp(t):

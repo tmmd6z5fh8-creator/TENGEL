@@ -39,7 +39,7 @@ SET = {'news': dict(jp='競馬新聞', key='run', pre='', sub=None, old='90c9d3f
 #   アプリの 中身と 画面の 確かめ（IN_APP）からは 外して、「アプリに 入って いない」ことを 見る
 IN_APP = [nm for nm in SET if nm != 'neon']
 N = 10; SC = 1.5
-N15 = ('news', 'silks', 'sunset', 'ink')                     # 第4.166版：15コマ（1コマ 1/30秒）。ネオン・ナイターは 10コマの まま
+N15 = ('news', 'silks', 'sunset', 'ink')                     # 第4.166版：15コマ（1コマ 1/30秒）。ネオンは 10コマの まま（アプリには 入って いない）。ナイターは 第4.167版で 15コマ
 NF = {nm: (15 if nm in N15 else N) for nm in SET}
 CELL = {}                                                     # いまの 切りぬく 場所（台帳から）。SET の cell は 前の 絵（2倍・10コマ）の 場所
 sys.path.insert(0, K)
@@ -92,27 +92,40 @@ NT_OLD = dict(h5='d9208aa63d454494f1d3ddbe65515aef', h3='425479ad8bee8af3244ae5c
 NT_KEEP = dict(far='d42c84d00c06bbc5dbda2ac042481eeb', track='e5b85de4f796815ad8f92a07b14c074e', rail='c7fe0d55b5c05b3338b9561c3979d3e9')
 NT_CELL = {'5': ([234, 120], [424, 110], [236, 118], [422, 112]), '3': ([326, 178], [-50, 100], [324, 178], [-50, 100]), '7': ([420, 216], [144, 78], [416, 216], [146, 78])}
 NTB = json.load(open(os.path.join(K, 'night_blobs.json'), encoding='utf8')); NTR = json.load(open(os.path.join(K, 'night_run.json'), encoding='utf8'))
-check(sorted(NTB) == sorted(list(NT_OLD) + list(NT_KEEP)) and all(HEX(v) for v in NTB.values()) and all(NTB[k] != o and o not in json.dumps(NTB) for k, o in NT_OLD.items())
-      and all(NTB[k] == o for k, o in NT_KEEP.items()) and NTR.get('scale') == SC and NTR['size'] == [780, 320]
-      and all(NTR['horses'][n]['cell'] == c[0] and NTR['horses'][n]['at'] == c[1] and NTR['horses'][n]['frames'] == N and NTR['trans'][n]['cell'] == c[2] and NTR['trans'][n]['at'] == c[3]
-              and [NTR['trans'][n]['cols'], NTR['trans'][n]['rows'], len(NTR['trans'][n]['frames'])] == [6, 3, 18] for n, c in NT_CELL.items()),
-      f'台帳（ナイター）：3頭の 走る コマ・止まる／走りだす コマ・表彰の 絵（9まい）は 新しい 絵・コースの 絵 3まいは そのまま・切りぬく 場所と コマの 数は 前と 同じ・絵の 細かさ {NTR.get("scale")}倍')
+# 第4.167版：走る コマは 15（1コマ 1/30秒）・止まる／走りだすは 時刻で 決めた コマ（72コマ・12×6・1倍・ロスあり：動いて いる 間 だけ 見える）・立つ 絵（s：1.5倍・ロスなし）は べつの 1まい
+NT_165 = dict(h5='8edbf16f7bf2d3ba9a951373614bc6a0', h3='c8ddf7dde0c9c54f1283130f667d7ac2', h7='28aabf8f3c948aa11be5cdc994b41bfd',
+              t5='bea400d33650a1f2ec4883509e122ecc', t3='bcae27477a2a8b2213ded5fb74d847d5', t7='ab2f74677fb738915dcdd60dc0c35163')      # 第4.157〜4.166版の 走る 10コマ・止まる／立つ／走りだす 18コマ（1.5倍）
+NT_AW = dict(a5='88c59aad22f3a012cd1264e2d4f7fa77', a3='09304cce3330dec0846b518d4609b380', a7='33cc560b6158d1fde6c5b1dfaf889ce2')        # 表彰の 絵は 第4.157版の まま
+NTN = 15; NT_COLS, NT_ROWS = 12, 6
+NTC = {n: (NTR['horses'][n]['cell'], NTR['horses'][n]['at'], NTR['trans'][n]['cell'], NTR['trans'][n]['at']) for n in NT_CELL}                # いまの 切りぬく 場所（台帳から）
+inside_ = lambda new, old: new[1][0] <= old[1][0] and new[1][1] <= old[1][1] and new[1][0] + new[0][0] >= old[1][0] + old[0][0] and new[1][1] + new[0][1] >= old[1][1] + old[0][1]
+check(sorted(NTB) == sorted(list(NT_OLD) + ['s5', 's3', 's7'] + list(NT_KEEP)) and all(HEX(v) for v in NTB.values()) and len(set(NTB.values())) == 15
+      and all(NTB[k] != o and o not in json.dumps(NTB) for k, o in NT_OLD.items()) and all(NTB[k] != o and o not in json.dumps(NTB) for k, o in NT_165.items())
+      and all(NTB[k] == o for k, o in NT_AW.items()) and all(NTB[k] == o for k, o in NT_KEEP.items()) and NTR.get('scale') == SC and NTR['size'] == [780, 320]
+      and all(NTR['horses'][n]['frames'] == NTN and inside_((NTC[n][0], NTC[n][1]), (c[0], c[1])) and all(v % 2 == 0 for v in NTC[n][0] + NTC[n][2])
+              and [NTR['trans'][n]['cols'], NTR['trans'][n]['rows'], len(NTR['trans'][n]['frames'])] == [NT_COLS, NT_ROWS, NT_COLS * NT_ROWS] and NTR['trans'][n]['stand']['kind'] == 'stand'
+              for n, c in NT_CELL.items()),
+      f'台帳（ナイター）：3頭の 走る コマ（15コマ）・止まる／走りだす コマ（72コマ）・立つ 絵（新しい キー s5・s3・s7）は 新しい 絵・表彰の 絵 3まいと コースの 絵 3まいは そのまま・'
+      f'走る コマの 切りぬく 場所は 前の 場所を ふくむ・絵の 細かさ {NTR.get("scale")}倍')
 nhtml, ncss = night_wall.inline(night_wall.load_blobs(os.path.join(K, 'night_blobs.json')), NTR)
-okp = all(o not in ncss + nhtml for o in NT_OLD.values())
-for n, c in NT_CELL.items():
-    cw, ch, tw, th = c[0][0] / 2, c[0][1] / 2, c[2][0] / 2, c[2][1] / 2
-    okp = (okp and f'.nts{n},.ntv{n}{{width:{N * cw:g}px;height:{ch:g}px;background:url(/_blob/{NTB["h" + n]}) 0 0/{N * cw:g}px {ch:g}px no-repeat;' in ncss
-           and f'.ntq{n}{{width:{6 * tw:g}px;height:{3 * th:g}px;background:url(/_blob/{NTB["t" + n]}) 0 0/{6 * tw:g}px {3 * th:g}px no-repeat;' in ncss
+okp = all(o not in ncss + nhtml for o in list(NT_OLD.values()) + list(NT_165.values())) and '.ntv' not in ncss + nhtml and 'ntu' not in nhtml
+for n in NT_CELL:
+    (cw, ch), (ax, ay), (tw, th), (tx, ty) = [[v / 2 for v in x] for x in NTC[n]]
+    okp = (okp and f'.nts{n}{{width:{NTN * cw:g}px;height:{ch:g}px;background:url(/_blob/{NTB["h" + n]}) 0 0/{NTN * cw:g}px {ch:g}px no-repeat;will-change:transform;animation:ntS{n} 0.5s steps({NTN}) infinite}}' in ncss
+           and f'.ntq{n}{{width:{tw:g}px;height:{th:g}px;background:url(/_blob/{NTB["t" + n]}) 0 0/{NT_COLS * tw:g}px {NT_ROWS * th:g}px no-repeat;' in ncss
+           and f'.nto{n}{{background:url(/_blob/{NTB["s" + n]}) 0 0/{tw:g}px {th:g}px no-repeat;' in ncss
            and f'.ntz{n}{{background:url(/_blob/{NTB["a" + n]}) 0 0/390px 160px no-repeat}}' in ncss
-           and f'.ntc{n},.ntu{n}{{position:absolute;left:{c[1][0] / 2:g}px;top:{c[1][1] / 2:g}px;width:{cw:g}px;height:{ch:g}px;overflow:hidden}}' in ncss)
-check(okp, 'ページ（ナイター）：3頭の 窓・走る シート・止まる／走りだす シート・表彰の 絵の 大きさは pt の まま（場所と 動きは 前と 同じ）・絵は 新しい id')
+           and f'.ntc{n}{{position:absolute;left:{ax:g}px;top:{ay:g}px;width:{cw:g}px;height:{ch:g}px;overflow:hidden;' in ncss
+           and f'.ntk{n},.nto{n}{{position:absolute;left:{tx:g}px;top:{ty:g}px;width:{tw:g}px;height:{th:g}px}}' in ncss)
+check(okp, 'ページ（ナイター）：3頭の 窓・走る シート（15コマを 0.5秒）・止まる／走りだす シート（窓と 同じ 大きさの 所で めくる）・立つ 絵・表彰の 絵の 大きさは pt・絵は 新しい id・'
+      'ギャロップの コマを 借りる 重ね（.ntu・.ntv）は ない')
 
 gi = subprocess.run(['git', 'ls-files'], capture_output=True, text=True, cwd=W).stdout.split('\n')
 tools = ['hq_news.py', 'hq_silks.py', 'hq_sunset.py', 'hq_ink.py', 'hq_neon.py', 'hq_fireworks.py', 'hq_night.py', 'hq_install.py']
 check(not any(f.startswith('ios/kisekae_blobs/') for f in gi) and all(os.path.exists(os.path.join(K, 'flat', f)) and ('kisekae/flat/' + f) in gi for f in tools)
       and all('/home/claude' not in open(os.path.join(K, 'flat', f), encoding='utf8').read() for f in tools),
       '壁紙の 絵は リポジトリに 入って いない・作る 道具（flat/hq_news.py・hq_silks.py・hq_sunset.py・hq_ink.py・hq_neon.py・hq_fireworks.py・hq_night.py）と 入れる 道具（flat/hq_install.py）が ある')
-ALL_NEW = list(ID.values()) + [FWB['scatter'], FWB['scatter_h']] + [NTB[k] for k in NT_OLD]
+ALL_NEW = list(ID.values()) + [FWB['scatter'], FWB['scatter_h']] + [NTB[k] for k in NTB if k not in NT_KEEP]
 have = os.path.isdir(BL) and all(os.path.exists(os.path.join(BL, i + '.webp')) for i in ALL_NEW)
 if not have:
     print('※ 壁紙の 絵（ios/kisekae_blobs）が ない ので、絵と アプリの 画面の 確かめは しない')
@@ -212,23 +225,66 @@ if okf:
           f'絵（花火の 馬）：{NG}組を 足すと 前と 同じ 絵（2/3 に 小さく して PSNR {ps:.1f}dB・明るさの ちがい {lit * 100:.1f}%）・前の 絵を のばした ものより 細かい（{dr:.2f}倍）・'
           f'組ごとの 光の 割合は 前と 同じ（ずれ {shd * 100:.2f}%＝散り方は かわらない）')
 
-# ナイターの 絵
-nt_new = nt_old = 0; rows_ = []
+# ナイターの 絵（第4.167版）
+VP8L = lambda p: open(p, 'rb').read()[12:16] == b'VP8L'
+nt_new = nt_165 = 0; rows_ = []
 for n, c in NT_CELL.items():
-    for key, cols, rws, cell in (('h' + n, N, 1, c[0]), ('t' + n, 6, 3, c[2]), ('a' + n, 1, 1, [780, 320])):
-        pn, po = P(NTB[key]), P(NT_OLD[key]); im = Image.open(pn); mode = 'RGB' if key[0] == 'a' else 'RGBA'
-        okf = (MD5(NTB[key]) and im.format == 'WEBP' and im.mode == mode and im.size == (int(cell[0] * SC) * cols, int(cell[1] * SC) * rws) == (3 * (cell[0] // 2) * cols, 3 * (cell[1] // 2) * rws)
-               and os.path.exists(po) and Image.open(po).size == (cell[0] * cols, cell[1] * rws))
-        nt_new += os.path.getsize(pn); nt_old += os.path.getsize(po) if os.path.exists(po) else 0
-        ps, dr, off = same_pic(load(pn), load(po), cols, rws) if okf else (0, 0, 9)
-        rows_.append((key, okf, ps, dr, off, im.size, os.path.getsize(pn)))
-for kind, jp, pmin, dmin in (('h', '走る コマ', 28, 1.25), ('t', '止まる／立つ／走りだす コマ', 28, 1.25), ('a', '表彰の 絵', 30, 1.1)):
-    rr = [r for r in rows_ if r[0][0] == kind]
-    check(all(r[1] and r[2] > pmin and r[3] > dmin and r[4] < 0.3 for r in rr),
-          f'絵（ナイターの {jp} 3まい）：名前は 中身の md5・pt の 3倍（' + '・'.join(f'{r[0]} {r[5][0]}×{r[5][1]}px {r[6] / 1e3:.0f}KB' for r in rr) + '）・同じ 絵（PSNR '
-          + '・'.join(f'{r[2]:.1f}' for r in rr) + 'dB' + ('' if kind == 'a' else '・馬の 場所の ずれ ' + '・'.join(f'{r[4]:.2f}' for r in rr) + 'pt') + '）・前より 細かい（'
-          + '・'.join(f'{r[3]:.2f}' for r in rr) + '倍）・前の 絵も 手元に のこって いる')
-check(-900_000 < nt_new - nt_old < 2_600_000, f'ナイターの 9まいで {"＋" if nt_new >= nt_old else "−"}{abs(nt_new - nt_old) / 1e3:.0f}KB（{nt_old / 1e3:.0f}KB → {nt_new / 1e3:.0f}KB）')
+    (cw, ch), (ax, ay), (tw, th), (tx, ty) = NTC[n]
+    # 走る 15コマ（1.5倍・ロスなし）：同じ 位相の 5コマ（新しい 0・3・6・9・12 ＝ 前の 0・2・4・6・8）を 第4.156版までの 絵（2倍・10コマ）と くらべる
+    pn, po = P(NTB['h' + n]), P(NT_OLD['h' + n]); im = Image.open(pn)
+    okf = (MD5(NTB['h' + n]) and im.format == 'WEBP' and im.mode == 'RGBA' and VP8L(pn) and im.size == (int(cw * SC) * NTN, int(ch * SC)) == (3 * (cw // 2) * NTN, 3 * (ch // 2))
+           and os.path.exists(po) and Image.open(po).size == (c[0][0] * N, c[0][1]) and os.path.exists(P(NT_165['h' + n])))
+    ps, dr, off = same_pic(*common(load(pn), load(po), [ax, ay, cw, ch], [c[1][0], c[1][1], c[0][0], c[0][1]]), 5) if okf else (0, 0, 9)
+    rows_.append(('h' + n, okf, ps, dr, off, im.size, os.path.getsize(pn)))
+    # 止まる／走りだす 72コマ（1倍・ロスあり）：さいしょの コマ（ゴールの しゅんかん）は 走る コマの 0番・さいごの コマ（走りだして 29/30秒）は 走る コマの 14番と 同じ 形
+    pt = P(NTB['t' + n]); it = Image.open(pt)
+    okt = (MD5(NTB['t' + n]) and it.format == 'WEBP' and it.mode == 'RGBA' and not VP8L(pt) and it.size == (tw * NT_COLS, th * NT_ROWS) and os.path.exists(P(NT_165['t' + n])))
+    T_ = load(pt); H_ = load(pn); fr = NTR['trans'][n]['frames']
+    X0, Y0, X1, Y1 = max(ax, tx), max(ay, ty), min(ax + cw, tx + tw), min(ay + ch, ty + th)
+    def tcell(i):
+        r_, c_ = divmod(i, NT_COLS)
+        return T_[r_ * th + Y0 - ty:r_ * th + Y1 - ty, c_ * tw + X0 - tx:c_ * tw + X1 - tx]
+    def hcell(f):
+        hw = int(cw * SC)
+        return resize(H_[int((Y0 - ay) * SC):int((Y1 - ay) * SC), f * hw + int((X0 - ax) * SC):f * hw + int((X1 - ax) * SC)], (X1 - X0, Y1 - Y0), Image.LANCZOS)
+    i_dec0 = [i for i, f in enumerate(fr) if f['kind'] == 'dec' and f['k'] == 0][0]; i_acc = [i for i, f in enumerate(fr) if f['kind'] == 'acc'][-1]
+    j0, j1 = psnr(tcell(i_dec0), hcell(0)) if okt else 0, psnr(tcell(i_acc), hcell(NTN - 1)) if okt else 0
+    rows_.append(('t' + n, okt, j0, j1, 0, it.size, os.path.getsize(pt)))
+    # 立つ 絵（1.5倍・ロスなし）：第4.166版までの 止まる／立つ／走りだす シート（6×3）の 立つ コマ（12番目）と 同じ 絵
+    ps_, p165 = P(NTB['s' + n]), P(NT_165['t' + n]); is_ = Image.open(ps_)
+    oks = MD5(NTB['s' + n]) and is_.format == 'WEBP' and is_.mode == 'RGBA' and VP8L(ps_) and is_.size == (int(tw * SC), int(th * SC)) == (3 * (tw // 2), 3 * (th // 2))
+    if oks and os.path.exists(p165):
+        O_ = load(p165); ow, oh = int(c[2][0] * SC), int(c[2][1] * SC); S_ = load(ps_)
+        ox, oy = 5 * ow, 1 * oh                                                    # 12番目（0から 数えて 11）＝2段目の 6つめ
+        SX0, SY0, SX1, SY1 = max(tx, c[3][0]), max(ty, c[3][1]), min(tx + tw, c[3][0] + c[2][0]), min(ty + th, c[3][1] + c[2][1])
+        ps = psnr(S_[int((SY0 - ty) * SC):int((SY1 - ty) * SC), int((SX0 - tx) * SC):int((SX1 - tx) * SC)],
+                  O_[oy + int((SY0 - c[3][1]) * SC):oy + int((SY1 - c[3][1]) * SC), ox + int((SX0 - c[3][0]) * SC):ox + int((SX1 - c[3][0]) * SC)])
+    else:
+        ps = 0
+    rows_.append(('s' + n, oks, ps, 0, 0, is_.size, os.path.getsize(ps_)))
+    # 表彰の 絵（第4.157版の まま）
+    pa, pao = P(NTB['a' + n]), P(NT_OLD['a' + n]); ia = Image.open(pa)
+    oka = MD5(NTB['a' + n]) and ia.mode == 'RGB' and ia.size == (1170, 480) and os.path.exists(pao)
+    psa, dra, _o = same_pic(load(pa), load(pao), 1, 1) if oka else (0, 0, 9)
+    rows_.append(('a' + n, oka, psa, dra, 0, ia.size, os.path.getsize(pa)))
+    nt_new += sum(os.path.getsize(P(NTB[k + n])) for k in 'htsa'); nt_165 += sum(os.path.getsize(P(i)) for i in (NT_165['h' + n], NT_165['t' + n], NT_AW['a' + n]))
+rr = [r for r in rows_ if r[0][0] == 'h']
+check(all(r[1] and r[2] > 28 and r[3] > 1.25 and r[4] < 0.3 for r in rr),
+      '絵（ナイターの 走る コマ 3まい・15コマ）：名前は 中身の md5・ロスなし・pt の 3倍（' + '・'.join(f'{r[0]} {r[5][0]}×{r[5][1]}px {r[6] / 1e3:.0f}KB' for r in rr)
+      + '）・同じ 位相の 5コマは 前の 絵と 同じ（PSNR ' + '・'.join(f'{r[2]:.1f}' for r in rr) + 'dB・馬の 場所の ずれ ' + '・'.join(f'{r[4]:.2f}' for r in rr) + 'pt）＝上下の 動きは 前の まま・前より 細かい（'
+      + '・'.join(f'{r[3]:.2f}' for r in rr) + '倍）')
+rr = [r for r in rows_ if r[0][0] == 't']
+check(all(r[1] and r[2] > 27 and r[3] > 27 for r in rr),
+      '絵（ナイターの 止まる／走りだす コマ 3まい・72コマ）：pt の 2倍・ロスあり（' + '・'.join(f'{r[0]} {r[5][0]}×{r[5][1]}px {r[6] / 1e3:.0f}KB' for r in rr)
+      + '）・つなぎ目：ゴールの しゅんかんの コマは 走る コマの 0番と 同じ 形（PSNR ' + '・'.join(f'{r[2]:.1f}' for r in rr) + 'dB）・走りだしの さいごの コマは 走る コマの 14番と 同じ 形（'
+      + '・'.join(f'{r[3]:.1f}' for r in rr) + 'dB）')
+rr = [r for r in rows_ if r[0][0] == 's']
+check(all(r[1] and r[2] > 40 for r in rr),
+      '絵（ナイターの 立つ 絵 3まい）：pt の 3倍・ロスなし（' + '・'.join(f'{r[0]} {r[5][0]}×{r[5][1]}px {r[6] / 1e3:.0f}KB' for r in rr) + '）・前の シートの 立つ コマと 同じ 絵（PSNR '
+      + '・'.join(f'{r[2]:.1f}' for r in rr) + 'dB）＝止まって いる 間は 前と 同じ 細かさ')
+rr = [r for r in rows_ if r[0][0] == 'a']
+check(all(r[1] and r[2] > 30 and r[3] > 1.1 for r in rr), '絵（ナイターの 表彰の 絵 3まい）：第4.157版の まま（1170×480px・PSNR ' + '・'.join(f'{r[2]:.1f}' for r in rr) + 'dB）')
+check(0 < nt_new - nt_165 < 2_500_000, f'ナイターの 馬の 絵（走る・止まる／走りだす・立つ・表彰）で ＋{(nt_new - nt_165) / 1e3:.0f}KB（第4.166版 {nt_165 / 1e3:.0f}KB → {nt_new / 1e3:.0f}KB：コマは 1頭 28 → 88コマ）')
 
 from playwright.sync_api import sync_playwright
 SRV = os.path.join(W, 'srv_wallhq'); PORT = 8800; APP = f'http://localhost:{PORT}/APP/'
@@ -242,7 +298,7 @@ for f in os.listdir(BL):
     shutil.copy(os.path.join(BL, f), os.path.join(SRV, 'APP', 'ks_' + f))
 check(not os.path.exists(os.path.join(SRV, 'APP', 'ks_neon.json')) and all(os.path.exists(os.path.join(SRV, 'APP', f'ks_{nm}.json')) for nm in IN_APP) and os.path.exists(os.path.join(BL, ID['neon'] + '.webp')),
       '第4.160版：ネオンの ファイル（ks_neon.json）は アプリに 入って いない（ほかの 4つは ある）・ネオンの 絵は 手元に のこって いる')
-for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm in IN_APP] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NT_OLD], list(NT_OLD.values()))]):
+for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm in IN_APP] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NTB if k not in NT_KEEP], list(NT_OLD.values()) + list(NT_165.values()))]):
     kj = json.load(open(os.path.join(SRV, 'APP', f'ks_{nm}.json'), encoding='utf8')); txt = kj['bnr']['html'] + kj['bnr']['css']
     check(all(f'ks_{i}.webp' in txt for i in new) and not any(o in json.dumps(kj) for o in old), f'{jp}の ファイル（ks_{nm}.json）：新しい 絵（{len(new)}まい）・前の 絵は 入って いない')
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
@@ -338,30 +394,39 @@ try:
 
         # ナイター：走る コマ・止まる／走りだす コマ・表彰の 絵
         use(pg, 'night')
-        sels = [[k + n, sel + n] for n in NT_CELL for k, sel in (('s', '.nts'), ('v', '.ntv'), ('q', '.ntq'), ('z', '.ntz'), ('c', '.ntc'), ('k', '.ntk'))]
+        sels = [[k + n, sel + n] for n in NT_CELL for k, sel in (('s', '.nts'), ('q', '.ntq'), ('o', '.nto'), ('z', '.ntz'), ('c', '.ntc'), ('k', '.ntk'))]
         q = pg.evaluate(PIC, sels)
         okq = bool(q) and q['bn'] == [390, 160] and q['sw'] <= 390
-        for n, c in NT_CELL.items():
-            cw, ch, tw, th = c[0][0] // 2, c[0][1] // 2, c[2][0] // 2, c[2][1] // 2
-            okq = (okq and all(q[k + n] for k in 'svqzck') and q['s' + n]['url'] == q['v' + n]['url'] == f'ks_{NTB["h" + n]}.webp' and q['s' + n]['nat'] == [3 * N * cw, 3 * ch] and q['s' + n]['bs'] == f'{N * cw}px {ch}px'
-                   and q['s' + n]['nat'][0] / q['s' + n]['w'] == 3.0 and q['q' + n]['url'] == f'ks_{NTB["t" + n]}.webp' and q['q' + n]['nat'] == [3 * 6 * tw, 3 * 3 * th] and q['q' + n]['bs'] == f'{6 * tw}px {3 * th}px'
+        for n in NT_CELL:
+            cw, ch, tw, th = NTC[n][0][0] // 2, NTC[n][0][1] // 2, NTC[n][2][0] // 2, NTC[n][2][1] // 2
+            okq = (okq and all(q[k + n] for k in 'sqozck') and q['s' + n]['url'] == f'ks_{NTB["h" + n]}.webp' and q['s' + n]['nat'] == [3 * NTN * cw, 3 * ch] and q['s' + n]['bs'] == f'{NTN * cw}px {ch}px'
+                   and q['s' + n]['nat'][0] / q['s' + n]['w'] == 3.0 and q['q' + n]['url'] == f'ks_{NTB["t" + n]}.webp' and q['q' + n]['nat'] == [2 * NT_COLS * tw, 2 * NT_ROWS * th]
+                   and q['q' + n]['bs'] == f'{NT_COLS * tw}px {NT_ROWS * th}px' and [q['q' + n]['w'], q['q' + n]['h']] == [tw, th]
+                   and q['o' + n]['url'] == f'ks_{NTB["s" + n]}.webp' and q['o' + n]['nat'] == [3 * tw, 3 * th] and q['o' + n]['bs'] == f'{tw}px {th}px'
                    and q['z' + n]['url'] == f'ks_{NTB["a" + n]}.webp' and q['z' + n]['nat'] == [1170, 480] and q['z' + n]['bs'] == '390px 160px'
-                   and q['c' + n]['box'][2:] == [cw, ch] and q['k' + n]['box'][2:] == [tw, th])
+                   and q['c' + n]['box'][2:] == [cw, ch] and q['k' + n]['box'][2:] == [tw, th] and q['o' + n]['box'][2:] == [tw, th])
         if not okq: print('    ', json.dumps(q, ensure_ascii=False)[:2500])
         check(okq, 'アプリ（ナイター・iPhone の 3倍の 画面）：3頭の 走る シート ' + '・'.join(f'{q["s" + n]["nat"][0]}×{q["s" + n]["nat"][1]}' for n in NT_CELL if q.get('s' + n) and q['s' + n]['nat'])
-              + 'px・止まる／走りだす シート・表彰の 絵 1170×480px＝**絵の 3px を 1pt に**・窓の 大きさは 前と 同じ')
-        old_css = ''.join(f'#ksBnr .nts{n},#ksBnr .ntv{n}{{background-image:url(ks_{NT_OLD["h" + n]}.webp) !important}}#ksBnr .ntq{n}{{background-image:url(ks_{NT_OLD["t" + n]}.webp) !important}}'
-                          f'#ksBnr .ntz{n}{{background-image:url(ks_{NT_OLD["a" + n]}.webp) !important}}' for n in NT_CELL)
-        OPEN_U, T_GOAL, T_AWARD = night_wall.OPEN_U, night_wall.T_GOAL, night_wall.T_AWARD
-        res = []
-        for jp, sel, t, vis in (('走って いる 7番', '.ntc7', 1.0, 'c7'), ('走って いる 3番', '.ntc3', 1.0, 'c3'), ('走って いる 5番', '.ntc5', 1.0, 'c5'),
-                                ('ゴールの あと 止まる 7番', '.ntk7', T_GOAL - OPEN_U + 1.0, 'k7'), ('表彰の 馬と 騎手', [113, 20, 143, 126], T_AWARD - OPEN_U + 3.0, None)):
-            same, dr, a0 = versus(pg, sel, t, old_css)
-            v = pg.evaluate(PIC, [[vis, sel]])[vis]['vis'] if vis else pg.evaluate("() => { const a = document.querySelector('#ksBnr .ntaw'); return +getComputedStyle(a).opacity > 0.9 && [...document.querySelectorAll('#ksBnr .nta')].filter(e => getComputedStyle(e).visibility === 'visible').length === 1 ? 'visible' : 'hidden'; }")
-            res.append((jp, same, dr, v, a0.shape, float(a0.mean())))
+              + 'px と 立つ 絵・表彰の 絵 1170×480px＝**絵の 3px を 1pt に**・止まる／走りだす シートは 絵の 2px を 1pt に（動いて いる 間 だけ）・窓の 大きさは pt')
+        OPEN_U, T_GOAL, T_AWARD, T_START, BLOCK = night_wall.OPEN_U, night_wall.T_GOAL, night_wall.T_AWARD, night_wall.T_START, night_wall.BLOCK
+        # 時刻ごとに どの 重ねが 見えるか：走って いる（走る シート）→ ゴールの あと（止まる コマ）→ 立つ 絵 → つぎの レースの 走りだし（走りだす コマ）→ 走る シート
+        VIS = "(n) => ['.ntc', '.ntk', '.nto'].map(s => getComputedStyle(document.querySelector('#ksBnr ' + s + n)).visibility === 'visible' ? 1 : 0).join('')"
+        seq = []
+        for jp, t, want in (('走って いる', 1.01, '100'), ('ゴールの すぐ あと', T_GOAL - OPEN_U + 0.51, '010'), ('止まる とちゅう', T_GOAL - OPEN_U + 1.81, '010'), ('止まった あと', T_GOAL - OPEN_U + 2.51, '001'),
+                            ('つぎの レースの 走りだす 前', BLOCK - OPEN_U + T_START - 0.2, '001'), ('走りだし', BLOCK - OPEN_U + T_START + 0.51, '010'), ('走りだして 1秒', BLOCK - OPEN_U + T_START + 1.01, '100')):
+            pg.evaluate(SEEK, t); pg.wait_for_timeout(120)
+            v = [pg.evaluate(VIS, n) for n in NT_CELL]
+            a0 = shot(pg, '.nth7', t)
+            seq.append((jp, v, want, float(a0.std())))
+        if not all(all(x == want for x in v) and sd > 0.02 for jp, v, want, sd in seq): print('    ', seq)
+        check(all(all(x == want for x in v) and sd > 0.02 for jp, v, want, sd in seq),
+              'アプリ（ナイター）：重ねの 入れかわり（走る シート／止まる・走りだす コマ／立つ 絵 の どれか 1つ だけ 見える）：' + ' → '.join(f'{jp}＝{"走る" if want == "100" else "止まる・走りだす コマ" if want == "010" else "立つ 絵"}' for jp, v, want, sd in seq))
+        old_css = ''.join(f'#ksBnr .ntz{n}{{background-image:url(ks_{NT_OLD["a" + n]}.webp) !important}}' for n in NT_CELL)
+        same, dr, a0 = versus(pg, [113, 20, 143, 126], T_AWARD - OPEN_U + 3.0, old_css)
+        v = pg.evaluate("() => { const a = document.querySelector('#ksBnr .ntaw'); return +getComputedStyle(a).opacity > 0.9 && [...document.querySelectorAll('#ksBnr .nta')].filter(e => getComputedStyle(e).visibility === 'visible').length === 1 ? 'visible' : 'hidden'; }")
         gal = pg.evaluate("() => document.querySelector('#ksBnr').getAnimations({ subtree: true }).length")
-        check(all(r[1] > 24 and r[2] > 1.15 and r[3] == 'visible' and r[5] > 0.03 for r in res) and gal > 30,
-              'アプリ（ナイター）：前の 絵（2倍）に さしかえた ときと 同じ 絵で、画面の 上でも くっきり（' + '／'.join(f'{r[0]}：PSNR {r[1]:.1f}dB・細かさ {r[2]:.2f}倍' for r in res) + '）')
+        check(same > 24 and dr > 1.15 and v == 'visible' and float(a0.mean()) > 0.03 and gal > 30,
+              f'アプリ（ナイター）：表彰の 馬と 騎手は 前の 絵（2倍）に さしかえた ときと 同じ 絵で くっきり（PSNR {same:.1f}dB・細かさ {dr:.2f}倍）')
         check(not errs and not bad, f'エラー なし・読めない 絵 なし {errs[:2]} {bad[:3]}')
         ctx.close()
         # iPad の「iPhone の 大きさ」（390×844・2倍の 画面）：同じ 場所に 出る（絵は 3倍の まま 小さく 出す）
@@ -373,7 +438,8 @@ try:
               f'iPad の「iPhone の 大きさ」（390×844・2倍の 画面）：壁紙は 引きのばさない（--ksk {q and q["k"]}）・走る コマは 同じ 場所 {q and q["win"]}')
         use(pg2, 'night'); q = pg2.evaluate(PIC, [['s7', '.nts7'], ['z7', '.ntz7']])
         use(pg2, 'fireworks'); q2 = pg2.evaluate(PIC, [['k', '.hqw .hq4'], ['h', '.hqw .hq4 .hqc i']])
-        check(bool(q) and q['bn'] == [390, 160] and q['s7']['nat'] == [3 * N * 210, 324] and q['s7']['bs'] == '2100px 108px' and q['z7']['nat'] == [1170, 480]
+        c7w, c7h = NTC['7'][0][0] // 2, NTC['7'][0][1] // 2
+        check(bool(q) and q['bn'] == [390, 160] and q['s7']['nat'] == [3 * NTN * c7w, 3 * c7h] and q['s7']['bs'] == f'{NTN * c7w}px {c7h}px' and q['z7']['nat'] == [1170, 480]
               and bool(q2) and q2['k']['box'] == [fx // 2, fy // 2, fw // 2, fhh // 2] and q2['h']['nat'] == [3 * NG * (fw // 2), 3 * (fhh // 2)] and not errs2 and not bad2,
               'iPad の「iPhone の 大きさ」：ナイターと 花火も 同じ 場所・同じ 大きさ（絵は 3倍の まま 小さく 出す）')
         ctx2.close(); b.close()

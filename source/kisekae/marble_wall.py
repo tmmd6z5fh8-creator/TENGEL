@@ -23,6 +23,12 @@
      前と 同じ「壁紙の 絵 780×320 の 画素」＝ 2で わって pt。絵は その 1.5倍の 細かさ ＝ CSS の background-size（pt）が 絵を ちぢめて 置く ので、ここの 計算は かわらない）。
      背景（止まった 絵・背景 だけの 絵）は 780×320 の まま。視差効果を 減らす とき：重ねる 絵は 出さないが、ふり向きの シートの さいしょの コマ（左向きの 像・画面の 3倍）だけ 動かさずに 出す
      （前は 止まった 絵 だけ ＝ 像も 画面の 2倍 だった。シルバー帯・ゴールド帯・マスター帯と 同じ：止めた ときも 馬は 高画質）
+   - 第4.167版（まさちゃん 2026/11/13「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：コマは 1/30秒の きざみ。
+     前は 角度を きざんだ コマ（ふり向き 12きざみ・体が 回る 30きざみ・ヒヒィーン 1秒に 15コマ）を「いちばん 近い コマ」で めくって いた（1秒に 12〜24コマ・間が ふぞろい）→
+     1/30秒ごとの 時刻の 形を 1コマずつ 描いた コマ（flat/marble_glb_run.py の frame_list：ふり向き 片がわ 42コマ・体が 回る 59コマ・ヒヒィーン 77コマ）を、その 時刻に めくる。
+     2度見の 時刻（T_SNAP）と 出来事の はじめは 1/30秒の きざみに そろえた。動いて いる 間の コマ（look・turnB・turnD・neighL・neighR）は コマが 2倍より 多く なる ので
+     画面の 2倍（1まいの シートの 画素は 前と 同じ くらい＝読む 重さは かわらない）、止まって いる 間の 像（rest：左向き・右向き）は 今までどおり 画面の 3倍。
+     ふり向き 〜 体が 回る 間（片がわの 1〜5秒）は ずっと 2倍の コマ（とちゅうの 短い 休みも 2倍の 止まった 形）＝細かさが ちらちら かわらない
    クラスの名前は mw…（的中ボタンの .mb とは別）
    python3 marble_wall.py --judge <Judge_Marble.dc.html> <marble_blobs.json> <marble_run.json>  → 判定画面の上の絵を書きかえる（何回やっても同じ）
    python3 marble_wall.py --plan <marble_run.json>  → 出来事の予定とコマの予定"""
@@ -35,7 +41,8 @@ SIDE_S = 8.0                     # 片がわ（左向き・右向き）の秒
 CYCLE = 2 * SIDE_S
 T_SLOW = (1.0, 2.0)              # ゆっくり ふり向く（0 → LOOK）
 T_BACK = (2.1, 2.3)              # 前へもどる（LOOK → 0）
-T_SNAP = (2.45, 2.6, 2.72)       # 2度見：ぱっと うしろを見て（0 → LOOK_OVER）・少しもどる（→ LOOK）
+FPS = 30                         # コマは 1/30秒の きざみ
+T_SNAP = (74 / FPS, 78 / FPS, 82 / FPS)   # 2度見：ぱっと うしろを見て（0 → LOOK_OVER）・少しもどる（→ LOOK）。第4.167版：2.45・2.6・2.72秒 → 1/30秒の きざみ（2.467・2.6・2.733秒）
 T_TURN = (3.0, 5.0)              # 体ごと くるっと（2秒・psi 0 → PSI_R・頭は うしろを見たまま）
 REST = 5.0                       # 片がわの中で 休みが はじまる秒（つぎの ふり向きは 9秒＝つぎの片がわの 1秒）
 EV_SIDES = 24                    # 出来事の1回りの 片がわの数（EV_LOOP＝192秒＝ふり向きの12回り）
@@ -88,22 +95,53 @@ def look_at(t, run):
     return L
 
 
-def base_at(t, run):
-    """ふり向きの1回りの中の時刻 t → (シート, コマの名前)"""
-    side = int(t // SIDE_S) % 2                                          # 0：左向きから・1：右向きから
-    t = t % SIDE_S
+def tick_plan(run):
+    """片がわ（SIDE_S 秒）の きざみ（1/30秒）ごとの コマ：[(きざみの 番号, シート, コマの 名前の しっぽ)]。しっぽ：'' ＝止まった 形（rest：画面の 3倍）・
+       'r' ＝動きの とちゅうの 止まった 形（look の シート）・'<番号>' ＝その 形が はじめて 出る きざみの 番号（look・turn）。
+       ふり向き（T_SLOW の はじめの 次の きざみ 〜 T_TURN の はじめ）は look・体が 回る 間（T_TURN）は turn・ほかは rest"""
+    n = int(round(SIDE_S * FPS))
+    i0, i1, i2 = int(round(T_SLOW[0] * FPS)), int(round(T_TURN[0] * FPS)), int(round(T_TURN[1] * FPS))
+    for t in T_SLOW + T_BACK + T_SNAP + T_TURN:
+        assert abs(t * FPS - round(t * FPS)) < 1e-9, t
+    out, seen = [], {}
+    for i in range(n):
+        if i <= i0 or i >= i2:
+            out.append((i, 'rest', ''))
+        elif i <= i1:
+            v = round(look_at(i / FPS, run), 3)
+            out.append((i, 'look', 'r' if v == 0 else seen.setdefault(v, f'{i:03d}')))
+        else:
+            out.append((i, 'turn', f'{i:03d}'))
+    return out
+
+
+def look_frames(run):
+    """ふり向きの コマ（片がわ）：[(しっぽ, ふり向きの 大きさ〈度〉)]（'r'＝0）"""
+    out, seen = [('r', 0.0)], set()
+    for i, sh, tail in tick_plan(run):
+        if sh == 'look' and tail != 'r' and tail not in seen:
+            seen.add(tail)
+            out.append((tail, round(look_at(i / FPS, run), 3)))
+    return out
+
+
+def turn_frames():
+    """体が 回る コマ：[(しっぽ, 回った わりあい 0〜1)]（T_TURN の 間の きざみ）"""
+    i1, i2 = int(round(T_TURN[0] * FPS)), int(round(T_TURN[1] * FPS))
+    return [(f'{i:03d}', ease((i - i1) / (i2 - i1))) for i in range(i1 + 1, i2)]
+
+
+def base_at(i, run):
+    """ふり向きの1回り（CYCLE 秒）の中の きざみ i → (シート, コマの名前)。シート：rest・look・turnB・turnD"""
+    n = int(round(SIDE_S * FPS))
+    side = (i // n) % 2                                                  # 0：左向きから・1：右向きから
     A, B, C, sB = ('A', 'B', 'C', 'turnB') if side == 0 else ('C', 'D', 'A', 'turnD')
-    NL, NT = run['N_LOOK'], run['N_TURN']
-    if t >= T_TURN[1]:
-        return 'look', f'{C}00'
-    if t >= T_TURN[0]:
-        k = int(round(ease((t - T_TURN[0]) / (T_TURN[1] - T_TURN[0])) * NT))
-        return ('look', f'{A}{NL:02d}') if k == 0 else ('look', f'{C}00') if k == NT else (sB, f'{B}{k:02d}')
-    v = look_at(t, run)
-    step = run['LOOK'] / NL
-    if v > run['LOOK']:
-        return 'look', (f'{A}{NL + 1:02d}' if v - run['LOOK'] > (run['LOOK_OVER'] - run['LOOK']) / 2 else f'{A}{NL:02d}')
-    return 'look', f'{A}{int(round(v / step)):02d}'
+    _, sh, tail = tick_plan(run)[i % n]
+    if sh == 'rest':
+        return 'rest', (A if (i % n) * 1.0 / FPS < T_TURN[1] else C)
+    if sh == 'look':
+        return 'look', A + tail
+    return sB, B + tail
 
 
 def schedule(run):
@@ -153,7 +191,7 @@ def schedule(run):
         sides = [('R' if s % 2 == 0 else 'L') for s, k, _ in evs if k == 'neigh']
         if not good or kinds.count('slide') < 2 or sides.count('L') < 2 or sides.count('R') < 2:
             continue
-        out = sorted((round(s * SIDE_S + REST + o, 3) % EV_LOOP, k, 'R' if s % 2 == 0 else 'L') for s, k, o in evs)
+        out = sorted((round(round((s * SIDE_S + REST + o) * FPS) / FPS, 5) % EV_LOOP, k, 'R' if s % 2 == 0 else 'L') for s, k, o in evs)   # はじめは 1/30秒の きざみに
         if out[0][0] > 16 or min(t for t, k, _ in out if k == 'slide') > 40:      # ページを開いて すぐ（16秒まで）に 1つめ・40秒までに ずっ！ずっ！
             continue
         if any(out[i][1] == 'slide' and out[(i + 1) % len(out)][1] == 'slide' for i in range(len(out))):   # ずっ！ずっ！は つづけない
@@ -182,7 +220,7 @@ def slide_parts(t0):
 
 
 def _pct(t, period):
-    return f'{t / period * 100:.4f}'.rstrip('0').rstrip('.') + '%'
+    return f'{t / period * 100:.5f}'.rstrip('0').rstrip('.') + '%'
 
 
 def _kf(name, pts, period, smooth=False):
@@ -217,37 +255,36 @@ def vis_pts(pts, smooth=False):
 def tracks(run):
     """要素ごとの キーフレーム：コマ（step-end）＝{要素: (周期, [(秒, 'css')])}・すべる絵と 粉（なめらか）＝{要素: [(秒, 'css')]}・出来事の予定"""
     fw, fh = (v // 2 for v in run['frame'])
+    assert run['FPS'] == FPS
     pos = {}
     for sname, sh in run['sheets'].items():
         for i, n in enumerate(sh['frames']):
             r, c = divmod(i, sh['cols'])
+            assert n not in pos, n
             pos[n] = f'background-position:{-c * fw}px {-r * fh}px'
-    F = {k: (CYCLE, []) for k in ('look', 'turnB', 'turnD')}
-    for i in range(int(round(CYCLE / DT)) + 1):
-        t = i * DT
-        sname, f = base_at(t % CYCLE, run)
+    F = {k: (CYCLE, []) for k in ('rest', 'look', 'turnB', 'turnD')}
+    nc = int(round(CYCLE * FPS))
+    for i in range(nc + 1):                                              # 1/30秒の きざみ ごと（同じ コマが つづく 所は _kf が まとめる）
+        t = i / FPS
+        sname, f = base_at(i % nc, run)
         for k in F:
-            if k == 'look':
-                if sname == 'look':                                   # 体が回る あいだは 前のコマのまま（上の turn が かくす）
-                    F[k][1].append((round(t, 3), pos[f]))
+            if k == 'rest':
+                if sname == 'rest':                                   # ふり向き・体が 回る あいだは 前のコマのまま（上の 重ねが かくす）
+                    F[k][1].append((round(t, 5), pos[f]))
             else:
-                F[k][1].append((round(t, 3), pos[f] + ';opacity:1' if sname == k else 'opacity:0'))
+                F[k][1].append((round(t, 5), pos[f] + ';opacity:1' if sname == k else 'opacity:0'))
     ev = schedule(run)
-    ns, nf = run['NEIGH_S'], run['NEIGH_FPS']
-    nk = int(round(ns * nf))
+    ns = run['NEIGH_S']
+    nk = int(round(ns * FPS))
+    ne = int(round(EV_LOOP * FPS))
     for key, side in (('neighL', 'L'), ('neighR', 'R')):
-        pts = []
-        for i in range(int(round(EV_LOOP / DT)) + 1):
-            t = i * DT
-            v = 'opacity:0'
-            for t0, kind, sd in ev:
-                d = (t - t0) % EV_LOOP
-                if kind == 'neigh' and sd == side and d < ns:
-                    k = int(round(d * nf))
-                    if 1 <= k < nk:
-                        v = pos[f'N{side}{k:02d}'] + ';opacity:1'
-            pts.append((round(t, 3), v))
-        F[key] = (EV_LOOP, pts)
+        vals = ['opacity:0'] * (ne + 1)
+        for t0, kind, sd in ev:
+            if kind == 'neigh' and sd == side:
+                for k in range(1, nk):                                 # コマ k（ヒヒィーンの k/30秒の 形）を はじめ＋k/30秒に
+                    vals[(int(round(t0 * FPS)) + k) % ne] = pos[f'N{side}{k:02d}'] + ';opacity:1'
+        vals[ne] = vals[0]
+        F[key] = (EV_LOOP, [(round(i / FPS, 5), v) for i, v in enumerate(vals)])
     group = [(0.0, 'opacity:0')]                                       # すべる絵と 背景だけの絵の ひとまとめ（ふわっと 入れかえる）
     S = {'spR': [(0.0, 'opacity:0;transform:none')], 'spL': [(0.0, 'opacity:0;transform:none')], 'dust': [(0.0, 'opacity:0;transform:none')]}
     for t0, kind, side in sorted(ev):
@@ -275,7 +312,7 @@ def tracks(run):
 
 
 def inline(blobs, run, alt=ALT):
-    """(html, css)。blobs：base（いまの止まった絵）・シート（look・turnB・turnD・neighL・neighR）・spR・spL・plate → '/_blob/<id>'。run：marble_run.json"""
+    """(html, css)。blobs：base（いまの止まった絵）・シート（rest・look・turnB・turnD・neighL・neighR）・spR・spL・plate → '/_blob/<id>'。run：marble_run.json"""
     x0, y0, x1, y1 = (v // 2 for v in run['crop'])
     fw, fh = (v // 2 for v in run['frame'])
     F, group, S, ev = tracks(run)
@@ -285,12 +322,12 @@ def inline(blobs, run, alt=ALT):
            f'.mww .mwF{{left:{x0}px;top:{y0}px;width:{fw}px;height:{fh}px;background-repeat:no-repeat;animation-timing-function:step-end;animation-iteration-count:infinite}}'
            + feather('.mww .mwF', x0, y0, fw, fh))
     html = f'<div class="mww" role="img" aria-label="{alt}"><img class="bnr" src="{blobs["base"]}" alt="">'
-    for key, cls in (('look', 'mwS'), ('turnB', 'mwB'), ('turnD', 'mwD'), ('neighL', 'mwNL'), ('neighR', 'mwNR')):
+    for key, cls in (('rest', 'mwS'), ('look', 'mwM'), ('turnB', 'mwB'), ('turnD', 'mwD'), ('neighL', 'mwNL'), ('neighR', 'mwNR')):
         sh = run['sheets'][key]
         period, pts = F[key]
         css += (f'.mww .{cls}{{background-image:url({blobs[key]});background-size:{sh["cols"] * fw}px {sh["rows"] * fh}px;'
-                + ('' if key == 'look' else 'opacity:0;')
-                + (f'animation-name:{cls}K;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period) if key == 'look' else
+                + ('' if key == 'rest' else 'opacity:0;')
+                + (f'animation-name:{cls}K;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period) if key == 'rest' else
                    f'animation-name:{cls}K,{cls}V;animation-duration:{period:g}s}}' + _kf(f'{cls}K', pts, period) + _kf(f'{cls}V', vis_pts(pts), period)))
         html += f'<i class="mwF {cls}" aria-hidden="true"></i>'
     css += (f'.mww .mwG{{left:0;top:0;width:390px;height:160px;opacity:0;animation:mwGK {EV_LOOP:g}s linear infinite,mwGV {EV_LOOP:g}s step-end infinite}}'   # ひとまとめ：ふわっと 入れかえる
