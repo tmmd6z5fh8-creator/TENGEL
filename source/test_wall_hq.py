@@ -8,6 +8,12 @@
 #     花火：花火 4つは 前の 絵と 1画素も ちがわない・馬の 8組を 足すと 前と 同じ 絵・組ごとの 光の 割合も 前と 同じ（散り方は かわらない）
 #   ・アプリの 画面（iPhone と 同じ 3倍）：絵の 3px を 1pt に 出す・動く・前の 絵（2倍）に さしかえた ときより くっきり・エラー なし
 #     iPad の「iPhone の 大きさ」（2倍の 画面）でも 同じ 場所に 出る
+#   第4.166版（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+#     競馬新聞・勝負服・夕焼け・水墨画の 走る コマは 10 → **15コマ**（0.5秒で 1回り＝1コマ 1/30秒 ちょうど）。絵の 細かさ（画面の 3倍）は そのまま。
+#     ・台帳：コマの 数 15・切りぬく 場所は コマが ふえた 分 だけ 少し かわる（前の 場所から 12画素 まで）
+#     ・絵：同じ 位相の コマ（新しい 0・3・6・9・12 ＝ 前の 0・2・4・6・8）は 前の 絵（2倍）と 同じ 絵・同じ 場所（上下の 動きは 前の 動きの まま）
+#     ・アプリの 画面：1コマめ（前と 同じ 形）で 前の 絵（2倍）に さしかえて くらべる・1回り 0.5秒・15コマ
+#     ネオン（アプリに 入れて いない）と ナイターは 10コマの まま
 import hashlib, io, json, os, re, shutil, subprocess, sys, time
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 K = os.path.join(W, 'kisekae')
@@ -24,15 +30,18 @@ def check(c, label):
 HEX = lambda v: bool(re.fullmatch(r'[0-9a-f]{32}', v))
 #           台帳の キー・id の 前に つく もの・run.json の どこ・前の 絵（2倍）・切りぬく 場所・絵の 形・ページの 動く 所／その 窓・絵の 大きさ（バイト）の はんい・
 #           dmin＝前の 絵を のばした ものより どれだけ 細かいか（絵）・smin＝同じ（アプリの 画面）。ネオンは 光の にじみが 多い 絵なので 差は 小さい
-SET = {'news': dict(jp='競馬新聞', key='run', pre='', sub=None, old='90c9d3f81a75c530c5dcaf297f8bfafb', cell=[208, 76, 360, 200], mode='RGB', el='.nsw .nsr', win='.nsw .nsh', anim='nsRun', kb=(70, 140), dmin=1.3, smin=1.12),
-       'silks': dict(jp='勝負服', key='run', pre='', sub=None, old='a6f4674ee0a8a396c3f9df8527b92f77', cell=[70, 24, 612, 292], mode='RGBA', el='.sbw .sbr', win='.sbw .sbh', anim='sbRun', kb=(280, 480), dmin=1.3, smin=1.12),
-       'sunset': dict(jp='夕焼け', key='horse', pre='/_blob/', sub='horse', old='3f932ad749f07e3a3d47e32e8004914e', cell=[204, 26, 430, 228], mode='RGBA', el='.ssw .sxr', win='.ssw .sxh', anim='sxRun', kb=(130, 250), dmin=1.3, smin=1.12),
-       'ink': dict(jp='水墨画', key='run', pre='', sub=None, old='2a2aa8796320a888283cdacb060f4be1', cell=[112, 32, 596, 266], mode='RGB', el='.ikw .ikr', win='.ikw .ikh', anim='ikRun', kb=(220, 400), dmin=1.3, smin=1.12),
+SET = {'news': dict(jp='競馬新聞', key='run', pre='', sub=None, old='90c9d3f81a75c530c5dcaf297f8bfafb', cell=[208, 76, 360, 200], mode='RGB', el='.nsw .nsr', win='.nsw .nsh', anim='nsRun', kb=(110, 200), hq165='0352aceb759e1da7dfc1dc208c08876b', dmin=1.3, smin=1.12),
+       'silks': dict(jp='勝負服', key='run', pre='', sub=None, old='a6f4674ee0a8a396c3f9df8527b92f77', cell=[70, 24, 612, 292], mode='RGBA', el='.sbw .sbr', win='.sbw .sbh', anim='sbRun', kb=(430, 720), hq165='2d4d141890936b1c4d001b4923332ad3', dmin=1.3, smin=1.12),
+       'sunset': dict(jp='夕焼け', key='horse', pre='/_blob/', sub='horse', old='3f932ad749f07e3a3d47e32e8004914e', cell=[204, 26, 430, 228], mode='RGBA', el='.ssw .sxr', win='.ssw .sxh', anim='sxRun', kb=(210, 360), hq165='00fe98049715d46ecfdac7210aada1f9', dmin=1.3, smin=1.12),
+       'ink': dict(jp='水墨画', key='run', pre='', sub=None, old='2a2aa8796320a888283cdacb060f4be1', cell=[112, 32, 596, 266], mode='RGB', el='.ikw .ikr', win='.ikw .ikh', anim='ikRun', kb=(340, 580), hq165='4115d8c9d46de3bca33d03f72088d265', dmin=1.3, smin=1.12),
        'neon': dict(jp='ネオン', key='run', pre='', sub=None, old='0417b8e6f0ca61b59a999f45f38744bd', cell=[170, 0, 284, 320], mode='RGBA', el='.nqw .nqr', win='.nqw .nqh', anim='nqRun', kb=(220, 400), dmin=1.04, smin=1.02)}
 # 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオンは アプリから 外した。絵と 作る 道具・台帳は 手元／リポジトリに のこす ので、台帳・ページ・絵の 確かめは そのまま。
 #   アプリの 中身と 画面の 確かめ（IN_APP）からは 外して、「アプリに 入って いない」ことを 見る
 IN_APP = [nm for nm in SET if nm != 'neon']
 N = 10; SC = 1.5
+N15 = ('news', 'silks', 'sunset', 'ink')                     # 第4.166版：15コマ（1コマ 1/30秒）。ネオン・ナイターは 10コマの まま
+NF = {nm: (15 if nm in N15 else N) for nm in SET}
+CELL = {}                                                     # いまの 切りぬく 場所（台帳から）。SET の cell は 前の 絵（2倍・10コマ）の 場所
 sys.path.insert(0, K)
 import news_wall, silks_wall, sunset_wall, ink_wall, neon_wall, fireworks_wall, night_wall
 MOD = dict(news=news_wall, silks=silks_wall, sunset=sunset_wall, ink=ink_wall, neon=neon_wall)
@@ -40,15 +49,22 @@ ID = {}; RUN = {}
 for nm, s in SET.items():
     blobs = json.load(open(os.path.join(K, nm + '_blobs.json'), encoding='utf8')); run = json.load(open(os.path.join(K, nm + '_run.json'), encoding='utf8'))
     info = run[s['sub']] if s['sub'] else run
-    v = blobs[s['key']]; ID[nm] = v[len(s['pre']):]; RUN[nm] = run
-    check(v.startswith(s['pre']) and HEX(ID[nm]) and ID[nm] != s['old'] and info['cell'] == s['cell'] and info['frames'] == N and info.get('scale') == SC
-          and s['old'] not in json.dumps(blobs),
-          f'台帳（{s["jp"]}）：走る コマは 新しい 絵・切りぬく 場所 {s["cell"]} と コマの 数 {N} は 前と 同じ・絵の 細かさ {info.get("scale")}倍（＝画面の 3倍）')
-    x0, y0, cw, ch = (v // 2 for v in s['cell'])
+    v = blobs[s['key']]; ID[nm] = v[len(s['pre']):]; RUN[nm] = run; n = NF[nm]; CELL[nm] = info['cell']
+    if nm in N15:
+        near = all(abs(a - b) <= 12 and a % 2 == 0 for a, b in zip(info['cell'], s['cell']))
+        check(v.startswith(s['pre']) and HEX(ID[nm]) and ID[nm] not in (s['old'], s['hq165']) and near and info['frames'] == n and info.get('scale') == SC
+              and s['old'] not in json.dumps(blobs) and s['hq165'] not in json.dumps(blobs),
+              f'台帳（{s["jp"]}）：走る コマは 新しい 絵（第4.166版）・コマの 数 {info["frames"]}・切りぬく 場所 {info["cell"]}（前は {s["cell"]}）・絵の 細かさ {info.get("scale")}倍（＝画面の 3倍）')
+    else:
+        check(v.startswith(s['pre']) and HEX(ID[nm]) and ID[nm] != s['old'] and info['cell'] == s['cell'] and info['frames'] == n and info.get('scale') == SC
+              and s['old'] not in json.dumps(blobs),
+              f'台帳（{s["jp"]}）：走る コマは 新しい 絵・切りぬく 場所 {s["cell"]} と コマの 数 {n} は 前と 同じ・絵の 細かさ {info.get("scale")}倍（＝画面の 3倍）')
+    x0, y0, cw, ch = (v // 2 for v in info['cell'])
     html, css = MOD[nm].inline(MOD[nm].load_blobs(os.path.join(K, nm + '_blobs.json')), run)
-    check(f'{s["el"]}{{width:{N * cw}px;height:{ch}px;background:url(/_blob/{ID[nm]}) 0 0/{N * cw}px {ch}px no-repeat;' in css and f'steps({N})' in css and f'translateX(-{N * cw}px)' in css
-          and f'left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden' in css and s['old'] not in css + html,
-          f'ページ（{s["jp"]}）：窓は 左 {x0}・上 {y0}・{cw}×{ch}pt・シートは {N * cw}×{ch}pt（pt の まま＝場所と 動きは 前と 同じ）・絵は 新しい id')
+    check(f'{s["el"]}{{width:{n * cw}px;height:{ch}px;background:url(/_blob/{ID[nm]}) 0 0/{n * cw}px {ch}px no-repeat;' in css and f'steps({n})' in css and f'translateX(-{n * cw}px)' in css
+          and f'left:{x0}px;top:{y0}px;width:{cw}px;height:{ch}px;overflow:hidden' in css and s['old'] not in css + html
+          and (nm not in N15 or bool(re.search(r'animation:%s 0?\.5s steps\(15\) infinite' % s['anim'], css))),
+          f'ページ（{s["jp"]}）：窓は 左 {x0}・上 {y0}・{cw}×{ch}pt・シートは {n * cw}×{ch}pt（pt の まま）・絵は 新しい id' + ('・0.5秒で 15コマ（1コマ 1/30秒）' if nm in N15 else ''))
 
 # ---- 花火（第4.157版）：馬の 足す光 だけ 別の 絵（8組を 横に・画面の 3倍）。花火 4つの 絵は 前の 絵から 馬の 段を 切り落とした もの
 FW_OLD = '64be0e0e3c35a9c3c4f2656f72b1144a'; NG = 8
@@ -145,21 +161,37 @@ def same_pic(A, O, cols=1, rows=1, alpha=True):
     return psnr(O, small), detail(A) / max(detail(up), 1e-9), off
 
 
+def common(A, O, cn, co, k=5):
+    """第4.166版：同じ 位相の コマ（新しい 15コマの 0・3・6・9・12 と 前の 10コマの 0・2・4・6・8）を、2つの 切りぬきが 重なる 所 だけ ならべる → (新しい 絵, 前の 絵)。
+       cn・co：新しい・前の 切りぬく 場所 [左, 上, 幅, 高さ]（壁紙の 絵 780×320 の 画素）。A は その 1.5倍・O は 1倍"""
+    X0, Y0 = max(cn[0], co[0]), max(cn[1], co[1]); X1, Y1 = min(cn[0] + cn[2], co[0] + co[2]), min(cn[1] + cn[3], co[1] + co[3])
+    wa, wo = int(cn[2] * SC), co[2]
+    pa = [A[int((Y0 - cn[1]) * SC):int((Y1 - cn[1]) * SC), 3 * i * wa + int((X0 - cn[0]) * SC):3 * i * wa + int((X1 - cn[0]) * SC)] for i in range(k)]
+    po_ = [O[Y0 - co[1]:Y1 - co[1], 2 * i * wo + X0 - co[0]:2 * i * wo + X1 - co[0]] for i in range(k)]
+    return np.concatenate(pa, 1), np.concatenate(po_, 1)
+
+
 tot_new = tot_old = 0
 for nm, s in SET.items():
-    x0, y0, cw, ch = s['cell']; pn, po = P(ID[nm]), P(s['old'])
+    x0, y0, cw, ch = CELL[nm]; ox0, oy0, ocw, och = s['cell']; n = NF[nm]; pn, po = P(ID[nm]), P(s['old'])
     im = Image.open(pn); szn = os.path.getsize(pn)
-    okf = MD5(ID[nm]) and im.format == 'WEBP' and im.mode == s['mode'] and im.size == (int(cw * SC) * N, int(ch * SC)) == (3 * (cw // 2) * N, 3 * (ch // 2))
-    oko = os.path.exists(po) and Image.open(po).size == (cw * N, ch)          # 前の 絵（キャンバスの id の まま：名前は md5 では ない）
+    okf = MD5(ID[nm]) and im.format == 'WEBP' and im.mode == s['mode'] and im.size == (int(cw * SC) * n, int(ch * SC)) == (3 * (cw // 2) * n, 3 * (ch // 2))
+    oko = os.path.exists(po) and Image.open(po).size == (ocw * N, och)        # 前の 絵（キャンバスの id の まま：名前は md5 では ない・10コマ）
     tot_new += szn; tot_old += os.path.getsize(po) if oko else 0
     check(okf and oko and s['kb'][0] * 1000 < szn < s['kb'][1] * 1000,
           f'絵（{s["jp"]}）：名前は 中身の md5・1コマ {int(cw * SC)}×{int(ch * SC)}px（{cw // 2}×{ch // 2}pt の 3倍）・{szn / 1e3:.0f}KB（前 {os.path.getsize(po) / 1e3 if oko else 0:.0f}KB）・前の 絵（2倍）も 手元に のこって いる')
     if not (okf and oko):
         continue
+    if nm in N15:                                                             # 同じ 位相の 5コマ（重なる 所）で くらべる
+        ps, dr, off = same_pic(*common(load(pn), load(po), CELL[nm], s['cell']), 5)
+        check(ps > 25 and dr > s['dmin'] and off < 0.3,
+              f'絵（{s["jp"]}）：同じ 位相の 5コマ（新しい 0・3・6・9・12 ＝ 前の 0・2・4・6・8）は 同じ 絵（2/3 に 小さく すると 前の 絵と 同じ：PSNR {ps:.1f}dB'
+              + (f'・馬の 場所の ずれ {off:.2f}pt' if s['mode'] == 'RGBA' else '') + f'）＝上下の 動きは 前の まま・前の 絵を のばした ものより 細かい（細かさ {dr:.2f}倍）')
+        continue
     ps, dr, off = same_pic(load(pn), load(po), N)
     check(ps > 25 and dr > s['dmin'] and off < 0.3,
           f'絵（{s["jp"]}）：同じ 絵（2/3 に 小さく すると 前の 絵と 同じ：PSNR {ps:.1f}dB' + (f'・馬の 場所の ずれ {off:.2f}pt' if s['mode'] == 'RGBA' else '') + f'）・前の 絵を のばした ものより 細かい（細かさ {dr:.2f}倍）')
-check(350_000 < tot_new - tot_old < 650_000, f'走る コマ 5まい（競馬新聞・勝負服・夕焼け・水墨画・ネオン）で ＋{(tot_new - tot_old) / 1e3:.0f}KB（{tot_old / 1e3:.0f}KB → {tot_new / 1e3:.0f}KB）')
+check(750000 < tot_new - tot_old < 1250000, f'走る コマ 5まい（競馬新聞・勝負服・夕焼け・水墨画〈15コマ〉・ネオン〈10コマ〉）で ＋{(tot_new - tot_old) / 1e3:.0f}KB（前の 2倍・10コマの 絵 {tot_old / 1e3:.0f}KB → {tot_new / 1e3:.0f}KB）')
 
 # 花火の 絵
 fB, fH, fO = (np.asarray(Image.open(P(i)).convert('RGB')) for i in (FWB['scatter'], FWB['scatter_h'], FW_OLD))
@@ -274,18 +306,21 @@ try:
             s = SET[nm]
             if nm != 'news':
                 use(pg, nm)
-            x0, y0, cw, ch = (v // 2 for v in s['cell'])
+            x0, y0, cw, ch = (v // 2 for v in CELL[nm]); n = NF[nm]
             q = pg.evaluate(ST, [s['el'], s['win']])
-            okq = (bool(q) and q['bn'] == [390, 160] and q['win'] == [x0, y0, cw, ch] and [q['w'], q['h']] == [N * cw, ch] and q['bs'] == f'{N * cw}px {ch}px' and q['url'] == f'ks_{ID[nm]}.webp'
-                   and q['nat'] == [3 * N * cw, 3 * ch] and q['nat'][0] / q['w'] == 3.0 and any(a[0].endswith(s['anim']) and a[1] == 'running' for a in q['an']) and q['tf'].replace(' ', '') in (f'steps({N})', f'steps({N},end)') and q['sw'] <= 390)
+            dur = next((a[2] for a in (q or {}).get('an', []) if a[0].endswith(s['anim'])), 0) / 1000
+            okq = (bool(q) and q['bn'] == [390, 160] and q['win'] == [x0, y0, cw, ch] and [q['w'], q['h']] == [n * cw, ch] and q['bs'] == f'{n * cw}px {ch}px' and q['url'] == f'ks_{ID[nm]}.webp'
+                   and q['nat'] == [3 * n * cw, 3 * ch] and q['nat'][0] / q['w'] == 3.0 and any(a[0].endswith(s['anim']) and a[1] == 'running' for a in q['an']) and q['tf'].replace(' ', '') in (f'steps({n})', f'steps({n},end)') and q['sw'] <= 390
+                   and abs(dur - n / 30) < 1e-6)
             if not okq: print('    ', json.dumps(q, ensure_ascii=False)[:900])
-            check(okq, f'アプリ（{s["jp"]}・iPhone の 3倍の 画面）：窓 {[x0, y0, cw, ch]}pt・シート {q and q["nat"]}px＝**絵の 3px を 1pt に**・走る 動き（{N}コマ）・横に はみ出さない' + ('' if okq else f'（{q}）'))
-            # くっきり：いまの 絵 と、同じ 所に 前の 絵（2倍）を さしかえた とき を くらべる（動きは 同じ コマで 止める）
-            dur = next((a[2] for a in (q or {}).get('an', []) if a[0].endswith(s['anim'])), 500) / 1000
-            a1 = shot(pg, s['win'], 0.45 * dur)
-            same, dr, a0 = versus(pg, s['win'], 0.05 * dur, f'#ksBnr {s["el"]}{{background-image:url(ks_{s["old"]}.webp) !important}}'); mv = float(np.abs(a0 - a1).mean())
-            check(a0.shape == (3 * ch, 3 * cw, 3) and same > 22 and dr > s['smin'] and mv > 0.004,
-                  f'アプリ（{s["jp"]}）：前の 絵（2倍）に さしかえた ときと 同じ 絵（PSNR {same:.1f}dB）で、画面の 上でも くっきり（細かさ {dr:.2f}倍）・コマが 進む')
+            check(okq, f'アプリ（{s["jp"]}・iPhone の 3倍の 画面）：窓 {[x0, y0, cw, ch]}pt・シート {q and q["nat"]}px＝**絵の 3px を 1pt に**・走る 動き（{n}コマ・1回り {dur:g}秒＝1コマ 1/30秒）・横に はみ出さない' + ('' if okq else f'（{q}）'))
+            # くっきり：いまの 絵 と、同じ 所に 前の 絵（2倍・10コマ）を さしかえた とき を くらべる。1コマめ（どちらも 同じ 形）で 止めて、2つの 切りぬきが 重なる 所 だけ 写す
+            ox0, oy0, ocw, och = (v // 2 for v in s['cell'])
+            X0, Y0, X1, Y1 = max(x0, ox0), max(y0, oy0), min(x0 + cw, ox0 + ocw), min(y0 + ch, oy0 + och); box = [X0, Y0, X1 - X0, Y1 - Y0]
+            a1 = shot(pg, box, 0.45 * dur)
+            same, dr, a0 = versus(pg, box, 0.0, f'#ksBnr {s["el"]}{{background-image:url(ks_{s["old"]}.webp) !important;background-size:{N * ocw}px {och}px !important;background-position:{ox0 - x0}px {oy0 - y0}px !important}}'); mv = float(np.abs(a0 - a1).mean())
+            check(a0.shape == (3 * box[3], 3 * box[2], 3) and same > 22 and dr > s['smin'] and mv > 0.004,
+                  f'アプリ（{s["jp"]}）：1コマめで 前の 絵（2倍）に さしかえた ときと 同じ 絵（PSNR {same:.1f}dB）で、画面の 上でも くっきり（細かさ {dr:.2f}倍）・コマが 進む')
 
         # 花火：馬の 段は 馬 だけの 絵（3倍）・花火 4つは 前と 同じ 絵（2倍）
         use(pg, 'fireworks')
@@ -332,9 +367,9 @@ try:
         # iPad の「iPhone の 大きさ」（390×844・2倍の 画面）：同じ 場所に 出る（絵は 3倍の まま 小さく 出す）
         ctx2 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo')
         pg2, errs2, bad2 = open_app(ctx2, 'silks')
-        s = SET['silks']; x0, y0, cw, ch = (v // 2 for v in s['cell'])
+        s = SET['silks']; x0, y0, cw, ch = (v // 2 for v in CELL['silks'])
         q = pg2.evaluate(ST, [s['el'], s['win']])
-        check(bool(q) and q['bn'] == [390, 160] and q['win'] == [x0, y0, cw, ch] and q['nat'] == [3 * N * cw, 3 * ch] and (q['k'] or '1') in ('1', '1.0000') and not errs2 and not bad2,
+        check(bool(q) and q['bn'] == [390, 160] and q['win'] == [x0, y0, cw, ch] and q['nat'] == [3 * NF['silks'] * cw, 3 * ch] and (q['k'] or '1') in ('1', '1.0000') and not errs2 and not bad2,
               f'iPad の「iPhone の 大きさ」（390×844・2倍の 画面）：壁紙は 引きのばさない（--ksk {q and q["k"]}）・走る コマは 同じ 場所 {q and q["win"]}')
         use(pg2, 'night'); q = pg2.evaluate(PIC, [['s7', '.nts7'], ['z7', '.ntz7']])
         use(pg2, 'fireworks'); q2 = pg2.evaluate(PIC, [['k', '.hqw .hq4'], ['h', '.hqw .hq4 .hqc i']])

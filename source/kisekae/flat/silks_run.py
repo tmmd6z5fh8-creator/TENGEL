@@ -19,7 +19,7 @@ import silks_bg
 from sea_run import leg_at
 from flat_horse import to_png
 
-N_FRAMES = 10
+N_FRAMES = 15                      # 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：10 → 15（0.5秒で 1回り ＝ 1コマ 1/30秒 ちょうど。前は 1秒に 20コマ）
 BOB = 7.0                                    # 体が上がる いちばん高い所（画素）
 # 足の形のかなめ（位相 0〜1・4つの角度）。"base" は いまの絵の形（POSE）
 # のびた形（base）は 0〜0.06 のあいだ そのまま（とんでいる間）。奥の足（R）は OFF だけ先に動く → コマ0 は 手前も奥も いまの絵の形
@@ -65,7 +65,7 @@ def frame_rgba(f, cam, hv0):
     g = f / N_FRAMES
     R, rgb, a = SB.rider(pose_at(g), cam=cam, name=f'silks_run{f}')
     hv = np.asarray(R['hooves'], float) / R['s']
-    pr, pa = SB.svg_png(SB.puffs(hv0, 7.0 * f, 1.0 - 0.055 * f))                    # もくもく：いまの絵の所から うしろへ
+    pr, pa = SB.svg_png(SB.puffs(hv0, 70.0 * g, 1.0 - 0.55 * g))                    # もくもく：いまの絵の所から うしろへ（第4.166版：1回りで 流れる 長さと 小さく なり方は 前と 同じ＝位相 g で。前は コマの 番号で 7 × f・0.055 × f ＝ 10コマの とき と 同じ）
     sh = cv2.warpAffine(a, np.float32([[1, 0, 6], [0, 1, 5]]), (SB.W, SB.Hh), flags=cv2.INTER_LINEAR, borderValue=0) * 0.45
     fwd = math.cos(2 * math.pi * g) > 0.3                                            # 前足が前へのびている時だけ流線
     fr, fa = SB.svg_png(SB.face_svg(R) + (SB.streaks(hv) if fwd else []) + SB.air_lines(R))

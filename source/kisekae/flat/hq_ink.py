@@ -73,5 +73,7 @@ for f in range(N):
     img = img * (1 - seal2[..., None]) + up(img1) * seal2[..., None]             # 落款（いまの 絵の まま）
     sheet2[:, f * int(cw * OUT):(f + 1) * int(cw * OUT)] = np.clip(img, 0, 1)[int(y0 * OUT):int((y0 + ch) * OUT), int(x0 * OUT):int((x0 + cw) * OUT)]
 save_webp(sheet1, f'{out}/ink_run_1x.webp', q=84); save_webp(sheet2, f'{out}/ink_run_hq.webp', q=84)
+if os.environ.get('HQ_RAW', '1') != '0':                                                     # 第4.166版：WebP に する 前の 画素も 書く（コマを ならべ直す とき 描き直さなくて よい ように）
+    np.save(f'{out}/ink_run_hq.npy', (np.clip(sheet2, 0, 1) * 255 + .5).astype(np.uint8))
 print('sizes', os.path.getsize(f'{out}/ink_run_1x.webp'), os.path.getsize(f'{out}/ink_run_hq.webp'))
 # 入れ方：python3 flat/hq_install.py ink <出す フォルダ>（手元の 絵の フォルダ ios/kisekae_blobs と 台帳へ。前の 絵は 消さない）

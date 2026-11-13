@@ -188,8 +188,8 @@ def horse_sheet(silk, sleeve, cap, coat):
 
 
 # ---------------------------------------------------------------- 真上から 見た サラブレッドと 騎手（第4.93版：上の絵の 馬。的中ボタンの まわりの 小さな 馬は 上の horse_sheet の まま）
-NF = 6                      # ギャロップ 1回の コマ
-GAL = 0.42                  # ギャロップ 1回の 秒
+NF = 12                     # ギャロップ 1回の コマ（第4.166版：6 → 12。まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）
+GAL = 0.4                   # ギャロップ 1回の 秒（第4.166版：0.42 → 0.4 ＝ 12コマを 1コマ 1/30秒 ちょうどで：前は 6コマ＝1秒に 14.3コマ）
 CW, CH = 42, 18             # 1コマの 大きさ（絵の 単位・右向き・鼻先が 右）
 HS2 = 0.70                  # 絵の 単位 → 画面の px（第4.94版：前の 0.95 の 7割4分＝1頭 約 26×5px・影を 入れて 29×13px）
 PATS = ['hoop', 'plain', 'sash', 'halves', 'plain', 'dots', 'hoop', 'sash']          # 勝負服の もよう（せなか）
@@ -812,7 +812,7 @@ def banner(B):
         T = NL * LAP
         for k in range(len(SILKS)):
             css += (f'.csw .csH.h{k}{{animation:csR{k} {f(T)}s linear infinite,csZ{k} {f(T)}s step-end infinite}}'
-                    f'.csw .csH.h{k}>b{{background-position:0 {f(-k * hh)}px;animation-delay:{f(-0.053 * k * 7 % GAL, 3)}s}}')
+                    f'.csw .csH.h{k}>b{{background-position:0 {f(-k * hh)}px;animation-delay:{f(-((k * 5) % n) * GAL / n, 4)}s}}')      # 第4.166版：馬ごとに ちがう 足の 形から（コマ 5つ ぶんずつ ずらす ＝ 8頭とも ちがう・コマが かわる 時は そろう）
             css += kf(f'csR{k}', keys_for(k)) + kf(f'csZ{k}', z_keys(k))
     for c, (w, h, seed, sec, p0, p1, dl) in enumerate(CLOUDS):
         css += f'.csw .csCl.c{c}{{width:{w}px;height:{h}px;animation:csC{c} {f(sec)}s linear {f(dl)}s infinite}}'

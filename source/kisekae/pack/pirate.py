@@ -7,9 +7,12 @@
      ゆれは 半分（かたむき 1.7°・上下 2px くらい・舵輪 ±7°）。8秒に 1回 小さな 海賊船（黒い 帆に 白い 蹄鉄）が 水平線の 近くを 通る
      （16秒で 右から 左・左から 右の 2回。少し 大きさと 高さを かえる・波で 上下に ゆれる）。
      船長は 40秒の 1回りの 中で 歩く（常歩の 12コマ・すべらない はやさ）・止まって まわりを 見る（前・見上げる・のぞきこむ）・くるっと 向きを かえる を
-     ばらばらの 長さで（宝箱と 舵輪の うしろを 通る）"""
+     ばらばらの 長さで（宝箱と 舵輪の うしろを 通る）
+   第4.166版（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     船長の 歩きは 36コマ・1.2秒（1秒に 30コマ。前は 12コマ・1.25秒＝1秒に 9.6コマ）・止まった 形（見上げる・のぞきこむ）は あいだの コマを 1/30秒ごとに めくる・
+     歩く ↔ 止まる の かわり目に 足を そろえる／ふみ出す つなぎ。1回りは 36秒（前は 37.5秒）。シートは ます目（common.sheet_flip・sheet_at）"""
 import math
-from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, box, rnd, reduced, fly_burst, fly_css, piece
+from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, box, rnd, reduced, fly_burst, fly_css, piece, sheet_size, sheet_at, sheet_flip
 
 ID = 'pirate'
 
@@ -22,7 +25,8 @@ ROT = 1.7          # 船の ゆれ（度）：第4.93版 3.4 → 1.7（まさち
 BOB = (1.8, 1.0)   # ゆれの 上下（px：上・下）：第4.93版 (3.5, 2) → 半分くらい
 WHEEL = (7, 6)     # 舵輪の 回る 角度（度）：第4.93版 (14, 12) → 半分
 SHIP_T = 16.0      # 海賊船の 1回り（秒）：8秒に 1回 通る（右から 左・左から 右）
-WALK_C = 1.25      # 船長の 歩く 1回り（秒：pirate_art.CYCLE と 同じ）
+WALK_C = 1.2       # 船長の 歩く 1回り（秒：pirate_art.CYCLE と 同じ。第4.166版：1.25 → 1.2 ＝ 36コマを 1コマ 1/30秒 ちょうどで めくる）
+FPS = 30           # 止まった 形の コマを めくる きざみ（1秒に 30コマ）
 ROCK = 6.0         # ゆれの 1回り（秒）
 
 # 世界（手すりの むこう：空・雲・島・海）は 舞台より 大きく（かたむけても すみが 見えない）。世界の 座標＝舞台の 座標 + (OX, OY)
@@ -349,31 +353,61 @@ def glint_svg():
     return doc(16, 16, f"<path d='{sparkle_d(8, 8, 7.6, 0.16)}' fill='#FFFDF0'/><circle cx='8' cy='8' r='1.8' fill='#FFFFFF'/>")
 
 
-# ---------------------------------------------------------------- 船長の 歩き方（40秒の 1回り）
-STANDS = ('front', 'up1', 'up', 'down1', 'down')     # pirate_art.STANDS と 同じ じゅん
-# ('stop', [(形, 秒)…], 向きを かえる 時刻（止まって から の 秒・なし＝None）) ／ ('walk', 1回りの 数, 向き：+1 右・-1 左)
-# 歩く 区間は 1回り（1.25秒）の 数・止まる 区間も 1.25秒の 倍数（歩きだす ときの 足の 形が いつも 同じ）。はじめは 左を 向いて 宝箱の 前
+# ---------------------------------------------------------------- 船長の 歩き方（36秒の 1回り）
+# 第4.166版（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど…全部ヌルヌル動くようにして！」）：
+#   ・歩く コマは 36コマ・1.2秒（前は 12コマ・1.25秒＝1秒に 9.6コマ）
+#   ・止まった 形は あいだの コマを 1/30秒ごとに めくって なめらかに（前は あいだが 1コマ だけ：前 → 0.15秒 → 見上げる）
+#   ・歩く ↔ 止まる の かわり目は 足を そろえる／ふみ出す つなぎ（各 8コマ）を はさむ（前は 歩く 形から 止まった 形へ 1コマで とんだ）
+# ('stop', [(形, コマ数)…], 向きを かえる 時刻（止まって から の 秒・なし＝None）) ／ ('walk', 1回りの 数, 向き：+1 右・-1 左)
+#   形：front（前を 見る）・up（見上げる）・down（のぞきこむ）・peek（少し のぞく＝のぞきこむ 半分）。コマ数は 1/30秒が いくつ（形が かわる とちゅうの コマも 入れて）。
+#   止まる 区間は「つなぎ 8コマ ＋ 形の コマ数の 合計 ＋ つなぎ 8コマ」が 1回り（36コマ）の 倍数（歩きだす ときの 足の 形が いつも 同じ）。はじめは 左を 向いて 宝箱の 前
 PLAN = [
-    ('stop', [('front', 1.0), ('down1', .15), ('down', 1.45), ('down1', .15), ('front', 1.0)], 2.95),   # 宝箱の 前：のぞきこむ → 右を 向く
+    ('stop', [('front', 22), ('down', 44), ('front', 26)], 2.75),     # 宝箱の 前：のぞきこむ → 右を 向く
     ('walk', 2, 1),
-    ('stop', [('front', .5), ('up1', .15), ('up', 1.2), ('up1', .15), ('front', .5)], None),          # 見上げる（旗・空）
+    ('stop', [('front', 10), ('up', 34), ('front', 12)], None),       # 見上げる（旗・空）
     ('walk', 2, 1),
-    ('stop', [('front', 1.0), ('down1', .15), ('down', .9), ('down1', .15), ('front', 1.55)], 2.85),   # 舵輪の うしろ：下を 見る → 左を 向く
+    ('stop', [('front', 22), ('down', 30), ('front', 40)], 2.4),      # 舵輪の うしろ：下を 見る → 左を 向く
     ('walk', 3, -1),
-    ('stop', [('front', .4), ('up1', .15), ('up', .4), ('up1', .15), ('front', .15)], None),
+    ('stop', [('up', 12), ('front', 8)], None),                       # ちらっと 見上げる
     ('walk', 2, -1),
-    ('stop', [('front', .6), ('down1', 1.8), ('front', 1.35)], 3.2),                                   # 宝箱を ながめる → 右を 向く
+    ('stop', [('front', 14), ('peek', 52), ('front', 26)], 2.65),     # 宝箱を ながめる → 右を 向く
     ('walk', 2, 1),
-    ('stop', [('front', .6), ('up1', .15), ('up', .95), ('up1', .15), ('front', .65)], None),
+    ('stop', [('front', 14), ('up', 28), ('front', 14)], None),
     ('walk', 1, 1),
-    ('stop', [('front', .9), ('down1', .15), ('down', .6), ('down1', .15), ('front', .7)], 2.0),
+    ('stop', [('front', 16), ('down', 18), ('front', 22)], 1.67),
     ('walk', 2, -1),
 ]
 TURN = 0.36        # くるっと 向きを かえる 秒
 
 
-def walk_keys(speed, cx):
-    """PLAN → 動きの キー（時刻・値）。返り値：(1回りの 秒, 位置, 向き, 歩いて いるか, 止まった 形)"""
+def look_seq(looks, ku, kd, kt):
+    """止まる 区間の コマの 名前の ならび（1/30秒ごと）：足を そろえる つなぎ → 形（かわる とちゅうの コマも）→ ふみ出す つなぎ"""
+    last = dict(front='front', up=f'u{ku}', down=f'd{kd}', peek=f'd{kd // 2}')
+    go = dict(up=[f'u{k}' for k in range(1, ku + 1)], down=[f'd{k}' for k in range(1, kd + 1)], peek=[f'd{k}' for k in range(1, kd // 2 + 1)])
+    seq = [f't{k}' for k in range(1, kt + 1)]
+    cur = 'front'
+    for nm, n in looks:
+        if nm == cur:
+            path = []
+        elif cur == 'front':
+            path = go[nm]                                           # 前 → その 形（さいごの コマが その 形）
+        else:
+            assert nm == 'front', (cur, nm)
+            path = go[cur][-2::-1] + ['front']                      # その 形 → 前（来た 道を もどる）
+        assert n >= len(path), (cur, nm, n, len(path))
+        seq += path + [last[nm]] * (n - len(path))
+        cur = nm
+    assert cur == 'front', looks
+    return seq + [f't{k}' for k in range(kt, 0, -1)]
+
+
+def walk_keys(speed, cx, names=None, cyc=36):
+    """PLAN → 動きの キー（時刻・値）。返り値：(1回りの 秒, 位置, 向き, 歩いて いるか, 止まった 形の コマ)。
+       names：止まった 形の シートの コマの 名前（pirate_art.STANDS）・cyc：歩く 1回りの コマ（1/30秒が いくつ）"""
+    names = list(names or [])
+    ku = sum(1 for q in names if q[0] == 'u') or 8
+    kd = sum(1 for q in names if q[0] == 'd') or 8
+    kt = sum(1 for q in names if q[0] == 't') or 8
     step = speed * WALK_C
     t, x, face = 0.0, 0.0, -1
     pos, flip, walking, frame = [(0.0, 0.0)], [(0.0, face)], [(0.0, 0)], []
@@ -387,17 +421,20 @@ def walk_keys(speed, cx):
             t += dur
             pos.append((t, x))
             walking.append((t, 0))
-            frame.append((t - dur, None))
         else:
             _, looks, turn = blk
-            dur = sum(d for _, d in looks)
-            assert abs(dur / WALK_C - round(dur / WALK_C)) < 1e-6, (dur, blk)
-            tt = t
-            for nm, d in looks:
-                frame.append((tt, STANDS.index(nm)))
-                tt += d
+            seq = look_seq(looks, ku, kd, kt)
+            assert len(seq) % cyc == 0, (len(seq), blk)
+            dur = len(seq) / FPS
+            prev = None
+            for i, nm in enumerate(seq):
+                if nm != prev:
+                    frame.append((t + i / FPS, names.index(nm) if names else 0))
+                    prev = nm
             pos.append((t + dur, x))
             if turn is not None:
+                i_t = int(round(turn * FPS))
+                assert all(q == 'front' for q in seq[i_t:int(round((turn + TURN) * FPS)) + 1]), (blk, seq[i_t:i_t + 12])      # 向きを かえる 間は 前を 見て 立って いる
                 flip += [(t + turn, face), (t + turn + TURN / 2, face * 0.06), (t + turn + TURN, -face)]
                 face = -face
             t += dur
@@ -469,31 +506,30 @@ def banner(B):
            '.prw .prCh{left:2px;top:4px;width:124px;height:152px}'
            '.prw .prGt{width:17px;height:17px;opacity:0;animation:prGlint 4.2s ease-in-out infinite;will-change:transform,opacity}')
     if wk and sd:
-        T, pos, flip, walking, frame = walk_keys(wk['speed'], wk['cx'])
+        T, pos, flip, walking, frame = walk_keys(wk['speed'], wk['cx'], sd.get('names'), wk['frames'])
+        assert abs(wk['frames'] / FPS - WALK_C) < 1e-9 and abs(wk.get('cycle', WALK_C) - WALK_C) < 1e-9, (wk['frames'], wk.get('cycle'))      # 歩く コマは 1/30秒ごと
         pc = lambda t: 100 * t / T
         n, (cw, ch), (ax, ay) = wk['frames'], wk['cell'], wk['at']
         sn, (sw, sh), (sx, sy) = sd['frames'], sd['cell'], sd['at']
+        (wW, wH), (sW, sH) = sheet_size(wk), sheet_size(sd)          # シート ぜんぶの 大きさ（CSS px：ます目）
+        walk_tf, walk_kf = sheet_flip('prWalk', wk)
         css += ('.prw .prHm,.prw .prHf,.prw .prHw,.prw .prHs{position:absolute;display:block}'
                 '.prw .prHm,.prw .prHf{left:0;top:0;width:390px;height:160px}'
                 f'.prw .prHm{{animation:prHm {f(T)}s linear infinite;will-change:transform}}'
                 f'.prw .prHf{{transform-origin:{f(wk["cx"])}px 140px;animation:prHf {f(T)}s linear infinite}}'
                 f'.prw .prHw{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;overflow:hidden;animation:prHw {f(T)}s step-end infinite}}'
-                f'.prw .prHw>i{{display:block;width:{f(n * cw / 2)}px;height:{f(ch / 2)}px;background:url({wk["url"]}) 0 0/{f(n * cw / 2)}px {f(ch / 2)}px no-repeat;'
-                f'animation:prWalk {WALK_C}s steps({n}) infinite}}'
+                f'.prw .prHw>i{{display:block;width:{f(wW)}px;height:{f(wH)}px;background:url({wk["url"]}) 0 0/{f(wW)}px {f(wH)}px no-repeat;'
+                f'animation:prWalk {WALK_C}s {walk_tf} infinite}}'
                 f'.prw .prHs{{left:{f(sx / 2)}px;top:{f(sy / 2)}px;width:{f(sw / 2)}px;height:{f(sh / 2)}px;overflow:hidden;animation:prHs {f(T)}s step-end infinite}}'
-                f'.prw .prHs>i{{display:block;width:{f(sn * sw / 2)}px;height:{f(sh / 2)}px;background:url({sd["url"]}) 0 0/{f(sn * sw / 2)}px {f(sh / 2)}px no-repeat;'
+                f'.prw .prHs>i{{display:block;width:{f(sW)}px;height:{f(sH)}px;background:url({sd["url"]}) 0 0/{f(sW)}px {f(sH)}px no-repeat;'
                 f'animation:prLook {f(T)}s step-end infinite}}'
-                + kf('prWalk', [(100, f'transform:translateX({f(-n * cw / 2)}px)')])
-                + kf('prHm', [(pc(t), f'transform:translateX({f(x)}px)') for t, x in pos])
-                + kf('prHf', [(pc(t), f'transform:scaleX({f(sc, 3)})') for t, sc in flip] + [(100, f'transform:scaleX({f(flip[0][1])})')]))
+                + walk_kf
+                + kf('prHm', [(pc(t), f'transform:translateX({f(x)}px)') for t, x in pos], 5)
+                + kf('prHf', [(pc(t), f'transform:scaleX({f(sc, 3)})') for t, sc in flip] + [(100, f'transform:scaleX({f(flip[0][1])})')], 5))
         vis = [(pc(t), f'opacity:{w}') for t, w in walking]
-        css += kf('prHw', vis) + kf('prHs', [(p_, 'opacity:' + str(1 - int(v_[-1]))) for p_, v_ in vis])
-        look, last = [], 0
-        for t, k in frame:
-            k = last if k is None else k
-            last = k
-            look.append((pc(t), f'transform:translateX({f(-k * sw / 2)}px)'))
-        css += kf('prLook', look + [(100, look[0][1])])
+        css += kf('prHw', vis, 5) + kf('prHs', [(p_, 'opacity:' + str(1 - int(v_[-1]))) for p_, v_ in vis], 5)      # ％は 小数 5けた（歩く シートと 止まった 形の シートの 入れかえが 同じ 時刻に なる）
+        look = [(pc(t), 'transform:' + sheet_at(sd, k)) for t, k in frame]      # 止まった 形の コマ（1/30秒ごとに かわる 所 だけ）
+        css += kf('prLook', look + [(100, look[0][1])], 5)
     for k, (x, y, d) in enumerate(((36, 95, 0.0), (64, 88, 0.7), (86, 98, 1.4), (50, 104, 2.1), (74, 104, 2.8), (111, 145, 3.5))):
         css += f'.prw .prGt.t{k}{{left:{x - 8.5}px;top:{y - 8.5}px;animation-delay:{f(d, 2)}s}}'
     up, dn = BOB

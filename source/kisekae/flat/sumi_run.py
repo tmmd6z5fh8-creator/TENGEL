@@ -13,10 +13,10 @@ import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import sumi_banner as SB
-from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at
+from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at, wave_dy
 from style2d import save_webp
 
-N_FRAMES = 10                      # ギャロップ1回のコマ数
+N_FRAMES = 15                      # ギャロップ1回のコマ数。第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：10 → 15（0.5秒で 1回り ＝ 1コマ 1/30秒 ちょうど。前は 0.52秒で 1秒に 19.2コマ）
 LIFT = 7.0                         # 宙に浮くコマの いちばん高いところ（画素）
 PHASE = dict(near=0.0, far=0.35)   # 2頭の足の運びのずれ
 HOOF_KEYS = ('FL', 'FR', 'HL', 'HR')
@@ -33,6 +33,10 @@ def pose_at(g, P0):
 
 def stance_legs(g):
     return [k for k in HOOF_KEYS if ((g - LEG_OFF[k]) % 1.0) < STANCE]
+
+
+# 第4.165版までの 10コマの 上下（2頭・2つの 波）。第4.166版：コマを 15に ふやしても 上下は この 動きの まま（sea_run.wave_dy）
+DY_165 = dict(far=[3.17, 3.45, 3.22, 2.4, 0.79, -1.14, -2.24, -1.67, 0.17, 2.08], near=[-5.46, -5.86, -6.43, -5.72, -5.24, -7.17, -10.78, -12.68, -10.92, -7.4])
 
 
 def smooth_dy(dys):
@@ -75,7 +79,7 @@ def run(out):
         for fr in frames:
             if fr['dy'] is None:
                 fr['dy'] = fr.pop('dy_air')
-        for fr, v in zip(frames, smooth_dy([fr['dy'] for fr in frames])):
+        for fr, v in zip(frames, wave_dy(DY_165[h['name']], n)):               # 第4.166版：前の 波を n コマの 位相で（前は smooth_dy＝コマから 決め直した 波）
             fr['dy'] = float(v)
             fr['k'], fr['A'] = shift(fr['k'], fr['dy']), shift(fr['A'], fr['dy'])
         per.append((h, frames, A0))

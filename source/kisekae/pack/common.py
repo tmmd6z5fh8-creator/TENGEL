@@ -144,9 +144,9 @@ def rgba(c, al):
     return f'rgba({r},{g},{b},{f(al)})'
 
 
-def kf(name, stops):
-    """@keyframes：stops＝[(%, '宣言')…]"""
-    return f'@keyframes {name}{{' + ''.join(f'{f(p, 3)}%{{{d}}}' for p, d in stops) + '}'
+def kf(name, stops, nd=3):
+    """@keyframes：stops＝[(%, '宣言')…]。nd：％の 小数の けた（長い 1回りの 中で 1/30秒ごとに 切りかえる ときは 5：36秒の 0.001% は 0.36ミリ秒）"""
+    return f'@keyframes {name}{{' + ''.join(f'{f(p, nd)}%{{{d}}}' for p, d in stops) + '}'
 
 
 def img(cls, svg, extra=''):
@@ -172,15 +172,52 @@ def flow_css(cls, kfname, uri, y, h, w, sec, direction=-1, more=''):
     return css.replace('{KF}', kfname) + kf(kfname, [(0, 'transform:translateX(0)'), (100, f'transform:translateX({f(dx)}px)')])
 
 
+# ---------------------------------------------------------------- コマの シート（第4.166版：コマを ふやして なめらかに ＝ ます目の シートも めくれる ように）
+def sheet_grid(meta):
+    """シートの ます目：(1行の コマ, 行)。meta に cols が ない ＝ 横 1行（いままでの シート）"""
+    n = meta['frames']
+    cols = meta.get('cols') or n
+    return cols, -(-n // cols)
+
+
+def sheet_size(meta, scale=0.5):
+    """シート ぜんぶの 大きさ（CSS px）：(はば, 高さ)"""
+    cols, rows = sheet_grid(meta)
+    return cols * meta['cell'][0] * scale, rows * meta['cell'][1] * scale
+
+
+def sheet_at(meta, k, scale=0.5):
+    """コマ k を 窓に 出す ずらし（transform の 値）。横 1行の シートは いままで どおり translateX"""
+    cols, rows = sheet_grid(meta)
+    x, y = -(k % cols) * meta['cell'][0] * scale, -(k // cols) * meta['cell'][1] * scale
+    return f'translateX({f(x)}px)' if rows == 1 else f'translate({f(x)}px,{f(y)}px)'
+
+
+def sheet_flip(name, meta, scale=0.5, step=1):
+    """コマを じゅんに めくる：(animation の 進み方, @keyframes)。
+       横 1行は いままで どおり steps(n)（to＝シートの はば ぶん 左へ）。ます目の シートは コマごとの 場所を 1つの アニメに 書いて step-end で 入れかえる
+       （行と 列を べつの アニメに すると 行の かわり目で 1コマ ずれる ことが ある ので、1つに する）。
+       step：コマを いくつ おきに 出すか（2＝1つ おき：同じ シートを 速く めくる とき）"""
+    n = meta['frames']
+    cols, rows = sheet_grid(meta)
+    if rows == 1 and step == 1:
+        return f'steps({n})', kf(name, [(100, f'transform:translateX({f(-n * meta["cell"][0] * scale)}px)')])
+    ks = list(range(0, n, step))
+    keys = [(100 * i / len(ks), 'transform:' + sheet_at(meta, k, scale)) for i, k in enumerate(ks)]
+    return 'step-end', kf(name, keys + [(100, keys[0][1])], 4)
+
+
 def sheet_css(cls, blob, meta, sec, scale=0.5, delay=0.0, more='', inner_more=''):
-    """馬の コマの シート（横に n コマ）を steps で めくる。meta：frames・cell（2倍の 画素）・at（2倍の 画素）。scale：絵の 画素 → CSS px"""
-    n, (cw, ch), (ax, ay) = meta['frames'], meta['cell'], meta['at']
+    """馬の コマの シート（横に n コマ・第4.166版から ます目も）を めくる。meta：frames・cell（2倍の 画素）・at（2倍の 画素）・cols（ます目の とき）。scale：絵の 画素 → CSS px"""
+    (cw, ch), (ax, ay) = meta['cell'], meta['at']
     w, h = cw * scale, ch * scale
+    sw, sh = sheet_size(meta, scale)
     name = cls.replace('.', '').replace(' ', '') + 'R'
+    tf, keys = sheet_flip(name, meta, scale)
     return (f'{cls}{{position:absolute;left:{f(ax * scale)}px;top:{f(ay * scale)}px;width:{f(w)}px;height:{f(h)}px;overflow:hidden;{more}}}'
-            f'{cls}>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({blob}) 0 0/{f(n * w)}px {f(h)}px no-repeat;'
-            f'animation:{name} {f(sec, 3)}s steps({n}) {f(-delay, 3)}s infinite;{inner_more}}}'
-            + kf(name, [(100, f'transform:translateX({f(-n * w)}px)')]))
+            f'{cls}>i{{display:block;width:{f(sw)}px;height:{f(sh)}px;background:url({blob}) 0 0/{f(sw)}px {f(sh)}px no-repeat;'
+            f'animation:{name} {f(sec, 3)}s {tf} {f(-delay, 3)}s infinite;{inner_more}}}'
+            + keys)
 
 
 def strips(cls, uri, w, h, n, amp, sec, skew=0.0, phase=1.0, grow=True):

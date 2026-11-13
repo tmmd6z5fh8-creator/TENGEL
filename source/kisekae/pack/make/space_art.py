@@ -17,7 +17,7 @@ PAL = dict(body='#ECEFF5', shade='#B9C0CF', muzzle='#F7F8FB', mane='#56607A', ma
            bodyShade='#DCE0EA')
 SPOT = dict(pose='gallop', facing='right', box=(196, 78, 470, 268), azim=6, shadow=('#05070F', 0.0))
 GROUND = 264.0
-N = 10
+N = 19             # 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：1回りの コマ 10 → 19（19/30秒＝1コマ 1/30秒 ちょうど。前は 0.62秒で 1秒に 16.1コマ）
 
 
 def star_pts(c, r, r2, n=5, rot=-90.0):
@@ -61,8 +61,11 @@ def acc_for(i):
     return acc
 
 
+DY_165 = [-2.12, -7.21, -6.38, -3.67, 4.23, 0.2, -0.29, -5.25, -7.21, -6.17]      # 第4.165版までの 10コマの 上下（この 動きを なめらかな 波に して 読む：sheets.wave_dy）
+
+
 if __name__ == '__main__':
-    u8, meta, frames, cam = gallop_sheet(PAL, SPOT, acc=acc_for, n=N, number='1', tag='pkspace', ground=GROUND, lift=6.0, workers=1)
+    u8, meta, frames, cam = gallop_sheet(PAL, SPOT, acc=acc_for, n=N, number='1', tag='pkspace', ground=GROUND, lift=6.0, workers=1, smooth=2, wave=DY_165)      # workers=1：ゼッケンの 数字（字）を 描く ので、分かれた プロセス（fork）では 字の 道具（pango）が 止まる
     xs = [h[0] for fr in frames for h in fr[2]]
     meta['hx'] = [round(min(xs) / 2, 2), round(max(xs) / 2, 2)]        # ひづめの 左右の はし（ページの px）：影の 置き場
     meta['ground'] = GROUND / 2

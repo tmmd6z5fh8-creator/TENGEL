@@ -43,8 +43,8 @@ def rgba2(A, rim_sun, rim_top):
     return np.clip(np.where(a[..., None] > 1e-4, k / np.maximum(a[..., None], 1e-4), 0), 0, 1), a
 
 
-cam = camera(W, Hh); dys, ground = SR.ground_dy(cam)
-print('dy', [round(v, 2) for v in dys], 'json', info['dy'], flush=True)
+cam = camera(W, Hh); dys = [float(v) for v in info['dy']]        # 第4.166版：上下は 台帳の 数（sunset_run.py が 決めた もの＝前の 動きの 波）。前は ここで コマから 決め直して いた（sunset_run.py と 同じ 式 だった ので 同じ 数 だった）
+print('dy', [round(v, 2) for v in dys], flush=True)
 F1, F2 = [], []
 for f in range(N):
     g = f / N

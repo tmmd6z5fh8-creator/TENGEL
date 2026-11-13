@@ -25,6 +25,7 @@ for p in (os.path.join(K, 'r3d'), FLAT, K, PACK):
         sys.path.insert(0, p)
 BLOB_DIR = os.environ.get('KISEKAE_ASSETS') or os.path.join(SRC, 'ios', 'kisekae_blobs')
 W2, H2 = 780, 320
+WEBP_MAX = 16383                               # WebP の 1辺の 上限（画素）
 HOOF_ORDER = ('FL', 'FR', 'HL', 'HR')          # draw_horse の marks['hooves'] の 順
 # 第4.112版（まさちゃん「壁紙パックの映像画質が悪いから綺麗にして！」）：絵の 画素を 画面の 3倍に。座標・目印・meta の 数（cell・at・dy・speed…）は
 #   いままで どおり 2倍の 画素（ページの CSS は かわらない）で、出す 絵だけ Z 倍の 画素（なし＝1.5＝画面の 3倍。PK_Z=1 で いままでの 2倍）。
@@ -123,18 +124,57 @@ def ground_dy(frames, stance, ground, lift=6.0):
     return out
 
 
+def smooth_dy(dys, harmonics=2):
+    """上下の ずらし（ground_dy）を 1回りの なめらかな 波（harmonics 個の 倍音 まで）に 合わせる（第4.166版：コマを ふやして なめらかに）。
+       ground_dy は「地面に ついて いる いちばん 低い ひづめ」を 地面に 合わせる ので、地面に つく 足が 入れかわる コマで 体が 数画素 とぶ
+       （1秒に 20コマでは 目立たない・30コマに すると 1コマ だけ カクッと 見える）。なめらかな 波に すると 体は とばない。
+       ひづめは 地面の 線から 少し（画面の 1px ほど まで）浮いたり しずんだり する コマが できる（速い ギャロップでは 見えない）。
+       flat/news_run.py など いままでの 壁紙の 走る コマと 同じ 考え方（くり返しの 2つの 波）"""
+    n = len(dys)
+    ph = 2 * math.pi * np.arange(n) / n
+    A = np.stack([np.ones(n)] + [fn(h * ph) for h in range(1, harmonics + 1) for fn in (np.cos, np.sin)], 1)
+    coef = np.linalg.lstsq(A, np.array(dys, float), rcond=None)[0]
+    return [float(v) for v in A @ coef]
+
+
+def wave_dy(old, n, harmonics=2):
+    """第4.166版：前の シート（len(old) コマ）の 上下の ずらしを 1回りの なめらかな 波（harmonics 個の 倍音 まで）に 合わせて、n コマの 位相で 読む。
+       コマを ふやす とき、上下の 動きは 前の シートの 動き（見なれた はね方）の ままに する：
+       コマを ふやして ground_dy で 決め直すと、足が 地面を はなれる 瞬間の コマ（ひづめが もう 上がり はじめて いる）が 入って、けり出す 前に 体が しずむ・
+       宙で 体が 上がらない 動きに なる（10コマでは その 瞬間が コマに 入って いなかった）。前の 上下（地面に ついた 足で そろえた 10この 数）を
+       なめらかに つないだ 波なら、体は とばず・はね方も 前と 同じ"""
+    m = len(old)
+    ph = 2 * math.pi * np.arange(m) / m
+    A = np.stack([np.ones(m)] + [fn(h * ph) for h in range(1, harmonics + 1) for fn in (np.cos, np.sin)], 1)
+    coef = np.linalg.lstsq(A, np.array(old, float), rcond=None)[0]
+    q = 2 * math.pi * np.arange(n) / n
+    B = np.stack([np.ones(n)] + [fn(h * q) for h in range(1, harmonics + 1) for fn in (np.cos, np.sin)], 1)
+    return [float(v) for v in B @ coef]
+
+
+def ground_err(frames, stance, ground, dys, legs=HOOF_ORDER):
+    """確かめ用：地面に ついて いる ひづめが 地面の 線から どれだけ 上下に ずれるか（2倍の 画素）→ (いちばん 大きい, 平均)。frames の hooves は HOOF_ORDER の 順"""
+    d = [abs(fr[2][HOOF_ORDER.index(k)][1] + dy - ground) for fr, st, dy in zip(frames, stance, dys) for k in st if k in legs]
+    return (round(max(d), 2), round(sum(d) / len(d), 2)) if d else (0.0, 0.0)
+
+
 def shadow_layer(W, H, cx, cy, rx, ry, blur=3.4, alpha=0.22):
     sm = np.zeros((H * 4, W * 4), np.float32)
     cv2.ellipse(sm, (int(cx * 4), int(cy * 4)), (int(rx * 4), int(ry * 4)), 0, 0, 360, 1.0, -1, cv2.LINE_AA)
     return cv2.GaussianBlur(cv2.resize(sm, (W, H), interpolation=cv2.INTER_AREA), (0, 0), blur) * alpha
 
 
-def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra=None):
+def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra=None, cols=None):
     """コマ（rgb・a）を 上下（dys）・左右（dxs）に ずらし、影（shadow＝(色, cx, cy, rx, ry, 濃さ)）を 足して、動く 所の 四角で 切りぬいて 横に ならべる。
        extra：(コマの 番号, pre, A) → (pre, A)（コマごとの 足し：しぶき・ほこり など。premultiplied・コマの 画素＝Z 倍）。返り値：(u8 RGBA, meta)
        第4.112版：コマの 絵が Z 倍の 画素（horse_flat の OUT_Z）でも よい。ずらし・影・W・H・pad は 2倍の 画素の まま わたし、ここで Z 倍に する。
-       meta の cell・at は 2倍の 画素（ページの CSS は かわらない）・z は 絵の 画素 ÷ ページの px"""
+       meta の cell・at は 2倍の 画素（ページの CSS は かわらない）・z は 絵の 画素 ÷ ページの px
+       第4.166版（まさちゃん 2026/11/13 15:21「全部ヌルヌル動くようにして！」＝コマを ふやす）：cols＝1行に ならべる コマの 数。コマが cols より 多い ときは 行を 折り返して
+       ます目に ならべる（左上から 右へ・次の 行へ）＝コマが ふえても 絵の 1辺が 長く なりすぎない（WebP は 1辺 16,383 画素 まで・画面の 帯も 短い まま）。
+       meta の cols に その 数（1行に おさまる ときは 入れない ＝ いままでの 横 1行の シートと 同じ 形）。ページは common.sheet_flip で めくる"""
     n = len(frames)
+    kc = n if not cols or n <= cols else int(cols)   # 1行の コマ
+    rows = -(-n // kc)
     dys = dys or [0.0] * n
     dxs = dxs or [0.0] * n
     Hp, Wp = frames[0][1].shape[:2]
@@ -165,7 +205,8 @@ def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra
     x1, y1 = x1 + (-(x1 - x0)) % q, y1 + (-(y1 - y0)) % q
     x1, y1 = min(x1, Wp + (-(Wp - x0)) % q), min(y1, Hp + (-(Hp - y0)) % q)
     cw, ch = x1 - x0, y1 - y0
-    sheet = np.zeros((ch, cw * n, 4), np.float32)
+    assert not cols or (cw * kc <= WEBP_MAX and ch * rows <= WEBP_MAX), (cw, ch, kc, rows)      # WebP の 1辺の 上限（ます目に する とき。1列の ままの ときは 呼ぶ 側が 折る：paddock_moves.py）
+    sheet = np.zeros((ch * rows, cw * kc, 4), np.float32)
     for i, (pre, A) in enumerate(cells):
         cut_p = np.zeros((ch, cw, 3), np.float32)
         cut_a = np.zeros((ch, cw), np.float32)
@@ -173,10 +214,13 @@ def make_sheet(frames, dys=None, dxs=None, shadow=None, pad=4, W=W2, H=H2, extra
         cut_p[:hh, :ww] = pre[y0:y0 + hh, x0:x0 + ww]
         cut_a[:hh, :ww] = A[y0:y0 + hh, x0:x0 + ww]
         rgb = np.where(cut_a[..., None] > 1e-4, cut_p / np.maximum(cut_a, 1e-4)[..., None], 0)
-        sheet[:, i * cw:(i + 1) * cw, :3] = rgb
-        sheet[:, i * cw:(i + 1) * cw, 3] = cut_a
+        r, c = divmod(i, kc)
+        sheet[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, :3] = rgb
+        sheet[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw, 3] = cut_a
     u8 = (np.clip(sheet, 0, 1) * 255 + .5).astype(np.uint8)
     meta = dict(frames=n, cell=[int(round(cw / z)), int(round(ch / z))], at=[int(round(x0 / z)), int(round(y0 / z))])
+    if rows > 1:
+        meta['cols'] = kc                            # 1行の コマ（ます目に ならべた シート）
     if q != 2:
         meta['z'] = q                                # 絵の 画素 ÷ ページの px（3倍の 絵）
     return u8, meta
@@ -199,11 +243,17 @@ def save_webp(u8, quality=90, lossless=False, out_dir=None):
     return bid
 
 
-def gallop_sheet(pal, spot, acc=None, n=10, number='1', tag='pk', ground=None, lift=6.0, shadow=None, workers=2, extra=None):
+def gallop_sheet(pal, spot, acc=None, n=10, number='1', tag='pk', ground=None, lift=6.0, shadow=None, workers=2, extra=None, cols=None, smooth=0, wave=None):
     """ギャロップの シート。ground：地面の 高さ（2倍の 画素・なければ spot の box の 下 − 4）。shadow：(色, 濃さ) か (色, cx, cy, rx, ry, 濃さ)"""
     frames, cam = render(pal, spot, gallop_poses(n), acc=acc, number=number, tag=tag, workers=workers)
     g = ground if ground is not None else spot['box'][3] - 4
     dys = ground_dy(frames, gallop_stance(n), g, lift)
+    if wave is not None:                         # 第4.166版：上下は 前の シートの 動き（wave＝前の dy の ならび）を なめらかな 波に して 読む（wave_dy）
+        raw, dys = dys, wave_dy(wave, n, smooth or 2)
+        print('上下：前の 動きの 波（', len(wave), '→', n, 'コマ）・地面に ついた ひづめの ずれ（いちばん 大きい, 平均）', ground_err(frames, gallop_stance(n), g, dys),
+              '／コマから 決め直した 上下との ちがい いちばん 大きい', round(max(abs(a - b) for a, b in zip(raw, dys)), 2), flush=True)
+    elif smooth:                                 # 上下を なめらかな 波に（smooth＝倍音の 数）
+        dys = smooth_dy(dys, smooth)
     sh = None
     if shadow:
         if len(shadow) == 2:
@@ -212,7 +262,7 @@ def gallop_sheet(pal, spot, acc=None, n=10, number='1', tag='pk', ground=None, l
             sh = (shadow[0], cx, g + 5, (max(xs) - min(xs)) * 0.5, 6.0, shadow[1])
         else:
             sh = shadow
-    u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra)
+    u8, meta = make_sheet(frames, dys, shadow=sh, extra=extra, cols=cols)
     meta['dy'] = [round(float(d), 2) for d in dys]
     return u8, meta, frames, cam
 

@@ -7,7 +7,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png, Z  # noqa: E402
+from sheets import render, gallop_poses, gallop_stance, ground_dy, wave_dy, ground_err, make_sheet, save_webp, record, preview_png, Z  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 from cute_horse import path, stroke, unit, V, f2  # noqa: E402
@@ -58,10 +58,14 @@ def ink_lines(i, pre, A):
     return pre2, A2
 
 
+DY_165 = [-2.84, -6.54, -5.93, -3.95, 1.86, -1.09, -1.45, -6.3, -8.15, -6.99]      # 第4.165版までの 10コマの 上下
+
+
 if __name__ == '__main__':
-    n = 10
+    n = 15                     # 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：1回りの コマ 10 → 15（0.5秒＝1コマ 1/30秒 ちょうど）
     frames, cam = render(PAL, SPOT, gallop_poses(n), acc=acc, number='', tag='pkuk', workers=2)
-    dys = ground_dy(frames, gallop_stance(n), SPOT['box'][3] - 4, lift=6.0)
+    dys = wave_dy(DY_165, n)                   # 上下は 第4.165版までの 動き（10コマ）を なめらかな 波に して 読む（体が とばない・はね方は 前と 同じ）
+    print('地面に ついた ひづめの ずれ（2倍の 画素：いちばん 大きい, 平均）', ground_err(frames, gallop_stance(n), SPOT['box'][3] - 4, dys), flush=True)
     u8, meta = make_sheet(frames, dys, shadow=None, extra=ink_lines)
     meta['dy'] = [round(float(d), 2) for d in dys]
     out = os.environ.get('OUT')

@@ -771,6 +771,9 @@ def banner(B):
         w, h = cw / 2, ch / 2
         dx, dy = LAYOUT[key]
         run = (meta['spf'] / 2 * n / v) if meta.get('spf') else RUN_S
+        if abs(n / 30 - run) / run < 0.04:                                   # 第4.166版：1コマ 1/30秒 ちょうどに そろえる（画面の 描きかえと 同じ きざみ ＝ コマの 長さが そろう）。
+            run = n / 30                                                      #   ひづめの すべりは 4% まで（地面に ついて いる 間に 1px も ずれない）
+        delay = round(delay * 30) / 30                                       #   ずらす 秒も 1/30秒の きざみに
         css += (f'.dnw .dnH.{cls}{{left:{f(ax / 2 + dx)}px;top:{f(ay / 2 + dy)}px;width:{f(w)}px;height:{f(h)}px;overflow:hidden}}'
                 f'.dnw .dnH.{cls}>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({meta["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;'
                 f'animation:dnRun{k + 1} {f(run, 4)}s steps({n}) {f(-delay, 3)}s infinite}}'

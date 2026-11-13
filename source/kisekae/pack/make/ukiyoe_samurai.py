@@ -48,7 +48,7 @@ def main(out=None):
     from pack import ukiyoe as U
     items, rows = [], []
     for who in ('a', 'b', 'c'):
-        items += [(U.samurai_walk_svg(who), U.SM_W * 12, U.SM_H), (U.samurai_bow_svg(who), U.SM_W * len(U.BOW), U.SM_H)]
+        items += [(U.samurai_walk_svg(who), U.SM_W * U.NW, U.SM_H), (U.samurai_bow_svg(who), U.SM_W * len(U.BOW), U.SM_H)]      # 第4.166版：歩く 30コマ・会釈 30コマ
         rows += [f'{who}_w', f'{who}_b']
     ims = shot(items)
     rh = int(round(U.SM_H * Z))

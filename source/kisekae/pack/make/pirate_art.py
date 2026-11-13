@@ -4,6 +4,14 @@
    止まって まわりを 見る コマ（前を 見る・見上げる 2つ・のぞきこむ 2つ＝5コマ）。どちらも 同じ カメラ・同じ 地面の 高さ（甲板の 奥：宝箱と 舵輪の うしろを 歩く）。
    足の 動きは 常歩（左うしろ → 左前 → 右うしろ → 右前・1本の 足は 1回りの 62% 地面に つく：パドックと 同じ 考え方を ここに 写した）。
    歩く はやさ（ページの px／秒）は 地面に ついた ひづめが すべらない はやさ（コマの ひづめの 動きから 出す）。
+   第4.166版（まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）：
+     歩く コマは 1回り 12コマ・1.25秒（＝1秒に 9.6コマ）だった → **36コマ・1.2秒（1秒に ちょうど 30コマ）**。シートは 12コマ × 3行の ます目（sheets.make_sheet の cols。止まった 形は 13コマ × 2行）。
+     止まった 形は 5コマ（前・見上げる 2つ・のぞきこむ 2つ：あいだが 1コマ だけで カクッと 動いた）→ **25コマ**：前 1 ＋ 見上げて いく 8（u1〜u8）＋ のぞきこんで いく 8（d1〜d8）＋
+     歩く 形（1回りの はじめ）から 止まった 形へ 足を そろえる つなぎ 8（t1〜t8：歩きだす ときは 逆に めくる）。あいだの 形は 首・頭・足の 角度を なめらかに つなぐ（ease）。
+     歩く 足は パドックの 壁紙と 同じ 解き方（make/paddock_gait.py：ひづめの 道を 先に 決めて 足の 角度を 逆に 解く）に した：前の 足（キーを つないだ 角度）は
+     地面に ついた ひづめの 高さが 足ごとに 少し ちがい、いちばん 低い ひづめを 地面に 合わせて いた ので、足が つく たびに 体が 1px ほど とんだ（12コマでは 目立たない・
+     36コマに すると カクッと 見える）。新しい 足は 地面に ついて いる 間 ひづめが 同じ 地面の 線の 上を まっすぐ うしろへ 動く ＝ 体の 上下は ほんの 少しの ゆれ だけ（walk_dy）。
+     前の 絵（12コマ・5コマ）は 消さない（手元の フォルダに 残る・アプリには 入らない：台帳が 新しい 絵を さす）
    python3 kisekae/pack/make/pirate_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の pirate.walk・pirate.stand（前の pirate.captain は 消す）"""
 import math
 import os
@@ -95,8 +103,13 @@ def acc(m):
 
 
 # ---------------------------------------------------------------- 歩く（常歩）：パドックの 壁紙と 同じ 考え方（キー・位相・すべらない はやさ）
-N = 12             # 1回りの コマ
-CYCLE = 1.25       # 1回りの 秒（ページと 同じ）
+N = 36             # 1回りの コマ（第4.166版：12 → 36）
+CYCLE = 1.2        # 1回りの 秒（ページと 同じ。第4.166版：1.25 → 1.2 ＝ 1コマ 1/30秒 ちょうど）
+COLS = 12          # 歩く シートの 1行の コマ（36コマ ＝ 3行）
+COLS_S = 13        # 止まった 形の シートの 1行の コマ（25コマ ＝ 2行）
+KU = 8             # 見上げて いく コマ（u1〜u8：u8 が 見上げきった 形）
+KD = 8             # のぞきこんで いく コマ（d1〜d8：d8 が のぞきこんだ 形）
+KT = 8             # 歩く 形（1回りの はじめ）→ 止まった 形 の つなぎの コマ（t1〜t8：t1 が 歩く 形に 近い）
 ST = 0.62          # 足が 地面に ついて いる 長さ（1回りの 割合）
 F_KEYS = [(0.00, [-114, -80, -80, -56]), (0.31, [-126, -92, -92, -62]), (0.60, [-136, -106, -106, -78]),
           (0.74, [-128, -78, -150, -150]), (0.88, [-110, -62, -92, -82])]
@@ -105,7 +118,11 @@ H_KEYS = [(0.00, [-52, -110, -82, -56]), (0.31, [-62, -118, -94, -64]), (0.60, [
 OFF = dict(HL=0.00, FL=0.25, HR=0.50, FR=0.75)
 BOX = (232, 78, 438, 280)       # 2倍の 画素：甲板の 奥（ひづめ＝280 → 画面の 140px）。宝箱（下の はし 146px）・舵輪の 台（154px）より 奥
 SPOT_W = dict(pose='stand', facing='right', box=BOX, azim=6, shadow=('#2A1A0E', 0.0), ext=(0.06, 0.06))
+SPOT_P = {k: v for k, v in SPOT_W.items() if k != 'ext'}       # 第4.166版：コマを 描く 置き場（管の のびは ポーズの cannon_ext に 入れる。カメラは SPOT_W で 決める＝前と 同じ）
+EXT0 = dict(FL=0.06, FR=0.06, HL=0.0, HR=0.0)                   # 止まった 形の 管の のび（SPOT_W の ext と 同じ：前足を 地面に つける）
 GROUND = BOX[3] - 4
+XV = -0.10         # 地面の 線を 決める 点（体の 中の x：前足と うしろ足の まん中。paddock_moves.XV と 同じ）
+ZN = 0.15          # 手前の ひづめの 目印の z（右向き：horse_flat の hooves と 同じ）
 
 
 def ease(t):
@@ -124,7 +141,23 @@ def leg_at(keys, p):
     return keys[0][1]
 
 
-def walk_pose(g):
+def walk_cycle(n=None):
+    """常歩 1回り n コマ（右向き）：パドックの 壁紙と 同じ 足（paddock_gait.cycle：ひづめの 道 → 足の 角度）。首・頭・しっぽの ゆれも 同じ"""
+    import paddock_gait as G
+    return [G.with_facing(q, 'right') for q in G.cycle(n or N)]
+
+
+def walk_dy(m0, n=None):
+    """コマごとの 上下の ずらし（2倍の 画素）：地面に ついて いる 手前の ひづめが いつも 地面の 線（GROUND）に くる。
+       ひづめは 体から 見て Y_G − bob(g) の 高さ（paddock_gait）＝ ずらしは 体の ほんの 少しの 上下 だけ（とばない）。m0：カメラを 決めた ときの 目印（sheets.camera）"""
+    import paddock_gait as G
+    import horse3d as Hm
+    n = n or N
+    return [GROUND - float(m0['P1'](Hm.v3((XV, G.Y_G - G.bob(i / n)), ZN))[1]) for i in range(n)]
+
+
+def walk_pose_old(g):
+    """第4.165版までの 歩く 形（キーを つないだ 足）。いまは 使わない（walk_cycle）"""
     from horse_flat import TAILS
     leg = lambda k: leg_at(F_KEYS if k[0] == 'F' else H_KEYS, g - OFF[k])
     w = 2 * math.pi
@@ -140,23 +173,59 @@ def stance(g):
     return [k for k in HOOF_ORDER if ((g - OFF[k]) % 1.0) < ST]
 
 
+_W0 = {}
+
+
+def walk0():
+    """歩く 1回りの はじめの 形（つなぎの コマの 出発点）"""
+    if 'p' not in _W0:
+        _W0['p'] = walk_cycle()[0]
+    return _W0['p']
+
+
+UP = dict(neck_rot=8.0, head_ang=-38.0)                          # 見上げきった 形（首を 上げて 鼻を 上へ）
+DOWN = dict(neck_bend=-46.0, neck_len=1.08, head_ang=-80.0)      # のぞきこんだ 形（首を 下げて 下を 見る）
+BASE = dict(neck_rot=-4.0, head_ang=-56.0, neck_bend=0.0, neck_len=1.0)   # 前を 見る 形（horse_flat の POSES['stand'] と 同じ・neck_bend／neck_len は なし＝0／1）
+
+
+def _lerp(a, b, t):
+    if isinstance(a, (list, tuple)):
+        return type(a)(_lerp(x, y, t) for x, y in zip(a, b))
+    return a + (b - a) * t
+
+
 def stand_pose(kind):
-    """止まった 形：front（前を 見る）・up1／up（見上げる：首を 上げて 鼻を 上へ）・down1／down（のぞきこむ：首を 下げて 下を 見る）"""
-    from horse_flat import POSES
+    """止まった 形：front（前を 見る）・u1〜u8（見上げて いく：u8 が 見上げきった 形）・d1〜d8（のぞきこんで いく：d8 が のぞきこんだ 形）・
+       t1〜t8（歩く 形〈1回りの はじめ＝walk_pose(0)〉から 前を 見る 形へ：足を そろえて 止まる。t1 が 歩く 形に 近い）"""
+    from horse_flat import POSES, TAILS
     P = {k: (list(v) if isinstance(v, list) else v) for k, v in POSES['stand'].items()}
     P['tail_kind'] = 'hang'
-    if kind == 'up1':
-        P.update(neck_rot=2.0, head_ang=-48.0)
-    elif kind == 'up':
-        P.update(neck_rot=8.0, head_ang=-38.0)
-    elif kind == 'down1':
-        P.update(neck_bend=-22.0, neck_len=1.04, head_ang=-66.0)
-    elif kind == 'down':
-        P.update(neck_bend=-46.0, neck_len=1.08, head_ang=-80.0)
+    P['cannon_ext'] = dict(EXT0)                                 # 管の のび（前は 置き場の ext で 入れて いた：同じ 形）
+    if kind == 'front':
+        return P
+    k = int(kind[1:])
+    if kind[0] == 'u':
+        t = ease(k / KU)
+        P.update(neck_rot=round(_lerp(BASE['neck_rot'], UP['neck_rot'], t), 2), head_ang=round(_lerp(BASE['head_ang'], UP['head_ang'], t), 2))
+    elif kind[0] == 'd':
+        t = ease(k / KD)
+        P.update(neck_bend=round(_lerp(0.0, DOWN['neck_bend'], t), 2), neck_len=round(_lerp(1.0, DOWN['neck_len'], t), 4), head_ang=round(_lerp(BASE['head_ang'], DOWN['head_ang'], t), 2))
+    elif kind[0] == 't':
+        t = ease(k / (KT + 1))                                   # 0＝歩く 形・1＝止まった 形
+        Wk = walk0()
+        for key in ('theta', 'neck_rot', 'head_ang'):
+            P[key] = round(_lerp(Wk[key], P[key], t), 2)
+        for key in ('fore_near', 'fore_far', 'hind_near', 'hind_far', 'tail'):
+            P[key] = [round(v, 2) for v in _lerp(list(Wk[key]), list(P[key]), t)]
+        P['cannon_ext'] = {k: round(_lerp(float(Wk.get('cannon_ext', {}).get(k, 0.0)), EXT0[k], t), 4) for k in EXT0}      # 管の のびも つなぐ
+        P['tail_tufts'] = _lerp([tuple(q) for q in Wk['tail_tufts']], [tuple(q) for q in TAILS['hang']], t)      # しっぽの 房も ゆれた 形 → たれた 形へ
+        P['tail_kind'] = 'sway' if t < 0.5 else 'hang'
+    else:
+        raise ValueError(kind)
     return P
 
 
-STANDS = ('front', 'up1', 'up', 'down1', 'down')
+STANDS = ('front',) + tuple(f'u{k}' for k in range(1, KU + 1)) + tuple(f'd{k}' for k in range(1, KD + 1)) + tuple(f't{k}' for k in range(1, KT + 1))
 
 
 def walk_speed(frames, legs):
@@ -193,23 +262,37 @@ def acc_i(i):
 
 def build(out=None):
     import horse_flat as HF
-    poses = [walk_pose(i / N) for i in range(N)] + [stand_pose(k) for k in STANDS]
-    frames, cam = render(PAL, SPOT_W, poses, acc=acc_i, number='', tag='pkpiw', workers=2)
+    from sheets import camera
+    import paddock_gait as G
+    poses = walk_cycle(N) + [stand_pose(k) for k in STANDS]
+    cam, m0 = camera(PAL, SPOT_W, '', 'pkpiwref')                # カメラは 前と 同じ 置き場（ext つき）で 決める
+    frames, cam = render(PAL, SPOT_P, poses, acc=acc_i, number='', tag='pkpiw', workers=2, cam=cam)
     wf, sf = frames[:N], frames[N:]
-    legs = [stance(i / N) for i in range(N)]
-    from sheets import ground_dy
-    dys = ground_dy(wf, legs, GROUND, lift=0.0)
-    v = walk_speed(wf, legs)
+    legs = [G.stance(i / N) for i in range(N)]
+    dys = walk_dy(m0, N)
+    near = ('FL', 'HL')                                          # 手前の 足（地面の 線は 手前の ひづめ）
+    dev = [abs(wf[i][2][HOOF_ORDER.index(k)][1] + dys[i] - GROUND) for i in range(N) for k in near if k in legs[i]]
+    print('地面に ついた 手前の ひづめの 上下の ずれ（2倍の 画素）：いちばん 大きい', round(max(dev), 3), '・平均', round(sum(dev) / len(dev), 3), flush=True)
+    v = walk_speed(wf, [[k for k in lg if k in near] for lg in legs])
+    slide = []
+    for i in range(N):
+        j = (i + 1) % N
+        for k in near:
+            if k in legs[i] and k in legs[j]:
+                slide.append(abs((wf[i][2][HOOF_ORDER.index(k)][0] - wf[j][2][HOOF_ORDER.index(k)][0]) - v))
+    print('地面に ついた 手前の ひづめの すべり（2倍の 画素／コマ・平均の はやさ', round(v, 3), 'との ちがい）：いちばん 大きい', round(max(slide), 3), flush=True)
     xs = [h[0] for fr in wf for h in fr[2]]
     sh = ('#2A1A0E', (min(xs) + max(xs)) / 2, GROUND + 2.5, (max(xs) - min(xs)) * 0.5, 5.0, 0.26)
-    u8, meta = make_sheet(wf, dys, shadow=sh)
+    u8, meta = make_sheet(wf, dys, shadow=sh, cols=COLS)
     meta['dy'] = [round(float(d), 2) for d in dys]
+    meta['cycle'] = CYCLE                                         # 1回りの 秒（ページの WALK_C と 同じ）
     meta['speed'] = round(abs(v) / 2 * N / CYCLE, 2)            # ページの px／秒（右向きに 進む）
     meta['cx'] = round((BOX[0] + BOX[2]) / 4, 2)                # 馬の まん中（ページの px）：左向きは ここを 中心に 反転
     sdy = [GROUND - max(h[1] for h in fr[2]) for fr in sf]      # 止まった 形：4本の ひづめが 地面に
-    u8s, meta_s = make_sheet(sf, sdy, shadow=sh)
+    u8s, meta_s = make_sheet(sf, sdy, shadow=sh, cols=COLS_S)
     meta_s['dy'] = [round(float(d), 2) for d in sdy]
     meta_s['names'] = list(STANDS)
+    meta_s['ku'], meta_s['kd'], meta_s['kt'] = KU, KD, KT
     if out:
         preview_png(u8, os.path.join(out, 'pirate_walk.png'), bg=(170, 120, 70))
         preview_png(u8s, os.path.join(out, 'pirate_stand.png'), bg=(170, 120, 70))

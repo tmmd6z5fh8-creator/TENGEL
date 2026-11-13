@@ -97,7 +97,8 @@ ID = 'ukiyoe'
 AI = dict(d='#1E3F73', m='#2F5E95', l='#86A7C9', p='#C9D9E6')        # 藍
 PAPER, PAPER2, SHU, INK = '#F1E6CF', '#F7EFDD', '#C8402C', '#2A2420'
 TILE = 390
-ROAD_S = 3.1       # 街道の 1まいぶん（秒）：馬の ギャロップ（0.48秒）に 合わせた 速さ
+RUN_S = 0.5        # 馬の ギャロップ 1回の 秒（第4.166版：15コマを 1コマ 1/30秒 ちょうどで。前は 10コマ・0.48秒＝1秒に 20.8コマ）
+ROAD_S = 3.2292    # 街道の 1まいぶん（秒）：馬の ギャロップに 合わせた 速さ（第4.166版：3.1 → 3.1 × 0.5/0.48 ＝ ひづめが すべらない 割合の まま）
 
 
 def washi_defs(seed=3):
@@ -399,11 +400,15 @@ def seal_svg():
 # ---------------------------------------------------------------- お侍さん（第4.93版：9秒に 1回 1人 か 2人 と 出会う）
 # 一から 描いた お侍さん（左を 向いて 歩く）：ちょんまげ（そった 頭の 上に のせた まげ）・羽織と 袴（たての しま）・腰に 刀 2本（つかは 前へ 上向き・さやは うしろへ）・
 # 白い 足袋と ぞうり。歩く コマ 12（1.125秒で 2歩）と 会釈の コマ 8（1.125秒：おじぎして もどる）
+# 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：歩く コマ 12 → 30・会釈の コマ 8 → 30（どちらも 1.0秒＝1コマ 1/30秒 ちょうど。
+#   前は 1.125秒で 歩く 1秒に 10.7コマ・会釈 7.1コマ）。1回りを 1.0秒に したのは、9秒ごとの 出会い（＝歩く 9回り ちょうど）で 会釈を はじめる 時に 足が そろう ため
+#   （34コマ・34/30秒 だと 9秒が 歩く 回りの 区切りに ならない）。歩く はやさは 少し 速く なる（1分に 107歩 → 120歩）。会釈の 角度は 前の 8つの 角度を なめらかに つないだ もの（bow_angle）
 SM_W, SM_H = 46, 58        # 1コマ（絵の 単位）
 SM_K = 1.16               # 画面の 大きさ（絵の 単位 × SM_K ＝ px）：街道の 手前を 歩くので 馬と つりあう 大きさ
 SM_HIP = (25, 33)          # 腰（回す 中心）
 SM_FOOT = 55               # 足の うら
-SM_T = 1.125               # 歩く 1回り（秒）・会釈の 長さ
+NW = 30                    # 歩く コマ・会釈の コマ（第4.166版：12・8 → 30）
+SM_T = NW / 30             # 歩く 1回り（秒）・会釈の 長さ（第4.166版：1.125 → 1.0。9秒＝歩く 9回り）
 SM_S = 17.0                # 足が 地面に ついて いる 間に うしろへ 動く 長さ（＝0.6回りで）
 SM_V = SM_S * SM_K / (0.6 * SM_T)              # 地面に 対する 歩く はやさ（px/秒）
 ROAD_V = TILE / ROAD_S                         # 街道の 流れる はやさ（px/秒）
@@ -518,16 +523,33 @@ def _foot(phase):
 def samurai_walk_svg(who):
     c = SAMURAI[who]
     o = ''
-    for k in range(12):
-        t = k / 12
+    for k in range(NW):
+        t = k / NW
         pn, pf = (t + 0.3) % 1, (t + 0.8) % 1                  # t=0：手前の 足が まん中（足が そろう）
         (ax, ay), (bx, by) = _foot(pn), _foot(pf)
         lf = lambda ph: math.sin(math.pi * (ph - 0.6) / 0.4) if ph >= 0.6 else 0.0
         o += _samurai(k * SM_W, c, [(SM_HIP[0] + ax, ay), (SM_HIP[0] + bx, by)], bob=-0.5 * math.cos(4 * math.pi * t), lifts=(lf(pn), lf(pf)))
-    return doc(SM_W * 12, SM_H, o)
+    return doc(SM_W * NW, SM_H, o)
 
 
-BOW = (0, 7, 16, 26, 30, 26, 14, 4)
+BOW8 = (0, 7, 16, 26, 30, 26, 14, 4)          # 第4.165版までの 会釈の 角度（8コマ）
+
+
+def bow_angle(t):
+    """会釈の 角度（t＝0〜1）：前の 8つの 角度を なめらかに つなぐ（はじめと おわりは 0・かたむきも 0 から）"""
+    n = len(BOW8)
+    P = list(BOW8) + [0.0]
+    x = min(max(t, 0.0), 1.0) * n
+    i = min(int(x), n - 1)
+    u = x - i
+    p0, p1 = P[i], P[i + 1]
+    m0 = 0.0 if i == 0 else (P[i + 1] - P[i - 1]) / 2
+    m1 = 0.0 if i + 1 == n else (P[i + 2] - P[i]) / 2
+    h00, h10, h01, h11 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+    return max(0.0, h00 * p0 + h10 * m0 + h01 * p1 + h11 * m1)
+
+
+BOW = tuple(round(bow_angle(k / NW), 2) for k in range(NW))
 
 
 def samurai_bow_svg(who):
@@ -578,17 +600,17 @@ def samurai_css():
                       (t3 / SM_CYCLE * 100, f'transform:translateX({f(x3 - hp)}px);animation-timing-function:step-end'),
                       (t3 / SM_CYCLE * 100 + 0.01, f'transform:translateX({f(off)}px)')]
         stops.append((100, f'transform:translateX({f(off)}px)'))
-        css += f'.ukw .ukSm.{who}{{animation:ukSmX{who} {f(SM_CYCLE)}s linear infinite}}' + kf(f'ukSmX{who}', stops)
+        css += f'.ukw .ukSm.{who}{{animation:ukSmX{who} {f(SM_CYCLE)}s linear infinite}}' + kf(f'ukSmX{who}', stops, 5)
         # 歩く コマ（会釈の 間は 消す）。うしろの 人は 半歩 ずらす（会釈を はじめる 時に 足が そろう）
         ws = [(0, 'opacity:1')] + [(t / SM_CYCLE * 100, f'opacity:{v}') for t, v in vis_w] + [(100, 'opacity:1')]
-        css += (f'.ukw .ukSm.{who} .w{{animation:ukSmW {f(SM_T, 3)}s steps(12) {"0s" if lead else f"{f(-SM_T / 2, 4)}s"} infinite,ukSmWv{who} {f(SM_CYCLE)}s step-end infinite}}'
-                + kf(f'ukSmWv{who}', ws))
+        css += (f'.ukw .ukSm.{who} .w{{animation:ukSmW {f(SM_T, 5)}s steps({NW}) {"0s" if lead else f"{f(-SM_T / 2, 5)}s"} infinite,ukSmWv{who} {f(SM_CYCLE)}s step-end infinite}}'
+                + kf(f'ukSmWv{who}', ws, 5))
         bs = [(0, 'opacity:0;transform:translateX(0)')]
         for t, k in vis_b:
             bs.append((t / SM_CYCLE * 100, 'opacity:0;transform:translateX(0)' if k < 0 else f'opacity:1;transform:translateX({f(-k * SM_W * SM_K)}px)'))
         bs.append((100, 'opacity:0;transform:translateX(0)'))
-        css += f'.ukw .ukSm.{who} .b{{animation:ukSmB{who} {f(SM_CYCLE)}s step-end infinite}}' + kf(f'ukSmB{who}', bs)
-    css += kf('ukSmW', [(100, f'transform:translateX({f(-12 * SM_W * SM_K)}px)')])
+        css += f'.ukw .ukSm.{who} .b{{animation:ukSmB{who} {f(SM_CYCLE)}s step-end infinite}}' + kf(f'ukSmB{who}', bs, 5)
+    css += kf('ukSmW', [(100, f'transform:translateX({f(-NW * SM_W * SM_K)}px)')])
     return css
 
 
@@ -950,7 +972,7 @@ def banner(B):
            '.ukw .ukSl{left:364px;top:6px;width:18px;height:18px}'
            f'.ukw .ukSm{{left:0;top:{f(SM_TOP)}px;width:{f(SM_W * SM_K)}px;height:{f(SM_H * SM_K)}px;overflow:hidden;transform:translateX(500px)}}'
            f'.ukw .ukSm>i{{position:absolute;display:block;left:0;top:0;height:{f(SM_H * SM_K)}px;background-repeat:no-repeat}}'
-           f'.ukw .ukSm .w{{width:{f(12 * SM_W * SM_K)}px}}.ukw .ukSm .b{{width:{f(len(BOW) * SM_W * SM_K)}px;opacity:0}}')
+           f'.ukw .ukSm .w{{width:{f(NW * SM_W * SM_K)}px}}.ukw .ukSm .b{{width:{f(len(BOW) * SM_W * SM_K)}px;opacity:0}}')
     for k, p in enumerate(RB_ROWS):             # 層 k の 箱：上の はしは 波の 頭の 線より RB_PAD 上・下の はしは 石の 土手の うしろ・大波に 合わせて 少し 上がる
         top = p['top'] - RB_PAD
         css += (f'.ukw .ukRw.ukR{k}{{top:{f(top, 2)}px;height:{f(RB_BOT - top, 2)}px;'
@@ -973,7 +995,7 @@ def banner(B):
             who, kind = key.split('_')
             css += f'.ukw .ukSm.{who} .{kind}{{background-position:0 {f(-r * rp * zs, 3)}px}}'
     else:
-        css += (f'.ukw .ukSm .w{{background-size:{f(12 * SM_W * SM_K)}px {f(SM_H * SM_K)}px}}'
+        css += (f'.ukw .ukSm .w{{background-size:{f(NW * SM_W * SM_K)}px {f(SM_H * SM_K)}px}}'
                 f'.ukw .ukSm .b{{background-size:{f(len(BOW) * SM_W * SM_K)}px {f(SM_H * SM_K)}px}}')
     if wave and wave.get('cells'):             # 大波：コマを step-end で 入れかえ（のばさない・ちぢめない）
         z = wave['z']
@@ -1003,7 +1025,7 @@ def banner(B):
         n, (cw, ch), (ax, ay) = run['frames'], run['cell'], run['at']
         w, h = cw / 2, ch / 2
         css += (f'.ukw .ukH{{left:{f(ax / 2)}px;top:{f(ay / 2 - 7)}px;width:{f(w)}px;height:{f(h)}px;overflow:hidden}}'   # 7px 上：ひづめを 街道の まん中に
-                f'.ukw .ukH>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({run["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;animation:ukRun .48s steps({n}) infinite}}'
+                f'.ukw .ukH>i{{display:block;width:{f(n * w)}px;height:{f(h)}px;background:url({run["url"]}) 0 0/{f(n * w)}px {f(h)}px no-repeat;animation:ukRun {RUN_S}s steps({n}) infinite}}'
                 + kf('ukRun', [(100, f'transform:translateX({f(-n * w)}px)')]))
     css += (kf('ukFlow', [(0, 'transform:translateX(0)'), (100, f'transform:translateX({-TILE}px)')])
             + kf('ukKs', [(0, 'transform:translateX(-8px)'), (50, 'transform:translateX(10px)'), (100, 'transform:translateX(-8px)')])

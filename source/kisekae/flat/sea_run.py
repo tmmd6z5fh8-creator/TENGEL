@@ -48,6 +48,20 @@ def leg_at(keys, p):
     return keys[0][1]
 
 
+def wave_dy(old, n, harmonics=2):
+    """第4.166版：前の コマ（len(old) こ）の 上下の ずれを くり返しの なめらかな 波（倍音 harmonics こ まで）に 合わせて、n コマの 位相で 読む。
+       コマを ふやす とき（競馬新聞・夕焼け・水墨画：10 → 15コマ）、上下の 動きは 前の 動きの ままに する。
+       コマを ふやして「地面に ついて いる いちばん 低い ひづめ」から 決め直すと、足が 地面を はなれる 瞬間の コマが 入って、けり出す 前に 体が しずむ 動きに なる
+       （前の 10コマでは その 瞬間が コマに 入って いなかった）"""
+    m = len(old)
+    ph = 2 * math.pi * np.arange(m) / m
+    A = np.stack([np.ones(m)] + [fn(h * ph) for h in range(1, harmonics + 1) for fn in (np.cos, np.sin)], 1)
+    coef = np.linalg.lstsq(A, np.array(old, float), rcond=None)[0]
+    q = 2 * math.pi * np.arange(n) / n
+    B = np.stack([np.ones(n)] + [fn(h * q) for h in range(1, harmonics + 1) for fn in (np.cos, np.sin)], 1)
+    return [float(v) for v in B @ coef]
+
+
 def pose_at(g):
     """ギャロップの位相 g（0〜1）の形（horse_flat の POSES と同じ形の dict）"""
     leg = lambda k: leg_at(F_KEYS if k[0] == 'F' else H_KEYS, g - LEG_OFF[k])

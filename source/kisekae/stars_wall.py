@@ -2,6 +2,7 @@
    - 下の絵（flat/pegasus_banner.py --base：いまの絵から うしろの小さい星700こだけを ぬいたもの。夜空・天の川・三日月・ペガサスはそのまま）の上に、
      同じ星（同じ場所・同じ明るさ・1画素の点）を SVG で描いて、右から左へ ゆっくり流す（ペガサスが右へかけていくように）。
      明るい星（手前）は速く・暗い星（奥）はゆっくり（2つの速さで奥行き）。1画素ずつ動く（steps）ので点がにじまない。
+     （第4.166版：画素が 3倍の 画面では 1歩を 1/3px＝画面の 1画素に。前は どの 画面でも 0.5px ＝ 3倍の 画面では 1.5画素で カクカク 見えた）
      星は三日月のうしろを通る（三日月の所は mask でかくす）。光は足し算（mix-blend-mode: plus-lighter）なので、止まった所は いまの絵と同じ
    - ペガサスの明るい星（星座の21こ）が かわるがわる きらっと光って回る・外の線の上の小さい星を 光がぐるっと走る
    - 8秒に1回、鼻の頭から しっぽの先へ 星が つぎつぎに キラキラ（まさちゃんの指定「8秒に一回、鼻の頭から尻尾の先に向けて、星がキラキラ輝く演出」）：
@@ -186,6 +187,10 @@ def inline(blobs, pts, alt=ALT):
            f'.szw .szr{{animation:szFlow {FAR_S}s steps({W}) infinite}}'
            f'.szw .szn{{animation:szFlow {NEAR_S}s steps({W}) infinite}}'
            f'@keyframes szFlow{{to{{transform:translateX(-{W}px)}}}}'
+           # 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：画面の 画素が 3倍の iPhone では 1歩を 画面の 1画素（1/3px）に する。
+           #   前は どの 画面でも 1歩 0.5px ＝ 3倍の 画面では 1.5画素（1歩ごとに 点が くっきり ／ にじむ を くり返して カクカク 見えた・奥の 星は 1秒に 7.8歩）。
+           #   3倍の 画面：奥の 星 1秒に 11.7歩・手前の 星 29.3歩（どの 歩も 画素 ちょうど ＝ 点は にじまない）。2倍の 画面は 今までどおり（0.5px＝1画素）
+           f'@media (-webkit-min-device-pixel-ratio:3),(min-resolution:3dppx){{.szw .szr,.szw .szn{{animation-timing-function:steps({W * 3 // 2})}}}}'
            f'.szw .szk{{opacity:0;animation:szTw {TW_S}s ease-in-out infinite}}'
            '@keyframes szTw{0%,100%{opacity:0;transform:scale(.2) rotate(0deg)}45%{opacity:1;transform:scale(1) rotate(45deg)}70%{opacity:.55;transform:scale(.6) rotate(70deg)}}'
            f'.szw .szg{{opacity:0;animation:szGl {GL_S}s linear infinite}}'

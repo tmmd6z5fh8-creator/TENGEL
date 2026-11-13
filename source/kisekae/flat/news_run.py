@@ -12,10 +12,11 @@ import cv2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import news_banner as NB
-from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at
+from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at, wave_dy
 from ink_horse import Hm, save_webp
 
-N_FRAMES = 10                      # ギャロップ1回のコマ数
+N_FRAMES = 15                      # ギャロップ1回のコマ数。第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：10 → 15（0.5秒で 1回り ＝ 1コマ 1/30秒 ちょうど。前は 1秒に 20コマ）
+DY_165 = [1.42, 2.33, 1.46, 0.79, 0.17, -2.08, -5.85, -8.28, -6.79, -2.36]      # 第4.165版までの 10コマの 上下（2つの 波）。第4.166版：コマを 15に ふやしても 上下は この 動きの まま（sea_run.wave_dy）
 LIFT = 8.0                         # 宙に浮くコマの いちばん高いところ（画素）
 HOOF_KEYS = ('FL', 'FR', 'HL', 'HR')
 
@@ -76,10 +77,8 @@ def run(out):
         if fr['dy'] is None:
             fr['dy'] = fr.pop('dy_air')
     # 上下は なめらかに（くり返しの2つの波に合わせる：足の形のちがいで がたがたしないように）
-    ph = 2 * math.pi * np.arange(n) / n
-    A = np.stack([np.ones(n), np.cos(ph), np.sin(ph), np.cos(2 * ph), np.sin(2 * ph)], 1)
-    coef = np.linalg.lstsq(A, np.array([fr['dy'] for fr in frames]), rcond=None)[0]
-    for fr, v in zip(frames, A @ coef):
+    #   第4.166版：コマから 決め直した 波では なく、第4.165版までの 波（DY_165）を n コマの 位相で 読む（はね方は 前と 同じ）
+    for fr, v in zip(frames, wave_dy(DY_165, n)):
         fr['dy_raw'], fr['dy'] = fr['dy'], float(v)
     # 切りぬく所：どのコマの墨も、いまの絵の馬も入る四角（にじみの分だけ広く・偶数にそろえる）
     boxes = []

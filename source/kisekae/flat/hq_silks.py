@@ -48,7 +48,7 @@ for f in range(N):
     col3, A3 = dbg['col3'], dbg['A3']
     a2 = cv2.resize(A3, (W2, H2), interpolation=cv2.INTER_AREA); rgb2 = np.clip(cv2.resize(col3 * A3[..., None], (W2, H2), interpolation=cv2.INTER_AREA) / np.maximum(a2[..., None], 1e-4), 0, 1); a2 = np.clip(a2, 0, 1)
     hv = np.asarray(R['hooves'], float) / R['s']; fwd = math.cos(2 * math.pi * g) > 0.3
-    pf = SB.puffs(hv0, 7.0 * f, 1.0 - 0.055 * f); fc = SB.face_svg(R) + (SB.streaks(hv) if fwd else []) + SB.air_lines(R)
+    pf = SB.puffs(hv0, 70.0 * g, 1.0 - 0.55 * g); fc = SB.face_svg(R) + (SB.streaks(hv) if fwd else []) + SB.air_lines(R)
     # いまと 同じ 作り方（1倍）
     pr, pa = SB.svg_png(pf); fr, fa = SB.svg_png(fc)
     sh = cv2.warpAffine(a1, np.float32([[1, 0, 6], [0, 1, 5]]), (W, Hh), flags=cv2.INTER_LINEAR, borderValue=0) * 0.45
@@ -66,9 +66,13 @@ def sheet(F, k, path):
     for i, (Cp, A) in enumerate(F):
         c = np.where(A[..., None] > 1e-4, Cp / np.maximum(A, 1e-4)[..., None], 0)
         S[:, i * CW:(i + 1) * CW, :3] = c[Y0:Y0 + CH, X0:X0 + CW]; S[:, i * CW:(i + 1) * CW, 3] = A[Y0:Y0 + CH, X0:X0 + CW]
-    Image.fromarray((np.clip(S, 0, 1) * 255 + .5).astype(np.uint8), 'RGBA').save(path, 'WEBP', quality=86, method=6)
+    u8 = (np.clip(S, 0, 1) * 255 + .5).astype(np.uint8)
+    Image.fromarray(u8, 'RGBA').save(path, 'WEBP', quality=86, method=6)
+    if os.environ.get('HQ_RAW', '1') != '0':
+        np.save(path[:-5] + '.npy', u8)
     return os.path.getsize(path)
 
 
 print('sizes', sheet(F1, 1, f'{out}/silks_run_1x.webp'), sheet(F2, OUT, f'{out}/silks_run_hq.webp'))
+# WebP に する 前の 画素（.npy）も 書く（HQ_RAW=0 で 書かない）（第4.166版：コマを ならべ直す とき 描き直さなくて よい ように）
 # 入れ方：python3 flat/hq_install.py silks <出す フォルダ>（手元の 絵の フォルダ ios/kisekae_blobs と 台帳へ。前の 絵は 消さない）

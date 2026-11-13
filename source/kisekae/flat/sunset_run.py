@@ -17,11 +17,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import sunset_banner as SB
 from sunset_horse import POSE, Hm, silhouette, camera, over, hexc
-from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at
+from sea_run import F_KEYS, H_KEYS, LEG_OFF, STANCE, leg_at, wave_dy
 from h3d import Scene, nrm
 
 W, Hh = SB.W, SB.Hh
-N_FRAMES = 10
+N_FRAMES = 15                      # 第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：10 → 15（0.5秒で 1回り ＝ 1コマ 1/30秒 ちょうど。前は 1秒に 20コマ）
 LIFT = 5.0                         # 4本とも宙のコマの いちばん高いところ（画素）
 FOV = 26.0
 HOOF_KEYS = ('FL', 'FR', 'HL', 'HR')
@@ -62,6 +62,13 @@ def shifted(cam, dy):
     wpp = 2 * np.linalg.norm(t - e) * math.tan(math.radians(FOV / 2)) / Hh
     d = up * dy * wpp
     return (e + d, t + d)
+
+
+# 第4.165版までの 10コマの 上下（2つの 波）と 地面の 高さ・1回りで 地面が 流れる 長さ。第4.166版：コマを 15に ふやしても この 動きの まま
+#   （地面の 絵 sunset_ground.webp は この 高さで 描いて ある。流れる はやさも かえない：コマを ふやして 数え直すと 足を けり上げる 速い 所が 入って 4割ほど 大きく 出る）
+DY_165 = [-5.0, -2.4, 0.19, 1.78, 2.27, 1.78, 0.19, -2.39, -4.98, -6.1]
+GROUND_165 = 243.72                # ground.base 244.72 ＝ これ ＋ 1.0（run の base）
+PX_CYCLE_165 = 226.14
 
 
 def ground_dy(cam):
@@ -174,8 +181,10 @@ def check(out):
 def run(out):
     os.makedirs(out, exist_ok=True)
     cam = camera(W, Hh)                                                 # いまの絵のカメラ（うごかさない）
-    dys, ground = ground_dy(cam)
-    px_cycle, steps_ = ground_speed(cam)
+    dys_new, ground_new = ground_dy(cam)
+    px_new, steps_ = ground_speed(cam)
+    dys, ground, px_cycle = wave_dy(DY_165, N_FRAMES), GROUND_165, PX_CYCLE_165          # 第4.166版：上下・地面の 高さ・流れる はやさは 前の まま
+    print('コマから 決め直した 値（使わない）：地面', round(ground_new, 2), '・1回りで 流れる 長さ', round(px_new, 2), '・上下', [round(v, 2) for v in dys_new], flush=True)
     print('ground', round(ground, 2), 'dy', [round(v, 2) for v in dys], 'px/cycle', round(px_cycle, 1), steps_, flush=True)
     # 空・夕日・地面
     SB.save_webp(SB.birds(SB.sky(with_sun=False)), f'{out}/sunset_sky.webp')

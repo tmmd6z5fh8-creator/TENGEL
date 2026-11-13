@@ -9,6 +9,9 @@
    すじは ひづめが 通った 所（地面＝レーンの 上で 止まって 見える 所）に 残って レーンと 同じ はやさで うしろへ 流れ、0.5秒で うすく 消える
    （光で 絵を 描いた ような あと：宙を けった ひづめの 弧と 地面の 光の 点）。レーンの はやさは 地面に ついた ひづめの はやさ（speed：ページの px／秒）。
    すじの 先は いちばん 新しい 馬の コマの ひづめ（コマが かわる まで は その ひづめから うしろへ 流れる 所だけ）＝すじが ひづめより 前に 出ない
+   第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：走る コマは 10コマ・0.48秒（1秒に 20.8コマ）だった → **15コマ・0.5秒（1秒に ちょうど 30コマ）**。
+     雷の シートも 15コマ（形は 前と 同じ 1回りに 10とおり：コマごとに ひづめに ついて 動く・形が かわるのは 前と 同じ 1秒に 20回 ほど ＝ ぱちぱちの 速さは かえない）。
+     光の すじは 20 → **30コマ（1コマ 1/60秒）**・15コマ × 2行の ます目（1行だと 画面の 帯が 7,110px に なる）。前の 絵は 消さない（手元に 残る・台帳が 新しい 絵を さす）
    python3 kisekae/pack/make/future_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の future.run・future.bolt0〜2・future.trail"""
 import math
 import os
@@ -16,7 +19,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import gallop_sheet, save_webp, record, preview_png, render, gallop_poses, gallop_stance, ground_dy, W2, H2, Z, ZW, ZH, Q  # noqa: E402
+from sheets import gallop_sheet, save_webp, record, preview_png, render, gallop_poses, gallop_stance, ground_dy, wave_dy, ground_err, W2, H2, Z, ZW, ZH, Q  # noqa: E402
 import numpy as np  # noqa: E402
 import cv2  # noqa: E402
 from cute_horse import smooth, path, stroke, circ, unit, V, f2  # noqa: E402
@@ -26,8 +29,15 @@ PAL = dict(body='#2E3448', shade='#1D2232', muzzle='#4A5370', mane='#5FE6FF', ma
            bodyShade='#262C3E')
 SPOT = dict(pose='gallop', facing='right', box=(250, 70, 520, 262), azim=6, shadow=('#000000', 0.0))
 GROUND = 258
-CYCLE = 0.48       # ギャロップ 1回の 秒（future.RUN と 同じ）
-NT = 20            # 光の すじの コマ（1回りに 20＝0.024秒ごと）
+CYCLE = 0.5        # ギャロップ 1回の 秒（future.RUN と 同じ。第4.166版：0.48 → 0.5 ＝ 15コマを 1コマ 1/30秒 ちょうどで）
+N = 15             # 走る コマ（第4.166版：10 → 15）
+NT = 30            # 光の すじの コマ（1回りに 30＝1/60秒ごと。第4.166版：20 → 30）
+TCOLS = 15         # 光の すじの シートの 1行の コマ（30コマ ＝ 2行）
+SHAPES = 10        # 雷の 形の 数（1回りに 10とおり：第4.165版までの コマの 数と 同じ ＝ ぱちぱちの 速さは かえない）
+DY_165 = [0.42, -4.27, -3.47, -0.85, 7.09, 3.1, 2.6, -2.45, -4.49, -3.54]      # 第4.165版までの 10コマの 上下（この 動きを なめらかな 波に して 読む：sheets.wave_dy）
+TRAVEL = 191.68    # ギャロップ 1回りで レーンが 流れる 長さ（2倍の 画素）：第4.165版までの 10コマの シートの 値（speed 199.67px／秒 × 2 × 0.48秒）を そのまま 使う。
+#                    コマから 数える（stance_speed）と コマを ふやした ぶん 足を けり上げる 速い 所も 入って 4割ほど 大きく 出る（15コマで 275px／秒）。
+#                    ひづめが レーンを ふんで いる 間の はやさは 前の 数の 方が 近い ＝ レーンと 光の すじの 流れは 前と 同じ 割合（0.5秒で 同じ 長さ）
 FADE = 0.55        # 光の すじが 消える までの 秒
 
 
@@ -227,28 +237,31 @@ def hoof_glow(hooves, ground):
     return np.clip(cv2.GaussianBlur(m, (0, 0), 5.5 * Z) * 0.85, 0, 1)
 
 
-def to_sheet(cells, box, pad=0):
-    """premultiplied の コマ（pre, A）を 同じ 四角（box＝x0, y0, x1, y1）で 切りぬいて 横に ならべる → u8 RGBA"""
+def to_sheet(cells, box, pad=0, cols=None):
+    """premultiplied の コマ（pre, A）を 同じ 四角（box＝x0, y0, x1, y1）で 切りぬいて 横に ならべる → u8 RGBA。cols：1行の コマ（多い ときは 行を 折り返す：第4.166版）"""
     x0, y0, x1, y1 = box
     cw, ch = x1 - x0, y1 - y0
     n = len(cells)
-    sheet = np.zeros((ch, cw * n, 4), np.float32)
+    kc = n if not cols or n <= cols else int(cols)
+    sheet = np.zeros((ch * (-(-n // kc)), cw * kc, 4), np.float32)
     for i, (pre, A) in enumerate(cells):
+        r_, c_ = divmod(i, kc)
         cut_p = np.zeros((ch, cw, 3), np.float32)
         cut_a = np.zeros((ch, cw), np.float32)
         hh, ww = min(ch, ZH - y0), min(cw, ZW - x0)
         cut_p[:hh, :ww] = pre[y0:y0 + hh, x0:x0 + ww]
         cut_a[:hh, :ww] = A[y0:y0 + hh, x0:x0 + ww]
         rgb = np.where(cut_a[..., None] > 1e-4, cut_p / np.maximum(cut_a, 1e-4)[..., None], 0)
-        sheet[:, i * cw:(i + 1) * cw, :3] = rgb
-        sheet[:, i * cw:(i + 1) * cw, 3] = cut_a
+        sheet[r_ * ch:(r_ + 1) * ch, c_ * cw:(c_ + 1) * cw, :3] = rgb
+        sheet[r_ * ch:(r_ + 1) * ch, c_ * cw:(c_ + 1) * cw, 3] = cut_a
     return (np.clip(sheet, 0, 1) * 255 + .5).astype(np.uint8)
 
 
 def build(out=None):
-    n = 10
+    n = N
     frames, cam = render(PAL, SPOT, gallop_poses(n), acc=acc_factory, number='', tag='pkfuture', workers=2)
-    dys = ground_dy(frames, gallop_stance(n), GROUND, 6.0)
+    dys = wave_dy(DY_165, n)                                                  # 第4.166版：上下は 前の 動きを なめらかな 波に（体が とばない・はね方は 前と 同じ）
+    print('地面に ついた ひづめの ずれ（2倍の 画素：いちばん 大きい, 平均）', ground_err(frames, gallop_stance(n), GROUND, dys), flush=True)
     horse, bolts = [], [[], [], []]
     gc = hexc('#5FE6FF')
     for i, ((rgb, a, hooves), dy) in enumerate(zip(frames, dys)):
@@ -262,7 +275,7 @@ def build(out=None):
         A = A + g * (1 - A)
         horse.append((pre, A))
         for v in range(3):
-            bolts[v].append(bolts_layer(hv, 1000 * v + 17 * i + 3, GROUND))
+            bolts[v].append(bolts_layer(hv, 1000 * v + 17 * (i * SHAPES // n) + 3, GROUND))      # 形は 1回りに SHAPES とおり（ひづめの 場所は コマごと）
     allA = np.max([A for _, A in horse] + [A for b in bolts for _, A in b], axis=0)
     ys, xs = np.nonzero(allA > 0.004)
     m4 = int(round(4 * Z))                                           # 第4.112版：Z 倍の 画素・画面の 1px（Q）に そろえる・meta は 2倍の 画素
@@ -276,8 +289,9 @@ def build(out=None):
     if Q != 2:
         meta['z'] = Q
     hvs = [[(x, y + dy) for x, y in fr[2]] for fr, dy in zip(frames, dys)]
-    v2 = stance_speed(hvs, gallop_stance(n))                         # 2倍の 画素／コマ
+    v2 = TRAVEL / n                                                  # 2倍の 画素／コマ（1回りの 長さは 前と 同じ：上の TRAVEL）
     meta['speed'] = round(v2 / 2 * n / CYCLE, 2)                     # ページの px／秒（レーンと 光の すじの 流れ）
+    meta['speed_raw'] = round(stance_speed(hvs, gallop_stance(n)) / 2 * n / CYCLE, 2)      # コマから 数えた 値（使わない・くらべる 用）
     u8 = to_sheet(horse, box)
     if out:
         preview_png(u8, os.path.join(out, 'future_run.png'), bg=(18, 22, 44))
@@ -295,11 +309,13 @@ def build(out=None):
     tx0, ty0 = tx0 - tx0 % Q, ty0 - ty0 % Q
     tx1, ty1 = tx1 + (-(tx1 - tx0)) % Q, ty1 + (-(ty1 - ty0)) % Q
     tbox = (int(tx0), int(ty0), int(tx1), int(ty1))
-    ut = to_sheet(trail, tbox)
+    ut = to_sheet(trail, tbox, cols=TCOLS)
     if out:
-        preview_png(ut[:, :ut.shape[1] // NT * 4], os.path.join(out, 'future_trail.png'), bg=(18, 22, 44))
+        preview_png(ut, os.path.join(out, 'future_trail.png'), bg=(18, 22, 44))
     tb = save_webp(ut, quality=90)
     tmeta = dict(frames=NT, cell=[round((tbox[2] - tbox[0]) / Z), round((tbox[3] - tbox[1]) / Z)], at=[round(tbox[0] / Z), round(tbox[1] / Z)])
+    if NT > TCOLS:
+        tmeta['cols'] = TCOLS
     if Q != 2:
         tmeta['z'] = Q
     record('future', 'trail', tb, tmeta)

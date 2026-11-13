@@ -7,6 +7,8 @@
    - ひづめ：地面に ついて いる ひづめを 地面の 線に そろえる（sheets.ground_dy）。地面に ついた ひづめが うしろへ 進む はやさ（spf：2倍の 画素／コマ）も 出す
      → ページは 地面を その はやさで 流し、おくの 馬は 1回りの 秒を かえて 同じ はやさに する（すべらない）。
    手前＝鹿毛（黒い たてがみ）・おく＝芦毛（灰色の たてがみ・少し 小さく）。
+   第4.166版（まさちゃん 2026/11/13 15:21「…全部ヌルヌル動くようにして！」）：走る コマは 1回り 10コマ（手前 0.5秒＝1秒に 20コマ・おく 0.423秒＝23.6コマ）だった →
+     手前 15コマ（0.5秒）・おく 13コマ（ページが 13/30秒に そろえる）＝ どちらも 1コマ 1/30秒 ちょうど（N_OF）。前の 絵は 消さない（手元に 残る・台帳が 新しい 絵を さす）
    python3 kisekae/pack/make/dino_art.py [near far]   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の dino.near・dino.far（コマの シート）"""
 import math
 import os
@@ -14,7 +16,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from sheets import render, gallop_poses, gallop_stance, ground_dy, make_sheet, save_webp, record, preview_png, HOOF_ORDER  # noqa: E402
+from sheets import render, gallop_poses, gallop_stance, ground_dy, wave_dy, ground_err, make_sheet, save_webp, record, preview_png, HOOF_ORDER  # noqa: E402
 from cute_horse import path, stroke, circ, ell, smooth, unit, V, f2  # noqa: E402
 
 BARE = dict(cloth='none', clothTrim='none', num='none', tack='#8A6A3E', ring='#EDE3C8')     # 布・番号は 描かない（鞍は 体の 色＝見えない）
@@ -24,7 +26,14 @@ FAR = dict(body='#E4E0D8', shade='#B3ABA0', muzzle='#F3F0EA', mane='#56504C', ma
            blush='#E8A898', bodyShade='#D2CBC1', saddle='#E4E0D8', saddleFlap='#E4E0D8', **BARE)
 SPOT_NEAR = dict(pose='gallop', facing='right', box=(176, 112, 444, 300), azim=6, shadow=('#5A3A1A', 0.0), mane_len=1.75)
 SPOT_FAR = dict(pose='gallop', facing='right', box=(262, 96, 486, 254), azim=6, shadow=('#5A3A1A', 0.0), mane_len=1.75)
-N = 10
+N = 10             # 第4.165版までの コマの 数（いまは N_OF）
+N_OF = dict(near=15, far=13)      # 第4.166版：1回りの コマ（手前 15＝0.5秒・おく 13＝13/30秒：ページの dino.py が 1コマ 1/30秒に そろえる）
+# ギャロップ 1回りで 地面が 流れる 長さ（2倍の 画素）：第4.165版までの 10コマの シートの spf × 10 を そのまま 使う（地面の はやさ・おくの 馬の 1回りの 秒を かえない）。
+#   spf(frames, stance) は「となりの コマも 地面に ついて いる ひづめ」の 動きの 平均 ＝ コマを ふやすと 足を うしろへ けり上げる 速い 所も 入って 4割ほど 大きく 出る
+#   （10コマ 189 → 15コマ 272）。ひづめが 地面を ふんで いる 間（まん中）の はやさは 前の 数の 方が 近い ので、前の 数の まま に する
+TRAVEL = dict(near=189.05, far=160.01)
+# 上下の 動き：第4.165版までの 10コマの シートの dy（地面に ついた 足で そろえた 数）を なめらかな 波に して 読む（sheets.wave_dy：はね方は 前と 同じ・体が とばない）
+DY_165 = dict(near=[0.49, -5.52, -4.63, -1.86, 5.22, 1.37, 0.98, -3.64, -5.27, -3.89], far=[-0.94, -4.66, -4.0, -1.84, 4.89, 1.56, 1.13, -3.89, -5.91, -4.92])
 TAIL_K, TAIL_W = 1.5, 1.12          # しっぽの 長さ・太さ
 
 
@@ -80,14 +89,14 @@ def bone(c, ang, L, w, col='#F4EBD4', edge='#B09A70'):
     return o
 
 
-def caveman(m, i, kind):
+def caveman(m, i, kind, n=N):
     """原始人を 馬の 背中に。front＝手前の 足・体・頭・手前の 手（馬の 上）／back＝おくの 手と 武器（馬の うしろに しく＝体と 頭の うしろ）。
        m：draw_horse の 目印（p1u・wx・cloth_top）・i：コマ（ギャロップに 合わせて 上下・こん棒と やりを ふる）"""
     p = m['p1u']
     shock = kind.endswith('_s')                                         # 第4.94版：ティラノに びっくり（両手を 上げて 口を あける）
     kind = kind[:-2] if shock else kind
     L = LOOK[kind]
-    g = i / N
+    g = i / n
     wave = math.sin(2 * math.pi * g)
     wx, top = m['wx'], m['cloth_top']
     xs = wx(-0.40)
@@ -225,10 +234,10 @@ def caveman(m, i, kind):
     return dict(front=front, back=back)
 
 
-def acc_for(kind):
+def acc_for(kind, n=N):
     def mk(i):
         def acc(m):
-            return caveman(m, i, kind)
+            return caveman(m, i, kind, n)
         return acc
     return mk
 
@@ -248,16 +257,19 @@ def spf(frames, stance):
 def build(name, out=None):
     base = name[:-2] if name.endswith('_s') else name
     pal, spot = (NEAR, SPOT_NEAR) if base == 'near' else (FAR, SPOT_FAR)
-    poses = long_tail(gallop_poses(N))
-    frames, cam = render(pal, spot, poses, acc=acc_for(name), number='', tag='pkdn2' + name, workers=2)
-    st = gallop_stance(N)
+    n = N_OF[base]
+    poses = long_tail(gallop_poses(n))
+    frames, cam = render(pal, spot, poses, acc=acc_for(name, n), number='', tag='pkdn2' + name, workers=2)
+    st = gallop_stance(n)
     g = spot['box'][3] - 4
-    dys = ground_dy(frames, st, g, lift=6.0)
+    dys = wave_dy(DY_165[base], n)                                       # 第4.166版：上下は 前の 動きを なめらかな 波に（足が 入れかわる コマで 体が とばない・はね方は 前と 同じ）
+    print(name, '地面に ついた ひづめの ずれ（2倍の 画素：いちばん 大きい, 平均）', ground_err(frames, st, g, dys), flush=True)
     xs = [h[0] for fr in frames for h in fr[2]]
     sh = ('#4A2E12', (min(xs) + max(xs)) / 2, g + 4, (max(xs) - min(xs)) * 0.5, 6.4, 0.26)
     u8, meta = make_sheet(frames, dys, shadow=sh)
     meta['dy'] = [round(float(d), 2) for d in dys]
-    meta['spf'] = round(spf(frames, st), 3)
+    meta['spf'] = round(TRAVEL[base] / n, 3)                              # 1コマあたり（ページは spf × コマの 数 ＝ 1回りの 長さ で 使う）。コマから 数えた 値は spf_raw
+    meta['spf_raw'] = round(spf(frames, st), 3)
     meta['ground'] = int(g - meta['at'][1])                              # シートの 中の 地面（ひづめの 点）の 高さ（2倍の 画素）
     if out:
         preview_png(u8, os.path.join(out, f'dino_{name}.png'), bg=(200, 170, 120))

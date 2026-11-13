@@ -83,14 +83,68 @@
     const stage = $('.ksb', b);
     if (p && p.bnr && p.bnr.html) { stage.innerHTML = p.bnr.html; b.hidden = false; fitBnr(); } else { stage.innerHTML = ''; b.hidden = true; }
     motion();
+    if (!b.hidden) phaseSoon();
   }
   // 動きを止める：「視差効果を減らす」か「演出を控えめにする」（.calm）・判定タブが見えていない／アプリが裏（.pause）※仮
   function motion() {
     const b = $('#ksBnr'); if (!b) return;
     const F = FX();
+    const was = b.classList.contains('pause') || b.classList.contains('calm');
     b.classList.toggle('calm', !!(F && F.calm && F.calm()));
     const v = $('#v-judge');
     b.classList.toggle('pause', !!document.hidden || !!(v && v.hidden));
+    if (was && !b.hidden && !b.classList.contains('pause') && !b.classList.contains('calm')) phaseSoon();      // また 動きだした：コマの さかい目を 合わせ直す
+  }
+  // ---------- コマ送りの 絵を なめらかに（第4.166版・まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）----------
+  //   壁紙の コマ送りの 絵（馬の シートを めくる）は 1コマ 1/30秒 ＝ 画面の 描きかえ（ふつう 1秒に 60回）の 2回ぶん。
+  //   コマが かわる 時刻が 描きかえの 時刻と 重なると、ほんの 少しの ずれで「1回 だけ 出る コマ」と「3回 出る コマ」が まざって がたつく（コマは 30こ あっても なめらかに 見えない）。
+  //   → 描きかえの 時刻を 10回 見て、コマが かわる 時刻（動きの はじまりから 1/60秒の きざみ）が 描きかえと 描きかえの ちょうど まん中に 来る ように、
+  //     上の絵の 動いて いる アニメの はじまりを 少し（多くて 描きかえ 半回ぶん＝1/120秒）ずらす（Web Animations の startTime）。
+  //     同じ ときに はじまって 同じ おくれの 動きは 同じ だけ ずれる ＝ たがいの そろい方は かわらない。もう まん中に 近い（2.5ミリ秒 まで）なら さわらない。
+  //     止めて いる とき（.pause・.calm）と 止まって いる アニメは さわらない（止める／動かすは CSS の まま）。できない 端末・はかれない ときは なにも しない。
+  //     絵を 出して すぐ（0.6秒・3秒 あと）と、また 動きだした とき、そのあとは 15秒ごとに 見直す
+  let phRun = null, phT1 = 0, phT2 = 0, phIv = 0;
+  function phase() {
+    if (phRun) return phRun;
+    // fin：この 関数の 中で もう 終わった（止めて いる・はかれない）。その ときは phRun に のこさない
+    //   （のこすと、止めて いる ときに 1回 よばれた あと、動きだしても ずっと その「終わった 約束」を 返して 何も しなく なる）
+    let fin = false;
+    const pr = new Promise(res => {
+      const done = v => { fin = true; phRun = null; res(v || null); };
+      const b = $('#ksBnr'), tl = document.timeline;
+      const idle = () => !b || b.hidden || b.classList.contains('pause') || b.classList.contains('calm') || document.hidden;
+      if (idle() || !b.getAnimations || !tl || typeof requestAnimationFrame !== 'function') return done();
+      const ts = [];
+      const step = () => {
+        const t = tl.currentTime;
+        if (typeof t !== 'number' || idle()) return done();
+        ts.push(t);
+        if (ts.length < 10) return requestAnimationFrame(step);
+        try {
+          let mn = 1e9; for (let i = 1; i < ts.length; i++) mn = Math.min(mn, ts[i] - ts[i - 1]);
+          // 描きかえの きざみ：1秒に 120回の 画面（いちばん 短い 間かくが 11ミリ秒 より 短い）なら 1/120秒、ほかは 1/60秒で 合わせる。
+          //   1秒に 30回（省電力）でも、とちゅうで 描きかえが ぬけても、描きかえの 時刻は 1/60秒の きざみの 上に ある ので 同じ 合わせ方で よい
+          const P = mn < 11 ? 1000 / 120 : 1000 / 60;
+          let n = 0, moved = 0;
+          for (const a of b.getAnimations({ subtree: true })) {
+            if (a.playState !== 'running' || a.pending || typeof a.startTime !== 'number' || !a.effect) continue;
+            const dl = +a.effect.getComputedTiming().delay || 0;
+            const ph = (((t - a.startTime - dl) % P) + P) % P, off = ph - P / 2;
+            n++;
+            if (Math.abs(off) > 2.5) { a.startTime = a.startTime + off; moved++; }
+          }
+          done({ P: P, n: n, moved: moved });
+        } catch (e) { done(); }
+      };
+      requestAnimationFrame(step);
+    });
+    if (!fin) phRun = pr;
+    return pr;
+  }
+  function phaseSoon() {
+    clearTimeout(phT1); clearTimeout(phT2);
+    phT1 = setTimeout(phase, 600); phT2 = setTimeout(phase, 3000);
+    if (!phIv) phIv = setInterval(phase, 15000);
   }
   async function apply(id, save) {
     if (!byId[id]) id = 'default';
@@ -409,6 +463,6 @@
 
   window.TengelKisekae = {
     on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx, pushArt: pushArt,
-    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, live: liveId, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
+    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
   };
 })();

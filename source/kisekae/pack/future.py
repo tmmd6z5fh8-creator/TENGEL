@@ -14,14 +14,14 @@
      レーンの 流れる はやさは 地面に ついた ひづめの はやさ（run の speed＝約200px／秒。前は 260px／秒で ひづめが 少し すべって 見えた）
    第4.95版：足もとの 雷と 光の すじを もっと うすく（雷 0.45・すじ 0.4 の こさ：まさちゃん「もっと薄くていいよ！」）"""
 import math
-from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece
+from .common import W, H, f, durl, curi, tile, doc, P, smooth, star_d, sparkle_d, mix, kf, img, rnd, reduced, fly_burst, fly_css, piece, sheet_size, sheet_flip
 
 ID = 'future'
 CODE = 'ft'
 CY = '#3FE0FF'      # 水色の 光
 MG = '#FF4FD8'      # 赤むらさきの 光
 LANE_Y = 129        # レーンの 上の 面（馬の ひづめ）
-RUN = 0.48          # ギャロップ 1回（10コマ）
+RUN = 0.5           # ギャロップ 1回（第4.166版：15コマ・0.5秒＝1コマ 1/30秒 ちょうど。前は 10コマ・0.48秒）
 LANE_SPEED = 260    # レーンの 光の 流れ（px／秒）：馬の シートに speed が あれば それ（地面に ついた ひづめと 同じ＝すべらない）
 
 
@@ -279,11 +279,13 @@ def banner(B):
         css += kf('ftZap', [(0, 'opacity:1'), (33.33, 'opacity:0'), (100, 'opacity:0')])
         tr = B.get('trail')
         if tr:
-            tn, (tw, th), (tx, ty) = tr['frames'], tr['cell'], tr['at']
+            (tw, th), (tx, ty) = tr['cell'], tr['at']
+            tW, tH = sheet_size(tr)                                  # 第4.166版：光の すじは 30コマ・2行の ます目（common.sheet_flip）
+            t_tf, t_kf = sheet_flip('ftTrail', tr)
             css += (f'.ftw .ftTr{{left:{f(tx / 2)}px;top:{f(ty / 2)}px;width:{f(tw / 2)}px;height:{f(th / 2)}px;overflow:hidden}}'
-                    f'.ftw .ftTr>i{{left:0;top:0;width:{f(tn * tw / 2)}px;height:{f(th / 2)}px;background:url({tr["url"]}) 0 0/{f(tn * tw / 2)}px {f(th / 2)}px no-repeat;'
-                    f'opacity:{TRAIL_OP};animation:ftTrail {RUN}s steps({tn}) infinite}}'
-                    + kf('ftTrail', [(100, f'transform:translateX({f(-tn * tw / 2)}px)')]))
+                    f'.ftw .ftTr>i{{left:0;top:0;width:{f(tW)}px;height:{f(tH)}px;background:url({tr["url"]}) 0 0/{f(tW)}px {f(tH)}px no-repeat;'
+                    f'opacity:{TRAIL_OP};animation:ftTrail {RUN}s {t_tf} infinite}}'
+                    + t_kf)
     for cls, d, top, sc, sec, dl, col, gl in CARS:
         w, h = 86 * sc, 18 * sc
         css += f'.ftw .ftCar.{cls}{{left:0;top:{top}px;width:{f(w)}px;height:{f(h)}px;animation:ftCar{cls} {f(sec)}s linear {f(dl)}s infinite}}'
