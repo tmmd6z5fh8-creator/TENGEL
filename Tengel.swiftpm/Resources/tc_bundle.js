@@ -1967,8 +1967,13 @@ const TCCare = (() => {
   
   
   
-  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [158, 1530], ew: 220, eh: 84, tap: [526, 1232] };
-  let pushCap = null, pushBase = null;
+  
+  
+  
+  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172 };
+  let pushCap = null, pushBase = null, dpIcon = null;
+  const dropOk = () => !!(O.dropOk && O.dropOk());
+  const DROP_WAIT = 0.4;      
   const pushLive = () => !!(S.push && S.push.hideT == null);
   function pushK(t) { const Pn = S.push; if (!Pn) return 0; const u = t - Pn.t0; return u < 0 ? 0 : sm(u / 0.2) * (Pn.hideT != null ? 1 - sm((t - Pn.hideT) / 0.22) : 1); }      
   function pushOpen(t) {
@@ -1995,6 +2000,10 @@ const TCCare = (() => {
     if (!S.bulk || S.stock < 1 || (O.drawLeft && O.drawLeft() < 1)) pushClose(t + 0.3);      
     return true;
   }
+  
+  
+  function dropUse(t) { if (S.stock < 1) return false; S.stock -= 1; S.stockDrop = t; if (S.push) S.push.n++; ev(t, 'token', { mute: true }); return true; }      
+  function pushDone(t) { if (pushLive()) pushClose(t); }
   function pushMode(t, bulk) { const Pn = S.push; if (!pushLive() || S.bulk === !!bulk) return; S.bulk = !!bulk; Pn.modeT = t; ev(t, 'button'); if (O.onBulk) O.onBulk(S.bulk); }
   function pushEnd(t) { const Pn = S.push; if (!pushLive() || !S.bulk || Pn.n < 1) return; ev(t, 'fold'); pushClose(t); }      
   function pushWait(t) { const Pn = S.push; if (t - Pn.waitT < 1.2) return; Pn.waitT = t; fx({ k: 'tagUI', t0: t, x: PUSHG.x, y: PUSHG.y - 300, txt: '先に PUSH を 押してね', size: 34, dur: 1.6 }); ev(t, 'wait'); }
@@ -2049,6 +2058,20 @@ const TCCare = (() => {
       chip(G.mn, G.mw, G.mh, 'まとめて 使う', S.bulk, 36, pop * (S.bulk ? mp : 1));
       
       if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, 'おわる', false, 36, pop, true);
+      
+      if (dropOk()) {
+        const dq = t - (S.press.dp == null ? -9 : S.press.dp), ds = pop * (dq >= 0 && dq < 0.22 ? 0.95 : 1) * (1 + 0.012 * Math.sin(TAU * 0.6 * u)), w = G.dpw, h = G.dph, k = 22;
+        g.save(); g.translate(G.dp[0], G.dp[1]); g.scale(ds, ds); g.lineWidth = 0.8;
+        pf([[-w / 2 + 6, -h / 2 + 8], [w / 2 + 6, -h / 2 + 8], [w / 2 + 6, h / 2 + 8], [-w / 2 + 6, h / 2 + 8]], 'rgba(40,20,5,0.24)');
+        pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], '#fff8ec');
+        pf([[-w / 2, h * 0.16], [w / 2, h * 0.16], [w / 2, h / 2], [-w / 2, h / 2]], '#f8ecd4');
+        pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], '#e6cf9f');
+        g.strokeStyle = '#e0a21f'; g.lineWidth = 4; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
+        if (dpIcon && dpIcon.naturalWidth) { const ih = h - 20, iw = ih * dpIcon.naturalWidth / dpIcon.naturalHeight; g.drawImage(dpIcon, -w / 2 + 12, -ih / 2, iw, ih); }
+        label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
+        label('玉を 落とす', 46, 44, 24, '#c2362b');
+        g.restore();
+      }
     }
     g.restore();
   }
@@ -2671,6 +2694,7 @@ const TCCare = (() => {
       if (inR(G.m1, G.mw, G.mh + 12)) return 'pm:1';
       if (inR(G.mn, G.mw, G.mh + 12)) return 'pm:n';
       if (S.bulk && S.push.n >= 1 && inR(G.end, G.ew, G.eh + 12)) return 'pend';
+      if (dropOk() && inR(G.dp, G.dpw, G.dph)) return 'pdrop';
       if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
       return null;                       
     }
@@ -2695,6 +2719,7 @@ const TCCare = (() => {
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
+    else if (what === 'pdrop') { if (pushLive() && !S.fxHold && dropOk() && t >= S.push.lock && t - S.push.t0 > DROP_WAIT) { S.press.dp = t; ev(t, 'button'); if (O.onDrop) O.onDrop(); } }      
     else if (what === 'buy') pressBuy(t);
   }
   function pointer(kind, x, y, t) {        
@@ -2990,6 +3015,7 @@ const TCCare = (() => {
     carrot = new Image(); carrot.src = AP('tc_items/tc_item_carrot.webp'); carrotG = new Image(); carrotG.src = AP('tc_items/tc_item_carrot_gold.webp');      
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
     pushCap = new Image(); pushCap.src = AP('tc_push_cap.webp'); pushBase = new Image(); pushBase.src = AP('tc_push_base.webp');      
+    if (o.dropOk) { dpIcon = new Image(); dpIcon.src = AP('tc_dp_icon.webp'); }      
     try { await Promise.all([pushCap.decode(), pushBase.decode()]); } catch (e) { }
     if (O.onBuy) {                       
       for (const k in BTN_X5) BTN[k][0] = BTN_X5[k];
@@ -3022,7 +3048,7 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
+    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
@@ -3082,6 +3108,9 @@ const TCGuide = (() => {
   
   const TOK = { every: 5, step: 5, max: 25 };
   const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
+  
+  const DP = { name: 'お世話チャレンジ', balls: 5, tone: [['青', '#2f7fe0', '10P〜300P'], ['緑', '#2f9f4a', 'ルーレット（800P か 1600P）'], ['紫', '#8a4ad8', 'ルーレット（1600P か 3200P）'], ['赤', '#d8352c', 'ルーレット（3200P か 6400P）'],
+    ['金', '#b8860b', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '#c2456f', '神様馬のルーレット・チケット']] };
   const SEC = [
     
     
@@ -3098,6 +3127,17 @@ const TCGuide = (() => {
       <p>　<b>1個 使う</b> → 1回押したらおしまい</p>
       <p>　<b>まとめて 使う</b> → トークンがあるあいだ、つづけて何回でも押せる（押した回数ぶんトークンがへる）。やめるときは「おわる」</p>
       <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数ぶん数えるよ）</p>`],
+    
+    
+    ['玉', '#e2574c', DP.name, `<p>・PUSHが出たとき、左下の<b>「お世話チャレンジ」</b>を押すと、<b>玉を落とす台</b>で抽選できるよ</p>
+      <p>・<b>「玉を落とす」</b>を押すたびに<b>トークンを1つ</b>使って、玉が1こ落ちる（1回で<b>${DP.balls}こ</b>まで。トークンが${DP.balls}こないときは、あるぶんだけ）</p>
+      <p>・当たりやすさは<b>PUSHとまったく同じ</b>（下の表のとおり。どのコップに入っても同じ）</p>
+      <p>・玉がコップに入ったとき、当たっていれば まん中の<b>「馬バレ」</b>が光るよ。色で中身がわかる（青から虹へ、光が大きくなる）</p>
+      <table data-tab="tone">${DP.tone.map(([nm, col, what]) => `<tr data-c="${nm}"><td><b style="color:${col}">${nm}</b></td><td>${what}</td></tr>`).join('')}</table>
+      <p>・当たりは<b>「当選」</b>のますにたまる → 玉をぜんぶ落としたら<b>「保留結果を見る」</b>で順に受け取ろう</p>
+      <p>・おわったあと、トークンが<b>${DP.balls}こ以上</b>のこっていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
+      <p class="note">玉1こ＝トークン1つ＝お世話1回（馬の育ちやミッションの回数も、玉の数ぶん数えるよ）</p>
+      <p class="note">とちゅうでアプリを閉じても、たまった当たりはなくならないよ（次に開いたときに「保留結果を見る」から）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
@@ -3142,12 +3182,14 @@ const TCGuide = (() => {
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
   ];
-  let root = null, inner = null, body = null, t0 = null;
+  let root = null, inner = null, body = null, t0 = null, withDrop = false;
+  
+  const dropReady = () => { try { return !!(typeof window !== 'undefined' && window.TCDrop && window.TCDrop.ready()); } catch (e) { return false; } };
   function build(el) {
     if (!document.getElementById('tcg-css')) { const st = document.createElement('style'); st.id = 'tcg-css'; st.textContent = CSS; document.head.appendChild(st); }
-    root = document.createElement('div'); root.id = 'tcg';
+    root = document.createElement('div'); root.id = 'tcg'; withDrop = dropReady();
     root.innerHTML = `<div class="bk"></div><div class="sh"><div class="hd"><b>トレーニングセンターの説明書</b><div class="x">✕</div></div><div class="bd"><div class="in">` +
-      SEC.map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
+      SEC.filter(s => withDrop || s[2] !== DP.name).map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
     el.appendChild(root); inner = root.querySelector('.in'); body = root.querySelector('.bd');
     
     
@@ -3166,6 +3208,7 @@ const TCGuide = (() => {
     anim = requestAnimationFrame(f);
   }
   function open(el, opt) {
+    if (root && withDrop !== dropReady()) { root.remove(); root = null; }      
     if (!root) build(el); root.style.display = 'flex'; openedAt = performance.now();
     if (opt && opt.anim) { onClose = opt.onClose || null; body.scrollTop = 0; set(0.001); tween(0, 1, 0.35); } else set(1);
   }
@@ -4540,6 +4583,645 @@ const TCBuy = (() => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const TCDrop = (() => {
+  const W = 1052, H = 1657, TAU = Math.PI * 2;
+  const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
+  const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function' ? window.TC_ASSET(p) : p);
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+  const lerp = (a, b, u) => a + (b - a) * u;
+  const backOut = x => { x = clamp(x, 0, 1); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const easeOut = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+  const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  const BALLS = 5;                                    
+  const IMG_H = 1632;                                 
+  
+  
+  const TONE = [null,
+    { rgb: [60, 150, 255], R: 2.0, a: 0.62, dim: 0.14, rays: 0, nt: 14, tl: 0.62, len: 1.0, keep: 0.50, hold: 0.50, lock: 0.95 },
+    { rgb: [50, 220, 100], R: 2.5, a: 0.68, dim: 0.18, rays: 0, nt: 18, tl: 0.88, len: 1.15, keep: 0.50, hold: 0.55, lock: 1.05 },
+    { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2 },
+    { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35 },
+    { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0 },
+    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4 }];
+  const HUES = [[255, 70, 70], [255, 160, 50], [255, 232, 70], [80, 235, 110], [70, 170, 255], [150, 110, 255], [240, 110, 230]];      
+  const NAME = [null, '青', '緑', '紫', '赤', '金', '虹'];
+  const MISS_LOCK = 0.32, FLY = 0.36;                 
+
+  let D = null, IM = null, loading = null, GLOW = null;
+  let cv = null, g = null, K = 1, MS = 1, MX = 0, MY = 0, cache = null, cacheKey = '';
+  let S = null, API = null, stageEl = null, raf = 0, lastNow = 0, done = null, T = { speed: 1, path: null, log: [] };
+  const calm = () => { try { return !!(window.TengelFx && window.TengelFx.calm && window.TengelFx.calm()); } catch (e) { return false; } };
+
+  
+  function img(src) {                                 
+    return new Promise(ok => { const i = new Image(); i.onload = () => { const d = i.decode ? i.decode().catch(() => { }) : null; if (d && d.then) d.then(() => ok(i)); else ok(i); }; i.onerror = () => ok(null); i.src = AP(src); });
+  }
+  function load() {
+    if (loading) return loading;
+    loading = (async () => {
+      let d = null;
+      try { const r = await fetch(AP('tc_dp.json')); if (!r.ok) throw new Error('no data'); d = await r.json(); } catch (e) { return false; }
+      if (!d || d.v !== 1 || !Array.isArray(d.paths) || !d.paths.length) return false;
+      const names = ['tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp'];
+      for (let c = 1; c <= 6; c++) names.push('tc_dp_uma' + c + '.webp', 'tc_dp_hold' + c + '.webp');
+      const ims = await Promise.all(names.map(img));
+      if (ims.some(i => !i)) return false;
+      IM = { base: ims[0], front: ims[1], see: ims[2], ball: ims[3], uma: [null], hold: [null] };
+      for (let c = 1; c <= 6; c++) { IM.uma.push(ims[2 + 2 * c]); IM.hold.push(ims[3 + 2 * c]); }
+      D = d; MS = IMG_H / d.img[1]; MX = (W - d.img[0] * MS) / 2; MY = 19;
+      return true;
+    })();
+    loading.then(ok => { if (!ok) loading = null; });      
+    return loading;
+  }
+  const ready = () => !!(D && IM);
+  function glows() {                                  
+    if (GLOW) return GLOW;
+    const lite = (rgb, k) => rgb.map(v => Math.round(v + (255 - v) * k));
+    const mk = rgb => { const c = document.createElement('canvas'); c.width = c.height = 96; const q = c.getContext('2d'), gr = q.createRadialGradient(48, 48, 0, 48, 48, 48), l = lite(rgb, 0.7);
+      gr.addColorStop(0, `rgba(${l[0]},${l[1]},${l[2]},0.95)`); gr.addColorStop(0.25, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.75)`); gr.addColorStop(0.6, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.22)`); gr.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+      q.fillStyle = gr; q.fillRect(0, 0, 96, 96); return c; };
+    const mt = rgb => { const c = document.createElement('canvas'); c.width = 128; c.height = 64; const q = c.getContext('2d'), l = lite(rgb, 0.45);
+      q.translate(0, 32); q.scale(1, 0.25); const gr = q.createRadialGradient(0, 0, 0, 0, 0, 128);
+      gr.addColorStop(0, `rgba(${l[0]},${l[1]},${l[2]},0.9)`); gr.addColorStop(0.3, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.62)`); gr.addColorStop(0.7, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.2)`); gr.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+      q.fillStyle = gr; q.beginPath(); q.arc(0, 0, 128, 0, TAU); q.fill(); return c; };
+    const gold = [255, 214, 90];
+    GLOW = { tone: [null], hue: HUES.map(mk), tong: [null], thue: HUES.map(mt) };
+    for (let c = 1; c <= 6; c++) { const rgb = c === 6 ? gold : TONE[c].rgb; GLOW.tone.push(mk(rgb)); GLOW.tong.push(mt(rgb)); }
+    return GLOW;
+  }
+
+  
+  const now = () => S.t;
+  const later = (dt, fn) => { S.sched.push({ t: S.t + dt, fn }); };
+  const wait = dt => new Promise(ok => later(dt, ok));
+  const se = (name, gain) => { T.log.push(name); if (T.log.length > 200) T.log.splice(0, 100); if (T.rec) T.rec.push([S ? +S.t.toFixed(4) : 0, name, gain == null ? 1 : gain]); try { if (API && API.se) API.se(name, gain == null ? 1 : gain); } catch (e) {   } };
+
+  
+  function roundMax() { return Math.max(0, Math.min(BALLS, API.stock(), API.left())); }
+  function newRound() {
+    S.max = roundMax(); S.n = 0; S.holds = []; S.ball = null; S.old = []; S.next = S.max > 0 ? { t0: S.t } : null; S.lcd = null; S.unlockT = null; S.endT = null; S.none = null; S.sum = 0; S.tk = 0; S.roundT = S.t;
+    S.phase = S.max > 0 ? 'ready' : 'end';
+    if (S.phase === 'end') endChoice();
+  }
+  function pickPath() {                                
+    if (T.path != null) { const i = T.path; T.path = null; return i % D.paths.length; }
+    if (!S.deck || !S.deck.length) {
+      const d = D.paths.map((_, i) => i);
+      for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+      if (d.length > 1 && d[d.length - 1] === S.lastPath) [d[0], d[d.length - 1]] = [d[d.length - 1], d[0]];
+      S.deck = d;
+    }
+    const i = S.deck.pop(); S.lastPath = i; return i;
+  }
+  function pressGo() {                                 
+    if (S.phase !== 'ready' || S.ball || S.t < S.lock || S.n >= S.max) return false;
+    const r = API.drop();
+    if (!r || !r.ok) { finishDrops(); return false; }
+    S.n++; S.used++; S.press.go = S.t; S.next = null;
+    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t;                    
+    const pi = pickPath();
+    S.ball = { p: D.paths[pi], pi, t0: S.t, hi: 0, inT: null, z: r.z || null, c: r.z ? (r.c || 1) : 0 };
+    S.phase = 'fall'; se('dp_out');
+    return true;
+  }
+  function ballIn(b) {                                 
+    b.inT = S.t; se('dp_cup', 0.9);
+    S.fx.push({ k: 'cup', t0: S.t, cup: b.p.cup });
+    if (b.z) later(0.12, () => reveal(b));
+    else { later(0.16, () => se('dp_miss', 0.8)); S.lock = S.t + MISS_LOCK; later(MISS_LOCK, afterBall); }
+  }
+  function reveal(b) {                                 
+    const c = b.c, tn = TONE[c];
+    S.lcd = { c, t0: S.t, off: null };
+    se('dp_uma' + c);
+    const slot = S.holds.length;
+    const h = { z: b.z, c, slot, t: null, fly: S.t + tn.hold, state: 'fly' };
+    S.holds.push(h);
+    later(tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
+    S.lock = S.t + tn.lock; later(tn.lock, afterBall);
+  }
+  function afterBall() {
+    if (S.phase !== 'fall') return;
+    if (S.ball && S.ball.inT != null) { S.old.push(S.ball); S.ball = null; }      
+    if (S.n >= S.max || API.stock() < 1 || API.left() < 1) finishDrops();
+    else { S.phase = 'ready'; S.next = { t0: S.t }; }
+  }
+  function finishDrops() {                             
+    S.next = null;
+    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t + 0.5;              
+    if (S.holds.length) { S.phase = 'wait'; S.unlockT = S.t; se('dp_open'); }
+    else { S.phase = 'none'; S.none = S.t; later(1.5, endChoice); }
+  }
+  function pressSee() {                                
+    if (S.phase !== 'wait' || S.t < S.unlockT + 0.25) return false;
+    S.phase = 'res'; S.press.see = S.t; se('button');
+    runSee(S.gen).catch(() => { });
+    return true;
+  }
+  async function runSee(gen) {                         
+    const live = () => !!S && S.gen === gen;
+    await wait(0.35);
+    for (const h of S.holds) {
+      if (!live()) return;
+      h.state = 'show'; h.showT = S.t; S.cur = h;
+      await wait(0.4); if (!live()) return;
+      const z = h.z;
+      if (z.k === 'pt') {
+        S.pop = { v: z.v, t0: S.t, c: h.c }; se(z.v >= 200 ? 'dedeen' : 'piron');
+        try { await API.show(z); } catch (e) {   }
+        if (!live()) return;
+        S.sum += +z.v || 0;
+        await wait(1.25);
+      } else {
+        if (z.k === 'rt' || z.k === 'zn') { S.cue = { t0: S.t, txt: z.k === 'zn' ? '特化ゾーン！' : 'ルーレット！' }; se('kyuin'); await wait(1.0); if (!live()) return; }
+        S.hold = true; S.holdT = S.t;                  
+        let v = 0; try { v = await API.show(z); } catch (e) {   }
+        if (!live()) return;
+        S.hold = false; S.holdT = S.t; S.sum += +v || 0; if (z.k === 'tk') S.tk += z.n || 1;
+        await wait(0.45);
+      }
+      if (!live()) return;
+      h.state = 'done'; h.doneT = S.t; S.cur = null;
+      await wait(0.3);
+    }
+    if (!live()) return;
+    await wait(0.25); if (!live()) return;
+    endChoice();
+  }
+  function endChoice() {                               
+    S.phase = 'end'; S.endT = S.t; S.more = API.stock() >= BALLS && API.left() >= 1;
+  }
+  function pressMore() { if (S.phase !== 'end' || !S.more || S.t < S.endT + 0.35) return false; se('button'); S.press.more = S.t; newRound(); return true; }
+  function pressEnd() { if (S.phase !== 'end' || S.t < S.endT + 0.35) return false; se('fold'); finish(); return true; }
+  function pressQuit() {                               
+    if (S.phase !== 'ready' || S.ball || S.t < S.lock) return false;
+    se('button'); S.press.quit = S.t;
+    if (S.n === 0 && !S.holds.length) finish(); else finishDrops();
+    return true;
+  }
+  function finish(aborted) {
+    const r = { used: S ? S.used : 0, aborted: !!aborted };
+    stop();
+    const d = done; done = null; S = null;
+    if (d) d(r);
+  }
+
+  
+  function open(stage, api, opt) {
+    opt = opt || {};
+    if (!ready() || S) return Promise.resolve({ used: 0, aborted: true });
+    stageEl = stage; API = api;
+    cv = stage.querySelector('canvas.tcdp');
+    if (!cv) { cv = document.createElement('canvas'); cv.className = 'tcdp'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'お世話チャレンジ'); stage.insertBefore(cv, stage.querySelector('canvas.tcfx')); }
+    cv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;opacity:1';      
+    g = cv.getContext('2d'); glows();
+    S = { t: 0, gen: (T.gen = (T.gen || 0) + 1), phase: 'ready', max: 0, n: 0, used: 0, holds: [], ball: null, old: [], next: null, lcd: null, lock: 0.45, fx: [], sched: [], press: {}, lastPath: -1, sum: 0, openT: 0, hold: false, cur: null, pop: null, cue: null, unlockT: null, endT: null, none: null, more: false, roundT: 0, deck: null, tk: 0, holdT: -9, op: 1 };
+    T.log.length = 0;
+    const pend = opt.resume && api.holds ? api.holds() : [];
+    if (pend.length) {                                 
+      S.holds = pend.slice(0, BALLS).map((z, i) => ({ z, c: z.c || 1, slot: i, t: -9, fly: -9, state: 'in' }));
+      S.phase = 'wait'; S.unlockT = 0.2;
+    } else newRound();
+    cv.addEventListener('pointerdown', onDown);
+    document.addEventListener('visibilitychange', onVis);
+    lastNow = 0; raf = requestAnimationFrame(frame);
+    return new Promise(ok => { done = ok; });
+  }
+  function stop() {
+    cancelAnimationFrame(raf); raf = 0;
+    if (cv) { cv.removeEventListener('pointerdown', onDown); cv.style.display = 'none'; try { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); } catch (e) {   } }
+    document.removeEventListener('visibilitychange', onVis);
+  }
+  function close() { if (S) finish(true); }           
+  const isOpen = () => !!S;
+  function onVis() { if (!S) return; if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { lastNow = 0; raf = requestAnimationFrame(frame); } }
+
+  
+  const inBox = (b, x, y, pad) => x >= b[0] - pad && x <= b[2] + pad && y >= b[1] - pad && y <= b[3] + pad;
+  const QUIT = { x: 122, y: 62, w: 204, h: 84 }, ENDC = { y: 960, w: 880, h: 600 }, ENDB = { y: 1146, w: 380, h: 150, gap: 36 };      
+  function hit(xd, yd) {                               
+    const xi = (xd - MX) / MS, yi = (yd - MY) / MS;
+    if (S.phase === 'end') {
+      const cx = S.more ? [W / 2 - ENDB.w / 2 - ENDB.gap / 2, W / 2 + ENDB.w / 2 + ENDB.gap / 2] : [null, W / 2];
+      if (S.more && Math.abs(xd - cx[0]) < ENDB.w / 2 && Math.abs(yd - ENDB.y) < ENDB.h / 2) return 'more';
+      if (Math.abs(xd - cx[1]) < ENDB.w / 2 && Math.abs(yd - ENDB.y) < ENDB.h / 2) return 'end';
+      return null;
+    }
+    if (S.phase === 'ready' && Math.abs(xd - (QUIT.x + 22)) < QUIT.w / 2 + 8 && Math.abs(yd - QUIT.y) < QUIT.h / 2 + 8) return 'quit';
+    if (inBox(D.go.box, xi, yi, 10)) return 'go';
+    if (inBox(D.see.box, xi, yi, 6)) return 'see';
+    return null;
+  }
+  function act(what) {
+    if (!S || S.hold) return false;
+    if (what === 'go') return pressGo();
+    if (what === 'see') return pressSee();
+    if (what === 'more') return pressMore();
+    if (what === 'end') return pressEnd();
+    if (what === 'quit') return pressQuit();
+    return false;
+  }
+  function onDown(e) {
+    if (!S) return; e.preventDefault(); e.stopPropagation();
+    const r = cv.getBoundingClientRect(); if (!r.width) return;
+    const what = hit((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H);
+    if (S.phase === 'res' && S.pop && !S.hold) { S.skip = S.t; }      
+    if (what) act(what);
+  }
+
+  
+  function pf(pts, fill) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); g.fillStyle = fill; g.fill(); g.strokeStyle = fill; g.stroke(); }
+  function label(txt, x, y, size, fill, edge, ew, align) {
+    g.font = `700 ${size}px ${FONT}`; g.textAlign = align || 'center'; g.textBaseline = 'middle';
+    if (edge) { g.lineJoin = 'round'; g.lineWidth = ew; g.strokeStyle = edge; g.strokeText(txt, x, y); }
+    g.fillStyle = fill; g.fillText(txt, x, y);
+  }
+  function chip(cx, cy, w, h, txt, size, o) {          
+    o = o || {}; const k = 22;
+    g.save(); g.globalAlpha *= o.a == null ? 1 : o.a; g.translate(cx, cy); g.scale(o.s || 1, o.s || 1); g.lineWidth = 0.8;
+    pf([[-w / 2 + 6, -h / 2 + 8], [w / 2 + 6, -h / 2 + 8], [w / 2 + 6, h / 2 + 8], [-w / 2 + 6, h / 2 + 8]], 'rgba(40,20,5,0.26)');
+    pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], o.gold ? '#f6c24a' : '#fff8ec');
+    pf([[-w / 2, h * 0.08], [w / 2, h * 0.08], [w / 2, h / 2], [-w / 2, h / 2]], o.gold ? '#eaae32' : '#f8ecd4');
+    pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], o.gold ? '#c98a1c' : '#e6cf9f');
+    g.strokeStyle = o.gold ? '#8a5a12' : '#d9b77c'; g.lineWidth = o.gold ? 4 : 3; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
+    label(txt, o.dx || 0, o.sub ? -size * 0.36 : 2, size, o.gold ? '#5b3412' : '#7a4520', o.gold ? '#fff3cf' : null, o.gold ? 6 : 0);
+    if (o.sub) label(o.sub, 0, size * 0.62, Math.round(size * 0.52), o.gold ? '#7a4a12' : '#9a7a55');
+    g.restore();
+  }
+  function tag(x, y, txt, size, a, sc, col) {          
+    if (a <= 0.003 || sc <= 0.01) return;
+    g.save(); g.globalAlpha *= a; g.translate(x, y); g.scale(sc, sc);
+    g.font = `700 ${size}px ${FONT}`; const w = g.measureText(txt).width + size * 1.0, h = size * 1.55, c = size * 0.38; g.lineWidth = 0.8;
+    pf([[-w / 2 + 4, -h / 2 + 6], [w / 2 + 4, -h / 2 + 6], [w / 2 + 4, h / 2 + 6], [-w / 2 + 4, h / 2 + 6]], 'rgba(40,20,5,0.18)');
+    pf([[-w / 2, -h / 2], [w / 2 - c, -h / 2], [w / 2, -h / 2 + c], [w / 2, h / 2], [-w / 2, h / 2]], '#fff8ea');
+    pf([[-w / 2, 0.06 * h], [w / 2, 0.06 * h], [w / 2, h / 2], [-w / 2, h / 2]], '#f6e8cc');
+    pf([[w / 2 - c, -h / 2], [w / 2, -h / 2 + c], [w / 2 - c, -h / 2 + c]], '#e3c993');
+    label(txt, 0, 1, size, col || '#7a4520');
+    g.restore();
+  }
+  function star(x, y, r, a) {                          
+    if (a <= 0.01 || r <= 0.2) return;
+    g.save(); g.globalAlpha *= a; g.translate(x, y); g.fillStyle = '#fff'; g.beginPath();
+    for (let i = 0; i < 8; i++) { const rr = i % 2 ? r * 0.22 : r, an = i * TAU / 8; g.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+    g.closePath(); g.fill(); g.restore();
+  }
+  function polyPath(p) { g.beginPath(); g.moveTo(p[0][0], p[0][1]); for (let i = 1; i < p.length; i++) g.lineTo(p[i][0], p[i][1]); g.closePath(); }
+
+  
+  function ballAt(b, u) {                              
+    const p = b.p, f = u * 60, i = Math.floor(f);
+    if (i >= p.n - 1) return null;
+    const q = f - i, a = p.f, j = 3 * i;
+    return { x: lerp(a[j], a[j + 3], q) / 10, y: lerp(a[j + 1], a[j + 4], q) / 10, r: lerp(a[j + 2], a[j + 5], q), f };
+  }
+  function drawBall(x, y, deg, sc, a) {
+    const r = D.ball.r * sc, n = 32, fi = ((Math.round(deg / 360 * n) % n) + n) % n, cs = 96, d = r * 2 * cs / 88;
+    g.save(); g.globalAlpha *= a == null ? 1 : a;
+    g.fillStyle = 'rgba(30,45,40,0.22)'; g.beginPath(); g.ellipse(x + r * 0.42, y + r * 0.62, r * 0.92, r * 0.8, 0, 0, TAU); g.fill();      
+    g.drawImage(IM.ball, (fi % 8) * cs, Math.floor(fi / 8) * cs, cs, cs, x - d / 2, y - d / 2, d, d);
+    g.restore();
+  }
+  function drawFront(x, y, r) {                        
+    const F = D.front, x0 = Math.max(F[0], Math.floor(x - r - 3)), y0 = Math.max(F[1], Math.floor(y - r - 3)), x1 = Math.min(F[0] + F[2], Math.ceil(x + r + 3)), y1 = Math.min(F[1] + F[3], Math.ceil(y + r + 3));
+    if (x1 <= x0 || y1 <= y0) return;
+    g.drawImage(IM.front, x0 - F[0], y0 - F[1], x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+  }
+
+  
+  
+  
+  function auraK(L) {                                  
+    const tn = TONE[L.c], u = S.t - L.t0;
+    let k = sm(u / 0.14) * (u < tn.len ? 1 : lerp(1, tn.keep, sm((u - tn.len) / 0.7)));
+    if (L.off != null) k *= 1 - sm((S.t - L.off) / 0.3);
+    return k;
+  }
+  const auraStrong = L => { const tn = TONE[L.c], u = S.t - L.t0; return u < tn.len ? 1 : 1 - sm((u - tn.len) / 0.7); };      
+  function auraDim(L) {                                
+    const tn = TONE[L.c], st = auraStrong(L), k = auraK(L) * (0.3 + 0.7 * st); if (k <= 0.004) return;
+    g.fillStyle = `rgba(14,8,26,${tn.dim * k})`; g.fillRect(0, 0, D.img[0], D.img[1]);
+  }
+  function hueAt(x) { const i = Math.floor(x), q = sm(x - i), a = HUES[((i % 7) + 7) % 7], b = HUES[(((i + 1) % 7) + 7) % 7]; return [0, 1, 2].map(j => Math.round(lerp(a[j], b[j], q))); }      
+  function drawAura(L) {
+    const c = L.c, tn = TONE[c], u = S.t - L.t0, k = auraK(L); if (k <= 0.004) return;
+    const [cx, cy, , rr] = D.lcd, cm = calm(), st = auraStrong(L), G = glows();
+    const br = cm ? 1 : 0.92 + 0.08 * Math.sin(TAU * 1.1 * u);                      
+    const R = rr * (1 + (tn.R - 1) * (0.62 + 0.38 * st)) * (cm ? 0.9 : 1);
+    const col = c === 6 ? [255, 250, 240] : tn.rgb, ka = c === 6 ? 0.45 : 1;
+    g.save();
+    
+    let gr = g.createRadialGradient(cx, cy, rr * 0.75, cx, cy, R);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${0.78 * ka * tn.a * k * br})`); gr.addColorStop(0.4, `rgba(${col[0]},${col[1]},${col[2]},${0.4 * ka * tn.a * k * br})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+    if (c === 6) for (let pass = 0; pass < 2; pass++) {      
+      g.globalCompositeOperation = pass ? 'lighter' : 'source-over';
+      for (let i = 0; i < 7; i++) {
+        const an = i * TAU / 7 + (cm ? 0 : u * 0.3), d = rr + (R - rr) * 0.36, sz = (R - rr) * 0.6 + rr * 0.55;
+        g.globalAlpha = (pass ? 0.34 : 0.62) * k * br;
+        g.drawImage(G.hue[i], cx + Math.cos(an) * d - sz, cy + Math.sin(an) * d - sz, sz * 2, sz * 2);
+      }
+      g.globalAlpha = 1;
+    }
+    g.globalCompositeOperation = 'lighter';
+    gr = g.createRadialGradient(cx, cy, rr * 0.8, cx, cy, rr + (R - rr) * 0.7);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${0.5 * ka * tn.a * k * br})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
+    
+    if (tn.rays && !cm) {
+      const rot = u * 0.055 * TAU, len = R * 1.12;
+      for (let i = 0; i < tn.rays; i++) {
+        const an = rot + i * TAU / tn.rays, w = TAU / tn.rays * 0.22, rc = c === 6 ? HUES[i % 7] : tn.rgb, al = (i % 2 ? 0.22 : 0.4) * tn.a * k * (0.3 + 0.7 * st);
+        const lg = g.createLinearGradient(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr, cx + Math.cos(an) * len, cy + Math.sin(an) * len);
+        lg.addColorStop(0, `rgba(${rc[0]},${rc[1]},${rc[2]},${al})`); lg.addColorStop(1, `rgba(${rc[0]},${rc[1]},${rc[2]},0)`);
+        g.fillStyle = lg; g.beginPath(); g.moveTo(cx + Math.cos(an - w * 0.3) * rr * 0.96, cy + Math.sin(an - w * 0.3) * rr * 0.96);
+        g.lineTo(cx + Math.cos(an - w) * len, cy + Math.sin(an - w) * len); g.lineTo(cx + Math.cos(an + w) * len, cy + Math.sin(an + w) * len); g.lineTo(cx + Math.cos(an + w * 0.3) * rr * 0.96, cy + Math.sin(an + w * 0.3) * rr * 0.96); g.closePath(); g.fill();
+      }
+    }
+    
+    const nt = cm ? Math.ceil(tn.nt * 0.6) : tn.nt, base = rr * tn.tl * (0.5 + 0.5 * st) * (0.55 + 0.45 * sm(u / 0.3));
+    for (let pass = 0; pass < 2; pass++) {             
+      g.globalCompositeOperation = pass ? 'lighter' : 'source-over';
+      for (let i = 0; i < nt; i++) {
+        const h1 = hash(i * 3.71 + c * 1.3), h2 = hash(i * 7.13 + c * 0.7), h3 = hash(i * 1.37 + c * 2.9);
+        const an = i * TAU / nt + (cm ? 0 : 0.16 * Math.sin(TAU * (0.21 + 0.17 * h1) * u + TAU * h2)), up = (1 - Math.sin(an)) / 2;
+        const wob = cm ? 0.75 : 0.5 + 0.5 * Math.sin(TAU * (0.5 + 0.42 * h2) * u + TAU * h3);
+        const len = base * (0.5 + 0.5 * wob) * (0.62 + 0.9 * up * up) * (0.75 + 0.5 * h1) + rr * 0.35, wd = rr * (0.36 + 0.07 * c) * (0.75 + 0.5 * h3);
+        g.globalAlpha = Math.min(1, (pass ? 0.42 : 0.5) * tn.a * k * (0.6 + 0.4 * wob));
+        g.save(); g.translate(cx + Math.cos(an) * rr * 0.7, cy + Math.sin(an) * rr * 0.7); g.rotate(an);
+        g.drawImage(c === 6 ? G.thue[(i + Math.floor(u * 0.6)) % 7] : G.tong[c], 0, -wd / 2, len, wd);
+        g.restore();
+      }
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
+    
+    const np = cm ? 0 : 4 + c * 3;
+    for (let i = 0; i < np; i++) {
+      const per = 1.1 + 0.9 * hash(i * 3.1 + c), x0 = u / per + hash(i * 7.7 + c * 1.3), ph = x0 % 1, cyc = Math.floor(x0);
+      const an = TAU * hash(i * 1.9 + c * 0.7 + cyc * 0.37), d0 = rr * (0.95 + 0.5 * hash(i * 5.3 + cyc)), rise = ph * rr * (0.7 + 0.28 * c) * (0.5 + 0.5 * st);
+      const sz = rr * (0.16 + 0.03 * c) * (1 - 0.5 * ph), al = Math.sin(Math.PI * ph) * 0.8 * k;
+      if (al <= 0.01) continue;
+      g.globalAlpha = Math.min(1, al);
+      g.drawImage(c === 6 ? G.hue[(i + cyc) % 7] : G.tone[c], cx + Math.cos(an) * d0 - sz, cy + Math.sin(an) * d0 * 0.9 - rise - sz, sz * 2, sz * 2);
+    }
+    g.globalAlpha = 1;
+    
+    if (c >= 4 && !cm) for (let j = 0; j < (c === 6 ? 2 : 1); j++) {
+      const v = (u - 0.05 - j * 0.3) / 0.8; if (v <= 0 || v >= 1) continue;
+      const rc = c === 6 ? HUES[(j * 3 + 1) % 7] : tn.rgb;
+      g.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${0.75 * (1 - v) * tn.a})`; g.lineWidth = rr * 0.22 * (1 - 0.6 * v);
+      g.beginPath(); g.arc(cx, cy, rr * (1 + (tn.R * 1.1 - 1) * easeOut(v)), 0, TAU); g.stroke();
+    }
+    g.restore();
+  }
+  function drawRim(L) {                                
+    const k = auraK(L); if (k <= 0.004) return;
+    const [cx, cy, , rr] = D.lcd, c = L.c, u = S.t - L.t0, col = c === 6 ? hueAt(u * 0.9) : TONE[c].rgb, x0 = Math.floor(cx - rr - 2), y0 = Math.floor(cy - rr - 2), w = Math.ceil(rr * 2 + 4);
+    g.save(); g.globalAlpha = Math.min(1, k * 1.4); g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.clip(); g.drawImage(IM.base, x0, y0, w, w, x0, y0, w, w); g.restore();
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(cx, cy, rr * 0.74, cx, cy, rr * 1.2);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.5, `rgba(${col[0]},${col[1]},${col[2]},${0.42 * k})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rr * 1.2, 0, TAU); g.fill(); g.restore();
+  }
+  function drawSpark(L) {                              
+    const c = L.c, tn = TONE[c], u = S.t - L.t0, k = auraK(L); if (c < 3 || k <= 0.004) return;
+    const [cx, cy, , rr] = D.lcd, cm = calm();
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < (cm ? 4 : 5 + (c - 3) * 6); i++) {
+      const per = 1.2 + 0.8 * hash(i * 4.1 + 9), x0 = u / per + hash(i * 6.3 + 2), ph = x0 % 1, cyc = Math.floor(x0);
+      const an = TAU * hash(i * 2.7 + cyc * 0.61 + c), d = rr * (1.2 + (tn.R * 0.8 - 1.2) * hash(i * 3.3 + cyc * 0.17));
+      star(cx + Math.cos(an) * d, cy + Math.sin(an) * d * 0.92, rr * (0.16 + 0.05 * c) * Math.sin(Math.PI * ph), Math.sin(Math.PI * ph) * 0.9 * k);
+    }
+    g.restore();
+  }
+  function drawLcd(L) {                                
+    const [cx, cy, r] = D.lcd, u = S.t - L.t0, k = L.off != null ? 1 - sm((S.t - L.off) / 0.25) : 1; if (k <= 0.004) return;
+    const s = calm() ? 1 : 0.86 + 0.14 * backOut(u / 0.3);
+    g.save(); g.beginPath(); g.arc(cx, cy, r + 1.5, 0, TAU); g.clip();
+    g.globalAlpha = k * sm(u / 0.08);
+    const im = IM.uma[L.c], d = r * 2 * s * (im.width / (im.width - 4));
+    g.drawImage(im, cx - d / 2, cy - d / 2, d, d);
+    const fl = 1 - sm(u / 0.32);                       
+    if (fl > 0.01) { g.globalAlpha = 0.7 * fl * k; g.fillStyle = '#fff'; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4); }
+    g.restore();
+  }
+
+  
+  function sizeUp() {
+    const ref = stageEl.querySelector('canvas.tco'), w = ref ? ref.width : Math.round(stageEl.clientWidth * Math.min(window.devicePixelRatio || 1, 3)), h = Math.round(w * H / W);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    K = cv.width / W;
+    const key = cv.width + 'x' + cv.height;
+    if (cacheKey !== key || !cache) {                  
+      cache = document.createElement('canvas'); cache.width = cv.width; cache.height = cv.height; cacheKey = key;
+      const q = cache.getContext('2d'); q.imageSmoothingQuality = 'high';
+      q.drawImage(IM.base, K * MX, K * MY, K * D.img[0] * MS, K * D.img[1] * MS);
+    }
+  }
+  function step(dt) {
+    S.t += dt;
+    for (let pass = 0; pass < 4; pass++) {             
+      const due = S.sched.filter(q => q.t <= S.t); if (!due.length) break;
+      S.sched = S.sched.filter(q => q.t > S.t);
+      for (const q of due.sort((a, b) => a.t - b.t)) { try { q.fn(); } catch (e) {   } if (!S) return; }
+    }
+    if (S.skip != null && S.pop) {                     
+      for (const q of S.sched) q.t = Math.min(q.t, S.t + 0.12);
+      S.skip = null;
+    }
+    const b = S.ball;
+    if (b) {
+      const u = S.t - b.t0, f = u * 60, p = b.p;
+      while (b.hi < p.h.length && p.h[b.hi][0] <= f) {                              
+        const hh = p.h[b.hi++], gain = clamp(0.22 + hh[3] / 95, 0.22, 1);
+        if (hh[1] === 0) { se('dp_peg' + (1 + hh[2] % 3), gain); S.fx.push({ k: 'peg', t0: S.t, i: hh[2], a: gain }); }
+        else if (b.inT == null) se('dp_peg1', gain * 0.5);
+      }
+      if (b.inT == null && f >= p.tin) ballIn(b);
+      if (f >= p.n - 1) S.ball = null;
+    }
+    S.old = S.old.filter(q => (S.t - q.t0) * 60 < q.p.n - 1);
+    S.fx = S.fx.filter(q => S.t - q.t0 < 0.7);
+    if (S.lcd && S.lcd.off != null && S.t - S.lcd.off > 0.4) S.lcd = null;
+  }
+  function draw() {
+    const t = S.t, cm = calm();
+    const hk = S.hold ? sm((t - S.holdT) / 0.25) : 1 - sm((t - S.holdT) / 0.3), op = +(1 - hk).toFixed(3);      
+    if (op !== S.op) { S.op = op; cv.style.opacity = String(op); }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+    const veil = sm(t / 0.3);                          
+    const vg = g.createLinearGradient(0, 0, 0, cv.height);
+    vg.addColorStop(0, `rgba(22,13,8,${0.96 * veil})`); vg.addColorStop(0.2, `rgba(22,13,8,${0.93 * veil})`); vg.addColorStop(0.5, `rgba(24,14,8,${0.88 * veil})`); vg.addColorStop(1, `rgba(24,14,8,${0.9 * veil})`);
+    g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
+    
+    const rise = cm ? 0 : (1 - easeOut(t / 0.4)) * 90 * K;
+    g.globalAlpha = sm(t / 0.25); g.drawImage(cache, 0, rise); g.globalAlpha = 1;
+    const TI = () => g.setTransform(K * MS, 0, 0, K * MS, K * MX, K * MY + rise), TS = () => g.setTransform(K, 0, 0, K, 0, rise);      
+    TI(); g.lineJoin = 'round';
+    
+    const L = S.lcd;
+    if (L) auraDim(L);
+    
+    const canGo = S.phase === 'ready' && !S.ball && t >= S.lock && S.n < S.max;
+    if (!canGo) { polyPath(D.go.poly); g.fillStyle = 'rgba(60,34,40,0.36)'; g.fill(); }
+    const pg = t - (S.press.go == null ? -9 : S.press.go);
+    if (pg >= 0 && pg < 0.3) { polyPath(D.go.poly); g.fillStyle = `rgba(255,255,255,${0.55 * (1 - pg / 0.3)})`; g.fill(); }
+    if (canGo) { const u = t - Math.max(S.lock, S.roundT + 0.45), a = sm(u / 0.25), pu = cm ? 0.6 : 0.5 + 0.5 * Math.sin(TAU * 0.8 * u); polyPath(D.go.poly); g.strokeStyle = `rgba(255,244,190,${a * (0.35 + 0.55 * pu)})`; g.lineWidth = 9; g.stroke(); }      
+    if (S.phase === 'wait' || S.phase === 'res') {     
+      const o = D.see.open, a = sm((t - S.unlockT) / 0.2);
+      g.globalAlpha = a; g.drawImage(IM.see, o[0], o[1], o[2], o[3]); g.globalAlpha = 1;
+      if (S.phase === 'wait') { const pu = cm ? 0.6 : 0.5 + 0.5 * Math.sin(TAU * 0.8 * (t - S.unlockT)); polyPath(D.see.poly); g.strokeStyle = `rgba(255,236,150,${a * (0.45 + 0.5 * pu)})`; g.lineWidth = 9; g.stroke(); g.fillStyle = `rgba(255,255,255,${a * 0.1 * pu})`; g.fill(); }
+      const ps = t - (S.press.see == null ? -9 : S.press.see);
+      if (ps >= 0 && ps < 0.3) { polyPath(D.see.poly); g.fillStyle = `rgba(255,255,255,${0.5 * (1 - ps / 0.3)})`; g.fill(); }
+    } else { polyPath(D.see.poly); g.fillStyle = 'rgba(40,60,54,0.26)'; g.fill(); }
+    
+    for (const h of S.holds) {
+      const x = D.hold.x[h.slot], y = D.hold.y, w = D.hold.w;
+      if (h.state === 'fly') continue;
+      let s = h.t != null && h.t > -5 ? backOut((t - h.t) / 0.32) : 1, a = 1;
+      if (h.state === 'show') s *= cm ? 1.06 : 1.08 + 0.06 * Math.sin(TAU * 1.2 * (t - h.showT));
+      if (h.state === 'done') { const v = sm((t - h.doneT) / 0.28); s *= 1 - 0.5 * v; a = 1 - v; }
+      if (a <= 0.01) continue;
+      if (h.state === 'show') { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.75; const G = glows(); g.drawImage(h.c === 6 ? G.hue[Math.floor(t * 3) % 7] : G.tone[h.c], x - w * 1.1, y - w * 1.1, w * 2.2, w * 2.2); g.restore(); }
+      g.globalAlpha = a; g.drawImage(IM.hold[h.c], x - w * s / 2, y - w * s / 2, w * s, w * s); g.globalAlpha = 1;
+    }
+    
+    if (S.next && !S.ball && S.n < S.max) { const u = t - S.next.t0, v = backOut(u / 0.3); drawBall(D.ball.start[0], D.ball.start[1] - (1 - Math.min(1, v)) * 46, 0, 0.6 + 0.4 * Math.min(1, v), sm(u / 0.12)); }
+    
+    for (const b of S.old.concat(S.ball ? [S.ball] : [])) {
+      const q = ballAt(b, t - b.t0);
+      if (q) {
+        const u = t - b.t0, hop = 1 + 0.1 * Math.sin(Math.PI * clamp(u / 0.34, 0, 1));      
+        drawBall(q.x, q.y, q.r, hop, 1); drawFront(q.x, q.y, D.ball.r * hop + 8);
+      }
+    }
+    
+    for (const f of S.fx) {
+      const u = t - f.t0;
+      if (f.k === 'peg' && u < 0.16) { const p = D.pegs[f.i]; if (p) star(p[0], p[1], 20 * (0.6 + 0.6 * f.a) * (1 - u / 0.16), 0.85 * (1 - u / 0.16)); }
+      if (f.k === 'cup' && u < 0.45) { const p = D.cups[f.cup], v = u / 0.45; g.strokeStyle = `rgba(255,255,255,${0.8 * (1 - v)})`; g.lineWidth = 7 * (1 - 0.5 * v); g.beginPath(); g.ellipse(p[0], p[1] - 4, 44 + 46 * easeOut(v), 14 + 14 * easeOut(v), 0, 0, TAU); g.stroke(); }
+    }
+    
+    if (S.max > 0 && (S.phase === 'ready' || S.phase === 'fall')) {
+      const bx = D.go.box[2] - 26, by = D.go.box[1] + 4, left = S.max - S.n, pb = t - (S.press.go == null ? -9 : S.press.go), sc = pb >= 0 && pb < 0.3 ? 1 + 0.18 * Math.sin(Math.PI * pb / 0.3) : 1;
+      g.save(); g.translate(bx, by); g.scale(sc, sc);
+      g.fillStyle = 'rgba(60,30,10,0.28)'; g.beginPath(); g.arc(3, 5, 47, 0, TAU); g.fill();
+      g.fillStyle = '#fff8ec'; g.beginPath(); g.arc(0, 0, 47, 0, TAU); g.fill(); g.strokeStyle = '#e0a21f'; g.lineWidth = 6; g.stroke();
+      label('あと', 0, -24, 22, '#9a6a1c'); label(String(left), -8, 10, 46, left > 0 ? '#c2362b' : '#a89a88'); label('こ', 25, 16, 22, '#9a6a1c');
+      g.restore();
+    }
+    
+    if (L) { drawAura(L); drawRim(L); drawLcd(L); drawSpark(L); }
+    for (const h of S.holds) if (h.state === 'fly' && t >= h.fly) {
+      const v = clamp((t - h.fly) / FLY, 0, 1), e = sm(v), x0 = D.lcd[0], y0 = D.lcd[1], x1 = D.hold.x[h.slot], y1 = D.hold.y;
+      const x = lerp(x0, x1, e), y = lerp(y0, y1, e) - Math.sin(Math.PI * e) * 70, G = glows(), sz = 70 - 22 * e;
+      g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(h.c === 6 ? G.hue[Math.floor(t * 12) % 7] : G.tone[h.c], x - sz, y - sz, sz * 2, sz * 2); g.restore();
+    }
+    
+    TS();
+    const ia = sm((t - 0.25) / 0.3);
+    
+    const canQuit = S.phase === 'ready' && !S.ball && t >= S.lock, qa = S.phase === 'ready' || S.phase === 'fall' ? ia * (canQuit ? 1 : 0.4) : 0;      
+    const early = S.n > 0 || S.holds.length > 0;      
+    if (qa > 0.01) chip(QUIT.x + 22, QUIT.y, QUIT.w, QUIT.h, early ? '投入終了' : 'やめる', early ? 36 : 34, { a: qa, dx: early ? 0 : 20 });
+    if (!early) { g.save(); g.globalAlpha *= qa; g.strokeStyle = '#7a4520'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath();      
+      g.moveTo(QUIT.x - 62, QUIT.y - 12); g.lineTo(QUIT.x - 38, QUIT.y + 14); g.moveTo(QUIT.x - 38, QUIT.y - 12); g.lineTo(QUIT.x - 62, QUIT.y + 14); g.stroke(); g.restore(); }
+    
+    g.save(); g.globalAlpha *= ia; g.translate(W - 148, 74); g.lineWidth = 0.8;
+    pf([[-125, -52], [135, -52], [135, 66], [-125, 66]], 'rgba(40,20,5,0.2)');
+    pf([[-130, -58], [108, -58], [130, -36], [130, 58], [-130, 58]], '#fff8ec'); pf([[-130, 6], [130, 6], [130, 58], [-130, 58]], '#f8ecd4'); pf([[108, -58], [130, -36], [108, -36]], '#e6cf9f');
+    label('お世話トークン', 0, -30, 27, '#7a4520');
+    const stock = API.stock(); label('のこり', -62, 22, 28, '#9a7a55'); label(String(stock), 34, 20, 52, '#3f7f3a', '#fff8ec', 6); label('こ', 96, 24, 26, '#9a7a55');
+    g.restore();
+    const hi = API.high ? API.high() : 0;
+    if (hi > 0) tag(W - 148, 168, `高確ゾーン あと ${hi}回`, 26, ia, 1, '#c2362b');
+    
+    if (S.phase === 'wait') { const u = t - S.unlockT - 0.35, k2 = sm(u / 0.25); if (k2 > 0) { const p = [MX + (D.see.box[0] + D.see.box[2]) / 2 * MS, MY + D.see.box[1] * MS - 30]; tag(p[0], p[1] + (cm ? 0 : 5 * Math.sin(TAU * 0.9 * u)), 'タップ！', 40, k2, 1, '#2f7f5f'); } }
+    
+    if (S.phase === 'none' && S.none != null) { const u = t - S.none; tag(W / 2, 760, 'ざんねん… 当たりは なかったよ', 38, sm(u / 0.2) * (1 - sm((u - 1.2) / 0.3)), backOut(u / 0.3), '#7a4520'); }
+    
+    if (S.cue) { const u = t - S.cue.t0; if (u > 1.3) S.cue = null; else tag(W / 2, 700, S.cue.txt, 56, sm(u / 0.12) * (1 - sm((u - 1.0) / 0.25)), backOut(u / 0.3) * (cm ? 1 : 1 + 0.04 * Math.sin(TAU * 1.4 * u)), '#c2362b'); }
+    
+    if (S.pop) {
+      const u = t - S.pop.t0; if (u > 1.6) S.pop = null; else {
+        const a = sm(u / 0.1) * (1 - sm((u - 1.25) / 0.3)), s = backOut(u / 0.3);
+        g.save(); g.globalAlpha *= a; g.translate(W / 2, 700 - (cm ? 0 : 14 * easeOut(u / 0.8))); g.scale(s, s); g.lineWidth = 0.8;
+        pf([[-205, -78], [215, -78], [215, 96], [-205, 96]], 'rgba(40,20,5,0.22)');
+        pf([[-210, -86], [176, -86], [210, -52], [210, 86], [-210, 86]], '#fff8ea'); pf([[-210, 10], [210, 10], [210, 86], [-210, 86]], '#f6e8cc'); pf([[176, -86], [210, -52], [176, -52]], '#e3c993');
+        label(`＋${Number(S.pop.v).toLocaleString('ja-JP')}`, -22, 4, 96, '#c2362b', '#fff8ea', 8); label('P', 150, 16, 64, '#c2362b', '#fff8ea', 6);
+        g.restore();
+      }
+    }
+    
+    if (S.phase === 'end' && S.endT != null) {
+      const u = t - S.endT, a = sm(u / 0.25), w = ENDC.w, h = ENDC.h, k = 36;
+      g.fillStyle = `rgba(20,12,6,${0.55 * a})`; g.fillRect(0, 0, W, H);
+      g.save(); g.globalAlpha *= a; g.translate(W / 2, ENDC.y); const sc = cm ? 1 : backOut(u / 0.35); g.scale(sc, sc); g.lineWidth = 0.8;
+      pf([[-w / 2 + 6, -h / 2 + 10], [w / 2 + 8, -h / 2 + 10], [w / 2 + 8, h / 2 + 10], [-w / 2 + 6, h / 2 + 10]], 'rgba(40,20,5,0.3)');
+      pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], '#fff8ec'); pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], '#e6cf9f');
+      g.strokeStyle = '#e0a21f'; g.lineWidth = 5; g.lineJoin = 'miter'; g.beginPath(); g.moveTo(-w / 2 + 14, -h / 2 + 14); g.lineTo(w / 2 - k - 8, -h / 2 + 14); g.lineTo(w / 2 - 14, -h / 2 + k + 8); g.lineTo(w / 2 - 14, h / 2 - 14); g.lineTo(-w / 2 + 14, h / 2 - 14); g.closePath(); g.stroke(); g.lineWidth = 0.8; g.lineJoin = 'round';      
+      label('お世話チャレンジ', 0, -h / 2 + 70, 40, '#7a4520');
+      label('今回の 当たり', 0, -h / 2 + 136, 30, '#9a7a55');
+      const got = [S.sum > 0 ? `＋${Number(S.sum).toLocaleString('ja-JP')}P` : '', S.tk > 0 ? `チケット ${S.tk}枚` : ''].filter(Boolean);
+      if (got.length) label(got.join('・'), 0, -h / 2 + 208, got.length > 1 ? 58 : 76, '#c2362b', '#fff8ec', 8);
+      else label('なし… また チャレンジしてね', 0, -h / 2 + 204, 40, '#8a7a66');
+      label(`お世話トークン のこり ${API.stock()}こ`, 0, -h / 2 + 290, 32, '#3f7f3a');
+      label(S.more ? 'もう 1回（玉 5こ）できるよ' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが 5こ たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
+      g.restore();
+      const pm = t - (S.press.more == null ? -9 : S.press.more);
+      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '玉を 5こ 落とす' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
+      else chip(W / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.08) / 0.3) });
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  function frame(tn) {
+    if (!S) return;
+    raf = requestAnimationFrame(frame);
+    const dt = lastNow ? clamp((tn - lastNow) / 1000, 0, 0.1) : 1 / 60; lastNow = tn;
+    if (T.manual) return;                              
+    sizeUp();
+    step(dt * (T.speed || 1));
+    if (!S) return;
+    draw();
+  }
+  T.tick = dt => { if (!S) return false; sizeUp(); step(dt); if (S) draw(); return !!S; };      
+
+  return { load, ready, open, close, isOpen, BALLS, TONE, NAME,
+    _t: T, get state() { return S; }, get data() { return D; },
+    tap: what => !!act(what),                          
+    
+    geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
+      return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
+    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null), ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
+})();
+
+;
+
+
+
+
+
+
 const TCApp = (() => {
   const W = 1052, H = 1657;
   const SK = 'tengel.tc';
@@ -4603,7 +5285,7 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null });      
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null, dp: null });      
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -4689,6 +5371,7 @@ const TCApp = (() => {
     
     
     if (e.k === 'token') { st.cares += 1; st.total = (st.total || 0) + 1; st.rs.n = (st.rs.n || 0) + 1; if (TCCare.on) st.stock = TCCare.S.stock; touch(); save(); later.push(() => growCheck()); }      
+    if (e.mute) return;                                
     let nm = SE_VAR[e.k] ? SE_VAR[e.k](e) : (e.k in SE_SKIP ? SE_SKIP[e.k] : e.k);
     if (!nm) return;
     const lag = Math.max(0, e.t - clock());
@@ -4894,7 +5577,7 @@ const TCApp = (() => {
   
   
   const careIdle = () => careFree() && !(TCCare.on && TCCare.S.push);
-  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()));
+  const panelOpen = () => !!((window.TCPlan && TCPlan.isOpen && TCPlan.isOpen()) || (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) || (window.TCTest && TCTest.isOpen && TCTest.isOpen()) || (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()) || (window.TCDrop && TCDrop.isOpen && TCDrop.isOpen()));
   const rsLeft = gms => (st.rs.at ? Math.max(0, Math.min((st.rs.at + RESET_MIN * 60000 - gms) / 1000, RESET_MIN * 60 - (+st.rs.el || 0))) : null);      
   const visitLeft = gms => (st.visit ? Math.max(0, Math.min((st.visit.until - gms) / 1000, VISIT_MIN * 60 - (+st.visit.el || 0))) : null);              
   const drawMax = () => (st.visit ? VISIT_DRAWS[st.visit.kind] || 0 : 0);                                       
@@ -4927,6 +5610,7 @@ const TCApp = (() => {
     const S = TCCare.S, hi = S.high > 0, k = hi ? HIGH_X : 1;
     if (hi) { S.high -= 1; S.highBump = clock(); st.high = S.high; touch(); }
     if (testPrize !== undefined) { const z = testPrize; testPrize = undefined; return z ? JSON.parse(JSON.stringify(z)) : null; }      
+    if (testList.length) { const z = testList.shift(); return z ? Object.assign(JSON.parse(JSON.stringify(z)), z.k === 'tk' && !z.n ? { n: 1 } : {}) : null; }      
     const r = Math.random(); let a = 0, tab = st.visit ? PRIZES_VISIT[st.visit.kind] || PRIZES : PRIZES;
     for (const [p, z] of tab) { a += p * k; if (r < a) return Object.assign({}, z, z.k === 'tk' ? { n: tkCount() } : {}); }
     return null;
@@ -4935,13 +5619,17 @@ const TCApp = (() => {
   
   
   
+  function prep(z) {                                   
+    z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
+    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
+    if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      
+    return z;
+  }
   function lottery() {                                 
     const z = draw(); if (!z) return null;
     if (st.pend) give(st.pend);                                  
-    z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (TCCare.on && TCCare.S.stock !== st.stock) st.stock = TCCare.S.stock;      
-    if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
-    if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      
+    prep(z);
     st.pend = JSON.parse(JSON.stringify(z)); touch(); save();
     return z;
   }
@@ -4954,6 +5642,7 @@ const TCApp = (() => {
     else if (z.k === 'zn') { v = +z.v > 0 ? +z.v : zoneV(z.n); grant(v, 'トレーニングセンターの ポイント特化ゾーン', z.id); }
     else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
     if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
+    if (z.id && st.dp && Array.isArray(st.dp.holds)) st.dp.holds = st.dp.holds.filter(q => q.id !== z.id);      
     touch(); save();
     return v;
   }
@@ -4961,7 +5650,13 @@ const TCApp = (() => {
     if (z.k === 'pt') { give(z); return; }
     if (busy || !window.TCFX) { give(z); if (ov) paintHead(); return; }      
     busy = true; TCCare.roulette(true);
-    try {
+    try { await prizeFx(z); } finally { busy = false; TCCare.roulette(false); }
+  }
+  
+  
+  async function prizeFx(z) {
+    let got = 0;
+    {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
@@ -4970,11 +5665,11 @@ const TCApp = (() => {
         
         
         SND.bgm(z.tier === 'kamisama' ? 'none' : 'roulette');
-        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); give(z); }      
+        try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); got = give(z); }      
       } else if (z.k === 'zn') {
         
         SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
-        try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { give(z); }
+        try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { got = give(z); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         
@@ -4982,7 +5677,8 @@ const TCApp = (() => {
         try { await TCFX.ticket(cvFx, { n, bg: fieldName(), se: SND.se, puchun: true }); } finally { give(z); paintHead(); }
         msg(`🎫 チケット ${n}枚 GET！\n設定の「着せ替え」で\n壁紙か ${TKP()}P を\n選べるよ`, 4.4);      
       }
-    } finally { busy = false; TCCare.roulette(false); }
+    }
+    return got;
   }
   
   
@@ -4993,6 +5689,79 @@ const TCApp = (() => {
   function grant(v, what, id) {
     const w = window.TengelWallet;
     if (w && typeof w.grant === 'function' && v > 0) w.grant(id || ('tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36)), v, what).catch(() => { });
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const dropTone = z => (!z ? 0 : z.k === 'tk' ? 6 : z.k === 'zn' ? 5 : z.k === 'rt' ? (z.vis === 'kamisama' ? 6 : z.vis === 'maboroshi' ? 5 : z.tier === 'kamisama' ? 4 : z.tier === 'maboroshi' ? 3 : 2) : 1);
+  let dropping = false;
+  
+  const DROP_SE = ['tc_se_dp_out.m4a', 'tc_se_dp_peg1.m4a', 'tc_se_dp_peg2.m4a', 'tc_se_dp_peg3.m4a', 'tc_se_dp_cup.m4a', 'tc_se_dp_miss.m4a', 'tc_se_dp_hold.m4a', 'tc_se_dp_open.m4a',
+    'tc_se_dp_uma1.m4a', 'tc_se_dp_uma2.m4a', 'tc_se_dp_uma3.m4a', 'tc_se_dp_uma4.m4a', 'tc_se_dp_uma5.m4a', 'tc_se_dp_uma6.m4a'];
+  const dropOk = () => !!(window.TCDrop && TCDrop.ready());
+  const dropHolds = () => (st && st.dp && Array.isArray(st.dp.holds) ? st.dp.holds : []);
+  
+  
+  const dropLeft = () => { if (st.visit) { const g = tnow(); if (visitLeft(g) <= 0 || (st.rs.at && rsLeft(g) <= 0)) return 0; } return drawLeft(); };
+  const DROP = {
+    stock: () => stockNow(),
+    left: () => dropLeft(),
+    high: () => (TCCare.on ? TCCare.S.high || 0 : 0),
+    holds: () => dropHolds().map(z => JSON.parse(JSON.stringify(z))),
+    se: (name, gain) => SND.se('tc_se_' + name + '.m4a', gain),
+    
+    drop() {
+      if (!TCCare.on || TCCare.S.stock < 1 || dropLeft() < 1) return { ok: false };
+      if (!TCCare.dropUse(clock())) return { ok: false };
+      const z = draw();
+      if (!z) return { ok: true, z: null, c: 0 };
+      prep(z); z.vis = st.visit ? st.visit.kind : null; z.c = dropTone(z);
+      if (!st.dp || !Array.isArray(st.dp.holds)) st.dp = { holds: [] };
+      st.dp.holds.push(JSON.parse(JSON.stringify(z))); touch(); save();
+      return { ok: true, z, c: z.c };
+    },
+    
+    async show(z) {
+      if (z.k === 'pt' || !window.TCFX) { const v = give(z); if (ov) paintHead(); return v; }
+      return prizeFx(z);
+    },
+  };
+  async function dropOpen(resume) {
+    if (dropping || busy || resetting || !built || !dropOk() || !TCCare.on) return false;
+    dropping = true; busy = true; TCCare.roulette(true);      
+    SND.preload(DROP_SE);      
+    let r = null;
+    try { r = await TCDrop.open(stage, DROP, { resume: !!resume || dropHolds().length > 0 }); }      
+    catch (e) { r = null; }
+    finally {
+      busy = false; dropping = false; TCCare.roulette(false); testList = [];      
+      if (r && r.used > 0) TCCare.pushDone(clock());           
+      if (ov) paintHead(); ptSync();
+      if (r && !r.aborted && dropHolds().length) later.push(() => { dropResume().catch(() => { }); });      
+    }
+    return true;
+  }
+  
+  async function dropResume() {
+    if (!dropHolds().length || dropping) return;
+    let ok = dropOk();
+    if (!ok && window.TCDrop) { try { ok = await TCDrop.load(); } catch (e) { ok = false; } }
+    if (!dropHolds().length || dropping) return;
+    if (ok && !busy && !resetting && TCCare.on) { dropOpen(true); return; }
+    if (ok) { later.push(() => { setTimeout(() => dropResume().catch(() => { }), 1500); }); return; }      
+    let v = 0, tk = 0;
+    for (const z of dropHolds().slice()) { if (z.k === 'tk') tk += z.n || 1; v += give(z); }
+    if (ov) paintHead();
+    later.push(() => msg(`🎁 前の 当たり（${[v > 0 ? v.toLocaleString('ja-JP') + 'P' : '', tk > 0 ? 'チケット ' + tk + '枚' : ''].filter(Boolean).join('・')}）を 受け取ったよ`, 3.6));
   }
 
   
@@ -5065,6 +5834,7 @@ const TCApp = (() => {
   
   function testOn() { return !!(window.__TEST && window.TCTest); }
   let testPrize;                 
+  let testList = [];             
   let testGold = false;          
   const testFree = () => !!(HO && BR && !busy && !resetting && careIdle());      
   const TEST = {
@@ -5087,7 +5857,7 @@ const TCApp = (() => {
     
     async prize(z, horse) {
       if (!testOn()) return 'off';
-      if (z === undefined) { testPrize = undefined; return 'ok'; }
+      if (z === undefined) { testPrize = undefined; testList = []; return 'ok'; }
       if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
       testPrize = z ? JSON.parse(JSON.stringify(z)) : null;
       if (TCCare.S.stock < 1) TEST.tokens();          
@@ -5109,6 +5879,23 @@ const TCApp = (() => {
       if (!testFree()) return 'busy';
       if (TCCare.S.stock < 1) TEST.tokens();
       TCCare.pushShow(clock() + 0.25); return 'ok';
+    },
+    
+    
+    
+    
+    
+    async drop(list, open, horse) {
+      if (!testOn()) return 'off';
+      if (open && !dropOk()) return 'none';
+      if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
+      const Z = [null, { k: 'pt', v: 100 }, { k: 'rt', tier: 'normal' }, { k: 'rt', tier: 'maboroshi' }, { k: 'rt', tier: 'kamisama' }, { k: 'zn' }, { k: 'tk', n: 1 }];
+      testList = (Array.isArray(list) ? list : []).map(c => (c && typeof c === 'object' ? JSON.parse(JSON.stringify(c)) : Z[c] ? JSON.parse(JSON.stringify(Z[c])) : null));
+      if (!open) return 'ok';
+      if (!testFree() && !(TCCare.on && TCCare.S.push && careFree() && !busy && !resetting)) { testList = []; return 'busy'; }
+      if (TCCare.S.stock < 5) TEST.tokens();
+      if (!TCCare.S.push) TCCare.pushShow(clock());
+      dropOpen(false); return 'ok';
     },
     
     heart(win) {
@@ -5222,11 +6009,13 @@ const TCApp = (() => {
       later.push(() => msg(z.k === 'tk' ? `🎫 前の 当たり（チケット ${z.n || 1}枚）を 受け取ったよ` : `🎁 前の 当たり（${v.toLocaleString('ja-JP')}P）を 受け取ったよ`, 3.6));
     }
     accrue(tnow());
+    if (window.TCDrop) TCDrop.load().catch(() => { });      
     await Promise.all([useHorse(true), field.setField(fieldName())]); paintBg(fieldName());
     await TCCare.init({ horse: HO, brain: BR, canvas: cvOv, cs, tod: tod(), bg: st.visit ? fieldName() : '', stageNo: stageOf(st.cares),
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
+      dropOk, onDrop: () => { dropOpen(false); },      
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
@@ -5244,6 +6033,7 @@ const TCApp = (() => {
     paintHead(); layout(); accrue(tnow()); ptSync();      
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; S.ptShow = null; }
     resume();
+    if (dropHolds().length && !dropping) later.push(() => { dropResume().catch(() => { }); });      
     if (opt && opt.plan && window.TCPlan) window.TCPlan.open(ov);
     if (opt && opt.test && testOn() && !TCTest.isOpen()) TCTest.open(stage, TEST);      
   }
@@ -5251,13 +6041,14 @@ const TCApp = (() => {
     if (window.TCPlan && window.TCPlan.isOpen && window.TCPlan.isOpen()) window.TCPlan.close();
     if (window.TCGuide && TCGuide.isOpen && TCGuide.isOpen()) TCGuide.close();
     if (window.TCBuy && TCBuy.isOpen && TCBuy.isOpen()) TCBuy.close();
+    if (window.TCDrop && TCDrop.isOpen && TCDrop.isOpen()) TCDrop.close();      
     pause(); save(); if (ov) ov.classList.remove('on');
     try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (e) { }      
   }
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
-;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCApp = TCApp;
+;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;
