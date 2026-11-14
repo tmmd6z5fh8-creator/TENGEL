@@ -75,6 +75,9 @@ APP_HEAD = (APP_CSP + '<style>body{touch-action:manipulation}#gate{position:fixe
 # App Store版だけ：買い目の組と判定（reserve.js）・買い目カスタムの%（custom_rate.js）。画面（src.html）より先に読む
 APP_LIBS = ('\n<script>\n' + open('reserve.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('custom_rate.js', encoding='utf8').read() + '\n</script>') if TARGET == 'app' else ''
 APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="はじめに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
+# テスト版だけ（第4.169版：まさちゃん 11/14「テスト版のみに全てをリセットできる機能つけて！」）：ぜんぶ リセット（reset_all.js）。
+#   <head> の どの スクリプトより 先に 入れる（開き直した ときに、ほかの コードが 保存場所を 読む 前に 消す）。App Store版・Web版には 1文字も 入らない
+RESET_HEAD = ('<script>\n' + open('reset_all.js', encoding='utf8').read() + '\n</script>\n') if TEST else ''
 head = f'''<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -83,7 +86,7 @@ head = f'''<!DOCTYPE html>
 <meta name="theme-color" content="#16203D"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon3-180.png"><link rel="icon" href="icon3-192.png">
 <style>:root{{color-scheme:light;--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px),var(--top-inset2,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0;font-size:14px;-webkit-tap-highlight-color:transparent}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 {APP_HEAD}
-<script>window.__APP_VER={json.dumps(APP_VER)};{'window.__TEST=true;' if TEST else ''}window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';window.__DATA_KEY=' + json.dumps(_ds_mod.load_key().hex()) + ';' if MOTHER_HOME is not None else ''}</script>
+{RESET_HEAD}<script>window.__APP_VER={json.dumps(APP_VER)};{'window.__TEST=true;' if TEST else ''}window.__CM={json.dumps(CM)};window.__ABOUT={json.dumps(_bl.about(TARGET), ensure_ascii=False)};window.__MOTHER_VER={json.dumps(MOTHER_VER)};window.__MOTHER={json.dumps(mother, ensure_ascii=False)};window.__MOTHER_DROP={json.dumps(DROP_IDS)};{'window.__MOTHER_HOME=' + json.dumps(MOTHER_HOME) + ';window.__DATA_URL=' + json.dumps(DATA_URL) + ';window.__DATA_KEY=' + json.dumps(_ds_mod.load_key().hex()) + ';' if MOTHER_HOME is not None else ''}</script>
 <script>
 {open('ocr_local.js', encoding='utf8').read()}
 </script>{APP_LIBS}

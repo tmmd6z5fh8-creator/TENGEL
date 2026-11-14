@@ -397,6 +397,8 @@ if r.returncode == 0:
           and '.pad' not in open(os.path.join(out, 'Tengel.swiftpm', 'Package.swift'), encoding='utf8').read().split('supportedDeviceFamilies')[1].split(']')[0],
           '第4.156版：CI は .pad を 足して 作った もの（Swift Playgrounds の ▶ と 同じ 形）を iPad の シミュレーターで 動かして、Webの 画面が 390pt 幅に なるか 見る（出す アプリの Package.swift は .phone だけの まま）')
     check('window.__TEST=true;' not in html and 'テスト版の道具' in html and 'gift-test' in html, 'ふつうの 作り方：テスト版の 印（__TEST=true）は 入って いない（道具の コードは あるが 動かない）')
+    # 第4.169版（まさちゃん 2026/11/14「テスト版のみに全てをリセットできる機能つけて！」）：保存場所を 消す しかけ（reset_all.js）は 出す アプリには 1文字も 入れない
+    check(not [w for w in ('deleteDatabase', 'tengel.wipe', 'localStorage.clear', 'TengelReset = ', 'wipeCover') if w in html], '第4.169版：ふつうの 作り方（出す アプリ）には「ぜんぶ リセット」の 消す しかけ（reset_all.js）が 入って いない')
     gi = open(os.path.join(W, '.gitignore'), encoding='utf8').read()
     check('ios/fx_assets/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/fx_assets/sfx_fz_push.m4a'], cwd=os.path.dirname(W)).returncode == 0, '絵と音のフォルダ（ios/fx_assets/）は git に入らない（source/.gitignore）')
     # 第4弾：着せ替え（30テーマの変数と @font-face を束ねた __KS・kisekae.js・設定のカード・テーマごとの ks_<id>.json・しぼった字・見本の絵は手元の ios/kisekae_blobs/ から）
@@ -532,6 +534,10 @@ if r2.returncode == 0:
     check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app.test",' in ps2 and 'bundleIdentifier: "jp.tengel.app",' not in ps2 and re.search(r'bundleVersion: "\d{8}\.\d+",', ps2) and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2,
           'テスト版：アプリの 名前は「テンゲル テスト」・bundle id は jp.tengel.app.test（本番と 並べて 入れられる）・ビルド番号は 日付から・iPhone用は ふつうと 同じ')
     check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
+    # 第4.169版：テスト版 だけ「ぜんぶ リセット」（reset_all.js）が <head> の いちばん はじめの スクリプトに 入る（ほかの どの コードも 保存場所を 読む 前に 動く）
+    f2 = re.search(r'<script>(.*?)</script>', h2, re.S).group(1)
+    check("'tengel.wipe'" in f2 and 'deleteDatabase' in f2 and 'window.TengelReset = {' in f2 and h2.index('window.TengelReset = {') < h2.index('window.__APP_VER=') and 'data-test="wipego"' in h2 and h2.count('deleteDatabase') == 1,
+          '第4.169版：テスト版 だけ「ぜんぶ リセット」の 消す しかけが いちばん はじめの スクリプトに 入る・設定の ボタン（リセット する）も ある')
     # 第4.148版：PUSHボタンの 絵が ない 作り方（PUSH_ASSETS=/nonexistent＝CI）：絵は 1まいも 入らない・一覧に pa なし・テーマの ファイルは 今までの コードの 面（svg）＝今までの PUSH の まま
     import json as _j2
     res2 = os.listdir(os.path.join(out2, 'TengelTest.swiftpm', 'Resources'))

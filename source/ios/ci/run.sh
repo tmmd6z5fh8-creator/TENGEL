@@ -7,6 +7,8 @@
 #  5) iPadのシミュレーター：1回目だけ（iPhone用のアプリなので、互換モードで iPhone の大きさの画面になる。スクショで確かめる）
 #  6) iPadの 広い 窓（第4.156版）：Package.swift に .pad を 足して 作った もの（Swift Playgrounds の ▶ と 同じ＝iPad の 画面いっぱいの 窓）で、
 #     アプリが iPhone の 大きさ（390×844）で まん中に 出るか（Webの 画面の 幅 390・まわりは 黒・スクショ）。出す アプリ（1〜5）は .phone だけの まま
+#  7) テスト版の「ぜんぶ リセット」（第4.169版）：消す しかけ（ci/reset_all.js）を テストの スクリプトと いっしょに 入れて、iPhone の シミュレーターで
+#     「リセット する」→ 開き直す → 保存場所・端末の おぼえが 空・「はじめる」の 画面・「前の記録が見つかったよ」が 出ない を 見る（出す アプリには 入れない）
 # 結果は results/（summary.txt・ログ・report-*.json・スクショ）。ワークフローが ios-ci-<ランナー> ブランチに置く
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -116,7 +118,8 @@ phase() {
   local D; D=$(xcrun simctl get_app_container "$U" "$BID" data 2> /dev/null)
   [ -z "$D" ] && { say "   $DEV $PH: app container not found (not installed?)"; return 0; }
   mkdir -p "$D/Documents"; rm -f "$D/Documents"/mark-* "$D/Documents"/report-* "$D/Documents"/ack-*
-  { echo "window.__ST_PHASE = $PH; window.__ST_DEVICE = '$DEV';"; cat "$ROOT/ci/selftest.js"; } > "$D/Documents/selftest.js"
+  # 5回目（第4.169版：テスト版の「ぜんぶ リセット」）だけ：テスト版の 印と 消す しかけ（ci/reset_all.js＝テスト版の index.html の 先頭に 入る ものと 同じ）を 先に 入れる
+  { echo "window.__ST_PHASE = $PH; window.__ST_DEVICE = '$DEV';"; if [ "$PH" = "5" ]; then echo "window.__TEST = true;"; cat "$ROOT/ci/reset_all.js"; fi; cat "$ROOT/ci/selftest.js"; } > "$D/Documents/selftest.js"
   cp "$ROOT"/ci/ocr/*.jpg "$D/Documents/" 2> /dev/null   # 画像の読み取りの見本（架空のオッズ画面）
   xcrun simctl launch "$U" "$BID" -tengelSelfTest >> "$OUT/$DEV-launch.txt" 2>&1
   for m in "$@"; do
@@ -150,6 +153,27 @@ if [ -n "$IPHONE" ]; then
   xcrun simctl ui "$IPHONE" appearance dark > /dev/null 2>&1
   xcrun simctl launch "$IPHONE" "$BID" > /dev/null 2>&1; sleep 8; shot "$IPHONE" "iphone-dark" 700
   xcrun simctl terminate "$IPHONE" "$BID" > /dev/null 2>&1
+  # 7) テスト版の「ぜんぶ リセット」（第4.169版）を 本物の WKWebView で：出す アプリには 消す しかけが ない ので、テストの スクリプトと いっしょに 入れる（phase の 5回目）。
+  #    アプリの 中身を ぜんぶ 消す ので、iPhone の さいごに 動かす
+  xcrun simctl ui "$IPHONE" appearance light > /dev/null 2>&1
+  if [ -f "$ROOT/ci/reset_all.js" ]; then
+    phase "$IPHONE" iphone 5 700 reset-confirm report-5a reset-gate reset-main report-5
+    if [ -f "$OUT/iphone-report-5.json" ]; then
+      say "   reset: $(python3 -c '
+import json, os, sys
+a = json.load(open(sys.argv[1])) if os.path.exists(sys.argv[1]) else {}; r = json.load(open(sys.argv[2]))
+bf = a.get("before") or {}; af = r.get("after") or {}; g = r.get("gate") or {}; d = af.get("did") or {}; m = r.get("main") or {}; bk = r.get("backupAfter") or {}
+ok = (a.get("hasReset") is True and bf.get("bets", 0) >= 1 and bf.get("setting") == "x" and "tengel.st5" in (bf.get("ls") or []) and (bf.get("backup") or {}).get("n", 0) >= 1
+      and r.get("db") == "ok" and d.get("native") == 4 and g.get("first") is True and af.get("bets") == 0 and af.get("setting") is None and af.get("memOnly") == "" and af.get("offer") is False
+      and "tengel.st5" not in (af.get("ls") or ["?"]) and "tengel.wipe" not in (af.get("ls") or ["?"]) and "st5" not in (af.get("ss") or ["?"]) and af.get("total") == 10000 and r.get("write") == 7
+      and m.get("offer") is False and m.get("tabbar") is True and bk.get("n") == 0 and bk.get("reset") is False and not r.get("errors") and not r.get("failed"))
+print("before bets %s setting %s backup %s -> after db %s native %s first-gate %s bets %s setting %s total %s offer %s write %s backup n %s errors %d -> %s" % (bf.get("bets"), bf.get("setting"), (bf.get("backup") or {}).get("n"), r.get("db"), d.get("native"),
+      g.get("first"), af.get("bets"), af.get("setting"), af.get("total"), af.get("offer"), r.get("write"), bk.get("n"), len(r.get("errors") or []), "OK" if ok else "CHECK"))
+' "$OUT/iphone-report-5a.json" "$OUT/iphone-report-5.json" 2>&1)"
+    else
+      say "   reset: report-5 not found CHECK"
+    fi
+  fi
   applog "$IPHONE" iphone
   xcrun simctl shutdown "$IPHONE" > /dev/null 2>&1
 fi

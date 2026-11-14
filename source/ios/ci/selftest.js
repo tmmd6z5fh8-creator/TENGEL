@@ -9,6 +9,8 @@
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
 // 4回目（第4.156版）：iPad の 広い 窓（run.sh が .pad を 足して 作った アプリ＝Swift Playgrounds の ▶ と 同じ 形）で、アプリが iPhone の 大きさ（390×844）で まん中に 出るか
+// 5回目（第4.169版）：テスト版の「ぜんぶ リセット」（reset_all.js）を 本物の WKWebView で。出す アプリには 消す しかけが 入って いない ので、
+//        run.sh が この ファイルの 先頭に「window.__TEST = true;」と reset_all.js を 足す（＝テスト版と 同じ 形：ほかの どの コードより 先に 動く）
 (function () {
   'use strict';
   if (window.top !== window) return;
@@ -528,6 +530,69 @@
     await mark('wide-main');
     report('4', R);
   }
-  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : PH === 4 ? phase4 : phase1;
+  // 第4.169版（まさちゃん 2026/11/14「テスト版のみに全てをリセットできる機能つけて！」）：テスト版の「ぜんぶ リセット」を 本物の WKWebView で 確かめる。
+  //   1ページ目（まだ 消して いない＝TengelReset.did() が null）：記録・設定・端末の おぼえを 作る → 設定の「テスト版の道具」→「ぜんぶ リセット」→「リセット する」→ ページが 開き直る
+  //   2ページ目（消した あと）：保存場所（IndexedDB）を 消し おわったか・記録 0件・設定なし・端末の おぼえなし・「はじめる」の 画面・「前の記録が見つかったよ」が 出ない・作り直した 保存場所に 書ける
+  //   （キーチェーンの しるしは シミュレーターでは 読めない〈error:-34018〉ので ここでは 見ない）
+  async function phase5() {
+    var RS = window.TengelReset, did = RS && RS.did();
+    if (!did) {
+      await ready();
+      var R = { phase: 5, device: DEV, page: 'before', hasReset: !!RS, test: window.__TEST === true };
+      R.basic = basic();
+      await step(R, 'seed', async function () {
+        await TengelLocal.putBets([{ id: 'st5-bet', date: '2026-11-08', venue: '', r: 9, rname: 'リセットの ためし', n: 14, types: ['馬単'], n1: 8, n2: 4, n3: 6, p1: 3, p2: 1, p3: 2, stake: '600', payout: '0', horses: [],
+          rsv: { state: 'done', types: ['馬単'], bets: { '馬単': [[3, 7], [7, 3]] }, result: { p: [[8], [4], [6]] }, fx: 'miss', at: new Date().toISOString() } }]);
+        await TengelLocal.putSetting('st5', 'x');
+        localStorage.setItem('tengel.st5', '1'); sessionStorage.setItem('st5', '1');
+        return true;
+      });
+      await sleep(2600);   // 自動バックアップ（保存の 1.5秒 あと）
+      await step(R, 'before', async function () {
+        var s = await TengelNative.loadBackup(), W = window.TengelWallet;
+        return { bets: TengelLocal.mem.bets.size, setting: await TengelLocal.getSetting('st5'), ls: Object.keys(localStorage).sort(), ss: Object.keys(sessionStorage).sort(), total: W ? W.total() : null,
+          events: W ? W.events().map(function (e) { return e.id + ':' + e.amount; }) : null, backup: s ? { n: (s.bets || []).length, at: s.at || null } : null, gate: window.__gate };
+      });
+      var lg = document.querySelector('#lgOv [data-lg=ok]'); if (lg) { lg.click(); await sleep(400); }   // ログインボーナスの 窓が 出て いたら とじる
+      tab('set'); await sleep(800);
+      var b1 = document.querySelector('#setTest [data-test=wipe]');
+      R.card = { card: !!document.querySelector('#setTest'), btn: !!b1 };
+      if (b1) { b1.click(); await sleep(900); }   // 1回目：たしかめる 札（出て から 0.7秒は「リセット する」を 受けない）
+      var w = document.querySelector('#testWipe');
+      R.confirm = w ? { hidden: w.hidden, text: w.innerText.slice(0, 60), rect: (function (r) { return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })(w.getBoundingClientRect()), ih: innerHeight, mark: localStorage.getItem('tengel.wipe') } : null;
+      await mark('reset-confirm');
+      report('5a', R);
+      await sleep(400);
+      var go = document.querySelector('#testWipe [data-test=wipego]');
+      if (go) go.click();   // 2回目：画面を かくして 開き直す → 2ページ目へ
+      else report('5', { phase: 5, device: DEV, page: 'after', failed: 'リセットの ボタンが ない' });
+      return;
+    }
+    var R2 = { phase: 5, device: DEV, page: 'after', did0: JSON.parse(JSON.stringify(did)) };
+    await loaded();
+    R2.db = await waitFor(function () { var d = window.TengelReset.did(); return d.db !== 'pending' && d.db !== 'blocked' ? d.db : null; }, 20000) || window.TengelReset.did().db;
+    await waitFor(function () { return window.TengelLocal; }, 20000);
+    await window.TengelLocal.ready.catch(function () {});
+    if (window.TengelWallet) await window.TengelWallet.ready;
+    await sleep(1500);   // 「前の記録が見つかったよ」が 出る なら この ころ（保存場所が 読めて すぐ）
+    var g = document.querySelector('#gate');
+    R2.gate = { shown: !!(g && !g.hidden), first: !!document.querySelector('#gateGo'), note: (document.querySelector('#wipeNote') || {}).textContent || null };
+    await mark('reset-gate');
+    await step(R2, 'after', async function () {
+      var s = await TengelNative.loadBackup(), W = window.TengelWallet, st = await TengelLocal.getSetting('st5');
+      return { did: window.TengelReset.did(), bets: TengelLocal.mem.bets.size, races: TengelLocal.mem.races.size, memOnly: TengelLocal.memOnly(), setting: st === undefined ? null : st,
+        ls: Object.keys(localStorage).sort(), ss: Object.keys(sessionStorage).sort(), total: W ? W.total() : null, events: W ? W.events().map(function (e) { return e.id + ':' + e.amount; }) : null,
+        offer: !!document.querySelector('#nativeRestore'), backup: s ? { n: (s.bets || []).length, at: s.at || null, reset: !!s.reset, auto: !!s.auto } : null };
+    });
+    await step(R2, 'write', async function () { await TengelLocal.putSetting('st5b', 7); return await TengelLocal.getSetting('st5b'); });   // 作り直した 保存場所に 書ける
+    window.__gate = await gate(false);
+    await sleep(1800);
+    R2.main = { gate: window.__gate, tabbar: !!document.querySelector('.tabbar'), login: !!document.querySelector('#lgOv'), offer: !!document.querySelector('#nativeRestore'), total: window.TengelWallet ? window.TengelWallet.total() : null };
+    await mark('reset-main');
+    await sleep(1800);
+    await step(R2, 'backupAfter', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, auto: !!s.auto, reset: !!s.reset, wallet: s.wallet && s.wallet.events ? s.wallet.events.length : 0 } : null; });
+    report('5', R2);
+  }
+  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : PH === 4 ? phase4 : PH === 5 ? phase5 : phase1;
   run().catch(function (e) { report('crash-' + (isManual ? 'manual' : PH), { phase: PH, device: DEV, exception: String(e && (e.stack || e.message || e)) }); });
 })();
