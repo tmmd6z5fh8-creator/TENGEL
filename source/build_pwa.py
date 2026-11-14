@@ -131,9 +131,10 @@ open(f'{out}/index.html', 'w', encoding='utf8').write(html)
 if TARGET == 'app':   # トレーニングセンターの 本体（コメントを 消して 1つに・出さない 言葉が ないことも 確かめる）
     # 第4.154版：テスト版（TENGEL_TEST=1）だけ、テストの 道具箱（tc/tc_test.js：幻の馬・神様馬を 出す・お世話の 当たりを えらぶ）を 入れる。App Store版の 中身には 入れない
     # 第4.165版：お世話トークンの 購入の 窓（tc/tc_buy.js）
-    TC_FILES = ('tc_horse.js', 'tc_field.js', 'tc_care.js', 'tc_guide.js', 'tc_fx.js', 'tc_plan.js', 'tc_buy.js') + (('tc_test.js',) if TEST else ()) + ('tc_app.js',)
+    # 第4.173版：お世話チャレンジ（玉を 落とす 台：tc/tc_drop.js）
+    TC_FILES = ('tc_horse.js', 'tc_field.js', 'tc_care.js', 'tc_guide.js', 'tc_fx.js', 'tc_plan.js', 'tc_buy.js', 'tc_drop.js') + (('tc_test.js',) if TEST else ()) + ('tc_app.js',)
     tcb = '\n;\n'.join(_at.strip_js_comments(open(os.path.join('tc', f), encoding='utf8').read()) for f in TC_FILES) + '\n'
-    tcb += ';window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCApp = TCApp;' + (' window.TCTest = TCTest;' if TEST else '') + '\n'   # const は window に のらない（tc_launch.js・tc_app.js が window. で さがす）
+    tcb += ';window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;' + (' window.TCTest = TCTest;' if TEST else '') + '\n'   # const は window に のらない（tc_launch.js・tc_app.js が window. で さがす）
     _at.check_clean(tcb, 'tc_bundle.js')
     open(f'{out}/tc_bundle.js', 'w', encoding='utf8').write(tcb)
 if TARGET == 'app':   # 思い出フィギュアの 本体（コメントを 消して 1つに・出さない 言葉が ないことも 確かめる）

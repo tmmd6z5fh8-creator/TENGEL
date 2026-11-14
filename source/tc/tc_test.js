@@ -51,6 +51,8 @@ const TCTest = (() => {
   const ZNS = [0, 1, 3, 6, 11, 12], ZV = n => 1000 + 2000 * n, ZMAX = 12;
   const znName = z => z.n == null ? '特化ゾーン（上乗せは くじどおり）' : `特化ゾーン 上乗せ ${z.n}回${z.n >= ZMAX ? '（MAX）' : ''} → ${P(ZV(z.n))}`;
   const HORSE = { normal: 'いつもの 馬', maboroshi: '幻の馬', kamisama: '神様馬' };
+  // 第4.173版：お世話チャレンジの 1こめの 玉（色の 番号・名前・中身：tc_app.js の TEST.drop の 番号と 同じ）
+  const DROPS = [[1, '青', '100P'], [2, '緑', 'ルーレット 800か1600'], [3, '紫', 'ルーレット 1600か3200'], [4, '赤', 'ルーレット 3200か6400'], [5, '金', '特化ゾーン'], [6, '虹', 'チケット']];
   const CALL = { come: '近づいてくる', turn: '振り向く', amae: '甘える' };
   const FLAG = { gold: '金のニンジン', beg: 'おかわりの目', rare: '首を かしげる', nibble: 'ほうきを かじる', win: 'ハートの 抽選', call: '呼ぶ' };
   const zName = z => z === undefined ? 'くじ（本番と 同じ 確率）' : !z ? 'はずれ（当たりなし）' : z.k === 'pt' ? P(z.v) : z.k === 'tk' ? `チケット ${z.n}枚` : z.k === 'zn' ? znName(z)
@@ -97,7 +99,18 @@ const TCTest = (() => {
     + `<div class="ttr">${Object.keys(CALL).map(k => btn(CALL[k], 'flag', { k: 'call', v: k })).join('')}</div>`
     + `<div class="ttg">チャンス・トークン</div>`
     + `<div class="ttr">${btn('高確ゾーン（お世話 5回）', 'high')}${btn('お世話トークンを 25こに', 'tokens')}${btn('お世話トークンを 19こに', 'tokens', { n: 19 })}${btn('お世話トークンを 0こに', 'tokens', { n: 0 })}${btn('トークンの 時計を 5分 進める（＋5）', 'ahead')}</div>`
-    + `<p>お世話トークンの 購入は、下の 列の 1番 右の「お世話トークン購入」から（テスト版の ポイントで 買えるよ。ポイントは 設定の「テスト版の道具」で 足せるよ）。</p></div>`;
+    + `<p>お世話トークンの 購入は、下の 列の 1番 右の「お世話トークン購入」から（テスト版の ポイントで 買えるよ。ポイントは 設定の「テスト版の道具」で 足せるよ）。</p></div>`
+    // 第4.173版：お世話チャレンジ（玉を 落とす 台：tc_drop.js）。お世話を とばして 台を すぐ 開く・玉ごとの 馬バレの 色を えらぶ（中身は 本番の 当たり：tc_app.js の TEST.drop）
+    + `<div class="tts" data-sec="drop"><h3>④ お世話チャレンジ（玉を 落とす 台）</h3>`
+    + `<p>お世話を とばして 台を すぐ 開くよ。えらんだ 色の 馬バレが 玉の 順に 出る（中身は 本番の 当たり：「保留結果を見る」で 本番と 同じ ように 受け取る）。えらんで いない 玉は いつもの くじ。お世話トークンが 5こ ない ときは 25こに するよ。</p>`
+    + `<div class="ttr">${btn('くじどおりで 開く', 'drop', { l: [] }, 'n')}${btn('ぜんぶ はずれ', 'drop', { l: [0, 0, 0, 0, 0] }, 'n')}</div>`
+    + `<div class="ttg">1こめの 玉の 馬バレ（いつもの 馬）</div>`
+    + `<div class="ttr">${DROPS.map(([c, nm, what]) => btn(`${nm}（${what}）`, 'drop', { l: [c], h: 'normal' })).join('')}</div>`
+    + `<div class="ttg">5こ まとめて（いつもの 馬）</div>`
+    + `<div class="ttr">${btn('青 → 緑 → 紫 → 赤 → 金', 'drop', { l: [1, 2, 3, 4, 5], h: 'normal' })}${btn('虹 → はずれ → 青 → 金 → 赤', 'drop', { l: [6, 0, 1, 5, 4], h: 'normal' })}${btn('青 5こ（10・50・100・200・300P）', 'drop', { l: [10, 50, 100, 200, 300].map(v => ({ k: 'pt', v })), h: 'normal' })}</div>`
+    + `<div class="ttg">馬が いる 間の ルーレット（押すと その 馬が 来る）</div>`
+    + `<div class="ttr">${btn('🌙 金（幻の馬の ルーレット）', 'drop', { l: [{ k: 'rt', tier: 'maboroshi', v: [800, 1600] }], h: 'maboroshi' }, 'v')}${btn('✨ 虹（神様馬の ルーレット）', 'drop', { l: [{ k: 'rt', tier: 'kamisama', v: [2000, 4000] }], h: 'kamisama' }, 'k')}</div>`
+    + `<p>色：青＝10〜300P・緑／紫／赤＝ルーレット（800か1600／1600か3200／3200か6400）・金＝幻の馬の ルーレット と ポイント特化ゾーン・虹＝神様馬の ルーレット と チケット。</p></div>`;
 
   let root = null, api = null, busy = false;
   function style() { if (!document.getElementById('tct-css')) { const st = document.createElement('style'); st.id = 'tct-css'; st.textContent = CSS; document.head.appendChild(st); } }
@@ -158,6 +171,7 @@ const TCTest = (() => {
       else if (a === 'tokens') { close(); api.tokens(o.n); m = `お世話トークンを\n${o.n == null ? 25 : o.n}こに したよ`; }
       else if (a === 'push') { close(); const r = api.info().push ? 'have' : api.push(); m = r === 'busy' ? busyMsg() : r === 'have' ? 'PUSH は もう\n出て いるよ' : 'PUSH を 出したよ\n（お世話を とばした）'; }
       else if (a === 'ahead') { close(); const r = api.ahead(5); m = r === 'max' ? 'お世話トークンは\nもう 最大だよ' : 'トークンの 時計を\n5分 進めたよ\n（＋5）'; }
+      else if (a === 'drop') { close(); const r = await api.drop(o.l || [], true, o.h); m = r === 'busy' ? busyMsg() : r === 'none' ? 'お世話チャレンジの\n絵が 入って いないよ' : null; }      // 第4.173版：台を すぐ 開く
       if (m) api.msg('🧪 ' + m, 3.6);
     } catch (e) { try { api.msg('🧪 うまく\nいかなかったよ', 3.4); } catch (x) { /* なし */ } }
     finally { busy = false; }
@@ -174,5 +188,5 @@ const TCTest = (() => {
   function open(el, a) { api = a; if (!root) build(el); paintNow(); root.querySelector('.tty').scrollTop = 0; root.style.display = 'flex'; }
   function close() { if (root) root.style.display = 'none'; }
   function isOpen() { return !!root && root.style.display !== 'none'; }
-  return { open, close, isOpen, head, PTS, RTS, ZNS, ZV, zName, get skip() { return skip; }, get el() { return root; } };
+  return { open, close, isOpen, head, PTS, RTS, ZNS, ZV, DROPS, zName, get skip() { return skip; }, get el() { return root; } };
 })();

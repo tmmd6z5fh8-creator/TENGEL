@@ -12,6 +12,7 @@ pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').
 open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
 from assets_dir import adir
 TCA = adir('tc_assets'); HAVE = os.path.isdir(TCA) and len(os.listdir(TCA)) > 100
+HAVE_DP = int(HAVE and os.path.isfile(os.path.join(TCA, 'tc_dp.json')))      # 第4.173版：お世話チャレンジの 台の 絵と データが ある（説明書の 項目が 1つ ふえる）
 if HAVE:
     for f in os.listdir(TCA): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
 else:
@@ -387,12 +388,13 @@ try:
         except Exception: okp = False
         pg.wait_for_timeout(1000); shot(pg, 'tc_push')
         p0 = pg.evaluate(PU); G = pg.evaluate("() => TCCare.PUSHG"); mx = pg.evaluate("() => [TCCare.RULE.stockMax, TCApp._t.ODDS.tokenMax]")
-        px = pg.evaluate(OVPX, [[G['x'], G['y'] - 40], [128, 1494], [G['m1'][0] - 100, G['m1'][1] - 20], [G['mn'][0] - 100, G['mn'][1] - 20]])
+        # 第4.173版：PUSH の 左下（撫でるの ボタンの あった 所）には お世話チャレンジの 入口が 出る（台の 絵が ある とき）→ かくれた ことは ごはんの ボタンの 所（327,1494：PUSH と 入口の 間）で 見る
+        px = pg.evaluate(OVPX, [[G['x'], G['y'] - 40], [327, 1494], [G['m1'][0] - 100, G['m1'][1] - 20], [G['mn'][0] - 100, G['mn'][1] - 20]])
         check(okp and p0['live'] and p0['stock'] == stock0 and p0['total'] == 0 and p0['cares'] == 0 and p0['rs'] == 0 and p0['push'] and p0['spush'] and not p0['bulk'] and p0['pop'] == [] and mx == [25, 25],
               f'ごはんが おわると PUSH が 出る：トークンは まだ 使って いない（{stock0}こ の まま）・お世話の 数も まだ・「PUSH が 出て いる」を 保存・トークンの 上限は 25（{mx}）')
         check(px[0][0] > 170 and px[0][1] < 100 and px[0][3] > 240 and px[1][3] == 0 and px[2][0] > 215 and 150 < px[2][1] < 215 and px[2][2] < 130 and min(px[3][:3]) > 215 and 420 < G['y'] * 614 / 1657 and G['y'] + G['w'] * G['ar'] / 2 < 1657,
-              f'画面の 下に 赤い PUSH（色 {px[0]}）・お世話の 4つの ボタンは かくれる（撫でるの 所は すきとおる {px[1]}）・スイッチは「1個 使う」が 金色（{px[2][:3]}）・「まとめて 使う」は 白（{px[3][:3]}）')
-        pg.evaluate("() => TCCare.press(TCCare.S.lastT, 'pet')"); stage_click(pg, 128, 1494); pg.wait_for_timeout(300); pb = pg.evaluate(PU)
+              f'画面の 下に 赤い PUSH（色 {px[0]}）・お世話の 4つの ボタンは かくれる（ごはんの 所は すきとおる {px[1]}）・スイッチは「1個 使う」が 金色（{px[2][:3]}）・「まとめて 使う」は 白（{px[3][:3]}）')
+        pg.evaluate("() => TCCare.press(TCCare.S.lastT, 'pet')"); stage_click(pg, 327, 1494); pg.wait_for_timeout(300); pb = pg.evaluate(PU)
         check(pb['mode'] is None and pb['phase'] == 'idle' and '先に PUSH を 押してね' in pb['tags'] and pb['live'] and pb['stock'] == stock0, f'PUSH が 出て いる 間は ほかの お世話は 始まらない（{pb["tags"][-1:]}）')
         stage_click(pg, *G['mn']); pg.wait_for_timeout(400); s1 = pg.evaluate(PU); px1 = pg.evaluate(OVPX, [[G['mn'][0] - 100, G['mn'][1] - 20]])
         stage_click(pg, *G['m1']); pg.wait_for_timeout(400); s2 = pg.evaluate(PU)
@@ -601,7 +603,8 @@ try:
               f"説明書：上乗せの 回数ごとの ％と 合計（0回 40% → 1,000P … 12回 約0.22% → 25,000P（MAX））・％を 足すと 100%・平均 {gz and gz['avg']:.1f}P（抽選の きまりから 数えた 数と 同じ）")
         #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
         g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいるあいだ'), heads: s.map(x => x[0]) }; }")
-        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 14
+        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 14 + HAVE_DP
+              and (not HAVE_DP or g2['heads'].index('玉お世話チャレンジ') == g2['heads'].index('押お世話のあとのPUSH') + 1)      # 第4.173版：台の 絵が ある ときは 項目が 15こ（「お世話チャレンジ」が PUSH の すぐ 下）
               and g2['heads'].index('替馬のリセット（次の馬の抽選）') == g2['heads'].index('★2分ごとのチャンス') + 1,
               f"説明書：「馬のリセット（次の馬の抽選）」の 項目が ある・幻の馬／神様馬の 抽選は そこに 書く（2分ごとの チャンスは 高確ゾーン だけ）・「いるのは10分」は ない（{g2['heads']}）")
         #   第4.159版：トークンの 上限 25・お世話の あとの PUSH（1個 使う／まとめて 使う・ハズレは 音 だけ）

@@ -149,14 +149,14 @@ try:
             sh = pg.evaluate("""() => { const r = document.querySelector('#tct'), y = r.querySelector('.tty'), st = document.querySelector('#tcOv .tcst').getBoundingClientRect(), s = r.querySelector('.tth').getBoundingClientRect();
               const bs = [...r.querySelectorAll('.ttb')], by = a => bs.filter(x => x.dataset.a === a).length;
               const rows = [...r.querySelectorAll('.ttr')].filter(q => q.querySelector('.ttl.w')).map(q => { const t = [...q.children].map(e => Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2)); return Math.max(...t) - Math.min(...t); });
-              return { open: TCTest.isOpen(), secs: [...r.querySelectorAll('.tts')].map(e => e.dataset.sec), n: bs.length, prize: by('prize'), visit: by('visit'), heart: by('heart'), flag: by('flag'), poop: by('poop'),
+              return { open: TCTest.isOpen(), secs: [...r.querySelectorAll('.tts')].map(e => e.dataset.sec), n: bs.length, prize: by('prize'), visit: by('visit'), heart: by('heart'), flag: by('flag'), poop: by('poop'), drop: by('drop'),
                 zone: bs.filter(x => x.classList.contains('z')).map(x => [x.textContent, JSON.parse(x.dataset.o).z]), zhead: [...r.querySelectorAll('.ttg')].map(e => e.textContent).filter(t => t.includes('特化ゾーン')),
                 extra: [by('skip'), by('push'), by('tokens'), by('ahead')], skip: [TCTest.skip, r.querySelector('[data-a=skip]').getAttribute('aria-pressed'), r.querySelector('[data-a=skip]').textContent.slice(0, 1)],
                 wide: y.scrollWidth - y.clientWidth, sc: y.scrollHeight > y.clientHeight, inside: s.left >= st.left && s.right <= st.right + 0.5 && s.bottom <= st.bottom + 0.5, rows, minH: Math.min(...bs.map(e => e.getBoundingClientRect().height)),
                 font: getComputedStyle(r.querySelector('.ttl')).fontFamily.split(',')[0], now: r.querySelector('[data-now]').innerText }; }""")
-            check(sh['open'] and sh['secs'] == ['horse', 'prize', 'other'] and sh['visit'] == 3 and sh['prize'] == 36 and sh['heart'] == 2 and sh['flag'] == 7 and sh['poop'] == 2 and sh['n'] == 58
+            check(sh['open'] and sh['secs'] == ['horse', 'prize', 'other', 'drop'] and sh['visit'] == 3 and sh['prize'] == 36 and sh['heart'] == 2 and sh['flag'] == 7 and sh['poop'] == 2 and sh['drop'] == 13 and sh['n'] == 71
                   and sh['extra'] == [1, 1, 3, 1] and sh['skip'] == [False, 'false', '☐'],
-                  f'道具箱：① 馬 3・② 当たり 36（くじ・はずれ・ポイント 6・ルーレット 6＋6＋6・チケット 3・ポイント特化ゾーン 7）・③ そのほか（{sh["n"]}こ の ボタン）・'
+                  f'道具箱：① 馬 3・② 当たり 36（くじ・はずれ・ポイント 6・ルーレット 6＋6＋6・チケット 3・ポイント特化ゾーン 7）・③ そのほか・④ お世話チャレンジ 13（第4.173版）（{sh["n"]}こ の ボタン）・'
                   f'第4.165版：すぐ PUSH の スイッチ（ここでは オフに して ある {sh["skip"]}）・「PUSH を すぐ 出す」・トークン 25／19／0こ・時計を 5分 進める {sh["extra"]}')
             #   第4.165版（まさちゃん 11/13 12:51「ポイントの特化ゾーンを作る」）：上乗せ できる 回数を えらぶ ボタン 6つ ＋ くじどおり
             zw = [[f'{n}回{"（MAX）" if n == 12 else ""} → {1000 + 2000 * n:,}P', {'k': 'zn', 'n': n}] for n in (0, 1, 3, 6, 11, 12)] + [['くじどおり（1回ごとに 60%）', {'k': 'zn'}]]

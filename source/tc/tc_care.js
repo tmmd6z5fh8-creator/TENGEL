@@ -606,8 +606,13 @@ const TCCare = (() => {
   //     絵が 読めない ときは 紙の 絵の ボタン。ちかちか しない（光らせない・ゆっくり 息を する 大きさ ±1.8%）
   //   ・場所：画面の いちばん 下（お世話の 4つの ボタンの 所）。出て いる 間は お世話の ボタンを かくす（どうせ 押せない）＝ 馬を かくさない（はじめは 画面の まん中に 置いて いた：子馬が ボタンの うしろに すっぽり かくれた）。
   //     ボタンは 馬より 手前の 地面に 置いて ある 見え方（馬が いちばん 手前〈y 1372〉に いても、ボタンの 下の はし〈影 y 1560〉の 方が 手前）。結果の 札（pointpop・ルーレット！）は 画面の まん中（y 720）
-  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [158, 1530], ew: 220, eh: 84, tap: [526, 1232] };
-  let pushCap = null, pushBase = null;
+  // 第4.173版（まさちゃん 2026/11/14 23:34「トレーニングセンターの抽選を、今のボタンと、もう一つボール落としができるようにしたい！」）：
+  //   PUSH の 左下（のこりの トークンの 札の 下）に「お世話チャレンジ」の 入口（dp：台の 小さい 絵と 名前の 札。押すと アプリが 玉を 落とす 台を 開く＝O.onDrop）。
+  //   絵と データが 読めて いる とき だけ 出す（O.dropOk）。「おわる」（まとめてで 1回 以上 押した あと）は その 所から 右の 列の 下（「まとめて 使う」の 下）へ うつした
+  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172 };
+  let pushCap = null, pushBase = null, dpIcon = null;
+  const dropOk = () => !!(O.dropOk && O.dropOk());
+  const DROP_WAIT = 0.4;      // PUSH が 出て から この 秒は 入口を 押しても 開かない（入口は 撫でるの ボタンの あった 所：お世話が おわる 瞬間に そこを さわって いた 指で 開かない ように）
   const pushLive = () => !!(S.push && S.push.hideT == null);
   function pushK(t) { const Pn = S.push; if (!Pn) return 0; const u = t - Pn.t0; return u < 0 ? 0 : sm(u / 0.2) * (Pn.hideT != null ? 1 - sm((t - Pn.hideT) / 0.22) : 1); }      // PUSH が 出て いる 度合い 0〜1（お世話の ボタンを かくす）
   function pushOpen(t) {
@@ -634,6 +639,10 @@ const TCCare = (() => {
     if (!S.bulk || S.stock < 1 || (O.drawLeft && O.drawLeft() < 1)) pushClose(t + 0.3);      // 1個 使う・トークンが なくなった・抽選の 上限に なった（第4.168版：ev('token') で アプリが もう 数えて いる）→ 押した 動きの あと 消える
     return true;
   }
+  // 第4.173版：お世話チャレンジ（tc_drop.js）から。dropUse＝玉 1こ ぶんの トークンを 使う（PUSH を 1回 押したのと 同じ 数え方：ev 'token'＝お世話 1回）・
+  //   pushDone＝チャレンジで 1こ 以上 落として もどった → PUSH は 消える（お世話の あとの 抽選は すんだ）
+  function dropUse(t) { if (S.stock < 1) return false; S.stock -= 1; S.stockDrop = t; if (S.push) S.push.n++; ev(t, 'token', { mute: true }); return true; }      // mute：トークンの 音は 鳴らさない（玉が 出る 音が ある）
+  function pushDone(t) { if (pushLive()) pushClose(t); }
   function pushMode(t, bulk) { const Pn = S.push; if (!pushLive() || S.bulk === !!bulk) return; S.bulk = !!bulk; Pn.modeT = t; ev(t, 'button'); if (O.onBulk) O.onBulk(S.bulk); }
   function pushEnd(t) { const Pn = S.push; if (!pushLive() || !S.bulk || Pn.n < 1) return; ev(t, 'fold'); pushClose(t); }      // おわる（まとめてで 1回 以上 押した あと）
   function pushWait(t) { const Pn = S.push; if (t - Pn.waitT < 1.2) return; Pn.waitT = t; fx({ k: 'tagUI', t0: t, x: PUSHG.x, y: PUSHG.y - 300, txt: '先に PUSH を 押してね', size: 34, dur: 1.6 }); ev(t, 'wait'); }
@@ -688,6 +697,20 @@ const TCCare = (() => {
       chip(G.mn, G.mw, G.mh, 'まとめて 使う', S.bulk, 36, pop * (S.bulk ? mp : 1));
       // おわる（まとめてで 1回 以上 押した あと）
       if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, 'おわる', false, 36, pop, true);
+      // 左下：お世話チャレンジ（玉を 落とす 台）の 入口：台の 小さい 絵 ＋ 名前
+      if (dropOk()) {
+        const dq = t - (S.press.dp == null ? -9 : S.press.dp), ds = pop * (dq >= 0 && dq < 0.22 ? 0.95 : 1) * (1 + 0.012 * Math.sin(TAU * 0.6 * u)), w = G.dpw, h = G.dph, k = 22;
+        g.save(); g.translate(G.dp[0], G.dp[1]); g.scale(ds, ds); g.lineWidth = 0.8;
+        pf([[-w / 2 + 6, -h / 2 + 8], [w / 2 + 6, -h / 2 + 8], [w / 2 + 6, h / 2 + 8], [-w / 2 + 6, h / 2 + 8]], 'rgba(40,20,5,0.24)');
+        pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], '#fff8ec');
+        pf([[-w / 2, h * 0.16], [w / 2, h * 0.16], [w / 2, h / 2], [-w / 2, h / 2]], '#f8ecd4');
+        pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], '#e6cf9f');
+        g.strokeStyle = '#e0a21f'; g.lineWidth = 4; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
+        if (dpIcon && dpIcon.naturalWidth) { const ih = h - 20, iw = ih * dpIcon.naturalWidth / dpIcon.naturalHeight; g.drawImage(dpIcon, -w / 2 + 12, -ih / 2, iw, ih); }
+        label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
+        label('玉を 落とす', 46, 44, 24, '#c2362b');
+        g.restore();
+      }
     }
     g.restore();
   }
@@ -1310,6 +1333,7 @@ const TCCare = (() => {
       if (inR(G.m1, G.mw, G.mh + 12)) return 'pm:1';
       if (inR(G.mn, G.mw, G.mh + 12)) return 'pm:n';
       if (S.bulk && S.push.n >= 1 && inR(G.end, G.ew, G.eh + 12)) return 'pend';
+      if (dropOk() && inR(G.dp, G.dpw, G.dph)) return 'pdrop';
       if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
       return null;                       // お世話の ボタンは かくれて いる（さわっても 何も おきない）
     }
@@ -1334,6 +1358,7 @@ const TCCare = (() => {
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
+    else if (what === 'pdrop') { if (pushLive() && !S.fxHold && dropOk() && t >= S.push.lock && t - S.push.t0 > DROP_WAIT) { S.press.dp = t; ev(t, 'button'); if (O.onDrop) O.onDrop(); } }      // お世話チャレンジを 開く（アプリ）。PUSH を 押した すぐ あと（ルーレット・特化ゾーンの キュインキュイーンの 間＝lock）は 開かない：開くと その 当たりの 演出が 出せなく なる
     else if (what === 'buy') pressBuy(t);
   }
   function pointer(kind, x, y, t) {        // アプリの 指（画面の 座標）
@@ -1629,6 +1654,7 @@ const TCCare = (() => {
     carrot = new Image(); carrot.src = AP('tc_items/tc_item_carrot.webp'); carrotG = new Image(); carrotG.src = AP('tc_items/tc_item_carrot_gold.webp');      // まさちゃんの ニンジンの 絵・それを 金に した 絵（11/09 11:27・11:28）
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
     pushCap = new Image(); pushCap.src = AP('tc_push_cap.webp'); pushBase = new Image(); pushBase.src = AP('tc_push_base.webp');      // お世話の あとの PUSH（第4.159版：まさちゃんの 赤い ボタン）
+    if (o.dropOk) { dpIcon = new Image(); dpIcon.src = AP('tc_dp_icon.webp'); }      // 第4.173版：お世話チャレンジの 入口の 絵（アプリ だけ）
     try { await Promise.all([pushCap.decode(), pushBase.decode()]); } catch (e) { }
     if (O.onBuy) {                       // 第4.165版：下の 列に「お世話トークン購入」が 入る（お世話の 4つは 左へ）
       for (const k in BTN_X5) BTN[k][0] = BTN_X5[k];
@@ -1661,6 +1687,6 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
+    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

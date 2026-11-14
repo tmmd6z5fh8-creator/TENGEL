@@ -147,7 +147,7 @@ try:
             pg.evaluate("() => TCApp.test.prize(null)"); stage_click(pg, 270 + 256, 1262)
             pg.wait_for_function("() => !!(TCCare.S.push && TCCare.S.push.hideT == null) && TCCare.S.phase === 'idle'", timeout=120000); pg.wait_for_timeout(700)
             stage_click(pg, 924, 1566); pg.wait_for_timeout(350)
-            c2 = pg.evaluate("() => [TCBuy.isOpen(), TCApp._t.buyShow(), TCCare.S.stock, TCCare.S.bulk]"); pp = pg.evaluate(OVPX, [[924, 1600], [128, 1600]])
+            c2 = pg.evaluate("() => [TCBuy.isOpen(), TCApp._t.buyShow(), TCCare.S.stock, TCCare.S.bulk]"); pp = pg.evaluate(OVPX, [[924, 1600], [327, 1600]])      # 第4.173版：左下（撫でるの 名前の 所）には お世話チャレンジの 入口が 出る → ごはんの 名前の 所で 見る
             shot(pg, 'buy_push')
             check(c0 == [True, False] and c1 == [False, False, True, True] and c2[:2] == [False, False] and c2[3] is False and pp[0][3] == 0 and pp[1][3] == 0,
                   f'押すと 購入の 窓・お世話の 途中（ごはんを えらぶ）は 開かない（札「お世話が おわってから 買えるよ」）・PUSH が 出て いる 間は 列ごと かくれて 押せない {c0} {c1} {c2}')

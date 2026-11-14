@@ -53,6 +53,9 @@ const TCGuide = (() => {
   // 第4.165版：お世話トークンの 購入（組は points.js の TOKEN_PACKS：なければ 同じ 数）・たまる 間（tc_app.js の TOKEN_MIN と 同じ 数：test_tc.py が 見くらべる）
   const TOK = { every: 5, step: 5, max: 25 };
   const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
+  // 第4.173版：お世話チャレンジ（tc_drop.js の BALLS・tc_app.js の dropTone と 同じ：test_tc_drop.py が 見くらべる）。色の 名前・字の 色・その 色で 出る 当たり
+  const DP = { name: 'お世話チャレンジ', balls: 5, tone: [['青', '#2f7fe0', '10P〜300P'], ['緑', '#2f9f4a', 'ルーレット（800P か 1600P）'], ['紫', '#8a4ad8', 'ルーレット（1600P か 3200P）'], ['赤', '#d8352c', 'ルーレット（3200P か 6400P）'],
+    ['金', '#b8860b', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '#c2456f', '神様馬のルーレット・チケット']] };
   const SEC = [
     // 第4.159版（まさちゃん 11/12 10:37）：トークンの 上限 25・お世話の あとの PUSH（押した ときに 抽選）・1個／まとめての スイッチ／12:48・14:50：10分ごとに 5つ（12:48 は 5分ごと → 14:50 に 10分ごとへ）・最大の ときに 撫でると「お世話トークンが最大だよ！」／
     //   13:27：ハートの 抽選は トークンが 20こ未満の とき だけ（20こ以上は 抽選まち → 20こを 切ったら 抽選）
@@ -69,6 +72,17 @@ const TCGuide = (() => {
       <p>　<b>1個 使う</b> → 1回押したらおしまい</p>
       <p>　<b>まとめて 使う</b> → トークンがあるあいだ、つづけて何回でも押せる（押した回数ぶんトークンがへる）。やめるときは「おわる」</p>
       <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数ぶん数えるよ）</p>`],
+    // 第4.173版（まさちゃん 2026/11/14 23:34「トレーニングセンターの抽選を、今のボタンと、もう一つボール落としができるようにしたい！」）：お世話チャレンジ（玉を 落とす 台：tc_drop.js）。
+    //   当たりやすさは PUSH と 同じ（下の 表）。馬バレの 色の 表は tc_app.js の dropTone と 同じ（test_tc_drop.py が 見くらべる）
+    ['玉', '#e2574c', DP.name, `<p>・PUSHが出たとき、左下の<b>「お世話チャレンジ」</b>を押すと、<b>玉を落とす台</b>で抽選できるよ</p>
+      <p>・<b>「玉を落とす」</b>を押すたびに<b>トークンを1つ</b>使って、玉が1こ落ちる（1回で<b>${DP.balls}こ</b>まで。トークンが${DP.balls}こないときは、あるぶんだけ）</p>
+      <p>・当たりやすさは<b>PUSHとまったく同じ</b>（下の表のとおり。どのコップに入っても同じ）</p>
+      <p>・玉がコップに入ったとき、当たっていれば まん中の<b>「馬バレ」</b>が光るよ。色で中身がわかる（青から虹へ、光が大きくなる）</p>
+      <table data-tab="tone">${DP.tone.map(([nm, col, what]) => `<tr data-c="${nm}"><td><b style="color:${col}">${nm}</b></td><td>${what}</td></tr>`).join('')}</table>
+      <p>・当たりは<b>「当選」</b>のますにたまる → 玉をぜんぶ落としたら<b>「保留結果を見る」</b>で順に受け取ろう</p>
+      <p>・おわったあと、トークンが<b>${DP.balls}こ以上</b>のこっていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
+      <p class="note">玉1こ＝トークン1つ＝お世話1回（馬の育ちやミッションの回数も、玉の数ぶん数えるよ）</p>
+      <p class="note">とちゅうでアプリを閉じても、たまった当たりはなくならないよ（次に開いたときに「保留結果を見る」から）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
@@ -113,12 +127,14 @@ const TCGuide = (() => {
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
   ];
-  let root = null, inner = null, body = null, t0 = null;
+  let root = null, inner = null, body = null, t0 = null, withDrop = false;
+  // 第4.173版：「お世話チャレンジ」の 項目は 台の 絵と データが 入って いる とき だけ 出す（入口が 出ない ときに 説明だけ 出さない）
+  const dropReady = () => { try { return !!(typeof window !== 'undefined' && window.TCDrop && window.TCDrop.ready()); } catch (e) { return false; } };
   function build(el) {
     if (!document.getElementById('tcg-css')) { const st = document.createElement('style'); st.id = 'tcg-css'; st.textContent = CSS; document.head.appendChild(st); }
-    root = document.createElement('div'); root.id = 'tcg';
+    root = document.createElement('div'); root.id = 'tcg'; withDrop = dropReady();
     root.innerHTML = `<div class="bk"></div><div class="sh"><div class="hd"><b>トレーニングセンターの説明書</b><div class="x">✕</div></div><div class="bd"><div class="in">` +
-      SEC.map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
+      SEC.filter(s => withDrop || s[2] !== DP.name).map(([ic, col, tt, html]) => `<div class="sec"><h3><i style="background:${col}">${ic}</i>${tt}</h3>${html}</div>`).join('') + `</div></div></div>`;
     el.appendChild(root); inner = root.querySelector('.in'); body = root.querySelector('.bd');
     // 第4.159版（バグ直し・まさちゃん 2026/11/12 14:54「トレーニングセンターの説明書開いたらすぐ閉じるようになってて表示されないよ！」）：
     //   「？」は フィールドの キャンバスの 上の 絵 ＝ 指を はなした とき（pointerup）に 説明書を 開く。指（タッチ）では その すぐ あとに 同じ 場所へ「クリック」が とどく →
@@ -137,6 +153,7 @@ const TCGuide = (() => {
     anim = requestAnimationFrame(f);
   }
   function open(el, opt) {
+    if (root && withDrop !== dropReady()) { root.remove(); root = null; }      // 台の 絵が あとから 読めた：項目を 入れて 作り直す
     if (!root) build(el); root.style.display = 'flex'; openedAt = performance.now();
     if (opt && opt.anim) { onClose = opt.onClose || null; body.scrollTop = 0; set(0.001); tween(0, 1, 0.35); } else set(1);
   }
