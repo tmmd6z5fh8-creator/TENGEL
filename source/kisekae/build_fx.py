@@ -42,11 +42,11 @@ SFX = dict(hit_push='sfx_hit_push.m4a', hit='sfx_hit.m4a', big_push='sfx_big_pus
            nd='sfx_nd.m4a', ndt='sfx_ndt.m4a',                                                                               # 第4.77版：ノーマルど的中の 音・第4.79版：押した 瞬間の 音
            gk='sfx_gk.m4a')                                                                                                  # 第4.117版：神様極的中の 音
 FILMS = dict(sgd_film='sgd_film2.mp4',                          # 第5弾：超神様の 動画。第4.162版：新しい 動画（球体の 場面なし・まさちゃんの 3D の 字と 鳥居）・昇格の 動画（spg_up）は なし
-             sd_film='sd_film3.mp4',                            # 第4.70版：ど的中・紫電の 動画（flat/shiden_film.py：第4.71版 ど！！！的中まで）。第4.163版：新しい 動画（馬と 字は まさちゃんの 3D）。第4.164版：字を 明るく（…3）
-             nd_film='nd_film3.mp4',                            # 第4.77版：ノーマルど的中の 動画（flat/normal_film.py）。第4.163版：新しい 動画（字は まさちゃんの 3D）。第4.164版：字を 明るく・芝から 少し 浮かせた（…3）
-             gk_film='gk_film.mp4')                             # 第4.117版：神様極的中の 動画（kami_kiwami.py・できた 動画から build_fx_films.py の gk_film）
-STILL = dict(sgd_last='sgd_last2.webp', sd_last='sd_last3.webp', nd_last='nd_last3.webp',  # 超神様（第4.162版：新しい 動画の）・紫電・ノーマルど的中（第4.163版 → 第4.164版：新しい 動画の）の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
-             gk_last='gk_last.webp')                                                    # 第4.117版：神様極的中
+             sd_film='sd_film4.mp4',                            # 第4.70版：ど的中・紫電の 動画（flat/shiden_film.py：第4.71版 ど！！！的中まで）。第4.163版：新しい 動画（馬と 字は まさちゃんの 3D）。第4.164版：字を 明るく（…3）
+             nd_film='nd_film4.mp4',                            # 第4.77版：ノーマルど的中の 動画（flat/normal_film.py）。第4.163版：新しい 動画（字は まさちゃんの 3D）。第4.164版：字を 明るく・芝から 少し 浮かせた（…3）
+             gk_film='gk_film2.mp4')                             # 第4.117版：神様極的中の 動画（kami_kiwami.py・できた 動画から build_fx_films.py の gk_film）
+STILL = dict(sgd_last='sgd_last2.webp', sd_last='sd_last4.webp', nd_last='nd_last4.webp',  # 超神様（第4.162版：新しい 動画の）・紫電・ノーマルど的中（第4.163版 → 第4.164版：新しい 動画の）の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+             gk_last='gk_last2.webp')                                                    # 第4.117版：神様極的中
 
 
 def blob_names():

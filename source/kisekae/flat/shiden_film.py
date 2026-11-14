@@ -2723,7 +2723,7 @@ if __name__ == '__main__':
     if sys.argv[1] == '--last':
         work, out = sys.argv[2], sys.argv[3]
         im = cv2.imread(frame_path(work, NF - 1))
-        assert im is not None and im.shape[:2] == (H0, W0), 'さいごの コマが 読めない'
+        assert im is not None and im.shape[:2] == (H, W), 'さいごの コマが 読めない'      # 第4.171版：SCALE を かえた とき（3倍＝1.5）は その 大きさ（前は もとの 大きさ だけ）
         cv2.imwrite(out, im, [cv2.IMWRITE_WEBP_QUALITY, 90])
         print(out, os.path.getsize(out))
     elif sys.argv[1] in ('--facebuf', '--facecomp'):

@@ -3,9 +3,11 @@
 #   ・環境音（朝・夕方・夜）：60秒の ループ（はじめと おわりを 重ねる）→ tc_amb_<tod>.m4a
 #   ・BGM（幻の馬・神様馬）：bgm.py の 60秒 ループ → tc_bgm_<abyss|divine>.m4a
 #   ・ルーレットの BGM（第4.168版）：bgm_roulette.py の 8小節 ループ（約14.5秒）→ tc_bgm_roulette.m4a（これ だけ 作る とき → python3 export_app.py <出す フォルダ> tc_bgm_roulette）
+#   ・テンゲルBGM と 神様馬の BGM の 第2稿（第4.171版）：bgm_tengel.py → bgm_tengel9.m4a（16小節・36 BPM・約106.7秒：笛 4本・鳥の 声・馬の 鳴き声と 走る 音・風の 音。第1稿 bgm_tengel.m4a・第2稿〜第8稿 bgm_tengel2〜8.m4a）・tc_bgm_divine2.m4a（32小節・約49.2秒）
 #   ・お世話の 音：sfx_care.py の render を できごと 1つずつ → tc_se_<k>.m4a（slot_1〜10・bite_apple／carrot・banin_kamisama／maboroshi）
 #     第4.159版：PUSH の 音 だけ 足す とき → python3 export_app.py <出す フォルダ> tc_se_pfo,tc_se_dedeen,tc_se_kyuin,tc_se_doon（できた 4つを ios/tc_assets へ 写す：前から ある 音は 作り直さない）
 #   ・ルーレット：sfx_roulette.py の 部品 → tc_se_rt_<lever|tick|stop|confirm>.m4a
+#   ・ルーレットの 高い 方の 爆発（第4.171版）：sfx_boom.py → tc_se_boom.m4a（これ だけ 作る とき → python3 export_app.py <出す フォルダ> tc_se_boom）
 #   ・チケット：sfx_ticket.py の render を できごと 1つずつ → tc_se_tk_<k>.m4a
 import os, sys, subprocess, tempfile, math
 import numpy as np
@@ -57,6 +59,20 @@ if want('tc_bgm_roulette'):      # 第4.168版：ルーレットの 間の BGM�
     #   ＝ m4a を 読む 道具が 頭に 短い 無音を つけても（その ぶん ずれても）、つなぎ目は 同じ 音どうしで リズムが とばない
     _lp = bgm_roulette.roulette(); _p = int(round(0.5 * SR))
     write('tc_bgm_roulette', np.concatenate([_lp[:, -_p:], _lp, _lp[:, :_p]], 1), '112k')
+# 第4.171版（まさちゃん 2026/11/14 16:18・17:08）：テンゲルBGM（判定・記録 などの 画面：bgm.js）と 神様馬の BGM の 第2稿（tc/tc_app.js の AMB.divine）。bgm_tengel.py の 曲。
+#   どれも ルーレットの BGM と 同じ 形（くり返す 1回りの 前に おしりの 0.5秒・うしろに 頭の 0.5秒）。作る とき → python3 export_app.py <出す フォルダ> bgm_tengel9,tc_bgm_divine2
+#   bgm_tengel＝テンゲルBGM の 第1稿（108 BPM の 明るい 曲）・bgm_tengel2＝第2稿（のどかな 村の ふんいき・116 BPM）：どちらも アプリには 入れない／bgm_tengel3＝第3稿（もっと ゆっくり 88 BPM・笛・鳥の 声）／bgm_tengel4＝第4稿（19:09「一回、鳥の声と笛の音だけにしてみて！もっとゆったりで！」：笛 1本 と 鳥の 声 だけ・60 BPM）：どれも アプリには 入れない／
+#   bgm_tengel5＝第5稿（19:25「ここに馬の走る音と、もう少し太い音の笛を混ぜて！ゆったりね！」：第4稿 ＋ 太い 音の 笛 ＋ 馬の 走る 音）：アプリには 入れない
+#   bgm_tengel6＝第6稿（19:41「もう一段階太い笛と、かなり音が低い笛も重ねて音入れて！」・19:42「馬の鳴き声と、馬が走る音追加して！」：笛 4本・鳥の 声・馬の 鳴き声と 走る 音）・bgm_tengel7＝第7稿（19:57「この笛を、バイオリンぽくできる？」：4本を 弦の 音に）：どれも アプリには 入れない／
+#   bgm_tengel8＝第8稿（20:12「ごめん！笛に戻して！もっとゆったりで！」・20:15「あと風の音も入れて！」：笛 4本に もどす・48 BPM・風の 音）：アプリには 入れない／
+#   bgm_tengel9＝第9稿（20:27「もっと笛の音ゆっくりして！」：36 BPM・笛の 吹き方も ゆっくり：アプリに 入れる）
+#   稿の 名前は bgm_tengel.py の SONGS（tengel・tengel2・…）から 作る ＝ 稿が ふえても ここは 直さない
+import bgm_tengel as _bt
+for _nm, _key in [('bgm_' + _k, _k) for _k in _bt.SONGS if _k.startswith('tengel')] + [('tc_bgm_divine2', 'divine2')]:
+    if not want(_nm): continue
+    import bgm_tengel
+    _lp, _S = bgm_tengel.SONGS[_key](); _p = int(round(0.5 * SR)); assert _lp.shape[1] == _S.n, (_lp.shape, _S.n)
+    write(_nm, np.concatenate([_lp[:, -_p:], _lp, _lp[:, :_p]], 1), '128k')
 
 # ---- お世話の 音 ----
 KINDS = ['button', 'unfold', 'fold', 'rub', 'heart', 'nod', 'swish', 'nuzzle', 'stretch', 'sneeze', 'tilt', 'calm', 'frisk', 'yawn', 'lie', 'nope', 'wait', 'ready', 'zoomin',
@@ -79,6 +95,11 @@ for nm, x, g in (('lever', sfx_roulette.lever_snd(rng), sfx_roulette.G_LEVER), (
     if not want('tc_se_rt_' + nm): continue
     y = amb.place(x, 0.0, g * 1.41, 0.08)
     write('tc_se_rt_' + nm, trim(np.concatenate([np.zeros((2, int(0.05 * SR))), y], 1)))
+
+# ---- ルーレットの 高い 方の 爆発（第4.171版：sfx_boom.py。動画 tc_rt_boom.mp4 と いっしょに 鳴らす）----
+if want('tc_se_boom'):
+    import sfx_boom
+    write('tc_se_boom', trim(np.concatenate([np.zeros((2, int(0.05 * SR))), sfx_boom.boom_snd()], 1)))
 
 # ---- チケット ----
 for k in ('fall', 'land', 'tapshow', 'tap', 'open', 'white', 'reveal', 'ticket', 'get'):

@@ -10,6 +10,8 @@
 //     ルーレット：止まった あと「安い 方＝デカ的中と 同じ 音」「高い 方＝プチュン → 真っ暗に なったら すぐ ポイント」。音は 的中の 演出の もの（sfx_big.m4a・sfx_sdp.m4a：アプリの 同じ フォルダ）を 小さめに
 //   ・第4.159版（まさちゃん 11/12 13:27「ルーレット高い方が当たった時に、プチュンしてまたルーレットの画面に戻ると変だから、光輝きながら獲得ポイントを表示するようにして！一枚目がテロップの画像！」
 //     ・13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：高い 方は プチュンの あと ルーレットに もどらない ＝ 暗い 舞台に 金の 光と テロップ「大量ポイント」（下の drawBig）・音は ドーン！！（tc_se_doon.m4a）
+//   ・第4.171版（まさちゃん 2026/11/14 16:18「④トレーニングセンターの神様馬、幻の馬ルーレットで高い方が当選し、プチュンした後は、リアルな爆発と一緒に獲得ポイントの表示するようにして！」）：
+//     高い 方は プチュンで 真っ暗に なった 瞬間に 爆発（下の BOOM：動画 tc_rt_boom.mp4・音 tc_se_boom.m4a）→ 0.6秒 あとに ドーン！！と テロップ「大量ポイント」が 火の 手前に 飛びこむ
 const TCFX = (() => {
   const W = 390, H = 614, TAU = Math.PI * 2;
   const AP = p => (typeof window.TC_ASSET === 'function' ? window.TC_ASSET(p) : p);
@@ -95,6 +97,49 @@ const TCFX = (() => {
     return pc;
   }
   const PCH_GAIN = 0.85, BIG_GAIN = 0.5;      // 的中の 演出の 音は トレーニングセンターの 音より ずっと 大きい（プチュン −7dB・デカ的中 −2dB）→ ルーレットの 確定の 音（−7dB）に 合わせて 小さく
+
+  // ================= 爆発（第4.171版）=================
+  //   プチュンで 真っ暗に なった 瞬間に、爆発の 動画（tc_rt_boom.mp4：kisekae/tc/boom.py が 流れの 計算で 作る 火の 玉・火花・煙。1170×1842・2.6秒・30コマ／秒・音なし・
+  //   はじめの コマと さいごの コマは 真っ暗）を 舞台 いっぱいに 流す。0.6秒（BOOM.telop）は 爆発 だけ → ドーン！！と テロップ「大量ポイント」が 火の 手前に 飛びこんで ポイント（drawBig）。
+  //   火の 玉は テロップより 大きい ので、テロップの 上と 下に 火が 見える。金の 光は 火が おさまる ころ（0.9秒から 1.1秒 かけて）明るく なる。
+  //   ・動画は 演出の キャンバスの 下に 置く 暗い 幕（.tcbm）の 中の <video>（的中の 演出の 動画と 同じ やり方：音なし・その場で 再生・タップの 中で 一度 起こして おく）。
+  //     キャンバスは 動画の 間 うしろを ぬらない（すき通る）＝ 火の 手前に テロップ・ポイント・金の 光が のる。動画が おわったら（2.6秒）いままでの 場面と 同じ 描き方に もどる
+  //   ・音：爆発（tc_se_boom.m4a：kisekae/tc/snd/sfx_boom.py）→ 0.6秒 あとに ドーン！！（テロップが 飛びこむ 時）。爆発の 音の ファイルは 山が −1.6dB（ざらざらした 音は 圧縮で 山が 高く なる）
+  //     → 0.75倍で 鳴らす（山 −4.1dB：ドーン！！の −3.8dB と 同じ ぐらい・重ねても 割れない：test_tc.py）
+  //   ・明るく なって 暗く なるのは 爆発の 1回 だけ（そのあとの 金の 光は 上がる だけ：test_tc.py が 動画の コマと 重ねて 1/30秒ごとに 測る）
+  //   ・動画が ない（手元に 素材の ない ビルド）・読めない とき、「演出を控えめにする」・iPhone の「視差効果を減らす」の とき：いままでの 場面（暗い 舞台に 金の 光と テロップ・音は ドーン！！ だけ）。
+  //     流そうと した 動画が 0.5秒（BOOM.wait）たっても 動かない とき：暗い 舞台の まま 0.6秒で テロップ（音は 爆発 → ドーン！！の まま）。
+  //     0.5秒まで 待つ：iPhone は 動画の はじめの コマを 出す までに 少し かかる ことが ある（おくれて 流れはじめても、テロップが 飛びこむ 前なら 爆発は 見える）
+  const BOOM = { src: 'tc_rt_boom.mp4', se: 'tc_se_boom.m4a', gain: 0.75, len: 2.6, telop: 0.6, late: 0.9, rise: 1.1, wait: 0.5 };
+  function bmOpen(cv) {                 // 幕と 動画を 用意する（まだ 見せない）
+    const st = cv.parentNode, el = document.createElement('div'), v = document.createElement('video'), bm = { el, v, dead: false, woke: false, tried: false, seen: false, off: false, gone: false };
+    el.className = 'tcbm'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#060302;pointer-events:none;opacity:0';
+    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.loop = false;
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true');
+    v.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;background:#060302';
+    v.addEventListener('error', () => { bm.dead = true; });
+    try { v.src = AP(BOOM.src); v.load(); } catch (e) { bm.dead = true; }
+    el.appendChild(v); st.insertBefore(el, cv);
+    return bm;
+  }
+  function bmWake(bm) {                 // タップの 中で 一度 動かして 止めて おく（iPhone で あとから すぐ 再生できる ように：的中の 演出の 動画と 同じ）
+    if (!bm || bm.woke || bm.dead) return; bm.woke = true;
+    try { const q = bm.v.play(); if (q && q.catch) q.catch(() => {}); bm.v.pause(); } catch (e) { /* なし */ }
+  }
+  function bmGo(bm) {                   // 流しはじめる（真っ暗に なった 瞬間）→ 流しはじめたら true
+    if (!bm || bm.dead || bm.gone) return false;
+    try { bm.v.currentTime = 0; } catch (e) { /* なし */ }
+    let q = null; try { q = bm.v.play(); } catch (e) { bm.dead = true; return false; }
+    if (q && q.catch) q.catch(() => { bm.dead = true; });
+    bm.el.style.opacity = '1'; return true;
+  }
+  const bmMoving = bm => !!bm && !bm.dead && bm.v.currentTime > 0.02;      // コマが 進んで いる（流れて いる・流れおわった）
+  function bmClose(bm) {
+    if (!bm || bm.gone) return; bm.gone = true;
+    try { bm.v.pause(); bm.v.removeAttribute('src'); bm.v.load(); } catch (e) { /* なし */ }
+    bm.el.remove();
+  }
 
   // ================= ルーレット =================
   const RT_STYLE = {
@@ -297,10 +342,11 @@ const TCFX = (() => {
     poly([[l - 8, t - 8], [r + 8, t - 8], [r + 8, b + 8], [l - 8, b + 8]], '#c8262b'); poly([[l - 3, t - 3], [r + 3, t - 3], [r + 3, b + 3], [l - 3, b + 3]], '#f3c33d'); poly([[l, t], [r, t], [r, b], [l, b]], '#fbe5c1');
     label('大量ポイント', 0, -h / 2 + h * 0.25, 52, '#ffd65c', '#a81818', 12);
   }
-  function drawBig(im, v, val, calm) {
-    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
+  //   ex（第4.171版：爆発と いっしょの とき）＝{ clear：うしろを ぬらない（下の 動画が 見える）・late／rise：金の 光が 明るく なりはじめる 時と かかる 長さ（秒） }
+  function drawBig(im, v, val, calm, ex) {
+    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = ex ? sm((v - ex.late) / ex.rise) : sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
     // 暗い 舞台（ルーレットは 見せない）と うしろの 赤い 光
-    g.save(); g.fillStyle = '#060302'; g.fillRect(0, 0, W, H);
+    g.save(); if (!(ex && ex.clear)) { g.fillStyle = '#060302'; g.fillRect(0, 0, W, H); }
     const bg = g.createRadialGradient(cx, cy, 20, cx, cy, 470);
     bg.addColorStop(0, `rgba(255,190,60,${0.95 * L})`); bg.addColorStop(0.3, `rgba(224,82,20,${0.85 * L})`); bg.addColorStop(0.62, `rgba(126,16,10,${0.7 * L})`); bg.addColorStop(1, `rgba(36,4,4,${0.5 * L})`);
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
@@ -374,10 +420,11 @@ const TCFX = (() => {
   }
 
   // ためす 用：大量ポイントの 場面の 1コマ（ドーン！！から v 秒め）を 描く。時計を 使わない ＝ 決めた 秒の 絵が いつも 同じ（光の 点めつを 1/30秒ごとに 測る：test_tc.py）。noImg＝絵が ない ときの 札で 描く
-  async function bigFrame(cv, v, val, calm, noImg) {
+  //   ex＝爆発と いっしょの ときの 描き方（drawBig の ex。ない ときは いままでの 場面）
+  async function bigFrame(cv, v, val, calm, noImg, ex) {
     const im = noImg ? null : await img(TELOP.src);
     PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
-    drawBig(im, v, val, !!calm); g.setTransform(1, 0, 0, 1, 0, 0);
+    drawBig(im, v, val, !!calm, ex || null); g.setTransform(1, 0, 0, 1, 0, 0);
     return !!im;
   }
 
@@ -394,15 +441,27 @@ const TCFX = (() => {
     //   音は お世話で 300P が 当たった ときの 音（デデーン：tc_se_dedeen.m4a）
     const big = high && th !== 'normal';
     const telop = big ? await img(TELOP.src) : null;
-    let pc = null, RV = null;
+    // 第4.171版：高い 方の 爆発（上の BOOM）。「演出を控えめにする」で ない とき だけ 用意する。EX＝真っ暗に なった ときに 爆発を 流しはじめた（音・テロップの 時刻が 爆発の 形に なる）
+    const bm = big && !calm ? bmOpen(cv) : null, wk = () => bmWake(bm), EXL = { clear: false, late: BOOM.late - BOOM.telop, rise: BOOM.rise };
+    if (bm) cv.addEventListener('pointerdown', wk);
+    let pc = null, RV = null, EX = false;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
       if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!big) RV = r.S1 + 0.4; }
       if (big && RV != null && u >= RV) {                    // 高い 方：プチュンの あとは 大量ポイントの 場面 だけ（ルーレットは 描かない）。幕は 0.2秒で 明ける（下も 真っ暗から 始まる）
-        if (pc) { pcClose(pc, 0.2); pc = null; }
-        drawBig(telop, u - RV, val, calm);
-        return { end: RV + TELOP.hold };
+        const v = u - RV;
+        if (bm && !bm.tried) { bm.tried = true; EX = bmGo(bm); }      // 真っ暗に なった 瞬間：爆発の 動画を 流しはじめる（第4.171版）
+        if (pc) { pcClose(pc, EX ? 0 : 0.2); pc = null; }
+        if (!EX) { drawBig(telop, v, val, calm); return { end: RV + TELOP.hold }; }
+        // 爆発と いっしょ：動画が 流れて いる 間（2.6秒）は キャンバスの うしろを ぬらない。0.6秒 たって から テロップ
+        if (bmMoving(bm)) bm.seen = true;
+        if (!bm.off && ((!bm.seen && (bm.dead || v > BOOM.wait)) || v >= BOOM.len + 0.1)) { bm.off = true; bmClose(bm); }      // 動かなかった・流れおわった → 幕を 外して いままでの 描き方
+        EXL.clear = !bm.off;
+        if (EXL.clear) bm.el.style.opacity = st.closeAt != null ? String(1 - sm((u - st.closeAt) / 0.5)) : '1';
+        if (v >= BOOM.telop) drawBig(telop, v - BOOM.telop, val, false, EXL);
+        else if (!EXL.clear) { g.fillStyle = '#060302'; g.fillRect(0, 0, W, H); }
+        return { end: RV + BOOM.telop + TELOP.hold };
       }
       const app = sm(u / 0.45);
       g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(16,10,6,${dim})`; g.fillRect(0, 0, W, H); g.restore();
@@ -434,9 +493,12 @@ const TCFX = (() => {
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
       if (big && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    // 高い 方（幻の馬・神様馬）：プチュン（控えめの ときは 音も なし：的中の 演出と 同じ）
-      if (RV != null && last < RV && u >= RV) se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);      // ポイントが 出る：高い 方＝ドーン！！（テロップと いっしょ）・ノーマルの 高い 方＝デデーン（300P の 当たりと 同じ 音：第4.168版）・安い 方＝デカ的中と 同じ 音
+      if (RV != null && last < RV && u >= RV) {
+        if (EX) { se(o, BOOM.se, BOOM.gain, 0); se(o, 'tc_se_doon.m4a', 1, BOOM.telop); }      // 第4.171版：爆発 → 0.6秒 あとに ドーン！！（テロップが 飛びこむ 時）
+        else se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);
+      }      // ポイントが 出る：高い 方＝ドーン！！（テロップと いっしょ）・ノーマルの 高い 方＝デデーン（300P の 当たりと 同じ 音：第4.168版）・安い 方＝デカ的中と 同じ 音
     });
-    pcClose(pc, 0);
+    pcClose(pc, 0); if (bm) { cv.removeEventListener('pointerdown', wk); bmClose(bm); }
   }
 
   // ================= 壁紙チケット =================
@@ -819,6 +881,6 @@ const TCFX = (() => {
     return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
   }
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;

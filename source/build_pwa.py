@@ -122,6 +122,9 @@ if TARGET == 'app':
     html += '<script>\n' + open(os.path.join('fig', 'fig_launch.js'), encoding='utf8').read() + '\n</script>\n'
     # ログインボーナス（第4.168版：まさちゃん 11/14）：その 日に はじめて 開いた とき 1回（7日で ひとまわり：200・300・400・500・600・1000・1300P）。points_ui.js の 財布（TengelWallet.grant）を 使う
     html += '<script>\n' + open('login_bonus.js', encoding='utf8').read() + '\n</script>\n'
+    # テンゲルBGM（第4.171版：まさちゃん 11/14 16:18）：判定・記録・実測・設定 などの 画面で 鳴らす 曲（bgm.js・音は bgm_tengel.m4a：build_ios.py が Resources/ に 入れる。リポジトリには 入れない）。
+    # トレーニングセンター・思い出フィギュア・作戦会議・推し馬の 画面と 的中の 演出の 間は 鳴らさない。設定の 札「BGM」は src.html の bgmCard
+    html += '<script>\n' + open('bgm.js', encoding='utf8').read() + '\n</script>\n'
 html += '</body></html>\n'
 if TARGET == 'app':
     html = _at.app_index(html)   # コメントを消す・競馬場・団体・商標・版の名前を置きかえる・残っていたら止める

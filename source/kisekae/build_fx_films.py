@@ -199,6 +199,8 @@ def nd_film():
     film, last = BF.FILMS['nd_film'], BF.STILL['nd_last']
     old = os.path.join(out, 'nd_film.mp4')
     splice = os.environ.get('ND_SPLICE', '1') != '0' and film != 'nd_film.mp4' and os.path.exists(old) and ND_CUT in key_frames(old)
+    if float(os.environ.get('SCALE', '1')) != 1:
+        splice = False          # 第4.171版：3倍（SCALE=1.5）で 描く ときは ぜんぶの コマを 描く（前の 動画は 2倍の 大きさ：つなげない）
     i0 = ND_CUT if splice else 0
     run([sys.executable, os.path.join(FLAT, 'normal_film.py'), nd, str(i0), str(n)])          # できて いる コマは とばす（作りかけから つづける）
     assert all(os.path.exists(os.path.join(nd, f'f{i:03d}.png')) for i in range(i0, n)), 'ノーマルど的中の コマが そろって いない'
@@ -232,8 +234,34 @@ def nd_film():
 
 
 # ---------------------------------------------------------------- 神様極的中の 動画と さいごの 1まい（第4.117版）
+GK_UP = 'scale=1170:2532:flags=lanczos+accurate_rnd+full_chroma_int,cas=0.5'      # 第4.171版：神様極的中を 3倍に のばす（Lanczos）＋ りんかくを 少し はっきり（CAS 0.5）
+
+
+def gk_film_up():
+    """第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：神様極的中の 動画と さいごの 1まいを 3倍（1170×2532）に → 新しい 名前（build_fx.py の FILMS・STILL：gk_film2.mp4・gk_last2.webp）。
+       もとの 絵を 1コマずつ 描く 道具と 素材は もう そろわない ので、できた 動画（780×1688・第14稿）を のばす（Lanczos ＋ りんかくを 少し はっきり）。端末が その場で のばす より くっきり 見える。
+       コマの 数・時刻は 同じ（361コマ・12.03秒）。前の もの（gk_film.mp4・gk_last.webp）は もとの フォルダに のこす（上書きしない・アプリには 入れない：assets_dir.py の superseded）"""
+    import kami_kiwami as KK
+    src = os.environ.get('GK_MASTER') or KK.MASTER
+    assert os.path.exists(src), f'神様極的中の できた 動画が ない：{src}（GK_MASTER=<mp4> で 指定）'
+    film, last = BF.FILMS['gk_film'], BF.STILL['gk_last']
+    assert film != 'gk_film.mp4' and last != 'gk_last.webp', '新しい 名前で 書き出す（前の ものを 上書きしない）'
+    run([FF, '-y', '-loglevel', 'error', '-i', src, '-vf', GK_UP, '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-tag:v', 'avc1', '-an', os.path.join(out, film)])
+    print(film, f'{os.path.getsize(os.path.join(out, film)) / 1e6:.2f}MB', flush=True)
+    tmp = os.path.join(work, 'gk_last_up.png')
+    run([FF, '-y', '-loglevel', 'error', '-sseof', '-0.05', '-i', src, '-frames:v', '1', '-update', '1', '-vf', GK_UP, tmp])
+    import cv2
+    im = cv2.imread(tmp)
+    assert im is not None and im.shape[:2] == (2532, 1170), 'さいごの 1まいが 読めない'
+    cv2.imwrite(os.path.join(out, last), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+    os.remove(tmp)
+    print(last, f'{os.path.getsize(os.path.join(out, last)) / 1e6:.2f}MB', flush=True)
+
+
 def gk_film():
     import kami_kiwami as KK
+    if BF.FILMS['gk_film'] != 'gk_film.mp4':      # 第4.171版：3倍に のばした 新しい 名前の とき
+        return gk_film_up()
     src = os.environ.get('GK_MASTER') or KK.MASTER
     assert os.path.exists(src), f'神様極的中の できた 動画が ない：{src}（GK_MASTER=<mp4> で 指定）'
     dst = os.path.join(out, 'gk_film.mp4')

@@ -16,6 +16,12 @@ if HAVE:
     for f in os.listdir(TCA): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
 else:
     print('※ トレーニングセンターの 絵と 音（ios/tc_assets）が ない ので、ボタンと 読みこめない 形だけ')
+# 第4.171版：ルーレットの 高い 方の 爆発の 動画（tc_rt_boom.mp4：H.264）は Chromium で 読めない ので、同じ 絵の 小さな webm を 作って かわりに 読ませる（TCFX.BOOM.src を さしかえる）
+BOOM_MP4 = os.path.join(TCA, 'tc_rt_boom.mp4'); HAVE_BOOM = HAVE and os.path.exists(BOOM_MP4) and bool(shutil.which('ffmpeg'))
+if HAVE_BOOM:
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', BOOM_MP4, '-vf', 'scale=390:614', '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-crf', '36', '-b:v', '0', '-an', '-row-mt', '1',
+                    os.path.join(SRV, 'APP', 'tc_rt_boom.webm')], check=False)
+    HAVE_BOOM = os.path.exists(os.path.join(SRV, 'APP', 'tc_rt_boom.webm'))
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails = []
 
@@ -939,7 +945,9 @@ try:
           for (let i = 0; i < box.length; i += 4) { const r = box[i], gg = box[i + 1], b = box[i + 2]; n++; if (r < 110 && gg < 60 && b < 40) dark++; else if (r > 235 && gg > 205 && b > 150 && r - b < 90) cream++; else if (r > 225 && gg > 130 && b < 150) gold++; }
           return { corner: [at(4, 4), at(385, 4), at(4, 609), at(385, 609)], top: at(195, 40), dark: dark / n, cream: cream / n, gold: gold / n }; }"""
         pg.mouse.click(300, 600); pg.wait_for_timeout(2200); px0 = pg.evaluate(FXPIX)
-        pg.wait_for_function("() => (window.__seL || []).includes('doon')", timeout=30000); pg.wait_for_timeout(900); px1 = pg.evaluate(FXPIX); shot(pg, 'tc_rt_get')      # ドーン！！から 約1秒（ポイントが 出た あと・なでる 光が 通る 前）
+        # 第4.171版：この ブラウザが 爆発の 動画（H.264）を 読める ときは 爆発と いっしょの 流れに なる（ドーン！！は 0.6秒 あとに 鳴る ように たのむ・動画の 間は キャンバスの うしろを ぬらない）
+        #   → 動画が おわった あと（3.1秒）の 絵で 見る ＝ 読めない ブラウザ（いままでの 場面）でも 同じ 絵に なって いる 時
+        pg.wait_for_function("() => (window.__seL || []).includes('doon')", timeout=30000); pg.wait_for_timeout(3100); px1 = pg.evaluate(FXPIX); shot(pg, 'tc_rt_get')
         tl = pg.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('/').pop().split('?')[0]).filter(n => n.startsWith('tc_telop')).length")
         pg.wait_for_timeout(1300); t_tap = time.time(); pg.mouse.click(200, 400)
         pg.wait_for_function("() => window.__rtDone", timeout=20000); t_close = time.time() - t_tap
@@ -951,7 +959,7 @@ try:
         lg = pg.evaluate("() => window.__pcLog.slice()"); sx = pg.evaluate(SES); ins = [x for x in lg if x['k'] == 'in']; outs = [x for x in lg if x['k'] == 'out']
         dur = (outs[0]['t'] - ins[0]['t']) / 1000 if ins and outs else -1
         check(len(ins) == 1 and len(outs) == 1 and ins[0]['above'] and ins[0]['fxon'] and ins[0]['pc'] == 1 and ins[0]['parts'] > 300 and 'fxvis' in ins[0]['an'] and ins[0]['w'] == '390px' and abs(ins[0]['fxk'] - ins[0]['sw'] / 390) < 0.002
-              and ins[0]['bg'] == 'rgb(0, 0, 0)' and ins[0]['pe'] == 'none' and 0.9 <= dur <= 2.4 and pg.evaluate("() => document.querySelectorAll('#tcOv .tcpc').length") == 0,
+              and ins[0]['bg'] == 'rgb(0, 0, 0)' and ins[0]['pe'] == 'none' and 0.75 <= dur <= 2.4 and pg.evaluate("() => document.querySelectorAll('#tcOv .tcpc').length") == 0,
               f'高い 方：プチュンは 的中の 演出と 同じ 部品（.pc・中の 部品 {ins[0]["parts"] if ins else 0}こ・幅 390 を 舞台の 幅に 合わせる {ins[0]["fxk"] if ins else 0}倍）を 盤の 上に 重ねる → {dur:.2f}秒で 外す（真っ暗に なったら すぐ ポイント）')
         ix = lambda n: sx.index(n) if n in sx else -1
         check(0 <= ix('rt_stop') < ix('sfx_sdp×0.85') < ix('doon') and sx.count('doon') == 1 and 'rt_confirm' not in sx and not any(x.startswith('sfx_big') for x in sx),
@@ -1023,6 +1031,163 @@ try:
               and TT['w'] <= 390 and 18 * TT['spin'] / 6.2832 < 1 and TT['sweep'][0] >= 1.2 and TT['sweep'][1] >= 2 and TT['hold'] >= 1,
               f'ポイントは 板の 中 だけ（1,600P と 20,000P の ちがい：板の 中 {dv["inn"]}画素・外 {dv["out"]}）・板の 場所は 絵と 合って いる（コード {TT["panel"]}・絵 {pin_}）・'
               f'光の すじは 同じ 所を 1秒に {18 * TT["spin"] / 6.2832:.2f}回 通る・なでる 光は {TT["sweep"][1]}秒に 1回')
+        print('■ ルーレットの 高い 方の 爆発（第4.171版）')
+        # まさちゃん 2026/11/14 16:18「④トレーニングセンターの神様馬、幻の馬ルーレットで高い方が当選し、プチュンした後は、リアルな爆発と一緒に獲得ポイントの表示するようにして！」
+        #   プチュンで 真っ暗に なった 瞬間に 爆発の 動画（演出の キャンバスの 下の 幕 .tcbm の 中の <video>）と 爆発の 音 → 0.6秒 あとに ドーン！！と テロップが 火の 手前に 飛びこむ → 動画が おわったら いままでの 場面
+        BO = pg.evaluate("() => Object.assign({}, TCFX.BOOM)")
+        check(BO['src'] == 'tc_rt_boom.mp4' and BO['se'] == 'tc_se_boom.m4a' and 0.4 <= BO['telop'] <= 0.8 and BO['late'] >= BO['telop'] and BO['len'] == 2.6 and 0.3 <= BO['wait'] < BO['telop'] and BO['gain'] <= 1,
+              f'爆発の 決めごと：動画 {BO["src"]}・音 {BO["se"]}・テロップは {BO["telop"]}秒 あと・金の 光は {BO["late"]}秒 から {BO["rise"]}秒 かけて・動画が {BO["wait"]}秒 動かなければ あきらめる')
+        check(pg.evaluate("() => document.querySelectorAll('#tcOv .tcbm').length") == 0, '上の ルーレットの あと：幕（.tcbm）は 残って いない')
+        H264 = pg.evaluate("() => document.createElement('video').canPlayType('video/mp4; codecs=\"avc1.640032\"') !== ''")      # この ブラウザが アプリの 動画（H.264）を そのまま 読めるか
+        BSRC = 'tc_rt_boom.mp4' if H264 else 'tc_rt_boom.webm'                                                                   # 読めない ときは 同じ 絵の webm を かわりに
+        if HAVE_BOOM:
+            import io as _io, numpy as _np
+            print('    爆発の 動画：' + ('アプリに 入る 動画（H.264）を そのまま 流す' if H264 else 'この ブラウザは H.264 を 読めない ので、同じ 絵の webm を かわりに 流す'))
+            #   1コマごとに：幕と 動画が あるか・動画の 進み・キャンバスの すみ（6, 6）と テロップの 板の 左はしの 内がわ（字の ない 所）の 画素。
+            #   動画が 0.3秒・1.05秒まで 進んだ ときの 絵（幕の 色 → 動画 → キャンバスの 順に 重ねた もの＝画面に 見える 絵）を 写して おく（写す 時は 動画の 進みで 決める：テストの 道具の おくれに 左右されない）
+            BM_REC = """() => { window.__bm = []; window.__bmSnap = {}; const cv = document.querySelector('#tcOv .tcfx'), g = cv.getContext('2d'), PX = cv.width / 390, T = TCFX.TELOP, w = T.w, h = w * T.ar;
+              const pl = [T.cx - w / 2 + (T.panel[0] + 0.025 * (T.panel[2] - T.panel[0])) * w, T.cy - h / 2 + (T.panel[1] + T.panel[3]) / 2 * h], A = (x, y) => [...g.getImageData(Math.round(x * PX), Math.round(y * PX), 1, 1).data];
+              const snap = v => { const c = document.createElement('canvas'); c.width = 390; c.height = 614; const q = c.getContext('2d'); q.fillStyle = '#060302'; q.fillRect(0, 0, 390, 614); q.drawImage(v, 0, 0, 390, 614); q.drawImage(cv, 0, 0, 390, 614); return c.toDataURL('image/png'); };
+              const f = () => { const el = document.querySelector('#tcOv .tcbm'), v = el && el.querySelector('video'), ct = v ? v.currentTime : null, S = window.__bmSnap;
+                if (v && +el.style.opacity === 1) { if (!S.a && ct >= 0.3) { S.a = snap(v); S.at = ct; } if (!S.b && ct >= 1.05) { S.b = snap(v); S.bt = ct; } }
+                window.__bm.push({ t: performance.now(), el: !!el, under: !!el && el.nextElementSibling === cv, op: el ? +el.style.opacity : null, ct, corner: A(6, 6)[3], panel: A(pl[0], pl[1]), on: cv.classList.contains('on') });
+                if (!window.__rtDone) requestAnimationFrame(f); };
+              requestAnimationFrame(f); }"""
+            BM_RUN = """(src) => { window.__rtDone = false; window.__bmSe = []; TCFX.BOOM.src = src;
+              const se = (n, g, l) => { window.__bmSe.push([n.replace('tc_se_', '').replace('.m4a', ''), g == null ? 1 : g, l || 0, performance.now()]); return TCApp._snd.se(n, g, l); };
+              TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'kamisama', a: 10000, b: 20000, win: 1, bg: 'divine', se }).then(() => { window.__rtDone = true; }); }"""
+            STG = "() => { const r = document.querySelector('#tcOv .tcst').getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }"
+
+            def bm_snap(du, name):
+                png = _b64.b64decode(du.split(',')[1]); im = _np.asarray(_Im.open(_io.BytesIO(png)).convert('RGB'), dtype=_np.float32)
+                if SHOT: open(os.path.join(SHOT, name + '.png'), 'wb').write(png)
+                return im
+
+            def bm_go(src):
+                pg.evaluate(BM_RUN, src); pg.evaluate(BM_REC); pg.wait_for_timeout(2500); pg.mouse.click(300, 600)
+                pg.wait_for_function("() => window.__bmSe.some(x => x[0] === 'boom' || x[0] === 'doon')", timeout=30000)
+
+            def bm_end(wait_ms):
+                pg.wait_for_timeout(wait_ms); pg.mouse.click(200, 400); pg.wait_for_function("() => window.__rtDone", timeout=20000); pg.wait_for_timeout(200)
+                r = pg.evaluate("() => ({ bm: window.__bm, se: window.__bmSe, snap: window.__bmSnap, left: document.querySelectorAll('#tcOv .tcbm').length, on: document.querySelector('#tcOv .tcfx').classList.contains('on') })")
+                return r
+
+            # ---- 動画が 流れる とき
+            bm_go(BSRC); pg.wait_for_timeout(700); shot(pg, 'tc_rt_boom_scr')
+            R = bm_end(3200); fr = R['bm']; se_ = R['se']; SN = R['snap']
+            tb = next((x[3] for x in se_ if x[0] == 'boom'), None); nm = [x[0] for x in se_ if not x[0].startswith('rt_tick')]
+            bo_ = [x for x in se_ if x[0] == 'boom']; dn_ = [x for x in se_ if x[0] == 'doon']
+            ix_ = lambda n: nm.index(n) if n in nm else -1
+            check(tb is not None and len(bo_) == 1 and len(dn_) == 1 and bo_[0][1] == BO['gain'] and bo_[0][2] == 0 and dn_[0][1] == 1 and abs(dn_[0][2] - BO['telop']) < 1e-9 and abs(dn_[0][3] - bo_[0][3]) < 40
+                  and 0 <= ix_('rt_stop') < ix_('sfx_sdp') < ix_('boom') < ix_('doon'),
+                  f'音：止まる → プチュン → 爆発（tc_se_boom・大きさ {bo_[0][1] if bo_ else None}）→ {BO["telop"]}秒 あとに ドーン！！（テロップが 飛びこむ 時：{nm}）')
+            if tb is not None:
+                win = lambda a_, b_: [f for f in fr if tb + a_ <= f['t'] < tb + b_]
+                # 時刻は 爆発の 音を たのんだ 時（tb）から 数える。動画が 動きだす コマは 少し おくれる ことが ある（〜0.2秒：その ぶん tb は 幕が 明ける 時より おそい）→ 窓の はしに よゆうを とる
+                pre = [f for f in fr if f['t'] < tb - 150]; w1 = win(80, 520); w2 = win(1100, 2150); w3 = win(2950, 3400)
+                check(len(pre) > 8 and all(f['el'] and f['under'] and f['op'] == 0 for f in pre),
+                      f'幕と 動画は ルーレットの はじめに 用意して かくして おく（演出の キャンバスの すぐ 下・すき通し 0：{len(pre)}コマ）')
+                cts = [f['ct'] for f in w1 if f['ct'] is not None]
+                check(len(w1) >= 2 and all(f['el'] and f['op'] == 1 for f in w1) and cts and max(cts) > 0.2 and all(b_ >= a_ - 1e-6 for a_, b_ in zip(cts, cts[1:]))
+                      and max(f['corner'] for f in w1) == 0 and max(f['panel'][3] for f in w1) == 0,
+                      f'真っ暗に なった 瞬間に 爆発の 動画が 流れる（0.5秒で {max(cts) if cts else 0:.2f}秒 ぶん 進む）・はじめの {BO["telop"]}秒は 爆発 だけ（キャンバスには 何も 描かない：すき通し {max(f["panel"][3] for f in w1)}）')
+                tp = next((f['t'] - tb for f in fr if f['t'] > tb and f['panel'][3] >= 250), None)
+                check(tp is not None and BO['telop'] * 1000 + 100 <= tp <= BO['telop'] * 1000 + 520, f'テロップは 爆発の {BO["telop"]}秒 あとに 飛びこんで くる（板が はっきり 見えるのは {(tp or 0) / 1000:.2f}秒）')
+                # 板の まん中の 画素は、数字が 回って いる 間 字の ふち（こげ茶）に かかる コマが ある → 色は まん中の 値で 見る（すけない ことは ぜんぶの コマで）
+                pr2 = sorted(f['panel'][0] for f in w2)
+                check(len(w2) >= 3 and all(f['el'] and f['op'] == 1 for f in w2) and max(f['corner'] for f in w2) < 250 and min(f['panel'][3] for f in w2) >= 250 and pr2[len(pr2) // 2] > 200,      # すき通った キャンバスに 重ねる ので、板の すき通しは 254 に なる コマが ある（255 の 99.6%：見た目は 同じ）
+                      f'動画の 間は キャンバスの うしろを ぬらない（すみの すき通し {max(f["corner"] for f in w2)}/255 まで＝下の 火が 見える）・テロップの 板は すけない（{len(w2)}コマ・幕が 出て いない コマ {sum(1 for f in w2 if not (f["el"] and f["op"] == 1))}・板の すき通し {min(f["panel"][3] for f in w2) if w2 else None}・板の 赤 {pr2[0] if pr2 else None}〜{pr2[-1] if pr2 else None}）')
+                check(len(w3) >= 1 and not any(f['el'] for f in w3) and all(f['corner'] == 255 for f in w3),
+                      f'動画が おわったら（{BO["len"]}秒）幕を 外して いままでの 場面と 同じ 描き方（すみも すけない 255）')
+            check(R['left'] == 0 and not R['on'], 'とじた あと：幕（.tcbm）は 残らない')
+            # 絵：0.33秒＝画面 いっぱいの 火（明るい・テロップは まだ）／1.1秒＝テロップの 板（クリーム色）の 上と 下に 火（赤〜黄）
+            #   絵：動画が 0.3秒まで 進んだ とき＝画面 いっぱいの 火（明るい・テロップは まだ）／1.05秒＝テロップの 板（クリーム色）の 上と 下に 火（黄〜赤）
+            if SN.get('a') and SN.get('b'):
+                im_a, im_b = bm_snap(SN['a'], 'tc_rt_boom_a'), bm_snap(SN['b'], 'tc_rt_boom_b'); reg = lambda im, x0, y0, x1, y1: im[int(y0):int(y1), int(x0):int(x1)].reshape(-1, 3)
+                ca = reg(im_a, 60, 150, 330, 430); fire = lambda px: float(_np.mean((px[:, 0] > 150) & (px[:, 0] > px[:, 2] + 40))); hot = lambda px: float(_np.mean(px.max(1) > 200))
+                T_ = pg.evaluate("() => TCFX.TELOP"); tw, th_ = T_['w'], T_['w'] * T_['ar']; plx = T_['cx'] - tw / 2 + T_['panel'][0] * tw; pcy = T_['cy'] - th_ / 2 + (T_['panel'][1] + T_['panel'][3]) / 2 * th_
+                pb = reg(im_b, plx + 3, pcy - 20, plx + 14, pcy + 20); cream = float(_np.mean((pb[:, 0] > 225) & (pb[:, 1] > 195) & (pb[:, 2] > 140)))
+                up_ = reg(im_b, 60, 40, 330, T_['cy'] - th_ / 2 - 12); dn2 = reg(im_b, 60, T_['cy'] + th_ / 2 + 70, 330, 560); pa = reg(im_a, plx + 3, pcy - 20, plx + 14, pcy + 20)
+                check(float(ca.mean()) > 170 and hot(ca) > 0.75 and float(_np.mean((pa[:, 0] > 225) & (pa[:, 2] > 140) & (pa[:, 0] - pa[:, 2] < 90) & (pa[:, 0] - pa[:, 2] > 20))) < 0.5,
+                      f'動画が {SN["at"]:.2f}秒の とき：画面の まん中は 火の 玉（明るさ {ca.mean():.0f}/255・明るい 所 {hot(ca):.0%}）・テロップは まだ 出て いない')
+                check(cream > 0.8 and fire(up_) > 0.2 and fire(dn2) > 0.1, f'動画が {SN["bt"]:.2f}秒の とき：テロップの 板（クリーム色 {cream:.0%}）の 上（火の 色 {fire(up_):.0%}）と 下（{fire(dn2):.0%}）に 火が 見える')
+            else: check(False, f'爆発の 絵を 写せなかった（{sorted(SN)}）')
+            # ---- 動画が 動かない とき（再生を はじめたのに コマが 進まない）：0.3秒で あきらめて 暗い 舞台 → 0.6秒で テロップ（音は 爆発 → ドーン！！の まま）
+            pg.evaluate("() => { window.__playO = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { return new Promise(() => {}); }; }")
+            bm_go(BSRC); R = bm_end(2600); fr = R['bm']; se_ = R['se']
+            pg.evaluate("() => { HTMLMediaElement.prototype.play = window.__playO; }")
+            tb = next((x[3] for x in se_ if x[0] == 'boom'), None); dn_ = [x for x in se_ if x[0] == 'doon']
+            if tb is not None:
+                win = lambda a_, b_: [f for f in fr if tb + a_ <= f['t'] < tb + b_]; w2 = win(1300, 2000)
+                gone = next((f['t'] - tb for f in fr if f['t'] > tb and not f['el']), None); w1 = win((gone or 0) + 20, BO['telop'] * 1000 - 5) if gone is not None else []
+                check(gone is not None and BO['wait'] * 1000 - 220 <= gone <= BO['wait'] * 1000 + 150 and all(f['corner'] == 255 and f['panel'][3] == 255 and max(f['panel'][:3]) < 40 for f in w1)
+                      and all(f['corner'] == 255 for f in win((gone or 0) + 20, 2500))
+                      and len(w2) >= 2 and all(f['corner'] == 255 and f['panel'][3] >= 250 for f in w2) and sorted(f['panel'][0] for f in w2)[len(w2) // 2] > 200 and len(dn_) == 1 and abs(dn_[0][2] - BO['telop']) < 1e-9 and R['left'] == 0,
+                      f'動画が 動かない とき：{(gone or 0) / 1000:.2f}秒で 幕を 外して 暗い 舞台（すけない：ルーレットは 見えない）→ テロップと ポイントは 出る（音は 爆発 → ドーン！！）')
+            else: check(False, '動画が 動かない とき：爆発の 音が 鳴らなかった')
+            # ---- 動画の ファイルが ない とき（読めない）：いままでの 場面（爆発の 音なし・ドーン！！は すぐ）
+            bm_go('nai_boom.webm'); R = bm_end(2000); se_ = R['se']; dn_ = [x for x in se_ if x[0] == 'doon']
+            check(not any(x[0] == 'boom' for x in se_) and len(dn_) == 1 and dn_[0][2] == 0 and R['left'] == 0 and all(f['op'] in (0, None) for f in R['bm']),
+                  '動画の ファイルが ない とき：いままでの 場面（爆発の 音は 鳴らさない・ドーン！！は すぐ・幕は 見せない）')
+            # ---- 「演出を控えめにする」：爆発は 出さない（幕も 用意しない）
+            pg.evaluate("() => TengelFx.set({ calm: true })")
+            bm_go(BSRC); R = bm_end(2000); se_ = R['se']
+            pg.evaluate("() => TengelFx.set({ calm: false })")
+            check(not any(x[0] == 'boom' for x in se_) and not any(f['el'] for f in R['bm']) and R['left'] == 0, '「演出を控えめにする」：爆発は 出さない（幕も 動画も 用意しない・音も いままで どおり）')
+            pg.evaluate("() => { TCFX.BOOM.src = 'tc_rt_boom.mp4'; }")
+            # ---- 光：動画の コマ（もとの 動画）と キャンバスの 絵（TCFX.bigFrame・時計を 使わない）を 1/30秒ごとに 重ねて 明るさを 測る（3.5秒）
+            raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', BOOM_MP4, '-vf', 'scale=390:614', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], capture_output=True, check=True).stdout
+            vid = _np.frombuffer(raw, _np.uint8).reshape(-1, 614, 390, 3); nv = len(vid)
+            BFJ = """async ([vs, clear, late, rise]) => { const cv = window.__bmCv || (window.__bmCv = Object.assign(document.createElement('canvas'), { width: 390, height: 614 }));
+              if (vs < 0) cv.getContext('2d').clearRect(0, 0, 390, 614); else await TCFX.bigFrame(cv, vs, 20000, false, false, { clear, late, rise });
+              return cv.toDataURL('image/png'); }"""
+            lin = lambda c: _np.where(c <= 0.03928, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+            G_, big_, mid_, small_ = [], [], [], []
+            for k in range(106):
+                v_ = k / 30; clear = v_ < BO['len'] + 0.1
+                du = pg.evaluate(BFJ, [v_ - BO['telop'], clear, BO['late'] - BO['telop'], BO['rise']])
+                cvs = _np.asarray(_Im.open(_io.BytesIO(_b64.b64decode(du.split(',')[1]))).convert('RGBA'), dtype=_np.float32); a_ = cvs[..., 3:4] / 255
+                base = vid[k].astype(_np.float32) if k < nv else _np.zeros((614, 390, 3), _np.float32) + _np.array([6, 3, 2], _np.float32)
+                out = cvs[..., :3] * a_ + base * (1 - a_) if clear else cvs[..., :3]
+                L_ = lin(out / 255); L_ = 0.2126 * L_[..., 0] + 0.7152 * L_[..., 1] + 0.0722 * L_[..., 2]
+                G_.append(float(L_.mean()))
+                big_.append([float(L_[int(i * 153.5):int((i + 1) * 153.5), j * 130:(j + 1) * 130].mean()) for i in range(4) for j in range(3)])
+                mid_.append([float(L_[int(i * 61.4):int((i + 1) * 61.4), j * 65:(j + 1) * 65].mean()) for i in range(10) for j in range(6)])
+                small_.append([float(L_[i * 30:min(614, (i + 1) * 30), j * 30:(j + 1) * 30].mean()) for i in range(21) for j in range(13)])
+            def per_sec(S):
+                o = []
+                for i in range(len(S[0])):
+                    ks = lum_tr([f[i] for f in S]); o.append(max([sum(1 for q in ks if k0 <= q < k0 + 30) for k0 in ks] or [0]))
+                return o
+            gt = lum_tr(G_); pk = max(range(len(G_)), key=lambda i: G_[i]); pb_g, pm_g, ps_g = per_sec(big_), per_sec(mid_), per_sec(small_)
+            n5 = sum(1 for v in ps_g if v >= 5)
+            check(len(vid) == 78 and G_[0] < 0.01 and pk <= 18 and len(gt) <= 3 and max(G_[60:]) - min(G_[60:]) <= 0.05 and 0.2 <= G_[-1] <= 0.45,
+                  f'爆発と いっしょの 場面の 明るさ（動画と キャンバスを 重ねて 測る）：まっ暗（{G_[0]:.3f}）→ 爆発で 明るく（山は {pk / 30:.2f}秒・{G_[pk]:.2f}）→ 火が おさまる → 金の 光で 明るく（向きがえ {len(gt)}回 ＝ 点めつは 1回）→ 2秒より あとは 一定（{G_[-1]:.2f}）')
+            check(max(pb_g) <= 4 and max(pm_g) <= 5 and max(ps_g) <= 6 and n5 <= 30,
+                  f'ちかちか しない：1秒の 向きがえ（2回で 点めつ 1回）＝大きい ます {max(pb_g)}回 まで・中の ます {max(pm_g)}回 まで・小さい ます（30pt）でも {max(ps_g)}回 まで（5回 以上は {n5}/273）')
+        else: print('  ⚠️ 爆発の 動画（ios/tc_assets/tc_rt_boom.mp4）か ffmpeg が ない（爆発の 流れは 確かめて いない）')
+        if HAVE:
+            import numpy as _np2
+            def _probe(f):
+                r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_type,codec_name,profile,width,height,pix_fmt,r_frame_rate,nb_frames:format=duration', '-of', 'json', f], capture_output=True, text=True)
+                return json.loads(r.stdout or '{}')
+            bmp = os.path.join(TCA, 'tc_rt_boom.mp4'); bse = os.path.join(TCA, 'tc_se_boom.m4a')
+            if os.path.exists(bmp) and os.path.exists(bse) and shutil.which('ffprobe'):
+                pv = _probe(bmp); st_ = pv.get('streams', []); v0 = st_[0] if st_ else {}
+                raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', bmp, '-vf', 'select=eq(n\\,0)+eq(n\\,77),scale=390:614', '-vsync', '0', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], capture_output=True).stdout
+                fb = _np2.frombuffer(raw, _np2.uint8).reshape(-1, 614, 390, 3)
+                check(len(st_) == 1 and (v0.get('codec_name'), v0.get('profile'), v0.get('width'), v0.get('height'), v0.get('pix_fmt'), v0.get('r_frame_rate'), int(v0.get('nb_frames', 0))) == ('h264', 'High', 1170, 1842, 'yuv420p', '30/1', 78)
+                      and len(fb) == 2 and int(fb[0].max()) <= 24 and float(fb[0].mean()) < 5 and int(fb[1].max()) <= 8 and os.path.getsize(bmp) < 4e6,
+                      f'爆発の 動画：H.264 High・1170×1842（舞台 390×614 の 3倍）・30コマ/秒・78コマ（2.6秒）・音なし・はじめと さいごの コマは 真っ暗（{int(fb[0].max()) if len(fb) else "?"}・{int(fb[1].max()) if len(fb) > 1 else "?"}/255）・{os.path.getsize(bmp) / 1e6:.2f}MB')
+                ps = _probe(bse); du = float(ps.get('format', {}).get('duration', 0))
+                rw = subprocess.run(['ffmpeg', '-v', 'error', '-i', bse, '-f', 's16le', '-ac', '2', '-ar', '44100', '-'], capture_output=True).stdout
+                ya = _np2.frombuffer(rw, _np2.int16).astype(_np2.float64) / 32768; pkd = 20 * float(_np2.log10(max(1e-9, float(_np2.abs(ya).max())))); h1 = float(_np2.sqrt(_np2.mean(ya[:44100 * 2 // 2] ** 2))); h2 = float(_np2.sqrt(_np2.mean(ya[-44100 * 2 // 2:] ** 2)))
+                rd_ = subprocess.run(['ffmpeg', '-v', 'error', '-i', os.path.join(TCA, 'tc_se_doon.m4a'), '-f', 's16le', '-ac', '2', '-ar', '44100', '-'], capture_output=True).stdout
+                yd = _np2.frombuffer(rd_, _np2.int16).astype(_np2.float64) / 32768; BO2 = pg.evaluate('() => Object.assign({}, TCFX.BOOM)'); i0 = int(BO2['telop'] * 44100) * 2
+                mix = _np2.zeros(max(len(ya), i0 + len(yd))); mix[:len(ya)] += ya * BO2['gain']; mix[i0:i0 + len(yd)] += yd; pkm = float(_np2.abs(mix).max())
+                check(2.4 <= du <= 2.8 and -4 <= pkd <= -0.5 and h1 > 4 * h2 and pkm < 0.92 and float(_np2.abs(ya).max()) * BO2['gain'] < 0.7,
+                      f'爆発の 音：{du:.2f}秒・ファイルの 山 {pkd:.1f}dB → {BO2["gain"]}倍で 鳴らす・{BO2["telop"]}秒 あとの ドーン！！と 重ねた 山は {pkm:.2f}（1 を こえない＝割れない）・はじめが 大きく だんだん 消える')
+            else: print('  ⚠️ 爆発の 動画・音（ios/tc_assets）が ない')
         print('■ ルーレット（幻の馬：目は 紫に 光る）')
         pg.evaluate("() => { window.__rtDone = false; TCFX.roulette(document.querySelector('#tcOv .tcfx'), { th: 'maboroshi', a: 1600, b: 3200, win: 0, bg: 'abyss', se: TCApp._snd.se }).then(() => { window.__rtDone = true; }); }")
         pg.wait_for_timeout(2500); shot(pg, 'tc_rt_mabo')
@@ -1109,6 +1274,22 @@ try:
         check(bm1 == ['roulette', 'roulette', 1] and bm2 == [None, '', 0] and bm3 == [fld, None, 1] and holds == ['roulette', '', 'null'] and 0 <= im_('rt_stop') < im_('sfx_sdp×0.85') < im_('doon') and 'dedeen' not in sm_
               and [x['k'] for x in lgm if x['k'] in ('in', 'out')][:1] == ['in'] and w4 == w3 + 3200 and ptm is not None and abs(ptm[2] - Pm['w']) < 0.01 and abs(ptm[3] - Pm['h']) < 0.01,
               f'幻の馬の 高い 方（3,200P）：プチュンで ルーレットの BGM を 止める（音なし）→ ドーン！！→ おわると フィールドの 音（{holds}）・プチュンと ドーン！！は 今までどおり・ピンは もとの 大きさ（{[round(v) for v in ptm[2:]] if ptm else None}）')
+        #   第4.171版（まさちゃん 2026/11/14 17:48「神様馬のルーレット中のBGMはなしで！」）：神様馬の ルーレットの 間は BGM なし（フィールドの 音も ルーレットの BGM も 鳴らさない）→ おわると フィールドの 音
+        pg.evaluate("() => { window.__bl.length = 0; }"); pg.evaluate(SES); w5 = pg.evaluate("() => TengelWallet.total()")
+        pg.evaluate("() => { window.__opDone = false; TCApp._t.onPrize({ k: 'rt', tier: 'kamisama', win: 0, id: 'tc-rt-test-171k' }).then(() => { window.__opDone = true; }); }")
+        pg.wait_for_function("() => document.querySelector('#tcOv .tcfx.on')", timeout=20000); pg.wait_for_timeout(2500); bk1 = pg.evaluate(BD)
+        pg.mouse.click(300, 600); pg.wait_for_timeout(5600); bk2 = pg.evaluate(BD)
+        for _ in range(20):
+            pg.wait_for_timeout(700)
+            if pg.evaluate("() => window.__opDone"): break
+            pg.mouse.click(200, 400)
+        pg.wait_for_function("() => window.__opDone", timeout=30000); pg.wait_for_timeout(2600)
+        bk3 = pg.evaluate(BD); blk = pg.evaluate("() => window.__bl.slice()"); sk_ = pg.evaluate(SES); w6 = pg.evaluate("() => TengelWallet.total()")
+        holdk = [k.split('|')[1] for k in blk]; holdk = [v for i, v in enumerate(holdk) if i == 0 or v != holdk[i - 1]]; bedk = sorted({k.split('|')[0] for k in blk})
+        check(bk1 == [None, 'none', 0] and bk2 == [None, 'none', 0] and bk3 == [fld, None, 1] and holdk == ['none', 'null'] and 'roulette' not in bedk and 'rt_lever' in sk_ and 'rt_stop' in sk_ and w6 == w5 + 3200,
+              f'神様馬の ルーレット：BGM なし（くり返す 音は {bk1[2]}つ：フィールドの 音も ルーレットの BGM も 鳴らさない・レバーや 止まる 音は 鳴る）→ おわると フィールドの 音に もどる（{holdk}・{bedk}）・ポイントは 台帳へ（+{w6 - w5:,}P）')
+        ta_ = open(os.path.join(W, 'tc', 'tc_app.js'), encoding='utf8').read()
+        check("SND.bgm(z.tier === 'kamisama' ? 'none' : 'roulette');" in ta_, 'ノーマル・幻の馬の ルーレットは いままで どおり ルーレットの BGM（上の 確かめ）・神様馬 だけ BGM なし')
         pg.evaluate("() => { clearInterval(window.__blT); }")
         print('■ チケット（2まい）')
         pg.evaluate("() => { window.__tkDone = false; TCFX.ticket(document.querySelector('#tcOv .tcfx'), { n: 2, bg: 'morning', se: TCApp._snd.se }).then(() => { window.__tkDone = true; }); }")

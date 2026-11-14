@@ -17,13 +17,18 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
           (('sd_film2.mp4', 'sd_last2.webp'), ('sd_film.mp4', 'sd_last.webp')),
           (('nd_film2.mp4', 'nd_last2.webp'), ('nd_film.mp4', 'nd_last.webp')),
           (('sd_film3.mp4', 'sd_last3.webp'), ('sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp')),
-          (('nd_film3.mp4', 'nd_last3.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp')))
+          (('nd_film3.mp4', 'nd_last3.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp')),
+          (('sd_film4.mp4', 'sd_last4.webp'), ('sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp')),
+          (('nd_film4.mp4', 'nd_last4.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp', 'nd_film3.mp4', 'nd_last3.webp')),
+          (('gk_film2.mp4', 'gk_last2.webp'), ('gk_film.mp4', 'gk_last.webp')))
 #   第4.162版（22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：超神様の 動画・さいごの 1まい・音は 新しい もの（…2）を 使う。
 #   新しい ものが 3つ そろって いる ときは 前の もの（球体の 場面 あり）は 入れない（もとの フォルダには 残す）
 #   第4.163版（11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」・02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：極ど的中（紫電）と
 #   ノーマルど的中の 動画・さいごの 1まいも 新しい もの（…2）。組ごとに、新しい ものが そろって いる ときだけ 前の ものを 入れない（音は 前と 同じ）
 #   第4.164版（11/13 08:28「全体的に文字が読みづらい！色合い明るくして！あと一枚目は、ど！的中の文字少しだけ浮かせて！」）：字を 明るく した 動画・さいごの 1まい（…3）。
 #   組は（新しい もの, その ときに 入れない 前の もの）。…3 が そろって いる ときは …2 と はじめの ものを 入れない（どれも もとの フォルダには 残す）
+#   第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：極ど的中・ノーマルど的中は 3倍（1170×2532）で 描き直した 動画と さいごの 1まい（…4）・
+#   神様極的中は 3倍に のばした もの（gk_film2.mp4・gk_last2.webp）。そろって いる 組は 前の もの（…3・はじめの もの）を 入れない
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
@@ -69,6 +74,20 @@ def superseded(name, files):
         #   kisekae/tc/buy_asset.py）。はじめの 横長の 絵（tc_icon_buy.webp）は 使わない ので 入れない（もとの フォルダには 残す）
         if 'tc_icon_buy2.webp' in files:
             old |= files & {'tc_icon_buy.webp'}
+        # 第4.171版（まさちゃん 2026/11/14 16:18「トレーニングセンターの神様馬出現中のBGM:もっとアップテンポで掻き立てられるようなBGM」）：神様馬の フィールドの BGM は
+        #   新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py）。前の 曲（tc_bgm_divine.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
+        if 'tc_bgm_divine2.m4a' in files:
+            old |= files & {'tc_bgm_divine.m4a'}
+        # 第4.171版（17:49「テンゲルのBGMは、この動画の背景で流れているBGMが理想！」）：テンゲルBGM は 第2稿（bgm_tengel2.m4a：のどかな 村の ふんいき）。第1稿（bgm_tengel.m4a）は 入れない（もとの フォルダには 残す）
+        #   → 18:49「BGMもっとゆっくりで、鳥の声や笛の音入れて！」：第3稿（bgm_tengel3.m4a）。第1稿・第2稿は 入れない
+        #   → 19:09「一回、鳥の声と笛の音だけにしてみて！もっとゆったりで！」：第4稿（bgm_tengel4.m4a）。第1稿〜第3稿は 入れない
+        #   → 19:25「ここに馬の走る音と、もう少し太い音の笛を混ぜて！ゆったりね！」：第5稿（bgm_tengel5.m4a）。第1稿〜第4稿は 入れない
+        #   → 19:41「もう一段階太い笛と、かなり音が低い笛も重ねて音入れて！」・19:42「馬の鳴き声と、馬が走る音追加して！」：第6稿（bgm_tengel6.m4a）
+        #   → 19:57「この笛を、バイオリンぽくできる？」：第7稿（bgm_tengel7.m4a）→ 20:12「ごめん！笛に戻して！もっとゆったりで！」・20:15「あと風の音も入れて！」：第8稿（bgm_tengel8.m4a）→ 20:27「もっと笛の音ゆっくりして！」：第9稿（bgm_tengel9.m4a）
+        #   きまり：bgm_tengel<番号>.m4a（番号なし＝第1稿）の うち、番号の いちばん 大きい もの だけ 入れる（前の 稿は もとの フォルダに 残す）
+        import re as _re
+        _bg = sorted((int(_m.group(1) or 1), f) for f in files for _m in [_re.fullmatch(r'bgm_tengel(\d*)\.m4a', f)] if _m)
+        old |= {f for _, f in _bg[:-1]}
         # 第4.165版（まさちゃん 2026/11/13 14:16「何か変だから、2枚目のアイコンにして、作戦会議のすぐ下に設置してみて！」）：「壁紙&ボード着せ替え」の 絵は 横長の カプセル
         #   （tc_icon_kise2.webp：kisekae/tc/kise_asset.py）。はじめの 丸い 絵（tc_icon_kise.webp）は 使わない ので 入れない（もとの フォルダには 残す）
         if 'tc_icon_kise2.webp' in files:

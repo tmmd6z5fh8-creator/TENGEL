@@ -102,12 +102,18 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine2.m4a', roulette: 'tc_bgm_roulette.m4a' };
     // 第4.168版（まさちゃん 2026/11/14 01:26「ルーレットに入った時にBGMを変える。フィールドBGMは重ねない。」）：ルーレットの 間は ルーレットの BGM だけ（bgm）。
     //   ・hold＝いま フィールドの 音の かわりに 鳴らす もの：null＝なし（フィールドの 音）・''＝音なし（プチュンの あと）・名前＝その BGM。hold が ある 間は field() は おぼえる だけ（重ねない）
     //   ・ルーレットの BGM の ファイルは、くり返す 1回り（8小節）の 前と うしろに 0.5秒ずつ 同じ 音の つづきが 入って いる（kisekae/tc/snd/export_app.py）→ まん中の 1回り だけを くり返す（LOOPS）。
     //     m4a は 読む 道具に よって 頭に 短い 無音が つく ことが ある：前と うしろに つづきが ある ので、その ぶん ずれても つなぎ目は 同じ 音どうし（リズムが とばない）
-    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 } };
+    // 第4.171版（まさちゃん 2026/11/14 16:18「トレーニングセンターの神様馬出現中のBGM:もっとアップテンポで掻き立てられるようなBGM」・
+    //   17:08「神様馬のBGMもう少しカッコよく！もう少し神様ぽさを混ぜて！」）：神様馬の フィールドの BGM は 新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py の divine2・
+    //   ホ短調・156 BPM・32小節）。ルーレットの BGM と 同じ 形の ファイル（前後に 0.5秒の つづき）→ まん中の 1回り だけを くり返す（LOOPS）。
+    //   曲の 頭は「降臨」の 和音（オルガン・合唱・鐘）なので、フィールドが かわる ときは すぐ 入れる（0.15秒：ゆっくり 入れると 頭の 和音が 聞こえない）。前の 音は 2秒で 消える。
+    //   新しい 曲の ファイルが ない（前の 素材の フォルダで 作った アプリ）とき だけ 前の 曲（AMB_OLD：60秒の ループ・LOOPS は 使わない）
+    const AMB_OLD = { divine: 'tc_bgm_divine.m4a' };
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
@@ -116,15 +122,16 @@ const TCApp = (() => {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
       const old = bed; bed = null;
       if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + fout); old.s.stop(n + fout + 0.1); } catch (e) { } }
-      const f = AMB[aim]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
+      const f = AMB[aim]; if (!f) return; let b, fb = false;
+      try { b = await buf(f); } catch (e) { if (!AMB_OLD[aim]) return; try { b = await buf(AMB_OLD[aim]); fb = true; } catch (e2) { return; } }
       if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const L = LOOPS[aim]; let off = 0;
+      const L = fb ? null : LOOPS[aim]; let off = 0;
       if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      // まん中の 1回り だけを くり返す・はじめは 1拍めから
       const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
       s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };
     }
-    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, 2); }      // フィールドの 音（2秒で 入れかえ）。ルーレットの 間（hold）は おぼえる だけ
+    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, LOOPS[name] ? 0.15 : 2); }      // フィールドの 音（2秒で 入れかえ）。ルーレットの 間（hold）は おぼえる だけ
     // ルーレットの 間の BGM：name＝BGM の 名前（すぐ 入れかえ：フィールドの 音は 0.3秒で 消す）・''＝音なし（プチュン：すぐ 消す）・null＝フィールドの 音に もどす（1.5秒で もどる）
     async function bgm(name) {
       hold = name == null ? null : String(name);
@@ -137,7 +144,7 @@ const TCApp = (() => {
     function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
     function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, LOOPS };
+    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      // loop（第4.171版）＝いまの 音の くり返す 所（秒：はじめ・おわり。0・0 は ファイルの はじめから おわりまで）
   })();
   // できごと → 効果音（sfx_care.py の parts で 作った tc_se_*.m4a。大きさ・ずれは 作る ときに 入れて ある）
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -422,9 +429,11 @@ const TCApp = (() => {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
-        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      // 止まった あとの 音を 回って いる 間に 読んで おく（第4.168版：ノーマルは プチュン・ドーン！！を 使わない＝高い 方は デデーン）
+        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a', 'tc_se_boom.m4a']);      // 止まった あとの 音を 回って いる 間に 読んで おく（第4.168版：ノーマルは プチュン・ドーン！！を 使わない＝高い 方は デデーン）
         // 第4.168版：ルーレットの 間は ルーレットの BGM（フィールドの 音は 消す：重ねない）。幻の馬・神様馬の 高い 方は プチュンで 音を 止める（onCut）。おわったら フィールドの 音に もどす
-        SND.bgm('roulette');
+        // 第4.171版（まさちゃん 2026/11/14 17:48「神様馬のルーレット中のBGMはなしで！」）：神様馬の ルーレットの 間は BGM なし（フィールドの 音も ルーレットの BGM も 鳴らさない：
+        //   'none'＝音の ない 名前 → いまの 音を 0.3秒で 消す だけ）。音は レバー・カチッ・止まる 音・プチュン・爆発・ドーン！！ だけ。ノーマル・幻の馬の ルーレットは いままで どおり ルーレットの BGM
+        SND.bgm(z.tier === 'kamisama' ? 'none' : 'roulette');
         try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); give(z); }      // 第4.159版：止まった あと 安い 方＝デカ的中と 同じ 音・高い 方＝プチュン → ドーン！！と テロップ「大量ポイント」（tc_fx.js）
       } else if (z.k === 'zn') {
         // 第4.165版：ポイント特化ゾーン（tc_fx.js の zone）。何回 上乗せ できるか（z.n）は もう 決まって いる → レバーを 1回ずつ 押して 見せる。おわったら（途中で 閉じても）合計を わたす

@@ -111,7 +111,8 @@ if len(bcp_have) != len(bcp_all):
 # kisekae/tc/collect_assets.py で 集める。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。右上の ボタンを 押すと「読みこめなかった」に なる）
 tc_dir = os.environ.get('TC_ASSETS') or _ad.adir('tc_assets')
 _tc_ls = os.listdir(tc_dir) if os.path.isdir(tc_dir) else []; _tc_old = _ad.superseded('tc_assets', _tc_ls)      # 第4.156版：使わなく なった 音（横に なる 動きの 3つ）は 入れない
-tc_have = sorted(f for f in _tc_ls if f not in _tc_old and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a'))
+# 第4.171版：ルーレットの 高い 方の 爆発の 動画（tc_rt_boom.mp4：kisekae/tc/boom.py）・テンゲルBGM（bgm_tengel.m4a：bgm.js が 鳴らす。置き場は 同じ フォルダ）も ここから 入れる
+tc_have = sorted(f for f in _tc_ls if f not in _tc_old and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a', 'mp4'))
 for f in tc_have:
     assert f.lower() not in names and f not in files, f
     shutil.copy(os.path.join(tc_dir, f), os.path.join(res, f)); files[f] = f

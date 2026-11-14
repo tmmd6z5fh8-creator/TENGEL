@@ -180,10 +180,22 @@ def has_tail(src):
     return bool(m) and os.path.isfile(os.path.join(os.path.dirname(src), m.group(1) + '_last' + m.group(2) + '.webp'))
 
 
+# 第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：神様極的中の 3倍の 動画（gk_film2.mp4）は、できた 動画（780×1688）を のばして 作った もの
+#   ＝ 新しい 細かさは ない ので、ほかの 動画（CRF 24）より 強めに 圧縮しても 見た目は かわらない（CRF 24＝15.4MB と CRF 27＝10.6MB を 同じ コマで 見くらべて 決めた。
+#   前の 2倍の 動画は 7.8MB：りんかくは 前より くっきり）。さいごの 30コマは ほかと 同じく 少しずつ きれいに（さいごは CRF 21：きれいな 1まい絵に つながる）
+FILM_P = {'gk_film2.mp4': (27, [[30, 25], [20, 23], [10, 21]])}
+
+
+def film_p(f):
+    """その 動画の 圧縮の 強さ（CRF）と さいごの コマの 決めごと"""
+    return FILM_P.get(os.path.basename(f), (PARAMS['crf'], PARAMS['tail']))
+
+
 def sig(name, f, how):
     """その ファイルを 作る ときの 決めごと（かわったら 作り直す）"""
     if how == 'film':
-        return f"crf{PARAMS['crf']}-{PARAMS['preset']}" + ('-tail' + '/'.join(f'{a}:{b}' for a, b in PARAMS['tail']) if has_tail(os.path.join(AD.master(name), f)) else '')
+        crf, tail = film_p(f)
+        return f"crf{crf}-{PARAMS['preset']}" + ('-tail' + '/'.join(f'{a}:{b}' for a, b in tail) if has_tail(os.path.join(AD.master(name), f)) else '')
     if how == 'webp':
         return f"q{PARAMS['q']}-m{PARAMS['method']}"
     if how == 'idxz':
@@ -194,11 +206,11 @@ def sig(name, f, how):
 
 
 def enc_film(src, dst):
-    tmp = dst + '.tmp.mp4'; a = probe(src); n = int(a['v']['nb_frames']); zones = []
+    tmp = dst + '.tmp.mp4'; a = probe(src); n = int(a['v']['nb_frames']); zones = []; crf, tail = film_p(src)
     if has_tail(src):
-        edges = [n - k for k, _c in PARAMS['tail']] + [n]
-        zones = ['-x264-params', 'zones=' + '/'.join(f'{edges[i]},{edges[i + 1] - 1},crf={c}' for i, (_k, c) in enumerate(PARAMS['tail']))]
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:v:0', '-c:v', 'libx264', '-profile:v', 'high', '-preset', PARAMS['preset'], '-crf', str(PARAMS['crf']), *zones,
+        edges = [n - k for k, _c in tail] + [n]
+        zones = ['-x264-params', 'zones=' + '/'.join(f'{edges[i]},{edges[i + 1] - 1},crf={c}' for i, (_k, c) in enumerate(tail))]
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:v:0', '-c:v', 'libx264', '-profile:v', 'high', '-preset', PARAMS['preset'], '-crf', str(crf), *zones,
                     '-pix_fmt', 'yuv420p', '-an', '-threads', '2', '-movflags', '+faststart', '-map_metadata', '-1', tmp], check=True)
     b = probe(tmp)
     for k in ('codec_name', 'profile', 'width', 'height', 'pix_fmt', 'r_frame_rate', 'nb_frames'):

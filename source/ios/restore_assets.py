@@ -4,7 +4,7 @@
 #     ks_<32けた>.<形> → ios/kisekae_blobs/<32けた>.<形>（着せ替えの 見本の 絵）
 #     build_fx の ASSET_FILES → ios/fx_assets/（的中ボタンの 絵と 音）
 #     bcp_app.files() → ios/bcp_assets/（結果ボードカスタムの 絵の ボード）
-#     tc_・rt_・tk_ で はじまる 絵・形・音 → ios/tc_assets/（トレーニングセンター）
+#     tc_・rt_・tk_ で はじまる 絵・形・音・動画 と bgm_tengel.m4a（テンゲルBGM）→ ios/tc_assets/（トレーニングセンター）
 #     fg で はじまる 形・絵 → ios/fig_assets/（思い出フィギュア）
 #   データの 鍵（xt/data_key.txt）は claude.ai の Project の「テンゲル_データ更新の鍵」から 戻す（ここでは 戻さない）
 import os, re, shutil, sys, zipfile
@@ -29,7 +29,7 @@ for f in sorted(names):
     if m: put('kisekae_blobs', f'{m.group(1)}.{m.group(2)}', f)
     elif f in FX: put('fx_assets', f, f)
     elif f in BCP: put('bcp_assets', f, f)
-    elif re.match(r'(tc_|rt_|tk_)', f) and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a') and f != 'tc_bundle.js': put('tc_assets', f, f)
+    elif (re.match(r'(tc_|rt_|tk_)', f) and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin', 'm4a', 'mp4') and f != 'tc_bundle.js') or re.fullmatch(r'bgm_tengel\d*\.m4a', f): put('tc_assets', f, f)      # 第4.171版：爆発の 動画（tc_rt_boom.mp4）・テンゲルBGM（bgm_tengel.m4a）も
     elif re.match(r'fg', f) and f.rsplit('.', 1)[-1].lower() in ('webp', 'json', 'bin'): put('fig_assets', f, f)
 print('戻した：', got)
 print('的中ボタン', got.get('fx_assets', 0), '/', len(FX), '・結果ボード', got.get('bcp_assets', 0), '/', len(BCP))
