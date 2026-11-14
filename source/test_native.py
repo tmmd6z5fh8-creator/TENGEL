@@ -335,6 +335,10 @@ try:
         # 第4.65版：App Store版は 複勝を 読まない（欄は 空のまま・「読めなかった：複勝」とも 言わない）
         check(got['rows'] == 12 and got['tan6'] == '2.4' and got['fuku6'] == '' and got['s1'] == '18.5' and got['s1c'] == '6-2-10' and got['s5'] == '41.3' and got['s10'] == '84', '単勝12頭と3連単1位・5位・10位が入る・複勝は 読まない（空）')
         check('読み取った' in got['msg'] and '単勝12頭' in got['msg'] and '読めなかった' not in got['msg'] and '複勝' not in got['msg'], f'読み取れたもののお知らせ（複勝の 文字は ない）（{got["msg"][:60]}）')
+        # 第4.170版：画像に 写って いた 馬の 名前（馬番ごと）も 入力と いっしょに 持つ（くわしくは test_names.py）
+        nm0 = pg.evaluate("(() => { const f = JSON.parse(localStorage.getItem('tengel.form')); return { names: f.names || null, nkey: f.nkey || '' }; })()")
+        check(bool(nm0['names']) and len(nm0['names']) == 12 and nm0['names'].get('6') == 'ミラクルアロー' and nm0['names'].get('10') == 'ロイヤルステップ' and bool(nm0['nkey']) and '馬名12頭' in got['msg'],
+              f'第4.170版：画像の 馬の 名前（馬番ごと 12頭）が 入力に 入る・お知らせに「馬名12頭」（{(nm0["names"] or {}).get("6")}）')
         check('単勝と3連単人気順のスクショを1〜3枚' in pg.locator('#ocrHint').inner_text() and '複勝' not in pg.locator('#ocrHint').inner_text(), 'ボタンの 横の 案内は「単勝と3連単人気順のスクショを1〜3枚」')
         check(len(outside) == n_out, '読み取りで外に通信しない')
         # 何も読めない画像（表がない）→ いまの入力はそのまま
@@ -377,6 +381,9 @@ try:
         card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
         b9 = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9) || null")
         check(b9 and b9.get('pid') == pid and b9.get('start') == '18:05' and b9['rsv']['types'] == ['単勝', '馬単'] and pg.evaluate('TengelWallet.countedN()') == 1, f'9Rを予約（単勝・馬単）：記録に pid・発走時刻が入る・ミッションに1レース数えた（{pg.evaluate("TengelWallet.countedN()")}）')
+        b8 = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 8) || null")
+        check(isinstance(b9.get('names'), dict) and len(b9['names']) == 12 and b9['names'].get('2') == 'テンゲルクイーン' and 'pn' not in b9 and 'names' not in b8,
+              '第4.170版：画像を 読んで 予約した 記録（9R）に 馬の 名前（names）が 入る・手で 入れた 8R には 入らない')
         check(pg.evaluate('TengelLocal.mem.bets.size') == 2 and len(pg.evaluate('window.__notify.items')) == 2, '最初の8R（200Pを使っていない）は数えない・お知らせは2件（8R・9R）')
         # ---- 一つ前のレース（11.3）：← で 10R に戻る・→ で 9R へ。ポイントは使わない ----
         pg.locator('#result [data-rnav=prev]').click(); pg.wait_for_timeout(400)
@@ -413,12 +420,16 @@ try:
         check(f9.count() == 1 and f9.get_attribute('data-mode') == 'result' and f9.locator('[data-k=p1]').count() == 1 and f9.locator('[data-k=res]').count() == 0 and f9.locator('details[data-k=betsee]').count() == 1 and f9.locator('[data-k=stake]').count() == 0 and f9.locator('[data-k=mslot]').count() == 0 and f9.locator('[data-k=note]').count() == 0
               and f9.locator('[data-act=rsave]').inner_text() == '結果を決める' and '金額は後からでも入れられるよ' in f9.inner_text() and '結果待ち' in f9.locator('[data-k=status]').inner_text(),
               '結果入力の欄（第4.65版）：まず 結果だけ（1〜3着の馬番・取消・中止・発走・画像）。買い目は出さない・金額・マザーデータ・メモの 欄は まだ ない・「結果を決める」・結果待ち')
+        nmv = lambda box: [box.locator(f'[data-k=nm{i}]').input_value() for i in (1, 2, 3)]
+        check(f9.locator('.pln .pnr input').count() == 3 and nmv(f9) == ['', '', ''] and '1〜3着の 馬の 名前' in f9.inner_text(), '第4.170版：結果の 欄に「1〜3着の 馬の 名前」の 欄 3つ（はじめは 空）')
         check(f9.locator('[data-act=rdel]').count() == 1 and f9.locator('[data-act=load]').count() == 1 and pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"]').inner_text().count('保存した判定') == 0 and '判定（' not in pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"] .ledit').inner_text(),
               'App Store版：行の 下に「保存した判定（STEP0〜T3）」と 判定の 1行（層・比・ゾーン）は 出さない')
         pg.evaluate("window.__ocrLines = %s" % json.dumps([RESULT_LINES], ensure_ascii=False))
         f9.locator('[data-k=rimgfile]').set_input_files([os.path.join(OCR_DIR, 'c_sanrentan.jpg')]); pg.wait_for_timeout(1800)
         vals = {k: f9.locator(f'[data-k={k}]').input_value() for k in ('p1', 'p2', 'p3', 'cancel')}
         check(vals == {'p1': '6', 'p2': '2', 'p3': '10', 'cancel': ''} and '読み取った' in f9.locator('[data-k=hint]').inner_text() and '1着 6（1番人気）' in f9.locator('[data-k=plab]').inner_text(), f'結果の画像から 1〜3着の馬番が入る（{vals}）')
+        check(nmv(f9) == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'] and '馬の 名前' in f9.locator('[data-k=hint]').inner_text(),
+              f'第4.170版：結果の 画像を 読むと 1〜3着の 名前の 欄にも 入る（記録に ある オッズの 画像の 名前が 先：{nmv(f9)}）')
         b9pay = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9).rsv.result")
         check('的中' in f9.locator('[data-k=status]').inner_text() and f9.locator('.betlist .hitc').count() == 2 and f9.locator('[data-k=payout]').count() == 0 and '「結果を決める」を押してね' in f9.locator('[data-k=hint]').inner_text(),
               '当たった組（単勝 6・馬単 6→2）に色・的中。払戻の 欄は まだ ない（画像の 払戻は 次の 金額の 欄に 入る）')
@@ -427,6 +438,7 @@ try:
         b9d = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)")
         check(b9d['rsv']['state'] == 'done' and b9d['rsv']['judged']['state'] == '的中' and b9d['rsv']['judged']['per'] == {'単勝': '的中', '馬単': '的中'} and [b9d['n1'], b9d['n2'], b9d['n3']] == [6, 2, 10] and [b9d['p1'], b9d['p2'], b9d['p3']] == [1, 2, 3] and b9d['payout'] is None and b9d['stake'] == 1800 and b9d['rsv']['result']['pay']['単勝'] == {'6': 240},
               f'「結果を決める」→ 券種ごとに的中・着順（馬番と人気）が記録に入る・購入額は 予約の 点数×100円・払戻は まだ 空（画像の 払戻の 表は 記録に）（payout={b9d["payout"]}）')
+        check(b9d.get('pn') == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'] and len(b9d.get('names') or {}) == 12 and b9d['names'].get('6') == 'ミラクルアロー', f'第4.170版：記録に 1〜3着の 名前（pn）が 入る・馬番ごとの 名前は 記録の まま（{b9d.get("pn")}）')
         # ---- 的中ボタン（第3弾・10章）：単勝・馬単の当たり（3連単なし）→ 的中の PUSH → タップ → いつものボード（券種ごとの結果・お金なし）→ とじる ----
         ov = pg.locator('#fxOv')
         sx = pg.evaluate('TengelFx.sfxState()')
@@ -465,6 +477,7 @@ try:
         check(pg.locator('#fxOv').count() == 0 and b9f['payout'] == 1360 and b9f['stake'] == 1800 and b9f['amt']['単勝'] == {'stake': 300, 'payout': 240} and '金額を記録したよ（的中）' in f9.locator('[data-k=savemsg]').inner_text()
               and f9.get_attribute('data-mode') == 'edit' and f9.locator('[data-k=p1]').count() == 1 and f9.locator('[data-k=stake]').count() == 2 and f9.locator('[data-act=rsave]').inner_text() == '記録を保存' and f9.locator('[data-act=rdel]').inner_text() == '記録を消す',
               f'「記録する」→ 払戻の 合計 1,360円が 記録に 入る・演出は 出ない・行は 全部の 欄（あとから 直す 形・mode=edit）に（payout={b9f["payout"]}）')
+        check(b9f.get('pn') == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'] and nmv(f9) == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'], '第4.170版：金額を 記録しても 名前は そのまま・あとから 直す 形の 欄に 保存した 名前が 出る')
         # 同じ記録を保存し直しても、もう出さない（あとで記録を直したとき）
         f9.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
         check(pg.locator('#fxOv').count() == 0 and '保存できたよ' in pg.locator('#toast').inner_text(), '結果を記録ずみの記録を保存し直す → 演出は出ない（お知らせの帯だけ）')
@@ -505,6 +518,12 @@ try:
         check(mx.count() == 1 and all(w in mxt for w in ('日付', ymd9, 'レース', '9R', '買い目', '18点', '単勝', '3点', '馬単', '15点', '結果', '1着 6（1番人気）', '2着 2（2番人気）', '3着 10（3番人気）', '的中', '金額', '購入 1,800円', '回収 1,360円', '−440円'))
               and mx.locator('.bc').count() == 18 and mx.locator('.bc.mh').count() == 2 and mx.locator('.bc.mh').nth(0).locator('.n').all_inner_texts() == ['6'] and mx.locator('.bc.mh').nth(1).locator('.n').all_inner_texts() == ['6', '2'] and mx.locator('b.minus').inner_text() == '−440円',
               f'ボードの 中の 記録の カード：日付・レース・買い目（単勝 3点・馬単 15点＝18点。当たった 単勝 6・馬単 6→2 に わく）・結果（1〜3着と 人気）・金額（購入 1,800円 → 回収 1,360円・−440円）（{mxt[:70]!r}）')
+        mrow = pg.evaluate("() => [...document.querySelectorAll('#fxOv .memx .mx')].map(e => e.querySelector('.mk').textContent + '｜' + e.querySelector('.mv').textContent.replace(/\\s+/g, ' ').trim()).slice(0, 4)")
+        finfo = pg.evaluate("(id) => TengelMem.get(id).info", b9c['id'])
+        check(mrow[1].startswith('レース｜') and mrow[1].endswith('9R（12頭）') and mrow[2] == 'コース｜ダート 1,400m' and mrow[3] == '買い目｜18点', f'第4.170版 思い出ボード：「レース」の 行に 出馬数（12頭）・「コース」の 行（ダート 1,400m）（{mrow[1:3]}）')
+        check(finfo.get('v') == 2 and finfo['date'] == ymd9 + '（' + '月火水木金土日'[_dt.date(int(d9[:4]), int(d9[5:7]), int(d9[8:10])).weekday()] + '）' and finfo['sub'] == '12頭・ダート 1,400m'
+              and finfo['lines'] == ['1着\u30006番 ミラクルアロー', '2着\u30002番 テンゲルクイーン', '3着\u300010番 ロイヤルステップ'] and finfo['money'] == '購入 1,800円 → 回収 1,360円' and 'kind' not in finfo and 'result' not in finfo,
+              f'第4.170版 フィギュアの ボードに 書く 文：レース名／日付／出馬数・コース／1〜3着（馬番＋名前）／購入 → 回収（的中の 種類・買い目は ない）（{json.dumps(finfo, ensure_ascii=False)[:150]}）')
         ov.locator('.close').click(force=True); pg.wait_for_timeout(400)
         f9 = pg.locator('#recList .rsvf')
         check(pg.locator('#fxOv').count() == 0 and pg.evaluate('TengelFx.current()') is None and pg.evaluate('TengelFx.memInfo()') is None and not pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__fxEv') == ['memory:hit', 'close:hit']

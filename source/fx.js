@@ -804,14 +804,15 @@
     const ordered = !!(RS() && RS().ORDERED[t]) || t === '馬単' || t === '枠単' || t === '3連単', isWaku = t === '枠複' || t === '枠単';
     return `<span class="bc${hit ? ' mh' : ''}">${c.map(no => num(no, n, false, isWaku)).join(`<span class="ar">${ordered ? '→' : '-'}</span>`)}</span>`;
   }
-  // 記録の カード（ボードの 中・買い目の 行の 下）：日付・レース・買い目（券種ごとに 全部の 組。当たった 組に わく）・結果・金額
+  // 記録の カード（ボードの 中・買い目の 行の 下）：日付・レース（第4.170版：＋出馬数）・コース（第4.170版）・買い目（券種ごとに 全部の 組。当たった 組に わく）・結果・金額
   function memCard(info, spec) {
     const n = spec && spec.n, bets = info.bets || {};
     const types = ((info.types && info.types.length) ? info.types : Object.keys(bets)).filter(t => Array.isArray(bets[t]) && bets[t].length);
     const hitKeys = new Set(); ((spec && spec.rows) || []).forEach(x => (x.hits || []).forEach(c => hitKeys.add(x.t + ':' + c.join('-'))));
     const total = types.reduce((a, t) => a + bets[t].length, 0);
     let h = `<div class="mx"><span class="mk">日付</span><span class="mv">${esc(info.date || '')}</span></div>`
-      + `<div class="mx"><span class="mk">レース</span><span class="mv">${esc(info.race || '')}</span></div>`
+      + `<div class="mx"><span class="mk">レース</span><span class="mv">${esc(info.race || '')}${info.heads ? `（${+info.heads}頭）` : ''}</span></div>`      // 第4.170版：出馬数
+      + (info.course ? `<div class="mx"><span class="mk">コース</span><span class="mv">${esc(info.course)}</span></div>` : '')      // 第4.170版：コース（ダート 1,600m）
       + `<div class="mx"><span class="mk">買い目</span><span class="mv">${total ? `${total}点` : 'なし'}</span></div>`;
     types.forEach(t => {
       const list = bets[t], cs = list.slice(0, 24).map(c => mcombo(c, t, n, hitKeys.has(t + ':' + c.join('-')))).join('');

@@ -1,6 +1,7 @@
 // ===== 画像の読み取り（アプリ版）：端末の中で読んだ文字（Apple の Vision）から、オッズ画面の表を組み立てる =====
 // 入力：画像ごとの行の配列 [{ text, x, y, w, h }]（位置は画像の左上が原点・0〜1）
 // 出力：Web版の読み取り（Claude）と同じ形 { venue, date, r, dist, surface, baba, n, horses:[{no,tan,fuku}], s1:{combo,odds}, s5, s10 }
+//       ＋ names：{ 馬番: 馬の名前 }（第4.170版：表の 行に 名前が 写って いる とき だけ。読めなければ null）
 // 画面に書かれている数字と文字だけを使う。読めない項目は null（推測や計算で埋めない）。
 (function (root) {
   'use strict';
@@ -207,6 +208,69 @@
     return out;
   }
 
+  // ---- 馬の 名前（第4.170版：まさちゃん 2026/11/14「名前は読み込んだ画像から割り出せる？」）----
+  //   表の 行「[人気／着順] [枠] 馬番 馬名 …」「1着 6 馬名」から 馬番ごとの 名前を 読む（オッズの 表・出馬表・結果の 表）。画面に 書いて ある 字 だけ（名前の 一覧は 持たない）。
+  //   ・名前＝馬番の すぐ あとの 文字（数字が 出る 前まで）の うち、はじめの「カタカナ 2〜18字」（日本の 競走馬の 名前は カタカナ 2〜9字・外国の 馬の カナ書きは もっと 長い ことが ある）。
+  //     印（◎○▲ など・（地）（外）など）は とばす。名前の 形で ない 文字が 先に あったら その 行は 名前なし。
+  //   ・人の 名前（騎手・調教師）は 読まない：数字（性齢・斤量・オッズ・タイム）より あとの 文字は 見ない・性別の「セン」は 名前に しない。
+  //   ・カタカナに 見える 漢字・ひらがな・横線（力→カ・口→ロ・二→ニ・一→ー など）は、ほかが カタカナの とき だけ カタカナに 直す。
+  //   ・2頭 以上 読めた とき だけ 返す。同じ 馬番に ちがう 名前が 読めたら その 馬番は 返さない（どちらが 正しいか 分からない）。
+  var KATA_FIX = { '力': 'カ', '口': 'ロ', '二': 'ニ', '八': 'ハ', '工': 'エ', '夕': 'タ', '卜': 'ト', '一': 'ー', '千': 'チ', '才': 'オ', 'へ': 'ヘ', 'べ': 'ベ', 'ぺ': 'ペ', 'り': 'リ', '-': 'ー', '~': 'ー' };
+  var NAME_STOP = ['セン', 'ダート', 'オッズ', 'ワイド', 'レース', 'コース', 'タイム', 'ハンデ', 'ブリンカー'];
+  var RE_MARK = /^(?:[◎○〇◯▲△☆★×✕✓✔・*＊]+|[\[(【]?(?:地|外|父|市|抽|混|指|特|B)[\])】]?)$/;
+  function kataName(t) {
+    var s = String(t || '').normalize('NFKC').replace(/^[\[(【][^\])】]{1,2}[\])】]/, '').replace(/^[\[(【「『<《]+/, '').replace(/[\[(【「『<《\])】」』>》].*$/, '').replace(/[牡牝騸]$/, '');
+    if (s.length < 2 || s.length > 18) return null;
+    if ((s.match(/[ァ-ヶー]/g) || []).length < Math.ceil(s.length * 0.6)) return null;
+    s = s.replace(/[\s\S]/g, function (c) { return KATA_FIX[c] || c; });
+    if (!/^[ァ-ヶ][ァ-ヶー]{1,17}$/.test(s) || NAME_STOP.indexOf(s) >= 0) return null;
+    return s;
+  }
+  // 行の トークン tk の i0 番目（馬番）の あとから 名前を さがす
+  function nameAfter(tk, i0) {
+    var run = [];
+    for (var i = i0 + 1; i < tk.length && tk[i].k === 'text'; i++) run.push(tk[i]);
+    for (var s = 0; s < run.length; s++) {
+      var t = run[s], best = kataName(t.t), joined = t.t, e = s;
+      // 名前が 2つに 分かれて 読めた とき（字の 間の すき間）：すぐ となり（すき間が 1字ぶん より せまい）の カタカナ だけ つなぐ
+      while (e + 1 < run.length) {
+        var a = run[e], b = run[e + 1], cw = (a.xe - a.x) / Math.max(1, a.t.length);
+        if (!(b.x - a.xe < cw * 0.9) || !/^[ァ-ヶー]+$/.test(a.t) || !/^[ァ-ヶー]/.test(b.t)) break;
+        var j = kataName(joined + b.t); if (!j) break;
+        joined += b.t; best = j; e++;
+      }
+      if (best) return best;
+      if (!RE_MARK.test(t.t)) return null;
+    }
+    return null;
+  }
+  function nameTable(rs) {
+    var got = {}, bad = {};
+    rs.forEach(function (r) {
+      var tk = r.toks, i = 0, lead = [], at;
+      if (hasCombo(tk)) return;
+      while (i < tk.length && tk[i].k === 'int') { lead.push(+tk[i].t); i++; }
+      if (!lead.length || lead.length > 3) return;
+      var no = lead[lead.length - 1]; at = i - 1;
+      if (lead.length === 1 && tk[i] && /^着/.test(tk[i].t) && tk[i + 1] && tk[i + 1].k === 'int') { no = +tk[i + 1].t; at = i + 1; }   // 「1着 6 馬名」
+      else if (no > 18 && lead.length === 1) { var sn = String(no); no = sn.length === 2 ? +sn[1] : +sn.slice(1); }
+      if (!(no >= 1 && no <= 18)) return;
+      var nm = nameAfter(tk, at);
+      if (!nm) return;
+      if (got[no] && got[no] !== nm) bad[no] = 1; else got[no] = nm;
+    });
+    Object.keys(bad).forEach(function (k) { delete got[k]; });
+    return Object.keys(got).length >= 2 ? got : null;
+  }
+  // 画像ごとの 名前を まとめる：いちばん 多く 読めた 画像を もとに、ほかの 画像の 名前は まだ ない 馬番 だけ 足す
+  function mergeNames(list) {
+    var tabs = (list || []).filter(Boolean).sort(function (a, b) { return Object.keys(b).length - Object.keys(a).length; });
+    if (!tabs.length) return null;
+    var out = {};
+    tabs.forEach(function (t) { Object.keys(t).forEach(function (k) { if (!out[k]) out[k] = t[k]; }); });
+    return out;
+  }
+
   function hasCombo(tk) {
     for (var i = 0; i < tk.length; i++) {
       if (tk[i].k === 'combo') return true;
@@ -247,12 +311,12 @@
     var all = rs.map(function (r) { return r.text; });
     var H = header(rs, all);
     var hs = horses(rs), tri = trifecta(rs);
-    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, closed: H.closed, horses: hs, tri: tri, lines: (lines || []).length };
+    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, closed: H.closed, horses: hs, tri: tri, names: nameTable(rs), lines: (lines || []).length };
   }
   // 画像（1〜3枚）をまとめる：項目ごとに最初に読めたもの。単勝の表は馬の数がいちばん多い画像、3連単は人気順の行がいちばん多い画像
   function parse(images) {
     var docs = (images || []).map(parseOne);
-    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, closed: null, horses: null, s1: null, s5: null, s10: null };
+    var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, closed: null, horses: null, s1: null, s5: null, s10: null, names: null };
     ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n', 'start', 'rname', 'closed'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
     var best = null; docs.forEach(function (d) { if (d.horses && (!best || d.horses.length > best.length)) best = d.horses; });
     if (best) {
@@ -263,6 +327,7 @@
     var bt = null; docs.forEach(function (d) { if (d.tri && (!bt || d.tri.count > bt.count)) bt = d.tri; });
     if (bt) { D.s1 = bt.s1; D.s5 = bt.s5; D.s10 = bt.s10; }
     if (D.n == null && D.horses && D.horses.length >= 4) D.n = D.horses.length;
+    D.names = mergeNames(docs.map(function (d) { return d.names; }));
     D._docs = docs.map(function (d) { return { lines: d.lines, horses: d.horses ? d.horses.length : 0, tri: d.tri ? d.tri.count : 0 }; });
     return D;
   }
@@ -274,7 +339,8 @@
   var RE_MONEY = /^\d{1,3}(?:,\d{3})+$|^\d{3,7}$/;
   function payType(t) { var k = String(t).replace(/^三/, '3').replace(/\s/g, ''); return PAYTYPE[k] || null; }
   function resultOne(lines) {
-    var rs = rows(lines), out = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, places: 0, payRows: 0 };
+    var rs = rows(lines), out = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, places: 0, payRows: 0, names: null };
+    out.names = nameTable(rs);   // 第4.170版：着順の 表に 写って いる 馬の 名前（馬番ごと）
     var xNo = null, xWaku = null, inPay = false;
     rs.forEach(function (r) {
       var tk = r.toks, txt = r.text;
@@ -319,7 +385,8 @@
   }
   // 画像（1〜3枚）をまとめる：着順はいちばん多く読めた画像、払戻は全部合わせる
   function parseResult(images) {
-    var docs = (images || []).map(resultOne), D = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, got: [] };
+    var docs = (images || []).map(resultOne), D = { p: [[], [], []], cancel: [], abandoned: false, pay: {}, got: [], names: null };
+    D.names = mergeNames(docs.map(function (d) { return d.names; }));   // got（読めた ものの 一覧）には 入れない：名前 だけ 読めた 画面は「読めなかった」の まま
     var best = null; docs.forEach(function (d) { if (!best || d.places > best.places) best = d; });
     if (best && best.places) { D.p = best.p; }
     docs.forEach(function (d) { d.cancel.forEach(function (c) { if (D.cancel.indexOf(c) < 0) D.cancel.push(c); }); if (d.abandoned) D.abandoned = true; Object.keys(d.pay).forEach(function (t) { D.pay[t] = Object.assign(D.pay[t] || {}, d.pay[t]); }); });
@@ -328,7 +395,7 @@
     var pt = Object.keys(D.pay); if (pt.length) D.got.push('払戻（' + pt.join('・') + '）');
     return D;
   }
-  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm };
+  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm, kataName: kataName, nameTable: nameTable };
   root.TengelOCR = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

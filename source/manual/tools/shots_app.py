@@ -2,6 +2,7 @@
 #   python3 manual/tools/shots_app.py <作業フォルダ>   → <作業フォルダ>/man_app/raw（png・meta.json）
 #   python3 manual/tools/conv.py <作業フォルダ> app    → <作業フォルダ>/man_app/img（webp）・man_app/dims.json・man_app/raw/meta2.json
 #   → manual/img_app/・dims_app.json・meta_app.json に 入れる（MERGE=1 python3 manual/tools/shots_app.py --merge <作業フォルダ>）
+#   ONLY=ocr_done,md_record python3 manual/tools/shots_app.py --merge <作業フォルダ> で、その 写真 だけ 入れる（ほかは 前の まま）
 #   架空の レースだけ（開催場の 名前は 出さない・アプリに 入っている データの 中身は 写さない）。マザーデータ①には 架空の レース 40走を 入れて 撮る
 import json, os, random, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -12,6 +13,8 @@ if sys.argv[1] == '--merge':   # 撮った 写真を 説明書の フォルダ�
     SP = sys.argv[2]; IMG = SP + '/man_app/img'
     dims = json.load(open(MAN + '/dims_app.json', encoding='utf-8')); meta = json.load(open(MAN + '/meta_app.json', encoding='utf-8'))
     nd = json.load(open(SP + '/man_app/dims.json', encoding='utf-8')); nm = json.load(open(SP + '/man_app/raw/meta2.json', encoding='utf-8'))
+    only = [x for x in os.environ.get('ONLY', '').split(',') if x]
+    if only: assert all(k in nd for k in only), only; nd = {k: nd[k] for k in only}
     for k, v in nd.items():
         shutil.copy(f'{IMG}/s_{k}.webp', f'{MAN}/img_app/s_{k}.webp'); dims[k] = v
         if k in nm: meta[k] = nm[k]
@@ -174,6 +177,10 @@ def new_ctx(b):
         v = mk.get(key); return {'ok': True, 'has': v is not None, 'value': v}
     ctx.expose_binding('__saveBackup', lambda s, t: None); ctx.expose_binding('__marker', marker)
     ctx.add_init_script(FAKE)
+    # 第4.170版：右の 丸い ボタン（推し馬・トレーニングセンター・思い出フィギュア＝#fabCol）と 作戦会議・着せ替え（#planBtn・#kiseBtn）は 画面に 止まって いる（第4.168版）ので、
+    #   カードの 写真に 重なる。HIDE_FAB=1 で かくして 撮る（下の 帯・タブの 写真 など ボタンも 見せたい ときは つけない）
+    if os.environ.get('HIDE_FAB') == '1':
+        ctx.add_init_script("document.addEventListener('DOMContentLoaded', function () { var s = document.createElement('style'); s.textContent = '#fabCol,#planBtn,#kiseBtn{display:none!important}'; document.head.appendChild(s); });")
     ctx.route('**/__native/autobackup.json', lambda route: route.fulfill(status=404, body='not found'))
     return ctx
 

@@ -340,7 +340,7 @@
       var hs = d.horses || [];
       return { local: !!sample.local, ms: Date.now() - t0, raw: { ok: raw && raw.ok, n: raw && raw.lines ? raw.lines.length : -1, ms: raw && raw.ms, sample: (raw && raw.lines || []).slice(0, 6).map(function (l) { return l.text; }) },
         venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
-        s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines };
+        s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines, names: d.names || null };      // 第4.170版：names＝画像に 写って いた 馬の 名前（馬番ごと）
     });
     await step(R, 'wallet2', wallet);
     // App内課金：商品（シミュレーターでは App Store Connect の設定がないので、読めないことが多い。読めなくてもアプリは動く）

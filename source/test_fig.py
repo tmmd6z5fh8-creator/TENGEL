@@ -49,8 +49,10 @@ SEED = """async () => {
     n1: res[0], n2: res[1], n3: res[2], p1: 3, p2: 1, p3: 2, stake: String(stake), payout: String(pay), horses: [],
     rsv: { state: 'done', types: Object.keys(bets), bets, result: { p: [[res[0]], [res[1]], [res[2]]] }, fx, at: new Date().toISOString() },
     mem: { at: new Date().toISOString(), v: 'a' } });
-  await TengelLocal.putBets([mk('figm1', 11, 'テンゲル記念', { '3連単': [[5, 2, 1], [5, 1, 2], [2, 5, 1]], '馬単': [[5, 2]] }, [5, 2, 1], 'nd', 1000, 45600),
-    mk('figm2', 9, 'はなまる特別', { '馬単': [[3, 7], [7, 3]] }, [8, 4, 6], 'miss', 600, 0)]);
+  // 第4.170版：1つ目は 距離・コース・1着と 2着の 名前（pn）つき／2つ目は 距離も 名前も ない 記録（前の 版で 作った 記録と 同じ 形）
+  const a = mk('figm1', 11, 'テンゲル記念', { '3連単': [[5, 2, 1], [5, 1, 2], [2, 5, 1]], '馬単': [[5, 2]] }, [5, 2, 1], 'nd', 1000, 45600);
+  Object.assign(a, { dist: 1600, surface: 'ダ', pn: ['テンゲルいち', 'テンゲルに', ''] });
+  await TengelLocal.putBets([a, mk('figm2', 9, 'はなまる特別', { '馬単': [[3, 7], [7, 3]] }, [8, 4, 6], 'miss', 600, 0)]);
 }"""
 
 
@@ -107,8 +109,11 @@ try:
         pg.evaluate(SEED); pg.wait_for_timeout(800)
         pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=rec]') || [...document.querySelectorAll('.tabbar button')].find(x => /記録/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(900)
         L = pg.evaluate("() => TengelMem.list()")
-        check(len(L) == 2 and L[0]['id'] == 'figm1' and L[0]['info']['race'] == '11R　テンゲル記念' and L[0]['info']['lines'][0].startswith('3連単') and '的中' in L[0]['info']['lines'][0]
-              and L[0]['info']['money'] == '購入 1,000円 → 回収 45,600円' and L[1]['info']['kind'] == 'ハズレ', f'思い出のレース 2つ・ボードに 書く 文 {L[0]["info"] if L else None}')
+        # 第4.170版（まさちゃん 11/14 12:07・12:36）：ボードに 書く 文＝レース名／日付／出馬数・コース／1〜3着（馬番＋名前。名前が ない 着順は 馬番＋人気）／購入 → 回収。的中の 種類・買い目は 書かない
+        check(len(L) == 2 and L[0]['id'] == 'figm1' and L[0]['info'] == {'v': 2, 'race': '11R　テンゲル記念', 'date': '2026年11月9日（月）', 'sub': '14頭・ダート 1,600m',
+                                                                    'lines': ['1着　5番 テンゲルいち', '2着　2番 テンゲルに', '3着　1番（2番人気）'], 'money': '購入 1,000円 → 回収 45,600円'}
+              and L[1]['info'] == {'v': 2, 'race': '9R　はなまる特別', 'date': '2026年11月8日（日）', 'sub': '14頭', 'lines': ['1着　8番（3番人気）', '2着　4番（1番人気）', '3着　6番（2番人気）'], 'money': '購入 600円 → 回収 0円'},
+              f'思い出のレース 2つ・ボードに 書く 文（第4.170版の 形：的中の 種類・買い目は ない） {L[0]["info"] if L else None}')
         mf = pg.locator('#recList .memfig')
         check(mf.count() == 1 and 'フィギュアブース' in mf.inner_text() and 'フィギュアを作る' in mf.inner_text(), f'記録タブの 思い出のレースの 欄に「フィギュアブース」「フィギュアを作る」（{mf.inner_text() if mf.count() else ""}）')
         shot(pg, 'fig_rec')
@@ -164,7 +169,17 @@ try:
         check(ds == ['22,000P'] * 5 + ['32,000P', '30,000P', '36,000P'], f'2. デザイン 8種と 値段（通常 22,000・神様馬 32,000・幻の馬 30,000・両方 36,000）{ds}')
         pg.wait_for_function("() => [...document.querySelectorAll('#fgOv .fgd img')].every(i => i.complete && i.naturalWidth > 0)", timeout=20000)
         shot(pg, 'fig_make_design')
+        # ボードの 絵に 書いた 文字を 見る（キャンバスの fillText を のぞく）
+        pg.evaluate("() => { const P = CanvasRenderingContext2D.prototype; window.__ft = []; window.__ft0 = P.fillText; P.fillText = function (t) { window.__ft.push(String(t)); return window.__ft0.apply(this, arguments); }; }")
         pg.locator('#fgOv .fgd[data-n="1"]').click(); wait_room(pg)
+        ft = pg.evaluate("() => { CanvasRenderingContext2D.prototype.fillText = window.__ft0; return [...new Set(window.__ft)]; }")
+        check(ft == ['11R　テンゲル記念', '2026年11月9日（月）　14頭・ダート 1,600m', '1着　5番 テンゲルいち', '2着　2番 テンゲルに', '3着　1番（2番人気）', '購入 1,000円 → 回収 45,600円'],
+              f'第4.170版 ボードの 絵に 書く 行：レース名／日付・出馬数・コース（1行）／1着・2着・3着／購入 → 回収 {ft}')
+        old = pg.evaluate("""() => { const P = CanvasRenderingContext2D.prototype, o = P.fillText, out = []; P.fillText = function (t) { out.push(String(t)); return o.apply(this, arguments); };
+          const c = FigGL.boardCanvas({ kind: 'ど的中', race: '11R　テンゲル記念', date: '2026年11月9日（月）', lines: ['3連単　5 → 2 → 1　的中', '馬単　5 → 2　的中'], result: '1着 5（3番人気）・2着 2（1番人気）・3着 1（2番人気）', money: '購入 1,000円 → 回収 45,600円' }, 1.4, 'gold', 256);
+          P.fillText = o; return { rows: [...new Set(out)], w: c.width }; }""")
+        check(old['w'] == 256 and old['rows'] == ['ど的中', '11R　テンゲル記念', '2026年11月9日（月）', '3連単　5 → 2 → 1　的中', '馬単　5 → 2　的中', '1着 5（3番人気）・2着 2（1番人気）・3着 1（2番人気）', '購入 1,000円 → 回収 45,600円'],
+              f'前の 版で 作った フィギュアの 文（的中の 種類・買い目・結果の 行の ある 形）は そのまま 描ける {old["rows"][:2]}')
         px = pg.evaluate("() => { const c = document.querySelector('#fgOv canvas'), g = c.getContext('webgl'), p = new Uint8Array(4); FigApp._t.need(); return [c.width, c.height]; }")
         check(px[0] > 100 and pg.locator('#fgOv [data-fg=buy1]').is_enabled(), f'3. 3D で 見る（キャンバス {px}）・作る ボタン')
         shot(pg, 'fig_make_prev')
@@ -173,7 +188,7 @@ try:
         pg.locator('#fgOv [data-fg=buy2]').click(); wait_scene(pg)
         it = pg.evaluate("() => TengelWallet.fig.items()")
         ev = pg.evaluate("() => TengelWallet.events().filter(e => /^unlock-fig:/.test(e.id)).map(e => [e.amount, e.what])")
-        check(len(it) == 1 and it[0]['n'] == 1 and it[0]['info']['race'] == '11R　テンゲル記念' and pg.evaluate(ALL) == p0 - 22000 and pg.evaluate("() => TengelWallet.total()") == 99999 - 22000 and len(ev) == 1 and ev[0][0] == -22000,
+        check(len(it) == 1 and it[0]['n'] == 1 and it[0]['info']['race'] == '11R　テンゲル記念' and it[0]['info'].get('v') == 2 and it[0]['info']['lines'][0] == '1着　5番 テンゲルいち' and it[0]['info']['sub'] == '14頭・ダート 1,600m' and pg.evaluate(ALL) == p0 - 22000 and pg.evaluate("() => TengelWallet.total()") == 99999 - 22000 and len(ev) == 1 and ev[0][0] == -22000,
               f'作った：ポイント −22,000（unlock-fig）・ボードの 文は 作った ときの まま {ev}')
         check(pg.evaluate("() => document.querySelector('#fgOv').classList.contains('pick') && /飾る 場所を 選んでね/.test(document.querySelector('#fgOv .fgf').textContent)"), 'ブースへ：飾る 場所を 選んでね')
         shot(pg, 'fig_pick')

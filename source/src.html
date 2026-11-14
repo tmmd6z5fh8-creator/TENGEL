@@ -464,6 +464,11 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .rsvf .pl input{text-align:center;font-family:var(--font-mono)}
 .rsvf .plab{font-size:12.5px;color:var(--muted);margin-top:4px}
 .rsvf .plab b{color:var(--ink)}
+/* 第4.170版：1〜3着の 馬の 名前の 欄（たてに 3つ・左に「1着」） */
+.rsvf .pln{display:grid;gap:6px}
+.rsvf .pnr{display:flex;align-items:center;gap:8px;margin:0}
+.rsvf .pnr span{flex:none;width:2.4em;font-size:13px;color:var(--muted)}
+.rsvf .pnr input{flex:1;min-width:0}
 .ocrnote{margin:6px 0 0;line-height:1.55}
 .rsvtop details.closed .lgiven .s{color:var(--muted)}
 .rsvnote{font-size:12.5px;color:var(--muted);margin:6px 0 0}
@@ -1627,6 +1632,21 @@ async function saveClosedRace(J) {
   try { await writeBet(J.id, doc, true); toast(`${J.venue}${J.x.r}R は締切済みのレースなので「締切済みレース」に入れたよ`, 3600); renderResult(); }
   catch (e) { closedSaving = null; writeErr(e); }
 }
+// 馬の 名前（第4.170版）：見えない 制御の 字と 改行を とる・前後の 空白を とる・18字まで（絵文字の 途中では 切らない）
+const cleanName = v => Array.from(String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, 18).join('').trim();
+// 名前が いまの 入力（f）の レースの ものか（第4.170版）。名前は 入力の 画面に 見えない ので、べつの レースに 持って いかない ように 見分ける：
+//   ・名前を 読んだ ときの レース（nkey＝日付・開催場・R）と いまが 同じ　または
+//   ・名前を 読んだ ときの 単勝の 表（nsig＝「馬番:単勝」）の 6割 以上が いまも そのまま（＝画像に R が 写って いなくて あとから 手で 入れた・読みまちがえた R や オッズを 少し 直した）
+//   手で べつの レースの オッズに 打ち直した ときは どちらにも 当たらない → 名前は 記録に 入れない
+const rowSig = rows => (rows || []).filter(r => r && +r.no > 0 && r.tan != null && r.tan !== '').map(r => `${+r.no}:${String(r.tan)}`);
+function namesFit(f) {
+  if (!f || !f.names) return false;
+  const id = formRaceId(f) || '';
+  if (f.nkey && f.nkey === id) return true;
+  const a = Array.isArray(f.nsig) ? f.nsig : [], b = new Set(rowSig(f.rows));
+  if (a.length < 3) return false;
+  return a.filter(x => b.has(x)).length / a.length >= 0.6;
+}
 // 読み取った中身を、いまの入力に重ねた形にする（まだ入力欄には入れない）。got＝読めた項目・miss＝読めなかった項目
 function ocrPick(d) {
   const f = Object.assign({}, st.form), got = [], miss = [];
@@ -1651,6 +1671,24 @@ function ocrPick(d) {
   for (const [k, lab] of [['s1', '3連単1位'], ['s5', '3連単5位'], ['s10', '3連単10位']]) {
     const o = d[k]; const v = o && N(o.odds);
     if (v) { f[k] = String(v); f[k + 'combo'] = o.combo ? String(o.combo) : ''; got.push(lab); } else miss.push(lab);
+  }
+  // 第4.170版（まさちゃん 2026/11/14「名前は読み込んだ画像から割り出せる？」）：画像に 写って いた 馬の 名前（馬番ごと）を 入力と いっしょに 持つ（App Store版 だけ・この 端末の 中 だけ）。
+  //   前の 名前を 引きつぐ（重ねる）のは、前の 名前が いまの 入力の もの（namesFit）で、この 読み取りで 単勝の 表が 入れかわって いない とき：
+  //     同じ レースの 2まい目（3連単の 人気順 など 単勝の 表の ない 写真。見出しで R が はじめて 入っても 同じ レース）・同じ オッズの 読み直し
+  //   引きつがない：単勝の 表が 入れかわった（swapped＝前に 名前を 読んだ ときの 表の 6割 未満しか のこって いない：べつの レース。前の レースの 名前を 1つも 残さない）・
+  //     見出しで べつの レースに かわった のに 表で 確かめられない（前の 名前が 表なしで 読まれて いた）
+  //   名前を 読んだ とき だけ むすび直す（nkey＝その ときの レース・nsig＝その ときの 単勝の 表）。記録に 入れる のは raceBase（namesFit の とき だけ）
+  if (NATIVE_APP) {
+    const idOld = formRaceId(st.form) || '', idNew = formRaceId(f) || '', moved = !!idOld && !!idNew && idOld !== idNew;
+    const sigOld = Array.isArray(st.form.nsig) ? st.form.nsig : [], sigNew = new Set(rowSig(f.rows));
+    const swapped = hs.length > 0 && sigOld.length >= 3 && sigOld.filter(x => sigNew.has(x)).length / sigOld.length < 0.6;
+    const nm = !swapped && !(moved && sigOld.length < 3) && namesFit(st.form) ? Object.assign({}, st.form.names) : {};
+    let k = 0;
+    if (d.names && typeof d.names === 'object') for (const [no, v] of Object.entries(d.names)) { const t = cleanName(v); if (+no >= 1 && +no <= 18 && t) { nm[+no] = t; k++; } }
+    f.names = Object.keys(nm).length ? nm : null;
+    if (!f.names) { f.nkey = ''; f.nsig = null; }
+    else if (k) { f.nkey = idNew; f.nsig = rowSig(f.rows); }
+    if (k && got.length) got.push(`馬名${k}頭`);
   }
   return { f, got, miss };
 }
@@ -2115,6 +2153,8 @@ function raceBase(J) {
     s1combo: f.s1combo || '', s5combo: f.s5combo || '', s10combo: f.s10combo || '', horses: J.horses.map(h => ({ no: h.no, tan: h.tan, fuku: h.fukuRaw || null })), snap: snapOf(J), hp: f.hp || null };
   // App Store版：レース名・発走時刻と、200Pを使って読み込んだしるし（pid。ミッションに数える）
   if (NATIVE_APP) { o.rname = f.rname || prev.rname || ''; o.start = f.start || prev.start || ''; o.pid = f.pid || prev.pid || null; }
+  // 第4.170版：馬の 名前（馬番ごと）。前に 記録した 名前に、いまの 入力の 名前（この レースで 読んだ もの だけ：namesFit）を 重ねる
+  if (NATIVE_APP) { const nm = Object.assign({}, prev.names || {}, namesFit(f) ? f.names : {}); if (Object.keys(nm).length) o.names = nm; }
   return o;
 }
 // 記録を保存したら、ミッション（記録したレースの数）に数える（App Store版・200Pを使って読み込んだレースだけ。同じレースは1回）
@@ -2629,14 +2669,38 @@ function rsvPayFromImage(b, t) {
   const sum = per.hit.reduce((a, c) => a + (pm[c.join('-')] || 0), 0);
   return per.state === '的中' && sum ? String(sum) : (per.state === '不的中' ? '0' : '');
 }
+// ---- 馬の 名前（第4.170版・まさちゃん 2026/11/14「名前を入れる欄を足す、名前は読み込んだ画像から割り出せる？難しいようならユーザーが入力するようにして」）----
+//   記録（bets）に names＝{ 馬番: 名前 }（オッズの 画像・結果の 画像から 読めた もの）と pn＝[1着, 2着, 3着 の 名前]（結果の 欄：自動で 入る・手で 直せる）。
+//   名前は ユーザーの データ（この 端末の 中 だけ・アプリには 1つも 入って いない）。思い出フィギュアの ボード（memFigInfo）が pn を 使う。
+//   rsvImgNames＝結果の 画像から 読んだ 名前（まだ 保存して いない 分・記録ごと）
+const rsvImgNames = new Map();
+const rsvNameMap = b => Object.assign({}, (b && rsvImgNames.get(b.id)) || {}, (b && b.names) || {});   // 記録に ある 名前（オッズの 画像）を 先に・結果の 画像の 名前は まだ ない 馬番 だけ
+const namesOfNos = (map, nos) => (nos || []).map(no => map[no] || '').filter(Boolean).join('・');
+function rsvPlaceNames(b, res) {
+  const map = rsvNameMap(b), saved = Array.isArray(b.pn) ? b.pn : null, p = (res && res.p) || [[], [], []];
+  return [0, 1, 2].map(i => (saved && saved[i] != null ? String(saved[i]) : namesOfNos(map, p[i])));   // 保存した 名前（空も ふくむ）が あれば それ・まだ 保存して いなければ 馬番ごとの 名前から
+}
+// 着順の 馬番が かわった 欄は 名前を 入れ直す（その 馬番の 名前が なければ 空に）。force＝空の 欄にも 入れる（結果の 画像を 読んだ すぐ あと）。手で 直した 名前は 馬番を かえる まで そのまま
+function rsvNameFill(box, b, force) {
+  const R = Reserve(); if (!R) return;
+  const map = rsvNameMap(b);
+  [1, 2, 3].forEach(i => {
+    const inp = $(`[data-k=nm${i}]`, box), pi = $(`[data-k=p${i}]`, box); if (!inp || !pi) return;
+    const nos = R.parseNos(pi.value.trim()), key = nos.join('-'), want = namesOfNos(map, nos);
+    if (inp.dataset.nos !== key) { inp.dataset.nos = key; inp.value = want; }
+    else if (force && !inp.value.trim() && want) inp.value = want;
+  });
+}
 function rsvFormHTML(b, mode) {
   mode = mode || rsvMode(b);
   const rs = b.rsv, res = rs.result || { p: [[], [], []], cancel: [], abandoned: false, pay: {} }, sfx = 'rsv-' + b.id, sn = b.snap || {};
   const v = draftFrom(b, true), amtv = { types: rs.types || [], amt: {}, other: '' };
   (rs.types || []).forEach(t => { const a = (b.amt && b.amt[t]) || {}; amtv.amt[t] = { stake: a.stake == null ? '' : String(a.stake), payout: a.payout == null ? rsvPayFromImage(b, t) : String(a.payout) }; });
   const g = i => (res.p[i] || []).join('-');
+  const pn = rsvPlaceNames(b, res);   // 第4.170版：1〜3着の 名前（記録に あれば それ・なければ 馬番ごとの 名前から）
   const resultFields = `
       <div class="f s6"><span class="lab">着順（馬番）。同着は「6.2」のように2頭</span><div class="pl"><input data-k="p1" data-dash inputmode="decimal" autocomplete="off" placeholder="1着" aria-label="1着の馬番" value="${esc(g(0))}"><input data-k="p2" data-dash inputmode="decimal" autocomplete="off" placeholder="2着" aria-label="2着の馬番" value="${esc(g(1))}"><input data-k="p3" data-dash inputmode="decimal" autocomplete="off" placeholder="3着" aria-label="3着の馬番" value="${esc(g(2))}"></div><div class="plab" data-k="plab"></div></div>
+      <div class="f s6"><span class="lab">1〜3着の 馬の 名前（なくても OK。画像から 読めた ときは 自動で 入るよ・直せるよ）</span><div class="pln">${[0, 1, 2].map(i => `<label class="pnr"><span>${i + 1}着</span><input data-k="nm${i + 1}" data-nos="${esc(g(i))}" maxlength="18" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${i + 1}着の 名前" aria-label="${i + 1}着の 馬の 名前" value="${esc(pn[i] || '')}"></label>`).join('')}</div></div>
       <div class="f s3"><label for="cancel-${sfx}">取消・除外の馬番（あれば）</label><input id="cancel-${sfx}" data-k="cancel" data-dash inputmode="decimal" autocomplete="off" placeholder="例 4.11" value="${esc((res.cancel || []).join('-'))}"></div>
       <div class="f s3"><span class="lab">レース</span><div class="seg" data-k="abandon"><button type="button" data-v="" aria-pressed="${!res.abandoned}">行われた</button><button type="button" data-v="1" aria-pressed="${!!res.abandoned}">中止（全部返還）</button></div></div>
       <div class="f s3"><label for="start-${sfx}">発走時刻（お知らせ用）</label><input type="time" id="start-${sfx}" data-k="start" value="${esc(rs.start || b.start || '')}"></div>
@@ -2673,12 +2737,14 @@ function readRsvf(box, b) {
     const si = $(`[data-k=stake][data-t="${t}"]`, box), pi = $(`[data-k=payout][data-t="${t}"]`, box); amt[t] = { stake: si ? si.value.trim() : '', payout: pi ? pi.value.trim() : '' };
   });
   const ms = $('[data-k=mslot]', box), noteEl = $('[data-k=note]', box);
-  return { mode, result, amt, start: mode === 'amount' ? (b.rsv.start || b.start || '') : val('start'), note: noteEl ? noteEl.value : (b.note || ''), mslot: ms ? +ms.value : undefined, upay: val('upay'), spay: val('spay') };
+  const pn = $('[data-k=nm1]', box) ? [1, 2, 3].map(i => cleanName(val('nm' + i))) : null;   // 第4.170版：1〜3着の 名前（欄が ない 形＝金額 だけ の ときは null：記録の まま）
+  return { mode, result, amt, start: mode === 'amount' ? (b.rsv.start || b.start || '') : val('start'), note: noteEl ? noteEl.value : (b.note || ''), mslot: ms ? +ms.value : undefined, upay: val('upay'), spay: val('spay'), pn };
 }
 // 着順（馬番）→ 人気順位（同着は先頭のならび）
 function rsvRanks(b, result) { const R = Reserve(), o = R.orders(result)[0] || [], ord = rankOrder(b.horses || []); return { nos: o, ranks: o.map(no => { const i = ord.indexOf(no); return i < 0 ? null : i + 1; }) }; }
 function updateRsvPreview(box) {
   const b = st.bets.get(box.dataset.id); if (!b || !b.rsv) return;
+  rsvNameFill(box, b, false);   // 第4.170版：着順の 馬番を かえたら 名前も 入れ直す
   const R = Reserve(), v = readRsvf(box, b), j = R.judge(b.rsv.bets, v.result, +b.n || 0), rk = rsvRanks(b, v.result);
   const bl = $('[data-k=betlist]', box); if (bl) bl.innerHTML = betListHTML(b.rsv.bets, b.rsv.types, j);
   for (const el of $$('[data-k=tst]', box)) { const r = j.per[el.dataset.t] ? j.per[el.dataset.t].state : ''; el.textContent = r === '—' ? '' : r; el.className = 'amt-s ' + ({ 的中: 'hit', 不的中: 'miss', 結果待ち: 'wait' }[r] || 'skip'); }
@@ -2706,11 +2772,15 @@ async function readResultImage(box, files) {
     if (d.cancel.length) set('cancel', d.cancel.join('-'));
     if (d.abandoned) $$('[data-k=abandon] button', box).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === '1')));
     b.rsv.result = Object.assign(b.rsv.result || {}, { pay: d.pay || {} });   // 払戻の表（保存のときに記録に入る）
+    // 第4.170版：結果の 画像に 写って いた 馬の 名前（馬番ごと）→ 1〜3着の 名前の 欄へ（空の 欄・着順が かわった 欄）。保存の ときに 記録の names に 足す（記録に もう ある 馬番は そのまま）
+    let nmN = 0;
+    if (d.names && typeof d.names === 'object') { const nm = Object.assign({}, rsvImgNames.get(b.id) || {}); for (const [no, v] of Object.entries(d.names)) { const t = cleanName(v); if (+no >= 1 && +no <= 18 && t) { nm[+no] = t; nmN++; } } if (nmN) rsvImgNames.set(b.id, nm); }
     // 当たった組の払戻を券種ごとに合計して、払戻の欄に入れる（空のときだけ）
     const v = readRsvf(box, b), j = R.judge(b.rsv.bets, v.result, +b.n || 0);
     (b.rsv.types || []).forEach(t => { const pi = $(`[data-k=payout][data-t="${t}"]`, box), pm = d.pay[t]; if (!pi || !pm || pi.value.trim() !== '') return; const per = j.per[t]; if (!per) return; const sum = per.hit.reduce((a, c) => a + (pm[c.join('-')] || 0), 0); if (per.state === '的中' && sum) pi.value = String(sum); else if (per.state === '不的中') pi.value = '0'; });
-    updateRsvPreview(box);
-    hint.textContent = `読み取った：${d.got.join('・')}。${['1着', '2着', '3着'].filter(x => !d.got.includes(x)).length ? '読めなかった着順は手で入れてね。' : ''}まちがいがないか確かめて${box.dataset.mode === 'result' ? '「結果を決める」を押してね' : '保存してね'}`;
+    updateRsvPreview(box); rsvNameFill(box, b, true);
+    const nmGot = [1, 2, 3].some(i => { const x = $(`[data-k=nm${i}]`, box); return x && x.value.trim(); }) && nmN > 0;
+    hint.textContent = `読み取った：${d.got.join('・')}${nmGot ? '・馬の 名前' : ''}。${['1着', '2着', '3着'].filter(x => !d.got.includes(x)).length ? '読めなかった着順は手で入れてね。' : ''}まちがいがないか確かめて${box.dataset.mode === 'result' ? '「結果を決める」を押してね' : '保存してね'}`;
   } catch (e) { hint.textContent = OCR_ERR[e && e.code] || '読み取りに失敗したよ。もう一度試すか、手で入れてね'; }
 }
 async function saveRsvf(box, btn) {
@@ -2732,11 +2802,15 @@ async function saveRsvf(box, btn) {
   const fields = { rsv: { ...b.rsv, state: done ? 'done' : 'reserved', start: v.start || b.rsv.start || '', result: res, judged: done ? { state: j.state, per: Object.fromEntries(Object.keys(j.per).map(t => [t, j.per[t].state])) } : null }, start: v.start || b.start || '',
     types: b.rsv.types || typesOf(b), amt, stake, payout, other: '', note: v.note, updatedAt: now,
     p1: rk.ranks[0] ?? null, p2: rk.ranks[1] ?? null, p3: rk.ranks[2] ?? null, n1: rk.nos[0] ?? null, n2: rk.nos[1] ?? null, n3: rk.nos[2] ?? null };
+  // 第4.170版：1〜3着の 名前（欄が ある 形 だけ）・結果の 画像から 読んだ 馬番ごとの 名前
+  if (v.pn) fields.pn = v.pn;   // 空に した 欄は 空の まま 覚える（つぎに 開いた ときに 自動で 入れ直さない）
+  if (rsvImgNames.has(id)) fields.names = Object.assign({}, rsvImgNames.get(id), b.names || {});
   const mslot = v.mslot != null && motherOn() && !slotLocked(v.mslot) ? v.mslot : 0, mRes = rk.ranks[0] != null && rk.ranks[1] != null;      // 解放して いない 枠には 入れない（第4.140版）
   if (v.mslot != null) { fields.mslot = mslot; fields.umatanPay = toNum(v.upay); fields.sanrenPay = toNum(v.spay); if (mslot && mRes) fields.mid = window.TengelMother.idOf(mslot, b.date, b.r); }
   if (btn) btn.disabled = true;
   try {
     await writeBet(id, fields, false);
+    rsvImgNames.delete(id);   // 記録に 入れた
     let mmsg = '';
     if (mslot && mRes) {
       try { const r = await window.TengelMother.put(mslot, { date: b.date, r: b.r, baba: b.baba, dist: b.dist, surface: b.surface, n: b.n, tan1: b.tan1, s1: b.s1, s5: b.s5, s10: b.s10, p1: rk.ranks[0], p2: rk.ranks[1], p3: rk.ranks[2] ?? null, umatanPay: fields.umatanPay, sanrenPay: fields.sanrenPay }, b.mslot ? { n: b.mslot, id: b.mid } : null); mmsg = `。${NATIVE_APP ? '' : 'マザーデータ'}「${(slotObj(mslot) || {}).name || ''}」にも${r.updated ? '入れ直した' : '入れた'}よ（${r.count}走）`; }
@@ -2789,6 +2863,8 @@ function memResultText(b) {
   return (parts.length ? parts.join('・') : '着順まだ') + cz;
 }
 function memRaceText(b) { return `${(b.venue || '').trim()}${b.venue ? ' ' : ''}${b.r}R${b.rname ? '　' + b.rname : ''}`.trim(); }
+// 第4.170版（まさちゃん 2026/11/14「出馬数、コースm」「1.足す！」）：コースの 文（「ダート 1,600m」「芝 2,000m」。距離が 入って いない 記録は 空）
+function memCourseText(b) { const d = +b.dist; if (!(d > 0)) return ''; const sf = b.surface === '芝' ? '芝' : b.surface === 'ダ' ? 'ダート' : ''; return `${sf}${sf ? ' ' : ''}${yen(d)}m`; }
 function memBtnsHTML(b) {
   if (!NATIVE_APP) return '';
   return b.mem ? `<button class="btn" type="button" data-act="memopen">思い出ボードを見る</button>${window.TengelFig ? '<button class="btn" type="button" data-act="figmake1">🏆 フィギュアにする</button>' : ''}<button class="btn ghost" type="button" data-act="memtog">思い出から外す</button>`
@@ -2803,6 +2879,7 @@ function memOpen(b) {
   const s = betStatus(b), stake = toNum(b.stake), pay = payoutOf(b), bal = pay - (stake || 0);
   const money = stake == null ? '金額はまだ入れていないよ' : `購入 ${yen(stake)}円 → 回収 ${yen(pay)}円　<b class="${bal > 0 ? 'plus' : bal < 0 ? 'minus' : ''}">${signYen(bal)}円</b>`;
   F.memory(memSpec(b), { kind: memKindOf(b), v: (b.mem && b.mem.v) || 'a', name: `${memDateFull(b.date)}　${memRaceText(b)}`, date: memDateFull(b.date), race: memRaceText(b),
+    heads: +b.n > 0 ? +b.n : 0, course: memCourseText(b),      // 第4.170版：出馬数・コース（思い出ボードの「レース」の 行と「コース」の 行）
     types: (b.rsv.types && b.rsv.types.length) ? b.rsv.types : typesOf(b), bets: b.rsv.bets || {}, result: `${memResultText(b)}　${s.s}`, money });
 }
 async function memSet(b, v) {   // v＝'a'／'b'（ど的中の わく）・null＝わくは 種類で 決まる
@@ -2832,15 +2909,17 @@ function memTopHTML() {
   return `<div class="memtop"><h3>思い出のレース<span class="muted">${ms.length}件・押すと思い出ボード</span></h3>${fig}<div class="lrows">${ms.map(row).join('')}</div></div>`;
 }
 // 第4.134版：思い出フィギュアに わたす 思い出のレース（ボードに 書く 文。作った フィギュアの ボードは 作った ときの まま：あとで 記録を 直しても かわらない）
+// 第4.170版（まさちゃん 2026/11/14「思い出フィギュアはボードの大きさ的に 日付、レース名、出馬数、コースm／着順、1位、2位、3位の名前／購入金額／回収金額 のイメージ」「3.外していいよ！」）：
+//   新しく 作る フィギュアの ボード＝レース名／日付・出馬数・コース／1〜3着（馬番＋名前。名前が ない ときは 馬番＋人気）／購入 → 回収。
+//   的中の 種類（kind）と 買い目は 書かない（板が 小さい ので 字を 大きく）。前に 作った フィギュア（kind・lines〈買い目〉・result の ある 形）は そのまま 描ける（fig_render.js の boardCanvas は 両方 描く）
 function memFigInfo(b) {
-  const R = Reserve(), spec = memSpec(b), bets = (b.rsv && b.rsv.bets) || {};
-  const types = ((b.rsv && b.rsv.types && b.rsv.types.length) ? b.rsv.types : typesOf(b)).filter(t => Array.isArray(bets[t]) && bets[t].length);
-  const hits = {}; spec.rows.forEach(x => { hits[x.t] = x.hits || []; });
-  const lab = (t, c) => (R && R.label ? R.label(t, c) : c.join('-')).replace(/→/g, ' → ');
-  const lines = types.map(t => { const h = hits[t] || [], all = bets[t]; return h.length ? `${t}　${lab(t, h[0])}${h.length > 1 ? `　ほか${h.length - 1}組` : ''}　的中` : `${t}　${lab(t, all[0])}${all.length > 1 ? `　ほか${all.length - 1}点` : ''}`; });
-  if (lines.length > 3) lines.splice(2, lines.length - 2, `ほか ${types.length - 2}券種`);
-  const stake = toNum(b.stake), pay = payoutOf(b);
-  return { kind: MEM_KIND_LABEL[memKindOf(b)] || '思い出のレース', race: memRaceText(b), date: memDateFull(b.date), lines, result: memResultText(b), money: stake == null ? '' : `購入 ${yen(stake)}円 → 回収 ${yen(pay)}円` };
+  const res = (b.rsv && b.rsv.result) || {}, p = res.p || [[], [], []], pn = rsvPlaceNames(b, res), rk = [b.p1, b.p2, b.p3];
+  const lines = res.abandoned ? ['中止（全部返還）'] : [0, 1, 2].map(i => {
+    const nos = p[i] || []; if (!nos.length) return '';
+    return `${i + 1}着　${nos.join('・')}番${pn[i] ? ' ' + pn[i] : (rk[i] && nos.length === 1 ? `（${rk[i]}番人気）` : '')}`;
+  }).filter(Boolean);
+  const stake = toNum(b.stake), pay = payoutOf(b), sub = [+b.n > 0 ? `${+b.n}頭` : '', memCourseText(b)].filter(Boolean).join('・');
+  return { v: 2, race: memRaceText(b), date: memDateFull(b.date), sub, lines, money: stake == null ? '' : `購入 ${yen(stake)}円 → 回収 ${yen(pay)}円` };
 }
 if (NATIVE_APP) window.TengelMem = {
   list: () => memRaces().map(b => ({ id: b.id, day: dlabel(b.date), race: memRaceText(b), kind: MEM_KIND_LABEL[memKindOf(b)] || '', result: memResultText(b), status: betStatus(b).s, info: memFigInfo(b) })),
@@ -2975,6 +3054,7 @@ const dlabel = d => { const [y, m, dd] = d.split('-'); const wd = '日月火水�
 function loadBetToForm(b) {
   st.form = Object.assign(blankForm(), { venue: b.venue || '大井', date: b.date, r: String(b.r), dist: String(b.dist ?? ''), surface: b.surface || 'ダ', baba: b.baba || '', n: String(b.n ?? ''), tan1: String(b.tan1 ?? ''), s1: String(b.s1 ?? ''), s5: b.s5 == null ? '' : String(b.s5), s10: b.s10 == null ? '' : String(b.s10), s1combo: b.s1combo || '', s5combo: b.s5combo || '', s10combo: b.s10combo || '',
     rows: (b.horses || []).map(h => ({ no: h.no, tan: String(h.tan), fuku: h.fuku || '' })), hp: b.hp || null, rname: b.rname || '', start: b.start || '', pid: b.pid || null, self: (b.rsv && b.rsv.self) ? clone(b.rsv.self) : null });
+  if (NATIVE_APP && b.names && Object.keys(b.names).length) { st.form.names = clone(b.names); st.form.nkey = formRaceId(st.form) || ''; st.form.nsig = rowSig(st.form.rows); }   // 第4.170版：馬の 名前も 持って いく
   if (b.rsv && b.rsv.state === 'closed') st.form.closed = { by: b.rsv.by || 'time', word: b.rsv.word || '', id: b.id, at: b.rsv.at || '', start: b.rsv.start || '' };   // 第4.116版：締切済みの しるしも 持って いく
   st.draft = null; formToUI(); storeSet('tengel.form', st.form); setTab('judge'); renderResult(); toast(`${dlabel(b.date)} ${b.venue || '大井'}${b.r}R を開いたよ`);
 }

@@ -56,7 +56,8 @@ const FigGL = (() => {
   function proj(VP, p) { const x = VP[0] * p[0] + VP[4] * p[1] + VP[8] * p[2] + VP[12], y = VP[1] * p[0] + VP[5] * p[1] + VP[9] * p[2] + VP[13], w = VP[3] * p[0] + VP[7] * p[1] + VP[11] * p[2] + VP[15]; return [x / w, y / w]; }
 
   // ---------- ボードの 絵（キャンバス）：aspect＝板の 横／縦・size＝絵の 大きさ（2の べき乗：ミップマップ）----------
-  //   info＝{ kind（的中の 種類）, race, date, lines（買い目 0〜3行）, result, money }
+  //   info＝{ kind（的中の 種類）, race, date, lines（買い目 0〜3行）, result, money }（第4.169版まで）
+  //   第4.170版から 作る フィギュア＝{ v: 2, race, date, sub（出馬数・コース：日付の 行の 右に つづける）, lines（1〜3着：馬番＋名前）, money }。kind・result が ない だけ で 同じ 描き方
   function boardCanvas(info, aspect, pal, size) {
     const PC = PAL[pal] || PAL.gold, S = size || 1024, Wc = 1024, Hc = Math.round(Wc / Math.max(0.5, aspect || 1.4));
     const c = document.createElement('canvas'); c.width = S; c.height = S; const g = c.getContext('2d'); g.scale(S / Wc, S / Hc);
@@ -67,7 +68,8 @@ const FigGL = (() => {
     const rows = [];
     if (info.kind) rows.push({ t: info.kind, s: 0.085, f: FONT_D, w: 400, c: PC.kind });
     if (info.race) rows.push({ t: info.race, s: 0.11, f: FONT_D, w: 400, c: PC.ink });
-    if (info.date) rows.push({ t: info.date, s: 0.06, f: FONT_B, w: 700, c: PC.sub });
+    const dt = [info.date, info.sub].filter(Boolean).join('　');
+    if (dt) rows.push({ t: dt, s: 0.06, f: FONT_B, w: 700, c: PC.sub });
     (info.lines || []).slice(0, 3).forEach((t, i) => rows.push({ t, s: 0.066, f: FONT_B, w: 700, c: PC.ink, gap: i === 0 ? 0.25 : 0 }));
     if (info.result) rows.push({ t: info.result, s: 0.056, f: FONT_B, w: 700, c: PC.sub, gap: 0.2 });
     if (info.money) rows.push({ t: info.money, s: 0.064, f: FONT_B, w: 700, c: PC.money });
