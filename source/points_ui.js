@@ -980,9 +980,41 @@
   let testN = 0;
   const TEST_NS = [0, 1, 2, 3, 4, 8, 16, 24];
   function testStreak(kind) { if (testN) return testN; const b = (W && W.board) || {}; return Math.max(1, (kind === 'miss' ? b.mstreak : b.streak) || 1); }
-  // 第4.169版：ぜんぶ リセット の たしかめる 札が 出た 時刻（出て から WIPE_WAIT ミリ秒は「リセット する」を 受けない）
+  // 第4.169版（まさちゃん 2026/11/14 10:32「テスト版のみに全てをリセットできる機能つけて！」）：ぜんぶ リセット の たしかめる 窓。
+  //   画面の まん中の 窓（うしろは 押せない・右下の 丸い ボタンにも かくれない）。confirm() は アプリの 中では 出ない ので 使わない。
+  //   窓が 出て から WIPE_WAIT ミリ秒は「リセット する」と うしろの タップを 受けない（つづけて 2回 押した ゆびで 消さない・すぐ とじない）。「やめる」は いつでも
+  //   消す しかけ そのものは reset_all.js（テスト版に だけ 入る）
   let wipeAt = 0;
   const WIPE_WAIT = 700;
+  function wipeClose() { const w = $('#testWipe'); if (w) w.remove(); wipeAt = 0; }
+  function wipeAsk() {
+    if (!window.__TEST || $('#testWipe')) return;
+    if (!$('#twCss')) {
+      const st = document.createElement('style'); st.id = 'twCss';
+      st.textContent = '#testWipe{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:calc(var(--sat,0px) + 16px) 16px calc(var(--sab,0px) + 16px);background:rgba(8,12,26,.55)}'
+        + '#testWipe .twbox{width:100%;max-width:520px;max-height:100%;overflow:auto;box-sizing:border-box;background:var(--surface);color:var(--ink);border:2px solid var(--bad);border-radius:16px;padding:18px 18px 16px;box-shadow:0 14px 40px rgba(0,0,0,.35)}'
+        + '#testWipe h3{margin:0 0 8px;font-size:17px;color:var(--bad)}#testWipe p{margin:0 0 12px;font-size:14.5px;line-height:1.65}';
+      document.head.appendChild(st);
+    }
+    const box = document.createElement('div');
+    box.id = 'testWipe'; box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'twTitle');
+    box.innerHTML = '<div class="twbox"><h3 id="twTitle">ほんとうに ぜんぶ 消す？</h3>'
+      + '<p>買った レースの 記録・マザーデータ・ポイント・着せ替え・トレーニングセンター・ログインボーナス・設定が ぜんぶ 消えて、アプリを はじめて 開いた ときの 形に もどるよ。<b>もとには もどせない</b>よ。</p>'
+      + '<p>のこしたい 記録は、先に 設定の「バックアップを保存」で ファイルに 保存してね（記録は あとで 戻せる・ポイントは 戻らない）。</p>'
+      + '<div class="row"><button type="button" class="btn danger" data-test="wipego">リセット する</button><button type="button" class="btn ghost" data-test="wipeno">やめる</button></div></div>';
+    document.body.appendChild(box); wipeAt = Date.now();
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-test]');
+      if (b && b.dataset.test === 'wipeno') { wipeClose(); return; }
+      if (Date.now() - wipeAt < WIPE_WAIT) return;
+      if (e.target === box) { wipeClose(); return; }      // うしろを 押す＝やめる
+      if (!b || b.dataset.test !== 'wipego') return;
+      if (!window.TengelReset) { toast('この 版では リセット できないよ', 2600); return; }
+      $$('#testWipe button').forEach(x => { x.disabled = true; });
+      window.TengelReset.run();      // しるしを 置いて 開き直す → 開き直した ページの はじめに ぜんぶ 消す
+    });
+    const no = box.querySelector('[data-test=wipeno]'); if (no) { try { no.focus({ preventScroll: true }); } catch (x) { /* なし */ } }
+  }
   function testCard() {
     if (!window.__TEST) return;
     const set = $('#v-set'); if (!set || $('#setTest')) return;
@@ -1007,12 +1039,9 @@
       + '<p class="hint" id="testTcHint" style="margin:10px 0 6px">トレーニングセンターの テスト（まぼろしの馬・神様馬を 出す／ルーレットなど お世話の 当たりを ぜんぶ えらべる）：下の ボタンか、トレーニングセンターを ひらいて 上の「🧪 テスト」を 押してね</p>'
       // 第4.165版（まさちゃん 2026/11/13 11:46「トレーニングセンターのルーレット抽選や幻の馬、神様馬のテストができるようにする」）：ここからも 道具箱を 開ける（トレーニングセンターを 開いて 道具箱を 出す）
       + '<div class="row"><button type="button" class="btn" data-test="tcopen">トレーニングセンターの テスト道具を ひらく</button></div>'
-      // 第4.169版（まさちゃん 2026/11/14 10:32「テスト版のみに全てをリセットできる機能つけて！」）：ぜんぶ リセット（2回 たしかめて から。消す しかけは reset_all.js＝テスト版に だけ 入る）
+      // 第4.169版（まさちゃん 2026/11/14 10:32「テスト版のみに全てをリセットできる機能つけて！」）：ぜんぶ リセット（押すと まん中に たしかめる 窓：wipeAsk。消す しかけは reset_all.js＝テスト版に だけ 入る）
       + '<p class="hint" style="margin:16px 0 6px">ぜんぶ リセット：記録・マザーデータ・ポイント・着せ替え・トレーニングセンター・設定を ぜんぶ 消して、アプリを はじめて 開いた ときの 形に もどす（もとには もどせない）</p>'
-      + '<div class="row"><button type="button" class="btn danger" data-test="wipe">ぜんぶ リセット</button></div>'
-      + '<div id="testWipe" hidden style="margin-top:10px;padding:12px;border:2px solid var(--bad);border-radius:12px;background:var(--bad-bg)">'
-      + '<p style="margin:0 0 10px;font-size:14px;line-height:1.65"><b>ほんとうに ぜんぶ 消す？</b><br>買った レースの 記録・マザーデータ・ポイント・着せ替え・トレーニングセンター・ログインボーナス・設定が ぜんぶ 消えて、アプリを はじめて 開いた ときの 形に もどるよ。<b>もとには もどせない</b>よ。<br>のこしたい 記録は、先に 下の「バックアップを保存」で ファイルに 保存してね（記録は あとで 戻せる・ポイントは 戻らない）。</p>'
-      + '<div class="row"><button type="button" class="btn danger" data-test="wipego">リセット する</button><button type="button" class="btn ghost" data-test="wipeno">やめる</button></div></div>';
+      + '<div class="row"><button type="button" class="btn danger" data-test="wipe">ぜんぶ リセット</button></div>';
     set.insertBefore(c, set.firstChild);
     c.addEventListener('click', async e => {
       const b = e.target.closest('[data-test]'); if (!b) return;
@@ -1044,18 +1073,7 @@
         await save(); if (got.length) boardEmit('unlock', { item: got[got.length - 1].id, no: got[got.length - 1].no, many: got.length });
       }
       else if (b.dataset.test === 'tcopen') { if (typeof window.TCOpen === 'function') window.TCOpen({ test: true }); return; }
-      else if (b.dataset.test === 'wipe' || b.dataset.test === 'wipeno') {      // 第4.169版：ぜんぶ リセット（1回目は たしかめる 札を 出す だけ・「やめる」で しまう）
-        const w = $('#testWipe'); if (!w) return;
-        w.hidden = b.dataset.test === 'wipeno'; wipeAt = w.hidden ? 0 : Date.now();
-        if (!w.hidden) { try { w.scrollIntoView({ block: 'center' }); } catch (x) { /* なし */ } }      // 下の タブに かくれない ように 画面の まん中へ
-        return;
-      }
-      else if (b.dataset.test === 'wipego') {      // 2回目：しるしを 置いて 開き直す → 開き直した ページの はじめに ぜんぶ 消す（reset_all.js）
-        if (!wipeAt || Date.now() - wipeAt < WIPE_WAIT) return;      // 札が 出て すぐの タップ（つづけて 2回 押した ゆび）では 動かさない
-        if (!window.TengelReset) { toast('この 版では リセット できないよ', 2600); return; }
-        $$('#testWipe button').forEach(x => { x.disabled = true; });
-        window.TengelReset.run(); return;
-      }
+      else if (b.dataset.test === 'wipe') { wipeAsk(); return; }      // 第4.169版：ぜんぶ リセット（たしかめる 窓を 出す だけ）
       else if (b.dataset.test === 'tkadd') {      // 第4.141版：チケットを ためす（当たりは まれ（第4.142版から 1/600）なので テスト版では ここから）
         try { window.TCInfo.backTicket(); } catch (x) { /* なし */ }
         try { document.dispatchEvent(new CustomEvent('tengel:tc')); } catch (x) { /* なし */ }

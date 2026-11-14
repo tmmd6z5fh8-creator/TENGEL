@@ -1,6 +1,7 @@
 # ぜんぶ リセット（第4.169版）の テスト
 #   まさちゃん 2026/11/14 10:32「テスト版のみに全てをリセットできる機能つけて！」
-#   ・テスト版（TENGEL_TEST=1）の 設定の「テスト版の道具」に「ぜんぶ リセット」→ たしかめる 札「リセット する／やめる」（2回 たしかめる・confirm()／alert() は 使わない）
+#   ・テスト版（TENGEL_TEST=1）の 設定の「テスト版の道具」に「ぜんぶ リセット」→ まん中に たしかめる 窓「リセット する／やめる」（2回 たしかめる・confirm()／alert() は 使わない・
+#     窓が 出て 0.7秒は「リセット する」と 窓の 外の タップを 受けない）
 #   ・「リセット する」→ 画面を かくして 開き直す → 開き直した ページの いちばん はじめに ぜんぶ 消す（reset_all.js）：
 #       localStorage・sessionStorage・IndexedDB（記録・マザーデータ・設定・ポイントの 台帳）・キーチェーンの しるし 2つ・自動バックアップ（空に）・待たせて いる お知らせ
 #   ・消した あとは はじめて 入れた ときと 同じ（開いた ときの 画面は「はじめる」・10,000P・ログインボーナス 1日目・着せ替えは「いつもの」・「前の記録が見つかったよ」は 出ない）
@@ -148,7 +149,8 @@ try:
           'TENGEL_TEST=1 の とき だけ 入る（TENGEL_TEST=0 は App Store版と 同じ 中身）・消す しかけは はじめの スクリプトの 中 だけ')
     check('confirm(' not in code and 'alert(' not in code and 'prompt(' not in code and 'confirm(' not in first and 'alert(' not in first, 'confirm()・alert() を 使わない（アプリの 中では 出ない）')
     body = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_body.txt'), encoding='utf8').read())
-    pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read(); part = pu[pu.index('data-test="wipe"') - 400:pu.index('data-test="wipeno"') + 60]
+    pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read()
+    part = re.sub(r'//[^\n]*', '', pu[pu.index('function wipeAsk()'):pu.index('const no = box.querySelector')]) + pu[pu.index('data-test="wipe">') - 400:pu.index('data-test="wipe">') + 40]      # 窓と ボタンの 言葉（コメントは 画面に 出ない）
     lack = sorted({c for c in ''.join(re.findall(r"'((?:[^'\\]|\\.)*)'", code)) + part if ord(c) > 0x2000 and c not in body and not 0x1F000 <= ord(c) <= 0x1FAFF})
     check(not lack and 'ほんとうに ぜんぶ 消す？' in part and 'もとには もどせない' in part, f'画面の 言葉は しぼった 字（本文 {len(body)}字）に 入って いる 字 だけ（足りない 字 {lack}）')
     check("post('marker', { op: 'del', key: 'gift-first' })" in code and "post('marker', { op: 'del', key: 'granted-sub' })" in code and "post('backup', { text: JSON.stringify({ reset: true, bets: [] }) })" in code
@@ -186,33 +188,42 @@ try:
 
         print('■ 設定の「テスト版の道具」：ぜんぶ リセット')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
-        lay = pg.evaluate("""() => { const c = document.getElementById('setTest'), bt = c.querySelector('[data-test=wipe]'), w = document.getElementById('testWipe'), all = [...c.querySelectorAll('[data-test]')], r = bt.getBoundingClientRect(), cr = c.getBoundingClientRect();
-          return { last: all[all.length - 3] === bt, hidden: w.hidden, txt: bt.textContent, cls: bt.className, h: r.height, inside: r.left >= cr.left && r.right <= cr.right, hint: bt.closest('.row').previousElementSibling.textContent, color: getComputedStyle(bt).color, ink: getComputedStyle(c).color }; }""")
-        check(lay['last'] and lay['hidden'] and lay['txt'] == 'ぜんぶ リセット' and 'danger' in lay['cls'] and lay['color'] != lay['ink'] and lay['h'] >= 36 and lay['inside'] and 'はじめて 開いた ときの 形に もどす' in lay['hint'] and 'もとには もどせない' in lay['hint'],
-              f'カードの いちばん 下に「ぜんぶ リセット」（赤い 字の ボタン・高さ {lay["h"]:.0f}px）と 説明・たしかめる 札は まだ 出て いない')
+        lay = pg.evaluate("""() => { const c = document.getElementById('setTest'), bt = c.querySelector('[data-test=wipe]'), all = [...c.querySelectorAll('[data-test]')], r = bt.getBoundingClientRect(), cr = c.getBoundingClientRect();
+          return { last: all[all.length - 1] === bt, win: !!document.getElementById('testWipe'), txt: bt.textContent, cls: bt.className, h: r.height, inside: r.left >= cr.left && r.right <= cr.right, hint: bt.closest('.row').previousElementSibling.textContent, color: getComputedStyle(bt).color, ink: getComputedStyle(c).color }; }""")
+        check(lay['last'] and not lay['win'] and lay['txt'] == 'ぜんぶ リセット' and 'danger' in lay['cls'] and lay['color'] != lay['ink'] and lay['h'] >= 36 and lay['inside'] and 'はじめて 開いた ときの 形に もどす' in lay['hint'] and 'もとには もどせない' in lay['hint'],
+              f'カードの いちばん 下に「ぜんぶ リセット」（赤い 字の ボタン・高さ {lay["h"]:.0f}px）と 説明・たしかめる 窓は まだ 出て いない')
         pg.locator('#setTest [data-test=wipe]').scroll_into_view_if_needed(); pg.locator('#setTest [data-test=wipe]').click(); pg.wait_for_timeout(400); shot(pg, 'reset_confirm')
-        cf = pg.evaluate("""() => { const w = document.getElementById('testWipe'), r = w.getBoundingClientRect(), go = w.querySelector('[data-test=wipego]'), no = w.querySelector('[data-test=wipeno]'), a = go.getBoundingClientRect(), n = no.getBoundingClientRect(), tb = document.querySelector('.tabbar').getBoundingClientRect();
-          return { hidden: w.hidden, txt: w.textContent, go: go.textContent, no: no.textContent, gh: a.height, nh: n.height, apart: n.left - a.right, row: Math.abs(a.top - n.top) < 2, inside: r.left >= 0 && r.right <= innerWidth, seen: r.bottom <= tb.top + 1 && r.top >= 0,
-            fam: getComputedStyle(w.querySelector('p')).fontFamily.split(',')[0].trim().replace(/"/g, ''), cardFam: getComputedStyle(document.querySelector('#setTest .hint')).fontFamily.split(',')[0].trim().replace(/"/g, ''), over: w.scrollWidth > w.clientWidth + 1 }; }""")
-        check(not cf['hidden'] and 'ほんとうに ぜんぶ 消す？' in cf['txt'] and 'もとには もどせない' in cf['txt'] and cf['go'] == 'リセット する' and cf['no'] == 'やめる' and cf['gh'] >= 36 and cf['nh'] >= 36 and cf['row'] and cf['apart'] >= 6
-              and cf['inside'] and cf['seen'] and not cf['over'] and cf['fam'] == cf['cardFam'],
-              f'1回目：たしかめる 札「ほんとうに ぜんぶ 消す？」＋「リセット する」「やめる」（横に ならぶ・間 {cf["apart"]:.0f}px・画面の 中に 見える・字は カードと 同じ {cf["fam"]}）')
+        cf = pg.evaluate("""() => { const w = document.getElementById('testWipe'), bx = w.querySelector('.twbox'), r = bx.getBoundingClientRect(), go = w.querySelector('[data-test=wipego]'), no = w.querySelector('[data-test=wipeno]'), a = go.getBoundingClientRect(), n = no.getBoundingClientRect();
+          const cs = getComputedStyle(w), fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, ''), at = (x, y) => { const e = document.elementFromPoint(x, y); return !!e && w.contains(e); }, fab = document.getElementById('tcFab').getBoundingClientRect();
+          return { txt: bx.textContent, title: bx.querySelector('h3').textContent, go: go.textContent, no: no.textContent, gh: a.height, nh: n.height, apart: n.left - a.right, row: Math.abs(a.top - n.top) < 2, pos: cs.position, z: +cs.zIndex, tabz: +getComputedStyle(document.querySelector('.tabbar')).zIndex,
+            inside: r.left >= 8 && r.right <= innerWidth - 8 && r.top >= 0 && r.bottom <= innerHeight, mid: Math.abs((r.top + r.bottom) / 2 - innerHeight / 2) < 40, coverTab: at(30, innerHeight - 10), coverFab: at(fab.left + fab.width / 2, fab.top + fab.height / 2), coverTop: at(60, 20),
+            role: w.getAttribute('role'), modal: w.getAttribute('aria-modal'), label: w.getAttribute('aria-labelledby'), fam: fam(bx.querySelector('p')), cardFam: fam(document.querySelector('#setTest .hint')), over: bx.scrollWidth > bx.clientWidth + 1 || bx.scrollHeight > bx.clientHeight + 1,
+            body: w.parentNode === document.body, w: r.width, h: r.height, btnIn: a.left >= r.left && n.right <= r.right && a.bottom <= r.bottom }; }""")
+        check(cf['title'] == 'ほんとうに ぜんぶ 消す？' and 'もとには もどせない' in cf['txt'] and 'バックアップを保存' in cf['txt'] and cf['go'] == 'リセット する' and cf['no'] == 'やめる' and cf['gh'] >= 36 and cf['nh'] >= 36 and cf['row'] and cf['apart'] >= 6 and cf['btnIn'],
+              f'1回目：まん中に 窓「ほんとうに ぜんぶ 消す？」（消える もの・もとには もどせない・先に バックアップ）＋「リセット する」「やめる」（横に ならぶ・間 {cf["apart"]:.0f}px・高さ {cf["gh"]:.0f}px）')
+        check(cf['pos'] == 'fixed' and cf['z'] == 60 and cf['z'] > cf['tabz'] and cf['inside'] and cf['mid'] and cf['coverTab'] and cf['coverFab'] and cf['coverTop'] and cf['body'] and not cf['over']
+              and cf['role'] == 'alertdialog' and cf['modal'] == 'true' and cf['label'] == 'twTitle' and cf['fam'] == cf['cardFam'],
+              f'窓：画面の まん中（{cf["w"]:.0f}×{cf["h"]:.0f}・はみ出さない）・うしろ（下の タブ・右下の 丸い ボタン・上の 帯）は 押せない・字は カードと 同じ {cf["fam"]}')
         s3 = pg.evaluate(STATE)
         check(s3['total'] == 20200 and s3['bets'] == 2 and 'tengel.wipe' not in s3['ls'] and s3['ss'] == ['seeded'] and not pg.locator('#wipeCover').count(), '1回目の ボタン だけでは 何も 消えない（しるしも 置かない）')
-        pg.locator('#setTest [data-test=wipeno]').click(); pg.wait_for_timeout(300)
-        s4 = pg.evaluate(STATE); hid = pg.evaluate("() => document.getElementById('testWipe').hidden")
-        check(hid and s4['total'] == 20200 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：札を しまう・何も 消えない')
+        pg.locator('#testWipe [data-test=wipeno]').click(); pg.wait_for_timeout(300)
+        s4 = pg.evaluate(STATE)
+        check(not pg.locator('#testWipe').count() and s4['total'] == 20200 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：窓を とじる・何も 消えない')
+        # うしろ（窓の 外）を 押す＝やめる。ただし 窓が 出て すぐ（0.7秒）は とじない（つづけて 2回 押した ゆびで すぐ 消えない）
+        pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.getElementById('testWipe').click(); }"); pg.wait_for_timeout(200); o1 = pg.locator('#testWipe').count()
+        pg.wait_for_timeout(700); pg.mouse.click(195, 30); pg.wait_for_timeout(300); o2 = pg.locator('#testWipe').count(); s4b = pg.evaluate(STATE)
+        check(o1 == 1 and o2 == 0 and s4b['total'] == 20200 and s4b['bets'] == 2 and 'tengel.wipe' not in s4b['ls'], '窓の 外を 押す＝やめる（出て すぐの 0.7秒は とじない）・何も 消えない')
 
         print('■ 「リセット する」→ 開き直して ぜんぶ 消す')
-        # つづけて 2回 押した ゆび（札が 出て すぐ「リセット する」に 当たる）では 動かない：出て から 0.7秒は 受けない
-        pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.querySelector('#setTest [data-test=wipego]').click(); }"); pg.wait_for_timeout(700)
-        dt = pg.evaluate("() => ({ cover: !!document.getElementById('wipeCover'), mark: localStorage.getItem('tengel.wipe'), open: !document.getElementById('testWipe').hidden, dis: [...document.querySelectorAll('#testWipe button')].some(b => b.disabled) })")
-        check(not dt['cover'] and dt['mark'] is None and dt['open'] and not dt['dis'] and 'const WIPE_WAIT = 700;' in pu, f'札が 出て すぐの「リセット する」（つづけて 2回 押した ゆび）では 動かない（0.7秒 待つ）{dt}')
+        # つづけて 2回 押した ゆび（窓が 出て すぐ「リセット する」に 当たる）では 動かない：出て から 0.7秒は 受けない
+        pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.querySelector('#testWipe [data-test=wipego]').click(); }"); pg.wait_for_timeout(700)
+        dt = pg.evaluate("() => ({ cover: !!document.getElementById('wipeCover'), mark: localStorage.getItem('tengel.wipe'), open: !!document.getElementById('testWipe'), dis: [...document.querySelectorAll('#testWipe button')].some(b => b.disabled) })")
+        check(not dt['cover'] and dt['mark'] is None and dt['open'] and not dt['dis'] and 'const WIPE_WAIT = 700;' in pu, f'窓が 出て すぐの「リセット する」（つづけて 2回 押した ゆび）では 動かない（0.7秒 待つ）{dt}')
         pg.wait_for_timeout(300)
         n_log = len(N.log); gift0 = s1['gift']; N.auth = 'authorized'
         # 開き直す までの 0.4秒を テストの 間 だけ 1.5秒に のばす（かくす 画面を 見る ひま）。__old＝前の ページの しるし（開き直すと 消える）
         pg.evaluate("() => { window.__old = true; const st = window.setTimeout; window.setTimeout = (f, ms, ...a) => st(f, ms === 400 ? 1500 : ms, ...a); }")
-        pg.locator('#setTest [data-test=wipego]').click(); pg.wait_for_timeout(250)
+        pg.locator('#testWipe [data-test=wipego]').click(); pg.wait_for_timeout(250)
         cv = pg.evaluate("""() => { const c = document.getElementById('wipeCover'); if (!c) return null; const r = c.getBoundingClientRect(), t = document.elementFromPoint(195, 800);
           return { txt: c.textContent, full: r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight, top: t === c, z: getComputedStyle(c).zIndex, ls: localStorage.getItem('tengel.wipe'), ss: sessionStorage.getItem('tengel.wipe'), dis: [...document.querySelectorAll('#testWipe button')].every(b => b.disabled) }; }""")
         shot(pg, 'reset_cover')
