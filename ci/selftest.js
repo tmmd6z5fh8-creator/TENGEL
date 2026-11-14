@@ -557,9 +557,10 @@
       tab('set'); await sleep(800);
       var b1 = document.querySelector('#setTest [data-test=wipe]');
       R.card = { card: !!document.querySelector('#setTest'), btn: !!b1 };
-      if (b1) { b1.click(); await sleep(900); }   // 1回目：たしかめる 札（出て から 0.7秒は「リセット する」を 受けない）
-      var w = document.querySelector('#testWipe');
-      R.confirm = w ? { hidden: w.hidden, text: w.innerText.slice(0, 60), rect: (function (r) { return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })(w.getBoundingClientRect()), ih: innerHeight, mark: localStorage.getItem('tengel.wipe') } : null;
+      if (b1) { b1.click(); await sleep(900); }   // 1回目：まん中に たしかめる 窓（出て から 0.7秒は「リセット する」を 受けない）
+      var w = document.querySelector('#testWipe'), bx = w && w.querySelector('.twbox');
+      R.confirm = w ? { hidden: w.hidden, text: w.innerText.slice(0, 60), rect: (function (r) { return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })((bx || w).getBoundingClientRect()), iw: innerWidth, ih: innerHeight,
+        z: getComputedStyle(w).zIndex, mark: localStorage.getItem('tengel.wipe') } : null;
       await mark('reset-confirm');
       report('5a', R);
       await sleep(400);
