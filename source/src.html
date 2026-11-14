@@ -2630,29 +2630,8 @@ function paintFxCard() {
   $$('.seg[data-fx]', c).forEach(sg => { const on = !!val[sg.dataset.fx]; $$('button', sg).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === '1') === on))); });
   const off = $('.seg[data-fx=calm] button[data-v="0"]', c); if (off) off.disabled = F.reduced();   // 端末の「視差効果を減らす」が オンの 間は オフに できない
 }
-// --- BGM（第4.171版・まさちゃん 2026/11/14 16:18「②テンゲルのBGMを考える・テンゲルBGM(トレーニングセンター、思い出フィギュア、作戦会議、推し馬の画面では流れない)」）：
-//   設定の「的中の演出」の すぐ 下に 札「BGM」（オン／オフ）。鳴らす 所・止める 所は bgm.js（window.TengelBgm：アプリ版 だけ）
-const Bgm = () => (NATIVE_APP && window.TengelBgm) || null;
-function bgmCard() {
-  const M = Bgm(), fx = $('#setFx'); if (!M || !fx || $('#setBgm')) return;
-  const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setBgm'; c.style.marginBottom = 'var(--gap)';
-  c.innerHTML = `<h2>BGM</h2><p class="hint">テンゲルの音楽だよ。判定・記録・実測・設定の画面で、小さな音で鳴るよ。トレーニングセンター・思い出フィギュア・作戦かいぎ・推し馬の画面と、的中の演出の間は鳴らないよ。</p>`
-    + `<div class="fxrow"><div class="fxlab"><b>BGM</b><span class="small muted">消音スイッチがオンのときは鳴らないよ。ほかのアプリの音楽は止めないよ</span></div><div class="seg" data-bgm="on"><button type="button" data-v="1" aria-pressed="true">オン</button><button type="button" data-v="0" aria-pressed="false">オフ</button></div></div>`;
-  fx.parentNode.insertBefore(c, fx.nextSibling);
-  c.addEventListener('click', e => {
-    const b = e.target.closest('.seg[data-bgm] button'); if (!b) return;
-    const on = b.dataset.v === '1'; M.set(on); paintBgmCard();
-    toast(on ? 'BGMをオンにしたよ' : 'BGMをオフにしたよ');
-  });
-  paintBgmCard();
-}
-function paintBgmCard() {
-  const M = Bgm(), c = $('#setBgm'); if (!M || !c) return;
-  const on = !!M.get(); $$('.seg[data-bgm] button', c).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === '1') === on)));
-}
-document.addEventListener('tengel:wallet', () => { fxCard(); bgmCard(); });
-document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { fxCard(); paintFxCard(); bgmCard(); paintBgmCard(); } });
-document.addEventListener('tengel:bgm', paintBgmCard);
+document.addEventListener('tengel:wallet', fxCard);
+document.addEventListener('tengel:tab', e => { if (e.detail === 'set') { fxCard(); paintFxCard(); } });
 document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') paintFxCard(); });
 
 // --- 予約したレースの結果（12章）：券種ごとに 的中／不的中／返還 ---

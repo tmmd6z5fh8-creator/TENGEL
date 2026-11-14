@@ -87,7 +87,8 @@ def superseded(name, files):
         #   きまり：bgm_tengel<番号>.m4a（番号なし＝第1稿）の うち、番号の いちばん 大きい もの だけ 入れる（前の 稿は もとの フォルダに 残す）
         import re as _re
         _bg = sorted((int(_m.group(1) or 1), f) for f in files for _m in [_re.fullmatch(r'bgm_tengel(\d*)\.m4a', f)] if _m)
-        old |= {f for _, f in _bg[:-1]}
+        #   → 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」（第4.172版）：テンゲルBGM は なし ＝ どの 稿も アプリに 入れない（もとの フォルダには 残す）
+        old |= {f for _, f in _bg}
         # 第4.165版（まさちゃん 2026/11/13 14:16「何か変だから、2枚目のアイコンにして、作戦会議のすぐ下に設置してみて！」）：「壁紙&ボード着せ替え」の 絵は 横長の カプセル
         #   （tc_icon_kise2.webp：kisekae/tc/kise_asset.py）。はじめの 丸い 絵（tc_icon_kise.webp）は 使わない ので 入れない（もとの フォルダには 残す）
         if 'tc_icon_kise2.webp' in files:

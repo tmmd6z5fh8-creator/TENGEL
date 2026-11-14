@@ -342,12 +342,11 @@
         venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
         s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines, names: d.names || null };      // 第4.170版：names＝画像に 写って いた 馬の 名前（馬番ごと）
     });
-    // 第4.171版：テンゲルBGM（bgm.js）を 本物の WebKit で：しかけが 入って いるか・消音スイッチの きまり（navigator.audioSession）を 決められるか・
-    //   音の ファイルが ない ビルド（GitHub の Mac）では 鳴らさないか。ルーレットの 爆発の 動画（H.264 High）を この WebKit が 読める 形かも 見る
+    // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
+    //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る
     await step(R, 'bgm', async function () {
-      var B = window.TengelBgm; if (!B) return { has: false };
-      B.sync(); await sleep(1500); var s = B.state(), v = document.createElement('video');
-      return { has: true, on: s.on, ambient: s.ambient, gone: s.gone, playing: s.playing, ctx: s.ctx, type: (navigator.audioSession && navigator.audioSession.type) || null, h264: v.canPlayType('video/mp4; codecs="avc1.640032"') };
+      var v = document.createElement('video');
+      return { has: !!window.TengelBgm, card: !!document.getElementById('setBgm'), h264: v.canPlayType('video/mp4; codecs="avc1.640032"') };
     });
     await step(R, 'wallet2', wallet);
     // App内課金：商品（シミュレーターでは App Store Connect の設定がないので、読めないことが多い。読めなくてもアプリは動く）

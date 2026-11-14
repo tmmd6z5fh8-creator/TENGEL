@@ -155,12 +155,12 @@ want = {"1": "サンライズゴールド", "2": "テンゲルクイーン", "3"
 same = sum(1 for k, v in want.items() if nm.get(k) == v); bad = {k: nm.get(k) for k in want if nm.get(k) != want[k]}
 print("read %d same %d/12 -> %s%s" % (len(nm), same, "OK" if same >= 10 else "CHECK", ("  not same: " + json.dumps(bad, ensure_ascii=False)) if bad else ""))
 ' "$OUT/iphone-report-1.json" 2>&1)"
-    # 第4.171版：テンゲルBGM の しかけ（bgm.js）：本物の WebKit で 入って いる・消音スイッチの きまり（audioSession＝ambient）を 決められる・音の ファイルが ない ここでは 鳴らさない・爆発の 動画の 形（H.264）を 読める
+    # 第4.172版：テンゲルBGM は なくした → 本物の WebKit で しかけ（window.TengelBgm）と 設定の 札が 入って いない・爆発の 動画の 形（H.264：第4.171版）を 読める
     say "   bgm: $(python3 -c '
 import json, sys
 o = json.load(open(sys.argv[1])).get("bgm") or {}
-ok = o.get("has") and o.get("ambient") and o.get("on") and o.get("gone") and not o.get("playing") and o.get("type") == "ambient" and o.get("h264")
-print("api %s audioSession %s (type %s) on %s no-file %s playing %s h264 %s -> %s" % (o.get("has"), o.get("ambient"), o.get("type"), o.get("on"), o.get("gone"), o.get("playing"), o.get("h264") or "-", "OK" if ok else "CHECK"))
+ok = ("has" in o) and (not o.get("has")) and (not o.get("card")) and o.get("h264")
+print("tengel-bgm api %s card %s (none expected) h264 %s -> %s" % (o.get("has"), o.get("card"), o.get("h264") or "-", "OK" if ok else "CHECK"))
 ' "$OUT/iphone-report-1.json" 2>&1)"
   fi
   phase "$IPHONE" iphone 2 700 report-2
