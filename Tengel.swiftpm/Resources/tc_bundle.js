@@ -3193,6 +3193,8 @@ const TCGuide = (() => {
 
 
 
+
+
 const TCFX = (() => {
   const W = 390, H = 614, TAU = Math.PI * 2;
   const AP = p => (typeof window.TC_ASSET === 'function' ? window.TC_ASSET(p) : p);
@@ -3278,6 +3280,49 @@ const TCFX = (() => {
     return pc;
   }
   const PCH_GAIN = 0.85, BIG_GAIN = 0.5;      
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const BOOM = { src: 'tc_rt_boom.mp4', se: 'tc_se_boom.m4a', gain: 0.75, len: 2.6, telop: 0.6, late: 0.9, rise: 1.1, wait: 0.5 };
+  function bmOpen(cv) {                 
+    const st = cv.parentNode, el = document.createElement('div'), v = document.createElement('video'), bm = { el, v, dead: false, woke: false, tried: false, seen: false, off: false, gone: false };
+    el.className = 'tcbm'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#060302;pointer-events:none;opacity:0';
+    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.loop = false;
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true');
+    v.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;background:#060302';
+    v.addEventListener('error', () => { bm.dead = true; });
+    try { v.src = AP(BOOM.src); v.load(); } catch (e) { bm.dead = true; }
+    el.appendChild(v); st.insertBefore(el, cv);
+    return bm;
+  }
+  function bmWake(bm) {                 
+    if (!bm || bm.woke || bm.dead) return; bm.woke = true;
+    try { const q = bm.v.play(); if (q && q.catch) q.catch(() => {}); bm.v.pause(); } catch (e) {   }
+  }
+  function bmGo(bm) {                   
+    if (!bm || bm.dead || bm.gone) return false;
+    try { bm.v.currentTime = 0; } catch (e) {   }
+    let q = null; try { q = bm.v.play(); } catch (e) { bm.dead = true; return false; }
+    if (q && q.catch) q.catch(() => { bm.dead = true; });
+    bm.el.style.opacity = '1'; return true;
+  }
+  const bmMoving = bm => !!bm && !bm.dead && bm.v.currentTime > 0.02;      
+  function bmClose(bm) {
+    if (!bm || bm.gone) return; bm.gone = true;
+    try { bm.v.pause(); bm.v.removeAttribute('src'); bm.v.load(); } catch (e) {   }
+    bm.el.remove();
+  }
 
   
   const RT_STYLE = {
@@ -3480,10 +3525,11 @@ const TCFX = (() => {
     poly([[l - 8, t - 8], [r + 8, t - 8], [r + 8, b + 8], [l - 8, b + 8]], '#c8262b'); poly([[l - 3, t - 3], [r + 3, t - 3], [r + 3, b + 3], [l - 3, b + 3]], '#f3c33d'); poly([[l, t], [r, t], [r, b], [l, b]], '#fbe5c1');
     label('大量ポイント', 0, -h / 2 + h * 0.25, 52, '#ffd65c', '#a81818', 12);
   }
-  function drawBig(im, v, val, calm) {
-    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
+  
+  function drawBig(im, v, val, calm, ex) {
+    const T = TELOP, cx = T.cx, cy = T.cy, w = T.w, h = w * T.ar, L = ex ? sm((v - ex.late) / ex.rise) : sm(v / (calm ? 0.8 : T.rise)), rot = 0.3 + (calm ? 0 : v * T.spin);
     
-    g.save(); g.fillStyle = '#060302'; g.fillRect(0, 0, W, H);
+    g.save(); if (!(ex && ex.clear)) { g.fillStyle = '#060302'; g.fillRect(0, 0, W, H); }
     const bg = g.createRadialGradient(cx, cy, 20, cx, cy, 470);
     bg.addColorStop(0, `rgba(255,190,60,${0.95 * L})`); bg.addColorStop(0.3, `rgba(224,82,20,${0.85 * L})`); bg.addColorStop(0.62, `rgba(126,16,10,${0.7 * L})`); bg.addColorStop(1, `rgba(36,4,4,${0.5 * L})`);
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
@@ -3557,10 +3603,11 @@ const TCFX = (() => {
   }
 
   
-  async function bigFrame(cv, v, val, calm, noImg) {
+  
+  async function bigFrame(cv, v, val, calm, noImg, ex) {
     const im = noImg ? null : await img(TELOP.src);
     PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
-    drawBig(im, v, val, !!calm); g.setTransform(1, 0, 0, 1, 0, 0);
+    drawBig(im, v, val, !!calm, ex || null); g.setTransform(1, 0, 0, 1, 0, 0);
     return !!im;
   }
 
@@ -3577,15 +3624,27 @@ const TCFX = (() => {
     
     const big = high && th !== 'normal';
     const telop = big ? await img(TELOP.src) : null;
-    let pc = null, RV = null;
+    
+    const bm = big && !calm ? bmOpen(cv) : null, wk = () => bmWake(bm), EXL = { clear: false, late: BOOM.late - BOOM.telop, rise: BOOM.rise };
+    if (bm) cv.addEventListener('pointerdown', wk);
+    let pc = null, RV = null, EX = false;
     let tickIdx = null;
     se(o, 'tc_se_unfold.m4a', 1, 0);
     await play(cv, o, (u, st) => {
       if (st.tap != null && r.HIT == null) { r.HIT = st.tap; r.S0 = r.HIT + 0.05; r.S1 = r.S0 + 3.5; if (!big) RV = r.S1 + 0.4; }
       if (big && RV != null && u >= RV) {                    
-        if (pc) { pcClose(pc, 0.2); pc = null; }
-        drawBig(telop, u - RV, val, calm);
-        return { end: RV + TELOP.hold };
+        const v = u - RV;
+        if (bm && !bm.tried) { bm.tried = true; EX = bmGo(bm); }      
+        if (pc) { pcClose(pc, EX ? 0 : 0.2); pc = null; }
+        if (!EX) { drawBig(telop, v, val, calm); return { end: RV + TELOP.hold }; }
+        
+        if (bmMoving(bm)) bm.seen = true;
+        if (!bm.off && ((!bm.seen && (bm.dead || v > BOOM.wait)) || v >= BOOM.len + 0.1)) { bm.off = true; bmClose(bm); }      
+        EXL.clear = !bm.off;
+        if (EXL.clear) bm.el.style.opacity = st.closeAt != null ? String(1 - sm((u - st.closeAt) / 0.5)) : '1';
+        if (v >= BOOM.telop) drawBig(telop, v - BOOM.telop, val, false, EXL);
+        else if (!EXL.clear) { g.fillStyle = '#060302'; g.fillRect(0, 0, W, H); }
+        return { end: RV + BOOM.telop + TELOP.hold };
       }
       const app = sm(u / 0.45);
       g.save(); g.globalAlpha *= app; g.fillStyle = `rgba(16,10,6,${dim})`; g.fillRect(0, 0, W, H); g.restore();
@@ -3617,9 +3676,12 @@ const TCFX = (() => {
       }
       if (r.S1 != null && last < r.S1 + 0.02 && u >= r.S1 + 0.02) se(o, 'tc_se_rt_stop.m4a', 1, 0);
       if (big && r.S1 != null && last < r.S1 + P0 && u >= r.S1 + P0 && !calm) se(o, 'sfx_sdp.m4a', PCH_GAIN, 0);    
-      if (RV != null && last < RV && u >= RV) se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);      
+      if (RV != null && last < RV && u >= RV) {
+        if (EX) { se(o, BOOM.se, BOOM.gain, 0); se(o, 'tc_se_doon.m4a', 1, BOOM.telop); }      
+        else se(o, big ? 'tc_se_doon.m4a' : high ? 'tc_se_dedeen.m4a' : 'sfx_big.m4a', big || high ? 1 : BIG_GAIN, 0);
+      }      
     });
-    pcClose(pc, 0);
+    pcClose(pc, 0); if (bm) { cv.removeEventListener('pointerdown', wk); bmClose(bm); }
   }
 
   
@@ -4002,7 +4064,7 @@ const TCFX = (() => {
     return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
   }
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;
 
@@ -4576,12 +4638,18 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine2.m4a', roulette: 'tc_bgm_roulette.m4a' };
     
     
     
     
-    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 } };
+    
+    
+    
+    
+    
+    const AMB_OLD = { divine: 'tc_bgm_divine.m4a' };
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
@@ -4590,15 +4658,16 @@ const TCApp = (() => {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
       const old = bed; bed = null;
       if (old) { try { const n = ac.currentTime; old.g.gain.cancelScheduledValues(n); old.g.gain.setValueAtTime(old.g.gain.value, n); old.g.gain.linearRampToValueAtTime(0, n + fout); old.s.stop(n + fout + 0.1); } catch (e) { } }
-      const f = AMB[aim]; if (!f) return; let b; try { b = await buf(f); } catch (e) { return; }
+      const f = AMB[aim]; if (!f) return; let b, fb = false;
+      try { b = await buf(f); } catch (e) { if (!AMB_OLD[aim]) return; try { b = await buf(AMB_OLD[aim]); fb = true; } catch (e2) { return; } }
       if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const L = LOOPS[aim]; let off = 0;
+      const L = fb ? null : LOOPS[aim]; let off = 0;
       if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      
       const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
       s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };
     }
-    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, 2); }      
+    async function field(name) { want = name; if (hold != null) return; await swap(name, 2, LOOPS[name] ? 0.15 : 2); }      
     
     async function bgm(name) {
       hold = name == null ? null : String(name);
@@ -4611,7 +4680,7 @@ const TCApp = (() => {
     function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
     function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, LOOPS };
+    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -4896,9 +4965,11 @@ const TCApp = (() => {
       if (z.k === 'rt') {
         if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1;
         const [a, b] = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal);
-        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a']);      
+        SND.preload(z.tier === 'normal' || !z.tier ? ['sfx_big.m4a', 'tc_se_dedeen.m4a'] : ['sfx_big.m4a', 'sfx_sdp.m4a', 'tc_se_doon.m4a', 'tc_se_boom.m4a']);      
         
-        SND.bgm('roulette');
+        
+        
+        SND.bgm(z.tier === 'kamisama' ? 'none' : 'roulette');
         try { await TCFX.roulette(cvFx, { th: z.tier, a, b, win: z.win, bg: fieldName(), se: SND.se, onCut: () => SND.bgm('') }); } finally { SND.bgm(null); give(z); }      
       } else if (z.k === 'zn') {
         
