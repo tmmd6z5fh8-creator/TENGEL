@@ -1,0 +1,39 @@
+== runner: macOS 26.7.2 arm64 (macos-26)
+== xcode: Xcode 26.6 Build version 17F113 
+== iPhone: 23C8F95C-765D-46A9-AE82-0BEE2921C8D7|iPhone 17|iOS 26.5
+== iPad: 65E439BE-B365-4ED5-AD53-88133BA3829C|iPad Pro 11-inch (M5)|iOS 26.5
+== scheme: テンゲル
+== build Swift5 Debug simulator: exit 0 (34s)
+   errors: 0  warnings: 2
+== build Swift6 Debug simulator: exit 0
+   errors: 0  warnings: 2
+== build Swift5 Release device: exit 0
+   errors: 0  warnings: 2
+   release app:  19M  selftest in release: 0
+== app: テンゲル.app
+   bundle id: jp.tengel.app  version: 1.0 (1)
+   iphone-only: UIDeviceFamily=1, orientations(iphone)=1 orientations(ipad)=1 launchscreen=yes OK
+   web files: 35  index.html at: ./index.html 
+   language: CFBundleDevelopmentRegion=ja ja.lproj files=2 localizations= OK
+== iPhone: installed
+   iphone 1: report-1
+   iphone 1: report-manual
+   iphone 1: report-back
+   names: read 12 same 12/12 -> OK
+   bgm: tengel-bgm api False card False (none expected) h264 probably -> OK
+   iphone 2: report-2
+   iphone 3: report-3
+   iphone 3: report-link
+   iphone 5: report-5a
+   iphone 5: report-5
+   reset: before bets 2 setting x backup 2 -> after db ok native 4 first-gate True bets 0 setting None total 10000 offer False write 7 backup n 0 errors 0 -> OK
+== iPad: installed
+   ipad 1: report-1
+   ipad 1: report-manual
+   ipad 1: report-back
+== build wide (.pad added) Debug simulator: exit 0 (46s)
+   wide app: UIDeviceFamily=1,2,
+== iPad wide: installed
+   ipadwide 4: report-4
+   wide: web 390x844 dpr 2 framed True host 834 web@(222,183) 390x844 ksk  errors 0 -> OK
+== done

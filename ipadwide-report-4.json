@@ -1,0 +1,70 @@
+{
+ "phase": 4,
+ "device": "ipadwide",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "version": "1.0",
+   "build": "1",
+   "device": "pad"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+  "w": 390,
+  "h": 844,
+  "dpr": 2,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "0px"
+ },
+ "layout": {
+  "windowWidth": 834,
+  "webY": 183,
+  "webWidth": 390,
+  "windowHeight": 1210,
+  "webX": 222,
+  "webHeight": 844,
+  "safeBottom": 25,
+  "bottom": 0,
+  "height": 1210,
+  "hostWidth": 834,
+  "framed": true,
+  "safeTop": 0,
+  "statusBarHidden": true,
+  "top": 0,
+  "y": 0,
+  "statusBar": 0,
+  "cssTop": "0px",
+  "cssBottom": "0px"
+ },
+ "screen": {
+  "w": 834,
+  "h": 1210,
+  "iw": 390,
+  "ih": 844,
+  "dpr": 2,
+  "topInset2": ""
+ },
+ "banner": {
+  "hidden": true,
+  "w": 0,
+  "h": 0,
+  "k": "",
+  "ks": ""
+ },
+ "header": {
+  "top": 0,
+  "w": 390
+ },
+ "errors": [],
+ "at": "2026-11-14T21:00:14.497Z"
+}

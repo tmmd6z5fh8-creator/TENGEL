@@ -1,0 +1,60 @@
+{
+ "phase": 5,
+ "device": "iphone",
+ "page": "after",
+ "did0": {
+  "at": 1794688736953,
+  "db": "pending",
+  "native": 4
+ },
+ "db": "ok",
+ "gate": {
+  "shown": true,
+  "first": true,
+  "note": "🧪 ぜんぶ リセットしたよ"
+ },
+ "after": {
+  "did": {
+   "at": 1794688736953,
+   "db": "ok",
+   "native": 4
+  },
+  "bets": 0,
+  "races": 290,
+  "memOnly": "",
+  "setting": null,
+  "ls": [
+   "tengel.nchk",
+   "tengel.zones"
+  ],
+  "ss": [],
+  "total": 10000,
+  "events": [
+   "gift-first:1500",
+   "gift-test:8500"
+  ],
+  "offer": false,
+  "backup": {
+   "n": 0,
+   "at": "2026-11-14T20:38:59.692Z",
+   "reset": false,
+   "auto": true
+  }
+ },
+ "write": 7,
+ "main": {
+  "gate": "first",
+  "tabbar": true,
+  "login": true,
+  "offer": false,
+  "total": 10200
+ },
+ "backupAfter": {
+  "n": 0,
+  "auto": true,
+  "reset": false,
+  "wallet": 3
+ },
+ "errors": [],
+ "at": "2026-11-14T20:39:08.918Z"
+}

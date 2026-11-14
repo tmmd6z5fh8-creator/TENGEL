@@ -1,0 +1,8 @@
+{
+ "phase": 3,
+ "device": "iphone",
+ "before": "tengel://localhost/index.html",
+ "after": "tengel://localhost/index.html",
+ "errors": [],
+ "at": "2026-11-14T20:37:52.276Z"
+}
