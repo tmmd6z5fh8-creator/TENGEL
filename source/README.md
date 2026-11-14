@@ -2662,6 +2662,11 @@
       - 名前を 読んだ あと、単勝の 表の ない 写真（3連単の 人気順 だけ）で べつの レースの 見出しを 読んで、単勝を 読み直さずに 予約すると、前の レースの 名前が その 記録に 入る（その 入力は オッズも 前の レースの まま ＝ もともと おかしい 入力）
       - 同じ レースを あとで 読み直して オッズが 大きく 動いて いた とき（単勝の 6割 以上が かわった）、読み直した 写真に 名前が 写って いないと 前の 名前は 消える（べつの レースと 見分けが つかない ため。結果の 画像・手入力で 入れられる）
       - 法律の ことは 姫には 決められない（上の 判決と ガイドラインは 調べた もの。心配な ときは 専門の 人に）
+      - 名前の 欄は 文字の キーボードで 打つ（アプリの 中の テンキー〈`numpad.js`〉は 数字の 欄 だけ）。キーボードが 出ない 使い方（第4.62版の とき iPad で あった）では 手で 打てない ＝ 画像からの 自動 だけ に なる
+    - GitHub の Mac（run 137・ios e5e90f7・11/14 16:10 ごろ 確かめた）：**macOS 26（Xcode 26.6・iPhone 17／iPad Pro 11 M5・iOS 26.5）・macOS 15（Xcode 16.4・iOS 26.2）とも OK**＝3つの ビルド とも エラー 0（警告は 前の 版と 同じ 2〜3こ）・
+      iPhone だけ／日本語の 確かめ OK・iPhone と iPad（互換モード）の 報告が そろって いる・iPad の 広い 窓：Web の 画面 390×844・エラー 0 → OK・「ぜんぶ リセット」（第4.169版）も 前と 同じ OK。この 版は Swift を かえて いない
+      - **本物の 文字認識（Vision）で 見本の 画像から 馬の 名前**（どちらの Mac も 同じ）：`names: read 12 same 12/12 -> OK`＝12頭 ぜんぶ 見本と 同じ 名前で 読めた（`iphone-report-1.json` の `ocr.names`・読み取り 6.8〜8.1秒・JavaScript の エラー 0）
+      - 見られなかった もの：本物の オッズ・結果の 画面での 読め方（見本は 姫が 作った 架空の 画面 1つ）・結果の 画像の 名前を 本物の Vision で 読む 所（CI の 見本は オッズの 画像 だけ）・名前の 欄を キーボードで 打つ 所（シミュレーターでは 押して いない）
   - テスト（できあがりの コードで ぜんぶ 走らせた）：`test_names.py`（45：新しい）・`test_ocr_local.js`（67 → 88：名前の 読み取り）・`test_native.py`（478 → 486：名前・出馬数・コース・フィギュアの 文）・`test_fig.py`（43 → 45：ボードの 文・絵に 書く 行・前の 形も 描ける）・
     `test_reset_all.py`（39）・`test_iphone_only.py`（81）・`test_login.py`（30）・`test_tc_buy.py`（40）・`test_tc_test.py`（55）・`test_plan_entry.py`（49）・`test_oshi.py`（41）・`test_tc.py`（168）・`test_tc_zone.py`（32）・`test_rt_art.py`（15）・`test_horse_fix.py`（20）・`test_mane_fix.py`（12）・`test_tc_care.js`（173）・
     `test_manual.py`（21）・`test_appname.py`（38）・`test_smooth.py`（39）・`test_wall_hq.py`（59）・`test_band_wall.py`（18）・`test_marble_wall.py`（17）・`test_push_art.py`（11）・`test_bcp_still.py`（9）・`test_sd_film.py`（30）・`test_sgd_film.py`（25）・
