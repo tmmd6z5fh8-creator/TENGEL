@@ -1,0 +1,813 @@
+{
+ "phase": 1,
+ "device": "ipad",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "version": "1.0",
+   "device": "phone",
+   "build": "1"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 0,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPad; CPU OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 375,
+  "h": 647,
+  "dpr": 2,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "0px"
+ },
+ "wallet": {
+  "total": 1700,
+  "balance": {
+   "total": 1700,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1700,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1700,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500",
+   "login-2026-11-14:200"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "pinch": true,
+   "zoom": 1
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "first"
+ },
+ "notify": {
+  "auth": "notDetermined",
+  "ok": true
+ },
+ "save": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "rsv": {
+   "state": "reserved",
+   "types": [
+    "馬単",
+    "3連単"
+   ],
+   "points": 99,
+   "zones": [
+    "中穴→人気",
+    "人気→大穴"
+   ]
+  },
+  "card": "買い目\n\n予約ずみ（結果待ち）\n発走時刻を入れるとお知らせできるよ（レース情報の「発走時刻」）\n買い目を確認（馬単・3連単）\n結果を入れる（記録タブ）\n選び直して予約し直す\n予約を消す\n読み直して馬を選び直したら「予約し直す」で上書きするよ（同じレースは1つ・ポイントは使わないよ）。\n",
+  "toast": "✅ 8R の買い目を予約したよ。結果は記録タブで入れてね",
+  "reserve": true,
+  "rate": true,
+  "omakase": true,
+  "pct": [
+   "選んだ馬で 8.2%・3連単 5.1%　※全部選んでいるのでゾーンと同じ",
+   "選んだ馬で 7.1%・3連単 6.1%　※全部選んでいるのでゾーンと同じ"
+  ]
+ },
+ "rsvList": {
+  "btn": "結果待ち1",
+  "ov": true,
+  "cards": 1,
+  "legs": 2,
+  "text": "予約済み・結果待ち\n1件\nとじる\n予約した 買い目だよ。結果が 出たら「結果を入れる」で、記録タブの その レースへ。\n\nB\n10/10（土） 8R\n発走時刻なし\n第1　中穴→人気\n1着\n7\n4\n1\n2着\n6\n2\n10\n3着\n6\n2\n10\n11\n5\n9\n第2　人気→大穴\n1着\n6\n2\n10\n2着\n11\n5\n9\n3着\n6"
+ },
+ "fx": {
+  "kind": "big",
+  "fpsPush": 57,
+  "push": true,
+  "pz": "1.200",
+  "css": true,
+  "settings": {
+   "effects": true,
+   "calm": null,
+   "sound": true
+  },
+  "calm": false,
+  "reduced": false,
+  "sfx": {
+   "ctx": true,
+   "fetched": false,
+   "playing": false,
+   "more": 0,
+   "keys": [
+    "big_push",
+    "big"
+   ],
+   "bufs": [
+    "big_push"
+   ]
+  },
+  "assets": {
+   "sfx_fz_push.m4a": 404,
+   "sfx_big.m4a": 404
+  },
+  "stage": {
+   "k": "0.7666",
+   "w": 375,
+   "h": 647
+  },
+  "decide": [
+   "sd",
+   "hit",
+   "hit",
+   "miss"
+  ],
+  "fpsReveal": 7,
+  "board": {
+   "cls": "rb big t-default",
+   "title": "デカ的中!!",
+   "sub": "8R の券種ごとの結果",
+   "rows": [
+    "3連単 的中 6 → 2 → 10 ",
+    "馬単 的中 6 → 2 ",
+    "ワイド 不的中 "
+   ],
+   "closeVis": "visible"
+  },
+  "fzPush": true,
+  "fzPz": "1.400",
+  "fpsFz": 61,
+  "fz": {
+   "ov": "ov fz sd still",
+   "rib": "超大穴\n10\n11番人気が3連単に！\n",
+   "title": "ど的中！！！",
+   "closeVis": "visible",
+   "finOpacity": null
+  },
+  "closed": true
+ },
+ "fx5": {
+  "decide": {
+   "kind": "sgd",
+   "tier": "g",
+   "multi": true,
+   "supers": [
+    {
+     "no": 11,
+     "rank": 11
+    }
+   ],
+   "bigs": [
+    {
+     "no": 8,
+     "rank": 8
+    }
+   ],
+   "trig": {
+    "t": "3連単",
+    "c": [
+     11,
+     8,
+     2
+    ]
+   }
+  },
+  "lottery": "undefined",
+  "films": [
+   "sgd_film",
+   "sd_film",
+   "nd_film",
+   "gk_film"
+  ],
+  "assets": {
+   "sgd_film2.mp4": 404,
+   "sgd_last2.webp": 404,
+   "sfx_sgd2.m4a": 404
+  },
+  "gone": {
+   "reveal": [],
+   "art": [],
+   "sfx": [],
+   "films": false,
+   "force": [
+    "sd/sd",
+    "sgd/sgd"
+   ]
+  },
+  "sgd": {
+   "kind": "sgd",
+   "push": true,
+   "cur": {
+    "kind": "sgd",
+    "phase": "reveal",
+    "quiet": false,
+    "theme": null,
+    "film": 2,
+    "pre": 0,
+    "pz": 1.6,
+    "art": ""
+   },
+   "ov": "ov fz sgd still",
+   "video": false,
+   "title": "超神様的中！！！",
+   "closeVis": "visible",
+   "holder": 3
+  },
+  "sd": {
+   "kind": "sd",
+   "push": true,
+   "rbw": false,
+   "pz": 1.4,
+   "fps": 63,
+   "pre0": 4,
+   "nd0": false,
+   "parts": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "imgs": 1,
+   "broken": 1,
+   "cur": {
+    "kind": "sd",
+    "phase": "reveal",
+    "quiet": false,
+    "theme": null,
+    "film": 2,
+    "pre": 4,
+    "pz": 1.4,
+    "art": ""
+   },
+   "ov": "ov fz sd still",
+   "nd": false,
+   "holder": true,
+   "title": "ど的中！！！",
+   "rib": "超大穴\n11\n11番人気が3連単に！\n",
+   "closeVis": "visible"
+  },
+  "nd": {
+   "kind": "sd",
+   "cur": "sd",
+   "push": true,
+   "pz": 1.4,
+   "decide": "sd"
+  },
+  "gk": {
+   "kind": "gk",
+   "push": true,
+   "pz": 1.6,
+   "fps": 60,
+   "parts": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "imgs": 1,
+   "broken": 1,
+   "cur": {
+    "kind": "gk",
+    "phase": "reveal",
+    "quiet": false,
+    "theme": null,
+    "film": 2,
+    "pre": 0,
+    "pz": 1.6,
+    "art": ""
+   },
+   "ov": "ov fz gk still",
+   "holder": true,
+   "ndtGone": true,
+   "title": "神様極的中！！！",
+   "rib": "超大穴\n11\n大穴\n8\nが3連単に！\n",
+   "closeVis": "visible"
+  },
+  "closed": true
+ },
+ "board": {
+  "items": 15,
+  "info": {
+   "owned": false,
+   "reads": 0,
+   "n": 0,
+   "next": null,
+   "nextReady": null,
+   "selHit": "",
+   "selMiss": "",
+   "streak": 0,
+   "mstreak": 0
+  },
+  "card": true,
+  "tiles": 16,
+  "buy": "1,500円で買う",
+  "ready": [
+   "ring",
+   "toast",
+   "race",
+   "snap",
+   "seal",
+   "cup",
+   "hoist",
+   "bloom",
+   "climb",
+   "rain",
+   "next",
+   "cover",
+   "wait",
+   "pen",
+   "carry"
+  ],
+  "carry": {
+   "bcx": "carry",
+   "cls": "hb bcx-carry bcst bcgo bchbv",
+   "parts": 8,
+   "vec": true,
+   "close": 563
+  },
+  "carryMiss": {
+   "bcx": "carry",
+   "kind": "miss"
+  },
+  "pic": {
+   "bcx": "ring",
+   "bcp": "",
+   "pic": false,
+   "rbInHb": true,
+   "stage": [
+    2,
+    "ring2"
+   ],
+   "n": 14
+  },
+  "picMiss": {
+   "bcx": "rain",
+   "pic": false,
+   "stage": [
+    4,
+    "miss1_4"
+   ]
+  }
+ },
+ "kisekae": {
+  "list": 30,
+  "groups": [
+   "壁紙パック",
+   "定番",
+   "季節・行事",
+   "競馬",
+   "和・アート",
+   "レトロ・ポップ",
+   "帯"
+  ],
+  "current0": "default",
+  "count": 0,
+  "usableSunset": false,
+  "usableGone": false,
+  "band": {
+   "silver": 5,
+   "golden": 10,
+   "tengel": 15
+  },
+  "files": {
+   "ks_sunset.json": 200,
+   "ks_banner_ranch.svg": 200,
+   "fonts/KaiseiOpti-700.woff2": 200,
+   "ks_5f93d2cbb5295e4148858bf5daf03c5a.webp": 404,
+   "ks_sakura.json": 404
+  },
+  "sunset": {
+   "ks": "sunset",
+   "loaded": true,
+   "bnr": {
+    "hidden": false,
+    "h": 153.828125,
+    "w": 375,
+    "k": "0.9615",
+    "anims": 20,
+    "inner": true
+   },
+   "bg": "rgb(255, 243, 234)",
+   "font": "\"Zen Kaku Gothic New\", \"BIZ UDPGothic\", ",
+   "hfont": "\"Kaisei Opti\", \"Dela Gothic On",
+   "fontLoaded": true,
+   "themeCss": 9332,
+   "scrollW": 375
+  },
+  "push": {
+   "cls": "push ss",
+   "svg": true,
+   "theme": "sunset"
+  },
+  "board": {
+   "cls": "rb hit t-sunset",
+   "title": "的中！",
+   "orn": true,
+   "pressed": "pressed ss"
+  },
+  "card": {
+   "tiles": 30,
+   "on": "sunset",
+   "locks": 29,
+   "names": [
+    "海賊",
+    "競馬場",
+    "宇宙",
+    "パドック",
+    "深海",
+    "恐竜時代"
+   ]
+  },
+  "conf": {
+   "tile": "lucky",
+   "role": "button",
+   "text": "7,000Pを使って解放する？／いま 1,700P／Pが足りないよ／ポイントを買う／やめる／",
+   "unlock": false,
+   "buy": true,
+   "cancel": true,
+   "top": false,
+   "below": true,
+   "inside": true,
+   "closed": true
+  },
+  "tengel": {
+   "ks": "tengel",
+   "bg": "rgb(10, 27, 34)",
+   "anims": 57,
+   "scrollW": 375
+  },
+  "pack": {
+   "ids": [
+    "pirate",
+    "course",
+    "space",
+    "paddock",
+    "deepsea",
+    "dino",
+    "kirie",
+    "ukiyoe",
+    "steam",
+    "future"
+   ],
+   "n": 10,
+   "owned": false,
+   "first": "壁紙パック",
+   "buy": true,
+   "usable": false,
+   "wall": {
+    "ks": "pirate",
+    "anims": 87,
+    "imgs": 18,
+    "scrollW": 375
+   }
+  },
+  "back": {
+   "ks": null,
+   "bnrHidden": true
+  }
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-11-14T20:45:06.790Z",
+  "auto": true,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "keys": [
+   "app",
+   "appVer",
+   "at",
+   "bets",
+   "settings",
+   "slots",
+   "wallet",
+   "auto"
+  ],
+  "hasKey": false
+ },
+ "copy": true,
+ "downloads": true,
+ "ocr": {
+  "local": true,
+  "ms": 7947,
+  "raw": {
+   "ok": true,
+   "n": 68,
+   "ms": 3135,
+   "sample": [
+    "大井競馬第9競走",
+    "ダ1400m",
+    "12頭 馬場：良発走 18:0510月14日（水）",
+    "枠",
+    "馬番",
+    "1"
+   ]
+  },
+  "venue": "大井",
+  "date": "2026-10-14",
+  "r": 9,
+  "dist": 1400,
+  "surface": "ダ",
+  "baba": "良",
+  "n": 12,
+  "horses": 12,
+  "h6": {
+   "no": 6,
+   "tan": 2.4,
+   "fuku": "1.1-1.3"
+  },
+  "h12": {
+   "no": 12,
+   "tan": 88.6,
+   "fuku": "13.2-21.1"
+  },
+  "s1": {
+   "combo": "6-2-10",
+   "odds": 18.5
+  },
+  "s5": {
+   "combo": "2-10-6",
+   "odds": 41.3
+  },
+  "s10": {
+   "combo": "6-10-7",
+   "odds": 84
+  },
+  "docs": [
+   {
+    "lines": 69,
+    "horses": 12,
+    "tri": 0
+   },
+   {
+    "lines": 45,
+    "horses": 0,
+    "tri": 15
+   }
+  ],
+  "lines": [
+   69,
+   45
+  ],
+  "names": {
+   "1": "サンライズゴールド",
+   "2": "テンゲルクイーン",
+   "3": "ナイトレイン",
+   "4": "ブルーハーバー",
+   "5": "コスモスカイ",
+   "6": "ミラクルアロー",
+   "7": "ハッピーデイズ",
+   "8": "シルバーウィンド",
+   "9": "ドリームキャッチャー",
+   "10": "ロイヤルステップ",
+   "11": "スターダストメモリー",
+   "12": "ラストサムライ"
+  }
+ },
+ "bgm": {
+  "has": false,
+  "card": false,
+  "h264": "probably"
+ },
+ "wallet2": {
+  "total": 1700,
+  "balance": {
+   "total": 1700,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1700,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1700,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500",
+   "login-2026-11-14:200"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "zoom": 1,
+   "pinch": true
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "first"
+ },
+ "iap": {
+  "missing": [
+   "jp.tengel.app.points500",
+   "jp.tengel.app.points1000",
+   "jp.tengel.app.points2000",
+   "jp.tengel.app.points4000",
+   "jp.tengel.app.sub2000",
+   "jp.tengel.app.sub4400",
+   "jp.tengel.app.sub9200",
+   "jp.tengel.app.boardcustom",
+   "jp.tengel.app.wallpack1",
+   "jp.tengel.app.bundle1"
+  ],
+  "ok": true,
+  "products": []
+ },
+ "layout": {
+  "webWidth": 375,
+  "bottom": 0,
+  "safeBottom": 0,
+  "y": 20,
+  "top": 0,
+  "height": 647,
+  "webY": 0,
+  "statusBar": 20,
+  "framed": false,
+  "windowHeight": 667,
+  "safeTop": 20,
+  "windowWidth": 375,
+  "hostWidth": 375,
+  "webHeight": 647,
+  "statusBarHidden": false,
+  "webX": 0,
+  "cssTop": "0px",
+  "cssBottom": "0px",
+  "padTop": "0px",
+  "padBottom": "0px"
+ },
+ "topbar": {
+  "pill": "ポイント 1,700P ",
+  "manual": {
+   "right": 359,
+   "top": 10.5
+  },
+  "badge": {
+   "left": 190.75,
+   "right": 359,
+   "top": 98
+  },
+  "headerTop": 0,
+  "topInset": "0px",
+  "topInset2": "",
+  "w": 375,
+  "test": false,
+  "testTag": false
+ },
+ "store": {
+  "url": "",
+  "version": "",
+  "notes": "",
+  "date": "",
+  "found": false,
+  "error": ""
+ },
+ "data": {
+  "ok": false,
+  "msg": "データの形がちがうよ",
+  "url": "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app2.json"
+ },
+ "unseal": {
+  "ok": true,
+  "good": {
+   "ok": true,
+   "text": "{\"app\":\"tengel\",\"kind\":\"selftest\",\"msg\":\"テンゲル ok\"}"
+  },
+  "bad": {
+   "ok": false,
+   "msg": "データの形がちがうよ"
+  },
+  "key2": {
+   "ok": false,
+   "msg": "データの形がちがうよ"
+  },
+  "junk": {
+   "ok": false,
+   "msg": "データの形がちがうよ"
+  }
+ },
+ "mother": {
+  "n": 290,
+  "N": 4,
+  "names": {
+   "1": "テンゲルデータ",
+   "2": "マザーデータ①",
+   "3": "マザーデータ②",
+   "4": "マザーデータ③"
+  },
+  "fixed1": true,
+  "input": [],
+  "slots": [
+   "1:290:fixed",
+   "2:0",
+   "3:0",
+   "4:0"
+  ]
+ },
+ "template": {
+  "ok": true,
+  "bytes": 60493,
+  "zip": true,
+  "share": true
+ },
+ "fonts": {
+  "status": "loaded",
+  "loaded": [
+   "BIZ UDPGothic",
+   "Dela Gothic One",
+   "IBM Plex Mono"
+  ]
+ },
+ "video": {
+  "ok": true,
+  "dur": 45,
+  "w": 1080,
+  "h": 1920
+ },
+ "settings": {
+  "points": "ポイント\n\n1,700P\nいま使えるポイント（3つの合計）\n購入ポイント\nパック・期限なし\n0P\nサブスクポイント\n届いた日から30日\n0P\n獲得ポイント\nはじめてのプレゼント・ミッション\n1,700P\nポイントは 合計 99,999P まで もてるよ（あと 98,299P 入るよ）\nポイントを買う\nサブスク\n詳しく\n1レースの読み込み（画像の読み取りから判定まで）に 200P 使うよ。同じレースを読み直すときは 0P。買ったポイントから先に使うよ（サブスクポイント → 購入ポイント → 獲得ポイント）。\n⚠️ アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません。ポイントはこの端末の中だけに入っているよ（ほかの端末には同期しないよ）。\n",
+  "custom": "Pカスタム\n\nPカスタムで、自分だけのテンゲルを育てよう！\nポイントで、使える券種とマザーデータの枠を増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。\n券種（記録・買い目の予約で選べるもの）\nはじめから：単勝・馬単・3連単\n複勝\n1つ 500P\n解放する\n枠複\n1つ 500P\n解放する\n枠単\n1つ 500P\n解放する\n馬連\n1つ 500P\n解放する\nワイド\n1つ 500P\n解放する\n3連複\n1つ 500P\n解放する\nマザーデータの枠（自分のデータで参考的中率を出す）\nテンゲルデータ（アプリに入っているデータ）とマザーデータ①は、はじめから使えるよ。マザーデータ②・③を解放すると、Excelや判定したレースで自分だけのマザーデータをもっと作れるよ。\nマザーデータ②\n1つ 15,000P\nPが足りない\nマザーデータ③\n1つ 15,000P\nPが足りない\n",
+  "mission": "ミッション\n\nミッションは、画面の上の「ミッション」からも見られるよ（受け取りもできるよ）。\n\n200Pを使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。いま 0レース・次は 8レースで 500P\n\n8レース記録　500P\nあと 8レース（0/8）\n壁紙のミッション\n設定の「着せ替え」でポイントを使って解放した壁紙と、壁紙パックで解放した壁紙の枚数で、帯の壁紙がもらえるよ（いつもの・帯の壁紙は数えないよ）。いま 0枚\n壁紙を5枚あつめる　シルバー帯の壁紙\nあと 5枚（0/5）\n壁紙を10枚あつめる　ゴールド帯の壁紙\nあと 10枚（0/10）\n壁紙を15枚あつめる　マスター帯の壁紙\nあと 15枚（0/15）\n解放した 壁紙の 枚数（ポイント・壁紙パック・帯の 3枚。いつもの は 数えないよ）で ポイントも もらえるよ。いま 0枚（いま 解放できるのは 29枚まで）\n壁紙 3枚解放　800P\nあと 3枚（0/3）\n壁紙 6枚解放　1,200P\nあと 6枚（0/6）\n壁紙 9枚解放　1,500P\nあと 9枚（0/9）\n壁紙 12枚解放　1,800P\nあと 12枚（0/12）\n壁紙 15枚解放　2,100P\nあと 15枚（0/15）\n壁紙 20枚解放　2,500P\nあと 20枚（0/20）\n壁紙 25枚解放　2,500P\nあと 25枚（0/25）\n壁紙 29枚解放　2,500P\nあと 29枚（0/29）\n結果ボードカスタムのミッション\n設定の「結果ボードカスタム」で 解放した 数（買った あとに 読み込んだ レースの 数で 番号の 順に 解放）で ポイントが もらえるよ。いま 0こ（結果ボードカスタムを 買うと すすむよ）\n結果ボードカスタム 3こ解放　500P\nあと 3こ（0/3）\n結果ボードカスタム 6こ解放　800P\nあと 6こ（0/6）\n結果ボードカスタム 9こ解放　1,100P\nあと 9こ（0/9）\n結果ボードカスタム 12こ解放　1,400P\nあと 12こ（0/12）\n結果ボードカスタム 15こ解放　1,600P\nあと 15こ（0/15）\nトレーニングセンターのミッション\nトレーニングセンターで お世話（ごはん・おそうじ）した 合計の 回数で ポイントが もらえるよ。馬の 色が かわって リセット されても 合計は 減らないよ。いま 0回\n馬をお世話して1段階目の成長させる　500P\nあと 50回（0/50）\n馬をお世話して2段階目の成長させる　1,000P\nあと 100回（0/100）\n馬をお世話して3段階目の成長させる　1,500P\nあと 150回（0/150）\n馬をお世話して4段階目の成長させる　2,000P\nあと 200回（0/200）\n思い出フィギュアのミッション\n思い出のレースから 作った 思い出フィギュアの 数で ポイントが もらえるよ（しまって ある フィギュアも 数えるよ）。いま 0こ\n思い出フィギュアを1つ完成させる　5,000P\nあと 1こ（0/1）\n思い出フィギュアを5つ完成させる　5,000P\nあと 5こ（0/5）\n思い出フィギュアを8つ完成させる　10,000P\nあと 8こ（0/8）\n",
+  "update": "アプリの更新\n\nいまの版\n1.0（1）\n中身 2026.11.15-1\nApp Store\nまだApp Storeに出ていないよ\n新しい版があるか確認\nApp Storeでは、まだ見つからなかったよ（公開されると、ここで確かめられるよ）\nアプリの新しい版は、App Storeから届くよ（端末の設定でAppの自動アップデートをオンにしておくと、自動で新しくなるよ）。更新しても、買ったレースの記録・買い目の設定・マザーデータ①〜③は消えないよ。\n⚠️ アプリを削除すると、中の記録・ポイント・解放したものも一緒に消えて、もどせないの。削除する前に、下の「バックアップを保存」で記録をファイルに保存してね（ポイントはファイルに入らないよ）。\n",
+  "data": "データの更新\n\nいまのデータ\nテンゲルデータ（アプリに入っているデータ）\n最後に確認\nまだ\n新しいデータがあるか確認\nデータの形がちがうよ\nテンゲルデータ（アプリに入っているデータ）は、アプリを更新しなくても、ここで新しい版にできるよ。読むのはデータだけ。入れても、マザーデータ①〜③・買ったレースの記録・買い目の設定はそのまま。\n",
+  "backup": "バックアップ（記録を守る）\n\n記録はこのアプリの中に入っているよ。アプリの中にも自動でバックアップしているけど、機種変更やアプリを消しちゃったときのために、ときどきファイルに保存してね（「ファイル」アプリやメールなど）。買い目の設定・マザーデータの名前・Excelで入れたマザーデータも一緒に保存するよ。ポイント・解放したものはファイルには入らないよ（この端末の中だけ）。\n記録\n1件\n最後のバックアップ\nまだしてないよ\n自動バックアップ\n今日 20:45（記録1件）\nバックアップを保存\nバックアップから戻す\n"
+ },
+ "about": {
+  "text": "このアプリについて\n\nアプリ\nテンゲル 1.0（1）\nご利用にあたって\nテンゲルは、過去のレースのデータから傾向を分析して表示する道具です。参考的中率などは過去の実測で、これからの的中や利益を約束するものではありません。\n馬券を買うかどうか、何を買うかは、ご自身の判断でお決めください。\n馬券は20歳になってから。20歳未満の方は、法律により馬券を購入できません。\n競馬は無理のない範囲で楽しみましょう。のめり込みが心配なときは、ひとりで悩まずに相談してください。\nギャンブル依存症予防回復支援センター「サポートコール」0120-683-705（年中無休・24時間・通話料無料）\n相談窓口の案内（内閣官房 ギャンブル等依存症対策推進本部）\nはじめに（競馬の注意・アプリの注意・楽しみ方）\n非公式のアプリです・商標について\nテンゲルは個人が開発した非公式のアプリです。競馬の主催者・団体とは関係ありません。\n\niPhone、iPad、Safariは、米国およびその他の国で登録されたApple Inc.の商標です。iPhoneの商標は、アイホン株式会社のライセンスにもとづき使用されています。\nExcelは、米国Microsoft Corporationの米国およびその他の国における登録商標または商標です。\nそのほか、記載されている会社名・団体名・商品名・サービス名は、各社・各団体の商標または登録商標です。\nプライバシーポリシー\nフォントのライセンス\n",
+  "fonts": true,
+  "tokusho": false
+ },
+ "cm": {
+  "card": false,
+  "modal": false
+ },
+ "numpad": {
+  "shown": true,
+  "target": "w5Win0",
+  "vh": 647,
+  "base": 647,
+  "hw": false,
+  "kb": null,
+  "active": "w5Win0",
+  "value": "7",
+  "activeAfter": "w5Win0",
+  "box": {
+   "top": 402,
+   "h": 245,
+   "bottom": 0
+  },
+  "closed": true,
+  "activeDone": "BODY"
+ },
+ "manualOv": {
+  "overlay": true,
+  "loaded": 2,
+  "href": "tengel://localhost/index.html",
+  "same": true,
+  "src": "tengel://localhost/manual.html",
+  "title": "テンゲルⅢ 説明書",
+  "imgs": 32,
+  "tab": "rec",
+  "item": {
+   "hash": "#about",
+   "page": true,
+   "close": true
+  },
+  "closed": true,
+  "hrefAfter": "tengel://localhost/index.html",
+  "gate": false,
+  "scroll": false,
+  "tabAfter": "rec"
+ },
+ "outside": [
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app2.json?t=1794688922637",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app2.json?t=1794689116856",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/cm/tengel3_cm.mp4?v=997550f1",
+  "https://tmmd6z5fh8-creator.github.io/TENGEL/data/mother_app2.json?t=1794689119258"
+ ],
+ "errors": [],
+ "at": "2026-11-14T20:45:56.768Z"
+}

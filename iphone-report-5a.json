@@ -1,0 +1,84 @@
+{
+ "phase": 5,
+ "device": "iphone",
+ "page": "before",
+ "hasReset": true,
+ "test": true,
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "build": "1",
+   "version": "1.0",
+   "device": "phone"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 402,
+  "h": 812,
+  "dpr": 3,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "34px"
+ },
+ "seed": true,
+ "before": {
+  "bets": 2,
+  "setting": "x",
+  "ls": [
+   "st-ls",
+   "tengel.form",
+   "tengel.gateSeen",
+   "tengel.kisekae",
+   "tengel.login",
+   "tengel.manual.last",
+   "tengel.nchk",
+   "tengel.st5",
+   "tengel.tab",
+   "tengel.win5",
+   "tengel.zones"
+  ],
+  "ss": [
+   "st5"
+  ],
+  "total": 10000,
+  "events": [
+   "gift-first:1500",
+   "login-2026-11-14:200",
+   "gift-test:8300"
+  ],
+  "backup": {
+   "n": 2,
+   "at": "2026-11-14T20:37:49.308Z"
+  },
+  "gate": "splash"
+ },
+ "card": {
+  "card": true,
+  "btn": true
+ },
+ "confirm": {
+  "hidden": false,
+  "text": "ほんとうに ぜんぶ 消す？\n買った レースの 記録・マザーデータ・ポイント・着せ替え・トレーニングセンター・ログインボー",
+  "rect": [
+   16,
+   239,
+   370,
+   300
+  ],
+  "iw": 402,
+  "ih": 812,
+  "z": "60",
+  "mark": null
+ },
+ "errors": [],
+ "at": "2026-11-14T20:37:56.237Z"
+}
