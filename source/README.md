@@ -2604,8 +2604,20 @@
     - **正直な 所（まだ 分からない・見られない もの）**
       - 本物の iPhone・iPad（Swift Playgrounds）では まだ 見て いない（手元は Chromium だけ）。WebKit での 動き（開き直し・DB を 消して すぐ 作り直す・番号 0 の お願い）は GitHub の Mac の シミュレーターで 見る（下）。キーチェーンの しるしを 消す 所 だけは シミュレーターでも 見られない（本物の 端末 だけ）
       - App Store の 買い物（サンドボックス）と 通知の 許可は アプリからは 消せない
-    - GitHub の Mac：（この あと 確かめて ここに 書く）
-  - テスト：（この あと 走らせて ここに 書く）
+    - GitHub の Mac（run 135＝はじめの 形〈カードの 中の 札〉 ios 56e79d9・run 136＝できあがりの 形〈まん中の 窓〉 ios 5b9eb71・11/14 12:35 ごろ 確かめた）：**macOS 26（Xcode 26.6・iPhone 17／iPad Pro 11 M5・iOS 26.5）・macOS 15（Xcode 16.4・iOS 26.2）とも OK**＝3つの ビルド とも エラー 0（警告は 前の 版と 同じ 2〜3こ）・
+      iPhone だけ／日本語の 確かめ OK・iPhone と iPad（互換モード）の 報告が そろって いる・iPad の 広い 窓：Web の 画面 390×844・エラー 0 → OK。この 版は Swift を かえて いない
+      - **本物の WKWebView での「ぜんぶ リセット」**（どちらの Mac も・2回 とも 同じ）：`reset: before bets 2 setting x backup 2 -> after db ok native 4 first-gate True bets 0 setting None total 10000 offer False write 7 backup n 0 errors 0 -> OK`
+        ＝設定の ボタン → まん中の 窓（幅 370×高さ 300・重なりの 順 60）→「リセット する」→ ページが 開き直る → 保存場所（IndexedDB）を 消し おわる → 「はじめる」の 画面・記録 0件・設定なし・端末の おぼえは はじめの 2つ だけ・10,000P・
+        「前の記録が見つかったよ」は 出ない・作り直した 保存場所に 書ける・自動バックアップは 新しい 形（記録 0件）・エラー 0。写真（`shots/iphone-5-reset-confirm／gate／main`）も 見た：窓は 画面の まん中で うしろは 暗い・上の 札「🧪 ぜんぶ リセットしたよ」は 時計の 下・「はじめる」の あとは ログインボーナス 1日目
+      - 見られなかった もの：キーチェーンの しるしを 消す 所（シミュレーターでは キーチェーンが 読めない `error:-34018`：前からの こと）＝本物の 端末 だけ
+  - テスト（できあがりの コードで ぜんぶ 走らせた）：`test_reset_all.py`（39：新しい）・`test_iphone_only.py`（81：出す アプリには 消す しかけが ない・テスト版 だけ はじめの スクリプトに 入る の 2こ を 足した）・`test_native.py`（478）・
+    `test_login.py`（30）・`test_tc_buy.py`（40）・`test_tc_test.py`（55）・`test_plan_entry.py`（49）・`test_oshi.py`（41）・`test_tc.py`（168）・`test_tc_zone.py`（32）・`test_rt_art.py`（15）・`test_horse_fix.py`（20）・`test_mane_fix.py`（12）・`test_tc_care.js`（173）・
+    `test_manual.py`（21）・`test_appname.py`（38）・`test_smooth.py`（39）・`test_wall_hq.py`（59）・`test_band_wall.py`（18）・`test_marble_wall.py`（17）・`test_fig.py`（43）・`test_push_art.py`（11）・`test_bcp_still.py`（9）・`test_sd_film.py`（30）・`test_sgd_film.py`（25）・
+    `test_fx_flash.py`（5）・`test_ks_flash.py`（17テーマ `--push` 51／`silks --wall` 1）・`test_bcx_flash.py`（5）・`test_cm.py`（20）・`test_dataentry.py`（80）・`test_kubun.py`・`test_merge.py`（7）・`test_set.py`（2）・`test_win5.py`（41）・
+    `test_engine.js`・`test_points.js`・`test_reserve.js`・`test_custom_rate.js`・`test_ocr_local.js` → ぜんぶ OK
+    - とちゅうの こと：はじめは たしかめるのを カードの 中の 赤い 札に して テスト・ビルド・GitHub の Mac（run 135）まで 通した。Mac の 写真で 右下の 丸い ボタン（推し馬）が 札の 右はしに 重なって 見えた ので まん中の 窓に かえて、ビルドと テストを はじめから やり直した（上の 数は やり直した あと）
+    - `test_reset_all.py` で 見つけて 直した もの：上の 札が 画面の 半分の 幅で 折り返して ロゴに かぶる（`left:50%` の 箱は 幅が 半分に なる）→ 短い 札は 1行（`white-space:nowrap`）・長い 札は 幅 88%
+    - **走らなかった／通らなかった Web版の 古い テスト**（前の 版と 同じ・この 版の せいでは ない：Web版の 中身は 1バイトも かわって いない）：`test_fix.py`・`test_slots.py`・`test_pwa.py`・`test_update.py`・`test_buyzone.py`・`test_hpick.py`・`test_input.py`・`test_types.py`
 
 ## 着せ替え（仮デザイン・2026/10/17〜・まだアプリには入れていない）
 - まさちゃんの指定の5テーマ＋いつもの：牧場（黄緑・芝と馬）／かわいい（ピンク・ハート・リボン・ポニー）／綺麗（レッド×ブラック・眼鏡の大人の女性・薔薇・馬）／子供向け（薄い黄色×パウダーホワイト・毛糸とフェルト・ぬいぐるみの馬・ロボット）／カッコいい（金・金ピカの馬）。アプリはFableで作る（それまでアプリのソースは変えない）
