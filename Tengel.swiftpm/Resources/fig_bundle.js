@@ -57,6 +57,7 @@ const FigGL = (() => {
 
   
   
+  
   function boardCanvas(info, aspect, pal, size) {
     const PC = PAL[pal] || PAL.gold, S = size || 1024, Wc = 1024, Hc = Math.round(Wc / Math.max(0.5, aspect || 1.4));
     const c = document.createElement('canvas'); c.width = S; c.height = S; const g = c.getContext('2d'); g.scale(S / Wc, S / Hc);
@@ -67,7 +68,8 @@ const FigGL = (() => {
     const rows = [];
     if (info.kind) rows.push({ t: info.kind, s: 0.085, f: FONT_D, w: 400, c: PC.kind });
     if (info.race) rows.push({ t: info.race, s: 0.11, f: FONT_D, w: 400, c: PC.ink });
-    if (info.date) rows.push({ t: info.date, s: 0.06, f: FONT_B, w: 700, c: PC.sub });
+    const dt = [info.date, info.sub].filter(Boolean).join('　');
+    if (dt) rows.push({ t: dt, s: 0.06, f: FONT_B, w: 700, c: PC.sub });
     (info.lines || []).slice(0, 3).forEach((t, i) => rows.push({ t, s: 0.066, f: FONT_B, w: 700, c: PC.ink, gap: i === 0 ? 0.25 : 0 }));
     if (info.result) rows.push({ t: info.result, s: 0.056, f: FONT_B, w: 700, c: PC.sub, gap: 0.2 });
     if (info.money) rows.push({ t: info.money, s: 0.064, f: FONT_B, w: 700, c: PC.money });

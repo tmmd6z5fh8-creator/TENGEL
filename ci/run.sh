@@ -146,6 +146,16 @@ if [ -n "$IPHONE" ]; then
   xcrun simctl ui "$IPHONE" appearance light > /dev/null 2>&1
   xcrun simctl install "$IPHONE" "$APP" > "$OUT/iphone-install.txt" 2>&1 && say "== iPhone: installed"
   phase "$IPHONE" iphone 1 700 $P1
+  # 第4.170版：本物の 文字認識（Vision）で、見本の 画像（架空の レース）から 馬の 名前（馬番ごと）が 読めたか。12頭の うち 10頭 以上が 見本と 同じ なら OK（読みまちがいは 中身で 見る）
+  if [ -f "$OUT/iphone-report-1.json" ]; then
+    say "   names: $(python3 -c '
+import json, sys
+o = json.load(open(sys.argv[1])).get("ocr") or {}; nm = o.get("names") or {}
+want = {"1": "サンライズゴールド", "2": "テンゲルクイーン", "3": "ナイトレイン", "4": "ブルーハーバー", "5": "コスモスカイ", "6": "ミラクルアロー", "7": "ハッピーデイズ", "8": "シルバーウィンド", "9": "ドリームキャッチャー", "10": "ロイヤルステップ", "11": "スターダストメモリー", "12": "ラストサムライ"}
+same = sum(1 for k, v in want.items() if nm.get(k) == v); bad = {k: nm.get(k) for k in want if nm.get(k) != want[k]}
+print("read %d same %d/12 -> %s%s" % (len(nm), same, "OK" if same >= 10 else "CHECK", ("  not same: " + json.dumps(bad, ensure_ascii=False)) if bad else ""))
+' "$OUT/iphone-report-1.json" 2>&1)"
+  fi
   phase "$IPHONE" iphone 2 700 report-2
   phase "$IPHONE" iphone 3 700 offer restored report-3 report-link
   sleep 3; shot "$IPHONE" "iphone-3-link-safari" 700
