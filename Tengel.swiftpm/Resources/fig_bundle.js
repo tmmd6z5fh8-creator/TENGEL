@@ -328,24 +328,33 @@ const FigGL = (() => {
 
 
 
+
+
+
+
 const FigApp = (() => {
   'use strict';
   const PAGES = 7, PER = 8, MAX = PAGES * PER;
-  const NAMES = ['', 'ロイヤルポニー', 'ゴールデンスカラー', 'フローラルゴールド', 'ロイヤルゴールデン', 'ロイヤルフォーチュン', '神様馬', '幻の馬', '幻の馬＆神様馬'];
-  const KIND = ['', 'normal', 'normal', 'normal', 'normal', 'normal', 'kami', 'mab', 'both'];
-  const PRICE = { normal: 22000, mab: 30000, kami: 32000, both: 36000 };
-  const KIND_JA = { normal: '', mab: '幻の馬', kami: '神様馬', both: '幻の馬＆神様馬' };
+  const LIST = [1, 3, 4, 5, 8];
+  const NAMES = ['', 'ロイヤルポニー', '', 'フローラルゴールド', 'ロイヤルゴールデン', 'ロイヤルフォーチュン', '', '', '幻の馬＆神様馬'];
+  const KIND = ['', 'normal', '', 'normal', 'normal', 'normal', '', '', 'both'];
+  const PRICE = { normal: 22000, both: 36000 };
+  const KIND_JA = { normal: '', both: '幻の馬＆神様馬' };
   const PK = 'tengel.figpage';
   const WL = () => window.TengelWallet, MEM = () => window.TengelMem;
   const nf = n => Math.round(+n || 0).toLocaleString('ja-JP');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const circ = n => '①②③④⑤⑥⑦⑧'.charAt(n - 1) || String(n);
+  const circ = n => '①②③④⑤'.charAt(LIST.indexOf(+n)) || '';      
   const priceOf = n => PRICE[KIND[n]] || PRICE.normal;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   
   let items = [], slots = Array(MAX).fill(null);
-  function sync() { const w = WL(); if (w && w.fig) { items = w.fig.items(); slots = w.fig.slots(); } }
+  function sync() {      
+    const w = WL(); if (!(w && w.fig)) return;
+    items = w.fig.items().filter(x => LIST.indexOf(+x.n) >= 0);
+    const ok = new Set(items.map(x => x.id)); slots = w.fig.slots().map(v => (v && ok.has(v) ? v : null));
+  }
   const itemOf = id => items.find(x => x.id === id) || null;
   const slotOf = id => slots.indexOf(id);
   const onPage = p => { const out = []; for (let i = 0; i < PER; i++) { const it = itemOf(slots[p * PER + i]); if (it) out.push({ slot: i, it }); } return out; };
@@ -683,7 +692,7 @@ const FigApp = (() => {
       exitRoom(); stg.classList.remove('room');
       head('フィギュアを作る', '1. 思い出のレースを 選ぶ', mk.back === 'booth' ? '← ブースへ' : '← もどる', '');
       const list = (MEM() && MEM().list()) || [];
-      let h = '<div class="fgmk"><p class="lead">思い出のレースを、ボードに 書いた フィギュアに できるよ。デザインは 8種類。作った フィギュアは フィギュアブースに 飾れるよ。</p>';
+      let h = '<div class="fgmk"><p class="lead">思い出のレースを、ボードに 書いた フィギュアに できるよ。デザインは 5種類。作った フィギュアは フィギュアブースに 飾れるよ。</p>';
       if (!list.length) h += '<div class="fgempty">思い出のレースが まだ ないよ。<br>記録タブで 結果を 決めた レースを 開いて「思い出のレースに記録する」を 押してね。</div>';
       list.forEach(r => { h += `<button type="button" class="fgrace" data-fg="race" data-id="${esc(r.id)}">${r.kind ? `<span class="k">${esc(r.kind)}</span>` : ''}<b>${esc(r.day)}　${esc(r.race)}</b><small>${esc(r.result)}</small></button>`; });
       pn.innerHTML = h + '</div>'; pn.hidden = false; pn.scrollTop = 0; ft.innerHTML = '';
@@ -692,7 +701,7 @@ const FigApp = (() => {
       const r = mk.race;
       head('フィギュアを作る', '2. デザインを 選ぶ', '← もどる', '');
       let h = `<div class="fgmk"><div class="fgsel">${r.kind ? `${esc(r.kind)}　` : ''}<b>${esc(r.day)}　${esc(r.race)}</b><br>${esc(r.result)}</div><div class="fgdg">`;
-      for (let n = 1; n <= 8; n++) {
+      for (const n of LIST) {
         const k = KIND[n];
         h += `<button type="button" class="fgd" data-fg="design" data-n="${n}" aria-label="${circ(n)} ${NAMES[n]}　${nf(priceOf(n))}ポイント"><img src="fg${n}_t.webp" alt=""><b>${circ(n)} ${esc(NAMES[n])}</b>${KIND_JA[k] ? `<span class="kd ${k}">${esc(KIND_JA[k])}</span>` : ''}<span class="pr">${nf(priceOf(n))}P</span></button>`;
       }
@@ -759,7 +768,7 @@ const FigApp = (() => {
       return;
     }
     if (a === 'race') { const r = MEM() && MEM().get(b.dataset.id); if (!r) return; mk.race = r; return showMake('design'); }
-    if (a === 'design') { mk.n = +b.dataset.n; return showMake('prev'); }
+    if (a === 'design') { const n = +b.dataset.n; if (LIST.indexOf(n) < 0) return; mk.n = n; return showMake('prev'); }
     if (a === 'buy1') { mk.conf = true; footBuy(); return; }
     if (a === 'buyx') { mk.conf = false; footBuy(); return; }
     if (a === 'buy2') return buy();
@@ -867,7 +876,7 @@ const FigApp = (() => {
     try { if (window.TengelWallet && window.TengelWallet.lockZoom) window.TengelWallet.lockZoom(false); } catch (e) {   }
     try { document.dispatchEvent(new CustomEvent('tengel:fig')); } catch (e) {   }
   }
-  return { booth, make, close, NAMES, KIND, PRICE, _t: { get mode() { return mode; }, get page() { return page; }, get slots() { return slots.slice(); }, get items() { return items.slice(); }, tapSlot, goPage, showOver, get mk() { return mk; }, get room() { return room; }, need,
+  return { booth, make, close, LIST, NAMES, KIND, PRICE, _t: { get mode() { return mode; }, get page() { return page; }, get slots() { return slots.slice(); }, get items() { return items.slice(); }, tapSlot, goPage, showOver, get mk() { return mk; }, get room() { return room; }, need,
     get view() { return view; }, hold: v => { hold = !!v; }, draw: () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } frame(performance.now()); } } };      
 })();
 

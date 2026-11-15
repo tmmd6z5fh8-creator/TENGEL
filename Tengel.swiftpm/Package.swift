@@ -32,7 +32,8 @@ let package = Package(
                 .portrait
             ],
             capabilities: [
-                .camera(purposeString: "オッズ画面を撮影して、オッズを読み取るときに使います。")
+                .camera(purposeString: "オッズ画面を撮影して、オッズを読み取るときに使います。"),
+                .localNetwork(purposeString: "TENGERカードバトルで、近くにいる友だちのiPhoneと直接つながるときに使います。", bonjourServiceTypes: ["_tengel-cb._tcp", "_tengel-cb._udp"])
             ]
         )
     ],
