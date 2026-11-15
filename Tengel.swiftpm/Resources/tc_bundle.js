@@ -1430,7 +1430,7 @@ const TCCare = (() => {
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
-    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, stockDrop: null, test: null, push: null, bulk: false };      
+    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, stockDrop: null, test: null, push: null, bulk: false, ask: null, askOut: null, withLot: true };      
   const POOP = [];          
 
   
@@ -1653,7 +1653,8 @@ const TCCare = (() => {
   function release(t) {
     const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; BR.hurry = 1; S.grazeOK = false;
     if (m === 'call') { S.callLast = t; if (S.callN >= RULE.streak) { S.callN = 0; S.callCoolUntil = t + RULE.cool; S.callCoolFrom = t; ev(t, 'callcool'); } }      
-    if (m === 'feed' || m === 'clean') pushOpen(t + 0.15);      
+    if ((m === 'feed' || m === 'clean') && S.withLot) pushOpen(t + 0.15);      
+    else if (m === 'feed' || m === 'clean') { fx({ k: 'tagUI', t0: t + 0.15, x: W / 2, y: PUSHG.y - 300, txt: '抽選なしの お世話（トークンは そのまま）', size: 32, dur: 2.0 }); ev(t, 'nolot'); }      
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          
       const c = { x: S.clean.sniff[0], y: S.clean.sniff[1] }; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
@@ -1706,9 +1707,30 @@ const TCCare = (() => {
     if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
+    if (S.phase === 'ask' && S.ask) { askBack(t); return; }      
     if (S.phase === 'choose' && S.chooser && !S.chooser.pick) { chooserBack(t); return; }      
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
-    S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
+    if (askOn()) askOpen(t, 'feed'); else { S.withLot = true; feedOpen(t); }
+  }
+  function feedOpen(t) { S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser'); }
+  
+  
+  
+  
+  
+  
+  
+  
+  const ASKG = { y: 1268, w: 400, h: 196, dx: 216 };      
+  const askOn = () => !S.demo && !!O.lottery;
+  function askOpen(t, kind) { S.ask = { t0: t, kind, pick: null, pickT: null }; S.askOut = null; S.phase = 'ask'; S.mode = 'ask'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser'); }
+  function askEnd(A, t, how) { A.pick = how; A.pickT = t; S.askOut = A; S.ask = null; S.phase = 'idle'; S.mode = null; BR.careHold = false; S.holdUntil = -1; }
+  function askBack(t) { const A = S.ask; if (!A) return; ev(t, 'fold'); askEnd(A, t, '-'); }
+  function askPick(t, yes) {
+    const A = S.ask; if (!A) return;
+    if (yes && S.stock < 1) { if (t - (A.noT == null ? -9 : A.noT) > 1.2) { A.noT = t; fx({ k: 'tagUI', t0: t, x: W / 2 - ASKG.dx, y: ASKG.y - ASKG.h / 2 - 46, txt: 'お世話トークンが ないよ', size: 32, dur: 1.8 }); ev(t, 'wait'); } return; }
+    ev(t, 'pick'); askEnd(A, t, yes ? 'y' : 'n'); S.withLot = !!yes;
+    if (A.kind === 'feed') feedOpen(t); else cleanGo(t);
   }
   
   
@@ -1723,8 +1745,8 @@ const TCCare = (() => {
     S.chooser.pick = kind; S.chooser.pickT = t; ev(t, 'pick');
     at(t + 0.25, tt => {
       S.chooser = null;
-      if (!haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));
+      if (S.withLot && !haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
+      const gold = kind === 'carrot' && S.withLot && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));      
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt };
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          
       comeNear(tt);
@@ -1819,13 +1841,19 @@ const TCCare = (() => {
     if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
+    if (S.phase === 'ask' && S.ask) { askBack(t); return; }      
     if (S.busy || S.phase !== 'idle') return;
     const tg = cleanTargets();
     if (!tg.length) {                    
       const m = S.trashIn > 0 ? Math.ceil(S.trashIn / 60) : 0;
       fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら おそうじ できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
     }
-    if (!haveToken(t, 'clean')) return;
+    if (askOn()) { askOpen(t, 'clean'); return; }      
+    S.withLot = true; cleanGo(t);
+  }
+  function cleanGo(t) {                  
+    const tg = cleanTargets(); if (!tg.length) return;
+    if (S.withLot && !haveToken(t, 'clean')) return;
     S.mode = 'clean'; BR.careHold = true; S.holdUntil = Infinity;
     if (tg.some(T => !T.poop)) BR.trashDone = true;          
     for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
@@ -2572,6 +2600,38 @@ const TCCare = (() => {
   }
 
   
+  function drawAsk(t) {
+    const A = S.ask || S.askOut; if (!A) return;
+    const pv = A.pickT != null ? (t - A.pickT) / 0.25 : 0;
+    if (pv >= 1) { if (S.askOut === A) S.askOut = null; return; }
+    const G = ASKG, none = S.stock < 1;
+    [['y', '抽選を する', none ? 'お世話トークンが ないよ' : `トークン のこり ${S.stock}こ`, -1], ['n', '抽選を しない', 'お世話 だけ（トークン そのまま）', 1]].forEach(([kd, main, sub, sx], i) => {
+      const v = (t - A.t0 - i * 0.06) / 0.3; if (v <= 0) return;
+      const picked = A.pick === kd, s = backOut(v) * (picked ? 1 + 0.07 * Math.sin(Math.PI * clamp(pv, 0, 1)) : 1) * (S.uiDown === 'ask:' + kd ? 0.96 : 1), a = (A.pick ? 1 - sm(picked ? (pv - 0.35) / 0.65 : pv / 0.6) : 1) * (kd === 'y' && none ? 0.55 : 1);
+      if (s <= 0.01 || a <= 0.01) return;
+      const gold = kd === 'y', w = G.w, h = G.h, k = 26;
+      g.save(); g.globalAlpha *= a; g.translate(W / 2 + sx * G.dx, G.y); g.scale(s, s); g.lineWidth = 0.8;
+      pf([[-w / 2 + 6, -h / 2 + 9], [w / 2 + 6, -h / 2 + 9], [w / 2 + 6, h / 2 + 9], [-w / 2 + 6, h / 2 + 9]], 'rgba(40,20,5,0.24)');
+      pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], gold ? '#f6c24a' : '#fff8ec');
+      pf([[-w / 2, h * 0.1], [w / 2, h * 0.1], [w / 2, h / 2], [-w / 2, h / 2]], gold ? '#eaae32' : '#f8ecd4');
+      pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], gold ? '#c98a1c' : '#e6cf9f');
+      g.strokeStyle = gold ? '#8a5a12' : '#d9b77c'; g.lineWidth = gold ? 5 : 4; g.strokeRect(-w / 2 + 3.5, -h / 2 + 3.5, w - 7, h - 7);
+      if (picked) { g.strokeStyle = '#fffbe6'; g.lineWidth = 7; g.strokeRect(-w / 2 + 9, -h / 2 + 9, w - 18, h - 18); }
+      label(main, 0, -22, 52, gold ? '#5b3412' : '#7a4520', gold ? '#fff3cf' : null, gold ? 7 : 0);
+      label(sub, 0, 48, 26, gold ? '#7a4a12' : '#9a7a55');
+      g.restore();
+    });
+    const v = (t - A.t0) / 0.3; if (v > 0 && !A.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const ttl = 'お世話の あとの 抽選は？', w = g.measureText(ttl).width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 + 60 - w / 2, 1080, w, 58, 29); g.fill(); label(ttl, W / 2 + 60, 1110, 34, '#fff8ea');
+      const B = CHBACK, dn = S.uiDown === 'askback' ? 0.95 : 1;      
+      g.translate(B.x, B.y); g.scale(dn, dn);
+      g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
+      g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
+      g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
+      label('← もどる', 0, 1, 32, '#7a4520');
+      g.restore(); }
+  }
+
+  
   function pre(t, dt) {
     if (S.t0 == null) S.t0 = t;
     const u = t - S.t0;
@@ -2655,6 +2715,7 @@ const TCCare = (() => {
     drawPush(t);
     drawVInfo(t);
     drawChooser(t);
+    drawAsk(t);
     
     if (S.hand) {
       const hs = S.hand, f = toS(S.finger || [W / 2, H / 2]);
@@ -2685,7 +2746,7 @@ const TCCare = (() => {
       const gone = new Set(S.clean.tg.map(T => T.o)); brain.trash = (brain.trash || []).filter(o => !gone.has(o) && o.out == null); brain.poops = (brain.poops || []).filter(q => !gone.has(q) && !q.sw);
       if (S.clean.tg.some(T => !T.poop)) brain.trashDone = true;          
     }
-    HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
+    HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.ask = null; S.askOut = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
   
   function uiHit(x, y) {
     if (pushLive() && !S.fxHold) {       
@@ -2699,6 +2760,10 @@ const TCCare = (() => {
       return null;                       
     }
     if (S.push && !S.fxHold) return 'pgone';      
+    if (S.ask) {                         
+      for (const [kd, sx] of [['y', -1], ['n', 1]]) if (Math.abs(x - (W / 2 + sx * ASKG.dx)) < ASKG.w / 2 && Math.abs(y - ASKG.y) < ASKG.h / 2) return 'ask:' + kd;
+      if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'askback';
+    }
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; }
       if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'chback'; }      
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
@@ -2716,6 +2781,7 @@ const TCCare = (() => {
     else if (what === 'help') { S.press.help = t; ev(t, 'button'); ev(t + 0.05, 'paper'); if (O.onHelp) O.onHelp(); }
     else if (what && what.startsWith('pick:')) pick(t, what.slice(5));
     else if (what === 'chback') chooserBack(t);
+    else if (what === 'ask:y') askPick(t, true); else if (what === 'ask:n') askPick(t, false); else if (what === 'askback') askBack(t);
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
@@ -3048,7 +3114,7 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
+    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, ASKG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
 
@@ -3081,6 +3147,7 @@ const TCGuide = (() => {
 #tcg .rt{font-weight:700;color:#c2456f}
 #tcg .tk{font-weight:700;color:#b07a10}
 #tcg .zn{font-weight:700;color:#6a4fd0}
+#tcg .gk{font-weight:700;color:#d8352c}
 #tcg .note{font-size:11px;color:#8a6a48}
 #tcg .hh{margin:8px 0 2px;font-weight:700;color:#6b3f1d}
 `;
@@ -3088,7 +3155,7 @@ const TCGuide = (() => {
   
   
   const pc = (d, n) => {               
-    const x = (n || 1) / d * 100, s = String(+x.toFixed(x >= 10 ? 1 : x >= 0.1 ? 2 : 3));
+    const x = (n || 1) / d * 100, s = String(+x.toFixed(x >= 10 ? 1 : x >= 0.1 ? 2 : x >= 0.001 ? 3 : 5));      
     return (Math.abs(+s - x) > 1e-9 ? '約' : '') + s + '%';
   };
   const R = (d, html) => `<tr data-d="${d}"><td>${pc(d)}<small>1/${d}</small></td><td>${html}</td></tr>`;
@@ -3104,24 +3171,32 @@ const TCGuide = (() => {
   const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
   const cm = v => Math.round(v).toLocaleString('ja-JP');
   const ZROW = R(ZONE.d, `<span class="zn">ポイント特化ゾーン</span>（最大${cm(ZV(ZONE.max))}P）`);      
-  const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d];      
+  
+  const GEKI = { d: 299999, v: 40000 };
+  const GROW = R(GEKI.d, `<span class="gk">激馬熱馬</span>（${cm(GEKI.v)}P）`);
+  const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d, GEKI.d];      
   
   const TOK = { every: 5, step: 5, max: 25 };
   const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
   
   const DP = { name: 'お世話チャレンジ', balls: 5, tone: [['青', '#2f7fe0', '10P〜300P'], ['緑', '#2f9f4a', 'ルーレット（800P か 1600P）'], ['紫', '#8a4ad8', 'ルーレット（1600P か 3200P）'], ['赤', '#d8352c', 'ルーレット（3200P か 6400P）'],
-    ['金', '#b8860b', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '#c2456f', '神様馬のルーレット・チケット']] };
+    ['金', '#b8860b', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '#c2456f', '神様馬のルーレット・チケット'], ['激馬熱馬', '#d8352c', '激馬熱馬（40,000P）']] };      
   const SEC = [
     
     
     
-    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>${TOK.every}分ごとに${TOK.step}つ</b>たまる（最大<b>${TOK.max}こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる</p><p>・ポイントで買うこともできる（下の「お世話トークンの購入」）</p>`],
+    ['ト', '#d9a443', 'お世話トークン', `<p>・<b>${TOK.every}分ごとに${TOK.step}つ</b>たまる（最大<b>${TOK.max}こ</b>）</p><p>・「ごはん」「おそうじ」のあとに出る<b>PUSH</b>を1回押すと1つ使う</p><p>・「撫でる」「呼ぶ」はトークンなしでできる（ごはん・おそうじも<b>「抽選を しない」</b>ならトークンなし）</p><p>・ポイントで買うこともできる（下の「お世話トークンの購入」）</p>`],
     ['買', '#3f9f5a', 'お世話トークンの購入', `<p>・下の列の1番右の<b>「お世話トークン購入」</b>を押すと、ポイントで買えるよ</p>
       <table data-tab="packs">${PACKS.map(([n, c]) => `<tr data-n="${n}"><td>${n}こ</td><td><span class="pt">${c.toLocaleString('ja-JP')}P</span></td></tr>`).join('')}</table>
       <p>・持てるのは<b>最大${TOK.max}こ</b>まで（いまの数とあわせて${TOK.max}こをこえる数は、そのときは買えないよ）</p>
       <p>・「買う」→「○○Pで 買う」と2回押すと決まり</p>
       <p class="note">買ったトークンはポイントにもどせないよ。当たりの確率は下の「お世話でポイントGETチャンス」「ポイント特化ゾーン」「幻の馬・神様馬がいるあいだ」の表のとおり</p>`],
-    ['押', '#d8352c', 'お世話のあとのPUSH', `<p>・ごはん・おそうじがおわると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
+    
+    ['選', '#c98a1c', '抽選をする／しない', `<p>・「ごはん」「おそうじ」を押すと、先に<b>「抽選を する」「抽選を しない」</b>を選ぶよ</p>
+      <p>　<b>抽選を する</b> → お世話がおわるとPUSHが出る（トークンを使って抽選）</p>
+      <p>　<b>抽選を しない</b> → お世話だけ（PUSHは出ない・<b>トークンは使わない</b>・0こでもできる）</p>
+      <p data-n="nolot" class="note">「抽選を しない」お世話は、お世話の回数（馬の育ち・馬のリセット・ミッション）には数えないよ。金のニンジンも出ないよ</p>`],
+    ['押', '#d8352c', 'お世話のあとのPUSH', `<p>・ごはん・おそうじ（<b>「抽選を する」</b>を選んだとき）がおわると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
       <p>・当たりは押したときに出るよ（ハズレは「プフォ」の音だけ）</p>
       <p>・PUSHの横のスイッチで<b>「1個 使う」「まとめて 使う」</b>を選べる（前に選んだ方をおぼえているよ）</p>
       <p>　<b>1個 使う</b> → 1回押したらおしまい</p>
@@ -3135,6 +3210,7 @@ const TCGuide = (() => {
       <p>・玉がコップに入ったとき、当たっていれば まん中の<b>「馬バレ」</b>が光るよ。色で中身がわかる（青から虹へ、光が大きくなる）</p>
       <table data-tab="tone">${DP.tone.map(([nm, col, what]) => `<tr data-c="${nm}"><td><b style="color:${col}">${nm}</b></td><td>${what}</td></tr>`).join('')}</table>
       <p data-dp="miss">・はずれのときは、馬バレが<b>白く</b>光るよ（うすく「ハズレ」の字）</p>
+      <p data-dp="geki">・<b>激馬熱馬</b>のときは、馬バレが<b>プチュン！</b>と消えてから「激馬熱馬」が出るよ</p>
       <p>・当たりは<b>「当選」</b>のますにたまる → 玉をぜんぶ落としたら<b>「保留結果を見る」</b>で順に受け取ろう</p>
       <p>・おわったあと、トークンが<b>${DP.balls}こ以上</b>のこっていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
       <p class="note">玉1こ＝トークン1つ＝お世話1回（馬の育ちやミッションの回数も、玉の数ぶん数えるよ）</p>
@@ -3142,12 +3218,12 @@ const TCGuide = (() => {
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ごはん・おそうじのあとの<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
       ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
-      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}</table>
+      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}${GROW}</table>
       <p class="note" data-n="sum">ぜんぶ 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
       <p class="note">チケット1枚で、<b>カギの壁紙を1つ解放</b>するか、<b>${TKP}P</b>にかえるか、選べるよ（設定の「着せ替え」）</p>
-      <p class="note">ポイント特化ゾーンは下の項目を見てね</p>`],
+      <p class="note">ポイント特化ゾーン・激馬熱馬は下の項目を見てね</p>`],
     ['虹', '#7a5ad8', 'ポイント特化ゾーン', `<p>・PUSHを押したとき <b>${pc(ZONE.d)}</b>（1/${ZONE.d}）で突入！（いつもの馬・幻の馬・神様馬の どのときも）</p>
       <p>・スタートは<b>${cm(ZV(0))}P</b></p>
       <p>・<b>「レバーを押し込め！」</b>→ レバーをタップするたびに<b>${Math.round(ZONE.rate * 100)}%</b>で<b>＋${cm(ZONE.add)}P 上乗せ</b>（虹色の光）</p>
@@ -3156,6 +3232,11 @@ const TCGuide = (() => {
       <p data-n="zavg" data-v="${Math.round(ZAVG)}">・ゾーン1回の平均は<b>約${cm(Math.round(ZAVG / 100) * 100)}P</b></p>
       <table data-tab="zone">${Array.from({ length: ZONE.max + 1 }, (_, n) => `<tr data-n="${n}"><td>${pc(1 / ZP(n))}</td><td>上乗せ <b>${n}回</b> → <span class="pt">${cm(ZV(n))}P</span>${n === ZONE.max ? '（MAX）' : ''}</td></tr>`).join('')}</table>
       <p class="note">上乗せできる回数は、ゾーンに入ったときに決まっているよ（とちゅうでアプリを閉じても、次に開いたときに合計を受け取れるよ）</p>`],
+    ['激', '#d8352c', '激馬熱馬', `<p>・抽選（PUSH・お世話チャレンジの玉）1回ごとに <b>${pc(GEKI.d)}</b>（1/${GEKI.d}）で当選！（いつもの馬・幻の馬・神様馬の どのときも）</p>
+      <p data-n="gekiv">・<b>${cm(GEKI.v)}P</b> GET</p>
+      <p>・<b>PUSH</b>で当たると、押したとたんに画面が<b>プチュン！</b>→ まっくら → 天国 →「40000P獲得」</p>
+      <p>・<b>お世話チャレンジ</b>で当たると、馬バレがプチュン！→「激馬熱馬」→<b>「保留結果を見る」</b>で天国へ</p>
+      <p class="note">とちゅうでアプリを閉じても、次に開いたときに受け取れるよ</p>`],
     ['撫', '#e86a92', '撫でる → なかよしハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・つづけて<b>5回</b>まで → 5回なでたら<b>7秒</b>おやすみ</p><p>・ハートは<b>1分に5こ</b>まで</p>
       <p>・ハート<b>10こ</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
       <p>・抽選は<b>お世話トークンが20こ未満</b>のときだけ。<b>20こ以上</b>（最大の25こも）のときは、ハートが10こたまっても<b>抽選まち</b> → PUSHを押してトークンが<b>20こを切ったら</b>抽選がはじまるよ</p>
@@ -3176,9 +3257,9 @@ const TCGuide = (() => {
       <p>・帰るのは、<b>抽選をつかい切ったとき</b>・<b>お世話${RS.cares}回のあと${RS.min}分</b>（リセット）・<b>来てから${RS.limit}分</b>（タイムリミット）の いちばん早いとき</p>
       <p>・左上の「なかよし」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ</p>
       <p class="hh">🌙 幻の馬</p>
-      <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}${ZROW}</table>
+      <table data-tab="maboroshi">${R(15, RT(800, 1600))}${R(30, RT(1600, 3200))}${R(60, RT(3200, 6400))}${ZROW}${GROW}</table>
       <p class="hh">✨ 神様馬</p>
-      <table data-tab="kamisama">${R(8, RT(2000, 4000))}${R(16, RT(5000, 10000))}${R(32, RT(10000, 20000))}${ZROW}</table>
+      <table data-tab="kamisama">${R(8, RT(2000, 4000))}${R(16, RT(5000, 10000))}${R(32, RT(10000, 20000))}${ZROW}${GROW}</table>
       <p class="note">いるあいだは この表だけ（いつものポイント・チケットは出ないよ）</p>`],
     ['育', '#b07a46', '育つ・色がかわる', `<p>・お世話 <b>50・100・150・200・250回</b>で大きく育つ</p><p>・<b>300回</b>で次の色の子に（ブラウン → まだら → ブラック → ホワイト → 肌色）</p>`],
     ['時', '#4a6aa8', '時間でかわるフィールド', `<p>・朝 7:00〜15:59・夕方 16:00〜18:59・夜 19:00〜6:59</p>`],
@@ -3225,6 +3306,7 @@ const TCGuide = (() => {
 })();
 
 ;
+
 
 
 
@@ -4107,8 +4189,180 @@ const TCFX = (() => {
     });
     return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const GK = { film: 'tc_gk_film2.mp4', end: 'tc_gk_end2.webp', sePc: 'tc_se_gk_pchun.m4a', seHv: 'tc_se_gk_heaven.m4a', seTd: 'tc_se_gk_tedeen.m4a', v: 40000,
+    line: 0.243, dim: 0.043, dark: 1.67, darkNo: 0.3, calm: 0.4, fade: 0.12, len: 2.4, text: 59 / 30, land: 0.17, wait: 1.0, stall: 0.8, still: 0.6, hold: 0.5 };
+  
+  const GKL = [[0, 48, 81, 1, 50], [0.043, 28, 55, 0.98, 33], [0.077, 11, 31, 0.83, 22], [0.110, 9, 26, 0.66, 18], [0.143, 9, 24, 0.56, 15], [0.177, 9, 18, 0.38, 11], [0.210, 9, 14, 0.16, 6], [0.243, 9, 12, 0, 3]];
+  function gkAt(u) {                    
+    if (!(u >= 0) || u >= GK.line) return null;
+    let i = 0; while (i + 2 < GKL.length && u >= GKL[i + 1][0]) i++;
+    const a = GKL[i], b = GKL[i + 1], q = clamp((u - a[0]) / (b[0] - a[0]), 0, 1);
+    return [1, 2, 3, 4].map(j => a[j] + (b[j] - a[j]) * q);
+  }
+  
+  
+  function gkLine(q, cx, cy, hw, u) {
+    const L = gkAt(u); if (!L) return 0;
+    const k = hw * 2 / 582, I = L[2], ht = Math.max(1.5, L[1] * k * 0.58), a = clamp(L[0] / (L[1] * 1.16), 0.05, 0.9) / 2, r = Math.max(1, L[3] * k);
+    q.save(); q.globalCompositeOperation = 'lighter';
+    let gr = q.createLinearGradient(0, cy - ht, 0, cy + ht);      
+    gr.addColorStop(0, 'rgba(255,24,16,0)'); gr.addColorStop(0.5 - a, `rgba(255,44,24,${0.55 * I})`); gr.addColorStop(0.5 - a * 0.5, `rgba(255,176,48,${0.9 * I})`); gr.addColorStop(0.5, `rgba(255,246,206,${I})`);
+    gr.addColorStop(0.5 + a * 0.5, `rgba(255,176,48,${0.9 * I})`); gr.addColorStop(0.5 + a, `rgba(255,44,24,${0.55 * I})`); gr.addColorStop(1, 'rgba(255,24,16,0)');
+    q.fillStyle = gr; q.fillRect(cx - hw, cy - ht, hw * 2, ht * 2);
+    const F = Math.min(1, I * 1.6);      
+    gr = q.createRadialGradient(cx, cy, 0, cx, cy, r * 2.3);
+    gr.addColorStop(0, `rgba(255,252,236,${F})`); gr.addColorStop(0.3, `rgba(255,214,110,${0.85 * F})`); gr.addColorStop(0.62, `rgba(255,70,30,${0.4 * F})`); gr.addColorStop(1, 'rgba(255,30,16,0)');
+    q.fillStyle = gr; q.beginPath(); q.arc(cx, cy, r * 2.3, 0, TAU); q.fill();
+    for (const [rot, len, wd, al] of [[0, 6.4, 0.36, 0.9], [Math.PI / 2, 2.4, 0.3, 0.8], [-0.62, 3.4, 0.24, 0.6]]) {
+      q.save(); q.translate(cx, cy); q.rotate(rot); q.scale(len, wd);
+      const sg = q.createRadialGradient(0, 0, 0, 0, 0, r); sg.addColorStop(0, `rgba(255,250,224,${al * F})`); sg.addColorStop(0.5, `rgba(255,190,70,${0.5 * al * F})`); sg.addColorStop(1, 'rgba(255,60,24,0)');
+      q.fillStyle = sg; q.beginPath(); q.arc(0, 0, r, 0, TAU); q.fill(); q.restore();
+    }
+    q.restore(); return I;
+  }
+  function gkOpen(cv) {                 
+    const st = cv.parentNode, el = document.createElement('div'), v = document.createElement('video'), im = new Image(), gk = { el, v, im, dead: false, woke: false, gone: false, imOk: false };
+    el.className = 'tcgk'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#000;pointer-events:none;opacity:0';
+    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.loop = false;
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true');
+    const fill = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block';
+    v.style.cssText = fill + ';background:#000'; im.style.cssText = fill + ';opacity:0'; im.alt = '';
+    v.addEventListener('error', () => { gk.dead = true; });
+    im.onload = () => { gk.imOk = true; }; im.onerror = () => { gk.imOk = false; };
+    try { v.src = AP(GK.film); v.load(); } catch (e) { gk.dead = true; }
+    im.src = AP(GK.end);
+    el.appendChild(v); el.appendChild(im); st.insertBefore(el, cv);
+    return gk;
+  }
+  function gkWake(gk) {                 
+    if (!gk || gk.woke || gk.dead) return; gk.woke = true;
+    try { const q = gk.v.play(); if (q && q.catch) q.catch(() => {}); gk.v.pause(); } catch (e) {   }
+  }
+  function gkGo(gk) {                   
+    if (!gk || gk.dead || gk.gone) return false;
+    try { gk.v.currentTime = 0; } catch (e) {   }
+    let q = null; try { q = gk.v.play(); } catch (e) { gk.dead = true; return false; }
+    if (q && q.catch) q.catch(() => { gk.dead = true; });
+    return true;
+  }
+  function gkClose(gk) {
+    if (!gk || gk.gone) return; gk.gone = true;
+    try { gk.v.pause(); gk.v.removeAttribute('src'); gk.v.load(); } catch (e) {   }
+    gk.el.remove();
+  }
+  function gkWord(txt, x, y, size) {     
+    g.font = `900 ${size}px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(96,16,0,0.5)'; g.lineWidth = size * 0.34; g.strokeText(txt, x, y + size * 0.06);
+    g.strokeStyle = '#fffdf2'; g.lineWidth = size * 0.27; g.strokeText(txt, x, y);
+    g.strokeStyle = '#9a0f0c'; g.lineWidth = size * 0.155; g.strokeText(txt, x, y);
+    const gf = g.createLinearGradient(0, y - size * 0.46, 0, y + size * 0.46); gf.addColorStop(0, '#fffbe2'); gf.addColorStop(0.5, '#ffe060'); gf.addColorStop(1, '#ffa51a');
+    g.fillStyle = gf; g.fillText(txt, x, y);
+  }
+  const GKCONF = ['#ffd65c', '#ff6a5c', '#fff4cf', '#6ad8ff', '#b98cff', '#7be08a'];
+  function gkTelop(v, val, calm) {       
+    if (v < 0) return;
+    const cx = W / 2, cy = 512, T = GK.land;
+    let s, a;
+    if (calm) { s = 1; a = sm(v / 0.4); }
+    else if (v < T) { const q = v / T, r = 1 - q; s = 1 + 0.6 * r * r * r; a = sm((q - 0.15) / 0.75); }      
+    else { const q = clamp((v - T) / 0.26, 0, 1); s = 1 + 0.03 * Math.sin(Math.PI * q) * (1 - q); a = 1; }      
+    const L = calm ? sm(v / 0.6) : sm((v - T * 0.6) / 0.35);      
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const gl = g.createRadialGradient(cx, cy, 10, cx, cy, 300);
+    gl.addColorStop(0, `rgba(255,246,210,${0.5 * L})`); gl.addColorStop(0.5, `rgba(255,214,120,${0.22 * L})`); gl.addColorStop(1, 'rgba(255,190,80,0)');
+    g.fillStyle = gl; g.fillRect(0, 0, W, H); g.restore();
+    if (!calm) {
+      confetti(GKCONF, Math.max(0, v - T), sm((v - T) / 0.5), W, H);      
+      const q = (v - T) / 0.6; if (q > 0 && q < 1) { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = `rgba(255,240,180,${0.5 * (1 - q)})`; g.lineWidth = 8 - 6 * q;
+        g.beginPath(); g.ellipse(cx, cy, 150 + 240 * easeOut(q), 90 + 150 * easeOut(q), 0, 0, TAU); g.stroke(); g.restore(); }      
+    }
+    const txt = String(Math.round(val)) + 'P';
+    g.save(); g.globalAlpha *= a; g.translate(cx, cy); g.scale(s, s);
+    g.font = `900 80px ${SANS}`; const w1 = g.measureText(txt).width, k1 = Math.min(1, 330 / Math.max(1, w1));
+    g.save(); g.translate(0, -44); g.scale(k1, k1); gkWord(txt, 0, 0, 80); g.restore();
+    gkWord('獲得', 0, 44, 88);
+    g.restore();
+    for (let i = 0; i < 10; i++) {       
+      const ang = i / 10 * TAU + 0.5 * hash(i + 21), x = cx + Math.cos(ang) * (170 + 22 * hash(i + 25)), y = cy + Math.sin(ang) * (84 + 16 * hash(i + 28));
+      const q = calm ? 0.5 : 0.5 + 0.5 * Math.sin(TAU * (v / (1.6 + 0.9 * hash(i + 31)) + hash(i + 23)));
+      sparkle(x, y, (8 + 10 * hash(i + 33)) * (0.35 + 0.65 * q), 0.9 * L * (0.3 + 0.7 * q));
+    }
+  }
+  
+  function gkFrame(cv, part, v, calm) {
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    if (part === 'pc') { g.fillStyle = `rgba(0,0,0,${v < GK.dim ? 0.45 : 1})`; g.fillRect(0, 0, W, H); gkLine(g, W / 2, H / 2, W / 2, v); }
+    else gkTelop(v, GK.v, !!calm);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  async function geki(cv, o) {
+    o = o || {};
+    const calm = pcCalm(), pcOn = !!o.puchun && !calm, val = +o.v > 0 ? +o.v : GK.v, gk = gkOpen(cv);
+    const T0 = pcOn ? GK.dark : calm ? GK.calm : GK.darkNo, FD = calm ? 0.4 : GK.fade;      
+    if (pcOn) se(o, GK.sePc, 1, 0);
+    if (!calm) gkWake(gk);      
+    let hv = null, mode = null, textAt = null, hvSe = false, mv = null;      
+    const R = { calm, puchun: pcOn, mode: null, hv: null, mv: null, textAt: null };      
+    GKS = R;
+    try {
+      await play(cv, Object.assign({}, o, { tapMin: 1e9 }), (u, st) => {
+        
+        let black = pcOn ? (u < GK.dim ? 0.45 : 1) : sm(u / (T0 * 0.8));
+        if (hv != null) black *= 1 - sm((u - hv) / FD);
+        if (black > 0.003) { g.fillStyle = `rgba(0,0,0,${black})`; g.fillRect(0, 0, W, H); }
+        if (pcOn) gkLine(g, W / 2, H / 2, W / 2, u);
+        
+        if (hv == null && u >= T0) {
+          hv = u; R.hv = u;
+          if (!calm && gkGo(gk)) mode = 'film'; else { mode = 'still'; gk.im.style.opacity = '1'; }
+          gk.el.style.opacity = '1';
+        }
+        if (mode === 'film' && !hvSe && gk.v.currentTime > 0) { hvSe = true; se(o, GK.seHv, 1, 0); }      
+        if (mode === 'film' && mv == null && gk.v.currentTime > 0.02) { mv = u; R.mv = u; }
+        if (mode === 'film' && mv == null && (gk.dead || u > hv + GK.wait)) { mode = 'still'; gk.im.style.opacity = '1'; }      
+        if (mode === 'film' && mv != null && textAt == null && u > mv + GK.text + GK.stall) { mode = 'still'; gk.im.style.opacity = '1'; }      
+        if (mode === 'film' && gk.v.ended && gk.imOk) gk.im.style.opacity = '1';      
+        R.mode = mode;
+        
+        if (textAt == null && hv != null && (mode === 'film' ? (gk.v.currentTime >= GK.text - 0.02 || gk.v.ended) : u >= hv + (calm ? 0.5 : GK.still))) { textAt = u; R.textAt = u; se(o, GK.seTd, 1, 0); }
+        if (textAt != null) gkTelop(u - textAt, val, calm);
+        if (st.closeAt != null) gk.el.style.opacity = String(Math.max(0, 1 - sm((u - st.closeAt) / 0.5)));      
+        return { end: textAt != null ? textAt + GK.land + GK.hold : null };
+      });
+    } finally { gkClose(gk); }
+    return val;
+  }
+  let GKS = null;
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, geki, GK, GKL, gkLine, gkFrame, get gkState() { return GKS; }, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;
 
@@ -4620,6 +4874,13 @@ const TCBuy = (() => {
 
 
 
+
+
+
+
+
+
+
 const TCDrop = (() => {
   const W = 1052, H = 1657, TAU = Math.PI * 2;
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
@@ -4642,14 +4903,19 @@ const TCDrop = (() => {
     { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2, pip: 4, long: 1, lo: 0.58 },
     { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35, pip: 5, long: 1, lo: 0.52, ring: [0.4] },
     { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0, pip: 7, long: 1, lo: 0.5, ring: [0, 0.6] },
-    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4, pip: 8, long: 2, lo: 0.48, ring: [0, 0.6, 0.9] }];
+    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4, pip: 8, long: 2, lo: 0.48, ring: [0, 0.6, 0.9] },
+    { rgb: [255, 255, 255], R: 6.6, a: 1.0, dim: 0.5, rays: 24, nt: 48, tl: 2.9, len: 2.5, keep: 0.62, hold: 1.35, lock: 2.4, pip: 8, long: 2, lo: 0.48, ring: [0, 0.6, 0.9] }];
   const HUES = [[255, 70, 70], [255, 160, 50], [255, 232, 70], [80, 235, 110], [70, 170, 255], [150, 110, 255], [240, 110, 230]];      
-  const NAME = ['白', '青', '緑', '紫', '赤', '金', '虹'];
+  const NAME = ['白', '青', '緑', '紫', '赤', '金', '虹', '激馬熱馬'];
+  const RB = c => c >= 6;                             
   const FLY = 0.36;                                   
   const BEAT = 0.1, LONG_GAP = 0.3;                   
   const BEAT_ON = 0.06, WEAK = 0.1;                   
   const WIN_AT = 0.05, LEAD = 0.1;                    
   const MISS_AT = 0.16, MISS_ON = 0.36;               
+  
+  
+  const PC_LINE = 0.243, PC_DARK = 1.67, PC_DIM = 0.043, PC_CALM = 0.4;
 
   let D = null, IM = null, loading = null, GLOW = null;
   let cv = null, g = null, K = 1, MS = 1, MX = 0, MY = 0, cache = null, cacheKey = '';
@@ -4668,10 +4934,11 @@ const TCDrop = (() => {
       if (!d || d.v !== 1 || !Array.isArray(d.paths) || !d.paths.length) return false;
       const names = ['tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp'];
       for (let c = 1; c <= 6; c++) names.push('tc_dp_uma' + c + '.webp', 'tc_dp_hold' + c + '.webp');
-      const ims = await Promise.all(names.map(img));
+      const [ims, gk] = await Promise.all([Promise.all(names.map(img)), Promise.all(['tc_dp_uma7.webp', 'tc_dp_hold7.webp'].map(img))]);
       if (ims.some(i => !i)) return false;
       IM = { base: ims[0], front: ims[1], see: ims[2], ball: ims[3], uma: [null], hold: [null] };
       for (let c = 1; c <= 6; c++) { IM.uma.push(ims[2 + 2 * c]); IM.hold.push(ims[3 + 2 * c]); }
+      IM.uma.push(gk[0] || IM.uma[6]); IM.hold.push(gk[1] || IM.hold[6]); IM.gk = !!(gk[0] && gk[1]);      
       D = d; MS = IMG_H / d.img[1]; MX = (W - d.img[0] * MS) / 2; MY = 19;
       return true;
     })();
@@ -4691,7 +4958,7 @@ const TCDrop = (() => {
       q.fillStyle = gr; q.beginPath(); q.arc(0, 0, 128, 0, TAU); q.fill(); return c; };
     const gold = [255, 214, 90];
     GLOW = { tone: [mk(TONE[0].rgb)], hue: HUES.map(mk), tong: [mt(TONE[0].rgb)], thue: HUES.map(mt), white: lens() };
-    for (let c = 1; c <= 6; c++) { const rgb = c === 6 ? gold : TONE[c].rgb; GLOW.tone.push(mk(rgb)); GLOW.tong.push(mt(rgb)); }
+    for (let c = 1; c <= 7; c++) { const rgb = RB(c) ? gold : TONE[c].rgb; GLOW.tone.push(mk(rgb)); GLOW.tong.push(mt(rgb)); }
     return GLOW;
   }
   function lens() {                                   
@@ -4742,21 +5009,30 @@ const TCDrop = (() => {
   function ballIn(b) {                                 
     b.inT = S.t; se('dp_cup', 0.9);
     S.fx.push({ k: 'cup', t0: S.t, cup: b.p.cup });
-    if (b.z) later(WIN_AT, () => reveal(b));
+    if (b.z) later(WIN_AT, () => (b.c === 7 ? gekiPc(b) : reveal(b)));
     else {                                             
       later(MISS_AT, () => { se('dp_miss', 0.8); S.lcd = { c: 0, t0: S.t, off: S.t + MISS_ON }; });
       S.lock = S.t + TONE[0].lock; later(TONE[0].lock, afterBall);
     }
   }
+  function gekiPc(b) {                                 
+    const cm = calm(), dark = cm ? PC_CALM : PC_DARK;
+    if (!cm) se('gk_pchun');
+    S.pc = { t0: S.t, dark, calm: cm };
+    if (API.quiet) { try { API.quiet(true); S.quiet = true; } catch (e) {   } }      
+    S.lock = S.t + dark + LEAD + TONE[7].lock;
+    later(dark, () => reveal(b));
+  }
+  function unquiet() { if (S && S.quiet && API && API.quiet) { S.quiet = false; try { API.quiet(false); } catch (e) {   } } }
   function reveal(b) {                                 
     const c = b.c, tn = TONE[c];
-    se('dp_umb' + c);
+    se('dp_umb' + Math.min(c, 6));                     
     const slot = S.holds.length;
     const h = { z: b.z, c, slot, t: null, fly: S.t + LEAD + tn.hold, state: 'fly' };
     S.holds.push(h);
     later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });
     later(LEAD + tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
-    S.lock = S.t + LEAD + tn.lock; later(LEAD + tn.lock, afterBall);
+    S.lock = S.t + LEAD + tn.lock; later(LEAD + tn.lock, () => { unquiet(); afterBall(); });
   }
   function afterBall() {
     if (S.phase !== 'fall') return;
@@ -4818,6 +5094,7 @@ const TCDrop = (() => {
     return true;
   }
   function finish(aborted) {
+    unquiet();                                         
     const r = { used: S ? S.used : 0, aborted: !!aborted };
     stop();
     const d = done; done = null; S = null;
@@ -4987,7 +5264,7 @@ const TCDrop = (() => {
     const tn = TONE[L.c], u = S.t - L.t0, ts = settle(tn);
     return u < ts ? 1 : 1 - 0.4 * (0.91 - waveAt(u - ts, loAt(tn, u))) / 0.91;      
   }
-  const lampCol = (L, u) => (L.c === 6 ? (!calm() && u < lastPip(TONE[6]) ? HUES[(beatAt(TONE[6], u) * 3) % 7] : hueAt(u * 0.9)) : TONE[L.c].rgb);      
+  const lampCol = (L, u) => (RB(L.c) ? (!calm() && u < lastPip(TONE[L.c]) ? HUES[(beatAt(TONE[L.c], u) * 3) % 7] : hueAt(u * 0.9)) : TONE[L.c].rgb);      
   const auraStrong = L => { const tn = TONE[L.c], u = S.t - L.t0; return u < tn.len ? 1 : 1 - sm((u - tn.len) / 0.7); };      
   function auraDim(L) {                                
     const tn = TONE[L.c], st = auraStrong(L), k = auraK(L) * (0.3 + 0.7 * st); if (k <= 0.004) return;
@@ -4999,13 +5276,13 @@ const TCDrop = (() => {
     const [cx, cy, , rr] = D.lcd, cm = calm(), st = auraStrong(L), G = glows();
     const br = auraBr(L);                              
     const R = rr * (1 + (tn.R - 1) * (0.62 + 0.38 * st)) * (cm ? 0.9 : 1);
-    const col = c === 6 ? [255, 250, 240] : tn.rgb, ka = c === 6 ? 0.45 : 1;
+    const col = RB(c) ? [255, 250, 240] : tn.rgb, ka = RB(c) ? 0.45 : 1;
     g.save();
     
     let gr = g.createRadialGradient(cx, cy, rr * 0.75, cx, cy, R);
     gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${0.78 * ka * tn.a * k * br})`); gr.addColorStop(0.4, `rgba(${col[0]},${col[1]},${col[2]},${0.4 * ka * tn.a * k * br})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
     g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
-    if (c === 6) for (let pass = 0; pass < 2; pass++) {      
+    if (RB(c)) for (let pass = 0; pass < 2; pass++) {      
       g.globalCompositeOperation = pass ? 'lighter' : 'source-over';
       for (let i = 0; i < 7; i++) {
         const an = i * TAU / 7 + (cm ? 0 : u * 0.3), d = rr + (R - rr) * 0.36, sz = (R - rr) * 0.6 + rr * 0.55;
@@ -5022,7 +5299,7 @@ const TCDrop = (() => {
     if (tn.rays && !cm) {
       const rot = u * 0.055 * TAU, len = R * 1.12;
       for (let i = 0; i < tn.rays; i++) {
-        const an = rot + i * TAU / tn.rays, w = TAU / tn.rays * 0.22, rc = c === 6 ? HUES[i % 7] : tn.rgb, al = (i % 2 ? 0.22 : 0.4) * tn.a * k * (0.3 + 0.7 * st);
+        const an = rot + i * TAU / tn.rays, w = TAU / tn.rays * 0.22, rc = RB(c) ? HUES[i % 7] : tn.rgb, al = (i % 2 ? 0.22 : 0.4) * tn.a * k * (0.3 + 0.7 * st);
         const lg = g.createLinearGradient(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr, cx + Math.cos(an) * len, cy + Math.sin(an) * len);
         lg.addColorStop(0, `rgba(${rc[0]},${rc[1]},${rc[2]},${al})`); lg.addColorStop(1, `rgba(${rc[0]},${rc[1]},${rc[2]},0)`);
         g.fillStyle = lg; g.beginPath(); g.moveTo(cx + Math.cos(an - w * 0.3) * rr * 0.96, cy + Math.sin(an - w * 0.3) * rr * 0.96);
@@ -5040,7 +5317,7 @@ const TCDrop = (() => {
         const len = base * (0.5 + 0.5 * wob) * (0.62 + 0.9 * up * up) * (0.75 + 0.5 * h1) + rr * 0.35, wd = rr * (0.36 + 0.07 * c) * (0.75 + 0.5 * h3);
         g.globalAlpha = Math.min(1, (pass ? 0.42 : 0.5) * tn.a * k * (0.6 + 0.4 * wob));
         g.save(); g.translate(cx + Math.cos(an) * rr * 0.7, cy + Math.sin(an) * rr * 0.7); g.rotate(an);
-        g.drawImage(c === 6 ? G.thue[(i + Math.floor(u * 0.6)) % 7] : G.tong[c], 0, -wd / 2, len, wd);
+        g.drawImage(RB(c) ? G.thue[(i + Math.floor(u * 0.6)) % 7] : G.tong[c], 0, -wd / 2, len, wd);
         g.restore();
       }
     }
@@ -5053,13 +5330,13 @@ const TCDrop = (() => {
       const sz = rr * (0.16 + 0.03 * c) * (1 - 0.5 * ph), al = Math.sin(Math.PI * ph) * 0.8 * k;
       if (al <= 0.01) continue;
       g.globalAlpha = Math.min(1, al);
-      g.drawImage(c === 6 ? G.hue[(i + cyc) % 7] : G.tone[c], cx + Math.cos(an) * d0 - sz, cy + Math.sin(an) * d0 * 0.9 - rise - sz, sz * 2, sz * 2);
+      g.drawImage(RB(c) ? G.hue[(i + cyc) % 7] : G.tone[c], cx + Math.cos(an) * d0 - sz, cy + Math.sin(an) * d0 * 0.9 - rise - sz, sz * 2, sz * 2);
     }
     g.globalAlpha = 1;
     
     if (tn.ring && !cm) for (let j = 0; j < tn.ring.length; j++) {
       const v = (u - tn.ring[j]) / 0.8; if (v <= 0 || v >= 1) continue;
-      const rc = c === 6 ? HUES[(j * 3 + 1) % 7] : tn.rgb;
+      const rc = RB(c) ? HUES[(j * 3 + 1) % 7] : tn.rgb;
       g.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${0.75 * (1 - v) * tn.a})`; g.lineWidth = rr * 0.22 * (1 - 0.6 * v);
       g.beginPath(); g.arc(cx, cy, rr * (1 + (tn.R * 1.1 - 1) * easeOut(v)), 0, TAU); g.stroke();
     }
@@ -5104,12 +5381,26 @@ const TCDrop = (() => {
     const gr = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r);
     gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.78, `rgba(${col[0]},${col[1]},${col[2]},${0.2 * E * ek})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},${0.62 * E * ek})`);
     g.fillStyle = gr; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4);
-    const N = c ? 14 : 0, hot = c === 6 ? null : G.tone[c];      
+    const N = c ? 14 : 0, hot = RB(c) ? null : G.tone[c];      
     for (let i = 0; i < N; i++) {                      
       const an = i * TAU / N + 0.22, sz = r * (0.24 + 0.07 * hash(i * 3.3 + 1));
       g.globalAlpha = Math.min(1, E * ek * (0.62 + 0.38 * hash(i * 5.7 + 2)));
       g.drawImage(hot || G.hue[(i + Math.floor(u * 2)) % 7], cx + Math.cos(an) * r * 0.94 - sz, cy + Math.sin(an) * r * 0.94 - sz, sz * 2, sz * 2);
     }
+    g.restore();
+  }
+
+  
+  
+  
+  function drawPc(P) {
+    const [cx, cy, r] = D.lcd, u = S.t - P.t0, on = P.dark + LEAD;      
+    if (u > on + 0.3) { S.pc = null; return; }
+    const k = (P.calm ? sm(u / 0.2) : 1) * (1 - sm((u - on) / 0.14));
+    g.save(); g.beginPath(); g.arc(cx, cy, r + 1.5, 0, TAU); g.clip();
+    if (!P.calm && u < PC_DIM) { g.fillStyle = 'rgba(255,238,196,0.4)'; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4); }
+    else { g.fillStyle = `rgba(4,2,6,${0.92 * k})`; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4); }
+    if (!P.calm && u < PC_LINE && window.TCFX && TCFX.gkLine) TCFX.gkLine(g, cx, cy, r + 2, u);
     g.restore();
   }
 
@@ -5189,7 +5480,7 @@ const TCDrop = (() => {
       if (h.state === 'show') s *= cm ? 1.06 : 1.08 + 0.06 * Math.sin(TAU * 1.2 * (t - h.showT));
       if (h.state === 'done') { const v = sm((t - h.doneT) / 0.28); s *= 1 - 0.5 * v; a = 1 - v; }
       if (a <= 0.01) continue;
-      if (h.state === 'show') { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.75; const G = glows(); g.drawImage(h.c === 6 ? G.hue[Math.floor(t * 3) % 7] : G.tone[h.c], x - w * 1.1, y - w * 1.1, w * 2.2, w * 2.2); g.restore(); }
+      if (h.state === 'show') { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.75; const G = glows(); g.drawImage(RB(h.c) ? G.hue[Math.floor(t * 3) % 7] : G.tone[h.c], x - w * 1.1, y - w * 1.1, w * 2.2, w * 2.2); g.restore(); }
       g.globalAlpha = a; g.drawImage(IM.hold[h.c], x - w * s / 2, y - w * s / 2, w * s, w * s); g.globalAlpha = 1;
     }
     
@@ -5219,10 +5510,11 @@ const TCDrop = (() => {
     }
     
     if (L) { drawAura(L); drawRim(L); drawLcd(L); drawSpark(L); }
+    if (S.pc) drawPc(S.pc);                            
     for (const h of S.holds) if (h.state === 'fly' && t >= h.fly) {
       const v = clamp((t - h.fly) / FLY, 0, 1), e = sm(v), x0 = D.lcd[0], y0 = D.lcd[1], x1 = D.hold.x[h.slot], y1 = D.hold.y;
       const x = lerp(x0, x1, e), y = lerp(y0, y1, e) - Math.sin(Math.PI * e) * 70, G = glows(), sz = 70 - 22 * e;
-      g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(h.c === 6 ? G.hue[Math.floor(t * 12) % 7] : G.tone[h.c], x - sz, y - sz, sz * 2, sz * 2); g.restore();
+      g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(RB(h.c) ? G.hue[Math.floor(t * 12) % 7] : G.tone[h.c], x - sz, y - sz, sz * 2, sz * 2); g.restore();
     }
     
     TS();
@@ -5293,13 +5585,13 @@ const TCDrop = (() => {
   }
   T.tick = dt => { if (!S) return false; sizeUp(); step(dt); if (S) draw(); return !!S; };      
 
-  return { load, ready, open, close, isOpen, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, beats: c => beatList(TONE[c]).map(q => q.slice()),
+  return { load, ready, open, close, isOpen, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, PC_LINE, PC_DARK, PC_CALM, gekiArt: () => !!(IM && IM.gk), beats: c => beatList(TONE[c]).map(q => q.slice()),
     _t: T, get state() { return S; }, get data() { return D; },
     tap: what => !!act(what),                          
     
     geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
       return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
-    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
+    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, pc: S.pc ? +(S.t - S.pc.t0).toFixed(3) : null, quiet: !!S.quiet, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
 })();
 
 ;
@@ -5349,7 +5641,14 @@ const TCApp = (() => {
   const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      
   const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
+  
+  
+  
+  
+  
+  const GEKI = { d: 299999, v: 40000 };
   const PRIZES = [                                    
+    [1 / GEKI.d, { k: 'gk' }],
     [1 / ZONE.d, { k: 'zn' }],
     
     
@@ -5366,8 +5665,8 @@ const TCApp = (() => {
   
   
   const PRIZES_VISIT = {
-    maboroshi: [[1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
-    kamisama: [[1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
+    maboroshi: [[1 / GEKI.d, { k: 'gk' }], [1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
+    kamisama: [[1 / GEKI.d, { k: 'gk' }], [1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
   const AP = p => String(p).split('/').pop();         
   window.TC_ASSET = AP;
 
@@ -5453,7 +5752,7 @@ const TCApp = (() => {
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
-  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron', pushin: 'stock' };      
+  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron', pushin: 'stock', nolot: null };      
   function onCareEvent(e) {
     
     
@@ -5710,6 +6009,7 @@ const TCApp = (() => {
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      
     if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      
+    if (z.k === 'gk') z.v = GEKI.v;                                  
     return z;
   }
   function lottery() {                                 
@@ -5727,6 +6027,7 @@ const TCApp = (() => {
     if (z.k === 'pt') { v = +z.v || 0; grant(v, 'トレーニングセンターの お世話', z.id); }
     else if (z.k === 'rt') { const ab = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal); v = ab[z.win ? 1 : 0]; grant(v, 'トレーニングセンターの ルーレット', z.id); }
     else if (z.k === 'zn') { v = +z.v > 0 ? +z.v : zoneV(z.n); grant(v, 'トレーニングセンターの ポイント特化ゾーン', z.id); }
+    else if (z.k === 'gk') { v = GEKI.v; grant(v, 'トレーニングセンターの 激馬熱馬', z.id); }
     else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
     if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
     if (z.id && st.dp && Array.isArray(st.dp.holds)) st.dp.holds = st.dp.holds.filter(q => q.id !== z.id);      
@@ -5757,6 +6058,12 @@ const TCApp = (() => {
         
         SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
         try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { got = give(z); }
+      } else if (z.k === 'gk') {
+        
+        
+        const pc = !z.c;
+        SND.preload(GEKI_SE); SND.bgm(pc ? '' : 'none');
+        try { await TCFX.geki(cvFx, { v: GEKI.v, se: SND.se, puchun: pc }); } finally { SND.bgm(null); got = give(z); if (ov) paintHead(); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         
@@ -5789,11 +6096,13 @@ const TCApp = (() => {
   
   
   
-  const dropTone = z => (!z ? 0 : z.k === 'tk' ? 6 : z.k === 'zn' ? 5 : z.k === 'rt' ? (z.vis === 'kamisama' ? 6 : z.vis === 'maboroshi' ? 5 : z.tier === 'kamisama' ? 4 : z.tier === 'maboroshi' ? 3 : 2) : 1);
+  const dropTone = z => (!z ? 0 : z.k === 'gk' ? 7 : z.k === 'tk' ? 6 : z.k === 'zn' ? 5 : z.k === 'rt' ? (z.vis === 'kamisama' ? 6 : z.vis === 'maboroshi' ? 5 : z.tier === 'kamisama' ? 4 : z.tier === 'maboroshi' ? 3 : 2) : 1);
   let dropping = false;
   
   const DROP_SE = ['tc_se_dp_out.m4a', 'tc_se_dp_peg1.m4a', 'tc_se_dp_peg2.m4a', 'tc_se_dp_peg3.m4a', 'tc_se_dp_cup.m4a', 'tc_se_dp_miss.m4a', 'tc_se_dp_hold.m4a', 'tc_se_dp_open.m4a',
     'tc_se_dp_umb1.m4a', 'tc_se_dp_umb2.m4a', 'tc_se_dp_umb3.m4a', 'tc_se_dp_umb4.m4a', 'tc_se_dp_umb5.m4a', 'tc_se_dp_umb6.m4a'];
+  
+  const GEKI_SE = ['tc_se_gk_pchun.m4a', 'tc_se_gk_heaven.m4a', 'tc_se_gk_tedeen.m4a'];
   const dropOk = () => !!(window.TCDrop && TCDrop.ready());
   const dropHolds = () => (st && st.dp && Array.isArray(st.dp.holds) ? st.dp.holds : []);
   
@@ -5805,6 +6114,7 @@ const TCApp = (() => {
     high: () => (TCCare.on ? TCCare.S.high || 0 : 0),
     holds: () => dropHolds().map(z => JSON.parse(JSON.stringify(z))),
     se: (name, gain) => SND.se('tc_se_' + name + '.m4a', gain),
+    quiet: on => { SND.bgm(on ? '' : null); },      
     
     drop() {
       if (!TCCare.on || TCCare.S.stock < 1 || dropLeft() < 1) return { ok: false };
@@ -5825,7 +6135,7 @@ const TCApp = (() => {
   async function dropOpen(resume) {
     if (dropping || busy || resetting || !built || !dropOk() || !TCCare.on) return false;
     dropping = true; busy = true; TCCare.roulette(true);      
-    SND.preload(DROP_SE);      
+    SND.preload(DROP_SE.concat(GEKI_SE));      
     let r = null;
     try { r = await TCDrop.open(stage, DROP, { resume: !!resume || dropHolds().length > 0 }); }      
     catch (e) { r = null; }
@@ -5976,7 +6286,7 @@ const TCApp = (() => {
       if (!testOn()) return 'off';
       if (open && !dropOk()) return 'none';
       if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
-      const Z = [null, { k: 'pt', v: 100 }, { k: 'rt', tier: 'normal' }, { k: 'rt', tier: 'maboroshi' }, { k: 'rt', tier: 'kamisama' }, { k: 'zn' }, { k: 'tk', n: 1 }];
+      const Z = [null, { k: 'pt', v: 100 }, { k: 'rt', tier: 'normal' }, { k: 'rt', tier: 'maboroshi' }, { k: 'rt', tier: 'kamisama' }, { k: 'zn' }, { k: 'tk', n: 1 }, { k: 'gk' }];
       testList = (Array.isArray(list) ? list : []).map(c => (c && typeof c === 'object' ? JSON.parse(JSON.stringify(c)) : Z[c] ? JSON.parse(JSON.stringify(Z[c])) : null));
       if (!open) return 'ok';
       if (!testFree() && !(TCCare.on && TCCare.S.push && careFree() && !busy && !resetting)) { testList = []; return 'busy'; }
@@ -6135,7 +6445,7 @@ const TCApp = (() => {
   
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
-  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;
