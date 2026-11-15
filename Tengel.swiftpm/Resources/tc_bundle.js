@@ -3134,6 +3134,7 @@ const TCGuide = (() => {
       <p>・当たりやすさは<b>PUSHとまったく同じ</b>（下の表のとおり。どのコップに入っても同じ）</p>
       <p>・玉がコップに入ったとき、当たっていれば まん中の<b>「馬バレ」</b>が光るよ。色で中身がわかる（青から虹へ、光が大きくなる）</p>
       <table data-tab="tone">${DP.tone.map(([nm, col, what]) => `<tr data-c="${nm}"><td><b style="color:${col}">${nm}</b></td><td>${what}</td></tr>`).join('')}</table>
+      <p data-dp="miss">・はずれのときは、馬バレが<b>白く</b>光るよ（うすく「ハズレ」の字）</p>
       <p>・当たりは<b>「当選」</b>のますにたまる → 玉をぜんぶ落としたら<b>「保留結果を見る」</b>で順に受け取ろう</p>
       <p>・おわったあと、トークンが<b>${DP.balls}こ以上</b>のこっていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
       <p class="note">玉1こ＝トークン1つ＝お世話1回（馬の育ちやミッションの回数も、玉の数ぶん数えるよ）</p>
@@ -4603,6 +4604,22 @@ const TCBuy = (() => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const TCDrop = (() => {
   const W = 1052, H = 1657, TAU = Math.PI * 2;
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
@@ -4616,16 +4633,23 @@ const TCDrop = (() => {
   const IMG_H = 1632;                                 
   
   
-  const TONE = [null,
-    { rgb: [60, 150, 255], R: 2.0, a: 0.62, dim: 0.14, rays: 0, nt: 14, tl: 0.62, len: 1.0, keep: 0.50, hold: 0.50, lock: 0.95 },
-    { rgb: [50, 220, 100], R: 2.5, a: 0.68, dim: 0.18, rays: 0, nt: 18, tl: 0.88, len: 1.15, keep: 0.50, hold: 0.55, lock: 1.05 },
-    { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2 },
-    { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35 },
-    { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0 },
-    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4 }];
+  
+  
+  const TONE = [
+    { rgb: [255, 255, 255], R: 1.6, a: 0.55, dim: 0.1, rays: 0, nt: 0, tl: 0, len: 0.36, keep: 0.5, hold: 0, lock: 0.5, pip: 1, long: 1, lo: 0.91 },
+    { rgb: [60, 150, 255], R: 2.0, a: 0.62, dim: 0.14, rays: 0, nt: 14, tl: 0.62, len: 1.0, keep: 0.50, hold: 0.50, lock: 0.95, pip: 2, long: 1, lo: 0.66 },
+    { rgb: [50, 220, 100], R: 2.5, a: 0.68, dim: 0.18, rays: 0, nt: 18, tl: 0.88, len: 1.15, keep: 0.50, hold: 0.55, lock: 1.05, pip: 3, long: 1, lo: 0.62 },
+    { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2, pip: 4, long: 1, lo: 0.58 },
+    { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35, pip: 5, long: 1, lo: 0.52, ring: [0.4] },
+    { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0, pip: 7, long: 1, lo: 0.5, ring: [0, 0.6] },
+    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4, pip: 8, long: 2, lo: 0.48, ring: [0, 0.6, 0.9] }];
   const HUES = [[255, 70, 70], [255, 160, 50], [255, 232, 70], [80, 235, 110], [70, 170, 255], [150, 110, 255], [240, 110, 230]];      
-  const NAME = [null, '青', '緑', '紫', '赤', '金', '虹'];
-  const MISS_LOCK = 0.32, FLY = 0.36;                 
+  const NAME = ['白', '青', '緑', '紫', '赤', '金', '虹'];
+  const FLY = 0.36;                                   
+  const BEAT = 0.1, LONG_GAP = 0.3;                   
+  const BEAT_ON = 0.06, WEAK = 0.1;                   
+  const WIN_AT = 0.05, LEAD = 0.1;                    
+  const MISS_AT = 0.16, MISS_ON = 0.36;               
 
   let D = null, IM = null, loading = null, GLOW = null;
   let cv = null, g = null, K = 1, MS = 1, MX = 0, MY = 0, cache = null, cacheKey = '';
@@ -4666,9 +4690,19 @@ const TCDrop = (() => {
       gr.addColorStop(0, `rgba(${l[0]},${l[1]},${l[2]},0.9)`); gr.addColorStop(0.3, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.62)`); gr.addColorStop(0.7, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.2)`); gr.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
       q.fillStyle = gr; q.beginPath(); q.arc(0, 0, 128, 0, TAU); q.fill(); return c; };
     const gold = [255, 214, 90];
-    GLOW = { tone: [null], hue: HUES.map(mk), tong: [null], thue: HUES.map(mt) };
+    GLOW = { tone: [mk(TONE[0].rgb)], hue: HUES.map(mk), tong: [mt(TONE[0].rgb)], thue: HUES.map(mt), white: lens() };
     for (let c = 1; c <= 6; c++) { const rgb = c === 6 ? gold : TONE[c].rgb; GLOW.tone.push(mk(rgb)); GLOW.tong.push(mt(rgb)); }
     return GLOW;
+  }
+  function lens() {                                   
+    const c = document.createElement('canvas'); c.width = c.height = 344; const q = c.getContext('2d'), R0 = 170;
+    q.translate(172, 172); q.beginPath(); q.arc(0, 0, R0, 0, TAU); q.clip();
+    const gr = q.createRadialGradient(0, -R0 * 0.08, R0 * 0.05, 0, 0, R0);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.55, '#f6f8ff'); gr.addColorStop(0.86, '#e0e7f6'); gr.addColorStop(1, '#b6c2de');
+    q.fillStyle = gr; q.fillRect(-R0, -R0, R0 * 2, R0 * 2);
+    q.strokeStyle = 'rgba(255,255,255,0.92)'; q.lineWidth = 3.5; q.beginPath(); q.arc(0, 0, R0 * 0.93, 0, TAU); q.stroke();
+    q.strokeStyle = 'rgba(140,156,200,0.45)'; q.lineWidth = 7; q.beginPath(); q.arc(0, 0, R0 - 3, 0, TAU); q.stroke();
+    return c;
   }
 
   
@@ -4699,7 +4733,7 @@ const TCDrop = (() => {
     const r = API.drop();
     if (!r || !r.ok) { finishDrops(); return false; }
     S.n++; S.used++; S.press.go = S.t; S.next = null;
-    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t;                    
+    if (S.lcd && (S.lcd.off == null || S.lcd.off > S.t)) S.lcd.off = S.t;      
     const pi = pickPath();
     S.ball = { p: D.paths[pi], pi, t0: S.t, hi: 0, inT: null, z: r.z || null, c: r.z ? (r.c || 1) : 0 };
     S.phase = 'fall'; se('dp_out');
@@ -4708,18 +4742,21 @@ const TCDrop = (() => {
   function ballIn(b) {                                 
     b.inT = S.t; se('dp_cup', 0.9);
     S.fx.push({ k: 'cup', t0: S.t, cup: b.p.cup });
-    if (b.z) later(0.12, () => reveal(b));
-    else { later(0.16, () => se('dp_miss', 0.8)); S.lock = S.t + MISS_LOCK; later(MISS_LOCK, afterBall); }
+    if (b.z) later(WIN_AT, () => reveal(b));
+    else {                                             
+      later(MISS_AT, () => { se('dp_miss', 0.8); S.lcd = { c: 0, t0: S.t, off: S.t + MISS_ON }; });
+      S.lock = S.t + TONE[0].lock; later(TONE[0].lock, afterBall);
+    }
   }
   function reveal(b) {                                 
     const c = b.c, tn = TONE[c];
-    S.lcd = { c, t0: S.t, off: null };
-    se('dp_uma' + c);
+    se('dp_umb' + c);
     const slot = S.holds.length;
-    const h = { z: b.z, c, slot, t: null, fly: S.t + tn.hold, state: 'fly' };
+    const h = { z: b.z, c, slot, t: null, fly: S.t + LEAD + tn.hold, state: 'fly' };
     S.holds.push(h);
-    later(tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
-    S.lock = S.t + tn.lock; later(tn.lock, afterBall);
+    later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });
+    later(LEAD + tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
+    S.lock = S.t + LEAD + tn.lock; later(LEAD + tn.lock, afterBall);
   }
   function afterBall() {
     if (S.phase !== 'fall') return;
@@ -4729,7 +4766,7 @@ const TCDrop = (() => {
   }
   function finishDrops() {                             
     S.next = null;
-    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t + 0.5;              
+    if (S.lcd && (S.lcd.off == null || S.lcd.off > S.t + 0.5)) S.lcd.off = S.t + 0.5;      
     if (S.holds.length) { S.phase = 'wait'; S.unlockT = S.t; se('dp_open'); }
     else { S.phase = 'none'; S.none = S.t; later(1.5, endChoice); }
   }
@@ -4911,12 +4948,46 @@ const TCDrop = (() => {
   
   
   
-  function auraK(L) {                                  
-    const tn = TONE[L.c], u = S.t - L.t0;
-    let k = sm(u / 0.14) * (u < tn.len ? 1 : lerp(1, tn.keep, sm((u - tn.len) / 0.7)));
-    if (L.off != null) k *= 1 - sm((S.t - L.off) / 0.3);
-    return k;
+  
+  function beatList(tn) {                              
+    if (!tn.bt) { const ns = tn.pip - tn.long; tn.bt = []; for (let i = 0; i < ns; i++) tn.bt.push([+(i * BEAT).toFixed(3), false]); for (let j = 0; j < tn.long; j++) tn.bt.push([+(ns * BEAT + j * LONG_GAP).toFixed(3), true]); }
+    return tn.bt;
   }
+  const beatAt = (tn, u) => { const B = beatList(tn); let i = 0; while (i + 1 < B.length && u >= B[i + 1][0] - 1e-6) i++; return i; };      
+  const lastPip = tn => { const B = beatList(tn); return B[B.length - 1][0]; };      
+  const settle = tn => lastPip(tn) + 0.12;                                           
+  function pipAt(tn, u) {                              
+    const B = beatList(tn), i = beatAt(tn, u), v = u - B[i][0];
+    if (i === B.length - 1) return lerp(1, 0.91, sm(v / 0.12));
+    if (B[i][1]) { const on = B[i + 1][0] - B[i][0] - (BEAT - BEAT_ON); return v < on - 1e-6 ? lerp(1, 0.86, v / on) : WEAK; }      
+    return v < BEAT_ON - 1e-6 ? 1 : WEAK;
+  }
+  function waveAt(v, lo) {                             
+    if (v < 0.5) return lerp(0.91, lo, Math.pow(v / 0.5, 1.8));
+    const ph = ((v - 0.5) / 0.5) % 1;
+    return lo + (1 - lo) * Math.min(sm(ph / 0.34), 1 - Math.pow(clamp((ph - 0.55) / 0.45, 0, 1), 1.6));
+  }
+  const loAt = (tn, u) => lerp(tn.lo, 0.86, sm((u - tn.len) / 0.7));                 
+  function lampRaw(L) {                                
+    const tn = TONE[L.c], u = S.t - L.t0; if (u < 0) return 0;
+    if (calm()) return sm(u / 0.2);                    
+    const ts = settle(tn);
+    return u < ts ? pipAt(tn, u) : waveAt(u - ts, loAt(tn, u));
+  }
+  const offK = L => (L.off != null ? 1 - sm((S.t - L.off) / 0.3) : 1);
+  const lampI = L => lampRaw(L) * offK(L);
+  function auraK(L) {                                  
+    const tn = TONE[L.c], u = S.t - L.t0; let k = 0;
+    if (calm()) k = sm(u / 0.14);
+    else { const B = beatList(tn); for (const q of B) k += sm((u - q[0]) / 0.07); k /= B.length; }
+    return k * (u < tn.len ? 1 : lerp(1, tn.keep, sm((u - tn.len) / 0.7))) * offK(L);
+  }
+  function auraBr(L) {                                 
+    if (calm()) return 1;
+    const tn = TONE[L.c], u = S.t - L.t0, ts = settle(tn);
+    return u < ts ? 1 : 1 - 0.4 * (0.91 - waveAt(u - ts, loAt(tn, u))) / 0.91;      
+  }
+  const lampCol = (L, u) => (L.c === 6 ? (!calm() && u < lastPip(TONE[6]) ? HUES[(beatAt(TONE[6], u) * 3) % 7] : hueAt(u * 0.9)) : TONE[L.c].rgb);      
   const auraStrong = L => { const tn = TONE[L.c], u = S.t - L.t0; return u < tn.len ? 1 : 1 - sm((u - tn.len) / 0.7); };      
   function auraDim(L) {                                
     const tn = TONE[L.c], st = auraStrong(L), k = auraK(L) * (0.3 + 0.7 * st); if (k <= 0.004) return;
@@ -4926,7 +4997,7 @@ const TCDrop = (() => {
   function drawAura(L) {
     const c = L.c, tn = TONE[c], u = S.t - L.t0, k = auraK(L); if (k <= 0.004) return;
     const [cx, cy, , rr] = D.lcd, cm = calm(), st = auraStrong(L), G = glows();
-    const br = cm ? 1 : 0.92 + 0.08 * Math.sin(TAU * 1.1 * u);                      
+    const br = auraBr(L);                              
     const R = rr * (1 + (tn.R - 1) * (0.62 + 0.38 * st)) * (cm ? 0.9 : 1);
     const col = c === 6 ? [255, 250, 240] : tn.rgb, ka = c === 6 ? 0.45 : 1;
     g.save();
@@ -4975,7 +5046,7 @@ const TCDrop = (() => {
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
     
-    const np = cm ? 0 : 4 + c * 3;
+    const np = cm || !c ? 0 : 4 + c * 3;
     for (let i = 0; i < np; i++) {
       const per = 1.1 + 0.9 * hash(i * 3.1 + c), x0 = u / per + hash(i * 7.7 + c * 1.3), ph = x0 % 1, cyc = Math.floor(x0);
       const an = TAU * hash(i * 1.9 + c * 0.7 + cyc * 0.37), d0 = rr * (0.95 + 0.5 * hash(i * 5.3 + cyc)), rise = ph * rr * (0.7 + 0.28 * c) * (0.5 + 0.5 * st);
@@ -4986,8 +5057,8 @@ const TCDrop = (() => {
     }
     g.globalAlpha = 1;
     
-    if (c >= 4 && !cm) for (let j = 0; j < (c === 6 ? 2 : 1); j++) {
-      const v = (u - 0.05 - j * 0.3) / 0.8; if (v <= 0 || v >= 1) continue;
+    if (tn.ring && !cm) for (let j = 0; j < tn.ring.length; j++) {
+      const v = (u - tn.ring[j]) / 0.8; if (v <= 0 || v >= 1) continue;
       const rc = c === 6 ? HUES[(j * 3 + 1) % 7] : tn.rgb;
       g.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${0.75 * (1 - v) * tn.a})`; g.lineWidth = rr * 0.22 * (1 - 0.6 * v);
       g.beginPath(); g.arc(cx, cy, rr * (1 + (tn.R * 1.1 - 1) * easeOut(v)), 0, TAU); g.stroke();
@@ -4995,12 +5066,18 @@ const TCDrop = (() => {
     g.restore();
   }
   function drawRim(L) {                                
-    const k = auraK(L); if (k <= 0.004) return;
-    const [cx, cy, , rr] = D.lcd, c = L.c, u = S.t - L.t0, col = c === 6 ? hueAt(u * 0.9) : TONE[c].rgb, x0 = Math.floor(cx - rr - 2), y0 = Math.floor(cy - rr - 2), w = Math.ceil(rr * 2 + 4);
+    const k = auraK(L), I = lampI(L); if (k <= 0.004 && I <= 0.004) return;
+    const [cx, cy, r, rr] = D.lcd, u = S.t - L.t0, col = lampCol(L, u), x0 = Math.floor(cx - rr - 2), y0 = Math.floor(cy - rr - 2), w = Math.ceil(rr * 2 + 4);
     g.save(); g.globalAlpha = Math.min(1, k * 1.4); g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.clip(); g.drawImage(IM.base, x0, y0, w, w, x0, y0, w, w); g.restore();
+    if (I <= 0.004) return;
+    
+    g.save(); g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.arc(cx, cy, r, 0, TAU, true); g.clip();
+    let gr = g.createRadialGradient(cx, cy, r, cx, cy, rr);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${0.5 * I})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},${0.06 * I})`);
+    g.fillStyle = gr; g.fillRect(x0, y0, w, w); g.restore();
     g.save(); g.globalCompositeOperation = 'lighter';
-    const gr = g.createRadialGradient(cx, cy, rr * 0.74, cx, cy, rr * 1.2);
-    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.5, `rgba(${col[0]},${col[1]},${col[2]},${0.42 * k})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    gr = g.createRadialGradient(cx, cy, rr * 0.74, cx, cy, rr * 1.2);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.5, `rgba(${col[0]},${col[1]},${col[2]},${0.46 * I})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
     g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rr * 1.2, 0, TAU); g.fill(); g.restore();
   }
   function drawSpark(L) {                              
@@ -5015,14 +5092,24 @@ const TCDrop = (() => {
     g.restore();
   }
   function drawLcd(L) {                                
-    const [cx, cy, r] = D.lcd, u = S.t - L.t0, k = L.off != null ? 1 - sm((S.t - L.off) / 0.25) : 1; if (k <= 0.004) return;
-    const s = calm() ? 1 : 0.86 + 0.14 * backOut(u / 0.3);
+    const [cx, cy, r] = D.lcd, I = lampI(L); if (I <= 0.004) return;
+    const c = L.c, u = S.t - L.t0, G = glows(), col = lampCol(L, u), im = c ? IM.uma[c] : G.white, d = r * 2 * (im.width / (im.width - 4));
     g.save(); g.beginPath(); g.arc(cx, cy, r + 1.5, 0, TAU); g.clip();
-    g.globalAlpha = k * sm(u / 0.08);
-    const im = IM.uma[L.c], d = r * 2 * s * (im.width / (im.width - 4));
-    g.drawImage(im, cx - d / 2, cy - d / 2, d, d);
-    const fl = 1 - sm(u / 0.32);                       
-    if (fl > 0.01) { g.globalAlpha = 0.7 * fl * k; g.fillStyle = '#fff'; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4); }
+    g.globalAlpha = I; g.drawImage(im, cx - d / 2, cy - d / 2, d, d);
+    if (!c) label('ハズレ', cx, cy + 3, r * 0.52, 'rgba(96,112,160,0.17)');      
+    g.globalCompositeOperation = 'lighter';
+    if (c) { g.globalAlpha = 0.3 * I; g.drawImage(im, cx - d / 2, cy - d / 2, d, d); }      
+    g.globalAlpha = 1;
+    const E = I * (1 + 0.55 * (1 - I)), ek = c ? 1 : 0.5;      
+    const gr = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.78, `rgba(${col[0]},${col[1]},${col[2]},${0.2 * E * ek})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},${0.62 * E * ek})`);
+    g.fillStyle = gr; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4);
+    const N = c ? 14 : 0, hot = c === 6 ? null : G.tone[c];      
+    for (let i = 0; i < N; i++) {                      
+      const an = i * TAU / N + 0.22, sz = r * (0.24 + 0.07 * hash(i * 3.3 + 1));
+      g.globalAlpha = Math.min(1, E * ek * (0.62 + 0.38 * hash(i * 5.7 + 2)));
+      g.drawImage(hot || G.hue[(i + Math.floor(u * 2)) % 7], cx + Math.cos(an) * r * 0.94 - sz, cy + Math.sin(an) * r * 0.94 - sz, sz * 2, sz * 2);
+    }
     g.restore();
   }
 
@@ -5206,13 +5293,13 @@ const TCDrop = (() => {
   }
   T.tick = dt => { if (!S) return false; sizeUp(); step(dt); if (S) draw(); return !!S; };      
 
-  return { load, ready, open, close, isOpen, BALLS, TONE, NAME,
+  return { load, ready, open, close, isOpen, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, beats: c => beatList(TONE[c]).map(q => q.slice()),
     _t: T, get state() { return S; }, get data() { return D; },
     tap: what => !!act(what),                          
     
     geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
       return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
-    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null), ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
+    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
 })();
 
 ;
@@ -5706,7 +5793,7 @@ const TCApp = (() => {
   let dropping = false;
   
   const DROP_SE = ['tc_se_dp_out.m4a', 'tc_se_dp_peg1.m4a', 'tc_se_dp_peg2.m4a', 'tc_se_dp_peg3.m4a', 'tc_se_dp_cup.m4a', 'tc_se_dp_miss.m4a', 'tc_se_dp_hold.m4a', 'tc_se_dp_open.m4a',
-    'tc_se_dp_uma1.m4a', 'tc_se_dp_uma2.m4a', 'tc_se_dp_uma3.m4a', 'tc_se_dp_uma4.m4a', 'tc_se_dp_uma5.m4a', 'tc_se_dp_uma6.m4a'];
+    'tc_se_dp_umb1.m4a', 'tc_se_dp_umb2.m4a', 'tc_se_dp_umb3.m4a', 'tc_se_dp_umb4.m4a', 'tc_se_dp_umb5.m4a', 'tc_se_dp_umb6.m4a'];
   const dropOk = () => !!(window.TCDrop && TCDrop.ready());
   const dropHolds = () => (st && st.dp && Array.isArray(st.dp.holds) ? st.dp.holds : []);
   
