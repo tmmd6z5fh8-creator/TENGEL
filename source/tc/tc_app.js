@@ -488,7 +488,7 @@ const TCApp = (() => {
   let dropping = false;
   // 台の 音 14こ（kisekae/tc/snd/sfx_drop.py）：玉が 出る・釘 3つ・コップ・はずれ・保留・かぎ・馬バレ 6色。名前は ここに そのまま 書く（test_iphone_only.py が「鳴らす 音＝入って いる 音」を 見くらべる）
   const DROP_SE = ['tc_se_dp_out.m4a', 'tc_se_dp_peg1.m4a', 'tc_se_dp_peg2.m4a', 'tc_se_dp_peg3.m4a', 'tc_se_dp_cup.m4a', 'tc_se_dp_miss.m4a', 'tc_se_dp_hold.m4a', 'tc_se_dp_open.m4a',
-    'tc_se_dp_uma1.m4a', 'tc_se_dp_uma2.m4a', 'tc_se_dp_uma3.m4a', 'tc_se_dp_uma4.m4a', 'tc_se_dp_uma5.m4a', 'tc_se_dp_uma6.m4a'];
+    'tc_se_dp_umb1.m4a', 'tc_se_dp_umb2.m4a', 'tc_se_dp_umb3.m4a', 'tc_se_dp_umb4.m4a', 'tc_se_dp_umb5.m4a', 'tc_se_dp_umb6.m4a'];
   const dropOk = () => !!(window.TCDrop && TCDrop.ready());
   const dropHolds = () => (st && st.dp && Array.isArray(st.dp.holds) ? st.dp.holds : []);
   // あと 何こ 落とせるか（抽選の 上限）：PUSH と 同じ（drawLeft）。ただし 幻の馬・神様馬の 帰る 時刻（タイムリミット・切り替わりタイマー）を すぎた あとは 0 ＝

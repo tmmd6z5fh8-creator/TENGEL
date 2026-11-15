@@ -11,16 +11,32 @@
 //   00:48「馬バレ音 ①青:ピピィーン ②緑:ピピピィーン ③紫:ピピピピィーン ④赤:ピピピピピィーン ⑤金:ドゥゴーンとピピピピピィーン(同時)
 //     ⑥虹色: キュイキュイキュイとドゥゴーンとビィボォーンとピピピピピィーン」（音は kisekae/tc/snd/sfx_drop.py）
 //   01:08「サイズ合うなら馬バレアイコンの金の枠無くして、馬バレの縁に合わせた方が綺麗かもね！」（馬バレの 絵は 中の 丸 だけを 台の 黄色い 縁に はめる）
+//   第4.174版・11/15 10:19「パチンコ抽選のハズレの時も、馬バレのところ白い光りがでるようにして！当選の時の光りのイメージ動画で送る！動画を確認して再現できるかやってみて！」
+//     見本の 動画（丸い ランプが 赤く つく）を 1コマずつ 測った：ぱっと ついて 消えてを すばやく 5回（1秒に 15回の 速さ）→ 消え方が だんだん 浅く なって 0.6秒で つきっぱなし →
+//     そのあと 1秒に 2回 明るさが ゆらぐ（谷は 山の 半分：谷から 速く 明るく なって、少し とどまって、暗く なる）
+//   10:44「それぞれ光りの強弱は、①青:ピピィーン ②緑:ピピピィーン ③紫:ピピピピィーン ④赤:ピピピピピィーン ⑤金:ドゥゴーンとピピピピピィーン(同時)
+//     ⑥虹色: キュイキュイキュイとドゥゴーンとビィボォーンとピピピピピィーン このピのところにあわせて！ あと、当選してから馬バレよりも0.3秒音の方が先に出るようにして！」
+//     → ランプ（馬バレの 丸）は 音の ピと 同じ 数・同じ 間で 強く 光る（ピが 鳴って いる 0.07秒は 強く・ピと ピの 間は 弱く）。さいごの ピィーンで つきっぱなし → 見本の ゆらぎ。
+//       まわりの オーラは ピ 1つ ごとに 1だん ずつ 大きく なる。当たりの 音は 先に 鳴らして、0.3秒 あとに 馬バレ（ランプと オーラ）を つける
+//   10:47「ハズレの白光の模様、この画像ではくて、めちゃくちゃ薄くハズレって書いてあるようにして！」（白い レンズの 切り子の 模様は やめて、とても うすい 字で「ハズレ」）
+//   12:29「やっぱり音0.1秒のずらしにして！光りの強弱もピにあわせて！音の種類数字で分けてるけど全部同時に鳴らして！
+//     ①青：1.ピピィーン 2.ドゥドゥォン 3.ギュンギュン ②緑：ピ・ドゥ・ギュンが 3つずつ ③紫：4つずつ ④赤：5つずつ
+//     ⑤金：1.ピピピピピピピィーン 2.ドゥ×6＋ドゥォン 3.ギュン×7 4.ドーンドーン 5.デゥデゥーン ⑥虹：1.ピ×6＋ピィーン＋ピィーン 2.ドゥ×6＋ドゥォン＋ドゥォン 3.ギュン×8 4.ドーンドーン 5.デゥデゥーン
+//     音と光り方少し変更！作成して！」
+//     → 馬バレ音を 作り直した（tc_se_dp_umb1〜6.m4a：kisekae/tc/snd/sfx_drop.py。0.1秒 ごとの 拍に ピ・ドゥ・ギュンを 重ねる・さいごの 拍〈虹は さいごの 2つ〉が 長い）。
+//       音を 先に 鳴らして 0.1秒 あとに 馬バレ。ランプは 拍（ピ）の 数 だけ 強く 光る：青 2・緑 3・紫 4・赤 5・金 7・虹 8
 //
 //   ・台＝まさちゃんの 3D（Meshy）を 正面から 描いた 絵（tc_dp_base.webp）。玉より 手前の 所（釘の 先・コップの 前の かべ）は 別の 絵（tc_dp_front.webp）を 玉の 上に 重ねる
 //     ＝玉は 釘の 先の うしろを 通って、コップの 中へ 入ると 前の かべに かくれる。絵と 場所・玉の 落ち方（tc_dp.json）は kisekae/tc/drop/ の 道具が 作る（リポジトリには 入れない）
 //   ・玉＝姫が 作った 3D（赤い 折り紙の 多面体：tc_dp_ball.webp＝ころがる 向きに 回した 32コマ）
 //   ・落ち方＝台の 釘・コップの 形で 物理の 計算を して 先に 作った 16とおり（コップごとに 4つ）。その 中から でたらめに 1つ（同じ ものは つづけない）。どの コップに 入っても 結果は 同じ
 //   ・抽選＝今の お世話の 抽選と 同じ（tc_app.js の draw）。玉 1こ＝お世話トークン 1こ＝お世話 1回。玉を 落とした 瞬間に 結果を 決めて 保存（途中で 閉じても なくならない・2回 もらえない）
-//   ・玉が コップに 入った 瞬間：当たって いれば 音と いっしょに 馬バレ（まん中の 丸）が その 色の 絵に かわって オーラが 出る（青 → 虹で 大きく 激しく）→ 当たりは「当選」の ます（5つ）に たまる
+//   ・玉が コップに 入った 瞬間：当たって いれば 先に 音 → 0.1秒 あとに 馬バレ（まん中の 丸）の ランプが その 色で つく（ピの 数 だけ 強く 光る → つきっぱなし → ゆらぐ）＋ まわりに オーラ（青 → 虹で 大きく 激しく）
+//     → 当たりは「当選」の ます（5つ）に たまる。はずれの ときは 音（ポスッ）と いっしょに 白く 光る（短く・絵は なし・うすく「ハズレ」）
 //   ・玉を ぜんぶ 落とした ら「保留結果を見る」の かぎが あく → 押すと たまった 当たりを 順に わたす（ポイントは 札・ルーレット／ポイント特化ゾーン／チケットは いつもの 演出：api.show）
 //   ・おわったら：お世話トークンが 5こ 以上 のこって いれば「続けてやる」「終わり」・なければ「終わり」だけ
-//   ・ちかちか しない：光は 1回 ふわっと 明るく なって ゆっくり 息を する（1秒に 3回 より おそい）。「演出を控えめにする」（TengelFx.calm）の ときは 回らない・とばない
+//   ・光の 点めつ：ピに 合わせて 速く 強弱が つく のは 馬バレの 丸と 縁の きわ だけ（数えると 画面の 1% ほど：テストは 3% 未満＝小さい 所の 点めつは 数えない 決まりの 中）。まわりの オーラ（広い 所）は 点めつ させない：
+//     ピ ごとに 大きく なる だけ（下がらない）→ その あとは ランプの ゆらぎ（1秒に 2回）に 合わせて 浅く 息を する（1秒に 3回 まで）。「演出を控えめにする」（TengelFx.calm）の ときは 強弱 なし・ゆらぎ なし・回らない・とばない
 //   TCDrop.load()（絵と データを 読む：true＝そろった）・TCDrop.ready()・TCDrop.open(stage, api, opt) → Promise<{ used }>・TCDrop.close()・TCDrop.isOpen()
 //     api：stock()＝のこりの トークン・left()＝あと 何回 抽選 できるか・drop()＝トークンを 1つ 使って 抽選 → { ok, z（当たり か null）, c（色 1〜6） }・
 //          show(z)＝当たりを わたす（演出つき・Promise）・se(名前, 大きさ)＝音・high()＝高確ゾーンの のこり・holds()＝まだ わたして いない 当たり（開き直した とき）
@@ -35,18 +51,25 @@ const TCDrop = (() => {
   const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
   const BALLS = 5;                                    // 1回り＝玉 5こ まで
   const IMG_H = 1632;                                 // 舞台（1052×1657）の 中の 台の 高さ
-  // 色（1 青・2 緑・3 紫・4 赤・5 金・6 虹）ごとの 光：rgb・オーラの 大きさ（R：黄色い 縁の 何倍 まで 色が とどくか）・こさ（a）・台を 暗く する 度合い（dim）・光の すじの 数（rays）・
+  // 色（0 白＝はずれ・1 青・2 緑・3 紫・4 赤・5 金・6 虹）ごとの 光：rgb・オーラの 大きさ（R：黄色い 縁の 何倍 まで 色が とどくか）・こさ（a）・台を 暗く する 度合い（dim）・光の すじの 数（rays）・
   //   オーラの 炎の 数（nt）と 長さ（tl：縁の 半径の 何倍）・はげしい 間（len 秒）・その あとの 落ちついた 強さ（keep）・保留が とび出す 時（hold 秒）・次の 玉を 落とせる まで（lock 秒：音が 鳴り おわる ころ）
-  const TONE = [null,
-    { rgb: [60, 150, 255], R: 2.0, a: 0.62, dim: 0.14, rays: 0, nt: 14, tl: 0.62, len: 1.0, keep: 0.50, hold: 0.50, lock: 0.95 },
-    { rgb: [50, 220, 100], R: 2.5, a: 0.68, dim: 0.18, rays: 0, nt: 18, tl: 0.88, len: 1.15, keep: 0.50, hold: 0.55, lock: 1.05 },
-    { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2 },
-    { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35 },
-    { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0 },
-    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4 }];
+  //   ランプ（丸の 中）：pip＝音の 拍（ピ）の 数・long＝その うち さいごの 長い 拍（ピィーン）の 数（kisekae/tc/snd/sfx_drop.py の N_BEAT・N_LONG と 同じ：青 2・緑 3・紫 4・赤 5・金 7・虹 8〈長い 2つ〉／
+  //     はずれは 1＝ぱっと つく だけ）・lo＝つきっぱなしに なった あとの ゆらぎの 谷の 明るさ（見本の 動画は 山の 0.52）・ring＝ひろがる 輪が 出る 時（ランプが ついて から・秒：赤＝さいごの ピィーン・金と 虹＝ドーンドーン）
+  const TONE = [
+    { rgb: [255, 255, 255], R: 1.6, a: 0.55, dim: 0.1, rays: 0, nt: 0, tl: 0, len: 0.36, keep: 0.5, hold: 0, lock: 0.5, pip: 1, long: 1, lo: 0.91 },
+    { rgb: [60, 150, 255], R: 2.0, a: 0.62, dim: 0.14, rays: 0, nt: 14, tl: 0.62, len: 1.0, keep: 0.50, hold: 0.50, lock: 0.95, pip: 2, long: 1, lo: 0.66 },
+    { rgb: [50, 220, 100], R: 2.5, a: 0.68, dim: 0.18, rays: 0, nt: 18, tl: 0.88, len: 1.15, keep: 0.50, hold: 0.55, lock: 1.05, pip: 3, long: 1, lo: 0.62 },
+    { rgb: [180, 95, 255], R: 3.1, a: 0.74, dim: 0.23, rays: 10, nt: 22, tl: 1.18, len: 1.3, keep: 0.52, hold: 0.62, lock: 1.2, pip: 4, long: 1, lo: 0.58 },
+    { rgb: [255, 62, 52], R: 3.8, a: 0.82, dim: 0.29, rays: 12, nt: 28, tl: 1.55, len: 1.5, keep: 0.54, hold: 0.72, lock: 1.35, pip: 5, long: 1, lo: 0.52, ring: [0.4] },
+    { rgb: [255, 196, 48], R: 4.7, a: 0.90, dim: 0.37, rays: 16, nt: 34, tl: 2.05, len: 2.1, keep: 0.56, hold: 1.05, lock: 2.0, pip: 7, long: 1, lo: 0.5, ring: [0, 0.6] },
+    { rgb: [255, 255, 255], R: 6.0, a: 1.0, dim: 0.46, rays: 20, nt: 44, tl: 2.7, len: 2.5, keep: 0.60, hold: 1.35, lock: 2.4, pip: 8, long: 2, lo: 0.48, ring: [0, 0.6, 0.9] }];
   const HUES = [[255, 70, 70], [255, 160, 50], [255, 232, 70], [80, 235, 110], [70, 170, 255], [150, 110, 255], [240, 110, 230]];      // 虹の 7色
-  const NAME = [null, '青', '緑', '紫', '赤', '金', '虹'];
-  const MISS_LOCK = 0.32, FLY = 0.36;                 // はずれの あと 次の 玉まで・保留が ますへ とぶ 長さ（秒）
+  const NAME = ['白', '青', '緑', '紫', '赤', '金', '虹'];
+  const FLY = 0.36;                                   // 保留が ますへ とぶ 長さ（秒）
+  const BEAT = 0.1, LONG_GAP = 0.3;                   // 音の 拍：ピと ピの 間（秒）・虹の 長い 拍（ピィーン）と 長い 拍の 間（kisekae/tc/snd/sfx_drop.py の BEAT・LONG_GAP と 同じ）
+  const BEAT_ON = 0.06, WEAK = 0.1;                   // 拍の 中で ランプが 強い 長さ（60コマ／秒で 4コマ 強く・2コマ 弱く）・弱い ときの 明るさ
+  const WIN_AT = 0.05, LEAD = 0.1;                    // 当たり：コップに 入って から 音まで・音から 馬バレ（ランプと オーラ）まで（まさちゃん 12:29：音の ずらしは 0.1秒）
+  const MISS_AT = 0.16, MISS_ON = 0.36;               // はずれ：コップに 入って から 音と 白い 光まで／白い 光が 消えはじめる まで（秒）
 
   let D = null, IM = null, loading = null, GLOW = null;
   let cv = null, g = null, K = 1, MS = 1, MX = 0, MY = 0, cache = null, cacheKey = '';
@@ -87,9 +110,19 @@ const TCDrop = (() => {
       gr.addColorStop(0, `rgba(${l[0]},${l[1]},${l[2]},0.9)`); gr.addColorStop(0.3, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.62)`); gr.addColorStop(0.7, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.2)`); gr.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
       q.fillStyle = gr; q.beginPath(); q.arc(0, 0, 128, 0, TAU); q.fill(); return c; };
     const gold = [255, 214, 90];
-    GLOW = { tone: [null], hue: HUES.map(mk), tong: [null], thue: HUES.map(mt) };
+    GLOW = { tone: [mk(TONE[0].rgb)], hue: HUES.map(mk), tong: [mt(TONE[0].rgb)], thue: HUES.map(mt), white: lens() };
     for (let c = 1; c <= 6; c++) { const rgb = c === 6 ? gold : TONE[c].rgb; GLOW.tone.push(mk(rgb)); GLOW.tong.push(mt(rgb)); }
     return GLOW;
+  }
+  function lens() {                                   // はずれの 白い ランプ：白い レンズ（模様は なし。色の 絵と 同じ 大きさ・内がわに 細い 輪）。うすい「ハズレ」の 字は 描く ときに のせる（drawLcd）
+    const c = document.createElement('canvas'); c.width = c.height = 344; const q = c.getContext('2d'), R0 = 170;
+    q.translate(172, 172); q.beginPath(); q.arc(0, 0, R0, 0, TAU); q.clip();
+    const gr = q.createRadialGradient(0, -R0 * 0.08, R0 * 0.05, 0, 0, R0);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.55, '#f6f8ff'); gr.addColorStop(0.86, '#e0e7f6'); gr.addColorStop(1, '#b6c2de');
+    q.fillStyle = gr; q.fillRect(-R0, -R0, R0 * 2, R0 * 2);
+    q.strokeStyle = 'rgba(255,255,255,0.92)'; q.lineWidth = 3.5; q.beginPath(); q.arc(0, 0, R0 * 0.93, 0, TAU); q.stroke();
+    q.strokeStyle = 'rgba(140,156,200,0.45)'; q.lineWidth = 7; q.beginPath(); q.arc(0, 0, R0 - 3, 0, TAU); q.stroke();
+    return c;
   }
 
   // ---------- 時計・予定 ----------
@@ -120,7 +153,7 @@ const TCDrop = (() => {
     const r = API.drop();
     if (!r || !r.ok) { finishDrops(); return false; }
     S.n++; S.used++; S.press.go = S.t; S.next = null;
-    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t;                    // 前の 馬バレは 消える
+    if (S.lcd && (S.lcd.off == null || S.lcd.off > S.t)) S.lcd.off = S.t;      // 前の 馬バレは 消える
     const pi = pickPath();
     S.ball = { p: D.paths[pi], pi, t0: S.t, hi: 0, inT: null, z: r.z || null, c: r.z ? (r.c || 1) : 0 };
     S.phase = 'fall'; se('dp_out');
@@ -129,18 +162,21 @@ const TCDrop = (() => {
   function ballIn(b) {                                 // 玉が コップに 入った
     b.inT = S.t; se('dp_cup', 0.9);
     S.fx.push({ k: 'cup', t0: S.t, cup: b.p.cup });
-    if (b.z) later(0.12, () => reveal(b));
-    else { later(0.16, () => se('dp_miss', 0.8)); S.lock = S.t + MISS_LOCK; later(MISS_LOCK, afterBall); }
+    if (b.z) later(WIN_AT, () => reveal(b));
+    else {                                             // はずれ：音（ポスッ）と いっしょに 馬バレの ランプが 白く 光る（短く・絵と 保留は なし）
+      later(MISS_AT, () => { se('dp_miss', 0.8); S.lcd = { c: 0, t0: S.t, off: S.t + MISS_ON }; });
+      S.lock = S.t + TONE[0].lock; later(TONE[0].lock, afterBall);
+    }
   }
-  function reveal(b) {                                 // 馬バレ：音と いっしょに 色の 絵と オーラ
+  function reveal(b) {                                 // 当たり：先に 音 → 0.1秒 あとに 馬バレ（色の ランプと オーラ）。保留が とび出す 時・次の 玉を 落とせる 時は 馬バレが ついて から 数える
     const c = b.c, tn = TONE[c];
-    S.lcd = { c, t0: S.t, off: null };
-    se('dp_uma' + c);
+    se('dp_umb' + c);
     const slot = S.holds.length;
-    const h = { z: b.z, c, slot, t: null, fly: S.t + tn.hold, state: 'fly' };
+    const h = { z: b.z, c, slot, t: null, fly: S.t + LEAD + tn.hold, state: 'fly' };
     S.holds.push(h);
-    later(tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
-    S.lock = S.t + tn.lock; later(tn.lock, afterBall);
+    later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });
+    later(LEAD + tn.hold + FLY, () => { h.t = S.t; h.state = 'in'; se('dp_hold', 0.9); });
+    S.lock = S.t + LEAD + tn.lock; later(LEAD + tn.lock, afterBall);
   }
   function afterBall() {
     if (S.phase !== 'fall') return;
@@ -150,7 +186,7 @@ const TCDrop = (() => {
   }
   function finishDrops() {                             // 玉を 落とし おわった（やめる でも）
     S.next = null;
-    if (S.lcd && S.lcd.off == null) S.lcd.off = S.t + 0.5;              // さいごの 馬バレは 少し して 消える（保留の ますと 結果が 見やすい）
+    if (S.lcd && (S.lcd.off == null || S.lcd.off > S.t + 0.5)) S.lcd.off = S.t + 0.5;      // さいごの 馬バレは 少し して 消える（保留の ますと 結果が 見やすい）
     if (S.holds.length) { S.phase = 'wait'; S.unlockT = S.t; se('dp_open'); }
     else { S.phase = 'none'; S.none = S.t; later(1.5, endChoice); }
   }
@@ -329,15 +365,49 @@ const TCDrop = (() => {
     g.drawImage(IM.front, x0 - F[0], y0 - F[1], x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
   }
 
-  // ---------- 馬バレ（まん中の 丸）と オーラ ----------
-  //   重ねる 順：台 → 台を 少し 暗く（auraDim）→ … → オーラ（drawAura：色の にじみ・炎・光の すじ・ひろがる 輪）→ 黄色い 縁を 描き直す（drawRim）→ 色の 絵（drawLcd）→ きらきら（drawSpark）
+  // ---------- 馬バレ（まん中の 丸）の ランプと オーラ ----------
+  //   重ねる 順：台 → 台を 少し 暗く（auraDim）→ … → オーラ（drawAura：色の にじみ・炎・光の すじ・ひろがる 輪）→ 黄色い 縁を 描き直す（drawRim）→ ランプ（drawLcd：色の 絵と 中の 光）→ きらきら（drawSpark）
   //   ＝光は 馬バレの うしろから 出て、色の 絵は いつも はっきり 見える。明るい 盤の 上でも 色が 白く とばない ように、先に 色を ぬって（ふつうの 重ね）から 光を 足す
-  function auraK(L) {                                  // 光の 強さ 0〜1：ふわっと 明るく → はげしい 間 → 落ちついた 強さ → 消える
-    const tn = TONE[L.c], u = S.t - L.t0;
-    let k = sm(u / 0.14) * (u < tn.len ? 1 : lerp(1, tn.keep, sm((u - tn.len) / 0.7)));
-    if (L.off != null) k *= 1 - sm((S.t - L.off) / 0.3);
-    return k;
+  //   ランプ（lampI）＝丸の 中と 縁の きわ：音の 拍（ピ）に 合わせて 強く 光る → つきっぱなし → ゆらぐ。オーラ（auraK）＝まわりの 広い 所：拍 ごとに 大きく なる だけ（点めつ させない）
+  function beatList(tn) {                              // → [[拍の 時（ランプが ついて から・秒）, 長い 拍か]]：短い 拍は BEAT ごと・さいごの long こが 長い（2つ ある ときは LONG_GAP あけて）
+    if (!tn.bt) { const ns = tn.pip - tn.long; tn.bt = []; for (let i = 0; i < ns; i++) tn.bt.push([+(i * BEAT).toFixed(3), false]); for (let j = 0; j < tn.long; j++) tn.bt.push([+(ns * BEAT + j * LONG_GAP).toFixed(3), true]); }
+    return tn.bt;
   }
+  const beatAt = (tn, u) => { const B = beatList(tn); let i = 0; while (i + 1 < B.length && u >= B[i + 1][0] - 1e-6) i++; return i; };      // いま 何番めの 拍か
+  const lastPip = tn => { const B = beatList(tn); return B[B.length - 1][0]; };      // さいごの 拍（ピィーン）の 時。赤：0.4
+  const settle = tn => lastPip(tn) + 0.12;                                           // つきっぱなしに なって ゆらぎが はじまる 時
+  function pipAt(tn, u) {                              // 拍の 間の 明るさ：拍の はじめ（0.06秒）は 強く・次の 拍 までは 弱く。さいごの 拍（ピィーン）からは 強い まま（ゆらぎへ つながる）
+    const B = beatList(tn), i = beatAt(tn, u), v = u - B[i][0];
+    if (i === B.length - 1) return lerp(1, 0.91, sm(v / 0.12));
+    if (B[i][1]) { const on = B[i + 1][0] - B[i][0] - (BEAT - BEAT_ON); return v < on - 1e-6 ? lerp(1, 0.86, v / on) : WEAK; }      // 長い 拍の つぎに まだ 拍が ある（虹の 1つめの ピィーン）：次の 拍の 直前 まで 強い まま
+    return v < BEAT_ON - 1e-6 ? 1 : WEAK;
+  }
+  function waveAt(v, lo) {                             // つきっぱなしに なって から v 秒（見本の 動画）：はじめは 0.5秒 かけて 谷へ → その あと 0.5秒に 1回（1秒に 2回）の ゆらぎ：谷（lo）から 速く 明るく なって、少し とどまって、暗く なる
+    if (v < 0.5) return lerp(0.91, lo, Math.pow(v / 0.5, 1.8));
+    const ph = ((v - 0.5) / 0.5) % 1;
+    return lo + (1 - lo) * Math.min(sm(ph / 0.34), 1 - Math.pow(clamp((ph - 0.55) / 0.45, 0, 1), 1.6));
+  }
+  const loAt = (tn, u) => lerp(tn.lo, 0.86, sm((u - tn.len) / 0.7));                 // はげしい 間が すぎたら ゆらぎは 浅く
+  function lampRaw(L) {                                // ランプの 明るさ 0〜1（消える 分は 入れない）
+    const tn = TONE[L.c], u = S.t - L.t0; if (u < 0) return 0;
+    if (calm()) return sm(u / 0.2);                    // 演出を 控えめに：すっと つく だけ
+    const ts = settle(tn);
+    return u < ts ? pipAt(tn, u) : waveAt(u - ts, loAt(tn, u));
+  }
+  const offK = L => (L.off != null ? 1 - sm((S.t - L.off) / 0.3) : 1);
+  const lampI = L => lampRaw(L) * offK(L);
+  function auraK(L) {                                  // オーラの 強さ 0〜1：ピ 1つ ごとに 1だん ずつ 大きく（下がらない＝点めつに ならない）→ はげしい 間 → 落ちついた 強さ → 消える
+    const tn = TONE[L.c], u = S.t - L.t0; let k = 0;
+    if (calm()) k = sm(u / 0.14);
+    else { const B = beatList(tn); for (const q of B) k += sm((u - q[0]) / 0.07); k /= B.length; }
+    return k * (u < tn.len ? 1 : lerp(1, tn.keep, sm((u - tn.len) / 0.7))) * offK(L);
+  }
+  function auraBr(L) {                                 // オーラの 息：ランプの ゆらぎに 合わせて 浅く（ゆれ幅は ランプの 4割）。ピの 間は 動かさない
+    if (calm()) return 1;
+    const tn = TONE[L.c], u = S.t - L.t0, ts = settle(tn);
+    return u < ts ? 1 : 1 - 0.4 * (0.91 - waveAt(u - ts, loAt(tn, u))) / 0.91;      // つきっぱなしに なった 瞬間（0.91）が 1：そこから つながる
+  }
+  const lampCol = (L, u) => (L.c === 6 ? (!calm() && u < lastPip(TONE[6]) ? HUES[(beatAt(TONE[6], u) * 3) % 7] : hueAt(u * 0.9)) : TONE[L.c].rgb);      // 虹：拍 ごとに 色が かわる → その あと なめらかに めぐる
   const auraStrong = L => { const tn = TONE[L.c], u = S.t - L.t0; return u < tn.len ? 1 : 1 - sm((u - tn.len) / 0.7); };      // はげしい 間 1 → 0
   function auraDim(L) {                                // 台を 少し 暗く（光が 目立つ）：色が 上がる ほど 暗く・はげしい 間 だけ（あとは うすく）
     const tn = TONE[L.c], st = auraStrong(L), k = auraK(L) * (0.3 + 0.7 * st); if (k <= 0.004) return;
@@ -347,7 +417,7 @@ const TCDrop = (() => {
   function drawAura(L) {
     const c = L.c, tn = TONE[c], u = S.t - L.t0, k = auraK(L); if (k <= 0.004) return;
     const [cx, cy, , rr] = D.lcd, cm = calm(), st = auraStrong(L), G = glows();
-    const br = cm ? 1 : 0.92 + 0.08 * Math.sin(TAU * 1.1 * u);                      // ゆっくり 息を する（1秒に 1回 くらい）
+    const br = auraBr(L);                              // ランプの ゆらぎ（1秒に 2回）に 合わせて 浅く 息を する
     const R = rr * (1 + (tn.R - 1) * (0.62 + 0.38 * st)) * (cm ? 0.9 : 1);
     const col = c === 6 ? [255, 250, 240] : tn.rgb, ka = c === 6 ? 0.45 : 1;
     g.save();
@@ -396,7 +466,7 @@ const TCDrop = (() => {
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
     // のぼる 光の 粒（縁の まわりから 上へ）
-    const np = cm ? 0 : 4 + c * 3;
+    const np = cm || !c ? 0 : 4 + c * 3;
     for (let i = 0; i < np; i++) {
       const per = 1.1 + 0.9 * hash(i * 3.1 + c), x0 = u / per + hash(i * 7.7 + c * 1.3), ph = x0 % 1, cyc = Math.floor(x0);
       const an = TAU * hash(i * 1.9 + c * 0.7 + cyc * 0.37), d0 = rr * (0.95 + 0.5 * hash(i * 5.3 + cyc)), rise = ph * rr * (0.7 + 0.28 * c) * (0.5 + 0.5 * st);
@@ -406,9 +476,9 @@ const TCDrop = (() => {
       g.drawImage(c === 6 ? G.hue[(i + cyc) % 7] : G.tone[c], cx + Math.cos(an) * d0 - sz, cy + Math.sin(an) * d0 * 0.9 - rise - sz, sz * 2, sz * 2);
     }
     g.globalAlpha = 1;
-    // ひろがる 輪（当たった 瞬間：赤 1つ・金 1つ・虹 2つ）
-    if (c >= 4 && !cm) for (let j = 0; j < (c === 6 ? 2 : 1); j++) {
-      const v = (u - 0.05 - j * 0.3) / 0.8; if (v <= 0 || v >= 1) continue;
+    // ひろがる 輪（赤 1つ＝さいごの ピィーン・金 2つ＝ドーンドーン・虹 3つ＝ドーンドーン と さいごの ピィーン：音の 中の 場所と 同じ）
+    if (tn.ring && !cm) for (let j = 0; j < tn.ring.length; j++) {
+      const v = (u - tn.ring[j]) / 0.8; if (v <= 0 || v >= 1) continue;
       const rc = c === 6 ? HUES[(j * 3 + 1) % 7] : tn.rgb;
       g.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${0.75 * (1 - v) * tn.a})`; g.lineWidth = rr * 0.22 * (1 - 0.6 * v);
       g.beginPath(); g.arc(cx, cy, rr * (1 + (tn.R * 1.1 - 1) * easeOut(v)), 0, TAU); g.stroke();
@@ -416,12 +486,18 @@ const TCDrop = (() => {
     g.restore();
   }
   function drawRim(L) {                                // 黄色い 縁を 光の 手前に 描き直す（台の 絵の その 所）＋ 縁の きわが 色に 光る
-    const k = auraK(L); if (k <= 0.004) return;
-    const [cx, cy, , rr] = D.lcd, c = L.c, u = S.t - L.t0, col = c === 6 ? hueAt(u * 0.9) : TONE[c].rgb, x0 = Math.floor(cx - rr - 2), y0 = Math.floor(cy - rr - 2), w = Math.ceil(rr * 2 + 4);
+    const k = auraK(L), I = lampI(L); if (k <= 0.004 && I <= 0.004) return;
+    const [cx, cy, r, rr] = D.lcd, u = S.t - L.t0, col = lampCol(L, u), x0 = Math.floor(cx - rr - 2), y0 = Math.floor(cy - rr - 2), w = Math.ceil(rr * 2 + 4);
     g.save(); g.globalAlpha = Math.min(1, k * 1.4); g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.clip(); g.drawImage(IM.base, x0, y0, w, w, x0, y0, w, w); g.restore();
+    if (I <= 0.004) return;
+    // ランプの 光が 縁に うつる（見本：レンズの まわりの わくが 赤く 光る）：縁の 内がわを 色に そめて（ふつうの 重ね）から 光を 足す。ランプと いっしょに ついて 消える
+    g.save(); g.beginPath(); g.arc(cx, cy, rr, 0, TAU); g.arc(cx, cy, r, 0, TAU, true); g.clip();
+    let gr = g.createRadialGradient(cx, cy, r, cx, cy, rr);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${0.5 * I})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},${0.06 * I})`);
+    g.fillStyle = gr; g.fillRect(x0, y0, w, w); g.restore();
     g.save(); g.globalCompositeOperation = 'lighter';
-    const gr = g.createRadialGradient(cx, cy, rr * 0.74, cx, cy, rr * 1.2);
-    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.5, `rgba(${col[0]},${col[1]},${col[2]},${0.42 * k})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    gr = g.createRadialGradient(cx, cy, rr * 0.74, cx, cy, rr * 1.2);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.5, `rgba(${col[0]},${col[1]},${col[2]},${0.46 * I})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
     g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rr * 1.2, 0, TAU); g.fill(); g.restore();
   }
   function drawSpark(L) {                              // きらきら（紫 から：いちばん 手前）
@@ -435,15 +511,25 @@ const TCDrop = (() => {
     }
     g.restore();
   }
-  function drawLcd(L) {                                // 色の 絵（丸）：ぽんと つく
-    const [cx, cy, r] = D.lcd, u = S.t - L.t0, k = L.off != null ? 1 - sm((S.t - L.off) / 0.25) : 1; if (k <= 0.004) return;
-    const s = calm() ? 1 : 0.86 + 0.14 * backOut(u / 0.3);
+  function drawLcd(L) {                                // ランプ（丸の 中）：色の 絵（はずれは 白い レンズ）が ランプの 明るさで つく ＋ 中から 光る（見本：ふちに LED の 明るい 点・ふちの ほうが 明るい）
+    const [cx, cy, r] = D.lcd, I = lampI(L); if (I <= 0.004) return;
+    const c = L.c, u = S.t - L.t0, G = glows(), col = lampCol(L, u), im = c ? IM.uma[c] : G.white, d = r * 2 * (im.width / (im.width - 4));
     g.save(); g.beginPath(); g.arc(cx, cy, r + 1.5, 0, TAU); g.clip();
-    g.globalAlpha = k * sm(u / 0.08);
-    const im = IM.uma[L.c], d = r * 2 * s * (im.width / (im.width - 4));
-    g.drawImage(im, cx - d / 2, cy - d / 2, d, d);
-    const fl = 1 - sm(u / 0.32);                       // つく 瞬間の 白い 光（丸の 中 だけ・1回）
-    if (fl > 0.01) { g.globalAlpha = 0.7 * fl * k; g.fillStyle = '#fff'; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4); }
+    g.globalAlpha = I; g.drawImage(im, cx - d / 2, cy - d / 2, d, d);
+    if (!c) label('ハズレ', cx, cy + 3, r * 0.52, 'rgba(96,112,160,0.17)');      // とても うすい 字（まさちゃん 10:47「めちゃくちゃ薄くハズレって書いてあるように」）
+    g.globalCompositeOperation = 'lighter';
+    if (c) { g.globalAlpha = 0.3 * I; g.drawImage(im, cx - d / 2, cy - d / 2, d, d); }      // 絵が 自分で 光る（白い レンズは もう 明るい ので 足さない：うすい 字が 白く とばない）
+    g.globalAlpha = 1;
+    const E = I * (1 + 0.55 * (1 - I)), ek = c ? 1 : 0.5;      // ふちの 光：ゆらぎの 谷でも ふちは 明るい まま（見本：暗く なる とき まん中から 先に 暗く なる）
+    const gr = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r);
+    gr.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0)`); gr.addColorStop(0.78, `rgba(${col[0]},${col[1]},${col[2]},${0.2 * E * ek})`); gr.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},${0.62 * E * ek})`);
+    g.fillStyle = gr; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4);
+    const N = c ? 14 : 0, hot = c === 6 ? null : G.tone[c];      // はずれの 白い レンズには 点を 出さない（模様に 見える：まさちゃん 10:47）
+    for (let i = 0; i < N; i++) {                      // ふちの LED（明るい 点が ふちに ならぶ）
+      const an = i * TAU / N + 0.22, sz = r * (0.24 + 0.07 * hash(i * 3.3 + 1));
+      g.globalAlpha = Math.min(1, E * ek * (0.62 + 0.38 * hash(i * 5.7 + 2)));
+      g.drawImage(hot || G.hue[(i + Math.floor(u * 2)) % 7], cx + Math.cos(an) * r * 0.94 - sz, cy + Math.sin(an) * r * 0.94 - sz, sz * 2, sz * 2);
+    }
     g.restore();
   }
 
@@ -627,11 +713,11 @@ const TCDrop = (() => {
   }
   T.tick = dt => { if (!S) return false; sizeUp(); step(dt); if (S) draw(); return !!S; };      // テスト・見本 用：dt 秒 進めて 1コマ 描く
 
-  return { load, ready, open, close, isOpen, BALLS, TONE, NAME,
+  return { load, ready, open, close, isOpen, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, beats: c => beatList(TONE[c]).map(q => q.slice()),
     _t: T, get state() { return S; }, get data() { return D; },
     tap: what => !!act(what),                          // テスト・見本 用：'go'・'see'・'more'・'end'・'quit'（押せた ときは true）
     // テスト 用：押す 所の まん中（舞台の 座標 1052×1657）と 馬バレの 丸（まん中・黄色い 縁の 半径）
     geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
       return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
-    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null), ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
+    info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
 })();

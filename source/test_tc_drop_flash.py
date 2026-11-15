@@ -1,5 +1,8 @@
-# お世話チャレンジ（第4.173版）の 光の 点めつ：馬バレ 6色（青・緑・紫・赤・金・虹）＋ 虹の「演出を控えめにする」を 60コマ／秒の 絵に して kisekae/flash_px.py で 数える
+# お世話チャレンジ（第4.173版・第4.174版）の 光の 点めつ：はずれの 白い 光・馬バレ 6色（青・緑・紫・赤・金・虹）＋ 虹の「演出を控えめにする」を 60コマ／秒の 絵に して kisekae/flash_px.py で 数える
 #   まさちゃん 2026/11/15 00:40「青から虹色にかけて光りは激しく大きくして！」→ 大きく・こく しても、ちかちかは させない（1秒に 3回 まで・画面の 10%）
+#   第4.174版（10:19 見本の 動画・10:44「光りの強弱は…このピのところにあわせて！」）：ピに 合わせて 速く 強弱が つく のは 馬バレの 丸と 縁の きわ だけ。
+#     ① いつもの 決まり（画面の 10% 以上で 1秒に 3回 まで）② もっと きびしく：1秒に 4回 以上 明るさが 上下 する 所は 画面の 3% 未満（＝小さい ランプ だけ。まわりの オーラは 入らない）
+#     ③「演出を控えめにする」では ランプも 強弱 なし（すっと つく だけ）
 #   コップに 入る 0.5秒 前から、馬バレが ついて・保留が たまって・光が 落ちつく まで（色ごとに 長さが ちがう）。画面 ぜんぶ（390×844）を 写す
 #   python3 test_tc_drop_flash.py [1,6,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/dp_frames/<色>/ に 残す）
 #   写して いる 間は トレーニングセンターの フィールドを 描くのを 止める（止まった 絵の まま：台の うしろで 9割 かくれて いる・写すのが 速く なる）
@@ -116,16 +119,17 @@ def seq_for(pg, want):
 
 # フィールドを 描くのを 止める／もどす：アプリが うしろに 回った ときと 同じ 合図（visibilitychange）を 送る
 HIDE = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => !!h }); document.dispatchEvent(new Event('visibilitychange')); }"
-NAMES = ['', '青', '緑', '紫', '赤', '金', '虹']
+NAMES = ['はずれ（白）', '青', '緑', '紫', '赤', '金', '虹']
+SMALL = '.03'      # 速い 強弱を ゆるす 広さ（画面の 割合）：ランプの 丸と 縁の きわ（半径 1.2倍 まで）で 2% ほど
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); ctx.add_init_script(FAKE)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         open_tc(pg, APP)
-        LEN = pg.evaluate("() => TCDrop.TONE.slice(1).map(t => t.len)")
+        LEN = pg.evaluate("() => TCDrop.TONE.map(t => t.len)"); LEAD = pg.evaluate("() => TCDrop.WIN_AT + TCDrop.LEAD")
         FD = os.path.join(W, 't5', 'dp_frames')
-        for c, wnt, calm in [(1, {'k': 'pt', 'v': 100}, 0), (2, {'k': 'rt', 'tier': 'normal'}, 0), (3, {'k': 'rt', 'tier': 'maboroshi'}, 0), (4, {'k': 'rt', 'tier': 'kamisama'}, 0), (5, {'k': 'zn'}, 0), (6, {'k': 'tk'}, 0), (6, {'k': 'tk'}, 1)]:
+        for c, wnt, calm in [(0, None, 0), (1, {'k': 'pt', 'v': 100}, 0), (2, {'k': 'rt', 'tier': 'normal'}, 0), (3, {'k': 'rt', 'tier': 'maboroshi'}, 0), (4, {'k': 'rt', 'tier': 'kamisama'}, 0), (5, {'k': 'zn'}, 0), (6, {'k': 'tk'}, 0), (6, {'k': 'tk'}, 1)]:
             if ONLY and c not in ONLY: continue
             d = os.path.join(FD, f'c{c}{"_calm" if calm else ""}'); shutil.rmtree(d, ignore_errors=True); os.makedirs(d); t0 = time.time()
             pg.evaluate("c => TengelFx.set({ calm: !!c })", calm); pg.evaluate(SETTOK, 25); pg.evaluate(PUSH_ON); pg.wait_for_timeout(900)
@@ -134,13 +138,21 @@ try:
             pg.evaluate(GO, [seq_for(pg, wnt)])
             pg.evaluate(TICK, [8, "TCDrop.state.ball && (TCDrop.state.t - TCDrop.state.ball.t0) * 60 >= TCDrop.state.ball.p.tin - 30"])      # コップに 入る 0.5秒 前から
             pg.evaluate(HIDE, True); pg.wait_for_timeout(200)
-            n = 0; N = int(round((0.5 + LEN[c - 1] + 1.6) * 60))      # 入る → 馬バレ（はげしい 間）→ 落ちつく（0.7秒）→ その あと 0.9秒
+            n = 0; N = int(round((0.5 + LEAD + LEN[c] + 1.6) * 60)); lamp = []      # 入る → 音 → 0.3秒 → 馬バレ（はげしい 間）→ 落ちつく（0.7秒）→ その あと 0.9秒
             for i in range(N):
                 pg.evaluate(TICK, [1 / 60, None]); pg.screenshot(path=os.path.join(d, f'f{n:04d}.png')); n += 1
+                if calm: lamp.append(pg.evaluate("() => TCDrop.info().lamp"))
             lcd = pg.evaluate(INFO)['lcd']
-            r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, '0'], capture_output=True, text=True, env=dict(os.environ, AREA='.1'))
-            out = r.stdout.strip().split('\n')
-            check(r.returncode == 0 and '窓 0個' in (out[0] if out else '') and lcd == c, f'{NAMES[c]}{"（演出を控えめに）" if calm else ""}：{n}コマ（{time.time() - t0:.0f}秒）… {out[0] if out else r.stderr[-200:]}／{out[-1] if out else ""}')
+            outs = []
+            for area in ('.1', SMALL):
+                r = subprocess.run(['python3', os.path.join(W, 'kisekae', 'flash_px.py'), d, '0'], capture_output=True, text=True, env=dict(os.environ, AREA=area))
+                o = r.stdout.strip().split('\n'); outs.append((r.returncode, o[0] if o else r.stderr[-200:], o[-1] if o else ''))
+            nm = f'{NAMES[c]}{"（演出を控えめに）" if calm else ""}'
+            check(outs[0][0] == 0 and '窓 0個' in outs[0][1] and lcd == c, f'{nm}：{n}コマ（{time.time() - t0:.0f}秒）… {outs[0][1]}／{outs[0][2]}')
+            check(outs[1][0] == 0 and '窓 0個' in outs[1][1], f'{nm}：速い 強弱は 小さい 所 だけ … {outs[1][1]}')
+            if calm:
+                up = sum(1 for i in range(1, len(lamp)) if lamp[i] >= 0.9 and lamp[i - 1] < 0.5); dn = sum(1 for i in range(1, len(lamp)) if lamp[i] < lamp[i - 1] - 0.02)
+                check(up == 0 and dn == 0 and max(lamp) > 0.99, f'{nm}：ランプは 強弱 なし（すっと つく だけ：上下 {up}・{dn}回）')
             pg.evaluate(HIDE, False); pg.wait_for_timeout(300)
             pg.evaluate("() => { TCDrop._t.manual = false; TCDrop.close(); }"); pg.wait_for_timeout(400)
             pg.evaluate("() => { for (const z of (TCApp.state.dp && TCApp.state.dp.holds || []).slice()) TCApp._t.give(z); TCCare.pushDone(TCCare.S.lastT); }"); pg.wait_for_timeout(400)

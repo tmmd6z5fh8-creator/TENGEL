@@ -1,12 +1,13 @@
 # お世話チャレンジの 素材（絵・データ・音）を アプリの 素材の フォルダ（ios/tc_assets）へ 置く
 #   python3 kisekae/tc/drop/drop_install.py <絵と データの フォルダ（drop_data.py の 出力）> <音の フォルダ（kisekae/tc/snd/sfx_drop.py の 出力）> [ios/tc_assets]
 #   ・**上書きしない**：同じ 名前の ファイルが もう あって 中身が ちがう ときは 止まる（かえる ときは 新しい 名前に して tc/tc_drop.js の 名前も かえる）
-#   ・置く もの：tc_dp.json・tc_dp_*.webp（18こ）・tc_se_dp_*.m4a（14こ）。リポジトリには 入れない（ios/tc_assets/ は .gitignore）
+#   ・置く もの：tc_dp.json・tc_dp_*.webp（18こ）・tc_se_dp_*.m4a（20こ：第4.174版で 馬バレ音を 作り直した umb1〜6 を 足した。前の uma1〜6 も もとの フォルダには 置く＝アプリには 入らない：assets_dir.superseded）。
+#     リポジトリには 入れない（ios/tc_assets/ は .gitignore）
 #   ・置いた あとは python3 kisekae/lite_assets.py（軽い 版を 作り直す）
 import os, sys, shutil, hashlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMGS = ['tc_dp.json', 'tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp', 'tc_dp_icon.webp'] + [f'tc_dp_{k}{i}.webp' for k in ('uma', 'hold') for i in range(1, 7)]
-SNDS = [f'tc_se_dp_{n}.m4a' for n in ['uma1', 'uma2', 'uma3', 'uma4', 'uma5', 'uma6', 'out', 'peg1', 'peg2', 'peg3', 'cup', 'miss', 'hold', 'open']]
+SNDS = [f'tc_se_dp_{n}.m4a' for n in ['uma1', 'uma2', 'uma3', 'uma4', 'uma5', 'uma6', 'umb1', 'umb2', 'umb3', 'umb4', 'umb5', 'umb6', 'out', 'peg1', 'peg2', 'peg3', 'cup', 'miss', 'hold', 'open']]
 
 
 def sha(p):

@@ -74,6 +74,10 @@ def superseded(name, files):
         #   kisekae/tc/buy_asset.py）。はじめの 横長の 絵（tc_icon_buy.webp）は 使わない ので 入れない（もとの フォルダには 残す）
         if 'tc_icon_buy2.webp' in files:
             old |= files & {'tc_icon_buy.webp'}
+        # 第4.174版（まさちゃん 2026/11/15 12:29「音の種類数字で分けてるけど全部同時に鳴らして！」）：お世話チャレンジの 馬バレ音は 作り直した 6つ（tc_se_dp_umb1〜6.m4a：
+        #   kisekae/tc/snd/sfx_drop.py）。6つ そろって いる とき、前の 6つ（tc_se_dp_uma1〜6.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
+        if {f'tc_se_dp_umb{c}.m4a' for c in range(1, 7)} <= files:
+            old |= files & {f'tc_se_dp_uma{c}.m4a' for c in range(1, 7)}
         # 第4.171版（まさちゃん 2026/11/14 16:18「トレーニングセンターの神様馬出現中のBGM:もっとアップテンポで掻き立てられるようなBGM」）：神様馬の フィールドの BGM は
         #   新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py）。前の 曲（tc_bgm_divine.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
         if 'tc_bgm_divine2.m4a' in files:
