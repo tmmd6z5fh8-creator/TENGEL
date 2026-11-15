@@ -163,6 +163,8 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         Store.shared.start()
         // 結果確認のお知らせが押されたら、Webの画面に知らせる（そのレースの結果入力へ）
         Notify.shared.onOpen = { [weak self] p in self?.event("notify", p) }
+        // 馬カードバトルの 部屋（第4.176版：近くの iPhone と 直接 つながる）：つながりの ようす・届いた 手を Webの 画面に 知らせる
+        Room.shared.onEvent = { [weak self] p in self?.event("room", p) }
         // キーボードが 出た／しまった を Webの 画面に 知らせる（数字の 欄で キーボードが 出なければ アプリの 中の テンキーを 出す：第4.62版）
         for (name, open) in [(UIResponder.keyboardWillShowNotification, true), (UIResponder.keyboardWillHideNotification, false)] {
             NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] n in
@@ -305,6 +307,9 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 let r = await Notify.shared.handle(p)
                 self?.reply(id, ok: true, value: r)
             }
+        case "room":
+            // 馬カードバトルの 部屋（第4.176版）：部屋を 作る・入る・手を 送る・やめる（Room.swift。近くの iPhone と 直接：サーバーなし）
+            reply(id, ok: true, value: Room.shared.handle(payload as? [String: Any] ?? [:]))
         case "unseal":
             // 「データの更新」の ファイルを 開く（iOS に 入って いる 暗号＝Apple CryptoKit の AES-GCM。アプリは 自分の 暗号の 計算を 持たない：DataSeal.swift）
             if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {

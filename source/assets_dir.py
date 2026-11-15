@@ -29,6 +29,7 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
 #   組は（新しい もの, その ときに 入れない 前の もの）。…3 が そろって いる ときは …2 と はじめの ものを 入れない（どれも もとの フォルダには 残す）
 #   第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：極ど的中・ノーマルど的中は 3倍（1170×2532）で 描き直した 動画と さいごの 1まい（…4）・
 #   神様極的中は 3倍に のばした もの（gk_film2.mp4・gk_last2.webp）。そろって いる 組は 前の もの（…3・はじめの もの）を 入れない
+FIG_GONE = re.compile(r'fg[267](\.json|\.bin|_[a-z]+\.webp)')      # 第4.176版：なくした フィギュアの デザイン（番号 2・6・7）の 形と 絵
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
@@ -50,8 +51,13 @@ def superseded(name, files):
             if set(new) <= files:
                 old |= files & set(prev)
         return old
-    if name == 'fig_assets' and 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
-        return {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}
+    if name == 'fig_assets':
+        # 第4.176版（まさちゃん 2026/11/15 21:53「思い出フィギュアのスタンプボードと神様馬&幻の馬ボード消して！」→ 11/16 00:07「間違えた！ 思い出フィギュアは、スタンプボードと神様馬ボードと幻の馬ボードを消して！ 神様馬&幻の馬ボードは残して！」）：
+        #   なくした デザイン（番号 2・6・7：fig/fig_app.js の LIST に ない）の 形と 絵（fg2.*・fg2_*.webp・fg6…・fg7…：27こ）は アプリに 入れない（もとの フォルダには 残す）
+        old = {f for f in files if FIG_GONE.fullmatch(f)}
+        if 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
+            old |= {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}
+        return old
     if name == 'tc_assets':                                     # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」「いないデータの削除」）：
         old = files & TC_GONE                                   #   横に なる 動きの 音（どさっ・ごろん・ねる）は もう 鳴らない ので アプリに 入れない（もとの フォルダには 残す）
         # 第4.158版（まさちゃん 2026/11/12 08:59「画像がなんかまだらに色がついてるから綺麗にできる？」）：ルーレットの 絵は きれいに した 新しい 絵（rt_<絵>_<部品>2.webp：

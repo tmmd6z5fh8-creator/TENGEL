@@ -206,7 +206,7 @@ try:
 
         # 第4.165版（まさちゃん 2026/11/13 12:47「推し馬はすぐに確認できるように、トレーニングセンターと思い出フィギュアのアイコンのところの1番上に配置して！
         #   推し馬のアイコンをタップしたら、推し馬の欄に飛ぶように設定して！」）：右下の 丸い ボタンの 列（#fabCol）の 1番 上に 推し馬 → 押すと 作戦会議が 開いて「推し馬」の 欄が 上に 出る
-        print('■ 右下の 列の 1番 上：推し馬の アイコン')
+        print('■ 右下の 丸い ボタン：推し馬の アイコン（第4.176版から 上から 2番目：トレーニングセンターの すぐ 下・カードバトルの すぐ 上）')
         FABS = """() => { const R = e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, ks = [...document.querySelectorAll('#fabCol > button')].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order);
           const o = document.querySelector('#oshiFab'), im = o && o.querySelector('.fabi img'), ft = o && o.querySelector('.fabt'), ir = o ? o.querySelector('.fabi').getBoundingClientRect() : null;
           return { ids: ks.map(b => b.id), rects: ks.map(R), name: o && o.querySelector('.fabl').textContent, aria: o && o.getAttribute('aria-label'), img: im ? [im.getAttribute('src'), im.naturalWidth, im.naturalHeight] : null, fb: ft ? ft.textContent : null,
@@ -219,9 +219,14 @@ try:
                 if not os.path.exists(os.path.join(SRV, 'APP', f)): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
             pg.reload(); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(700)
         fb = pg.evaluate(FABS); rc = fb['rects']
-        check(fb['ids'][:2] == ['oshiFab', 'tcFab'] and (len(fb['ids']) < 3 or fb['ids'][2] == 'figFab') and all(rc[i][3] <= rc[i + 1][1] + 1 for i in range(len(rc) - 1)) and rc[-1][3] <= fb['tab'] - 4 and rc[0][2] <= 390
-              and fb['name'] == '推し馬' and '推し馬' in (fb['aria'] or '') and fb['iw'] and abs(fb['iw'][0] - 66) < 1 and abs(fb['iw'][1] - 66) < 1 and fb['vis'],
-              f'列の ならび：上から 推し馬 → トレーニングセンター → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの 上・絵は 66px・名前「推し馬」')
+        # 第4.176版：カードバトル（#cbFab）が 入って 4つ。まさちゃん 11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」・00:47「①トレーニングセンター ②推し馬 ③カードバトル ④思い出フィギュア」
+        #   ＝ たてに 4つ（1列）・丸の 大きさは 画面に 合わせる（ここは 上の絵が ない ので もとの 66px）・列の 下は 下の タブの すぐ 上（01:15「この青四角下の空間気になる」）
+        mid = lambda r: (r[0] + r[2]) / 2
+        g_ok = (len(rc) == 4 and all(rc[i][3] <= rc[i + 1][1] + 1 and rc[i + 1][1] - rc[i][3] <= 8 and abs(mid(rc[i]) - mid(rc[i + 1])) <= 2 for i in range(3))
+                and not any(a[0] < c[2] - 1 and c[0] < a[2] - 1 and a[1] < c[3] - 1 and c[1] < a[3] - 1 for i, a in enumerate(rc) for c in rc[i + 1:]))
+        check(fb['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and g_ok and max(r[3] for r in rc) <= fb['tab'] - 3 and max(r[2] for r in rc) <= 390 and min(r[0] for r in rc) >= 0
+              and fb['name'] == '推し馬' and '推し馬' in (fb['aria'] or '') and fb['iw'] and abs(fb['iw'][0] - 66) < 1 and abs(fb['iw'][1] - 66) < 1 and fb['vis'] and fb['tab'] - max(r[3] for r in rc) <= 6,
+              f'ならび（たてに 4つ）：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの すぐ 上・絵は 66px・名前「推し馬」')
         if HAVE:
             check(fb['img'] == ['tc_icon_oshi.webp', 240, 240] and fb['fb'] is None, f'絵：まさちゃんの 推し馬の アイコン（tc_icon_oshi.webp・240×240：ほかの 2つと 同じ 作り方）{fb["img"]}')
             from PIL import Image as _Im

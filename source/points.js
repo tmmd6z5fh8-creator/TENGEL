@@ -433,6 +433,20 @@
   //   第4.147版：外した 壁紙（GONE_THEMES）は 数えない
   function goneTheme(what) { var m = /^theme:(.+)$/.exec(String(what || '')); return !!m && GONE_THEMES.indexOf(m[1]) >= 0; }
   function wallCount(events, packN) { return (events || []).filter(function (e) { return e && e.kind === 'unlock' && /^theme:/.test(String(e.what || '')) && !/^theme:(silver|golden|tengel)$/.test(String(e.what)) && !goneTheme(e.what); }).length + Math.max(0, Math.floor(+packN || 0)); }
+  // 第4.176版（まさちゃん 2026/11/15 21:53「思い出フィギュアのスタンプボードと神様馬&幻の馬ボード消して！」→ 11/16 00:07「間違えた！ 思い出フィギュアは、スタンプボードと神様馬ボードと幻の馬ボードを消して！ 神様馬&幻の馬ボードは残して！」）：
+  //   思い出フィギュアの デザイン 3つ（スタンプの ボード＝番号 2・神様馬＝番号 6・幻の馬＝番号 7）を なくした
+  //   （デザインの 番号 → [名前, 値段]。fig/fig_app.js の LIST に ない 番号）。作って いた 人の フィギュアは 台帳から 外して、使った ポイントを 返す
+  //   （goneFigs → points_ui.js の goneFigBack：1体に 1回 だけ＝返した しるし back-fig:<フィギュアの id>）
+  var FIG_GONE = { 2: ['ゴールデンスカラー', 22000], 6: ['神様馬', 32000], 7: ['幻の馬', 30000] };
+  function figGone(n) { return Object.prototype.hasOwnProperty.call(FIG_GONE, String(+n)); }
+  // なくした デザインの フィギュア（items の うち）：[{ id（フィギュアの id）, n, name, cost（作った ときに 使った P。書いて なければ 値段）, back（返した しるし）, paid（もう 返して ある）}]
+  //   heldIds：あずかりポイントに 入って いる id（上限で あずかった ぶんも「返した」に 数える）
+  function goneFigs(items, events, heldIds) {
+    return (items || []).filter(function (x) { return x && typeof x.id === 'string' && x.id && figGone(x.n); }).map(function (x) {
+      var g = FIG_GONE[String(+x.n)], back = 'back-fig:' + x.id;
+      return { id: x.id, n: +x.n, name: g[0], cost: Math.max(0, Math.round(+x.cost > 0 ? +x.cost : g[1])), back: back, paid: has(events, back) || (heldIds || []).indexOf(back) >= 0 };
+    });
+  }
   // 外した 壁紙を 解放して いた ぶん（まだ 返して いない もの）：[{ theme, name, cost（使った ポイント・0＝チケットで 解放した）, id（返した しるし back-theme:<名前>） }]。
   //   heldIds：あずかりポイントに 入って いる id（上限で あずかった ぶんも「返した」に 数える）
   function goneUnlocks(events, heldIds) {
@@ -526,7 +540,7 @@
     holdNorm: holdNorm, holdTotal: holdTotal, holdSum: holdSum, holdSplit: holdSplit, holdRelease: holdRelease, holdDrop: holdDrop,
     stamp: stamp, stampAll: stampAll, seqMax: seqMax, raceFp: raceFp, fpDiff: fpDiff, fpRho: fpRho, fpShare: fpShare, FP: { min: FP_MIN, rho: FP_RHO, same: FP_SAME },
     WALLPACK: WALLPACK, packOwned: packOwned, packUnlocked: packUnlocked, packNext: packNext,
-    missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, GONE_THEMES: GONE_THEMES, GONE_NAMES: GONE_NAMES, goneUnlocks: goneUnlocks, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
+    missions: missions, missionAt: missionAt, WALL_MISSIONS: WALL_MISSIONS, wallMissions: wallMissions, wallMissionEvents: wallMissionEvents, wallCount: wallCount, GONE_THEMES: GONE_THEMES, GONE_NAMES: GONE_NAMES, goneUnlocks: goneUnlocks, FIG_GONE: FIG_GONE, figGone: figGone, goneFigs: goneFigs, raceKey: raceKey, sameRace: sameRace, findPaid: findPaid, vnorm: vnorm, addDays: addDays, iso: iso };
   root.TengelPoints = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

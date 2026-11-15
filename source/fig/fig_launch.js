@@ -4,6 +4,7 @@
 //     09:55「思い出フィギュアのアイコンタップすると、フィギュアブースに飛んで！フィギュアブースからもフィギュアを作る、ができるようにして！」）：
 //     どの タブでも 右上の トレーニングセンターの ボタンの 下に 丸い ボタン（#figFab・絵 fg_icon.webp＝まさちゃんの アイコン・下に 名前「思い出フィギュア」）→ 押すと フィギュアブース
 //     （ブースの 下に「＋ フィギュアを作る」：fig_app.js の footBooth）。列と ボタンの 形は tc/tc_launch.js の TengelFab.add（index.html では tc_launch.js が 先）
+//     第4.176版（11/16 00:47「①トレーニングセンター ②推し馬 ③カードバトル ④思い出フィギュア」）：列の いちばん 下（order 3：カードバトルの すぐ 下）
 //   ・押した ときに fig_bundle.js（3D の 描画・ブース・部屋・作る 画面）を 読む。形と 絵は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
 (function () {
   'use strict';
@@ -27,7 +28,7 @@
   // ---------- 右上の 丸い ボタン（トレーニングセンターの 下・絵＋下に 名前「思い出フィギュア」）：列と ボタンの 形は tc/tc_launch.js の TengelFab（先に 読まれる）----------
   function boot() {
     if (document.getElementById('figFab') || !window.TengelFab) return;
-    fab = window.TengelFab.add({ id: 'figFab', order: 2, name: ['思い出', 'フィギュア'], aria: '思い出フィギュア（押すと フィギュアブースを ひらくよ）', img: 'fg_icon.webp', fb: ['思い出', '#1B1F4A', '#E2B33C', '#FFE6A0'], tap: function () { window.TengelFig.booth(); } });
+    fab = window.TengelFab.add({ id: 'figFab', order: 3, name: ['思い出', 'フィギュア'], aria: '思い出フィギュア（押すと フィギュアブースを ひらくよ）', img: 'fg_icon.webp', fb: ['思い出', '#1B1F4A', '#E2B33C', '#FFE6A0'], tap: function () { window.TengelFig.booth(); } });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

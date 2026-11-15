@@ -1146,7 +1146,7 @@ try:
         check(locks.count('🔒 1,000P') == 0 and locks.count('🔒 2,000P') == 6 and locks.count('🔒 3,000P') == 3 and locks.count('🔒 4,000P') == 4 and locks.count('🔒 7,000P') == 3 and locks.count('🔒 壁紙を5枚あつめると') == 1 and locks.count('🔒 壁紙を10枚あつめると') == 1 and locks.count('🔒 壁紙を15枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 0 and locks.count('🔒 壁紙パック') == NPK
               and '0/26枚（ポイント・壁紙パック。5・10・15枚で 帯の壁紙がミッションでもらえるよ）' in ks.inner_text(),
               '値段（9.1）：2,000P×6・3,000P×3（第4.160版：ネオンを 外した）・4,000P×4・7,000P×3（1,000Pの 壁紙は もう ない）・帯は 5・10・15枚・壁紙パック（買い切り）・解放した壁紙 0/26枚')
-        check(ks.locator('.kst[data-ks=sunset] .ksth').get_attribute('src') == 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_c1fccd55173e28903228b7256479cc32.webp',
+        check(ks.locator('.kst[data-ks=sunset] .ksth').get_attribute('src') == 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_1a751ea1ce289886fc010bcfa4df9bf7.webp',
               '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
         # 招き馬（7,000P・いま 7,000P）→ タップした タイルの 中（カギの 下）に 確認が出る（第4.64版：前は 一覧の 上の 帯）→ やめる。
         # 2,000P 使ったあと（5,000P）だと「Pが足りないよ」と「ポイントを買う」

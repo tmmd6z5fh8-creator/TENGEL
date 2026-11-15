@@ -3,6 +3,8 @@
 //     （11/09 13:04 まさちゃん「右下にうかぶ丸ボタン」→ 11/10 09:45「右上の赤丸の場所にして！」→ 11/10 11:32「アイコンが壁紙と重なってるから、右下に移動して！」
 //       ・11/10 09:57「トレーニングセンターのアイコンこれにして！」「アイコンの下に、トレーニングセンター、思い出フィギュア、って壁紙に合う文字で」）
 //     その 下に 思い出フィギュアの ボタン（fig/fig_launch.js が ここの TengelFab.add で 入れる：同じ 列 #fabCol・上から トレーニングセンター → 思い出フィギュア）
+//     第4.176版（11/16 00:47 まさちゃん「トレーニングセンターを一番上、カードバトルを思い出フィギュアの上にして ①トレーニングセンター ②推し馬 ③カードバトル ④思い出フィギュア」）：
+//       列の 順＝上から トレーニングセンター（#tcFab）→ 推し馬（#oshiFab）→ カードバトル（#cbFab：cb/cb_launch.js）→ 思い出フィギュア（#figFab：fig/fig_launch.js）
 //     第4.165版（11/13 12:47「推し馬はすぐに確認できるように、トレーニングセンターと思い出フィギュアのアイコンのところの1番上に配置して！推し馬のアイコンをタップしたら、
 //       推し馬の欄に飛ぶように設定して！」）：列の 1番 上に 推し馬の ボタン（#oshiFab・まさちゃんの 絵 tc_icon_oshi.webp）→ 押すと 作戦会議を 開いて「推し馬」の 欄へ（planOpen({ oshi: true })）
 //   ・作戦会議の 通知（tengel.plan）：src.html の syncNotify が TCPlanNotify() を いっしょに 入れる（アプリの 中から 出す お知らせ）
@@ -89,10 +91,11 @@
     });
     return out;
   };
-  // ---------- 右下の 丸い ボタンの 列（#fabCol）：上から 推し馬（#oshiFab：第4.165版）→ トレーニングセンター（#tcFab）→ 思い出フィギュア（#figFab：fig/fig_launch.js が TengelFab.add で 入れる）----------
+  // ---------- 右下の 丸い ボタンの 列（#fabCol）：上から トレーニングセンター（#tcFab）→ 推し馬（#oshiFab：第4.165版）→ カードバトル（#cbFab：第4.176版・cb/cb_launch.js）→ 思い出フィギュア（#figFab：fig/fig_launch.js）。
+  //            あとの 2つは TengelFab.add で 入れる。順（order）は 第4.176版（まさちゃん 2026/11/16 00:47）から：前は 推し馬 → トレーニングセンター → 思い出フィギュア ----------
   //   ・場所：下の タブの すぐ 上・右はし（画面に 固定）。11/10 09:45「右上の赤丸の場所にして！」で 上の 帯の すぐ 下に した（第4.138版）が、
   //     判定タブで 壁紙の 上の絵に 重なる → 11:32「アイコンが壁紙と重なってるから、右下に移動して！」で 右下へ（第4.139版）
-  //   ・ボタン＝丸い 絵（66px）＋ その 下の 名前の 札（.fabl・2行）。押せる のは 絵と 札だけ（まわりの すきまは 下の 画面に とどく）
+  //   ・ボタン＝丸い 絵（66px まで：第4.176版から 画面に 合わせて 小さく する。下の fabFit）＋ その 下の 名前の 札（.fabl・2行）。押せる のは 絵と 札だけ（まわりの すきまは 下の 画面に とどく）
   //   ・名前の 字（11/10 09:57 まさちゃん「壁紙に合う文字で」「文字の太さや字体は自然に馴染むように」）：
   //     字体＝いまの 壁紙（着せ替え）の 本文の 字（--font-body：どの 壁紙でも かな と「思い出」が 入って いる。見出しの 字 --font-display は しぼって あって 漢字が ない）・
   //     太さ＝下の タブの 名前と 同じ 700・札の 色＝上の 帯と 同じ（地 --night・字 --night-ink・ふちの 線 --lamp）：壁紙を かえると 帯と いっしょに かわる。
@@ -103,38 +106,96 @@
   //     判定タブの 下の 帯（#minibar：判定の 要点・押すと 結果へ）の ぶん、列は いつも 上に あけて おく（place：帯の 字を かくさない）。
   //       第4.168版（まさちゃん 2026/11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：
   //       前は 帯が 出て いる あいだ だけ 上へ 上げて いた ＝ 画面を 上下に 動かして 帯が 出たり 消えたり する たびに 列が 上下に 動いて いた → どの タブでも いつも 同じ 所・
+  //       第4.176版（まさちゃん 2026/11/16 01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」）：たてに 1列の ときは 列を 下の タブの すぐ 上まで 下げる
+  //       （帯の 上に あけて いた 40px ほどの 空間を なくす）。帯は 列の 手前で 終わる ように 右を ちぢめる（--fabm：帯が 出ても 消えても 列は 動かない・帯の 字は かくれない）・
   //     買い目編集の「保存する」の 帯（.zsave.sticky：変更が ある あいだ 下に はりつく）は 右を ちぢめて 列の 手前で 終わる（--fabz）
   var MINI_B = 58, MINI_H = 40;            // 下の 帯（#minibar）：画面の 下からの 場所（src.html：bottom:calc(58px + var(--sab,0px))）・高さ（どの 壁紙でも 39.2px → 40。test_tc.py が 測る）
   function fabCol() {
     var c = document.getElementById('fabCol'); if (c) return c;
     var st = document.createElement('style'); st.id = 'fabColCss';
-    st.textContent = '#fabCol{position:fixed;right:4px;bottom:calc(104px + var(--sab,0px));z-index:29;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}'
+    // 第4.176版：ボタンが 4つに なった（カードバトルが 入った）。前の 大きさ（丸 66px）の まま たてに 4つ ならべると 352px で、どの iPhone でも 列の 上が 判定タブの 右上の
+    //   「作戦会議」「壁紙&ボード着せ替え」に 重なる（アプリの 画面の 高さ＝iPhone の 高さ − 上の 時計の 帯。下は ホームバーの ぶん あける：390×844 の iPhone で、着せ替えの ボタンの 下から 使える 高さは 約240px）。
+    //   → まさちゃん 2026/11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」：**たてに 4つの まま、丸の 大きさ（--fd）を 画面に 合わせて 決める**（下の fabFit：66px から 1px ずつ 小さく して、
+    //     着せ替えの ボタンの 下に おさまる いちばん 大きい 大きさ。名前の 字・札も 丸に 合わせて 小さく なる）。丸を 36px に しても たてに おさまらない 画面（iPhone SE など）だけ 2列 × 2段（.g2：
+    //     順の とおりに 左の 列の 上 → 下、右の 列の 上 → 下 ＝ 左：トレーニングセンター・推し馬／右：カードバトル・思い出フィギュア）
+    //   → 01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」：列の 下を 下の タブの すぐ 上に して（下の place）、「壁紙&ボード着せ替え」の すぐ 下 〜 下の タブの すぐ 上 を
+    //     4つで ぴったり うめる（丸は その ぶん 大きく なる：390×844 の iPhone で 46px → 53〜58px）。判定の 帯（#minibar）は 列の 手前で 終わる（右の あき --fabm：下の clear が 入れる）
+    st.textContent = '#fabCol{position:fixed;right:4px;bottom:calc(69px + var(--sab,0px));z-index:29;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;--fd:66px}'
+      + '#fabCol.g2{display:grid;grid-template-rows:auto auto;grid-auto-flow:column;justify-items:center;align-items:start}'
       + '#fabCol>button{pointer-events:none;display:flex;flex-direction:column;align-items:center;border:0;padding:0;margin:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;transition:transform .15s}'
       + '#fabCol>button:active{transform:scale(.94)}#fabCol>button:disabled{opacity:.7}'
-      + '#fabCol .fabi{pointer-events:auto;cursor:pointer;display:block;width:66px;height:66px;border-radius:50%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}'
+      + '#fabCol .fabi{pointer-events:auto;cursor:pointer;display:block;width:var(--fd);height:var(--fd);border-radius:50%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}'
       + '#fabCol .fabi img{width:100%;height:100%;display:block;pointer-events:none}'
-      + '#fabCol .fabt{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;box-sizing:border-box;border:4px solid;font:400 12px/1.15 var(--font-display,sans-serif);text-align:center}'
-      + '#fabCol .fabl{pointer-events:auto;cursor:pointer;position:relative;display:block;box-sizing:border-box;min-width:64px;margin-top:-7px;padding:2px 6px 2.5px;border-radius:9px;border:1px solid var(--lamp);background:var(--night);color:var(--night-ink);'
-      + 'font-family:var(--font-body);font-weight:700;font-size:9.5px;line-height:11px;letter-spacing:-.01em;text-align:center;white-space:pre;box-shadow:0 1px 3px rgba(0,0,0,.25)}'
-      + '.zsave.sticky{margin-right:var(--fabz,0px)}';
+      + '#fabCol .fabt{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;box-sizing:border-box;border:4px solid;font:400 12px/1.15 var(--font-display,sans-serif);font-size:calc(var(--fd) * .182);text-align:center}'
+      + '#fabCol .fabl{pointer-events:auto;cursor:pointer;position:relative;display:block;box-sizing:border-box;min-width:calc(var(--fd) - 2px);margin-top:-8px;padding:.2em .6em .26em;border-radius:9px;border:1px solid var(--lamp);background:var(--night);color:var(--night-ink);'
+      + 'font-family:var(--font-body);font-weight:700;font-size:clamp(7px,calc(var(--fd) * .144),9.5px);line-height:1.16;letter-spacing:-.01em;text-align:center;white-space:pre;box-shadow:0 1px 3px rgba(0,0,0,.25)}'
+      + '.zsave.sticky{margin-right:var(--fabz,0px)}'
+      + '#minibar{padding-right:var(--fabm,12px)}'       // 判定の 帯：右の あき（もとは 12px）を 列の 手前まで 広げる ＝ 帯（まん中に よせた 丸い 札）は 列に かからない。字が 入らない ぶんは「…」
+      // ちぢめた とき（.fabn：下の clear が つける）は 少し つめる（左の あき 12 → 6px・中の すきま 10 → 6px・字 13 → 12px）：そのままだと A層・B層の 2本の ゾーン
+      //   （「8R 第1 中穴→人気・第2 人気→大穴」）が 幅 390px の iPhone で 20〜29px 入らず「…」に なる（測った：30この 壁紙 ぜんぶ）→ つめると 幅 375・390・402・430px とも 入る
+      + '#minibar.fabn{padding-left:6px}#minibar.fabn button{gap:6px;padding:7px 5px 7px 6px;font-size:12px}#minibar.fabn .go{padding-right:4px}';
     document.head.appendChild(st);
     c = document.createElement('div'); c.id = 'fabCol'; document.body.appendChild(c);
-    // 場所（第4.168版）：判定タブの 下の 帯（#minibar）が 出る 所の すぐ 上（6px）に いつも いる ＝ 帯が 出ても 消えても・どの タブでも 動かない。
-    //   帯は 画面の 下から MINI_B（＋下の 安全な 余白 --sab）の 所に 高さ MINI_H で 出る（src.html の .minibar：下の タブの 高さは 壁紙で 61〜69px と かわるが、帯の 場所は かわらない）。
-    //   帯が それより 上まで 来た とき（字を 大きく して いる など）だけ、その ぶん 上へ（_min：もどさない ＝ 行ったり 来たり しない）。下の タブが ない 画面（横に 広い 画面）は 画面の 下から 10px
+    // 場所：列の 下は 2とおり（どちらに するかは fabFit が 決める。どちらも 帯が 出ても 消えても・どの タブでも・画面を 上下に 動かしても 動かない）
+    //   ・たてに 1列（_b1：第4.176版）：下の タブの すぐ 上（FAB_B）。下の タブの 高さは 壁紙で 61〜69px と かわる ので 測る
+    //   ・2列 × 2段（_b2：たての 短い 画面。第4.168版の 場所の まま）：判定タブの 下の 帯（#minibar）が 出る 所の すぐ 上（6px）。帯は 画面の 下から MINI_B（＋下の 安全な 余白 --sab）の 所に
+    //     高さ MINI_H で 出る。帯が それより 上まで 来た とき（字を 大きく して いる など）だけ、その ぶん 上へ（_min：もどさない ＝ 行ったり 来たり しない）。かたまりが 広い ので 帯は ちぢめない
+    //   下の タブが ない 画面（横に 広い 画面）は 画面の 下から 10px
     var place = function () {
       var tb = document.querySelector('.tabbar'), r = tb ? tb.getBoundingClientRect() : null;
       var h = r && r.height && getComputedStyle(tb).display !== 'none' ? r.height : 0;
       var mb = document.getElementById('minibar'), q = mb && !mb.hidden ? mb.getBoundingClientRect() : null;
       if (q && q.height) c._min = Math.max(c._min || 0, window.innerHeight - q.top + 6);
-      c.style.bottom = h ? 'max(calc(' + (MINI_B + MINI_H + 6) + 'px + var(--sab,0px)),' + (c._min || 0).toFixed(2) + 'px)' : 'calc(10px + env(safe-area-inset-bottom))';
-      clear();
+      var wide = 'calc(10px + env(safe-area-inset-bottom))';
+      // 下の タブの 高さの うち、下の 安全な 余白（--sab：タブの 下の あき）の ぶんは CSS に まかせる ＝ アプリが あとから 余白を 知らせて も そのまま ついて いく
+      var pad = h ? parseFloat(getComputedStyle(tb).paddingBottom) || 0 : 0;
+      c._b1 = h ? 'calc(' + (Math.round((window.innerHeight - r.top - pad + FAB_B) * 10) / 10) + 'px + var(--sab,0px))' : wide;
+      c._b2 = h ? 'max(calc(' + (MINI_B + MINI_H + 6) + 'px + var(--sab,0px)),' + (c._min || 0).toFixed(2) + 'px)' : wide;
+      var b = c.classList.contains('g2') ? c._b2 : c._b1; if (c.style.bottom !== b) c.style.bottom = b;
+      fitAsk();
     };
     place(); window.addEventListener('resize', place); setTimeout(place, 400); setTimeout(place, 1500);
-    try { if (window.ResizeObserver) { var ro = new ResizeObserver(place), tb = document.querySelector('.tabbar'), mb = document.getElementById('minibar'); ro.observe(c); if (tb) ro.observe(tb); if (mb) ro.observe(mb); } } catch (e) { /* なし */ }
+    fitHold(2000);                                                          // はじめの 2秒：壁紙の 字が 読める まで 上の 帯の 高さが 動く → 落ち着いて から 決め直す
+    try { if (window.ResizeObserver) { var ro = new ResizeObserver(place), tb = document.querySelector('.tabbar'), mb = document.getElementById('minibar'); ro.observe(c); if (tb) { try { ro.observe(tb, { box: 'border-box' }); } catch (e2) { ro.observe(tb); } } if (mb) ro.observe(mb); } } catch (e) { /* なし */ }      // 下の タブ：下の あき（余白）が かわった ときも 知る（border-box）
     try { var mb2 = document.getElementById('minibar'); if (mb2 && window.MutationObserver) new MutationObserver(place).observe(mb2, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] }); } catch (e) { /* なし */ }
     return c;
   }
+  // 丸の 大きさを 決める（第4.176版）：判定タブの 右上の「壁紙&ボード着せ替え」の ボタンの すぐ 下（FD_PAD）から 列の 下（下の タブの すぐ 上）まで を、4つで ぴったり うめる
+  //   ＝ おさまる いちばん 大きい 丸（もとの 大きさ 66px まで・36px から。名前の 字・札も 丸に 合わせて かわる）。高さは じっさいに ならべて 測る（名前が 1行・2行の ボタンが ある ので 計算 しない）。
+  //   ・着せ替えの ボタンの 下の 場所（_kb）：判定タブが 出て いる ときに 測って 覚える（ほかの タブでは ボタンは かくれて いる → 覚えた 場所を 使う ＝ どの タブでも 同じ 大きさ）。
+  //     壁紙で かわる（上の 帯と 上の絵が 高い 壁紙ほど 下）ので、壁紙を かえると 丸の 大きさも 少し かわる。まだ 測って いない あいだは、いちばん 下に 来る 壁紙（星座）の 場所：
+  //     画面の 幅 375px で 上から 409px・幅が 1px 広い ごとに 0.44px 下（測った 数：幅 320→384.5・375→407.5・390→414.5・402→420.5・414→425.5・430→431.5・440→435.5）
+  //   ・36px でも たてに おさまらない 画面（iPhone SE で 壁紙の 上の絵が ある とき など）は 2列 × 2段（.g2：場所は 判定の 帯の 上＝_b2）で 同じ ように さがす
+  //   ・壁紙を かえた すぐ あと・はじめ は 決め直さない（fitHold）：新しい 字が 読める まで 上の 帯が いっとき 高く なって、着せ替えの ボタンも 0.15秒 ほど 30px 下へ 行く
+  //     （ためした：それを 拾うと 丸が いっとき 小さく なる）→ 落ち着いて から 1回 だけ 決め直す
+  var FD_MAX = 66, FD_MIN = 36, FD_PAD = 4, FAB_B = 4, holdUntil = 0, holdT = 0;
+  function fabFit(c) {
+    var n = c.children.length; if (!n) return;
+    var root = document.documentElement, vw = root.clientWidth || window.innerWidth, cr = c.getBoundingClientRect();
+    if (!(cr.width > 0 && cr.height > 0)) return;                          // 列が 出て いない（かくして いる）：出た ときに 決める
+    var k = kiseB, kr = k ? k.getBoundingClientRect() : null;
+    if (kr && kr.height > 0 && kr.bottom > 0) c._kb = Math.round(kr.bottom * 2) / 2;
+    var top = (c._kb || 409 + 0.44 * (vw - 375)) + FD_PAD;                 // 列の 上は ここより 下
+    var key = [n, vw, window.innerHeight, top, c._b1, c._b2, Math.round(cr.bottom * 2) / 2].join(':'); if (c._fit === key) return;
+    var set = function (d, g2) {
+      c.classList.toggle('g2', !!g2); var b = g2 ? c._b2 : c._b1; if (b && c.style.bottom !== b) c.style.bottom = b;
+      c.style.setProperty('--fd', d + 'px'); return c.getBoundingClientRect().top;
+    };
+    var d;
+    var done = function () { c._fit = [n, vw, window.innerHeight, top, c._b1, c._b2, Math.round(c.getBoundingClientRect().bottom * 2) / 2].join(':'); };      // 決めた あとの 列の 下も 覚える（下の 余白が かわったら 決め直す）
+    for (d = FD_MAX; d >= FD_MIN; d--) if (set(d, false) >= top) return done();
+    for (d = FD_MAX; d >= FD_MIN; d--) if (set(d, true) >= top) return done();
+    set(FD_MIN, true); done();
+  }
+  // 大きさを 決め直して ほしい（場所が かわった・着せ替えの ボタンを 置いた）：ふだんは すぐ。fitHold の あいだは おわって から 1回
+  function fitAsk() {
+    var c = document.getElementById('fabCol'); if (!c) return;
+    clearTimeout(holdT); holdT = 0;
+    var left = holdUntil - Date.now();
+    if (c._fit && left > 0) { holdT = setTimeout(fitAsk, left + 40); return; }
+    fabFit(c); clear();
+  }
+  function fitHold(ms) { holdUntil = Math.max(holdUntil, Date.now() + ms); fitAsk(); }
   // 列の 下に かくれた ままに ならない ように：main の 下の 余白（列の 高さの ぶん）・保存の 帯の 右の あき
   //   余白は 列の いまの 場所（下の 帯の すぐ 上：いつも 同じ）で 数える
   var GAP = 6;
@@ -144,6 +205,9 @@
     var on = r.height > 0;
     var fz = on ? Math.max(0, Math.ceil(vw - 16 - 17 - r.left + GAP)) : 0;                      // 保存の 帯（カードの 中：右はし＝画面の 右から 16＋17）を ちぢめる はば
     if (root.style.getPropertyValue('--fabz') !== fz + 'px') root.style.setProperty('--fabz', fz + 'px');
+    var fm = on && !c.classList.contains('g2') ? Math.max(12, Math.ceil(vw - r.left + GAP)) : 12;      // 判定の 帯（#minibar）の 右の あき：たてに 1列の とき、列の 手前（6px）で 終わる。2列 × 2段は 帯の 上に ある ので もとの まま
+    if (root.style.getPropertyValue('--fabm') !== fm + 'px') root.style.setProperty('--fabm', fm + 'px');
+    var mbar = document.getElementById('minibar'); if (mbar && mbar.classList.contains('fabn') !== (fm > 12)) mbar.classList.toggle('fabn', fm > 12);
     if (mn) { var pb = on ? Math.ceil(vh - r.top + GAP + 2) + 'px' : ''; if (mn.style.paddingBottom !== pb) mn.style.paddingBottom = pb; }      // 第4.168版：列は 動かない ので、いまの 場所を そのまま 測る
   }
   // ボタンを 1つ 足す：o＝{ id, order（上からの 順）, name（下に 出す 名前：行ごと）, aria, img（絵）, fb（絵が ない ときの 丸：[字, 地, ふち, 字の 色]）, tap }
@@ -158,10 +222,10 @@
     im.src = o.img; i.appendChild(im); b.appendChild(i);
     var l = document.createElement('span'); l.className = 'fabl'; l.textContent = o.name.join('\n'); b.appendChild(l);
     b.addEventListener('click', function () { if (!b.disabled) o.tap(); });
-    fabCol().appendChild(b); clear();
+    var c = fabCol(); c.appendChild(b); c._fit = ''; fabFit(c); clear();      // ボタンが ふえた：大きさを 決め直す
     return b;
   }
-  window.TengelFab = { add: fabAdd };
+  window.TengelFab = { add: fabAdd, busy: function () { return !!holdT; } };      // busy：大きさを 決め直すのを 待って いる（テストが 落ち着くのを 待つ ため）
   var fab = null, loading = null;
   // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ（下の 黒い 札）
   function note(m) { try { var t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(function () { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } }
@@ -175,6 +239,9 @@
     return load().then(function () { return window.TCApp.open(opt); }).catch(function () { note('トレーニングセンターを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
   }
   window.TCOpen = open;
+  // 第4.176版：馬カードバトルの ごほうび（cb/cb_app.js）：お世話トークンを n こ わたす → Promise<{ add（わたせた 数）, stock, max }>（読みこめない ときは null）。
+  //   トークンの 数え方（時間で たまる・25こ まで）は tc_app.js に ある ので、バンドルを 読んで から TCApp.tokens.give に まかせる（画面は 開かない）
+  window.TCGift = function (n) { return load().then(function () { return window.TCApp.tokens.give(n); }).catch(function () { return null; }); };
   // ---------- 作戦会議の 入口：判定タブの「レース情報」の カードの 右上（第4.160版・まさちゃん 11/12 14:58「作戦会議は、1番左の項目判定のページでも開けるようにして！アイコンは右上に設置して！」）----------
   //   ・絵は トレーニングセンターの 作戦会議の 札と 同じ（tc_icon_plan.webp：500×200 の 中に 札が 468×141）。絵の 大きさ 118×47 ＝ 見える 札 110×33・押せる 所は 絵 ぜんぶ（高さ 47）
   //   ・場所（第4.165版・11/13 13:55「赤枠の作戦会議のアイコンを青四角のあたりに設置して！」）＝ カードの 右上の かど：
@@ -258,6 +325,7 @@
     // ---- 「壁紙&ボード着せ替え」の ボタン：作戦会議の 札の すぐ 下（右はしは 札と 同じ）----
     px(k, 'top', top + (inkB - inkT) + KISE_UNDER); px(k, 'right', rgt);
     slotFit(card, k, cr.right - br - (parseFloat(cs.paddingRight) || 0), sy);
+    fitAsk();                                                                                                // 第4.176版：右下の 丸い ボタンの 大きさ（この ボタンの すぐ 下から うめる）
   }
   // 判定タブが 出て いる あいだ だけ 出す（ボタンは body の 下に ある ので、タブを かえたら 自分で かくす）
   function dockSync() {
@@ -387,13 +455,13 @@
     setTimeout(kiseJump, 0); setTimeout(kiseJump, 1500);
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(planPlace); } catch (e) { /* なし */ }
     try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', planPlace); } catch (e) { /* なし */ }      // 壁紙の 字が あとから 読めた（チップの 幅が かわる）
-    try { if (window.MutationObserver) new MutationObserver(function () { planPlace(); setTimeout(planPlace, 300); setTimeout(planPlace, 1200); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-ks'] }); } catch (e) { /* なし */ }      // 壁紙を かえた
+    try { if (window.MutationObserver) new MutationObserver(function () { fitHold(1500); planPlace(); setTimeout(planPlace, 300); setTimeout(planPlace, 1200); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-ks'] }); } catch (e) { /* なし */ }      // 壁紙を かえた
   }
   function boot() {
     if (document.getElementById('tcFab')) return;
-    // 第4.165版：推し馬（列の 1番 上）→ 作戦会議の「推し馬」の 欄を すぐ 開く
-    oshiB = fabAdd({ id: 'oshiFab', order: 0, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を ひらくよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen({ oshi: true }); } });
-    fab = fabAdd({ id: 'tcFab', order: 1, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと ひらくよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
+    // 第4.165版：推し馬 → 作戦会議の「推し馬」の 欄を すぐ 開く。順（order）：第4.176版から トレーニングセンター 0 → 推し馬 1 → カードバトル 2 → 思い出フィギュア 3
+    oshiB = fabAdd({ id: 'oshiFab', order: 1, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を ひらくよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen({ oshi: true }); } });
+    fab = fabAdd({ id: 'tcFab', order: 0, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと ひらくよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
     planBoot();
   }
   // 通知を 押した（作戦会議）→ トレーニングセンターの 作戦会議を 開く

@@ -59,7 +59,11 @@ assert sorted(ORDER) == sorted(BY_ID), set(ORDER) ^ set(BY_ID)
 OLD_DESC = dict(default='紺と金', ranch='黄緑・芝と馬', cute='ピンク・リボン', kids='ぬいぐるみ', gold='金ピカ・ゴージャス')
 T20_BY = {t['id']: t for t in T20}
 BLOBS20 = json.load(open(os.path.join(K, 'blobs20.json')))
-THUMB_DEFAULT = 'c1fccd55173e28903228b7256479cc32'      # いつもの の 小さな絵（見本の 選ぶ画面と同じ）
+# 第4.176版（まさちゃん 2026/11/16 01:26「いつもの(デフォルト)壁紙これにして！ バージョン2.1完全自動分析エンジンの文字だけ消して！」）：いつもの の 壁紙＝まさちゃんの TENGER の 絵
+#   （kisekae/default_wall.py が ios/wall_src/default_tenger.jpg から 作る・1170×480）。判定タブの 上の絵（動かない 1まい：一覧の bnr → kisekae.js）と 選ぶ 画面の 小さな絵の 両方に 使う
+DEFAULT_WALL = '1a751ea1ce289886fc010bcfa4df9bf7'
+DEFAULT_WALL_ALT = 'TENGER（テンゲル）の 絵'
+THUMB_DEFAULT = DEFAULT_WALL      # いつもの の 小さな絵。前は 'c1fccd55173e28903228b7256479cc32'（エンブレム だけの 160×160：見本の 選ぶ画面と同じ）
 BANNER_SVG = dict(ranch='banner_ranch.svg', cute='banner_cute.svg', kids='banner_kids.svg', gold='banner_gold.svg')   # 定番4の 止まった絵（kisekae/svg・リポジトリにある）
 # 子供向けの 上の帯の もよう（キャンバスの 小さな SVG。中身は 文字なので ここに持つ：絵のファイルにしない）
 KIDS_HD_SVG = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10' width='12' height='10'><rect width='12' height='10' fill='#FFF3B8'/>"
@@ -374,6 +378,8 @@ def theme_list():
                 thumb = asset_name(BLOBS20[tid])
             row = dict(id=tid, name=name, desc=desc, group=gname, price=PRICE.get(tid, 0), band=BAND.get(tid, 0), dark=is_dark(t), thumb=thumb,
                        alt=(t20['alt'] if t20 else ''), fonts=[t['v']['font'].strip('"'), t['v']['dfont'].strip('"')], pc=push_code(tid))
+            if tid == 'default':
+                row['bnr'] = asset_name(DEFAULT_WALL); row['balt'] = DEFAULT_WALL_ALT      # 第4.176版：いつもの の 上の絵（動かない 1まい。ほかの テーマの 上の絵は ks_<id>.json の bnr）
             if tid in PK.IDS:
                 row['pack'] = PK.ORDER.index(tid) + 1          # 壁紙パックの 解放の 順（1〜10：読み込み 5レースごと）
             pa = push_art().get(tid)

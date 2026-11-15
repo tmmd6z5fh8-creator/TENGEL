@@ -5,6 +5,8 @@
 //     第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオンも 外した ＝ 31 → 30テーマ（ポイントの 17 → 16枚・帯は 5・10・16 → 5・10・15枚）。同じ しくみで「いつもの」に もどして ポイントを 返す
 //     解放して いた ぶんの ポイント・チケットは points_ui.js の goneBack が 返す
 //   テーマは 色・字・形（CSS の変数：html[data-ks=<id>]）・判定タブの上の絵（見本と同じ 動く壁紙：#ksBnr）・的中の PUSH と 結果のボード（fx.js が TengelKisekae.fx() で読む）。
+//     第4.176版（まさちゃん 2026/11/16 01:26「いつもの(デフォルト)壁紙これにして！」）：「いつもの」にも 上の絵（まさちゃんの TENGER の 絵・動かない 1まい：一覧の bnr＝ファイル名。
+//     kisekae/default_wall.py・build_kisekae.py の DEFAULT_WALL）。色・字・PUSH・ボードは 前の まま。絵が 読めない（絵を 入れて いない CI など）ときは 上の絵なし（前と 同じ）
 //   見本（kisekae/themes20.py・boards.py・gen_fx.py・mock/）の CSS と HTML は kisekae/build_kisekae.py が束ねる：小さい分は window.__KS、テーマごとの大きい分は ks_<id>.json（選んだときに 1回だけ読む）。
 //   選んだテーマは端末に保存（localStorage＝起動の瞬間から・設定の DB にも）。解放したかどうかは ポイントの台帳（unlock-theme:<id>・TengelWallet）。
 //   「視差効果を減らす」か 設定の「演出を控えめにする」なら 壁紙は止まった絵（CSS の @media と .calm）。判定タブが見えていない間は 動きを止める（.pause ※仮）。
@@ -78,10 +80,14 @@
     if (!isFinite(k) || k <= 0) k = 1; if (Math.abs(k - 1) < .01) k = 1;
     b.style.setProperty('--ksk', k.toFixed(4));
   }
+  // いつもの の 上の絵（第4.176版）：動かない 1まいの 絵。読めない ときは 上の絵を かくす（下の paintBnr）
+  const DEF = (() => { const t = byId.default; return t && t.bnr ? { id: 'default', bnr: { html: `<img class="bnr ksdf" src="${esc(t.bnr)}" alt="${esc(t.balt || '')}" decoding="async">`, css: '' } } : null; })();
   function paintBnr(p) {
     const b = bnrBox(); if (!b) return;
     const stage = $('.ksb', b);
     if (p && p.bnr && p.bnr.html) { stage.innerHTML = p.bnr.html; b.hidden = false; fitBnr(); } else { stage.innerHTML = ''; b.hidden = true; }
+    const df = $('img.ksdf', stage);
+    if (df) { const bad = () => { if (stage.contains(df)) { stage.innerHTML = ''; b.hidden = true; } }; df.addEventListener('error', bad); if (df.complete && !df.naturalWidth) bad(); }
     motion();
     if (!b.hidden) phaseSoon();
   }
@@ -157,7 +163,7 @@
     const p = await my;
     if (loading !== my || curId !== id) return;      // 途中で別のテーマにかわった
     payload = p;
-    themeStyle(id === 'default' ? null : p); paintBnr(id === 'default' ? null : p);
+    themeStyle(id === 'default' ? null : p); paintBnr(id === 'default' ? DEF : p);
     paint(); emit('apply');
   }
   // ---------- PUSHボタンの 絵（第4.148版・まさちゃん 2026/11/10 20:36「（画像は1枚だけもらって、「光る・へこむ・はじける」はコードで動かす）これがいいかも！」）----------

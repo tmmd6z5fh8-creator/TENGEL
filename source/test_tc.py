@@ -167,16 +167,23 @@ try:
           if (!h || !t || !col || !f || !l || !i) return null; const R = e => e.getBoundingClientRect(), a = R(h), c = R(f), q = R(l), ii = R(i), cs = getComputedStyle(l), cc = R(col), bn = document.getElementById('ksBnr');
           return { hb: a.bottom, top: c.top, left: c.left, right: c.right, bottom: c.bottom, tab: R(t).top, ct: cc.top, cb: cc.bottom, cl: cc.left, cr: cc.right, name: l.textContent, lt: q.top, lb: q.bottom, lw: q.width, lh: q.height, ib: ii.bottom, iw: ii.width, ih: ii.height,
             ff: cs.fontFamily, fw: cs.fontWeight, fs: cs.fontSize, bg: cs.backgroundImage + cs.backgroundColor, ink: cs.color, line: cs.borderTopColor, order: getComputedStyle(f).order, bnb: bn && !bn.hidden ? R(bn).bottom : 0,
-            oshi: (() => { const o = document.querySelector('#oshiFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent]; })() }; }"""
+            oshi: (() => { const o = document.querySelector('#oshiFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })(),
+            cbf: (() => { const o = document.querySelector('#cbFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })() }; }"""
         #   第4.168版（まさちゃん 11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：列は いつも 同じ 所
         #   ＝判定の 帯（#minibar）が 出る 高さの すぐ 上（下の タブから 約43px 上）。前は 帯が 出ると 上へ・消えると 下へ 動いた（ページを 送ると 帯が 出たり 消えたり する）
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(500)
         pos = pg.evaluate(POS)
         #   第4.165版（11/13 12:47「推し馬は…トレーニングセンターと思い出フィギュアのアイコンのところの1番上に配置して！」）：列の いちばん 上は 推し馬・その 下が トレーニングセンター
-        check(pos is not None and 40 <= pos['tab'] - pos['cb'] <= 50 and pos['cr'] <= 390 and pos['cl'] >= 390 - 84 and pos['ct'] > pos['hb'] + 150 and pos['oshi'] is not None and pos['oshi'][0] == pos['ct']
-              and pos['oshi'][1] <= pos['top'] + 0.5 and [pos['oshi'][2], pos['order']] == ['0', '1'] and pos['oshi'][3] == '推し馬',
-              f'ボタンの 列は 下の タブの 上（判定の 帯が 出る 高さの すぐ 上：下の タブから {pos and round(pos["tab"] - pos["cb"])}px）・右はし（上の 帯からは はなれて いる）・いちばん 上が 推し馬・その 下が トレーニングセンター（{pos and [round(pos["ct"]), round(pos["cb"]), round(pos["tab"]), round(pos["cl"]), round(pos["cr"])]}）')
-        check(pos is not None and pos['name'] == 'トレーニング\nセンター' and pos['ib'] - 9 <= pos['lt'] <= pos['ib'] + 4 and abs(pos['iw'] - 66) < 1 and abs(pos['ih'] - 66) < 1 and 60 <= pos['lw'] <= 76 and 24 <= pos['lh'] <= 32
+        #   第4.176版：カードバトルが 入って 4つ。まさちゃん 11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」・00:47「トレーニングセンターを一番上、カードバトルを思い出フィギュアの上にして」
+        #     ＝ たてに 4つ（1列）：上から トレーニングセンター（列の 上）→ 推し馬 → カードバトル（→ 思い出フィギュア）・丸の 大きさは 画面に 合わせる（ここは 上の絵が ない ので もとの 66px）
+        #     01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」＝ 列の 下は 下の タブの すぐ 上（前は 判定の 帯の 上＝下の タブから 約43px 上）
+        mx = lambda a, b: (a + b) / 2
+        check(pos is not None and 3 <= pos['tab'] - pos['cb'] <= 6 and pos['cr'] <= 390 and pos['cl'] >= 390 - 4 - 76 and pos['ct'] > pos['hb'] + 150 and pos['oshi'] is not None and pos['cbf'] is not None and abs(pos['top'] - pos['ct']) <= 1
+              and pos['bottom'] <= pos['oshi'][0] + 0.5 and pos['oshi'][0] - pos['bottom'] <= 8 and pos['oshi'][1] <= pos['cbf'][0] + 0.5 and pos['cbf'][0] - pos['oshi'][1] <= 8
+              and abs(mx(pos['left'], pos['right']) - mx(pos['oshi'][4], pos['oshi'][5])) <= 2 and abs(mx(pos['left'], pos['right']) - mx(pos['cbf'][4], pos['cbf'][5])) <= 2 and abs(pos['right'] - pos['cr']) <= 4
+              and [pos['order'], pos['oshi'][2], pos['cbf'][2]] == ['0', '1', '2'] and pos['oshi'][3] == '推し馬' and pos['cbf'][3].replace('\n', '') == 'TENGERカードバトル',
+              f'ボタンの 列は 下の タブの すぐ 上（下の タブから {pos and round(pos["tab"] - pos["cb"])}px）・右はし（上の 帯からは はなれて いる）・たてに 1列（上から トレーニングセンター → 推し馬 → TENGERカードバトル）（{pos and [round(pos["ct"]), round(pos["cb"]), round(pos["tab"]), round(pos["cl"]), round(pos["cr"])]}）')
+        check(pos is not None and pos['name'] == 'トレーニング\nセンター' and pos['ib'] - 9 <= pos['lt'] <= pos['ib'] + 4 and abs(pos['iw'] - 66) < 1 and abs(pos['ih'] - 66) < 1 and 56 <= pos['lw'] <= 76 and 22 <= pos['lh'] <= 32
               and abs(pos['lb'] - pos['bottom']) < 1 and pos['right'] - pos['left'] <= 76,
               f'絵（66px）の 下に 名前の 札「トレーニング／センター」（2行・はば {pos and round(pos["lw"])}px＝絵と ほぼ 同じ はば・高さ {pos and round(pos["lh"])}px）')
         seen = []
@@ -217,16 +224,20 @@ try:
         check(all(e['atEnd'] and e['last'] <= e['ct'] + 0.5 and e['pb'] >= e['ch'] + 60 for e in ends),
               f'5つの タブ：いちばん 下まで スクロール すると さいごの 中身が 列の 上まで 上がる（main の 下の 余白 {round(ends[0]["pb"])}px ≧ 列の 高さ {round(ends[0]["ch"])}px＋下の タブ）{[[round(e["last"]), round(e["ct"])] for e in ends][:2]}')
         pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(450)
-        # 判定タブの 下の 帯（#minibar：判定の 要点）が 出て いる あいだは 列を その 上へ・消えると もどる
-        MB = """() => { const m = document.getElementById('minibar'), b = m.getBoundingClientRect(), c = document.querySelector('#fabCol').getBoundingClientRect(); return { mt: m.hidden ? null : b.top, cb: c.bottom, tab: document.querySelector('.tabbar').getBoundingClientRect().top, pb: document.querySelector('main').style.paddingBottom }; }"""
+        # 判定タブの 下の 帯（#minibar：判定の 要点）：出ても 消えても 列は 動かない。第4.176版から 列は 下の タブの すぐ 上（帯と 同じ 高さ）→ 帯は 列の 手前で 終わる（字は ぜんぶ 見える）
+        MB = """() => { const m = document.getElementById('minibar'), b = m.getBoundingClientRect(), c = document.querySelector('#fabCol').getBoundingClientRect(), pl = m.hidden ? null : m.querySelector('button').getBoundingClientRect(), z = m.querySelector('.mz');
+          return { mt: m.hidden ? null : b.top, mbot: m.hidden ? null : b.bottom, pr: pl ? pl.right : null, plft: pl ? pl.left : null, cl: c.left, ct: c.top, over: z && !m.hidden ? z.scrollWidth - z.clientWidth : null, fabn: m.classList.contains('fabn'), fs: pl ? getComputedStyle(m.querySelector('button')).fontSize : null,
+            cb: c.bottom, tab: document.querySelector('.tabbar').getBoundingClientRect().top, pb: document.querySelector('main').style.paddingBottom }; }"""
         pg.evaluate("() => { document.getElementById('minibar').hidden = true; }"); pg.wait_for_timeout(500)
         m0 = pg.evaluate(MB)
         pg.evaluate("() => { const m = document.getElementById('minibar'); if (!document.getElementById('miniBtn').innerHTML) document.getElementById('miniBtn').innerHTML = '<span class=\"lb LB\">B</span><span class=\"mz\">8R 第1 中穴→人気・第2 人気→大穴</span><span class=\"go\">判定へ↓</span>'; m.hidden = false; }"); pg.wait_for_timeout(500)
         m1 = pg.evaluate(MB)
         pg.evaluate("() => { document.getElementById('minibar').hidden = true; }"); pg.wait_for_timeout(500)
         m2 = pg.evaluate(MB)
-        check(m0['mt'] is None and 40 <= m0['tab'] - m0['cb'] <= 50 and m1['mt'] is not None and 2 <= m1['mt'] - m1['cb'] <= 10 and abs(m1['cb'] - m0['cb']) < 0.6 and abs(m2['cb'] - m0['cb']) < 0.6 and m1['pb'] == m0['pb'],
-              f'第4.168版：判定タブの 下の 帯（判定の 要点）が 出ても 消えても 列は 動かない（{round(m0["cb"])} → {round(m1["cb"])} → {round(m2["cb"])}）・帯は 列の すぐ 下に 出る（帯の 上 {m1["mt"] and round(m1["mt"])}・列の 下 {round(m1["cb"])}＝重ならない）・ページの 下の 余白は かわらない')
+        check(m0['mt'] is None and 3 <= m0['tab'] - m0['cb'] <= 6 and m1['mt'] is not None and abs(m1['cb'] - m0['cb']) < 0.6 and abs(m2['cb'] - m0['cb']) < 0.6 and m1['pb'] == m0['pb'],
+              f'第4.168版：判定タブの 下の 帯（判定の 要点）が 出ても 消えても 列は 動かない（{round(m0["cb"])} → {round(m1["cb"])} → {round(m2["cb"])}）・ページの 下の 余白は かわらない')
+        check(m1['mt'] is not None and m1['mt'] < m1['cb'] and m1['mbot'] > m1['ct'] and m1['pr'] <= m1['cl'] - 3 and m1['plft'] >= 4 and m1['over'] == 0 and m1['fabn'] and m1['fs'] == '12px',
+              f'第4.176版：列は 下の タブの すぐ 上まで ある（帯と 同じ 高さ）→ 帯は 列の 手前で 終わる（帯の 右 {m1["pr"] and round(m1["pr"])} ＜ 列の 左 {round(m1["cl"])}）・帯の 字は ぜんぶ 見える（はみ出し {m1["over"]}px・少し つめる：字 {m1["fs"]}）')
         # 買い目編集の 保存の 帯（変更が ある あいだ 下に はりつく）は 列の 手前で 終わる
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[4].click()"); pg.wait_for_timeout(500)
         zok = pg.evaluate("() => { const b = document.querySelector('.zrow [data-act=down]:not([disabled])'); if (!b) return false; b.scrollIntoView({ block: 'center' }); b.click(); return true; }"); pg.wait_for_timeout(600)

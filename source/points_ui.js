@@ -522,7 +522,7 @@
     } else if (ui.show === 'hist') {
       const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
       // 第4.139版：あずかりポイントから 補充した ぶん（from:'hold'）・届いた ときに あずけた ぶん（held）も わかる ように
-      const msLab = e => (/^(rel-)?back-theme:|^login-/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない（第4.168版：ログインボーナス login-<日付> も）
+      const msLab = e => (/^(rel-)?back-(theme|fig):|^login-/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない（第4.168版：ログインボーナス login-<日付> も）
       const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : msLab(e);
       const nm0 = e => e.kind === 'mission' ? msLab(e) : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
       const lab = e => e.from === 'hold' ? `あずかりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（ほかに ${pts(e.held)} は あずかり）` : `${nm0(e)}（${pts(e.held)} は あずかり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^(fig|tctok):/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` ほか${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
@@ -1138,13 +1138,35 @@
     }
     return { names: names, back: back, held: held, tickets: tk };
   }
+  // ---------- なくした フィギュアの デザインを 作って いた 人へ 返す（第4.176版・まさちゃん 2026/11/15 21:53「思い出フィギュアのスタンプボードと神様馬&幻の馬ボード消して！」→ 11/16 00:07「間違えた！ 思い出フィギュアは、スタンプボードと神様馬ボードと幻の馬ボードを消して！ 神様馬&幻の馬ボードは残して！」：points.js の FIG_GONE）----------
+  //   その フィギュアを 台帳から 外して（飾って いた 場所は 空き）、作った ときに 使った ポイントを 獲得ポイントで 返す（上限を こえる ぶんは あずかる）。
+  //   1体に 1回 だけ（台帳の back-fig:<フィギュアの id>）。フィギュアを 外すのと ポイントを 返すのは 同じ 保存（どちらか だけに ならない）
+  async function goneFigBack() {
+    if (!W || typeof P.goneFigs !== 'function') return null;
+    const list = P.goneFigs(W.figs.items, W.events, W.hold.map(h => String(h.id)));
+    if (!list.length) return null;
+    let back = 0, held = 0; const names = [];
+    list.forEach(g => {
+      if (!g.paid && g.cost > 0) {
+        const c = credit(P.rowEvent({ id: g.back, reward: g.cost, label: `なくなったフィギュア「${g.name}」のポイントを返した` }, Date.now()));
+        back += c.added + c.held; held += c.held;
+      }
+      if (names.indexOf(g.name) < 0) names.push(g.name);
+    });
+    const ids = new Set(list.map(g => g.id));
+    W.figs = figNorm({ items: W.figs.items.filter(x => !ids.has(x.id)), slots: W.figs.slots });
+    await save(); paintAll();
+    try { document.dispatchEvent(new CustomEvent('tengel:fig')); } catch (e) { /* なし */ }
+    toast(`なくなったフィギュア（${names.join('・')}）の ${pts(back)} を返したよ` + heldNote(held), 7000);
+    return { names: names, back: back, held: held, n: list.length };
+  }
   // tc_launch.js（TCInfo）は この ファイルの あとに 読まれる ので、ページを 読みおわって から。
   //   アプリを 開いた ときの 画面（#gate：html.gateon）が 出て いる あいだは 待つ（お知らせが その うしろで 消えない ように。2分 たっても 出て いたら 待たずに 返す）
   function goneBackSoon() {
     let tries = 0;
     const go = () => {
       if (document.documentElement.classList.contains('gateon') && tries++ < 400) { setTimeout(go, 300); return; }
-      goneBack().catch(() => { /* つぎに 開いた とき */ });
+      goneBack().catch(() => { /* つぎに 開いた とき */ }).then(() => goneFigBack()).catch(() => { /* つぎに 開いた とき */ });      // 第4.176版：なくした フィギュアの デザインも
     };
     const run = () => setTimeout(go, 600);
     if (document.readyState === 'complete') run(); else window.addEventListener('load', run, { once: true });
@@ -1184,6 +1206,7 @@
     // 第4.139版：あずかりポイント（上限を こえて 届いた ぶん）。hold＝{ total, paid_sub, paid_pack, free }・avail＝財布＋あずかり（上限まで：使えるかを 見る ときは これ）・refill＝補充
     hold: () => holdSum(), avail, refill,
     goneBack,      // 第4.147版：外した 壁紙の ポイント・チケットを 返す（起動の ときに 自分で よぶ・もう 返した ものは 何も しない）
+    goneFigBack,   // 第4.176版：なくした フィギュアの デザイン（番号 2・6・7）の フィギュアを 外して ポイントを 返す（同じく 起動の ときに 自分で よぶ）
     // 結果ボードカスタム（第4.91版・bcx.js が 使う）
     board: { info: boardInfo, active: boardActive, select: boardSelect, result: boardResult, buy: btn => buy(P.BOARD.product, btn), restore: btn => restore(btn),
       price: () => price(P.BOARD.product), products: () => loadProducts(false) },
@@ -1193,11 +1216,12 @@
     bundle: { owned: () => !!W && P.bundleOwned(W.events), offer: () => !!W && P.bundleOffer(W.events), buy: btn => buy(P.BUNDLE.product, btn), price: () => price(P.BUNDLE.product), products: () => loadProducts(false) },
     // 思い出フィギュア（第4.134版・fig/fig_app.js）：buy＝ポイントを 使って 作る（unlock-fig:<id>・slot を 渡せば そこに 飾る）・place＝飾る 場所（56こ）を 書く
     fig: {
-      items: () => (W ? JSON.parse(JSON.stringify(W.figs.items)) : []),
-      slots: () => (W ? W.figs.slots.slice() : Array(FIG_SLOTS).fill(null)),
+      // 第4.176版：なくした デザイン（points.js の FIG_GONE）の フィギュアは 渡さない（ポイントを 返して 台帳から 外す 前でも）
+      items: () => (W ? JSON.parse(JSON.stringify(W.figs.items.filter(x => !P.figGone(x.n)))) : []),
+      slots: () => { if (!W) return Array(FIG_SLOTS).fill(null); const gone = new Set(W.figs.items.filter(x => P.figGone(x.n)).map(x => x.id)); return W.figs.slots.map(v => (v && gone.has(v) ? null : v)); },
       buy: async (item, cost, slot) => {
         await walletReady;
-        if (!item || typeof item.id !== 'string' || !item.id || !(+item.n >= 1 && +item.n <= 8) || !(cost > 0)) return { ok: false, why: 'bad' };
+        if (!item || typeof item.id !== 'string' || !item.id || !(+item.n >= 1 && +item.n <= 8) || P.figGone(item.n) || !(cost > 0)) return { ok: false, why: 'bad' };
         if (W.figs.items.some(x => x.id === item.id)) return { ok: false, why: 'dup' };
         ensure(Math.round(cost));
         const next = P.unlock(W.events, 'fig:' + item.id, Math.round(cost), device(), Date.now());
@@ -1232,7 +1256,7 @@
     },
     // 自動バックアップ（アプリの中）に入れる・戻す。書き出すバックアップ（共有シート）には入れない
     snapshot: () => (W ? JSON.parse(JSON.stringify(W)) : null),
-    restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); await goneBack().catch(() => {}); return W.events.length !== cur; },
+    restore: async snap => { await walletReady; if (!snap || !Array.isArray(snap.events)) return false; const cur = W.events.length; W = normalize(snap); await save(); await giftCheck().catch(() => {}); await goneBack().catch(() => {}); await goneFigBack().catch(() => {}); return W.events.length !== cur; },
     // まだ何も使っていない（初回プレゼントだけ・読み込みも記録もなし）なら「空」＝自動バックアップの台帳を戻してよい
     isEmpty: () => !W || (!W.events.some(e => !/^gift-(first|test)/.test(e.id)) && !W.paid.length && !Object.keys(W.counted).length && !W.hold.length)
   };

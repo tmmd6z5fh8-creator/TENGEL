@@ -26,6 +26,11 @@ ios/fig_src/
 ios/lite/
 # PUSHボタンの 絵（第4.148版：まさちゃんの 絵 31まい＝ios/push_assets/src/・アプリに 入れる 形＝pb_<名前>.webp と 台帳 pb.json：kisekae/push_art.py）
 ios/push_assets/
+# 馬カードバトルの 絵（第4.176版：まさちゃんの 絵 13まい＝ios/cb_assets/src/・アプリに 入れる 形＝cb_*.webp・音 cb_se_*.m4a：kisekae/cb_art.py・kisekae/cb_sfx.py）
+ios/cb_assets/
+# いつもの（デフォルト）の 壁紙の もとの 絵（第4.176版：まさちゃんの 絵 ios/wall_src/default_tenger.jpg。アプリに 入れる 形は ios/kisekae_blobs/ に 作る：kisekae/default_wall.py）
+ios/wall_src/
+srv_cb/
 srv_pb/
 srv_band/
 srv_rt/
@@ -36,3 +41,4 @@ srv_reset/
 srv_names/
 srv_wallhq/
 srv_bgm/
+srv_cbf/

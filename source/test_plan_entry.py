@@ -193,9 +193,9 @@ try:
             pg.locator(f'.tabbar button[data-tab="{tab}"]').click(); pg.wait_for_timeout(350)
             vis[tab] = pg.evaluate("() => ['planBtn', 'kiseBtn'].map(i => { const r = document.getElementById(i).getBoundingClientRect(); return r.width > 0 && r.height > 0; })")
         check(vis == dict(win5=[False, False], rec=[False, False], stats=[False, False], set=[False, False], judge=[True, True]), f'札と「壁紙&ボード着せ替え」の ボタンは 判定タブ だけ（ほかの タブでは 出ない）{vis}')
-        print('■ 第4.168版：画面を 上下に 動かしても 右の ボタン（作戦会議・壁紙&ボード着せ替え・推し馬・トレーニングセンター・思い出フィギュア）は 同じ 所')
-        POS5 = "() => ['planBtn', 'kiseBtn', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(v => Math.round(v * 10) / 10); })"
-        HIT5 = "() => ['planBtn', 'kiseBtn', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const q = e.querySelector('img, .plt, .kft, .fabi') || e, r = q.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })"
+        print('■ 第4.168版：画面を 上下に 動かしても 右の ボタン（作戦会議・壁紙&ボード着せ替え・トレーニングセンター・推し馬・カードバトル〈第4.176版〉・思い出フィギュア）は 同じ 所')
+        POS5 = "() => ['planBtn', 'kiseBtn', 'cbFab', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(v => Math.round(v * 10) / 10); })"
+        HIT5 = "() => ['planBtn', 'kiseBtn', 'cbFab', 'oshiFab', 'tcFab', 'figFab'].map(i => { const e = document.getElementById(i); if (!e) return null; const q = e.querySelector('img, .plt, .kft, .fabi') || e, r = q.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); })"
         pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(400); p0 = pg.evaluate(POS5); h0 = pg.evaluate(HIT5)
         maxY = pg.evaluate("() => document.documentElement.scrollHeight - window.innerHeight"); seen = []
         for y in (40, 180, maxY // 2, maxY):
@@ -206,12 +206,12 @@ try:
           return { pos: [f(I('planBtn')), f(I('kiseBtn')), f(I('fabCol'))], z: [z(I('planBtn')), z(I('kiseBtn')), z(I('fabCol')), z(document.querySelector('header.top')), z(document.querySelector('.tabbar'))], body: [I('planBtn').parentNode === document.body, I('kiseBtn').parentNode === document.body],
             hd: hd.bottom, tb: tb.top }; }""")
         pg.evaluate("() => window.scrollTo(0, 0)"); pg.wait_for_timeout(350); p1 = pg.evaluate(POS5)
-        need = [p0[0], p0[1], p0[3]]
+        need = [p0[0], p0[1], p0[2], p0[4]]      # 作戦会議・壁紙&ボード着せ替え・カードバトル・トレーニングセンター は いつも ある（推し馬・思い出フィギュアは 絵が ある とき）
         check(maxY > 200 and all(q is not None for q in need) and all(sc[1] == p0 for sc in seen) and seen[-1][0] >= maxY - 2 and seen[1][0] == 180 and pf[0] > 100 and pf[1] == p0 and p1 == p0,
-              f'ページを 40・180・{maxY // 2}・{maxY}（いちばん 下）まで 送っても、指で なぞって 送っても（{pf[0]}）、5つとも 画面の 同じ 所（1つも 動かない）{[q and q[:2] for q in p0]}')
+              f'ページを 40・180・{maxY // 2}・{maxY}（いちばん 下）まで 送っても、指で なぞって 送っても（{pf[0]}）、6つとも 画面の 同じ 所（1つも 動かない）{[q and q[:2] for q in p0]}')
         check(all(v for v in h0 if v is not None) and all(all(v for v in sc[2] if v is not None) for sc in seen) and lay['pos'] == ['fixed', 'fixed', 'fixed'] and lay['body'] == [True, True]
               and lay['z'][0] == 28 and lay['z'][1] == 28 and lay['z'][2] == 29 and lay['z'][3] < 28 and lay['z'][4] > 29 and p0[0][1] > lay['hd'] - 0.5 and all(q is None or q[1] + q[3] <= lay['tb'] + 0.5 for q in p0),
-              f'どこまで 送っても 5つとも 押せる（上に 何も かぶらない）・画面に 止める（position:fixed）・重なりは 上の 帯（{lay["z"][3]}）より 上／下の タブ（{lay["z"][4]}）より 下・上の 帯と 下の タブの 間に おさまる')
+              f'どこまで 送っても 6つとも 押せる（上に 何も かぶらない）・画面に 止める（position:fixed）・重なりは 上の 帯（{lay["z"][3]}）より 上／下の タブ（{lay["z"][4]}）より 下・上の 帯と 下の タブの 間に おさまる')
         if WALL:
             print('■ どの 壁紙でも')
             ids = pg.evaluate("() => TengelKisekae.list().map(t => t.id || t)"); bad = []; worst = dict(above=99, h2=999, kh2=999, chip=99, lw=0, bottom=0); fonts = set(); modes = {}
@@ -229,7 +229,55 @@ try:
             check(not bad and len(ids) >= 25, f'{len(ids)}この 壁紙 ぜんぶで 札は 右上の かど・見出しの 字と 壁紙の 上の絵に 重ならない（いちばん せまい 所：上の絵から {worst["above"]}・見出しの 字から {worst["h2"]}）{bad[:4]}')
             check(not bad and worst['lw'] <= KBOX + 0.5 and len(fonts) >= 8, f'{len(ids)}この 壁紙 ぜんぶで「壁紙&ボード着せ替え」の ボタンは 札の すぐ 下・データの チップに かからない（いちばん 近い 所 {worst["chip"]}・見出しの 字から {worst["kh2"]}）・'
                   f'名前の 札は ボタンの 幅に おさまる（いちばん 広い {worst["lw"]}）・字は その 壁紙の 本文の 字（{len(fonts)}種）・色は 上の 帯と 同じ・データの 行の 折り返し {modes}')
+            # 第4.176版：右下の 丸い ボタンが 4つに なった（カードバトル）。本物の iPhone では アプリの 画面は「iPhone の 高さ − 上の 時計の 帯」で、下は ホームバーの ぶん あける
+            #   （Swift：TengelWebView は 上の 安全な 所から・下は 画面の はし まで／--bottom-inset）。上の テストの 大きさ（390×844・下 0）より たてが せまい ので、その 大きさでも 測る：
+            #   まさちゃん 11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」・01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」
+            #   ＝ たてに 4つの まま、「壁紙&ボード着せ替え」の すぐ 下 〜 下の タブの すぐ 上 を ぴったり うめる 大きさ（壁紙ごとに 着せ替えの ボタンの 場所が ちがう ので、丸の 大きさも 少し かわる）。
+            #   iPhone SE（たてに 入らない）だけ 2列 × 2段（判定の 帯の 上）。どの 壁紙でも、ボタンの 列は「壁紙&ボード着せ替え」の 下に ある（重ならない）・着せ替えの ボタンは どこを 押しても 届く・丸い ボタンは 4つとも 押せる
+            print('■ 第4.176版：本物の iPhone の 画面の 大きさで（右下の ボタン たてに 4つ と 右上の ボタン）')
+            GRIDQ = """() => { const R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
+              const k = document.getElementById('kiseBtn'), c = k.getBoundingClientRect(), who = e => e ? (e.id || (e.closest('[id]') || {}).id || '') : '';
+              const pts = [[.5, .3], [.5, .85], [.15, .5], [.85, .5], [.85, .9], [.15, .9]].map(p => who(document.elementFromPoint(c.left + c.width * p[0], c.top + c.height * p[1])));
+              const fabs = [...document.querySelectorAll('#fabCol > button')].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order);
+              const hitf = fabs.map(f => { const q = f.querySelector('.fabi').getBoundingClientRect(), e = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!e && !!e.closest('#' + f.id); });
+              return { kise: R(k), plan: R(document.getElementById('planBtn')), col: R(document.getElementById('fabCol')), ids: fabs.map(f => f.id), rc: fabs.map(R), hitf, pts, tab: R(document.querySelector('.tabbar'))[1], iw: Math.round(fabs[0].querySelector('.fabi').getBoundingClientRect().width),
+                iws: fabs.map(f => Math.round(f.querySelector('.fabi').getBoundingClientRect().width)), g2: document.getElementById('fabCol').classList.contains('g2') }; }"""
+            for dname, vw, vh, sab, two in (('iPhone SE', 375, 647, 0, True), ('iPhone 12/13 mini', 375, 762, 34, False), ('iPhone 12〜14', 390, 797, 34, False)):
+                cx = b.new_context(viewport={'width': vw, 'height': vh}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); cx.add_init_script(FAKE)
+                px = cx.new_page(); px.goto(APP); px.wait_for_timeout(1500); gate(px); px.wait_for_timeout(800)
+                px.evaluate("(s) => document.documentElement.style.setProperty('--bottom-inset', s + 'px')", sab); px.wait_for_timeout(500)
+                ng = []; tight = None; loose = None; q0 = None; ds = {}
+                for tid in ids:
+                    px.evaluate("(id) => TengelKisekae.apply(id, false)", tid)
+                    try: px.wait_for_function("(id) => TengelKisekae.current() === id && TengelKisekae.loaded()", arg=tid, timeout=8000)
+                    except Exception: ng.append((tid, '読めない')); continue
+                    px.wait_for_timeout(700); px.wait_for_function("() => !TengelFab.busy()", timeout=8000); px.wait_for_timeout(500)      # 壁紙を かえた あとの 置き直し・丸の 大きさの 決め直し（1.5秒 あと）が おわる まで
+                    q = px.evaluate(GRIDQ); gap = q['col'][1] - q['kise'][3]; low = q['tab'] - q['col'][3]; rc = q['rc']; q0 = q0 or q; d0 = q['iws'][0] if q['iws'] else 0; ds[tid] = d0
+                    lap = any(x[0] < y[2] - 1 and y[0] < x[2] - 1 and x[1] < y[3] - 1 and y[1] < x[3] - 1 for i, x in enumerate(rc) for y in rc[i + 1:])
+                    fit = (33 <= low <= 50) if two else (3 <= low <= 5 and (gap <= 10 or d0 == 66))      # たてに 1列：下の タブの すぐ 上・着せ替えの すぐ 下（1px 大きく すると 入らない）／2列 × 2段：判定の 帯の 上
+                    if not (gap >= 3 and all(w == 'kiseBtn' for w in q['pts']) and all(q['hitf']) and not lap and q['col'][0] >= 0 and q['col'][2] <= vw and q['col'][3] <= q['tab'] - 3
+                            and (not HAVE or (q['iws'] == [d0] * 4 and 36 <= d0 <= 66 and q['g2'] == two and fit))): ng.append((tid, gap, low, q['pts'], q['hitf'], q['iws'], q['g2']))
+                    if tight is None or gap < tight[1]: tight = (tid, gap)
+                    if loose is None or gap > loose[1]: loose = (tid, gap)
+                r0 = q0['rc'] if q0 else []
+                under = lambda a, c: a[3] <= c[1] + 1 and abs((a[0] + a[2]) - (c[0] + c[2])) <= 4
+                if not HAVE: lay_ok = len(r0) >= 2
+                elif two: lay_ok = len(r0) == 4 and q0['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and under(r0[0], r0[1]) and under(r0[2], r0[3]) and abs(r0[2][1] - r0[0][1]) <= 1 and r0[2][0] >= r0[0][2] - 1
+                else: lay_ok = len(r0) == 4 and q0['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and under(r0[0], r0[1]) and under(r0[1], r0[2]) and under(r0[2], r0[3])
+                dmin, dmax = (min(ds.values()), max(ds.values())) if ds else (0, 0)
+                check(not ng and tight is not None and lay_ok, f'{dname}（アプリの 画面 {vw}×{vh}・下の あき {sab}）：{len(ids)}この 壁紙 ぜんぶで 右下の ボタン（丸 {dmin}〜{dmax}px・'
+                      + ('2列 × 2段：左＝トレーニングセンター・推し馬／右＝カードバトル・思い出フィギュア。判定の 帯の 上' if two else 'たてに 4つ：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア。下の タブの すぐ 上まで') +
+                      f'）は「壁紙&ボード着せ替え」に 重ならない・すぐ 下から ぴったり うめる（すきま：いちばん せまい {tight}・いちばん 広い {loose}）・着せ替えの ボタンは どこを 押しても 届く・4つとも 押せる {ng[:3]}')
+                cx.close()
             pg.evaluate("(id) => TengelKisekae.apply(id, false)", 'default'); pg.wait_for_timeout(1500)
+            # 第4.176版（まさちゃん 2026/11/16 01:26「いつもの(デフォルト)壁紙これにして！ バージョン2.1完全自動分析エンジンの文字だけ消して！」）：いつもの にも 上の絵（まさちゃんの TENGER の 絵・動かない 1まい）
+            sys.path.insert(0, os.path.join(W, 'kisekae')); import build_kisekae as _bk, default_wall as _dw
+            dfw = pg.evaluate("""() => { const b = document.getElementById('ksBnr'), im = b && b.querySelector('img.ksdf'), r = b ? b.getBoundingClientRect() : null, th = document.querySelector('#setKisekae .kst[data-ks=default] .ksth'), d = TengelKisekae.list().find(t => t.id === 'default');
+              return { hidden: !b || b.hidden, src: im ? im.getAttribute('src') : null, nat: im ? [im.naturalWidth, im.naturalHeight] : null, box: r ? [Math.round(r.width), Math.round(r.height)] : null, anim: b ? b.getAnimations({ subtree: true }).length : -1,
+                thumb: d && d.thumb, bnr: d && d.bnr, ks: document.documentElement.dataset.ks || null, fx: TengelKisekae.fx() }; }""")
+            check(dfw['hidden'] is False and dfw['src'] == f'ks_{_bk.DEFAULT_WALL}.webp' and dfw['nat'] == [1170, 480] and dfw['box'] == [390, 160] and dfw['anim'] == 0 and dfw['thumb'] == dfw['bnr'] == dfw['src'] and dfw['ks'] is None and dfw['fx'] is None,
+                  f'いつもの の 上の絵：まさちゃんの TENGER の 絵（{dfw["src"]}・1170×480 を 390×160 で・動かない）・選ぶ 画面の 小さな絵も 同じ 絵・色と PUSH は 前の まま（data-ks なし）')
+            check((not os.path.isfile(_dw.SRC) or _dw.blob_id() == _bk.DEFAULT_WALL) and os.path.isfile(os.path.join(BL, _bk.DEFAULT_WALL + '.webp')), f'その 絵は もとの 絵（ios/wall_src/default_tenger.jpg）から 今の 決めごとで 作った もの（kisekae/default_wall.py：小さい 字 だけ 消す・上下を 切る）')
         q0 = pg.evaluate(GEO)
         check(geo_ok(q0)[0] and kise_ok(q0)[0] and q0['kfont'][0] == 'BIZ UDPGothic', 'いつもの 壁紙に もどすと 札も ボタンも もとどおり')
         print('■ データの 行を 作り直した とき・長く なった とき')

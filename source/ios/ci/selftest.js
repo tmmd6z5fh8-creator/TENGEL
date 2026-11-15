@@ -9,6 +9,9 @@
 // 2回目：開き直しても記録が残っているか → 保存場所（IndexedDB）を消す
 // 3回目：「前の記録が見つかったよ」→「記録を戻す」で戻るか
 // 4回目（第4.156版）：iPad の 広い 窓（run.sh が .pad を 足して 作った アプリ＝Swift Playgrounds の ▶ と 同じ 形）で、アプリが iPhone の 大きさ（390×844）で まん中に 出るか
+// 6回目・7回目（第4.176版）：馬カードバトルの「部屋」を 本物の アプリ（Room.swift＝MultipeerConnectivity）で。run.sh が iPhone と iPad の シミュレーターを 同時に 起こして、
+//        iPhone＝部屋を 作る（6回目）・iPad＝部屋に 入る（7回目）。部屋番号は run.sh が window.__ST_ROOM で 渡す。つながったら 2台とも 自動で さいごまで 対戦して 結果を 書く
+//        （1回目にも コンピュータとの 対戦を 入れた：本物の WebKit で 入口・本体・対戦・アプリの 部屋の 窓口の 返事を 見る）
 // 5回目（第4.169版）：テスト版の「ぜんぶ リセット」（reset_all.js）を 本物の WKWebView で。出す アプリには 消す しかけが 入って いない ので、
 //        run.sh が この ファイルの 先頭に「window.__TEST = true;」と reset_all.js を 足す（＝テスト版と 同じ 形：ほかの どの コードより 先に 動く）
 (function () {
@@ -453,6 +456,43 @@
       if (!out.closed) TengelManual.close();
       return out;
     });
+    // 第4.176版：馬カードバトル（cb/）を 本物の WebKit で：入口の ボタン（たてに 4つの 上から 3番目）・本体を 読む・コンピュータと さいごまで 対戦・ごほうび・アプリの 部屋の 窓口（Room.swift）の 返事
+    await step(R, 'cb', async function () {
+      // 右下の 丸い ボタン：順（order：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア）・場所（たてに 1列＝col。たての 短い 画面 だけ 2列 × 2段＝g2）・丸の 大きさ（fd：画面に 合わせる）
+      var ks = Array.prototype.slice.call(document.querySelectorAll('#fabCol > button')).sort(function (a, b) { return (+getComputedStyle(a).order) - (+getComputedStyle(b).order); });
+      var rr = ks.map(function (k) { var r = k.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; });
+      var kb = document.getElementById('kiseBtn'), kr = kb ? kb.getBoundingClientRect() : null;
+      var out = { fab: ks.map(function (k) { return k.id; }), fabRect: rr, kise: kr && kr.width ? [Math.round(kr.left), Math.round(kr.top), Math.round(kr.right), Math.round(kr.bottom)] : null, view: [window.innerWidth, window.innerHeight], api: typeof window.TengelCB };
+      var under = function (a, b) { return a[3] <= b[1] + 1 && Math.abs((a[0] + a[2]) - (b[0] + b[2])) <= 4; }, fc = document.getElementById('fabCol');
+      out.fd = ks.map(function (k) { var i = k.querySelector('.fabi'); return i ? Math.round(i.getBoundingClientRect().width) : 0; });
+      out.col = rr.length === 4 && under(rr[0], rr[1]) && under(rr[1], rr[2]) && under(rr[2], rr[3]);
+      out.g2 = !!fc && fc.classList.contains('g2') && rr.length === 4 && under(rr[0], rr[1]) && under(rr[2], rr[3]) && Math.abs(rr[2][1] - rr[0][1]) <= 1 && rr[2][0] >= rr[0][2] - 1;
+      out.clear = !out.kise || rr.every(function (r) { return r[1] >= out.kise[3] + 2 || r[0] >= out.kise[2] || r[2] <= out.kise[0]; });      // 「壁紙&ボード着せ替え」に 重ならない（本物の 画面の 大きさで）
+      if (!window.TengelCB) return out;
+      out.room = await TengelNative.call('room', { op: 'state' }).catch(function (e) { return { error: String(e && (e.message || e)) }; });
+      out.roomBad = await TengelNative.call('room', { op: 'join', room: '12a4' }).catch(function (e) { return { error: String(e && (e.message || e)) }; });
+      await window.TengelCB.open();
+      out.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
+      if (!out.open) return out;
+      out.menu = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu .cbb'), function (b) { return b.textContent.replace(/\s+/g, ' ').trim(); });
+      out.roomBtn = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu [data-cb=host],#cbOv .cbmenu [data-cb=join]'), function (b) { return !b.disabled; });
+      await mark('cb-menu');
+      window.CBApp._t.speed(0.2); window.CBApp._think = function () { return 200; };
+      document.querySelector('#cbOv .cbmenu [data-cb=cpu]').click();
+      await waitFor(function () { return window.CBApp._t.view && window.CBApp._t.idle; }, 20000);
+      await sleep(700);
+      var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn } : null;
+      await mark('cb-game');
+      out.auto = await cbAuto(90000);
+      var v = window.CBApp._t.view; out.res = v ? v.res : null; out.wins = v ? [v.my.wins, v.op.wins] : null; out.discard = v ? v.discard.length : null;
+      out.gift = await waitFor(function () { var e = document.querySelector('#cbOv .cbend .gift'); return e && e.textContent.length > 3 ? e.textContent : null; }, 20000);
+      out.state = JSON.parse(JSON.stringify(window.CBApp._t.state)); out.tokens = window.TCApp && window.TCApp.state ? window.TCApp.state.stock : null;
+      await mark('cb-end');
+      var mb = document.querySelector('#cbOv .cbend [data-cb=menu]'); if (mb) mb.click(); await sleep(300);
+      var cl = document.querySelector('#cbOv .cbmenu [data-cb=close]'); if (cl) cl.click(); await sleep(300);
+      out.closed = !document.querySelector('#cbOv.on');
+      return out;
+    });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);
@@ -600,6 +640,56 @@
     await step(R2, 'backupAfter', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, auto: !!s.auto, reset: !!s.reset, wallet: s.wallet && s.wallet.events ? s.wallet.events.length : 0 } : null; });
     report('5', R2);
   }
-  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : PH === 4 ? phase4 : PH === 5 ? phase5 : phase1;
+  // 馬カードバトルを 自動で 進める（番が 来たら 押す：効果は 使わない・手札の 左から 出す）。対戦が 終わる か ms たつ まで。返り値＝押した 回数 など
+  async function cbAuto(ms) {
+    var T = window.CBApp._t, t0 = Date.now(), n = 0, kinds = {};
+    var click = function (sel) { var e = document.querySelector(sel); if (e && !e.disabled) { e.click(); return true; } return false; };
+    while (Date.now() - t0 < ms && !T.ended && T.match) {
+      if (T.idle && T.view) {
+        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? 'set' : 'wait';
+        if (s === 'k' || s === 'm') { if (click('#cbOv .cbact [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
+        else if (s === 'eff') { if (click('#cbOv .cbact [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
+        else if (s === 'swap' || s === 'set') {
+          if (!T.modOn()) click('#cbOv .cbhand .cbc');
+          await sleep(120);
+          if (click('#cbOv .cbmod [data-cb=' + s + ']')) { n++; kinds[s] = (kinds[s] || 0) + 1; }
+        }
+      }
+      await sleep(150);
+    }
+    return { clicks: n, kinds: kinds, ended: !!T.ended, ms: Date.now() - t0 };
+  }
+  // 6回目（部屋を 作る）・7回目（部屋に 入る）：2台の シミュレーターで 対戦
+  async function phaseRoom(host) {
+    var R = { phase: PH, device: DEV, host: host, room: String(window.__ST_ROOM || ''), evs: [] };
+    document.addEventListener('tengel:native', function (e) { var d = e.detail || {}; if (d.name !== 'room') return; var p = d.payload || {}; R.evs.push(p.ev === 'data' ? 'data' : p.ev + ':' + (p.state || p.why || '')); });
+    await loaded();
+    window.__gate = await gate(false);
+    await waitFor(function () { return window.TengelCB && document.querySelector('#cbFab'); }, 20000);
+    R.api = typeof window.TengelCB;
+    if (!window.TengelCB) { report(String(PH), R); return; }
+    await window.TengelCB.open();
+    R.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
+    if (!R.open) { report(String(PH), R); return; }
+    window.CBApp._t.speed(0.2);
+    if (host) { window.CBApp._room = R.room; document.querySelector('#cbOv .cbmenu [data-cb=host]').click(); }
+    else {
+      document.querySelector('#cbOv .cbmenu [data-cb=join]').click(); await sleep(300);
+      for (var i = 0; i < R.room.length; i++) { var k = document.querySelector('#cbOv .cbkeys [data-key="' + R.room.charAt(i) + '"]'); if (k) k.click(); await sleep(80); }
+      var go = document.querySelector('#cbOv .cbkeys [data-key=go]'); R.go = !!(go && !go.disabled); if (go) go.click();
+    }
+    await sleep(500);
+    R.shown = (document.querySelector('#cbOv .cbroom .num') || {}).textContent || '';
+    R.connected = !!(await waitFor(function () { return window.CBApp._t.screen === 'game' && window.CBApp._t.view ? true : null; }, 120000));
+    R.screen = window.CBApp._t.screen;
+    if (!R.connected) { R.text = ((document.querySelector('#cbOv .cbroom') || {}).textContent || '').slice(0, 240); R.evs = R.evs.slice(0, 60); report(String(PH), R); return; }
+    R.kind = window.CBApp._t.match ? window.CBApp._t.match.kind : null;
+    R.auto = await cbAuto(150000);
+    var v = window.CBApp._t.view; R.res = v ? v.res : null; R.wins = v ? [v.my.wins, v.op.wins] : null; R.discard = v ? v.discard.length : null;
+    R.gift = await waitFor(function () { var e = document.querySelector('#cbOv .cbend .gift'); return e && e.textContent.length > 3 ? e.textContent : null; }, 15000);
+    R.evs = R.evs.filter(function (x) { return x !== 'data'; }).concat(['data×' + R.evs.filter(function (x) { return x === 'data'; }).length]);
+    report(String(PH), R);
+  }
+  var run = isManual ? manualPage : PH === 2 ? phase2 : PH === 3 ? phase3 : PH === 4 ? phase4 : PH === 5 ? phase5 : PH === 6 ? function () { return phaseRoom(true); } : PH === 7 ? function () { return phaseRoom(false); } : phase1;
   run().catch(function (e) { report('crash-' + (isManual ? 'manual' : PH), { phase: PH, device: DEV, exception: String(e && (e.stack || e.message || e)) }); });
 })();

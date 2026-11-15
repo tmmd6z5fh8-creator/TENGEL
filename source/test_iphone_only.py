@@ -68,6 +68,21 @@ if r.returncode == 0:
     html = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'index.html'), encoding='utf8').read()
     check('TengelPoints' in html and 'TengelWallet' in html and 'id="gate"' in html and 'touch-action:manipulation' in html, 'アプリの画面に ポイント・アプリを開いた時の画面・拡大の決まりが入っている')
     check(all(os.path.exists(os.path.join(out, 'Tengel.swiftpm', f)) for f in ('Markers.swift', 'Store.swift', 'Notify.swift')), 'Markers.swift・Store.swift・Notify.swift が入っている')
+    # 第4.176版：馬カードバトル（右下の 丸い ボタン「カードバトル」）。本体は cb_bundle.js（押した ときに 読む）・絵と 音は 手元の ios/cb_assets/ から（リポジトリには 入れない）
+    #   部屋（近くの 友だちと 対戦）：Room.swift（MultipeerConnectivity・暗号化・端末の 名前は 使わない）＋ Package.swift の ローカルネットワークの 許可（説明の 文・Bonjour の 名前）
+    sys.path.insert(0, os.path.join(W, 'kisekae')); import cb_art as _cba, cb_sfx as _cbs
+    _cbf = _cba.files() + _cbs.files(); _cb_have = [f for f in _cbf if f in res]; _cb_src = os.path.join(W, 'ios', 'cb_assets')
+    _cb_all = all(os.path.isfile(os.path.join(_cb_src, f)) for f in _cbf)
+    _cbb = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'cb_bundle.js'), encoding='utf8').read() if 'cb_bundle.js' in res else ''
+    check(all(w in _cbb for w in ('CBRules', 'CBCpu', 'CBNet', 'CBApp')) and "id: 'cbFab'" in html and 'cb_bundle.js' in html and 'CBRules' not in html and (len(_cb_have) == len(_cbf) == 35 if _cb_all else not _cb_have)
+          and not [f for f in res if f.startswith('cb_') and f != 'cb_bundle.js' and f not in _cbf] and not any(f.lower().endswith('.png') for f in res if f.startswith('cb_')),
+          f'第4.176版：馬カードバトルの 本体（cb_bundle.js：ルール・コンピュータ・対戦の 進め役・画面）は 別の ファイル（index.html には 入口だけ）・絵 24まいと 音 11こ（{len(_cb_have)}こ・{sum(os.path.getsize(os.path.join(out, "Tengel.swiftpm", "Resources", f)) for f in _cb_have) / 1e6:.2f}MB）が Resources に 入る（もとの 絵 src/・PNG・台帳は 入れない）'
+          if _cb_all else '第4.176版：馬カードバトルの 本体（cb_bundle.js）は 入る・絵と 音が 手元に ない ときは 入れずに 作る')
+    _rm = nocom(open(os.path.join(out, 'Tengel.swiftpm', 'Room.swift'), encoding='utf8').read()) if os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Room.swift')) else ''
+    _ln = re.search(r'\.localNetwork\(\s*purposeString:\s*"([^"]+)",\s*bonjourServiceTypes:\s*\[([^\]]*)\]\s*\)', bp); _sv = re.search(r'roomService\s*=\s*"([a-z0-9-]{1,15})"', _rm)
+    check(bool(_rm) and _ln is not None and _sv is not None and sorted(re.findall(r'"([^"]+)"', _ln.group(2))) == sorted([f'_{_sv.group(1)}._tcp', f'_{_sv.group(1)}._udp']) and len(_ln.group(1)) >= 15 and '.camera(purposeString:' in bp
+          and 'case "room":' in nocom(open(os.path.join(out, 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read()) and 'encryptionPreference: .required' in _rm and 'UIDevice' not in _rm and 'import MultipeerConnectivity' in _rm,
+          f'第4.176版：Room.swift（近くの 友だちと 直接 つなぐ・暗号化・端末の 名前は 使わない）と ローカルネットワークの 許可（説明の 文「{_ln.group(1) if _ln else "?"}」・Bonjour の 名前 _{_sv.group(1) if _sv else "?"}._tcp／_udp＝Room.swift の 名前と 同じ）・Webの 画面からの 窓口「room」')
     check('TengelReserve' in html and 'TengelCustomRate' in html and 'parseResult' in html and 'omakaseBtn' in html, 'アプリの画面に 買い目の予約・%・結果の画像の読み取り・テンゲルにお任せ が入っている（第2弾）')
     # 第3弾：的中ボタン（見本の CSS/HTML を束ねた __FX・fx.js・設定のカード）。絵と音は手元の ios/fx_assets/ から Resources/ へ（リポジトリには入れない）
     check('window.__FX=' in html and 'window.TengelFx' in html and "'tengel.fxhidden'" not in html and 'setFx' in html and 'fz_nglow.webp' not in html and 'fz_ncore.webp' not in html and 'sfx_fz.m4a' not in html and 'sfx_fz_push.m4a' in html and '/_blob/' not in html, 'アプリの画面に 的中ボタン（__FX・fx.js・設定の「的中の演出」）が入っている・見本の絵の場所（/_blob/）が残っていない（第3弾）・隠れど的中の 数（tengel.fxhidden）は 使わない（第4.86版）・前の ど的中の ネオンの 絵と 音は 入れない（第4.109版）')
@@ -155,10 +170,10 @@ if r.returncode == 0:
         p_films = _sz(FILMS.values()); p_bcp = _sz([f for f in res if f.startswith('bcp_')]); p_tcc = _sz([f for f in res if f.startswith('tc_c_')])
         p_fgc = _sz([f for f in res if re.fullmatch(r'fg\d+_cs?\.webp', f)]); p_shelf = _sz([f for f in res if re.fullmatch(r'fg_shelf2_c\d+\.webp', f)]); p_all = _sz(res)
         # 第4.151版（まさちゃん 11/11 09:07「ア、をお願い！」「棚の7個とも画質がかなり悪くなってるから、改善して！」）：
-        #   番号が 32bit の 形（フィギュア 8体・神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）→ 棚は 第4.153版で 貼り直した（下）
+        #   番号が 32bit の 形（フィギュア 5体〈第4.176版：ゴールデンスカラー・神様馬・幻の馬の 3体を 外した。前は 8体〉・トレーニングセンターの 神様馬・幻の馬）は 番号を 詰めた 入れもの（how＝idxz・もとに もどすと 1バイトも ちがわない）・棚の 絵 7まいは 劣化なしの WebP（how＝shelf・色は 6bit）→ 棚は 第4.153版で 貼り直した（下）
         import importlib as _il; sys.path.insert(0, os.path.join(W, 'kisekae')) if os.path.join(W, 'kisekae') not in sys.path else None; _la = _il.import_module('lite_assets')
         _iz = [(n, f, e) for n, f, e in _all if e['how'] == 'idxz']
-        iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in range(1, 9)] + ['tc_horse_bk_kamisama2.bin', 'tc_horse_bk_maboroshi2.bin']) and all(
+        iz_ok = sorted(f for _n, f, _e in _iz) == sorted([f'fg{i}.bin' for i in (1, 3, 4, 5, 8)] + ['tc_horse_bk_kamisama2.bin', 'tc_horse_bk_maboroshi2.bin']) and all(
             open(os.path.join(RES, f), 'rb').read(4) == b'TGIZ' and _la.unpack_idx(open(os.path.join(RES, f), 'rb').read()) == open(os.path.join(_ad.master(n), f), 'rb').read() for n, f, _e in _iz)
         iz_save = sum(e['src'][0] - e['size'] for _n, _f, e in _iz)
         # 第4.153版（まさちゃん 11/11 12:10「やって！」＝棚の 貼り方を 作り直して 軽く）：棚は fg_shelf2.*（kisekae/fig/shelf_reuv.py）。前の fg_shelf.* は アプリに 入れない（もとの フォルダには 残す）
@@ -178,16 +193,16 @@ if r.returncode == 0:
         sh_ok, sh_v, sh_bin = _sh2()
         same_sz = all(os.path.getsize(os.path.join(RES, f)) == e['size'] for _n, f, e in _all)
         keep_fl = [(n, f) for n, f, e in _all if re.fullmatch(r'tc_n_.+\.webp|fg\d+_(n|ns|m|ms)\.webp|bcp_.+\.webp', f)]
-        keep_ok = len(keep_fl) == 7 + 32 + 108 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
+        keep_ok = len(keep_fl) == 7 + 20 + 108 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
         # 第4.175版：ノーマルど的中の 動画は 極ど的中の 入りに 使う はじめの 180コマ だけ（kisekae/lite_assets.py の CUT）＝ 動画 4本で 約34.2MB（前は 約37.3MB）
-        check(32.5e6 < p_films < 36.0e6 and _man['fx_assets']['files']['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and _man['fx_assets']['files']['sfx_nd.m4a']['how'] == 'acut' and how.get('acut') == 1 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((167e6 < p_all < 177e6) if _pb_on else (164e6 < p_all < 174e6)) and same_sz and keep_ok and src_ok
-              and how.get('film') == 4 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 24, 'preset': 'slow', 'tail': [[30, 23], [20, 22], [10, 21]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES)
+        check(32.5e6 < p_films < 36.0e6 and _man['fx_assets']['files']['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and _man['fx_assets']['files']['sfx_nd.m4a']['how'] == 'acut' and how.get('acut') == 1 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 3.5e6 < p_fgc < 4.5e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 3.9e6 < iz_save < 4.9e6 and sh_ok and ((162e6 < p_all < 172e6) if _pb_on else (159e6 < p_all < 169e6)) and same_sz and keep_ok and src_ok
+              and how.get('film') == 4 and how.get('webp', 0) + how.get('keep', 0) == 37 and how.get('idxz') == 7 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 24, 'preset': 'slow', 'tail': [[30, 23], [20, 22], [10, 21]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES)
               and all(_man['fx_assets']['files'][f]['p'].startswith('crf27-slow' if f == FILMS['gk_film'] else 'crf24-slow') for f in FILMS.values()),      # 第4.171版：のばして 作った 神様極的中 だけ CRF 27
               f'第4.146版：アプリに 入る のは 軽い 版（動画 4本 {p_films / 1e6:.1f}MB：もとは 70.7MB〈第4.171版：3倍の 動画。前は 26.6MB・もと 40.8MB／第4.162版：昇格の 動画を 外して 4本・超神様の 新しい 動画は 前と 同じ 10.9MB。前は 5本 31.0MB／第4.156版：CRF 29 → 24 に 上げた。第4.155版までは 18.5MB〉・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（10こ・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB → …… → 第4.162版で プレミアムど的中・超プレミアム神様的中の 絵と 音と 昇格の 動画を 外して 約149MB → 第4.166版で 壁紙 11こ の コマを 1秒に 30コマに して 約152MB → 第4.167版で のこりの 5こ（パドック・ナイター・大理石・ドット絵・浮世絵の 大波）も 30コマに して 約157.5MB → 第4.171版で 的中の 演出の 動画 3本を 3倍に・テンゲルBGM・ルーレットの 爆発の 動画を 入れて 約172MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB（第4.176版：5体。前は 8体で 5.8MB）・棚の 絵 7まい {p_shelf / 1e6:.1f}MB（第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（7こ：第4.176版で フィギュアを 3体 外して 10 → 7・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB → …… → 第4.162版で プレミアムど的中・超プレミアム神様的中の 絵と 音と 昇格の 動画を 外して 約149MB → 第4.166版で 壁紙 11こ の コマを 1秒に 30コマに して 約152MB → 第4.167版で のこりの 5こ（パドック・ナイター・大理石・ドット絵・浮世絵の 大波）も 30コマに して 約157.5MB → 第4.171版で 的中の 演出の 動画 3本を 3倍に・テンゲルBGM・ルーレットの 爆発の 動画を 入れて 約172MB → 第4.176版で 思い出フィギュアの デザインを 3つ 外して・カードバトルの 絵と 音を 入れて 約166MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
         # 第4.161版（まさちゃん 11/12 18:00「神様馬、赤丸の位置から動く変なパーツが飛び出てる／幻の馬は…立髪の毛の色がブラック…身体の表面…ボヤけて…全て改善して！」・19:47「幻の馬、肩幅狭くして！」）：
         #   神様馬・幻の馬の 形は 直した 新しい 形（tc_horse_bk_<名前>2.json＋.bin：kisekae/tc/horse_fix.py）。前の 形は アプリに 入れない（もとの フォルダには 残す）
         import json as _j161
@@ -535,6 +550,8 @@ if r2.returncode == 0:
     check('name: "テンゲル テスト",' in ps2 and 'bundleIdentifier: "jp.tengel.app.test",' in ps2 and 'bundleIdentifier: "jp.tengel.app",' not in ps2 and re.search(r'bundleVersion: "\d{8}\.\d+",', ps2) and 'supportedDeviceFamilies: [\n                .phone\n            ]' in ps2,
           'テスト版：アプリの 名前は「テンゲル テスト」・bundle id は jp.tengel.app.test（本番と 並べて 入れられる）・ビルド番号は 日付から・iPhone用は ふつうと 同じ')
     check('window.__TEST=true;' in h2 and 'テスト版の道具' in h2, 'テスト版：画面に __TEST（はじめから 10,000P・設定の いちばん上に テスト版の道具）')
+    check('.localNetwork(purposeString:' in ps2 and '"_tengel-cb._tcp"' in ps2 and os.path.exists(os.path.join(out2, 'TengelTest.swiftpm', 'Room.swift')) and os.path.exists(os.path.join(out2, 'TengelTest.swiftpm', 'Resources', 'cb_bundle.js')) and "id: 'cbFab'" in h2,
+          '第4.176版：テスト版にも 馬カードバトル（入口・本体・Room.swift・ローカルネットワークの 許可）が 入る ＝ 2台の iPhone で 部屋を ためせる')
     # 第4.169版：テスト版 だけ「ぜんぶ リセット」（reset_all.js）が <head> の いちばん はじめの スクリプトに 入る（ほかの どの コードも 保存場所を 読む 前に 動く）
     f2 = re.search(r'<script>(.*?)</script>', h2, re.S).group(1)
     check("'tengel.wipe'" in f2 and 'deleteDatabase' in f2 and 'window.TengelReset = {' in f2 and h2.index('window.TengelReset = {') < h2.index('window.__APP_VER=') and 'data-test="wipego"' in h2 and h2.count('deleteDatabase') == 1,

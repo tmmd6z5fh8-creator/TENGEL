@@ -143,7 +143,7 @@ const FigGL = (() => {
       if (p !== end) throw new Error('bin');
       return out;
     }
-    // 形（名前ごとに 1つ・すてない：棚 1つと フィギュア 8種）
+    // 形（名前ごとに 1つ・すてない：棚 1つと フィギュア 5種〈第4.176版：番号 2・6・7 を なくした〉）
     function mesh(name) {
       if (cache.mesh[name]) return cache.mesh[name];
       const p = (async () => {

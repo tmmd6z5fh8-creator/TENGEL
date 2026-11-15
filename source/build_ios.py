@@ -63,6 +63,8 @@ if os.path.exists(os.path.join(web, 'mother_template.xlsx')):
     files['mother_template.xlsx'] = 'mother_template.xlsx'   # 第4.123版：マザーデータの 入力用 Excel の ひな形（共有シートで 渡す）
 if os.path.exists(os.path.join(web, 'tc_bundle.js')):
     files['tc_bundle.js'] = 'tc_bundle.js'   # トレーニングセンターの 本体（第4.130版：丸い ボタン（第4.138版から 右上）を 押した ときに 読む）
+if os.path.exists(os.path.join(web, 'cb_bundle.js')):
+    files['cb_bundle.js'] = 'cb_bundle.js'   # 馬カードバトルの 本体（第4.176版：右下の 丸い ボタン「カードバトル」を 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'fig_bundle.js')):
     files['fig_bundle.js'] = 'fig_bundle.js'   # 思い出フィギュアの 本体（第4.134版：記録タブの「フィギュアブース」「フィギュアを作る」を 押した ときに 読む）
 if os.path.exists(os.path.join(web, 'cm', 'poster.jpg')):
@@ -130,6 +132,20 @@ for f in fig_have:
     shutil.copy(os.path.join(fig_dir, f), os.path.join(res, f)); files[f] = f
 if not fig_have:
     print('※ 思い出フィギュアの 形と 絵が ない（', fig_dir, '）。kisekae/fig/collect_assets.py で 集めるよ（CIではなしのまま）')
+# 馬カードバトルの 絵と 音（第4.176版：まさちゃんの カード・うら・プレイボード・山札・アイコン から 作った cb_*.webp〈kisekae/cb_art.py〉と 姫が 作った 音 cb_se_*.m4a〈kisekae/cb_sfx.py〉）：
+#   ios/cb_assets/ か CB_ASSETS=<フォルダ>。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。丸い ボタンは 字の 丸・対戦は 絵なしで 動く）
+#   入れるのは 決まった 名前 だけ（cb_art.files()・cb_sfx.files()：もとの 絵 src/ や 台帳は 入れない）。絵が 古い（もとの 絵・決めごとが かわった）ときは 止める
+import cb_art as _cba, cb_sfx as _cbs
+cb_dir = os.environ.get('CB_ASSETS') or os.path.join(W, 'ios', 'cb_assets')
+if not os.environ.get('CB_ASSETS') and _cba.stale():
+    sys.exit('※ 馬カードバトルの 絵（ios/cb_assets）が 古い：' + _cba.stale() + '\n   python3 kisekae/cb_art.py で 作り直してね')
+cb_all = _cba.files() + _cbs.files()
+cb_have = [f for f in cb_all if os.path.isfile(os.path.join(cb_dir, f))]
+for f in cb_have:
+    assert f.lower() not in names and f not in files, f
+    shutil.copy(os.path.join(cb_dir, f), os.path.join(res, f)); files[f] = f
+if len(cb_have) != len(cb_all):
+    print('※ 馬カードバトルの 絵と 音が', len(cb_all) - len(cb_have), 'こ ない（', cb_dir, '）。kisekae/cb_art.py・kisekae/cb_sfx.py で 作れるよ（CIではなしのまま）')
 # 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
 import build_kisekae as _ks

@@ -132,6 +132,19 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.goneUnlocks(ev2, []).map(x => x.theme).join() === 'xmas,halloween' && P.goneUnlocks(ev2, ['back-theme:xmas']).map(x => x.theme).join() === 'halloween'
     && P.goneUnlocks(ev2.concat([P.rowEvent({ id: 'back-theme:xmas', reward: 0, label: 'x' }, T0), P.rowEvent({ id: 'back-theme:halloween', reward: 0, label: 'x' }, T0)]), []).length === 0,
     '返した もの（back-theme:<名前>）・あずかりに 入って いる ものは もう 返さない（1回 だけ）');
+  // 第4.176版（まさちゃん 2026/11/15 21:53 → 11/16 00:07「間違えた！ 思い出フィギュアは、スタンプボードと神様馬ボードと幻の馬ボードを消して！ 神様馬&幻の馬ボードは残して！」）：思い出フィギュアの デザイン 3つ（番号 2・6・7）を なくした（番号 8 は 残す）
+  //   → 作って いた フィギュアを 外して、作った ときに 使った ポイントを 返す（1体に 1回 だけ＝back-fig:<フィギュアの id>）
+  {
+    const its = [{ id: 'fa', n: 2, cost: 22000 }, { id: 'fb', n: 6, cost: 32000 }, { id: 'fc', n: 1, cost: 22000 }, { id: 'fd', n: 6 }, { id: 'fe', n: 7, cost: 30000 }, { id: 'ff', n: 8, cost: 36000 }, null, { n: 2 }];
+    const gf = P.goneFigs(its, [P.giftEvent(T0)], []);
+    check(P.figGone(2) && P.figGone(6) && P.figGone(7) && P.figGone('7') && [1, 3, 4, 5, 8, 0, 9].every(n => !P.figGone(n)) && Object.keys(P.FIG_GONE).join() === '2,6,7' && P.FIG_GONE[2].join() === 'ゴールデンスカラー,22000' && P.FIG_GONE[6].join() === '神様馬,32000' && P.FIG_GONE[7].join() === '幻の馬,30000',
+      'なくした フィギュアの デザインは 番号 2（ゴールデンスカラー・22,000P）・番号 6（神様馬・32,000P）・番号 7（幻の馬・30,000P）だけ（番号 8 幻の馬＆神様馬は 残す）');
+    check(gf.map(x => [x.id, x.n, x.name, x.cost, x.back, x.paid].join(':')).join() === 'fa:2:ゴールデンスカラー:22000:back-fig:fa:false,fb:6:神様馬:32000:back-fig:fb:false,fd:6:神様馬:32000:back-fig:fd:false,fe:7:幻の馬:30000:back-fig:fe:false',
+      '返す ぶん：番号 2・6・7 の フィギュア だけ（使った P・書いて なければ 値段）。のこって いる デザイン（番号 1・8）は 返さない');
+    const gf2 = P.goneFigs(its, [P.giftEvent(T0), P.rowEvent({ id: 'back-fig:fa', reward: 22000, label: 'x' }, T0)], ['back-fig:fb']);
+    check(gf2.map(x => x.id + ':' + x.paid).join() === 'fa:true,fb:true,fd:false,fe:false' && P.goneFigs([], [], []).length === 0 && P.goneFigs(null, null, null).length === 0,
+      '返した もの（back-fig:<id>）・あずかりに 入って いる ものは もう 返さない（フィギュアは 外す ので 一覧には 出る＝paid）');
+  }
   check(P.goneUnlocks([], []).length === 0 && P.goneUnlocks(null).length === 0 && P.goneUnlocks([P.giftEvent(T0), un('gold', 2000)], []).length === 0
     && P.goneUnlocks([un('sakura', 1000), un('sakura', 1000)], []).length === 1, '外した 壁紙を 解放して いなければ 何も 返さない・同じ 壁紙は 1回');
   const b0 = P.balance(ev, T0).total, back = P.rowEvent({ id: 'back-theme:xmas', reward: 4000, label: 'なくなった壁紙「クリスマス」のポイントを返した' }, T0);
