@@ -89,3 +89,25 @@ python3 kisekae/lite_assets.py                             # 軽い 版を 作�
 ```
 
 絵と データが 入って いない ビルド（CI など）では、入口が 出ない だけ（`TCDrop.ready()` が false）。
+
+## 7. 激馬熱馬（第4.175版）
+
+まさちゃん 2026/11/15 13:56「トレーニングセンターに激馬熱馬当選を追加　1/299999 …」。素材は 7こ（どれも リポジトリに 入れない）。道具は ここと 1つ 上（`kisekae/tc/`）と 音（`kisekae/tc/snd/`）。
+
+```
+python3 -I kisekae/tc/drop/geki_art.py <馬バレの 絵（丸）> <保留の 絵（八角）> <出力>      # tc_dp_uma7.webp・tc_dp_hold7.webp（ほかの 6色と 同じ 大きさ）
+python3 -I kisekae/tc/geki_cut_measure.py <40000P の 3D>                              # 「4」の くぼみの 底の 三角を 頂点から 測る（何も 書かない）
+python3 -I kisekae/tc/geki_cut.py <40000P の 3D> <出す 3D>                            # 「4」の 三角の 中 だけ くりぬく（14:11「4の3Dの赤線の中だけくり抜いて！」）
+python3 -I kisekae/tc/geki_film.py <くりぬいた 3D> <天国の 絵> <コマの フォルダ>          # 天国の 動画の コマ（1170×1842・72コマ：1コマ 14秒 ほど）
+python3 -I kisekae/tc/geki_film.py --flash <コマの フォルダ>                           # 動画 だけで 光の 点めつを 数える（決まり：10% 未満）
+python3 -I kisekae/tc/geki_film.py --encode <コマの フォルダ> <出力>                   # tc_gk_film2.mp4・tc_gk_end2.webp
+python3 kisekae/tc/snd/sfx_geki.py <出力>                                            # tc_se_gk_pchun.m4a・tc_se_gk_heaven.m4a・tc_se_gk_tedeen.m4a
+python3 kisekae/tc/geki_install.py <絵> <動画> <音>                                   # ios/tc_assets へ（上書きしない）
+python3 kisekae/lite_assets.py                                                      # 軽い 版を 作り直す
+```
+
+- 動画の 動かし方（`geki_film.py` の `shot`）を かえたら `--flash` で 数える（小さく 作った コマ `--scale 0.2` でも 同じ 数に なる：1回 50秒）。
+  はじめの 動かし方（カットインの 間に カメラが 12度 回る）は 11.0% で 決まりを こえて いた → ゆっくり 寄る だけに して 1.7%。アプリの 中での 数は `test_tc_geki_flash.py`
+- カットの 時刻（`CUT_F`・`TEXT_F`）を かえたら `kisekae/tc/snd/sfx_geki.py` の `FILM` と `tc/tc_fx.js` の `GK` も かえる（`test_tc_geki.py` が 見くらべる）
+- プチュンの 線の 形（`tc/tc_fx.js` の `GKL`）と 音（`sfx_geki.py`）は、まさちゃんの 見本の 動画を 数字で 測って 作った（線の 太さ・明るさ・音の 高さの 動き）。見本の 動画・その 音は 使って いない（リポジトリにも 入れない）
+- 素材が ない とき：激馬熱馬の 絵（uma7・hold7）だけ ない＝馬バレと 保留は 虹の 絵で 代わり／動画と さいごの コマが ない（CI など）＝天国の 場面は 暗い 舞台に 字 だけ。どちらも 40,000P は 受け取れる

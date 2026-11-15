@@ -12,6 +12,7 @@
 //     ・13:30「ドーン！！みたいな音と一緒にテロップ出して！」）：高い 方は プチュンの あと ルーレットに もどらない ＝ 暗い 舞台に 金の 光と テロップ「大量ポイント」（下の drawBig）・音は ドーン！！（tc_se_doon.m4a）
 //   ・第4.171版（まさちゃん 2026/11/14 16:18「④トレーニングセンターの神様馬、幻の馬ルーレットで高い方が当選し、プチュンした後は、リアルな爆発と一緒に獲得ポイントの表示するようにして！」）：
 //     高い 方は プチュンで 真っ暗に なった 瞬間に 爆発（下の BOOM：動画 tc_rt_boom.mp4・音 tc_se_boom.m4a）→ 0.6秒 あとに ドーン！！と テロップ「大量ポイント」が 火の 手前に 飛びこむ
+//   ・第4.175版（まさちゃん 2026/11/15 13:56）：激馬熱馬（1/299999・40000P）の 演出（下の geki：赤と 金の 新しい プチュン → 真っ暗 → 天国の 動画〈3D の 40000P〉→ テデーンと「40000P獲得」）
 const TCFX = (() => {
   const W = 390, H = 614, TAU = Math.PI * 2;
   const AP = p => (typeof window.TC_ASSET === 'function' ? window.TC_ASSET(p) : p);
@@ -880,7 +881,179 @@ const TCFX = (() => {
     });
     return { taps: taps.slice(), total: Z.start + Z.add * Z.n };
   }
+  // ================= 激馬熱馬（第4.175版）=================
+  //   まさちゃん 2026/11/15 13:56「トレーニングセンターに激馬熱馬当選を追加　1/299999 … 新しいプチュン一個目の動画と同じ速度、線の細さで線を赤と金で作成 …
+  //     ボタン抽選演出：当選した瞬間にいきなり画面プチュンして、ブラックアウト、天国のような画面に切り替わり、上から40000Pと書かれた立体の文字が降りてきて、
+  //     40、00、0Pでそれぞれを色々な角度から映すカットが入って、テデーンとデカ文字で40000P獲得と出てきて終わり！
+  //     パチンコ抽選演出：1/299999に抽選した瞬間に馬バレのところがプチュンして、激馬熱馬が表示される　保留結果を見る、で天国のような画面に切り替わり…（同じ）」
+  //   14:04「プチュンの音は、動画の音にかなり近く作成して！」
+  //   ・新しい プチュン（gkLine）：見本の 動画を 1コマずつ 測った 形（30コマ／秒で 7コマ＝0.233秒）。太く 明るい 横一本（はじめの 0.043秒は うしろが まだ 見える）→ 真っ暗の 上で
+  //     線が 細く・暗く なって 消える。まん中に 星の 形の 光（小さく なって いく）。色は 赤と 金（芯＝白っぽい 金・まわり＝赤）。線の 太さは 見本と 同じ 割合（横幅 582 に 対して 48→28→11→9）
+  //   ・音（tc_se_gk_pchun.m4a：kisekae/tc/snd/sfx_geki.py）は 1.67秒で ぷつっと 切れる ＝ そこまで 真っ暗（GK.dark）→ 天国の 場面へ
+  //   ・天国の 場面＝動画（tc_gk_film2.mp4：kisekae/tc/geki_film.py が 天国の 絵の 上に 3D の「40000P」を 1コマずつ 描いて 作る。1170×1842・2.4秒・30コマ／秒・音なし）。
+  //     置き方は 爆発の 動画（上の BOOM）と 同じ：演出の キャンバスの 下の 幕（.tcgk）の 中の <video>。キャンバスは 動画の 間 うしろを ぬらない
+  //     14:58「40000Pの全体が見える前に、40、00、0Pのカットイン入れて！全体が見える時は背景切れてもいいからもっとアップにして迫力ある演出にして！」
+  //     → 0〜0.6秒「40」（上から 降りて きて 止まる）／0.6〜1.07「00」／1.07〜1.5「0P」／1.5秒〜 ぜんぶ（近くから 一気に 引いて ドーンと 止まる：字は ななめに 画面の 上 2/3 いっぱい。さいごの コマで 止まる）。
+  //       音は tc_se_gk_heaven.m4a（カットで シャキーン・ぜんぶが 見える ときに ドーン）
+  //   ・1.97秒（GK.text）：テ・デーン！（tc_se_gk_tedeen.m4a）と いっしょに デカ文字「40000P」「獲得」が 手前から 寄って くる（テ＝出はじめ・デーン＝着く：0.17秒 あと）。字は 画面の 下 1/3（3D の 下）。
+  //     少し 大きい 所（1.6倍）から すっと ちぢみながら はっきり する（うすい うちに ほぼ ちぢみ おわる）→ 着いた あと 小さく 1回 はずむ（3%）。
+  //     はじめは 2.3倍から 大きく ちぢむ 形だった：字の 赤い ふち・白い ふち・金の 字が 下 1/3 の 同じ 所を 何回も 通って、ぜんぶが 見える 場面の 引く 動きと 合わせて
+  //     光の 点めつの 決まりの ぎりぎり（1秒に 4回 以上 点めつ する 点が 画面の 9.9%）だった → この 形で 2% ほど（test_tc_geki_flash.py）
+  //   ・とじる：着いて から 1.1秒 たてば タップで・タップが なければ 3.5秒で（play の 決まり）
+  //   ・動画が ない・流れない（1.0秒 待つ：GK.wait）とき、「演出を控えめにする」・iPhone の「視差効果を減らす」（calm）の とき：動画の さいごの コマの 絵（tc_gk_end2.webp）を 出して 字（控えめは 飛びこまない・
+  //     動画が 途中で 止まった とき（アプリが うしろに 回った など：動きはじめて から デカ文字の 時刻 ＋ 0.8秒 たっても そこまで 進まない）も さいごの コマの 絵に かえて 字を 出す（演出が 止まった ままに ならない）。
+  //     動画は はじめに 一度 起こして おく（gkWake：PUSH は 押した 指の 中＝天国の 1.67秒 前・「保留結果を見る」からは 0.3秒 前）。iPhone は 起こして いない 動画を 流しはじめる までに
+  //     時間が かかる ことが ある ので、流れはじめるのを 1.0秒まで 待つ（その 間は 暗い まま。前は 0.5秒：zip の 中身を 重い 画面〈3倍〉で 動かした とき「保留結果を見る」からの 動画が 間に 合わず、絵に かわった）。
+  //     おくれて 流れはじめても さいごまで 流す（止まったか どうかは 動きはじめた 時から 数える。前は 天国が 出た 時から 数えて いて、おくれた 分 だけ 早く 絵に かわった）
+  //     天国の 音は 動画が 動きはじめた 時に 鳴らす（絵の カットと 音が ずれない・動画が 流れない ときは 鳴らない）
+  //     プチュンの 線と 音・天国の 音は なし＝テデーン だけ）。絵も ない ときは 暗い 舞台に 字 だけ
+  //   ・o.puchun＝false（お世話チャレンジの「保留結果を見る」から）：プチュンは なし（馬バレの 所で もう 見せた）。すっと 暗く して 0.3秒で 天国の 場面
+  const GK = { film: 'tc_gk_film2.mp4', end: 'tc_gk_end2.webp', sePc: 'tc_se_gk_pchun.m4a', seHv: 'tc_se_gk_heaven.m4a', seTd: 'tc_se_gk_tedeen.m4a', v: 40000,
+    line: 0.243, dim: 0.043, dark: 1.67, darkNo: 0.3, calm: 0.4, fade: 0.12, len: 2.4, text: 59 / 30, land: 0.17, wait: 1.0, stall: 0.8, still: 0.6, hold: 0.5 };
+  // プチュンの 線：[時（秒）, 明るさが 半分に なる 太さ, 1割に なる 太さ, 明るさ, まん中の 光の 大きさ]（太さ・大きさは 見本の 画素：横幅 582 の とき）
+  const GKL = [[0, 48, 81, 1, 50], [0.043, 28, 55, 0.98, 33], [0.077, 11, 31, 0.83, 22], [0.110, 9, 26, 0.66, 18], [0.143, 9, 24, 0.56, 15], [0.177, 9, 18, 0.38, 11], [0.210, 9, 14, 0.16, 6], [0.243, 9, 12, 0, 3]];
+  function gkAt(u) {                    // u 秒の 線の 形（コマの 間は なめらかに つなぐ）。おわって いれば null
+    if (!(u >= 0) || u >= GK.line) return null;
+    let i = 0; while (i + 2 < GKL.length && u >= GKL[i + 1][0]) i++;
+    const a = GKL[i], b = GKL[i + 1], q = clamp((u - a[0]) / (b[0] - a[0]), 0, 1);
+    return [1, 2, 3, 4].map(j => a[j] + (b[j] - a[j]) * q);
+  }
+  // q（2D の 描く 先）の (cx,cy) を まん中に、左右 hw まで のびる 赤と 金の 線と まん中の 光を 足す（'lighter'）。返り値＝明るさ 0〜1。
+  //   お世話チャレンジの 馬バレ（tc_drop.js）も これを 使う（丸の 中に 切りぬいて）
+  function gkLine(q, cx, cy, hw, u) {
+    const L = gkAt(u); if (!L) return 0;
+    const k = hw * 2 / 582, I = L[2], ht = Math.max(1.5, L[1] * k * 0.58), a = clamp(L[0] / (L[1] * 1.16), 0.05, 0.9) / 2, r = Math.max(1, L[3] * k);
+    q.save(); q.globalCompositeOperation = 'lighter';
+    let gr = q.createLinearGradient(0, cy - ht, 0, cy + ht);      // 線：外＝赤 → 金 → 芯は 白っぽい 金
+    gr.addColorStop(0, 'rgba(255,24,16,0)'); gr.addColorStop(0.5 - a, `rgba(255,44,24,${0.55 * I})`); gr.addColorStop(0.5 - a * 0.5, `rgba(255,176,48,${0.9 * I})`); gr.addColorStop(0.5, `rgba(255,246,206,${I})`);
+    gr.addColorStop(0.5 + a * 0.5, `rgba(255,176,48,${0.9 * I})`); gr.addColorStop(0.5 + a, `rgba(255,44,24,${0.55 * I})`); gr.addColorStop(1, 'rgba(255,24,16,0)');
+    q.fillStyle = gr; q.fillRect(cx - hw, cy - ht, hw * 2, ht * 2);
+    const F = Math.min(1, I * 1.6);      // まん中の 光：丸い 光 ＋ 横・たて・ななめの すじ（星の 形）
+    gr = q.createRadialGradient(cx, cy, 0, cx, cy, r * 2.3);
+    gr.addColorStop(0, `rgba(255,252,236,${F})`); gr.addColorStop(0.3, `rgba(255,214,110,${0.85 * F})`); gr.addColorStop(0.62, `rgba(255,70,30,${0.4 * F})`); gr.addColorStop(1, 'rgba(255,30,16,0)');
+    q.fillStyle = gr; q.beginPath(); q.arc(cx, cy, r * 2.3, 0, TAU); q.fill();
+    for (const [rot, len, wd, al] of [[0, 6.4, 0.36, 0.9], [Math.PI / 2, 2.4, 0.3, 0.8], [-0.62, 3.4, 0.24, 0.6]]) {
+      q.save(); q.translate(cx, cy); q.rotate(rot); q.scale(len, wd);
+      const sg = q.createRadialGradient(0, 0, 0, 0, 0, r); sg.addColorStop(0, `rgba(255,250,224,${al * F})`); sg.addColorStop(0.5, `rgba(255,190,70,${0.5 * al * F})`); sg.addColorStop(1, 'rgba(255,60,24,0)');
+      q.fillStyle = sg; q.beginPath(); q.arc(0, 0, r, 0, TAU); q.fill(); q.restore();
+    }
+    q.restore(); return I;
+  }
+  function gkOpen(cv) {                 // 幕（黒）と 動画・さいごの コマの 絵を 用意する（まだ 見せない）
+    const st = cv.parentNode, el = document.createElement('div'), v = document.createElement('video'), im = new Image(), gk = { el, v, im, dead: false, woke: false, gone: false, imOk: false };
+    el.className = 'tcgk'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#000;pointer-events:none;opacity:0';
+    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.loop = false;
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true');
+    const fill = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block';
+    v.style.cssText = fill + ';background:#000'; im.style.cssText = fill + ';opacity:0'; im.alt = '';
+    v.addEventListener('error', () => { gk.dead = true; });
+    im.onload = () => { gk.imOk = true; }; im.onerror = () => { gk.imOk = false; };
+    try { v.src = AP(GK.film); v.load(); } catch (e) { gk.dead = true; }
+    im.src = AP(GK.end);
+    el.appendChild(v); el.appendChild(im); st.insertBefore(el, cv);
+    return gk;
+  }
+  function gkWake(gk) {                 // タップの 中で 一度 動かして 止めて おく（iPhone で あとから すぐ 再生できる ように：爆発の 動画 bmWake と 同じ）
+    if (!gk || gk.woke || gk.dead) return; gk.woke = true;
+    try { const q = gk.v.play(); if (q && q.catch) q.catch(() => {}); gk.v.pause(); } catch (e) { /* なし */ }
+  }
+  function gkGo(gk) {                   // 動画を 流しはじめる → 流しはじめたら true
+    if (!gk || gk.dead || gk.gone) return false;
+    try { gk.v.currentTime = 0; } catch (e) { /* なし */ }
+    let q = null; try { q = gk.v.play(); } catch (e) { gk.dead = true; return false; }
+    if (q && q.catch) q.catch(() => { gk.dead = true; });
+    return true;
+  }
+  function gkClose(gk) {
+    if (!gk || gk.gone) return; gk.gone = true;
+    try { gk.v.pause(); gk.v.removeAttribute('src'); gk.v.load(); } catch (e) { /* なし */ }
+    gk.el.remove();
+  }
+  function gkWord(txt, x, y, size) {     // デカ文字：金の 字・赤い ふち・白い 外ふち・下に 影（明るい 天国の 上でも はっきり 読める）
+    g.font = `900 ${size}px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(96,16,0,0.5)'; g.lineWidth = size * 0.34; g.strokeText(txt, x, y + size * 0.06);
+    g.strokeStyle = '#fffdf2'; g.lineWidth = size * 0.27; g.strokeText(txt, x, y);
+    g.strokeStyle = '#9a0f0c'; g.lineWidth = size * 0.155; g.strokeText(txt, x, y);
+    const gf = g.createLinearGradient(0, y - size * 0.46, 0, y + size * 0.46); gf.addColorStop(0, '#fffbe2'); gf.addColorStop(0.5, '#ffe060'); gf.addColorStop(1, '#ffa51a');
+    g.fillStyle = gf; g.fillText(txt, x, y);
+  }
+  const GKCONF = ['#ffd65c', '#ff6a5c', '#fff4cf', '#6ad8ff', '#b98cff', '#7be08a'];
+  function gkTelop(v, val, calm) {       // テ（v＝0）から v 秒め：「40000P」「獲得」（画面の 下 1/3：上 2/3 は 3D の「40000P」）
+    if (v < 0) return;
+    const cx = W / 2, cy = 512, T = GK.land;
+    let s, a;
+    if (calm) { s = 1; a = sm(v / 0.4); }
+    else if (v < T) { const q = v / T, r = 1 - q; s = 1 + 0.6 * r * r * r; a = sm((q - 0.15) / 0.75); }      // 1.6倍 → 1倍（はじめに 速く ちぢむ）・はっきり するのは おくれて（うすい うちに ちぢみ おわる）
+    else { const q = clamp((v - T) / 0.26, 0, 1); s = 1 + 0.03 * Math.sin(Math.PI * q) * (1 - q); a = 1; }      // 着いた あと：小さく 1回 はずむ
+    const L = calm ? sm(v / 0.6) : sm((v - T * 0.6) / 0.35);      // うしろの 光（着く ころから 上がる だけ）
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const gl = g.createRadialGradient(cx, cy, 10, cx, cy, 300);
+    gl.addColorStop(0, `rgba(255,246,210,${0.5 * L})`); gl.addColorStop(0.5, `rgba(255,214,120,${0.22 * L})`); gl.addColorStop(1, 'rgba(255,190,80,0)');
+    g.fillStyle = gl; g.fillRect(0, 0, W, H); g.restore();
+    if (!calm) {
+      confetti(GKCONF, Math.max(0, v - T), sm((v - T) / 0.5), W, H);      // 紙ふぶき（着いて から）
+      const q = (v - T) / 0.6; if (q > 0 && q < 1) { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = `rgba(255,240,180,${0.5 * (1 - q)})`; g.lineWidth = 8 - 6 * q;
+        g.beginPath(); g.ellipse(cx, cy, 150 + 240 * easeOut(q), 90 + 150 * easeOut(q), 0, 0, TAU); g.stroke(); g.restore(); }      // 着いた ときの 光の 輪（1回）
+    }
+    const txt = String(Math.round(val)) + 'P';
+    g.save(); g.globalAlpha *= a; g.translate(cx, cy); g.scale(s, s);
+    g.font = `900 80px ${SANS}`; const w1 = g.measureText(txt).width, k1 = Math.min(1, 330 / Math.max(1, w1));
+    g.save(); g.translate(0, -44); g.scale(k1, k1); gkWord(txt, 0, 0, 80); g.restore();
+    gkWord('獲得', 0, 44, 88);
+    g.restore();
+    for (let i = 0; i < 10; i++) {       // きらめき（字の まわり：ゆっくり 光る）
+      const ang = i / 10 * TAU + 0.5 * hash(i + 21), x = cx + Math.cos(ang) * (170 + 22 * hash(i + 25)), y = cy + Math.sin(ang) * (84 + 16 * hash(i + 28));
+      const q = calm ? 0.5 : 0.5 + 0.5 * Math.sin(TAU * (v / (1.6 + 0.9 * hash(i + 31)) + hash(i + 23)));
+      sparkle(x, y, (8 + 10 * hash(i + 33)) * (0.35 + 0.65 * q), 0.9 * L * (0.3 + 0.7 * q));
+    }
+  }
+  // ためす 用：激馬熱馬の キャンバスの 1コマを 描く（時計を 使わない）。part＝'pc'（プチュン：はじめから v 秒め。うしろの 絵は 下の キャンバスに 置いて おく）・'telop'（テ から v 秒め）
+  function gkFrame(cv, part, v, calm) {
+    PX = cv.width / W; g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cv.width, cv.height); g.setTransform(PX, 0, 0, PX, 0, 0);
+    if (part === 'pc') { g.fillStyle = `rgba(0,0,0,${v < GK.dim ? 0.45 : 1})`; g.fillRect(0, 0, W, H); gkLine(g, W / 2, H / 2, W / 2, v); }
+    else gkTelop(v, GK.v, !!calm);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  async function geki(cv, o) {
+    o = o || {};
+    const calm = pcCalm(), pcOn = !!o.puchun && !calm, val = +o.v > 0 ? +o.v : GK.v, gk = gkOpen(cv);
+    const T0 = pcOn ? GK.dark : calm ? GK.calm : GK.darkNo, FD = calm ? 0.4 : GK.fade;      // 天国が 出はじめる 時・出る 速さ
+    if (pcOn) se(o, GK.sePc, 1, 0);
+    if (!calm) gkWake(gk);      // 動画を 起こして おく（PUSH は 押した 指の 中で ここまで 来る・「保留結果を見る」からも：起こして いない 動画は 流れはじめるのが おそい）
+    let hv = null, mode = null, textAt = null, hvSe = false, mv = null;      // mv＝動画が 動きはじめた 時
+    const R = { calm, puchun: pcOn, mode: null, hv: null, mv: null, textAt: null };      // ためす 用（TCFX.gkState）
+    GKS = R;
+    try {
+      await play(cv, Object.assign({}, o, { tapMin: 1e9 }), (u, st) => {
+        // 黒い 幕：プチュンの 間と 真っ暗の 間（プチュン なしの ときは すっと 暗く）→ 天国が 出たら うすく なる
+        let black = pcOn ? (u < GK.dim ? 0.45 : 1) : sm(u / (T0 * 0.8));
+        if (hv != null) black *= 1 - sm((u - hv) / FD);
+        if (black > 0.003) { g.fillStyle = `rgba(0,0,0,${black})`; g.fillRect(0, 0, W, H); }
+        if (pcOn) gkLine(g, W / 2, H / 2, W / 2, u);
+        // 天国の 場面：動画を 流す（控えめ・動画が ない ときは さいごの コマの 絵）
+        if (hv == null && u >= T0) {
+          hv = u; R.hv = u;
+          if (!calm && gkGo(gk)) mode = 'film'; else { mode = 'still'; gk.im.style.opacity = '1'; }
+          gk.el.style.opacity = '1';
+        }
+        if (mode === 'film' && !hvSe && gk.v.currentTime > 0) { hvSe = true; se(o, GK.seHv, 1, 0); }      // 天国の 音：動画が 動きはじめた 時に 鳴らす（絵の カットと 音の シャキーンが ずれない）
+        if (mode === 'film' && mv == null && gk.v.currentTime > 0.02) { mv = u; R.mv = u; }
+        if (mode === 'film' && mv == null && (gk.dead || u > hv + GK.wait)) { mode = 'still'; gk.im.style.opacity = '1'; }      // 動かない（GK.wait 秒 待った）：絵に かえる
+        if (mode === 'film' && mv != null && textAt == null && u > mv + GK.text + GK.stall) { mode = 'still'; gk.im.style.opacity = '1'; }      // 途中で 止まった（アプリが うしろに 回った など）：さいごの コマの 絵に かえて 先へ（止まった ままに しない）
+        if (mode === 'film' && gk.v.ended && gk.imOk) gk.im.style.opacity = '1';      // 流れ おわった：同じ 絵（さいごの コマ）を 上に
+        R.mode = mode;
+        // テ・デーン！と デカ文字
+        if (textAt == null && hv != null && (mode === 'film' ? (gk.v.currentTime >= GK.text - 0.02 || gk.v.ended) : u >= hv + (calm ? 0.5 : GK.still))) { textAt = u; R.textAt = u; se(o, GK.seTd, 1, 0); }
+        if (textAt != null) gkTelop(u - textAt, val, calm);
+        if (st.closeAt != null) gk.el.style.opacity = String(Math.max(0, 1 - sm((u - st.closeAt) / 0.5)));      // とじる：幕も いっしょに 消える
+        return { end: textAt != null ? textAt + GK.land + GK.hold : null };
+      });
+    } finally { gkClose(gk); }
+    return val;
+  }
+  let GKS = null;
   function preload(th) { rtLoad(th || 'normal'); ['tk_door_closed.webp', 'tk_door_open.webp', 'tk_ticket.webp', TELOP.src].forEach(img); }
-  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
+  return { roulette, ticket, zone, zoneFrame, puchun, preload, PCH, TELOP, BOOM, bigFrame, ZN, geki, GK, GKL, gkLine, gkFrame, get gkState() { return GKS; }, zoneInfo: (o, taps) => { const Z = znZ(o); return { need: znNeed(Z), end: znEnd(Z, taps || []), total: Z.start + Z.add * Z.n }; } };
 })();
 window.TCFX = TCFX;

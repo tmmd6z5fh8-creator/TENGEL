@@ -3,6 +3,7 @@
 #   第4.174版（10:19 見本の 動画・10:44「光りの強弱は…このピのところにあわせて！」）：ピに 合わせて 速く 強弱が つく のは 馬バレの 丸と 縁の きわ だけ。
 #     ① いつもの 決まり（画面の 10% 以上で 1秒に 3回 まで）② もっと きびしく：1秒に 4回 以上 明るさが 上下 する 所は 画面の 3% 未満（＝小さい ランプ だけ。まわりの オーラは 入らない）
 #     ③「演出を控えめにする」では ランプも 強弱 なし（すっと つく だけ）
+#   第4.175版：激馬熱馬（7）＝馬バレの 丸が プチュン（赤と 金の 線 → 真っ暗の 丸：1.67秒）→ 虹と 同じ 拍で 激馬熱馬の 絵（オーラは 虹より 少し 大きい）。控えめも 数える
 #   コップに 入る 0.5秒 前から、馬バレが ついて・保留が たまって・光が 落ちつく まで（色ごとに 長さが ちがう）。画面 ぜんぶ（390×844）を 写す
 #   python3 test_tc_drop_flash.py [1,6,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/dp_frames/<色>/ に 残す）
 #   写して いる 間は トレーニングセンターの フィールドを 描くのを 止める（止まった 絵の まま：台の うしろで 9割 かくれて いる・写すのが 速く なる）
@@ -10,7 +11,7 @@ import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8813; APP = f'http://localhost:{PORT}/APP/'
-ONLY = [int(x) for x in sys.argv[1].split(',')] if len(sys.argv) > 1 else None      # 数える 色（1 青 … 6 虹）
+ONLY = [int(x) for x in sys.argv[1].split(',')] if len(sys.argv) > 1 else None      # 数える 色（1 青 … 6 虹・7 激馬熱馬）
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict({k: v for k, v in os.environ.items() if k != 'TENGEL_TEST'}, TARGET='app'))
@@ -119,7 +120,7 @@ def seq_for(pg, want):
 
 # フィールドを 描くのを 止める／もどす：アプリが うしろに 回った ときと 同じ 合図（visibilitychange）を 送る
 HIDE = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => !!h }); document.dispatchEvent(new Event('visibilitychange')); }"
-NAMES = ['はずれ（白）', '青', '緑', '紫', '赤', '金', '虹']
+NAMES = ['はずれ（白）', '青', '緑', '紫', '赤', '金', '虹', '激馬熱馬']
 SMALL = '.03'      # 速い 強弱を ゆるす 広さ（画面の 割合）：ランプの 丸と 縁の きわ（半径 1.2倍 まで）で 2% ほど
 try:
     with sync_playwright() as p:
@@ -127,9 +128,9 @@ try:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); ctx.add_init_script(FAKE)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         open_tc(pg, APP)
-        LEN = pg.evaluate("() => TCDrop.TONE.map(t => t.len)"); LEAD = pg.evaluate("() => TCDrop.WIN_AT + TCDrop.LEAD")
+        LEN = pg.evaluate("() => TCDrop.TONE.map(t => t.len)"); LEAD = pg.evaluate("() => TCDrop.WIN_AT + TCDrop.LEAD"); PCD = pg.evaluate("() => [TCDrop.PC_DARK, TCDrop.PC_CALM]")      # PCD＝激馬熱馬の プチュンの 長さ（ふつう・控えめ）
         FD = os.path.join(W, 't5', 'dp_frames')
-        for c, wnt, calm in [(0, None, 0), (1, {'k': 'pt', 'v': 100}, 0), (2, {'k': 'rt', 'tier': 'normal'}, 0), (3, {'k': 'rt', 'tier': 'maboroshi'}, 0), (4, {'k': 'rt', 'tier': 'kamisama'}, 0), (5, {'k': 'zn'}, 0), (6, {'k': 'tk'}, 0), (6, {'k': 'tk'}, 1)]:
+        for c, wnt, calm in [(0, None, 0), (1, {'k': 'pt', 'v': 100}, 0), (2, {'k': 'rt', 'tier': 'normal'}, 0), (3, {'k': 'rt', 'tier': 'maboroshi'}, 0), (4, {'k': 'rt', 'tier': 'kamisama'}, 0), (5, {'k': 'zn'}, 0), (6, {'k': 'tk'}, 0), (6, {'k': 'tk'}, 1), (7, {'k': 'gk'}, 0), (7, {'k': 'gk'}, 1)]:
             if ONLY and c not in ONLY: continue
             d = os.path.join(FD, f'c{c}{"_calm" if calm else ""}'); shutil.rmtree(d, ignore_errors=True); os.makedirs(d); t0 = time.time()
             pg.evaluate("c => TengelFx.set({ calm: !!c })", calm); pg.evaluate(SETTOK, 25); pg.evaluate(PUSH_ON); pg.wait_for_timeout(900)
@@ -138,7 +139,7 @@ try:
             pg.evaluate(GO, [seq_for(pg, wnt)])
             pg.evaluate(TICK, [8, "TCDrop.state.ball && (TCDrop.state.t - TCDrop.state.ball.t0) * 60 >= TCDrop.state.ball.p.tin - 30"])      # コップに 入る 0.5秒 前から
             pg.evaluate(HIDE, True); pg.wait_for_timeout(200)
-            n = 0; N = int(round((0.5 + LEAD + LEN[c] + 1.6) * 60)); lamp = []      # 入る → 音 → 0.3秒 → 馬バレ（はげしい 間）→ 落ちつく（0.7秒）→ その あと 0.9秒
+            n = 0; N = int(round((0.5 + LEAD + (PCD[1 if calm else 0] if c == 7 else 0) + LEN[c] + 1.6) * 60)); lamp = []      # 入る →（激馬熱馬：プチュンと 真っ暗の 丸）→ 音 → 0.1秒 → 馬バレ（はげしい 間）→ 落ちつく（0.7秒）→ その あと 0.9秒
             for i in range(N):
                 pg.evaluate(TICK, [1 / 60, None]); pg.screenshot(path=os.path.join(d, f'f{n:04d}.png')); n += 1
                 if calm: lamp.append(pg.evaluate("() => TCDrop.info().lamp"))

@@ -851,7 +851,7 @@ try:
               f'動画が 読めない とき：ノーマルど的中の さいごの 1まいは 出ない → 極ど的中の さいごの 1まい（still）（{cst4}）')
         pg.wait_for_timeout(1400)
         bh4 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, t: e.innerText, hb: getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity }; })()")
-        check(bh4['op'] == '1' and bh4['hb'] == '1' and bh4['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.art.nd") == ['nd_last4.webp'] and pg.evaluate("window.__FX.t.ND") == 9.9
+        check(bh4['op'] == '1' and bh4['hb'] == '1' and bh4['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.art.nd") == [] and pg.evaluate("window.__FX.t.ND") == 9.9
               and pg.evaluate("window.__FX.t.NDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.nd") == 'sfx_nd.m4a' and pg.evaluate("window.__FX.films.nd_film") is not None and pg.evaluate("!!window.__FX.reveal.nd")
               and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.05s both')"),
               f'1.3秒で ボード「ど的中！！！」・ノーマルど的中の 幕／動画／音（極ど的中の 入りに 使う）は 束に 残して ある（{bh4}）')

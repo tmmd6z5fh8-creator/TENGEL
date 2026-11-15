@@ -91,9 +91,11 @@ SR = ('ど的中！押した ボタンが 光って はじけ、画面が 暗く
 def nd_layers(board_html, last_url, burst=''):
     """押したあと（下から）：（動画は fx.js が 舞台に 置く video.sgv）→ さいごの 1まい（still の 時）→ ボードの うしろを 少し 暗く → 押した 画面（.ndt：
        暗い 幕・まん中の 光・押された PUSH（{{PZ}}・{{PC}}・{{PRESSED}}・{{BURST}} は fx.js が テーマで うめる：デカ的中と 同じ）・はじける 火花 burst）→ ボード（board_html）。
-       プチュンは なし（押すと 押した 画面 → 1秒まで 真っ暗 → 動画）"""
-    return f'''<img class="nds" src="{last_url}" alt="">
-    <div class="ndk" aria-hidden="true"></div>
+       プチュンは なし（押すと 押した 画面 → 1秒まで 真っ暗 → 動画）。
+       第4.175版：last_url が None の ときは さいごの 1まい（<img class="nds">）を 置かない（アプリ：ノーマルど的中は 第4.165版で なくした ので still に ならない。
+       極ど的中の 入りで この 幕を 使う たびに、出さない 絵を 読んで いた）"""
+    nds = f'<img class="nds" src="{last_url}" alt="">\n    ' if last_url else ''
+    return f'''{nds}<div class="ndk" aria-hidden="true"></div>
     <div class="ndt" aria-hidden="true"><div class="ndtb"></div><div class="pzw" style="--pz:{{{{PZ}}}}"><div class="pressed{{{{PC}}}}">{{{{PRESSED}}}}</div>{{{{BURST}}}}<i class="ndtr"></i></div>{burst}</div>
     <div class="hb">{board_html}</div>
     <p class="sr">{SR}</p>'''

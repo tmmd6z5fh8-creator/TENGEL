@@ -44,7 +44,14 @@ const TCApp = (() => {
   const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      // n回 上乗せ した ときの 合計
   const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
+  // 第4.175版（まさちゃん 2026/11/15 13:56「トレーニングセンターに激馬熱馬当選を追加　1/299999 … パチンコ抽選 ボタン抽選 1/299999 40000P」）：激馬熱馬
+  //   ・抽選 1回ごとに 1/299999（PUSH でも お世話チャレンジの 玉でも・いつもの 馬・幻の馬・神様馬の どの 表でも。高確ゾーンの 間は ほかの 当たりと 同じ ×4）→ 40,000P
+  //   ・演出は tc_fx.js の geki（PUSH：赤と 金の プチュン → 真っ暗 → 天国の 動画〈3D の 40000P〉→ テデーンと「40000P獲得」／お世話チャレンジ：馬バレが プチュン → 激馬熱馬の 絵 →
+  //     「保留結果を見る」で 天国の 動画から）。ポイントは 演出が おわった とき（途中で 閉じても：st.pend・st.dp.holds）に わたす（ルーレット・特化ゾーンと 同じ）
+  //   ・この 分、抽選 1回の 平均は ＋約0.13P（40,000 ÷ 299,999）
+  const GEKI = { d: 299999, v: 40000 };
   const PRIZES = [                                    // お世話（ごはん・おそうじ）の 抽選：まれな 方から
+    [1 / GEKI.d, { k: 'gk' }],
     [1 / ZONE.d, { k: 'zn' }],
     // 第4.142版（11/10 17:20 まさちゃん「仕組みは今のままでいい！ただノーマルのルーレット抽選、幻の馬ルーレット当選と神様馬ルーレット抽選の確率だけ変えたい！」）：
     //   ルーレット 800P か 1600P 1/1000 → 1/125・1600P か 3200P 1/2000 → 1/245・3200P か 6400P 1/3600 → 1/399・チケット 1/2400 → 1/600（ポイントの 当たり 6つは そのまま）。
@@ -61,8 +68,8 @@ const TCApp = (() => {
   //   第4.142版（同じ 17:20 の 指定）：幻の馬 1/300・1/500・1/1000 → 1/15・1/30・1/60／神様馬 1/85・1/99・1/121 → 1/8・1/16・1/32。
   //   何か 当たる のは 幻の馬 約11.7%（平均 1回 240P）・神様馬 約21.9%（平均 1回 約1,313P）。高確ゾーン（×4）でも 約46.7%・87.5%（1 を こえない）
   const PRIZES_VISIT = {
-    maboroshi: [[1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
-    kamisama: [[1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
+    maboroshi: [[1 / GEKI.d, { k: 'gk' }], [1 / ZONE.d, { k: 'zn' }], [1 / 60, { k: 'rt', tier: 'maboroshi', v: [3200, 6400] }], [1 / 30, { k: 'rt', tier: 'maboroshi', v: [1600, 3200] }], [1 / 15, { k: 'rt', tier: 'maboroshi', v: [800, 1600] }]],
+    kamisama: [[1 / GEKI.d, { k: 'gk' }], [1 / ZONE.d, { k: 'zn' }], [1 / 32, { k: 'rt', tier: 'kamisama', v: [10000, 20000] }], [1 / 16, { k: 'rt', tier: 'kamisama', v: [5000, 10000] }], [1 / 8, { k: 'rt', tier: 'kamisama', v: [2000, 4000] }]] };
   const AP = p => String(p).split('/').pop();         // アプリ：Resources に 名前だけ
   window.TC_ASSET = AP;
 
@@ -148,7 +155,7 @@ const TCApp = (() => {
   })();
   // できごと → 効果音（sfx_care.py の parts で 作った tc_se_*.m4a。大きさ・ずれは 作る ときに 入れて ある）
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
-  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron', pushin: 'stock' };      // callcool（呼ぶの 7秒の 休み）は 音なし（第4.156版：ない 音の ファイルを 読みに 行かない）・unlock（ハートの 抽選の 当たり）は piron と 同じ 音（中身が 1バイトも ちがわない ファイルが 2つ あった → 1つに）
+  const SE_SKIP = { ready2: 'ready', zoomout: 'zoomin', feedstart: null, callcool: null, unlock: 'piron', pushin: 'stock', nolot: null };      // callcool（呼ぶの 7秒の 休み）は 音なし（第4.156版：ない 音の ファイルを 読みに 行かない）・nolot（第4.175版：抽選を しない お世話の おわり）も 音なし・unlock（ハートの 抽選の 当たり）は piron と 同じ 音（中身が 1バイトも ちがわない ファイルが 2つ あった → 1つに）
   function onCareEvent(e) {
     // 第4.159版：トークンを 使うのは お世話の あとの PUSH を 押した とき（まとめて 使う なら 押した 回数ぶん）＝トークン 1個が お世話 1回（まさちゃん「数える」）。
     //   使った トークンは その場で 保存（つづけて 押した あと すぐ 閉じても、使った 分が もどらない）
@@ -405,6 +412,7 @@ const TCApp = (() => {
     z.id = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
     if (z.k === 'rt') { const ab = z.v || RT[z.tier] || RT.normal; if (z.win == null) z.win = Math.random() < 0.5 ? 0 : 1; z.a = ab[0]; z.b = ab[1]; }      // ルーレットの 止まる 所も ここで 決める（50%ずつ）
     if (z.k === 'zn') { z.n = z.n == null ? zoneRoll() : Math.max(0, Math.min(ZONE.max, Math.round(+z.n) || 0)); z.v = zoneV(z.n); }      // 特化ゾーン：何回 上乗せ できるか（1回ごとに 60%）と 合計も ここで 決める
+    if (z.k === 'gk') z.v = GEKI.v;                                  // 第4.175版：激馬熱馬（40,000P）
     return z;
   }
   function lottery() {                                 // tc_care.js が お世話の たびに よぶ
@@ -422,6 +430,7 @@ const TCApp = (() => {
     if (z.k === 'pt') { v = +z.v || 0; grant(v, 'トレーニングセンターの お世話', z.id); }
     else if (z.k === 'rt') { const ab = z.a != null ? [z.a, z.b] : (z.v || RT[z.tier] || RT.normal); v = ab[z.win ? 1 : 0]; grant(v, 'トレーニングセンターの ルーレット', z.id); }
     else if (z.k === 'zn') { v = +z.v > 0 ? +z.v : zoneV(z.n); grant(v, 'トレーニングセンターの ポイント特化ゾーン', z.id); }
+    else if (z.k === 'gk') { v = GEKI.v; grant(v, 'トレーニングセンターの 激馬熱馬', z.id); }
     else if (z.k === 'tk') st.tickets = (st.tickets || 0) + (z.n || 1);
     if (st.pend && (!z.id || st.pend.id === z.id)) st.pend = null;
     if (z.id && st.dp && Array.isArray(st.dp.holds)) st.dp.holds = st.dp.holds.filter(q => q.id !== z.id);      // 第4.173版：お世話チャレンジの 保留（わたすのと 消すのを 1回の 保存で ＝ 2回 わたさない）
@@ -452,6 +461,12 @@ const TCApp = (() => {
         // 第4.165版：ポイント特化ゾーン（tc_fx.js の zone）。何回 上乗せ できるか（z.n）は もう 決まって いる → レバーを 1回ずつ 押して 見せる。おわったら（途中で 閉じても）合計を わたす
         SND.preload(['tc_se_zn_up.m4a', 'tc_se_zn_down.m4a', 'tc_se_rt_lever.m4a', 'sfx_big.m4a', 'tc_se_doon.m4a']);
         try { await TCFX.zone(cvFx, { n: z.n, start: ZONE.start, add: ZONE.add, max: ZONE.max, rate: ZONE.rate, bg: fieldName(), se: SND.se }); } finally { got = give(z); }
+      } else if (z.k === 'gk') {
+        // 第4.175版：激馬熱馬（tc_fx.js の geki）。PUSH＝押した 瞬間に 赤と 金の プチュン（フィールドの 音は その場で 止める）→ 真っ暗 → 天国の 動画 → テデーンと「40000P獲得」。
+        //   お世話チャレンジの「保留結果を見る」から（z.c が ある）＝プチュンは なし（馬バレの 所で もう 見せた）：すっと 暗く して 天国の 動画から。おわったら（途中で 閉じても）40,000P を わたす
+        const pc = !z.c;
+        SND.preload(GEKI_SE); SND.bgm(pc ? '' : 'none');
+        try { await TCFX.geki(cvFx, { v: GEKI.v, se: SND.se, puchun: pc }); } finally { SND.bgm(null); got = give(z); if (ov) paintHead(); }
       } else if (z.k === 'tk') {
         const n = z.n || 1;
         // 第4.159版（まさちゃん 11/12「プチュンしてから今の演出」・11:56「プチュンは、極ど的中と超プレミアム神様的中で使用してたプチュンの演出入れてね！プチュンしたらすぐに扉が落ちてくる演出にして！」）：
@@ -480,15 +495,17 @@ const TCApp = (() => {
   //   ・台の 画面と 流れは tc_drop.js（TCDrop）。ここは 中身：玉 1こ＝お世話トークン 1こ＝お世話 1回（PUSH を 1回 押したのと 同じ：TCCare.dropUse → ev 'token'）・
   //     抽選は PUSH と 同じ くじ（draw：いまの 馬の 表・高確ゾーン・幻の馬／神様馬の 抽選の 上限も 同じ）・当たりの 中身も 同じ 決め方（prep）
   //   ・色（先バレ）：ポイント 10〜300P＝青(1)／ルーレット 1/125＝緑(2)・1/245＝紫(3)・1/399＝赤(4)／幻の馬が いる 間の ルーレット・ポイント特化ゾーン＝金(5)／
-  //     神様馬が いる 間の ルーレット・チケット＝虹(6)。くじを ひいた ときに 馬が いたか（z.vis）で 決める
+  //     神様馬が いる 間の ルーレット・チケット＝虹(6)。くじを ひいた ときに 馬が いたか（z.vis）で 決める。第4.175版：激馬熱馬＝7（馬バレが プチュン → 激馬熱馬の 絵・音は 虹と 同じ）
   //   ・途中で 閉じても なくならない・2回 もらえない：玉を 落とした 瞬間に 当たりを 保存（st.dp.holds）→「保留結果を見る」で わたす たびに 同じ 保存で 消す（give）。
   //     残った まま 閉じた ときは、次に 開いた ときに 台を「保留結果を見る」から 出す（dropResume）。絵が 読めない ときは その場で ぜんぶ わたす（前の PUSH の 当たり st.pend と 同じ）
   //   ・台が 出て いる 間は busy（馬の 入れかえ・タイムリミットは 待つ：当たりの 演出の 間と 同じ）
-  const dropTone = z => (!z ? 0 : z.k === 'tk' ? 6 : z.k === 'zn' ? 5 : z.k === 'rt' ? (z.vis === 'kamisama' ? 6 : z.vis === 'maboroshi' ? 5 : z.tier === 'kamisama' ? 4 : z.tier === 'maboroshi' ? 3 : 2) : 1);
+  const dropTone = z => (!z ? 0 : z.k === 'gk' ? 7 : z.k === 'tk' ? 6 : z.k === 'zn' ? 5 : z.k === 'rt' ? (z.vis === 'kamisama' ? 6 : z.vis === 'maboroshi' ? 5 : z.tier === 'kamisama' ? 4 : z.tier === 'maboroshi' ? 3 : 2) : 1);
   let dropping = false;
   // 台の 音 14こ（kisekae/tc/snd/sfx_drop.py）：玉が 出る・釘 3つ・コップ・はずれ・保留・かぎ・馬バレ 6色。名前は ここに そのまま 書く（test_iphone_only.py が「鳴らす 音＝入って いる 音」を 見くらべる）
   const DROP_SE = ['tc_se_dp_out.m4a', 'tc_se_dp_peg1.m4a', 'tc_se_dp_peg2.m4a', 'tc_se_dp_peg3.m4a', 'tc_se_dp_cup.m4a', 'tc_se_dp_miss.m4a', 'tc_se_dp_hold.m4a', 'tc_se_dp_open.m4a',
     'tc_se_dp_umb1.m4a', 'tc_se_dp_umb2.m4a', 'tc_se_dp_umb3.m4a', 'tc_se_dp_umb4.m4a', 'tc_se_dp_umb5.m4a', 'tc_se_dp_umb6.m4a'];
+  // 第4.175版：激馬熱馬の 音 3つ（kisekae/tc/snd/sfx_geki.py）：プチュン（PUSH と 馬バレの 両方）・天国の 場面・テデーン
+  const GEKI_SE = ['tc_se_gk_pchun.m4a', 'tc_se_gk_heaven.m4a', 'tc_se_gk_tedeen.m4a'];
   const dropOk = () => !!(window.TCDrop && TCDrop.ready());
   const dropHolds = () => (st && st.dp && Array.isArray(st.dp.holds) ? st.dp.holds : []);
   // あと 何こ 落とせるか（抽選の 上限）：PUSH と 同じ（drawLeft）。ただし 幻の馬・神様馬の 帰る 時刻（タイムリミット・切り替わりタイマー）を すぎた あとは 0 ＝
@@ -500,6 +517,7 @@ const TCApp = (() => {
     high: () => (TCCare.on ? TCCare.S.high || 0 : 0),
     holds: () => dropHolds().map(z => JSON.parse(JSON.stringify(z))),
     se: (name, gain) => SND.se('tc_se_' + name + '.m4a', gain),
+    quiet: on => { SND.bgm(on ? '' : null); },      // 第4.175版：激馬熱馬の 馬バレの プチュンの 間は フィールドの 音を 止める（true）→ もどす（false）
     // 玉を 1こ 落とす：トークン −1（お世話 1回に 数えて 保存）→ くじ → 当たりは すぐ 保存。返り値 { ok, z（当たり か null）, c（色 1〜6・はずれは 0） }
     drop() {
       if (!TCCare.on || TCCare.S.stock < 1 || dropLeft() < 1) return { ok: false };
@@ -520,7 +538,7 @@ const TCApp = (() => {
   async function dropOpen(resume) {
     if (dropping || busy || resetting || !built || !dropOk() || !TCCare.on) return false;
     dropping = true; busy = true; TCCare.roulette(true);      // PUSH を かくす・押せなく する（当たりの 演出の 間と 同じ）
-    SND.preload(DROP_SE);      // 台の 音を 先に 読んで おく（はじめの 玉で 音が おくれない）
+    SND.preload(DROP_SE.concat(GEKI_SE));      // 台の 音を 先に 読んで おく（はじめの 玉で 音が おくれない）
     let r = null;
     try { r = await TCDrop.open(stage, DROP, { resume: !!resume || dropHolds().length > 0 }); }      // わたして いない 当たりが 残って いたら、いつでも 先に「保留結果を見る」から
     catch (e) { r = null; }
@@ -635,7 +653,7 @@ const TCApp = (() => {
       try { if (kind) { forceNext = kind; await doReset(); } else await endVisit(); } finally { resetting = false; forceNext = undefined; }
       return 'ok';
     },
-    // 次の お世話の 当たり：z＝undefined（くじに もどす）・null（はずれ）・{ k:'pt', v }・{ k:'rt', tier, v:[a,b]（なければ 表の 数）, win:0か1 }・{ k:'tk', n }
+    // 次の お世話の 当たり：z＝undefined（くじに もどす）・null（はずれ）・{ k:'pt', v }・{ k:'rt', tier, v:[a,b]（なければ 表の 数）, win:0か1 }・{ k:'tk', n }・{ k:'gk' }（第4.175版：激馬熱馬）
     //   horse＝その 当たりが 出る 馬（'normal'・'maboroshi'・'kamisama'）：ちがう 馬が いる ときは 先に 入れかえる（本番で 起きる 組み合わせ だけ ためす）
     async prize(z, horse) {
       if (!testOn()) return 'off';
@@ -663,7 +681,7 @@ const TCApp = (() => {
       TCCare.pushShow(clock() + 0.25); return 'ok';
     },
     // 第4.173版：お世話チャレンジ。list＝これから 落とす 玉の 結果を 順に（のこりの 玉は いつもの くじ）：数＝色（0 はずれ・1 青〈100P〉・2 緑〈ルーレット 800P か 1600P〉・
-    //   3 紫〈1600P か 3200P〉・4 赤〈3200P か 6400P〉・5 金〈ポイント特化ゾーン〉・6 虹〈チケット 1枚〉）か、当たり そのもの（{ k, … }：prize と 同じ 形）。
+    //   3 紫〈1600P か 3200P〉・4 赤〈3200P か 6400P〉・5 金〈ポイント特化ゾーン〉・6 虹〈チケット 1枚〉・7 激馬熱馬〈40,000P：第4.175版〉）か、当たり そのもの（{ k, … }：prize と 同じ 形）。
     //   open＝true で お世話を とばして すぐ 台を 開く。horse＝その 当たりが 出る 馬（ちがう 馬が いる ときは 先に 入れかえる：prize と 同じ）。
     //   中身は 本番の くじの 当たり（色の 決め方・わたし方も 本番と 同じ）。台を 閉じたら 決めた 結果は 消える（あとの PUSH に のこらない）。
     //   返り値：'ok'・'none'（台の 絵が 入って いない）・'busy'・'off'
@@ -671,7 +689,7 @@ const TCApp = (() => {
       if (!testOn()) return 'off';
       if (open && !dropOk()) return 'none';
       if (horse) { const r = await TEST.visit(horse === 'normal' ? null : horse); if (r === 'busy' || r === 'off') return r; }
-      const Z = [null, { k: 'pt', v: 100 }, { k: 'rt', tier: 'normal' }, { k: 'rt', tier: 'maboroshi' }, { k: 'rt', tier: 'kamisama' }, { k: 'zn' }, { k: 'tk', n: 1 }];
+      const Z = [null, { k: 'pt', v: 100 }, { k: 'rt', tier: 'normal' }, { k: 'rt', tier: 'maboroshi' }, { k: 'rt', tier: 'kamisama' }, { k: 'zn' }, { k: 'tk', n: 1 }, { k: 'gk' }];
       testList = (Array.isArray(list) ? list : []).map(c => (c && typeof c === 'object' ? JSON.parse(JSON.stringify(c)) : Z[c] ? JSON.parse(JSON.stringify(Z[c])) : null));
       if (!open) return 'ok';
       if (!testFree() && !(TCCare.on && TCCare.S.push && careFree() && !busy && !resetting)) { testList = []; return 'busy'; }
@@ -830,5 +848,5 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
+  return { open, close, tickets, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();

@@ -36,10 +36,14 @@ OLD = {'sd_film3.mp4': 'b3a39134056574606fb399a5d195183b', 'sd_last3.webp': 'f98
 print('■ アプリ（動画の 名前）')
 check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film4.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film2.mp4'}
       and BF.STILL == {'sgd_last': 'sgd_last2.webp', 'sd_last': 'sd_last4.webp', 'nd_last': 'nd_last4.webp', 'gk_last': 'gk_last2.webp'}
-      and BF.ART == {'sd': ['sd_last4.webp'], 'nd': ['nd_last4.webp'], 'sgd': ['sgd_last2.webp'], 'gk': ['gk_last2.webp']} and len(BF.ASSET_FILES) == 24,
-      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4・神様極的中は …2（3倍の もの）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：数は 同じ）')
+      and BF.ART == {'sd': ['sd_last4.webp'], 'nd': [], 'sgd': ['sgd_last2.webp'], 'gk': ['gk_last2.webp']} and len(BF.ASSET_FILES) == 23 and 'nd_last4.webp' not in BF.ASSET_FILES,
+      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4・神様極的中は …2（3倍の もの）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：第4.175版から ノーマルど的中の さいごの 1まいは 入れない）')
 B = BF.bundle()
-check(B['films'] == BF.FILMS and all(BF.STILL[k + '_last'] in B['reveal'][k] for k in ('sd', 'nd', 'gk', 'sgd')) and not any(o in json.dumps(B['reveal']) for o in ('sd_last3.webp', 'nd_last3.webp', 'gk_last.webp'))
+import lite_assets as LA
+import normal_do as NDM
+# 第4.175版：ノーマルど的中の さいごの 1まい（<img class="nds">）は 幕に 置かない（still に ならない ので 出ない 絵）
+check(B['films'] == BF.FILMS and all(BF.STILL[k + '_last'] in B['reveal'][k] for k in ('sd', 'gk', 'sgd')) and 'nd_last' not in json.dumps(B) and 'class="nds"' not in B['reveal']['nd'] and 'class="ndk"' in B['reveal']['nd']
+      and not any(o in json.dumps(B['reveal']) for o in ('sd_last3.webp', 'nd_last3.webp', 'gk_last.webp'))
       and B['t']['SD'] == 9.9 and B['t']['ND'] == 9.9 and B['t']['GKB'] == 12.0 and B['t']['SDS'] == {'FROM': 9.8, 'WAIT': 1.0},
       '演出の 束（window.__FX）：動画と さいごの 1まいは 新しい 名前・ボードが 出る 時刻は 前と 同じ（音と ずれない）')
 fx = rd('fx.js')
@@ -136,11 +140,32 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEWF
         man = assets_dir.manifest('fx_assets'); lt = assets_dir.lite('fx_assets'); fl = man['files']; lsz = osz = 0
         ok = assets_dir.stale('fx_assets') == '' and all(f in fl and os.path.isfile(os.path.join(lt, f)) for f in NEWF) and not any(f in fl or os.path.exists(os.path.join(lt, f)) for f in OLD if not f.startswith('sgd'))
         for nm, film, last, ofilm, olast, n, redraw in FILMS:
-            ok = ok and fl[film]['how'] == 'film' and fl[film]['p'] == ('crf24-slow-tail30:23/20:22/10:21' if redraw else 'crf27-slow-tail30:25/20:23/10:21') and probe(os.path.join(lt, film)) == (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', n, True)
+            cutn = LA.CUT.get(film)                      # 第4.175版：はじめの 所 だけ 入れる 動画（ノーマルど的中：180コマ）
+            ok = ok and fl[film]['how'] == 'film' and fl[film]['p'] == (f'crf24-slow-cut{cutn}' if cutn else 'crf24-slow-tail30:23/20:22/10:21' if redraw else 'crf27-slow-tail30:25/20:23/10:21') and probe(os.path.join(lt, film)) == (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', cutn or n, True)
             ok = ok and os.path.getsize(os.path.join(lt, film)) < os.path.getsize(os.path.join(fxd, film)) * 0.85 and md5(os.path.join(lt, last)) == md5(os.path.join(fxd, last))
             lsz += os.path.getsize(os.path.join(lt, film)) + os.path.getsize(os.path.join(lt, last))
-        check(ok, f'軽い 版：新しい 6つ（動画 3本・さいごの 1まい 3まい）だけ（前の ものは ない）・描き直した 2本は CRF 24・のばして 作った 神様極的中は CRF 27（どれも さいごの 30コマは 少しずつ きれいに）・形は もとと 同じ・さいごの 1まいは もとの まま（6つで {lsz / 1e6:.1f}MB）')
+        check(ok, f'軽い 版：新しい 6つ（動画 3本・さいごの 1まい 3まい）だけ（前の ものは ない）・描き直した 2本は CRF 24・のばして 作った 神様極的中は CRF 27（極ど的中・神様極的中は さいごの 30コマを 少しずつ きれいに）・形は もとと 同じ'
+                  f'（第4.175版：ノーマルど的中は はじめの {LA.CUT["nd_film4.mp4"]}コマ だけ）・さいごの 1まいは もとの まま（6つで {lsz / 1e6:.1f}MB）')
         print('  軽い 版の 大きさ：' + '・'.join(f'{JP[nm]} {os.path.getsize(os.path.join(lt, film)) / 1e6:.2f}MB' for nm, film, *_ in FILMS))
+        # 第4.175版（まさちゃん 2026/11/15 17:45「アプリ内のいらないデータも消して！」）：ノーマルど的中の 動画・音は 極ど的中の 入り（はじめの 5.34秒）に しか 使わない → 軽い 版（アプリ）には はじめの 所 だけ
+        fxj = rd('fx.js'); cut = LA.CUT.get('nd_film4.mp4', 0); acut = LA.ACUT.get('sfx_nd.m4a', 0); need = NDM.SD_UP['AT'] + 0.6
+        check(LA.CUT == {'nd_film4.mp4': 180} and LA.ACUT == {'sfx_nd.m4a': 6.5} and cut / 30 >= need and acut >= need + 0.3
+              and 'later(sdBlack, Math.max(0, A.t.SDUP.AT - (v.currentTime || 0) + .6) * 1000)' in fxj and "if ((v.currentTime || 0) >= A.t.SDUP.AT || v.ended) { sdBlack(); return; }" in fxj
+              and "function shown(kind, quiet) { return kind === 'pc' || kind === 'nd' ? 'sd' :" in fxj and "const kind = tier === 'g' ? 'sgd' : tier === 'd' ? 'sd' : tier === 'b' ? 'big' : 'hit';" in fxj,
+              f'第4.175版：ノーマルど的中（もう 出ない：くじの 結果にも 決めて 出す ときにも ない）の 動画・音は 極ど的中の 入り だけ：{NDM.SD_UP["AT"]}秒で 止める（時刻が 進まない ときの 予備でも {need:.2f}秒）'
+              f' → 軽い 版は 動画 はじめの {cut}コマ（{cut / 30:.1f}秒）・音 はじめの {acut}秒 で 足りる')
+        ln, mn = os.path.join(lt, 'nd_film4.mp4'), os.path.join(fxd, 'nd_film4.mp4'); ks = [20, 60, 100, 140, 159, cut - 1]
+        pq = [psnr(frame(ln, k), frame(mn, k)) if frame(ln, k) is not None and frame(mn, k) is not None else 0 for k in ks]
+        check(min(pq) > 36 and frame(ln, cut) is None and os.path.getsize(ln) < os.path.getsize(mn) * 0.4,
+              f'ノーマルど的中の 動画（軽い 版）：使う 所の 絵は もとと 同じ（コマ {"・".join(str(k) for k in ks)} の 近さ {" ".join("%.1f" % min(v, 99) for v in pq)} dB）・{cut}コマ目から 先は ない（{os.path.getsize(ln) / 1e6:.2f}MB・もとは {os.path.getsize(mn) / 1e6:.2f}MB）')
+        la, ma = os.path.join(lt, 'sfx_nd.m4a'), os.path.join(fxd, 'sfx_nd.m4a')
+        dur = lambda q: float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', q], capture_output=True, text=True).stdout.strip() or 0)
+        pcm = lambda q: np.frombuffer(subprocess.run(['ffmpeg', '-v', 'error', '-i', q, '-f', 's16le', '-acodec', 'pcm_s16le', '-'], capture_output=True, check=True).stdout, np.int16)
+        xa, ya = pcm(ma), pcm(la); kk = len(ya) - 4096
+        check(fl['sfx_nd.m4a']['how'] == 'acut' and fl['sfx_nd.m4a']['p'] == f'cut{acut}' and abs(dur(la) - acut) < 0.05 and dur(ma) > 12 and kk > 0 and np.array_equal(xa[:kk], ya[:kk]) and LA._elst(la) is not None
+              and [t for _d, t in LA._elst(la)] == [t for _d, t in LA._elst(ma)] and md5(os.path.join(lt, 'sfx_sd.m4a')) == md5(os.path.join(fxd, 'sfx_sd.m4a')) and md5(os.path.join(lt, 'sfx_ndt.m4a')) == md5(os.path.join(fxd, 'sfx_ndt.m4a')),
+              f'ノーマルど的中の 音（軽い 版）：はじめの {dur(la):.2f}秒 だけ（もとは {dur(ma):.2f}秒）・圧縮し直して いない（ほどいた 音は もとの はじめと 1つも ちがわない・頭の あきも 同じ）'
+              f'（{os.path.getsize(la) / 1e3:.0f}KB・もとは {os.path.getsize(ma) / 1e3:.0f}KB）・ほかの 音は もとの まま')
     else:
         print('  ※ 軽い 版（ios/lite/fx_assets）が ない ので、その 確かめは しない')
 else:

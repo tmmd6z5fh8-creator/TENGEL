@@ -38,6 +38,7 @@ const TCTest = (() => {
 #tct .ttb.k{border-color:#d9a443;background:#fff1c4;color:#7a5208}
 #tct .ttb.n{border-color:#c9c0b2;background:#f6f2ea;color:#6a5a48}
 #tct .ttb.z{border-color:#8a78e0;background:#eef0ff;color:#3f3690}
+#tct .ttb.g{border-color:#d8352c;background:#fff0e6;color:#a01c14}
 #tct .ttb.sw{width:100%;text-align:left;border-style:dashed;background:#fff}
 #tct .ttb.sw[aria-pressed="true"]{border-style:solid;border-color:#3f9f5a;background:#eaf7ea;color:#2c6a3a}
 `;
@@ -52,13 +53,14 @@ const TCTest = (() => {
   const znName = z => z.n == null ? '特化ゾーン（上乗せは くじどおり）' : `特化ゾーン 上乗せ ${z.n}回${z.n >= ZMAX ? '（MAX）' : ''} → ${P(ZV(z.n))}`;
   const HORSE = { normal: 'いつもの 馬', maboroshi: '幻の馬', kamisama: '神様馬' };
   // 第4.173版：お世話チャレンジの 1こめの 玉（色の 番号・名前・中身：tc_app.js の TEST.drop の 番号と 同じ）
-  const DROPS = [[1, '青', '100P'], [2, '緑', 'ルーレット 800か1600'], [3, '紫', 'ルーレット 1600か3200'], [4, '赤', 'ルーレット 3200か6400'], [5, '金', '特化ゾーン'], [6, '虹', 'チケット']];
+  const DROPS = [[1, '青', '100P'], [2, '緑', 'ルーレット 800か1600'], [3, '紫', 'ルーレット 1600か3200'], [4, '赤', 'ルーレット 3200か6400'], [5, '金', '特化ゾーン'], [6, '虹', 'チケット'], [7, '激馬熱馬', '40,000P']];      // 第4.175版：7＝激馬熱馬
+  const GKN = '激馬熱馬（40,000P）';
   const CALL = { come: '近づいてくる', turn: '振り向く', amae: '甘える' };
   const FLAG = { gold: '金のニンジン', beg: 'おかわりの目', rare: '首を かしげる', nibble: 'ほうきを かじる', win: 'ハートの 抽選', call: '呼ぶ' };
-  const zName = z => z === undefined ? 'くじ（本番と 同じ 確率）' : !z ? 'はずれ（当たりなし）' : z.k === 'pt' ? P(z.v) : z.k === 'tk' ? `チケット ${z.n}枚` : z.k === 'zn' ? znName(z)
+  const zName = z => z === undefined ? 'くじ（本番と 同じ 確率）' : !z ? 'はずれ（当たりなし）' : z.k === 'pt' ? P(z.v) : z.k === 'tk' ? `チケット ${z.n}枚` : z.k === 'zn' ? znName(z) : z.k === 'gk' ? GKN
     : `ルーレット（${P(z.v[0])} か ${P(z.v[1])}）→ ${P(z.v[z.win ? 1 : 0])}`;
   // フィールドの お知らせ用（1行は 短く：お知らせの 札は 画面の 半分の 幅）
-  const zLines = z => !z ? 'はずれ（当たりなし）' : z.k === 'pt' ? `${P(z.v)} が 当たる` : z.k === 'tk' ? `チケット ${z.n}枚` : z.k === 'zn' ? (z.n == null ? 'ポイント特化ゾーン\n（上乗せは くじどおり）' : `ポイント特化ゾーン\n上乗せ ${z.n}回${z.n >= ZMAX ? '（MAX）' : ''}\n→ ${P(ZV(z.n))}`) : `ルーレット\n${P(z.v[0])} か ${P(z.v[1])}\n→ ${P(z.v[z.win ? 1 : 0])}`;
+  const zLines = z => !z ? 'はずれ（当たりなし）' : z.k === 'pt' ? `${P(z.v)} が 当たる` : z.k === 'tk' ? `チケット ${z.n}枚` : z.k === 'gk' ? '激馬熱馬\n（40,000P）' : z.k === 'zn' ? (z.n == null ? 'ポイント特化ゾーン\n（上乗せは くじどおり）' : `ポイント特化ゾーン\n上乗せ ${z.n}回${z.n >= ZMAX ? '（MAX）' : ''}\n→ ${P(ZV(z.n))}`) : `ルーレット\n${P(z.v[0])} か ${P(z.v[1])}\n→ ${P(z.v[z.win ? 1 : 0])}`;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const btn = (txt, a, o, cls) => `<button type="button" class="ttb${cls ? ' ' + cls : ''}" data-a="${a}"${o ? ` data-o="${esc(JSON.stringify(o))}"` : ''}>${txt}</button>`;
   const rtRows = (h, cls) => RTS[h].map(([tier, a, b]) => `<div class="ttr"><span class="ttl w">${P(a)} か ${P(b)} →</span>`
@@ -83,6 +85,9 @@ const TCTest = (() => {
     + `<div class="ttg">🌈 ポイント特化ゾーン（上乗せ できる 回数を えらぶ・いまの 馬の まま 出る）</div>`
     + `<div class="ttr">${ZNS.map(n => btn(`${n}回${n >= ZMAX ? '（MAX）' : ''} → ${P(ZV(n))}`, 'prize', { z: { k: 'zn', n } }, 'z')).join('')}${btn('くじどおり（1回ごとに 60%）', 'prize', { z: { k: 'zn' } }, 'z')}</div>`
     + `<p>本番は PUSH 1回ごとに 1/699 で 入るよ。レバーを タップ → 60% で ＋2,000P 上乗せ・失敗で おわり・12回 つづけて 上乗せで MAX 25,000P。</p>`
+    + `<div class="ttg">🔥 激馬熱馬（40,000P・いまの 馬の まま 出る）</div>`
+    + `<div class="ttr">${btn('激馬熱馬（PUSH で プチュン → 天国 → 40000P獲得）', 'prize', { z: { k: 'gk' } }, 'g')}</div>`
+    + `<p>本番は 抽選 1回ごとに 1/299999。お世話チャレンジで 出す ときは 下の ④ の「激馬熱馬」（馬バレが プチュン →「保留結果を見る」で 天国）。</p>`
     + `<div class="ttg">🌙 幻の馬が いる 間の ルーレット（押すと 幻の馬が 来る）</div>` + rtRows('maboroshi', 'v')
     + `<div class="ttg">✨ 神様馬が いる 間の ルーレット（押すと 神様馬が 来る）</div>` + rtRows('kamisama', 'k') + `</div>`
     + `<div class="tts" data-sec="other"><h3>③ そのほかの 当たり・めずらしい 動き</h3>`
@@ -110,7 +115,7 @@ const TCTest = (() => {
     + `<div class="ttr">${btn('青 → 緑 → 紫 → 赤 → 金', 'drop', { l: [1, 2, 3, 4, 5], h: 'normal' })}${btn('虹 → はずれ → 青 → 金 → 赤', 'drop', { l: [6, 0, 1, 5, 4], h: 'normal' })}${btn('青 5こ（10・50・100・200・300P）', 'drop', { l: [10, 50, 100, 200, 300].map(v => ({ k: 'pt', v })), h: 'normal' })}</div>`
     + `<div class="ttg">馬が いる 間の ルーレット（押すと その 馬が 来る）</div>`
     + `<div class="ttr">${btn('🌙 金（幻の馬の ルーレット）', 'drop', { l: [{ k: 'rt', tier: 'maboroshi', v: [800, 1600] }], h: 'maboroshi' }, 'v')}${btn('✨ 虹（神様馬の ルーレット）', 'drop', { l: [{ k: 'rt', tier: 'kamisama', v: [2000, 4000] }], h: 'kamisama' }, 'k')}</div>`
-    + `<p>色：青＝10〜300P・緑／紫／赤＝ルーレット（800か1600／1600か3200／3200か6400）・金＝幻の馬の ルーレット と ポイント特化ゾーン・虹＝神様馬の ルーレット と チケット。</p></div>`;
+    + `<p>色：青＝10〜300P・緑／紫／赤＝ルーレット（800か1600／1600か3200／3200か6400）・金＝幻の馬の ルーレット と ポイント特化ゾーン・虹＝神様馬の ルーレット と チケット・激馬熱馬＝40,000P（馬バレが プチュン → 激馬熱馬の 絵）。</p></div>`;
 
   let root = null, api = null, busy = false;
   function style() { if (!document.getElementById('tct-css')) { const st = document.createElement('style'); st.id = 'tct-css'; st.textContent = CSS; document.head.appendChild(st); } }

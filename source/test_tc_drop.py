@@ -168,9 +168,9 @@ try:
     n_beat = eval(re.search(r'^N_BEAT = (\{[^}]*\})', sx, re.M).group(1)); n_long = eval(re.search(r'^N_LONG = (\{[^}]*\})', sx, re.M).group(1))
     p_beat = float(re.search(r'^BEAT = ([0-9.]+)', sx, re.M).group(1)); p_gap = float(re.search(r'^LONG_GAP = ([0-9.]+)', sx, re.M).group(1))
     js_pip = [(int(a_), int(b_)) for a_, b_ in re.findall(r'pip: (\d+), long: (\d+), lo:', d_)]; js_c = re.search(r'const BEAT = ([0-9.]+), LONG_GAP = ([0-9.]+);', d_); js_l = re.search(r'const WIN_AT = ([0-9.]+), LEAD = ([0-9.]+);', d_)
-    check(js_pip == [(1, 1)] + [(n_beat[c], n_long[c]) for c in range(1, 7)] and [p for p, _ in js_pip] == [1, 2, 3, 4, 5, 7, 8] and js_c is not None and float(js_c.group(1)) == p_beat == 0.1 and float(js_c.group(2)) == p_gap,
+    check(js_pip == [(1, 1)] + [(n_beat[c], n_long[c]) for c in range(1, 7)] + [(n_beat[6], n_long[6])] and [p for p, _ in js_pip] == [1, 2, 3, 4, 5, 7, 8, 8] and js_c is not None and float(js_c.group(1)) == p_beat == 0.1 and float(js_c.group(2)) == p_gap,
           f'ランプの 拍（数と 長い 拍 {js_pip}・間 {js_c and js_c.group(1)}秒・虹の 長い 拍の 間 {js_c and js_c.group(2)}秒）は 音を 作る 道具（sfx_drop.py：{n_beat}・{n_long}・{p_beat}・{p_gap}）と 同じ')
-    check(js_l is not None and float(js_l.group(2)) == 0.1 and "later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });" in d_ and d_.index("se('dp_umb' + c);") < d_.index("later(LEAD, () => { S.lcd"),
+    check(js_l is not None and float(js_l.group(2)) == 0.1 and "later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });" in d_ and d_.index("se('dp_umb' + Math.min(c, 6));") < d_.index("later(LEAD, () => { S.lcd"),
           '当たり：先に 音・0.1秒 あとに 馬バレ（LEAD＝0.1）')
     import assets_dir as _A
     _um = {f'tc_se_dp_um{v}{c}.m4a' for v in 'ab' for c in range(1, 7)}; _old = {f for f in _um if 'uma' in f}
@@ -195,11 +195,11 @@ try:
             okp.append(len(f) == 3 * n and 60 < p['tin'] < n and n <= 200 and abs(x0 - dp['ball']['start'][0]) < 3 and abs(y0 - dp['ball']['start'][1]) < 3
                        and abs(xe - cx) < 70 and ye > cy and step < 40 and all(h[0] <= n and h[1] in (0, 1, 2, 3) for h in p['h']) and sum(1 for h in p['h'] if h[1] == 0) >= 3)
         check(all(okp), f'落ち方：受け皿から 出て・釘に 3回 以上 当たって・その コップの 中で おわる・3.4秒 以内・1コマに 40画素より 動かない（{okp.count(True)}/16）')
-        need = ['tc_dp.json', 'tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp', 'tc_dp_icon.webp'] + [f'tc_dp_{k}{i}.webp' for k in ('uma', 'hold') for i in range(1, 7)]
+        need = ['tc_dp.json', 'tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp', 'tc_dp_icon.webp'] + [f'tc_dp_{k}{i}.webp' for k in ('uma', 'hold') for i in range(1, 8)]      # 第4.175版：激馬熱馬の 絵（uma7・hold7）
         snds = [f'tc_se_dp_{n}.m4a' for n in ['umb1', 'umb2', 'umb3', 'umb4', 'umb5', 'umb6', 'out', 'peg1', 'peg2', 'peg3', 'cup', 'miss', 'hold', 'open']]
         have = set(os.listdir(TCA)); used = set(re.findall(r"dp_[a-z]+\d?", ' '.join(re.findall(r"se\('(dp_[a-z0-9']*)", src['tc_drop.js']))))
         check(all(f in have for f in need + snds) and not [f for f in have if '_dp' in f and f not in need + snds],
-              f'素材：絵と データ 18こ・音 14こが そろって いる（ほかの tc_dp の ファイルは ない）')
+              f'素材：絵と データ {len(need)}こ・音 14こが そろって いる（ほかの tc_dp の ファイルは ない）')
         sz = sum(os.path.getsize(os.path.join(TCA, f)) for f in need + snds)
         check(sz < 1.2e6 and not any(f.endswith('.png') for f in need), f'素材の 大きさ：合わせて {sz / 1e6:.2f}MB（1.2MB より 小さい・PNG は なし）')
 
@@ -221,7 +221,7 @@ try:
             ctx, pg = page(); open_tc(pg, APP)
             T = pg.evaluate("() => ({ tone: TCDrop.TONE.slice(1), balls: TCDrop.BALLS, name: TCDrop.NAME.slice(1), test: typeof TCApp.test.drop === 'function' ? 1 : 0 })")
             inc = lambda k: all(T['tone'][i][k] < T['tone'][i + 1][k] for i in range(5))
-            check(T['balls'] == 5 and T['name'] == ['青', '緑', '紫', '赤', '金', '虹'] and all(inc(k) for k in ('R', 'a', 'dim', 'nt', 'tl', 'len', 'lock')),
+            check(T['balls'] == 5 and T['name'] == ['青', '緑', '紫', '赤', '金', '虹', '激馬熱馬'] and all(inc(k) for k in ('R', 'a', 'dim', 'nt', 'tl', 'len', 'lock')),
                   '光は 青 → 緑 → 紫 → 赤 → 金 → 虹の 順に 大きく・こく・長く なる（オーラの 大きさ R・こさ・暗さ・炎の 数と 長さ・はげしい 間）')
             check([t['rays'] for t in T['tone']] == sorted(t['rays'] for t in T['tone']) and T['tone'][0]['rays'] == 0 and T['tone'][5]['rays'] > T['tone'][3]['rays'] > 0, '光の すじ：青・緑は なし → 紫 から ふえる')
             tone = pg.evaluate("""() => { const f = TCApp._t.dropTone; return [f(null), f({ k: 'pt', v: 10 }), f({ k: 'pt', v: 300 }), f({ k: 'rt', tier: 'normal' }), f({ k: 'rt', tier: 'maboroshi' }), f({ k: 'rt', tier: 'kamisama' }),
@@ -430,7 +430,7 @@ try:
             ctx, pg = page(); open_tc(pg, APP)
             gd = pg.evaluate("""() => { TCGuide.open(document.querySelector('#tcOv .tcst'), { anim: false }); const sec = [...document.querySelectorAll('#tcg .sec')].find(e => e.querySelector('h3').textContent.includes('お世話チャレンジ'));
               const r = sec ? { rows: [...sec.querySelectorAll('table[data-tab=tone] tr')].map(tr => [tr.dataset.c, tr.children[1].textContent]), txt: sec.textContent, idx: [...document.querySelectorAll('#tcg .sec h3')].map(e => e.textContent.slice(1)) } : null; TCGuide.close(); return r; }""")
-            want_rows = [['青', '10P〜300P'], ['緑', 'ルーレット（800P か 1600P）'], ['紫', 'ルーレット（1600P か 3200P）'], ['赤', 'ルーレット（3200P か 6400P）'], ['金', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '神様馬のルーレット・チケット']]
+            want_rows = [['青', '10P〜300P'], ['緑', 'ルーレット（800P か 1600P）'], ['紫', 'ルーレット（1600P か 3200P）'], ['赤', 'ルーレット（3200P か 6400P）'], ['金', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '神様馬のルーレット・チケット'], ['激馬熱馬', '激馬熱馬（40,000P）']]      # 第4.175版：＋激馬熱馬
             check(gd is not None and gd['rows'] == want_rows, f'説明書「お世話チャレンジ」：馬バレの 色の 表（{gd and gd["rows"]}）')
             check(gd is not None and all(x in gd['txt'] for x in ['玉を落とす台で抽選できるよ', 'トークンを1つ使って', '1回で5こまで', 'PUSHとまったく同じ', '「保留結果を見る」で順に受け取ろう', '「続けてやる」か「終わり」', '玉1こ＝トークン1つ＝お世話1回', 'たまった当たりはなくならないよ', 'はずれのときは、馬バレが白く光るよ'])
                   and gd['idx'].index('お世話チャレンジ') == gd['idx'].index('お世話のあとのPUSH') + 1, '説明書の 文：入口・玉 1こ＝トークン 1つ・5こ まで・確率は PUSH と 同じ・保留結果・続けてやる／終わり・途中で 閉じても なくならない（PUSH の 項目の すぐ 下）')
@@ -445,7 +445,7 @@ try:
             ctx, pg = page(); open_tc(pg, TESTB)
             pg.evaluate("() => document.querySelector('#tcOv [data-tc=test]').click()"); pg.wait_for_timeout(500)
             tb = pg.evaluate("() => { const s = document.querySelector('#tct [data-sec=drop]'); return s ? { h: s.querySelector('h3').textContent, btn: [...s.querySelectorAll('.ttb')].map(b => b.textContent) } : null; }")
-            check(tb is not None and tb['h'].startswith('④ お世話チャレンジ') and len(tb['btn']) == 13 and tb['btn'][0] == 'くじどおりで 開く' and '青（100P）' in tb['btn'] and '虹（チケット）' in tb['btn']
+            check(tb is not None and tb['h'].startswith('④ お世話チャレンジ') and len(tb['btn']) == 14 and tb['btn'][0] == 'くじどおりで 開く' and '青（100P）' in tb['btn'] and '虹（チケット）' in tb['btn'] and '激馬熱馬（40,000P）' in tb['btn']
                   and '青 → 緑 → 紫 → 赤 → 金' in tb['btn'] and any('幻の馬の ルーレット' in t for t in tb['btn']) and any('神様馬の ルーレット' in t for t in tb['btn']), f'道具箱に ④（ボタン {tb and len(tb["btn"])}こ）')
             if SHOT: pg.evaluate("() => document.querySelector('#tct [data-sec=drop]').scrollIntoView()"); pg.wait_for_timeout(300); shot(pg, 'dp_tool')
             pg.evaluate("() => { const b = [...document.querySelectorAll('#tct [data-sec=drop] .ttb')].find(b => b.textContent === '青 → 緑 → 紫 → 赤 → 金'); b.click(); }")
@@ -470,7 +470,7 @@ try:
             # --- 第4.174版（まさちゃん 10:44「それぞれ光りの強弱は…このピのところにあわせて！」）：ランプは ピの 数 だけ 強く 光る・オーラは ピの 間 下がらない ---
             print('■ ランプの 強弱（音の 拍〈ピ〉に 合わせる）')
             pips = pg.evaluate("() => TCDrop.TONE.map(t => t.pip)"); bts = pg.evaluate("() => TCDrop.TONE.map((t, c) => TCDrop.beats(c).map(q => q[0]))"); got = []; mono = []; gaps = []
-            for c in range(0, 7):
+            for c in range(0, 8):      # 第4.175版：7＝激馬熱馬（プチュンの あと 虹と 同じ 音 ＝ 同じ 拍）
                 pg.evaluate("() => { for (const z of (TCApp.state.dp && TCApp.state.dp.holds || []).slice()) TCApp._t.give(z); TCCare.pushDone(TCCare.S.lastT); TCApp.test.tokens(20); }"); pg.wait_for_timeout(400)
                 pg.evaluate("async c => await TCApp.test.drop([c], true)", c); pg.wait_for_function("() => TCDrop.isOpen()", timeout=20000)
                 pg.evaluate("() => { TCDrop._t.manual = true; TCDrop._t.rec = []; TCDrop._t.path = 5; }"); pg.evaluate(TICK, [0.7, None]); pg.evaluate("() => TCDrop.tap('go')")
@@ -481,8 +481,8 @@ try:
                 n_p = int(round((bts[c][-1] + 0.1) * 60))
                 mono.append(all(w[i + 1][1] >= w[i][1] - 1e-3 for i in range(n_p)) and w[n_p][1] > 0.97)
                 pg.evaluate("() => { TCDrop._t.manual = false; TCDrop.close(); }"); pg.wait_for_timeout(400)
-            check(got == pips == [1, 2, 3, 4, 5, 7, 8], f'ランプが 強く 光る 回数＝音の 拍（ピ）の 数：はずれ 1・青 2・緑 3・紫 4・赤 5・金 7・虹 8（{got}）')
-            check(bts[5] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6] and bts[6] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.9] and all(len(g_) == len(bt) and all(abs(x - y) <= 0.018 for x, y in zip(g_, bt)) for g_, bt in zip(gaps, bts)),
+            check(got == pips == [1, 2, 3, 4, 5, 7, 8, 8], f'ランプが 強く 光る 回数＝音の 拍（ピ）の 数：はずれ 1・青 2・緑 3・紫 4・赤 5・金 7・虹 8・激馬熱馬 8（{got}）')
+            check(bts[5] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6] and bts[6] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.9] and bts[7] == bts[6] and all(len(g_) == len(bt) and all(abs(x - y) <= 0.018 for x, y in zip(g_, bt)) for g_, bt in zip(gaps, bts)),
                   f'強く 光る 時は 音の 拍と 同じ（0.1秒 ごと・虹の さいごの 2つは 0.3秒 あけて）：赤 {gaps[4]}・虹 {gaps[6]}')
             check(all(mono), f'まわりの オーラは 拍 ごとに 大きく なる だけ（拍の 間 下がらない＝広い 所は 点めつ しない）（{mono}）')
             pg.evaluate("() => { for (const z of (TCApp.state.dp && TCApp.state.dp.holds || []).slice()) TCApp._t.give(z); TCCare.pushDone(TCCare.S.lastT); }"); pg.wait_for_timeout(400)

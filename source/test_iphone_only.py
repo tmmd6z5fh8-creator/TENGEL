@@ -82,11 +82,11 @@ if r.returncode == 0:
     from build_fx import FILMS, STILL, ART, SFX
     import json as _json
     FXJ = _json.JSONDecoder().raw_decode(html.split('window.__FX=')[1])[0]
-    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('sgd', 'sd', 'nd', 'gk')) and all(v in html for v in list(FILMS.values()) + list(STILL.values()) + [SFX[k] for k in ('sgd', 'sd', 'sdp', 'nd', 'ndt', 'gk')]) and 'sd_last4.webp' in html
+    check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('sgd', 'sd', 'nd', 'gk')) and all(v in html for v in list(FILMS.values()) + [v for k, v in STILL.items() if k != 'nd_last'] + [SFX[k] for k in ('sgd', 'sd', 'sdp', 'nd', 'ndt', 'gk')]) and 'sd_last4.webp' in html
           and sorted(SFX) == ['big', 'big_push', 'fz_push', 'gk', 'hit', 'hit_push', 'nd', 'ndt', 'sd', 'sdp', 'sgd'] and sorted(FILMS) == ['gk_film', 'nd_film', 'sd_film', 'sgd_film'] and sorted(FXJ['sfx']) == sorted(SFX) and sorted(FXJ['films']) == sorted(FILMS)
           and [FILMS['sgd_film'], STILL['sgd_last'], SFX['sgd']] == ['sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'] and FXJ['t']['SG'] == {'FILM': 12.8333, 'RES': 12.9333, 'STILL_FROM': 12.8333, 'STILL_WAIT': 1.0, 'STILL_BOARD': 1.3, 'WAIT_MAX': 4.0} and 'PC' not in FXJ['t']
           and not any(x in html for x in ('pm_face_F.webp', 'pm_fin.webp', 'sfx_pc.m4a', 'sfx_zp.m4a', 'sfx_spg.m4a', 'sfx_spg_up.m4a', 'spg_up.mp4', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_sgd.m4a', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'nd_film2.mp4', 'nd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp', '.fxs .ov.fz.pm', '.fxs .ov.fz.zp', '.fxs .spu', '.fxs .zpdefs', 'spgGo', 'spzOv')) and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film4.mp4' in html
-          and 'nd_film4.mp4' in html and 'nd_last4.webp' in html and '.fxs .ov.fz.nd' in html
+          and 'nd_film4.mp4' in html and 'nd_last4.webp' not in html and 'class=\\"nds\\"' not in html and '.fxs .ov.fz.nd' in html      # 第4.175版：ノーマルど的中の さいごの 1まいは 入れない（幕にも 置かない）
           and [FILMS['sd_film'], STILL['sd_last'], FILMS['nd_film'], STILL['nd_last'], SFX['sd'], SFX['nd']] == ['sd_film4.mp4', 'sd_last4.webp', 'nd_film4.mp4', 'nd_last4.webp', 'sfx_sd.m4a', 'sfx_nd.m4a']
           and 'gk_film2.mp4' in html and 'gk_last2.webp' in html and 'sfx_gk.m4a' in html and '.fxs .ov.fz.gk' in html and FXJ['board']['titles'].get('gk') == '神様極的中！！！' and FXJ['t'].get('GKB') == 12.0   # 第4.117版：神様極的中
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000]
@@ -96,7 +96,7 @@ if r.returncode == 0:
           '第4.162版：プレミアムど的中・超プレミアム神様的中（押したあと・CSS・絵・音・昇格の 動画・くじ）は 入って いない・超神様の 動画／さいごの 1まい／音は 新しい もの（sgd_film2.mp4・sgd_last2.webp・sfx_sgd2.m4a：12.83秒）・'
           '第4.163版：極ど的中（紫電）と ノーマルど的中の 動画／さいごの 1まいは 新しい もの（馬と 字は まさちゃんの 3D。音は 前と 同じ）・'
           '第4.164版：字を 明るく した もの → 第4.171版：同じ 絵を 3倍（1170×2532）に した もの（sd_film4.mp4・sd_last4.webp・nd_film4.mp4・nd_last4.webp・神様極的中は gk_film2.mp4・gk_last2.webp）・前の 名前（…3・…2・はじめの もの）は 入って いない')
-    check('pm' not in ART and not [f for f in ASSET_FILES if f.startswith(('pm_', 'spg', 'sfx_pc', 'sfx_zp', 'sfx_spg'))] and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last4.webp'] and ART['nd'] == ['nd_last4.webp'] and ART['gk'] == ['gk_last2.webp'] and ART['sgd'] == ['sgd_last2.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 11 + 4 + 4 + 5 and ASSET_FILES[:5] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp'] and not [f for f in ASSET_FILES if f.startswith('bcx_ph')], f'絵と音と動画の 数：音 11（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない・第4.117版：神様極的中の 音・第4.162版：プレミアム／超プレミアム／超プレミアム神様／昇格の 音 4こは なし）・プレミアムの 絵 43まいは なし（第4.162版）・さいごの 1まい 4（超神様・紫電・ノーマルど的中・神様極的中）・動画 4（第4.162版：昇格の 動画は なし）・ボードを持つ馬の 部品 5（第4.108版）・結果ボードカスタムの 幻の 馬の 絵 2まいは 入れない（第4.113版：出世馬と いっしょに 消した）（{len(ASSET_FILES)}）')
+    check('pm' not in ART and not [f for f in ASSET_FILES if f.startswith(('pm_', 'spg', 'sfx_pc', 'sfx_zp', 'sfx_spg'))] and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last4.webp'] and ART['nd'] == [] and ART['gk'] == ['gk_last2.webp'] and ART['sgd'] == ['sgd_last2.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 11 + 3 + 4 + 5 and ASSET_FILES[:5] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp'] and not [f for f in ASSET_FILES if f.startswith('bcx_ph')], f'絵と音と動画の 数：音 11（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない・第4.117版：神様極的中の 音・第4.162版：プレミアム／超プレミアム／超プレミアム神様／昇格の 音 4こは なし）・プレミアムの 絵 43まいは なし（第4.162版）・さいごの 1まい 3（超神様・紫電・神様極的中。第4.175版：ノーマルど的中の ものは 入れない＝もう 出ない 絵）・動画 4（第4.162版：昇格の 動画は なし）・ボードを持つ馬の 部品 5（第4.108版）・結果ボードカスタムの 幻の 馬の 絵 2まいは 入れない（第4.113版：出世馬と いっしょに 消した）（{len(ASSET_FILES)}）')
     check('root.TengelBoardArt = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html
           and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {')
           and 'TengelBoardPhantom' not in html and 'bcx_ph0.webp' not in html and 'bcx_ph1.webp' not in html and 'bcxph' not in html and not os.path.exists(os.path.join(W, 'bcx_phantom.js')),
@@ -182,7 +182,8 @@ if r.returncode == 0:
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
-        check(35.5e6 < p_films < 39.0e6 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((167e6 < p_all < 177e6) if _pb_on else (164e6 < p_all < 174e6)) and same_sz and keep_ok and src_ok
+        # 第4.175版：ノーマルど的中の 動画は 極ど的中の 入りに 使う はじめの 180コマ だけ（kisekae/lite_assets.py の CUT）＝ 動画 4本で 約34.2MB（前は 約37.3MB）
+        check(32.5e6 < p_films < 36.0e6 and _man['fx_assets']['files']['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and _man['fx_assets']['files']['sfx_nd.m4a']['how'] == 'acut' and how.get('acut') == 1 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 5.3e6 < p_fgc < 6.3e6 and 2.4e6 < p_shelf < 3.3e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 5.7e6 < iz_save < 6.5e6 and sh_ok and ((167e6 < p_all < 177e6) if _pb_on else (164e6 < p_all < 174e6)) and same_sz and keep_ok and src_ok
               and how.get('film') == 4 and how.get('webp', 0) + how.get('keep', 0) == 43 and how.get('idxz') == 10 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 24, 'preset': 'slow', 'tail': [[30, 23], [20, 22], [10, 21]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES)
               and all(_man['fx_assets']['files'][f]['p'].startswith('crf27-slow' if f == FILMS['gk_film'] else 'crf24-slow') for f in FILMS.values()),      # 第4.171版：のばして 作った 神様極的中 だけ CRF 27
               f'第4.146版：アプリに 入る のは 軽い 版（動画 4本 {p_films / 1e6:.1f}MB：もとは 70.7MB〈第4.171版：3倍の 動画。前は 26.6MB・もと 40.8MB／第4.162版：昇格の 動画を 外して 4本・超神様の 新しい 動画は 前と 同じ 10.9MB。前は 5本 31.0MB／第4.156版：CRF 29 → 24 に 上げた。第4.155版までは 18.5MB〉・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
@@ -300,11 +301,11 @@ if r.returncode == 0:
             else: _want.add(_e)
         _got = {f[6:-4] for f in res if f.startswith('tc_se_') and f.endswith('.m4a')}
         _gone = ['flop', 'goron', 'lie', 'hop', 'unlock']
-        check(_got == _want and len(_got) == 90 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
+        check(_got == _want and len(_got) == 93 and not any(g in _got for g in _gone) and all(os.path.exists(os.path.join(_ad.master('tc_assets'), f'tc_se_{g}.m4a')) for g in _gone)
               and _skip.get('unlock') == "'piron'" and _skip.get('callcool') == 'null' and sorted(_ad.TC_GONE) == sorted(f'tc_se_{g}.m4a' for g in _gone)
               and open(os.path.join(_ad.master('tc_assets'), 'tc_se_unlock.m4a'), 'rb').read() == open(os.path.join(RES, 'tc_se_piron.m4a'), 'rb').read()
               and not re.search(r"mode: 'sleep'|ev\(tt, '(flop|goron|lie)'\)|TEST\.wake|wake\(\)", _tall) and 'ごろん' not in open(os.path.join(RES, 'tc_bundle.js'), encoding='utf8').read(),
-              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ〈第4.159版：＋4＝プフォ・デデーン・キュインキュイーン・ドーン／−1＝ルーレットの 前の 確定の 音・第4.165版：＋2＝ポイント特化ゾーンの 上乗せ・失敗・第4.171版：＋1＝ルーレットの 高い 方の 爆発・第4.173版：＋14＝お世話チャレンジの 台（玉・釘・コップ・はずれ・保留・かぎ・馬バレ 6色）〉・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
+              f'第4.156版：トレーニングセンターの 音は 鳴らす もの と 入って いる もの が 同じ（{len(_got)}こ〈第4.159版：＋4＝プフォ・デデーン・キュインキュイーン・ドーン／−1＝ルーレットの 前の 確定の 音・第4.165版：＋2＝ポイント特化ゾーンの 上乗せ・失敗・第4.171版：＋1＝ルーレットの 高い 方の 爆発・第4.173版：＋14＝お世話チャレンジの 台（玉・釘・コップ・はずれ・保留・かぎ・馬バレ 6色）・第4.175版：＋3＝激馬熱馬（プチュン・天国・テデーン）〉・足りない {sorted(_want - _got)}・あまり {sorted(_got - _want)}）・'
               f'横に なる 動きの 音（flop・goron・lie）と 使わない 音（hop・unlock＝piron と 同じ 中身）は 入れない（もとの フォルダには 残る）・馬を 横に する コードと「ごろん」の 字は ない')
         # 第4.158版（まさちゃん 2026/11/12 08:59「このルーレットの神様馬、目が怖いから金色に光らせて！あと、画像がなんかまだらに色がついてるから綺麗にできる？」・09:00「幻の馬のルーレットは、目を紫に光らせて！」）：
         #   ルーレットの 絵は きれいに した 新しい 絵 12まい（rt_<絵>_<部品>2.webp：kisekae/tc/rt_clean.py）。前の 12まい（rt_<絵>_<部品>.webp）は 入れない（もとの フォルダには 残す）
@@ -546,6 +547,20 @@ if r2.returncode == 0:
     check(not any(f.startswith('pb_') for f in res2) and len(ksd2['themes']) == 30 and not any('pa' in t for t in ksd2['themes']) and 'img' not in sk2['push'] and '<svg' in sk2['push']['svg'] and '<svg' in sk2['push']['pressed']
           and 'img' not in px2['push'] and '<svg' in px2['push']['svg'],
           '第4.148版：PUSHボタンの 絵が ない 作り方（CI と 同じ）：絵は 入らない・一覧に pa なし・テーマの ファイルは 今までの コードの 面（svg）の まま ＝ 今までの PUSH で 作れる')
+# 第4.175版：アプリの 中に「使って いない ファイル」が ない（app_unused.py：まさちゃん「アプリ内のいらないデータも消して！」）。
+#   素材の フォルダの 中身を ぜんぶ 入れる 作り方 なので、古い 版を 外す 表（assets_dir.superseded）に 書き忘れると 使わない ファイルが 入る。それを ここで 止める
+if r.returncode == 0:
+    import app_unused as _au
+    _pk = os.path.join(out, 'Tengel.swiftpm'); _u = _au.unused(_pk)
+    _probe = ['qx9probe_film.mp4', 'tc_se_qx9probe.m4a', 'tc_field_qx9probe.webp', 'bcp_qx9probe.webp', 'tc_horse_bk_qx9probe_s3.json']
+    for _f in _probe: open(os.path.join(_pk, 'Resources', _f), 'wb').write(b'x')
+    try: _u2 = _au.unused(_pk)
+    finally:
+        for _f in _probe: os.remove(os.path.join(_pk, 'Resources', _f))
+    _u3 = _au.unused(os.path.join(out2, 'TengelTest.swiftpm'))['unused'] if r2.returncode == 0 else ['テスト版が 作れない']
+    check(not _u['unused'] and len(_u['lit']) + len(_u['pat']) + len(_u['model']) == _u['files'] and sorted(_u2['unused']) == sorted(_probe) and not _u3,
+          f'第4.175版：アプリの 中に 使って いない ファイルは ない（{_u["files"]}こ ぜんぶ コードから 使う：名前が そのまま {len(_u["lit"])}こ・名前を 組み立てる 所 {len(_u["pat"])}こ・形の ファイル {len(_u["model"])}こ）'
+          f'・テスト版も ない・使わない ファイルを {len(_probe)}こ 足すと {len(_u2["unused"])}こ 見つける' + (f'：{_u["unused"][:8]} {_u3[:8]}' if _u['unused'] or _u3 else ''))
 shutil.rmtree(out2, ignore_errors=True)
 shutil.rmtree(out, ignore_errors=True)   # 2026/11/04：作った アプリ（約190MB）を 残さない（前は /tmp に 1回ごとに 残って いた）
 print('結果：', 'OK' if not fails else f'{len(fails)}件おかしい')

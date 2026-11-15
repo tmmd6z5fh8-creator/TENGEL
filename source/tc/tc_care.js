@@ -69,7 +69,7 @@ const TCCare = (() => {
     greeted: false, busy: false, lot: null, holdUntil: -1, drainT: null, demo: null, t0: null, finger: null, readyT: null, stockBump: null,
     petN: 0, petLast: -1e9, petGen: 0, callN: 0, callLast: -1e9, callCoolUntil: -1e9, callCoolFrom: -1e9,
     phase: 'idle', mode: null, route: null, zoom: { z: 1, cx: W / 2, cy: H / 2 }, zA: null, zB: null, zT0: 0, zDur: 1, marks: {}, press: { pet: -9, call: -9, feed: -9, clean: -9 }, petIdle: 0, callKind: null,
-    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, stockDrop: null, test: null, push: null, bulk: false };      // push＝お世話の あとの PUSH（第4.159版）・bulk＝トークンを まとめて 使う
+    chooser: null, feed: null, clean: null, fav: 'apple', high: 0, highBump: null, stockDrop: null, test: null, push: null, bulk: false, ask: null, askOut: null, withLot: true };      // push＝お世話の あとの PUSH（第4.159版）・bulk＝トークンを まとめて 使う
   const POOP = [];          // うんちの 絵（おそうじで ほうきで 動かす とき）
 
   // ---------- 紙の 絵 ----------
@@ -292,7 +292,8 @@ const TCCare = (() => {
   function release(t) {
     const m = S.mode; S.phase = 'idle'; S.mode = null; mark('Z', t); BR.careHold = false; BR.want.look = [0, 0]; BR.until = t + 2.5; BR.forcedWalk = false; BR.hurry = 1; S.grazeOK = false;
     if (m === 'call') { S.callLast = t; if (S.callN >= RULE.streak) { S.callN = 0; S.callCoolUntil = t + RULE.cool; S.callCoolFrom = t; ev(t, 'callcool'); } }      // 呼ぶ：5回目が おわったら 7秒 できない
-    if (m === 'feed' || m === 'clean') pushOpen(t + 0.15);      // 第4.159版：お世話（ごはん・おそうじ）が おわった → PUSH（押した ときに 抽選と 結果）。前は ここで 当たりの 札を 出して いた
+    if ((m === 'feed' || m === 'clean') && S.withLot) pushOpen(t + 0.15);      // 第4.159版：お世話（ごはん・おそうじ）が おわった → PUSH（押した ときに 抽選と 結果）。前は ここで 当たりの 札を 出して いた
+    else if (m === 'feed' || m === 'clean') { fx({ k: 'tagUI', t0: t + 0.15, x: W / 2, y: PUSHG.y - 300, txt: '抽選なしの お世話（トークンは そのまま）', size: 32, dur: 2.0 }); ev(t, 'nolot'); }      // 第4.175版：抽選を しない お世話：PUSH は 出ない・トークンも 使わない
     if (m === 'clean' && S.clean && S.clean.sniff && !BR.stand) {          // うんちを 片付けた：きれいに なった 所へ 行って くんくん
       const c = { x: S.clean.sniff[0], y: S.clean.sniff[1] }; S.clean = null; BR.careHold = true; S.mode = 'after'; S.phase = 'after'; S.holdUntil = Infinity; S.afterT = t;
       const d = Math.atan2((c.y - BR.y) / 0.5, c.x - BR.x), sc = TCHorse.scaleAt(HO, c.y);
@@ -345,9 +346,30 @@ const TCCare = (() => {
     if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.feed = t; ev(t, 'button');
+    if (S.phase === 'ask' && S.ask) { askBack(t); return; }      // 第4.175版：「抽選を する／しない」の 札が 出て いる ときに もう一度 押す＝とじる
     if (S.phase === 'choose' && S.chooser && !S.chooser.pick) { chooserBack(t); return; }      // 第4.168版：えらぶ 札が 出て いる ときに もう一度「ごはん」＝ とじる
     if (S.busy || S.phase !== 'idle' || BR.sl > 0.001) return;
-    S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser');
+    if (askOn()) askOpen(t, 'feed'); else { S.withLot = true; feedOpen(t); }
+  }
+  function feedOpen(t) { S.chooser = { t0: t, pick: null, pickT: null }; S.phase = 'choose'; S.mode = 'feed'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser'); }
+  // 第4.175版（まさちゃん 2026/11/15 13:56「お世話ボタンを押した時に、・抽選をする・抽選をしない を選べるようにする！」）：
+  //   ごはん・おそうじの ボタンを 押したら、先に 札「抽選を する」「抽選を しない」（左上に「← もどる」・もう一度 同じ ボタンでも とじる）。
+  //   ・抽選を する＝いままで どおり：お世話が おわったら PUSH（押した ときに トークン −1 → 抽選）。トークンが 1つ 以上 いる（ない ときは 札「お世話トークンが ないよ」）
+  //   ・抽選を しない＝お世話 だけ：PUSH は 出ない・トークンは 使わない（0こ でも できる）。トークンを 使わない ので、お世話の 回数（馬の 成長・馬の 入れかえの 5回・ミッション）には 数えない
+  //     （数えるのは トークン 1こ＝お世話 1回：第4.159版）。ただで なかよしハートを ふやせない ように、金のニンジン（なかよし ＋3）は 出ない。
+  //     ゴミ・うんちは 片付く（金のうんちの 高確ゾーンも つく）・好物の「だいすき！」・おかわりの目は いつもと 同じ
+  //   ・えらんだら すぐ 次へ（ごはん＝えらぶ 札・おそうじ＝ほうきと ちりとり）。札は 0.25秒で 消える（askOut）
+  //   ・見本（S.demo）と、アプリで ない とき（O.lottery が ない）は 札を 出さない（いままで どおり）
+  const ASKG = { y: 1268, w: 400, h: 196, dx: 216 };      // 札の まん中の 高さ・大きさ・まん中からの 左右の ずれ
+  const askOn = () => !S.demo && !!O.lottery;
+  function askOpen(t, kind) { S.ask = { t0: t, kind, pick: null, pickT: null }; S.askOut = null; S.phase = 'ask'; S.mode = 'ask'; BR.careHold = true; S.holdUntil = Infinity; ev(t, 'chooser'); }
+  function askEnd(A, t, how) { A.pick = how; A.pickT = t; S.askOut = A; S.ask = null; S.phase = 'idle'; S.mode = null; BR.careHold = false; S.holdUntil = -1; }
+  function askBack(t) { const A = S.ask; if (!A) return; ev(t, 'fold'); askEnd(A, t, '-'); }
+  function askPick(t, yes) {
+    const A = S.ask; if (!A) return;
+    if (yes && S.stock < 1) { if (t - (A.noT == null ? -9 : A.noT) > 1.2) { A.noT = t; fx({ k: 'tagUI', t0: t, x: W / 2 - ASKG.dx, y: ASKG.y - ASKG.h / 2 - 46, txt: 'お世話トークンが ないよ', size: 32, dur: 1.8 }); ev(t, 'wait'); } return; }
+    ev(t, 'pick'); askEnd(A, t, yes ? 'y' : 'n'); S.withLot = !!yes;
+    if (A.kind === 'feed') feedOpen(t); else cleanGo(t);
   }
   // 第4.168版（まさちゃん 2026/11/14 01:26「ごはんを押しちゃうと戻れないから、戻るボタンを追加して！」）：えらぶ 札の 左上の「← もどる」（CHBACK）か、もう一度「ごはん」で とじる。
   //   まだ 何も えらんで いない とき だけ（えらんだ あとは ごはんが 始まる）。トークンは 使わない（使うのは おわった あとの PUSH）・PUSH も 出ない
@@ -362,8 +384,8 @@ const TCCare = (() => {
     S.chooser.pick = kind; S.chooser.pickT = t; ev(t, 'pick');
     at(t + 0.25, tt => {
       S.chooser = null;
-      if (!haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));
+      if (S.withLot && !haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
+      const gold = kind === 'carrot' && S.withLot && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));      // 第4.175版：抽選を しない ごはんでは 金のニンジンは 出ない
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt };
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          // 幻の馬・神様馬：正面の まま
       comeNear(tt);
@@ -458,13 +480,19 @@ const TCCare = (() => {
     if (drawOut()) { drawOutTag(t); return; }
     cancelAfter(t);
     S.press.clean = t; ev(t, 'button');
+    if (S.phase === 'ask' && S.ask) { askBack(t); return; }      // 第4.175版：「抽選を する／しない」の 札が 出て いる ときに もう一度 押す＝とじる
     if (S.busy || S.phase !== 'idle') return;
     const tg = cleanTargets();
     if (!tg.length) {                    // 片付ける ものが ない：できない（トークンは 使わない）
       const m = S.trashIn > 0 ? Math.ceil(S.trashIn / 60) : 0;
       fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら おそうじ できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
     }
-    if (!haveToken(t, 'clean')) return;
+    if (askOn()) { askOpen(t, 'clean'); return; }      // 第4.175版：先に「抽選を する／しない」
+    S.withLot = true; cleanGo(t);
+  }
+  function cleanGo(t) {                  // おそうじを 始める（「抽選を する／しない」を えらんだ あと）
+    const tg = cleanTargets(); if (!tg.length) return;
+    if (S.withLot && !haveToken(t, 'clean')) return;
     S.mode = 'clean'; BR.careHold = true; S.holdUntil = Infinity;
     if (tg.some(T => !T.poop)) BR.trashDone = true;          // ここで 片付けた あつかい（tc_app.js：次の 15分が 始まる・とちゅうで 閉じても のこらない）
     for (const T of tg) { if (T.poop) T.o.sw = true; else delete T.o.t0; }
@@ -1210,6 +1238,38 @@ const TCCare = (() => {
       g.restore(); }
   }
 
+  // 第4.175版：「抽選を する／しない」の 札（えらぶ 札と 同じ 所：下の ボタンの 上）。左＝する（金色：トークンが ない ときは うすく）・右＝しない
+  function drawAsk(t) {
+    const A = S.ask || S.askOut; if (!A) return;
+    const pv = A.pickT != null ? (t - A.pickT) / 0.25 : 0;
+    if (pv >= 1) { if (S.askOut === A) S.askOut = null; return; }
+    const G = ASKG, none = S.stock < 1;
+    [['y', '抽選を する', none ? 'お世話トークンが ないよ' : `トークン のこり ${S.stock}こ`, -1], ['n', '抽選を しない', 'お世話 だけ（トークン そのまま）', 1]].forEach(([kd, main, sub, sx], i) => {
+      const v = (t - A.t0 - i * 0.06) / 0.3; if (v <= 0) return;
+      const picked = A.pick === kd, s = backOut(v) * (picked ? 1 + 0.07 * Math.sin(Math.PI * clamp(pv, 0, 1)) : 1) * (S.uiDown === 'ask:' + kd ? 0.96 : 1), a = (A.pick ? 1 - sm(picked ? (pv - 0.35) / 0.65 : pv / 0.6) : 1) * (kd === 'y' && none ? 0.55 : 1);
+      if (s <= 0.01 || a <= 0.01) return;
+      const gold = kd === 'y', w = G.w, h = G.h, k = 26;
+      g.save(); g.globalAlpha *= a; g.translate(W / 2 + sx * G.dx, G.y); g.scale(s, s); g.lineWidth = 0.8;
+      pf([[-w / 2 + 6, -h / 2 + 9], [w / 2 + 6, -h / 2 + 9], [w / 2 + 6, h / 2 + 9], [-w / 2 + 6, h / 2 + 9]], 'rgba(40,20,5,0.24)');
+      pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], gold ? '#f6c24a' : '#fff8ec');
+      pf([[-w / 2, h * 0.1], [w / 2, h * 0.1], [w / 2, h / 2], [-w / 2, h / 2]], gold ? '#eaae32' : '#f8ecd4');
+      pf([[w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2 - k, -h / 2 + k]], gold ? '#c98a1c' : '#e6cf9f');
+      g.strokeStyle = gold ? '#8a5a12' : '#d9b77c'; g.lineWidth = gold ? 5 : 4; g.strokeRect(-w / 2 + 3.5, -h / 2 + 3.5, w - 7, h - 7);
+      if (picked) { g.strokeStyle = '#fffbe6'; g.lineWidth = 7; g.strokeRect(-w / 2 + 9, -h / 2 + 9, w - 18, h - 18); }
+      label(main, 0, -22, 52, gold ? '#5b3412' : '#7a4520', gold ? '#fff3cf' : null, gold ? 7 : 0);
+      label(sub, 0, 48, 26, gold ? '#7a4a12' : '#9a7a55');
+      g.restore();
+    });
+    const v = (t - A.t0) / 0.3; if (v > 0 && !A.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const ttl = 'お世話の あとの 抽選は？', w = g.measureText(ttl).width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 + 60 - w / 2, 1080, w, 58, 29); g.fill(); label(ttl, W / 2 + 60, 1110, 34, '#fff8ea');
+      const B = CHBACK, dn = S.uiDown === 'askback' ? 0.95 : 1;      // 「← もどる」（えらぶ 札と 同じ 所・同じ 形）
+      g.translate(B.x, B.y); g.scale(dn, dn);
+      g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
+      g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
+      g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
+      label('← もどる', 0, 1, 32, '#7a4520');
+      g.restore(); }
+  }
+
   // ---------- 1コマ ----------
   function pre(t, dt) {
     if (S.t0 == null) S.t0 = t;
@@ -1294,6 +1354,7 @@ const TCCare = (() => {
     drawPush(t);
     drawVInfo(t);
     drawChooser(t);
+    drawAsk(t);
     // 手（画面の 上で いつも 同じ 大きさ）
     if (S.hand) {
       const hs = S.hand, f = toS(S.finger || [W / 2, H / 2]);
@@ -1324,7 +1385,7 @@ const TCCare = (() => {
       const gone = new Set(S.clean.tg.map(T => T.o)); brain.trash = (brain.trash || []).filter(o => !gone.has(o) && o.out == null); brain.poops = (brain.poops || []).filter(q => !gone.has(q) && !q.sw);
       if (S.clean.tg.some(T => !T.poop)) brain.trashDone = true;          // 「片付けた」しるしを 新しい 馬へ（tc_app.js が 次の 15分を 始める）
     }
-    HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
+    HO = horse; BR = brain; S.phase = 'idle'; S.mode = null; S.ses = null; S.hand = null; S.feed = null; S.clean = null; S.chooser = null; S.ask = null; S.askOut = null; S.zoom = { z: 1, cx: W / 2, cy: H / 2 }; S.zB = null; }
   // アプリ：画面を 押した（フィールドの px・ズーム前の 画面の 座標）。ボタン・えらぶ 札・説明書の「？」は ここ、馬（なでる・ほうき）は input へ
   function uiHit(x, y) {
     if (pushLive() && !S.fxHold) {       // PUSH が 出て いる：PUSH・スイッチ・おわる（・説明書の「？」）だけ
@@ -1338,6 +1399,10 @@ const TCCare = (() => {
       return null;                       // お世話の ボタンは かくれて いる（さわっても 何も おきない）
     }
     if (S.push && !S.fxHold) return 'pgone';      // PUSH が 消えて いく 間（押して から 約0.6秒）：さわっても 何も おきない（「1個 使う」で つづけて 押した 指が、まだ 見えない ごはん・おそうじの ボタンを 押さない ように）
+    if (S.ask) {                         // 第4.175版：「抽選を する／しない」の 札（と「← もどる」）
+      for (const [kd, sx] of [['y', -1], ['n', 1]]) if (Math.abs(x - (W / 2 + sx * ASKG.dx)) < ASKG.w / 2 && Math.abs(y - ASKG.y) < ASKG.h / 2) return 'ask:' + kd;
+      if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'askback';
+    }
     if (S.chooser && !S.chooser.pick) { const items = ['esa', 'apple', 'carrot']; for (let i = 0; i < 3; i++) { const cx = 270 + i * 256; if (Math.abs(x - cx) < 110 && y > 1262 - 122 && y < 1262 + 112) return 'pick:' + items[i]; }
       if (Math.abs(x - CHBACK.x) < CHBACK.w / 2 + 10 && y > CHBACK.y - CHBACK.h / 2 - 14 && y < CHBACK.y + CHBACK.h / 2 + 1) return 'chback'; }      // 第4.168版：「← もどる」（下は 札の 上はし 1140 まで）
     if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
@@ -1355,6 +1420,7 @@ const TCCare = (() => {
     else if (what === 'help') { S.press.help = t; ev(t, 'button'); ev(t + 0.05, 'paper'); if (O.onHelp) O.onHelp(); }
     else if (what && what.startsWith('pick:')) pick(t, what.slice(5));
     else if (what === 'chback') chooserBack(t);
+    else if (what === 'ask:y') askPick(t, true); else if (what === 'ask:n') askPick(t, false); else if (what === 'askback') askBack(t);
     else if (what === 'push') pushPress(t);
     else if (what === 'pm:1') pushMode(t, false); else if (what === 'pm:n') pushMode(t, true);
     else if (what === 'pend') pushEnd(t);
@@ -1687,6 +1753,6 @@ const TCCare = (() => {
     window.__careDone = () => !!S.demoDone;
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
-    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
+    dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, ASKG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
     view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();

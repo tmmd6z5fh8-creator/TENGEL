@@ -62,7 +62,9 @@ def blob_names():
 #  アプリに 入れない（作る 道具 kami.py・kami_art.py・super_premium.py は のこす）
 # 第4.162版：プレミアムど的中の 絵（pm_….webp：premium_blobs.json の 43まい・約2.3MB）も 入れない
 ART = dict(sd=[STILL['sd_last']],                                                                                  # ど的中・紫電の 動画の さいごの 1まい（第4.71版）
-           nd=[STILL['nd_last']],                                                                                  # ノーマルど的中の 動画の さいごの 1まい（第4.77版）
+           nd=[],                                                                                                  # ノーマルど的中の 動画の さいごの 1まい（第4.77版）→ 第4.175版：入れない（まさちゃん 11/15 17:45
+                                                                                                                   #   「アプリ内のいらないデータも消して！」：ノーマルど的中は 第4.165版で なくした ＝ さいごの 1まい〈still〉を 出す 所に もう 来ない。
+                                                                                                                   #   極ど的中の 入りが 使うのは 動画と 音の はじめの 5.34秒 だけ：kisekae/lite_assets.py の CUT・ACUT）。もとの 絵（STILL['nd_last']）は フォルダに 残す
            sgd=[STILL['sgd_last']],
            gk=[STILL['gk_last']])                                                                                  # 神様極的中の 動画の さいごの 1まい（第4.117版）
 ART_FILES = sorted(set(ART['sd'] + ART['nd'] + ART['sgd'] + ART['gk']))
@@ -446,7 +448,7 @@ def reveal_nd(G):
     """ノーマルど的中（第4.77版）：normal_do.py の nd_layers（動画 <video class="sgv"> は fx.js が 舞台に 置く。go＝動画が 動きだした・still＝さいごの 1まい）。
        プチュンは なし（押すと 1秒 真っ暗 → 動画）。第4.79版：押した 画面（PUSH の 画面とは 別：押された PUSH が ポチッと へこんで うすい 光の 輪 → 暗く。爆発は 入れない）"""
     return f'''<div class="ov fz nd" style="--n:{{{{N}}}}">
-    {G.ND.nd_layers('{{BOARD}}', STILL['nd_last'])}
+    {G.ND.nd_layers('{{BOARD}}', None)}
     {CLOSE}
   </div>'''
 

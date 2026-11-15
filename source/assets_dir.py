@@ -78,6 +78,10 @@ def superseded(name, files):
         #   kisekae/tc/snd/sfx_drop.py）。6つ そろって いる とき、前の 6つ（tc_se_dp_uma1〜6.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
         if {f'tc_se_dp_umb{c}.m4a' for c in range(1, 7)} <= files:
             old |= files & {f'tc_se_dp_uma{c}.m4a' for c in range(1, 7)}
+        # 第4.175版：激馬熱馬の 天国の 動画と さいごの コマは、カットインの カメラを ゆっくりに した もの（tc_gk_film2.mp4・tc_gk_end2.webp：kisekae/tc/geki_film.py。
+        #   はじめの ものは 光の 点めつが 決まり〈1秒に 3回 まで・画面の 10%〉を こえて いた）。2つ そろって いる とき、はじめの もの（番号 なし）は 入れない（もとの フォルダには 残す）
+        if {'tc_gk_film2.mp4', 'tc_gk_end2.webp'} <= files:
+            old |= files & {'tc_gk_film.mp4', 'tc_gk_end.webp'}
         # 第4.171版（まさちゃん 2026/11/14 16:18「トレーニングセンターの神様馬出現中のBGM:もっとアップテンポで掻き立てられるようなBGM」）：神様馬の フィールドの BGM は
         #   新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py）。前の 曲（tc_bgm_divine.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
         if 'tc_bgm_divine2.m4a' in files:

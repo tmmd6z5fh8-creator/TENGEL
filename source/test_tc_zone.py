@@ -65,6 +65,11 @@ def stage_click(pg, x, y):
     pg.mouse.click(*stage_xy(pg, x, y))
 
 
+def ask_yes(pg):                      # 第4.175版：ごはん・おそうじの 前の 札「抽選を する／しない」→「抽選を する」（左の 札：フィールドの 座標 310,1268）を 押す
+    pg.wait_for_function("() => !!TCCare.S.ask", timeout=20000); pg.wait_for_timeout(450)
+    stage_click(pg, 310, 1268)
+
+
 def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
@@ -98,7 +103,7 @@ def seq_for(n):                        # 上乗せ n回の 特化ゾーンが �
 
 
 def feed(pg, item=1):                  # ごはん（リンゴ）→ PUSH が 出る まで
-    stage_click(pg, 327, 1494)
+    stage_click(pg, 327, 1494); ask_yes(pg)
     pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700)
     stage_click(pg, 270 + 256 * item, 1262)
     pg.wait_for_function(PUSH_LIVE, timeout=120000); pg.wait_for_timeout(400)
@@ -168,10 +173,10 @@ try:
             open_tc(pg, STORE)
             # ---------- 抽選 ----------
             print('■ 抽選の 表と 決め方')
-            tb = pg.evaluate("""() => { const T = TCApp._t, f = t => t.map(([p, z]) => [Math.round(1 / p), z.k]); return { n: f(T.PRIZES)[0], m: f(T.PRIZES_VISIT.maboroshi)[0], k: f(T.PRIZES_VISIT.kamisama)[0], zone: T.ZONE, odds: T.ODDS.zone, x: T.ODDS.highX,
+            tb = pg.evaluate("""() => { const T = TCApp._t, f = t => t.map(([p, z]) => [Math.round(1 / p), z.k]); return { n: f(T.PRIZES)[1], m: f(T.PRIZES_VISIT.maboroshi)[1], k: f(T.PRIZES_VISIT.kamisama)[1], g: [f(T.PRIZES)[0], f(T.PRIZES_VISIT.maboroshi)[0], f(T.PRIZES_VISIT.kamisama)[0]], zone: T.ZONE, odds: T.ODDS.zone, x: T.ODDS.highX,
               vs: Array.from({ length: 13 }, (_, n) => T.zoneV(n)), edge: [T.zoneV(-3), T.zoneV(99), T.zoneV('x'), T.zoneV(2.4)] }; }""")
-            check(tb['n'] == [699, 'zn'] and tb['m'] == [699, 'zn'] and tb['k'] == [699, 'zn'] and tb['zone'] == {'d': D, 'start': START, 'add': ADD, 'rate': RATE, 'max': MAX} and tb['vs'] == [ZV(n) for n in range(13)] and tb['edge'] == [1000, 25000, 1000, 5000],
-                  f'いつもの 表・幻の馬・神様馬の どの 表にも ポイント特化ゾーン 1/699・合計は 1,000P ＋ 2,000P × 回数（0〜12回：{tb["vs"][0]:,}P 〜 {tb["vs"][12]:,}P・おかしな 数は 0〜12に まるめる）')
+            check(tb['n'] == [699, 'zn'] and tb['m'] == [699, 'zn'] and tb['k'] == [699, 'zn'] and tb['g'] == [[299999, 'gk']] * 3 and tb['zone'] == {'d': D, 'start': START, 'add': ADD, 'rate': RATE, 'max': MAX} and tb['vs'] == [ZV(n) for n in range(13)] and tb['edge'] == [1000, 25000, 1000, 5000],
+                  f'いつもの 表・幻の馬・神様馬の どの 表にも ポイント特化ゾーン 1/699（第4.175版：その 前の 行は 激馬熱馬 1/299,999）・合計は 1,000P ＋ 2,000P × 回数（0〜12回：{tb["vs"][0]:,}P 〜 {tb["vs"][12]:,}P・おかしな 数は 0〜12に まるめる）')
             dr = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, R = Math.random, one = (r, kind, high) => { st.visit = kind ? { kind, until: Date.now() + 6e5 } : null; S.high = high ? 3 : 0; Math.random = () => r; let z; try { z = T.draw(); } finally { Math.random = R; } return z ? z.k : null; };
               const o = { in: one(0.0005, null), edge: one(0.00142, null), out: one(0.00145, null), mab: one(0.0005, 'maboroshi'), mabOut: one(0.00145, 'maboroshi'), kami: one(0.0005, 'kamisama'), kamiOut: one(0.00145, 'kamisama'),
                 hi: one(0.0056, null, true), hiOut: one(0.0058, null, true), hiMab: one(0.0056, 'maboroshi', true) }; st.visit = null; S.high = 0; st.high = 0; return o; }""")

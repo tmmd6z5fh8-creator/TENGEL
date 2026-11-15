@@ -31,7 +31,10 @@
 #         棚の 絵は 小さな 島が びっしり ならんだ 絵（UV）なので、ふつうの 圧縮（quality 75・もとの 90 でも）だと 島の さかいで となりの 島の 色が にじんで、
 #         暗い 板に 茶色の すじ・柱の ふちの ギザギザが 出る。→ 劣化なしの もと（ios/fig_src/shelf_cN.webp：kisekae/fig/shelf_proj.py が 作る・リポジトリに 入れない）から
 #         色を 6bit（64段）に そろえて **劣化なしの WebP** に する（色の 差は 2／255 まで・島の さかいは にじまない）。ios/fig_src が ない ときは もとの 絵（quality 90）の 写し
-#   台帳 lite.info（JSON）：{ v, params, files: { 名前: { how（webp・film・copy・keep・idxz・shelf）, p（作る ときの 決めごと：かわったら 作り直す）, src: [大きさ, 更新の 時刻, sha1], size } } }
+#   第4.175版（まさちゃん 2026/11/15 17:45「アプリ内のいらないデータも消して！」）：アプリが **はじめの 所 しか 使わない** 動画・音は、使う 所 だけを 軽い 版に 入れる（CUT・ACUT：下）。
+#     ノーマルど的中（第4.165版で なくした 演出）の 動画 nd_film4.mp4（10.5秒）と 音 sfx_nd.m4a（12.35秒）は、極ど的中の 入り（はじめの 5.34秒）に しか 使わない
+#     ＝ 動画の 後ろ 半分・音の 後ろ 半分は アプリの どこにも 出ない。もと（マスター）は そのまま 残す（ノーマルど的中を もどす ときは CUT・ACUT から 消す だけ）
+#   台帳 lite.info（JSON）：{ v, params, files: { 名前: { how（webp・film・copy・keep・idxz・shelf・acut）, p（作る ときの 決めごと：かわったら 作り直す）, src: [大きさ, 更新の 時刻, sha1], size } } }
 import hashlib, json, os, re, shutil, subprocess, sys, time
 from multiprocessing import Pool
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
@@ -44,7 +47,7 @@ V = 1
 def rule(name, f):
     """その ファイルを どう するか：film・webp・copy"""
     if name == 'fx_assets':
-        return 'film' if f.endswith('.mp4') else 'copy'
+        return 'film' if f.endswith('.mp4') else 'acut' if f in ACUT else 'copy'
     if name == 'bcp_assets':
         return 'copy'      # 第4.150版（まさちゃん 2026/11/11 02:36「…その代わり、画質あげて！」）：結果ボードの 絵（止まった 絵 だけに なった）は 軽く しない＝もとの 画質（WebP quality 88・前の 絵 90）の まま
     if name == 'tc_assets':
@@ -191,11 +194,26 @@ def film_p(f):
     return FILM_P.get(os.path.basename(f), (PARAMS['crf'], PARAMS['tail']))
 
 
+# 第4.175版（まさちゃん 2026/11/15 17:45「アプリ内のいらないデータも消して！」）：アプリが はじめの 所 しか 使わない 動画・音 ＝ 使う 所 だけ 入れる（もとは さわらない）。
+#   ノーマルど的中（nd）は 第4.165版で なくした（fx.js の shown：決めて 出す ときも 極ど的中に する）。動画と 音が 出るのは 極ど的中の 入り だけ：
+#   押すと nd_film と 音 nd が はじまり、動画の SD_UP['AT']＝5.34秒（kisekae/normal_do.py）で 動画も 音も 止めて 極ど的中へ（fx.js の sdWatch → sdBlack）。
+#   動画の 時刻が 進まない ときの 予備の 時計でも 5.34 ＋ 0.6 ＝ 5.94秒で 止める。→ 動画は はじめの 180コマ（6.0秒）・音は はじめの 6.5秒（時計が 少し おくれても 足りる）で 足りる。
+#   ・動画：同じ 決めごと（CRF・preset）で はじめの コマ だけ 圧縮。さいごの 1まい絵には つながらない ので「さいごの 30コマを きれいに」（tail）は なし
+#   ・音：圧縮し直さない（AAC の かたまりを はじめから 写す だけ：-c copy）。作った あと、ほどいた 音が もとの はじめと 1つも ちがわない・頭の あき（elst）が 同じ ことを 確かめる
+#   さいごの 1まい絵（nd_last4.webp）は アプリに 入れない（kisekae/build_fx.py の ART['nd'] が 空：still の 絵を 出す 所に もう 来ない）
+CUT = {'nd_film4.mp4': 180}        # 動画：はじめの 何コマ
+ACUT = {'sfx_nd.m4a': 6.5}         # 音：はじめの 何秒
+
+
 def sig(name, f, how):
     """その ファイルを 作る ときの 決めごと（かわったら 作り直す）"""
     if how == 'film':
         crf, tail = film_p(f)
+        if f in CUT:
+            return f"crf{crf}-{PARAMS['preset']}-cut{CUT[f]}"
         return f"crf{crf}-{PARAMS['preset']}" + ('-tail' + '/'.join(f'{a}:{b}' for a, b in tail) if has_tail(os.path.join(AD.master(name), f)) else '')
+    if how == 'acut':
+        return f'cut{ACUT[f]}'
     if how == 'webp':
         return f"q{PARAMS['q']}-m{PARAMS['method']}"
     if how == 'idxz':
@@ -206,17 +224,62 @@ def sig(name, f, how):
 
 
 def enc_film(src, dst):
-    tmp = dst + '.tmp.mp4'; a = probe(src); n = int(a['v']['nb_frames']); zones = []; crf, tail = film_p(src)
-    if has_tail(src):
+    tmp = dst + '.tmp.mp4'; a = probe(src); n0 = n = int(a['v']['nb_frames']); zones = []; crf, tail = film_p(src); cut = CUT.get(os.path.basename(src))
+    if cut:                                                            # 第4.175版：はじめの cut コマ だけ（さいごの 1まいには つながらない ので tail は なし）
+        assert 0 < cut < n, (src, cut, n); zones = ['-frames:v', str(cut)]; n = cut
+    elif has_tail(src):
         edges = [n - k for k, _c in tail] + [n]
         zones = ['-x264-params', 'zones=' + '/'.join(f'{edges[i]},{edges[i + 1] - 1},crf={c}' for i, (_k, c) in enumerate(tail))]
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:v:0', '-c:v', 'libx264', '-profile:v', 'high', '-preset', PARAMS['preset'], '-crf', str(crf), *zones,
                     '-pix_fmt', 'yuv420p', '-an', '-threads', '2', '-movflags', '+faststart', '-map_metadata', '-1', tmp], check=True)
     b = probe(tmp)
-    for k in ('codec_name', 'profile', 'width', 'height', 'pix_fmt', 'r_frame_rate', 'nb_frames'):
+    for k in ('codec_name', 'profile', 'width', 'height', 'pix_fmt', 'r_frame_rate'):
         assert a['v'][k] == b['v'][k], (os.path.basename(src), k, a['v'][k], b['v'][k])
-    assert abs(float(a['v']['duration']) - float(b['v']['duration'])) < 1e-3, (src, a['v']['duration'], b['v']['duration'])
+    assert int(b['v']['nb_frames']) == n, (os.path.basename(src), 'nb_frames', n, b['v']['nb_frames'])
+    assert abs(float(a['v']['duration']) * n / n0 - float(b['v']['duration'])) < 1e-3, (src, a['v']['duration'], b['v']['duration'])
     assert b['n'] == 1 and a['n'] == 1 and b['fast'], (src, a['n'], b['n'], b['fast'])        # 絵だけ（音なし）・faststart
+    os.replace(tmp, dst)
+
+
+def _elst(p):
+    """mp4／m4a の 頭の あき（moov の 中の elst：[(長さ, はじまる 所)…]）。AAC の はじめの 無音の かたまりを とばす 決めごと"""
+    import struct
+    b = open(p, 'rb').read(); i = b.find(b'elst')
+    if i < 0:
+        return None
+    ver = b[i + 4]; n = struct.unpack('>I', b[i + 8:i + 12])[0]; out = []; q = i + 12
+    for _ in range(n):
+        if ver == 1:
+            d, t = struct.unpack('>Qq', b[q:q + 16]); q += 20
+        else:
+            d, t = struct.unpack('>Ii', b[q:q + 8]); q += 12
+        out.append((d, t))
+    return out
+
+
+def enc_acut(src, dst):
+    """音の はじめの ACUT 秒 だけ（第4.175版）：圧縮し直さない（AAC の かたまりを 写す）。作った あとに 確かめる：
+       形（コーデック・プロファイル・サンプル数／秒・チャンネル）は 同じ・長さは ACUT 秒（±0.05秒）・頭の あき（elst の はじまる 所）は 同じ・
+       ほどいた 音（16bit）は さいごの 2かたまり（重ねて ほどく 所）を のぞいて もとの はじめと 1つも ちがわない"""
+    import numpy as np
+    sec = ACUT[os.path.basename(src)]; tmp = dst + '.tmp.m4a'
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:a:0', '-t', str(sec), '-c', 'copy', '-movflags', '+faststart', '-map_metadata', '-1', tmp], check=True)
+
+    def info(q):
+        r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_type,codec_name,profile,sample_rate,channels,duration', '-of', 'json', q], capture_output=True, text=True, check=True)
+        st = json.loads(r.stdout)['streams']; assert len(st) == 1 and st[0]['codec_type'] == 'audio', (q, st)
+        return st[0]
+
+    def pcm(q):
+        return np.frombuffer(subprocess.run(['ffmpeg', '-v', 'error', '-i', q, '-f', 's16le', '-acodec', 'pcm_s16le', '-'], capture_output=True, check=True).stdout, np.int16)
+    a, b = info(src), info(tmp)
+    for k in ('codec_name', 'profile', 'sample_rate', 'channels'):
+        assert a[k] == b[k], (os.path.basename(src), k, a[k], b[k])
+    assert abs(float(b['duration']) - sec) < 0.05 and float(b['duration']) < float(a['duration']), (src, a['duration'], b['duration'])
+    ea, eb = _elst(src), _elst(tmp)
+    assert (ea is None and eb is None) or (ea and eb and len(ea) == len(eb) and [t for _d, t in ea] == [t for _d, t in eb]), (src, ea, eb)
+    x, y = pcm(src), pcm(tmp); k = len(y) - 2 * 1024 * int(b['channels'])
+    assert 0 < k and len(y) < len(x) and np.array_equal(x[:k], y[:k]), (src, len(x), len(y))
     os.replace(tmp, dst)
 
 
@@ -246,6 +309,8 @@ def one(job):
         enc_idxz(name, f, src, dst)
     elif how == 'shelf':
         enc_shelf(f, dst)
+    elif how == 'acut':
+        enc_acut(src, dst)
     else:
         shutil.copy2(src, dst)
     if how in ('film', 'webp') and os.path.getsize(dst) > PARAMS['keep'] * os.path.getsize(src):
@@ -284,7 +349,7 @@ def build(only=None):
                 q = os.path.join(p, f); assert os.path.dirname(os.path.abspath(q)) == os.path.abspath(p) and os.sep + os.path.join('ios', 'lite') + os.sep in os.path.abspath(q), q
                 os.remove(q)
     films = [j for j in jobs if j[2] == 'film']; rest = [j for j in jobs if j[2] != 'film']
-    print('作る もの：動画', len(films), '・絵', sum(1 for j in rest if j[2] == 'webp'), '・形（番号を 詰める）', sum(1 for j in rest if j[2] == 'idxz'), '・棚の 絵', sum(1 for j in rest if j[2] == 'shelf'), '・写し', sum(1 for j in rest if j[2] == 'copy'), flush=True)
+    print('作る もの：動画', len(films), '・絵', sum(1 for j in rest if j[2] == 'webp'), '・形（番号を 詰める）', sum(1 for j in rest if j[2] == 'idxz'), '・棚の 絵', sum(1 for j in rest if j[2] == 'shelf'), '・音の はじめ だけ', sum(1 for j in rest if j[2] == 'acut'), '・写し', sum(1 for j in rest if j[2] == 'copy'), flush=True)
     done = 0; t0 = time.time()
     for j in films:
         name, f, how, size, sec = one(j); mans[name]['files'][f].update(how=how, size=size); done += 1

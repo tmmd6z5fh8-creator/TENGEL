@@ -102,6 +102,11 @@ def stage_click(pg, x, y):            # フィールドの 座標（1052×1657�
     pg.mouse.click(r[0] + x / 1052 * r[2], r[1] + y / 1657 * r[3])
 
 
+def ask_yes(pg):                      # 第4.175版：ごはん・おそうじの 前の 札「抽選を する／しない」→「抽選を する」（左の 札：フィールドの 座標 310,1268）を 押す
+    pg.wait_for_function("() => !!TCCare.S.ask", timeout=20000); pg.wait_for_timeout(450)
+    stage_click(pg, 310, 1268)
+
+
 # 第4.159版：お世話の あとの PUSH（tc/tc_care.js）。押すのは 本物の 指の 出来事（pointerdown：指を 置いた 瞬間に 押される）で、その 間 だけ くじ（Math.random）を 決めた 数に する
 #   （馬の 頭は 作る ときの Math.random を おぼえて いる ので、さしかえるのは 出来事を 送る 1回の 間 だけ）。返り値＝減った トークンの 数
 PUSH_LIVE = "() => { const S = TCCare.S; return !!(S.push && S.push.hideT == null); }"
@@ -366,7 +371,13 @@ try:
         print('■ ごはん（エサ・3D の バケツ）')
         stock0 = pg.evaluate("() => TCCare.S.stock")
         stage_click(pg, 327, 1494); pg.wait_for_timeout(1200)
-        check(pg.evaluate("() => !!TCCare.S.chooser"), 'ごはんを 押すと 3つ から えらぶ')
+        # 第4.175版（まさちゃん 2026/11/15 13:56「お世話ボタンを押した時に、・抽選をする・抽選をしない を選べるようにする！」）：先に 札「抽選を する／しない」
+        ak = pg.evaluate("() => { const S = TCCare.S; return { ask: S.ask && S.ask.kind, phase: S.phase, chooser: !!S.chooser, stock: S.stock }; }"); shot(pg, 'tc_ask')
+        apx = pg.evaluate(OVPX, [[310, 1268 - 60], [742, 1268 - 60], [310 + 150, 1268 + 70], [742 + 150, 1268 + 70]])
+        check(ak['ask'] == 'feed' and ak['phase'] == 'ask' and not ak['chooser'] and all(q[3] > 200 for q in apx) and apx[0][0] > apx[0][2] + 60 and apx[1][2] > 200,
+              f'ごはんを 押すと 先に 札「抽選を する」（左・金色）「抽選を しない」（右・白い 紙）が 出る（えらぶ 札は まだ：{ak}・色 {[q[:3] for q in apx[:2]]}）')
+        stage_click(pg, 310, 1268); pg.wait_for_timeout(900)
+        check(pg.evaluate("() => !!TCCare.S.chooser && !TCCare.S.ask && TCCare.S.withLot === true"), '「抽選を する」を 押すと 3つ から えらぶ')
         stage_click(pg, 270, 1262)
         ok = False
         for _ in range(120):
@@ -432,6 +443,7 @@ try:
               f'散らばる 場所（300回）：いつも 5か所・馬の 足もとは さける（いちばん 近くて {sp["near"]:.0f}）・たがいに {sp["dm"]:.0f} 以上・4つの 絵が まざる・山の 中身は 種から いつも 同じ')
         for _ in range(16):                  # ごはんの あとの 当たりの 札が 出て いる 間は 押せない：押せる ように なる まで
             stage_click(pg, 526, 1494); pg.wait_for_timeout(600)
+            if pg.evaluate("() => !!TCCare.S.ask"): stage_click(pg, 310, 1268); pg.wait_for_timeout(300)      # 第4.175版：「抽選を する」
             if pg.evaluate("() => TCCare.S.mode === 'clean'"): break
         for _ in range(40):
             pg.wait_for_timeout(250)
@@ -499,6 +511,7 @@ try:
         pg.evaluate("() => { const [HO, BR] = TCCare._hb; BR.poops = [{ x: 470, y: 1230, img: 1, t0: -10, h0: 1.05, w: 0.5 * (HO.opt.stage || 1), gold: false }]; }"); pg.wait_for_timeout(600)
         for _ in range(16):
             stage_click(pg, 526, 1494); pg.wait_for_timeout(600)
+            if pg.evaluate("() => !!TCCare.S.ask"): stage_click(pg, 310, 1268); pg.wait_for_timeout(300)      # 第4.175版：「抽選を する」
             if pg.evaluate("() => TCCare.S.mode === 'clean'"): break
         for _ in range(40):
             pg.wait_for_timeout(250)
@@ -560,24 +573,24 @@ try:
         # 第4.140版（11/10 14:14 まさちゃん「あと項目ごとに%を説明書に載せるようにして！」）：項目ごとに ％（表の 左に ％・その 下に 小さく 分数）。分数は 抽選の 表（tc_app.js）と 同じ
         gd = pg.evaluate("""() => { const T = TCApp._t, e = document.querySelector('#tcg');
           const rows = t => [...e.querySelectorAll(`table[data-tab=${t}] tr`)].map(r => ({ d: +r.dataset.d, pc: r.cells[0].childNodes[0].textContent, fr: r.cells[0].querySelector('small').textContent, lab: r.cells[1].textContent }));
-          const key = z => z.k === 'pt' ? z.v + 'P GET' : z.k === 'tk' ? 'チケット' : z.k === 'zn' ? 'ポイント特化ゾーン（最大25,000P）' : (z.v || T.RT[z.tier]).join('P か ') + 'P';
+          const key = z => z.k === 'pt' ? z.v + 'P GET' : z.k === 'tk' ? 'チケット' : z.k === 'zn' ? 'ポイント特化ゾーン（最大25,000P）' : z.k === 'gk' ? '激馬熱馬（40,000P）' : (z.v || T.RT[z.tier]).join('P か ') + 'P';
           const want = tab => tab.map(([p, z]) => ({ d: Math.round(1 / p), key: key(z) }));
           return { care: rows('care'), mab: rows('maboroshi'), kami: rows('kamisama'), wCare: want(T.PRIZES), wMab: want(T.PRIZES_VISIT.maboroshi), wKami: want(T.PRIZES_VISIT.kamisama), odds: T.ODDS, text: e.textContent,
             fit: [...e.querySelectorAll('td:first-child')].every(td => td.scrollWidth <= td.clientWidth + 1 && td.getBoundingClientRect().height < 46) }; }""")
         def pc(d, n=1):                       # tc_guide.js の pc と 同じ きまり（まるめは JS の toFixed と 同じ：ちょうど まん中は 大きい 方＝3.125 → 3.13）
             from decimal import Decimal, ROUND_HALF_UP
-            x = n / d * 100; f = 1 if x >= 10 else 2 if x >= 0.1 else 3
+            x = n / d * 100; f = 1 if x >= 10 else 2 if x >= 0.1 else 3 if x >= 0.001 else 5      # 第4.175版：とても 小さい 数（激馬熱馬 1/299999）は 5けた
             s_ = str(Decimal(x).quantize(Decimal(1).scaleb(-f), rounding=ROUND_HALF_UP))
             if '.' in s_: s_ = s_.rstrip('0').rstrip('.')
             return ('約' if abs(float(s_) - x) > 1e-9 else '') + s_ + '%'
         def same(rows, want):
             return (len(rows) == len(want) and all(any(r['d'] == w['d'] and w['key'] in r['lab'] for r in rows) for w in want)
                     and all(r['pc'] == pc(r['d']) and r['fr'] == f"1/{r['d']}" for r in rows))
-        check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(15, '約6.67%'), (25, '4%'), (55, '約1.82%'), (95, '約1.05%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 11      # 第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95
-              and [(r['d'], r['pc']) for r in gd['care']][6:] == [(125, '0.8%'), (245, '約0.41%'), (399, '約0.25%'), (600, '約0.17%'), (699, '約0.14%')],      # 第4.142版：ルーレット 1/125・1/245・1/399・チケット 1/600／第4.165版：ポイント特化ゾーン 1/699
-              f"説明書：お世話の 当たりは 項目ごとに ％（第4.165版：10P 約6.67%・20P 4%・50P 約1.82%・100P 約1.05% … ルーレット 0.8%・約0.41%・約0.25%・チケット 約0.17%・ポイント特化ゾーン 約0.14%）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
-        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%'), (699, '約0.14%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%'), (699, '約0.14%')],      # 第4.142版／第4.165版：ポイント特化ゾーン 1/699
-              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32／どちらも ポイント特化ゾーン 1/699：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
+        check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(15, '約6.67%'), (25, '4%'), (55, '約1.82%'), (95, '約1.05%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 12      # 第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95
+              and [(r['d'], r['pc']) for r in gd['care']][6:] == [(125, '0.8%'), (245, '約0.41%'), (399, '約0.25%'), (600, '約0.17%'), (699, '約0.14%'), (299999, '約0.00033%')],      # 第4.142版：ルーレット 1/125・1/245・1/399・チケット 1/600／第4.165版：ポイント特化ゾーン 1/699／第4.175版：激馬熱馬 1/299999
+              f"説明書：お世話の 当たりは 項目ごとに ％（第4.165版：10P 約6.67%・20P 4%・50P 約1.82%・100P 約1.05% … ルーレット 0.8%・約0.41%・約0.25%・チケット 約0.17%・ポイント特化ゾーン 約0.14%・第4.175版：激馬熱馬 約0.00033%）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
+        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%'), (699, '約0.14%'), (299999, '約0.00033%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%'), (699, '約0.14%'), (299999, '約0.00033%')],      # 第4.142版／第4.165版：ポイント特化ゾーン 1/699
+              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32／どちらも ポイント特化ゾーン 1/699・激馬熱馬 1/299999：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
         od = gd['odds']; D = lambda k: round(1 / od[k])
         wantTx = ['ぜんぶ 合わせて 約17.1%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pにかえるか、選べるよ', 'お世話（ごはん・おそうじ）を5回すると、リセットのタイマーがスタート', 'タイマーが5分たつとリセット → 次の馬を抽選', 'それ以外は いつもの馬のまま', 'お世話をしないと 馬はかわらないよ（開いているだけでは 抽選しないよ）', 'お世話のとちゅうは リセットしないよ',
                   '抽選（お世話のあとのPUSH）は、幻の馬 最大10回・神様馬 最大5回まで。つかい切ると帰るよ',      # 第4.168版（まさちゃん 11/14 01:26「幻の馬は、抽選最大10回まで 神様馬は、抽選最大5回まで」）
@@ -603,14 +616,15 @@ try:
               f"説明書：上乗せの 回数ごとの ％と 合計（0回 40% → 1,000P … 12回 約0.22% → 25,000P（MAX））・％を 足すと 100%・平均 {gz and gz['avg']:.1f}P（抽選の きまりから 数えた 数と 同じ）")
         #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
         g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいるあいだ'), heads: s.map(x => x[0]) }; }")
-        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 14 + HAVE_DP
+        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 16 + HAVE_DP
               and (not HAVE_DP or g2['heads'].index('玉お世話チャレンジ') == g2['heads'].index('押お世話のあとのPUSH') + 1)      # 第4.173版：台の 絵が ある ときは 項目が 15こ（「お世話チャレンジ」が PUSH の すぐ 下）
+              and g2['heads'].index('選抽選をする／しない') == g2['heads'].index('押お世話のあとのPUSH') - 1 and g2['heads'].index('激激馬熱馬') == g2['heads'].index('虹ポイント特化ゾーン') + 1      # 第4.175版：＋2こ（「抽選をする／しない」は PUSH の すぐ 上・「激馬熱馬」は 特化ゾーンの すぐ 下）
               and g2['heads'].index('替馬のリセット（次の馬の抽選）') == g2['heads'].index('★2分ごとのチャンス') + 1,
               f"説明書：「馬のリセット（次の馬の抽選）」の 項目が ある・幻の馬／神様馬の 抽選は そこに 書く（2分ごとの チャンスは 高確ゾーン だけ）・「いるのは10分」は ない（{g2['heads']}）")
         #   第4.159版：トークンの 上限 25・お世話の あとの PUSH（1個 使う／まとめて 使う・ハズレは 音 だけ）
         g3 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tok: f('お世話トークン'), push: f('お世話のあとのPUSH'), pt: f('お世話でポイントGETチャンス'), pet: f('撫でる'), heads: s.map(x => x[0]) }; }")
         check('最大25こ' in g3['tok'] and '20こ' not in g3['tok'] and '5分ごとに5つたまる' in g3['tok'] and '10分ごと' not in g3['tok'] and 'ポイントで買うこともできる' in g3['tok'] and 'お世話トークンが最大だよ！' in g3['pet'] and 'PUSHを1回押すと1つ使う' in g3['tok']
-              and g3['heads'].index('買お世話トークンの購入') == g3['heads'].index('トお世話トークン') + 1 and g3['heads'].index('押お世話のあとのPUSH') == g3['heads'].index('トお世話トークン') + 2
+              and g3['heads'].index('買お世話トークンの購入') == g3['heads'].index('トお世話トークン') + 1 and g3['heads'].index('押お世話のあとのPUSH') == g3['heads'].index('トお世話トークン') + 3
               and all(x in g3['push'] for x in ['PUSHが出るよ', 'トークンを1つ使って抽選', 'ハズレは「プフォ」の音だけ', '「1個 使う」「まとめて 使う」', '1回押したらおしまい', '押した回数ぶんトークンがへる', 'やめるときは「おわる」', 'トークン1つがお世話1回'])
               and 'PUSHを押すたびに抽選' in g3['pt']
               and all(x in g3['pet'] for x in ['抽選はお世話トークンが20こ未満のときだけ', '20こ以上（最大の25こも）のときは', '抽選まち', '20こを切ったら抽選がはじまるよ']) and 'ふえない' not in g3['pet'],
@@ -745,11 +759,11 @@ try:
         #   第4.142版（11/10 17:20 まさちゃん「ノーマルのルーレット抽選、幻の馬ルーレット当選と神様馬ルーレット抽選の確率だけ変えたい！」）：ルーレット 1/125・1/245・1/399・チケット 1/600（ポイントの 当たりは そのまま）
         #   第4.165版（11/13 11:46 まさちゃん「お世話でポイントGET 確率少し変える(ここだけ) 1/15で10P 1/25で20P 1/55で50P 1/95で100P」）：10P・20P・50P・100P だけ（200P・300P・ルーレット・チケットは そのまま）
         #   第4.165版（11/13 12:51「ポイントの特化ゾーンを作る … 1回の抽選の1/699で入る」）：表の あたまに ポイント特化ゾーン 1/699（いつもの 表・幻の馬・神様馬の どれにも）
-        check(tabS == ['699:zn:', '600:tk:', '399:rt:kamisama', '245:rt:maboroshi', '125:rt:normal', '121:pt:300', '99:pt:200', '95:pt:100', '55:pt:50', '25:pt:20', '15:pt:10'], f'お世話の 抽選の 表：ルーレット 1/125・1/245・1/399・チケット 1/600・200P 1/99・300P 1/121 は そのまま／第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95・ポイント特化ゾーン 1/699（{tabS}）')
+        check(tabS == ['299999:gk:', '699:zn:', '600:tk:', '399:rt:kamisama', '245:rt:maboroshi', '125:rt:normal', '121:pt:300', '99:pt:200', '95:pt:100', '55:pt:50', '25:pt:20', '15:pt:10'], f'お世話の 抽選の 表：ルーレット 1/125・1/245・1/399・チケット 1/600・200P 1/99・300P 1/121 は そのまま／第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95・ポイント特化ゾーン 1/699／第4.175版：あたまに 激馬熱馬 1/299999（{tabS}）')
         tabV = pg.evaluate("() => { const T = TCApp._t, f = t => t.map(([p, z]) => Math.round(1 / p) + ':' + (z.v ? z.v.join('/') : z.k)), sum = t => t.reduce((a, [p]) => a + p, 0); return { mab: f(T.PRIZES_VISIT.maboroshi), kami: f(T.PRIZES_VISIT.kamisama), rt: T.RT, x: T.ODDS.highX, sums: [sum(T.PRIZES), sum(T.PRIZES_VISIT.maboroshi), sum(T.PRIZES_VISIT.kamisama)] }; }")
-        check(tabV['mab'] == ['699:zn', '60:3200/6400', '30:1600/3200', '15:800/1600'] and tabV['kami'] == ['699:zn', '32:10000/20000', '16:5000/10000', '8:2000/4000'] and tabV['rt'] == {'normal': [800, 1600], 'maboroshi': [1600, 3200], 'kamisama': [3200, 6400]},
-              f"幻の馬・神様馬の 表：1/15・1/30・1/60／1/8・1/16・1/32（ポイントの 数は そのまま）＋ ポイント特化ゾーン 1/699（{tabV['mab']}・{tabV['kami']}）")
-        check(all(x * tabV['x'] < 1 for x in tabV['sums']) and abs(tabV['sums'][0] - 0.169995 - 1 / 699) < 0.0001 and abs(tabV['sums'][1] - 7 / 60 - 1 / 699) < 1e-9 and abs(tabV['sums'][2] - 7 / 32 - 1 / 699) < 1e-9,
+        check(tabV['mab'] == ['299999:gk', '699:zn', '60:3200/6400', '30:1600/3200', '15:800/1600'] and tabV['kami'] == ['299999:gk', '699:zn', '32:10000/20000', '16:5000/10000', '8:2000/4000'] and tabV['rt'] == {'normal': [800, 1600], 'maboroshi': [1600, 3200], 'kamisama': [3200, 6400]},
+              f"幻の馬・神様馬の 表：1/15・1/30・1/60／1/8・1/16・1/32（ポイントの 数は そのまま）＋ ポイント特化ゾーン 1/699 ＋ 激馬熱馬 1/299999（{tabV['mab']}・{tabV['kami']}）")
+        check(all(x * tabV['x'] < 1 for x in tabV['sums']) and abs(tabV['sums'][0] - 0.169995 - 1 / 699 - 1 / 299999) < 0.0001 and abs(tabV['sums'][1] - 7 / 60 - 1 / 699 - 1 / 299999) < 1e-9 and abs(tabV['sums'][2] - 7 / 32 - 1 / 699 - 1 / 299999) < 1e-9,
               f"高確ゾーン（×{tabV['x']}）でも 当たりの 合計は 1 を こえない（いつも {tabV['sums'][0] * tabV['x']:.1%}・幻の馬 {tabV['sums'][1] * tabV['x']:.1%}・神様馬 {tabV['sums'][2] * tabV['x']:.1%}）")
         nm = lot['normal']; rate = lambda c, k: c.get(k, 0) / 20000
         check(abs(rate(nm, 'pt:10') - 1 / 15) < 0.007 and abs(rate(nm, 'pt:20') - 0.04) < 0.0055 and abs(rate(nm, 'pt:50') - 1 / 55) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 95) < 0.0035 and abs(1 - rate(nm, '-') - 0.1714) < 0.011 and abs(rate(nm, 'zn:') - 1 / 699) < 0.0013
@@ -1222,10 +1236,10 @@ try:
         #   11.「ごはんを押しちゃうと戻れないから、戻るボタンを追加して！」：えらぶ 札の 左上の「← もどる」／もう一度「ごはん」で とじる（トークンは 使わない・PUSH も 出ない）
         pg.wait_for_function("() => TCCare.S.phase === 'idle' && !TCCare.S.mode && !TCCare.S.busy && !(TCCare.S.push && TCCare.S.push.hideT == null) && !document.querySelector('#tcOv .tcfx.on')", timeout=60000)
         CH = pg.evaluate("() => TCCare.CHBACK"); CST = "() => { const S = TCCare.S; return { chooser: !!S.chooser, phase: S.phase, mode: S.mode, stock: S.stock, hold: !!TCCare._hb[1].careHold, live: !!(S.push && S.push.hideT == null) }; }"
-        cb0 = pg.evaluate(CST); stage_click(pg, 327, 1494); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700)
+        cb0 = pg.evaluate(CST); stage_click(pg, 327, 1494); ask_yes(pg); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700)
         cpx = pg.evaluate(OVPX, [[CH['x'] - 80, CH['y']], [CH['x'] + 80, CH['y']], [CH['x'] - CH['w'] / 2 - 20, CH['y']]]); cb1 = pg.evaluate(CST); shot(pg, 'tc_chooser_back')
         stage_click(pg, CH['x'], CH['y']); pg.wait_for_timeout(800); cb2 = pg.evaluate(CST)
-        stage_click(pg, 327, 1494); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700); stage_click(pg, 327, 1494); pg.wait_for_timeout(800); cb3 = pg.evaluate(CST)
+        stage_click(pg, 327, 1494); ask_yes(pg); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(700); stage_click(pg, 327, 1494); pg.wait_for_timeout(800); cb3 = pg.evaluate(CST)
         idle = {'chooser': False, 'phase': 'idle', 'mode': None, 'stock': cb0['stock'], 'hold': False, 'live': False}
         check(CH == {'x': 262, 'y': 1109, 'w': 200, 'h': 58} and cb1['chooser'] and cb1['phase'] == 'choose' and min(cpx[0][:3]) > 200 and min(cpx[1][:3]) > 200 and cpx[0][3] >= 240 and cb2 == idle and cb3 == idle,
               f'ごはんの えらぶ 札の 左上に「← もどる」（クリーム色の 札 {cpx[0][:3]}）→ 押すと とじる・もう一度「ごはん」を 押しても とじる（トークンは {cb0["stock"]}こ の まま・PUSH は 出ない）')

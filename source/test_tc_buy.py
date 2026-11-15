@@ -61,6 +61,11 @@ def stage_click(pg, x, y):
     pg.mouse.click(*stage_xy(pg, x, y))
 
 
+def ask_yes(pg):                      # 第4.175版：ごはん・おそうじの 前の 札「抽選を する／しない」→「抽選を する」（左の 札：フィールドの 座標 310,1268）を 押す
+    pg.wait_for_function("() => !!TCCare.S.ask", timeout=20000); pg.wait_for_timeout(450)
+    stage_click(pg, 310, 1268)
+
+
 def shot(pg, name):
     if SHOT: os.makedirs(SHOT, exist_ok=True); pg.screenshot(path=os.path.join(SHOT, name + '.png'))
 
@@ -141,7 +146,7 @@ try:
             shot(pg, 'buy_btn')
             # 押す → 購入の 窓。お世話の 途中（ごはんを えらぶ）は 開かない（札）・お世話の あとの PUSH が 出て いる 間は 列ごと かくれる
             stage_click(pg, *BUYXY); pg.wait_for_timeout(450); c0 = pg.evaluate("() => [TCBuy.isOpen(), TCApp._t.buyShow()]"); sheet(pg, False)
-            stage_click(pg, 327, 1494); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(500)
+            stage_click(pg, 327, 1494); ask_yes(pg); pg.wait_for_function("() => !!TCCare.S.chooser", timeout=20000); pg.wait_for_timeout(500)
             stage_click(pg, *BUYXY); pg.wait_for_timeout(350)
             c1 = pg.evaluate("() => [TCBuy.isOpen(), TCApp._t.buyShow(), TCCare.S.fx.some(f => f.k === 'tagUI' && f.txt === 'お世話が おわってから 買えるよ'), !!TCCare.S.chooser]")
             pg.evaluate("() => TCApp.test.prize(null)"); stage_click(pg, 270 + 256, 1262)
