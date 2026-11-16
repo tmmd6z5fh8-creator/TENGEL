@@ -115,16 +115,21 @@ LNP=$(/usr/libexec/PlistBuddy -c "Print NSLocalNetworkUsageDescription" "$APP/In
 BJN=$(/usr/libexec/PlistBuddy -c "Print NSBonjourServices" "$APP/Info.plist" 2>/dev/null | grep -c '_tengel-cb\._')
 say "   local network: purpose=$([ -n "$LNP" ] && echo yes || echo no) bonjour=${BJN:-0} $([ -n "$LNP" ] && [ "${BJN:-0}" = "2" ] && echo OK || echo CHECK)"
 CBPY='
-# start の op（相手の 手札）は 5 か 4：コンピュータが もう セットして いれば 4（セットは すぐ 確定する：第4.176版の 流れ。run 143 では 4 だった）
+# start の op（相手の 手札）は 7 か 6：コンピュータが もう セットして いれば 6（セットは すぐ 確定する：第4.176版の 流れ。run 143 では 4〈手札 5まいの とき〉だった）
+# 第4.178版：5ターン・手札 7まい（山札 16）・メニューの ボタン 6つ（「設定」が ふえた）・設定の 窓（BGM・効果音・エフェクト）・火の あかりの ゆれ・エフェクト オフ／オン・捨て札は 10まい 以上
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
 fd = o.get("fd") or []
 ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
-     and o.get("open") is True and len(o.get("menu") or []) == 5 and o.get("roomBtn") == [True, True] and st.get("hand") == 5 and st.get("op") in (4, 5) and st.get("deck") == 20 and st.get("turn") == 1 and au.get("ended") is True \
-     and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 6 and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
+     and o.get("open") is True and len(o.get("menu") or []) == 6 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
+     and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 10 and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
      and (o.get("res") != "win" or o.get("tokens") == 6)
+se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
+ok2 = se.get("fx") is True and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
+      and o.get("gear") == "bgm,se,fx" and o.get("nofx") is True and o.get("fxBack") is True and not o.get("setsErr")
 print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s tokens %s closed %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("tokens"), o.get("closed"), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
+print("   card battle settings: sets %s bgm %s fire %s gear %s fx-off %s fx-back %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("nofx"), o.get("fxBack"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
 '
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
 #   じかに 描いた 紙と 1画素も ちがわない（くらべた 14コマ・べつの 紙との 見くらべも 0）・読んだ 値（線の 太さ 2・こさ 0.375）
@@ -309,7 +314,7 @@ if h is None or g is None:
     print("report host %s guest %s -> CHECK" % ("yes" if h else "NO", "yes" if g else "NO")); sys.exit(0)
 flip = {"win": "lose", "lose": "win", "draw": "draw"}
 ok = (h.get("connected") is True and g.get("connected") is True and h.get("kind") == "host" and g.get("kind") == "guest" and h.get("res") in flip and flip[h["res"]] == g.get("res")
-      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 6 and h.get("discard") == g.get("discard") and not h.get("errors") and not g.get("errors"))
+      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 10 and h.get("discard") == g.get("discard") and not h.get("errors") and not g.get("errors"))      # 第4.178版：5ターン ＝ 捨て札は 10まい 以上
 print("host connected %s res %s wins %s discard %s evs %s / guest connected %s res %s wins %s evs %s errors %d -> %s" % (h.get("connected"), h.get("res"), h.get("wins"), h.get("discard"), h.get("evs"), g.get("connected"), g.get("res"), g.get("wins"), g.get("evs"),
       len(h.get("errors") or []) + len(g.get("errors") or []), "OK" if ok else "CHECK " + (h.get("text") or "")[:80] + " / " + (g.get("text") or "")[:80]))
 ' "$OUT/room-iphone-report-6.json" "$OUT/room-ipad-report-7.json" 2>&1)"

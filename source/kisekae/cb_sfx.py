@@ -2,7 +2,7 @@
 #   python3 kisekae/cb_sfx.py            … ios/cb_assets/cb_se_<名前>.m4a（アプリに 入れる 形：モノラル 44.1kHz・AAC 96kbps）
 #   python3 kisekae/cb_sfx.py wav <出す フォルダ>   … wav（聞いて 確かめる 用）
 #   音（cb/cb_app.js の SE と 同じ 名前）：
-#     deal（配る：シャッ×5）・set（カードを 置く：トン）・flip（めくる：シュッ パッ）・win（ターンに 勝った：明るい 3つの 音）・lose（ターンに 負けた：下がる 2つの 音）・
+#     deal（配る：シャッ×7＝手札 7まい：第4.178版。前は ×5）・set（カードを 置く：トン）・flip（めくる：シュッ パッ）・win（ターンに 勝った：明るい 3つの 音）・lose（ターンに 負けた：下がる 2つの 音）・
 #     even（かぶり・引き分け・同点：コン コン）・magic（効果：キラキラ 上がる）・tap（ボタン：チッ）・fanfare（対戦に 勝った：ファンファーレ）・over（対戦に 負けた：しずむ 音）・join（友だちと つながった：ピンポン）
 #   大きさ（山）：アプリの ほかの 音（ピロン 0.23・デデーン 0.36）と ならぶ ぐらい（下の PEAK）
 import os, subprocess, sys, tempfile
@@ -16,9 +16,12 @@ NAMES = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare'
 PEAK = {'deal': 0.26, 'set': 0.30, 'flip': 0.27, 'win': 0.33, 'lose': 0.30, 'even': 0.30, 'magic': 0.27, 'tap': 0.16, 'fanfare': 0.40, 'over': 0.34, 'join': 0.30}
 
 
+BGM = 'cb_bgm.m4a'           # BGM（第4.178版：kisekae/cb_bgm.py が 作る。ここでは 名前 だけ）
+
+
 def files():
-    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）"""
-    return [f'cb_se_{n}.m4a' for n in NAMES]
+    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）：効果音 11こ ＋ BGM 1こ"""
+    return [f'cb_se_{n}.m4a' for n in NAMES] + [BGM]
 
 
 def t_(sec):
@@ -71,10 +74,11 @@ def flick(rng, sec=0.07, lo=1800, hi=9000):
 
 
 def snd_deal(rng):
-    y = np.zeros(int(0.62 * SR))
-    for i in range(5):
-        put(y, flick(rng, 0.075, 1500 + 200 * i, 8000) * (0.8 + 0.2 * rng.random()), 0.02 + i * 0.105)
-        put(y, 0.25 * low(rng.standard_normal(int(0.03 * SR)), 300) * env(int(0.03 * SR), 0.002, 0.02), 0.05 + i * 0.105)
+    # 第4.178版：手札 7まい → シャッ×7（画面の 配る 動きは 0.09秒 ごと：7まいで 0.63秒）。前は ×5・0.105秒 ごと
+    y = np.zeros(int(0.74 * SR))
+    for i in range(7):
+        put(y, flick(rng, 0.075, 1500 + 150 * i, 8000) * (0.8 + 0.2 * rng.random()), 0.02 + i * 0.09)
+        put(y, 0.25 * low(rng.standard_normal(int(0.03 * SR)), 300) * env(int(0.03 * SR), 0.002, 0.02), 0.05 + i * 0.09)
     return y
 
 

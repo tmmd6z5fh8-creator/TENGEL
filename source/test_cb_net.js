@@ -110,6 +110,34 @@ async function playOut(pairs, rng, guard) {
     check(late.ok === false && late.why === 'off', 'やめた あとの 手は 通らない');
   }
 
+  console.log('■ 部屋：逆転勝利（第4.178版：ゲストが 1 を 3まい・ホストが 幻の馬）');
+  {
+    const w = wire(), rng = rngOf(9);
+    const H = N.host(w.a, rng, { hands: [['m', '4', '5', '6', '7'], ['1', '1', '1', '2', '3']], turns: 3 }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+    H.start(); G.start(); await tick(); await tick(); await tick();
+    await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '1').u }); await tick(); await tick();
+    const n0 = w.log.length;
+    await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === 'm').u }); await tick(); await tick();
+    const hu = hs.ups[hs.ups.length - 1], gu = gs.ups[gs.ups.length - 1], sent = w.log.slice(n0).filter(x => x[0] === 'h').map(x => x[1]).join('');
+    check(hu.ev.map(e => e.e).join() === 'set,open' && gu.ev.map(e => e.e).join() === 'set,open' && hu.ev[1].rev === 'op' && gu.ev[1].rev === 'me' && hu.ev[1].res === 'win' && gu.ev[1].res === 'lose' && hu.ev[1].wins.join() === '0,0'
+      && hs.view.phase === 'rev' && gs.view.phase === 'rev' && gs.view.pend.type === 'rev' && gs.view.pend.mine === true && hs.view.pend.mine === false && hs.view.wait === true && gs.view.wait === false && hs.view.op.hand.every(c => c.k === null),
+      'オープンした 所で 止まる：ゲスト（1 が 3まい）が「逆転勝利を 使う？」・ホスト（幻の馬）は 待つ（勝ちは まだ 数えない）');
+    check(!/"who"|"known"|"deck"/.test(sent) && (sent.match(/"k":"m"/g) || []).length >= 1 && !/"k":"[4567]"/.test(sent), 'ゲストに 送る 文字：場の 幻の馬は 見える・ホストの 手札（4・5・6・7）の 中身は 入って いない');
+    const no = await H.act({ t: 'rev', use: true }); await tick();
+    check(no.ok === false && hs.view.phase === 'rev' && hs.view.my.wins === 0, '聞かれて いない ホストが「使う」を 送っても 通らない');
+    const yes = await G.act({ t: 'rev', use: true }); await tick(); await tick();
+    const hu2 = hs.ups[hs.ups.length - 1], gu2 = gs.ups[gs.ups.length - 1];
+    check(yes.ok && hu2.ev.map(e => e.e).join() === 'rev,fin,clear,turn' && gu2.ev.map(e => e.e).join() === 'rev,fin,clear,turn' && hu2.ev[0].me === false && gu2.ev[0].me === true && hu2.ev[0].k === '1' && hu2.ev[0].beat === 'm' && hu2.ev[0].show.length === 2 && hu2.ev[0].drop.k === '1'
+      && hu2.ev[1].res === 'lose' && gu2.ev[1].res === 'win' && hu2.ev[1].rev === true && gu2.ev[1].wins.join() === '1,0' && hu2.ev[1].wins.join() === '0,1',
+      'ゲストが「使う」→ 2人に 同じ できごと（見せた 2まい・捨てた 1・結果：ゲスト 勝ち／ホスト 負け）');
+    check(hs.view.turn === 2 && gs.view.turn === 2 && hs.view.phase === 'set' && !hs.view.pend && gs.view.my.wins === 1 && hs.view.op.wins === 1 && hs.view.my.wins === 0 && gs.view.my.hand.length === 3
+      && hs.view.op.hand.filter(c => c.k === '1').length === 1 && hs.view.op.hand.filter(c => c.k === null).length === 2 && gs.view.my.hand.filter(c => c.seen).map(c => c.k).join() === '1'
+      && JSON.stringify(gs.view.discard.map(d => d.k + d.why + (d.mine ? 'me' : 'op'))) === '["11me","mtop","1tme"]',
+      '2ターン目へ（幻の馬の 効果は 出ない）：ゲストの 手札 3まい・見せて のこった 1 は ホストの 画面で 表・捨て札に「1 の 効果で 捨てた 1」');
+    const end = await playOut([[H, hs], [G, gs]], rng);
+    check(end === 'end' && hs.view.phase === 'end' && gs.view.phase === 'end', 'その あとも さいごまで あそべる');
+  }
+
   console.log('■ 部屋：たくさん あそぶ（でたらめな 手札で 300回）');
   {
     let bad = 0, leak = 0, n = 0; const res = { win: 0, lose: 0, draw: 0 };
@@ -160,7 +188,7 @@ async function playOut(pairs, rng, guard) {
     const n0 = hs.ups.length;
     for (const junk of ['', 'x', '{', 'null', '[]', '{"t":"act"}', '{"t":"act","id":1,"a":{"t":"set","u":"zz"}}', '{"t":"up","view":{}}', 'a'.repeat(30000), '{"t":"act","id":2,"a":null}']) w.b.send(junk);
     await tick(); await tick(); await tick();
-    check(hs.ups.length === n0 && hs.view.my.hand.length === 5 && H._.state().p[1].hand.length === 5 && hs.states.join() === 'ready', 'こわれた 文字・長すぎる 文字・でたらめな 手が 届いても 対戦は そのまま（何も かわらない）');
+    check(hs.ups.length === n0 && hs.view.my.hand.length === 7 && H._.state().p[1].hand.length === 7 && hs.states.join() === 'ready', 'こわれた 文字・長すぎる 文字・でたらめな 手が 届いても 対戦は そのまま（何も かわらない）');
     w.a.send('{bad'); w.a.send(JSON.stringify({ t: 'up' })); w.a.send(JSON.stringify({ t: 'up', n: 9, ev: 'x', view: {} })); await tick(); await tick();
     check(gs.ups.length === 1, 'ゲストも こわれた 文字は 捨てる');
   }
@@ -176,7 +204,7 @@ async function playOut(pairs, rng, guard) {
   {
     const M = N.cpu(rngOf(7), () => 0), s = seat(M);
     M.start(); await tick();
-    check(M.kind === 'cpu' && s.ups.length === 1 && s.view.me === 0 && s.view.op.hand.length === 5 && !s.view.op.set, 'はじまった とき：コンピュータは まだ 出して いない');
+    check(M.kind === 'cpu' && s.ups.length === 1 && s.view.me === 0 && s.view.op.hand.length === 7 && s.view.turns === 5 && !s.view.op.set, 'はじまった とき：コンピュータは まだ 出して いない');
     await sleep(30);
     check(!s.view.op.set, '画面の 動きが 終わる まで（idle を よぶ まで）コンピュータは 考えない');
     M.idle(); await sleep(30);
@@ -188,7 +216,7 @@ async function playOut(pairs, rng, guard) {
     }
     check(s.view.phase === 'end' && ['win', 'lose', 'draw'].indexOf(s.view.res) >= 0, `さいごまで あそべる（${s.view.res} ${s.view.my.wins}－${s.view.op.wins}）`);
     M.again(); await tick();
-    check(s.view.phase === 'set' && s.view.turn === 1 && s.view.my.hand.length === 5, 'もう 1回 → すぐ 配り直す（コンピュータは 待たない）');
+    check(s.view.phase === 'set' && s.view.turn === 1 && s.view.my.hand.length === 7, 'もう 1回 → すぐ 配り直す（コンピュータは 待たない）');
     M.leave(); M.idle(); await sleep(20);
     const r = await M.act({ t: 'set', u: s.view.my.hand[0].u });
     check(r.ok === false && !s.view.op.set, 'やめた あとは コンピュータも 動かない・手も 通らない');

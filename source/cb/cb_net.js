@@ -17,7 +17,7 @@
 //     { t:'again' }（もう 1回）・{ t:'bye' }（やめる）
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 2, MAXLEN = 20000;      // PROTO 2（第4.177版）：5 の 条件・3 の 効果が かわった ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）
+  const R = CBRules, PROTO = 3, MAXLEN = 20000;      // PROTO 3（第4.178版）：5ターン・手札 7まい・6 の 条件が かわった ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 2＝第4.177版（5 の 条件・3 の 効果）
   const say = (m, k, v) => { try { if (typeof m[k] === 'function') m[k](v); } catch (e) { /* 画面の 中の まちがいで 対戦を 止めない */ } };
 
   // ---------- 親（コンピュータと 対戦・部屋の ホスト）----------

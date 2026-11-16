@@ -8,25 +8,36 @@
 #     cb_board.png（プレイボード：1672×941・すき通し なし）・cb_deck.png（山札：1254×1254）・cb_icon.png（アイコン：1254×1254）
 #     第4.177版（まさちゃん 2026/11/16 10:40「3.に効果追加…」・10:54「5.の効果変更した画像！」）：3 と 5 は 新しい 絵 cb_3_v2.png・cb_5_v2.png（1024×1536・すき通し なし＝白い 紙の 上に カード）。
 #       前の 絵 cb_3.png・cb_5.png は のこす（上書きしない・消さない）。白い 紙の 絵は「白で ない 所の 四角」を カードと して 切り出す（下の alpha_of：カードの 場所と 角の 丸みは 前の 絵と 同じ）
+#     第4.178版（まさちゃん 2026/11/16 15:33「テンゲルカードバトルに追加 1は…2は…」と 新しい 絵 2まい「3枚公開：逆転勝利」）：1 と 2 も 新しい 絵 cb_1_v2.png・cb_2_v2.png（1024×1536・白い 紙の 上）。
+#       前の 絵 cb_1.png・cb_2.png は のこす（上書きしない・消さない）
 #   作る もの：
 #     カード 10種 × 2つの 大きさ：cb_c<名前>.webp（800×1200：大きく 見る・めくった とき）・cb_s<名前>.webp（300×450：手札・台の 上）。名前＝1〜7・k・m・b（うら）
 #       ・カードは もとの 絵ごとに 大きさと たて横が 少し ちがう（おもて 986〜1007×1510〜1521・うら 938×1338）→ 絵の ある 所（すき通しで ない 所）を 切り出して、
 #         どれも 同じ たて横（2:3）・同じ 角の 丸み に そろえる（めくった ときに 形が かわらない ように）。うらは たてに 5% ほど のびる（もようは ほぼ そのまま）
 #       ・もとの 絵は まん中も 少し すき通って いる（不透明度 242〜254／255）→ まん中は ぴったり 不透明に する。ふちは 4px 内がわで 切る（もとの ふちの にじみを 出さない）
 #     cb_board.webp（1254×706）・cb_deck.webp（360×426）・cb_icon.webp（240×240：右下の 丸い ボタン）・cb_logo.webp（720×720：メニューの 絵）
-#   台帳 cb_art.json：{ v, files: { 名前: { src: [もとの 名前, 大きさ, sha1], size } } }（アプリには 入れない）
+#     第4.178版（まさちゃん 2026/11/16 14:43「フィールドの雰囲気を夜の月あかりと火のライトに照らされてるイメージにして！(デザインは変えないで、差し込んでる光りの色を変えてみて)」）：
+#       cb_board.webp は、もとの 絵（cb_board.png：そのまま のこす）の **光の 色 だけ** を かえて 作る（下の night）：形・もよう・字は 1画素も 動かさない。
+#       ・ぜんたいを 夜の 暗さ・青みへ ／ 光って いる 所（床に 差しこむ 光・金の ふちの てり）の 色を、左上から 月あかり（青白）・右下から 火の あかり（だいだい）に 入れかえる ／
+#         緑の フェルト・緑の 馬と 葉は ほぼ そのまま（あそぶ 所が 見にくく ならない ように）
+#   台帳 cb_art.json：{ v, p（決めごと：大きさ・夜の 色の 数字）, files: { 名前: { src: [もとの 名前, 大きさ, sha1], size } } }（アプリには 入れない）
 import hashlib, json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
-CARDS = [('1', 'cb_1.png'), ('2', 'cb_2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
+CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
 BASE = (1000, 1500)          # そろえる 大きさ（たて横 2:3）
 INSET, RADIUS = 4, 62        # ふちを 内がわへ 4px・角の 丸み 62px（1000×1500 の とき。どの もとの 絵の 角 よりも 内がわ）
 BIG, SMALL = (800, 1200), (300, 450)
 Q = dict(quality=84, method=6)
-INFO = 'cb_art.json'         # 台帳（アプリには 入れない：build_ios.py は cb_*.webp と cb_se_*.m4a だけ 入れる）
+INFO = 'cb_art.json'         # 台帳（アプリには 入れない：build_ios.py は cb_*.webp と cb_se_*.m4a・cb_bgm.m4a だけ 入れる）
+# 夜の 光（第4.178版）：月＝左上から・火＝右下から。数字を かえたら 台帳の p が かわる（--check で 古いと 出る）
+#   mkeep＝月の 側で もとの 色（金）を どれだけ のこすか（0.70：金の ふちは 金の まま、てりが 青白く なる。0.4 に すると 銀色に 見えて「デザインが かわった」ように 見えた）
+NIGHT = dict(lit0=0.06, lit1=0.40, mx=0.0, my=-0.08, mrx=1.0, mry=1.3, fx=1.03, fy=1.0, frx=0.95, fry=1.25, floor=0.3,
+             amb=(0.40, 0.50, 0.76), moon=(0.52, 0.73, 1.0), fire=(1.0, 0.53, 0.17), mkeep=0.70, mcool=(0.78, 0.96, 1.10), mgain=1.10,
+             fwarm=(1.30, 0.80, 0.33), fgain=1.16, recolor=0.92, mpool=0.065, fpool=0.10, felt=0.12)
 
 
 def sha(p):
@@ -104,6 +115,33 @@ def square(b):
     return o
 
 
+def night(im, P=None):
+    """ボードの 絵（RGB）の 光の 色 だけを 夜（月あかり＋火の あかり）に かえた 絵を 返す。形・もようは 動かさない（1画素ごとに 色を 計算する だけ）
+         1) ぜんたい：夜の 暗さ・青み（amb）  2) 光って いる 所（明るい・緑で ない 所）：月の 側（左上）は 青白い てり・火の 側（右下）は だいだいの てりに 入れかえる
+         3) 月と 火の うすい 光を 足す（mpool・fpool：緑の フェルトの 上は felt 倍 だけ）"""
+    P = P or NIGHT
+    a = np.asarray(im.convert('RGB'), np.float32) / 255
+    h, w, _ = a.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32); u = xx / (w - 1); v = yy / (h - 1)
+    sm = lambda x, lo, hi: (lambda t: t * t * (3 - 2 * t))(np.clip((x - lo) / (hi - lo), 0, 1))
+    lin = a ** 2.2                                               # 光の 足し引きは 明るさに 比例する 形で
+    L = 0.2126 * lin[..., 0] + 0.7152 * lin[..., 1] + 0.0722 * lin[..., 2]
+    green = sm(lin[..., 1] - np.maximum(lin[..., 0], lin[..., 2]), 0.004, 0.05)
+    lit = sm(L, P['lit0'], P['lit1']) * (1 - green)
+    moon = np.clip(1 - np.hypot((u - P['mx']) / P['mrx'], (v - P['my']) / P['mry']), 0, 1)
+    fire = np.clip(1 - np.hypot((u - P['fx']) / P['frx'], (v - P['fy']) / P['fry']), 0, 1)
+    tot = np.maximum(moon + fire, P['floor']); wm = (moon / tot)[..., None]; wf = (fire / tot)[..., None]
+    mc = np.array(P['moon'], np.float32)[None, None, :]; fc = np.array(P['fire'], np.float32)[None, None, :]
+    out = lin * np.array(P['amb'], np.float32)[None, None, :]
+    moonlit = (P['mkeep'] * lin * np.array(P['mcool'], np.float32)[None, None, :] + (1 - P['mkeep']) * L[..., None] * mc) * P['mgain']
+    firelit = lin * np.array(P['fwarm'], np.float32)[None, None, :] * P['fgain']
+    k = (lit * P['recolor'])[..., None]
+    out = out * (1 - k * (wm + wf)) + k * (wm * moonlit + wf * firelit)
+    soft = (P['felt'] + (1 - P['felt']) * (1 - green))[..., None]
+    out = out + (P['mpool'] * (moon ** 2)[..., None] * mc + P['fpool'] * (fire ** 2)[..., None] * fc) * soft
+    return Image.fromarray((np.clip(out, 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8))
+
+
 def plan():
     """作る もの：[(できる 名前, もとの 名前, 作る 関数)]"""
     jobs = []
@@ -111,12 +149,17 @@ def plan():
         jobs.append((f'cb_c{cid}.webp', src, lambda p, o: save(card(p)[0], BIG, o)))
         jobs.append((f'cb_s{cid}.webp', src, lambda p, o: save(card(p)[0], SMALL, o)))
     def board(p, o):
-        im = Image.open(p).convert('RGB').resize((1254, 706), Image.LANCZOS); im.save(o, 'WEBP', quality=86, method=6); return os.path.getsize(o)
+        im = night(Image.open(p).convert('RGB')).resize((1254, 706), Image.LANCZOS); im.save(o, 'WEBP', quality=86, method=6); return os.path.getsize(o)      # 第4.178版：光の 色を 夜に（night）
     jobs.append(('cb_board.webp', 'cb_board.png', board))
     jobs.append(('cb_deck.webp', 'cb_deck.png', lambda p, o: save(cut(p), (360, 426), o)))
     jobs.append(('cb_icon.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (240, 240), o)))
     jobs.append(('cb_logo.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (720, 720), o)))
     return jobs
+
+
+def PARAMS():
+    """決めごと（台帳に 書く：かわったら 作り直す）"""
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT]))
 
 
 def files():
@@ -132,7 +175,7 @@ def stale():
     if not os.path.isfile(mf):
         return '台帳（cb_art.json）が ない'
     man = json.load(open(mf, encoding='utf8'))
-    if man.get('v') != V or man.get('p') != [list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q]:
+    if man.get('v') != V or man.get('p') != PARAMS():
         return '決めごとが かわった'
     for name, src, _f in plan():
         e = man['files'].get(name); sp = os.path.join(SRC, src); op = os.path.join(OUT, name)
@@ -146,7 +189,7 @@ def stale():
 def main():
     if '--check' in sys.argv:
         w = stale(); print('cb_assets →', 'もとの 絵が ない' if w is None else ('新しい' if w == '' else '古い：' + w)); sys.exit(1 if w else 0)
-    man = {'v': V, 'p': [list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q], 'files': {}}; tot = 0
+    man = {'v': V, 'p': PARAMS(), 'files': {}}; tot = 0
     for cid, src in CARDS:
         _o, sz, thin = card(os.path.join(SRC, src))
         print(f'  カード {cid}：もとの 絵の 大きさ {sz[0]}×{sz[1]}（たて横 {sz[0] / sz[1]:.4f}）→ {BASE[0]}×{BASE[1]}・マスクの 中で もとが うすかった 点 {thin}')

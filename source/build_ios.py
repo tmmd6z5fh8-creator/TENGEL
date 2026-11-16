@@ -135,6 +135,7 @@ if not fig_have:
 # 馬カードバトルの 絵と 音（第4.176版：まさちゃんの カード・うら・プレイボード・山札・アイコン から 作った cb_*.webp〈kisekae/cb_art.py〉と 姫が 作った 音 cb_se_*.m4a〈kisekae/cb_sfx.py〉）：
 #   ios/cb_assets/ か CB_ASSETS=<フォルダ>。リポジトリには 入れない ので、ない ときは 入れずに 作る（CI は この 形。丸い ボタンは 字の 丸・対戦は 絵なしで 動く）
 #   入れるのは 決まった 名前 だけ（cb_art.files()・cb_sfx.files()：もとの 絵 src/ や 台帳は 入れない）。絵が 古い（もとの 絵・決めごとが かわった）ときは 止める
+#   第4.178版：BGM（cb_bgm.m4a：kisekae/cb_bgm.py が 計算で 作る 曲）も cb_sfx.files() に 入って いる（効果音 11こ ＋ BGM 1こ）
 import cb_art as _cba, cb_sfx as _cbs
 cb_dir = os.environ.get('CB_ASSETS') or os.path.join(W, 'ios', 'cb_assets')
 if not os.environ.get('CB_ASSETS') and _cba.stale():
@@ -145,7 +146,7 @@ for f in cb_have:
     assert f.lower() not in names and f not in files, f
     shutil.copy(os.path.join(cb_dir, f), os.path.join(res, f)); files[f] = f
 if len(cb_have) != len(cb_all):
-    print('※ 馬カードバトルの 絵と 音が', len(cb_all) - len(cb_have), 'こ ない（', cb_dir, '）。kisekae/cb_art.py・kisekae/cb_sfx.py で 作れるよ（CIではなしのまま）')
+    print('※ 馬カードバトルの 絵と 音が', len(cb_all) - len(cb_have), 'こ ない（', cb_dir, '）。kisekae/cb_art.py・kisekae/cb_sfx.py・kisekae/cb_bgm.py（BGM）で 作れるよ（CIではなしのまま）')
 # 着せ替えの絵（第4弾・16.1）：キャンバスから集めた見本の絵（ios/kisekae_blobs/<id>.webp か KISEKAE_ASSETS=<フォルダ>）を ks_<id>.<形> の名前で入れる。
 # リポジトリには入れない（1章の11）ので、ないときは入れずに作る（CIはこの形。アプリは上の絵なし・いつものボードの飾りで動く）
 import build_kisekae as _ks
