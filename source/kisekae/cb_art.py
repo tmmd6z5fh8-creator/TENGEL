@@ -6,6 +6,8 @@
 #   もとの 絵（名前は 姫が つけた）：
 #     cb_1.png 〜 cb_7.png（数字の カード）・cb_k.png（神様馬）・cb_m.png（幻の馬）・cb_back.png（カードの うら）：1024×1536・すき通し あり（角が 丸い）
 #     cb_board.png（プレイボード：1672×941・すき通し なし）・cb_deck.png（山札：1254×1254）・cb_icon.png（アイコン：1254×1254）
+#     第4.177版（まさちゃん 2026/11/16 10:40「3.に効果追加…」・10:54「5.の効果変更した画像！」）：3 と 5 は 新しい 絵 cb_3_v2.png・cb_5_v2.png（1024×1536・すき通し なし＝白い 紙の 上に カード）。
+#       前の 絵 cb_3.png・cb_5.png は のこす（上書きしない・消さない）。白い 紙の 絵は「白で ない 所の 四角」を カードと して 切り出す（下の alpha_of：カードの 場所と 角の 丸みは 前の 絵と 同じ）
 #   作る もの：
 #     カード 10種 × 2つの 大きさ：cb_c<名前>.webp（800×1200：大きく 見る・めくった とき）・cb_s<名前>.webp（300×450：手札・台の 上）。名前＝1〜7・k・m・b（うら）
 #       ・カードは もとの 絵ごとに 大きさと たて横が 少し ちがう（おもて 986〜1007×1510〜1521・うら 938×1338）→ 絵の ある 所（すき通しで ない 所）を 切り出して、
@@ -19,7 +21,7 @@ from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
-CARDS = [('1', 'cb_1.png'), ('2', 'cb_2.png'), ('3', 'cb_3.png'), ('4', 'cb_4.png'), ('5', 'cb_5.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
+CARDS = [('1', 'cb_1.png'), ('2', 'cb_2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
 BASE = (1000, 1500)          # そろえる 大きさ（たて横 2:3）
 INSET, RADIUS = 4, 62        # ふちを 内がわへ 4px・角の 丸み 62px（1000×1500 の とき。どの もとの 絵の 角 よりも 内がわ）
 BIG, SMALL = (800, 1200), (300, 450)
@@ -48,9 +50,22 @@ def solid(al):
     return np.clip((al.astype(np.float32) - 64) / (236 - 64), 0, 1)
 
 
+def alpha_of(a):
+    """もとの 絵の すき通し（0〜255）。すき通しの ない 絵（白い 紙の 上の カード）は、白で ない 点が 5% より 多い 行と 列の 四角を カード（255）・その 外を すき通し（0）に する
+       （カードの 上下の はしの 行は 角が 丸い ぶん 短い・金の ふちに 白く 光る 所も ある ので、半分では なく 5%。紙の 上の 小さな ごみでは 広がらない）。
+       角の 白い 所は あとの 丸い マスク（INSET・RADIUS：カードの 角より 内がわ）で 切れる。カードの 中の 白い 所（字・光）は そのまま のこる"""
+    al = a[..., 3]
+    if int(al.min()) >= 250:
+        ink = a[..., :3].min(axis=2) < 236
+        cols = np.nonzero(ink.mean(axis=0) > 0.05)[0]; rows = np.nonzero(ink.mean(axis=1) > 0.05)[0]
+        al = np.zeros(al.shape, np.uint8); al[rows.min():rows.max() + 1, cols.min():cols.max() + 1] = 255
+    return al
+
+
 def card(src):
     """カード 1まい → 1000×1500 の RGBA（float 0〜255）と、マスクの 中で もとが うすかった 所の 数"""
-    a = np.asarray(Image.open(src).convert('RGBA'))
+    a = np.asarray(Image.open(src).convert('RGBA')).copy()
+    a[..., 3] = alpha_of(a)
     x0, y0, x1, y1 = bbox(a[..., 3])
     im = Image.fromarray(a[y0:y1, x0:x1]).resize(BASE, Image.LANCZOS)
     b = np.asarray(im, np.float32)

@@ -94,7 +94,9 @@ function flK(t) {
     const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
     const PR = gl.createProgram(); gl.attachShader(PR, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(PR, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(PR);
     const QB = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, QB); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const LP = gl.getAttribLocation(PR, 'p'), U = n => gl.getUniformLocation(PR, n);
+    // 第4.177版：シェーダーの 値の 場所（getUniformLocation）は 1回 だけ 聞いて おぼえる。前は 毎コマ 14回 聞いて いた ＝ iPhone では 聞く たびに 絵を 描く 係（別の プロセス）の
+    //   返事を 待つ（その 間 アプリが 止まる）。返る 場所は いつも 同じ なので、見え方は かわらない
+    const LP = gl.getAttribLocation(PR, 'p'), UL = {}, U = n => (n in UL ? UL[n] : (UL[n] = gl.getUniformLocation(PR, n)));
     const T = [gl.createTexture(), gl.createTexture(), gl.createTexture()];
     function up(unit, im, raw) {
       gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, T[unit]);

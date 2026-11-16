@@ -85,6 +85,12 @@ const TCDrop = (() => {
 
   let D = null, IM = null, loading = null, GLOW = null;
   let cv = null, g = null, K = 1, MS = 1, MX = 0, MY = 0, cache = null, cacheKey = '';
+  // 第4.177版（まさちゃん 2026/11/16 10:40「トレーニングセンターがカクカク重くなっている、原因を見つけて改善して！」）：
+  //   前は 毎コマ、紙（iPhone では 絵の 細かさ 3倍＝1170×1843 画素）を「ぜんぶ 消す → 画面 いっぱいの 幕（色が かわる ぼかし）を ぬる → 画面 いっぱいの 台の 絵を 重ねる」の 3回 ぬって から 動く ものを 描いて いた
+  //   ＝ 動かない 所を 1秒に 60回 ぬり直して いた（測った：お世話の 札 だけの ときの 3倍の 重さ）。iPhone の 2D の 絵は CPU で 描く ので、画面 いっぱいの 色を 重ねるのが いちばん 重い。
+  //   → 出おわった あと（0.4秒〜）は、幕と 台を 重ねた 絵（still：同じ 命令で 1回 だけ 作る）を そのまま 写す（重ねない「写し」1回）。紙に 入る 色は 前と まったく 同じ ＝ その 上に 足す 光（馬バレの オーラなど）も 前と 同じ 見え方。
+  //   出て くる 間（はじめの 0.4秒：幕が こく なる・台が 下から 出る）は 前と 同じ 描き方
+  let stillCv = null;
   let S = null, API = null, stageEl = null, raf = 0, lastNow = 0, done = null, T = { speed: 1, path: null, log: [] };
   const calm = () => { try { return !!(window.TengelFx && window.TengelFx.calm && window.TengelFx.calm()); } catch (e) { return false; } };
 
@@ -295,6 +301,9 @@ const TCDrop = (() => {
   }
   function close() { if (S) finish(true); }           // 外から（トレーニングセンターを 閉じた）：わたして いない 当たりは アプリが おぼえて いる
   const isOpen = () => !!S;
+  // 第4.177版：台が 画面を すっかり おおって いる（幕が 出おわって・台が 消えかけて いない）＝下の フィールド・馬・お世話の 札は ほとんど 見えない（幕の こさ 88〜96%）。
+  //   その 間、アプリは 下の 絵を 描かない（tc_app.js の frame：計算は つづける）。いつもの 演出の 間（S.hold：台が すっと 消える）は すぐ false に なって 下が また 動く
+  const covers = () => !!S && !S.hold && S.op === 1 && S.t >= 0.34;
   function onVis() { if (!S) return; if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { lastNow = 0; raf = requestAnimationFrame(frame); } }
 
   // ---------- 指 ----------
@@ -580,7 +589,17 @@ const TCDrop = (() => {
       cache = document.createElement('canvas'); cache.width = cv.width; cache.height = cv.height; cacheKey = key;
       const q = cache.getContext('2d'); q.imageSmoothingQuality = 'high';
       q.drawImage(IM.base, K * MX, K * MY, K * D.img[0] * MS, K * D.img[1] * MS);
+      // 第4.177版：出おわった あとの「幕 ＋ 台」の 絵（何も ない 紙に 幕を ぬって 台を 重ねる ＝ 前の 毎コマの 描き方と 同じ 命令。紙の 大きさ ごとに 1回 だけ）
+      if (!stillCv) stillCv = document.createElement('canvas');
+      stillCv.width = cv.width; stillCv.height = cv.height;
+      const s2 = stillCv.getContext('2d'); veilFill(s2, 1); s2.drawImage(cache, 0, 0);
     }
+  }
+  // うしろ（フィールドと お世話の 札）を かくす 幕：上の 札の 所は こく（veil＝こさ 0〜1）
+  function veilFill(q, veil) {
+    const vg = q.createLinearGradient(0, 0, 0, cv.height);
+    vg.addColorStop(0, `rgba(22,13,8,${0.96 * veil})`); vg.addColorStop(0.2, `rgba(22,13,8,${0.93 * veil})`); vg.addColorStop(0.5, `rgba(24,14,8,${0.88 * veil})`); vg.addColorStop(1, `rgba(24,14,8,${0.9 * veil})`);
+    q.fillStyle = vg; q.fillRect(0, 0, cv.width, cv.height);
   }
   function step(dt) {
     S.t += dt;
@@ -612,14 +631,22 @@ const TCDrop = (() => {
     const t = S.t, cm = calm();
     const hk = S.hold ? sm((t - S.holdT) / 0.25) : 1 - sm((t - S.holdT) / 0.3), op = +(1 - hk).toFixed(3);      // いつもの 演出の 間：台を すっと 消す → おわったら もどす
     if (op !== S.op) { S.op = op; cv.style.opacity = String(op); }
-    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
-    const veil = sm(t / 0.3);                          // うしろ（フィールドと お世話の 札）を かくす 幕：上の 札の 所は こく
-    const vg = g.createLinearGradient(0, 0, 0, cv.height);
-    vg.addColorStop(0, `rgba(22,13,8,${0.96 * veil})`); vg.addColorStop(0.2, `rgba(22,13,8,${0.93 * veil})`); vg.addColorStop(0.5, `rgba(24,14,8,${0.88 * veil})`); vg.addColorStop(1, `rgba(24,14,8,${0.9 * veil})`);
-    g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
+    if (op === 0) {                                    // 第4.177版：台が すっかり 消えて いる 間（いつもの 演出＝ルーレットなどの 間）は 台を 描かない（見えない 絵を 毎コマ 描き直さない）
+      if (S.cue && t - S.cue.t0 > 1.3) S.cue = null;   //   古く なった 札の かたづけ だけは 前と 同じ（下の 描く 所で して いた こと）
+      if (S.pop && t - S.pop.t0 > 1.6) S.pop = null;
+      return;
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    const veil = sm(t / 0.3), ba = sm(t / 0.25);       // 幕の こさ・台の 絵の こさ（出て くる 間 だけ 1 より 小さい）
     // 台（はじめは 下から すっと 出る）
     const rise = cm ? 0 : (1 - easeOut(t / 0.4)) * 90 * K;
-    g.globalAlpha = sm(t / 0.25); g.drawImage(cache, 0, rise); g.globalAlpha = 1;
+    if (veil >= 1 && ba >= 1 && rise === 0) {          // 出おわった あと：幕と 台を 重ねた 絵を そのまま 写す（第4.177版：紙の 中身を 入れかえる 写し 1回。消す・幕・台 の 3回を やめた）
+      g.globalCompositeOperation = 'copy'; g.drawImage(stillCv, 0, 0); g.globalCompositeOperation = 'source-over';
+    } else {                                           // 出て くる 間（0.4秒）：前と 同じ 描き方
+      g.clearRect(0, 0, cv.width, cv.height);
+      veilFill(g, veil);
+      g.globalAlpha = ba; g.drawImage(cache, 0, rise); g.globalAlpha = 1;
+    }
     const TI = () => g.setTransform(K * MS, 0, 0, K * MS, K * MX, K * MY + rise), TS = () => g.setTransform(K, 0, 0, K, 0, rise);      // 台の 絵の 画素で 描く／舞台の 座標で 描く
     TI(); g.lineJoin = 'round';
     // 馬バレが ついて いる 間は 台を 少し 暗く（光が 目立つ：色が 上がる ほど）
@@ -751,7 +778,7 @@ const TCDrop = (() => {
   }
   T.tick = dt => { if (!S) return false; sizeUp(); step(dt); if (S) draw(); return !!S; };      // テスト・見本 用：dt 秒 進めて 1コマ 描く
 
-  return { load, ready, open, close, isOpen, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, PC_LINE, PC_DARK, PC_CALM, gekiArt: () => !!(IM && IM.gk), beats: c => beatList(TONE[c]).map(q => q.slice()),
+  return { load, ready, open, close, isOpen, covers, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, PC_LINE, PC_DARK, PC_CALM, gekiArt: () => !!(IM && IM.gk), beats: c => beatList(TONE[c]).map(q => q.slice()),
     _t: T, get state() { return S; }, get data() { return D; },
     tap: what => !!act(what),                          // テスト・見本 用：'go'・'see'・'more'・'end'・'quit'（押せた ときは true）
     // テスト 用：押す 所の まん中（舞台の 座標 1052×1657）と 馬バレの 丸（まん中・黄色い 縁の 半径）

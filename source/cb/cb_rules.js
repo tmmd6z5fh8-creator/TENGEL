@@ -14,6 +14,12 @@
 //     ・セットが お互いに 完了したら、カードの 効果を 使うか 選択できる（＝「効果タイム」）
 //     ・神様馬と 幻の馬の ように 勝利したら 出てくる 効果は、勝利した 次の ターンの スタートで 使うか 選べる
 //   まさちゃんの 直し（23:15）：捨て札は タップすると 確認できる（終わった ターンの 捨て札・効果による 捨て札）→ 捨て札は「だれの・どの ターンの・何で 捨てたか」を 覚える
+//   まさちゃんの 直し（第4.177版・2026/11/16 10:40）：
+//     ・5 の ルール変更「手札がバトルターンに必要な枚数を切らない場合に発動できる（例:最後のターンに5ともう一枚ある場合、フィールドの5と手札を一枚捨てて効果発動）」
+//       ＋ 10:54 の 新しい 5 の 絵「5を表向きにセットした後、その5と手札1枚を捨て、山札からランダムに1枚をフィールドにセットできる。※発動後の手札が、残りターン数より少なくならない場合のみ発動可能。」
+//       → 使える 条件：5 を セットして いる・手札が 1まい 以上・山札が 1まい 以上・（手札 − 1）≧ のこりの ターンの 数（＝3 − いまの ターン）。前は「手札が 4まい 以上」＝1ターン目 だけ だった
+//     ・3 に 効果追加「手札に3が3枚ある場合、その3枚を相手に見せることで、一枚と、相手の手札からランダムに選んだ一枚を交換できる」（絵：「3枚公開：手札交換」）
+//     ・「カードの効果は使うか使わないか選べるようにして！」→ どの 効果も 使うか えらべる（3 の 効果も 効果タイムで 聞く）
 //
 //   1ターンの 流れ：
 //     （はじめ：前の ターンに 神様馬／幻の馬で 勝った 人が 効果を 使うか 決める＝phase 'pre'）
@@ -24,11 +30,16 @@
 //   姫が 決めた 所（ルールの 文に ない 所。README と 報告に 書く）：
 //     ・神様馬 と 幻の馬 が ぶつかったら 引き分け（どちらの 勝ちにも 数えない）。同じ 数字が ぶつかったら どちらも 負け（どちらの 勝ちにも 数えない）
 //     ・3ターン ぜんぶ やる（先に 2勝 しても 3ターン目を やる）。ターンの あいだに 山札から 引かない（引くのは 効果 だけ）
-//     ・効果タイムで えらぶのは 7・6・5・4 の 4つ とも（手札の 効果の 7・6 も ここ。手札は「セットした あと」の 手札で 数える）
-//     ・効果タイムは 2人とも 決めて から いっしょに 行う（相手が 何を 使うか 見て から 決める ことは できない）。行う 順は 6 → 5 → 7 → 4（同じ 効果は 2人 いっしょ）
+//     ・効果タイムで えらぶのは 7・6・5・4・3 の 5つ とも（手札の 効果の 7・6・3 も ここ。手札は「セットした あと」の 手札で 数える）
+//     ・効果タイムは 2人とも 決めて から いっしょに 行う（相手が 何を 使うか 見て から 決める ことは できない）。行う 順は 6 → 5 → 7 → 3 → 4（同じ 効果は 2人 いっしょ）
+//     ・3（第4.177版）：見せた 3 の うち 相手に わたす 1まいは どれでも 同じ（ぜんぶ 3）なので はじめの 1まい。相手の 手札からは くじで 1まい（えらべない）。
+//         見せた 3まいは 相手に「知られた カード」に なる（手札に のこる 2まい）。わたした 3 は 自分が 知って いる（相手の 手札の 中で 表に 見える）。もらった カードは 相手が 知って いる（目の しるし）。
+//         5 の 効果で 3 を 捨てて 3まい なくなる ときは いっしょに 使えない。3 は 4まい しか ない ので、2人が 同時に 使う ことは ない
 //     ・7：先に 3まい 引いて から 7 を 山札に もどして まぜる（もどした 7 を すぐ 引き直さない ＝ かならず「新しく 3まい」）
 //     ・6：見る カードは 決める ときに えらぶ。見せた 6 の 2まいは 相手に「知られた カード」に なる
-//     ・5：手札の 数は「5 を セットした あと」で 数える（カードの 文の とおり）＝ 5まい 持って いる 1ターン目に 使える。山札から 来た カードは オープンまで だれにも 見えない（自分にも）
+//     ・5：手札の 数は「5 を セットした あと」で 数える。「残りターン数」は いまの ターンの あとに のこる ターンの 数（1ターン目 2・2ターン目 1・3ターン目 0）。
+//         ＝ 使った あとの 手札（手札 − 1）が、のこりの ターンで 出す 数より 少なく ならない とき だけ 使える（3ターン目は 手札が 1まい あれば 使える：まさちゃんの 例）。
+//         山札から 来た カードは オープンまで だれにも 見えない（自分にも）。捨てた 5 と 手札は 捨て札で 2人とも 見える（＝5 は 表に なる）
 //     ・4：両方が 4 の 効果を 使ったら 打ち消し（交換なし → 4 と 4 で どちらも 負け）。交換で もどった カードは 手札に 入る
 //     ・神様馬・幻の馬の 効果は 使わなくても いい。さいごの 3ターン目に 勝った ときは 出ない（次の ターンが ない）。幻の馬は ちょうど 2まい 捨てて 引ける だけ（2まい まで）引く
 //     ・「見た カード」は その カードが 相手の 手札に ある あいだ 覚えて いる（そのカードが 場に 出たら、場の カードが 何か わかる）
@@ -36,7 +47,7 @@
 //   部品：
 //     CBRules.newGame(rng, opt) → S（対戦の 中身 ぜんぶ：ホスト だけが 持つ）   opt.hands＝[[5まい],[5まい]]・opt.deck＝[上から …]（テスト用）
 //     CBRules.act(S, i, a)      → { ok, why, ev }：プレイヤー i（0／1）の 手 a を S に 入れる（ev＝おきた こと）
-//        a＝{ t:'set', u } ／ { t:'eff', use:{ p6:見る カード, u5:捨てる カード, x7:true, u4:true }（使う もの だけ。使わない＝null か {}）} ／ { t:'swap', u } ／
+//        a＝{ t:'set', u } ／ { t:'eff', use:{ p6:見る カード, u5:捨てる カード, x7:true, x3:true, u4:true }（使う もの だけ。使わない＝null か {}）} ／ { t:'swap', u } ／
 //           { t:'k', pick:u|null } ／ { t:'m', drop:[u,u]|null }
 //     CBRules.view(S, i)        → プレイヤー i に 見せて いい こと だけ（相手の 手札・ふせた カードは 見えない）
 //     CBRules.evFor(ev, i)      → おきた こと の うち、プレイヤー i に 見せて いい 形
@@ -89,13 +100,14 @@ const CBRules = (() => {
     const P = S.p[i], Q = S.p[1 - i], sk = P.set ? P.set.c.k : null;
     return {
       e6: count(P.hand, '6') >= 2 && Q.hand.length >= 1,
-      e5: sk === '5' && P.hand.length >= 4 && S.deck.length >= 1,
+      e5: sk === '5' && P.hand.length >= 1 && P.hand.length - 1 >= TURNS - S.turn && S.deck.length >= 1,      // 第4.177版：使った あとの 手札が のこりの ターンの 数より 少なく ならない
       e7: count(P.hand, '7') >= 3 && S.deck.length >= 3,
+      e3: count(P.hand, '3') >= 3 && Q.hand.length >= 1,                                                        // 第4.177版：3 が 3まい → 見せて 交換
       e4: sk === '4' && Q.hand.length >= 1
     };
   }
-  const any = c => c.e6 || c.e5 || c.e7 || c.e4;
-  const NOUSE = () => ({ p6: null, u5: null, x7: false, u4: false });
+  const any = c => c.e6 || c.e5 || c.e7 || c.e3 || c.e4;
+  const NOUSE = () => ({ p6: null, u5: null, x7: false, x3: false, u4: false });
 
   function act(S, i, a, rng) {
     rng = rng || Math.random;
@@ -120,6 +132,10 @@ const CBRules = (() => {
       if (w.x7) {                                        // 5 の 効果で 7 を 捨てる なら、のこりの 7 が 3まい いる
         if (!can.e7 || count(P.hand.filter(c => c.u !== use.u5), '7') < 3) return bad('e7');
         use.x7 = true;
+      }
+      if (w.x3) {                                        // 5 の 効果で 3 を 捨てる なら、のこりの 3 が 3まい いる
+        if (!can.e3 || count(P.hand.filter(c => c.u !== use.u5), '3') < 3) return bad('e3');
+        use.x3 = true;
       }
       if (w.u4) { if (!can.e4) return bad('e4'); use.u4 = true; }
       P.eff.use = use; P.eff.done = true;
@@ -177,7 +193,7 @@ const CBRules = (() => {
     S.p[1].eff = { can: c1, done: !any(c1), use: null };
     ev.push({ e: 'efft', has: [any(c0), any(c1)] });
   }
-  // 2人とも 決めた：6 → 5 → 7 → 4 の 順に 行う（その とき もう できなく なって いたら 不発：fizz）
+  // 2人とも 決めた：6 → 5 → 7 → 3 → 4 の 順に 行う（その とき もう できなく なって いたら 不発：fizz）
   function resolve(S, ev, rng) {
     const U = S.p.map(P => (P.eff && P.eff.use) || NOUSE());
     [0, 1].forEach(i => {                                // 6：2まい 見せて、相手の 手札を 1まい 見る
@@ -207,6 +223,19 @@ const CBRules = (() => {
       back.forEach(c => { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); });      // もどした カードは 新しい 番号（どれが もどした 7 か 追えない ように）
       shuffle(S.deck, rng);
       ev.push({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) });
+    });
+    [0, 1].forEach(i => {                                // 3（第4.177版）：3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（くじ）を 交換
+      const P = S.p[i], Q = S.p[1 - i]; if (!U[i].x3) return;
+      const three = P.hand.filter(c => c.k === '3').slice(0, 3);
+      if (three.length < 3 || Q.hand.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+      const give = three[0], take = Q.hand[Math.floor(rng() * Q.hand.length)];
+      P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
+      P.hand.push(take); Q.hand.push(give);
+      forget(S, give.u); forget(S, take.u);              // 持ち主が かわった：前の「知って いる」は 消して から 入れ直す
+      three.slice(1).forEach(c => learn(Q, c.u));        // 見せた 3（手札に のこる 2まい）は 相手が 知って いる
+      learn(P, give.u);                                  // わたした 3 は 自分が 知って いる（相手の 手札の 中）
+      learn(Q, take.u);                                  // もらった カードは 相手が 知って いる（もとは 相手の カード）
+      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: { u: give.u, k: give.k }, take: { u: take.u, k: take.k } });
     });
     S.p.forEach(P => { P.eff = null; });
     const A = S.p[0], B = S.p[1], f0 = U[0].u4 && A.set.c.k === '4', f1 = U[1].u4 && B.set.c.k === '4';      // 4：先に 見せて、相手に 交換させる
@@ -268,7 +297,7 @@ const CBRules = (() => {
       discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
       my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
       op: { hand: Q.hand.map(c => ({ u: c.u, k: P.known.indexOf(c.u) >= 0 ? c.k : null })), set: setOf(Q, false), wins: Q.wins },
-      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e4: ce.e4 } : null },
+      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e3: ce.e3, e4: ce.e4 } : null },
       pend: S.pend ? { type: S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res } : null,
@@ -286,6 +315,7 @@ const CBRules = (() => {
       else if (x.e === 'efft') { o.mine = x.has[i]; o.other = x.has[1 - i]; }
       else if (x.e === 'p6') { o.six = x.six; o.pick = x.pick; if (x.who === i) o.k = x.k; }
       else if (x.e === 'u5') { o.five = x.five; o.drop = x.drop; }
+      else if (x.e === 'x3') { o.three = x.three; o.give = x.give; o.take = x.take; }      // 見せた 3まい・わたした 3・もらった カード：2人とも 知って いる（もらった カードは もとの 持ち主も 知って いる）
       else if (x.e === 'fizz') o.k = x.k;
       else if (x.e === 'open') { o.turn = x.turn; o.my = x.c[i]; o.op = x.c[1 - i]; o.res = x.res === 0 || x.res === 1 ? (x.res === i ? 'win' : 'lose') : x.res; o.wins = [x.wins[i], x.wins[1 - i]]; }
       else if (x.e === 'pre') o.type = x.type;

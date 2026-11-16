@@ -171,6 +171,11 @@ const TCApp = (() => {
   let ov = null, stage = null, cvGL = null, cvOv = null, cvFx = null, field = null, gl = null, built = false;
   let HO = null, BR = null, horseKey = '', raf = 0, running = false, tBase = 0, lastT = null, lastDraw = 0, nextTick = 0, later = [], busy = false;
   let buying = false;                                 // 第4.165版：お世話トークンを 買って いる 途中（ボタンは 下の 列の 1番 右：tc_care.js が 描く）
+  // 第4.177版（まさちゃん 2026/11/16 10:40「トレーニングセンターがカクカク重くなっている、原因を見つけて改善して！」）：お世話チャレンジの 台が 画面を おおって いる 間（TCDrop.covers：幕の こさ 88〜96%）は、
+  //   下に かくれて いる フィールド・馬（WebGL）と お世話の 札（2D）を 描かない。前は 見えない のに 1秒に 60回 ぜんぶ 描いて いた（台の 絵と 合わせて 画面 いっぱいの 絵が 4まい）。
+  //   計算（馬の 歩き・トークンが たまる・時間切れ・保存）は いつも どおり つづける。台が 消える・すっと うすく なる（いつもの 演出の 間）と すぐ 描く。
+  //   mustDraw＝のこり 何コマは かくれて いても 描くか（紙の 大きさが かわった・アプリが 裏から もどった すぐ あと：紙の 中身が 消えて いる ことが ある）。hidN＝描かなかった コマの 数（テスト用）
+  let mustDraw = 0, hidN = 0;
   const clock = () => (performance.now() - tBase) / 1000 + 1.5;
   const css = `
 #tcOv{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;background:#2a1d12;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none;touch-action:none;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
@@ -239,7 +244,7 @@ const TCApp = (() => {
     //   背景の 絵は 同じ 絵を ひきのばす（前と 同じ 見え方）。GOV.q＝なめらかさを 守る ための 細かさの 倍（ふだんは 1：下の govern）
     const dpr = Math.min(window.devicePixelRatio || 1, 3) * GOV.q;
     const pw = Math.round(w * dpr), ph = Math.round(pw * H / W);
-    for (const c of [cvGL, cvOv, cvFx]) if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    for (const c of [cvGL, cvOv, cvFx]) if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; mustDraw = 3; }      // 大きさを かえると 紙の 中身が 消える → 台の 下でも 描き直す（下の frame）
     if (window.TCCare && TCCare.S) TCCare.S.cs = pw / W;
     return pw / W;
   }
@@ -775,12 +780,15 @@ const TCApp = (() => {
     while (later.length) { try { later.shift()(); } catch (e) { } }
     if (!HO || !BR) return;
     const ZV = TCCare.on ? TCCare.view() : null;
-    field.render(t, ZV);
+    let hid = !!(window.TCDrop && TCDrop.covers && TCDrop.covers());      // お世話チャレンジの 台の 下に かくれて いる
+    if (mustDraw > 0) { mustDraw--; hid = false; }
+    if (hid) hidN++;
+    if (!hid) field.render(t, ZV);
     const cvv = gl.canvas, kk = cvv.width / W, Z = ZV ? ZV.z : 1, ZX = ZV ? ZV.cx : W / 2, ZY = ZV ? ZV.cy : H / 2;
     if (TCCare.on) TCCare.pre(t, dt);
     TCHorse.step(HO, BR, t, dt, BR.rnd);
-    TCHorse.draw(HO, BR, t, { W: cvv.width, H: cvv.height, k: kk * Z, ox: cvv.width / 2 - ZX * kk * Z, oy: cvv.height / 2 - ZY * kk * Z });
-    if (TCCare.on) TCCare.post(t);
+    TCHorse.draw(HO, BR, t, { W: cvv.width, H: cvv.height, k: kk * Z, ox: cvv.width / 2 - ZX * kk * Z, oy: cvv.height / 2 - ZY * kk * Z, dry: hid });      // dry：場所の 計算 だけ（描かない）
+    if (TCCare.on) TCCare.post(t, hid);
     // 保存する もの（トレセンの 紙の 絵が かえた 数）
     const S = TCCare.S;
     if (S.stock !== st.stock) { st.stock = S.stock; touch(); }
@@ -793,6 +801,7 @@ const TCApp = (() => {
   function pause() { running = false; cancelAnimationFrame(raf); SND.stopAll(); if (dirty) save(); }
   function resume() {
     if (running) return; running = true; lastT = null; lastDraw = 0; GOV.last = 0; GOV.n = GOV.slow = 0; GOV.wait = GOV_WAIT; SND.unlock(); syncField(); raf = requestAnimationFrame(frame);
+    mustDraw = 3; if (window.TCCare && TCCare.REC) TCCare.REC.dirty();      // 第4.177版：もどって きた すぐ あとは かならず 描く（裏に いた 間に 紙の 中身が 消えて いる ことが ある）
   }
 
   // ---------- 開く・閉じる ----------
@@ -863,5 +872,5 @@ const TCApp = (() => {
       return { add, stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();

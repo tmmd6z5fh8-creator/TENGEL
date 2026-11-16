@@ -1014,6 +1014,7 @@
     const R3 = [V[0], V[1], V[2], V[4], V[5], V[6], V[8], V[9], V[10]];      // 回転だけ（法線 用）
     V = M.mul(M.sc(s / view.W * 2, s / view.H * 2, 0.4), V);
     h.last = { mats, V, cx, cy, view, s, R3 };                // お世話の 絵を 置く ため（where）
+    if (view.dry) return;                                     // 第4.177版：かくれて いる 間（お世話チャレンジの 台の 下）は 場所の 計算 だけ（描く 命令は 出さない）
     if (st.trash && st.trash.length && h.trashTex.length) drawTrash(h, st, t, view, lt);      // ゴミは 地面に ねて いる：馬と かげの 下
     // かげ（足もと・時間帯で こさ と のび）
     gl.useProgram(h.S); gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -1057,8 +1058,11 @@
       if (h.loc.aUV >= 0) { gl.disableVertexAttribArray(h.loc.aUV); gl.vertexAttrib2f(h.loc.aUV, 0, 0); }
       gl.uniform1f(h.loc.uTexOn, 0); gl.uniform1f(h.loc.uNrmOn, 0); gl.uniform3f(h.loc.uFix, 0, 0, 0);
     }
-    const all = [].concat(...mats); while (all.length < 18 * 16) all.push(...M.id()); gl.uniformMatrix4fv(h.loc.uB, false, new Float32Array(all.slice(0, 18 * 16)));
-    gl.uniformMatrix4fv(h.loc.uV, false, new Float32Array(V)); gl.uniformMatrix3fv(h.loc.uR, false, new Float32Array(R3));
+    // 第4.177版：骨の 行列を 入れる 配列は 使い回す（前は 毎コマ 新しい 配列を 作って いた＝1秒に 600KB ほどの ごみ → ごみ集めで コマが 止まる もとを へらす）。中身は 前と 同じ（骨 18本ぶん・足りない 骨は そのまま の 行列）
+    const UB = h.ub || (h.ub = { b: new Float32Array(18 * 16), v: new Float32Array(16), r: new Float32Array(9), id: M.id() });
+    for (let bi = 0; bi < 18; bi++) { const m = bi < mats.length ? mats[bi] : UB.id, o = bi * 16; for (let j = 0; j < 16; j++) UB.b[o + j] = m[j]; }
+    gl.uniformMatrix4fv(h.loc.uB, false, UB.b);
+    UB.v.set(V); UB.r.set(R3); gl.uniformMatrix4fv(h.loc.uV, false, UB.v); gl.uniformMatrix3fv(h.loc.uR, false, UB.r);
     gl.uniform4f(h.loc.uP, cx, cy, 0.08, 0);
     const n = Math.hypot(...lt.sun); gl.uniform3f(h.loc.uSun, lt.sun[0] / n, lt.sun[1] / n, lt.sun[2] / n);
     gl.uniform3fv(h.loc.uSunC, lt.sunC); gl.uniform3fv(h.loc.uAmb, lt.amb); gl.uniform3fv(h.loc.uFill, lt.fill); gl.uniform1f(h.loc.uLift, h.opt.lift || 0); gl.uniform1f(h.loc.uA, 1);

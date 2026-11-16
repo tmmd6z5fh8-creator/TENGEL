@@ -493,6 +493,56 @@
       out.closed = !document.querySelector('#cbOv.on');
       return out;
     });
+    // 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC：同じ 絵の コマは 紙に さわらない）を 本物の WebKit で たしかめる。
+    //   トレーニングセンターの 絵と 3D は この ビルドに 入って いない ので 開かない。部品 だけ 読んで（tc_bundle.js）、ためしの 紙に いろいろな 命令（ぬり・線・字・色の ぼかし・影・切りぬき・足す 光・点線・絵）を
+    //   書きとめ役を 通して 描き、同じ 命令を じかに 描いた 紙と 1画素ずつ くらべる（REC.check）。同じ 絵が つづく コマ・かくれて いる コマは 描かない ことも 数える
+    await step(R, 'hudrec', async function () {
+      var out = { have: false };
+      if (!window.TCCare) { await new Promise(function (r) { var sc = document.createElement('script'); sc.src = 'tc_bundle.js'; sc.onload = r; sc.onerror = r; document.head.appendChild(sc); }); await sleep(200); }
+      var REC = window.TCCare && window.TCCare.REC; if (!REC) return out;
+      out.have = true; out.ok0 = REC.ok; if (!REC.ok) return out;
+      var cv = document.createElement('canvas'); cv.width = 240; cv.height = 160; var g0 = cv.getContext('2d');
+      var img = document.createElement('canvas'); img.width = 40; img.height = 40; img._fix = true;      // _fix＝中身の かわらない 紙
+      var ig = img.getContext('2d'); ig.fillStyle = '#c33'; ig.fillRect(0, 0, 40, 40); ig.fillStyle = '#fc6'; ig.beginPath(); ig.arc(20, 20, 14, 0, 6.2832); ig.fill();
+      var mut = document.createElement('canvas'); mut.width = 30; mut.height = 30; var mg = mut.getContext('2d'); mg.fillStyle = '#2a6'; mg.fillRect(0, 0, 30, 30);      // あとから 中身の かわる 紙
+      var lg = g0.createLinearGradient(0, 0, 0, 100); lg.addColorStop(0, 'rgba(255,240,200,0.9)'); lg.addColorStop(1, 'rgba(200,120,60,0.6)');
+      var rg = g0.createRadialGradient(120, 40, 2, 120, 40, 30); rg.addColorStop(0, 'rgba(120,255,160,0.8)'); rg.addColorStop(1, 'rgba(120,255,160,0)');
+      var reads = [];
+      function scene(g, k) {
+        g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 240, 160); g.setTransform(1.5, 0, 0, 1.5, 0, 0);
+        g.lineJoin = 'round'; g.lineCap = 'round';
+        g.fillStyle = lg; g.beginPath(); g.moveTo(10, 10); g.lineTo(90, 14); g.quadraticCurveTo(100, 40, 80, 60); g.bezierCurveTo(60, 70, 30, 66, 12, 50); g.closePath(); g.fill();
+        g.strokeStyle = '#5a3a1a'; g.lineWidth = 2 + k; g.lineWidth = -3; reads.push(g.lineWidth); g.stroke();      // だめな 値（−3）は 本物と 同じく 捨てる
+        g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 4; g.shadowOffsetY = 2; g.font = '700 14px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        var w = g.measureText('お世話 ' + k).width; g.fillStyle = '#fff8ea'; g.fillRect(50 - w / 2 - 4, 26, w + 8, 20); g.restore();
+        g.font = '700 14px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#c2362b'; g.strokeStyle = '#fff'; g.lineWidth = 3; g.strokeText('お世話 ' + k, 50, 36); g.fillText('お世話 ' + k, 50, 36);
+        g.save(); g.beginPath(); g.arc(120, 40, 26, 0, 6.2832); g.clip(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.fillRect(90, 10, 60, 60);
+        g.globalAlpha = 0.75; g.globalAlpha = g.globalAlpha * 0.5; reads.push(g.globalAlpha); g.fillStyle = '#48f'; g.fillRect(100 + k * 3, 20, 20, 40); g.restore();
+        g.save(); g.translate(40, 85); g.rotate(0.2 * k); g.setLineDash([4, 3]); g.lineDashOffset = k; g.strokeStyle = '#264'; g.lineWidth = 1.5; g.strokeRect(-20, -10, 40, 20); g.setLineDash([]); g.restore();
+        g.drawImage(img, 100, 70); g.drawImage(img, 5, 5, 30, 30, 70, 76, 20, 20); g.globalAlpha = 0.7; g.drawImage(img, 126, 72, 24, 24); g.globalAlpha = 1;
+        if (k === 3) g.drawImage(mut, 4, 70);
+      }
+      var st0 = JSON.parse(JSON.stringify(REC.stat));
+      REC.check(true);
+      var seq = [0, 0, 0, 1, 1, 2, 2, 2, 0, 0, 3, 3], i, g;
+      for (i = 0; i < seq.length; i++) {
+        if (i === 11) { mg.fillStyle = '#a2c'; mg.fillRect(6, 6, 18, 18); }      // 中身を かえた：次の コマに 出る
+        g = REC.begin(g0, false); scene(g, seq[i]); REC.end();
+      }
+      for (i = 0; i < 2; i++) { g = REC.begin(g0, true); scene(g, 1); REC.end(); }      // かくれて いる コマ（描かない）
+      for (i = 0; i < 2; i++) { g = REC.begin(g0, false); scene(g, 1); REC.end(); }     // 出て きた：1コマ目は 描く・2コマ目は 同じ
+      var st = REC.stat; out.stat = { frames: st.frames - st0.frames, drawn: st.drawn - st0.drawn, same: st.same - st0.same, hidden: st.hidden - st0.hidden, forced: st.forced - st0.forced, bad: st.bad - st0.bad };
+      out.checks = REC.checks; out.notes = st.notes.slice(0, 4); out.ok1 = REC.ok;
+      REC.check(false); REC.resync();
+      out.reads = [reads[0], reads[1], reads.length];      // 読んだ 値：線の 太さ（−3 を 捨てて 2）・こさ（0.75 × 0.5＝0.375）・読んだ 回数（16コマ × 2）
+      // べつの たしかめ：同じ 場面を 新しい 紙に じかに 描いて、書きとめ役を 通した 紙と くらべる
+      var ref = document.createElement('canvas'); ref.width = 240; ref.height = 160; scene(ref.getContext('2d'), 1);
+      var a = g0.getImageData(0, 0, 240, 160).data, b = ref.getContext('2d').getImageData(0, 0, 240, 160).data, df = 0, px = 0;
+      for (i = 0; i < a.length; i += 4) { if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) df++; if (a[i + 3] > 0) px++; }
+      out.diff = df; out.px = +(px / (a.length / 4)).toFixed(3);
+      out.names = Object.getOwnPropertyNames(CanvasRenderingContext2D.prototype).length;
+      return out;
+    });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);
@@ -647,8 +697,8 @@
     while (Date.now() - t0 < ms && !T.ended && T.match) {
       if (T.idle && T.view) {
         var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? 'set' : 'wait';
-        if (s === 'k' || s === 'm') { if (click('#cbOv .cbact [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
-        else if (s === 'eff') { if (click('#cbOv .cbact [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
+        if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
+        else if (s === 'eff') { if (click('#cbOv [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
         else if (s === 'swap' || s === 'set') {
           if (!T.modOn()) click('#cbOv .cbhand .cbc');
           await sleep(120);

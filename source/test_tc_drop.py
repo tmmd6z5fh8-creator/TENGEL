@@ -138,6 +138,13 @@ def drop_ball(pg, want):
     return dict(ok=ok, a=a, sa=sa, b=b, m1=m1, m=m, c=c, lp=lp, snd=snd, d=d)
 
 
+def tap_see(pg):
+    """「保留結果を見る」を 押す：かぎが あいて 0.25秒 たって から 押せる。時計を 手で 進めた すぐ あと（本当の 時間に もどした 所）は、台の 時計が そこまで 進むのを 待って から 押す
+       （第4.177版：台の 下を 描かなく なって 1コマが 速く なった ＝ 前は たまたま 1コマで 0.1秒 進んで 間に合って いた）"""
+    pg.wait_for_function("() => { const S = TCDrop.state; return !!S && S.phase === 'wait' && S.t >= S.unlockT + 0.3; }", timeout=20000)
+    return pg.evaluate("() => TCDrop.tap('see')")
+
+
 def finish_fx(pg, limit=150):
     """「保留結果を見る」の あと：いつもの 演出（ルーレット・特化ゾーン・チケット）は タップで 進めて、おしまいの 札まで 待つ"""
     t0 = time.time(); ops = []
@@ -246,6 +253,12 @@ try:
             stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000); pg.wait_for_timeout(900)
             i0 = pg.evaluate(INFO); s1 = pg.evaluate(ST)
             order = pg.evaluate("() => [...document.querySelector('#tcOv .tcst').children].map(e => e.className.split(' ')[0])")
+            # 第4.177版：台は 1まいの 紙の まま（見え方は 前と 同じ）。動かない 所（幕 ＋ 台の 絵）は 重ねた 絵を 1回 だけ 作って、毎コマ そのまま 写す
+            lay = pg.evaluate("""() => { const st = document.querySelector('#tcOv .tcst'), cv = st.querySelector('canvas.tcdp'), k = cv.width / 1052, g = cv.getContext('2d');
+              const px = (x, y) => [...g.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data];
+              return { n: st.querySelectorAll('canvas.tcdp').length, extra: st.querySelectorAll('.tcdw, .tcdb, .tcdv, .tcdd').length, mid: px(526, 900), corner: px(4, 4), op: getComputedStyle(cv).opacity, cov: TCDrop.covers(), t: +TCDrop.state.t.toFixed(2) }; }""")
+            check(lay['n'] == 1 and lay['extra'] == 0 and lay['mid'][3] == 255 and lay['corner'][3] >= 240 and lay['op'] == '1' and lay['cov'],
+                  f'台は 1まいの 紙（前と 同じ 見え方）：台の 絵と うしろを かくす 幕が 入って いる・出おわったら 下を おおって いる と 知らせる（まん中 {lay["mid"]}・すみ {lay["corner"]}・{lay["t"]}秒）')
             check(i0['phase'] == 'ready' and i0['max'] == 5 and i0['n'] == 0 and i0['next'] and s1['fxHold'] and s1['stock'] == 12 and s1['cares'] == s0['cares'],
                   f'入口を 押すと 台が 出る：玉 5こ・まだ 落として いない・トークンは へって いない・PUSH は かくれる（{i0["phase"]}・あと {i0["max"]}こ）')
             check(order.index('tcdp') > order.index('tco') and order.index('tcdp') < order.index('tcfx'), f'重なり：お世話の 絵の 上・当たりの 演出（tcfx）の 下（{order}）')
@@ -353,7 +366,9 @@ try:
             check(k0['max'] == 2 and r1['c']['lcd'] == 6 and r2['c']['lcd'] == 5 and k2['phase'] == 'wait' and r1['sa']['dp'][0][2] == 'kamisama',
                   f'神様馬（抽選は 5回 まで・もう 3回 使った）：玉は 2こ まで・神様馬の ルーレット＝虹・特化ゾーン＝金（あと {k0["max"]}こ・色 {[r1["c"]["lcd"], r2["c"]["lcd"]]}）')
             pg.evaluate("() => { TCDrop._t.manual = false; }")
-            pg.evaluate("() => TCDrop.tap('see')"); finish_fx(pg, 240); pg.wait_for_timeout(1000); k3 = pg.evaluate(INFO)
+            tap_see(pg); finish_fx(pg, 240); pg.wait_for_timeout(1000); k3 = pg.evaluate(INFO)
+            if k3['phase'] != 'end':      # 止まった ときの ようす（しらべる 用）
+                print('   ※', pg.evaluate("() => { const S = TCDrop.state, C = TCCare.S; return { t: +S.t.toFixed(1), phase: S.phase, hold: S.hold, op: S.op, cur: S.cur ? S.cur.z.k : null, cov: TCDrop.covers(), fxOn: !!document.querySelector('#tcOv .tcfx.on'), fxHold: !!C.fxHold, hid: TCApp._t.hidN, rec: [TCCare.REC.ok, TCCare.REC.stat.frames, TCCare.REC.stat.drawn], manual: !!TCDrop._t.manual, vis: document.visibilityState, gov: [TCApp._t.gov.q, TCApp._t.gov.off], sizes: [...document.querySelectorAll('#tcOv canvas')].map(c => c.className + ' ' + c.width) }; }"), pg.errs[:4])
             check(k3['phase'] == 'end' and not k3['more'] and k3['sum'] == va + 1000, f'抽選を つかい切った：トークンが のこって いても「終わり」だけ（＋{k3["sum"]}P）')
             pg.evaluate("() => TCDrop.tap('end')"); pg.wait_for_timeout(600)
             pg.wait_for_function("() => !TCApp.state.visit", timeout=60000); pg.wait_for_timeout(1500)      # 抽選を つかい切った 神様馬は 帰る
@@ -369,7 +384,7 @@ try:
             l0 = pg.evaluate("() => [TCApp._t.drawLeft(), TCApp._t.dropLeft()]"); g0 = pg.evaluate(GO, [seq_for(pg, {'k': 'rt', 'tier': 'maboroshi'})]); pg.evaluate(TICK, [0.5, None]); x0 = pg.evaluate(INFO); sx = pg.evaluate(ST)
             check(l0 == [9, 0] and not g0 and x0['phase'] == 'wait' and x0['n'] == 1 and sx['stock'] == 19, f'幻の馬の タイムリミットを すぎた あと：玉は もう 落とせない（トークンは へらない）→「保留結果を見る」へ（上限の のこり {l0[0]}・落とせる 数 {l0[1]}）')
             pg.evaluate("() => { TCDrop._t.manual = false; }")
-            pg.evaluate("() => TCDrop.tap('see')"); finish_fx(pg, 240); pg.wait_for_timeout(1000); x1 = pg.evaluate(INFO)
+            tap_see(pg); finish_fx(pg, 240); pg.wait_for_timeout(1000); x1 = pg.evaluate(INFO)
             check(x1['phase'] == 'end' and not x1['more'], 'おしまいの 札：トークンが のこって いても「終わり」だけ')
             pg.evaluate("() => TCDrop.tap('end')"); pg.wait_for_function("() => !TCApp.state.visit", timeout=60000); pg.wait_for_timeout(800)
             check(pg.evaluate("() => !TCApp.state.visit && !TCDrop.isOpen() && TCApp._t.dropLeft() === Infinity"), '台を 閉じると 幻の馬は 帰る（いつもの 馬は 上限 なし）')

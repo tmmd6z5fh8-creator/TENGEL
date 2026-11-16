@@ -1,6 +1,7 @@
 # 馬カードバトル（第4.176版）の 光の 点めつ：対戦の 動き（配る・セット・「効果タイム」の 帯・効果・オープン・勝ち負けの 字・「ターン」「神様馬の 効果」の 帯・結果）を 60コマ／秒の 絵に して kisekae/flash_px.py で 数える
 #   決まり：画面の 10% 以上の 広さで 1秒に 3回 まで（もっと きびしい 3% でも 数えて 出す）。「演出を控えめにする」（動きを へらす 設定）でも 数える
 #   時計は 手で 進める（CBApp._t.manual・tick：1/60秒 ずつ）。CSS の 動き（transition・animation）は 出て きた 時刻を 覚えて、同じ 時計で 進める
+#   第4.177版：2つ目の 対戦（3 の 効果）＝効果を 使うか 聞く 窓が 出る（ask3）・3 を 3まい 見せる 窓 → もらった カード → 交換 → オープン（eff3_open）・勝ち → さいごの 画面の「お世話トークン ＋1こ GET！」の 札（end_win）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -104,18 +105,33 @@ try:
             tap_play(pg, 'k'); settle(pg, 0.8)
             seg('efft', 2.4, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 2}))
             # ③ 6 の 効果を 使う → 見た カードを 大きく → オープン（勝ち！）→ 片付け →「ターン 2」→「神様馬の 効果」の 帯
-            pg.locator('#cbOv .cbact [data-cb=effyes]').click(); pg.wait_for_timeout(60)
+            pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(60)
             seg('eff6_open', 8.6, lambda: pg.locator('#cbOv .cbmod .pick .cbc').first.click())
-            pg.locator('#cbOv .cbact [data-cb=kskip]').click(); settle(pg, 0.6)      # 2ターン目の はじめ：神様馬の 効果は 使わない
+            pg.locator('#cbOv [data-cb=kskip]').click(); settle(pg, 0.6)      # 2ターン目の はじめ：神様馬の 効果は 使わない
             # ④ 2ターン目：相手が 先に セット → 自分が セット →「効果タイム」→ 使わない → オープン（負け…）→「ターン 3」
             pg.evaluate(OPP, {'t': 'set', 'k': 3}); settle(pg, 0.8)
             seg('set_efft', 2.6, lambda: tap_play(pg, '7'))
-            seg('open_lose', 5.4, lambda: pg.locator('#cbOv .cbact [data-cb=effno]').click())
+            seg('open_lose', 5.4, lambda: pg.locator('#cbOv [data-cb=effno]').click())
             # ⑤ 3ターン目：かぶり → 片付け → 結果（同点）
             pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 0.8)
             if want('end'): run(pg, 'end' + tag, 6.4, pre=lambda: tap_play(pg, '6'))
             v = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.phase, v.res, v.my.wins, v.op.wins, v.discard.length] : null; }")
             check(v == ['end', 'draw', 1, 1, 6], f'場面の とおりに 進んだ（さいごまで：1勝 1勝 の 同点・捨て札 6まい）{v}')
+            # ---- 2つ目の 対戦（第4.177版）：3 の 効果（聞く 窓 → 3まい 見せる → 交換）・勝ち → GET の 札 ----
+            settle(pg, 1.0)
+            pg.evaluate("() => { CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['3', '3', '3', '1', '2'], ['4', '5', '6', '7', '7']] }; }"); pg.wait_for_timeout(100)
+            pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 3.4)
+            tap_play(pg, '1'); settle(pg, 0.8)
+            seg('ask3', 2.6, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 7}))      # 「効果タイム」の 帯 → 聞く 窓（3 の カードの 絵・「3 の 効果を 使う？」）
+            a3 = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.cbask'); return m ? m.querySelector('.askq b').textContent : null; }")
+            seg('eff3_open', 10.4, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 3 を 3まい 見せる 窓 → もらった カードを 大きく → 交換 → オープン（勝ち！）→「ターン 2」
+            h2 = pg.evaluate("() => CBApp._t.view.my.hand.map(c => c.k).sort().join('')")
+            tap_play(pg, '2'); settle(pg, 0.8); pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 5.6)      # 2ターン目：2 と 6 → 勝ち
+            pg.evaluate(OPP, {'t': 'set', 'k': 7}); settle(pg, 0.8)
+            if want('end_win'): run(pg, 'end_win' + tag, 7.0, pre=lambda: tap_play(pg, '3'))      # 3ターン目：3 と 7 → 勝ち → 結果「あなたの 勝ち！」→ GET の 札が ぽんと 出る
+            else: tap_play(pg, '3'); settle(pg, 7.0)
+            v2 = pg.evaluate("() => { const v = CBApp._t.view, b = document.querySelector('#cbOv .cbend .cbget'); return v ? [v.phase, v.res, v.my.wins, v.op.wins, b ? b.querySelector('.n').textContent : null] : null; }")
+            check(a3 == '3 の 効果を 使う？' and h2 == '2334' and v2 == ['end', 'win', 3, 0, '＋1こ GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・3勝 0勝・GET の 札）{v2}')
             check(not errs, f'エラー なし {errs[:3]}')
             ctx.close()
 finally:

@@ -53,7 +53,7 @@ const TCCare = (() => {
   //   第4.151版：急ぎ足（歩く・向きを かえる 速さの 倍）・ズームの 秒（前は 0.95）・呼ぶで 来る 所（いちばん 手前まで 歩かない：いまの 所から STEP_Y だけ 手前・NEAR_Y より 奥なら NEAR_Y まで）
   //   ズームの 上限：いちばん 手前まで 来た とき（2.2倍）と 同じ 大きさに 見える 倍率（奥に 立って いる ぶん 大きく 寄る・2.7倍まで）
 
-  let g = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
+  let g = null, G0 = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
   const FRONT = { x: 526, y: 1372 };          // 画面の いちばん 手前（撫でる・呼ぶで 来る 所）
   function front() {                          // 大きな 馬（幻の馬・神様馬：5段階の 1.7倍）は 横向きで 画面に 収まる 所まで 下がる（11/09 11:38 まさちゃん「他の馬と同じ動きにして！」）
     let y = FRONT.y; while (y > 960 && TCHorse.scaleAt(HO, y) * 1.8 > 0.47 * W) y -= 8; return { x: FRONT.x, y, big: y < FRONT.y };      // 大きな 馬は まん中（頭も しっぽも 画面に 入る）
@@ -78,6 +78,10 @@ const TCCare = (() => {
     if (k >= 1) { const u = k - 1; r += (255 - r) * u; gg += (255 - gg) * u; b += (255 - b) * u; } else { r *= k; gg *= k; b *= k; }
     return `rgb(${r | 0},${gg | 0},${b | 0})`;
   }
+  // 第4.177版：ゆっくり した ゆれ（ずっと つづく もの）は 時間を hz 回／秒に きざんで 動かす。きざみ 1つで 動くのは 画面の 1画素 ほど まで（0.4〜0.9画素：下の 3か所）なので 見た目は なめらかな まま、
+  //   動かない コマは 前と 同じ 絵 ＝ 紙に 描かない（下の REC）。指に ついて 動く もの・押した ときの 動き・出る／消える 動きは きざまない（毎コマ）。
+  //   きざみは 同じ 時計（t）の 30・15・7.5回／秒 ＝ たがいに そろう（別々の 時に 動いて 描き直しが ふえない）：PUSH 30回・降臨の バナー 15回・おそうじの「！」7.5回
+  const tq = (t, hz) => Math.floor(t * hz) / hz;
   function pf(pts, fill) {            // 面（となりの 面との すきまが 見えない ように 同じ 色で ふちも ぬる）
     g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath();
     g.fillStyle = fill; g.fill(); g.strokeStyle = fill; g.stroke();
@@ -147,6 +151,7 @@ const TCCare = (() => {
     const q = c.getContext('2d'), off = c.width + 60;
     q.shadowColor = '#2b1a0e'; q.shadowBlur = bl * 2; q.shadowOffsetX = off;      // 形は 絵の 外（左）に かいて、かげ だけを 絵の 中へ
     q.setTransform(S0, 0, 0, S0, pad - x0 * S0 - off, pad - y0 * S0); q.fillStyle = '#2b1a0e'; q.fill(path, 'nonzero');
+    c._fix = true;                                    // 作った あと 中身が かわらない 紙（REC：書きとめた まま あとで 描いて よい）
     return (HAND_SH[lv] = { c, S0, ox: pad - x0 * S0, oy: pad - y0 * S0 });
   }
   function hand(x, y, s, rot, press, a, open) {
@@ -692,7 +697,8 @@ const TCCare = (() => {
     Pn.cov = (Pn.cov || 0) + ((S.fxHold ? 1 : 0) - (Pn.cov || 0)) * 0.3;                      // ルーレット・チケットの 演出の 間は かくす
     const a = sm(u / 0.16) * (1 - out) * (1 - Pn.cov); if (a <= 0.01) return;
     const hv = t - Pn.hitT, pd = hv < 0 || hv > 0.34 ? 0 : hv < 0.05 ? hv / 0.05 : hv < 0.12 ? 1 : Math.max(-0.12, 1 - backOut((hv - 0.12) / 0.22));      // 押しこみ 0〜1（すっと 沈んで ぽよんと もどる）
-    const s = backOut(u / 0.32) * (1 - 0.2 * out) * (1 + 0.018 * Math.sin(TAU * 0.7 * u)) * (1 - 0.025 * Math.max(0, pd)), w = G.w, h = w * G.ar;
+    const uq = tq(t, 30) - Pn.t0;                      // ゆっくり した ゆれ用の 時間（第4.177版：1秒に 30回）
+    const s = backOut(u / 0.32) * (1 - 0.2 * out) * (1 + 0.018 * Math.sin(TAU * 0.7 * uq)) * (1 - 0.025 * Math.max(0, pd)), w = G.w, h = w * G.ar;
     g.save(); g.globalAlpha *= a;
     // 地面の 影
     g.save(); g.translate(G.x, G.y + h * 0.36 * s); g.scale(1, 0.26); g.fillStyle = 'rgba(30,16,4,0.28)'; g.beginPath(); g.arc(0, 0, w * 0.47 * s, 0, TAU); g.fill(); g.restore();
@@ -710,7 +716,7 @@ const TCCare = (() => {
     }
     g.restore();
     // 「タップ！」の 札（はじめて 押す まで：ゆっくり ゆれる）
-    if (Pn.n === 0) { const k = sm((u - 0.3) / 0.25); if (k > 0) { g.save(); g.globalAlpha *= k; tag(G.tap[0], G.tap[1] + 5 * Math.sin(TAU * 0.9 * u), 'タップ！', 40, 1, 1, 0, '#c2362b'); g.restore(); } }
+    if (Pn.n === 0) { const k = sm((u - 0.3) / 0.25); if (k > 0) { g.save(); g.globalAlpha *= k; tag(G.tap[0], G.tap[1] + 5 * Math.sin(TAU * 0.9 * uq), 'タップ！', 40, 1, 1, 0, '#c2362b'); g.restore(); } }
     // 左：のこりの トークン
     const pop = backOut(clamp((u - 0.08) / 0.3, 0, 1));
     if (pop > 0.01) {
@@ -727,7 +733,7 @@ const TCCare = (() => {
       if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, 'おわる', false, 36, pop, true);
       // 左下：お世話チャレンジ（玉を 落とす 台）の 入口：台の 小さい 絵 ＋ 名前
       if (dropOk()) {
-        const dq = t - (S.press.dp == null ? -9 : S.press.dp), ds = pop * (dq >= 0 && dq < 0.22 ? 0.95 : 1) * (1 + 0.012 * Math.sin(TAU * 0.6 * u)), w = G.dpw, h = G.dph, k = 22;
+        const dq = t - (S.press.dp == null ? -9 : S.press.dp), ds = pop * (dq >= 0 && dq < 0.22 ? 0.95 : 1) * (1 + 0.012 * Math.sin(TAU * 0.6 * uq)), w = G.dpw, h = G.dph, k = 22;
         g.save(); g.translate(G.dp[0], G.dp[1]); g.scale(ds, ds); g.lineWidth = 0.8;
         pf([[-w / 2 + 6, -h / 2 + 8], [w / 2 + 6, -h / 2 + 8], [w / 2 + 6, h / 2 + 8], [-w / 2 + 6, h / 2 + 8]], 'rgba(40,20,5,0.24)');
         pf([[-w / 2, -h / 2], [w / 2 - k, -h / 2], [w / 2, -h / 2 + k], [w / 2, h / 2], [-w / 2, h / 2]], '#fff8ec');
@@ -1100,6 +1106,7 @@ const TCCare = (() => {
       q.globalCompositeOperation = 'destination-out'; q.fillStyle = '#000'; cut(0, 0);
       q.globalCompositeOperation = 'source-over';
     }
+    c._fix = true;                                    // 作った あと 中身が かわらない 紙（REC）
     return (CAR_C[key] = c);
   }
   function carrotHeld(qx, qy, side, L, bites, gold, a) {   // 先（かじった 所）を 口もと（qx,qy）に・根もとは 手の 方（side：馬の 向き）・L：体の 長さ（画面）
@@ -1345,7 +1352,149 @@ const TCCare = (() => {
     cleanStep(t);
     const pp = props3(t) || tools3(t); if (pp) BR.props = pp; else if (BR.props) BR.props = null;      // 3D の バケツ・エサ／ほうき・ちりとり（馬と いっしょに 描く）
   }
-  function post(t) {
+  // ---------- 描く 命令を 書きとめて、前と 同じ コマは 描かない（第4.177版・まさちゃん 2026/11/16 10:40「トレーニングセンターがカクカク重くなっている、原因を見つけて改善して！」）----------
+  //   お世話の 札（.tco）は 1コマに 約1,000この 命令（面 65・線 73・字 23 …）で、毎コマ はじめから 描き直して いた。iPhone の 2D の 絵は 絵の 細かさ 3倍の 紙（1170×1843 画素）に CPU で 描く。
+  //   でも、馬が 歩いて いる だけの 間は 札は 前の コマと まったく 同じ 絵（馬と フィールドは 別の 紙＝WebGL）。
+  //   → 描く 命令を いったん 書きとめて（下の rec：本物の 紙と 同じ 名前の 命令と 値を もつ）、前に 紙へ 描いた 命令と 1つも ちがわなければ 紙に さわらない。ちがう ときだけ 書きとめた 命令を 紙へ 流す（run）。
+  //     描く 順も 値も 書きとめた まま ＝ 紙に 出る 絵は 前の 作りと 同じ（テスト test_tc_rec.py が 1画素ずつ くらべる）。
+  //   ・絵の もと（drawImage の もと）が「あとから 中身の かわる 紙」（かじった リンゴ・金の うんち：1まいの 紙を 使い回す）の ときは、その 場で そこまでを 紙へ 流す（flush）。
+  //     書きとめた まま コマの おわりに 流すと、その ときには 紙の 中身が かわって いる。中身の かわらない 紙（_fix：手の かげ・かじった ニンジン）と 絵（img）は そのまま 書きとめる
+  //   ・値を 読む 所（g.globalAlpha *= a）は 書きとめ役が おぼえて いる 値を 返す（save／restore の 山も まねる）。字の 幅（measureText）は 別の 小さな 紙で 測る
+  //   ・同じ でも 1秒に 1回は 描き直す（KEEP：字の 形が あとから 読めた・アプリが 裏から もどって 紙の 中身が 消えた、などに そなえる）。紙の 大きさが かわったら はじめから
+  //   ・hide（お世話チャレンジの 台が 上を おおって いる）：書きとめる だけで 紙へ 流さない（計算は いつも どおり）
+  //   ・書きとめ役が 使えない・途中で 失敗した ときは、前の 作り（本物の 紙へ じかに 描く）に もどる（REC.ok＝false）
+  const REC = (() => {
+    const C2 = typeof CanvasRenderingContext2D !== 'undefined' ? CanvasRenderingContext2D.prototype : null;
+    const out = { ok: false, off: false, stat: { frames: 0, drawn: 0, same: 0, hidden: 0, forced: 0, bad: 0, notes: [] }, begin: null, end: null, dirty: () => { }, resync: () => { }, check: () => { }, last: () => null };
+    if (!C2 || typeof document === 'undefined') return out;
+    const KEEP = 60;
+    const FN = [], FNAME = [], PN = [], rec = {}, V = [], V0 = [], A0 = [], used = [], isUsed = [], stack = [], pool = [], stat = out.stat;
+    let real = null, base = null, sizeKey = '', mq = null, mqFont = null, iFont = -1, cDash = -1;
+    let A = [], nA = -1, B = [], n = 0, flushed = 0, forced = false, hide = false, sync = false, since = 0, chk = null;
+    const NUM = { globalAlpha: v => v >= 0 && v <= 1, lineWidth: v => v > 0 && isFinite(v), miterLimit: v => v > 0 && isFinite(v), shadowBlur: v => v >= 0 && isFinite(v), lineDashOffset: v => isFinite(v), shadowOffsetX: v => isFinite(v), shadowOffsetY: v => isFinite(v) };
+    const QUERY = /^(getTransform|getLineDash|isPointInPath|isPointInStroke|getImageData|createImageData|getContextAttributes|isContextLost|drawFocusIfNeeded|scrollPathIntoView|putImageData|reset)$/;
+    const MAKE = /^(createLinearGradient|createRadialGradient|createConicGradient|createPattern)$/;
+    const mutable = src => !!src && !src._fix && (typeof src.getContext === 'function' || src.videoWidth !== undefined);      // あとから 中身の かわる 絵の もと（紙・動画）
+    function run(from, to) {                           // 書きとめた 命令を 本物の 紙へ 流す
+      const q = real; let i = from;
+      if (i === 0 && sync) { for (const j of used) q[PN[j]] = V0[j]; sync = false; }      // 流さなかった コマが あった：コマの はじめの 値を そろえて から
+      while (i < to) {
+        const c = B[i++];
+        if (c < 0) { q[PN[-1 - c]] = B[i++]; continue; }
+        const k = B[i++], f = FN[c];
+        if (c === cDash) q.setLineDash(B.slice(i, i + k));
+        else switch (k) {
+          case 0: f.call(q); break;
+          case 1: f.call(q, B[i]); break;
+          case 2: f.call(q, B[i], B[i + 1]); break;
+          case 3: f.call(q, B[i], B[i + 1], B[i + 2]); break;
+          case 4: f.call(q, B[i], B[i + 1], B[i + 2], B[i + 3]); break;
+          case 5: f.call(q, B[i], B[i + 1], B[i + 2], B[i + 3], B[i + 4]); break;
+          case 6: f.call(q, B[i], B[i + 1], B[i + 2], B[i + 3], B[i + 4], B[i + 5]); break;
+          default: f.apply(q, B.slice(i, i + k));
+        }
+        i += k;
+      }
+      flushed = to;
+    }
+    function flush() { forced = true; if (flushed < n) run(flushed, n); }
+    for (const name of Object.getOwnPropertyNames(C2)) {
+      const d = Object.getOwnPropertyDescriptor(C2, name);
+      if (!d) continue;
+      if (d.set) {                                     // 書ける 値（fillStyle・lineWidth …）：おぼえて おく。数の 値は 本物の 紙と 同じ きまりで、だめな 値は 捨てる
+        const i = PN.length, ok = NUM[name]; PN.push(name); if (name === 'font') iFont = i;
+        Object.defineProperty(rec, name, { enumerable: true,
+          get() { if (chk) chk.get(name, V[i]); return V[i]; },
+          set(v) { if (chk) chk.set(name, v); if (ok) { v = +v; if (!ok(v)) return; } V[i] = v; if (!isUsed[i]) { isUsed[i] = true; used.push(i); } B[n++] = -1 - i; B[n++] = v; } });
+      } else if (d.get) {                              // 読む だけの 値（canvas）
+        Object.defineProperty(rec, name, { enumerable: true, get() { return real[name]; } });
+      } else if (typeof d.value === 'function' && name !== 'constructor') {
+        const c = FN.length, f = d.value; FN.push(f); FNAME.push(name);
+        if (name === 'measureText') rec[name] = function (txt) {
+          if (mqFont !== V[iFont]) { mq.font = V[iFont]; mqFont = V[iFont]; }
+          const m = mq.measureText(txt); if (chk) chk.meas(txt, m); return m;
+        };
+        else if (MAKE.test(name)) rec[name] = function () { return f.apply(real, arguments); };      // 色の ぼかし・もよう：紙の ようすに よらない → その場で 作る
+        else if (QUERY.test(name)) rec[name] = function () { flush(); if (chk) f.apply(chk.q, arguments); return f.apply(real, arguments); };      // 紙の ようすを 聞く 命令：そこまでを 流して から 聞く
+        else if (name === 'save') rec[name] = function () { const st = pool.pop() || []; for (let j = 0; j < PN.length; j++) st[j] = V[j]; stack.push(st); B[n++] = c; B[n++] = 0; if (chk) chk.q.save(); };
+        else if (name === 'restore') rec[name] = function () { const st = stack.pop(); if (st) { for (let j = 0; j < PN.length; j++) V[j] = st[j]; pool.push(st); } B[n++] = c; B[n++] = 0; if (chk) chk.q.restore(); };
+        else if (name === 'setLineDash') { cDash = c; rec[name] = function (a) { const k = a ? a.length : 0; B[n++] = c; B[n++] = k; for (let j = 0; j < k; j++) B[n++] = a[j]; if (chk) chk.q.setLineDash(a); }; }
+        else if (name === 'drawImage') rec[name] = function (src) {
+          const k = arguments.length; B[n++] = c; B[n++] = k; for (let j = 0; j < k; j++) B[n++] = arguments[j];
+          if (chk) f.apply(chk.q, arguments);
+          if (!hide && mutable(src)) flush();
+        };
+        else rec[name] = function () { const k = arguments.length; B[n++] = c; B[n++] = k; for (let j = 0; j < k; j++) B[n++] = arguments[j]; if (chk) f.apply(chk.q, arguments); };
+      }
+    }
+    function reset(ctx) {                              // 紙が かわった・大きさが かわった（本物の 紙の 中身も ようすも はじめに もどって いる）
+      base = ctx; sizeKey = ctx.canvas.width + 'x' + ctx.canvas.height; nA = -1; stack.length = 0; sync = false; since = 0;
+      for (let j = 0; j < PN.length; j++) V[j] = ctx[PN[j]];
+      if (!mq) mq = document.createElement('canvas').getContext('2d'); mqFont = null;
+      if (chk) chk.size(ctx);
+    }
+    out.begin = (ctx, h) => {
+      if (ctx !== base || sizeKey !== ctx.canvas.width + 'x' + ctx.canvas.height) reset(ctx);
+      real = ctx; hide = !!h; n = 0; flushed = 0; forced = false;
+      for (let j = 0; j < PN.length; j++) V0[j] = V[j];
+      return rec;
+    };
+    out.end = () => {
+      stat.frames++;
+      let drew = false, skip = false;
+      if (forced) { run(flushed, n); drew = true; stat.forced++; }
+      else if (hide) { stat.hidden++; sync = true; }
+      else {
+        let same = n === nA && since < KEEP;
+        if (same) for (let j = 0; j < PN.length; j++) if (V0[j] !== A0[j]) { same = false; break; }
+        if (same) for (let j = 0; j < n; j++) if (B[j] !== A[j]) { same = false; break; }
+        if (same) { stat.same++; since++; skip = true; } else { run(0, n); drew = true; }
+      }
+      if (chk) chk.frame(real, drew, skip, hide);
+      if (drew) { const t = A; A = B; B = t; nA = n; since = 0; stat.drawn++; for (let j = 0; j < PN.length; j++) A0[j] = V0[j]; }
+      real = null;
+    };
+    out.dirty = () => { nA = -1; };                    // つぎの コマは かならず 描く
+    out.resync = () => { base = null; };               // じかに 描いた あと（紙の ようすが おぼえて いる 値と ちがう かも しれない）：つぎに 使う ときに 読み直す
+    // 前に 紙へ 描いた 命令と いまの 命令の はじめの ちがい（しらべる 用）
+    out.last = () => { const name = j => { const c = A[j]; return c < 0 ? PN[-1 - c] + '=' + A[j + 1] : FNAME[c] + '(' + A.slice(j + 2, j + 2 + A[j + 1]).map(x => typeof x === 'number' ? +x.toFixed(4) : typeof x === 'object' ? '{}' : x).join(',') + ')'; }; const o = []; let j = 0; while (j < nA) { o.push(name(j)); j += A[j] < 0 ? 2 : 2 + A[j + 1]; } return o; };
+    // たしかめ（テスト用）：書きとめるのと 同時に、同じ 命令を「じかに 描く 紙」（前の 作りと 同じ）にも 描いて、(1) 読んだ 値・字の 幅が 本物と 同じか (2) コマの おわりに 2まいの 紙が 1画素も ちがわないか を 数える
+    out.check = on => {
+      if (!on) { chk = null; return; }
+      const cv = document.createElement('canvas'), bad = (why) => { stat.bad++; if (stat.notes.length < 12) stat.notes.push(why); };
+      chk = { cv, q: cv.getContext('2d'), n: 0, cmp: 0,
+        size(ctx) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; chk.q = cv.getContext('2d'); for (const p of PN) { try { chk.q[p] = ctx[p]; } catch (e) { /* なし */ } } },      // 紙の ようす（色・線の 太さ …）を 本物と そろえて から
+        set(name, v) { chk.q[name] = v; },
+        get(name, v) { if (typeof v === 'number' && chk.q[name] !== v) bad('読んだ 値 ' + name + ' ' + v + ' ≠ ' + chk.q[name]); },
+        meas(txt, m) { const w = chk.q.measureText(txt).width; if (Math.abs(w - m.width) > 1e-6) bad('字の 幅 ' + txt + ' ' + m.width + ' ≠ ' + w + '（' + V[iFont] + ' / ' + chk.q.font + '）'); },
+        frame(ctx, drew, skip, hid) {
+          chk.n++; if (hid) return;
+          const w = cv.width, h = cv.height; if (!w || !h) return;
+          const a = ctx.getImageData(0, 0, w, h).data, b = chk.q.getImageData(0, 0, w, h).data; let df = 0, mx = 0;
+          for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) { df++; const e = Math.abs(a[j] - b[j]); if (e > mx) mx = e; }
+          chk.cmp++; if (df) bad('絵が ちがう（' + (skip ? '描かなかった コマ' : '描いた コマ') + '）：' + df + ' こ・いちばん 大きい 差 ' + mx + '・コマ ' + chk.n);
+        } };
+      if (base) { chk.size(base); nA = -1; base = null; }      // つぎの コマで はじめから（2まいの 紙を そろえる）
+    };
+    Object.defineProperty(out, 'checks', { get() { return chk ? chk.cmp : 0; } });
+    out.ok = FN.length > 20 && iFont >= 0;
+    return out;
+  })();
+  function post(t, hide) {
+    let rec = null;
+    if (REC.ok && !REC.off && G0) { try { rec = REC.begin(G0, hide); } catch (e) { REC.ok = false; rec = null; } }
+    if (!rec) { g = G0; REC.resync(); paint(t); return; }      // じかに 描く（前の 作り）
+    let bad = false;
+    g = rec;
+    try { paint(t); REC.end(); } catch (e) { bad = true; }
+    g = G0;
+    if (bad) {                                         // 書きとめ役で つまずいた（この 端末の ブラウザと 合わない など）：もう 使わない。この コマから じかに 描く（前の 作り）
+      REC.ok = false;
+      try { for (let i = 0; i < 64; i++) G0.restore(); } catch (e) { /* なし */ }      // 途中まで 流した 分の save を もどす（紙の ようすを コマの はじめの 形に）
+      paint(t);
+    }
+  }
+  function paint(t) {
     const cs = S.cs || O.cs || 1; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, g.canvas.width, g.canvas.height); g.setTransform(cs, 0, 0, cs, 0, 0);      // S.cs：アプリ（画面の 大きさが かわった とき）
     g.lineJoin = 'round'; g.lineCap = 'round';
     drawBanner(t);
@@ -1454,7 +1603,7 @@ const TCCare = (() => {
     let k, a, dy;
     if (B.hideT != null) { const v = (t - B.hideT) / 0.38; if (v >= 1) return; k = 1 - 0.12 * sm(v); a = 1 - sm(v); dy = -70 * v * v; }
     else { if (ui < 0) return; const v = ui / 0.62; k = 0.72 + 0.28 * backOut(v); a = sm(v / 0.35); dy = -90 * (1 - easeOut(v)); }
-    const bob = 4 * Math.sin(TAU * ui / 3.4), sway = 0.007 * Math.sin(TAU * ui / 4.6);
+    const uq = tq(t, 15) - B.showT, bob = 4 * Math.sin(TAU * uq / 3.4), sway = 0.007 * Math.sin(TAU * uq / 4.6);      // 第4.177版：ゆっくり した ゆれは 1秒に 15回（1きざみ 0.5px まで）
     g.save(); g.globalAlpha *= a; g.translate(cx, cy + dy + bob); g.rotate(sway); g.scale(k, k); g.drawImage(im, -w / 2, -h / 2, w, h); g.restore();
     if (B.hideT == null && ui > 0.25 && ui < 2.4) {                 // 来た ときの きらきら（ゆっくり 1回ずつ・ちかちか しない）
       const col = B.kind === 'kamisama' ? '#fff2bf' : '#f6dcff';
@@ -1584,7 +1733,7 @@ const TCCare = (() => {
         if (!canClean()) {
           g.save(); g.fillStyle = 'rgba(60,40,25,0.45)'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.restore();
           if (S.trashIn > 0) label(`あと${Math.ceil(S.trashIn / 60)}分`, x, y + 2, 34, '#ffffff', 'rgba(60,35,15,0.9)', 7);
-        } else { const bs = 1 + 0.07 * Math.sin(t * 2.2); g.save(); g.translate(x + 48, y - 48); g.scale(bs, bs); g.fillStyle = '#e5484d'; g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.fill(); g.strokeStyle = '#fff8ec'; g.lineWidth = 4; g.stroke(); g.restore(); label('！', x + 48, y - 47, 28, '#ffffff'); }
+        } else { const bs = 1 + 0.07 * Math.sin(tq(t, 7.5) * 2.2); g.save(); g.translate(x + 48, y - 48); g.scale(bs, bs); g.fillStyle = '#e5484d'; g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.fill(); g.strokeStyle = '#fff8ec'; g.lineWidth = 4; g.stroke(); g.restore(); label('！', x + 48, y - 47, 28, '#ffffff'); }
       }
       if (k === 'call' && t < S.callCoolUntil) {
         const rem = (S.callCoolUntil - t) / RULE.cool;
@@ -1713,7 +1862,7 @@ const TCCare = (() => {
   async function init(o) {
     O = Object.assign({ cs: 1, tod: 'morning', stageNo: 5 }, o); HO = o.horse; BR = o.brain; rnd = o.rnd || Math.random;
     if (O.banTop) BAN_TOP = O.banTop;
-    g = o.canvas.getContext('2d'); S.on = true;
+    g = G0 = o.canvas.getContext('2d'); S.on = true;      // G0＝本物の 紙（g は 描く 間 だけ 書きとめ役 REC に かわる：下の post）
     apple = new Image(); apple.src = AP('tc_items/tc_item_apple.webp'); try { await apple.decode(); } catch (e) { }
     bucket = new Image(); bucket.src = AP('tc_items/tc_item_bucket.webp'); try { await bucket.decode(); } catch (e) { }      // まさちゃんの エサの バケツの 絵（11/09 13:21：ごはんの ボタン）
     if (o.props !== false) PROPS = await loadProps();      // まさちゃんの 3D の バケツ・エサ（11/09 14:13）：なければ 紙の 絵の バケツ
@@ -1754,5 +1903,5 @@ const TCCare = (() => {
   }
   return { init, pre: (t, dt) => { if (S.lastT != null && t - S.lastT > 3) S.wakeT = t; S.lastT = t; pre(t, dt); }, post, input, pointer, press, pressPet, pressCall, get _hb() { return [HO, BR]; }, special, roulette, setHorse,
     dropUse, pushDone, BTN, BTN_R, BUYG, PTG, CHBACK, ASKG, CLEAN, GRAB, grabAt: (x, y) => (S.clean && S.clean.pan ? grabAt(S.lastT || 0, x, y) : null), PUSHG, pushPress, pushShow: t => { if (!pushLive() && S.stock >= 1) { S.push = { t0: t, n: 0, hitT: -9, hideT: null, lock: t + 0.1, res: null, modeT: -9, waitT: -9 }; ev(t, 'pushin'); } },      // pushShow：アプリを 開き直した とき（前の PUSH が まだ）
-    view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
+    view: () => S.zoom, get on() { return S.on; }, S, DEMOS, RULE, REC, vinfoRows, vinfoBox: () => { const im = BANNER; if (!S.ban || !S.vinfo || !im || !im.naturalWidth || !bannerVisible()) return null; return Object.assign(vinfoRect(), { banTop: BAN_TOP, banH: BAN_W * im.naturalHeight / im.naturalWidth, banW: BAN_W, gauge: [26, 34, 600, 126] }); } };
 })();
