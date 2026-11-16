@@ -92,6 +92,7 @@ try:
             pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
             pg.locator('#cbFab .fabi').click(); pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(600)
+            pg.evaluate("() => { CBApp._guard = 0; }")      # 聞く 窓が 出て すぐでも 押せる（うっかり 押し 防止は test_cb.py で 見る）
             print('■ ' + ('「演出を控えめにする」（動きを へらす）' if calm else 'ふつう'))
             pg.evaluate("() => { CBApp._t.manual(true); CBApp._think = () => 1e9; CBApp._opt = { hands: [['k', '1', '6', '6', '7'], ['2', '3', '6', '5', '7']] }; }")
             want = lambda n: (not ONLY) or (n in ONLY)

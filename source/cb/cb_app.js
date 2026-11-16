@@ -551,6 +551,12 @@ const CBApp = (() => {
   //   ・「手札と ボードを 見る」で 窓を 下げられる（その あとは 画面の 下の「使わない」「○ の 効果を 使う」で 答える：前と 同じ 形）
   //   ・カードや 捨て札の 窓を 見て いる とちゅうには 重ねない（その 窓を 閉じた ときに 出す）
   let peekId = '';
+  // うっかり 押し 防止（第4.177版の あと：次の 版に 入る）：聞く 窓が 出て から ASK_GUARD ミリ秒は、窓の 中の 答え（使わない／使う）を 押しても 受けつけない。
+  //   ・効果が 2つ つづけて 聞かれる とき（例：5 と 7）、1つ目の 答えを すばやく 2回 押すと、同じ 所に すぐ 出る 2つ目の 窓まで 同じ 答えに なって いた（2つ目を えらべない）
+  //   ・カードを 大きく 見る 窓を 閉じた しゅんかん・相手が セットした しゅんかんに 窓が 出ると、指の 下に 答えの ボタンが 来る ことが ある
+  //   「手札と ボードを 見る」は すぐ 押せる（何も 決まらない）。CBApp._guard＝テスト用（数字を 入れると その ミリ秒）
+  const ASK_GUARD = 350;
+  let askAt = 0;
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
     if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.q}`, k: mode.q, head: '効果タイム！', q: `${mode.q} の 効果を 使う？`, text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
@@ -567,7 +573,7 @@ const CBApp = (() => {
     modal(`<h3 class="gold">${esc(A.head)}</h3><div class="big"><img src="${pic(A.k, true)}" alt="${esc(nameOf(A.k))}"></div><p class="askq"><b>${esc(A.q)}</b>${esc(A.text)}</p>`
       + `<div class="rowb"><button type="button" class="cbb dk lg" data-cb="${A.no}">使わない</button><button type="button" class="cbb lg" data-cb="${A.yes}">使う</button></div>`
       + '<button type="button" class="cbb dk sm" data-cb="askpeek">手札と ボードを 見る</button>', 'cbask');
-    modEl.dataset.ask = A.id;
+    modEl.dataset.ask = A.id; askAt = performance.now();
     return true;
   }
   // 手札の カードを タップ：大きい カード ＋ できる こと（セットは「この カードを セットする」を 押したら 確定：もう 変えられない）
@@ -635,6 +641,7 @@ const CBApp = (() => {
     const key = e.target.closest('[data-key]'); if (key && !key.disabled) return roomKey(key.dataset.key);
     const b = e.target.closest('[data-cb]'); if (!b || b.disabled) return;
     const a = b.dataset.cb, u = +b.dataset.u;
+    if (/^(effyes|effno|kgo|kskip|mpick|mskip)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      // 聞く 窓が 出て すぐ：受けつけない（上の ASK_GUARD）
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
@@ -915,7 +922,7 @@ const CBApp = (() => {
     try { document.dispatchEvent(new CustomEvent('tengel:cb')); } catch (e) { /* なし */ }
   }
   return {
-    open, close, REWARD, rewardFor, _rng: null, _think: null, _link: null, _opt: null, _room: null,      // _rng・_think・_link・_opt・_room：テスト・見本 用（ふだんは 空）
+    open, close, REWARD, rewardFor, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null,      // _rng・_think・_link・_opt・_room・_guard：テスト・見本 用（ふだんは 空）
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, modOn

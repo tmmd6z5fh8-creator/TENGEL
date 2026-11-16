@@ -104,7 +104,7 @@ def idle(pg, t=30000):
 def open_cb(pg, speed=0.03):
     pg.locator('#cbFab .fabi').click()
     pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000)
-    pg.evaluate(f"() => CBApp._t.speed({speed})"); pg.wait_for_timeout(150)
+    pg.evaluate(f"() => {{ CBApp._t.speed({speed}); CBApp._guard = 0; }}"); pg.wait_for_timeout(150)      # _guard 0：聞く 窓が 出て すぐでも 押せる（テストは すぐ 押す。うっかり 押し 防止は 下で 別に 見る）
     # 出て すぐ 消える ことば（帯＝.cbban・ふきだし＝.cbtoast）を 覚えて おく（said() で 読んで 空に する）
     pg.evaluate("""() => { if (window.__said) return; window.__said = [];
       const W = (sel, tag) => { const e = document.querySelector('#cbOv ' + sel); let last = ''; new MutationObserver(() => { const s = e.classList.contains('on') ? e.textContent : ''; if (s && s !== last) window.__said.push(tag + ':' + s); last = s; }).observe(e, { childList: true, subtree: true, attributes: true, characterData: true }); };
@@ -551,6 +551,23 @@ try:
         start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
         pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(80); tap(pg, '7'); pg.locator('#cbOv .cbmod [data-cb=drop5]').click(); idle(pg)
         check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '177', '5 の 効果で 7 を 捨てた（7 が 2まいに なる）→ 7 の 効果は 聞かれない')
+
+        print('■ うっかり 押し 防止：聞く 窓が 出て すぐ（0.35秒）は 答えを 受けつけない（すばやく 2回 押しても 2つ目の 質問は 答えた ことに ならない）')
+        pg.evaluate("() => { CBApp._guard = null; }")      # ふだんの 動き（0.35秒）
+        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1}); pg.wait_for_timeout(450)
+        g = pg.evaluate("""() => { const T = CBApp._t, q0 = T.mode.q; document.querySelector('#cbOv .cbask [data-cb=effno]').click(); const q1 = T.mode.q, b = document.querySelector('#cbOv .cbask [data-cb=effno]');
+          if (b) b.click(); const pk = document.querySelector('#cbOv .cbask [data-cb=askpeek]'); return { q0, q1, q2: T.mode.q, ask: T.ask, has: !!b, peek: !!pk }; }""")
+        check(g == {'q0': '5', 'q1': '7', 'q2': '7', 'ask': True, 'has': True, 'peek': True} and asked(pg)[0] == '7 の 効果を 使う？' and pg.evaluate(V)['phase'] == 'eff',
+              f'「使わない」を すばやく 2回：1回目で 5 の 質問に 答える → 同じ 所に 出た「7 の 効果を 使う？」は 2回目では 答えた ことに ならない（まだ 聞いて いる：{g}）')
+        pg.wait_for_timeout(420); pg.locator('#cbOv .cbask [data-cb=effyes]').click(); idle(pg)
+        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '1234', f'0.35秒 たてば 押せる：7 の 効果を「使う」→ 7 を 3まい 交換（手札 {pg.evaluate(HAND)}）')
+        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1}); pg.wait_for_timeout(450)
+        pg.locator('#cbOv .cbask [data-cb=effno]').click()
+        g2 = pg.evaluate("() => { const b = document.querySelector('#cbOv .cbask [data-cb=askpeek]'); if (b) b.click(); return { had: !!b, ask: CBApp._t.ask, bar: [...document.querySelectorAll('#cbOv .cbact .cbb')].map(x => x.textContent.trim()) }; }")
+        check(g2['had'] and not g2['ask'] and g2['bar'] == ['使わない', '7 の 効果を 使う'], f'「手札と ボードを 見る」は 出て すぐでも 押せる（何も 決まらない：下の 行で 答える {g2["bar"]}）')
+        pg.locator('#cbOv .cbact [data-cb=effno]').click(); idle(pg)
+        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '1777', '下の 行の「使わない」は すぐ 押せる（手札は そのまま）')
+        pg.evaluate("() => { CBApp._guard = 0; }")
 
         print('■ 5：2ターン目・3ターン目でも 使える（第4.177版：使った あとの 手札が のこりの ターンの 数より 少なく ならない とき）')
         start(pg, '55123', '12346', '2k'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
