@@ -714,6 +714,7 @@
         var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? 'set' : 'wait';
         if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
         else if (s === 'rev') { if (click('#cbOv [data-cb=revyes]')) { n++; kinds.rev = (kinds.rev || 0) + 1; } }      // 第4.178版：逆転勝利（1・2 の 効果）を 聞かれたら 使う
+        else if (s === 'u5') { if (click('#cbOv [data-cb=u5no]')) { n++; kinds.u5 = (kinds.u5 || 0) + 1; } }      // 第4.183版：4 の 効果で 交換して 5 を 出した → 5 の 効果は 使わない
         else if (s === 'eff') { if (click('#cbOv [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
         else if (s === 'swap' || s === 'set') {
           if (!T.modOn()) click('#cbOv .cbhand .cbc');

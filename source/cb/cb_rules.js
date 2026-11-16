@@ -36,12 +36,16 @@
 //       2人とも 使わない ときは いまも かぶり・1人 だけ 使う ときは 相手が 交換（前と 同じ）
 //     ・「お互いにカードの効果は、カードを伏せてセットしてから、効果を使うか使わないか申告して、オープンする」→ 姫が 聞いた
 //       （効果が ない 人にも 毎ターン 聞く？・神様馬／幻の馬も 伏せて から？）→「いまの流れのままでOK」＝ 流れは 下の まま
+//   まさちゃんの 直し（第4.183版・2026/11/16 21:24「バトルカード、4で交換したあとに5を相手がフィールドにセットした場合、五の効果を使える」）：
+//     ・相手の 4 の 効果で 交換して 5 を セットした 人は、5 の 効果を 使うか えらべる（phase 'u5'：オープンの 前。使える 条件は いつもの 5 と 同じ＝can5）。
+//       使う → 5 と 手札 1まいを 捨てて、山札の 上を ふせて セット（いつもの 5 と 同じ：u5 の できごと）→ オープン。使わない（u5skip）→ そのまま オープン
+//     ・姫が 決めた 所：相手には「交換して いる」まま に 見せる（5 を 出した ことが 聞かれ方で わからない ように：view の phase・pend を 'swap'、ask5・u5skip は わたさない）
 //
 //   1ターンの 流れ：
 //     （はじめ：前の ターンに 神様馬／幻の馬で 勝った 人が 効果を 使うか 決める＝phase 'pre'）
 //     → セット（2人とも 1まい ずつ ふせる。出したら 確定＝phase 'set'）
 //     → 効果タイム（使える 効果が ある 人が 使うか 決める。2人とも 決めて から いっしょに 行う＝phase 'eff'。だれも 使える 効果が なければ とばす）
-//     → （4 の 効果が 出たら 相手が 交換＝phase 'swap'。2人とも 4 の 効果なら 打ち消して ドロー：第4.181版）→ オープン
+//     → （4 の 効果が 出たら 相手が 交換＝phase 'swap'。2人とも 4 の 効果なら 打ち消して ドロー：第4.181版。交換で 5 を 出したら 5 の 効果を 使うか＝phase 'u5'：第4.183版）→ オープン
 //     → （負けた 人が 1・2 の「逆転勝利」を 使える なら、使うか 決める＝phase 'rev'。勝ち負けを 数えるのは 決めた あと）→ 捨て札へ → 次の ターン
 //
 //   姫が 決めた 所（ルールの 文に ない 所。README と 報告に 書く）：
@@ -74,7 +78,7 @@
 //     CBRules.newGame(rng, opt) → S（対戦の 中身 ぜんぶ：ホスト だけが 持つ）   opt.hands＝[[手札],[手札]]・opt.deck＝[上から …]・opt.turns＝ターンの 数（どれも テスト用：ふだんは 7まい・5ターン）
 //     CBRules.act(S, i, a)      → { ok, why, ev }：プレイヤー i（0／1）の 手 a を S に 入れる（ev＝おきた こと）
 //        a＝{ t:'set', u } ／ { t:'eff', use:{ p6:見る カード, u5:捨てる カード, x7:true, x3:true, u4:true }（使う もの だけ。使わない＝null か {}）} ／ { t:'swap', u } ／
-//           { t:'k', pick:u|null } ／ { t:'m', drop:[u,u]|null } ／ { t:'rev', use:true|false }（逆転勝利）
+//           { t:'k', pick:u|null } ／ { t:'m', drop:[u,u]|null } ／ { t:'rev', use:true|false }（逆転勝利）／ { t:'u5', drop:u|null }（交換で 出した 5 の 効果：第4.183版）
 //     CBRules.view(S, i)        → プレイヤー i に 見せて いい こと だけ（相手の 手札・ふせた カードは 見えない）
 //     CBRules.evFor(ev, i)      → おきた こと の うち、プレイヤー i に 見せて いい 形
 const CBRules = (() => {
@@ -136,6 +140,8 @@ const CBRules = (() => {
     };
   }
   const any = c => c.e6 || c.e5 || c.e7 || c.e3 || c.e4;
+  // 5 の 効果を 使えるか（第4.183版：4 の 効果で 交換して 出した 5）：ふせて いる 5・手札 1まい 以上・使った あとの 手札が のこりの ターンの 数より 少なく ならない・山札が ある
+  const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1; };
   // 逆転勝利（第4.178版）を 使える 人の 席（いなければ null）。r＝オープンして ふつうに くらべた 結果（0／1＝勝った 席）
   //   負けた 人の 場の カードが 1（相手＝神様馬・幻の馬）か 2（相手＝1）・手札に 同じ 数字が 2まい 以上（場と 合わせて 3まい）・1まい 捨てても のこりの ターンに 足りる
   function revWho(S, r) {
@@ -188,6 +194,22 @@ const CBRules = (() => {
       P.set = { c: c, up: false, blind: false, open: false };
       S.pend = null;
       ev.push({ e: 'swap', who: i, u: c.u, back: old.u });
+      // 第4.183版：交換で 5 を セットした → 5 の 効果を 使えるなら、使うか 聞く（オープンは その あと）
+      if (can5(S, i)) { S.phase = 'u5'; S.pend = { type: 'u5', who: i }; ev.push({ e: 'ask5', who: i }); return { ok: true, ev: ev }; }
+      open(S, ev);
+      return { ok: true, ev: ev };
+    }
+    if (a.t === 'u5') {                                  // 第4.183版：交換で 出した 5 の 効果（drop＝いっしょに 捨てる 手札・null＝使わない）
+      if (S.phase !== 'u5' || !S.pend || S.pend.type !== 'u5' || S.pend.who !== i) return bad('u5');
+      if (a.drop == null) ev.push({ e: 'u5skip', who: i });
+      else {
+        const d = idx(P.hand, a.drop); if (d < 0 || !can5(S, i)) return bad('drop');
+        const five = P.set.c, drop = P.hand.splice(d, 1)[0];
+        toss(S, five, i, '5'); toss(S, drop, i, '5');
+        P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
+        ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k }, sw: true });
+      }
+      S.pend = null;
       open(S, ev);
       return { ok: true, ev: ev };
     }
@@ -360,13 +382,14 @@ const CBRules = (() => {
       return o;
     };
     const ce = S.phase === 'eff' && P.eff && !P.eff.done ? P.eff.can : null;
+    const hide5 = S.phase === 'u5' && !!S.pend && S.pend.who !== i;      // 第4.183版：相手が 交換で 出した 5 の 効果を えらんで いる ＝ この 人には「交換して いる」に 見せる
     return {
-      v: 3, me: i, turn: S.turn, turns: S.turns, phase: S.phase, deckN: S.deck.length,
+      v: 3, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length,
       discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
       my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
       op: { hand: Q.hand.map(c => ({ u: c.u, k: P.known.indexOf(c.u) >= 0 ? c.k : null })), set: setOf(Q, false), wins: Q.wins },
       can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e3: ce.e3, e4: ce.e4 } : null },
-      pend: S.pend ? { type: S.pend.type, mine: S.pend.who === i } : null,
+      pend: S.pend ? { type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev, d4: !!S.last.d4 } : null,
       res: S.phase === 'end' ? (S.res === 'draw' ? 'draw' : S.res === i ? 'win' : 'lose') : null
@@ -375,7 +398,7 @@ const CBRules = (() => {
 
   // おきた こと を プレイヤー i に 見せて いい 形に（who は「自分か」に する：me）
   function evFor(ev, i) {
-    return ev.map(x => {
+    return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip') && x.who !== i)).map(x => {      // 第4.183版：交換で 出した 5 を 聞いた・使わなかった ことは 相手に わたさない
       const o = { e: x.e };
       if (x.who != null) o.me = x.who === i;
       if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; }

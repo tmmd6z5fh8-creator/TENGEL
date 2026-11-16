@@ -11,6 +11,8 @@
 //         3 が 3まい（第4.177版）→ 1ターン目は 3回に 1回・2ターン目からは 半分 ほど 使う（3 を 1まい わたして 相手の 手札を くじで 1まい もらう：手の 内を 見せる ので 毎回は 使わない）／
 //         4 を セットして いる → 1ターン目は 使わない・とちゅうの ターンは 半分・さいごの ターンは 使う（相手の 手札が 少ない ほど 効く）
 //     ・交換（相手の 4 の 効果）：4 に 勝てる カードの 中で 1番 弱い もの。なければ 4（かぶって どちらも 負け）。それも なければ 1番 弱い カード
+//         第4.183版：4 も なくて 5 の 効果を 使える（手札 − 1 が のこりの ターンの 数 以上・山札が ある）なら 5（交換で 出した 5 の 効果で 山札から 出す）。
+//         交換で 出した 5 の 効果は いつも 使う（4 には 5 で 勝てない：山札の カードに かける）。捨てるのは 1番 弱い 手札
 //     ・神様馬の 効果（次の ターンの はじめ）：まだ 知らない カードを 見る（第4.178版：知らない カードが ない ときは 聞かれない。見るのは 知らない カード だけ）／
 //         幻の馬の 効果：弱い 方から 2まい 捨てる（のこりの ターンで 出さない カード）
 //     ・逆転勝利（第4.178版：1 で 神様馬・幻の馬に／2 で 1 に 負けた とき、手札に 同じ 数字が 2まい あれば 使える）：使える ときは いつも 使う
@@ -29,8 +31,10 @@ const CBCpu = (() => {
         const s = byStrong(hand), win = s.filter(c => power(c.k) < 4);
         if (win.length) return { t: 'swap', u: win[win.length - 1].u };
         const four = s.find(c => c.k === '4'); if (four) return { t: 'swap', u: four.u };
+        const five = s.find(c => c.k === '5'); if (five && hand.length - 1 >= v.turns - v.turn && v.deckN >= 1) return { t: 'swap', u: five.u };      // 第4.183版
         return { t: 'swap', u: s[s.length - 1].u };
       }
+      if (v.pend.type === 'u5') { const s = byStrong(hand); return { t: 'u5', drop: s.length ? s[s.length - 1].u : null }; }      // 第4.183版：交換で 出した 5 の 効果
       if (v.pend.type === 'k') {
         const un = opHand.filter(c => c.k == null);
         return { t: 'k', pick: un.length ? pick(un, rng).u : null };

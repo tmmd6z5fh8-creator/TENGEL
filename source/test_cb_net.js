@@ -5,6 +5,7 @@
 //     ・もう 1回・やめる・切れた・版が ちがう
 //   コンピュータとの 対戦：画面の 動きが 終わって（idle）から 考える・もう 1回
 //   第4.179版：部屋の 決まり（参加コイン・勝者の 獲得コイン）：ホストの あいさつに 入る → ゲストが「参加する」（join）と 答えて から 配る・数字の はんい（stakeOf）
+//   第4.183版：部屋の あいさつに おたがいの デザイン（dz）・こわれた デザインは すてる・PROTO 6（ルールが かわった：4 の 効果で 交換して 5 を 出したら 5 の 効果）
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
 let fails = [];
@@ -53,7 +54,7 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 5 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 6 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
       && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
       'はじめに おたがいに あいさつ（hello・版の 番号 4）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
     G.join(); await tick(); await tick(); await tick();
@@ -235,6 +236,42 @@ async function playOut(pairs, rng, guard) {
     const w3 = wire(), G3 = N.guest(w3.b), g3 = seat(G3); w3.a.onText = () => { };
     G3.join(); await tick();
     check(w3.log.length === 0 && G3.stake === null, 'あいさつが 届く 前の「参加する」は 送らない');
+  }
+
+  console.log('■ 部屋：それぞれの デザイン（第4.183版・まさちゃん 20:53「②お友達バトルの時は、それぞれがカスタムしている背面デザイン、カードデザインにして！」）');
+  {
+    const w = wire(), rng = rngOf(9);
+    const H = N.host(w.a, rng, null, null, { b: 'sky', f: { k: 'ka', 6: '6a' } }), G = N.guest(w.b, { b: 'star', f: { m: 'mb', 3: '3b' } });
+    const hs = seat(H), gs = seat(G);
+    check(H.opDz === null && G.opDz === null, 'はじめは 相手の デザインは まだ ない（opDz＝null）');
+    H.start(); G.start(); await tick(); await tick(); await tick();
+    const gh = JSON.parse(w.log[0][1]), hh = JSON.parse(w.log[1][1]);
+    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 6 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 6,
+      'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 6（第4.183版：ルールが かわった）');
+    check(JSON.stringify(H.opDz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && JSON.stringify(G.opDz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake',
+      'おたがいの デザインが 届く（match.opDz）・あいさつの 流れは 前と 同じ');
+    G.join(); await tick(); await tick(); await tick();
+    check(hs.ups.length === 1 && gs.ups.length === 1 && hs.ups[0].ev[0].e === 'deal' && !w.log.some(x => JSON.parse(x[1]).t === 'up' && /"dz"/.test(x[1])), '配る ところは 前と 同じ（デザインは あいさつ だけ）');
+    H.leave(); await tick(); await tick();
+  }
+  {
+    // dz を 送らない 相手（同じ 版の 番号）と つなぐ：相手の デザインは いつもの（b ''・f {}）
+    const w = wire();
+    const H = N.host(w.a, rngOf(3), null, null, { b: 'sky', f: { k: 'ka' } }); const hs = seat(H);
+    H.start(); w.b.send(JSON.stringify({ t: 'hello', v: N.PROTO })); await tick(); await tick(); await tick();
+    check(JSON.stringify(H.opDz) === '{"b":"","f":{}}' && hs.states.join() === 'ready' && JSON.parse(w.log[1][1]).t === 'hello' && JSON.parse(w.log[1][1]).dz.b === 'sky',
+      'dz の ない あいさつ → 相手の デザインは いつもの（ホストは 自分の デザインを 送る）');
+    const w2 = wire(), G = N.guest(w2.b, null); seat(G);
+    G.start(); w2.a.send(JSON.stringify({ t: 'hello', v: N.PROTO, stake: { e: 0, w: 0 } })); await tick(); await tick(); await tick();
+    check(JSON.stringify(G.opDz) === '{"b":"","f":{}}' && JSON.stringify(JSON.parse(w2.log[0][1]).dz) === '{"b":"","f":{}}', 'dz の ない ホストとも つながる・デザインを えらんで いない 人は 空の dz');
+  }
+  {
+    const bad = N.dzOf({ b: '<img src=x>', f: { k: 'KA', m: 'ma', x: 'zz', 1: 12, 2: 'a'.repeat(13), 3: '3b', toString: 'x' } });
+    check(JSON.stringify(bad) === '{"b":"","f":{"3":"3b","m":"ma"}}' && JSON.stringify(N.dzOf(null)) === '{"b":"","f":{}}' && JSON.stringify(N.dzOf('sky')) === '{"b":"","f":{}}' && JSON.stringify(N.dzOf({ b: 'ice', f: 'x' })) === '{"b":"ice","f":{}}',
+      'こわれた デザインは すてる（名前は 英小文字・数字 1〜12字・カードの 種類 だけ・文字で ない ものは すてる）');
+    const w = wire(), H = N.host(w.a, rngOf(4)); seat(H);
+    H.start(); w.b.send(JSON.stringify({ t: 'hello', v: N.PROTO, dz: { b: '"><script>', f: { k: 'ka', '__proto__': { b: 1 } } } })); await tick(); await tick();
+    check(JSON.stringify(H.opDz) === '{"b":"","f":{"k":"ka"}}' && ({}).b === undefined, 'ゲストから こわれた デザインが 届いても、形だけ のこす（あやしい 名前は すてる）');
   }
 
   console.log('■ コンピュータと 対戦');
