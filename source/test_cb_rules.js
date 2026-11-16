@@ -6,6 +6,7 @@
 //     3 に 効果（手札に 3 が 3まい → 3まいを 見せて、その 1まいと 相手の 手札の くじで えらんだ 1まいを 交換）・どの 効果も 使うか えらべる
 //   まさちゃんの 直し（第4.178版・2026/11/16 14:43）：5ターン勝負・手札 7まい ／ 6 の 効果は、相手の 手札が もう 見た カード しか ない ときは 発動しない
 //   まさちゃんの 追加（第4.178版・2026/11/16 15:33・15:41「A、オープンしてから」）：逆転勝利 ＝ 1 が 3まい（場 ＋ 手札 2）→ 神様馬・幻の馬に 勝てる ／ 2 が 3まい → 1 に 勝てる（手札の 1まいを 捨てる）
+//   まさちゃんの 直し（第4.181版・2026/11/16 19:05「4をお互いに出して効果を発動した場合、ドローになる」）：2人とも 4 の 効果 → 打ち消して ドロー（前は かぶり＝どちらも 負け）
 //   ＋ 見せて いい こと だけを 渡して いるか（相手の 手札・ふせた カード）・でたらめに 2万回 あそんでも カードが 30まいの まま か
 const R = require('./cb/cb_rules.js'), C = require('./cb/cb_cpu.js');
 let fails = [];
@@ -281,7 +282,19 @@ console.log('■ 4：最初に 公開すると、相手は セットした カ�
   check(r2.ok && names(r2) === 'swap,open,clear,turn' && r2.ev[1].c.map(x => x.k).join('') === '45' && r2.ev[1].res === 0 && S.p[0].wins === 1 && ks(S.p[1].hand).split('').sort().join('') === '1677',
     '相手は 1 を 手札に もどして 5 を 出した → 4 と 5 で 4 の 勝ち（もどした 1 は 手札に のこる）');
   const B = G('41236', '41567'); set(B, 0, '4'); set(B, 1, '4'); eff(B, 0, { u4: true }); const rb = eff(B, 1, { u4: true });
-  check(names(rb) === 'effd,first2,open,clear,turn' && rb.ev[2].res === 'clash' && B.p[0].wins === 0 && B.p[1].wins === 0, '両方が 4 の 効果を 使った → 打ち消し（交換なし）→ 4 と 4 で どちらも 負け');
+  const eb1 = R.evFor(rb.ev, 1)[2], vb0 = R.view(B, 0), vb1 = R.view(B, 1);
+  check(names(rb) === 'effd,first2,open,clear,turn' && rb.ev[2].res === 'tie' && rb.ev[2].d4 === true && rb.ev[2].c.map(x => x.k).join('') === '44' && B.p[0].wins === 0 && B.p[1].wins === 0
+    && B.last.res === 'tie' && B.last.d4 === true && vb0.last.res === 'tie' && vb0.last.d4 === true && vb1.last.res === 'tie' && vb1.last.d4 === true && eb1.res === 'tie' && eb1.d4 === true && !B.win && B.turn === 2 && B.phase === 'set',
+    '両方が 4 の 効果を 使った → 打ち消し（交換なし）→ ドロー（第4.181版：どちらの 勝ちにも 数えない・2人の 画面にも「4 の 効果で ドロー」と わたる。前は 4 と 4 の かぶり＝どちらも 負け）');
+  const B0 = G('41236', '41567'); set(B0, 0, '4'); set(B0, 1, '4'); eff(B0, 0, null); const rb0 = eff(B0, 1, null);
+  check(names(rb0) === 'effd,open,clear,turn' && rb0.ev[1].res === 'clash' && rb0.ev[1].d4 === undefined && B0.last.d4 === false && R.view(B0, 0).last.d4 === false && B0.p[0].wins === 0 && B0.p[1].wins === 0,
+    '2人とも 4 を 出して、2人とも 効果を 使わない → いままで どおり かぶり（どちらも 負け）');
+  const B1 = G('41236', '41567'); set(B1, 0, '4'); set(B1, 1, '4'); eff(B1, 1, { u4: true }); eff(B1, 0, null);
+  check(B1.phase === 'swap' && B1.pend.who === 0, '2人とも 4 を 出して、1人 だけ 効果を 使う → 使わなかった 人が 交換する（前と 同じ）');
+  const r1 = R.act(B1, 0, { t: 'swap', u: U(B1, 0, '1') });
+  check(r1.ok && r1.ev[1].res === 0 && !r1.ev[1].d4 && B1.p[0].wins === 1, '交換して 1 を 出した → 1 の 勝ち（ドローに ならない）');
+  const L4 = G('41', '42', '', 1); set(L4, 0, '4'); set(L4, 1, '4'); eff(L4, 0, { u4: true }); const rl = eff(L4, 1, { u4: true });
+  check(rl.ok && L4.phase === 'end' && L4.res === 'draw' && rl.ev.some(e => e.e === 'open' && e.d4 && e.res === 'tie'), 'さいごの ターンで 2人とも 4 の 効果 → ドロー（勝ち 0 対 0 → 同点）');
   const N = G('41236', '15677'); set(N, 0, '4'); set(N, 1, '1'); const rn = eff(N, 0, null);
   check(names(rn) === 'effd,open,clear,turn' && rn.ev[1].res === 1, '効果を 使わなければ ふつうに オープン（4 と 1 → 1 の 勝ち）');
   const F = G('66123', '12347'); set(F, 0, '1'); set(F, 1, '2'); check(eff(F, 0, { u4: true }).why === 'e4' && F.phase === 'eff', '4 を セットして いない 人が「4 の 効果」と 言っても 受けつけない');
@@ -603,7 +616,7 @@ function rndUse(v, rng) {
 
 console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも こわれない）');
 {
-  const rng = rngOf(20261115); let bad = 0, n = 0, st = { rev: 0, revskip: 0, revk: { 1: 0, 2: 0 }, revbeat: { k: 0, m: 0, 1: 0 }, fin: 0, revq: 0, efft: 0, x7: 0, p6: 0, u5: 0, x3: 0, both57: 0, both53: 0, u5t: [0, 0, 0, 0, 0, 0], x3t: [0, 0, 0, 0, 0, 0], u5n: [0, 0, 0, 0], no6: 0, nok: 0, first: 0, first2: 0, swap: 0, pre: 0, k: 0, m: 0, fizz: 0, clash: 0, tie: 0, win0: 0, win1: 0, draw: 0 };
+  const rng = rngOf(20261115); let bad = 0, n = 0, st = { rev: 0, revskip: 0, revk: { 1: 0, 2: 0 }, revbeat: { k: 0, m: 0, 1: 0 }, fin: 0, revq: 0, efft: 0, x7: 0, p6: 0, u5: 0, x3: 0, both57: 0, both53: 0, u5t: [0, 0, 0, 0, 0, 0], x3t: [0, 0, 0, 0, 0, 0], u5n: [0, 0, 0, 0], no6: 0, nok: 0, first: 0, first2: 0, d4: 0, d4bad: 0, swap: 0, pre: 0, k: 0, m: 0, fizz: 0, clash: 0, tie: 0, win0: 0, win1: 0, draw: 0 };
   for (let g = 0; g < 20000; g++) {
     const S = R.newGame(rng); let guard = 0;
     while (S.phase !== 'end' && guard++ < 200) {
@@ -629,7 +642,7 @@ console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも 
       const r = R.act(S, i, a, rng);
       if (!r.ok) { bad++; break; }
       r.ev.forEach(e => { if (e.e === 'u5') S.p[e.who].u5n = (S.p[e.who].u5n || 0) + 1; });
-      r.ev.forEach(e => { if (typeof st[e.e] === 'number') st[e.e]++; if (e.e === 'u5') st.u5t[tn]++; if (e.e === 'x3') st.x3t[tn]++; if (e.e === 'open') { if (e.res === 'clash') st.clash++; if (e.res === 'tie') st.tie++; if (e.rev != null) st.revq++; }
+      r.ev.forEach(e => { if (typeof st[e.e] === 'number') st[e.e]++; if (e.e === 'u5') st.u5t[tn]++; if (e.e === 'x3') st.x3t[tn]++; if (e.e === 'open') { if (e.res === 'clash') st.clash++; if (e.res === 'tie') st.tie++; if (e.rev != null) st.revq++; if (e.d4) { st.d4++; if (e.res !== 'tie' || e.c[0].k !== '4' || e.c[1].k !== '4' || e.rev != null) st.d4bad++; } }
         if (e.e === 'rev') { st.revk[e.k]++; st.revbeat[e.beat]++; } });
       // 逆転勝利：使った → 聞かれた 人の 勝ち・手札が 1まい へる ／ 使わない → 相手の 勝ち・手札は そのまま（どちらも 勝ちは 1つ だけ ふえる）
       if (t === 'rev') { const dw = [S.p[0].wins - w0[0], S.p[1].wins - w0[1]]; if (dw[i] !== (a.use ? 1 : 0) || dw[1 - i] !== (a.use ? 0 : 1) || P.hand.length !== hn - (a.use ? 1 : 0)) { bad++; break; } }
@@ -647,8 +660,8 @@ console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも 
     st[S.res === 'draw' ? 'draw' : 'win' + S.res]++; n++;
   }
   check(bad === 0 && n === 20000, `2万回：ぜんぶ 5ターンで おわる・カードは いつも 30まい・打てる と 言った 手は ぜんぶ 通る・止まらない（おかしい ${bad}）`);
-  check(st.efft > 5000 && st.x7 > 50 && st.p6 > 500 && st.u5 > 1000 && st.x3 > 50 && st.first > 500 && st.first2 > 20 && st.swap > 500 && st.pre > 2000 && st.k > 500 && st.m > 500 && st.clash > 2000 && st.tie > 3 && st.fizz === 0,
-    `効果も ぜんぶ 出た（効果タイム ${st.efft}・7 ${st.x7}・6 ${st.p6}・5 ${st.u5}・3 ${st.x3}・5 と 7 を いっしょに ${st.both57}・5 と 3 を いっしょに ${st.both53}・4 ${st.first}・4 の 打ち消し ${st.first2}・交換 ${st.swap}・神様馬 ${st.k}・幻の馬 ${st.m}・かぶり ${st.clash}・引き分け ${st.tie}・不発 ${st.fizz}）`);
+  check(st.efft > 5000 && st.x7 > 50 && st.p6 > 500 && st.u5 > 1000 && st.x3 > 50 && st.first > 500 && st.first2 > 20 && st.d4 === st.first2 && st.d4bad === 0 && st.swap > 500 && st.pre > 2000 && st.k > 500 && st.m > 500 && st.clash > 2000 && st.tie > 3 && st.fizz === 0,
+    `効果も ぜんぶ 出た（効果タイム ${st.efft}・7 ${st.x7}・6 ${st.p6}・5 ${st.u5}・3 ${st.x3}・5 と 7 を いっしょに ${st.both57}・5 と 3 を いっしょに ${st.both53}・4 ${st.first}・4 の 打ち消し ${st.first2}（→ ドロー ${st.d4}）・交換 ${st.swap}・神様馬 ${st.k}・幻の馬 ${st.m}・かぶり ${st.clash}・引き分け ${st.tie}・不発 ${st.fizz}）`);
   check(st.u5t.slice(1).every(q => q > 300) && st.x3t[1] > 20 && st.x3t[2] > 5 && st.x3t[5] === 0 && st.u5n[3] === 0 && st.u5n[2] > 100,
     `5 の 効果は どの ターンでも 出た（1〜5ターン目 ${st.u5t.slice(1).join('・')}）・1人が 1回の 対戦で 使った 回数は 2回 まで（0回 ${st.u5n[0]}・1回 ${st.u5n[1]}・2回 ${st.u5n[2]}・3回 ${st.u5n[3]}：手札 7まい・5ターン＝よぶんは 2まい）・`
     + `3 の 効果は 1〜4ターン目（${st.x3t.slice(1, 5).join('・')}：5ターン目は 手札が 2まい まで なので 出ない ${st.x3t[5]}）`);

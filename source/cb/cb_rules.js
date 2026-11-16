@@ -30,12 +30,18 @@
 //     ・使う とき（姫が 聞いた：A＝オープンした あと／B＝効果タイム）→ まさちゃん 15:41「A、オープンしてから」
 //       ＝オープンして 負けた 人が、場に 出した 1（相手＝神様馬・幻の馬）か 2（相手＝1）と 同じ 数字を 手札に 2まい 以上 持って いたら「使う？」と 聞く（phase 'rev'）。
 //         使う → 手札の 2まいを 相手に 見せて（場の 1まいと 合わせて 3まい）、その 1まいを 捨てる → その ターンは 勝ち
+//   まさちゃんの 直し（第4.181版・2026/11/16 19:05）：
+//     ・「4をお互いに出して効果を発動した場合、ドローになる」→ 2人とも 4 を セットして 2人とも 4 の 効果を 使ったら、打ち消し（交換なし）→ その ターンは ドロー
+//       （引き分け＝'tie'：どちらの 勝ちにも 数えない。open の ev と S.last に d4）。前は 4 と 4 の かぶり（どちらも 負け）。
+//       2人とも 使わない ときは いまも かぶり・1人 だけ 使う ときは 相手が 交換（前と 同じ）
+//     ・「お互いにカードの効果は、カードを伏せてセットしてから、効果を使うか使わないか申告して、オープンする」→ 姫が 聞いた
+//       （効果が ない 人にも 毎ターン 聞く？・神様馬／幻の馬も 伏せて から？）→「いまの流れのままでOK」＝ 流れは 下の まま
 //
 //   1ターンの 流れ：
 //     （はじめ：前の ターンに 神様馬／幻の馬で 勝った 人が 効果を 使うか 決める＝phase 'pre'）
 //     → セット（2人とも 1まい ずつ ふせる。出したら 確定＝phase 'set'）
 //     → 効果タイム（使える 効果が ある 人が 使うか 決める。2人とも 決めて から いっしょに 行う＝phase 'eff'。だれも 使える 効果が なければ とばす）
-//     → （4 の 効果が 出たら 相手が 交換＝phase 'swap'）→ オープン
+//     → （4 の 効果が 出たら 相手が 交換＝phase 'swap'。2人とも 4 の 効果なら 打ち消して ドロー：第4.181版）→ オープン
 //     → （負けた 人が 1・2 の「逆転勝利」を 使える なら、使うか 決める＝phase 'rev'。勝ち負けを 数えるのは 決めた あと）→ 捨て札へ → 次の ターン
 //
 //   姫が 決めた 所（ルールの 文に ない 所。README と 報告に 書く）：
@@ -53,7 +59,7 @@
 //         ＝ 使った あとの 手札（手札 − 1）が、のこりの ターンで 出す 数より 少なく ならない とき だけ 使える（さいごの ターンは 手札が 1まい あれば 使える：まさちゃんの 例）。
 //         手札 7まい・5ターン ＝ よぶんは 2まい → 5 の 効果は ふつう 1回の 対戦で 2回 まで（ほかの 効果で 手札が ふえて いなければ）。
 //         山札から 来た カードは オープンまで だれにも 見えない（自分にも）。捨てた 5 と 手札は 捨て札で 2人とも 見える（＝5 は 表に なる）
-//     ・4：両方が 4 の 効果を 使ったら 打ち消し（交換なし → 4 と 4 で どちらも 負け）。交換で もどった カードは 手札に 入る
+//     ・4：両方が 4 の 効果を 使ったら 打ち消し（交換なし）→ 第4.181版から その ターンは ドロー（前は 4 と 4 で どちらも 負け）。交換で もどった カードは 手札に 入る
 //     ・神様馬・幻の馬の 効果は 使わなくても いい。さいごの ターンに 勝った ときは 出ない（次の ターンが ない）。幻の馬は ちょうど 2まい 捨てて 引ける だけ（2まい まで）引く
 //     ・「見た カード」は その カードが 相手の 手札に ある あいだ 覚えて いる（そのカードが 場に 出たら、場の カードが 何か わかる）
 //     ・逆転勝利（1・2：第4.178版）：
@@ -289,7 +295,7 @@ const CBRules = (() => {
     });
     S.p.forEach(P => { P.eff = null; });
     const A = S.p[0], B = S.p[1], f0 = U[0].u4 && A.set.c.k === '4', f1 = U[1].u4 && B.set.c.k === '4';      // 4：先に 見せて、相手に 交換させる
-    if (f0 && f1) { A.set.up = B.set.up = true; ev.push({ e: 'first2' }); open(S, ev); return; }      // 両方：打ち消し
+    if (f0 && f1) { A.set.up = B.set.up = true; ev.push({ e: 'first2' }); open(S, ev, true); return; }      // 両方：打ち消し → ドロー（第4.181版：まさちゃん 19:05「4をお互いに出して効果を発動した場合、ドローになる」）
     if (f0 || f1) {
       const w = f0 ? 0 : 1, F = S.p[w], O = S.p[1 - w];
       F.set.up = true;
@@ -298,8 +304,9 @@ const CBRules = (() => {
     }
     open(S, ev);
   }
-  function open(S, ev) {
-    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = compare(c0.k, c1.k), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];
+  // d4＝2人とも 4 の 効果を 使った（第4.181版：くらべずに ドロー＝'tie'。逆転勝利も 出ない）
+  function open(S, ev, d4) {
+    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];
     S.p.forEach(P => { P.set.up = true; P.set.blind = false; P.set.open = true; P.eff = null; });
     const rv = revWho(S, r);
     if (rv != null) {                                    // 逆転勝利（第4.178版）：負けた 人が 使うか 決める まで、勝ち負けは 数えない（wins は 前の まま・rev＝聞かれる 席）
@@ -307,15 +314,15 @@ const CBRules = (() => {
       ev.push({ e: 'open', turn: S.turn, c: cs, res: r, wins: [S.p[0].wins, S.p[1].wins], rev: rv });
       return;
     }
-    score(S, r, false);
-    ev.push({ e: 'open', turn: S.turn, c: cs, res: r, wins: [S.p[0].wins, S.p[1].wins] });
+    score(S, r, false, d4);
+    ev.push(Object.assign({ e: 'open', turn: S.turn, c: cs, res: r, wins: [S.p[0].wins, S.p[1].wins] }, d4 ? { d4: true } : {}));
     endTurn(S, ev);
   }
-  // この ターンの 勝ち負けを 数える（r＝0／1＝勝った 席・'clash'・'tie'。rev＝逆転勝利で 決まった）
-  function score(S, r, rev) {
+  // この ターンの 勝ち負けを 数える（r＝0／1＝勝った 席・'clash'・'tie'。rev＝逆転勝利で 決まった・d4＝2人とも 4 の 効果で ドロー：第4.181版）
+  function score(S, r, rev, d4) {
     const c0 = S.p[0].set.c, c1 = S.p[1].set.c;
     if (r === 0 || r === 1) S.p[r].wins += 1;
-    S.last = { turn: S.turn, c: [c0.k, c1.k], res: r, rev: !!rev };
+    S.last = { turn: S.turn, c: [c0.k, c1.k], res: r, rev: !!rev, d4: !!d4 };
     // 神様馬・幻の馬で 勝った：次の ターンの はじめに 効果を 使うか 決める（さいごの ターンは 次が ない ので 出ない。逆転で 負けた ときは 勝って いない ので 出ない）
     S.win = null;
     if ((r === 0 || r === 1) && S.turn < S.turns) { const wk = r === 0 ? c0.k : c1.k; if (wk === 'k' || wk === 'm') S.win = { type: wk, who: r }; }
@@ -361,7 +368,7 @@ const CBRules = (() => {
       can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e3: ce.e3, e4: ce.e4 } : null },
       pend: S.pend ? { type: S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (!!S.pend && S.pend.who !== i),
-      last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev } : null,
+      last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev, d4: !!S.last.d4 } : null,
       res: S.phase === 'end' ? (S.res === 'draw' ? 'draw' : S.res === i ? 'win' : 'lose') : null
     };
   }
@@ -378,7 +385,7 @@ const CBRules = (() => {
       else if (x.e === 'u5') { o.five = x.five; o.drop = x.drop; }
       else if (x.e === 'x3') { o.three = x.three; o.give = x.give; o.take = x.take; }      // 見せた 3まい・わたした 3・もらった カード：2人とも 知って いる（もらった カードは もとの 持ち主も 知って いる）
       else if (x.e === 'fizz') o.k = x.k;
-      else if (x.e === 'open') { o.turn = x.turn; o.my = x.c[i]; o.op = x.c[1 - i]; o.res = x.res === 0 || x.res === 1 ? (x.res === i ? 'win' : 'lose') : x.res; o.wins = [x.wins[i], x.wins[1 - i]]; if (x.rev != null) o.rev = x.rev === i ? 'me' : 'op'; }      // rev＝逆転勝利を 使えるのは 自分か 相手か（ある とき：勝ち負けは まだ 決まって いない）
+      else if (x.e === 'open') { o.turn = x.turn; o.my = x.c[i]; o.op = x.c[1 - i]; o.res = x.res === 0 || x.res === 1 ? (x.res === i ? 'win' : 'lose') : x.res; o.wins = [x.wins[i], x.wins[1 - i]]; if (x.rev != null) o.rev = x.rev === i ? 'me' : 'op'; if (x.d4) o.d4 = true; }      // rev＝逆転勝利を 使えるのは 自分か 相手か（ある とき：勝ち負けは まだ 決まって いない）
       else if (x.e === 'rev') { o.k = x.k; o.show = x.show; o.drop = x.drop; o.beat = x.beat; }      // 逆転勝利：見せた 2まい・捨てた 1まいは 2人とも 見える
       else if (x.e === 'fin') { o.turn = x.turn; o.res = x.res === i ? 'win' : 'lose'; o.wins = [x.wins[i], x.wins[1 - i]]; o.rev = !!x.rev; }
       else if (x.e === 'pre') o.type = x.type;

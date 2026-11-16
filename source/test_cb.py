@@ -268,7 +268,7 @@ try:
         shot(pg, 'cb_menu')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         ht = pg.locator('#cbOv .cbhelp .bd').inner_text()
-        need = ['手札は 7まい。5ターンで 勝負', '5ターン 終わって', '2まいは 使わずに のこるよ', '強い カードの 勝ち', '勝った 数が 多い 人の 勝ち', '神様馬と 幻の馬が いちばん 強い', '1 が いちばん 強くて、7 が いちばん 弱い', '「かぶり」＝どちらも 負け', '1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい',
+        need = ['手札は 7まい。5ターンで 勝負', '5ターン 終わって', '2まいは 使わずに のこるよ', '強い カードの 勝ち', '勝った 数が 多い 人の 勝ち', '神様馬と 幻の馬が いちばん 強い', '1 が いちばん 強くて、7 が いちばん 弱い', '「かぶり」＝どちらも 負け', '4 どうしで 2人とも 4 の 効果を 使った ときは ドロー', '2人とも 4 を 出して、2人とも 効果を 使ったら、打ち消して その ターンは ドロー', '1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい',
                 '① セット', 'セットしたら もう 変えられない', '② 効果タイム', '2人とも セットしたら、使える 効果が ある 人に「効果を 使う？」と 聞くよ', '③ オープン', '次の ターンの はじめに、使うか えらぶよ', '効果が 出る 順番は 6 → 5 → 7 → 3 → 4', '「使う」「使わない」は 自分で えらべる', '使うか 使わないかは 自分で えらべる',
                 '終わった ターンの 捨て札', '効果で 捨てた カード',
                 '7：3まい そろえて 交換', '6：2まい 見せて 手札を 見る', '5：2まい 捨てて 山札から セット', 'のこりの ターンの 数より 少なく ならない とき', 'さいごの ターンは、手札が 1まい あれば 使える', '4：見せて 強制交換',
@@ -552,6 +552,24 @@ try:
         pg.locator('#cbOv .cbmod [data-cb=swap]').click(); idle(pg)
         seen = pg.evaluate("() => window.__seen")
         check(any('負け…' in s for s in seen) and pg.evaluate(HAND) == '1677' and pg.evaluate(V)['op']['wins'] == 1, f'5 と 交換（1 は 手札に もどる）→ 4 と 5 で 負け（手札 {pg.evaluate(HAND)}）')
+
+        # 第4.181版（まさちゃん 19:05「4をお互いに出して効果を発動した場合、ドローになる」）：2人とも 4 → 2人とも 効果を 使う → 打ち消して ドロー
+        start(pg, '41236', '41567'); play(pg, '4'); opp(pg, {'t': 'set', 'k': 4})
+        check(asked(pg) == ['4 の 効果を 使う？', '4 を 見せて、相手に カードを 交換させるよ'], '2人とも 4 を セット → 自分にも「4 の 効果を 使う？」')
+        opp(pg, {'t': 'eff', 'use': {'u4': True}}); said(pg)
+        pg.evaluate("""() => { window.__seen = []; window.__cls = []; const m = document.querySelector('#cbOv .cbmod');
+          const mo = new MutationObserver(() => { const r = m.querySelector('.cbres.on'); if (m.classList.contains('cbopen') && r) window.__cls.push(['my', 'op'].map(x => m.querySelector('[data-sd=' + x + ']').className).join('|')); });
+          mo.observe(m, { childList: true, subtree: true, attributes: true }); window.__mo4 = mo; }""")
+        pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
+        seen = pg.evaluate("() => window.__seen"); sd = said(pg); cls = pg.evaluate("() => { window.__mo4.disconnect(); return window.__cls; }"); v = pg.evaluate(V)
+        check(any('ドロー！' in x and 'どちらも 4 の 効果を 使った ので 引き分け' in x for x in seen) and any('どちらも 4 の 効果 → 打ち消して ドロー' in x for x in sd)
+              and v['turn'] == 2 and v['my']['wins'] == 0 and v['op']['wins'] == 0 and v['last']['res'] == 'tie' and v['last']['d4'] is True and pg.evaluate(PIPS) == '0-0' and pg.evaluate(HAND) == '1236',
+              f'2人とも 4 の 効果を 使った →「4 の 効果！ どちらも 4 の 効果 → 打ち消して ドロー」→ オープンは「ドロー！ どちらも 4 の 効果を 使った ので 引き分け」（しるしは ふえない・交換なし：手札 {pg.evaluate(HAND)}）')
+        check(bool(cls) and all('ls' not in c.split('|')[0].split() and 'ls' not in c.split('|')[1].split() for c in cls), f'ドローの ときは どちらの カードも 暗く しない（{cls[-1] if cls else None}）')
+        start(pg, '41236', '41567'); play(pg, '4'); opp(pg, {'t': 'set', 'k': 4}); opp(pg, {'t': 'eff', 'use': {}})
+        pg.evaluate("() => { window.__seen = []; }")
+        pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
+        check(any('かぶり！' in x and '同じ カード（4）＝どちらも 負け' in x for x in pg.evaluate("() => window.__seen")) and pg.evaluate(V)['last']['d4'] is False, '2人とも 4 で、2人とも 効果を 使わない → いままで どおり「かぶり！ どちらも 負け」')
 
         print('■ 効果タイム：使える 効果が 2つ（5 と 7）→ 1つ ずつ 聞く')
         start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
@@ -854,7 +872,7 @@ try:
         check(w1 and '1 を 3まい（場の 1まい ＋ 手札の 2まい）見せたよ' in w1[0] and '手札の 1 を 1まい 捨てて、幻の馬に 逆転！' in w1[0] and w1[0].count('cb_s1.webp') == 3 and any(s.startswith('ban:逆転勝利！') and '1 が 幻の馬 に 勝ったよ' in s for s in sd),
               f'「使う」→ 1 の カードを 3まい 見せる 窓 →「逆転勝利！ 1 が 幻の馬 に 勝ったよ」（{w1[0] if w1 else None}）')
         check(v['turn'] == 2 and v['phase'] == 'set' and v['pend'] is None and v['my']['wins'] == 1 and v['op']['wins'] == 0 and pg.evaluate(PIPS) == '0-1' and pg.evaluate(HAND) == '123' and pg.evaluate(DOMHAND) == '123' and pg.locator('#cbOv .cbdis .cbn').inner_text() == '3'
-              and v['last'] == {'turn': 1, 'c': ['1', 'm'], 'res': 'win', 'rev': True} and not any('幻の馬の 効果' in s for s in sd),
+              and v['last'] == {'turn': 1, 'c': ['1', 'm'], 'res': 'win', 'rev': True, 'd4': False} and not any('幻の馬の 効果' in s for s in sd),
               f'勝ちの しるしが 1つ・手札は 1・2・3（1 を 1まい 捨てた）・捨て札 3まい・幻の馬の 効果は 出ない → 2ターン目の セットへ（手札 {pg.evaluate(HAND)}）')
         eye = pg.evaluate("""() => { const es = [...document.querySelectorAll('#cbOv .cbhand .cbc .eye')]; return es.map(e => { const r = e.getBoundingClientRect(), h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), c = e.closest('.cbc'), cr = c.getBoundingClientRect();
           return { k: c.querySelector('img').getAttribute('src'), vis: !!h && (h === e || h === c || c.contains(h)), in: r.left >= cr.left - 4 && r.right <= cr.left + cr.width * 0.62 }; }); }""")
@@ -918,7 +936,7 @@ try:
               f'iPhone SE（375×647）：2 の 逆転勝利の 聞く 窓「…1 に 勝てるよ」も 重ならずに 画面の 中（絵の 幅 {se_["img"][2] - se_["img"][0]}px・下の はし {se_["peek"][3]}／{se_["vh"]}）')
         shot(pg, 'cb_rev_ask_se')
         pg.locator('#cbOv .cbask [data-cb=revyes]').click(); idle(pg)
-        check(pg.evaluate(V)['my']['wins'] == 1 and pg.evaluate(HAND) == '12345' and pg.evaluate(V)['last'] == {'turn': 1, 'c': ['2', '1'], 'res': 'win', 'rev': True}, '2 の 効果を 使う → 1 に 勝ち（手札 7まいの 形）')
+        check(pg.evaluate(V)['my']['wins'] == 1 and pg.evaluate(HAND) == '12345' and pg.evaluate(V)['last'] == {'turn': 1, 'c': ['2', '1'], 'res': 'win', 'rev': True, 'd4': False}, '2 の 効果を 使う → 1 に 勝ち（手札 7まいの 形）')
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(250)
 
         print('■ 結果と ごほうび（お世話トークン）')
