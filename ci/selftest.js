@@ -483,27 +483,17 @@
       await waitFor(function () { return window.CBApp._t.view && window.CBApp._t.idle; }, 20000);
       await sleep(700);
       var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn, turns: v0.turns } : null;
-      // 第4.184版：エフェクト着せ替えの 描く ところを 本物の WebKit で（CI の ビルドには 絵が ない → 光の グラデーション・線 だけ 描かれる）：3まいの canvas・光の 層は スクリーンで 重ねる・終わったら 消える
-      try {
-        var T0 = window.CBApp._t, fxn = T0.efx.log.length;
-        T0.speed(1); T0.fxPlay('shine', true); await sleep(450);
-        var cvs = document.querySelectorAll('#cbOv canvas.cbefx'), cntA = function (c) { var d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, k = 0; for (var i = 3; i < d.length; i += 64) if (d[i] > 8) k++; return k; };
-        out.efx = { n: cvs.length, on: T0.efx.on, blend: cvs[1] ? getComputedStyle(cvs[1]).mixBlendMode : null, l: cvs[1] ? cntA(cvs[1]) : 0, a: cvs[0] ? cntA(cvs[0]) : 0, w: cvs[1] ? cvs[1].width : 0, cw: cvs[1] ? Math.round(cvs[1].getBoundingClientRect().width) : 0 };
-        await waitFor(function () { return !T0.efx.run; }, 10000); await sleep(100);
-        out.efx.after = T0.efx.on; out.efx.log = T0.efx.log.length - fxn; T0.speed(0.2);
-      } catch (e) { out.efx = { err: String(e) }; }
       // 第4.178版：設定（BGM・効果音・エフェクト）の はじめの 形・夜の フィールドの 火の あかり（.cbfire の ゆれ）・BGM（CI の ビルドには 音の ファイルが ない → 鳴らさずに そのまま 進む）
+      // 第4.185版：設定は BGM・効果音 だけ（エフェクトは なくした：sets に fx が ない・窓に エフェクトの ボタンが ない）・プレイボードは いつもの 絵（cb_board.webp：cust なし）
       try {
         var se0 = window.CBApp._t.sets, bg0 = window.CBApp._t.bgm;
-        out.sets = { bgm: se0.bgm, se: se0.se, fx: se0.fx, as: se0.as };
+        out.sets = { bgm: se0.bgm, se: se0.se, fx: 'fx' in se0, as: se0.as };
         out.bgm = { on: bg0.on, want: bg0.want, gone: bg0.gone, len: Math.round(bg0.len * 100) / 100, ctx: bg0.ctx };
         out.fire = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbfire'), function (e) { var c = getComputedStyle(e); return c.animationName + ' ' + c.animationDuration; });
         document.querySelector('#cbOv .cbgear').click(); await sleep(200);
         out.gear = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmod.cbset .cbsw'), function (r) { return r.getAttribute('data-set'); }).join();
-        var fx0 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="0"]'); if (fx0) fx0.click(); await sleep(150);
-        out.nofx = document.querySelector('#cbOv').classList.contains('nofx');
-        var fx1 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="1"]'); if (fx1) fx1.click(); await sleep(150);
-        out.fxBack = !document.querySelector('#cbOv').classList.contains('nofx');
+        out.fxBtn = !!document.querySelector('#cbOv .cbset [data-k=fx]');
+        var bdi = document.querySelector('#cbOv .cbboard > img'); out.board = bdi ? [bdi.getAttribute('src'), document.querySelector('#cbOv .cbboard').classList.contains('cust')] : null;
         var mx = document.querySelector('#cbOv .cbset [data-cb=modx]'); if (mx) mx.click(); await sleep(200);
       } catch (e) { out.setsErr = String(e); }
       await mark('cb-game');

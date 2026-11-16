@@ -81,15 +81,22 @@
 
 
 
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
   const TURNS = 5, HAND = 7, COPIES = 4;      
-  const power = k => (k === 'k' || k === 'm' ? 0 : +k);          
+  const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      
   
-  function compare(a, b) {
+  function compare(a, b, rv) {
     if (a === b) return 'clash';
-    const pa = power(a), pb = power(b);
+    const pa = power(a, rv), pb = power(b, rv);
     return pa === pb ? 'tie' : pa < pb ? 0 : 1;
   }
   function shuffle(a, rng) {
@@ -104,7 +111,7 @@ const CBRules = (() => {
   function newGame(rng, opt) {
     rng = rng || Math.random; opt = opt || {};
     const tn = Math.floor(+opt.turns);
-    const S = { v: 3, turn: 1, turns: tn >= 1 && tn <= 9 ? tn : TURNS, phase: 'set', uid: 0, deck: [], discard: [], p: [mkP(), mkP()], pend: null, win: null, last: null, res: null };
+    const S = { v: 4, turn: 1, turns: tn >= 1 && tn <= 9 ? tn : TURNS, phase: 'set', uid: 0, deck: [], discard: [], p: [mkP(), mkP()], pend: null, win: null, last: null, res: null, rv: false };      
     let rest = fullSet();
     const take = k => { const j = rest.indexOf(k); if (j < 0) throw new Error('card ' + k); rest.splice(j, 1); return k; };
     if (opt.hands) {
@@ -135,11 +142,12 @@ const CBRules = (() => {
       e6: count(P.hand, '6') >= 2 && unseen(P, Q).length >= 1,                                                  
       e5: sk === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1,      
       e7: count(P.hand, '7') >= 3 && S.deck.length >= 3,
+      e7r: count(P.hand, '7') >= 4 && !S.rv,                                                                    
       e3: count(P.hand, '3') >= 3 && Q.hand.length >= 1,                                                        
       e4: sk === '4' && Q.hand.length >= 1
     };
   }
-  const any = c => c.e6 || c.e5 || c.e7 || c.e3 || c.e4;
+  const any = c => c.e6 || c.e5 || c.e7 || c.e7r || c.e3 || c.e4;
   
   const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1; };
   
@@ -150,7 +158,7 @@ const CBRules = (() => {
     const hit = (mk === '1' && (wk === 'k' || wk === 'm')) || (mk === '2' && wk === '1');
     return hit && count(P.hand, mk) >= 2 && P.hand.length - 1 >= S.turns - S.turn ? i : null;
   }
-  const NOUSE = () => ({ p6: null, u5: null, x7: false, x3: false, u4: false });
+  const NOUSE = () => ({ p6: null, u5: null, x7: false, x7r: false, x3: false, u4: false });
 
   function act(S, i, a, rng) {
     rng = rng || Math.random;
@@ -172,6 +180,10 @@ const CBRules = (() => {
       const can = P.eff.can, w = a.use && typeof a.use === 'object' ? a.use : {}, use = NOUSE();
       if (w.p6 != null) { if (!can.e6) return bad('e6'); if (idx(Q.hand, w.p6) < 0 || P.known.indexOf(w.p6) >= 0) return bad('pick'); use.p6 = w.p6; }      
       if (w.u5 != null) { if (!can.e5) return bad('e5'); if (idx(P.hand, w.u5) < 0) return bad('drop'); use.u5 = w.u5; }
+      if (w.x7r) {                                       
+        if (!can.e7r || w.x7 || count(P.hand.filter(c => c.u !== use.u5), '7') < 4) return bad('e7r');
+        use.x7r = true;
+      }
       if (w.x7) {                                        
         if (!can.e7 || count(P.hand.filter(c => c.u !== use.u5), '7') < 3) return bad('e7');
         use.x7 = true;
@@ -292,6 +304,16 @@ const CBRules = (() => {
       ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k } });
     });
     [0, 1].forEach(i => {                                
+      const P = S.p[i], Q = S.p[1 - i]; if (!U[i].x7r) return;
+      const sev = P.hand.filter(c => c.k === '7').slice(0, 4);
+      if (sev.length < 4 || S.rv) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
+      const drop = sev[0];
+      P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, '7');
+      sev.slice(1).forEach(c => learn(Q, c.u));          
+      S.rv = true;
+      ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: { u: drop.u, k: drop.k } });
+    });
+    [0, 1].forEach(i => {                                
       const P = S.p[i]; if (!U[i].x7) return;
       const back = P.hand.filter(c => c.k === '7').slice(0, 3);
       if (back.length < 3 || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
@@ -328,7 +350,7 @@ const CBRules = (() => {
   }
   
   function open(S, ev, d4) {
-    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];
+    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k, S.rv), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];      
     S.p.forEach(P => { P.set.up = true; P.set.blind = false; P.set.open = true; P.eff = null; });
     const rv = revWho(S, r);
     if (rv != null) {                                    
@@ -384,11 +406,11 @@ const CBRules = (() => {
     const ce = S.phase === 'eff' && P.eff && !P.eff.done ? P.eff.can : null;
     const hide5 = S.phase === 'u5' && !!S.pend && S.pend.who !== i;      
     return {
-      v: 3, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length,
+      v: 4, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length, rv: !!S.rv,      
       discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
       my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
       op: { hand: Q.hand.map(c => ({ u: c.u, k: P.known.indexOf(c.u) >= 0 ? c.k : null })), set: setOf(Q, false), wins: Q.wins },
-      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e3: ce.e3, e4: ce.e4 } : null },
+      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e7r: ce.e7r, e3: ce.e3, e4: ce.e4 } : null },
       pend: S.pend ? { type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev, d4: !!S.last.d4 } : null,
@@ -402,6 +424,7 @@ const CBRules = (() => {
       const o = { e: x.e };
       if (x.who != null) o.me = x.who === i;
       if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; }
+      else if (x.e === 'x7r') { o.show = x.show; o.drop = x.drop; }      
       else if (x.e === 'set' || x.e === 'swap') { if (x.who === i) { o.u = x.u; if (x.back != null) o.back = x.back; } }
       else if (x.e === 'efft') { o.mine = x.has[i]; o.other = x.has[1 - i]; }
       else if (x.e === 'p6') { o.six = x.six; o.pick = x.pick; if (x.who === i) o.k = x.k; }
@@ -452,55 +475,57 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;
 
 
 
+
 const CBCpu = (() => {
   'use strict';
-  const power = k => (k === 'k' || k === 'm' ? 0 : +k);
-  const byStrong = hand => hand.slice().sort((a, b) => power(a.k) - power(b.k) || a.u - b.u);      
+  const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      
+  const byStrong = (hand, rv) => hand.slice().sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u);      
   const pick = (a, rng) => a[Math.floor(rng() * a.length)];
 
   function decide(v, rng) {
     rng = rng || Math.random;
     if (!v || v.phase === 'end') return null;
-    const hand = v.my.hand, opHand = v.op.hand;
+    const hand = v.my.hand, opHand = v.op.hand, rv = !!v.rv, P = k => power(k, rv), byS = h => byStrong(h, rv);
     if (v.pend && v.pend.mine) {
       if (v.pend.type === 'swap') {
-        const s = byStrong(hand), win = s.filter(c => power(c.k) < 4);
+        const s = byS(hand), win = s.filter(c => P(c.k) < P('4'));
         if (win.length) return { t: 'swap', u: win[win.length - 1].u };
         const four = s.find(c => c.k === '4'); if (four) return { t: 'swap', u: four.u };
         const five = s.find(c => c.k === '5'); if (five && hand.length - 1 >= v.turns - v.turn && v.deckN >= 1) return { t: 'swap', u: five.u };      
         return { t: 'swap', u: s[s.length - 1].u };
       }
-      if (v.pend.type === 'u5') { const s = byStrong(hand); return { t: 'u5', drop: s.length ? s[s.length - 1].u : null }; }      
+      if (v.pend.type === 'u5') { const s = byS(hand); return { t: 'u5', drop: s.length ? s[s.length - 1].u : null }; }      
       if (v.pend.type === 'k') {
         const un = opHand.filter(c => c.k == null);
         return { t: 'k', pick: un.length ? pick(un, rng).u : null };
       }
       if (v.pend.type === 'm') {
-        const s = byStrong(hand);
+        const s = byS(hand);
         return { t: 'm', drop: [s[s.length - 1].u, s[s.length - 2].u] };
       }
       if (v.pend.type === 'rev') return { t: 'rev', use: true };      
       return null;
     }
     if (v.can.eff) {                                     
-      const c = v.can.eff, use = {}, s = byStrong(hand), n7 = hand.filter(x => x.k === '7').length, n3 = hand.filter(x => x.k === '3').length;
+      const c = v.can.eff, use = {}, s = byS(hand), n7 = hand.filter(x => x.k === '7').length, n3 = hand.filter(x => x.k === '3').length;
       if (c.e6) { const un = opHand.filter(x => x.k == null); if (un.length) use.p6 = pick(un, rng).u; }
-      if (c.e7) use.x7 = true;
+      if (c.e7r) use.x7r = true;                         
+      else if (c.e7 && !rv) use.x7 = true;               
       if (c.e3 && rng() < (v.turn >= 2 ? 0.55 : 0.35)) use.x3 = true;
       if (c.e5) {
         
-        const cand = s.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x3 && x.k === '3' && n3 <= 3)), weak = cand[cand.length - 1];
-        if (weak && ((!use.x7 && !use.x3) || (use.x7 && weak.k === '7') || (use.x3 && weak.k === '3') || power(weak.k) >= 5)) use.u5 = weak.u;
+        const cand = s.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x7r && x.k === '7' && n7 <= 4) && !(use.x3 && x.k === '3' && n3 <= 3)), weak = cand[cand.length - 1];
+        if (weak && ((!use.x7 && !use.x7r && !use.x3) || (use.x7 && weak.k === '7') || (use.x3 && weak.k === '3') || P(weak.k) >= P('5'))) use.u5 = weak.u;
       }
       if (c.e4 && (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false)) use.u4 = true;
       return { t: 'eff', use: use };
     }
     if (v.phase !== 'set' || !v.can.set) return null;
-    const s = byStrong(hand), left = v.turns - v.turn + 1;          
+    const s = byS(hand), left = v.turns - v.turn + 1;          
     const top = s.slice(0, Math.min(left, s.length));
     if (hand.length - 2 >= v.turns - v.turn && hand.length - 1 >= 1 && v.deckN >= 1) {          
       const third = top[top.length - 1], five = s.find(x => x.k === '5');
-      if (five && power(third.k) >= 5) return { t: 'set', u: five.u };
+      if (five && P(third.k) >= P('5')) return { t: 'set', u: five.u };
     }
     const knownOp = opHand.filter(x => x.k != null).map(x => x.k);
     let cand = top.filter(x => x.k === 'k' || x.k === 'm' || knownOp.indexOf(x.k) < 0);
@@ -541,7 +566,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 6, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 7, MAXLEN = 20000;      
   
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -556,7 +581,6 @@ const CBNet = (() => {
     const o = { b: '', f: {} };
     if (!d || typeof d !== 'object') return o;
     if (typeof d.b === 'string' && DZID.test(d.b)) o.b = d.b;
-    if (typeof d.e === 'string' && DZID.test(d.e)) o.e = d.e;      
     const f = d.f && typeof d.f === 'object' ? d.f : {};
     R.KINDS.forEach(k => { if (Object.prototype.hasOwnProperty.call(f, k) && typeof f[k] === 'string' && DZID.test(f[k])) o.f[k] = f[k]; });
     return o;
@@ -725,226 +749,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
-const CBFx = (() => {
-  'use strict';
-  const IDS = ['bomb', 'shine', 'dark', 'heart'];
-  const NAME = { bomb: '爆発', shine: '光り輝く', dark: '闇のオーラ', heart: 'ハート' };
-  const DUR = { bomb: 1700, shine: 1650, dark: 1800, heart: 1700 };
-  const HOLD = { bomb: 760, shine: 700, dark: 820, heart: 820 };
-  const SEQ = { bomb: { e: 'cb_ef_bomb_e.webp', a: 'cb_ef_bomb_a.webp', n: 32, s: 384, cols: 8, ms: 1150 }, dark: { e: 'cb_ef_dark_e.webp', a: 'cb_ef_dark_a.webp', n: 32, s: 384, cols: 8, ms: 1500 } };
-  const PARTS = { star: [0, 0, 512, 512], ring: [512, 0, 256, 256], glint: [768, 0, 128, 128], hex: [896, 0, 128, 128], dot: [768, 128, 64, 64], spark: [832, 128, 64, 64],
-    h0: [0, 512, 256, 256], h1: [256, 512, 256, 256], h2: [512, 512, 256, 256], h3: [768, 512, 256, 256] };
-  const PF = 'cb_ef_parts.webp';
-  const img = {}, tints = {};
-  function load1(f) { if (!img[f]) img[f] = new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = f; }); return img[f]; }
-  function load(id) { const L = [PF].concat(SEQ[id] ? [SEQ[id].e, SEQ[id].a] : []); return Promise.all(L.map(load1)).then(a => { const o = {}; L.forEach((s, i) => { o[s] = a[i]; }); return o; }); }
-  const rngOf = seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
-  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
-  const ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
-  const back = x => { const k = clamp(x, 0, 1), c = 2.2; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };      
-  const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-  const TAU = Math.PI * 2;
-  
-  const src = (P, name) => { const r = PARTS[name]; return { im: P, x: r[0], y: r[1], w: r[2], h: r[3] }; };
-  function tinted(P, name, rgb) {
-    const key = name + '|' + rgb; if (tints[key]) return tints[key];
-    if (!P) return null;
-    const r = PARTS[name], c = document.createElement('canvas'); c.width = r[2]; c.height = r[3];
-    const g = c.getContext('2d'); g.drawImage(P, r[0], r[1], r[2], r[3], 0, 0, r[2], r[3]); g.globalCompositeOperation = 'source-in'; g.fillStyle = `rgb(${rgb})`; g.fillRect(0, 0, r[2], r[3]);
-    tints[key] = { im: c, x: 0, y: 0, w: r[2], h: r[3] }; return tints[key];
-  }
-  
-  function spr(ctx, s, x, y, w, rot, al, op) {
-    if (!s || !s.im || !(al > 0.003) || !(w > 0.5)) return;
-    const h = w * s.h / s.w;
-    ctx.save(); ctx.globalAlpha = Math.min(1, al); ctx.globalCompositeOperation = op || 'lighter'; ctx.translate(x, y); if (rot) ctx.rotate(rot);
-    ctx.drawImage(s.im, s.x, s.y, s.w, s.h, -w / 2, -h / 2, w, h); ctx.restore();
-  }
-  
-  function seq(L, I, q, f, x, y, d, al, ea) {
-    const E = I[q.e], A = I[q.a]; if (!E || !A || !(al > 0.003)) return;
-    const i = clamp(Math.floor(f), 0, q.n - 1), sx = (i % q.cols) * q.s, sy = Math.floor(i / q.cols) * q.s;
-    L.a.save(); L.a.globalAlpha = Math.min(1, al); L.a.drawImage(A, sx, sy, q.s, q.s, x - d / 2, y - d / 2, d, d); L.a.restore();
-    L.l.save(); L.l.globalAlpha = Math.min(1, al * (ea == null ? 1 : ea)); L.l.globalCompositeOperation = 'lighter'; L.l.drawImage(E, sx, sy, q.s, q.s, x - d / 2, y - d / 2, d, d); L.l.restore();
-  }
-  
-  function glow(ctx, x, y, r, rgb, al) {
-    if (!(al > 0.003) || !(r > 1)) return;
-    const a = Math.min(1, al), g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(0.28, `rgba(${rgb},${a * 0.5})`); g.addColorStop(0.62, `rgba(${rgb},${a * 0.14})`); g.addColorStop(1, `rgba(${rgb},0)`);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore();
-  }
-  
-  function vign(ctx, W, H, x, y, r0, rgb, c0, c1) {
-    if (!(c1 > 0.003)) return;
-    const g = ctx.createRadialGradient(x, y, r0, x, y, Math.hypot(Math.max(x, W - x), Math.max(y, H - y)));
-    g.addColorStop(0, `rgba(${rgb},${c0})`); g.addColorStop(1, `rgba(${rgb},${c1})`);
-    ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
-  }
-
-  function make(id, o) {
-    const R = rngOf(o.seed || 7), S = o.s, fx = { id: id, o: o };
-    fx.ph = [R() * TAU, R() * TAU];
-    if (id === 'bomb') {
-      fx.sp = Array.from({ length: 120 }, () => { const a = R() * TAU, v = S * (1.1 + R() * 2.6); return { vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.45 * R(), life: 420 + R() * 820, w: 1 + R() * 2.4, d: R() * 80 }; });
-      fx.db = Array.from({ length: 18 }, () => { const a = R() * TAU, v = S * (0.8 + R() * 1.7); return { vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.8, r: R() * 6, vr: (R() - 0.5) * 18, sz: S * (0.016 + R() * 0.026), life: 900 + R() * 600, n: 3 + Math.floor(R() * 3), k: [0, 1, 2, 3, 4].map(() => 0.6 + 0.4 * R()) }; });
-      fx.em = Array.from({ length: 50 }, () => ({ x: (R() - 0.5) * S * 1.2, y: (R() - 0.35) * S * 0.8, vy: -S * (0.12 + R() * 0.32), sw: R() * TAU, life: 650 + R() * 700, d: 200 + R() * 450, sz: S * (0.05 + R() * 0.06) }));
-    } else if (id === 'shine') {
-      fx.rays = Array.from({ length: 16 }, (_, i) => ({ a: i / 16 * TAU + (R() - 0.5) * 0.18, l: R() * 0.9, w: 0.022 + R() * 0.035 }));
-      fx.gl = Array.from({ length: 36 }, () => { const a = R() * TAU, r = S * (0.25 + R() * 1.3); return { x: Math.cos(a) * r, y: Math.sin(a) * r * 1.15, d: 120 + R() * 1150, l: 260 + R() * 260, sz: 0.16 + R() * 0.22, r: R() * 0.8 }; });
-      fx.du = Array.from({ length: 80 }, () => ({ x: (R() - 0.5) * S * 2.4, y: (R() - 0.2) * S * 1.4, vy: -S * (0.12 + R() * 0.38), sw: R() * TAU, d: R() * 700, life: 700 + R() * 700, sz: S * (0.03 + R() * 0.045) }));
-      fx.hx = [[-0.55, 0.32, 0.40], [0.35, 0.18, 0.55], [0.8, 0.42, 0.32], [1.25, 0.24, 0.45]];
-    } else if (id === 'dark') {
-      fx.bolts = [260, 640, 1020].map(at => {
-        const a0 = R() * TAU, L = S * (0.75 + R() * 0.6), n = 10, pts = [];
-        for (let i = 0; i <= n; i++) { const k = i / n, j = i && i < n ? 1 : 0; pts.push([Math.cos(a0) * L * k + (R() - 0.5) * S * 0.16 * j, Math.sin(a0) * L * k + (R() - 0.5) * S * 0.16 * j]); }
-        const b = 3 + Math.floor(R() * 4), a1 = a0 + (R() < 0.5 ? -1 : 1) * (0.5 + R() * 0.5), br = [pts[b]];      
-        for (let i = 1; i <= 4; i++) br.push([pts[b][0] + Math.cos(a1) * L * 0.09 * i + (R() - 0.5) * S * 0.08, pts[b][1] + Math.sin(a1) * L * 0.09 * i + (R() - 0.5) * S * 0.08]);
-        return { at: at + R() * 80, pts: pts, br: br };
-      });
-      fx.pl = Array.from({ length: 30 }, () => { const a = R() * TAU, r = S * (0.25 + R() * 0.4); return { x: Math.cos(a) * r * 1.1, y: Math.sin(a) * r * 0.8 + S * 0.15, vy: -S * (0.55 + R() * 0.5), sw: R() * TAU, d: R() * 950, life: 700 + R() * 450, s0: 0.2 + R() * 0.15, s1: 0.45 + R() * 0.3 }; });
-      fx.tw = Array.from({ length: 14 }, () => ({ ph: R() * TAU, r0: S * (0.95 + R() * 0.65), tu: 0.9 + R() * 0.6, w: 1.1 + R() * 1.6, d: R() * 650, life: 650 + R() * 420 }));      
-      fx.in = Array.from({ length: 46 }, () => ({ a: R() * TAU, r: S * (1.2 + R() * 0.9), d: R() * 950, life: 420 + R() * 380, w: 1 + R() * 1.6 }));      
-      fx.em = Array.from({ length: 70 }, () => ({ x: (R() - 0.5) * S * 2.1, y: (R() - 0.1) * S * 1.4, vy: -S * (0.15 + R() * 0.42), sw: R() * TAU, d: 150 + R() * 900, life: 600 + R() * 700, sz: S * (0.035 + R() * 0.05) }));
-    } else if (id === 'heart') {
-      fx.bu = Array.from({ length: 34 }, (_, i) => { const a = R() * TAU, v = S * (1.0 + R() * 1.8); return { c: i % 4, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 1.1 - S * 0.4, r: (R() - 0.5) * 1.2, vr: (R() - 0.5) * 4, d: 90 + R() * 140, life: 900 + R() * 520, sz: 0.15 + R() * 0.22 }; });
-      fx.fl = Array.from({ length: 14 }, (_, i) => ({ c: (i + 1) % 4, x: (R() - 0.5) * S * 2.3, y: S * (0.6 + R() * 0.7), vy: -S * (0.45 + R() * 0.5), sw: R() * TAU, d: 300 + R() * 650, life: 900 + R() * 450, sz: 0.12 + R() * 0.15 }));
-      fx.gl = Array.from({ length: 22 }, () => { const a = R() * TAU, r = S * (0.3 + R() * 1.2); return { x: Math.cos(a) * r, y: Math.sin(a) * r * 1.2, d: 150 + R() * 1100, l: 260 + R() * 240, sz: 0.14 + R() * 0.16, r: R() }; });
-    }
-    return fx;
-  }
-
-  function draw(L, I, fx, t) {
-    const o = fx.o, W = o.W, H = o.H, x = o.x, y = o.y, S = o.s, P = I[PF];
-    let shake = [0, 0];
-    if (fx.id === 'bomb') {
-      
-      const fl = t < 50 ? t / 50 : Math.exp(-(t - 50) / 150);
-      if (fl > 0.01) { L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.fillStyle = `rgba(255,222,176,${(0.55 * fl).toFixed(3)})`; L.l.fillRect(0, 0, W, H); L.l.restore(); }
-      glow(L.l, x, y, S * (0.95 + t / 900), '255,150,60', 0.9 * Math.exp(-t / 480));
-      const q = SEQ.bomb;      
-      seq(L, I, q, t / q.ms * q.n, x, y - S * 0.16 * ease(t / 1500), S * 2.2, 1 - smooth(1200, 1680, t));
-      if (t < 560) {           
-        const k = t / 560, r = S * (0.2 + 2.0 * ease(k));
-        L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.strokeStyle = `rgba(255,232,196,${(0.62 * (1 - k)).toFixed(3)})`; L.l.lineWidth = S * 0.08 * (1 - k) + 1;
-        L.l.beginPath(); L.l.ellipse(x, y, r, r * 0.9, 0, 0, TAU); L.l.stroke(); L.l.restore();
-      }
-      L.l.save(); L.l.lineCap = 'round'; L.l.globalCompositeOperation = 'lighter';      
-      for (const p of fx.sp) {
-        const tt = (t - p.d) / 1000, Lf = p.life / 1000; if (tt <= 0 || tt > Lf) continue;
-        const dr = Math.exp(-tt * 1.7), px = x + p.vx * (1 - dr) / 1.7, py = y + p.vy * (1 - dr) / 1.7 + 0.5 * S * 1.8 * tt * tt;
-        const vx = p.vx * dr, vy = p.vy * dr + S * 1.8 * tt, k = tt / Lf, c = k < 0.25 ? '255,248,226' : k < 0.55 ? '255,196,96' : '255,116,40';
-        L.l.strokeStyle = `rgba(${c},${(1 - k).toFixed(3)})`; L.l.lineWidth = p.w; L.l.beginPath(); L.l.moveTo(px, py); L.l.lineTo(px - vx * 0.045, py - vy * 0.045); L.l.stroke();
-      }
-      L.l.restore();
-      for (const p of fx.db) {  
-        const tt = t / 1000, Lf = p.life / 1000; if (tt > Lf) continue;
-        const dr = Math.exp(-tt * 1.2), px = x + p.vx * (1 - dr) / 1.2, py = y + p.vy * (1 - dr) / 1.2 + 0.5 * S * 2.2 * tt * tt;
-        const al = 0.92 * (1 - smooth(0.6, 1, tt / Lf)) * smooth(S * 0.5, S * 0.8, Math.hypot(px - x, py - y));      
-        L.o.save(); L.o.fillStyle = `rgba(30,19,12,${al.toFixed(3)})`; L.o.translate(px, py); L.o.rotate(p.r + p.vr * tt); L.o.beginPath();
-        for (let i = 0; i < p.n; i++) { const a = i / p.n * TAU, rr = p.sz * p.k[i]; if (i) L.o.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); else L.o.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-        L.o.closePath(); L.o.fill(); L.o.restore();
-      }
-      const sk = src(P, 'spark');      
-      for (const p of fx.em) { const tt = (t - p.d) / 1000, Lf = p.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, sk, x + p.x + Math.sin(p.sw + tt * 5) * S * 0.04, y + p.y + p.vy * tt, p.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
-      const kk = t < 900 ? S * 0.05 * Math.exp(-t / 170) : 0;      
-      shake = [kk * 0.35 * Math.sin(t / 210 * TAU + 1), kk * Math.sin(t / 260 * TAU)];
-    } else if (fx.id === 'shine') {
-      const env = smooth(0, 240, t) * (1 - smooth(950, 1620, t));      
-      vign(L.a, W, H, x, y, S * 0.7, '0,0,0', 0, 0.36 * env);
-      glow(L.l, x, y, S * 1.8, '255,236,186', 0.55 * env);
-      glow(L.l, x, y, S * 0.55, '255,252,236', 0.85 * env);
-      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.translate(x, y); L.l.rotate(t / 1000 * 0.32);      
-      for (const r of fx.rays) {
-        const len = S * (1.5 + r.l) * (0.6 + 0.4 * ease(t / 420)), al = 0.42 * env; if (al < 0.004) continue;
-        const g = L.l.createLinearGradient(0, 0, Math.cos(r.a) * len, Math.sin(r.a) * len); g.addColorStop(0, `rgba(255,242,206,${al.toFixed(3)})`); g.addColorStop(1, 'rgba(255,242,206,0)');
-        L.l.fillStyle = g; L.l.beginPath(); L.l.moveTo(0, 0); L.l.lineTo(Math.cos(r.a - r.w) * len, Math.sin(r.a - r.w) * len); L.l.lineTo(Math.cos(r.a + r.w) * len, Math.sin(r.a + r.w) * len); L.l.closePath(); L.l.fill();
-      }
-      L.l.restore();
-      const rg = src(P, 'ring'), st = src(P, 'star');
-      spr(L.l, rg, x, y, S * (0.5 + 2.7 * ease(t / 950)), 0, 0.9 * (1 - smooth(250, 1050, t)));
-      spr(L.l, rg, x, y, S * (0.3 + 1.7 * ease((t - 180) / 900)), 0, t > 180 ? 0.55 * (1 - smooth(400, 1150, t)) : 0);
-      spr(L.l, st, x, y, S * (1.3 + 0.7 * ease(t / 520)), t / 1000 * 0.18, env);
-      spr(L.l, st, x, y, S * 0.85, -t / 1000 * 0.4 + 0.5, 0.65 * env);
-      const hx = src(P, 'hex'), cx = W / 2, cy = H / 2;      
-      for (const h of fx.hx) spr(L.l, hx, x + (cx - x) * (1 + h[0]), y + (cy - y) * (1 + h[0]), S * h[1], 0, h[2] * env);
-      const gl = src(P, 'glint'), du = tinted(P, 'dot', '255,214,120');
-      for (const g of fx.gl) { const k = (t - g.d) / g.l; if (k < 0 || k > 1) continue; const a = Math.sin(Math.PI * k); spr(L.l, gl, x + g.x, y + g.y, S * g.sz * (0.4 + 0.8 * a), g.r, a); }
-      for (const d of fx.du) { const tt = (t - d.d) / 1000, Lf = d.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, du, x + d.x + Math.sin(d.sw + tt * 4) * S * 0.05, y + d.y + d.vy * tt, d.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
-    } else if (fx.id === 'dark') {
-      const env = smooth(0, 320, t) * (1 - smooth(1300, 1780, t));      
-      vign(L.a, W, H, x, y, S * 0.15, '6,0,14', 0.34 * env, 0.8 * env);
-      const q = SEQ.dark, qa = 1 - smooth(1500, 1790, t);
-      glow(L.l, x, y, S * 1.5, '120,40,220', 0.2 * env);
-      
-      const bk = tinted(P, 'dot', '10,0,18'), pg = tinted(P, 'dot', '150,70,255');
-      for (const b of fx.pl) {
-        const tt = (t - b.d) / 1000, Lf = b.life / 1000; if (tt <= 0 || tt > Lf) continue;
-        const k = tt / Lf, px = x + b.x + Math.sin(b.sw + tt * 4) * S * 0.08, py = y + b.y + b.vy * tt, w = S * (b.s0 + (b.s1 - b.s0) * k) * 2.2, al = Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k);
-        spr(L.a, bk, px, py, w, 0, al * 0.85, 'source-over'); spr(L.l, pg, px, py - w * 0.05, w * 1.15, 0, al * 0.3);
-      }
-      seq(L, I, q, t / q.ms * q.n, x, y, S * 2.5, qa, 0.55);      
-      if (qa > 0.003) { const i = clamp(Math.floor(t / q.ms * q.n), 0, q.n - 1), d = S * 2.5; L.a.save(); L.a.globalAlpha = qa * 0.7; L.a.drawImage(I[q.a], (i % q.cols) * q.s, Math.floor(i / q.cols) * q.s, q.s, q.s, x - d / 2, y - d / 2, d, d); L.a.restore(); }      
-      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.lineCap = 'round'; L.l.lineJoin = 'round';      
-      for (const b of fx.bolts) {
-        const k = (t - b.at) / 150; if (k < 0 || k > 1) continue; const al = 1 - k;
-        for (const [lw, a, c] of [[8, 0.22, '170,90,255'], [2.2, 0.95, '238,218,255']]) {
-          L.l.strokeStyle = `rgba(${c},${(a * al).toFixed(3)})`; L.l.lineWidth = lw;
-          for (const line of [b.pts, b.br]) { L.l.beginPath(); line.forEach(([px, py], i) => { if (i) L.l.lineTo(x + px, y + py); else L.l.moveTo(x + px, y + py); }); L.l.stroke(); }
-        }
-      }
-      L.l.restore();
-      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.lineCap = 'round';      
-      for (const w of fx.tw) {
-        const k = (t - w.d) / w.life; if (k < 0 || k > 1) continue;
-        const al = Math.sin(Math.PI * k), sc = 1 - 0.55 * ease(k), rot = w.ph + (t / 1000) * 2.6 + k * 1.2, N = 26;
-        for (const [lw, a, c] of [[w.w * 4.5, 0.13, '150,60,255'], [w.w, 0.7, '226,188,255']]) {
-          L.l.strokeStyle = `rgba(${c},${(a * al).toFixed(3)})`; L.l.lineWidth = lw; L.l.beginPath();
-          for (let i = 0; i <= N; i++) { const th = i / N * w.tu * TAU, r = w.r0 * sc * Math.exp(-0.42 * th), A = rot + th; if (i) L.l.lineTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); else L.l.moveTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); }
-          L.l.stroke();
-        }
-      }
-      for (const q2 of fx.in) {      
-        const k = (t - q2.d) / q2.life; if (k < 0 || k > 1) continue;
-        const r = q2.r * (1 - k * k), r2 = q2.r * (1 - Math.max(0, k - 0.12) ** 2), A = q2.a + k * 0.9, al = Math.sin(Math.PI * k) * 0.85;
-        L.l.strokeStyle = `rgba(214,170,255,${al.toFixed(3)})`; L.l.lineWidth = q2.w; L.l.beginPath();
-        L.l.moveTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); L.l.lineTo(x + Math.cos(A - 0.1) * r2, y + Math.sin(A - 0.1) * r2 * 0.85); L.l.stroke();
-      }
-      L.l.restore();
-      if (t > 1050 && t < 1560) {      
-        const k = (t - 1050) / 510, r = S * (0.45 + 2.1 * ease(k)), lw = S * 0.16 * (1 - k) + 1;
-        L.a.save(); L.a.strokeStyle = `rgba(8,0,16,${(0.62 * (1 - k)).toFixed(3)})`; L.a.lineWidth = lw; L.a.beginPath(); L.a.ellipse(x, y, r, r * 0.85, 0, 0, TAU); L.a.stroke(); L.a.restore();
-        L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.strokeStyle = `rgba(170,90,255,${(0.42 * (1 - k)).toFixed(3)})`; L.l.lineWidth = Math.max(1, lw * 0.25); L.l.beginPath(); L.l.ellipse(x, y, r + lw * 0.5, (r + lw * 0.5) * 0.85, 0, 0, TAU); L.l.stroke(); L.l.restore();
-      }
-      const pd = tinted(P, 'dot', '186,104,255');
-      for (const e of fx.em) { const tt = (t - e.d) / 1000, Lf = e.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, pd, x + e.x + Math.sin(e.sw + tt * 3) * S * 0.06, y + e.y + e.vy * tt, e.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
-    } else if (fx.id === 'heart') {
-      const beat = c => Math.exp(-Math.pow((t - c) / 95, 2));
-      const pulse = beat(90) + 0.85 * beat(480);                        
-      glow(L.l, x, y, S * 1.6, '255,110,186', 0.44 * pulse);
-      glow(L.l, x, y, S * 0.95, '255,170,214', 0.24 * (1 - smooth(900, 1650, t)));
-      const gl = tinted(P, 'glint', '255,214,236');
-      for (const g of fx.gl) { const k = (t - g.d) / g.l; if (k < 0 || k > 1) continue; const a = Math.sin(Math.PI * k); spr(L.l, gl, x + g.x, y + g.y, S * g.sz * (0.4 + 0.8 * a), g.r, a * 0.95); }
-      for (const f of fx.fl) { const tt = (t - f.d) / 1000, Lf = f.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.o, src(P, 'h' + f.c), x + f.x + Math.sin(f.sw + tt * 3) * S * 0.12, y + f.y + f.vy * tt, S * f.sz, Math.sin(f.sw + tt * 2) * 0.3, Math.sin(Math.PI * tt / Lf) * 0.9, 'source-over'); }
-      for (const h of fx.bu) {      
-        const tt = (t - h.d) / 1000, Lf = h.life / 1000; if (tt <= 0 || tt > Lf) continue;
-        const k = tt / Lf, dr = 1 - Math.exp(-tt * 3.2);
-        spr(L.o, src(P, 'h' + h.c), x + h.vx * dr / 3.2, y + h.vy * dr / 3.2 - S * 0.35 * tt * tt, S * h.sz * (1 - 0.35 * k), h.r + h.vr * tt, 1 - smooth(0.55, 1, k), 'source-over');
-      }
-      const up = smooth(1100, 1680, t), sc = back(t / 260) * (1 + 0.13 * beat(480)) * (1 + 0.2 * up);
-      spr(L.o, src(P, 'h0'), x, y - S * 0.32 * up, S * 1.25 * sc, 0, 1 - up, 'source-over');
-    }
-    return { shake: shake };
-  }
-  return { IDS, NAME, DUR, HOLD, load, make, draw };
-})();
-if (typeof module !== 'undefined' && module.exports) module.exports = CBFx;
-
-;
-
-
-
-
 
 
 
@@ -1017,16 +821,16 @@ const CBApp = (() => {
   
   const FACE_COST = 300, TOP_COST = 500, BACK_COST = 300;      
   const FACES = [['k', 'ka', '朱の鳥居'], ['k', 'kb', '天空の神殿'], ['m', 'ma', '三日月の幻'], ['m', 'mb', '紅い雷'], ['1', '1a', '炎の輪'], ['1', '1b', '赤銅の鎧'], ['2', '2a', '月夜の黒馬'], ['2', '2b', '銀の鎧'],
-    ['3', '3a', '水晶の間'], ['3', '3b', '星の遺跡'], ['4', '4a', '雷の城'], ['4', '4b', '青の広間'], ['5', '5a', '炎の城'], ['5', '5b', '琥珀の洞窟'], ['6', '6a', '赤の書庫'], ['6', '6b', '紅玉の天文台'], ['7', '7a', '緑の森'], ['7', '7b', '天空の都']]
+    ['3', '3a', '水晶の間'], ['3', '3b', '星の遺跡'], ['4', '4a', '雷の城'], ['4', '4b', '青の広間'], ['5', '5a', '炎の城'], ['5', '5b', '琥珀の洞窟'], ['6', '6a', '赤の書庫'], ['6', '6b', '紅玉の天文台'], ['7', '7a', '疾風の草原'], ['7', '7b', '翡翠の馬']]      
     .map(([k, id, name]) => ({ k: k, id: id, name: name, c: `cb_fc_${id}_c.webp`, s: `cb_fc_${id}_s.webp`, cost: k === 'k' || k === 'm' ? TOP_COST : FACE_COST }));
   const BACKS = [['sky', '天馬の光'], ['star', '星座の馬'], ['ice', '氷の結晶'], ['wa', '和の墨絵'], ['ori', '折り紙の馬'], ['crown', '王冠の紋章'], ['heart', 'ハートの2頭']]
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
-  const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
   
-  const FXL = typeof CBFx !== 'undefined' ? CBFx : null;
-  const EF_COST = 500, EF_IDS = ['bomb', 'shine', 'dark', 'heart'];
-  const EF_NAME = { bomb: '爆発', shine: '光り輝く', dark: '闇のオーラ', heart: 'ハート' };
-  const EFS = EF_IDS.map(id => ({ id: id, name: EF_NAME[id], s: `cb_ef_${id}_s.webp`, cost: EF_COST }));
+  const BOARD_COST = 300;
+  const BOARDS = [['marble', '白亜の宮殿'], ['frost', '蒼氷の宮'], ['sakura', '桜の舞踏会'], ['violet', '紫月の夜'], ['crimson', '紅蓮の闘技場'], ['starry', '黄金の星空'], ['steam', '歯車の工房']]
+    .map(([id, name]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST }));
+  const boardNow = () => (st && st.board ? BOARDS.find(d => d.id === st.board) || null : null);      
+  const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
   
   
   const selOf = side => { const o = side === 'op' && match && match.kind !== 'cpu' ? match.opDz || { b: '', f: {} } : null; return o ? { back: o.b || '', face: o.f || {} } : { back: st ? st.back : '', face: st ? st.face : {} }; };
@@ -1048,17 +852,18 @@ const CBApp = (() => {
     return n;
   }
   const T = ms => new Promise(ok => later(ok, Math.max(0, ms * SPEED)));
-  const reduce = () => !fxOn() || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);      
+  const reduce = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);      
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, ms: null, efs: [], ef: '' });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null });
   let lostStake = 0;                                   
   let lostMs = '';                                     
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     ['streak', 'win', 'lose', 'draw', 'owe'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
-    ['bgm', 'se', 'fx'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      
+    ['bgm', 'se'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      
+    delete st.fx;                                      
     st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+st.coin || 0)));      
     
     const m0 = st.ms && typeof st.ms === 'object' ? st.ms : {}, g0 = m0.got && typeof m0.got === 'object' ? m0.got : {};
@@ -1075,8 +880,9 @@ const CBApp = (() => {
     const fc = {}, f0 = st.face && typeof st.face === 'object' ? st.face : {};
     DZ_KINDS.forEach(k => { const id = f0[k]; if (st.faces.indexOf(id) >= 0 && FACES.some(f => f.id === id && f.k === k)) fc[k] = id; });
     st.face = fc;
-    st.efs = Array.isArray(st.efs) ? st.efs.filter((x, i, a) => EF_IDS.indexOf(x) >= 0 && a.indexOf(x) === i) : [];      
-    st.ef = st.efs.indexOf(st.ef) >= 0 ? st.ef : '';
+    const dids = BOARDS.map(d => d.id);                
+    st.boards = Array.isArray(st.boards) ? st.boards.filter((x, i, a) => dids.indexOf(x) >= 0 && a.indexOf(x) === i) : [];
+    st.board = st.boards.indexOf(st.board) >= 0 ? st.board : '';
     
     const k = st.stake; st.stake = null;
     if (k && typeof k === 'object' && Math.floor(+k.e) > 0) { lostStake = Math.floor(+k.e); save(); }
@@ -1136,29 +942,24 @@ const CBApp = (() => {
   
   
   
-  const SE = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join', 'ef_bomb', 'ef_shine', 'ef_dark', 'ef_heart'];      
+  const SE = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join'];
   const snd = { ac: null, buf: {} };
   const AS = (() => { try { return !!(navigator.audioSession && 'type' in navigator.audioSession); } catch (e) { return false; } })();
   const appSound = () => { try { const g = window.TengelFx && window.TengelFx.get ? window.TengelFx.get() : null; return g ? g.sound !== false : true; } catch (e) { return true; } };
   const seOn = () => (st && st.se != null ? st.se : appSound());
   const bgmOn = () => (st && st.bgm != null ? st.bgm : appSound() && (AS || !!CBApp._as));
-  const fxOn = () => !(st && st.fx === false);
   function actx() {
     if (!snd.ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) { try { snd.ac = new C(); } catch (e) { snd.ac = null; } } }
     const c = snd.ac;
     if (c && c.state !== 'running' && c.resume) { try { const q = c.resume(); if (q && q.catch) q.catch(() => { }); } catch (e) {   } }
     return c;
   }
-  function seBuf(name) {      
-    const c = actx(); if (!c || SE.indexOf(name) < 0) return null;
-    const f = 'cb_se_' + name + '.m4a';
-    if (!snd.buf[name]) snd.buf[name] = fetch(f).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
-    return snd.buf[name];
-  }
   function se(name, gain) {
     if (!seOn()) return;
-    const c = actx(), q = seBuf(name); if (!c || !q) return;
-    q.then(b => { if (!b || !seOn()) return; try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) {   } });
+    const c = actx(); if (!c || SE.indexOf(name) < 0) return;
+    const f = 'cb_se_' + name + '.m4a';
+    if (!snd.buf[name]) snd.buf[name] = fetch(f).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
+    snd.buf[name].then(b => { if (!b || !seOn()) return; try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) {   } });
   }
   
   
@@ -1229,7 +1030,7 @@ const CBApp = (() => {
 #cbOv .cbfire{position:absolute;inset:0;pointer-events:none;background:radial-gradient(88% 46% at 100% 76%,rgba(255,138,44,.34) 0%,rgba(214,84,18,.15) 40%,rgba(120,40,8,0) 72%);will-change:opacity;animation:cbfire 5.6s ease-in-out infinite}
 #cbOv .cbboard .cbfire{background:radial-gradient(62% 88% at 100% 82%,rgba(255,150,56,.26) 0%,rgba(226,96,24,.10) 45%,rgba(140,50,10,0) 74%);animation-duration:4.3s;animation-delay:-1.7s}
 @keyframes cbfire{0%{opacity:.78}17%{opacity:.92}29%{opacity:.82}46%{opacity:1}61%{opacity:.84}78%{opacity:.95}100%{opacity:.78}}
-#cbOv.nofx .cbfire{animation:none;opacity:.88}
+#cbOv .cbboard.cust .cbfire{display:none}
 #cbOv .cbs{position:absolute;inset:0;display:none;flex-direction:column;box-sizing:border-box;padding:var(--sat,env(safe-area-inset-top)) 0 var(--sab,env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
 #cbOv .cbs.on{display:flex}
 #cbOv .gold{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;background:linear-gradient(180deg,#fff3c4 0%,#ffd76a 38%,#e2a83e 62%,#9c6410 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
@@ -1348,6 +1149,26 @@ const CBApp = (() => {
 #cbOv .cbb.lg{min-height:58px;border-radius:29px;font-size:19px;padding:8px 10px}
 #cbOv .cbmod .three{display:flex;justify-content:center;gap:8px}
 #cbOv .cbmod .three .cbc{width:min(24vw,104px)}
+#cbOv .cbmod .three.four{gap:6px}#cbOv .cbmod .three.four .cbc{width:min(19vw,84px)}
+#cbOv .cbmod .rvord{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:21px;letter-spacing:.06em;color:#9ff0c0;text-shadow:0 2px 0 rgba(0,0,0,.6)}
+#cbOv .cbmod .rvord small{display:block;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;letter-spacing:0;color:#d9c08c;margin-top:2px}
+#cbOv .cbturn small.rv{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;background:linear-gradient(180deg,#1f7a46,#0f4a2a);border:1px solid #7be0a5;color:#e8fff1;font-size:11px;letter-spacing:0;line-height:1.5;vertical-align:2px}
+#cbOv .cbuse{position:absolute;left:50%;top:40%;z-index:7;width:min(calc(100% - 24px),390px);box-sizing:border-box;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#cbOv .cbuse.on{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+#cbOv .cbuse .in{display:flex;align-items:center;gap:12px;padding:11px 14px 11px 11px;border-radius:16px;background:linear-gradient(180deg,rgba(52,33,15,.97),rgba(22,13,6,.97));border:2px solid #c9a35a;box-shadow:0 10px 28px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,226,160,.18),inset 0 1px 0 rgba(255,240,200,.18)}
+#cbOv .cbuse .cd{position:relative;flex:none;width:62px;aspect-ratio:2/3;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+#cbOv .cbuse .cd img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+#cbOv .cbuse .cd.two{width:80px;aspect-ratio:auto;height:98px}
+#cbOv .cbuse .cd.two img{width:62px;height:93px}
+#cbOv .cbuse .cd.two img+img{left:18px;top:5px;transform:rotate(7deg)}
+#cbOv .cbuse .tx{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
+#cbOv .cbuse .who{font-size:11.5px;font-weight:700;line-height:19px;padding:0 9px;border-radius:10px;white-space:nowrap}
+#cbOv .cbuse.me .who{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206}
+#cbOv .cbuse.op .who{background:#3a1c10;border:1px solid #ffb38a;color:#ffd9c4;line-height:17px}
+#cbOv .cbuse.both .who{background:#1b1209;border:1px solid #c9a35a;color:#ffe2a0;line-height:17px}
+#cbOv .cbuse .tx b{font-size:22px;line-height:1.2;margin-top:1px}
+#cbOv .cbuse .tx em{font-style:normal;font-size:15px;font-weight:700;line-height:1.3;color:#ffe9a8}
+#cbOv .cbuse .tx small{font-size:12.5px;line-height:1.5;color:#f0dfb6;word-break:keep-all;overflow-wrap:anywhere}
 #cbOv .cbdl{width:100%;max-width:340px;max-height:56vh;overflow:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;padding:2px 4px 6px}
 #cbOv .cbdl h4{margin:12px 0 6px;font-size:14px;line-height:1.3;color:#ffe2a0;text-align:left;border-left:4px solid #e2a83e;padding-left:8px}
 #cbOv .cbdl h4:first-child{margin-top:2px}
@@ -1456,11 +1277,11 @@ const CBApp = (() => {
 #cbOv .cbmod.cbdzm{background:rgba(8,5,2,.93)}
 #cbOv .cbmod.cbdzm h3 small{display:block;font-size:12.5px;font-weight:400;color:#d9c08c;letter-spacing:.04em}
 #cbOv .cbmod .big.sm{width:min(36vw,calc((100vh - 420px) * .6667),150px)}
+#cbOv .cbdz .tiles.d{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#cbOv .cbdz .tiles.d .dzt>img{max-width:none;aspect-ratio:1672/941;border-radius:6px}
+#cbOv .cbmod .big.bd{width:min(calc(100vw - 32px),calc((100vh - 300px) * 1.777),420px);aspect-ratio:1672/941;border-radius:10px;overflow:hidden}
+#cbOv .cbmod .big.bd.sm{width:min(64vw,calc((100vh - 400px) * 1.777),260px)}
 #cbOv .cbmod .cbneed{font-size:12.5px;color:#ffb38a;text-align:center}
-#cbOv .cbefx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:5;display:none}
-#cbOv .cbefx.l{mix-blend-mode:screen}
-#cbOv.efon .cbefx{display:block}#cbOv.eftop .cbefx{z-index:10}
-#cbOv .cbmod .big.ef{width:min(52vw,calc((100vh - 400px) * .6667),220px)}
 #cbOv .cbtst{margin:18px 2px 0;padding:10px 10px 12px;border-radius:14px;border:2px dashed #b98a4a;background:rgba(255,244,214,.08)}
 #cbOv .cbtst b{display:block;color:#ffe9a8;font-size:14px}#cbOv .cbtst small{display:block;font-size:11.5px;color:#d9c08c;margin:2px 0 8px}
 #cbOv .cbtst .r{display:flex;flex-wrap:wrap;gap:6px}
@@ -1498,11 +1319,9 @@ const CBApp = (() => {
 #cbOv .cbend .gift .cbmsn b{color:#ffe07a;font-size:15px}
 #cbOv .cbend .gift .cbmsn .cbci{width:1.25em;height:1.25em;vertical-align:-.28em;margin-right:0}
 @media (max-height:720px){#cbOv .cbmenu .lg{width:min(44vw,168px)}#cbOv .cbmenu{gap:8px}}
-@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}}
-#cbOv.nofx .cbglow.on{animation:none}#cbOv.nofx .cbhand .cbc.new{animation:none}#cbOv.nofx .cbflip .in{transition:none}#cbOv.nofx .cbget{animation:none}#cbOv.nofx .cbend .gift .cbmsn{animation:none}
-#cbOv.nofx .cbban,#cbOv.nofx .cbres,#cbOv.nofx .cbvs .sd,#cbOv.nofx .cbhand .cbc,#cbOv.nofx .cbtoast{transition:none}
+@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
 `;
-  let ov = null, built = false, scr = {}, flyEl = null, modEl = null, toastEl = null, banEl = null;
+  let ov = null, built = false, scr = {}, flyEl = null, modEl = null, toastEl = null, banEl = null, useEl = null;
   const $ = (s, r) => (r || ov).querySelector(s);
   function build() {
     if (built) return; built = true;
@@ -1514,7 +1333,7 @@ const CBApp = (() => {
       + '<div class="btns"><button type="button" class="cbb" data-cb="cpu">コンピュータと 対戦</button>'
       + '<div class="row"><button type="button" class="cbb" data-cb="host">部屋を 作る<small>友だちと 対戦</small></button><button type="button" class="cbb" data-cb="join">部屋に 入る<small>友だちと 対戦</small></button></div>'
       + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div>'
-      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>おもて・うら・エフェクト</small></button></div></div></section>'
+      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>おもて・うら・ボード</small></button></div></div></section>'
       + '<section class="cbs cbroom" data-s="room"></section>'
       + '<section class="cbs cbgame" data-s="game">'
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div><button type="button" class="cbb dk sm" data-cb="help" aria-label="あそび方">？</button></div>'
@@ -1530,17 +1349,17 @@ const CBApp = (() => {
       + '<section class="cbs cbhelp" data-s="help"></section>'
       + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<section class="cbs cbms" data-s="ms"></section>'
-      + '<div class="cbfly"></div><canvas class="cbefx a"></canvas><canvas class="cbefx l"></canvas><canvas class="cbefx o"></canvas><div class="cbban"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
+      + '<div class="cbfly"></div><div class="cbban"></div><div class="cbuse" data-cb="useok" aria-live="polite"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
     document.body.appendChild(ov);
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
-    flyEl = $('.cbfly'); modEl = $('.cbmod'); toastEl = $('.cbtoast'); banEl = $('.cbban');
+    flyEl = $('.cbfly'); modEl = $('.cbmod'); toastEl = $('.cbtoast'); banEl = $('.cbban'); useEl = $('.cbuse');
     ov.addEventListener('click', onClick);
     document.addEventListener('visibilitychange', () => { if (ov.classList.contains('on')) bgmSync(); });      
     window.addEventListener('resize', () => { if (ov.classList.contains('on')) layout(); });
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
   let screen = '';
-  function show(name) { screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); }
+  function show(name) { screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); if (name !== 'game') useOff(); }
   let toastT = 0;
   function toast(t, sec) {
     toastEl.textContent = t;
@@ -1556,81 +1375,45 @@ const CBApp = (() => {
     banEl.innerHTML = `<div class="bd"><b class="gold">${esc(big)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>`; banEl.classList.add('on');
     await T(ms || 900); banEl.classList.remove('on'); await T(180);
   }
-
   
   
   
   
-  
-  const fxs = { run: null, cv: null, log: [], stop: null };
-  const efOf = me => { if (me || !match || match.kind === 'cpu') return st && EF_IDS.indexOf(st.ef) >= 0 ? st.ef : ''; const e = match.opDz && match.opDz.e; return EF_IDS.indexOf(e) >= 0 ? e : ''; };
-  const fxNow = () => (clk.manual ? clk.now : performance.now());
-  function fxAt(me) {      
-    const o = ov.getBoundingClientRect(), el = me == null ? null : $('.cbslot.' + (me ? 'my' : 'op')), bd = $('.cbboard');
-    const r = el && el.getBoundingClientRect().width ? el.getBoundingClientRect() : null, bw = bd && bd.getBoundingClientRect().width ? bd.getBoundingClientRect().width : Math.min(o.width, 480);
-    return { x: r ? r.left - o.left + r.width / 2 : o.width / 2, y: r ? r.top - o.top + r.height / 2 : o.height * 0.42, s: Math.max(110, Math.min(210, bw * 0.42)) };
+  const USE_MS = 1900;
+  let useSkip = null;
+  function useOf(x) {
+    const W = WHO(), yours = x.me ? `${W}の` : 'あなたの';
+    if (x.e === 'p6') return { k: '6', t: '6 の 効果', n: '手札を 1まい 見る', d: `6 を 2まい 見せて、${yours} 手札を 1まい 見るよ` };
+    if (x.e === 'u5') return { k: '5', t: '5 の 効果', n: '捨てて 山札から セット', d: 'セットした 5 と 手札 1まいを 捨てて、山札から 1まい ふせて セットするよ' };
+    if (x.e === 'x7') return { k: '7', t: '7 の 効果', n: '3まい 交換', d: '7 を 3まい 山札に もどして、新しく 3まい 引くよ' };
+    if (x.e === 'x7r') return { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4まい 見せて 1まい 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
+    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: `3 を 3まい 見せて、その 1まいと ${yours} 手札の 1まい（ランダム）を 交換するよ` };
+    if (x.e === 'first') return { k: '4', t: '4 の 効果', n: '強制 交換', d: x.me ? `4 を 先に 見せたよ。${W}は セットした カードを 交換するよ` : '4 を 先に 見せたよ。あなたは セットした カードを、手札の 別の カードと 交換してね' };
+    if (x.e === 'first2') return { k: '4', t: '4 の 効果', n: '打ち消して ドロー', d: '2人とも 4 の 効果を 使った ので、打ち消しあって この ターンは ドロー（引き分け）だよ', both: true };
+    if (x.e === 'k') return { k: 'k', t: '神様馬の 効果', n: '手札を 1まい 見る', d: `前の ターンに 神様馬で 勝った ので、${yours} 手札を 1まい 見るよ` };
+    if (x.e === 'm') return { k: 'm', t: '幻の馬の 効果', n: '捨てて 引きなおす', d: `前の ターンに 幻の馬で 勝った ので、手札を 2まい 捨てて、山札から ${x.n}まい 引くよ` };
+    if (x.e === 'rev') return { k: x.k, t: `${x.k} の 効果`, n: '逆転勝利', d: `${x.k} を 3まい（場の 1まい ＋ 手札の 2まい）見せて、手札の ${x.k} を 1まい 捨てると、${toName(x.beat)} 勝ち！` };
+    return null;
   }
-  function fxPlay(id, at, top) {
-    if (!FXL || !ov) return Promise.resolve();
-    const run = (fxs.run || Promise.resolve()).then(() => FXL.load(id)).then(I => new Promise(done => {
-      if (!fxs.cv) fxs.cv = ['a', 'l', 'o'].map(k => $('.cbefx.' + k));
-      const o = ov.getBoundingClientRect(), W = Math.max(1, Math.round(o.width)), H = Math.max(1, Math.round(o.height)), dpr = Math.min(2, window.devicePixelRatio || 1);
-      fxs.cv.forEach(c => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
-      const L = { a: fxs.cv[0].getContext('2d'), l: fxs.cv[1].getContext('2d'), o: fxs.cv[2].getContext('2d') }, all = [L.a, L.l, L.o];
-      const fx = FXL.make(id, { x: at.x, y: at.y, s: at.s, W: W, H: H, seed: fxs.log.length * 7919 + 17 });
-      const dur = FXL.DUR[id], t0 = fxNow(), g = top ? null : scr.game;
-      let h = null, live = true;
-      const wipe = () => all.forEach(c => { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, c.canvas.width, c.canvas.height); });
-      const fin = () => {
-        if (!live) return; live = false;
-        if (h != null) { if (typeof h === 'object') unlater(h); else cancelAnimationFrame(h); }
-        wipe(); ov.classList.remove('efon', 'eftop'); if (g) g.style.transform = ''; fxs.stop = null; done();
-      };
-      const frame = () => {
-        h = null; if (!live) return;
-        const t = (fxNow() - t0) / Math.max(SPEED, 0.001);
-        if (t >= dur) return fin();
-        wipe(); all.forEach(c => c.setTransform(dpr, 0, 0, dpr, 0, 0));
-        let r = null; try { r = FXL.draw(L, I, fx, t); } catch (e) { return fin(); }
-        const sh = r && r.shake ? r.shake : [0, 0];
-        if (g) g.style.transform = sh[0] || sh[1] ? `translate(${sh[0].toFixed(1)}px,${sh[1].toFixed(1)}px)` : '';
-        h = clk.manual ? later(frame, 1000 / 60) : requestAnimationFrame(frame);
-      };
-      fxs.stop = fin; fxs.log.push({ id: id, top: !!top, me: at.me });
-      ov.classList.add('efon'); ov.classList.toggle('eftop', !!top);
-      frame();
-    }));
-    fxs.run = run; run.then(() => { if (fxs.run === run) fxs.run = null; });
-    return run;
+  async function useShow(x) {
+    const u = useOf(x); if (!u || !useEl || screen !== 'game') return;
+    hush();                                            
+    const im = sd => `<img src="${pic(u.k, false, sd)}" alt="" draggable="false">`;
+    useEl.className = 'cbuse ' + (u.both ? 'both' : x.me ? 'me' : 'op');
+    useEl.innerHTML = `<div class="in"><span class="cd${u.both ? ' two' : ''}">${u.both ? im('my') + im('op') : im(x.me ? 'my' : 'op')}</span><div class="tx">`
+      + `<span class="who">${esc(u.both ? 'どちらも 使った！' : x.me ? 'あなたが 使った！' : WHO() + 'が 使った！')}</span><b class="gold">${esc(u.t)}</b><em>${esc(u.n)}</em><small>${esc(u.d)}</small></div></div>`;
+    const bd = $('.cbboard').getBoundingClientRect(), o = ov.getBoundingClientRect();
+    useEl.style.top = bd.height ? Math.round(bd.top - o.top + bd.height / 2) + 'px' : '';      
+    void useEl.offsetWidth; useEl.classList.add('on');
+    se('magic');
+    await new Promise(ok => { const h = later(() => { useSkip = null; ok(); }, USE_MS * SPEED); useSkip = () => { unlater(h); useSkip = null; ok(); }; });
+    useEl.classList.remove('on'); await T(220);
   }
-  function fxStop() { if (fxs.stop) fxs.stop(); }
-  
-  async function efx(me) {
-    const id = efOf(me); if (!id || !FXL) return false;
-    while (fxs.run) await fxs.run;
-    await FXL.load(id);
-    se('ef_' + id);
-    if (reduce() || !match) return true;
-    const at = fxAt(me); at.me = !!me;
-    fxPlay(id, at);
-    await T(FXL.HOLD[id]);
-    return true;
-  }
-  
-  function fxPre() { if (!FXL) return; [efOf(true), efOf(false)].forEach(id => { if (id) { FXL.load(id); if (seOn()) seBuf('ef_' + id); } }); }
-  
-  async function fxTry(id) {
-    if (EF_IDS.indexOf(id) < 0 || !FXL || fxs.run) return;
-    await FXL.load(id);
-    se('ef_' + id);
-    if (reduce()) { toast('設定の「エフェクト」が オフ（または iPhone の「視差効果を減らす」）\nなので、音 だけ 鳴らしたよ', 3); return; }
-    const big = $('.cbmod .big'), o = ov.getBoundingClientRect(), r = big ? big.getBoundingClientRect() : null;
-    fxPlay(id, r && r.width ? { x: r.left - o.left + r.width / 2, y: r.top - o.top + r.height / 2, s: Math.max(110, Math.min(200, r.width * 0.8)) } : { x: o.width / 2, y: o.height * 0.45, s: 160 }, true);
-  }
+  function useOff() { if (useSkip) useSkip(); if (useEl) useEl.classList.remove('on'); }      
 
   
   function showMenu() {
-    fxStop(); closeMod(); show('menu'); msRoll();
+    closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　いま <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
       + `勝つと お世話トークン <b>${REWARD.win}</b>こ・<b>${REWARD.every}</b>連勝 ごとに <b>${REWARD.bonus}</b>こ`;
@@ -1656,9 +1439,9 @@ const CBApp = (() => {
       + '<li><b>② 効果タイム</b>：2人とも セットしたら、使える 効果が ある 人に「効果を 使う？」と 聞くよ。<b>「使う」「使わない」は 自分で えらべる</b>。2人とも 決めたら、いっしょに 効果が 出る</li>'
       + '<li><b>③ オープン</b>：2まいを いっしょに めくる。<b>強い カードの 勝ち</b>（1・2 の「<b>逆転勝利</b>」は、めくった あとに 使うか えらぶよ）</li></ul>'
       + '<h4>カードの 強さ</h4><div class="ord">' + ['k', 'm'].map(k => `<img src="${pic(k)}" alt="${nameOf(k)}">`).join('<i>＝</i>') + ['1', '2', '3', '4', '5', '6', '7'].map(k => `<i>＞</i><img src="${pic(k)}" alt="${k}">`).join('') + '</div>'
-      + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が いちばん 強い（この 2まいが ぶつかったら 引き分け）</li><li>数字は <b>1 が いちばん 強くて、7 が いちばん 弱い</b></li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b>（4 どうしで <b>2人とも 4 の 効果を 使った</b> ときは <b>ドロー</b>）</li><li><b>逆転勝利</b>：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる（下の「カードの 効果」）</li><li>カードは ぜんぶで 30まい（1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい）</li></ul>'
-      + '<h4>カードの 効果</h4><ul><li><b>7・6・5・4・3</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、使うか えらぶよ</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした あと</b>、負けた 人が 使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で えらべる</b>よ</li></ul>'
-      + ef('7', '7：3まい そろえて 交換', '手札に 7 が 3まい あれば、3まいを 山札に もどして、新しく 3まい 引けるよ。')
+      + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が いちばん 強い（この 2まいが ぶつかったら 引き分け）</li><li>数字は <b>1 が いちばん 強くて、7 が いちばん 弱い</b></li><li>7 の 効果（<b>4まい 公開</b>）で <b>強さ 逆転</b>したら、その 対戦が 終わる まで <b>7 が いちばん 強くて、1 が いちばん 弱い</b>（神様馬と 幻の馬は いちばん 強い まま。上に「強さ 逆転中」と 出るよ）</li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b>（4 どうしで <b>2人とも 4 の 効果を 使った</b> ときは <b>ドロー</b>）</li><li><b>逆転勝利</b>：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる（下の「カードの 効果」）</li><li>カードは ぜんぶで 30まい（1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい）</li></ul>'
+      + '<h4>カードの 効果</h4><ul><li><b>7・6・5・4・3</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、使うか えらぶよ</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした あと</b>、負けた 人が 使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で えらべる</b>よ</li><li>効果を 使うと、ボードの まん中に <b>だれが・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
+      + ef('7', '7：3まい 交換・4まい 公開で 逆転', '【3まい】手札に 7 が 3まい あれば、3まいを 山札に もどして、新しく 3まい 引けるよ。<br>【4まい】手札に 7 が 4まい あれば、4まい 見せて 1まい 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は いちばん 強い まま）。【3まい】と【4まい】は どちらか 1つ')
       + ef('6', '6：2まい 見せて 手札を 見る', '手札に 6 が 2まい あれば、その 2まいを 相手に 見せて、相手の 手札を 1まい えらんで 見られるよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
       + ef('5', '5：2まい 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1まいを 捨てて、山札から 1まいを ふせて セットできるよ。何が 出るかは オープンまで わからない！<br>使えるのは、使った あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ（さいごの ターンは、手札が 1まい あれば 使える）。')
       + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる かわりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか えらべる</strong>よ（オープンの 前）。')
@@ -1674,15 +1457,14 @@ const CBApp = (() => {
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b>・<b>${COIN.every}連勝 ごとに ${COIN.bonus}枚</b> もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
       + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
-      + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>と <b>うら</b>の デザインを かえられるよ</li>`
-      + `<li>新しい デザインは <b>バトルコイン</b>で 1つずつ 解放できるよ：カードの おもて <b>${FACE_COST}枚</b>（神様馬・幻の馬は <b>${TOP_COST}枚</b>）・カードの うら <b>${BACK_COST}枚</b>。いつもの デザインは はじめから 使えるよ</li>`
-      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（うら・おもて）も あなたが えらんだ デザインに なるよ</li><li>友だちと 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友だちの カードは 友だちが えらんだ デザイン</b>で 出るよ（山札は あなたの うら）</li>'
-      + `<li><b>エフェクト</b>（カードの 効果を 使う ときの 演出と 音：${EFS.map(d => d.name).join('・')}）も 1つ <b>${EF_COST}枚</b>で 解放できるよ。「ためしに 見る」で 解放の 前にも 見られるよ</li><li>コンピュータの 効果も あなたが えらんだ エフェクト・友だちの 効果は 友だちが えらんだ エフェクトで 出るよ（設定の「エフェクト」が オフの ときは 音 だけ）</li></ul>`
+      + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>・<b>うら</b>と <b>プレイボード</b>の デザインを かえられるよ</li>`
+      + `<li>新しい デザインは <b>バトルコイン</b>で 1つずつ 解放できるよ：カードの おもて <b>${FACE_COST}枚</b>（神様馬・幻の馬は <b>${TOP_COST}枚</b>）・カードの うら <b>${BACK_COST}枚</b>・プレイボード <b>${BOARD_COST}枚</b>。いつもの デザインは はじめから 使えるよ</li>`
+      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（うら・おもて）も あなたが えらんだ デザインに なるよ</li><li>友だちと 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友だちの カードは 友だちが えらんだ デザイン</b>で 出るよ（山札は あなたの うら）</li><li>プレイボードは、あなたの 画面に 出るよ（友だちと 対戦する ときも、あなたの 画面は あなたが えらんだ ボード）</li></ul>'
       + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友だちバトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友だちバトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に もどる）</li>'
       + '<li>負けると その 連勝は 0 に もどるよ（とちゅうで やめた・対戦の とちゅうで アプリを 閉じた ときも 同じ）。同点は そのまま。友だちが とちゅうで 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータと 友だちバトルの 連勝は 別に 数えるよ</li></ul>'
-      + '<h4>音と エフェクト（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>・<b>エフェクト</b>（光や 動きの 演出）を オン／オフ できるよ</li></ul>'
+      + '<h4>音（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>を オン／オフ できるよ</li></ul>'
       + '<h4>友だちと 対戦（部屋）</h4><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4けた）</b>を 友だちに 教える</li><li>友だちは「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友だち</b>と、iPhone どうしで 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>はじめて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul>'
       + '</div>';
     show('help');
@@ -1715,9 +1497,9 @@ const CBApp = (() => {
     const same = !tab || tab === dzTab, b0 = $('.bd', scr.dz), y = same && b0 && screen === 'dz' ? b0.scrollTop : 0;
     if (tab) dzTab = tab;
     closeMod();
-    const body = dzTab === 'e'
-      ? `<h4>エフェクト<small>1つ ${COINI}${EF_COST}枚</small></h4><div class="tiles">${efTile(null)}${EFS.map(efTile).join('')}</div>`
-        + '<p class="dzn">えらんだ エフェクトは、あなたが カードの 効果を 使う ときに 出るよ（音も かわる）。コンピュータの 効果も この エフェクト。友だちと 対戦する ときは、友だちの 効果は 友だちが えらんだ エフェクトに なるよ。設定の「エフェクト」が オフの ときは 音 だけ</p>'
+    const body = dzTab === 'd'
+      ? `<h4>プレイボード<small>1つ ${COINI}${BOARD_COST}枚</small></h4><div class="tiles d">${bdTile(null)}${BOARDS.map(bdTile).join('')}</div>`
+        + '<p class="dzn">えらんだ プレイボードは、あなたの 画面の 対戦で 出るよ。友だちと 対戦する ときも、あなたの 画面は あなたの ボード（友だちの 画面は 友だちが えらんだ ボード）</p>'
       : dzTab === 'b'
       ? `<h4>カードの うら<small>1つ ${COINI}${BACK_COST}枚</small></h4><div class="tiles b">${dzTile(null, null)}${BACKS.map(d => dzTile(null, d)).join('')}</div>`
         + '<p class="dzn">えらんだ うらは、あなたの 画面の 山札・あなたの ふせた カードに 出るよ。コンピュータの 手札も この うら。友だちと 対戦する ときは、友だちの カードは 友だちが えらんだ うらに なるよ</p>'
@@ -1727,7 +1509,7 @@ const CBApp = (() => {
       + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
       + `<div class="tabs" role="tablist"><button type="button" role="tab" data-cb="dztab" data-t="f" class="${dzTab === 'f' ? 'on' : ''}" aria-selected="${dzTab === 'f'}">カードの おもて</button>`
       + `<button type="button" role="tab" data-cb="dztab" data-t="b" class="${dzTab === 'b' ? 'on' : ''}" aria-selected="${dzTab === 'b'}">カードの うら</button>`
-      + `<button type="button" role="tab" data-cb="dztab" data-t="e" class="${dzTab === 'e' ? 'on' : ''}" aria-selected="${dzTab === 'e'}">エフェクト</button></div>`
+      + `<button type="button" role="tab" data-cb="dztab" data-t="d" class="${dzTab === 'd' ? 'on' : ''}" aria-selected="${dzTab === 'd'}">プレイボード</button></div>`
       + `<div class="bd">${body}${testOn() ? window.CBTest.html() : ''}</div>`;
     show('dz');
     const b1 = $('.bd', scr.dz); if (b1) b1.scrollTop = y;
@@ -1766,48 +1548,54 @@ const CBApp = (() => {
     showDz(); toast(`${dzWhat(kind)}を『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
   }
   
-  const efGet = id => (id ? EFS.find(d => d.id === id) : null);
-  const efOwn = d => !d || st.efs.indexOf(d.id) >= 0;
-  function efTile(d) {
-    const id = d ? d.id : '', used = (st.ef || '') === id, own = efOwn(d);
+  const bdGet = id => (id ? BOARDS.find(d => d.id === id) : null);      
+  const bdOwn = d => !d || st.boards.indexOf(d.id) >= 0;
+  const bdUsed = id => (st.board || '') === (id || '');
+  function bdTile(d) {
+    const id = d ? d.id : '', used = bdUsed(id), own = bdOwn(d);
     const em = used ? '使って いる' : own ? '持って いる' : `${COINI}${d.cost}枚`;
-    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}" data-cb="efi" data-id="${id}" aria-label="${esc((d ? d.name : 'いつもの') + '・' + em.replace(/<[^>]+>/g, ''))}"><img src="${d ? d.s : 'cb_ef_none_s.webp'}" alt="" draggable="false"><span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
+    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}" data-cb="bdi" data-id="${id}" aria-label="${esc((d ? d.name : 'いつもの') + '・' + em.replace(/<[^>]+>/g, ''))}"><img src="${d ? d.s : 'cb_board.webp'}" alt="" draggable="false"><span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
   }
-  function efItem(id) {
-    const d = efGet(id); if (id && !d) return;
-    const used = (st.ef || '') === (id || ''), own = efOwn(d);
+  function bdItem(id) {
+    const d = bdGet(id); if (d === undefined) return;
+    const used = bdUsed(id), own = bdOwn(d);
     let btns;
     if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
-    else if (own) btns = `<button type="button" class="cbb" data-cb="efuse" data-id="${id || ''}">この エフェクトを 使う</button>`;
-    else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="efopen" data-id="${d.id}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
+    else if (own) btns = `<button type="button" class="cbb" data-cb="bduse" data-id="${id || ''}">この ボードを 使う</button>`;
+    else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="bdopen" data-id="${d.id}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
     else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚）</p>`;
-    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>エフェクト（効果を 使う ときの 演出）</small></h3><div class="big ef"><img src="${d ? d.s : 'cb_ef_none_s.webp'}" alt="${esc(d ? d.name : 'いつもの')}"></div>`
-      + (d ? '' : '<p>効果を 使う とき、とくべつな 演出は 出さないよ（いつもの 音）</p>')
-      + `<div class="col">${d ? `<button type="button" class="cbb dk" data-cb="eftry" data-id="${d.id}">▶ ためしに 見る</button>` : ''}${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
+    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>プレイボード</small></h3><div class="big bd"><img src="${d ? d.b : 'cb_board.webp'}" alt="プレイボード"></div>`
+      + `<div class="col">${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
   }
-  function efAsk(id) {
-    const d = efGet(id); if (!d || efOwn(d) || st.coin < d.cost) return;
+  function bdAsk(id) {
+    const d = bdGet(id); if (!d || bdOwn(d) || st.coin < d.cost) return;
     dzAt = performance.now();
-    modal(`<h3 class="gold">解放する？</h3><div class="big sm"><img src="${d.s}" alt=""></div><p>エフェクト『${esc(d.name)}』を 解放するよ</p>`
+    modal(`<h3 class="gold">解放する？</h3><div class="big bd sm"><img src="${d.s}" alt=""></div><p>『${esc(d.name)}』（プレイボード）を 解放するよ</p>`
       + `<p class="cbstkv">${COINI}<b>${st.coin}</b>枚<i>→</i>のこり <b>${st.coin - d.cost}</b>枚</p>`
-      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="efgo" data-id="${d.id}">解放する</button></div>`, 'cbdzm');
+      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="bdgo" data-id="${d.id}">解放する</button></div>`, 'cbdzm');
   }
-  function efGo(id) {
-    const d = efGet(id); if (!d || efOwn(d) || st.coin < d.cost) return;
-    st.coin -= d.cost; st.efs.push(d.id); st.ef = d.id;      
-    save(); se('magic', 0.8);
-    showDz(); toast(`エフェクト『${d.name}』を 解放したよ！\n効果を 使う ときに 出るよ`, 3);
+  function bdGo(id) {
+    const d = bdGet(id); if (!d || bdOwn(d) || st.coin < d.cost) return;
+    st.coin -= d.cost; st.boards.push(d.id); st.board = d.id;      
+    save(); se('magic', 0.8); boardImg();
+    showDz(); toast(`『${d.name}』を 解放したよ！\nプレイボードが この デザインに なったよ`, 3);
   }
-  function efUse(id) {
-    const d = efGet(id); if ((id && !d) || !efOwn(d)) return;
-    st.ef = d ? d.id : ''; save(); se('tap', 0.7);
-    showDz(); toast(`エフェクトを『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
+  function bdUse(id) {
+    const d = bdGet(id); if (d === undefined || !bdOwn(d)) return;
+    st.board = d ? d.id : ''; save(); se('tap', 0.7); boardImg();
+    showDz(); toast(`プレイボードを『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
+  }
+  
+  function boardImg() {
+    if (!ov) return; const im = $('.cbboard>img'), d = boardNow(), f = d ? d.b : 'cb_board.webp';
+    if (im && im.getAttribute('src') !== f) im.setAttribute('src', f);
+    const bd = $('.cbboard'); if (bd) bd.classList.toggle('cust', !!d);
   }
   
   const dzApi = {
     add: k => { addCoin(k); save(); showDz(); toast(`🧪 バトルコイン ＋${k}枚（いま ${st.coin}枚）`, 2); },
     set: k => { st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+k || 0))); save(); showDz(); toast(`🧪 バトルコイン ${st.coin}枚に したよ`, 2); },
-    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; st.efs = []; st.ef = ''; save(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン・エフェクト）', 2.4); }
+    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; st.boards = []; st.board = ''; save(); boardImg(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン・ボード）', 2.4); }
   };
 
   
@@ -1905,7 +1693,7 @@ const CBApp = (() => {
     nr.open(r.mode, r.code, step => { if (room !== r) return; r.step = step; paintRoom(); }).then(link => {
       if (room !== r) { try { link.close(); } catch (e) {   } return; }
       clearTimeout(r.tm); room = null; se('join');
-      const dz = { b: st.back, f: Object.assign({}, st.face), e: st.ef || '' };      
+      const dz = { b: st.back, f: Object.assign({}, st.face) };      
       startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined, r.stake, dz) : CBNet.guest(link, dz));
     }).catch(e => {
       if (room !== r) return;
@@ -1981,18 +1769,23 @@ const CBApp = (() => {
   }
   
   
-  const EFFQ = ['6', '5', '7', '3', '4'];
+  
+  const EFFQ = ['6', '5', '7r', '7', '3', '4'];
   const EFFTXT = { 6: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', 5: '5 と 手札 1まいを 捨てて、山札から 1まい セットできるよ', 7: '7 を 3まい 山札に もどして、新しく 3まい 引けるよ',
+    '7r': '7 を 4まい 見せて 1まい 捨てると、この 対戦が 終わる まで 数字の 強さが 逆に なるよ（7＞6＞5＞4＞3＞2＞1）',
     3: '3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（ランダム）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
-  const EFFBAR = { 3: '3 を 3まい 見せて、手札を 1まい 交換できるよ' };      
+  const EFFBAR = { 3: '3 を 3まい 見せて、手札を 1まい 交換できるよ', '7r': '7 を 4まい 見せて 1まい 捨てると、数字の 強さが 逆に なるよ' };
+  const effQ = q => (q === '7r' ? '7 を 4まい 見せて 逆転する？' : `${q} の 効果を 使う？`);      
+  const effBtn = q => (q === '7r' ? '4まい 見せて 逆転' : `${q} の 効果を 使う`);
+  const effK = q => (q === '7r' ? '7' : q);      
   
   const toName = o => (NAMES[o] ? NAMES[o] + 'に' : o + ' に');
   const REVTXT = (k, o) => `手札の ${k} を 2まい 見せて、1まい 捨てると、${toName(o)} 勝てるよ`;
   const REVBAR = (k, o) => `手札の ${k} を 1まい 捨てて、${toName(o)} 勝てるよ`;
   function effOk(q, v, use) {
     const c = v.can.eff; if (!c) return false;
-    const three = k => v.my.hand.filter(x => x.k === k && x.u !== use.u5).length >= 3;
-    return q === '6' ? c.e6 : q === '5' ? c.e5 : q === '7' ? c.e7 && three('7') : q === '3' ? !!c.e3 && three('3') : c.e4;
+    const three = k => v.my.hand.filter(x => x.k === k && x.u !== use.u5).length >= 3, four = v.my.hand.filter(x => x.k === '7' && x.u !== use.u5).length >= 4;
+    return q === '6' ? c.e6 : q === '5' ? c.e5 : q === '7r' ? !!c.e7r && four : q === '7' ? c.e7 && three('7') && !use.x7r : q === '3' ? !!c.e3 && three('3') : c.e4;
   }
   function effNext(v, use, after) { for (let i = EFFQ.indexOf(after) + 1; i < EFFQ.length; i++) if (effOk(EFFQ[i], v, use)) return EFFQ[i]; return null; }
   
@@ -2009,14 +1802,14 @@ const CBApp = (() => {
     else if (mode.k === 'u5') { if (!(v.pend && v.pend.mine && v.pend.type === 'u5')) mode = { k: 'idle' }; }
     else mode = { k: 'idle' };
   }
-  const sortHand = h => h.slice().sort((a, b) => power(a.k) - power(b.k) || a.u - b.u);
+  const sortHand = h => { const rv = !!(V && V.rv); return h.slice().sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u); };      
   const cardBtn = (c, cls, extra, side) => `<button type="button" class="cbc ${cls || ''}" data-u="${c.u}" data-ck="${c.k ? esc(c.k) : ''}"${extra || ''} aria-label="${c.k ? esc(nameOf(c.k)) + ' の カード' : 'ふせた カード'}"><img src="${pic(c.k, false, side)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;
   function pips(n, turns) { let h = ''; for (let i = 0; i < turns; i++) h += `<i class="${i < n ? 'on' : ''}"></i>`; return h; }
   const turnsOf = () => (V && V.turns) || R.TURNS;      
   function deckImg() { const im = $('.cbdeck img'), f = deckPic(); if (im && im.getAttribute('src') !== f) im.setAttribute('src', f); }      
   function paintEmpty() {
     $('.cbturn').innerHTML = ''; $('.cbohand').innerHTML = ''; $('.cbhand').innerHTML = ''; $('.cbact').innerHTML = ''; say('');
-    deckImg(); $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
+    deckImg(); boardImg(); $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
     ov.querySelectorAll('.cbpips').forEach(e => { e.innerHTML = pips(0, turnsOf()); });
     $('.cbglow').classList.remove('on');
   }
@@ -2068,7 +1861,7 @@ const CBApp = (() => {
   function render() {
     const v = V; if (!v || screen !== 'game') return;
     if (v.can.eff && mode.k !== 'eff') { const q = effNext(v, {}, null); mode = q ? { k: 'eff', use: {}, q: q, step: 'ask' } : { k: 'idle' }; }      
-    $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '');
+    $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '') + (v.rv ? '<small class="rv">強さ 逆転中</small>' : '');      
     $('.cbpips[data-p=op]').innerHTML = pips(v.op.wins, v.turns); $('.cbpips[data-p=my]').innerHTML = pips(v.my.wins, v.turns);
     $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ' data-cb="ocard"', 'op')).join('');
     deckImg(); $('.cbdeck .cbn').textContent = String(v.deckN); paintDis(v.discard);
@@ -2082,7 +1875,7 @@ const CBApp = (() => {
     layout();
   }
   function modeText() {
-    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と いっしょに 捨てる カードを えらんでね（カードを タップ）' : `効果タイム！ ${mode.q} の 効果を 使う？\n${EFFBAR[mode.q] || EFFTXT[mode.q]}`;
+    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と いっしょに 捨てる カードを えらんでね（カードを タップ）' : `効果タイム！ ${effQ(mode.q)}\n${EFFBAR[mode.q] || EFFTXT[mode.q]}`;
     if (mode.k === 'dropm') return `捨てる カードを 2まい えらんでね（${mode.sel.length}／2）`;
     if (mode.k === 'u5') return '5 と いっしょに 捨てる カードを えらんでね（カードを タップ）';      
     return '';
@@ -2096,7 +1889,7 @@ const CBApp = (() => {
     const v = V, a = $('.cbact'); let h = '';
     const two = (no, yes, yesText) => `<button type="button" class="cbb dk sm" data-cb="${no}">使わない</button><button type="button" class="cbb sm" data-cb="${yes}">${yesText}</button>`;
     if (asking) h = '';
-    else if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">もどる</button>' : two('effno', 'effyes', `${mode.q} の 効果を 使う`);
+    else if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">もどる</button>' : two('effno', 'effyes', effBtn(mode.q));
     else if (mode.k === 'dropm') h = `<button type="button" class="cbb dk sm" data-cb="modex">もどる</button><button type="button" class="cbb sm" data-cb="mgo"${mode.sel.length === 2 ? '' : ' disabled'}>この 2まいを 捨てて 引く</button>`;
     else if (v.pend && v.pend.mine && v.pend.type === 'k') h = two('kskip', 'kgo', '神様馬の 効果を 使う');
     else if (v.pend && v.pend.mine && v.pend.type === 'm') h = two('mskip', 'mpick', '幻の馬の 効果を 使う');
@@ -2124,7 +1917,7 @@ const CBApp = (() => {
   let askAt = 0;
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
-    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.q}`, k: mode.q, head: '効果タイム！', q: `${mode.q} の 効果を 使う？`, text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
+    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.q}`, k: effK(mode.q), head: '効果タイム！', q: effQ(mode.q), text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'k') return { id: `k${gameNo}.${v.turn}`, k: 'k', head: '神様馬で 勝った！', q: '神様馬の 効果を 使う？', text: '相手の 手札を 1まい 見られるよ', yes: 'kgo', no: 'kskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'm') return { id: `m${gameNo}.${v.turn}`, k: 'm', head: '幻の馬で 勝った！', q: '幻の馬の 効果を 使う？', text: '手札を 2まい 捨てて、山札から 2まい 引けるよ', yes: 'mpick', no: 'mskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'u5') return { id: `u${gameNo}.${v.turn}`, k: '5', head: '交換で 5 を セット！', q: '5 の 効果を 使う？', text: EFFTXT[5], yes: 'u5yes', no: 'u5no' };      
@@ -2189,8 +1982,9 @@ const CBApp = (() => {
   
   
   
-  const SETS = [['bgm', 'BGM', '音楽'], ['se', '効果音', 'カードや ボタンの 音'], ['fx', 'エフェクト', '光や 動きの 演出']];
-  const setOn = k => (k === 'bgm' ? bgmOn() : k === 'se' ? seOn() : fxOn());
+  
+  const SETS = [['bgm', 'BGM', '音楽'], ['se', '効果音', 'カードや ボタンの 音']];
+  const setOn = k => (k === 'bgm' ? bgmOn() : seOn());
   function gearModal() {
     const rows = SETS.map(([k, name, note]) => { const on = setOn(k); return `<div class="cbsw" data-set="${k}"><span>${name}<small>${note}</small></span><div class="cbseg" role="group" aria-label="${name}">`
       + `<button type="button" class="${on ? 'on' : ''}" data-cb="tg" data-k="${k}" data-v="1" aria-pressed="${on}">オン</button><button type="button" class="${on ? '' : 'on'}" data-cb="tg" data-k="${k}" data-v="0" aria-pressed="${!on}">オフ</button></div></div>`; }).join('');
@@ -2201,12 +1995,12 @@ const CBApp = (() => {
   }
   
   function setSet(k, on) {
-    if (['bgm', 'se', 'fx'].indexOf(k) < 0) return;
+    if (['bgm', 'se'].indexOf(k) < 0) return;
     st[k] = !!on; save(); applySets();
     if (k === 'se' && on) se('tap', 0.8);
     if (modEl.classList.contains('cbset')) gearModal();
   }
-  function applySets() { if (ov) ov.classList.toggle('nofx', !fxOn()); bgmSync(); }
+  function applySets() { bgmSync(); }
   function quitModal() {
     const mid = !ended && !!V;
     modal(`<h3 class="gold">対戦を やめる？</h3><p>${mid ? 'とちゅうで やめると 負けに なるよ（連勝は 0 に もどるよ）' + (st.stake ? `<br>${COINI}参加コイン ${st.stake.e}枚も もどらないよ` : '') : 'メニューに もどるよ'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">つづける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`);
@@ -2230,18 +2024,18 @@ const CBApp = (() => {
     const key = e.target.closest('[data-key]'); if (key && !key.disabled) return roomKey(key.dataset.key);
     const b = e.target.closest('[data-cb]'); if (!b || b.disabled) return;
     const a = b.dataset.cb, u = +b.dataset.u;
+    if (a === 'useok') { if (useSkip) useSkip(); return; }      
     if (/^(effyes|effno|kgo|kskip|mpick|mskip|revyes|revno|u5yes|u5no)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
     if (a === 'dz') { se('tap'); return showDz('f'); }      
     if (a === 'dzx') return showMenu();
-    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' || b.dataset.t === 'e' ? b.dataset.t : 'f'); }
-    if (a === 'efi') { se('tap', 0.6); return efItem(b.dataset.id || ''); }      
-    if (a === 'eftry') return fxTry(b.dataset.id || '');
-    if (a === 'efopen') return efAsk(b.dataset.id || '');
-    if (a === 'efgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; return efGo(b.dataset.id || ''); }
-    if (a === 'efuse') return efUse(b.dataset.id || '');
+    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' || b.dataset.t === 'd' ? b.dataset.t : 'f'); }
+    if (a === 'bdi') { se('tap', 0.6); return bdItem(b.dataset.id || ''); }      
+    if (a === 'bdopen') return bdAsk(b.dataset.id || '');
+    if (a === 'bdgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; return bdGo(b.dataset.id || ''); }
+    if (a === 'bduse') return bdUse(b.dataset.id || '');
     if (a === 'dzi') { se('tap', 0.6); return dzItem(b.dataset.ck || null, b.dataset.id || ''); }
     if (a === 'dzback') return closeMod();
     if (a === 'dzopen') return dzAsk(b.dataset.ck || null, b.dataset.id || '');
@@ -2290,7 +2084,7 @@ const CBApp = (() => {
       if (mode.step !== 'ask') return;
       if (mode.q === '6') return pickModal('p6');
       if (mode.q === '5') { mode.step = 'drop5'; render(); return; }
-      if (mode.q === '7') mode.use.x7 = true; else if (mode.q === '3') mode.use.x3 = true; else mode.use.u4 = true;
+      if (mode.q === '7r') mode.use.x7r = true; else if (mode.q === '7') mode.use.x7 = true; else if (mode.q === '3') mode.use.x3 = true; else mode.use.u4 = true;
       return effStep();
     }
     if (a === 'modex') { mode = { k: 'idle' }; render(); return; }
@@ -2336,10 +2130,10 @@ const CBApp = (() => {
   const cardBox = (side, u) => { const e = (side === 'my' ? $('.cbhand') : $('.cbohand')).querySelector(`[data-u="${u}"]`); return e ? box(e) : null; };
   
   
-  async function openShow(x) {
-    const hold = x.rev === 'me' || x.rev === 'op';
+  async function openShow(x, rv) {                     
+    const hold = x.rev === 'me' || x.rev === 'op', rn = rv && R.NUMS.indexOf(x.my.k) >= 0 && R.NUMS.indexOf(x.op.k) >= 0 ? '（強さ 逆転中）' : '';
     const txt = x.rev === 'me' ? ['チャンス！', `${nameOf(x.op.k)} の ほうが 強い…でも ${x.my.k} の「逆転勝利」を 使えるよ`] : x.rev === 'op' ? ['勝負は まだ！', `${WHO()}は ${x.op.k} の「逆転勝利」を 使えるよ`]
-      : x.res === 'win' ? ['勝ち！', `${nameOf(x.my.k)} が ${nameOf(x.op.k)} に 勝ったよ`] : x.res === 'lose' ? ['負け…', `${nameOf(x.op.k)} の ほうが 強いよ`] : x.res === 'clash' ? ['かぶり！', `同じ カード（${nameOf(x.my.k)}）＝どちらも 負け`] : x.d4 ? ['ドロー！', 'どちらも 4 の 効果を 使った ので 引き分け'] : ['引き分け', '神様馬 と 幻の馬 は 同じ 強さ'];
+      : x.res === 'win' ? ['勝ち！', `${nameOf(x.my.k)} が ${nameOf(x.op.k)} に 勝ったよ${rn}`] : x.res === 'lose' ? ['負け…', `${nameOf(x.op.k)} の ほうが 強いよ${rn}`] : x.res === 'clash' ? ['かぶり！', `同じ カード（${nameOf(x.my.k)}）＝どちらも 負け`] : x.d4 ? ['ドロー！', 'どちらも 4 の 効果を 使った ので 引き分け'] : ['引き分け', '神様馬 と 幻の馬 は 同じ 強さ'];
     const side = (who, k) => `<div class="sd" data-sd="${who}"><span>${who === 'my' ? 'あなた' : esc(WHO())}</span><div class="cbflip"><div class="in"><img src="${pic(null, true, who)}" alt=""><img class="fc" src="${pic(k, true, who)}" alt="${esc(nameOf(k))}"></div></div></div>`;
     modal(`<h3 class="gold">ターン ${x.turn}　オープン！</h3><div class="cbvs">${side('my', x.my.k)}<b class="mid gold">VS</b>${side('op', x.op.k)}</div><div class="cbres gold" aria-live="assertive"><span></span><small></small></div>`, 'cbopen');
     await T(450); se('flip');
@@ -2376,7 +2170,6 @@ const CBApp = (() => {
         ended = false; gameNo += 1; closeMod(); V = null; paintEmpty();
         payStake();                                    
         msLive();                                      
-        fxPre();                                       
         $('.cbdeck .cbn').textContent = '30'; se('deal');
         await banner('対戦 スタート', `${WHO()}と 勝負！`, 900);
         
@@ -2409,18 +2202,16 @@ const CBApp = (() => {
       } else if (x.e === 'fizz') {
         toast(`${x.me ? '' : WHO() + 'の '}${x.k} の 効果は 使えなかったよ`, 2.2); await T(700);
       } else if (x.e === 'p6') {
-        const fx = await efx(x.me);                    
+        await useShow(x);                              
         if (x.me) await peekShow('6 の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { if (!fx) se('magic'); toast(`${WHO()}が 6 を 2まい 見せて、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
+        else { const c = hand.find(q => q.u === x.pick); toast(c ? `${WHO()}が 6 の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が 6 を 2まい 見せて、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'ask5') {                     
         se('magic', 0.7);
       } else if (x.e === 'u5') {                       
+        await useShow(x);
         const sd = x.me ? 'my' : 'op';
-        $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: '5' }, '', '', sd);
-        const fx = await efx(x.me);                    
         toast(x.me ? `5 の 効果！\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1まい セットしたよ` : `${WHO()}が 5 の 効果を 使ったよ\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1まい`, 3);
-        if (!fx) se('magic');
-        await T(600);
+        $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: '5' }, '', '', sd); await T(600);
         $('.cbslot.' + sd).innerHTML = '';
         const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
         await Promise.all([fly('5', slotBox(sd), mid(disBox(), 20), 380, true, sd), fly(x.drop.k, x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd)]);
@@ -2430,16 +2221,27 @@ const CBApp = (() => {
         $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: null }, '', '', sd) + (x.me ? '<span class="tag">山札から</span>' : '');
         await T(250);
       } else if (x.e === 'x7') {
-        if (!(await efx(x.me))) se('magic');
+        await useShow(x);
         toast(x.me ? '7 の 効果！\n7 を 3まい もどして、新しく 3まい 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3まい もどして 3まい 引いた`, 3);
         const s7 = x.me ? 'my' : 'op', hb = handBox(s7), d = deckBox(), w = x.me ? 56 : 36;
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
         if (x.me) { let n = 0; hand = hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly(null, mid(d, 36), mid(hb, w), 320, false, s7))));
         if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
+      } else if (x.e === 'x7r') {                      
+        await useShow(x);
+        const sd = x.me ? 'my' : 'op';
+        modal(`<h3 class="gold">7 の 効果！ 強さ 逆転</h3><div class="three four">${[0, 1, 2, 3].map(() => `<span class="cbc"><img src="${pic('7', false, sd)}" alt="7 の カード" draggable="false"></span>`).join('')}</div>`
+          + `<p>${x.me ? '手札の 7 を 4まい 見せて、1まい 捨てたよ' : `${esc(WHO())}が 手札の 7 を 4まい 見せて、1まい 捨てたよ`}<br><b>この 対戦が 終わる まで、数字の 強さが 逆に なるよ</b></p><p class="rvord">7＞6＞5＞4＞3＞2＞1<small>神様馬・幻の馬は いちばん 強い まま</small></p>`, 'cbopen');
+        await T(2000); closeMod();
+        const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
+        await fly('7', x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd);
+        if (x.me) { hand = hand.filter(q => q.u !== x.drop.u).map(q => (x.show.indexOf(q.u) >= 0 ? { u: q.u, k: q.k, seen: true } : q)); rehand(); } else if (oc) oc.remove();
+        toDis([{ k: '7', mine: x.me }]);
+        await banner('強さ 逆転！', '7＞6＞5＞4＞3＞2＞1（この 対戦が 終わる まで）', 1500);
       } else if (x.e === 'x3') {                       
         const hm = handBox('my'), ho = handBox('op'), tk = x.take.k;
-        if (!(await efx(x.me))) se('magic');
+        await useShow(x);
         
         modal(`<h3 class="gold">3 の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic('3', false, x.me ? 'my' : 'op')}" alt="3 の カード" draggable="false"></span>`).join('')}</div><p>${x.me ? `手札の 3 を 3まい 見せたよ<br>その 1まいと、${esc(WHO())}の 手札の 1まいを 交換！` : `${esc(WHO())}が 手札の 3 を 3まい 見せたよ<br>その 1まいと、あなたの 手札の 1まいを 交換！`}</p>`, 'cbopen');
         await T(1700); closeMod();
@@ -2458,13 +2260,11 @@ const CBApp = (() => {
       } else if (x.e === 'first') {
         se('flip');
         $('.cbslot.' + (x.me ? 'my' : 'op')).innerHTML = cardBtn({ u: 0, k: '4' }, '', '', x.me ? 'my' : 'op') + '<span class="tag">4 の 効果</span>';
-        await efx(x.me);                               
-        await banner('4 の 効果！', x.me ? `${WHO()}は カードを 交換するよ` : 'あなたは セットした カードを 交換してね', 1200);
+        await useShow(x);                              
       } else if (x.e === 'first2') {
         se('flip');
         $('.cbslot.my').innerHTML = cardBtn({ u: 0, k: '4' }, ''); $('.cbslot.op').innerHTML = cardBtn({ u: 0, k: '4' }, '', '', 'op');
-        await efx(true); await efx(false);              
-        await banner('4 の 効果！', 'どちらも 4 の 効果 → 打ち消して ドロー', 1300);      
+        await useShow(x);                              
       } else if (x.e === 'swap') {
         se('set');
         const sd = x.me ? 'my' : 'op', hb = handBox(sd);
@@ -2476,13 +2276,13 @@ const CBApp = (() => {
         else toast(`${WHO()}が カードを 交換したよ`, 1.8);
       } else if (x.e === 'open') {
         hush();                                        
-        await openShow(x);
+        await openShow(x, !!(v && v.rv));
       } else if (x.e === 'k') {
-        const fx = await efx(x.me);
+        await useShow(x);
         if (x.me) await peekShow('神様馬の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { if (!fx) se('magic'); toast(`${WHO()}が 神様馬の 効果で、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
+        else { const c = hand.find(q => q.u === x.pick); toast(c ? `${WHO()}が 神様馬の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が 神様馬の 効果で、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'm') {
-        if (!(await efx(x.me))) se('magic');
+        await useShow(x);
         toast(x.me ? `幻の馬の 効果！\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}まい 引いたよ` : `${WHO()}が 幻の馬の 効果を 使ったよ\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}まい 引いた`, 3.2);
         const sd = x.me ? 'my' : 'op', hb = handBox(sd), d = deckBox(), w = x.me ? 56 : 36;
         await Promise.all(x.drop.map((c, i) => T(i * 80).then(() => fly(c.k, x.me ? (cardBox('my', c.u) || mid(hb, w)) : mid(hb, w), mid(disBox(), 20), 360, true, sd))));
@@ -2494,7 +2294,7 @@ const CBApp = (() => {
       } else if (x.e === 'kskip' || x.e === 'mskip') {
         if (!x.me) { toast(`${WHO()}は 効果を 使わなかったよ`, 1.8); await T(500); }
       } else if (x.e === 'rev') {                      
-        hush(); if (!(await efx(x.me))) se('magic');
+        hush(); await useShow(x);
         modal(`<h3 class="gold">${esc(x.k)} の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic(x.k, false, x.me ? 'my' : 'op')}" alt="${esc(x.k)} の カード" draggable="false"></span>`).join('')}</div>`
           + `<p>${x.me ? '' : esc(WHO()) + 'が '}${esc(x.k)} を 3まい（場の 1まい ＋ 手札の 2まい）見せたよ<br>手札の ${esc(x.k)} を 1まい 捨てて、${esc(toName(x.beat))} 逆転！</p>`, 'cbopen');
         await T(1700); closeMod();
@@ -2567,7 +2367,7 @@ const CBApp = (() => {
   }
   
   function leave(count) {
-    const m = match; match = null; queue = []; fxStop();      
+    const m = match; match = null; queue = [];
     if (m) { if (count && !ended && V) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) {   } }      
     if (st && st.stake) { st.stake = null; save(); }      
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      
@@ -2582,6 +2382,7 @@ const CBApp = (() => {
     try { if (window.TengelFx && window.TengelFx.prime) window.TengelFx.prime(); } catch (e) {   }
     ['1', '2', '3', '4', '5', '6', '7', 'k', 'm', null].forEach(k => { const im = new Image(); im.src = pic(k); });
     if (st.back) { const im = new Image(); im.src = deckPic(); }
+    boardImg();                                        
     actx(); applySets();                               
     showMenu();
   }
@@ -2596,11 +2397,10 @@ const CBApp = (() => {
     open, close, REWARD, rewardFor, COIN, coinFor, MS, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
-      get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), fx: fxOn(), raw: { bgm: st.bgm, se: st.se, fx: st.fx }, as: AS }; },
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic,
-      get efx() { return { log: fxs.log.slice(), run: !!fxs.run, on: !!(ov && ov.classList.contains('efon')) }; }, fxPlay: (id, me) => fxPlay(id, Object.assign(fxAt(me), { me: me })), fxUse: me => efx(me), fxTry, efOf      
+      get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
 })();
 
-;window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBFx = CBFx; window.CBApp = CBApp;
+;window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBApp = CBApp;
