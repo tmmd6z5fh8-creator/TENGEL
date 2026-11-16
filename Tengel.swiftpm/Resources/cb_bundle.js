@@ -799,7 +799,7 @@ const CBApp = (() => {
   
   
   
-  const BGM = { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.55, fin: 1.4, fout: 0.45 };      
+  const BGM = { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.42, fin: 1.4, fout: 0.45 };      
   const bg = { raw: null, buf: null, dec: null, cur: null, tau: 0, gone: false, want: false };
   function bgmLoad() {
     if (bg.buf || bg.gone) return Promise.resolve(bg.buf);
