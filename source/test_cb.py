@@ -357,8 +357,10 @@ try:
               and any('勝ち！' in s for s in seen) and pg.evaluate(V)['turn'] == 2 and acts(pg) == [],
               f'「使う」→ 7 を 3まい もどして 3まい 引いた（手札 {pg.evaluate(DOMHAND)}・山札 20 の まま）→ オープン → 2ターン目')
         start(pg, '77712', '12345'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2}); pg.evaluate("() => { window.__seen = []; }")
-        pg.locator('#cbOv .cbact [data-cb=effno]').click(); idle(pg)
+        pg.locator('#cbOv .cbact [data-cb=effno]').click()
+        hs = pg.evaluate("() => [document.querySelector('#cbOv .cbact').children.length, document.querySelector('#cbOv .cbmsg').textContent, CBApp._t.idle]"); idle(pg)
         check(pg.evaluate(HAND) == '2777' and any('勝ち！' in s for s in pg.evaluate("() => window.__seen")) and pg.evaluate(V)['turn'] == 2, '「使わない」→ 手札は そのまま オープン')
+        check(hs == [0, '', False], f'「使わない」を 押した すぐ あと：前の 質問「効果を 使う？」と ボタンは 消える（結果を 見せ終わる まで のこさない：前は 5秒 ほど のこって いた）{hs}')
 
         print('■ 効果タイム：6（2まい 見せて 相手の 手札を 見る）')
         start(pg, '66123', '12345'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})

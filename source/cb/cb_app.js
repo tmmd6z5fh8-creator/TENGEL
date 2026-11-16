@@ -560,9 +560,13 @@ const CBApp = (() => {
   }
 
   // ---------- 手を 打つ ----------
+  // 下の 質問（.cbmsg）と ボタン（.cbact）を かたづける：手を 打った とき・カードを 開く とき。
+  //   そのままだと、結果を 見せ終わって かき直す まで 前の 質問と ボタンが のこる（測った：効果タイムで「使わない」を 押して から 5.7秒「6 の 効果を 使う？」が 出た まま
+  //   ＝押せて いない ように 見える。その あいだ 押しても 何も おきない）。場所の 高さは CSS で 決まって いる ので、消しても まわりは 動かない
+  function hush() { if (screen !== 'game') return; const a = $('.cbact'), m = $('.cbmsg'); if (a) a.innerHTML = ''; if (m) m.textContent = ''; }
   async function send(a) {
     if (busy || !match) return false;
-    busy = true; lock = true; closeMod();              // lock：この 手の 結果（おきた こと）を 見せ終わって かき直す まで、次の 手は 待つ（pump が はずす）
+    busy = true; lock = true; closeMod(); hush();      // lock：この 手の 結果（おきた こと）を 見せ終わって かき直す まで、次の 手は 待つ（pump が はずす）
     let r = null;
     try { r = await match.act(a); } catch (e) { r = { ok: false, why: 'err' }; }
     busy = false;
@@ -751,6 +755,7 @@ const CBApp = (() => {
         if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push({ u: bk.u, k: bk.k, seen: !!bk.seen }); rehand(bk ? [bk.u] : null); }
         else toast(`${WHO()}が カードを 交換したよ`, 1.8);
       } else if (x.e === 'open') {
+        hush();                                        // 「相手を 待って いるよ」などの 前の 文を 消して から 開く
         await openShow(x);
       } else if (x.e === 'k') {
         if (x.me) await peekShow('神様馬の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`);
