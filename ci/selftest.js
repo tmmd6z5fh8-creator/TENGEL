@@ -481,9 +481,23 @@
       document.querySelector('#cbOv .cbmenu [data-cb=cpu]').click();
       await waitFor(function () { return window.CBApp._t.view && window.CBApp._t.idle; }, 20000);
       await sleep(700);
-      var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn } : null;
+      var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn, turns: v0.turns } : null;
+      // 第4.178版：設定（BGM・効果音・エフェクト）の はじめの 形・夜の フィールドの 火の あかり（.cbfire の ゆれ）・BGM（CI の ビルドには 音の ファイルが ない → 鳴らさずに そのまま 進む）
+      try {
+        var se0 = window.CBApp._t.sets, bg0 = window.CBApp._t.bgm;
+        out.sets = { bgm: se0.bgm, se: se0.se, fx: se0.fx, as: se0.as };
+        out.bgm = { on: bg0.on, want: bg0.want, gone: bg0.gone, len: Math.round(bg0.len * 100) / 100, ctx: bg0.ctx };
+        out.fire = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbfire'), function (e) { var c = getComputedStyle(e); return c.animationName + ' ' + c.animationDuration; });
+        document.querySelector('#cbOv .cbgear').click(); await sleep(200);
+        out.gear = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmod.cbset .cbsw'), function (r) { return r.getAttribute('data-set'); }).join();
+        var fx0 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="0"]'); if (fx0) fx0.click(); await sleep(150);
+        out.nofx = document.querySelector('#cbOv').classList.contains('nofx');
+        var fx1 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="1"]'); if (fx1) fx1.click(); await sleep(150);
+        out.fxBack = !document.querySelector('#cbOv').classList.contains('nofx');
+        var mx = document.querySelector('#cbOv .cbset [data-cb=modx]'); if (mx) mx.click(); await sleep(200);
+      } catch (e) { out.setsErr = String(e); }
       await mark('cb-game');
-      out.auto = await cbAuto(90000);
+      out.auto = await cbAuto(150000);
       var v = window.CBApp._t.view; out.res = v ? v.res : null; out.wins = v ? [v.my.wins, v.op.wins] : null; out.discard = v ? v.discard.length : null;
       out.gift = await waitFor(function () { var e = document.querySelector('#cbOv .cbend .gift'); return e && e.textContent.length > 3 ? e.textContent : null; }, 20000);
       out.state = JSON.parse(JSON.stringify(window.CBApp._t.state)); out.tokens = window.TCApp && window.TCApp.state ? window.TCApp.state.stock : null;
@@ -698,6 +712,7 @@
       if (T.idle && T.view) {
         var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? 'set' : 'wait';
         if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
+        else if (s === 'rev') { if (click('#cbOv [data-cb=revyes]')) { n++; kinds.rev = (kinds.rev || 0) + 1; } }      // 第4.178版：逆転勝利（1・2 の 効果）を 聞かれたら 使う
         else if (s === 'eff') { if (click('#cbOv [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
         else if (s === 'swap' || s === 'set') {
           if (!T.modOn()) click('#cbOv .cbhand .cbc');
