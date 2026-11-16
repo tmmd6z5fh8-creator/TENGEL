@@ -8,6 +8,7 @@
 //   まさちゃんの 追加（第4.178版・2026/11/16 15:33・15:41「A、オープンしてから」）：逆転勝利 ＝ 1 が 3まい（場 ＋ 手札 2）→ 神様馬・幻の馬に 勝てる ／ 2 が 3まい → 1 に 勝てる（手札の 1まいを 捨てる）
 //   まさちゃんの 直し（第4.181版・2026/11/16 19:05「4をお互いに出して効果を発動した場合、ドローになる」）：2人とも 4 の 効果 → 打ち消して ドロー（前は かぶり＝どちらも 負け）
 //   まさちゃんの 直し（第4.183版・2026/11/16 21:24「4で交換したあとに5を相手がフィールドにセットした場合、五の効果を使える」）：交換で 5 → 5 の 効果を 使うか 聞く（phase u5）
+//   まさちゃんの 直し（第4.185版・2026/11/16 22:39「7は、手札に7が4枚ある場合、4枚公開し内1枚を捨てると、数字の強さ順が逆転する」・22:45「その試合は終わるまで」）：7 の 4まい 公開で 強さ 逆転（S.rv）
 //   ＋ 見せて いい こと だけを 渡して いるか（相手の 手札・ふせた カード）・でたらめに 2万回 あそんでも カードが 30まいの まま か
 const R = require('./cb/cb_rules.js'), C = require('./cb/cb_cpu.js');
 let fails = [];
@@ -53,6 +54,15 @@ console.log('■ 強さ');
   }
   check(ok && c('1', '2') === 0 && c('7', '6') === 1 && c('k', '1') === 0 && c('1', 'm') === 1 && c('3', '3') === 'clash' && c('k', 'm') === 'tie' && c('m', 'k') === 'tie',
     'くらべ方（81通り）：強い 方の 勝ち・同じ 数字は かぶり（どちらも 負け）・神様馬 と 幻の馬 は 引き分け');
+  // 第4.185版：強さ 逆転ちゅう（rv）：数字 だけ 逆（7＞6＞…＞1）・神様馬 と 幻の馬は いちばん 強い まま
+  let ok2 = true;
+  for (const a of R.KINDS) for (const b of R.KINDS) {
+    const r = c(a, b, true), na = R.NUMS.indexOf(a) >= 0, nb = R.NUMS.indexOf(b) >= 0;
+    const want = a === b ? 'clash' : !na && !nb ? 'tie' : !na ? 0 : !nb ? 1 : +a > +b ? 0 : 1;
+    if (r !== want) ok2 = false;
+  }
+  check(ok2 && P('7', true) === 1 && P('1', true) === 7 && P('k', true) === 0 && c('7', '1', true) === 0 && c('1', '2', true) === 1 && c('k', '7', true) === 0 && c('7', 'm', true) === 1 && c('6', '6', true) === 'clash',
+    '第4.185版：強さ 逆転ちゅう（81通り）：数字は 7 が 1番 強くて 1 が 1番 弱い・神様馬 と 幻の馬は いちばん 強い まま・かぶり・引き分けは 同じ');
 }
 
 console.log('■ 1ターンの 流れ・3ターンで 勝負');
@@ -227,7 +237,7 @@ console.log('■ 3：手札に 3 が 3まい → 3まいを 見せて、その 1
 {
   const mk = () => { const S = G('33312', '4567k'); set(S, 0, '1'); set(S, 1, '7'); return S; };
   const S = mk(), t3 = S.p[0].hand.filter(c => c.k === '3').map(c => c.u), h1 = S.p[1].hand.map(c => c.u);
-  check(S.phase === 'eff' && JSON.stringify(R.view(S, 0).can.eff) === '{"e6":false,"e5":false,"e7":false,"e3":true,"e4":false}' && R.view(S, 1).can.eff === null && R.view(S, 1).wait === true,
+  check(S.phase === 'eff' && JSON.stringify(R.view(S, 0).can.eff) === '{"e6":false,"e5":false,"e7":false,"e7r":false,"e3":true,"e4":false}' && R.view(S, 1).can.eff === null && R.view(S, 1).wait === true,
     '3 が 3まい（セットした あとの 手札）→ 効果タイムで「3 の 効果」を 使える（相手は 待つ）');
   const r = eff(S, 0, { x3: true }, rngOf(5)), e = r.ev[1];
   check(r.ok && names(r) === 'effd,x3,open,clear,turn' && e.who === 0 && e.three.join() === t3.join() && e.give.k === '3' && t3.indexOf(e.give.u) >= 0 && h1.indexOf(e.take.u) >= 0 && '456k'.indexOf(e.take.k) >= 0,
@@ -497,7 +507,7 @@ console.log('■ 見せて いい こと だけを 渡す');
   // 効果タイム：相手が 何を 使えるか は 渡さない
   const E = G('66123', '77712'); set(E, 0, '1'); set(E, 1, '2');
   const x0 = R.view(E, 0), x1 = R.view(E, 1);
-  check(JSON.stringify(x0.can.eff) === '{"e6":true,"e5":false,"e7":false,"e3":false,"e4":false}' && JSON.stringify(x1.can.eff) === '{"e6":false,"e5":false,"e7":true,"e3":false,"e4":false}' && !('eff' in x0.op) && !('eff' in x0.my), '効果タイム：自分が 使える 効果 だけ 渡す（相手が 何を 使えるかは 渡さない）');
+  check(JSON.stringify(x0.can.eff) === '{"e6":true,"e5":false,"e7":false,"e7r":false,"e3":false,"e4":false}' && JSON.stringify(x1.can.eff) === '{"e6":false,"e5":false,"e7":true,"e7r":false,"e3":false,"e4":false}' && !('eff' in x0.op) && !('eff' in x0.my), '効果タイム：自分が 使える 効果 だけ 渡す（相手が 何を 使えるかは 渡さない）');
 }
 
 console.log('■ 逆転勝利：1 が 3まい（場 ＋ 手札 2まい）→ 神様馬・幻の馬に 勝てる（第4.178版・まさちゃん 15:33／15:41「A、オープンしてから」）');
@@ -637,6 +647,67 @@ console.log('■ 逆転勝利：本番の 形（5ターン・手札 7まい）')
   check(names(rt) === 'set,open,clear,turn' && rt.ev[1].rev === undefined && T.p[1].wins >= 1 && ks(T.p[0].hand) === '22', '2（手札に 2 が 2まい）と 1 でも、捨てると 足りなく なる → 聞かれない（負け）');
 }
 
+console.log('■ 7 の 4まい 公開：強さ 逆転（第4.185版・まさちゃん 22:39「7は、手札に7が4枚ある場合、4枚公開し内1枚を捨てると、数字の強さ順が逆転する」・22:45「1.その試合は終わるまで」）');
+{
+  // 席 0：7 が 4まい ＋ 1（1 を セット）／席 1：2 を セット。逆転すると この ターンの オープンから 2 が 1 に 勝つ
+  const S = G('77771', '23456', '345');
+  set(S, 0, '1'); set(S, 1, '2');
+  const v0 = R.view(S, 0);
+  check(S.phase === 'eff' && JSON.stringify(v0.can.eff) === '{"e6":false,"e5":false,"e7":true,"e7r":true,"e3":false,"e4":false}' && R.view(S, 1).can.eff === null && v0.rv === false,
+    '7 が 4まい（セットした あとの 手札）→ 効果タイムで「3まい 交換」と「4まい 公開で 逆転」の どちらも 使える（相手は 待つ）');
+  const sev = S.p[0].hand.filter(c => c.k === '7').map(c => c.u);
+  const bad2 = eff(S, 0, { x7: true, x7r: true });
+  check(!bad2.ok && bad2.why === 'e7r' && S.phase === 'eff', '3まい 交換と 4まい 公開は いっしょに 使えない（どちらか 1つ）');
+  const r = eff(S, 0, { x7r: true }), x = r.ev.find(e => e.e === 'x7r'), op = r.ev.find(e => e.e === 'open');
+  check(r.ok && names(r).startsWith('effd,x7r,open') && x.who === 0 && JSON.stringify(x.show) === JSON.stringify(sev) && x.drop.k === '7' && x.drop.u === sev[0] && S.rv === true
+    && op.res === 1 && S.p[1].wins === 1 && ks(S.p[0].hand) === '777' && S.discard.some(d => d.u === sev[0] && d.why === '7' && d.by === 0) && sane(S),
+    '「4まい 公開」→ 7 を 4まい 見せて 1まい 捨てる（捨て札の 理由 7）→ その ターンの オープンから 逆：1 は 2 に 負ける（強さ 逆転）');
+  const v1 = R.view(S, 1), v0b = R.view(S, 0), e1 = R.evFor(r.ev, 1).find(e => e.e === 'x7r');
+  check(v1.rv === true && v0b.rv === true && v1.op.hand.filter(c => c.k === '7').length === 3 && v0b.my.hand.every(c => c.seen) && e1 && e1.me === false && e1.show.length === 4 && e1.drop.k === '7',
+    '2人とも 逆転ちゅう（view.rv）・手札に のこった 7 の 3まいは 相手に 知られた カード・できごと x7r（見せた 4まい・捨てた 1まい）は 相手にも 見える');
+  // 2ターン目：7 が 1番 強い 数字 ／ 3ターン目まで ずっと 逆
+  set(S, 0, '7'); set(S, 1, '3');
+  check(S.turn === 3 && S.p[0].wins === 1 && S.rv === true && S.last.res === 0, '2ターン目：7 は 3 に 勝つ（逆転は その 対戦が 終わる まで）');
+  set(S, 0, '7'); set(S, 1, '6');
+  check(S.phase === 'end' && S.p[0].wins === 2 && S.res === 0, '3ターン目も 逆：7 は 6 に 勝つ → 2勝 1敗');
+  // 神様馬・幻の馬は 逆転ちゅうも いちばん 強い
+  const K = G('7777k', '7123m'.replace('7', '1'), '345');
+  set(K, 0, 'k'); set(K, 1, '1'); eff(K, 0, { x7r: true });
+  check(K.rv === true && K.p[0].wins === 1 && K.turn === 2 && K.phase === 'pre', '逆転ちゅうも 神様馬は 数字に 勝つ');
+  R.act(K, 0, { t: 'k', pick: null }); set(K, 0, '7'); set(K, 1, 'm');
+  check(K.p[1].wins === 1 && K.last.res === 1, '逆転ちゅうも 幻の馬は 7 に 勝つ（数字 だけ 逆）');
+}
+{
+  // 使えない とき：7 が 3まい・5 の 効果で 7 を 捨てて 4まい なく なる・もう 逆転ちゅう
+  const A = G('77712', '23456', '345'); set(A, 0, '1'); set(A, 1, '2');
+  check(R.view(A, 0).can.eff.e7r === false && R.view(A, 0).can.eff.e7 === true && !eff(A, 0, { x7r: true }).ok, '7 が 3まい では 逆転は 使えない（3まい 交換 だけ）');
+  const B = G('77775', '23456', '345'); set(B, 0, '5'); set(B, 1, '2');
+  const sv = U(B, 0, '7'), rb = eff(B, 0, { u5: sv, x7r: true });
+  check(R.view(B, 0).can.eff.e7r === true && !rb.ok && rb.why === 'e7r', '5 の 効果で 7 を 1まい 捨てる ときは、のこりが 3まい なので 逆転は 使えない');
+  const C2 = G('77775', '23456', '1345'); set(C2, 0, '5'); set(C2, 1, '2');
+  const rc2 = eff(C2, 0, { x7r: true, u5: U(C2, 0, '7') });
+  check(!rc2.ok, '（5 で 捨てる カードを 7 に した とき：通らない）');
+}
+{
+  // 逆転勝利（1・2）は いつもの 条件：逆転ちゅうは 2 が 1 に 勝つ ので 2 の 逆転勝利は 出ない
+  const S = G('77773', '22213', '3456'); set(S, 0, '3'); set(S, 1, '1'); eff(S, 0, { x7r: true });
+  check(S.rv === true && S.p[0].wins === 1 && S.phase === 'set' && S.turn === 2, '逆転ちゅう：3 が 1 に 勝つ（1 の 逆転勝利は 神様馬・幻の馬に 負けた とき だけ ＝ 聞かれない）');
+  set(S, 0, '7'); set(S, 1, '2');
+  check(S.p[0].wins === 2 && S.phase !== 'rev', '逆転ちゅう：7 が 2 に 勝つ（逆転勝利は 出ない）');
+}
+{
+  // コンピュータ：7 が 4まい → いつも 逆転・逆転ちゅうは 7 の 交換を しない・強い 7 を 出す
+  const S = G('77771', '23456', '3456'); set(S, 0, '1'); set(S, 1, '2');
+  const a = C.decide(R.view(S, 0), rngOf(1));
+  check(a && a.t === 'eff' && a.use.x7r === true && !a.use.x7, 'コンピュータ：7 が 4まい → 4まい 公開で 逆転（3まい 交換は しない）');
+  R.act(S, 0, a, rngOf(2));
+  const b = C.decide(R.view(S, 0), rngOf(3));
+  check(S.rv === true && b && b.t === 'set' && S.p[0].hand.find(c => c.u === b.u).k === '7', 'コンピュータ：逆転ちゅうは 7 が 強い カード（のこりの ターンの 分の 強い 方から 出す）');
+  const T = G('77712', '23456', '345'); T.rv = true; set(T, 0, '1'); set(T, 1, '2');
+  const c3 = T.phase === 'eff' ? C.decide(R.view(T, 0), rngOf(4)) : null;
+  check(T.phase === 'eff' && c3 && !c3.use.x7, 'コンピュータ：逆転ちゅうに 7 が 3まい あっても 交換しない（7 は 強い）');
+}
+
 console.log('■ まちがった 手は 受けつけない');
 {
   const S = G('12367', '12367');
@@ -650,9 +721,10 @@ console.log('■ まちがった 手は 受けつけない');
 function rndUse(v, rng) {
   const c = v.can.eff, use = {}, h = v.my.hand, rc = a => a[Math.floor(rng() * a.length)];
   if (c.e6 && rng() < 0.7) use.p6 = rc(v.op.hand.filter(x => x.k == null)).u;      // 見るのは まだ 見て いない カード だけ（第4.178版）
-  if (c.e7 && rng() < 0.7) use.x7 = true;
+  if (c.e7r && rng() < 0.6) use.x7r = true;          // 第4.185版：4まい 公開（3まい 交換とは どちらか 1つ）
+  else if (c.e7 && rng() < 0.7) use.x7 = true;
   if (c.e3 && rng() < 0.7) use.x3 = true;
-  if (c.e5 && rng() < 0.7) { const n7 = h.filter(x => x.k === '7').length, n3 = h.filter(x => x.k === '3').length, cand = h.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x3 && x.k === '3' && n3 <= 3)); if (cand.length) use.u5 = rc(cand).u; }
+  if (c.e5 && rng() < 0.7) { const n7 = h.filter(x => x.k === '7').length, n3 = h.filter(x => x.k === '3').length, cand = h.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x7r && x.k === '7' && n7 <= 4) && !(use.x3 && x.k === '3' && n3 <= 3)); if (cand.length) use.u5 = rc(cand).u; }
   if (c.e4 && rng() < 0.7) use.u4 = true;
   return use;
 }
@@ -714,6 +786,44 @@ console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも 
   check(Math.abs(st.win0 - st.win1) / n < 0.03, `どちらの 席も 同じ ぐらい 勝つ（${st.win0}・${st.win1}・同点 ${st.draw}）`);
   check(st.revq > 10 && st.revq === st.rev + st.revskip && st.fin === st.revq && st.rev > 5 && st.revskip > 1 && st.revk[1] + st.revk[2] === st.rev && st.revbeat.k + st.revbeat.m === st.revk[1] && st.revbeat[1] === st.revk[2],
     `逆転勝利も 出た（聞かれた ${st.revq}回＝使った ${st.rev}・使わない ${st.revskip}。1 の 効果 ${st.revk[1]}回〈神様馬に ${st.revbeat.k}・幻の馬に ${st.revbeat.m}〉・2 の 効果 ${st.revk[2]}回：ふつうに 配ると めったに 出ない）`);
+}
+
+console.log('■ でたらめに あそぶ：7 が 4まい ある 手札で 5000回（第4.185版：強さ 逆転が たくさん 出る 形）');
+{
+  const rng = rngOf(20261185); let bad = 0, n = 0; const st = { x7r: 0, x7: 0, rvopen: 0, open: 0, fizz: 0, both: 0 };
+  for (let g = 0; g < 5000; g++) {
+    const S = R.newGame(rng, { hands: [['7', '7', '7', '7', rng() < 0.5 ? '1' : '5', '2', '6'], ['k', 'm', '1', '2', '3', '4', '6']] }); let guard = 0;
+    while (S.phase !== 'end' && guard++ < 200) {
+      const L0 = R.legal(S, 0), L1 = R.legal(S, 1);
+      if (!L0.length && !L1.length) { bad++; break; }
+      const i = rng() < 0.5 ? 0 : 1, L = i === 0 ? L0 : L1; if (!L.length) continue;
+      const t = L[Math.floor(rng() * L.length)], P = S.p[i], Q = S.p[1 - i], rc = h => h[Math.floor(rng() * h.length)]; let a;
+      if (t === 'set') a = { t: 'set', u: rc(P.hand).u };
+      else if (t === 'eff') a = { t: 'eff', use: rndUse(R.view(S, i), rng) };
+      else if (t === 'swap') a = { t: 'swap', u: rc(P.hand).u };
+      else if (t === 'u5') a = { t: 'u5', drop: rng() < 0.3 ? null : rc(P.hand).u };
+      else if (t === 'k') a = { t: 'k', pick: rng() < 0.3 ? null : rc(Q.hand.filter(c => P.known.indexOf(c.u) < 0)).u };
+      else if (t === 'm') { const h = R.shuffle(P.hand.slice(), rng); a = { t: 'm', drop: rng() < 0.3 ? null : [h[0].u, h[1].u] }; }
+      else if (t === 'rev') a = { t: 'rev', use: rng() < 0.75 };
+      const rv0 = S.rv, r = R.act(S, i, a, rng);
+      if (!r.ok || !sane(S)) { bad++; break; }
+      let rvNow = rv0;
+      r.ev.forEach(e => {
+        if (e.e === 'x7r') { st.x7r++; if (rvNow || e.show.length !== 4 || e.drop.k !== '7') bad++; rvNow = true; }
+        if (e.e === 'x7') st.x7++;
+        if (e.e === 'fizz') st.fizz++;
+        if (e.e === 'open' && !e.d4) { st.open++; if (rvNow) st.rvopen++; if (e.res !== R.compare(e.c[0].k, e.c[1].k, rvNow)) bad++; }
+      });
+      if (rv0 && !S.rv) bad++;                            // 逆転は もどらない（その 対戦が 終わる まで）
+      if (S.rv !== rvNow) bad++;
+      if (S.phase !== 'end' && S.p.some(X => X.hand.length + (X.set ? 1 : 0) < R.TURNS - S.turn + 1)) { bad++; break; }
+      const v = R.view(S, 1 - i); if (v.op.hand.some(c => c.k !== null && S.p[1 - i].known.indexOf(c.u) < 0) || v.rv !== S.rv) { bad++; break; }
+    }
+    if (S.phase !== 'end' || S.turn !== 5 || S.discard.filter(d => d.why === 't').length !== 10 || S.discard.filter(d => d.why === '7').length > 1) bad++;
+    n++;
+  }
+  check(bad === 0 && n === 5000 && st.x7r > 1000 && st.rvopen > 3000 && st.fizz === 0,
+    `5000回：こわれない・逆転は 1回の 対戦で 1回 まで・いちど 逆に なったら さいごまで 逆・逆転ちゅうの オープンは ぜんぶ 逆の 強さで くらべた（逆転 ${st.x7r}回・逆の オープン ${st.rvopen}／${st.open}・3まい 交換 ${st.x7}・おかしい ${bad}）`);
 }
 
 console.log('■ でたらめに あそぶ：1・2 が そろいやすい 手札で 1万回（逆転勝利が たくさん 出る 形）');

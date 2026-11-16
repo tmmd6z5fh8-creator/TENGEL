@@ -5,6 +5,8 @@
 #   第4.178版：1つ目・2つ目の 対戦は 前の 形（3ターン・手札 5まい）の まま。3つ目の 対戦＝本番の 形（5ターン・手札 7まい）：7まい ずつ 配る（deal7）・何も しない 6秒＝夜の フィールドの 火の あかりの ゆれ（fire）・
 #     逆転勝利（自分：rev_open＝めくった 窓「チャンス！」→ 聞く 窓／rev_use＝3まい 見せる 窓 →「逆転勝利！」。相手：rev_op_open＝「勝負は まだ！」／rev_op_use＝「逆転負け…」）。
 #     3回目の 通し＝カードバトルの 設定で「エフェクト オフ」（3つ目の 対戦 だけ）
+#   第4.185版：効果を 使った ときの 札（ボードの まん中・約 2秒）が 入る ぶん 効果の 場面を 長く 写す。設定の「エフェクト オフ」は なくした ので、3回目の 通しは
+#     プレイボード『白亜の宮殿』（いちばん 明るい ボード：暗い 窓や 札との 明るさの ちがいが いちばん 大きい）。4つ目の 対戦（3ターン）：相手が 7 を 4まい 見せて 強さ 逆転（x7r）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -88,17 +90,17 @@ def tap_play(pg, k, btn='set'):
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
-        for calm in (0, 1, 2):      # 0＝ふつう・1＝iPhone の「視差効果を減らす」・2＝カードバトルの 設定で「エフェクト オフ」（第4.178版：3つ目の 対戦 だけ）
-            tag = ['', '_calm', '_nofx'][calm]
+        for calm in (0, 1, 2):      # 0＝ふつう・1＝iPhone の「視差効果を減らす」・2＝プレイボード『白亜の宮殿』（第4.185版：3つ目・4つ目の 対戦 だけ）
+            tag = ['', '_calm', '_marble'][calm]
             ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo', reduced_motion='reduce' if calm == 1 else 'no-preference')
             ctx.add_init_script(FAKE)
             pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
             pg.locator('#cbFab .fabi').click(); pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(600)
             pg.evaluate("() => { CBApp._guard = 0; }")      # 聞く 窓が 出て すぐでも 押せる（うっかり 押し 防止は test_cb.py で 見る）
-            print('■ ' + ['ふつう', '「演出を控えめにする」（動きを へらす）', 'カードバトルの 設定「エフェクト オフ」'][calm])
+            print('■ ' + ['ふつう', '「演出を控えめにする」（動きを へらす）', 'プレイボード『白亜の宮殿』'][calm])
             pg.evaluate("() => { CBApp._t.manual(true); CBApp._think = () => 1e9; CBApp._opt = { hands: [['k', '1', '6', '6', '7'], ['2', '3', '6', '5', '7']], turns: 3 }; }")
-            if calm == 2: pg.evaluate("() => { CBApp._t.setSet('fx', false); }"); pg.wait_for_timeout(100)
+            if calm == 2: pg.evaluate("() => { const T = CBApp._t; T.state.boards = ['marble']; T.state.board = 'marble'; T.save(); }"); pg.wait_for_timeout(100)
             want = lambda n: (not ONLY) or (n in ONLY)
             def seg(name, sec, pre):
                 if want(name): run(pg, name + tag, sec, pre=pre)
@@ -112,7 +114,7 @@ try:
                 seg('efft', 2.4, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 2}))
                 # ③ 6 の 効果を 使う → 見た カードを 大きく → オープン（勝ち！）→ 片付け →「ターン 2」→「神様馬の 効果」の 帯
                 pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(60)
-                seg('eff6_open', 8.6, lambda: pg.locator('#cbOv .cbmod .pick .cbc').first.click())
+                seg('eff6_open', 10.8, lambda: pg.locator('#cbOv .cbmod .pick .cbc').first.click())      # 第4.185版：効果の 札の ぶん 長く
                 pg.locator('#cbOv [data-cb=kskip]').click(); settle(pg, 0.6)      # 2ターン目の はじめ：神様馬の 効果は 使わない
                 # ④ 2ターン目：相手が 先に セット → 自分が セット →「効果タイム」→ 使わない → オープン（負け…）→「ターン 3」
                 pg.evaluate(OPP, {'t': 'set', 'k': 3}); settle(pg, 0.8)
@@ -130,7 +132,7 @@ try:
                 tap_play(pg, '1'); settle(pg, 0.8)
                 seg('ask3', 2.6, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 7}))      # 「効果タイム」の 帯 → 聞く 窓（3 の カードの 絵・「3 の 効果を 使う？」）
                 a3 = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.cbask'); return m ? m.querySelector('.askq b').textContent : null; }")
-                seg('eff3_open', 10.4, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 3 を 3まい 見せる 窓 → もらった カードを 大きく → 交換 → オープン（勝ち！）→「ターン 2」
+                seg('eff3_open', 12.6, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 3 を 3まい 見せる 窓 → もらった カードを 大きく → 交換 → オープン（勝ち！）→「ターン 2」
                 h2 = pg.evaluate("() => CBApp._t.view.my.hand.map(c => c.k).sort().join('')")
                 tap_play(pg, '2'); settle(pg, 0.8); pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 5.6)      # 2ターン目：2 と 6 → 勝ち
                 pg.evaluate(OPP, {'t': 'set', 'k': 7}); settle(pg, 0.8)
@@ -142,19 +144,30 @@ try:
             settle(pg, 1.0)
             pg.evaluate("() => { if (CBApp._t.screen !== 'menu') CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '1', '1', '2', '3', '6', '7'], ['m', '2', '2', '2', '4', '5', '6']] }; }"); pg.wait_for_timeout(100)
             seg('deal7', 3.8, lambda: pg.locator('#cbOv .cbmenu [data-cb=cpu]').click())      # 「対戦 スタート」→ 7まい ずつ 配る → 手札が 入る
-            d7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.turns, v.my.hand.length, v.op.hand.length, v.deckN, document.querySelectorAll('#cbOv .cbfire').length, document.querySelector('#cbOv').classList.contains('nofx')] : null; }")
+            d7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.turns, v.my.hand.length, v.op.hand.length, v.deckN, document.querySelectorAll('#cbOv .cbfire').length, document.querySelector('#cbOv .cbboard').classList.contains('cust')] : null; }")
             seg('fire', 6.0, lambda: None)                                                    # 何も しない 6秒：火の あかりの ゆれ（5.6秒・4.3秒で 1回り）と 自分の わくの 光 だけ
             tap_play(pg, '1'); settle(pg, 0.8)
             seg('rev_open', 5.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 'm'}))              # オープン：1 と 幻の馬 →「チャンス！」→ 聞く 窓「逆転の チャンス！／1 の 効果を 使う？」
             ar = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.cbask'); return m ? m.querySelector('h3').textContent + '｜' + m.querySelector('.askq b').textContent : null; }")
-            seg('rev_use', 6.6, lambda: pg.locator('#cbOv .cbask [data-cb=revyes]').click())    # 1 を 3まい 見せる 窓 → 1まいが 捨て札へ →「逆転勝利！」→ 片付け →「ターン 2」
+            seg('rev_use', 8.8, lambda: pg.locator('#cbOv .cbask [data-cb=revyes]').click())    # 1 を 3まい 見せる 窓 → 1まいが 捨て札へ →「逆転勝利！」→ 片付け →「ターン 2」
             r1 = pg.evaluate("() => { const v = CBApp._t.view; return [v.turn, v.my.wins, v.op.wins, v.my.hand.map(c => c.k).sort().join('')]; }")
             tap_play(pg, '1'); settle(pg, 0.8)
             seg('rev_op_open', 5.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': '2'}))           # オープン：1 と 2（相手は 2 が 3まい）→「勝負は まだ！」→ 相手を 待つ
-            seg('rev_op_use', 6.6, lambda: pg.evaluate(OPP, {'t': 'rev', 'use': True}))         # 相手が 2 を 3まい 見せる 窓 → 捨て札へ →「逆転負け…」→ 片付け →「ターン 3」
+            seg('rev_op_use', 8.8, lambda: pg.evaluate(OPP, {'t': 'rev', 'use': True}))         # 相手が 2 を 3まい 見せる 窓 → 捨て札へ →「逆転負け…」→ 片付け →「ターン 3」
             r2 = pg.evaluate("() => { const v = CBApp._t.view; return [v.turn, v.my.wins, v.op.wins, v.op.hand.length, v.phase]; }")
             check(d7 == [5, 7, 7, 16, 2, calm == 2] and ar == '逆転の チャンス！｜1 の 効果を 使う？' and r1 == [2, 1, 0, '12367'] and r2 == [3, 1, 1, 4, 'set'],
-                  f'3つ目の 対戦も 場面の とおり（5ターン・手札 7まい・山札 16・火の あかり 2つ {d7}・聞く 窓「{ar}」・自分の 逆転勝利 {r1}・相手の 逆転勝利 {r2}）')
+                  f'3つ目の 対戦も 場面の とおり（5ターン・手札 7まい・山札 16・火の あかり 2つ・『白亜の宮殿』の とき だけ ボードが cust {d7}・聞く 窓「{ar}」・自分の 逆転勝利 {r1}・相手の 逆転勝利 {r2}）')
+            # ---- 4つ目の 対戦（第4.185版）：相手が 7 を 4まい 見せて 強さ 逆転 ----
+            settle(pg, 1.0)
+            pg.evaluate("() => { CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['2', '3', '4', '5', '6', '1', 'k'], ['7', '7', '7', '7', '1', '2', '3']], turns: 3 }; }"); pg.wait_for_timeout(100)
+            pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 3.4)
+            tap_play(pg, '2'); settle(pg, 0.8)
+            def x7r_pre():
+                pg.evaluate(OPP, {'t': 'set', 'k': '1'}); settle(pg, 2.4)
+                pg.evaluate(OPP, {'t': 'eff', 'use': {'x7r': True}})
+            seg('x7r', 12.0, x7r_pre)                             # 効果の 札 → 4まいの 窓 → 1まい 捨て札へ →「強さ 逆転！」→ オープン（2 が 1 に 勝つ）→「ターン 2」
+            r7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.rv, v.turn, v.my.wins, v.op.wins, v.op.hand.filter(c => c.k === '7').length, document.querySelector('#cbOv .cbturn').textContent.indexOf('強さ 逆転中') >= 0] : null; }")
+            check(r7 == [True, 2, 1, 0, 3, True], f'4つ目の 対戦も 場面の とおり（相手が 7 を 4まい 見せて 逆転 → 2 が 1 に 勝つ・相手の 7 が 3まい 見える・「強さ 逆転中」{r7}）')
             check(not errs, f'エラー なし {errs[:3]}')
             ctx.close()
 finally:

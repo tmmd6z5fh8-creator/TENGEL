@@ -484,17 +484,16 @@
       await sleep(700);
       var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn, turns: v0.turns } : null;
       // 第4.178版：設定（BGM・効果音・エフェクト）の はじめの 形・夜の フィールドの 火の あかり（.cbfire の ゆれ）・BGM（CI の ビルドには 音の ファイルが ない → 鳴らさずに そのまま 進む）
+      // 第4.185版：設定は BGM・効果音 だけ（エフェクトは なくした：sets に fx が ない・窓に エフェクトの ボタンが ない）・プレイボードは いつもの 絵（cb_board.webp：cust なし）
       try {
         var se0 = window.CBApp._t.sets, bg0 = window.CBApp._t.bgm;
-        out.sets = { bgm: se0.bgm, se: se0.se, fx: se0.fx, as: se0.as };
+        out.sets = { bgm: se0.bgm, se: se0.se, fx: 'fx' in se0, as: se0.as };
         out.bgm = { on: bg0.on, want: bg0.want, gone: bg0.gone, len: Math.round(bg0.len * 100) / 100, ctx: bg0.ctx };
         out.fire = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbfire'), function (e) { var c = getComputedStyle(e); return c.animationName + ' ' + c.animationDuration; });
         document.querySelector('#cbOv .cbgear').click(); await sleep(200);
         out.gear = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmod.cbset .cbsw'), function (r) { return r.getAttribute('data-set'); }).join();
-        var fx0 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="0"]'); if (fx0) fx0.click(); await sleep(150);
-        out.nofx = document.querySelector('#cbOv').classList.contains('nofx');
-        var fx1 = document.querySelector('#cbOv .cbset [data-cb=tg][data-k=fx][data-v="1"]'); if (fx1) fx1.click(); await sleep(150);
-        out.fxBack = !document.querySelector('#cbOv').classList.contains('nofx');
+        out.fxBtn = !!document.querySelector('#cbOv .cbset [data-k=fx]');
+        var bdi = document.querySelector('#cbOv .cbboard > img'); out.board = bdi ? [bdi.getAttribute('src'), document.querySelector('#cbOv .cbboard').classList.contains('cust')] : null;
         var mx = document.querySelector('#cbOv .cbset [data-cb=modx]'); if (mx) mx.click(); await sleep(200);
       } catch (e) { out.setsErr = String(e); }
       await mark('cb-game');

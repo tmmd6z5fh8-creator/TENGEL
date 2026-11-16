@@ -17,6 +17,12 @@
 #     第4.182版（まさちゃん 20:09「カードバトルデザインカスタム デザイン一枚解放、バトルコイン300枚 神様馬カードと幻の馬カード500枚」と 絵 16まい）：
 #       カードの おもての べつの デザイン cb_face_<名前>.png（1024×1536・白い 紙の 上に カード：名前は 姫が つけた。<カード><a・b>）→ 下の FACES
 #       ka・kb（神様馬）・ma・mb（幻の馬）・1a・1b・2a・2b・3a・3b・4a・4b・5a・5b・6a・7a ／ 20:22「6.71枚づつ追加して！」＋ 絵 2まい：6b・7b（あわせて 18種）
+#     第4.185版（まさちゃん 2026/11/16 22:39「7.の効果変わる！…」＋ 7 の 新しい 絵 3まい「デザインベースが一枚目！カスタムが二枚目！、3枚目！」・
+#       22:45「2.元々のは消して！ルールが追加されてないから！」）：7 の いつもの 絵は cb_7_v2.png・カスタム 7a・7b は cb_face_7a_v2.png・cb_face_7b_v2.png
+#       （1024×1536・白い 紙の 上：「3枚交換・4枚公開で逆転」の 文）。前の 絵 cb_7.png・cb_face_7a.png・cb_face_7b.png は のこす（上書きしない・消さない：アプリには 入れない）
+#     第4.185版（まさちゃん 2026/11/16 23:20「バトルコインで、プレイボード7種類購入できるようにして！ 1個バトルコイン300枚で解放できるようにして！」と 絵 7まい）：
+#       プレイボード 7種 cb_board_<名前>.png（1672×941・すき通し なし：いつもの ボードと 同じ 形〈台・捨て札・山札・VS の 2つの わく・歯車〉の 場所は 1画素も ずれて いない）＝
+#       marble（白亜の宮殿）・frost（蒼氷の宮）・sakura（桜の舞踏会）・violet（紫月の夜）・crimson（紅蓮の闘技場）・starry（黄金の星空）・steam（歯車の工房）→ 下の BOARDS（名前は 姫が つけた）
 #   作る もの：
 #     カード 10種 × 2つの 大きさ：cb_c<名前>.webp（800×1200：大きく 見る・めくった とき）・cb_s<名前>.webp（300×450：手札・台の 上）。名前＝1〜7・k・m・b（うら）
 #       ・カードは もとの 絵ごとに 大きさと たて横が 少し ちがう（おもて 986〜1007×1510〜1521・うら 938×1338）→ 絵の ある 所（すき通しで ない 所）を 切り出して、
@@ -27,6 +33,8 @@
 #       ・おもてと 同じ 切り方（card：白い 紙の 外を 切って 2:3・同じ 角の 丸み）
 #       ・山札は cb_deck.png（いつもの 山札の 絵：少し ななめから 見た 形）の いちばん 上の カードの 面 だけを、その うらの 絵に はりかえる（DECK_FACE の 4つの 角へ ななめに うつす）。
 #         下に かさなった カードの ふち（金の 線）と 外の 形（すき通し）は いつもの まま ＝ 切り方・大きさは cb_deck.webp と 同じ
+#     第4.185版：プレイボード 7種 × 2つ：cb_bd_<名前>.webp（1254×706：対戦の ボード）・cb_bd_<名前>_s.webp（480×270：デザインカスタムの タイル）。
+#       絵は そのまま（夜の 色〈night〉に しない：まさちゃんの デザインの まま）。大きさを かえる だけ
 #     cb_board.webp（1254×706）・cb_deck.webp（360×426）・cb_icon.webp（240×240：右下の 丸い ボタン）・cb_logo.webp（720×720：メニューの 絵）・cb_coin.webp（240×240：バトルコイン：第4.179版）
 #     第4.178版（まさちゃん 2026/11/16 14:43「フィールドの雰囲気を夜の月あかりと火のライトに照らされてるイメージにして！(デザインは変えないで、差し込んでる光りの色を変えてみて)」）：
 #       cb_board.webp は、もとの 絵（cb_board.png：そのまま のこす）の **光の 色 だけ** を かえて 作る（下の night）：形・もよう・字は 1画素も 動かさない。
@@ -39,9 +47,11 @@ from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
-CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
+CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
 BACKS = [('sky', 'cb_back_sky.png'), ('star', 'cb_back_star.png'), ('ice', 'cb_back_ice.png'), ('wa', 'cb_back_wa.png'), ('ori', 'cb_back_ori.png'), ('crown', 'cb_back_crown.png'), ('heart', 'cb_back_heart.png')]      # 第4.182版：背面カスタム
-FACES = [(f, f'cb_face_{f}.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]      # 第4.182版：おもての べつの デザイン
+BOARDS = [(b, f'cb_board_{b}.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード
+BD, BD_S = (1254, 706), (480, 270)      # 第4.185版：プレイボードの 大きさ（いつもの cb_board.webp と 同じ）・タイル
+FACES = [(f, f'cb_face_{f}' + ('_v2' if f in ('7a', '7b') else '') + '.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]      # 第4.182版：おもての べつの デザイン（第4.185版：7a・7b は 新しい 絵）
 DECK_FACE = ((268.4, 104.0), (963.2, 104.0), (1060.7, 948.0), (198.0, 948.0))      # cb_deck.png（1254×1254）の いちばん 上の カードの 面の 角（左上・右上・右下・左下：外の 形の 左右の 線と 金の ふちの 上下で 測った）
 BASE = (1000, 1500)          # そろえる 大きさ（たて横 2:3）
 INSET, RADIUS = 4, 62        # ふちを 内がわへ 4px・角の 丸み 62px（1000×1500 の とき。どの もとの 絵の 角 よりも 内がわ）
@@ -202,12 +212,19 @@ def plan():
         jobs.append((f'cb_bk_{bid}_c.webp', src, lambda p, o: save(card(p)[0], BIG, o)))
         jobs.append((f'cb_bk_{bid}_s.webp', src, lambda p, o: save(card(p)[0], SMALL, o)))
         jobs.append((f'cb_bk_{bid}_d.webp', src, lambda p, o: save(deck_with(p), (360, 426), o)))
+    def plain(size):                                            # 第4.185版：プレイボード（絵は そのまま・大きさ だけ）
+        def f(p, o):
+            Image.open(p).convert('RGB').resize(size, Image.LANCZOS).save(o, 'WEBP', quality=86, method=6); return os.path.getsize(o)
+        return f
+    for did, src in BOARDS:
+        jobs.append((f'cb_bd_{did}.webp', src, plain(BD)))
+        jobs.append((f'cb_bd_{did}_s.webp', src, plain(BD_S)))
     return jobs
 
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE]]))
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)]]))      # 第4.185版：プレイボードの 大きさ
 
 
 def files():
