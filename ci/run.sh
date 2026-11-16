@@ -118,6 +118,7 @@ CBPY='
 # start の op（相手の 手札）は 7 か 6：コンピュータが もう セットして いれば 6（セットは すぐ 確定する：第4.176版の 流れ。run 143 では 4〈手札 5まいの とき〉だった）
 # 第4.178版：5ターン・手札 7まい（山札 16）・メニューの ボタン 6つ（「設定」が ふえた）・設定の 窓（BGM・効果音・エフェクト）・火の あかりの ゆれ・エフェクト オフ／オン・捨て札は 10まい 以上
 # 第4.179版：メニューに バトルコインの 行（はじめ 0枚）・コンピュータに 勝ったら 1枚
+# 第4.184版：エフェクト着せ替えの canvas（3まい・光の 層は スクリーン・描いた 点が ある・終わったら 消える）
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
@@ -129,8 +130,11 @@ ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.
 se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
 ok2 = se.get("fx") is True and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
       and o.get("gear") == "bgm,se,fx" and o.get("nofx") is True and o.get("fxBack") is True and not o.get("setsErr")
+ef = o.get("efx") or {}
+ok3 = ef.get("n") == 3 and ef.get("on") is True and ef.get("blend") == "screen" and (ef.get("l") or 0) > 0 and (ef.get("a") or 0) > 0 and (ef.get("w") or 0) >= (ef.get("cw") or 1) and ef.get("after") is False and ef.get("log") == 1 and not ef.get("err")
 print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s tokens %s closed %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("tokens"), o.get("closed"), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 print("   card battle settings: sets %s bgm %s fire %s gear %s fx-off %s fx-back %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("nofx"), o.get("fxBack"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
+print("   card battle effect: %s -> %s" % (ef, "OK" if ok3 else "CHECK"))
 '
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
 #   じかに 描いた 紙と 1画素も ちがわない（くらべた 14コマ・べつの 紙との 見くらべも 0）・読んだ 値（線の 太さ 2・こさ 0.375）

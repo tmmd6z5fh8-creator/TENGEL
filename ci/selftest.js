@@ -483,6 +483,15 @@
       await waitFor(function () { return window.CBApp._t.view && window.CBApp._t.idle; }, 20000);
       await sleep(700);
       var v0 = window.CBApp._t.view; out.start = v0 ? { hand: v0.my.hand.length, op: v0.op.hand.length, deck: v0.deckN, turn: v0.turn, turns: v0.turns } : null;
+      // 第4.184版：エフェクト着せ替えの 描く ところを 本物の WebKit で（CI の ビルドには 絵が ない → 光の グラデーション・線 だけ 描かれる）：3まいの canvas・光の 層は スクリーンで 重ねる・終わったら 消える
+      try {
+        var T0 = window.CBApp._t, fxn = T0.efx.log.length;
+        T0.speed(1); T0.fxPlay('shine', true); await sleep(450);
+        var cvs = document.querySelectorAll('#cbOv canvas.cbefx'), cntA = function (c) { var d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, k = 0; for (var i = 3; i < d.length; i += 64) if (d[i] > 8) k++; return k; };
+        out.efx = { n: cvs.length, on: T0.efx.on, blend: cvs[1] ? getComputedStyle(cvs[1]).mixBlendMode : null, l: cvs[1] ? cntA(cvs[1]) : 0, a: cvs[0] ? cntA(cvs[0]) : 0, w: cvs[1] ? cvs[1].width : 0, cw: cvs[1] ? Math.round(cvs[1].getBoundingClientRect().width) : 0 };
+        await waitFor(function () { return !T0.efx.run; }, 10000); await sleep(100);
+        out.efx.after = T0.efx.on; out.efx.log = T0.efx.log.length - fxn; T0.speed(0.2);
+      } catch (e) { out.efx = { err: String(e) }; }
       // 第4.178版：設定（BGM・効果音・エフェクト）の はじめの 形・夜の フィールドの 火の あかり（.cbfire の ゆれ）・BGM（CI の ビルドには 音の ファイルが ない → 鳴らさずに そのまま 進む）
       try {
         var se0 = window.CBApp._t.sets, bg0 = window.CBApp._t.bgm;

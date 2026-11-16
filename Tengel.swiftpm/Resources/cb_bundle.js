@@ -538,6 +538,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
 const CBNet = (() => {
   'use strict';
   const R = CBRules, PROTO = 6, MAXLEN = 20000;      
@@ -555,6 +556,7 @@ const CBNet = (() => {
     const o = { b: '', f: {} };
     if (!d || typeof d !== 'object') return o;
     if (typeof d.b === 'string' && DZID.test(d.b)) o.b = d.b;
+    if (typeof d.e === 'string' && DZID.test(d.e)) o.e = d.e;      
     const f = d.f && typeof d.f === 'object' ? d.f : {};
     R.KINDS.forEach(k => { if (Object.prototype.hasOwnProperty.call(f, k) && typeof f[k] === 'string' && DZID.test(f[k])) o.f[k] = f[k]; });
     return o;
@@ -723,6 +725,240 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+const CBFx = (() => {
+  'use strict';
+  const IDS = ['bomb', 'shine', 'dark', 'heart'];
+  const NAME = { bomb: '爆発', shine: '光り輝く', dark: '闇のオーラ', heart: 'ハート' };
+  const DUR = { bomb: 1700, shine: 1650, dark: 1800, heart: 1700 };
+  const HOLD = { bomb: 760, shine: 700, dark: 820, heart: 820 };
+  const SEQ = { bomb: { e: 'cb_ef_bomb_e.webp', a: 'cb_ef_bomb_a.webp', n: 32, s: 384, cols: 8, ms: 1150 }, dark: { e: 'cb_ef_dark_e.webp', a: 'cb_ef_dark_a.webp', n: 32, s: 384, cols: 8, ms: 1500 } };
+  const PARTS = { star: [0, 0, 512, 512], ring: [512, 0, 256, 256], glint: [768, 0, 128, 128], hex: [896, 0, 128, 128], dot: [768, 128, 64, 64], spark: [832, 128, 64, 64],
+    h0: [0, 512, 256, 256], h1: [256, 512, 256, 256], h2: [512, 512, 256, 256], h3: [768, 512, 256, 256] };
+  const PF = 'cb_ef_parts.webp';
+  const img = {}, tints = {};
+  function load1(f) { if (!img[f]) img[f] = new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = f; }); return img[f]; }
+  function load(id) { const L = [PF].concat(SEQ[id] ? [SEQ[id].e, SEQ[id].a] : []); return Promise.all(L.map(load1)).then(a => { const o = {}; L.forEach((s, i) => { o[s] = a[i]; }); return o; }); }
+  const rngOf = seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+  const ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+  const back = x => { const k = clamp(x, 0, 1), c = 2.2; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };      
+  const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+  const TAU = Math.PI * 2;
+  
+  const src = (P, name) => { const r = PARTS[name]; return { im: P, x: r[0], y: r[1], w: r[2], h: r[3] }; };
+  function tinted(P, name, rgb) {
+    const key = name + '|' + rgb; if (tints[key]) return tints[key];
+    if (!P) return null;
+    const r = PARTS[name], c = document.createElement('canvas'); c.width = r[2]; c.height = r[3];
+    const g = c.getContext('2d'); g.drawImage(P, r[0], r[1], r[2], r[3], 0, 0, r[2], r[3]); g.globalCompositeOperation = 'source-in'; g.fillStyle = `rgb(${rgb})`; g.fillRect(0, 0, r[2], r[3]);
+    tints[key] = { im: c, x: 0, y: 0, w: r[2], h: r[3] }; return tints[key];
+  }
+  
+  function spr(ctx, s, x, y, w, rot, al, op) {
+    if (!s || !s.im || !(al > 0.003) || !(w > 0.5)) return;
+    const h = w * s.h / s.w;
+    ctx.save(); ctx.globalAlpha = Math.min(1, al); ctx.globalCompositeOperation = op || 'lighter'; ctx.translate(x, y); if (rot) ctx.rotate(rot);
+    ctx.drawImage(s.im, s.x, s.y, s.w, s.h, -w / 2, -h / 2, w, h); ctx.restore();
+  }
+  
+  function seq(L, I, q, f, x, y, d, al, ea) {
+    const E = I[q.e], A = I[q.a]; if (!E || !A || !(al > 0.003)) return;
+    const i = clamp(Math.floor(f), 0, q.n - 1), sx = (i % q.cols) * q.s, sy = Math.floor(i / q.cols) * q.s;
+    L.a.save(); L.a.globalAlpha = Math.min(1, al); L.a.drawImage(A, sx, sy, q.s, q.s, x - d / 2, y - d / 2, d, d); L.a.restore();
+    L.l.save(); L.l.globalAlpha = Math.min(1, al * (ea == null ? 1 : ea)); L.l.globalCompositeOperation = 'lighter'; L.l.drawImage(E, sx, sy, q.s, q.s, x - d / 2, y - d / 2, d, d); L.l.restore();
+  }
+  
+  function glow(ctx, x, y, r, rgb, al) {
+    if (!(al > 0.003) || !(r > 1)) return;
+    const a = Math.min(1, al), g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(0.28, `rgba(${rgb},${a * 0.5})`); g.addColorStop(0.62, `rgba(${rgb},${a * 0.14})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore();
+  }
+  
+  function vign(ctx, W, H, x, y, r0, rgb, c0, c1) {
+    if (!(c1 > 0.003)) return;
+    const g = ctx.createRadialGradient(x, y, r0, x, y, Math.hypot(Math.max(x, W - x), Math.max(y, H - y)));
+    g.addColorStop(0, `rgba(${rgb},${c0})`); g.addColorStop(1, `rgba(${rgb},${c1})`);
+    ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
+  }
+
+  function make(id, o) {
+    const R = rngOf(o.seed || 7), S = o.s, fx = { id: id, o: o };
+    fx.ph = [R() * TAU, R() * TAU];
+    if (id === 'bomb') {
+      fx.sp = Array.from({ length: 120 }, () => { const a = R() * TAU, v = S * (1.1 + R() * 2.6); return { vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.45 * R(), life: 420 + R() * 820, w: 1 + R() * 2.4, d: R() * 80 }; });
+      fx.db = Array.from({ length: 18 }, () => { const a = R() * TAU, v = S * (0.8 + R() * 1.7); return { vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.8, r: R() * 6, vr: (R() - 0.5) * 18, sz: S * (0.016 + R() * 0.026), life: 900 + R() * 600, n: 3 + Math.floor(R() * 3), k: [0, 1, 2, 3, 4].map(() => 0.6 + 0.4 * R()) }; });
+      fx.em = Array.from({ length: 50 }, () => ({ x: (R() - 0.5) * S * 1.2, y: (R() - 0.35) * S * 0.8, vy: -S * (0.12 + R() * 0.32), sw: R() * TAU, life: 650 + R() * 700, d: 200 + R() * 450, sz: S * (0.05 + R() * 0.06) }));
+    } else if (id === 'shine') {
+      fx.rays = Array.from({ length: 16 }, (_, i) => ({ a: i / 16 * TAU + (R() - 0.5) * 0.18, l: R() * 0.9, w: 0.022 + R() * 0.035 }));
+      fx.gl = Array.from({ length: 36 }, () => { const a = R() * TAU, r = S * (0.25 + R() * 1.3); return { x: Math.cos(a) * r, y: Math.sin(a) * r * 1.15, d: 120 + R() * 1150, l: 260 + R() * 260, sz: 0.16 + R() * 0.22, r: R() * 0.8 }; });
+      fx.du = Array.from({ length: 80 }, () => ({ x: (R() - 0.5) * S * 2.4, y: (R() - 0.2) * S * 1.4, vy: -S * (0.12 + R() * 0.38), sw: R() * TAU, d: R() * 700, life: 700 + R() * 700, sz: S * (0.03 + R() * 0.045) }));
+      fx.hx = [[-0.55, 0.32, 0.40], [0.35, 0.18, 0.55], [0.8, 0.42, 0.32], [1.25, 0.24, 0.45]];
+    } else if (id === 'dark') {
+      fx.bolts = [260, 640, 1020].map(at => {
+        const a0 = R() * TAU, L = S * (0.75 + R() * 0.6), n = 10, pts = [];
+        for (let i = 0; i <= n; i++) { const k = i / n, j = i && i < n ? 1 : 0; pts.push([Math.cos(a0) * L * k + (R() - 0.5) * S * 0.16 * j, Math.sin(a0) * L * k + (R() - 0.5) * S * 0.16 * j]); }
+        const b = 3 + Math.floor(R() * 4), a1 = a0 + (R() < 0.5 ? -1 : 1) * (0.5 + R() * 0.5), br = [pts[b]];      
+        for (let i = 1; i <= 4; i++) br.push([pts[b][0] + Math.cos(a1) * L * 0.09 * i + (R() - 0.5) * S * 0.08, pts[b][1] + Math.sin(a1) * L * 0.09 * i + (R() - 0.5) * S * 0.08]);
+        return { at: at + R() * 80, pts: pts, br: br };
+      });
+      fx.pl = Array.from({ length: 30 }, () => { const a = R() * TAU, r = S * (0.25 + R() * 0.4); return { x: Math.cos(a) * r * 1.1, y: Math.sin(a) * r * 0.8 + S * 0.15, vy: -S * (0.55 + R() * 0.5), sw: R() * TAU, d: R() * 950, life: 700 + R() * 450, s0: 0.2 + R() * 0.15, s1: 0.45 + R() * 0.3 }; });
+      fx.tw = Array.from({ length: 14 }, () => ({ ph: R() * TAU, r0: S * (0.95 + R() * 0.65), tu: 0.9 + R() * 0.6, w: 1.1 + R() * 1.6, d: R() * 650, life: 650 + R() * 420 }));      
+      fx.in = Array.from({ length: 46 }, () => ({ a: R() * TAU, r: S * (1.2 + R() * 0.9), d: R() * 950, life: 420 + R() * 380, w: 1 + R() * 1.6 }));      
+      fx.em = Array.from({ length: 70 }, () => ({ x: (R() - 0.5) * S * 2.1, y: (R() - 0.1) * S * 1.4, vy: -S * (0.15 + R() * 0.42), sw: R() * TAU, d: 150 + R() * 900, life: 600 + R() * 700, sz: S * (0.035 + R() * 0.05) }));
+    } else if (id === 'heart') {
+      fx.bu = Array.from({ length: 34 }, (_, i) => { const a = R() * TAU, v = S * (1.0 + R() * 1.8); return { c: i % 4, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 1.1 - S * 0.4, r: (R() - 0.5) * 1.2, vr: (R() - 0.5) * 4, d: 90 + R() * 140, life: 900 + R() * 520, sz: 0.15 + R() * 0.22 }; });
+      fx.fl = Array.from({ length: 14 }, (_, i) => ({ c: (i + 1) % 4, x: (R() - 0.5) * S * 2.3, y: S * (0.6 + R() * 0.7), vy: -S * (0.45 + R() * 0.5), sw: R() * TAU, d: 300 + R() * 650, life: 900 + R() * 450, sz: 0.12 + R() * 0.15 }));
+      fx.gl = Array.from({ length: 22 }, () => { const a = R() * TAU, r = S * (0.3 + R() * 1.2); return { x: Math.cos(a) * r, y: Math.sin(a) * r * 1.2, d: 150 + R() * 1100, l: 260 + R() * 240, sz: 0.14 + R() * 0.16, r: R() }; });
+    }
+    return fx;
+  }
+
+  function draw(L, I, fx, t) {
+    const o = fx.o, W = o.W, H = o.H, x = o.x, y = o.y, S = o.s, P = I[PF];
+    let shake = [0, 0];
+    if (fx.id === 'bomb') {
+      
+      const fl = t < 50 ? t / 50 : Math.exp(-(t - 50) / 150);
+      if (fl > 0.01) { L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.fillStyle = `rgba(255,222,176,${(0.55 * fl).toFixed(3)})`; L.l.fillRect(0, 0, W, H); L.l.restore(); }
+      glow(L.l, x, y, S * (0.95 + t / 900), '255,150,60', 0.9 * Math.exp(-t / 480));
+      const q = SEQ.bomb;      
+      seq(L, I, q, t / q.ms * q.n, x, y - S * 0.16 * ease(t / 1500), S * 2.2, 1 - smooth(1200, 1680, t));
+      if (t < 560) {           
+        const k = t / 560, r = S * (0.2 + 2.0 * ease(k));
+        L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.strokeStyle = `rgba(255,232,196,${(0.62 * (1 - k)).toFixed(3)})`; L.l.lineWidth = S * 0.08 * (1 - k) + 1;
+        L.l.beginPath(); L.l.ellipse(x, y, r, r * 0.9, 0, 0, TAU); L.l.stroke(); L.l.restore();
+      }
+      L.l.save(); L.l.lineCap = 'round'; L.l.globalCompositeOperation = 'lighter';      
+      for (const p of fx.sp) {
+        const tt = (t - p.d) / 1000, Lf = p.life / 1000; if (tt <= 0 || tt > Lf) continue;
+        const dr = Math.exp(-tt * 1.7), px = x + p.vx * (1 - dr) / 1.7, py = y + p.vy * (1 - dr) / 1.7 + 0.5 * S * 1.8 * tt * tt;
+        const vx = p.vx * dr, vy = p.vy * dr + S * 1.8 * tt, k = tt / Lf, c = k < 0.25 ? '255,248,226' : k < 0.55 ? '255,196,96' : '255,116,40';
+        L.l.strokeStyle = `rgba(${c},${(1 - k).toFixed(3)})`; L.l.lineWidth = p.w; L.l.beginPath(); L.l.moveTo(px, py); L.l.lineTo(px - vx * 0.045, py - vy * 0.045); L.l.stroke();
+      }
+      L.l.restore();
+      for (const p of fx.db) {  
+        const tt = t / 1000, Lf = p.life / 1000; if (tt > Lf) continue;
+        const dr = Math.exp(-tt * 1.2), px = x + p.vx * (1 - dr) / 1.2, py = y + p.vy * (1 - dr) / 1.2 + 0.5 * S * 2.2 * tt * tt;
+        const al = 0.92 * (1 - smooth(0.6, 1, tt / Lf)) * smooth(S * 0.5, S * 0.8, Math.hypot(px - x, py - y));      
+        L.o.save(); L.o.fillStyle = `rgba(30,19,12,${al.toFixed(3)})`; L.o.translate(px, py); L.o.rotate(p.r + p.vr * tt); L.o.beginPath();
+        for (let i = 0; i < p.n; i++) { const a = i / p.n * TAU, rr = p.sz * p.k[i]; if (i) L.o.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); else L.o.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+        L.o.closePath(); L.o.fill(); L.o.restore();
+      }
+      const sk = src(P, 'spark');      
+      for (const p of fx.em) { const tt = (t - p.d) / 1000, Lf = p.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, sk, x + p.x + Math.sin(p.sw + tt * 5) * S * 0.04, y + p.y + p.vy * tt, p.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
+      const kk = t < 900 ? S * 0.05 * Math.exp(-t / 170) : 0;      
+      shake = [kk * 0.35 * Math.sin(t / 210 * TAU + 1), kk * Math.sin(t / 260 * TAU)];
+    } else if (fx.id === 'shine') {
+      const env = smooth(0, 240, t) * (1 - smooth(950, 1620, t));      
+      vign(L.a, W, H, x, y, S * 0.7, '0,0,0', 0, 0.36 * env);
+      glow(L.l, x, y, S * 1.8, '255,236,186', 0.55 * env);
+      glow(L.l, x, y, S * 0.55, '255,252,236', 0.85 * env);
+      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.translate(x, y); L.l.rotate(t / 1000 * 0.32);      
+      for (const r of fx.rays) {
+        const len = S * (1.5 + r.l) * (0.6 + 0.4 * ease(t / 420)), al = 0.42 * env; if (al < 0.004) continue;
+        const g = L.l.createLinearGradient(0, 0, Math.cos(r.a) * len, Math.sin(r.a) * len); g.addColorStop(0, `rgba(255,242,206,${al.toFixed(3)})`); g.addColorStop(1, 'rgba(255,242,206,0)');
+        L.l.fillStyle = g; L.l.beginPath(); L.l.moveTo(0, 0); L.l.lineTo(Math.cos(r.a - r.w) * len, Math.sin(r.a - r.w) * len); L.l.lineTo(Math.cos(r.a + r.w) * len, Math.sin(r.a + r.w) * len); L.l.closePath(); L.l.fill();
+      }
+      L.l.restore();
+      const rg = src(P, 'ring'), st = src(P, 'star');
+      spr(L.l, rg, x, y, S * (0.5 + 2.7 * ease(t / 950)), 0, 0.9 * (1 - smooth(250, 1050, t)));
+      spr(L.l, rg, x, y, S * (0.3 + 1.7 * ease((t - 180) / 900)), 0, t > 180 ? 0.55 * (1 - smooth(400, 1150, t)) : 0);
+      spr(L.l, st, x, y, S * (1.3 + 0.7 * ease(t / 520)), t / 1000 * 0.18, env);
+      spr(L.l, st, x, y, S * 0.85, -t / 1000 * 0.4 + 0.5, 0.65 * env);
+      const hx = src(P, 'hex'), cx = W / 2, cy = H / 2;      
+      for (const h of fx.hx) spr(L.l, hx, x + (cx - x) * (1 + h[0]), y + (cy - y) * (1 + h[0]), S * h[1], 0, h[2] * env);
+      const gl = src(P, 'glint'), du = tinted(P, 'dot', '255,214,120');
+      for (const g of fx.gl) { const k = (t - g.d) / g.l; if (k < 0 || k > 1) continue; const a = Math.sin(Math.PI * k); spr(L.l, gl, x + g.x, y + g.y, S * g.sz * (0.4 + 0.8 * a), g.r, a); }
+      for (const d of fx.du) { const tt = (t - d.d) / 1000, Lf = d.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, du, x + d.x + Math.sin(d.sw + tt * 4) * S * 0.05, y + d.y + d.vy * tt, d.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
+    } else if (fx.id === 'dark') {
+      const env = smooth(0, 320, t) * (1 - smooth(1300, 1780, t));      
+      vign(L.a, W, H, x, y, S * 0.15, '6,0,14', 0.34 * env, 0.8 * env);
+      const q = SEQ.dark, qa = 1 - smooth(1500, 1790, t);
+      glow(L.l, x, y, S * 1.5, '120,40,220', 0.2 * env);
+      
+      const bk = tinted(P, 'dot', '10,0,18'), pg = tinted(P, 'dot', '150,70,255');
+      for (const b of fx.pl) {
+        const tt = (t - b.d) / 1000, Lf = b.life / 1000; if (tt <= 0 || tt > Lf) continue;
+        const k = tt / Lf, px = x + b.x + Math.sin(b.sw + tt * 4) * S * 0.08, py = y + b.y + b.vy * tt, w = S * (b.s0 + (b.s1 - b.s0) * k) * 2.2, al = Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k);
+        spr(L.a, bk, px, py, w, 0, al * 0.85, 'source-over'); spr(L.l, pg, px, py - w * 0.05, w * 1.15, 0, al * 0.3);
+      }
+      seq(L, I, q, t / q.ms * q.n, x, y, S * 2.5, qa, 0.55);      
+      if (qa > 0.003) { const i = clamp(Math.floor(t / q.ms * q.n), 0, q.n - 1), d = S * 2.5; L.a.save(); L.a.globalAlpha = qa * 0.7; L.a.drawImage(I[q.a], (i % q.cols) * q.s, Math.floor(i / q.cols) * q.s, q.s, q.s, x - d / 2, y - d / 2, d, d); L.a.restore(); }      
+      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.lineCap = 'round'; L.l.lineJoin = 'round';      
+      for (const b of fx.bolts) {
+        const k = (t - b.at) / 150; if (k < 0 || k > 1) continue; const al = 1 - k;
+        for (const [lw, a, c] of [[8, 0.22, '170,90,255'], [2.2, 0.95, '238,218,255']]) {
+          L.l.strokeStyle = `rgba(${c},${(a * al).toFixed(3)})`; L.l.lineWidth = lw;
+          for (const line of [b.pts, b.br]) { L.l.beginPath(); line.forEach(([px, py], i) => { if (i) L.l.lineTo(x + px, y + py); else L.l.moveTo(x + px, y + py); }); L.l.stroke(); }
+        }
+      }
+      L.l.restore();
+      L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.lineCap = 'round';      
+      for (const w of fx.tw) {
+        const k = (t - w.d) / w.life; if (k < 0 || k > 1) continue;
+        const al = Math.sin(Math.PI * k), sc = 1 - 0.55 * ease(k), rot = w.ph + (t / 1000) * 2.6 + k * 1.2, N = 26;
+        for (const [lw, a, c] of [[w.w * 4.5, 0.13, '150,60,255'], [w.w, 0.7, '226,188,255']]) {
+          L.l.strokeStyle = `rgba(${c},${(a * al).toFixed(3)})`; L.l.lineWidth = lw; L.l.beginPath();
+          for (let i = 0; i <= N; i++) { const th = i / N * w.tu * TAU, r = w.r0 * sc * Math.exp(-0.42 * th), A = rot + th; if (i) L.l.lineTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); else L.l.moveTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); }
+          L.l.stroke();
+        }
+      }
+      for (const q2 of fx.in) {      
+        const k = (t - q2.d) / q2.life; if (k < 0 || k > 1) continue;
+        const r = q2.r * (1 - k * k), r2 = q2.r * (1 - Math.max(0, k - 0.12) ** 2), A = q2.a + k * 0.9, al = Math.sin(Math.PI * k) * 0.85;
+        L.l.strokeStyle = `rgba(214,170,255,${al.toFixed(3)})`; L.l.lineWidth = q2.w; L.l.beginPath();
+        L.l.moveTo(x + Math.cos(A) * r, y + Math.sin(A) * r * 0.85); L.l.lineTo(x + Math.cos(A - 0.1) * r2, y + Math.sin(A - 0.1) * r2 * 0.85); L.l.stroke();
+      }
+      L.l.restore();
+      if (t > 1050 && t < 1560) {      
+        const k = (t - 1050) / 510, r = S * (0.45 + 2.1 * ease(k)), lw = S * 0.16 * (1 - k) + 1;
+        L.a.save(); L.a.strokeStyle = `rgba(8,0,16,${(0.62 * (1 - k)).toFixed(3)})`; L.a.lineWidth = lw; L.a.beginPath(); L.a.ellipse(x, y, r, r * 0.85, 0, 0, TAU); L.a.stroke(); L.a.restore();
+        L.l.save(); L.l.globalCompositeOperation = 'lighter'; L.l.strokeStyle = `rgba(170,90,255,${(0.42 * (1 - k)).toFixed(3)})`; L.l.lineWidth = Math.max(1, lw * 0.25); L.l.beginPath(); L.l.ellipse(x, y, r + lw * 0.5, (r + lw * 0.5) * 0.85, 0, 0, TAU); L.l.stroke(); L.l.restore();
+      }
+      const pd = tinted(P, 'dot', '186,104,255');
+      for (const e of fx.em) { const tt = (t - e.d) / 1000, Lf = e.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.l, pd, x + e.x + Math.sin(e.sw + tt * 3) * S * 0.06, y + e.y + e.vy * tt, e.sz, 0, Math.sin(Math.PI * tt / Lf) * 0.9); }
+    } else if (fx.id === 'heart') {
+      const beat = c => Math.exp(-Math.pow((t - c) / 95, 2));
+      const pulse = beat(90) + 0.85 * beat(480);                        
+      glow(L.l, x, y, S * 1.6, '255,110,186', 0.44 * pulse);
+      glow(L.l, x, y, S * 0.95, '255,170,214', 0.24 * (1 - smooth(900, 1650, t)));
+      const gl = tinted(P, 'glint', '255,214,236');
+      for (const g of fx.gl) { const k = (t - g.d) / g.l; if (k < 0 || k > 1) continue; const a = Math.sin(Math.PI * k); spr(L.l, gl, x + g.x, y + g.y, S * g.sz * (0.4 + 0.8 * a), g.r, a * 0.95); }
+      for (const f of fx.fl) { const tt = (t - f.d) / 1000, Lf = f.life / 1000; if (tt <= 0 || tt > Lf) continue; spr(L.o, src(P, 'h' + f.c), x + f.x + Math.sin(f.sw + tt * 3) * S * 0.12, y + f.y + f.vy * tt, S * f.sz, Math.sin(f.sw + tt * 2) * 0.3, Math.sin(Math.PI * tt / Lf) * 0.9, 'source-over'); }
+      for (const h of fx.bu) {      
+        const tt = (t - h.d) / 1000, Lf = h.life / 1000; if (tt <= 0 || tt > Lf) continue;
+        const k = tt / Lf, dr = 1 - Math.exp(-tt * 3.2);
+        spr(L.o, src(P, 'h' + h.c), x + h.vx * dr / 3.2, y + h.vy * dr / 3.2 - S * 0.35 * tt * tt, S * h.sz * (1 - 0.35 * k), h.r + h.vr * tt, 1 - smooth(0.55, 1, k), 'source-over');
+      }
+      const up = smooth(1100, 1680, t), sc = back(t / 260) * (1 + 0.13 * beat(480)) * (1 + 0.2 * up);
+      spr(L.o, src(P, 'h0'), x, y - S * 0.32 * up, S * 1.25 * sc, 0, 1 - up, 'source-over');
+    }
+    return { shake: shake };
+  }
+  return { IDS, NAME, DUR, HOLD, load, make, draw };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = CBFx;
+
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -787,6 +1023,11 @@ const CBApp = (() => {
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
   const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
   
+  const FXL = typeof CBFx !== 'undefined' ? CBFx : null;
+  const EF_COST = 500, EF_IDS = ['bomb', 'shine', 'dark', 'heart'];
+  const EF_NAME = { bomb: '爆発', shine: '光り輝く', dark: '闇のオーラ', heart: 'ハート' };
+  const EFS = EF_IDS.map(id => ({ id: id, name: EF_NAME[id], s: `cb_ef_${id}_s.webp`, cost: EF_COST }));
+  
   
   const selOf = side => { const o = side === 'op' && match && match.kind !== 'cpu' ? match.opDz || { b: '', f: {} } : null; return o ? { back: o.b || '', face: o.f || {} } : { back: st ? st.back : '', face: st ? st.face : {} }; };
   const backNow = side => { const id = selOf(side).back; return id ? BACKS.find(b => b.id === id) || null : null; };
@@ -811,7 +1052,7 @@ const CBApp = (() => {
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, ms: null });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, ms: null, efs: [], ef: '' });
   let lostStake = 0;                                   
   let lostMs = '';                                     
   function load() {
@@ -834,6 +1075,8 @@ const CBApp = (() => {
     const fc = {}, f0 = st.face && typeof st.face === 'object' ? st.face : {};
     DZ_KINDS.forEach(k => { const id = f0[k]; if (st.faces.indexOf(id) >= 0 && FACES.some(f => f.id === id && f.k === k)) fc[k] = id; });
     st.face = fc;
+    st.efs = Array.isArray(st.efs) ? st.efs.filter((x, i, a) => EF_IDS.indexOf(x) >= 0 && a.indexOf(x) === i) : [];      
+    st.ef = st.efs.indexOf(st.ef) >= 0 ? st.ef : '';
     
     const k = st.stake; st.stake = null;
     if (k && typeof k === 'object' && Math.floor(+k.e) > 0) { lostStake = Math.floor(+k.e); save(); }
@@ -893,7 +1136,7 @@ const CBApp = (() => {
   
   
   
-  const SE = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join'];
+  const SE = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join', 'ef_bomb', 'ef_shine', 'ef_dark', 'ef_heart'];      
   const snd = { ac: null, buf: {} };
   const AS = (() => { try { return !!(navigator.audioSession && 'type' in navigator.audioSession); } catch (e) { return false; } })();
   const appSound = () => { try { const g = window.TengelFx && window.TengelFx.get ? window.TengelFx.get() : null; return g ? g.sound !== false : true; } catch (e) { return true; } };
@@ -906,12 +1149,16 @@ const CBApp = (() => {
     if (c && c.state !== 'running' && c.resume) { try { const q = c.resume(); if (q && q.catch) q.catch(() => { }); } catch (e) {   } }
     return c;
   }
-  function se(name, gain) {
-    if (!seOn()) return;
-    const c = actx(); if (!c || SE.indexOf(name) < 0) return;
+  function seBuf(name) {      
+    const c = actx(); if (!c || SE.indexOf(name) < 0) return null;
     const f = 'cb_se_' + name + '.m4a';
     if (!snd.buf[name]) snd.buf[name] = fetch(f).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
-    snd.buf[name].then(b => { if (!b || !seOn()) return; try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) {   } });
+    return snd.buf[name];
+  }
+  function se(name, gain) {
+    if (!seOn()) return;
+    const c = actx(), q = seBuf(name); if (!c || !q) return;
+    q.then(b => { if (!b || !seOn()) return; try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) {   } });
   }
   
   
@@ -1190,7 +1437,7 @@ const CBApp = (() => {
 #cbOv .cbdz .hd b{flex:1;text-align:center;font-size:17px;color:#ffe9a8;margin-right:64px}
 #cbOv .cbdz>.cbcoinl{flex:none;margin:0 0 6px}
 #cbOv .cbdz .tabs{flex:none;display:flex;gap:4px;margin:0 14px 4px;padding:3px;border-radius:24px;border:1.5px solid #c9a35a;background:#1b1209}
-#cbOv .cbdz .tabs button{flex:1 1 0;height:40px;border:0;border-radius:20px;background:none;color:#bfa873;font-size:15px;font-weight:700;padding:0 6px}
+#cbOv .cbdz .tabs button{flex:1 1 0;min-width:0;height:40px;border:0;border-radius:20px;background:none;color:#bfa873;font-size:min(14px,3.75vw);font-weight:700;padding:0 2px;white-space:nowrap}
 #cbOv .cbdz .tabs button.on{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206}
 #cbOv .cbdz .bd{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 12px 26px}
 #cbOv .cbdz h4{display:flex;align-items:baseline;gap:8px;margin:14px 2px 7px;font-size:15px;color:#ffe2a0;border-left:4px solid #e2a83e;padding-left:8px}
@@ -1210,6 +1457,10 @@ const CBApp = (() => {
 #cbOv .cbmod.cbdzm h3 small{display:block;font-size:12.5px;font-weight:400;color:#d9c08c;letter-spacing:.04em}
 #cbOv .cbmod .big.sm{width:min(36vw,calc((100vh - 420px) * .6667),150px)}
 #cbOv .cbmod .cbneed{font-size:12.5px;color:#ffb38a;text-align:center}
+#cbOv .cbefx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:5;display:none}
+#cbOv .cbefx.l{mix-blend-mode:screen}
+#cbOv.efon .cbefx{display:block}#cbOv.eftop .cbefx{z-index:10}
+#cbOv .cbmod .big.ef{width:min(52vw,calc((100vh - 400px) * .6667),220px)}
 #cbOv .cbtst{margin:18px 2px 0;padding:10px 10px 12px;border-radius:14px;border:2px dashed #b98a4a;background:rgba(255,244,214,.08)}
 #cbOv .cbtst b{display:block;color:#ffe9a8;font-size:14px}#cbOv .cbtst small{display:block;font-size:11.5px;color:#d9c08c;margin:2px 0 8px}
 #cbOv .cbtst .r{display:flex;flex-wrap:wrap;gap:6px}
@@ -1263,7 +1514,7 @@ const CBApp = (() => {
       + '<div class="btns"><button type="button" class="cbb" data-cb="cpu">コンピュータと 対戦</button>'
       + '<div class="row"><button type="button" class="cbb" data-cb="host">部屋を 作る<small>友だちと 対戦</small></button><button type="button" class="cbb" data-cb="join">部屋に 入る<small>友だちと 対戦</small></button></div>'
       + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div>'
-      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>おもて・うらを 解放</small></button></div></div></section>'
+      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>おもて・うら・エフェクト</small></button></div></div></section>'
       + '<section class="cbs cbroom" data-s="room"></section>'
       + '<section class="cbs cbgame" data-s="game">'
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div><button type="button" class="cbb dk sm" data-cb="help" aria-label="あそび方">？</button></div>'
@@ -1279,7 +1530,7 @@ const CBApp = (() => {
       + '<section class="cbs cbhelp" data-s="help"></section>'
       + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<section class="cbs cbms" data-s="ms"></section>'
-      + '<div class="cbfly"></div><div class="cbban"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
+      + '<div class="cbfly"></div><canvas class="cbefx a"></canvas><canvas class="cbefx l"></canvas><canvas class="cbefx o"></canvas><div class="cbban"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
     document.body.appendChild(ov);
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
     flyEl = $('.cbfly'); modEl = $('.cbmod'); toastEl = $('.cbtoast'); banEl = $('.cbban');
@@ -1307,8 +1558,79 @@ const CBApp = (() => {
   }
 
   
+  
+  
+  
+  
+  const fxs = { run: null, cv: null, log: [], stop: null };
+  const efOf = me => { if (me || !match || match.kind === 'cpu') return st && EF_IDS.indexOf(st.ef) >= 0 ? st.ef : ''; const e = match.opDz && match.opDz.e; return EF_IDS.indexOf(e) >= 0 ? e : ''; };
+  const fxNow = () => (clk.manual ? clk.now : performance.now());
+  function fxAt(me) {      
+    const o = ov.getBoundingClientRect(), el = me == null ? null : $('.cbslot.' + (me ? 'my' : 'op')), bd = $('.cbboard');
+    const r = el && el.getBoundingClientRect().width ? el.getBoundingClientRect() : null, bw = bd && bd.getBoundingClientRect().width ? bd.getBoundingClientRect().width : Math.min(o.width, 480);
+    return { x: r ? r.left - o.left + r.width / 2 : o.width / 2, y: r ? r.top - o.top + r.height / 2 : o.height * 0.42, s: Math.max(110, Math.min(210, bw * 0.42)) };
+  }
+  function fxPlay(id, at, top) {
+    if (!FXL || !ov) return Promise.resolve();
+    const run = (fxs.run || Promise.resolve()).then(() => FXL.load(id)).then(I => new Promise(done => {
+      if (!fxs.cv) fxs.cv = ['a', 'l', 'o'].map(k => $('.cbefx.' + k));
+      const o = ov.getBoundingClientRect(), W = Math.max(1, Math.round(o.width)), H = Math.max(1, Math.round(o.height)), dpr = Math.min(2, window.devicePixelRatio || 1);
+      fxs.cv.forEach(c => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
+      const L = { a: fxs.cv[0].getContext('2d'), l: fxs.cv[1].getContext('2d'), o: fxs.cv[2].getContext('2d') }, all = [L.a, L.l, L.o];
+      const fx = FXL.make(id, { x: at.x, y: at.y, s: at.s, W: W, H: H, seed: fxs.log.length * 7919 + 17 });
+      const dur = FXL.DUR[id], t0 = fxNow(), g = top ? null : scr.game;
+      let h = null, live = true;
+      const wipe = () => all.forEach(c => { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, c.canvas.width, c.canvas.height); });
+      const fin = () => {
+        if (!live) return; live = false;
+        if (h != null) { if (typeof h === 'object') unlater(h); else cancelAnimationFrame(h); }
+        wipe(); ov.classList.remove('efon', 'eftop'); if (g) g.style.transform = ''; fxs.stop = null; done();
+      };
+      const frame = () => {
+        h = null; if (!live) return;
+        const t = (fxNow() - t0) / Math.max(SPEED, 0.001);
+        if (t >= dur) return fin();
+        wipe(); all.forEach(c => c.setTransform(dpr, 0, 0, dpr, 0, 0));
+        let r = null; try { r = FXL.draw(L, I, fx, t); } catch (e) { return fin(); }
+        const sh = r && r.shake ? r.shake : [0, 0];
+        if (g) g.style.transform = sh[0] || sh[1] ? `translate(${sh[0].toFixed(1)}px,${sh[1].toFixed(1)}px)` : '';
+        h = clk.manual ? later(frame, 1000 / 60) : requestAnimationFrame(frame);
+      };
+      fxs.stop = fin; fxs.log.push({ id: id, top: !!top, me: at.me });
+      ov.classList.add('efon'); ov.classList.toggle('eftop', !!top);
+      frame();
+    }));
+    fxs.run = run; run.then(() => { if (fxs.run === run) fxs.run = null; });
+    return run;
+  }
+  function fxStop() { if (fxs.stop) fxs.stop(); }
+  
+  async function efx(me) {
+    const id = efOf(me); if (!id || !FXL) return false;
+    while (fxs.run) await fxs.run;
+    await FXL.load(id);
+    se('ef_' + id);
+    if (reduce() || !match) return true;
+    const at = fxAt(me); at.me = !!me;
+    fxPlay(id, at);
+    await T(FXL.HOLD[id]);
+    return true;
+  }
+  
+  function fxPre() { if (!FXL) return; [efOf(true), efOf(false)].forEach(id => { if (id) { FXL.load(id); if (seOn()) seBuf('ef_' + id); } }); }
+  
+  async function fxTry(id) {
+    if (EF_IDS.indexOf(id) < 0 || !FXL || fxs.run) return;
+    await FXL.load(id);
+    se('ef_' + id);
+    if (reduce()) { toast('設定の「エフェクト」が オフ（または iPhone の「視差効果を減らす」）\nなので、音 だけ 鳴らしたよ', 3); return; }
+    const big = $('.cbmod .big'), o = ov.getBoundingClientRect(), r = big ? big.getBoundingClientRect() : null;
+    fxPlay(id, r && r.width ? { x: r.left - o.left + r.width / 2, y: r.top - o.top + r.height / 2, s: Math.max(110, Math.min(200, r.width * 0.8)) } : { x: o.width / 2, y: o.height * 0.45, s: 160 }, true);
+  }
+
+  
   function showMenu() {
-    closeMod(); show('menu'); msRoll();
+    fxStop(); closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　いま <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
       + `勝つと お世話トークン <b>${REWARD.win}</b>こ・<b>${REWARD.every}</b>連勝 ごとに <b>${REWARD.bonus}</b>こ`;
@@ -1354,7 +1676,8 @@ const CBApp = (() => {
       + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
       + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>と <b>うら</b>の デザインを かえられるよ</li>`
       + `<li>新しい デザインは <b>バトルコイン</b>で 1つずつ 解放できるよ：カードの おもて <b>${FACE_COST}枚</b>（神様馬・幻の馬は <b>${TOP_COST}枚</b>）・カードの うら <b>${BACK_COST}枚</b>。いつもの デザインは はじめから 使えるよ</li>`
-      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（うら・おもて）も あなたが えらんだ デザインに なるよ</li><li>友だちと 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友だちの カードは 友だちが えらんだ デザイン</b>で 出るよ（山札は あなたの うら）</li></ul>'
+      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（うら・おもて）も あなたが えらんだ デザインに なるよ</li><li>友だちと 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友だちの カードは 友だちが えらんだ デザイン</b>で 出るよ（山札は あなたの うら）</li>'
+      + `<li><b>エフェクト</b>（カードの 効果を 使う ときの 演出と 音：${EFS.map(d => d.name).join('・')}）も 1つ <b>${EF_COST}枚</b>で 解放できるよ。「ためしに 見る」で 解放の 前にも 見られるよ</li><li>コンピュータの 効果も あなたが えらんだ エフェクト・友だちの 効果は 友だちが えらんだ エフェクトで 出るよ（設定の「エフェクト」が オフの ときは 音 だけ）</li></ul>`
       + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友だちバトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友だちバトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に もどる）</li>'
@@ -1392,7 +1715,10 @@ const CBApp = (() => {
     const same = !tab || tab === dzTab, b0 = $('.bd', scr.dz), y = same && b0 && screen === 'dz' ? b0.scrollTop : 0;
     if (tab) dzTab = tab;
     closeMod();
-    const body = dzTab === 'b'
+    const body = dzTab === 'e'
+      ? `<h4>エフェクト<small>1つ ${COINI}${EF_COST}枚</small></h4><div class="tiles">${efTile(null)}${EFS.map(efTile).join('')}</div>`
+        + '<p class="dzn">えらんだ エフェクトは、あなたが カードの 効果を 使う ときに 出るよ（音も かわる）。コンピュータの 効果も この エフェクト。友だちと 対戦する ときは、友だちの 効果は 友だちが えらんだ エフェクトに なるよ。設定の「エフェクト」が オフの ときは 音 だけ</p>'
+      : dzTab === 'b'
       ? `<h4>カードの うら<small>1つ ${COINI}${BACK_COST}枚</small></h4><div class="tiles b">${dzTile(null, null)}${BACKS.map(d => dzTile(null, d)).join('')}</div>`
         + '<p class="dzn">えらんだ うらは、あなたの 画面の 山札・あなたの ふせた カードに 出るよ。コンピュータの 手札も この うら。友だちと 対戦する ときは、友だちの カードは 友だちが えらんだ うらに なるよ</p>'
       : DZ_KINDS.map(k => `<h4>${esc(dzLabel(k))}<small>1つ ${COINI}${k === 'k' || k === 'm' ? TOP_COST : FACE_COST}枚</small></h4><div class="tiles">${dzTile(k, null)}${FACES.filter(f => f.k === k).map(f => dzTile(k, f)).join('')}</div>`).join('')
@@ -1400,7 +1726,8 @@ const CBApp = (() => {
     scr.dz.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="dzx">← もどる</button><b>デザインカスタム</b></div>'
       + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
       + `<div class="tabs" role="tablist"><button type="button" role="tab" data-cb="dztab" data-t="f" class="${dzTab === 'f' ? 'on' : ''}" aria-selected="${dzTab === 'f'}">カードの おもて</button>`
-      + `<button type="button" role="tab" data-cb="dztab" data-t="b" class="${dzTab === 'b' ? 'on' : ''}" aria-selected="${dzTab === 'b'}">カードの うら</button></div>`
+      + `<button type="button" role="tab" data-cb="dztab" data-t="b" class="${dzTab === 'b' ? 'on' : ''}" aria-selected="${dzTab === 'b'}">カードの うら</button>`
+      + `<button type="button" role="tab" data-cb="dztab" data-t="e" class="${dzTab === 'e' ? 'on' : ''}" aria-selected="${dzTab === 'e'}">エフェクト</button></div>`
       + `<div class="bd">${body}${testOn() ? window.CBTest.html() : ''}</div>`;
     show('dz');
     const b1 = $('.bd', scr.dz); if (b1) b1.scrollTop = y;
@@ -1439,10 +1766,48 @@ const CBApp = (() => {
     showDz(); toast(`${dzWhat(kind)}を『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
   }
   
+  const efGet = id => (id ? EFS.find(d => d.id === id) : null);
+  const efOwn = d => !d || st.efs.indexOf(d.id) >= 0;
+  function efTile(d) {
+    const id = d ? d.id : '', used = (st.ef || '') === id, own = efOwn(d);
+    const em = used ? '使って いる' : own ? '持って いる' : `${COINI}${d.cost}枚`;
+    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}" data-cb="efi" data-id="${id}" aria-label="${esc((d ? d.name : 'いつもの') + '・' + em.replace(/<[^>]+>/g, ''))}"><img src="${d ? d.s : 'cb_ef_none_s.webp'}" alt="" draggable="false"><span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
+  }
+  function efItem(id) {
+    const d = efGet(id); if (id && !d) return;
+    const used = (st.ef || '') === (id || ''), own = efOwn(d);
+    let btns;
+    if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
+    else if (own) btns = `<button type="button" class="cbb" data-cb="efuse" data-id="${id || ''}">この エフェクトを 使う</button>`;
+    else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="efopen" data-id="${d.id}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
+    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚）</p>`;
+    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>エフェクト（効果を 使う ときの 演出）</small></h3><div class="big ef"><img src="${d ? d.s : 'cb_ef_none_s.webp'}" alt="${esc(d ? d.name : 'いつもの')}"></div>`
+      + (d ? '' : '<p>効果を 使う とき、とくべつな 演出は 出さないよ（いつもの 音）</p>')
+      + `<div class="col">${d ? `<button type="button" class="cbb dk" data-cb="eftry" data-id="${d.id}">▶ ためしに 見る</button>` : ''}${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
+  }
+  function efAsk(id) {
+    const d = efGet(id); if (!d || efOwn(d) || st.coin < d.cost) return;
+    dzAt = performance.now();
+    modal(`<h3 class="gold">解放する？</h3><div class="big sm"><img src="${d.s}" alt=""></div><p>エフェクト『${esc(d.name)}』を 解放するよ</p>`
+      + `<p class="cbstkv">${COINI}<b>${st.coin}</b>枚<i>→</i>のこり <b>${st.coin - d.cost}</b>枚</p>`
+      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="efgo" data-id="${d.id}">解放する</button></div>`, 'cbdzm');
+  }
+  function efGo(id) {
+    const d = efGet(id); if (!d || efOwn(d) || st.coin < d.cost) return;
+    st.coin -= d.cost; st.efs.push(d.id); st.ef = d.id;      
+    save(); se('magic', 0.8);
+    showDz(); toast(`エフェクト『${d.name}』を 解放したよ！\n効果を 使う ときに 出るよ`, 3);
+  }
+  function efUse(id) {
+    const d = efGet(id); if ((id && !d) || !efOwn(d)) return;
+    st.ef = d ? d.id : ''; save(); se('tap', 0.7);
+    showDz(); toast(`エフェクトを『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
+  }
+  
   const dzApi = {
     add: k => { addCoin(k); save(); showDz(); toast(`🧪 バトルコイン ＋${k}枚（いま ${st.coin}枚）`, 2); },
     set: k => { st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+k || 0))); save(); showDz(); toast(`🧪 バトルコイン ${st.coin}枚に したよ`, 2); },
-    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; save(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン）', 2.4); }
+    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; st.efs = []; st.ef = ''; save(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン・エフェクト）', 2.4); }
   };
 
   
@@ -1540,7 +1905,7 @@ const CBApp = (() => {
     nr.open(r.mode, r.code, step => { if (room !== r) return; r.step = step; paintRoom(); }).then(link => {
       if (room !== r) { try { link.close(); } catch (e) {   } return; }
       clearTimeout(r.tm); room = null; se('join');
-      const dz = { b: st.back, f: Object.assign({}, st.face) };      
+      const dz = { b: st.back, f: Object.assign({}, st.face), e: st.ef || '' };      
       startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined, r.stake, dz) : CBNet.guest(link, dz));
     }).catch(e => {
       if (room !== r) return;
@@ -1871,7 +2236,12 @@ const CBApp = (() => {
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
     if (a === 'dz') { se('tap'); return showDz('f'); }      
     if (a === 'dzx') return showMenu();
-    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' ? 'b' : 'f'); }
+    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' || b.dataset.t === 'e' ? b.dataset.t : 'f'); }
+    if (a === 'efi') { se('tap', 0.6); return efItem(b.dataset.id || ''); }      
+    if (a === 'eftry') return fxTry(b.dataset.id || '');
+    if (a === 'efopen') return efAsk(b.dataset.id || '');
+    if (a === 'efgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; return efGo(b.dataset.id || ''); }
+    if (a === 'efuse') return efUse(b.dataset.id || '');
     if (a === 'dzi') { se('tap', 0.6); return dzItem(b.dataset.ck || null, b.dataset.id || ''); }
     if (a === 'dzback') return closeMod();
     if (a === 'dzopen') return dzAsk(b.dataset.ck || null, b.dataset.id || '');
@@ -2006,6 +2376,7 @@ const CBApp = (() => {
         ended = false; gameNo += 1; closeMod(); V = null; paintEmpty();
         payStake();                                    
         msLive();                                      
+        fxPre();                                       
         $('.cbdeck .cbn').textContent = '30'; se('deal');
         await banner('対戦 スタート', `${WHO()}と 勝負！`, 900);
         
@@ -2038,15 +2409,18 @@ const CBApp = (() => {
       } else if (x.e === 'fizz') {
         toast(`${x.me ? '' : WHO() + 'の '}${x.k} の 効果は 使えなかったよ`, 2.2); await T(700);
       } else if (x.e === 'p6') {
+        const fx = await efx(x.me);                    
         if (x.me) await peekShow('6 の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { se('magic'); toast(`${WHO()}が 6 を 2まい 見せて、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
+        else { if (!fx) se('magic'); toast(`${WHO()}が 6 を 2まい 見せて、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'ask5') {                     
         se('magic', 0.7);
       } else if (x.e === 'u5') {                       
         const sd = x.me ? 'my' : 'op';
+        $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: '5' }, '', '', sd);
+        const fx = await efx(x.me);                    
         toast(x.me ? `5 の 効果！\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1まい セットしたよ` : `${WHO()}が 5 の 効果を 使ったよ\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1まい`, 3);
-        se('magic');
-        $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: '5' }, '', '', sd); await T(600);
+        if (!fx) se('magic');
+        await T(600);
         $('.cbslot.' + sd).innerHTML = '';
         const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
         await Promise.all([fly('5', slotBox(sd), mid(disBox(), 20), 380, true, sd), fly(x.drop.k, x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd)]);
@@ -2056,7 +2430,7 @@ const CBApp = (() => {
         $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: null }, '', '', sd) + (x.me ? '<span class="tag">山札から</span>' : '');
         await T(250);
       } else if (x.e === 'x7') {
-        se('magic');
+        if (!(await efx(x.me))) se('magic');
         toast(x.me ? '7 の 効果！\n7 を 3まい もどして、新しく 3まい 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3まい もどして 3まい 引いた`, 3);
         const s7 = x.me ? 'my' : 'op', hb = handBox(s7), d = deckBox(), w = x.me ? 56 : 36;
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
@@ -2065,7 +2439,7 @@ const CBApp = (() => {
         if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
       } else if (x.e === 'x3') {                       
         const hm = handBox('my'), ho = handBox('op'), tk = x.take.k;
-        se('magic');
+        if (!(await efx(x.me))) se('magic');
         
         modal(`<h3 class="gold">3 の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic('3', false, x.me ? 'my' : 'op')}" alt="3 の カード" draggable="false"></span>`).join('')}</div><p>${x.me ? `手札の 3 を 3まい 見せたよ<br>その 1まいと、${esc(WHO())}の 手札の 1まいを 交換！` : `${esc(WHO())}が 手札の 3 を 3まい 見せたよ<br>その 1まいと、あなたの 手札の 1まいを 交換！`}</p>`, 'cbopen');
         await T(1700); closeMod();
@@ -2084,10 +2458,12 @@ const CBApp = (() => {
       } else if (x.e === 'first') {
         se('flip');
         $('.cbslot.' + (x.me ? 'my' : 'op')).innerHTML = cardBtn({ u: 0, k: '4' }, '', '', x.me ? 'my' : 'op') + '<span class="tag">4 の 効果</span>';
+        await efx(x.me);                               
         await banner('4 の 効果！', x.me ? `${WHO()}は カードを 交換するよ` : 'あなたは セットした カードを 交換してね', 1200);
       } else if (x.e === 'first2') {
         se('flip');
         $('.cbslot.my').innerHTML = cardBtn({ u: 0, k: '4' }, ''); $('.cbslot.op').innerHTML = cardBtn({ u: 0, k: '4' }, '', '', 'op');
+        await efx(true); await efx(false);              
         await banner('4 の 効果！', 'どちらも 4 の 効果 → 打ち消して ドロー', 1300);      
       } else if (x.e === 'swap') {
         se('set');
@@ -2102,10 +2478,11 @@ const CBApp = (() => {
         hush();                                        
         await openShow(x);
       } else if (x.e === 'k') {
+        const fx = await efx(x.me);
         if (x.me) await peekShow('神様馬の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { se('magic'); toast(`${WHO()}が 神様馬の 効果で、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
+        else { if (!fx) se('magic'); toast(`${WHO()}が 神様馬の 効果で、\nあなたの 手札を 1まい 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'm') {
-        se('magic');
+        if (!(await efx(x.me))) se('magic');
         toast(x.me ? `幻の馬の 効果！\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}まい 引いたよ` : `${WHO()}が 幻の馬の 効果を 使ったよ\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}まい 引いた`, 3.2);
         const sd = x.me ? 'my' : 'op', hb = handBox(sd), d = deckBox(), w = x.me ? 56 : 36;
         await Promise.all(x.drop.map((c, i) => T(i * 80).then(() => fly(c.k, x.me ? (cardBox('my', c.u) || mid(hb, w)) : mid(hb, w), mid(disBox(), 20), 360, true, sd))));
@@ -2117,7 +2494,7 @@ const CBApp = (() => {
       } else if (x.e === 'kskip' || x.e === 'mskip') {
         if (!x.me) { toast(`${WHO()}は 効果を 使わなかったよ`, 1.8); await T(500); }
       } else if (x.e === 'rev') {                      
-        hush(); se('magic');
+        hush(); if (!(await efx(x.me))) se('magic');
         modal(`<h3 class="gold">${esc(x.k)} の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic(x.k, false, x.me ? 'my' : 'op')}" alt="${esc(x.k)} の カード" draggable="false"></span>`).join('')}</div>`
           + `<p>${x.me ? '' : esc(WHO()) + 'が '}${esc(x.k)} を 3まい（場の 1まい ＋ 手札の 2まい）見せたよ<br>手札の ${esc(x.k)} を 1まい 捨てて、${esc(toName(x.beat))} 逆転！</p>`, 'cbopen');
         await T(1700); closeMod();
@@ -2190,7 +2567,7 @@ const CBApp = (() => {
   }
   
   function leave(count) {
-    const m = match; match = null; queue = [];
+    const m = match; match = null; queue = []; fxStop();      
     if (m) { if (count && !ended && V) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) {   } }      
     if (st && st.stake) { st.stake = null; save(); }      
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      
@@ -2220,9 +2597,10 @@ const CBApp = (() => {
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), fx: fxOn(), raw: { bgm: st.bgm, se: st.se, fx: st.fx }, as: AS }; },
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic,
+      get efx() { return { log: fxs.log.slice(), run: !!fxs.run, on: !!(ov && ov.classList.contains('efon')) }; }, fxPlay: (id, me) => fxPlay(id, Object.assign(fxAt(me), { me: me })), fxUse: me => efx(me), fxTry, efOf      
     }
   };
 })();
 
-;window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBApp = CBApp;
+;window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBFx = CBFx; window.CBApp = CBApp;
