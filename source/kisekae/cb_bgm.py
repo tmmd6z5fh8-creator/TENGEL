@@ -7,6 +7,15 @@
 #   場面：夜の 酒場の 前の 木の ポーチ（1回り 約80.5秒：前の 曲と 同じ 長さ＝LOOP）
 #   まさちゃん 17:11「人の声ガヤガヤだけ消してみて！」→ VOICES＝False（話し声・笑い声は 入れない。グラスの チンは のこす：ドアが 開いて いる 間は 少し はっきり）。
 #     ガヤガヤの 作り方（voice・crowd）は のこして ある：VOICES＝True に すると もどる
+#   第4.180版（まさちゃん 17:45「カードバトルのBGM、全体的に音が尖ってるから丸みをつけて！ きしむ音は、もう少し少なくていいよ！ 扉の音ももう少し短く！」）：
+#     ・丸み：足音・パタンの 立ち上がりを ゆるく（かかとの 小さな「カチッ」を やめた・やわらかい たたき方〈knock の soft〉・鳴りはじめを 3〜4ミリ秒 かけて ふくらませる〈att〉）・
+#       拍車・グラス・きしみの 高い 音を 小さく・足音や 木の 音 ぜんぶの 高い 音を おさえる（3kHz）・ひびきは 少し 長く くらく（0.55秒 → 0.65秒）・
+#       虫の 声は 少し 小さく（−3dB）・高い 細い 声は もっと 小さく・夜の 空気（低い 風の 音）を 少し 大きく（＋2dB）。
+#       一歩 ごと・パタン ごとの 大きさの ばらつきを 小さく（KNOCK・FLAP：前は たたく 雑音しだいで 1歩 だけ 急に 大きい／小さい ことが あった → 近づく・遠ざかる 感じが すなおに）。
+#       大きさは 足音・木の 音 全体の ふつうの 大きさ（FO_RMS）を 第4.179版と 同じに そろえる（とがった 山が へる ので、ファイルの 山は 0.49 → 0.30）
+#     ・きしむ 音を へらす（56回 → 27回）：歩く 足の 下の 床板 12回 → 6回（7歩に 1回 ほど：くじ では なく 数で 決める）・ゆりいすは 38回 → 17回（約34秒 → 約19秒・ゆっくり・少し 小さく）・
+#       ひとりでに きしむ 床は 2回 → 1回・扉の ギィは 6回 → 3回
+#     ・扉の 音を 短く（鳴って いる 長さ 約2.8秒 → 約1.2秒）：ギィ（0.55〜0.85秒 → 0.28〜0.40秒）→ すぐ パタン パタン（2回：前は 開いて 2秒 ほど して から 3回）
 #     ・（VOICES＝True の とき だけ）酒場の 中の ガヤガヤ：16人の 話し声（声の もと＋口の 形の ひびき〈母音〉・1秒に 4〜6この 音節・高さが 上下・くじで えらぶ ので ことばには ならない）・ときどき 笑い声・グラスの チン。
 #       部屋の ひびき → かべの むこうで こもる。スイングドアが 開いて いる 間 だけ 声が 少し 大きく・はっきり なる
 #     ・足音：木の 床を ブーツで 歩く（かかと → つま先）＋ 拍車の チャリッ。左から 来て 酒場に 入る・出て きて 右へ 遠ざかる・右から 左へ 通りすぎる・右から 来て 入る
@@ -25,7 +34,13 @@ SR = 44100
 TAU = 2 * np.pi
 LOOP = 34 * 3 * 60.0 / 76      # 1回り（秒）：cb/cb_app.js の BGM.len と 同じ（34 * 3 * 60 / 76：第4.178版の 曲の 長さ の まま）
 PRE = 0.5                       # アプリ用の ファイルの 前と うしろの つづき（秒）：cb/cb_app.js の BGM.pre と 同じ
-PEAK = 0.50                     # ファイルの 山（アプリは BGM.vol 倍で 鳴らす）
+PEAK = 0.50                     # ファイルの 山の 上限（アプリは BGM.vol 倍で 鳴らす）
+FO_RMS = 0.0140                 # 足音・木の 音 全体の ふつうの 大きさ（RMS）：第4.179版と 同じ（−37.1dB）
+KNOCK = 1.33                    # 一歩の 木の ひびき（はじめ 50ミリ秒 の RMS：第4.179版の 平均 1.56 → 少し 小さく＝どん の 方を 少し 前に）
+FLAP = 2.8                      # スイングドアの パタン（はじめ 50ミリ秒 の RMS：第4.179版の 平均 3.54 → 少し 小さく）
+INS_RMS = 0.0160                # 虫の 声の ふつうの 大きさ（第4.179版 0.0225 → −3dB）
+AIR_G = 4.2                     # 夜の 空気の 倍（第4.179版 3.38 → ＋2dB：低い 音で やわらかく）
+IN_G = 0.045                    # 酒場の 中（グラスの チン・話し声）の 倍（第4.179版と 同じ）
 VOICES = False                  # 酒場の 中の 話し声（ガヤガヤ）を 入れるか（まさちゃん 17:11「人の声ガヤガヤだけ消してみて！」→ 入れない）
 NL = int(round(LOOP * SR))
 
@@ -138,12 +153,12 @@ def night_air(seed):
 
 
 # ---------------- ひびき（小さな 広間・外の 夜）----------------
-def reverb_ir(seed, rt=1.7, pre=0.022):
+def reverb_ir(seed, rt=1.7, pre=0.022, dark=5200):
     rng = np.random.default_rng(seed); n = int((rt * 1.15 + pre) * SR); t = np.arange(n) / SR
     ir = np.zeros((2, n))
     for ch in range(2):
         x = rng.standard_normal(n) * np.exp(-6.9 * np.maximum(0, t - pre) / rt) * (t >= pre)
-        x = signal.lfilter(*signal.butter(1, 5200 / (SR / 2), 'low'), x)
+        x = signal.lfilter(*signal.butter(1, dark / (SR / 2), 'low'), x)      # dark＝ひびきの 高い 音を おさえる 所（Hz）
         x = signal.lfilter(*signal.butter(1, 220 / (SR / 2), 'high'), x)
         for d, g in ((0.011, 0.5), (0.019, 0.38), (0.031, 0.3), (0.043, 0.22)):      # はじめの はね返り
             i = int((d + 0.003 * ch) * SR); x[i] += g * (1 if (ch + int(d * 1000)) % 2 else -1) * 6
@@ -281,8 +296,8 @@ def modal_ir(freqs, decays, amps, dur=0.25, rng=None, spread=0.0):
     return ir
 
 
-def creak(rng, dur, r0, r1, freqs, decays, amps, jitter=0.3, bump=0.3, a_env=None):
-    """木が きしむ：こすれて 止まって を くり返す（1秒に r 回の こまかい「コッ」）→ 木の ひびき を 鳴らす"""
+def creak(rng, dur, r0, r1, freqs, decays, amps, jitter=0.3, bump=0.3, a_env=None, soft=2400):
+    """木が きしむ：こすれて 止まって を くり返す（1秒に r 回の こまかい「コッ」）→ 木の ひびき を 鳴らす。soft＝高い 音を おさえる 所（Hz：第4.180版）"""
     n = int((dur + 0.1) * SR); imp = np.zeros(n); t = 0.0
     while t < dur:
         u = t / dur; r = r0 + (r1 - r0) * u + bump * (r0 + r1) / 2 * np.sin(np.pi * u)
@@ -291,75 +306,82 @@ def creak(rng, dur, r0, r1, freqs, decays, amps, jitter=0.3, bump=0.3, a_env=Non
         t += (1.0 / r) * (1 + jitter * rng.uniform(-1, 1))
     ir = modal_ir(freqs, decays, amps, 0.12, rng, 0.04)
     y = signal.fftconvolve(imp, ir)[:n]
-    return y
+    return signal.lfilter(*signal.butter(2, soft / (SR / 2), 'low'), y) if soft else y
 
 
 def floor_creak(rng, dur=None):
-    return creak(rng, dur or rng.uniform(0.25, 0.6), rng.uniform(22, 30), rng.uniform(35, 48), [300, 610, 960, 1470, 2250], [0.022, 0.016, 0.012, 0.009, 0.006], [1.0, 0.75, 0.5, 0.32, 0.18])
+    return creak(rng, dur or rng.uniform(0.25, 0.6), rng.uniform(22, 30), rng.uniform(35, 48), [300, 610, 960, 1470, 2250], [0.022, 0.016, 0.012, 0.009, 0.006], [1.0, 0.65, 0.35, 0.16, 0.05])
 
 
 def hinge_creak(rng, dur=None):
-    return creak(rng, dur or rng.uniform(0.55, 0.85), rng.uniform(70, 95), rng.uniform(130, 170), [690, 1380, 2080, 3010], [0.018, 0.012, 0.009, 0.006], [1.0, 0.6, 0.4, 0.22], jitter=0.18, bump=0.2)
+    """スイングドアの ちょうつがい「ギィ」（第4.180版：短く・低めに・高い 音を おさえた）"""
+    return creak(rng, dur or rng.uniform(0.28, 0.40), rng.uniform(60, 80), rng.uniform(100, 130), [560, 1120, 1700, 2500], [0.018, 0.012, 0.009, 0.006], [1.0, 0.5, 0.22, 0.06], jitter=0.18, bump=0.2, soft=2000)
 
 
 def chair_creak(rng, fwd):
     d = rng.uniform(0.32, 0.46)
-    return creak(rng, d, *( (36, 54) if fwd else (52, 34) ), [420, 860, 1330, 1920], [0.02, 0.014, 0.01, 0.007], [1.0, 0.7, 0.45, 0.25], jitter=0.25, bump=0.15)
+    return creak(rng, d, *( (36, 54) if fwd else (52, 34) ), [420, 860, 1330, 1920], [0.02, 0.014, 0.01, 0.007], [1.0, 0.6, 0.3, 0.1], jitter=0.25, bump=0.15)
 
 
-def knock(rng, freqs, decays, amps, exc_ms=4.0, dur=0.25):
-    """木を たたく 音（短い 雑音で 木の ひびきを 鳴らす）"""
+def rms50(y):
+    """はじめ 50ミリ秒 の ふつうの 大きさ（RMS）"""
+    return float(np.sqrt(np.mean(y[:int(0.05 * SR)] ** 2))) + 1e-12
+
+
+def knock(rng, freqs, decays, amps, exc_ms=4.0, dur=0.25, soft=0, att=0.0):
+    """木を たたく 音（短い 雑音で 木の ひびきを 鳴らす）。第4.180版：soft＝やわらかく たたく（たたく 雑音の 高い 音を おさえる 所 Hz）・att＝鳴りはじめを ふくらませる 時間（秒）"""
     ne = max(8, int(exc_ms / 1000 * SR)); exc = rng.standard_normal(ne) * np.exp(-np.arange(ne) / (ne / 3))
-    return signal.fftconvolve(exc, modal_ir(freqs, decays, amps, dur, rng, 0.03))
+    if soft: exc = lp1(np.concatenate([exc, np.zeros(int(0.004 * SR))]), soft)
+    y = signal.fftconvolve(exc, modal_ir(freqs, decays, amps, dur, rng, 0.03))
+    return y * (1 - np.exp(-np.arange(len(y)) / (att * SR))) if att else y
 
 
 def boot_step(rng, toe=False):
     """ブーツの 一歩：かかと（どん＋こつ）→ つま先（小さく）"""
     n = int(0.35 * SR); t = np.arange(n) / SR; y = np.zeros(n)
     s = 0.45 if toe else 1.0
-    ft = rng.uniform(92, 128)
-    y += s * 0.9 * np.sin(TAU * ft * t) * np.exp(-t / 0.05) * (1 - np.exp(-t / 0.002))
-    y += s * 0.35 * np.sin(TAU * ft * 2.2 * t) * np.exp(-t / 0.03)
-    k = knock(rng, [360, 730, 1160, 1680, 2500], [0.045, 0.03, 0.022, 0.016, 0.01], [1.0, 0.85, 0.6, 0.4, 0.22], exc_ms=3.0 if not toe else 2.0, dur=0.2)
-    y[:len(k)] += s * 0.55 * k[:n]
-    c = rng.standard_normal(int(0.002 * SR)); c = signal.lfilter(*signal.butter(2, 3000 / (SR / 2), 'high'), c)
-    y[:len(c)] += s * 0.25 * c
-    return y
+    ft = rng.uniform(82, 110)
+    y += s * 0.9 * np.sin(TAU * ft * t) * np.exp(-t / 0.06) * (1 - np.exp(-t / 0.005))      # 第4.180版：立ち上がりを ゆるく（2 → 5ミリ秒）・少し 低く
+    y += s * 0.18 * np.sin(TAU * ft * 2.2 * t) * np.exp(-t / 0.03)
+    k = knock(rng, [360, 730, 1160, 1680, 2500], [0.045, 0.03, 0.022, 0.016, 0.01], [1.0, 0.7, 0.38, 0.15, 0.04], exc_ms=3.0 if not toe else 2.0, dur=0.2, soft=1400, att=0.0035 if not toe else 0.003)      # 高い ひびきを 小さく・やわらかく たたく
+    k = k * (KNOCK * (0.82 if toe else 1.0) * rng.uniform(0.85, 1.0) / rms50(k))      # 一歩 ごとの 大きさの ばらつきを 小さく
+    y[:len(k)] += s * k[:n]
+    return signal.lfilter(*signal.butter(2, 2600 / (SR / 2), 'low'), y)      # 小さな「カチッ」は やめた・高い 音を おさえる
 
 
 def spur(rng, a=1.0):
     """拍車の チャリッ（小さな 金具が 2〜3回 ふれる）"""
     n = int(0.4 * SR); y = np.zeros(n)
-    base = rng.uniform(2900, 3500)
+    base = rng.uniform(2300, 2800)      # 第4.180版：低めに・高い 音を 小さく
     for h in range(int(rng.integers(2, 4))):
-        at = int(rng.uniform(0, 0.05) * SR); ir = modal_ir([base * r for r in (1.0, 1.47, 2.09, 2.76)], [0.075, 0.055, 0.04, 0.03], [1.0, 0.6, 0.4, 0.25], 0.3, rng, 0.02)
+        at = int(rng.uniform(0, 0.05) * SR); ir = modal_ir([base * r for r in (1.0, 1.47, 2.09, 2.76)], [0.075, 0.055, 0.04, 0.03], [1.0, 0.45, 0.2, 0.08], 0.3, rng, 0.02)
         ex = rng.standard_normal(40) * np.exp(-np.arange(40) / 8)
         z = signal.fftconvolve(ex, ir)[:n - at] * rng.uniform(0.4, 1.0)
         y[at:at + len(z)] += z
-    return y * a
+    return signal.lfilter(*signal.butter(2, 3500 / (SR / 2), 'low'), y) * a
 
 
-def walk(rng, buf, t0, steps, gap, pan0, pan1, g0, g1, creak_p=0.3, spurs=True):
-    """木の 床の 上を 歩く（t0 から steps 歩・gap 秒 ごと。場所 pan0→pan1・大きさ g0→g1）"""
-    t = t0
+def walk(rng, buf, t0, steps, gap, pan0, pan1, g0, g1, creak_p=0.15, spurs=True):      # 第4.180版：足の 下の きしみ 3歩に 1回 くらい → 7歩に 1回 くらい
+    """木の 床の 上を 歩く（t0 から steps 歩・gap 秒 ごと。場所 pan0→pan1・大きさ g0→g1）。足の 下の 床が きしむ のは steps×creak_p 回（どの 歩かは くじ）"""
+    t = t0; ck = set(rng.choice(steps, size=int(round(steps * creak_p)), replace=False).tolist())
     for i in range(steps):
         u = i / max(1, steps - 1); pan = pan0 + (pan1 - pan0) * u; g = g0 + (g1 - g0) * u
         place(buf, boot_step(rng), t, pan, g)
         place(buf, boot_step(rng, True), t + rng.uniform(0.07, 0.11), pan, g)
-        if spurs: place(buf, spur(rng), t + rng.uniform(0.01, 0.03), pan, g * 0.10)
-        if rng.random() < creak_p: place(buf, floor_creak(rng), t + rng.uniform(0.03, 0.08), pan, g * 0.38)
+        if spurs: place(buf, spur(rng), t + rng.uniform(0.01, 0.03), pan, g * 0.05)      # 第4.180版：拍車を 小さく（0.10 → 0.05）
+        if i in ck: place(buf, floor_creak(rng), t + rng.uniform(0.03, 0.08), pan, g * 0.38)
         t += gap * rng.uniform(0.94, 1.06)
     return t
 
 
-def door(rng, buf, t0, pan, g, flaps=3):
-    """スイングドア：ギィ…（開く）→ パタン パタン（もどって ゆれる）"""
-    place(buf, hinge_creak(rng), t0, pan, g * 0.30)
-    tf = t0 + rng.uniform(1.6, 2.4); a = 1.0
+def door(rng, buf, t0, pan, g, flaps=2):
+    """スイングドア：ギィ（開く）→ すぐ パタン パタン（第4.180版：短く。前は 開いて 2秒 ほど して から 3回）"""
+    place(buf, hinge_creak(rng), t0, pan, g * 0.24)
+    tf = t0 + rng.uniform(0.6, 0.8); a = 1.0
     for k in range(flaps):
-        place(buf, knock(rng, [170, 410, 880, 1500], [0.05, 0.035, 0.02, 0.012], [1.0, 0.7, 0.4, 0.2], exc_ms=6.0, dur=0.3), tf, pan + 0.05 * (k % 2), g * 0.45 * a)
-        if k == 0: place(buf, hinge_creak(rng, 0.3), tf - 0.25, pan, g * 0.16)
-        tf += rng.uniform(0.32, 0.42) * (0.85 ** k); a *= 0.55
+        kz = knock(rng, [170, 410, 880, 1500], [0.05, 0.035, 0.02, 0.012], [1.0, 0.6, 0.28, 0.08], exc_ms=6.0, dur=0.3, soft=1200, att=0.003)
+        place(buf, kz * (FLAP * rng.uniform(0.9, 1.0) / rms50(kz)), tf, pan + 0.05 * (k % 2), g * 0.45 * a)
+        tf += rng.uniform(0.22, 0.28); a *= 0.45
     return tf
 
 
@@ -370,14 +392,14 @@ def glass(rng):
         ir = modal_ir([f * r for r in (1.0, 2.32, 4.25, 6.63)], [0.45, 0.28, 0.16, 0.09], [1.0, 0.45, 0.22, 0.1], 0.9, rng, 0.01)
         ex = rng.standard_normal(30) * np.exp(-np.arange(30) / 6)
         z = signal.fftconvolve(ex, ir)[:n]; y += z * (1.0 if j == 0 else 0.8)
-    return y
+    return signal.lfilter(*signal.butter(2, 3200 / (SR / 2), 'low'), y)      # 第4.180版：高い 音を おさえる
 
 
 # ---------------- 場面の 予定（秒）----------------
 DOORS = [11.6, 27.0, 70.3]                                     # スイングドアが 開く 時刻
 OPEN = [(11.6, 14.2), (27.0, 29.8), (70.3, 73.0)]             # ドアが 開いて いる 間（中の 声が 少し 大きく・はっきり）
 LAUGH = {5: [12.4], 0: [43.8], 3: [44.1], 7: [44.35], 2: [71.1], 9: [71.35], 11: [58.6]}      # 笑う 人と 時刻（44秒 ごろ・71秒 ごろは 何人か いっしょに）
-GLASS = [8.2, 13.1, 22.5, 33.9, 45.0, 56.7, 71.8, 78.4]       # グラスの チン
+GLASS = [13.1, 33.9, 56.7, 71.8]                             # グラスの チン（第4.180版：8回 → 4回）
 
 
 def loop_filt(x, fc, order=2):
@@ -386,15 +408,15 @@ def loop_filt(x, fc, order=2):
     return np.stack([signal.lfilter(b, a, np.tile(x[c], 3))[NL:2 * NL] for c in range(2)])
 
 
-def render(nv=16, voices=None):
-    """くり返す 1回り（ステレオ・2×NL）。voices＝話し声（ガヤガヤ）を 入れるか（決めなければ VOICES）"""
+def render(nv=16, voices=None, parts=False):
+    """くり返す 1回り（ステレオ・2×NL）。voices＝話し声（ガヤガヤ）を 入れるか（決めなければ VOICES）。parts＝まぜる 前の 音も 返す（測る 用）"""
     voices = VOICES if voices is None else voices
     rng = np.random.default_rng(31178)
     # 酒場の 中：（ガヤガヤ ＋ 笑い声）＋ グラス → 部屋の ひびき → かべの むこう（こもる）／ドアが 開いて いる 間は はっきり
     if voices: cr = crowd(9178, nv, LAUGH); crr = np.sqrt(np.mean(cr ** 2))
     else: cr = np.zeros((2, NL)); crr = 1.0
     for tg in GLASS:
-        gz = glass(rng); place(cr, gz / np.abs(gz).max(), tg, rng.uniform(-0.6, 0.6), 1.3 * crr)
+        gz = glass(rng); place(cr, gz / np.abs(gz).max(), tg, rng.uniform(-0.6, 0.6), 0.9 * crr)
     cr = wet(cr, reverb_ir(81, rt=1.0, pre=0.012), 0.35)
     closed = loop_filt(cr, 1700); opened = loop_filt(cr, 4800) * 1.9
     tt = np.arange(NL) / SR; w = np.zeros(NL)
@@ -409,24 +431,26 @@ def render(nv=16, voices=None):
     door(rng, fo, DOORS[0], 0.0, 0.85)
     door(rng, fo, DOORS[1], 0.05, 0.85)                                 # 出て くる
     walk(rng, fo, 28.3, 10, 0.68, 0.02, 0.85, 0.85, 0.28)               # 右へ 歩いて 遠ざかる
-    place(fo, floor_creak(rng, 0.7), 36.5, 0.4, 0.35)
+    place(fo, floor_creak(rng, 0.5), 36.5, 0.4, 0.3)
     te = walk(rng, fo, 47.0, 7, 0.7, 0.9, 0.05, 0.3, 0.85)              # 右から 左へ 通りすぎる
     walk(rng, fo, te, 7, 0.7, -0.05, -0.9, 0.85, 0.3)
     walk(rng, fo, 64.0, 9, 0.66, 0.85, 0.05, 0.28, 0.85)                # 右から 来て 入る
     door(rng, fo, DOORS[2], 0.0, 0.85)
-    place(fo, floor_creak(rng, 0.5), 77.2, -0.3, 0.3)
-    for (ta, tb, pan, g) in ((17.5, 40.0, -0.55, 0.55), (57.5, 69.0, 0.6, 0.42)):      # ゆりいす：ゆっくり ゆれる（行って 帰って）
+    for (ta, tb, pan, g) in ((18.0, 30.0, -0.55, 0.38), (59.0, 66.5, 0.6, 0.3)):      # ゆりいす：ゆっくり ゆれる（行って 帰って）。第4.180版：短く・ゆっくり・小さく
         t = ta; fwd = True
         while t < tb:
-            place(fo, chair_creak(rng, fwd), t, pan, g * rng.uniform(0.85, 1.0)); t += rng.uniform(0.85, 1.0); fwd = not fwd
-    fo = wet(fo, reverb_ir(82, rt=0.55, pre=0.008), 0.18)
-    ins = wet(insects(4178, tree=0.45), reverb_ir(78, rt=1.1), 0.10)
+            place(fo, chair_creak(rng, fwd), t, pan, g * rng.uniform(0.85, 1.0)); t += rng.uniform(1.1, 1.3); fwd = not fwd
+    # 第4.180版：丸み ＝ 高い 音を おさえる（3kHz）→ 少し 長めの くらい ひびき（第4.179版：0.55秒・0.18）
+    fo = loop_filt(fo, 3000)
+    fo = wet(fo, reverb_ir(82, rt=0.65, pre=0.01, dark=2800), 0.2)
+    ins = wet(loop_filt(insects(4178, tree=0.25), 4500), reverb_ir(78, rt=1.1, dark=4000), 0.12)      # 虫の 声も 高い 音を おさえる・ずっと 鳴る 高い 細い 声は もっと 小さく
     air = night_air(5178)
     rms = lambda x: float(np.sqrt(np.mean(x ** 2)))
-    k_in = 0.040 / rms(closed * swell) if voices else 0.040      # 話し声なし：グラスは 話し声 ありの ときと ほぼ 同じ 大きさ（話し声の RMS を 1 と した 時の 1.3倍 → 0.040 倍）
-    mix = inside * k_in + ins * (0.020 / rms(ins)) + fo * (0.42 / np.abs(fo).max()) + air * 3.0
-    mix = mix - mix.mean(axis=1, keepdims=True)
-    return mix * (PEAK / np.abs(mix).max())
+    k_in = IN_G / rms(closed * swell) if voices else IN_G      # 話し声なし：グラスは 話し声 ありの ときと ほぼ 同じ 大きさ
+    pt = {'inside': inside * k_in, 'ins': ins * (INS_RMS / rms(ins)), 'fo': fo * (FO_RMS / rms(fo)), 'air': air * AIR_G}
+    mix = sum(pt.values()); mix = mix - mix.mean(axis=1, keepdims=True)
+    g = min(1.0, PEAK / np.abs(mix).max())      # 山は PEAK を こえない
+    return (mix * g, {k: v * g for k, v in pt.items()}) if parts else mix * g
 
 
 def with_margins(x):
