@@ -19,6 +19,7 @@
 #   第4.185版（まさちゃん 2026/11/16 22:39・22:45）：7 の 4まい 公開で 強さ 逆転（効果タイムで 聞く・見せる 窓・捨て札・「強さ 逆転中」・その 対戦が 終わる まで・コンピュータも 使う）・7 の 新しい 絵と カスタムの 名前
 #     （23:04）設定の「エフェクト」を なくした（BGM・効果音 だけ・前の 版の fx は すてる）／（23:06）効果を 使った ときの 札（だれが・どの 効果・何を する）／
 #     （23:20）プレイボード 7種（デザインカスタムの 3つ目の タブ・1つ 300枚・対戦の ボードの 絵・いつもの 以外は 火の あかりの ゆれ なし）
+#   第4.186版（まさちゃん 2026/11/17 00:52）：プレイボード 4つを 新しい 絵に（山札の 札が 左へ 5.86% → この 4つの とき だけ 山札も 左へ：.cbboard.dl）
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -1379,7 +1380,7 @@ try:
         pg.evaluate("() => { const T = CBApp._t; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }")
 
         print('■ プレイボード（第4.185版・まさちゃん 23:20「バトルコインで、プレイボード7種類購入できるようにして！ 1個バトルコイン300枚で解放できるようにして！」）')
-        BIMG = "() => { const b = document.querySelector('#cbOv .cbboard'), f = getComputedStyle(b.querySelector('.cbfire')), i = b.querySelector(':scope > img'); return [i.getAttribute('src'), b.classList.contains('cust'), f.display, f.animationName, i.complete && i.naturalWidth]; }"
+        BIMG = "() => { const b = document.querySelector('#cbOv .cbboard'), f = getComputedStyle(b.querySelector('.cbfire')), i = b.querySelector(':scope > img'); return [i.getAttribute('src'), b.classList.contains('cust'), f.display, f.animationName, i.complete && i.naturalWidth, b.classList.contains('dl')]; }"
         start(pg, '12345', '12345'); b0 = pg.evaluate(BIMG); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
         check(b0[:4] == ['cb_board.webp', False, 'block', 'cbfire'] and (not HAVE or b0[4] == 1254), f'はじめは いつもの ボード（夜の 光・火の あかりの ゆれ あり）（{b0}）')
         pg.evaluate("() => { const T = CBApp._t; T.state.coin = 250; T.state.boards = []; T.state.board = ''; T.save(); T.menu(); }"); pg.wait_for_timeout(150)
@@ -1413,8 +1414,8 @@ try:
               f'「解放する」：窓が 出て すぐは 受けつけない → 300枚 へって（700 → 400）解放・すぐ その ボードに・おぼえる（{s1}）')
         pg.locator('#cbOv .cbdz [data-cb=dzx]').click(); pg.wait_for_timeout(100)
         start(pg, '12345', '12345'); pg.wait_for_timeout(300 if HAVE else 0); b1 = pg.evaluate(BIMG)
-        check(b1[:4] == ['cb_bd_sakura.webp', True, 'none', 'cbfire'] and (not HAVE or b1[4] == 1254), f'対戦の ボードが『桜の舞踏会』（まさちゃんの 絵の まま：ボードの 上の 火の あかりの ゆれは 出さない）（{b1}）')
-        GEO = "() => ['.cbslot.op', '.cbslot.my', '.cbdeck', '.cbdis', '.cbgear'].map(q => { const r = document.querySelector('#cbOv ' + q).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })"
+        check(b1[:4] == ['cb_bd_sakura.webp', True, 'none', 'cbfire'] and (not HAVE or b1[4] == 1254) and b1[5] is True, f'対戦の ボードが『桜の舞踏会』（まさちゃんの 絵の まま：ボードの 上の 火の あかりの ゆれは 出さない・第4.186版の 新しい 絵：山札は 左へ〈dl〉）（{b1}）')
+        GEO = "() => ['.cbslot.op', '.cbslot.my', '.cbdeck', '.cbdis', '.cbgear', '.cbboard'].map(q => { const r = document.querySelector('#cbOv ' + q).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })"
         g1 = pg.evaluate(GEO); shot(pg, 'cb_board_sakura')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
         pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(150); pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=d]').click(); pg.wait_for_timeout(150)
@@ -1424,8 +1425,12 @@ try:
         pg.locator('#cbOv .cbdz [data-cb=dzx]').click(); pg.wait_for_timeout(100)
         start(pg, '12345', '12345'); b2 = pg.evaluate(BIMG); g2 = pg.evaluate(GEO); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
         check(y5['h'] == 'いつものプレイボード' and y5['img'] == 'cb_board.webp' and y5['btns'] == ['この ボードを 使う', 'もどる'] and s2 == [400, ['sakura'], '', ''] and tt5 == 'プレイボードを『いつもの』に したよ'
-              and b2[:4] == ['cb_board.webp', False, 'block', 'cbfire'] and g1 == g2,
-              f'いつもの に もどす：コインは 使わない・解放した ものは のこる・火の あかりが もどる・カードを 置く 所・山札・捨て札・歯車の 場所は ボードを かえても 同じ（{s2}・{g1 == g2}）')
+              and b2[:4] == ['cb_board.webp', False, 'block', 'cbfire'] and b2[5] is False and g1[:2] + g1[3:] == g2[:2] + g2[3:] and g1[2][1:] == g2[2][1:] and abs((g2[2][0] - g1[2][0]) - g2[5][2] * 0.0586) <= 1.5,
+              f'いつもの に もどす：コインは 使わない・解放した ものは のこる・火の あかりが もどる・カードを 置く 所・捨て札・歯車の 場所は ボードを かえても 同じ・'
+              f'山札は『桜の舞踏会』〈第4.186版の 新しい 絵〉の とき だけ ボードの 幅の 5.86% 左（{g2[2][0] - g1[2][0]}px／幅 {g2[5][2]}px）（{s2}）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.boards = ['sakura', 'violet']; T.state.board = 'violet'; T.save(); }")
+        start(pg, '12345', '12345'); b3 = pg.evaluate(BIMG); g3 = pg.evaluate(GEO); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
+        check(b3[0] == 'cb_bd_violet.webp' and b3[1] is True and b3[5] is False and g3 == g2, f'『紫月の夜』（前の 絵の まま）：山札は いつもの 場所（{g3[2]}）')
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.boards = ['zz', 'sakura', 'sakura', 7]; s.board = 'frost'; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
         s3 = pg.evaluate("() => [CBApp._t.state.boards, CBApp._t.state.board]")
         check(s3 == [['sakura'], ''], f'おぼえた 中身が おかしい ときは なおす（ない 名前・2つ目・解放して いない ボードは すてる）（{s3}）')

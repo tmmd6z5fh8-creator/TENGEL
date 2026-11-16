@@ -1,5 +1,5 @@
 // 馬カードバトルの 画面（App Store版）：メニュー・部屋・対戦・あそび方（第4.176版・まさちゃん 2026/11/15 21:41「TENGER馬カードバトル」）
-//   ・絵は まさちゃんの もの（カード 9種・うら・プレイボード・山札・アイコン：kisekae/cb_art.py が アプリ用に した cb_*.webp）。背景は まさちゃんの 絵が 来るまで かりの 色（.cbbg）
+//   ・絵は まさちゃんの もの（カード 9種・うら・プレイボード・山札・アイコン：kisekae/cb_art.py が アプリ用に した cb_*.webp）。背景は いまの 夜の 色（.cbbg：まさちゃん 2026/11/17 00:52「カードバトルの背景の作業なしで大丈夫！」）
 //   ・ルールは cb_rules.js・相手（コンピュータ／部屋の 友だち）との やりとりは cb_net.js。ここは 見せる だけ：
 //       画面に 出すのは「自分に 見せて いい こと」（view）だけ。おきた こと（ev）を 順に 動かして から、その あとの 形（view）を かき直す
 //   ・画面の 形：縦（上から 相手の 手札 → プレイボード〈まさちゃんの 絵 ぜんぶ〉→ 自分の 手札）。ボードの 上の カードは 小さい ので、
@@ -65,6 +65,10 @@
 //     ・デザインカスタムに 3つ目の タブ「プレイボード」：いつもの ＋ 7種（名前は 姫が つけた）。1つ バトルコイン 300枚で 解放（解放したら すぐ その ボードに）。
 //       えらんだ ボードは 自分の 画面 だけ（友だちには 送らない：ルールも かわらない）。いつもの ボード 以外では、ボードの 上の 火の あかりの ゆれ（夜の 光）は 出さない（まさちゃんの 絵の まま）。
 //       保存は localStorage 'tengel.cb' の boards（解放した もの）・board（えらんだ もの）
+//   第4.186版（まさちゃん 2026/11/17 00:52「この4つ、この画像と入れ替えて！ カードバトルの背景の作業なしで大丈夫！」と 絵 4まい）：
+//     ・プレイボード『紅蓮の闘技場』『桜の舞踏会』『白亜の宮殿』『蒼氷の宮』を 新しい 絵に（kisekae/cb_art.py の _v2）。
+//       新しい 4まいは「山札」の 札が 左へ 5.86%（右の 馬が 大きく なった ぶん）→ この 4つの とき だけ 山札の 置き場所も 同じ だけ 左へ（BOARDS の dl → .cbboard.dl）。
+//       山札が 馬に かぶらない・札の 上に のる。ほかの 3つと いつもの ボードは 前の まま
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -89,8 +93,9 @@ const CBApp = (() => {
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
   // 第4.185版：プレイボード 7種（まさちゃん 23:20：1つ 300枚）。絵は kisekae/cb_art.py の BOARDS（cb_bd_<id>.webp：対戦の ボード・cb_bd_<id>_s.webp：タイル）。名前は 姫が つけた
   const BOARD_COST = 300;
-  const BOARDS = [['marble', '白亜の宮殿'], ['frost', '蒼氷の宮'], ['sakura', '桜の舞踏会'], ['violet', '紫月の夜'], ['crimson', '紅蓮の闘技場'], ['starry', '黄金の星空'], ['steam', '歯車の工房']]
-    .map(([id, name]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST }));
+  //   dl＝山札の 置き場所を 左へ（第4.186版：新しい 絵の「山札」の 札の 上）
+  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 0], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 0], ['steam', '歯車の工房', 0]]
+    .map(([id, name, dl]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST, dl: !!dl }));
   const boardNow = () => (st && st.board ? BOARDS.find(d => d.id === st.board) || null : null);      // えらんだ プレイボード（null＝いつもの）
   const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
   // えらんだ デザイン：side＝'op' は 相手の カード。友だちとの 対戦では 友だちが えらんだ デザイン（部屋の あいさつで 届いた match.opDz・ない 名前は いつもの：第4.183版）。
@@ -293,6 +298,7 @@ const CBApp = (() => {
 #cbOv .cbboard .cbfire{background:radial-gradient(62% 88% at 100% 82%,rgba(255,150,56,.26) 0%,rgba(226,96,24,.10) 45%,rgba(140,50,10,0) 74%);animation-duration:4.3s;animation-delay:-1.7s}
 @keyframes cbfire{0%{opacity:.78}17%{opacity:.92}29%{opacity:.82}46%{opacity:1}61%{opacity:.84}78%{opacity:.95}100%{opacity:.78}}
 #cbOv .cbboard.cust .cbfire{display:none}
+#cbOv .cbboard.dl .cbdeck{left:61.34%}
 #cbOv .cbs{position:absolute;inset:0;display:none;flex-direction:column;box-sizing:border-box;padding:var(--sat,env(safe-area-inset-top)) 0 var(--sab,env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
 #cbOv .cbs.on{display:flex}
 #cbOv .gold{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;background:linear-gradient(180deg,#fff3c4 0%,#ffd76a 38%,#e2a83e 62%,#9c6410 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
@@ -851,7 +857,7 @@ const CBApp = (() => {
   function boardImg() {
     if (!ov) return; const im = $('.cbboard>img'), d = boardNow(), f = d ? d.b : 'cb_board.webp';
     if (im && im.getAttribute('src') !== f) im.setAttribute('src', f);
-    const bd = $('.cbboard'); if (bd) bd.classList.toggle('cust', !!d);
+    const bd = $('.cbboard'); if (bd) { bd.classList.toggle('cust', !!d); bd.classList.toggle('dl', !!(d && d.dl)); }      // 第4.186版：dl＝山札を 左へ
   }
   // テスト版の 道具（cb_test.js）に わたす もの：App Store版では 使われない
   const dzApi = {

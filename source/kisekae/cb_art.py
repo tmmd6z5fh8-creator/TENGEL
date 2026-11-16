@@ -34,6 +34,8 @@
 #       ・山札は cb_deck.png（いつもの 山札の 絵：少し ななめから 見た 形）の いちばん 上の カードの 面 だけを、その うらの 絵に はりかえる（DECK_FACE の 4つの 角へ ななめに うつす）。
 #         下に かさなった カードの ふち（金の 線）と 外の 形（すき通し）は いつもの まま ＝ 切り方・大きさは cb_deck.webp と 同じ
 #     第4.185版：プレイボード 7種 × 2つ：cb_bd_<名前>.webp（1254×706：対戦の ボード）・cb_bd_<名前>_s.webp（480×270：デザインカスタムの タイル）。
+#     第4.186版（まさちゃん 2026/11/17 00:52「この4つ、この画像と入れ替えて！」と 絵 4まい）：crimson・sakura・marble・frost は 新しい 絵 cb_board_<名前>_v2.png
+#       （1672×941：右の 馬が 大きく なって「山札」の 札が 左へ 98px。ほかの 形〈台・捨て札・VS の わく・歯車〉は 同じ 場所）。前の 絵は のこす（上書きしない・消さない：アプリには 入れない）
 #       絵は そのまま（夜の 色〈night〉に しない：まさちゃんの デザインの まま）。大きさを かえる だけ
 #     cb_board.webp（1254×706）・cb_deck.webp（360×426）・cb_icon.webp（240×240：右下の 丸い ボタン）・cb_logo.webp（720×720：メニューの 絵）・cb_coin.webp（240×240：バトルコイン：第4.179版）
 #     第4.178版（まさちゃん 2026/11/16 14:43「フィールドの雰囲気を夜の月あかりと火のライトに照らされてるイメージにして！(デザインは変えないで、差し込んでる光りの色を変えてみて)」）：
@@ -49,7 +51,7 @@ SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', '
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
 BACKS = [('sky', 'cb_back_sky.png'), ('star', 'cb_back_star.png'), ('ice', 'cb_back_ice.png'), ('wa', 'cb_back_wa.png'), ('ori', 'cb_back_ori.png'), ('crown', 'cb_back_crown.png'), ('heart', 'cb_back_heart.png')]      # 第4.182版：背面カスタム
-BOARDS = [(b, f'cb_board_{b}.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード
+BOARDS = [(b, f'cb_board_{b}' + ('_v2' if b in ('crimson', 'sakura', 'marble', 'frost') else '') + '.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード（第4.186版：4つは 新しい 絵）
 BD, BD_S = (1254, 706), (480, 270)      # 第4.185版：プレイボードの 大きさ（いつもの cb_board.webp と 同じ）・タイル
 FACES = [(f, f'cb_face_{f}' + ('_v2' if f in ('7a', '7b') else '') + '.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]      # 第4.182版：おもての べつの デザイン（第4.185版：7a・7b は 新しい 絵）
 DECK_FACE = ((268.4, 104.0), (963.2, 104.0), (1060.7, 948.0), (198.0, 948.0))      # cb_deck.png（1254×1254）の いちばん 上の カードの 面の 角（左上・右上・右下・左下：外の 形の 左右の 線と 金の ふちの 上下で 測った）
