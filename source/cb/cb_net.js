@@ -15,9 +15,21 @@
 //   やりとり する もの（JSON の 文字・1つ 20KB まで）：
 //     { t:'hello', v }（はじめに おたがいに。版が ちがえば 対戦しない）・{ t:'up', n, ev, view }（親 → ゲスト）・{ t:'act', id, a }（ゲスト → 親）・{ t:'ack', id, ok, why }（親 → ゲスト）
 //     { t:'again' }（もう 1回）・{ t:'bye' }（やめる）
+//   第4.179版（まさちゃん 2026/11/16 15:47「お友達と部屋を作る際に、参加ポイントと勝利者獲得ポイントを設定できるようにして！」→ 16:01「1にしよう！」＝バトルコイン・
+//     16:18「お友達との部屋を作成する場合は、バトルコインで参加枚数を指定する・勝者獲得コインは、参加枚数の2倍まで」）：
+//     ・部屋を 作った 人（ホスト）が 決めた「参加コイン e・勝者の 獲得コイン w」を、あいさつ（hello）で ゲストに 伝える：{ t:'hello', v, stake:{ e, w } }
+//     ・ゲストは それを 見て「参加する」と 答える：{ t:'join', stake:{ e, w } }（同じ 数字を 返す）。ホストは それが 届いて から 配る（参加コインが 0 の 部屋は ゲストが すぐ 答える）
+//     ・コインの 数は それぞれの 端末が 自分で 数える（画面の 係＝cb_app.js）。ここは 決まりを 伝える だけ（match.stake・onState('stake')・match.join()）
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 3, MAXLEN = 20000;      // PROTO 3（第4.178版）：5ターン・手札 7まい・6 の 条件が かわった ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 2＝第4.177版（5 の 条件・3 の 効果）
+  const R = CBRules, PROTO = 4, MAXLEN = 20000;      // PROTO 4（第4.179版）：あいさつに 参加コインの 決まり・「参加する」の 返事が ふえた ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 3＝第4.178版（5ターン・手札 7まい・逆転勝利）・PROTO 2＝第4.177版
+  // 参加コイン e（0〜STAKE_MAX）・勝者の 獲得コイン w（e 〜 e の 2倍）。数字で ない・はんいの 外は 直す（相手から 届いた ものも ここを 通す）
+  const STAKE_MAX = 999;
+  function stakeOf(k) {
+    const e = Math.max(0, Math.min(STAKE_MAX, Math.floor(+(k && k.e) || 0)));
+    const w = Math.max(e, Math.min(e * 2, Math.floor(+(k && k.w) || 0)));
+    return { e: e, w: e > 0 ? w : 0 };
+  }
   const say = (m, k, v) => { try { if (typeof m[k] === 'function') m[k](v); } catch (e) { /* 画面の 中の まちがいで 対戦を 止めない */ } };
 
   // ---------- 親（コンピュータと 対戦・部屋の ホスト）----------
@@ -70,23 +82,30 @@ const CBNet = (() => {
     }, opt);
   }
 
-  // 部屋の ホスト（親）：link の むこうに 友だち
-  function host(link, rng, opt) {
+  // 部屋の ホスト（親）：link の むこうに 友だち。stake＝{ e:参加コイン, w:勝者の 獲得コイン }（なければ 0）
+  function host(link, rng, opt, stake) {
     rng = rng || Math.random;
-    return parent('host', rng, m => {
-      let hello = false, closed = false, want = false;
+    const stk = stakeOf(stake);
+    const mm = parent('host', rng, m => {
+      let hello = false, joined = false, closed = false, want = false;
       const send = o => { if (!closed) link.send(JSON.stringify(o)); };
-      // 配るのは 友だちの あいさつ（hello：版が 同じ）が 届いて から
-      const deal = m.start; m.start = () => { want = true; if (hello) deal(); };
+      // 配るのは 友だちの あいさつ（hello：版が 同じ）と「参加する」（join：決まりを 見て 答えた）が 届いて から
+      const deal = m.start; m.start = () => { want = true; if (joined) deal(); };
       link.onText = txt => {
         if (closed || typeof txt !== 'string' || txt.length > MAXLEN) return;
         let o; try { o = JSON.parse(txt); } catch (e) { return; }
         if (!o || typeof o !== 'object') return;
-        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; send({ t: 'hello', v: PROTO }); say(m, 'onState', 'ready'); if (want) deal(); } return; }
+        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; send({ t: 'hello', v: PROTO, stake: stk }); say(m, 'onState', 'ready'); } return; }
         if (!hello) return;
+        if (o.t === 'join') {                           // 友だちが 決まりを 見て「参加する」：同じ 数字で ある こと（ちがえば 配らない）
+          const k = stakeOf(o.stake);
+          if (!joined && k.e === stk.e && k.w === stk.w) { joined = true; say(m, 'onState', 'joined'); if (want) deal(); }
+          return;
+        }
+        if (o.t === 'bye') { m._.end('bye'); return; }
+        if (!joined) return;
         if (o.t === 'act') { const r = m._.apply(1, o.a); send({ t: 'ack', id: o.id, ok: r.ok, why: r.why }); }
         else if (o.t === 'again') m._.seatAgain();
-        else if (o.t === 'bye') m._.end('bye');
       };
       link.onLost = () => { if (!closed) m._.end('lost'); };
       return {
@@ -95,20 +114,22 @@ const CBNet = (() => {
         stop: mine => { if (closed) return; if (mine) send({ t: 'bye' }); closed = true; setTimeout(() => { try { link.close(); } catch (e) { /* なし */ } }, mine ? 250 : 0); }
       };
     }, opt);
+    mm.stake = stk;
+    return mm;
   }
 
   // 部屋の ゲスト：親（ホスト）に 手を 送って、見せて もらった ものを 受ける
   function guest(link) {
     let alive = true, id = 0, hello = false;
     const wait = {};
-    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null };
+    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null };
     const send = o => { if (alive) link.send(JSON.stringify(o)); };
     const end = why => { if (!alive) return; alive = false; Object.keys(wait).forEach(k => wait[k]({ ok: false, why: 'off' })); try { link.close(); } catch (e) { /* なし */ } say(m, 'onState', why); };
     link.onText = txt => {
       if (!alive || typeof txt !== 'string' || txt.length > MAXLEN) return;
       let o; try { o = JSON.parse(txt); } catch (e) { return; }
       if (!o || typeof o !== 'object') return;
-      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; say(m, 'onState', 'ready'); } }
+      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      // stake：部屋の 決まり（参加コイン・勝者の 獲得コイン）が 届いた → 画面が 聞いて match.join()
       else if (o.t === 'up' && o.view && Array.isArray(o.ev)) say(m, 'onUpdate', { n: o.n, ev: o.ev, view: o.view });
       else if (o.t === 'ack') { const f = wait[o.id]; if (f) { delete wait[o.id]; f({ ok: !!o.ok, why: o.why }); } }
       else if (o.t === 'again') say(m, 'onState', 'again');
@@ -116,6 +137,7 @@ const CBNet = (() => {
     };
     link.onLost = () => end('lost');
     m.start = () => send({ t: 'hello', v: PROTO });
+    m.join = () => { if (hello && m.stake) send({ t: 'join', stake: m.stake }); };      // 決まりを 見て「参加する」（ホストは これが 届いて から 配る）
     m.act = a => new Promise(ok => { if (!alive) return ok({ ok: false, why: 'off' }); id += 1; wait[id] = ok; send({ t: 'act', id: id, a: a }); });
     m.idle = () => { };
     m.again = () => send({ t: 'again' });
@@ -155,6 +177,6 @@ const CBNet = (() => {
     };
   }
 
-  return { PROTO, cpu, host, guest, nativeRoom };
+  return { PROTO, STAKE_MAX, stakeOf, cpu, host, guest, nativeRoom };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;

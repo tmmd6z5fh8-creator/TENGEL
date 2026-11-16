@@ -12,6 +12,8 @@
 #   第4.178版（まさちゃん 2026/11/16 14:43・15:33）：①BGM（設定で オン／オフ・うしろに 行ったら 止まる）・②5ターン・手札 7まい・③設定の 窓（BGM・効果音・エフェクト）・
 #     ④6 の 効果は もう 見た カード しか ない ときは 聞かれない・⑤夜の フィールド（火の あかりの ゆれ）・逆転勝利（1 が 3まい → 神様馬・幻の馬に／2 が 3まい → 1 に：オープンしてから 聞く）
 #     前から ある 場面（効果の しくみ）は「3ターン・手札 5まい」の まま 動かす（start() が turns: 3 を わたす）。本番の 形（5ターン・手札 7まい）は「■ 5ターン・手札 7まい」で 見る
+#   第4.179版（まさちゃん 2026/11/16 15:47・16:01・16:10・16:18）：バトルコイン（買えない・コンピュータに 勝つと 1枚・5連勝 ごとに 5枚）・部屋の 参加コインと 勝者の 獲得コイン（2倍 まで）
+#     ・入れない（足りない）・参加する → 2人とも 出す → 勝者が もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手が もらう）・つながりが 切れたら もどる
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -260,6 +262,8 @@ try:
         check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← もどる', 'コンピュータと 対戦', '部屋を 作る友だちと 対戦', '部屋に 入る友だちと 対戦', 'あそび方', '設定BGM・効果音'] and not any(m['dis']),
               f'メニュー：コンピュータと 対戦・部屋を 作る・部屋に 入る・あそび方・設定（第4.178版）（{m["btn"]}）')
         check(m['rec'] == '勝つと お世話トークン 1こ・5連勝 ごとに 3こ' and (not HAVE or m['lg'] == 720), f'ごほうびの 説明（{m["rec"]}）')
+        cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
+        check(cl == ['バトルコイン 0枚コンピュータに 勝つと 1枚・5連勝 ごとに 5枚', 1], f'メニューに バトルコイン（第4.179版：コインの 絵・持って いる 数・もらい方）（{cl}）')
         check(reqs.count('cb_bundle.js') == 1 and 'cb_bundle.js' not in reqs[:reqs.index('cb_bundle.js')][:5], '本体（cb_bundle.js）は ボタンを 押した ときに 1回 だけ 読む')
         shot(pg, 'cb_menu')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
@@ -271,7 +275,9 @@ try:
                 '3：3まい 見せて 手札を 交換', 'ランダムに えらんだ 1まいを 交換できるよ', '7・6・5・4・3 の 効果は', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1こ', '5連勝 ごとに 3こ', '部屋番号（4けた）', '近くに いる 友だち',
                 'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', '音と エフェクト（設定）', 'BGM・効果音・エフェクト（光や 動きの 演出）を オン／オフ',
                 '1：3まい 見せて 逆転勝利', '2：3まい 見せて 逆転勝利', '神様馬・幻の馬に 負けた とき、手札に 1 が 2まい あれば', '1 に 負けた とき、手札に 2 が 2まい あれば', '勝ちに できるよ', '1・2 の 効果（逆転勝利）は、オープンした あと、負けた 人が 使うか えらぶよ',
-                '1・2 の「逆転勝利」は、めくった あとに 使うか えらぶよ', '逆転勝利：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる']
+                '1・2 の「逆転勝利」は、めくった あとに 使うか えらぶよ', '逆転勝利：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる',
+                'バトルコイン', 'コンピュータに 勝つと 1枚', '5連勝 ごとに 5枚', '買う ことは できない', '参加コイン', '参加コインの 2倍 まで', '同じ 数の 参加コインを 持って いないと 入れない', 'テンゲルから 獲得コインを プレゼントで もらえる',
+                '同点は 参加コインが もどる', 'とちゅうで やめると、参加コインは もどらない']
         miss = [x for x in need if x not in ht]
         check(pg.evaluate("() => CBApp._t.screen") == 'help' and not miss and pg.locator('#cbOv .cbhelp .ord img').count() == 9 and pg.locator('#cbOv .cbhelp .ef').count() == 9 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s3.webp"]').count() == 1 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s1.webp"]').count() == 1 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s2.webp"]').count() == 1,
               f'あそび方：勝負の しかた（手札 7まい・5ターン）・1ターンの 流れ（セット → 効果タイム → オープン）・強さ（9まいの 並び）・効果 9つ（第4.178版：1・2 の 逆転勝利を 足した）・どの 効果も 自分で えらべる・捨て札・ごほうび・設定・部屋（ない 文 {miss}）')
@@ -767,7 +773,7 @@ try:
         if HAVE:
             pg.wait_for_function("() => CBApp._t.bgm.on", timeout=30000)
             b1 = pg.evaluate("() => CBApp._t.bgm"); pg.wait_for_timeout(700); b2 = pg.evaluate("() => CBApp._t.bgm")
-            check(b1['file'] == 'cb_bgm.m4a' and abs(b1['len'] - 34 * 3 * 60 / 76) < 1e-6 and b1['pre'] == 0.5 and b1['loop'] and abs(b1['loop'][0] - 0.25) < 1e-6 and abs(b1['loop'][1] - (0.25 + b1['len'])) < 1e-6 and 0 < b1['vol'] <= 0.4 and b1['ctx'] == 'running' and b2['pos'] > b1['pos'] + 0.4,
+            check(b1['file'] == 'cb_bgm.m4a' and abs(b1['len'] - 34 * 3 * 60 / 76) < 1e-6 and b1['pre'] == 0.5 and b1['loop'] and abs(b1['loop'][0] - 0.25) < 1e-6 and abs(b1['loop'][1] - (0.25 + b1['len'])) < 1e-6 and 0 < b1['vol'] <= 0.6 and b1['ctx'] == 'running' and b2['pos'] > b1['pos'] + 0.4,
                   f'BGM が 鳴る：cb_bgm.m4a・くり返すのは まん中の 1回り（{b1["loop"] and [round(x, 2) for x in b1["loop"]]}秒：約 {b1["len"]:.1f}秒）・音の 大きさ {b1["vol"]}・曲が 進む（{b1["pos"]:.2f} → {b2["pos"]:.2f}秒）')
             HID = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => h }); document.dispatchEvent(new Event('visibilitychange')); }"
             pg.evaluate(HID, True); pg.wait_for_timeout(150); b3 = pg.evaluate("() => CBApp._t.bgm"); pg.wait_for_timeout(600); b4 = pg.evaluate("() => CBApp._t.bgm")
@@ -925,6 +931,7 @@ try:
             return pg.evaluate("() => ({ h: document.querySelector('#cbOv .cbend h3').textContent, sc: document.querySelector('#cbOv .cbend .sc').textContent, g: document.querySelector('#cbOv .cbend .gift').textContent, st: Object.assign({}, CBApp._t.state) })")
         t0 = pg.evaluate(TC)
         e = win_game(); t1 = pg.evaluate(TC)
+        check(e['st']['coin'] == 1 and 'バトルコイン ＋1枚（いま 1枚）' in e['g'] and pg.locator('#cbOv .cbend .gift .cbcl img[src="cb_coin.webp"]').count() == 1, f'バトルコイン：コンピュータに 勝つと 1枚（いま {e["st"]["coin"]}枚）（第4.179版）')
         check(e['h'] == 'あなたの 勝ち！' and e['sc'].startswith('3 － 0') and t1 == (t0 or 5) + 1 and e['st']['streak'] == 1 and e['st']['win'] == 1 and e['st']['owe'] == 0 and 'お世話トークン＋1こ GET！' in e['g'] and f'いま {t1}こ／25こ' in e['g'] and '1連勝中！' in e['g'] and 'あと 4勝で 3こ' in e['g'],
               f'勝ち：お世話トークン ＋1（{t0 or 5} → {t1}）・1連勝中・あと 4勝で 3こ（{e["g"]}）')
         # 第4.177版（まさちゃん「お世話トークンGETした場合、最後の画面でGETしたことをもう少し分かりやすく」）：金の わくの 札「お世話トークン ＋1こ GET！」
@@ -943,10 +950,11 @@ try:
         check(pg.evaluate(V)['turn'] == 1 and pg.evaluate(V)['phase'] == 'set' and not pg.evaluate("() => CBApp._t.ended") and pg.evaluate(PIPS) == '0-0' and not pg.evaluate("() => CBApp._t.modOn()"), '「もう 1回」→ すぐ 新しい 対戦（しるしも 0 に）')
         for k in range(3): win_game()
         e = win_game(); t5 = pg.evaluate(TC)
+        check(e['st']['coin'] == 9 and 'バトルコイン ＋5枚（いま 9枚）' in e['g'], f'バトルコイン：5連勝目は 5枚（1・1・1・1・5 ＝ {e["st"]["coin"]}枚）')
         check(e['st']['streak'] == 5 and e['st']['win'] == 5 and t5 == t1 + 3 + 3 and '5連勝 ボーナス！ お世話トークン＋3こ GET！' in e['g'] and '5連勝中！' in e['g']
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'5連勝：5回目は ＋3（{t1} → 2・3・4回目 ＋1 ずつ → 5回目 ＋3 ＝ {t5}）（{e["g"]}）')
         e = win_game()
-        check(e['st']['streak'] == 6 and pg.evaluate(TC) == t5 + 1 and 'あと 4勝で 3こ' in e['g'], '6連勝目は また ＋1（つぎの ＋3 は 10連勝）')
+        check(e['st']['streak'] == 6 and pg.evaluate(TC) == t5 + 1 and 'あと 4勝で 3こ' in e['g'] and e['st']['coin'] == 10 and 'バトルコイン ＋1枚（いま 10枚）' in e['g'], '6連勝目は また ＋1（つぎの ＋3 は 10連勝）・バトルコインも ＋1')
         # 上限 25こ
         pg.evaluate("() => { TCApp.state.stock = 25; TCApp.state.stockAt = Date.now(); }")
         e = win_game()
@@ -958,6 +966,8 @@ try:
         e = win_game()      # 10連勝：＋3 の はずが、あと 1こ しか 入らない
         check(e['st']['streak'] == 10 and pg.evaluate(TC) == 25 and 'お世話トークン＋1こ GET！' in e['g'] and '25こ まで なので 1こ だけ' in e['g'] and e['st']['owe'] == 0
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'10連勝（＋3）で あと 1こ しか 入らない とき：入る 分 だけ（{e["g"]}）')
+        check(e['st']['coin'] == 18 and 'バトルコイン ＋5枚（いま 18枚）' in e['g'], f'10連勝目も バトルコイン 5枚（いま {e["st"]["coin"]}枚）・字は 札の 場所に おさまる')
+        shot(pg, 'cb_end_coin')
         # 負け：連勝 0
         start(pg, '23677', '12356'); play(pg, '3'); opp(pg, {'t': 'set', 'k': 1}); play(pg, '6'); opp(pg, {'t': 'set', 'k': 2}); play(pg, '7'); opp(pg, {'t': 'set', 'k': 3})
         pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
@@ -966,6 +976,7 @@ try:
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(120)
         rec = pg.locator('#cbOv .cbmenu .rec').inner_text()
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and '10勝 1敗 0分' in rec.replace('\n', ' '), f'メニューに 勝ち負けの 数（{rec!r}）')
+        check(e['st']['coin'] == 18 and 'バトルコイン' not in e['g'] and 'バトルコイン 18枚' in pg.locator('#cbOv .cbmenu .cbcoinl').inner_text(), '負け：バトルコインは かわらない（へらない）・メニューに いまの 数（18枚）')
 
         print('■ とちゅうで やめる')
         start(pg, '12367', '23567'); play(pg, '1')
@@ -1012,7 +1023,29 @@ try:
         gp = ctx.new_page(); gerrs = []; gp.on('pageerror', lambda e: gerrs.append(str(e)))
         gp.goto(APP); gp.wait_for_timeout(1300); gate(gp); gp.wait_for_timeout(600); open_cb(gp)
         pg.evaluate("() => { CBApp._opt = { hands: [['k', '1', '2', '6', '6'], ['m', '3', '4', '5', '7']], turns: 3 }; }")
+        pg.evaluate("() => { CBApp._t.state.coin = 10; }"); gp.evaluate("() => { CBApp._t.state.coin = 2; }")      # 2つの 画面は 保存の 場所が 同じ → 数は 画面の 中で 決める（読み直さない）
+        c0 = pg.evaluate("() => window.__room.calls.length")
         pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(300)
+        STK = """() => { const r = document.querySelector('#cbOv .cbroom'), q = s => r.querySelector(s); if (!q('[data-cb=stkgo]')) return null;
+          return { chips: [...r.querySelectorAll('[data-cb=stke]')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).join(','), w: q('.cbstp b').textContent, minus: q('[data-cb=stkw][data-d="-1"]').disabled, plus: q('[data-cb=stkw][data-d="1"]').disabled,
+            go: q('[data-cb=stkgo]').textContent, have: q('.cbcoinl').textContent, calls: window.__room.calls.length, h2: q('h2').textContent }; }"""
+        k0 = pg.evaluate(STK)
+        check(k0 and k0['h2'] == '部屋を 作る' and k0['chips'] == '0*,1,2,3,5,10' and k0['w'] == '0枚' and k0['minus'] and k0['plus'] and k0['go'] == 'コインなしで 部屋を 作る' and '持って いる バトルコイン 10枚' in k0['have'] and k0['calls'] == c0,
+              f'バトルコインを 持って いる 人が「部屋を 作る」→ 先に 参加コインを 決める（えらべるのは 持って いる 数 まで：{k0 and k0["chips"]}・まだ 部屋は 作らない）（第4.179版）')
+        shot(pg, 'cb_room_stake')
+        pg.locator('#cbOv .cbroom [data-cb=stke][data-n="3"]').click(); k1 = pg.evaluate(STK)
+        pg.locator('#cbOv .cbroom [data-cb=stkw][data-d="-1"]').click(); k2 = pg.evaluate(STK)
+        for _ in range(3): pg.locator('#cbOv .cbroom [data-cb=stkw][data-d="-1"]').click(force=True)
+        k3 = pg.evaluate(STK)
+        for _ in range(5): pg.locator('#cbOv .cbroom [data-cb=stkw][data-d="1"]').click(force=True)
+        k4 = pg.evaluate(STK)
+        pg.locator('#cbOv .cbroom [data-cb=stke][data-n="10"]').click(); k5 = pg.evaluate(STK)
+        check(k1['chips'] == '0,1,2,3*,5,10' and k1['w'] == '6枚' and k1['plus'] and not k1['minus'] and k1['go'] == '参加 3枚・勝者 6枚で 部屋を 作る' and k2['w'] == '5枚' and not k2['plus']
+              and k3['w'] == '3枚' and k3['minus'] and k4['w'] == '6枚' and k4['plus'] and k5['w'] == '20枚' and k5['go'] == '参加 10枚・勝者 20枚で 部屋を 作る',
+              f'参加コイン 3 → 勝者の 獲得コインは 2倍の 6枚から・−で へらせる（参加コインより 少なく ならない：3枚）・＋は 2倍 まで（6枚）・参加 10 → 勝者 20（{[k["w"] for k in (k1, k2, k3, k4, k5)]}）')
+        pg.locator('#cbOv .cbroom [data-cb=stke][data-n="0"]').click()
+        check(pg.evaluate(STK)['go'] == 'コインなしで 部屋を 作る', '参加コイン 0 → コインなしの 部屋（前の 版と 同じ）')
+        pg.locator('#cbOv .cbroom [data-cb=stkgo]').click(); pg.wait_for_timeout(300)
         hr = pg.evaluate("() => ({ scr: CBApp._t.screen, num: document.querySelector('#cbOv .cbroom .num').textContent, stt: document.querySelector('#cbOv .cbroom .stt').textContent, t: document.querySelector('#cbOv .cbroom').textContent, calls: window.__room.calls.slice() })")
         check(hr['scr'] == 'room' and re.fullmatch(r'[1-9][0-9]{3}', hr['num']) is not None and '友だちを 待って いるよ' in hr['stt'] and 'この 番号を 友だちに 教えてね' in hr['t'] and hr['calls'] == ['host:' + hr['num']],
               f'部屋を 作る：4けたの 部屋番号（{hr["num"]}）・「友だちを 待って いるよ…」・アプリに「部屋を 作る」を お願い（{hr["calls"]}）')
@@ -1086,7 +1119,8 @@ try:
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and pg.evaluate("() => window.__room.calls[window.__room.calls.length - 1]") == 'stop', 'メニューへ（アプリの 部屋も とじる）')
         # 部屋を 作れない（ローカルネットワークを 許可して いない など）
         pg.evaluate("() => { window.__room.deny = true; }")
-        pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_function("() => /部屋を 作れなかったよ/.test(document.querySelector('#cbOv .cbroom').textContent)", timeout=10000)
+        pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(150); pg.locator('#cbOv .cbroom [data-cb=stkgo]').click()      # バトルコインを 持って いる：コインなしで 作る
+        pg.wait_for_function("() => /部屋を 作れなかったよ/.test(document.querySelector('#cbOv .cbroom').textContent)", timeout=10000)
         check(pg.locator('#cbOv .cbroom [data-cb=roomre]').count() == 1, '部屋を 作れない とき：「部屋を 作れなかったよ」と「もう一度 作る」')
         pg.evaluate("() => { window.__room.deny = false; }")
         pg.locator('#cbOv .cbroom [data-cb=roomx]').click(); pg.wait_for_timeout(100)
@@ -1097,11 +1131,100 @@ try:
         check('部屋を さがして いるよ' in pg.locator('#cbOv .cbroom .stt').inner_text() and pg.locator('#cbOv .cbkeys').count() == 0, 'ない 部屋番号：「部屋を さがして いるよ…」の まま（数字の ボタンは 出ない）')
         pg.locator('#cbOv .cbroom [data-cb=roomx]').click(); pg.wait_for_timeout(150)
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and pg.evaluate("() => window.__room.calls[window.__room.calls.length - 1]") == 'stop', '「← やめる」→ メニュー（さがすのを やめる）')
+
+        print('■ 部屋：バトルコイン（参加コイン・勝者の 獲得コイン）（第4.179版・まさちゃん 16:18「お友達との部屋を作成する場合は、バトルコインで参加枚数を指定する・勝者獲得コインは、参加枚数の2倍まで」）')
+        COINS = "() => [CBApp._t.state.coin, CBApp._t.state.stake ? CBApp._t.state.stake.e + '/' + CBApp._t.state.stake.w : null]"
+        def make_room(e, w=None):
+            pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(200)
+            pg.locator(f'#cbOv .cbroom [data-cb=stke][data-n="{e}"]').click()
+            if w is not None:
+                while pg.evaluate("() => parseInt(document.querySelector('#cbOv .cbroom .cbstp b').textContent)") > w: pg.locator('#cbOv .cbroom [data-cb=stkw][data-d="-1"]').click()
+            pg.locator('#cbOv .cbroom [data-cb=stkgo]').click(); pg.wait_for_timeout(300)
+            return pg.evaluate("() => document.querySelector('#cbOv .cbroom .num').textContent")
+        def join_room(num):
+            gp.locator('#cbOv .cbmenu [data-cb=join]').click(); gp.wait_for_timeout(150)
+            for d in num: gp.locator(f'#cbOv .cbkeys [data-key="{d}"]').click()
+            gp.locator('#cbOv .cbkeys [data-key=go]').click()
+            gp.wait_for_function("() => CBApp._t.screen === 'game' && document.querySelector('#cbOv .cbmod.cbjoin')", timeout=30000); gp.wait_for_timeout(150)
+        JOINM = "() => { const m = document.querySelector('#cbOv .cbmod.cbjoin'); return m ? { t: m.textContent, btns: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim()), coin: !!m.querySelector('img[src=\"cb_coin.webp\"]') } : null; }"
+        pg.evaluate("() => { CBApp._t.state.coin = 10; CBApp._opt = { hands: [['1', '2', '3', '6', '7'], ['2', '3', '6', '7', '7']], turns: 3 }; }"); gp.evaluate("() => { CBApp._t.state.coin = 2; }")
+        num = make_room(3)
+        rs = pg.evaluate("() => ({ t: document.querySelector('#cbOv .cbroom .cbstkl').textContent, last: window.__room.calls[window.__room.calls.length - 1] })")
+        check(rs['t'] == '参加コイン 3枚・勝者 6枚' and rs['last'] == 'host:' + num and pg.evaluate(COINS) == [10, None], f'参加 3枚・勝者 6枚の 部屋を 作った：部屋番号の 下に 決まり（{rs["t"]}）・まだ コインは 出さない')
+        join_room(num)
+        jm = gp.evaluate(JOINM); hm = pg.evaluate(MSG)
+        check(jm and 'この 部屋の 決まり' in jm['t'] and '参加コイン 3枚→勝者 6枚' in jm['t'] and 'あなたの バトルコイン 2枚' in jm['t'] and 'あと 1枚 足りない ので、この 部屋には 入れないよ' in jm['t'] and jm['btns'] == ['メニューへ'] and jm['coin']
+              and pg.evaluate("() => CBApp._t.screen") == 'game' and hm == 'ともだちが 参加するか えらんで いるよ…' and pg.evaluate("() => CBApp._t.view") is None,
+              f'入る 人の バトルコインが 足りない（2枚）：「この 部屋の 決まり」・「あと 1枚 足りない ので、この 部屋には 入れないよ」（ボタンは メニューへ だけ）・作った 人は「ともだちが 参加するか えらんで いるよ…」（まだ 配らない）')
+        shot(gp, 'cb_join_short')
+        gp.locator('#cbOv .cbjoin [data-cb=joinno]').click(); gp.wait_for_timeout(200)
+        pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        check(gp.evaluate("() => CBApp._t.screen") == 'menu' and gp.evaluate(COINS) == [2, None] and pg.evaluate(COINS) == [10, None] and '勝ち負けに 数えないよ' not in pg.locator('#cbOv .cbmod').inner_text(),
+              '入らずに メニューへ → 作った 人に「ともだちが 部屋を 出たよ」（2人とも コインは かわらない）')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # 足りる：参加する → 2人とも 出す → 勝った 人が 6枚
+        gp.evaluate("() => { CBApp._t.state.coin = 5; }")
+        num = make_room(3); join_room(num)
+        jm = gp.evaluate(JOINM)
+        check(jm and 'あなたの バトルコイン 5枚' in jm['t'] and '足りない' not in jm['t'] and jm['btns'] == ['やめる', '参加する'] and '同点は もどる・とちゅうで やめると もどらないよ' in jm['t'], f'足りる（5枚）：「やめる」「参加する」（{jm and jm["btns"]}）')
+        shot(gp, 'cb_join_ask')
+        gp.locator('#cbOv .cbjoin [data-cb=joinyes]').click()
+        pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.idle", timeout=30000); gp.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000)
+        tl = [q.locator('#cbOv .cbturn').inner_text().replace('\n', '') for q in (pg, gp)]
+        check(pg.evaluate(COINS) == [7, '3/6'] and gp.evaluate(COINS) == [2, '3/6'] and all('勝者 6枚' in t for t in tl) and pg.evaluate(V)['turns'] == 3,
+              f'「参加する」→ 配る → 2人とも 参加コイン 3枚を 出す（作った 人 10 → 7・入った 人 5 → 2）・ターンの 字の よこに「勝者 6枚」（{tl}）')
+        shot(pg, 'cb_room_coin_game')
+        pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80)
+        check('参加コイン 3枚も もどらないよ' in pg.locator('#cbOv .cbmod').inner_text(), '「やめる」の 窓：参加コインも もどらない ことを 出す')
+        pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
+        for mine, his in (('1', '2'), ('2', '3'), ('3', '6')):
+            idle(pg); idle(gp); play(pg, mine); idle(gp); play(gp, his); idle(pg); idle(gp)
+        for q in (pg, gp): q.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
+        eh = pg.evaluate("() => ({ g: document.querySelector('#cbOv .cbend .gift').textContent, again: document.querySelector('#cbOv .cbend [data-cb=again]').disabled })")
+        eg = gp.evaluate("() => ({ g: document.querySelector('#cbOv .cbend .gift').textContent, g2: document.querySelector('#cbOv .cbend .gift2').textContent, again: document.querySelector('#cbOv .cbend [data-cb=again]').disabled, h: document.querySelector('#cbOv .cbend h3').textContent })")
+        check(pg.evaluate(V)['res'] == 'win' and 'バトルコイン ＋6枚（いま 13枚）' in eh['g'] and pg.evaluate(COINS) == [13, None] and not eh['again'],
+              f'作った 人の 勝ち（3 － 0）：勝者の 獲得コイン 6枚（7 → 13枚）（{eh["g"]}）')
+        check(eg['h'] == 'あなたの 負け…' and '参加コイン 3枚は もどらないよ（いま 2枚）' in eg['g'] and gp.evaluate(COINS) == [2, None] and eg['again'] and eg['g2'] == 'バトルコインが 足りない ので、もう 1回は できないよ' and gp.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift2'); return Math.round(g.getBoundingClientRect().height) <= 20; }"),
+              f'入った 人の 負け：参加コインは もどらない（いま 2枚）・バトルコインが 足りない ので「もう 1回」は 押せない（{eg["g2"]}）')
+        shot(gp, 'cb_room_coin_lose')
+        gp.locator('#cbOv .cbend [data-cb=menu]').click(); gp.wait_for_timeout(200)
+        pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        check(pg.evaluate(COINS) == [13, None] and 'バトルコイン' not in pg.locator('#cbOv .cbmod').inner_text(), '終わった あとに 相手が 出ても、コインは かわらない')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # とちゅうで やめた 人の 参加コインは もどらない・相手は 獲得コインを もらう
+        gp.evaluate("() => { CBApp._t.state.coin = 4; }")
+        num = make_room(1); join_room(num); gp.locator('#cbOv .cbjoin [data-cb=joinyes]').click()
+        pg.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000); gp.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000)
+        check(pg.evaluate(COINS) == [12, '1/2'] and gp.evaluate(COINS) == [3, '1/2'], '参加 1枚・勝者 2枚の 部屋：2人とも 1枚 出した（13 → 12・4 → 3）')
+        lose0 = gp.evaluate("() => CBApp._t.state.lose")
+        gp.locator('#cbOv .cbtop [data-cb=quit]').click(); gp.wait_for_timeout(80)
+        check('参加コイン 1枚も もどらないよ' in gp.locator('#cbOv .cbmod').inner_text(), '入った 人の「やめる」の 窓にも 出る')
+        gp.locator('#cbOv .cbmod [data-cb=quitgo]').click(); gp.wait_for_timeout(200)
+        pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        mt = pg.locator('#cbOv .cbmod').inner_text()
+        check(gp.evaluate(COINS) == [3, None] and gp.evaluate("() => CBApp._t.state.lose") == lose0 + 1 and pg.evaluate(COINS) == [14, None] and 'ともだちが とちゅうで やめた ので、バトルコイン 2枚を もらったよ' in mt and '勝ち負けに 数えないよ' in mt,
+              f'とちゅうで やめた 人：参加コインは もどらない（3枚の まま・負けに 数える）・相手は 勝者の 獲得コイン 2枚（12 → 14）（{mt[:80]!r}）')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # つながりが 切れた：2人とも 参加コインが もどる
+        num = make_room(1); join_room(num); gp.locator('#cbOv .cbjoin [data-cb=joinyes]').click()
+        pg.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000); gp.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000)
+        mid = [pg.evaluate(COINS), gp.evaluate(COINS)]
+        for q in (pg, gp): q.evaluate("() => window.__nativeEvent('room', { ev: 'state', state: 'idle' })")
+        for q in (pg, gp): q.wait_for_function("() => CBApp._t.modOn() && /つながりが 切れたよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        check(mid == [[13, '1/2'], [2, '1/2']] and pg.evaluate(COINS) == [14, None] and gp.evaluate(COINS) == [3, None] and all('参加コイン 1枚は もどったよ' in q.locator('#cbOv .cbmod').inner_text() for q in (pg, gp)),
+              f'つながりが 切れた：2人とも 参加コインが もどる（{mid} → 14・3）')
+        for q in (pg, gp): q.locator('#cbOv .cbmod [data-cb=menu]').click(); q.wait_for_timeout(150)
+        # 同点は もどる・負けは もどらない・勝ちは 獲得コイン（数える 所 だけ）／とちゅうで アプリが 閉じた ときの 参加コインは もどらない（つぎに 開いた とき 知らせる）
+        r3 = pg.evaluate("""async () => { const T = CBApp._t, out = []; for (const res of ['draw', 'lose', 'win']) { const c0 = T.state.coin; T.state.stake = { e: 2, w: 4 }; const r = await T.settle(res); out.push([res, r.pot.add, T.state.coin - c0, T.state.stake]); } return out; }""")
+        check(r3 == [['draw', 2, 2, None], ['lose', 0, 0, None], ['win', 4, 4, None]], f'参加 2・勝者 4：同点＝2枚 もどる・負け＝0・勝ち＝4枚（{r3}）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.stake = { e: 5, w: 10 }; T.save(); T.load(); }")
+        c5 = pg.evaluate(COINS); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(200); tt = pg.evaluate(TOAST)
+        check(c5[1] is None and '前の 対戦が とちゅうで 終わった ので、' in tt and '参加コイン 5枚は もどらなかったよ' in tt, f'参加コインを 出した まま アプリが 閉じた → つぎに 開いた とき「参加コイン 5枚は もどらなかったよ」（{tt!r}）')
         check(not errs and not gerrs, f'エラー なし {errs[:3]} {gerrs[:3]}')
         if HAVE:
             miss = sorted(set(f for f in reqs if f.startswith('cb_') and f != 'cb_bundle.js' and f not in CBF))
             used = sorted(set(f for f in reqs if f in CBF))
-            check(not miss and all(f in used for f in ['cb_board.webp', 'cb_deck.webp', 'cb_logo.webp', 'cb_icon.webp', 'cb_sb.webp', 'cb_s1.webp', 'cb_c1.webp', 'cb_ck.webp']), f'読んだ 絵と 音は ぜんぶ アプリに 入れる ファイル（ない 名前 {miss}・読んだ {len(used)}こ）')
+            check(not miss and all(f in used for f in ['cb_board.webp', 'cb_deck.webp', 'cb_logo.webp', 'cb_icon.webp', 'cb_sb.webp', 'cb_s1.webp', 'cb_c1.webp', 'cb_ck.webp', 'cb_coin.webp', 'cb_bgm.m4a']), f'読んだ 絵と 音は ぜんぶ アプリに 入れる ファイル（ない 名前 {miss}・読んだ {len(used)}こ）')
 finally:
     srv.terminate()
 print('\n' + ('全部 OK' if not fails else f'NG {len(fails)}こ：' + ' / '.join(fails)))

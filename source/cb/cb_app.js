@@ -22,10 +22,23 @@
 //     2は、手札のフィールドと合わせて3枚を相手見せ、その内、手札の2を1枚捨てることで1に勝利することができる」＋ 新しい 1・2 の 絵「3枚公開：逆転勝利」・15:41「A、オープンしてから」）：
 //     ・逆転勝利：オープンして 負けた 人が 使える とき（cb_rules.js の phase 'rev'）、めくった 窓に「チャンス！」→ 聞く 窓「○ の 効果を 使う？」（使わない／使う）。
 //       使う → 3まいを 見せる 窓 → 手札の 1まいが 捨て札へ →「逆転勝利！」（相手の 画面は「逆転負け…」）。勝ちの しるしは 決まって から つく
+//   第4.179版：バトルコイン（まさちゃん 2026/11/16 15:47「お友達と部屋を作る際に、参加ポイントと勝利者獲得ポイントを設定できるようにして！ ※参加ポイントは、同じポイントで参加足りなけれ参加できない、
+//     獲得ポイントは、参加ポイントの2倍以上は設定できない。」→ 買える ポイントを 出し合う 形の 心配（日本の 賭博の 決まり・App Store の 審査）を 伝えた → 16:01「1にしよう！」＝カードバトル専用の コイン・
+//     16:10「バトルコインは買えない、CPUとの勝負で勝つと1枚貰える、5連勝すると5枚貰える」・16:18（コインの 絵）「購入できない・使用できるのは、カードバトルの着せ替え、カード背面のデザイン、カードのデザイン、のみ
+//     (通常ポイントやお金では獲得できない)・お友達との部屋を作成する場合は、バトルコインで参加枚数を指定する・勝者獲得コインは、参加枚数の2倍まで…勝者獲得コインはテンゲルからのプレゼントコイン」）：
+//     ・コインは この 端末の 中 だけ（localStorage 'tengel.cb' の coin）。買う しくみは ない・ポイントや お世話トークンとは かえられない・人に わたす しくみも ない
+//     ・もらう：コンピュータに 勝つと 1枚・5連勝 ごとに 5枚（COIN）
+//     ・部屋：作る 人が「参加コイン」と「勝者の 獲得コイン」（参加コイン 〜 2倍）を 決める → 入る 人は 決まりを 見て「参加する」（足りなければ 入れない）→ 配った とき 2人とも 参加コインを 出す
+//       → 勝った 人が 獲得コインを もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手は 獲得コインを もらう）・つながりが 切れた ときは もどる
+//     ・コインで 解放する もの（カードバトルの 着せ替え・カード背面・カードの デザイン）は、絵が 届いて から（まだ ない）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
   const REWARD = { win: 1, every: 5, bonus: 3 };
+  const COIN = { win: 1, every: 5, bonus: 5, max: 9999 };      // バトルコイン（第4.179版）：コンピュータに 勝つと 1枚・5連勝 ごとに 5枚・持てる 数
+  const coinFor = streak => (streak > 0 && streak % COIN.every === 0 ? COIN.bonus : COIN.win);
+  const COINI = '<img class="cbci" src="cb_coin.webp" alt="">';      // 字の 中に 入れる コインの しるし
+  const STAKE_CHIPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100];      // 部屋の 参加コインで えらべる 数（持って いる 数 まで）
   const NAMES = { k: '神様馬', m: '幻の馬' };
   const nameOf = k => NAMES[k] || String(k);
   const pic = (k, big) => 'cb_' + (big ? 'c' : 's') + (k == null ? 'b' : k) + '.webp';
@@ -46,12 +59,18 @@ const CBApp = (() => {
 
   // ---------- 保存（連勝・勝ち負けの 数）----------
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null });
+  let lostStake = 0;                                   // 前の 対戦が とちゅうで 終わって、もどらなかった 参加コイン（メニューで 1回 知らせる）
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     ['streak', 'win', 'lose', 'draw', 'owe'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
     ['bgm', 'se', 'fx'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      // 設定（第4.178版）：null＝まだ 決めて いない
+    st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+st.coin || 0)));      // バトルコイン（第4.179版）
+    // 参加コインを 出した まま 終わって いた（対戦の とちゅうで アプリが 閉じられた など）：その コインは もどらない（とちゅうで やめた のと 同じ）
+    const k = st.stake; st.stake = null;
+    if (k && typeof k === 'object' && Math.floor(+k.e) > 0) { lostStake = Math.floor(+k.e); save(); }
   }
+  const addCoin = n => { st.coin = Math.max(0, Math.min(COIN.max, st.coin + Math.floor(+n || 0))); };
   function save() { try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) { /* なし */ } }
   const rewardFor = streak => (streak > 0 && streak % REWARD.every === 0 ? REWARD.bonus : REWARD.win);
   // まだ わたして いない ごほうびを わたす → { want, add, stock, max }（わたす ものが ない・読みこめない ときは null）
@@ -63,15 +82,24 @@ const CBApp = (() => {
     st.owe = 0; save();                                // 持てる 数（25こ）を こえる ぶんは なくなる
     return { want: want, add: r.add, stock: r.stock, max: r.max };
   }
-  // 対戦が 終わった：数える → ごほうび
+  // 対戦が 終わった：数える → ごほうび（お世話トークン）
+  //   第4.179版：バトルコイン ＝ コンピュータに 勝つと 1枚・5連勝 ごとに 5枚（coin）／部屋の 参加コイン（pot）：勝ち＝勝者の 獲得コイン・同点＝参加コインが もどる・負け＝もどらない
   async function settle(res) {
-    let got = 0;
-    if (res === 'win') { st.win += 1; st.streak += 1; got = rewardFor(st.streak); st.owe += got; }
+    let got = 0, coin = 0, pot = null; const cpu = !!match && match.kind === 'cpu', k = st.stake;
+    if (res === 'win') { st.win += 1; st.streak += 1; got = rewardFor(st.streak); st.owe += got; if (cpu) coin = coinFor(st.streak); }
     else if (res === 'lose') { st.lose += 1; st.streak = 0; }
     else st.draw += 1;
+    if (k) { pot = { e: k.e, w: k.w, add: res === 'win' ? k.w : res === 'draw' ? k.e : 0 }; st.stake = null; }
+    const want = coin + (pot ? pot.add : 0), c0 = st.coin; addCoin(want);
     save();
     const p = got ? await pay() : null;
-    return { res: res, got: got, pay: p, streak: st.streak };
+    return { res: res, got: got, pay: p, streak: st.streak, coin: coin, pot: pot, coins: st.coin, full: st.coin - c0 < want };
+  }
+  // 参加コインを 出す（配った とき：2人とも 自分の 端末で）。出した 数は 対戦が 終わる まで おぼえて おく（st.stake）
+  function payStake() {
+    const k = match && match.stake; st.stake = null;
+    if (k && k.e > 0) { st.coin = Math.max(0, st.coin - k.e); st.stake = { e: k.e, w: k.w }; }
+    save();
   }
 
   // ---------- 音 ----------
@@ -101,11 +129,13 @@ const CBApp = (() => {
     snd.buf[name].then(b => { if (!b || !seOn()) return; try { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) { /* なし */ } });
   }
   // BGM（第4.178版・まさちゃん「テンゲルカードバトルにBGMをつける。(カーボーイの時代っぽい雰囲気、ゆったりバイオリンの音と、夜の虫の音で作成して)」）：
-  //   cb_bgm.m4a＝姫が 計算で 作った 曲（kisekae/cb_bgm.py：バイオリンの ような 音の ゆったりした ふし ＋ 夜の 虫の 声。録音・よその 曲は 使って いない）。
+  //   第4.179版（まさちゃん 17:00「BGMにバイオリン消して、木がきしむ音、足跡を追加して！ 酒場っぽく後ろが、声とかでガヤガヤしてる感じも表現できたら入れてほしい！」）：
+  //   cb_bgm.m4a＝姫が 計算で 作った 夜の 酒場の 前の 音（kisekae/cb_bgm.py：木の 床の 足音〈ブーツ＋拍車〉・木の きしみ〈床板・ゆりいす・スイングドア〉・中の グラスの チン・夜の 虫の 声。
+  //   録音・よその 曲は 使って いない。第4.178版の バイオリンの 曲は 消した。話し声の ガヤガヤも 作ったが、まさちゃん 17:11「人の声ガヤガヤだけ消してみて！」で 消した）。
   //   ファイルは くり返す 1回り（BGM.len 秒）の 前と うしろに 0.5秒ずつ 同じ 音の つづきが 入って いる → まん中の 1回り だけを くり返す（つなぎ目で 音が とばない：トレーニングセンターの BGM と 同じ 形）。
   //   ・鳴らす 間：カードバトルを 開いて いる 間（メニュー・部屋・対戦・あそび方）。アプリが うしろに 行ったら 止める → もどったら つづきから（曲の 頭に もどらない）
   //   ・ほどいた 音は 大きい（約30MB）ので、カードバトルを 閉じたら 手ばなす（次に 開いた ときに ほどき直す）。ファイルが ない（絵と 音の ない ビルド）ときは 何も 鳴らさない
-  const BGM = { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.32, fin: 1.4, fout: 0.45 };      // len＝34小節（3拍子・1分に 76拍）＝約80.5秒：kisekae/cb_bgm.py の LOOP と 同じ。vol＝ファイルの 音を この 倍で（効果音より ひかえめ：ふつうの 大きさ 約−29dB）
+  const BGM = { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.55, fin: 1.4, fout: 0.45 };      // len＝約80.5秒（34 * 3 * 60 / 76：第4.178版の 曲と 同じ 長さ）：kisekae/cb_bgm.py の LOOP と 同じ。vol＝ファイルの 音を この 倍で（第4.179版：夜の 酒場の 前の 音は 曲より しずかな ので 0.32 → 0.55。虫の 声 約−38dB・足音の 山 約−11dB：効果音より ひかえめ）
   const bg = { raw: null, buf: null, dec: null, cur: null, tau: 0, gone: false, want: false };
   function bgmLoad() {
     if (bg.buf || bg.gone) return Promise.resolve(bg.buf);
@@ -315,7 +345,7 @@ const CBApp = (() => {
 #cbOv .cbend h3{font-size:40px;line-height:1.15}
 #cbOv .cbend .sc{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:26px;color:#ffe9a8;letter-spacing:.08em}
 #cbOv .cbend .sc small{font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;color:#d9c08c;letter-spacing:0;display:block}
-#cbOv .cbend .gift{min-height:158px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
+#cbOv .cbend .gift{min-height:186px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
 #cbOv .cbend .gift b{color:#ffe07a;font-size:17px}
 #cbOv .cbget{display:inline-flex;align-items:center;gap:14px;box-sizing:border-box;min-width:250px;padding:11px 24px 12px 18px;border-radius:22px;border:2.5px solid #ffd76a;background:linear-gradient(180deg,#5a3a12 0%,#3a240a 55%,#2a1806 100%);box-shadow:0 0 0 1.5px rgba(60,30,0,.7),0 0 22px rgba(255,210,90,.6),inset 0 1px 0 rgba(255,240,190,.35),inset 0 0 14px rgba(255,200,80,.22);animation:cbget .55s cubic-bezier(.3,1.5,.5,1) both}
 #cbOv .cbget .tk{flex:none;font-style:normal;font-size:42px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
@@ -347,6 +377,29 @@ const CBApp = (() => {
 #cbOv .cbseg button{min-width:58px;height:40px;border:0;padding:0 10px;background:none;color:#bfa873;font-size:15px;font-weight:700}
 #cbOv .cbseg button.on{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206}
 #cbOv .cbmenu .row.two .cbb{min-height:44px}
+#cbOv .cbci{display:inline-block;width:1.35em;height:1.35em;vertical-align:-.32em;margin-right:.25em}
+#cbOv .cbcoinl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 2px;margin:0;font-size:13.5px;line-height:1.5;color:#f0dfb6}
+#cbOv .cbcoinl b{color:#ffe07a;font-size:17px}
+#cbOv .cbcoinl small{flex:0 0 100%;font-size:11.5px;color:#d9c08c}
+#cbOv .cbturn small.stk{margin-left:10px;color:#ffe07a;font-size:11.5px}
+#cbOv .cbstk{display:flex;flex-direction:column;gap:9px;width:100%;max-width:330px}
+#cbOv .cbstk .blk{box-sizing:border-box;padding:9px 12px 11px;border-radius:16px;background:rgba(255,236,190,.07);border:1px solid rgba(255,226,160,.26);text-align:left}
+#cbOv .cbstk .blk>b{display:block;font-size:15px;color:#ffe9a8}
+#cbOv .cbstk .blk>small{display:block;font-size:11.5px;line-height:1.45;color:#d9c08c;margin-bottom:7px}
+#cbOv .cbstk .chips{display:flex;flex-wrap:wrap;gap:6px}
+#cbOv .cbstk .chips button{min-width:44px;height:40px;box-sizing:border-box;border-radius:20px;border:1.5px solid #c9a35a;background:#1b1209;color:#ffe9a8;font-size:15px;font-weight:700;padding:0 8px}
+#cbOv .cbstk .chips button.on{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;border-color:#f7d27c}
+#cbOv .cbstp{display:flex;align-items:center;justify-content:center;gap:14px}
+#cbOv .cbstp button{width:48px;height:42px;border-radius:14px;border:1.5px solid #c9a35a;background:linear-gradient(180deg,#3a2616,#22150b);color:#ffe9a8;font-size:20px;font-weight:700;padding:0}
+#cbOv .cbstp button:disabled{opacity:.35}
+#cbOv .cbstp>b{min-width:74px;text-align:center;font-size:26px;line-height:1;color:#ffe07a}
+#cbOv .cbstp>b small{font-size:13px;font-weight:400;color:#d9c08c;margin-left:2px}
+#cbOv .cbstkl{margin:0;font-size:14px;color:#f0dfb6}#cbOv .cbstkl b{color:#ffe07a;font-size:16px}
+#cbOv .cbmod .cbstkv{font-size:16px;line-height:1.5;color:#f0dfb6}
+#cbOv .cbmod .cbstkv b{color:#ffe07a;font-size:21px}#cbOv .cbmod .cbstkv i{font-style:normal;color:#c9a35a;margin:0 8px}
+#cbOv .cbmod .cbhave b{color:#ffe07a;font-size:16px}#cbOv .cbmod .cbhave strong{color:#ffb38a}
+#cbOv .cbmod.cbjoin{background:rgba(8,5,2,.93)}
+#cbOv .cbend .gift .cbcl b{color:#ffe07a;font-size:15.5px}
 @media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbfire{animation:none;opacity:.88}}
 #cbOv.nofx .cbglow.on{animation:none}#cbOv.nofx .cbhand .cbc.new{animation:none}#cbOv.nofx .cbflip .in{transition:none}#cbOv.nofx .cbget{animation:none}
 #cbOv.nofx .cbban,#cbOv.nofx .cbres,#cbOv.nofx .cbvs .sd,#cbOv.nofx .cbhand .cbc,#cbOv.nofx .cbtoast{transition:none}
@@ -359,7 +412,7 @@ const CBApp = (() => {
     ov = document.createElement('div'); ov.id = 'cbOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'TENGERカードバトル');
     ov.innerHTML = '<div class="cbbg"><div class="cbfire"></div></div>'
       + '<section class="cbs cbmenu" data-s="menu"><button type="button" class="cbb dk sm cbx" data-cb="close">← もどる</button>'
-      + '<img class="lg" src="cb_logo.webp" alt=""><h1 class="gold"><small>TENGER</small>カードバトル</h1><p class="rec"></p>'
+      + '<img class="lg" src="cb_logo.webp" alt=""><h1 class="gold"><small>TENGER</small>カードバトル</h1><p class="rec"></p><p class="cbcoinl"></p>'
       + '<div class="btns"><button type="button" class="cbb" data-cb="cpu">コンピュータと 対戦</button>'
       + '<div class="row"><button type="button" class="cbb" data-cb="host">部屋を 作る<small>友だちと 対戦</small></button><button type="button" class="cbb" data-cb="join">部屋に 入る<small>友だちと 対戦</small></button></div>'
       + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div></div></section>'
@@ -407,6 +460,8 @@ const CBApp = (() => {
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　いま <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
       + `勝つと お世話トークン <b>${REWARD.win}</b>こ・<b>${REWARD.every}</b>連勝 ごとに <b>${REWARD.bonus}</b>こ`;
+    $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚</small>`;
+    if (lostStake > 0) { const nn = lostStake; lostStake = 0; toast(`前の 対戦が とちゅうで 終わった ので、\n参加コイン ${nn}枚は もどらなかったよ`, 3.6); }
     const can = !!(window.__NATIVE && window.TengelNative);
     scr.menu.querySelectorAll('[data-cb=host],[data-cb=join]').forEach(b => { b.disabled = !can; });
     pay().then(p => { if (p && p.add > 0 && screen === 'menu') toast(`🎟 前の 対戦の ごほうび\nお世話トークン ${p.add}こを 受け取ったよ`, 3.2); });
@@ -438,6 +493,9 @@ const CBApp = (() => {
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある あいだ 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の しるしが つくよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめると 負けに なるよ</li></ul>`
+      + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b>・<b>${COIN.every}連勝 ごとに ${COIN.bonus}枚</b> もらえるよ。<b>買う ことは できない</b>よ</li>`
+      + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
+      + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
       + '<h4>音と エフェクト（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>・<b>エフェクト</b>（光や 動きの 演出）を オン／オフ できるよ</li></ul>'
       + '<h4>友だちと 対戦（部屋）</h4><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4けた）</b>を 友だちに 教える</li><li>友だちは「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友だち</b>と、iPhone どうしで 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>はじめて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul>'
       + '</div>';
@@ -447,18 +505,43 @@ const CBApp = (() => {
   // ---------- 部屋（作る・入る）----------
   let room = null;                                     // { mode, code, nr（つなぐ 部品）, tm }
   function roomNumber() { let n = 0; try { const a = new Uint16Array(1); crypto.getRandomValues(a); n = a[0]; } catch (e) { n = Math.floor(Math.random() * 65536); } return String(1000 + n % 9000); }
-  function showRoom(mode) {
+  //   第4.179版：バトルコインを 持って いる 人が 部屋を 作る ときは、先に 参加コインと 勝者の 獲得コインを 決める（step 'stake'）。持って いなければ コインなしの 部屋を すぐ 作る（前と 同じ）。
+  //   keep＝「もう一度 作る」：決めた 数の まま 作り直す
+  function showRoom(mode, keep) {
+    const old = keep && room && room.stake ? room.stake : null;
     closeMod(); roomStop();
-    room = { mode: mode, code: mode === 'host' ? (CBApp._room || roomNumber()) : '', nr: null, tm: 0, step: '' };
+    room = { mode: mode, code: mode === 'host' ? (CBApp._room || roomNumber()) : '', nr: null, tm: 0, step: '', stake: old || { e: 0, w: 0 } };
+    if (mode === 'host' && !old && st.coin > 0) { room.step = 'stake'; paintRoom(); show('room'); return; }
     paintRoom(); show('room');
     if (mode === 'host') roomGo();
+  }
+  // 参加コイン・勝者の 獲得コインを かえる（部屋を 作る 前）：参加コインは 持って いる 数 まで・獲得コインは 参加コイン 〜 2倍（参加コインを かえたら 2倍に もどす）
+  function stakeSet(kind, v) {
+    const r = room; if (!r || r.mode !== 'host' || r.step !== 'stake') return;
+    const k = r.stake, maxE = Math.min(st.coin, CBNet.STAKE_MAX);
+    if (kind === 'e') { const e = Math.max(0, Math.min(maxE, Math.floor(+v || 0))); k.e = e; k.w = e * 2; }
+    else k.w = Math.max(k.e, Math.min(k.e * 2, k.w + (v > 0 ? 1 : -1)));
+    se('tap', 0.6); paintRoom();
   }
   function paintRoom() {
     const r = room, e = scr.room; if (!r) return;
     const digits = c => [0, 1, 2, 3].map(i => `<span class="${i === c.length ? 'cur' : ''}">${c.charAt(i)}</span>`).join('');
     let h = '<button type="button" class="cbb dk sm cbx" data-cb="roomx">← やめる</button>';
+    if (r.mode === 'host' && r.step === 'stake') {      // 第4.179版：参加コイン・勝者の 獲得コインを 決める
+      const k = r.stake, maxE = Math.min(st.coin, CBNet.STAKE_MAX), chips = STAKE_CHIPS.filter(q => q <= maxE);
+      h += '<h2 class="gold">部屋を 作る</h2><p>参加コインと、勝った 人が もらう コインを 決めてね</p>'
+        + `<p class="cbcoinl">${COINI}<span>持って いる バトルコイン <b>${st.coin}</b>枚</span></p>`
+        + '<div class="cbstk"><div class="blk"><b>参加コイン</b><small>2人とも はじめに 出す 数。同じ 数を 持って いる 人 だけ 入れるよ</small>'
+        + `<div class="chips" role="group" aria-label="参加コイン">${chips.map(q => `<button type="button" class="${q === k.e ? 'on' : ''}" data-cb="stke" data-n="${q}" aria-pressed="${q === k.e}">${q}</button>`).join('')}</div></div>`
+        + '<div class="blk"><b>勝者の 獲得コイン</b><small>勝った 人への プレゼント。参加コインの 2倍 まで</small>'
+        + `<div class="cbstp"><button type="button" data-cb="stkw" data-d="-1"${k.w <= k.e ? ' disabled' : ''} aria-label="1枚 へらす">−</button><b aria-live="polite">${k.w}<small>枚</small></b><button type="button" data-cb="stkw" data-d="1"${k.w >= k.e * 2 ? ' disabled' : ''} aria-label="1枚 ふやす">＋</button></div></div></div>`
+        + '<p class="hint">同点の ときは 参加コインが もどるよ。<br>とちゅうで やめると、参加コインは もどらないよ</p>'
+        + `<button type="button" class="cbb" data-cb="stkgo">${k.e > 0 ? `参加 ${k.e}枚・勝者 ${k.w}枚で 部屋を 作る` : 'コインなしで 部屋を 作る'}</button>`;
+      e.innerHTML = h; return;
+    }
     if (r.mode === 'host') {
       h += '<h2 class="gold">部屋を 作ったよ</h2><p>この 番号を 友だちに 教えてね</p>' + `<div class="num" aria-label="部屋番号 ${r.code}">${r.code}</div>`
+        + (r.stake && r.stake.e > 0 ? `<p class="cbstkl">${COINI}参加コイン <b>${r.stake.e}枚</b>・勝者 <b>${r.stake.w}枚</b></p>` : '')
         + `<div class="stt">${r.step === 'found' ? '<i class="cbspin"></i>友だちが 来たよ！ つないで いるよ…' : r.step === 'fail' ? '部屋を 作れなかったよ' : '<i class="cbspin"></i>友だちを 待って いるよ…'}</div>`
         + '<p class="hint">友だちは「部屋に 入る」で この 番号を 入れるよ。<br>近くに いる 友だちと 直接 つながるよ（2人とも Wi‑Fi か Bluetooth を オンに）</p>';
       if (r.step === 'fail') h += '<button type="button" class="cbb" data-cb="roomre">もう一度 作る</button>';
@@ -481,7 +564,7 @@ const CBApp = (() => {
     nr.open(r.mode, r.code, step => { if (room !== r) return; r.step = step; paintRoom(); }).then(link => {
       if (room !== r) { try { link.close(); } catch (e) { /* なし */ } return; }
       clearTimeout(r.tm); room = null; se('join');
-      startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined) : CBNet.guest(link));
+      startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined, r.stake) : CBNet.guest(link));
     }).catch(e => {
       if (room !== r) return;
       clearTimeout(r.tm); r.step = 'fail'; r.nr = null; paintRoom();
@@ -508,15 +591,36 @@ const CBApp = (() => {
     paintEmpty(); layout();
     m.start();
     if (m.kind === 'guest') say('相手を 待って いるよ…');
+    else if (m.kind === 'host') say(m.stake && m.stake.e > 0 ? `${WHO()}が 参加するか えらんで いるよ…` : '相手を 待って いるよ…');      // 第4.179版：友だちが 部屋の 決まりを 見て「参加する」と 答える まで 配らない
+  }
+  // 部屋の 決まり（参加コイン・勝者の 獲得コイン）が 届いた（部屋に 入った 人）：コインなしの 部屋は すぐ 参加・コインの 部屋は 聞く（足りなければ 入れない）
+  function joinAsk() {
+    const m = match; if (!m || m.kind !== 'guest' || !m.stake) return;
+    const k = m.stake;
+    if (k.e <= 0) { m.join(); return; }
+    const need = k.e - st.coin;
+    modal(`<h3 class="gold">この 部屋の 決まり</h3><div class="cbstkv">${COINI}参加コイン <b>${k.e}枚</b><i>→</i>勝者 <b>${k.w}枚</b></div>`
+      + `<p>2人とも はじめに ${k.e}枚 出すよ。勝った 人は ${k.w}枚 もらえる。<br>同点は もどる・とちゅうで やめると もどらないよ</p>`
+      + `<p class="cbhave">${COINI}あなたの バトルコイン <b>${st.coin}</b>枚${need > 0 ? `<br><strong>あと ${need}枚 足りない ので、この 部屋には 入れないよ</strong>` : ''}</p>`
+      + (need > 0 ? '<div class="col"><button type="button" class="cbb" data-cb="joinno">メニューへ</button></div>'
+        : '<div class="rowb"><button type="button" class="cbb dk" data-cb="joinno">やめる</button><button type="button" class="cbb" data-cb="joinyes">参加する</button></div>'), 'cbjoin');
   }
   function onNet(s) {
     if (!match) return;
     if (s === 'again') { if (ended) { const e = $('.cbend .gift2'); if (e) e.textContent = WHO() + 'が「もう 1回」を 押したよ'; } return; }
-    if (s === 'ready') return;
+    if (s === 'ready' || s === 'joined') return;
+    if (s === 'stake') return joinAsk();
     const playing = !ended && !!V;
     const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が ちがうので 対戦できないよ。\n2人とも 新しい 版に してね' : 'つながりが 切れたよ';
+    // 参加コイン（第4.179版）：相手が とちゅうで やめた → 勝者の 獲得コインを もらう／つながりが 切れた → 参加コインが もどる
+    let coinMsg = '';
+    if (st.stake) {
+      const k = st.stake; st.stake = null;
+      if (s === 'bye') { addCoin(k.w); coinMsg = `${WHO()}が とちゅうで やめた ので、バトルコイン ${k.w}枚を もらったよ`; } else { addCoin(k.e); coinMsg = `参加コイン ${k.e}枚は もどったよ`; }
+      save();
+    }
     match = null; queue = [];
-    modal(`<h3 class="gold">${s === 'ver' ? '対戦できないよ' : '対戦は ここまで'}</h3><p>${esc(why).replace(/\n/g, '<br>')}${playing ? '<br>（この 対戦は 勝ち負けに 数えないよ）' : ''}</p><div class="col"><button type="button" class="cbb" data-cb="menu">メニューへ</button></div>`);
+    modal(`<h3 class="gold">${s === 'ver' ? '対戦できないよ' : '対戦は ここまで'}</h3><p>${esc(why).replace(/\n/g, '<br>')}${playing ? '<br>（この 対戦は 勝ち負けに 数えないよ）' : ''}${coinMsg ? `<br>${COINI}${esc(coinMsg)}` : ''}</p><div class="col"><button type="button" class="cbb" data-cb="menu">メニューへ</button></div>`);
   }
   async function pump() {
     if (pumping) return; pumping = true;
@@ -616,7 +720,7 @@ const CBApp = (() => {
   function render() {
     const v = V; if (!v || screen !== 'game') return;
     if (v.can.eff && mode.k !== 'eff') { const q = effNext(v, {}, null); mode = q ? { k: 'eff', use: {}, q: q, step: 'ask' } : { k: 'idle' }; }      // 効果タイム：1つ目から 聞く
-    $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>`;
+    $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '');
     $('.cbpips[data-p=op]').innerHTML = pips(v.op.wins, v.turns); $('.cbpips[data-p=my]').innerHTML = pips(v.my.wins, v.turns);
     $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ' data-cb="ocard"')).join('');
     $('.cbdeck .cbn').textContent = String(v.deckN); paintDis(v.discard);
@@ -752,7 +856,7 @@ const CBApp = (() => {
   function applySets() { if (ov) ov.classList.toggle('nofx', !fxOn()); bgmSync(); }
   function quitModal() {
     const mid = !ended && !!V;
-    modal(`<h3 class="gold">対戦を やめる？</h3><p>${mid ? 'とちゅうで やめると 負けに なるよ（連勝は 0 に もどるよ）' : 'メニューに もどるよ'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">つづける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`);
+    modal(`<h3 class="gold">対戦を やめる？</h3><p>${mid ? 'とちゅうで やめると 負けに なるよ（連勝は 0 に もどるよ）' + (st.stake ? `<br>${COINI}参加コイン ${st.stake.e}枚も もどらないよ` : '') : 'メニューに もどるよ'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">つづける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`);
   }
 
   // ---------- 手を 打つ ----------
@@ -780,7 +884,12 @@ const CBApp = (() => {
     if (a === 'help') return showHelp(screen === 'game' ? 'game' : 'menu');
     if (a === 'helpx') { show(helpBack); if (helpBack === 'game') render(); return; }
     if (a === 'roomx') { roomStop(); return showMenu(); }
-    if (a === 'roomre') return showRoom('host');
+    if (a === 'roomre') return showRoom('host', true);
+    if (a === 'stke') return stakeSet('e', +b.dataset.n);
+    if (a === 'stkw') return stakeSet('w', +b.dataset.d);
+    if (a === 'stkgo') { const r = room; if (!r || r.step !== 'stake') return; se('tap'); r.step = ''; paintRoom(); return roomGo(); }
+    if (a === 'joinyes') { const m = match; if (!m || m.kind !== 'guest' || !m.stake || st.coin < m.stake.e || V) return; se('tap'); closeMod(); m.join(); say('相手を 待って いるよ…'); return; }
+    if (a === 'joinno') { leave(false); return showMenu(); }
     if (a === 'menu') { leave(false); return showMenu(); }
     if (a === 'modx') { closeMod(); if (match && V && screen === 'game' && !busy && !lock && askInfo()) render(); return; }      // 閉じた 所で、聞く ことが あれば 聞く 窓を 出す
     if (a === 'askpeek') { const A = askInfo(); if (A) peekId = A.id; closeMod(); if (V && screen === 'game') render(); return; }      // 聞く 窓を 下げて 手札と ボードを 見る（答えは 下の ボタンで）
@@ -888,6 +997,7 @@ const CBApp = (() => {
       if (!match) return;
       if (x.e === 'deal') {
         ended = false; gameNo += 1; closeMod(); V = null; paintEmpty();
+        payStake();                                    // 第4.179版：部屋の 参加コインを 出す（コンピュータとの 対戦・コインなしの 部屋は 何も しない）
         $('.cbdeck .cbn').textContent = '30'; se('deal');
         await banner('対戦 スタート', `${WHO()}と 勝負！`, 900);
         // 配る：山札から 2人の 手札へ
@@ -1048,11 +1158,19 @@ const CBApp = (() => {
       h += `<div><b>${r.streak}連勝中！</b>` + (r.streak % REWARD.every ? `　あと ${REWARD.every - r.streak % REWARD.every}勝で ${REWARD.bonus}こ` : '') + '</div>';
     } else if (x.res === 'lose') h = '<div>連勝は 0 に もどったよ。もう 1回 やって みよう！</div>';
     else h = `<div>${st.streak > 0 ? `同点なので 連勝（${st.streak}連勝）は そのまま` : '同点！ もう 1回 やって みよう！'}</div>`;
+    // バトルコイン（第4.179版）：部屋の 参加コイン／コンピュータに 勝った ごほうび を 1行で（いまの 数も）
+    const now = `（いま ${r.coins}枚${r.full ? `：${COIN.max}枚 まで` : ''}）`;
+    if (r.pot) h += `<div class="cbcl">${COINI}${x.res === 'win' ? `<b>バトルコイン ＋${r.pot.w}枚</b>` : x.res === 'draw' ? `同点：参加コイン ${r.pot.e}枚 もどったよ` : `参加コイン ${r.pot.e}枚は もどらないよ`}${now}</div>`;
+    else if (r.coin) h += `<div class="cbcl">${COINI}<b>バトルコイン ＋${r.coin}枚</b>${now}</div>`;      // 5連勝の ときも 1行（「5連勝 ボーナス！」は 上の お世話トークンの 札に 出る）
     g.innerHTML = h;
     if (g.querySelector('.cbget')) se('magic', 0.7);
+    // 部屋の「もう 1回」：参加コインが 足りなければ できない
+    const k = match && match.stake;
+    if (k && k.e > 0 && st.coin < k.e) { const ab = $('.cbend [data-cb=again]'), g2 = $('.cbend .gift2'); if (ab) ab.disabled = true; if (g2) g2.textContent = `バトルコインが 足りない ので、もう 1回は できないよ`; }
   }
   function again() {
     if (!match || !ended) return;
+    if (match.stake && match.stake.e > 0 && st.coin < match.stake.e) return;      // 参加コインが 足りない（第4.179版）
     const g2 = $('.cbend .gift2'), b = $('.cbend [data-cb=again]');
     if (match.kind !== 'cpu') { if (b) b.disabled = true; if (g2) g2.textContent = `${WHO()}を 待って いるよ…`; }
     match.again();
@@ -1061,6 +1179,7 @@ const CBApp = (() => {
   function leave(count) {
     const m = match; match = null; queue = [];
     if (m) { if (count && !ended && V) { st.lose += 1; st.streak = 0; save(); } try { m.leave(); } catch (e) { /* なし */ } }
+    if (st && st.stake) { st.stake = null; save(); }      // 第4.179版：とちゅうで やめた → 出した 参加コインは もどらない
     V = null; ended = false; closeMod();
   }
 
@@ -1082,11 +1201,11 @@ const CBApp = (() => {
     try { document.dispatchEvent(new CustomEvent('tengel:cb')); } catch (e) { /* なし */ }
   }
   return {
-    open, close, REWARD, rewardFor, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null,      // _rng・_think・_link・_opt・_room・_guard・_as：テスト・見本 用（ふだんは 空）
+    open, close, REWARD, rewardFor, COIN, coinFor, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null,      // _rng・_think・_link・_opt・_room・_guard・_as：テスト・見本 用（ふだんは 空）
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), fx: fxOn(), raw: { bgm: st.bgm, se: st.se, fx: st.fx }, as: AS }; },
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, modOn
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn
     }
   };
 })();

@@ -74,9 +74,9 @@ if r.returncode == 0:
     _cbf = _cba.files() + _cbs.files(); _cb_have = [f for f in _cbf if f in res]; _cb_src = os.path.join(W, 'ios', 'cb_assets')
     _cb_all = all(os.path.isfile(os.path.join(_cb_src, f)) for f in _cbf)
     _cbb = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'cb_bundle.js'), encoding='utf8').read() if 'cb_bundle.js' in res else ''
-    check(all(w in _cbb for w in ('CBRules', 'CBCpu', 'CBNet', 'CBApp')) and "id: 'cbFab'" in html and 'cb_bundle.js' in html and 'CBRules' not in html and (len(_cb_have) == len(_cbf) == 36 if _cb_all else not _cb_have)
+    check(all(w in _cbb for w in ('CBRules', 'CBCpu', 'CBNet', 'CBApp')) and "id: 'cbFab'" in html and 'cb_bundle.js' in html and 'CBRules' not in html and (len(_cb_have) == len(_cbf) == 37 if _cb_all else not _cb_have)
           and not [f for f in res if f.startswith('cb_') and f != 'cb_bundle.js' and f not in _cbf] and not any(f.lower().endswith('.png') for f in res if f.startswith('cb_')),
-          f'第4.176版：馬カードバトルの 本体（cb_bundle.js：ルール・コンピュータ・対戦の 進め役・画面）は 別の ファイル（index.html には 入口だけ）・絵 24まいと 音 12こ〈効果音 11＋BGM 1：第4.178版〉（{len(_cb_have)}こ・{sum(os.path.getsize(os.path.join(out, "Tengel.swiftpm", "Resources", f)) for f in _cb_have) / 1e6:.2f}MB）が Resources に 入る（もとの 絵 src/・PNG・台帳は 入れない）'
+          f'第4.176版：馬カードバトルの 本体（cb_bundle.js：ルール・コンピュータ・対戦の 進め役・画面）は 別の ファイル（index.html には 入口だけ）・絵 25まい〈バトルコイン：第4.179版〉と 音 12こ〈効果音 11＋BGM 1：第4.178版〉（{len(_cb_have)}こ・{sum(os.path.getsize(os.path.join(out, "Tengel.swiftpm", "Resources", f)) for f in _cb_have) / 1e6:.2f}MB）が Resources に 入る（もとの 絵 src/・PNG・台帳は 入れない）'
           if _cb_all else '第4.176版：馬カードバトルの 本体（cb_bundle.js）は 入る・絵と 音が 手元に ない ときは 入れずに 作る')
     _rm = nocom(open(os.path.join(out, 'Tengel.swiftpm', 'Room.swift'), encoding='utf8').read()) if os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Room.swift')) else ''
     _ln = re.search(r'\.localNetwork\(\s*purposeString:\s*"([^"]+)",\s*bonjourServiceTypes:\s*\[([^\]]*)\]\s*\)', bp); _sv = re.search(r'roomService\s*=\s*"([a-z0-9-]{1,15})"', _rm)

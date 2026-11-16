@@ -4,6 +4,7 @@
 //     ・2人の 画面に 出る もの（view）が、同じ 対戦を それぞれの 席から 見た 形に なって いる
 //     ・もう 1回・やめる・切れた・版が ちがう
 //   コンピュータとの 対戦：画面の 動きが 終わって（idle）から 考える・もう 1回
+//   第4.179版：部屋の 決まり（参加コイン・勝者の 獲得コイン）：ホストの あいさつに 入る → ゲストが「参加する」（join）と 答えて から 配る・数字の はんい（stakeOf）
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
 let fails = [];
@@ -52,8 +53,11 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready',
-      'はじめに おたがいに あいさつ（hello・版の 番号）');
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 4 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+      && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
+      'はじめに おたがいに あいさつ（hello・版の 番号 4）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
+    G.join(); await tick(); await tick(); await tick();
+    check(JSON.parse(w.log[2][1]).t === 'join' && hs.states.join() === 'ready,joined', 'ゲストが「参加する」（join）→ ホストに 届く');
     check(hs.ups.length === 1 && gs.ups.length === 1 && hs.ups[0].ev[0].e === 'deal' && gs.ups[0].ev[0].e === 'deal' && hs.view.me === 0 && gs.view.me === 1, 'あいさつの あと 配る：2人に はじめの 形が 届く（ホスト＝席 0・ゲスト＝席 1）');
     check(hs.view.my.hand.map(c => c.k).join('') === 'k1266' && gs.view.my.hand.map(c => c.k).join('') === 'm3457' && gs.view.op.hand.every(c => c.k === null) && hs.view.op.hand.every(c => c.k === null),
       'それぞれ 自分の 手札 だけ 見える');
@@ -114,7 +118,7 @@ async function playOut(pairs, rng, guard) {
   {
     const w = wire(), rng = rngOf(9);
     const H = N.host(w.a, rng, { hands: [['m', '4', '5', '6', '7'], ['1', '1', '1', '2', '3']], turns: 3 }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
-    H.start(); G.start(); await tick(); await tick(); await tick();
+    H.start(); G.start(); await tick(); await tick(); await tick(); G.join(); await tick(); await tick(); await tick();
     await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '1').u }); await tick(); await tick();
     const n0 = w.log.length;
     await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === 'm').u }); await tick(); await tick();
@@ -143,8 +147,10 @@ async function playOut(pairs, rng, guard) {
     let bad = 0, leak = 0, n = 0; const res = { win: 0, lose: 0, draw: 0 };
     for (let g = 0; g < 300; g++) {
       const w = wire(), rng = rngOf(1000 + g);
-      const H = N.host(w.a, rng), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+      const H = N.host(w.a, rng, undefined, g % 3 ? { e: g % 7, w: g % 7 + (g % 5) } : null), G = N.guest(w.b), hs = seat(H), gs = seat(G);      // 第4.179版：参加コインの ある 部屋も まぜる
       H.start(); G.start(); await tick(); await tick(); await tick();
+      if (JSON.stringify(G.stake) !== JSON.stringify(H.stake)) { bad++; continue; }
+      G.join(); await tick(); await tick(); await tick();
       const end = await playOut([[H, hs], [G, gs]], rng);
       if (end !== 'end') { bad++; continue; }
       const S = H._.state();
@@ -184,11 +190,11 @@ async function playOut(pairs, rng, guard) {
   }
   {
     const w = wire(), H = N.host(w.a, rngOf(1)), G = N.guest(w.b), hs = seat(H), gs = seat(G);
-    H.start(); G.start(); await tick(); await tick(); await tick();
+    H.start(); G.start(); await tick(); await tick(); await tick(); G.join(); await tick(); await tick(); await tick();
     const n0 = hs.ups.length;
     for (const junk of ['', 'x', '{', 'null', '[]', '{"t":"act"}', '{"t":"act","id":1,"a":{"t":"set","u":"zz"}}', '{"t":"up","view":{}}', 'a'.repeat(30000), '{"t":"act","id":2,"a":null}']) w.b.send(junk);
     await tick(); await tick(); await tick();
-    check(hs.ups.length === n0 && hs.view.my.hand.length === 7 && H._.state().p[1].hand.length === 7 && hs.states.join() === 'ready', 'こわれた 文字・長すぎる 文字・でたらめな 手が 届いても 対戦は そのまま（何も かわらない）');
+    check(hs.ups.length === n0 && hs.view.my.hand.length === 7 && H._.state().p[1].hand.length === 7 && hs.states.join() === 'ready,joined', 'こわれた 文字・長すぎる 文字・でたらめな 手が 届いても 対戦は そのまま（何も かわらない）');
     w.a.send('{bad'); w.a.send(JSON.stringify({ t: 'up' })); w.a.send(JSON.stringify({ t: 'up', n: 9, ev: 'x', view: {} })); await tick(); await tick();
     check(gs.ups.length === 1, 'ゲストも こわれた 文字は 捨てる');
   }
@@ -198,6 +204,37 @@ async function playOut(pairs, rng, guard) {
     w.b.onText = () => { };
     w.b.send(JSON.stringify({ t: 'act', id: 1, a: { t: 'set', u: 1 } })); await tick(); await tick();
     check(hs.ups.length === 0 && w.a.sent.length === 0, 'あいさつの 前の 手は 受けない');
+  }
+
+  console.log('■ 部屋の 決まり：参加コイン・勝者の 獲得コイン（第4.179版・まさちゃん 16:18「バトルコインで参加枚数を指定する・勝者獲得コインは、参加枚数の2倍まで」）');
+  {
+    const S = N.stakeOf;
+    check(JSON.stringify([S(null), S({}), S({ e: 3, w: 6 }), S({ e: 3, w: 9 }), S({ e: 3, w: 1 }), S({ e: -2, w: 5 }), S({ e: 2.7, w: 4.9 }), S({ e: '4', w: '7' }), S({ e: 'x', w: 3 }), S({ e: 5000, w: 1 }), S({ e: 0, w: 9 })])
+      === JSON.stringify([{ e: 0, w: 0 }, { e: 0, w: 0 }, { e: 3, w: 6 }, { e: 3, w: 6 }, { e: 3, w: 3 }, { e: 0, w: 0 }, { e: 2, w: 4 }, { e: 4, w: 7 }, { e: 0, w: 0 }, { e: N.STAKE_MAX, w: N.STAKE_MAX }, { e: 0, w: 0 }]) && N.STAKE_MAX === 999,
+      '数字の はんい：参加コインは 0〜999・獲得コインは 参加コイン 〜 2倍（はみ出したら はじに よせる・数字で ない ものは 0）');
+    const w = wire(), rng = rngOf(21), H = N.host(w.a, rng, { hands: [['1', '2', '3', '6', '7'], ['2', '3', '6', '7', '7']], turns: 3 }, { e: 3, w: 9 }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+    H.start(); G.start(); await tick(); await tick(); await tick();
+    const hello = JSON.parse(w.log.find(x => x[0] === 'h' && JSON.parse(x[1]).t === 'hello')[1]);
+    check(JSON.stringify(H.stake) === '{"e":3,"w":6}' && JSON.stringify(hello.stake) === '{"e":3,"w":6}' && JSON.stringify(G.stake) === '{"e":3,"w":6}' && gs.states.join() === 'ready,stake' && hs.ups.length === 0 && gs.ups.length === 0,
+      'ホストが 決めた 決まり（参加 3・勝者 9 → 2倍の 6 に なおす）が あいさつで ゲストに 届く・まだ 配らない');
+    w.b.send(JSON.stringify({ t: 'join', stake: { e: 1, w: 2 } })); await tick(); await tick();
+    w.b.send(JSON.stringify({ t: 'act', id: 1, a: { t: 'set', u: 1 } })); await tick(); await tick();
+    check(hs.ups.length === 0 && hs.states.join() === 'ready' && !H._.state(), 'ちがう 決まりで「参加する」が 届いても 配らない・参加の 前の 手も 受けない');
+    G.join(); await tick(); await tick(); await tick();
+    check(hs.states.join() === 'ready,joined' && hs.ups.length === 1 && gs.ups.length === 1 && hs.view.turns === 3 && gs.view.my.hand.length === 5, '同じ 決まりで「参加する」→ 配る');
+    G.join(); await tick(); await tick();
+    check(hs.ups.length === 1 && hs.states.join() === 'ready,joined', '2回目の「参加する」は 何も しない（配り直さない）');
+    const end = await playOut([[H, hs], [G, gs]], rng);
+    check(end === 'end' && hs.view.res && gs.view.res && JSON.stringify(G.stake) === '{"e":3,"w":6}', `さいごまで あそべる（ホスト ${hs.view.res}）・決まりは 対戦の あいだ かわらない`);
+    // 決まりが 0 の 部屋（前の 版と 同じ）・ゲストが 参加しないで 出る
+    const w2 = wire(), H2 = N.host(w2.a, rngOf(2), undefined, { e: 0, w: 5 }), G2 = N.guest(w2.b), h2 = seat(H2), g2 = seat(G2);
+    H2.start(); G2.start(); await tick(); await tick(); await tick();
+    check(JSON.stringify(G2.stake) === '{"e":0,"w":0}' && h2.ups.length === 0, '参加コイン 0 の 部屋：勝者の 獲得コインも 0（ゲストが「参加する」まで 配らない）');
+    G2.leave(); await sleep(300); await tick();
+    check(h2.states[h2.states.length - 1] === 'bye' && h2.ups.length === 0, '「参加する」の 前に ゲストが 出た → ホストに「相手が やめた」（配って いない）');
+    const w3 = wire(), G3 = N.guest(w3.b), g3 = seat(G3); w3.a.onText = () => { };
+    G3.join(); await tick();
+    check(w3.log.length === 0 && G3.stake === null, 'あいさつが 届く 前の「参加する」は 送らない');
   }
 
   console.log('■ コンピュータと 対戦');
