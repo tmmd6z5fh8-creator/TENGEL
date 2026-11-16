@@ -803,6 +803,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -827,8 +831,9 @@ const CBApp = (() => {
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
   
   const BOARD_COST = 300;
-  const BOARDS = [['marble', '白亜の宮殿'], ['frost', '蒼氷の宮'], ['sakura', '桜の舞踏会'], ['violet', '紫月の夜'], ['crimson', '紅蓮の闘技場'], ['starry', '黄金の星空'], ['steam', '歯車の工房']]
-    .map(([id, name]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST }));
+  
+  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 0], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 0], ['steam', '歯車の工房', 0]]
+    .map(([id, name, dl]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST, dl: !!dl }));
   const boardNow = () => (st && st.board ? BOARDS.find(d => d.id === st.board) || null : null);      
   const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
   
@@ -1031,6 +1036,7 @@ const CBApp = (() => {
 #cbOv .cbboard .cbfire{background:radial-gradient(62% 88% at 100% 82%,rgba(255,150,56,.26) 0%,rgba(226,96,24,.10) 45%,rgba(140,50,10,0) 74%);animation-duration:4.3s;animation-delay:-1.7s}
 @keyframes cbfire{0%{opacity:.78}17%{opacity:.92}29%{opacity:.82}46%{opacity:1}61%{opacity:.84}78%{opacity:.95}100%{opacity:.78}}
 #cbOv .cbboard.cust .cbfire{display:none}
+#cbOv .cbboard.dl .cbdeck{left:61.34%}
 #cbOv .cbs{position:absolute;inset:0;display:none;flex-direction:column;box-sizing:border-box;padding:var(--sat,env(safe-area-inset-top)) 0 var(--sab,env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
 #cbOv .cbs.on{display:flex}
 #cbOv .gold{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;background:linear-gradient(180deg,#fff3c4 0%,#ffd76a 38%,#e2a83e 62%,#9c6410 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
@@ -1589,7 +1595,7 @@ const CBApp = (() => {
   function boardImg() {
     if (!ov) return; const im = $('.cbboard>img'), d = boardNow(), f = d ? d.b : 'cb_board.webp';
     if (im && im.getAttribute('src') !== f) im.setAttribute('src', f);
-    const bd = $('.cbboard'); if (bd) bd.classList.toggle('cust', !!d);
+    const bd = $('.cbboard'); if (bd) { bd.classList.toggle('cust', !!d); bd.classList.toggle('dl', !!(d && d.dl)); }      
   }
   
   const dzApi = {
