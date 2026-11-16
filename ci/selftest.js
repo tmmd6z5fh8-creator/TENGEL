@@ -475,6 +475,7 @@
       out.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
       if (!out.open) return out;
       out.menu = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu .cbb'), function (b) { return b.textContent.replace(/\s+/g, ' ').trim(); });
+      out.coinl = ((document.querySelector('#cbOv .cbmenu .cbcoinl') || {}).textContent || '');      // 第4.179版：バトルコインの 行
       out.roomBtn = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu [data-cb=host],#cbOv .cbmenu [data-cb=join]'), function (b) { return !b.disabled; });
       await mark('cb-menu');
       window.CBApp._t.speed(0.2); window.CBApp._think = function () { return 200; };
@@ -737,7 +738,10 @@
     R.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
     if (!R.open) { report(String(PH), R); return; }
     window.CBApp._t.speed(0.2);
-    if (host) { window.CBApp._room = R.room; document.querySelector('#cbOv .cbmenu [data-cb=host]').click(); }
+    if (host) {
+      window.CBApp._room = R.room; document.querySelector('#cbOv .cbmenu [data-cb=host]').click(); await sleep(300);
+      var sg = document.querySelector('#cbOv .cbroom [data-cb=stkgo]'); R.stakeStep = !!sg; if (sg) sg.click();      // 第4.179版：バトルコインを 持って いれば 参加コインを 決める 画面 → コインなしで 作る
+    }
     else {
       document.querySelector('#cbOv .cbmenu [data-cb=join]').click(); await sleep(300);
       for (var i = 0; i < R.room.length; i++) { var k = document.querySelector('#cbOv .cbkeys [data-key="' + R.room.charAt(i) + '"]'); if (k) k.click(); await sleep(80); }
