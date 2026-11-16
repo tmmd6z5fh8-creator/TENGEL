@@ -30,7 +30,15 @@
 //     ・もらう：コンピュータに 勝つと 1枚・5連勝 ごとに 5枚（COIN）
 //     ・部屋：作る 人が「参加コイン」と「勝者の 獲得コイン」（参加コイン 〜 2倍）を 決める → 入る 人は 決まりを 見て「参加する」（足りなければ 入れない）→ 配った とき 2人とも 参加コインを 出す
 //       → 勝った 人が 獲得コインを もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手は 獲得コインを もらう）・つながりが 切れた ときは もどる
-//     ・コインで 解放する もの（カードバトルの 着せ替え・カード背面・カードの デザイン）は、絵が 届いて から（まだ ない）
+//     ・コインで 解放する もの（カードバトルの 着せ替え・カード背面・カードの デザイン）→ 第4.182版の デザインカスタム（下）
+//   第4.182版：デザインカスタム（まさちゃん 2026/11/16 20:00「バトルコインで購入するカード背面のデザイン送る！ ・背面カスタム1枚 バトルコイン300枚」＋ うらの 絵 7まい・
+//     20:09「カードバトルデザインカスタム デザイン一枚解放、バトルコイン300枚 神様馬カードと幻の馬カード500枚」＋ おもての 絵 16まい・20:22「6.71枚づつ追加して！」＋ 6 と 7 の 絵 1まい ずつ ＝ おもて 18種）
+//     ・メニューの「デザインカスタム」→「カードの おもて」「カードの うら」。バトルコインで 1つずつ 解放（おもて 300枚・神様馬／幻の馬の おもて 500枚・うら 300枚）→ 解放すると すぐ その デザインに なる
+//     ・えらんだ デザインは 自分の 画面で 出る（pic・deckPic）：おもて＝その カード ぜんぶ（手札・相手の 見えた カード・めくった とき・捨て札・あそび方）／うら＝山札・相手の 手札・ふせた カード・めくる 前。
+//       部屋では それぞれの iPhone が 自分で えらんだ デザインで 見る（相手には 送らない）。いつもの デザインは はじめから 使える。デザインの 名前は 姫が つけた
+//     ・コインを 使う ことは「解放」と 呼ぶ（お金で 買う ものでは ない）。解放を もどして コインを 返す しくみは ない。保存は localStorage 'tengel.cb' の backs・faces（解放した もの）・back・face（えらんだ もの）
+//     ・テスト版だけ：デザインカスタムの いちばん 下に テスト版の 道具（cb_test.js：コインを ふやす・解放を もとに もどす）
+//     ・ボードの カードの 種類は 絵の 名前では なく data-ck で 読む（kIn：べつの デザインの 絵の 名前でも まちがえない）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -41,7 +49,19 @@ const CBApp = (() => {
   const STAKE_CHIPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100];      // 部屋の 参加コインで えらべる 数（持って いる 数 まで）
   const NAMES = { k: '神様馬', m: '幻の馬' };
   const nameOf = k => NAMES[k] || String(k);
-  const pic = (k, big) => 'cb_' + (big ? 'c' : 's') + (k == null ? 'b' : k) + '.webp';
+  // デザインカスタム（第4.182版）：バトルコインで 解放する べつの デザイン（名前は 姫が つけた）。絵は kisekae/cb_art.py の FACES・BACKS（cb_fc_<id>_c／_s.webp・cb_bk_<id>_c／_s／_d.webp）
+  const FACE_COST = 300, TOP_COST = 500, BACK_COST = 300;      // おもて 1つ 300枚・神様馬／幻の馬の おもて 500枚・うら 1つ 300枚（まさちゃん 20:00・20:09）
+  const FACES = [['k', 'ka', '朱の鳥居'], ['k', 'kb', '天空の神殿'], ['m', 'ma', '三日月の幻'], ['m', 'mb', '紅い雷'], ['1', '1a', '炎の輪'], ['1', '1b', '赤銅の鎧'], ['2', '2a', '月夜の黒馬'], ['2', '2b', '銀の鎧'],
+    ['3', '3a', '水晶の間'], ['3', '3b', '星の遺跡'], ['4', '4a', '雷の城'], ['4', '4b', '青の広間'], ['5', '5a', '炎の城'], ['5', '5b', '琥珀の洞窟'], ['6', '6a', '赤の書庫'], ['6', '6b', '紅玉の天文台'], ['7', '7a', '緑の森'], ['7', '7b', '天空の都']]
+    .map(([k, id, name]) => ({ k: k, id: id, name: name, c: `cb_fc_${id}_c.webp`, s: `cb_fc_${id}_s.webp`, cost: k === 'k' || k === 'm' ? TOP_COST : FACE_COST }));
+  const BACKS = [['sky', '天馬の光'], ['star', '星座の馬'], ['ice', '氷の結晶'], ['wa', '和の墨絵'], ['ori', '折り紙の馬'], ['crown', '王冠の紋章'], ['heart', 'ハートの2頭']]
+    .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
+  const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
+  const backNow = () => (st && st.back ? BACKS.find(b => b.id === st.back) || null : null);
+  const faceNow = k => { const id = st && st.face ? st.face[k] : ''; return id ? FACES.find(f => f.id === id && f.k === k) || null : null; };
+  // カードの 絵：k＝種類（null＝うら）・big＝大きい 絵。えらんだ デザインが あれば その 絵（第4.182版）
+  const pic = (k, big) => { const d = k == null ? backNow() : faceNow(k); return d ? d[big ? 'c' : 's'] : 'cb_' + (big ? 'c' : 's') + (k == null ? 'b' : k) + '.webp'; };
+  const deckPic = () => { const b = backNow(); return b ? b.d : 'cb_deck.webp'; };      // 山札の 絵（えらんだ うら）
   const power = R.power;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let SPEED = 1;                                       // 動きの 速さ（テストでは 小さく する）
@@ -59,13 +79,21 @@ const CBApp = (() => {
 
   // ---------- 保存（連勝・勝ち負けの 数）----------
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, fx: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {} });
   let lostStake = 0;                                   // 前の 対戦が とちゅうで 終わって、もどらなかった 参加コイン（メニューで 1回 知らせる）
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     ['streak', 'win', 'lose', 'draw', 'owe'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
     ['bgm', 'se', 'fx'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      // 設定（第4.178版）：null＝まだ 決めて いない
     st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+st.coin || 0)));      // バトルコイン（第4.179版）
+    // デザインカスタム（第4.182版）：解放した もの（backs・faces）・えらんだ もの（back・face）。ない 名前・解放して いない ものは すてる
+    const bids = BACKS.map(b => b.id), fids = FACES.map(f => f.id);
+    st.backs = Array.isArray(st.backs) ? st.backs.filter((x, i, a) => bids.indexOf(x) >= 0 && a.indexOf(x) === i) : [];
+    st.faces = Array.isArray(st.faces) ? st.faces.filter((x, i, a) => fids.indexOf(x) >= 0 && a.indexOf(x) === i) : [];
+    st.back = st.backs.indexOf(st.back) >= 0 ? st.back : '';
+    const fc = {}, f0 = st.face && typeof st.face === 'object' ? st.face : {};
+    DZ_KINDS.forEach(k => { const id = f0[k]; if (st.faces.indexOf(id) >= 0 && FACES.some(f => f.id === id && f.k === k)) fc[k] = id; });
+    st.face = fc;
     // 参加コインを 出した まま 終わって いた（対戦の とちゅうで アプリが 閉じられた など）：その コインは もどらない（とちゅうで やめた のと 同じ）
     const k = st.stake; st.stake = null;
     if (k && typeof k === 'object' && Math.floor(+k.e) > 0) { lostStake = Math.floor(+k.e); save(); }
@@ -400,6 +428,35 @@ const CBApp = (() => {
 #cbOv .cbmod .cbhave b{color:#ffe07a;font-size:16px}#cbOv .cbmod .cbhave strong{color:#ffb38a}
 #cbOv .cbmod.cbjoin{background:rgba(8,5,2,.93)}
 #cbOv .cbend .gift .cbcl b{color:#ffe07a;font-size:15.5px}
+#cbOv .cbdz{padding-left:0;padding-right:0}
+#cbOv .cbdz .hd{flex:none;height:48px;display:flex;align-items:center;gap:8px;padding:0 12px}
+#cbOv .cbdz .hd b{flex:1;text-align:center;font-size:17px;color:#ffe9a8;margin-right:64px}
+#cbOv .cbdz>.cbcoinl{flex:none;margin:0 0 6px}
+#cbOv .cbdz .tabs{flex:none;display:flex;gap:4px;margin:0 14px 4px;padding:3px;border-radius:24px;border:1.5px solid #c9a35a;background:#1b1209}
+#cbOv .cbdz .tabs button{flex:1 1 0;height:40px;border:0;border-radius:20px;background:none;color:#bfa873;font-size:15px;font-weight:700;padding:0 6px}
+#cbOv .cbdz .tabs button.on{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206}
+#cbOv .cbdz .bd{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 12px 26px}
+#cbOv .cbdz h4{display:flex;align-items:baseline;gap:8px;margin:14px 2px 7px;font-size:15px;color:#ffe2a0;border-left:4px solid #e2a83e;padding-left:8px}
+#cbOv .cbdz h4 small{font-size:12px;font-weight:400;color:#d9c08c}
+#cbOv .cbdz h4 .cbci,#cbOv .dzt .cbci{width:1.25em;height:1.25em;vertical-align:-.3em;margin-right:.12em}
+#cbOv .cbdz .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#cbOv .cbdz .tiles.b{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#cbOv .dzt{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:6px 4px 7px;border-radius:12px;border:1.5px solid rgba(255,226,160,.22);background:rgba(255,236,190,.06);color:#f0dfb6}
+#cbOv .dzt>img{width:100%;max-width:100px;height:auto;aspect-ratio:2/3;display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+#cbOv .dzt span{font-size:12px;line-height:1.3;color:#ffe9a8;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
+#cbOv .dzt em{font-style:normal;font-size:11.5px;line-height:1.25;color:#d9c08c}
+#cbOv .dzt.on{border-color:#f7d27c;background:rgba(255,214,120,.16);box-shadow:0 0 0 1px #f7d27c inset}
+#cbOv .dzt.on em{color:#ffe07a;font-weight:700}
+#cbOv .dzt.lk>img{filter:brightness(.6) saturate(.75) drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+#cbOv .cbdz .dzn{margin:12px 4px 0;font-size:12px;line-height:1.6;color:#d9c08c}
+#cbOv .cbmod.cbdzm{background:rgba(8,5,2,.93)}
+#cbOv .cbmod.cbdzm h3 small{display:block;font-size:12.5px;font-weight:400;color:#d9c08c;letter-spacing:.04em}
+#cbOv .cbmod .big.sm{width:min(36vw,calc((100vh - 420px) * .6667),150px)}
+#cbOv .cbmod .cbneed{font-size:12.5px;color:#ffb38a;text-align:center}
+#cbOv .cbtst{margin:18px 2px 0;padding:10px 10px 12px;border-radius:14px;border:2px dashed #b98a4a;background:rgba(255,244,214,.08)}
+#cbOv .cbtst b{display:block;color:#ffe9a8;font-size:14px}#cbOv .cbtst small{display:block;font-size:11.5px;color:#d9c08c;margin:2px 0 8px}
+#cbOv .cbtst .r{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-height:720px){#cbOv .cbmenu .lg{width:min(44vw,168px)}#cbOv .cbmenu{gap:8px}}
 @media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbfire{animation:none;opacity:.88}}
 #cbOv.nofx .cbglow.on{animation:none}#cbOv.nofx .cbhand .cbc.new{animation:none}#cbOv.nofx .cbflip .in{transition:none}#cbOv.nofx .cbget{animation:none}
 #cbOv.nofx .cbban,#cbOv.nofx .cbres,#cbOv.nofx .cbvs .sd,#cbOv.nofx .cbhand .cbc,#cbOv.nofx .cbtoast{transition:none}
@@ -415,7 +472,8 @@ const CBApp = (() => {
       + '<img class="lg" src="cb_logo.webp" alt=""><h1 class="gold"><small>TENGER</small>カードバトル</h1><p class="rec"></p><p class="cbcoinl"></p>'
       + '<div class="btns"><button type="button" class="cbb" data-cb="cpu">コンピュータと 対戦</button>'
       + '<div class="row"><button type="button" class="cbb" data-cb="host">部屋を 作る<small>友だちと 対戦</small></button><button type="button" class="cbb" data-cb="join">部屋に 入る<small>友だちと 対戦</small></button></div>'
-      + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div></div></section>'
+      + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div>'
+      + `<div class="row"><button type="button" class="cbb dk" data-cb="dz">${COINI}デザインカスタム<small>カードの おもて・うら（バトルコインで 解放）</small></button></div></div></section>`
       + '<section class="cbs cbroom" data-s="room"></section>'
       + '<section class="cbs cbgame" data-s="game">'
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div><button type="button" class="cbb dk sm" data-cb="help" aria-label="あそび方">？</button></div>'
@@ -429,6 +487,7 @@ const CBApp = (() => {
       + '<div class="cbme"><div class="cbwho"><b>あなた</b><span class="cbpips" data-p="my"></span></div></div>'
       + '<div class="cbhand"></div><div class="cbact"></div></div></section>'
       + '<section class="cbs cbhelp" data-s="help"></section>'
+      + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<div class="cbfly"></div><div class="cbban"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
     document.body.appendChild(ov);
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
@@ -445,7 +504,9 @@ const CBApp = (() => {
     toastEl.textContent = t;
     // 対戦の 画面では ことばの 行（ボードの すぐ 下）に 重ねる：相手の 手札や ボードの 動きを かくさない
     const m = screen === 'game' ? $('.cbmsg') : null;
-    if (m && m.getBoundingClientRect().height) { const r = m.getBoundingClientRect(), o = ov.getBoundingClientRect(); toastEl.style.top = Math.max(60, r.top - o.top - 6) + 'px'; } else toastEl.style.top = '';
+    if (m && m.getBoundingClientRect().height) { const r = m.getBoundingClientRect(), o = ov.getBoundingClientRect(); toastEl.style.top = Math.max(60, r.top - o.top - 6) + 'px'; }
+    else if (screen === 'dz') toastEl.style.top = Math.round(ov.getBoundingClientRect().height * 0.6) + 'px';      // 第4.182版：デザインカスタムでは まん中より 下（上の コインの 数と タブを かくさない）
+    else toastEl.style.top = '';
     toastEl.classList.add('on');
     unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
   }
@@ -496,11 +557,94 @@ const CBApp = (() => {
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b>・<b>${COIN.every}連勝 ごとに ${COIN.bonus}枚</b> もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
       + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
+      + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>と <b>うら</b>の デザインを かえられるよ</li>`
+      + `<li>新しい デザインは <b>バトルコイン</b>で 1つずつ 解放できるよ：カードの おもて <b>${FACE_COST}枚</b>（神様馬・幻の馬は <b>${TOP_COST}枚</b>）・カードの うら <b>${BACK_COST}枚</b>。いつもの デザインは はじめから 使えるよ</li>`
+      + '<li>えらんだ デザインは、あなたの 画面で 出るよ（部屋の 友だちの 画面は、友だちが えらんだ デザイン）</li></ul>'
       + '<h4>音と エフェクト（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>・<b>エフェクト</b>（光や 動きの 演出）を オン／オフ できるよ</li></ul>'
       + '<h4>友だちと 対戦（部屋）</h4><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4けた）</b>を 友だちに 教える</li><li>友だちは「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友だち</b>と、iPhone どうしで 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>はじめて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul>'
       + '</div>';
     show('help');
   }
+
+  // ---------- デザインカスタム（第4.182版）----------
+  //   画面（scr.dz）：「カードの おもて」（種類ごとに いつもの ＋ べつの デザイン）・「カードの うら」（いつもの ＋ 7種）。タイルを 押す → 窓（大きい 絵・使う／解放）
+  //   解放の 窓は「やめる」「解放する」。窓が 出て すぐ（DZ_GUARD）は「解放する」を 受けつけない（つづけて 2回 押した ゆびで 解放しない）
+  let dzTab = 'f', dzAt = 0;
+  const DZ_GUARD = 450;
+  const testOn = () => !!(window.__TEST && window.CBTest);      // テスト版だけ（cb_test.js：App Store版の 中身には 入らない）
+  const dzLabel = k => NAMES[k] || k + ' の カード';
+  const dzFind = id => FACES.find(f => f.id === id) || BACKS.find(b => b.id === id) || null;
+  const dzOwn = d => !d || (d.k ? st.faces : st.backs).indexOf(d.id) >= 0;      // d＝null：いつもの（はじめから 使える）
+  const dzUsed = (kind, id) => (kind ? st.face[kind] || '' : st.back) === (id || '');
+  const dzWhat = kind => (kind ? dzLabel(kind) + 'の おもて' : 'カードの うら');
+  // d が kind の デザインか（id '' ＝ いつもの）。ちがえば null
+  function dzGet(kind, id) {
+    if (kind && DZ_KINDS.indexOf(kind) < 0) return undefined;
+    if (!id) return null;
+    const d = dzFind(id); return d && (d.k || null) === (kind || null) ? d : undefined;
+  }
+  function dzTile(kind, d) {
+    const id = d ? d.id : '', used = dzUsed(kind, id), own = dzOwn(d);
+    const img = d ? d.s : kind ? 'cb_s' + kind + '.webp' : 'cb_sb.webp';
+    const em = used ? '使って いる' : own ? '持って いる' : `${COINI}${d.cost}枚`;
+    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}" data-cb="dzi" data-id="${id}" data-ck="${kind || ''}" aria-label="${esc((d ? d.name : 'いつもの') + '・' + em.replace(/<[^>]+>/g, ''))}"><img src="${img}" alt="" draggable="false"><span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
+  }
+  function showDz(tab) {
+    const same = !tab || tab === dzTab, b0 = $('.bd', scr.dz), y = same && b0 && screen === 'dz' ? b0.scrollTop : 0;
+    if (tab) dzTab = tab;
+    closeMod();
+    const body = dzTab === 'b'
+      ? `<h4>カードの うら<small>1つ ${COINI}${BACK_COST}枚</small></h4><div class="tiles b">${dzTile(null, null)}${BACKS.map(d => dzTile(null, d)).join('')}</div>`
+        + '<p class="dzn">えらんだ うらは、あなたの 画面の 山札・相手の 手札・ふせた カードに 出るよ</p>'
+      : DZ_KINDS.map(k => `<h4>${esc(dzLabel(k))}<small>1つ ${COINI}${k === 'k' || k === 'm' ? TOP_COST : FACE_COST}枚</small></h4><div class="tiles">${dzTile(k, null)}${FACES.filter(f => f.k === k).map(f => dzTile(k, f)).join('')}</div>`).join('')
+        + '<p class="dzn">えらんだ デザインは、あなたの 画面の その カード ぜんぶに 出るよ（手札・相手の 見えた カード・めくった とき・捨て札）</p>';
+    scr.dz.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="dzx">← もどる</button><b>デザインカスタム</b></div>'
+      + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
+      + `<div class="tabs" role="tablist"><button type="button" role="tab" data-cb="dztab" data-t="f" class="${dzTab === 'f' ? 'on' : ''}" aria-selected="${dzTab === 'f'}">カードの おもて</button>`
+      + `<button type="button" role="tab" data-cb="dztab" data-t="b" class="${dzTab === 'b' ? 'on' : ''}" aria-selected="${dzTab === 'b'}">カードの うら</button></div>`
+      + `<div class="bd">${body}${testOn() ? window.CBTest.html() : ''}</div>`;
+    show('dz');
+    const b1 = $('.bd', scr.dz); if (b1) b1.scrollTop = y;
+  }
+  // タイルを 押した：大きい 絵と「使う」／「バトルコイン ○枚で 解放」
+  function dzItem(kind, id) {
+    const d = dzGet(kind, id); if (d === undefined) return;
+    const used = dzUsed(kind, id), own = dzOwn(d), big = d ? d.c : kind ? 'cb_c' + kind + '.webp' : 'cb_cb.webp';
+    let btns;
+    if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
+    else if (own) btns = `<button type="button" class="cbb" data-cb="dzuse" data-id="${id || ''}" data-ck="${kind || ''}">この デザインを 使う</button>`;
+    else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="dzopen" data-id="${d.id}" data-ck="${kind || ''}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
+    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚）</p>`;
+    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>${esc(dzWhat(kind))}</small></h3><div class="big"><img src="${big}" alt="${esc(dzWhat(kind))}"></div>`
+      + `<div class="col">${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
+  }
+  // 解放の 窓（コインの 数 → のこり）
+  function dzAsk(kind, id) {
+    const d = dzGet(kind, id); if (!d || dzOwn(d) || st.coin < d.cost) return;
+    dzAt = performance.now();
+    modal(`<h3 class="gold">解放する？</h3><div class="big sm"><img src="${d.s}" alt=""></div><p>『${esc(d.name)}』（${esc(dzWhat(kind))}）を 解放するよ</p>`
+      + `<p class="cbstkv">${COINI}<b>${st.coin}</b>枚<i>→</i>のこり <b>${st.coin - d.cost}</b>枚</p>`
+      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="dzgo" data-id="${d.id}" data-ck="${kind || ''}">解放する</button></div>`, 'cbdzm');
+  }
+  function dzGo(kind, id) {
+    const d = dzGet(kind, id); if (!d || dzOwn(d) || st.coin < d.cost) return;
+    st.coin -= d.cost; (d.k ? st.faces : st.backs).push(d.id);
+    if (d.k) st.face[d.k] = d.id; else st.back = d.id;      // 解放したら すぐ その デザインに
+    save(); se('magic', 0.8);
+    showDz(); toast(`『${d.name}』を 解放したよ！\n${dzWhat(kind)}が この デザインに なったよ`, 3);
+  }
+  function dzUse(kind, id) {
+    const d = dzGet(kind, id); if (d === undefined || !dzOwn(d)) return;
+    if (kind) { if (d) st.face[kind] = d.id; else delete st.face[kind]; } else st.back = d ? d.id : '';
+    save(); se('tap', 0.7);
+    showDz(); toast(`${dzWhat(kind)}を『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
+  }
+  // テスト版の 道具（cb_test.js）に わたす もの：App Store版では 使われない
+  const dzApi = {
+    add: k => { addCoin(k); save(); showDz(); toast(`🧪 バトルコイン ＋${k}枚（いま ${st.coin}枚）`, 2); },
+    set: k => { st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+k || 0))); save(); showDz(); toast(`🧪 バトルコイン ${st.coin}枚に したよ`, 2); },
+    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; save(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン）', 2.4); }
+  };
 
   // ---------- 部屋（作る・入る）----------
   let room = null;                                     // { mode, code, nr（つなぐ 部品）, tm }
@@ -664,12 +808,13 @@ const CBApp = (() => {
     else mode = { k: 'idle' };
   }
   const sortHand = h => h.slice().sort((a, b) => power(a.k) - power(b.k) || a.u - b.u);
-  const cardBtn = (c, cls, extra) => `<button type="button" class="cbc ${cls || ''}" data-u="${c.u}"${extra || ''} aria-label="${c.k ? esc(nameOf(c.k)) + ' の カード' : 'ふせた カード'}"><img src="${pic(c.k)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;
+  const cardBtn = (c, cls, extra) => `<button type="button" class="cbc ${cls || ''}" data-u="${c.u}" data-ck="${c.k ? esc(c.k) : ''}"${extra || ''} aria-label="${c.k ? esc(nameOf(c.k)) + ' の カード' : 'ふせた カード'}"><img src="${pic(c.k)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;
   function pips(n, turns) { let h = ''; for (let i = 0; i < turns; i++) h += `<i class="${i < n ? 'on' : ''}"></i>`; return h; }
   const turnsOf = () => (V && V.turns) || R.TURNS;      // この 対戦の ターンの 数（ふだんは 5。テストでは 3 の 場面も ある）
+  function deckImg() { const im = $('.cbdeck img'), f = deckPic(); if (im && im.getAttribute('src') !== f) im.setAttribute('src', f); }      // 第4.182版：山札の 絵＝えらんだ うら
   function paintEmpty() {
     $('.cbturn').innerHTML = ''; $('.cbohand').innerHTML = ''; $('.cbhand').innerHTML = ''; $('.cbact').innerHTML = ''; say('');
-    $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
+    deckImg(); $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
     ov.querySelectorAll('.cbpips').forEach(e => { e.innerHTML = pips(0, turnsOf()); });
     $('.cbglow').classList.remove('on');
   }
@@ -723,7 +868,7 @@ const CBApp = (() => {
     $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '');
     $('.cbpips[data-p=op]').innerHTML = pips(v.op.wins, v.turns); $('.cbpips[data-p=my]').innerHTML = pips(v.my.wins, v.turns);
     $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ' data-cb="ocard"')).join('');
-    $('.cbdeck .cbn').textContent = String(v.deckN); paintDis(v.discard);
+    deckImg(); $('.cbdeck .cbn').textContent = String(v.deckN); paintDis(v.discard);
     const os = v.op.set, ms = v.my.set;
     $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k }, '', ' data-cb="oset"') + setTag(os, false) : '';
     $('.cbslot.my').innerHTML = ms ? cardBtn({ u: ms.u, k: ms.k }, '', ' data-cb="mset"') + setTag(ms, true) : '';
@@ -881,6 +1026,15 @@ const CBApp = (() => {
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
+    if (a === 'dz') { se('tap'); return showDz('f'); }      // 第4.182版：デザインカスタム
+    if (a === 'dzx') return showMenu();
+    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' ? 'b' : 'f'); }
+    if (a === 'dzi') { se('tap', 0.6); return dzItem(b.dataset.ck || null, b.dataset.id || ''); }
+    if (a === 'dzback') return closeMod();
+    if (a === 'dzopen') return dzAsk(b.dataset.ck || null, b.dataset.id || '');
+    if (a === 'dzgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; return dzGo(b.dataset.ck || null, b.dataset.id || ''); }
+    if (a === 'dzuse') return dzUse(b.dataset.ck || null, b.dataset.id || '');
+    if (a === 'tst') { if (testOn()) window.CBTest.act(b.dataset.t, dzApi); return; }
     if (a === 'help') return showHelp(screen === 'game' ? 'game' : 'menu');
     if (a === 'helpx') { show(helpBack); if (helpBack === 'game') render(); return; }
     if (a === 'roomx') { roomStop(); return showMenu(); }
@@ -993,7 +1147,7 @@ const CBApp = (() => {
     let hand = P ? P.my.hand.slice() : [], dis = P ? P.discard.slice() : [];
     const rehand = fresh => { paintHand(fresh, hand); layout(); };
     const toDis = ks => { ks.forEach(k => dis.push({ k: k })); paintDis(dis); };
-    const kIn = (sd) => { const el = $('.cbslot.' + sd + ' .cbc img'), m = el ? /cb_s(.)\.webp/.exec(el.getAttribute('src')) : null; return m && m[1] !== 'b' ? m[1] : null; };
+    const kIn = (sd) => { const el = $('.cbslot.' + sd + ' .cbc'); return el && el.dataset.ck ? el.dataset.ck : null; };      // 第4.182版：絵の 名前では なく data-ck（べつの デザインでも 読める）
     for (const x of ev) {
       if (!match) return;
       if (x.e === 'deal') {

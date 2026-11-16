@@ -14,6 +14,7 @@
 #     前から ある 場面（効果の しくみ）は「3ターン・手札 5まい」の まま 動かす（start() が turns: 3 を わたす）。本番の 形（5ターン・手札 7まい）は「■ 5ターン・手札 7まい」で 見る
 #   第4.179版（まさちゃん 2026/11/16 15:47・16:01・16:10・16:18）：バトルコイン（買えない・コンピュータに 勝つと 1枚・5連勝 ごとに 5枚）・部屋の 参加コインと 勝者の 獲得コイン（2倍 まで）
 #     ・入れない（足りない）・参加する → 2人とも 出す → 勝者が もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手が もらう）・つながりが 切れたら もどる
+#   第4.182版（まさちゃん 2026/11/16 20:00・20:09）：デザインカスタム（カードの おもて 18種・うら 7種：バトルコインで 解放＝おもて 300枚・神様馬／幻の馬 500枚・うら 300枚）
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -259,8 +260,8 @@ try:
         print('■ メニュー・あそび方')
         open_cb(pg)
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
-        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← もどる', 'コンピュータと 対戦', '部屋を 作る友だちと 対戦', '部屋に 入る友だちと 対戦', 'あそび方', '設定BGM・効果音'] and not any(m['dis']),
-              f'メニュー：コンピュータと 対戦・部屋を 作る・部屋に 入る・あそび方・設定（第4.178版）（{m["btn"]}）')
+        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← もどる', 'コンピュータと 対戦', '部屋を 作る友だちと 対戦', '部屋に 入る友だちと 対戦', 'あそび方', '設定BGM・効果音', 'デザインカスタムカードの おもて・うら（バトルコインで 解放）'] and not any(m['dis']),
+              f'メニュー：コンピュータと 対戦・部屋を 作る・部屋に 入る・あそび方・設定（第4.178版）・デザインカスタム（第4.182版）（{m["btn"]}）')
         check(m['rec'] == '勝つと お世話トークン 1こ・5連勝 ごとに 3こ' and (not HAVE or m['lg'] == 720), f'ごほうびの 説明（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
         check(cl == ['バトルコイン 0枚コンピュータに 勝つと 1枚・5連勝 ごとに 5枚', 1], f'メニューに バトルコイン（第4.179版：コインの 絵・持って いる 数・もらい方）（{cl}）')
@@ -273,7 +274,8 @@ try:
                 '終わった ターンの 捨て札', '効果で 捨てた カード',
                 '7：3まい そろえて 交換', '6：2まい 見せて 手札を 見る', '5：2まい 捨てて 山札から セット', 'のこりの ターンの 数より 少なく ならない とき', 'さいごの ターンは、手札が 1まい あれば 使える', '4：見せて 強制交換',
                 '3：3まい 見せて 手札を 交換', 'ランダムに えらんだ 1まいを 交換できるよ', '7・6・5・4・3 の 効果は', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1こ', '5連勝 ごとに 3こ', '部屋番号（4けた）', '近くに いる 友だち',
-                'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', '音と エフェクト（設定）', 'BGM・効果音・エフェクト（光や 動きの 演出）を オン／オフ',
+                'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', 'メニューの「デザインカスタム」で、カードの おもてと うらの デザインを かえられるよ',
+                '新しい デザインは バトルコインで 1つずつ 解放できるよ：カードの おもて 300枚（神様馬・幻の馬は 500枚）・カードの うら 300枚', '音と エフェクト（設定）', 'BGM・効果音・エフェクト（光や 動きの 演出）を オン／オフ',
                 '1：3まい 見せて 逆転勝利', '2：3まい 見せて 逆転勝利', '神様馬・幻の馬に 負けた とき、手札に 1 が 2まい あれば', '1 に 負けた とき、手札に 2 が 2まい あれば', '勝ちに できるよ', '1・2 の 効果（逆転勝利）は、オープンした あと、負けた 人が 使うか えらぶよ',
                 '1・2 の「逆転勝利」は、めくった あとに 使うか えらぶよ', '逆転勝利：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる',
                 'バトルコイン', 'コンピュータに 勝つと 1枚', '5連勝 ごとに 5枚', '買う ことは できない', '参加コイン', '参加コインの 2倍 まで', '同じ 数の 参加コインを 持って いないと 入れない', 'テンゲルから 獲得コインを プレゼントで もらえる',
@@ -1238,6 +1240,71 @@ try:
         pg.evaluate("() => { const T = CBApp._t; T.state.stake = { e: 5, w: 10 }; T.save(); T.load(); }")
         c5 = pg.evaluate(COINS); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(200); tt = pg.evaluate(TOAST)
         check(c5[1] is None and '前の 対戦が とちゅうで 終わった ので、' in tt and '参加コイン 5枚は もどらなかったよ' in tt, f'参加コインを 出した まま アプリが 閉じた → つぎに 開いた とき「参加コイン 5枚は もどらなかったよ」（{tt!r}）')
+        print('■ デザインカスタム（第4.182版・まさちゃん 20:00「…背面カスタム1枚 バトルコイン300枚」・20:09「…デザイン一枚解放、バトルコイン300枚 神様馬カードと幻の馬カード500枚」）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }"); pg.wait_for_timeout(200)
+        pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(250)
+        DZ = """() => { const s = document.querySelector('#cbOv .cbdz'); return { scr: CBApp._t.screen, coin: s.querySelector('.cbcoinl').textContent.replace(/\\s+/g, ' ').trim(), tab: [...s.querySelectorAll('.tabs button')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')),
+          h4: [...s.querySelectorAll('h4')].map(h => h.textContent.replace(/\\s+/g, ' ').trim()),
+          tiles: [...s.querySelectorAll('.dzt')].map(t => (t.dataset.ck || '-') + ':' + (t.dataset.id || 'base') + ':' + t.querySelector(':scope > img').getAttribute('src') + ':' + t.querySelector('em').textContent + (t.classList.contains('on') ? '*' : '') + (t.classList.contains('lk') ? '!' : '')) }; }"""
+        MZ = """() => { const m = document.querySelector('#cbOv .cbmod.cbdzm'); if (!m) return null; return { h: m.querySelector('h3').textContent, img: (m.querySelector('.big img') || {}).getAttribute ? m.querySelector('.big img').getAttribute('src') : '', btns: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim() + (b.disabled ? '!' : '')), need: (m.querySelector('.cbneed') || {}).textContent || '', t: m.textContent.replace(/\\s+/g, ' ').trim() }; }"""
+        d0 = pg.evaluate(DZ)
+        check(d0['scr'] == 'dz' and d0['coin'] == 'バトルコイン 0枚' and d0['tab'] == ['カードの おもて*', 'カードの うら'] and len(d0['h4']) == 9 and d0['h4'][0] == '神様馬1つ 500枚' and d0['h4'][1] == '幻の馬1つ 500枚' and d0['h4'][2] == '1 の カード1つ 300枚'
+              and len(d0['tiles']) == 27 and d0['tiles'][0] == 'k:base:cb_sk.webp:使って いる*' and d0['tiles'][1] == 'k:ka:cb_fc_ka_s.webp:500枚!' and d0['tiles'][-1] == '7:7b:cb_fc_7b_s.webp:300枚!'
+              and sum(1 for t in d0['tiles'] if t.endswith('300枚!')) == 14 and sum(1 for t in d0['tiles'] if t.endswith('500枚!')) == 4 and sum(1 for t in d0['tiles'] if t.endswith('使って いる*')) == 9,
+              f'メニューの「デザインカスタム」→「カードの おもて」：9種類（神様馬・幻の馬は 1つ 500枚・ほかは 300枚）・いつもの 9 ＋ べつの デザイン 18（{len(d0["tiles"])}こ）')
+        shot(pg, 'cb_dz_faces')
+        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(150); z1 = pg.evaluate(MZ)
+        check(z1 and z1['h'] == '朱の鳥居神様馬の おもて' and z1['img'] == 'cb_fc_ka_c.webp' and z1['btns'] == ['バトルコイン 500枚で 解放!', 'もどる'] and z1['need'] == 'あと 500枚 たりないよ（コンピュータに 勝つと 1枚・5連勝 ごとに 5枚）',
+              f'コインが 足りない：大きい 絵・「バトルコイン 500枚で 解放」は 押せない・あと 500枚（{z1 and z1["btns"]}）')
+        pg.locator('#cbOv .cbmod [data-cb=dzback]').click(); pg.wait_for_timeout(80)
+        pg.evaluate("() => { CBApp._t.state.coin = 800; }"); pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(150); z2 = pg.evaluate(MZ)
+        pg.locator('#cbOv .cbmod [data-cb=dzopen]').click(); pg.wait_for_timeout(150); z3 = pg.evaluate(MZ)
+        check(z2['btns'] == ['バトルコイン 500枚で 解放', 'もどる'] and z3['h'] == '解放する？' and '『朱の鳥居』（神様馬の おもて）を 解放するよ' in z3['t'] and '800枚→のこり 300枚' in z3['t'] and z3['btns'] == ['やめる', '解放する'],
+              f'800枚 ある：「解放」→ たしかめる 窓（800枚 → のこり 300枚・やめる／解放する）（{z3["t"]}）')
+        shot(pg, 'cb_dz_ask')
+        pg.evaluate("() => { CBApp._guard = 1e9; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(100); g0 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.faces.slice()]")
+        pg.evaluate("() => { CBApp._guard = 0; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(200)
+        d1 = pg.evaluate(DZ); st1 = pg.evaluate("() => { const s = CBApp._t.state, ls = JSON.parse(localStorage.getItem('tengel.cb')); return [s.coin, s.faces, s.face, ls.coin, ls.faces, ls.face]; }"); tt = pg.evaluate(TOAST)
+        check(g0 == [800, []] and st1 == [300, ['ka'], {'k': 'ka'}, 300, ['ka'], {'k': 'ka'}] and d1['coin'] == 'バトルコイン 300枚' and d1['tiles'][0] == 'k:base:cb_sk.webp:持って いる' and d1['tiles'][1] == 'k:ka:cb_fc_ka_s.webp:使って いる*'
+              and not pg.evaluate("() => CBApp._t.modOn()") and '『朱の鳥居』を 解放したよ！' in tt,
+              f'「解放する」：窓が 出て すぐは 受けつけない → 500枚 へって（800 → 300）解放・すぐ その デザインに・おぼえる（{st1}）')
+        pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=b]').click(); pg.wait_for_timeout(150); d2 = pg.evaluate(DZ)
+        check(d2['tab'] == ['カードの おもて', 'カードの うら*'] and d2['h4'] == ['カードの うら1つ 300枚'] and len(d2['tiles']) == 8 and d2['tiles'][0] == '-:base:cb_sb.webp:使って いる*' and all(t.endswith('300枚!') for t in d2['tiles'][1:])
+              and [t.split(':')[1] for t in d2['tiles'][1:]] == ['sky', 'star', 'ice', 'wa', 'ori', 'crown', 'heart'],
+              f'「カードの うら」：いつもの ＋ 7種（1つ 300枚）（{[t.split(":")[1] for t in d2["tiles"]]}）')
+        shot(pg, 'cb_dz_backs')
+        pg.locator('#cbOv .cbdz .dzt[data-id="sky"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=dzopen]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(200)
+        d3 = pg.evaluate(DZ)
+        pg.locator('#cbOv .cbdz .dzt[data-id="star"]').click(); pg.wait_for_timeout(120); z4 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzback]').click(); pg.wait_for_timeout(80)
+        check(d3['coin'] == 'バトルコイン 0枚' and d3['tiles'][1] == '-:sky:cb_bk_sky_s.webp:使って いる*' and d3['tiles'][0] == '-:base:cb_sb.webp:持って いる' and z4['btns'] == ['バトルコイン 300枚で 解放!', 'もどる'] and 'あと 300枚 たりないよ' in z4['need']
+              and pg.evaluate("() => [CBApp._t.state.backs, CBApp._t.state.back]") == [['sky'], 'sky'],
+              f'うら『天馬の光』を 300枚で 解放（300 → 0）・ほかは あと 300枚（{d3["coin"]}）')
+        pg.locator('#cbOv .cbdz [data-cb=dzx]').click(); pg.wait_for_timeout(150)
+        check(pg.evaluate("() => CBApp._t.screen") == 'menu' and 'バトルコイン 0枚' in pg.evaluate("() => document.querySelector('#cbOv .cbmenu .cbcoinl').textContent"), '「← もどる」→ メニュー（コインの 数も 0枚）')
+        start(pg, 'k1234', '15677')
+        IM = """() => ({ deck: document.querySelector('#cbOv .cbdeck img').getAttribute('src'), op: [...document.querySelectorAll('#cbOv .cbohand img')].map(i => i.getAttribute('src')), my: [...document.querySelectorAll('#cbOv .cbhand .cbc')].map(c => c.dataset.ck + '=' + c.querySelector('img').getAttribute('src')) })"""
+        im = pg.evaluate(IM)
+        check(im['deck'] == 'cb_bk_sky_d.webp' and set(im['op']) == {'cb_bk_sky_s.webp'} and 'k=cb_fc_ka_s.webp' in im['my'] and '1=cb_s1.webp' in im['my'] and not any('cb_sk.webp' in x for x in im['my']),
+              f'対戦：山札と 相手の 手札は えらんだ うら『天馬の光』・神様馬は えらんだ おもて『朱の鳥居』・ほかは いつもの（{im["deck"]}・{im["my"]}）')
+        shot(pg, 'cb_dz_game')
+        pg.evaluate("() => { window.__seen = []; }")
+        pg.locator('#cbOv .cbhand .cbc[data-ck="k"]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=set]').click(); idle(pg)
+        opp(pg, {'t': 'set', 'k': 1})
+        seen = pg.evaluate("() => window.__seen"); dt = pg.evaluate("() => { const d = document.querySelector('#cbOv .cbdis img'); return d ? d.getAttribute('src') : null; }")
+        check(any('勝ち！' in x and 'cb_fc_ka_c.webp,cb_c1.webp' in x for x in seen) and pg.evaluate(V)['my']['wins'] == 1, f'めくった とき：神様馬は えらんだ おもての 大きい 絵（{seen[-1] if seen else None}）')
+        pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbdz .dzt[data-ck="k"][data-id=""]').click(); pg.wait_for_timeout(120); z5 = pg.evaluate(MZ)
+        pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150)
+        st2 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.face, CBApp._t.state.faces, JSON.parse(localStorage.getItem('tengel.cb')).face]")
+        check(z5['btns'] == ['この デザインを 使う', 'もどる'] and st2 == [0, {}, ['ka'], {}] and pg.evaluate(DZ)['tiles'][0] == 'k:base:cb_sk.webp:使って いる*', f'いつもの に もどす：コインは 使わない・解放した ものは のこる（{st2}）')
+        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(120); z6 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150)
+        check(z6['btns'] == ['この デザインを 使う', 'もどる'] and pg.evaluate("() => CBApp._t.state.face") == {'k': 'ka'}, '解放した デザインは コインなしで また 使える')
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.faces = ['zz', 'ka', 'ka']; s.face = { k: 'kb', '1': 'ka', m: 'ma' }; s.backs = ['sky', 'nope']; s.back = 'ice'; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
+        st3 = pg.evaluate("() => { const s = CBApp._t.state; return [s.faces, s.face, s.backs, s.back]; }")
+        check(st3 == [['ka'], {}, ['sky'], ''], f'おぼえた 中身が おかしい ときは なおす（ない 名前・解放して いない もの・ちがう 種類は すてる）（{st3}）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }")
         check(not errs and not gerrs, f'エラー なし {errs[:3]} {gerrs[:3]}')
         if HAVE:
             miss = sorted(set(f for f in reqs if f.startswith('cb_') and f != 'cb_bundle.js' and f not in CBF))

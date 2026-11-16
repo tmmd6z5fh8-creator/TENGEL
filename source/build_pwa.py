@@ -147,9 +147,10 @@ if TARGET == 'app':   # 思い出フィギュアの 本体（コメントを 消
     _at.check_clean(fgb, 'fig_bundle.js')
     open(f'{out}/fig_bundle.js', 'w', encoding='utf8').write(fgb)
 if TARGET == 'app':   # 馬カードバトルの 本体（第4.176版：コメントを 消して 1つに・出さない 言葉が ないことも 確かめる）
-    CB_FILES = ('cb_rules.js', 'cb_cpu.js', 'cb_net.js', 'cb_app.js')
+    # 第4.182版：テスト版（TENGEL_TEST=1）だけ、テストの 道具（cb/cb_test.js：デザインカスタムの 画面で バトルコインを ふやす・解放を もとに もどす）を 入れる。App Store版の 中身には 入れない
+    CB_FILES = ('cb_rules.js', 'cb_cpu.js', 'cb_net.js') + (('cb_test.js',) if TEST else ()) + ('cb_app.js',)
     cbb = '\n;\n'.join(_at.strip_js_comments(open(os.path.join('cb', f), encoding='utf8').read()) for f in CB_FILES) + '\n'
-    cbb += ';window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBApp = CBApp;\n'   # const は window に のらない（cb_launch.js が window. で さがす）
+    cbb += ';window.CBRules = CBRules; window.CBCpu = CBCpu; window.CBNet = CBNet; window.CBApp = CBApp;' + (' window.CBTest = CBTest;' if TEST else '') + '\n'   # const は window に のらない（cb_launch.js が window. で さがす）
     _at.check_clean(cbb, 'cb_bundle.js')
     open(f'{out}/cb_bundle.js', 'w', encoding='utf8').write(cbb)
 if TARGET == 'app':   # 第4.123版：マザーデータ①〜③の 入力用 Excel の ひな形（templates/make_template.py で 作る・設定 → マザーデータの 編集 →「入力用のExcel（ひな形）を保存」）

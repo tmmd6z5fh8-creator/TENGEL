@@ -11,11 +11,22 @@
 #     第4.178版（まさちゃん 2026/11/16 15:33「テンゲルカードバトルに追加 1は…2は…」と 新しい 絵 2まい「3枚公開：逆転勝利」）：1 と 2 も 新しい 絵 cb_1_v2.png・cb_2_v2.png（1024×1536・白い 紙の 上）。
 #       前の 絵 cb_1.png・cb_2.png は のこす（上書きしない・消さない）
 #     第4.179版（まさちゃん 2026/11/16 16:18「一枚目、コインのデザイン」）：バトルコインの 絵 cb_coin.png（1254×1254・すき通し あり）→ cb_coin.webp（240×240：メニュー・部屋・結果の 画面の 小さい しるし）
+#     第4.182版（まさちゃん 2026/11/16 20:00「バトルコインで購入するカード背面のデザイン送る！ ・背面カスタム1枚 バトルコイン300枚」と 絵 7まい）：
+#       カードの うら 7種 cb_back_<名前>.png（1024×1536・白い 紙の 上に カード：名前は 姫が つけた）＝ sky（天馬の光）・star（星座の馬）・ice（氷の結晶）・wa（和の墨絵）・
+#       ori（折り紙の馬）・crown（王冠の紋章）・heart（ハートの2頭）→ 下の BACKS
+#     第4.182版（まさちゃん 20:09「カードバトルデザインカスタム デザイン一枚解放、バトルコイン300枚 神様馬カードと幻の馬カード500枚」と 絵 16まい）：
+#       カードの おもての べつの デザイン cb_face_<名前>.png（1024×1536・白い 紙の 上に カード：名前は 姫が つけた。<カード><a・b>）→ 下の FACES
+#       ka・kb（神様馬）・ma・mb（幻の馬）・1a・1b・2a・2b・3a・3b・4a・4b・5a・5b・6a・7a ／ 20:22「6.71枚づつ追加して！」＋ 絵 2まい：6b・7b（あわせて 18種）
 #   作る もの：
 #     カード 10種 × 2つの 大きさ：cb_c<名前>.webp（800×1200：大きく 見る・めくった とき）・cb_s<名前>.webp（300×450：手札・台の 上）。名前＝1〜7・k・m・b（うら）
 #       ・カードは もとの 絵ごとに 大きさと たて横が 少し ちがう（おもて 986〜1007×1510〜1521・うら 938×1338）→ 絵の ある 所（すき通しで ない 所）を 切り出して、
 #         どれも 同じ たて横（2:3）・同じ 角の 丸み に そろえる（めくった ときに 形が かわらない ように）。うらは たてに 5% ほど のびる（もようは ほぼ そのまま）
 #       ・もとの 絵は まん中も 少し すき通って いる（不透明度 242〜254／255）→ まん中は ぴったり 不透明に する。ふちは 4px 内がわで 切る（もとの ふちの にじみを 出さない）
+#     第4.182版：おもての べつの デザイン 18種 × 2つ：cb_fc_<名前>_c.webp（800×1200）・cb_fc_<名前>_s.webp（300×450）：いつもの おもてと 同じ 切り方（card）
+#     第4.182版：背面カスタム 7種 × 3つ：cb_bk_<名前>_c.webp（800×1200）・cb_bk_<名前>_s.webp（300×450）・cb_bk_<名前>_d.webp（山札 360×426：下の deck_with）
+#       ・おもてと 同じ 切り方（card：白い 紙の 外を 切って 2:3・同じ 角の 丸み）
+#       ・山札は cb_deck.png（いつもの 山札の 絵：少し ななめから 見た 形）の いちばん 上の カードの 面 だけを、その うらの 絵に はりかえる（DECK_FACE の 4つの 角へ ななめに うつす）。
+#         下に かさなった カードの ふち（金の 線）と 外の 形（すき通し）は いつもの まま ＝ 切り方・大きさは cb_deck.webp と 同じ
 #     cb_board.webp（1254×706）・cb_deck.webp（360×426）・cb_icon.webp（240×240：右下の 丸い ボタン）・cb_logo.webp（720×720：メニューの 絵）・cb_coin.webp（240×240：バトルコイン：第4.179版）
 #     第4.178版（まさちゃん 2026/11/16 14:43「フィールドの雰囲気を夜の月あかりと火のライトに照らされてるイメージにして！(デザインは変えないで、差し込んでる光りの色を変えてみて)」）：
 #       cb_board.webp は、もとの 絵（cb_board.png：そのまま のこす）の **光の 色 だけ** を かえて 作る（下の night）：形・もよう・字は 1画素も 動かさない。
@@ -29,6 +40,9 @@ H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
+BACKS = [('sky', 'cb_back_sky.png'), ('star', 'cb_back_star.png'), ('ice', 'cb_back_ice.png'), ('wa', 'cb_back_wa.png'), ('ori', 'cb_back_ori.png'), ('crown', 'cb_back_crown.png'), ('heart', 'cb_back_heart.png')]      # 第4.182版：背面カスタム
+FACES = [(f, f'cb_face_{f}.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]      # 第4.182版：おもての べつの デザイン
+DECK_FACE = ((268.4, 104.0), (963.2, 104.0), (1060.7, 948.0), (198.0, 948.0))      # cb_deck.png（1254×1254）の いちばん 上の カードの 面の 角（左上・右上・右下・左下：外の 形の 左右の 線と 金の ふちの 上下で 測った）
 BASE = (1000, 1500)          # そろえる 大きさ（たて横 2:3）
 INSET, RADIUS = 4, 62        # ふちを 内がわへ 4px・角の 丸み 62px（1000×1500 の とき。どの もとの 絵の 角 よりも 内がわ）
 BIG, SMALL = (800, 1200), (300, 450)
@@ -143,6 +157,31 @@ def night(im, P=None):
     return Image.fromarray((np.clip(out, 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8))
 
 
+def persp(dst, src):
+    """ななめに うつす 数（PIL の PERSPECTIVE：できる 絵の 点 → もとの 絵の 点）。dst・src＝4つの 角"""
+    A, B = [], []
+    for (x, y), (u, v) in zip(dst, src):
+        A.append([x, y, 1, 0, 0, 0, -u * x, -u * y]); B.append(u)
+        A.append([0, 0, 0, x, y, 1, -v * x, -v * y]); B.append(v)
+    return [float(c) for c in np.linalg.solve(np.array(A, np.float64), np.array(B, np.float64))]
+
+
+def deck_with(back_src):
+    """山札の 絵（cb_deck.png）の いちばん 上の 面を back_src の うらに はりかえた RGBA（float）を、cut と 同じ 形で 返す（外の 形・下の ふちは いつもの まま）"""
+    d = np.asarray(Image.open(os.path.join(SRC, 'cb_deck.png')).convert('RGBA')).astype(np.float32)
+    f = card(back_src)[0]; al = f[..., 3:4] / 255
+    pm = np.concatenate([f[..., :3] * al, f[..., 3:4]], 2)      # すき通しを かけた 色で うつす（ふちに 外の 色が にじまない ように）
+    h, w = d.shape[:2]; ss = 2                                  # 2倍で うつして 小さく する（ふちを なめらかに）
+    co = persp([(x * ss, y * ss) for x, y in DECK_FACE], [(0, 0), (BASE[0], 0), (BASE[0], BASE[1]), (0, BASE[1])])
+    wp = Image.fromarray(np.clip(pm + 0.5, 0, 255).astype(np.uint8), 'RGBA').transform((w * ss, h * ss), Image.PERSPECTIVE, co, Image.BICUBIC)
+    wp = np.asarray(wp.resize((w, h), Image.LANCZOS), np.float32)
+    a2 = wp[..., 3:4] / 255
+    out = d.copy(); out[..., :3] = d[..., :3] * (1 - a2) + wp[..., :3]      # 面の 上に かさねる（色は すき通しを かけて ある）
+    x0, y0, x1, y1 = bbox(d[..., 3], 128)                      # 切り方は cut（いつもの 山札）と 同じ
+    b = out[y0:y1, x0:x1].copy(); b[..., 3] = solid(d[y0:y1, x0:x1, 3]) * 255
+    return b
+
+
 def plan():
     """作る もの：[(できる 名前, もとの 名前, 作る 関数)]"""
     jobs = []
@@ -156,12 +195,19 @@ def plan():
     jobs.append(('cb_icon.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (240, 240), o)))
     jobs.append(('cb_logo.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (720, 720), o)))
     jobs.append(('cb_coin.webp', 'cb_coin.png', lambda p, o: save(square(cut(p)), (240, 240), o)))      # 第4.179版：バトルコイン
+    for fid, src in FACES:                                      # 第4.182版：おもての べつの デザイン（大きい・小さい）
+        jobs.append((f'cb_fc_{fid}_c.webp', src, lambda p, o: save(card(p)[0], BIG, o)))
+        jobs.append((f'cb_fc_{fid}_s.webp', src, lambda p, o: save(card(p)[0], SMALL, o)))
+    for bid, src in BACKS:                                      # 第4.182版：背面カスタム（大きい・小さい・山札）
+        jobs.append((f'cb_bk_{bid}_c.webp', src, lambda p, o: save(card(p)[0], BIG, o)))
+        jobs.append((f'cb_bk_{bid}_s.webp', src, lambda p, o: save(card(p)[0], SMALL, o)))
+        jobs.append((f'cb_bk_{bid}_d.webp', src, lambda p, o: save(deck_with(p), (360, 426), o)))
     return jobs
 
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT]))
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE]]))
 
 
 def files():
@@ -192,7 +238,7 @@ def main():
     if '--check' in sys.argv:
         w = stale(); print('cb_assets →', 'もとの 絵が ない' if w is None else ('新しい' if w == '' else '古い：' + w)); sys.exit(1 if w else 0)
     man = {'v': V, 'p': PARAMS(), 'files': {}}; tot = 0
-    for cid, src in CARDS:
+    for cid, src in CARDS + [('fc_' + f, s_) for f, s_ in FACES] + [('bk_' + b, s_) for b, s_ in BACKS]:
         _o, sz, thin = card(os.path.join(SRC, src))
         print(f'  カード {cid}：もとの 絵の 大きさ {sz[0]}×{sz[1]}（たて横 {sz[0] / sz[1]:.4f}）→ {BASE[0]}×{BASE[1]}・マスクの 中で もとが うすかった 点 {thin}')
     for name, src, fn in plan():
