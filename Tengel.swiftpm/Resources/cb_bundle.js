@@ -40,6 +40,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -89,13 +100,14 @@ const CBRules = (() => {
     const P = S.p[i], Q = S.p[1 - i], sk = P.set ? P.set.c.k : null;
     return {
       e6: count(P.hand, '6') >= 2 && Q.hand.length >= 1,
-      e5: sk === '5' && P.hand.length >= 4 && S.deck.length >= 1,
+      e5: sk === '5' && P.hand.length >= 1 && P.hand.length - 1 >= TURNS - S.turn && S.deck.length >= 1,      
       e7: count(P.hand, '7') >= 3 && S.deck.length >= 3,
+      e3: count(P.hand, '3') >= 3 && Q.hand.length >= 1,                                                        
       e4: sk === '4' && Q.hand.length >= 1
     };
   }
-  const any = c => c.e6 || c.e5 || c.e7 || c.e4;
-  const NOUSE = () => ({ p6: null, u5: null, x7: false, u4: false });
+  const any = c => c.e6 || c.e5 || c.e7 || c.e3 || c.e4;
+  const NOUSE = () => ({ p6: null, u5: null, x7: false, x3: false, u4: false });
 
   function act(S, i, a, rng) {
     rng = rng || Math.random;
@@ -120,6 +132,10 @@ const CBRules = (() => {
       if (w.x7) {                                        
         if (!can.e7 || count(P.hand.filter(c => c.u !== use.u5), '7') < 3) return bad('e7');
         use.x7 = true;
+      }
+      if (w.x3) {                                        
+        if (!can.e3 || count(P.hand.filter(c => c.u !== use.u5), '3') < 3) return bad('e3');
+        use.x3 = true;
       }
       if (w.u4) { if (!can.e4) return bad('e4'); use.u4 = true; }
       P.eff.use = use; P.eff.done = true;
@@ -208,6 +224,19 @@ const CBRules = (() => {
       shuffle(S.deck, rng);
       ev.push({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) });
     });
+    [0, 1].forEach(i => {                                
+      const P = S.p[i], Q = S.p[1 - i]; if (!U[i].x3) return;
+      const three = P.hand.filter(c => c.k === '3').slice(0, 3);
+      if (three.length < 3 || Q.hand.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+      const give = three[0], take = Q.hand[Math.floor(rng() * Q.hand.length)];
+      P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
+      P.hand.push(take); Q.hand.push(give);
+      forget(S, give.u); forget(S, take.u);              
+      three.slice(1).forEach(c => learn(Q, c.u));        
+      learn(P, give.u);                                  
+      learn(Q, take.u);                                  
+      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: { u: give.u, k: give.k }, take: { u: take.u, k: take.k } });
+    });
     S.p.forEach(P => { P.eff = null; });
     const A = S.p[0], B = S.p[1], f0 = U[0].u4 && A.set.c.k === '4', f1 = U[1].u4 && B.set.c.k === '4';      
     if (f0 && f1) { A.set.up = B.set.up = true; ev.push({ e: 'first2' }); open(S, ev); return; }      
@@ -268,7 +297,7 @@ const CBRules = (() => {
       discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
       my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
       op: { hand: Q.hand.map(c => ({ u: c.u, k: P.known.indexOf(c.u) >= 0 ? c.k : null })), set: setOf(Q, false), wins: Q.wins },
-      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e4: ce.e4 } : null },
+      can: { set: S.phase === 'set' && !P.set, eff: ce ? { e6: ce.e6, e5: ce.e5, e7: ce.e7, e3: ce.e3, e4: ce.e4 } : null },
       pend: S.pend ? { type: S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res } : null,
@@ -286,6 +315,7 @@ const CBRules = (() => {
       else if (x.e === 'efft') { o.mine = x.has[i]; o.other = x.has[1 - i]; }
       else if (x.e === 'p6') { o.six = x.six; o.pick = x.pick; if (x.who === i) o.k = x.k; }
       else if (x.e === 'u5') { o.five = x.five; o.drop = x.drop; }
+      else if (x.e === 'x3') { o.three = x.three; o.give = x.give; o.take = x.take; }      
       else if (x.e === 'fizz') o.k = x.k;
       else if (x.e === 'open') { o.turn = x.turn; o.my = x.c[i]; o.op = x.c[1 - i]; o.res = x.res === 0 || x.res === 1 ? (x.res === i ? 'win' : 'lose') : x.res; o.wins = [x.wins[i], x.wins[1 - i]]; }
       else if (x.e === 'pre') o.type = x.type;
@@ -311,6 +341,8 @@ const CBRules = (() => {
 if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;
 
 ;
+
+
 
 
 
@@ -350,13 +382,14 @@ const CBCpu = (() => {
       return null;
     }
     if (v.can.eff) {                                     
-      const c = v.can.eff, use = {}, s = byStrong(hand), n7 = hand.filter(x => x.k === '7').length;
+      const c = v.can.eff, use = {}, s = byStrong(hand), n7 = hand.filter(x => x.k === '7').length, n3 = hand.filter(x => x.k === '3').length;
       if (c.e6) { const un = opHand.filter(x => x.k == null); if (un.length) use.p6 = pick(un, rng).u; }
       if (c.e7) use.x7 = true;
+      if (c.e3 && rng() < (v.turn >= 2 ? 0.55 : 0.35)) use.x3 = true;
       if (c.e5) {
         
-        const cand = s.filter(x => !(use.x7 && x.k === '7' && n7 <= 3)), weak = cand[cand.length - 1];
-        if (weak && (!use.x7 || weak.k === '7' || power(weak.k) >= 5)) use.u5 = weak.u;
+        const cand = s.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x3 && x.k === '3' && n3 <= 3)), weak = cand[cand.length - 1];
+        if (weak && ((!use.x7 && !use.x3) || (use.x7 && weak.k === '7') || (use.x3 && weak.k === '3') || power(weak.k) >= 5)) use.u5 = weak.u;
       }
       if (c.e4 && (v.turn >= v.turns ? true : v.turn === 2 ? rng() < 0.5 : false)) use.u4 = true;
       return { t: 'eff', use: use };
@@ -364,7 +397,7 @@ const CBCpu = (() => {
     if (v.phase !== 'set' || !v.can.set) return null;
     const s = byStrong(hand), left = v.turns - v.turn + 1;          
     const top = s.slice(0, Math.min(left, s.length));
-    if (hand.length - 1 >= 4 && v.deckN >= 1) {          
+    if (hand.length - 2 >= v.turns - v.turn && hand.length - 1 >= 1 && v.deckN >= 1) {          
       const third = top[top.length - 1], five = s.find(x => x.k === '5');
       if (five && power(third.k) >= 5) return { t: 'set', u: five.u };
     }
@@ -397,7 +430,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 1, MAXLEN = 20000;
+  const R = CBRules, PROTO = 2, MAXLEN = 20000;      
   const say = (m, k, v) => { try { if (typeof m[k] === 'function') m[k](v); } catch (e) {   } };
 
   
@@ -699,7 +732,7 @@ const CBApp = (() => {
 #cbOv .cbglow{position:absolute;left:39.6%;top:41.4%;width:20.8%;height:23%;border-radius:12% / 18%;pointer-events:none;box-shadow:0 0 0 2px rgba(255,226,130,.85),0 0 16px 4px rgba(255,210,90,.55);opacity:0;transition:opacity .3s}
 #cbOv .cbglow.on{opacity:1;animation:cbgl 1.8s ease-in-out infinite alternate}
 @keyframes cbgl{from{box-shadow:0 0 0 2px rgba(255,226,130,.7),0 0 10px 2px rgba(255,210,90,.35)}to{box-shadow:0 0 0 2px rgba(255,240,180,.95),0 0 18px 5px rgba(255,210,90,.6)}}
-#cbOv .cbmsg{flex:none;min-height:36px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;font-size:13.5px;font-weight:700;line-height:1.35;color:#fff1cf;padding:2px 12px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+#cbOv .cbmsg{flex:none;height:44px;box-sizing:border-box;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;font-size:13.5px;font-weight:700;line-height:1.35;color:#fff1cf;padding:2px 12px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
 #cbOv .cbme{flex:none;margin-top:auto}
 #cbOv .cbhand{flex:0 1 190px;min-height:104px;display:flex;align-items:center;justify-content:center;padding:14px 6px 4px;box-sizing:border-box}
 #cbOv .cbhand .cbc{width:var(--cw,70px);margin-left:var(--ov,4px);transition:transform .16s ease-out}
@@ -708,7 +741,8 @@ const CBApp = (() => {
 #cbOv .cbhand .cbc.off{filter:brightness(.55) drop-shadow(0 2px 3px rgba(0,0,0,.5))}
 #cbOv .cbhand .cbc.new{animation:cbin .4s ease-out both}
 @keyframes cbin{from{transform:translateY(-30px) scale(.8);opacity:0}to{transform:none;opacity:1}}
-#cbOv .cbact{flex:none;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:4px 10px 6px;box-sizing:border-box}
+#cbOv .cbact{flex:none;height:48px;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap;padding:4px 10px 6px;box-sizing:border-box}
+#cbOv .cbact .cbb{flex:0 1 auto;white-space:nowrap}
 
 #cbOv .cbfly{position:absolute;inset:0;pointer-events:none;z-index:5}
 #cbOv .cbfl{position:absolute;border-radius:6.5% / 4.3%;will-change:transform;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
@@ -730,6 +764,15 @@ const CBApp = (() => {
 #cbOv .cbmod .pick .cbc{width:min(17vw,74px)}
 #cbOv .cbmod .pick .cbc.knw{filter:brightness(.6)}
 #cbOv .cbmod.cbdm{background:rgba(8,5,2,.95)}
+#cbOv .cbmod.cbask{gap:11px;background:rgba(8,5,2,.86)}
+#cbOv .cbmod.cbask h3{font-size:22px}
+#cbOv .cbmod.cbask .big{width:min(52vw,calc((100vh - 410px) * .6667),220px)}
+#cbOv .cbmod .askq{font-size:14px;line-height:1.6;color:#f0dfb6}
+#cbOv .cbmod p,#cbOv .cbmsg,#cbOv .cbtoast,#cbOv .cbend .gift,#cbOv .cbhelp .bd{word-break:keep-all;overflow-wrap:anywhere}
+#cbOv .cbmod .askq b{display:block;font-size:20px;line-height:1.4;color:#ffe9a8}
+#cbOv .cbb.lg{min-height:58px;border-radius:29px;font-size:19px;padding:8px 10px}
+#cbOv .cbmod .three{display:flex;justify-content:center;gap:8px}
+#cbOv .cbmod .three .cbc{width:min(24vw,104px)}
 #cbOv .cbdl{width:100%;max-width:340px;max-height:56vh;overflow:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;padding:2px 4px 6px}
 #cbOv .cbdl h4{margin:12px 0 6px;font-size:14px;line-height:1.3;color:#ffe2a0;text-align:left;border-left:4px solid #e2a83e;padding-left:8px}
 #cbOv .cbdl h4:first-child{margin-top:2px}
@@ -759,8 +802,14 @@ const CBApp = (() => {
 #cbOv .cbend h3{font-size:40px;line-height:1.15}
 #cbOv .cbend .sc{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:26px;color:#ffe9a8;letter-spacing:.08em}
 #cbOv .cbend .sc small{font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;color:#d9c08c;letter-spacing:0;display:block}
-#cbOv .cbend .gift{min-height:44px;font-size:14px;line-height:1.6;color:#fff1cf}
+#cbOv .cbend .gift{min-height:158px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
 #cbOv .cbend .gift b{color:#ffe07a;font-size:17px}
+#cbOv .cbget{display:inline-flex;align-items:center;gap:14px;box-sizing:border-box;min-width:250px;padding:11px 24px 12px 18px;border-radius:22px;border:2.5px solid #ffd76a;background:linear-gradient(180deg,#5a3a12 0%,#3a240a 55%,#2a1806 100%);box-shadow:0 0 0 1.5px rgba(60,30,0,.7),0 0 22px rgba(255,210,90,.6),inset 0 1px 0 rgba(255,240,190,.35),inset 0 0 14px rgba(255,200,80,.22);animation:cbget .55s cubic-bezier(.3,1.5,.5,1) both}
+#cbOv .cbget .tk{flex:none;font-style:normal;font-size:42px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
+#cbOv .cbget .tx{display:block;text-align:left}
+#cbOv .cbget small{display:block;font-size:13.5px;font-weight:700;line-height:1.3;color:#ffe9b0}
+#cbOv .cbend .gift .cbget .n{display:block;font-size:31px;line-height:1.15;letter-spacing:.03em}
+@keyframes cbget{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
 #cbOv .cbtoast{position:absolute;left:50%;top:calc(var(--sat,env(safe-area-inset-top)) + 54px);z-index:9;transform:translate(-50%,-8px);width:max-content;max-width:86%;box-sizing:border-box;padding:9px 16px;border-radius:16px;background:rgba(20,12,6,.94);border:1.5px solid #c9a35a;color:#fff1cf;font-size:13.5px;font-weight:700;line-height:1.5;text-align:center;white-space:pre-line;box-shadow:0 6px 16px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #cbOv .cbtoast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -775,7 +824,8 @@ const CBApp = (() => {
 #cbOv .cbhelp .ef{display:flex;gap:10px;align-items:flex-start;margin:8px 0;padding:8px;border-radius:12px;background:rgba(255,236,190,.06);border:1px solid rgba(255,226,160,.22)}
 #cbOv .cbhelp .ef img{flex:none;width:58px;height:87px}
 #cbOv .cbhelp .ef b{display:block;color:#ffe9a8;font-size:14px}
-@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}}
+#cbOv .cbhelp .ef strong{color:#ffe9a8}
+@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}}
 `;
   let ov = null, built = false, scr = {}, flyEl = null, modEl = null, toastEl = null, banEl = null;
   const $ = (s, r) => (r || ov).querySelector(s);
@@ -845,18 +895,19 @@ const CBApp = (() => {
     scr.help.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="helpx">← もどる</button><b>あそび方</b></div><div class="bd">'
       + '<h4>勝負の しかた</h4><ul><li>手札は <b>5まい</b>。<b>3ターン</b>で 勝負するよ</li><li>3ターン 終わって、<b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）</li></ul>'
       + '<h4>1ターンの 流れ</h4><ul><li><b>① セット</b>：手札から 1まい えらんで「この カードを セットする」。ふせて 出すよ。<b>セットしたら もう 変えられない</b></li>'
-      + '<li><b>② 効果タイム</b>：2人とも セットしたら、使える 効果が ある 人に「効果を 使う？」と 聞くよ。2人とも 決めたら、いっしょに 効果が 出る</li>'
+      + '<li><b>② 効果タイム</b>：2人とも セットしたら、使える 効果が ある 人に「効果を 使う？」と 聞くよ。<b>「使う」「使わない」は 自分で えらべる</b>。2人とも 決めたら、いっしょに 効果が 出る</li>'
       + '<li><b>③ オープン</b>：2まいを いっしょに めくる。<b>強い カードの 勝ち</b></li></ul>'
       + '<h4>カードの 強さ</h4><div class="ord">' + ['k', 'm'].map(k => `<img src="${pic(k)}" alt="${nameOf(k)}">`).join('<i>＝</i>') + ['1', '2', '3', '4', '5', '6', '7'].map(k => `<i>＞</i><img src="${pic(k)}" alt="${k}">`).join('') + '</div>'
       + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が いちばん 強い（この 2まいが ぶつかったら 引き分け）</li><li>数字は <b>1 が いちばん 強くて、7 が いちばん 弱い</b></li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b></li><li>カードは ぜんぶで 30まい（1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい）</li></ul>'
-      + '<h4>カードの 効果</h4><ul><li><b>7・6・5・4</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li></ul>'
+      + '<h4>カードの 効果</h4><ul><li><b>7・6・5・4・3</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で えらべる</b>よ</li></ul>'
       + ef('7', '7：3まい そろえて 交換', '手札に 7 が 3まい あれば、3まいを 山札に もどして、新しく 3まい 引けるよ。')
       + ef('6', '6：2まい 見せて 手札を 見る', '手札に 6 が 2まい あれば、その 2まいを 相手に 見せて、相手の 手札を 1まい えらんで 見られるよ。')
-      + ef('5', '5：山札から セット', '5 を セットして、手札が 4まい 以上 のこって いれば（＝1ターン目）、その 5 と 手札 1まいを 捨てて、山札から 1まいを ふせて セットできるよ。何が 出るかは オープンまで わからない！')
+      + ef('5', '5：2まい 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1まいを 捨てて、山札から 1まいを ふせて セットできるよ。何が 出るかは オープンまで わからない！<br>使えるのは、使った あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ（さいごの ターンは、手札が 1まい あれば 使える）。')
       + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる かわりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ（2人とも 使ったら 打ち消し）。')
+      + ef('3', '3：3まい 見せて 手札を 交換', '手札に 3 が 3まい あれば、その 3まいを 相手に 見せて、その うちの 1まいと、相手の 手札から <strong>ランダムに えらんだ 1まい</strong>を 交換できるよ。')
       + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの はじめに、相手の 手札を 1まい えらんで 見られるよ。')
       + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの はじめに、手札を 2まい 捨てて、山札から 2まい 引けるよ。')
-      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果タイムで 効果が 出る 順番は <b>6 → 5 → 7 → 4</b></li><li>3ターン目に 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
+      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果タイムで 効果が 出る 順番は <b>6 → 5 → 7 → 3 → 4</b></li><li>3ターン目に 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある あいだ 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の しるしが つくよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめると 負けに なるよ</li></ul>`
@@ -928,7 +979,7 @@ const CBApp = (() => {
     $('.cbopp .cbwho b').textContent = WHO();
     paintEmpty(); layout();
     m.start();
-    if (m.kind === 'guest') $('.cbmsg').textContent = '相手を 待って いるよ…';
+    if (m.kind === 'guest') say('相手を 待って いるよ…');
   }
   function onNet(s) {
     if (!match) return;
@@ -952,11 +1003,15 @@ const CBApp = (() => {
     if (match && !queue.length) match.idle();
   }
   
-  const EFFQ = ['6', '5', '7', '4'];
-  const EFFTXT = { 6: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', 5: '5 と 手札 1まいを 捨てて、山札から 1まい セットできるよ', 7: '7 を 3まい 山札に もどして、新しく 3まい 引けるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
+  
+  const EFFQ = ['6', '5', '7', '3', '4'];
+  const EFFTXT = { 6: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', 5: '5 と 手札 1まいを 捨てて、山札から 1まい セットできるよ', 7: '7 を 3まい 山札に もどして、新しく 3まい 引けるよ',
+    3: '3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（ランダム）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
+  const EFFBAR = { 3: '3 を 3まい 見せて、手札を 1まい 交換できるよ' };      
   function effOk(q, v, use) {
     const c = v.can.eff; if (!c) return false;
-    return q === '6' ? c.e6 : q === '5' ? c.e5 : q === '7' ? c.e7 && v.my.hand.filter(x => x.k === '7' && x.u !== use.u5).length >= 3 : c.e4;
+    const three = k => v.my.hand.filter(x => x.k === k && x.u !== use.u5).length >= 3;
+    return q === '6' ? c.e6 : q === '5' ? c.e5 : q === '7' ? c.e7 && three('7') : q === '3' ? !!c.e3 && three('3') : c.e4;
   }
   function effNext(v, use, after) { for (let i = EFFQ.indexOf(after) + 1; i < EFFQ.length; i++) if (effOk(EFFQ[i], v, use)) return EFFQ[i]; return null; }
   
@@ -976,7 +1031,7 @@ const CBApp = (() => {
   const cardBtn = (c, cls, extra) => `<button type="button" class="cbc ${cls || ''}" data-u="${c.u}"${extra || ''} aria-label="${c.k ? esc(nameOf(c.k)) + ' の カード' : 'ふせた カード'}"><img src="${pic(c.k)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;
   function pips(n, turns) { let h = ''; for (let i = 0; i < turns; i++) h += `<i class="${i < n ? 'on' : ''}"></i>`; return h; }
   function paintEmpty() {
-    $('.cbturn').innerHTML = ''; $('.cbohand').innerHTML = ''; $('.cbhand').innerHTML = ''; $('.cbact').innerHTML = ''; $('.cbmsg').textContent = '';
+    $('.cbturn').innerHTML = ''; $('.cbohand').innerHTML = ''; $('.cbhand').innerHTML = ''; $('.cbact').innerHTML = ''; say('');
     $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
     ov.querySelectorAll('.cbpips').forEach(e => { e.innerHTML = pips(0, R.TURNS); });
     $('.cbglow').classList.remove('on');
@@ -993,6 +1048,15 @@ const CBApp = (() => {
     }
     const oh = $('.cbohand'), q = oh.getBoundingClientRect();
     if (q.height > 0) oh.style.setProperty('--ow', Math.max(30, Math.min(58, Math.floor((q.height - 4) * 2 / 3))) + 'px');
+  }
+  
+  
+  function say(t) {
+    const m = $('.cbmsg'); if (!m) return;
+    m.style.fontSize = ''; m.textContent = t || '';
+    if (!t) return;
+    let fs = 13.5;
+    while (m.scrollHeight > m.clientHeight + 0.5 && fs > 10.5) { fs -= 0.5; m.style.fontSize = fs + 'px'; }
   }
   function statusText(v) {
     if (v.phase === 'end') return '';
@@ -1026,12 +1090,13 @@ const CBApp = (() => {
     $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k }, '', ' data-cb="oset"') + setTag(os, false) : '';
     $('.cbslot.my').innerHTML = ms ? cardBtn({ u: ms.u, k: ms.k }, '', ' data-cb="mset"') + setTag(ms, true) : '';
     $('.cbglow').classList.toggle('on', v.can.set || !!(v.pend && v.pend.mine && v.pend.type === 'swap'));
-    paintHand(); paintAct();
-    $('.cbmsg').textContent = modeText() || statusText(v);
+    const asking = askSync();                          
+    paintHand(); paintAct(asking);
+    say(asking ? '効果を 使うか えらんでね' : (modeText() || statusText(v)));
     layout();
   }
   function modeText() {
-    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と いっしょに 捨てる カードを えらんでね（カードを タップ）' : `効果タイム！ ${mode.q} の 効果を 使う？\n${EFFTXT[mode.q]}`;
+    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と いっしょに 捨てる カードを えらんでね（カードを タップ）' : `効果タイム！ ${mode.q} の 効果を 使う？\n${EFFBAR[mode.q] || EFFTXT[mode.q]}`;
     if (mode.k === 'dropm') return `捨てる カードを 2まい えらんでね（${mode.sel.length}／2）`;
     return '';
   }
@@ -1040,10 +1105,11 @@ const CBApp = (() => {
     const hd = $('.cbhand');
     hd.innerHTML = sortHand(list || V.my.hand).map(c => cardBtn(c, (mode.k === 'dropm' && mode.sel.indexOf(c.u) >= 0 ? 'sel ' : '') + (fresh && fresh.indexOf(c.u) >= 0 ? 'new' : ''), ' data-cb="card"')).join('');
   }
-  function paintAct() {
+  function paintAct(asking) {
     const v = V, a = $('.cbact'); let h = '';
     const two = (no, yes, yesText) => `<button type="button" class="cbb dk sm" data-cb="${no}">使わない</button><button type="button" class="cbb sm" data-cb="${yes}">${yesText}</button>`;
-    if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">もどる</button>' : two('effno', 'effyes', `${mode.q} の 効果を 使う`);
+    if (asking) h = '';
+    else if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">もどる</button>' : two('effno', 'effyes', `${mode.q} の 効果を 使う`);
     else if (mode.k === 'dropm') h = `<button type="button" class="cbb dk sm" data-cb="modex">もどる</button><button type="button" class="cbb sm" data-cb="mgo"${mode.sel.length === 2 ? '' : ' disabled'}>この 2まいを 捨てて 引く</button>`;
     else if (v.pend && v.pend.mine && v.pend.type === 'k') h = two('kskip', 'kgo', '神様馬の 効果を 使う');
     else if (v.pend && v.pend.mine && v.pend.type === 'm') h = two('mskip', 'mpick', '幻の馬の 効果を 使う');
@@ -1054,6 +1120,31 @@ const CBApp = (() => {
   function modal(html, cls) { modEl.className = 'cbmod on ' + (cls || ''); modEl.innerHTML = html; }
   function closeMod() { if (modEl) { modEl.className = 'cbmod'; modEl.innerHTML = ''; } }
   const modOn = () => modEl.classList.contains('on');
+  
+  
+  
+  
+  
+  let peekId = '';
+  function askInfo() {
+    const v = V; if (!v || ended || !match) return null;
+    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.q}`, k: mode.q, head: '効果タイム！', q: `${mode.q} の 効果を 使う？`, text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
+    if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'k') return { id: `k${gameNo}.${v.turn}`, k: 'k', head: '神様馬で 勝った！', q: '神様馬の 効果を 使う？', text: '相手の 手札を 1まい 見られるよ', yes: 'kgo', no: 'kskip' };
+    if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'm') return { id: `m${gameNo}.${v.turn}`, k: 'm', head: '幻の馬で 勝った！', q: '幻の馬の 効果を 使う？', text: '手札を 2まい 捨てて、山札から 2まい 引けるよ', yes: 'mpick', no: 'mskip' };
+    return null;
+  }
+  const askOn = () => !!modEl && modEl.classList.contains('cbask');
+  function askSync() {                                 
+    const A = askInfo();
+    if (!A || peekId === A.id || screen !== 'game') { if (askOn()) closeMod(); return false; }
+    if (askOn() && modEl.dataset.ask === A.id) return true;
+    if (modOn() && !askOn()) return false;
+    modal(`<h3 class="gold">${esc(A.head)}</h3><div class="big"><img src="${pic(A.k, true)}" alt="${esc(nameOf(A.k))}"></div><p class="askq"><b>${esc(A.q)}</b>${esc(A.text)}</p>`
+      + `<div class="rowb"><button type="button" class="cbb dk lg" data-cb="${A.no}">使わない</button><button type="button" class="cbb lg" data-cb="${A.yes}">使う</button></div>`
+      + '<button type="button" class="cbb dk sm" data-cb="askpeek">手札と ボードを 見る</button>', 'cbask');
+    modEl.dataset.ask = A.id;
+    return true;
+  }
   
   function cardModal(u) {
     const v = V, c = v.my.hand.find(x => x.u === u); if (!c) return;
@@ -1102,9 +1193,13 @@ const CBApp = (() => {
   }
 
   
+  
+  
+  
+  function hush() { if (screen !== 'game') return; const a = $('.cbact'); if (a) a.innerHTML = ''; say(''); }
   async function send(a) {
     if (busy || !match) return false;
-    busy = true; lock = true; closeMod();              
+    busy = true; lock = true; closeMod(); hush();      
     let r = null;
     try { r = await match.act(a); } catch (e) { r = { ok: false, why: 'err' }; }
     busy = false;
@@ -1123,7 +1218,8 @@ const CBApp = (() => {
     if (a === 'roomx') { roomStop(); return showMenu(); }
     if (a === 'roomre') return showRoom('host');
     if (a === 'menu') { leave(false); return showMenu(); }
-    if (a === 'modx') return closeMod();
+    if (a === 'modx') { closeMod(); if (match && V && screen === 'game' && !busy && !lock && askInfo()) render(); return; }      
+    if (a === 'askpeek') { const A = askInfo(); if (A) peekId = A.id; closeMod(); if (V && screen === 'game') render(); return; }      
     if (a === 'gear') return gearModal();
     if (a === 'quit') return quitModal();
     if (a === 'quitgo') { leave(true); return showMenu(); }
@@ -1135,7 +1231,7 @@ const CBApp = (() => {
     if (a === 'ocard' || a === 'oset') { const c = a === 'oset' ? v.op.set : v.op.hand.find(x => x.u === u); if (c && c.k) showCard(c.k, a === 'oset' ? '相手が セットした カード' : '効果で 見た 相手の カード'); return; }
     if (a === 'mset') { const c = v.my.set; if (c) showCard(c.k, c.open ? 'あなたが セットした カード' : c.blind ? '山札から 来た カード（オープンまで わからない）' : c.up ? '4 の 効果で 見せた カード' : 'あなたが セットした カード（相手には 見えない・もう 変えられない）'); return; }
     if (a === 'card') {
-      if (mode.k === 'dropm') { const j = mode.sel.indexOf(u); if (j >= 0) mode.sel.splice(j, 1); else if (mode.sel.length < 2) mode.sel.push(u); se('tap', 0.6); paintHand(); paintAct(); $('.cbmsg').textContent = modeText(); layout(); return; }
+      if (mode.k === 'dropm') { const j = mode.sel.indexOf(u); if (j >= 0) mode.sel.splice(j, 1); else if (mode.sel.length < 2) mode.sel.push(u); se('tap', 0.6); paintHand(); paintAct(); say(modeText()); layout(); return; }
       se('tap', 0.6); return cardModal(u);
     }
     if (a === 'set') { if (!v.can.set || mode.k !== 'idle') return; return send({ t: 'set', u: u }); }
@@ -1149,7 +1245,7 @@ const CBApp = (() => {
       if (mode.step !== 'ask') return;
       if (mode.q === '6') return pickModal('p6');
       if (mode.q === '5') { mode.step = 'drop5'; render(); return; }
-      if (mode.q === '7') mode.use.x7 = true; else mode.use.u4 = true;
+      if (mode.q === '7') mode.use.x7 = true; else if (mode.q === '3') mode.use.x3 = true; else mode.use.u4 = true;
       return effStep();
     }
     if (a === 'modex') { mode = { k: 'idle' }; render(); return; }
@@ -1275,6 +1371,24 @@ const CBApp = (() => {
         if (x.me) { let n = 0; hand = hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly(null, mid(d, 36), mid(hb, w), 320))));
         if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
+      } else if (x.e === 'x3') {                       
+        const hm = handBox('my'), ho = handBox('op'), tk = x.take.k;
+        se('magic');
+        
+        modal(`<h3 class="gold">3 の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic('3')}" alt="3 の カード" draggable="false"></span>`).join('')}</div><p>${x.me ? `手札の 3 を 3まい 見せたよ<br>その 1まいと、${esc(WHO())}の 手札の 1まいを 交換！` : `${esc(WHO())}が 手札の 3 を 3まい 見せたよ<br>その 1まいと、あなたの 手札の 1まいを 交換！`}</p>`, 'cbopen');
+        await T(1700); closeMod();
+        if (x.me) {
+          await peekShow('3 の 効果：交換！', tk, `${WHO()}の 手札から ${nameOf(tk)} を もらったよ（3 を 1まい わたした）`);
+          await Promise.all([fly('3', cardBox('my', x.give.u) || mid(hm, 56), mid(ho, 36), 400), fly(tk, mid(ho, 36), mid(hm, 56), 400)]);
+          hand = hand.filter(q => q.u !== x.give.u).map(q => (x.three.indexOf(q.u) >= 0 ? { u: q.u, k: q.k, seen: true } : q)).concat([{ u: x.take.u, k: tk, seen: true }]);
+          rehand([x.take.u]);
+        } else {
+          toast(`${WHO()}が 3 の 効果を 使ったよ\nあなたの ${nameOf(tk)} と 3 を 交換した`, 3.4);
+          await Promise.all([fly(tk, cardBox('my', x.take.u) || mid(hm, 56), mid(ho, 36), 400), fly('3', mid(ho, 36), mid(hm, 56), 400)]);
+          hand = hand.filter(q => q.u !== x.take.u).concat([{ u: x.give.u, k: '3' }]);
+          rehand([x.give.u]);
+        }
+        await T(500);
       } else if (x.e === 'first') {
         se('flip');
         $('.cbslot.' + (x.me ? 'my' : 'op')).innerHTML = cardBtn({ u: 0, k: '4' }, '') + '<span class="tag">4 の 効果</span>';
@@ -1293,6 +1407,7 @@ const CBApp = (() => {
         if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push({ u: bk.u, k: bk.k, seen: !!bk.seen }); rehand(bk ? [bk.u] : null); }
         else toast(`${WHO()}が カードを 交換したよ`, 1.8);
       } else if (x.e === 'open') {
+        hush();                                        
         await openShow(x);
       } else if (x.e === 'k') {
         if (x.me) await peekShow('神様馬の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`);
@@ -1331,16 +1446,20 @@ const CBApp = (() => {
       + '<div class="col"><button type="button" class="cbb" data-cb="again">もう 1回</button><button type="button" class="cbb dk" data-cb="menu">メニューへ</button></div>', 'cbend');
     const no = gameNo, r = await settle(x.res), g = $('.cbend .gift');
     if (!g || no !== gameNo) return;
+    
+    
+    const get = (n, bonus) => `<div class="cbget" role="status" aria-label="お世話トークン ${n}こ GET"><i class="tk" aria-hidden="true">🎟</i><span class="tx"><small>${bonus ? `${REWARD.every}連勝 ボーナス！ ` : ''}お世話トークン</small><b class="n gold">＋${n}こ GET！</b></span></div>`;
     let h = '';
     if (x.res === 'win') {
-      const p = r.pay;
-      if (p && p.add > 0) h = `🎟 お世話トークン <b>＋${p.add}</b>${r.got > REWARD.win ? `（${REWARD.every}連勝 ボーナス！）` : ''}${p.add < p.want ? `<br>（${p.max}こ まで なので ${p.add}こ だけ）` : ''}<br>いま ${p.stock}こ／${p.max}こ`;
-      else if (p) h = `お世話トークンが いっぱい（${p.max}こ）なので、今回は もらえなかったよ`;
-      else h = `🎟 お世話トークン ${r.got}こは、つぎに ここを 開いた ときに わたすね`;
-      h += `<br><b>${r.streak}連勝中！</b>` + (r.streak % REWARD.every ? `　あと ${REWARD.every - r.streak % REWARD.every}勝で ${REWARD.bonus}こ` : '');
-    } else if (x.res === 'lose') h = '連勝は 0 に もどったよ。もう 1回 やって みよう！';
-    else h = st.streak > 0 ? `同点なので 連勝（${st.streak}連勝）は そのまま` : '同点！ もう 1回 やって みよう！';
+      const p = r.pay, bonus = r.got > REWARD.win;
+      if (p && p.add > 0) h = get(p.add, bonus) + `<div>いま ${p.stock}こ／${p.max}こ${p.add < p.want ? `（${p.max}こ まで なので ${p.add}こ だけ）` : ''}</div>`;
+      else if (p) h = `<div>お世話トークンが いっぱい（${p.max}こ）なので、今回は もらえなかったよ</div>`;
+      else h = get(r.got, bonus) + '<div>つぎに ここを 開いた ときに わたすね</div>';
+      h += `<div><b>${r.streak}連勝中！</b>` + (r.streak % REWARD.every ? `　あと ${REWARD.every - r.streak % REWARD.every}勝で ${REWARD.bonus}こ` : '') + '</div>';
+    } else if (x.res === 'lose') h = '<div>連勝は 0 に もどったよ。もう 1回 やって みよう！</div>';
+    else h = `<div>${st.streak > 0 ? `同点なので 連勝（${st.streak}連勝）は そのまま` : '同点！ もう 1回 やって みよう！'}</div>`;
     g.innerHTML = h;
+    if (g.querySelector('.cbget')) se('magic', 0.7);
   }
   function again() {
     if (!match || !ended) return;
@@ -1374,7 +1493,7 @@ const CBApp = (() => {
     open, close, REWARD, rewardFor, _rng: null, _think: null, _link: null, _opt: null, _room: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
-      get idle() { return !pumping && !queue.length && !busy && !lock; }, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, modOn
+      get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, modOn
     }
   };
 })();
