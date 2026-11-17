@@ -17,6 +17,10 @@
 //   ・コインは localStorage 'tengel.cbgift'（{ v:1, list:[{ id:'login-<年-月-日>', c: 枚数 }]：さいごの 30件 }）に ためて、カードバトル（cb/cb_app.js）が 受け取る
 //     （受け取った id は カードバトルの 保存に のこる＝2回 入らない）。カードバトルの 本体を 読んで いる ときは すぐ（'tengel:cbgift'）
 //   ・窓：「○日目 の ボーナス +○P と バトルコイン +○枚 を もらったよ」・7日ぶんの 札にも コインの 枚数（コインの 絵は カードバトルの cb_coin.webp：読めない ときは 絵 だけ かくす）
+// 第4.191版（まさちゃん 2026/11/17 21:23「お願い！」＝ 21:11「アプリ内のポイントとか、バトルコインとか不正に受け取ることできないようになってる？」の 抜け道 1）：
+//   ・日付は 時計の 番人（clock_guard.js の TengelClock.now）の 本当の 時刻で 決める：iPhone の 日付を 先に 進めても、つぎの 日の ボーナス（ポイント・バトルコイン）は
+//     もらえない（本当の 日付に なったら もらえる）。もどしても もらえない（前と 同じ）。もらうか 決める 前に アプリの 時計で たしかめる（TengelClock.sync）
+//   ・アプリが 時計を わたさない とき（テストの にせもの）は iPhone の 時計（前と 同じ）
 (function () {
   'use strict';
   if (!window.__NATIVE) return;
@@ -54,12 +58,13 @@
     return s;
   }
   function testOn() { return !!window.__TEST; }
-  var today = function (s) { return ymd(Date.now() + (s.off || 0) * 86400000); };
+  function clk() { return window.TengelClock ? window.TengelClock.now() : Date.now(); }      // 第4.191版：本当の 時刻
+  var today = function (s) { return ymd(clk() + (s.off || 0) * 86400000); };
   // その 日の ぶんを もらう（もう もらって いれば 何も しない）→ もらった 日（0〜6）か −1
   function check() {
     var w = wallet(); if (!w || busy) return Promise.resolve(-1);
     busy = true;
-    return Promise.resolve(w.ready).then(function () {
+    return Promise.resolve(w.ready).then(function () { return window.TengelClock ? window.TengelClock.sync() : null; }).then(function () {      // 第4.191版：アプリの 時計で たしかめて から
       var s = state(), t = today(s);
       if (s.last && t <= s.last) return -1;                                  // 今日は もう もらった／時計が もどって いる
       var day = s.n % DAYS;
@@ -141,8 +146,8 @@
   // テスト版 だけ：日付を 1日 先に 進めた ことに して、つぎの 日の ぶんを もらう
   function testNext() {
     if (!testOn() || busy) return Promise.resolve(-1);
-    var s = state(), t = ymd(Date.now() + s.off * 86400000);
-    while (ymd(Date.now() + s.off * 86400000) <= (s.last > t ? s.last : t) && s.off < 4000) s.off += 1;
+    var s = state(), t = ymd(clk() + s.off * 86400000);
+    while (ymd(clk() + s.off * 86400000) <= (s.last > t ? s.last : t) && s.off < 4000) s.off += 1;
     jset(s);
     return check();
   }

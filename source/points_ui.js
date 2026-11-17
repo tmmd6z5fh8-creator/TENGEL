@@ -13,10 +13,14 @@
 //  ・第4.114版（まさちゃん 2026/11/01）：結果ボードカスタム 1,500円・お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット。持って いれば 両方を 持って いる 扱い）。
 //    ミッションを 2つ 足した：結果ボードカスタムの 解放の 数（3・6・9・12・16こ → 第4.120版で 15こ）と 壁紙の 解放の 枚数（3〜45枚・帯も 数える）で ポイント（もらったP）
 //  ・ほかの画面から使う窓口：window.TengelWallet
+//  ・第4.191版（まさちゃん 2026/11/17 21:23「お願い！」＝ 21:11 の 抜け道 3）：残高（サブスクの ポイントの 期限）・使う・解放・あずかり・できごとの 時刻は
+//    時計の 番人（clock_guard.js の TengelClock.now：本当の 時刻）で 決める（NOW）。iPhone の 日付を もどしても、期限が 切れた サブスクの ポイントは もう 使えない
+//    （テスト版の 道具は iPhone の 時計の まま）
 (function () {
   'use strict';
   if (!window.__NATIVE || !window.TengelLocal || !window.TengelPoints) return;
   const P = window.TengelPoints, TL = window.TengelLocal, N = window.TengelNative;
+  const NOW = () => (window.TengelClock ? window.TengelClock.now() : Date.now());      // 第4.191版：本当の 時刻（時計の 番人）
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -80,7 +84,7 @@
     emit(); paintAll();
     return saving;
   }
-  const B = () => P.balance(W ? W.events : [], Date.now());
+  const B = () => P.balance(W ? W.events : [], NOW());
   const total = () => B().total;
   const device = () => (W && W.device) || 'x';
   // ---------- あずかりポイント（第4.139版・まさちゃん 11/10 12:27「99999pに到達しながらサブスクに入っている人は、ミッションのところで超えてしまっているポイントが溜まっていくようにして！
@@ -95,7 +99,7 @@
   const holdCan = () => (W ? Math.min(holdN(), P.room(total())) : 0);          // いま 補充できる P
   function release() {                                                         // 台帳へ（保存は よぶ 側）。返り値＝入れた P
     if (!W || !W.hold.length) return 0;
-    const r = P.holdRelease(W.events, W.hold, Date.now());
+    const r = P.holdRelease(W.events, W.hold, NOW());
     if (!r.moved) return 0;
     W.events = r.events; W.hold = r.hold; return r.moved;
   }
@@ -130,7 +134,7 @@
     }
     const r = await marker('get', 'gift-first');
     if (r.ok && r.has) { if (!W.gift || W.gift.state !== 'already') { W.gift = { state: 'already', at: r.value || '' }; save(); } return; }   // 前に受け取っている（入れ直し・同じApple IDのほかの端末）
-    const g = P.giftEvent(Date.now());
+    const g = P.giftEvent(NOW());
     W.events.push(g);
     const s = await marker('set', 'gift-first', g.at);
     W.gift = { marked: !!s.ok, state: 'given', note: s.ok ? '' : (s.error || '') };
@@ -157,7 +161,7 @@
     let added = 0;
     const Pd = P.PRODUCTS[tx.product] || {}, isUnlock = Pd.kind === 'unlock', what = Pd.what || '';
     if (tx.revoked) {
-      const rf = P.refundEvent(W.events, tx, Date.now());
+      const rf = P.refundEvent(W.events, tx, NOW());
       const hn = W.hold.length; W.hold = P.holdDrop(W.hold, tx.id);      // 第4.139版：その 取引の あずかりポイントも 消す
       if (rf) { W.events.push(rf); added = rf.amount; await save(); toast(isUnlock ? `返金があったので、${Pd.name}を使えなくしたよ` : `返金があったので ${pts(-rf.amount)} を引いたよ`, 4000); if (isUnlock) unlockEmit(what, 'refund'); }
       else if (W.hold.length !== hn) await save();
@@ -166,7 +170,7 @@
       if (tx.kind === 'sub' && done.includes(String(tx.id))) { /* 入れ直し・ほかの端末で、もうこの取引のPは足してある */ }
       else {
         const had = isUnlock && P.owned(W.events, what);
-        const e = P.txEvent(W.events, tx, Date.now());
+        const e = P.txEvent(W.events, tx, NOW());
         if (e) {
           const c = credit(e); added = c.added; takeTx.held = c.held; await save();      // 第4.139版：上限を こえる ぶんは あずかる（credit）
           if (tx.kind === 'sub') await rememberSub(tx.id);
@@ -231,7 +235,7 @@
   const READ_WHAT = r => `読み込み ${r.date ? dayOf(r.date) : ''}${r.venue ? ' ' + r.venue : ''}${r.r ? ' ' + r.r + 'R' : ''}`.trim();
   function charge(amount, what) {
     ensure(amount);
-    const next = P.spend(W.events, amount, what, device(), Date.now());
+    const next = P.spend(W.events, amount, what, device(), NOW());
     if (!next) return false;
     W.events = next; return true;
   }
@@ -392,7 +396,7 @@
       const m = extraMissions().find(x => x.id === id);
       if (!m || !m.claimable) return;
       if (overCap(m.reward)) { toast(capMsg(m.label, m.reward).replace('使ってからに してね', '使ってから 受け取ってね（ミッションは 消えないよ）'), 5200); return; }
-      W.events.push(P.rowEvent(m, Date.now()));
+      W.events.push(P.rowEvent(m, NOW()));
       await save();
       toast(`🎉 ${m.label}の ${pts(m.reward)} を受け取ったよ（合計 ${pts(total())}）`, 4000);
       unlockFx(msRowSel(id), `+${pts(m.reward)}`);
@@ -401,7 +405,7 @@
     if (/^mission-wall-/.test(String(id))) {     // 壁紙のミッション（帯の壁紙・第4弾）
       const wm = P.wallMissions(P.wallCount(W.events, packN()), W.events).find(x => x.id === id);
       if (!wm || !wm.claimable) return;
-      P.wallMissionEvents(wm, device(), Date.now()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
+      P.wallMissionEvents(wm, device(), NOW()).forEach(e => { if (!P.has(W.events, e.id)) W.events.push(e); });
       await save(); paintAll();
       toast(`✅ ${wm.label}を受け取ったよ！ 設定の「着せ替え」で使えるよ`, 4000);
       unlockFx(msRowSel(id), '受け取り！');
@@ -410,7 +414,7 @@
     const m = P.missions(countedN(), W.events).find(x => x.id === id);
     if (!m || !m.claimable) return;
     if (overCap(m.reward)) { toast(capMsg(m.label, m.reward).replace('使ってからに してね', '使ってから 受け取ってね（ミッションは 消えないよ）'), 5200); return; }
-    W.events.push(P.missionEvent(m, Date.now()));
+    W.events.push(P.missionEvent(m, NOW()));
     await save();
     toast(`🎉 ${m.label}の ${pts(m.reward)} を受け取ったよ（合計 ${pts(total())}）`, 4000);
     unlockFx(msRowSel(id), `+${pts(m.reward)}`);
@@ -433,7 +437,7 @@
     if (/^type:/.test(key)) cost = P.COST.type; else if (/^slot:/.test(key)) cost = P.COST.slot;
     cost = Math.max(0, Math.round(+cost || 0));
     ensure(cost);
-    const next = P.unlock(W.events, key, cost, device(), Date.now());
+    const next = P.unlock(W.events, key, cost, device(), NOW());
     if (!next) return false;
     W.events = next; await save(); return true;
   }
@@ -1115,7 +1119,7 @@
     let back = 0, held = 0, tk = 0, changed = false; const names = [];
     list.forEach(g => {
       if (g.cost > 0) {
-        const c = credit(P.rowEvent({ id: g.id, reward: g.cost, label: `なくなった壁紙「${g.name}」のポイントを返した` }, Date.now()));
+        const c = credit(P.rowEvent({ id: g.id, reward: g.cost, label: `なくなった壁紙「${g.name}」のポイントを返した` }, NOW()));
         back += c.added + c.held; held += c.held; names.push(g.name); changed = true;
       } else {
         const done = goneTkDone();
@@ -1125,7 +1129,7 @@
           if (ok) { fresh = true; try { localStorage.setItem(GONE_TK, JSON.stringify(done.concat([g.theme]))); } catch (e) { /* 覚えられなくても 台帳の しるしが ある */ } }
         }
         if (!ok) return;
-        W.events.push(P.rowEvent({ id: g.id, reward: 0, label: `なくなった壁紙「${g.name}」のチケットを返した` }, Date.now()));
+        W.events.push(P.rowEvent({ id: g.id, reward: 0, label: `なくなった壁紙「${g.name}」のチケットを返した` }, NOW()));
         changed = true;
         if (fresh) { tk += 1; names.push(g.name); }
       }
@@ -1148,7 +1152,7 @@
     let back = 0, held = 0; const names = [];
     list.forEach(g => {
       if (!g.paid && g.cost > 0) {
-        const c = credit(P.rowEvent({ id: g.back, reward: g.cost, label: `なくなったフィギュア「${g.name}」のポイントを返した` }, Date.now()));
+        const c = credit(P.rowEvent({ id: g.back, reward: g.cost, label: `なくなったフィギュア「${g.name}」のポイントを返した` }, NOW()));
         back += c.added + c.held; held += c.held;
       }
       if (names.indexOf(g.name) < 0) names.push(g.name);
@@ -1199,7 +1203,7 @@
     //   第4.139版：上限（99,999P）を こえる ぶんは 消さずに あずかる（ミッションの 窓の「あずかりポイント」→ 使って あきが できたら 補充）
     grant: async (id, n, what) => {
       await walletReady; if (!W || !id || !(n > 0) || P.has(W.events, id) || W.hold.some(h => h.id === String(id))) return false;
-      const c = credit(P.rowEvent({ id: String(id), reward: Math.round(n), label: String(what || 'トレーニングセンター') }, Date.now())); await save(); paintAll();
+      const c = credit(P.rowEvent({ id: String(id), reward: Math.round(n), label: String(what || 'トレーニングセンター') }, NOW())); await save(); paintAll();
       if (c.held) toast(`上限 ${pts(P.CAP)} なので、${pts(c.added + c.held)} の うち ${pts(c.held)} は あずかったよ（ミッションの 窓で 補充できるよ）`, 5200);
       return true;
     },
@@ -1224,7 +1228,7 @@
         if (!item || typeof item.id !== 'string' || !item.id || !(+item.n >= 1 && +item.n <= 8) || P.figGone(item.n) || !(cost > 0)) return { ok: false, why: 'bad' };
         if (W.figs.items.some(x => x.id === item.id)) return { ok: false, why: 'dup' };
         ensure(Math.round(cost));
-        const next = P.unlock(W.events, 'fig:' + item.id, Math.round(cost), device(), Date.now());
+        const next = P.unlock(W.events, 'fig:' + item.id, Math.round(cost), device(), NOW());
         if (!next) return { ok: false, why: 'short', need: Math.round(cost) - total() };
         W.events = next;
         const it = JSON.parse(JSON.stringify(item)); it.at = new Date().toISOString(); it.cost = Math.round(cost); W.figs.items.push(it);
@@ -1248,7 +1252,7 @@
         const key = 'tctok:' + pk[0] + ':' + id;
         if (P.unlocked(W.events, key)) return { ok: true, dup: true, n: pk[0], cost: pk[1] };
         ensure(pk[1]);
-        const next = P.unlock(W.events, key, pk[1], device(), Date.now());
+        const next = P.unlock(W.events, key, pk[1], device(), NOW());
         if (!next) return { ok: false, why: 'short', need: pk[1] - total() };
         W.events = next; await save();
         return { ok: true, n: pk[0], cost: pk[1] };

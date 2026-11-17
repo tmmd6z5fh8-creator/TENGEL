@@ -1850,13 +1850,28 @@ try:
         start(pg, 'k1234', '76543'); pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(150)
         q0 = pg.evaluate(MST)
         check(q0['cpu'] == 0 and q0['live'] == '' and pg.evaluate("() => CBApp._t.screen") == 'menu', f'対戦の とちゅうで やめた → ミッションの 連勝も 0（{q0["cpu"]}）')
-        # 対戦の とちゅうで アプリが 閉じられた（つぎに 開いた とき）→ 0・知らせる
-        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.save(); }")
+        # 対戦の とちゅうで アプリが 閉じられた（つぎに 開いた とき）→ 0・知らせる（第4.191版：負けに 数えて いつもの 連勝も 0）
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.state.streak = 4; T.save(); }")
         start(pg, 'k1234', '76543'); ckey(pg, 'k')
-        lv2 = json.loads(pg.evaluate("() => localStorage.getItem('tengel.cb')"))['ms']
-        pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(150); tt = pg.evaluate(TOAST); q1 = pg.evaluate(MST)
+        sv2 = json.loads(pg.evaluate("() => localStorage.getItem('tengel.cb')")); lv2 = sv2['ms']
+        pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(150); tt = pg.evaluate(TOAST); q1 = pg.evaluate(MST); sq1 = pg.evaluate("() => [CBApp._t.state.streak, CBApp._t.state.lose, CBApp._t.state.win]")
+        check(sv2['streak'] == 4 and sq1 == [0, sv2['lose'] + 1, sv2['win']] and '負けに 数えたよ（4連勝は 0 に もどったよ）' in tt and pg.locator('#cbOv .cbmenu .rec').inner_text().startswith(f'{sv2["win"]}勝 {sv2["lose"] + 1}敗'),
+              f'第4.191版：対戦 ちゅうに アプリが 閉じられた ＝「やめる」と 同じ：負けに 数える・いつもの 連勝（4）も 0（前は ミッションの 連勝 だけ）・「負けに 数えたよ（4連勝は 0 に もどったよ）」（{sq1}）')
         check(lv2['live'] == 'cpu' and lv2['cpu'] == 4 and q1['cpu'] == 0 and q1['live'] == '' and '前の 対戦が とちゅうで 終わった ので、' in tt and 'ミッションの 連勝（コンピュータ）は 0 に もどったよ' in tt,
               f'対戦 ちゅうに アプリが 閉じられた → つぎに 開いた とき ミッションの 連勝は 0・「ミッションの 連勝（コンピュータ）は 0 に もどったよ」（{tt!r}）')
+        # 第4.191版：結果は 決まった とき（'end' が 届いた とき）すぐ 数える → 最後の 札の とちゅうで アプリが 閉じられても 勝ちは 勝ち（負けを 足さない）
+        sv0 = pg.evaluate("() => { const T = CBApp._t, s = T.state; return { coin: s.coin, win: s.win, lose: s.lose, draw: s.draw, streak: s.streak, owe: s.owe }; }")      # この 場面の あとで もとに もどす（あとの 場面の コインの 数を かえない）
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 0; T.state.streak = 2; T.save(); }"); w0 = pg.evaluate("() => [CBApp._t.state.win, CBApp._t.state.lose]")
+        start(pg, 'k1234', '76543'); ckey(pg, 'k'); opp(pg, {'t': 'set', 'k': 7}); pg.locator('#cbOv .cbmod [data-cb=kskip]').click(); idle(pg)
+        ckey(pg, '1'); opp(pg, {'t': 'set', 'k': 6}); ckey(pg, '2'); pg.evaluate("() => CBApp._t.speed(1)")      # 最後の 手は ふつうの 速さ・待たずに 読む（札を 見せて いる とちゅうを つかまえる）
+        e0 = pg.evaluate("""async () => { const m = CBApp._t.match, S = m._.state(), c = S.p[1].hand.find(x => x.k === '3'); m._.apply(1, { t: 'set', u: c.u }); await new Promise(r => setTimeout(r, 150));
+          return [CBApp._t.ended, !!document.querySelector('#cbOv .cbend'), JSON.parse(localStorage.getItem('tengel.cb'))]; }"""); pg.evaluate("() => CBApp._t.speed(0.03)")
+        pg.evaluate("() => { CBApp._t.load(); }"); e1 = pg.evaluate("() => [CBApp._t.state.win, CBApp._t.state.lose, CBApp._t.state.streak, CBApp._t.state.ms.live]")
+        pg.wait_for_function("() => CBApp._t.ended && !!document.querySelector('#cbOv .cbend .gift')", timeout=30000); pg.wait_for_timeout(300)
+        g1 = pg.locator('#cbOv .cbend .gift').inner_text(); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150); tt1 = pg.evaluate(TOAST) or ''
+        check(not e0[0] and not e0[1] and e0[2]['win'] == w0[0] + 1 and e0[2]['lose'] == w0[1] and e0[2]['streak'] == 3 and e0[2]['ms']['live'] == '' and e1 == [w0[0] + 1, w0[1], 3, ''] and '負けに 数えたよ' not in tt1 and 'バトルコイン' in g1,
+              f'第4.191版：最後の 手で 勝ちが 決まった とき すぐ 数えて 保存（まだ 最後の 札を 見せて いる とちゅう：{not e0[0] and not e0[1]}）→ そこで アプリが 閉じられても 勝ち（{e1}）・負けを 足さない')
+        pg.evaluate("(v) => { const T = CBApp._t; Object.assign(T.state, v); T.state.ms.cpu = 0; T.state.ms.live = ''; T.save(); T.menu(); }", sv0); pg.wait_for_timeout(150)
         # 月が かわる → リセット（達成も 連勝も 0）
         pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 3; T.state.ms.fr = 2; T.state.ms.got = { cpu: [3], fr: [] }; T.save(); CBApp._now = () => new Date(2026, 11, 1, 0, 0, 5); T.menu(); }"); pg.wait_for_timeout(150)
         r0 = pg.evaluate(MST); mb = pg.evaluate(MSB)
@@ -1864,6 +1879,15 @@ try:
         check(r0 == {'m': '2026-12', 'cpu': 0, 'fr': 0, 'got': {'cpu': [], 'fr': []}, 'live': ''} and mb == '🎯ミッション今月 0／14 達成' and m3['m'] == '12月の ミッション1月1日に リセット（あと 31日）' and m3['rows'][0] == '3連勝30枚あと 3勝>' and pg.evaluate("() => CBApp._t.state.coin") == 32,
               f'月が かわった（12月1日）→ ミッションを リセット（達成も 連勝も 0・コインは のこる）・「12月の ミッション（1月1日に リセット）」（{r0}）')
         pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(100)
+        # 第4.191版：月が もどった（日付を もどした）→ リセットしない（もう 1回 達成 は できない）・ミッションの 画面の 月は おぼえた 月
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 2; T.state.ms.got = { cpu: [], fr: [] }; T.save(); CBApp._now = () => new Date(2026, 10, 20, 12, 0, 0); T.menu(); }"); pg.wait_for_timeout(150)
+        b0 = pg.evaluate(MST); pg.locator('#cbOv .cbmenu [data-cb=ms]').click(); pg.wait_for_timeout(150); mb2 = pg.evaluate(MSS); pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(100)
+        check(b0['m'] == '2026-12' and b0['cpu'] == 2 and mb2['m'] == '12月の ミッション1月1日に リセット（あと 42日）',
+              f'第4.191版：日付を 11月に もどしても リセットしない（{b0["m"]}・連勝 {b0["cpu"]}）・画面は「12月の ミッション（1月1日に リセット）」（{mb2["m"]!r}）')
+        # 第4.191版：テストの 時計（CBApp._now）が ない ときは 時計の 番人の 本当の 時刻（TengelClock.now）で 決める
+        pg.evaluate("() => { CBApp._now = null; window.__tcNow = window.TengelClock.now; window.TengelClock.now = () => new Date(2027, 0, 3, 9, 0, 0).getTime(); CBApp._t.menu(); }"); pg.wait_for_timeout(150)
+        b1 = pg.evaluate(MST); pg.evaluate("() => { window.TengelClock.now = window.__tcNow; CBApp._now = () => new Date(2026, 11, 1, 0, 0, 5); }")
+        check(b1['m'] == '2027-01' and b1['cpu'] == 0, f'第4.191版：本当の 時刻（時計の 番人）が 1月 → リセット（{b1["m"]}）')
         # 前の 月の 連勝の まま 月が かわって 勝つ → 新しい 月の 1連勝（前の 月の 続きに しない）
         pg.evaluate("() => { const T = CBApp._t; T.state.ms = { m: '2026-11', cpu: 9, fr: 0, got: { cpu: [3, 5, 6, 7, 8, 9], fr: [] }, live: '' }; T.save(); }")
         start(pg, 'k1234', '76543'); ckey(pg, 'k'); opp(pg, {'t': 'set', 'k': 7}); pg.locator('#cbOv .cbmod [data-cb=kskip]').click(); idle(pg)

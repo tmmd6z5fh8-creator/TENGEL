@@ -204,6 +204,22 @@ print("tengel-bgm api %s card %s (none expected) h264 %s -> %s" % (o.get("has"),
   [ -f "$OUT/iphone-report-1.json" ] && say "   card battle: $(python3 -c "$CBPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
+  # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
+  #   アプリの 番号（proc）は かわる・Webの 画面（TengelClock）は 1回目 first／ok・2回目 ok（同じ 起動）。boot が 空（iOS が 見せない）でも ほかが 合えば OK（その ときは 番号なしで 見はる）
+  if [ -f "$OUT/iphone-report-1.json" ] && [ -f "$OUT/iphone-report-2.json" ]; then
+    say "   clock: $(python3 -c '
+import json, sys
+c1 = json.load(open(sys.argv[1])).get("clock") or {}; c2 = json.load(open(sys.argv[2])).get("clock") or {}
+a, b, d = c1.get("a") or {}, c1.get("b") or {}, c2.get("a") or {}
+js = c1.get("js") or [0, 0]; s1 = c1.get("st") or {}; s2 = c2.get("st") or {}
+wall = isinstance(a.get("wall"), (int, float)) and js[0] - 2000 <= a["wall"] <= js[1] + 2000
+mono = isinstance(a.get("mono"), (int, float)) and a["mono"] > 0 and isinstance(b.get("mono"), (int, float)) and 300 <= b["mono"] - a["mono"] <= 5000 and isinstance(d.get("mono"), (int, float)) and d["mono"] > b["mono"]
+ids = bool(a.get("dev")) and a.get("dev") == b.get("dev") == d.get("dev") and a.get("proc") == b.get("proc") and d.get("proc") != a.get("proc") and a.get("boot") == b.get("boot") == d.get("boot")
+web = c1.get("has") and c1.get("how") in ("first", "ok") and c2.get("how") == "ok" and s1.get("dev") == s2.get("dev") == a.get("dev") and abs(c2.get("diff") or 0) < 5000
+ok = wall and mono and ids and web
+print("wall %s mono %s(+%s ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round((b.get("mono") or 0) - (a.get("mono") or 0)), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else "NO", str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
+' "$OUT/iphone-report-1.json" "$OUT/iphone-report-2.json" 2>&1)"
+  fi
   phase "$IPHONE" iphone 3 700 offer restored report-3 report-link
   sleep 3; shot "$IPHONE" "iphone-3-link-safari" 700
   # ダークモードで1枚

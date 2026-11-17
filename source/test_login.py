@@ -8,6 +8,10 @@
 #   ・App Store版：テスト版の ボタン（つぎの 日を ためす）は 出ない・日付を ずらす しかけは 効かない／Web版には 入れない
 #   第4.188版（まさちゃん 2026/11/17 11:22「毎日ログインにも、バトルコイン1日2枚 7日ログインで10枚貰えるようにして！」）：
 #   ・ポイントと いっしょに バトルコイン（1〜6日目 2枚・7日目 12枚）→ localStorage 'tengel.cbgift' に ためる（同じ 日は 1回）・窓と 7日ぶんの 札にも 出る
+#   第4.191版（まさちゃん 2026/11/17 21:23「お願い！」＝ 21:11「アプリ内のポイントとか、バトルコインとか不正に受け取ることできないようになってる？」）：
+#   ・時計の 番人（clock_guard.js の TengelClock）：アプリの 時計（Clock.swift：お願い「clock」）の にせもので、iPhone の 日付を 進めても・アプリを 開き直しても
+#     つぎの 日の ボーナスは もらえない・本当に 1日 たつと 本当の 日付の ボーナス・もどしても もらえない・サブスクの ポイントの 期限は 日付を もどしても もどらない・
+#     電源を 入れ直した あとは iPhone の 時計を 信じる（再起動を くり返す やり方は 見分けられない）。アプリの 時計が ない ときは 前と 同じ（ほかの 場面は この まま）
 #   python3 test_login.py
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -80,6 +84,9 @@ try:
     check('const COIN = { win: 2, bonus: [[3, 6], [5, 10]], day: 2, day7: 10, max: 9999 };' in cba and "const GK = 'tengel.cbgift';" in cba, 'カードバトルの 説明の 数（day 2・day7 10）と 受け取る 場所（tengel.cbgift）が ログインボーナスと 同じ')
     check('tengel.cbgift' not in web, 'Web版には バトルコインの しくみも ない')
     check('TengelLogin' not in web and 'ログインボーナス' not in web and 'tengel.login' not in web, 'Web版には 入って いない（かわらない）')
+    check(all(0 < x.find('window.TengelClock = {') < x.find('window.TengelWallet = {') and x.find('window.TengelClock = {') < x.find('window.TengelLogin = {') and "N.call('clock', {})" in x for x in (app, store))
+          and 'TengelClock' not in web and 'tengel.clock' not in web,
+          '第4.191版：時計の 番人（clock_guard.js）は App Store版・テスト版の ポイント・ログインボーナスより 前に 入って いる（Web版には ない）')
     check('confirm(' not in code and 'alert(' not in code and 'prompt(' not in code, '窓は confirm()・alert() を 使わない（アプリの 中では 出ない）')
     body = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_body.txt'), encoding='utf8').read()); disp = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_disp.txt'), encoding='utf8').read())
     strs = ''.join(re.findall(r"'((?:[^'\\]|\\.)*)'", code)); lack = sorted({c for c in strs if ord(c) > 0x2000 and c not in body}); lackd = [c for c in 'ログインボーナス' if c not in disp]
@@ -197,6 +204,55 @@ try:
         check(not errs and not dialogs, f'エラー なし・confirm()／alert() の 窓は 出て いない {errs[:3]} {dialogs[:3]}')
         ctx.close()
 
+        print('■ 時計の 番人（第4.191版：iPhone の 日付を 進めても・もどしても ずるは できない）')
+        FAKE2 = FAKE.replace("  if (m.name === 'iap')", "  if (m.name === 'clock' && window.__clk) val = window.__clk();\n  if (m.name === 'iap')"); assert FAKE2 != FAKE
+        # 本当の 時刻 ＝ 本物の 時計 ＋ st.real（テストで 時間を たたせる）・iPhone の 時計 ＝ 本当の 時刻 ＋ st.day 日（設定で かえた）・電源を 入れてからの 時間 ＝ st.mb ＋ 本物の 時計 ＋ st.real
+        CLK2 = """(() => { const R = Date.now.bind(Date), K = '__clkw', st = JSON.parse(sessionStorage.getItem(K) || 'null') || { real: 0, day: 0, boot: 'B1', mb: 5 * 86400000 - R() };
+  const put = () => sessionStorage.setItem(K, JSON.stringify(st)); put(); const proc = 'P' + R() + Math.random();
+  Date.now = () => R() + st.real + st.day * 86400000;
+  window.__clk = () => ({ wall: Date.now(), mono: st.mb + R() + st.real, boot: st.boot, proc: proc, dev: 'D1' });
+  window.__pass = ms => { st.real += ms; put(); }; window.__setDay = d => { st.day = d; put(); }; window.__reboot = () => { st.boot = 'B' + R(); st.mb = 60000 - R() - st.real; put(); };
+  window.__hows = []; document.addEventListener('tengel:clock', e => window.__hows.push(e.detail.how)); })();"""
+        CLKI = """() => { const p2 = n => (n < 10 ? '0' : '') + n, ymd = ms => { const d = new Date(ms); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
+  return { how: TengelClock.how(), hows: window.__hows.slice(), st: TengelClock.state(), wall: ymd(Date.now()), trusted: ymd(TengelClock.now()), open: !!document.getElementById('lgOv'),
+    ev: TengelWallet.events().filter(e => /^login-/.test(e.id)).map(e => e.id), gift: (JSON.parse(localStorage.getItem('tengel.cbgift') || 'null') || { list: [] }).list.map(x => x.id) }; }"""
+        c5 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); c5.add_init_script(FAKE2); c5.add_init_script(CLK2 + AUTO)
+        p5 = c5.new_page(); e5 = []; p5.on('pageerror', lambda e: e5.append(str(e)))
+        p5.goto(APP); p5.wait_for_timeout(1500); p5.wait_for_function("() => window.TengelWallet && TengelWallet.on && TengelWallet.total() >= 10000", timeout=20000); p5.wait_for_timeout(1100); gate(p5)
+        p5.wait_for_function("() => !!document.getElementById('lgOv')", timeout=20000); p5.wait_for_timeout(400); k0 = p5.evaluate(CLKI); p5.evaluate("() => TengelLogin.close()")
+        check(k0['how'] in ('first', 'ok') and k0['ev'] == [f'login-{k0["wall"]}'] and k0['trusted'] == k0['wall'] and k0['st']['boot'] == 'B1' and k0['st']['dev'] == 'D1' and k0['gift'] == k0['ev'],
+              f'アプリの 時計で たしかめて 今日の ボーナス（{k0["how"]}・{k0["ev"]}）・おぼえ（tengel.clock）に 起動の 番号と 端末の 番号')
+        p5.evaluate("() => __setDay(1)"); r1 = p5.evaluate("() => TengelLogin.check()"); p5.wait_for_timeout(400); k1 = p5.evaluate(CLKI)
+        check(r1 == -1 and not k1['open'] and k1['ev'] == k0['ev'] and k1['gift'] == k0['gift'] and k1['how'] == 'ahead' and k1['wall'] > k1['trusted'] == k0['wall'],
+              f'iPhone の 日付を 1日 進めても、つぎの 日の ボーナス（ポイント・バトルコイン）は もらえない（{k1["how"]}・iPhone {k1["wall"]}・本当 {k1["trusted"]}）')
+        p5.goto(APP); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(2500); k2 = p5.evaluate(CLKI)
+        check(not k2['open'] and k2['ev'] == k0['ev'] and k2['hows'] and set(k2['hows']) == {'ahead'} and k2['trusted'] == k0['wall'] and k2['st']['proc'] != k1['st']['proc'] and k2['st']['hi'] < k2['st']['t'] + 600000,
+              f'進めた まま アプリを 開き直しても もらえない（{k2["hows"]}：起動の 番号が 同じ ＝ 電源を 入れ直して いない・開いた すぐ あとの iPhone の 時計は おぼえない）')
+        p5.evaluate("() => __pass(86400000)"); r3 = p5.evaluate("() => TengelLogin.check()")
+        p5.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); p5.wait_for_timeout(300); k3 = p5.evaluate(CLKI); p5.evaluate("() => TengelLogin.close()")
+        check(r3 == 1 and k3['ev'] == k0['ev'] + [f'login-{k3["trusted"]}'] and k3['trusted'] > k0['wall'] and k3['trusted'] < k3['wall'],
+              f'本当に 1日 たつと 本当の 日付（{k3["trusted"]}）の 2日目の ボーナス（iPhone は {k3["wall"]}：進めた ぶんは 先どり できない）')
+        p5.evaluate("() => __setDay(0)"); r4 = p5.evaluate("() => TengelLogin.check()"); p5.wait_for_timeout(400); k4 = p5.evaluate(CLKI)
+        p5.evaluate("() => __setDay(-3)"); r5 = p5.evaluate("() => TengelLogin.check()"); p5.wait_for_timeout(400); k5 = p5.evaluate(CLKI)
+        check(r4 == -1 and k4['how'] == 'ok' and r5 == -1 and k5['how'] == 'back' and k5['trusted'] == k4['trusted'] == k3['trusted'] and k5['ev'] == k3['ev'],
+              f'日付を もとに もどす（{k4["how"]}）・3日 もどす（{k5["how"]}：本当の 日付は {k5["trusted"]} の まま）→ もらえない')
+        p5.evaluate("() => __setDay(0)")
+        # サブスクの ポイントの 期限（30日）：31日 たって 切れた → iPhone の 日付を 31日 もどしても 使えない
+        sub = p5.evaluate("""async () => { window.__nativeEvent('iap', { id: '77001', originalId: '77001', product: 'jp.tengel.app.sub9200', kind: 'sub', date: new Date(Date.now()).toISOString(), revoked: false, env: 'Xcode' });
+          await new Promise(r => setTimeout(r, 800)); return TengelWallet.balance().paid_sub; }""")
+        p5.evaluate("() => __pass(31 * 86400000)"); x1 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
+        p5.evaluate("() => __setDay(-31)"); x2 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
+        p5.evaluate("() => __setDay(0)"); p5.evaluate("() => TengelLogin.close()")
+        check(sub >= 9200 and x1 == [0, 'ok'] and x2 == [0, 'back'], f'サブスクの ポイント（{sub:,}P）：31日 たって 期限が 切れた（{x1}）→ iPhone の 日付を 31日 もどしても 使えない（{x2}）')
+        # 電源を 入れ直した（日付を 進めた まま）→ わからない ので 信じる
+        p5.evaluate("async () => { await TengelLogin.check(); TengelLogin.close(); }"); p5.wait_for_timeout(300); k6 = p5.evaluate(CLKI)
+        p5.evaluate("() => { __setDay(1); __reboot(); }"); p5.goto(APP); p5.wait_for_timeout(1500); gate(p5)
+        p5.wait_for_function("() => !!document.getElementById('lgOv')", timeout=20000); p5.wait_for_timeout(300); k7 = p5.evaluate(CLKI); p5.evaluate("() => TengelLogin.close()")
+        check(k7['hows'][:1] == ['boot'] and k7['st']['boot'] not in ('', 'B1') and k7['trusted'] == k7['wall'] and k7['ev'] == k6['ev'] + [f'login-{k7["wall"]}'],
+              f'日付を 進めた まま 電源を 入れ直す → わからない ので iPhone の 時計を 信じる（{k7["hows"][:3]}：再起動を くり返す やり方は 見分けられない）')
+        check(not e5, f'エラー なし {e5[:3]}')
+        c5.close()
+
         print('■ App Store版')
         c2 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); c2.add_init_script(FAKE); c2.add_init_script(CLOCK + AUTO)
         p2 = c2.new_page(); e2 = []; p2.on('pageerror', lambda e: e2.append(str(e)))
@@ -221,7 +277,7 @@ try:
         c3.close()
         c4 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); c4.add_init_script(AUTO)
         p4 = c4.new_page(); e4 = []; p4.on('pageerror', lambda e: e4.append(str(e))); p4.goto(WEB); p4.wait_for_timeout(1500); gate(p4); p4.wait_for_timeout(2500)
-        check(p4.evaluate("() => typeof window.TengelLogin === 'undefined' && !document.getElementById('lgOv') && !document.getElementById('lgCss') && localStorage.getItem('tengel.login') === null && localStorage.getItem('tengel.cbgift') === null") and not e4, f'Web版：ログインボーナスは ない（窓も おぼえも ない）・エラー なし {e4[:3]}')
+        check(p4.evaluate("() => typeof window.TengelClock === 'undefined' && localStorage.getItem('tengel.clock') === null") and p4.evaluate("() => typeof window.TengelLogin === 'undefined' && !document.getElementById('lgOv') && !document.getElementById('lgCss') && localStorage.getItem('tengel.login') === null && localStorage.getItem('tengel.cbgift') === null") and not e4, f'Web版：ログインボーナスは ない（窓も おぼえも ない）・エラー なし {e4[:3]}')
         c4.close()
         b.close()
 finally:

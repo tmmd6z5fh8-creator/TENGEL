@@ -96,6 +96,9 @@ head = f'''<!DOCTYPE html>
 {APP_BODY}'''
 html = head + page + '\n<script>\n' + open('pwa_ui.js', encoding='utf8').read() + '\n</script>\n'
 if TARGET == 'app':
+    # 第4.191版：時計の 番人（clock_guard.js：TengelClock）。iPhone の 時計を 設定で 進めた・もどした ことを、アプリの 設定では かえられない 時計（Clock.swift）と くらべて 見つける。
+    #   ポイント（points_ui.js）・ログインボーナス（login_bonus.js）・カードバトルの ミッション（cb/cb_app.js）が 使うので、その 前に 読む（App Store版だけ）
+    html += '<script>\n' + open('clock_guard.js', encoding='utf8').read() + '\n</script>\n'
     # ポイント・Pカスタム・ミッション・アプリを開いた時の画面・拡大（App Store版だけ。Web版の動きは変えない）
     html += '<script>\n' + open('points.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('points_ui.js', encoding='utf8').read() + '\n</script>\n'
     # テンキー（第4.62版）：数字の 欄で iOS の キーボードが 出ない とき（Apple Pencil・Swift Playgrounds の 画面）に アプリの 中の テンキーを 出す（App Store版だけ）
