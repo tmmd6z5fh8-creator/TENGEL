@@ -97,6 +97,14 @@
 //     ・デザインカスタムの タブは「カードパック」「おもて」「うら」「ボード」（はじめは カードパック）。前に コインで 解放した おもては そのまま 持って いる
 //     ・15:39「パックの画像これ使える？」→ パックの 絵は まさちゃんの 絵（cb_pack.webp）。16:35「パック開いた後にいきなりカードが現れるんじゃなくて、一枚ずつパックから出て、カードが後ろに5枚並ぶ感じにして！」・
 //       16:37「背景に5枚カードが並んだらパックの袋は消えないと、カードが開いていく演出が見えないよ！」→ カードは 1まいずつ パックの 上から 出て うしろに ならぶ → 5まい ならんだら 袋が 消える → めくる（pkRip・pkOut）
+//   第4.190版（まさちゃん 2026/11/17 17:14「テンゲルカードバトルは、効果はそれぞれの一つ一つ終わってから効果の選択するようにして！
+//     例えば、6の効果を使用して、終わったら次の5の効果を使用する。※効果発動の順番が早い順で発動」・「あと効果は、神様馬カードと幻の馬カードの効果に優先順位が高いのは6の効果だよ！
+//     6は、カードをセットする前に相手のカード見れる！からね！」）：
+//     ・6 の 効果は ターンの はじめ（セットの 前・神様馬／幻の馬より 先）：聞く 窓「ターンの はじめ！ 6 の 効果を 使う？」（askInfo の six）→ 使う → 見る カードを えらぶ → { t:'p6', pick }。
+//       使わない → { t:'p6', pick:null }。相手が 決めて いる あいだは「○○が 6 の 効果を 使うか えらんで いるよ…」
+//     ・効果タイムは 1つずつ：ルールが いまの 効果 1つを 聞く（v.can.eff.st・n）→ 答えたら すぐ 送る → 行った あとの 手札で 次の 効果を 聞く（7 → 3 → 5 → 4）。
+//       前（第4.188版）は ぜんぶ 聞いて から まとめて 送って いた（EFFQ・effNext・dropOk は なくした：5 で 捨てる カードは 7・3 が 終わった あとの 手札から えらぶ）
+//     ・配った（deal）あとの 同じ 知らせに 6 の 効果が 入って いる ときは、帯を 見せ終わる まで 聞く 窓と 下の ボタンを 出さない（dealHold）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -153,7 +161,7 @@ const CBApp = (() => {
   const deckPic = () => { const b = backNow(); return b ? b.d : 'cb_deck.webp'; };      // 山札の 絵（自分が えらんだ うら：友だちとの 対戦でも 自分の 画面の 山札は 自分の うら）
   const power = R.power;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let SPEED = 1;                                       // 動きの 速さ（テストでは 小さく する）
+  let SPEED = 1, GEN = 0;                              // 動きの 速さ（テストでは 小さく する）・GEN＝対戦の 世代（第4.190版：対戦を はじめた・はなれた ときに ＋1）
   // 待つ 時間：ふだんは setTimeout。光の 点めつを 数える テスト（test_cb_flash.py）では 手で 進める 時計（_t.manual・_t.tick：1/60秒 ずつ 進めて 1コマ ずつ 写す）
   const clk = { manual: false, now: 0, q: [] };
   function later(fn, ms) { if (!clk.manual) return setTimeout(fn, ms); const o = { at: clk.now + Math.max(0, ms), fn: fn }; clk.q.push(o); return o; }
@@ -163,7 +171,9 @@ const CBApp = (() => {
     for (;;) { const due = clk.q.filter(o => o.at <= clk.now).sort((a, b) => a.at - b.at)[0]; if (!due) break; clk.q.splice(clk.q.indexOf(due), 1); due.fn(); n++; }
     return n;
   }
-  const T = ms => new Promise(ok => later(ok, Math.max(0, ms * SPEED)));
+  // 第4.190版：待って いる あいだに 世代（GEN）が かわったら 先へ 進まない ＝ はなれた 対戦の 動きの つづき（play）は そこで 止まる
+  //   （前は 効果の 札などの とちゅうで メニューへ もどって すぐ 次の 対戦を はじめると、前の 対戦の 動きの つづきが 新しい 対戦の 手札を かきかえる ことが あった：テストで 見つけた）
+  const T = ms => { const g = GEN; return new Promise(ok => later(() => { if (g === GEN) ok(); }, Math.max(0, ms * SPEED))); };
   const reduce = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);      // 動きを へらす：OS の「視差効果を減らす」（第4.185版：ここの 設定の「エフェクト オフ」は なくした）
 
   // ---------- 保存（連勝・勝ち負けの 数）----------
@@ -885,14 +895,15 @@ const CBApp = (() => {
     const ef = (k, t, d) => `<div class="ef"><img src="${pic(k)}" alt=""><div><b>${t}</b>${d}</div></div>`;
     scr.help.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="helpx">← もどる</button><b>あそび方</b></div><div class="bd">'
       + `<h4>勝負の しかた</h4><ul><li>手札は <b>${R.HAND}まい</b>。<b>${R.TURNS}ターン</b>で 勝負するよ</li><li>${R.TURNS}ターン 終わって、<b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）。先に 勝ちが 決まっても、さいごの ターンまで やるよ</li><li>出すのは 1ターンに 1まい。${R.HAND - R.TURNS}まいは 使わずに のこるよ</li></ul>`
-      + '<h4>1ターンの 流れ</h4><ul><li><b>① セット</b>：手札から 1まい えらんで「この カードを セットする」。<b>ふせて（うらで）出す</b>よ（自分の カードには 数字の しるし・タップで 見られる）。<b>セットしたら もう 変えられない</b><br>手札に <b>7 が 4まい</b> ある ときは、<b>セットの 前</b>に「7 を 4まい 見せて 逆転する？」と 聞くよ</li>'
-      + '<li><b>② 効果タイム</b>：2人とも セットしたら、使える 効果が ある 人に「効果を 使う？」と 聞くよ。<b>「使う」「使わない」は 自分で えらべる</b>。2人とも 決めたら、いっしょに 効果が 出る</li>'
-      + '<li><b>③ オープン</b>：2まいを いっしょに めくる。<b>強い カードの 勝ち</b>（1・2 の「<b>逆転勝利</b>」は、めくった あとに 使うか えらぶよ）</li></ul>'
+      + '<h4>1ターンの 流れ</h4><ul><li><b>① ターンの はじめ</b>：手札に <b>6 が 2まい</b> ある 人に「6 の 効果を 使う？」と 聞くよ（<b>セットの 前</b>に 相手の 手札を 1まい 見られる）。その あと、前の ターンに <b>神様馬・幻の馬</b>で 勝った 人が 効果を 使うか えらぶよ</li>'
+      + '<li><b>② セット</b>：手札から 1まい えらんで「この カードを セットする」。<b>ふせて（うらで）出す</b>よ（自分の カードには 数字の しるし・タップで 見られる）。<b>セットしたら もう 変えられない</b><br>手札に <b>7 が 4まい</b> ある ときは、<b>セットの 前</b>に「7 を 4まい 見せて 逆転する？」と 聞くよ</li>'
+      + '<li><b>③ 効果タイム</b>：2人とも セットしたら、効果を <b>1つずつ</b> 聞くよ（<b>7 → 3 → 5 → 4</b> の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら <b>すぐ 効果が 出て</b>、終わって から 次の 効果を 聞くよ。<b>「使う」「使わない」は 自分で えらべる</b>。同じ 効果を 2人とも 使える ときは、2人とも 決めて から いっしょに 出る</li>'
+      + '<li><b>④ オープン</b>：2まいを いっしょに めくる。<b>強い カードの 勝ち</b>（1・2 の「<b>逆転勝利</b>」は、めくった あとに 使うか えらぶよ）</li></ul>'
       + '<h4>カードの 強さ</h4><div class="ord">' + ['k', 'm'].map(k => `<img src="${pic(k)}" alt="${nameOf(k)}">`).join('<i>＝</i>') + ['1', '2', '3', '4', '5', '6', '7'].map(k => `<i>＞</i><img src="${pic(k)}" alt="${k}">`).join('') + '</div>'
       + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が いちばん 強い（この 2まいが ぶつかったら 引き分け）</li><li>数字は <b>1 が いちばん 強くて、7 が いちばん 弱い</b></li><li>7 の 効果（<b>4まい 公開</b>）で <b>強さ 逆転</b>したら、その 対戦が 終わる まで <b>7 が いちばん 強くて、1 が いちばん 弱い</b>（神様馬と 幻の馬は いちばん 強い まま。上に「強さ 逆転中」と 出るよ）</li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b>（4 どうしで <b>2人とも 4 の 効果を 使った</b> ときは <b>ドロー</b>）</li><li><b>逆転勝利</b>：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる（下の「カードの 効果」）</li><li>カードは ぜんぶで 30まい（1〜7 が 4まい ずつ・神様馬 1まい・幻の馬 1まい）</li></ul>'
-      + '<h4>カードの 効果</h4><ul><li><b>7（3まい 交換）・6・5・4・3</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、使うか えらぶよ</li><li><b>7 の 4まい 公開</b>（強さ 逆転）は、<b>セットの 前</b>に 使うか えらぶよ（セットしなくて いい）</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした あと</b>、負けた 人が 使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で えらべる</b>よ</li><li>効果を 使うと、ボードの まん中に <b>だれが・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
+      + '<h4>カードの 効果</h4><ul><li><b>6</b> の 効果は <b>ターンの はじめ</b>（セットの 前）に 使うか えらぶよ</li><li><b>7（3まい 交換）・3・5・4</b> の 効果は、2人とも セットした あとの「<b>効果タイム</b>」で、<b>1つずつ</b> 使うか えらぶよ</li><li><b>7 の 4まい 公開</b>（強さ 逆転）は、<b>セットの 前</b>に 使うか えらぶよ（セットしなくて いい）</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした あと</b>、負けた 人が 使うか えらぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの はじめ</b>に、使うか えらぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で えらべる</b>よ</li><li>効果を 使うと、ボードの まん中に <b>だれが・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
       + ef('7', '7：3まい 交換・4まい 公開で 逆転', '【3まい】手札に 7 が 3まい あれば、3まいを 山札に もどして、新しく 3まい 引けるよ。<br>【4まい】手札に 7 が 4まい あれば、<strong>セットの 前に</strong> 4まい 見せて 1まい 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は いちばん 強い まま）。その あと いつもの ように セット（のこった 7 を 出しても いい）。<br>【4まい】を 使った ターンは【3まい】は 使えない（どちらか 1つ）')
-      + ef('6', '6：2まい 見せて 手札を 見る', '手札に 6 が 2まい あれば、その 2まいを 相手に 見せて、相手の 手札を 1まい えらんで 見られるよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
+      + ef('6', '6：2まい 見せて 手札を 見る', '手札に 6 が 2まい あれば、<strong>ターンの はじめ（セットの 前）</strong>に、その 2まいを 相手に 見せて、相手の 手札を 1まい えらんで 見られるよ（見てから セットする カードを えらべる）。神様馬・幻の馬の 効果より 先だよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
       + ef('5', '5：2まい 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1まいを 捨てて、山札から 1まいを ふせて セットできるよ。何が 出るかは オープンまで わからない！<br>使えるのは、使った あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ（さいごの ターンは、手札が 1まい あれば 使える）。')
       + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる かわりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか えらべる</strong>よ（オープンの 前）。<br>4 の 効果は <strong>いちばん あと</strong>：相手が 5 の 効果で 山札から ふせた カードも 交換に なるよ。')
       + ef('3', '3：3まい 見せて 手札を 交換', '手札に 3 が 3まい あれば、その 3まいを 相手に 見せて、その うちの 1まいと、相手の 手札から <strong>ランダムに えらんだ 1まい</strong>を 交換できるよ。')
@@ -900,7 +911,7 @@ const CBApp = (() => {
       + ef('1', '1：3まい 見せて 逆転勝利', '1 を 出して <strong>神様馬・幻の馬に 負けた</strong> とき、手札に 1 が 2まい あれば（場の 1 と 合わせて 3まい）、その 2まいを 相手に 見せて、1まい 捨てると、<strong>勝ちに できる</strong>よ。<br>1・2 とも、使えるのは 捨てた あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ。')
       + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの はじめに、相手の 手札を 1まい えらんで 見られるよ（まだ 見て いない カードが ある とき）。')
       + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの はじめに、手札を 2まい 捨てて、山札から 2まい 引けるよ。')
-      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの はじめ</b>（神様馬・幻の馬）→ <b>② 手札の 効果</b>（7 の 4まい 公開は セットの 前・効果タイムは 6 → 7 → 3）→ <b>③ セットした カードの 効果</b>（<b>5 → 4</b>：4 は いちばん あと）</li><li>効果タイムで 効果が 出る 順番は <b>6 → 7 → 3 → 5 → 4</b>（聞く 順番も 同じ）</li><li>さいごの ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
+      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの はじめ</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（7 の 4まい 公開は セットの 前）→ <b>③ 効果タイム</b>（<b>7 → 3 → 5 → 4</b>：手札の 効果 → セットした カードの 効果。4 は いちばん あと）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で かわった 手札で 決められる。例：7 で 引いた あとの 手札で、5 を 使うか・どの カードを 捨てるか）</li><li>さいごの ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある あいだ 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の しるしが つくよ</li><li>セットした カードは、前に 見た カードでも <b>うら</b>（4 の 効果で 見せる か、オープン するまで）。どの カードを セットしたかは わからない ので、見た カードは オープンまで 手札に ある ように 見えるよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめると 負けに なるよ</li></ul>`
@@ -1342,10 +1353,10 @@ const CBApp = (() => {
   }
 
   // ---------- 対戦 ----------
-  let match = null, V = null, queue = [], pumping = false, mode = { k: 'idle' }, busy = false, lock = false, ended = false, gameNo = 0;
+  let match = null, V = null, queue = [], pumping = false, mode = { k: 'idle' }, busy = false, lock = false, ended = false, gameNo = 0, dealHold = false;      // dealHold：第4.190版（下の play の deal）
   const WHO = () => (match && match.kind === 'cpu' ? 'コンピュータ' : 'ともだち');
   function startMatch(m) {
-    match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false;
+    GEN += 1; match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false; dealHold = false;
     m.onUpdate = u => { queue.push(u); pump(); };
     m.onState = s => onNet(s);
     show('game'); closeMod();
@@ -1389,51 +1400,46 @@ const CBApp = (() => {
   function opPre() { [null, 'k', 'm', '1', '2', '3', '4', '5', '6', '7'].forEach(k => [false, true].forEach(big => { const im = new Image(); im.src = pic(k, big, 'op'); })); }
   async function pump() {
     if (pumping) return; pumping = true;
+    const g = GEN;                                     // 第4.190版：この 対戦の 世代（はなれたら つづきは しない）
     try {
-      while (queue.length && match) {
+      while (queue.length && match && g === GEN) {
         const u = queue.shift();
         await play(u.ev, u.view);
+        if (g !== GEN) return;                         // とちゅうで 対戦を はなれた：前の 対戦の 形で かき直さない
+        dealHold = false;
         if (!match) break;
         V = u.view; lock = false; keepMode(); render();
       }
-    } finally { pumping = false; }
-    if (match && !queue.length) match.idle();
+    } finally { if (g === GEN) pumping = false; }
+    if (g === GEN && match && !queue.length) match.idle();
   }
-  // 効果タイム：使える 効果を 1つ ずつ 聞く（第4.188版：6 → 7 → 3 → 5 → 4 の 順＝手札の 効果 → セットした カードの 効果〈4 は いちばん あと〉。前は 6 → 5 → 7 → 3 → 4）
+  // 効果タイム（第4.190版：1つずつ）：ルール（cb_rules.js）が いまの 効果 1つを 聞く（v.can.eff.st：x7＝7 の 3まい 交換・x3＝3・u5＝5・u4＝4 の 順・n＝何番目）→ 答えたら すぐ 送る（{ t:'eff', use }）→
+  //   行った あとの 形で 次の 効果を 聞く（同じ 効果を 2人とも 使える ときは 2人とも 決めて から いっしょに）。6 は ターンの はじめ（下の SIX）
   //   第4.177版（まさちゃん 2026/11/16 10:40）：3 の 効果（3 を 3まい 見せて 1まいを 交換）を 足した
-  //   第4.185版：'7r'＝7 を 4まい 見せて 1まい 捨てる → 強さ 逆転（7 の 3まい 交換より 先に 聞く・使ったら 3まい 交換は 聞かない）
-  //   第4.187版：'7r' は セットの 前に 聞く（下の X7）。効果タイムの 7 は 3まい 交換 だけ
-  //   第4.188版：5 で 捨てる カードは あとで えらぶ ので、先に 使うと 決めた 7・3 の 効果の 3まいを くずさない カード だけ（dropOk）
-  const EFFQ = ['6', '7', '3', '5', '4'];
+  //   第4.187版：7 の 4まい 公開は セットの 前に 聞く（下の X7）。効果タイムの 7 は 3まい 交換 だけ
+  //   第4.188版：聞く 順 6 → 7 → 3 → 5 → 4（まとめて 送る・5 で 捨てる カードは dropOk）→ 第4.190版：1つずつ 送る ので dropOk は いらない（7・3 は 5 を 聞く 前に 終わって いる）
+  const EFFQ = { x7: '7', x3: '3', u5: '5', u4: '4' };      // いまの 効果（st）→ カードの 数字（聞く 文・カードの 絵）
   const EFFTXT = { 6: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', 5: '5 と 手札 1まいを 捨てて、山札から 1まい セットできるよ', 7: '7 を 3まい 山札に もどして、新しく 3まい 引けるよ',
     3: '3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（ランダム）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
   const EFFBAR = { 3: '3 を 3まい 見せて、手札を 1まい 交換できるよ' };
   const effQ = q => `${q} の 効果を 使う？`;      // 聞く 文・使う ボタン・カードの 絵
   const effBtn = q => `${q} の 効果を 使う`;
   const effK = q => q;      // 下の 行（2行ぶんの 高さ）に 出す 短い 文は EFFBAR（ない ものは EFFTXT と 同じ）
+  // 6 の 効果（第4.190版：ターンの はじめ・セットの 前・神様馬／幻の馬より 先）
+  const SIX = { head: 'ターンの はじめ！', q: '6 の 効果を 使う？', text: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ（セットの 前：見てから セットする カードを えらべる）', bar: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', btn: '6 の 効果を 使う' };
   // 7 の 4まい 公開（第4.187版：セットの 前に 聞く。セットは いらない）
   const X7 = { head: '7 が 4まい！', q: '7 を 4まい 見せて 逆転する？', text: 'セットの 前に 使えるよ（セットは いらない）。4まい 見せて 1まい 捨てると、この 対戦が 終わる まで 数字の 強さが 逆に なるよ', ord: '7＞6＞5＞4＞3＞2＞1', btn: '4まい 見せて 逆転', bar: '7 を 4まい 見せて 逆転' };      // ord：強さの 順（とちゅうで 行を かえない）
   // 逆転勝利（第4.178版）の 文：k＝自分が 出した カード（1／2）・o＝相手の カード（神様馬・幻の馬／1）
   const toName = o => (NAMES[o] ? NAMES[o] + 'に' : o + ' に');
   const REVTXT = (k, o) => `手札の ${k} を 2まい 見せて、1まい 捨てると、${toName(o)} 勝てるよ`;
   const REVBAR = (k, o) => `手札の ${k} を 1まい 捨てて、${toName(o)} 勝てるよ`;
-  // 5 で 捨てて いい カードか（第4.188版）：7 の 効果を 使う ときは 7 を 3まい・3 の 効果を 使う ときは 3 を 3まい のこす
-  const dropOk = (x, v, use) => { const n = k => v.my.hand.filter(c => c.k === k).length; return !(use.x7 && x.k === '7' && n('7') <= 3) && !(use.x3 && x.k === '3' && n('3') <= 3); };
-  function effOk(q, v, use) {
-    const c = v.can.eff; if (!c) return false;
-    return q === '6' ? c.e6 : q === '5' ? !!c.e5 && v.my.hand.some(x => dropOk(x, v, use)) : q === '7' ? c.e7 : q === '3' ? !!c.e3 : c.e4;
-  }
-  function effNext(v, use, after) { for (let i = EFFQ.indexOf(after) + 1; i < EFFQ.length; i++) if (effOk(EFFQ[i], v, use)) return EFFQ[i]; return null; }
-  // 1つ 答えた：次の 効果を 聞く。もう なければ、えらんだ ものを まとめて 送る（送ったら 決め直せない）
-  function effStep() {
-    const nx = effNext(V, mode.use, mode.q);
-    if (nx) { mode.q = nx; mode.step = 'ask'; render(); return; }
-    const use = mode.use; send({ t: 'eff', use: use });
-  }
+  // いまの 効果の 答えを 送る（第4.190版：1つずつ。送ったら 決め直せない）
+  const effSend = use => send({ t: 'eff', use: use });
+  const effNow = v => !!(v && v.can.eff && mode.k === 'eff' && mode.n === v.can.eff.n);      // いま 聞いて いる 効果（n が 同じ）
   // えらんで いる とちゅう（効果タイムの 答え・幻の馬で 捨てる 2まい）は、相手の 動きが 届いても 消さない（もう できなく なった とき だけ もどす）
   function keepMode() {
     const v = V, has = u => v.my.hand.some(c => c.u === u);
-    if (mode.k === 'eff') { if (!v.can.eff) mode = { k: 'idle' }; }
+    if (mode.k === 'eff') { if (!effNow(v)) mode = { k: 'idle' }; }      // 第4.190版：次の 効果（n が かわった）・もう 決めた → もどす（render が 次を 聞く）
     else if (mode.k === 'dropm') { if (v.pend && v.pend.mine && v.pend.type === 'm') mode.sel = mode.sel.filter(has); else mode = { k: 'idle' }; }
     else if (mode.k === 'u5') { if (!(v.pend && v.pend.mine && v.pend.type === 'u5')) mode = { k: 'idle' }; }
     else mode = { k: 'idle' };
@@ -1482,7 +1488,8 @@ const CBApp = (() => {
       if (v.pend.type === 'm') return me ? '幻の馬で 勝った！ 効果を 使う？\n手札を 2まい 捨てて、山札から 2まい 引けるよ' : `${w}が 幻の馬の 効果を 使うか えらんで いるよ…`;
       if (v.pend.type === 'rev') return me && v.my.set && v.op.set ? `逆転の チャンス！ ${v.my.set.k} の 効果を 使う？\n${REVBAR(v.my.set.k, v.op.set.k)}` : `${w}が 逆転勝利を 使うか えらんで いるよ…`;
     }
-    if (v.phase === 'eff') return `${w}が 効果を 使うか えらんで いるよ…`;
+    if (v.phase === 'six') return v.can.six ? `${SIX.head} ${SIX.q}\n${SIX.bar}` : `${w}が 6 の 効果を 使うか えらんで いるよ…`;      // 第4.190版：ターンの はじめ
+    if (v.phase === 'eff') return `${w}が 効果を 使うか えらんで いるよ…`;      // 第4.190版：どの 効果かは 出さない（相手が セットした カードが わからない ように）
     if (v.can.set && v.can.x7r) return (v.op.set ? `${w}は もう セットしたよ。カードを えらんでね` : 'セットする カードを えらんでね（カードを タップ）') + '\n7 が 4まい！ セットの 前なら 逆転を 使えるよ';      // 第4.187版
     if (v.can.set) return v.op.set ? `${w}は もう セットしたよ。セットする カードを えらんでね` : 'セットする カードを えらんでね（カードを タップ）';
     return `${w}が えらんで いるよ…`;
@@ -1504,7 +1511,7 @@ const CBApp = (() => {
   };
   function render() {
     const v = V; if (!v || screen !== 'game') return;
-    if (v.can.eff && mode.k !== 'eff') { const q = effNext(v, {}, null); mode = q ? { k: 'eff', use: {}, q: q, step: 'ask' } : { k: 'idle' }; }      // 効果タイム：1つ目から 聞く
+    if (v.can.eff && !effNow(v)) mode = { k: 'eff', q: EFFQ[v.can.eff.st], n: v.can.eff.n, step: 'ask' };      // 効果タイム（第4.190版）：いまの 効果を 聞く
     $('.cbturn').innerHTML = v.phase === 'end' ? 'けっか' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '') + (v.rv ? '<small class="rv">強さ 逆転中</small>' : '');      // 第4.185版
     $('.cbpips[data-p=op]').innerHTML = pips(v.op.wins, v.turns); $('.cbpips[data-p=my]').innerHTML = pips(v.my.wins, v.turns);
     $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ' data-cb="ocard"', 'op')).join('');
@@ -1513,9 +1520,9 @@ const CBApp = (() => {
     $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k }, '', ' data-cb="oset"', 'op') + setTag(os, false) : '';
     $('.cbslot.my').innerHTML = mySet(ms, true);      // 第4.187版：ふせて いる あいだは うら（しるし つき）
     $('.cbglow').classList.toggle('on', v.can.set || !!(v.pend && v.pend.mine && v.pend.type === 'swap'));
-    const asking = askSync();                          // 効果を 使うか 聞く 窓（下の askSync）：出て いる 間、下の ボタンは 出さない（同じ ボタンを 2か所に 出さない）
+    const asking = dealHold ? false : askSync();       // 効果を 使うか 聞く 窓（下の askSync）：出て いる 間、下の ボタンは 出さない（同じ ボタンを 2か所に 出さない）。dealHold：配った あとの 帯の あいだ（第4.190版）
     paintHand(); paintAct(asking);
-    say(asking ? '効果を 使うか えらんでね' : (modeText() || statusText(v)));
+    say(dealHold ? '' : asking ? '効果を 使うか えらんでね' : (modeText() || statusText(v)));
     layout();
   }
   function modeText() {
@@ -1532,7 +1539,8 @@ const CBApp = (() => {
   function paintAct(asking) {
     const v = V, a = $('.cbact'); let h = '';
     const two = (no, yes, yesText) => `<button type="button" class="cbb dk sm" data-cb="${no}">使わない</button><button type="button" class="cbb sm" data-cb="${yes}">${yesText}</button>`;
-    if (asking) h = '';
+    if (asking || dealHold) h = '';
+    else if (mode.k === 'idle' && v.can.six) h = two('sixno', 'sixyes', SIX.btn);      // 第4.190版：6 の 効果（ターンの はじめ）
     else if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">もどる</button>' : two('effno', 'effyes', effBtn(mode.q));
     else if (mode.k === 'dropm') h = `<button type="button" class="cbb dk sm" data-cb="modex">もどる</button><button type="button" class="cbb sm" data-cb="mgo"${mode.sel.length === 2 ? '' : ' disabled'}>この 2まいを 捨てて 引く</button>`;
     else if (mode.k === 'idle' && v.can.x7r) h = x7off === x7id(v) ? `<button type="button" class="cbb sm" data-cb="x7yes">${X7.bar}</button>` : two('x7no', 'x7yes', X7.btn);      // 第4.187版：セットの 前（「使わない」の あとも セットする まで 使える）
@@ -1550,19 +1558,21 @@ const CBApp = (() => {
   const modOn = () => modEl.classList.contains('on');
   // 効果を 使うか 聞く 窓（第4.177版・まさちゃん 2026/11/16 10:40「カードの効果は使うか使わないか選べるようにして！」）：
   //   前は 画面の 下の 小さい 字と 小さい ボタン 2つ だけ だった（気づきにくい）→ 効果を 使える ときは、まん中に カードの 絵・「○ の 効果を 使う？」・大きい「使わない」「使う」を 出す。
-  //   ・効果タイム（7・6・5・4・3：1つ ずつ 聞く）と、神様馬・幻の馬で 勝った 次の ターンの はじめ の どちらも 同じ 窓。第4.178版：オープンして 負けた ときの 逆転勝利（1・2）も 同じ 窓
+  //   ・効果タイム（7・3・5・4：1つ ずつ 聞く）と、ターンの はじめ（第4.190版：6・神様馬・幻の馬で 勝った 次の ターン）の どちらも 同じ 窓。第4.178版：オープンして 負けた ときの 逆転勝利（1・2）も 同じ 窓
   //   ・「手札と ボードを 見る」で 窓を 下げられる（その あとは 画面の 下の「使わない」「○ の 効果を 使う」で 答える：前と 同じ 形）
   //   ・カードや 捨て札の 窓を 見て いる とちゅうには 重ねない（その 窓を 閉じた ときに 出す）
   let peekId = '';
   // うっかり 押し 防止（第4.177版の あと：次の 版に 入る）：聞く 窓が 出て から ASK_GUARD ミリ秒は、窓の 中の 答え（使わない／使う）を 押しても 受けつけない。
   //   ・効果が 2つ つづけて 聞かれる とき（例：5 と 7）、1つ目の 答えを すばやく 2回 押すと、同じ 所に すぐ 出る 2つ目の 窓まで 同じ 答えに なって いた（2つ目を えらべない）
+  //     （第4.190版：2つ目は 1つ目を 行った あとに 出る〈1つずつ〉。窓が 出て すぐ 受けつけないのは 同じ）
   //   ・カードを 大きく 見る 窓を 閉じた しゅんかん・相手が セットした しゅんかんに 窓が 出ると、指の 下に 答えの ボタンが 来る ことが ある
   //   「手札と ボードを 見る」は すぐ 押せる（何も 決まらない）。CBApp._guard＝テスト用（数字を 入れると その ミリ秒）
   const ASK_GUARD = 350;
   let askAt = 0;
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
-    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.q}`, k: effK(mode.q), head: '効果タイム！', q: effQ(mode.q), text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
+    if (mode.k === 'idle' && v.can.six) return { id: `s${gameNo}.${v.turn}`, k: '6', head: SIX.head, q: SIX.q, text: SIX.text, yes: 'sixyes', no: 'sixno' };      // 第4.190版：6 の 効果（ターンの はじめ）
+    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.n}`, k: effK(mode.q), head: '効果タイム！', q: effQ(mode.q), text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'k') return { id: `k${gameNo}.${v.turn}`, k: 'k', head: '神様馬で 勝った！', q: '神様馬の 効果を 使う？', text: '相手の 手札を 1まい 見られるよ', yes: 'kgo', no: 'kskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'm') return { id: `m${gameNo}.${v.turn}`, k: 'm', head: '幻の馬で 勝った！', q: '幻の馬の 効果を 使う？', text: '手札を 2まい 捨てて、山札から 2まい 引けるよ', yes: 'mpick', no: 'mskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'u5') return { id: `u${gameNo}.${v.turn}`, k: '5', head: '交換で 5 を セット！', q: '5 の 効果を 使う？', text: EFFTXT[5], yes: 'u5yes', no: 'u5no' };      // 第4.183版
@@ -1590,7 +1600,7 @@ const CBApp = (() => {
     const v = V, c = v.my.hand.find(x => x.u === u); if (!c) return;
     let btn = '', note = '';
     if (v.pend && v.pend.mine && v.pend.type === 'swap') btn = `<button type="button" class="cbb" data-cb="swap" data-u="${u}">この カードと 交換する</button>`;
-    else if (mode.k === 'eff') { if (mode.step === 'drop5') { if (dropOk(c, v, mode.use)) btn = `<button type="button" class="cbb" data-cb="drop5" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`; else note = `<p>${c.k === '7' ? '7 の 効果で もどす 7' : '3 の 効果で 見せる 3'} なので、捨てられないよ</p>`; } }      // 第4.188版：dropOk
+    else if (mode.k === 'eff') { if (mode.step === 'drop5') btn = `<button type="button" class="cbb" data-cb="drop5" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`; }      // 第4.190版：7・3 は もう 終わって いる（どの カードも 捨てられる）
     else if (mode.k === 'u5') btn = `<button type="button" class="cbb" data-cb="u5drop" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`;      // 第4.183版
     else if (v.can.set) btn = `<button type="button" class="cbb" data-cb="set" data-u="${u}">この カードを セットする<small>セットしたら もう 変えられないよ</small></button>`;
     modal(`<div class="big"><img src="${pic(c.k, true)}" alt="${esc(nameOf(c.k))}"></div>${c.seen ? '<p>この カードは 相手に 見られて いるよ</p>' : ''}${note}<div class="col">${btn}<button type="button" class="cbb dk" data-cb="modx">もどる</button></div>`);
@@ -1663,8 +1673,9 @@ const CBApp = (() => {
   async function send(a) {
     if (busy || !match) return false;
     busy = true; lock = true; closeMod(); hush();      // lock：この 手の 結果（おきた こと）を 見せ終わって かき直す まで、次の 手は 待つ（pump が はずす）
-    let r = null;
+    let r = null; const g = GEN;
     try { r = await match.act(a); } catch (e) { r = { ok: false, why: 'err' }; }
+    if (g !== GEN) return false;                       // 第4.190版：返事を 待つ あいだに 対戦を はなれた（新しい 対戦の 形は かえない）
     busy = false;
     if (!r || !r.ok) { lock = false; if (match && V) { mode = { k: 'idle' }; render(); toast('その 手は 打てなかったよ', 2); } return false; }
     return true;
@@ -1674,7 +1685,7 @@ const CBApp = (() => {
     const b = e.target.closest('[data-cb]'); if (!b || b.disabled) return;
     const a = b.dataset.cb, u = +b.dataset.u;
     if (a === 'useok') { if (useSkip) useSkip(); return; }      // 第4.185版：効果の 札を タップ → すぐ 次へ
-    if (/^(effyes|effno|kgo|kskip|mpick|mskip|revyes|revno|u5yes|u5no|x7yes|x7no)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      // 聞く 窓が 出て すぐ：受けつけない（上の ASK_GUARD）
+    if (/^(effyes|effno|sixyes|sixno|kgo|kskip|mpick|mskip|revyes|revno|u5yes|u5no|x7yes|x7no)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      // 聞く 窓が 出て すぐ：受けつけない（上の ASK_GUARD）
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
@@ -1735,24 +1746,25 @@ const CBApp = (() => {
     // 第4.187版：7 の 4まい 公開（セットの 前）。使わない → この ターンは もう 窓を 出さない（下の ボタンで 使える）
     if (a === 'x7yes') { if (!v.can.x7r || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x7r' }); }
     if (a === 'x7no') { if (!v.can.x7r) return; se('tap', 0.6); x7off = x7id(v); closeMod(); render(); return; }
-    // 効果タイム：「使う」「使わない」を 1つ ずつ 答える
+    // 第4.190版：6 の 効果（ターンの はじめ）。使う → 見る カードを えらぶ 窓（もどる → また 聞く）・使わない → すぐ 送る
+    if (a === 'sixyes') { if (!v.can.six || mode.k !== 'idle') return; se('tap', 0.6); return pickModal('p6'); }
+    if (a === 'sixno') { if (!v.can.six) return; se('tap', 0.6); return send({ t: 'p6', pick: null }); }
+    // 効果タイム（第4.190版：1つずつ）：いまの 効果に「使う」「使わない」を 答える → すぐ 送る（5 は 捨てる カードを えらんで から）
     if (a === 'effyes' || a === 'effno' || a === 'effback' || a === 'drop5') {
-      if (mode.k !== 'eff' || !v.can.eff) return;
+      if (!effNow(v)) return;
       se('tap', 0.6);
       if (a === 'effback') { mode.step = 'ask'; closeMod(); render(); return; }
-      if (a === 'effno') { if (mode.step !== 'ask') return; return effStep(); }
-      if (a === 'drop5') { const dc = v.my.hand.find(c => c.u === u); if (mode.step !== 'drop5' || !dc || !dropOk(dc, v, mode.use)) return; mode.use.u5 = u; closeMod(); return effStep(); }
+      if (a === 'effno') { if (mode.step !== 'ask') return; return effSend({}); }
+      if (a === 'drop5') { if (mode.step !== 'drop5' || !v.my.hand.some(c => c.u === u)) return; return effSend({ u5: u }); }
       if (mode.step !== 'ask') return;
-      if (mode.q === '6') return pickModal('p6');
       if (mode.q === '5') { mode.step = 'drop5'; render(); return; }
-      if (mode.q === '7') mode.use.x7 = true; else if (mode.q === '3') mode.use.x3 = true; else mode.use.u4 = true;
-      return effStep();
+      return effSend(mode.q === '7' ? { x7: true } : mode.q === '3' ? { x3: true } : { u4: true });
     }
     if (a === 'modex') { mode = { k: 'idle' }; render(); return; }
     if (a === 'kgo') return pickModal('k');
     if (a === 'pick') {
       if (!v.op.hand.some(c => c.u === u && !c.k)) return;      // まだ 見て いない カード だけ
-      if (b.dataset.kind === 'p6') { if (mode.k !== 'eff' || mode.q !== '6') return; mode.use.p6 = u; closeMod(); return effStep(); }
+      if (b.dataset.kind === 'p6') { if (!v.can.six) return; return send({ t: 'p6', pick: u }); }      // 第4.190版：6 の 効果（ターンの はじめ）
       return send({ t: 'k', pick: u });
     }
     if (a === 'kskip') return send({ t: 'k', pick: null });
@@ -1777,8 +1789,9 @@ const CBApp = (() => {
     im.style.cssText = `left:${from.x}px;top:${from.y}px;width:${from.w}px;height:${from.h}px`;
     flyEl.appendChild(im);
     const dx = to.x + to.w / 2 - (from.x + from.w / 2), dy = to.y + to.h / 2 - (from.y + from.h / 2), sc = to.w / from.w, d = Math.max(1, ms * SPEED);
+    const g = GEN;
     return new Promise(ok => {
-      let done = false; const fin = () => { if (done) return; done = true; im.remove(); ok(); };
+      let done = false; const fin = () => { if (done) return; done = true; im.remove(); if (g === GEN) ok(); };      // 第4.190版：世代が かわったら 進まない（上の T）
       const go = () => { im.style.transition = `transform ${d}ms cubic-bezier(.25,.7,.25,1),opacity ${d}ms`; im.style.transform = `translate(${dx}px,${dy}px) scale(${sc})`; if (fade) im.style.opacity = '0'; };
       if (clk.manual) { void im.offsetWidth; go(); } else requestAnimationFrame(go);
       later(fin, d + 60);
@@ -1819,14 +1832,14 @@ const CBApp = (() => {
     await T(1900); closeMod();
   }
   async function play(ev, v) {
-    const P = V;                                       // 動かす 前の 形
+    const P = V, g0 = GEN;                             // 動かす 前の 形・この 対戦の 世代（第4.190版）
     // まとめて 届いた できごとの とちゅうで かき直す ための 写し（自分の 手札・捨て札）
     let hand = P ? P.my.hand.slice() : [], dis = P ? P.discard.slice() : [];
     const rehand = fresh => { paintHand(fresh, hand); layout(); };
     const toDis = cs => { cs.forEach(c => dis.push({ k: c.k, mine: c.mine })); paintDis(dis); };      // cs＝[{ k, mine }]（第4.183版：だれの カードか）
     const kIn = (sd) => { const el = $('.cbslot.' + sd + ' .cbc'); return el && el.dataset.ck ? el.dataset.ck : null; };      // 第4.182版：絵の 名前では なく data-ck（べつの デザインでも 読める）
     for (const x of ev) {
-      if (!match) return;
+      if (!match || g0 !== GEN) return;
       if (x.e === 'deal') {
         ended = false; gameNo += 1; closeMod(); V = null; paintEmpty();
         payStake();                                    // 第4.179版：部屋の 参加コインを 出す（コンピュータとの 対戦・コインなしの 部屋は 何も しない）
@@ -1839,6 +1852,7 @@ const CBApp = (() => {
         const nDeal = Math.max(v.my.hand.length, v.op.hand.length) || R.HAND;      // 配る 数（ふだんは 7まい ずつ）
         for (let i = 0; i < nDeal; i++) { jobs.push(T(i * 90).then(() => fly(null, mid(d, w), mid(hm, w), 320))); jobs.push(T(i * 90 + 45).then(() => fly(null, mid(d, w), mid(ho, w * 0.7), 320, false, 'op'))); }
         await Promise.all(jobs);
+        dealHold = ev.indexOf(x) < ev.length - 1;     // 第4.190版：配った あとに 6 の 効果を 聞く（sixt）ときは、その 帯を 見せ終わる まで 聞く 窓・ボタンを 出さない（pump が もどす）
         V = v; mode = { k: 'idle' }; render();
         hand = v.my.hand.slice(); dis = v.discard.slice();
         $('.cbhand').querySelectorAll('.cbc').forEach((c, i) => { c.classList.add('new'); c.style.animationDelay = (i * 50 * SPEED) + 'ms'; });
@@ -1858,9 +1872,14 @@ const CBApp = (() => {
           const hs = Array.from($('.cbohand').children), h = hs.filter(e => !e.dataset.ck).pop() || hs[hs.length - 1];
           await fly(null, h ? box(h) : mid(handBox('op'), 40), slotBox('op'), 300, false, 'op'); if (h) h.remove(); $('.cbslot.op').innerHTML = cardBtn({ u: 0, k: null }, '', '', 'op');
         }
-      } else if (x.e === 'efft') {                     // 2人とも セットした：効果タイム
+      } else if (x.e === 'sixt') {                     // 第4.190版：ターンの はじめ：6 の 効果を 使うか えらぶ（セットの 前・神様馬／幻の馬より 先）
+        se('magic'); await banner('6 の 効果', x.mine ? 'セットの 前に 使うか えらんでね' : `${WHO()}が 使うか えらぶよ`, 950);
+      } else if (x.e === 'sixd' || x.e === 'p6skip') {
+        if (x.e === 'p6skip' && !x.me) { toast(`${WHO()}は 6 の 効果を 使わなかったよ`, 1.8); await T(500); }      // 決めた こと だけ（sixd）・使わなかった（p6skip：ターンの はじめ は 待って いた ので 知らせる）
+      } else if (x.e === 'efft') {                     // 2人とも セットした：効果タイム（第4.190版：1つずつ。帯は はじめの 1つ だけ）
         $('.cbglow').classList.remove('on');
-        await banner('効果タイム', x.mine ? 'カードの 効果を 使うか えらんでね' : `${WHO()}が 効果を 使うか えらぶよ`, 950);
+        if (x.first) await banner('効果タイム', x.mine ? 'カードの 効果を 使うか えらんでね' : `${WHO()}が 効果を 使うか えらぶよ`, 950);
+        else if (x.mine) se('magic', 0.5);
       } else if (x.e === 'effd') {
         /* 決めた こと だけ（何を 使うかは まだ 出さない）*/
       } else if (x.e === 'fizz') {
@@ -2033,7 +2052,7 @@ const CBApp = (() => {
   }
   // 対戦を はなれる（count＝とちゅうで やめた → 負けに 数える）
   function leave(count) {
-    const m = match; match = null; queue = [];
+    const m = match; match = null; queue = []; GEN += 1;      // 第4.190版：世代を かえる（この 対戦の 動きの つづきは 止まる）
     if (m) { if (count && !ended && V) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) { /* なし */ } }      // 第4.183版：ミッションの 連勝も 0
     if (st && st.stake) { st.stake = null; save(); }      // 第4.179版：とちゅうで やめた → 出した 参加コインは もどらない
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      // 第4.183版：対戦 ちゅうの しるしを 消す

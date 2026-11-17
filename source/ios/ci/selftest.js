@@ -711,11 +711,12 @@
     var click = function (sel) { var e = document.querySelector(sel); if (e && !e.disabled) { e.click(); return true; } return false; };
     while (Date.now() - t0 < ms && !T.ended && T.match) {
       if (T.idle && T.view) {
-        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && T.ask ? 'x7' : 'set') : 'wait';
+        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && T.ask ? 'x7' : 'set') : 'wait';
         if (s === 'x7') { if (click('#cbOv .cbask [data-cb=x7no]')) { n++; kinds.x7 = (kinds.x7 || 0) + 1; } }      // 第4.187版：7 が 4まい（セットの 前）→ 使わない
         else if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
         else if (s === 'rev') { if (click('#cbOv [data-cb=revyes]')) { n++; kinds.rev = (kinds.rev || 0) + 1; } }      // 第4.178版：逆転勝利（1・2 の 効果）を 聞かれたら 使う
         else if (s === 'u5') { if (click('#cbOv [data-cb=u5no]')) { n++; kinds.u5 = (kinds.u5 || 0) + 1; } }      // 第4.183版：4 の 効果で 交換して 5 を 出した → 5 の 効果は 使わない
+        else if (s === 'six') { if (click('#cbOv [data-cb=sixno]')) { n++; kinds.six = (kinds.six || 0) + 1; } }      // 第4.190版：ターンの はじめの 6 の 効果 → 使わない
         else if (s === 'eff') { if (click('#cbOv [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
         else if (s === 'swap' || s === 'set') {
           if (!T.modOn()) click('#cbOv .cbhand .cbc');
@@ -751,7 +752,7 @@
     }
     await sleep(500);
     R.shown = (document.querySelector('#cbOv .cbroom .num') || {}).textContent || '';
-    R.connected = !!(await waitFor(function () { return window.CBApp._t.screen === 'game' && window.CBApp._t.view ? true : null; }, 120000));
+    R.connected = !!(await waitFor(function () { return window.CBApp._t.screen === 'game' && window.CBApp._t.view ? true : null; }, 240000));      // 第4.190版：2分 → 4分（run 157 の macOS 26 は iPad が つながるのに 2分 より かかった）
     R.screen = window.CBApp._t.screen;
     if (!R.connected) { R.text = ((document.querySelector('#cbOv .cbroom') || {}).textContent || '').slice(0, 240); R.evs = R.evs.slice(0, 60); report(String(PH), R); return; }
     R.kind = window.CBApp._t.match ? window.CBApp._t.match.kind : null;

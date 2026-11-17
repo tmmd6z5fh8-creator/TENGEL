@@ -8,6 +8,7 @@
 //   第4.183版：部屋の あいさつに おたがいの デザイン（dz）・こわれた デザインは すてる・PROTO 6（ルールが かわった：4 の 効果で 交換して 5 を 出したら 5 の 効果）
 //   第4.187版：PROTO 8（7 の 4まい 公開は セットの 前・場の カードは いつも うら）・部屋で 4まい 公開 → 7 を セット（ゲストには どれを 出したか わからない）
 //   第4.188版：PROTO 9（効果の 順 6 → 7 → 3 → 5 → 4）・部屋で 4 は いちばん あと：ゲストの 5 の 効果で 山札から ふせた カードを、ホストの 4 で 交換
+//   第4.190版：PROTO 10（6 は ターンの はじめ・効果タイムは 1つずつ）・1ターン目の はじめの 6 は 配った 知らせと いっしょ（deal,sixt）
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
 let fails = [];
@@ -56,16 +57,30 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 9 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 10 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
       && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
-      'はじめに おたがいに あいさつ（hello・版の 番号 4）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
+      'はじめに おたがいに あいさつ（hello・版の 番号 10）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
     G.join(); await tick(); await tick(); await tick();
     check(JSON.parse(w.log[2][1]).t === 'join' && hs.states.join() === 'ready,joined', 'ゲストが「参加する」（join）→ ホストに 届く');
     check(hs.ups.length === 1 && gs.ups.length === 1 && hs.ups[0].ev[0].e === 'deal' && gs.ups[0].ev[0].e === 'deal' && hs.view.me === 0 && gs.view.me === 1, 'あいさつの あと 配る：2人に はじめの 形が 届く（ホスト＝席 0・ゲスト＝席 1）');
     check(hs.view.my.hand.map(c => c.k).join('') === 'k1266' && gs.view.my.hand.map(c => c.k).join('') === 'm3457' && gs.view.op.hand.every(c => c.k === null) && hs.view.op.hand.every(c => c.k === null),
       'それぞれ 自分の 手札 だけ 見える');
+    check(hs.ups[0].ev.map(e => e.e).join() === 'deal,sixt' && gs.ups[0].ev.map(e => e.e).join() === 'deal,sixt' && hs.ups[0].ev[1].mine === true && gs.ups[0].ev[1].mine === false && gs.ups[0].ev[1].other === true
+      && hs.view.phase === 'six' && hs.view.can.six && gs.view.can.six === null && gs.view.wait === true && !hs.view.can.set && !gs.view.can.set,
+      '第4.190版：配った 知らせと いっしょに 1ターン目の はじめ：ホスト（6 が 2まい）が 6 の 効果を えらぶ 番・ゲストは 待つ（2人とも まだ セットできない）');
     const up0 = JSON.parse(w.log.find(x => x[0] === 'h' && JSON.parse(x[1]).t === 'up')[1]);
     check(!/"deck"/.test(JSON.stringify(up0)) && (JSON.stringify(up0).match(/"k":"[1-7km]"/g) || []).length === 5, 'ゲストに 送る 文字の 中の カードの 中身は ゲストの 手札の 5まい だけ（ホストの 手札・山札の 並びは 入って いない）');
+    const early = await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '3').u }); await tick();
+    const late1 = await G.act({ t: 'p6', pick: hs.view.my.hand[0].u }); await tick();
+    check(early.ok === false && late1.ok === false && hs.view.phase === 'six' && !gs.view.my.set, 'ゲストは まだ セットできない・6 の 効果も 使えない（ホストが ことわる）');
+    // ホストが 6 の 効果（ゲストの 手札を 1まい 見る）→ 2人とも セットへ
+    const pk = gs.view.my.hand[0].u, pkK = gs.view.my.hand[0].k;
+    const before = w.log.length;
+    const r2 = await H.act({ t: 'p6', pick: pk }); await tick(); await tick();
+    const sent = w.log.slice(before).filter(x => x[0] === 'h').map(x => JSON.parse(x[1]));
+    check(r2.ok && hs.view.op.hand.find(c => c.u === pk).k === pkK && gs.view.my.hand.find(c => c.u === pk).seen === true && gs.view.op.hand.filter(c => c.k === '6').length === 2
+      && sent.length === 1 && sent[0].ev.map(e => e.e).join() === 'sixd,p6' && sent[0].ev[1].k === undefined && sent[0].ev[1].pick === pk && hs.view.phase === 'set' && hs.view.can.set && gs.view.can.set,
+      'ホストが 6 の 効果：ホストは 見た カードが 見える・ゲストには 見せた 6 の 2まいと「どれを 見られたか」→ 2人とも セットへ');
     // ゲストが 出す → まだ オープン しない。ホストに 届くのは「相手が 出した」だけ
     const gu = gs.view.my.hand.find(c => c.k === '3').u;
     const r1 = await G.act({ t: 'set', u: gu }); await tick(); await tick();
@@ -75,26 +90,16 @@ async function playOut(pairs, rng, guard) {
     check(bad.ok === false, 'ゲストの まちがった 手（もう 出した）は ホストが ことわる（ack ok:false）');
     const fake = await G.act({ t: 'set', u: hs.view.my.hand[0].u }); await tick();
     check(fake.ok === false && hs.view.my.hand.length === 5 && !hs.view.my.set, 'ゲストは ホストの カードを 動かせない');
-    // ホストも 出す → 2人とも セットした：ホストは 6 が 2まい → 効果タイム（ゲストは 待つ）
+    // ホストも 出す → 効果タイムは ない（第4.190版：6 は ターンの はじめ）→ オープン → 2ターン目の はじめ：まず 6・その あと 神様馬
     const r3 = await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === 'k').u }); await tick(); await tick();
-    const hu0 = hs.ups[hs.ups.length - 1], gu0 = gs.ups[gs.ups.length - 1];
-    check(r3.ok && hu0.ev.map(e => e.e).join() === 'set,efft' && gu0.ev.map(e => e.e).join() === 'set,efft' && hu0.ev[1].mine === true && gu0.ev[1].mine === false && gu0.ev[1].other === true
-      && hs.view.phase === 'eff' && hs.view.can.eff && hs.view.can.eff.e6 === true && gs.view.can.eff === null && gs.view.wait === true && gs.view.op.set.k === null,
-      '2人とも セットした → 効果タイム：ホスト（6 が 2まい）が えらぶ 番・ゲストは 待つ（オープンは まだ）');
-    const late1 = await G.act({ t: 'eff', use: { u4: true } }); await tick();
-    check(late1.ok === false && hs.view.phase === 'eff', 'ゲストは えらぶ ものが ない（効果を 送っても ホストが ことわる）');
-    // ホストが 6 の 効果（ゲストの 手札を 1まい 見る）→ いっしょに オープン
-    const pk = gs.view.my.hand[0].u, pkK = gs.view.my.hand[0].k;
-    const before = w.log.length;
-    const r2 = await H.act({ t: 'eff', use: { p6: pk } }); await tick(); await tick();
-    const sent = w.log.slice(before).filter(x => x[0] === 'h').map(x => JSON.parse(x[1]));
-    check(r2.ok && hs.view.op.hand.find(c => c.u === pk).k === pkK && gs.view.my.hand.find(c => c.u === pk).seen === true && gs.view.op.hand.filter(c => c.k === '6').length === 2
-      && sent.length === 1 && sent[0].ev[0].e === 'effd' && sent[0].ev[1].e === 'p6' && sent[0].ev[1].k === undefined && sent[0].ev[1].pick === pk,
-      'ホストが 6 の 効果：ホストは 見た カードが 見える・ゲストには 見せた 6 の 2まいと「どれを 見られたか」');
     const hu = hs.ups[hs.ups.length - 1], gu2 = gs.ups[gs.ups.length - 1];
-    check(hu.ev.map(e => e.e).join() === 'effd,p6,open,clear,turn,pre' && gu2.ev.map(e => e.e).join() === 'effd,p6,open,clear,turn,pre' && hu.ev[2].res === 'win' && gu2.ev[2].res === 'lose' && hu.ev[2].my.k === 'k' && gu2.ev[2].my.k === '3' && gu2.ev[2].op.k === 'k'
-      && hs.view.turn === 2 && gs.view.turn === 2 && hs.view.phase === 'pre' && hs.view.pend.mine === true && hs.view.pend.type === 'k' && gs.view.pend.mine === false && gs.view.wait === true && !hs.view.can.set && !gs.view.can.set,
-      'オープン：同じ できごとが 2人に 届く（ホスト＝勝ち・ゲスト＝負け）。神様馬の 効果は 2ターン目の はじめに ホストが えらぶ');
+    check(r3.ok && hu.ev.map(e => e.e).join() === 'set,open,clear,turn,sixt' && gu2.ev.map(e => e.e).join() === 'set,open,clear,turn,sixt' && hu.ev[1].res === 'win' && gu2.ev[1].res === 'lose' && hu.ev[1].my.k === 'k' && gu2.ev[1].my.k === '3' && gu2.ev[1].op.k === 'k'
+      && hs.view.turn === 2 && gs.view.turn === 2 && hs.view.phase === 'six' && hs.view.can.six && !hs.view.pend && gs.view.wait === true && !hs.view.can.set && !gs.view.can.set,
+      'オープン：同じ できごとが 2人に 届く（ホスト＝勝ち・ゲスト＝負け）。2ターン目の はじめ：まず ホストの 6（神様馬の 効果は その あと）');
+    const r5 = await H.act({ t: 'p6', pick: null }); await tick(); await tick();
+    check(r5.ok && hs.ups[hs.ups.length - 1].ev.map(e => e.e).join() === 'sixd,p6skip,pre' && gs.ups[gs.ups.length - 1].ev.map(e => e.e).join() === 'sixd,p6skip,pre'
+      && hs.view.phase === 'pre' && hs.view.pend.mine === true && hs.view.pend.type === 'k' && gs.view.pend.mine === false && gs.view.wait === true && !hs.view.can.set && !gs.view.can.set,
+      '6 を 使わない →（ゲストにも「使わなかった」）→ 神様馬の 効果は ホストが えらぶ・ゲストは 待つ');
     check(JSON.stringify(hs.view.discard) === '[{"k":"k","mine":true,"why":"t","turn":1},{"k":"3","mine":false,"why":"t","turn":1}]' && JSON.stringify(gs.view.discard) === '[{"k":"k","mine":false,"why":"t","turn":1},{"k":"3","mine":true,"why":"t","turn":1}]',
       '捨て札：2人に 同じ 中身が 届く（「だれの」だけ 自分から 見た 形）');
     const r4 = await H.act({ t: 'k', pick: null }); await tick(); await tick();
@@ -108,7 +113,7 @@ async function playOut(pairs, rng, guard) {
     G.again(); await tick(); await tick();
     check(hs.states.indexOf('again') >= 0 && hs.ups.length === n0, 'ゲストが「もう 1回」→ ホストに 知らせ（まだ 配らない）');
     H.again(); await tick(); await tick(); await tick();
-    check(gs.states.indexOf('again') >= 0 && hs.view.phase === 'set' && gs.view.phase === 'set' && hs.view.turn === 1 && hs.ups[hs.ups.length - 1].ev[0].e === 'deal' && gs.view.my.hand.length === 5 && hs.view.my.wins === 0,
+    check(gs.states.indexOf('again') >= 0 && hs.view.phase === 'six' && gs.view.phase === 'six' && hs.view.turn === 1 && hs.ups[hs.ups.length - 1].ev.map(e => e.e).join() === 'deal,sixt' && gs.view.my.hand.length === 5 && hs.view.my.wins === 0,
       'ホストも「もう 1回」→ 配り直して 新しい 対戦');
     // やめる
     G.leave(); await sleep(320); await tick();
@@ -177,9 +182,13 @@ async function playOut(pairs, rng, guard) {
     await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '5').u }); await tick(); await tick();
     await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === '4').u }); await tick(); await tick();
     await G.act({ t: 'eff', use: { u5: gs.view.my.hand.find(c => c.k === '7').u } }); await tick(); await tick();
+    const hu1 = hs.ups[hs.ups.length - 1], gu1 = gs.ups[gs.ups.length - 1];
+    check(gu1.ev.map(e => e.e).join() === 'effd,u5,efft' && hu1.ev.map(e => e.e).join() === 'effd,u5,efft' && hu1.ev[2].mine === true && hu1.ev[2].st === 'u4' && gu1.ev[2].mine === false && !('st' in gu1.ev[2])
+      && hs.view.can.eff && hs.view.can.eff.e4 && gs.view.can.eff === null && gs.view.wait === true,
+      '第4.190版：ゲストの 5 の 効果を すぐ 行う → 次に ホストの 4（ゲストには どの 効果を 聞いて いるか 届かない）');
     await H.act({ t: 'eff', use: { u4: true } }); await tick(); await tick();
     const hu = hs.ups[hs.ups.length - 1], gu = gs.ups[gs.ups.length - 1];
-    check(gu.ev.map(e => e.e).join() === 'effd,u5,first' && hu.ev.map(e => e.e).join() === 'effd,u5,first' && hu.ev[1].five.k === '5' && hu.ev[1].drop.k === '7' && gs.view.phase === 'swap' && gs.view.pend.mine === true && gs.view.my.set.blind === true && gs.view.my.set.k === null && hs.view.op.set.k === null,
+    check(gu.ev.map(e => e.e).join() === 'effd,first' && hu.ev.map(e => e.e).join() === 'effd,first' && hu1.ev[1].five.k === '5' && hu1.ev[1].drop.k === '7' && gs.view.phase === 'swap' && gs.view.pend.mine === true && gs.view.my.set.blind === true && gs.view.my.set.k === null && hs.view.op.set.k === null,
       'ゲストの 5 の 効果（5 と 7 を 捨てて 山札から ふせて セット）→ ホストの 4 の 効果（いちばん あと）→ ゲストが 山札から 来た カードを 交換する 番（中身は まだ だれにも 見えない）');
     await G.act({ t: 'swap', u: gs.view.my.hand.find(c => c.k === '1').u }); await tick(); await tick();
     check(gs.view.my.hand.some(c => c.k === 'k') && gs.view.turn === 2 && gs.view.my.wins === 1, '交換：山札から 来て いた 神様馬は ゲストの 手札に 入る・出した 1 が 4 に 勝つ');
@@ -290,8 +299,8 @@ async function playOut(pairs, rng, guard) {
     check(H.opDz === null && G.opDz === null, 'はじめは 相手の デザインは まだ ない（opDz＝null）');
     H.start(); G.start(); await tick(); await tick(); await tick();
     const gh = JSON.parse(w.log[0][1]), hh = JSON.parse(w.log[1][1]);
-    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 9 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 9,
-      'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 9（第4.188版：効果の 順 6 → 7 → 3 → 5 → 4：ルールが かわった）');
+    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 10 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 10,
+      'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 10（第4.190版：6 は ターンの はじめ・効果タイムは 1つずつ：ルールが かわった）');
     check(JSON.stringify(H.opDz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && JSON.stringify(G.opDz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake',
       'おたがいの デザインが 届く（match.opDz）・あいさつの 流れは 前と 同じ');
     G.join(); await tick(); await tick(); await tick();

@@ -13,6 +13,9 @@
 #     くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる：pk_rev_gsr）／もう 1パック：レア（pk_rev_r）
 #   第4.189版：時計を 進める ときに、CSS から 消えた 動き（idle：animation: none に した・transition が とりけされた）の 時刻を 入れない（入れると その 動きが 生きかえって、
 #     うしろの 動きを 上書きする：パックが 消えずに のこって 写って いた）。前の 場面も この 形で 数え直した
+#   第4.190版：6 の 効果は ターンの はじめ（1つ目の 対戦）：配る → 「6 の 効果」の 帯 → 聞く 窓（deal）・見る カードを えらぶ → 効果の 札 → 見た カードを 大きく（six_peek）・
+#     オープン（勝ち）→「ターン 2」→「6 の 効果」の 帯（open_win）・6 を 使わない →「神様馬の 効果」の 帯（six_pre）・相手の 5 で「効果タイム」の 帯（set_efft）→ 負け（open_lose）。
+#     前の efft・eff6_open（効果タイムの 6）は なくなった
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -113,20 +116,23 @@ try:
                 else: pre(); settle(pg, sec)
                 settle(pg, 0.5)
             if calm < 2:
-                # ① はじまり：「対戦 スタート」→ 配る → 手札が 入る
-                seg('deal', 3.2, lambda: pg.locator('#cbOv .cbmenu [data-cb=cpu]').click())
-                # ② 1ターン目：自分が 神様馬を セット → 相手も セット →「効果タイム」の 帯 →「6 の 効果を 使う？」
+                # ① はじまり：「対戦 スタート」→ 配る → 手札が 入る →（第4.190版）ターンの はじめ：「6 の 効果」の 帯 → 聞く 窓「6 の 効果を 使う？」
+                seg('deal', 4.6, lambda: pg.locator('#cbOv .cbmenu [data-cb=cpu]').click())
+                # ② 6 の 効果を 使う → 見る カードを えらぶ → 効果の 札 → 見た カードを 大きく → セットへ
+                pg.locator('#cbOv [data-cb=sixyes]').click(); pg.wait_for_timeout(60)
+                seg('six_peek', 5.2, lambda: pg.locator('#cbOv .cbmod .pick .cbc').first.click())
+                # ③ 1ターン目：自分が 神様馬を セット → 相手も セット → オープン（勝ち！）→ 片付け →「ターン 2」→「6 の 効果」の 帯 → 聞く 窓
                 tap_play(pg, 'k'); settle(pg, 0.8)
-                seg('efft', 2.4, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 2}))
-                # ③ 6 の 効果を 使う → 見た カードを 大きく → オープン（勝ち！）→ 片付け →「ターン 2」→「神様馬の 効果」の 帯
-                pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(60)
-                seg('eff6_open', 10.8, lambda: pg.locator('#cbOv .cbmod .pick .cbc').first.click())      # 第4.185版：効果の 札の ぶん 長く
-                pg.locator('#cbOv [data-cb=kskip]').click(); settle(pg, 0.6)      # 2ターン目の はじめ：神様馬の 効果は 使わない
-                # ④ 2ターン目：相手が 先に セット → 自分が セット →「効果タイム」→ 使わない → オープン（負け…）→「ターン 3」
-                pg.evaluate(OPP, {'t': 'set', 'k': 3}); settle(pg, 0.8)
+                seg('open_win', 7.4, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 2}))
+                # ④ 2ターン目の はじめ：6 は 使わない →「神様馬の 効果」の 帯 → 聞く 窓 → 使わない
+                seg('six_pre', 2.6, lambda: pg.locator('#cbOv [data-cb=sixno]').click())
+                pg.locator('#cbOv [data-cb=kskip]').click(); settle(pg, 0.6)
+                # ⑤ 2ターン目：相手が 先に 5 を セット → 自分が セット →「効果タイム」の 帯（相手の 5）→ 相手は 使わない → オープン（負け…）→「ターン 3」→「6 の 効果」
+                pg.evaluate(OPP, {'t': 'set', 'k': 5}); settle(pg, 0.8)
                 seg('set_efft', 2.6, lambda: tap_play(pg, '7'))
-                seg('open_lose', 5.4, lambda: pg.locator('#cbOv [data-cb=effno]').click())
-                # ⑤ 3ターン目：かぶり → 片付け → 結果（同点）
+                seg('open_lose', 7.4, lambda: pg.evaluate(OPP, {'t': 'eff', 'use': {}}))
+                # ⑥ 3ターン目：6 は 使わない → かぶり → 片付け → 結果（同点）
+                pg.locator('#cbOv [data-cb=sixno]').click(); settle(pg, 0.6)
                 pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 0.8)
                 if want('end'): run(pg, 'end' + tag, 6.4, pre=lambda: tap_play(pg, '6'))
                 v = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.phase, v.res, v.my.wins, v.op.wins, v.discard.length] : null; }")

@@ -18,6 +18,9 @@
 //     ・逆転勝利（第4.178版：1 で 神様馬・幻の馬に／2 で 1 に 負けた とき、手札に 同じ 数字が 2まい あれば 使える）：使える ときは いつも 使う
 //     ・第4.185版：7 が 4まい → いつも 4まい 見せて 逆転（7 が 1番 強く なる）。強さ 逆転ちゅう（v.rv）は 強さを 逆で 見る（出す カード・交換・捨てる カード）・7 の 3まい 交換は しない（7 は 強い）
 //       第4.187版：4まい 公開は セットの 前（v.can.x7r → { t:'x7r' }。その あと いつもの ように セット：逆転した 強さで えらぶ）
+//     ・第4.190版：6 の 効果は ターンの はじめ（v.can.six → { t:'p6', pick }：まだ 見て いない 手札から ランダムに 1まい）。
+//       効果タイムは 1つずつ 聞かれる（v.can.eff に いまの 効果 1つ）→ その 効果 だけ 決める（7・3 の あとの 手札で 5 を 考える）
+//     ・相手の 手札を 見る（6・神様馬）ときは、まだ 見て いない カード（うら）の 中から ひとしく ランダムに えらぶ（カードの 中身は 見えて いない：のぞかない）
 const CBCpu = (() => {
   'use strict';
   const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      // 小さい ほど 強い（rv＝強さ 逆転ちゅう：第4.185版）
@@ -48,18 +51,17 @@ const CBCpu = (() => {
       if (v.pend.type === 'rev') return { t: 'rev', use: true };      // 逆転勝利（第4.178版）：使える ときは いつも 使う（負けが 勝ちに なる：1まい 捨てる より 得）
       return null;
     }
-    if (v.can.eff) {                                     // 効果タイム：使う ものを まとめて 決める
-      const c = v.can.eff, use = {}, s = byS(hand), n7 = hand.filter(x => x.k === '7').length, n3 = hand.filter(x => x.k === '3').length;
-      if (c.e6) { const un = opHand.filter(x => x.k == null); if (un.length) use.p6 = pick(un, rng).u; }
-      if (c.e7 && !rv) use.x7 = true;                    // 逆転ちゅうの 7 は 強い ので 交換しない
-      if (c.e3 && rng() < (v.turn >= 2 ? 0.55 : 0.35)) use.x3 = true;
-      if (c.e5) {
-        // 7 の 交換も する とき：7 は 3まい 残す（4まい ある ときは 1まい 捨てて いい）。7 で ない カードは 弱い（5・6）とき だけ 捨てる。3 の 交換も する とき：3 は 3まい 残す
-        const cand = s.filter(x => !(use.x7 && x.k === '7' && n7 <= 3) && !(use.x3 && x.k === '3' && n3 <= 3)), weak = cand[cand.length - 1];
-        if (weak && ((!use.x7 && !use.x3) || (use.x7 && weak.k === '7') || (use.x3 && weak.k === '3') || P(weak.k) >= P('5'))) use.u5 = weak.u;
-      }
-      if (c.e4 && (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false)) use.u4 = true;
-      return { t: 'eff', use: use };
+    if (v.can.six) {                                     // 第4.190版：6 の 効果（ターンの はじめ）：まだ 見て いない 手札から ランダムに 1まい 見る
+      const un = opHand.filter(x => x.k == null);
+      return { t: 'p6', pick: un.length ? pick(un, rng).u : null };
+    }
+    if (v.can.eff) {                                     // 効果タイム（第4.190版：1つずつ）：いまの 効果 だけ 決める
+      const c = v.can.eff, s = byS(hand);
+      if (c.e7) return { t: 'eff', use: rv ? {} : { x7: true } };      // 逆転ちゅうの 7 は 強い ので 交換しない
+      if (c.e3) return { t: 'eff', use: rng() < (v.turn >= 2 ? 0.55 : 0.35) ? { x3: true } : {} };
+      if (c.e5) { const weak = s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      // 1番 弱い 手札を 捨てて 山札から 出す（7・3 は もう 終わって いる）
+      if (c.e4) return { t: 'eff', use: (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false) ? { u4: true } : {} };
+      return { t: 'eff', use: {} };
     }
     if (v.phase !== 'set' || !v.can.set) return null;
     if (v.can.x7r) return { t: 'x7r' };                 // 第4.187版：7 が 4まい → セットの 前に 4まい 見せて 逆転（7 が 1番 強く なる）→ その あと セット
