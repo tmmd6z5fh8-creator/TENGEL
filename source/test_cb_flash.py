@@ -9,6 +9,8 @@
 #     プレイボード『白亜の宮殿』（いちばん 明るい ボード：暗い 窓や 札との 明るさの ちがいが いちばん 大きい）。4つ目の 対戦（3ターン）：相手が 7 を 4まい 見せて 強さ 逆転（x7r）
 #   第4.187版：7 の 4まい 公開は セットの 前（x7r：まだ だれも セットして いない ときに 相手が 使う）→ 自分が セット → 相手が ふせて セット → オープン（x7r_open）。
 #     セットした カードは 自分の 画面でも うら（ふせて セット：うらで とんで、うら ＋ しるしで 置く）
+#   第4.189版：5つ目＝カードパック（ふつう・動きを へらす の 2回）：タブの パックの 絵（光の すじ：pk_tab）→「開ける」→ パックが 出る（pk_pack）→ タップ → 上が 切れて とぶ → 5まい 出る → ノーマル 4まいを めくる → くじが ゆっくり ひかる（pk_open）→
+#     くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる：pk_rev_gsr）／もう 1パック：レア（pk_rev_r）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -168,6 +170,22 @@ try:
             seg('x7r_open', 6.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': '1'}))      # 相手が ふせて セット → オープン（2 が 1 に 勝つ・強さ 逆転中）→「ターン 2」
             r7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.rv, v.turn, v.my.wins, v.op.wins, v.op.hand.filter(c => c.k === '7').length, document.querySelector('#cbOv .cbturn').textContent.indexOf('強さ 逆転中') >= 0] : null; }")
             check(r7 == [True, 2, 1, 0, 3, True], f'4つ目の 対戦も 場面の とおり（相手が セットの 前に 7 を 4まい 見せて 逆転 → 2 が 1 に 勝つ・相手の 7 が 3まい 見える・「強さ 逆転中」{r7}）')
+            if calm < 2:
+                # ---- 5つ目（第4.189版）：カードパック ----
+                settle(pg, 1.0)
+                pg.evaluate("() => { const T = CBApp._t; T.menu(); T.state.coin = 1000; T.state.pkh = []; T.state.packs = 0; T.save(); window.__q = [0, 3, 6, 9, 225, 0, 1, 4, 7, 10, 100, 2]; CBApp._randInt = n => (n === 1679616 ? 1 : window.__q.shift()); }"); pg.wait_for_timeout(100)
+                pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); settle(pg, 0.5)
+                seg('pk_tab', 5.2, lambda: None)                                                        # カードパックの タブ：パックの 絵（光の すじが 5秒に 1回 ゆっくり 通る）
+                pg.locator('#cbOv .cbdz [data-cb=pkask]').click(); settle(pg, 0.3)
+                seg('pk_pack', 3.0, lambda: pg.locator('#cbOv .cbmod [data-cb=pkgo]').click())         # 「開ける」→ パックの 画面：パックが 出る（ゆれる）
+                seg('pk_open', 4.6, lambda: pg.locator('#cbOv .cbpk .pkart.big').click())               # タップ → 上の ギザギザが 切れて とぶ → 5まい 出る → ノーマル 4まいを めくる → くじが ゆっくり ひかる
+                seg('pk_rev_gsr', 3.2, lambda: pg.locator('#cbOv .cbpk [data-cb=pklast]').click())     # くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる）
+                pg.locator('#cbOv .cbpk [data-cb=pkmore]').click(); settle(pg, 0.3); pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); settle(pg, 0.8)
+                pg.locator('#cbOv .cbpk .pkart.big').click(); settle(pg, 4.0)
+                seg('pk_rev_r', 3.0, lambda: pg.locator('#cbOv .cbpk [data-cb=pklast]').click())       # もう 1パック：レアの くじ
+                pk = pg.evaluate("() => { const s = CBApp._t.state, p = CBApp._t.pk; return [p && p.st, s.pkh.map(h => h.g + ':' + h.cards.join(',')), s.coin]; }")
+                check(pk == ['done', ['gsr:ka,mb,2a,3b,ksr', 'r:kb,1a,2b,4a,3r'], 776], f'カードパックも 場面の とおり（神様馬の 超レア → レア・コイン 1000 → 776）{pk}')
+                pg.evaluate("() => { CBApp._randInt = null; CBApp._t.menu(); }")
             check(not errs, f'エラー なし {errs[:3]}')
             ctx.close()
 finally:

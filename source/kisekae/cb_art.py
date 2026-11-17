@@ -37,7 +37,14 @@
 #     第4.186版（まさちゃん 2026/11/17 00:52「この4つ、この画像と入れ替えて！」と 絵 4まい）：crimson・sakura・marble・frost は 新しい 絵 cb_board_<名前>_v2.png
 #       （1672×941：右の 馬が 大きく なって「山札」の 札が 左へ 98px。ほかの 形〈台・捨て札・VS の わく・歯車〉は 同じ 場所）。前の 絵は のこす（上書きしない・消さない：アプリには 入れない）
 #       絵は そのまま（夜の 色〈night〉に しない：まさちゃんの デザインの まま）。大きさを かえる だけ
+#     第4.189版（まさちゃん 2026/11/17 15:00「カードバトル 1パックコイン112枚 カード購入ではなく、パック式にする…」と 絵 18まい：どれも「SECRET RARE」）：
+#       カードパックの レア 9種・超レア 9種（1〜7・神様馬・幻の馬：名前は 姫が つけた。どちらが レアかは 姫が 決めた）＝ cb_face_<名前>.png（1024×1536・白い 紙の 上に カード）
+#       ・レア（キラキラの 水晶の 枠・角ばった 大きい 数字）：kr・mr・1r〜7r（2r だけ cb_face_2r.jpg：もらった 形の まま）
+#       ・超レア（宮殿の 柱と ダイヤの 枠・丸い 数字）：ksr・msr・1sr〜7sr
+#       kr・ksr は 紙の ふちが ない（絵が 画面いっぱい）→ そのまま 2:3 で 同じ 角の 丸みに 切る。作り方は ほかの おもてと 同じ（cb_fc_<名前>_c／_s.webp）
 #     cb_board.webp（1254×706）・cb_deck.webp（360×426）・cb_icon.webp（240×240：右下の 丸い ボタン）・cb_logo.webp（720×720：メニューの 絵）・cb_coin.webp（240×240：バトルコイン：第4.179版）
+#     第4.189版（まさちゃん 2026/11/17 15:39「パックの画像これ使える？」と 絵 1まい）：カードパックの 絵 cb_pack.png（1024×1536・すき通し あり：TENGER 馬カードバトル・BOOSTER PACK・5枚入り）
+#       → cb_pack.webp（600×1110：絵の ある 所〈109〜914 × 6〜1509〉に すこし よゆうを つけて 切り出す・まん中は ぴったり 不透明に・まわりの うすい もや〈不透明度 64 未満〉は 消す）
 #     第4.178版（まさちゃん 2026/11/16 14:43「フィールドの雰囲気を夜の月あかりと火のライトに照らされてるイメージにして！(デザインは変えないで、差し込んでる光りの色を変えてみて)」）：
 #       cb_board.webp は、もとの 絵（cb_board.png：そのまま のこす）の **光の 色 だけ** を かえて 作る（下の night）：形・もよう・字は 1画素も 動かさない。
 #       ・ぜんたいを 夜の 暗さ・青みへ ／ 光って いる 所（床に 差しこむ 光・金の ふちの てり）の 色を、左上から 月あかり（青白）・右下から 火の あかり（だいだい）に 入れかえる ／
@@ -53,11 +60,13 @@ CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4',
 BACKS = [('sky', 'cb_back_sky.png'), ('star', 'cb_back_star.png'), ('ice', 'cb_back_ice.png'), ('wa', 'cb_back_wa.png'), ('ori', 'cb_back_ori.png'), ('crown', 'cb_back_crown.png'), ('heart', 'cb_back_heart.png')]      # 第4.182版：背面カスタム
 BOARDS = [(b, f'cb_board_{b}' + ('_v2' if b in ('crimson', 'sakura', 'marble', 'frost') else '') + '.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード（第4.186版：4つは 新しい 絵）
 BD, BD_S = (1254, 706), (480, 270)      # 第4.185版：プレイボードの 大きさ（いつもの cb_board.webp と 同じ）・タイル
-FACES = [(f, f'cb_face_{f}' + ('_v2' if f in ('7a', '7b') else '') + '.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]      # 第4.182版：おもての べつの デザイン（第4.185版：7a・7b は 新しい 絵）
+FACES = [(f, f'cb_face_{f}' + ('_v2' if f in ('7a', '7b') else '') + '.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]
+FACES += [(f, f'cb_face_{f}' + ('.jpg' if f == '2r' else '.png')) for f in ('kr', 'mr', '1r', '2r', '3r', '4r', '5r', '6r', '7r', 'ksr', 'msr', '1sr', '2sr', '3sr', '4sr', '5sr', '6sr', '7sr')]      # 第4.189版：カードパックの レア・超レア      # 第4.182版：おもての べつの デザイン（第4.185版：7a・7b は 新しい 絵）
 DECK_FACE = ((268.4, 104.0), (963.2, 104.0), (1060.7, 948.0), (198.0, 948.0))      # cb_deck.png（1254×1254）の いちばん 上の カードの 面の 角（左上・右上・右下・左下：外の 形の 左右の 線と 金の ふちの 上下で 測った）
 BASE = (1000, 1500)          # そろえる 大きさ（たて横 2:3）
 INSET, RADIUS = 4, 62        # ふちを 内がわへ 4px・角の 丸み 62px（1000×1500 の とき。どの もとの 絵の 角 よりも 内がわ）
 BIG, SMALL = (800, 1200), (300, 450)
+PACK_BOX, PACK_SIZE = (104, 4, 920, 1514), (600, 1110)      # 第4.189版：カードパックの 絵の 切り出し（cb_pack.png の 中）と 大きさ
 Q = dict(quality=84, method=6)
 INFO = 'cb_art.json'         # 台帳（アプリには 入れない：build_ios.py は cb_*.webp と cb_se_*.m4a・cb_bgm.m4a だけ 入れる）
 # 夜の 光（第4.178版）：月＝左上から・火＝右下から。数字を かえたら 台帳の p が かわる（--check で 古いと 出る）
@@ -207,6 +216,11 @@ def plan():
     jobs.append(('cb_icon.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (240, 240), o)))
     jobs.append(('cb_logo.webp', 'cb_icon.png', lambda p, o: save(square(cut(p)), (720, 720), o)))
     jobs.append(('cb_coin.webp', 'cb_coin.png', lambda p, o: save(square(cut(p)), (240, 240), o)))      # 第4.179版：バトルコイン
+    def pack(p, o):                                             # 第4.189版：カードパックの 絵
+        a = np.asarray(Image.open(p).convert('RGBA')).astype(np.float32)
+        x0, y0, x1, y1 = PACK_BOX; b = a[y0:y1, x0:x1].copy(); b[..., 3] = solid(b[..., 3]) * 255
+        return save(b, PACK_SIZE, o)
+    jobs.append(('cb_pack.webp', 'cb_pack.png', pack))
     for fid, src in FACES:                                      # 第4.182版：おもての べつの デザイン（大きい・小さい）
         jobs.append((f'cb_fc_{fid}_c.webp', src, lambda p, o: save(card(p)[0], BIG, o)))
         jobs.append((f'cb_fc_{fid}_s.webp', src, lambda p, o: save(card(p)[0], SMALL, o)))
@@ -226,7 +240,7 @@ def plan():
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)]]))      # 第4.185版：プレイボードの 大きさ
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)]]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
 
 
 def files():

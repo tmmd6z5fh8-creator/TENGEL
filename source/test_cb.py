@@ -23,6 +23,7 @@
 #   第4.186版（まさちゃん 2026/11/17 00:52）：プレイボード 4つを 新しい 絵に（山札の 札が 左へ 5.86% → この 4つの とき だけ 山札も 左へ：.cbboard.dl）
 #   第4.187版（まさちゃん 2026/11/17 09:39）：7 の 4まい 公開は セットの 前（聞く 窓・使わない の あとの 下の ボタン）・セットは いつも ふせて（自分の 場の カードは うら ＋ しるし・相手が 7 を ふせても 見え方は 同じ）
 #   第4.188版（まさちゃん 2026/11/17 11:05・11:16）：効果の 順 6 → 7 → 3 → 5 → 4（聞く 順も・4 は いちばん あと）・5 で 捨てる カードは 7・3 の 効果の 分を のこす・相手の 5 の 効果で 来た カードでも 逆転勝利
+#   第4.189版（まさちゃん 2026/11/17 15:00・15:18・15:39）：カードパック（1パック 112枚・5まい＝ノーマル 4まい ＋ くじ 1まい：0〜229 の 番号・コイン／カード／記録を いっしょに 保存・2回 しない・記録から もう 1回 見る・パックの 絵）。おもては パックで 集める（コインで 解放は うら・ボード だけ）
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -268,7 +269,7 @@ try:
         print('■ メニュー・あそび方')
         open_cb(pg)
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
-        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← もどる', 'コンピュータと 対戦', '部屋を 作る友だちと 対戦', '部屋に 入る友だちと 対戦', 'あそび方', '設定BGM・効果音', '🎯ミッション今月 0／14 達成', 'デザインカスタムおもて・うら・ボード'] and not any(m['dis']),
+        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← もどる', 'コンピュータと 対戦', '部屋を 作る友だちと 対戦', '部屋に 入る友だちと 対戦', 'あそび方', '設定BGM・効果音', '🎯ミッション今月 0／14 達成', 'デザインカスタムカードパック・うら・ボード'] and not any(m['dis']),
               f'メニュー：コンピュータと 対戦・部屋を 作る・部屋に 入る・あそび方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
         check(m['rec'] == '勝つと お世話トークン 1こ・5連勝 ごとに 3こ' and (not HAVE or m['lg'] == 720), f'ごほうびの 説明（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
@@ -290,7 +291,7 @@ try:
                 '友だちと 対戦する ときは、あなたの カードは あなたの デザイン・友だちの カードは 友だちが えらんだ デザインで 出るよ（山札は あなたの うら）',
                 'メニューの「ミッション」：コンピュータに 連続勝利・友だちバトルで 連続勝利で バトルコインが もらえるよ', 'コンピュータ：3連勝 30枚・5連勝 60枚・6連勝 90枚・7連勝 120枚・8連勝 150枚・9連勝 200枚・10連勝 300枚',
                 '友だちバトル：3連勝 20枚・5連勝 40枚・6連勝 60枚・7連勝 80枚・8連勝 100枚・9連勝 120枚・10連勝 140枚', '毎月 1日に リセット（達成も 連勝も 0 に もどる）', 'コンピュータと 友だちバトルの 連勝は 別に 数えるよ',
-                '新しい デザインは バトルコインで 1つずつ 解放できるよ：カードの おもて 300枚（神様馬・幻の馬は 500枚）・カードの うら 300枚・プレイボード 300枚', '音（設定）', 'BGM・効果音を オン／オフ',
+                'カードの おもては カードパックで 集めるよ：1パック バトルコイン 112枚・5まい入り（ノーマル 4まい ＋ くじの 1まい）', 'くじの 1まい：レア 2パックに 1まい・超レア 5パックに 1まい（どちらも 神様馬・幻の馬を ふくむ）・神様馬／幻の馬の レア 10パックに 1まい・神様馬／幻の馬の 超レア 23パックに 1まい（どれも 平均。くわしい 確率は カードパックの「出る 確率」）', '新しい カードは 持って いる カードに 入るよ（同じ カードが 出ても、数は ふえないよ）。開けた パックは「パックの 記録」で もう 1回 見られるよ', 'カードの うら 300枚・プレイボード 300枚は バトルコインで 1つずつ 解放できるよ。いつもの デザインは はじめから 使えるよ', '音（設定）', 'BGM・効果音を オン／オフ',
                 'プレイボードは、あなたの 画面に 出るよ（友だちと 対戦する ときも、あなたの 画面は あなたが えらんだ ボード）',
                 '1：3まい 見せて 逆転勝利', '2：3まい 見せて 逆転勝利', '神様馬・幻の馬に 負けた とき、手札に 1 が 2まい あれば', '1 に 負けた とき、手札に 2 が 2まい あれば', '勝ちに できるよ', '1・2 の 効果（逆転勝利）は、オープンした あと、負けた 人が 使うか えらぶよ',
                 '1・2 の「逆転勝利」は、めくった あとに 使うか えらぶよ', '逆転勝利：1 が 3まい あれば 神様馬・幻の馬に、2 が 3まい あれば 1 に 勝てる',
@@ -1362,71 +1363,240 @@ try:
         pg.evaluate("() => { const T = CBApp._t; T.state.stake = { e: 5, w: 10 }; T.save(); T.load(); }")
         c5 = pg.evaluate(COINS); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(200); tt = pg.evaluate(TOAST)
         check(c5[1] is None and '前の 対戦が とちゅうで 終わった ので、' in tt and '参加コイン 5枚は もどらなかったよ' in tt, f'参加コインを 出した まま アプリが 閉じた → つぎに 開いた とき「参加コイン 5枚は もどらなかったよ」（{tt!r}）')
-        print('■ デザインカスタム（第4.182版・まさちゃん 20:00「…背面カスタム1枚 バトルコイン300枚」・20:09「…デザイン一枚解放、バトルコイン300枚 神様馬カードと幻の馬カード500枚」）')
-        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }"); pg.wait_for_timeout(200)
+        print('■ デザインカスタム・カードパック（第4.189版・まさちゃん 11/17 15:00「1パックコイン112枚 カード購入ではなく、パック式にする … 1パック5枚にする レアは2パックに1枚 超レアは5パックに1枚 神様馬と幻の馬のレアは10パックに1枚 神様馬と幻の馬の超レアは23パックに1枚」・'
+              '15:18「…毎回0〜229の番号を均等に1つ選ぶ… 112コインの消費・5枚の付与・購入履歴の保存をまとめて確定… 購入履歴から同じ結果を再表示… 連打しても、同じ購入を二重処理しない」・15:39 パックの 絵）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.state.pkh = []; T.state.packs = 0; T.save(); T.menu(); }"); pg.wait_for_timeout(200)
         pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(250)
-        DZ = """() => { const s = document.querySelector('#cbOv .cbdz'); return { scr: CBApp._t.screen, coin: s.querySelector('.cbcoinl').textContent.replace(/\\s+/g, ' ').trim(), tab: [...s.querySelectorAll('.tabs button')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')),
-          h4: [...s.querySelectorAll('h4')].map(h => h.textContent.replace(/\\s+/g, ' ').trim()),
-          tiles: [...s.querySelectorAll('.dzt')].map(t => (t.dataset.ck || '-') + ':' + (t.dataset.id || 'base') + ':' + t.querySelector(':scope > img').getAttribute('src') + ':' + t.querySelector('em').textContent + (t.classList.contains('on') ? '*' : '') + (t.classList.contains('lk') ? '!' : '')) }; }"""
+        DZ = """() => { const s = document.querySelector('#cbOv .cbdz'), T = x => x.textContent.replace(/\\s+/g, ' ').trim(); return { scr: CBApp._t.screen, coin: T(s.querySelector('.cbcoinl')), tab: [...s.querySelectorAll('.tabs button')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')),
+          h4: [...s.querySelectorAll('h4')].map(T), h3: [...s.querySelectorAll('h3.pkh3')].map(T),
+          tiles: [...s.querySelectorAll('.dzt')].map(t => (t.dataset.ck || '-') + ':' + (t.dataset.id || 'base') + ':' + t.querySelector(':scope > img').getAttribute('src') + ':' + t.querySelector('em').textContent + (t.classList.contains('on') ? '*' : '') + (t.classList.contains('lk') ? '!' : '')),
+          chips: [...s.querySelectorAll('.dzt')].map(t => { const c = t.querySelector(':scope > .rr'); return c ? c.textContent : ''; }),
+          ask: (() => { const b = s.querySelector('[data-cb=pkask]'); return b ? T(b) + (b.disabled ? '!' : '') : null; })(), need: (() => { const n = s.querySelector('.pkbox .cbneed'); return n ? T(n) : ''; })(),
+          box: [...s.querySelectorAll('.pkbox .pkc0, .pkbox .pkc1')].map(T), art: [...s.querySelectorAll('.pkbox .pkart img')].map(i => i.getAttribute('src') + ':' + i.naturalWidth), un: (() => { const u = s.querySelector('.pkun span'); return u ? T(u) : ''; })(),
+          hist: [...s.querySelectorAll('.pkhi')].map(h => h.dataset.id + ':' + [...h.querySelectorAll('.cs img')].map(i => i.getAttribute('src').replace('cb_fc_', '').replace('_s.webp', '')).join(',') + ':' + h.querySelector(':scope > .rr').textContent + (h.classList.contains('un') ? '!' : '')) }; }"""
         MZ = """() => { const m = document.querySelector('#cbOv .cbmod.cbdzm'); if (!m) return null; return { h: m.querySelector('h3').textContent, img: (m.querySelector('.big img') || {}).getAttribute ? m.querySelector('.big img').getAttribute('src') : '', btns: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim() + (b.disabled ? '!' : '')), need: (m.querySelector('.cbneed') || {}).textContent || '', t: m.textContent.replace(/\\s+/g, ' ').trim() }; }"""
+        # パックの 画面：いまの ようす・ことば・下の ボタン・5まい（おもての 絵:しるし:NEW／持って いる・^＝めくった・*＝くじの 演出）
+        PK = """() => { const s = document.querySelector('#cbOv .cbpk'), p = CBApp._t.pk; return { scr: CBApp._t.screen, st: p && p.st, ready: p && p.ready, msg: s.querySelector('.pkmsg').textContent, hd: s.querySelector('.pkhd').textContent,
+          ft: [...s.querySelectorAll('.pkft .cbb')].map(b => b.textContent.replace(/\\s+/g, '') + (b.disabled ? '!' : '')), need: (s.querySelector('.pkft .cbneed') || {}).textContent || '',
+          cards: [...s.querySelectorAll('.pkc')].map(c => c.querySelector('.fr').getAttribute('src').replace('cb_fc_', '').replace('_s.webp', '') + ':' + c.querySelector('.rr').textContent + ':' + (c.querySelector('.nw') ? 'NEW' : c.querySelector('.hv').textContent) + (c.classList.contains('up') ? '^' : '') + (c.classList.contains('rv') ? '*' : '')),
+          g: [...s.querySelectorAll('.pkc')].map(c => (c.className.match(/\\bg-(\\w+)/) || [])[1]), art: [...s.querySelectorAll('.pkart.big img')].map(i => i.className + ':' + i.getAttribute('src')), out: s.classList.contains('out') }; }"""
+        S1 = """() => { const T = CBApp._t, s = T.state, ls = JSON.parse(localStorage.getItem('tengel.cb')), H = a => a.map(h => [h.id, h.g, h.k, h.cards.join(','), h.nw.map(x => x ? 1 : 0).join(''), h.v]);
+          return { scr: T.screen, coin: s.coin, lsc: ls.coin, faces: s.faces, lsf: ls.faces, packs: s.packs, lsp: ls.packs, pkh: H(s.pkh), lsh: H(ls.pkh), q: (window.__q || []).length }; }"""
+        NIDS = ['ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b']
+        RIDS = [f'{i}r' for i in range(1, 8)]; GRIDS = ['kr', 'mr']; SRIDS = [f'{i}sr' for i in range(1, 8)]; GSRIDS = ['ksr', 'msr']
+        PIDS = NIDS + RIDS + GRIDS + SRIDS + GSRIDS
         d0 = pg.evaluate(DZ)
-        check(d0['scr'] == 'dz' and d0['coin'] == 'バトルコイン 0枚' and d0['tab'] == ['カードの おもて*', 'カードの うら', 'プレイボード'] and len(d0['h4']) == 9 and d0['h4'][0] == '神様馬1つ 500枚' and d0['h4'][1] == '幻の馬1つ 500枚' and d0['h4'][2] == '1 の カード1つ 300枚'
-              and len(d0['tiles']) == 27 and d0['tiles'][0] == 'k:base:cb_sk.webp:使って いる*' and d0['tiles'][1] == 'k:ka:cb_fc_ka_s.webp:500枚!' and d0['tiles'][-1] == '7:7b:cb_fc_7b_s.webp:300枚!'
-              and sum(1 for t in d0['tiles'] if t.endswith('300枚!')) == 14 and sum(1 for t in d0['tiles'] if t.endswith('500枚!')) == 4 and sum(1 for t in d0['tiles'] if t.endswith('使って いる*')) == 9,
-              f'メニューの「デザインカスタム」→「カードの おもて」：9種類（神様馬・幻の馬は 1つ 500枚・ほかは 300枚）・いつもの 9 ＋ べつの デザイン 18（{len(d0["tiles"])}こ）')
-        shot(pg, 'cb_dz_faces')
-        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(150); z1 = pg.evaluate(MZ)
-        check(z1 and z1['h'] == '朱の鳥居神様馬の おもて' and z1['img'] == 'cb_fc_ka_c.webp' and z1['btns'] == ['バトルコイン 500枚で 解放!', 'もどる'] and z1['need'] == 'あと 500枚 たりないよ（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）',
-              f'コインが 足りない：大きい 絵・「バトルコイン 500枚で 解放」は 押せない・あと 500枚（{z1 and z1["btns"]}）')
+        tw = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbdz .tabs button')].map(b => b.scrollWidth <= b.clientWidth + 1)")
+        check(d0['scr'] == 'dz' and d0['coin'] == 'バトルコイン 0枚' and d0['tab'] == ['カードパック*', 'おもて', 'うら', 'ボード'] and len(tw) == 4 and all(tw),
+              f'メニューの「デザインカスタム」→ はじめは「カードパック」の タブ（タブは カードパック・おもて・うら・ボード：字は 4つとも おさまる）（{d0["tab"]}）')
+        check(d0['box'] == ['1パック 112枚・5まい入り', 'ノーマル 4まい ＋ くじの 1まい'] and d0['ask'] == '112枚で パックを 開ける!' and d0['need'] == 'あと 112枚 たりないよ（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）'
+              and not d0['un'] and not d0['hist'] and d0['art'] == ['cb_pack.webp:' + ('600' if HAVE else '0')],
+              f'カードパック：パックの 絵（まさちゃんの 絵 cb_pack.webp）・「1パック 112枚・5まい入り」「ノーマル 4まい ＋ くじの 1まい」・コインが 0枚 なので「112枚で パックを 開ける」は 押せない・あと 112枚（{d0["box"]}・{d0["ask"]}）')
+        check(d0['h3'] == ['この パックで 出る カード36種・持って いる 0／36'] and d0['h4'] == ['ノーマル4まいは ここから・くじ 30%・持って いる 0／18', 'レア（1〜7）くじ 40%・持って いる 0／7', '神様馬・幻の馬の レアくじ 10%・持って いる 0／2', '超レア（1〜7）くじ 15.65%・持って いる 0／7', '神様馬・幻の馬の 超レアくじ 4.35%・持って いる 0／2']
+              and [t.split(':')[1] for t in d0['tiles']] == PIDS and all(t.endswith(':パックで 出る!') for t in d0['tiles']) and all(t.split(':')[2] == 'cb_fc_' + t.split(':')[1] + '_s.webp' for t in d0['tiles']) and d0['chips'] == ['N'] * 18 + ['R'] * 9 + ['SR'] * 9,
+              f'「この パックで 出る カード」36種：ノーマル 18（N）・レア 1〜7（R）・神様馬／幻の馬の レア（R）・超レア 1〜7（SR）・神様馬／幻の馬の 超レア（SR）・くじの 確率と 持って いる 数（{d0["h3"]}・{d0["h4"]}）')
+        shot(pg, 'cb_pk_tab')
+        pg.locator('#cbOv .cbdz [data-cb=pkodds]').click(); pg.wait_for_timeout(150)
+        od = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbodm'); if (!m) return null; const r = m.querySelector('.pkod').getBoundingClientRect();
+          return { h: m.querySelector('h3').textContent, cap: m.querySelector('.pkod caption').textContent, rows: [...m.querySelectorAll('.pkod tr')].map(r => r.querySelector('th').textContent + '|' + r.querySelector('td').textContent), t: m.textContent.replace(/\\s+/g, ' '),
+            btn: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim()), w: [Math.round(r.left), Math.round(r.right), innerWidth] }; }""")
+        check(od and od['h'] == '出る 確率' and od['cap'] == 'くじの 1まい（0〜229 の 番号を ひとしく 1つ）'
+              and od['rows'] == ['ノーマル18種・番号 0〜68（69こ）|30%1種 1.67%', 'レア（1〜7）7種・番号 69〜160（92こ）|40%1種 5.71%', '神様馬・幻の馬の レア2種・番号 161〜183（23こ）|10%1種 5%', '超レア（1〜7）7種・番号 184〜219（36こ）|15.65%1種 2.24%', '神様馬・幻の馬の 超レア2種・番号 220〜229（10こ）|4.35%1種 2.17%']
+              and '1パック 5まい：ノーマル 4まい（18種から 同じ 確率・1種 5.56%。同じ カードが かさなる ことも あるよ）＋ くじの 1まい' in od['t'] and 'レア ぜんぶ 50%（2パックに 1まい）・超レア ぜんぶ 20%（5パックに 1まい）' in od['t']
+              and '23パック 開けても かならず 出る わけでは ないよ' in od['t'] and od['btn'] == ['とじる'] and od['w'][0] >= 0 and od['w'][1] <= od['w'][2],
+              f'「出る 確率」：くじの 番号の はんいと 確率（1種ごとも）・ノーマル 4まいの 確率・どれも 平均（{od and od["rows"]}）')
+        shot(pg, 'cb_pk_odds')
         pg.locator('#cbOv .cbmod [data-cb=dzback]').click(); pg.wait_for_timeout(80)
-        pg.evaluate("() => { CBApp._t.state.coin = 800; }"); pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(150)
-        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(150); z2 = pg.evaluate(MZ)
-        pg.locator('#cbOv .cbmod [data-cb=dzopen]').click(); pg.wait_for_timeout(150); z3 = pg.evaluate(MZ)
-        check(z2['btns'] == ['バトルコイン 500枚で 解放', 'もどる'] and z3['h'] == '解放する？' and '『朱の鳥居』（神様馬の おもて）を 解放するよ' in z3['t'] and '800枚→のこり 300枚' in z3['t'] and z3['btns'] == ['やめる', '解放する'],
-              f'800枚 ある：「解放」→ たしかめる 窓（800枚 → のこり 300枚・やめる／解放する）（{z3["t"]}）')
-        shot(pg, 'cb_dz_ask')
-        pg.evaluate("() => { CBApp._guard = 1e9; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(100); g0 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.faces.slice()]")
-        pg.evaluate("() => { CBApp._guard = 0; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(200)
-        d1 = pg.evaluate(DZ); st1 = pg.evaluate("() => { const s = CBApp._t.state, ls = JSON.parse(localStorage.getItem('tengel.cb')); return [s.coin, s.faces, s.face, ls.coin, ls.faces, ls.face]; }"); tt = pg.evaluate(TOAST)
-        check(g0 == [800, []] and st1 == [300, ['ka'], {'k': 'ka'}, 300, ['ka'], {'k': 'ka'}] and d1['coin'] == 'バトルコイン 300枚' and d1['tiles'][0] == 'k:base:cb_sk.webp:持って いる' and d1['tiles'][1] == 'k:ka:cb_fc_ka_s.webp:使って いる*'
-              and not pg.evaluate("() => CBApp._t.modOn()") and '『朱の鳥居』を 解放したよ！' in tt,
-              f'「解放する」：窓が 出て すぐは 受けつけない → 500枚 へって（800 → 300）解放・すぐ その デザインに・おぼえる（{st1}）')
+        mp = pg.evaluate("""() => { const T = CBApp._t, P = CBApp.PACK, c = {}; for (let k = 0; k < P.lot; k++) { const g = T.pkGroup(k); c[g] = (c[g] || 0) + 1; }
+          const pools = {}; ['n', 'r', 'gr', 'sr', 'gsr'].forEach(g => { pools[g] = T.pkPool(g).map(f => f.id); });
+          return { c: c, lot: P.lot, size: P.size, cost: P.cost, pools: pools, n: CBApp.FACES.length, edge: [0, 68, 69, 160, 161, 183, 184, 219, 220, 229].map(k => T.pkGroup(k)) }; }""")
+        c = mp['c']
+        check(mp['lot'] == 230 and mp['size'] == 5 and mp['cost'] == 112 and c == {'n': 69, 'r': 92, 'gr': 23, 'sr': 36, 'gsr': 10} and mp['edge'] == ['n', 'n', 'r', 'r', 'gr', 'gr', 'sr', 'sr', 'gsr', 'gsr']
+              and c['n'] * 10 == 3 * 230 and c['r'] * 10 == 4 * 230 and (c['r'] + c['gr']) * 2 == 230 and (c['sr'] + c['gsr']) * 5 == 230 and c['gr'] * 10 == 230 and c['gsr'] * 23 == 230,
+              f'くじの 番号 0〜229：ノーマル 69こ（30%）・レア 92こ（40%）・神様馬／幻の馬の レア 23こ（10%＝10パックに 1まい）・超レア 36こ（≒15.65%）・神様馬／幻の馬の 超レア 10こ（1/23）→ レア ぜんぶ 1/2・超レア ぜんぶ 1/5（丸めて いない）（{c}）')
+        check(mp['pools'] == {'n': NIDS, 'r': RIDS, 'gr': GRIDS, 'sr': SRIDS, 'gsr': GSRIDS} and mp['n'] == 36 and len(set(PIDS)) == 36,
+              f'グループの カード：ノーマル 18・レア 7・神様馬／幻の馬の レア 2・超レア 7・神様馬／幻の馬の 超レア 2 ＝ 36種（{[len(v) for v in mp["pools"].values()]}）')
+        un = pg.evaluate("""() => { const T = CBApp._t, N = 230, R = 230000, c = new Array(N).fill(0); let bad = 0; CBApp._randInt = null;
+          for (let i = 0; i < R; i++) { const x = T.randInt(N); if (x >= 0 && x < N && x === Math.floor(x)) c[x]++; else bad++; }
+          const e = R / N, chi = c.reduce((a, x) => a + (x - e) * (x - e) / e, 0), g = {}; c.forEach((x, k) => { const q = T.pkGroup(k); g[q] = (g[q] || 0) + x; });
+          return { bad: bad, chi: Math.round(chi * 10) / 10, g: g }; }""")
+        gq = {k: v / 230000 for k, v in un['g'].items()}
+        check(un['bad'] == 0 and 130 < un['chi'] < 345 and abs(gq['n'] - .3) < .005 and abs(gq['r'] - .4) < .005 and abs(gq['gr'] - .1) < .003 and abs(gq['sr'] - 36 / 230) < .004 and abs(gq['gsr'] - 10 / 230) < .0025,
+              f'くじの 番号は ひとしく 出る（23万回：0〜229 の どれも ほぼ 1000回・カイ二乗 {un["chi"]}〈自由度 229〉・{"・".join(f"{k} {v * 100:.2f}%" for k, v in gq.items())}）')
+        dd = pg.evaluate("""() => { const T = CBApp._t, R = 46000, c = {}, N = T.pkPool('n').map(f => f.id), P = {}; let bad = 0; CBApp._randInt = null; ['n', 'r', 'gr', 'sr', 'gsr'].forEach(g => { P[g] = T.pkPool(g).map(f => f.id); });
+          for (let i = 0; i < R; i++) { const d = T.pkDraw(); if (d.cards.length !== 5 || d.g !== T.pkGroup(d.k) || d.cards.slice(0, 4).some(id => N.indexOf(id) < 0) || P[d.g].indexOf(d.cards[4]) < 0) bad++; d.cards.forEach(id => { c[id] = (c[id] || 0) + 1; }); }
+          return { bad: bad, c: c }; }""")
+        exp = {i: 46000 * 4.3 / 18 for i in NIDS}; exp.update({i: 46000 * .4 / 7 for i in RIDS}); exp.update({i: 46000 * .1 / 2 for i in GRIDS}); exp.update({i: 46000 * 36 / 230 / 7 for i in SRIDS}); exp.update({i: 46000 * 10 / 230 / 2 for i in GSRIDS})
+        tol = lambda i: .05 if i in NIDS else .10 if i in RIDS + GRIDS else .15
+        far = [f'{i} {dd["c"].get(i, 0)}／{exp[i]:.0f}' for i in PIDS if abs(dd['c'].get(i, 0) - exp[i]) > exp[i] * tol(i)]
+        check(dd['bad'] == 0 and set(dd['c']) == set(PIDS) and not far, f'パックを 4万6千回：5まい（ノーマル 4まい ＋ くじの グループの 1まい）・どの カードも 決めた 確率どおりに 出る（はずれ {far}）')
+        dr = pg.evaluate("""() => { const T = CBApp._t, run = seq => { const q = seq.slice(); CBApp._randInt = () => q.shift(); const d = T.pkDraw(); CBApp._randInt = null; return d.cards.join(',') + '|' + d.g + '|' + d.k + '|' + q.length; };
+          return [run([0, 17, 5, 5, 0, 0]), run([1, 1, 1, 1, 68, 17]), run([2, 3, 4, 5, 69, 0]), run([0, 0, 0, 0, 160, 6]), run([0, 0, 0, 0, 161, 0]), run([0, 0, 0, 0, 183, 1]), run([0, 0, 0, 0, 184, 0]), run([0, 0, 0, 0, 219, 6]), run([0, 0, 0, 0, 220, 0]), run([0, 0, 0, 0, 229, 1])]; }""")
+        check(dr == ['ka,7b,1b,1b,ka|n|0|0', 'kb,kb,kb,kb,7b|n|68|0', 'ma,mb,1a,1b,1r|r|69|0', 'ka,ka,ka,ka,7r|r|160|0', 'ka,ka,ka,ka,kr|gr|161|0', 'ka,ka,ka,ka,mr|gr|183|0', 'ka,ka,ka,ka,1sr|sr|184|0', 'ka,ka,ka,ka,7sr|sr|219|0', 'ka,ka,ka,ka,ksr|gsr|220|0', 'ka,ka,ka,ka,msr|gsr|229|0'],
+              f'くじの さかい目：0・68＝ノーマル／69・160＝レア／161・183＝神様馬・幻の馬の レア／184・219＝超レア／220・229＝神様馬・幻の馬の 超レア・ノーマルは 同じ カードが かさなっても よい（{dr}）')
+        # 開ける：たしかめる 窓 → うっかり 押し 防止 → すばやく 2回 → 1回 だけ（コイン・カード・記録を いっしょに）
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 300; T.save(); T.dz('p'); window.__q = [0, 0, 2, 17, 200, 2]; CBApp._randInt = n => (n === 1679616 ? 4242 : window.__q.shift()); }"); pg.wait_for_timeout(150)
+        a1 = pg.evaluate(DZ)
+        pg.locator('#cbOv .cbdz [data-cb=pkask]').click(); pg.wait_for_timeout(150); k1 = pg.evaluate(MZ)
+        rq = pg.evaluate("() => document.querySelector('#cbOv .cbmod [data-cb=pkgo]').dataset.rq")
+        ka = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbmod .pkart img')].map(i => i.getAttribute('src'))")
+        check(a1['ask'] == '112枚で パックを 開ける' and not a1['need'] and k1 and k1['h'] == 'パックを 開ける？' and 'カードパック（5まい）を 1つ 開けるよ' in k1['t'] and '300枚→のこり 188枚' in k1['t'] and k1['btns'] == ['やめる', '開ける'] and re.fullmatch(r'p[0-9a-z]+-39u', rq or '') and ka == ['cb_pack.webp'],
+              f'300枚 ある：「112枚で パックを 開ける」→ たしかめる 窓（パックの 絵・300枚 → のこり 188枚・やめる／開ける・この 窓だけの 番号 {rq}）')
+        shot(pg, 'cb_pk_ask')
+        pg.evaluate("() => { CBApp._guard = 1e9; }"); pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); pg.wait_for_timeout(100)
+        g0 = pg.evaluate("() => { const s = CBApp._t.state; return [s.coin, s.pkh.length, s.faces.length, CBApp._t.screen, CBApp._t.modOn(), document.querySelector('#cbOv .cbmod [data-cb=pkgo]').disabled]; }")
+        check(g0 == [300, 0, 0, 'dz', True, False], f'窓が 出て すぐ（0.45秒）は「開ける」を 受けつけない（うっかり 押し 防止）（{g0}）')
+        pg.evaluate("() => { CBApp._guard = 0; const b = document.querySelector('#cbOv .cbmod [data-cb=pkgo]'); b.click(); b.click(); }"); pg.wait_for_timeout(150)
+        p1 = pg.evaluate(S1); v1 = pg.evaluate(PK)
+        check(p1['scr'] == 'pk' and p1['coin'] == 188 and p1['lsc'] == 188 and p1['faces'] == ['ka', 'ma', '7b', '3sr'] and p1['lsf'] == p1['faces'] and p1['packs'] == 1 and p1['lsp'] == 1
+              and p1['pkh'] == [[rq, 'sr', 200, 'ka,ka,ma,7b,3sr', '10111', False]] and p1['lsh'] == p1['pkh'] and p1['q'] == 0,
+              f'「開ける」を すばやく 2回：1回 だけ 開ける ＝ コイン 112枚（300 → 188）・5まい（朱の鳥居が 2まい：2まい目は 数えない → 持って いる カード 4種）・パックの 記録を いっしょに 保存（{p1["pkh"]}）')
+        check(v1['st'] == 'pack' and v1['msg'] == 'タップで パックを 開けよう' and v1['ft'] == ['パックを開ける'] and v1['art'] == ['bd:cb_pack.webp', 'tp:cb_pack.webp'] and not v1['out'] and v1['g'] == ['n', 'n', 'n', 'n', 'sr'] and v1['hd'] == 'カードパック',
+              f'パックの 画面：パックが 出る（タップで 開ける：上の ギザギザが 切れて とぶ 2まい かさね）（{v1["msg"]}）')
+        shot(pg, 'cb_pk_pack')
+        pg.evaluate("rq => { const b = document.createElement('button'); b.dataset.cb = 'pkgo'; b.dataset.rq = rq; document.querySelector('#cbOv').appendChild(b); b.click(); b.remove(); }", rq); pg.wait_for_timeout(150)
+        p2 = pg.evaluate(S1); v2 = pg.evaluate(PK)
+        check(p2 == p1 and v2['st'] == 'pack' and v2['scr'] == 'pk', f'同じ 番号の「開ける」が もう 1回 来ても 開けない（記録の 同じ 結果を 見せる・コインも 記録も そのまま）（{p2["coin"]}枚・{len(p2["pkh"])}こ）')
+        pg.evaluate("() => { const b = document.createElement('button'); b.dataset.cb = 'pkgo'; b.dataset.rq = 'pzzz-1'; document.querySelector('#cbOv').appendChild(b); b.click(); b.remove(); }"); pg.wait_for_timeout(100)
+        check(pg.evaluate(S1) == p1, '窓の 番号と ちがう「開ける」は 何も しない')
+        # 開ける ところを 見ずに アプリを 閉じた → つぎに 開いた とき：メニューで 知らせる・タブの 上に「見る」→ 同じ 結果を 開ける ところから
+        said(pg); pg.evaluate("() => { const T = CBApp._t; T.load(); T.menu(); }"); pg.wait_for_timeout(250); s3 = said(pg)
+        check(any('🎴 開けた パックの 結果は\n「デザインカスタム」→「カードパック」で 見られるよ' in x for x in s3) and pg.evaluate("() => CBApp._t.state.pkh.length") == 1,
+              f'開ける ところを 見おわる 前に 閉じた パック：つぎに 開いた ときの メニューで「開けた パックの 結果は …「カードパック」で 見られるよ」（{s3}）')
+        pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(200); a2 = pg.evaluate(DZ)
+        check(a2['tab'][0] == 'カードパック*' and a2['coin'] == 'バトルコイン 188枚' and a2['un'] == '🎴 まだ 見おわって いない パックが 1つ あるよ' and a2['hist'] == [f'{rq}:ka,ka,ma,7b,3sr:SR!']
+              and a2['h3'] == ['この パックで 出る カード36種・持って いる 4／36', 'パックの 記録開けた パック 1つ・さいごの 1つ'] and a2['h4'][0].endswith('持って いる 3／18') and a2['h4'][3].endswith('持って いる 1／7')
+              and 'k:ka:cb_fc_ka_s.webp:持って いる' in a2['tiles'] and '3:3sr:cb_fc_3sr_s.webp:持って いる' in a2['tiles'],
+              f'カードパックの タブ：「まだ 見おわって いない パックが 1つ」＋「見る」・パックの 記録・出た カードは「持って いる」（{a2["hist"]}）')
+        shot(pg, 'cb_pk_unseen')
+        pg.locator('#cbOv .cbdz .pkun [data-cb=pkhis]').click(); pg.wait_for_timeout(150); v3 = pg.evaluate(PK)
+        check(v3['st'] == 'pack' and v3['art'] and [c.split(':')[0] for c in v3['cards']] == ['ka', 'ka', 'ma', '7b', '3sr'] and pg.evaluate(S1)['coin'] == 188, '「見る」→ 同じ パックを 開ける ところから（コインは もう へらない）')
+        pg.locator('#cbOv .cbpk .pkart.big').click()
+        pg.wait_for_function("() => CBApp._t.pk && CBApp._t.pk.ready", timeout=10000); pg.wait_for_timeout(100); v4 = pg.evaluate(PK)
+        gl = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbpk .pkc')].map(c => getComputedStyle(c.querySelector('.gl')).animationName)")
+        check(v4['st'] == 'out' and v4['out'] and v4['msg'] == 'さいごの 1まい（くじ）… タップで めくろう！' and v4['ft'] == ['さいごの1まいをめくる'] and [c.endswith('^') for c in v4['cards']] == [True] * 4 + [False] and gl == ['none'] * 4 + ['pkgl'],
+              f'パックを タップ → 5まいが 出て ふせて ならぶ → ノーマル 4まいを めくる → さいごの 1まい（くじ）は ふせた まま（超レアの くじ：うらの まわりが ゆっくり ひかる）（{v4["cards"]}）')
+        shot(pg, 'cb_pk_ready')
+        pg.locator('#cbOv .cbpk .pkc[data-i="4"]').click()
+        pg.wait_for_function("() => CBApp._t.pk && CBApp._t.pk.st === 'done'", timeout=10000); pg.wait_for_timeout(150); v5 = pg.evaluate(PK); s5 = pg.evaluate(S1)
+        check(v5['msg'] == '🌟 超レア！『碧玉の温室』\nNEW 4まい！（持って いる カード 4／36）' and v5['cards'] == ['ka:N:NEW^', 'ka:N:持って いる^', 'ma:N:NEW^', '7b:N:NEW^', '3sr:SR:NEW^*'] and v5['ft'] == ['とじる', 'もう1パック112枚'] and not v5['need']
+              and s5['pkh'][0][5] is True and s5['lsh'][0][5] is True and s5['coin'] == 188,
+              f'さいごの 1まいを タップ → めくる（超レア：光の すじ・光が ひろがる）→「🌟 超レア！『碧玉の温室』」・NEW 4まい・2まい目の 朱の鳥居は「持って いる」・見おわった ことを 記録（{v5["msg"]!r}・{v5["cards"]}）')
+        shot(pg, 'cb_pk_done')
+        pg.locator('#cbOv .cbpk .pkc[data-i="4"]').click(); pg.wait_for_timeout(150); z7 = pg.evaluate(MZ)
+        said(pg); pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150); s7 = said(pg)
+        f7 = pg.evaluate("() => [CBApp._t.screen, CBApp._t.state.face, JSON.parse(localStorage.getItem('tengel.cb')).face, CBApp._t.modOn()]")
+        check(z7 and z7['h'] == '碧玉の温室3 の カードの おもて・超レア' and z7['img'] == 'cb_fc_3sr_c.webp' and z7['btns'] == ['この デザインを 使う', 'もどる'] and f7 == ['pk', {'3': '3sr'}, {'3': '3sr'}, False] and any('3 の カードの おもてを『碧玉の温室』に したよ' in x for x in s7),
+              f'出た カードを タップ → 大きい 絵・「この デザインを 使う」→ すぐ 使える（パックの 画面の まま）（{f7}）')
+        pg.evaluate("() => { window.__q = [5, 5, 5, 5, 229, 1]; }")
+        pg.locator('#cbOv .cbpk [data-cb=pkmore]').click(); pg.wait_for_timeout(150); k8 = pg.evaluate(MZ)
+        pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbpk .pkft [data-cb=pkrip]').click(); pg.wait_for_function("() => CBApp._t.pk && CBApp._t.pk.ready", timeout=10000)
+        gl8 = pg.evaluate("() => getComputedStyle(document.querySelector('#cbOv .cbpk .pkc[data-i=\"4\"] .gl')).animationName")
+        pg.locator('#cbOv .cbpk [data-cb=pklast]').click(); pg.wait_for_function("() => CBApp._t.pk && CBApp._t.pk.st === 'done'", timeout=10000); pg.wait_for_timeout(150)
+        v8 = pg.evaluate(PK); s8 = pg.evaluate(S1); rq2 = s8['pkh'][-1][0]
+        check('188枚→のこり 76枚' in k8['t'] and s8['coin'] == 76 and s8['lsc'] == 76 and s8['faces'] == ['ka', 'ma', '7b', '3sr', '1b', 'msr'] and s8['packs'] == 2 and len(s8['pkh']) == 2 and s8['pkh'][1][1:] == ['gsr', 229, '1b,1b,1b,1b,msr', '10001', True] and rq2 != rq
+              and v8['msg'] == '🌟 幻の馬の 超レア！『紫電の魔城』\nNEW 2まい！（持って いる カード 6／36）' and v8['ft'] == ['とじる', 'もう1パック112枚!'] and v8['need'] == 'あと 36枚 たりないよ（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）' and gl8 == 'pkgl' and v8['g'][4] == 'gsr',
+              f'「もう 1パック」（188 → 76枚）・下の「パックを 開ける」「さいごの 1まいを めくる」でも 開けられる：幻の馬の 超レア『紫電の魔城』・同じ ノーマルが 4まい（数は 1）・のこり 76枚 なので「もう 1パック」は 押せない（あと 36枚）（{v8["msg"]!r}）')
+        shot(pg, 'cb_pk_gsr')
+        pg.locator('#cbOv .cbpk [data-cb=pkx]').click(); pg.wait_for_timeout(200); a9 = pg.evaluate(DZ)
+        check(a9['scr'] == 'dz' and a9['tab'][0] == 'カードパック*' and not a9['un'] and a9['hist'] == [f'{rq2}:1b,1b,1b,1b,msr:SR', f'{rq}:ka,ka,ma,7b,3sr:SR'] and a9['h3'][1] == 'パックの 記録開けた パック 2つ・さいごの 2つ' and a9['ask'] == '112枚で パックを 開ける!' and 'あと 36枚' in a9['need'],
+              f'「とじる」→ カードパックの タブ：パックの 記録（あたらしい 順）・見おわって いない パックは ない（{a9["hist"]}）')
+        pg.locator(f'#cbOv .cbdz .pkhi[data-id="{rq}"]').click(); pg.wait_for_timeout(200); v9 = pg.evaluate(PK)
+        check(v9['st'] == 'done' and not v9['art'] and v9['out'] and v9['cards'] == ['ka:N:NEW^', 'ka:N:持って いる^', 'ma:N:NEW^', '7b:N:NEW^', '3sr:SR:NEW^'] and re.fullmatch(r'カードパック\d+/\d+ \d+:\d\d に 開けた パック', v9['hd']) and v9['msg'].startswith('🌟 超レア！『碧玉の温室』\nNEW 4まい！'),
+              f'記録を タップ → その パックを もう 1回（5まい ぜんぶ おもて・開けた 日時）（{v9["hd"]}）')
+        shot(pg, 'cb_pk_static')
+        pg.locator('#cbOv .cbpk [data-cb=pkx]').click(); pg.wait_for_timeout(150)
+        # 保存が できない とき：ぜんぶ もとの まま（コイン・カード・記録は いっしょに 決まる）
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 500; T.save(); T.dz('p'); window.__q = [0, 0, 0, 0, 100, 0]; }"); pg.wait_for_timeout(120)
+        r0 = pg.evaluate(S1)
+        for how in ('throw', 'noop'):
+            pg.locator('#cbOv .cbdz [data-cb=pkask]').click(); pg.wait_for_timeout(120); said(pg)
+            pg.evaluate("how => { window.__si = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === 'tengel.cb') { if (how === 'throw') throw new Error('QuotaExceededError'); return; } return window.__si.call(this, k, v); }; }", how)
+            pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); pg.wait_for_timeout(150)
+            pg.evaluate("() => { Storage.prototype.setItem = window.__si; }")
+            rr = pg.evaluate(S1); tt = said(pg)
+            check({k: v for k, v in rr.items() if k != 'q'} == {k: v for k, v in r0.items() if k != 'q'} and rr['q'] == 0 and any('保存が できなかったので、パックは 開けなかったよ\n（コインは へって いないよ）' in x for x in tt) and not pg.evaluate("() => CBApp._t.modOn()"),
+                  f'保存が できない とき（{"書けない" if how == "throw" else "書いた 中身が のこらない"}）：パックは 開けない・コイン・カード・記録は ぜんぶ もとの まま（{rr["coin"]}枚・{len(rr["pkh"])}こ）')
+            pg.evaluate("() => { window.__q = [0, 0, 0, 0, 100, 0]; }"); pg.wait_for_timeout(900)      # ふきだしが 消えて から（同じ ことばの ふきだしを 2回目も 数える）
+        # 「おもて」の タブ：パックで 集めた カードを 使う（コインでは 解放しない）
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.save(); }")
+        pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(150); f0 = pg.evaluate(DZ)
+        check(f0['tab'] == ['カードパック', 'おもて*', 'うら', 'ボード'] and f0['h4'] == ['神様馬持って いる 1／4', '幻の馬持って いる 2／4', '1 の カード持って いる 1／4', '2 の カード持って いる 0／4', '3 の カード持って いる 1／4', '4 の カード持って いる 0／4', '5 の カード持って いる 0／4', '6 の カード持って いる 0／4', '7 の カード持って いる 1／4']
+              and len(f0['tiles']) == 45 and f0['tiles'][:5] == ['k:base:cb_sk.webp:使って いる*', 'k:ka:cb_fc_ka_s.webp:持って いる', 'k:kb:cb_fc_kb_s.webp:パックで 出る!', 'k:kr:cb_fc_kr_s.webp:パックで 出る!', 'k:ksr:cb_fc_ksr_s.webp:パックで 出る!'] and f0['chips'][:5] == ['', 'N', 'N', 'R', 'SR']
+              and 'm:msr:cb_fc_msr_s.webp:持って いる' in f0['tiles'] and '3:3sr:cb_fc_3sr_s.webp:使って いる*' in f0['tiles'] and '3:base:cb_s3.webp:持って いる' in f0['tiles'],
+              f'「おもて」の タブ：9種類 ×（いつもの ＋ ノーマル 2・レア 1・超レア 1）＝ 45・N／R／SR の しるし・持って いない ものは「パックで 出る」（{f0["h4"]}）')
+        shot(pg, 'cb_dz_faces')
+        pg.locator('#cbOv .cbdz .dzt[data-id="ksr"]').click(); pg.wait_for_timeout(150); z8 = pg.evaluate(MZ)
+        check(z8 and z8['h'] == '白金の聖殿神様馬の おもて・超レア' and z8['img'] == 'cb_fc_ksr_c.webp' and z8['btns'] == ['カードパックへ', 'もどる'] and z8['need'] == 'カードパックで 出るよ（神様馬・幻の馬の 超レア）',
+              f'持って いない おもてを タップ：大きい 絵・「カードパックで 出るよ（神様馬・幻の馬の 超レア）」・「カードパックへ」（コインで 解放は ない）（{z8 and z8["btns"]}）')
+        pg.locator('#cbOv .cbmod [data-cb=dztab][data-t=p]').click(); pg.wait_for_timeout(150)
+        check(pg.evaluate(DZ)['tab'][0] == 'カードパック*' and not pg.evaluate("() => CBApp._t.modOn()"), '「カードパックへ」→ カードパックの タブ')
+        pg.locator('#cbOv .cbdz .dzt[data-id="kr"]').click(); pg.wait_for_timeout(120); z9 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzback]').click(); pg.wait_for_timeout(80)
+        check(z9 and z9['h'] == '聖光の神馬神様馬の おもて・レア' and z9['btns'] == ['もどる'] and z9['need'] == 'カードパックで 出るよ（神様馬・幻の馬の レア）', f'カードパックの タブで 持って いない カードを タップ：大きい 絵と どの くじで 出るか（{z9 and z9["need"]}）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 999; T.save(); }")
+        bad = pg.evaluate("""() => { const o = document.querySelector('#cbOv'), r = []; for (const [cb, ck, id] of [['dzopen', 'k', 'kb'], ['dzgo', 'k', 'kb'], ['dzopen', '7', '7sr'], ['dzgo', '7', '7sr']]) {
+          const b = document.createElement('button'); b.dataset.cb = cb; b.dataset.ck = ck; b.dataset.id = id; o.appendChild(b); b.click(); b.remove(); r.push(CBApp._t.modOn()); } const s = CBApp._t.state; return [r, s.coin, s.faces.slice()]; }""")
+        check(bad == [[False, False, False, False], 999, ['ka', 'ma', '7b', '3sr', '1b', 'msr']], f'おもては コインでは 解放できない（前の 版の「解放」の ボタンが 来ても 何も しない）（{bad}）')
+        # 「うら」の タブ（いままで どおり コインで 解放）
+        pg.evaluate("() => { const T = CBApp._t; T.state.coin = 300; T.save(); }")
         pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=b]').click(); pg.wait_for_timeout(150); d2 = pg.evaluate(DZ)
-        check(d2['tab'] == ['カードの おもて', 'カードの うら*', 'プレイボード'] and d2['h4'] == ['カードの うら1つ 300枚'] and len(d2['tiles']) == 8 and d2['tiles'][0] == '-:base:cb_sb.webp:使って いる*' and all(t.endswith('300枚!') for t in d2['tiles'][1:])
-              and [t.split(':')[1] for t in d2['tiles'][1:]] == ['sky', 'star', 'ice', 'wa', 'ori', 'crown', 'heart'],
-              f'「カードの うら」：いつもの ＋ 7種（1つ 300枚）（{[t.split(":")[1] for t in d2["tiles"]]}）')
+        check(d2['tab'] == ['カードパック', 'おもて', 'うら*', 'ボード'] and d2['h4'] == ['カードの うら1つ 300枚'] and len(d2['tiles']) == 8 and d2['tiles'][0] == '-:base:cb_sb.webp:使って いる*' and all(t.endswith('300枚!') for t in d2['tiles'][1:])
+              and [t.split(':')[1] for t in d2['tiles'][1:]] == ['sky', 'star', 'ice', 'wa', 'ori', 'crown', 'heart'] and d2['chips'] == [''] * 8,
+              f'「うら」：いつもの ＋ 7種（1つ 300枚：いままで どおり コインで 解放）（{[t.split(":")[1] for t in d2["tiles"]]}）')
         shot(pg, 'cb_dz_backs')
-        pg.locator('#cbOv .cbdz .dzt[data-id="sky"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=dzopen]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(200)
-        d3 = pg.evaluate(DZ)
+        pg.locator('#cbOv .cbdz .dzt[data-id="sky"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=dzopen]').click(); pg.wait_for_timeout(120); z3 = pg.evaluate(MZ)
+        pg.evaluate("() => { CBApp._guard = 1e9; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(100); g1 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.backs.slice()]")
+        said(pg); pg.evaluate("() => { CBApp._guard = 0; }"); pg.locator('#cbOv .cbmod [data-cb=dzgo]').click(); pg.wait_for_timeout(200)
+        d3 = pg.evaluate(DZ); tt = said(pg)
         pg.locator('#cbOv .cbdz .dzt[data-id="star"]').click(); pg.wait_for_timeout(120); z4 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzback]').click(); pg.wait_for_timeout(80)
-        check(d3['coin'] == 'バトルコイン 0枚' and d3['tiles'][1] == '-:sky:cb_bk_sky_s.webp:使って いる*' and d3['tiles'][0] == '-:base:cb_sb.webp:持って いる' and z4['btns'] == ['バトルコイン 300枚で 解放!', 'もどる'] and 'あと 300枚 たりないよ' in z4['need']
-              and pg.evaluate("() => [CBApp._t.state.backs, CBApp._t.state.back]") == [['sky'], 'sky'],
-              f'うら『天馬の光』を 300枚で 解放（300 → 0）・ほかは あと 300枚（{d3["coin"]}）')
+        check(z3['h'] == '解放する？' and '『天馬の光』（カードの うら）を 解放するよ' in z3['t'] and '300枚→のこり 0枚' in z3['t'] and z3['btns'] == ['やめる', '解放する'] and g1 == [300, []]
+              and d3['coin'] == 'バトルコイン 0枚' and d3['tiles'][1] == '-:sky:cb_bk_sky_s.webp:使って いる*' and d3['tiles'][0] == '-:base:cb_sb.webp:持って いる' and any('『天馬の光』を 解放したよ！' in x for x in tt)
+              and z4['btns'] == ['バトルコイン 300枚で 解放!', 'もどる'] and 'あと 300枚 たりないよ' in z4['need'] and pg.evaluate("() => [CBApp._t.state.backs, CBApp._t.state.back]") == [['sky'], 'sky'],
+              f'うら『天馬の光』：たしかめる 窓（窓が 出て すぐは 受けつけない）→ 300枚で 解放（300 → 0）・すぐ その うらに・ほかは あと 300枚（{d3["coin"]}）')
+        pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(120)
+        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(120); z10 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150)
+        check(z10['btns'] == ['この デザインを 使う', 'もどる'] and pg.evaluate("() => CBApp._t.state.face") == {'k': 'ka', '3': '3sr'}, 'パックで 出た『朱の鳥居』を「この デザインを 使う」（コインは 使わない）')
         pg.locator('#cbOv .cbdz [data-cb=dzx]').click(); pg.wait_for_timeout(150)
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and 'バトルコイン 0枚' in pg.evaluate("() => document.querySelector('#cbOv .cbmenu .cbcoinl').textContent"), '「← もどる」→ メニュー（コインの 数も 0枚）')
         start(pg, 'k1234', '15677')
         IM = """() => ({ deck: document.querySelector('#cbOv .cbdeck img').getAttribute('src'), op: [...document.querySelectorAll('#cbOv .cbohand img')].map(i => i.getAttribute('src')), my: [...document.querySelectorAll('#cbOv .cbhand .cbc')].map(c => c.dataset.ck + '=' + c.querySelector('img').getAttribute('src')) })"""
         im = pg.evaluate(IM)
-        check(im['deck'] == 'cb_bk_sky_d.webp' and set(im['op']) == {'cb_bk_sky_s.webp'} and 'k=cb_fc_ka_s.webp' in im['my'] and '1=cb_s1.webp' in im['my'] and not any('cb_sk.webp' in x for x in im['my']),
-              f'対戦：山札と 相手の 手札は えらんだ うら『天馬の光』・神様馬は えらんだ おもて『朱の鳥居』・ほかは いつもの（{im["deck"]}・{im["my"]}）')
+        check(im['deck'] == 'cb_bk_sky_d.webp' and set(im['op']) == {'cb_bk_sky_s.webp'} and 'k=cb_fc_ka_s.webp' in im['my'] and '3=cb_fc_3sr_s.webp' in im['my'] and '1=cb_s1.webp' in im['my'] and not any('cb_sk.webp' in x for x in im['my']),
+              f'対戦：山札と 相手の 手札は えらんだ うら『天馬の光』・神様馬は パックの『朱の鳥居』・3 は 超レアの『碧玉の温室』・ほかは いつもの（{im["deck"]}・{im["my"]}）')
         shot(pg, 'cb_dz_game')
         pg.evaluate("() => { window.__seen = []; }")
         pg.locator('#cbOv .cbhand .cbc[data-ck="k"]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=set]').click(); idle(pg)
         opp(pg, {'t': 'set', 'k': 1})
-        seen = pg.evaluate("() => window.__seen"); dt = pg.evaluate("() => { const d = document.querySelector('#cbOv .cbdis img'); return d ? d.getAttribute('src') : null; }")
+        seen = pg.evaluate("() => window.__seen")
         check(any('勝ち！' in x and 'cb_fc_ka_c.webp,cb_c1.webp' in x for x in seen) and pg.evaluate(V)['my']['wins'] == 1, f'めくった とき：神様馬は えらんだ おもての 大きい 絵（{seen[-1] if seen else None}）')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
-        pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(150); pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(150)
         pg.locator('#cbOv .cbdz .dzt[data-ck="k"][data-id=""]').click(); pg.wait_for_timeout(120); z5 = pg.evaluate(MZ)
         pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150)
-        st2 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.face, CBApp._t.state.faces, JSON.parse(localStorage.getItem('tengel.cb')).face]")
-        check(z5['btns'] == ['この デザインを 使う', 'もどる'] and st2 == [0, {}, ['ka'], {}] and pg.evaluate(DZ)['tiles'][0] == 'k:base:cb_sk.webp:使って いる*', f'いつもの に もどす：コインは 使わない・解放した ものは のこる（{st2}）')
-        pg.locator('#cbOv .cbdz .dzt[data-id="ka"]').click(); pg.wait_for_timeout(120); z6 = pg.evaluate(MZ); pg.locator('#cbOv .cbmod [data-cb=dzuse]').click(); pg.wait_for_timeout(150)
-        check(z6['btns'] == ['この デザインを 使う', 'もどる'] and pg.evaluate("() => CBApp._t.state.face") == {'k': 'ka'}, '解放した デザインは コインなしで また 使える')
+        st2 = pg.evaluate("() => [CBApp._t.state.coin, CBApp._t.state.face, CBApp._t.state.faces.length, JSON.parse(localStorage.getItem('tengel.cb')).face]")
+        check(z5['btns'] == ['この デザインを 使う', 'もどる'] and st2 == [0, {'3': '3sr'}, 6, {'3': '3sr'}] and pg.evaluate(DZ)['tiles'][0] == 'k:base:cb_sk.webp:使って いる*', f'いつもの に もどす：コインは 使わない・集めた カードは のこる（{st2}）')
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.faces = ['zz', 'ka', 'ka']; s.face = { k: 'kb', '1': 'ka', m: 'ma' }; s.backs = ['sky', 'nope']; s.back = 'ice'; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
         st3 = pg.evaluate("() => { const s = CBApp._t.state; return [s.faces, s.face, s.backs, s.back]; }")
-        check(st3 == [['ka'], {}, ['sky'], ''], f'おぼえた 中身が おかしい ときは なおす（ない 名前・解放して いない もの・ちがう 種類は すてる）（{st3}）')
-        pg.evaluate("() => { const T = CBApp._t; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }")
+        check(st3 == [['ka'], {}, ['sky'], ''], f'おぼえた 中身が おかしい ときは なおす（ない 名前・持って いない もの・ちがう 種類は すてる）（{st3}）')
+        pg.evaluate("""() => { const s = JSON.parse(localStorage.getItem('tengel.cb')), ok = { id: 'pok', t: 5, g: 'r', k: 100, cards: ['ka', 'kb', 'ma', 'mb', '3r'], v: 1 };
+          s.pkh = [null, 5, { id: 'p1', g: 'r', cards: ['ka', 'kb', 'ma', 'mb'] }, { id: 'p2', g: 'r', cards: ['ka', 'kb', 'ma', 'mb', 'zz'] }, { id: 'p3', g: 'x', cards: ['ka', 'kb', 'ma', 'mb', '3r'] }, { id: 7, g: 'r', cards: ['ka', 'kb', 'ma', 'mb', '3r'] }, ok]; s.packs = 'abc';
+          localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }""")
+        ph = pg.evaluate("() => [CBApp._t.state.pkh, CBApp._t.state.packs]")
+        check(ph == [[{'id': 'pok', 't': 5, 'g': 'r', 'k': 100, 'cards': ['ka', 'kb', 'ma', 'mb', '3r'], 'nw': [False] * 5, 'v': True}], 1],
+              f'パックの 記録が おかしい ときは なおす（5まい ない・ない カード・ない グループ・番号が 文字で ない ものは すてる・開けた 数は 記録の 数より 少なく しない）（{ph}）')
+        pg.evaluate("""() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.pkh = []; for (let i = 0; i < 105; i++) s.pkh.push({ id: 'p' + i, t: i, g: 'n', k: 0, cards: ['ka', 'ka', 'ka', 'ka', 'ka'], nw: [false, false, false, false, false], v: true });
+          s.packs = 105; s.coin = 112; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); CBApp._t.dz('p'); window.__q = [1, 1, 1, 1, 0, 0]; }"""); pg.wait_for_timeout(150)
+        pm = pg.evaluate("() => [CBApp._t.state.pkh.length, CBApp._t.state.pkh[0].id, CBApp._t.state.pkh[99].id, CBApp._t.state.packs]")
+        pg.locator('#cbOv .cbdz [data-cb=pkask]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); pg.wait_for_timeout(150)
+        p100 = pg.evaluate(S1)
+        check(pm == [100, 'p5', 'p104', 105] and len(p100['pkh']) == 100 and p100['pkh'][0][0] == 'p6' and p100['pkh'][-1][1:4] == ['n', 0, 'kb,kb,kb,kb,ka'] and p100['packs'] == 106 and p100['coin'] == 0 and p100['lsh'] == p100['pkh'],
+              f'パックの 記録は さいごの 100こ まで（開けた 数は そのまま 105 → 106・のこりの コインが ちょうど 112枚でも 開けられる）（{pm}・{len(p100["pkh"])}こ）')
+        pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); delete s.pkh; delete s.packs; s.faces = ['ka', '6a', 'mb']; s.face = { k: 'ka', '6': '6a' }; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
+        mg = pg.evaluate("() => { const s = CBApp._t.state; return [s.faces, s.face, s.pkh, s.packs]; }")
+        check(mg == [['ka', '6a', 'mb'], {'k': 'ka', '6': '6a'}, [], 0], f'前の 版で コインで 解放した おもては そのまま 持って いる（使って いる ものも そのまま・パックの 記録は 空から）（{mg}）')
+        pg.evaluate("() => { CBApp._randInt = null; const T = CBApp._t; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.state.pkh = []; T.state.packs = 0; T.save(); T.menu(); }")
 
         print('■ プレイボード（第4.185版・まさちゃん 23:20「バトルコインで、プレイボード7種類購入できるようにして！ 1個バトルコイン300枚で解放できるようにして！」）')
         BIMG = "() => { const b = document.querySelector('#cbOv .cbboard'), f = getComputedStyle(b.querySelector('.cbfire')), i = b.querySelector(':scope > img'); return [i.getAttribute('src'), b.classList.contains('cust'), f.display, f.animationName, i.complete && i.naturalWidth, b.classList.contains('dl')]; }"
@@ -1438,10 +1608,10 @@ try:
         bn = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbdz .dzt span')].map(s => s.textContent)")
         tw = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbdz .tabs button')].map(b => b.scrollWidth <= b.clientWidth + 1)")
         ti = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbdz .dzt > img')].map(i => { const r = i.getBoundingClientRect(); return Math.round(r.width / r.height * 100) / 100; })")
-        check(e0['tab'] == ['カードの おもて', 'カードの うら', 'プレイボード*'] and all(tw) and e0['h4'] == ['プレイボード1つ 300枚'] and len(e0['tiles']) == 8 and e0['tiles'][0] == '-:base:cb_board.webp:使って いる*'
+        check(e0['tab'] == ['カードパック', 'おもて', 'うら', 'ボード*'] and all(tw) and e0['h4'] == ['プレイボード1つ 300枚'] and len(e0['tiles']) == 8 and e0['tiles'][0] == '-:base:cb_board.webp:使って いる*'
               and [t.split(':')[1] for t in e0['tiles'][1:]] == ['marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam'] and all(t.endswith('300枚!') for t in e0['tiles'][1:])
               and all(t.split(':')[2] == 'cb_bd_' + t.split(':')[1] + '_s.webp' for t in e0['tiles'][1:]) and bn == ['いつもの', '白亜の宮殿', '蒼氷の宮', '桜の舞踏会', '紫月の夜', '紅蓮の闘技場', '黄金の星空', '歯車の工房'] and all(1.7 <= r <= 1.85 for r in ti),
-              f'デザインカスタムの 3つ目の タブ「プレイボード」（タブの 字は 3つとも おさまる）：いつもの ＋ 7種（1つ 300枚・横長の 絵）（{bn}）')
+              f'デザインカスタムの 4つ目の タブ「ボード」（第4.189版：タブの 字は 4つとも おさまる）：いつもの ＋ 7種（1つ 300枚・横長の 絵）（{bn}）')
         shot(pg, 'cb_dz_boards')
         pg.locator('#cbOv .cbdz .dzt[data-cb=bdi][data-id="sakura"]').click(); pg.wait_for_timeout(150); y1 = pg.evaluate(MZ)
         bg = pg.evaluate("() => { const r = document.querySelector('#cbOv .cbmod .big.bd').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.width / r.height * 100) / 100, innerWidth]; }")
@@ -1540,7 +1710,7 @@ try:
         pg.locator('#cbOv .cbmenu [data-cb=dz]').click(); pg.wait_for_timeout(150); pg.locator('#cbOv .cbdz [data-cb=dztab][data-t=f]').click(); pg.wait_for_timeout(150)
         n7 = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbdz .dzt[data-ck=\"7\"]')].map(t => t.dataset.id + ':' + t.querySelector('span').textContent)")
         pg.locator('#cbOv .cbdz [data-cb=dzx]').click(); pg.wait_for_timeout(100)
-        check(n7 == [':いつもの', '7a:疾風の草原', '7b:翡翠の馬'], f'7 の カスタム：『疾風の草原』『翡翠の馬』（新しい 絵：前の 2つは 消した）（{n7}）')
+        check(n7 == [':いつもの', '7a:疾風の草原', '7b:翡翠の馬', '7r:翠玉の輝き', '7sr:天空の楽園'], f'7 の カスタム：『疾風の草原』『翡翠の馬』（新しい 絵：前の 2つは 消した）・第4.189版：パックの レア『翠玉の輝き』・超レア『天空の楽園』（{n7}）')
 
         print('■ 4 の 効果で 交換して 5 を 出したら 5 の 効果（第4.183版・まさちゃん 21:24「バトルカード、4で交換したあとに5を相手がフィールドにセットした場合、五の効果を使える」）')
         # 自分が 交換させられて 5 を 出す → 聞く 窓 → 使う → 捨てる カード → 山札の 神様馬で 勝ち
