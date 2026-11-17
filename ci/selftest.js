@@ -710,8 +710,9 @@
     var click = function (sel) { var e = document.querySelector(sel); if (e && !e.disabled) { e.click(); return true; } return false; };
     while (Date.now() - t0 < ms && !T.ended && T.match) {
       if (T.idle && T.view) {
-        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? 'set' : 'wait';
-        if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
+        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && T.ask ? 'x7' : 'set') : 'wait';
+        if (s === 'x7') { if (click('#cbOv .cbask [data-cb=x7no]')) { n++; kinds.x7 = (kinds.x7 || 0) + 1; } }      // 第4.187版：7 が 4まい（セットの 前）→ 使わない
+        else if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
         else if (s === 'rev') { if (click('#cbOv [data-cb=revyes]')) { n++; kinds.rev = (kinds.rev || 0) + 1; } }      // 第4.178版：逆転勝利（1・2 の 効果）を 聞かれたら 使う
         else if (s === 'u5') { if (click('#cbOv [data-cb=u5no]')) { n++; kinds.u5 = (kinds.u5 || 0) + 1; } }      // 第4.183版：4 の 効果で 交換して 5 を 出した → 5 の 効果は 使わない
         else if (s === 'eff') { if (click('#cbOv [data-cb=effno]') || click('#cbOv .cbact [data-cb=effback]')) { n++; kinds.eff = (kinds.eff || 0) + 1; } }      // 効果タイム（2人とも セットした あと）：使わない
