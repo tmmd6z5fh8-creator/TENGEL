@@ -1471,8 +1471,22 @@ try:
         shot(pg, 'cb_pk_unseen')
         pg.locator('#cbOv .cbdz .pkun [data-cb=pkhis]').click(); pg.wait_for_timeout(150); v3 = pg.evaluate(PK)
         check(v3['st'] == 'pack' and v3['art'] and [c.split(':')[0] for c in v3['cards']] == ['ka', 'ka', 'ma', '7b', '3sr'] and pg.evaluate(S1)['coin'] == 188, '「見る」→ 同じ パックを 開ける ところから（コインは もう へらない）')
-        pg.locator('#cbOv .cbpk .pkart.big').click()
-        pg.wait_for_function("() => CBApp._t.pk && CBApp._t.pk.ready", timeout=10000); pg.wait_for_timeout(100); v4 = pg.evaluate(PK)
+        # 第4.189版（まさちゃん 16:35「一枚ずつパックから出て、カードが後ろに5枚並ぶ感じにして！」・16:37「背景に5枚カードが並んだらパックの袋は消えないと…」）：時計を 手で 進めて 1つずつ 見る
+        pg.evaluate("() => CBApp._t.manual(true)"); pg.locator('#cbOv .cbpk .pkart.big').click()
+        DEAL = """() => { const p = CBApp._t.pk, a = document.querySelector('#cbOv .cbpk .pkart.big'), cs = [...document.querySelectorAll('#cbOv .cbpk .pkc')];
+          return [p.st, cs.filter(c => c.classList.contains('got')).length, a.classList.contains('gone'), cs.filter(c => c.classList.contains('up')).length]; }"""
+        seq = []
+        for _ in range(800):
+            pg.evaluate("async () => { CBApp._t.tick(1); for (let i = 0; i < 20; i++) await null; }"); x = pg.evaluate(DEAL)
+            if not seq or seq[-1] != x: seq.append(x)
+            if pg.evaluate("() => CBApp._t.pk.ready"): break
+        zi = pg.evaluate("() => getComputedStyle(document.querySelector('#cbOv .cbpk .pkart.big')).zIndex")
+        pg.evaluate("() => CBApp._t.manual(false)")
+        gots = [x[1] for x in seq]
+        check(seq and seq[0][:2] == ['rip', 0] and sorted(set(gots)) == [0, 1, 2, 3, 4, 5] and all(0 <= b_ - a_ <= 1 for a_, b_ in zip(gots, gots[1:])) and [x[1] for x in seq if x[0] == 'deal'][:5] == [1, 2, 3, 4, 5]
+              and all((not x[2]) or x[1] == 5 for x in seq) and all(x[3] == 0 or x[2] for x in seq) and seq[-1] == ['out', 5, True, 4] and zi == '5',
+              f'パックを タップ → 上が 切れる → カードが 1まいずつ 出て パックの うしろに ならぶ（パックが 前：z-index {zi}）→ 5まい ならんでから パックが 消える → それから めくる（{seq}）')
+        pg.wait_for_timeout(100); v4 = pg.evaluate(PK)
         gl = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbpk .pkc')].map(c => getComputedStyle(c.querySelector('.gl')).animationName)")
         check(v4['st'] == 'out' and v4['out'] and v4['msg'] == 'さいごの 1まい（くじ）… タップで めくろう！' and v4['ft'] == ['さいごの1まいをめくる'] and [c.endswith('^') for c in v4['cards']] == [True] * 4 + [False] and gl == ['none'] * 4 + ['pkgl'],
               f'パックを タップ → 5まいが 出て ふせて ならぶ → ノーマル 4まいを めくる → さいごの 1まい（くじ）は ふせた まま（超レアの くじ：うらの まわりが ゆっくり ひかる）（{v4["cards"]}）')

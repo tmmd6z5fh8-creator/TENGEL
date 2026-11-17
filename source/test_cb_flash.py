@@ -9,7 +9,7 @@
 #     プレイボード『白亜の宮殿』（いちばん 明るい ボード：暗い 窓や 札との 明るさの ちがいが いちばん 大きい）。4つ目の 対戦（3ターン）：相手が 7 を 4まい 見せて 強さ 逆転（x7r）
 #   第4.187版：7 の 4まい 公開は セットの 前（x7r：まだ だれも セットして いない ときに 相手が 使う）→ 自分が セット → 相手が ふせて セット → オープン（x7r_open）。
 #     セットした カードは 自分の 画面でも うら（ふせて セット：うらで とんで、うら ＋ しるしで 置く）
-#   第4.189版：5つ目＝カードパック（ふつう・動きを へらす の 2回）：タブの パックの 絵（光の すじ：pk_tab）→「開ける」→ パックが 出る（pk_pack）→ タップ → 上が 切れて とぶ → 5まい 出る → ノーマル 4まいを めくる → くじが ゆっくり ひかる（pk_open）→
+#   第4.189版：5つ目＝カードパック（ふつう・動きを へらす の 2回）：タブの パックの 絵（光の すじ：pk_tab）→「開ける」→ パックが 出る（pk_pack）→ タップ → 上が 切れて とぶ → カードが 1まいずつ 出て パックの うしろに ならぶ → パックが 下へ 消える → ノーマル 4まいを めくる → くじが ゆっくり ひかる（pk_open）→
 #     くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる：pk_rev_gsr）／もう 1パック：レア（pk_rev_r）
 #   第4.189版：時計を 進める ときに、CSS から 消えた 動き（idle：animation: none に した・transition が とりけされた）の 時刻を 入れない（入れると その 動きが 生きかえって、
 #     うしろの 動きを 上書きする：パックが 消えずに のこって 写って いた）。前の 場面も この 形で 数え直した
@@ -180,10 +180,10 @@ try:
                 seg('pk_tab', 5.2, lambda: None)                                                        # カードパックの タブ：パックの 絵（光の すじが 5秒に 1回 ゆっくり 通る）
                 pg.locator('#cbOv .cbdz [data-cb=pkask]').click(); settle(pg, 0.3)
                 seg('pk_pack', 3.0, lambda: pg.locator('#cbOv .cbmod [data-cb=pkgo]').click())         # 「開ける」→ パックの 画面：パックが 出る（ゆれる）
-                seg('pk_open', 4.6, lambda: pg.locator('#cbOv .cbpk .pkart.big').click())               # タップ → 上の ギザギザが 切れて とぶ → 5まい 出る → ノーマル 4まいを めくる → くじが ゆっくり ひかる
+                seg('pk_open', 6.0, lambda: pg.locator('#cbOv .cbpk .pkart.big').click())               # タップ → 上の ギザギザが 切れて とぶ → カードが 1まいずつ 出て パックの うしろに ならぶ → パックが 下へ 消える → ノーマル 4まいを めくる → くじが ゆっくり ひかる
                 seg('pk_rev_gsr', 3.2, lambda: pg.locator('#cbOv .cbpk [data-cb=pklast]').click())     # くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる）
                 pg.locator('#cbOv .cbpk [data-cb=pkmore]').click(); settle(pg, 0.3); pg.locator('#cbOv .cbmod [data-cb=pkgo]').click(); settle(pg, 0.8)
-                pg.locator('#cbOv .cbpk .pkart.big').click(); settle(pg, 4.0)
+                pg.locator('#cbOv .cbpk .pkart.big').click(); settle(pg, 5.4)
                 seg('pk_rev_r', 3.0, lambda: pg.locator('#cbOv .cbpk [data-cb=pklast]').click())       # もう 1パック：レアの くじ
                 pk = pg.evaluate("() => { const s = CBApp._t.state, p = CBApp._t.pk; return [p && p.st, s.pkh.map(h => h.g + ':' + h.cards.join(',')), s.coin]; }")
                 check(pk == ['done', ['gsr:ka,mb,2a,3b,ksr', 'r:kb,1a,2b,4a,3r'], 776], f'カードパックも 場面の とおり（神様馬の 超レア → レア・コイン 1000 → 776）{pk}')

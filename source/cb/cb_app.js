@@ -95,6 +95,8 @@
 //     ・36種：ノーマル 18（第4.182版からの おもて）・レア 9（キラキラの 水晶の 枠）・超レア 9（宮殿の 柱の 枠）＝ どちらも 1〜7・神様馬・幻の馬（どちらが レアかと 名前は 姫が 決めた）
 //     ・1パック バトルコイン 112枚・5まい：ノーマル 4まい ＋ くじの 1まい（0〜229 の 番号：PACK.lot）。くわしくは 下の「カードパック」
 //     ・デザインカスタムの タブは「カードパック」「おもて」「うら」「ボード」（はじめは カードパック）。前に コインで 解放した おもては そのまま 持って いる
+//     ・15:39「パックの画像これ使える？」→ パックの 絵は まさちゃんの 絵（cb_pack.webp）。16:35「パック開いた後にいきなりカードが現れるんじゃなくて、一枚ずつパックから出て、カードが後ろに5枚並ぶ感じにして！」・
+//       16:37「背景に5枚カードが並んだらパックの袋は消えないと、カードが開いていく演出が見えないよ！」→ カードは 1まいずつ パックの 上から 出て うしろに ならぶ → 5まい ならんだら 袋が 消える → めくる（pkRip・pkOut）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -677,18 +679,17 @@ const CBApp = (() => {
 #cbOv .cbpk .pkft .rowb{display:flex;gap:9px;width:100%}#cbOv .cbpk .pkft .rowb .cbb{flex:1 1 0;padding-left:8px;padding-right:8px;font-size:15px}
 #cbOv .cbpk .pkft .rowb .cbb small{display:block;font-size:12px;font-weight:700;opacity:.85}#cbOv .cbpk .pkft .rowb .cbb small .cbci{width:1.2em;height:1.2em;vertical-align:-.28em}
 #cbOv .cbpk .pkft .cbneed{margin:0;font-size:12px;color:#ffb38a;text-align:center;line-height:1.5}
-#cbOv .cbpk .pkart.big{--pw:min(46vw,200px,calc((100vh - 300px) * .44));position:absolute;left:50%;top:50%;margin:calc(var(--pw) * -.925) 0 0 calc(var(--pw) * -.5);cursor:pointer;animation:pkin calc(.5s * var(--k)) cubic-bezier(.2,.9,.3,1.2) both,pkwob calc(2.8s * var(--k)) ease-in-out calc(.7s * var(--k)) infinite;transition:opacity calc(.42s * var(--k)),transform calc(.42s * var(--k))}
+#cbOv .cbpk .pkart.big{--pw:min(46vw,200px,calc((100vh - 300px) * .44));position:absolute;z-index:5;left:50%;top:50%;margin:calc(var(--pw) * -.925) 0 0 calc(var(--pw) * -.5);cursor:pointer;animation:pkin calc(.5s * var(--k)) cubic-bezier(.2,.9,.3,1.2) both,pkwob calc(2.8s * var(--k)) ease-in-out calc(.7s * var(--k)) infinite;transition:opacity calc(.42s * var(--k)),transform calc(.42s * var(--k))}
 @keyframes pkin{from{opacity:0;transform:translateY(-36px) scale(.9)}to{opacity:1;transform:none}}
 @keyframes pkwob{0%,80%,100%{transform:none}86%{transform:rotate(-2.2deg)}92%{transform:rotate(2deg)}}
 #cbOv .cbpk .pkart.big .tp{transition:transform calc(.38s * var(--k)) cubic-bezier(.45,0,.8,.55),opacity calc(.38s * var(--k)) ease-in}
 #cbOv .cbpk .pkart.big.rip{animation:none}
 #cbOv .cbpk .pkart.big.rip .tp{transform:translate(9%,-8%) rotate(-16deg);opacity:0}
-#cbOv .cbpk .pkart.big.gone{opacity:0;transform:translateY(26px) scale(.86);pointer-events:none}
+#cbOv .cbpk .pkart.big.gone{opacity:0;transform:translateY(34%) scale(.9);pointer-events:none;transition-duration:calc(.5s * var(--k));transition-timing-function:ease-in}
 #cbOv .cbpk .pkgrid{--cw:min(29vw,128px,calc((100vh - 300px) / 3.1));display:flex;flex-direction:column;align-items:center;gap:16px}
 #cbOv .cbpk .pkgrid .row{display:flex;flex-wrap:nowrap;justify-content:center;align-items:flex-start;gap:12px}
-#cbOv .pkc{position:relative;width:var(--cw);aspect-ratio:2/3;padding:0;border:0;background:none;perspective:800px;opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.42) rotate(-8deg);
-  transition:opacity calc(.3s * var(--k)),transform calc(.56s * var(--k)) cubic-bezier(.2,.85,.25,1);-webkit-tap-highlight-color:transparent}
-#cbOv .cbpk.out .pkc{opacity:1;transform:none}
+#cbOv .pkc{position:relative;width:var(--cw);aspect-ratio:2/3;padding:0;border:0;background:none;perspective:800px;opacity:0;-webkit-tap-highlight-color:transparent}
+#cbOv .pkc.got{opacity:1}
 #cbOv .pkc .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform calc(.46s * var(--k)) cubic-bezier(.3,.6,.3,1)}
 #cbOv .pkc.up .in{transform:rotateY(180deg)}
 #cbOv .pkc .in img{position:absolute;inset:0;width:100%;height:100%;display:block;backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
@@ -702,7 +703,7 @@ const CBApp = (() => {
 #cbOv .pkc.g-gr .gl{box-shadow:0 0 14px 4px rgba(214,176,255,.85),0 0 26px 6px rgba(150,220,255,.4)}
 #cbOv .pkc.g-sr .gl{box-shadow:0 0 16px 5px rgba(255,210,90,.9)}
 #cbOv .pkc.g-gsr .gl{box-shadow:0 0 16px 5px rgba(255,214,110,.92),0 0 30px 8px rgba(255,150,230,.45)}
-#cbOv .cbpk.out .pkc:not(.g-n):not(.up) .gl{animation:pkgl calc(2.4s * var(--k)) ease-in-out infinite alternate}
+#cbOv .cbpk.out .pkc.got:not(.g-n):not(.up) .gl{animation:pkgl calc(2.4s * var(--k)) ease-in-out infinite alternate}
 @keyframes pkgl{from{opacity:.35}to{opacity:1}}
 #cbOv .pkc.up.r-r .gl,#cbOv .pkc.up.r-sr .gl{opacity:.75}
 #cbOv .pkc.up:not(.rv).g-r .gl,#cbOv .pkc.up:not(.rv).g-gr .gl,#cbOv .pkc.up:not(.rv).g-sr .gl,#cbOv .pkc.up:not(.rv).g-gsr .gl{opacity:.75}
@@ -717,7 +718,7 @@ const CBApp = (() => {
 #cbOv .pkc>.rr{left:-5px;top:-7px;box-shadow:0 0 0 1.5px rgba(20,12,6,.9),0 2px 5px rgba(0,0,0,.5)}
 #cbOv .pkc>.nw{right:-5px;top:-7px;padding:1px 7px;border-radius:999px;background:#ff5b6e;color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.45)}
 #cbOv .pkc>.hv{left:50%;bottom:-9px;margin-left:-2.9em;width:5.8em;text-align:center;padding:1px 0;border-radius:999px;background:rgba(20,12,6,.92);border:1px solid rgba(255,226,160,.5);color:#d9c08c;font-size:10.5px;font-weight:700;line-height:1.4}
-@media (prefers-reduced-motion: reduce){#cbOv .pkart::after{animation:none;opacity:0}#cbOv .cbpk .pkart.big{animation:none;transition:opacity .2s}#cbOv .cbpk .pkart.big.gone{transform:none}#cbOv .cbpk .pkart.big .tp{transition:opacity .15s}#cbOv .cbpk .pkart.big.rip .tp{transform:none}#cbOv .pkc{transition-duration:.01s}#cbOv .pkc .in{transition:none}#cbOv .cbpk.out .pkc:not(.g-n):not(.up) .gl{animation:none;opacity:.8}#cbOv .pkc.rv .sh,#cbOv .pkc.rv .bst{animation:none}}
+@media (prefers-reduced-motion: reduce){#cbOv .pkart::after{animation:none;opacity:0}#cbOv .cbpk .pkart.big{animation:none;transition:opacity .2s}#cbOv .cbpk .pkart.big.gone{transform:none}#cbOv .cbpk .pkart.big .tp{transition:opacity .15s}#cbOv .cbpk .pkart.big.rip .tp{transform:none}#cbOv .pkc .in{transition:none}#cbOv .cbpk.out .pkc.got:not(.g-n):not(.up) .gl{animation:none;opacity:.8}#cbOv .pkc.rv .sh,#cbOv .pkc.rv .bst{animation:none}}
 #cbOv .cbtst{margin:18px 2px 0;padding:10px 10px 12px;border-radius:14px;border:2px dashed #b98a4a;background:rgba(255,244,214,.08)}
 #cbOv .cbtst b{display:block;color:#ffe9a8;font-size:14px}#cbOv .cbtst small{display:block;font-size:11.5px;color:#d9c08c;margin:2px 0 8px}
 #cbOv .cbtst .r{display:flex;flex-wrap:wrap;gap:6px}
@@ -1053,8 +1054,9 @@ const CBApp = (() => {
   //   ・開ける：たしかめる 窓（いまの 枚数 → のこり）→「開ける」→ くじ（pkDraw）→ コイン 112枚・5まいの カード・パックの 記録を いっしょに 1回で 保存（saveOk：書けなかったら ぜんぶ もとに もどす）
   //     → それから 開ける ところを 見せる（めくる 前に 閉じても、記録から 同じ 結果を もう 1回 見られる）
   //   ・2回 しない：たしかめる 窓ごとに 1つの 番号（pkReq）。「開ける」は その 番号で 1回 だけ（記録に もう ある 番号は 開けずに その 結果を 見せる）。窓が 出て すぐは 受けつけない（DZ_GUARD）
-  //   ・パックの 画面（scr.pk）：パックが 出る（タップで 開ける）→ 切り口が とんで 5まいが パックから 出て ふせて ならぶ（上 3まい・下 2まい：くじの 1まいは 右下）→
-  //     ノーマル 4まいを じゅんに めくる → さいごに くじの 1まい（タップで めくる）。くじが レア以上の ときは、ならんだ ときから うらの まわりが ゆっくり ひかる（レア＝銀・超レア＝金・
+  //   ・パックの 画面（scr.pk）：パックが 出る（タップで 開ける）→ 上の ギザギザが 切れて とぶ →
+  //     カードが 1まいずつ パックの 上から 出て きて、パックの うしろの 場所へ とんで ならぶ（上 3まい・下 2まい：くじの 1まいは 右下。まさちゃん 16:35「一枚ずつパックから出て、カードが後ろに5枚並ぶ感じにして！」）→
+  //     5まい ならんだら 空っぽの パックが 下へ 消える → ノーマル 4まいを じゅんに めくる → さいごに くじの 1まい（タップで めくる）。くじが レア以上の ときは、ならんだ ときから うらの まわりが ゆっくり ひかる（レア＝銀・超レア＝金・
   //     神様馬／幻の馬＝虹：点めつ しない）。めくると 光の すじが 1回 通る・超レアは 光が 1回 ひろがる → NEW（はじめて 持つ）／持って いる（同じ カードは 数えない）→ もう 1パック／とじる
   //   ・パックの 記録（st.pkh：さいごの 100）：「カードパック」の タブで 見られる・タップで その パックを もう 1回 見る。見おわって いない パックは タブの 上に「見る」
   //   ・くじ：randInt（crypto：かたよりの ない ひとしい 整数）。テストは CBApp._randInt。テスト版の 道具は「つぎの くじ」の グループを 決められる（pkForce）
@@ -1134,7 +1136,7 @@ const CBApp = (() => {
     closeMod();
     const back = pic(null, false), last = PACK.size - 1, cs = h.cards.map((id, i) => ({ f: faceOf(id), isNew: !!h.nw[i] }));
     pk = { h: h, cards: cs, g: h.g, st: anim ? 'pack' : 'done', up: cs.map(() => !anim), anim: !!anim, ready: false, at: performance.now() };      // at：出た 時（すぐの タップは 受けつけない）
-    const card = (c, i) => `<button type="button" class="pkc g-${i === last ? h.g : 'n'} r-${c.f.r}${anim ? '' : ' up'}" data-cb="pkflip" data-i="${i}" aria-label="${i + 1}まい目の カード"><span class="gl"></span><span class="bst"></span>`
+    const card = (c, i) => `<button type="button" class="pkc g-${i === last ? h.g : 'n'} r-${c.f.r}${anim ? '' : ' got up'}" data-cb="pkflip" data-i="${i}" aria-label="${i + 1}まい目の カード"><span class="gl"></span><span class="bst"></span>`
       + `<span class="in"><img class="bk" src="${back}" alt="" draggable="false"><img class="fr" src="${c.f.s}" alt="" draggable="false"><span class="sh"></span></span>`
       + `<i class="rr k-${c.f.r}">${RARS[c.f.r]}</i>${c.isNew ? '<b class="nw">NEW</b>' : '<b class="hv">持って いる</b>'}</button>`;
     scr.pk.classList.toggle('out', !anim); scr.pk.style.setProperty('--k', String(Math.max(0.01, SPEED)));
@@ -1144,39 +1146,53 @@ const CBApp = (() => {
     show('pk'); pkPaint();
   }
   const pkHit = c => (c.f.r === 'n' ? '' : `${c.f.r === 'sr' ? '🌟' : '✨'} ${isTop(c.f) ? nameOf(c.f.k) + 'の ' : ''}${RAR[c.f.r]}！『${c.f.name}』`);
-  // ことばと 下の ボタン（いまの ようす：pack → rip → out〈ノーマルを めくる → ready：くじを めくる〉→ done）
+  // ことばと 下の ボタン（いまの ようす：pack → rip → deal〈カードが 1まいずつ 出る〉→ out〈ノーマルを めくる → ready：くじを めくる〉→ done）
   function pkPaint(say) {
     if (!pk || !scr.pk) return;
     const m = $('.pkmsg', scr.pk), f = $('.pkft', scr.pk), ok = st.coin >= PACK.cost, nNew = pk.cards.filter(c => c.isNew).length, lc = pk.cards[PACK.size - 1];
-    if (m) m.textContent = say || (pk.st === 'pack' ? 'タップで パックを 開けよう' : pk.st === 'rip' ? '' : pk.st === 'out' ? (pk.ready ? 'さいごの 1まい（くじ）… タップで めくろう！' : 'ノーマル 4まい…')
+    if (m) m.textContent = say || (pk.st === 'pack' ? 'タップで パックを 開けよう' : pk.st === 'rip' ? '' : pk.st === 'deal' ? 'パックから カードが 出て くるよ…' : pk.st === 'out' ? (pk.ready ? 'さいごの 1まい（くじ）… タップで めくろう！' : 'ノーマル 4まい…')
       : (pkHit(lc) ? pkHit(lc) + '\n' : '') + (nNew ? `NEW ${nNew}まい！（持って いる カード ${FACES.filter(x => dzOwn(x)).length}／${FACES.length}）` : 'ぜんぶ 持って いる カードだったよ'));
     if (!f) return;
     f.innerHTML = pk.st === 'pack' ? '<button type="button" class="cbb" data-cb="pkrip">パックを 開ける</button>'
-      : pk.st === 'rip' ? '<button type="button" class="cbb" disabled>パックを 開ける</button>'
+      : pk.st === 'rip' || pk.st === 'deal' ? '<button type="button" class="cbb dk" disabled>パックを 開けて いるよ…</button>'
       : pk.st === 'out' ? (pk.ready ? '<button type="button" class="cbb" data-cb="pklast">さいごの 1まいを めくる</button>' : '<button type="button" class="cbb dk" disabled>めくって いるよ…</button>')
       : `<div class="rowb"><button type="button" class="cbb dk" data-cb="pkx">とじる</button><button type="button" class="cbb" data-cb="pkmore"${ok ? '' : ' disabled'}>もう 1パック<small>${COINI}${PACK.cost}枚</small></button></div>${ok ? '' : pkNeed()}`;
   }
-  // パックを 開ける：切り口が とぶ → カードが パックの まん中から それぞれの 場所へ（ふせた まま）→ ノーマル 4まいを じゅんに めくる
+  // パックを 開ける：上の ギザギザが 切れて とぶ → カードが 1まいずつ パックの 上から 出て、パックの うしろの 場所へ（ふせた まま）→ 空っぽの パックが 下へ 消える → ノーマル 4まいを じゅんに めくる
   async function pkRip() {
     if (!pk || pk.st !== 'pack' || performance.now() - pk.at < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return;      // 「開ける」を すばやく 2回 押した 2回目で パックまで 開けない
     const me = pk; pk.st = 'rip'; pkPaint(); se('deal', 0.9);
     const art = $('.pkart.big', scr.pk), cs = [...scr.pk.querySelectorAll('.pkc')];
     if (art) art.classList.add('rip');
-    await T(reduce() ? 60 : 360); if (pk !== me) return;
-    const a = art ? art.getBoundingClientRect() : null;
-    cs.forEach((c, i) => {
-      const r = c.getBoundingClientRect();
-      if (a) { c.style.setProperty('--dx', Math.round(a.left + a.width / 2 - (r.left + r.width / 2)) + 'px'); c.style.setProperty('--dy', Math.round(a.top + a.height * 0.45 - (r.top + r.height / 2)) + 'px'); }
-      c.style.transitionDelay = Math.round(i * 90 * SPEED) + 'ms';
-    });
-    void scr.pk.offsetWidth;
-    scr.pk.classList.add('out'); if (art) art.classList.add('gone');
-    await T(reduce() ? 120 : 560 + 90 * (PACK.size - 1)); if (pk !== me) return;
-    cs.forEach(c => { c.style.transitionDelay = ''; });
+    await T(reduce() ? 60 : 380); if (pk !== me) return;
+    scr.pk.classList.add('out'); pk.st = 'deal'; pkPaint();
+    for (let i = 0; i < cs.length; i++) {
+      pkOut(cs[i], art, i); se('deal', 0.5);
+      await T(reduce() ? 120 : 300); if (pk !== me) return;
+    }
+    await T(reduce() ? 80 : 640); if (pk !== me) return;
+    if (art) art.classList.add('gone');      // 5まい ならんだら 空っぽの パックは 下へ 消える
+    await T(reduce() ? 120 : 520); if (pk !== me) return;
     pk.st = 'out'; pkPaint();
     for (let i = 0; i < PACK.size - 1; i++) { await T(i ? 330 : 200); if (pk !== me) return; pkTurn(i); }
     await T(560); if (pk !== me) return;
     pk.ready = true; pkPaint();
+  }
+  // カード 1まいが パックから 出る：パックの 中（パックの うしろに かくれて いる）→ 上の 切り口から すっと 出る → 自分の 場所へ とぶ（ずっと パックの うしろ：.pkart.big は z-index 5）
+  function pkOut(c, art, i) {
+    c.classList.add('got');
+    if (reduce() || !art || !c.animate) return;      // 動きを へらす：その場に ふっと 出る だけ
+    const a = art.getBoundingClientRect(), r = c.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, ax = a.left + a.width / 2, cut = a.top + a.height * 0.045;      // cut：切り口（上から 4.5%）
+    const dx = ax - cx, dy0 = cut + r.height * 0.56 - cy, dy1 = cut - r.height * 0.22 - cy, tilt = [-4, 3, -3, 4, 0][i % 5];
+    try {
+      c.animate([
+        { transform: `translate(${dx}px,${dy0}px) scale(.94)`, easing: 'cubic-bezier(.25,.8,.35,1)' },
+        { transform: `translate(${dx}px,${dy1}px) scale(.98) rotate(${tilt}deg)`, offset: 0.42, easing: 'cubic-bezier(.45,0,.25,1)' },
+        { transform: 'none' }
+      ], { duration: Math.max(1, 640 * SPEED) });
+      art.animate([{ transform: 'none' }, { transform: 'translateY(3px) scale(.99,1.01)', offset: 0.35 }, { transform: 'none' }], { duration: Math.max(1, 240 * SPEED) });      // パックが すこし ゆれる
+    } catch (e) { /* 動きが 使えない とき：その場に 出る */ }
   }
   // 1まい めくる（くじの 1まいは レア度の 演出）
   function pkTurn(i) {
