@@ -71,6 +71,14 @@
     if (window.TengelWallet) await window.TengelWallet.ready;
     await sleep(600);
   }
+  // 第4.191版：時計の 番人（アプリの 時計 Clock.swift：wall・mono〈電源を 入れてからの 時間〉・boot・proc・dev／Webの 画面の TengelClock）
+  async function clock() {
+    var t0 = Date.now(), a = await TengelNative.call('clock', {}).catch(function (e) { return { error: String(e) }; }), t1 = Date.now();
+    await sleep(400);
+    var b = await TengelNative.call('clock', {}).catch(function (e) { return { error: String(e) }; });
+    var C = window.TengelClock; if (C) await C.sync();
+    return { a: a, b: b, js: [t0, t1], has: !!C, how: C ? C.how() : null, st: C ? C.state() : null, diff: C ? Math.round(C.now() - Date.now()) : null };
+  }
   // ポイント（App Store版）：残高・できごと・キーチェーンのしるし・拡大の状態
   async function wallet() {
     var W = window.TengelWallet; if (!W) return null;
@@ -100,6 +108,7 @@
     var R = { phase: 1, device: DEV };
     R.basic = basic();
     await step(R, 'wallet', wallet);
+    await step(R, 'clock', clock);      // 第4.191版
     await mark('main');
     // 第2弾：判定画面の下は「買い目」のカード → 「買い目を予約」で記録（bets）に rsv が入る。CIでは通知の許可のダイアログを出さない（お知らせはオフ）
     await step(R, 'notify', async function () { var s = await TengelNative.notify('status'); await TengelLocal.putSetting('notify', false); return s; });
@@ -593,6 +602,7 @@
     R.basic = basic();
     R.persist = { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), form: !!localStorage.getItem('tengel.form') };
     await step(R, 'wallet', wallet);
+    await step(R, 'clock', clock);      // 第4.191版
     await sleep(2500);
     await step(R, 'autobackup', async function () { var s = await TengelNative.loadBackup(); return s ? { n: (s.bets || []).length, at: s.at } : null; });
     await step(R, 'deleteDB', function () {

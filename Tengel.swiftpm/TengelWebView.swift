@@ -310,6 +310,9 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         case "room":
             // 馬カードバトルの 部屋（第4.176版）：部屋を 作る・入る・手を 送る・やめる（Room.swift。近くの iPhone と 直接：サーバーなし）
             reply(id, ok: true, value: Room.shared.handle(payload as? [String: Any] ?? [:]))
+        case "clock":
+            // 時計の 番人（第4.191版）：いまの 時刻と、設定で かえられない 時計（電源を 入れてからの 時間・起動の 番号：Clock.swift）。どこにも 送らない
+            reply(id, ok: true, value: Clock.sample())
         case "unseal":
             // 「データの更新」の ファイルを 開く（iOS に 入って いる 暗号＝Apple CryptoKit の AES-GCM。アプリは 自分の 暗号の 計算を 持たない：DataSeal.swift）
             if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {

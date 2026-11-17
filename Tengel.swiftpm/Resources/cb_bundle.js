@@ -943,6 +943,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -957,7 +964,7 @@ const CBApp = (() => {
   
   const MS = { cpu: [[3, 30], [5, 60], [6, 90], [7, 120], [8, 150], [9, 200], [10, 300]], fr: [[3, 20], [5, 40], [6, 60], [7, 80], [8, 100], [9, 120], [10, 140]] };
   const MS_WHO = { cpu: 'コンピュータ', fr: '友だちバトル' }, MS_ALL = MS.cpu.length + MS.fr.length;
-  const nowD = () => (typeof CBApp._now === 'function' ? CBApp._now() : new Date());      
+  const nowD = () => (typeof CBApp._now === 'function' ? CBApp._now() : new Date(window.TengelClock ? window.TengelClock.now() : Date.now()));      
   const monthKey = d => { const x = d || nowD(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); };
   const COINI = '<img class="cbci" src="cb_coin.webp" alt="">';      
   const STAKE_CHIPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100];      
@@ -1019,6 +1026,7 @@ const CBApp = (() => {
   const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0 });
   let lostStake = 0;                                   
   let lostMs = '';                                     
+  let lostLive = -1;                                   
   let giftGot = 0, giftFull = false;                   
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -1031,7 +1039,8 @@ const CBApp = (() => {
     const gotOf = kd => (Array.isArray(g0[kd]) ? g0[kd] : []).map(x => Math.floor(+x)).filter((x, i, a) => MS[kd].some(t => t[0] === x) && a.indexOf(x) === i).sort((a, b) => a - b);
     const cnt = x => Math.max(0, Math.min(9999, Math.floor(+x || 0)));
     st.ms = { m: typeof m0.m === 'string' && /^\d{4}-\d{2}$/.test(m0.m) ? m0.m : monthKey(), cpu: cnt(m0.cpu), fr: cnt(m0.fr), got: { cpu: gotOf('cpu'), fr: gotOf('fr') }, live: m0.live === 'cpu' || m0.live === 'fr' ? m0.live : '' };
-    if (st.ms.live) { if (st.ms[st.ms.live] > 0) lostMs = st.ms.live; st.ms[st.ms.live] = 0; st.ms.live = ''; save(); }      
+    
+    if (st.ms.live) { if (st.ms[st.ms.live] > 0) lostMs = st.ms.live; st.ms[st.ms.live] = 0; st.ms.live = ''; lostLive = st.streak; st.lose += 1; st.streak = 0; save(); }
     msRoll();
     
     const bids = BACKS.map(b => b.id), fids = FACES.map(f => f.id);
@@ -1077,8 +1086,9 @@ const CBApp = (() => {
   
   function saveOk() { try { const s = JSON.stringify(st); localStorage.setItem(SK, s); return localStorage.getItem(SK) === s; } catch (e) { return false; } }      
   
+  
   function msRoll() {
-    const k = monthKey(); if (st.ms.m === k) return false;
+    const k = monthKey(); if (k <= st.ms.m) return false;
     st.ms = { m: k, cpu: 0, fr: 0, got: { cpu: [], fr: [] }, live: st.ms.live }; save(); return true;
   }
   
@@ -1715,6 +1725,7 @@ const CBApp = (() => {
     $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>${coinHow()}<br>${coinDay()}</small>`;
     $('[data-cb=ms] .msn', scr.menu).textContent = `今月 ${msDone()}／${MS_ALL} 達成`;      
     const lw = [];
+    if (lostLive >= 0) { lw.push(lostLive > 0 ? `負けに 数えたよ（${lostLive}連勝は 0 に もどったよ）` : '負けに 数えたよ'); lostLive = -1; }      
     if (lostStake > 0) { lw.push(`参加コイン ${lostStake}枚は もどらなかったよ`); lostStake = 0; }
     if (lostMs) { lw.push(`ミッションの 連勝（${MS_WHO[lostMs]}）は 0 に もどったよ`); lostMs = ''; }
     const tw = lw.length ? ['前の 対戦が とちゅうで 終わった ので、\n' + lw.join('\n')] : [];
@@ -1752,7 +1763,7 @@ const CBApp = (() => {
       + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの はじめ</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（7 の 4まい 公開は セットの 前）→ <b>③ 効果タイム</b>（<b>7 → 3 → 5 → 4</b>：手札の 効果 → セットした カードの 効果。4 は いちばん あと）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で かわった 手札で 決められる。例：7 で 引いた あとの 手札で、5 を 使うか・どの カードを 捨てるか）</li><li>さいごの ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある あいだ 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の しるしが つくよ</li><li>セットした カードは、前に 見た カードでも <b>うら</b>（4 の 効果で 見せる か、オープン するまで）。どの カードを セットしたかは わからない ので、見た カードは オープンまで 手札に ある ように 見えるよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
-      + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめると 負けに なるよ</li></ul>`
+      + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
@@ -2085,7 +2096,8 @@ const CBApp = (() => {
   function showMs(tab) {
     if (tab) msTab = tab === 'fr' ? 'fr' : 'cpu';
     closeMod(); msRoll();
-    const d = nowD(), nx = new Date(d.getFullYear(), d.getMonth() + 1, 1), left = Math.max(1, Math.ceil((nx - d) / 86400000)), s = st.ms, kd = msTab, cur = s[kd];
+    const d = nowD(), mm = /^(\d{4})-(\d{2})$/.exec(st.ms.m), mY = mm ? +mm[1] : d.getFullYear(), mM = mm ? +mm[2] : d.getMonth() + 1;      
+    const nx = new Date(mY, mM, 1), left = Math.max(1, Math.ceil((nx - d) / 86400000)), s = st.ms, kd = msTab, cur = s[kd];
     const nt = MS[kd].find(t => s.got[kd].indexOf(t[0]) < 0);      
     const rows = MS[kd].map(t => {
       const done = s.got[kd].indexOf(t[0]) >= 0, nxt = !!nt && nt[0] === t[0];
@@ -2093,7 +2105,7 @@ const CBApp = (() => {
     }).join('');
     scr.ms.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="msx">← もどる</button><b>ミッション</b></div>'
       + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
-      + `<p class="msm">${d.getMonth() + 1}月の ミッション<small>${nx.getMonth() + 1}月1日に リセット（あと ${left}日）</small></p>`
+      + `<p class="msm">${mM}月の ミッション<small>${nx.getMonth() + 1}月1日に リセット（あと ${left}日）</small></p>`
       + `<div class="tabs" role="tablist">${['cpu', 'fr'].map(k => `<button type="button" role="tab" data-cb="mstab" data-t="${k}" class="${kd === k ? 'on' : ''}" aria-selected="${kd === k}">${MS_WHO[k]}<small>${s.got[k].length}／${MS[k].length} 達成</small></button>`).join('')}</div>`
       + `<div class="bd"><h4>${kd === 'cpu' ? 'コンピュータに 連続勝利' : '友だちバトルで 連続勝利'}</h4>`
       + `<p class="cur"><span>いま</span><b>${cur}</b><span>連勝</span><small>${nt ? `つぎは ${nt[0]}連勝で ${COINI}${nt[1]}枚（あと ${Math.max(1, nt[0] - cur)}勝）` : '今月の ミッションは ぜんぶ 達成！ 🎉'}</small></p>`
@@ -2192,10 +2204,19 @@ const CBApp = (() => {
 
   
   let match = null, V = null, queue = [], pumping = false, mode = { k: 'idle' }, busy = false, lock = false, ended = false, gameNo = 0, dealHold = false;      
+  
+  let fin = false, ends = [];
+  function onEv(u) {
+    (u && u.ev || []).forEach(x => {
+      if (!x) return;
+      if (x.e === 'deal') fin = false;
+      else if (x.e === 'end' && !fin) { fin = true; ends.push(settle(x.res)); }
+    });
+  }
   const WHO = () => (match && match.kind === 'cpu' ? 'コンピュータ' : 'ともだち');
   function startMatch(m) {
-    GEN += 1; match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false; dealHold = false;
-    m.onUpdate = u => { queue.push(u); pump(); };
+    GEN += 1; match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false; dealHold = false; fin = false; ends = [];
+    m.onUpdate = u => { if (match === m) onEv(u); queue.push(u); pump(); };
     m.onState = s => onNet(s);
     show('game'); closeMod();
     $('.cbopp .cbwho b').textContent = WHO();
@@ -2222,7 +2243,7 @@ const CBApp = (() => {
     if (s === 'ready') { opPre(); return; }            
     if (s === 'joined') return;
     if (s === 'stake') return joinAsk();
-    const playing = !ended && !!V;
+    const playing = !ended && !fin && !!V;      
     const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が ちがうので 対戦できないよ。\n2人とも 新しい 版に してね' : 'つながりが 切れたよ';
     
     let coinMsg = '';
@@ -2852,7 +2873,7 @@ const CBApp = (() => {
     se(x.res === 'win' ? 'fanfare' : x.res === 'lose' ? 'over' : 'even');
     modal(`<h3 class="gold">${head}</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(WHO())}（勝った 数）</small></div><div class="gift"></div><div class="gift2" style="min-height:20px;font-size:12.5px;color:#d9c08c"></div>`
       + '<div class="col"><button type="button" class="cbb" data-cb="again">もう 1回</button><button type="button" class="cbb dk" data-cb="menu">メニューへ</button></div>', 'cbend');
-    const no = gameNo, r = await settle(x.res), g = $('.cbend .gift');
+    const no = gameNo, r = await (ends.shift() || settle(x.res)), g = $('.cbend .gift');      
     if (!g || no !== gameNo) return;
     
     
@@ -2891,7 +2912,8 @@ const CBApp = (() => {
   
   function leave(count) {
     const m = match; match = null; queue = []; GEN += 1;      
-    if (m) { if (count && !ended && V) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) {   } }      
+    if (m) { if (count && !ended && !fin && V) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) {   } }      
+    fin = false; ends = [];
     if (st && st.stake) { st.stake = null; save(); }      
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      
     V = null; ended = false; closeMod();
