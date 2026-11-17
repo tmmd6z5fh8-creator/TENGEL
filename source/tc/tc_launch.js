@@ -420,14 +420,14 @@
     if (document.getElementById('planBtn')) return;
     var card = document.querySelector('#v-judge .card'), h = card && card.querySelector('h2'); if (!card || !h) return;
     planCss(); card.classList.add('planc');
-    var b = document.createElement('button'); b.type = 'button'; b.id = 'planBtn'; b.setAttribute('aria-label', '作戦会議（押すと ひらくよ）');
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'planBtn'; b.setAttribute('aria-label', '作戦会議（押すと 開くよ）');
     var im = new Image(); im.alt = '';
     im.onerror = function () { var t = document.createElement('span'); t.className = 'plt'; t.textContent = '作戦会議'; im.replaceWith(t); };      // 絵が ない（CI など）：字の 札
     im.src = 'tc_icon_plan.webp'; b.appendChild(im);
     b.addEventListener('click', function () { if (!b.disabled) planOpen(null); });
     planCard = card; document.body.appendChild(b); planB = b;                                                // 第4.168版：body の 下（画面に 止める）
     // 第4.165版：「壁紙&ボード着せ替え」の ボタン（作戦会議の 札の すぐ 下：カプセルの 絵 ＋ 名前の 札）→ 設定タブの「着せ替え」へ
-    var k = document.createElement('button'); k.type = 'button'; k.id = 'kiseBtn'; k.setAttribute('aria-label', KISE_NAME + '（押すと 設定の 着せ替え・結果ボードカスタムを ひらくよ）');
+    var k = document.createElement('button'); k.type = 'button'; k.id = 'kiseBtn'; k.setAttribute('aria-label', KISE_NAME + '（押すと 設定の 着せ替え・結果ボードカスタムを 開くよ）');
     var km = new Image(); km.alt = '';
     km.onerror = function () { var t = document.createElement('span'); t.className = 'kft'; km.replaceWith(t); };      // 絵が ない（CI など）：色の カプセル（名前は 下の 札に ある）
     km.src = 'tc_icon_kise2.webp'; k.appendChild(km);
@@ -460,8 +460,8 @@
   function boot() {
     if (document.getElementById('tcFab')) return;
     // 第4.165版：推し馬 → 作戦会議の「推し馬」の 欄を すぐ 開く。順（order）：第4.176版から トレーニングセンター 0 → 推し馬 1 → カードバトル 2 → 思い出フィギュア 3
-    oshiB = fabAdd({ id: 'oshiFab', order: 1, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を ひらくよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen({ oshi: true }); } });
-    fab = fabAdd({ id: 'tcFab', order: 0, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと ひらくよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
+    oshiB = fabAdd({ id: 'oshiFab', order: 1, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を 開くよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen({ oshi: true }); } });
+    fab = fabAdd({ id: 'tcFab', order: 0, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと 開くよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
     planBoot();
   }
   // 通知を 押した（作戦会議）→ トレーニングセンターの 作戦会議を 開く

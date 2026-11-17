@@ -704,7 +704,7 @@
   function fakeBoard(miss, head, tf) { return `<div class="rb bcfake${miss ? ' miss' : ''}" style="${tf || ''}"><div class="fh">${head}</div><div class="fr"></div><div class="fr"></div></div>`; }
   function thumbHtml(it, sk) {   // sk：的中ボード／ハズレボードの 一覧（第4.125版：どちらにも 出る 飾りは その 結果の 見本）
     if (it.ready && isPic(it.id)) return `<div class="bcmini pic" aria-hidden="true"><img class="bcpth" src="${esc(String(PIC.items[it.id].t || String(PIC.thumb || '').replace('{}', it.id)))}" alt="" decoding="async" draggable="false"><div class="bcpno">${esc(it.name)}</div></div>`;
-    if (!it.ready || !B[it.id]) return `<div class="bcmini prep" aria-hidden="true"><div class="bcmi"><div class="hb bcst">${fakeBoard(false, '')}</div></div><span class="bcprep">じゅんび中</span></div>`;
+    if (!it.ready || !B[it.id]) return `<div class="bcmini prep" aria-hidden="true"><div class="bcmi"><div class="hb bcst">${fakeBoard(false, '')}</div></div><span class="bcprep">準備中</span></div>`;
     const k = sk && it.when === 'all' ? sk : kindOf(it), miss = k === 'miss', H = 170;
     const o = { H, W: 350, sp: 120, st: true, miss, big: k === 'big', kind: k, dark: false, title: { l: 112, t: 14, w: 126, h: 40 }, redHd: false, streak: 0, u: 0 };
     let r = {};
@@ -734,16 +734,16 @@
     const bundle = w && w.bundle && w.bundle.offer() ? { price: w.bundle.price() } : null;   // 第4.114版：お得パック（単品を どちらも 持って いない とき）
     const seen = seenSet(), last = PT.BOARD_NEED[PT.BOARD_NEED.length - 1], every = PT.BOARD.steps.length === 1 ? PT.BOARD.steps[0][1] : 0;
     const sel = { hit: i.selHit || '', miss: i.selMiss || '' };
-    let h = '<p class="hint" style="margin:0 0 8px">結果のボードを、絵の ボードや 馬の 飾りに かえられるよ。<b>的中ボード</b>と <b>ハズレボード</b>から、それぞれ <b>1つずつ</b> つけられるよ（<b>つけない</b>＝いつもの ボード）。<b>どの 壁紙でも 使える</b>よ。</p>';
+    let h = '<p class="hint" style="margin:0 0 8px">結果のボードを、絵の ボードや 馬の 飾りに 変えられるよ。<b>的中ボード</b>と <b>ハズレボード</b>から、それぞれ <b>1つずつ</b> 付けられるよ（<b>付けない</b>＝いつもの ボード）。<b>どの 壁紙でも 使える</b>よ。</p>';
     if (!i.owned) {
       h += `<div class="bcbuy"><div><b>結果ボードカスタム</b><small>${ITEMS.length}種・買い切り（1回 買えば ずっと）</small></div><button class="btn primary" type="button" data-bcact="buy">${esc(price)}で買う</button></div>`;
-      h += `<p class="ptnote">買った あとに 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}ぜんぶで ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも ためせるよ。</p>`;
-      if (bundle) h += `<div class="bcbun"><div><b>お得パック</b><small>壁紙パック（新しい 壁紙 ${PT.WALLPACK.n}枚）と 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></div><button class="btn primary" type="button" data-bcact="bundle">${esc(bundle.price)}で買う</button></div>`;
+      h += `<p class="ptnote">買った 後に 読み込んだ レースの 数で、1つずつ 番号の 順に 解放されるよ（${every ? `${every}レースごと／` : ''}全部で ${last}レース）。読み直し（0P）と 5連の 予想は 数えないよ。「▶ 見る」で 買う 前にも 試せるよ。</p>`;
+      if (bundle) h += `<div class="bcbun"><div><b>お得パック</b><small>壁紙パック（新しい 壁紙 ${PT.WALLPACK.n}枚）と 結果ボードカスタムの 2つが セット。別々に 買うより お得だよ</small></div><button class="btn primary" type="button" data-bcact="bundle">${esc(bundle.price)}で買う</button></div>`;
       h += '<div class="row" style="margin-top:6px"><button class="btn ghost" type="button" data-bcact="restore">購入を復元</button></div>';
     } else {
       const nx = i.next, nr = i.nextReady, done = !nx, pct = done ? 100 : Math.round((i.reads - nx.from) / (nx.need - nx.from) * 100);
-      const nxt = done ? 'ぜんぶ 解放したよ！' : nx.item.ready ? `つぎの「${esc(nx.item.name)}」まで あと <b>${nx.left}</b>レース`
-        : `つぎの 解放まで あと <b>${nx.left}</b>レース${nr ? `（「${esc(nr.item.name)}」まで あと ${nr.left}レース）` : ''}`;
+      const nxt = done ? '全部 解放したよ！' : nx.item.ready ? `次の「${esc(nx.item.name)}」まで あと <b>${nx.left}</b>レース`
+        : `次の 解放まで あと <b>${nx.left}</b>レース${nr ? `（「${esc(nr.item.name)}」まで あと ${nr.left}レース）` : ''}`;
       h += `<div class="bcprog"><b>解放 ${i.n}/${ITEMS.length}</b>　<span class="muted" style="font-size:12.5px">買ってから 読み込んだ レース：${i.reads}</span><div class="bar"><i style="width:${pct}%"></i></div>`
         + `<span style="font-size:12.5px">${nxt}</span></div>`;
     }
@@ -757,27 +757,27 @@
       h += i.owned
         ? `<div class="bcslot" data-slot="${k}"><div class="bcsl1"><span class="bck ${k}">${SEC[k]}（${list.length}種）</span><span class="bcsn${has ? '' : ' none'}">${has ? esc(cur.name) : 'なし（いつもの ボード）'}</span></div>`
           + `<button class="btn ghost" type="button" data-bcact="seeslot" data-slot="${k}">▶ 見る</button>`
-          + `<button class="btn ghost" type="button" data-bcact="none" data-slot="${k}"${has ? '' : ' disabled'}>つけない</button></div>`
+          + `<button class="btn ghost" type="button" data-bcact="none" data-slot="${k}"${has ? '' : ' disabled'}>付けない</button></div>`
         : `<div class="bcsech"><span class="bck ${k}">${SEC[k]}（${list.length}種）</span><span class="bcsc">${KIND[k]}の ときの 結果の ボード</span></div>`;
       h += '<div class="bcgrid">';
       list.forEach(it => {
         const ok = it.ready && !!B[it.id], open = i.owned && it.no <= i.n, isNew = open && ok && !seen.has(it.id);
         const left = i.owned ? Math.max(0, it.need - i.reads) : 0, on = open && ok && sel[k] === it.id;
-        const st = !i.owned ? '🔒 買うと 解放' : !open ? `🔒 あと ${left}レース` : !ok ? '解放ずみ・じゅんび中' : on ? `${KIND[k]}で つけている` : 'つけられるよ';
+        const st = !i.owned ? '🔒 買うと 解放' : !open ? `🔒 あと ${left}レース` : !ok ? '解放済み・準備中' : on ? `${KIND[k]}で 付けている` : '付けられるよ';
         let use = '';
-        if (ok && open) use += `<button class="btn ghost bcpick" type="button" data-bcact="use" data-id="${it.id}" data-slot="${k}" aria-pressed="${on}">${on ? '✓ つけている' : 'つける'}</button>`;
+        if (ok && open) use += `<button class="btn ghost bcpick" type="button" data-bcact="use" data-id="${it.id}" data-slot="${k}" aria-pressed="${on}">${on ? '✓ 付けている' : '付ける'}</button>`;
         if (ok) use += `<button class="btn ghost bcsee" type="button" data-bcact="see" data-id="${it.id}"${both(it) && !isPic(it.id) ? ` data-kind="${k}"` : ''}>${seeLabel(it, k)}</button>`;
-        h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" data-sec="${k}" role="group" aria-label="${it.no}. ${esc(it.name)}${on ? '（つけている）' : open ? '' : '（まだ）'}">`
+        h += `<div class="bct${on ? ' on' : ''}${open ? '' : ' lock'}${ok ? '' : ' prep'}" data-bc="${it.id}" data-sec="${k}" role="group" aria-label="${it.no}. ${esc(it.name)}${on ? '（付けている）' : open ? '' : '（まだ）'}">`
           + `${open ? '' : '<span class="bclk" aria-hidden="true">🔒</span>'}${thumbHtml(it, k)}<span class="bcn"><span class="bcno">${it.no}</span>${esc(it.name)}${isNew ? '<span class="bcnew">NEW</span>' : ''}</span>`
           + `<span class="bcd">${esc(it.desc)}</span>`
           + `<span class="bcs">${st}</span>${use ? `<div class="bcuse">${use}</div>` : ''}</div>`;
       });
       h += '</div></section>';
     });
-    h += '<p class="ptnote" style="margin-top:10px">「的中ボード」「ハズレボード」の 中で「つける」を 押すと、その 結果の ときに 使うよ（それぞれ 1つ。もう一度 押すか「つけない」で いつもの ボード）。「▶ 見る」で、ためしに 結果の ボードを 出すよ（まだ 解放して いない ものも 見られるよ）。<br>'
-      + '絵の ボードは、的中は 続けて 当てた 数（連勝）・ハズレは 続けて ハズレた 数で 絵が かわるよ（「▶ 見る」は 押す たびに つぎの 絵）。<br>'
-      + (ITEMS.some(x => !x.ready) ? 'じゅんび中の 番号には、アプリの 更新で 新しい 飾りが 入るよ（解放ずみの 番号なら、入ったら すぐ 使えるよ）。<br>' : '')
-      + '「視差効果を減らす」か 設定の「演出を控えめにする」が オンなら、飾りは 止まった 形で 出るよ。<br>アプリを 消すと、解放の 進み具合は 0に もどるよ（買った ことは「購入を復元」で もどせるよ）。</p>';
+    h += '<p class="ptnote" style="margin-top:10px">「的中ボード」「ハズレボード」の 中で「付ける」を 押すと、その 結果の ときに 使うよ（それぞれ 1つ。もう一度 押すか「付けない」で いつもの ボード）。「▶ 見る」で、試しに 結果の ボードを 出すよ（まだ 解放して いない ものも 見られるよ）。<br>'
+      + '絵の ボードは、的中は 続けて 当てた 数（連勝）・ハズレは 続けて ハズレた 数で 絵が 変わるよ（「▶ 見る」は 押す たびに 次の 絵）。<br>'
+      + (ITEMS.some(x => !x.ready) ? '準備中の 番号には、アプリの 更新で 新しい 飾りが 入るよ（解放済みの 番号なら、入ったら すぐ 使えるよ）。<br>' : '')
+      + '「視差効果を減らす」か 設定の「演出を控えめにする」が オンなら、飾りは 止まった 形で 出るよ。<br>アプリを 消すと、解放の 進み具合は 0に 戻るよ（買った ことは「購入を復元」で 戻せるよ）。</p>';
     box.innerHTML = h;
     fitThumbs(); requestAnimationFrame(fitThumbs);
     const opened = ITEMS.filter(it => i.owned && it.no <= i.n && it.ready && B[it.id]).map(it => it.id);
@@ -842,11 +842,11 @@
       if (act === 'buy') { await w.board.buy(a); paint(); return; }
       if (act === 'bundle') { if (w.bundle) await w.bundle.buy(a); paint(); return; }
       if (act === 'restore') { await w.board.restore(a); paint(); return; }
-      if (act === 'none') { if (await w.board.select('none', k)) { toast(`${KIND[k]}の ときは いつもの ボードに もどしたよ`); paint(); } return; }
+      if (act === 'none') { if (await w.board.select('none', k)) { toast(`${KIND[k]}の ときは いつもの ボードに 戻したよ`); paint(); } return; }
       if (act === 'use') {
         const it = BY[a.dataset.id], i = w.board.info(); if (!it) return;
         const cur = k === 'miss' ? i.selMiss : i.selHit, off = cur === it.id;
-        if (await w.board.select(off ? 'none' : it.id, k)) { toast(off ? `${KIND[k]}の ときは いつもの ボードに もどしたよ` : `${KIND[k]}の ときに「${it.name}」を 使うよ`); paint(); }
+        if (await w.board.select(off ? 'none' : it.id, k)) { toast(off ? `${KIND[k]}の ときは いつもの ボードに 戻したよ` : `${KIND[k]}の ときに「${it.name}」を 使うよ`); paint(); }
         return;
       }
       return;
@@ -855,10 +855,10 @@
     const t = e.target.closest('.bct'); if (!t) return;
     const it = BY[t.dataset.bc]; if (!it) return;
     const i = w && w.board ? w.board.info() : { owned: false, reads: 0, n: 0 };
-    if (!it.ready || !B[it.id]) { toast(`${it.no}番は じゅんび中だよ（アプリの 更新で 新しい 飾りが 入るよ）`, 3600); return; }
+    if (!it.ready || !B[it.id]) { toast(`${it.no}番は 準備中だよ（アプリの 更新で 新しい 飾りが 入るよ）`, 3600); return; }
     if (!i.owned) { toast(`買うと、読み込んだ レースの 数で 番号の 順に 解放されるよ（「${it.name}」は ${it.need}レース）`, 3600); return; }
     if (it.no > i.n) { toast(`「${it.name}」は あと ${Math.max(0, it.need - i.reads)}レースで 解放（番号の 順に 解放されるよ）`, 3600); return; }
-    toast(`「つける」を 押すと、${t.dataset.sec === 'miss' ? 'ハズレ' : '的中'}の ときに 使うよ`, 3000);
+    toast(`「付ける」を 押すと、${t.dataset.sec === 'miss' ? 'ハズレ' : '的中'}の ときに 使うよ`, 3000);
   }
   // 解放の お知らせ（読み込みの あと：画面の 上に 4秒）・設定の タイルの 解放エフェクト
   function note(html) {
@@ -874,7 +874,7 @@
     paint();
     if (d.phase === 'unlock' && BY[d.item]) {
       const it = BY[d.item];
-      note(`<b>🎉 結果ボードカスタム「${esc(it.name)}」が 解放！</b>${d.many > 1 ? `${d.many}こ 解放したよ。` : ''}設定の「結果ボードカスタム」で 使えるよ`);
+      note(`<b>🎉 結果ボードカスタム「${esc(it.name)}」が 解放！</b>${d.many > 1 ? `${d.many}個 解放したよ。` : ''}設定の「結果ボードカスタム」で 使えるよ`);
       const tile = $(`#setBoard .bct[data-bc="${it.id}"]`), v = $('#v-set');
       if (tile && v && !v.hidden && FX() && FX().unlock) FX().unlock(tile, { text: '解放！' });
     }

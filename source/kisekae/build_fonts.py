@@ -46,7 +46,7 @@ WNAME = {100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Med
 IN_APP = ('BIZ UDPGothic', 'Dela Gothic One')   # もうアプリに入っている（ios/fonts・丸ごと）
 
 # 見出し用の決まった言葉（アプリの --font-display の所・ボードの見出し・PUSH）
-DISP_WORDS = ('テンゲルⅢ', 'ABC層堅警戒穴', '人気中穴大穴超大穴対象外', '第１２３０４５６７８９', '点的中デカど隠れハズレ神様超', '！!!?？', 'PUSH', 'タップ！とじる',
+DISP_WORDS = ('テンゲルⅢ', 'ABC層堅警戒穴', '人気中穴大穴超大穴対象外', '第１２３０４５６７８９', '点的中デカど隠れハズレ神様超', '！!!?？', 'PUSH', 'タップ！とじる閉じる',
               '判定不可（データ不足）', '姫ゲート待機中', '記録を読み込み中…', '基盤データに接続できません', 'この月年の記録はまだないよ', '「」はまだ空だよ',
               'テンゲル基盤データ', '円Ｐ・→／〜％%.,:-+ 　', '予約レース結果', 'あと枚',
               # 第4.85版：ボードの 札（券種・的中／不的中／返還：太さ 800 → 見出し用の 顔に なる 字が ある）・単勝5連勝の ①〜⑩
@@ -82,6 +82,9 @@ def body_chars():
     import build_kisekae as BK
     for t in BK.theme_list():
         txt += t['name'] + t['desc'] + t.get('group', '')
+    spec = importlib.util.spec_from_file_location('app_target', os.path.join(SRC, 'app_target.py'))      # 第4.192版：Web版と 同じ ファイルの 文を アプリ だけ 漢字に そろえた 字（KANJI_INDEX）も
+    AT = importlib.util.module_from_spec(spec); spec.loader.exec_module(AT)
+    txt += ''.join(b for a, b, k in AT.KANJI_INDEX)
     txt += ''.join(DISP_WORDS) + ASCII + KANA
     chars = {c for c in txt if ord(c) >= 32 and unicodedata.category(c)[0] not in ('C', 'Z') or c == ' '}
     chars -= set('﻿‍️')

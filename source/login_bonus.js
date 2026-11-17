@@ -130,9 +130,9 @@
       + '<p class="lgs"><b>' + (day + 1) + '日目</b> の ボーナス<span class="lgp">+' + comma(BONUS[day]) + 'P</span>と<br>'
       + '<span class="lgq">' + COINI + 'バトルコイン<b>+' + cbCoins(day) + '枚</b></span>を もらったよ</p>'
       + '<ol class="lgd">' + li + '</ol>'
-      + '<p class="lgn">毎日、さいしょに ひらいた ときに 1回 もらえるよ。<br>7日目の つぎは、また 1日目から。<br>バトルコインは カードバトルで 使えるよ。<br>（7日目は ' + CBDAY + '枚＋' + CB7 + '枚）</p>'
+      + '<p class="lgn">毎日、最初に 開いた ときに 1回 もらえるよ。<br>7日目の 次は、また 1日目から。<br>バトルコインは カードバトルで 使えるよ。<br>（7日目は ' + CBDAY + '枚＋' + CB7 + '枚）</p>'
       + '<button type="button" class="lgb" data-lg="ok">OK</button>'
-      + (testOn() ? '<button type="button" class="lgt" data-lg="next">テスト版：つぎの 日を ためす</button>' : '')
+      + (testOn() ? '<button type="button" class="lgt" data-lg="next">テスト版：次の 日を 試す</button>' : '')
       + '</div>';
     o.addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('[data-lg]') : null;

@@ -723,14 +723,14 @@ const TCDrop = (() => {
     pf([[-125, -52], [135, -52], [135, 66], [-125, 66]], 'rgba(40,20,5,0.2)');
     pf([[-130, -58], [108, -58], [130, -36], [130, 58], [-130, 58]], '#fff8ec'); pf([[-130, 6], [130, 6], [130, 58], [-130, 58]], '#f8ecd4'); pf([[108, -58], [130, -36], [108, -36]], '#e6cf9f');
     label('お世話トークン', 0, -30, 27, '#7a4520');
-    const stock = API.stock(); label('のこり', -62, 22, 28, '#9a7a55'); label(String(stock), 34, 20, 52, '#3f7f3a', '#fff8ec', 6); label('こ', 96, 24, 26, '#9a7a55');
+    const stock = API.stock(); label('残り', -62, 22, 28, '#9a7a55'); label(String(stock), 34, 20, 52, '#3f7f3a', '#fff8ec', 6); label('こ', 96, 24, 26, '#9a7a55');
     g.restore();
     const hi = API.high ? API.high() : 0;
     if (hi > 0) tag(W - 148, 168, `高確ゾーン あと ${hi}回`, 26, ia, 1, '#c2362b');
     // 合図
     if (S.phase === 'wait') { const u = t - S.unlockT - 0.35, k2 = sm(u / 0.25); if (k2 > 0) { const p = [MX + (D.see.box[0] + D.see.box[2]) / 2 * MS, MY + D.see.box[1] * MS - 30]; tag(p[0], p[1] + (cm ? 0 : 5 * Math.sin(TAU * 0.9 * u)), 'タップ！', 40, k2, 1, '#2f7f5f'); } }
     // 当たり なし
-    if (S.phase === 'none' && S.none != null) { const u = t - S.none; tag(W / 2, 760, 'ざんねん… 当たりは なかったよ', 38, sm(u / 0.2) * (1 - sm((u - 1.2) / 0.3)), backOut(u / 0.3), '#7a4520'); }
+    if (S.phase === 'none' && S.none != null) { const u = t - S.none; tag(W / 2, 760, '残念… 当たりは なかったよ', 38, sm(u / 0.2) * (1 - sm((u - 1.2) / 0.3)), backOut(u / 0.3), '#7a4520'); }
     // ルーレット！・特化ゾーン！
     if (S.cue) { const u = t - S.cue.t0; if (u > 1.3) S.cue = null; else tag(W / 2, 700, S.cue.txt, 56, sm(u / 0.12) * (1 - sm((u - 1.0) / 0.25)), backOut(u / 0.3) * (cm ? 1 : 1 + 0.04 * Math.sin(TAU * 1.4 * u)), '#c2362b'); }
     // ポイントの 札
@@ -757,11 +757,11 @@ const TCDrop = (() => {
       const got = [S.sum > 0 ? `＋${Number(S.sum).toLocaleString('ja-JP')}P` : '', S.tk > 0 ? `チケット ${S.tk}枚` : ''].filter(Boolean);
       if (got.length) label(got.join('・'), 0, -h / 2 + 208, got.length > 1 ? 58 : 76, '#c2362b', '#fff8ec', 8);
       else label('なし… また チャレンジしてね', 0, -h / 2 + 204, 40, '#8a7a66');
-      label(`お世話トークン のこり ${API.stock()}こ`, 0, -h / 2 + 290, 32, '#3f7f3a');
-      label(S.more ? 'もう 1回（玉 5こ）できるよ' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが 5こ たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
+      label(`お世話トークン 残り ${API.stock()}個`, 0, -h / 2 + 290, 32, '#3f7f3a');
+      label(S.more ? 'もう 1回（玉 5個）できるよ' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが 5個 たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
       g.restore();
       const pm = t - (S.press.more == null ? -9 : S.press.more);
-      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '玉を 5こ 落とす' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
+      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '玉を 5個 落とす' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
       else chip(W / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.08) / 0.3) });
     }
     g.setTransform(1, 0, 0, 1, 0, 0);

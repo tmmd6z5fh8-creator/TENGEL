@@ -330,7 +330,7 @@ def push_fz_t(G):
     return f'<div class="ov fz">\n    {h2}\n  </div>'
 
 
-CLOSE = '<button class="close" type="button" data-fx="close">とじる</button>'
+CLOSE = '<button class="close" type="button" data-fx="close">閉じる</button>'      # 第4.192版：漢字に そろえる（とじる → 閉じる）
 
 
 def reveal_hit(G):

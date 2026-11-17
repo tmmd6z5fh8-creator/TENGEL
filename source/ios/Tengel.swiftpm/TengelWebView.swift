@@ -318,7 +318,7 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {
                 reply(id, ok: true, value: text)
             } else {
-                reply(id, ok: false, value: "データの形がちがうよ")
+                reply(id, ok: false, value: "データの形が違うよ")
             }
         #if DEBUG
         case "selftest":

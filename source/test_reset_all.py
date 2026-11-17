@@ -43,7 +43,7 @@ AUTO = 'window.__LOGIN_AUTO = true;'      # テストの ブラウザ（navigato
 
 
 class Native:
-    """にせものの アプリ 1台ぶん（しるし・自動バックアップ・お知らせ・届いた お願いの 記録）"""
+    """にせものの アプリ 1台ぶん（印・自動バックアップ・お知らせ・届いた お願いの 記録）"""
     def __init__(self):
         self.markers, self.backup, self.writes, self.items, self.auth, self.log = {}, None, [], [], 'notDetermined', []
 
@@ -101,7 +101,7 @@ def boot(pg, url, want=None):
 
 
 def login_close(pg):
-    """ログインボーナスの 窓が 出て いたら「OK」で とじる"""
+    """ログインボーナスの 窓が 出て いたら「OK」で 閉じる"""
     try: pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=6000)
     except Exception: return False
     pg.wait_for_timeout(500); pg.locator('#lgOv [data-lg=ok]').click(); pg.wait_for_timeout(400); return True
@@ -127,9 +127,9 @@ SEED = """async () => {
   await TengelLocal.putBets([mk('rsm1', 11, 'テンゲル記念', { '3連単': [[5, 2, 1], [5, 1, 2], [2, 5, 1]], '馬単': [[5, 2]] }, [5, 2, 1], 'hit', 1000, 45600),
     mk('rsm2', 9, 'はなまる特別', { '馬単': [[3, 7], [7, 3]] }, [8, 4, 6], 'miss', 600, 0)]);
   await TengelLocal.putSetting('notify', false);
-  await TengelLocal.slots.rename(2, 'ためしの データ');
+  await TengelLocal.slots.rename(2, '試しの データ');
   localStorage.setItem('tengel.tc', JSON.stringify({ v: 1, total: 7, tickets: 2 }));
-  localStorage.setItem('tengel.oshi', JSON.stringify({ v: 1, list: [{ id: 'o1', name: 'ためしの 馬', ped: [], memo: '', at: 1 }] }));
+  localStorage.setItem('tengel.oshi', JSON.stringify({ v: 1, list: [{ id: 'o1', name: '試しの 馬', ped: [], memo: '', at: 1 }] }));
   localStorage.setItem('tengel.form', JSON.stringify({ r: '5', n: '12' }));
   sessionStorage.setItem('seeded', '1');
 }"""
@@ -140,26 +140,26 @@ try:
     app, store, web = RAW['APP'], RAW['STORE'], RAW['TENGEL']
     first = re.search(r'<script>(.*?)</script>', app, re.S).group(1)      # テスト版の index.html の いちばん はじめの スクリプト
     check("'tengel.wipe'" in first and 'deleteDatabase' in first and 'window.TengelReset = {' in first and app.index('window.TengelReset = {') < app.index('window.__APP_VER=') < app.index('window.TengelNative'),
-          'テスト版の index.html：ぜんぶ リセット（reset_all.js）が いちばん はじめの スクリプト（ほかの どの コードも 保存場所を 読む 前に 動く）')
+          'テスト版の index.html：全部 リセット（reset_all.js）が 一番 初めの スクリプト（他の どの コードも 保存場所を 読む 前に 動く）')
     words = ('deleteDatabase', 'tengel.wipe', 'localStorage.clear', 'sessionStorage.clear', 'TengelReset = ', 'wipeCover', 'wipeNote')
     check(not [w for w in words if w in store] and not [w for w in words if w in web] and 'TengelReset' not in web,
           f'App Store版・Web版の index.html には 消す しかけが 1つも 入って いない（{[w for w in words if w in store or w in web]}）')
     sb = subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'STORE0')], capture_output=True, text=True, env=dict({k: v for k, v in os.environ.items() if k != 'TENGEL_TEST'}, TARGET='app', TENGEL_TEST='0'))
     check(sb.returncode == 0 and open(os.path.join(SRV, 'STORE0', 'index.html'), encoding='utf8').read() == store and app.replace(first, '', 1).count('deleteDatabase') == 0,
-          'TENGEL_TEST=1 の とき だけ 入る（TENGEL_TEST=0 は App Store版と 同じ 中身）・消す しかけは はじめの スクリプトの 中 だけ')
+          'TENGEL_TEST=1 の とき だけ 入る（TENGEL_TEST=0 は App Store版と 同じ 中身）・消す しかけは 初めの スクリプトの 中 だけ')
     check('confirm(' not in code and 'alert(' not in code and 'prompt(' not in code and 'confirm(' not in first and 'alert(' not in first, 'confirm()・alert() を 使わない（アプリの 中では 出ない）')
     body = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_body.txt'), encoding='utf8').read())
     pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read()
     part = re.sub(r'//[^\n]*', '', pu[pu.index('function wipeAsk()'):pu.index('const no = box.querySelector')]) + pu[pu.index('data-test="wipe">') - 400:pu.index('data-test="wipe">') + 40]      # 窓と ボタンの 言葉（コメントは 画面に 出ない）
     lack = sorted({c for c in ''.join(re.findall(r"'((?:[^'\\]|\\.)*)'", code)) + part if ord(c) > 0x2000 and c not in body and not 0x1F000 <= ord(c) <= 0x1FAFF})
-    check(not lack and 'ほんとうに ぜんぶ 消す？' in part and 'もとには もどせない' in part, f'画面の 言葉は しぼった 字（本文 {len(body)}字）に 入って いる 字 だけ（足りない 字 {lack}）')
+    check(not lack and '本当に 全部 消す？' in part and '元には 戻せない' in part, f'画面の 言葉は しぼった 字（本文 {len(body)}字）に 入って いる 字 だけ（足りない 字 {lack}）')
     check("post('marker', { op: 'del', key: 'gift-first' })" in code and "post('marker', { op: 'del', key: 'granted-sub' })" in code and "post('backup', { text: JSON.stringify({ reset: true, bets: [] }) })" in code
           and "post('notify', { op: 'sync', items: [] })" in code and 'id: 0' in code and "DB = 'tengel3'" in code and "var DBNAME = 'tengel3'" in open(os.path.join(W, 'pwa_shim.js'), encoding='utf8').read(),
-          'アプリへの お願い 4つ（しるし 2つを 消す・自動バックアップを 空に・お知らせを 消す）は 番号 0（返事なし）・消す DB の 名前は アプリの DB（tengel3）と 同じ')
+          'アプリへの お願い 4つ（印 2つを 消す・自動バックアップを 空に・お知らせを 消す）は 番号 0（返事なし）・消す DB の 名前は アプリの DB（tengel3）と 同じ')
     sw = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'TengelWebView.swift'), encoding='utf8').read(); mk = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'Markers.swift'), encoding='utf8').read()
     check('guard id > 0, let webView else { return }' in sw and '(body["id"] as? NSNumber)?.intValue ?? 0' in sw and 'case "del":' in mk and 'if scheme == AppSchemeHandler.scheme ||' in sw
           and all(f'"{k}"' in open(os.path.join(W, 'points_ui.js'), encoding='utf8').read() or f"'{k}'" in open(os.path.join(W, 'points_ui.js'), encoding='utf8').read() for k in ('gift-first', 'granted-sub')),
-          'アプリ（Swift）：番号 0 の お願いには 返事を しない・しるしを 消す（del）が ある・開き直し（tengel: の ページ）は 通す・しるしの 名前は 財布（points_ui.js）と 同じ 2つ')
+          'アプリ（Swift）：番号 0 の お願いには 返事を しない・印を 消す（del）が ある・開き直し（tengel: の ページ）は 通す・印の 名前は 財布（points_ui.js）と 同じ 2つ')
 
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
@@ -169,10 +169,10 @@ try:
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         dialogs = []; pg.on('dialog', lambda d: (dialogs.append(d.type), d.dismiss()))
 
-        print('■ つかった あとの 形を 作る（テスト版）')
+        print('■ 使った 後の 形を 作る（テスト版）')
         boot(pg, APP, 10000); s0 = pg.evaluate(STATE)
         check(s0['first'] and s0['total'] == 10000 and s0['ev'] == ['gift-first', 'gift-test'] and s0['did'] is None and s0['hasReset'] and s0['bets'] == 0 and 'gift-first' in N.markers,
-              f'はじめて 開いた：「はじめる」の 画面・10,000P（初回 1,500P＋テスト版 8,500P）・キーチェーンに 初回の しるし・リセットは まだ 動いて いない（{s0["ev"]}）')
+              f'初めて 開いた：「始める」の 画面・10,000P（初回 1,500P＋テスト版 8,500P）・キーチェーンに 初回の 印・リセットは まだ 動いて いない（{s0["ev"]}）')
         gate(pg); l0 = login_close(pg)
         F0 = pg.evaluate(FORMVALS); K0 = pg.evaluate("() => Object.keys(localStorage).sort()")      # はじめて 開いた ときの 判定タブの 入力・端末の おぼえの 名前（消した あとと くらべる）
         pg.evaluate(SEED); pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
@@ -180,18 +180,18 @@ try:
         N.markers['granted-sub'] = '["tx-1"]'; N.items = [{'id': 'x1', 'at': 1, 'title': 't', 'body': 'b'}]
         pg.wait_for_timeout(2600)      # 自動バックアップ（保存の 1.5秒 あと）
         s1 = pg.evaluate(STATE); bk1 = json.loads(N.backup) if N.backup else {}
-        check(l0 and s1['total'] == 20200 and s1['bets'] == 2 and s1['notify'] is False and s1['names'].get('2') == 'ためしの データ' and s1['tickets'] == 2 and 'tengel.gateSeen' in s1['ls'] and 'tengel.login' in s1['ls'] and s1['ss'] == ['seeded']
-              and len(bk1.get('bets') or []) == 2, f'つかった 形：20,200P（＋ログインボーナス 200P・テストの 10,000P）・記録 2件・設定・マザーデータの 名前・チケット 2枚・自動バックアップに 記録 2件（{s1["ls"]}）')
+        check(l0 and s1['total'] == 20200 and s1['bets'] == 2 and s1['notify'] is False and s1['names'].get('2') == '試しの データ' and s1['tickets'] == 2 and 'tengel.gateSeen' in s1['ls'] and 'tengel.login' in s1['ls'] and s1['ss'] == ['seeded']
+              and len(bk1.get('bets') or []) == 2, f'使った 形：20,200P（＋ログインボーナス 200P・テストの 10,000P）・記録 2件・設定・マザーデータの 名前・チケット 2枚・自動バックアップに 記録 2件（{s1["ls"]}）')
         boot(pg, APP, 20200); s2 = pg.evaluate(STATE)
         check(not s2['first'] and s2['total'] == 20200 and s2['bets'] == 2 and s2['did'] is None and not s2['restore'], '開き直しても そのまま（リセットは 押した とき だけ）・開いた ときの 画面は 短い 形')
         gate(pg); pg.wait_for_timeout(600)
 
-        print('■ 設定の「テスト版の道具」：ぜんぶ リセット')
+        print('■ 設定の「テスト版の道具」：全部 リセット')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
         lay = pg.evaluate("""() => { const c = document.getElementById('setTest'), bt = c.querySelector('[data-test=wipe]'), all = [...c.querySelectorAll('[data-test]')], r = bt.getBoundingClientRect(), cr = c.getBoundingClientRect();
           return { last: all[all.length - 1] === bt, win: !!document.getElementById('testWipe'), txt: bt.textContent, cls: bt.className, h: r.height, inside: r.left >= cr.left && r.right <= cr.right, hint: bt.closest('.row').previousElementSibling.textContent, color: getComputedStyle(bt).color, ink: getComputedStyle(c).color }; }""")
-        check(lay['last'] and not lay['win'] and lay['txt'] == 'ぜんぶ リセット' and 'danger' in lay['cls'] and lay['color'] != lay['ink'] and lay['h'] >= 36 and lay['inside'] and 'はじめて 開いた ときの 形に もどす' in lay['hint'] and 'もとには もどせない' in lay['hint'],
-              f'カードの いちばん 下に「ぜんぶ リセット」（赤い 字の ボタン・高さ {lay["h"]:.0f}px）と 説明・たしかめる 窓は まだ 出て いない')
+        check(lay['last'] and not lay['win'] and lay['txt'] == '全部 リセット' and 'danger' in lay['cls'] and lay['color'] != lay['ink'] and lay['h'] >= 36 and lay['inside'] and '初めて 開いた ときの 形に 戻す' in lay['hint'] and '元には 戻せない' in lay['hint'],
+              f'カードの 一番 下に「全部 リセット」（赤い 字の ボタン・高さ {lay["h"]:.0f}px）と 説明・確かめる 窓は まだ 出て いない')
         pg.locator('#setTest [data-test=wipe]').scroll_into_view_if_needed(); pg.locator('#setTest [data-test=wipe]').click(); pg.wait_for_timeout(400); shot(pg, 'reset_confirm')
         cf = pg.evaluate("""() => { const w = document.getElementById('testWipe'), bx = w.querySelector('.twbox'), r = bx.getBoundingClientRect(), go = w.querySelector('[data-test=wipego]'), no = w.querySelector('[data-test=wipeno]'), a = go.getBoundingClientRect(), n = no.getBoundingClientRect();
           const cs = getComputedStyle(w), fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, ''), at = (x, y) => { const e = document.elementFromPoint(x, y); return !!e && w.contains(e); }, fab = document.getElementById('tcFab').getBoundingClientRect();
@@ -199,26 +199,26 @@ try:
             inside: r.left >= 8 && r.right <= innerWidth - 8 && r.top >= 0 && r.bottom <= innerHeight, mid: Math.abs((r.top + r.bottom) / 2 - innerHeight / 2) < 40, coverTab: at(30, innerHeight - 10), coverFab: at(fab.left + fab.width / 2, fab.top + fab.height / 2), coverTop: at(60, 20),
             role: w.getAttribute('role'), modal: w.getAttribute('aria-modal'), label: w.getAttribute('aria-labelledby'), fam: fam(bx.querySelector('p')), cardFam: fam(document.querySelector('#setTest .hint')), over: bx.scrollWidth > bx.clientWidth + 1 || bx.scrollHeight > bx.clientHeight + 1,
             body: w.parentNode === document.body, w: r.width, h: r.height, btnIn: a.left >= r.left && n.right <= r.right && a.bottom <= r.bottom }; }""")
-        check(cf['title'] == 'ほんとうに ぜんぶ 消す？' and 'もとには もどせない' in cf['txt'] and 'バックアップを保存' in cf['txt'] and cf['go'] == 'リセット する' and cf['no'] == 'やめる' and cf['gh'] >= 36 and cf['nh'] >= 36 and cf['row'] and cf['apart'] >= 6 and cf['btnIn'],
-              f'1回目：まん中に 窓「ほんとうに ぜんぶ 消す？」（消える もの・もとには もどせない・先に バックアップ）＋「リセット する」「やめる」（横に ならぶ・間 {cf["apart"]:.0f}px・高さ {cf["gh"]:.0f}px）')
+        check(cf['title'] == '本当に 全部 消す？' and '元には 戻せない' in cf['txt'] and 'バックアップを保存' in cf['txt'] and cf['go'] == 'リセット する' and cf['no'] == 'やめる' and cf['gh'] >= 36 and cf['nh'] >= 36 and cf['row'] and cf['apart'] >= 6 and cf['btnIn'],
+              f'1回目：真ん中に 窓「本当に 全部 消す？」（消える もの・元には 戻せない・先に バックアップ）＋「リセット する」「やめる」（横に 並ぶ・間 {cf["apart"]:.0f}px・高さ {cf["gh"]:.0f}px）')
         check(cf['pos'] == 'fixed' and cf['z'] == 60 and cf['z'] > cf['tabz'] and cf['inside'] and cf['mid'] and cf['coverTab'] and cf['coverFab'] and cf['coverTop'] and cf['body'] and not cf['over']
               and cf['role'] == 'alertdialog' and cf['modal'] == 'true' and cf['label'] == 'twTitle' and cf['fam'] == cf['cardFam'],
-              f'窓：画面の まん中（{cf["w"]:.0f}×{cf["h"]:.0f}・はみ出さない）・うしろ（下の タブ・右下の 丸い ボタン・上の 帯）は 押せない・字は カードと 同じ {cf["fam"]}')
+              f'窓：画面の 真ん中（{cf["w"]:.0f}×{cf["h"]:.0f}・はみ出さない）・うしろ（下の タブ・右下の 丸い ボタン・上の 帯）は 押せない・字は カードと 同じ {cf["fam"]}')
         s3 = pg.evaluate(STATE)
-        check(s3['total'] == 20200 and s3['bets'] == 2 and 'tengel.wipe' not in s3['ls'] and s3['ss'] == ['seeded'] and not pg.locator('#wipeCover').count(), '1回目の ボタン だけでは 何も 消えない（しるしも 置かない）')
+        check(s3['total'] == 20200 and s3['bets'] == 2 and 'tengel.wipe' not in s3['ls'] and s3['ss'] == ['seeded'] and not pg.locator('#wipeCover').count(), '1回目の ボタン だけでは 何も 消えない（印も 置かない）')
         pg.locator('#testWipe [data-test=wipeno]').click(); pg.wait_for_timeout(300)
         s4 = pg.evaluate(STATE)
-        check(not pg.locator('#testWipe').count() and s4['total'] == 20200 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：窓を とじる・何も 消えない')
+        check(not pg.locator('#testWipe').count() and s4['total'] == 20200 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：窓を 閉じる・何も 消えない')
         # うしろ（窓の 外）を 押す＝やめる。ただし 窓が 出て すぐ（0.7秒）は とじない（つづけて 2回 押した ゆびで すぐ 消えない）
         pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.getElementById('testWipe').click(); }"); pg.wait_for_timeout(200); o1 = pg.locator('#testWipe').count()
         pg.wait_for_timeout(700); pg.mouse.click(195, 30); pg.wait_for_timeout(300); o2 = pg.locator('#testWipe').count(); s4b = pg.evaluate(STATE)
-        check(o1 == 1 and o2 == 0 and s4b['total'] == 20200 and s4b['bets'] == 2 and 'tengel.wipe' not in s4b['ls'], '窓の 外を 押す＝やめる（出て すぐの 0.7秒は とじない）・何も 消えない')
+        check(o1 == 1 and o2 == 0 and s4b['total'] == 20200 and s4b['bets'] == 2 and 'tengel.wipe' not in s4b['ls'], '窓の 外を 押す＝やめる（出て すぐの 0.7秒は 閉じない）・何も 消えない')
 
-        print('■ 「リセット する」→ 開き直して ぜんぶ 消す')
+        print('■ 「リセット する」→ 開き直して 全部 消す')
         # つづけて 2回 押した ゆび（窓が 出て すぐ「リセット する」に 当たる）では 動かない：出て から 0.7秒は 受けない
         pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.querySelector('#testWipe [data-test=wipego]').click(); }"); pg.wait_for_timeout(700)
         dt = pg.evaluate("() => ({ cover: !!document.getElementById('wipeCover'), mark: localStorage.getItem('tengel.wipe'), open: !!document.getElementById('testWipe'), dis: [...document.querySelectorAll('#testWipe button')].some(b => b.disabled) })")
-        check(not dt['cover'] and dt['mark'] is None and dt['open'] and not dt['dis'] and 'const WIPE_WAIT = 700;' in pu, f'窓が 出て すぐの「リセット する」（つづけて 2回 押した ゆび）では 動かない（0.7秒 待つ）{dt}')
+        check(not dt['cover'] and dt['mark'] is None and dt['open'] and not dt['dis'] and 'const WIPE_WAIT = 700;' in pu, f'窓が 出て すぐの「リセット する」（続けて 2回 押した ゆび）では 動かない（0.7秒 待つ）{dt}')
         pg.wait_for_timeout(300)
         n_log = len(N.log); gift0 = s1['gift']; N.auth = 'authorized'
         # 開き直す までの 0.4秒を テストの 間 だけ 1.5秒に のばす（かくす 画面を 見る ひま）。__old＝前の ページの しるし（開き直すと 消える）
@@ -227,7 +227,7 @@ try:
         cv = pg.evaluate("""() => { const c = document.getElementById('wipeCover'); if (!c) return null; const r = c.getBoundingClientRect(), t = document.elementFromPoint(195, 800);
           return { txt: c.textContent, full: r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight, top: t === c, z: getComputedStyle(c).zIndex, ls: localStorage.getItem('tengel.wipe'), ss: sessionStorage.getItem('tengel.wipe'), dis: [...document.querySelectorAll('#testWipe button')].every(b => b.disabled) }; }""")
         shot(pg, 'reset_cover')
-        check(bool(cv) and cv['txt'] == 'リセットして いるよ…' and cv['full'] and cv['top'] and cv['ls'] == '1' and cv['ss'] == '1' and cv['dis'], f'押した すぐ：画面 いっぱいに「リセットして いるよ…」（下の タブも 押せない）・しるしを 置く・ボタンは もう 押せない（{cv}）')
+        check(bool(cv) and cv['txt'] == 'リセットして いるよ…' and cv['full'] and cv['top'] and cv['ls'] == '1' and cv['ss'] == '1' and cv['dis'], f'押した すぐ：画面 いっぱいに「リセットして いるよ…」（下の タブも 押せない）・印を 置く・ボタンは もう 押せない（{cv}）')
         pg.wait_for_function("() => !window.__old && window.TengelReset && TengelReset.did() && TengelReset.did().db === 'ok'", timeout=30000)
         nt = pg.evaluate("""() => { const n = document.getElementById('wipeNote'); if (!n) return null; const r = n.getBoundingClientRect(), g = document.getElementById('gate'); return { txt: n.textContent, inside: r.left >= 0 && r.right <= innerWidth && r.top >= 0, z: +getComputedStyle(n).zIndex > +getComputedStyle(g).zIndex, pe: getComputedStyle(n).pointerEvents }; }""")
         pg.wait_for_function("() => window.TengelWallet && TengelWallet.on && TengelWallet.total() >= 10000", timeout=30000); pg.wait_for_timeout(900)
@@ -235,41 +235,41 @@ try:
         head = [(i, nm, P) for i, nm, P in msgs[:4]]
         check(head == [(0, 'marker', {'op': 'del', 'key': 'gift-first'}), (0, 'marker', {'op': 'del', 'key': 'granted-sub'}), (0, 'backup', {'text': '{"reset":true,"bets":[]}'}), (0, 'notify', {'op': 'sync', 'items': []})]
               and all(i > 0 for i, _n, _p in msgs[4:]) and len(msgs) > 4 and s5['did']['native'] == 4,
-              f'開き直した ページが アプリへ はじめに 送る 4つ：しるし 2つを 消す → 自動バックアップを 空に → お知らせを 消す（番号 0・この あとに ふつうの お願い {len(msgs) - 4}こ）')
-        check(bool(nt) and nt['txt'] == '🧪 ぜんぶ リセットしたよ' and nt['inside'] and nt['z'] and nt['pe'] == 'none', f'上に 小さな 札「🧪 ぜんぶ リセットしたよ」（開いた ときの 画面より 上・押す じゃまに ならない）{nt}')
+              f'開き直した ページが アプリへ 初めに 送る 4つ：印 2つを 消す → 自動バックアップを 空に → お知らせを 消す（番号 0・この 後に 普通の お願い {len(msgs) - 4}個）')
+        check(bool(nt) and nt['txt'] == '🧪 全部 リセットしたよ' and nt['inside'] and nt['z'] and nt['pe'] == 'none', f'上に 小さな 札「🧪 全部 リセットしたよ」（開いた ときの 画面より 上・押す じゃまに ならない）{nt}')
         check(s5['first'] and s5['gate'] and s5['total'] == 10000 and s5['ev'] == ['gift-first', 'gift-test'] and s5['gift'] and s5['gift'] != gift0 and N.markers.get('gift-first') == s5['gift'] and 'granted-sub' not in N.markers,
-              f'はじめて 入れた ときと 同じ：「はじめる」の 画面・ちょうど 10,000P（初回の 1,500P を もう一度 もらう＋テスト版 8,500P）・キーチェーンの しるしは 新しい 日時・サブスクの しるしは なし（{s5["ev"]}）')
-        check(s5['bets'] == 0 and s5['notify'] is None and s5['names'].get('2') != 'ためしの データ' and s5['names'] == s0['names'] and s5['active'] == s0['active'] and s5['races'] == s0['races'] and s5['memOnly'] == '' and s5['dbs'] in (None, ['tengel3']),
-              f'保存場所（IndexedDB）：記録 0件・設定は なし・マザーデータは はじめの 形（{s5["races"]}走・名前 {s5["names"]}）・保存場所は ふつうに 開けて いる')
+              f'初めて 入れた ときと 同じ：「始める」の 画面・ちょうど 10,000P（初回の 1,500P を もう一度 もらう＋テスト版 8,500P）・キーチェーンの 印は 新しい 日時・サブスクの 印は なし（{s5["ev"]}）')
+        check(s5['bets'] == 0 and s5['notify'] is None and s5['names'].get('2') != '試しの データ' and s5['names'] == s0['names'] and s5['active'] == s0['active'] and s5['races'] == s0['races'] and s5['memOnly'] == '' and s5['dbs'] in (None, ['tengel3']),
+              f'保存場所（IndexedDB）：記録 0件・設定は なし・マザーデータは 初めの 形（{s5["races"]}走・名前 {s5["names"]}）・保存場所は 普通に 開けて いる')
         check('tengel.wipe' not in s5['ls'] and not [k for k in s5['ls'] if k in ('tengel.gateSeen', 'tengel.login', 'tengel.tc', 'tengel.oshi', 'tengel.form', 'tengel.kisekae')] and s5['ss'] == [] and s5['tickets'] == 0 and s5['theme'] == 'default'
-              and s5['login']['n'] == 0 and s5['login']['last'] == '', f'端末の おぼえ（localStorage・sessionStorage）は 空（のこり {s5["ls"]}）・しるしも 消えた・チケット 0枚・着せ替えは「いつもの」・ログインボーナスは まだ 0回')
+              and s5['login']['n'] == 0 and s5['login']['last'] == '', f'端末の 覚え（localStorage・sessionStorage）は 空（残り {s5["ls"]}）・印も 消えた・チケット 0枚・着せ替えは「いつもの」・ログインボーナスは まだ 0回')
         check(not s5['restore'] and N.items == [] and 'granted-sub' not in N.markers, '「前の記録が見つかったよ」は 出ない・待たせて いた お知らせは 消えた')
         gate(pg); l5 = login_close(pg)
         F1 = pg.evaluate(FORMVALS); K1 = pg.evaluate("() => Object.keys(localStorage).sort()")
         check(s5['ls'] == s0['ls'] and K1 == K0 and F1 == F0 and len(F0) >= 20 and 'tengel.gateSeen' in K1 and 'tengel.login' in K1,
-              f'はじめて 開いた ときと 見くらべて 同じ：端末の おぼえの 名前（「はじめる」の 前 {s5["ls"]}・あと {K1}）・判定タブの 入力の 中身（{len(F0)}こ）')
+              f'初めて 開いた ときと 見くらべて 同じ：端末の 覚えの 名前（「始める」の 前 {s5["ls"]}・あと {K1}）・判定タブの 入力の 中身（{len(F0)}個）')
         pg.wait_for_timeout(2600); s6 = pg.evaluate(STATE); bk6 = json.loads(N.backup)
         check(l5 and s6['total'] == 10200 and s6['ev'] == ['gift-first', 'gift-test', 'login'] and s6['login']['n'] == 1 and not s6['restore'] and bk6.get('bets') == [] and bk6.get('auto') is True and 'reset' not in bk6
-              and len((bk6.get('wallet') or {}).get('events') or []) == 3, f'「はじめる」の あと：ログインボーナスは 1日目から（+200P＝10,200P）・自動バックアップは 新しい 形（記録 0件・台帳 3件）に 書き直される')
+              and len((bk6.get('wallet') or {}).get('events') or []) == 3, f'「始める」の あと：ログインボーナスは 1日目から（+200P＝10,200P）・自動バックアップは 新しい 形（記録 0件・台帳 3件）に 書き直される')
         check(not errs and not dialogs, f'エラーなし・confirm()／alert() の 窓は 出ない（{errs[:2]}{dialogs}）')
 
-        print('■ しるしは 1回 だけ／消した あとも ふつうに 使える')
+        print('■ 印は 1回 だけ／消した あとも 普通に 使える')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300); pg.locator('#setTest [data-test=pts]').click(); pg.wait_for_timeout(600)
         pg.evaluate("() => TengelLocal.putSetting('notify', false)"); pg.wait_for_timeout(300)
         boot(pg, APP, 20200); s7 = pg.evaluate(STATE)
         check(s7['did'] is None and not s7['first'] and s7['total'] == 20200 and s7['notify'] is False and s7['login']['n'] == 1 and not s7['restore'] and not pg.locator('#wipeNote').count(),
-              f'つぎに 開いた とき：もう 消えない（リセットは 1回 だけ）・消した あとに 足した 10,000P と 設定は のこる（{s7["total"]:,}P）')
+              f'次に 開いた とき：もう 消えない（リセットは 1回 だけ）・消した 後に 足した 10,000P と 設定は 残る（{s7["total"]:,}P）')
         gate(pg); pg.wait_for_timeout(500)
 
-        print('■ とちゅうで 閉じた とき（しるしが のこって いる）→ つぎに 開いた ときに 消す')
+        print('■ 途中で 閉じた とき（印が 残って いる）→ 次に 開いた ときに 消す')
         pg.evaluate("() => { localStorage.setItem('tengel.wipe', '1'); }")      # sessionStorage の しるしは なし（アプリを 閉じると 消える）
         n_log = len(N.log); boot(pg, APP, 10000)
         pg.wait_for_function("() => TengelReset.did() && TengelReset.did().db === 'ok'", timeout=20000); s8 = pg.evaluate(STATE); m8 = N.log[n_log:n_log + 4]
         check(s8['first'] and s8['total'] == 10000 and s8['bets'] == 0 and s8['notify'] is None and 'tengel.wipe' not in s8['ls'] and [x[1] for x in m8] == ['marker', 'marker', 'backup', 'notify'] and all(x[0] == 0 for x in m8),
-              '端末に のこった しるし だけでも、開いた ときに はじめから 消す（10,000P・記録 0件）・しるしは 消える')
+              '端末に 残った 印 だけでも、開いた ときに 初めから 消す（10,000P・記録 0件）・印は 消える')
         ctx.close()
 
-        print('■ 保存場所を 消すのが 終わらない とき（ほかの つながりが のこって いる）')
+        print('■ 保存場所を 消すのが 終わらない とき（他の つながりが 残って いる）')
         Nb = Native(); ctxb = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo'); Nb.attach(ctxb)
         pa = ctxb.new_page(); eb = []; pa.on('pageerror', lambda e: eb.append(str(e)))
         boot(pa, APP, 10000); gate(pa); login_close(pa)
@@ -277,14 +277,14 @@ try:
         hold.evaluate("() => new Promise((res, rej) => { const r = indexedDB.open('tengel3'); r.onsuccess = () => { window.__hold = r.result; res(1); }; r.onerror = () => rej(r.error); })")
         pa.evaluate("() => { localStorage.setItem('tengel.wipe', '1'); }"); pa.goto(APP); pa.wait_for_timeout(1500)
         b1 = pa.evaluate("() => ({ did: TengelReset.did(), mark: localStorage.getItem('tengel.wipe') })")
-        check(b1['did'] and b1['did']['db'] == 'blocked' and b1['mark'] == '1', f'消すのを 待って いる 間：しるしは のこる（とちゅうで 閉じても つぎに 開いた ときに もう一度 消す）{b1["did"]}')
+        check(b1['did'] and b1['did']['db'] == 'blocked' and b1['mark'] == '1', f'消すのを 待って いる 間：印は 残る（途中で 閉じても 次に 開いた ときに もう一度 消す）{b1["did"]}')
         pa.wait_for_timeout(4300); nb = pa.evaluate("() => { const n = document.getElementById('wipeNote'); return n ? n.textContent : null; }"); shot(pa, 'reset_blocked')
-        check(nb == 'リセットの とちゅうだよ。アプリを いちど 閉じて、もう一度 開いてね', f'5秒 たっても 終わらない とき：上に「{nb}」（出した まま）')
+        check(nb == 'リセットの 途中だよ。アプリを いちど 閉じて、もう一度 開いてね', f'5秒 たっても 終わらない とき：上に「{nb}」（出した まま）')
         hold.evaluate("() => { window.__hold.close(); }")
         pa.wait_for_function("() => TengelReset.did().db === 'ok'", timeout=20000); pa.wait_for_function("() => window.TengelWallet && TengelWallet.total() >= 10000", timeout=30000); pa.wait_for_timeout(600)
         b2 = pa.evaluate(STATE); nb2 = pa.evaluate("() => { const n = document.getElementById('wipeNote'); return n ? n.textContent : null; }")
-        check(b2['total'] == 10000 and b2['first'] and b2['memOnly'] == '' and 'tengel.wipe' not in b2['ls'] and nb2 == '🧪 ぜんぶ リセットしたよ' and b2['ev'] == ['gift-first', 'gift-test'] and not eb,
-              f'つながりが 閉じると つづきから：消し おわって アプリが ふつうに 開く（10,000P・しるしは 消える・札は「{nb2}」）{eb[:2]}')
+        check(b2['total'] == 10000 and b2['first'] and b2['memOnly'] == '' and 'tengel.wipe' not in b2['ls'] and nb2 == '🧪 全部 リセットしたよ' and b2['ev'] == ['gift-first', 'gift-test'] and not eb,
+              f'つながりが 閉じると 続きから：消し 終わって アプリが 普通に 開く（10,000P・印は 消える・札は「{nb2}」）{eb[:2]}')
         ctxb.close()
 
         print('■ 保存場所を 消せなかった とき（エラー）')
@@ -294,8 +294,8 @@ try:
         boot(pe, APP, 10000); gate(pe); login_close(pe); pe.evaluate(SEED); pe.wait_for_timeout(500)
         pe.evaluate("() => { localStorage.setItem('tengel.wipe', '1'); }"); boot(pe, APP, 10000)
         x = pe.evaluate(STATE); nx = pe.evaluate("() => { const n = document.getElementById('wipeNote'); return n ? n.textContent : null; }"); shot(pe, 'reset_error')
-        check(x['did']['db'] == 'error' and 'tengel.wipe' not in x['ls'] and x['bets'] == 2 and x['memOnly'] == '' and x['total'] == 10200 and nx == '保存場所を 消せなかったよ。もう一度「ぜんぶ リセット」を 押してね' and not ee,
-              f'しるしを 外す（開く たびに くり返さない）・上に「{nx}」・アプリは ふつうに 開く（記録 {x["bets"]}件は のこって いる）{ee[:2]}')
+        check(x['did']['db'] == 'error' and 'tengel.wipe' not in x['ls'] and x['bets'] == 2 and x['memOnly'] == '' and x['total'] == 10200 and nx == '保存場所を 消せなかったよ。もう一度「全部 リセット」を 押してね' and not ee,
+              f'印を 外す（開く たびに くり返さない）・上に「{nx}」・アプリは 普通に 開く（記録 {x["bets"]}件は 残って いる）{ee[:2]}')
         ctxe.close()
 
         print('■ GitHub の Mac の 自動テスト（5回目：本物の WKWebView で 見る）を 手元の ブラウザで なぞる')
@@ -304,7 +304,7 @@ try:
         check('if [ "$PH" = "5" ]; then echo "window.__TEST = true;"; cat "$ROOT/ci/reset_all.js"; fi; cat "$ROOT/ci/selftest.js"' in ci_run and 'phase "$IPHONE" iphone 5 700 reset-confirm report-5a reset-gate reset-main report-5' in ci_run
               and ci_run.index('phase "$IPHONE" iphone 3 700') < ci_run.index('shot "$IPHONE" "iphone-dark" 700') < ci_run.index('phase "$IPHONE" iphone 5 700') < ci_run.index('applog "$IPHONE" iphone')
               and 'async function phase5()' in ci_st and 'PH === 5 ? phase5' in ci_st and "report('5', R2)" in ci_st and "report('5a', R)" in ci_st and "await mark('reset-gate')" in ci_st,
-              'CI：iPhone の シミュレーターの さいごに 5回目（テスト版の 印と reset_all.js を テストの スクリプトの 先頭に 足す → リセット → 開き直した あとを 見る）')
+              'CI：iPhone の シミュレーターの 最後に 5回目（テスト版の 印と reset_all.js を テストの スクリプトの 先頭に 足す → リセット → 開き直した あとを 見る）')
         py = ci_run.split("say \"   reset: $(python3 -c '")[1].split("' \"$OUT/iphone-report-5a.json\"")[0]      # 結果を 1行に まとめる Python（run.sh の 中）
         Nc = Native(); files = {}
         def ci_native(source, m):
@@ -329,11 +329,11 @@ try:
         check(line.returncode == 0 and out.endswith('-> OK') and [k for k in ('mark-reset-confirm.txt', 'mark-reset-gate.txt', 'mark-reset-main.txt', 'report-5a.json', 'report-5.json') if k not in files] == []
               and ra.get('card') == {'card': True, 'btn': True} and (ra.get('confirm') or {}).get('hidden') is False and rb.get('db') == 'ok' and (rb.get('gate') or {}).get('first') is True and af.get('bets') == 0 and af.get('total') == 10000
               and rb.get('write') == 7 and not rb.get('errors') and not ec,
-              f'手元の ブラウザで なぞると ぜんぶ 通る：{out[:230]}')
+              f'手元の ブラウザで なぞると 全部 通る：{out[:230]}')
         bad = dict(rb, after=dict(af, bets=1)); json.dump(bad, open(fb, 'w')); o2 = subprocess.run(['python3', '-c', py, fa, fb], capture_output=True, text=True).stdout.strip()
         bad = dict(rb, db='blocked'); json.dump(bad, open(fb, 'w')); o3 = subprocess.run(['python3', '-c', py, fa, fb], capture_output=True, text=True).stdout.strip()
         bad = dict(rb, after=dict(af, offer=True)); json.dump(bad, open(fb, 'w')); o4 = subprocess.run(['python3', '-c', py, fa, fb], capture_output=True, text=True).stdout.strip()
-        check(o2.endswith('-> CHECK') and o3.endswith('-> CHECK') and o4.endswith('-> CHECK'), '結果の まとめ：記録が のこった・保存場所を 消し おわらない・「前の記録が見つかったよ」が 出た ときは CHECK と 出る')
+        check(o2.endswith('-> CHECK') and o3.endswith('-> CHECK') and o4.endswith('-> CHECK'), '結果の まとめ：記録が 残った・保存場所を 消し 終わらない・「前の記録が見つかったよ」が 出た ときは CHECK と 出る')
         ctxc.close()
 
         print('■ App Store版：消す しかけが ない')
@@ -344,12 +344,12 @@ try:
         n_log = len(N2.log); boot(p2, STORE, 1700); t1 = p2.evaluate(STATE); p2.click('.tabbar button[data-tab=set]'); p2.wait_for_timeout(300); t2 = p2.evaluate(STATE)
         check(not t1['hasReset'] and t1['did'] is None and t1['total'] == 1700 and t1['bets'] == 2 and t1['notify'] is False and t1['tickets'] == 2 and 'tengel.wipe' in t1['ls'] and 'tengel.gateSeen' in t1['ls'] and not t1['first']
               and not [x for x in N2.log[n_log:] if x[0] == 0 or (x[1] == 'marker' and x[2].get('op') == 'del')] and len(json.loads(N2.backup)['bets']) == 2,
-              f'しるしを 置いて 開き直しても 何も 消えない（1,700P・記録 2件・設定・チケット そのまま・アプリへ 消す お願いも 出さない）')
-        check(not t2['card'] and t2['wipeBtn'] == 0 and not p2.locator('#testWipe').count() and not e2, '設定に「テスト版の道具」も「ぜんぶ リセット」も 出ない')
+              f'印を 置いて 開き直しても 何も 消えない（1,700P・記録 2件・設定・チケット そのまま・アプリへ 消す お願いも 出さない）')
+        check(not t2['card'] and t2['wipeBtn'] == 0 and not p2.locator('#testWipe').count() and not e2, '設定に「テスト版の道具」も「全部 リセット」も 出ない')
         ctx2.close(); b.close()
 finally:
     srv.terminate()
 print()
 if fails:
-    print(f'❌ {len(fails)}こ だめ'); [print('  -', f) for f in fails]; sys.exit(1)
-print('✅ ぜんぶ リセット（テスト版 だけ）の テスト OK')
+    print(f'❌ {len(fails)}個 だめ'); [print('  -', f) for f in fails]; sys.exit(1)
+print('✅ 全部 リセット（テスト版 だけ）の テスト OK')

@@ -48,7 +48,7 @@ FAKE = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read().split('FAKE =
 PW, PH, INK = 118, 47, (16 / 500, 30 / 200, 483 / 500, 170 / 200)      # 絵の 大きさ・絵の 中の 札の 場所（tc/tc_launch.js と 同じ）
 UP, OVER, EDGE, CLEAR = 5, 11, 5, 6                                    # 札：上へ はみ出す 長さ・右へ はみ出す 長さ・画面の 右はしから あける 長さ・すぐ 上の ものから あける 長さ（tc/tc_launch.js と 同じ）
 KBOX, KW, KH, KUNDER, KLAP, KGAP = 110, 100, 36, 3, 3, 4               # 「壁紙&ボード着せ替え」の ボタン：幅（作戦会議の 見える 札と 同じ）・カプセルの 幅と 高さ・札の 下から あける 長さ・名前の 札が 重なる 長さ・チップから あける 長さ
-KNAME = '壁紙&ボード着せ替え'; KLABEL = KNAME + '（押すと 設定の 着せ替え・結果ボードカスタムを ひらくよ）'
+KNAME = '壁紙&ボード着せ替え'; KLABEL = KNAME + '（押すと 設定の 着せ替え・結果ボードカスタムを 開くよ）'
 
 
 def gate(pg):
@@ -172,7 +172,7 @@ try:
         cdp = ctx.new_cdp_session(pg)
         print('■ 判定タブの 右上の 札')
         q = pg.evaluate(GEO); ok, d = geo_ok(q)
-        check(ok and q['label'] == '作戦会議（押すと ひらくよ）' and abs(d['up'] - UP) <= 1 and abs(d['over'] - OVER) <= 1,
+        check(ok and q['label'] == '作戦会議（押すと 開くよ）' and abs(d['up'] - UP) <= 1 and abs(d['over'] - OVER) <= 1,
               f'「レース情報」の カードの 右上の かどに 作戦会議の 札（絵 {PW}×{PH}＝見える 札 110×33・押せる 高さ {PH}）：カードの 上の ふちより {d["up"]} 上・右はしより {d["over"]} 外（画面の 右はしから {d["edge"]}）・'
               f'見出しの 字から {d["h2"]}・データの 行まで {d["row"]}・すぐ 上の もの（上の 帯）から {d["above"]}・上の 帯に かくれない')
         kok, kd = kise_ok(q)

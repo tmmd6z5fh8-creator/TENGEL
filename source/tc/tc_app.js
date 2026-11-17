@@ -201,7 +201,7 @@ const TCApp = (() => {
     if (built) return; built = true;
     const s = document.createElement('style'); s.id = 'tcCss'; s.textContent = css; document.head.appendChild(s);
     ov = document.createElement('div'); ov.id = 'tcOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'トレーニングセンター');
-    ov.innerHTML = `<div class="tch"><button type="button" class="tcbk" data-tc="back" aria-label="もどる">← もどる</button>`
+    ov.innerHTML = `<div class="tch"><button type="button" class="tcbk" data-tc="back" aria-label="戻る">← 戻る</button>`
       + `<span class="tcsp"></span>`
       + (testOn() ? TCTest.head() : '')          // テスト版だけ：道具箱の 入口（ボタンの 絵と 字は tc_test.js）
       + `<span class="tctk" hidden></span><button type="button" class="tcsd" data-tc="snd" aria-label="音"></button></div>`
@@ -229,9 +229,9 @@ const TCApp = (() => {
     document.addEventListener('visibilitychange', () => { if (!ov.classList.contains('on')) return; if (document.hidden) pause(); else resume(); });
   }
   function paintHead() {
-    const b = ov.querySelector('.tcsd'); b.textContent = st.snd ? '🔊' : '🔇'; b.setAttribute('aria-label', st.snd ? '音：オン（押すと けす）' : '音：オフ（押すと 出す）');
+    const b = ov.querySelector('.tcsd'); b.textContent = st.snd ? '🔊' : '🔇'; b.setAttribute('aria-label', st.snd ? '音：オン（押すと 消す）' : '音：オフ（押すと 出す）');
     const tk = ov.querySelector('.tctk'); tk.hidden = !(st.tickets > 0); tk.textContent = `🎫 ${st.tickets}`;
-    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで、壁紙の 解放か ${TKP()}P に かえるか 選べるよ）`);
+    tk.setAttribute('aria-label', `チケット ${st.tickets}枚（設定の 着せ替えで、壁紙の 解放か ${TKP()}P に 変えるか 選べるよ）`);
   }
   function layout() {
     const vw = window.innerWidth, r = ov.getBoundingClientRect(), head = 58;
@@ -328,7 +328,7 @@ const TCApp = (() => {
   function spawnTrash(t, quiet) {                       // 散らばる（開いて いる ときは ひらひら 落ちて くる）
     st.trash = trashSpots(Math.random, BR && BR.x, BR && BR.y); touch(); save();
     if (BR) BR.trash = st.trash.map((q, i) => trashLive(q, quiet ? null : t + i * 0.16));
-    if (!quiet) { SND.se('tc_se_paper.m4a', 0.7); msg('🍂 ゴミが 出たよ！\nおそうじ しよう', 2.8); }
+    if (!quiet) { SND.se('tc_se_paper.m4a', 0.7); msg('🍂 ゴミが 出たよ！\nお掃除 しよう', 2.8); }
   }
   function trashStep(gms, t) {                          // 1コマ：片付いた → 次の 時刻／時刻が 来た → 散らばる／お世話の 画面へ「あと 何秒」
     if (BR && BR.trashDone) { BR.trashDone = false; st.trash = []; st.trashAt = gms + TRASH_MIN * 60000; touch(); save(); }
@@ -626,7 +626,7 @@ const TCApp = (() => {
     if (!w || !w.tc) return;                           // 台帳が まだ 読めない → 次に 開いた とき
     try { await w.ready; } catch (e) { return; }
     if (buying || !st.buy || st.buy.id !== b.id) return;
-    if (w.tc.paid(b.id)) { st.buy = null; stockSet(stockNow() + n, n); save(); later.push(() => msg(`🎟 前に 買った\nお世話トークン ${n}こを\n受け取ったよ`, 3.6)); }
+    if (w.tc.paid(b.id)) { st.buy = null; stockSet(stockNow() + n, n); save(); later.push(() => msg(`🎟 前に 買った\nお世話トークン ${n}個を\n受け取ったよ`, 3.6)); }
     else { st.buy = null; touch(); save(); }
   }
 
@@ -837,7 +837,7 @@ const TCApp = (() => {
     try {
       if (!ready) ready = init(); else { load(); ov.classList.add('on'); layout(); const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.high = st.high || 0; S.wakeT = clock(); if (BR && careFree()) BR.trash = st.trash.map(q => trashLive(q)); }
       await ready;
-    } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを ひらけなかったよ（' + (e && e.message || e) + '）'); return; }      // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ
+    } catch (e) { ready = null; if (ov) ov.classList.remove('on'); note('トレーニングセンターを 開けなかったよ（' + (e && e.message || e) + '）'); return; }      // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ
     const ld = ov.querySelector('.tcld'); if (ld) ld.remove();
     paintHead(); layout(); accrue(tnow()); ptSync();      // ptSync（第4.168版）：開く たびに 合計ポイントを 読み直す
     if (TCCare.on) { const S = TCCare.S; S.stock = S.stockShow = st.stock; S.ptShow = null; }

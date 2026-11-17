@@ -10,10 +10,10 @@
 //     ＝ 何回も 対戦しなくても、達成 → バトルコインを もらう 流れと 月の リセットを ためせる。CBTest.msHtml()・CBTest.msAct(t, api)　api＝cb_app.js の msApi（win・lose・next）
 const CBTest = (() => {
   'use strict';
-  const B = [['add300', 'バトルコイン ＋300'], ['add1000', 'バトルコイン ＋1000'], ['zero', 'バトルコインを 0枚に'], ['reset', '解放・集めた カードを ぜんぶ もとに もどす'],
-    ['pkr', 'つぎの くじ：レア'], ['pkgr', 'つぎの くじ：神様馬・幻の馬の レア'], ['pksr', 'つぎの くじ：超レア'], ['pkgsr', 'つぎの くじ：神様馬・幻の馬の 超レア']];
+  const B = [['add300', 'バトルコイン ＋300'], ['add1000', 'バトルコイン ＋1000'], ['zero', 'バトルコインを 0枚に'], ['reset', '解放・集めた カードを 全部 元に 戻す'],
+    ['pkr', '次の くじ：レア'], ['pkgr', '次の くじ：神様馬・幻の馬の レア'], ['pksr', '次の くじ：超レア'], ['pkgsr', '次の くじ：神様馬・幻の馬の 超レア']];
   function html() {
-    return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（コインを ふやす・パックの くじを 決めて、レア・超レアの 演出を ためせる）</small><div class="r">'
+    return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（コインを 増やす・パックの くじを 決めて、レア・超レアの 演出を 試せる）</small><div class="r">'
       + B.map(([t, l]) => `<button type="button" class="cbb dk sm" data-cb="tst" data-t="${t}">${l}</button>`).join('') + '</div></div>';
   }
   function act(t, api) {
@@ -24,9 +24,9 @@ const CBTest = (() => {
     else if (t === 'reset') api.reset();
     else if (/^pk(r|gr|sr|gsr)$/.test(t) && api.pk) api.pk(t.slice(2));
   }
-  const M = [['mcw', 'コンピュータで 1勝'], ['mcl', 'コンピュータで 負け'], ['mfw', '友だちバトルで 1勝'], ['mfl', '友だちバトルで 負け'], ['mnx', '月が かわった ことに（リセット）']];
+  const M = [['mcw', 'コンピュータで 1勝'], ['mcl', 'コンピュータで 負け'], ['mfw', '友達バトルで 1勝'], ['mfl', '友達バトルで 負け'], ['mnx', '月が 変わった ことに（リセット）']];
   function msHtml() {
-    return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（対戦 しなくても、ミッションの 達成と リセットを ためせる）</small><div class="r">'
+    return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（対戦 しなくても、ミッションの 達成と リセットを 試せる）</small><div class="r">'
       + M.map(([t, l]) => `<button type="button" class="cbb dk sm" data-cb="tstm" data-t="${t}">${l}</button>`).join('') + '</div></div>';
   }
   function msAct(t, api) {

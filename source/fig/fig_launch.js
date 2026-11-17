@@ -28,7 +28,7 @@
   // ---------- 右上の 丸い ボタン（トレーニングセンターの 下・絵＋下に 名前「思い出フィギュア」）：列と ボタンの 形は tc/tc_launch.js の TengelFab（先に 読まれる）----------
   function boot() {
     if (document.getElementById('figFab') || !window.TengelFab) return;
-    fab = window.TengelFab.add({ id: 'figFab', order: 3, name: ['思い出', 'フィギュア'], aria: '思い出フィギュア（押すと フィギュアブースを ひらくよ）', img: 'fg_icon.webp', fb: ['思い出', '#1B1F4A', '#E2B33C', '#FFE6A0'], tap: function () { window.TengelFig.booth(); } });
+    fab = window.TengelFab.add({ id: 'figFab', order: 3, name: ['思い出', 'フィギュア'], aria: '思い出フィギュア（押すと フィギュアブースを 開くよ）', img: 'fg_icon.webp', fb: ['思い出', '#1B1F4A', '#E2B33C', '#FFE6A0'], tap: function () { window.TengelFig.booth(); } });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

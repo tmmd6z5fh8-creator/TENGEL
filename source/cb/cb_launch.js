@@ -21,7 +21,7 @@
   window.TengelCB = { open: open };
   function boot() {
     if (document.getElementById('cbFab') || !window.TengelFab) return;
-    fab = window.TengelFab.add({ id: 'cbFab', order: 2, name: ['TENGER', 'カードバトル'], aria: 'TENGERカードバトル（押すと ひらくよ）', img: 'cb_icon.webp', fb: ['バトル', '#0F3A1E', '#E2B33C', '#FFE6A0'], tap: open });
+    fab = window.TengelFab.add({ id: 'cbFab', order: 2, name: ['TENGER', 'カードバトル'], aria: 'TENGERカードバトル（押すと 開くよ）', img: 'cb_icon.webp', fb: ['バトル', '#0F3A1E', '#E2B33C', '#FFE6A0'], tap: open });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

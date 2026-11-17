@@ -119,7 +119,7 @@ FX_ON = "() => !!document.querySelector('#tcOv .tcfx.on')"
 
 
 def seq_for(pg, want):
-    """その 当たりを 出す くじの 列（はずれ＝None）"""
+    """その 当たりを 出す くじの 列（外れ＝None）"""
     if want is None: return [0.995]
     r = pg.evaluate(RND_FOR, want); assert r is not None, want
     if want['k'] == 'tk': return [r, 0.9, 0.3]          # 枚数（1枚）・番号
@@ -128,7 +128,7 @@ def seq_for(pg, want):
 
 
 def drop_ball(pg, want):
-    """玉を 1こ 落として、コップに 入って 馬バレ（か はずれ）が 出て、次を 押せる ように なる まで 進める → (押した 直後, 入る 直前, 出た 直後, 音, おわった あと)"""
+    """玉を 1個 落として、コップに 入って 馬バレ（か 外れ）が 出て、次を 押せる ように なる まで 進める → (押した 直後, 入る 直前, 出た 直後, 音, 終わった あと)"""
     ok = pg.evaluate(GO, [seq_for(pg, want)]); a = pg.evaluate(INFO); sa = pg.evaluate(ST)
     pg.evaluate(TICK, [8, "TCDrop.state.ball && (TCDrop.state.t - TCDrop.state.ball.t0) * 60 >= TCDrop.state.ball.p.tin - 2"]); b = pg.evaluate(INFO); pg.evaluate(SES)
     pg.evaluate(TICK, [8 / 60, None]); m1 = pg.evaluate(LAMP)    # 入って 0.1秒：当たりは 音 だけ 先に 鳴って いる（馬バレは まだ）
@@ -178,15 +178,15 @@ try:
     check(js_pip == [(1, 1)] + [(n_beat[c], n_long[c]) for c in range(1, 7)] + [(n_beat[6], n_long[6])] and [p for p, _ in js_pip] == [1, 2, 3, 4, 5, 7, 8, 8] and js_c is not None and float(js_c.group(1)) == p_beat == 0.1 and float(js_c.group(2)) == p_gap,
           f'ランプの 拍（数と 長い 拍 {js_pip}・間 {js_c and js_c.group(1)}秒・虹の 長い 拍の 間 {js_c and js_c.group(2)}秒）は 音を 作る 道具（sfx_drop.py：{n_beat}・{n_long}・{p_beat}・{p_gap}）と 同じ')
     check(js_l is not None and float(js_l.group(2)) == 0.1 and "later(LEAD, () => { S.lcd = { c, t0: S.t, off: null }; });" in d_ and d_.index("se('dp_umb' + Math.min(c, 6));") < d_.index("later(LEAD, () => { S.lcd"),
-          '当たり：先に 音・0.1秒 あとに 馬バレ（LEAD＝0.1）')
+          '当たり：先に 音・0.1秒 後に 馬バレ（LEAD＝0.1）')
     import assets_dir as _A
     _um = {f'tc_se_dp_um{v}{c}.m4a' for v in 'ab' for c in range(1, 7)}; _old = {f for f in _um if 'uma' in f}
     check(_A.superseded('tc_assets', _um) == _old and _A.superseded('tc_assets', _um - {'tc_se_dp_umb4.m4a'}) == set() and "'tc_se_dp_umb6.m4a'" in src['tc_app.js'] and 'tc_se_dp_uma' not in src['tc_app.js'],
-          '馬バレ音は 作り直した 6つ（umb1〜6）を 鳴らす・前の 6つ（uma1〜6）は アプリに 入れない（新しい 6つが そろって いる とき だけ。もとの フォルダには 残す）')
-    check("label('ハズレ', cx, cy + 3" in d_ and "'ハズレ'" in bundle and 'rgba(96,112,160,0.17)' in d_, 'はずれの 白い レンズには とても うすい 字で「ハズレ」（模様は なし）')
+          '馬バレ音は 作り直した 6つ（umb1〜6）を 鳴らす・前の 6つ（uma1〜6）は アプリに 入れない（新しい 6つが そろって いる とき だけ。元の フォルダには 残す）')
+    check("label('ハズレ', cx, cy + 3" in d_ and "'ハズレ'" in bundle and 'rgba(96,112,160,0.17)' in d_, '外れの 白い レンズには とても 薄い 字で「ハズレ」（模様は なし）')
     a = src['tc_app.js']
     check('const z = draw();' in a[a.index('const DROP = {'):a.index('async function dropOpen')] and 'const z = draw(); if (!z) return null;' in a,
-          '抽選は PUSH と 同じ くじ（draw）を 1回 ひく（PUSH＝lottery・玉＝DROP.drop：確率は 今の まま）')
+          '抽選は PUSH と 同じ くじ（draw）を 1回 引く（PUSH＝lottery・玉＝DROP.drop：確率は 今の まま）')
     check("TCCare.dropUse(clock())" in a and "ev(t, 'token', { mute: true })" in src['tc_care.js'] and "if (e.k === 'token') { st.cares += 1;" in a,
           '玉 1こ＝お世話トークン 1こ＝お世話 1回（PUSH を 1回 押したのと 同じ 数え方：ev token）')
 
@@ -201,12 +201,12 @@ try:
             step = max(((f[3 * i] - f[3 * i - 3]) ** 2 + (f[3 * i + 1] - f[3 * i - 2]) ** 2) ** 0.5 / 10 for i in range(1, n))
             okp.append(len(f) == 3 * n and 60 < p['tin'] < n and n <= 200 and abs(x0 - dp['ball']['start'][0]) < 3 and abs(y0 - dp['ball']['start'][1]) < 3
                        and abs(xe - cx) < 70 and ye > cy and step < 40 and all(h[0] <= n and h[1] in (0, 1, 2, 3) for h in p['h']) and sum(1 for h in p['h'] if h[1] == 0) >= 3)
-        check(all(okp), f'落ち方：受け皿から 出て・釘に 3回 以上 当たって・その コップの 中で おわる・3.4秒 以内・1コマに 40画素より 動かない（{okp.count(True)}/16）')
+        check(all(okp), f'落ち方：受け皿から 出て・釘に 3回 以上 当たって・その コップの 中で 終わる・3.4秒 以内・1コマに 40画素より 動かない（{okp.count(True)}/16）')
         need = ['tc_dp.json', 'tc_dp_base.webp', 'tc_dp_front.webp', 'tc_dp_see.webp', 'tc_dp_ball.webp', 'tc_dp_icon.webp'] + [f'tc_dp_{k}{i}.webp' for k in ('uma', 'hold') for i in range(1, 8)]      # 第4.175版：激馬熱馬の 絵（uma7・hold7）
         snds = [f'tc_se_dp_{n}.m4a' for n in ['umb1', 'umb2', 'umb3', 'umb4', 'umb5', 'umb6', 'out', 'peg1', 'peg2', 'peg3', 'cup', 'miss', 'hold', 'open']]
         have = set(os.listdir(TCA)); used = set(re.findall(r"dp_[a-z]+\d?", ' '.join(re.findall(r"se\('(dp_[a-z0-9']*)", src['tc_drop.js']))))
         check(all(f in have for f in need + snds) and not [f for f in have if '_dp' in f and f not in need + snds],
-              f'素材：絵と データ {len(need)}こ・音 14こが そろって いる（ほかの tc_dp の ファイルは ない）')
+              f'素材：絵と データ {len(need)}個・音 14個が そろって いる（他の tc_dp の ファイルは ない）')
         sz = sum(os.path.getsize(os.path.join(TCA, f)) for f in need + snds)
         check(sz < 1.2e6 and not any(f.endswith('.png') for f in need), f'素材の 大きさ：合わせて {sz / 1e6:.2f}MB（1.2MB より 小さい・PNG は なし）')
 
@@ -230,7 +230,7 @@ try:
             inc = lambda k: all(T['tone'][i][k] < T['tone'][i + 1][k] for i in range(5))
             check(T['balls'] == 5 and T['name'] == ['青', '緑', '紫', '赤', '金', '虹', '激馬熱馬'] and all(inc(k) for k in ('R', 'a', 'dim', 'nt', 'tl', 'len', 'lock')),
                   '光は 青 → 緑 → 紫 → 赤 → 金 → 虹の 順に 大きく・こく・長く なる（オーラの 大きさ R・こさ・暗さ・炎の 数と 長さ・はげしい 間）')
-            check([t['rays'] for t in T['tone']] == sorted(t['rays'] for t in T['tone']) and T['tone'][0]['rays'] == 0 and T['tone'][5]['rays'] > T['tone'][3]['rays'] > 0, '光の すじ：青・緑は なし → 紫 から ふえる')
+            check([t['rays'] for t in T['tone']] == sorted(t['rays'] for t in T['tone']) and T['tone'][0]['rays'] == 0 and T['tone'][5]['rays'] > T['tone'][3]['rays'] > 0, '光の すじ：青・緑は なし → 紫 から 増える')
             tone = pg.evaluate("""() => { const f = TCApp._t.dropTone; return [f(null), f({ k: 'pt', v: 10 }), f({ k: 'pt', v: 300 }), f({ k: 'rt', tier: 'normal' }), f({ k: 'rt', tier: 'maboroshi' }), f({ k: 'rt', tier: 'kamisama' }),
               f({ k: 'rt', tier: 'maboroshi', vis: 'maboroshi' }), f({ k: 'zn' }), f({ k: 'zn', vis: 'kamisama' }), f({ k: 'rt', tier: 'kamisama', vis: 'kamisama' }), f({ k: 'tk', n: 1 })]; }""")
             check(tone == [0, 1, 1, 2, 3, 4, 5, 5, 5, 6, 6], f'色：10〜300P＝青・ルーレット 1/125＝緑・1/245＝紫・1/399＝赤・幻の馬の ルーレット＝金・特化ゾーン＝金・神様馬の ルーレット＝虹・チケット＝虹（{tone}）')
@@ -241,7 +241,7 @@ try:
             # --- 入口 ---
             # PUSH を 出すのと 入口に 指が ふれるのを ページの 中で つづけて（テストの 機械が おそいと、外から 押す までに 0.4秒 たって しまう：第4.174版で 直した）
             pg.evaluate(SETTOK, 12); early = pg.evaluate(EARLY); pg.wait_for_timeout(250)
-            check(early['shown'] and not pg.evaluate("() => TCDrop.isOpen()") and pg.evaluate(PUSH_LIVE), 'PUSH が 出た すぐ あと（0.4秒）は 入口を 押しても 開かない（撫でるの ボタンの あった 所：お世話が おわる 瞬間に さわって いた 指で 開かない）')
+            check(early['shown'] and not pg.evaluate("() => TCDrop.isOpen()") and pg.evaluate(PUSH_LIVE), 'PUSH が 出た すぐ あと（0.4秒）は 入口を 押しても 開かない（撫でるの ボタンの あった 所：お世話が 終わる 瞬間に さわって いた 指で 開かない）')
             pg.wait_for_timeout(700)
             G = pg.evaluate("() => TCCare.PUSHG"); geo = pg.evaluate("() => TCDrop.geo()")
             px = pg.evaluate("""([x, y, w, h]) => { const cv = document.querySelector('#tcOv .tco'), g = cv.getContext('2d'), k = cv.width / 1052; const d = g.getImageData(Math.round((x - w / 2) * k), Math.round((y - h / 2) * k), Math.round(w * k), Math.round(h * k)).data;
@@ -258,22 +258,22 @@ try:
               const px = (x, y) => [...g.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data];
               return { n: st.querySelectorAll('canvas.tcdp').length, extra: st.querySelectorAll('.tcdw, .tcdb, .tcdv, .tcdd').length, mid: px(526, 900), corner: px(4, 4), op: getComputedStyle(cv).opacity, cov: TCDrop.covers(), t: +TCDrop.state.t.toFixed(2) }; }""")
             check(lay['n'] == 1 and lay['extra'] == 0 and lay['mid'][3] == 255 and lay['corner'][3] >= 240 and lay['op'] == '1' and lay['cov'],
-                  f'台は 1まいの 紙（前と 同じ 見え方）：台の 絵と うしろを かくす 幕が 入って いる・出おわったら 下を おおって いる と 知らせる（まん中 {lay["mid"]}・すみ {lay["corner"]}・{lay["t"]}秒）')
+                  f'台は 1枚の 紙（前と 同じ 見え方）：台の 絵と うしろを 隠す 幕が 入って いる・出おわったら 下を おおって いる と 知らせる（真ん中 {lay["mid"]}・すみ {lay["corner"]}・{lay["t"]}秒）')
             check(i0['phase'] == 'ready' and i0['max'] == 5 and i0['n'] == 0 and i0['next'] and s1['fxHold'] and s1['stock'] == 12 and s1['cares'] == s0['cares'],
-                  f'入口を 押すと 台が 出る：玉 5こ・まだ 落として いない・トークンは へって いない・PUSH は かくれる（{i0["phase"]}・あと {i0["max"]}こ）')
+                  f'入口を 押すと 台が 出る：玉 5個・まだ 落として いない・トークンは 減って いない・PUSH は 隠れる（{i0["phase"]}・あと {i0["max"]}個）')
             check(order.index('tcdp') > order.index('tco') and order.index('tcdp') < order.index('tcfx'), f'重なり：お世話の 絵の 上・当たりの 演出（tcfx）の 下（{order}）')
             shot(pg, 'dp_open')
             # --- やめる（まだ 落として いない）---
             pg.wait_for_function("() => TCDrop.info().t > 0.6"); stage_click(pg, *geo['quit']); pg.wait_for_timeout(700)
             s2 = pg.evaluate(ST)
-            check(not s2['open'] and s2['push'] and s2['stock'] == 12 and s2['cares'] == s0['cares'] and not s2['fxHold'], '「やめる」（落とす 前）：台を 閉じて PUSH に もどる・トークンも お世話の 数も そのまま')
+            check(not s2['open'] and s2['push'] and s2['stock'] == 12 and s2['cares'] == s0['cares'] and not s2['fxHold'], '「やめる」（落とす 前）：台を 閉じて PUSH に 戻る・トークンも お世話の 数も そのまま')
 
             # --- 1回り：青（100P）・はずれ・緑（ルーレット）・金（特化ゾーン）・虹（チケット）---
-            print('■ App Store版：玉 5こ → 馬バレ → 保留')
+            print('■ App Store版：玉 5個 → 馬バレ → 保留')
             stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000)
             pg.evaluate("() => { const T = TCDrop._t; T.manual = true; T.rec = []; }"); pg.evaluate(TICK, [0.7, None])
             w0 = pg.evaluate(ST); wants = [{'k': 'pt', 'v': 100}, None, {'k': 'rt', 'tier': 'normal'}, {'k': 'zn'}, {'k': 'tk'}]; exp = [1, 0, 2, 5, 6]; res = []
-            check(not pg.evaluate("() => TCDrop.tap('see')") and pg.evaluate(INFO)['phase'] == 'ready', '「保留結果を見る」は かぎが かかって いる（玉を 落とし おわる まで 押せない）')
+            check(not pg.evaluate("() => TCDrop.tap('see')") and pg.evaluate(INFO)['phase'] == 'ready', '「保留結果を見る」は かぎが かかって いる（玉を 落とし 終わる まで 押せない）')
             for i, wnt in enumerate(wants):
                 if i == 0:      # 1こめは 本物の 指で
                     pressed = pg.evaluate(GO_PTR, [seq_for(pg, wnt)])
@@ -284,32 +284,32 @@ try:
                     pg.evaluate(TICK, [0.3, None]); c_ = pg.evaluate(INFO); lp_ = pg.evaluate(LAMP); snd_ = pg.evaluate(SES)
                     pg.evaluate(TICK, [6, "TCDrop.state.phase !== 'fall'"]); pg.evaluate(TICK, [0.2, None]); d_ = pg.evaluate(INFO)
                     r = dict(ok=pressed and a_['phase'] == 'fall', a=a_, sa=sa_, b=b_, m1=m1_, m=m_, c=c_, lp=lp_, snd=snd_, d=d_)
-                    check(r['ok'] and not again and 'dp_out' in pre and sum(1 for n in pre if n.startswith('dp_peg')) >= 3, f'「玉を落とす」を 指で 押すと 玉が 1こ 出る（ポンッ）・落ちて いる 間は もう 押せない・釘に 当たる 音（{sum(1 for n in pre if n.startswith("dp_peg"))}回）')
+                    check(r['ok'] and not again and 'dp_out' in pre and sum(1 for n in pre if n.startswith('dp_peg')) >= 3, f'「玉を落とす」を 指で 押すと 玉が 1個 出る（ポンッ）・落ちて いる 間は もう 押せない・釘に 当たる 音（{sum(1 for n in pre if n.startswith("dp_peg"))}回）')
                     shot(pg, 'dp_uma1')
                 else:
                     r = drop_ball(pg, wnt)
                 res.append(r)
             ok_cnt = all(r['ok'] and r['sa']['stock'] == 12 - (i + 1) and r['sa']['sstock'] == 12 - (i + 1) and r['sa']['cares'] == w0['cares'] + i + 1 and r['sa']['total'] == w0['total'] + i + 1 and r['sa']['rs'] == w0['rs'] + i + 1 for i, r in enumerate(res))
-            check(ok_cnt, f'玉 1こ ごとに：お世話トークン −1（すぐ 保存）・お世話の 数 ＋1（育ち・ミッション・リセットの 数え）（{[r["sa"]["stock"] for r in res]}）')
+            check(ok_cnt, f'玉 1個 ごとに：お世話トークン −1（すぐ 保存）・お世話の 数 ＋1（育ち・ミッション・リセットの 数え）（{[r["sa"]["stock"] for r in res]}）')
             held = [len(r['sa']['sdp']) for r in res]
             check(held == [1, 1, 2, 3, 4] and [q[1] for q in res[4]['sa']['sdp']] == [1, 2, 5, 6], f'当たりは 玉を 落とした 瞬間に 保存（コップに 入る 前に 閉じても なくならない）（{held}・色 {[q[1] for q in res[4]["sa"]["sdp"]]}）')
             check(all(r['b']['lcd'] == 0 for r in res) and all(r['a']['lcd'] == 0 or r['a']['lcdOff'] for r in res),
                   'コップに 入る 前は 馬バレは ついて いない（前の 玉の 馬バレは 次の 玉を 落とすと 消える）')
             lc = [r['lp']['c'] for r in res]
-            check(lc == exp and all(r['lp']['lamp'] > 0.05 for i, r in enumerate(res) if exp[i]), f'コップに 入ると 馬バレの ランプが その 色に つく：青・（はずれは 白＝0）・緑・金・虹（{lc}）')
+            check(lc == exp and all(r['lp']['lamp'] > 0.05 for i, r in enumerate(res) if exp[i]), f'コップに 入ると 馬バレの ランプが その 色に つく：青・（外れは 白＝0）・緑・金・虹（{lc}）')
             sd = [[n for n in r['snd'] if n.startswith('dp_um') or n in ('dp_miss', 'dp_cup')] for r in res]
-            check(sd == [['dp_cup', 'dp_umb1'], ['dp_cup', 'dp_miss'], ['dp_cup', 'dp_umb2'], ['dp_cup', 'dp_umb5'], ['dp_cup', 'dp_umb6']], f'音：コトン → 当たりは その 色の 馬バレ音・はずれは ポスッ だけ（{sd}）')
+            check(sd == [['dp_cup', 'dp_umb1'], ['dp_cup', 'dp_miss'], ['dp_cup', 'dp_umb2'], ['dp_cup', 'dp_umb5'], ['dp_cup', 'dp_umb6']], f'音：コトン → 当たりは その 色の 馬バレ音・外れは ポスッ だけ（{sd}）')
             # 第4.174版（まさちゃん 10:44「当選してから馬バレよりも0.3秒音の方が先に出るようにして！」→ 12:29「やっぱり音0.1秒のずらしにして！」）
             mid = [[r['m1']['c'], r['m1']['seT'] is not None] for r in res]; lead = [round(r['lp']['t0'] - r['lp']['seT'], 3) for i, r in enumerate(res) if exp[i]]
             check(mid == [[-1, True], [-1, False], [-1, True], [-1, True], [-1, True]] and all(0.095 <= v <= 0.125 for v in lead),
-                  f'当たり：音が 先に 鳴って、0.1秒 あとに 馬バレが つく（入って 0.1秒の ランプ {[q[0] for q in mid]}＝まだ・音は 鳴って いる・音から ランプまで {lead}秒）')
+                  f'当たり：音が 先に 鳴って、0.1秒 後に 馬バレが つく（入って 0.1秒の ランプ {[q[0] for q in mid]}＝まだ・音は 鳴って いる・音から ランプまで {lead}秒）')
             check(res[1]['m']['white'] and res[1]['m']['lamp'] > 0.85 and res[1]['d']['lcd'] == 0 and res[1]['d']['lamp'] < 0.5 and len(res[1]['d']['holds']) == 1,
-                  f'はずれ（まさちゃん 10:19）：音（ポスッ）と いっしょに 馬バレが 白く 光る（明るさ {res[1]["m"]["lamp"]}）→ すぐ 消えて いく（0.7秒で {res[1]["d"]["lamp"]}）・保留は ふえない')
+                  f'外れ（まさちゃん 10:19）：音（ポスッ）と 一緒に 馬バレが 白く 光る（明るさ {res[1]["m"]["lamp"]}）→ すぐ 消えて いく（0.7秒で {res[1]["d"]["lamp"]}）・保留は 増えない')
             hs = [[h[0] for h in r['d']['holds']] for r in res]
             check(hs == [[1], [1], [1, 2], [1, 2, 5], [1, 2, 5, 6]] and all(h[1] == 'in' for h in res[4]['d']['holds']), f'当たりは「当選」の ますに 左から たまる（{hs[-1]}）')
             fin = pg.evaluate(INFO)
             check(fin['phase'] == 'wait' and fin['n'] == 5 and not fin['next'] and not pg.evaluate("() => TCDrop.tap('go')") and not pg.evaluate("() => TCDrop.tap('quit')"),
-                  '5こ 落とし おわると「保留結果を見る」の かぎが あく（もう 玉は 落とせない）')
+                  '5個 落とし 終わると「保留結果を見る」の かぎが あく（もう 玉は 落とせない）')
             pg.evaluate(TICK, [0.8, None]); snd_w = pg.evaluate(SES); shot(pg, 'dp_wait')
             # --- 保留結果を見る ---
             print('■ App Store版：保留結果を見る')
@@ -319,28 +319,28 @@ try:
             ops = finish_fx(pg); pg.wait_for_timeout(1200)
             e1 = pg.evaluate(INFO); s3 = pg.evaluate(ST); sl = pg.evaluate("() => window.__seL")
             check(e1['phase'] == 'end' and [h[1] for h in e1['holds']] == ['done'] * 4 and s3['dp'] == [] and s3['sdp'] == [] and s3['wal'] == w0['wal'] + 100 + 800 + 1000 and s3['tickets'] == w0['tickets'] + 1,
-                  f'順に わたす：100P ＋ ルーレット 800P ＋ 特化ゾーン 1,000P ＋ チケット 1枚（財布 ＋{s3["wal"] - w0["wal"]}P・チケット ＋{s3["tickets"] - w0["tickets"]}）・保存の 保留は 空に')
+                  f'順に 渡す：100P ＋ ルーレット 800P ＋ 特化ゾーン 1,000P ＋ チケット 1枚（財布 ＋{s3["wal"] - w0["wal"]}P・チケット ＋{s3["tickets"] - w0["tickets"]}）・保存の 保留は 空に')
             check(e1['sum'] == 1900 and e1['tk'] == 1, f'おしまいの 札の「今回の 当たり」＝＋1,900P・チケット 1枚（{e1["sum"]}・{e1["tk"]}）')
             ix = lambda n: sl.index(n) if n in sl else -1
             check(0 <= ix('piron') < ix('kyuin') < ix('rt_lever') and sl.count('kyuin') == 2 and any(n.startswith('zn_') for n in sl),
-                  f'わたす ときの 音・演出は PUSH と 同じ（ピロン → キュインキュイーン → ルーレット → キュインキュイーン → 特化ゾーン → チケット）（{[n for n in sl if not n.startswith("dp_")][:14]}）')
-            check(min(ops) == 0 and ops[0] == 1 and e1['op'] == 1, 'ルーレット・特化ゾーン・チケットの 演出の 間は 台を かくす（いつもの 見え方）→ おわると もどる')
+                  f'渡す ときの 音・演出は PUSH と 同じ（ピロン → キュインキュイーン → ルーレット → キュインキュイーン → 特化ゾーン → チケット）（{[n for n in sl if not n.startswith("dp_")][:14]}）')
+            check(min(ops) == 0 and ops[0] == 1 and e1['op'] == 1, 'ルーレット・特化ゾーン・チケットの 演出の 間は 台を 隠す（いつもの 見え方）→ 終わると 戻る')
             shot(pg, 'dp_end')
-            check(e1['more'] and s3['stock'] == 7, f'トークンが 5こ 以上 のこって いる（{s3["stock"]}こ）→「続けてやる」「終わり」')
+            check(e1['more'] and s3['stock'] == 7, f'トークンが 5個 以上 残って いる（{s3["stock"]}個）→「続けてやる」「終わり」')
             # --- 続けてやる → ぜんぶ はずれ → 終わり だけ ---
             stage_click(pg, *geo['more']); pg.wait_for_timeout(500)
             i2 = pg.evaluate(INFO)
-            check(i2['phase'] == 'ready' and i2['max'] == 5 and i2['n'] == 0 and i2['holds'] == [], '「続けてやる」を 指で 押すと 新しい 5こ')
+            check(i2['phase'] == 'ready' and i2['max'] == 5 and i2['n'] == 0 and i2['holds'] == [], '「続けてやる」を 指で 押すと 新しい 5個')
             pg.evaluate("() => { TCDrop._t.manual = true; TCDrop._t.rec = []; }"); pg.evaluate(TICK, [0.6, None])
             for i in range(5): drop_ball(pg, None)
             pg.evaluate(TICK, [0.3, None]); n1 = pg.evaluate(INFO); pg.evaluate(TICK, [2.2, None]); n2 = pg.evaluate(INFO); s4 = pg.evaluate(ST)
             check(n1['phase'] == 'none' and n2['phase'] == 'end' and not n2['more'] and s4['stock'] == 2 and s4['wal'] == s3['wal'] and n2['sum'] == 0,
-                  f'ぜんぶ はずれ：「ざんねん…」→ おしまいの 札（当たり なし）・トークン {s4["stock"]}こ（5こ ない）→「終わり」だけ')
+                  f'全部 外れ：「残念…」→ おしまいの 札（当たり なし）・トークン {s4["stock"]}こ（5個 ない）→「終わり」だけ')
             check(not pg.evaluate("() => TCDrop.tap('more')"), '「続けてやる」は 出ない・押せない')
             pg.evaluate("() => { TCDrop._t.manual = false; }"); pg.wait_for_timeout(500)
             stage_click(pg, *geo['end1']); pg.wait_for_timeout(900)
             s5 = pg.evaluate(ST)
-            check(not s5['open'] and not s5['push'] and not s5['fxHold'] and s5['cares'] == w0['cares'] + 10, f'「終わり」を 指で 押すと 台を 閉じる・PUSH も 消える（お世話の あとの 抽選は すんだ）・お世話 ＋10回')
+            check(not s5['open'] and not s5['push'] and not s5['fxHold'] and s5['cares'] == w0['cares'] + 10, f'「終わり」を 指で 押すと 台を 閉じる・PUSH も 消える（お世話の 後の 抽選は すんだ）・お世話 ＋10回')
             check(pg.errs == [] and not [f for f in pg.bad if '_dp' in f], f'エラーなし・読めない ファイルなし（{pg.errs[:2]}・{pg.bad[:3]}）')
 
             # --- トークンが 5こ ない・途中で「投入終了」---
@@ -349,9 +349,9 @@ try:
             stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000)
             pg.evaluate("() => { TCDrop._t.manual = true; TCDrop._t.rec = []; }"); pg.evaluate(TICK, [0.7, None])
             t3 = pg.evaluate(INFO); r = drop_ball(pg, {'k': 'pt', 'v': 10})
-            check(t3['max'] == 3 and r['d']['phase'] == 'ready' and r['d']['n'] == 1, f'トークン 3こ：玉は 3こ まで（あと {t3["max"]}こ）')
+            check(t3['max'] == 3 and r['d']['phase'] == 'ready' and r['d']['n'] == 1, f'トークン 3こ：玉は 3個 まで（あと {t3["max"]}個）')
             q1 = pg.evaluate("() => TCDrop.tap('quit')"); pg.evaluate(TICK, [0.5, None]); t4 = pg.evaluate(INFO); s6 = pg.evaluate(ST)
-            check(q1 and t4['phase'] == 'wait' and s6['stock'] == 2 and len(s6['dp']) == 1, '1こ 落とした あとの「投入終了」：のこりの 玉は 落とさずに「保留結果を見る」へ（トークンは 使った 分 だけ）')
+            check(q1 and t4['phase'] == 'wait' and s6['stock'] == 2 and len(s6['dp']) == 1, '1個 落とした 後の「投入終了」：残りの 玉は 落とさずに「保留結果を見る」へ（トークンは 使った 分 だけ）')
             pg.evaluate("() => TCDrop.tap('see')"); pg.evaluate(TICK, [6, "TCDrop.state.phase === 'end'"]); pg.evaluate(TICK, [0.5, None]); t5 = pg.evaluate(INFO)
             check(t5['phase'] == 'end' and not t5['more'] and t5['sum'] == 10, 'ポイントの 当たり だけ なら その まま おしまいの 札へ（＋10P）')
             pg.evaluate("() => TCDrop.tap('end')"); pg.evaluate("() => { TCDrop._t.manual = false; }"); pg.wait_for_timeout(600)
@@ -364,15 +364,15 @@ try:
             va = pg.evaluate("() => TCApp._t.PRIZES_VISIT.kamisama.find(q => q[1].k === 'rt')[1].v[0]")
             k0 = pg.evaluate(INFO); r1 = drop_ball(pg, {'k': 'rt', 'tier': 'kamisama'}); r2 = drop_ball(pg, {'k': 'zn'}); k2 = pg.evaluate(INFO)
             check(k0['max'] == 2 and r1['c']['lcd'] == 6 and r2['c']['lcd'] == 5 and k2['phase'] == 'wait' and r1['sa']['dp'][0][2] == 'kamisama',
-                  f'神様馬（抽選は 5回 まで・もう 3回 使った）：玉は 2こ まで・神様馬の ルーレット＝虹・特化ゾーン＝金（あと {k0["max"]}こ・色 {[r1["c"]["lcd"], r2["c"]["lcd"]]}）')
+                  f'神様馬（抽選は 5回 まで・もう 3回 使った）：玉は 2個 まで・神様馬の ルーレット＝虹・特化ゾーン＝金（あと {k0["max"]}個・色 {[r1["c"]["lcd"], r2["c"]["lcd"]]}）')
             pg.evaluate("() => { TCDrop._t.manual = false; }")
             tap_see(pg); finish_fx(pg, 240); pg.wait_for_timeout(1000); k3 = pg.evaluate(INFO)
             if k3['phase'] != 'end':      # 止まった ときの ようす（しらべる 用）
                 print('   ※', pg.evaluate("() => { const S = TCDrop.state, C = TCCare.S; return { t: +S.t.toFixed(1), phase: S.phase, hold: S.hold, op: S.op, cur: S.cur ? S.cur.z.k : null, cov: TCDrop.covers(), fxOn: !!document.querySelector('#tcOv .tcfx.on'), fxHold: !!C.fxHold, hid: TCApp._t.hidN, rec: [TCCare.REC.ok, TCCare.REC.stat.frames, TCCare.REC.stat.drawn], manual: !!TCDrop._t.manual, vis: document.visibilityState, gov: [TCApp._t.gov.q, TCApp._t.gov.off], sizes: [...document.querySelectorAll('#tcOv canvas')].map(c => c.className + ' ' + c.width) }; }"), pg.errs[:4])
-            check(k3['phase'] == 'end' and not k3['more'] and k3['sum'] == va + 1000, f'抽選を つかい切った：トークンが のこって いても「終わり」だけ（＋{k3["sum"]}P）')
+            check(k3['phase'] == 'end' and not k3['more'] and k3['sum'] == va + 1000, f'抽選を 使い切った：トークンが 残って いても「終わり」だけ（＋{k3["sum"]}P）')
             pg.evaluate("() => TCDrop.tap('end')"); pg.wait_for_timeout(600)
             pg.wait_for_function("() => !TCApp.state.visit", timeout=60000); pg.wait_for_timeout(1500)      # 抽選を つかい切った 神様馬は 帰る
-            check(pg.evaluate("() => !TCApp.state.visit && !TCDrop.isOpen()"), '台を 閉じると（抽選を つかい切った）神様馬は 帰る')
+            check(pg.evaluate("() => !TCApp.state.visit && !TCDrop.isOpen()"), '台を 閉じると（抽選を 使い切った）神様馬は 帰る')
             pg.evaluate("() => TCApp._t.startVisit('maboroshi')"); pg.wait_for_function("() => TCCare.vinfoBox() && TCCare.S.vinfo && TCApp.state.visit.kind === 'maboroshi'", timeout=60000); pg.wait_for_timeout(1200)
             pg.evaluate(SETTOK, 20); pg.evaluate(PUSH_ON); pg.wait_for_timeout(900)
             stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000)
@@ -382,10 +382,10 @@ try:
             # 台を 開いた まま タイムリミットを すぎた：その 馬の 表では もう ひけない（台を 開いて 待つ 抜け穴を 作らない）→ 保留結果を 見て 閉じると 馬は 帰る
             pg.evaluate("() => { TCApp.state.visit.until = Date.now() - 1000; }")
             l0 = pg.evaluate("() => [TCApp._t.drawLeft(), TCApp._t.dropLeft()]"); g0 = pg.evaluate(GO, [seq_for(pg, {'k': 'rt', 'tier': 'maboroshi'})]); pg.evaluate(TICK, [0.5, None]); x0 = pg.evaluate(INFO); sx = pg.evaluate(ST)
-            check(l0 == [9, 0] and not g0 and x0['phase'] == 'wait' and x0['n'] == 1 and sx['stock'] == 19, f'幻の馬の タイムリミットを すぎた あと：玉は もう 落とせない（トークンは へらない）→「保留結果を見る」へ（上限の のこり {l0[0]}・落とせる 数 {l0[1]}）')
+            check(l0 == [9, 0] and not g0 and x0['phase'] == 'wait' and x0['n'] == 1 and sx['stock'] == 19, f'幻の馬の タイムリミットを 過ぎた あと：玉は もう 落とせない（トークンは 減らない）→「保留結果を見る」へ（上限の 残り {l0[0]}・落とせる 数 {l0[1]}）')
             pg.evaluate("() => { TCDrop._t.manual = false; }")
             tap_see(pg); finish_fx(pg, 240); pg.wait_for_timeout(1000); x1 = pg.evaluate(INFO)
-            check(x1['phase'] == 'end' and not x1['more'], 'おしまいの 札：トークンが のこって いても「終わり」だけ')
+            check(x1['phase'] == 'end' and not x1['more'], 'おしまいの 札：トークンが 残って いても「終わり」だけ')
             pg.evaluate("() => TCDrop.tap('end')"); pg.wait_for_function("() => !TCApp.state.visit", timeout=60000); pg.wait_for_timeout(800)
             check(pg.evaluate("() => !TCApp.state.visit && !TCDrop.isOpen() && TCApp._t.dropLeft() === Infinity"), '台を 閉じると 幻の馬は 帰る（いつもの 馬は 上限 なし）')
             ctx.close()
@@ -401,7 +401,7 @@ try:
             pg.evaluate("() => { TCDrop._t.manual = false; }")
             pg.evaluate("() => TCApp.close()"); pg.wait_for_timeout(700)
             c1 = pg.evaluate("() => { const sv = JSON.parse(localStorage.getItem('tengel.tc')); return { open: TCDrop.isOpen(), dp: sv.dp.holds.map(z => [z.k, z.c]), stock: sv.stock, wal: TengelWallet.total() + TengelWallet.hold().total }; }")
-            check(not c1['open'] and c1['dp'] == [['pt', 1], ['rt', 3]] and c1['stock'] == 7 and c1['wal'] == w0['wal'], f'玉が 落ちて いる 途中で 閉じる：当たり 2つは 保存に のこる・まだ わたして いない（{c1["dp"]}）')
+            check(not c1['open'] and c1['dp'] == [['pt', 1], ['rt', 3]] and c1['stock'] == 7 and c1['wal'] == w0['wal'], f'玉が 落ちて いる 途中で 閉じる：当たり 2つは 保存に 残る・まだ 渡して いない（{c1["dp"]}）')
             pg.reload(); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
             pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300); pg.locator('#tcFab').click()
             pg.wait_for_function("() => window.TCDrop && TCDrop.isOpen()", timeout=90000); pg.wait_for_timeout(1500)
@@ -411,7 +411,7 @@ try:
             stage_click(pg, *geo['see']); finish_fx(pg, 120); pg.wait_for_timeout(1000)
             r1 = pg.evaluate(INFO); s1 = pg.evaluate(ST)
             check(r1['phase'] == 'end' and s1['wal'] == w0['wal'] + 200 + 1600 and s1['dp'] == [] and s1['sdp'] == [], f'受け取る：200P ＋ ルーレット 1,600P（財布 ＋{s1["wal"] - w0["wal"]}P）・保存の 保留は 空に')
-            check(r1['more'] and s1['stock'] == 7, 'トークンが 5こ 以上 あれば そのまま「続けてやる」も できる')
+            check(r1['more'] and s1['stock'] == 7, 'トークンが 5個 以上 あれば そのまま「続けてやる」も できる')
             pg.evaluate("() => TCDrop.tap('end')"); pg.wait_for_timeout(700); s2 = pg.evaluate(ST)
             check(not s2['open'] and s2['stock'] == 7, '「終わり」→ 閉じる（玉を 落として いない ので トークンは そのまま）')
             pg.evaluate("() => TCApp.close()"); pg.wait_for_timeout(500); pg.locator('#tcFab').click(); pg.wait_for_function("() => TCCare.on", timeout=60000); pg.wait_for_timeout(2500)
@@ -431,7 +431,7 @@ try:
             pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=90000); pg.wait_for_timeout(2500)
             n0 = pg.evaluate("() => ({ ready: TCDrop.ready(), open: TCDrop.isOpen(), dp: (TCApp.state.dp && TCApp.state.dp.holds || []).length, tk: TCApp.state.tickets || 0, wal: TengelWallet.total() + TengelWallet.hold().total, msg: document.querySelector('#tcOv .tcmsg').textContent })")
             check(not n0['ready'] and not n0['open'] and n0['dp'] == 0 and n0['wal'] == w0 + 300 and n0['tk'] >= 2 and '300P' in n0['msg'] and 'チケット 2枚' in n0['msg'],
-                  f'台の 絵が 読めない：残って いた 当たり（300P・チケット 2枚）は その場で わたす（{n0["msg"]}）')
+                  f'台の 絵が 読めない：残って いた 当たり（300P・チケット 2枚）は その場で 渡す（{n0["msg"]}）')
             pg.evaluate(SETTOK, 6); pg.evaluate(PUSH_ON); pg.wait_for_timeout(900); G = pg.evaluate("() => TCCare.PUSHG")
             stage_click(pg, *G['dp']); pg.wait_for_timeout(600)
             n1 = pg.evaluate(ST)
@@ -447,8 +447,8 @@ try:
               const r = sec ? { rows: [...sec.querySelectorAll('table[data-tab=tone] tr')].map(tr => [tr.dataset.c, tr.children[1].textContent]), txt: sec.textContent, idx: [...document.querySelectorAll('#tcg .sec h3')].map(e => e.textContent.slice(1)) } : null; TCGuide.close(); return r; }""")
             want_rows = [['青', '10P〜300P'], ['緑', 'ルーレット（800P か 1600P）'], ['紫', 'ルーレット（1600P か 3200P）'], ['赤', 'ルーレット（3200P か 6400P）'], ['金', '幻の馬のルーレット・ポイント特化ゾーン'], ['虹', '神様馬のルーレット・チケット'], ['激馬熱馬', '激馬熱馬（40,000P）']]      # 第4.175版：＋激馬熱馬
             check(gd is not None and gd['rows'] == want_rows, f'説明書「お世話チャレンジ」：馬バレの 色の 表（{gd and gd["rows"]}）')
-            check(gd is not None and all(x in gd['txt'] for x in ['玉を落とす台で抽選できるよ', 'トークンを1つ使って', '1回で5こまで', 'PUSHとまったく同じ', '「保留結果を見る」で順に受け取ろう', '「続けてやる」か「終わり」', '玉1こ＝トークン1つ＝お世話1回', 'たまった当たりはなくならないよ', 'はずれのときは、馬バレが白く光るよ'])
-                  and gd['idx'].index('お世話チャレンジ') == gd['idx'].index('お世話のあとのPUSH') + 1, '説明書の 文：入口・玉 1こ＝トークン 1つ・5こ まで・確率は PUSH と 同じ・保留結果・続けてやる／終わり・途中で 閉じても なくならない（PUSH の 項目の すぐ 下）')
+            check(gd is not None and all(x in gd['txt'] for x in ['玉を落とす台で抽選できるよ', 'トークンを1つ使って', '1回で5個まで', 'PUSHとまったく同じ', '「保留結果を見る」で順に受け取ろう', '「続けてやる」か「終わり」', '玉1こ＝トークン1つ＝お世話1回', 'たまった当たりはなくならないよ', '外れのときは、馬バレが白く光るよ'])
+                  and gd['idx'].index('お世話チャレンジ') == gd['idx'].index('お世話の後のPUSH') + 1, '説明書の 文：入口・玉 1こ＝トークン 1つ・5個 まで・確率は PUSH と 同じ・保留結果・続けてやる／終わり・途中で 閉じても なくならない（PUSH の 項目の すぐ 下）')
             if SHOT:
                 pg.evaluate("() => { TCGuide.open(document.querySelector('#tcOv .tcst'), { anim: false }); [...document.querySelectorAll('#tcg .sec h3')].find(e => e.textContent.includes('お世話チャレンジ')).scrollIntoView(); }"); pg.wait_for_timeout(400); shot(pg, 'dp_guide'); pg.evaluate("() => TCGuide.close()")
 
@@ -461,7 +461,7 @@ try:
             pg.evaluate("() => document.querySelector('#tcOv [data-tc=test]').click()"); pg.wait_for_timeout(500)
             tb = pg.evaluate("() => { const s = document.querySelector('#tct [data-sec=drop]'); return s ? { h: s.querySelector('h3').textContent, btn: [...s.querySelectorAll('.ttb')].map(b => b.textContent) } : null; }")
             check(tb is not None and tb['h'].startswith('④ お世話チャレンジ') and len(tb['btn']) == 14 and tb['btn'][0] == 'くじどおりで 開く' and '青（100P）' in tb['btn'] and '虹（チケット）' in tb['btn'] and '激馬熱馬（40,000P）' in tb['btn']
-                  and '青 → 緑 → 紫 → 赤 → 金' in tb['btn'] and any('幻の馬の ルーレット' in t for t in tb['btn']) and any('神様馬の ルーレット' in t for t in tb['btn']), f'道具箱に ④（ボタン {tb and len(tb["btn"])}こ）')
+                  and '青 → 緑 → 紫 → 赤 → 金' in tb['btn'] and any('幻の馬の ルーレット' in t for t in tb['btn']) and any('神様馬の ルーレット' in t for t in tb['btn']), f'道具箱に ④（ボタン {tb and len(tb["btn"])}個）')
             if SHOT: pg.evaluate("() => document.querySelector('#tct [data-sec=drop]').scrollIntoView()"); pg.wait_for_timeout(300); shot(pg, 'dp_tool')
             pg.evaluate("() => { const b = [...document.querySelectorAll('#tct [data-sec=drop] .ttb')].find(b => b.textContent === '青 → 緑 → 紫 → 赤 → 金'); b.click(); }")
             pg.wait_for_function("() => TCDrop.isOpen()", timeout=20000)
@@ -480,7 +480,7 @@ try:
             pg.evaluate("() => { TCDrop._t.manual = false; TCDrop.close(); }"); pg.wait_for_timeout(500)
             pg.evaluate("() => { for (const z of (TCApp.state.dp && TCApp.state.dp.holds || []).slice()) TCApp._t.give(z); TCCare.pushDone(TCCare.S.lastT); }"); pg.wait_for_timeout(600)
             lot = pg.evaluate("""() => { const R = Math.random; Math.random = () => 0.995; try { return TCApp._t.draw(); } finally { Math.random = R; } }""")
-            check(r6 == 'ok' and c6 == 6 and lot is None, f'決めた 結果（虹 3こ）の うち 1こ だけ 落として 閉じる → のこりは 消える（あとの PUSH は いつもの くじ）（色 {c6}・{lot}）')
+            check(r6 == 'ok' and c6 == 6 and lot is None, f'決めた 結果（虹 3個）の うち 1個 だけ 落として 閉じる → 残りは 消える（後の PUSH は いつもの くじ）（色 {c6}・{lot}）')
             # （神様馬を 呼ぶ 前に：馬が 来て いる 間は ルーレットの 色が かわる・抽選の 数に 上限が ある）
             # --- 第4.174版（まさちゃん 10:44「それぞれ光りの強弱は…このピのところにあわせて！」）：ランプは ピの 数 だけ 強く 光る・オーラは ピの 間 下がらない ---
             print('■ ランプの 強弱（音の 拍〈ピ〉に 合わせる）')
@@ -496,9 +496,9 @@ try:
                 n_p = int(round((bts[c][-1] + 0.1) * 60))
                 mono.append(all(w[i + 1][1] >= w[i][1] - 1e-3 for i in range(n_p)) and w[n_p][1] > 0.97)
                 pg.evaluate("() => { TCDrop._t.manual = false; TCDrop.close(); }"); pg.wait_for_timeout(400)
-            check(got == pips == [1, 2, 3, 4, 5, 7, 8, 8], f'ランプが 強く 光る 回数＝音の 拍（ピ）の 数：はずれ 1・青 2・緑 3・紫 4・赤 5・金 7・虹 8・激馬熱馬 8（{got}）')
+            check(got == pips == [1, 2, 3, 4, 5, 7, 8, 8], f'ランプが 強く 光る 回数＝音の 拍（ピ）の 数：外れ 1・青 2・緑 3・紫 4・赤 5・金 7・虹 8・激馬熱馬 8（{got}）')
             check(bts[5] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6] and bts[6] == [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.9] and bts[7] == bts[6] and all(len(g_) == len(bt) and all(abs(x - y) <= 0.018 for x, y in zip(g_, bt)) for g_, bt in zip(gaps, bts)),
-                  f'強く 光る 時は 音の 拍と 同じ（0.1秒 ごと・虹の さいごの 2つは 0.3秒 あけて）：赤 {gaps[4]}・虹 {gaps[6]}')
+                  f'強く 光る 時は 音の 拍と 同じ（0.1秒 ごと・虹の 最後の 2つは 0.3秒 あけて）：赤 {gaps[4]}・虹 {gaps[6]}')
             check(all(mono), f'まわりの オーラは 拍 ごとに 大きく なる だけ（拍の 間 下がらない＝広い 所は 点めつ しない）（{mono}）')
             pg.evaluate("() => { for (const z of (TCApp.state.dp && TCApp.state.dp.holds || []).slice()) TCApp._t.give(z); TCCare.pushDone(TCCare.S.lastT); }"); pg.wait_for_timeout(400)
             print('■ テスト版：神様馬の ルーレット')
@@ -512,5 +512,5 @@ try:
             ctx.close(); b.close()
 finally:
     srv.terminate()
-print('\n' + ('❌ ' + str(len(fails)) + ' こ 失敗：\n  ' + '\n  '.join(fails) if fails else '✅ ぜんぶ OK'))
+print('\n' + ('❌ ' + str(len(fails)) + ' こ 失敗：\n  ' + '\n  '.join(fails) if fails else '✅ 全部 OK'))
 sys.exit(1 if fails else 0)

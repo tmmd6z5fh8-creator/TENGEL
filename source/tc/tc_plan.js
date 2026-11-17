@@ -125,7 +125,7 @@ const TCPlan = (() => {
   function build(el) {
     if (!document.getElementById('tcPlanCss')) { const s = document.createElement('style'); s.id = 'tcPlanCss'; s.textContent = css; document.head.appendChild(s); }
     root = document.createElement('div'); root.id = 'tcPlan'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', '作戦会議');
-    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">とじる</button></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
+    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
     el.appendChild(root);
     root.addEventListener('click', onClick);
     root.addEventListener('input', onInput);
@@ -160,7 +160,7 @@ const TCPlan = (() => {
     const td = today(), list = P.races.slice().sort((a, c) => (a.date + a.time).localeCompare(c.date + c.time));
     const off = auth === 'denied';
     let h = OS() ? `<div class="jump"><button type="button" data-p="jr">📋 お気に入りレース</button><button type="button" data-p="jo">🐴 推し馬 ${OL.length}/${OS().MAX}</button></div>` : '';
-    h += `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに えらんだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
+    h += `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに 選んだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
       + `<button type="button" class="sw" role="switch" aria-checked="${!!P.on}" aria-label="通知" data-p="on"></button></div>`;
     h += `<div class="board"><div class="cork"><div class="bdt">${jaDate(td)}（${wday(td)}）</div><div class="bsub">お気に入りレース一覧</div>`;
     if (!list.length) h += '<div class="empty">まだ 予約した レースは ないよ<br>下の「＋ レースを予約」から 入れてね</div>';
@@ -169,7 +169,7 @@ const TCPlan = (() => {
       if (r.date !== cur) { cur = r.date; if (r.date !== td) h += `<div class="dh">${jaDate(r.date)}（${wday(r.date)}）</div>`; }
       const meta = [r.venue ? esc(r.venue) : '', r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
       h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${memoBox(r)}${chipRow(r)}`
-        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? 'ほんとに 消す？' : '消す'}</button></div></div>`;
+        + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? '本当に 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
     h += oBoardHtml();
@@ -178,7 +178,7 @@ const TCPlan = (() => {
     if (oshiMode && b.scrollTop !== y0) b.scrollTop = y0;      // 描き直しで 中身が いちど 短く なって 上へ もどされた とき → もとの 所へ
   }
   // ---------- 推し馬の ボード（第4.165版）----------
-  const oMemoBox = o => `<textarea class="mm" data-p="omemo" data-id="${esc(o.id)}" rows="1" maxlength="${OS().MEMO_MAX}" placeholder="📝 備考を書く（特徴・ねらい目など）" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`;
+  const oMemoBox = o => `<textarea class="mm" data-p="omemo" data-id="${esc(o.id)}" rows="1" maxlength="${OS().MEMO_MAX}" placeholder="📝 備考を書く（特徴・狙い目など）" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`;
   // 血統の 表：左から 親（2頭）・おじいちゃん（4頭）・ひいおじいちゃん（8頭）。父は 青・母は 桃の 地。入れて いない ますは「—」
   function pedTable(o) {
     const cell = (i, r0, span, col) => `<div class="pc ${i % 2 ? 'f' : 'm'}${o.ped[i] ? '' : ' e'}" data-i="${i}" style="grid-column:${col};grid-row:${r0} / span ${span}"><small>${PED_LB[i]}</small><b>${o.ped[i] ? esc(o.ped[i]) : '—'}</b></div>`;
@@ -193,9 +193,9 @@ const TCPlan = (() => {
     if (!OL.length) h += '<div class="empty">まだ 推し馬は いないよ<br>下の「＋ 推し馬を登録」から 入れてね</div>';
     OL.forEach(o => {
       const open = !!openO[o.id], sum = [o.ped[0] ? '父：' + esc(o.ped[0]) : '', o.ped[1] ? '母：' + esc(o.ped[1]) : ''].filter(Boolean).join('　');
-      h += `<div class="oc" data-oid="${esc(o.id)}"><button type="button" class="oh" data-p="otog" data-id="${esc(o.id)}" aria-expanded="${open}"><span class="onm">🐴 ${esc(o.name)}</span><span class="otg">${open ? 'とじる ▲' : '血統を見る ▼'}</span></button>`
+      h += `<div class="oc" data-oid="${esc(o.id)}"><button type="button" class="oh" data-p="otog" data-id="${esc(o.id)}" aria-expanded="${open}"><span class="onm">🐴 ${esc(o.name)}</span><span class="otg">${open ? '閉じる ▲' : '血統を見る ▼'}</span></button>`
         + (open ? pedTable(o) : (sum ? `<div class="osum">${sum}</div>` : '')) + oMemoBox(o)
-        + `<div class="ra"><button type="button" class="sb" data-p="oedit" data-id="${esc(o.id)}">直す</button><button type="button" class="sb del${delAskO === o.id ? ' ask' : ''}" data-p="odel" data-id="${esc(o.id)}">${delAskO === o.id ? 'ほんとに 消す？' : 'この推し馬を消す'}</button></div></div>`;
+        + `<div class="ra"><button type="button" class="sb" data-p="oedit" data-id="${esc(o.id)}">直す</button><button type="button" class="sb del${delAskO === o.id ? ' ask' : ''}" data-p="odel" data-id="${esc(o.id)}">${delAskO === o.id ? '本当に 消す？' : 'この推し馬を消す'}</button></div></div>`;
     });
     const full = OL.length >= os.MAX;
     return h + `<button type="button" class="add oadd" data-p="oadd"${full ? ' disabled' : ''}>${full ? `推し馬は ${os.MAX}頭まで（いっぱいだよ）` : '＋ 推し馬を登録'}</button></div></div>`;
@@ -262,7 +262,7 @@ const TCPlan = (() => {
       if (d.start) { edit.time = String(d.start).padStart(5, '0'); got.push('発走時間'); }
       if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.date >= today()) edit.date = d.date;
       if (d.venue) edit.venue = d.venue; if (d.r) edit.r = +d.r;
-      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。ちがう 所は 直してね` : '読み取れなかったよ。手で 入れてね';
+      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
     } catch (er) { edit._msg = '読み取れなかったよ。手で 入れてね'; }
     paint();
   }

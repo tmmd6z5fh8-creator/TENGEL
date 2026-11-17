@@ -194,7 +194,7 @@
       const hit = x.state === '的中', ref = x.state === '返還', hits = x.hits || [];
       const cls = [hit && tt && x.t === tt ? 'top' : '', hit ? '' : 'no'].filter(Boolean).join(' ');
       const rs = hit ? '<span class="rs hit">的中</span>' : ref ? '<span class="rs ref">返還</span>' : '<span class="rs miss">不的中</span>';
-      const cs = hit ? hits.slice(0, 3).map(c => combo(c, x.t, n, tt && x.t === tt ? mark : [])).join('') + (hits.length > 3 ? `<span class="more">ほか${hits.length - 3}点</span>` : '') : '';
+      const cs = hit ? hits.slice(0, 3).map(c => combo(c, x.t, n, tt && x.t === tt ? mark : [])).join('') + (hits.length > 3 ? `<span class="more">他${hits.length - 3}点</span>` : '') : '';
       return `<li${cls ? ` class="${cls}"` : ''} style="--i:${i}"><span class="bt">${esc(x.t)}</span>${rs}${cs}</li>`;
     }).join('');
     return { html: html, n: rows.length };
@@ -816,7 +816,7 @@
       + `<div class="mx"><span class="mk">買い目</span><span class="mv">${total ? `${total}点` : 'なし'}</span></div>`;
     types.forEach(t => {
       const list = bets[t], cs = list.slice(0, 24).map(c => mcombo(c, t, n, hitKeys.has(t + ':' + c.join('-')))).join('');
-      h += `<div class="mx"><span class="mk mt">${esc(t)}</span><span class="mv">${cs}${list.length > 24 ? `<span class="by">ほか${list.length - 24}点</span>` : ''}<span class="by">${list.length}点</span></span></div>`;
+      h += `<div class="mx"><span class="mk mt">${esc(t)}</span><span class="mv">${cs}${list.length > 24 ? `<span class="by">他${list.length - 24}点</span>` : ''}<span class="by">${list.length}点</span></span></div>`;
     });
     h += `<div class="mx"><span class="mk">結果</span><span class="mv">${esc(info.result || '')}</span></div>`
       + `<div class="mx"><span class="mk">金額</span><span class="mv">${info.money || ''}</span></div>`;
@@ -843,7 +843,7 @@
     const extra = k === 'hit' ? '<div class="rays"></div>' : k === 'big' ? '<div class="rbow"></div><div class="glow"></div>' : frame === 'turf' ? '<div class="mring"></div>' : '';
     stage.innerHTML = `<div class="${base} mem f-${frame}" style="--n:${Math.max(1, rows.n)}"><div class="dim"></div>${extra}`
       + `<div class="memhd"><span class="mlab">思い出のレース</span><b class="mname">${esc(info.name || '')}</b></div><div class="hb">${board}</div>`
-      + '<button class="close" type="button" data-fx="close">とじる</button></div>';
+      + '<button class="close" type="button" data-fx="close">閉じる</button></div>';
     emit('memory', k);
     return k;
   }

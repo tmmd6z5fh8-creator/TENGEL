@@ -390,7 +390,7 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   //   ・抽選の 途中で トークンが ふえて いた とき（10分ごとの ＋5）：当たりの ＋5 は 25 まで（足せる 数を 札と「＋N」の 両方に）
   console.log('トークンが 最大（25）の とき・ハートの 抽選は 20こ未満の とき だけ');
   {
-  const MAXT = 'お世話トークンが 最大だよ！', LOTT = 'トークンが 20こを 切ったら 抽選だよ', AUTOT = 'なかよしハートの 抽選！';
+  const MAXT = 'お世話トークンが 最大だよ！', LOTT = 'トークンが 20個を 切ったら 抽選だよ', AUTOT = '仲良しハートの 抽選！';      // 第4.192版：漢字に そろえた
   const tagsNow = () => S.fx.filter(f => f.k === 'tagUI' && f.txt === MAXT).length, notes = txt => S.fx.filter(f => f.k === 'note' && f.txt === txt).length;
   const settle = () => { until(() => S.phase === 'idle' && !S.busy && !S.mode, 30); run(0.8); clearPush(); until(() => T >= S.coolUntil + 0.2, 10); };
   const prep = (n, h) => {          // トークン n こ・ハート h こに して、前の 札を 片付ける
@@ -482,7 +482,7 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
     TCCare.pointer('down', Q.x + 84, Q.y, T); TCCare.pointer('up', Q.x + 84, Q.y, T); TCCare.pointer('down', Q.x, Q.y, T); TCCare.pointer('up', Q.x + 200, Q.y - 300, T);
     check(BUYS === 1, '丸の 中 だけ（まわり 10px まで）・指を ずらして はなした ときは 押した ことに ならない');
     BUYOK = false; e0 = EV.length; TCCare.pointer('down', Q.x, Q.y, T); TCCare.pointer('up', Q.x, Q.y, T);
-    check(BUYS === 2 && S.fx.some(f => f.k === 'tagUI' && f.txt === 'お世話が おわってから 買えるよ') && evn('wait', e0) === 1, 'アプリが 開けない とき（お世話の 途中 など：onBuy が false）→ 札「お世話が おわってから 買えるよ」');
+    check(BUYS === 2 && S.fx.some(f => f.k === 'tagUI' && f.txt === 'お世話が 終わってから 買えるよ') && evn('wait', e0) === 1, 'アプリが 開けない とき（お世話の 途中 など：onBuy が false）→ 札「お世話が おわってから 買えるよ」');
     BUYOK = true; for (const k of ['pet', 'feed', 'clean', 'call']) { TCCare.pointer('down', B[k][0], B[k][1], T); }
     S.uiDown = null; TCCare.pushShow(T); run(0.4);
     TCCare.pointer('down', Q.x, Q.y + 60, T); TCCare.pointer('up', Q.x, Q.y + 60, T);
@@ -514,7 +514,7 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
     check(p1 === true && live1 && p2 === true && p3 === false && !pushLive() && S.stock === 7, `まとめて 使う：のこり 2回 → 2回 押せて、0回に なったら PUSH が 消える（3回めは 押せない・トークンは 2こ だけ へる：のこり ${S.stock}）`);
     until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.8); S.fx = S.fx.filter(f => f.k !== 'tagUI'); const e1 = EV.length;
     TCCare.press(T, 'feed'); run(0.3);
-    check(!S.chooser && !S.ask && S.phase === 'idle' && S.fx.some(f => f.k === 'tagUI' && f.txt === 'この 馬の 抽選は おわったよ') && EV.slice(e1).some(e => e.k === 'wait'), 'のこり 0回：ごはんは 始まらない → 札「この 馬の 抽選は おわったよ」');
+    check(!S.chooser && !S.ask && S.phase === 'idle' && S.fx.some(f => f.k === 'tagUI' && f.txt === 'この 馬の 抽選は 終わったよ') && EV.slice(e1).some(e => e.k === 'wait'), 'のこり 0回：ごはんは 始まらない → 札「この 馬の 抽選は おわったよ」');
     LEFT = Infinity; run(1.4); S.fx = S.fx.filter(f => f.k !== 'tagUI'); feedY(); run(0.3);
     check(!!S.chooser, 'いつもの 馬（上限 なし）は 今までどおり'); TCCare.press(T, 'chback'); run(0.5); }
   // 条件の 札（幻の馬・神様馬）：2行めは「抽選 ○/○回」・神様馬（上限 5回＝リセットの 回数 以下）は 切り替わりタイマーの 行 なし

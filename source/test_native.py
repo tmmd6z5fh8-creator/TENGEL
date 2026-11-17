@@ -136,7 +136,7 @@ RESULT_LINES = [{'text': t, 'x': 0.05, 'y': 0.05 + i * 0.035, 'w': 0.8, 'h': 0.0
 
 
 def gate(pg):
-    """アプリを開いた時の画面（19章）：はじめては「はじめる」を押す・2回目からは短い画面をタップ"""
+    """アプリを開いた時の画面（19章）：初めては「始める」を押す・2回目からは短い画面をタップ"""
     g = pg.locator('#gate')
     for _ in range(40):
         if not g.count() or g.evaluate('e => e.hidden'):
@@ -194,8 +194,8 @@ try:
         # ---- アプリを開いた時の画面（19章）：はじめては3つの文と「はじめる」。拡大は止めている ----
         g = pg.locator('#gate')
         gt = g.inner_text() if g.count() else ''
-        check(g.count() == 1 and g.is_visible() and pg.locator('#gateGo').count() == 1 and '競馬の注意' in gt and 'アプリの注意' in gt and 'テンゲルの楽しみ方' in gt and '20歳未満' in gt and 'もどせません' in gt and 'お客様が自由に選べます' in gt,
-              'はじめて開いた：競馬の注意・アプリの注意・楽しみ方と「はじめる」')
+        check(g.count() == 1 and g.is_visible() and pg.locator('#gateGo').count() == 1 and '競馬の注意' in gt and 'アプリの注意' in gt and 'テンゲルの楽しみ方' in gt and '20歳未満' in gt and '戻せません' in gt and 'お客様が自由に選べます' in gt,
+              '初めて開いた：競馬の注意・アプリの注意・楽しみ方と「始める」')
         vp0 = pg.evaluate("document.querySelector('meta[name=viewport]').content")
         check('maximum-scale=1' in vp0 and 'user-scalable=no' in vp0 and any(z.get('lock') for z in pg.evaluate('window.__zoom')), f'開いた時の画面の間は拡大を止める（{vp0}）')
         check(not [w for w in ('大井', 'JRA', 'まさちゃん') if w in gt], '開いた時の画面に出さない言葉がない')
@@ -203,7 +203,7 @@ try:
         gate(pg); pg.wait_for_timeout(500)
         vp1 = pg.evaluate("document.querySelector('meta[name=viewport]').content")
         check(pg.evaluate("document.querySelector('#gate').hidden") and 'maximum-scale=3' in vp1 and 'user-scalable=no' not in vp1 and pg.evaluate('window.__zoom').pop().get('lock') is False and pg.evaluate("getComputedStyle(document.body).touchAction") == 'manipulation',
-              f'「はじめる」→ 画面が開く・2本指で3倍まで拡大できる・ダブルタップでは拡大しない（{vp1}）')
+              f'「始める」→ 画面が開く・2本指で3倍まで拡大できる・ダブルタップでは拡大しない（{vp1}）')
         pg.reload(); pg.wait_for_timeout(600)
         g = pg.locator('#gate')
         check(g.count() == 1 and g.is_visible() and pg.locator('#gateGo').count() == 0 and '20歳' in g.inner_text(), '2回目から：短い注意だけ（タップでとばせる）')
@@ -227,7 +227,7 @@ try:
         order = pg.evaluate("[...document.querySelectorAll('#v-set > .card')].slice(0, 3).map(c => c.id)")
         check(order == ['setPoints', 'setCustom', 'setMission'], f'設定タブの上に ポイント・Pカスタム・ミッション（{order}）')
         pt = pg.locator('#setPoints').inner_text()
-        check(pg.evaluate('TengelWallet.total()') == 1500 and '1,500P' in pt and pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['0P', '0P', '1,500P'] and store['markers'].get('gift-first'), f'はじめてのプレゼント 1,500P（獲得ポイント）・キーチェーンにしるし（{list(store["markers"])}）')
+        check(pg.evaluate('TengelWallet.total()') == 1500 and '1,500P' in pt and pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['0P', '0P', '1,500P'] and store['markers'].get('gift-first'), f'初めてのプレゼント 1,500P（獲得ポイント）・キーチェーンに印（{list(store["markers"])}）')
         # 第4.59版：上の帯の 所有ポイントと 説明書の 置き場・テスト版の 印は ない
         #   第4.139版（まさちゃん 11/10 11:46「上のところに表示されてる時は、合計のポイントだけ表示するようにして！」）：札は 合計だけ「ポイント 1,500P」（前は「購入 ○P・サブスク ○P」）。内わけは 札の title と、押すと 出る「ポイントの詳細」
         hb = pg.evaluate("(() => { const p = document.querySelector('#ptsPill'), m = document.querySelector('#manBtn'), d = document.querySelector('#dbpill'), b = document.querySelector('header.top .brand'); if (!p || !m || !d) return null; const r = x => x.getBoundingClientRect(); return { txt: p.innerText.replace(/\\s+/g, ' '), afterBrand: b.nextElementSibling === p, order: m.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : 0, mRight: r(m).right, dLeft: r(d).left, dRight: r(d).right, mTop: r(m).top, dTop: r(d).top, w: innerWidth, tag: !!document.querySelector('#testTag'), gopt: p.dataset.gopt, title: p.title, al: p.getAttribute('aria-label'), segs: p.querySelectorAll('.pp').length }; })()")
@@ -243,12 +243,12 @@ try:
         #   説明書は 画面の 右はし（ミッション・マザーデータの 札と 同じ）・ポイントの 札は ロゴの すぐ 右から 説明書まで のびる・結果待ちの 左はしは ポイントの 札の 左はしと 同じ 線
         check(abs(hb2['manR'] - 16) <= 1 and abs(hb2['msR'] - 16) <= 1 and 4 <= hb2['pL'] - hb2['brR'] <= 12 and abs(hb2['rvL'] - hb2['pL']) <= 1 and hb2['rvRow'] and hb2['pw'] >= 130,
               f'第4.139版：説明書・ミッションは 画面の 右はし（右から {hb2["manR"]}・{hb2["msR"]}px）・ポイントの 札は ロゴの すぐ 右（{hb2["brR"]} → {hb2["pL"]}）から のびる（はば {hb2["pw"]}px）・結果待ちの 左はし {hb2["rvL"]} は 札の 左はしと 同じ 線')
-        check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、もどせません' in pt and '200P' in pt and '買ったポイントから先に使う' in pt and 'サブスクポイント → 購入ポイント → 獲得ポイント' in pt
-              and all(w in pt for w in ('購入ポイント', 'サブスクポイント', '獲得ポイント', 'ポイントは 合計 99,999P まで もてるよ', 'あと 98,499P 入るよ')), 'ポイントのカード：消えることの注意・1レース200P・使う順・内わけ 3つ（購入ポイント・サブスクポイント・獲得ポイント）・上限 99,999P（あと 98,499P）')
+        check('アプリを消すと、ポイント・解放したもの・記録はすべて消えて、戻せません' in pt and '200P' in pt and '買ったポイントから先に使う' in pt and 'サブスクポイント → 購入ポイント → 獲得ポイント' in pt
+              and all(w in pt for w in ('購入ポイント', 'サブスクポイント', '獲得ポイント', 'ポイントは 合計 99,999P まで 持てるよ', 'あと 98,499P 入るよ')), 'ポイントのカード：消えることの注意・1レース200P・使う順・内わけ 3つ（購入ポイント・サブスクポイント・獲得ポイント）・上限 99,999P（あと 98,499P）')
         cu = pg.locator('#setCustom').inner_text()
-        check('Pカスタムで、自分だけのテンゲルを育てよう！' in cu and 'はじめから：単勝・馬単・3連単' in cu and cu.count('500P') >= 6 and '15,000P' in cu and pg.locator('#setCustom [data-pt=unlock1]').count() == 8, 'Pカスタム：券種6つ（1つ500P）・マザーデータの枠2つ（15,000P）')
+        check('Pカスタムで、自分だけのテンゲルを育てよう！' in cu and '初めから：単勝・馬単・3連単' in cu and cu.count('500P') >= 6 and '15,000P' in cu and pg.locator('#setCustom [data-pt=unlock1]').count() == 8, 'Pカスタム：券種6つ（1つ500P）・マザーデータの枠2つ（15,000P）')
         ms = pg.locator('#setMission').inner_text()
-        check('いま 0レース' in ms and '8レース記録' in ms and '500P' in ms and pg.locator('#setMission [data-pt=claim]').count() == 0, 'ミッション：0レース・次は8レースで500P')
+        check('今 0レース' in ms and '8レース記録' in ms and '500P' in ms and pg.locator('#setMission [data-pt=claim]').count() == 0, 'ミッション：0レース・次は8レースで500P')
         pg.locator('#setPoints [data-pt=show][data-v=buy]').click(); pg.wait_for_timeout(400)
         pt = pg.locator('#setPoints').inner_text()
         check(pg.locator('#setPoints [data-pt=buy]').count() == 4 and '¥352' in pt and '4,000P' in pt and '期限なし' in pt, '「ポイントを買う」：パック4つ・App Storeの値段')
@@ -263,7 +263,7 @@ try:
         # ---- このアプリについて ----
         ab = pg.locator('#setAbout')
         last = pg.evaluate("[...document.querySelectorAll('#setExtra > .card')].pop().id")
-        check(ab.count() == 1 and last == 'setAbout', f'設定タブのいちばん下に「このアプリについて」（{last}）')
+        check(ab.count() == 1 and last == 'setAbout', f'設定タブの一番下に「このアプリについて」（{last}）')
         at = ab.inner_text()
         check('テンゲル 1.0（7）' in at and 'ご利用にあたって' in at and '約束するものではありません' in at and '馬券は20歳になってから' in at and '0120-683-705' in at, '版・ご利用にあたって（参考情報・20歳・相談先）')
         check(pg.locator('#setAbout a[href^="https://www.cas.go.jp"]').count() == 1 and pg.locator('#setAbout a[href="tel:0120683705"]').count() == 1, '相談窓口のリンクと電話')
@@ -301,7 +301,7 @@ try:
         check(pg.locator('#omakaseBtn').count() == 1 and pg.locator('#result .rnav').count() == 0, '「テンゲルにお任せ」がある・1つ前のレースはまだない（矢印なし）')
         pg.locator('#result .hp[data-no="6"][data-hs="b"]').first.click(); pg.wait_for_timeout(300)
         pct2 = [t for t in pg.locator('#result .zref').all_inner_texts() if '選んだ馬で' in t]
-        check('6.5%' not in pct2[0] and 'ゾーンと同じ' not in pct2[0], f'馬を外すと%がかわる（{pct2[0][:30]}）')
+        check('6.5%' not in pct2[0] and 'ゾーンと同じ' not in pct2[0], f'馬を外すと%が変わる（{pct2[0][:30]}）')
         card.locator('details[data-k=betsee] summary').click(); pg.wait_for_timeout(200)
         bl = card.locator('.betlist').inner_text()
         check('馬単' in bl and '3連単' in bl and '→' in bl and '合計' in card.locator('.rsvnote').first.inner_text() and '点' not in pg.locator('#result').inner_text(), '「買い目を確認」：券種ごとの組と点数（点数はここだけ・判定の画面には出ない）')
@@ -311,7 +311,7 @@ try:
         check([c['op'] for c in nn['calls']][-3:] == ['status', 'permission', 'sync'] and nn['auth'] == 'authorized' and len(nn['items']) == 1 and nn['items'][0]['body'] == '大井 8R はなまる特別' and nn['items'][0]['title'] == '結果を確認しよう！', f'最初の予約で通知を許可 → 発走15分後のお知らせを入れる（{nn["items"][0]["body"] if nn["items"] else "なし"}）')
         import datetime as _dt
         check(nn['items'] and _dt.datetime.utcfromtimestamp(nn['items'][0]['at'] / 1000).strftime('%Y-%m-%d %H:%M') == '2026-10-10 06:55', 'お知らせの時刻＝発走15:40（日本時間）の15分後')
-        check('予約ずみ（結果待ち）' in card.inner_text() and card.locator('[data-rsv=cancel]').count() == 1 and card.locator('[data-rsv=redo]').count() == 1, '予約ずみのカード（結果を入れる・予約し直す・予約を消す）')
+        check('予約済み（結果待ち）' in card.inner_text() and card.locator('[data-rsv=cancel]').count() == 1 and card.locator('[data-rsv=redo]').count() == 1, '予約済みのカード（結果を入れる・予約し直す・予約を消す）')
         check(store['writes'] == n0, 'すぐには書かない（少し待ってまとめて書く）')
         pg.wait_for_timeout(1600)
         bk = json.loads(store['backup'])
@@ -344,7 +344,7 @@ try:
         # 何も読めない画像（表がない）→ いまの入力はそのまま
         pg.evaluate("window.__ocrLines = [[{ text: 'ようこそ', x: 0.1, y: 0.1, w: 0.3, h: 0.03 }]]")
         pg.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'c_sanrentan.jpg')]); pg.wait_for_timeout(1500)
-        check('見つからなかった' in pg.locator('#ocrMsg').inner_text() and pg.evaluate("JSON.parse(localStorage.getItem('tengel.form')).rows.length") == 12 and pg.locator('#fR').input_value() == '9', '表のない画像：案内を出して、いまの入力はそのまま')
+        check('見つからなかった' in pg.locator('#ocrMsg').inner_text() and pg.evaluate("JSON.parse(localStorage.getItem('tengel.form')).rows.length") == 12 and pg.locator('#fR').input_value() == '9', '表のない画像：案内を出して、今の入力はそのまま')
         pg.screenshot(path=os.path.join(W, 't4', 'native_ocr.png'), full_page=False)
         # ---- 読み込みで 200P を使う・同じレースの読み直しは 0P・券種の🔒・マザーデータの🔒 ----
         check(pg.evaluate('TengelWallet.total()') == 1300 and '200P 使ったよ' in got['msg'] and '1レース 200P' in pg.locator('#ocrHint').inner_text(), f'読み込みで200P使った（残り {pg.evaluate("TengelWallet.total()")}P）・ボタンの横に残りのP')
@@ -368,12 +368,12 @@ try:
         card = pg.locator('#recCard')
         tb = card.locator('[data-k=rtypes] button')
         check(tb.count() == 9 and card.locator('[data-k=rtypes] button.lock').count() == 6 and card.locator('[data-k=rtypes] button[data-v=枠複]').count() == 1 and card.locator('[data-k=rtypes] button[data-v=単勝]:not(.lock)').count() == 1,
-              '券種は9つ（枠複・枠単も）。単勝・馬単・3連単のほかは🔒')
+              '券種は9つ（枠複・枠単も）。単勝・馬単・3連単の他は🔒')
         card.locator('[data-k=rtypes] button[data-v=複勝]').click(); pg.wait_for_timeout(200)
         check(card.locator('[data-k=rtypes] button[data-v=複勝]').get_attribute('aria-pressed') == 'false' and 'Pカスタム' in pg.locator('#toast').inner_text(), '🔒の券種は選べない（Pカスタムの案内）')
         chips = pg.locator('#slotJudge .slotchip')
         check(chips.count() == 4 and pg.locator('#slotJudge .slotchip.lock').count() == 2 and [c.inner_text().replace('\n', ' ') for c in chips.all()] == ['テンゲルデータ', 'マザーデータ① 空', 'マザーデータ② 🔒', 'マザーデータ③ 🔒'],
-              f'判定画面の データの 切り替え（第4.123版）：テンゲルデータ（数は 出さない）・マザーデータ①（はじめから・空）・②③は🔒（{[c.inner_text().replace(chr(10), " ") for c in chips.all()]}）')
+              f'判定画面の データの 切り替え（第4.123版）：テンゲルデータ（数は 出さない）・マザーデータ①（初めから・空）・②③は🔒（{[c.inner_text().replace(chr(10), " ") for c in chips.all()]}）')
         pg.locator('#slotJudge .slotchip.lock').first.click(); pg.wait_for_timeout(200)
         check('Pカスタム' in pg.locator('#toast').inner_text() and pg.evaluate('TengelLocal.slots.active()') == 1, '🔒の枠は使えない（Pカスタムの案内）')
         card.locator('[data-k=rtypes] button[data-v=単勝]').click(); pg.wait_for_timeout(200)
@@ -392,7 +392,7 @@ try:
         b10 = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 10) || null")
         check(b10 and b10['rsv']['state'] == 'given' and '諦めたレース' in pg.locator('#recCard').inner_text() and pg.evaluate('TengelWallet.countedN()') == 2, '戻った10Rを「このレースを諦める」→ 諦めたレース・ミッションに数える（2レース）')
         pg.locator('#result [data-rnav=next]').click(); pg.wait_for_timeout(400)
-        check(pg.locator('#fR').input_value() == '9' and 'いまのレース' in pg.locator('#result .rnav').inner_text(), '次のレース → 9R に戻る')
+        check(pg.locator('#fR').input_value() == '9' and '今のレース' in pg.locator('#result .rnav').inner_text(), '次のレース → 9R に戻る')
         # ---- テンゲルにお任せ：ゾーンの中からランダム・頭一つ残し ----
         pg.locator('#omakaseBtn').click(); pg.wait_for_timeout(300)
         hp = pg.evaluate("JSON.parse(localStorage.getItem('tengel.form')).hp")
@@ -421,7 +421,7 @@ try:
               and f9.locator('[data-act=rsave]').inner_text() == '結果を決める' and '金額は後からでも入れられるよ' in f9.inner_text() and '結果待ち' in f9.locator('[data-k=status]').inner_text(),
               '結果入力の欄（第4.65版）：まず 結果だけ（1〜3着の馬番・取消・中止・発走・画像）。買い目は出さない・金額・マザーデータ・メモの 欄は まだ ない・「結果を決める」・結果待ち')
         nmv = lambda box: [box.locator(f'[data-k=nm{i}]').input_value() for i in (1, 2, 3)]
-        check(f9.locator('.pln .pnr input').count() == 3 and nmv(f9) == ['', '', ''] and '1〜3着の 馬の 名前' in f9.inner_text(), '第4.170版：結果の 欄に「1〜3着の 馬の 名前」の 欄 3つ（はじめは 空）')
+        check(f9.locator('.pln .pnr input').count() == 3 and nmv(f9) == ['', '', ''] and '1〜3着の 馬の 名前' in f9.inner_text(), '第4.170版：結果の 欄に「1〜3着の 馬の 名前」の 欄 3つ（初めは 空）')
         check(f9.locator('[data-act=rdel]').count() == 1 and f9.locator('[data-act=load]').count() == 1 and pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"]').inner_text().count('保存した判定') == 0 and '判定（' not in pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"] .ledit').inner_text(),
               'App Store版：行の 下に「保存した判定（STEP0〜T3）」と 判定の 1行（層・比・ゾーン）は 出さない')
         pg.evaluate("window.__ocrLines = %s" % json.dumps([RESULT_LINES], ensure_ascii=False))
@@ -449,7 +449,7 @@ try:
         res9 = pg.evaluate("performance.getEntriesByType('resource').map(e => e.name.split('/').pop())")
         check(sorted(sx['keys']) == ['big_push', 'fz_push', 'hit', 'hit_push'] and pg.locator('#fxVh video').count() == 0
               and not any(n.endswith('.mp4') or n.startswith(('sfx_sgd', 'sfx_spg', 'sfx_zp', 'sfx_pc', 'sfx_sd', 'sfx_nd', 'sfx_gk', 'sfx_fz.', 'fz_n', 'pm_', 'sgd_last', 'sd_last', 'nd_last', 'gk_last')) for n in res9),
-              f'保存の たびに 読むのは PUSH の 音 3こと 出す 演出（的中）の 音だけ・ほかの 演出の 音・動画・絵は 読まない（第4.109版）（{sorted(sx["keys"])}・動画 {pg.locator("#fxVh video").count()}）')
+              f'保存の たびに 読むのは PUSH の 音 3こと 出す 演出（的中）の 音だけ・他の 演出の 音・動画・絵は 読まない（第4.109版）（{sorted(sx["keys"])}・動画 {pg.locator("#fxVh video").count()}）')
         check(pg.locator('#toast').is_hidden() or '保存できたよ' not in pg.locator('#toast').inner_text(), '演出が出るときは、お知らせの帯は出さない（ボードが結果を見せる）')
         f9 = pg.locator('#recList .rsvf')
         check(f9.get_attribute('data-mode') == 'amount' and '結果を記録したよ（的中）' in f9.locator('[data-k=savemsg]').inner_text() and '単勝 的中' in f9.locator('[data-k=savemsg]').inner_text(), '演出の うしろで 行は 金額の 欄（mode=amount）に 入れかわる・欄の下には 結果を記録したよ（券種ごとの結果）')
@@ -464,24 +464,24 @@ try:
         ov.locator('.close').click(force=True); pg.wait_for_timeout(400)
         b9e = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)")
         check(pg.locator('#fxOv').count() == 0 and pg.evaluate('TengelFx.current()') is None and not pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is False and b9e['rsv'].get('fx') == 'hit',
-              f'「とじる」→ 記録の画面にもどる・拡大できる・記録に出した印（rsv.fx）（{b9e["rsv"].get("fx")}）')
+              f'「閉じる」→ 記録の画面に戻る・拡大できる・記録に出した印（rsv.fx）（{b9e["rsv"].get("fx")}）')
         # 第4.65版：演出の あとは 金額の 欄（結果の 欄は ない）。払戻は 結果の 画像から（単勝 240・馬単 1120）・購入額は 点数×100円・「金額の入力は後からでもできるよ」
         f9 = pg.locator('#recList .rsvf')
         check(f9.count() == 1 and f9.get_attribute('data-mode') == 'amount' and f9.locator('[data-k=p1]').count() == 0 and f9.locator('[data-k=stake][data-t="単勝"]').input_value() == '300' and f9.locator('[data-k=stake][data-t="馬単"]').input_value() == '1500'
               and f9.locator('[data-k=payout][data-t="単勝"]').input_value() == '240' and f9.locator('[data-k=payout][data-t="馬単"]').input_value() == '1120' and f9.locator('[data-k=mslot]').count() == 1 and f9.locator('[data-k=note]').count() == 1
-              and '金額の入力は後からでもできるよ' in f9.inner_text() and f9.locator('[data-act=rsave]').inner_text() == '記録する' and f9.locator('[data-act=rlater]').inner_text() == 'あとで入れる' and '的中' in f9.locator('[data-k=status]').inner_text(),
-              '演出の あと：金額の 欄だけ（券種ごとの 購入額 → 払戻（画像の 払戻が 入っている）・マザーデータ・メモ）・「記録する」「あとで入れる」・「金額の入力は後からでもできるよ！」')
+              and '金額の入力は後からでもできるよ' in f9.inner_text() and f9.locator('[data-act=rsave]').inner_text() == '記録する' and f9.locator('[data-act=rlater]').inner_text() == '後で入れる' and '的中' in f9.locator('[data-k=status]').inner_text(),
+              '演出の あと：金額の 欄だけ（券種ごとの 購入額 → 払戻（画像の 払戻が 入っている）・マザーデータ・メモ）・「記録する」「後で入れる」・「金額の入力は後からでもできるよ！」')
         f9.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
         b9f = pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)")
         f9 = pg.locator('#recList .rsvf')
         check(pg.locator('#fxOv').count() == 0 and b9f['payout'] == 1360 and b9f['stake'] == 1800 and b9f['amt']['単勝'] == {'stake': 300, 'payout': 240} and '金額を記録したよ（的中）' in f9.locator('[data-k=savemsg]').inner_text()
               and f9.get_attribute('data-mode') == 'edit' and f9.locator('[data-k=p1]').count() == 1 and f9.locator('[data-k=stake]').count() == 2 and f9.locator('[data-act=rsave]').inner_text() == '記録を保存' and f9.locator('[data-act=rdel]').inner_text() == '記録を消す',
-              f'「記録する」→ 払戻の 合計 1,360円が 記録に 入る・演出は 出ない・行は 全部の 欄（あとから 直す 形・mode=edit）に（payout={b9f["payout"]}）')
-        check(b9f.get('pn') == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'] and nmv(f9) == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'], '第4.170版：金額を 記録しても 名前は そのまま・あとから 直す 形の 欄に 保存した 名前が 出る')
+              f'「記録する」→ 払戻の 合計 1,360円が 記録に 入る・演出は 出ない・行は 全部の 欄（後から 直す 形・mode=edit）に（payout={b9f["payout"]}）')
+        check(b9f.get('pn') == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'] and nmv(f9) == ['ミラクルアロー', 'テンゲルクイーン', 'ロイヤルステップ'], '第4.170版：金額を 記録しても 名前は そのまま・後から 直す 形の 欄に 保存した 名前が 出る')
         # 同じ記録を保存し直しても、もう出さない（あとで記録を直したとき）
         f9.locator('[data-act=rsave]').click(); pg.wait_for_timeout(900)
-        check(pg.locator('#fxOv').count() == 0 and '保存できたよ' in pg.locator('#toast').inner_text(), '結果を記録ずみの記録を保存し直す → 演出は出ない（お知らせの帯だけ）')
-        check(pg.evaluate("TengelWallet.board.info().streak") == 1, f'第4.91版 結果ボードカスタムの 連続的中の 数（第4.113版：出世馬は 消した・数は 残す）：結果が はじめて 決まった 的中で 1・金額の 記録・保存し直しでは 数えない（{pg.evaluate("TengelWallet.board.info().streak")}）')
+        check(pg.locator('#fxOv').count() == 0 and '保存できたよ' in pg.locator('#toast').inner_text(), '結果を記録済みの記録を保存し直す → 演出は出ない（お知らせの帯だけ）')
+        check(pg.evaluate("TengelWallet.board.info().streak") == 1, f'第4.91版 結果ボードカスタムの 連続的中の 数（第4.113版：出世馬は 消した・数は 残す）：結果が 初めて 決まった 的中で 1・金額の 記録・保存し直しでは 数えない（{pg.evaluate("TengelWallet.board.info().streak")}）')
         pg.wait_for_timeout(500)
         # ---- 思い出記録（第4.115版・まさちゃん「思い出記録機能を追加する。記録内容 レース名 日付 買い目 結果 金額:購入、回収」「思い出レース表示用の思い出ボードを作成する」）----
         #      記録を 直す 画面の ボタン → 記録に mem → 思い出のレースの 欄・行の 印 → 思い出ボード（種類の ボード ＋ 記録の カード）→ とじる → 絞り込み → ど的中の わく ①② → 外す → バックアップ
@@ -502,7 +502,7 @@ try:
               f'記録タブの 上に「思い出のレース」の 欄（{md9} 9R・的中・1〜3着・購入→回収）・月の 一覧の 行に「思い出」の 印（{mt.locator(".memrow .s").inner_text()[:40]}）')
         f9 = pg.locator('#recList .rsvf')
         check(f9.count() == 1 and f9.get_attribute('data-mode') == 'edit' and f9.locator('[data-act=memopen]').inner_text() == '思い出ボードを見る' and f9.locator('[data-act=memtog]').inner_text() == '思い出から外す',
-              '記録した あとの 画面：「思い出ボードを見る」「思い出から外す」（行は 開いた まま）')
+              '記録した 後の 画面：「思い出ボードを見る」「思い出から外す」（行は 開いた まま）')
         pg.evaluate("window.__fxEv = []")
         mt.locator('.memrow .lmain').click(); pg.wait_for_timeout(1600)
         ov = pg.locator('#fxOv')
@@ -511,7 +511,7 @@ try:
         mxt = mx.inner_text() if mx.count() else ''
         check(ov.count() == 1 and 'k-hit' in ov.get_attribute('class') and 'mem' in ov.get_attribute('class') and mo.count() == 1 and ov.locator('.push').count() == 0 and ov.locator('.rays').count() == 1
               and ov.locator('.memhd .mlab').inner_text() == '思い出のレース' and ymd9 in ov.locator('.memhd .mname').inner_text() and '9R' in ov.locator('.memhd .mname').inner_text()
-              and ov.locator('.rb.hit .bh').inner_text() == '的中！' and ov.locator('.rb .brows li').count() == 2 and ov.locator('.close').inner_text() == 'とじる'
+              and ov.locator('.rb.hit .bh').inner_text() == '的中！' and ov.locator('.rb .brows li').count() == 2 and ov.locator('.close').inner_text() == '閉じる'
               and pg.evaluate('TengelFx.current()') == {'kind': 'hit', 'phase': 'mem', 'quiet': True, 'theme': None, 'film': 0, 'pre': 0, 'pz': 1, 'art': ''} and pg.evaluate('TengelFx.memInfo()') == {'v': 'a', 'frame': 'hit'}
               and pg.evaluate('window.__fxEv') == ['memory:hit'] and pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__zoom').pop().get('lock') is True,
               f'思い出の 行を 押す → 思い出ボード：PUSH なし・的中の 形（光の筋・いつもの ボード「的中！」券種 2行）・上に「思い出のレース」と レース名・合図 memory・拡大は 止める（{pg.evaluate("TengelFx.current()")}）')
@@ -528,7 +528,7 @@ try:
         f9 = pg.locator('#recList .rsvf')
         check(pg.locator('#fxOv').count() == 0 and pg.evaluate('TengelFx.current()') is None and pg.evaluate('TengelFx.memInfo()') is None and not pg.evaluate('document.documentElement.classList.contains("fxon")') and pg.evaluate('window.__fxEv') == ['memory:hit', 'close:hit']
               and pg.evaluate('window.__zoom').pop().get('lock') is False and f9.count() == 1 and f9.get_attribute('data-mode') == 'edit',
-              '「とじる」→ 記録タブに もどる（行は 開いた まま・拡大できる・合図 close）')
+              '「閉じる」→ 記録タブに 戻る（行は 開いた まま・拡大できる・合図 close）')
         pg.click('#rFilters [data-f=mem]'); pg.wait_for_timeout(400)
         fl = pg.locator('#recList .dgroup .lrow')
         check(fl.count() == 1 and fl.get_attribute('data-id') == b9c['id'] and pg.locator('#recList .memtop').count() == 1 and pg.locator('#rFilters [data-f=mem]').get_attribute('aria-pressed') == 'true',
@@ -541,10 +541,10 @@ try:
         pg.evaluate("(async () => { const b = [...TengelLocal.mem.bets.values()].find(b => b.r === 9); const d = JSON.parse(JSON.stringify(b)); d.rsv.fx = 'nd'; delete d.mem; await TengelLocal.putBets([d]); })()"); pg.wait_for_timeout(400)
         pg.click('#rFilters [data-f=all]'); pg.wait_for_timeout(400)
         f9 = pg.locator('#recList .rsvf')
-        check(pg.locator('#recList .memtop').count() == 0 and f9.count() == 1 and f9.locator('[data-act=memtog]').inner_text() == '思い出のレースに記録する', '思い出を 消した 記録（ど的中に した）：欄は 消える・ボタンは「思い出のレースに記録する」に もどる')
+        check(pg.locator('#recList .memtop').count() == 0 and f9.count() == 1 and f9.locator('[data-act=memtog]').inner_text() == '思い出のレースに記録する', '思い出を 消した 記録（ど的中に した）：欄は 消える・ボタンは「思い出のレースに記録する」に 戻る')
         f9.locator('[data-act=memtog]').click(); pg.wait_for_timeout(500)
         ch = pg.locator('#recList .rsvf .memchoose')
-        check(ch.count() == 1 and ch.locator('[data-act=memsave][data-v=a]').inner_text() == '① 光の輪の芝コース' and ch.locator('[data-act=memsave][data-v=b]').inner_text() == '② プレミアムかわいい馬' and ch.locator('[data-act=memcancel]').inner_text() == 'やめる' and 'あとから変えられないよ' in ch.inner_text()
+        check(ch.count() == 1 and ch.locator('[data-act=memsave][data-v=a]').inner_text() == '① 光の輪の芝コース' and ch.locator('[data-act=memsave][data-v=b]').inner_text() == '② プレミアムかわいい馬' and ch.locator('[data-act=memcancel]').inner_text() == 'やめる' and '後から変えられないよ' in ch.inner_text()
               and 'mem' not in pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 9)") and pg.locator('#recList .memtop').count() == 0,
               'ど的中の レース → 押すと まず わくを 選ぶ 窓（① 光の輪の芝コース／② プレミアムかわいい馬／やめる）。まだ 記録しない')
         ch.locator('[data-act=memcancel]').click(); pg.wait_for_timeout(400)
@@ -598,7 +598,7 @@ try:
             ('3連単 13・8・2（13番人気は 数えない）', spec([13, 8, 2]), 'b|big||3連単||8'),
             ('3連単 13・14・2', spec([13, 14, 2]), 'h|hit||||'),
             ('3連単 11・13・2（13番人気は 大穴以上で ない → D）', spec([11, 13, 2]), 'd|sd||3連単|11|'),
-            ('3連単 11・6・99（人気が わからない 馬は 数えない）', spec([11, 6, 99]), 'd|sd||3連単|11|'),
+            ('3連単 11・6・99（人気が 分からない 馬は 数えない）', spec([11, 6, 99]), 'd|sd||3連単|11|'),
             ('3連単 99・8・2', spec([99, 8, 2]), 'b|big||3連単||8'),
             ('馬単だけ 11→8', rsp([('馬単', '的中', [[11, 8]])]), 'g|sgd||馬単|11|8'),
             ('馬単だけ 11→6', rsp([('馬単', '的中', [[11, 6]])]), 'd|sd||馬単|11|'),
@@ -624,7 +624,7 @@ try:
         ]
         dgot = [D(sp_) for _, sp_, _ in DCASES]
         dbad = [(nm, g_, e_) for (nm, _, e_), g_ in zip(DCASES, dgot) if g_ != e_]
-        check(not dbad, f'どれが出るか（第4.118版・第4.162版：G は M でも 超神様的中）：G／D／B／H・M・段を 決めた 券種・帯の 超大穴と 大穴（馬単だけ・ワイド・単勝・複勝・枠は 人気を 見ない・13番人気と 人気の わからない 馬は 数えない・超大穴 2頭は G・2券種で M）{len(DCASES)}こ（おかしい：{dbad}）')
+        check(not dbad, f'どれが出るか（第4.118版・第4.162版：G は M でも 超神様的中）：G／D／B／H・M・段を 決めた 券種・帯の 超大穴と 大穴（馬単だけ・ワイド・単勝・複勝・枠は 人気を 見ない・13番人気と 人気の 分からない 馬は 数えない・超大穴 2頭は G・2券種で M）{len(DCASES)}こ（おかしい：{dbad}）')
         gdd = pg.evaluate("(s) => TengelFx.decide(s)", spec([11, 8, 2], [('馬単', '的中', [[11, 8]])]))
         check(gdd == {'kind': 'sgd', 'tier': 'g', 'multi': True, 'supers': [{'no': 11, 'rank': 11}], 'bigs': [{'no': 8, 'rank': 8}], 'trig': {'t': '3連単', 'c': [11, 8, 2]}},
               f'decide の 中身：種類・段（tier）・M（multi）・帯の 超大穴と 大穴・段を 決めた 組（trig：券種と 組）（{gdd}）')
@@ -649,7 +649,7 @@ try:
         zx = fo.locator('.rb .brows li.top .n.zx')
         check(fo.locator('.fxs .ov.sd.still').count() == 1 and fo.locator('.fxs .ov.nd').count() == 0 and fo.locator('.nic').count() == 0 and fo.locator('.rb.fz .bh').text_content() == 'ど的中！！！' and '超大穴' in fo.locator('.rb .zrib').text_content() and '11番人気が3連単に！' in fo.locator('.rb .zrib').text_content() and zx.count() == 1 and zx.text_content() == '11' and fo.locator('.rb .brows li').nth(1).locator('.bc').count() == 2
               and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1',
-              f'ど的中の ボード（動画が 読めない → 極ど的中の さいごの 1まい → 1.3秒）：「ど的中！！！」・帯「超大穴 11 11番人気が3連単に！」・3連単の 11 に虹色の輪・馬単の当たり2つ（{fo.locator(".rb .zrib").text_content()}）')
+              f'ど的中の ボード（動画が 読めない → 極ど的中の 最後の 1枚 → 1.3秒）：「ど的中！！！」・帯「超大穴 11 11番人気が3連単に！」・3連単の 11 に虹色の輪・馬単の当たり2つ（{fo.locator(".rb .zrib").text_content()}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         # 設定：的中エフェクト オフ → PUSH・演出なしでボードだけ静かに／演出を控えめにする → .calm／効果音
         pg.evaluate("TengelFx.set({ effects: false })"); pg.wait_for_timeout(100)
@@ -665,7 +665,7 @@ try:
         cfz = pg.evaluate('TengelFx.current()')
         cfz['pc'] = pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).display"); cfz['ndt'] = pg.locator('#fxOv .ndt').count()
         check(cfz['kind'] == 'sd' and cfz['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv .ov.nd').count() == 0 and pg.locator('#fxOv video.sgv').count() == 0 and cfz['pc'] == 'none' and cfz['ndt'] == 0,
-              f'控えめ：ど的中（force の fz ＝ 極ど的中）は 入りの 幕・押した 画面・プチュン・動画を 出さず さいごの 1まい（still）→ ボード（{cfz}）')
+              f'控えめ：ど的中（force の fz ＝ 極ど的中）は 入りの 幕・押した 画面・プチュン・動画を 出さず 最後の 1枚（still）→ ボード（{cfz}）')
         pg.evaluate('TengelFx.close()')
         # ---- 第5弾（16.3）・第4.118版：特別な 演出は 決まった 条件（第4.162版：くじは ない）→ PUSH は ど的中と 同じ → 押したあと → ど的中の 形の ボード ----
         pg.evaluate("window.__seq = arr => { let i = 0; TengelFx._rand = () => arr[Math.min(i++, arr.length - 1)]; }")   # 乱数を 順に 決める
@@ -698,7 +698,7 @@ try:
                       ('sd', {'rib': '超大穴1111番人気が単勝に！', 'rows': ['単勝*:11', '3連単']}),
                       ('big', {'rib': '', 'rows': ['ワイド*', '単勝']}),
                       ('hit', {'rib': '', 'rows': ['馬単', '単勝']})],
-              f'帯「…が（段を 決めた 券種）に！」と その 券種の 行が いちばん上（虹色の 輪も その 行）・デカ的中は 帯なし・的中は 予約した 順（第4.118版）（{RBS}）')
+              f'帯「…が（段を 決めた 券種）に！」と その 券種の 行が 一番上（虹色の 輪も その 行）・デカ的中は 帯なし・的中は 予約した 順（第4.118版）（{RBS}）')
         # 的中エフェクト オフ（第4.118版）：同じ 決まった 種類・見出しは その 種類の もの・PUSH なしで すぐ ボード
         pg.evaluate("TengelFx.set({ effects: false })"); pg.evaluate("TengelFx._rand = () => 0")   # 前は くじで プレミアムに なった 乱数
         QB = "(() => { const o = document.querySelector('#fxOv'); const z = o.querySelector('.rb .zrib'); return [document.querySelectorAll('#fxOv .push').length, document.querySelectorAll('#fxOv .fxs .ov.miss.quiet').length, o.querySelector('.rb .bh').textContent.replace(/\\s+/g, ''), z ? z.textContent.replace(/\\s+/g, '') : ''].join('|'); })()"
@@ -729,14 +729,14 @@ try:
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sgd' }, s))", spec([11, 8, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(400)
         cst = pg.evaluate('TengelFx.current()')
         check(cst['film'] == 2 and pg.locator('#fxOv .ov.sgd.still').count() == 1 and pg.locator('#fxOv .ov.sgd.go').count() == 0 and pg.locator('#fxOv video.sgv').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .sgs')).display") == 'block' and pg.locator('#fxOv .rb.fz .bh').inner_text() == '超神様的中！！！',
-              f'控えめの 超神様的中：動画を 出さず さいごの 1まい（still）・見出し「超神様的中！！！」（{cst}）')
+              f'控えめの 超神様的中：動画を 出さず 最後の 1枚（still）・見出し「超神様的中！！！」（{cst}）')
         pg.wait_for_timeout(1500)
         check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .hb')).visibility") == 'visible', '控えめの 超神様的中：1.3秒で ボードが ふわっと 出る')
         pg.evaluate('TengelFx.close()')
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(400)
         csd = pg.evaluate('TengelFx.current()')
         check(csd['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sds')).display") == 'block' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).display") == 'none',
-              f'控えめの 紫電：プチュンも 動画も 出さず 動画の さいごの 1まい（still）（第4.71版）（{csd}）')
+              f'控えめの 紫電：プチュンも 動画も 出さず 動画の 最後の 1枚（still）（第4.71版）（{csd}）')
         pg.wait_for_timeout(1500)
         check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sdk')).opacity") == '1', '控えめの 紫電：1.3秒で ボードが ふわっと 出る（うしろは 少し 暗く）')
         pg.evaluate('TengelFx.close()')
@@ -757,19 +757,19 @@ try:
             check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .hb')).opacity") == '0', '動画の 間は ボードは まだ 見えない（12.93秒から：第4.162版）')
             pg.wait_for_timeout(int((SGT.RES + 1.27) * 1000))   # ボード 12.93秒 →「とじる」13.38＋0.24＋0.3秒（第4.162版。前は 14.33秒・14.78秒）
             v2 = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv'); return { ended: v.ended || v.paused, t: Math.round(v.currentTime * 10) / 10 }; })()")
-            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .close')).visibility") == 'visible' and v2['ended'] and SGT.FILM - .4 <= v2['t'] <= SGT.FILM + .2, f'12.93秒 ボード →「とじる」・動画（12.83秒：球体の 場面なし）は さいごの 1まいで 止まる（{v2}）')
+            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sgd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .close')).visibility") == 'visible' and v2['ended'] and SGT.FILM - .4 <= v2['t'] <= SGT.FILM + .2, f'12.93秒 ボード →「閉じる」・動画（12.83秒：球体の 場面なし）は 最後の 1枚で 止まる（{v2}）')
         else:
             print('  ⚠️ 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
-        check(pg.locator('#fxOv').count() == 0 and pg.locator('#fxVh video[data-film=sgd_film]').count() == 1 and pg.locator('#fxVh video[data-film=spg_up]').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '（第4.162版：昇格の 動画 spg_up は もう ない）「とじる」→ 動画は 止めて はじめに もどして 置き場へ（動画は 出す 演出の 分だけ 作る）')
+        check(pg.locator('#fxOv').count() == 0 and pg.locator('#fxVh video[data-film=sgd_film]').count() == 1 and pg.locator('#fxVh video[data-film=spg_up]').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '（第4.162版：昇格の 動画 spg_up は もう ない）「閉じる」→ 動画は 止めて 初めに 戻して 置き場へ（動画は 出す 演出の 分だけ 作る）')
         # 動画が 読めない 時（ファイルが ない）→ さいごの 1まい → 1.3秒 ボード
         pg.evaluate("window.__FX.films = { sgd_film: 'nai_sgd_film.webm' }")   # ない 名前 → error → still
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'spg' }, s))", spec([11, 8, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1200)
         cst2 = pg.evaluate('TengelFx.current()')
-        check(cst2['kind'] == 'sgd' and cst2['film'] == 2 and pg.locator('#fxOv .ov.sgd.still').count() == 1 and pg.locator('#fxOv .ov.spz, #fxOv .ov.spg, #fxOv video.spu').count() == 0, f'動画が 読めない（force は 前の 超プレミアム神様的中 → 超神様的中に なる）→ さいごの 1まい → ボード（{cst2}）')
+        check(cst2['kind'] == 'sgd' and cst2['film'] == 2 and pg.locator('#fxOv .ov.sgd.still').count() == 1 and pg.locator('#fxOv .ov.spz, #fxOv .ov.spg, #fxOv video.spu').count() == 0, f'動画が 読めない（force は 前の 超プレミアム神様的中 → 超神様的中に なる）→ 最後の 1枚 → ボード（{cst2}）')
         pg.wait_for_timeout(1400)   # 押して 2.6秒（さいごの 1まい → 1.3秒 ボード → 1.6秒 見出し → 1.7秒 帯）
         bh2 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sgd .rb .bh'), z = document.querySelector('#fxOv .ov.sgd .rb .zrib'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText, rib: z ? getComputedStyle(z).opacity : null, ribt: z ? z.innerText.replace(/\\s+/g, '') : null }; })()")
-        check(bh2['op'] == '1' and bh2['vis'] == 'visible' and bh2['t'] == '超神様的中！！！' and bh2['rib'] == '1' and bh2['ribt'] == '超大穴11大穴8が3連単に！', f'さいごの 1まいの ときの ボードの 見出し「超神様的中！！！」と 帯は ボードと いっしょに 出る（ど的中の 7.2秒を 待たない）（{bh2}）')
+        check(bh2['op'] == '1' and bh2['vis'] == 'visible' and bh2['t'] == '超神様的中！！！' and bh2['rib'] == '1' and bh2['ribt'] == '超大穴11大穴8が3連単に！', f'最後の 1枚の ときの ボードの 見出し「超神様的中！！！」と 帯は ボードと 一緒に 出る（ど的中の 7.2秒を 待たない）（{bh2}）')
         pg.evaluate('TengelFx.close()')
         # 第4.71版：紫電は 押した 瞬間に プチュン（CSS・動画を 待たない）→ 動画（sd_film）が 動きだしたら go（幕が すきとおる）→ 10.05秒 ボード／読めない → さいごの 1まい（still）→ 1.3秒 ボード
         # 第4.77版：極ど的中（紫電）は ノーマルど的中の 幕と 動画（nd_film・音 nd）から 入る → 動画の 5.34秒（白い 光に つつまれた 瞬間）で すぐ 極ど的中（プチュン → sd_film → 10.05秒 ボード）
@@ -783,7 +783,7 @@ try:
         pg.evaluate("window.__fxT0 = performance.now()"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(120)
         pr0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.nd'); const h = o && o.querySelector('.hb'); const pr = o && o.querySelector('.ndt .pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; return { nd: !!o, sd: !!document.querySelector('#fxOv .ov.sd'), pc: document.querySelectorAll('#fxOv .pc').length, hb: !h || getComputedStyle(h).visibility === 'hidden' || getComputedStyle(h).opacity === '0', pre: (TengelFx.current() || {}).pre, push: document.querySelectorAll('#fxOv .pbox .push').length, press: a.length === 1 && a[0].playState === 'running', ring: document.querySelectorAll('#fxOv .ov.nd .ndt .ndtr').length, bx: document.querySelectorAll('#fxOv .ov.nd .ndt .bx').length }; })()")
         check(pr0['nd'] and not pr0['sd'] and pr0['pc'] == 0 and pr0['hb'] and pr0['pre'] in (1, 2) and pr0['push'] == 0 and pr0['press'] and pr0['ring'] == 1 and pr0['bx'] == 0,
-              f'極ど的中（第4.77版・第4.79版）：押すと まず ノーマルど的中の 幕（プチュンなし・ボードなし）・PUSH の 画面とは 別の 押した 画面（押された PUSH が ポチッと へこむ・うすい 光の 輪・爆発は なし）（{pr0}）')
+              f'極ど的中（第4.77版・第4.79版）：押すと まず ノーマルど的中の 幕（プチュンなし・ボードなし）・PUSH の 画面とは 別の 押した 画面（押された PUSH が ポチッと へこむ・薄い 光の 輪・爆発は なし）（{pr0}）')
         if HAVE_SD:
             pg.wait_for_function("() => (TengelFx.current() || {}).pre === 2", timeout=6000)
             v = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv.on'); return v ? { paused: v.paused, film: v.getAttribute('data-film') } : null; })()")
@@ -801,28 +801,28 @@ try:
                   and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0' and pg.locator('#fxOv video').count() == 1,
                   f'極ど的中：動画が 舞台で 動きだす（go・幕が すきとおる）・ボードは まだ 出ない（{v}）')
             pg.wait_for_timeout(1500)
-            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).visibility") == 'hidden', '紫電：プチュンは 約1秒で おわる（あとは 動画）')
+            check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .pc')).visibility") == 'hidden', '紫電：プチュンは 約1秒で 終わる（あとは 動画）')
             pg.wait_for_timeout(7600)
             check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '0', '紫電：9秒すぎ（ど！！！的中の 2.5秒）は まだ ボードを 出さない')
             pg.wait_for_timeout(1900)
             check(pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity") == '1' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .close')).visibility") == 'visible' and pg.locator('#fxOv .rb.fz .bh').inner_text() == 'ど的中！！！',
-                  '紫電：10.05秒で ボード「ど的中！！！」→「とじる」')
+                  '紫電：10.05秒で ボード「ど的中！！！」→「閉じる」')
         else:
             print('  ⚠️ 紫電・ノーマルど的中の 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
-        check(pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0)") and pg.locator('#fxOv').count() == 0, '極ど的中：「とじる」→ 動画（入りの ノーマルも）を 止めて 置き場へ')
+        check(pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0)") and pg.locator('#fxOv').count() == 0, '極ど的中：「閉じる」→ 動画（入りの ノーマルも）を 止めて 置き場へ')
         # 入りの とちゅうで とじる → 動画と 時刻の しかけが のこらない
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(700)
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(6500)
-        check(pg.locator('#fxOv').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused)"), '極ど的中：入りの とちゅうで「とじる」→ あとから ブラックアウト・極ど的中が 出て こない')
+        check(pg.locator('#fxOv').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused)"), '極ど的中：入りの 途中で「閉じる」→ 後から ブラックアウト・極ど的中が 出て こない')
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', sd_film: 'nai_sd_film.webm', nd_film: 'nai_nd_film.webm' }")   # ない 名前 → error → still
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1600)
         cst3 = pg.evaluate('TengelFx.current()')
         check(cst3['kind'] == 'sd' and cst3['film'] == 2 and cst3['pre'] == 4 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv .ov.sd.go').count() == 0 and pg.locator('#fxOv .ov.nd').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.sd .sds')).display") == 'block',
-              f'紫電で 動画が 読めない（入りの ノーマルの 動画も）→ すぐ 極ど的中の さいごの 1まい（still）（{cst3}）')
+              f'紫電で 動画が 読めない（入りの ノーマルの 動画も）→ すぐ 極ど的中の 最後の 1枚（still）（{cst3}）')
         pg.wait_for_timeout(1400)
         bh3 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText, hb: getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity }; })()")
-        check(bh3['op'] == '1' and bh3['hb'] == '1' and bh3['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.t.SDUP") == {'AT': 5.34, 'BLACK': 0}, f'紫電の still：1.3秒で ボード・見出しも ボードと いっしょに（{bh3}）')
+        check(bh3['op'] == '1' and bh3['hb'] == '1' and bh3['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.t.SDUP") == {'AT': 5.34, 'BLACK': 0}, f'紫電の still：1.3秒で ボード・見出しも ボードと 一緒に（{bh3}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         # 第4.165版（まさちゃん 2026/11/13 11:52「あと、ノーマル的中の演出消して！」→ 聞いて 決めた：消すのは ノーマルど的中・その 条件の レースは 極ど的中・極ど的中の 入りは 残す）：
         #   D で M で ない レース（前は ノーマルど的中：くじは ない）→ 極ど的中（入り＝ノーマルど的中の 幕と 動画の はじめの 5.34秒 → プチュン → 極ど的中の 動画）。決めて 出す nd も 極ど的中（静かな ボードでも）
@@ -843,12 +843,12 @@ try:
             pg.evaluate("(v) => TengelFx.set({ effects: v })", fx_on)
             NDK.append(pg.evaluate("(s) => { const k = TengelFx.show(Object.assign({ force: 'nd' }, s)); const c = TengelFx.current(); const r = k + '/' + c.kind + '/' + document.querySelector('#fxOv').className.split(' ')[0]; TengelFx.close(); return r; }", spec([11, 6, 2]))); pg.wait_for_timeout(60)
         pg.evaluate("TengelFx.set({ effects: true })")
-        check(NDK == ['sd/sd/k-sd'] * 2, f'決めて 出す ノーマルど的中（force の nd：前の 道具・ためし）も 極ど的中に なる（静かな ボードでも）（{NDK}）')
+        check(NDK == ['sd/sd/k-sd'] * 2, f'決めて 出す ノーマルど的中（force の nd：前の 道具・試し）も 極ど的中に なる（静かな ボードでも）（{NDK}）')
         pg.evaluate("window.__FX.films = { sgd_film: 'sgd_film.webm', sd_film: 'nai_sd_film.webm', nd_film: 'nai_nd_film.webm' }")   # ない 名前 → error → 極ど的中の さいごの 1まい
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'nd' }, s))", spec([11, 6, 2])); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1600)
         cst4 = pg.evaluate('TengelFx.current()')
         check(cst4['kind'] == 'sd' and cst4['film'] == 2 and pg.locator('#fxOv .ov.sd.still').count() == 1 and pg.locator('#fxOv .ov.nd').count() == 0 and pg.locator('#fxOv .ov.nd.still').count() == 0,
-              f'動画が 読めない とき：ノーマルど的中の さいごの 1まいは 出ない → 極ど的中の さいごの 1まい（still）（{cst4}）')
+              f'動画が 読めない とき：ノーマルど的中の 最後の 1枚は 出ない → 極ど的中の 最後の 1枚（still）（{cst4}）')
         pg.wait_for_timeout(1400)
         bh4 = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.sd .rb .bh'); const s = getComputedStyle(e); return { op: s.opacity, t: e.innerText, hb: getComputedStyle(document.querySelector('#fxOv .ov.sd .hb')).opacity }; })()")
         check(bh4['op'] == '1' and bh4['hb'] == '1' and bh4['t'] == 'ど的中！！！' and pg.evaluate("window.__FX.art.nd") == [] and pg.evaluate("window.__FX.t.ND") == 9.9
@@ -889,7 +889,7 @@ try:
         pg.evaluate("window.__fxEv = []"); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(150)
         gk0 = pg.evaluate("(() => { const o = document.querySelector('#fxOv .ov.gk'); const h = getComputedStyle(o.querySelector('.hb')); const t = o.querySelector('.ndt'); const pr = t && t.querySelector('.pzw .pressed'); const a = pr && pr.getAnimations ? pr.getAnimations().filter(x => x.animationName && x.animationName.endsWith('ndtP')) : []; return { cls: o.className, bg: getComputedStyle(o).backgroundColor, hb: h.visibility === 'hidden' || h.opacity === '0', img: [...o.querySelectorAll('img')].map(i => i.src.split('/').pop()), press: a.length === 1 && a[0].playState === 'running', pz: t ? t.querySelector('.pzw').style.getPropertyValue('--pz') : '', ring: t ? t.querySelectorAll('.ndtr').length : 0, z: t ? getComputedStyle(t).zIndex : '', vis: t ? getComputedStyle(t).visibility : '', push: document.querySelectorAll('#fxOv .pbox .push').length, sr: (o.querySelector('.sr') || {}).textContent || '', oz: getComputedStyle(o).zIndex }; })()")
         check('fz' in gk0['cls'] and (gk0['bg'] == 'rgb(0, 0, 0)' or 'go' in gk0['cls']) and gk0['hb'] and gk0['img'] == ['gk_last2.webp'] + (['pb_default.webp'] if PIC else []) and gk0['press'] and gk0['pz'] == '1.6' and gk0['ring'] == 1 and gk0['z'] == '20' and gk0['vis'] == 'visible' and gk0['push'] == 0 and '神様極的中' in gk0['sr'] and gk0['oz'] == '31',
-              f'神様極的中：押すと ノーマルど的中と 同じ 押した 画面（押された PUSH が 1.6倍の まま ポチッと へこむ・うすい 光の 輪）・黒い 幕・ボードは まだ・絵は 動画の さいごの 1まい だけ（{gk0}）')
+              f'神様極的中：押すと ノーマルど的中と 同じ 押した 画面（押された PUSH が 1.6倍の まま ポチッと へこむ・薄い 光の 輪）・黒い 幕・ボードは まだ・絵は 動画の 最後の 1枚 だけ（{gk0}）')
         if HAVE_GK:
             pg.wait_for_function("() => (TengelFx.current() || {}).film === 1", timeout=6000)
             v = pg.evaluate("(() => { const v = document.querySelector('#fxOv video.sgv.on'); return v ? { paused: v.paused, film: v.getAttribute('data-film') } : null; })()")
@@ -898,36 +898,36 @@ try:
                   f'神様極的中：動画が 舞台で 動きだす（go・幕が すきとおる）・ボードは まだ（{v}）')
             pg.evaluate("window.__goT = performance.now()")
             pg.wait_for_function("() => getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).visibility === 'hidden'", timeout=3000)
-            check(pg.evaluate("performance.now() - window.__goT") < 1500, '神様極的中：押した 画面は すぐ（約0.55秒）消える（動画の はじめの 真っ暗の あいだ）')
+            check(pg.evaluate("performance.now() - window.__goT") < 1500, '神様極的中：押した 画面は すぐ（約0.55秒）消える（動画の 初めの 真っ暗の 間）')
             pg.wait_for_function("() => performance.now() - window.__goT > 11400", timeout=14000)
             hb114 = pg.evaluate("(() => { const h = getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')); return { op: h.opacity, k: getComputedStyle(document.querySelector('#fxOv .ov.gk .gkk')).opacity, t: Math.round(performance.now() - window.__goT) }; })()")
-            check(hb114['op'] == '0' and hb114['k'] == '0', f'神様極的中：11.4秒（さいごの 場面：虹色の 極と 雷）は まだ ボードを 出さない（{hb114}）')
+            check(hb114['op'] == '0' and hb114['k'] == '0', f'神様極的中：11.4秒（最後の 場面：虹色の 極と 雷）は まだ ボードを 出さない（{hb114}）')
             pg.wait_for_function("() => performance.now() - window.__goT > 13500", timeout=4000)
             gb = pg.evaluate("(() => { const z = document.querySelector('#fxOv .ov.gk .rb .zrib'); return { hb: getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')).opacity, close: getComputedStyle(document.querySelector('#fxOv .close')).visibility, t: document.querySelector('#fxOv .rb.fz .bh').innerText, rib: z ? z.innerText.replace(/\\s+/g, '') : '', zx: [...document.querySelectorAll('#fxOv .rb .brows li.top .n.zx')].map(n => n.innerText) }; })()")
             check(gb['hb'] == '1' and gb['close'] == 'visible' and gb['t'] == '神様極的中！！！' and gb['rib'] == '超大穴11大穴8が3連単に！' and gb['zx'] == ['11', '8'],
-                  f'神様極的中：12秒で ボード「神様極的中！！！」（帯は 超大穴 11 と 大穴 8・3連単の 11 と 8 に 虹色の 輪）→「とじる」（{gb}）')
+                  f'神様極的中：12秒で ボード「神様極的中！！！」（帯は 超大穴 11 と 大穴 8・3連単の 11 と 8 に 虹色の 輪）→「閉じる」（{gb}）')
         else:
             print('  ⚠️ 神様極的中の 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
-        check(pg.locator('#fxOv').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '神様極的中：「とじる」→ 動画を 止めて はじめに もどして 置き場へ')
+        check(pg.locator('#fxOv').count() == 0 and pg.evaluate("[...document.querySelectorAll('#fxVh video')].every(v => v.paused && v.currentTime === 0 && !v.className)"), '神様極的中：「閉じる」→ 動画を 止めて 初めに 戻して 置き場へ')
         pg.evaluate("window.__FX.films = Object.assign({}, window.__FX.films, { gk_film: 'nai_gk_film.webm' })")   # ない 名前 → error → still
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'gk' }, s))", GS); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(1000)
         cg = pg.evaluate('TengelFx.current()')
         check(cg['kind'] == 'gk' and cg['film'] == 2 and pg.locator('#fxOv .ov.gk.still').count() == 1 and pg.locator('#fxOv .ov.gk.go').count() == 0 and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.gk .gks')).display") == 'block' and pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')).opacity") == '0',
-              f'神様極的中で 動画が 読めない → 動画の さいごの 1まい（still）・ボードは まだ（{cg}）')
+              f'神様極的中で 動画が 読めない → 動画の 最後の 1枚（still）・ボードは まだ（{cg}）')
         pg.wait_for_timeout(1400)   # 押して 2.4秒（さいごの 1まい → 1.3秒 ボード → 1.6秒 見出し → 1.7秒 帯）
         bhg = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.gk .rb .bh'), z = document.querySelector('#fxOv .ov.gk .rb .zrib'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText, rib: z ? getComputedStyle(z).opacity : null, ribt: z ? z.innerText.replace(/\\s+/g, '') : null, hb: getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')).opacity, k: getComputedStyle(document.querySelector('#fxOv .ov.gk .gkk')).opacity }; })()")
         check(bhg['op'] == '1' and bhg['vis'] == 'visible' and bhg['hb'] == '1' and bhg['t'] == '神様極的中！！！' and bhg['rib'] == '1' and bhg['ribt'] == '超大穴11大穴8が3連単に！' and bhg['k'] == '1'
               and pg.evaluate("window.__FX.t.GKS") == {'FROM': 11.75, 'WAIT': 1.0} and pg.evaluate("window.__FX.t.GK") == 11.85 and pg.evaluate("window.__FX.t.GKB") == 12.0 and pg.evaluate("window.__FX.art.gk") == ['gk_last2.webp']
               and pg.evaluate("window.__FX.films.gk_film") is not None and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 12s both')"),
-              f'神様極的中の still：1.3秒で ボード（うしろは 少し 暗く）・見出し「神様極的中！！！」と 帯（超大穴と 大穴）も いっしょに・音は sfx_gk の 11.75秒から・ボードは 動画の 12秒（{bhg}）')
+              f'神様極的中の still：1.3秒で ボード（うしろは 少し 暗く）・見出し「神様極的中！！！」と 帯（超大穴と 大穴）も 一緒に・音は sfx_gk の 11.75秒から・ボードは 動画の 12秒（{bhg}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx.set({ calm: true })")
         pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=2)); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
         cgc = pg.evaluate('TengelFx.current()')
         cgc['ndt'] = pg.evaluate("getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).display")
         check(cgc['kind'] == 'gk' and cgc['film'] == 2 and pg.locator('#fxOv .fxs.calm .ov.gk.still').count() == 1 and pg.locator('#fxOv video.sgv').count() == 0 and cgc['ndt'] == 'none',
-              f'控えめの 神様極的中：押した 画面も 動画も 出さず さいごの 1まい（still）→ 1.3秒 ボード（{cgc}）')
+              f'控えめの 神様極的中：押した 画面も 動画も 出さず 最後の 1枚（still）→ 1.3秒 ボード（{cgc}）')
         pg.evaluate('TengelFx.close()'); pg.evaluate("TengelFx.set({ calm: null, effects: false })"); pg.wait_for_timeout(100)
         kq = [pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=2))]; pg.wait_for_timeout(300)
         qg = pg.evaluate("(() => ({ push: document.querySelectorAll('#fxOv .push').length, quiet: document.querySelectorAll('#fxOv .fxs .ov.miss.quiet').length, t: document.querySelector('#fxOv .rb.fz .bh').textContent.replace(/\\s+/g, ''), rib: document.querySelector('#fxOv .rb .zrib').textContent.replace(/\\s+/g, '') }))()")   # 第4.118版：textContent（重い ときは 0.3秒で まだ 描かれて いない ことが ある）
@@ -951,14 +951,14 @@ try:
             have = {p_: po.locator(f'.ov.{cls} {p_}').count() for p_ in parts}
             imgs_bad = pg.evaluate("[...document.querySelectorAll('#fxOv img')].filter(i => i.complete && i.naturalWidth === 0 && !/sgd_last|pm_|gd_|sd_/.test(i.src)).length")
             check(okp and po.locator(f'.fxs .ov.fz.{cls}').count() == 1 and all(have.values()) and po.locator('.rb.fz .bh').text_content() == title and ribs in po.locator('.rb .zrib').text_content() and imgs_bad == 0 and po.locator('.rb .brows li.top .bt').text_content() == '3連単',   # ボードは まだ 見えない（text_content）
-                  f'{kind}：PUSH は ど的中と 同じ → 押したあとの 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が いちばん上（{have}）')
+                  f'{kind}：PUSH は ど的中と 同じ → 押した後の 部品（{"・".join(parts)}）→ ボード「{title}」・3連単の 行が 一番上（{have}）')
             if kind == 'sd':   # 第4.71版：紫電は 絵を 使わない（ど！！！的中も 動画の 中の 3D）。さいごの 1まいと プチュン（ど的中と 同じ 部品）・ボードは 10.05秒
                 srcs = pg.evaluate("[...new Set([...document.querySelectorAll('#fxOv .ov.sd img')].map(i => i.src.split('/').pop()))].sort()")
                 check(srcs == ['sd_last4.webp'] and po.locator('.ov.sd .pc .pcl').count() == 1 and po.locator('.ov.sd .pc .pca path').count() > 20
                       and po.locator('.ov.sd .sdC, .ov.sd .sdlogo, .ov.sd .sdbt, .ov.sd .sdar').count() == 0
                       and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 10.05s both')") and pg.evaluate("window.__FX.t.SD") == 9.9
                       and pg.evaluate("window.__FX.art.sd") == ['sd_last4.webp'] and pg.evaluate("window.__FX.t.SDS") == {'FROM': 9.8, 'WAIT': 1.0} and pg.evaluate("window.__FX.sfx.sdp") == 'sfx_sdp.m4a',
-                      f'紫電（第4.71版）：絵は さいごの 1まい だけ（{srcs}）・押した 瞬間の プチュンは ど的中と 同じ 部品・音は sfx_sdp・ボードは 10.05秒')
+                      f'紫電（第4.71版）：絵は 最後の 1枚 だけ（{srcs}）・押した 瞬間の プチュンは ど的中と 同じ 部品・音は sfx_sdp・ボードは 10.05秒')
             pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx._rand = null")
         # 着せ替えの テーマで：超神様的中（第4.162版：前は プレミアムど的中で ためして いた）の ボードは その テーマの ど的中の 形（第4弾・16.4）
@@ -1013,11 +1013,11 @@ try:
         pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(400)
         pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"] .lmain').click(); pg.wait_for_timeout(300)
         pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"] [data-act=load]').click(); pg.wait_for_timeout(600)
-        check(pg.locator('#fR').input_value() == '9' and '結果を記録ずみ（的中）' in pg.locator('#recCard').inner_text() and pg.locator('#recCard [data-rsv=reserve]').count() == 0, '結果を記録した9R：判定画面では「結果を記録ずみ」（予約し直せない）')
+        check(pg.locator('#fR').input_value() == '9' and '結果を記録済み（的中）' in pg.locator('#recCard').inner_text() and pg.locator('#recCard [data-rsv=reserve]').count() == 0, '結果を記録した9R：判定画面では「結果を記録済み」（予約し直せない）')
         # 設定：結果確認のお知らせ オフ → 待っていたお知らせが消える → オン
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(500)
         nc = pg.locator('#setNotify')
-        check(nc.count() == 1 and '発走15分後' in nc.inner_text() and '通知は許可されているよ' in nc.inner_text() and '2件' in nc.inner_text(), f'設定に「結果確認のお知らせ」（許可ずみ・予約中2件）')
+        check(nc.count() == 1 and '発走15分後' in nc.inner_text() and '通知は許可されているよ' in nc.inner_text() and '2件' in nc.inner_text(), f'設定に「結果確認のお知らせ」（許可済み・予約中2件）')
         nc.locator('#notifySeg button[data-v="0"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate('window.__notify.items') == [] and pg.evaluate("TengelLocal.getSetting('notify')") is False, 'オフ → 待っていたお知らせを全部消す')
         nc.locator('#notifySeg button[data-v="1"]').click(); pg.wait_for_timeout(700)
@@ -1026,13 +1026,13 @@ try:
         pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(400)
         pg.locator(f'#recList .lrow[data-id="{b8id}"] .lmain').click(); pg.wait_for_timeout(300)
         pg.locator(f'#recList .lrow[data-id="{b8id}"] [data-act=load]').click(); pg.wait_for_timeout(600)
-        check(pg.locator('#fR').input_value() == '8' and '予約ずみ' in pg.locator('#recCard').inner_text(), '予約中の8Rを判定画面で開く')
+        check(pg.locator('#fR').input_value() == '8' and '予約済み' in pg.locator('#recCard').inner_text(), '予約中の8Rを判定画面で開く')
         # 足りないとき：Pカスタムで2つ解放（500P×2）→ 100P → 新しいレースは読めない → ポイントを買う
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         for tp in ('複勝', '枠複'):
             pg.locator(f'#setCustom [data-pt=unlock1][data-key="type:{tp}"]').click(); pg.wait_for_timeout(150)
             pg.locator(f'#setCustom [data-pt=unlock2][data-key="type:{tp}"]').click(); pg.wait_for_timeout(500)
-        check(pg.evaluate('TengelWallet.total()') == 100 and pg.evaluate("TengelWallet.unlocked('type:複勝') && TengelWallet.unlocked('type:枠複') && !TengelWallet.unlocked('type:馬連')") and '解放ずみ' in pg.locator('#setCustom').inner_text(), '券種を2つ解放（500P×2）→ 残り100P')
+        check(pg.evaluate('TengelWallet.total()') == 100 and pg.evaluate("TengelWallet.unlocked('type:複勝') && TengelWallet.unlocked('type:枠複') && !TengelWallet.unlocked('type:馬連')") and '解放済み' in pg.locator('#setCustom').inner_text(), '券種を2つ解放（500P×2）→ 残り100P')
         check(pg.locator('#setCustom [data-pt=unlock1]').count() == 6 and pg.locator('#setCustom [data-pt=unlock1]').first.inner_text() == 'Pが足りない', '足りないときは「Pが足りない」')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(400)
         card = pg.locator('#recCard')
@@ -1050,26 +1050,26 @@ try:
         # 第4.84版（まさちゃん「このポイントの欄タップしたら、所持ポイントの確認と、ポイント&サブスクの購入選択画面が出てくるようにして！」）：「ポイントを買う」も 上の帯の 所有ポイントも ポイントの 窓
         po = pg.locator('#ptOv')
         pot = po.inner_text() if po.count() else ''
-        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and '合計 100P' in pot and 'ポイントの詳細' in pot and po.locator('#ptDetail h2').inner_text() == 'ポイントの詳細' and pg.evaluate("[...document.querySelectorAll('#ptOv #ptDetail .ptbk > div > span')].map(x => x.firstChild.textContent)") == ['購入ポイント', 'サブスクポイント', '獲得ポイント'] and 'ポイントは 合計 99,999P まで もてるよ' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
-              f'「ポイントを買う」→ ポイントの窓（第4.139版：いちばん 上に「ポイントの詳細」＝合計 100P と 購入ポイント・サブスクポイント・獲得ポイントの 3つ・上限の 行 ／ パック 4つ・サブスク 3つ）')
+        check(po.count() == 1 and po.get_attribute('role') == 'dialog' and '合計 100P' in pot and 'ポイントの詳細' in pot and po.locator('#ptDetail h2').inner_text() == 'ポイントの詳細' and pg.evaluate("[...document.querySelectorAll('#ptOv #ptDetail .ptbk > div > span')].map(x => x.firstChild.textContent)") == ['購入ポイント', 'サブスクポイント', '獲得ポイント'] and 'ポイントは 合計 99,999P まで 持てるよ' in pot and 'ポイントを買う' in pot and 'サブスク（毎月とどく）' in pot and po.locator('#ptBuy [data-pt=buy]').count() == 4 and po.locator('#ptSub [data-pt=buy]').count() == 3 and po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').count() == 1,
+              f'「ポイントを買う」→ ポイントの窓（第4.139版：一番 上に「ポイントの詳細」＝合計 100P と 購入ポイント・サブスクポイント・獲得ポイントの 3つ・上限の 行 ／ パック 4つ・サブスク 3つ）')
         # 買う（App内課金のかわり）：1,000P → 届く → finish（窓の 中で）
         pg.evaluate("window.__txn = 500; window.__iap.buy['jp.tengel.app.points1000'] = () => ({ ok: true, state: 'ok', tx: { id: String(++window.__txn), originalId: 'o1', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: false } }); 0")
         pg.evaluate("window.__bridge = []")
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         fin = [x for x in pg.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
-        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and '合計 1,100P' in po.inner_text() and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 1,100P', '窓で 1,000Pのパックを買う → 1,100P（窓の 内わけ＝購入ポイント 1,000・獲得ポイント 100 と 上の帯の 合計も かわる）・台帳に書いてから取引を終わらせる（finish）')
+        check(pg.evaluate('TengelWallet.total()') == 1100 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['1,000P', '0P', '100P'] and '合計 1,100P' in po.inner_text() and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 1,100P', '窓で 1,000Pのパックを買う → 1,100P（窓の 内わけ＝購入ポイント 1,000・獲得ポイント 100 と 上の帯の 合計も 変わる）・台帳に書いてから取引を終わらせる（finish）')
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate('TengelWallet.total()') == 2100, 'もう一度買う（別の取引）→ 2,100P')
         pg.evaluate("window.__iap.buy['jp.tengel.app.points500'] = () => ({ ok: false, state: 'cancelled' }); 0")
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points500"]').click(); pg.wait_for_timeout(500)
         check(pg.evaluate('TengelWallet.total()') == 2100, 'やめたら何も変わらない')
         po.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
-        check(pg.locator('#ptOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')"), 'ポイントの窓を とじる')
+        check(pg.locator('#ptOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')"), 'ポイントの窓を 閉じる')
         pg.click('#ptsPill'); pg.wait_for_timeout(500)
         pd = pg.evaluate("() => { const o = document.querySelector('#ptOv'), d = o && o.querySelector('#ptDetail'), b = o && o.querySelector('.msb'); if (!d) return null; const r = d.getBoundingClientRect(), h = o.querySelector('.msh').getBoundingClientRect(); return { top: Math.round(r.top - h.bottom), first: b.firstElementChild === d, st: b.scrollTop, big: d.querySelector('.ptbig').innerText.replace(/\\s+/g, ''), rows: [...d.querySelectorAll('.ptbk > div')].map(x => x.innerText.replace(/\\s+/g, ' ')) }; }")
         check(pg.locator('#ptOv').count() == 1 and '合計 2,100P' in pg.locator('#ptOv').inner_text() and bool(pd) and pd['first'] and pd['st'] == 0 and 0 <= pd['top'] <= 40 and pd['big'] == '2,100P'
-              and pd['rows'] == ['購入ポイント パック・期限なし 2,000P', 'サブスクポイント 届いた日から30日 0P', '獲得ポイント はじめてのプレゼント・ミッション 100P'],
-              f'上の帯の 所有ポイントを 押すと ポイントの窓（いま 2,100P）。第4.139版（まさちゃん 11/10 11:46「ポイント欄を押すと、ポイントの詳細がわかる欄を作ってそこに飛ぶようにして！」）：開くと いちばん 上が「ポイントの詳細」（購入ポイント 2,000P・サブスクポイント 0P・獲得ポイント 100P）（{pd}）')
+              and pd['rows'] == ['購入ポイント パック・期限なし 2,000P', 'サブスクポイント 届いた日から30日 0P', '獲得ポイント 初めてのプレゼント・ミッション 100P'],
+              f'上の帯の 所有ポイントを 押すと ポイントの窓（今 2,100P）。第4.139版（まさちゃん 11/10 11:46「ポイント欄を押すと、ポイントの詳細が分かる欄を作ってそこに飛ぶようにして！」）：開くと 一番 上が「ポイントの詳細」（購入ポイント 2,000P・サブスクポイント 0P・獲得ポイント 100P）（{pd}）')
         pg.locator('#ptOv [data-ms=hist]').click(); pg.wait_for_timeout(600)
         check(pg.locator('#ptOv').count() == 0 and pg.locator('#v-set').is_visible() and pg.locator('#setPoints [data-pt=restore]').count() == 1, '窓の「ポイントの履歴・購入を復元」→ 設定タブのポイント（詳しく）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
@@ -1091,7 +1091,7 @@ try:
         check(pg.evaluate("[...document.querySelectorAll('#setPoints .ptbk b')].map(x => x.innerText)") == ['2,000P', '4,400P', '100P'] and 'サブスクポイント：4,400P は' in pt and 'まで' in pt and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 6,500P', f'ポイントのカード：内わけ（購入ポイント 2,000・サブスクポイント 4,400・獲得ポイント 100）と サブスクの期限・上の帯は 合計「ポイント 6,500P」（{pt[:120]}…）')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(300)
         hist = pg.locator('#setPoints .pthist').inner_text()
-        check('初回プレゼント' in hist and '+1,000P' in hist and '-400P' in hist and '解放' in hist and '月4,400Pプラン' in hist and pg.locator('#setPoints [data-pt=restore]').count() == 1, 'くわしく：履歴（プレゼント・買った・使った・解放・サブスク）と「購入を復元」')
+        check('初回プレゼント' in hist and '+1,000P' in hist and '-400P' in hist and '解放' in hist and '月4,400Pプラン' in hist and pg.locator('#setPoints [data-pt=restore]').count() == 1, '詳しく：履歴（プレゼント・買った・使った・解放・サブスク）と「購入を復元」')
         # ミッション：8レース数えた状態にして受け取る（数え方は test_points.js。ここは画面）
         pg.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); for (let i = 1; i <= 8; i++) w.counted['2026-10-0' + i + '||1'] = new Date().toISOString(); await TengelLocal.putMeta(w); })()""")
         pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(1200)
@@ -1102,25 +1102,25 @@ try:
         #   ◯/◯＝達成した 数／ミッションの 合計（前は 記録の 数／つぎの 記録ミッションの 数「10/15」）。合計は 表から 数える（記録 12・帯 3・壁紙の 枚数 8・結果ボード 5・トレーニングセンター 4・思い出フィギュア 3＝35。第4.147版：壁紙を 10枚 外して 枚数の 行が 10 → 8＝37 → 35）
         mall = pg.evaluate("() => { const P = TengelPoints; return P.MISSIONS.length + P.WALL_MISSIONS.length + P.WALLP_MISSIONS.length + P.BOARD_MISSIONS.length + P.TC_MISSIONS.length + P.FIG_MISSIONS.length; }")
         check(mall == 35 and bool(mb) and mb['t'] == f'ミッション 1/{mall} 1' and mb['hot'] and mb['bd'] == '1' and mb['bdc'] == 'rgb(31, 58, 14)' and mb['bdbg'] == 'rgb(212, 245, 166)' and mb['bdsvg'] and mb['row1'] and mb['row2'] and mb['row3'] and mb['inTop'] and mb['hdr'] <= 150
-              and '達成 1／ぜんぶで 35' in mb['title'],
-              f'上の帯：ロゴ・所有ポイント・説明書が 1段目 ／ 2段目の 右に「ミッション」（達成 1／合計 {mall}・受け取れる 1 は うすい 黄緑の 四角に ふきだしの 絵と 数）／ 3段目の 右に マザーデータの札（{mb}）')
+              and '達成 1／全部で 35' in mb['title'],
+              f'上の帯：ロゴ・所有ポイント・説明書が 1段目 ／ 2段目の 右に「ミッション」（達成 1／合計 {mall}・受け取れる 1 は 薄い 黄緑の 四角に ふきだしの 絵と 数）／ 3段目の 右に マザーデータの札（{mb}）')
         rb = pg.evaluate("() => { const b = document.querySelector('#rsvBtn'), m = document.querySelector('#msBtn'); if (!b || !m) return null; const r = b.getBoundingClientRect(), q = m.getBoundingClientRect(); return { t: b.innerText.replace(/\\s+/g, ''), n: [...TengelLocal.mem.bets.values()].filter(x => x.rsv && x.rsv.state === 'reserved').length, has: b.classList.contains('has'), row: Math.abs(r.top - q.top) < 6 && r.right <= q.left + 1 && r.left >= 8, next: (b.nextElementSibling || {}).id }; }")
         check(bool(rb) and rb['n'] >= 1 and rb['t'] == f'結果待ち{rb["n"]}' and rb['has'] and rb['row'] and rb['next'] == 'msBtn', f'第4.122版：2段目の「ミッション」の 左に「結果待ち」と 予約済み・結果待ちの レースの 数（{rb}）')
         pg.click('#msBtn'); pg.wait_for_timeout(500)
         ov = pg.locator('#msOv')
         ovt = ov.inner_text() if ov.count() else ''
-        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and ov.locator('.msn').inner_text().replace('\n', '・') == '達成 1/35・受け取れるのが 1つ！' and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() == 0 and 'マザーデータ①〜③のレースで進む' in ov.locator('#msRev').inner_text() and 'いま 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
+        check(ov.count() == 1 and ov.get_attribute('role') == 'dialog' and '受け取れるのが 1つ' in ovt and ov.locator('.msn').inner_text().replace('\n', '・') == '達成 1/35・受け取れるのが 1つ！' and 'ポイントミッション' in ovt and '壁紙ミッション' in ovt and '見直し基準の進み具合' in ovt and ov.locator('#msRev .pi').count() == 0 and 'マザーデータ①〜③のレースで進む' in ov.locator('#msRev').inner_text() and '今 10レース' in ovt and ov.locator('#msPts [data-pt=claim]').count() == 1 and ov.locator('#msWall .msrow').count() == 3 and pg.evaluate("document.documentElement.classList.contains('mson')"),
               '「ミッション」を押すと ミッションの窓：ポイントミッション（受け取る 1つ）・壁紙ミッション（3つ）・見直し基準の進み具合（テンゲルデータの ときは 数を 出さずに「マザーデータ①〜③のレースで進む」：第4.123版）')
         ov.locator('#msPts [data-pt=claim]').click(); pg.wait_for_timeout(700)
         mb2 = pg.evaluate("() => { const b = document.querySelector('#msBtn'); return { t: b.innerText.replace(/\\s+/g, ' '), hot: b.classList.contains('hot') }; }")
-        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取りずみ' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 1/35' and not mb2['hot'] and ov.locator('.msn').inner_text().strip() == '達成 1/35',
-              f'窓で「受け取る」→ 500P（獲得ポイント）・窓の行は受け取りずみ・上の「ミッション」の 印と設定タブの印が消える（達成の 数 1/35 は そのまま：第4.147版で 37 → 35）（{mb2}）')
+        check(pg.evaluate('TengelWallet.total()') == 7000 and pg.evaluate("TengelWallet.balance().free") == 600 and ov.locator('[data-pt=claim]').count() == 0 and '受け取り済み' in ov.inner_text() and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and mb2['t'] == 'ミッション 1/35' and not mb2['hot'] and ov.locator('.msn').inner_text().strip() == '達成 1/35',
+              f'窓で「受け取る」→ 500P（獲得ポイント）・窓の行は受け取り済み・上の「ミッション」の 印と設定タブの印が消える（達成の 数 1/35 は そのまま：第4.147版で 37 → 35）（{mb2}）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_mission_ov.png'), full_page=False)
         ov.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
-        check(pg.locator('#msOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')") and pg.evaluate("document.activeElement && document.activeElement.id") == 'msBtn', '「とじる」で窓が閉じる（「ミッション」にもどる）')
+        check(pg.locator('#msOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')") and pg.evaluate("document.activeElement && document.activeElement.id") == 'msBtn', '「閉じる」で窓が閉じる（「ミッション」に戻る）')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         ms = pg.locator('#setMission')
-        check('いま 10レース' in ms.inner_text() and ms.locator('[data-pt=claim]').count() == 0 and '次は 15レース' in ms.inner_text() and '画面の上の' in ms.inner_text(), '設定タブのミッションも 受け取りずみ・次は15レース（上の「ミッション」の案内つき）')
+        check('今 10レース' in ms.inner_text() and ms.locator('[data-pt=claim]').count() == 0 and '次は 15レース' in ms.inner_text() and '画面の上の' in ms.inner_text(), '設定タブのミッションも 受け取り済み・次は15レース（上の「ミッション」の案内つき）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_mission.png'), full_page=False)
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         # ---- 着せ替え（第4弾・9章・16.1・16.1.1・16.2.1・16.4）：設定の「着せ替え」・30テーマ（第4.147版：壁紙を 10枚 外した・第4.160版：ネオンも 外した）・名前と値段（9.1）・解放（P）→ 着せ替わる・上の絵（動く壁紙）・テーマの的中PUSHとボード・帯のミッション（8.3） ----
@@ -1130,11 +1130,11 @@ try:
         #   第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！」「七夕も消して！」）：41 → 31テーマ（ポイント 26 → 17枚・壁紙パック 11 → 10枚）
         #   第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：31 → 30テーマ（ポイント 17 → 16枚）
         check(ks.count() == 1 and NPK == 10 and ks.locator('.kst').count() == 20 + NPK and ks.locator('.ksg').count() == 7 and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 19 + NPK and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
-              f'設定に「着せ替え」：7つの組（壁紙パック＋6）・{20 + NPK}テーマ・いつものが使用中・ほかの{19 + NPK}はカギ')
+              f'設定に「着せ替え」：7つの組（壁紙パック＋6）・{20 + NPK}テーマ・いつものが使用中・他の{19 + NPK}はカギ')
         check(not any(ks.locator(f'.kst[data-ks={t}]').count() for t in ('sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata', 'neon'))
               and not any(n in ks.inner_text() for n in ('桜', '紅葉', 'お正月', 'クリスマス', 'ハロウィン', 'バレンタイン', 'ホワイトデー', '七夕', 'ネオン')) and pg.evaluate("TengelKisekae.list().length") == 30
               and not pg.evaluate("TengelKisekae.usable('neon')"),
-              '第4.147版・第4.160版：外した 壁紙 11枚（桜・海・紅葉・雪・お正月・クリスマス・ハロウィン・バレンタイン・ホワイトデー・七夕・ネオン）は 一覧に ない（ぜんぶで 30テーマ）')
+              '第4.147版・第4.160版：外した 壁紙 11枚（桜・海・紅葉・雪・お正月・クリスマス・ハロウィン・バレンタイン・ホワイトデー・七夕・ネオン）は 一覧に ない（全部で 30テーマ）')
         names = ks.locator('.kst .ksn').all_inner_texts()
         PKN = ['海賊', '競馬場', '宇宙', 'パドック', '深海', '恐竜時代', '切り絵', '浮世絵風', 'スチームパンク', '近未来都市']
         check(names[:NPK] == [n for n, t in zip(PKN, ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future']) if t in pg.evaluate("TengelKisekae.pack().ids")] and len(names[:NPK]) == 10, f'壁紙パックの 名前と 並び（10枚：{names[:NPK]}）')
@@ -1154,8 +1154,8 @@ try:
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         cf = ks.locator('.ksconf')
         check(cf.count() == 1 and ks.locator('.kst[data-ks=lucky].cf .ksconf').count() == 1 and ks.locator('.kst[data-ks=lucky]').get_attribute('aria-expanded') == 'true'
-              and '7,000Pを使って解放する？' in cf.inner_text() and 'いま 7,000P' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1 and cf.locator('[data-ksact=cancel]').count() == 1,
-              f'カギの壁紙をタップ → その タイルの 中に 「○○Pを使って解放する？ いま △△P」「解放する」「やめる」（{cf.inner_text()[:50]!r}）')
+              and '7,000Pを使って解放する？' in cf.inner_text() and '今 7,000P' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1 and cf.locator('[data-ksact=cancel]').count() == 1,
+              f'カギの壁紙をタップ → その タイルの 中に 「○○Pを使って解放する？ 今 △△P」「解放する」「やめる」（{cf.inner_text()[:50]!r}）')
         cfb = ks.locator('.kst[data-ks=lucky]').bounding_box(); unb = cf.locator('[data-ksact=unlock]').bounding_box(); lkb = ks.locator('.kst[data-ks=lucky] .kslock').bounding_box()
         check(cfb and unb and lkb and unb['y'] > lkb['y'] + lkb['height'] - 1 and unb['x'] >= cfb['x'] and unb['x'] + unb['width'] <= cfb['x'] + cfb['width'] + 1 and unb['y'] + unb['height'] <= cfb['y'] + cfb['height'] + 1,
               '「解放する」は カギ（🔒 7,000P）の 下・タイルの 中')
@@ -1169,7 +1169,7 @@ try:
           return { id: t ? t.dataset.ks : null, n: document.querySelectorAll('#setKisekae .kst.lv').length, run: run, others: others, scoped: css.indexOf('#setKisekae .kslv') >= 0 && css.indexOf('#ksBnr') < 0, kp: /@keyframes kpkb/.test(css),
             kss: el ? parseFloat(getComputedStyle(el).getPropertyValue('--kss')) : 0, img: !!document.querySelector('#setKisekae .kst.lv .ksth') }; }""")
         check(lv['id'] == 'lucky' and lv['n'] == 1 and lv['run'] > 0 and lv['others'] == 0 and lv['scoped'] and lv['kp'] and 0.3 < lv['kss'] < 1 and lv['img'],
-              f'第4.89版：確認を 開いた カギの タイル（招き馬）だけ 動く 壁紙が 重なる（ほかの タイルは 止まった 絵・CSS は #setKisekae .kslv に・@keyframes は kp…）（{lv}）')
+              f'第4.89版：確認を 開いた カギの タイル（招き馬）だけ 動く 壁紙が 重なる（他の タイルは 止まった 絵・CSS は #setKisekae .kslv に・@keyframes は kp…）（{lv}）')
         ks.locator('.kst[data-ks=lucky]').click(position={'x': 10, 'y': 10}); pg.wait_for_timeout(200)
         check(ks.locator('.ksconf').count() == 0 and ks.locator('.kst.cf').count() == 0 and ks.locator('.kst.lv').count() == 0 and pg.evaluate("document.querySelector('#ksPrev').textContent") == '',
               'もう一度 タイルを タップ → 閉じる（動く 壁紙も 消える：いつもの は 動く 絵が ないので どの タイルも 止まった まま）')
@@ -1190,12 +1190,12 @@ try:
           return { id: t ? t.dataset.ks : null, on: !!(t && t.classList.contains('on')), run: el ? el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length : -1,
             others: [...document.querySelectorAll('#setKisekae .kst:not(.lv)')].reduce((n, e) => n + e.getAnimations({ subtree: true }).length, 0), ranch: document.querySelector('#setKisekae .kst[data-ks=ranch] .ksth').getAttribute('src') }; }""")
         check(lv['id'] == 'sunset' and lv['on'] and lv['run'] > 0 and lv['others'] == 0 and lv['ranch'] == 'ks_banner_ranch.svg',
-              f'第4.89版：解放して 使用中に なった 夕焼けの タイルだけ 動く（ほかは 止まった 絵）（{lv}）')
+              f'第4.89版：解放して 使用中に なった 夕焼けの タイルだけ 動く（他は 止まった 絵）（{lv}）')
         check(pg.evaluate("document.fonts.check('700 16px \"Kaisei Opti\"') || [...document.fonts].some(f => f.family.replace(/\"/g, '') === 'Kaisei Opti')") and 'KaiseiOpti-700.woff2' in pg.evaluate("[...document.styleSheets].map(s => { try { return [...s.cssRules].filter(r => r instanceof CSSFontFaceRule).map(r => r.cssText).join() } catch (e) { return '' } }).join()"),
               'テーマの字はアプリの中のフォント（fonts/KaiseiOpti-700.woff2・Google に通信しない）')
         # 帯：シルバー帯をタップ → ミッションの案内（まだ使えない）
         ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(300)
-        check('壁紙を5枚あつめて、ミッションで受け取ると使えるよ（いま 1枚）' in pg.locator('#toast').inner_text() and pg.evaluate("TengelKisekae.current()") == 'sunset', '帯の壁紙をタップ → ミッションの案内（5枚・いま 1枚）')
+        check('壁紙を5枚あつめて、ミッションで受け取ると使えるよ（今 1枚）' in pg.locator('#toast').inner_text() and pg.evaluate("TengelKisekae.current()") == 'sunset', '帯の壁紙をタップ → ミッションの案内（5枚・今 1枚）')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(300)
         check('解放：壁紙「夕焼け」' in pg.locator('#setPoints .pthist').inner_text() and '-2,000P' in pg.locator('#setPoints .pthist').inner_text(), 'ポイントの履歴に「解放：壁紙「夕焼け」」')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(200)
@@ -1206,17 +1206,17 @@ try:
         bb = bn.bounding_box()
         check(bn.count() == 1 and not bn.evaluate('e => e.hidden') and bn.locator('.ssw').count() == 1 and bn.locator('img.bnr').get_attribute('src') == 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' and abs(bb['height'] - 160) < 1 and abs(bb['width'] - 390) < 1
               and pg.evaluate("document.querySelector('#ksBnr').getAnimations({ subtree: true }).length") > 10 and bn.evaluate("e => e.previousElementSibling") is None and bn.evaluate("e => e.nextElementSibling.id") == 'w5Banner',
-              f'判定タブのいちばん上に 夕焼けの上の絵（390×160・夕日と馬と鳥の動き・{pg.evaluate("document.querySelector(\'#ksBnr\').getAnimations({ subtree: true }).length")}の動き）')
+              f'判定タブの一番上に 夕焼けの上の絵（390×160・夕日と馬と鳥の動き・{pg.evaluate("document.querySelector(\'#ksBnr\').getAnimations({ subtree: true }).length")}の動き）')
         check(pg.evaluate("document.documentElement.scrollWidth") <= 390 and pg.evaluate("document.querySelector('#fxCss') !== null && document.querySelector('#ksTheme').textContent.includes('.fxs .rb.t-sunset')"), '横にはみ出さない・テーマのボードの CSS が入っている')
         # 「演出を控えめにする」→ 壁紙も止まった絵（.calm）。もどすと動く。アプリが裏（判定タブ以外）では .pause
         pg.evaluate("TengelFx.set({ calm: true })"); pg.wait_for_timeout(100)
         check(bn.evaluate("e => e.classList.contains('calm')"), '演出を控えめにする → 壁紙は止まった絵（.calm）')
         pg.evaluate("TengelFx.set({ calm: false })"); pg.wait_for_timeout(100)
-        check(not bn.evaluate("e => e.classList.contains('calm')"), 'もどすと動く')
+        check(not bn.evaluate("e => e.classList.contains('calm')"), '戻すと動く')
         pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(200)
         check(bn.evaluate("e => e.classList.contains('pause')"), '判定タブが見えていない間は壁紙の動きを止める（.pause ※仮）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(200)
-        check(not bn.evaluate("e => e.classList.contains('pause')"), '判定タブにもどると動く')
+        check(not bn.evaluate("e => e.classList.contains('pause')"), '判定タブに戻ると動く')
         # 的中ボタン：夕焼けの PUSH（面の SVG・はじける 光）→ 夕焼けのボード。デカ的中の PUSH も 夕焼けの PUSH・ボードは夕焼け
         pg.evaluate("(s) => TengelFx.show(s)", spec(None, [('馬単', '的中', [[6, 2]]), ('単勝', '的中', [[6]])])); pg.wait_for_timeout(300)
         fk = pg.locator('#fxOv')
@@ -1243,11 +1243,11 @@ try:
         check(pg.evaluate("TengelKisekae.count()") == 8 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 1, '壁紙を8枚解放 → 受け取れるミッションの印')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         wm = pg.locator('#setMission')
-        check('壁紙のミッション' in wm.inner_text() and 'いま 8枚' in wm.inner_text() and '壁紙を5枚あつめる' in wm.inner_text() and '壁紙を10枚あつめる' in wm.inner_text() and '壁紙を15枚あつめる' in wm.inner_text() and '壁紙を16枚あつめる' not in wm.inner_text() and '壁紙を8枚あつめる' not in wm.inner_text() and '壁紙を25枚あつめる' not in wm.inner_text()
+        check('壁紙のミッション' in wm.inner_text() and '今 8枚' in wm.inner_text() and '壁紙を5枚あつめる' in wm.inner_text() and '壁紙を10枚あつめる' in wm.inner_text() and '壁紙を15枚あつめる' in wm.inner_text() and '壁紙を16枚あつめる' not in wm.inner_text() and '壁紙を8枚あつめる' not in wm.inner_text() and '壁紙を25枚あつめる' not in wm.inner_text()
               and wm.locator('[data-pt=claim][data-id="mission-wall-silver"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wall-golden"]').count() == 0 and 'あと 2枚（8/10）' in wm.inner_text() and 'あと 7枚（8/15）' in wm.inner_text(),
               'ミッションに「壁紙のミッション」：5枚（シルバー帯）で「受け取る」・10枚（ゴールド帯）は あと2枚・15枚（マスター帯）は あと7枚')
         check(wm.locator('.msrow[data-mid^="mission-wallp-"]').count() == 8 and wm.locator('.msrow[data-mid="mission-wallp-29"]').count() == 1 and wm.locator('.msrow[data-mid="mission-wallp-30"]').count() == 0 and wm.locator('.msrow[data-mid="mission-wallp-35"]').count() == 0 and wm.locator('.msrow[data-mid="mission-wallp-40"]').count() == 0
-              and '壁紙 29枚解放' in wm.inner_text() and '壁紙 30枚解放' not in wm.inner_text() and '壁紙 35枚解放' not in wm.inner_text() and '壁紙 40枚解放' not in wm.inner_text(), '第4.147版・第4.160版：壁紙の 枚数の ミッションは 29枚まで（8こ：さいごは 30 → 29枚・35枚・40枚の 行は ない）')
+              and '壁紙 29枚解放' in wm.inner_text() and '壁紙 30枚解放' not in wm.inner_text() and '壁紙 35枚解放' not in wm.inner_text() and '壁紙 40枚解放' not in wm.inner_text(), '第4.147版・第4.160版：壁紙の 枚数の ミッションは 29枚まで（8こ：最後は 30 → 29枚・35枚・40枚の 行は ない）')
         check(pg.evaluate("() => { const b = document.querySelector('#msBtn'); return b.classList.contains('hot') && b.querySelector('.mbd').innerText === '3'; }") and wm.locator('[data-pt=claim][data-id="mission-wallp-3"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wallp-6"]').count() == 1 and wm.locator('[data-pt=claim][data-id="mission-wallp-9"]').count() == 0,
               '上の「ミッション」にも 受け取れる 3 の印（シルバー帯・第4.114版の 壁紙 3枚と 6枚）')
         wm.locator('[data-pt=claim][data-id="mission-wall-silver"]').click(); pg.wait_for_timeout(700)
@@ -1255,12 +1255,12 @@ try:
               and pg.evaluate("TengelWallet.events().some(e => e.id === 'mission-wall-silver' && e.kind === 'mission' && e.amount === 0)"),
               '受け取る → シルバー帯が使える（0P・枚数は8のまま・残りは 第4.114版の 枚数の ミッション 3つ（帯の 1枚で 9枚に））')
         # 第4.114版：壁紙の 枚数の ミッション（帯も 数える：8 ＋ シルバー 1 ＝ 9枚 → 3・6・9 が 受け取れる）
-        check(wm.locator('[data-pt=claim][data-id="mission-wallp-9"]').count() == 1 and 'いま 9枚' in wm.inner_text(), '帯の 1枚も 枚数に 数える → 9枚で「壁紙 9枚解放」も 受け取れる')
+        check(wm.locator('[data-pt=claim][data-id="mission-wallp-9"]').count() == 1 and '今 9枚' in wm.inner_text(), '帯の 1枚も 枚数に 数える → 9枚で「壁紙 9枚解放」も 受け取れる')
         for mid, add in (('mission-wallp-3', 800), ('mission-wallp-6', 1200), ('mission-wallp-9', 1500)):
             t0 = pg.evaluate('TengelWallet.total()'); f0 = pg.evaluate('TengelWallet.balance().free')
             wm.locator(f'[data-pt=claim][data-id="{mid}"]').click(); pg.wait_for_timeout(700)
-            check(pg.evaluate('TengelWallet.total()') == t0 + add and pg.evaluate('TengelWallet.balance().free') == f0 + add and f'{add:,}P' in pg.locator('#toast').inner_text() and wm.locator(f'.msrow[data-mid="{mid}"] .md').inner_text() == '受け取りずみ',
-                  f'第4.114版：「{mid}」を 受け取る → +{add:,}P（もらったP）・受け取りずみ')
+            check(pg.evaluate('TengelWallet.total()') == t0 + add and pg.evaluate('TengelWallet.balance().free') == f0 + add and f'{add:,}P' in pg.locator('#toast').inner_text() and wm.locator(f'.msrow[data-mid="{mid}"] .md').inner_text() == '受け取り済み',
+                  f'第4.114版：「{mid}」を 受け取る → +{add:,}P（もらったP）・受け取り済み')
         check(wm.locator('[data-pt=claim]').count() == 0 and pg.locator('.tabbar [data-tab=set] .tbdg').count() == 0 and pg.evaluate('TengelWallet.total()') == 8500, '受け取れる ものが なくなると 印が 消える（合計 8,500P）')
         check(ks.locator('.kst[data-ks=silver] .kslock').count() == 0 and ks.locator('.kst[data-ks=golden] .kslock').inner_text() == '🔒 壁紙を10枚あつめると' and ks.locator('.kst[data-ks=tengel] .kslock').inner_text() == '🔒 壁紙を15枚あつめると', '着せ替えのカード：シルバー帯のカギが外れる・ゴールド帯は10枚・マスター帯は15枚')
         ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(1200)
@@ -1285,10 +1285,10 @@ try:
                 if pg.evaluate("document.documentElement.scrollWidth") > 390: wide.append(tid + ' ' + tab)
             w2 = pg.evaluate("[1,2,3,4,5,6,7,8].map(i => { const e = document.createElement('span'); e.className = 'num w' + i; document.body.appendChild(e); const c = getComputedStyle(e).backgroundColor; e.remove(); return c; })")
             if w2 != ['rgb(255, 255, 255)', 'rgb(26, 26, 26)', 'rgb(211, 35, 45)', 'rgb(30, 91, 190)', 'rgb(243, 207, 30)', 'rgb(29, 138, 59)', 'rgb(240, 126, 25)', 'rgb(243, 141, 182)']: wk.append(tid)
-        check(not low, f'全30テーマ：主な文字と背景のコントラスト 4.5以上（層の大きい字は 3.0以上）（{len(low)}こ 低い：{low[:6]}）')
+        check(not low, f'全30テーマ：主な文字と背景のコントラスト 4.5以上（層の大きい字は 3.0以上）（{len(low)}個 低い：{low[:6]}）')
         check(not wide and not wk, f'全30テーマ：横にはみ出さない（{wide[:4]}）・馬番の枠の色はどのテーマでも同じ（{wk[:4]}）')
         pg.evaluate("TengelKisekae.apply('default')"); pg.wait_for_timeout(500)
-        check(pg.evaluate("document.documentElement.dataset.ks") is None and pg.locator('#ksBnr').evaluate('e => e.hidden') and pg.evaluate("document.querySelector('#ksTheme').textContent === ''"), 'いつものにもどす → 上の絵なし・テーマの CSS なし')
+        check(pg.evaluate("document.documentElement.dataset.ks") is None and pg.locator('#ksBnr').evaluate('e => e.hidden') and pg.evaluate("document.querySelector('#ksTheme').textContent === ''"), 'いつものに戻す → 上の絵なし・テーマの CSS なし')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
         # ---- 第4.165版：作戦会議の 推し馬（tc_launch.js の TCOshi）も バックアップに 入る（まさちゃん 11/13 11:46「作戦会議の中に、推し馬、の欄を作成して、推し馬を25頭まで登録できるようにして！」）----
         n_o = store['writes']
@@ -1336,28 +1336,28 @@ try:
         check(pg.evaluate("() => TCOshi.load().length") == 0, '推し馬の 置き場が 消えた（0頭）')
         box = pg.locator('#nativeRestore')
         check(box.count() == 1 and '3件' in box.inner_text() and 'ポイントの台帳が' in box.inner_text(), f'記録0件で自動バックアップに記録 → 「戻す？」（{box.inner_text()[:60] if box.count() else "なし"}）')
-        check(pg.evaluate('TengelWallet.total()') == 0 and pg.evaluate('TengelWallet.isEmpty()'), '保存場所が消えても、初回の1,500Pはもう一度は出ない（キーチェーンのしるし）')
+        check(pg.evaluate('TengelWallet.total()') == 0 and pg.evaluate('TengelWallet.isEmpty()'), '保存場所が消えても、初回の1,500Pはもう一度は出ない（キーチェーンの印）')
         pg.screenshot(path=os.path.join(W, 't4', 'native_restore.png'))
         pg.wait_for_timeout(2200)
         check(store['backup'] == before, '聞いている間は自動バックアップを書かない（前の記録を守る）')
         box.locator('[data-nr=yes]').click(); pg.wait_for_timeout(1200); rs_toast = pg.locator('#toast').inner_text()
-        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（8,500P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 8500, '「記録を戻す」→ 記録とポイントの台帳が戻る（着せ替えで 2,000P 使って、第4.114版の 枚数の ミッションで 3,500P もらった あと）')
+        check(pg.locator('#nativeRestore').count() == 0 and pg.evaluate('TengelLocal.mem.bets.size') == 3 and '記録3件を戻したよ' in pg.locator('#toast').inner_text() and 'ポイント（8,500P）も戻したよ' in pg.locator('#toast').inner_text() and pg.evaluate('TengelWallet.total()') == 8500, '「記録を戻す」→ 記録とポイントの台帳が戻る（着せ替えで 2,000P 使って、第4.114版の 枚数の ミッションで 3,500P もらった 後）')
         pg.wait_for_timeout(800)
         check(len(json.loads(store['backup'])['bets']) == 3 and json.loads(store['backup'])['wallet']['events'], '戻したあとも自動バックアップに記録と台帳')
         ors = pg.evaluate("() => { const l = TCOshi.load(); return { n: l.length, name: l[0] && l[0].name, ped: l[0] && l[0].ped.length, memo: l[0] && l[0].memo, again: TCOshi.merge(l), n2: TCOshi.load().length }; }")
         check('推し馬1頭も戻したよ' in rs_toast and ors == {'n': 1, 'name': 'はなまるスター', 'ped': 14, 'memo': '先行が とくい\n左回り', 'again': 0, 'n2': 1} and len(json.loads(store['backup']).get('oshi') or []) == 1,
-              f'「記録を戻す」で 推し馬も 戻る（お知らせ「推し馬1頭も戻したよ」・{ors["name"]}・もう いる 馬は 足さない {ors["again"]}）・戻した あとの 自動バックアップにも 入る')
+              f'「記録を戻す」で 推し馬も 戻る（お知らせ「推し馬1頭も戻したよ」・{ors["name"]}・もう いる 馬は 足さない {ors["again"]}）・戻した 後の 自動バックアップにも 入る')
         # ---- もう一度消えた → 「戻さない」 ----
         pg.evaluate("new Promise(r => { const q = indexedDB.deleteDatabase('tengel3'); q.onsuccess = q.onerror = q.onblocked = () => r(); })")
         pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(900)
         check(pg.locator('#nativeRestore').count() == 1, 'また「戻す？」')
         pg.locator('#nativeRestore [data-nr=no]').click(); pg.wait_for_timeout(1900)
-        check(pg.locator('#nativeRestore').count() == 0 and json.loads(store['backup'])['bets'] == [], '「戻さない」→ いまの状態（0件）をバックアップ')
+        check(pg.locator('#nativeRestore').count() == 0 and json.loads(store['backup'])['bets'] == [], '「戻さない」→ 今の状態（0件）をバックアップ')
         pg.reload(); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(900)
         check(pg.locator('#nativeRestore').count() == 0, 'もう聞かない')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
-        check(pg.evaluate('TengelWallet.total()') == 0 and '受け取りずみだよ' in pg.locator('#setPoints').inner_text(), '戻さなかったので 0P・はじめてのプレゼントは受け取りずみの案内')
-        check(pg.locator('#setAbout #abGate').count() == 1 and '競馬の注意' in pg.locator('#setAbout #abGate').inner_text(), '「このアプリについて」にも、はじめの文（競馬の注意など）')
+        check(pg.evaluate('TengelWallet.total()') == 0 and '受け取り済みだよ' in pg.locator('#setPoints').inner_text(), '戻さなかったので 0P・初めてのプレゼントは受け取り済みの案内')
+        check(pg.locator('#setAbout #abGate').count() == 1 and '競馬の注意' in pg.locator('#setAbout #abGate').inner_text(), '「このアプリについて」にも、初めの文（競馬の注意など）')
         # ---- Web版（ブラウザ）は今までどおり ----
         ctx2 = b.new_context(viewport={'width': 390, 'height': 844}, locale='ja-JP')
         p2 = ctx2.new_page(); p2.on('pageerror', lambda e: errs.append('WEB ' + str(e)))
@@ -1463,7 +1463,7 @@ try:
         if not BCP_ON:
             exp_r, exp_c, exp_m = [[(x[:2] + ['', x[3], False]) if isinstance(x, list) else x for x in e] for e in (exp_r, exp_c, exp_m)]
         check(sr6 == exp_r and sc6 == exp_c and sm6 == exp_m and sp6 == [['▶ 見る（1回目）', 'pen', '', 'miss', False], '▶ 見る（2回目）'],
-              f'第4.121版：絵の ボードの「▶ 見る」は 押す たびに つぎの 段（1〜4連勝〜・出世馬 1〜24連勝〜・ハズレ 1〜4回目〜）・絵が 読めない とき（pen）は いつもの ボード（{sr6}・{sc6[-2:]}・{sm6[-2:]}・{sp6}）')
+              f'第4.121版：絵の ボードの「▶ 見る」は 押す たびに 次の 段（1〜4連勝〜・出世馬 1〜24連勝〜・ハズレ 1〜4回目〜）・絵が 読めない とき（pen）は いつもの ボード（{sr6}・{sc6[-2:]}・{sm6[-2:]}・{sp6}）')
         # 第4.125版：15「ボードを持つ馬」は 的中ボード・ハズレボードの 両方に 出る → その 一覧の 結果で ためす（見本の 絵も その 結果）
         p6.locator('#setBoard .bct[data-sec=hit] [data-bcact=see][data-id=carry]').click(); p6.wait_for_timeout(1600)
         sv1 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
@@ -1474,15 +1474,15 @@ try:
         sv3 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         thh = p6.evaluate("[...document.querySelectorAll('#setBoard .bct[data-bc=carry] .bcfake .fh')].map(e => e.innerText)")
         check(sv1 == {'bcx': 'carry', 'kind': 'hit', 'phase': 'reveal'} and sv2 == {'bcx': 'carry', 'kind': 'miss', 'phase': 'reveal'} and sv3 == sv2 and lab == '▶ 見る' and thh == ['的中！', 'ハズレ'],
-              f'買う 前でも「▶ 見る」で ためせる（PUSH なしで すぐ 結果の ボード）・15 は 的中ボードの 所では 的中・ハズレボードの 所では ハズレ（見本の 絵も）（{sv1}・{sv2}・{lab}・{thh}）')
+              f'買う 前でも「▶ 見る」で 試せる（PUSH なしで すぐ 結果の ボード）・15 は 的中ボードの 所では 的中・ハズレボードの 所では ハズレ（見本の 絵も）（{sv1}・{sv2}・{lab}・{thh}）')
         # 買う（App内課金の かわり）→ 台帳に tx-7001（0P）→ 終わらせる（finish）
         p6.evaluate("window.__iap.buy['jp.tengel.app.boardcustom'] = () => ({ ok: true, state: 'ok', tx: { id: '7001', originalId: 'o7001', product: 'jp.tengel.app.boardcustom', kind: 'unlock', date: new Date().toISOString(), revoked: false } }); window.__bridge = []; 0")
         p6.locator('#setBoard [data-bcact=buy]').click(); p6.wait_for_timeout(900)
         fin6 = [x for x in p6.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
         bi = p6.evaluate(BCI)
         check(p6.evaluate("TengelWallet.board.info().owned") and p6.evaluate('TengelWallet.total()') == 1500 and len(fin6) == 1 and fin6[0]['payload']['id'] == '7001' and '買ったよ' in p6.locator('#toast').inner_text() and not bi['buy'] and not bi['bun'] and not p6.evaluate("TengelWallet.bundle.offer()") and p6.locator('#setKisekae .kspk [data-ksact=bundle]').count() == 0
-              and '解放 0/15' in bi['prog'] and 'つぎの「結果ボードを廻る」まで あと 6レース' in bi['prog'] and bi['slots'] == ['hit:なし（いつもの ボード）', 'miss:なし（いつもの ボード）'] and not bi['picks'],
-              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/15・つぎの「結果ボードを廻る」まで あと 6レース）と 的中の とき／ハズレの とき（どちらも なし）・お得パックは 2つの 買う 所から 消える（{bi["prog"]!r}・{bi["slots"]}）')
+              and '解放 0/15' in bi['prog'] and '次の「結果ボードを廻る」まで あと 6レース' in bi['prog'] and bi['slots'] == ['hit:なし（いつもの ボード）', 'miss:なし（いつもの ボード）'] and not bi['picks'],
+              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・カードは 進み具合（解放 0/15・次の「結果ボードを廻る」まで あと 6レース）と 的中の とき／ハズレの とき（どちらも なし）・お得パックは 2つの 買う 所から 消える（{bi["prog"]!r}・{bi["slots"]}）')
         RD = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-20', venue: '大井', r: r }, ocr: {} })"
         for r in range(1, 6): p6.evaluate(RD, r)
         p6.wait_for_timeout(200)
@@ -1515,24 +1515,24 @@ try:
         p6.locator('#setBoard .bct[data-bc=carry][data-sec=hit] .bcn').click(); p6.wait_for_timeout(300)
         bi = p6.evaluate(BCI)
         pk14 = ['ring:hit:true'] + [f'{x}:hit:false' for x in ('toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb')] + [f'{x}:miss:false' for x in ('rain', 'next', 'cover', 'wait', 'pen')]
-        check(p6.evaluate(BSEL) == ['ring', '', 14, 'ring', ''] and 'あと 6レース' in p6.locator('#toast').inner_text() and bi['locks'] == 2 and 'つぎの「ボードを持つ馬」まで あと 6レース' in bi['prog'] and bi['picks'] == pk14,
-              f'84レース → 14こ 解放（1〜9 は 的中の ボタン・10〜14 は ハズレの ボタン）・15「ボードを持つ馬」は あと 6レース（{p6.locator("#toast").inner_text()}・{bi["prog"]!r}・{bi["picks"]}）')
+        check(p6.evaluate(BSEL) == ['ring', '', 14, 'ring', ''] and 'あと 6レース' in p6.locator('#toast').inner_text() and bi['locks'] == 2 and '次の「ボードを持つ馬」まで あと 6レース' in bi['prog'] and bi['picks'] == pk14,
+              f'84レース → 14個 解放（1〜9 は 的中の ボタン・10〜14 は ハズレの ボタン）・15「ボードを持つ馬」は あと 6レース（{p6.locator("#toast").inner_text()}・{bi["prog"]!r}・{bi["picks"]}）')
         for r in range(7, 12): p6.evaluate(RD, r)
         p6.wait_for_timeout(200)
         check(p6.evaluate("TengelWallet.board.info().n") == 14 and p6.locator('#bcNote').count() == 0, '89レース → まだ（お知らせも なし）')
         p6.evaluate(RD, 12); p6.wait_for_timeout(600)
         bi = p6.evaluate(BCI)
         check(p6.evaluate(BSEL) == ['ring', 'carry', 15, 'ring', 'carry'] and p6.locator('#bcNote').count() == 1 and 'ボードを持つ馬' in p6.locator('#bcNote').inner_text() and bi['on'] == ['ring', 'carry'] and bi['news'] >= 1
-              and bi['slots'] == ['hit:結果ボードを廻る', 'miss:ボードを持つ馬'] and bi['picks'] == pk14[:9] + ['carry:hit:false'] + pk14[9:] + ['carry:miss:true'] and '解放 15/15' in bi['prog'] and 'ぜんぶ 解放したよ' in bi['prog'],
+              and bi['slots'] == ['hit:結果ボードを廻る', 'miss:ボードを持つ馬'] and bi['picks'] == pk14[:9] + ['carry:hit:false'] + pk14[9:] + ['carry:miss:true'] and '解放 15/15' in bi['prog'] and '全部 解放したよ' in bi['prog'],
               f'90レース目 → 15「ボードを持つ馬」が 解放（画面の 上に お知らせ・まだ 選んで いない ハズレの とき に そのまま 使う・的中の とき は「結果ボードを廻る」の まま）（{bi["slots"]}・{bi["picks"][-2:]}）')
         p6.evaluate("TengelWallet.board.select('carry', 'hit')"); p6.wait_for_timeout(300)
-        check(p6.evaluate(BSEL) == ['carry', 'carry', 15, 'carry', 'carry'], '的中の とき にも「ボードを持つ馬」を 選ぶ（ここから 下は 前の 版と 同じ ためし）')
+        check(p6.evaluate(BSEL) == ['carry', 'carry', 15, 'carry', 'carry'], '的中の とき にも「ボードを持つ馬」を 選ぶ（ここから 下は 前の 版と 同じ 試し）')
         # 結果の ボードに つく：的中の 所は 的中・デカ的中（ハズレ いがい）・ハズレの 所は ハズレ。「とじる」は 動かない
         p6.evaluate(SHOW6, ['hit', SPEC6]); p6.wait_for_timeout(2600); h1 = p6.evaluate(HB6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate(SHOW6, ['big', SPEC6]); p6.wait_for_timeout(3600); h3 = p6.evaluate(HB6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         p6.evaluate(SHOW6, ['miss', MISS6]); p6.wait_for_timeout(1800); h2 = p6.evaluate(HB6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         check(h1 and h1['bcx'] == 'carry' and 'bcgo' in h1['cls'] and h3 and h3['bcx'] == 'carry' and h2 and h2['bcx'] == 'carry' and h1['close'] == h0['close'] and not h1['inHb'],
-              f'結果の ボード：的中・デカ的中・ハズレに「ボードを持つ馬」・「とじる」の 場所は 同じ（ボードの 外）（{h1 and h1["bcx"]}・{h3 and h3["bcx"]}・{h2 and h2["bcx"]}）')
+              f'結果の ボード：的中・デカ的中・ハズレに「ボードを持つ馬」・「閉じる」の 場所は 同じ（ボードの 外）（{h1 and h1["bcx"]}・{h3 and h3["bcx"]}・{h2 and h2["bcx"]}）')
         # ハズレの とき →「なし」（カードの ボタン）：ハズレには つかない・的中には つく
         p6.locator('#setBoard [data-bcact=none][data-slot=miss]').click(); p6.wait_for_timeout(400)
         tn = p6.locator('#toast').inner_text()
@@ -1541,7 +1541,7 @@ try:
         bi = p6.evaluate(BCI)
         check(p6.evaluate(BSEL) == ['carry', 'none', 15, 'carry', ''] and 'ハズレの ときは いつもの ボード' in tn and h1['bcx'] == 'carry' and h2['bcx'] == ''
               and bi['slots'] == ['hit:ボードを持つ馬', 'miss:なし（いつもの ボード）'] and [x for x in bi['picks'] if x.startswith('carry:')] == ['carry:hit:true', 'carry:miss:false'],
-              f'ハズレの とき →「なし」：ハズレの ボードは いつもの 形・的中は そのまま（べつべつ）（{tn}・{bi["slots"]}）')
+              f'ハズレの とき →「なし」：ハズレの ボードは いつもの 形・的中は そのまま（別々）（{tn}・{bi["slots"]}）')
         # タイルの「的中」を もう一度 押す → 的中も なし／「ハズレ」を 押す → ハズレだけ
         p6.locator('#setBoard [data-bcact=use][data-id=carry][data-slot=hit]').click(); p6.wait_for_timeout(400)
         p6.locator('#setBoard [data-bcact=use][data-id=carry][data-slot=miss]').click(); p6.wait_for_timeout(400)
@@ -1557,7 +1557,7 @@ try:
         p6.locator('#setBoard [data-bcact=seeslot][data-slot=hit]').click(); p6.wait_for_timeout(1600); s2 = p6.evaluate(SEE6); p6.evaluate('TengelFx.close()'); p6.wait_for_timeout(300)
         sk6 = [p6.evaluate("(a) => TengelWallet.board.select(a[0], a[1])", a) for a in (['prep3', 'hit'], ['orbit', 'miss'], ['carry', 'hit'])]
         check(s1 == {'bcx': 'carry', 'kind': 'miss', 'phase': 'reveal'} and s2 == {'bcx': '', 'kind': 'hit', 'phase': 'reveal'} and sk6 == [False, False, True] and p6.evaluate(BSEL) == ['carry', 'carry', 15, 'carry', 'carry'],
-              f'的中の とき／ハズレの とき の「▶ 見る」は その 結果の ボードで（なし なら いつもの 形）・じゅんび中と 消した 飾りは 選べない（{s1}・{s2}・{sk6}）')
+              f'的中の とき／ハズレの とき の「▶ 見る」は その 結果の ボードで（なし なら いつもの 形）・準備中と 消した 飾りは 選べない（{s1}・{s2}・{sk6}）')
         # 15「ボードを持つ馬」：的中にも ハズレにも つく・頭と首・後ろ足・しっぽ・前足の 部品・「とじる」は 動かない。この テストは 絵（ios/fx_assets の bcx_hb_*.webp）を 置かないので SVG の 馬（.bchbv）
         #   第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！」）：いつも 動かない（.bcst）＝下から 出て こない（.bce-carry なし・
         #   いつもの ボードと 同じ 出方）・ぷるぷる しない・しっぽを ふらない・まばたき しない・ボードを 落としそうに ならない（bcHbSlip なし）。前は 控えめ だけ 止まった 形 だった
@@ -1577,7 +1577,7 @@ try:
         check(c1 and c1['bcx'] == 'carry' and 'bcst' in c1['cls'] and 'bce-carry' not in c1['cls'] and not c1['an'].startswith('bcECarry') and 'bcgo' in c1b['cls'] and 'bchbv' in c1b['cls'] and c1b['imgs'] == 5
               and c1b['head'] >= 1 and c1b['legs'] >= 1 and c1b['tail'] >= 1 and c2 and c2['bcx'] == 'carry' and 'bcst' in c2['cls'] and 'bcgo' in c2['cls'] and c1b['close'] == h0['close'] and c2['close'] == h0['close']
               and c3['bcx'] == 'carry' and 'bcst' in c3['cls'] and 'bce-carry' not in c3['cls'],
-              f'「ボードを持つ馬」（15）は 的中にも ハズレにも つく・頭と首・後ろ足・しっぽ（絵が ない ときは SVG の 馬）・「とじる」は 動かない／第4.150版：いつも 止まった 形（.bcst）＝下から 出て こない（{c1 and c1["cls"]}・{c1b["cls"]}・{c3["cls"]}）')
+              f'「ボードを持つ馬」（15）は 的中にも ハズレにも つく・頭と首・後ろ足・しっぽ（絵が ない ときは SVG の 馬）・「閉じる」は 動かない／第4.150版：いつも 止まった 形（.bcst）＝下から 出て こない（{c1 and c1["cls"]}・{c1b["cls"]}・{c3["cls"]}）')
         check(all(x['moves'] == 0 and x['rbAn'] == 'none' for x in (c1, c1b, c1c, c2, c3)) and sl1 == 0 and c3s == 0 and c3a == 'none' and c1c['close'] == h0['close'],
               f'第4.150版：「ボードを持つ馬」は 動かない（飾りの 部品と ボードの 板に 動きが 1つも ない：出はじめ・出おわり・その 1.8秒後・ハズレ・控えめ＝{[x["moves"] for x in (c1, c1b, c1c, c2, c3)]}）・'
               f'ボードを 落としそうに ならない（{sl1}・{c3s}・{c3a}）')
@@ -1613,7 +1613,7 @@ try:
         else:
             ok6 = ok6 and all(x[1] == '' and not x[2] and not x[3] for x in stg)
         check(ok6 and stp and stp[0] == 'pen' and stp[1] == '' and not stp[2] and not stp[3] and stp[7] == h0['cb'],
-              f'第4.121版：絵の ボードの 段は 連続の 数（出世馬 1→1・3→3・5→4・16→16・40→24連勝／ハズレ 1・2・7→1・2・4回目）・オフと 控えめは 止まった 形・「とじる」の 場所は 同じ（出世馬 16連勝は その 色）・'
+              f'第4.121版：絵の ボードの 段は 連続の 数（出世馬 1→1・3→3・5→4・16→16・40→24連勝／ハズレ 1・2・7→1・2・4回目）・オフと 控えめは 止まった 形・「閉じる」の 場所は 同じ（出世馬 16連勝は その 色）・'
               f'絵が 読めない → いつもの ボード（{[x and x[:8] for x in stg]}・{stp and stp[:4]}・{h0["cb"]}・{cl16 in stg[3][8]}）')
         # 第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」）：絵の ボードは 動かない＝止まった 絵 1まい（bcp_<デザイン>.webp）と
         #   前の 絵（_fg.webp）だけ。キャラの 入れもの（.chrw）・動かない 物（.chroc・.chrot）・まわりの 光と 雲（canvas.chramb）・動きの CSS（style.bcmCss）は ない。
@@ -1641,7 +1641,7 @@ try:
         mf6 = {f for n in _bcp.MOTION for f in _bcp.motion_files(n)}
         check(len(ALLD6) == 59 and all(len(a) == len(set(a)) and sorted(a) == sorted(_need6(n)) for n, a in zip(ALLD6, ps6)) and so6 == [] and len(fl6) == len(set(fl6)) == 108
               and sum(1 for f in fl6 if f.endswith('_fg.webp')) == 35 and sum(1 for f in fl6 if f.startswith('bcp_t_')) == 14 and all(_bcp.pics(n)[0] in fl6 for n in ALLD6) and sum(1 for f in fl6 if f.endswith('_bl.webp')) == 52 and not (set(fl6) & mf6) and mo_n == 0,
-              f'第4.150版：アプリが 読む 絵は bcx.js と bcp_app.py で 同じ（59デザイン）・入れる 絵 {len(fl6)}（見本 14・止まった 絵 59・前の 絵 35）・動く 絵の 部品（{len(mf6)}まい）は 入れない・動きの データ なし（{mo_n}）')
+              f'第4.150版：アプリが 読む 絵は bcx.js と bcp_app.py で 同じ（59デザイン）・入れる 絵 {len(fl6)}（見本 14・止まった 絵 59・前の 絵 35）・動く 絵の 部品（{len(mf6)}枚）は 入れない・動きの データ なし（{mo_n}）')
         # 先に 読む 絵（prime：「結果を保存」を 押した とき）：つぎの 的中（連続的中＋1）と ハズレ（続けて ハズレた 数＋1）の 部品 ぜんぶ。もう一度 よんでも ふえない・えらび直すと 前の ぶんは はなす
         p6.evaluate("TengelWallet.board.select('bloom', 'hit')"); p6.evaluate("TengelWallet.board.select('rain', 'miss')"); p6.wait_for_timeout(300)
         ski2 = p6.evaluate("(() => { const i = TengelWallet.board.info(); return [i.streak, i.mstreak]; })()")
@@ -1651,7 +1651,7 @@ try:
         w3 = p6.evaluate("(() => { TengelBoard.prime(); return TengelBoard._warm(); })()")
         e1 = _need6(nx6('bloom', ski2[0] + 1)) + _need6(nx6('rain', ski2[1] + 1)); e3 = _need6(nx6('ring', ski2[0] + 1)) + _need6(nx6('rain', ski2[1] + 1))
         check(sorted(w1) == sorted(e1) and w2 == w1 and sorted(w3) == sorted(e3) and len(w1) == len(set(w1)) and len(w3) == len(set(w3)) and 2 <= len(e1) <= 4 and not (set(w1 + w3) & mf6),
-              f'先に 読む 絵は つぎの 的中と ハズレの 絵（第4.150版：止まった 絵と 前の 絵 だけ：花束 {len(_need6(nx6("bloom", ski2[0] + 1)))}まい＋二人でしょんぼり {len(_need6(nx6("rain", ski2[1] + 1)))}まい）・もう一度 よんでも 同じ・えらび直すと 入れかわる（{len(w1)}・{len(w2)}・{len(w3)}）')
+              f'先に 読む 絵は 次の 的中と ハズレの 絵（第4.150版：止まった 絵と 前の 絵 だけ：花束 {len(_need6(nx6("bloom", ski2[0] + 1)))}枚＋二人でしょんぼり {len(_need6(nx6("rain", ski2[1] + 1)))}枚）・もう一度 よんでも 同じ・選び直すと 入れかわる（{len(w1)}・{len(w2)}・{len(w3)}）')
         # 前の 版の 台帳（1つの 選択 sel）：その とき 的中にも ハズレにも ついて いた ので 両方へ・消した 飾り（1〜21）は まだ 選んで いない と 同じ
         p6.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.board = { reads: 146, sel: 'carry', streak: 3, res: [] }; await TengelLocal.putMeta(w); })()""")
         reopen6()
@@ -1669,7 +1669,7 @@ try:
         check(not p6.evaluate("TengelWallet.board.info().owned") and h1['bcx'] == '' and '返金' in p6.locator('#toast').inner_text() and p6.locator('#setBoard [data-bcact=buy]').count() == 1, f'返金 → 使えなくなる（飾りなし・カードは また「買う」）（{p6.locator("#toast").inner_text()}）')
         p6.evaluate("window.__iap.current = [{ id: '7002', originalId: 'o7001', product: 'jp.tengel.app.boardcustom', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
         p6.locator('#setBoard [data-bcact=restore]').click(); p6.wait_for_timeout(900)
-        check(p6.evaluate("TengelWallet.board.info().owned") and 'もどしたよ' in p6.locator('#toast').inner_text() and p6.evaluate(BSEL) == ['carry', '', 15, 'carry', ''], f'購入を復元 → もどる（この 端末の 進み具合と 選んだ ものは そのまま）（{p6.locator("#toast").inner_text()}）')
+        check(p6.evaluate("TengelWallet.board.info().owned") and '戻したよ' in p6.locator('#toast').inner_text() and p6.evaluate(BSEL) == ['carry', '', 15, 'carry', ''], f'購入を復元 → 戻る（この 端末の 進み具合と 選んだ ものは そのまま）（{p6.locator("#toast").inner_text()}）')
         p6.screenshot(path=os.path.join(W, 't4', 'native_board_custom.png'), full_page=False)
         ctx6.close()
         # ---- 第4.92版：壁紙パック（買い切り 1,500円・非消耗型 jp.tengel.app.wallpack1）：着せ替えの いちばん上の 組・買う／購入を復元・読み込み 5レースごとに 1枚ずつ 解放・
@@ -1694,7 +1694,7 @@ try:
         k0 = p7.evaluate(PKI)
         check(bool(k0) and k0['first'] == '壁紙パック' and k0['buy'] == '¥1,500で買う' and k0['bun'] == '¥2,200で買う' and k0['restore'] and k0['tiles'] == len(k0['ids']) >= 1 and all('壁紙パック' in x for x in k0['locks']) and len(k0['locks']) == len(k0['ids'])
               and k0['order'][:2] == ['pirate', 'course'] and k0['order'][-1] == 'future' and len(k0['order']) == 10 and 'tanabata' not in k0['order'] and not k0['owned'],
-              f'第4.92版：着せ替えの いちばん上に「壁紙パック」の 組（¥1,500で買う・第4.114版：お得パック ¥2,200で買う・購入を復元・カギの 壁紙 {k0 and k0["tiles"]}枚・解放の 順は 海賊 → 競馬場 → … → 近未来都市 の 10枚：第4.147版で 七夕を 外した）（{k0 and {k: k0[k] for k in ("first", "buy", "bun", "tiles", "ids")}}）')
+              f'第4.92版：着せ替えの 一番上に「壁紙パック」の 組（¥1,500で買う・第4.114版：お得パック ¥2,200で買う・購入を復元・カギの 壁紙 {k0 and k0["tiles"]}枚・解放の 順は 海賊 → 競馬場 → … → 近未来都市 の 10枚：第4.147版で 七夕を 外した）（{k0 and {k: k0[k] for k in ("first", "buy", "bun", "tiles", "ids")}}）')
         check(not p7.evaluate("TengelKisekae.usable('pirate')") and p7.evaluate("TengelKisekae.usable('default')"), '買う 前は 壁紙パックの 壁紙は 使えない（ポイントでも 解放 できない）')
         p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(400)
         check(p7.locator('#setKisekae .kst.cf[data-ks=pirate] [data-ksact=pkbuy]').count() == 1, 'カギの 壁紙を 押すと その 下に「¥1,500で買う」')
@@ -1704,7 +1704,7 @@ try:
         k1 = p7.evaluate(PKI)
         check(k1['owned'] and k1['n'] == 0 and p7.evaluate('TengelWallet.total()') == 1500 and len(fin7) == 1 and fin7[0]['payload']['id'] == '8001' and '買ったよ' in p7.locator('#toast').inner_text()
               and '解放 0/10' in k1['box'] and 'あと 5レース' in k1['box'] and not k1['buy'] and not k1['bun'] and k1['locks'][0] == '🔒 あと5レース' and not p7.evaluate("TengelWallet.bundle.offer()") and p7.locator('#setBoard [data-bcact=bundle]').count() == 0 and p7.locator('#setBoard [data-bcact=buy]').inner_text() == '¥1,500で買う',
-              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・箱は 進み具合（解放 0/10・つぎの「海賊」まで あと 5レース）・お得パックは 消えて 結果ボードカスタムの 単品だけ（{k1["box"]!r}）')
+              f'¥1,500で買う → 持って いる（ポイントは 1,500P の まま）・取引を 終わらせる・箱は 進み具合（解放 0/10・次の「海賊」まで あと 5レース）・お得パックは 消えて 結果ボードカスタムの 単品だけ（{k1["box"]!r}）')
         p7.locator('#setKisekae .kst[data-ks=pirate]').click(); p7.wait_for_timeout(300)
         check('あと 5レース' in p7.locator('#toast').inner_text(), f'買った あと・解放 前に 押す → あと 何レースか（{p7.locator("#toast").inner_text()}）')
         RD7 = "(r) => TengelWallet.readCharge({ form: { date: '2026-10-21', venue: '大井', r: r }, ocr: {} })"
@@ -1747,7 +1747,7 @@ try:
         k55 = p7.evaluate(PKI)
         check(k55['n'] == 10 and k55['reads'] == 55 and '解放 10/10' in k55['box'] and not k55['locks'] and p7.evaluate("TengelKisekae.usable('future')") and not p7.evaluate("TengelKisekae.usable('tanabata')")
               and p7.evaluate("TengelWallet.pack.info().next") is None and p7.evaluate("TengelPoints.wallCount(TengelWallet.events(), TengelWallet.pack.info().n)") == 11,
-              f'第4.147版：55レース 読み込んで いた 人 → 10枚 ぜんぶ 解放（解放 10/10・カギなし・つぎは ない・七夕は もう ない）・帯の 枚数は 10＋ポイントの 1枚 ＝ 11（{k55["box"]!r}）')
+              f'第4.147版：55レース 読み込んで いた 人 → 10枚 全部 解放（解放 10/10・カギなし・次は ない・七夕は もう ない）・帯の 枚数は 10＋ポイントの 1枚 ＝ 11（{k55["box"]!r}）')
         p7.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.pack.reads = 35; await TengelLocal.putMeta(w); })()""")
         for _ in range(3):
             p7.goto(APPURL); p7.wait_for_timeout(900); gate(p7)
@@ -1758,11 +1758,11 @@ try:
         # 返金 → 使えなくなる（いつもの に もどる）・購入を復元 → もどる（この 端末の 進み具合は そのまま）
         p7.evaluate("window.__nativeEvent('iap', { id: '8001', originalId: 'o8001', product: 'jp.tengel.app.wallpack1', kind: 'unlock', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); p7.wait_for_timeout(900)
         check(not p7.evaluate("TengelKisekae.pack().owned") and not p7.evaluate("TengelKisekae.usable('pirate')") and p7.evaluate("TengelKisekae.current()") == 'default' and '返金' in p7.locator('#toast').inner_text(),
-              f'返金 → 壁紙パックの 壁紙は 使えなくなる（いつもの に もどる）（{p7.locator("#toast").inner_text()}）')
+              f'返金 → 壁紙パックの 壁紙は 使えなくなる（いつもの に 戻る）（{p7.locator("#toast").inner_text()}）')
         p7.click('.tabbar button[data-tab=set]'); p7.wait_for_timeout(500)
         p7.evaluate("window.__iap.current = [{ id: '8002', originalId: 'o8001', product: 'jp.tengel.app.wallpack1', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
         p7.locator('#setKisekae .kspk [data-ksact=pkrestore]').click(); p7.wait_for_timeout(900)
-        check(p7.evaluate("TengelKisekae.pack().owned") and p7.evaluate("TengelKisekae.pack().n") == 7 and 'もどしたよ' in p7.locator('#toast').inner_text(), f'購入を復元 → もどる（解放 7枚 の まま）（{p7.locator("#toast").inner_text()}）')
+        check(p7.evaluate("TengelKisekae.pack().owned") and p7.evaluate("TengelKisekae.pack().n") == 7 and '戻したよ' in p7.locator('#toast').inner_text(), f'購入を復元 → 戻る（解放 7枚 の まま）（{p7.locator("#toast").inner_text()}）')
         p7.screenshot(path=os.path.join(W, 't4', 'native_wall_pack.png'), full_page=False)
         ctx7.close()
         # ---- 第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！ミッションも減った分調整して！」「七夕も消して！」）：
@@ -1824,13 +1824,13 @@ try:
               and g1['back'] == [['back-theme:sakura', 'mission', 'free', 1000, 0, 'なくなった壁紙「桜」のポイントを返した'], ['back-theme:xmas', 'mission', 'free', 4000, 0, 'なくなった壁紙「クリスマス」のポイントを返した'], ['back-theme:halloween', 'mission', 'free', 0, 0, 'なくなった壁紙「ハロウィン」のチケットを返した'],
                                  ['back-theme:neon', 'mission', 'free', 3000, 0, 'なくなった壁紙「ネオン」のポイントを返した']]
               and g1['toast'] == 'なくなった壁紙（桜・クリスマス・ハロウィン・ネオン）の 8,000P と チケット 1枚 を返したよ',
-              f'第4.147版・第4.160版：桜（1,000P）・クリスマス（4,000P）・ネオン（3,000P）の ポイントが 返る（獲得ポイント +8,000P・合計 {g1["total"]:,}P）・ハロウィンは 0P の しるし だけ・お知らせ（{g1["toast"]!r}）')
+              f'第4.147版・第4.160版：桜（1,000P）・クリスマス（4,000P）・ネオン（3,000P）の ポイントが 返る（獲得ポイント +8,000P・合計 {g1["total"]:,}P）・ハロウィンは 0P の 印 だけ・お知らせ（{g1["toast"]!r}）')
         check(g1['tk'] == 3, f'チケットで 解放して いた ハロウィン → チケットが 1枚 返る（2 → {g1["tk"]}枚）')
         check(ksw0 is None and g1['cur'] == 'default' and g1['ks'] is None and g1['ls'] == 'default' and g1['db'] == 'default' and pW.locator('#ksBnr').evaluate('e => e.hidden'),
               f'使って いた ネオン → 開いた 瞬間から「いつもの」（端末の 覚え {g1["ls"]}・設定の DB {g1["db"]} も「いつもの」に 覚え直す）')
         check(g1['count'] == 1 and g1['countAll'] == 2 and g1['wall'] == [['mission-wall-silver', 5, False, True, False], ['mission-wall-golden', 10, False, False, False], ['mission-wall-tengel', 15, False, False, False]]
               and pW.evaluate("TengelKisekae.usable('gold')") and pW.evaluate("TengelKisekae.usable('silver')") and not pW.evaluate("TengelKisekae.usable('sakura')") and not pW.evaluate("TengelKisekae.usable('neon')"),
-              f'枚数：外した 4枚は 数えない（のこりは ぷりけつのお馬の 1枚・帯も 数えると 2枚）・前の 版で 受け取った シルバー帯は 受け取りずみ の まま（もう一度は 受け取れない）・のこった 壁紙は 使える（{g1["wall"][0]}）')
+              f'枚数：外した 4枚は 数えない（残りは ぷりけつのお馬の 1枚・帯も 数えると 2枚）・前の 版で 受け取った シルバー帯は 受け取り済み の まま（もう一度は 受け取れない）・残った 壁紙は 使える（{g1["wall"][0]}）')
         pW.click('.tabbar button[data-tab=set]'); pW.wait_for_timeout(500)
         pW.locator('#setPoints [data-pt=show][data-v=hist]').click(); pW.wait_for_timeout(300)
         hW = pW.locator('#setPoints .pthist').inner_text(); kW = pW.locator('#setKisekae').inner_text()
@@ -1838,7 +1838,7 @@ try:
               'ポイントの 履歴（第4.160版）：ネオンの 解放は「壁紙「ネオン」（なくなった壁紙）」・返した 行は「なくなった壁紙「ネオン」のポイントを返した +3,000P」')
         check('解放：壁紙「桜」（なくなった壁紙）' in hW and '解放：壁紙「クリスマス」（なくなった壁紙）' in hW and 'なくなった壁紙「桜」のポイントを返した' in hW and 'なくなった壁紙「クリスマス」のポイントを返した' in hW and 'なくなった壁紙「ハロウィン」のチケットを返した' in hW
               and 'ミッション：なくなった壁紙' not in hW and '+1,000P' in hW and '+4,000P' in hW and '解放：壁紙「ぷりけつのお馬」' in hW and '壁紙 sakura' not in hW,
-              'ポイントの 履歴：前の 解放は「壁紙「桜」（なくなった壁紙）」・返した 行は「なくなった壁紙「桜」のポイントを返した +1,000P」（「ミッション：」は つけない）')
+              'ポイントの 履歴：前の 解放は「壁紙「桜」（なくなった壁紙）」・返した 行は「なくなった壁紙「桜」のポイントを返した +1,000P」（「ミッション：」は 付けない）')
         check('解放した壁紙：1/26枚' in kW and '桜' not in kW and 'クリスマス' not in kW and 'ネオン' not in kW and pW.locator('#setKisekae .kst.on').get_attribute('data-ks') == 'default' and pW.locator('#setKisekae .kst[data-ks=gold] .kslock').count() == 0 and pW.locator('#setKisekae .kst[data-ks=silver] .kslock').count() == 0,
               '着せ替えの カード：解放した壁紙 1/26枚・外した 壁紙は ない・「いつもの」が 使用中・ぷりけつのお馬と シルバー帯は カギなし')
         pW.screenshot(path=os.path.join(W, 't4', 'native_wall_gone.png'), full_page=False)
@@ -1851,36 +1851,36 @@ try:
         reopenW('back-theme:whiteday')
         g3 = pW.evaluate(GST)
         check(g3['total'] == 99999 and g3['hold'] == 3501 and ['back-theme:whiteday', 'mission', 'free', 499, 3501, 'なくなった壁紙「ホワイトデー」のポイントを返した'] in g3['back'] and pW.evaluate("TengelWallet.avail()") == 99999
-              and g3['toast'] == 'なくなった壁紙（ホワイトデー）の 4,000P を返したよ（上限 99,999P なので、うち 3,501P は あずかったよ。ミッションの 窓で 補充できるよ）',
-              f'上限（99,999P）の 近く：499P だけ 入って 3,501P は あずかりポイントに（{g3["toast"]!r}）')
-        check(g3['cur'] == 'gold' and g3['ks'] == 'gold' and g3['ls'] == 'gold' and g3['db'] == 'gold', f'のこった 壁紙（ぷりけつのお馬）を 使って いた 人は そのまま（{g3["cur"]}）')
+              and g3['toast'] == 'なくなった壁紙（ホワイトデー）の 4,000P を返したよ（上限 99,999P なので、うち 3,501P は 預かったよ。ミッションの 窓で 補充できるよ）',
+              f'上限（99,999P）の 近く：499P だけ 入って 3,501P は 預かりポイントに（{g3["toast"]!r}）')
+        check(g3['cur'] == 'gold' and g3['ks'] == 'gold' and g3['ls'] == 'gold' and g3['db'] == 'gold', f'残った 壁紙（ぷりけつのお馬）を 使って いた 人は そのまま（{g3["cur"]}）')
         reopenW()
         g4 = pW.evaluate(GST)
-        check(g4['total'] == 99999 and g4['hold'] == 3501 and g4['n'] == g3['n'] and 'なくなった壁紙' not in g4['toast'], f'あずかった ぶんも「返した」に 数える（もう一度 開いても 2回は 返さない：合計 {g4["total"]:,}P・あずかり {g4["hold"]:,}P）')
+        check(g4['total'] == 99999 and g4['hold'] == 3501 and g4['n'] == g3['n'] and 'なくなった壁紙' not in g4['toast'], f'預かった ぶんも「返した」に 数える（もう一度 開いても 2回は 返さない：合計 {g4["total"]:,}P・預かり {g4["hold"]:,}P）')
         r5 = pW.evaluate("(async () => { const ok = await TengelWallet.unlock('theme:news', 2000); const moved = await TengelWallet.refill(); return { ok, moved, total: TengelWallet.total(), hold: TengelWallet.hold().free, rel: TengelWallet.events().filter(e => /^rel-back-theme:/.test(e.id)).map(e => [e.id, e.amount, e.bucket]) }; })()")
-        check(r5['ok'] and r5['moved'] == 2000 and r5['total'] == 99999 and r5['hold'] == 1501 and r5['rel'] == [['rel-back-theme:whiteday-1', 2000, 'free']], f'使って あきが できたら、あずかった ぶんを 補充できる（2,000P 使う → 2,000P 補充・あずかり のこり 1,501P）（{r5}）')
+        check(r5['ok'] and r5['moved'] == 2000 and r5['total'] == 99999 and r5['hold'] == 1501 and r5['rel'] == [['rel-back-theme:whiteday-1', 2000, 'free']], f'使って あきが できたら、預かった 分を 補充できる（2,000P 使う → 2,000P 補充・預かり 残り 1,501P）（{r5}）')
         # 3) チケットで 解放して いた バレンタイン（0P）・トレーニングセンターの 記録が ない（チケットを 返せない）→ しるしを 書かない → 記録が できたら つぎに 開いた ときに 返る。
         #    壁紙パックの 七夕を 使って いた → 「いつもの」に もどる（七夕は 台帳に できごとが ない ので 返す ものは ない）
         pW.evaluate(GINJ, {'ev': [['un', 'valentine', 0]], 'ks': 'tanabata', 'tc': None})
         reopenW()
         g5 = pW.evaluate(GST)
         check(not any(x[0] == 'back-theme:valentine' for x in g5['back']) and g5['tk'] == 0 and 'なくなった壁紙' not in g5['toast'] and g5['total'] == r5['total'],
-              f'チケットを 返せない とき（トレーニングセンターの 記録が ない）：しるしを 書かない・ポイントも 変わらない（チケット {g5["tk"]}枚）')
-        check(g5['cur'] == 'default' and g5['ks'] is None and g5['ls'] == 'default' and g5['db'] == 'default' and not pW.evaluate("TengelKisekae.usable('tanabata')"), f'壁紙パックの 七夕を 使って いた → 「いつもの」に もどる（{g5["ls"]}・{g5["db"]}）')
+              f'チケットを 返せない とき（トレーニングセンターの 記録が ない）：印を 書かない・ポイントも 変わらない（チケット {g5["tk"]}枚）')
+        check(g5['cur'] == 'default' and g5['ks'] is None and g5['ls'] == 'default' and g5['db'] == 'default' and not pW.evaluate("TengelKisekae.usable('tanabata')"), f'壁紙パックの 七夕を 使って いた → 「いつもの」に 戻る（{g5["ls"]}・{g5["db"]}）')
         pW.evaluate("localStorage.setItem('tengel.tc', JSON.stringify({ v: 1, tickets: 0 }))")
         reopenW('back-theme:valentine')
         g6 = pW.evaluate(GST)
         check(['back-theme:valentine', 'mission', 'free', 0, 0, 'なくなった壁紙「バレンタイン」のチケットを返した'] in g6['back'] and g6['tk'] == 1 and g6['toast'] == 'なくなった壁紙（バレンタイン）の チケット 1枚 を返したよ' and g6['total'] == r5['total'],
-              f'トレーニングセンターの 記録が できた あとに 開く → チケットが 1枚 返る（{g6["toast"]!r}）')
+              f'トレーニングセンターの 記録が できた 後に 開く → チケットが 1枚 返る（{g6["toast"]!r}）')
         reopenW()
         g7 = pW.evaluate(GST)
-        check(g7['tk'] == 1 and g7['n'] == g6['n'] and len(g7['back']) == 6 and 'なくなった壁紙' not in g7['toast'], f'チケットも 1回 だけ（もう一度 開いても {g7["tk"]}枚 の まま・返した しるしは 6つ：桜・クリスマス・ハロウィン・ネオン・ホワイトデー・バレンタイン）')
+        check(g7['tk'] == 1 and g7['n'] == g6['n'] and len(g7['back']) == 6 and 'なくなった壁紙' not in g7['toast'], f'チケットも 1回 だけ（もう一度 開いても {g7["tk"]}枚 の まま・返した 印は 6つ：桜・クリスマス・ハロウィン・ネオン・ホワイトデー・バレンタイン）')
         # 4) チケットを 返した すぐ あとに アプリが 閉じた（台帳の しるしが 保存される 前）→ つぎに 開いた とき：端末の 覚え（tengel.gonetk）が ある ので 2枚目は 返さない・しるし だけ 書く
         check(pW.evaluate("JSON.parse(localStorage.getItem('tengel.gonetk') || '[]').join()") == 'halloween,valentine', 'チケットを 返した 壁紙は 端末にも 覚える（tengel.gonetk：halloween・valentine）')
         pW.evaluate("""(async () => { const w = await TengelLocal.getMeta('wallet'); w.events = w.events.filter(e => e.id !== 'back-theme:valentine'); await TengelLocal.putMeta(w); })()""")
         reopenW('back-theme:valentine')
         g8 = pW.evaluate(GST)
-        check(g8['tk'] == 1 and any(x[0] == 'back-theme:valentine' for x in g8['back']) and g8['n'] == g7['n'] and g8['total'] == g7['total'] and 'なくなった壁紙' not in g8['toast'], f'台帳の しるしが 保存される 前に 閉じても、チケットは 2枚目を 返さない（{g8["tk"]}枚 の まま・しるしは 書き直す・お知らせは 出さない）')
+        check(g8['tk'] == 1 and any(x[0] == 'back-theme:valentine' for x in g8['back']) and g8['n'] == g7['n'] and g8['total'] == g7['total'] and 'なくなった壁紙' not in g8['toast'], f'台帳の 印が 保存される 前に 閉じても、チケットは 2枚目を 返さない（{g8["tk"]}枚 の まま・印は 書き直す・お知らせは 出さない）')
         ctxW.close()
         # ---- 第4.114版（まさちゃん 2026/11/01）：お得パック（jp.tengel.app.bundle1・2,200円＝壁紙パックと 結果ボードカスタムの セット）：単品を どちらも 持って いない ときだけ 2つの 買う 所に 出る・
         #      買うと 2つとも 持って いる・読み込みで 2つとも 進む・返金で 2つとも 使えなくなる・購入を復元で もどる。ミッション：結果ボードカスタムの 解放の 数（3〜16こ）・壁紙の 枚数（3〜45枚・帯も 数える）----
@@ -1933,7 +1933,7 @@ try:
         p8.click('.tabbar button[data-tab=set]'); p8.wait_for_timeout(600)   # 設定タブを 開く（App Store の 表示価格を 読む）
         u3 = p8.evaluate(BUN)
         check(u3['bN'] == 14 and u3['pN'] == 10 and u3['badge'] == '9' and u3['hot'] and p8.locator('.tabbar [data-tab=set] .tbdg').count() == 1,
-              f'結果ボードカスタム 14こ・壁紙 10枚 → 上の「ミッション」に 受け取れる 9（結果ボードカスタム 4・壁紙の 枚数 3・シルバー帯 1・ゴールド帯 1）（{u3["badge"]}）')
+              f'結果ボードカスタム 14個・壁紙 10枚 → 上の「ミッション」に 受け取れる 9（結果ボードカスタム 4・壁紙の 枚数 3・シルバー帯 1・ゴールド帯 1）（{u3["badge"]}）')
         p8.click('#msBtn'); p8.wait_for_timeout(600)
         ov8 = p8.locator('#msOv')
         MSI = """() => { const ov = document.querySelector('#msOv'); if (!ov) return null; const rows = s => [...ov.querySelectorAll(s + ' .msrow')].map(r => r.dataset.mid + (r.classList.contains('can') ? '*' : '')); const txt = s => (ov.querySelector(s) || {}).innerText || '';
@@ -1947,29 +1947,29 @@ try:
               and mi['board'] == ['mission-board-3*', 'mission-board-6*', 'mission-board-9*', 'mission-board-12*', 'mission-board-15'] and len(mi['wallp']) == 8 and mi['wallp'][:4] == ['mission-wallp-3*', 'mission-wallp-6*', 'mission-wallp-9*', 'mission-wallp-12']
               and mi['wallp'][-1] == 'mission-wallp-29' and not mi['has45']
               and mi['wall'] == ['mission-wall-silver*', 'mission-wall-golden*', 'mission-wall-tengel'] and '（10/29）' in mi['last'] and '結果ボードカスタム 3こ解放' in mi['b3'] and '500P' in mi['b3'] and '壁紙 3枚解放' in mi['w3'] and '800P' in mi['w3']
-              and 'いま 14こ' in mi['bhint'] and 'いま 10枚' in mi['whint'] and '29枚まで' in mi['whint'] and mi['claims'] == 9 and any('結果ボードカスタム' in h for h in mi['h2']),
-              f'ミッションの 窓：「結果ボードカスタムミッション」（3・6・9・12 受け取れる・15 は まだ）・壁紙ミッションの 下に 枚数の 8行（3・6・9 受け取れる・さいごは 29枚・35枚より 上の 行は ない）・帯の 3行（シルバー 5枚・ゴールド 10枚が 受け取れる・マスター 15枚は まだ）・上は「達成 n/35」（{mi and {k: mi[k] for k in ("n", "mp", "board", "wall", "last", "claims")}}）')
+              and '今 14個' in mi['bhint'] and '今 10枚' in mi['whint'] and '29枚まで' in mi['whint'] and mi['claims'] == 9 and any('結果ボードカスタム' in h for h in mi['h2']),
+              f'ミッションの 窓：「結果ボードカスタムミッション」（3・6・9・12 受け取れる・15 は まだ）・壁紙ミッションの 下に 枚数の 8行（3・6・9 受け取れる・最後は 29枚・35枚より 上の 行は ない）・帯の 3行（シルバー 5枚・ゴールド 10枚が 受け取れる・マスター 15枚は まだ）・上は「達成 n/35」（{mi and {k: mi[k] for k in ("n", "mp", "board", "wall", "last", "claims")}}）')
         ov8.locator('#msBoard [data-pt=claim][data-id="mission-board-3"]').click(); p8.wait_for_timeout(800)
         t8b = p8.locator('#toast').inner_text(); u4 = p8.evaluate(BUN)
         ov8.locator('#msWallp [data-pt=claim][data-id="mission-wallp-9"]').click(); p8.wait_for_timeout(800)
         t8w = p8.locator('#toast').inner_text(); u5 = p8.evaluate(BUN); mi2 = p8.evaluate(MSI)
         check('結果ボードカスタム 3こ解放' in t8b and '500P' in t8b and u4['free'] == u3['free'] + 500 and u4['badge'] == '8' and '壁紙 9枚解放' in t8w and '1,500P' in t8w and u5['free'] == u3['free'] + 2000 and u5['total'] == u3['total'] + 2000 and u5['badge'] == '7'
               and mi2['board'][0] == 'mission-board-3' and mi2['wallp'][2] == 'mission-wallp-9' and mi2['n'].endswith('受け取れるのが 7つ！') and mi2['mp'] == mi['mp'] and p8.evaluate("TengelWallet.events().filter(e => /^mission-(board|wallp)-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()") == 'mission-board-3:500:free,mission-wallp-9:1500:free',
-              f'窓で 受け取る → 結果ボードカスタム 3こ 500P・壁紙 9枚 1,500P（獲得ポイント）・行は 受け取りずみ・上の 数は 9 → 8 → 7（達成の 数は 受け取っても 同じ）（{t8b}／{t8w}）')
+              f'窓で 受け取る → 結果ボードカスタム 3個 500P・壁紙 9枚 1,500P（獲得ポイント）・行は 受け取り済み・上の 数は 9 → 8 → 7（達成の 数は 受け取っても 同じ）（{t8b}／{t8w}）')
         # 帯の シルバーを 受け取る → 帯も 枚数に 数える（10 → 11枚：12枚は まだ・上の 数は 7 → 6）→ ゴールドも 受け取る（11 → 12枚）→ 壁紙 12枚が 受け取れる（6 − 1 ＋ 1 ＝ 6）
         ov8.locator('#msWall [data-pt=claim][data-id="mission-wall-silver"]').click(); p8.wait_for_timeout(800)
         mi3a = p8.evaluate(MSI); u6a = p8.evaluate(BUN)
-        check(mi3a['wall'] == ['mission-wall-silver', 'mission-wall-golden*', 'mission-wall-tengel'] and mi3a['wallp'][3] == 'mission-wallp-12' and 'いま 11枚' in mi3a['whint'] and u6a['badge'] == '6' and p8.evaluate("TengelKisekae.usable('silver')") and not p8.evaluate("TengelKisekae.usable('golden')"),
+        check(mi3a['wall'] == ['mission-wall-silver', 'mission-wall-golden*', 'mission-wall-tengel'] and mi3a['wallp'][3] == 'mission-wallp-12' and '今 11枚' in mi3a['whint'] and u6a['badge'] == '6' and p8.evaluate("TengelKisekae.usable('silver')") and not p8.evaluate("TengelKisekae.usable('golden')"),
               f'シルバー帯を 受け取る → 帯の 1枚も 枚数に 数えて 11枚（壁紙 12枚は まだ・上の 数は 7 → 6）（{mi3a["whint"]}）')
         ov8.locator('#msWall [data-pt=claim][data-id="mission-wall-golden"]').click(); p8.wait_for_timeout(800)
         mi3 = p8.evaluate(MSI); u6 = p8.evaluate(BUN)
-        check(mi3['wall'] == ['mission-wall-silver', 'mission-wall-golden', 'mission-wall-tengel'] and mi3['wallp'][3] == 'mission-wallp-12*' and 'いま 12枚' in mi3['whint'] and u6['badge'] == '6' and p8.evaluate("TengelKisekae.usable('golden')") and u6['total'] == u5['total']
+        check(mi3['wall'] == ['mission-wall-silver', 'mission-wall-golden', 'mission-wall-tengel'] and mi3['wallp'][3] == 'mission-wallp-12*' and '今 12枚' in mi3['whint'] and u6['badge'] == '6' and p8.evaluate("TengelKisekae.usable('golden')") and u6['total'] == u5['total']
               and p8.evaluate("TengelWallet.events().filter(e => /^mission-wall-/.test(e.id)).map(e => e.id + ':' + e.amount).join()") == 'mission-wall-silver:0,mission-wall-golden:0',
               f'ゴールド帯（10枚）も 受け取る → 帯の 2枚も 枚数に 数えて 12枚 → 壁紙 12枚の ミッションが 受け取れる（上の 数は 6 の まま・ポイントは 変わらない）（{mi3["whint"]}）')
         ov8.locator('[data-ms=close]').click(); p8.wait_for_timeout(300)
         ms8 = p8.locator('#setMission').inner_text()
-        check('結果ボードカスタムのミッション' in ms8 and '壁紙 12枚解放' in ms8 and '結果ボードカスタム 6こ解放' in ms8 and p8.locator('#setMission [data-pt=claim][data-id="mission-wallp-12"]').count() == 1 and p8.locator('#setMission .msrow[data-mid="mission-board-3"] .md').inner_text() == '受け取りずみ',
-              '設定タブの ミッションにも 壁紙の 枚数と 結果ボードカスタムの 行（受け取りずみ・受け取る）')
+        check('結果ボードカスタムのミッション' in ms8 and '壁紙 12枚解放' in ms8 and '結果ボードカスタム 6こ解放' in ms8 and p8.locator('#setMission [data-pt=claim][data-id="mission-wallp-12"]').count() == 1 and p8.locator('#setMission .msrow[data-mid="mission-board-3"] .md').inner_text() == '受け取り済み',
+              '設定タブの ミッションにも 壁紙の 枚数と 結果ボードカスタムの 行（受け取り済み・受け取る）')
         # 返金 → 2つとも 使えなくなる（お得パックが また 出る・受け取った ミッションは そのまま）・購入を復元 → 2つとも もどる（進み具合は そのまま）
         p8.evaluate("window.__nativeEvent('iap', { id: '9001', originalId: 'o9001', product: 'jp.tengel.app.bundle1', kind: 'unlock', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); p8.wait_for_timeout(900)
         u7 = p8.evaluate(BUN); t8r = p8.locator('#toast').inner_text()
@@ -1979,8 +1979,8 @@ try:
         p8.evaluate("window.__iap.current = [{ id: '9002', originalId: 'o9001', product: 'jp.tengel.app.bundle1', kind: 'unlock', date: new Date().toISOString(), revoked: false }]; 0")
         p8.locator('#setKisekae .kspk [data-ksact=pkrestore]').click(); p8.wait_for_timeout(1000)
         u8 = p8.evaluate(BUN); t8s = p8.locator('#toast').inner_text()
-        check(u8['owned'] and u8['bOwn'] and u8['pOwn'] and not u8['offer'] and 'もどしたよ' in t8s and '結果ボードカスタム' in t8s and '壁紙パック' in t8s and u8['bN'] == 14 and u8['pN'] == 10 and u8['badge'] == '6',
-              f'購入を復元（壁紙パックの 箱から）→ お得パックで 2つとも もどる（進み具合は そのまま・ミッションも もどる）（{t8s}）')
+        check(u8['owned'] and u8['bOwn'] and u8['pOwn'] and not u8['offer'] and '戻したよ' in t8s and '結果ボードカスタム' in t8s and '壁紙パック' in t8s and u8['bN'] == 14 and u8['pN'] == 10 and u8['badge'] == '6',
+              f'購入を復元（壁紙パックの 箱から）→ お得パックで 2つとも 戻る（進み具合は そのまま・ミッションも 戻る）（{t8s}）')
         p8.screenshot(path=os.path.join(W, 't4', 'native_bundle.png'), full_page=False)
         ctx8.close()
         # ---- 第4.116版（まさちゃん 2026/11/01 07:50「画像読み取りで締切済みレースは締切済みレースに記録される。買い目予約と結果&記録ができない。ポイントは200p消費する。※で注意事項を表示」）：
@@ -2018,8 +2018,8 @@ try:
         c1 = p9.evaluate(CL9)
         print('   締切済み①:', {k: c1[k] for k in ('total', 'counted', 'chips', 'hp', 'reserve', 'closed', 'date', 'start', 'bets')})
         check(c1['total'] == 1300 and '200P 使ったよ' in c1['msg'] and c1['date'] == '2026-10-01' and c1['start'] == '09:00' and c1['r'] == '9', f'発走 09:00 の レース（10月1日）を 読む → 読み込みの 200P は 使う（残り {c1["total"]}P）・日付と 発走時刻が 入る')
-        check('締切済みのレース' in c1['msg'] and '発走 09:00 をすぎている' in c1['msg'] and '買い目の予約と結果の記録はできないよ' in c1['msg'] and '200P は使うよ' in c1['msg'], f'読み取りの お知らせに「締切済みのレースだよ（発走 09:00 をすぎている）」と ※の 注意（{c1["msg"][-90:]}）')
-        check(bool(c1['closed']) and c1['closed']['by'] == 'time' and c1['closed']['start'] == '09:00' and '締切済み' in c1['chips'] and c1['hp'] == 0 and c1['reserve'] == 0 and '締切済み' in c1['card'] and '発走 09:00 をすぎている' in c1['card'] and '判定は見られるよ' in c1['card'],
+        check('締切済みのレース' in c1['msg'] and '発走 09:00 を過ぎている' in c1['msg'] and '買い目の予約と結果の記録はできないよ' in c1['msg'] and '200P は使うよ' in c1['msg'], f'読み取りの お知らせに「締切済みのレースだよ（発走 09:00 を過ぎている）」と ※の 注意（{c1["msg"][-90:]}）')
+        check(bool(c1['closed']) and c1['closed']['by'] == 'time' and c1['closed']['start'] == '09:00' and '締切済み' in c1['chips'] and c1['hp'] == 0 and c1['reserve'] == 0 and '締切済み' in c1['card'] and '発走 09:00 を過ぎている' in c1['card'] and '判定は見られるよ' in c1['card'],
               f'判定は 出る（「締切済み」の 印）・馬を 選ぶ 行と お任せ・「買い目を予約」「諦める」は 出ない・買い目の カードは「締切済み」と ※の 注意（{c1["chips"]}／hp {c1["hp"]}／ボタン {c1["reserve"]}）')
         check(len(c1['bets']) == 1 and c1['bets'][0]['state'] == 'closed' and c1['bets'][0]['by'] == 'time' and c1['bets'][0]['r'] == 9 and c1['bets'][0]['types'] == [] and c1['bets'][0]['stake'] is None and c1['bets'][0]['p1'] is None and c1['counted'] == 0
               and '締切済みレース' in c1['toast'] and '「締切済みレース」に入っているよ' in c1['card'],
@@ -2037,9 +2037,9 @@ try:
         tt9 = top9.inner_text()
         row9 = top9.locator(f'.lrow[data-id="{id9}"]')
         rt9 = row9.inner_text() if row9.count() else ''
-        check(row9.count() == 1 and '9R' in rt9 and '締切済み（発走 09:00 をすぎている）' in rt9 and row9.locator('[data-act=load]').inner_text() == '判定を見る' and row9.locator('[data-act=rdel]').inner_text() == '消す' and row9.locator('.rsvf, .recf, input').count() == 0
+        check(row9.count() == 1 and '9R' in rt9 and '締切済み（発走 09:00 を過ぎている）' in rt9 and row9.locator('[data-act=load]').inner_text() == '判定を見る' and row9.locator('[data-act=rdel]').inner_text() == '消す' and row9.locator('.rsvf, .recf, input').count() == 0
               and '買い目の予約と結果の記録はできないよ' in tt9 and '判定だけ残しているよ' in tt9,
-              f'行は 9R・締切済み（発走 09:00 をすぎている）・「判定を見る」「消す」だけ（結果の 欄は ない）・欄の 上に ※の 注意（{rt9[:60]}）')
+              f'行は 9R・締切済み（発走 09:00 を過ぎている）・「判定を見る」「消す」だけ（結果の 欄は ない）・欄の 上に ※の 注意（{rt9[:60]}）')
         row9.locator('[data-act=load]').click(); p9.wait_for_timeout(800)
         c2 = p9.evaluate(CL9)
         check(p9.evaluate("document.querySelector('.tabbar button[data-tab=judge]').getAttribute('aria-selected')") == 'true' and c2['r'] == '9' and '締切済み' in c2['chips'] and c2['reserve'] == 0 and '「締切済みレース」に入っているよ' in c2['card'] and c2['total'] == 1300,
@@ -2048,13 +2048,13 @@ try:
         top9 = p9.locator('#recList .rsvtop details[data-k=closed]'); top9.locator('summary').click(); p9.wait_for_timeout(200)
         row9 = top9.locator(f'.lrow[data-id="{id9}"]')
         row9.locator('[data-act=rdel]').click(); p9.wait_for_timeout(200)
-        check(row9.locator('[data-act=rdel]').inner_text() == 'ほんとに消す？', '「消す」→「ほんとに消す？」')
+        check(row9.locator('[data-act=rdel]').inner_text() == '本当に消す？', '「消す」→「本当に消す？」')
         row9.locator('[data-act=rdel]').click(); p9.wait_for_timeout(900)
         c3 = p9.evaluate(CL9)
         check(len(c3['bets']) == 0 and '締切済みレースから消したよ' in c3['toast'] and p9.locator('#recList .rsvtop details[data-k=closed]').count() == 0, f'もう一度 押す → 締切済みレースから 消える（{c3["toast"]}）')
         p9.click('.tabbar button[data-tab=judge]'); p9.wait_for_timeout(800)
         c4 = p9.evaluate(CL9)
-        check(len(c4['bets']) == 0 and '締切済み' in c4['chips'] and c4['reserve'] == 0 and '締切済み' in c4['card'] and '入っているよ' not in c4['card'], '消した あとに 判定画面に 戻っても、入れ直さない（印と ※は そのまま・予約も できない）')
+        check(len(c4['bets']) == 0 and '締切済み' in c4['chips'] and c4['reserve'] == 0 and '締切済み' in c4['card'] and '入っているよ' not in c4['card'], '消した 後に 判定画面に 戻っても、入れ直さない（印と ※は そのまま・予約も できない）')
         # ② 画面に「発売締切」（日付は 先の 10月14日）→ 言葉で 締切済み
         p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, extra='発売締切')], ensure_ascii=False))
         p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
@@ -2072,7 +2072,7 @@ try:
         p9.locator('#recCard [data-rsv=reserve]').click(); p9.wait_for_timeout(1000)
         c7 = p9.evaluate(CL9)
         b11 = [x for x in c7['bets'] if x['r'] == 11]
-        check(len(b11) == 1 and b11[0]['state'] == 'reserved' and c7['counted'] == 1 and len(c7['bets']) == 2, f'11R は ふつうに 予約できる・ミッションに 1レース 数える（締切済みの 10R は 数えない）（{c7["counted"]}）')
+        check(len(b11) == 1 and b11[0]['state'] == 'reserved' and c7['counted'] == 1 and len(c7['bets']) == 2, f'11R は 普通に 予約できる・ミッションに 1レース 数える（締切済みの 10R は 数えない）（{c7["counted"]}）')
         p9.click('.tabbar button[data-tab=rec]'); p9.wait_for_timeout(700)
         rt = p9.locator('#recList .rsvtop').inner_text()
         check('予約レース' in rt and '締切済みレース（1件）' in rt and p9.locator('#recList .rsvtop details[data-k=closed] .lrow').count() == 1 and p9.locator('#recList .dgroup').count() == 0, f'記録タブ：予約レース（11R）と 締切済みレース（10R）が 分かれて 出る（{rt[:60]}…）')
@@ -2110,16 +2110,16 @@ try:
         o0 = pR.locator('#rsvOv')
         check(o0.count() == 1 and o0.get_attribute('role') == 'dialog' and '0件' in o0.inner_text() and '結果待ちの レースは ないよ' in o0.inner_text() and pR.evaluate("document.documentElement.classList.contains('mson')"), '押すと 窓「予約済み・結果待ち」（まだ 0件）')
         pR.keyboard.press('Escape'); pR.wait_for_timeout(250)
-        check(pR.locator('#rsvOv').count() == 0 and not pR.evaluate("document.documentElement.classList.contains('mson')") and pR.evaluate("document.activeElement && document.activeElement.id") == 'rsvBtn', 'Esc で 窓を 閉じる（「結果待ち」に もどる）')
+        check(pR.locator('#rsvOv').count() == 0 and not pR.evaluate("document.documentElement.classList.contains('mson')") and pR.evaluate("document.activeElement && document.activeElement.id") == 'rsvBtn', 'Esc で 窓を 閉じる（「結果待ち」に 戻る）')
         # 自己入力：判定の ゾーンと 関係なく どの 番号でも（B層の 8R：ゾーンは 中穴→人気・人気→大穴）
         cR = pR.locator('#recCard')
         sb = cR.locator('[data-k=rzones] [data-k=rself]')
-        check(sb.count() == 1 and sb.get_attribute('aria-pressed') == 'false' and '自己入力' in sb.inner_text() and cR.locator('.selfpk').count() == 0, '買い目の カード：使うゾーンの ならびに「✏️ 自己入力」（はじめは オフ）')
+        check(sb.count() == 1 and sb.get_attribute('aria-pressed') == 'false' and '自己入力' in sb.inner_text() and cR.locator('.selfpk').count() == 0, '買い目の カード：使うゾーンの 並びに「✏️ 自己入力」（初めは オフ）')
         sb.click(); pR.wait_for_timeout(300)
         pk = cR.locator('.selfpk')
         check(pk.count() == 1 and cR.locator('[data-k=rself]').get_attribute('aria-pressed') == 'true' and pk.locator('.spr').count() == 3 and [pk.locator('.spr').nth(i).get_attribute('data-side') for i in range(3)] == ['a', 'b', 't']
               and pk.locator('.spr[data-side=a] button').count() == 14 and pk.locator('.spr button[aria-pressed=true]').count() == 0 and 'まだ 選んで いないよ' in pk.inner_text() and pk.locator('[data-k=rpclear]').is_disabled(),
-              '押すと 自己入力の 欄：1着・2着・3着（馬単・3連単）× 14頭 ぜんぶの 番号・はじめは 何も 選んで いない')
+              '押すと 自己入力の 欄：1着・2着・3着（馬単・3連単）× 14頭 全部の 番号・初めは 何も 選んで いない')
         for side, nos in (('a', [3, 9]), ('b', [1, 6, 12])):
             for no in nos:
                 cR.locator(f'.selfpk .spr[data-side={side}] button[data-no="{no}"]').click(); pR.wait_for_timeout(120)
@@ -2170,7 +2170,7 @@ try:
         zr = [{'w': [[x.inner_text() for x in z.locator('.zw1').first.locator('.num').all()]], 'fk': z.locator('[data-t=枠複] .zwc').inner_text(), 'ft': z.locator('[data-t=枠単] .zwc').inner_text()} for z in zwR.all()]
         z0, z1 = (zr + [{}, {}])[:2]
         check(zwR.count() == 2 and z0.get('w') == [['5', '3', '1', '4', '2', '6']] and z0.get('fk') == '1-2・1-4・1-6・2-3・2-5・3-4・3-6・4-5・5-6' and z0.get('ft') == '1→2・1→4・1→6・3→2・3→4・3→6・5→2・5→4・5→6',
-              f'設定タブで 解放して 判定タブに もどると ゾーンごとに 枠：第1 中穴→人気（7・4・1 → 6・2・10）＝ 枠 5・3・1 → 4・2・6・枠複 9つ・枠単 9つ（14頭の 枠）（{z0 or "なし"}）')
+              f'設定タブで 解放して 判定タブに 戻ると ゾーンごとに 枠：第1 中穴→人気（7・4・1 → 6・2・10）＝ 枠 5・3・1 → 4・2・6・枠複 9つ・枠単 9つ（14頭の 枠）（{z0 or "なし"}）')
         check(z1.get('fk') == '2-4・2-6・2-7・4-4・4-6・4-7・6-6・6-7' and z1.get('ft') == '2→4・2→6・2→7・4→4・4→6・4→7・6→4・6→6・6→7' and zwR.count() and '通り' not in zwR.first.inner_text() and '点' not in pR.locator('#result').inner_text(),
               f'第2 人気→大穴：同じ 枠の 2頭（6と5＝4枠・10と9＝6枠）は 4-4・6-6 も 入る・通り数／点数は 判定の 画面に 出さない（{z1.get("fk")}）')
         if zwR.count():
@@ -2186,26 +2186,26 @@ try:
         tb = p5.evaluate("(() => ({ total: TengelWallet.total(), tag: (document.querySelector('#testTag') || {}).innerText, pill: document.querySelector('#ptsPill').innerText.replace(/\\s+/g, ' '), first: document.querySelector('#v-set > .card').id, btns: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.innerText), kinds: [...document.querySelectorAll('#setTest [data-test=fx]')].map(x => x.dataset.kind), ev: TengelWallet.events().map(e => e.id + ':' + e.amount) }))()")
         check(tb['total'] == 10000 and tb['tag'] == 'テスト版' and tb['pill'] == 'ポイント 10,000P' and tb['first'] == 'setTest' and tb['btns'] == ['的中', 'デカ的中', '極ど的中', 'ハズレ', '超神様的中', '神様極的中'] and tb['kinds'] == ['hit', 'big', 'sd', 'miss', 'sgd', 'gk'] and tb['ev'] == ['gift-first:1500', 'gift-test:8500']
               and p5.locator('#setTest [data-test=tcopen]').count() == 1 and 'トレーニングセンター' in p5.locator('#setTest [data-test=tcopen]').inner_text(),
-              f'テスト版：はじめから ちょうど 10,000P（初回の 1,500P＋テスト版の 8,500P）・上の帯に「テスト版」の 印・設定の いちばん上に「テスト版の道具」（的中ボタン 6こ：第4.86版 隠れど的中・超プレミアムど的中・神様的中は なし・第4.117版 神様極的中・第4.162版 プレミアムど的中・超プレミアム神様的中は なし・第4.165版 ノーマルど的中は なし）・「トレーニングセンターの テスト道具を ひらく」（{tb}）')
+              f'テスト版：初めから ちょうど 10,000P（初回の 1,500P＋テスト版の 8,500P）・上の帯に「テスト版」の 印・設定の 一番上に「テスト版の道具」（的中ボタン 6こ：第4.86版 隠れど的中・超プレミアムど的中・神様的中は なし・第4.117版 神様極的中・第4.162版 プレミアムど的中・超プレミアム神様的中は なし・第4.165版 ノーマルど的中は なし）・「トレーニングセンターの テスト道具を 開く」（{tb}）')
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(300)
         p5.locator('#setTest [data-test=pts]').click(); p5.wait_for_timeout(400)
-        check(p5.evaluate('TengelWallet.total()') == 20000 and p5.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 20,000P', 'テスト版：「10,000P 足す」で 20,000P（上の帯の 合計も かわる）')
+        check(p5.evaluate('TengelWallet.total()') == 20000 and p5.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 20,000P', 'テスト版：「10,000P 足す」で 20,000P（上の帯の 合計も 変わる）')
         # 第4.114版：テスト版の 道具「お得パック：買ったことにする」→ 壁紙パックも 結果ボードカスタムも 持って いる（App Store の 買い物は しない）
         p5.locator('#setTest [data-test=uown]').click(); p5.wait_for_timeout(600)
         ub = p5.evaluate("({ own: TengelWallet.bundle.owned(), b: TengelWallet.board.info().owned, p: TengelKisekae.pack().owned, st: document.querySelector('#testBundle').innerText, toast: document.querySelector('#toast').innerText, buy: document.querySelectorAll('#setBoard [data-bcact=buy], #setBoard [data-bcact=bundle], #setKisekae .kspk [data-ksact=pkbuy], #setKisekae .kspk [data-ksact=bundle]').length })")
         check(ub['own'] and ub['b'] and ub['p'] and ub['st'] == '買った' and 'お得パック' in ub['toast'] and ub['buy'] == 0 and p5.evaluate('TengelWallet.total()') == 20000, f'第4.114版：テスト版の「お得パック：買ったことにする」→ 2つとも 持って いる（買うの ボタンは 消える・ポイントは そのまま）（{ub}）')
         p5.locator('#setTest [data-test=fx][data-kind=sgd]').click(); p5.wait_for_timeout(500)
-        check(p5.locator('#fxOv .ov.fz .pbox.rbw .push .rbf').count() == 1 and p5.evaluate("TengelFx.current().kind") == 'sgd', 'テスト版：「超神様的中」を 押すと 虹色の PUSH（超神様的中）が 出る（くじは ひかない）')
+        check(p5.locator('#fxOv .ov.fz .pbox.rbw .push .rbf').count() == 1 and p5.evaluate("TengelFx.current().kind") == 'sgd', 'テスト版：「超神様的中」を 押すと 虹色の PUSH（超神様的中）が 出る（くじは 引かない）')
         p5.evaluate('TengelFx.close()'); p5.wait_for_timeout(200)
         for kd, nm in (('sd', '極ど的中'), ('gk', '神様極的中')):   # 第4.81版：極ど的中の ボタン（くじは ひかない）・第4.117版：神様極的中（第4.165版：ノーマルど的中の ボタンは なし）
             p5.locator(f'#setTest [data-test=fx][data-kind={kd}]').click(); p5.wait_for_timeout(500)
             check(p5.evaluate("TengelFx.current() && TengelFx.current().kind") == kd and p5.locator('#fxOv .ov.fz .pbox .push').count() >= 1 and (kd != 'gk' or (p5.locator('#fxOv .ov.fz .pbox.rbw .push .rbf').count() == 1 and p5.evaluate('TengelFx.current().pz') == 1.6)),
-                  f'テスト版：「{nm}」を 押すと {nm}（{kd}）の PUSH が 出る（くじは ひかない{"・虹色の 1.6倍" if kd == "gk" else ""}）')
+                  f'テスト版：「{nm}」を 押すと {nm}（{kd}）の PUSH が 出る（くじは 引かない{"・虹色の 1.6倍" if kd == "gk" else ""}）')
             p5.evaluate('TengelFx.close()'); p5.wait_for_timeout(200)
         p5.locator('#setTest [data-test=fx][data-kind=miss]').click(); p5.wait_for_timeout(600)
         check(p5.locator('#fxOv .rb.miss').count() == 1 and p5.locator('#fxOv .rb .bh').inner_text() == 'ハズレ', 'テスト版：「ハズレ」で ハズレの ボード')
         p5.evaluate('TengelFx.close()')
-        check(p5.evaluate("!!document.querySelector('#setTest')") and pg.evaluate("!document.querySelector('#setTest') && !window.__TEST"), 'App Store版（ふつうの 作り方）には テスト版の 道具も 印も ない')
+        check(p5.evaluate("!!document.querySelector('#setTest')") and pg.evaluate("!document.querySelector('#setTest') && !window.__TEST"), 'App Store版（普通の 作り方）には テスト版の 道具も 印も ない')
         # ---- 第4.60版：iPad の テスト（2026/10/25）の 7つの 直し ----
         # ① 5重勝 → 単勝5連勝（タブ・画面・説明書）
         p5.click('.tabbar button[data-tab=win5]'); p5.wait_for_timeout(500)
@@ -2252,7 +2252,7 @@ try:
         #   第4.123版：テンゲルデータの ときは 実測を 出さない → マザーデータ①（2つ目）に ファイルの データを 入れて 使う
         p5.click('.tabbar button[data-tab=stats]'); p5.wait_for_timeout(800)
         fx46 = p5.evaluate("(() => ({ body: document.querySelector('#statsBody').innerText, per: document.querySelector('#perChips').hidden, title: document.querySelector('#motherTitle').innerText, tables: document.querySelectorAll('#statsBody table').length }))()")
-        check(fx46['per'] and fx46['tables'] == 0 and 'テンゲルデータの実測' in fx46['title'] and '中身（レースの数・実測①〜⑦）は見られないよ' in fx46['body'] and not re.search(r'\d+走', fx46['body']), f'第4.123版：テンゲルデータの ときは 実測（①〜⑦）と 見直し基準を 出さない（期間の ボタンも かくす）（{fx46}）')
+        check(fx46['per'] and fx46['tables'] == 0 and 'テンゲルデータの実測' in fx46['title'] and '中身（レースの数・実測①〜⑦）は見られないよ' in fx46['body'] and not re.search(r'\d+走', fx46['body']), f'第4.123版：テンゲルデータの ときは 実測（①〜⑦）と 見直し基準を 出さない（期間の ボタンも 隠す）（{fx46}）')
         p5.evaluate("(async () => { const L = TengelLocal.slots; const rows = L.rows(1).map(r => Object.assign({}, r, { id: r.id.replace('-m1-', '-m2-'), src: undefined })); await L.replace(2, rows, { source: 'excel', file: 'テスト.xlsx' }); await L.setActive(2); })()"); p5.wait_for_timeout(1500)
         p5.click('.tabbar button[data-tab=judge]'); p5.wait_for_timeout(300); p5.click('.tabbar button[data-tab=stats]'); p5.wait_for_timeout(1000)
         st46 = p5.evaluate("(() => { const cards = [...document.querySelectorAll('#statsBody .card')]; const f = m => cards.find(c => (c.querySelector('h2') || {}).textContent.includes(m)); const c4 = f('④'), c3 = f('③'), pr = f('見直し基準'); return { c4: c4 ? c4.innerText.includes('C層×非該当') : null, c4rows: c4 ? c4.querySelectorAll('tbody tr').length : 0, c3: c3 ? c3.innerText.includes('C層・非該当') : null, prog: [...pr.querySelectorAll('.prog .pl b')].map(b => b.textContent), hint: pr.querySelector('.hint').innerText }; })()")
@@ -2260,7 +2260,7 @@ try:
         check(st46['prog'] == ['0/30', '0/10', '0/20', '0/30', '0/10', '0/10'] and 'アプリに入っているデータは数えない' in st46['hint'], f'第4.60版：見直し基準の 進み具合は 0 から（アプリに 入っている データは 数えない・使う人が 入れた レースで 進む）（{st46}）')
         # ④「くわしく」→「詳しく」 ／ ⑦ 解放エフェクト（券種・マザーデータ・壁紙・ミッション）
         p5.click('.tabbar button[data-tab=set]'); p5.wait_for_timeout(500)
-        check(p5.locator('#setPoints button[data-v=hist]').inner_text().strip() == '詳しく' and p5.evaluate("typeof TengelFx.unlock === 'function'"), '第4.60版：ポイントの「くわしく」→「詳しく」・TengelFx.unlock が ある')
+        check(p5.locator('#setPoints button[data-v=hist]').inner_text().strip() == '詳しく' and p5.evaluate("typeof TengelFx.unlock === 'function'"), '第4.60版：ポイントの「詳しく」→「詳しく」・TengelFx.unlock が ある')
         p5.locator('#setCustom .ptitem[data-key="type:複勝"] [data-pt=unlock1]').click(); p5.wait_for_timeout(200)
         p5.locator('#setCustom .ptitem[data-key="type:複勝"] [data-pt=unlock2]').click()
         p5.wait_for_function("() => !!document.querySelector('.unlkt')", timeout=5000); p5.wait_for_timeout(120)      # 第4.168版：項目が 止まって から 出る（0.26秒〜）
@@ -2286,7 +2286,7 @@ try:
         except Exception: pass
         p5.wait_for_timeout(200)
         mf = p5.evaluate("({ unlk: !!document.querySelector('#setMission .msrow[data-mid=mission-wall-silver].unlk'), text: (document.querySelector('.unlkt') || {}).innerText, done: document.querySelector('#setMission .msrow[data-mid=mission-wall-silver] .md').innerText })")
-        check(mf['unlk'] and mf['text'] == '受け取り！' and mf['done'] == '受け取りずみ', f'第4.60版：ミッションの「受け取る」でも、その 行の 上に 解放エフェクト（「受け取り！」）（{mf}）')
+        check(mf['unlk'] and mf['text'] == '受け取り！' and mf['done'] == '受け取り済み', f'第4.60版：ミッションの「受け取る」でも、その 行の 上に 解放エフェクト（「受け取り！」）（{mf}）')
         # 第4.168版（まさちゃん 2026/11/14 01:26「マザーボード解放の時に、文字がおかしくなる時がある」）：解放エフェクトの 字は、項目が 止まって から 出す（画面が 動いて いる 途中の 場所に 出さない）・
         #   出た あとも 項目に ついて いく（画面を 動かしても ずれない）・もう 画面に ない 項目（かき直されて 外れた）には 出さない（画面の すみに 字が 出ない）
         p5.wait_for_timeout(2200); p5.evaluate("() => window.scrollTo(0, 0)"); p5.wait_for_timeout(400)
@@ -2305,7 +2305,7 @@ try:
         dd = lambda q: max(abs(q[0][0] - q[1][0]), abs(q[0][1] - q[1][1])) if q and q[1] else 99
         check(not uq.get('none') and uq['ret'] is True and not uq['early'] and not uq['at120'] and 250 <= uq['t1'] <= 1700 and dd(uq['a']) < 1 and dd(uq['b']) < 1 and abs(uq['b'][0][1] - uq['a'][0][1]) > 30
               and (uq['b'][2] is None or max(abs(uq['b'][2][0] - uq['b'][0][0]), abs(uq['b'][2][1] - uq['b'][0][1])) < 1) and uq['gone'] and uq['none2'],
-              f'第4.168版：解放エフェクトは 項目が 止まって から 出る（{uq.get("t1", 0):.0f}ミリ秒 あと・すぐには 出ない）・字は 項目の まん中（ずれ {dd(uq.get("a")):.2f}px）・画面を 60px 動かしても ついて いく（ずれ {dd(uq.get("b")):.2f}px）・'
+              f'第4.168版：解放エフェクトは 項目が 止まって から 出る（{uq.get("t1", 0):.0f}ミリ秒 あと・すぐには 出ない）・字は 項目の 真ん中（ずれ {dd(uq.get("a")):.2f}px）・画面を 60px 動かしても ついて いく（ずれ {dd(uq.get("b")):.2f}px）・'
               f'2秒で 消える・もう 画面に ない 項目には 出さない')
         ctx5.close()
         # ---- 第4.117版・第4.118版：神様極的中の 数え方（src.html の godCount → TengelFx.show の godN）。記録の 画面で 結果を 決める（ふつうの 流れ）----
@@ -2374,21 +2374,21 @@ try:
             pG.evaluate('TengelFx.close()'); pG.wait_for_timeout(300)
             return (sp or {}).get('godN'), (cu or {}).get('kind'), (sv or {}).get('rsv', {}).get('state'), (sv or {}).get('rsv', {}).get('fx')
         r1 = gcycle(NS[:3] + [GX], rnd=0)
-        check(r1 == (1, 'sgd', 'done', 'sgd'), f'神様極的中の 数え方（第4.118版）：G・M は この レースだけ（ほかは 的中 3レースと G だけ（3連単だけ）の 09/15）→ godN 1 → 超神様的中（第4.162版：超プレミアム神様的中は なし・乱数 0 でも くじなし）（{r1}）')
+        check(r1 == (1, 'sgd', 'done', 'sgd'), f'神様極的中の 数え方（第4.118版）：G・M は この レースだけ（他は 的中 3レースと G だけ（3連単だけ）の 09/15）→ godN 1 → 超神様的中（第4.162版：超プレミアム神様的中は なし・乱数 0 でも くじなし）（{r1}）')
         r2 = gcycle([G1], rnd=0)
         check(r2 == (2, 'gk', 'done', 'gk'), f'09/10 の G・M の レース＋この レース → godN 2 → 神様極的中・記録に 出した 印 gk（{r2}）')
         r3 = gcycle(NS[3:])
-        check(r3 == (1, 'sgd', 'done', 'sgd'), f'あいだに G・M で ない 49レース（的中 48・09/15 の G だけ）→ 09/10 の G・M の レースは 51レース目で 外れる → godN 1 → 超神様的中（{r3}）')
+        check(r3 == (1, 'sgd', 'done', 'sgd'), f'間に G・M で ない 49レース（的中 48・09/15 の G だけ）→ 09/10 の G・M の レースは 51レース目で 外れる → godN 1 → 超神様的中（{r3}）')
         RS_, GV_ = grec('2026-09-25', 1, '18:00', 'reserved'), grec('2026-09-25', 2, '18:30', 'given')
         r4 = gcycle([grec('2026-09-20', 1, '', 'closed'), RS_, GV_])
-        check(r4 == (2, 'gk', 'done', 'gk'), f'あいだの 1つを 締切済みに（ほかに 予約中・諦めた）→ 数えない ので 09/10 の G・M の レースが ちょうど 50レース目 → godN 2 → 神様極的中（{r4}）')
+        check(r4 == (2, 'gk', 'done', 'gk'), f'間の 1つを 締切済みに（他に 予約中・諦めた）→ 数えない ので 09/10 の G・M の レースが ちょうど 50レース目 → godN 2 → 神様極的中（{r4}）')
         r4b = gcycle([NS[0], grec('2026-09-20', 2, '', 'done', tri=(1, 2, 3), abandoned=True)])
-        check(r4b == (2, 'gk', 'done', 'gk'), f'締切済みを もどして、ほかの 1つを 中止（全部 返還）に → 中止は 数えない → 50レース目 → godN 2 → 神様極的中（{r4b}）')
+        check(r4b == (2, 'gk', 'done', 'gk'), f'締切済みを 戻して、他の 1つを 中止（全部 返還）に → 中止は 数えない → 50レース目 → godN 2 → 神様極的中（{r4b}）')
         r4c = gcycle([NS[1]])
-        check(r4c == (1, 'sgd', 'done', 'sgd'), f'中止を もどす → また 51レース目で 外れる → godN 1（{r4c}）')
+        check(r4c == (1, 'sgd', 'done', 'sgd'), f'中止を 戻す → また 51レース目で 外れる → godN 1（{r4c}）')
         GF, GSL = grec('2026-10-01', 1, '10:00', 'done'), grec('2026-09-30', 12, '20:45', 'done')
         r5 = gcycle([grec('2026-09-10', 5, '15:00', 'given'), GF, GSL])
-        check(r5 == (1, 'sgd', 'done', 'sgd'), f'あとの レース（10/01・同じ 日の あとの 発走 20:45）の G・M は 数えない → godN 1（{r5}）')
+        check(r5 == (1, 'sgd', 'done', 'sgd'), f'後の レース（10/01・同じ 日の 後の 発走 20:45）の G・M は 数えない → godN 1（{r5}）')
         pG.evaluate("TengelFx.set({ effects: false })")
         r6 = gcycle([], shown=False)
         check(r6 == (None, None, 'done', None) and pG.locator('#fxOv').count() == 0, f'的中エフェクト オフ：演出も ボードも 出さず（show は 呼ばない）・記録は 決まる（出した 印なし）（{r6}）')
@@ -2433,86 +2433,86 @@ try:
               f'上の帯：99,999P でも 札の 中に 入る（「ポイント」と 数が 札の 中・つめない）・説明書は 同じ 段の 右はし・結果待ちの 左はしは 札と 同じ 線・横に はみ出さない（{hg}）')
         pC.locator('#setTest [data-test=pts]').click(); pC.wait_for_timeout(400)
         c2 = pC.evaluate(CI)
-        check(c2['total'] == 99999 and 'いっぱい' in c2['toast'], f'上限の ときは「10,000P 足す」を 押しても ふえない（「いっぱい」と 知らせる）（{c2["toast"]}）')
+        check(c2['total'] == 99999 and 'いっぱい' in c2['toast'], f'上限の ときは「10,000P 足す」を 押しても 増えない（「いっぱい」と 知らせる）（{c2["toast"]}）')
         # 買う：上限を こえる パック・サブスクは 買う 前に 止める（App Store を よばない）
         pC.evaluate("window.__bridge = []"); pC.click('#ptsPill'); pC.wait_for_timeout(600)
         pb = pC.evaluate("""() => { const o = document.querySelector('#ptOv'); const dis = s => [...o.querySelectorAll(s + ' [data-pt=buy]')].map(b => b.disabled); o.querySelectorAll('[data-pt=buy]').forEach(b => b.click());
           return { pack: dis('#ptBuy'), sub: dis('#ptSub'), tb: o.querySelector('#ptBuy').innerText, ts: o.querySelector('#ptSub').innerText, det: o.querySelector('#ptDetail').innerText }; }""")
         pC.wait_for_timeout(300)
         buys = [x for x in pC.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload'].get('op') == 'buy']
-        check(pb['pack'] == [True] * 4 and pb['sub'] == [True] * 3 and '足すと こえる パックは 買えないよ' in pb['tb'] and 'プランは はじめられないよ' in pb['ts'] and 'いま いっぱい' in pb['det'] and not buys,
-              f'上限の とき：ポイントの 窓の「買う」4つ・「はじめる」3つは 押せない（わけを 出す）・App Store は よばない（{len(buys)}回）')
+        check(pb['pack'] == [True] * 4 and pb['sub'] == [True] * 3 and '足すと 超える パックは 買えないよ' in pb['tb'] and 'プランは 始められないよ' in pb['ts'] and '今 いっぱい' in pb['det'] and not buys,
+              f'上限の とき：ポイントの 窓の「買う」4つ・「始める」3つは 押せない（わけを 出す）・App Store は よばない（{len(buys)}回）')
         pC.evaluate("TengelWallet.closePoints()"); pC.wait_for_timeout(200)
         # ミッション：入らない あいだは 受け取りを 待つ（消えない）
         pC.evaluate("() => { localStorage.setItem('tengel.tc', JSON.stringify({ v: 1, total: 60 })); document.dispatchEvent(new CustomEvent('tengel:tc')); }"); pC.wait_for_timeout(300)
         pC.evaluate("TengelWallet.claim('mission-tc-50')"); pC.wait_for_timeout(500)
         c3 = pC.evaluate(CI)
-        check(c3['total'] == 99999 and c3['badge'] == '1' and 'こえるよ' in c3['toast'] and 'ミッションは 消えないよ' in c3['toast'] and not pC.evaluate("TengelWallet.events().some(e => e.id === 'mission-tc-50')"),
-              f'上限の とき：ミッション（500P）は 受け取れない（あとで 受け取れる・上の 数は 1 の まま）（{c3["toast"]}）')
+        check(c3['total'] == 99999 and c3['badge'] == '1' and '超えるよ' in c3['toast'] and 'ミッションは 消えないよ' in c3['toast'] and not pC.evaluate("TengelWallet.events().some(e => e.id === 'mission-tc-50')"),
+              f'上限の とき：ミッション（500P）は 受け取れない（後で 受け取れる・上の 数は 1 の まま）（{c3["toast"]}）')
         # サブスクの 更新が 届く（上限）→ こえた ぶんは あずかりポイント
         pC.locator('#setTest [data-test=ptsub]').click(); pC.wait_for_timeout(600)
         c4 = pC.evaluate(CI)
-        check(c4['total'] == 99999 and c4['hold'] == {'total': 9200, 'paid_sub': 9200, 'paid_pack': 0, 'free': 0} and c4['avail'] == 99999 and 'あずかったよ' in c4['toast'] and '9,200P' in c4['toast'] and c4['badge'] == '1' and c4['pill'] == 'ポイント 99,999P',
-              f'上限の ときに サブスク 9,200P が 届く → 台帳は 99,999P の まま・9,200P は あずかりポイント（知らせる・上の 数は まだ ふえない）（{c4["hold"]}）')
+        check(c4['total'] == 99999 and c4['hold'] == {'total': 9200, 'paid_sub': 9200, 'paid_pack': 0, 'free': 0} and c4['avail'] == 99999 and '預かったよ' in c4['toast'] and '9,200P' in c4['toast'] and c4['badge'] == '1' and c4['pill'] == 'ポイント 99,999P',
+              f'上限の ときに サブスク 9,200P が 届く → 台帳は 99,999P の まま・9,200P は 預かりポイント（知らせる・上の 数は まだ 増えない）（{c4["hold"]}）')
         pC.click('#msBtn'); pC.wait_for_timeout(600)
         HC = """() => { const c = document.querySelector('#msHoldCard'), b = c && c.querySelector('[data-pt=refill]'), r = c && c.querySelector('.msrow[data-mid=hold]');
           return c ? { hidden: c.hidden, first: document.querySelector('#msOv .msb').firstElementChild === c, h2: c.querySelector('h2').innerText, t: c.innerText.replace(/\\s+/g, ' '), dis: b ? b.disabled : null, can: r ? r.classList.contains('can') : null, msn: document.querySelector('#msOv .msn').innerText } : null; }"""
         h1 = pC.evaluate(HC)
-        check(bool(h1) and not h1['hidden'] and h1['first'] and h1['h2'] == 'あずかりポイント' and 'あずかり中 9,200P' in h1['t'] and 'サブスクポイント 9,200P' in h1['t'] and 'いまは いっぱい' in h1['t'] and h1['dis'] is True and h1['can'] is False
-              and '補充した 日から 30日' in h1['t'], f'ミッションの 窓の いちばん 上に「あずかりポイント」（あずかり中 9,200P・サブスクポイント）。いっぱいの あいだは「補充する」は 押せない（{h1 and h1["t"][-60:]}）')
+        check(bool(h1) and not h1['hidden'] and h1['first'] and h1['h2'] == '預かりポイント' and '預かり中 9,200P' in h1['t'] and 'サブスクポイント 9,200P' in h1['t'] and '今は いっぱい' in h1['t'] and h1['dis'] is True and h1['can'] is False
+              and '補充した 日から 30日' in h1['t'], f'ミッションの 窓の 一番 上に「預かりポイント」（預かり中 9,200P・サブスクポイント）。いっぱいの 間は「補充する」は 押せない（{h1 and h1["t"][-60:]}）')
         pC.evaluate("TengelWallet.closeMissions()"); pC.wait_for_timeout(200)
         # 使う（500P）→ あきが できる → 上の 数に 1つ ふえる → 補充する
         okU = pC.evaluate("TengelWallet.unlock('type:複勝', 500)"); pC.wait_for_timeout(500)
         c5 = pC.evaluate(CI)
-        check(okU and c5['total'] == 99499 and c5['hold']['total'] == 9200 and c5['avail'] == 99999 and c5['badge'] == '2' and c5['pill'] == 'ポイント 99,499P', f'500P 使う → 99,499P・上の「ミッション」の 数が 1 → 2（あずかりを 補充できる）（{c5}）')
+        check(okU and c5['total'] == 99499 and c5['hold']['total'] == 9200 and c5['avail'] == 99999 and c5['badge'] == '2' and c5['pill'] == 'ポイント 99,499P', f'500P 使う → 99,499P・上の「ミッション」の 数が 1 → 2（預かりを 補充できる）（{c5}）')
         pC.click('#msBtn'); pC.wait_for_timeout(600)
         h2 = pC.evaluate(HC)
-        check(h2['dis'] is False and h2['can'] is True and 'いま 補充できるのは 500P' in h2['t'] and h2['msn'].endswith('受け取れるのが 2つ！'), f'あずかりポイント：「いま 補充できるのは 500P」・「補充する」が 押せる（{h2["msn"]}）')
+        check(h2['dis'] is False and h2['can'] is True and '今 補充できるのは 500P' in h2['t'] and h2['msn'].endswith('受け取れるのが 2つ！'), f'預かりポイント：「今 補充できるのは 500P」・「補充する」が 押せる（{h2["msn"]}）')
         pC.locator('#msHoldCard [data-pt=refill]').click(); pC.wait_for_timeout(900)
         c6 = pC.evaluate(CI); h3 = pC.evaluate(HC)
         rel = pC.evaluate("TengelWallet.events().filter(e => e.from === 'hold').map(e => ({ id: e.id, kind: e.kind, bucket: e.bucket, amount: e.amount, days: Math.round((Date.parse(e.expires) - Date.parse(e.at)) / 86400000), product: e.product }))")
-        check(c6['total'] == 99999 and c6['sub'] == 500 and c6['hold'] == {'total': 8700, 'paid_sub': 8700, 'paid_pack': 0, 'free': 0} and c6['badge'] == '1' and '補充したよ' in c6['toast'] and '500P' in c6['toast'] and 'のこり 8,700P' in c6['toast']
+        check(c6['total'] == 99999 and c6['sub'] == 500 and c6['hold'] == {'total': 8700, 'paid_sub': 8700, 'paid_pack': 0, 'free': 0} and c6['badge'] == '1' and '補充したよ' in c6['toast'] and '500P' in c6['toast'] and '残り 8,700P' in c6['toast']
               and len(rel) == 1 and rel[0]['id'].startswith('rel-tx-test-') and rel[0]['id'].endswith('-1') and rel[0]['kind'] == 'sub' and rel[0]['bucket'] == 'paid_sub' and rel[0]['amount'] == 500 and rel[0]['days'] == 30 and rel[0]['product'] == 'jp.tengel.app.sub9200'
-              and 'あずかり中 8,700P' in h3['t'] and h3['dis'] is True,
-              f'「補充する」→ 500P が サブスクポイントに 入って 99,999P・あずかり 8,700P（期限は 補充した 日から 30日・上の 数は 2 → 1）（{c6["toast"]}・{rel}）')
+              and '預かり中 8,700P' in h3['t'] and h3['dis'] is True,
+              f'「補充する」→ 500P が サブスクポイントに 入って 99,999P・預かり 8,700P（期限は 補充した 日から 30日・上の 数は 2 → 1）（{c6["toast"]}・{rel}）')
         pC.evaluate("TengelWallet.closeMissions()"); pC.wait_for_timeout(200)
         # ポイントの詳細・履歴に あずかりポイント
         pC.click('#ptsPill'); pC.wait_for_timeout(500)
         dt = pC.locator('#ptOv #ptDetail').inner_text().replace('\n', ' ')
-        check('あずかりポイント：8,700P' in dt and '「ミッション」で 補充できるよ' in dt and 'あずかり 8,700P' in pC.evaluate("document.querySelector('#ptsPill').title"), 'ポイントの詳細に「あずかりポイント：8,700P」（札の title にも）')
+        check('預かりポイント：8,700P' in dt and '「ミッション」で 補充できるよ' in dt and '預かり 8,700P' in pC.evaluate("document.querySelector('#ptsPill').title"), 'ポイントの詳細に「預かりポイント：8,700P」（札の title にも）')
         pC.evaluate("TengelWallet.closePoints()"); pC.wait_for_timeout(200)
         pC.evaluate("() => { const b = document.querySelector('#setPoints [data-pt=show][data-v=hist]'); if (b.getAttribute('aria-pressed') !== 'true') b.click(); }"); pC.wait_for_timeout(400)
         hs = pC.evaluate("[...document.querySelectorAll('#setPoints .pthist li')].map(x => x.innerText.replace(/\\s+/g, ' '))")
-        check(any('あずかりポイントから 補充（月9,200Pプラン' in x and x.endswith('+500P') for x in hs) and any('月9,200Pプラン（9,200P は あずかり）' in x for x in hs),
-              f'履歴：「あずかりポイントから 補充（月9,200Pプラン…）+500P」・届いた 行は「月9,200Pプラン（9,200P は あずかり）」（{hs[:3]}）')
+        check(any('預かりポイントから 補充（月9,200Pプラン' in x and x.endswith('+500P') for x in hs) and any('月9,200Pプラン（9,200P は 預かり）' in x for x in hs),
+              f'履歴：「預かりポイントから 補充（月9,200Pプラン…）+500P」・届いた 行は「月9,200Pプラン（9,200P は 預かり）」（{hs[:3]}）')
         # トレーニングセンターの 当たり（上限）→ あずかり（獲得ポイント）・同じ id は 2回 入らない
         g1 = pC.evaluate("TengelWallet.grant('tc-cap-1', 300, 'トレーニングセンターの お世話')"); pC.wait_for_timeout(400)
         c7 = pC.evaluate(CI); g2 = pC.evaluate("TengelWallet.grant('tc-cap-1', 300, 'トレーニングセンターの お世話')")
-        check(g1 is True and g2 is False and c7['total'] == 99999 and c7['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300} and 'あずかったよ' in c7['toast'],
-              f'上限の ときの トレーニングセンターの 当たり 300P → 消さずに あずかる（獲得ポイント）・同じ 当たりは 2回 入らない（{c7["hold"]}）')
+        check(g1 is True and g2 is False and c7['total'] == 99999 and c7['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300} and '預かったよ' in c7['toast'],
+              f'上限の ときの トレーニングセンターの 当たり 300P → 消さずに 預かる（獲得ポイント）・同じ 当たりは 2回 入らない（{c7["hold"]}）')
         # あとから 届いた パック（上限）→ あずかり・台帳には 0P の できごと・取引は 終わらせる。返金 → あずかりも 消える
         pC.evaluate("window.__iap.finished = []; window.__nativeEvent('iap', { id: '7001', originalId: 'o7', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: false })"); pC.wait_for_timeout(700)
         c8 = pC.evaluate(CI)
         e8 = pC.evaluate("(e => e && { amount: e.amount, held: e.held, kind: e.kind })(TengelWallet.events().find(e => e.id === 'tx-7001'))")
-        check(c8['total'] == 99999 and c8['hold']['paid_pack'] == 1000 and c8['hold']['total'] == 10000 and e8 == {'amount': 0, 'held': 1000, 'kind': 'purchase'} and pC.evaluate("window.__iap.finished") == ['7001'] and 'あずかったよ' in c8['toast'],
-              f'上限の ときに 届いた パック 1,000P → あずかり（購入ポイント）・台帳には 0P の できごと（同じ 取引は 2回 入らない）・取引は 終わらせる（{e8}）')
+        check(c8['total'] == 99999 and c8['hold']['paid_pack'] == 1000 and c8['hold']['total'] == 10000 and e8 == {'amount': 0, 'held': 1000, 'kind': 'purchase'} and pC.evaluate("window.__iap.finished") == ['7001'] and '預かったよ' in c8['toast'],
+              f'上限の ときに 届いた パック 1,000P → 預かり（購入ポイント）・台帳には 0P の できごと（同じ 取引は 2回 入らない）・取引は 終わらせる（{e8}）')
         pC.evaluate("window.__nativeEvent('iap', { id: '7001', originalId: 'o7', product: 'jp.tengel.app.points1000', kind: 'pack', date: new Date().toISOString(), revoked: true, revokedAt: new Date().toISOString() })"); pC.wait_for_timeout(700)
         c9 = pC.evaluate(CI)
-        check(c9['total'] == 99999 and c9['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300}, f'その パックが 返金 → あずかりの 1,000P も 消える（ほかの あずかりは そのまま）（{c9["hold"]}）')
+        check(c9['total'] == 99999 and c9['hold'] == {'total': 9000, 'paid_sub': 8700, 'paid_pack': 0, 'free': 300}, f'その パックが 返金 → 預かりの 1,000P も 消える（他の 預かりは そのまま）（{c9["hold"]}）')
         # 足りなくて 使えない ときは、あずかりから 先に 補充してから 使う（「使えるか」は 財布＋あずかりで 見る）
         pC.evaluate("TengelWallet.unlock('test:big', 99600)"); pC.wait_for_timeout(400)
         c10 = pC.evaluate(CI)
         okA = pC.evaluate("TengelWallet.unlock('type:枠複', 500)"); pC.wait_for_timeout(500)
         c11 = pC.evaluate(CI)
         check(c10['total'] == 399 and c10['avail'] == 9399 and okA and c11['total'] == 399 + 9000 - 500 and c11['hold']['total'] == 0 and c11['badge'] == '1',
-              f'財布 399P・あずかり 9,000P の ときに 500P の 解放 → あずかりから 先に 補充（9,000P）してから 使う → 8,899P・あずかり 0（{c10["total"]}／{c10["avail"]} → {c11["total"]}）')
+              f'財布 399P・預かり 9,000P の ときに 500P の 解放 → 預かりから 先に 補充（9,000P）してから 使う → 8,899P・預かり 0（{c10["total"]}／{c10["avail"]} → {c11["total"]}）')
         # あきが できた ので ミッションを 受け取れる・開き直しても あずかりは 残る
         pC.evaluate("TengelWallet.claim('mission-tc-50')"); pC.wait_for_timeout(500)
         check(pC.evaluate("TengelWallet.events().some(e => e.id === 'mission-tc-50')") and pC.evaluate('TengelWallet.total()') == 8899 + 500, 'あきが できたら 待って いた ミッション（500P）を 受け取れる')
         pC.locator('#setTest [data-test=pts100]').click(); pC.wait_for_timeout(400); pC.locator('#setTest [data-test=ptsub]').click(); pC.wait_for_timeout(600)
         pC.reload(); pC.wait_for_timeout(1500); gate(pC); pC.wait_for_timeout(900)
         c12 = pC.evaluate(CI)
-        check(c12['total'] == 99999 and c12['hold']['total'] == 9200 and c12['hold']['paid_sub'] == 9200 and pC.evaluate("TengelWallet.snapshot().hold.length") == 1, f'開き直しても あずかりポイントは 残る（台帳と いっしょに 保存・自動バックアップにも 入る）（{c12["hold"]}）')
+        check(c12['total'] == 99999 and c12['hold']['total'] == 9200 and c12['hold']['paid_sub'] == 9200 and pC.evaluate("TengelWallet.snapshot().hold.length") == 1, f'開き直しても 預かりポイントは 残る（台帳と 一緒に 保存・自動バックアップにも 入る）（{c12["hold"]}）')
         ctxC.close()
         # ---- 第4.139版：ポイントを 不正に ふやせる 抜け穴を ふさぐ（まさちゃん 11/10 12:27「販売版で、ポイントを不正に増やせる抜け穴みたいのって今のテンゲルに存在する？防ぐための仕組みが必要ならアイディアを出してから組み込んでみて！」）----
         mS = {}
@@ -2541,8 +2541,8 @@ try:
           bad: [...TengelLocal.mem.bets.values()].filter(b => [b.r, b.venue, b.rname, b.n, (b.types || []).join(), Object.keys(b.rsv.bets).join(), (b.snap || {}).L].some(v => /[<>"'`]/.test(String(v)))).length,
           r: String([...TengelLocal.mem.bets.values()].map(b => b.r)[0]) })""")
         check(emp and t0 == 1500 and fi['total'] == 1500 and fi['ev'] == ['gift-first'] and fi['bets'] == 3 and '記録3件を戻したよ' in fi['info'] and 'ポイント' not in fi['info'],
-              f'抜け穴①：書きかえた バックアップ（ポイントの 台帳 99,999P と auto の しるし）を「バックアップから戻す」で 読ませても ポイントは ふえない（記録だけ 戻る）（{fi["total"]}P・{fi["info"][:40]}）')
-        check(fi['bad'] == 0 and '＜' in fi['r'] and '”' in fi['r'], f'ファイルから 読んだ 字は < > " \' ` を 全角に かえてから 入れる（数の 欄・券種の 名前・見出しの 名前も）（{fi["r"][:24]}…）')
+              f'抜け穴①：書きかえた バックアップ（ポイントの 台帳 99,999P と auto の 印）を「バックアップから戻す」で 読ませても ポイントは 増えない（記録だけ 戻る）（{fi["total"]}P・{fi["info"][:40]}）')
+        check(fi['bad'] == 0 and '＜' in fi['r'] and '”' in fi['r'], f'ファイルから 読んだ 字は < > " \' ` を 全角に 変えてから 入れる（数の 欄・券種の 名前・見出しの 名前も）（{fi["r"][:24]}…）')
         XN = "() => document.querySelectorAll('[data-xss]').length"
         pS.click('.tabbar button[data-tab=rec]'); pS.wait_for_timeout(500)
         pS.evaluate("() => { const b = document.querySelector('button[data-ym=m][data-v=\"0\"]'); if (b) b.click(); }"); pS.wait_for_timeout(500)
@@ -2553,7 +2553,7 @@ try:
         pS.evaluate("() => { const b = document.querySelector('.tgov [data-ms=close], .tgov .btn'); if (b) b.click(); }"); pS.wait_for_timeout(300)
         pS.evaluate("() => document.querySelector('.tabbar button[data-tab=stats]').click()"); pS.wait_for_timeout(500); x4 = pS.evaluate(XN)
         pS.evaluate("() => document.querySelector('.tabbar button[data-tab=set]').click()"); pS.wait_for_timeout(500); x5 = pS.evaluate(XN)
-        check(seen1 >= 3 and [x1, x2, x3, x4, x5] == [0, 0, 0, 0, 0], f'読ませた 字は どの 画面でも タグに ならない（字と して 出る：記録の 一覧・開いた 行・結果待ちの 窓・実測・設定）（字 {seen1}こ・タグ {[x1, x2, x3, x4, x5]}）')
+        check(seen1 >= 3 and [x1, x2, x3, x4, x5] == [0, 0, 0, 0, 0], f'読ませた 字は どの 画面でも タグに ならない（字と して 出る：記録の 一覧・開いた 行・結果待ちの 窓・実測・設定）（字 {seen1}個・タグ {[x1, x2, x3, x4, x5]}）')
         # 台帳に じかに 入った おかしな 字（前の 版の データなど）でも、記録の 一覧の R・層の 札は タグに ならない
         pS.evaluate("""(C) => TengelLocal.putBets([{ id: 'xsraw', date: '2026-10-05', venue: 'V', r: '9' + C, rname: 'N', n: 14, types: ['馬単'], n1: 5, n2: 2, n3: 1, p1: 3, p2: 1, p3: 2, stake: '600', payout: '0', horses: [], snap: { L: 'B' + C, kubun: 'B' },
           rsv: { state: 'done', types: ['馬単'], bets: { '馬単': [[5, 2]] }, result: { p: [[5], [2], [1]] }, fx: 'miss', at: new Date().toISOString() }, mem: { at: new Date().toISOString(), v: 'a' } }])""", XS); pS.wait_for_timeout(400)
@@ -2567,7 +2567,7 @@ try:
         html_app = open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read()
         inl = re.findall('[\\s"\'<]on[a-z]{3,14}\\s*=\\s*["\'\\\\]', html_app)
         check(csp == "script-src-attr 'none'; base-uri 'none'; object-src 'none'" and ran == 0 and not inl and html_app.index('Content-Security-Policy') < html_app.index('<script'),
-              f'抜け穴②の 守り：App Store版の ページは タグに 書いた スクリプト（onerror・onclick）を 動かさない（{csp}・動いた {ran}・ページの 中の タグの スクリプト {len(inl)}こ）')
+              f'抜け穴②の 守り：App Store版の ページは タグに 書いた スクリプト（onerror・onclick）を 動かさない（{csp}・動いた {ran}・ページの 中の タグの スクリプト {len(inl)}個）')
         check('Content-Security-Policy' not in open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read(), 'Web版の ページには この 守りを 入れて いない（App Store版だけ）')
         # ③ ミッション（記録の 数）：200P の 読み込み 1回で 数える のは 1レースだけ（日付・R を 手で かえて 何レースも 数えさせない）
         rc = pS.evaluate("""async () => {
@@ -2583,7 +2583,7 @@ try:
           const c6 = await W.countRace({ date: '2026-10-20', venue: 'あ', r: 9, pid: b.pid });
           return { a: [a.ok, a.charged], b: [b.ok, b.charged], c: [c1, c2, c3, c4, c5, c6], n: [n0, n1, W.countedN()], spent: t0 - W.total() }; }""")
         check(rc['a'] == [True, True] and rc['b'] == [True, True] and rc['c'] == [True, False, False, False, False, True] and rc['n'] == [0, 1, 2] and rc['spent'] == 400,
-              f'抜け穴③：1回の 読み込み（200P）で 数える のは 1レースだけ。同じ 読み込みの しるしで R・日付・開催場を かえた 記録は 数えない（べつの 読み込みを した レースは 数える）（{rc}）')
+              f'抜け穴③：1回の 読み込み（200P）で 数える のは 1レースだけ。同じ 読み込みの 印で R・日付・開催場を 変えた 記録は 数えない（別の 読み込みを した レースは 数える）（{rc}）')
         # ④ 年：2026〜2036年を いつも 選べる（まさちゃん 11/10 12:47「年号2036年までできるようにして！」）
         pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(500)
         ys = pS.evaluate("[...document.querySelectorAll('#v-rec select[data-ym=y] option')].map(o => o.textContent)")
@@ -2592,7 +2592,7 @@ try:
         pS.evaluate("() => document.querySelector('.tabbar button[data-tab=stats]').click()"); pS.wait_for_timeout(500)
         ys2 = pS.evaluate("[...document.querySelectorAll('#v-stats select[data-ym=y] option')].map(o => o.textContent)")
         check(ys == [f'{y}年' for y in range(2026, 2037)] and y2['ttl'].startswith('2036年') and y2['sel'] == '2036' and 'まだないよ' in y2['empty'] and ys2 == ys,
-              f'年：2026年〜2036年（11こ・古い 順）を 選べる・2036年を 選ぶと その 年に なる（記録タブ・実測タブ）（{ys[0]}〜{ys[-1]}・{y2}）')
+              f'年：2026年〜2036年（11個・古い 順）を 選べる・2036年を 選ぶと その 年に なる（記録タブ・実測タブ）（{ys[0]}〜{ys[-1]}・{y2}）')
         # ⑤ 台帳の ならび（第4.139版）：その日 1回 使った あとに ポイントが 届いても、そのあと 使った ぶんは へる（前は その日の のこりが 0P で 読めた）
         so = pS.evaluate("""async () => {
           const W = TengelWallet, rd = r => W.readCharge({ form: { date: '2026-10-22', venue: 'う', r }, ocr: { date: '2026-10-22', venue: 'う', r } });
@@ -2606,7 +2606,7 @@ try:
         kS = so['t1'] // 200
         check(so['low'] < 200 and so['t1'] == so['low'] + 500 and so['got'] == [1] * kS + [0] * (5 - kS) and so['total'] == so['t1'] - 200 * kS and len(so['sp']) >= 2 and so['sp'][-1] == -200 * kS
               and sorted(so['ns']) == list(range(1, len(so['ns']) + 1)),
-              f'抜け穴⑤：使った あとに 届いた 500P も、使えば へる（{so["t1"]}P → 読めるのは {kS}回だけ → {so["total"]}P）・届いた あとの「使った」は 新しい 1件・できごとに 書いた 順の 番号（{so}）')
+              f'抜け穴⑤：使った 後に 届いた 500P も、使えば 減る（{so["t1"]}P → 読めるのは {kS}回だけ → {so["total"]}P）・届いた 後の「使った」は 新しい 1件・できごとに 書いた 順の 番号（{so}）')
         # ⑥ 読み直しの 見分け（第4.140版・11/10 14:22 まさちゃん「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）これで！」）：
         #    切り取った 画像（日付・R が 写って いない）で 別の レースを 読むと、前は 入力の 日付・R で 同じ レースと 見て 0P だった → 読んだ 単勝の 表が ぜんぜん ちがえば 200P
         fpq = pS.evaluate("""async () => {
@@ -2648,7 +2648,7 @@ try:
         u0 = pS.evaluate('TengelWallet.total()')
         u1 = readS(OCR_LINES['a_tanfuku_waku']); u2 = readS(lines_other(OCR_LINES['a_tanfuku_waku'], head=False)); u3 = readS(lines_other(OCR_LINES['a_tanfuku_waku'], head=False)); u4 = readS(OCR_LINES['a_tanfuku_waku'])
         check(u1['total'] == u0 - 200 and u1['tan6'] == '2.4' and '別のレース' not in u1['msg'], f'画面：9R を 読む → 200P（{u0} → {u1["total"]}）')
-        check(u2['total'] == u0 - 400 and u2['tan6'] == '66.1' and u2['r'] == '9' and '人気のならびがぜんぜんちがうので、別のレースとして 200P 使ったよ' in u2['msg'],
+        check(u2['total'] == u0 - 400 and u2['tan6'] == '66.1' and u2['r'] == '9' and '人気の並びが全然違うので、別のレースとして 200P 使ったよ' in u2['msg'],
               f'画面：日付・R の 写って いない 別の レースの 表 → 200P・わけを 出す（{u2["msg"][-70:]}）')
         check(u3['total'] == u0 - 400 and '同じレースの読み直しなので 0P' in u3['msg'] and u4['total'] == u0 - 400 and u4['tan6'] == '2.4' and '0P' in u4['msg'], f'画面：その 表を もう一度 → 0P・9R の 表を もう一度 → 0P（{u3["total"]}・{u4["total"]}）')
         # ⑦ マザーデータの 枠（第4.140版・11/10 14:28 まさちゃん「…マザーデータの解放…この上記の解放するための抜け穴があるか確認して！」）：
@@ -2668,7 +2668,7 @@ try:
           out.fld = typeof motherFieldHTML === 'function' ? (() => { const d = document.createElement('div'); d.innerHTML = motherFieldHTML({ mslot: 3, upay: '', spay: '' }, { defSlot: 0 }); const s = d.querySelector('select'); return s ? [s.value, [...s.options].map(o => o.value).join()] : null; })() : 'nofn';
           return out; }""")
         check(sl['locked'] == [True, True, False, False] and all('解放すると使えるよ' in sl[k] for k in ('put3', 'up3', 'rep4')) and sl['rows'] == [0, 0] and sl['after'] == [False, False] and sl['put2'] == 'ok' and sl['rows2'] == 1,
-              f'抜け穴⑦：解放して いない 枠（3つ目・4つ目）には、記録からも・足すのも・入れ替えも できない（枠は 空の まま＝解放されない）。解放ずみの 枠（2つ目）には 入る（{sl}）')
+              f'抜け穴⑦：解放して いない 枠（3つ目・4つ目）には、記録からも・足すのも・入れ替えも できない（枠は 空の まま＝解放されない）。解放済みの 枠（2つ目）には 入る（{sl}）')
         check(sl['fld'] == 'nofn' or (sl['fld'] is not None and sl['fld'][0] == '0' and '3' not in sl['fld'][1].split(',')), f'記録に 解放して いない 枠の 番号が 残って いても、入れ先は「入れない」（{sl["fld"]}）')
         ctxS.close()
         # ---- App Store版の説明書 ----

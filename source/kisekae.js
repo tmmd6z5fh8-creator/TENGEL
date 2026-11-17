@@ -263,9 +263,9 @@
   let tkAsk = false;
   function ticketBox() {
     const n = tickets(); if (!(n > 0) || !wallet()) { tkAsk = false; return ''; }
-    return `<div class="kstk" role="group" aria-label="チケット"><span class="kstx"><b>🎫 チケット ${n}枚</b><small>1枚で、<b>カギの壁紙を1つ解放</b>（壁紙を押してね）か、<b>${esc(pts(TKP()))}にかえる</b>か、選べるよ</small></span>`
-      + (tkAsk ? `<span class="kstb"><button class="btn primary" type="button" data-ksact="tkpt2">1枚を ${esc(pts(TKP()))}に かえる</button><button class="btn ghost" type="button" data-ksact="tkpt0">やめる</button></span>`
-        : `<span class="kstb"><button class="btn" type="button" data-ksact="tkpt1">${esc(pts(TKP()))}に かえる</button></span>`) + '</div>';
+    return `<div class="kstk" role="group" aria-label="チケット"><span class="kstx"><b>🎫 チケット ${n}枚</b><small>1枚で、<b>カギの壁紙を1つ解放</b>（壁紙を押してね）か、<b>${esc(pts(TKP()))}に変える</b>か、選べるよ</small></span>`
+      + (tkAsk ? `<span class="kstb"><button class="btn primary" type="button" data-ksact="tkpt2">1枚を ${esc(pts(TKP()))}に 変える</button><button class="btn ghost" type="button" data-ksact="tkpt0">やめる</button></span>`
+        : `<span class="kstb"><button class="btn" type="button" data-ksact="tkpt1">${esc(pts(TKP()))}に 変える</button></span>`) + '</div>';
   }
   // チケット 1枚 → 7,000P（獲得ポイント）。先に チケットを 1枚 使ってから 足す（足せなければ もどす）。上限を こえる ぶんは あずかりポイントへ（points_ui.js の grant）
   async function ticketToPoints() {
@@ -275,21 +275,21 @@
     const held0 = typeof w.hold === 'function' ? w.hold().total : 0;
     try {
       try { used = !!window.TCInfo.useTicket(); } catch (x) { used = false; }
-      if (used) { try { ok = await w.grant('tkp-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36), TKP(), 'チケットを ポイントに かえた'); } catch (x) { ok = false; } }
+      if (used) { try { ok = await w.grant('tkp-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36), TKP(), 'チケットを ポイントに 変えた'); } catch (x) { ok = false; } }
       if (used && !ok) { try { window.TCInfo.backTicket(); } catch (x) { /* なし */ } }
     } finally { actBusy = false; }
     const held = (typeof w.hold === 'function' ? w.hold().total : 0) - held0;
-    if (ok && !(held > 0)) toast(`🎫 チケット 1枚を ${pts(TKP())}に かえたよ（合計 ${pts(w.total())}・チケット のこり ${tickets()}枚）`, 4200);      // あずかった ときは 財布の お知らせ（うち ○P は あずかったよ）が 出る
-    else if (!ok) toast('チケットを ポイントに かえられなかったよ', 3000);
+    if (ok && !(held > 0)) toast(`🎫 チケット 1枚を ${pts(TKP())}に 変えたよ（合計 ${pts(w.total())}・チケット 残り ${tickets()}枚）`, 4200);      // あずかった ときは 財布の お知らせ（うち ○P は あずかったよ）が 出る
+    else if (!ok) toast('チケットを ポイントに 変えられなかったよ', 3000);
     return ok;
   }
   function confBox(t, total) {
     if (t.pack) return packConf(t);
     const ok = total >= t.price;
-    return `<span class="ksconf" role="group" aria-label="解放の確認"><span class="kscq">${esc(pts(t.price))}を使って解放する？<small>いま ${esc(pts(total))}</small></span>`
+    return `<span class="ksconf" role="group" aria-label="解放の確認"><span class="kscq">${esc(pts(t.price))}を使って解放する？<small>今 ${esc(pts(total))}</small></span>`
       + (ok ? `<button class="btn primary" type="button" data-ksact="unlock" data-id="${esc(t.id)}">解放する</button>`
         : `<span class="kscq muted">Pが足りないよ</span><button class="btn primary" type="button" data-gopt="points">ポイントを買う</button>`)
-      + (tickets() > 0 ? `<button class="btn" type="button" data-ksact="ticket" data-id="${esc(t.id)}">🎫 チケットで解放（のこり ${tickets()}枚）</button>` : '')
+      + (tickets() > 0 ? `<button class="btn" type="button" data-ksact="ticket" data-id="${esc(t.id)}">🎫 チケットで解放（残り ${tickets()}枚）</button>` : '')
       + '<button class="btn ghost" type="button" data-ksact="cancel">やめる</button></span>';
   }
   // 壁紙パックの 買う／進み具合の 箱（組の 見出しの 下）・カギの タイルの 中の 買う 確認
@@ -303,12 +303,12 @@
     if (!i.owned) {
       return '<div class="kspk"><div class="kspkt"><b>新しい壁紙 ' + all + '枚の パック</b><small>買い切り（1回 買えば ずっと）・ポイントでは 解放できないよ</small></div>'
         + `<button class="btn primary" type="button" data-ksact="pkbuy">${esc(packPrice())}で買う</button>`
-        + (bundleOffer() ? `<div class="kspku"><span><b>お得パック</b><small>壁紙パックと 結果ボードカスタムの 2つが セット。べつべつに 買うより お得だよ</small></span><button class="btn primary" type="button" data-ksact="bundle">${esc(bundlePrice())}で買う</button></div>` : '')
-        + `<p class="kspkn">買った あとに 読み込んだ レース ${PK.every}つごとに、上の 順に 1枚ずつ 使えるよ（${PK.every * all}レースで 全部）。帯の 壁紙の ミッションの 枚数にも 数えるよ。</p>`
+        + (bundleOffer() ? `<div class="kspku"><span><b>お得パック</b><small>壁紙パックと 結果ボードカスタムの 2つが セット。別々に 買うより お得だよ</small></span><button class="btn primary" type="button" data-ksact="bundle">${esc(bundlePrice())}で買う</button></div>` : '')
+        + `<p class="kspkn">買った 後に 読み込んだ レース ${PK.every}つごとに、上の 順に 1枚ずつ 使えるよ（${PK.every * all}レースで 全部）。帯の 壁紙の ミッションの 枚数にも 数えるよ。</p>`
         + '<div class="kspkr"><button class="btn ghost" type="button" data-ksact="pkrestore">購入を復元</button></div></div>';
     }
     const nx = i.next, w = Math.round(i.n / all * 100);
-    return `<div class="kspk on"><div class="kspkt"><b>壁紙パック　解放 ${i.n}/${all}</b><small>${nx ? `つぎの「${esc(packName(nx.no))}」まで あと ${nx.left}レース（読み込み ${i.reads}レース）` : `${all}枚 ぜんぶ 解放したよ！`}</small></div>`
+    return `<div class="kspk on"><div class="kspkt"><b>壁紙パック　解放 ${i.n}/${all}</b><small>${nx ? `次の「${esc(packName(nx.no))}」まで あと ${nx.left}レース（読み込み ${i.reads}レース）` : `${all}枚 全部 解放したよ！`}</small></div>`
       + `<div class="kspkb" aria-hidden="true"><i style="width:${w}%"></i></div></div>`;
   }
   function packConf(t) {
@@ -323,7 +323,7 @@
   function paint() {
     const box = $('#setKisekae .ksbody'); if (!box) return;
     const cur = byId[curId] || byId.default, n = count(), total = have();
-    let h = `<p class="hint" style="margin:0 0 4px">いまのテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
+    let h = `<p class="hint" style="margin:0 0 4px">今のテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
     h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。${[A.band.silver, A.band.golden, A.band.tengel].join('・')}枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
     h += ticketBox();
     const groups = [];
@@ -371,7 +371,7 @@
           if (used && !ok) { try { window.TCInfo.backTicket(); } catch (x) { /* なし */ } }
         } finally { actBusy = false; }
         conf = '';
-        if (ok) { toast(`🎫 チケットで「${t.name}」を解放したよ（のこり ${tickets()}枚）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
+        if (ok) { toast(`🎫 チケットで「${t.name}」を解放したよ（残り ${tickets()}枚）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
         else { toast('チケットで 解放 できなかったよ', 3000); paint(); }
         return;
       }
@@ -382,7 +382,7 @@
         try { ok = await wallet().unlock('theme:' + id, t.price); } catch (x) { ok = false; } finally { actBusy = false; }
         conf = '';
         if (ok) { toast(`✅ 「${t.name}」を解放したよ（残り ${pts(wallet().total())}）`, 3600); emit('unlock'); await apply(id, true); unlockFx(id); }
-        else { toast(`Pが足りないよ（${pts(t.price)}いる・いま ${pts(have())}）`, 3600); paint(); }
+        else { toast(`Pが足りないよ（${pts(t.price)}いる・今 ${pts(have())}）`, 3600); paint(); }
         return;
       }
     }
@@ -405,7 +405,7 @@
       const c = $('#setKisekae .kst.cf'); if (c) c.scrollIntoView({ block: 'nearest' });
       return;
     }
-    if (t.band) { toast(`壁紙を${t.band}枚あつめて、ミッションで受け取ると使えるよ（いま ${count()}枚）`, 3600); }
+    if (t.band) { toast(`壁紙を${t.band}枚あつめて、ミッションで受け取ると使えるよ（今 ${count()}枚）`, 3600); }
   }
   // タイルは <div role="button">：Enter か スペースで 押す
   function onKey(e) {

@@ -763,7 +763,7 @@ const TCFX = (() => {
     label(tx, 0, mx ? 6 : 0, fs, '#ffd65c', '#3a1a08', 12, SERIF);
     label('GET！！！', 0, ph / 2 - 32, 28, '#fff6e2', '#3a1a08', 9);
     g.restore();
-    if (w > ZN.hold) { g.save(); g.globalAlpha *= sm((w - ZN.hold) / 0.3) * (0.7 + 0.3 * Math.sin(TAU * 0.5 * (w - ZN.hold))); label('タップで とじる', W / 2, H - 34, 15, '#fff6e2', 'rgba(20,10,40,0.8)', 5); g.restore(); }
+    if (w > ZN.hold) { g.save(); g.globalAlpha *= sm((w - ZN.hold) / 0.3) * (0.7 + 0.3 * Math.sin(TAU * 0.5 * (w - ZN.hold))); label('タップで 閉じる', W / 2, H - 34, 15, '#fff6e2', 'rgba(20,10,40,0.8)', 5); g.restore(); }
   }
   // 1コマ（taps＝レバーを 押した 時刻の ならび・u＝いまの 時刻）
   function znDraw(A, Z, taps, u, calm, dim) {
@@ -831,7 +831,7 @@ const TCFX = (() => {
       // ひとこと
       if (lok && rv >= 0.36 && rv < 1.3) { const q = rv - 0.36, a = sm(q / 0.12) * (1 - sm((q - 0.7) / 0.24)), z = calm ? 1 : backOut(clamp(q / 0.26, 0, 1)); g.save(); g.globalAlpha *= a; g.translate(W / 2, ZN.msgY - 6 * easeOut(q / 0.9)); g.scale(z, z); label(`＋${comma(Z.add)}P 上乗せ！`, 0, 0, 31, '#fff2b8', '#b0281e', 9); g.restore(); }
       else if (failed && rv >= 0.3) { g.save(); g.globalAlpha *= sm((rv - 0.3) / 0.3); label('上乗せ ならず…', W / 2, ZN.msgY, 25, '#c9d2ee', 'rgba(20,10,40,0.9)', 7); g.restore(); }
-      else if (waiting) { g.save(); g.globalAlpha *= sm((u - rd) / 0.25); label(np === 0 ? 'レバーを 押して 上乗せ！' : np >= Z.max - 1 ? 'あと 1回で MAX！' : 'つづけて 押しこめ！', W / 2, ZN.msgY, 21, '#fff6e2', 'rgba(20,10,40,0.9)', 7); g.restore(); }
+      else if (waiting) { g.save(); g.globalAlpha *= sm((u - rd) / 0.25); label(np === 0 ? 'レバーを 押して 上乗せ！' : np >= Z.max - 1 ? 'あと 1回で MAX！' : '続けて 押しこめ！', W / 2, ZN.msgY, 21, '#fff6e2', 'rgba(20,10,40,0.9)', 7); g.restore(); }
       // 「タップ」の 札
       if (waiting) {
         const k = sm((u - rd) / 0.25), y = H - 44 + 3 * Math.sin(TAU * 0.9 * (u - rd)), tw = 118, th = 44;

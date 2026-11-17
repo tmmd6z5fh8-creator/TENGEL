@@ -83,24 +83,24 @@ try:
           out.bad = [O.norm(null), O.norm({ id: 'a', name: '   ' }), O.norm({ id: '', name: 'n' }), O.norm('x')];
           out.saved = O.save([{ id: 'x1', name: 'A' }, { id: 'x1', name: 'かぶり' }, { id: 'x2', name: '' }, { id: 'x3', name: 'C', ped: ['p'], memo: 'm' }]).map(q => q.id + ':' + q.name);
           out.ls = JSON.parse(localStorage.getItem('tengel.oshi'));
-          out.m1 = O.merge([{ id: 'x3', name: 'べつの 名前' }, { id: 'x4', name: 'D' }]); out.after = O.load().map(q => q.id + ':' + q.name);
+          out.m1 = O.merge([{ id: 'x3', name: '別の 名前' }, { id: 'x4', name: 'D' }]); out.after = O.load().map(q => q.id + ':' + q.name);
           const many = []; for (let i = 0; i < 40; i++) many.push({ id: 'm' + i, name: 'N' + i }); out.m2 = O.merge(many); out.n = O.load().length; out.m3 = O.merge(many);
           const cut = O.str('あ'.repeat(29) + '\\uD83D\\uDC34', 30); out.cut = [cut.length, /[\\uD800-\\uDBFF]$/.test(cut)];
           localStorage.setItem('tengel.oshi', '{こわれた'); out.broken = O.load(); localStorage.setItem('tengel.oshi', JSON.stringify({ v: 1, list: 'x' })); out.broken2 = O.load();
           localStorage.removeItem('tengel.oshi'); return out; }""")
-        check(o['k'] == [25, 14, 30, 300, 'function', 'function', 'function'] and o['empty'] == [], f'TCOshi：25頭まで・血統 14頭・名前 30字・備考 300字（はじめは 0頭）{o["k"][:4]}')
+        check(o['k'] == [25, 14, 30, 300, 'function', 'function', 'function'] and o['empty'] == [], f'TCOshi：25頭まで・血統 14頭・名前 30字・備考 300字（初めは 0頭）{o["k"][:4]}')
         n = o['norm']
         check(n['id'] == 'a1' and n['name'] == 'なまえ 二行目' and n['ped'][:3] == ['ち ち', 'x' * 30, '3'] and len(n['ped']) == 14 and all(x == '' for x in n['ped'][3:]) and n['memo'].startswith('め\nも') and len(n['memo']) == 300 and 'extra' not in n and o['bad'] == [None] * 4,
-              f'そろえる：名前は 1行・30字まで／血統は 14こ（足りない ぶんは 空）／備考は 改行を のこして 300字まで・見えない 字は 消す／名前か 番号が ない ものは すてる')
+              f'そろえる：名前は 1行・30字まで／血統は 14こ（足りない 分は 空）／備考は 改行を 残して 300字まで・見えない 字は 消す／名前か 番号が ない ものは 捨てる')
         check(o['saved'] == ['x1:A', 'x3:C'] and o['ls']['v'] == 1 and len(o['ls']['list']) == 2 and o['m1'] == 1 and o['after'] == ['x1:A', 'x3:C', 'x4:D'] and o['m2'] == 22 and o['n'] == 25 and o['m3'] == 0,
-              f'保存：同じ 番号は 1つ・名前の ない ものは 入れない／もどす（merge）：もう いる 馬は そのまま・いない 馬を 足す（{o["m1"]}頭）・25頭で 止まる（40頭 → ＋{o["m2"]}＝25頭）')
+              f'保存：同じ 番号は 1つ・名前の ない ものは 入れない／戻す（merge）：もう いる 馬は そのまま・いない 馬を 足す（{o["m1"]}頭）・25頭で 止まる（40頭 → ＋{o["m2"]}＝25頭）')
         check(o['cut'] == [29, False] and o['broken'] == [] and o['broken2'] == [], '絵文字の 途中では 切らない・こわれた データは 0頭として 読む（止まらない）')
 
         print('■ 作戦会議の「推し馬」の ボード')
         open_plan(pg); bd = pg.evaluate(BOARD); shot(pg, 'oshi_empty')
         check(bd is not None and bd['title'] == '推し馬' and '0頭' in bd['sub'] and '25頭まで' in bd['sub'] and bd['empty'] and bd['cards'] == [] and bd['add'] == '＋ 推し馬を登録' and not bd['addOff'],
               f'レースの ボードの 下に「推し馬」の ボード（0頭・25頭まで 登録できるよ・「＋ 推し馬を登録」）')
-        check(bd['order'] == ['jump', 'nt', 'board', 'board oboard'] and len(bd['jump']) == 2 and '推し馬 0/25' in bd['jump'][1], f'ならび：上から 行き先の 札（お気に入りレース／推し馬 0/25）・通知・お気に入りレース一覧・推し馬 {bd["order"]}')
+        check(bd['order'] == ['jump', 'nt', 'board', 'board oboard'] and len(bd['jump']) == 2 and '推し馬 0/25' in bd['jump'][1], f'並び：上から 行き先の 札（お気に入りレース／推し馬 0/25）・通知・お気に入りレース一覧・推し馬 {bd["order"]}')
         # 登録の 入力
         pg.locator('#tcPlan [data-p=oadd]').click(); pg.wait_for_timeout(250); shot(pg, 'oshi_form')
         fm = pg.evaluate("""() => { const r = document.querySelector('#tcPlan .ofm'), pb = document.querySelector('#tcPlan .pb'); return { h3: r.querySelector('h3').textContent, h4: [...r.querySelectorAll('h4')].map(e => e.textContent), labels: [...r.querySelectorAll('label')].map(e => e.textContent),
@@ -119,22 +119,22 @@ try:
         c = bd['cards'][0] if bd['cards'] else {}
         check(len(bd['cards']) == 1 and c['name'] == '🐴 テストホース' and c['sum'] == '父：チチウマ　母：ハハウマ' and c['tog'] == '血統を見る ▼' and c['open'] == 'false' and not c['ped'] and c['memo'] == 'ダートの 短い 距離が 得意\n雨の 日に 強い'
               and c['btns'] == ['直す', 'この推し馬を消す'] and '1頭' in bd['sub'] and '推し馬 1/25' in bd['jump'][1] and not bd['empty'],
-              f'「保存」→ 札が 1まい：名前・父と 母・備考（そのまま 書ける 欄）・「直す」「この推し馬を消す」・数は 1頭（上の 札も 1/25）{c.get("btns")}')
+              f'「保存」→ 札が 1枚：名前・父と 母・備考（そのまま 書ける 欄）・「直す」「この推し馬を消す」・数は 1頭（上の 札も 1/25）{c.get("btns")}')
         check(ls['v'] == 1 and len(ls['list']) == 1 and ls['list'][0]['name'] == 'テストホース' and ls['list'][0]['ped'] == ['チチウマ', 'ハハウマ', 'チチノチチ', 'チチノハハ', 'ハハノチチ', 'ハハノハハ', 'ヒイジイイチ', '', '', '', '', '', '', 'ヒイバアハチ'] and ls['list'][0]['memo'].startswith('ダート') and ls['list'][0]['id'] == c['id'] and ls['list'][0]['at'],
-              f'端末に 保存（tengel.oshi：名前・血統 14こ・備考・登録した 時）')
+              f'端末に 保存（tengel.oshi：名前・血統 14個・備考・登録した 時）')
         # 血統の 表
         pg.locator('#tcPlan [data-p=otog]').click(); pg.wait_for_timeout(250); shot(pg, 'oshi_ped')
         pd = pg.evaluate("""() => { const c = document.querySelector('#tcPlan .oc'), R = e => e.getBoundingClientRect(), cells = [...c.querySelectorAll('.pc')].map(e => ({ i: +e.dataset.i, lb: e.querySelector('small').textContent, v: e.querySelector('b').textContent, f: e.classList.contains('f'), e: e.classList.contains('e'), x: Math.round(R(e).left), y: Math.round(R(e).top), h: Math.round(R(e).height), r: R(e).right }));
           return { head: [...c.querySelectorAll('.pedh span')].map(e => e.textContent), cells, tog: c.querySelector('.otg').textContent, open: c.querySelector('.oh').getAttribute('aria-expanded'), sum: !!c.querySelector('.osum'), right: R(c).right, wide: document.querySelector('#tcPlan .pb').scrollWidth - document.querySelector('#tcPlan .pb').clientWidth }; }""")
         cs = sorted(pd['cells'], key=lambda q: q['i']); xs = sorted({q['x'] for q in cs})
         check(pd['head'] == ['親', 'おじいちゃん', 'ひいおじいちゃん'] and [q['lb'] for q in cs] == PED_LB and [q['v'] for q in cs] == ['チチウマ', 'ハハウマ', 'チチノチチ', 'チチノハハ', 'ハハノチチ', 'ハハノハハ', 'ヒイジイイチ'] + ['—'] * 6 + ['ヒイバアハチ']
-              and [q['e'] for q in cs] == [False] * 7 + [True] * 6 + [False] and [q['f'] for q in cs] == [i % 2 == 1 for i in range(14)] and pd['tog'] == 'とじる ▲' and pd['open'] == 'true' and not pd['sum'],
+              and [q['e'] for q in cs] == [False] * 7 + [True] * 6 + [False] and [q['f'] for q in cs] == [i % 2 == 1 for i in range(14)] and pd['tog'] == '閉じる ▲' and pd['open'] == 'true' and not pd['sum'],
               f'「血統を見る」→ 表：左から 親・おじいちゃん・ひいおじいちゃん（14ます：入れて いない ますは「—」・父は 青・母は 桃）')
         check(len(xs) == 3 and [q['x'] for q in cs] == [xs[0]] * 2 + [xs[1]] * 4 + [xs[2]] * 8 and cs[0]['y'] == cs[2]['y'] == cs[6]['y'] and cs[1]['y'] == cs[4]['y'] == cs[10]['y'] and cs[0]['h'] > cs[2]['h'] > cs[6]['h']
               and cs[3]['y'] == cs[8]['y'] and cs[5]['y'] == cs[12]['y'] and all(q['r'] <= pd['right'] + 0.5 for q in cs) and pd['wide'] <= 0,
-              f'表の 形：3れつ（親 2ます・おじいちゃん 4ます・ひいおじいちゃん 8ます）・父の ますの 右に その 父と 母が ならぶ・札から はみ出さない')
+              f'表の 形：3れつ（親 2ます・おじいちゃん 4ます・ひいおじいちゃん 8ます）・父の ますの 右に その 父と 母が 並ぶ・札から はみ出さない')
         pg.locator('#tcPlan [data-p=otog]').click(); pg.wait_for_timeout(200)
-        check(pg.evaluate("() => [!!document.querySelector('#tcPlan .ped'), document.querySelector('#tcPlan .otg').textContent]") == [False, '血統を見る ▼'], 'もう一度 押すと 表を とじる')
+        check(pg.evaluate("() => [!!document.querySelector('#tcPlan .ped'), document.querySelector('#tcPlan .otg').textContent]") == [False, '血統を見る ▼'], 'もう一度 押すと 表を 閉じる')
         # 備考：札の 中で そのまま 書く（書いた そばから 保存）
         mm = pg.locator('#tcPlan .oc textarea.mm'); mm.fill('かきなおした 備考'); pg.wait_for_timeout(200)
         ls2 = pg.evaluate(LS); st2 = pg.evaluate("() => [document.activeElement && document.activeElement.dataset.p, document.querySelectorAll('#tcPlan .oc').length]")
@@ -152,10 +152,10 @@ try:
         ls3 = pg.evaluate(LS)['list']; bd = pg.evaluate(BOARD)
         check(ed == ['推し馬を直す', 'テストホース', 'チチウマ', 'ヒイバアハチ', 'ダートが 得意'] and keep['name'] == 'テストホース' and keep['ped'][7] == ''
               and len(ls3) == 1 and ls3[0]['name'] == 'テストホース二世' and ls3[0]['ped'][7] == 'ヒイバアニ' and ls3[0]['ped'][0] == 'チチウマ' and ls3[0]['id'] == c['id'] and ls3[0]['at'] == ls['list'][0]['at'] and bd['cards'][0]['name'] == '🐴 テストホース二世',
-              f'「直す」→ いまの 中身が 入った 入力 →「やめる」は かえない・「保存」で かわる（同じ 馬の まま：番号と 登録した 時は そのまま）')
+              f'「直す」→ 今の 中身が 入った 入力 →「やめる」は 変えない・「保存」で 変わる（同じ 馬の まま：番号と 登録した 時は そのまま）')
 
         print('■ 「この推し馬を消す」（2回 押して 消す）')
-        pg.evaluate("""() => { const l = TCOshi.load(); l.push({ id: 'k2', name: 'のこる 馬', ped: ['ちち'], memo: '' }); TCOshi.save(l); }""")
+        pg.evaluate("""() => { const l = TCOshi.load(); l.push({ id: 'k2', name: '残る 馬', ped: ['ちち'], memo: '' }); TCOshi.save(l); }""")
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200); open_plan(pg)
         dl = pg.locator(f'#tcPlan .oc[data-oid="{c["id"]}"] [data-p=odel]')
         dl.click(); pg.wait_for_timeout(200)
@@ -163,14 +163,14 @@ try:
         shot(pg, 'oshi_delask')
         pg.locator('#tcPlan .oboard .bdt').click(); pg.wait_for_timeout(200)
         d2 = pg.evaluate("(id) => { const b = document.querySelector(`#tcPlan .oc[data-oid=\"${id}\"] [data-p=odel]`); return [b.textContent, b.classList.contains('ask'), TCOshi.load().length]; }", c['id'])
-        check(d1 == ['ほんとに 消す？', True, 2, ['ほんとに 消す？', 'この推し馬を消す']] and d2 == ['この推し馬を消す', False, 2], f'「この推し馬を消す」を 1回 押す →「ほんとに 消す？」（まだ 消えない・ほかの 馬の ボタンは そのまま）→ ほかの 所を 押すと もどる')
+        check(d1 == ['本当に 消す？', True, 2, ['本当に 消す？', 'この推し馬を消す']] and d2 == ['この推し馬を消す', False, 2], f'「この推し馬を消す」を 1回 押す →「本当に 消す？」（まだ 消えない・他の 馬の ボタンは そのまま）→ 他の 所を 押すと 戻る')
         dl.click(); pg.wait_for_timeout(150)
         pg.locator('#tcPlan .oc[data-oid="k2"] textarea.mm').click(); pg.wait_for_timeout(150)
         d3 = pg.evaluate("(id) => { const b = document.querySelector(`#tcPlan .oc[data-oid=\"${id}\"] [data-p=odel]`); return [b.textContent, b.classList.contains('ask'), TCOshi.load().length, document.activeElement.dataset.p]; }", c['id'])
-        check(d3 == ['この推し馬を消す', False, 2, 'omemo'], '「ほんとに 消す？」の あと 備考の 欄を 押す → もどる（欄は 消えない＝書ける）')
+        check(d3 == ['この推し馬を消す', False, 2, 'omemo'], '「本当に 消す？」の あと 備考の 欄を 押す → 戻る（欄は 消えない＝書ける）')
         dl.click(); pg.wait_for_timeout(150); dl.click(); pg.wait_for_timeout(250)
         bd = pg.evaluate(BOARD); ls4 = pg.evaluate(LS)['list']
-        check([q['name'] for q in bd['cards']] == ['🐴 のこる 馬'] and [q['id'] for q in ls4] == ['k2'] and '1頭' in bd['sub'], f'もう一度 押す → その 馬 だけ 消える（ほかの 馬は のこる）・端末の 保存からも 消える')
+        check([q['name'] for q in bd['cards']] == ['🐴 残る 馬'] and [q['id'] for q in ls4] == ['k2'] and '1頭' in bd['sub'], f'もう一度 押す → その 馬 だけ 消える（他の 馬は 残る）・端末の 保存からも 消える')
         check(not dialogs, f'confirm()・alert() の 窓は 出て いない {dialogs}')
 
         print('■ 25頭まで')
@@ -180,7 +180,7 @@ try:
         pg.locator('#tcPlan [data-p=jo]').click(); pg.wait_for_timeout(200)
         jo = pg.evaluate("() => { const pb = document.querySelector('#tcPlan .pb'), ob = document.querySelector('#tcPlan .oboard'); return [pb.scrollTop > 100, Math.abs(ob.getBoundingClientRect().top - pb.getBoundingClientRect().top) < 30]; }")
         pg.locator('#tcPlan [data-p=jr]').click(); pg.wait_for_timeout(150); jr = pg.evaluate("() => document.querySelector('#tcPlan .pb').scrollTop")
-        check(jo == [True, True] and jr == 0, '上の 札「推し馬」→ 推し馬の ボードへ・「お気に入りレース」→ いちばん 上へ')
+        check(jo == [True, True] and jr == 0, '上の 札「推し馬」→ 推し馬の ボードへ・「お気に入りレース」→ 一番 上へ')
         pg.locator('#tcPlan [data-p=oadd]').click(); pg.wait_for_timeout(200); pg.locator('#tcPlan [data-o=name]').fill('25頭目'); pg.locator('#tcPlan [data-p=osave]').click(); pg.wait_for_timeout(300)
         bd = pg.evaluate(BOARD); shot(pg, 'oshi_full')
         vis = pg.evaluate("() => { const pb = document.querySelector('#tcPlan .pb').getBoundingClientRect(), c = [...document.querySelectorAll('#tcPlan .oc')].pop().getBoundingClientRect(); return c.top >= pb.top - 1 && c.top < pb.bottom; }")
@@ -189,7 +189,7 @@ try:
         r26 = pg.evaluate("() => { const l = TCOshi.load(); l.push({ id: 'h26', name: '26頭目' }); return [TCOshi.save(l).length, TCOshi.load().length]; }")
         check(r26 == [25, 25], '置き場も 25頭まで（26頭目は 入らない）')
 
-        print('■ 日が かわっても 消えない・開き直しても のこる')
+        print('■ 日が 変わっても 消えない・開き直しても 残る')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         pg.evaluate("""() => { const d = new Date(), pad = n => String(n).padStart(2, '0'), day = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
           localStorage.setItem('tengel.plan', JSON.stringify({ v: 1, on: false, races: [{ id: 'r1', date: day, time: '23:59', name: 'きょうの レース', n: '', dist: '', memo: '', notify: [] }] })); }""")
@@ -197,11 +197,11 @@ try:
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         pg.evaluate("() => { const D = Date, OFF = 2 * 86400000; class FD extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() + OFF); } static now() { return D.now() + OFF; } } FD.UTC = D.UTC; FD.parse = D.parse; window.Date = FD; }")
         open_plan(pg); r1 = pg.evaluate("() => [document.querySelectorAll('#tcPlan .rc').length, document.querySelectorAll('#tcPlan .oc').length, TCOshi.load().length]")
-        check(r0 == [1, 25] and r1 == [0, 25, 25], f'2日 たつと 予約した レースは 消える（{r0[0]} → {r1[0]}）・推し馬は のこる（{r1[1]}頭）')
+        check(r0 == [1, 25] and r1 == [0, 25, 25], f'2日 たつと 予約した レースは 消える（{r0[0]} → {r1[0]}）・推し馬は 残る（{r1[1]}頭）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600); open_plan(pg)
         r2 = pg.evaluate("() => [document.querySelectorAll('#tcPlan .oc').length, document.querySelector('#tcPlan .oc .onm').textContent]")
-        check(r2 == [25, '🐴 推し馬1'], f'アプリを 開き直しても のこる（{r2[0]}頭）')
+        check(r2 == [25, '🐴 推し馬1'], f'アプリを 開き直しても 残る（{r2[0]}頭）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
 
         # 第4.165版（まさちゃん 2026/11/13 12:47「推し馬はすぐに確認できるように、トレーニングセンターと思い出フィギュアのアイコンのところの1番上に配置して！
@@ -226,9 +226,9 @@ try:
                 and not any(a[0] < c[2] - 1 and c[0] < a[2] - 1 and a[1] < c[3] - 1 and c[1] < a[3] - 1 for i, a in enumerate(rc) for c in rc[i + 1:]))
         check(fb['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and g_ok and max(r[3] for r in rc) <= fb['tab'] - 3 and max(r[2] for r in rc) <= 390 and min(r[0] for r in rc) >= 0
               and fb['name'] == '推し馬' and '推し馬' in (fb['aria'] or '') and fb['iw'] and abs(fb['iw'][0] - 66) < 1 and abs(fb['iw'][1] - 66) < 1 and fb['vis'] and fb['tab'] - max(r[3] for r in rc) <= 6,
-              f'ならび（たてに 4つ）：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの すぐ 上・絵は 66px・名前「推し馬」')
+              f'並び（たてに 4つ）：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの すぐ 上・絵は 66px・名前「推し馬」')
         if HAVE:
-            check(fb['img'] == ['tc_icon_oshi.webp', 240, 240] and fb['fb'] is None, f'絵：まさちゃんの 推し馬の アイコン（tc_icon_oshi.webp・240×240：ほかの 2つと 同じ 作り方）{fb["img"]}')
+            check(fb['img'] == ['tc_icon_oshi.webp', 240, 240] and fb['fb'] is None, f'絵：まさちゃんの 推し馬の アイコン（tc_icon_oshi.webp・240×240：他の 2つと 同じ 作り方）{fb["img"]}')
             from PIL import Image as _Im
             _a, _b = _Im.open(os.path.join(TCA, 'tc_icon_oshi.webp')), _Im.open(os.path.join(TCA, 'tc_icon_tc.webp'))
             ba, bb = _a.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox(), _b.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()
@@ -241,25 +241,25 @@ try:
         pg.locator('#oshiFab .fabi').click(); pg.wait_for_function("() => window.TCPlan && TCPlan.isOpen()", timeout=30000); pg.wait_for_timeout(500)
         j1 = pg.evaluate(JUMP); shot(pg, 'oshi_fab_open')
         check(j1['open'] and j1['host'] == 'planHost' and not j1['tc'] and j1['n'] == 25 and j1['top'] is not None and 0 <= j1['top'] <= 12 and j1['st'] > 200,
-              f'推し馬の アイコンを 押す → 作戦会議が 開いて「推し馬」の 欄が いちばん 上（上から {j1["top"]}px・トレーニングセンターは 開かない）')
+              f'推し馬の アイコンを 押す → 作戦会議が 開いて「推し馬」の 欄が 一番 上（上から {j1["top"]}px・トレーニングセンターは 開かない）')
         pg.locator('#tcPlan [data-p=jr]').click(); pg.wait_for_timeout(200); j2 = pg.evaluate(JUMP)
         pg.locator('#tcPlan [data-p=jo]').click(); pg.wait_for_timeout(200); j3 = pg.evaluate(JUMP)
-        check(j2['st'] == 0 and j2['sp'] == 0 and 0 <= j3['top'] <= 12, f'上の「📋 お気に入りレース」で いちばん 上へ・「🐴 推し馬」で また 推し馬の 欄へ（{j2["st"]} → 上から {j3["top"]}px）')
+        check(j2['st'] == 0 and j2['sp'] == 0 and 0 <= j3['top'] <= 12, f'上の「📋 お気に入りレース」で 一番 上へ・「🐴 推し馬」で また 推し馬の 欄へ（{j2["st"]} → 上から {j3["top"]}px）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         open_plan(pg); j4 = pg.evaluate(JUMP)
-        check(j4['open'] and j4['st'] == 0 and j4['sp'] == 0, f'判定タブの「作戦会議」の 札から 開いた ときは いつも 上から（推し馬の 欄へ 進めた 所は のこらない：{j4["st"]}）')
+        check(j4['open'] and j4['st'] == 0 and j4['sp'] == 0, f'判定タブの「作戦会議」の 札から 開いた ときは いつも 上から（推し馬の 欄へ 進めた 所は 残らない：{j4["st"]}）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         # 推し馬が 少ない とき（中身が 1画面に おさまる）でも 推し馬の 欄が 上まで 上がる（下に 余白を 足す）
         pg.evaluate("() => TCOshi.save(TCOshi.load().slice(0, 1))")
         pg.locator('#oshiFab .fabi').click(); pg.wait_for_timeout(700); j5 = pg.evaluate(JUMP)
-        check(j5['open'] and j5['n'] == 1 and 0 <= j5['top'] <= 12 and j5['sp'] > 50, f'推し馬が 1頭 だけ（中身が 短い）でも「推し馬」の 欄が いちばん 上（上から {j5["top"]}px・下の 余白 {j5["sp"]}px）')
+        check(j5['open'] and j5['n'] == 1 and 0 <= j5['top'] <= 12 and j5['sp'] > 50, f'推し馬が 1頭 だけ（中身が 短い）でも「推し馬」の 欄が 一番 上（上から {j5["top"]}px・下の 余白 {j5["sp"]}px）')
         pg.locator('#tcPlan .oc [data-p=otog]').first.click(); pg.wait_for_timeout(250); j6 = pg.evaluate(JUMP)
-        check(0 <= j6['top'] <= 12, f'血統を ひらいても 推し馬の 欄は 上の まま（上から {j6["top"]}px）')
+        check(0 <= j6['top'] <= 12, f'血統を 開いても 推し馬の 欄は 上の まま（上から {j6["top"]}px）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         # ほかの タブでも 押せる
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(400)
         pg.locator('#oshiFab .fabi').click(); pg.wait_for_timeout(700); j7 = pg.evaluate(JUMP)
-        check(j7['open'] and 0 <= j7['top'] <= 12 and pg.evaluate("() => !document.querySelector('#v-judge') || document.querySelector('#v-judge').hidden"), '記録タブでも 押せる（とじると 記録タブの まま）')
+        check(j7['open'] and 0 <= j7['top'] <= 12 and pg.evaluate("() => !document.querySelector('#v-judge') || document.querySelector('#v-judge').hidden"), '記録タブでも 押せる（閉じると 記録タブの まま）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[0].click()"); pg.wait_for_timeout(300)
 

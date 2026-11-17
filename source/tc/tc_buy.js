@@ -55,7 +55,7 @@ const TCBuy = (() => {
   function build(el) {
     style();
     root = document.createElement('div'); root.id = 'tcb'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'お世話トークン購入');
-    root.innerHTML = `<div class="bbk"></div><div class="bsh"><div class="bhd"><b>お世話トークン購入</b><button type="button" class="bx" aria-label="とじる">✕</button></div><div class="bbd"></div></div>`;
+    root.innerHTML = `<div class="bbk"></div><div class="bsh"><div class="bhd"><b>お世話トークン購入</b><button type="button" class="bx" aria-label="閉じる">✕</button></div><div class="bbd"></div></div>`;
     el.appendChild(root);
     const shut = () => { if (!busy && performance.now() - openedAt >= GUARD * 1000) close(); };
     root.querySelector('.bx').addEventListener('click', shut);
@@ -65,24 +65,24 @@ const TCBuy = (() => {
     //   → 開いて から GUARD 秒は 中の ボタンも 受けつけない（幕・✕ と 同じ）
     root.addEventListener('click', e => { if (performance.now() - openedAt < GUARD * 1000) return; const b = e.target.closest('[data-b]'); if (b && !b.disabled) act(b.dataset.b, +b.dataset.n || 0); });
   }
-  const WHY = (r, i) => r.why === 'full' ? `いまは あと ${r.room != null ? r.room : i.room}こ まで 買えるよ（持てるのは ${i.max}こ まで）`
+  const WHY = (r, i) => r.why === 'full' ? `今は あと ${r.room != null ? r.room : i.room}個 まで 買えるよ（持てるのは ${i.max}個 まで）`
     : r.why === 'short' ? `ポイントが 足りないよ${r.need > 0 ? `（あと ${P(r.need)}）` : ''}`
-    : r.why === 'busy' ? 'ちょっと まってね' : 'うまく 買えなかったよ。もう一度 ためしてね';
+    : r.why === 'busy' ? 'ちょっと 待ってね' : 'うまく 買えなかったよ。もう一度 試してね';
   function paint() {
     if (!root || !api) return;
     const i = api.info(); last = JSON.stringify(i);
-    let h = `<div class="bnow"><div><small>いまの お世話トークン</small><b class="tk" data-v="stock">${i.stock}<i> / ${i.max}こ</i></b></div><div><small>使える ポイント</small><b class="pt" data-v="points">${P(i.points)}</b></div></div>`
+    let h = `<div class="bnow"><div><small>今の お世話トークン</small><b class="tk" data-v="stock">${i.stock}<i> / ${i.max}個</i></b></div><div><small>使える ポイント</small><b class="pt" data-v="points">${P(i.points)}</b></div></div>`
       + `<p class="bmsg${note && note.ng ? ' ng' : ''}" aria-live="polite">${note ? esc(note.t) : ''}</p>`;
     i.packs.forEach(pk => {
       const ok = pk.state === 'ok', head = `<span class="bn">${pk.n}<i>こ</i></span><span class="bc">${P(pk.cost)}</span>`;
       if (ok && conf === pk.n) h += `<div class="brow cf" data-n="${pk.n}" data-s="confirm">${head}<button type="button" class="bb no" data-b="no"${busy ? ' disabled' : ''}>やめる</button><button type="button" class="bb go" data-b="go" data-n="${pk.n}"${busy ? ' disabled' : ''}>${busy ? '…' : P(pk.cost) + 'で 買う'}</button></div>`;
       else if (ok) h += `<div class="brow" data-n="${pk.n}" data-s="ok">${head}<button type="button" class="bb" data-b="ask" data-n="${pk.n}"${busy ? ' disabled' : ''}>買う</button></div>`;
-      else h += `<div class="brow off" data-n="${pk.n}" data-s="${pk.state}">${head}<span class="bwhy">${pk.state === 'full' ? `${i.max}こを こえる` : 'ポイントが 足りない'}</span></div>`;
+      else h += `<div class="brow off" data-n="${pk.n}" data-s="${pk.state}">${head}<span class="bwhy">${pk.state === 'full' ? `${i.max}個を 超える` : 'ポイントが 足りない'}</span></div>`;
     });
-    h += `<p class="bnote">・持てるのは <b>${i.max}こ</b>まで。いまは あと <b>${i.room}こ</b> 買えるよ</p>`
+    h += `<p class="bnote">・持てるのは <b>${i.max}個</b>まで。今は あと <b>${i.room}個</b> 買えるよ</p>`
       + `<p class="bnote">・時間でも たまるよ（<b>${i.every}分ごとに ${i.step}つ</b>）</p>`
-      + `<p class="bnote">・ごはん・おそうじの あとの <b>PUSH</b> で 使うよ</p>`
-      + `<p class="bnote">・買った トークンは ポイントに もどせないよ</p>`
+      + `<p class="bnote">・ご飯・お掃除の 後の <b>PUSH</b> で 使うよ</p>`
+      + `<p class="bnote">・買った トークンは ポイントに 戻せないよ</p>`
       + `<button type="button" class="bg" data-b="guide">説明書を 見る（当たりの 確率）</button>`;
     root.querySelector('.bbd').innerHTML = h;
   }
@@ -96,7 +96,7 @@ const TCBuy = (() => {
     let r;
     try { r = await api.buy(n); } catch (e) { r = { ok: false, why: 'err' }; }
     busy = false; conf = 0;
-    note = r && r.ok ? { t: `✅ お世話トークン ${r.n}こ 買ったよ！（${P(r.cost)}）` } : { ng: true, t: WHY(r || {}, api.info()) };
+    note = r && r.ok ? { t: `✅ お世話トークン ${r.n}個 買ったよ！（${P(r.cost)}）` } : { ng: true, t: WHY(r || {}, api.info()) };
     paint();
   }
   function open(el, a) {

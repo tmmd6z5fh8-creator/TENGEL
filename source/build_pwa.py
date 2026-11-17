@@ -74,7 +74,7 @@ APP_HEAD = (APP_CSP + '<style>body{touch-action:manipulation}#gate{position:fixe
             if TARGET == 'app' else '')
 # App Store版だけ：買い目の組と判定（reserve.js）・買い目カスタムの%（custom_rate.js）。画面（src.html）より先に読む
 APP_LIBS = ('\n<script>\n' + open('reserve.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('custom_rate.js', encoding='utf8').read() + '\n</script>') if TARGET == 'app' else ''
-APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="はじめに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
+APP_BODY = '<div id="gate" role="dialog" aria-modal="true" aria-label="初めに">テンゲル<em>Ⅲ</em></div>\n' if TARGET == 'app' else ''
 # テスト版だけ（第4.169版：まさちゃん 11/14「テスト版のみに全てをリセットできる機能つけて！」）：ぜんぶ リセット（reset_all.js）。
 #   <head> の どの スクリプトより 先に 入れる（開き直した ときに、ほかの コードが 保存場所を 読む 前に 消す）。App Store版・Web版には 1文字も 入らない
 RESET_HEAD = ('<script>\n' + open('reset_all.js', encoding='utf8').read() + '\n</script>\n') if TEST else ''

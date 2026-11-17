@@ -94,7 +94,7 @@ try:
     check(not lack and not lackd and 'login_bonus.js' in open(os.path.join(W, 'kisekae', 'build_fonts.py'), encoding='utf8').read() and not (set(_bf.body_chars()) - body),
           f'画面の 言葉は しぼった 字（本文 {len(body)}字・見出し {len(disp)}字）に 入って いる 字 だけ（足りない 字 {lack}{lackd}）・字を しぼる 道具（kisekae/build_fonts.py）も login_bonus.js を 見る')
     man = re.sub(r'<[^>]+>', '', open(os.path.join(W, 'manual', 'content_app.html'), encoding='utf8').read())      # タグを とった 文
-    check('ログインボーナス' in man and all(f'{i + 1}日目 {BONUS[i]:,}P' in man for i in range(7)) and '7日でひとまわり' in man.replace(' ', ''),
+    check('ログインボーナス' in man and all(f'{i + 1}日目 {BONUS[i]:,}P' in man for i in range(7)) and '7日で一回り' in man.replace(' ', ''),
           '説明書（ポイントの もらい方）に ログインボーナスの 行（1日目 200P 〜 7日目 1,300P・7日で ひとまわり）')
     pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read()
     check("/^(rel-)?back-(theme|fig):|^login-/.test(String(e.id)) ? '' : 'ミッション：'" in pu, 'ポイントの 履歴：ログインボーナスには「ミッション：」を つけない（第4.176版から 思い出フィギュアの 返した ぶんも）')

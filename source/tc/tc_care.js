@@ -322,17 +322,17 @@ const TCCare = (() => {
   //   ＝当たりの ＋5 が 上限（25）で むだに ならない。待って いる 間に「撫でる」を 押した・なでた ときは お知らせ（3秒に 1回 まで）
   const lotOK = () => S.stock < RULE.lotStock;
   const lotWaiting = () => S.heart >= RULE.max && !S.lot && !S.busy && S.drainT == null;      // ハート 10こ・抽選は まだ（待って いる）
-  function lotNote(t) { if (t - (S.lotNoteT || -9) < 3) return; S.lotNoteT = t; fx({ k: 'note', t0: t, txt: `トークンが ${RULE.lotStock}こを 切ったら 抽選だよ`, dur: 3.0 }); ev(t, 'wait'); }
+  function lotNote(t) { if (t - (S.lotNoteT || -9) < 3) return; S.lotNoteT = t; fx({ k: 'note', t0: t, txt: `トークンが ${RULE.lotStock}個を 切ったら 抽選だよ`, dur: 3.0 }); ev(t, 'wait'); }
   function petStart(t) {                 // 撫でる 見え方に する（馬が 横向きに なって カメラが 寄る）
     S.mode = 'pet'; BR.careHold = true; S.holdUntil = Infinity;
     if (BR.stand) { BR.reacts = []; S.phase = 'pet'; S.petIdle = t; mark('A', t); mark('R', t); ev(t, 'ready2'); return; }      // 幻の馬・神様馬：正面の まま その場で 撫でる（11/09 09:40 まさちゃん）
     comeNear(t);
   }
   function lotAuto(t) {                  // 待って いた 抽選を 始める（撫でる 見え方に なったら すぐ 抽選：下の pre）
-    S.lotGo = true; fx({ k: 'note', t0: t, txt: 'なかよしハートの 抽選！', dur: 2.6 }); ev(t, 'ready'); petStart(t);
+    S.lotGo = true; fx({ k: 'note', t0: t, txt: '仲良しハートの 抽選！', dur: 2.6 }); ev(t, 'ready'); petStart(t);
   }
   function haveToken(t, k) {
-    if (S.stock < 1) { fx({ k: 'tagUI', t0: t, x: BTN[k][0], y: BTN[k][1] - 150, txt: 'お世話トークンが たまるまで まってね', size: 30, dur: 1.8 }); ev(t, 'wait'); return false; }
+    if (S.stock < 1) { fx({ k: 'tagUI', t0: t, x: BTN[k][0], y: BTN[k][1] - 150, txt: 'お世話トークンが たまるまで 待ってね', size: 30, dur: 1.8 }); ev(t, 'wait'); return false; }
     return true;
   }
   function careLottery() {               // お世話の 抽選（見本：ポイントだけ。アプリ：O.lottery() → { k: 'pt', v } ・{ k: 'rt', tier }・{ k: 'tk', n }）
@@ -345,7 +345,7 @@ const TCCare = (() => {
   // 第4.168版：幻の馬・神様馬の 抽選の 上限を つかい切った（O.drawLeft() が 0）→ 馬は すぐ 帰る（tc_app.js）。その 間は ごはん・おそうじを 始めない
   //   （「まとめて 使う」で つづけて 押した 指が、PUSH が 消えた あと 下の「おそうじ」に 当たって、帰る 前に おそうじが 始まる ことが ない ように）
   const drawOut = () => !!(O.drawLeft && O.drawLeft() < 1);
-  function drawOutTag(t) { if (t - (S.drawOutT == null ? -9 : S.drawOutT) < 1.2) return; S.drawOutT = t; fx({ k: 'tagUI', t0: t, x: W / 2, y: PUSHG.y - 300, txt: 'この 馬の 抽選は おわったよ', size: 34, dur: 1.6 }); ev(t, 'wait'); }
+  function drawOutTag(t) { if (t - (S.drawOutT == null ? -9 : S.drawOutT) < 1.2) return; S.drawOutT = t; fx({ k: 'tagUI', t0: t, x: W / 2, y: PUSHG.y - 300, txt: 'この 馬の 抽選は 終わったよ', size: 34, dur: 1.6 }); ev(t, 'wait'); }
   function pressFeed(t) {
     if (pushLive()) { pushWait(t); return; }
     if (drawOut()) { drawOutTag(t); return; }
@@ -434,14 +434,14 @@ const TCCare = (() => {
   }
   function feedAfter(t) {                // 食べた あと：好物・金のニンジン・おかわりの目
     const F = S.feed; let end = t + 0.4;
-    if (F.fav) { at(t + 0.1, tt => { react('happy', 2.6, tt); react('nod', 1.4, tt + 0.3); ev(tt, 'yummy'); tagW(P('poll'), 'だいすき！', tt + 0.1, { off: [30, -100], size: 40, dur: 2.0 });
+    if (F.fav) { at(t + 0.1, tt => { react('happy', 2.6, tt); react('nod', 1.4, tt + 0.3); ev(tt, 'yummy'); tagW(P('poll'), '大好き！', tt + 0.1, { off: [30, -100], size: 40, dur: 2.0 });
       for (let k = 0; k < 5; k++) at(tt + 0.2 + k * 0.3, t2 => { const p = P('poll'); if (p) fx({ k: 'mini', t0: t2, w: [p[0] + (hash(t2 * 3) - 0.5) * 120, p[1] - 10], r: 22, dx: (hash(t2 * 7) - 0.5) * 70 }); ev(t2, 'heartpop'); }); }); end = t + 2.8; }
     if (F.gold) {                       // なかよし +3
       for (let k = 0; k < 3; k++) at(t + 0.3 + k * 0.3, tt => {
         const q = toS(F.itemW || itemPos()), i = Math.min(S.heart, RULE.max - 1); fx({ k: 'fly', t0: tt, x: q[0], y: q[1], i, dur: 0.8 }); ev(tt, 'heart'); S.heart = Math.min(RULE.max, S.heart + 1);
         at(tt + 0.8, t2 => { S.heartShow = Math.max(S.heartShow, i + 1); ev(t2, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: t2, x: SLOT(i)[0], y: SLOT(i)[1] }); });
       });
-      at(t + 0.3, tt => tagW(P('poll'), 'なかよし +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
+      at(t + 0.3, tt => tagW(P('poll'), '仲良し +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
       end = Math.max(end, t + 2.2);
     }
     const beg = S.demo && S.demo.beg != null ? S.demo.beg : T1('beg', () => rnd() < 1 / 4);
@@ -490,7 +490,7 @@ const TCCare = (() => {
     const tg = cleanTargets();
     if (!tg.length) {                    // 片付ける ものが ない：できない（トークンは 使わない）
       const m = S.trashIn > 0 ? Math.ceil(S.trashIn / 60) : 0;
-      fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら おそうじ できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
+      fx({ k: 'tagUI', t0: t, x: BTN.clean[0] - 30, y: BTN.clean[1] - 150, txt: m ? `ゴミは あと ${m}分で 出るよ` : 'ゴミが 出たら お掃除 できるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); return;
     }
     if (askOn()) { askOpen(t, 'clean'); return; }      // 第4.175版：先に「抽選を する／しない」
     S.withLot = true; cleanGo(t);
@@ -723,14 +723,14 @@ const TCCare = (() => {
       g.save(); g.translate(G.tok[0], G.tok[1]); g.scale(pop, pop); panel(-G.tw / 2, -G.th / 2, G.tw, G.th, 20);
       label('お世話トークン', 0, -30, 27, '#7a4520');
       const bq = hv >= 0 && hv < 0.4 ? 1 + 0.16 * Math.sin(Math.PI * hv / 0.4) : 1;
-      label('のこり', -62, 22, 28, '#9a7a55'); g.save(); g.translate(34, 20); g.scale(bq, bq); label(String(S.stock), 0, 0, 52, '#3f7f3a', '#fff8ec', 6); g.restore(); label('こ', 96, 24, 26, '#9a7a55');
+      label('残り', -62, 22, 28, '#9a7a55'); g.save(); g.translate(34, 20); g.scale(bq, bq); label(String(S.stock), 0, 0, 52, '#3f7f3a', '#fff8ec', 6); g.restore(); label('こ', 96, 24, 26, '#9a7a55');
       g.restore();
       // 右：1個 使う／まとめて 使う の スイッチ（えらんで いる 方が 金色）
       const mq = t - Pn.modeT, mp = mq >= 0 && mq < 0.3 ? 1 + 0.08 * Math.sin(Math.PI * mq / 0.3) : 1;
       chip(G.m1, G.mw, G.mh, '1個 使う', !S.bulk, 36, pop * (!S.bulk ? mp : 1));
       chip(G.mn, G.mw, G.mh, 'まとめて 使う', S.bulk, 36, pop * (S.bulk ? mp : 1));
       // おわる（まとめてで 1回 以上 押した あと）
-      if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, 'おわる', false, 36, pop, true);
+      if (S.bulk && Pn.n >= 1) chip(G.end, G.ew, G.eh, '終わる', false, 36, pop, true);
       // 左下：お世話チャレンジ（玉を 落とす 台）の 入口：台の 小さい 絵 ＋ 名前
       if (dropOk()) {
         const dq = t - (S.press.dp == null ? -9 : S.press.dp), ds = pop * (dq >= 0 && dq < 0.22 ? 0.95 : 1) * (1 + 0.012 * Math.sin(TAU * 0.6 * uq)), w = G.dpw, h = G.dph, k = 22;
@@ -856,7 +856,7 @@ const TCCare = (() => {
     // なかよしハート（1分に 5こまで）
     if (full) {                          // もう 10こ：トークンが 20こ未満なら 抽選・20こ以上なら 待ち（お知らせ）
       if (willLot) { S.busy = true; at(Math.max(t + 1.45, end - 0.15), lottery); } else at(t + 0.5, lotNote);
-    } else if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5こまで', dur: 2.6 }); ev(tt, 'nope'); }); }
+    } else if (!getHeart) { at(t + 0.5, tt => { fx({ k: 'note', t0: tt, txt: 'ハートは 1分に 5個まで', dur: 2.6 }); ev(tt, 'nope'); }); }
     else {
       S.got.push(t); const i = Math.min(S.heart, RULE.max - 1), q = toS([x, y - 24]);
       fx({ k: 'fly', t0: t + 0.15, x: q[0], y: q[1], i, dur: 0.8 }); ev(t + 0.15, 'heart');
@@ -960,39 +960,39 @@ const TCCare = (() => {
   const PET3 = (A, B, ds, dr, u0) => { u0 = u0 || 0.25; const st = strokes(u0 + 0.7, A, B, 3, ds || 0.58, dr || 0.33), e = st[st.length - 1][1]; return [[u0, u0 + 0.7, 'awayR', A, false], ...st, [e + 0.1, e + 1.0, B, 'awayR', false]]; };
   const DEMOS = {
     // ① 撫でる の 流れ・④ 朝（ボタン → 手前へ → ズーム → 撫でる → もどる → 7秒）
-    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと その場で 横向きに なるよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 なでると なかよしハート +1'], ['Z-0.2', 'Z+4.4', 'つづけて 5回まで → 5回 なでたら 7秒 おやすみ']],
+    pet_a: { press: [[1.0, 'pet'], ['Z+1.4', 'pet']], cap: [[0.2, 'A+0.3', '「撫でる」を押すと その場で 横向きに なるよ'], ['A+0.3', 'R+3.0', '近くで ズーム → 指で なぞってね'], ['R+3.0', 'Z-0.2', '3回 撫でると 仲良しハート +1'], ['Z-0.2', 'Z+4.4', '続けて 5回まで → 5回 撫でたら 7秒 お休み']],
       path: [[0.25, 0.95, 'awayR', 'neckA', false], [0.95, 2.3, 'neckA', 'neckA', true], ...strokes(2.3, 'neckA', 'neckB', 3, 0.6, 0.34), [4.3, 5.3, 'neckB', 'awayR', false]], greeted: false, end: 'Z+4.6' },
     // ② 体の 場所（はじめから 手前・ズーム）
-    pet_b: { front: 1, heart: 1, got: [-20], greeted: true, cap: [[0.2, 'R+5.6', '頭を なでると → すりすり']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.8' },
-    pet_d: { front: 1, heart: 2, got: [-25, -14], greeted: true, cap: [[0.2, 'R+8.0', '背中を なでると → ぐーっと のび']], path: PET3('backA', 'backB', 0.6, 0.34), end: 'R+8.2' },
-    pet_e: { front: 1, heart: 3, got: [-30, -20, -10], greeted: true, cap: [[0.2, 'R+5.0', '鼻を なでると → ぷしゅっ']], path: PET3('noseA', 'noseB', 0.5, 0.3), end: 'R+5.2' },
+    pet_b: { front: 1, heart: 1, got: [-20], greeted: true, cap: [[0.2, 'R+5.6', '頭を 撫でると → すりすり']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.8' },
+    pet_d: { front: 1, heart: 2, got: [-25, -14], greeted: true, cap: [[0.2, 'R+8.0', '背中を 撫でると → ぐーっと 伸び']], path: PET3('backA', 'backB', 0.6, 0.34), end: 'R+8.2' },
+    pet_e: { front: 1, heart: 3, got: [-30, -20, -10], greeted: true, cap: [[0.2, 'R+5.0', '鼻を 撫でると → ぷしゅっ']], path: PET3('noseA', 'noseB', 0.5, 0.3), end: 'R+5.2' },
     // ハートは 1分に 5こまで
-    pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5こまで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
+    pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5個まで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
     // なかよしハート 10こ → 抽選
-    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
-    pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10こに なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
+    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
+    pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
     // ④ 時間帯・⑤ 育ち・たまに
-    pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり よりかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
+    pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり 寄りかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
     pet_j: { front: 1, heart: 3, got: [-30, -15], greeted: true, cap: [[0.2, 'R+8.2', '夜は あくび']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+8.4' },
-    pet_k: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+7.2', '小さい ころは はしゃぐ']], path: PET3('neckA', 'neckB', 0.5, 0.3), end: 'R+7.4' },
+    pet_k: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+7.2', '小さい 頃は はしゃぐ']], path: PET3('neckA', 'neckB', 0.5, 0.3), end: 'R+7.4' },
     pet_l: { front: 1, heart: 2, got: [-30, -15], greeted: true, rare: true, cap: [[0.2, 'R+5.4', 'たまに（1/20）首を かしげる']], path: PET3('headA', 'headB', 0.55, 0.32), end: 'R+5.6' },
     // 呼ぶ
     call_a: { press: [[0.9, 'call', 'come']], cap: [[0.2, 'Z+0.4', '呼ぶ：近づいて くる']], end: 'Z+0.6' },
     call_b: { press: [[0.9, 'call', 'turn']], cap: [[0.2, 'Z+0.4', '呼ぶ：振り向く']], end: 'Z+0.6' },
     call_c: { press: [[0.9, 'call', 'amae']], cap: [[0.2, 'Z+0.4', '呼ぶ：甘える']], end: 'Z+0.6' },
     // ごはん（エサ・リンゴ・ニンジン）
-    feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ごはん：エサ・リンゴ・ニンジンから えらぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で からっぽ）']], end: 'Z+0.6' },
-    feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大よろこび'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      // 第4.159版：当たりは PUSH を 押した とき
+    feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ご飯：エサ・リンゴ・ニンジンから 選ぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で 空っぽ）']], end: 'Z+0.6' },
+    feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大喜び'], ['Z+0.1', 'Z+1.3', 'お世話の 後に PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      // 第4.159版：当たりは PUSH を 押した とき
     feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true,      // 第4.168版：おかわりの目は 見た目 だけ（なでる 手の 見本は なくした）
-      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → なかよし +3'], ['B-0.2', 'Z+0.6', 'ときどき おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
+      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → 仲良し +3'], ['B-0.2', 'Z+0.6', '時々 おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
     ban_k: { rt: [6.4, 6.7], cap: [], end: 10.6 },          // 神様馬の フィールド：降臨の バナー → 当選で ルーレット → 消える → もどる
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
     // おそうじ
     clean_a: { poop: [770, 1240, 0], nibble: true, pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
-      cap: [[0.2, 'C+0.5', 'おそうじ：うんちを ほうきで はく'], ['C+0.5', 'C+3.5', 'ちりとりへ はき入れる（ときどき かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
+      cap: [[0.2, 'C+0.5', 'お掃除：うんちを ほうきで 掃く'], ['C+0.5', 'C+3.5', 'ちりとりへ 掃き入れる（時々 かじられる）'], ['C+3.5', 'Z2+0.2', 'きれいに なると くんくん しに 来る']], end: 'Z2+0.4' },
     clean_b: { pt: 200, trash: [[300, 1010], [760, 980], [520, 1160], [250, 1290], [800, 1300]], press: [[0.8, 'clean'], ['Z+1.3', 'push']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 5, 0.5, 0.36)],
-      cap: [[0.2, 'C+4.6', '15分ごとに ゴミが 5か所に 散らばる → ちりとりへ はき入れる'], ['C+4.6', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+1.3', 'お世話の あとに PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → デデーン']], end: 'Z+3.6' },
+      cap: [[0.2, 'C+4.6', '15分ごとに ゴミが 5か所に 散らばる → ちりとりへ 掃き入れる'], ['C+4.6', 'Z+0.1', 'きれい！'], ['Z+0.1', 'Z+1.3', 'お世話の 後に PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → デデーン']], end: 'Z+3.6' },
     guide: { press: [[0.8, 'help']], guideEnd: 15.8, cap: [], end: 16.8 },
     clean_c: { poop: [700, 1250, 2, true], pt: null, press: [[0.8, 'clean']], pathBase: 'C', path: [[0.15, 0.6, 'brA', 'brA', false], ...strokes(0.6, 'brA', 'brB', 3, 0.5, 0.36)],
       cap: [[0.2, 'C+3.4', '金のうんち（うんちの 1/20）'], ['C+3.4', 'Z2+0.2', '運がついた！ 高確ゾーン（お世話 5回）']], end: 'Z2+0.4' },
@@ -1241,7 +1241,7 @@ const TCCare = (() => {
       g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
       g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
       g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
-      label('← もどる', 0, 1, 32, '#7a4520');
+      label('← 戻る', 0, 1, 32, '#7a4520');
       g.restore(); }
   }
 
@@ -1251,7 +1251,7 @@ const TCCare = (() => {
     const pv = A.pickT != null ? (t - A.pickT) / 0.25 : 0;
     if (pv >= 1) { if (S.askOut === A) S.askOut = null; return; }
     const G = ASKG, none = S.stock < 1;
-    [['y', '抽選を する', none ? 'お世話トークンが ないよ' : `トークン のこり ${S.stock}こ`, -1], ['n', '抽選を しない', 'お世話 だけ（トークン そのまま）', 1]].forEach(([kd, main, sub, sx], i) => {
+    [['y', '抽選を する', none ? 'お世話トークンが ないよ' : `トークン 残り ${S.stock}個`, -1], ['n', '抽選を しない', 'お世話 だけ（トークン そのまま）', 1]].forEach(([kd, main, sub, sx], i) => {
       const v = (t - A.t0 - i * 0.06) / 0.3; if (v <= 0) return;
       const picked = A.pick === kd, s = backOut(v) * (picked ? 1 + 0.07 * Math.sin(Math.PI * clamp(pv, 0, 1)) : 1) * (S.uiDown === 'ask:' + kd ? 0.96 : 1), a = (A.pick ? 1 - sm(picked ? (pv - 0.35) / 0.65 : pv / 0.6) : 1) * (kd === 'y' && none ? 0.55 : 1);
       if (s <= 0.01 || a <= 0.01) return;
@@ -1267,13 +1267,13 @@ const TCCare = (() => {
       label(sub, 0, 48, 26, gold ? '#7a4a12' : '#9a7a55');
       g.restore();
     });
-    const v = (t - A.t0) / 0.3; if (v > 0 && !A.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const ttl = 'お世話の あとの 抽選は？', w = g.measureText(ttl).width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 + 60 - w / 2, 1080, w, 58, 29); g.fill(); label(ttl, W / 2 + 60, 1110, 34, '#fff8ea');
+    const v = (t - A.t0) / 0.3; if (v > 0 && !A.pick) { g.save(); g.globalAlpha *= sm(v); g.font = `700 34px ${FONT}`; const ttl = 'お世話の 後の 抽選は？', w = g.measureText(ttl).width + 50; g.fillStyle = 'rgba(40,24,10,0.6)'; g.beginPath(); g.roundRect(W / 2 + 60 - w / 2, 1080, w, 58, 29); g.fill(); label(ttl, W / 2 + 60, 1110, 34, '#fff8ea');
       const B = CHBACK, dn = S.uiDown === 'askback' ? 0.95 : 1;      // 「← もどる」（えらぶ 札と 同じ 所・同じ 形）
       g.translate(B.x, B.y); g.scale(dn, dn);
       g.fillStyle = 'rgba(40,20,5,0.25)'; g.beginPath(); g.roundRect(-B.w / 2 + 3, -B.h / 2 + 5, B.w, B.h, B.h / 2); g.fill();
       g.fillStyle = '#fff8ec'; g.beginPath(); g.roundRect(-B.w / 2, -B.h / 2, B.w, B.h, B.h / 2); g.fill();
       g.strokeStyle = '#d9b77c'; g.lineWidth = 4; g.beginPath(); g.roundRect(-B.w / 2 + 2, -B.h / 2 + 2, B.w - 4, B.h - 4, B.h / 2 - 2); g.stroke();
-      label('← もどる', 0, 1, 32, '#7a4520');
+      label('← 戻る', 0, 1, 32, '#7a4520');
       g.restore(); }
   }
 
@@ -1472,7 +1472,7 @@ const TCCare = (() => {
           const w = cv.width, h = cv.height; if (!w || !h) return;
           const a = ctx.getImageData(0, 0, w, h).data, b = chk.q.getImageData(0, 0, w, h).data; let df = 0, mx = 0;
           for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) { df++; const e = Math.abs(a[j] - b[j]); if (e > mx) mx = e; }
-          chk.cmp++; if (df) bad('絵が ちがう（' + (skip ? '描かなかった コマ' : '描いた コマ') + '）：' + df + ' こ・いちばん 大きい 差 ' + mx + '・コマ ' + chk.n);
+          chk.cmp++; if (df) bad('絵が 違う（' + (skip ? '描かなかった コマ' : '描いた コマ') + '）：' + df + ' こ・一番 大きい 差 ' + mx + '・コマ ' + chk.n);
         } };
       if (base) { chk.size(base); nA = -1; base = null; }      // つぎの コマで はじめから（2まいの 紙を そろえる）
     };
@@ -1562,7 +1562,7 @@ const TCCare = (() => {
   // 第4.165版：「お世話トークン購入」を 押した → アプリが 購入の 窓を 開く（O.onBuy）。開けない とき（お世話の 途中 など：false が 返る）は 札で 知らせる
   function pressBuy(t) {
     S.press.buy = t; ev(t, 'button');
-    if (O.onBuy && O.onBuy() === false) { fx({ k: 'tagUI', t0: t, x: 800, y: BUYG.y - 150, txt: 'お世話が おわってから 買えるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); }
+    if (O.onBuy && O.onBuy() === false) { fx({ k: 'tagUI', t0: t, x: 800, y: BUYG.y - 150, txt: 'お世話が 終わってから 買えるよ', size: 30, dur: 1.8 }); ev(t, 'wait'); }
   }
   function press(t, what) {
     if (what === 'pet') pressPet(t); else if (what === 'feed') pressFeed(t); else if (what === 'clean') pressClean(t); else if (what === 'call') pressCall(t);
@@ -1658,7 +1658,7 @@ const TCCare = (() => {
     panel(gx, gy, gw, gh, 24);
     const pulse = S.lot ? 1 + 0.06 * Math.sin(TAU * 0.9 * (t - S.lot.t0)) * (1 - sm((t - S.lot.t0 - 2.2) / 0.6)) : 1;
     heart(gx + 62, gy + gh / 2 + 4, 36 * pulse, -0.06, 1);
-    label('なかよし', gx + 128, gy + 36, 32, '#7a4520', null, 0, 'left');
+    label('仲良し', gx + 128, gy + 36, 32, '#7a4520', null, 0, 'left');
     label(lotWaiting() && S.heartShow >= RULE.max ? `抽選まち ${S.heartShow}/10` : `${S.heartShow}/10`, gx + gw - 30, gy + 36, 32, '#c2456f', null, 0, 'right');      // 第4.159版：ハート 10こ・抽選は まだ（トークンが 20こ以上／20こを 切ったが PUSH などが まだ 出て いる）
     const dr = S.drainT != null ? t - S.drainT : -1;
     for (let i = 0; i < RULE.max; i++) {
@@ -1707,7 +1707,7 @@ const TCCare = (() => {
     // 下の ボタン（絵は かり）。第4.159版：お世話の あとの PUSH が 出て いる 間は かくす（その 所に PUSH が 出る・押せない ボタンを 見せない）
     const pk = pushK(t); if (pk > 0.99) return;
     g.save(); g.globalAlpha *= 1 - pk;
-    const items = [['pet', '撫でる'], ['feed', 'ごはん'], ['clean', 'おそうじ'], ['call', '呼ぶ']];
+    const items = [['pet', '撫でる'], ['feed', 'ご飯'], ['clean', 'お掃除'], ['call', '呼ぶ']];
     items.forEach(([k, txt]) => {
       const [x, y] = BTN[k], r = BTN_R, pq = S.press[k] != null ? (t - S.press[k]) / 0.35 : 9, ps = pq < 1 ? 1 - 0.1 * Math.sin(Math.PI * pq) : 1;
       g.save(); g.translate(x, y); g.scale(ps, ps); g.translate(-x, -y);
