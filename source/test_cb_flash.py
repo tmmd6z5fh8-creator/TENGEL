@@ -11,6 +11,8 @@
 #     セットした カードは 自分の 画面でも うら（ふせて セット：うらで とんで、うら ＋ しるしで 置く）
 #   第4.189版：5つ目＝カードパック（ふつう・動きを へらす の 2回）：タブの パックの 絵（光の すじ：pk_tab）→「開ける」→ パックが 出る（pk_pack）→ タップ → 上が 切れて とぶ → 5まい 出る → ノーマル 4まいを めくる → くじが ゆっくり ひかる（pk_open）→
 #     くじを めくる：神様馬の 超レア（光の すじ・光が ひろがる：pk_rev_gsr）／もう 1パック：レア（pk_rev_r）
+#   第4.189版：時計を 進める ときに、CSS から 消えた 動き（idle：animation: none に した・transition が とりけされた）の 時刻を 入れない（入れると その 動きが 生きかえって、
+#     うしろの 動きを 上書きする：パックが 消えずに のこって 写って いた）。前の 場面も この 形で 数え直した
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -43,7 +45,7 @@ STEP = """async (dt) => {
   for (let i = 0; i < 40; i++) await null;
   const now = T.now, ov = document.getElementById('cbOv'), V = window.__cbv || (window.__cbv = { track: [], seen: new WeakSet() });
   ov.getAnimations({ subtree: true }).forEach(a => { if (V.seen.has(a)) return; V.seen.add(a); try { a.pause(); } catch (e) { } V.track.push({ a, at: now }); });
-  V.track = V.track.filter(o => { try { o.a.currentTime = Math.max(0, now - o.at); return true; } catch (e) { return false; } });
+  V.track = V.track.filter(o => { try { if (o.a.playState === 'idle') return false; o.a.currentTime = Math.max(0, now - o.at); return true; } catch (e) { return false; } });      // 第4.189版：CSS から 消えた 動き（animation: none・transition の とりけし）は 生きかえらせない
   return V.track.length; }"""
 OPP = """a => { const m = CBApp._t.match, S = m._.state(), h = S.p[1].hand, b = Object.assign({}, a); if (b.k != null) { b.u = h.find(x => x.k === String(b.k)).u; delete b.k; } return m._.apply(1, b); }"""
 
