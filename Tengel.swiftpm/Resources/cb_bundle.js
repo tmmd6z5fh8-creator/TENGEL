@@ -865,6 +865,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -886,10 +893,22 @@ const CBApp = (() => {
   const NAMES = { k: '神様馬', m: '幻の馬' };
   const nameOf = k => NAMES[k] || String(k);
   
-  const FACE_COST = 300, TOP_COST = 500, BACK_COST = 300;      
+  
+  const BACK_COST = 300;      
   const FACES = [['k', 'ka', '朱の鳥居'], ['k', 'kb', '天空の神殿'], ['m', 'ma', '三日月の幻'], ['m', 'mb', '紅い雷'], ['1', '1a', '炎の輪'], ['1', '1b', '赤銅の鎧'], ['2', '2a', '月夜の黒馬'], ['2', '2b', '銀の鎧'],
-    ['3', '3a', '水晶の間'], ['3', '3b', '星の遺跡'], ['4', '4a', '雷の城'], ['4', '4b', '青の広間'], ['5', '5a', '炎の城'], ['5', '5b', '琥珀の洞窟'], ['6', '6a', '赤の書庫'], ['6', '6b', '紅玉の天文台'], ['7', '7a', '疾風の草原'], ['7', '7b', '翡翠の馬']]      
-    .map(([k, id, name]) => ({ k: k, id: id, name: name, c: `cb_fc_${id}_c.webp`, s: `cb_fc_${id}_s.webp`, cost: k === 'k' || k === 'm' ? TOP_COST : FACE_COST }));
+    ['3', '3a', '水晶の間'], ['3', '3b', '星の遺跡'], ['4', '4a', '雷の城'], ['4', '4b', '青の広間'], ['5', '5a', '炎の城'], ['5', '5b', '琥珀の洞窟'], ['6', '6a', '赤の書庫'], ['6', '6b', '紅玉の天文台'], ['7', '7a', '疾風の草原'], ['7', '7b', '翡翠の馬'],      
+    
+    ['k', 'kr', '聖光の神馬', 'r'], ['m', 'mr', '紫の水鏡', 'r'], ['1', '1r', '暁の凱旋門', 'r'], ['2', '2r', '黒き日食', 'r'], ['3', '3r', '碧水の森', 'r'], ['4', '4r', '蒼晶の跳躍', 'r'], ['5', '5r', '金色の大橋', 'r'], ['6', '6r', '紅き満月', 'r'], ['7', '7r', '翠玉の輝き', 'r'],
+    ['k', 'ksr', '白金の聖殿', 'sr'], ['m', 'msr', '紫電の魔城', 'sr'], ['1', '1sr', '真紅の宮廷', 'sr'], ['2', '2sr', '黒曜の大階段', 'sr'], ['3', '3sr', '碧玉の温室', 'sr'], ['4', '4sr', '月光のテラス', 'sr'], ['5', '5sr', '黄金の宝殿', 'sr'], ['6', '6sr', '雲上の図書館', 'sr'], ['7', '7sr', '天空の楽園', 'sr']]
+    .map(([k, id, name, r]) => ({ k: k, id: id, name: name, r: r || 'n', c: `cb_fc_${id}_c.webp`, s: `cb_fc_${id}_s.webp` }));
+  
+  
+  
+  
+  const PACK = { cost: 112, size: 5, lot: 230, ranges: [['n', 0, 68], ['r', 69, 160], ['gr', 161, 183], ['sr', 184, 219], ['gsr', 220, 229]] };
+  const GROUP = { n: 'ノーマル', r: 'レア（1〜7）', gr: '神様馬・幻の馬の レア', sr: '超レア（1〜7）', gsr: '神様馬・幻の馬の 超レア' };
+  const RAR = { n: 'ノーマル', r: 'レア', sr: '超レア' }, RARS = { n: 'N', r: 'R', sr: 'SR' };
+  const PKH_MAX = 100;      
   const BACKS = [['sky', '天馬の光'], ['star', '星座の馬'], ['ice', '氷の結晶'], ['wa', '和の墨絵'], ['ori', '折り紙の馬'], ['crown', '王冠の紋章'], ['heart', 'ハートの2頭']]
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
   
@@ -924,7 +943,7 @@ const CBApp = (() => {
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [] });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0 });
   let lostStake = 0;                                   
   let lostMs = '';                                     
   let giftGot = 0, giftFull = false;                   
@@ -949,6 +968,10 @@ const CBApp = (() => {
     const fc = {}, f0 = st.face && typeof st.face === 'object' ? st.face : {};
     DZ_KINDS.forEach(k => { const id = f0[k]; if (st.faces.indexOf(id) >= 0 && FACES.some(f => f.id === id && f.k === k)) fc[k] = id; });
     st.face = fc;
+    
+    st.pkh = Array.isArray(st.pkh) ? st.pkh.filter(h => h && typeof h.id === 'string' && Array.isArray(h.cards) && h.cards.length === PACK.size && h.cards.every(id => fids.indexOf(id) >= 0) && PACK.ranges.some(t => t[0] === h.g))
+      .map(h => ({ id: h.id, t: Math.floor(+h.t || 0), g: h.g, k: Math.floor(+h.k || 0), cards: h.cards.slice(), nw: Array.isArray(h.nw) ? h.cards.map((x, i) => !!h.nw[i]) : h.cards.map(() => false), v: !!h.v })).slice(-PKH_MAX) : [];
+    st.packs = Math.max(st.pkh.length, Math.min(1e9, Math.floor(+st.packs || 0)));
     const dids = BOARDS.map(d => d.id);                
     st.boards = Array.isArray(st.boards) ? st.boards.filter((x, i, a) => dids.indexOf(x) >= 0 && a.indexOf(x) === i) : [];
     st.board = st.boards.indexOf(st.board) >= 0 ? st.board : '';
@@ -978,6 +1001,8 @@ const CBApp = (() => {
   }
   const addCoin = n => { st.coin = Math.max(0, Math.min(COIN.max, st.coin + Math.floor(+n || 0))); };
   function save() { try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) {   } }
+  
+  function saveOk() { try { const s = JSON.stringify(st); localStorage.setItem(SK, s); return localStorage.getItem(SK) === s; } catch (e) { return false; } }      
   
   function msRoll() {
     const k = monthKey(); if (st.ms.m === k) return false;
@@ -1375,6 +1400,101 @@ const CBApp = (() => {
 #cbOv .cbmod .big.bd{width:min(calc(100vw - 32px),calc((100vh - 300px) * 1.777),420px);aspect-ratio:1672/941;border-radius:10px;overflow:hidden}
 #cbOv .cbmod .big.bd.sm{width:min(64vw,calc((100vh - 400px) * 1.777),260px)}
 #cbOv .cbmod .cbneed{font-size:12.5px;color:#ffb38a;text-align:center}
+/* 第4.189版：カードパック（デザインカスタムの タブ・パックの 絵・開ける 画面・レア度の しるし）*/
+#cbOv .cbdz .tabs button{font-size:min(14px,3.6vw)}
+#cbOv .rr{display:inline-block;padding:1px 7px;border-radius:999px;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;line-height:1.45;white-space:nowrap}
+#cbOv .rr.k-n{background:#3b4356;color:#dfe6f3;box-shadow:0 0 0 1px rgba(223,230,243,.35) inset}
+#cbOv .rr.k-r{background:linear-gradient(120deg,#bfe6ff,#d6c8ff 50%,#ffd6f2);color:#1d2340}
+#cbOv .rr.k-sr{background:linear-gradient(180deg,#fff3c4,#ffd76a 45%,#e2a83e);color:#3a2206;box-shadow:0 0 6px rgba(255,210,90,.55)}
+#cbOv .dzt{position:relative}
+#cbOv .dzt>.rr{position:absolute;left:3px;top:3px;font-size:10px;padding:0 6px;z-index:1;box-shadow:0 0 0 1.5px rgba(20,12,6,.9),0 2px 4px rgba(0,0,0,.5)}
+#cbOv .dzt.r-r:not(.lk)>img{filter:drop-shadow(0 0 5px rgba(190,220,255,.7)) drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+#cbOv .dzt.r-sr:not(.lk)>img{filter:drop-shadow(0 0 6px rgba(255,214,110,.85)) drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+#cbOv .cbmod .cbneed.pk{color:#f3e2b8}
+#cbOv .pkbox{display:flex;flex-direction:column;align-items:center;gap:9px;margin:12px 0 2px;padding:16px 12px 14px;border-radius:16px;border:1.5px solid rgba(255,214,120,.35);background:radial-gradient(110% 80% at 50% 18%,rgba(126,74,196,.3),rgba(20,12,30,0) 70%),rgba(255,236,190,.05)}
+#cbOv .pkbox .cbb{width:min(100%,300px)}
+#cbOv .pkbox .cbneed{margin:-2px 0 0;font-size:12.5px;line-height:1.55;color:#ffb38a;text-align:center}
+#cbOv .pkc0{margin:2px 0 0;font-size:14px;color:#f3e2b8}
+#cbOv .pkc0 b{color:#ffe07a;font-size:17px}
+#cbOv .pkc0 .cbci{width:1.25em;height:1.25em;vertical-align:-.3em}
+#cbOv .pkc1{margin:-4px 0 2px;font-size:12.5px;color:#d9c08c}
+#cbOv .pkun{display:flex;align-items:center;gap:10px;margin:12px 0 0;padding:10px 12px;border-radius:14px;border:1.5px solid #ff9f4a;background:rgba(255,140,60,.14);font-size:13.5px;font-weight:700;color:#ffe2b8;line-height:1.45}
+#cbOv .pkun span{flex:1 1 auto}#cbOv .pkun .cbb{flex:none;min-height:40px;padding:6px 16px}
+#cbOv .cbdz .pkh3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:22px 2px 2px;font-size:16.5px;color:#ffe9a8}
+#cbOv .cbdz .pkh3 small{font-size:12px;font-weight:400;color:#d9c08c}
+#cbOv .pkhl{display:flex;flex-direction:column;gap:6px}
+#cbOv .pkhi{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:6px 10px;border-radius:12px;border:1.5px solid rgba(255,226,160,.22);background:rgba(255,236,190,.06);color:#f0dfb6;text-align:left}
+#cbOv .pkhi.un{border-color:#ff9f4a;background:rgba(255,140,60,.12)}
+#cbOv .pkhi .w{flex:none;width:6.6em;font-size:12px;color:#d9c08c}
+#cbOv .pkhi .cs{flex:1 1 auto;display:flex;gap:3px;min-width:0}
+#cbOv .pkhi .cs img{width:min(9vw,34px);height:auto;aspect-ratio:2/3}
+#cbOv .pkhi .cs img.r-r{filter:drop-shadow(0 0 3px rgba(190,220,255,.9))}#cbOv .pkhi .cs img.r-sr{filter:drop-shadow(0 0 4px rgba(255,214,110,.95))}
+#cbOv .pkart{--pw:132px;position:relative;flex:none;width:var(--pw);aspect-ratio:600/1110;filter:drop-shadow(0 10px 16px rgba(0,0,0,.6))}
+#cbOv .pkart img{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
+#cbOv .pkart::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(255,246,214,.34) 50%,rgba(255,255,255,0) 60%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:url(cb_pack.webp) 0 0/100% 100% no-repeat;mask:url(cb_pack.webp) 0 0/100% 100% no-repeat;animation:pkshn 5s ease-in-out infinite}
+@keyframes pkshn{0%,58%{background-position:150% 0}100%{background-position:-50% 0}}
+#cbOv .pkart .tp{clip-path:polygon(0 0, 100% 0, 100% 4.5%, 95% 3.9%, 90% 4.5%, 85% 3.9%, 80% 4.5%, 75% 3.9%, 70% 4.5%, 65% 3.9%, 60% 4.5%, 55% 3.9%, 50% 4.5%, 45% 3.9%, 40% 4.5%, 35% 3.9%, 30% 4.5%, 25% 3.9%, 20% 4.5%, 15% 3.9%, 10% 4.5%, 5% 3.9%, 0% 4.5%);-webkit-clip-path:polygon(0 0, 100% 0, 100% 4.5%, 95% 3.9%, 90% 4.5%, 85% 3.9%, 80% 4.5%, 75% 3.9%, 70% 4.5%, 65% 3.9%, 60% 4.5%, 55% 3.9%, 50% 4.5%, 45% 3.9%, 40% 4.5%, 35% 3.9%, 30% 4.5%, 25% 3.9%, 20% 4.5%, 15% 3.9%, 10% 4.5%, 5% 3.9%, 0% 4.5%);transform-origin:96% 4.2%}
+#cbOv .pkart .bd{clip-path:polygon(0% 4.5%, 5% 3.9%, 10% 4.5%, 15% 3.9%, 20% 4.5%, 25% 3.9%, 30% 4.5%, 35% 3.9%, 40% 4.5%, 45% 3.9%, 50% 4.5%, 55% 3.9%, 60% 4.5%, 65% 3.9%, 70% 4.5%, 75% 3.9%, 80% 4.5%, 85% 3.9%, 90% 4.5%, 95% 3.9%, 100% 4.5%, 100% 100%, 0 100%);-webkit-clip-path:polygon(0% 4.5%, 5% 3.9%, 10% 4.5%, 15% 3.9%, 20% 4.5%, 25% 3.9%, 30% 4.5%, 35% 3.9%, 40% 4.5%, 45% 3.9%, 50% 4.5%, 55% 3.9%, 60% 4.5%, 65% 3.9%, 70% 4.5%, 75% 3.9%, 80% 4.5%, 85% 3.9%, 90% 4.5%, 95% 3.9%, 100% 4.5%, 100% 100%, 0 100%)}
+#cbOv .cbmod .pkart.sm{--pw:96px}
+#cbOv .cbmod .pkod{width:min(100%,340px);border-collapse:collapse;font-size:13px;color:#f0dfb6}
+#cbOv .cbmod .pkod caption{font-size:12.5px;color:#d9c08c;padding-bottom:4px}
+#cbOv .cbmod .pkod th,#cbOv .cbmod .pkod td{padding:6px 6px;border-bottom:1px solid rgba(255,226,160,.2);text-align:left;font-weight:700;vertical-align:top}
+#cbOv .cbmod .pkod td{text-align:right;color:#ffe07a;white-space:nowrap}
+#cbOv .cbmod .pkod small{display:block;font-size:11px;color:#d9c08c;font-weight:400}
+#cbOv .cbmod p.sm{font-size:12px;color:#d9c08c}
+#cbOv .cbmod.cbodm{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}#cbOv .cbmod.cbodm>:first-child{margin-top:auto}#cbOv .cbmod.cbodm>:last-child{margin-bottom:auto}
+#cbOv .cbpk{--k:1;align-items:center;background:radial-gradient(90% 55% at 50% 44%,rgba(98,56,160,.42),rgba(0,0,0,0) 72%),#0c0812}
+#cbOv .cbpk .pkhd{flex:none;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#cbOv .cbpk .pkhd b{font-size:22px;letter-spacing:.06em}
+#cbOv .cbpk .pkhd small{font-size:12px;color:#d9c08c}
+#cbOv .cbpk .pkmsg{flex:none;min-height:2.9em;margin:0 16px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;font-size:15px;font-weight:700;line-height:1.45;color:#ffe9a8}
+#cbOv .cbpk .pkst{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+#cbOv .cbpk .pkft{flex:none;width:100%;max-width:340px;box-sizing:border-box;padding:6px 16px 14px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#cbOv .cbpk .pkft>.cbb{width:100%}
+#cbOv .cbpk .pkft .rowb{display:flex;gap:9px;width:100%}#cbOv .cbpk .pkft .rowb .cbb{flex:1 1 0;padding-left:8px;padding-right:8px;font-size:15px}
+#cbOv .cbpk .pkft .rowb .cbb small{display:block;font-size:12px;font-weight:700;opacity:.85}#cbOv .cbpk .pkft .rowb .cbb small .cbci{width:1.2em;height:1.2em;vertical-align:-.28em}
+#cbOv .cbpk .pkft .cbneed{margin:0;font-size:12px;color:#ffb38a;text-align:center;line-height:1.5}
+#cbOv .cbpk .pkart.big{--pw:min(46vw,200px,calc((100vh - 300px) * .44));position:absolute;left:50%;top:50%;margin:calc(var(--pw) * -.925) 0 0 calc(var(--pw) * -.5);cursor:pointer;animation:pkin calc(.5s * var(--k)) cubic-bezier(.2,.9,.3,1.2) both,pkwob calc(2.8s * var(--k)) ease-in-out calc(.7s * var(--k)) infinite;transition:opacity calc(.42s * var(--k)),transform calc(.42s * var(--k))}
+@keyframes pkin{from{opacity:0;transform:translateY(-36px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes pkwob{0%,80%,100%{transform:none}86%{transform:rotate(-2.2deg)}92%{transform:rotate(2deg)}}
+#cbOv .cbpk .pkart.big .tp{transition:transform calc(.38s * var(--k)) cubic-bezier(.45,0,.8,.55),opacity calc(.38s * var(--k)) ease-in}
+#cbOv .cbpk .pkart.big.rip{animation:none}
+#cbOv .cbpk .pkart.big.rip .tp{transform:translate(9%,-8%) rotate(-16deg);opacity:0}
+#cbOv .cbpk .pkart.big.gone{opacity:0;transform:translateY(26px) scale(.86);pointer-events:none}
+#cbOv .cbpk .pkgrid{--cw:min(29vw,128px,calc((100vh - 300px) / 3.1));display:flex;flex-direction:column;align-items:center;gap:16px}
+#cbOv .cbpk .pkgrid .row{display:flex;flex-wrap:nowrap;justify-content:center;align-items:flex-start;gap:12px}
+#cbOv .pkc{position:relative;width:var(--cw);aspect-ratio:2/3;padding:0;border:0;background:none;perspective:800px;opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.42) rotate(-8deg);
+  transition:opacity calc(.3s * var(--k)),transform calc(.56s * var(--k)) cubic-bezier(.2,.85,.25,1);-webkit-tap-highlight-color:transparent}
+#cbOv .cbpk.out .pkc{opacity:1;transform:none}
+#cbOv .pkc .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform calc(.46s * var(--k)) cubic-bezier(.3,.6,.3,1)}
+#cbOv .pkc.up .in{transform:rotateY(180deg)}
+#cbOv .pkc .in img{position:absolute;inset:0;width:100%;height:100%;display:block;backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+#cbOv .pkc .in .fr{transform:rotateY(180deg)}
+#cbOv .pkc .sh{position:absolute;inset:2%;border-radius:6.5% / 4.3%;transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;opacity:0;
+  background:linear-gradient(115deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.55) 48%,rgba(196,232,255,.4) 53%,rgba(255,255,255,0) 63%);background-size:320% 100%;background-position:100% 0}
+#cbOv .pkc.rv .sh{animation:pksw calc(1.2s * var(--k)) ease-in-out 1 both}
+@keyframes pksw{0%{opacity:0;background-position:100% 0}14%{opacity:1}100%{opacity:0;background-position:0 0}}
+#cbOv .pkc .gl{position:absolute;inset:-3px;border-radius:9% / 6%;opacity:0;pointer-events:none}
+#cbOv .pkc.g-r .gl{box-shadow:0 0 14px 4px rgba(170,214,255,.85)}
+#cbOv .pkc.g-gr .gl{box-shadow:0 0 14px 4px rgba(214,176,255,.85),0 0 26px 6px rgba(150,220,255,.4)}
+#cbOv .pkc.g-sr .gl{box-shadow:0 0 16px 5px rgba(255,210,90,.9)}
+#cbOv .pkc.g-gsr .gl{box-shadow:0 0 16px 5px rgba(255,214,110,.92),0 0 30px 8px rgba(255,150,230,.45)}
+#cbOv .cbpk.out .pkc:not(.g-n):not(.up) .gl{animation:pkgl calc(2.4s * var(--k)) ease-in-out infinite alternate}
+@keyframes pkgl{from{opacity:.35}to{opacity:1}}
+#cbOv .pkc.up.r-r .gl,#cbOv .pkc.up.r-sr .gl{opacity:.75}
+#cbOv .pkc.up:not(.rv).g-r .gl,#cbOv .pkc.up:not(.rv).g-gr .gl,#cbOv .pkc.up:not(.rv).g-sr .gl,#cbOv .pkc.up:not(.rv).g-gsr .gl{opacity:.75}
+#cbOv .pkc.up.r-r:not(.g-r):not(.g-gr) .gl{box-shadow:0 0 12px 3px rgba(170,214,255,.8)}
+#cbOv .pkc.up.r-sr:not(.g-sr):not(.g-gsr) .gl{box-shadow:0 0 14px 4px rgba(255,210,90,.85)}
+#cbOv .pkc .bst{position:absolute;left:50%;top:50%;width:230%;aspect-ratio:1;border-radius:50%;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.2);
+  background:radial-gradient(circle,rgba(255,240,180,.8) 0%,rgba(255,206,96,.34) 34%,rgba(255,206,96,0) 68%)}
+#cbOv .pkc.rv.g-sr .bst,#cbOv .pkc.rv.g-gsr .bst{animation:pkbst calc(1.1s * var(--k)) ease-out 1 both}
+@keyframes pkbst{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}28%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
+#cbOv .pkc>.rr,#cbOv .pkc>.nw,#cbOv .pkc>.hv{position:absolute;z-index:2;opacity:0;transform:scale(.6);transition:opacity calc(.25s * var(--k)) calc(.32s * var(--k)),transform calc(.25s * var(--k)) calc(.32s * var(--k));pointer-events:none}
+#cbOv .pkc.up>.rr,#cbOv .pkc.up>.nw,#cbOv .pkc.up>.hv{opacity:1;transform:none}
+#cbOv .pkc>.rr{left:-5px;top:-7px;box-shadow:0 0 0 1.5px rgba(20,12,6,.9),0 2px 5px rgba(0,0,0,.5)}
+#cbOv .pkc>.nw{right:-5px;top:-7px;padding:1px 7px;border-radius:999px;background:#ff5b6e;color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+#cbOv .pkc>.hv{left:50%;bottom:-9px;margin-left:-2.9em;width:5.8em;text-align:center;padding:1px 0;border-radius:999px;background:rgba(20,12,6,.92);border:1px solid rgba(255,226,160,.5);color:#d9c08c;font-size:10.5px;font-weight:700;line-height:1.4}
+@media (prefers-reduced-motion: reduce){#cbOv .pkart::after{animation:none;opacity:0}#cbOv .cbpk .pkart.big{animation:none;transition:opacity .2s}#cbOv .cbpk .pkart.big.gone{transform:none}#cbOv .cbpk .pkart.big .tp{transition:opacity .15s}#cbOv .cbpk .pkart.big.rip .tp{transform:none}#cbOv .pkc{transition-duration:.01s}#cbOv .pkc .in{transition:none}#cbOv .cbpk.out .pkc:not(.g-n):not(.up) .gl{animation:none;opacity:.8}#cbOv .pkc.rv .sh,#cbOv .pkc.rv .bst{animation:none}}
 #cbOv .cbtst{margin:18px 2px 0;padding:10px 10px 12px;border-radius:14px;border:2px dashed #b98a4a;background:rgba(255,244,214,.08)}
 #cbOv .cbtst b{display:block;color:#ffe9a8;font-size:14px}#cbOv .cbtst small{display:block;font-size:11.5px;color:#d9c08c;margin:2px 0 8px}
 #cbOv .cbtst .r{display:flex;flex-wrap:wrap;gap:6px}
@@ -1427,7 +1547,7 @@ const CBApp = (() => {
       + '<div class="btns"><button type="button" class="cbb" data-cb="cpu">コンピュータと 対戦</button>'
       + '<div class="row"><button type="button" class="cbb" data-cb="host">部屋を 作る<small>友だちと 対戦</small></button><button type="button" class="cbb" data-cb="join">部屋に 入る<small>友だちと 対戦</small></button></div>'
       + '<div class="row two"><button type="button" class="cbb dk" data-cb="help">あそび方</button><button type="button" class="cbb dk" data-cb="gear">設定<small>BGM・効果音</small></button></div>'
-      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>おもて・うら・ボード</small></button></div></div></section>'
+      + '<div class="row two"><button type="button" class="cbb dk" data-cb="ms">🎯ミッション<small class="msn"></small></button><button type="button" class="cbb dk" data-cb="dz">デザインカスタム<small>カードパック・うら・ボード</small></button></div></div></section>'
       + '<section class="cbs cbroom" data-s="room"></section>'
       + '<section class="cbs cbgame" data-s="game">'
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div><button type="button" class="cbb dk sm" data-cb="help" aria-label="あそび方">？</button></div>'
@@ -1443,6 +1563,7 @@ const CBApp = (() => {
       + '<section class="cbs cbhelp" data-s="help"></section>'
       + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<section class="cbs cbms" data-s="ms"></section>'
+      + '<section class="cbs cbpk" data-s="pk"></section>'
       + '<div class="cbfly"></div><div class="cbban"></div><div class="cbuse" data-cb="useok" aria-live="polite"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
     document.body.appendChild(ov);
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
@@ -1453,17 +1574,24 @@ const CBApp = (() => {
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
   let screen = '';
-  function show(name) { screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); if (name !== 'game') useOff(); }
+  function show(name) {
+    const was = screen; screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); if (name !== 'game') useOff();
+    if (was !== name && toastEl && toastEl.classList.contains('on')) toastPos();      
+  }
   let toastT = 0;
   function toast(t, sec) {
-    toastEl.textContent = t;
+    toastEl.textContent = t; toastPos();
+    toastEl.classList.add('on');
+    unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
+  }
+  
+  function toastPos() {
     
     const m = screen === 'game' ? $('.cbmsg') : null;
     if (m && m.getBoundingClientRect().height) { const r = m.getBoundingClientRect(), o = ov.getBoundingClientRect(); toastEl.style.top = Math.max(60, r.top - o.top - 6) + 'px'; }
+    else if (screen === 'pk') toastEl.style.top = Math.round(ov.getBoundingClientRect().height * 0.13) + 'px';      
     else if (screen === 'dz' || screen === 'ms') toastEl.style.top = Math.round(ov.getBoundingClientRect().height * 0.6) + 'px';      
     else toastEl.style.top = '';
-    toastEl.classList.add('on');
-    unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
   }
   async function banner(big, small, ms) {
     banEl.innerHTML = `<div class="bd"><b class="gold">${esc(big)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>`; banEl.classList.add('on');
@@ -1507,6 +1635,7 @@ const CBApp = (() => {
 
   
   function showMenu() {
+    pk = null;      
     closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　いま <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
@@ -1517,6 +1646,7 @@ const CBApp = (() => {
     if (lostStake > 0) { lw.push(`参加コイン ${lostStake}枚は もどらなかったよ`); lostStake = 0; }
     if (lostMs) { lw.push(`ミッションの 連勝（${MS_WHO[lostMs]}）は 0 に もどったよ`); lostMs = ''; }
     const tw = lw.length ? ['前の 対戦が とちゅうで 終わった ので、\n' + lw.join('\n')] : [];
+    if (pkUnseen().length && !pkTold) { pkTold = true; tw.push('🎴 開けた パックの 結果は\n「デザインカスタム」→「カードパック」で 見られるよ'); }      
     if (giftGot > 0) { tw.push(`🎁 ログインボーナスの バトルコイン\n${giftGot}枚を 受け取ったよ${giftFull ? `（${COIN.max}枚 まで）` : ''}`); giftGot = 0; giftFull = false; }      
     if (tw.length) toast(tw.join('\n'), (lw.length ? 3.6 + (lw.length - 1) * 1.2 : 2.4) + (tw.length - (lw.length ? 1 : 0)) * 1.2);
     const can = !!(window.__NATIVE && window.TengelNative);
@@ -1555,7 +1685,10 @@ const CBApp = (() => {
       + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
       + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
       + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>・<b>うら</b>と <b>プレイボード</b>の デザインを かえられるよ</li>`
-      + `<li>新しい デザインは <b>バトルコイン</b>で 1つずつ 解放できるよ：カードの おもて <b>${FACE_COST}枚</b>（神様馬・幻の馬は <b>${TOP_COST}枚</b>）・カードの うら <b>${BACK_COST}枚</b>・プレイボード <b>${BOARD_COST}枚</b>。いつもの デザインは はじめから 使えるよ</li>`
+      + `<li><b>カードの おもて</b>は <b>カードパック</b>で 集めるよ：1パック <b>バトルコイン ${PACK.cost}枚</b>・<b>${PACK.size}まい</b>入り（ノーマル ${PACK.size - 1}まい ＋ くじの 1まい）</li>`
+      + `<li>くじの 1まい：<b>レア 2パックに 1まい</b>・<b>超レア 5パックに 1まい</b>（どちらも 神様馬・幻の馬を ふくむ）・<b>神様馬／幻の馬の レア 10パックに 1まい</b>・<b>神様馬／幻の馬の 超レア 23パックに 1まい</b>（どれも 平均。くわしい 確率は カードパックの「出る 確率」）</li>`
+      + '<li>新しい カードは 持って いる カードに 入るよ（同じ カードが 出ても、数は ふえないよ）。開けた パックは「パックの 記録」で もう 1回 見られるよ</li>'
+      + `<li>カードの うら <b>${BACK_COST}枚</b>・プレイボード <b>${BOARD_COST}枚</b>は バトルコインで 1つずつ 解放できるよ。いつもの デザインは はじめから 使えるよ</li>`
       + '<li>コンピュータと 対戦する ときは、コンピュータの カード（うら・おもて）も あなたが えらんだ デザインに なるよ</li><li>友だちと 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友だちの カードは 友だちが えらんだ デザイン</b>で 出るよ（山札は あなたの うら）</li><li>プレイボードは、あなたの 画面に 出るよ（友だちと 対戦する ときも、あなたの 画面は あなたが えらんだ ボード）</li></ul>'
       + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友だちバトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友だちバトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
@@ -1570,12 +1703,14 @@ const CBApp = (() => {
   
   
   
-  let dzTab = 'f', dzAt = 0;
+  
+  let dzTab = 'p', dzAt = 0;
   const DZ_GUARD = 450;
   const testOn = () => !!(window.__TEST && window.CBTest);      
   const dzLabel = k => NAMES[k] || k + ' の カード';
   const dzFind = id => FACES.find(f => f.id === id) || BACKS.find(b => b.id === id) || null;
   const dzOwn = d => !d || (d.k ? st.faces : st.backs).indexOf(d.id) >= 0;      
+  const rrChip = d => (d && d.k ? `<i class="rr k-${d.r}" aria-hidden="true">${RARS[d.r]}</i>` : '');      
   const dzUsed = (kind, id) => (kind ? st.face[kind] || '' : st.back) === (id || '');
   const dzWhat = kind => (kind ? dzLabel(kind) + 'の おもて' : 'カードの うら');
   
@@ -1587,26 +1722,27 @@ const CBApp = (() => {
   function dzTile(kind, d) {
     const id = d ? d.id : '', used = dzUsed(kind, id), own = dzOwn(d);
     const img = d ? d.s : kind ? 'cb_s' + kind + '.webp' : 'cb_sb.webp';
-    const em = used ? '使って いる' : own ? '持って いる' : `${COINI}${d.cost}枚`;
-    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}" data-cb="dzi" data-id="${id}" data-ck="${kind || ''}" aria-label="${esc((d ? d.name : 'いつもの') + '・' + em.replace(/<[^>]+>/g, ''))}"><img src="${img}" alt="" draggable="false"><span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
+    const em = used ? '使って いる' : own ? '持って いる' : d.k ? 'パックで 出る' : `${COINI}${d.cost}枚`;
+    const lab = (d ? d.name + (d.k ? '・' + RAR[d.r] : '') : 'いつもの') + '・' + em.replace(/<[^>]+>/g, '');
+    return `<button type="button" class="dzt${used ? ' on' : ''}${own ? '' : ' lk'}${d && d.k ? ' r-' + d.r : ''}" data-cb="dzi" data-id="${id}" data-ck="${kind || ''}" aria-label="${esc(lab)}"><img src="${img}" alt="" draggable="false">${rrChip(d)}<span>${esc(d ? d.name : 'いつもの')}</span><em>${em}</em></button>`;
   }
   function showDz(tab) {
     const same = !tab || tab === dzTab, b0 = $('.bd', scr.dz), y = same && b0 && screen === 'dz' ? b0.scrollTop : 0;
     if (tab) dzTab = tab;
     closeMod();
-    const body = dzTab === 'd'
+    const body = dzTab === 'p'
+      ? pkTab()
+      : dzTab === 'd'
       ? `<h4>プレイボード<small>1つ ${COINI}${BOARD_COST}枚</small></h4><div class="tiles d">${bdTile(null)}${BOARDS.map(bdTile).join('')}</div>`
         + '<p class="dzn">えらんだ プレイボードは、あなたの 画面の 対戦で 出るよ。友だちと 対戦する ときも、あなたの 画面は あなたの ボード（友だちの 画面は 友だちが えらんだ ボード）</p>'
       : dzTab === 'b'
       ? `<h4>カードの うら<small>1つ ${COINI}${BACK_COST}枚</small></h4><div class="tiles b">${dzTile(null, null)}${BACKS.map(d => dzTile(null, d)).join('')}</div>`
         + '<p class="dzn">えらんだ うらは、あなたの 画面の 山札・あなたの ふせた カードに 出るよ。コンピュータの 手札も この うら。友だちと 対戦する ときは、友だちの カードは 友だちが えらんだ うらに なるよ</p>'
-      : DZ_KINDS.map(k => `<h4>${esc(dzLabel(k))}<small>1つ ${COINI}${k === 'k' || k === 'm' ? TOP_COST : FACE_COST}枚</small></h4><div class="tiles">${dzTile(k, null)}${FACES.filter(f => f.k === k).map(f => dzTile(k, f)).join('')}</div>`).join('')
-        + '<p class="dzn">えらんだ デザインは、あなたの カードに 出るよ（手札・めくった とき・捨て札）。コンピュータの カードも この デザイン。友だちと 対戦する ときは、友だちの カードは 友だちが えらんだ デザインに なるよ</p>';
+      : DZ_KINDS.map(k => { const fs = FACES.filter(f => f.k === k); return `<h4>${esc(dzLabel(k))}<small>持って いる ${fs.filter(f => dzOwn(f)).length}／${fs.length}</small></h4><div class="tiles">${dzTile(k, null)}${fs.map(f => dzTile(k, f)).join('')}</div>`; }).join('')
+        + '<p class="dzn">おもての デザインは「カードパック」で 集めるよ（N＝ノーマル・R＝レア・SR＝超レア）。えらんだ デザインは、あなたの カードに 出るよ（手札・めくった とき・捨て札）。コンピュータの カードも この デザイン。友だちと 対戦する ときは、友だちの カードは 友だちが えらんだ デザインに なるよ</p>';
     scr.dz.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="dzx">← もどる</button><b>デザインカスタム</b></div>'
       + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
-      + `<div class="tabs" role="tablist"><button type="button" role="tab" data-cb="dztab" data-t="f" class="${dzTab === 'f' ? 'on' : ''}" aria-selected="${dzTab === 'f'}">カードの おもて</button>`
-      + `<button type="button" role="tab" data-cb="dztab" data-t="b" class="${dzTab === 'b' ? 'on' : ''}" aria-selected="${dzTab === 'b'}">カードの うら</button>`
-      + `<button type="button" role="tab" data-cb="dztab" data-t="d" class="${dzTab === 'd' ? 'on' : ''}" aria-selected="${dzTab === 'd'}">プレイボード</button></div>`
+      + '<div class="tabs" role="tablist">' + [['p', 'カードパック'], ['f', 'おもて'], ['b', 'うら'], ['d', 'ボード']].map(([t, l]) => `<button type="button" role="tab" data-cb="dztab" data-t="${t}" class="${dzTab === t ? 'on' : ''}" aria-selected="${dzTab === t}">${l}</button>`).join('') + '</div>'
       + `<div class="bd">${body}${testOn() ? window.CBTest.html() : ''}</div>`;
     show('dz');
     const b1 = $('.bd', scr.dz); if (b1) b1.scrollTop = y;
@@ -1618,21 +1754,22 @@ const CBApp = (() => {
     let btns;
     if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
     else if (own) btns = `<button type="button" class="cbb" data-cb="dzuse" data-id="${id || ''}" data-ck="${kind || ''}">この デザインを 使う</button>`;
+    else if (d.k) btns = `<p class="cbneed pk">カードパックで 出るよ（${esc(GROUP[pkGroupOf(d)])}）</p>${dzTab === 'p' ? '' : '<button type="button" class="cbb" data-cb="dztab" data-t="p">カードパックへ</button>'}`;      
     else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="dzopen" data-id="${d.id}" data-ck="${kind || ''}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
     else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）</p>`;
-    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>${esc(dzWhat(kind))}</small></h3><div class="big"><img src="${big}" alt="${esc(dzWhat(kind))}"></div>`
+    modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>${esc(dzWhat(kind))}${d && d.k ? '・' + RAR[d.r] : ''}</small></h3><div class="big"><img src="${big}" alt="${esc(dzWhat(kind))}"></div>`
       + `<div class="col">${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
   }
   
   function dzAsk(kind, id) {
-    const d = dzGet(kind, id); if (!d || dzOwn(d) || st.coin < d.cost) return;
+    const d = dzGet(kind, id); if (!d || d.k || dzOwn(d) || st.coin < d.cost) return;
     dzAt = performance.now();
     modal(`<h3 class="gold">解放する？</h3><div class="big sm"><img src="${d.s}" alt=""></div><p>『${esc(d.name)}』（${esc(dzWhat(kind))}）を 解放するよ</p>`
       + `<p class="cbstkv">${COINI}<b>${st.coin}</b>枚<i>→</i>のこり <b>${st.coin - d.cost}</b>枚</p>`
       + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="dzgo" data-id="${d.id}" data-ck="${kind || ''}">解放する</button></div>`, 'cbdzm');
   }
   function dzGo(kind, id) {
-    const d = dzGet(kind, id); if (!d || dzOwn(d) || st.coin < d.cost) return;
+    const d = dzGet(kind, id); if (!d || d.k || dzOwn(d) || st.coin < d.cost) return;
     st.coin -= d.cost; (d.k ? st.faces : st.backs).push(d.id);
     if (d.k) st.face[d.k] = d.id; else st.back = d.id;      
     save(); se('magic', 0.8);
@@ -1642,6 +1779,7 @@ const CBApp = (() => {
     const d = dzGet(kind, id); if (d === undefined || !dzOwn(d)) return;
     if (kind) { if (d) st.face[kind] = d.id; else delete st.face[kind]; } else st.back = d ? d.id : '';
     save(); se('tap', 0.7);
+    if (screen === 'pk') { closeMod(); return toast(`${dzWhat(kind)}を『${d ? d.name : 'いつもの'}』に したよ`, 2.4); }      
     showDz(); toast(`${dzWhat(kind)}を『${d ? d.name : 'いつもの'}』に したよ`, 2.4);
   }
   
@@ -1689,10 +1827,168 @@ const CBApp = (() => {
     const bd = $('.cbboard'); if (bd) { bd.classList.toggle('cust', !!d); bd.classList.toggle('dl', !!(d && d.dl)); }      
   }
   
+  
+  
+  
+  
+  
+  
+  
+  
+  let pk = null, pkForce = '', pkReq = null, pkTold = false;
+  function randInt(n) {
+    if (typeof CBApp._randInt === 'function') return Math.max(0, Math.min(n - 1, Math.floor(CBApp._randInt(n))));
+    try { const lim = Math.floor(4294967296 / n) * n, a = new Uint32Array(1); for (let i = 0; i < 64; i++) { crypto.getRandomValues(a); if (a[0] < lim) return a[0] % n; } } catch (e) {   }
+    return Math.min(n - 1, Math.floor(Math.random() * n));
+  }
+  const isTop = f => f.k === 'k' || f.k === 'm';
+  
+  const pkPool = g => FACES.filter(f => (g === 'n' ? f.r === 'n' : f.r === (g === 'gsr' || g === 'sr' ? 'sr' : 'r') && isTop(f) === (g[0] === 'g')));
+  const pkGroupOf = f => (f.r === 'n' ? 'n' : (isTop(f) ? 'g' : '') + f.r);
+  const pkGroup = k => { const t = PACK.ranges.find(x => k >= x[1] && k <= x[2]); return t ? t[0] : 'n'; };      
+  const pkP = g => { const t = PACK.ranges.find(x => x[0] === g); return t ? (t[2] - t[1] + 1) / PACK.lot : 0; };
+  function pkDraw() {
+    const N = pkPool('n'), cards = [];
+    for (let i = 0; i < PACK.size - 1; i++) cards.push(N[randInt(N.length)].id);
+    let k = randInt(PACK.lot);
+    if (pkForce) { const t = PACK.ranges.find(x => x[0] === pkForce); if (t) k = t[1] + randInt(t[2] - t[1] + 1); pkForce = ''; }      
+    const g = pkGroup(k), pool = pkPool(g);
+    cards.push(pool[randInt(pool.length)].id);
+    return { cards: cards, g: g, k: k };
+  }
+  const faceOf = id => FACES.find(f => f.id === id) || null;
+  const pkUnseen = () => (st && st.pkh ? st.pkh.filter(h => !h.v) : []);
+  
+  const packArt = cls => `<div class="pkart${cls ? ' ' + cls : ''}"${cls === 'big' ? ' data-cb="pkrip" role="button" aria-label="パックを 開ける"' : ' aria-hidden="true"'}>${cls === 'big' ? '<img class="bd" src="cb_pack.webp" alt="" draggable="false"><img class="tp" src="cb_pack.webp" alt="" draggable="false">' : '<img src="cb_pack.webp" alt="" draggable="false">'}</div>`;
+  const pkNeed = () => `<p class="cbneed">あと ${PACK.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）</p>`;
+  const pct = p => (Math.round(p * 10000) / 100).toFixed(2).replace(/\.?0+$/, '') + '%';
+  const when = t => { const d = new Date(t || 0); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  
+  function pkTab() {
+    const ok = st.coin >= PACK.cost, un = pkUnseen(), own = FACES.filter(f => dzOwn(f)).length;
+    const grp = g => { const fs = pkPool(g); return `<h4>${esc(GROUP[g])}<small>${g === 'n' ? `${PACK.size - 1}まいは ここから・くじ ${pct(pkP(g))}` : `くじ ${pct(pkP(g))}`}・持って いる ${fs.filter(f => dzOwn(f)).length}／${fs.length}</small></h4><div class="tiles">${fs.map(f => dzTile(f.k, f)).join('')}</div>`; };
+    const hist = st.pkh.slice(-10).reverse().map(h => `<button type="button" class="pkhi${h.v ? '' : ' un'}" data-cb="pkhis" data-id="${esc(h.id)}" aria-label="${when(h.t)}・${esc(GROUP[h.g])}"><span class="w">${when(h.t)}</span><span class="cs">${h.cards.map((id, i) => { const f = faceOf(id); return `<img src="${f.s}" alt="" class="${i === PACK.size - 1 && f.r !== 'n' ? 'r-' + f.r : ''}">`; }).join('')}</span><i class="rr k-${faceOf(h.cards[PACK.size - 1]).r}">${RARS[faceOf(h.cards[PACK.size - 1]).r]}</i></button>`).join('');
+    return (un.length ? `<div class="pkun"><span>🎴 まだ 見おわって いない パックが ${un.length}つ あるよ</span><button type="button" class="cbb sm" data-cb="pkhis" data-id="${esc(un[0].id)}">見る</button></div>` : '')
+      + `<div class="pkbox">${packArt('')}<p class="pkc0">1パック ${COINI}<b>${PACK.cost}</b>枚・<b>${PACK.size}まい</b>入り</p><p class="pkc1">ノーマル ${PACK.size - 1}まい ＋ くじの 1まい</p>`
+      + `<button type="button" class="cbb" data-cb="pkask"${ok ? '' : ' disabled'}>${COINI}${PACK.cost}枚で パックを 開ける</button>${ok ? '' : pkNeed()}`
+      + '<button type="button" class="cbb dk sm" data-cb="pkodds">出る 確率</button></div>'
+      + `<h3 class="pkh3">この パックで 出る カード<small>${FACES.length}種・持って いる ${own}／${FACES.length}</small></h3>`
+      + ['n', 'r', 'gr', 'sr', 'gsr'].map(grp).join('')
+      + (hist ? `<h3 class="pkh3">パックの 記録<small>開けた パック ${st.packs}つ・さいごの ${Math.min(10, st.pkh.length)}つ</small></h3><div class="pkhl">${hist}</div>` : '')
+      + '<p class="dzn">新しい カードは 持って いる カードに 入るよ（同じ カードが 出ても 数は ふえないよ）。出た カードは「おもて」の タブで 使えるよ。記録を タップすると、その パックを もう 1回 見られるよ</p>';
+  }
+  
+  function pkOdds() {
+    const nN = pkPool('n').length;
+    const row = g => { const n = pkPool(g).length, t = PACK.ranges.find(x => x[0] === g); return `<tr><th>${esc(GROUP[g])}<small>${n}種・番号 ${t[1]}〜${t[2]}（${t[2] - t[1] + 1}こ）</small></th><td>${pct(pkP(g))}<small>1種 ${pct(pkP(g) / n)}</small></td></tr>`; };
+    modal(`<h3 class="gold">出る 確率</h3><p>1パック ${PACK.size}まい：<b>ノーマル ${PACK.size - 1}まい</b>（${nN}種から 同じ 確率・1種 ${pct(1 / nN)}。同じ カードが かさなる ことも あるよ）＋ <b>くじの 1まい</b></p>`
+      + `<table class="pkod"><caption>くじの 1まい（0〜${PACK.lot - 1} の 番号を ひとしく 1つ）</caption>${PACK.ranges.map(t => row(t[0])).join('')}</table>`
+      + '<p class="sm">レア ぜんぶ 50%（2パックに 1まい）・超レア ぜんぶ 20%（5パックに 1まい）。同じ グループの 中では、どの カードも 同じ 確率。どれも 平均なので、23パック 開けても かならず 出る わけでは ないよ</p>'
+      + '<div class="col"><button type="button" class="cbb dk" data-cb="dzback">とじる</button></div>', 'cbdzm cbodm');
+  }
+  
+  function pkAsk() {
+    if (st.coin < PACK.cost) return;
+    dzAt = performance.now(); pkReq = 'p' + Date.now().toString(36) + '-' + randInt(1679616).toString(36);
+    modal(`<h3 class="gold">パックを 開ける？</h3>${packArt('sm')}<p>カードパック（${PACK.size}まい）を 1つ 開けるよ</p>`
+      + `<p class="cbstkv">${COINI}<b>${st.coin}</b>枚<i>→</i>のこり <b>${st.coin - PACK.cost}</b>枚</p>`
+      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="dzback">やめる</button><button type="button" class="cbb" data-cb="pkgo" data-rq="${pkReq}">開ける</button></div>`, 'cbdzm');
+  }
+  
+  function pkGo(rq) {
+    const old = st.pkh.find(h => h.id === rq); if (old) return pkShow(old, !old.v);      
+    if (!rq || rq !== pkReq || st.coin < PACK.cost) return;
+    pkReq = null;
+    const before = JSON.stringify(st), d = pkDraw(), own = st.faces.slice(), nw = [];
+    d.cards.forEach(id => { const f = own.indexOf(id) < 0; nw.push(f); if (f) own.push(id); });
+    const h = { id: rq, t: Date.now(), g: d.g, k: d.k, cards: d.cards, nw: nw, v: false };
+    st.coin -= PACK.cost; st.faces = own; st.packs += 1; st.pkh.push(h); if (st.pkh.length > PKH_MAX) st.pkh = st.pkh.slice(-PKH_MAX);
+    if (!saveOk()) { st = JSON.parse(before); closeMod(); return toast('保存が できなかったので、パックは 開けなかったよ\n（コインは へって いないよ）', 3.4); }
+    se('tap'); pkShow(h, true);
+  }
+  
+  function pkShow(h, anim) {
+    closeMod();
+    const back = pic(null, false), last = PACK.size - 1, cs = h.cards.map((id, i) => ({ f: faceOf(id), isNew: !!h.nw[i] }));
+    pk = { h: h, cards: cs, g: h.g, st: anim ? 'pack' : 'done', up: cs.map(() => !anim), anim: !!anim, ready: false, at: performance.now() };      
+    const card = (c, i) => `<button type="button" class="pkc g-${i === last ? h.g : 'n'} r-${c.f.r}${anim ? '' : ' up'}" data-cb="pkflip" data-i="${i}" aria-label="${i + 1}まい目の カード"><span class="gl"></span><span class="bst"></span>`
+      + `<span class="in"><img class="bk" src="${back}" alt="" draggable="false"><img class="fr" src="${c.f.s}" alt="" draggable="false"><span class="sh"></span></span>`
+      + `<i class="rr k-${c.f.r}">${RARS[c.f.r]}</i>${c.isNew ? '<b class="nw">NEW</b>' : '<b class="hv">持って いる</b>'}</button>`;
+    scr.pk.classList.toggle('out', !anim); scr.pk.style.setProperty('--k', String(Math.max(0.01, SPEED)));
+    scr.pk.innerHTML = `<div class="pkhd"><b class="gold">カードパック</b>${anim ? '' : `<small>${when(h.t)} に 開けた パック</small>`}</div><p class="pkmsg" aria-live="polite"></p>`
+      + `<div class="pkst"><div class="pkgrid"><div class="row">${cs.slice(0, 3).map(card).join('')}</div><div class="row">${cs.slice(3).map((c, j) => card(c, j + 3)).join('')}</div></div>${anim ? packArt('big') : ''}</div>`
+      + '<div class="pkft"></div>';
+    show('pk'); pkPaint();
+  }
+  const pkHit = c => (c.f.r === 'n' ? '' : `${c.f.r === 'sr' ? '🌟' : '✨'} ${isTop(c.f) ? nameOf(c.f.k) + 'の ' : ''}${RAR[c.f.r]}！『${c.f.name}』`);
+  
+  function pkPaint(say) {
+    if (!pk || !scr.pk) return;
+    const m = $('.pkmsg', scr.pk), f = $('.pkft', scr.pk), ok = st.coin >= PACK.cost, nNew = pk.cards.filter(c => c.isNew).length, lc = pk.cards[PACK.size - 1];
+    if (m) m.textContent = say || (pk.st === 'pack' ? 'タップで パックを 開けよう' : pk.st === 'rip' ? '' : pk.st === 'out' ? (pk.ready ? 'さいごの 1まい（くじ）… タップで めくろう！' : 'ノーマル 4まい…')
+      : (pkHit(lc) ? pkHit(lc) + '\n' : '') + (nNew ? `NEW ${nNew}まい！（持って いる カード ${FACES.filter(x => dzOwn(x)).length}／${FACES.length}）` : 'ぜんぶ 持って いる カードだったよ'));
+    if (!f) return;
+    f.innerHTML = pk.st === 'pack' ? '<button type="button" class="cbb" data-cb="pkrip">パックを 開ける</button>'
+      : pk.st === 'rip' ? '<button type="button" class="cbb" disabled>パックを 開ける</button>'
+      : pk.st === 'out' ? (pk.ready ? '<button type="button" class="cbb" data-cb="pklast">さいごの 1まいを めくる</button>' : '<button type="button" class="cbb dk" disabled>めくって いるよ…</button>')
+      : `<div class="rowb"><button type="button" class="cbb dk" data-cb="pkx">とじる</button><button type="button" class="cbb" data-cb="pkmore"${ok ? '' : ' disabled'}>もう 1パック<small>${COINI}${PACK.cost}枚</small></button></div>${ok ? '' : pkNeed()}`;
+  }
+  
+  async function pkRip() {
+    if (!pk || pk.st !== 'pack' || performance.now() - pk.at < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return;      
+    const me = pk; pk.st = 'rip'; pkPaint(); se('deal', 0.9);
+    const art = $('.pkart.big', scr.pk), cs = [...scr.pk.querySelectorAll('.pkc')];
+    if (art) art.classList.add('rip');
+    await T(reduce() ? 60 : 360); if (pk !== me) return;
+    const a = art ? art.getBoundingClientRect() : null;
+    cs.forEach((c, i) => {
+      const r = c.getBoundingClientRect();
+      if (a) { c.style.setProperty('--dx', Math.round(a.left + a.width / 2 - (r.left + r.width / 2)) + 'px'); c.style.setProperty('--dy', Math.round(a.top + a.height * 0.45 - (r.top + r.height / 2)) + 'px'); }
+      c.style.transitionDelay = Math.round(i * 90 * SPEED) + 'ms';
+    });
+    void scr.pk.offsetWidth;
+    scr.pk.classList.add('out'); if (art) art.classList.add('gone');
+    await T(reduce() ? 120 : 560 + 90 * (PACK.size - 1)); if (pk !== me) return;
+    cs.forEach(c => { c.style.transitionDelay = ''; });
+    pk.st = 'out'; pkPaint();
+    for (let i = 0; i < PACK.size - 1; i++) { await T(i ? 330 : 200); if (pk !== me) return; pkTurn(i); }
+    await T(560); if (pk !== me) return;
+    pk.ready = true; pkPaint();
+  }
+  
+  function pkTurn(i) {
+    const c = pk.cards[i], el = scr.pk.querySelector(`.pkc[data-i="${i}"]`); if (!c || !el || pk.up[i]) return;
+    pk.up[i] = true; el.classList.add('up'); se('flip', 0.8);
+  }
+  async function pkLast() {
+    if (!pk || pk.st !== 'out' || !pk.ready) return;
+    const me = pk, i = PACK.size - 1, c = pk.cards[i], el = scr.pk.querySelector(`.pkc[data-i="${i}"]`);
+    pk.ready = false; pkTurn(i); pkPaint(' ');
+    if (c.f.r !== 'n') { await T(reduce() ? 80 : 420); if (pk !== me) return; if (el) el.classList.add('rv'); se(c.f.r === 'sr' ? 'fanfare' : 'magic', 0.85); pkPaint(pkHit(c)); }
+    await T(c.f.r !== 'n' ? 900 : 420); if (pk !== me) return;
+    pk.st = 'done'; pkSeen(pk.h); pkPaint();
+  }
+  
+  function pkSeen(h) { const x = st.pkh.find(y => y.id === h.id); if (x && !x.v) { x.v = true; save(); } }
+  
+  function pkTap(i) {
+    if (!pk) return;
+    if (pk.st === 'out' && i === PACK.size - 1 && pk.ready) return pkLast();
+    if (pk.up[i] && pk.st === 'done') return pkBig(i);
+  }
+  function pkBig(i) {
+    const c = pk && pk.cards[i]; if (!c) return;
+    const d = c.f, used = dzUsed(d.k, d.id);
+    modal(`<h3 class="gold">${esc(d.name)}<small>${esc(dzWhat(d.k))}・${RAR[d.r]}</small></h3><div class="big"><img src="${d.c}" alt="${esc(dzWhat(d.k))}"></div>`
+      + `<div class="col">${used ? '<button type="button" class="cbb" disabled>使って いるよ</button>' : `<button type="button" class="cbb" data-cb="dzuse" data-id="${d.id}" data-ck="${d.k}">この デザインを 使う</button>`}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
+  }
+  
   const dzApi = {
     add: k => { addCoin(k); save(); showDz(); toast(`🧪 バトルコイン ＋${k}枚（いま ${st.coin}枚）`, 2); },
     set: k => { st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+k || 0))); save(); showDz(); toast(`🧪 バトルコイン ${st.coin}枚に したよ`, 2); },
-    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; st.boards = []; st.board = ''; save(); boardImg(); showDz(); toast('🧪 解放を ぜんぶ もとに もどしたよ（いつもの デザイン・ボード）', 2.4); }
+    reset: () => { st.backs = []; st.faces = []; st.back = ''; st.face = {}; st.boards = []; st.board = ''; st.pkh = []; st.packs = 0; save(); boardImg(); showDz(); toast('🧪 解放と 集めた カード・パックの 記録を ぜんぶ もとに もどしたよ', 2.4); },
+    
+    pk: g => { if (!PACK.ranges.some(t => t[0] === g) || g === 'n') return; pkForce = g; toast(`🧪 つぎの パックの くじは「${GROUP[g]}」`, 2.4); }
   };
 
   
@@ -2143,9 +2439,18 @@ const CBApp = (() => {
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
-    if (a === 'dz') { se('tap'); return showDz('f'); }      
+    if (a === 'dz') { se('tap'); return showDz('p'); }      
     if (a === 'dzx') return showMenu();
-    if (a === 'dztab') { se('tap', 0.6); return showDz(b.dataset.t === 'b' || b.dataset.t === 'd' ? b.dataset.t : 'f'); }
+    if (a === 'dztab') { se('tap', 0.6); return showDz(['p', 'b', 'd'].indexOf(b.dataset.t) >= 0 ? b.dataset.t : 'f'); }
+    if (a === 'pkask') return pkAsk();      
+    if (a === 'pkgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; b.disabled = true; return pkGo(b.dataset.rq || ''); }
+    if (a === 'pkodds') { se('tap', 0.6); return pkOdds(); }
+    if (a === 'pkrip') return pkRip();
+    if (a === 'pkflip') return pkTap(+b.dataset.i);
+    if (a === 'pklast') return pkLast();
+    if (a === 'pkmore') return pkAsk();
+    if (a === 'pkhis') { const h = st.pkh.find(x => x.id === b.dataset.id); if (h) { se('tap', 0.6); pkShow(h, !h.v); } return; }
+    if (a === 'pkx') { if (pk && pk.h) pkSeen(pk.h); pk = null; se('tap', 0.6); return showDz('p'); }
     if (a === 'bdi') { se('tap', 0.6); return bdItem(b.dataset.id || ''); }      
     if (a === 'bdopen') return bdAsk(b.dataset.id || '');
     if (a === 'bdgo') { if (performance.now() - dzAt < (typeof CBApp._guard === 'number' ? CBApp._guard : DZ_GUARD)) return; return bdGo(b.dataset.id || ''); }
@@ -2519,11 +2824,11 @@ const CBApp = (() => {
   
   document.addEventListener('tengel:cbgift', () => { if (!st || !takeGift()) return; if (ov && ov.classList.contains('on') && screen === 'menu' && !modOn()) showMenu(); });
   return {
-    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
+    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
 })();
