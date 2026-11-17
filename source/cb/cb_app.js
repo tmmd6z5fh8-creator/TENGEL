@@ -797,18 +797,24 @@ const CBApp = (() => {
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
   let screen = '';
-  function show(name) { screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); if (name !== 'game') useOff(); }
+  function show(name) {
+    const was = screen; screen = name; Object.keys(scr).forEach(k => scr[k].classList.toggle('on', k === name)); if (name !== 'game') useOff();
+    if (was !== name && toastEl && toastEl.classList.contains('on')) toastPos();      // 第4.189版：出て いる ふきだしは 新しい 画面の 場所へ（パックの 画面の 上の ふきだしが デザインカスタムの タブに かからない）
+  }
   let toastT = 0;
   function toast(t, sec) {
-    toastEl.textContent = t;
+    toastEl.textContent = t; toastPos();
+    toastEl.classList.add('on');
+    unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
+  }
+  // ふきだしの 場所（画面ごと）
+  function toastPos() {
     // 対戦の 画面では ことばの 行（ボードの すぐ 下）に 重ねる：相手の 手札や ボードの 動きを かくさない
     const m = screen === 'game' ? $('.cbmsg') : null;
     if (m && m.getBoundingClientRect().height) { const r = m.getBoundingClientRect(), o = ov.getBoundingClientRect(); toastEl.style.top = Math.max(60, r.top - o.top - 6) + 'px'; }
     else if (screen === 'pk') toastEl.style.top = Math.round(ov.getBoundingClientRect().height * 0.13) + 'px';      // 第4.189版：パックを 開ける 画面は 上（カードを かくさない）
     else if (screen === 'dz' || screen === 'ms') toastEl.style.top = Math.round(ov.getBoundingClientRect().height * 0.6) + 'px';      // 第4.182版：デザインカスタムでは まん中より 下（上の コインの 数と タブを かくさない）
     else toastEl.style.top = '';
-    toastEl.classList.add('on');
-    unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
   }
   async function banner(big, small, ms) {
     banEl.innerHTML = `<div class="bd"><b class="gold">${esc(big)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>`; banEl.classList.add('on');
