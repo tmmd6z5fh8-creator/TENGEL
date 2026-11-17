@@ -31,18 +31,17 @@ enum Clock {
     }()
 
     private static let service = "jp.tengel.app.clock"
-    private static var devCache: String?
 
     /// いまの 時計（Webの 画面からの お願い「clock」）
     static func sample() -> [String: Any] {
         let wall = Date().timeIntervalSince1970 * 1000
         let mono = Double(mach_continuous_time()) * ratio / 1_000_000
-        return ["wall": wall, "mono": mono, "boot": boot, "proc": proc, "dev": device()]
+        return ["wall": wall, "mono": mono, "boot": boot, "proc": proc, "dev": device]
     }
 
-    /// この 端末の 番号（はじめて 使う ときに 作って キーチェーンに 入れる。読めない ときは 空）
-    private static func device() -> String {
-        if let d = devCache { return d }
+    /// この 端末の 番号（はじめて 使う ときに 作って キーチェーンに 入れる。読めない ときは 空）。
+    /// アプリが 動いて いる あいだに 1回 だけ 読む（static let：Swift 6 でも かわる 共有の 値を 持たない）
+    private static let device: String = {
         let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                    kSecAttrService as String: service,
                                    kSecAttrAccount as String: "device"]
@@ -52,19 +51,14 @@ enum Clock {
         var out: CFTypeRef?
         let st = SecItemCopyMatching(q as CFDictionary, &out)
         if st == errSecSuccess, let data = out as? Data, let s = String(data: data, encoding: .utf8), !s.isEmpty {
-            devCache = s
             return s
         }
-        guard st == errSecItemNotFound else { return "" }      // 読めない（まだ ロックを 外して いない など）：番号なし（Webの 画面は 同じ 端末と みなす）
+        guard st == errSecItemNotFound else { return "" }      // 読めない（まだ ロックを 外して いない・シミュレーターの 署名なし ビルド など）：番号なし（Webの 画面は 同じ 端末と みなす）
         let s = UUID().uuidString
         var add = base
         add[kSecValueData as String] = Data(s.utf8)
         // この 端末 だけ（べつの 端末に もどした バックアップには 入らない・iCloud キーチェーンで 同期しない）
         add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        if SecItemAdd(add as CFDictionary, nil) == errSecSuccess {
-            devCache = s
-            return s
-        }
-        return ""
-    }
+        return SecItemAdd(add as CFDictionary, nil) == errSecSuccess ? s : ""
+    }()
 }

@@ -209,15 +209,16 @@ print("tengel-bgm api %s card %s (none expected) h264 %s -> %s" % (o.get("has"),
   if [ -f "$OUT/iphone-report-1.json" ] && [ -f "$OUT/iphone-report-2.json" ]; then
     say "   clock: $(python3 -c '
 import json, sys
-c1 = json.load(open(sys.argv[1])).get("clock") or {}; c2 = json.load(open(sys.argv[2])).get("clock") or {}
+r1 = json.load(open(sys.argv[1])); c1 = r1.get("clock") or {}; c2 = json.load(open(sys.argv[2])).get("clock") or {}
+kc = "-34018" in str(((r1.get("wallet") or {}).get("gift") or {}).get("error") or "")      # シミュレーターの 署名なし ビルドは キーチェーンが 使えない（初回プレゼントの しるしも 同じ -34018）→ 端末の 番号は 空で よい
 a, b, d = c1.get("a") or {}, c1.get("b") or {}, c2.get("a") or {}
 js = c1.get("js") or [0, 0]; s1 = c1.get("st") or {}; s2 = c2.get("st") or {}
 wall = isinstance(a.get("wall"), (int, float)) and js[0] - 2000 <= a["wall"] <= js[1] + 2000
 mono = isinstance(a.get("mono"), (int, float)) and a["mono"] > 0 and isinstance(b.get("mono"), (int, float)) and 300 <= b["mono"] - a["mono"] <= 5000 and isinstance(d.get("mono"), (int, float)) and d["mono"] > b["mono"]
-ids = bool(a.get("dev")) and a.get("dev") == b.get("dev") == d.get("dev") and a.get("proc") == b.get("proc") and d.get("proc") != a.get("proc") and a.get("boot") == b.get("boot") == d.get("boot")
+ids = (bool(a.get("dev")) or kc) and a.get("dev") == b.get("dev") == d.get("dev") and a.get("proc") == b.get("proc") and d.get("proc") != a.get("proc") and a.get("boot") == b.get("boot") == d.get("boot")
 web = c1.get("has") and c1.get("how") in ("first", "ok") and c2.get("how") == "ok" and s1.get("dev") == s2.get("dev") == a.get("dev") and abs(c2.get("diff") or 0) < 5000
 ok = wall and mono and ids and web
-print("wall %s mono %s(+%s ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round((b.get("mono") or 0) - (a.get("mono") or 0)), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else "NO", str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
+print("wall %s mono %s(+%s ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round((b.get("mono") or 0) - (a.get("mono") or 0)), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else ("none (keychain -34018 in simulator)" if kc else "NO"), str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
 ' "$OUT/iphone-report-1.json" "$OUT/iphone-report-2.json" 2>&1)"
   fi
   phase "$IPHONE" iphone 3 700 offer restored report-3 report-link
