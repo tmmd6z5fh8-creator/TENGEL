@@ -304,8 +304,8 @@ if [ -n "$IPHONE" ] && [ -n "$IPAD" ]; then
     sleep 8
     xcrun simctl launch "$IPAD" "$BID" -tengelSelfTest >> "$OUT/room-launch.txt" 2>&1
     sleep 14; shot "$IPHONE" "room-iphone-wait" 700; shot "$IPAD" "room-ipad-wait" 1000      # つなぐ とちゅう（確認の 窓が 出て いれば ここに 写る）
-    waitfile "$DH/Documents/report-6.json" 300 && cp "$DH/Documents/report-6.json" "$OUT/room-iphone-report-6.json"
-    waitfile "$DG/Documents/report-7.json" 60 && cp "$DG/Documents/report-7.json" "$OUT/room-ipad-report-7.json"
+    waitfile "$DH/Documents/report-6.json" 480 && cp "$DH/Documents/report-6.json" "$OUT/room-iphone-report-6.json"      # 第4.190版：つながる まで 4分 まで 待つ（selftest.js）＋ 対戦 2分半
+    waitfile "$DG/Documents/report-7.json" 240 && cp "$DG/Documents/report-7.json" "$OUT/room-ipad-report-7.json"
     sleep 1; shot "$IPHONE" "room-iphone-end" 700; shot "$IPAD" "room-ipad-end" 1000
     say "== room (iPhone hosts $ROOM, iPad joins): $(( $(date +%s) - T0 ))s"
     say "   room: $(python3 -c '
