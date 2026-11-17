@@ -6,6 +6,7 @@
 //   コンピュータとの 対戦：画面の 動きが 終わって（idle）から 考える・もう 1回
 //   第4.179版：部屋の 決まり（参加コイン・勝者の 獲得コイン）：ホストの あいさつに 入る → ゲストが「参加する」（join）と 答えて から 配る・数字の はんい（stakeOf）
 //   第4.183版：部屋の あいさつに おたがいの デザイン（dz）・こわれた デザインは すてる・PROTO 6（ルールが かわった：4 の 効果で 交換して 5 を 出したら 5 の 効果）
+//   第4.187版：PROTO 8（7 の 4まい 公開は セットの 前・場の カードは いつも うら）・部屋で 4まい 公開 → 7 を セット（ゲストには どれを 出したか わからない）
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
 let fails = [];
@@ -54,7 +55,7 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 7 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 8 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
       && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
       'はじめに おたがいに あいさつ（hello・版の 番号 4）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
     G.join(); await tick(); await tick(); await tick();
@@ -141,6 +142,30 @@ async function playOut(pairs, rng, guard) {
       '2ターン目へ（幻の馬の 効果は 出ない）：ゲストの 手札 3まい・見せて のこった 1 は ホストの 画面で 表・捨て札に「1 の 効果で 捨てた 1」');
     const end = await playOut([[H, hs], [G, gs]], rng);
     check(end === 'end' && hs.view.phase === 'end' && gs.view.phase === 'end', 'その あとも さいごまで あそべる');
+  }
+
+  console.log('■ 部屋：7 の 4まい 公開（第4.187版：セットの 前・場の カードは うら）');
+  {
+    const w = wire(), rng = rngOf(11);
+    const H = N.host(w.a, rng, { hands: [['7', '7', '7', '7', '6'], ['1', '2', '3', '4', '5']], turns: 3 }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+    H.start(); G.start(); await tick(); await tick(); await tick(); G.join(); await tick(); await tick(); await tick();
+    check(hs.view.can.x7r === true && gs.view.can.x7r === false && hs.view.phase === 'set', 'ホスト（7 が 4まい）は セットの 前に 4まい 公開を 使える・ゲストは 使えない');
+    const no = await G.act({ t: 'x7r' }); await tick();
+    const r = await H.act({ t: 'x7r' }); await tick(); await tick();
+    const gu = gs.ups[gs.ups.length - 1];
+    check(!no.ok && r.ok && gu.ev.map(e => e.e).join() === 'x7r' && gu.ev[0].me === false && gu.ev[0].show.length === 4 && gu.ev[0].drop.k === '7' && gs.view.rv === true && hs.view.rv === true
+      && gs.view.op.hand.map(c => c.k).join(',') === '7,7,7,' && gs.view.phase === 'set' && hs.view.can.set && gs.view.can.set,
+      'ホストが 使う → ゲストにも 同じ できごと（見せた 4まい・捨てた 7）・2人とも 強さ 逆転・ゲストには のこりの 7 の 3まいが 見える・セットは これから');
+    const n0 = w.log.length;
+    await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === '7').u }); await tick(); await tick();
+    const sent = w.log.slice(n0).filter(x => x[0] === 'h').map(x => JSON.parse(x[1])).filter(o => o.t === 'up');
+    check(sent.length === 1 && gs.view.op.set && gs.view.op.set.k === null && sent[0].view.op.set.k === null && gs.view.op.hand.map(c => c.k).join(',') === '7,7,7' && hs.view.my.set.k === '7',
+      'ホストが 7 を セット：ゲストの 画面では 場の カードは うら・手札は 7 が 3まいの まま 見える（どれを 出したか わからない）');
+    await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '1').u }); await tick(); await tick();
+    const op = gs.ups[gs.ups.length - 1].ev.find(e => e.e === 'open');
+    check(op && op.op.k === '7' && op.my.k === '1' && op.res === 'lose' && gs.view.op.hand.map(c => c.k).join(',') === '7,7,', 'オープン：逆転ちゅうの 7 が 1 に 勝つ・その あと ゲストの 画面の 手札は ほんとうの 形（7 が 2まい）');
+    const end = await playOut([[H, hs], [G, gs]], rng);
+    check(end === 'end', 'その あとも さいごまで あそべる');
   }
 
   console.log('■ 部屋：たくさん あそぶ（でたらめな 手札で 300回）');
@@ -246,8 +271,8 @@ async function playOut(pairs, rng, guard) {
     check(H.opDz === null && G.opDz === null, 'はじめは 相手の デザインは まだ ない（opDz＝null）');
     H.start(); G.start(); await tick(); await tick(); await tick();
     const gh = JSON.parse(w.log[0][1]), hh = JSON.parse(w.log[1][1]);
-    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 7 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 7,
-      'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 7（第4.185版：7 の 4まい 公開で 強さ 逆転・ルールが かわった）');
+    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 8 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 8,
+      'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 8（第4.187版：7 の 4まい 公開は セットの 前・場の カードは いつも うら：ルールが かわった）');
     check(JSON.stringify(H.opDz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && JSON.stringify(G.opDz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake',
       'おたがいの デザインが 届く（match.opDz）・あいさつの 流れは 前と 同じ');
     G.join(); await tick(); await tick(); await tick();

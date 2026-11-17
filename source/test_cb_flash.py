@@ -7,6 +7,8 @@
 #     3回目の 通し＝カードバトルの 設定で「エフェクト オフ」（3つ目の 対戦 だけ）
 #   第4.185版：効果を 使った ときの 札（ボードの まん中・約 2秒）が 入る ぶん 効果の 場面を 長く 写す。設定の「エフェクト オフ」は なくした ので、3回目の 通しは
 #     プレイボード『白亜の宮殿』（いちばん 明るい ボード：暗い 窓や 札との 明るさの ちがいが いちばん 大きい）。4つ目の 対戦（3ターン）：相手が 7 を 4まい 見せて 強さ 逆転（x7r）
+#   第4.187版：7 の 4まい 公開は セットの 前（x7r：まだ だれも セットして いない ときに 相手が 使う）→ 自分が セット → 相手が ふせて セット → オープン（x7r_open）。
+#     セットした カードは 自分の 画面でも うら（ふせて セット：うらで とんで、うら ＋ しるしで 置く）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -161,13 +163,11 @@ try:
             settle(pg, 1.0)
             pg.evaluate("() => { CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['2', '3', '4', '5', '6', '1', 'k'], ['7', '7', '7', '7', '1', '2', '3']], turns: 3 }; }"); pg.wait_for_timeout(100)
             pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 3.4)
+            seg('x7r', 8.0, lambda: pg.evaluate(OPP, {'t': 'x7r'}))      # 第4.187版：セットの 前に 相手が 使う：効果の 札 → 4まいの 窓 → 1まい 捨て札へ →「強さ 逆転！」
             tap_play(pg, '2'); settle(pg, 0.8)
-            def x7r_pre():
-                pg.evaluate(OPP, {'t': 'set', 'k': '1'}); settle(pg, 2.4)
-                pg.evaluate(OPP, {'t': 'eff', 'use': {'x7r': True}})
-            seg('x7r', 12.0, x7r_pre)                             # 効果の 札 → 4まいの 窓 → 1まい 捨て札へ →「強さ 逆転！」→ オープン（2 が 1 に 勝つ）→「ターン 2」
+            seg('x7r_open', 6.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': '1'}))      # 相手が ふせて セット → オープン（2 が 1 に 勝つ・強さ 逆転中）→「ターン 2」
             r7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.rv, v.turn, v.my.wins, v.op.wins, v.op.hand.filter(c => c.k === '7').length, document.querySelector('#cbOv .cbturn').textContent.indexOf('強さ 逆転中') >= 0] : null; }")
-            check(r7 == [True, 2, 1, 0, 3, True], f'4つ目の 対戦も 場面の とおり（相手が 7 を 4まい 見せて 逆転 → 2 が 1 に 勝つ・相手の 7 が 3まい 見える・「強さ 逆転中」{r7}）')
+            check(r7 == [True, 2, 1, 0, 3, True], f'4つ目の 対戦も 場面の とおり（相手が セットの 前に 7 を 4まい 見せて 逆転 → 2 が 1 に 勝つ・相手の 7 が 3まい 見える・「強さ 逆転中」{r7}）')
             check(not errs, f'エラー なし {errs[:3]}')
             ctx.close()
 finally:
