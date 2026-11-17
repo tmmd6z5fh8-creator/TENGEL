@@ -12,10 +12,25 @@
 //   ・字は いまの 壁紙の 字（--font-body・--font-display：しぼった 字）→ ここの 画面の 言葉は その 字に 入って いる 字 だけで 書く（test_login.py が 確かめる）
 //   ・テスト版（TENGEL_TEST=1）だけ：窓の 下に「つぎの 日を ためす」（日付を 1日 先に 進めた ことに して つぎの ボーナスを もらう：7日ぶんを すぐ 見られる）
 //   App Store版 だけ（Web版には 入れない：build_pwa.py）
+// 第4.188版（まさちゃん 2026/11/17 11:22「毎日ログインにも、バトルコイン1日2枚 7日ログインで10枚貰えるようにして！」）：
+//   ・ポイントと いっしょに カードバトルの バトルコインも：毎日 2枚・7日目は ＋10枚（＝12枚）。日の 数え方は ポイントと 同じ（7日で ひとまわり・休んでも つづきから）
+//   ・コインは localStorage 'tengel.cbgift'（{ v:1, list:[{ id:'login-<年-月-日>', c: 枚数 }]：さいごの 30件 }）に ためて、カードバトル（cb/cb_app.js）が 受け取る
+//     （受け取った id は カードバトルの 保存に のこる＝2回 入らない）。カードバトルの 本体を 読んで いる ときは すぐ（'tengel:cbgift'）
+//   ・窓：「○日目 の ボーナス +○P と バトルコイン +○枚 を もらったよ」・7日ぶんの 札にも コインの 枚数（コインの 絵は カードバトルの cb_coin.webp：読めない ときは 絵 だけ かくす）
 (function () {
   'use strict';
   if (!window.__NATIVE) return;
   var KEY = 'tengel.login', BONUS = [200, 300, 400, 500, 600, 1000, 1300], DAYS = BONUS.length, NAME = 'ログインボーナス';
+  var CBK = 'tengel.cbgift', CBDAY = 2, CB7 = 10;      // 第4.188版：バトルコイン（毎日 2枚・7日目は ＋10枚）
+  function cbCoins(day) { return CBDAY + (day === DAYS - 1 ? CB7 : 0); }
+  // その 日の バトルコインを ためる（同じ id は 1回 だけ）→ カードバトルに 知らせる
+  function cbGift(t, day) {
+    var g = null; try { g = JSON.parse(localStorage.getItem(CBK) || 'null'); } catch (e) { g = null; }
+    var list = g && typeof g === 'object' && Array.isArray(g.list) ? g.list.filter(function (x) { return x && typeof x.id === 'string' && x.c > 0; }) : [], id = 'login-' + t;
+    if (!list.some(function (x) { return x.id === id; })) list.push({ id: id, c: cbCoins(day) });
+    try { localStorage.setItem(CBK, JSON.stringify({ v: 1, list: list.slice(-30) })); } catch (e) { /* なし */ }
+    try { document.dispatchEvent(new CustomEvent('tengel:cbgift', { detail: { id: id, coins: cbCoins(day) } })); } catch (e) { /* なし */ }
+  }
   var busy = false, shown = null;
   function jget() { try { var v = JSON.parse(localStorage.getItem(KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
   function jset(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* なし */ } }
@@ -51,6 +66,7 @@
       return w.grant('login-' + t, BONUS[day], NAME + '（' + (day + 1) + '日目）').then(function (ok) {
         if (!ok) { var f = fromWallet(); if (f.last >= t) { s.last = f.last; s.n = Math.max(s.n, f.n); jset(s); } return -1; }      // 財布には もう 入って いた
         s.n += 1; s.last = t; jset(s);
+        cbGift(t, day);                                                       // 第4.188版：バトルコイン
         return day;
       });
     }).catch(function () { return -1; }).then(function (day) { busy = false; if (day >= 0) whenClear(function () { popup(day); }); return day; });
@@ -73,6 +89,11 @@
       + '#lgOv .lgd li:nth-child(7){grid-column:span 2}'
       + '#lgOv .lgd .d{display:block;font-size:11px;font-weight:700;color:var(--muted,#667)}'
       + '#lgOv .lgd .p{display:block;margin-top:3px;font-family:var(--font-mono,monospace);font-size:14.5px;font-weight:700;letter-spacing:-.01em}'
+      + '#lgOv .lgd .c{display:flex;align-items:center;justify-content:center;gap:1px;margin-top:2px;font-size:12px;font-weight:700;line-height:1.2;color:var(--ink,#1a2233)}'
+      + '#lgOv .lgd li.now .c{color:var(--night-ink,#F3F0E6)}#lgOv .lgd li.got .c{opacity:.62}'
+      + '#lgOv .lgci{flex:none;width:15px;height:15px;object-fit:contain}'
+      + '#lgOv .lgs .lgq{display:inline-flex;align-items:center;gap:3px;margin:4px 2px 0;padding:1px 10px 2px 6px;border-radius:999px;background:var(--night,#16203D);color:var(--lamp,#FFD45C);font-size:13px;font-weight:700;vertical-align:middle}'
+      + '#lgOv .lgs .lgq .lgci{width:20px;height:20px}#lgOv .lgs .lgq b{font-family:var(--font-mono,monospace);font-size:16px;letter-spacing:.02em}'
       + '#lgOv .lgd li.got{border-color:var(--ok,#2E8B57);background:var(--ok-bg,#E6F5EC)}'
       + '#lgOv .lgd li.got .p{opacity:.62}'
       + '#lgOv .lgd li.now{border:2px solid var(--lamp,#E2B33C);padding:6px 1px 5px;background:var(--night,#16203D);color:var(--night-ink,#F3F0E6);box-shadow:0 0 0 3px rgba(226,179,60,.25);animation:lgNow .42s cubic-bezier(.2,1.5,.4,1) .2s both}'
@@ -89,6 +110,7 @@
     document.head.appendChild(st);
   }
   function close() { var o = document.getElementById('lgOv'); if (o) o.remove(); shown = null; }
+  var COINI = '<img class="lgci" src="cb_coin.webp" alt="">';      // 第4.188版：バトルコインの 絵（カードバトルと 同じ）
   // 窓：day＝今日 もらった 日（0〜6）
   function popup(day) {
     css(); close();
@@ -96,12 +118,14 @@
     var li = '';
     for (var i = 0; i < DAYS; i++) {
       var cls = i < day ? 'got' : i === day ? 'now' : '';
-      li += '<li' + (cls ? ' class="' + cls + '"' : '') + '><span class="d">' + (i + 1) + '日目</span><span class="p">' + comma(BONUS[i]) + 'P</span>' + (i <= day ? '<i class="ck" aria-hidden="true"></i>' : '') + '</li>';
+      li += '<li' + (cls ? ' class="' + cls + '"' : '') + '><span class="d">' + (i + 1) + '日目</span><span class="p">' + comma(BONUS[i]) + 'P</span>'
+        + '<span class="c">' + COINI + cbCoins(i) + '枚</span>' + (i <= day ? '<i class="ck" aria-hidden="true"></i>' : '') + '</li>';
     }
     o.innerHTML = '<div class="lgc"><h2 class="lgh">' + NAME + '</h2>'
-      + '<p class="lgs"><b>' + (day + 1) + '日目</b> の ボーナス<span class="lgp">+' + comma(BONUS[day]) + 'P</span>を もらったよ</p>'
+      + '<p class="lgs"><b>' + (day + 1) + '日目</b> の ボーナス<span class="lgp">+' + comma(BONUS[day]) + 'P</span>と<br>'
+      + '<span class="lgq">' + COINI + 'バトルコイン<b>+' + cbCoins(day) + '枚</b></span>を もらったよ</p>'
       + '<ol class="lgd">' + li + '</ol>'
-      + '<p class="lgn">毎日、さいしょに ひらいた ときに 1回 もらえるよ。<br>7日目の つぎは、また 1日目から。</p>'
+      + '<p class="lgn">毎日、さいしょに ひらいた ときに 1回 もらえるよ。<br>7日目の つぎは、また 1日目から。<br>バトルコインは カードバトルで 使えるよ。<br>（7日目は ' + CBDAY + '枚＋' + CB7 + '枚）</p>'
       + '<button type="button" class="lgb" data-lg="ok">OK</button>'
       + (testOn() ? '<button type="button" class="lgt" data-lg="next">テスト版：つぎの 日を ためす</button>' : '')
       + '</div>';
@@ -110,8 +134,9 @@
       if (b && b.getAttribute('data-lg') === 'next') { e.preventDefault(); testNext(); return; }
       if (b || e.target === o) { e.preventDefault(); close(); }
     });
+    [].forEach.call(o.querySelectorAll('img.lgci'), function (im) { im.addEventListener('error', function () { im.style.display = 'none'; }); });      // コインの 絵が 読めない ときは 絵 だけ かくす
     document.body.appendChild(o); shown = day;
-    try { document.dispatchEvent(new CustomEvent('tengel:login', { detail: { day: day, points: BONUS[day] } })); } catch (e) { /* なし */ }
+    try { document.dispatchEvent(new CustomEvent('tengel:login', { detail: { day: day, points: BONUS[day], coins: cbCoins(day) } })); } catch (e) { /* なし */ }
   }
   // テスト版 だけ：日付を 1日 先に 進めた ことに して、つぎの 日の ぶんを もらう
   function testNext() {
@@ -130,5 +155,5 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
     setInterval(function () { if (!document.hidden) check(); }, 60000);
   }
-  window.TengelLogin = { BONUS: BONUS.slice(), check: check, state: state, close: close, shown: function () { return shown; }, next: testNext };
+  window.TengelLogin = { BONUS: BONUS.slice(), CB: BONUS.map(function (x, i) { return cbCoins(i); }), check: check, state: state, close: close, shown: function () { return shown; }, next: testNext };
 })();

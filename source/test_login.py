@@ -6,6 +6,8 @@
 #   ・開いた まま 日付が かわった ときも もらえる（もどって きた とき）
 #   ・字は いまの 壁紙の 字（しぼった 字に 入って いる 字 だけ）・窓は confirm()／alert() を 使わない
 #   ・App Store版：テスト版の ボタン（つぎの 日を ためす）は 出ない・日付を ずらす しかけは 効かない／Web版には 入れない
+#   第4.188版（まさちゃん 2026/11/17 11:22「毎日ログインにも、バトルコイン1日2枚 7日ログインで10枚貰えるようにして！」）：
+#   ・ポイントと いっしょに バトルコイン（1〜6日目 2枚・7日目 12枚）→ localStorage 'tengel.cbgift' に ためる（同じ 日は 1回）・窓と 7日ぶんの 札にも 出る
 #   python3 test_login.py
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -21,6 +23,7 @@ for d in ('APP', 'STORE'):
     pth = os.path.join(SRV, d, 'index.html'); html = open(pth, encoding='utf8').read()
     assert "window.__NATIVE = location.protocol === 'tengel:';" in html
     open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
+    if os.path.isfile(os.path.join(W, 'ios', 'cb_assets', 'cb_coin.webp')): shutil.copy(os.path.join(W, 'ios', 'cb_assets', 'cb_coin.webp'), os.path.join(SRV, d, 'cb_coin.webp'))      # 第4.188版：バトルコインの 絵（アプリでは Resources に ある）
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails = []
 
@@ -35,10 +38,13 @@ FAKE = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read().split('FAKE =
 CLOCK = "(() => { const R = Date.now.bind(Date); window.__realNow = R; window.__dayOff = 0; Date.now = () => R() + window.__dayOff * 86400000; })();"
 AUTO = 'window.__LOGIN_AUTO = true;'      # テストの ブラウザ（navigator.webdriver）でも、アプリと 同じ ように 自分から 出す
 BONUS = [200, 300, 400, 500, 600, 1000, 1300]
+CB = [2, 2, 2, 2, 2, 2, 12]      # 第4.188版：バトルコイン（毎日 2枚・7日目は ＋10枚）
+LINE = lambda d: f'{d + 1}日目 の ボーナス+{BONUS[d]:,}Pとバトルコイン+{CB[d]}枚を もらったよ'
 INFO = """() => { const o = document.getElementById('lgOv'), s = window.TengelLogin ? TengelLogin.state() : null, d = new Date(Date.now()), p2 = n => (n < 10 ? '0' : '') + n;
   return { open: !!o, title: o ? o.querySelector('.lgh').textContent : null, line: o ? o.querySelector('.lgs').textContent : null, tiles: o ? [...o.querySelectorAll('.lgd li')].map(e => (e.className || '-') + ':' + e.textContent) : null,
     ck: o ? o.querySelectorAll('.lgd .ck').length : 0, n: s && s.n, last: s && s.last, off: s && s.off, total: TengelWallet.total(), today: d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()),
-    ev: TengelWallet.events().filter(e => /^login-/.test(e.id)).map(e => [e.id, e.amount, e.what, e.kind]), shown: window.TengelLogin ? TengelLogin.shown() : null }; }"""
+    ev: TengelWallet.events().filter(e => /^login-/.test(e.id)).map(e => [e.id, e.amount, e.what, e.kind]), shown: window.TengelLogin ? TengelLogin.shown() : null,
+    gift: JSON.parse(localStorage.getItem('tengel.cbgift') || 'null') }; }"""
 
 
 def gate(pg):
@@ -60,7 +66,7 @@ def shot(pg, name):
 
 
 def tiles_ok(tl, day):          # 7つの 札：day より 前＝もらった（got）・day＝今日（now）・あとは 何も なし
-    want = [('got' if i < day else 'now' if i == day else '-') + f':{i + 1}日目{BONUS[i]:,}P' for i in range(7)]
+    want = [('got' if i < day else 'now' if i == day else '-') + f':{i + 1}日目{BONUS[i]:,}P{CB[i]}枚' for i in range(7)]
     return tl == want
 
 
@@ -68,8 +74,11 @@ try:
     print('■ 中身（ビルド）')
     src = open(os.path.join(W, 'login_bonus.js'), encoding='utf8').read(); code = re.sub(r'//[^\n]*', '', src)
     app = open(os.path.join(SRV, 'APP', 'index.html'), encoding='utf8').read(); store = open(os.path.join(SRV, 'STORE', 'index.html'), encoding='utf8').read(); web = open(os.path.join(SRV, 'TENGEL', 'index.html'), encoding='utf8').read()
-    check(all('window.TengelLogin = {' in x and "'tengel.login'" in x and 'BONUS = [200, 300, 400, 500, 600, 1000, 1300]' in x for x in (app, store)) and sum(BONUS) == 4300,
-          'App Store版・テスト版の index.html に ログインボーナス（login_bonus.js）が 入って いる・表は 200・300・400・500・600・1,000・1,300P（1週間で 4,300P）')
+    check(all('window.TengelLogin = {' in x and "'tengel.login'" in x and 'BONUS = [200, 300, 400, 500, 600, 1000, 1300]' in x and "var CBK = 'tengel.cbgift', CBDAY = 2, CB7 = 10;" in x for x in (app, store)) and sum(BONUS) == 4300 and sum(CB) == 24,
+          'App Store版・テスト版の index.html に ログインボーナス（login_bonus.js）が 入って いる・表は 200・300・400・500・600・1,000・1,300P（1週間で 4,300P）・バトルコイン 毎日 2枚・7日目 ＋10枚（第4.188版）')
+    cba = open(os.path.join(W, 'cb', 'cb_app.js'), encoding='utf8').read()
+    check('const COIN = { win: 2, bonus: [[3, 6], [5, 10]], day: 2, day7: 10, max: 9999 };' in cba and "const GK = 'tengel.cbgift';" in cba, 'カードバトルの 説明の 数（day 2・day7 10）と 受け取る 場所（tengel.cbgift）が ログインボーナスと 同じ')
+    check('tengel.cbgift' not in web, 'Web版には バトルコインの しくみも ない')
     check('TengelLogin' not in web and 'ログインボーナス' not in web and 'tengel.login' not in web, 'Web版には 入って いない（かわらない）')
     check('confirm(' not in code and 'alert(' not in code and 'prompt(' not in code, '窓は confirm()・alert() を 使わない（アプリの 中では 出ない）')
     body = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_body.txt'), encoding='utf8').read()); disp = set(open(os.path.join(W, 'ios', 'fonts', 'ks', 'chars_disp.txt'), encoding='utf8').read())
@@ -81,7 +90,7 @@ try:
     check('ログインボーナス' in man and all(f'{i + 1}日目 {BONUS[i]:,}P' in man for i in range(7)) and '7日でひとまわり' in man.replace(' ', ''),
           '説明書（ポイントの もらい方）に ログインボーナスの 行（1日目 200P 〜 7日目 1,300P・7日で ひとまわり）')
     pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read()
-    check("/^(rel-)?back-theme:|^login-/.test(String(e.id)) ? '' : 'ミッション：'" in pu, 'ポイントの 履歴：ログインボーナスには「ミッション：」を つけない')
+    check("/^(rel-)?back-(theme|fig):|^login-/.test(String(e.id)) ? '' : 'ミッション：'" in pu, 'ポイントの 履歴：ログインボーナスには「ミッション：」を つけない（第4.176版から 思い出フィギュアの 返した ぶんも）')
 
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
@@ -96,15 +105,18 @@ try:
         check(gon and not g0['open'] and g0['ev'] == [] and g0['n'] == 0 and g0['last'] == '', f'開いた ときの 画面（スタートの 画面）が 出て いる 間は まだ もらわない・窓も 出ない（{g0["ev"]}）')
         t0 = g0['total']; gate(pg)
         pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=20000); pg.wait_for_timeout(700); a = pg.evaluate(INFO); shot(pg, 'login_day1')
-        check(a['open'] and a['title'] == 'ログインボーナス' and a['line'] == '1日目 の ボーナス+200Pを もらったよ' and tiles_ok(a['tiles'], 0) and a['ck'] == 1 and a['shown'] == 0,
+        check(a['open'] and a['title'] == 'ログインボーナス' and a['line'] == LINE(0) and tiles_ok(a['tiles'], 0) and a['ck'] == 1 and a['shown'] == 0,
               f'スタートの 画面が 消えると 窓「ログインボーナス」：「{a["line"]}」・7日ぶんの 札（今日＝1日目に しるし）{a["tiles"]}')
         check(a['ev'] == [[f'login-{a["today"]}', 200, 'ログインボーナス（1日目）', 'mission']] and a['total'] == t0 + 200 and a['n'] == 1 and a['last'] == a['today'],
               f'獲得ポイントに 200P 入る（{t0:,} → {a["total"]:,}P）・台帳に 1件（login-<今日>）・おぼえ（1回・今日）{a["ev"]}')
+        ci = pg.evaluate("() => { const o = document.getElementById('lgOv'); return [...o.querySelectorAll('img.lgci')].map(i => [i.getAttribute('src'), i.complete && i.naturalWidth > 0, Math.round(i.getBoundingClientRect().width)]); }")
+        check(a['gift'] == {'v': 1, 'list': [{'id': f'login-{a["today"]}', 'c': 2}]} and len(ci) == 8 and all(x[0] == 'cb_coin.webp' and x[1] and x[2] >= 14 for x in ci),
+              f'バトルコイン 2枚を ためる（tengel.cbgift：カードバトルが 受け取る）・窓の 字と 7日ぶんの 札に コインの 絵（{len(ci)}こ）{a["gift"]}')
         lay = pg.evaluate("""() => { const o = document.getElementById('lgOv'), c = o.querySelector('.lgc').getBoundingClientRect(), bt = o.querySelector('.lgb').getBoundingClientRect(), cs = getComputedStyle(o), t = document.elementFromPoint(c.left + c.width / 2, c.top + 20);
           const li = [...o.querySelectorAll('.lgd li')], lr = li.map(e => e.getBoundingClientRect()), fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, ''), tb = document.elementFromPoint(8, innerHeight - 8);
           return { z: +cs.zIndex, pos: cs.position, inside: c.left >= 0 && c.right <= innerWidth && c.top >= 0 && c.bottom <= innerHeight, top: !!t && o.contains(t), bh: bt.height, role: o.getAttribute('role'), modal: o.getAttribute('aria-modal'), label: o.getAttribute('aria-label'),
             font: fam(o.querySelector('.lgc')), hfont: fam(o.querySelector('.lgh')), bodyFont: fam(document.querySelector('.card') || document.body), rows: new Set(lr.map(r => Math.round(r.top))).size, wide7: lr[6].width > lr[5].width * 1.6,
-            over: li.some(e => [...e.querySelectorAll('.d, .p')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })),      // 札の 字（○日目・○P）が 札の 中に おさまる（かどの しるしは 札の 外へ 少し 出る 形）
+            over: li.some(e => [...e.querySelectorAll('.d, .p, .c')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })),      // 札の 字（○日目・○P）が 札の 中に おさまる（かどの しるしは 札の 外へ 少し 出る 形）
              test: !!o.querySelector('[data-lg=next]'), tabz: +getComputedStyle(document.querySelector('.tabbar')).zIndex, cover: !!tb && o.contains(tb), w: c.width, h: c.height }; }""")
         check(lay['pos'] == 'fixed' and lay['z'] == 60 and lay['z'] > lay['tabz'] and lay['inside'] and lay['top'] and lay['cover'] and lay['bh'] >= 40 and lay['role'] == 'dialog' and lay['modal'] == 'true' and lay['label'] == 'ログインボーナス'
               and lay['rows'] == 2 and lay['wide7'] and not lay['over'],
@@ -112,7 +124,7 @@ try:
         check(lay['font'] == lay['bodyFont'] == 'BIZ UDPGothic' and lay['hfont'] == 'Dela Gothic One' and lay['test'], f'字は いまの 壁紙の 字（本文 {lay["font"]}・見出し {lay["hfont"]}）・テスト版 だけ「つぎの 日を ためす」が ある')
         pg.locator('#lgOv [data-lg=ok]').click(); pg.wait_for_timeout(300)
         c1 = pg.evaluate(INFO); r1 = pg.evaluate("() => TengelLogin.check()"); pg.wait_for_timeout(400); c2 = pg.evaluate(INFO)
-        check(not c1['open'] and c1['shown'] is None and r1 == -1 and not c2['open'] and len(c2['ev']) == 1 and c2['total'] == a['total'], f'「OK」で とじる・同じ 日に もう 1回 確かめても もらえない（{r1}・{c2["total"]:,}P の まま）')
+        check(not c1['open'] and c1['shown'] is None and r1 == -1 and not c2['open'] and len(c2['ev']) == 1 and c2['total'] == a['total'] and c2['gift'] == a['gift'], f'「OK」で とじる・同じ 日に もう 1回 確かめても もらえない（{r1}・{c2["total"]:,}P の まま・バトルコインも ふえない）')
 
         print('■ 開き直し・時計を もどす・おぼえを 消す')
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(2800); d1 = pg.evaluate(INFO)
@@ -120,22 +132,25 @@ try:
         pg.evaluate("() => { window.__dayOff = -3; }"); r2 = pg.evaluate("() => TengelLogin.check()"); pg.wait_for_timeout(300); d2 = pg.evaluate(INFO)
         check(r2 == -1 and len(d2['ev']) == 1 and d2['total'] == a['total'] and d2['today'] < a['today'] and d2['last'] == a['today'], f'端末の 時計を 3日 もどしても もらえない（さいごに もらった 日より あとの 日 だけ：{d2["today"]} < {d2["last"]}）')
         pg.evaluate("() => { window.__dayOff = 0; localStorage.removeItem('tengel.login'); }"); d3s = pg.evaluate("() => TengelLogin.state()"); r3 = pg.evaluate("() => TengelLogin.check()"); pg.wait_for_timeout(300); d3 = pg.evaluate(INFO)
-        check(d3s['n'] == 1 and d3s['last'] == a['today'] and r3 == -1 and len(d3['ev']) == 1 and d3['total'] == a['total'], f'おぼえ（localStorage）が 消えても、財布の 台帳から 作り直す（{d3s["n"]}回・{d3s["last"]}）→ 同じ 日に 2回 もらえない')
+        check(d3s['n'] == 1 and d3s['last'] == a['today'] and r3 == -1 and len(d3['ev']) == 1 and d3['total'] == a['total'] and d3['gift'] == a['gift'], f'おぼえ（localStorage）が 消えても、財布の 台帳から 作り直す（{d3s["n"]}回・{d3s["last"]}）→ 同じ 日に 2回 もらえない')
 
         print('■ 7日で ひとまわり')
         seq = []; tot = a['total']
         for k in range(1, 9):               # 2日目 … 7日目 → 1日目 → 2日目
             pg.evaluate("(k) => { window.__dayOff = k; }", k); r = pg.evaluate("() => TengelLogin.check()")
             pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); pg.wait_for_timeout(250); q = pg.evaluate(INFO); tot += BONUS[k % 7]
-            seq.append((r, q['line'], tiles_ok(q['tiles'], k % 7), q['ck'] == k % 7 + 1, q['total'] == tot, q['n'] == k + 1, q['last'] == q['today'], q['ev'][-1][:3] == [f'login-{q["today"]}', BONUS[k % 7], f'ログインボーナス（{k % 7 + 1}日目）']))
+            seq.append((r, q['line'], tiles_ok(q['tiles'], k % 7), q['ck'] == k % 7 + 1, q['total'] == tot, q['n'] == k + 1, q['last'] == q['today'], q['ev'][-1][:3] == [f'login-{q["today"]}', BONUS[k % 7], f'ログインボーナス（{k % 7 + 1}日目）'],
+                        q['gift']['list'][-1] == {'id': f'login-{q["today"]}', 'c': CB[k % 7]}))
             if k in (3, 6): shot(pg, f'login_day{k + 1}')
             pg.evaluate("() => TengelLogin.close()")
-        check([x[0] for x in seq] == [1, 2, 3, 4, 5, 6, 0, 1] and [x[1] for x in seq] == [f'{d + 1}日目 の ボーナス+{BONUS[d]:,}Pを もらったよ' for d in (1, 2, 3, 4, 5, 6, 0, 1)] and all(all(x[2:]) for x in seq),
-              f'日付が かわる たびに 1回：2日目 300P → … → 7日目 1,300P → また 1日目 200P → 2日目 300P（札の しるし・ポイント・台帳の 名前も 合って いる）{[x[0] + 1 for x in seq]}')
+        check([x[0] for x in seq] == [1, 2, 3, 4, 5, 6, 0, 1] and [x[1] for x in seq] == [LINE(d) for d in (1, 2, 3, 4, 5, 6, 0, 1)] and all(all(x[2:]) for x in seq),
+              f'日付が かわる たびに 1回：2日目 300P → … → 7日目 1,300P → また 1日目 200P → 2日目 300P（札の しるし・ポイント・台帳の 名前・バトルコイン 2枚〈7日目 12枚〉も 合って いる）{[x[0] + 1 for x in seq]}')
         e9 = pg.evaluate(INFO)
+        check([x['c'] for x in e9['gift']['list']] == [2, 2, 2, 2, 2, 2, 12, 2, 2] and len({x['id'] for x in e9['gift']['list']}) == 9 and sum(x['c'] for x in e9['gift']['list']) == 24 + 4,
+              f'バトルコイン 9日ぶん：2・2・2・2・2・2・12（7日目は 2枚 ＋10枚）・2・2 ＝ {sum(x["c"] for x in e9["gift"]["list"])}枚（日付は ぜんぶ ちがう）')
         check(len(e9['ev']) == 9 and len({x[0] for x in e9['ev']}) == 9 and sum(x[1] for x in e9['ev']) == 4300 + 200 + 300 and e9['total'] == t0 + 4800, f'9日ぶん：台帳に 9件（日付は ぜんぶ ちがう）・合わせて {sum(x[1] for x in e9["ev"]):,}P（1週間 4,300P＋200＋300）')
         pg.evaluate("() => { window.__dayOff = 20; }"); r5 = pg.evaluate("() => TengelLogin.check()"); pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); pg.wait_for_timeout(250); f1 = pg.evaluate(INFO)
-        check(r5 == 2 and f1['line'] == '3日目 の ボーナス+400Pを もらったよ' and f1['n'] == 10, f'開かない 日が あっても（11日 あいた）つづきから：「{f1["line"]}」（1日目に もどさない）')
+        check(r5 == 2 and f1['line'] == LINE(2) and f1['n'] == 10, f'開かない 日が あっても（11日 あいた）つづきから：「{f1["line"]}」（1日目に もどさない）')
         # 外（暗い 所）を 押すと とじる・窓の 中を 押しても とじない
         cc = pg.evaluate("() => { const c = document.querySelector('#lgOv .lgc').getBoundingClientRect(); return [c.left + c.width / 2, c.top + 30]; }")
         pg.touchscreen.tap(*cc); pg.wait_for_timeout(250); k1 = pg.evaluate("() => !!document.getElementById('lgOv')")
@@ -145,9 +160,9 @@ try:
         print('■ 開いた まま 日付が かわった とき・テスト版の ボタン')
         pg.evaluate("() => { window.__dayOff = 21; document.dispatchEvent(new Event('visibilitychange')); }")
         pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); pg.wait_for_timeout(250); v1 = pg.evaluate(INFO)
-        check(v1['line'] == '4日目 の ボーナス+500Pを もらったよ' and v1['n'] == 11 and v1['last'] == v1['today'], f'アプリに もどって きた とき（日付が かわって いた）にも もらえる：「{v1["line"]}」')
+        check(v1['line'] == LINE(3) and v1['n'] == 11 and v1['last'] == v1['today'], f'アプリに もどって きた とき（日付が かわって いた）にも もらえる：「{v1["line"]}」')
         pg.locator('#lgOv [data-lg=next]').click(); pg.wait_for_timeout(900); v2 = pg.evaluate(INFO)
-        check(v2['open'] and v2['line'] == '5日目 の ボーナス+600Pを もらったよ' and v2['n'] == 12 and v2['off'] == 1 and v2['last'] > v1['last'] and len(v2['ev']) == 12,
+        check(v2['open'] and v2['line'] == LINE(4) and v2['n'] == 12 and v2['off'] == 1 and v2['last'] > v1['last'] and len(v2['ev']) == 12,
               f'テスト版の「つぎの 日を ためす」→ 日付を 1日 先に 進めた ことに して つぎの ボーナス：「{v2["line"]}」（ずらした 日数 {v2["off"]}）')
         pg.evaluate("() => TengelLogin.close()")
         # 壁紙を かえると 窓の 字も かわる（ポイントで 解放した 壁紙で：持って いない 壁紙は 財布が かわった ときに 標準へ もどる）
@@ -161,7 +176,7 @@ try:
             pg.wait_for_timeout(900); f1 = pg.evaluate(FAM)
             pg.evaluate("() => { TengelLogin.next(); }"); pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); pg.wait_for_timeout(500)
             kf = pg.evaluate("""() => { const o = document.getElementById('lgOv'), fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, ''), c = o.querySelector('.lgc').getBoundingClientRect();
-              return { font: fam(o.querySelector('.lgc')), hfont: fam(o.querySelector('.lgh')), cur: TengelKisekae.current(), inside: c.top >= 0 && c.bottom <= innerHeight && c.left >= 0 && c.right <= innerWidth, over: [...o.querySelectorAll('.lgd li')].some(e => [...e.querySelectorAll('.d, .p')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })) }; }""")
+              return { font: fam(o.querySelector('.lgc')), hfont: fam(o.querySelector('.lgh')), cur: TengelKisekae.current(), inside: c.top >= 0 && c.bottom <= innerHeight && c.left >= 0 && c.right <= innerWidth, over: [...o.querySelectorAll('.lgd li')].some(e => [...e.querySelectorAll('.d, .p, .c')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })) }; }""")
             shot(pg, 'login_theme')
             check(th is not None and kf['cur'] == th and f1['body'] != f0['body'] and kf['font'] == f1['body'] and kf['hfont'] == f1['disp'] and kf['inside'] and not kf['over'],
                   f'壁紙を かえる（{th}）→ 窓の 字も その 壁紙の 字（本文 {f0["body"]} → {kf["font"]}・見出し {f0["disp"]} → {kf["hfont"]}）・はみ出さない')
@@ -169,7 +184,7 @@ try:
         # 小さい 画面（320×568）でも おさまる
         pg.set_viewport_size({'width': 320, 'height': 568}); pg.evaluate("() => { TengelLogin.next(); }"); pg.wait_for_function("() => !!document.getElementById('lgOv')", timeout=10000); pg.wait_for_timeout(500)
         sm = pg.evaluate("""() => { const o = document.getElementById('lgOv'), c = o.querySelector('.lgc'), r = c.getBoundingClientRect(), bt = o.querySelector('.lgb').getBoundingClientRect();
-          return { inside: r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5, ok: bt.bottom <= innerHeight && bt.top >= 0, sc: c.scrollHeight - c.clientHeight, over: [...o.querySelectorAll('.lgd li')].some(e => [...e.querySelectorAll('.d, .p')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })) }; }""")
+          return { inside: r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5, ok: bt.bottom <= innerHeight && bt.top >= 0, sc: c.scrollHeight - c.clientHeight, over: [...o.querySelectorAll('.lgd li')].some(e => [...e.querySelectorAll('.d, .p, .c')].some(c => { const g = document.createRange(); g.selectNodeContents(c); const t = g.getBoundingClientRect(), q = e.getBoundingClientRect(); return t.right > q.right - 1 || t.left < q.left + 1; })) }; }""")
         shot(pg, 'login_small')
         check(sm['inside'] and sm['ok'] and not sm['over'], f'小さい 画面（320×568）でも 窓は 画面の 中・「OK」が 押せる 所に ある・札の 字は はみ出さない（中の スクロール {sm["sc"]}px）')
         pg.evaluate("() => TengelLogin.close()"); pg.set_viewport_size({'width': 390, 'height': 844})
@@ -188,10 +203,10 @@ try:
         p2.goto(STORE); p2.wait_for_timeout(1500); s0 = p2.evaluate("() => TengelWallet.total()"); gate(p2)
         p2.wait_for_function("() => !!document.getElementById('lgOv')", timeout=20000); p2.wait_for_timeout(600); s1 = p2.evaluate(INFO)
         st_btn = p2.evaluate("() => !!document.querySelector('#lgOv [data-lg=next]')")
-        check(s1['line'] == '1日目 の ボーナス+200Pを もらったよ' and s1['total'] == s0 + 200 == 1700 and tiles_ok(s1['tiles'], 0) and not st_btn,
+        check(s1['line'] == LINE(0) and s1['total'] == s0 + 200 == 1700 and tiles_ok(s1['tiles'], 0) and not st_btn and s1['gift'] == {'v': 1, 'list': [{'id': f'login-{s1["today"]}', 'c': 2}]},
               f'App Store版（はじめの 1,500P）：スタートの 画面の あと「{s1["line"]}」→ {s1["total"]:,}P・テスト版の ボタンは 出ない')
         r6 = p2.evaluate("async () => { const a = await TengelLogin.next(); const s = JSON.parse(localStorage.getItem('tengel.login')); s.off = 5; localStorage.setItem('tengel.login', JSON.stringify(s)); const b = await TengelLogin.check(); return [a, b, TengelLogin.state().off, TengelWallet.total()]; }")
-        check(r6 == [-1, -1, 0, 1700], f'App Store版：日付を ずらす しかけ（つぎの 日を ためす・おぼえの 中の ずれ）は 効かない {r6}')
+        check(r6 == [-1, -1, 0, 1700] and p2.evaluate(INFO)['gift'] == s1['gift'], f'App Store版：日付を ずらす しかけ（つぎの 日を ためす・おぼえの 中の ずれ）は 効かない（バトルコインも ふえない）{r6}')
         p2.evaluate("() => TengelLogin.close()")
         check(not e2, f'エラー なし {e2[:3]}')
         c2.close()
@@ -206,7 +221,7 @@ try:
         c3.close()
         c4 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo'); c4.add_init_script(AUTO)
         p4 = c4.new_page(); e4 = []; p4.on('pageerror', lambda e: e4.append(str(e))); p4.goto(WEB); p4.wait_for_timeout(1500); gate(p4); p4.wait_for_timeout(2500)
-        check(p4.evaluate("() => typeof window.TengelLogin === 'undefined' && !document.getElementById('lgOv') && !document.getElementById('lgCss') && localStorage.getItem('tengel.login') === null") and not e4, f'Web版：ログインボーナスは ない（窓も おぼえも ない）・エラー なし {e4[:3]}')
+        check(p4.evaluate("() => typeof window.TengelLogin === 'undefined' && !document.getElementById('lgOv') && !document.getElementById('lgCss') && localStorage.getItem('tengel.login') === null && localStorage.getItem('tengel.cbgift') === null") and not e4, f'Web版：ログインボーナスは ない（窓も おぼえも ない）・エラー なし {e4[:3]}')
         c4.close()
         b.close()
 finally:

@@ -191,11 +191,14 @@ console.log('■ 5：5 と 手札 1まいを 捨てて 山札から 1まい セ�
     '5 と 7 を 捨てて、山札の 上を ふせて セット（手札 3まい・山札 19まい）');
   check(r.ev[2].c[0].k === 'k' && r.ev[2].res === 0 && S.discard.map(c => c.k).join('') === '57k1' && S.pend && S.pend.type === 'k', 'オープン：山札から 来た 神様馬で 勝ち（神様馬の 効果は 次の ターンの はじめ）');
   const e1 = R.evFor(r.ev, 1)[1]; check(e1.five.k === '5' && e1.drop.k === '7' && e1.me === false, '捨てた 2まい（5 と 7）は 相手にも 見える（捨て札）');
-  // 山札から 来た カードは オープンまで だれにも 見えない（相手の 4 の 効果で 止まった 所で たしかめる）
+  // 山札から 来た カードは オープンまで だれにも 見えない：できごと u5 には 山札から 来た カードは 入らない（オープンで はじめて 出る）
+  const e2 = R.evFor(r.ev, 0)[1], e3 = R.evFor(r.ev, 1)[1];
+  check(!/"k":"k"/.test(JSON.stringify(e2)) && !/"k":"k"/.test(JSON.stringify(e3)) && Object.keys(e2).sort().join() === 'drop,e,five,me', '山札から 来た カードは オープンまで だれにも 見えない（できごと u5 に 入らない：自分にも）');
+  // 第4.188版（まさちゃん 11:16「4は効果発動最後にして！」）：5 → 4 の 順（4 は いちばん あと）。山札から ふせた カードも、相手の 4 の 効果で 交換に なる
   const Z = G('51237', '41236', 'k'); set(Z, 0, '5'); set(Z, 1, '4');
   check(Z.phase === 'eff' && R.view(Z, 0).can.eff.e5 && R.view(Z, 1).can.eff.e4, '5 を セットした 人と 4 を セットした 人：2人とも えらぶ');
   eff(Z, 0, { u5: U(Z, 0, '7') }); const rz = eff(Z, 1, { u4: true });
-  check(names(rz) === 'effd,u5,first' && Z.phase === 'swap' && Z.pend.who === 0 && Z.p[0].set.blind === true && Z.p[0].set.c.k === 'k', '5 → 4 の 順：山札から ふせた カードも、相手の 4 の 効果で 交換に なる');
+  check(names(rz) === 'effd,u5,first' && Z.phase === 'swap' && Z.pend.who === 0 && Z.p[0].set.blind === true && Z.p[0].set.c.k === 'k', '5 → 4 の 順（4 は いちばん あと）：山札から ふせた カードも、相手の 4 の 効果で 交換に なる');
   check(R.view(Z, 0).my.set.k === null && R.view(Z, 0).my.set.blind === true && R.view(Z, 1).op.set.k === null && JSON.stringify(R.view(Z, 0)).indexOf('"k":"k"') < 0, '山札から 来た カードは オープンまで だれにも 見えない（自分にも）');
   R.act(Z, 0, { t: 'swap', u: U(Z, 0, '1') });
   check(Z.p[0].hand.some(c => c.k === 'k') && Z.p[0].wins === 1 && Z.turn === 2, '交換：山札から 来て いた カード（神様馬）は 手札に 入る・出した 1 が 4 に 勝つ');
@@ -230,7 +233,7 @@ console.log('■ 5：5 と 手札 1まいを 捨てて 山札から 1まい セ�
   const C7 = G('57771', '12346', '2346'); set(C7, 0, '5'); set(C7, 1, '1');
   check(R.view(C7, 0).can.eff.e5 && R.view(C7, 0).can.eff.e7 && eff(C7, 0, { u5: U(C7, 0, '7'), x7: true }).why === 'e7' && C7.phase === 'eff', '5 の 効果で 7 を 捨てると 7 が 2まいに なる → 7 の 効果とは いっしょに 使えない');
   const rc = eff(C7, 0, { u5: U(C7, 0, '1'), x7: true }, rngOf(4));
-  check(rc.ok && names(rc) === 'effd,u5,x7,open,clear,turn' && rc.ev[2].drew.map(c => c.k).join('') === '346' && rc.ev[3].c[0].k === '2' && ks(C7.p[0].hand).split('').sort().join('') === '346' && sane(C7), '5 の 効果（1 を 捨てる）→ 7 の 効果 の 順に 両方 使える');
+  check(rc.ok && names(rc) === 'effd,x7,u5,open,clear,turn' && rc.ev[1].drew.map(c => c.k).join('') === '234' && rc.ev[2].drop.k === '1' && ks(C7.p[0].hand).split('').sort().join('') === '234' && sane(C7), '第4.188版：7 の 効果（手札の 効果：先）→ 5 の 効果（1 を 捨てる）の 順に 両方 使える');
   const C4 = G('57777', '12346'); set(C4, 0, '5'); set(C4, 1, '1'); const r4 = eff(C4, 0, { u5: U(C4, 0, '7'), x7: true }, rngOf(4));
   check(r4.ok && C4.p[0].hand.length === 3 && !C4.p[0].hand.some(c => c.k === '7' && c.u <= 5) && sane(C4), '7 が 4まい ある ときは、1まいを 5 の 効果で 捨てて、のこりの 3まいを 交換できる');
 }
@@ -267,18 +270,20 @@ console.log('■ 3：手札に 3 が 3まい → 3まいを 見せて、その 1
   const C = G('53331', '12467', '2'); set(C, 0, '5'); set(C, 1, '1');
   check(R.view(C, 0).can.eff.e5 && R.view(C, 0).can.eff.e3 && eff(C, 0, { u5: U(C, 0, '3'), x3: true }).why === 'e3' && C.phase === 'eff', '5 の 効果で 3 を 捨てると 3 が 2まいに なる → 3 の 効果とは いっしょに 使えない');
   const rc = eff(C, 0, { u5: U(C, 0, '1'), x3: true }, rngOf(4));
-  check(rc.ok && names(rc) === 'effd,u5,x3,open,clear,turn' && rc.ev[1].drop.k === '1' && rc.ev[3].c[0].k === '2' && C.p[0].hand.filter(c => c.k === '3').length === 2 && C.p[0].hand.length === 3 && sane(C), '5 の 効果（1 を 捨てる）→ 3 の 効果 の 順に 両方 使える');
+  check(rc.ok && names(rc) === 'effd,x3,u5,open,clear,turn' && rc.ev[2].drop.k === '1' && rc.ev[3].c[0].k === '2' && C.p[0].hand.filter(c => c.k === '3').length === 2 && C.p[0].hand.length === 3 && sane(C), '第4.188版：3 の 効果（手札の 効果：先）→ 5 の 効果（1 を 捨てる）の 順に 両方 使える');
   const C4 = G('53333', '12467'); set(C4, 0, '5'); set(C4, 1, '1'); const r4 = eff(C4, 0, { u5: U(C4, 0, '3'), x3: true }, rngOf(4));
-  check(r4.ok && names(r4).indexOf('u5,x3') > 0 && C4.p[0].hand.length === 3 && C4.p[0].hand.filter(c => c.k === '3').length === 2 && sane(C4), '3 が 4まい ある ときは、1まいを 5 の 効果で 捨てて、のこりの 3まいで 交換できる');
-  // 順番：6 → 5 → 7 → 3 → 4
-  const O = G('43331', '66125'); set(O, 0, '4'); set(O, 1, '5');
-  eff(O, 1, { p6: U(O, 0, '1'), u5: U(O, 1, '2') }); const ro = eff(O, 0, { x3: true, u4: true }, rngOf(9));
-  check(names(ro) === 'effd,p6,u5,x3,first' && O.phase === 'swap', '行う 順：6 → 5 → 3 → 4（3 の 交換の あとで 4 の 効果）');
+  check(r4.ok && names(r4).indexOf('x3,u5') > 0 && C4.p[0].hand.length === 3 && C4.p[0].hand.filter(c => c.k === '3').length === 2 && sane(C4), '3 が 4まい ある ときは、1まいを 5 の 効果で 捨てて、のこりの 3まいで 交換できる');
+  // 順番（第4.188版）：6 → 7 → 3 → 5 → 4
+  const O = G('43331', '66125'); set(O, 0, '4'); set(O, 1, '5'); const u2o = U(O, 1, '2');
+  eff(O, 1, { p6: U(O, 0, '1'), u5: u2o }); const ro = eff(O, 0, { x3: true, u4: true }, rngOf(9));
+  check(names(ro) === 'effd,p6,x3,u5,first' && ro.ev[2].take.u !== u2o && ro.ev[3].drop.u === u2o && O.phase === 'swap' && O.pend.who === 1 && O.p[1].set.blind === true,
+    '行う 順：6 → 3 → 5 → 4（3 は 相手が 5 で 捨てる と 決めた 2 を もらわない・4 は いちばん あと）');
   // 不発：相手の 手札が なくなって いた（相手が 同じ 効果タイムの 5 の 効果で さいごの 手札を 捨てた）
   const F = G('33312', '51246'); set(F, 0, '1'); set(F, 1, '1'); eff(F, 0, null); set(F, 0, '2'); set(F, 1, '2'); eff(F, 0, null); toDis(F, 1, '4'); fromDeck(F, 0, '6');
   check(F.turn === 3 && ks(F.p[0].hand) === '3336' && ks(F.p[1].hand) === '56', '（3ターン目：自分は 3・3・3・6／相手は 5・6 に した）');
   set(F, 0, '6'); set(F, 1, '5'); eff(F, 1, { u5: U(F, 1, '6') }); const rf = eff(F, 0, { x3: true });
-  check(rf.ok && names(rf) === 'effd,u5,fizz,open,clear,end' && rf.ev[2].k === '3' && rf.ev[2].who === 0 && ks(F.p[0].hand) === '333' && sane(F), '相手の 手札が 先に なくなった ときは 不発（交換しない・カードは そのまま）');
+  check(rf.ok && names(rf) === 'effd,x3,fizz,open,clear,end' && rf.ev[1].take.k === '6' && rf.ev[2].k === '5' && rf.ev[2].who === 1 && !rf.ev[2].why && ks(F.p[0].hand) === '336' && ks(F.p[1].hand) === '3' && rf.ev[3].c[1].k === '5' && sane(F),
+    '第4.188版：相手の 手札が 5 で 捨てる 1まい だけ → 3 の 効果（先）で その カードを もらう → 相手の 5 の 効果は 不発（捨てる 手札が ない）');
 }
 
 console.log('■ 4：最初に 公開すると、相手は セットした カードを 手札の 1まいと 交換する');
@@ -346,7 +351,7 @@ console.log('■ 4 の 効果で 交換して 5 を 出したら、5 の 効果�
   const X = G('41236', '15677'); set(X, 1, '1'); set(X, 0, '4'); eff(X, 0, { u4: true }); const rx = R.act(X, 1, { t: 'swap', u: U(X, 1, '6') });
   check(names(rx) === 'swap,open,clear,turn', '交換で 5 で ない カード（6）を 出した → いつも どおり オープン');
   const F = G('41236', '55677', 'k'); set(F, 1, '5'); set(F, 0, '4'); eff(F, 1, { u5: U(F, 1, '6') }); eff(F, 0, { u4: true });
-  check(F.phase === 'swap' && F.p[1].set.blind === true, '効果タイムで 5 の 効果を 使った（山札から ふせた カード）あとで 4 の 効果 → 交換');
+  check(F.phase === 'swap' && F.p[1].set.blind === true, '効果タイムで 5 の 効果を 使った（山札から ふせた カード）あとで 4 の 効果 → 交換（4 は いちばん あと）');
   R.act(F, 1, { t: 'swap', u: U(F, 1, '5') });
   check(F.phase === 'u5' && F.p[1].hand.length === 3, '交換で もう 1まいの 5 を 出した → また 5 の 効果を 使うか 聞く（手札 3まい・あと 2ターン）');
   // コンピュータ：4 に 勝てる カードも 4 も ない とき、5 の 効果を 使えるなら 5 を 出して、5 の 効果を 使う
@@ -649,6 +654,52 @@ console.log('■ 逆転勝利：本番の 形（5ターン・手札 7まい）')
   check(names(rt) === 'set,open,clear,turn' && rt.ev[1].rev === undefined && T.p[1].wins >= 1 && ks(T.p[0].hand) === '22', '2（手札に 2 が 2まい）と 1 でも、捨てると 足りなく なる → 聞かれない（負け）');
 }
 
+console.log('■ 逆転勝利：5 の 効果で 入れ替わった カードでも（第4.188版の 確かめ・まさちゃん 11/17 11:05「1と2の効果は、5の効果でカードが入れ替わった際もオープンしたあとに使用できるようになってる？」）');
+{
+  for (const top of ['k', 'm']) {      // 相手の 5 の 効果 → 山札の 神様馬（幻の馬）が 場に
+    const S = G('11123', '54672', top); set(S, 0, '1'); set(S, 1, '5'); const r = eff(S, 1, { u5: U(S, 1, '7') }), op = r.ev.find(e => e.e === 'open');
+    check(names(r) === 'effd,u5,open' && op.c[1].k === top && op.res === 1 && op.rev === 0 && S.phase === 'rev' && S.pend.who === 0 && R.view(S, 0).pend.type === 'rev',
+      `相手の 5 の 効果 → 山札の ${top === 'k' ? '神様馬' : '幻の馬'}が 場に → オープン：1 は 負け …だけど 1 の 逆転勝利を 聞かれる`);
+    const rr = R.act(S, 0, { t: 'rev', use: true });
+    check(rr.ok && names(rr).startsWith('rev,fin') && rr.ev[0].k === '1' && rr.ev[0].beat === top && rr.ev[0].show.length === 2 && S.p[0].wins === 1 && S.p[1].wins === 0 && ks(S.p[0].hand) === '123' && S.discard.some(d => d.k === '1' && d.why === '1') && sane(S),
+      `使う：場の 1 ＋ 手札の 1 を 2まい 見せて、手札の 1 を 1まい 捨てる → ${top === 'k' ? '神様馬' : '幻の馬'}に 大逆転（勝ちは 自分）`);
+  }
+  const T = G('22234', '54673', '1'); set(T, 0, '2'); set(T, 1, '5'); const rt = eff(T, 1, { u5: U(T, 1, '7') });
+  check(T.phase === 'rev' && rt.ev.find(e => e.e === 'open').c[1].k === '1' && R.act(T, 0, { t: 'rev', use: true }).ok && T.p[0].wins === 1 && T.p[1].wins === 0, '2 は 1 に 対して 同じ（相手の 5 の 効果で 山札の 1 が 出ても、2 の 逆転勝利で 勝ち）');
+  const Y = G('51123', 'k4672', '1'); set(Y, 0, '5'); set(Y, 1, 'k'); const ry = eff(Y, 0, { u5: U(Y, 0, '3') });
+  check(Y.phase === 'rev' && Y.pend.who === 0 && ry.ev.find(e => e.e === 'open').c[0].k === '1' && R.act(Y, 0, { t: 'rev', use: true }).ok && Y.p[0].wins === 1, '自分の 5 の 効果で 山札から 1 が 来て、相手の 神様馬に 負けた ときも 使える');
+  const W = G('11123', '46572'); set(W, 0, '3'); set(W, 1, '4'); const rw = eff(W, 1, { u4: true });
+  R.act(W, 0, { t: 'swap', u: U(W, 0, '1') });
+  check(names(rw) === 'effd,first' && W.last.c.join() === '1,4' && W.phase === 'set' && W.p[0].wins === 1, '（4 の 効果の 交換で 出した 1 も ふつうに 勝負：4 に 勝つ）');
+}
+
+console.log('■ 効果の 順番（第4.188版・まさちゃん 11:05「神様馬カード、幻の馬カードのターン明けの効果が1番、手札から使える効果が2番、セットしてから使える効果が3番」・11:16「4は効果発動最後にして！」）');
+{
+  // 席 0：4 を セット（6 の 効果・3 の 効果・4 の 効果）／席 1：5 を セット（7 の 効果・5 の 効果）→ 6 → 7 → 3 → 5 → 4
+  const S = G('4663337', '5777121'); set(S, 0, '4'); set(S, 1, '5');
+  const c0 = R.view(S, 0).can.eff, c1 = R.view(S, 1).can.eff;
+  check(c0.e6 && c0.e3 && c0.e4 && !c0.e5 && c1.e7 && c1.e5 && !c1.e4, '（席 0：6・3・4 の 効果／席 1：7・5 の 効果 を 使える）');
+  const u1 = U(S, 1, '1'); eff(S, 1, { x7: true, u5: u1 }); const r = eff(S, 0, { p6: U(S, 1, '2'), x3: true, u4: true }, rngOf(3));
+  const x3 = r.ev.find(e => e.e === 'x3');
+  check(names(r) === 'effd,p6,x7,x3,u5,first' && x3.take.u !== u1 && r.ev.find(e => e.e === 'u5').drop.u === u1 && S.phase === 'swap' && S.pend.who === 1 && S.p[1].set.blind === true,
+    '手札の 効果（6 → 7 → 3）→ セットした カードの 効果（5 → 4：4 は いちばん あと）：席 1 は 5 の 効果で 山札から ふせた カードを、4 の 効果で 交換する 番・3 の くじは 5 で 捨てる 1 を とらない');
+  // 4 が なければ 5 は いちばん あと
+  const B = G('5663337', '4777121'); set(B, 0, '5'); set(B, 1, '4');
+  const ub = U(B, 0, '7'); eff(B, 1, { x7: true }); const rb = eff(B, 0, { p6: U(B, 1, '2'), x3: true, u5: ub }, rngOf(4));
+  check(names(rb).startsWith('effd,p6,x7,x3,u5,open') && rb.ev.find(e => e.e === 'u5').drop.u === ub && sane(B), '4 を 使わない ときも：6 → 7 → 3 → 5 → オープン');
+  // 3 の くじは、相手が 5 で 捨てる と 決めた カードを とらない（400回）
+  let hit = 0, took = 0;
+  for (let sd = 1; sd <= 400; sd++) {
+    const X = G('33312', '52467', '1'); set(X, 0, '1'); set(X, 1, '5'); const ux = U(X, 1, '7');
+    eff(X, 1, { u5: ux }); const rx = eff(X, 0, { x3: true }, rngOf(sd)), t = rx.ev.find(e => e.e === 'x3');
+    if (!t || !rx.ev.some(e => e.e === 'u5' && e.drop.u === ux)) hit++; else if (t.take.u === ux) hit++; else took++;
+  }
+  check(hit === 0 && took === 400, `相手の 3 の 効果の くじには、5 で 捨てる と 決めた カードは 入らない（400回 ぜんぶ ほかの カード・5 の 効果は そのまま 出る：おかしい ${hit}）`);
+  // 神様馬・幻の馬の 効果は ターンの はじめ（1番）：セットより 前
+  const K = G('k1234', '12345'); set(K, 0, 'k'); set(K, 1, '1');
+  check(K.turn === 2 && K.phase === 'pre' && !R.view(K, 0).can.set && !R.view(K, 1).can.set && R.view(K, 0).pend.type === 'k', '神様馬で 勝った 次の ターン：まず 神様馬の 効果（1番）。決める まで 2人とも セットできない');
+}
+
 console.log('■ 7 の 4まい 公開：強さ 逆転（第4.185版・まさちゃん 22:39「7は、手札に7が4枚ある場合、4枚公開し内1枚を捨てると、数字の強さ順が逆転する」・22:45「1.その試合は終わるまで」／第4.187版・11/17 09:39「手札に7が4枚ある段階で発動できる…フィールドセット必要ないからね！」＝セットの 前）');
 {
   // 席 0：7 が 4まい ＋ 1。セットの 前に 4まい 公開 → 1まい 捨てる → 逆転 → 1 を セット ／ 席 1：2 を セット。この ターンの オープンから 2 が 1 に 勝つ
@@ -780,7 +831,7 @@ function rndUse(v, rng) {
 
 console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも こわれない）');
 {
-  const rng = rngOf(20261115); let bad = 0, n = 0, st = { ask5: 0, u5skip: 0, u5sw: 0, rev: 0, revskip: 0, revk: { 1: 0, 2: 0 }, revbeat: { k: 0, m: 0, 1: 0 }, fin: 0, revq: 0, efft: 0, x7: 0, p6: 0, u5: 0, x3: 0, both57: 0, both53: 0, u5t: [0, 0, 0, 0, 0, 0], x3t: [0, 0, 0, 0, 0, 0], u5n: [0, 0, 0, 0], no6: 0, no6h: 0, hid: 0, x7r: 0, nok: 0, first: 0, first2: 0, d4: 0, d4bad: 0, swap: 0, pre: 0, k: 0, m: 0, fizz: 0, clash: 0, tie: 0, win0: 0, win1: 0, draw: 0 };
+  const rng = rngOf(20261115); let bad = 0, n = 0, st = { ask5: 0, u5skip: 0, u5sw: 0, rev: 0, revskip: 0, revk: { 1: 0, 2: 0 }, revbeat: { k: 0, m: 0, 1: 0 }, fin: 0, revq: 0, efft: 0, x7: 0, p6: 0, u5: 0, x3: 0, both57: 0, both53: 0, u5t: [0, 0, 0, 0, 0, 0], x3t: [0, 0, 0, 0, 0, 0], u5n: [0, 0, 0, 0], no6: 0, no6h: 0, hid: 0, x7r: 0, fz4: 0, fz53: 0, fzx: 0, ordbad: 0, nok: 0, first: 0, first2: 0, d4: 0, d4bad: 0, swap: 0, pre: 0, k: 0, m: 0, fizz: 0, clash: 0, tie: 0, win0: 0, win1: 0, draw: 0 };
   for (let g = 0; g < 20000; g++) {
     const S = R.newGame(rng); let guard = 0;
     while (S.phase !== 'end' && guard++ < 200) {
@@ -808,6 +859,9 @@ console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも 
       const r = R.act(S, i, a, rng);
       if (!r.ok) { bad++; break; }
       r.ev.forEach(e => { if (e.e === 'u5') S.p[e.who].u5n = (S.p[e.who].u5n || 0) + 1; });
+      // 第4.188版：不発の わけ（相手の 3 が 5 で 捨てる はずの さいごの 1まいを もらった・それ 以外は おかしい）と 効果の 順（6 → 7 → 3 → 5 → 4）
+      r.ev.forEach(e => { if (e.e !== 'fizz') return; if (e.why === '4') st.fz4++; else if (e.k === '5' && r.ev.some(x => x.e === 'x3' && x.who !== e.who)) st.fz53++; else st.fzx++; });
+      { const RK = { p6: 0, x7: 1, x3: 2, u5: 3, first: 4, first2: 4 }; let lastRk = -1; for (const e of r.ev) { if (e.e === 'open' || e.e === 'swap') break; if (!(e.e in RK) || (e.e === 'u5' && e.sw)) continue; if (RK[e.e] < lastRk) { st.ordbad++; bad++; } lastRk = RK[e.e]; } }
       r.ev.forEach(e => { if (typeof st[e.e] === 'number') st[e.e]++; if (e.e === 'u5') st.u5t[tn]++; if (e.e === 'x3') st.x3t[tn]++; if (e.e === 'open') { if (e.res === 'clash') st.clash++; if (e.res === 'tie') st.tie++; if (e.rev != null) st.revq++; if (e.d4) { st.d4++; if (e.res !== 'tie' || e.c[0].k !== '4' || e.c[1].k !== '4' || e.rev != null) st.d4bad++; } }
         if (e.e === 'rev') { st.revk[e.k]++; st.revbeat[e.beat]++; } if (e.e === 'u5' && e.sw) st.u5sw++; });
       // 逆転勝利：使った → 聞かれた 人の 勝ち・手札が 1まい へる ／ 使わない → 相手の 勝ち・手札は そのまま（どちらも 勝ちは 1つ だけ ふえる）
@@ -828,8 +882,8 @@ console.log('■ でたらめに 2万回 あそぶ（どんな 手の 順でも 
     st[S.res === 'draw' ? 'draw' : 'win' + S.res]++; n++;
   }
   check(bad === 0 && n === 20000, `2万回：ぜんぶ 5ターンで おわる・カードは いつも 30まい・打てる と 言った 手は ぜんぶ 通る・止まらない（おかしい ${bad}）`);
-  check(st.efft > 5000 && st.x7 > 50 && st.p6 > 500 && st.u5 > 1000 && st.x3 > 50 && st.first > 500 && st.first2 > 20 && st.d4 === st.first2 && st.d4bad === 0 && st.swap > 500 && st.pre > 2000 && st.k > 500 && st.m > 500 && st.clash > 2000 && st.tie > 3 && st.fizz === 0,
-    `効果も ぜんぶ 出た（効果タイム ${st.efft}・7 ${st.x7}・6 ${st.p6}・5 ${st.u5}・3 ${st.x3}・5 と 7 を いっしょに ${st.both57}・5 と 3 を いっしょに ${st.both53}・4 ${st.first}・4 の 打ち消し ${st.first2}（→ ドロー ${st.d4}）・交換 ${st.swap}・神様馬 ${st.k}・幻の馬 ${st.m}・かぶり ${st.clash}・引き分け ${st.tie}・不発 ${st.fizz}）`);
+  check(st.efft > 5000 && st.x7 > 50 && st.p6 > 500 && st.u5 > 1000 && st.x3 > 50 && st.first > 500 && st.first2 > 20 && st.d4 === st.first2 && st.d4bad === 0 && st.swap > 500 && st.pre > 2000 && st.k > 500 && st.m > 500 && st.clash > 2000 && st.tie > 3 && st.fzx === 0 && st.fz4 === 0 && st.ordbad === 0,
+    `効果も ぜんぶ 出た（効果タイム ${st.efft}・7 ${st.x7}・6 ${st.p6}・5 ${st.u5}・3 ${st.x3}・5 と 7 を いっしょに ${st.both57}・5 と 3 を いっしょに ${st.both53}・4 ${st.first}・4 の 打ち消し ${st.first2}（→ ドロー ${st.d4}）・交換 ${st.swap}・神様馬 ${st.k}・幻の馬 ${st.m}・かぶり ${st.clash}・引き分け ${st.tie}・不発 ${st.fizz}〈第4.188版：3 が 5 で 捨てる はずの 1まいを もらった ${st.fz53}・ほか ${st.fzx + st.fz4}〉・効果の 順〈6 → 7 → 3 → 5 → 4〉が ちがう ${st.ordbad}）`);
   check(st.u5t.slice(1).every(q => q > 300) && st.x3t[1] > 20 && st.x3t[2] > 5 && st.x3t[5] === 0 && st.u5n[3] === 0 && st.u5n[2] > 100,
     `5 の 効果は どの ターンでも 出た（1〜5ターン目 ${st.u5t.slice(1).join('・')}）・1人が 1回の 対戦で 使った 回数は 2回 まで（0回 ${st.u5n[0]}・1回 ${st.u5n[1]}・2回 ${st.u5n[2]}・3回 ${st.u5n[3]}：手札 7まい・5ターン＝よぶんは 2まい）・`
     + `3 の 効果は 1〜4ターン目（${st.x3t.slice(1, 5).join('・')}：5ターン目は 手札が 2まい まで なので 出ない ${st.x3t[5]}）`);
@@ -866,7 +920,7 @@ console.log('■ でたらめに あそぶ：7 が 4まい ある 手札で 5000
       r.ev.forEach(e => {
         if (e.e === 'x7r') { st.x7r++; if (rvNow || e.show.length !== 4 || e.drop.k !== '7' || t !== 'x7r') bad++; rvNow = true; }
         if (e.e === 'x7') st.x7++;
-        if (e.e === 'fizz') st.fizz++;
+        if (e.e === 'fizz' && !(e.k === '5' && r.ev.some(x => x.e === 'x3' && x.who !== e.who))) st.fizz++;      // 第4.188版：相手の 3 が 5 で 捨てる はずの さいごの 1まいを もらった ときの 不発は 数えない
         if (e.e === 'open' && !e.d4) { st.open++; if (rvNow) st.rvopen++; if (e.res !== R.compare(e.c[0].k, e.c[1].k, rvNow)) bad++; }
       });
       if (rv0 && !S.rv) bad++;                            // 逆転は もどらない（その 対戦が 終わる まで）
