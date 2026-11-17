@@ -96,6 +96,13 @@
 
 
 
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -317,6 +324,10 @@ const CBRules = (() => {
     ev.push({ e: 'efft', has: [any(c0), any(c1)] });
   }
   
+  
+  
+  
+  
   function resolve(S, ev, rng) {
     const U = S.p.map(P => (P.eff && P.eff.use) || NOUSE());
     [0, 1].forEach(i => {                                
@@ -328,17 +339,8 @@ const CBRules = (() => {
       ev.push({ e: 'p6', who: i, six: six.map(c => c.u), pick: Q.hand[j].u, k: Q.hand[j].k });
     });
     [0, 1].forEach(i => {                                
-      const P = S.p[i]; if (U[i].u5 == null) return;
-      const d = idx(P.hand, U[i].u5);
-      if (d < 0 || !P.set || P.set.c.k !== '5' || S.deck.length < 1) { ev.push({ e: 'fizz', who: i, k: '5' }); return; }
-      const five = P.set.c, drop = P.hand.splice(d, 1)[0];
-      toss(S, five, i, '5'); toss(S, drop, i, '5');
-      P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
-      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k } });
-    });
-    [0, 1].forEach(i => {                                
       const P = S.p[i]; if (!U[i].x7) return;
-      const back = P.hand.filter(c => c.k === '7').slice(0, 3);
+      const back = P.hand.filter(c => c.k === '7' && c.u !== U[i].u5).slice(0, 3);
       if (back.length < 3 || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
       P.hand = P.hand.filter(c => back.indexOf(c) < 0);
       const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
@@ -349,9 +351,10 @@ const CBRules = (() => {
     });
     [0, 1].forEach(i => {                                
       const P = S.p[i], Q = S.p[1 - i]; if (!U[i].x3) return;
-      const three = P.hand.filter(c => c.k === '3').slice(0, 3);
-      if (three.length < 3 || Q.hand.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
-      const give = three[0], take = Q.hand[Math.floor(rng() * Q.hand.length)];
+      const three = P.hand.filter(c => c.k === '3' && c.u !== U[i].u5).slice(0, 3);      
+      const pool = Q.hand.filter(c => c.u !== U[1 - i].u5), from = pool.length ? pool : Q.hand;      
+      if (three.length < 3 || from.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+      const give = three[0], take = from[Math.floor(rng() * from.length)];
       P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
       P.hand.push(take); Q.hand.push(give);
       forget(S, give.u); forget(S, take.u);              
@@ -359,6 +362,15 @@ const CBRules = (() => {
       learn(P, give.u);                                  
       learn(Q, take.u);                                  
       ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: { u: give.u, k: give.k }, take: { u: take.u, k: take.k } });
+    });
+    [0, 1].forEach(i => {                                
+      const P = S.p[i]; if (U[i].u5 == null) return;
+      const d = idx(P.hand, U[i].u5);
+      if (d < 0 || !P.set || P.set.c.k !== '5' || S.deck.length < 1) { ev.push({ e: 'fizz', who: i, k: '5' }); return; }
+      const five = P.set.c, drop = P.hand.splice(d, 1)[0];
+      toss(S, five, i, '5'); toss(S, drop, i, '5');
+      P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
+      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k } });
     });
     S.p.forEach(P => { P.eff = null; });
     const A = S.p[0], B = S.p[1], f0 = U[0].u4 && A.set.c.k === '4', f1 = U[1].u4 && B.set.c.k === '4';      
@@ -590,9 +602,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 8, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 9, MAXLEN = 20000;      
   
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -841,12 +854,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
   const REWARD = { win: 1, every: 5, bonus: 3 };
-  const COIN = { win: 1, every: 5, bonus: 5, max: 9999 };      
-  const coinFor = streak => (streak > 0 && streak % COIN.every === 0 ? COIN.bonus : COIN.win);
+  
+  const COIN = { win: 2, bonus: [[3, 6], [5, 10]], day: 2, day7: 10, max: 9999 };
+  const coinBonus = streak => COIN.bonus.reduce((a, t) => a + (streak > 0 && streak % t[0] === 0 ? t[1] : 0), 0);      
+  const coinFor = streak => COIN.win + coinBonus(streak);
+  const coinHow = () => `コンピュータに 勝つと ${COIN.win}枚（${COIN.bonus.map(t => `${t[0]}連勝 ＋${t[1]}枚`).join('・')}）`;      
+  const coinDay = () => `毎日の ログインボーナスで ${COIN.day}枚（7日目 ＋${COIN.day7}枚）`;
+  const GK = 'tengel.cbgift';                         
   
   const MS = { cpu: [[3, 30], [5, 60], [6, 90], [7, 120], [8, 150], [9, 200], [10, 300]], fr: [[3, 20], [5, 40], [6, 60], [7, 80], [8, 100], [9, 120], [10, 140]] };
   const MS_WHO = { cpu: 'コンピュータ', fr: '友だちバトル' }, MS_ALL = MS.cpu.length + MS.fr.length;
@@ -895,9 +924,10 @@ const CBApp = (() => {
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [] });
   let lostStake = 0;                                   
   let lostMs = '';                                     
+  let giftGot = 0, giftFull = false;                   
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     ['streak', 'win', 'lose', 'draw', 'owe'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
@@ -925,6 +955,26 @@ const CBApp = (() => {
     
     const k = st.stake; st.stake = null;
     if (k && typeof k === 'object' && Math.floor(+k.e) > 0) { lostStake = Math.floor(+k.e); save(); }
+    st.gifts = Array.isArray(st.gifts) ? st.gifts.filter((x, i, a) => typeof x === 'string' && a.indexOf(x) === i).slice(-60) : [];      
+    takeGift();
+  }
+  
+  
+  function takeGift() {
+    if (!st) return 0;
+    let g = null; try { g = JSON.parse(localStorage.getItem(GK) || 'null'); } catch (e) { g = null; }
+    const list = g && typeof g === 'object' && Array.isArray(g.list) ? g.list : [];
+    let want = 0;
+    list.forEach(x => {
+      const id = x && typeof x.id === 'string' ? x.id : '', c = Math.max(0, Math.min(COIN.max, Math.floor(+(x && x.c) || 0)));
+      if (!id || !(c > 0) || st.gifts.indexOf(id) >= 0) return;
+      st.gifts.push(id); want += c;
+    });
+    if (!want) return 0;
+    st.gifts = st.gifts.slice(-60);
+    const c0 = st.coin; addCoin(want); save();
+    giftGot += st.coin - c0; if (st.coin - c0 < want) giftFull = true;
+    return st.coin - c0;
   }
   const addCoin = n => { st.coin = Math.max(0, Math.min(COIN.max, st.coin + Math.floor(+n || 0))); };
   function save() { try { localStorage.setItem(SK, JSON.stringify(st)); } catch (e) {   } }
@@ -954,17 +1004,18 @@ const CBApp = (() => {
   
   
   
+  
   async function settle(res) {
-    let got = 0, coin = 0, pot = null, ms = []; const cpu = !!match && match.kind === 'cpu', k = st.stake, mk = msKind(match);
+    let got = 0, coin = 0, cb = 0, pot = null, ms = []; const cpu = !!match && match.kind === 'cpu', k = st.stake, mk = msKind(match);
     st.ms.live = '';
-    if (res === 'win') { st.win += 1; st.streak += 1; got = rewardFor(st.streak); st.owe += got; if (cpu) coin = coinFor(st.streak); ms = msWin(mk); }
+    if (res === 'win') { st.win += 1; st.streak += 1; got = rewardFor(st.streak); st.owe += got; if (cpu) { coin = COIN.win; cb = coinBonus(st.streak); } ms = msWin(mk); }
     else if (res === 'lose') { st.lose += 1; st.streak = 0; msRoll(); st.ms[mk] = 0; }
     else { st.draw += 1; msRoll(); }
     if (k) { pot = { e: k.e, w: k.w, add: res === 'win' ? k.w : res === 'draw' ? k.e : 0 }; st.stake = null; }
-    const msc = ms.reduce((a, x) => a + x.c, 0), want = coin + (pot ? pot.add : 0) + msc, c0 = st.coin; addCoin(want);
+    const msc = ms.reduce((a, x) => a + x.c, 0), want = coin + cb + (pot ? pot.add : 0) + msc, c0 = st.coin; addCoin(want);
     save();
     const p = got ? await pay() : null;
-    return { res: res, got: got, pay: p, streak: st.streak, coin: coin, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
+    return { res: res, got: got, pay: p, streak: st.streak, coin: coin, cb: cb, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
   }
   
   function msLive() { if (!match) return; msRoll(); st.ms.live = msKind(match); save(); }
@@ -1240,7 +1291,7 @@ const CBApp = (() => {
 #cbOv .cbend h3{font-size:40px;line-height:1.15}
 #cbOv .cbend .sc{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:26px;color:#ffe9a8;letter-spacing:.08em}
 #cbOv .cbend .sc small{font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;color:#d9c08c;letter-spacing:0;display:block}
-#cbOv .cbend .gift{min-height:212px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
+#cbOv .cbend .gift{min-height:248px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
 #cbOv .cbend .gift b{color:#ffe07a;font-size:17px}
 #cbOv .cbget{display:inline-flex;align-items:center;gap:14px;box-sizing:border-box;min-width:250px;padding:11px 24px 12px 18px;border-radius:22px;border:2.5px solid #ffd76a;background:linear-gradient(180deg,#5a3a12 0%,#3a240a 55%,#2a1806 100%);box-shadow:0 0 0 1.5px rgba(60,30,0,.7),0 0 22px rgba(255,210,90,.6),inset 0 1px 0 rgba(255,240,190,.35),inset 0 0 14px rgba(255,200,80,.22);animation:cbget .55s cubic-bezier(.3,1.5,.5,1) both}
 #cbOv .cbget .tk{flex:none;font-style:normal;font-size:42px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
@@ -1356,12 +1407,13 @@ const CBApp = (() => {
 #cbOv .msr.next{border-color:#c9a35a;background:rgba(255,236,190,.1)}
 #cbOv .msr.next em{color:#ffd9a0}
 #cbOv .cbms .note{margin:12px 2px 0;padding:0 0 0 1.2em;font-size:12px;line-height:1.65;color:#d9c08c}
-#cbOv .cbend .gift .cbmsn{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:0 5px;box-sizing:border-box;max-width:100%;padding:3px 14px 4px;border-radius:16px;border:1.5px solid #ffd76a;background:rgba(255,214,120,.15);font-size:13.5px;line-height:1.5;color:#fff1cf;animation:cbget .45s cubic-bezier(.2,1.4,.4,1) 1 both}
-#cbOv .cbend .gift .cbmsn i{font-style:normal}
-#cbOv .cbend .gift .cbmsn b{color:#ffe07a;font-size:15px}
-#cbOv .cbend .gift .cbmsn .cbci{width:1.25em;height:1.25em;vertical-align:-.28em;margin-right:0}
+#cbOv .cbend .gift .cbmsn,#cbOv .cbend .gift .cbsbn{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:0 5px;box-sizing:border-box;max-width:100%;padding:3px 14px 4px;border-radius:16px;border:1.5px solid #ffd76a;background:rgba(255,214,120,.15);font-size:13.5px;line-height:1.5;color:#fff1cf;animation:cbget .45s cubic-bezier(.2,1.4,.4,1) 1 both}
+#cbOv .cbend .gift .cbmsn i,#cbOv .cbend .gift .cbsbn i{font-style:normal}
+#cbOv .cbend .gift .cbmsn b,#cbOv .cbend .gift .cbsbn b{color:#ffe07a;font-size:15px}
+#cbOv .cbend .gift .cbmsn .cbci,#cbOv .cbend .gift .cbsbn .cbci{width:1.25em;height:1.25em;vertical-align:-.28em;margin-right:0}
+#cbOv .cbend .gift .cbsbn{border-color:#ff9f4a;background:rgba(255,140,60,.16)}
 @media (max-height:720px){#cbOv .cbmenu .lg{width:min(44vw,168px)}#cbOv .cbmenu{gap:8px}}
-@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
+@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn,#cbOv .cbend .gift .cbsbn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
 `;
   let ov = null, built = false, scr = {}, flyEl = null, modEl = null, toastEl = null, banEl = null, useEl = null;
   const $ = (s, r) => (r || ov).querySelector(s);
@@ -1459,12 +1511,14 @@ const CBApp = (() => {
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　いま <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
       + `勝つと お世話トークン <b>${REWARD.win}</b>こ・<b>${REWARD.every}</b>連勝 ごとに <b>${REWARD.bonus}</b>こ`;
-    $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚</small>`;
+    $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>${coinHow()}<br>${coinDay()}</small>`;
     $('[data-cb=ms] .msn', scr.menu).textContent = `今月 ${msDone()}／${MS_ALL} 達成`;      
     const lw = [];
     if (lostStake > 0) { lw.push(`参加コイン ${lostStake}枚は もどらなかったよ`); lostStake = 0; }
     if (lostMs) { lw.push(`ミッションの 連勝（${MS_WHO[lostMs]}）は 0 に もどったよ`); lostMs = ''; }
-    if (lw.length) toast('前の 対戦が とちゅうで 終わった ので、\n' + lw.join('\n'), 3.6 + (lw.length - 1) * 1.2);
+    const tw = lw.length ? ['前の 対戦が とちゅうで 終わった ので、\n' + lw.join('\n')] : [];
+    if (giftGot > 0) { tw.push(`🎁 ログインボーナスの バトルコイン\n${giftGot}枚を 受け取ったよ${giftFull ? `（${COIN.max}枚 まで）` : ''}`); giftGot = 0; giftFull = false; }      
+    if (tw.length) toast(tw.join('\n'), (lw.length ? 3.6 + (lw.length - 1) * 1.2 : 2.4) + (tw.length - (lw.length ? 1 : 0)) * 1.2);
     const can = !!(window.__NATIVE && window.TengelNative);
     scr.menu.querySelectorAll('[data-cb=host],[data-cb=join]').forEach(b => { b.disabled = !can; });
     pay().then(p => { if (p && p.add > 0 && screen === 'menu') toast(`🎟 前の 対戦の ごほうび\nお世話トークン ${p.add}こを 受け取ったよ`, 3.2); });
@@ -1486,17 +1540,18 @@ const CBApp = (() => {
       + ef('7', '7：3まい 交換・4まい 公開で 逆転', '【3まい】手札に 7 が 3まい あれば、3まいを 山札に もどして、新しく 3まい 引けるよ。<br>【4まい】手札に 7 が 4まい あれば、<strong>セットの 前に</strong> 4まい 見せて 1まい 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は いちばん 強い まま）。その あと いつもの ように セット（のこった 7 を 出しても いい）。<br>【4まい】を 使った ターンは【3まい】は 使えない（どちらか 1つ）')
       + ef('6', '6：2まい 見せて 手札を 見る', '手札に 6 が 2まい あれば、その 2まいを 相手に 見せて、相手の 手札を 1まい えらんで 見られるよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
       + ef('5', '5：2まい 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1まいを 捨てて、山札から 1まいを ふせて セットできるよ。何が 出るかは オープンまで わからない！<br>使えるのは、使った あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ（さいごの ターンは、手札が 1まい あれば 使える）。')
-      + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる かわりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか えらべる</strong>よ（オープンの 前）。')
+      + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる かわりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか えらべる</strong>よ（オープンの 前）。<br>4 の 効果は <strong>いちばん あと</strong>：相手が 5 の 効果で 山札から ふせた カードも 交換に なるよ。')
       + ef('3', '3：3まい 見せて 手札を 交換', '手札に 3 が 3まい あれば、その 3まいを 相手に 見せて、その うちの 1まいと、相手の 手札から <strong>ランダムに えらんだ 1まい</strong>を 交換できるよ。')
       + ef('2', '2：3まい 見せて 逆転勝利', '2 を 出して <strong>1 に 負けた</strong> とき、手札に 2 が 2まい あれば（場の 2 と 合わせて 3まい）、その 2まいを 相手に 見せて、1まい 捨てると、<strong>勝ちに できる</strong>よ。')
       + ef('1', '1：3まい 見せて 逆転勝利', '1 を 出して <strong>神様馬・幻の馬に 負けた</strong> とき、手札に 1 が 2まい あれば（場の 1 と 合わせて 3まい）、その 2まいを 相手に 見せて、1まい 捨てると、<strong>勝ちに できる</strong>よ。<br>1・2 とも、使えるのは 捨てた あとの 手札が <strong>のこりの ターンの 数より 少なく ならない とき</strong> だけ。')
       + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの はじめに、相手の 手札を 1まい えらんで 見られるよ（まだ 見て いない カードが ある とき）。')
       + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの はじめに、手札を 2まい 捨てて、山札から 2まい 引けるよ。')
-      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果タイムで 効果が 出る 順番は <b>6 → 5 → 7 → 3 → 4</b></li><li>さいごの ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
+      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの はじめ</b>（神様馬・幻の馬）→ <b>② 手札の 効果</b>（7 の 4まい 公開は セットの 前・効果タイムは 6 → 7 → 3）→ <b>③ セットした カードの 効果</b>（<b>5 → 4</b>：4 は いちばん あと）</li><li>効果タイムで 効果が 出る 順番は <b>6 → 7 → 3 → 5 → 4</b>（聞く 順番も 同じ）</li><li>さいごの ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある あいだ 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の しるしが つくよ</li><li>セットした カードは、前に 見た カードでも <b>うら</b>（4 の 効果で 見せる か、オープン するまで）。どの カードを セットしたかは わからない ので、見た カードは オープンまで 手札に ある ように 見えるよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ごほうび</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}こ</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}こ</b>（負けると 連勝は 0 に もどるよ。同点は そのまま）</li><li>お世話トークンは 25こ まで。対戦の とちゅうで やめると 負けに なるよ</li></ul>`
-      + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b>・<b>${COIN.every}連勝 ごとに ${COIN.bonus}枚</b> もらえるよ。<b>買う ことは できない</b>よ</li>`
+      + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
+      + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友だちと 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
       + '<li>2人とも はじめに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが もどる</li><li><b>とちゅうで やめると、参加コインは もどらない</b>（つながりが 切れた ときは もどるよ）</li></ul>'
       + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>おもて</b>・<b>うら</b>と <b>プレイボード</b>の デザインを かえられるよ</li>`
@@ -1564,7 +1619,7 @@ const CBApp = (() => {
     if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
     else if (own) btns = `<button type="button" class="cbb" data-cb="dzuse" data-id="${id || ''}" data-ck="${kind || ''}">この デザインを 使う</button>`;
     else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="dzopen" data-id="${d.id}" data-ck="${kind || ''}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
-    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚）</p>`;
+    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）</p>`;
     modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>${esc(dzWhat(kind))}</small></h3><div class="big"><img src="${big}" alt="${esc(dzWhat(kind))}"></div>`
       + `<div class="col">${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
   }
@@ -1605,7 +1660,7 @@ const CBApp = (() => {
     if (used) btns = '<button type="button" class="cbb" disabled>使って いるよ</button>';
     else if (own) btns = `<button type="button" class="cbb" data-cb="bduse" data-id="${id || ''}">この ボードを 使う</button>`;
     else if (st.coin >= d.cost) btns = `<button type="button" class="cbb" data-cb="bdopen" data-id="${d.id}">${COINI}バトルコイン ${d.cost}枚で 解放</button>`;
-    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つと ${COIN.win}枚・${COIN.every}連勝 ごとに ${COIN.bonus}枚）</p>`;
+    else btns = `<button type="button" class="cbb" disabled>${COINI}バトルコイン ${d.cost}枚で 解放</button><p class="cbneed">あと ${d.cost - st.coin}枚 たりないよ<br>（コンピュータに 勝つ・毎日の ログインボーナスで もらえるよ）</p>`;
     modal(`<h3 class="gold">${esc(d ? d.name : 'いつもの')}<small>プレイボード</small></h3><div class="big bd"><img src="${d ? d.b : 'cb_board.webp'}" alt="プレイボード"></div>`
       + `<div class="col">${btns}<button type="button" class="cbb dk" data-cb="dzback">もどる</button></div>`, 'cbdzm');
   }
@@ -1813,7 +1868,8 @@ const CBApp = (() => {
   
   
   
-  const EFFQ = ['6', '5', '7', '3', '4'];
+  
+  const EFFQ = ['6', '7', '3', '5', '4'];
   const EFFTXT = { 6: '6 を 2まい 見せて、相手の 手札を 1まい 見られるよ', 5: '5 と 手札 1まいを 捨てて、山札から 1まい セットできるよ', 7: '7 を 3まい 山札に もどして、新しく 3まい 引けるよ',
     3: '3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（ランダム）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
   const EFFBAR = { 3: '3 を 3まい 見せて、手札を 1まい 交換できるよ' };
@@ -1826,10 +1882,11 @@ const CBApp = (() => {
   const toName = o => (NAMES[o] ? NAMES[o] + 'に' : o + ' に');
   const REVTXT = (k, o) => `手札の ${k} を 2まい 見せて、1まい 捨てると、${toName(o)} 勝てるよ`;
   const REVBAR = (k, o) => `手札の ${k} を 1まい 捨てて、${toName(o)} 勝てるよ`;
+  
+  const dropOk = (x, v, use) => { const n = k => v.my.hand.filter(c => c.k === k).length; return !(use.x7 && x.k === '7' && n('7') <= 3) && !(use.x3 && x.k === '3' && n('3') <= 3); };
   function effOk(q, v, use) {
     const c = v.can.eff; if (!c) return false;
-    const three = k => v.my.hand.filter(x => x.k === k && x.u !== use.u5).length >= 3;
-    return q === '6' ? c.e6 : q === '5' ? c.e5 : q === '7' ? c.e7 && three('7') : q === '3' ? !!c.e3 && three('3') : c.e4;
+    return q === '6' ? c.e6 : q === '5' ? !!c.e5 && v.my.hand.some(x => dropOk(x, v, use)) : q === '7' ? c.e7 : q === '3' ? !!c.e3 : c.e4;
   }
   function effNext(v, use, after) { for (let i = EFFQ.indexOf(after) + 1; i < EFFQ.length; i++) if (effOk(EFFQ[i], v, use)) return EFFQ[i]; return null; }
   
@@ -1996,12 +2053,12 @@ const CBApp = (() => {
   
   function cardModal(u) {
     const v = V, c = v.my.hand.find(x => x.u === u); if (!c) return;
-    let btn = '';
+    let btn = '', note = '';
     if (v.pend && v.pend.mine && v.pend.type === 'swap') btn = `<button type="button" class="cbb" data-cb="swap" data-u="${u}">この カードと 交換する</button>`;
-    else if (mode.k === 'eff') { if (mode.step === 'drop5') btn = `<button type="button" class="cbb" data-cb="drop5" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`; }
+    else if (mode.k === 'eff') { if (mode.step === 'drop5') { if (dropOk(c, v, mode.use)) btn = `<button type="button" class="cbb" data-cb="drop5" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`; else note = `<p>${c.k === '7' ? '7 の 効果で もどす 7' : '3 の 効果で 見せる 3'} なので、捨てられないよ</p>`; } }      
     else if (mode.k === 'u5') btn = `<button type="button" class="cbb" data-cb="u5drop" data-u="${u}">この カードを 捨てる<small>5 と いっしょに 捨てて、山札から 1まい セット</small></button>`;      
     else if (v.can.set) btn = `<button type="button" class="cbb" data-cb="set" data-u="${u}">この カードを セットする<small>セットしたら もう 変えられないよ</small></button>`;
-    modal(`<div class="big"><img src="${pic(c.k, true)}" alt="${esc(nameOf(c.k))}"></div>${c.seen ? '<p>この カードは 相手に 見られて いるよ</p>' : ''}<div class="col">${btn}<button type="button" class="cbb dk" data-cb="modx">もどる</button></div>`);
+    modal(`<div class="big"><img src="${pic(c.k, true)}" alt="${esc(nameOf(c.k))}"></div>${c.seen ? '<p>この カードは 相手に 見られて いるよ</p>' : ''}${note}<div class="col">${btn}<button type="button" class="cbb dk" data-cb="modx">もどる</button></div>`);
   }
   
   function showCard(k, text, back, side) { modal(`<div class="big"><img src="${pic(k, true, side)}" alt="${esc(k ? nameOf(k) : 'ふせた カード')}"></div>${text ? `<p>${esc(text)}</p>` : ''}<div class="col"><button type="button" class="cbb dk" data-cb="${back === 'discard' ? 'discard' : 'modx'}">もどる</button></div>`); }
@@ -2140,7 +2197,7 @@ const CBApp = (() => {
       se('tap', 0.6);
       if (a === 'effback') { mode.step = 'ask'; closeMod(); render(); return; }
       if (a === 'effno') { if (mode.step !== 'ask') return; return effStep(); }
-      if (a === 'drop5') { if (mode.step !== 'drop5' || !v.my.hand.some(c => c.u === u)) return; mode.use.u5 = u; closeMod(); return effStep(); }
+      if (a === 'drop5') { const dc = v.my.hand.find(c => c.u === u); if (mode.step !== 'drop5' || !dc || !dropOk(dc, v, mode.use)) return; mode.use.u5 = u; closeMod(); return effStep(); }
       if (mode.step !== 'ask') return;
       if (mode.q === '6') return pickModal('p6');
       if (mode.q === '5') { mode.step = 'drop5'; render(); return; }
@@ -2411,12 +2468,14 @@ const CBApp = (() => {
     
     
     const now = `（いま ${r.coins}枚${r.full ? `：${COIN.max}枚 まで` : ''}）`;
+    
+    if (r.cb) h += `<div class="cbsbn" role="status" aria-label="${r.streak}連勝 ボーナス バトルコイン ${r.cb}枚"><i aria-hidden="true">🔥</i><span>${r.streak}連勝 ボーナス！</span>${COINI}<b>＋${r.cb}枚</b></div>`;
     h += r.ms.map(m => `<div class="cbmsn" role="status" aria-label="ミッション達成 ${m.n}連勝 バトルコイン ${m.c}枚"><i aria-hidden="true">🎯</i><span>ミッション達成！</span><b>${m.n}連勝</b>${COINI}<b>＋${m.c}枚</b></div>`).join('');
     if (r.pot) h += `<div class="cbcl">${COINI}${x.res === 'win' ? `<b>バトルコイン ＋${r.pot.w}枚</b>` : x.res === 'draw' ? `同点：参加コイン ${r.pot.e}枚 もどったよ` : `参加コイン ${r.pot.e}枚は もどらないよ`}${now}</div>`;
     else if (r.coin) h += `<div class="cbcl">${COINI}<b>バトルコイン ＋${r.coin}枚</b>${now}</div>`;      
     else if (r.ms.length) h += `<div class="cbcl">${COINI}バトルコイン${now}</div>`;      
     g.innerHTML = h;
-    if (g.querySelector('.cbget') || g.querySelector('.cbmsn')) se('magic', 0.7);
+    if (g.querySelector('.cbget') || g.querySelector('.cbmsn') || g.querySelector('.cbsbn')) se('magic', 0.7);
     
     const k = match && match.stake;
     if (k && k.e > 0 && st.coin < k.e) { const ab = $('.cbend [data-cb=again]'), g2 = $('.cbend .gift2'); if (ab) ab.disabled = true; if (g2) g2.textContent = `バトルコインが 足りない ので、もう 1回は できないよ`; }
@@ -2456,12 +2515,15 @@ const CBApp = (() => {
     try { if (window.TengelWallet && window.TengelWallet.lockZoom) window.TengelWallet.lockZoom(false); } catch (e) {   }
     try { document.dispatchEvent(new CustomEvent('tengel:cb')); } catch (e) {   }
   }
+  
+  
+  document.addEventListener('tengel:cbgift', () => { if (!st || !takeGift()) return; if (ov && ov.classList.contains('on') && screen === 'menu' && !modOn()) showMenu(); });
   return {
-    open, close, REWARD, rewardFor, COIN, coinFor, MS, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
+    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, _rng: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
 })();

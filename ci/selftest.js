@@ -476,6 +476,7 @@
       if (!out.open) return out;
       out.menu = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu .cbb'), function (b) { return b.textContent.replace(/\s+/g, ' ').trim(); });
       out.coinl = ((document.querySelector('#cbOv .cbmenu .cbcoinl') || {}).textContent || '');      // 第4.179版：バトルコインの 行
+      out.gift0 = ((window.CBApp._t.state || {}).gifts || []).length; out.coin0 = (window.CBApp._t.state || {}).coin;      // 第4.188版：開いた とき もう 受け取って いた ログインボーナスの バトルコイン（毎日 2枚）
       out.roomBtn = Array.prototype.map.call(document.querySelectorAll('#cbOv .cbmenu [data-cb=host],#cbOv .cbmenu [data-cb=join]'), function (b) { return !b.disabled; });
       await mark('cb-menu');
       window.CBApp._t.speed(0.2); window.CBApp._think = function () { return 200; };
