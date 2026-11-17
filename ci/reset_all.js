@@ -40,8 +40,8 @@
     var done = function (s) {
       did.db = s;
       try { localStorage.removeItem(KEY); } catch (e) {}
-      if (s === 'ok') note('🧪 ぜんぶ リセットしたよ', 4200);
-      else note('保存場所を 消せなかったよ。もう一度「ぜんぶ リセット」を 押してね', 9000, true);      // 消せなかった：くり返しても 同じ かも しれない ので しるしは 外す（記録は のこって いる）
+      if (s === 'ok') note('🧪 全部 リセットしたよ', 4200);
+      else note('保存場所を 消せなかったよ。もう一度「全部 リセット」を 押してね', 9000, true);      // 消せなかった：くり返しても 同じ かも しれない ので しるしは 外す（記録は のこって いる）
     };
     try {
       var rq = indexedDB.deleteDatabase(DB);
@@ -57,7 +57,7 @@
     post('backup', { text: JSON.stringify({ reset: true, bets: [] }) });
     post('notify', { op: 'sync', items: [] });
     // 保存場所を 消すのが 終わらない とき（ほかの つながりが のこって いる）：アプリを 閉じて 開き直して もらう（しるしが のこって いる ので つぎに 開いた ときに 消える）
-    setTimeout(function () { if (did.db === 'pending' || did.db === 'blocked') note('リセットの とちゅうだよ。アプリを いちど 閉じて、もう一度 開いてね', 0, true); }, 5000);
+    setTimeout(function () { if (did.db === 'pending' || did.db === 'blocked') note('リセットの 途中だよ。アプリを いちど 閉じて、もう一度 開いてね', 0, true); }, 5000);
   }
 
   var armed = false;

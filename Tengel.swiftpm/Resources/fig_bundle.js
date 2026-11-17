@@ -447,8 +447,8 @@ const FigApp = (() => {
     if (built) return; built = true;
     const s = document.createElement('style'); s.id = 'fgCss'; s.textContent = css; document.head.appendChild(s);
     ov = document.createElement('div'); ov.id = 'fgOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '思い出フィギュア');
-    ov.innerHTML = '<div class="fgh"><button type="button" class="fgbtn" data-fg="back">← もどる</button><div class="fgt"><b></b><span></span></div><button type="button" class="fgbtn" data-fg="over">一覧</button></div>'
-      + '<div class="fgwr"><div class="fgst"><canvas></canvas><div class="fgsl"></div><div class="fgld" hidden><i></i><span>よみこみ中…</span></div></div><div class="fgpn" hidden></div></div>'
+    ov.innerHTML = '<div class="fgh"><button type="button" class="fgbtn" data-fg="back">← 戻る</button><div class="fgt"><b></b><span></span></div><button type="button" class="fgbtn" data-fg="over">一覧</button></div>'
+      + '<div class="fgwr"><div class="fgst"><canvas></canvas><div class="fgsl"></div><div class="fgld" hidden><i></i><span>読み込み中…</span></div></div><div class="fgpn" hidden></div></div>'
       + '<div class="fgf"></div><div class="fgsh" aria-hidden="true"></div><div class="fgmsg" aria-live="polite"></div>';
     document.body.appendChild(ov);
     stg = ov.querySelector('.fgst'); cv = stg.querySelector('canvas'); slEl = ov.querySelector('.fgsl'); pn = ov.querySelector('.fgpn'); ft = ov.querySelector('.fgf'); ldEl = ov.querySelector('.fgld'); sh = ov.querySelector('.fgsh');
@@ -470,7 +470,7 @@ const FigApp = (() => {
   }
   function head(title, sub, back, right) {
     ov.querySelector('.fgt b').textContent = title; ov.querySelector('.fgt span').textContent = sub || '';
-    const bk = ov.querySelector('[data-fg=back]'); bk.textContent = back || '← もどる';
+    const bk = ov.querySelector('[data-fg=back]'); bk.textContent = back || '← 戻る';
     const rb = ov.querySelector('[data-fg=over]'); rb.hidden = !right; if (right) rb.textContent = right;
   }
   function msg(t, sec) {
@@ -553,8 +553,8 @@ const FigApp = (() => {
     let h = `<div class="fgpg"><button type="button" data-fg="prev" aria-label="前の ブース"${page <= 0 ? ' disabled' : ''}>‹</button><div class="fgdots" aria-hidden="true">${Array.from({ length: PAGES }, (_, i) => `<i class="${i === page ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-fg="next" aria-label="次の ブース"${page >= PAGES - 1 ? ' disabled' : ''}>›</button></div>`;
     if (pick) {
       const it = itemOf(pick.id);
-      h += `<div class="fgpick">${pick.from >= 0 ? '動かす 場所を 選んでね' : '飾る 場所を 選んでね'}<small>${esc(it ? `${NAMES[it.n]}・${it.info && it.info.race || ''}` : '')}　ほかの ブースは ‹ › で</small></div>`
-        + `<div class="fgrow">${pick.from >= 0 ? '<button type="button" class="dk" data-fg="unplace">しまう</button>' : ''}<button type="button" class="dk" data-fg="pickx">${pick.fresh ? 'あとで（しまっておく）' : 'やめる'}</button></div>`;
+      h += `<div class="fgpick">${pick.from >= 0 ? '動かす 場所を 選んでね' : '飾る 場所を 選んでね'}<small>${esc(it ? `${NAMES[it.n]}・${it.info && it.info.race || ''}` : '')}　他の ブースは ‹ › で</small></div>`
+        + `<div class="fgrow">${pick.from >= 0 ? '<button type="button" class="dk" data-fg="unplace">しまう</button>' : ''}<button type="button" class="dk" data-fg="pickx">${pick.fresh ? '後で（しまっておく）' : 'やめる'}</button></div>`;
     } else {
       h += `<div class="fgrow"><button type="button" class="dk" data-fg="store">しまってある（${st}）</button><button type="button" class="pri" data-fg="make">＋ フィギュアを作る</button></div>`;
     }
@@ -566,7 +566,7 @@ const FigApp = (() => {
     mode = 'booth'; ov.classList.remove('roomm'); pn.hidden = true; pn.innerHTML = ''; slEl.hidden = false; stg.classList.remove('room');
     if (p != null) page = clamp(p, 0, PAGES - 1);
     try { localStorage.setItem(PK, String(page)); } catch (e) {   }
-    head('思い出フィギュアブース', `ブース ${page + 1} / ${PAGES}`, '← もどる', '一覧');
+    head('思い出フィギュアブース', `ブース ${page + 1} / ${PAGES}`, '← 戻る', '一覧');
     footBooth(); layout();
     if (dir) await slide(dir, () => loadPage(page)); else { try { await loadPage(page); } catch (e) { fail(e); } }
     need();
@@ -581,7 +581,7 @@ const FigApp = (() => {
   }
   const wait = ms => new Promise(ok => setTimeout(ok, ms));
   function fail(e) { loading(false); console.warn('fig', e); msg('フィギュアの 絵を 読みこめなかったよ', 3.2); }
-  function goPage(d) { const np = clamp(page + d, 0, PAGES - 1); if (np === page) return; page = np; head('思い出フィギュアブース', `ブース ${page + 1} / ${PAGES}`, '← もどる', '一覧'); footBooth(); slide(d, () => loadPage(page)).then(need); try { localStorage.setItem(PK, String(page)); } catch (e) {   } }
+  function goPage(d) { const np = clamp(page + d, 0, PAGES - 1); if (np === page) return; page = np; head('思い出フィギュアブース', `ブース ${page + 1} / ${PAGES}`, '← 戻る', '一覧'); footBooth(); slide(d, () => loadPage(page)).then(need); try { localStorage.setItem(PK, String(page)); } catch (e) {   } }
 
   
   let pick = null;                                     
@@ -608,7 +608,7 @@ const FigApp = (() => {
   function openSheet(target) {
     sheetTarget = target == null ? -1 : target;
     const list = stored().slice().reverse();
-    let h = `<h3><span>${sheetTarget >= 0 ? 'ここに 飾る フィギュアを 選んでね' : 'しまってある フィギュア'}</span><button type="button" data-fg="shx">とじる</button></h3><div class="fgsl2">`;
+    let h = `<h3><span>${sheetTarget >= 0 ? 'ここに 飾る フィギュアを 選んでね' : 'しまってある フィギュア'}</span><button type="button" data-fg="shx">閉じる</button></h3><div class="fgsl2">`;
     if (!list.length) {
       h += `<div class="fgempty">しまってある フィギュアは ないよ。${hasRaces() ? '<br>思い出のレースから 新しく 作れるよ' : '<br>記録タブで「思い出のレースに記録する」と、フィギュアに できるよ'}</div>`;
       if (hasRaces()) h += '<div class="fgrow"><button type="button" class="pri" data-fg="make">＋ フィギュアを作る</button></div>';
@@ -629,7 +629,7 @@ const FigApp = (() => {
     head('ブース一覧', `飾っている フィギュア ${placed} / ${MAX}`, '← ブースへ', '');
     ft.innerHTML = '';
     let h = '<div class="fgov">';
-    for (let p = 0; p < PAGES; p++) h += `<button type="button" class="fgoc${p === page ? ' cur' : ''}" data-fg="ovp" data-p="${p}" aria-label="ブース ${p + 1}（${onPage(p).length}こ）"><canvas width="300" height="388"></canvas><b>ブース ${p + 1}</b><small>${onPage(p).length} / ${PER}</small></button>`;
+    for (let p = 0; p < PAGES; p++) h += `<button type="button" class="fgoc${p === page ? ' cur' : ''}" data-fg="ovp" data-p="${p}" aria-label="ブース ${p + 1}（${onPage(p).length}個）"><canvas width="300" height="388"></canvas><b>ブース ${p + 1}</b><small>${onPage(p).length} / ${PER}</small></button>`;
     h += `<div class="fgos"><span>飾っている<br>フィギュア</span><b>${placed} / ${MAX}</b><small>しまってある ${stored().length}</small></div></div>`;
     pn.innerHTML = h; pn.hidden = false; pn.scrollTop = 0;
     for (let p = 0; p < PAGES; p++) {
@@ -667,8 +667,8 @@ const FigApp = (() => {
     const at = it.at ? new Date(it.at) : null, made = at ? `${at.getFullYear()}/${at.getMonth() + 1}/${at.getDate()}` : '';
     const placed = slotOf(it.id) >= 0;
     ft.innerHTML = `<div class="fginfo">${it.info && it.info.kind ? `<span class="k">${esc(it.info.kind)}</span>` : ''}<b>${esc(it.info && it.info.race || '')}</b><small>${esc(it.info && it.info.date || '')}${made ? `　・　作った日 ${made}` : ''}</small></div>`
-      + `<div class="fgrow">${placed ? '<button type="button" class="dk" data-fg="move">場所をかえる</button><button type="button" class="dk" data-fg="unplace">しまう</button>' : '<button type="button" class="pri" data-fg="place">ブースに飾る</button>'}</div>`
-      + '<div class="fghint">指で まわせるよ・2本指で 大きく</div>';
+      + `<div class="fgrow">${placed ? '<button type="button" class="dk" data-fg="move">場所を変える</button><button type="button" class="dk" data-fg="unplace">しまう</button>' : '<button type="button" class="pri" data-fg="place">ブースに飾る</button>'}</div>`
+      + '<div class="fghint">指で 回せるよ・2本指で 大きく</div>';
   }
   async function enterRoom(n, info, extra) {
     exitRoom();
@@ -690,7 +690,7 @@ const FigApp = (() => {
     mode = 'make'; mk.step = step; mk.conf = false; slEl.hidden = true;
     if (step === 'race') {
       exitRoom(); stg.classList.remove('room');
-      head('フィギュアを作る', '1. 思い出のレースを 選ぶ', mk.back === 'booth' ? '← ブースへ' : '← もどる', '');
+      head('フィギュアを作る', '1. 思い出のレースを 選ぶ', mk.back === 'booth' ? '← ブースへ' : '← 戻る', '');
       const list = (MEM() && MEM().list()) || [];
       let h = '<div class="fgmk"><p class="lead">思い出のレースを、ボードに 書いた フィギュアに できるよ。デザインは 5種類。作った フィギュアは フィギュアブースに 飾れるよ。</p>';
       if (!list.length) h += '<div class="fgempty">思い出のレースが まだ ないよ。<br>記録タブで 結果を 決めた レースを 開いて「思い出のレースに記録する」を 押してね。</div>';
@@ -699,7 +699,7 @@ const FigApp = (() => {
     } else if (step === 'design') {
       exitRoom(); stg.classList.remove('room');
       const r = mk.race;
-      head('フィギュアを作る', '2. デザインを 選ぶ', '← もどる', '');
+      head('フィギュアを作る', '2. デザインを 選ぶ', '← 戻る', '');
       let h = `<div class="fgmk"><div class="fgsel">${r.kind ? `${esc(r.kind)}　` : ''}<b>${esc(r.day)}　${esc(r.race)}</b><br>${esc(r.result)}</div><div class="fgdg">`;
       for (const n of LIST) {
         const k = KIND[n];
@@ -716,9 +716,9 @@ const FigApp = (() => {
   }
   function footBuy() {
     const w = WL(), have = w ? (typeof w.avail === 'function' ? w.avail() : w.total()) : 0, cost = priceOf(mk.n), ok = have >= cost;      
-    ft.innerHTML = `<div class="fgbuy"><b>${nf(cost)}P</b>　いま ${nf(have)}P${ok ? '' : `<br><span class="ng">あと ${nf(cost - have)}P 足りないよ</span>`}</div>`
+    ft.innerHTML = `<div class="fgbuy"><b>${nf(cost)}P</b>　今 ${nf(have)}P${ok ? '' : `<br><span class="ng">あと ${nf(cost - have)}P 足りないよ</span>`}</div>`
       + `<div class="fgrow">${mk.conf ? `<button type="button" class="dk" data-fg="buyx">やめる</button><button type="button" class="pri" data-fg="buy2">${nf(cost)}Pを使って作る</button>` : `<button type="button" class="pri" data-fg="buy1"${ok ? '' : ' disabled'}>このデザインで作る</button>`}</div>`
-      + '<div class="fghint">指で まわせるよ・2本指で 大きく</div>';
+      + '<div class="fghint">指で 回せるよ・2本指で 大きく</div>';
   }
   let buying = false;
   async function buy() {
@@ -758,7 +758,7 @@ const FigApp = (() => {
     }
     if (a === 'pickx') { pick = null; footBooth(); need(); return; }
     if (a === 'move' && room && room.it) { const it = room.it; const g = slotOf(it.id); await showBooth(g >= 0 ? Math.floor(g / PER) : page); startPick(it.id, false); return; }
-    if (a === 'place' && room && room.it) { const it = room.it, free = slots.indexOf(null); if (free < 0) { msg('ブースが いっぱいだよ。\nほかの フィギュアを しまってから 飾ってね', 3.2); return; } await showBooth(Math.floor(free / PER)); startPick(it.id, false); return; }
+    if (a === 'place' && room && room.it) { const it = room.it, free = slots.indexOf(null); if (free < 0) { msg('ブースが いっぱいだよ。\n他の フィギュアを しまってから 飾ってね', 3.2); return; } await showBooth(Math.floor(free / PER)); startPick(it.id, false); return; }
     if (a === 'unplace') {
       const id = room && room.it ? room.it.id : pick ? pick.id : ''; if (!id) return;
       const next = slots.slice(), g = slotOf(id); if (g >= 0) next[g] = null;
@@ -867,7 +867,7 @@ const FigApp = (() => {
   }
   function openFail(e) {      
     if (ov) ov.classList.remove('on');
-    try { const t = document.getElementById('toast'); if (t) { t.textContent = '思い出フィギュアを ひらけなかったよ（' + (e && e.message || e) + '）'; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (x) {   }
+    try { const t = document.getElementById('toast'); if (t) { t.textContent = '思い出フィギュアを 開けなかったよ（' + (e && e.message || e) + '）'; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(() => { t.hidden = true; }, 4200); } } catch (x) {   }
   }
   function reload() { if (mode === 'booth') showBooth(page); else if (mode === 'over') showOver(); else if (mode === 'room' && room && room.it) openRoom(room.it); else if (mode === 'make') showMake(mk.step); }
   function close() {

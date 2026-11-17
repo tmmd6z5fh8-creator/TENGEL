@@ -334,10 +334,11 @@ h, g = rd(sys.argv[1]), rd(sys.argv[2])
 if h is None or g is None:
     print("report host %s guest %s -> CHECK" % ("yes" if h else "NO", "yes" if g else "NO")); sys.exit(0)
 flip = {"win": "lose", "lose": "win", "draw": "draw"}
+bad = lambda r: [e for e in (r.get("errors") or []) if "ResizeObserver loop" not in str(e)]      # 第4.192版：WebKit の「ResizeObserver loop …」の 知らせは 数えない（画面の 大きさの 知らせが 1コマ おくれた だけ：run 160）
 ok = (h.get("connected") is True and g.get("connected") is True and h.get("kind") == "host" and g.get("kind") == "guest" and h.get("res") in flip and flip[h["res"]] == g.get("res")
-      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 10 and h.get("discard") == g.get("discard") and not h.get("errors") and not g.get("errors"))      # 第4.178版：5ターン ＝ 捨て札は 10まい 以上
+      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 10 and h.get("discard") == g.get("discard") and not bad(h) and not bad(g))      # 第4.178版：5ターン ＝ 捨て札は 10まい 以上
 print("host connected %s res %s wins %s discard %s evs %s / guest connected %s res %s wins %s evs %s errors %d -> %s" % (h.get("connected"), h.get("res"), h.get("wins"), h.get("discard"), h.get("evs"), g.get("connected"), g.get("res"), g.get("wins"), g.get("evs"),
-      len(h.get("errors") or []) + len(g.get("errors") or []), "OK" if ok else "CHECK " + (h.get("text") or "")[:80] + " / " + (g.get("text") or "")[:80]))
+      len(bad(h)) + len(bad(g)), "OK" if ok else "CHECK " + (h.get("text") or "")[:80] + " / " + (g.get("text") or "")[:80]))
 ' "$OUT/room-iphone-report-6.json" "$OUT/room-ipad-report-7.json" 2>&1)"
     for f in "$DH/Documents"/report-crash-*.json "$DG/Documents"/report-crash-*.json; do [ -f "$f" ] && cp "$f" "$OUT/room-$(basename "$f")" && say "   room: CRASH $(basename "$f")"; done
     applog "$IPHONE" room-iphone; applog "$IPAD" room-ipad

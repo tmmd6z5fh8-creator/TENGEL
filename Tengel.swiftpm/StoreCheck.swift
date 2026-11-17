@@ -23,7 +23,7 @@ enum StoreCheck {
         var info = StoreInfo()
         guard let bundleID = Bundle.main.bundleIdentifier, !bundleID.isEmpty,
               var parts = URLComponents(string: "https://itunes.apple.com/lookup") else {
-            info.error = "アプリのIDがわからないよ"
+            info.error = "アプリのIDが分からないよ"
             return info
         }
         parts.queryItems = [
